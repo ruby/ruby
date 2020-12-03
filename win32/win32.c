@@ -71,6 +71,9 @@ static int w32_stati128(const char *path, struct stati128 *st, UINT cp, BOOL lst
 static char *w32_getenv(const char *name, UINT cp);
 
 #undef getenv
+/*
+ * Do not remove the macros to substitute functions in dln_find.c.
+ */
 #define DLN_FIND_EXTRA_ARG_DECL ,UINT cp
 #define DLN_FIND_EXTRA_ARG ,cp
 #define rb_w32_stati128(path, st) w32_stati128(path, st, cp, FALSE)
@@ -1362,7 +1365,7 @@ w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
 	int redir = -1;
 	int nt;
 	while (ISSPACE(*cmd)) cmd++;
-	if ((shell = getenv("RUBYSHELL")) && (redir = has_redirection(cmd, cp))) {
+	if ((shell = w32_getenv("RUBYSHELL", cp)) && (redir = has_redirection(cmd, cp))) {
 	    size_t shell_len = strlen(shell);
 	    char *tmp = ALLOCV(v, shell_len + strlen(cmd) + sizeof(" -c ") + 2);
 	    memcpy(tmp, shell, shell_len + 1);
@@ -1370,7 +1373,7 @@ w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
 	    sprintf(tmp + shell_len, " -c \"%s\"", cmd);
 	    cmd = tmp;
 	}
-	else if ((shell = getenv("COMSPEC")) &&
+	else if ((shell = w32_getenv("COMSPEC", cp)) &&
 		 (nt = !is_command_com(shell),
 		  (redir < 0 ? has_redirection(cmd, cp) : redir) ||
 		  is_internal_cmd(cmd, nt))) {
@@ -1491,7 +1494,7 @@ w32_aspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags, UIN
     if (check_spawn_mode(mode)) return -1;
 
     if (!prog) prog = argv[0];
-    if ((shell = getenv("COMSPEC")) &&
+    if ((shell = w32_getenv("COMSPEC", cp)) &&
 	internal_cmd_match(prog, tmpnt = !is_command_com(shell))) {
 	ntcmd = tmpnt;
 	prog = shell;

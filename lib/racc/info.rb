@@ -11,7 +11,7 @@
 #++
 
 module Racc
-  VERSION   = '1.5.0'
+  VERSION   = '1.5.1'
   Version = VERSION
   Copyright = 'Copyright (c) 1999-2006 Minero Aoki'
 end

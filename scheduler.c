@@ -8,6 +8,7 @@
 
 **********************************************************************/
 
+#include "vm_core.h"
 #include "internal/scheduler.h"
 #include "ruby/io.h"
 
@@ -35,6 +36,54 @@ Init_Scheduler(void)
     id_io_read = rb_intern_const("io_read");
     id_io_write = rb_intern_const("io_write");
     id_io_wait = rb_intern_const("io_wait");
+}
+
+VALUE
+rb_scheduler_get()
+{
+    rb_thread_t *thread = GET_THREAD();
+    VM_ASSERT(thread);
+
+    return thread->scheduler;
+}
+
+VALUE
+rb_scheduler_set(VALUE scheduler)
+{
+    rb_thread_t *thread = GET_THREAD();
+    VM_ASSERT(thread);
+
+    // We invoke Scheduler#close when setting it to something else, to ensure the previous scheduler runs to completion before changing the scheduler. That way, we do not need to consider interactions, e.g., of a Fiber from the previous scheduler with the new scheduler.
+    if (thread->scheduler != Qnil) {
+        rb_scheduler_close(thread->scheduler);
+    }
+
+    thread->scheduler = scheduler;
+
+    return thread->scheduler;
+}
+
+static VALUE
+rb_threadptr_scheduler_current(rb_thread_t *thread)
+{
+    VM_ASSERT(thread);
+
+    if (thread->blocking == 0) {
+        return thread->scheduler;
+    } else {
+        return Qnil;
+    }
+}
+
+VALUE
+rb_scheduler_current()
+{
+    return rb_threadptr_scheduler_current(GET_THREAD());
+}
+
+VALUE rb_thread_scheduler_current(VALUE thread)
+{
+    return rb_threadptr_scheduler_current(rb_thread_ptr(thread));
 }
 
 VALUE

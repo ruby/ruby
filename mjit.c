@@ -11,7 +11,7 @@
 
 // To share variables privately, include mjit_worker.c instead of linking.
 
-#include "ruby/internal/config.h"
+#include "ruby/internal/config.h" // defines USE_MJIT
 
 #if USE_MJIT
 
@@ -22,44 +22,9 @@
 #include "internal/cont.h"
 #include "internal/file.h"
 #include "internal/hash.h"
-#include "internal/mjit.h"
 #include "internal/warnings.h"
 
 #include "mjit_worker.c"
-
-// Copy ISeq's states so that race condition does not happen on compilation.
-static void
-mjit_copy_job_handler(void *data)
-{
-    mjit_copy_job_t *job = data;
-    if (stop_worker_p) { // check if mutex is still alive, before calling CRITICAL_SECTION_START.
-        return;
-    }
-
-    CRITICAL_SECTION_START(3, "in mjit_copy_job_handler");
-    // Make sure that this job is never executed when:
-    //   1. job is being modified
-    //   2. alloca memory inside job is expired
-    //   3. ISeq is GC-ed
-    if (job->finish_p) {
-        CRITICAL_SECTION_FINISH(3, "in mjit_copy_job_handler");
-        return;
-    }
-    else if (job->iseq == NULL) { // ISeq GC notified in mjit_free_iseq
-        job->finish_p = true;
-        CRITICAL_SECTION_FINISH(3, "in mjit_copy_job_handler");
-        return;
-    }
-
-    const struct rb_iseq_constant_body *body = job->iseq->body;
-    if (job->is_entries) {
-        memcpy(job->is_entries, body->is_entries, sizeof(union iseq_inline_storage_entry) * body->is_size);
-    }
-
-    job->finish_p = true;
-    rb_native_cond_broadcast(&mjit_worker_wakeup);
-    CRITICAL_SECTION_FINISH(3, "in mjit_copy_job_handler");
-}
 
 extern int rb_thread_create_mjit_thread(void (*worker_func)(void));
 
@@ -154,9 +119,8 @@ mjit_free_iseq(const rb_iseq_t *iseq)
         return;
 
     CRITICAL_SECTION_START(4, "mjit_free_iseq");
-    if (mjit_copy_job.iseq == iseq) {
-        mjit_copy_job.iseq = NULL;
-    }
+    RUBY_ASSERT_ALWAYS(in_gc);
+    RUBY_ASSERT_ALWAYS(!in_jit);
     if (iseq->body->jit_unit) {
         // jit_unit is not freed here because it may be referred by multiple
         // lists of units. `get_from_list` and `mjit_finish` do the job.
@@ -204,16 +168,6 @@ free_list(struct rb_mjit_unit_list *list, bool close_handle_p)
     list->length = 0;
 }
 
-// MJIT info related to an existing continutaion.
-struct mjit_cont {
-    rb_execution_context_t *ec; // continuation ec
-    struct mjit_cont *prev, *next; // used to form lists
-};
-
-// Double linked list of registered continuations. This is used to detect
-// units which are in use in unload_units.
-static struct mjit_cont *first_cont;
-
 // Register a new continuation with execution context `ec`. Return MJIT info about
 // the continuation.
 struct mjit_cont *
@@ -221,7 +175,12 @@ mjit_cont_new(rb_execution_context_t *ec)
 {
     struct mjit_cont *cont;
 
-    cont = ZALLOC(struct mjit_cont);
+    // We need to use calloc instead of something like ZALLOC to avoid triggering GC here.
+    // When this function is called from rb_thread_alloc through rb_threadptr_root_fiber_setup,
+    // the thread is still being prepared and marking it causes SEGV.
+    cont = calloc(1, sizeof(struct mjit_cont));
+    if (cont == NULL)
+        rb_memerror();
     cont->ec = ec;
 
     CRITICAL_SECTION_START(3, "in mjit_cont_new");
@@ -256,7 +215,7 @@ mjit_cont_free(struct mjit_cont *cont)
     }
     CRITICAL_SECTION_FINISH(3, "in mjit_cont_new");
 
-    xfree(cont);
+    free(cont);
 }
 
 // Finish work with continuation info.
@@ -286,91 +245,6 @@ create_unit(const rb_iseq_t *iseq)
     iseq->body->jit_unit = unit;
 }
 
-// Set up field `used_code_p` for unit iseqs whose iseq on the stack of ec.
-static void
-mark_ec_units(rb_execution_context_t *ec)
-{
-    const rb_control_frame_t *cfp;
-
-    if (ec->vm_stack == NULL)
-        return;
-    for (cfp = RUBY_VM_END_CONTROL_FRAME(ec) - 1; ; cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
-        const rb_iseq_t *iseq;
-        if (cfp->pc && (iseq = cfp->iseq) != NULL
-            && imemo_type((VALUE) iseq) == imemo_iseq
-            && (iseq->body->jit_unit) != NULL) {
-            iseq->body->jit_unit->used_code_p = TRUE;
-        }
-
-        if (cfp == ec->cfp)
-            break; // reached the most recent cfp
-    }
-}
-
-// Unload JIT code of some units to satisfy the maximum permitted
-// number of units with a loaded code.
-static void
-unload_units(void)
-{
-    //rb_vm_t *vm = GET_THREAD()->vm;
-    //rb_thread_t *th = NULL;
-    struct rb_mjit_unit *unit = 0, *next, *worst;
-    struct mjit_cont *cont;
-    int delete_num, units_num = active_units.length;
-
-    // For now, we don't unload units when ISeq is GCed. We should
-    // unload such ISeqs first here.
-    list_for_each_safe(&active_units.head, unit, next, unode) {
-        if (unit->iseq == NULL) { // ISeq is GCed.
-            remove_from_list(unit, &active_units);
-            free_unit(unit);
-        }
-    }
-
-    // Detect units which are in use and can't be unloaded.
-    list_for_each(&active_units.head, unit, unode) {
-        assert(unit->iseq != NULL && unit->handle != NULL);
-        unit->used_code_p = FALSE;
-    }
-    // TODO
-    //list_for_each(&vm->living_threads, th, lt_node) {
-    //    mark_ec_units(th->ec);
-    //}
-    for (cont = first_cont; cont != NULL; cont = cont->next) {
-        mark_ec_units(cont->ec);
-    }
-    // TODO: check slale_units and unload unused ones! (note that the unit is not associated to ISeq anymore)
-
-    // Remove 1/10 units more to decrease unloading calls.
-    // TODO: Calculate max total_calls in unit_queue and don't unload units
-    // whose total_calls are larger than the max.
-    delete_num = active_units.length / 10;
-    for (; active_units.length > mjit_opts.max_cache_size - delete_num;) {
-        // Find one unit that has the minimum total_calls.
-        worst = NULL;
-        list_for_each(&active_units.head, unit, unode) {
-            if (unit->used_code_p) // We can't unload code on stack.
-                continue;
-
-            if (worst == NULL || worst->iseq->body->total_calls > unit->iseq->body->total_calls) {
-                worst = unit;
-            }
-        }
-        if (worst == NULL)
-            break;
-
-        // Unload the worst node.
-        verbose(2, "Unloading unit %d (calls=%lu)", worst->id, worst->iseq->body->total_calls);
-        assert(worst->handle != NULL);
-        remove_from_list(worst, &active_units);
-        free_unit(worst);
-    }
-
-    if (units_num > active_units.length) {
-        verbose(1, "Too many JIT code -- %d units unloaded", units_num - active_units.length);
-    }
-}
-
 static void
 mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_info *compile_info)
 {
@@ -389,16 +263,7 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_inf
     CRITICAL_SECTION_START(3, "in add_iseq_to_process");
     add_to_list(iseq->body->jit_unit, &unit_queue);
     if (active_units.length >= mjit_opts.max_cache_size) {
-        if (in_compact) {
-            verbose(1, "Too many JIT code, but skipped unloading units for JIT compaction");
-        } else {
-            RB_DEBUG_COUNTER_INC(mjit_unload_units);
-            unload_units();
-        }
-        if (active_units.length == mjit_opts.max_cache_size && mjit_opts.wait) { // Sometimes all methods may be in use
-            mjit_opts.max_cache_size++; // avoid infinite loop on `rb_mjit_wait_call`. Note that --jit-wait is just for testing.
-            verbose(1, "No units can be unloaded -- incremented max-cache-size to %d for --jit-wait", mjit_opts.max_cache_size);
-        }
+        unload_requests++;
     }
     verbose(3, "Sending wakeup signal to workers in mjit_add_iseq_to_process");
     rb_native_cond_broadcast(&mjit_worker_wakeup);
@@ -838,7 +703,11 @@ mjit_init(const struct mjit_options *opts)
     rb_native_cond_initialize(&mjit_worker_wakeup);
     rb_native_cond_initialize(&mjit_gc_wakeup);
 
-    // Make sure root_fiber's saved_ec is scanned by mark_ec_units
+    // Make sure the saved_ec of the initial thread's root_fiber is scanned by mark_ec_units.
+    //
+    // rb_threadptr_root_fiber_setup for the initial thread is called before mjit_init,
+    // meaning mjit_cont_new is skipped for the root_fiber. Therefore we need to call
+    // rb_fiber_init_mjit_cont again with mjit_enabled=true to set the root_fiber's mjit_cont.
     rb_fiber_init_mjit_cont(GET_EC()->fiber_ptr);
 
     // Initialize class_serials cache for compilation
@@ -916,7 +785,7 @@ mjit_resume(void)
     return Qtrue;
 }
 
-// Skip calling `clean_object_files` for units which currently exist in the list.
+// Skip calling `clean_temp_files` for units which currently exist in the list.
 static void
 skip_cleaning_object_files(struct rb_mjit_unit_list *list)
 {
@@ -924,10 +793,6 @@ skip_cleaning_object_files(struct rb_mjit_unit_list *list)
 
     // No mutex for list, assuming MJIT worker does not exist yet since it's immediately after fork.
     list_for_each_safe(&list->head, unit, next, unode) {
-#ifndef _MSC_VER // Actually mswin does not reach here since it doesn't have fork
-        if (unit->c_file) unit->c_file_inherited_p = true;
-#endif
-
 #if defined(_WIN32) // mswin doesn't reach here either. This is for MinGW.
         if (unit->so_file) unit->so_file = NULL;
 #endif
@@ -1050,19 +915,11 @@ mjit_mark(void)
         return;
     RUBY_MARK_ENTER("mjit");
 
-    CRITICAL_SECTION_START(4, "mjit_mark");
-    VALUE iseq = (VALUE)mjit_copy_job.iseq;
-    CRITICAL_SECTION_FINISH(4, "mjit_mark");
-
-    // Don't wrap critical section with this. This may trigger GC,
-    // and in that case mjit_gc_start_hook causes deadlock.
-    if (iseq) rb_gc_mark(iseq);
-
     struct rb_mjit_unit *unit = NULL;
     CRITICAL_SECTION_START(4, "mjit_mark");
     list_for_each(&unit_queue.head, unit, unode) {
         if (unit->iseq) { // ISeq is still not GCed
-            iseq = (VALUE)unit->iseq;
+            VALUE iseq = (VALUE)unit->iseq;
             CRITICAL_SECTION_FINISH(4, "mjit_mark rb_gc_mark");
 
             // Don't wrap critical section with this. This may trigger GC,

@@ -72,6 +72,7 @@ module WEBrick
       "json"  => "application/json",
       "lha"   => "application/octet-stream",
       "lzh"   => "application/octet-stream",
+      "mjs"   => "application/javascript",
       "mov"   => "video/quicktime",
       "mpe"   => "video/mpeg",
       "mpeg"  => "video/mpeg",

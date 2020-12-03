@@ -73,9 +73,18 @@ describe "String#swapcase" do
     -> { "abc".swapcase(:invalid_option) }.should raise_error(ArgumentError)
   end
 
-  it "returns subclass instances when called on a subclass" do
-    StringSpecs::MyString.new("").swapcase.should be_an_instance_of(StringSpecs::MyString)
-    StringSpecs::MyString.new("hello").swapcase.should be_an_instance_of(StringSpecs::MyString)
+  ruby_version_is ''...'3.0' do
+    it "returns subclass instances when called on a subclass" do
+      StringSpecs::MyString.new("").swapcase.should be_an_instance_of(StringSpecs::MyString)
+      StringSpecs::MyString.new("hello").swapcase.should be_an_instance_of(StringSpecs::MyString)
+    end
+  end
+
+  ruby_version_is '3.0' do
+    it "returns String instances when called on a subclass" do
+      StringSpecs::MyString.new("").swapcase.should be_an_instance_of(String)
+      StringSpecs::MyString.new("hello").swapcase.should be_an_instance_of(String)
+    end
   end
 end
 

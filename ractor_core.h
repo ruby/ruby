@@ -1,8 +1,8 @@
 #include "ruby/ruby.h"
+#include "ruby/ractor.h"
 #include "vm_core.h"
 #include "id_table.h"
 #include "vm_debug.h"
-#include "ractor_pub.h"
 
 #ifndef RACTOR_CHECK_MODE
 #define RACTOR_CHECK_MODE (0 || VM_CHECK_MODE || RUBY_DEBUG)
@@ -35,6 +35,8 @@ struct rb_ractor_waiting_list {
     int size;
     rb_ractor_t **ractors;
 };
+
+struct rb_random_struct; // c.f. ruby/random.h
 
 struct rb_ractor_struct {
     // ractor lock
@@ -121,6 +123,10 @@ struct rb_ractor_struct {
 
     struct list_node vmlr_node;
 
+    // ractor local data
+
+    st_table *local_storage;
+
     VALUE r_stdin;
     VALUE r_stdout;
     VALUE r_stderr;
@@ -158,6 +164,30 @@ void rb_ractor_blocking_threads_dec(rb_ractor_t *r, const char *file, int line);
 void rb_ractor_vm_barrier_interrupt_running_thread(rb_ractor_t *r);
 void rb_ractor_terminate_interrupt_main_thread(rb_ractor_t *r);
 void rb_ractor_terminate_all(void);
+bool rb_ractor_main_p_(void);
+void rb_ractor_finish_marking(void);
+
+RUBY_SYMBOL_EXPORT_BEGIN
+bool rb_ractor_shareable_p_continue(VALUE obj);
+
+// THIS FUNCTION SHOULD NOT CALL WHILE INCREMENTAL MARKING!!
+// This function is for T_DATA::free_func
+void rb_ractor_local_storage_delkey(rb_ractor_local_key_t key);
+
+RUBY_SYMBOL_EXPORT_END
+
+RUBY_EXTERN bool ruby_multi_ractor;
+
+static inline bool
+rb_ractor_main_p(void)
+{
+    if (!ruby_multi_ractor) {
+        return true;
+    }
+    else {
+        return rb_ractor_main_p_();
+    }
+}
 
 static inline bool
 rb_ractor_status_p(rb_ractor_t *r, enum ractor_status status)

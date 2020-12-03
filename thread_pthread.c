@@ -194,6 +194,7 @@ designate_timer_thread(rb_global_vm_lock_t *gvl)
 static void
 do_gvl_timer(rb_global_vm_lock_t *gvl, rb_thread_t *th)
 {
+    rb_vm_t *vm = GET_VM();
     static rb_hrtime_t abs;
     native_thread_data_t *nd = &th->native_thread_data;
 
@@ -208,14 +209,14 @@ do_gvl_timer(rb_global_vm_lock_t *gvl, rb_thread_t *th)
     gvl->timer_err = native_cond_timedwait(&nd->cond.gvlq, &gvl->lock, &abs);
 
     ubf_wakeup_all_threads();
-    ruby_sigchld_handler(GET_VM());
+    ruby_sigchld_handler(vm);
 
     if (UNLIKELY(rb_signal_buff_size())) {
-        if (th == GET_VM()->ractor.main_thread) {
+        if (th == vm->ractor.main_thread) {
             RUBY_VM_SET_TRAP_INTERRUPT(th->ec);
         }
         else {
-            threadptr_trap_interrupt(GET_VM()->ractor.main_thread);
+            threadptr_trap_interrupt(vm->ractor.main_thread);
         }
     }
 
@@ -223,7 +224,10 @@ do_gvl_timer(rb_global_vm_lock_t *gvl, rb_thread_t *th)
      * Timeslice.  Warning: the process may fork while this
      * thread is contending for GVL:
      */
-    if (gvl->owner) timer_thread_function(gvl->owner->ec);
+    if (gvl->owner) {
+        // strictly speaking, accessing "gvl->owner" is not thread-safe
+        RUBY_VM_SET_TIMER_INTERRUPT(gvl->owner->ec);
+    }
     gvl->timer = 0;
 }
 

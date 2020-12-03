@@ -173,7 +173,7 @@
 # The port to kpeg was performed by Eric Hodel and Evan Phoenix
 #
 # [dingus]: http://daringfireball.net/projects/markdown/dingus
-# [GFM]: http://github.github.com/github-flavored-markdown/
+# [GFM]: https://github.github.com/gfm/
 # [pegmarkdown]: https://github.com/jgm/peg-markdown
 # [PHPE]: http://michelf.com/projects/php-markdown/extra/#def-list
 # [syntax]: http://daringfireball.net/projects/markdown/syntax

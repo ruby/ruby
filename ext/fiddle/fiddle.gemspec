@@ -39,6 +39,7 @@ Gem::Specification.new do |spec|
     "ext/fiddle/function.c",
     "ext/fiddle/function.h",
     "ext/fiddle/handle.c",
+    "ext/fiddle/pinned.c",
     "ext/fiddle/pointer.c",
     "ext/fiddle/win32/fficonfig.h",
     "ext/fiddle/win32/libffi-3.2.1-mswin.patch",
@@ -64,4 +65,6 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "bundler"
   spec.add_development_dependency "rake"
   spec.add_development_dependency "rake-compiler"
+
+  spec.metadata["msys2_mingw_dependencies"] = "libffi"
 end

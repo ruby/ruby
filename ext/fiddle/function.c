@@ -106,7 +106,9 @@ normalize_argument_types(const char *name,
     normalized_arg_types = rb_ary_new_capa(n_arg_types);
     for (i = 0; i < n_arg_types; i++) {
         VALUE arg_type = RARRAY_AREF(arg_types, i);
-        int c_arg_type = NUM2INT(arg_type);
+        int c_arg_type;
+        arg_type = rb_fiddle_type_ensure(arg_type);
+        c_arg_type = NUM2INT(arg_type);
         if (c_arg_type == TYPE_VARIADIC) {
             if (i != n_arg_types - 1) {
                 rb_raise(rb_eArgError,
@@ -146,6 +148,7 @@ initialize(int argc, VALUE argv[], VALUE self)
     PTR2NUM(cfunc);
     c_ffi_abi = NIL_P(abi) ? FFI_DEFAULT_ABI : NUM2INT(abi);
     abi = INT2FIX(c_ffi_abi);
+    ret_type = rb_fiddle_type_ensure(ret_type);
     c_ret_type = NUM2INT(ret_type);
     (void)INT2FFI_TYPE(c_ret_type); /* raise */
     ret_type = INT2FIX(c_ret_type);
@@ -207,6 +210,7 @@ function_call(int argc, VALUE argv[], VALUE self)
     int n_call_args = 0;
     int i;
     int i_call;
+    VALUE converted_args = Qnil;
     VALUE alloc_buffer = 0;
 
     cfunc    = rb_iv_get(self, "@ptr");
@@ -255,7 +259,9 @@ function_call(int argc, VALUE argv[], VALUE self)
         arg_types = rb_ary_dup(fixed_arg_types);
         for (i = n_fixed_args; i < argc; i += 2) {
           VALUE arg_type = argv[i];
-          int c_arg_type = NUM2INT(arg_type);
+          int c_arg_type;
+          arg_type = rb_fiddle_type_ensure(arg_type);
+          c_arg_type = NUM2INT(arg_type);
           (void)INT2FFI_TYPE(c_arg_type); /* raise */
           rb_ary_push(arg_types, INT2FIX(c_arg_type));
         }
@@ -313,6 +319,7 @@ function_call(int argc, VALUE argv[], VALUE self)
          i++, i_call++) {
         VALUE arg_type;
         int c_arg_type;
+        VALUE original_src;
         VALUE src;
         arg_type = RARRAY_AREF(arg_types, i_call);
         c_arg_type = FIX2INT(arg_type);
@@ -327,11 +334,22 @@ function_call(int argc, VALUE argv[], VALUE self)
             }
             else if (cPointer != CLASS_OF(src)) {
                 src = rb_funcall(cPointer, rb_intern("[]"), 1, src);
+                if (NIL_P(converted_args)) {
+                    converted_args = rb_ary_new();
+                }
+                rb_ary_push(converted_args, src);
             }
             src = rb_Integer(src);
         }
 
+        original_src = src;
         VALUE2GENERIC(c_arg_type, src, &generic_args[i_call]);
+        if (src != original_src) {
+            if (NIL_P(converted_args)) {
+                converted_args = rb_ary_new();
+            }
+            rb_ary_push(converted_args, src);
+        }
         args.values[i_call] = (void *)&generic_args[i_call];
     }
     args.values[i_call] = NULL;

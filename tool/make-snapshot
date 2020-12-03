@@ -54,7 +54,7 @@ PACKAGES = {
 DEFAULT_PACKAGES = PACKAGES.keys - ["tar"]
 if !$no7z and system("7z", out: IO::NULL)
   PACKAGES["gzip"] = %w".tar.gz 7z a dummy -tgzip -mx -so"
-  PACKAGES["zip"]  = %w".zip    7z a -tzip  -mx -mtc=off" << {out: IO::NULL}
+  PACKAGES["zip"]  = %w".zip    7z a -tzip -l -mx -mtc=off" << {out: IO::NULL}
 elsif gzip = ENV.delete("GZIP")
   PACKAGES["gzip"].concat(gzip.shellsplit)
 end
@@ -242,6 +242,16 @@ class MAKE < Struct.new(:prog, :args)
   end
 end
 
+def measure
+  clock = Process::CLOCK_MONOTONIC
+  t0 = Process.clock_gettime(clock)
+  STDOUT.flush
+  result = yield
+  printf(" %6.3f", Process.clock_gettime(clock) - t0)
+  STDOUT.flush
+  result
+end
+
 def package(vcs, rev, destdir, tmp = nil)
   pwd = Dir.pwd
   patchlevel = false
@@ -311,7 +321,7 @@ def package(vcs, rev, destdir, tmp = nil)
   end
   if $srcdir
     Dir.glob($srcdir + "/{tool/config.{guess,sub},gems/*.gem,.downloaded-cache/*,enc/unicode/data/**/*.txt}") do |file|
-      puts "copying #{file}"
+      puts "copying #{file}" if $VERBOSE
       dest = exported + file[$srcdir.size..-1]
       FileUtils.mkpath(File.dirname(dest))
       begin
@@ -497,6 +507,7 @@ touch-unicode-files:
       system(*%W"#{YACC} -o parse.c parse.y")
     end
     vcs.after_export(".") if exported
+    clean.concat(Dir.glob("ext/**/autom4te.cache"))
     FileUtils.rm_rf(clean) unless $keep_temp
     FileUtils.rm_rf(".downloaded-cache")
     if File.exist?("gems/bundled_gems")
@@ -543,7 +554,7 @@ touch-unicode-files:
       else
         tarball = ext == ".tar" ? file : "#{$archname||v}.tar"
         print "creating tarball... #{tarball}"
-        if tar_create(tarball, v)
+        if measure {tar_create(tarball, v)}
           puts $colorize.pass(" done")
           File.utime(modified, modified, tarball) if modified
           next if tarball == file
@@ -554,7 +565,7 @@ touch-unicode-files:
         end
       end
       print "creating #{mesg} tarball... #{file}"
-      done = system(*cmd, tarball, out: file)
+      done = measure {system(*cmd, tarball, out: file)}
     else
       print "creating #{mesg} archive... #{file}"
       if Hash === cmd.last
@@ -563,7 +574,7 @@ touch-unicode-files:
       else
         (cmd = cmd.dup) << file << v
       end
-      done = system(*cmd)
+      done = measure {system(*cmd)}
     end
     if done
       puts $colorize.pass(" done")

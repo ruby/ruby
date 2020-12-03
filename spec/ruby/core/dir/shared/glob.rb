@@ -53,6 +53,7 @@ describe :dir_glob, shared: true do
       dir_filename_ordering
       file_one.ext
       file_two.ext
+      nested
       nondotfile
       special
       subdir_one
@@ -156,6 +157,7 @@ describe :dir_glob, shared: true do
       dir_filename_ordering
       file_one.ext
       file_two.ext
+      nested
       nondotfile
       special
       subdir_one
@@ -177,6 +179,7 @@ describe :dir_glob, shared: true do
       deeply/nested/directory/
       deeply/nested/directory/structure/
       dir/
+      nested/
       special/
       special/test{1}/
       subdir_one/

@@ -57,6 +57,17 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal('Ruby', 'Ruby'.sub(/[^a-z]/i, '-'))
   end
 
+  def test_premature_end_char_property
+    ["\\p{",
+     "\\p{".dup.force_encoding("UTF-8"),
+     "\\p{".dup.force_encoding("US-ASCII")
+    ].each do |string|
+      assert_raise(RegexpError) do
+        Regexp.new(string)
+      end
+    end
+  end
+
   def test_assert_normal_exit
     # moved from knownbug.  It caused core.
     Regexp.union("a", "a")
@@ -650,16 +661,9 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal('foobazquux/foobazquux', result, bug8856)
   end
 
-  def test_KCODE
-    assert_nil($KCODE)
-    assert_nothing_raised { $KCODE = nil }
+  def test_ignorecase
     assert_equal(false, $=)
     assert_nothing_raised { $= = nil }
-  end
-
-  def test_KCODE_warning
-    assert_warning(/variable \$KCODE is no longer effective; ignored/) { $KCODE = nil }
-    assert_warning(/variable \$KCODE is no longer effective/) { $KCODE = nil }
   end
 
   def test_ignorecase_warning
@@ -1190,6 +1194,20 @@ class TestRegexp < Test::Unit::TestCase
       assert_not_match("(?<!(?i)ab)cd", "ABcd")
       assert_not_match("(?<!(?i:ab))cd", "ABcd")
     }
+  end
+
+  def test_quantifier_reduction
+    assert_equal('aa', eval('/(a+?)*/').match('aa')[0])
+    assert_equal('aa', eval('/(?:a+?)*/').match('aa')[0])
+
+    quantifiers = %w'? * + ?? *? +?'
+    quantifiers.each do |q1|
+      quantifiers.each do |q2|
+        r1 = eval("/(a#{q1})#{q2}/").match('aa')[0]
+        r2 = eval("/(?:a#{q1})#{q2}/").match('aa')[0]
+        assert_equal(r1, r2)
+      end
+    end
   end
 
   def test_once

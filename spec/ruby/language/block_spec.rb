@@ -873,12 +873,18 @@ describe "Post-args" do
     end.call(1, 2, 3).should == [[], 1, 2, 3]
   end
 
-  it "are required" do
+  it "are required for a lambda" do
     -> {
       -> *a, b do
         [a, b]
       end.call
     }.should raise_error(ArgumentError)
+  end
+
+  it "are assigned to nil when not enough arguments are given to a proc" do
+    proc do |a, *b, c|
+      [a, b, c]
+    end.call.should == [nil, [], nil]
   end
 
   describe "with required args" do

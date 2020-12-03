@@ -55,4 +55,49 @@ describe "C-API Exception function" do
       -> { @s.rb_set_errinfo("error") }.should raise_error(TypeError)
     end
   end
+
+  describe "rb_make_exception" do
+    it "returns a RuntimeError when given a String argument" do
+      e = @s.rb_make_exception(["Message"])
+      e.class.should == RuntimeError
+      e.message.should == "Message"
+    end
+
+    it "returns the exception when given an Exception argument" do
+      exc = Exception.new
+      e = @s.rb_make_exception([exc])
+      e.should == exc
+    end
+
+    it "returns the exception with the given class and message" do
+      e = @s.rb_make_exception([Exception, "Message"])
+      e.class.should == Exception
+      e.message.should == "Message"
+    end
+
+    it "returns the exception with the given class, message, and backtrace" do
+      e = @s.rb_make_exception([Exception, "Message", ["backtrace 1"]])
+      e.class.should == Exception
+      e.message.should == "Message"
+      e.backtrace.should == ["backtrace 1"]
+    end
+
+    it "raises a TypeError for incorrect types" do
+      -> { @s.rb_make_exception([nil]) }.should raise_error(TypeError)
+      -> { @s.rb_make_exception([Object.new]) }.should raise_error(TypeError)
+      obj = Object.new
+      def obj.exception
+        "not exception type"
+      end
+      -> { @s.rb_make_exception([obj]) }.should raise_error(TypeError)
+    end
+
+    it "raises an ArgumentError for too many arguments" do
+      -> { @s.rb_make_exception([Exception, "Message", ["backtrace 1"], "extra"])  }.should raise_error(ArgumentError)
+    end
+
+    it "returns nil for empty arguments" do
+      @s.rb_make_exception([]).should == nil
+    end
+  end
 end

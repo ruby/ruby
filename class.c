@@ -40,6 +40,9 @@
 
 #define id_attached id__attached__
 
+#define METACLASS_OF(k) RBASIC(k)->klass
+#define SET_METACLASS_OF(k, cls) RBASIC_SET_CLASS(k, cls)
+
 void
 rb_class_subclass_add(VALUE super, VALUE klass)
 {
@@ -227,7 +230,7 @@ void
 rb_check_inheritable(VALUE super)
 {
     if (!RB_TYPE_P(super, T_CLASS)) {
-	rb_raise(rb_eTypeError, "superclass must be a Class (%"PRIsVALUE" given)",
+        rb_raise(rb_eTypeError, "superclass must be an instance of Class (given an instance of %"PRIsVALUE")",
 		 rb_obj_class(super));
     }
     if (RBASIC(super)->flags & FL_SINGLETON) {
@@ -457,22 +460,35 @@ rb_singleton_class_clone(VALUE obj)
     return rb_singleton_class_clone_and_attach(obj, Qundef);
 }
 
+// Clone and return the singleton class of `obj` if it has been created and is attached to `obj`.
 VALUE
 rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
 {
     const VALUE klass = RBASIC(obj)->klass;
 
-    if (!FL_TEST(klass, FL_SINGLETON))
-	return klass;
+    // Note that `rb_singleton_class()` can create situations where `klass` is
+    // attached to an object other than `obj`. In which case `obj` does not have
+    // a material singleton class attached yet and there is no singleton class
+    // to clone.
+    if (!(FL_TEST(klass, FL_SINGLETON) && rb_attr_get(klass, id_attached) == obj)) {
+        // nothing to clone
+        return klass;
+    }
     else {
 	/* copy singleton(unnamed) class */
+        bool klass_of_clone_is_new;
 	VALUE clone = class_alloc(RBASIC(klass)->flags, 0);
 
 	if (BUILTIN_TYPE(obj) == T_CLASS) {
+            klass_of_clone_is_new = true;
 	    RBASIC_SET_CLASS(clone, clone);
 	}
 	else {
-	    RBASIC_SET_CLASS(clone, rb_singleton_class_clone(klass));
+            VALUE klass_metaclass_clone = rb_singleton_class_clone(klass);
+            // When `METACLASS_OF(klass) == klass_metaclass_clone`, it means the
+            // recursive call did not clone `METACLASS_OF(klass)`.
+            klass_of_clone_is_new = (METACLASS_OF(klass) != klass_metaclass_clone);
+            RBASIC_SET_CLASS(clone, klass_metaclass_clone);
 	}
 
 	RCLASS_SET_SUPER(clone, RCLASS_SUPER(klass));
@@ -496,7 +512,9 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
 	    arg.new_klass = clone;
 	    rb_id_table_foreach(RCLASS_M_TBL(klass), clone_method_i, &arg);
 	}
-	rb_singleton_class_attached(RBASIC(clone)->klass, clone);
+        if (klass_of_clone_is_new) {
+            rb_singleton_class_attached(RBASIC(clone)->klass, clone);
+        }
 	FL_SET(clone, FL_SINGLETON);
 
 	return clone;
@@ -517,11 +535,6 @@ rb_singleton_class_attached(VALUE klass, VALUE obj)
 	rb_class_ivar_set(klass, id_attached, obj);
     }
 }
-
-
-
-#define METACLASS_OF(k) RBASIC(k)->klass
-#define SET_METACLASS_OF(k, cls) RBASIC_SET_CLASS(k, cls)
 
 /*!
  * whether k is a meta^(n)-class of Class class
@@ -626,7 +639,7 @@ boot_defclass(const char *name, VALUE super)
     ID id = rb_intern(name);
 
     rb_const_set((rb_cObject ? rb_cObject : obj), id, obj);
-    rb_vm_add_root_module(id, obj);
+    rb_vm_add_root_module(obj);
     return obj;
 }
 
@@ -748,14 +761,14 @@ rb_define_class(const char *name, VALUE super)
 	}
 
         /* Class may have been defined in Ruby and not pin-rooted */
-        rb_vm_add_root_module(id, klass);
+        rb_vm_add_root_module(klass);
 	return klass;
     }
     if (!super) {
 	rb_raise(rb_eArgError, "no super class for `%s'", name);
     }
     klass = rb_define_class_id(id, super);
-    rb_vm_add_root_module(id, klass);
+    rb_vm_add_root_module(klass);
     rb_const_set(rb_cObject, id, klass);
     rb_class_inherited(super, klass);
 
@@ -821,7 +834,7 @@ rb_define_class_id_under(VALUE outer, ID id, VALUE super)
 		     outer, rb_id2str(id), RCLASS_SUPER(klass), super);
 	}
         /* Class may have been defined in Ruby and not pin-rooted */
-        rb_vm_add_root_module(id, klass);
+        rb_vm_add_root_module(klass);
 
 	return klass;
     }
@@ -833,8 +846,7 @@ rb_define_class_id_under(VALUE outer, ID id, VALUE super)
     rb_set_class_path_string(klass, outer, rb_id2str(id));
     rb_const_set(outer, id, klass);
     rb_class_inherited(super, klass);
-    rb_vm_add_root_module(id, klass);
-    rb_gc_register_mark_object(klass);
+    rb_vm_add_root_module(klass);
 
     return klass;
 }
@@ -847,6 +859,7 @@ rb_module_new(void)
     return (VALUE)mdl;
 }
 
+// Kept for compatibility. Use rb_module_new() instead.
 VALUE
 rb_define_module_id(ID id)
 {
@@ -867,12 +880,11 @@ rb_define_module(const char *name)
 		     name, rb_obj_class(module));
 	}
         /* Module may have been defined in Ruby and not pin-rooted */
-        rb_vm_add_root_module(id, module);
+        rb_vm_add_root_module(module);
 	return module;
     }
-    module = rb_define_module_id(id);
-    rb_vm_add_root_module(id, module);
-    rb_gc_register_mark_object(module);
+    module = rb_module_new();
+    rb_vm_add_root_module(module);
     rb_const_set(rb_cObject, id, module);
 
     return module;
@@ -898,7 +910,7 @@ rb_define_module_id_under(VALUE outer, ID id)
 	}
 	return module;
     }
-    module = rb_define_module_id(id);
+    module = rb_module_new();
     rb_const_set(outer, id, module);
     rb_set_class_path_string(module, outer, rb_id2str(id));
     rb_gc_register_mark_object(module);
@@ -1002,17 +1014,22 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
     VALUE original_klass = klass;
 
     while (module) {
+        int origin_seen = FALSE;
 	int superclass_seen = FALSE;
 	struct rb_id_table *tbl;
 
+        if (klass == c)
+            origin_seen = TRUE;
 	if (klass_m_tbl && klass_m_tbl == RCLASS_M_TBL(module))
 	    return -1;
 	/* ignore if the module included already in superclasses */
         for (p = RCLASS_SUPER(klass); p; p = RCLASS_SUPER(p)) {
 	    int type = BUILTIN_TYPE(p);
+            if (c == p)
+                origin_seen = TRUE;
 	    if (type == T_ICLASS) {
 		if (RCLASS_M_TBL(p) == RCLASS_M_TBL(module)) {
-		    if (!superclass_seen) {
+                    if (!superclass_seen && origin_seen) {
 			c = p;  /* move insertion point */
 		    }
 		    goto skip;
@@ -1813,7 +1830,7 @@ singleton_class_of(VALUE obj)
 
     klass = RBASIC(obj)->klass;
     if (!(FL_TEST(klass, FL_SINGLETON) &&
-	  rb_ivar_get(klass, id_attached) == obj)) {
+          rb_attr_get(klass, id_attached) == obj)) {
 	rb_serial_t serial = RCLASS_SERIAL(klass);
 	klass = rb_make_metaclass(obj, klass);
 	RCLASS_SERIAL(klass) = serial;
@@ -1854,7 +1871,7 @@ rb_singleton_class_get(VALUE obj)
     }
     klass = RBASIC(obj)->klass;
     if (!FL_TEST(klass, FL_SINGLETON)) return Qnil;
-    if (rb_ivar_get(klass, id_attached) != obj) return Qnil;
+    if (rb_attr_get(klass, id_attached) != obj) return Qnil;
     return klass;
 }
 

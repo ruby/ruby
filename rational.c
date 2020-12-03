@@ -430,18 +430,6 @@ f_rational_new_bang1(VALUE klass, VALUE x)
     return nurat_s_new_internal(klass, x, ONE);
 }
 
-#ifdef CANONICALIZATION_FOR_MATHN
-static int canonicalization = 0;
-
-RUBY_FUNC_EXPORTED void
-nurat_canonicalization(int f)
-{
-    canonicalization = f;
-}
-#else
-# define canonicalization 0
-#endif
-
 inline static void
 nurat_int_check(VALUE num)
 {
@@ -490,8 +478,6 @@ nurat_s_canonicalize_internal(VALUE klass, VALUE num, VALUE den)
     nurat_canonicalize(&num, &den);
     nurat_reduce(&num, &den);
 
-    if (canonicalization && f_one_p(den))
-	return num;
     return nurat_s_new_internal(klass, num, den);
 }
 
@@ -500,8 +486,6 @@ nurat_s_canonicalize_internal_no_reduce(VALUE klass, VALUE num, VALUE den)
 {
     nurat_canonicalize(&num, &den);
 
-    if (canonicalization && f_one_p(den))
-	return num;
     return nurat_s_new_internal(klass, num, den);
 }
 
@@ -2028,12 +2012,7 @@ rb_numeric_quo(VALUE x, VALUE y)
         return rb_funcallv(x, idFdiv, 1, &y);
     }
 
-    if (canonicalization) {
-        x = rb_rational_raw1(x);
-    }
-    else {
-        x = rb_convert_type(x, T_RATIONAL, "Rational", "to_r");
-    }
+    x = rb_convert_type(x, T_RATIONAL, "Rational", "to_r");
     return nurat_div(x, y);
 }
 
@@ -2092,9 +2071,6 @@ rb_float_numerator(VALUE self)
     if (isinf(d) || isnan(d))
 	return self;
     r = float_to_r(self);
-    if (canonicalization && k_integer_p(r)) {
-	return r;
-    }
     return nurat_numerator(r);
 }
 
@@ -2115,9 +2091,6 @@ rb_float_denominator(VALUE self)
     if (isinf(d) || isnan(d))
 	return INT2FIX(1);
     r = float_to_r(self);
-    if (canonicalization && k_integer_p(r)) {
-	return ONE;
-    }
     return nurat_denominator(r);
 }
 
@@ -2425,7 +2398,7 @@ parse_rat(const char *s, const char *const e, int strict, int raise)
 
     if (!read_num(&s, e, &num, &nexp)) {
 	if (strict) return Qnil;
-	return canonicalization ? ZERO : nurat_s_alloc(rb_cRational);
+	return nurat_s_alloc(rb_cRational);
     }
     den = ONE;
     if (s < e && *s == '/') {
@@ -2481,9 +2454,7 @@ parse_rat(const char *s, const char *const e, int strict, int raise)
 	num = negate_num(num);
     }
 
-    if (!canonicalization || den != ONE)
-	num = rb_rational_raw(num, den);
-    return num;
+    return rb_rational_raw(num, den);
 }
 
 static VALUE

@@ -34,6 +34,10 @@ void rb_provide(const char*);
 VALUE rb_f_require(VALUE, VALUE);
 VALUE rb_require_string(VALUE);
 
+// extension configuration
+void rb_ext_ractor_safe(bool flag);
+#define RB_EXT_RACTOR_SAFE(f) rb_ext_ractor_safe(f)
+
 RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RBIMPL_INTERN_LOAD_H */

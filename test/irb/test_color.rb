@@ -34,7 +34,6 @@ module TestIRB
         '"foo#{a} #{b}"' => "#{RED}#{BOLD}\"#{CLEAR}#{RED}foo#{CLEAR}#{RED}\#{#{CLEAR}a#{RED}}#{CLEAR}#{RED} #{CLEAR}#{RED}\#{#{CLEAR}b#{RED}}#{CLEAR}#{RED}#{BOLD}\"#{CLEAR}",
         '/r#{e}g/' => "#{RED}#{BOLD}/#{CLEAR}#{RED}r#{CLEAR}#{RED}\#{#{CLEAR}e#{RED}}#{CLEAR}#{RED}g#{CLEAR}#{RED}#{BOLD}/#{CLEAR}",
         "'a\nb'" => "#{RED}#{BOLD}'#{CLEAR}#{RED}a#{CLEAR}\n#{RED}b#{CLEAR}#{RED}#{BOLD}'#{CLEAR}",
-        "[1]]]\u0013" => "[1]]]^S",
         "%[str]" => "#{RED}#{BOLD}%[#{CLEAR}#{RED}str#{CLEAR}#{RED}#{BOLD}]#{CLEAR}",
         "%Q[str]" => "#{RED}#{BOLD}%Q[#{CLEAR}#{RED}str#{CLEAR}#{RED}#{BOLD}]#{CLEAR}",
         "%q[str]" => "#{RED}#{BOLD}%q[#{CLEAR}#{RED}str#{CLEAR}#{RED}#{BOLD}]#{CLEAR}",
@@ -75,6 +74,17 @@ module TestIRB
           "4.5.6" => "#{MAGENTA}#{BOLD}4.5#{CLEAR}#{RED}#{REVERSE}.6#{CLEAR}",
           "\e[0m\n" => "#{RED}#{REVERSE}^[#{CLEAR}[#{BLUE}#{BOLD}0#{CLEAR}#{RED}#{REVERSE}m#{CLEAR}\n",
           "<<EOS\nhere\nEOS" => "#{RED}<<EOS#{CLEAR}\n#{RED}here#{CLEAR}\n#{RED}EOS#{CLEAR}",
+        })
+      end
+
+      # specific to Ruby 3.0+
+      if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('3.0.0')
+        tests.merge!({
+          "[1]]]\u0013" => "[#{BLUE}#{BOLD}1#{CLEAR}]#{RED}#{REVERSE}]#{CLEAR}#{RED}#{REVERSE}]#{CLEAR}#{RED}#{REVERSE}^S#{CLEAR}",
+        })
+      else
+        tests.merge!({
+          "[1]]]\u0013" => "[1]]]^S",
         })
       end
 

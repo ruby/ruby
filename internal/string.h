@@ -42,6 +42,8 @@ VALUE rb_str_initialize(VALUE str, const char *ptr, long len, rb_encoding *enc);
 size_t rb_str_memsize(VALUE);
 char *rb_str_to_cstr(VALUE str);
 const char *ruby_escaped_char(int c);
+void rb_str_make_independent(VALUE str);
+
 static inline bool STR_EMBED_P(VALUE str);
 static inline bool STR_SHARED_P(VALUE str);
 static inline VALUE QUOTE(VALUE v);

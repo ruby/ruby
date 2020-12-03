@@ -112,7 +112,7 @@
 #include "vm_core.h"
 #include "vm_sync.h"
 #include "vm_callinfo.h"
-#include "ractor.h"
+#include "ractor_core.h"
 
 #include "builtin.h"
 
@@ -682,7 +682,7 @@ typedef struct rb_objspace {
 	unsigned int dont_gc : 1;
 	unsigned int dont_incremental : 1;
 	unsigned int during_gc : 1;
-        unsigned int during_compacting : 1;
+        unsigned int during_compacting : 2;
 	unsigned int gc_stressful: 1;
 	unsigned int has_hook: 1;
 	unsigned int during_minor_gc : 1;
@@ -1911,8 +1911,10 @@ heap_page_create(rb_objspace_t *objspace)
 static void
 heap_add_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page)
 {
+    /* Adding to eden heap during incremental sweeping is forbidden */
+    GC_ASSERT(!(heap == heap_eden && heap->sweeping_page));
     page->flags.in_tomb = (heap == heap_tomb);
-    list_add(&heap->pages, &page->page_node);
+    list_add_tail(&heap->pages, &page->page_node);
     heap->total_pages++;
     heap->total_slots += page->total_slots;
 }
@@ -2304,7 +2306,11 @@ rb_newobj(void)
 VALUE
 rb_newobj_of(VALUE klass, VALUE flags)
 {
-    return newobj_of(klass, flags & ~FL_WB_PROTECTED, 0, 0, 0, flags & FL_WB_PROTECTED);
+    if ((flags & RUBY_T_MASK) == T_OBJECT) {
+        return newobj_of(klass, (flags | ROBJECT_EMBED) & ~FL_WB_PROTECTED , Qundef, Qundef, Qundef, flags & FL_WB_PROTECTED);
+    } else {
+        return newobj_of(klass, flags & ~FL_WB_PROTECTED, 0, 0, 0, flags & FL_WB_PROTECTED);
+    }
 }
 
 #define UNEXPECTED_NODE(func) \
@@ -3085,6 +3091,17 @@ void
 Init_heap(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
+
+#if defined(HAVE_SYSCONF) && defined(_SC_PAGE_SIZE)
+    /* If Ruby's heap pages are not a multiple of the system page size, we
+     * cannot use mprotect for the read barrier, so we must disable automatic
+     * compaction. */
+    int pagesize;
+    pagesize = (int)sysconf(_SC_PAGE_SIZE);
+    if ((HEAP_PAGE_SIZE % pagesize) != 0) {
+        ruby_enable_autocompact = 0;
+    }
+#endif
 
     objspace->next_object_id = INT2FIX(OBJ_ID_INITIAL);
     objspace->id_to_obj_tbl = st_init_table(&object_id_hash_type);
@@ -4385,6 +4402,11 @@ static VALUE gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free);
 static void
 lock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
 {
+    /* If this is an explicit compaction (GC.compact), we don't need a read
+     * barrier, so just return early. */
+    if (objspace->flags.during_compacting >> 1) {
+        return;
+    }
 #if defined(_WIN32)
     DWORD old_protect;
 
@@ -4401,6 +4423,11 @@ lock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
 static void
 unlock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
 {
+    /* If this is an explicit compaction (GC.compact), we don't need a read
+     * barrier, so just return early. */
+    if (objspace->flags.during_compacting >> 1) {
+        return;
+    }
 #if defined(_WIN32)
     DWORD old_protect;
 
@@ -4572,7 +4599,25 @@ static struct sigaction old_sigsegv_handler;
 static void
 read_barrier_signal(int sig, siginfo_t * info, void * data)
 {
-	read_barrier_handler((intptr_t)info->si_addr);
+    // setup SEGV/BUS handlers for errors
+    struct sigaction prev_sigbus, prev_sigsegv;
+    sigaction(SIGBUS, &old_sigbus_handler, &prev_sigbus);
+    sigaction(SIGSEGV, &old_sigsegv_handler, &prev_sigsegv);
+
+    // enable SIGBUS/SEGV
+    sigset_t set, prev_set;
+    sigemptyset(&set);
+    sigaddset(&set, SIGBUS);
+    sigaddset(&set, SIGSEGV);
+    sigprocmask(SIG_UNBLOCK, &set, &prev_set);
+
+    // run handler
+    read_barrier_handler((intptr_t)info->si_addr);
+
+    // reset SEGV/BUS handlers
+    sigaction(SIGBUS, &prev_sigbus, NULL);
+    sigaction(SIGSEGV, &prev_sigsegv, NULL);
+    sigprocmask(SIG_SETMASK, &prev_set, NULL);
 }
 
 static void uninstall_handlers(void)
@@ -4620,8 +4665,12 @@ gc_compact_finish(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     GC_ASSERT(heap->sweeping_page == heap->compact_cursor);
 
-    gc_unprotect_pages(objspace, heap);
-    uninstall_handlers();
+    /* If this is an explicit compaction (GC.compact), no read barrier was set
+     * so we don't need to unprotect pages or uninstall the SEGV handler */
+    if (!(objspace->flags.during_compacting >> 1)) {
+        gc_unprotect_pages(objspace, heap);
+        uninstall_handlers();
+    }
 
     /* The mutator is allowed to run during incremental sweeping. T_MOVED
      * objects can get pushed on the stack and when the compaction process
@@ -4987,7 +5036,7 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
 
     do {
 	int free_slots = gc_page_sweep(objspace, heap, sweep_page);
-	heap->sweeping_page = list_next(&heap->pages, sweep_page, page_node);
+        heap->sweeping_page = list_next(&heap->pages, sweep_page, page_node);
 
 	if (sweep_page->final_slots + free_slots == sweep_page->total_slots &&
 	    heap_pages_freeable_pages > 0 &&
@@ -5048,9 +5097,6 @@ gc_sweep_continue(rb_objspace_t *objspace, rb_heap_t *heap)
 
     unsigned int lock_lev;
     gc_enter(objspace, "sweep_continue", &lock_lev);
-    if (objspace->rgengc.need_major_gc == GPR_FLAG_NONE && heap_increment(objspace, heap)) {
-	gc_report(3, objspace, "gc_sweep_continue: success heap_increment().\n");
-    }
     gc_sweep_step(objspace, heap);
     gc_exit(objspace, "sweep_continue", &lock_lev);
 }
@@ -5129,6 +5175,12 @@ gc_compact_start(rb_objspace_t *objspace, rb_heap_t *heap)
 
     memset(objspace->rcompactor.considered_count_table, 0, T_MASK * sizeof(size_t));
     memset(objspace->rcompactor.moved_count_table, 0, T_MASK * sizeof(size_t));
+
+    /* If this is an explicit compaction (GC.compact), we don't need a read
+     * barrier, so just return early. */
+    if (objspace->flags.during_compacting >> 1) {
+        return;
+    }
 
     /* Set up read barrier for pages containing MOVED objects */
     install_handlers();
@@ -7026,7 +7078,7 @@ gc_marks_start(rb_objspace_t *objspace, int full_mark)
 #endif
 	objspace->flags.during_minor_gc = FALSE;
         if (ruby_enable_autocompact) {
-            objspace->flags.during_compacting = TRUE;
+            objspace->flags.during_compacting |= TRUE;
         }
 	objspace->profile.major_gc_count++;
 	objspace->rgengc.uncollectible_wb_unprotected_objects = 0;
@@ -7220,6 +7272,7 @@ gc_marks_finish(rb_objspace_t *objspace)
     }
 
     rb_transient_heap_finish_marking();
+    rb_ractor_finish_marking();
 
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_END_MARK, 0);
 
@@ -8053,7 +8106,9 @@ gc_start(rb_objspace_t *objspace, int reason)
 
     /* reason may be clobbered, later, so keep set immediate_sweep here */
     objspace->flags.immediate_sweep = !!((unsigned)reason & GPR_FLAG_IMMEDIATE_SWEEP);
-    objspace->flags.during_compacting = !!((unsigned)reason & GPR_FLAG_COMPACT);
+
+    /* Explicitly enable compaction (GC.compact) */
+    objspace->flags.during_compacting = (!!((unsigned)reason & GPR_FLAG_COMPACT) << 1);
 
     if (!heap_allocated_pages) return FALSE; /* heap is not ready */
     if (!(reason & GPR_FLAG_METHOD) && !ready_to_gc(objspace)) return TRUE; /* GC is not allowed */
@@ -8508,24 +8563,20 @@ compare_free_slots(const void *left, const void *right, void *dummy)
     return left_page->free_slots - right_page->free_slots;
 }
 
-static VALUE
-gc_sort_heap_by_empty_slots(rb_execution_context_t *ec, VALUE self)
+static void
+gc_sort_heap_by_empty_slots(rb_objspace_t *objspace)
 {
-    rb_objspace_t *objspace = &rb_objspace;
-
     size_t total_pages = heap_eden->total_pages;
     size_t size = size_mul_or_raise(total_pages, sizeof(struct heap_page *), rb_eRuntimeError);
     struct heap_page *page = 0, **page_list = malloc(size);
     size_t i = 0;
 
-    gc_rest(objspace);
-
     list_for_each(&heap_eden->pages, page, page_node) {
         page_list[i++] = page;
-        GC_ASSERT(page != NULL);
+        assert(page != NULL);
     }
-    GC_ASSERT(total_pages > 0);
-    GC_ASSERT((size_t)i == total_pages);
+    assert(total_pages > 0);
+    assert((size_t)i == total_pages);
 
     /* Sort the heap so "filled pages" are first. `heap_add_page` adds to the
      * head of the list, so empty pages will end up at the start of the heap */
@@ -8543,18 +8594,6 @@ gc_sort_heap_by_empty_slots(rb_execution_context_t *ec, VALUE self)
     }
 
     free(page_list);
-
-    return Qnil;
-}
-
-static VALUE
-gc_double_heap_size(rb_execution_context_t *ec, VALUE self)
-{
-    rb_objspace_t *objspace = &rb_objspace;
-
-    heap_add_pages(objspace, heap_eden, heap_allocated_pages);
-
-    return Qnil;
 }
 
 static void
@@ -9260,12 +9299,46 @@ heap_check_moved_i(void *vstart, void *vend, size_t stride, void *data)
 }
 
 static VALUE
-gc_check_references_for_moved(rb_execution_context_t *ec, VALUE self)
+gc_compact(rb_execution_context_t *ec, VALUE self)
+{
+    /* Clear the heap. */
+    gc_start_internal(ec, self, Qtrue, Qtrue, Qtrue, Qfalse);
+
+    /* At this point, all references are live and the mutator is not allowed
+     * to run, so we don't need a read barrier. */
+    gc_start_internal(ec, self, Qtrue, Qtrue, Qtrue, Qtrue);
+
+    return gc_compact_stats(ec, self);
+}
+
+static VALUE
+gc_verify_compaction_references(rb_execution_context_t *ec, VALUE self, VALUE double_heap, VALUE toward_empty)
 {
     rb_objspace_t *objspace = &rb_objspace;
+
+    /* Clear the heap. */
+    gc_start_internal(ec, self, Qtrue, Qtrue, Qtrue, Qfalse);
+
+    RB_VM_LOCK_ENTER();
+    {
+        gc_rest(objspace);
+
+        if (RTEST(double_heap)) {
+            heap_add_pages(objspace, heap_eden, heap_allocated_pages);
+        }
+
+        if (RTEST(toward_empty)) {
+            gc_sort_heap_by_empty_slots(objspace);
+        }
+    }
+    RB_VM_LOCK_LEAVE();
+
+    gc_start_internal(ec, self, Qtrue, Qtrue, Qtrue, Qtrue);
+
     objspace_reachable_objects_from_root(objspace, root_obj_check_moved_i, NULL);
     objspace_each_objects(objspace, heap_check_moved_i, NULL);
-    return Qnil;
+
+    return gc_compact_stats(ec, self);
 }
 
 VALUE
@@ -9859,6 +9932,16 @@ gc_disable(rb_execution_context_t *ec, VALUE _)
 static VALUE
 gc_set_auto_compact(rb_execution_context_t *ec, VALUE _, VALUE v)
 {
+#if defined(HAVE_SYSCONF) && defined(_SC_PAGE_SIZE)
+    /* If Ruby's heap pages are not a multiple of the system page size, we
+     * cannot use mprotect for the read barrier, so we must disable automatic
+     * compaction. */
+    int pagesize;
+    pagesize = (int)sysconf(_SC_PAGE_SIZE);
+    if ((HEAP_PAGE_SIZE % pagesize) != 0) {
+        rb_raise(rb_eNotImpError, "Automatic compaction isn't available on this platform");
+    }
+#endif
     ruby_enable_autocompact = RTEST(v);
     return v;
 }
@@ -12197,6 +12280,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
             }
 	    break;
 	  case T_STRING: {
+            if (STR_SHARED_P(obj)) APPENDF((BUFF_ARGS, " [shared] "));
             APPENDF((BUFF_ARGS, "%.*s", str_len_no_raise(obj), RSTRING_PTR(obj)));
 	    break;
 	  }
@@ -12573,6 +12657,7 @@ Init_GC(void)
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_PAGE_OBJ_LIMIT")), SIZET2NUM(HEAP_PAGE_OBJ_LIMIT));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_PAGE_BITMAP_SIZE")), SIZET2NUM(HEAP_PAGE_BITMAP_SIZE));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_PAGE_BITMAP_PLANES")), SIZET2NUM(HEAP_PAGE_BITMAP_PLANES));
+    rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_PAGE_SIZE")), SIZET2NUM(HEAP_PAGE_SIZE));
     OBJ_FREEZE(gc_constants);
     /* internal constants */
     rb_define_const(rb_mGC, "INTERNAL_CONSTANTS", gc_constants);

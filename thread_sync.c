@@ -29,15 +29,15 @@ sync_wakeup(struct list_head *head, long max)
     list_for_each_safe(head, cur, next, node) {
         list_del_init(&cur->node);
 
-        if (cur->th->scheduler != Qnil) {
-            rb_scheduler_unblock(cur->th->scheduler, cur->self, rb_fiberptr_self(cur->fiber));
-        }
-
         if (cur->th->status != THREAD_KILLED) {
-            if (cur->th->scheduler == Qnil) {
+
+            if (cur->th->scheduler != Qnil) {
+                rb_scheduler_unblock(cur->th->scheduler, cur->self, rb_fiberptr_self(cur->fiber));
+            } else {
                 rb_threadptr_interrupt(cur->th);
                 cur->th->status = THREAD_RUNNABLE;
             }
+
             if (--max == 0) return;
         }
     }
@@ -193,14 +193,35 @@ rb_mutex_locked_p(VALUE self)
 }
 
 static void
+thread_mutex_insert(rb_thread_t *thread, rb_mutex_t *mutex) {
+    if (thread->keeping_mutexes) {
+        mutex->next_mutex = thread->keeping_mutexes;
+    }
+
+    thread->keeping_mutexes = mutex;
+}
+
+static void
+thread_mutex_remove(rb_thread_t *thread, rb_mutex_t *mutex) {
+    rb_mutex_t **keeping_mutexes = &thread->keeping_mutexes;
+
+    while (*keeping_mutexes && *keeping_mutexes != mutex) {
+        // Move to the next mutex in the list:
+        keeping_mutexes = &(*keeping_mutexes)->next_mutex;
+    }
+
+    if (*keeping_mutexes) {
+        *keeping_mutexes = mutex->next_mutex;
+        mutex->next_mutex = NULL;
+    }
+}
+
+static void
 mutex_locked(rb_thread_t *th, VALUE self)
 {
     rb_mutex_t *mutex = mutex_ptr(self);
 
-    if (th->keeping_mutexes) {
-	mutex->next_mutex = th->keeping_mutexes;
-    }
-    th->keeping_mutexes = mutex;
+    thread_mutex_insert(th, mutex);
 }
 
 /*
@@ -246,7 +267,7 @@ mutex_owned_p(rb_fiber_t *fiber, rb_mutex_t *mutex)
 }
 
 static VALUE call_rb_scheduler_block(VALUE mutex) {
-    return rb_scheduler_block(rb_thread_current_scheduler(), mutex, Qnil);
+    return rb_scheduler_block(rb_scheduler_current(), mutex, Qnil);
 }
 
 static VALUE remove_from_mutex_lock_waiters(VALUE arg) {
@@ -281,7 +302,7 @@ do_mutex_lock(VALUE self, int interruptible_p)
         }
 
         while (mutex->fiber != fiber) {
-            VALUE scheduler = rb_thread_current_scheduler();
+            VALUE scheduler = rb_scheduler_current();
             if (scheduler != Qnil) {
                 list_add_tail(&mutex->waitq, &w.node);
 
@@ -392,18 +413,17 @@ rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_fiber_t *fiber)
     const char *err = NULL;
 
     if (mutex->fiber == 0) {
-	err = "Attempt to unlock a mutex which is not locked";
+        err = "Attempt to unlock a mutex which is not locked";
     }
     else if (mutex->fiber != fiber) {
-	err = "Attempt to unlock a mutex which is locked by another thread/fiber";
+        err = "Attempt to unlock a mutex which is locked by another thread/fiber";
     }
     else {
-	struct sync_waiter *cur = 0, *next;
-	rb_mutex_t **th_mutex = &th->keeping_mutexes;
+        struct sync_waiter *cur = 0, *next;
 
-	mutex->fiber = 0;
-	list_for_each_safe(&mutex->waitq, cur, next, node) {
-	    list_del_init(&cur->node);
+        mutex->fiber = 0;
+        list_for_each_safe(&mutex->waitq, cur, next, node) {
+            list_del_init(&cur->node);
 
             if (cur->th->scheduler != Qnil) {
                 rb_scheduler_unblock(cur->th->scheduler, cur->self, rb_fiberptr_self(cur->fiber));
@@ -422,13 +442,10 @@ rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_fiber_t *fiber)
                     continue;
                 }
             }
-	}
-      found:
-	while (*th_mutex != mutex) {
-	    th_mutex = &(*th_mutex)->next_mutex;
-	}
-	*th_mutex = mutex->next_mutex;
-	mutex->next_mutex = NULL;
+        }
+
+    found:
+        thread_mutex_remove(th, mutex);
     }
 
     return err;
@@ -516,7 +533,7 @@ rb_mutex_sleep(VALUE self, VALUE timeout)
     rb_mutex_unlock(self);
     time_t beg = time(0);
 
-    VALUE scheduler = rb_thread_current_scheduler();
+    VALUE scheduler = rb_scheduler_current();
     if (scheduler != Qnil) {
         rb_scheduler_kernel_sleep(scheduler, timeout);
         mutex_lock_uninterruptible(self);

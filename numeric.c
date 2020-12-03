@@ -1820,6 +1820,15 @@ rb_flo_is_finite_p(VALUE num)
     return Qtrue;
 }
 
+static VALUE
+flo_nextafter(VALUE flo, double value)
+{
+    double x, y;
+    x = NUM2DBL(flo);
+    y = nextafter(x, value);
+    return DBL2NUM(y);
+}
+
 /*
  *  call-seq:
  *     float.next_float  ->  float
@@ -1875,10 +1884,7 @@ rb_flo_is_finite_p(VALUE num)
 static VALUE
 flo_next_float(VALUE vx)
 {
-    double x, y;
-    x = NUM2DBL(vx);
-    y = nextafter(x, HUGE_VAL);
-    return DBL2NUM(y);
+    return flo_nextafter(vx, HUGE_VAL);
 }
 
 /*
@@ -1926,10 +1932,7 @@ flo_next_float(VALUE vx)
 static VALUE
 flo_prev_float(VALUE vx)
 {
-    double x, y;
-    x = NUM2DBL(vx);
-    y = nextafter(x, -HUGE_VAL);
-    return DBL2NUM(y);
+    return flo_nextafter(vx, -HUGE_VAL);
 }
 
 /*

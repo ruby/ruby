@@ -103,18 +103,18 @@ int initgroups(const char *, rb_gid_t);
 #include "internal/error.h"
 #include "internal/eval.h"
 #include "internal/hash.h"
-#include "internal/mjit.h"
 #include "internal/object.h"
 #include "internal/process.h"
 #include "internal/thread.h"
 #include "internal/variable.h"
 #include "internal/warnings.h"
+#include "mjit.h"
 #include "ruby/io.h"
 #include "ruby/st.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
 #include "vm_core.h"
-#include "ractor_pub.h"
+#include "ruby/ractor.h"
 
 /* define system APIs */
 #ifdef _WIN32
@@ -4927,7 +4927,7 @@ static VALUE
 rb_f_sleep(int argc, VALUE *argv, VALUE _)
 {
     time_t beg = time(0);
-    VALUE scheduler = rb_thread_current_scheduler();
+    VALUE scheduler = rb_scheduler_current();
 
     if (scheduler != Qnil) {
         rb_scheduler_kernel_sleepv(scheduler, argc, argv);

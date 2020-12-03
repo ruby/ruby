@@ -199,8 +199,7 @@ module GC
   end
 
   def self.compact
-    Primitive.gc_start_internal true, true, true, true
-    Primitive.gc_compact_stats
+    Primitive.gc_compact
   end
 
   # call-seq:
@@ -218,17 +217,7 @@ module GC
   # object, that object should be pushed on the mark stack, and will
   # make a SEGV.
   def self.verify_compaction_references(toward: nil, double_heap: false)
-    if double_heap
-      Primitive.gc_double_heap_size
-    end
-
-    if toward == :empty
-      Primitive.gc_sort_heap_by_empty_slots
-    end
-
-    Primitive.gc_start_internal true, true, true, true
-    Primitive.gc_check_references_for_moved
-    Primitive.gc_compact_stats
+    Primitive.gc_verify_compaction_references(double_heap, toward == :empty)
   end
 end
 

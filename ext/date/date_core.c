@@ -9526,6 +9526,8 @@ Init_date_core(void)
      * A subclass of Date that easily handles date, hour, minute, second,
      * and offset.
      *
+     * DateTime class is considered deprecated. Use Time class.
+     *
      * DateTime does not consider any leap seconds, does not track
      * any summer time rules.
      *

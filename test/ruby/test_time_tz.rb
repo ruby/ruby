@@ -752,6 +752,16 @@ class TestTimeTZ::DummyTZ < Test::Unit::TestCase
   def self.make_timezone(tzname, abbr, utc_offset, abbr2 = nil, utc_offset2 = nil)
     TestTimeTZ::TZ.new(tzname, abbr, utc_offset, abbr2, utc_offset2)
   end
+
+  def test_fractional_second
+    x = Object.new
+    def x.local_to_utc(t); t + 8*3600; end
+    def x.utc_to_local(t); t - 8*3600; end
+
+    t1 = Time.new(2020,11,11,12,13,14.124r, '-08:00')
+    t2 = Time.new(2020,11,11,12,13,14.124r, x)
+    assert_equal(t1, t2)
+  end
 end
 
 begin

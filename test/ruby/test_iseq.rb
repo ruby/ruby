@@ -98,6 +98,22 @@ class TestISeq < Test::Unit::TestCase
     assert_include(RubyVM::InstructionSequence.of(obj.method(name)).disasm, name)
   end
 
+  def test_compile_file_encoding
+    Tempfile.create(%w"test_iseq .rb") do |f|
+      f.puts "{ '\u00de' => 'Th', '\u00df' => 'ss', '\u00e0' => 'a' }"
+      f.close
+
+      EnvUtil.with_default_external(Encoding::US_ASCII) do
+        assert_warn('') {
+          load f.path
+        }
+        assert_nothing_raised(SyntaxError) {
+          RubyVM::InstructionSequence.compile_file(f.path)
+        }
+      end
+    end
+  end
+
   LINE_BEFORE_METHOD = __LINE__
   def method_test_line_trace
 
@@ -572,6 +588,21 @@ class TestISeq < Test::Unit::TestCase
     EOS
     assert_not_nil(invokebuiltin)
     assert_equal([:func_ptr, :argc, :index, :name], invokebuiltin[1].keys)
+  end
+
+  def test_iseq_builtin_load
+    Tempfile.create(["builtin", ".iseq"]) do |f|
+      f.binmode
+      f.write(RubyVM::InstructionSequence.of(1.method(:abs)).to_binary)
+      f.close
+      assert_separately(["-", f.path], "#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
+        bin = File.binread(ARGV[0])
+        assert_raise(ArgumentError) do
+          RubyVM::InstructionSequence.load_from_binary(bin)
+        end
+      end;
+    end
   end
 
   def test_iseq_option_debug_level

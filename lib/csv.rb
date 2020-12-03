@@ -117,6 +117,11 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 #
 # Despite the name \CSV, a \CSV representation can use different separators.
 #
+# For more about tables, see the Wikipedia article
+# "{Table (information)}[https://en.wikipedia.org/wiki/Table_(information)]",
+# especially its section
+# "{Simple table}[https://en.wikipedia.org/wiki/Table_(information)#Simple_table]"
+#
 # == \Class \CSV
 #
 # Class \CSV provides methods for:
@@ -674,11 +679,14 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 #
 # You can define a custom field converter:
 #   strip_converter = proc {|field| field.strip }
-# Add it to the \Converters \Hash:
-#   CSV::Converters[:strip] = strip_converter
-# Use it by name:
 #   string = " foo , 0 \n bar , 1 \n baz , 2 \n"
 #   array = CSV.parse(string, converters: strip_converter)
+#   array # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
+# You can register the converter in \Converters \Hash,
+# which allows you to refer to it by name:
+#   CSV::Converters[:strip] = strip_converter
+#   string = " foo , 0 \n bar , 1 \n baz , 2 \n"
+#   array = CSV.parse(string, converters: :strip)
 #   array # => [["foo", "0"], ["bar", "1"], ["baz", "2"]]
 #
 # ==== Header \Converters
@@ -737,13 +745,16 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 #
 # You can define a custom header converter:
 #   upcase_converter = proc {|header| header.upcase }
-# Add it to the \HeaderConverters \Hash:
-#   CSV::HeaderConverters[:upcase] = upcase_converter
-# Use it by name:
 #   string = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
-#   table = CSV.parse(string, headers: true, converters: upcase_converter)
+#   table = CSV.parse(string, headers: true, header_converters: upcase_converter)
 #   table # => #<CSV::Table mode:col_or_row row_count:4>
-#   table.headers # => ["Name", "Value"]
+#   table.headers # => ["NAME", "VALUE"]
+# You can register the converter in \HeaderConverters \Hash,
+# which allows you to refer to it by name:
+#   CSV::HeaderConverters[:upcase] = upcase_converter
+#   table = CSV.parse(string, headers: true, header_converters: :upcase)
+#   table # => #<CSV::Table mode:col_or_row row_count:4>
+#   table.headers # => ["NAME", "VALUE"]
 #
 # ===== Write \Converters
 #
@@ -752,23 +763,23 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 # its return value becomes the new value for the field.
 # A converter might, for example, strip whitespace from a field.
 #
-# - Using no write converter (all fields unmodified):
-#     output_string = CSV.generate do |csv|
-#       csv << [' foo ', 0]
-#       csv << [' bar ', 1]
-#       csv << [' baz ', 2]
-#     end
-#     output_string # => " foo ,0\n bar ,1\n baz ,2\n"
-# - Using option +write_converters+:
-#     strip_converter = proc {|field| field.respond_to?(:strip) ? field.strip : field }
-#     upcase_converter = proc {|field| field.respond_to?(:upcase) ? field.upcase : field }
-#     converters = [strip_converter, upcase_converter]
-#       output_string = CSV.generate(write_converters: converters) do |csv|
-#         csv << [' foo ', 0]
-#         csv << [' bar ', 1]
-#         csv << [' baz ', 2]
-#       end
-#       output_string # => "FOO,0\nBAR,1\nBAZ,2\n"
+# Using no write converter (all fields unmodified):
+#   output_string = CSV.generate do |csv|
+#     csv << [' foo ', 0]
+#     csv << [' bar ', 1]
+#     csv << [' baz ', 2]
+#   end
+#   output_string # => " foo ,0\n bar ,1\n baz ,2\n"
+# Using option +write_converters+ with two custom write converters:
+#   strip_converter = proc {|field| field.respond_to?(:strip) ? field.strip : field }
+#   upcase_converter = proc {|field| field.respond_to?(:upcase) ? field.upcase : field }
+#   write_converters = [strip_converter, upcase_converter]
+#   output_string = CSV.generate(write_converters: write_converters) do |csv|
+#     csv << [' foo ', 0]
+#     csv << [' bar ', 1]
+#     csv << [' baz ', 2]
+#   end
+#   output_string # => "FOO,0\nBAR,1\nBAZ,2\n"
 #
 # === Character Encodings (M17n or Multilingualization)
 #
@@ -1052,9 +1063,28 @@ class CSV
           out_options[key] = value
         end
       end
+
       # build input and output wrappers
-      input  = new(input  || ARGF,    **in_options)
+      input  = new(input  || ARGF, **in_options)
       output = new(output || $stdout, **out_options)
+
+      # process headers
+      need_manual_header_output =
+        (in_options[:headers] and
+         out_options[:headers] == true and
+         out_options[:write_headers])
+      if need_manual_header_output
+        first_row = input.shift
+        if first_row
+          if first_row.is_a?(Row)
+            headers = first_row.headers
+            yield headers
+            output << headers
+          end
+          yield first_row
+          output << first_row
+        end
+      end
 
       # read, yield, write
       input.each do |row|

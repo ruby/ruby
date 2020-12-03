@@ -3,7 +3,10 @@ require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 require_relative 'shared/codepoints'
 
-# See redmine #1667
-describe "StringIO#codepoints" do
-  it_behaves_like :stringio_codepoints, :codepoints
+ruby_version_is ''...'2.8' do
+
+  # See redmine #1667
+  describe "StringIO#codepoints" do
+    it_behaves_like :stringio_codepoints, :codepoints
+  end
 end

@@ -96,31 +96,42 @@ module Fiddle
       end
       snprintf = Function.new(snprintf_pointer,
                               [
-                                TYPE_VOIDP,
-                                TYPE_SIZE_T,
-                                TYPE_VOIDP,
-                                TYPE_VARIADIC,
+                                :voidp,
+                                :size_t,
+                                :const_string,
+                                :variadic,
                               ],
-                              TYPE_INT)
+                              :int)
       output_buffer = " " * 1024
       output = Pointer[output_buffer]
 
       written = snprintf.call(output,
                               output.size,
-                              "int: %d, string: %.*s\n",
-                              TYPE_INT, -29,
-                              TYPE_INT, 4,
-                              TYPE_VOIDP, "Hello")
-      assert_equal("int: -29, string: Hell\n",
+                              "int: %d, string: %.*s, const string: %s\n",
+                              :int, -29,
+                              :int, 4,
+                              :voidp, "Hello",
+                              :const_string, "World")
+      assert_equal("int: -29, string: Hell, const string: World\n",
                    output_buffer[0, written])
 
+      string_like_class = Class.new do
+        def initialize(string)
+          @string = string
+        end
+
+        def to_str
+          @string
+        end
+      end
       written = snprintf.call(output,
                               output.size,
-                              "string: %.*s, uint: %u\n",
-                              TYPE_INT, 2,
-                              TYPE_VOIDP, "Hello",
-                              TYPE_INT, 29)
-      assert_equal("string: He, uint: 29\n",
+                              "string: %.*s, const string: %s, uint: %u\n",
+                              :int, 2,
+                              :voidp, "Hello",
+                              :const_string, string_like_class.new("World"),
+                              :int, 29)
+      assert_equal("string: He, const string: World, uint: 29\n",
                    output_buffer[0, written])
     end
   end

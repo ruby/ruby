@@ -12,6 +12,16 @@ describe "File.extname" do
     File.extname(".app.conf").should == ".conf"
   end
 
+  it "returns unfrozen strings" do
+    File.extname("foo.rb").frozen?.should == false
+    File.extname("/foo/bar.rb").frozen?.should == false
+    File.extname("/foo.rb/bar.c").frozen?.should == false
+    File.extname("bar").frozen?.should == false
+    File.extname(".bashrc").frozen?.should == false
+    File.extname("/foo.bar/baz").frozen?.should == false
+    File.extname(".app.conf").frozen?.should == false
+  end
+
   it "returns the extension for edge cases" do
     File.extname("").should ==  ""
     File.extname(".").should ==  ""

@@ -113,6 +113,9 @@ Lint/Debugger:
   Exclude:
     - 'core/binding/fixtures/irb.rb'
 
+Lint/Loop:
+  Enabled: false
+
 Style/Lambda:
   Enabled: true
   EnforcedStyle: literal

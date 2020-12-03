@@ -8,13 +8,13 @@ class TestFiberMutex < Test::Unit::TestCase
 
     thread = Thread.new do
       scheduler = Scheduler.new
-      Thread.current.scheduler = scheduler
+      Fiber.set_scheduler scheduler
 
       Fiber.schedule do
-        assert_not_predicate Thread.current, :blocking?
+        assert_not_predicate Fiber, :blocking?
 
         mutex.synchronize do
-          assert_not_predicate Thread.current, :blocking?
+          assert_not_predicate Fiber, :blocking?
         end
       end
     end
@@ -27,7 +27,7 @@ class TestFiberMutex < Test::Unit::TestCase
 
     thread = Thread.new do
       scheduler = Scheduler.new
-      Thread.current.scheduler = scheduler
+      Fiber.set_scheduler scheduler
 
       Fiber.schedule do
         mutex.lock
@@ -53,7 +53,7 @@ class TestFiberMutex < Test::Unit::TestCase
 
     thread = Thread.new do
       scheduler = Scheduler.new
-      Thread.current.scheduler = scheduler
+      Fiber.set_scheduler scheduler
 
       Fiber.schedule do
         mutex.lock
@@ -79,7 +79,7 @@ class TestFiberMutex < Test::Unit::TestCase
 
       thread = Thread.new do
         scheduler = Scheduler.new
-        Thread.current.scheduler = scheduler
+        Fiber.set_scheduler scheduler
 
         f = Fiber.schedule do
           assert_raise_with_message(RuntimeError, "bye") do
@@ -108,9 +108,9 @@ class TestFiberMutex < Test::Unit::TestCase
 
     signalled = 0
 
-    thread = Thread.new do
+    Thread.new do
       scheduler = Scheduler.new
-      Thread.current.scheduler = scheduler
+      Fiber.set_scheduler scheduler
 
       Fiber.schedule do
         mutex.synchronize do
@@ -132,11 +132,9 @@ class TestFiberMutex < Test::Unit::TestCase
       end
 
       scheduler.run
-    end
+    end.join
 
-    thread.join
-
-    assert_operator signalled, :>, 1
+    assert_equal 3, signalled
   end
 
   def test_queue
@@ -145,7 +143,7 @@ class TestFiberMutex < Test::Unit::TestCase
 
     thread = Thread.new do
       scheduler = Scheduler.new
-      Thread.current.scheduler = scheduler
+      Fiber.set_scheduler scheduler
 
       Fiber.schedule do
         3.times do |i|
@@ -176,7 +174,7 @@ class TestFiberMutex < Test::Unit::TestCase
 
     thread = Thread.new do
       scheduler = Scheduler.new
-      Thread.current.scheduler = scheduler
+      Fiber.set_scheduler scheduler
 
       result = nil
       Fiber.schedule do
@@ -204,7 +202,7 @@ class TestFiberMutex < Test::Unit::TestCase
 
     thread = Thread.new do
       scheduler = Scheduler.new
-      Thread.current.scheduler = scheduler
+      Fiber.set_scheduler scheduler
 
       Fiber.schedule do
         mutex.synchronize do

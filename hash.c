@@ -532,7 +532,7 @@ hash_verify_(VALUE hash, const char *file, int line)
         HASH_ASSERT(RHASH_AR_TABLE_BOUND_RAW(hash) == 0);
     }
 
-#if USE_TRANSIENT_HEP
+#if USE_TRANSIENT_HEAP
     if (RHASH_TRANSIENT_P(hash)) {
         volatile st_data_t MAYBE_UNUSED(key) = RHASH_AR_TABLE_REF(hash, 0)->key; /* read */
         HASH_ASSERT(RHASH_AR_TABLE(hash) != NULL);
@@ -6251,19 +6251,6 @@ env_key(VALUE dmy, VALUE value)
     return Qnil;
 }
 
-/*
- * call-seq:
- *   ENV.index(value) -> name
- *
- * Deprecated method that is equivalent to ENV.key.
- */
-static VALUE
-env_index(VALUE dmy, VALUE value)
-{
-    rb_warn_deprecated("ENV.index", "ENV.key");
-    return env_key(dmy, value);
-}
-
 static VALUE
 env_to_hash(void)
 {
@@ -7137,7 +7124,6 @@ Init_Hash(void)
     rb_define_singleton_method(envtbl, "to_a", env_to_a, 0);
     rb_define_singleton_method(envtbl, "to_s", env_to_s, 0);
     rb_define_singleton_method(envtbl, "key", env_key, 1);
-    rb_define_singleton_method(envtbl, "index", env_index, 1);
     rb_define_singleton_method(envtbl, "size", env_size, 0);
     rb_define_singleton_method(envtbl, "length", env_size, 0);
     rb_define_singleton_method(envtbl, "empty?", env_empty_p, 0);

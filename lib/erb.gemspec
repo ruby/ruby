@@ -19,4 +19,6 @@ Gem::Specification.new do |spec|
   spec.bindir        = "libexec"
   spec.executables   = ["erb"]
   spec.require_paths = ["lib"]
+
+  spec.add_dependency "cgi"
 end

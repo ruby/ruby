@@ -3920,19 +3920,6 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
 }
 
 static VALUE
-kcode_getter(ID _x, VALUE *_y)
-{
-    rb_warn("variable $KCODE is no longer effective");
-    return Qnil;
-}
-
-static void
-kcode_setter(VALUE val, ID id, VALUE *_)
-{
-    rb_warn("variable $KCODE is no longer effective; ignored");
-}
-
-static VALUE
 ignorecase_getter(ID _x, VALUE *_y)
 {
     rb_warn("variable $= is no longer effective");
@@ -4062,8 +4049,6 @@ Init_Regexp(void)
     rb_gvar_ractor_local("$+");
 
     rb_define_virtual_variable("$=", ignorecase_getter, ignorecase_setter);
-    rb_define_virtual_variable("$KCODE", kcode_getter, kcode_setter);
-    rb_define_virtual_variable("$-K", kcode_getter, kcode_setter);
 
     rb_cRegexp = rb_define_class("Regexp", rb_cObject);
     rb_define_alloc_func(rb_cRegexp, rb_reg_s_alloc);

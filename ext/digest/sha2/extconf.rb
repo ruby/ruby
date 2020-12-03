@@ -10,7 +10,7 @@ $defs << "-DHAVE_CONFIG_H"
 
 $objs = [ "sha2init.#{$OBJEXT}" ]
 
-unless digest_conf("sha2", "sha", %w[SHA256 SHA512])
+unless digest_conf("sha2")
   have_type("u_int8_t")
 end
 

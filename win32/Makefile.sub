@@ -67,9 +67,6 @@ icondirs=$(ICONDIRS)
 icondirs=$(icondirs:\=/)
 iconinc=-I$(icondirs: = -I)
 !endif
-!if !defined(MATHN)
-MATHN = yes
-!endif
 ###############
 
 .SUFFIXES: .def .lib
@@ -308,9 +305,6 @@ ARFLAGS = -machine:$(MACHINE) -out:
 LD = $(CC)
 LDSHARED = $(LD) -LD
 XCFLAGS = -DRUBY_EXPORT $(INCFLAGS) $(XCFLAGS)
-!if "$(MATHN)" == "yes"
-XCFLAGS = $(XCFLAGS) -DCANONICALIZATION_FOR_MATHN
-!endif
 !if $(MSC_VER) >= 1400
 # Prevents VC++ 2005 (cl ver 14) warnings
 MANIFESTTOOL = mt -nologo

@@ -562,34 +562,33 @@ rb_ary_modify_check(VALUE ary)
 }
 
 void
-rb_ary_modify(VALUE ary)
+rb_ary_cancel_sharing(VALUE ary)
 {
-    rb_ary_modify_check(ary);
     if (ARY_SHARED_P(ary)) {
-	long shared_len, len = RARRAY_LEN(ary);
+        long shared_len, len = RARRAY_LEN(ary);
         VALUE shared_root = ARY_SHARED_ROOT(ary);
 
         ary_verify(shared_root);
 
         if (len <= RARRAY_EMBED_LEN_MAX) {
-	    const VALUE *ptr = ARY_HEAP_PTR(ary);
+            const VALUE *ptr = ARY_HEAP_PTR(ary);
             FL_UNSET_SHARED(ary);
             FL_SET_EMBED(ary);
-	    MEMCPY((VALUE *)ARY_EMBED_PTR(ary), ptr, VALUE, len);
+            MEMCPY((VALUE *)ARY_EMBED_PTR(ary), ptr, VALUE, len);
             rb_ary_decrement_share(shared_root);
             ARY_SET_EMBED_LEN(ary, len);
         }
         else if (ARY_SHARED_ROOT_OCCUPIED(shared_root) && len > ((shared_len = RARRAY_LEN(shared_root))>>1)) {
             long shift = RARRAY_CONST_PTR_TRANSIENT(ary) - RARRAY_CONST_PTR_TRANSIENT(shared_root);
-	    FL_UNSET_SHARED(ary);
+            FL_UNSET_SHARED(ary);
             ARY_SET_PTR(ary, RARRAY_CONST_PTR_TRANSIENT(shared_root));
-	    ARY_SET_CAPA(ary, shared_len);
+            ARY_SET_CAPA(ary, shared_len);
             RARRAY_PTR_USE_TRANSIENT(ary, ptr, {
-		MEMMOVE(ptr, ptr+shift, VALUE, len);
-	    });
+                MEMMOVE(ptr, ptr+shift, VALUE, len);
+            });
             FL_SET_EMBED(shared_root);
             rb_ary_decrement_share(shared_root);
-	}
+        }
         else {
             VALUE *ptr = ary_heap_alloc(ary, len);
             MEMCPY(ptr, ARY_HEAP_PTR(ary), VALUE, len);
@@ -598,9 +597,16 @@ rb_ary_modify(VALUE ary)
             ARY_SET_PTR(ary, ptr);
         }
 
-	rb_gc_writebarrier_remember(ary);
+        rb_gc_writebarrier_remember(ary);
     }
     ary_verify(ary);
+}
+
+void
+rb_ary_modify(VALUE ary)
+{
+    rb_ary_modify_check(ary);
+    rb_ary_cancel_sharing(ary);
 }
 
 static VALUE
@@ -1189,7 +1195,7 @@ ary_make_partial_step(VALUE ary, VALUE klass, long offset, long len, long step)
 static VALUE
 ary_make_shared_copy(VALUE ary)
 {
-    return ary_make_partial(ary, rb_obj_class(ary), 0, RARRAY_LEN(ary));
+    return ary_make_partial(ary, rb_cArray, 0, RARRAY_LEN(ary));
 }
 
 enum ary_take_pos_flags
@@ -1628,7 +1634,7 @@ rb_ary_subseq_step(VALUE ary, long beg, long len, long step)
     if (alen < len || alen < beg + len) {
 	len = alen - beg;
     }
-    klass = rb_obj_class(ary);
+    klass = rb_cArray;
     if (len == 0) return ary_new(klass, 0);
     if (step == 0)
         rb_raise(rb_eArgError, "slice step cannot be zero");
@@ -4010,7 +4016,6 @@ ary_slice_bang_by_rb_ary_splice(VALUE ary, long pos, long len)
     }
     else {
         VALUE arg2 = rb_ary_new4(len, RARRAY_CONST_PTR_TRANSIENT(ary)+pos);
-        RBASIC_SET_CLASS(arg2, rb_obj_class(ary));
         rb_ary_splice(ary, pos, len, 0, 0);
         return arg2;
     }
@@ -4820,7 +4825,7 @@ rb_ary_times(VALUE ary, VALUE times)
 
     len = NUM2LONG(times);
     if (len == 0) {
-	ary2 = ary_new(rb_obj_class(ary), 0);
+        ary2 = ary_new(rb_cArray, 0);
 	goto out;
     }
     if (len < 0) {
@@ -4831,7 +4836,7 @@ rb_ary_times(VALUE ary, VALUE times)
     }
     len *= RARRAY_LEN(ary);
 
-    ary2 = ary_new(rb_obj_class(ary), len);
+    ary2 = ary_new(rb_cArray, len);
     ARY_SET_LEN(ary2, len);
 
     ptr = RARRAY_CONST_PTR_TRANSIENT(ary);
@@ -5947,7 +5952,6 @@ rb_ary_uniq(VALUE ary)
 	hash = ary_make_hash(ary);
 	uniq = rb_hash_values(hash);
     }
-    RBASIC_SET_CLASS(uniq, rb_obj_class(ary));
     if (hash) {
         ary_recycle_hash(hash);
     }
@@ -6146,7 +6150,7 @@ flatten(VALUE ary, int level)
 	st_clear(memo);
     }
 
-    RBASIC_SET_CLASS(result, rb_obj_class(ary));
+    RBASIC_SET_CLASS(result, rb_cArray);
     return result;
 }
 
@@ -7595,13 +7599,7 @@ finish_exact_sum(long n, VALUE r, VALUE v, int z)
     if (n != 0)
         v = rb_fix_plus(LONG2FIX(n), v);
     if (r != Qundef) {
-	/* r can be an Integer when mathn is loaded */
-	if (FIXNUM_P(r))
-	    v = rb_fix_plus(r, v);
-	else if (RB_TYPE_P(r, T_BIGNUM))
-	    v = rb_big_plus(r, v);
-	else
-	    v = rb_rational_plus(r, v);
+        v = rb_rational_plus(r, v);
     }
     else if (!n && z) {
         v = rb_fix_plus(LONG2FIX(0), v);
@@ -7689,7 +7687,7 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
     if (RB_FLOAT_TYPE_P(e)) {
         /*
          * Kahan-Babuska balancing compensated summation algorithm
-         * See http://link.springer.com/article/10.1007/s00607-005-0139-x
+         * See https://link.springer.com/article/10.1007/s00607-005-0139-x
          */
         double f, c;
         double x, t;

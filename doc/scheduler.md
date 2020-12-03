@@ -73,16 +73,16 @@ program.
 Fibers can be used to create non-blocking execution contexts.
 
 ~~~ ruby
-Fiber.new(blocking: false) do
+Fiber.new do
   puts Fiber.current.blocking? # false
 
-  # May invoke `Thread.scheduler&.io_wait`.
+  # May invoke `Fiber.scheduler&.io_wait`.
   io.read(...)
 
-  # May invoke `Thread.scheduler&.io_wait`.
+  # May invoke `Fiber.scheduler&.io_wait`.
   io.write(...)
 
-  # Will invoke `Thread.scheduler&.kernel_sleep`.
+  # Will invoke `Fiber.scheduler&.kernel_sleep`.
   sleep(n)
 end.resume
 ~~~

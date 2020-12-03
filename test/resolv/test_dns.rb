@@ -128,6 +128,119 @@ class TestResolvDNS < Test::Unit::TestCase
     }
   end
 
+  def test_query_ipv4_duplicate_responses
+    begin
+      OpenSSL
+    rescue LoadError
+      skip 'autoload problem. see [ruby-dev:45021][Bug #5786]'
+    end if defined?(OpenSSL)
+
+    with_udp('127.0.0.1', 0) {|u|
+      _, server_port, _, server_address = u.addr
+      begin
+        client_thread = Thread.new {
+          Resolv::DNS.open(:nameserver_port => [[server_address, server_port]], :search => ['bad1.com', 'bad2.com', 'good.com'], ndots: 5) {|dns|
+            dns.getaddress("example")
+          }
+        }
+        server_thread = Thread.new {
+          3.times do
+            msg, (_, client_port, _, client_address) = Timeout.timeout(5) {u.recvfrom(4096)}
+            id, flags, qdcount, ancount, nscount, arcount = msg.unpack("nnnnnn")
+
+            qr =     (flags & 0x8000) >> 15
+            opcode = (flags & 0x7800) >> 11
+            aa =     (flags & 0x0400) >> 10
+            tc =     (flags & 0x0200) >> 9
+            rd =     (flags & 0x0100) >> 8
+            ra =     (flags & 0x0080) >> 7
+            z =      (flags & 0x0070) >> 4
+            rcode =   flags & 0x000f
+            _rest = msg[12..-1]
+
+            questions = msg.bytes[12..-1]
+            labels = []
+            idx = 0
+            while idx < questions.length-5
+              size = questions[idx]
+              labels << questions[idx+1..idx+size].pack('c*')
+              idx += size+1
+            end
+            hostname = labels.join('.')
+
+            if hostname == "example.good.com"
+              id = id
+              qr = 1
+              opcode = opcode
+              aa = 0
+              tc = 0
+              rd = rd
+              ra = 1
+              z = 0
+              rcode = 0
+              qdcount = 1
+              ancount = 1
+              nscount = 0
+              arcount = 0
+              word2 = (qr << 15) |
+                      (opcode << 11) |
+                      (aa << 10) |
+                      (tc << 9) |
+                      (rd << 8) |
+                      (ra << 7) |
+                      (z << 4) |
+                      rcode
+              msg = [id, word2, qdcount, ancount, nscount, arcount].pack("nnnnnn")
+              msg << questions.pack('c*')
+              type = 1
+              klass = 1
+              ttl = 3600
+              rdlength = 4
+              rdata = [52,0,2,1].pack("CCCC")
+              rr = [0xc00c, type, klass, ttl, rdlength, rdata].pack("nnnNna*")
+              msg << rr
+              rdata = [52,0,2,2].pack("CCCC")
+              rr = [0xc00c, type, klass, ttl, rdlength, rdata].pack("nnnNna*")
+              msg << rr
+
+              u.send(msg, 0, client_address, client_port)
+            else
+              id = id
+              qr = 1
+              opcode = opcode
+              aa = 0
+              tc = 0
+              rd = rd
+              ra = 1
+              z = 0
+              rcode = 3
+              qdcount = 1
+              ancount = 0
+              nscount = 0
+              arcount = 0
+              word2 = (qr << 15) |
+                      (opcode << 11) |
+                      (aa << 10) |
+                      (tc << 9) |
+                      (rd << 8) |
+                      (ra << 7) |
+                      (z << 4) |
+                      rcode
+              msg = [id, word2, qdcount, ancount, nscount, arcount].pack("nnnnnn")
+              msg << questions.pack('c*')
+
+              u.send(msg, 0, client_address, client_port)
+              u.send(msg, 0, client_address, client_port)
+            end
+          end
+        }
+        result, _ = assert_join_threads([client_thread, server_thread])
+        assert_instance_of(Resolv::IPv4, result)
+        assert_equal("52.0.2.1", result.to_s)
+      end
+    }
+  end
+
   def test_query_ipv4_address_timeout
     with_udp('127.0.0.1', 0) {|u|
       _, port , _, host = u.addr

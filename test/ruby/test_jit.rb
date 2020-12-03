@@ -45,10 +45,8 @@ class TestJIT < Test::Unit::TestCase
     # ci.rvm.jp caches its build environment. Clean up temporary files left by SEGV.
     if ENV['RUBY_DEBUG']&.include?('ci')
       Dir.glob("#{ENV.fetch('TMPDIR', '/tmp')}/_ruby_mjit_p*u*.*").each do |file|
-        if File.mtime(file) < Time.now - 60 * 60 * 24
-          puts "test/ruby/test_jit.rb: removing #{file}"
-          File.unlink(file)
-        end
+        puts "test/ruby/test_jit.rb: removing #{file}"
+        File.unlink(file)
       end
     end
 
@@ -692,17 +690,12 @@ class TestJIT < Test::Unit::TestCase
         assert_match(/\A#{JIT_SUCCESS_PREFIX}: mjit#{i}@\(eval\):/, errs[i], debug_info)
       end
 
+      assert_equal("No units can be unloaded -- incremented max-cache-size to 11 for --jit-wait\n", errs[10], debug_info)
+      assert_match(/\A#{JIT_SUCCESS_PREFIX}: mjit10@\(eval\):/, errs[11], debug_info)
       # On --jit-wait, when the number of JIT-ed code reaches --jit-max-cache,
       # it should trigger compaction.
-      if RUBY_PLATFORM.match?(/mswin|mingw/) # compaction is not supported on Windows yet
-        assert_equal("Too many JIT code -- 1 units unloaded\n", errs[10], debug_info)
-        assert_match(/\A#{JIT_SUCCESS_PREFIX}: mjit10@\(eval\):/, errs[11], debug_info)
-      else
-        assert_equal("Too many JIT code, but skipped unloading units for JIT compaction\n", errs[10], debug_info)
-        assert_equal("No units can be unloaded -- incremented max-cache-size to 11 for --jit-wait\n", errs[11], debug_info)
-        assert_match(/\A#{JIT_SUCCESS_PREFIX}: mjit10@\(eval\):/, errs[12], debug_info)
-
-        assert_equal(3, compactions.size, debug_info)
+      unless RUBY_PLATFORM.match?(/mswin|mingw/) # compaction is not supported on Windows yet
+        assert_equal(1, compactions.size, debug_info)
       end
 
       if RUBY_PLATFORM.match?(/mswin/)

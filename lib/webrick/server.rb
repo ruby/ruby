@@ -100,7 +100,7 @@ module WEBrick
       @logger.info("ruby #{rubyv}")
 
       @listeners = []
-      @shutdown_pipe = @config[:ShutdownPipe]
+      @shutdown_pipe = nil
       unless @config[:DoNotListen]
         raise ArgumentError, "Port must an integer" unless @config[:Port].to_s == @config[:Port].to_i.to_s
 

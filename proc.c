@@ -3919,7 +3919,7 @@ proc_ruby2_keywords(VALUE procval)
  * == Conversion of other objects to procs
  *
  * Any object that implements the +to_proc+ method can be converted into
- * a proc by the <code>&</code> operator, and therefore con be
+ * a proc by the <code>&</code> operator, and therefore can be
  * consumed by iterators.
  *
 

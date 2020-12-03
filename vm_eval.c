@@ -1085,12 +1085,14 @@ send_internal_kw(int argc, const VALUE *argv, VALUE recv, call_type scope)
  *    foo.__send__(string [, args...])   -> obj
  *
  *  Invokes the method identified by _symbol_, passing it any
- *  arguments specified. You can use <code>__send__</code> if the name
- *  +send+ clashes with an existing method in _obj_.
+ *  arguments specified.
  *  When the method is identified by a string, the string is converted
  *  to a symbol.
  *
  *  BasicObject implements +__send__+, Kernel implements +send+.
+ *  <code>__send__</code> is safer than +send+
+ *  when _obj_ has the same method name like <code>Socket</code>.
+ *  See also <code>public_send</code>.
  *
  *     class Klass
  *       def hello(*args)

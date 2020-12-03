@@ -2,41 +2,43 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
-describe "IO#lines" do
-  before :each do
-    @io = IOSpecs.io_fixture "lines.txt"
-  end
+ruby_version_is ''...'2.8' do
+  describe "IO#lines" do
+    before :each do
+      @io = IOSpecs.io_fixture "lines.txt"
+    end
 
-  after :each do
-    @io.close if @io
-  end
+    after :each do
+      @io.close if @io
+    end
 
-  it "returns an Enumerator" do
-    @io.lines.should be_an_instance_of(Enumerator)
-  end
-
-  describe "when no block is given" do
     it "returns an Enumerator" do
       @io.lines.should be_an_instance_of(Enumerator)
     end
 
-    describe "returned Enumerator" do
-      describe "size" do
-        it "should return nil" do
-          @io.lines.size.should == nil
+    describe "when no block is given" do
+      it "returns an Enumerator" do
+        @io.lines.should be_an_instance_of(Enumerator)
+      end
+
+      describe "returned Enumerator" do
+        describe "size" do
+          it "should return nil" do
+            @io.lines.size.should == nil
+          end
         end
       end
     end
-  end
 
-  it "returns a line when accessed" do
-    enum = @io.lines
-    enum.first.should == IOSpecs.lines[0]
-  end
+    it "returns a line when accessed" do
+      enum = @io.lines
+      enum.first.should == IOSpecs.lines[0]
+    end
 
-  it "yields each line to the passed block" do
-    ScratchPad.record []
-    @io.lines { |s| ScratchPad << s }
-    ScratchPad.recorded.should == IOSpecs.lines
+    it "yields each line to the passed block" do
+      ScratchPad.record []
+      @io.lines { |s| ScratchPad << s }
+      ScratchPad.recorded.should == IOSpecs.lines
+    end
   end
 end

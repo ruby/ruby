@@ -1,56 +1,82 @@
 # frozen_string_literal: true
 require 'test/unit'
 require 'fiddle'
+require 'etc'
 
 class TestGCCompact < Test::Unit::TestCase
-  def test_enable_autocompact
-    before = GC.auto_compact
-    GC.auto_compact = true
-    assert GC.auto_compact
-  ensure
-    GC.auto_compact = before
-  end
-
-  def test_disable_autocompact
-    before = GC.auto_compact
-    GC.auto_compact = false
-    refute GC.auto_compact
-  ensure
-    GC.auto_compact = before
-  end
-
-  def test_major_compacts
-    before = GC.auto_compact
-    GC.auto_compact = true
-    compact = GC.stat :compact_count
-    GC.start
-    assert_operator GC.stat(:compact_count), :>, compact
-  ensure
-    GC.auto_compact = before
-  end
-
-  def test_implicit_compaction_does_something
-    before = GC.auto_compact
-    list = []
-    list2 = []
-
-    # Try to make some fragmentation
-    500.times {
-      list << Object.new
-      Object.new
-      Object.new
-    }
-    count = GC.stat :compact_count
-    GC.auto_compact = true
-    loop do
-      break if count < GC.stat(:compact_count)
-      list2 << Object.new
+  class AutoCompact < Test::Unit::TestCase
+    def setup
+      skip "autocompact not supported on this platform" unless supports_auto_compact?
+      super
     end
-    compact_stats = GC.latest_compact_info
-    refute_predicate compact_stats[:considered], :empty?
-    refute_predicate compact_stats[:moved], :empty?
-  ensure
-    GC.auto_compact = before
+
+    def test_enable_autocompact
+      before = GC.auto_compact
+      GC.auto_compact = true
+      assert GC.auto_compact
+    ensure
+      GC.auto_compact = before
+    end
+
+    def test_disable_autocompact
+      before = GC.auto_compact
+      GC.auto_compact = false
+      refute GC.auto_compact
+    ensure
+      GC.auto_compact = before
+    end
+
+    def test_major_compacts
+      before = GC.auto_compact
+      GC.auto_compact = true
+      compact = GC.stat :compact_count
+      GC.start
+      assert_operator GC.stat(:compact_count), :>, compact
+    ensure
+      GC.auto_compact = before
+    end
+
+    def test_implicit_compaction_does_something
+      before = GC.auto_compact
+      list = []
+      list2 = []
+
+      # Try to make some fragmentation
+      500.times {
+        list << Object.new
+        Object.new
+        Object.new
+      }
+      count = GC.stat :compact_count
+      GC.auto_compact = true
+      loop do
+        break if count < GC.stat(:compact_count)
+        list2 << Object.new
+      end
+      compact_stats = GC.latest_compact_info
+      refute_predicate compact_stats[:considered], :empty?
+      refute_predicate compact_stats[:moved], :empty?
+    ensure
+      GC.auto_compact = before
+    end
+
+    private
+
+    def supports_auto_compact?
+      return true unless defined?(Etc::SC_PAGE_SIZE)
+
+      begin
+        return GC::INTERNAL_CONSTANTS[:HEAP_PAGE_SIZE] % Etc.sysconf(Etc::SC_PAGE_SIZE) == 0
+      rescue NotImplementedError
+      rescue ArgumentError
+      end
+
+      true
+    end
+  end
+
+  def os_page_size
+    return true unless defined?(Etc::SC_PAGE_SIZE)
   end
 
   def test_gc_compact_stats

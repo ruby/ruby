@@ -271,13 +271,14 @@ AS_CASE(["$host_os:$build_os"],
     # clang version 1.0 (http://llvm.org/svn/llvm-project/cfe/tags/Apple/clang-23 exported)
     # Apple clang version 2.0 (tags/Apple/clang-137) (based on LLVM 2.9svn)
     # Apple clang version 2.1 (tags/Apple/clang-163.7.1) (based on LLVM 3.0svn)
-    AS_IF([! $CC -E -xc - <<SRC >/dev/null], [
-	@%:@if defined __APPLE_CC__ && defined __clang_major__ && __clang_major__ < 3
-	@%:@error premature clang
-	@%:@endif
-SRC
-	AC_MSG_ERROR([clang version 3.0 or later is required])
-    ])
+    AC_PREPROC_IFELSE(
+	[AC_LANG_PROGRAM([
+	    @%:@if defined __APPLE_CC__ && defined __clang_major__ && __clang_major__ < 3
+	    @%:@error premature clang
+	    @%:@endif
+	])],
+	[],
+	[AC_MSG_ERROR([clang version 3.0 or later is required])])
 ])
 
 AS_CASE(["$target_os"],
@@ -370,9 +371,14 @@ AC_SUBST(CC_VERSION_MESSAGE, $cc_version_message)
 : ${DLDFLAGS="$LDFLAGS"}
 
 RUBY_UNIVERSAL_ARCH
-AS_IF([test "$target_cpu" != "$host_cpu" -a "$GCC" = yes -a "$cross_compiling" = no -a "$universal_binary" = no], [
+AS_IF([test "$target_cpu" != "$host_cpu" -a "$GCC" = yes -a "$cross_compiling" = no -a "${universal_binary:-no}" = no], [
     RUBY_DEFAULT_ARCH("$target_cpu")
 ])
+host_os=$target_os
+host_vendor=$target_vendor
+host_cpu=$target_cpu
+host=$target
+host_alias=$target_alias
 
 AC_CACHE_CHECK([for $AR flags], [rb_cv_arflags], [
     AS_IF([$AR rcD conftest.a > /dev/null 2>&1 && rm conftest.a],
@@ -667,7 +673,8 @@ AS_IF([test "$GCC" = yes], [
 				 [disable -D_FORTIFY_SOURCE=2 option, which causes link error on mingw]),
 		  [fortify_source=$enableval])
     AS_IF([test "x$fortify_source" != xno], [
-    RUBY_TRY_CFLAGS(-D_FORTIFY_SOURCE=2, [RUBY_APPEND_OPTION(XCFLAGS, -D_FORTIFY_SOURCE=2)])
+        RUBY_TRY_CFLAGS([$optflags -D_FORTIFY_SOURCE=2], [RUBY_APPEND_OPTION(XCFLAGS, -D_FORTIFY_SOURCE=2)], [],
+                        [@%:@include <stdio.h>])
     ])
 
     : ${MJIT_HEADER_FLAGS='-P -dD'}
@@ -1197,7 +1204,9 @@ AC_CHECK_HEADERS(syscall.h)
 AC_CHECK_HEADERS(time.h)
 AC_CHECK_HEADERS(ucontext.h)
 AC_CHECK_HEADERS(utime.h)
-AC_CHECK_HEADERS(x86intrin.h)
+AS_CASE("$target_cpu", [x64|x86_64|i[3-6]86*], [
+  AC_CHECK_HEADERS(x86intrin.h)
+])
 
 AC_ARG_WITH([gmp],
   [AS_HELP_STRING([--without-gmp],
@@ -1626,10 +1635,8 @@ RUBY_DECL_ATTRIBUTE([__nonnull__(n)], [RUBY_FUNC_NONNULL(n,x)], [rb_cv_func_nonn
 RUBY_APPEND_OPTION(XCFLAGS, -DRUBY_EXPORT)
 
 AC_ARG_ENABLE(mathn,
-    AS_HELP_STRING([--disable-mathn], [disable canonicalization for mathn]),
-    [mathn=$enableval], [mathn=yes])
-test "x$mathn" = xyes || mathn=
-AC_SUBST(MATHN, $mathn)
+    AS_HELP_STRING([--enable-mathn], [enable canonicalization for mathn]),
+    [AC_MSG_ERROR([mathn support has been dropped])])
 
 AC_CACHE_CHECK(for function name string predefined identifier,
     rb_cv_function_name_string,

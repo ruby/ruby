@@ -222,11 +222,16 @@ class RubyLex
     begin # check if parser error are available
       verbose, $VERBOSE = $VERBOSE, nil
       case RUBY_ENGINE
+      when 'ruby'
+        self.class.compile_with_errors_suppressed(code) do |inner_code, line_no|
+          RubyVM::InstructionSequence.compile(inner_code, nil, nil, line_no)
+        end
       when 'jruby'
         JRuby.compile_ir(code)
       else
-        self.class.compile_with_errors_suppressed(code) do |inner_code, line_no|
-          RubyVM::InstructionSequence.compile(inner_code, nil, nil, line_no)
+        catch(:valid) do
+          eval("BEGIN { throw :valid, true }\n#{code}")
+          false
         end
       end
     rescue EncodingError
@@ -317,13 +322,11 @@ class RubyLex
           if t[2] == '='
             in_oneliner_def = :BODY
           end
-        elsif t[3].allbits?(Ripper::EXPR_END)
+        else
           if in_oneliner_def == :BODY
             # one-liner method definition
             indent -= 1
           end
-          in_oneliner_def = nil
-        else
           in_oneliner_def = nil
         end
       end
@@ -376,13 +379,11 @@ class RubyLex
           if t[2] == '='
             in_oneliner_def = :BODY
           end
-        elsif t[3].allbits?(Ripper::EXPR_END)
+        else
           if in_oneliner_def == :BODY
             # one[-liner method definition
             depth_difference -= 1
           end
-          in_oneliner_def = nil
-        else
           in_oneliner_def = nil
         end
       end
@@ -451,7 +452,7 @@ class RubyLex
           if t[2] == '='
             in_oneliner_def = :BODY
           end
-        elsif t[3].allbits?(Ripper::EXPR_END)
+        else
           if in_oneliner_def == :BODY
             # one-liner method definition
             if is_first_printable_of_line
@@ -461,8 +462,6 @@ class RubyLex
               corresponding_token_depth = nil
             end
           end
-          in_oneliner_def = nil
-        else
           in_oneliner_def = nil
         end
       end

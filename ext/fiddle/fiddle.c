@@ -1,41 +1,11 @@
 #include <fiddle.h>
 
 VALUE mFiddle;
+VALUE rb_eFiddleDLError;
 VALUE rb_eFiddleError;
 
-#ifndef TYPE_SSIZE_T
-# if SIZEOF_SIZE_T == SIZEOF_INT
-#   define TYPE_SSIZE_T TYPE_INT
-# elif SIZEOF_SIZE_T == SIZEOF_LONG
-#   define TYPE_SSIZE_T TYPE_LONG
-# elif defined HAVE_LONG_LONG && SIZEOF_SIZE_T == SIZEOF_LONG_LONG
-#   define TYPE_SSIZE_T TYPE_LONG_LONG
-# endif
-#endif
-#define TYPE_SIZE_T (-1*SIGNEDNESS_OF_SIZE_T*TYPE_SSIZE_T)
-
-#ifndef TYPE_PTRDIFF_T
-# if SIZEOF_PTRDIFF_T == SIZEOF_INT
-#   define TYPE_PTRDIFF_T TYPE_INT
-# elif SIZEOF_PTRDIFF_T == SIZEOF_LONG
-#   define TYPE_PTRDIFF_T TYPE_LONG
-# elif defined HAVE_LONG_LONG && SIZEOF_PTRDIFF_T == SIZEOF_LONG_LONG
-#   define TYPE_PTRDIFF_T TYPE_LONG_LONG
-# endif
-#endif
-
-#ifndef TYPE_INTPTR_T
-# if SIZEOF_INTPTR_T == SIZEOF_INT
-#   define TYPE_INTPTR_T TYPE_INT
-# elif SIZEOF_INTPTR_T == SIZEOF_LONG
-#   define TYPE_INTPTR_T TYPE_LONG
-# elif defined HAVE_LONG_LONG && SIZEOF_INTPTR_T == SIZEOF_LONG_LONG
-#   define TYPE_INTPTR_T TYPE_LONG_LONG
-# endif
-#endif
-#define TYPE_UINTPTR_T (-TYPE_INTPTR_T)
-
 void Init_fiddle_pointer(void);
+void Init_fiddle_pinned(void);
 
 /*
  * call-seq: Fiddle.malloc(size)
@@ -47,9 +17,7 @@ static VALUE
 rb_fiddle_malloc(VALUE self, VALUE size)
 {
     void *ptr;
-    size_t sizet = NUM2SIZET(size);
-    ptr = (void*)ruby_xmalloc(sizet);
-    memset(ptr, 0, sizet);
+    ptr = (void*)ruby_xcalloc(1, NUM2SIZET(size));
     return PTR2NUM(ptr);
 }
 
@@ -165,11 +133,32 @@ Init_fiddle(void)
     mFiddle = rb_define_module("Fiddle");
 
     /*
+     * Document-class: Fiddle::Error
+     *
+     * Generic error class for Fiddle
+     */
+    rb_eFiddleError = rb_define_class_under(mFiddle, "Error", rb_eStandardError);
+
+    /*
+     * Ruby installed by RubyInstaller for Windows always require
+     * bundled Fiddle because ruby_installer/runtime/dll_directory.rb
+     * requires Fiddle. It's used by
+     * rubygems/defaults/operating_system.rb. It means that the
+     * bundled Fiddle is always required on initialization.
+     *
+     * We just remove existing Fiddle::DLError here to override
+     * the bundled Fiddle.
+     */
+    if (rb_const_defined(mFiddle, rb_intern("DLError"))) {
+        rb_const_remove(mFiddle, rb_intern("DLError"));
+    }
+
+    /*
      * Document-class: Fiddle::DLError
      *
      * standard dynamic load exception
      */
-    rb_eFiddleError = rb_define_class_under(mFiddle, "DLError", rb_eStandardError);
+    rb_eFiddleDLError = rb_define_class_under(mFiddle, "DLError", rb_eFiddleError);
 
     /* Document-const: TYPE_VOID
      *
@@ -234,6 +223,12 @@ Init_fiddle(void)
      */
     rb_define_const(mFiddle, "TYPE_VARIADIC",  INT2NUM(TYPE_VARIADIC));
 #endif
+
+    /* Document-const: TYPE_CONST_STRING
+     *
+     * C type - const char* ('\0' terminated const char*)
+     */
+    rb_define_const(mFiddle, "TYPE_CONST_STRING",  INT2NUM(TYPE_CONST_STRING));
 
     /* Document-const: TYPE_SIZE_T
      *
@@ -435,6 +430,12 @@ Init_fiddle(void)
      */
     rb_define_const(mFiddle, "SIZEOF_UINTPTR_T",  INT2NUM(sizeof(uintptr_t)));
 
+    /* Document-const: SIZEOF_CONST_STRING
+     *
+     * size of a const char*
+     */
+    rb_define_const(mFiddle, "SIZEOF_CONST_STRING", INT2NUM(sizeof(const char*)));
+
     /* Document-const: RUBY_FREE
      *
      * Address of the ruby_xfree() function
@@ -459,5 +460,6 @@ Init_fiddle(void)
     Init_fiddle_closure();
     Init_fiddle_handle();
     Init_fiddle_pointer();
+    Init_fiddle_pinned();
 }
 /* vim: set noet sws=4 sw=4: */

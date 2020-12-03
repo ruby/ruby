@@ -30,7 +30,8 @@
             && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
             && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
     )) {
-        if (false && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
             fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
         int sp_inc = (int)sp_inc_of_sendish(ci);

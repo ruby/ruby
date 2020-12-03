@@ -706,7 +706,7 @@ class Resolv
       end
 
       def sender_for(addr, msg)
-        @senders[[addr,msg.id]]
+        @senders.delete([addr,msg.id])
       end
 
       def close
@@ -2460,13 +2460,38 @@ class Resolv
       \z/x
 
     ##
+    # IPv6 link local address format fe80:b:c:d:e:f:g:h%em1
+    Regex_8HexLinkLocal = /\A
+      [Ff][Ee]80
+      (?::[0-9A-Fa-f]{1,4}){7}
+      %[0-9A-Za-z]+
+      \z/x
+
+    ##
+    # Compressed IPv6 link local address format fe80::b%em1
+
+    Regex_CompressedHexLinkLocal = /\A
+      [Ff][Ee]80:
+      (?:
+        ((?:[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4})*)?) ::
+        ((?:[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4})*)?)
+        |
+        :((?:[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4})*)?)
+      )?
+      :[0-9A-Fa-f]{1,4}%[0-9A-Za-z.]+
+      \z/x
+
+    ##
     # A composite IPv6 address Regexp.
 
     Regex = /
       (?:#{Regex_8Hex}) |
       (?:#{Regex_CompressedHex}) |
       (?:#{Regex_6Hex4Dec}) |
-      (?:#{Regex_CompressedHex4Dec})/x
+      (?:#{Regex_CompressedHex4Dec}) |
+      (?:#{Regex_8HexLinkLocal}) |
+      (?:#{Regex_CompressedHexLinkLocal})
+      /x
 
     ##
     # Creates a new IPv6 address from +arg+ which may be:

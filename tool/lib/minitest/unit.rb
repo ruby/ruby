@@ -1405,6 +1405,7 @@ module MiniTest
 
       def self.test_suites # :nodoc:
         suites = @@test_suites.keys
+
         case self.test_order
         when :random
           # shuffle test suites based on CRC32 of their names

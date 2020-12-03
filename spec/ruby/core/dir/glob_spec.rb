@@ -59,6 +59,8 @@ describe "Dir.glob" do
       deeply/nested/directory/
       deeply/nested/directory/structure/
       dir/
+      nested/
+      nested/.dotsubir/
       special/
       special/test{1}/
       subdir_one/
@@ -66,6 +68,18 @@ describe "Dir.glob" do
     ]
 
     Dir.glob('**/', File::FNM_DOTMATCH).sort.should == expected
+  end
+
+  it "recursively matches files and directories in nested dot subdirectory with 'nested/**/*' from the current directory and option File::FNM_DOTMATCH" do
+    expected = %w[
+      nested/.
+      nested/.dotsubir
+      nested/.dotsubir/.
+      nested/.dotsubir/.dotfile
+      nested/.dotsubir/nondotfile
+    ]
+
+    Dir.glob('nested/**/*', File::FNM_DOTMATCH).sort.should == expected.sort
   end
 
   # This is a separate case to check **/ coming after a constant
@@ -80,6 +94,8 @@ describe "Dir.glob" do
       ./deeply/nested/directory/
       ./deeply/nested/directory/structure/
       ./dir/
+      ./nested/
+      ./nested/.dotsubir/
       ./special/
       ./special/test{1}/
       ./subdir_one/

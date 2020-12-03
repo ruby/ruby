@@ -3854,10 +3854,7 @@ sum_iter_normalize_memo(struct enum_sum_memo *memo)
     memo->v = rb_fix_plus(LONG2FIX(memo->n), memo->v);
     memo->n = 0;
 
-    /* r can be an Integer when mathn is loaded */
     switch (TYPE(memo->r)) {
-      case T_FIXNUM:   memo->v = rb_fix_plus(memo->r, memo->v);      break;
-      case T_BIGNUM:   memo->v = rb_big_plus(memo->r, memo->v);      break;
       case T_RATIONAL: memo->v = rb_rational_plus(memo->r, memo->v); break;
       case T_UNDEF:    break;
       default:         UNREACHABLE; /* or ...? */
@@ -3903,7 +3900,7 @@ sum_iter_Kahan_Babuska(VALUE i, struct enum_sum_memo *memo)
 {
     /*
      * Kahan-Babuska balancing compensated summation algorithm
-     * See http://link.springer.com/article/10.1007/s00607-005-0139-x
+     * See https://link.springer.com/article/10.1007/s00607-005-0139-x
      */
     double x;
 
@@ -4107,13 +4104,7 @@ enum_sum(int argc, VALUE* argv, VALUE obj)
         if (memo.n != 0)
             memo.v = rb_fix_plus(LONG2FIX(memo.n), memo.v);
         if (memo.r != Qundef) {
-            /* r can be an Integer when mathn is loaded */
-            if (FIXNUM_P(memo.r))
-                memo.v = rb_fix_plus(memo.r, memo.v);
-            else if (RB_TYPE_P(memo.r, T_BIGNUM))
-                memo.v = rb_big_plus(memo.r, memo.v);
-            else
-                memo.v = rb_rational_plus(memo.r, memo.v);
+            memo.v = rb_rational_plus(memo.r, memo.v);
         }
         return memo.v;
     }

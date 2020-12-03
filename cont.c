@@ -22,13 +22,13 @@
 #include "gc.h"
 #include "internal.h"
 #include "internal/cont.h"
-#include "internal/mjit.h"
 #include "internal/proc.h"
 #include "internal/warnings.h"
+#include "internal/scheduler.h"
 #include "mjit.h"
 #include "vm_core.h"
 #include "id_table.h"
-#include "ractor.h"
+#include "ractor_core.h"
 
 static const int DEBUG = 0;
 
@@ -944,7 +944,8 @@ cont_free(void *ptr)
 
     RUBY_FREE_UNLESS_NULL(cont->saved_vm_stack.ptr);
 
-    if (mjit_enabled && cont->mjit_cont != NULL) {
+    if (mjit_enabled) {
+        VM_ASSERT(cont->mjit_cont != NULL);
         mjit_cont_free(cont->mjit_cont);
     }
     /* free rb_cont_t or rb_fiber_t */
@@ -1154,11 +1155,10 @@ VALUE rb_fiberptr_self(struct rb_fiber_struct *fiber)
     return fiber->cont.self;
 }
 
+// This is used for root_fiber because other fibers call cont_init_mjit_cont through cont_new.
 void
 rb_fiber_init_mjit_cont(struct rb_fiber_struct *fiber)
 {
-    // Currently this function is meant for root_fiber. Others go through cont_new.
-    // XXX: Is this mjit_cont `mjit_cont_free`d?
     cont_init_mjit_cont(&fiber->cont);
 }
 
@@ -1821,17 +1821,22 @@ static VALUE
 rb_fiber_initialize_kw(int argc, VALUE* argv, VALUE self, int kw_splat)
 {
     VALUE pool = Qnil;
-    VALUE blocking = Qtrue;
+    VALUE blocking = Qfalse;
 
     if (kw_splat != RB_NO_KEYWORDS) {
-      VALUE options = Qnil;
-      VALUE arguments[2] = {Qundef};
+        VALUE options = Qnil;
+        VALUE arguments[2] = {Qundef};
 
-      argc = rb_scan_args_kw(kw_splat, argc, argv, ":", &options);
-      rb_get_kwargs(options, fiber_initialize_keywords, 0, 2, arguments);
+        argc = rb_scan_args_kw(kw_splat, argc, argv, ":", &options);
+        rb_get_kwargs(options, fiber_initialize_keywords, 0, 2, arguments);
 
-      blocking = arguments[0];
-      pool = arguments[1];
+        if (arguments[0] != Qundef) {
+            blocking = arguments[0];
+        }
+
+        if (arguments[1] != Qundef) {
+            pool = arguments[1];
+        }
     }
 
     return fiber_initialize(self, rb_block_proc(), rb_fiber_pool_default(pool), RTEST(blocking));
@@ -1870,6 +1875,22 @@ static VALUE
 rb_f_fiber(int argc, VALUE *argv, VALUE obj)
 {
     return rb_f_fiber_kw(argc, argv, rb_keyword_given_p());
+}
+
+static VALUE
+rb_fiber_scheduler(VALUE klass)
+{
+    return rb_scheduler_get();
+}
+
+static VALUE
+rb_fiber_set_scheduler(VALUE klass, VALUE scheduler)
+{
+    // if (rb_scheduler_get() != Qnil) {
+    //     rb_raise(rb_eFiberError, "Scheduler is already defined!");
+    // }
+
+    return rb_scheduler_set(scheduler);
 }
 
 static void rb_fiber_terminate(rb_fiber_t *fiber, int need_interrupt);
@@ -1965,6 +1986,9 @@ rb_threadptr_root_fiber_setup(rb_thread_t *th)
     fiber->blocking = 1;
     fiber_status_set(fiber, FIBER_RESUMED); /* skip CREATED */
     th->ec = &fiber->cont.saved_ec;
+    // This skips mjit_cont_new for the initial thread because mjit_enabled is always false
+    // at this point. mjit_init calls rb_fiber_init_mjit_cont again for this root_fiber.
+    rb_fiber_init_mjit_cont(fiber);
 }
 
 void
@@ -2176,6 +2200,18 @@ VALUE
 rb_fiber_blocking_p(VALUE fiber)
 {
     return (fiber_ptr(fiber)->blocking == 0) ? Qfalse : Qtrue;
+}
+
+static VALUE
+rb_f_fiber_blocking_p(VALUE klass)
+{
+    rb_thread_t *thread = GET_THREAD();
+    unsigned blocking = thread->blocking;
+
+    if (blocking == 0)
+        return Qfalse;
+
+    return INT2NUM(blocking);
 }
 
 void
@@ -2593,6 +2629,10 @@ Init_Cont(void)
     rb_define_method(rb_cFiber, "backtrace_locations", rb_fiber_backtrace_locations, -1);
     rb_define_method(rb_cFiber, "to_s", fiber_to_s, 0);
     rb_define_alias(rb_cFiber, "inspect", "to_s");
+
+    rb_define_singleton_method(rb_cFiber, "blocking?", rb_f_fiber_blocking_p, 0);
+    rb_define_singleton_method(rb_cFiber, "scheduler", rb_fiber_scheduler, 0);
+    rb_define_singleton_method(rb_cFiber, "set_scheduler", rb_fiber_set_scheduler, 1);
 
     rb_define_singleton_method(rb_cFiber, "schedule", rb_f_fiber, -1);
     //rb_define_global_function("Fiber", rb_f_fiber, -1);

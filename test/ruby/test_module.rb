@@ -631,6 +631,16 @@ class TestModule < Test::Unit::TestCase
     assert_equal([m1, m2], m3.included_modules)
   end
 
+  def test_include_with_prepend
+    c = Class.new{def m; [:c] end}
+    p = Module.new{def m; [:p] + super end}
+    q = Module.new{def m; [:q] + super end; include p}
+    r = Module.new{def m; [:r] + super end; prepend q}
+    s = Module.new{def m; [:s] + super end; include r}
+    a = Class.new(c){def m; [:a] + super end; prepend p; include s}
+    assert_equal([:p, :a, :s, :q, :r, :c], a.new.m)
+  end
+
   def test_instance_methods
     assert_equal([:user, :user2], User.instance_methods(false).sort)
     assert_equal([:user, :user2, :mixin].sort, User.instance_methods(true).sort)

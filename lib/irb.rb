@@ -761,7 +761,7 @@ module IRB
             str = "%s...\e[0m" % lines.first
             multiline_p = false
           else
-            str.gsub!(/(\A.*?\n).*/m, "\\1...")
+            str = str.gsub(/(\A.*?\n).*/m, "\\1...")
           end
         else
           output_width = Reline::Unicode.calculate_width(@context.return_format % str, true)

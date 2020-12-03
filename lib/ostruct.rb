@@ -36,15 +36,15 @@
 # Hash keys with spaces or characters that could normally not be used for
 # method calls (e.g. <code>()[]*</code>) will not be immediately available
 # on the OpenStruct object as a method for retrieval or assignment, but can
-# still be reached through the Object#__send__ method or using [].
+# still be reached through the Object#send method or using [].
 #
 #   measurements = OpenStruct.new("length (in inches)" => 24)
 #   measurements[:"length (in inches)"]       # => 24
-#   measurements.__send__("length (in inches)")   # => 24
+#   measurements.send("length (in inches)")   # => 24
 #
 #   message = OpenStruct.new(:queued? => true)
 #   message.queued?                           # => true
-#   message.__send__("queued?=", false)
+#   message.send("queued?=", false)
 #   message.queued?                           # => false
 #
 # Removing the presence of an attribute requires the execution of the
@@ -107,7 +107,7 @@
 # For all these reasons, consider not using OpenStruct at all.
 #
 class OpenStruct
-  VERSION = "0.2.0"
+  VERSION = "0.3.1"
 
   #
   # Creates a new OpenStruct object.  By default, the resulting OpenStruct
@@ -203,7 +203,6 @@ class OpenStruct
   # Provides marshalling support for use by the Marshal library.
   #
   alias_method :marshal_load, :update_to_values! # :nodoc:
-  public :marshal_load
 
   #
   # Used internally to defined properties on the

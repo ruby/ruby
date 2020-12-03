@@ -18,7 +18,6 @@
 #include "internal/error.h"
 #include "internal/eval.h"
 #include "internal/inits.h"
-#include "internal/mjit.h"
 #include "internal/object.h"
 #include "internal/parse.h"
 #include "internal/proc.h"
@@ -35,7 +34,7 @@
 #include "vm_debug.h"
 #include "vm_exec.h"
 #include "vm_insnhelper.h"
-#include "ractor.h"
+#include "ractor_core.h"
 #include "vm_sync.h"
 
 #include "builtin.h"
@@ -1004,6 +1003,7 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
 
     VALUE *env_body = ZALLOC_N(VALUE, src_env->env_size); // fill with Qfalse
     VALUE *ep = &env_body[src_env->env_size - 2];
+    volatile VALUE prev_env = Qnil;
 
     if (read_only_variables) {
         for (int i=0; i<RARRAY_LENINT(read_only_variables); i++) {
@@ -1031,13 +1031,16 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
     if (!VM_ENV_LOCAL_P(src_ep)) {
         const VALUE *prev_ep = VM_ENV_PREV_EP(src_env->ep);
         const rb_env_t *new_prev_env = env_copy(prev_ep, read_only_variables);
+        prev_env = (VALUE)new_prev_env;
         ep[VM_ENV_DATA_INDEX_SPECVAL] = VM_GUARDED_PREV_EP(new_prev_env->ep);
     }
     else {
         ep[VM_ENV_DATA_INDEX_SPECVAL] = VM_BLOCK_HANDLER_NONE;
     }
 
-    return vm_env_new(ep, env_body, src_env->env_size, src_env->iseq);
+    const rb_env_t *copied_env = vm_env_new(ep, env_body, src_env->env_size, src_env->iseq);
+    RB_GC_GUARD(prev_env);
+    return copied_env;
 }
 
 static void
@@ -2597,7 +2600,7 @@ rb_vm_register_special_exception_str(enum ruby_special_exceptions sp, VALUE cls,
 }
 
 int
-rb_vm_add_root_module(ID id, VALUE module)
+rb_vm_add_root_module(VALUE module)
 {
     rb_vm_t *vm = GET_VM();
 
@@ -2783,12 +2786,11 @@ rb_execution_context_update(const rb_execution_context_t *ec)
             cfp->iseq = (rb_iseq_t *)rb_gc_location((VALUE)cfp->iseq);
             cfp->block_code = (void *)rb_gc_location((VALUE)cfp->block_code);
 
-            while (!VM_ENV_LOCAL_P(ep)) {
+            if (!VM_ENV_LOCAL_P(ep)) {
                 if (VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED)) {
                     VM_FORCE_WRITE(&ep[VM_ENV_DATA_INDEX_ENV], rb_gc_location(ep[VM_ENV_DATA_INDEX_ENV]));
                     VM_FORCE_WRITE(&ep[VM_ENV_DATA_INDEX_ME_CREF], rb_gc_location(ep[VM_ENV_DATA_INDEX_ME_CREF]));
                 }
-                ep = VM_ENV_PREV_EP(ep);
             }
 
             cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
@@ -2824,12 +2826,11 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
             rb_gc_mark_movable((VALUE)cfp->iseq);
             rb_gc_mark_movable((VALUE)cfp->block_code);
 
-            while (!VM_ENV_LOCAL_P(ep)) {
+            if (!VM_ENV_LOCAL_P(ep)) {
 		if (VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED)) {
                     rb_gc_mark_movable(ep[VM_ENV_DATA_INDEX_ENV]);
                     rb_gc_mark(ep[VM_ENV_DATA_INDEX_ME_CREF]);
 		}
-                ep = VM_ENV_PREV_EP(ep);
             }
 
 	    cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
@@ -3055,6 +3056,7 @@ th_init(rb_thread_t *th, VALUE self)
 #endif
     th->name = Qnil;
     th->report_on_exception = th->vm->thread_report_on_exception;
+    th->ext_config.ractor_safe = true;
 }
 
 static VALUE

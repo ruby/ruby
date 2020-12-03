@@ -29,6 +29,8 @@ VALUE rb_ary_tmp_new_fill(long capa);
 VALUE rb_ary_at(VALUE, VALUE);
 size_t rb_ary_memsize(VALUE);
 VALUE rb_to_array_type(VALUE obj);
+void rb_ary_cancel_sharing(VALUE ary);
+
 static inline VALUE rb_ary_entry_internal(VALUE ary, long offset);
 static inline bool ARY_PTR_USING_P(VALUE ary);
 static inline void RARY_TRANSIENT_SET(VALUE ary);

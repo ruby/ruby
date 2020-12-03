@@ -8,9 +8,11 @@ rake = File.realpath("../../.bundle/bin/rake", __FILE__)
 gem_dir = File.realpath('../../gems', __FILE__)
 exit_code = 0
 ruby = ENV['RUBY'] || RbConfig.ruby
+failed = []
 File.foreach("#{gem_dir}/bundled_gems") do |line|
   next if /^\s*(?:#|$)/ =~ line
   gem = line.split.first
+  next if ARGV.any? {|pat| !File.fnmatch?(pat, gem)}
   puts "\nTesting the #{gem} gem"
 
   test_command = "#{ruby} -C #{gem_dir}/src/#{gem} -Ilib #{rake} test"
@@ -43,9 +45,11 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
     if allowed_failures.include?(gem)
       puts "Ignoring test failures for #{gem} due to \$TEST_BUNDLED_GEMS_ALLOW_FAILURES"
     else
+      failed << gem
       exit_code = $?.exitstatus
     end
   end
 end
 
+puts "Failed gems: #{failed.join(', ')}" unless failed.empty?
 exit exit_code

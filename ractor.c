@@ -2,10 +2,11 @@
 
 #include "ruby/ruby.h"
 #include "ruby/thread.h"
+#include "ruby/ractor.h"
 #include "ruby/thread_native.h"
 #include "vm_core.h"
 #include "vm_sync.h"
-#include "ractor.h"
+#include "ractor_core.h"
 #include "internal/complex.h"
 #include "internal/error.h"
 #include "internal/hash.h"
@@ -14,12 +15,13 @@
 #include "variable.h"
 #include "gc.h"
 
-static VALUE rb_cRactor;
+VALUE rb_cRactor;
 static VALUE rb_eRactorError;
 static VALUE rb_eRactorRemoteError;
 static VALUE rb_eRactorMovedError;
 static VALUE rb_eRactorClosedError;
 static VALUE rb_cRactorMovedObject;
+VALUE rb_eRactorUnsafeError;
 
 VALUE
 rb_ractor_error_class(void)
@@ -38,7 +40,8 @@ static void
 ASSERT_ractor_unlocking(rb_ractor_t *r)
 {
 #if RACTOR_CHECK_MODE > 0
-    if (r->locked_by == GET_RACTOR()->self) {
+    // GET_EC is NULL in an MJIT worker
+    if (GET_EC() != NULL && r->locked_by == GET_RACTOR()->self) {
         rb_bug("recursive ractor locking");
     }
 #endif
@@ -48,7 +51,8 @@ static void
 ASSERT_ractor_locking(rb_ractor_t *r)
 {
 #if RACTOR_CHECK_MODE > 0
-    if (r->locked_by != GET_RACTOR()->self) {
+    // GET_EC is NULL in an MJIT worker
+    if (GET_EC() != NULL && r->locked_by != GET_RACTOR()->self) {
         rp(r->locked_by);
         rb_bug("ractor lock is not acquired.");
     }
@@ -64,7 +68,9 @@ ractor_lock(rb_ractor_t *r, const char *file, int line)
     rb_native_mutex_lock(&r->lock);
 
 #if RACTOR_CHECK_MODE > 0
-    r->locked_by = GET_RACTOR()->self;
+    if (GET_EC() != NULL) { // GET_EC is NULL in an MJIT worker
+        r->locked_by = GET_RACTOR()->self;
+    }
 #endif
 
     RUBY_DEBUG_LOG2(file, line, "locked  r:%u%s", r->id, GET_RACTOR() == r ? " (self)" : "");
@@ -176,6 +182,9 @@ ractor_queue_mark(struct rb_ractor_queue *rq)
     }
 }
 
+static void ractor_local_storage_mark(rb_ractor_t *r);
+static void ractor_local_storage_free(rb_ractor_t *r);
+
 static void
 ractor_mark(void *ptr)
 {
@@ -199,6 +208,8 @@ ractor_mark(void *ptr)
             rb_gc_mark(th->self);
         }
     }
+
+    ractor_local_storage_mark(r);
 }
 
 static void
@@ -221,6 +232,7 @@ ractor_free(void *ptr)
     rb_native_cond_destroy(&r->wait.cond);
     ractor_queue_free(&r->incoming_queue);
     ractor_waiting_list_free(&r->taking_ractors);
+    ractor_local_storage_free(r);
     ruby_xfree(r);
 }
 
@@ -820,7 +832,7 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yield
             wait_status |= wait_taking;
         }
         else {
-            rb_raise(rb_eArgError, "It should be ractor objects");
+            rb_raise(rb_eArgError, "should be a ractor object, but %"PRIsVALUE, v);
         }
     }
     rs = NULL;
@@ -1288,6 +1300,10 @@ ractor_create(rb_execution_context_t *ec, VALUE self, VALUE loc, VALUE name, VAL
 static void
 ractor_yield_atexit(rb_execution_context_t *ec, rb_ractor_t *cr, VALUE v, bool exc)
 {
+    if (cr->outgoing_port_closed) {
+        return;
+    }
+
     ASSERT_ractor_unlocking(cr);
 
     struct rb_ractor_basket basket;
@@ -1591,7 +1607,7 @@ rb_ractor_terminate_interrupt_main_thread(rb_ractor_t *r)
     }
 }
 
-void rb_thread_terminate_all(void); // thread.c
+void rb_thread_terminate_all(rb_thread_t *th); // thread.c
 
 static void
 ractor_terminal_interrupt_all(rb_vm_t *vm)
@@ -1620,7 +1636,7 @@ rb_ractor_terminate_all(void)
         ractor_terminal_interrupt_all(vm); // kill all ractors
         RB_VM_UNLOCK();
     }
-    rb_thread_terminate_all(); // kill other threads in main-ractor and wait
+    rb_thread_terminate_all(GET_THREAD()); // kill other threads in main-ractor and wait
 
     RB_VM_LOCK();
     {
@@ -1659,6 +1675,7 @@ Init_Ractor(void)
     rb_eRactorRemoteError = rb_define_class_under(rb_cRactor, "RemoteError", rb_eRactorError);
     rb_eRactorMovedError  = rb_define_class_under(rb_cRactor, "MovedError",  rb_eRactorError);
     rb_eRactorClosedError = rb_define_class_under(rb_cRactor, "ClosedError", rb_eStopIteration);
+    rb_eRactorUnsafeError = rb_define_class_under(rb_cRactor, "UnsafeError", rb_eRactorError);
 
     rb_cRactorMovedObject = rb_define_class_under(rb_cRactor, "MovedObject", rb_cBasicObject);
     rb_undef_alloc_func(rb_cRactorMovedObject);
@@ -1776,6 +1793,9 @@ enum obj_traverse_iterator_result {
 
 typedef enum obj_traverse_iterator_result (*rb_obj_traverse_enter_func)(VALUE obj);
 typedef enum obj_traverse_iterator_result (*rb_obj_traverse_leave_func)(VALUE obj);
+typedef enum obj_traverse_iterator_result (*rb_obj_traverse_final_func)(VALUE obj);
+
+static enum obj_traverse_iterator_result null_leave(VALUE obj);
 
 struct obj_traverse_data {
     rb_obj_traverse_enter_func enter_func;
@@ -1950,12 +1970,29 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
     }
 }
 
+struct rb_obj_traverse_final_data {
+    rb_obj_traverse_final_func final_func;
+    int stopped;
+};
+
+static int
+obj_traverse_final_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    struct rb_obj_traverse_final_data *data = (void *)arg;
+    if (data->final_func(key)) {
+        data->stopped = 1;
+        return ST_STOP;
+    }
+    return ST_CONTINUE;
+}
+
 // 0: traverse all
 // 1: stopped
 static int
 rb_obj_traverse(VALUE obj,
                 rb_obj_traverse_enter_func enter_func,
-                rb_obj_traverse_leave_func leave_func)
+                rb_obj_traverse_leave_func leave_func,
+                rb_obj_traverse_final_func final_func)
 {
     struct obj_traverse_data data = {
         .enter_func = enter_func,
@@ -1963,7 +2000,13 @@ rb_obj_traverse(VALUE obj,
         .rec = NULL,
     };
 
-    return obj_traverse_i(obj, &data);
+    if (obj_traverse_i(obj, &data)) return 1;
+    if (final_func && data.rec) {
+        struct rb_obj_traverse_final_data f = {final_func, 0};
+        st_foreach(data.rec, obj_traverse_final_i, (st_data_t)&f);
+        return f.stopped;
+    }
+    return 0;
 }
 
 static int
@@ -2034,7 +2077,7 @@ rb_ractor_make_shareable(VALUE obj)
 {
     rb_obj_traverse(obj,
                     make_shareable_check_shareable,
-                    mark_shareable);
+                    null_leave, mark_shareable);
     return obj;
 }
 
@@ -2063,7 +2106,7 @@ MJIT_FUNC_EXPORTED bool
 rb_ractor_shareable_p_continue(VALUE obj)
 {
     if (rb_obj_traverse(obj,
-                        shareable_p_enter,
+                        shareable_p_enter, null_leave,
                         mark_shareable)) {
         return false;
     }
@@ -2084,20 +2127,20 @@ reset_belonging_enter(VALUE obj)
         return traverse_cont;
     }
 }
+#endif
 
 static enum obj_traverse_iterator_result
 null_leave(VALUE obj)
 {
     return traverse_cont;
 }
-#endif
 
 static VALUE
 ractor_reset_belonging(VALUE obj)
 {
 #if RACTOR_CHECK_MODE > 0
     rp(obj);
-    rb_obj_traverse(obj, reset_belonging_enter, null_leave);
+    rb_obj_traverse(obj, reset_belonging_enter, null_leave, NULL);
 #endif
     return obj;
 }
@@ -2181,6 +2224,24 @@ void rb_hash_transient_heap_evacuate(VALUE hash, int promote);
 void rb_struct_transient_heap_evacuate(VALUE st, int promote);
 #endif
 
+static void
+obj_refer_only_shareables_p_i(VALUE obj, void *ptr)
+{
+    int *pcnt = (int *)ptr;
+
+    if (!rb_ractor_shareable_p(obj)) {
+        pcnt++;
+    }
+}
+
+static int
+obj_refer_only_shareables_p(VALUE obj)
+{
+    int cnt = 0;
+    rb_objspace_reachable_objects_from(obj, obj_refer_only_shareables_p_i, &cnt);
+    return cnt == 0;
+}
+
 static int
 obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
 {
@@ -2237,7 +2298,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
       case T_MATCH:
         break;
       case T_STRING:
-        rb_str_modify(obj);
+        rb_str_make_independent(obj);
         break;
 
       case T_OBJECT:
@@ -2259,7 +2320,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
 
       case T_ARRAY:
         {
-            rb_ary_modify(obj);
+            rb_ary_cancel_sharing(obj);
 #if USE_TRANSIENT_HEAP
             if (data->move) rb_ary_transient_heap_evacuate(obj, TRUE);
 #endif
@@ -2329,6 +2390,14 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
         break;
 
       case T_DATA:
+        if (!data->move && obj_refer_only_shareables_p(obj)) {
+            break;
+        }
+        else {
+            rb_raise(rb_eRactorError, "can not %s %"PRIsVALUE" object.",
+                     data->move ? "move" : "copy", rb_class_of(obj));
+        }
+
       case T_IMEMO:
         // not supported yet
         return 1;
@@ -2474,7 +2543,8 @@ copy_leave(VALUE obj, struct obj_traverse_replace_data *data)
     return traverse_cont;
 }
 
-static VALUE ractor_copy(VALUE obj)
+static VALUE
+ractor_copy(VALUE obj)
 {
     VALUE val = rb_obj_traverse_replace(obj, copy_enter, copy_leave, false);
     if (val != Qundef) {
@@ -2482,6 +2552,202 @@ static VALUE ractor_copy(VALUE obj)
     }
     else {
         rb_raise(rb_eRactorError, "can not copy the object");
+    }
+}
+
+// Ractor local storage
+
+struct rb_ractor_local_key_struct {
+    const struct rb_ractor_local_storage_type *type;
+    void *main_cache;
+};
+
+static struct freed_ractor_local_keys_struct {
+    int cnt;
+    int capa;
+    rb_ractor_local_key_t *keys;
+} freed_ractor_local_keys;
+
+static int
+ractor_local_storage_mark_i(st_data_t key, st_data_t val, st_data_t dmy)
+{
+    struct rb_ractor_local_key_struct *k = (struct rb_ractor_local_key_struct *)key;
+    if (k->type->mark) (*k->type->mark)((void *)val);
+    return ST_CONTINUE;
+}
+
+static void
+ractor_local_storage_mark(rb_ractor_t *r)
+{
+    if (r->local_storage) {
+        st_foreach(r->local_storage, ractor_local_storage_mark_i, 0);
+
+        for (int i=0; i<freed_ractor_local_keys.cnt; i++) {
+            rb_ractor_local_key_t key = freed_ractor_local_keys.keys[i];
+            st_data_t val;
+            if (st_delete(r->local_storage, (st_data_t *)&key, &val) &&
+                key->type->free) {
+                (*key->type->free)((void *)val);
+            }
+        }
+    }
+}
+
+static int
+ractor_local_storage_free_i(st_data_t key, st_data_t val, st_data_t dmy)
+{
+    struct rb_ractor_local_key_struct *k = (struct rb_ractor_local_key_struct *)key;
+    if (k->type->free) (*k->type->free)((void *)val);
+    return ST_CONTINUE;
+}
+
+static void
+ractor_local_storage_free(rb_ractor_t *r)
+{
+    if (r->local_storage) {
+        st_foreach(r->local_storage, ractor_local_storage_free_i, 0);
+        st_free_table(r->local_storage);
+    }
+}
+
+static void
+rb_ractor_local_storage_value_mark(void *ptr)
+{
+    rb_gc_mark((VALUE)ptr);
+}
+
+static const struct rb_ractor_local_storage_type ractor_local_storage_type_null = {
+    NULL,
+    NULL,
+};
+
+const struct rb_ractor_local_storage_type rb_ractor_local_storage_type_free = {
+    NULL,
+    ruby_xfree,
+};
+
+static const struct rb_ractor_local_storage_type ractor_local_storage_type_value = {
+    rb_ractor_local_storage_value_mark,
+    NULL,
+};
+
+rb_ractor_local_key_t
+rb_ractor_local_storage_ptr_newkey(const struct rb_ractor_local_storage_type *type)
+{
+    rb_ractor_local_key_t key = ALLOC(struct rb_ractor_local_key_struct);
+    key->type = type ? type : &ractor_local_storage_type_null;
+    key->main_cache = (void *)Qundef;
+    return key;
+}
+
+rb_ractor_local_key_t
+rb_ractor_local_storage_value_newkey(void)
+{
+    return rb_ractor_local_storage_ptr_newkey(&ractor_local_storage_type_value);
+}
+
+void
+rb_ractor_local_storage_delkey(rb_ractor_local_key_t key)
+{
+    RB_VM_LOCK_ENTER();
+    {
+        if (freed_ractor_local_keys.cnt == freed_ractor_local_keys.capa) {
+            freed_ractor_local_keys.capa = freed_ractor_local_keys.capa ? freed_ractor_local_keys.capa * 2 : 4;
+            REALLOC_N(freed_ractor_local_keys.keys, rb_ractor_local_key_t, freed_ractor_local_keys.capa);
+        }
+        freed_ractor_local_keys.keys[freed_ractor_local_keys.cnt++] = key;
+    }
+    RB_VM_LOCK_LEAVE();
+}
+
+static bool
+ractor_local_ref(rb_ractor_local_key_t key, void **pret)
+{
+    if (rb_ractor_main_p()) {
+        if ((VALUE)key->main_cache != Qundef) {
+            *pret = key->main_cache;
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    else {
+        rb_ractor_t *cr = GET_RACTOR();
+
+        if (cr->local_storage && st_lookup(cr->local_storage, (st_data_t)key, (st_data_t *)pret)) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+}
+
+static void
+ractor_local_set(rb_ractor_local_key_t key, void *ptr)
+{
+    rb_ractor_t *cr = GET_RACTOR();
+
+    if (cr->local_storage == NULL) {
+        cr->local_storage = st_init_numtable();
+    }
+
+    st_insert(cr->local_storage, (st_data_t)key, (st_data_t)ptr);
+
+    if (rb_ractor_main_p()) {
+        key->main_cache = ptr;
+    }
+}
+
+VALUE
+rb_ractor_local_storage_value(rb_ractor_local_key_t key)
+{
+    VALUE val;
+    if (ractor_local_ref(key, (void **)&val)) {
+        return val;
+    }
+    else {
+        return Qnil;
+    }
+}
+
+void
+rb_ractor_local_storage_value_set(rb_ractor_local_key_t key, VALUE val)
+{
+    ractor_local_set(key, (void *)val);
+}
+
+void *
+rb_ractor_local_storage_ptr(rb_ractor_local_key_t key)
+{
+    void *ret;
+    if (ractor_local_ref(key, &ret)) {
+        return ret;
+    }
+    else {
+        return NULL;
+    }
+}
+
+void
+rb_ractor_local_storage_ptr_set(rb_ractor_local_key_t key, void *ptr)
+{
+    ractor_local_set(key, ptr);
+}
+
+#define DEFAULT_KEYS_CAPA 0x10
+
+void
+rb_ractor_finish_marking(void)
+{
+    for (int i=0; i<freed_ractor_local_keys.cnt; i++) {
+        ruby_xfree(freed_ractor_local_keys.keys[i]);
+    }
+    freed_ractor_local_keys.cnt = 0;
+    if (freed_ractor_local_keys.capa > DEFAULT_KEYS_CAPA) {
+        freed_ractor_local_keys.capa = DEFAULT_KEYS_CAPA;
+        REALLOC_N(freed_ractor_local_keys.keys, rb_ractor_local_key_t, DEFAULT_KEYS_CAPA);
     }
 }
 

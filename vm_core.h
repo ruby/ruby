@@ -649,6 +649,10 @@ typedef struct rb_vm_struct {
     const struct rb_builtin_function *builtin_function_table;
     int builtin_inline_index;
 
+#if USE_VM_CLOCK
+    uint32_t clock;
+#endif
+
     /* params */
     struct { /* size in byte */
 	size_t thread_vm_stack_size;
@@ -845,6 +849,9 @@ struct rb_execution_context_struct {
     /* interrupt flags */
     rb_atomic_t interrupt_flag;
     rb_atomic_t interrupt_mask; /* size should match flag */
+#if USE_VM_CLOCK
+    uint32_t checked_clock;
+#endif
 
     rb_fiber_t *fiber_ptr;
     struct rb_thread_struct *thread_ptr;
@@ -904,6 +911,10 @@ void rb_ec_initialize_vm_stack(rb_execution_context_t *ec, VALUE *stack, size_t 
 // Clear (set to `NULL`) the vm_stack pointer.
 // @param ec the execution context to update.
 void rb_ec_clear_vm_stack(rb_execution_context_t *ec);
+
+struct rb_ext_config {
+    bool ractor_safe;
+};
 
 typedef struct rb_ractor_struct rb_ractor_t;
 
@@ -992,6 +1003,8 @@ typedef struct rb_thread_struct {
 
     /* misc */
     VALUE name;
+
+    struct rb_ext_config ext_config;
 
 #ifdef USE_SIGALTSTACK
     void *altstack;
@@ -1845,7 +1858,20 @@ enum {
 #define RUBY_VM_SET_VM_BARRIER_INTERRUPT(ec)    ATOMIC_OR((ec)->interrupt_flag, VM_BARRIER_INTERRUPT_MASK)
 #define RUBY_VM_INTERRUPTED(ec)			((ec)->interrupt_flag & ~(ec)->interrupt_mask & \
 						 (PENDING_INTERRUPT_MASK|TRAP_INTERRUPT_MASK))
-#define RUBY_VM_INTERRUPTED_ANY(ec)		((ec)->interrupt_flag & ~(ec)->interrupt_mask)
+
+static inline bool
+RUBY_VM_INTERRUPTED_ANY(rb_execution_context_t *ec)
+{
+#if USE_VM_CLOCK
+    uint32_t current_clock = rb_ec_vm_ptr(ec)->clock;
+
+    if (current_clock != ec->checked_clock) {
+        ec->checked_clock = current_clock;
+        RUBY_VM_SET_TIMER_INTERRUPT(ec);
+    }
+#endif
+    return ec->interrupt_flag & ~(ec)->interrupt_mask;
+}
 
 VALUE rb_exc_set_backtrace(VALUE exc, VALUE bt);
 int rb_signal_buff_size(void);
@@ -1973,6 +1999,8 @@ extern void rb_clear_coverages(void);
 extern void rb_reset_coverages(void);
 
 void rb_postponed_job_flush(rb_vm_t *vm);
+
+extern VALUE rb_eRactorUnsafeError; // ractor.c
 
 RUBY_SYMBOL_EXPORT_END
 

@@ -248,9 +248,9 @@ HELP_EXTRA_TASKS = \
 
 extract-gems: $(HAVE_BASERUBY:yes=update-gems)
 
-BUNDLED_GEMS := $(shell sed '/^[ 	]*\#/d;/^[ 	]*$$/d;s/[ 	][ 	]*/-/;s/[ 	].*//' $(srcdir)/gems/bundled_gems)
+bundled-gems := $(shell sed '/^[ 	]*\#/d;/^[ 	]*$$/d;s/[ 	][ 	]*/-/;s/[ 	].*//' $(srcdir)/gems/bundled_gems)
 
-update-gems: | $(patsubst %,gems/%.gem,$(BUNDLED_GEMS))
+update-gems: | $(patsubst %,gems/%.gem,$(bundled-gems))
 
 test-bundler-precheck: | $(srcdir)/.bundle/cache
 
@@ -269,7 +269,7 @@ gems/%.gem:
 	    -e 'File.unlink(*old) and' \
 	    -e 'FileUtils.rm_rf(old.map{'"|n|"'n.chomp(".gem")})'
 
-extract-gems: | $(patsubst %,.bundle/gems/%,$(BUNDLED_GEMS))
+extract-gems: | $(patsubst %,.bundle/gems/%,$(bundled-gems))
 
 .bundle/gems/%: gems/%.gem | .bundle/gems
 	$(ECHO) Extracting bundle gem $*...
@@ -383,3 +383,14 @@ update-deps:
 	$(RMDIR) $(dir $(deps_dir))
 	git --git-dir=$(GIT_DIR) merge --no-edit --ff-only $(update_deps)
 	git --git-dir=$(GIT_DIR) branch --delete $(update_deps)
+
+# order-only-prerequisites doesn't work for $(RUBYSPEC_CAPIEXT)
+# because the same named directory exists in the source tree.
+$(RUBYSPEC_CAPIEXT)/%.$(DLEXT): $(srcdir)/$(RUBYSPEC_CAPIEXT)/%.c $(srcdir)/$(RUBYSPEC_CAPIEXT)/rubyspec.h $(RUBY_H_INCLUDES) $(LIBRUBY_SO)
+	$(ECHO) building $@
+	$(Q) $(MAKEDIRS) $(@D)
+	$(Q) $(DLDSHARED) $(XDLDFLAGS) $(XLDFLAGS) $(ARCH_FLAG) $(ARCH_FLAG) $(CFLAGS) $(INCFLAGS) $(CPPFLAGS) $(OUTFLAG)$@ $< $(LIBRUBY_SO)
+	$(Q) $(RMALL) $@.*
+
+rubyspec-capiext: $(patsubst %.c,$(RUBYSPEC_CAPIEXT)/%.$(DLEXT),$(notdir $(wildcard $(srcdir)/$(RUBYSPEC_CAPIEXT)/*.c)))
+	@ $(NULLCMD)

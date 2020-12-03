@@ -44,11 +44,19 @@ Gem::Specification.new do |spec|
     "NEWS.md",
     "README.md",
   ]
+  recipes_dir = File.join(doc_dir, "csv", "recipes")
+  if File.exist?(recipes_dir)
+    Dir.chdir(recipes_dir) do
+      Dir.glob("**/*.rdoc").each do |recipe_file|
+        rdoc_files << "doc/csv/recipes/#{recipe_file}"
+      end
+    end
+  end
   spec.extra_rdoc_files = rdoc_files
 
   spec.required_ruby_version = ">= 2.5.0"
 
-  spec.add_dependency "stringio", ">= 0.1.3"
+  # spec.add_dependency "stringio", ">= 0.1.3"
   spec.add_development_dependency "bundler"
   spec.add_development_dependency "rake"
   spec.add_development_dependency "benchmark_driver"

@@ -31,9 +31,12 @@ else
       $extso << dll
       $cleanfiles << "$(topdir)/#{dll}" << "$(ZIMPLIB)"
       zmk = "\t$(MAKE) -f $(ZMKFILE) TOP=$(ZSRC)"
+      zopts = []
       if $nmake
         zmkfile = "$(ZSRC)/win32/Makefile.msc"
         m = "#{zsrc}/win32/Makefile.msc"
+        # zopts << "USE_ASM=1"
+        zopts << "ARCH=#{RbConfig::CONFIG['target_cpu']}"
       else
         zmkfile = "$(ZSRC)/win32/Makefile.gcc"
         m = "#{zsrc}/win32/Makefile.gcc"
@@ -55,9 +58,10 @@ else
       addconf.push(
         "ZMKFILE = #{zmkfile}\n",
         "ZIMPLIB = #{zimplib}\n",
+        "ZOPTS = #{zopts.join(' ')}\n",
         "$(TARGET_SO): $(ZIMPLIB)\n",
         "$(ZIMPLIB):\n",
-        "#{zmk} $@\n",
+        "#{zmk} $(ZOPTS) $@\n",
         "install-so: $(topdir)/#{dll}",
         "$(topdir)/#{dll}: $(ZIMPLIB)\n",
         "\t$(Q) $(COPY) #{dll} $(@D)\n",

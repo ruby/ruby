@@ -405,19 +405,6 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
-  def test_each_codepoint_enumerator
-    make_tempfile {|t|
-      a = ""
-      b = ""
-      File.open(t, 'rt') {|f|
-        a = f.each_codepoint.take(4).pack('U*')
-        b = f.read(8)
-      }
-      assert_equal("foo\n", a)
-      assert_equal("bar\nbaz\n", b)
-    }
-  end
-
   def test_rubydev33072
     t = make_tempfile
     path = t.path
@@ -1819,6 +1806,61 @@ class TestIO < Test::Unit::TestCase
       a = []
       r.each_char {|c| a << c }
       assert_equal(%w(f o o) + ["\n"] + %w(b a r) + ["\n"] + %w(b a z) + ["\n"], a)
+    end)
+  end
+
+  def test_each_line
+    pipe(proc do |w|
+      w.puts "foo"
+      w.puts "bar"
+      w.puts "baz"
+      w.close
+    end, proc do |r|
+      e = nil
+      assert_warn('') {
+        e = r.each_line
+      }
+      assert_equal("foo\n", e.next)
+      assert_equal("bar\n", e.next)
+      assert_equal("baz\n", e.next)
+      assert_raise(StopIteration) { e.next }
+    end)
+  end
+
+  def test_each_byte2
+    pipe(proc do |w|
+      w.binmode
+      w.puts "foo"
+      w.puts "bar"
+      w.puts "baz"
+      w.close
+    end, proc do |r|
+      e = nil
+      assert_warn('') {
+        e = r.each_byte
+      }
+      (%w(f o o) + ["\n"] + %w(b a r) + ["\n"] + %w(b a z) + ["\n"]).each do |c|
+        assert_equal(c.ord, e.next)
+      end
+      assert_raise(StopIteration) { e.next }
+    end)
+  end
+
+  def test_each_char2
+    pipe(proc do |w|
+      w.puts "foo"
+      w.puts "bar"
+      w.puts "baz"
+      w.close
+    end, proc do |r|
+      e = nil
+      assert_warn('') {
+        e = r.each_char
+      }
+      (%w(f o o) + ["\n"] + %w(b a r) + ["\n"] + %w(b a z) + ["\n"]).each do |c|
+        assert_equal(c, e.next)
+      end
+      assert_raise(StopIteration) { e.next }
     end)
   end
 

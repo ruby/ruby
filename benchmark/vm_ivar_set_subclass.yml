@@ -1,0 +1,17 @@
+prelude: |
+  class A
+    def initialize
+      @a = nil
+      @b = nil
+      @c = nil
+      @d = nil
+      @e = nil
+    end
+  end
+  class B < A; end
+  class C < A; end
+benchmark:
+  vm_ivar_init: |
+    B.new
+    C.new
+loop_count: 3000000

@@ -17,6 +17,10 @@ class Ripper
   # Parses +src+ and create S-exp tree.
   # Returns more readable tree rather than Ripper.sexp_raw.
   # This method is mainly for developer use.
+  # The +filename+ argument is mostly ignored.
+  # By default, this method does not handle syntax errors in +src+,
+  # returning +nil+ in such cases. Use the +raise_errors+ keyword
+  # to raise a SyntaxError for an error in +src+.
   #
   #   require 'ripper'
   #   require 'pp'
@@ -28,15 +32,25 @@ class Ripper
   #           [:paren, [:params, [[:@ident, "a", [1, 6]]], nil, nil, nil, nil, nil, nil]],
   #           [:bodystmt, [[:var_ref, [:@kw, "nil", [1, 9]]]], nil, nil, nil]]]]
   #
-  def Ripper.sexp(src, filename = '-', lineno = 1)
+  def Ripper.sexp(src, filename = '-', lineno = 1, raise_errors: false)
     builder = SexpBuilderPP.new(src, filename, lineno)
     sexp = builder.parse
-    sexp unless builder.error?
+    if builder.error?
+      if raise_errors
+        raise SyntaxError, builder.error
+      end
+    else
+      sexp
+    end
   end
 
   # [EXPERIMENTAL]
   # Parses +src+ and create S-exp tree.
   # This method is mainly for developer use.
+  # The +filename+ argument is mostly ignored.
+  # By default, this method does not handle syntax errors in +src+,
+  # returning +nil+ in such cases. Use the +raise_errors+ keyword
+  # to raise a SyntaxError for an error in +src+.
   #
   #   require 'ripper'
   #   require 'pp'
@@ -54,13 +68,21 @@ class Ripper
   #             nil,
   #             nil]]]]
   #
-  def Ripper.sexp_raw(src, filename = '-', lineno = 1)
+  def Ripper.sexp_raw(src, filename = '-', lineno = 1, raise_errors: false)
     builder = SexpBuilder.new(src, filename, lineno)
     sexp = builder.parse
-    sexp unless builder.error?
+    if builder.error?
+      if raise_errors
+        raise SyntaxError, builder.error
+      end
+    else
+      sexp
+    end
   end
 
   class SexpBuilder < ::Ripper   #:nodoc:
+    attr_reader :error
+
     private
 
     def dedent_element(e, width)
@@ -107,6 +129,13 @@ class Ripper
         end
       End
     end
+
+    def on_error(mesg)
+      @error = mesg
+    end
+    remove_method :on_parse_error
+    alias on_parse_error on_error
+    alias compile_error on_error
   end
 
   class SexpBuilderPP < SexpBuilder #:nodoc:

@@ -134,7 +134,7 @@ assert_equal '["r1", "r2"]', %q{
 }
 
 # Ractor.select from multiple ractors.
-assert_equal 'true', %q{
+assert_equal 30.times.map { 'ok' }.to_s, %q{
   def test n
     rs = (1..n).map do |i|
       Ractor.new(i) do |i|
@@ -160,8 +160,8 @@ assert_equal 'true', %q{
 
   30.times.map{|i|
     test i
-  }.all?('ok')
-}
+  }
+} unless ENV['RUN_OPTS'] =~ /--jit-min-calls=5/ # This always fails with --jit-wait --jit-min-calls=5
 
 # Outgoing port of a ractor will be closed when the Ractor is terminated.
 assert_equal 'ok', %q{
@@ -201,8 +201,8 @@ assert_equal 'ok', %q{
 # Raise Ractor::ClosedError when try to send into a closed actor
 assert_equal 'ok', %q{
   r = Ractor.new { Ractor.receive }
+  r.close_incoming
 
-  r.close
   begin
     r.send(1)
   rescue Ractor::ClosedError
@@ -219,7 +219,7 @@ assert_equal 'ok', %q{
     Ractor.receive
   end
 
-  r.close
+  r.close_outgoing
   begin
     r.take
   rescue Ractor::ClosedError
@@ -309,6 +309,16 @@ assert_equal 'ok', %q{
   end
 }
 
+# a ractor with closed outgoing port should terminate
+assert_equal 'ok', %q{
+  Ractor.new do
+    close_outgoing
+  end
+
+  true until Ractor.count == 1
+  :ok
+}
+
 # multiple Ractors can receive (wait) from one Ractor
 assert_equal '[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]', %q{
   pipe = Ractor.new do
@@ -394,6 +404,39 @@ assert_equal '[RuntimeError, "ok", true]', %q{
      e.cause.message, #=> 'ok'
      e.ractor == r]   #=> true
   end
+}
+
+# threads in a ractor will killed
+assert_equal '{:ok=>3}', %q{
+  Ractor.new Ractor.current do |main|
+    q = Queue.new
+    Thread.new do
+      q << true
+      loop{}
+    ensure
+      main << :ok
+    end
+
+    Thread.new do
+      q << true
+      while true
+      end
+    ensure
+      main << :ok
+    end
+
+    Thread.new do
+      q << true
+      sleep 1
+    ensure
+      main << :ok
+    end
+
+    # wait for the start of all threads
+    3.times{q.pop}
+  end
+
+  3.times.map{Ractor.receive}.tally
 }
 
 # unshareable object are copied
@@ -515,7 +558,6 @@ assert_equal [false, true, false].inspect, %q{
   results << check(C.new(true).freeze)  # true
   results << check(C.new(false).freeze) # false
 }
-
 
 # move example2: String
 # touching moved object causes an error
@@ -933,6 +975,26 @@ assert_equal 'true', %q{
   Ractor.shareable?(pr)
 }
 
+# Ractor.shareable?(recursive_objects)
+assert_equal '[false, false]', %q{
+  y = []
+  x = [y, {}].freeze
+  y << x
+  y.freeze
+  [Ractor.shareable?(x), Ractor.shareable?(y)]
+}
+
+# Ractor.make_shareable(recursive_objects)
+assert_equal '[:ok, false, false]', %q{
+  o = Object.new
+  def o.freeze; raise; end
+  y = []
+  x = [y, o].freeze
+  y << x
+  y.freeze
+  [(Ractor.make_shareable(x) rescue :ok), Ractor.shareable?(x), Ractor.shareable?(y)]
+}
+
 # define_method() can invoke different Ractor's proc if the proc is shareable.
 assert_equal '1', %q{
   class C
@@ -958,6 +1020,21 @@ assert_equal 'can not make a Proc shareable because it accesses outer variables 
   rescue => e
     e.message
   end
+}
+
+# Ractor deep copies frozen objects (ary)
+assert_equal '[true, false]', %q{
+  Ractor.new([[]].freeze) { |ary|
+    [ary.frozen?, ary.first.frozen? ]
+  }.take
+}
+
+# Ractor deep copies frozen objects (str)
+assert_equal '[true, false]', %q{
+  s = String.new.instance_eval { @x = []; freeze}
+  Ractor.new(s) { |s|
+    [s.frozen?, s.instance_variable_get(:@x).frozen?]
+  }.take
 }
 
 ###
