@@ -1230,6 +1230,7 @@ rb_ractor_main_alloc(void)
     r->id = ++ractor_last_id;
     r->loc = Qnil;
     r->name = Qnil;
+    r->self = Qnil;
     ruby_single_main_ractor = r;
 
     return r;
@@ -2154,7 +2155,6 @@ static VALUE
 ractor_reset_belonging(VALUE obj)
 {
 #if RACTOR_CHECK_MODE > 0
-    rp(obj);
     rb_obj_traverse(obj, reset_belonging_enter, null_leave, NULL);
 #endif
     return obj;
