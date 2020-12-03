@@ -2784,14 +2784,14 @@ str_encode_associate(VALUE str, int encidx)
 
 /*
  *  call-seq:
- *     str.encode!(encoding [, options] )   -> str
- *     str.encode!(dst_encoding, src_encoding [, options] )   -> str
+ *     str.encode!(encoding, **options)   -> str
+ *     str.encode!(dst_encoding, src_encoding, **options)   -> str
  *
  *  The first form transcodes the contents of <i>str</i> from
  *  str.encoding to +encoding+.
  *  The second form transcodes the contents of <i>str</i> from
  *  src_encoding to dst_encoding.
- *  The options Hash gives details for conversion. See String#encode
+ *  The +options+ keyword arguments give details for conversion. See String#encode
  *  for details.
  *  Returns the string even if no changes were made.
  */
@@ -2820,9 +2820,9 @@ static VALUE encoded_dup(VALUE newstr, VALUE str, int encidx);
 
 /*
  *  call-seq:
- *     str.encode(encoding [, options] )   -> str
- *     str.encode(dst_encoding, src_encoding [, options] )   -> str
- *     str.encode([options])   -> str
+ *     str.encode(encoding, **options)   -> str
+ *     str.encode(dst_encoding, src_encoding, **options)   -> str
+ *     str.encode(**options)   -> str
  *
  *  The first form returns a copy of +str+ transcoded
  *  to encoding +encoding+.
@@ -2838,8 +2838,8 @@ static VALUE encoded_dup(VALUE newstr, VALUE str, int encidx);
  *  in the source encoding. The last form by default does not raise
  *  exceptions but uses replacement strings.
  *
- *  The +options+ Hash gives details for conversion and can have the following
- *  keys:
+ *  The +options+ keyword arguments give details for conversion.
+ *  The arguments are:
  *
  *  :invalid ::
  *    If the value is +:replace+, #encode replaces invalid byte sequences in
