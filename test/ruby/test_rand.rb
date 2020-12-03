@@ -336,6 +336,18 @@ class TestRand < Test::Unit::TestCase
     }
   end
 
+  def test_default
+    r1 = Random::DEFAULT.dup
+    r2 = Random::DEFAULT.dup
+    3.times do
+      x0 = rand
+      x1 = r1.rand
+      x2 = r2.rand
+      assert_equal(x0, x1)
+      assert_equal(x0, x2)
+    end
+  end
+
   def test_marshal
     bug3656 = '[ruby-core:31622]'
     assert_raise(TypeError, bug3656) {
