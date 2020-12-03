@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.summary       = %q{Provides a framework for message digest libraries.}
   spec.description   = %q{Provides a framework for message digest libraries.}
   spec.homepage      = "https://github.com/ruby/digest"
-  spec.license       = "BSD-2-Clause"
+  spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   spec.files         = [
     ".gitignore", ".travis.yml", "Gemfile", "LICENSE.txt", "README.md", "Rakefile", "bin/console", "bin/setup",
