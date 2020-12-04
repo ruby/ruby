@@ -34,7 +34,7 @@ class TestFiber < Test::Unit::TestCase
   end
 
   def test_many_fibers
-    skip 'This is unstable on GitHub Actions --jit-wait. TODO: debug it' if RubyVM::MJIT.enabled?
+    skip 'This is unstable on GitHub Actions --jit-wait. TODO: debug it' if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
     max = 10_000
     assert_equal(max, max.times{
       Fiber.new{}

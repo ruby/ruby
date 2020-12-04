@@ -485,7 +485,7 @@ class TestSocket < Test::Unit::TestCase
         end while IO.select([r], nil, nil, 0.1).nil?
         n
       end
-      timeout = (RubyVM::MJIT.enabled? ? 120 : 30) # for --jit-wait
+      timeout = (defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? ? 120 : 30) # for --jit-wait
       assert_equal([[s1],[],[]], IO.select([s1], nil, nil, timeout))
       msg, _, _, stamp = s1.recvmsg
       assert_equal("a", msg)

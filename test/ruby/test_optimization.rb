@@ -452,7 +452,7 @@ class TestRubyOptimization < Test::Unit::TestCase
   end
 
   def test_tailcall_not_to_grow_stack
-    skip 'currently JIT-ed code always creates a new stack frame' if RubyVM::MJIT.enabled?
+    skip 'currently JIT-ed code always creates a new stack frame' if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
     bug16161 = '[ruby-core:94881]'
 
     tailcall("#{<<-"begin;"}\n#{<<~"end;"}")

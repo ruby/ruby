@@ -607,7 +607,7 @@ class TestIO < Test::Unit::TestCase
 
   if have_nonblock?
     def test_copy_stream_no_busy_wait
-      skip "MJIT has busy wait on GC. This sometimes fails with --jit." if RubyVM::MJIT.enabled?
+      skip "MJIT has busy wait on GC. This sometimes fails with --jit." if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
       skip "multiple threads already active" if Thread.list.size > 1
 
       msg = 'r58534 [ruby-core:80969] [Backport #13533]'
@@ -1562,7 +1562,7 @@ class TestIO < Test::Unit::TestCase
   end if have_nonblock?
 
   def test_read_nonblock_no_exceptions
-    skip '[ruby-core:90895] MJIT worker may leave fd open in a forked child' if RubyVM::MJIT.enabled? # TODO: consider acquiring GVL from MJIT worker.
+    skip '[ruby-core:90895] MJIT worker may leave fd open in a forked child' if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # TODO: consider acquiring GVL from MJIT worker.
     with_pipe {|r, w|
       assert_equal :wait_readable, r.read_nonblock(4096, exception: false)
       w.puts "HI!"
@@ -2210,7 +2210,7 @@ class TestIO < Test::Unit::TestCase
   def test_autoclose_true_closed_by_finalizer
     # http://ci.rvm.jp/results/trunk-mjit@silicon-docker/1465760
     # http://ci.rvm.jp/results/trunk-mjit@silicon-docker/1469765
-    skip 'this randomly fails with MJIT' if RubyVM::MJIT.enabled?
+    skip 'this randomly fails with MJIT' if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
 
     feature2250 = '[ruby-core:26222]'
     pre = 'ft2250'
