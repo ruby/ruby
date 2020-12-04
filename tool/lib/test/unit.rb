@@ -8,7 +8,9 @@ require 'test/unit/assertions'
 require_relative '../envutil'
 require_relative '../colorize'
 require 'test/unit/testcase'
+require 'fileutils'
 require 'optparse'
+require 'time'
 
 # See Test::Unit
 module Test
@@ -345,6 +347,11 @@ module Test
         warn "or, a bug of test/unit/parallel.rb. try again without -j"
         warn "option."
         warn ""
+        if File.exist?('core')
+          core_path = "/tmp/core.#{Time.now.utc.iso8601}"
+          warn "A core file is found. Saving it at: #{core_path.dump}"
+          FileUtils.mv('core', core_path)
+        end
         STDERR.flush
         exit c
       end
