@@ -1233,26 +1233,49 @@ class Matrix
   #   #  => 67 96
   #   #     48 99
   #
-  def **(other)
-    case other
+  def **(exp)
+    case exp
     when Integer
-      x = self
-      if other <= 0
-        x = self.inverse
-        return self.class.identity(self.column_count) if other == 0
-        other = -other
-      end
-      z = nil
-      loop do
-        z = z ? z * x : x if other[0] == 1
-        return z if (other >>= 1).zero?
-        x *= x
+      case
+      when exp == 0
+        _make_sure_it_is_invertible = inverse
+        self.class.identity(column_count)
+      when exp < 0
+        inverse.power_int(-exp)
+      else
+        power_int(exp)
       end
     when Numeric
       v, d, v_inv = eigensystem
-      v * self.class.diagonal(*d.each(:diagonal).map{|e| e ** other}) * v_inv
+      v * self.class.diagonal(*d.each(:diagonal).map{|e| e ** exp}) * v_inv
     else
-      raise ErrOperationNotDefined, ["**", self.class, other.class]
+      raise ErrOperationNotDefined, ["**", self.class, exp.class]
+    end
+  end
+
+  protected def power_int(exp)
+    # assumes `exp` is an Integer > 0
+    #
+    # Previous algorithm:
+    #   build M**2, M**4 = (M**2)**2, M**8, ... and multiplying those you need
+    #   e.g. M**0b1011 = M**11 = M * M**2 * M**8
+    #                              ^  ^
+    #   (highlighted the 2 out of 5 multiplications involving `M * x`)
+    #
+    # Current algorithm has same number of multiplications but with lower exponents:
+    #    M**11 = M * (M * M**4)**2
+    #              ^    ^  ^
+    #   (highlighted the 3 out of 5 multiplications involving `M * x`)
+    #
+    # This should be faster for all (non nil-potent) matrices.
+    case
+    when exp == 1
+      self
+    when exp.odd?
+      self * power_int(exp - 1)
+    else
+      sqrt = power_int(exp / 2)
+      sqrt * sqrt
     end
   end
 
