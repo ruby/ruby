@@ -80,15 +80,15 @@ memory_view_parse_item_format(VALUE mod, VALUE format)
     const char *err = NULL;
 
     rb_memory_view_item_component_t *members;
-    ssize_t n_members;
+    size_t n_members;
     ssize_t item_size = rb_memory_view_parse_item_format(c_str, &members, &n_members, &err);
 
     VALUE result = rb_ary_new_capa(3);
     rb_ary_push(result, SSIZET2NUM(item_size));
 
     if (!err) {
-        VALUE ary = rb_ary_new_capa(n_members);
-        ssize_t i;
+        VALUE ary = rb_ary_new_capa((long)n_members);
+        size_t i;
         for (i = 0; i < n_members; ++i) {
             VALUE member = rb_hash_new();
             rb_hash_aset(member, sym_format, rb_str_new(&members[i].format, 1));
@@ -231,6 +231,26 @@ memory_view_ref_count_while_exporting(VALUE mod, VALUE obj, VALUE n)
 }
 
 static VALUE
+memory_view_extract_item_members(VALUE mod, VALUE str, VALUE format)
+{
+    StringValue(str);
+    StringValue(format);
+
+    rb_memory_view_item_component_t *members;
+    size_t n_members;
+    const char *err = NULL;
+    (void)rb_memory_view_parse_item_format(RSTRING_PTR(format), &members, &n_members, &err);
+    if (err != NULL) {
+        rb_raise(rb_eArgError, "Unable to parse item format");
+    }
+
+    VALUE item = rb_memory_view_extract_item_members(RSTRING_PTR(str), members, n_members);
+    xfree(members);
+
+    return item;
+}
+
+static VALUE
 expstr_initialize(VALUE obj, VALUE s)
 {
     if (!NIL_P(s)) {
@@ -346,6 +366,7 @@ Init_memory_view(void)
     rb_define_module_function(mMemoryViewTestUtils, "get_memory_view_info", memory_view_get_memory_view_info, 1);
     rb_define_module_function(mMemoryViewTestUtils, "fill_contiguous_strides", memory_view_fill_contiguous_strides, 4);
     rb_define_module_function(mMemoryViewTestUtils, "ref_count_while_exporting", memory_view_ref_count_while_exporting, 2);
+    rb_define_module_function(mMemoryViewTestUtils, "extract_item_members", memory_view_extract_item_members, 2);
 
     VALUE cExportableString = rb_define_class_under(mMemoryViewTestUtils, "ExportableString", rb_cObject);
     rb_define_method(cExportableString, "initialize", expstr_initialize, 1);

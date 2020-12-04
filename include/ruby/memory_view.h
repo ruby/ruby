@@ -128,9 +128,10 @@ RBIMPL_ATTR_NOALIAS()
 int rb_memory_view_init_as_byte_array(rb_memory_view_t *view, VALUE obj, void *data, const ssize_t len, const bool readonly);
 ssize_t rb_memory_view_parse_item_format(const char *format,
                                          rb_memory_view_item_component_t **members,
-                                         ssize_t *n_members, const char **err);
+                                         size_t *n_members, const char **err);
 ssize_t rb_memory_view_item_size_from_format(const char *format, const char **err);
 void *rb_memory_view_get_item_pointer(rb_memory_view_t *view, const ssize_t *indices);
+VALUE rb_memory_view_extract_item_members(const void *ptr, const rb_memory_view_item_component_t *members, size_t n_members);
 
 int rb_memory_view_available_p(VALUE obj);
 int rb_memory_view_get(VALUE obj, rb_memory_view_t* memory_view, int flags);
