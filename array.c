@@ -5941,8 +5941,7 @@ rb_ary_uniq(VALUE ary)
     VALUE hash, uniq;
 
     if (RARRAY_LEN(ary) <= 1) {
-        hash = 0;
-        uniq = rb_ary_dup(ary);
+        return rb_ary_dup(ary);
     }
     else if (rb_block_given_p()) {
 	hash = ary_make_hash_by(ary);
@@ -5952,9 +5951,7 @@ rb_ary_uniq(VALUE ary)
 	hash = ary_make_hash(ary);
 	uniq = rb_hash_values(hash);
     }
-    if (hash) {
-        ary_recycle_hash(hash);
-    }
+    ary_recycle_hash(hash);
 
     return uniq;
 }
