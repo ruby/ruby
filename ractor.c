@@ -14,6 +14,7 @@
 #include "internal/struct.h"
 #include "variable.h"
 #include "gc.h"
+#include "transient_heap.h"
 
 VALUE rb_cRactor;
 static VALUE rb_eRactorError;
@@ -1127,13 +1128,30 @@ ractor_next_id(void)
 }
 
 static void
-vm_insert_ractor0(rb_vm_t *vm, rb_ractor_t *r)
+vm_insert_ractor0(rb_vm_t *vm, rb_ractor_t *r, bool single_ractor_mode)
 {
     RUBY_DEBUG_LOG("r:%u ractor.cnt:%u++", r->id, vm->ractor.cnt);
-    VM_ASSERT(!rb_multi_ractor_p() || RB_VM_LOCKED_P());
+    VM_ASSERT(single_ractor_mode || RB_VM_LOCKED_P());
 
     list_add_tail(&vm->ractor.set, &r->vmlr_node);
     vm->ractor.cnt++;
+}
+
+static void
+cancel_single_ractor_mode(void)
+{
+    // enable multi-ractor mode
+    RUBY_DEBUG_LOG("enable multi-ractor mode", 0);
+
+    rb_gc_start();
+    rb_transient_heap_evacuate();
+
+    if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_EXPERIMENTAL)) {
+        rb_warn("Ractor is experimental, and the behavior may change in future versions of Ruby! "
+                "Also there are many implementation issues.");
+    }
+
+    ruby_single_main_ractor = NULL;
 }
 
 static void
@@ -1144,29 +1162,22 @@ vm_insert_ractor(rb_vm_t *vm, rb_ractor_t *r)
     if (rb_multi_ractor_p()) {
         RB_VM_LOCK();
         {
-            vm_insert_ractor0(vm, r);
+            vm_insert_ractor0(vm, r, false);
             vm_ractor_blocking_cnt_inc(vm, r, __FILE__, __LINE__);
         }
         RB_VM_UNLOCK();
     }
     else {
-        vm_insert_ractor0(vm, r);
-
-        if (vm->ractor.cnt == 1) {
+        if (vm->ractor.cnt == 0) {
             // main ractor
+            vm_insert_ractor0(vm, r, true);
             ractor_status_set(r, ractor_blocking);
             ractor_status_set(r, ractor_running);
         }
         else {
+            cancel_single_ractor_mode();
+            vm_insert_ractor0(vm, r, true);
             vm_ractor_blocking_cnt_inc(vm, r, __FILE__, __LINE__);
-
-            // enable multi-ractor mode
-            RUBY_DEBUG_LOG("enable multi-ractor mode", 0);
-            ruby_single_main_ractor = NULL;
-
-            if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_EXPERIMENTAL)) {
-                rb_warn("Ractor is experimental, and the behavior may change in future versions of Ruby! Also there are many implementation issues.");
-            }
         }
     }
 }
