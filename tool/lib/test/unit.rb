@@ -337,7 +337,7 @@ module Test
         return unless @options[:parallel]
         return if @interrupt
         flush_job_tokens
-        warn e.full_message if e
+        warn e if e
         real_file = worker.real_file and warn "running file: #{real_file}"
         @need_quit = true
         warn ""
