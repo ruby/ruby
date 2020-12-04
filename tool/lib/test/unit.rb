@@ -348,7 +348,13 @@ module Test
         if File.exist?('core')
           require 'fileutils'
           require 'time'
-          core_path = "/tmp/core.#{Time.now.utc.iso8601}"
+          Dir.glob('/tmp/test-unit-core.*').each do |f|
+            if Time.now - File.mtime(f) > 7 * 24 * 60 * 60 # 7 days
+              warn "Deleting an old core file: #{f}"
+              FileUtils.rm(f)
+            end
+          end
+          core_path = "/tmp/test-unit-core.#{Time.now.utc.iso8601}"
           warn "A core file is found. Saving it at: #{core_path.dump}"
           FileUtils.mv('core', core_path)
         end
