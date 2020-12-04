@@ -8,9 +8,7 @@ require 'test/unit/assertions'
 require_relative '../envutil'
 require_relative '../colorize'
 require 'test/unit/testcase'
-require 'fileutils'
 require 'optparse'
-require 'time'
 
 # See Test::Unit
 module Test
@@ -348,6 +346,8 @@ module Test
         warn "option."
         warn ""
         if File.exist?('core')
+          require 'fileutils'
+          require 'time'
           core_path = "/tmp/core.#{Time.now.utc.iso8601}"
           warn "A core file is found. Saving it at: #{core_path.dump}"
           FileUtils.mv('core', core_path)
