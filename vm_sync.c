@@ -41,6 +41,8 @@ rb_vm_locked_p(void)
 static void
 vm_lock_enter(rb_ractor_t *cr, rb_vm_t *vm, bool locked, unsigned int *lev APPEND_LOCATION_ARGS)
 {
+    RUBY_DEBUG_LOG2(file, line, "start locked:%d", locked);
+
     if (locked) {
         ASSERT_vm_locking();
     }
