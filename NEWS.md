@@ -163,7 +163,7 @@ Outstanding ones only.
     * Fiber#backtrace & Fiber#backtrace_locations provide per-fiber backtrace.
       [[Feature #16815]]
 
-    * The limitation of Fiber#transfer is relaxed. [Bug #17221]
+    * The limitation of Fiber#transfer is relaxed. [[Bug #17221]]
 
 * GC
 
@@ -619,6 +619,6 @@ end
 [Feature #17134]: https://bugs.ruby-lang.org/issues/17134
 [Feature #17136]: https://bugs.ruby-lang.org/issues/17136
 [Feature #17176]: https://bugs.ruby-lang.org/issues/17176
-[Feature #17260]: https://bugs.ruby-lang.org/issues/17260
+[Bug #17221]:     https://bugs.ruby-lang.org/issues/17221
 [Feature #17260]: https://bugs.ruby-lang.org/issues/17260
 [GH-2991]:        https://github.com/ruby/ruby/pull/2991
