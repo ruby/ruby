@@ -905,8 +905,8 @@ vm_proc_create_from_captured(VALUE klass,
     VM_ASSERT(VM_EP_IN_HEAP_P(GET_EC(), captured->ep));
 
     /* copy block */
-    RB_OBJ_WRITE(procval, &proc->block.as.captured.self, captured->self);
     RB_OBJ_WRITE(procval, &proc->block.as.captured.code.val, captured->code.val);
+    RB_OBJ_WRITE(procval, &proc->block.as.captured.self, captured->self);
     rb_vm_block_ep_update(procval, &proc->block, captured->ep);
 
     vm_block_type_set(&proc->block, block_type);
