@@ -424,7 +424,7 @@ ruby_debug_log(const char *file, int line, const char *func_name, const char *fm
     }
 
     // ractor information
-    if (GET_VM()->ractor.cnt > 1) {
+    if (ruby_single_main_ractor == NULL) {
         rb_ractor_t *cr = GET_RACTOR();
         if (r && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
             r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tr:#%u/%u",
