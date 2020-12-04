@@ -448,6 +448,12 @@ class TestMatrix < Test::Unit::TestCase
     assert_equal(Matrix[[67,96],[48,99]], Matrix[[7,6],[3,9]] ** 2)
     assert_equal(Matrix.I(5), Matrix.I(5) ** -1)
     assert_raise(Matrix::ErrOperationNotDefined) { Matrix.I(5) ** Object.new }
+
+    m = Matrix[[0,2],[1,0]]
+    exp = 0b11101000
+    assert_equal(Matrix.scalar(2, 1 << (exp/2)), m ** exp)
+    exp = 0b11101001
+    assert_equal(Matrix[[0, 2 << (exp/2)], [1 << (exp/2), 0]], m ** exp)
   end
 
   def test_det
