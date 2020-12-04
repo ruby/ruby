@@ -4484,7 +4484,7 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
                             objspace->rcompactor.total_moved++;
                             gc_move(objspace, (VALUE)p, dest);
                             gc_pin(objspace, (VALUE)p);
-                            heap->compact_cursor_index = i + 1;
+                            heap->compact_cursor_index = i;
                             if (from_freelist) {
                                 FL_SET((VALUE)p, FL_FROM_FREELIST);
                             }
