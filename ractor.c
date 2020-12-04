@@ -802,6 +802,7 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yield
     bool interrupted = false;
     enum ractor_wait_status wait_status = 0;
     bool yield_p = (yielded_value != Qundef) ? true : false;
+    const int rs_len = alen;
 
     struct ractor_select_action {
         enum ractor_select_action_type {
@@ -840,8 +841,8 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yield
   restart:
 
     if (yield_p) {
-        actions[i].type = ractor_select_action_yield;
-        actions[i].v = Qundef;
+        actions[rs_len].type = ractor_select_action_yield;
+        actions[rs_len].v = Qundef;
         wait_status |= wait_yielding;
         alen++;
 
