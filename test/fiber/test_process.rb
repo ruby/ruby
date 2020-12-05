@@ -9,7 +9,8 @@ class TestFiberProcess < Test::Unit::TestCase
       Fiber.set_scheduler scheduler
 
       Fiber.schedule do
-        system("sleep 1")
+        system("true")
+        assert_predicate $?, :success?
       end
     end.join
   end
