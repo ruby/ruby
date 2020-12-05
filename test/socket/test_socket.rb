@@ -108,7 +108,7 @@ class TestSocket < Test::Unit::TestCase
       require "socket"
       Socket.getaddrinfo("localhost", nil)
       pid = fork { Socket.getaddrinfo("localhost", nil) }
-      assert_equal pid, Timeout.timeout(30) { Process.wait(pid) }
+      assert_equal pid, Timeout.timeout(3) { Process.wait(pid) }
     end;
   end
 
