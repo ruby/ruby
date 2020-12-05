@@ -1,17 +1,20 @@
 require_relative '../../../spec_helper'
-require 'set'
 
-describe "SortedSet#subtract" do
-  before :each do
-    @set = SortedSet["a", "b", "c"]
-  end
+ruby_version_is ""..."3.0" do
+  require 'set'
 
-  it "deletes any elements contained in other and returns self" do
-    @set.subtract(SortedSet["b", "c"]).should == @set
-    @set.should == SortedSet["a"]
-  end
+  describe "SortedSet#subtract" do
+    before :each do
+      @set = SortedSet["a", "b", "c"]
+    end
 
-  it "accepts any enumerable as other" do
-    @set.subtract(["c"]).should == SortedSet["a", "b"]
+    it "deletes any elements contained in other and returns self" do
+      @set.subtract(SortedSet["b", "c"]).should == @set
+      @set.should == SortedSet["a"]
+    end
+
+    it "accepts any enumerable as other" do
+      @set.subtract(["c"]).should == SortedSet["a", "b"]
+    end
   end
 end

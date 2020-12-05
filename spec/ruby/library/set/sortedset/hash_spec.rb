@@ -1,13 +1,16 @@
 require_relative '../../../spec_helper'
-require 'set'
 
-describe "SortedSet#hash" do
-  it "is static" do
-    SortedSet[].hash.should == SortedSet[].hash
-    SortedSet[1, 2, 3].hash.should == SortedSet[1, 2, 3].hash
-    SortedSet["a", "b", "c"].hash.should == SortedSet["c", "b", "a"].hash
+ruby_version_is ""..."3.0" do
+  require 'set'
 
-    SortedSet[].hash.should_not == SortedSet[1, 2, 3].hash
-    SortedSet[1, 2, 3].hash.should_not == SortedSet["a", "b", "c"].hash
+  describe "SortedSet#hash" do
+    it "is static" do
+      SortedSet[].hash.should == SortedSet[].hash
+      SortedSet[1, 2, 3].hash.should == SortedSet[1, 2, 3].hash
+      SortedSet["a", "b", "c"].hash.should == SortedSet["c", "b", "a"].hash
+
+      SortedSet[].hash.should_not == SortedSet[1, 2, 3].hash
+      SortedSet[1, 2, 3].hash.should_not == SortedSet["a", "b", "c"].hash
+    end
   end
 end
