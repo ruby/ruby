@@ -5402,7 +5402,7 @@ rb_thread_backtrace_locations_m(int argc, VALUE *argv, VALUE thval)
 }
 
 void
-Init_Thread_Mutex()
+Init_Thread_Mutex(void)
 {
     rb_thread_t *th = GET_THREAD();
 

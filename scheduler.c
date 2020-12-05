@@ -39,7 +39,7 @@ Init_Scheduler(void)
 }
 
 VALUE
-rb_scheduler_get()
+rb_scheduler_get(void)
 {
     rb_thread_t *thread = GET_THREAD();
     VM_ASSERT(thread);
@@ -76,7 +76,7 @@ rb_threadptr_scheduler_current(rb_thread_t *thread)
 }
 
 VALUE
-rb_scheduler_current()
+rb_scheduler_current(void)
 {
     return rb_threadptr_scheduler_current(GET_THREAD());
 }

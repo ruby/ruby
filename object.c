@@ -1133,7 +1133,7 @@ rb_class_search_ancestor(VALUE cl, VALUE c)
  */
 
 static VALUE
-rb_obj_dummy()
+rb_obj_dummy(void)
 {
     return Qnil;
 }

@@ -17,7 +17,7 @@
 #if defined(__sparc)
 __attribute__((noinline))
 // https://marc.info/?l=linux-sparc&m=131914569320660&w=2
-static void coroutine_flush_register_windows() {
+static void coroutine_flush_register_windows(void) {
     __asm__
 #ifdef __GNUC__
     __volatile__
@@ -34,11 +34,11 @@ static void coroutine_flush_register_windows() {
     ;
 }
 #else
-static void coroutine_flush_register_windows() {}
+static void coroutine_flush_register_windows(void) {}
 #endif
 
 __attribute__((noinline))
-void *coroutine_stack_pointer() {
+void *coroutine_stack_pointer(void) {
     return (void*)(
         (char*)__builtin_frame_address(0)
     );
