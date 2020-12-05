@@ -12,7 +12,14 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
     require 'fileutils'
     require 'tempfile'
 
-    tmp_dest = Dir.mktmpdir(".gem.", ".")
+    # SOURCE_EPOCH_DATE is used for reproducible builds. Assume that we are
+    # in a build sandbox when it's set.
+    if ENV['SOURCE_EPOCH_DATE']
+      tmp_dest = Time.at(ENV['SOURCE_EPOCH_DATE'].to_i).strftime(".gem.%Y%m%d")
+      Dir.mkdir(tmp_dest)
+    else
+      tmp_dest = Dir.mktmpdir(".gem.", ".")
+    end
 
     # Some versions of `mktmpdir` return absolute paths, which will break make
     # if the paths contain spaces. However, on Ruby 1.9.x on Windows, relative

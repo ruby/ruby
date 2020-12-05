@@ -2260,7 +2260,7 @@ RULES
     end
     $srcs = srcs
 
-    hdrs = Dir[File.join(srcdir, "*.{#{HDR_EXT.join(%q{,})}}")]
+    hdrs = Dir[File.join(srcdir, "*.{#{HDR_EXT.join(%q{,})}}")].sort
 
     target = nil if $objs.empty?
 
