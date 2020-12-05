@@ -90,6 +90,13 @@ class Scheduler
   def timeout_after(duration, klass, *arguments, &block)
   end
 
+  # Resolve hostname to an array of IP addresses.
+  # This hook is optional.
+  # @parameter hostname [String] Example: "www.ruby-lang.org".
+  # @returns [Array] An array of IPv4 and/or IPv6 address strings that the hostname resolves to.
+  def address_resolve(hostname)
+  end
+
   # Block the calling fiber.
   # @parameter blocker [Object] What we are waiting on, informational only.
   # @parameter timeout [Numeric | Nil] The amount of time to wait for in seconds.

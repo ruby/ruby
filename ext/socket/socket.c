@@ -1279,34 +1279,10 @@ sock_s_getnameinfo(int argc, VALUE *argv, VALUE _)
 	    rb_raise(rb_eArgError, "array size should be 3 or 4, %ld given",
 		     RARRAY_LEN(sa));
 	}
-	/* host */
-	if (NIL_P(host)) {
-	    hptr = NULL;
-	}
-	else {
-	    strncpy(hbuf, StringValueCStr(host), sizeof(hbuf));
-	    hbuf[sizeof(hbuf) - 1] = '\0';
-	    hptr = hbuf;
-	}
-	/* port */
-	if (NIL_P(port)) {
-	    strcpy(pbuf, "0");
-	    pptr = NULL;
-	}
-	else if (FIXNUM_P(port)) {
-	    snprintf(pbuf, sizeof(pbuf), "%ld", NUM2LONG(port));
-	    pptr = pbuf;
-	}
-	else {
-	    strncpy(pbuf, StringValueCStr(port), sizeof(pbuf));
-	    pbuf[sizeof(pbuf) - 1] = '\0';
-	    pptr = pbuf;
-	}
 	hints.ai_socktype = (fl & NI_DGRAM) ? SOCK_DGRAM : SOCK_STREAM;
 	/* af */
         hints.ai_family = NIL_P(af) ? PF_UNSPEC : rsock_family_arg(af);
-	error = rb_getaddrinfo(hptr, pptr, &hints, &res);
-	if (error) goto error_exit_addr;
+	res = rsock_getaddrinfo(host, port, &hints, 0);
 	sap = res->ai->ai_addr;
         salen = res->ai->ai_addrlen;
     }
@@ -1335,12 +1311,6 @@ sock_s_getnameinfo(int argc, VALUE *argv, VALUE _)
 	rb_freeaddrinfo(res);
     }
     return rb_assoc_new(rb_str_new2(hbuf), rb_str_new2(pbuf));
-
-  error_exit_addr:
-    saved_errno = errno;
-    if (res) rb_freeaddrinfo(res);
-    errno = saved_errno;
-    rsock_raise_socket_error("getaddrinfo", error);
 
   error_exit_name:
     saved_errno = errno;

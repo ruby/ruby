@@ -139,6 +139,7 @@
 #include "ruby/thread.h"
 #include "ruby/util.h"
 #include "sockport.h"
+#include "ruby/fiber/scheduler.h"
 
 #ifndef HAVE_TYPE_SOCKLEN_T
 typedef int socklen_t;
@@ -313,7 +314,6 @@ struct rb_addrinfo {
   struct addrinfo *ai;
   int allocated_by_malloc;
 };
-int rb_getaddrinfo(const char *node, const char *service, const struct addrinfo *hints, struct rb_addrinfo **res);
 void rb_freeaddrinfo(struct rb_addrinfo *ai);
 VALUE rsock_freeaddrinfo(VALUE arg);
 int rb_getnameinfo(const struct sockaddr *sa, socklen_t salen, char *host, size_t hostlen, char *serv, size_t servlen, int flags);
