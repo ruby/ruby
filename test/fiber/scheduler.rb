@@ -121,7 +121,7 @@ class Scheduler
     # This is a very simple way to implement a non-blocking wait:
     Thread.new do
       Process::Status.wait(pid, flags)
-    end.join
+    end.value
   end
 
   def io_wait(io, events, duration)

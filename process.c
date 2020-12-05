@@ -4657,9 +4657,13 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
     /* may be different from waitpid_state.pid on exec failure */
     rb_pid_t pid = rb_execarg_spawn(execarg_obj, 0, 0);
 
+    rb_last_status_clear();
+
     if (pid > 0) {
         VALUE status = rb_process_status_wait(pid, 0);
         struct rb_process_status *data = RTYPEDDATA_DATA(status);
+
+        GET_THREAD()->last_status = status;
 
         // fork failure:
         if (data->error != 0) {
