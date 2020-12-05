@@ -71,6 +71,8 @@ class Ractor
   #   #   and r is :yield
   #
   def self.select(*ractors, yield_value: yield_unspecified = true, move: false)
+    raise ArgumentError, 'specify at least one ractor or `yield_value`' if yield_unspecified && ractors.empty?
+
     __builtin_cstmt! %q{
       const VALUE *rs = RARRAY_CONST_PTR_TRANSIENT(ractors);
       VALUE rv;

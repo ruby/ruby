@@ -163,6 +163,15 @@ assert_equal 30.times.map { 'ok' }.to_s, %q{
   }
 } unless ENV['RUN_OPTS'] =~ /--jit-min-calls=5/ # This always fails with --jit-wait --jit-min-calls=5
 
+# Exception for empty select
+assert_match /specify at least one ractor/, %q{
+  begin
+    Ractor.select
+  rescue ArgumentError => e
+    e.message
+  end
+}
+
 # Outgoing port of a ractor will be closed when the Ractor is terminated.
 assert_equal 'ok', %q{
   r = Ractor.new do
