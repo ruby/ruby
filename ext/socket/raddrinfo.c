@@ -436,6 +436,8 @@ gaicbs_wait_all(void)
     gai_suspend(reqs, size, NULL); // ignore result intentionally
 }
 
+#define MILLISECOND_IN_NANOSECONDS 1000000
+
 /*  A mitigation for [Bug #17220].
     It cancels all outstanding requests and waits for ongoing requests.
     Then, it waits internal worker threads in getaddrinfo_a(3) to be finished. */
@@ -447,7 +449,8 @@ rb_getaddrinfo_a_before_exec(void)
 
     /* wait worker threads in getaddrinfo_a(3) to be finished.
        they will finish after 1 second sleep. */
-    sleep(1);
+    struct timespec ts = {1, 500 * MILLISECOND_IN_NANOSECONDS};
+    nanosleep(&ts, NULL);
 }
 
 int
