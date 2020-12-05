@@ -2654,6 +2654,30 @@ lazy_uniq(VALUE obj)
 }
 
 static struct MEMO *
+lazy_compact_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+{
+    if (NIL_P(result->memo_value)) return 0;
+    return result;
+}
+
+static const lazyenum_funcs lazy_compact_funcs = {
+    lazy_compact_proc, 0,
+};
+
+/*
+ *  call-seq:
+ *     lazy.compact                  -> lazy_enumerator
+ *
+ *  Like Enumerable#compact, but chains operation to be lazy-evaluated.
+ */
+
+static VALUE
+lazy_compact(VALUE obj)
+{
+    return lazy_add_method(obj, 0, 0, Qnil, Qnil, &lazy_compact_funcs);
+}
+
+static struct MEMO *
 lazy_with_index_proc(VALUE proc_entry, struct MEMO* result, VALUE memos, long memo_index)
 {
     struct proc_entry *entry = proc_entry_ptr(proc_entry);
@@ -4098,6 +4122,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cLazy, "slice_when", lazy_super, -1);
     rb_define_method(rb_cLazy, "chunk_while", lazy_super, -1);
     rb_define_method(rb_cLazy, "uniq", lazy_uniq, 0);
+    rb_define_method(rb_cLazy, "compact", lazy_compact, 0);
     rb_define_method(rb_cLazy, "with_index", lazy_with_index, -1);
 
     lazy_use_super_method = rb_hash_new_with_size(18);

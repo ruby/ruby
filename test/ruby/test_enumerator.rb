@@ -696,6 +696,11 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal([0, 1], u.force)
   end
 
+  def test_compact
+    u = [0, 1, nil, 2, 3, nil].to_enum.lazy.compact
+    assert_equal([0, 1, 2, 3], u.force)
+  end
+
   def test_enum_chain_and_plus
     r = 1..5
 
