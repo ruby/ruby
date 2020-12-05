@@ -4913,9 +4913,8 @@ fptr_waitpid(rb_io_t *fptr, int nohang)
 {
     int status;
     if (fptr->pid) {
-	rb_last_status_clear();
-	rb_waitpid(fptr->pid, &status, nohang ? WNOHANG : 0);
-	fptr->pid = 0;
+        rb_waitpid(fptr->pid, &status, nohang ? WNOHANG : 0);
+        fptr->pid = 0;
     }
 }
 
@@ -6437,7 +6436,7 @@ pipe_finalize(rb_io_t *fptr, int noraise)
     }
     fptr->fd = -1;
     fptr->stdio_file = 0;
-    rb_last_status_set(status, fptr->pid);
+    rb_last_status_set(fptr->pid, status, 0);
 #else
     fptr_finalize(fptr, noraise);
 #endif

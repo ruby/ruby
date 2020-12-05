@@ -14,6 +14,7 @@
 #include "ruby/internal/config.h"
 
 #include "internal/scheduler.h"
+#include "coroutine/Stack.h"
 
 #include <ctype.h>
 #include <errno.h>
@@ -571,6 +572,27 @@ proc_get_ppid(VALUE _)
 
 static VALUE rb_cProcessStatus;
 
+struct rb_process_status {
+    pid_t pid;
+    int status;
+    int error;
+};
+
+static const rb_data_type_t rb_process_status_Type = {
+    .wrap_struct_name = "Process::Status",
+    .function = {
+        .dfree = RUBY_DEFAULT_FREE,
+    },
+    .data = NULL,
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
+static VALUE rb_process_status_allocate(VALUE self) {
+    struct rb_process_status *data = ruby_xmalloc(sizeof(struct rb_process_status));
+
+    return TypedData_Wrap_Struct(self, &rb_process_status_Type, data);
+}
+
 VALUE
 rb_last_status_get(void)
 {
@@ -599,13 +621,20 @@ proc_s_last_status(VALUE mod)
 }
 
 void
-rb_last_status_set(int status, rb_pid_t pid)
+rb_last_status_set(rb_pid_t pid, int status, int error)
 {
     rb_thread_t *th = GET_THREAD();
-    th->last_status = rb_obj_alloc(rb_cProcessStatus);
-    rb_ivar_set(th->last_status, id_status, INT2FIX(status));
-    rb_ivar_set(th->last_status, id_pid, PIDT2NUM(pid));
-    rb_obj_freeze(th->last_status);
+
+    VALUE last_status = rb_process_status_allocate(rb_cProcessStatus);
+
+    struct rb_process_status *data = RTYPEDDATA_DATA(last_status);
+    data->pid = pid;
+    data->status = status;
+    data->error = error;
+
+    rb_obj_freeze(last_status);
+
+    th->last_status = last_status;
 }
 
 void
@@ -627,9 +656,11 @@ rb_last_status_clear(void)
  */
 
 static VALUE
-pst_to_i(VALUE st)
+pst_to_i(VALUE self)
 {
-    return rb_ivar_get(st, id_status);
+    struct rb_process_status *data = RTYPEDDATA_DATA(self);
+
+    return RB_INT2NUM(data->status);
 }
 
 #define PST2INT(st) NUM2INT(pst_to_i(st))
@@ -646,9 +677,11 @@ pst_to_i(VALUE st)
  */
 
 static VALUE
-pst_pid(VALUE st)
+pst_pid(VALUE self)
 {
-    return rb_attr_get(st, id_pid);
+    struct rb_process_status *data = RTYPEDDATA_DATA(self);
+
+    return RB_PIDT2NUM(data->pid);
 }
 
 static VALUE pst_message_status(VALUE str, int status);
@@ -1107,6 +1140,7 @@ waitpid_state_init(struct waitpid_state *w, rb_pid_t pid, int options)
     w->ret = 0;
     w->pid = pid;
     w->options = options;
+    w->errnum = 0;
 }
 
 static const rb_hrtime_t *
@@ -1217,8 +1251,10 @@ waitpid_wait(struct waitpid_state *w)
      */
     rb_native_mutex_lock(&vm->waitpid_lock);
 
-    if (w->pid > 0 || list_empty(&vm->waiting_pids))
+    if (w->pid > 0 || list_empty(&vm->waiting_pids)) {
         w->ret = do_waitpid(w->pid, &w->status, w->options | WNOHANG);
+    }
+
     if (w->ret) {
         if (w->ret == -1) w->errnum = errno;
     }
@@ -1267,35 +1303,82 @@ waitpid_no_SIGCHLD(struct waitpid_state *w)
         w->errnum = errno;
 }
 
+// This is the root entry point for waiting on a pid.
+VALUE rb_process_status_wait(pid_t pid, int flags)
+{
+    VALUE scheduler = rb_scheduler_current();
+    if (rb_scheduler_supports_process_wait(scheduler)) {
+        return rb_scheduler_process_wait(scheduler, pid, flags);
+    }
+
+    COROUTINE_STACK_LOCAL(struct waitpid_state, w);
+
+    waitpid_state_init(w, pid, flags);
+    w->ec = GET_EC();
+
+    if (WAITPID_USE_SIGCHLD) {
+        waitpid_wait(w);
+    }
+    else {
+        waitpid_no_SIGCHLD(w);
+    }
+
+    if (w->ret > 0) {
+        if (ruby_nocldwait) {
+            w->ret = -1;
+            w->errnum = ECHILD;
+        }
+    }
+
+    VALUE status = rb_process_status_allocate(rb_cProcessStatus);
+
+    struct rb_process_status *data = RTYPEDDATA_DATA(status);
+    data->pid = w->ret;
+    data->status = w->status;
+    data->error = w->errnum;
+
+    COROUTINE_STACK_FREE(w);
+
+    return status;
+}
+
+VALUE
+rb_process_status_waitv(int argc, VALUE *argv, VALUE _)
+{
+    rb_check_arity(argc, 0, 2);
+
+    rb_pid_t pid = -1;
+    int flags = 0;
+
+    if (argc >= 1) {
+        pid = RB_NUM2PIDT(argv[0]);
+    }
+
+    if (argc >= 2) {
+        flags = RB_NUM2INT(argv[1]);
+    }
+
+    return rb_process_status_wait(pid, flags);
+}
+
 rb_pid_t
 rb_waitpid(rb_pid_t pid, int *st, int flags)
 {
-    struct waitpid_state w;
+    rb_last_status_clear();
 
-    waitpid_state_init(&w, pid, flags);
-    w.ec = GET_EC();
+    VALUE status = rb_process_status_wait(pid, flags);
+    struct rb_process_status *data = RTYPEDDATA_DATA(status);
 
-    if (WAITPID_USE_SIGCHLD) {
-        waitpid_wait(&w);
+    if (st) *st = data->status;
+
+    if (data->error) {
+        errno = data->error;
     }
     else {
-        waitpid_no_SIGCHLD(&w);
+        rb_last_status_set(data->pid, data->status, data->error);
     }
 
-    if (st) *st = w.status;
-    if (w.ret == -1) {
-        errno = w.errnum;
-    }
-    else if (w.ret > 0) {
-        if (ruby_nocldwait) {
-            w.ret = -1;
-            errno = ECHILD;
-        }
-        else {
-            rb_last_status_set(w.status, w.ret);
-        }
-    }
-    return w.ret;
+    return data->pid;
 }
 
 static VALUE
@@ -1315,12 +1398,15 @@ proc_wait(int argc, VALUE *argv)
             flags = NUM2UINT(vflags);
         }
     }
+
     if ((pid = rb_waitpid(pid, &status, flags)) < 0)
         rb_sys_fail(0);
+
     if (pid == 0) {
         rb_last_status_clear();
         return Qnil;
     }
+
     return PIDT2NUM(pid);
 }
 
@@ -4438,10 +4524,10 @@ rb_spawn_process(struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen)
 	pid = proc_spawn_cmd(argv, prog, eargp);
     }
     if (pid == -1)
-	rb_last_status_set(0x7f << 8, 0);
+	rb_last_status_set(0, 0x7f << 8, 0);
 # else
     status = system(rb_execarg_commandline(eargp, &prog));
-    rb_last_status_set((status & 0xff) << 8, 0);
+    rb_last_status_set(0, (status & 0xff) << 8, 0);
     pid = 1;			/* dummy */
 # endif
     if (eargp->waitpid_state && eargp->waitpid_state != WAITPID_LOCK_ONLY) {
@@ -4565,58 +4651,52 @@ rb_spawn(int argc, const VALUE *argv)
 static VALUE
 rb_f_system(int argc, VALUE *argv, VALUE _)
 {
-    /*
-     * n.b. using alloca for now to simplify future Thread::Light code
-     * when we need to use malloc for non-native Fiber
-     */
-    struct waitpid_state *w = alloca(sizeof(struct waitpid_state));
-    rb_pid_t pid; /* may be different from waitpid_state.pid on exec failure */
-    VALUE execarg_obj;
-    struct rb_execarg *eargp;
-    int exec_errnum;
+    VALUE execarg_obj = rb_execarg_new(argc, argv, TRUE, TRUE);
+    struct rb_execarg *eargp = rb_execarg_get(execarg_obj);
+    
+    /* may be different from waitpid_state.pid on exec failure */
+    rb_pid_t pid = rb_execarg_spawn(execarg_obj, 0, 0);
 
-    execarg_obj = rb_execarg_new(argc, argv, TRUE, TRUE);
-    eargp = rb_execarg_get(execarg_obj);
-    w->ec = GET_EC();
-    waitpid_state_init(w, 0, 0);
-    eargp->waitpid_state = w;
-    pid = rb_execarg_spawn(execarg_obj, 0, 0);
-    exec_errnum = pid < 0 ? errno : 0;
+    if (pid > 0) {
+        VALUE status = rb_process_status_wait(pid, 0);
+        struct rb_process_status *data = RTYPEDDATA_DATA(status);
 
-#if defined(HAVE_WORKING_FORK) || defined(HAVE_SPAWNV)
-    if (w->pid > 0) {
-        /* `pid' (not w->pid) may be < 0 here if execve failed in child */
-        if (WAITPID_USE_SIGCHLD) {
-            rb_ensure(waitpid_sleep, (VALUE)w, waitpid_cleanup, (VALUE)w);
+        // fork failure:
+        if (data->error != 0) {
+            if (eargp->exception) {
+                VALUE command = eargp->invoke.sh.shell_script;
+                RB_GC_GUARD(execarg_obj);
+                rb_syserr_fail_str(data->error, command);
+            }
+            else {
+                return Qnil;
+            }
         }
-        else {
-            waitpid_no_SIGCHLD(w);
+
+        if (data->status == EXIT_SUCCESS) {
+            return Qtrue;
         }
-        rb_last_status_set(w->status, w->ret);
-    }
-#endif
-    if (w->pid < 0 /* fork failure */ || pid < 0 /* exec failure */) {
-        if (eargp->exception) {
-            int err = exec_errnum ? exec_errnum : w->errnum;
+        else if (eargp->exception) {
             VALUE command = eargp->invoke.sh.shell_script;
+            VALUE str = rb_str_new_cstr("Command failed with");
+            rb_str_cat_cstr(pst_message_status(str, data->status), ": ");
+            rb_str_append(str, command);
             RB_GC_GUARD(execarg_obj);
-            rb_syserr_fail_str(err, command);
+            rb_exc_raise(rb_exc_new_str(rb_eRuntimeError, str));
         }
         else {
-            return Qnil;
+            return Qfalse;
         }
     }
-    if (w->status == EXIT_SUCCESS) return Qtrue;
+
+    // exec failure:
     if (eargp->exception) {
         VALUE command = eargp->invoke.sh.shell_script;
-        VALUE str = rb_str_new_cstr("Command failed with");
-        rb_str_cat_cstr(pst_message_status(str, w->status), ": ");
-        rb_str_append(str, command);
         RB_GC_GUARD(execarg_obj);
-        rb_exc_raise(rb_exc_new_str(rb_eRuntimeError, str));
+        rb_syserr_fail_str(errno, command);
     }
     else {
-        return Qfalse;
+        return Qnil;
     }
 }
 
@@ -8507,7 +8587,10 @@ InitVM_process(void)
     rb_define_method(rb_cWaiter, "pid", detach_process_pid, 0);
 
     rb_cProcessStatus = rb_define_class_under(rb_mProcess, "Status", rb_cObject);
+    rb_define_alloc_func(rb_cProcessStatus, rb_process_status_allocate);
     rb_undef_method(CLASS_OF(rb_cProcessStatus), "new");
+
+    rb_define_singleton_method(rb_cProcessStatus, "wait", rb_process_status_waitv, -1);
 
     rb_define_method(rb_cProcessStatus, "==", pst_equal, 1);
     rb_define_method(rb_cProcessStatus, "&", pst_bitand, 1);
