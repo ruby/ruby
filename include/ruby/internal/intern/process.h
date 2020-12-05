@@ -28,7 +28,7 @@
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 /* process.c */
-RUBY_EXTERN void (* rb_socket_before_exec_func)();
+RUBY_EXTERN void (* rb_socket_before_fork_func)();
 
 void rb_last_status_set(int status, rb_pid_t pid);
 VALUE rb_last_status_get(void);

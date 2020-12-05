@@ -332,7 +332,7 @@ static ID id_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC;
 #endif
 static ID id_hertz;
 #ifdef HAVE_GETADDRINFO_A
-void (* rb_socket_before_exec_func)() = NULL;
+void (* rb_socket_before_fork_func)() = NULL;
 #endif
 
 /* execv and execl are async-signal-safe since SUSv4 (POSIX.1-2008, XPG7) */
@@ -1548,13 +1548,6 @@ before_exec_async_signal_safe(void)
 static void
 before_exec_non_async_signal_safe(void)
 {
-#ifdef HAVE_GETADDRINFO_A
-    if (rb_socket_before_exec_func) {
-        /* A mitigation for [Bug #17220]. See ext/socket/raddrinfo.c */
-        rb_socket_before_exec_func();
-    }
-#endif
-
     /*
      * On Mac OS X 10.5.x (Leopard) or earlier, exec() may return ENOTSUP
      * if the process have multiple threads. Therefore we have to kill
@@ -1628,7 +1621,19 @@ after_exec(void)
 }
 
 #if defined HAVE_WORKING_FORK || defined HAVE_DAEMON
-#define before_fork_ruby() before_exec()
+static void
+before_fork_ruby(void)
+{
+#ifdef HAVE_GETADDRINFO_A
+    if (rb_socket_before_fork_func) {
+        /* A mitigation for [Bug #17220]. See ext/socket/raddrinfo.c */
+        rb_socket_before_fork_func();
+    }
+#endif
+
+    before_exec();
+}
+
 static void
 after_fork_ruby(void)
 {

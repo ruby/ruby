@@ -442,7 +442,7 @@ gaicbs_wait_all(void)
     It cancels all outstanding requests and waits for ongoing requests.
     Then, it waits internal worker threads in getaddrinfo_a(3) to be finished. */
 void
-rb_getaddrinfo_a_before_exec(void)
+rb_getaddrinfo_a_before_fork(void)
 {
     gaicbs_cancel_all();
     gaicbs_wait_all();
@@ -2875,6 +2875,6 @@ rsock_init_addrinfo(void)
     rb_define_method(rb_cAddrinfo, "marshal_load", addrinfo_mload, 1);
 
 #ifdef HAVE_GETADDRINFO_A
-    rb_socket_before_exec_func = rb_getaddrinfo_a_before_exec;
+    rb_socket_before_fork_func = rb_getaddrinfo_a_before_fork;
 #endif
 }
