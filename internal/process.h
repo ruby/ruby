@@ -26,6 +26,7 @@
 #define RB_MAX_GROUPS (65536)
 
 struct waitpid_state;
+struct rb_process_status;
 struct rb_execarg {
     union {
         struct {
@@ -56,6 +57,7 @@ struct rb_execarg {
     unsigned gid_given : 1;
     unsigned exception : 1;
     unsigned exception_given : 1;
+    struct rb_process_status *status;
     struct waitpid_state *waitpid_state; /* for async process management */
     rb_pid_t pgroup_pgid; /* asis(-1), new pgroup(0), specified pgroup (0<V). */
     VALUE rlimit_limits; /* Qfalse or [[rtype, softlim, hardlim], ...] */
