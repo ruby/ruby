@@ -1229,6 +1229,21 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([1, [1, 2]], Foo.new.to_enum.uniq)
   end
 
+  def test_compact
+    class << (enum = Object.new)
+      include Enumerable
+      def each
+        yield 3
+        yield nil
+        yield 7
+        yield 9
+        yield nil
+      end
+    end
+
+    assert_equal([3, 7, 9], enum.compact)
+  end
+
   def test_transient_heap_sort_by
     klass = Class.new do
       include Comparable
