@@ -3816,7 +3816,7 @@ AS_IF([test "${ARCH_FLAG}"], [
     LDFLAGS=`echo "$LDFLAGS" | sed "s| *$archflagpat"'||'`
 ])
 rb_cv_warnflags=`echo "$rb_cv_warnflags" | sed 's/^ *//;s/ *$//'`
-warnflags="$rb_cv_warnflags"
+warnflags="$warnflags $rb_cv_warnflags"
 AC_SUBST(cppflags)dnl
 AC_SUBST(cflags, ["${orig_cflags:+$orig_cflags }"'${optflags} ${debugflags} ${warnflags}'])dnl
 AC_SUBST(cxxflags)dnl
