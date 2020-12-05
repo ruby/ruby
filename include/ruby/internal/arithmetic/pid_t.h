@@ -23,12 +23,22 @@
 #include "ruby/internal/config.h"
 #include "ruby/internal/arithmetic/long.h"
 
-#ifndef PIDT2NUM
-# define PIDT2NUM RB_LONG2NUM
+#ifndef RB_PIDT2NUM
+# define RB_PIDT2NUM RB_LONG2NUM
 #endif
 
+// Deprecated.
+#ifndef PIDT2NUM
+# define PIDT2NUM RB_PIDT2NUM
+#endif
+
+#ifndef RB_NUM2PIDT
+# define RB_NUM2PIDT RB_NUM2LONG
+#endif
+
+// Deprecated.
 #ifndef NUM2PIDT
-# define NUM2PIDT RB_NUM2LONG
+# define NUM2PIDT RB_NUM2PIDT
 #endif
 
 #endif /* RBIMPL_ARITHMETIC_PID_T_H */
