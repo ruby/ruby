@@ -197,57 +197,6 @@ class TestMemoryView < Test::Unit::TestCase
     assert_equal(expected_result, members)
   end
 
-  def test_rb_memory_view_extract_item_members
-    m = MemoryViewTestUtils
-    assert_equal(1, m.extract_item_members([1].pack("c"), "c"))
-    assert_equal([1, 2], m.extract_item_members([1, 2].pack("ii"), "ii"))
-    assert_equal([1, 2, 3], m.extract_item_members([1, 2, 3].pack("cls"), "cls"))
-  end
-
-  def test_rb_memory_view_extract_item_members_endianness
-    m = MemoryViewTestUtils
-    assert_equal([0x0102, 0x0304], m.extract_item_members([1, 2, 3, 4].pack("c*"), "S>2"))
-    assert_equal([0x0102, 0x0304], m.extract_item_members([1, 2, 3, 4].pack("c*"), "n2"))
-    assert_equal([0x0201, 0x0403], m.extract_item_members([1, 2, 3, 4].pack("c*"), "S<2"))
-    assert_equal([0x0201, 0x0403], m.extract_item_members([1, 2, 3, 4].pack("c*"), "v2"))
-    assert_equal(0x01020304, m.extract_item_members([1, 2, 3, 4].pack("c*"), "L>"))
-    assert_equal(0x01020304, m.extract_item_members([1, 2, 3, 4].pack("c*"), "N"))
-    assert_equal(0x04030201, m.extract_item_members([1, 2, 3, 4].pack("c*"), "L<"))
-    assert_equal(0x04030201, m.extract_item_members([1, 2, 3, 4].pack("c*"), "V"))
-    assert_equal(0x0102030405060708, m.extract_item_members([1, 2, 3, 4, 5, 6, 7, 8].pack("c*"), "Q>"))
-    assert_equal(0x0807060504030201, m.extract_item_members([1, 2, 3, 4, 5, 6, 7, 8].pack("c*"), "Q<"))
-  end
-
-  def test_rb_memory_view_extract_item_members_float
-    m = MemoryViewTestUtils
-    packed = [1.23].pack("f")
-    assert_equal(packed.unpack("f")[0], m.extract_item_members(packed, "f"))
-  end
-
-  def test_rb_memory_view_extract_item_members_float_endianness
-    m = MemoryViewTestUtils
-    hi, lo = [1.23].pack("f").unpack("L")[0].divmod(0x10000)
-    packed = [lo, hi].pack("S*")
-    assert_equal(packed.unpack("e")[0], m.extract_item_members(packed, "e"))
-    packed = [hi, lo].pack("S*")
-    assert_equal(packed.unpack("g")[0], m.extract_item_members(packed, "g"))
-  end
-
-  def test_rb_memory_view_extract_item_members_doble
-    m = MemoryViewTestUtils
-    packed = [1.23].pack("d")
-    assert_equal(1.23, m.extract_item_members(packed, "d"))
-  end
-
-  def test_rb_memory_view_extract_item_members_doble_endianness
-    m = MemoryViewTestUtils
-    hi, lo = [1.23].pack("d").unpack("Q")[0].divmod(0x10000)
-    packed = [lo, hi].pack("L*")
-    assert_equal(packed.unpack("E")[0], m.extract_item_members(packed, "E"))
-    packed = [hi, lo].pack("L*")
-    assert_equal(packed.unpack("G")[0], m.extract_item_members(packed, "G"))
-  end
-
   def test_rb_memory_view_available_p
     es = MemoryViewTestUtils::ExportableString.new("ruby")
     assert_equal(true, MemoryViewTestUtils.available?(es))
