@@ -2335,7 +2335,7 @@ rb_wb_protected_newobj_of(VALUE klass, VALUE flags)
 }
 
 VALUE
-rb_wb_protected_newobj_of_ec(rb_execution_context_t *ec, VALUE klass, VALUE flags)
+rb_ec_wb_protected_newobj_of(rb_execution_context_t *ec, VALUE klass, VALUE flags)
 {
     GC_ASSERT((flags & FL_WB_PROTECTED) == 0);
     return newobj_of_cr(rb_ec_ractor_ptr(ec), klass, flags, 0, 0, 0, TRUE);
