@@ -3856,7 +3856,7 @@ rb_thread_sleep_that_takes_VALUE_as_sole_argument(VALUE n)
 }
 
 static int
-handle_fork_error(int err, int *status, int *ep, volatile int *try_gc_p)
+handle_fork_error(int err, struct rb_process_status *status, int *ep, volatile int *try_gc_p)
 {
     int state = 0;
 
@@ -3877,7 +3877,7 @@ handle_fork_error(int err, int *status, int *ep, volatile int *try_gc_p)
         }
         else {
             rb_protect(rb_thread_sleep_that_takes_VALUE_as_sole_argument, INT2FIX(1), &state);
-            if (status) *status = state;
+            if (status) status->status = state;
             if (!state) return 0;
         }
         break;
@@ -4166,7 +4166,7 @@ disable_child_handler_fork_child(struct child_handler_disabler_state *old, char 
 }
 
 static rb_pid_t
-retry_fork_async_signal_safe(int *status, int *ep,
+retry_fork_async_signal_safe(struct rb_process_status *status, int *ep,
         int (*chfunc)(void*, char *, size_t), void *charg,
         char *errmsg, size_t errmsg_buflen,
         struct waitpid_state *w)
@@ -4227,7 +4227,7 @@ retry_fork_async_signal_safe(int *status, int *ep,
 }
 
 static rb_pid_t
-fork_check_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg,
+fork_check_err(struct rb_process_status *status, int (*chfunc)(void*, char *, size_t), void *charg,
         VALUE fds, char *errmsg, size_t errmsg_buflen,
         struct rb_execarg *eargp)
 {
@@ -4235,31 +4235,46 @@ fork_check_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg,
     int err;
     int ep[2];
     int error_occurred;
-    struct waitpid_state *w;
 
-    w = eargp && eargp->waitpid_state ? eargp->waitpid_state : 0;
+    struct waitpid_state *w = eargp && eargp->waitpid_state ? eargp->waitpid_state : 0;
 
-    if (status) *status = 0;
+    if (status) status->status = 0;
 
     if (pipe_nocrash(ep, fds)) return -1;
-    pid = retry_fork_async_signal_safe(status, ep, chfunc, charg,
-                                       errmsg, errmsg_buflen, w);
-    if (pid < 0)
+
+    pid = retry_fork_async_signal_safe(status, ep, chfunc, charg, errmsg, errmsg_buflen, w);
+
+    if (status) status->pid = pid;
+
+    if (pid < 0) {
+        if (status) status->error = errno;
+
         return pid;
+    }
+
     close(ep[1]);
+
     error_occurred = recv_child_error(ep[0], &err, errmsg, errmsg_buflen);
+
     if (error_occurred) {
         if (status) {
+            int state = 0;
+            status->error = err;
+
             VM_ASSERT((w == 0 || w == WAITPID_LOCK_ONLY) &&
                       "only used by extensions");
-            rb_protect(proc_syswait, (VALUE)pid, status);
+            rb_protect(proc_syswait, (VALUE)pid, &state);
+
+            status->status = state;
         }
         else if (!w || w == WAITPID_LOCK_ONLY) {
             rb_syswait(pid);
         }
+
         errno = err;
         return -1;
     }
+
     return pid;
 }
 
@@ -4275,34 +4290,57 @@ rb_fork_async_signal_safe(int *status,
                           int (*chfunc)(void*, char *, size_t), void *charg,
                           VALUE fds, char *errmsg, size_t errmsg_buflen)
 {
-    return fork_check_err(status, chfunc, charg, fds, errmsg, errmsg_buflen, 0);
+    struct rb_process_status process_status;
+
+    rb_pid_t result = fork_check_err(&process_status, chfunc, charg, fds, errmsg, errmsg_buflen, 0);
+
+    if (status) {
+        *status = process_status.status;
+    }
+
+    return result;
+}
+
+rb_pid_t
+rb_fork_ruby2(struct rb_process_status *status) {
+    rb_pid_t pid;
+    int try_gc = 1, err;
+    struct child_handler_disabler_state old;
+
+    if (status) status->status = 0;
+
+    while (1) {
+        prefork();
+        if (mjit_enabled) mjit_pause(false); // Don't leave locked mutex to child. Note: child_handler must be enabled to pause MJIT.
+        disable_child_handler_before_fork(&old);
+        before_fork_ruby();
+        pid = rb_fork();
+        err = errno;
+        after_fork_ruby();
+        disable_child_handler_fork_parent(&old); /* yes, bad name */
+        
+        if (mjit_enabled && pid > 0) mjit_resume(); /* child (pid == 0) is cared by rb_thread_atfork */
+        
+        if (pid >= 0) /* fork succeed */
+            return pid;
+        
+        /* fork failed */
+        if (handle_fork_error(err, status, NULL, &try_gc)) {
+            return -1;
+        }
+    }
 }
 
 rb_pid_t
 rb_fork_ruby(int *status)
 {
-    rb_pid_t pid;
-    int try_gc = 1, err;
-    struct child_handler_disabler_state old;
+    struct rb_process_status process_status = {0};
 
-    if (status) *status = 0;
+    rb_pid_t pid = rb_fork_ruby2(&process_status);
 
-    while (1) {
-	prefork();
-        if (mjit_enabled) mjit_pause(false); // Don't leave locked mutex to child. Note: child_handler must be enabled to pause MJIT.
-	disable_child_handler_before_fork(&old);
-	before_fork_ruby();
-	pid = rb_fork();
-	err = errno;
-        after_fork_ruby();
-	disable_child_handler_fork_parent(&old); /* yes, bad name */
-        if (mjit_enabled && pid > 0) mjit_resume(); /* child (pid == 0) is cared by rb_thread_atfork */
-	if (pid >= 0) /* fork succeed */
-	    return pid;
-	/* fork failed */
-	if (handle_fork_error(err, status, NULL, &try_gc))
-	    return -1;
-    }
+    if (status) *status = process_status.status;
+
+    return pid;
 }
 
 #endif
@@ -4578,7 +4616,7 @@ rb_spawn_process(struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen)
 #endif
 
 #if defined HAVE_WORKING_FORK && !USE_SPAWNV
-    pid = fork_check_err(0, rb_exec_atfork, eargp, eargp->redirect_fds, errmsg, errmsg_buflen, eargp);
+    pid = fork_check_err(eargp->status, rb_exec_atfork, eargp, eargp->redirect_fds, errmsg, errmsg_buflen, eargp);
 #else
     prog = eargp->use_shell ? eargp->invoke.sh.shell_script : eargp->invoke.cmd.command_name;
 
@@ -4734,6 +4772,9 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
     VALUE execarg_obj = rb_execarg_new(argc, argv, TRUE, TRUE);
     struct rb_execarg *eargp = rb_execarg_get(execarg_obj);
 
+    struct rb_process_status status;
+    eargp->status = &status;
+
     /* may be different from waitpid_state.pid on exec failure */
     rb_pid_t pid = rb_execarg_spawn(execarg_obj, 0, 0);
 
@@ -4774,6 +4815,10 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
         }
 
         RB_GC_GUARD(status);
+    }
+
+    if (status.pid > 0) {
+        rb_last_status_set(status.pid, status.status, status.error);
     }
 
     if (eargp->exception) {
