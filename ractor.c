@@ -30,13 +30,6 @@ rb_ractor_error_class(void)
     return rb_eRactorError;
 }
 
-RUBY_SYMBOL_EXPORT_BEGIN
-
-// to share with MJIT
-rb_ractor_t *ruby_single_main_ractor;
-
-RUBY_SYMBOL_EXPORT_END
-
 static void vm_ractor_blocking_cnt_inc(rb_vm_t *vm, rb_ractor_t *r, const char *file, int line);
 
 static void
