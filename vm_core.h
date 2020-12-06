@@ -1733,6 +1733,7 @@ rb_execution_context_t *rb_vm_main_ractor_ec(rb_vm_t *vm); // ractor.c
 #if RUBY_VM_THREAD_MODEL == 2
 RUBY_SYMBOL_EXPORT_BEGIN
 
+RUBY_EXTERN struct rb_ractor_struct *ruby_single_main_ractor; // ractor.c
 RUBY_EXTERN rb_vm_t *ruby_current_vm_ptr;
 RUBY_EXTERN rb_event_flag_t ruby_vm_event_flags;
 RUBY_EXTERN rb_event_flag_t ruby_vm_event_enabled_global_flags;
@@ -1798,8 +1799,6 @@ rb_current_thread(void)
     const rb_execution_context_t *ec = GET_EC();
     return rb_ec_thread_ptr(ec);
 }
-
-extern struct rb_ractor_struct *ruby_single_main_ractor; // ractor.c
 
 static inline rb_ractor_t *
 rb_current_ractor(void)

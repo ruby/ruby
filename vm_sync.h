@@ -31,7 +31,7 @@ void rb_vm_barrier(void);
 #include "vm_core.h"
 #endif
 
-extern struct rb_ractor_struct *ruby_single_main_ractor; // ractor.c
+RUBY_EXTERN struct rb_ractor_struct *ruby_single_main_ractor; // ractor.c
 
 static inline bool
 rb_multi_ractor_p(void)
