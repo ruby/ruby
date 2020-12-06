@@ -441,6 +441,17 @@ begin
       EOC
     end
 
+    def test_backspace_until_returns_to_initial
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
+      write("ABC")
+      write("\C-h\C-h\C-h")
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt>
+      EOC
+    end
+
     private def write_inputrc(content)
       File.open(@inputrc_file, 'w') do |f|
         f.write content

@@ -933,6 +933,7 @@ class Reline::LineEditor
       finish
       return
     end
+    old_line = @line.dup
     @first_char = false
     completion_occurs = false
     if @config.editing_mode_is?(:emacs, :vi_insert) and key.char == "\C-i".ord
@@ -964,7 +965,7 @@ class Reline::LineEditor
     if not Reline::IOGate.in_pasting? and @just_cursor_moving.nil?
       if @previous_line_index and @buffer_of_lines[@previous_line_index] == @line
         @just_cursor_moving = true
-      elsif @previous_line_index.nil? and @buffer_of_lines[@line_index] == @line
+      elsif @previous_line_index.nil? and @buffer_of_lines[@line_index] == @line and old_line == @line
         @just_cursor_moving = true
       else
         @just_cursor_moving = false
