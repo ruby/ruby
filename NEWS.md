@@ -82,9 +82,12 @@ sufficient information, see the ChangeLog file or Redmine
 
 * When a class variable is overtaken by the same definition in an
   ancestor class/module, a RuntimeError is now raised (previously,
-  it only issued a warning in verbose mode.  Additionally, accessing a
+  it only issued a warning in verbose mode).  Additionally, accessing a
   class variable from the toplevel scope is now a RuntimeError.
   [[Bug #14541]]
+
+* Assigning to a numbered parameter is now a SyntaxError instead of
+  a warning.
 
 * Endless method definition is added.  [EXPERIMENTAL]
   [[Feature #16746]]
