@@ -1328,16 +1328,7 @@ extract-gems$(gnumake:yes=-nongnumake): PHONY
 
 update-bundled_gems: PHONY
 	$(Q) $(RUNRUBY) -rrubygems \
-	    -pla \
-	    -e 'unless /^[^#]/!~(gem=$$F[0])' \
-	    -e '(gem,src), = Gem::SpecFetcher.fetcher.detect(:latest) {'"|s|" \
-	    -e   's.platform=="ruby"&&s.name==gem' \
-	    -e '}' \
-	    -e 'gem = src.fetch_spec(gem)' \
-	    -e 'uri = gem.metadata["source_code_uri"]||gem.homepage' \
-	    -e 'uri = uri.sub(%r[\Ahttps://github\.com/[^/]+/[^/]+\K/tree/.*], "")' \
-	    -e '$$_ = [gem.name, gem.version, uri].join(" ")' \
-	    -e 'end' \
+	     $(tooldir)/update-bundled_gems.rb \
 	     "$(srcdir)/gems/bundled_gems" | \
 	"$(IFCHANGE)" "$(srcdir)/gems/bundled_gems" -
 
