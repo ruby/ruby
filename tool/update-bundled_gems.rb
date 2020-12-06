@@ -8,6 +8,6 @@ unless /^[^#]/ !~ (gem = $F[0])
   }
   gem = src.fetch_spec(gem)
   uri = gem.metadata["source_code_uri"] || gem.homepage
-  uri = uri.sub(%r[\Ahttps://github\.com/[^/]+/[^/]+\K/tree/.*], "")
+  uri = uri.sub(%r[\Ahttps://github\.com/[^/]+/[^/]+\K/tree/.*], "").chomp(".git")
   $_ = [gem.name, gem.version, uri].join(" ")
 end
