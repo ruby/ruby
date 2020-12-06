@@ -2,8 +2,8 @@
 minitest 5.14.2 https://github.com/seattlerb/minitest
 power_assert 1.2.0 https://github.com/ruby/power_assert
 rake 13.0.1 https://github.com/ruby/rake
-test-unit 3.3.6 https://github.com/test-unit/test-unit 3.3.6
+test-unit 3.3.7 https://github.com/test-unit/test-unit 3.3.7
 rexml 3.2.4 https://github.com/ruby/rexml
 rss 0.2.9 https://github.com/ruby/rss 0.2.9
 rbs 0.19.0 https://github.com/ruby/rbs
-typeprof 0.7.0 https://github.com/ruby/typeprof
+typeprof 0.8.0 https://github.com/ruby/typeprof
