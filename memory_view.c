@@ -761,7 +761,7 @@ rb_memory_view_extract_item_members(const void *ptr, const rb_memory_view_item_c
     }
 
     VALUE buf_v = 0;
-    uint8_t *buf;
+    uint8_t *buf = NULL;
     if (need_switch_endianness_p) {
         buf = ALLOCV_N(uint8_t, buf_v, max_size);
     }
