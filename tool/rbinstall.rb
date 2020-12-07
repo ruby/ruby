@@ -874,24 +874,24 @@ end
 def load_gemspec(file, expanded = false)
   file = File.realpath(file)
   code = File.read(file, encoding: "utf-8:-")
-  code.gsub!(/`git.*?`/m, '""')
-  code.gsub!(/%x\[git.*?\]/m, '""')
+  code.gsub!(/(?:`git[^\`]*`|%x\[git[^\]]*\])\.split\(\"(?:\\.|[^\"])*\"\)/m) do
+    files = []
+    if expanded
+      base = File.dirname(file)
+      Dir.glob("**/*", File::FNM_DOTMATCH, base: base) do |n|
+        next if n.start_with?(".git") # git related files are useless
+        case File.basename(n); when ".", ".."; next; end
+        next if File.directory?(File.join(base, n))
+        files << n.dump
+      end
+    end
+    "[" + files.join(", ") + "]"
+  end
   spec = eval(code, binding, file)
   unless Gem::Specification === spec
     raise TypeError, "[#{file}] isn't a Gem::Specification (#{spec.class} instead)."
   end
   spec.loaded_from = file
-
-  # gather expanded bundled gem files
-  if expanded
-    base = File.dirname(file)
-    Dir.glob("**/*", File::FNM_DOTMATCH, base: base) do |n|
-      next if n.start_with?(".git") # git related files are useless
-      case File.basename(n); when ".", ".."; next; end
-      next if File.directory?(File.join(base, n))
-      spec.files << n
-    end
-  end
 
   spec
 end
