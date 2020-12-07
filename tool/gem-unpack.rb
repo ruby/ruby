@@ -10,7 +10,7 @@ def Gem.unpack(file, dir = nil)
   target = spec.full_name
   target = File.join(dir, target) if dir
   pkg.extract_files target
-  spec_file = File.join(target, "#{spec.name}.gemspec")
+  spec_file = File.join(target, "#{spec.name}-#{spec.version}.gemspec")
   open(spec_file, 'wb') do |f|
     f.print spec.to_ruby
   end

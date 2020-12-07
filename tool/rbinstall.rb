@@ -965,9 +965,14 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
     next if /^\s*(?:#|$)/ =~ name
     next unless /^(\S+)\s+(\S+).*/ =~ name
     gem_name = "#$1-#$2"
-    path = "#{srcdir}/.bundle/gems/#{gem_name}/#$1.gemspec"
-    next unless File.exist?(path)
-    spec = load_gemspec(path, true)
+    path = "#{srcdir}/.bundle/gems/#{gem_name}/#{gem_name}.gemspec"
+    if File.exist?(path)
+      spec = load_gemspec(path)
+    else
+      path = "#{srcdir}/.bundle/gems/#{gem_name}/#$1.gemspec"
+      next unless File.exist?(path)
+      spec = load_gemspec(path, true)
+    end
     next unless spec.platform == Gem::Platform::RUBY
     next unless spec.full_name == gem_name
     spec.extension_dir = "#{extensions_dir}/#{spec.full_name}"
