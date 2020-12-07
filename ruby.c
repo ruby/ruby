@@ -1819,9 +1819,6 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     Init_ruby_description();
     Init_enc();
     lenc = rb_locale_encoding();
-#if UTF8_PATH
-    uenc = rb_utf8_encoding();
-#endif
     rb_enc_associate(rb_progname, lenc);
     rb_obj_freeze(rb_progname);
     parser = rb_parser_new();
