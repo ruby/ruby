@@ -7740,7 +7740,7 @@ rb_gc_writebarrier(VALUE a, VALUE b)
             // do nothing
         }
         else {
-            RB_VM_LOCK_ENTER(); // can change GC state
+            RB_VM_LOCK_ENTER_NO_BARRIER(); // can change GC state
             {
                 if (!is_incremental_marking(objspace)) {
                     if (!RVALUE_OLD_P(a) || RVALUE_OLD_P(b)) {
@@ -7754,11 +7754,11 @@ rb_gc_writebarrier(VALUE a, VALUE b)
                     retry = true;
                 }
             }
-            RB_VM_LOCK_LEAVE();
+            RB_VM_LOCK_LEAVE_NO_BARRIER();
         }
     }
     else { /* slow path */
-        RB_VM_LOCK_ENTER(); // can change GC state
+        RB_VM_LOCK_ENTER_NO_BARRIER(); // can change GC state
         {
             if (is_incremental_marking(objspace)) {
                 gc_writebarrier_incremental(a, b, objspace);
@@ -7767,7 +7767,7 @@ rb_gc_writebarrier(VALUE a, VALUE b)
                 retry = true;
             }
         }
-        RB_VM_LOCK_LEAVE();
+        RB_VM_LOCK_LEAVE_NO_BARRIER();
     }
     if (retry) goto retry_;
 
