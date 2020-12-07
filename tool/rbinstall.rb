@@ -874,7 +874,7 @@ end
 def load_gemspec(file, expanded = false)
   file = File.realpath(file)
   code = File.read(file, encoding: "utf-8:-")
-  code.gsub!(/(?:`git[^\`]*`|%x\[git[^\]]*\])\.split\(\"(?:\\.|[^\"])*\"\)/m) do
+  code.gsub!(/(?:`git[^\`]*`|%x\[git[^\]]*\])\.split\([^\)]*\)/m) do
     files = []
     if expanded
       base = File.dirname(file)
