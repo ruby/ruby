@@ -3188,18 +3188,10 @@ struct each_obj_args {
 static void
 objspace_each_objects_without_setup(rb_objspace_t *objspace, each_obj_callback *callback, void *data)
 {
-    size_t i;
-    struct heap_page *page;
+    struct heap_page *page = 0, *next;
     RVALUE *pstart = NULL, *pend;
 
-    i = 0;
-    while (i < heap_allocated_pages) {
-	while (0 < i && pstart < heap_pages_sorted[i-1]->start)              i--;
-	while (i < heap_allocated_pages && heap_pages_sorted[i]->start <= pstart) i++;
-	if (heap_allocated_pages <= i) break;
-
-	page = heap_pages_sorted[i];
-
+    list_for_each_safe(&heap_eden->pages, page, next, page_node) {
 	pstart = page->start;
 	pend = pstart + page->total_slots;
 
