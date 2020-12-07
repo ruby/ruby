@@ -12,6 +12,18 @@
 #include "internal/util.h"
 #include "ruby/memory_view.h"
 
+#if SIZEOF_INTPTR_T == SIZEOF_LONG_LONG
+#   define INTPTR2NUM LL2NUM
+#   define UINTPTR2NUM ULL2NUM
+#elif SIZEOF_INTPTR_T == SIZEOF_LONG
+#   define INTPTR2NUM LONG2NUM
+#   define UINTPTR2NUM ULONG2NUM
+#else
+#   define INTPTR2NUM INT2NUM
+#   define UINTPTR2NUM UINT2NUM
+#endif
+
+
 #define STRUCT_ALIGNOF(T, result) do { \
     (result) = RUBY_ALIGNOF(T); \
 } while(0)
@@ -394,13 +406,13 @@ calculate_padding(ssize_t total, ssize_t alignment_size) {
 ssize_t
 rb_memory_view_parse_item_format(const char *format,
                                  rb_memory_view_item_component_t **members,
-                                 ssize_t *n_members, const char **err)
+                                 size_t *n_members, const char **err)
 {
     if (format == NULL) return 1;
 
     VALUE error = Qnil;
     ssize_t total = 0;
-    ssize_t len = 0;
+    size_t len = 0;
     bool alignment = false;
     ssize_t max_alignment_size = 0;
 
@@ -556,6 +568,200 @@ rb_memory_view_get_item_pointer(rb_memory_view_t *view, const ssize_t *indices)
     }
 
     return ptr;
+}
+
+static void
+switch_endianness(uint8_t *buf, ssize_t len)
+{
+    RUBY_ASSERT(buf != NULL);
+    RUBY_ASSERT(len >= 0);
+
+    uint8_t *p = buf;
+    uint8_t *q = buf + len - 1;
+
+    while (q - p > 0) {
+        uint8_t t = *p;
+        *p = *q;
+        *q = t;
+        ++p;
+        --q;
+    }
+}
+
+static inline VALUE
+extract_item_member(const uint8_t *ptr, const rb_memory_view_item_component_t *member, const size_t i)
+{
+    RUBY_ASSERT(ptr != NULL);
+    RUBY_ASSERT(member != NULL);
+    RUBY_ASSERT(i < member->repeat);
+
+#ifdef WORDS_BIGENDIAN
+    const bool native_endian_p = !member->little_endian_p;
+#else
+    const bool native_endian_p = member->little_endian_p;
+#endif
+
+    const uint8_t *p = ptr + member->offset + i * member->size;
+
+    if (member->format == 'c') {
+        return INT2FIX(*(char *)p);
+    }
+    else if (member->format == 'C') {
+        return INT2FIX(*(unsigned char *)p);
+    }
+
+    union {
+        short s;
+        unsigned short us;
+        int i;
+        unsigned int ui;
+        long l;
+        unsigned long ul;
+        LONG_LONG ll;
+        unsigned LONG_LONG ull;
+        int16_t i16;
+        uint16_t u16;
+        int32_t i32;
+        uint32_t u32;
+        int64_t i64;
+        uint64_t u64;
+        intptr_t iptr;
+        uintptr_t uptr;
+        float f;
+        double d;
+    } val;
+
+    if (!native_endian_p) {
+        MEMCPY(&val, p, uint8_t, member->size);
+        switch_endianness((uint8_t *)&val, member->size);
+    }
+    else {
+        MEMCPY(&val, p, uint8_t, member->size);
+    }
+
+    switch (member->format) {
+      case 's':
+        if (member->native_size_p) {
+            return INT2FIX(val.s);
+        }
+        else {
+            return INT2FIX(val.i16);
+        }
+
+      case 'S':
+      case 'n':
+      case 'v':
+        if (member->native_size_p) {
+            return UINT2NUM(val.us);
+        }
+        else {
+            return INT2FIX(val.u16);
+        }
+
+      case 'i':
+        return INT2NUM(val.i);
+
+      case 'I':
+        return UINT2NUM(val.ui);
+
+      case 'l':
+        if (member->native_size_p) {
+            return LONG2NUM(val.l);
+        }
+        else {
+            return LONG2NUM(val.i32);
+        }
+
+      case 'L':
+      case 'N':
+      case 'V':
+        if (member->native_size_p) {
+            return ULONG2NUM(val.ul);
+        }
+        else {
+            return ULONG2NUM(val.u32);
+        }
+
+      case 'f':
+      case 'e':
+      case 'g':
+        return DBL2NUM(val.f);
+
+      case 'q':
+        if (member->native_size_p) {
+            return LL2NUM(val.ll);
+        }
+        else {
+#if SIZEOF_INT64_t == SIZEOF_LONG
+            return LONG2NUM(val.i64);
+#else
+            return LL2NUM(val.i64);
+#endif
+        }
+
+      case 'Q':
+        if (member->native_size_p) {
+            return ULL2NUM(val.ull);
+        }
+        else {
+#if SIZEOF_UINT64_t == SIZEOF_LONG
+            return ULONG2NUM(val.u64);
+#else
+            return ULL2NUM(val.u64);
+#endif
+        }
+
+      case 'd':
+      case 'E':
+      case 'G':
+        return DBL2NUM(val.d);
+
+      case 'j':
+        return INTPTR2NUM(val.iptr);
+
+      case 'J':
+        return UINTPTR2NUM(val.uptr);
+
+      default:
+        UNREACHABLE_RETURN(Qnil);
+    }
+}
+
+/* Return a value of the extracted member. */
+VALUE
+rb_memory_view_extract_item_member(const void *ptr, const rb_memory_view_item_component_t *member, const size_t i)
+{
+    if (ptr == NULL) return Qnil;
+    if (member == NULL) return Qnil;
+    if (i >= member->repeat) return Qnil;
+
+    return extract_item_member(ptr, member, i);
+}
+
+/* Return a value that consists of item members.
+ * When an item is a single member, the return value is a single value.
+ * When an item consists of multiple members, an array will be returned. */
+VALUE
+rb_memory_view_extract_item_members(const void *ptr, const rb_memory_view_item_component_t *members, const size_t n_members)
+{
+    if (ptr == NULL) return Qnil;
+    if (members == NULL) return Qnil;
+    if (n_members == 0) return Qnil;
+
+    if (n_members == 1 && members[0].repeat == 1) {
+        return rb_memory_view_extract_item_member(ptr, members, 0);
+    }
+
+    size_t i, j;
+    VALUE item = rb_ary_new();
+    for (i = 0; i < n_members; ++i) {
+        for (j = 0; j < members[i].repeat; ++j) {
+            VALUE v = extract_item_member(ptr, &members[i], j);
+            rb_ary_push(item, v);
+        }
+    }
+
+    return item;
 }
 
 static const rb_memory_view_entry_t *
