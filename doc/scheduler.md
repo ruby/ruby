@@ -12,6 +12,17 @@ This is the interface you need to implement.
 
 ~~~ ruby
 class Scheduler
+  # Wait for the specified process ID to exit.
+  # This hook is optional.
+  # @parameter pid [Integer] The process ID to wait for.
+  # @parameter flags [Integer] A bit-mask of flags suitable for `Process::Status.wait`.
+  # @returns [Process::Status] A process status instance.
+  def process_wait(pid, flags)
+    Thread.new do
+      Process::Status.wait(pid, flags)
+    end.value
+  end
+
   # Wait for the given file descriptor to match the specified events within
   # the specified timeout.
   # @parameter event [Integer] A bit mask of `IO::READABLE`,

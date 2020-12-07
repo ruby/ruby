@@ -14,6 +14,7 @@
 #include "ruby/internal/config.h"
 
 #include "internal/scheduler.h"
+#include "coroutine/Stack.h"
 
 #include <ctype.h>
 #include <errno.h>
@@ -568,6 +569,27 @@ proc_get_ppid(VALUE _)
 
 static VALUE rb_cProcessStatus;
 
+struct rb_process_status {
+    rb_pid_t pid;
+    int status;
+    int error;
+};
+
+static const rb_data_type_t rb_process_status_type = {
+    .wrap_struct_name = "Process::Status",
+    .function = {
+        .dfree = RUBY_DEFAULT_FREE,
+    },
+    .data = NULL,
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
+static VALUE rb_process_status_allocate(VALUE klass) {
+    struct rb_process_status *data = NULL;
+
+    return TypedData_Make_Struct(klass, struct rb_process_status, &rb_process_status_type, data);
+}
+
 VALUE
 rb_last_status_get(void)
 {
@@ -596,13 +618,20 @@ proc_s_last_status(VALUE mod)
 }
 
 void
-rb_last_status_set(int status, rb_pid_t pid)
+rb_last_status_set(rb_pid_t pid, int status, int error)
 {
     rb_thread_t *th = GET_THREAD();
-    th->last_status = rb_obj_alloc(rb_cProcessStatus);
-    rb_ivar_set(th->last_status, id_status, INT2FIX(status));
-    rb_ivar_set(th->last_status, id_pid, PIDT2NUM(pid));
-    rb_obj_freeze(th->last_status);
+
+    VALUE last_status = rb_process_status_allocate(rb_cProcessStatus);
+
+    struct rb_process_status *data = RTYPEDDATA_DATA(last_status);
+    data->pid = pid;
+    data->status = status;
+    data->error = error;
+
+    rb_obj_freeze(last_status);
+
+    th->last_status = last_status;
 }
 
 void
@@ -624,9 +653,11 @@ rb_last_status_clear(void)
  */
 
 static VALUE
-pst_to_i(VALUE st)
+pst_to_i(VALUE self)
 {
-    return rb_ivar_get(st, id_status);
+    struct rb_process_status *data = RTYPEDDATA_DATA(self);
+
+    return RB_INT2NUM(data->status);
 }
 
 #define PST2INT(st) NUM2INT(pst_to_i(st))
@@ -643,9 +674,11 @@ pst_to_i(VALUE st)
  */
 
 static VALUE
-pst_pid(VALUE st)
+pst_pid(VALUE self)
 {
-    return rb_attr_get(st, id_pid);
+    struct rb_process_status *data = RTYPEDDATA_DATA(self);
+
+    return PIDT2NUM(data->pid);
 }
 
 static VALUE pst_message_status(VALUE str, int status);
@@ -1104,6 +1137,7 @@ waitpid_state_init(struct waitpid_state *w, rb_pid_t pid, int options)
     w->ret = 0;
     w->pid = pid;
     w->options = options;
+    w->errnum = 0;
 }
 
 static const rb_hrtime_t *
@@ -1214,8 +1248,10 @@ waitpid_wait(struct waitpid_state *w)
      */
     rb_native_mutex_lock(&vm->waitpid_lock);
 
-    if (w->pid > 0 || list_empty(&vm->waiting_pids))
+    if (w->pid > 0 || list_empty(&vm->waiting_pids)) {
         w->ret = do_waitpid(w->pid, &w->status, w->options | WNOHANG);
+    }
+
     if (w->ret) {
         if (w->ret == -1) w->errnum = errno;
     }
@@ -1264,35 +1300,125 @@ waitpid_no_SIGCHLD(struct waitpid_state *w)
         w->errnum = errno;
 }
 
+/*
+ *  call-seq:
+ *     Process::Status.wait(pid=-1, flags=0)      -> Process::Status
+ *
+ *  Waits for a child process to exit and returns a Process::Status object
+ *  containing information on that process. Which child it waits on
+ *  depends on the value of _pid_:
+ *
+ *  > 0::   Waits for the child whose process ID equals _pid_.
+ *
+ *  0::     Waits for any child whose process group ID equals that of the
+ *          calling process.
+ *
+ *  -1::    Waits for any child process (the default if no _pid_ is
+ *          given).
+ *
+ *  < -1::  Waits for any child whose process group ID equals the absolute
+ *          value of _pid_.
+ *
+ *  The _flags_ argument may be a logical or of the flag values
+ *  Process::WNOHANG (do not block if no child available)
+ *  or Process::WUNTRACED (return stopped children that
+ *  haven't been reported). Not all flags are available on all
+ *  platforms, but a flag value of zero will work on all platforms.
+ *
+ *  Calling this method raises a SystemCallError if there are no child
+ *  processes. Not available on all platforms.
+ *
+ *  May invoke the scheduler hook _process_wait_.
+ *
+ *     fork { exit 99 }                              #=> 27429
+ *     Process::Status.wait                          #=> pid 27429 exit 99
+ *     $?                                            #=> nil
+ *
+ *     pid = fork { sleep 3 }                        #=> 27440
+ *     Time.now                                      #=> 2008-03-08 19:56:16 +0900
+ *     Process::Status.wait(pid, Process::WNOHANG)   #=> nil
+ *     Time.now                                      #=> 2008-03-08 19:56:16 +0900
+ *     Process::Status.wait(pid, 0)                  #=> pid 27440 exit 99
+ *     Time.now                                      #=> 2008-03-08 19:56:19 +0900
+ */
+VALUE rb_process_status_wait(rb_pid_t pid, int flags)
+{
+    // We only enter the scheduler if we are "blocking":
+    if (!(flags & WNOHANG)) {
+        VALUE scheduler = rb_scheduler_current();
+        if (rb_scheduler_supports_process_wait(scheduler)) {
+            return rb_scheduler_process_wait(scheduler, pid, flags);
+        }
+    }
+
+    COROUTINE_STACK_LOCAL(struct waitpid_state, w);
+
+    waitpid_state_init(w, pid, flags);
+    w->ec = GET_EC();
+
+    if (WAITPID_USE_SIGCHLD) {
+        waitpid_wait(w);
+    }
+    else {
+        waitpid_no_SIGCHLD(w);
+    }
+
+    if (w->ret > 0) {
+        if (ruby_nocldwait) {
+            w->ret = -1;
+            w->errnum = ECHILD;
+        }
+    }
+
+    VALUE status = rb_process_status_allocate(rb_cProcessStatus);
+
+    struct rb_process_status *data = RTYPEDDATA_DATA(status);
+    data->pid = w->ret;
+    data->status = w->status;
+    data->error = w->errnum;
+
+    COROUTINE_STACK_FREE(w);
+
+    return status;
+}
+
+VALUE
+rb_process_status_waitv(int argc, VALUE *argv, VALUE _)
+{
+    rb_check_arity(argc, 0, 2);
+
+    rb_pid_t pid = -1;
+    int flags = 0;
+
+    if (argc >= 1) {
+        pid = NUM2PIDT(argv[0]);
+    }
+
+    if (argc >= 2) {
+        flags = RB_NUM2INT(argv[1]);
+    }
+
+    return rb_process_status_wait(pid, flags);
+}
+
 rb_pid_t
 rb_waitpid(rb_pid_t pid, int *st, int flags)
 {
-    struct waitpid_state w;
+    VALUE status = rb_process_status_wait(pid, flags);
+    struct rb_process_status *data = RTYPEDDATA_DATA(status);
 
-    waitpid_state_init(&w, pid, flags);
-    w.ec = GET_EC();
+    if (st) *st = data->status;
 
-    if (WAITPID_USE_SIGCHLD) {
-        waitpid_wait(&w);
+    if (data->pid == -1) {
+        errno = data->error;
     }
     else {
-        waitpid_no_SIGCHLD(&w);
+        rb_obj_freeze(status);
+        GET_THREAD()->last_status = status;
     }
 
-    if (st) *st = w.status;
-    if (w.ret == -1) {
-        errno = w.errnum;
-    }
-    else if (w.ret > 0) {
-        if (ruby_nocldwait) {
-            w.ret = -1;
-            errno = ECHILD;
-        }
-        else {
-            rb_last_status_set(w.status, w.ret);
-        }
-    }
-    return w.ret;
+    RB_GC_GUARD(status);
+    return data->pid;
 }
 
 static VALUE
@@ -1312,12 +1438,15 @@ proc_wait(int argc, VALUE *argv)
             flags = NUM2UINT(vflags);
         }
     }
+
     if ((pid = rb_waitpid(pid, &status, flags)) < 0)
         rb_sys_fail(0);
+
     if (pid == 0) {
         rb_last_status_clear();
         return Qnil;
     }
+
     return PIDT2NUM(pid);
 }
 
@@ -4411,8 +4540,7 @@ rb_spawn_process(struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen)
 #endif
 
 #if defined HAVE_WORKING_FORK && !USE_SPAWNV
-    pid = fork_check_err(0, rb_exec_atfork, eargp, eargp->redirect_fds,
-                         errmsg, errmsg_buflen, eargp);
+    pid = fork_check_err(0, rb_exec_atfork, eargp, eargp->redirect_fds, errmsg, errmsg_buflen, eargp);
 #else
     prog = eargp->use_shell ? eargp->invoke.sh.shell_script : eargp->invoke.cmd.command_name;
 
@@ -4426,32 +4554,37 @@ rb_spawn_process(struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen)
     }
 # if defined HAVE_SPAWNV
     if (eargp->use_shell) {
-	pid = proc_spawn_sh(RSTRING_PTR(prog));
+        pid = proc_spawn_sh(RSTRING_PTR(prog));
     }
     else {
         char **argv = ARGVSTR2ARGV(eargp->invoke.cmd.argv_str);
-	pid = proc_spawn_cmd(argv, prog, eargp);
+        pid = proc_spawn_cmd(argv, prog, eargp);
     }
-    if (pid == -1)
-	rb_last_status_set(0x7f << 8, 0);
+
+    if (pid == -1) {
+        rb_last_status_set(pid, 0x7f << 8, 0);
+    }
 # else
     status = system(rb_execarg_commandline(eargp, &prog));
-    rb_last_status_set((status & 0xff) << 8, 0);
     pid = 1;			/* dummy */
+    rb_last_status_set(pid, (status & 0xff) << 8, 0);
 # endif
+
     if (eargp->waitpid_state && eargp->waitpid_state != WAITPID_LOCK_ONLY) {
         eargp->waitpid_state->pid = pid;
     }
+
     rb_execarg_run_options(&sarg, NULL, errmsg, errmsg_buflen);
 #endif
+
     return pid;
 }
 
 struct spawn_args {
     VALUE execarg;
     struct {
-	char *ptr;
-	size_t buflen;
+        char *ptr;
+        size_t buflen;
     } errmsg;
 };
 
@@ -4587,7 +4720,7 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
         else {
             waitpid_no_SIGCHLD(w);
         }
-        rb_last_status_set(w->status, w->ret);
+        rb_last_status_set(w->ret, w->status, 0);
     }
 #endif
     if (w->pid < 0 /* fork failure */ || pid < 0 /* exec failure */) {
@@ -8502,7 +8635,10 @@ InitVM_process(void)
     rb_define_method(rb_cWaiter, "pid", detach_process_pid, 0);
 
     rb_cProcessStatus = rb_define_class_under(rb_mProcess, "Status", rb_cObject);
+    rb_define_alloc_func(rb_cProcessStatus, rb_process_status_allocate);
     rb_undef_method(CLASS_OF(rb_cProcessStatus), "new");
+
+    rb_define_singleton_method(rb_cProcessStatus, "wait", rb_process_status_waitv, -1);
 
     rb_define_method(rb_cProcessStatus, "==", pst_equal, 1);
     rb_define_method(rb_cProcessStatus, "&", pst_bitand, 1);
