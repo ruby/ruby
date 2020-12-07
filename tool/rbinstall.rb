@@ -879,7 +879,6 @@ def load_gemspec(file, expanded = false)
     if expanded
       base = File.dirname(file)
       Dir.glob("**/*", File::FNM_DOTMATCH, base: base) do |n|
-        next if n.start_with?(".git") # git related files are useless
         case File.basename(n); when ".", ".."; next; end
         next if File.directory?(File.join(base, n))
         files << n.dump
@@ -892,6 +891,7 @@ def load_gemspec(file, expanded = false)
     raise TypeError, "[#{file}] isn't a Gem::Specification (#{spec.class} instead)."
   end
   spec.loaded_from = file
+  spec.files.reject! {|n| n.end_with?(".gemspec") or n.start_with?(".git")}
 
   spec
 end
