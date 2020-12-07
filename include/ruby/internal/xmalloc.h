@@ -55,7 +55,7 @@ RBIMPL_ATTR_RESTRICT()
 RBIMPL_ATTR_RETURNS_NONNULL()
 RBIMPL_ATTR_ALLOC_SIZE((1))
 /**
- * Allocates an  object instance.  It is  largely the same as  system malloc(),
+ * Allocates a  storage instance.  It is  largely the same as  system malloc(),
  * except:
  *
  *   - It raises Ruby exceptions instead of returning NULL, and
@@ -142,19 +142,19 @@ RBIMPL_ATTR_NODISCARD()
 RBIMPL_ATTR_RETURNS_NONNULL()
 RBIMPL_ATTR_ALLOC_SIZE((2))
 /**
- * Resize the object instance.
+ * Resize the storage instance.
  *
- * @param[in]  ptr           A  valid pointer  to an  object instance  that was
+ * @param[in]  ptr           A  valid pointer  to a  storage instance  that was
  *                           previously  returned  from either  ruby_xmalloc(),
  *                           ruby_xmalloc2(),  ruby_xcalloc(), ruby_xrealloc(),
  *                           or ruby_xrealloc2().
  * @param[in]  newsiz        Requested new amount of memory.
  * @throw      rb_eMemError  No space left for `newsiz` bytes allocation.
  * @retval     ptr           In case  the function  returns the  passed pointer
- *                           as-is, the object instance  that the pointer holds
+ *                           as-is, the storage instance that the pointer holds
  *                           is  either  grown or  shrunken  to  have at  least
  *                           `newsiz` bytes.
- * @retval     otherwise     A  valid  pointer  to  a  newly  allocated  object
+ * @retval     otherwise     A  valid  pointer  to a  newly  allocated  storage
  *                           instance which has at  least `newsiz` bytes width,
  *                           and  holds previous  contents of  `ptr`.  In  this
  *                           case `ptr` is  invalidated as if it  was passed to
@@ -182,8 +182,8 @@ RBIMPL_ATTR_NODISCARD()
 RBIMPL_ATTR_RETURNS_NONNULL()
 RBIMPL_ATTR_ALLOC_SIZE((2,3))
 /**
- * Identical to ruby_xrealloc(), except it resizes the given object instance to
- * `newelems`  * `newsiz`  bytes.  This  is needed  because the  multiplication
+ * Identical to ruby_xrealloc(),  except it resizes the  given storage instance
+ * to `newelems` *  `newsiz` bytes.  This is needed  because the multiplication
  * could integer overflow.   On such situations Ruby does not  try to touch the
  * contents  of  argument pointer  at  all  but  raises Ruby  level  exceptions
  * instead.  If there is no integer  overflow the behaviour is exactly the same
@@ -192,7 +192,7 @@ RBIMPL_ATTR_ALLOC_SIZE((2,3))
  * This  is   roughly  the  same   as  reallocarray()  function   that  OpenBSD
  * etc. provides, but also interacts with our GC.
  *
- * @param[in]  ptr           A  valid pointer  to an  object instance  that was
+ * @param[in]  ptr           A  valid pointer  to a  storage instance  that was
  *                           previously  returned  from either  ruby_xmalloc(),
  *                           ruby_xmalloc2(),  ruby_xcalloc(), ruby_xrealloc(),
  *                           or ruby_xrealloc2().
@@ -201,10 +201,10 @@ RBIMPL_ATTR_ALLOC_SIZE((2,3))
  * @throw      rb_eMemError  No space left for  allocation.
  * @throw      rb_eArgError  `newelems` * `newsiz` would overflow.
  * @retval     ptr           In case  the function  returns the  passed pointer
- *                           as-is, the object instance  that the pointer holds
+ *                           as-is, the storage instance that the pointer holds
  *                           is  either  grown or  shrunken  to  have at  least
  *                           `newelems` * `newsiz` bytes.
- * @retval     otherwise     A  valid  pointer  to  a  newly  allocated  object
+ * @retval     otherwise     A  valid  pointer  to a  newly  allocated  storage
  *                           instance which has at  least `newelems` * `newsiz`
  *                           bytes width, and holds previous contents of `ptr`.
  *                           In this  case `ptr`  is invalidated  as if  it was
@@ -230,12 +230,12 @@ RBIMPL_ATTR_NOEXCEPT(realloc(ptr, newelems * newsiz))
 ;
 
 /**
- * Deallocates an object instance.
+ * Deallocates a storage instance.
  *
  * @param[out]  ptr  Either NULL,  or a valid pointer  previously returned from
  *                   one  of  ruby_xmalloc(), ruby_xmalloc2(),  ruby_xcalloc(),
  *                   ruby_xrealloc(), or ruby_xrealloc2().
- * @warning     Every single  object instance that was  previously allocated by
+ * @warning     Every single storage instance  that was previously allocated by
  *              either    ruby_xmalloc(),   ruby_xmalloc2(),    ruby_xcalloc(),
  *              ruby_xrealloc(),  or  ruby_xrealloc2()   shall  be  invalidated
  *              exactly once by  either passing it to  ruby_xfree(), or passing
