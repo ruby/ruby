@@ -7060,7 +7060,9 @@ gc_verify_internal_consistency_(rb_objspace_t *objspace)
 
     /* check counters */
 
-    if (!is_lazy_sweeping(heap_eden) && !finalizing) {
+    if (!is_lazy_sweeping(heap_eden) &&
+        !finalizing &&
+        ruby_single_main_ractor != NULL) {
 	if (objspace_live_slots(objspace) != data.live_object_count) {
 	    fprintf(stderr, "heap_pages_final_slots: %"PRIdSIZE", "
                     "objspace->profile.total_freed_objects: %"PRIdSIZE"\n",
