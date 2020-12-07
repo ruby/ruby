@@ -2735,6 +2735,7 @@ make_io_zombie(rb_objspace_t *objspace, VALUE obj)
 static void
 obj_free_object_id(rb_objspace_t *objspace, VALUE obj)
 {
+    ASSERT_vm_locking();
     st_data_t o = (st_data_t)obj, id;
 
     GC_ASSERT(FL_TEST(obj, FL_SEEN_OBJ_ID));
@@ -3672,17 +3673,17 @@ finalize_list(rb_objspace_t *objspace, VALUE zombie)
 
 	run_final(objspace, zombie);
 
-        GC_ASSERT(BUILTIN_TYPE(zombie) == T_ZOMBIE);
-        if (FL_TEST(zombie, FL_SEEN_OBJ_ID)) {
-            obj_free_object_id(objspace, zombie);
-        }
-
-	RZOMBIE(zombie)->basic.flags = 0;
-        GC_ASSERT(heap_pages_final_slots > 0);
-        GC_ASSERT(page->final_slots > 0);
-
         RB_VM_LOCK_ENTER();
         {
+            GC_ASSERT(BUILTIN_TYPE(zombie) == T_ZOMBIE);
+            if (FL_TEST(zombie, FL_SEEN_OBJ_ID)) {
+                obj_free_object_id(objspace, zombie);
+            }
+
+            RZOMBIE(zombie)->basic.flags = 0;
+            GC_ASSERT(heap_pages_final_slots > 0);
+            GC_ASSERT(page->final_slots > 0);
+
             heap_pages_final_slots--;
             page->final_slots--;
             page->free_slots++;
