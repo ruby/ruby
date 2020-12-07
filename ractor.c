@@ -627,8 +627,8 @@ ractor_receive(rb_execution_context_t *ec, rb_ractor_t *r)
         {
             if (ractor_queue_empty_p(r, &r->incoming_queue)) {
                 VM_ASSERT(r->wait.status == wait_none);
-                VM_ASSERT(r->wait.wakeup_status == wakeup_none);
                 r->wait.status = wait_receiving;
+                r->wait.wakeup_status = wakeup_none;
 
                 ractor_sleep(ec, r);
 
@@ -887,8 +887,8 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yield
         RACTOR_LOCK(cr);
         {
             VM_ASSERT(cr->wait.status == wait_none);
-            VM_ASSERT(cr->wait.wakeup_status == wakeup_none);
             cr->wait.status = wait_status;
+            cr->wait.wakeup_status == wakeup_none;
         }
         RACTOR_UNLOCK(cr);
 
@@ -1331,6 +1331,8 @@ ractor_yield_atexit(rb_execution_context_t *ec, rb_ractor_t *cr, VALUE v, bool e
 
                 VM_ASSERT(cr->wait.status == wait_none);
                 cr->wait.status = wait_yielding;
+                cr->wait.wakeup_status = wakeup_none;
+
                 VM_ASSERT(cr->yield_atexit == false);
                 cr->yield_atexit = true;
             }

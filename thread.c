@@ -825,6 +825,9 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
 	    errinfo = th->ec->errinfo;
 
             if (state == TAG_FATAL) {
+                if (th->invoke_type == thread_invoke_type_ractor_proc) {
+                    rb_ractor_atexit(th->ec, Qnil);
+                }
 		/* fatal error within this thread, need to stop whole script */
 	    }
 	    else if (rb_obj_is_kind_of(errinfo, rb_eSystemExit)) {

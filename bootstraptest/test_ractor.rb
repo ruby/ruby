@@ -229,6 +229,26 @@ assert_equal 'ok', %q{
   end
 }
 
+# Can mix with Thread#interrupt and Ractor#take [Bug #17366]
+assert_equal 'err', %q{
+  Ractor.new{
+    t = Thread.current
+    begin
+      Thread.new{ t.raise "err" }.join
+    rescue => e
+      e.message
+    end
+  }.take
+}
+
+# Killed Ractor's thread yields nil
+assert_equal 'nil', %q{
+  Ractor.new{
+    t = Thread.current
+    Thread.new{ t.kill }.join
+  }.take.inspect #=> nil
+}
+
 # Ractor.yield raises Ractor::ClosedError when outgoing port is closed.
 assert_equal 'ok', %q{
   r = Ractor.new Ractor.current do |main|
