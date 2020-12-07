@@ -1684,7 +1684,9 @@ rb_enc_default_external(void)
  * File data written to disk will be transcoded to the default external
  * encoding when written, if default_internal is not nil.
  *
- * The default external encoding is initialized by the locale or -E option.
+ * The default external encoding is initialized by the -E option.
+ * If -E isn't set, it is initialized to UTF-8 on Windows and the locale on
+ * other operating systems.
  */
 static VALUE
 get_default_external(VALUE klass)
