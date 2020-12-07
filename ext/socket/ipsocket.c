@@ -51,16 +51,9 @@ init_inetsock_internal(VALUE v)
     int family = AF_UNSPEC;
     const char *syscall = 0;
 
-#ifdef HAVE_GETADDRINFO_A
-    arg->remote.res = rsock_addrinfo_a(arg->remote.host, arg->remote.serv,
-				       family, SOCK_STREAM,
-				       (type == INET_SERVER) ? AI_PASSIVE : 0,
-				       arg->resolv_timeout);
-#else
     arg->remote.res = rsock_addrinfo(arg->remote.host, arg->remote.serv,
 				     family, SOCK_STREAM,
 				     (type == INET_SERVER) ? AI_PASSIVE : 0);
-#endif
 
 
     /*

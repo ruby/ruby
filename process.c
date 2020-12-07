@@ -331,9 +331,6 @@ static ID id_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID;
 static ID id_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC;
 #endif
 static ID id_hertz;
-#ifdef HAVE_GETADDRINFO_A
-void (* rb_socket_before_fork_func)() = NULL;
-#endif
 
 /* execv and execl are async-signal-safe since SUSv4 (POSIX.1-2008, XPG7) */
 #if defined(__sun) && !defined(_XPG7) /* Solaris 10, 9, ... */
@@ -1624,13 +1621,6 @@ after_exec(void)
 static void
 before_fork_ruby(void)
 {
-#ifdef HAVE_GETADDRINFO_A
-    if (rb_socket_before_fork_func) {
-        /* A mitigation for [Bug #17220]. See ext/socket/raddrinfo.c */
-        rb_socket_before_fork_func();
-    }
-#endif
-
     before_exec();
 }
 

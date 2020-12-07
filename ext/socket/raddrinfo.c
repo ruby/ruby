@@ -199,27 +199,6 @@ nogvl_getaddrinfo(void *arg)
 }
 #endif
 
-#ifdef HAVE_GETADDRINFO_A
-struct gai_suspend_arg
-{
-    struct gaicb *req;
-    struct timespec *timeout;
-};
-
-static void *
-nogvl_gai_suspend(void *arg)
-{
-    int ret;
-    struct gai_suspend_arg *ptr = arg;
-    struct gaicb const *wait_reqs[1];
-
-    wait_reqs[0] = ptr->req;
-    ret = gai_suspend(wait_reqs, 1, ptr->timeout);
-
-    return (void *)(VALUE)ret;
-}
-#endif
-
 static int
 numeric_getaddrinfo(const char *node, const char *service,
         const struct addrinfo *hints,
@@ -338,175 +317,6 @@ rb_getaddrinfo(const char *node, const char *service,
     }
     return ret;
 }
-
-#ifdef HAVE_GETADDRINFO_A
-struct gaicbs {
-    struct gaicbs *next;
-    struct gaicb *gaicb;
-};
-
-/* linked list to retain all outstanding and ongoing requests */
-static struct gaicbs *requests = NULL;
-
-static void
-gaicbs_add(struct gaicb *req)
-{
-    struct gaicbs *request;
-
-    if (!req) return;
-    request = (struct gaicbs *)xmalloc(sizeof(struct gaicbs));
-    request->gaicb = req;
-    request->next = requests;
-
-    requests = request;
-}
-
-static void
-gaicbs_remove(struct gaicb *req)
-{
-    struct gaicbs *request = requests;
-    struct gaicbs *prev = NULL;
-
-    if (!req) return;
-
-    while (request) {
-        if (request->gaicb == req) break;
-        prev = request;
-        request = request->next;
-    }
-
-    if (request) {
-        if (prev) {
-            prev->next = request->next;
-        } else {
-            requests = request->next;
-        }
-        xfree(request);
-    }
-}
-
-static void
-gaicbs_cancel_all(void)
-{
-    struct gaicbs *request = requests;
-    struct gaicbs *tmp, *prev = NULL;
-    int ret;
-
-    while (request) {
-        ret = gai_cancel(request->gaicb);
-        if (ret == EAI_NOTCANCELED) {
-            // continue to next request
-            prev = request;
-            request = request->next;
-        } else {
-            // remove the request from the list
-            if (prev) {
-                prev->next = request->next;
-            } else {
-                requests = request->next;
-            }
-            tmp = request;
-            request = request->next;
-            xfree(tmp);
-        }
-    }
-}
-
-static void
-gaicbs_wait_all(void)
-{
-    struct gaicbs *request = requests;
-    int size = 0;
-
-    // count gaicbs
-    while (request) {
-        size++;
-        request = request->next;
-    }
-
-    // create list to wait
-    const struct gaicb *reqs[size];
-    request = requests;
-    for (int i=0; request; i++) {
-        reqs[i] = request->gaicb;
-        request = request->next;
-    }
-
-    // wait requests
-    gai_suspend(reqs, size, NULL); // ignore result intentionally
-}
-
-#define MILLISECOND_IN_NANOSECONDS 1000000
-
-/*  A mitigation for [Bug #17220].
-    It cancels all outstanding requests and waits for ongoing requests.
-    Then, it waits internal worker threads in getaddrinfo_a(3) to be finished. */
-void
-rb_getaddrinfo_a_before_fork(void)
-{
-    gaicbs_cancel_all();
-    gaicbs_wait_all();
-
-    /* wait worker threads in getaddrinfo_a(3) to be finished.
-       they will finish after 1 second sleep. */
-    struct timespec ts = {1, 500 * MILLISECOND_IN_NANOSECONDS};
-    nanosleep(&ts, NULL);
-}
-
-int
-rb_getaddrinfo_a(const char *node, const char *service,
-               const struct addrinfo *hints,
-               struct rb_addrinfo **res, struct timespec *timeout)
-{
-    struct addrinfo *ai;
-    int ret;
-    int allocated_by_malloc = 0;
-
-    ret = numeric_getaddrinfo(node, service, hints, &ai);
-    if (ret == 0)
-        allocated_by_malloc = 1;
-    else {
-	struct gai_suspend_arg arg;
-	struct gaicb *reqs[1];
-	struct gaicb req;
-
-	req.ar_name = node;
-	req.ar_service = service;
-	req.ar_request = hints;
-
-	reqs[0] = &req;
-	ret = getaddrinfo_a(GAI_NOWAIT, reqs, 1, NULL);
-	if (ret) return ret;
-        gaicbs_add(&req);
-
-	arg.req = &req;
-	arg.timeout = timeout;
-
-	ret = (int)(VALUE)rb_thread_call_without_gvl(nogvl_gai_suspend, &arg, RUBY_UBF_IO, 0);
-        gaicbs_remove(&req);
-        if (ret && ret != EAI_ALLDONE) {
-            /* EAI_ALLDONE indicates that the request already completed and gai_suspend was redundant */
-            /* on Ubuntu 18.04 (or other systems), gai_suspend(3) returns EAI_SYSTEM/ENOENT on timeout */
-            if (ret == EAI_SYSTEM && errno == ENOENT) {
-                return EAI_AGAIN;
-            } else {
-                return ret;
-            }
-        }
-
-
-	ret = gai_error(reqs[0]);
-	ai = reqs[0]->ar_result;
-    }
-
-    if (ret == 0) {
-        *res = (struct rb_addrinfo *)xmalloc(sizeof(struct rb_addrinfo));
-        (*res)->allocated_by_malloc = allocated_by_malloc;
-        (*res)->ai = ai;
-    }
-    return ret;
-}
-#endif
 
 void
 rb_freeaddrinfo(struct rb_addrinfo *ai)
@@ -716,42 +526,6 @@ rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_h
     return res;
 }
 
-#ifdef HAVE_GETADDRINFO_A
-struct rb_addrinfo*
-rsock_getaddrinfo_a(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack, VALUE timeout)
-{
-    struct rb_addrinfo* res = NULL;
-    char *hostp, *portp;
-    int error;
-    char hbuf[NI_MAXHOST], pbuf[NI_MAXSERV];
-    int additional_flags = 0;
-
-    hostp = host_str(host, hbuf, sizeof(hbuf), &additional_flags);
-    portp = port_str(port, pbuf, sizeof(pbuf), &additional_flags);
-
-    if (socktype_hack && hints->ai_socktype == 0 && str_is_number(portp)) {
-       hints->ai_socktype = SOCK_DGRAM;
-    }
-    hints->ai_flags |= additional_flags;
-
-    if (NIL_P(timeout)) {
-        error = rb_getaddrinfo_a(hostp, portp, hints, &res, (struct timespec *)NULL);
-    } else {
-        struct timespec _timeout = rb_time_timespec_interval(timeout);
-        error = rb_getaddrinfo_a(hostp, portp, hints, &res, &_timeout);
-    }
-
-    if (error) {
-        if (hostp && hostp[strlen(hostp)-1] == '\n') {
-            rb_raise(rb_eSocket, "newline at the end of hostname");
-        }
-        rsock_raise_socket_error("getaddrinfo_a", error);
-    }
-
-    return res;
-}
-#endif
-
 int
 rsock_fd_family(int fd)
 {
@@ -776,20 +550,6 @@ rsock_addrinfo(VALUE host, VALUE port, int family, int socktype, int flags)
     hints.ai_flags = flags;
     return rsock_getaddrinfo(host, port, &hints, 1);
 }
-
-#ifdef HAVE_GETADDRINFO_A
-struct rb_addrinfo*
-rsock_addrinfo_a(VALUE host, VALUE port, int family, int socktype, int flags, VALUE timeout)
-{
-    struct addrinfo hints;
-
-    MEMZERO(&hints, struct addrinfo, 1);
-    hints.ai_family = family;
-    hints.ai_socktype = socktype;
-    hints.ai_flags = flags;
-    return rsock_getaddrinfo_a(host, port, &hints, 1, timeout);
-}
-#endif
 
 VALUE
 rsock_ipaddr(struct sockaddr *sockaddr, socklen_t sockaddrlen, int norevlookup)
@@ -1071,11 +831,7 @@ call_getaddrinfo(VALUE node, VALUE service,
 	hints.ai_flags = NUM2INT(flags);
     }
 
-#ifdef HAVE_GETADDRINFO_A
-    res = rsock_getaddrinfo_a(node, service, &hints, socktype_hack, timeout);
-#else
     res = rsock_getaddrinfo(node, service, &hints, socktype_hack);
-#endif
 
     if (res == NULL)
 	rb_raise(rb_eSocket, "host not found");
@@ -2873,8 +2629,4 @@ rsock_init_addrinfo(void)
 
     rb_define_method(rb_cAddrinfo, "marshal_dump", addrinfo_mdump, 0);
     rb_define_method(rb_cAddrinfo, "marshal_load", addrinfo_mload, 1);
-
-#ifdef HAVE_GETADDRINFO_A
-    rb_socket_before_fork_func = rb_getaddrinfo_a_before_fork;
-#endif
 }

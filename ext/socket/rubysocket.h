@@ -320,10 +320,6 @@ int rb_getnameinfo(const struct sockaddr *sa, socklen_t salen, char *host, size_
 int rsock_fd_family(int fd);
 struct rb_addrinfo *rsock_addrinfo(VALUE host, VALUE port, int family, int socktype, int flags);
 struct rb_addrinfo *rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack);
-#ifdef HAVE_GETADDRINFO_A
-struct rb_addrinfo *rsock_addrinfo_a(VALUE host, VALUE port, int family, int socktype, int flags, VALUE timeout);
-struct rb_addrinfo *rsock_getaddrinfo_a(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack, VALUE timeout);
-#endif
 
 VALUE rsock_fd_socket_addrinfo(int fd, struct sockaddr *addr, socklen_t len);
 VALUE rsock_io_socket_addrinfo(VALUE io, struct sockaddr *addr, socklen_t len);
