@@ -938,7 +938,6 @@ compile_compact_jit_code(char* c_file)
     bool success = true;
     CRITICAL_SECTION_START(3, "before active_units list_for_each");
     list_for_each(&active_units.head, child_unit, unode) {
-        CRITICAL_SECTION_FINISH(3, "after active_units list_for_each");
         char funcname[MAXPATHLEN];
         sprint_funcname(funcname, child_unit);
 
@@ -952,8 +951,6 @@ compile_compact_jit_code(char* c_file)
         if (!iseq_label) iseq_label = sep = "";
         fprintf(f, "\n/* %s%s%s:%ld */\n", iseq_label, sep, iseq_path, iseq_lineno);
         success &= mjit_compile(f, child_unit->iseq, funcname, child_unit->id);
-
-        CRITICAL_SECTION_START(3, "before active_units list_for_each");
     }
     CRITICAL_SECTION_FINISH(3, "after active_units list_for_each");
 
