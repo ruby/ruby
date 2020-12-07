@@ -107,7 +107,7 @@ jobs:
           [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding("IBM437")
           [Console]::InputEncoding  = [System.Text.Encoding]::GetEncoding("IBM437")
           $jobs = [int](1.5 * $env:NUMBER_OF_PROCESSORS)
-          make test-all TESTOPTS="-j $jobs --retry --job-status=normal --show-skip --timeout-scale=1.5"
+          make test-all TESTOPTS="-j $jobs --retry --job-status=normal --show-skip --timeout-scale=1.5" --regexp="!/^(test_to_specs_respects_bundler_version|test_gem_bundler|test_activate_bin_path_gives_proper_error_for_bundler)$/"
 
       - name: test-spec
         timeout-minutes: 10
