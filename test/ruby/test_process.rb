@@ -2492,6 +2492,12 @@ EOS
     assert_same(Process.last_status, $?)
   end
 
+  def test_last_status_failure
+    assert_nil system("sad")
+    assert_not_predicate $?, :success?
+    assert_equal $?.exitstatus, 127
+  end
+
   def test_exec_failure_leaves_no_child
     assert_raise(Errno::ENOENT) do
       spawn('inexistent_command')

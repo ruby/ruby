@@ -10002,6 +10002,7 @@ process.$(OBJEXT): $(top_srcdir)/internal/thread.h
 process.$(OBJEXT): $(top_srcdir)/internal/variable.h
 process.$(OBJEXT): $(top_srcdir)/internal/vm.h
 process.$(OBJEXT): $(top_srcdir)/internal/warnings.h
+process.$(OBJEXT): {$(VPATH)}$(COROUTINE_H)
 process.$(OBJEXT): {$(VPATH)}assert.h
 process.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 process.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
