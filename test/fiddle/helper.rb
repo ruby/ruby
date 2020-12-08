@@ -55,7 +55,6 @@ when /mingw/, /mswin/
   crtname = RbConfig::CONFIG["RUBY_SO_NAME"][/msvc\w+/] || 'ucrtbase'
   libc_so = libm_so = "#{crtname}.dll"
 when /darwin/
-  # macOS 11.0+ removed libSystem.B.dylib from /usr/lib. But It works with dlopen.
   libc_so = libm_so = "/usr/lib/libSystem.B.dylib"
 when /kfreebsd/
   libc_so = "/lib/libc.so.0.1"
@@ -122,6 +121,11 @@ end
 
 libc_so = nil if !libc_so || (libc_so[0] == ?/ && !File.file?(libc_so))
 libm_so = nil if !libm_so || (libm_so[0] == ?/ && !File.file?(libm_so))
+
+# macOS 11.0+ removed libSystem.B.dylib from /usr/lib. But It works with dlopen.
+if RUBY_PLATFORM =~ /darwin/
+  libc_so = libm_so = "/usr/lib/libSystem.B.dylib"
+end
 
 if !libc_so || !libm_so
   ruby = EnvUtil.rubybin
