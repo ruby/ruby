@@ -124,29 +124,29 @@ Outstanding ones only.
       subclass instances when called on subclass instances:
       [[Bug #6087]]
 
-        * `Array#drop`
-        * `Array#drop_while`
-        * `Array#flatten`
-        * `Array#slice!`
-        * `Array#slice/#[]`
-        * `Array#take`
-        * `Array#take_while`
-        * `Array#uniq`
-        * `Array#*`
+        * Array#drop
+        * Array#drop_while
+        * Array#flatten
+        * Array#slice!
+        * Array#slice / Array#[]
+        * Array#take
+        * Array#take_while
+        * Array#uniq
+        * Array#*
 
 * ConditionVariable
 
-    * `ConditionVariable#wait` may now invoke the `block`/`unblock` scheduler
+    * ConditionVariable#wait may now invoke the `block`/`unblock` scheduler
       hooks in a non-blocking context. [[Feature #16786]]
 
 * Dir
 
-    * `Dir.glob` and `Dir.[]` now sort the results by default, and
+    * Dir.glob and Dir.[] now sort the results by default, and
       accept `sort:` keyword option.  [[Feature #8709]]
 
 * ENV
 
-    * `ENV.except` has been added, which returns a hash excluding the
+    * ENV.except has been added, which returns a hash excluding the
       given keys and their values.  [[Feature #15822]]
 
 * Encoding
@@ -155,19 +155,19 @@ Outstanding ones only.
 
 * Fiber
 
-    * `Fiber.new(blocking: true/false)` allows you to create non-blocking
+    * Fiber.new(blocking: true/false) allows you to create non-blocking
       execution contexts. [[Feature #16786]]
 
-    * `Fiber#blocking?` tells whether the fiber is non-blocking. [[Feature #16786]]
+    * Fiber#blocking? tells whether the fiber is non-blocking. [[Feature #16786]]
 
-    * `Fiber#backtrace` & `Fiber#backtrace_locations` provide per-fiber backtrace.
+    * Fiber#backtrace & Fiber#backtrace_locations provide per-fiber backtrace.
       [[Feature #16815]]
 
-    * The limitation of `Fiber#transfer` is relaxed. [Bug #17221]
+    * The limitation of Fiber#transfer is relaxed. [[Bug #17221]]
 
 * GC
 
-    * `GC.auto_compact=` and `GC.auto_compact` have been added to control
+    * GC.auto_compact= and GC.auto_compact have been added to control
       when compaction runs.  Setting `auto_compact=` to true will cause
       compaction to occur during major collections.  At the moment,
       compaction adds significant overhead to major collections, so please
@@ -175,46 +175,46 @@ Outstanding ones only.
 
 * Hash
 
-    * `Hash#transform_keys` now accepts a hash that maps keys to new
+    * Hash#transform_keys now accepts a hash that maps keys to new
       keys.  [[Feature #16274]]
 
-    * `Hash#except` has been added, which returns a hash excluding the
+    * Hash#except has been added, which returns a hash excluding the
       given keys and their values.  [[Feature #15822]]
 
 * IO
 
-    * `IO#nonblock?` now defaults to `true`. [[Feature #16786]]
+    * IO#nonblock? now defaults to `true`. [[Feature #16786]]
 
-    * `IO#wait_readable`, `IO#wait_writable`, `IO#read`, `IO#write` and other
-      related methods (e.g. `#puts`, `#gets`) may invoke the scheduler hook
+    * IO#wait_readable, IO#wait_writable, IO#read, IO#write and other
+      related methods (e.g. IO#puts, IO#gets) may invoke the scheduler hook
       `#io_wait(io, events, timeout)` in a non-blocking execution context.
       [[Feature #16786]]
 
 * Kernel
 
-    * `Kernel#clone` when called with `freeze: false` keyword will call
+    * Kernel#clone when called with `freeze: false` keyword will call
       `#initialize_clone` with the `freeze: false` keyword.
       [[Bug #14266]]
 
-    * `Kernel#clone` when called with `freeze: true` keyword will call
+    * Kernel#clone when called with `freeze: true` keyword will call
       `#initialize_clone` with the `freeze: true` keyword, and will
       return a frozen copy even if the receiver is unfrozen.
       [[Feature #16175]]
 
-    * `Kernel#eval` when called with two arguments will use "(eval)"
+    * Kernel#eval when called with two arguments will use "(eval)"
       for `__FILE__` and 1 for `__LINE__` in the evaluated code.
       [[Bug #4352]]
 
-    * `Kernel#lambda` now warns if called without a literal block.
+    * Kernel#lambda now warns if called without a literal block.
       [[Feature #15973]]
 
-    * `Kernel.sleep(...)` invokes the scheduler hook `#kernel_sleep(...)` in a
+    * Kernel.sleep invokes the scheduler hook `#kernel_sleep(...)` in a
       non-blocking execution context. [[Feature #16786]]
 
 * Module
 
-    * `Module#include` and `#prepend` now affect classes and modules that
-      have already included or prepended the receiver, mirroring the
+    * Module#include and Module#prepend now affect classes and modules
+      that have already included or prepended the receiver, mirroring the
       behavior if the arguments were included in the receiver before
       the other modules and classes included or prepended the receiver.
       [[Feature #9573]]
@@ -236,13 +236,13 @@ Outstanding ones only.
 
 * Proc
 
-    * `Proc#==` and `Proc#eql?` are now defined and will return true for
+    * Proc#== and Proc#eql? are now defined and will return true for
       separate Proc instances if the procs were created from the same block.
       [[Feature #14267]]
 
 * Queue / SizedQueue
 
-    * `Queue#pop`, `SizedQueue#push` and related methods may now invoke the
+    * Queue#pop, SizedQueue#push and related methods may now invoke the
       `block`/`unblock` scheduler hooks in a non-blocking context.
       [[Feature #16786]]
 
@@ -257,62 +257,62 @@ Outstanding ones only.
       instead of subclass instances when called on subclass instances:
       [[Bug #10845]]
 
-        * `String#*`
-        * `String#capitalize`
-        * `String#center`
-        * `String#chomp`
-        * `String#chop`
-        * `String#delete`
-        * `String#delete_prefix`
-        * `String#delete_suffix`
-        * `String#downcase`
-        * `String#dump`
-        * `String#each_char`
-        * `String#each_grapheme_cluster`
-        * `String#each_line`
-        * `String#gsub`
-        * `String#ljust`
-        * `String#lstrip`
-        * `String#partition`
-        * `String#reverse`
-        * `String#rjust`
-        * `String#rpartition`
-        * `String#rstrip`
-        * `String#scrub`
-        * `String#slice!`
-        * `String#slice/#[]`
-        * `String#split`
-        * `String#squeeze`
-        * `String#strip`
-        * `String#sub`
-        * `String#succ/#next`
-        * `String#swapcase`
-        * `String#tr`
-        * `String#tr_s`
-        * `String#upcase`
+        * String#*
+        * String#capitalize
+        * String#center
+        * String#chomp
+        * String#chop
+        * String#delete
+        * String#delete_prefix
+        * String#delete_suffix
+        * String#downcase
+        * String#dump
+        * String#each_char
+        * String#each_grapheme_cluster
+        * String#each_line
+        * String#gsub
+        * String#ljust
+        * String#lstrip
+        * String#partition
+        * String#reverse
+        * String#rjust
+        * String#rpartition
+        * String#rstrip
+        * String#scrub
+        * String#slice!
+        * String#slice / String#[]
+        * String#split
+        * String#squeeze
+        * String#strip
+        * String#sub
+        * String#succ / String#next
+        * String#swapcase
+        * String#tr
+        * String#tr_s
+        * String#upcase
 
 * Symbol
 
-    * `Symbol#to_proc` now returns a lambda Proc.  [[Feature #16260]]
+    * Symbol#to_proc now returns a lambda Proc.  [[Feature #16260]]
 
-    * `Symbol#name` has been added, which returns the name of the symbol
+    * Symbol#name has been added, which returns the name of the symbol
       if it is named.  The returned string is frozen.  [[Feature #16150]]
 
 * Thread
 
-    * Introduce `Fiber.set_scheduler` for intercepting blocking operations and
-      `Fiber.scheduler` for accessing the current scheduler. See
+    * Introduce Fiber.set_scheduler for intercepting blocking operations and
+      Fiber.scheduler for accessing the current scheduler. See
       doc/scheduler.md for more details. [[Feature #16786]]
 
-    * `Fiber.blocking?` tells whether the current execution context is
+    * Fiber.blocking? tells whether the current execution context is
       blocking. [[Feature #16786]]
 
-    * `Thread#join` invokes the scheduler hooks `block`/`unblock` in a
+    * Thread#join invokes the scheduler hooks `block`/`unblock` in a
       non-blocking execution context. [[Feature #16786]]
 
-    * `Thread.ignore_deadlock` accessor for disabling the default deadlock
-      detection, allowing the use of signal handlers to break deadlock.
-      [[Bug #13768]]
+    * Thread.ignore_deadlock accessor has been added for disabling the
+      default deadlock detection, allowing the use of signal handlers to
+      break deadlock. [[Bug #13768]]
 
 * Warning
 
@@ -341,10 +341,10 @@ Outstanding ones only.
 
 * Net::HTTP
 
-    * `Net::HTTP#verify_hostname=` and `Net::HTTP#verify_hostname` have been
+    * Net::HTTP#verify_hostname= and Net::HTTP#verify_hostname have been
       added to skip hostname verification.  [[Feature #16555]]
 
-    * `Net::HTTP.get`, `Net::HTTP.get_response`, and `Net::HTTP.get_print`
+    * Net::HTTP.get, Net::HTTP.get_response, and Net::HTTP.get_print
       can take the request headers as a Hash in the second argument when the
       first argument is a URI.  [[Feature #16686]]
 
@@ -384,6 +384,7 @@ Outstanding ones only.
 Excluding feature bug fixes.
 
 * Regexp literals and all Range objects are frozen [[Feature #8948]] [[Feature #16377]] [[Feature #15504]]
+
     ```ruby
     /foo/.frozen? #=> true
     (42...).frozen? # => true
@@ -402,7 +403,7 @@ Excluding feature bug fixes.
 
 * `TRUE`/`FALSE`/`NIL` constants are no longer defined.
 
-* `Integer#zero?` overrides `Numeric#zero?` for optimization.  [[Misc #16961]]
+* Integer#zero? overrides Numeric#zero? for optimization.  [[Misc #16961]]
 
 ## Stdlib compatibility issues
 
@@ -619,6 +620,6 @@ end
 [Feature #17134]: https://bugs.ruby-lang.org/issues/17134
 [Feature #17136]: https://bugs.ruby-lang.org/issues/17136
 [Feature #17176]: https://bugs.ruby-lang.org/issues/17176
-[Feature #17260]: https://bugs.ruby-lang.org/issues/17260
+[Bug #17221]:     https://bugs.ruby-lang.org/issues/17221
 [Feature #17260]: https://bugs.ruby-lang.org/issues/17260
 [GH-2991]:        https://github.com/ruby/ruby/pull/2991

@@ -2,7 +2,7 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
-ruby_version_is ''...'2.8' do
+ruby_version_is ''...'3.0' do
   describe "IO#bytes" do
     before :each do
       @io = IOSpecs.io_fixture "lines.txt"

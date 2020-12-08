@@ -473,10 +473,14 @@ rb_memory_view_parse_item_format(const char *format,
                 switch (type_char) {
                   case 'e':
                   case 'E':
+                  case 'v':
+                  case 'V':
                     little_endian_p = true;
                     break;
                   case 'g':
                   case 'G':
+                  case 'n':
+                  case 'N':
                     little_endian_p = false;
                     break;
                   default:

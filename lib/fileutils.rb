@@ -223,8 +223,9 @@ module FileUtils
       until path == stack.last   # dirname("/")=="/", dirname("C:/")=="C:/"
         stack.push path
         path = File.dirname(path)
+        break if File.directory?(path)
       end
-      stack.pop                 # root directory should exist
+      stack.pop if path == stack.last   # root directory should exist
       stack.reverse_each do |dir|
         begin
           fu_mkdir dir, mode

@@ -113,4 +113,5 @@ module Mutex_m
     mu_initialize
     super
   end
+  ruby2_keywords(:initialize) if respond_to?(:ruby2_keywords, true)
 end

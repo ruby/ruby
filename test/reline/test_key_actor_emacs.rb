@@ -1281,6 +1281,36 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_equal(%w{foo_foo foo_bar foo_baz}, @line_editor.instance_variable_get(:@menu_info).list)
   end
 
+  def test_completion_duplicated_list
+    @line_editor.completion_proc = proc { |word|
+      %w{
+        foo_foo
+        foo_foo
+        foo_bar
+      }.map { |i|
+        i.encode(@encoding)
+      }
+    }
+    input_keys('foo_')
+    assert_byte_pointer_size('foo_')
+    assert_cursor(4)
+    assert_cursor_max(4)
+    assert_line('foo_')
+    assert_equal(nil, @line_editor.instance_variable_get(:@menu_info))
+    input_keys("\C-i", false)
+    assert_byte_pointer_size('foo_')
+    assert_cursor(4)
+    assert_cursor_max(4)
+    assert_line('foo_')
+    assert_equal(nil, @line_editor.instance_variable_get(:@menu_info))
+    input_keys("\C-i", false)
+    assert_byte_pointer_size('foo_')
+    assert_cursor(4)
+    assert_cursor_max(4)
+    assert_line('foo_')
+    assert_equal(%w{foo_foo foo_bar}, @line_editor.instance_variable_get(:@menu_info).list)
+  end
+
   def test_completion
     @line_editor.completion_proc = proc { |word|
       %w{
@@ -1894,6 +1924,26 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_cursor_max(15)
     assert_line('aaa bbb ccc ddd')
     assert_equal([0, 0], @line_editor.instance_variable_get(:@mark_pointer))
+  end
+
+  def test_em_exchange_mark_without_mark
+    input_keys('aaa bbb ccc ddd')
+    assert_byte_pointer_size('aaa bbb ccc ddd')
+    assert_cursor(15)
+    assert_cursor_max(15)
+    assert_line('aaa bbb ccc ddd')
+    input_keys("\C-a\M-f", false)
+    assert_byte_pointer_size('aaa')
+    assert_cursor(3)
+    assert_cursor_max(15)
+    assert_line('aaa bbb ccc ddd')
+    assert_equal(nil, @line_editor.instance_variable_get(:@mark_pointer))
+    input_key_by_symbol(:em_exchange_mark)
+    assert_byte_pointer_size('aaa')
+    assert_cursor(3)
+    assert_cursor_max(15)
+    assert_line('aaa bbb ccc ddd')
+    assert_equal(nil, @line_editor.instance_variable_get(:@mark_pointer))
   end
 
   def test_modify_lines_with_wrong_rs

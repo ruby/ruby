@@ -60,7 +60,7 @@ describe "ObjectSpace.define_finalizer" do
     ruby_exe(code, :args => "2>&1").should include("finalizer run\n")
   end
 
-  ruby_version_is "2.8" do
+  ruby_version_is "3.0" do
     it "warns if the finalizer has the object as the receiver" do
       code = <<-RUBY
         class CapturesSelf

@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
 require_relative 'shared/key'
 
-ruby_version_is ''...'2.8' do
+ruby_version_is ''...'3.0' do
   describe "ENV.index" do
     it_behaves_like :env_key, :index
 

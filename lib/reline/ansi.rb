@@ -1,4 +1,5 @@
 require 'io/console'
+require 'timeout'
 
 class Reline::ANSI
   def self.encoding
@@ -67,7 +68,7 @@ class Reline::ANSI
   end
 
   @@buf = []
-  def self.getc
+  def self.inner_getc
     unless @@buf.empty?
       return @@buf.shift
     end
@@ -78,6 +79,62 @@ class Reline::ANSI
   rescue Errno::EIO
     # Maybe the I/O has been closed.
     nil
+  end
+
+  @@in_bracketed_paste_mode = false
+  START_BRACKETED_PASTE = String.new("\e[200~,", encoding: Encoding::ASCII_8BIT)
+  END_BRACKETED_PASTE = String.new("\e[200~.", encoding: Encoding::ASCII_8BIT)
+  def self.getc_with_bracketed_paste
+    buffer = String.new(encoding: Encoding::ASCII_8BIT)
+    buffer << inner_getc
+    while START_BRACKETED_PASTE.start_with?(buffer) or END_BRACKETED_PASTE.start_with?(buffer) do
+      if START_BRACKETED_PASTE == buffer
+        @@in_bracketed_paste_mode = true
+        return inner_getc
+      elsif END_BRACKETED_PASTE == buffer
+        @@in_bracketed_paste_mode = false
+        ungetc(-1)
+        return inner_getc
+      end
+      begin
+        succ_c = nil
+        Timeout.timeout(Reline.core.config.keyseq_timeout * 100) {
+          succ_c = inner_getc
+        }
+      rescue Timeout::Error
+        break
+      else
+        buffer << succ_c
+      end
+    end
+    buffer.bytes.reverse_each do |ch|
+      ungetc ch
+    end
+    inner_getc
+  end
+
+  def self.getc
+    if Reline.core.config.enable_bracketed_paste
+      getc_with_bracketed_paste
+    else
+      inner_getc
+    end
+  end
+
+  def self.in_pasting?
+    @@in_bracketed_paste_mode or (not Reline::IOGate.empty_buffer?)
+  end
+
+  def self.empty_buffer?
+    unless @@buf.empty?
+      return false
+    end
+    rs, = IO.select([@@input], [], [], 0.00001)
+    if rs and rs[0]
+      false
+    else
+      true
+    end
   end
 
   def self.ungetc(c)
@@ -115,7 +172,7 @@ class Reline::ANSI
 
   def self.cursor_pos
     begin
-      res = ''
+      res = String.new
       m = nil
       @@input.raw do |stdin|
         @@output << "\e[6n"

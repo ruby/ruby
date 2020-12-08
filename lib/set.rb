@@ -16,12 +16,9 @@
 #
 # This library provides the Set class, which deals with a collection
 # of unordered values with no duplicates.  It is a hybrid of Array's
-# intuitive inter-operation facilities and Hash's fast lookup.  If you
-# need to keep values sorted in some order, use the SortedSet class.
+# intuitive inter-operation facilities and Hash's fast lookup.
 #
 # The method +to_set+ is added to Enumerable for convenience.
-#
-# See the Set and SortedSet documentation for examples of usage.
 
 
 #
@@ -48,9 +45,9 @@
 # == Comparison
 #
 # The comparison operators <, >, <=, and >= are implemented as
-# shorthand for the {proper_,}{subset?,superset?} methods.  However,
-# the <=> operator is intentionally left out because not every pair of
-# sets is comparable ({x, y} vs. {x, z} for example).
+# shorthand for the {proper_,}{subset?,superset?} methods.
+# The <=> operator reflects this order, or return `nil` for
+# sets that both have distinct elements ({x, y} vs. {x, z} for example).
 #
 # == Example
 #
@@ -136,10 +133,18 @@ class Set
     @hash = orig.instance_variable_get(:@hash).dup
   end
 
-  # Clone internal hash.
-  def initialize_clone(orig, freeze: nil)
-    super
-    @hash = orig.instance_variable_get(:@hash).clone(freeze: freeze)
+  if Kernel.instance_method(:initialize_clone).arity != 1
+    # Clone internal hash.
+    def initialize_clone(orig, **options)
+      super
+      @hash = orig.instance_variable_get(:@hash).clone(**options)
+    end
+  else
+    # Clone internal hash.
+    def initialize_clone(orig)
+      super
+      @hash = orig.instance_variable_get(:@hash).clone
+    end
   end
 
   def freeze    # :nodoc:
@@ -296,6 +301,19 @@ class Set
     end
   end
   alias < proper_subset?
+
+  # Returns 0 if the set are equal,
+  # -1 / +1 if the set is a proper subset / superset of the given set,
+  # or nil if they both have unique elements.
+  def <=>(set)
+    return unless set.is_a?(Set)
+
+    case size <=> set.size
+    when -1 then -1 if proper_subset?(set)
+    when +1 then +1 if proper_superset?(set)
+    else 0 if self.==(set)
+    end
+  end
 
   # Returns true if the set and the given set have at least one
   # element in common.
@@ -659,154 +677,6 @@ class Set
   end
 end
 
-#
-# SortedSet implements a Set that guarantees that its elements are
-# yielded in sorted order (according to the return values of their
-# #<=> methods) when iterating over them.
-#
-# All elements that are added to a SortedSet must respond to the <=>
-# method for comparison.
-#
-# Also, all elements must be <em>mutually comparable</em>: <tt>el1 <=>
-# el2</tt> must not return <tt>nil</tt> for any elements <tt>el1</tt>
-# and <tt>el2</tt>, else an ArgumentError will be raised when
-# iterating over the SortedSet.
-#
-# == Example
-#
-#   require "set"
-#
-#   set = SortedSet.new([2, 1, 5, 6, 4, 5, 3, 3, 3])
-#   ary = []
-#
-#   set.each do |obj|
-#     ary << obj
-#   end
-#
-#   p ary # => [1, 2, 3, 4, 5, 6]
-#
-#   set2 = SortedSet.new([1, 2, "3"])
-#   set2.each { |obj| } # => raises ArgumentError: comparison of Fixnum with String failed
-#
-class SortedSet < Set
-  @@setup = false
-  @@mutex = Mutex.new
-
-  class << self
-    def [](*ary)        # :nodoc:
-      new(ary)
-    end
-
-    def setup   # :nodoc:
-      @@setup and return
-
-      @@mutex.synchronize do
-        # a hack to shut up warning
-        alias_method :old_init, :initialize
-
-        begin
-          require 'rbtree'
-
-          module_eval <<-END, __FILE__, __LINE__+1
-            def initialize(*args)
-              @hash = RBTree.new
-              super
-            end
-
-            def add(o)
-              o.respond_to?(:<=>) or raise ArgumentError, "value must respond to <=>"
-              super
-            end
-            alias << add
-          END
-        rescue LoadError
-          module_eval <<-END, __FILE__, __LINE__+1
-            def initialize(*args)
-              @keys = nil
-              super
-            end
-
-            def clear
-              @keys = nil
-              super
-            end
-
-            def replace(enum)
-              @keys = nil
-              super
-            end
-
-            def add(o)
-              o.respond_to?(:<=>) or raise ArgumentError, "value must respond to <=>"
-              @keys = nil
-              super
-            end
-            alias << add
-
-            def delete(o)
-              @keys = nil
-              @hash.delete(o)
-              self
-            end
-
-            def delete_if
-              block_given? or return enum_for(__method__) { size }
-              n = @hash.size
-              super
-              @keys = nil if @hash.size != n
-              self
-            end
-
-            def keep_if
-              block_given? or return enum_for(__method__) { size }
-              n = @hash.size
-              super
-              @keys = nil if @hash.size != n
-              self
-            end
-
-            def merge(enum)
-              @keys = nil
-              super
-            end
-
-            def each(&block)
-              block or return enum_for(__method__) { size }
-              to_a.each(&block)
-              self
-            end
-
-            def to_a
-              (@keys = @hash.keys).sort! unless @keys
-              @keys.dup
-            end
-
-            def freeze
-              to_a
-              super
-            end
-
-            def rehash
-              @keys = nil
-              super
-            end
-          END
-        end
-        # a hack to shut up warning
-        remove_method :old_init
-
-        @@setup = true
-      end
-    end
-  end
-
-  def initialize(*args, &block) # :nodoc:
-    SortedSet.setup
-    @keys = nil
-    super
-  end
-end
-
 module Enumerable
   # Makes a set from the enumerable object with given arguments.
   # Needs to +require "set"+ to use this method.
@@ -814,97 +684,3 @@ module Enumerable
     klass.new(self, *args, &block)
   end
 end
-
-# =begin
-# == RestricedSet class
-# RestricedSet implements a set with restrictions defined by a given
-# block.
-#
-# === Super class
-#     Set
-#
-# === Class Methods
-# --- RestricedSet::new(enum = nil) { |o| ... }
-# --- RestricedSet::new(enum = nil) { |rset, o| ... }
-#     Creates a new restricted set containing the elements of the given
-#     enumerable object.  Restrictions are defined by the given block.
-#
-#     If the block's arity is 2, it is called with the RestrictedSet
-#     itself and an object to see if the object is allowed to be put in
-#     the set.
-#
-#     Otherwise, the block is called with an object to see if the object
-#     is allowed to be put in the set.
-#
-# === Instance Methods
-# --- restriction_proc
-#     Returns the restriction procedure of the set.
-#
-# =end
-#
-# class RestricedSet < Set
-#   def initialize(*args, &block)
-#     @proc = block or raise ArgumentError, "missing a block"
-#
-#     if @proc.arity == 2
-#       instance_eval %{
-#       def add(o)
-#         @hash[o] = true if @proc.call(self, o)
-#         self
-#       end
-#       alias << add
-#
-#       def add?(o)
-#         if include?(o) || !@proc.call(self, o)
-#           nil
-#         else
-#           @hash[o] = true
-#           self
-#         end
-#       end
-#
-#       def replace(enum)
-#         enum.respond_to?(:each) or raise ArgumentError, "value must be enumerable"
-#         clear
-#         enum.each_entry { |o| add(o) }
-#
-#         self
-#       end
-#
-#       def merge(enum)
-#         enum.respond_to?(:each) or raise ArgumentError, "value must be enumerable"
-#         enum.each_entry { |o| add(o) }
-#
-#         self
-#       end
-#       }
-#     else
-#       instance_eval %{
-#       def add(o)
-#         if @proc.call(o)
-#           @hash[o] = true
-#         end
-#         self
-#       end
-#       alias << add
-#
-#       def add?(o)
-#         if include?(o) || !@proc.call(o)
-#           nil
-#         else
-#           @hash[o] = true
-#           self
-#         end
-#       end
-#       }
-#     end
-#
-#     super(*args)
-#   end
-#
-#   def restriction_proc
-#     @proc
-#   end
-# end
-
-# Tests have been moved to test/test_set.rb.

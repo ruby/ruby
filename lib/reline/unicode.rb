@@ -35,11 +35,16 @@ class Reline::Unicode
   }
   EscapedChars = EscapedPairs.keys.map(&:chr)
 
-  CSI_REGEXP = /\e\[[\d;]*[ABCDEFGHJKSTfminsuhl]/
-  OSC_REGEXP = /\e\]\d+(?:;[^;]+)*\a/
   NON_PRINTING_START = "\1"
   NON_PRINTING_END = "\2"
-  WIDTH_SCANNER = /\G(?:#{NON_PRINTING_START}|#{NON_PRINTING_END}|#{CSI_REGEXP}|#{OSC_REGEXP}|\X)/
+  CSI_REGEXP = /\e\[[\d;]*[ABCDEFGHJKSTfminsuhl]/
+  OSC_REGEXP = /\e\]\d+(?:;[^;]+)*\a/
+  WIDTH_SCANNER = /\G(?:(#{NON_PRINTING_START})|(#{NON_PRINTING_END})|(#{CSI_REGEXP})|(#{OSC_REGEXP})|(\X))/o
+  NON_PRINTING_START_INDEX = 0
+  NON_PRINTING_END_INDEX = 1
+  CSI_REGEXP_INDEX = 2
+  OSC_REGEXP_INDEX = 3
+  GRAPHEME_CLUSTER_INDEX = 4
 
   def self.get_mbchar_byte_size_by_first_char(c)
     # Checks UTF-8 character byte size
@@ -72,20 +77,42 @@ class Reline::Unicode
     }.join
   end
 
+  require 'reline/unicode/east_asian_width'
+
+  MBCharWidthRE = /
+    (?<width_2_1>
+      [#{ EscapedChars.map {|c| "\\x%02x" % c.ord }.join }] (?# ^ + char, such as ^M, ^H, ^[, ...)
+    )
+  | (?<width_3>^\u{2E3B}) (?# THREE-EM DASH)
+  | (?<width_0>^\p{M})
+  | (?<width_2_2>
+      #{ EastAsianWidth::TYPE_F }
+    | #{ EastAsianWidth::TYPE_W }
+    )
+  | (?<width_1>
+      #{ EastAsianWidth::TYPE_H }
+    | #{ EastAsianWidth::TYPE_NA }
+    | #{ EastAsianWidth::TYPE_N }
+    )
+  | (?<ambiguous_width>
+      #{EastAsianWidth::TYPE_A}
+    )
+  /x
+
   def self.get_mbchar_width(mbchar)
-    case mbchar.encode(Encoding::UTF_8)
-    when *EscapedChars # ^ + char, such as ^M, ^H, ^[, ...
-      2
-    when /^\u{2E3B}/ # THREE-EM DASH
-      3
-    when /^\p{M}/
-      0
-    when EastAsianWidth::TYPE_A
-      Reline.ambiguous_width
-    when EastAsianWidth::TYPE_F, EastAsianWidth::TYPE_W
-      2
-    when EastAsianWidth::TYPE_H, EastAsianWidth::TYPE_NA, EastAsianWidth::TYPE_N
-      1
+    ord = mbchar.ord
+    if (0x00 <= ord and ord <= 0x1F)
+      return 2
+    elsif (0x20 <= ord and ord <= 0x7E)
+      return 1
+    end
+    m = mbchar.encode(Encoding::UTF_8).match(MBCharWidthRE)
+    case
+    when m[:width_2_1], m[:width_2_2] then 2
+    when m[:width_3] then 3
+    when m[:width_0] then 0
+    when m[:width_1] then 1
+    when m[:ambiguous_width] then Reline.ambiguous_width
     else
       nil
     end
@@ -97,13 +124,14 @@ class Reline::Unicode
       rest = str.encode(Encoding::UTF_8)
       in_zero_width = false
       rest.scan(WIDTH_SCANNER) do |gc|
-        case gc
-        when NON_PRINTING_START
+        case
+        when gc[NON_PRINTING_START_INDEX]
           in_zero_width = true
-        when NON_PRINTING_END
+        when gc[NON_PRINTING_END_INDEX]
           in_zero_width = false
-        when CSI_REGEXP, OSC_REGEXP
-        else
+        when gc[CSI_REGEXP_INDEX], gc[OSC_REGEXP_INDEX]
+        when gc[GRAPHEME_CLUSTER_INDEX]
+          gc = gc[GRAPHEME_CLUSTER_INDEX]
           unless in_zero_width
             width += get_mbchar_width(gc)
           end
@@ -124,14 +152,17 @@ class Reline::Unicode
     rest = str.encode(Encoding::UTF_8)
     in_zero_width = false
     rest.scan(WIDTH_SCANNER) do |gc|
-      case gc
-      when NON_PRINTING_START
+      case
+      when gc[NON_PRINTING_START_INDEX]
         in_zero_width = true
-      when NON_PRINTING_END
+      when gc[NON_PRINTING_END_INDEX]
         in_zero_width = false
-      when CSI_REGEXP, OSC_REGEXP
-        lines.last << gc
-      else
+      when gc[CSI_REGEXP_INDEX]
+        lines.last << gc[CSI_REGEXP_INDEX]
+      when gc[OSC_REGEXP_INDEX]
+        lines.last << gc[OSC_REGEXP_INDEX]
+      when gc[GRAPHEME_CLUSTER_INDEX]
+        gc = gc[GRAPHEME_CLUSTER_INDEX]
         unless in_zero_width
           mbchar_width = get_mbchar_width(gc)
           if (width += mbchar_width) > max_width
@@ -591,5 +622,3 @@ class Reline::Unicode
     [byte_size, width]
   end
 end
-
-require 'reline/unicode/east_asian_width'

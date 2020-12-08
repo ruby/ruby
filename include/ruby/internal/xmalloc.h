@@ -59,7 +59,7 @@ RBIMPL_ATTR_ALLOC_SIZE((1))
  * except:
  *
  *   - It raises Ruby exceptions instead of returning NULL, and
- *   - In case of `ENOMEM` it tries to GC to make some roon.
+ *   - In case of `ENOMEM` it tries to GC to make some room.
  *
  * @param[in]  size          Requested amount of memory.
  * @throw      rb_eMemError  No space left for `size` bytes allocation.
@@ -68,7 +68,7 @@ RBIMPL_ATTR_ALLOC_SIZE((1))
  *             the underlying malloc() routine.
  * @note       It doesn't return NULL.
  * @note       Unlike some malloc() implementations, it allocates something and
- *             returns a meaningful value even when `size` is equl to zero.
+ *             returns a meaningful value even when `size` is equal to zero.
  * @warning    The return  value shall  be invalidated  exactly once  by either
  *             ruby_xfree(),  ruby_xrealloc(), or  ruby_xrealloc2().   It is  a
  *             failure to pass it to system free(), because the system and Ruby
@@ -241,7 +241,7 @@ RBIMPL_ATTR_NOEXCEPT(realloc(ptr, newelems * newsiz))
  *              exactly once by  either passing it to  ruby_xfree(), or passing
  *              it to  either ruby_xrealloc(), ruby_xrealloc2() then  check the
  *              return value for invalidation.
- * @warning     Do not pass anytihng other  than pointers described above.  For
+ * @warning     Do not pass anything other  than pointers described above.  For
  *              instance pointers returned from malloc() or mmap() shall not be
  *              passed  to   this  function,  because  the   underlying  memory
  *              management mechanism could differ.

@@ -199,6 +199,20 @@ class Reline::Windows
     @@output_buf.unshift(c)
   end
 
+  def self.in_pasting?
+    not self.empty_buffer?
+  end
+
+  def self.empty_buffer?
+    if not @@input_buf.empty?
+      false
+    elsif @@kbhit.call == 0
+      true
+    else
+      false
+    end
+  end
+
   def self.get_screen_size
     csbi = 0.chr * 22
     @@GetConsoleScreenBufferInfo.call(@@hConsoleHandle, csbi)

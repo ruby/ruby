@@ -265,8 +265,13 @@ define rp
     printf "%sT_ZOMBIE%s: ", $color_type, $color_end
     print (struct RData *)($arg0)
   else
+  if ($flags & RUBY_T_MASK) == RUBY_T_MOVED
+    printf "%sT_MOVED%s: ", $color_type, $color_end
+    print *(struct RMoved *)$arg0
+  else
     printf "%sunknown%s: ", $color_type, $color_end
     print (struct RBasic *)($arg0)
+  end
   end
   end
   end

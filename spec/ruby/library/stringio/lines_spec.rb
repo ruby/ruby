@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 require 'stringio'
 require_relative 'shared/each'
 
-ruby_version_is ''...'2.8' do
+ruby_version_is ''...'3.0' do
   describe "StringIO#lines when passed a separator" do
     it_behaves_like :stringio_each_separator, :lines
   end

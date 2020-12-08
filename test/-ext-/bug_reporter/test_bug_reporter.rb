@@ -7,7 +7,7 @@ class TestBugReporter < Test::Unit::TestCase
     skip if ENV['RUBY_ON_BUG']
 
     description = RUBY_DESCRIPTION
-    description = description.sub(/\+JIT /, '') if RubyVM::MJIT.enabled?
+    description = description.sub(/\+JIT /, '') if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
     expected_stderr = [
       :*,
       /\[BUG\]\sSegmentation\sfault.*\n/,

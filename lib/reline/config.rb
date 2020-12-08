@@ -37,6 +37,7 @@ class Reline::Config
     vi-cmd-mode-icon
     vi-ins-mode-icon
     emacs-mode-string
+    enable-bracketed-paste
   }
   VARIABLE_NAME_SYMBOLS = VARIABLE_NAMES.map { |v| :"#{v.tr(?-, ?_)}" }
   VARIABLE_NAME_SYMBOLS.each do |v|

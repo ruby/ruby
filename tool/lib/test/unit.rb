@@ -337,7 +337,7 @@ module Test
         return unless @options[:parallel]
         return if @interrupt
         flush_job_tokens
-        warn e.full_message if e
+        warn e if e
         real_file = worker.real_file and warn "running file: #{real_file}"
         @need_quit = true
         warn ""
@@ -345,6 +345,19 @@ module Test
         warn "or, a bug of test/unit/parallel.rb. try again without -j"
         warn "option."
         warn ""
+        if File.exist?('core')
+          require 'fileutils'
+          require 'time'
+          Dir.glob('/tmp/test-unit-core.*').each do |f|
+            if Time.now - File.mtime(f) > 7 * 24 * 60 * 60 # 7 days
+              warn "Deleting an old core file: #{f}"
+              FileUtils.rm(f)
+            end
+          end
+          core_path = "/tmp/test-unit-core.#{Time.now.utc.iso8601}"
+          warn "A core file is found. Saving it at: #{core_path.dump}"
+          FileUtils.mv('core', core_path)
+        end
         STDERR.flush
         exit c
       end
