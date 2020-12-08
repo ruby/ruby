@@ -351,6 +351,14 @@ Outstanding ones only.
       can take the request headers as a Hash in the second argument when the
       first argument is a URI.  [[Feature #16686]]
 
+* Net::SMTP
+
+    * Add SNI support.
+
+    * Net::SMTP.start arguments are keyword arguments.
+
+    * TLS should not check the host name by default.
+
 * OpenStruct
 
     * Initialization no longer lazy [[Bug #12136]]
