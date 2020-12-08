@@ -14,7 +14,6 @@
 #include "ujit_codegen.h"
 #include "ujit_asm.h"
 #include "ujit_utils.h"
-#include "ujit_hooks.inc"
 
 // Code generation function signature
 typedef bool (*codegen_fn)(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx);
@@ -34,8 +33,7 @@ static codeblock_t* ocb = NULL;
 static void
 ujit_gen_entry(codeblock_t* cb)
 {
-    for (size_t i = 0; i < sizeof(ujit_with_ec_pre_call_bytes); ++i)
-        cb_write_byte(cb, ujit_with_ec_pre_call_bytes[i]);
+    cb_write_pre_call_bytes(cb);
 }
 
 /**
@@ -57,8 +55,7 @@ ujit_gen_exit(codeblock_t* cb, ctx_t* ctx, VALUE* exit_pc)
     mov(cb, member_opnd(REG_CFP, rb_control_frame_t, pc), RAX);
 
     // Write the post call bytes
-    for (size_t i = 0; i < sizeof(ujit_with_ec_post_call_bytes); ++i)
-        cb_write_byte(cb, ujit_with_ec_post_call_bytes[i]);
+    cb_write_post_call_bytes(cb);
 }
 
 /**
