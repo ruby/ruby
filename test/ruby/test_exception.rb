@@ -918,6 +918,7 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
   def capture_warning_warn(category: false)
     verbose = $VERBOSE
     deprecated = Warning[:deprecated]
+    experimental = Warning[:experimental]
     warning = []
 
     ::Warning.class_eval do
@@ -937,12 +938,14 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
 
     $VERBOSE = true
     Warning[:deprecated] = true
+    Warning[:experimental] = true
     yield
 
     return warning
   ensure
     $VERBOSE = verbose
     Warning[:deprecated] = deprecated
+    Warning[:experimental] = experimental
 
     ::Warning.class_eval do
       remove_method :warn
@@ -1055,6 +1058,46 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     assert_raise(ArgumentError) {Warning[:XXXX]}
     assert_include([true, false], Warning[:deprecated])
     assert_include([true, false], Warning[:experimental])
+  end
+
+  def test_warning_category_deprecated
+    warning = EnvUtil.verbose_warning do
+      deprecated = Warning[:deprecated]
+      Warning[:deprecated] = true
+      Warning.warn "deprecated feature", category: :deprecated
+    ensure
+      Warning[:deprecated] = deprecated
+    end
+    assert_equal "deprecated feature", warning
+
+    warning = EnvUtil.verbose_warning do
+      deprecated = Warning[:deprecated]
+      Warning[:deprecated] = false
+      Warning.warn "deprecated feature", category: :deprecated
+    ensure
+      Warning[:deprecated] = deprecated
+    end
+    assert_empty warning
+  end
+
+  def test_warning_category_experimental
+    warning = EnvUtil.verbose_warning do
+      experimental = Warning[:experimental]
+      Warning[:experimental] = true
+      Warning.warn "experimental feature", category: :experimental
+    ensure
+      Warning[:experimental] = experimental
+    end
+    assert_equal "experimental feature", warning
+
+    warning = EnvUtil.verbose_warning do
+      experimental = Warning[:experimental]
+      Warning[:experimental] = false
+      Warning.warn "experimental feature", category: :experimental
+    ensure
+      Warning[:experimental] = experimental
+    end
+    assert_empty warning
   end
 
   def test_undefined_backtrace

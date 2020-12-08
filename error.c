@@ -238,7 +238,7 @@ rb_warning_s_aset(VALUE mod, VALUE category, VALUE flag)
  *
  * Writes warning message +msg+ to $stderr. This method is called by
  * Ruby for all emitted warnings. A +category+ may be included with
- * the warning, but is ignored by default.
+ * the warning.
  *
  * See the documentation of the Warning module for how to customize this.
  */
@@ -248,13 +248,17 @@ rb_warning_s_warn(int argc, VALUE *argv, VALUE mod)
 {
     VALUE str;
     VALUE opt;
-    VALUE category;
+    VALUE category = Qnil;
 
     rb_scan_args(argc, argv, "1:", &str, &opt);
     if (!NIL_P(opt)) rb_get_kwargs(opt, &id_category, 0, 1, &category);
 
     Check_Type(str, T_STRING);
     rb_must_asciicompat(str);
+    if (!NIL_P(category)) {
+        rb_warning_category_t cat = rb_warning_category_from_name(category);
+        if (!rb_warning_category_enabled_p(cat)) return Qnil;
+    }
     rb_write_error_str(str);
     return Qnil;
 }
@@ -301,7 +305,8 @@ rb_warning_warn(VALUE mod, VALUE str)
 
 
 static int
-rb_warning_warn_arity(void) {
+rb_warning_warn_arity(void)
+{
     return rb_method_entry_arity(rb_method_entry(rb_singleton_class(rb_mWarning), id_warn));
 }
 
