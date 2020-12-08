@@ -186,7 +186,7 @@ rb_warning_category_enabled_p(rb_warning_category_t category)
 }
 
 /*
- * call-seq
+ * call-seq:
  *    Warning[category]  -> true or false
  *
  * Returns the flag to show the warning messages for +category+.
@@ -212,7 +212,7 @@ rb_warning_s_aref(VALUE mod, VALUE category)
 }
 
 /*
- * call-seq
+ * call-seq:
  *    Warning[category] = flag -> flag
  *
  * Sets the warning flags for +category+.
