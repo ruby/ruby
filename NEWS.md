@@ -334,7 +334,7 @@ Outstanding ones only.
 
 * Bundler
 
-    * Update to Bundler 2.2.0.rc.1
+    * Update to Bundler 2.2.0
 
 * CSV
 
@@ -385,7 +385,7 @@ Outstanding ones only.
 
 * RubyGems
 
-    * Update to RubyGems 3.2.0.rc.1
+    * Update to RubyGems 3.2.0
 
 ## Compatibility issues
 
