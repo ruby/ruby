@@ -3,7 +3,7 @@
  */
 
 #include "id_table.h"
-#include "ujit_compile.h"
+#include "ujit.h"
 
 #define METHOD_DEBUG 0
 
