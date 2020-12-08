@@ -152,9 +152,15 @@ Outstanding ones only.
     * ENV.except has been added, which returns a hash excluding the
       given keys and their values.  [[Feature #15822]]
 
+    * Windows: Read ENV names and values as UTF-8 encoded Strings
+      [[Feature #12650]]
+
 * Encoding
 
     * Added new encoding IBM720.  [[Feature #16233]]
+
+    * Changed default for Encoding.default_external to UTF-8 on Windows
+      [[Feature #16604]]
 
 * Fiber
 
