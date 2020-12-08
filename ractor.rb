@@ -102,6 +102,47 @@ class Ractor
   end
   alias recv receive
 
+  # Receive only a specific message.
+  #
+  # Instead of Ractor.receive, Ractor.receive_if can provide a pattern
+  # by a block and you can choose the receiving message.
+  #
+  # # Example:
+  # r = Ractor.new do
+  #   p Ractor.receive_if{|msg| /foo/ =~ msg} #=> "foo3"
+  #   p Ractor.receive_if{|msg| /bar/ =~ msg} #=> "bar1"
+  #   p Ractor.receive_if{|msg| /baz/ =~ msg} #=> "baz2"
+  # end
+  # r << "bar1"
+  # r << "baz2"
+  # r << "foo3"
+  # r.take
+  #
+  # If the block returns truthy, the message will be removed from incoming queue
+  # and return this method with the message.
+  # When the block is escaped by break/return/exception and so on, the message also
+  # removed from the incoming queue.
+  # Otherwise, the messsage is remained in the incoming queue and check next received
+  # message by the given block.
+  #
+  # If there is no messages in the incoming queue, wait until arrival of other messages.
+  #
+  # Note that you can not call receive/receive_if in the given block recursively.
+  # It means that you should not do any tasks in the block.
+  #
+  # # Example:
+  # Ractor.current << true
+  # Ractor.receive_if{|msg| Ractor.receive}
+  # #=> `receive': can not call receive/receive_if recursively (Ractor::Error)
+  #
+  def self.receive_if &b
+    Primitive.ractor_receive_if b
+  end
+
+  def receive_if &b
+    Primitive.ractor_receive_if b
+  end
+
   # Send a message to a Ractor's incoming queue.
   #
   # # Example:

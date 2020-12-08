@@ -100,6 +100,64 @@ assert_equal 'ok', %q{
   r.take
 }
 
+# Ractor#receive_if can filter the message
+assert_equal '[2, 3, 1]', %q{
+  r = Ractor.new Ractor.current do |main|
+    main << 1
+    main << 2
+    main << 3
+  end
+  a = []
+  a << Ractor.receive_if{|msg| msg == 2}
+  a << Ractor.receive_if{|msg| msg == 3}
+  a << Ractor.receive
+}
+
+# Ractor#receive_if with break
+assert_equal '[2, [1, :break], 3]', %q{
+  r = Ractor.new Ractor.current do |main|
+    main << 1
+    main << 2
+    main << 3
+  end
+
+  a = []
+  a << Ractor.receive_if{|msg| msg == 2}
+  a << Ractor.receive_if{|msg| break [msg, :break]}
+  a << Ractor.receive
+}
+
+# Ractor#receive_if can't be called recursively
+assert_equal '[[:e1, 1], [:e2, 2]]', %q{
+  r = Ractor.new Ractor.current do |main|
+    main << 1
+    main << 2
+    main << 3
+  end
+
+  a = []
+  
+  Ractor.receive_if do |msg|
+    begin
+      Ractor.receive
+    rescue Ractor::Error
+      a << [:e1, msg]
+    end
+    true # delete 1 from queue
+  end
+
+  Ractor.receive_if do |msg|
+    begin
+      Ractor.receive_if{}
+    rescue Ractor::Error
+      a << [:e2, msg]
+    end
+    true # delete 2 from queue
+  end
+
+  a # 
+}
+
 ###
 ###
 # Ractor still has several memory corruption so skip huge number of tests

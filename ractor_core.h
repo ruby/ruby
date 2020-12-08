@@ -14,11 +14,13 @@ enum rb_ractor_basket_type {
     basket_type_copy,
     basket_type_move,
     basket_type_will,
+    basket_type_deleted,
+    basket_type_reserved,
 };
 
 struct rb_ractor_basket {
-    enum rb_ractor_basket_type type;
     bool exception;
+    enum rb_ractor_basket_type type;
     VALUE v;
     VALUE sender;
 };
@@ -28,6 +30,8 @@ struct rb_ractor_queue {
     int start;
     int cnt;
     int size;
+    unsigned int serial;
+    unsigned int reserved_cnt;
 };
 
 struct rb_ractor_waiting_list {
@@ -76,7 +80,7 @@ struct rb_ractor_sync {
 
 struct rb_ractor_struct {
     struct rb_ractor_sync sync;
-
+    VALUE receiving_mutex;
     bool yield_atexit;
 
     // vm wide barrier synchronization
