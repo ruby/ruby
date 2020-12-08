@@ -580,7 +580,7 @@ update-known-errors:
 	$(IFCHANGE) $(srcdir)/defs/known_errors.def -
 
 INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
-	  vmtc.inc vm.inc mjit_compile.inc ujit_examples.inc
+	  vmtc.inc vm.inc mjit_compile.inc ujit_hooks.inc
 
 $(INSNS): $(srcdir)/insns.def vm_opts.h \
 	  $(srcdir)/defs/opt_operand.def $(srcdir)/defs/opt_insn_unif.def \

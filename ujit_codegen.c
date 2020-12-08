@@ -8,59 +8,15 @@
 #include "internal/compile.h"
 #include "internal/class.h"
 #include "insns_info.inc"
-#include "ujit_compile.h"
+#include "ujit.h"
+#include "ujit_iface.h"
+#include "ujit_core.h"
+#include "ujit_codegen.h"
 #include "ujit_asm.h"
 #include "ujit_utils.h"
+#include "ujit_hooks.inc"
 
-// TODO: give ujit_examples.inc some more meaningful file name
-// eg ujit_hook.h
-#include "ujit_examples.inc"
-
-#ifdef _WIN32
-#define PLATFORM_SUPPORTED_P 0
-#else
-#define PLATFORM_SUPPORTED_P 1
-#endif
-
-#ifndef UJIT_CHECK_MODE
-#define UJIT_CHECK_MODE 0
-#endif
-
-// >= 1: print when output code invalidation happens
-// >= 2: dump list of instructions when regions compile
-#ifndef UJIT_DUMP_MODE
-#define UJIT_DUMP_MODE 0
-#endif
-
-bool rb_ujit_enabled;
-
-// Hash table of encoded instructions
-extern st_table *rb_encoded_insn_data;
-
-// Code generation context
-typedef struct ctx_struct
-{
-    // Current PC
-    VALUE *pc;
-
-    // Difference between the current stack pointer and actual stack top
-    int32_t stack_diff;
-
-    // The iseq that owns the region that is compiling
-    const rb_iseq_t *iseq;
-
-    // Index in the iseq of the opcode we are replacing
-    size_t start_idx;
-
-    // The start of the generated code
-    uint8_t *code_ptr;
-
-    // Whether we know self is a heap object
-    bool self_is_object;
-
-} ctx_t;
-
-// MicroJIT code generation function signature
+// Code generation function signature
 typedef bool (*codegen_fn)(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx);
 
 // Map from YARV opcodes to code generation functions
@@ -73,243 +29,6 @@ static codeblock_t* cb = NULL;
 // Code block into which we write out-of-line machine code
 static codeblock_t outline_block;
 static codeblock_t* ocb = NULL;
-
-// Register MicroJIT receives the CFP and EC into
-#define REG_CFP RDI
-#define REG_EC RSI
-
-// Register MicroJIT loads the SP into
-#define REG_SP RDX
-
-// Scratch registers used by MicroJIT
-#define REG0 RAX
-#define REG1 RCX
-#define REG0_32 EAX
-#define REG1_32 ECX
-
-// Keep track of mapping from instructions to generated code
-// See comment for rb_encoded_insn_data in iseq.c
-static void
-addr2insn_bookkeeping(void *code_ptr, int insn)
-{
-    const void * const *table = rb_vm_get_insns_address_table();
-    const void * const translated_address = table[insn];
-    st_data_t encoded_insn_data;
-    if (st_lookup(rb_encoded_insn_data, (st_data_t)translated_address, &encoded_insn_data)) {
-        st_insert(rb_encoded_insn_data, (st_data_t)code_ptr, encoded_insn_data);
-    }
-    else {
-        rb_bug("ujit: failed to find info for original instruction while dealing with addr2insn");
-    }
-}
-
-// GC root for interacting with the GC
-struct ujit_root_struct {};
-
-// Map cme_or_cc => [[iseq, offset]]. An entry in the map means compiled code at iseq[offset]
-// is only valid when cme_or_cc is valid
-static st_table *method_lookup_dependency;
-
-struct compiled_region_array {
-    int32_t size;
-    int32_t capa;
-    struct compiled_region {
-        const rb_iseq_t *iseq;
-        size_t start_idx;
-        uint8_t *code;
-    } data[];
-};
-
-// Add an element to a region array, or allocate a new region array.
-static struct compiled_region_array *
-add_compiled_region(struct compiled_region_array *array, const rb_iseq_t *iseq, size_t start_idx, uint8_t *code)
-{
-    if (!array) {
-        // Allocate a brand new array with space for one
-        array = malloc(sizeof(*array) + sizeof(struct compiled_region));
-        if (!array) {
-            return NULL;
-        }
-        array->size = 0;
-        array->capa = 1;
-    }
-    if (array->size == INT32_MAX) {
-        return NULL;
-    }
-    // Check if the region is already present
-    for (int32_t i = 0; i < array->size; i++) {
-        if (array->data[i].iseq == iseq && array->data[i].start_idx == start_idx) {
-            return array;
-        }
-    }
-    if (array->size + 1 > array->capa) {
-        // Double the array's capacity.
-        int64_t double_capa = ((int64_t)array->capa) * 2;
-        int32_t new_capa = (int32_t)double_capa;
-        if (new_capa != double_capa) {
-            return NULL;
-        }
-        array = realloc(array, sizeof(*array) + new_capa * sizeof(struct compiled_region));
-        if (array == NULL) {
-            return NULL;
-        }
-        array->capa = new_capa;
-    }
-
-    int32_t size = array->size;
-    array->data[size].iseq = iseq;
-    array->data[size].start_idx = start_idx;
-    array->data[size].code = code;
-    array->size++;
-    return array;
-}
-
-static int
-add_lookup_dependency_i(st_data_t *key, st_data_t *value, st_data_t data, int existing)
-{
-    ctx_t *ctx = (ctx_t *)data;
-    struct compiled_region_array *regions = NULL;
-    if (existing) {
-        regions = (struct compiled_region_array *)*value;
-    }
-    regions = add_compiled_region(regions, ctx->iseq, ctx->start_idx, ctx->code_ptr);
-    if (!regions) {
-        rb_bug("ujit: failed to add method lookup dependency"); // TODO: we could bail out of compiling instead
-    }
-    *value = (st_data_t)regions;
-    return ST_CONTINUE;
-}
-
-// Store info to remember that the currently compiling region is only valid while cme and cc and valid.
-static void
-ujit_assume_method_lookup_stable(const struct rb_callcache *cc, const rb_callable_method_entry_t *cme,  ctx_t *ctx)
-{
-    st_update(method_lookup_dependency, (st_data_t)cme, add_lookup_dependency_i, (st_data_t)ctx);
-    st_update(method_lookup_dependency, (st_data_t)cc, add_lookup_dependency_i, (st_data_t)ctx);
-    // FIXME: This is a leak! When either the cme or the cc become invalid, the other also needs to go
-}
-
-static int
-ujit_root_mark_i(st_data_t k, st_data_t v, st_data_t ignore)
-{
-    // FIXME: This leaks everything that end up in the dependency table!
-    // One way to deal with this is with weak references...
-    rb_gc_mark((VALUE)k);
-    struct compiled_region_array *regions = (void *)v;
-    for (int32_t i = 0; i < regions->size; i++) {
-        rb_gc_mark((VALUE)regions->data[i].iseq);
-    }
-
-    return ST_CONTINUE;
-}
-
-// GC callback during mark phase
-static void
-ujit_root_mark(void *ptr)
-{
-    if (method_lookup_dependency) {
-        st_foreach(method_lookup_dependency, ujit_root_mark_i, 0);
-    }
-}
-
-static void
-ujit_root_free(void *ptr)
-{
-    // Do nothing. The root lives as long as the process.
-}
-
-static size_t
-ujit_root_memsize(const void *ptr)
-{
-    // Count off-gc-heap allocation size of the dependency table
-    return st_memsize(method_lookup_dependency); // TODO: more accurate accounting
-}
-
-// Custom type for interacting with the GC
-// TODO: compaction support
-// TODO: make this write barrier protected
-static const rb_data_type_t ujit_root_type = {
-    "ujit_root",
-    {ujit_root_mark, ujit_root_free, ujit_root_memsize, },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
-};
-
-static int
-opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc)
-{
-    const VALUE at_pc = *pc;
-    if (FL_TEST_RAW((VALUE)iseq, ISEQ_TRANSLATED)) {
-        return rb_vm_insn_addr2opcode((const void *)at_pc);
-    }
-    else {
-        return (int)at_pc;
-    }
-}
-
-// Get the current instruction opcode from the context object
-static int
-ctx_get_opcode(ctx_t *ctx)
-{
-    return opcode_at_pc(ctx->iseq, ctx->pc);
-}
-
-// Get an instruction argument from the context object
-static VALUE
-ctx_get_arg(ctx_t* ctx, size_t arg_idx)
-{
-    assert (arg_idx + 1 < insn_len(ctx_get_opcode(ctx)));
-    return *(ctx->pc + arg_idx + 1);
-}
-
-/*
-Get an operand for the adjusted stack pointer address
-*/
-static x86opnd_t
-ctx_sp_opnd(ctx_t* ctx, int32_t offset_bytes)
-{
-    int32_t offset = (ctx->stack_diff) * 8 + offset_bytes;
-    return mem_opnd(64, REG_SP, offset);
-}
-
-/*
-Make space on the stack for N values
-Return a pointer to the new stack top
-*/
-static x86opnd_t
-ctx_stack_push(ctx_t* ctx, size_t n)
-{
-    ctx->stack_diff += n;
-
-    // SP points just above the topmost value
-    int32_t offset = (ctx->stack_diff - 1) * 8;
-    return mem_opnd(64, REG_SP, offset);
-}
-
-/*
-Pop N values off the stack
-Return a pointer to the stack top before the pop operation
-*/
-static x86opnd_t
-ctx_stack_pop(ctx_t* ctx, size_t n)
-{
-    // SP points just above the topmost value
-    int32_t offset = (ctx->stack_diff - 1) * 8;
-    x86opnd_t top = mem_opnd(64, REG_SP, offset);
-
-    ctx->stack_diff -= n;
-
-    return top;
-}
-
-static x86opnd_t
-ctx_stack_opnd(ctx_t* ctx, int32_t idx)
-{
-    // SP points just above the topmost value
-    int32_t offset = (ctx->stack_diff - 1 - idx) * 8;
-    x86opnd_t opnd = mem_opnd(64, REG_SP, offset);
-
-    return opnd;
-}
 
 // Ruby instruction entry
 static void
@@ -382,7 +101,7 @@ Compile a sequence of bytecode instructions starting at `insn_idx`.
 Return the index to the first instruction not compiled in the sequence
 through `next_ujit_idx`. Return `NULL` in case compilation fails.
 */
-static uint8_t *
+uint8_t *
 ujit_compile_insn(const rb_iseq_t *iseq, unsigned int insn_idx, unsigned int *next_ujit_idx)
 {
     assert (cb != NULL);
@@ -469,7 +188,7 @@ ujit_compile_insn(const rb_iseq_t *iseq, unsigned int insn_idx, unsigned int *ne
     // Generate code to exit to the interpreter
     ujit_gen_exit(cb, &ctx, &encoded[*next_ujit_idx]);
 
-    addr2insn_bookkeeping(code_ptr, first_opcode);
+    map_addr2insn(code_ptr, first_opcode);
 
     if (UJIT_DUMP_MODE >= 2) {
         // Dump list of compiled instrutions
@@ -485,6 +204,15 @@ ujit_compile_insn(const rb_iseq_t *iseq, unsigned int insn_idx, unsigned int *ne
 
     return code_ptr;
 }
+
+
+
+
+
+
+
+
+
 
 static bool
 gen_dup(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
@@ -1098,7 +826,8 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 
     //print_str(cb, "before C call");
 
-    ujit_assume_method_lookup_stable(cd->cc, cme, ctx);
+    assume_method_lookup_stable(cd->cc, cme, ctx);
+
     // Call the C function
     // VALUE ret = (cfunc->func)(recv, argv[0], argv[1]);
     // cfunc comes from compile-time cme->def, which we assume to be stable.
@@ -1134,76 +863,8 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 }
 
 void
-rb_ujit_compile_iseq(const rb_iseq_t *iseq)
+ujit_init_codegen(void)
 {
-#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
-    RB_VM_LOCK_ENTER();
-    VALUE *encoded = (VALUE *)iseq->body->iseq_encoded;
-
-    unsigned int insn_idx;
-    unsigned int next_ujit_idx = 0;
-
-    for (insn_idx = 0; insn_idx < iseq->body->iseq_size; /* */) {
-        int insn = opcode_at_pc(iseq, &encoded[insn_idx]);
-        int len = insn_len(insn);
-
-        uint8_t *native_code_ptr = NULL;
-
-        // If ujit hasn't already compiled this instruction
-        if (insn_idx >= next_ujit_idx) {
-            native_code_ptr = ujit_compile_insn(iseq, insn_idx, &next_ujit_idx);
-        }
-
-        if (native_code_ptr) {
-            encoded[insn_idx] = (VALUE)native_code_ptr;
-        }
-        insn_idx += len;
-    }
-    RB_VM_LOCK_LEAVE();
-#endif
-}
-
-// Callback when cme or cc become invalid
-void
-rb_ujit_method_lookup_change(VALUE cme_or_cc)
-{
-    if (!method_lookup_dependency) return;
-
-    RUBY_ASSERT(IMEMO_TYPE_P(cme_or_cc, imemo_ment) || IMEMO_TYPE_P(cme_or_cc, imemo_callcache));
-
-    st_data_t image;
-    if (st_lookup(method_lookup_dependency, (st_data_t)cme_or_cc, &image)) {
-        struct compiled_region_array *array = (void *)image;
-        // Invalidate all regions that depend on the cme or cc
-        for (int32_t i = 0; i < array->size; i++) {
-            struct compiled_region *region = &array->data[i];
-            const struct rb_iseq_constant_body *body = region->iseq->body;
-            RUBY_ASSERT((unsigned int)region->start_idx < body->iseq_size);
-            // Restore region address to interpreter address in bytecode sequence
-            if (body->iseq_encoded[region->start_idx] == (VALUE)region->code) {
-                const void *const *code_threading_table = rb_vm_get_insns_address_table();
-                int opcode = rb_vm_insn_addr2insn(region->code);
-                body->iseq_encoded[region->start_idx] = (VALUE)code_threading_table[opcode];
-                if (UJIT_DUMP_MODE > 0) {
-                    fprintf(stderr, "cc_or_cme=%p now out of date. Restored idx=%u in iseq=%p\n", (void *)cme_or_cc, (unsigned)region->start_idx, (void *)region->iseq);
-                }
-            }
-        }
-
-        array->size = 0;
-    }
-}
-
-void
-rb_ujit_init(void)
-{
-    if (!ujit_scrape_successful || !PLATFORM_SUPPORTED_P)
-    {
-        return;
-    }
-
-    rb_ujit_enabled = true;
-
     // Initialize the code blocks
     size_t mem_size = 128 * 1024 * 1024;
     uint8_t* mem_block = alloc_exec_mem(mem_size);
@@ -1231,9 +892,4 @@ rb_ujit_init(void)
     st_insert(gen_fns, (st_data_t)BIN(opt_minus), (st_data_t)&gen_opt_minus);
     st_insert(gen_fns, (st_data_t)BIN(opt_plus), (st_data_t)&gen_opt_plus);
     st_insert(gen_fns, (st_data_t)BIN(opt_send_without_block), (st_data_t)&gen_opt_send_without_block);
-
-    method_lookup_dependency = st_init_numtable();
-    struct ujit_root_struct *root;
-    VALUE ujit_root = TypedData_Make_Struct(0, struct ujit_root_struct, &ujit_root_type, root);
-    rb_gc_register_mark_object(ujit_root);
 }

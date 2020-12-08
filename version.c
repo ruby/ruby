@@ -13,7 +13,7 @@
 #include "version.h"
 #include "vm_core.h"
 #include "mjit.h"
-#include "ujit_compile.h"
+#include "ujit_iface.h"
 #include <stdio.h>
 
 #ifndef EXIT_SUCCESS
@@ -127,7 +127,7 @@ ruby_show_version(void)
     }
 
     if (rb_ujit_enabled_p()) {
-        fputs("MicroJIT is on\n", stdout);
+        fputs("uJIT is enabled\n", stdout);
     }
 #ifdef RUBY_LAST_COMMIT_TITLE
     fputs("last_commit=" RUBY_LAST_COMMIT_TITLE, stdout);

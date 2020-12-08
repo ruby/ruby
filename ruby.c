@@ -59,7 +59,7 @@
 #include "internal/process.h"
 #include "internal/variable.h"
 #include "mjit.h"
-#include "ujit_compile.h"
+#include "ujit.h"
 #include "ruby/encoding.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"

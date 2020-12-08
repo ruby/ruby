@@ -151,7 +151,9 @@ COMMONOBJS    = array.$(OBJEXT) \
 		vm_trace.$(OBJEXT) \
 		ujit_asm.$(OBJEXT) \
 		ujit_utils.$(OBJEXT) \
-		ujit_compile.$(OBJEXT) \
+		ujit_core.$(OBJEXT) \
+		ujit_codegen.$(OBJEXT) \
+		ujit_iface.$(OBJEXT) \
 		$(COROUTINE_OBJ) \
 		$(DTRACE_OBJ) \
 		$(BUILTIN_ENCOBJS) \
@@ -1079,7 +1081,7 @@ incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}known_errors.inc \
 
 insns: $(INSNS)
 
-ujit_examples.inc: vm.$(OBJEXT)
+ujit_hooks.inc: vm.$(OBJEXT)
 
 id.h: $(tooldir)/generic_erb.rb $(srcdir)/template/id.h.tmpl $(srcdir)/defs/id.def
 	$(ECHO) generating $@
@@ -3007,7 +3009,7 @@ compile.$(OBJEXT): {$(VPATH)}st.h
 compile.$(OBJEXT): {$(VPATH)}subst.h
 compile.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 compile.$(OBJEXT): {$(VPATH)}thread_native.h
-compile.$(OBJEXT): {$(VPATH)}ujit_compile.h
+compile.$(OBJEXT): {$(VPATH)}ujit.h
 compile.$(OBJEXT): {$(VPATH)}util.h
 compile.$(OBJEXT): {$(VPATH)}vm_callinfo.h
 compile.$(OBJEXT): {$(VPATH)}vm_core.h
@@ -3387,7 +3389,7 @@ cont.$(OBJEXT): {$(VPATH)}st.h
 cont.$(OBJEXT): {$(VPATH)}subst.h
 cont.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 cont.$(OBJEXT): {$(VPATH)}thread_native.h
-cont.$(OBJEXT): {$(VPATH)}ujit_compile.h
+cont.$(OBJEXT): {$(VPATH)}ujit.h
 cont.$(OBJEXT): {$(VPATH)}vm_core.h
 cont.$(OBJEXT): {$(VPATH)}vm_debug.h
 cont.$(OBJEXT): {$(VPATH)}vm_opts.h
@@ -5416,7 +5418,7 @@ eval.$(OBJEXT): {$(VPATH)}st.h
 eval.$(OBJEXT): {$(VPATH)}subst.h
 eval.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 eval.$(OBJEXT): {$(VPATH)}thread_native.h
-eval.$(OBJEXT): {$(VPATH)}ujit_compile.h
+eval.$(OBJEXT): {$(VPATH)}ujit.h
 eval.$(OBJEXT): {$(VPATH)}vm.h
 eval.$(OBJEXT): {$(VPATH)}vm_core.h
 eval.$(OBJEXT): {$(VPATH)}vm_debug.h
@@ -5846,7 +5848,7 @@ gc.$(OBJEXT): {$(VPATH)}thread.h
 gc.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 gc.$(OBJEXT): {$(VPATH)}thread_native.h
 gc.$(OBJEXT): {$(VPATH)}transient_heap.h
-gc.$(OBJEXT): {$(VPATH)}ujit_compile.h
+gc.$(OBJEXT): {$(VPATH)}ujit.h
 gc.$(OBJEXT): {$(VPATH)}util.h
 gc.$(OBJEXT): {$(VPATH)}vm_callinfo.h
 gc.$(OBJEXT): {$(VPATH)}vm_core.h
@@ -6971,7 +6973,7 @@ iseq.$(OBJEXT): {$(VPATH)}subst.h
 iseq.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 iseq.$(OBJEXT): {$(VPATH)}thread_native.h
 iseq.$(OBJEXT): {$(VPATH)}ujit_asm.h
-iseq.$(OBJEXT): {$(VPATH)}ujit_compile.h
+iseq.$(OBJEXT): {$(VPATH)}ujit.h
 iseq.$(OBJEXT): {$(VPATH)}util.h
 iseq.$(OBJEXT): {$(VPATH)}vm_callinfo.h
 iseq.$(OBJEXT): {$(VPATH)}vm_core.h
@@ -8612,7 +8614,7 @@ mjit.$(OBJEXT): {$(VPATH)}subst.h
 mjit.$(OBJEXT): {$(VPATH)}thread.h
 mjit.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 mjit.$(OBJEXT): {$(VPATH)}thread_native.h
-mjit.$(OBJEXT): {$(VPATH)}ujit_compile.h
+mjit.$(OBJEXT): {$(VPATH)}ujit.h
 mjit.$(OBJEXT): {$(VPATH)}util.h
 mjit.$(OBJEXT): {$(VPATH)}vm_callinfo.h
 mjit.$(OBJEXT): {$(VPATH)}vm_core.h
@@ -8823,7 +8825,7 @@ mjit_compile.$(OBJEXT): {$(VPATH)}st.h
 mjit_compile.$(OBJEXT): {$(VPATH)}subst.h
 mjit_compile.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 mjit_compile.$(OBJEXT): {$(VPATH)}thread_native.h
-mjit_compile.$(OBJEXT): {$(VPATH)}ujit_compile.h
+mjit_compile.$(OBJEXT): {$(VPATH)}ujit.h
 mjit_compile.$(OBJEXT): {$(VPATH)}vm_callinfo.h
 mjit_compile.$(OBJEXT): {$(VPATH)}vm_core.h
 mjit_compile.$(OBJEXT): {$(VPATH)}vm_exec.h
@@ -12326,7 +12328,7 @@ ruby.$(OBJEXT): {$(VPATH)}subst.h
 ruby.$(OBJEXT): {$(VPATH)}thread.h
 ruby.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 ruby.$(OBJEXT): {$(VPATH)}thread_native.h
-ruby.$(OBJEXT): {$(VPATH)}ujit_compile.h
+ruby.$(OBJEXT): {$(VPATH)}ujit.h
 ruby.$(OBJEXT): {$(VPATH)}util.h
 ruby.$(OBJEXT): {$(VPATH)}vm_core.h
 ruby.$(OBJEXT): {$(VPATH)}vm_opts.h
@@ -14208,7 +14210,7 @@ thread.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 thread.$(OBJEXT): {$(VPATH)}thread_native.h
 thread.$(OBJEXT): {$(VPATH)}thread_sync.c
 thread.$(OBJEXT): {$(VPATH)}timev.h
-thread.$(OBJEXT): {$(VPATH)}ujit_compile.h
+thread.$(OBJEXT): {$(VPATH)}ujit.h
 thread.$(OBJEXT): {$(VPATH)}vm_core.h
 thread.$(OBJEXT): {$(VPATH)}vm_debug.h
 thread.$(OBJEXT): {$(VPATH)}vm_opts.h
@@ -14955,8 +14957,8 @@ ujit_compile.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 ujit_compile.$(OBJEXT): {$(VPATH)}thread_native.h
 ujit_compile.$(OBJEXT): {$(VPATH)}ujit_asm.h
 ujit_compile.$(OBJEXT): {$(VPATH)}ujit_compile.c
-ujit_compile.$(OBJEXT): {$(VPATH)}ujit_compile.h
-ujit_compile.$(OBJEXT): {$(VPATH)}ujit_examples.inc
+ujit_compile.$(OBJEXT): {$(VPATH)}ujit.h
+ujit_compile.$(OBJEXT): {$(VPATH)}ujit_hooks.inc
 ujit_compile.$(OBJEXT): {$(VPATH)}ujit_utils.h
 ujit_compile.$(OBJEXT): {$(VPATH)}vm_callinfo.h
 ujit_compile.$(OBJEXT): {$(VPATH)}vm_core.h
@@ -15519,7 +15521,7 @@ version.$(OBJEXT): {$(VPATH)}st.h
 version.$(OBJEXT): {$(VPATH)}subst.h
 version.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 version.$(OBJEXT): {$(VPATH)}thread_native.h
-version.$(OBJEXT): {$(VPATH)}ujit_compile.h
+version.$(OBJEXT): {$(VPATH)}ujit.h
 version.$(OBJEXT): {$(VPATH)}version.c
 version.$(OBJEXT): {$(VPATH)}vm_core.h
 version.$(OBJEXT): {$(VPATH)}vm_opts.h
@@ -15742,7 +15744,7 @@ vm.$(OBJEXT): {$(VPATH)}st.h
 vm.$(OBJEXT): {$(VPATH)}subst.h
 vm.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 vm.$(OBJEXT): {$(VPATH)}thread_native.h
-vm.$(OBJEXT): {$(VPATH)}ujit_compile.h
+vm.$(OBJEXT): {$(VPATH)}ujit.h
 vm.$(OBJEXT): {$(VPATH)}variable.h
 vm.$(OBJEXT): {$(VPATH)}vm.c
 vm.$(OBJEXT): {$(VPATH)}vm.h
@@ -16526,7 +16528,7 @@ vm_trace.$(OBJEXT): {$(VPATH)}subst.h
 vm_trace.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 vm_trace.$(OBJEXT): {$(VPATH)}thread_native.h
 vm_trace.$(OBJEXT): {$(VPATH)}trace_point.rbinc
-vm_trace.$(OBJEXT): {$(VPATH)}ujit_compile.h
+vm_trace.$(OBJEXT): {$(VPATH)}ujit.h
 vm_trace.$(OBJEXT): {$(VPATH)}vm_core.h
 vm_trace.$(OBJEXT): {$(VPATH)}vm_opts.h
 vm_trace.$(OBJEXT): {$(VPATH)}vm_trace.c
