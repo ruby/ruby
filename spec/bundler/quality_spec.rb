@@ -190,7 +190,7 @@ RSpec.describe "The library itself" do
         line.scan(/Bundler\.settings\[:#{key_pattern}\]/).flatten.each {|s| all_settings[s] << "referenced at `#{filename}:#{number.succ}`" }
       end
     end
-    documented_settings = File.read("man/bundle-config.1.ronn")[/LIST OF AVAILABLE KEYS.*/m].scan(/^\* `#{key_pattern}`/).flatten
+    documented_settings = File.read("lib/bundler/man/bundle-config.1.ronn")[/LIST OF AVAILABLE KEYS.*/m].scan(/^\* `#{key_pattern}`/).flatten
 
     documented_settings.each do |s|
       all_settings.delete(s)
@@ -249,7 +249,7 @@ RSpec.describe "The library itself" do
   end
 
   it "does not use require internally, but require_relative" do
-    exempt = %r{templates/|vendor/}
+    exempt = %r{templates/|man/|vendor/}
     all_bad_requires = []
     lib_tracked_files.each do |filename|
       next if filename =~ exempt

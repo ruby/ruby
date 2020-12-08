@@ -41,7 +41,6 @@ module Bundler
     settings_flag(:plugins) { @bundler_version >= Gem::Version.new("1.14") }
     settings_flag(:print_only_version_number) { bundler_3_mode? }
     settings_flag(:setup_makes_kernel_gem_public) { !bundler_3_mode? }
-    settings_flag(:specific_platform) { bundler_3_mode? }
     settings_flag(:suppress_install_using_messages) { bundler_3_mode? }
     settings_flag(:unlock_source_unlocks_spec) { !bundler_3_mode? }
     settings_flag(:update_requires_all_flag) { bundler_4_mode? }

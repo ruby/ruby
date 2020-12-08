@@ -602,6 +602,10 @@ EOF
       reset_rubygems!
     end
 
+    def reset_settings!
+      @settings = nil
+    end
+
     def reset_paths!
       @bin_path = nil
       @bundler_major_version = nil

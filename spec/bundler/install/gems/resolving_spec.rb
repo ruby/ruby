@@ -1,9 +1,46 @@
 # frozen_string_literal: true
 
 RSpec.describe "bundle install with install-time dependencies" do
+  before do
+    build_repo2 do
+      # Test complicated gem dependencies for install
+      build_gem "net_a" do |s|
+        s.add_dependency "net_b"
+        s.add_dependency "net_build_extensions"
+      end
+
+      build_gem "net_b"
+
+      build_gem "net_build_extensions" do |s|
+        s.add_dependency "rake"
+        s.extensions << "Rakefile"
+        s.write "Rakefile", <<-RUBY
+          task :default do
+            path = File.expand_path("../lib", __FILE__)
+            FileUtils.mkdir_p(path)
+            File.open("\#{path}/net_build_extensions.rb", "w") do |f|
+              f.puts "NET_BUILD_EXTENSIONS = 'YES'"
+            end
+          end
+        RUBY
+      end
+
+      build_gem "net_c" do |s|
+        s.add_dependency "net_a"
+        s.add_dependency "net_d"
+      end
+
+      build_gem "net_d"
+
+      build_gem "net_e" do |s|
+        s.add_dependency "net_d"
+      end
+    end
+  end
+
   it "installs gems with implicit rake dependencies" do
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "#{file_uri_for(gem_repo2)}"
       gem "with_implicit_rake_dep"
       gem "another_implicit_rake_dep"
       gem "rake"
@@ -43,7 +80,7 @@ RSpec.describe "bundle install with install-time dependencies" do
   describe "with crazy rubygem plugin stuff" do
     it "installs plugins" do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "net_b"
       G
 
@@ -52,7 +89,7 @@ RSpec.describe "bundle install with install-time dependencies" do
 
     it "installs plugins depended on by other plugins" do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "net_a"
       G
 
@@ -61,7 +98,7 @@ RSpec.describe "bundle install with install-time dependencies" do
 
     it "installs multiple levels of dependencies" do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "net_c"
         gem "net_e"
       G
@@ -72,7 +109,7 @@ RSpec.describe "bundle install with install-time dependencies" do
     context "with ENV['BUNDLER_DEBUG_RESOLVER'] set" do
       it "produces debug output" do
         gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
+          source "#{file_uri_for(gem_repo2)}"
           gem "net_c"
           gem "net_e"
         G
@@ -86,7 +123,7 @@ RSpec.describe "bundle install with install-time dependencies" do
     context "with ENV['DEBUG_RESOLVER'] set" do
       it "produces debug output" do
         gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
+          source "#{file_uri_for(gem_repo2)}"
           gem "net_c"
           gem "net_e"
         G
@@ -100,7 +137,7 @@ RSpec.describe "bundle install with install-time dependencies" do
     context "with ENV['DEBUG_RESOLVER_TREE'] set" do
       it "produces debug output" do
         gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
+          source "#{file_uri_for(gem_repo2)}"
           gem "net_c"
           gem "net_e"
         G
@@ -126,6 +163,10 @@ RSpec.describe "bundle install with install-time dependencies" do
 
       it "installs the older version" do
         build_repo2 do
+          build_gem "rack", "1.2" do |s|
+            s.executables = "rackup"
+          end
+
           build_gem "rack", "9001.0.0" do |s|
             s.required_ruby_version = "> 9000"
           end
@@ -198,13 +239,7 @@ RSpec.describe "bundle install with install-time dependencies" do
 
       let(:ruby_requirement) { %("#{RUBY_VERSION}") }
       let(:error_message_requirement) { "~> #{RUBY_VERSION}.0" }
-      let(:error_message_platform) do
-        if Bundler.feature_flag.specific_platform?
-          " #{Bundler.local_platform}"
-        else
-          ""
-        end
-      end
+      let(:error_message_platform) { " #{Bundler.local_platform}" }
 
       shared_examples_for "ruby version conflicts" do
         it "raises an error during resolution" do

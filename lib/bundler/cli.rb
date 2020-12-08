@@ -57,7 +57,7 @@ module Bundler
       custom_gemfile = options[:gemfile] || Bundler.settings[:gemfile]
       if custom_gemfile && !custom_gemfile.empty?
         Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", File.expand_path(custom_gemfile)
-        Bundler.reset_paths!
+        Bundler.reset_settings!
       end
 
       Bundler.settings.set_command_option_if_given :retry, options[:retry]
@@ -134,7 +134,8 @@ module Bundler
         if Bundler.which("man") && man_path !~ %r{^file:/.+!/META-INF/jruby.home/.+}
           Kernel.exec "man #{man_page}"
         else
-          puts File.read("#{File.dirname(man_page)}/#{File.basename(man_page)}.ronn")
+          fallback_man_path = File.expand_path("../man", __FILE__)
+          puts File.read("#{fallback_man_path}/#{File.basename(man_page)}.ronn")
         end
       elsif command_path = Bundler.which("bundler-#{cli}")
         Kernel.exec(command_path, "--help")
@@ -380,6 +381,8 @@ module Bundler
       "Make binstubs that can work without the Bundler runtime"
     method_option "all", :type => :boolean, :banner =>
       "Install binstubs for all gems"
+    method_option "all-platforms", :type => :boolean, :default => false, :banner =>
+      "Install binstubs for all platforms"
     def binstubs(*gems)
       require_relative "cli/binstubs"
       Binstubs.new(options, gems).run

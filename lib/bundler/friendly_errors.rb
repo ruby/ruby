@@ -6,6 +6,18 @@ module Bundler
   module FriendlyErrors
     module_function
 
+    def enable!
+      @disabled = false
+    end
+
+    def disabled?
+      @disabled
+    end
+
+    def disable!
+      @disabled = true
+    end
+
     def log_error(error)
       case error
       when YamlSyntaxError
@@ -114,10 +126,13 @@ module Bundler
   end
 
   def self.with_friendly_errors
+    FriendlyErrors.enable!
     yield
   rescue SignalException
     raise
   rescue Exception => e # rubocop:disable Lint/RescueException
+    raise if FriendlyErrors.disabled?
+
     FriendlyErrors.log_error(e)
     exit FriendlyErrors.exit_status(e)
   end

@@ -15,7 +15,7 @@ RSpec.describe "bundle lock" do
     gemfile <<-G
       source "#{file_uri_for(repo)}"
       gem "rails"
-      gem "with_license"
+      gem "weakling"
       gem "foo"
     G
 
@@ -40,7 +40,7 @@ RSpec.describe "bundle lock" do
             activeresource (= 2.3.2)
             rake (= 13.0.1)
           rake (13.0.1)
-          with_license (1.0)
+          weakling (0.0.3)
 
       PLATFORMS
         #{lockfile_platforms}
@@ -48,7 +48,7 @@ RSpec.describe "bundle lock" do
       DEPENDENCIES
         foo
         rails
-        with_license
+        weakling
 
       BUNDLED WITH
          #{Bundler::VERSION}

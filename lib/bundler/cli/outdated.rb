@@ -76,8 +76,6 @@ module Bundler
         next unless gems.empty? || gems.include?(current_spec.name)
 
         active_spec = retrieve_active_spec(definition, current_spec)
-        next unless active_spec
-
         next unless filter_options_patch.empty? || update_present_via_semver_portions(current_spec, active_spec, options)
 
         gem_outdated = Gem::Version.new(active_spec.version) > Gem::Version.new(current_spec.version)
@@ -146,8 +144,6 @@ module Bundler
     end
 
     def retrieve_active_spec(definition, current_spec)
-      return unless current_spec.match_platform(Bundler.local_platform)
-
       if strict
         active_spec = definition.find_resolved_spec(current_spec)
       else
@@ -233,6 +229,8 @@ module Bundler
     end
 
     def update_present_via_semver_portions(current_spec, active_spec, options)
+      return false if active_spec.nil?
+
       current_major = current_spec.version.segments.first
       active_major = active_spec.version.segments.first
 

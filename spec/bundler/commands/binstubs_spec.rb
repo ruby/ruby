@@ -51,6 +51,18 @@ RSpec.describe "bundle binstubs <gem>" do
       expect(bundled_app("bin/rake")).to exist
     end
 
+    it "allows installing binstubs for all platforms" do
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack"
+      G
+
+      bundle "binstubs rack --all-platforms"
+
+      expect(bundled_app("bin/rackup")).to exist
+      expect(bundled_app("bin/rackup.cmd")).to exist
+    end
+
     it "displays an error when used without any gem" do
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
@@ -96,6 +108,10 @@ RSpec.describe "bundle binstubs <gem>" do
       before do
         pristine_system_gems "bundler-#{system_bundler_version}"
         build_repo2 do
+          build_gem "rack", "1.2" do |s|
+            s.executables = "rackup"
+          end
+
           build_gem "prints_loaded_gems", "1.0" do |s|
             s.executables = "print_loaded_gems"
             s.bindir = "exe"
@@ -262,7 +278,7 @@ RSpec.describe "bundle binstubs <gem>" do
     end
 
     it "sets correct permissions for binstubs" do
-      skip "https://github.com/rubygems/bundler/issues/6895" if Gem.win_platform?
+      skip "https://github.com/rubygems/rubygems/issues/3352" if Gem.win_platform?
 
       with_umask(0o002) do
         install_gemfile <<-G
@@ -352,6 +368,14 @@ RSpec.describe "bundle binstubs <gem>" do
         expect(bundled_app("foo/rackup")).to exist
       end
     end
+
+    context "when specified --all-platforms option" do
+      it "generates standalone binstubs for all platforms" do
+        bundle "binstubs rack --standalone --all-platforms"
+        expect(bundled_app("bin/rackup")).to exist
+        expect(bundled_app("bin/rackup.cmd")).to exist
+      end
+    end
   end
 
   context "when the bin already exists" do
@@ -417,8 +441,14 @@ RSpec.describe "bundle binstubs <gem>" do
     end
 
     it "works if the gem has development dependencies" do
+      build_repo2 do
+        build_gem "with_development_dependency" do |s|
+          s.add_development_dependency "activesupport", "= 2.3.5"
+        end
+      end
+
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "with_development_dependency"
       G
 
