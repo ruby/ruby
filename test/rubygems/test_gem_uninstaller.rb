@@ -177,7 +177,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
 
     @spec.files += %w[lib/rubygems_plugin.rb]
 
-    Gem::Installer.at(Gem::Package.build(@spec)).install
+    Gem::Installer.at(Gem::Package.build(@spec), :force => true).install
 
     plugin_path = File.join Gem.plugindir, 'a_plugin.rb'
     assert File.exist?(plugin_path), 'plugin not written'
@@ -194,7 +194,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
 
     @spec.files += %w[lib/rubygems_plugin.rb]
 
-    Gem::Installer.at(Gem::Package.build(@spec)).install
+    Gem::Installer.at(Gem::Package.build(@spec), :force => true).install
 
     plugin_path = File.join Gem.plugindir, 'a_plugin.rb'
     assert File.exist?(plugin_path), 'plugin not written'
@@ -212,7 +212,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
 
     @spec.files += %w[lib/rubygems_plugin.rb]
 
-    Gem::Installer.at(Gem::Package.build(@spec)).install
+    Gem::Installer.at(Gem::Package.build(@spec), :force => true).install
 
     plugin_path = File.join Gem.plugindir, 'a_plugin.rb'
     assert File.exist?(plugin_path), 'plugin not written'
@@ -314,7 +314,7 @@ create_makefile '#{@spec.name}'
     use_ui @ui do
       path = Gem::Package.build @spec
 
-      installer = Gem::Installer.at path
+      installer = Gem::Installer.at path, :force => true
       installer.install
     end
 
@@ -633,19 +633,19 @@ create_makefile '#{@spec.name}'
     plugin_path = File.join Gem.plugindir, 'a_plugin.rb'
 
     @spec.version = '1'
-    Gem::Installer.at(Gem::Package.build(@spec)).install
+    Gem::Installer.at(Gem::Package.build(@spec), :force => true).install
 
     refute File.exist?(plugin_path), 'version without plugin installed, but plugin written'
 
     @spec.files += %w[lib/rubygems_plugin.rb]
     @spec.version = '2'
-    Gem::Installer.at(Gem::Package.build(@spec)).install
+    Gem::Installer.at(Gem::Package.build(@spec), :force => true).install
 
     assert File.exist?(plugin_path), 'version with plugin installed, but plugin not written'
     assert_match %r{\Arequire.*a-2/lib/rubygems_plugin\.rb}, File.read(plugin_path), 'written plugin has incorrect content'
 
     @spec.version = '3'
-    Gem::Installer.at(Gem::Package.build(@spec)).install
+    Gem::Installer.at(Gem::Package.build(@spec), :force => true).install
 
     assert File.exist?(plugin_path), 'version with plugin installed, but plugin removed'
     assert_match %r{\Arequire.*a-3/lib/rubygems_plugin\.rb}, File.read(plugin_path), 'old version installed, but plugin updated'

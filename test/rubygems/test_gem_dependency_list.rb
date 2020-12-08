@@ -139,8 +139,8 @@ class TestGemDependencyList < Gem::TestCase
 
     exp = {
       "b" => [
-        Gem::Dependency.new("a", ">= 1")
-      ]
+        Gem::Dependency.new("a", ">= 1"),
+      ],
     }
 
     assert_equal exp, @deplist.why_not_ok?

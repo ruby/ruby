@@ -281,7 +281,7 @@ class Gem::Resolver
         amount_constrained(dependency),
         conflicts[name] ? 0 : 1,
         activated.vertex_named(name).payload ? 0 : search_for(dependency).count,
-        i # for stable sort
+        i, # for stable sort
       ]
     end
   end

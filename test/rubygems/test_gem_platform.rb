@@ -11,10 +11,69 @@ class TestGemPlatform < Gem::TestCase
   end
 
   def test_self_match
-    assert Gem::Platform.match(nil), 'nil == ruby'
-    assert Gem::Platform.match(Gem::Platform.local), 'exact match'
-    assert Gem::Platform.match(Gem::Platform.local.to_s), '=~ match'
-    assert Gem::Platform.match(Gem::Platform::RUBY), 'ruby'
+    Gem::Deprecate.skip_during do
+      assert Gem::Platform.match(nil), 'nil == ruby'
+      assert Gem::Platform.match(Gem::Platform.local), 'exact match'
+      assert Gem::Platform.match(Gem::Platform.local.to_s), '=~ match'
+      assert Gem::Platform.match(Gem::Platform::RUBY), 'ruby'
+    end
+  end
+
+  def test_self_match_gem?
+    assert Gem::Platform.match_gem?(nil, 'json'), 'nil == ruby'
+    assert Gem::Platform.match_gem?(Gem::Platform.local, 'json'), 'exact match'
+    assert Gem::Platform.match_gem?(Gem::Platform.local.to_s, 'json'), '=~ match'
+    assert Gem::Platform.match_gem?(Gem::Platform::RUBY, 'json'), 'ruby'
+  end
+
+  def test_self_match_spec?
+    make_spec = -> platform do
+      util_spec 'mygem-for-platform-match_spec', '1' do |s|
+        s.platform = platform
+      end
+    end
+
+    assert Gem::Platform.match_spec?(make_spec.call(nil)), 'nil == ruby'
+    assert Gem::Platform.match_spec?(make_spec.call(Gem::Platform.local)), 'exact match'
+    assert Gem::Platform.match_spec?(make_spec.call(Gem::Platform.local.to_s)), '=~ match'
+    assert Gem::Platform.match_spec?(make_spec.call(Gem::Platform::RUBY)), 'ruby'
+  end
+
+  def test_self_match_spec_with_match_gem_override
+    make_spec = -> name, platform do
+      util_spec name, '1' do |s|
+        s.platform = platform
+      end
+    end
+
+    class << Gem::Platform
+      alias_method :original_match_gem?, :match_gem?
+      def match_gem?(platform, gem_name)
+        # e.g., sassc and libv8 are such gems, their native extensions do not use the Ruby C API
+        if gem_name == 'gem-with-ruby-impl-independent-precompiled-ext'
+          match_platforms?(platform, [Gem::Platform::RUBY, Gem::Platform.local])
+        else
+          match_platforms?(platform, Gem.platforms)
+        end
+      end
+    end
+
+    platforms = Gem.platforms
+    Gem.platforms = [Gem::Platform::RUBY]
+    begin
+      assert_equal true,  Gem::Platform.match_spec?(make_spec.call('mygem', Gem::Platform::RUBY))
+      assert_equal false, Gem::Platform.match_spec?(make_spec.call('mygem', Gem::Platform.local))
+
+      name = 'gem-with-ruby-impl-independent-precompiled-ext'
+      assert_equal true, Gem::Platform.match_spec?(make_spec.call(name, Gem::Platform.local))
+    ensure
+      Gem.platforms = platforms
+      class << Gem::Platform
+        remove_method :match_gem?
+        alias_method :match_gem?, :original_match_gem? # rubocop:disable Lint/DuplicateMethods
+        remove_method :original_match_gem?
+      end
+    end
   end
 
   def test_self_new

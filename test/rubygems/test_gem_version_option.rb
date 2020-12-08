@@ -56,7 +56,7 @@ class TestGemVersionOption < Gem::TestCase
     @cmd.handle_options %w[--platform ruby]
 
     expected = [
-      Gem::Platform::RUBY
+      Gem::Platform::RUBY,
     ]
 
     assert_equal expected, Gem.platforms

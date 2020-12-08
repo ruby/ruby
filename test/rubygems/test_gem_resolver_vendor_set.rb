@@ -51,7 +51,7 @@ class TestGemResolverVendorSet < Gem::TestCase
     source = Gem::Source::Vendor.new directory
 
     expected = [
-      Gem::Resolver::VendorSpecification.new(@set, spec, source)
+      Gem::Resolver::VendorSpecification.new(@set, spec, source),
     ]
 
     assert_equal expected, found

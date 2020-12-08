@@ -198,13 +198,13 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
   def test_execute_system_specific_newer_than_or_equal_to_3_2_leaves_plugins_dir_alone
     spec_fetcher do |fetcher|
-      fetcher.download 'rubygems-update', 3.2 do |s|
+      fetcher.download 'rubygems-update', "3.2.a" do |s|
         s.files = %w[setup.rb]
       end
     end
 
     @cmd.options[:args]          = []
-    @cmd.options[:system]        = "3.2"
+    @cmd.options[:system]        = "3.2.a"
 
     FileUtils.mkdir_p Gem.plugindir
     plugin_file = File.join(Gem.plugindir, 'a_plugin.rb')

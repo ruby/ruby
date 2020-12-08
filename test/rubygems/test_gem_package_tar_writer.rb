@@ -117,7 +117,7 @@ class TestGemPackageTarWriter < Gem::Package::TarTestCase
   end
 
   def test_add_file_signer
-    skip 'openssl is missing' unless defined?(OpenSSL::SSL)
+    skip 'openssl is missing' unless Gem::HAVE_OPENSSL
 
     signer = Gem::Security::Signer.new PRIVATE_KEY, [PUBLIC_CERT]
 

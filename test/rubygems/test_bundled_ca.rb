@@ -3,7 +3,7 @@ require 'rubygems/test_case'
 require 'net/http'
 require 'rubygems/openssl'
 
-unless defined?(OpenSSL::SSL)
+unless Gem::HAVE_OPENSSL
   warn 'Skipping bundled certificates tests.  openssl not found.'
 end
 
@@ -46,11 +46,15 @@ class TestBundledCA < Gem::TestCase
     assert_https('rubygems.org')
   end
 
-  def test_accessing_fastly
-    assert_https('rubygems.global.ssl.fastly.net')
+  def test_accessing_www_rubygems
+    assert_https('www.rubygems.org')
+  end
+
+  def test_accessing_staging
+    assert_https('staging.rubygems.org')
   end
 
   def test_accessing_new_index
-    assert_https('fastly.rubygems.org')
+    assert_https('index.rubygems.org')
   end
-end if defined?(OpenSSL::SSL)
+end if Gem::HAVE_OPENSSL

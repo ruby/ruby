@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require 'rubygems/test_case'
 
-unless defined?(OpenSSL::SSL)
+unless Gem::HAVE_OPENSSL
   warn 'Skipping Gem::Security::Signer tests.  openssl not found.'
 end
 
@@ -214,4 +214,4 @@ toqvglr0kdbknSRRjBVLK6tsgr07aLT9gNP7mTW2PA==
       signer.sign 'hello'
     end
   end
-end if defined?(OpenSSL::SSL)
+end if Gem::HAVE_OPENSSL

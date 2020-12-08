@@ -32,7 +32,6 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
     super()
 
     @domain = domain
-    @remote = consider_remote?
 
     @f = Gem::SpecFetcher.fetcher
 
@@ -170,7 +169,7 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
     always_install = @always_install.map {|s| s.full_name }
 
     '#<%s domain: %s specs: %p always install: %p>' % [
-      self.class, @domain, @specs.keys, always_install,
+      self.class, @domain, @specs.keys, always_install
     ]
   end
 

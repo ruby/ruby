@@ -170,7 +170,7 @@ extensions will be restored.
         :install_dir => spec.base_dir,
         :env_shebang => env_shebang,
         :build_args => spec.build_args,
-        :bin_dir => bin_dir
+        :bin_dir => bin_dir,
       }
 
       if options[:only_executables]

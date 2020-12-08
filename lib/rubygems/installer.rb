@@ -12,7 +12,6 @@ require 'rubygems/deprecate'
 require 'rubygems/package'
 require 'rubygems/ext'
 require 'rubygems/user_interaction'
-require 'fileutils'
 
 ##
 # The installer installs the files contained in the .gem into the Gem.home.
@@ -433,7 +432,7 @@ class Gem::Installer
   #
 
   def default_spec_file
-    File.join Gem.default_specifications_dir, "#{spec.full_name}.gemspec"
+    File.join gem_home, "specifications", "default", "#{spec.full_name}.gemspec"
   end
 
   ##
@@ -492,7 +491,11 @@ class Gem::Installer
 
       mode = File.stat(bin_path).mode
       dir_mode = options[:prog_mode] || (mode | 0111)
-      FileUtils.chmod dir_mode, bin_path unless dir_mode == mode
+
+      unless dir_mode == mode
+        require 'fileutils'
+        FileUtils.chmod dir_mode, bin_path
+      end
 
       check_executable_overwrite filename
 
@@ -527,6 +530,7 @@ class Gem::Installer
   def generate_bin_script(filename, bindir)
     bin_script_path = File.join bindir, formatted_program_filename(filename)
 
+    require 'fileutils'
     FileUtils.rm_f bin_script_path # prior install may have been --no-wrappers
 
     File.open bin_script_path, 'wb', 0755 do |file|
@@ -670,7 +674,7 @@ class Gem::Installer
       :env_shebang  => false,
       :force        => false,
       :only_install_dir => false,
-      :post_install_message => true
+      :post_install_message => true,
     }.merge options
 
     @env_shebang         = options[:env_shebang]
@@ -693,11 +697,10 @@ class Gem::Installer
     @build_args = options[:build_args] || Gem::Command.build_args
 
     unless @build_root.nil?
-      require 'pathname'
-      @build_root = Pathname.new(@build_root).expand_path
-      @bin_dir = File.join(@build_root, options[:bin_dir] || Gem.bindir(@gem_home))
-      @gem_home = File.join(@build_root, @gem_home)
-      alert_warning "You build with buildroot.\n  Build root: #{@build_root}\n  Bin dir: #{@bin_dir}\n  Gem home: #{@gem_home}"
+      @bin_dir = File.join(@build_root, @bin_dir.gsub(/^[a-zA-Z]:/, ''))
+      @gem_home = File.join(@build_root, @gem_home.gsub(/^[a-zA-Z]:/, ''))
+      @plugins_dir = File.join(@build_root, @plugins_dir.gsub(/^[a-zA-Z]:/, ''))
+      alert_warning "You build with buildroot.\n  Build root: #{@build_root}\n  Bin dir: #{@bin_dir}\n  Gem home: #{@gem_home}\n  Plugins dir: #{@plugins_dir}"
     end
   end
 

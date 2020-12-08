@@ -73,7 +73,7 @@ class TestGemResolverConflict < Gem::TestCase
 
     expected = [
       'net-ssh (>= 2.0.13), 2.2.2 activated',
-      'rye (= 0.9.8), 0.9.8 activated'
+      'rye (= 0.9.8), 0.9.8 activated',
     ]
 
     assert_equal expected, conflict.request_path(child.requester)

@@ -1,5 +1,6 @@
 # frozen_string_literal: true
-require 'rubygems/resolver/molinillo/lib/molinillo/dependency_graph'
+
+require_relative 'dependency_graph'
 
 module Gem::Resolver::Molinillo
   # This class encapsulates a dependency resolver.
@@ -8,7 +9,7 @@ module Gem::Resolver::Molinillo
   #
   #
   class Resolver
-    require 'rubygems/resolver/molinillo/lib/molinillo/resolution'
+    require_relative 'resolution'
 
     # @return [SpecificationProvider] the specification provider used
     #   in the resolution process

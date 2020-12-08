@@ -6,7 +6,6 @@
 #++
 
 require 'rubygems/exceptions'
-require 'fileutils'
 require_relative 'openssl'
 
 ##
@@ -592,7 +591,7 @@ module Gem::Security
 
 end
 
-if defined?(OpenSSL::SSL)
+if Gem::HAVE_OPENSSL
   require 'rubygems/security/policy'
   require 'rubygems/security/policies'
   require 'rubygems/security/trust_dir'

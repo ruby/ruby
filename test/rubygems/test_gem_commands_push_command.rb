@@ -152,7 +152,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
 
     keys = {
       :rubygems_api_key => 'KEY',
-      @host => @api_key
+      @host => @api_key,
     }
 
     FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
@@ -187,7 +187,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
 
     keys = {
       :rubygems_api_key => 'KEY',
-      @host => @api_key
+      @host => @api_key,
     }
 
     FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
@@ -271,7 +271,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
 
     keys = {
       :rubygems_api_key => 'KEY',
-      @host => @api_key
+      @host => @api_key,
     }
 
     FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
@@ -302,7 +302,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     api_key = "PRIVKEY"
 
     keys = {
-      host => api_key
+      host => api_key,
     }
 
     FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
@@ -373,7 +373,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
 
     @fetcher.data["#{Gem.host}/api/v1/gems"] = [
       [response_fail, 401, 'Unauthorized'],
-      [response_success, 200, 'OK']
+      [response_success, 200, 'OK'],
     ]
 
     @otp_ui = Gem::MockGemUi.new "111111\n"
@@ -402,6 +402,32 @@ class TestGemCommandsPushCommand < Gem::TestCase
     assert_match 'You have enabled multi-factor authentication. Please enter OTP code.', @otp_ui.output
     assert_match 'Code: ', @otp_ui.output
     assert_equal '111111', @fetcher.last_request['OTP']
+  end
+
+  def test_sending_gem_unathorized_api_key
+    response_forbidden = "The API key doesn't have access"
+    response_success   = 'Successfully registered gem: freewill (1.0.0)'
+
+    @fetcher.data["#{@host}/api/v1/gems"] = [
+      [response_forbidden, 403, 'Forbidden'],
+      [response_success, 200, "OK"],
+    ]
+
+    @fetcher.data["#{@host}/api/v1/api_key"] = ["", 200, "OK"]
+    @cmd.instance_variable_set :@host, @host
+    @cmd.instance_variable_set :@scope, :push_rubygem
+
+    @ui = Gem::MockGemUi.new "some@mail.com\npass\n"
+    use_ui @ui do
+      @cmd.send_gem(@path)
+    end
+
+    access_notice = "The existing key doesn't have access of push_rubygem on https://rubygems.example. Please sign in to update access."
+    assert_match access_notice, @ui.output
+    assert_match "Email:", @ui.output
+    assert_match "Password:", @ui.output
+    assert_match "Added push_rubygem scope to the existing API key", @ui.output
+    assert_match response_success, @ui.output
   end
 
   private
