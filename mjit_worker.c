@@ -1361,16 +1361,27 @@ mjit_worker(void)
     while (!stop_worker_p) {
         struct rb_mjit_unit *unit;
 
-        // wait until unit is available
+        // Wait until a unit becomes available
         CRITICAL_SECTION_START(3, "in worker dequeue");
         while ((list_empty(&unit_queue.head) || active_units.length >= mjit_opts.max_cache_size) && !stop_worker_p) {
             rb_native_cond_wait(&mjit_worker_wakeup, &mjit_engine_mutex);
             verbose(3, "Getting wakeup from client");
 
+            // Unload some units as needed
             if (unload_requests >= throttle_threshold) {
+                while (in_gc) {
+                    verbose(3, "Waiting wakeup from GC");
+                    rb_native_cond_wait(&mjit_gc_wakeup, &mjit_engine_mutex);
+                }
+                in_jit = true; // Lock GC
+
                 RB_DEBUG_COUNTER_INC(mjit_unload_units);
                 unload_units();
                 unload_requests = 0;
+
+                in_jit = false; // Unlock GC
+                verbose(3, "Sending wakeup signal to client in a mjit-worker for GC");
+                rb_native_cond_signal(&mjit_client_wakeup);
             }
             if (active_units.length == mjit_opts.max_cache_size && mjit_opts.wait) { // Sometimes all methods may be in use
                 mjit_opts.max_cache_size++; // avoid infinite loop on `rb_mjit_wait_call`. Note that --jit-wait is just for testing.
