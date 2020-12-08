@@ -36,9 +36,7 @@ install (FILES test.txt DESTINATION bin)
 
     output = []
 
-    Dir.chdir @ext do
-      Gem::Ext::CmakeBuilder.build nil, @dest_path, output
-    end
+    Gem::Ext::CmakeBuilder.build nil, @dest_path, output, [], nil, @ext
 
     output = output.join "\n"
 
@@ -54,9 +52,7 @@ install (FILES test.txt DESTINATION bin)
     output = []
 
     error = assert_raises Gem::InstallError do
-      Dir.chdir @ext do
-        Gem::Ext::CmakeBuilder.build nil, @dest_path, output
-      end
+      Gem::Ext::CmakeBuilder.build nil, @dest_path, output, [], nil, @ext
     end
 
     output = output.join "\n"
@@ -77,9 +73,7 @@ install (FILES test.txt DESTINATION bin)
 
     output = []
 
-    Dir.chdir @ext do
-      Gem::Ext::CmakeBuilder.build nil, @dest_path, output
-    end
+    Gem::Ext::CmakeBuilder.build nil, @dest_path, output, [], nil, @ext
 
     output = output.join "\n"
 

@@ -8,7 +8,7 @@
 require 'rbconfig'
 
 module Gem
-  VERSION = "3.2.0.rc.2".freeze
+  VERSION = "3.2.0".freeze
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -118,6 +118,10 @@ module Gem
   # This allows switching ".untaint" to ".tap(&Gem::UNTAINT)",
   # to avoid deprecation warnings in Ruby 2.7.
   UNTAINT = RUBY_VERSION < '2.7' ? :untaint.to_sym : proc{}
+
+  # When https://bugs.ruby-lang.org/issues/17259 is available, there is no need to override Kernel#warn
+  KERNEL_WARN_IGNORES_INTERNAL_ENTRIES = RUBY_ENGINE == "truffleruby" ||
+      (RUBY_ENGINE == "ruby" && RUBY_VERSION >= '3.0')
 
   ##
   # An Array of Regexps that match windows Ruby platforms.
@@ -975,7 +979,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
                      val = RbConfig::CONFIG[key]
                      next unless val and not val.empty?
                      ".#{val}"
-                   end
+                   end,
                   ].compact.uniq
   end
 

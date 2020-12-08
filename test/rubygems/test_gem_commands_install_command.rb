@@ -410,7 +410,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     expected = [
       "ERROR:  Could not find a valid gem 'non-existent_with-hint' (>= 0) in any repository",
-      "ERROR:  Possible alternatives: nonexistent-with_hint"
+      "ERROR:  Possible alternatives: nonexistent-with_hint",
     ]
 
     output = @ui.error.split "\n"

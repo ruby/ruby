@@ -34,6 +34,10 @@ class Gem::Commands::SourcesCommand < Gem::Command
       options[:update] = value
     end
 
+    add_option '-f', '--[no-]force', "Do not show any confirmation prompts and behave as if 'yes' was always answered" do |value, options|
+      options[:force] = value
+    end
+
     add_proxy_option
   end
 
@@ -71,7 +75,7 @@ class Gem::Commands::SourcesCommand < Gem::Command
 Do you want to add this source?
       QUESTION
 
-      terminate_interaction 1 unless ask_yes_no question
+      terminate_interaction 1 unless options[:force] || ask_yes_no(question)
     end
   end
 
@@ -86,7 +90,7 @@ https://rubygems.org is recommended for security over #{uri}
 Do you want to add this insecure source?
       QUESTION
 
-      terminate_interaction 1 unless ask_yes_no question
+      terminate_interaction 1 unless options[:force] || ask_yes_no(question)
     end
   end
 

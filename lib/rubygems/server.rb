@@ -771,7 +771,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
         doc_items << {
           :name    => base_name,
           :url     => doc_root(new_path),
-          :summary => ''
+          :summary => '',
         }
       end
 

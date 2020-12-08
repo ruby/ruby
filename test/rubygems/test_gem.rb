@@ -164,7 +164,7 @@ class TestGem < Gem::TestCase
       :prog_mode => win_platform? ? 0410 : 0510,
       :data_mode => 0640,
       :wrappers => true,
-      :format_executable => format_executable
+      :format_executable => format_executable,
     }
     Dir.chdir @tempdir do
       Dir.mkdir 'bin'
@@ -765,7 +765,7 @@ class TestGem < Gem::TestCase
 
     expected = [
       File.expand_path('test/rubygems/sff/discover.rb', PROJECT_DIR),
-      File.join(foo1.full_gem_path, discover_path)
+      File.join(foo1.full_gem_path, discover_path),
     ].sort
 
     assert_equal expected, Gem.find_files('sff/discover').sort
@@ -1532,7 +1532,7 @@ class TestGem < Gem::TestCase
 
     tests = [
       [:dir0, [ Gem.dir, Gem.user_dir], m0],
-      [:dir1, [ Gem.user_dir, Gem.dir], m1]
+      [:dir1, [ Gem.user_dir, Gem.dir], m1],
     ]
 
     tests.each do |_name, _paths, expected|

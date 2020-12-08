@@ -247,7 +247,7 @@ EOF
 
     @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = [
       [response_fail, 401, 'Unauthorized'],
-      [response_success, 200, 'OK']
+      [response_success, 200, 'OK'],
     ]
 
     @otp_ui = Gem::MockGemUi.new "111111\n"
@@ -274,5 +274,53 @@ EOF
     assert_match 'You have enabled multi-factor authentication. Please enter OTP code.', @otp_ui.output
     assert_match 'Code: ', @otp_ui.output
     assert_equal '111111', @stub_fetcher.last_request['OTP']
+  end
+
+  def test_remove_owners_unathorized_api_key
+    response_forbidden = "The API key doesn't have access"
+    response_success   = "Owner removed successfully."
+
+    @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = [
+      [response_forbidden, 403, 'Forbidden'],
+      [response_success, 200, "OK"],
+    ]
+    @stub_fetcher.data["#{Gem.host}/api/v1/api_key"] = ["", 200, "OK"]
+    @cmd.instance_variable_set :@scope, :remove_owner
+
+    @stub_ui = Gem::MockGemUi.new "some@mail.com\npass\n"
+    use_ui @stub_ui do
+      @cmd.remove_owners("freewill", ["some@example"])
+    end
+
+    access_notice = "The existing key doesn't have access of remove_owner on RubyGems.org. Please sign in to update access."
+    assert_match access_notice, @stub_ui.output
+    assert_match "Email:", @stub_ui.output
+    assert_match "Password:", @stub_ui.output
+    assert_match "Added remove_owner scope to the existing API key", @stub_ui.output
+    assert_match response_success, @stub_ui.output
+  end
+
+  def test_add_owners_unathorized_api_key
+    response_forbidden = "The API key doesn't have access"
+    response_success   = "Owner added successfully."
+
+    @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = [
+      [response_forbidden, 403, 'Forbidden'],
+      [response_success, 200, "OK"],
+    ]
+    @stub_fetcher.data["#{Gem.host}/api/v1/api_key"] = ["", 200, "OK"]
+    @cmd.instance_variable_set :@scope, :add_owner
+
+    @stub_ui = Gem::MockGemUi.new "some@mail.com\npass\n"
+    use_ui @stub_ui do
+      @cmd.add_owners("freewill", ["some@example"])
+    end
+
+    access_notice = "The existing key doesn't have access of add_owner on RubyGems.org. Please sign in to update access."
+    assert_match access_notice, @stub_ui.output
+    assert_match "Email:", @stub_ui.output
+    assert_match "Password:", @stub_ui.output
+    assert_match "Added add_owner scope to the existing API key", @stub_ui.output
+    assert_match response_success, @stub_ui.output
   end
 end

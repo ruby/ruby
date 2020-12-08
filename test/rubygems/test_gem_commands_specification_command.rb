@@ -186,6 +186,34 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
     assert_equal Gem::Version.new("1"), spec.version
   end
 
+  def test_execute_remote_with_version_and_platform
+    original_platforms = Gem.platforms.dup
+
+    spec_fetcher do |fetcher|
+      fetcher.spec 'foo', "1"
+      fetcher.spec 'foo', "1" do |s|
+        s.platform = 'x86_64-linux'
+      end
+    end
+
+    @cmd.options[:args] = %w[foo]
+    @cmd.options[:version] = "1"
+    @cmd.options[:domain] = :remote
+    @cmd.options[:added_platform] = true
+    Gem.platforms = [Gem::Platform::RUBY, Gem::Platform.new("x86_64-linux")]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    spec = Gem::Specification.from_yaml @ui.output
+
+    assert_equal Gem::Version.new("1"), spec.version
+    assert_equal Gem::Platform.new("x86_64-linux"), spec.platform
+  ensure
+    Gem.platforms = original_platforms
+  end
+
   def test_execute_remote_without_prerelease
     spec_fetcher do |fetcher|
       fetcher.spec 'foo', '2.0.0'

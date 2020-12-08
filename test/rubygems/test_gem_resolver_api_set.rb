@@ -39,7 +39,7 @@ class TestGemResolverAPISet < Gem::TestCase
       { :name         => 'a',
         :number       => '1',
         :platform     => 'ruby',
-        :dependencies => [], },
+        :dependencies => [] },
     ]
 
     @fetcher.data["#{@dep_uri}?gems=a"] = Marshal.dump data
@@ -49,7 +49,7 @@ class TestGemResolverAPISet < Gem::TestCase
     a_dep = @DR::DependencyRequest.new dep('a'), nil
 
     expected = [
-      @DR::APISpecification.new(set, data.first)
+      @DR::APISpecification.new(set, data.first),
     ]
 
     assert_equal expected, set.find_all(a_dep)
@@ -62,7 +62,7 @@ class TestGemResolverAPISet < Gem::TestCase
       { :name         => 'a',
         :number       => '1',
         :platform     => 'ruby',
-        :dependencies => [], },
+        :dependencies => [] },
     ]
 
     @fetcher.data["#{@dep_uri}?gems=a"] = Marshal.dump data
@@ -74,7 +74,7 @@ class TestGemResolverAPISet < Gem::TestCase
     set.prefetch [a_dep]
 
     expected = [
-      @DR::APISpecification.new(set, data.first)
+      @DR::APISpecification.new(set, data.first),
     ]
 
     assert_equal expected, set.find_all(a_dep)
@@ -114,7 +114,7 @@ class TestGemResolverAPISet < Gem::TestCase
       { :name         => 'a',
         :number       => '1',
         :platform     => 'ruby',
-        :dependencies => [], },
+        :dependencies => [] },
     ]
 
     @fetcher.data["#{@dep_uri}?gems=a,b"] = Marshal.dump data
@@ -138,7 +138,7 @@ class TestGemResolverAPISet < Gem::TestCase
       { :name         => 'a',
         :number       => '1',
         :platform     => 'ruby',
-        :dependencies => [], },
+        :dependencies => [] },
     ]
 
     @fetcher.data["#{@dep_uri}?gems=a"] = Marshal.dump data
@@ -163,7 +163,7 @@ class TestGemResolverAPISet < Gem::TestCase
       { :name         => 'a',
         :number       => '1',
         :platform     => 'ruby',
-        :dependencies => [], },
+        :dependencies => [] },
     ]
 
     @fetcher.data["#{@dep_uri}?gems=a,b"] = Marshal.dump data
@@ -187,7 +187,7 @@ class TestGemResolverAPISet < Gem::TestCase
       { :name         => 'a',
         :number       => '1',
         :platform     => 'ruby',
-        :dependencies => [], },
+        :dependencies => [] },
     ]
 
     @fetcher.data["#{@dep_uri}?gems=a,b"] = Marshal.dump data

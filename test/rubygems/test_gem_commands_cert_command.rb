@@ -2,7 +2,7 @@
 require 'rubygems/test_case'
 require 'rubygems/commands/cert_command'
 
-unless defined?(OpenSSL::SSL)
+unless Gem::HAVE_OPENSSL
   warn 'Skipping `gem cert` tests.  openssl not found.'
 end
 
@@ -805,4 +805,4 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
     assert_equal "invalid argument: --sign #{nonexistent}: does not exist",
                  e.message
   end
-end if defined?(OpenSSL::SSL) && !Gem.java_platform?
+end if Gem::HAVE_OPENSSL && !Gem.java_platform?

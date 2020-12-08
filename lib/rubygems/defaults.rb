@@ -38,13 +38,13 @@ module Gem
              [
                File.dirname(RbConfig::CONFIG['sitedir']),
                'Gems',
-               RbConfig::CONFIG['ruby_version']
+               RbConfig::CONFIG['ruby_version'],
              ]
            else
              [
                RbConfig::CONFIG['rubylibprefix'],
                'gems',
-               RbConfig::CONFIG['ruby_version']
+               RbConfig::CONFIG['ruby_version'],
              ]
            end
 

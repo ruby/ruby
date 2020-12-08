@@ -120,7 +120,7 @@ class TestGemRequire < Gem::TestCase
     c1 = new_default_spec "c", "1", nil, "c/c.rb"
     c2 = new_default_spec "c", "2", nil, "c/c.rb"
 
-    install_default_specs c1, c2, b1, a1
+    install_default_gems c1, c2, b1, a1
 
     dir = Dir.mktmpdir("test_require", @tempdir)
     dash_i_arg = File.join dir, 'lib'
@@ -405,8 +405,8 @@ class TestGemRequire < Gem::TestCase
 
     # Remove an old default gem version directly from disk as if someone ran
     # gem cleanup.
-    FileUtils.rm_rf(File.join @default_dir, "#{b1.full_name}")
-    FileUtils.rm_rf(File.join @default_spec_dir, "#{b1.full_name}.gemspec")
+    FileUtils.rm_rf(File.join @gemhome, "#{b1.full_name}")
+    FileUtils.rm_rf(File.join @gemhome, "specifications", "default", "#{b1.full_name}.gemspec")
 
     # Require gems that have not been removed.
     assert_require 'a/b'
@@ -433,7 +433,7 @@ class TestGemRequire < Gem::TestCase
   def test_default_gem_only
     default_gem_spec = new_default_spec("default", "2.0.0.0",
                                         nil, "default/gem.rb")
-    install_default_specs(default_gem_spec)
+    install_default_gems(default_gem_spec)
     assert_require "default/gem"
     assert_equal %w[default-2.0.0.0], loaded_spec_names
   end
@@ -441,7 +441,7 @@ class TestGemRequire < Gem::TestCase
   def test_default_gem_require_activates_just_once
     default_gem_spec = new_default_spec("default", "2.0.0.0",
                                         nil, "default/gem.rb")
-    install_default_specs(default_gem_spec)
+    install_default_gems(default_gem_spec)
 
     assert_require "default/gem"
 
@@ -506,7 +506,7 @@ class TestGemRequire < Gem::TestCase
   def test_default_gem_and_normal_gem
     default_gem_spec = new_default_spec("default", "2.0.0.0",
                                         nil, "default/gem.rb")
-    install_default_specs(default_gem_spec)
+    install_default_gems(default_gem_spec)
     normal_gem_spec = util_spec("default", "3.0", nil,
                                "lib/default/gem.rb")
     install_specs(normal_gem_spec)
@@ -544,11 +544,11 @@ class TestGemRequire < Gem::TestCase
   def test_default_gem_prerelease
     default_gem_spec = new_default_spec("default", "2.0.0",
                                         nil, "default/gem.rb")
-    install_default_specs(default_gem_spec)
+    install_default_gems(default_gem_spec)
 
     normal_gem_higher_prerelease_spec = util_spec("default", "3.0.0.rc2", nil,
                                                   "lib/default/gem.rb")
-    install_default_specs(normal_gem_higher_prerelease_spec)
+    install_default_gems(normal_gem_higher_prerelease_spec)
 
     assert_require "default/gem"
     assert_equal %w[default-3.0.0.rc2], loaded_spec_names
@@ -586,7 +586,7 @@ class TestGemRequire < Gem::TestCase
   def test_require_when_gem_defined
     default_gem_spec = new_default_spec("default", "2.0.0.0",
                                         nil, "default/gem.rb")
-    install_default_specs(default_gem_spec)
+    install_default_gems(default_gem_spec)
     c = Class.new do
       def self.gem(*args)
         raise "received #gem with #{args.inspect}"
@@ -675,6 +675,47 @@ class TestGemRequire < Gem::TestCase
           end
           assert_match(/{:x=>1}\n{:y=>2}\n$/, err)
         end
+      end
+    end
+
+    def test_no_crash_when_overriding_warn_with_warning_module
+      skip "https://github.com/oracle/truffleruby/issues/2109" if RUBY_ENGINE == "truffleruby"
+
+      Dir.mktmpdir("warn_test") do |dir|
+        File.write(dir + "/main.rb", "module Warning; def warn(str); super; end; end; warn 'Foo Bar'")
+        _, err = capture_subprocess_io do
+          system(*ruby_with_rubygems_in_load_path, "-w", "--disable=gems", "-C", dir, "main.rb")
+        end
+        assert_match(/Foo Bar\n$/, err)
+        _, err = capture_subprocess_io do
+          system(*ruby_with_rubygems_in_load_path, "-w", "--enable=gems", "-C", dir, "main.rb")
+        end
+        assert_match(/Foo Bar\n$/, err)
+      end
+    end
+
+    def test_expected_backtrace_location_when_inheriting_from_basic_object_and_including_kernel
+      Dir.mktmpdir("warn_test") do |dir|
+        File.write(dir + "/main.rb", "\nrequire 'sub'\n")
+        File.write(dir + "/sub.rb", <<-'RUBY')
+          require 'rubygems'
+          class C < BasicObject
+            include ::Kernel
+            def deprecated
+              warn "This is a deprecated method", uplevel: 2
+            end
+          end
+          C.new.deprecated
+        RUBY
+
+        _, err = capture_subprocess_io do
+          system(*ruby_with_rubygems_in_load_path, "-w", "--disable=gems", "-C", dir, "-I", dir, "main.rb")
+        end
+        assert_match(/main\.rb:2: warning: This is a deprecated method$/, err)
+        _, err = capture_subprocess_io do
+          system(*ruby_with_rubygems_in_load_path, "-w", "--enable=gems", "-C", dir, "-I", dir, "main.rb")
+        end
+        assert_match(/main\.rb:2: warning: This is a deprecated method$/, err)
       end
     end
   end

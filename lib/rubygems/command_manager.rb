@@ -73,7 +73,7 @@ class Gem::CommandManager
   ].freeze
 
   ALIAS_COMMANDS = {
-    'i' => 'install'
+    'i' => 'install',
   }.freeze
 
   ##
@@ -174,8 +174,8 @@ class Gem::CommandManager
     else
       cmd_name = args.shift.downcase
       cmd = find_command cmd_name
-      cmd.invoke_with_build_args args, build_args
       cmd.deprecation_warning if cmd.deprecated?
+      cmd.invoke_with_build_args args, build_args
     end
   end
 

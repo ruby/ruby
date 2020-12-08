@@ -28,7 +28,7 @@ class Gem::Resolver::LockSet < Gem::Resolver::Set
   def add(name, version, platform) # :nodoc:
     version = Gem::Version.new version
     specs = [
-      Gem::Resolver::LockSpecification.new(self, name, version, @sources, platform)
+      Gem::Resolver::LockSpecification.new(self, name, version, @sources, platform),
     ]
 
     @specs.concat specs

@@ -61,7 +61,7 @@ The push command will use ~/.gem/credentials to authenticate to a server, but yo
               options[:host]
             end
 
-    sign_in @host
+    sign_in @host, scope: get_push_scope
 
     send_gem(gem_name)
   end
@@ -86,7 +86,7 @@ The push command will use ~/.gem/credentials to authenticate to a server, but yo
   private
 
   def send_push_request(name, args)
-    rubygems_api_request(*args) do |request|
+    rubygems_api_request(*args, scope: get_push_scope) do |request|
       request.body = Gem.read_binary name
       request.add_field "Content-Length", request.body.size
       request.add_field "Content-Type",   "application/octet-stream"
@@ -100,7 +100,11 @@ The push command will use ~/.gem/credentials to authenticate to a server, but yo
 
     [
       gem_metadata["default_gem_server"],
-      gem_metadata["allowed_push_host"]
+      gem_metadata["allowed_push_host"],
     ]
+  end
+
+  def get_push_scope
+    :push_rubygem
   end
 end

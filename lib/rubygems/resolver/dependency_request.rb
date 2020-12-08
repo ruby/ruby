@@ -28,7 +28,7 @@ class Gem::Resolver::DependencyRequest
     when Gem::Dependency
       @dependency == other
     when Gem::Resolver::DependencyRequest
-      @dependency == other.dependency && @requester == other.requester
+      @dependency == other.dependency
     else
       false
     end

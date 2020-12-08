@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require 'rubygems/test_case'
 
-unless defined?(OpenSSL::SSL)
+unless Gem::HAVE_OPENSSL
   warn 'Skipping Gem::Security::TrustDir tests.  openssl not found.'
 end
 
@@ -95,4 +95,4 @@ class TestGemSecurityTrustDir < Gem::TestCase
 
     assert_equal mask, File.stat(@dest_dir).mode unless win_platform?
   end
-end if defined?(OpenSSL::SSL)
+end if Gem::HAVE_OPENSSL

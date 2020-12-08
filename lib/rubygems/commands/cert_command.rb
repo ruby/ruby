@@ -311,4 +311,4 @@ For further reading on signing gems see `ri Gem::Security`.
     # It's simple, but is all we need
     email =~ /\A.+@.+\z/
   end
-end if defined?(OpenSSL::SSL)
+end if Gem::HAVE_OPENSSL

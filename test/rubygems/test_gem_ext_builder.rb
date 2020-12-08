@@ -30,9 +30,8 @@ class TestGemExtBuilder < Gem::TestCase
     ENV['DESTDIR'] = 'destination'
     results = []
 
-    Dir.chdir @ext do
-      File.open 'Makefile', 'w' do |io|
-        io.puts <<-MAKEFILE
+    File.open File.join(@ext, 'Makefile'), 'w' do |io|
+      io.puts <<-MAKEFILE
 all:
 \t@#{Gem.ruby} -e "puts %Q{all: \#{ENV['DESTDIR']}}"
 
@@ -41,11 +40,10 @@ clean:
 
 install:
 \t@#{Gem.ruby} -e "puts %Q{install: \#{ENV['DESTDIR']}}"
-        MAKEFILE
-      end
-
-      Gem::Ext::Builder.make @dest_path, results
+      MAKEFILE
     end
+
+    Gem::Ext::Builder.make @dest_path, results, @ext
 
     results = results.join("\n").b
 
@@ -64,19 +62,17 @@ install:
     ENV['DESTDIR'] = 'destination'
     results = []
 
-    Dir.chdir @ext do
-      File.open 'Makefile', 'w' do |io|
-        io.puts <<-MAKEFILE
+    File.open File.join(@ext, 'Makefile'), 'w' do |io|
+      io.puts <<-MAKEFILE
 all:
 \t@#{Gem.ruby} -e "puts %Q{all: \#{ENV['DESTDIR']}}"
 
 install:
 \t@#{Gem.ruby} -e "puts %Q{install: \#{ENV['DESTDIR']}}"
-        MAKEFILE
-      end
-
-      Gem::Ext::Builder.make @dest_path, results
+      MAKEFILE
     end
+
+    Gem::Ext::Builder.make @dest_path, results, @ext
 
     results = results.join("\n").b
 

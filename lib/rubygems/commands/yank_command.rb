@@ -47,7 +47,7 @@ data you will need to change them immediately and yank your gem.
   def execute
     @host = options[:host]
 
-    sign_in @host
+    sign_in @host, scope: get_yank_scope
 
     version   = get_version_from_requirements(options[:version])
     platform  = get_platform_from_requirements(options)
@@ -72,7 +72,7 @@ data you will need to change them immediately and yank your gem.
 
   def yank_api_request(method, version, platform, api)
     name = get_one_gem_name
-    response = rubygems_api_request(method, api, host) do |request|
+    response = rubygems_api_request(method, api, host, scope: get_yank_scope) do |request|
       request.add_field("Authorization", api_key)
       request.add_field("OTP", options[:otp]) if options[:otp]
 
@@ -93,7 +93,7 @@ data you will need to change them immediately and yank your gem.
     nil
   end
 
-  def get_platform_from_requirements(requirements)
-    Gem.platforms[1].to_s if requirements.key? :added_platform
+  def get_yank_scope
+    :yank_rubygem
   end
 end
