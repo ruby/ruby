@@ -105,7 +105,7 @@ automatically and that requires `bundler` to silently remember them. Since
 
 * `--local`:
   Do not attempt to connect to `rubygems.org`. Instead, Bundler will use the
-  gems already present in Rubygems' cache or in `vendor/cache`. Note that if a
+  gems already present in Rubygems' cache or in `vendor/cache`. Note that if an
   appropriate platform-specific gem exists on `rubygems.org` it will not be
   found.
 

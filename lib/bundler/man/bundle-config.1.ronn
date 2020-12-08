@@ -250,14 +250,6 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    be changed in the next major version.
 * `silence_root_warning` (`BUNDLE_SILENCE_ROOT_WARNING`):
    Silence the warning Bundler prints when installing gems as root.
-* `specific_platform` (`BUNDLE_SPECIFIC_PLATFORM`):
-   Allow bundler to resolve for the specific running platform and store it in
-   the lockfile, instead of only using a generic platform.
-   A specific platform is the exact platform triple reported by
-   `Gem::Platform.local`, such as `x86_64-darwin-16` or `universal-java-1.8`.
-   On the other hand, generic platforms are those such as `ruby`, `mswin`, or
-   `java`. In this example, `x86_64-darwin-16` would map to `ruby` and
-   `universal-java-1.8` to `java`.
 * `ssl_ca_cert` (`BUNDLE_SSL_CA_CERT`):
    Path to a designated CA certificate file or folder containing multiple
    certificates for trusted CAs in PEM format.
@@ -371,7 +363,7 @@ Or you can set the credentials as an environment variable like this:
 
 For gems with a git source with HTTP(S) URL you can specify credentials like so:
 
-    bundle config set --global https://github.com/bundler/bundler.git username:password
+    bundle config set --global https://github.com/rubygems/rubygems.git username:password
 
 Or you can set the credentials as an environment variable like so:
 

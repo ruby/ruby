@@ -179,11 +179,11 @@ module Bundler
     # @param [Pathname] gemfile_path The Gemfile from which to remove dependencies.
     def remove_gems_from_gemfile(gems, gemfile_path)
       patterns = /gem\s+(['"])#{Regexp.union(gems)}\1|gem\s*\((['"])#{Regexp.union(gems)}\2\)/
-
       new_gemfile = []
       multiline_removal = false
       IO.readlines(gemfile_path).each do |line|
-        if line.match(patterns)
+        match_data = line.match(patterns)
+        if match_data && is_not_within_comment?(line, match_data)
           multiline_removal = line.rstrip.end_with?(",")
           # skip lines which match the regex
           next
@@ -205,6 +205,13 @@ module Bundler
       %w[group source env install_if].each {|block| remove_nested_blocks(new_gemfile, block) }
 
       new_gemfile.join.chomp
+    end
+
+    # @param [String] line          Individual line of gemfile content.
+    # @param [MatchData] match_data Data about Regex match.
+    def is_not_within_comment?(line, match_data)
+      match_start_index = match_data.offset(0).first
+      !line[0..match_start_index].include?("#")
     end
 
     # @param [Array] gemfile       Array of gemfile contents.

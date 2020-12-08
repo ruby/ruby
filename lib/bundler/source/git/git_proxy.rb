@@ -118,7 +118,7 @@ module Bundler
               git_retry %(clone --no-checkout --quiet "#{path}" "#{destination}")
               File.chmod(((File.stat(destination).mode | 0o777) & ~File.umask), destination)
             rescue Errno::EEXIST => e
-              file_path = e.message[%r{.*?(/.*)}, 1]
+              file_path = e.message[%r{.*?((?:[a-zA-Z]:)?/.*)}, 1]
               raise GitError, "Bundler could not install a gem because it needs to " \
                 "create a directory, but a file exists - #{file_path}. Please delete " \
                 "this file and try again."

@@ -496,6 +496,10 @@ G
         #{ruby_version_correct}
       G
       update_repo2 do
+        build_gem "rack", "1.2" do |s|
+          s.executables = "rackup"
+        end
+
         build_gem "activesupport", "3.0"
       end
 
@@ -512,6 +516,10 @@ G
         #{ruby_version_correct_engineless}
       G
       update_repo2 do
+        build_gem "rack", "1.2" do |s|
+          s.executables = "rackup"
+        end
+
         build_gem "activesupport", "3.0"
       end
 

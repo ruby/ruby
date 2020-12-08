@@ -207,7 +207,7 @@ module Bundler::Molinillo
       def start_resolution
         @started_at = Time.now
 
-        handle_missing_or_push_dependency_state(initial_state)
+        push_initial_state
 
         debug { "Starting resolution (#{@started_at})\nUser-requested dependencies: #{original_requested}" }
         resolver_ui.before_resolution
@@ -273,10 +273,10 @@ module Bundler::Molinillo
         states.last
       end
 
-      # Creates the initial state for the resolution, based upon the
+      # Creates and pushes the initial state for the resolution, based upon the
       # {#requested} dependencies
-      # @return [DependencyState] the initial state for the resolution
-      def initial_state
+      # @return [void]
+      def push_initial_state
         graph = DependencyGraph.new.tap do |dg|
           original_requested.each do |requested|
             vertex = dg.add_vertex(name_for(requested), nil, true)
@@ -285,18 +285,7 @@ module Bundler::Molinillo
           dg.tag(:initial_state)
         end
 
-        requirements = sort_dependencies(original_requested, graph, {})
-        initial_requirement = requirements.shift
-        DependencyState.new(
-          initial_requirement && name_for(initial_requirement),
-          requirements,
-          graph,
-          initial_requirement,
-          possibilities_for_requirement(initial_requirement, graph),
-          0,
-          {},
-          []
-        )
+        push_state_for_requirements(original_requested, true, graph)
       end
 
       # Unwinds the states stack because a conflict has been encountered
@@ -361,7 +350,7 @@ module Bundler::Molinillo
         current_detail
       end
 
-      # @param [Array<Object>] array of requirements that combine to create a conflict
+      # @param [Array<Object>] binding_requirements array of requirements that combine to create a conflict
       # @return [Array<UnwindDetails>] array of UnwindDetails that have a chance
       #    of resolving the passed requirements
       def unwind_options_for_requirements(binding_requirements)
@@ -429,7 +418,7 @@ module Bundler::Molinillo
       end
 
       # @param [DependencyState] state
-      # @param [Array] array of requirements
+      # @param [Array] binding_requirements array of requirements
       # @return [Boolean] whether or not the given state has any possibilities
       #    that could satisfy the given requirements
       def conflict_fixing_possibilities?(state, binding_requirements)
@@ -444,7 +433,8 @@ module Bundler::Molinillo
 
       # Filter's a state's possibilities to remove any that would not fix the
       # conflict we've just rewound from
-      # @param [UnwindDetails] details of the conflict just unwound from
+      # @param [UnwindDetails] unwind_details details of the conflict just
+      #   unwound from
       # @return [void]
       def filter_possibilities_after_unwind(unwind_details)
         return unless state && !state.possibilities.empty?
@@ -458,7 +448,7 @@ module Bundler::Molinillo
 
       # Filter's a state's possibilities to remove any that would not satisfy
       # the requirements in the conflict we've just rewound from
-      # @param [UnwindDetails] details of the conflict just unwound from
+      # @param [UnwindDetails] unwind_details details of the conflict just unwound from
       # @return [void]
       def filter_possibilities_for_primary_unwind(unwind_details)
         unwinds_to_state = unused_unwind_options.select { |uw| uw.state_index == unwind_details.state_index }
@@ -491,7 +481,7 @@ module Bundler::Molinillo
 
       # Filter's a state's possibilities to remove any that would (eventually)
       # create a requirement in the conflict we've just rewound from
-      # @param [UnwindDetails] details of the conflict just unwound from
+      # @param [UnwindDetails] unwind_details details of the conflict just unwound from
       # @return [void]
       def filter_possibilities_for_parent_unwind(unwind_details)
         unwinds_to_state = unused_unwind_options.select { |uw| uw.state_index == unwind_details.state_index }
@@ -500,7 +490,7 @@ module Bundler::Molinillo
         primary_unwinds = unwinds_to_state.select(&:unwinding_to_primary_requirement?).uniq
         parent_unwinds = unwinds_to_state.uniq - primary_unwinds
 
-        allowed_possibility_sets = Compatibility.flat_map(primary_unwinds) do |unwind|
+        allowed_possibility_sets = primary_unwinds.flat_map do |unwind|
           states[unwind.state_index].possibilities.select do |possibility_set|
             possibility_set.possibilities.any? do |poss|
               possibility_satisfies_requirements?(poss, unwind.conflicting_requirements)
@@ -508,7 +498,7 @@ module Bundler::Molinillo
           end
         end
 
-        requirements_to_avoid = Compatibility.flat_map(parent_unwinds, &:sub_dependencies_to_avoid)
+        requirements_to_avoid = parent_unwinds.flat_map(&:sub_dependencies_to_avoid)
 
         state.possibilities.reject! do |possibility_set|
           !allowed_possibility_sets.include?(possibility_set) &&
@@ -524,12 +514,12 @@ module Bundler::Molinillo
 
         possible_binding_requirements = conflict.requirements.values.flatten(1).uniq
 
-        # When there’s a `CircularDependency` error the conflicting requirement
-        # (the one causing the circular) won’t be `conflict.requirement`
-        # (which won’t be for the right state, because we won’t have created it,
-        # because it’s circular).
-        # We need to make sure we have that requirement in the conflict’s list,
-        # otherwise we won’t be able to unwind properly, so we just return all
+        # When there's a `CircularDependency` error the conflicting requirement
+        # (the one causing the circular) won't be `conflict.requirement`
+        # (which won't be for the right state, because we won't have created it,
+        # because it's circular).
+        # We need to make sure we have that requirement in the conflict's list,
+        # otherwise we won't be able to unwind properly, so we just return all
         # the requirements for the conflict.
         return possible_binding_requirements if conflict.underlying_error
 
@@ -558,8 +548,8 @@ module Bundler::Molinillo
       end
 
       # @param [Object] requirement we wish to check
-      # @param [Array] array of requirements
-      # @param [Array] array of possibilities the requirements will be used to filter
+      # @param [Array] possible_binding_requirements array of requirements
+      # @param [Array] possibilities array of possibilities the requirements will be used to filter
       # @return [Boolean] whether or not the given requirement is required to filter
       #    out all elements of the array of possibilities.
       def binding_requirement_in_set?(requirement, possible_binding_requirements, possibilities)
@@ -568,6 +558,7 @@ module Bundler::Molinillo
         end
       end
 
+      # @param [Object] requirement
       # @return [Object] the requirement that led to `requirement` being added
       #   to the list of requirements.
       def parent_of(requirement)
@@ -577,6 +568,7 @@ module Bundler::Molinillo
         parent_state.requirement
       end
 
+      # @param [String] name
       # @return [Object] the requirement that led to a version of a possibility
       #   with the given name being activated.
       def requirement_for_existing_name(name)
@@ -585,6 +577,7 @@ module Bundler::Molinillo
         states.find { |s| s.name == name }.requirement
       end
 
+      # @param [Object] requirement
       # @return [ResolutionState] the state whose `requirement` is the given
       #   `requirement`.
       def find_state_for(requirement)
@@ -592,6 +585,7 @@ module Bundler::Molinillo
         states.find { |i| requirement == i.requirement }
       end
 
+      # @param [Object] underlying_error
       # @return [Conflict] a {Conflict} that reflects the failure to activate
       #   the {#possibility} in conjunction with the current {#state}
       def create_conflict(underlying_error = nil)
@@ -628,6 +622,7 @@ module Bundler::Molinillo
         vertex.requirements.map { |r| requirement_tree_for(r) }
       end
 
+      # @param [Object] requirement
       # @return [Array<Object>] the list of requirements that led to
       #   `requirement` being required.
       def requirement_tree_for(requirement)
@@ -673,9 +668,8 @@ module Bundler::Molinillo
           attempt_to_filter_existing_spec(existing_vertex)
         else
           latest = possibility.latest_version
-          # use reject!(!satisfied) for 1.8.7 compatibility
-          possibility.possibilities.reject! do |possibility|
-            !requirement_satisfied_by?(requirement, activated, possibility)
+          possibility.possibilities.select! do |possibility|
+            requirement_satisfied_by?(requirement, activated, possibility)
           end
           if possibility.latest_version.nil?
             # ensure there's a possibility for better error messages
@@ -705,7 +699,7 @@ module Bundler::Molinillo
 
       # Generates a filtered version of the existing vertex's `PossibilitySet` using the
       # current state's `requirement`
-      # @param [Object] existing vertex
+      # @param [Object] vertex existing vertex
       # @return [PossibilitySet] filtered possibility set
       def filtered_possibility_set(vertex)
         PossibilitySet.new(vertex.payload.dependencies, vertex.payload.possibilities & possibility.possibilities)
@@ -730,7 +724,7 @@ module Bundler::Molinillo
       end
 
       # Requires the dependencies that the recently activated spec has
-      # @param [Object] activated_possibility the PossibilitySet that has just been
+      # @param [Object] possibility_set the PossibilitySet that has just been
       #   activated
       # @return [void]
       def require_nested_dependencies_for(possibility_set)
@@ -749,6 +743,8 @@ module Bundler::Molinillo
       # Pushes a new {DependencyState} that encapsulates both existing and new
       # requirements
       # @param [Array] new_requirements
+      # @param [Boolean] requires_sort
+      # @param [Object] new_activated
       # @return [void]
       def push_state_for_requirements(new_requirements, requires_sort = true, new_activated = activated)
         new_requirements = sort_dependencies(new_requirements.uniq, new_activated, conflicts) if requires_sort
@@ -767,7 +763,8 @@ module Bundler::Molinillo
 
       # Checks a proposed requirement with any existing locked requirement
       # before generating an array of possibilities for it.
-      # @param [Object] the proposed requirement
+      # @param [Object] requirement the proposed requirement
+      # @param [Object] activated
       # @return [Array] possibilities
       def possibilities_for_requirement(requirement, activated = self.activated)
         return [] unless requirement
@@ -778,7 +775,8 @@ module Bundler::Molinillo
         group_possibilities(search_for(requirement))
       end
 
-      # @param [Object] the proposed requirement
+      # @param [Object] requirement the proposed requirement
+      # @param [Object] activated
       # @return [Array] possibility set containing only the locked requirement, if any
       def locked_requirement_possibility_set(requirement, activated = self.activated)
         all_possibilities = search_for(requirement)
@@ -797,8 +795,8 @@ module Bundler::Molinillo
       # Build an array of PossibilitySets, with each element representing a group of
       # dependency versions that all have the same sub-dependency version constraints
       # and are contiguous.
-      # @param [Array] an array of possibilities
-      # @return [Array] an array of possibility sets
+      # @param [Array] possibilities an array of possibilities
+      # @return [Array<PossibilitySet>] an array of possibility sets
       def group_possibilities(possibilities)
         possibility_sets = []
         current_possibility_set = nil

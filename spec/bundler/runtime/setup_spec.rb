@@ -1233,6 +1233,9 @@ end
         end << "bundler"
         exempts << "fiddle" if Gem.win_platform? && Gem::Version.new(Gem::VERSION) >= Gem::Version.new("2.7")
         exempts << "uri" if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new("2.7")
+        exempts << "pathname" if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new("3.0")
+        exempts << "set" if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new("3.0")
+        exempts << "tsort" if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new("3.0")
         exempts
       end
 
@@ -1313,7 +1316,7 @@ end
         expect(out).to eq("The Gemfile's dependencies are satisfied")
       end
 
-      # bundler respects paths specified directly in RUBYLIB or RUBYOPT, and
+      # bundler respects paths specified direclty in RUBYLIB or RUBYOPT, and
       # that happens when running ruby from the ruby-core setup. To
       # workaround, we manually remove those for these tests when they would
       # override the default gem.
