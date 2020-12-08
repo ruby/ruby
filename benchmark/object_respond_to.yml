@@ -1,0 +1,11 @@
+prelude: |
+  class Base; def foo; end end
+  class OneTwentyEight < Base
+    128.times { include(Module.new) }
+  end
+  obj = OneTwentyEight.new
+benchmark:
+  respond_to_false: obj.respond_to?(:bar)
+  respond_to_true: obj.respond_to?(:foo)
+loop_count: 1_000_000
+
