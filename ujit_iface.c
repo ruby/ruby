@@ -19,6 +19,22 @@ bool rb_ujit_enabled;
 // Hash table of encoded instructions
 extern st_table *rb_encoded_insn_data;
 
+// Write the uJIT entry point pre-call bytes
+void 
+cb_write_pre_call_bytes(codeblock_t* cb)
+{
+    for (size_t i = 0; i < sizeof(ujit_with_ec_pre_call_bytes); ++i)
+        cb_write_byte(cb, ujit_with_ec_pre_call_bytes[i]);
+}
+
+// Write the uJIT exit post-call bytes
+void 
+cb_write_post_call_bytes(codeblock_t* cb)
+{
+    for (size_t i = 0; i < sizeof(ujit_with_ec_post_call_bytes); ++i)
+        cb_write_byte(cb, ujit_with_ec_post_call_bytes[i]);
+}
+
 // Keep track of mapping from instructions to generated code
 // See comment for rb_encoded_insn_data in iseq.c
 void
