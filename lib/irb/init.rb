@@ -131,7 +131,7 @@ module IRB # :nodoc:
         $DEBUG = true
         $VERBOSE = true
       when "-w"
-        $VERBOSE = true
+        Warning[:deprecated] = $VERBOSE = true
       when /^-W(.+)?/
         opt = $1 || argv.shift
         case opt
@@ -140,7 +140,7 @@ module IRB # :nodoc:
         when "1"
           $VERBOSE = false
         else
-          $VERBOSE = true
+          Warning[:deprecated] = $VERBOSE = true
         end
       when /^-r(.+)?/
         opt = $1 || argv.shift
