@@ -30,10 +30,6 @@ Koichi Sasada (ko1)
 
 Yukihiro Matsumoto (matz)
 
-=== Documentation
-
-Zachary Scott (zzak)
-
 == Standard Library Maintainers
 
 === Libraries
@@ -144,7 +140,7 @@ Zachary Scott (zzak)
   https://github.com/ruby/ipaddr
   https://rubygems.org/gems/ipaddr
 [lib/irb.rb, lib/irb/*]
-  Keiju ISHITSUKA (keiju)
+  aycabta
   https://github.com/ruby/irb
   https://rubygems.org/gems/irb
 [lib/optparse.rb, lib/optparse/*]
@@ -155,7 +151,7 @@ Zachary Scott (zzak)
   https://github.com/ruby/logger
   https://rubygems.org/gems/logger
 [lib/matrix.rb]
-  Marc-Andre Lafortune (marcandre)
+  Marc-André Lafortune (marcandre)
   https://github.com/ruby/matrix
   https://rubygems.org/gems/matrix
 [lib/mutex_m.rb]
@@ -198,7 +194,7 @@ Zachary Scott (zzak)
   Tanaka Akira (akr)
   https://github.com/ruby/open-uri
 [lib/ostruct.rb]
-  Marc-Andre Lafortune (marcandre)
+  Marc-André Lafortune (marcandre)
   https://github.com/ruby/ostruct
   https://rubygems.org/gems/ostruct
 [lib/pp.rb]
@@ -210,7 +206,7 @@ Zachary Scott (zzak)
   https://github.com/ruby/prettyprint
   https://rubygems.org/gems/prettyprint
 [lib/prime.rb]
-  Yuki Sonoda (yugui)
+  Marc-André Lafortune (marcandre)
   https://github.com/ruby/prime
   https://rubygems.org/gems/prime
 [lib/pstore.rb]
