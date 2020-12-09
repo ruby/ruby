@@ -24,10 +24,9 @@ class Tarball
 
   def gz?;  @url.end_with?('.gz'); end
   def zip?; @url.end_with?('.zip'); end
-  def bz2?; @url.end_with?('.bz2'); end
   def xz?;  @url.end_with?('.xz'); end
 
-  def ext; @url[/(?:zip|tar\.(?:gz|bz2|xz))\z/]; end
+  def ext; @url[/(?:zip|tar\.(?:gz|xz))\z/]; end
 
   def to_md
     <<eom
@@ -180,27 +179,22 @@ eom
   url:
     gz:  https://cache.ruby-lang.org/pub/ruby/#{xy}/ruby-#{ver}.tar.gz
     zip: https://cache.ruby-lang.org/pub/ruby/#{xy}/ruby-#{ver}.zip
-    bz2: https://cache.ruby-lang.org/pub/ruby/#{xy}/ruby-#{ver}.tar.bz2
     xz:  https://cache.ruby-lang.org/pub/ruby/#{xy}/ruby-#{ver}.tar.xz
   size:
     gz:  #{ary.find{|x|x.gz? }.size}
     zip: #{ary.find{|x|x.zip?}.size}
-    bz2: #{ary.find{|x|x.bz2?}.size}
     xz:  #{ary.find{|x|x.xz? }.size}
   sha1:
     gz:  #{ary.find{|x|x.gz? }.sha1}
     zip: #{ary.find{|x|x.zip?}.sha1}
-    bz2: #{ary.find{|x|x.bz2?}.sha1}
     xz:  #{ary.find{|x|x.xz? }.sha1}
   sha256:
     gz:  #{ary.find{|x|x.gz? }.sha256}
     zip: #{ary.find{|x|x.zip?}.sha256}
-    bz2: #{ary.find{|x|x.bz2?}.sha256}
     xz:  #{ary.find{|x|x.xz? }.sha256}
   sha512:
     gz:  #{ary.find{|x|x.gz? }.sha512}
     zip: #{ary.find{|x|x.zip?}.sha512}
-    bz2: #{ary.find{|x|x.bz2?}.sha512}
     xz:  #{ary.find{|x|x.xz? }.sha512}
 eom
 
