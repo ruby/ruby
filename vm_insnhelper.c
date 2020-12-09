@@ -1542,7 +1542,10 @@ vm_ccs_create(VALUE klass, const rb_callable_method_entry_t *cme)
     ccs->capa = 4;
     ccs->len = 0;
     RB_OBJ_WRITE(klass, &ccs->cme, cme);
-    METHOD_ENTRY_CACHED_SET((rb_callable_method_entry_t *)cme);
+
+    if (cme) {
+        METHOD_ENTRY_CACHED_SET((rb_callable_method_entry_t *)cme);
+    }
     ccs->entries = ALLOC_N(struct rb_class_cc_entries_entry, ccs->capa);
     return ccs;
 }
@@ -1618,30 +1621,32 @@ vm_search_cc(VALUE klass, const struct rb_callinfo *ci)
 
     if (cc_tbl) {
         if (rb_id_table_lookup(cc_tbl, mid, (VALUE *)&ccs)) {
-            const int ccs_len = ccs->len;
-            VM_ASSERT(vm_ccs_verify(ccs, mid, klass));
+            if (ccs->cme) {
+                const int ccs_len = ccs->len;
+                VM_ASSERT(vm_ccs_verify(ccs, mid, klass));
 
-            if (UNLIKELY(METHOD_ENTRY_INVALIDATED(ccs->cme))) {
-                rb_vm_ccs_free(ccs);
-                rb_id_table_delete(cc_tbl, mid);
-                ccs = NULL;
-            }
-            else {
-                for (int i=0; i<ccs_len; i++) {
-                    const struct rb_callinfo  *ccs_ci = ccs->entries[i].ci;
-                    const struct rb_callcache *ccs_cc = ccs->entries[i].cc;
+                if (UNLIKELY(METHOD_ENTRY_INVALIDATED(ccs->cme))) {
+                    rb_vm_ccs_free(ccs);
+                    rb_id_table_delete(cc_tbl, mid);
+                    ccs = NULL;
+                }
+                else {
+                    for (int i=0; i<ccs_len; i++) {
+                        const struct rb_callinfo  *ccs_ci = ccs->entries[i].ci;
+                        const struct rb_callcache *ccs_cc = ccs->entries[i].cc;
 
-                    VM_ASSERT(vm_ci_p(ccs_ci));
-                    VM_ASSERT(IMEMO_TYPE_P(ccs_cc, imemo_callcache));
+                        VM_ASSERT(vm_ci_p(ccs_ci));
+                        VM_ASSERT(IMEMO_TYPE_P(ccs_cc, imemo_callcache));
 
-                    if (ccs_ci == ci) { // TODO: equality
-                        RB_DEBUG_COUNTER_INC(cc_found_ccs);
+                        if (ccs_ci == ci) { // TODO: equality
+                            RB_DEBUG_COUNTER_INC(cc_found_ccs);
 
-                        VM_ASSERT(vm_cc_cme(ccs_cc)->called_id == mid);
-                        VM_ASSERT(ccs_cc->klass == klass);
-                        VM_ASSERT(!METHOD_ENTRY_INVALIDATED(vm_cc_cme(ccs_cc)));
+                            VM_ASSERT(vm_cc_cme(ccs_cc)->called_id == mid);
+                            VM_ASSERT(ccs_cc->klass == klass);
+                            VM_ASSERT(!METHOD_ENTRY_INVALIDATED(vm_cc_cme(ccs_cc)));
 
-                        return ccs_cc;
+                            return ccs_cc;
+                        }
                     }
                 }
             }

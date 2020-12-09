@@ -20,6 +20,7 @@ RB_DEBUG_COUNTER(mc_inline_miss_klass)       // IMC miss by different class
 RB_DEBUG_COUNTER(mc_inline_miss_invalidated) // IMC miss by invalidated ME
 RB_DEBUG_COUNTER(mc_cme_complement)          // number of acquiring complement CME
 RB_DEBUG_COUNTER(mc_cme_complement_hit)      // number of cache hit for complemented CME
+RB_DEBUG_COUNTER(mc_nomethod_hit)            // number of negative cache hit (method doesn't exist)
 
 RB_DEBUG_COUNTER(mc_search)                  // count for method lookup in class tree
 RB_DEBUG_COUNTER(mc_search_notfound)         //           method lookup, but not found

@@ -2650,9 +2650,9 @@ cc_table_mark_i(ID id, VALUE ccs_ptr, void *data_ptr)
     struct cc_tbl_i_data *data = data_ptr;
     struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_ptr;
     VM_ASSERT(vm_ccs_p(ccs));
-    VM_ASSERT(id == ccs->cme->called_id);
+    VM_ASSERT(ccs->cme == NULL || id == ccs->cme->called_id);
 
-    if (METHOD_ENTRY_INVALIDATED(ccs->cme)) {
+    if (ccs->cme && METHOD_ENTRY_INVALIDATED(ccs->cme)) {
         rb_vm_ccs_free(ccs);
         return ID_TABLE_DELETE;
     }
