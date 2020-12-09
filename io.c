@@ -6437,7 +6437,7 @@ pipe_finalize(rb_io_t *fptr, int noraise)
     }
     fptr->fd = -1;
     fptr->stdio_file = 0;
-    rb_last_status_set(fptr->pid, status, 0);
+    rb_last_status_set(status, fptr->pid);
 #else
     fptr_finalize(fptr, noraise);
 #endif

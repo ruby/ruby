@@ -584,7 +584,9 @@ static const rb_data_type_t rb_process_status_type = {
     .flags = RUBY_TYPED_FREE_IMMEDIATELY,
 };
 
-static VALUE rb_process_status_allocate(VALUE klass) {
+static VALUE
+rb_process_status_allocate(VALUE klass)
+{
     struct rb_process_status *data = NULL;
 
     return TypedData_Make_Struct(klass, struct rb_process_status, &rb_process_status_type, data);
@@ -617,11 +619,9 @@ proc_s_last_status(VALUE mod)
     return rb_last_status_get();
 }
 
-void
-rb_last_status_set(rb_pid_t pid, int status, int error)
+VALUE
+rb_process_status_new(rb_pid_t pid, int status, int error)
 {
-    rb_thread_t *th = GET_THREAD();
-
     VALUE last_status = rb_process_status_allocate(rb_cProcessStatus);
 
     struct rb_process_status *data = RTYPEDDATA_DATA(last_status);
@@ -630,8 +630,19 @@ rb_last_status_set(rb_pid_t pid, int status, int error)
     data->error = error;
 
     rb_obj_freeze(last_status);
+    return last_status;
+}
 
-    th->last_status = last_status;
+static void
+process_status_set(rb_pid_t pid, int status, int error)
+{
+    GET_THREAD()->last_status = rb_process_status_new(pid, status, error);
+}
+
+void
+rb_last_status_set(int status, rb_pid_t pid)
+{
+    process_status_set(pid, status, 0);
 }
 
 void
@@ -1340,8 +1351,11 @@ waitpid_no_SIGCHLD(struct waitpid_state *w)
  *     Time.now                                      #=> 2008-03-08 19:56:16 +0900
  *     Process::Status.wait(pid, 0)                  #=> pid 27440 exit 99
  *     Time.now                                      #=> 2008-03-08 19:56:19 +0900
+ *
+ * EXPERIMENTAL FEATURE
  */
-VALUE rb_process_status_wait(rb_pid_t pid, int flags)
+VALUE
+rb_process_status_wait(rb_pid_t pid, int flags)
 {
     // We only enter the scheduler if we are "blocking":
     if (!(flags & WNOHANG)) {
@@ -1370,12 +1384,7 @@ VALUE rb_process_status_wait(rb_pid_t pid, int flags)
         }
     }
 
-    VALUE status = rb_process_status_allocate(rb_cProcessStatus);
-
-    struct rb_process_status *data = RTYPEDDATA_DATA(status);
-    data->pid = w->ret;
-    data->status = w->status;
-    data->error = w->errnum;
+    VALUE status = rb_process_status_new(w->ret, w->status, w->errnum);
 
     COROUTINE_STACK_FREE(w);
 
@@ -1413,7 +1422,6 @@ rb_waitpid(rb_pid_t pid, int *st, int flags)
         errno = data->error;
     }
     else {
-        rb_obj_freeze(status);
         GET_THREAD()->last_status = status;
     }
 
@@ -4562,12 +4570,12 @@ rb_spawn_process(struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen)
     }
 
     if (pid == -1) {
-        rb_last_status_set(pid, 0x7f << 8, 0);
+        rb_last_status_set(0x7f << 8, pid);
     }
 # else
     status = system(rb_execarg_commandline(eargp, &prog));
     pid = 1;			/* dummy */
-    rb_last_status_set(pid, (status & 0xff) << 8, 0);
+    rb_last_status_set((status & 0xff) << 8, pid);
 # endif
 
     if (eargp->waitpid_state && eargp->waitpid_state != WAITPID_LOCK_ONLY) {
@@ -4720,7 +4728,7 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
         else {
             waitpid_no_SIGCHLD(w);
         }
-        rb_last_status_set(w->ret, w->status, 0);
+        rb_last_status_set(w->status, w->ret);
     }
 #endif
     if (w->pid < 0 /* fork failure */ || pid < 0 /* exec failure */) {

@@ -28,7 +28,7 @@
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 /* process.c */
-void rb_last_status_set(rb_pid_t pid, int status, int error);
+void rb_last_status_set(int status, rb_pid_t pid);
 VALUE rb_last_status_get(void);
 int rb_proc_exec(const char*);
 
