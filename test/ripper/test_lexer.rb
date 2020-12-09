@@ -140,10 +140,8 @@ class TestRipper::Lexer < Test::Unit::TestCase
   end
 
   def test_trailing_on_embexpr_end
-    # This is useful for scanning a template engine literal `{ foo, bar: baz }`
-    # whose body inside brackes works like trailing method arguments, like Haml.
     token = Ripper.lex("a( foo, bar: baz }").last
-    assert_equal [[1, 17], :on_embexpr_end, "}", state(:EXPR_ARG)], token
+    assert_equal [[1, 17], :on_rbrace, "}", state(:EXPR_ARG)], token
   end
 
   BAD_CODE = {

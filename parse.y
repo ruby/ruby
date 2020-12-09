@@ -31,6 +31,7 @@ struct lex_context {
     unsigned int in_kwarg: 1;
     unsigned int in_def: 1;
     unsigned int in_class: 1;
+    unsigned int in_string: 1;
 };
 
 #include "internal.h"
@@ -4766,6 +4767,8 @@ string_content	: tSTRING_CONTENT
 		    {
 			CMDARG_PUSH(0);
 			COND_PUSH(0);
+			$<ctxt>$ = p->ctxt;
+			p->ctxt.in_string = 1;
 		    }
 		    {
 			/* need to backup p->lex.strterm so that a string literal `%!foo,#{ !0 },bar!` can be parsed */
@@ -4793,6 +4796,7 @@ string_content	: tSTRING_CONTENT
 			p->lex.brace_nest = $<num>5;
 			p->heredoc_indent = $<num>6;
 			p->heredoc_line_indent = -1;
+			p->ctxt.in_string = $<ctxt>1.in_string;
 		    /*%%%*/
 			if ($7) $7->flags &= ~NODE_FL_NEWLINE;
 			$$ = new_evstr(p, $7, &@$);
@@ -9453,7 +9457,7 @@ parser_yylex(struct parser_params *p)
 
       case '}':
 	/* tSTRING_DEND does COND_POP and CMDARG_POP in the yacc's rule */
-	if (!p->lex.brace_nest--) return tSTRING_DEND;
+	if (!p->lex.brace_nest--) return p->ctxt.in_string ? tSTRING_DEND : c;
 	COND_POP();
 	CMDARG_POP();
 	SET_LEX_STATE(EXPR_END);
