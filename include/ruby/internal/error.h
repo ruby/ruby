@@ -74,13 +74,14 @@ VALUE rb_errinfo(void);
 /**
  * Sets the current exception (`$!`) to the given value.
  *
+ * @param[in]  err            An instance of ::rb_eException, or ::RUBY_Qnil.
  * @exception  rb_eTypeError  What  is given  was  neither ::rb_eException  nor
  *                            ::RUBY_Qnil.
  * @note       Use  rb_raise()  instead to  raise  `err`.   This function  just
  *             assigns the given object to the global variable.
  * @ingroup    exception
  */
-void rb_set_errinfo(VALUE);
+void rb_set_errinfo(VALUE err);
 
 RBIMPL_ATTR_NORETURN()
 RBIMPL_ATTR_NONNULL((2))
@@ -151,7 +152,7 @@ RBIMPL_ATTR_NORETURN()
 /**
  * Converts a C errno into a Ruby exception, then raises it.  For instance:
  *
- * ```C
+ * ```CXX
  * static VALUE
  * foo(VALUE argv)
  * {
