@@ -990,6 +990,14 @@ rb_method_entry(VALUE klass, ID id)
     return search_method_protect(klass, id, NULL);
 }
 
+static const rb_callable_method_entry_t *
+prepare_negative_entry(VALUE defined_class, ID id)
+{
+    rb_callable_method_entry_t *cme = (rb_callable_method_entry_t *)rb_imemo_new(imemo_ment, 0, (VALUE)id, Qnil, defined_class);
+    METHOD_ENTRY_MISSING_SET(cme);
+    return cme;
+}
+
 static inline const rb_callable_method_entry_t *
 prepare_callable_method_entry(VALUE defined_class, ID id, const rb_method_entry_t * const me, int create)
 {
@@ -1096,16 +1104,28 @@ callable_method_entry(VALUE klass, ID mid, VALUE *defined_class_ptr)
     RB_VM_LOCK_ENTER();
     {
         cme = cached_callable_method_entry(klass, mid);
-
         if (cme) {
-            if (defined_class_ptr != NULL) *defined_class_ptr = cme->defined_class;
+            if (METHOD_ENTRY_MISSING(cme)) {
+                cme = NULL;
+            }
+            else {
+                if (defined_class_ptr != NULL) *defined_class_ptr = cme->defined_class;
+            }
         }
         else {
             VALUE defined_class;
             rb_method_entry_t *me = search_method_protect(klass, mid, &defined_class);
             if (defined_class_ptr) *defined_class_ptr = defined_class;
-            cme = prepare_callable_method_entry(defined_class, mid, me, TRUE);
-            if (cme) cache_callable_method_entry(klass, mid, cme);
+            if (me) {
+                cme = prepare_callable_method_entry(defined_class, mid, me, TRUE);
+                cache_callable_method_entry(klass, mid, cme);
+            } else {
+                const rb_callable_method_entry_t *negative_cme;
+                negative_cme = prepare_negative_entry(defined_class, mid);
+                cache_callable_method_entry(klass, mid, negative_cme);
+                RB_OBJ_WRITTEN(klass, Qundef, (VALUE)negative_cme);
+                cme = NULL;
+            }
         }
     }
     RB_VM_LOCK_LEAVE();
