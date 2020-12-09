@@ -77,11 +77,13 @@ typedef struct {
 
     struct {
         /* The array of rb_memory_view_item_component_t that describes the
-         * item structure. */
+         * item structure.  rb_memory_view_prepare_item_desc and
+         * rb_memory_view_get_item allocate this memory if needed,
+         * and rb_memory_view_release frees it. */
         rb_memory_view_item_component_t *components;
 
         /* The number of components in an item. */
-        ssize_t length;
+        size_t length;
     } item_desc;
 
     /* The number of dimension. */
@@ -132,6 +134,8 @@ ssize_t rb_memory_view_parse_item_format(const char *format,
 ssize_t rb_memory_view_item_size_from_format(const char *format, const char **err);
 void *rb_memory_view_get_item_pointer(rb_memory_view_t *view, const ssize_t *indices);
 VALUE rb_memory_view_extract_item_members(const void *ptr, const rb_memory_view_item_component_t *members, const size_t n_members);
+VALUE rb_memory_view_prepare_item_dexc(rb_memory_view_t *view);
+VALUE rb_memory_view_get_item(rb_memory_view_t *view, const ssize_t *indices);
 
 int rb_memory_view_available_p(VALUE obj);
 int rb_memory_view_get(VALUE obj, rb_memory_view_t* memory_view, int flags);
