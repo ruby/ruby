@@ -1136,7 +1136,12 @@ static const rb_method_entry_t *resolve_refined_method(VALUE refinements, const 
 static const rb_method_entry_t *
 method_entry_resolve_refinement(VALUE klass, ID id, int with_refinement, VALUE *defined_class_ptr)
 {
-    const rb_method_entry_t *me = search_method_protect(klass, id, defined_class_ptr);
+    const rb_method_entry_t *me;
+    if (RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS)) {
+        me = (const rb_method_entry_t*)callable_method_entry(klass, id, defined_class_ptr);
+    } else {
+        me = search_method_protect(klass, id, defined_class_ptr);
+    }
 
     if (me) {
 	if (me->def->type == VM_METHOD_TYPE_REFINED) {
