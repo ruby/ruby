@@ -452,6 +452,9 @@ Excluding feature bug fixes.
 
 * Integer#zero? overrides Numeric#zero? for optimization.  [[Misc #16961]]
 
+* Enumerable#grep and grep_v when passed a Regexp and no block no longer modify
+  Regexp.last_match [[Bug #17030]]
+
 * Requiring 'open-uri' no longer redefines `Kernel#open`.
   Call `URI.open` directly or `use URI#open` instead. [[Misc #15893]]
 
@@ -682,3 +685,4 @@ end
 [Feature #17351]: https://bugs.ruby-lang.org/issues/17351
 [Feature #17371]: https://bugs.ruby-lang.org/issues/17371
 [GH-2991]:        https://github.com/ruby/ruby/pull/2991
+[Bug #17030]:     https://bugs.ruby-lang.org/issues/17030

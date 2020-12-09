@@ -19,6 +19,7 @@
 #include "internal/object.h"
 #include "internal/proc.h"
 #include "internal/rational.h"
+#include "internal/re.h"
 #include "ruby/util.h"
 #include "ruby_assert.h"
 #include "symbol.h"
@@ -82,6 +83,22 @@ grep_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 }
 
 static VALUE
+grep_regexp_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
+{
+    struct MEMO *memo = MEMO_CAST(args);
+    VALUE converted_element, match;
+    ENUM_WANT_SVALUE();
+
+    /* In case element can't be converted to a Symbol or String: not a match (don't raise) */
+    converted_element = SYMBOL_P(i) ? i : rb_check_string_type(i);
+    match = NIL_P(converted_element) ? Qfalse : rb_reg_match_p(memo->v1, i, 0);
+    if (match == memo->u3.value) {
+	rb_ary_push(memo->v2, i);
+    }
+    return Qnil;
+}
+
+static VALUE
 grep_iter_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 {
     struct MEMO *memo = MEMO_CAST(args);
@@ -91,6 +108,27 @@ grep_iter_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 	rb_ary_push(memo->v2, enum_yield(argc, i));
     }
     return Qnil;
+}
+
+static VALUE
+enum_grep0(VALUE obj, VALUE pat, VALUE test)
+{
+    VALUE ary = rb_ary_new();
+    struct MEMO *memo = MEMO_NEW(pat, ary, test);
+    rb_block_call_func_t fn;
+    if (rb_block_given_p()) {
+    	fn = grep_iter_i;
+    }
+    else if (RB_TYPE_P(pat, T_REGEXP) &&
+      LIKELY(rb_method_basic_definition_p(CLASS_OF(pat), idEqq))) {
+	fn = grep_regexp_i;
+    }
+    else {
+	fn = grep_i;
+    }
+    rb_block_call(obj, id_each, 0, 0, fn, (VALUE)memo);
+
+    return ary;
 }
 
 /*
@@ -114,12 +152,7 @@ grep_iter_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 static VALUE
 enum_grep(VALUE obj, VALUE pat)
 {
-    VALUE ary = rb_ary_new();
-    struct MEMO *memo = MEMO_NEW(pat, ary, Qtrue);
-
-    rb_block_call(obj, id_each, 0, 0, rb_block_given_p() ? grep_iter_i : grep_i, (VALUE)memo);
-
-    return ary;
+    return enum_grep0(obj, pat, Qtrue);
 }
 
 /*
@@ -140,12 +173,7 @@ enum_grep(VALUE obj, VALUE pat)
 static VALUE
 enum_grep_v(VALUE obj, VALUE pat)
 {
-    VALUE ary = rb_ary_new();
-    struct MEMO *memo = MEMO_NEW(pat, ary, Qfalse);
-
-    rb_block_call(obj, id_each, 0, 0, rb_block_given_p() ? grep_iter_i : grep_i, (VALUE)memo);
-
-    return ary;
+    return enum_grep0(obj, pat, Qfalse);
 }
 
 #define COUNT_BIGNUM IMEMO_FL_USER0
