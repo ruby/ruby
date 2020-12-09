@@ -819,6 +819,7 @@ class TestMatrix < Test::Unit::TestCase
     assert_equal(Matrix.empty(0,2), @e1.adjoint)
   end
 
+=begin
   def test_ractor
     obj1 = @m1.freeze
 
@@ -827,4 +828,5 @@ class TestMatrix < Test::Unit::TestCase
     end.take
     assert_same obj1, obj2
   end if defined?(Ractor)
+=end
 end
