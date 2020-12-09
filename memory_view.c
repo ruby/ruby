@@ -226,6 +226,8 @@ rb_memory_view_init_as_byte_array(rb_memory_view_t *view, VALUE obj, void *data,
     view->readonly = readonly;
     view->format = NULL;
     view->item_size = 1;
+    view->item_desc.components = NULL;
+    view->item_desc.length = 0;
     view->ndim = 1;
     view->shape = NULL;
     view->strides = NULL;
@@ -764,6 +766,37 @@ rb_memory_view_extract_item_members(const void *ptr, const rb_memory_view_item_c
     return item;
 }
 
+void
+rb_memory_view_prepare_item_desc(rb_memory_view_t *view)
+{
+    if (view->item_desc.components == NULL) {
+        const char *err;
+        ssize_t n = rb_memory_view_parse_item_format(view->format, &view->item_desc.components, &view->item_desc.length, &err);
+        if (n < 0) {
+            rb_raise(rb_eRuntimeError,
+                     "Unable to parse item format at %"PRIdSIZE" in \"%s\"",
+                     (err - view->format), view->format);
+        }
+    }
+}
+
+/* Return a value that consists of item members in the given memory view. */
+VALUE
+rb_memory_view_get_item(rb_memory_view_t *view, const ssize_t *indices)
+{
+    void *ptr = rb_memory_view_get_item_pointer(view, indices);
+
+    if (view->format == NULL) {
+        return INT2FIX(*(uint8_t *)ptr);
+    }
+
+    if (view->item_desc.components == NULL) {
+        rb_memory_view_prepare_item_desc(view);
+    }
+
+    return rb_memory_view_extract_item_members(ptr, view->item_desc.components, view->item_desc.length);
+}
+
 static const rb_memory_view_entry_t *
 lookup_memory_view_entry(VALUE klass)
 {
@@ -830,6 +863,9 @@ rb_memory_view_release(rb_memory_view_t* view)
         if (rv) {
             unregister_exported_object(view->obj);
             view->obj = Qnil;
+            if (view->item_desc.components) {
+                xfree(view->item_desc.components);
+            }
         }
         return rv;
     }

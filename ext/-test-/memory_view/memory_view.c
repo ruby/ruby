@@ -264,8 +264,16 @@ static int
 mdview_get_memory_view(VALUE obj, rb_memory_view_t *view, int flags)
 {
     VALUE buf_v = rb_ivar_get(obj, id_str);
+    VALUE format_v = rb_ivar_get(obj, SYM2ID(sym_format));
     VALUE shape_v = rb_ivar_get(obj, SYM2ID(sym_shape));
     VALUE strides_v = rb_ivar_get(obj, SYM2ID(sym_strides));
+
+    const char *format = RSTRING_PTR(format_v);
+    const char *err;
+    const ssize_t item_size = rb_memory_view_item_size_from_format(format, &err);
+    if (item_size < 0) {
+        return 0;
+    }
 
     ssize_t i, ndim = RARRAY_LEN(shape_v);
     ssize_t *shape = ALLOC_N(ssize_t, ndim);
@@ -288,8 +296,8 @@ mdview_get_memory_view(VALUE obj, rb_memory_view_t *view, int flags)
     }
 
     rb_memory_view_init_as_byte_array(view, obj, RSTRING_PTR(buf_v), RSTRING_LEN(buf_v), true);
-    view->format = "l";
-    view->item_size = sizeof(long);
+    view->format = StringValueCStr(format_v);
+    view->item_size = item_size;
     view->ndim = ndim;
     view->shape = shape;
     view->strides = strides;
@@ -310,13 +318,15 @@ static const rb_memory_view_entry_t mdview_memory_view_entry = {
 };
 
 static VALUE
-mdview_initialize(VALUE obj, VALUE buf, VALUE shape, VALUE strides)
+mdview_initialize(VALUE obj, VALUE buf, VALUE format, VALUE shape, VALUE strides)
 {
     Check_Type(buf, T_STRING);
+    StringValue(format);
     Check_Type(shape, T_ARRAY);
     if (!NIL_P(strides)) Check_Type(strides, T_ARRAY);
 
     rb_ivar_set(obj, id_str, buf);
+    rb_ivar_set(obj, SYM2ID(sym_format), format);
     rb_ivar_set(obj, SYM2ID(sym_shape), shape);
     rb_ivar_set(obj, SYM2ID(sym_strides), strides);
     return Qnil;
@@ -344,11 +354,8 @@ mdview_aref(VALUE obj, VALUE indices_v)
         indices[i] = NUM2SSIZET(RARRAY_AREF(indices_v, i));
     }
 
-    char *ptr = rb_memory_view_get_item_pointer(&view, indices);
+    VALUE result = rb_memory_view_get_item(&view, indices);
     ALLOCV_END(buf_indices);
-
-    long x = *(long *)ptr;
-    VALUE result = LONG2FIX(x);
     rb_memory_view_release(&view);
 
     return result;
@@ -373,7 +380,7 @@ Init_memory_view(void)
     rb_memory_view_register(cExportableString, &exportable_string_memory_view_entry);
 
     VALUE cMDView = rb_define_class_under(mMemoryViewTestUtils, "MultiDimensionalView", rb_cObject);
-    rb_define_method(cMDView, "initialize", mdview_initialize, 3);
+    rb_define_method(cMDView, "initialize", mdview_initialize, 4);
     rb_define_method(cMDView, "[]", mdview_aref, 1);
     rb_memory_view_register(cMDView, &mdview_memory_view_entry);
 
