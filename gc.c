@@ -2084,18 +2084,25 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
 
 #if RGENGC_CHECK_MODE
     p->as.values.v1 = p->as.values.v2 = p->as.values.v3 = 0;
-    GC_ASSERT(RVALUE_MARKED(obj) == FALSE);
-    GC_ASSERT(RVALUE_MARKING(obj) == FALSE);
-    GC_ASSERT(RVALUE_OLD_P(obj) == FALSE);
-    GC_ASSERT(RVALUE_WB_UNPROTECTED(obj) == FALSE);
 
-    if (flags & FL_PROMOTED1) {
-        if (RVALUE_AGE(obj) != 2) rb_bug("newobj: %s of age (%d) != 2.", obj_info(obj), RVALUE_AGE(obj));
+    RB_VM_LOCK_ENTER_NO_BARRIER();
+    {
+        check_rvalue_consistency(obj);
+
+        GC_ASSERT(RVALUE_MARKED(obj) == FALSE);
+        GC_ASSERT(RVALUE_MARKING(obj) == FALSE);
+        GC_ASSERT(RVALUE_OLD_P(obj) == FALSE);
+        GC_ASSERT(RVALUE_WB_UNPROTECTED(obj) == FALSE);
+
+        if (flags & FL_PROMOTED1) {
+            if (RVALUE_AGE(obj) != 2) rb_bug("newobj: %s of age (%d) != 2.", obj_info(obj), RVALUE_AGE(obj));
+        }
+        else {
+            if (RVALUE_AGE(obj) > 0) rb_bug("newobj: %s of age (%d) > 0.", obj_info(obj), RVALUE_AGE(obj));
+        }
+        if (rgengc_remembered(objspace, (VALUE)obj)) rb_bug("newobj: %s is remembered.", obj_info(obj));
     }
-    else {
-        if (RVALUE_AGE(obj) > 0) rb_bug("newobj: %s of age (%d) > 0.", obj_info(obj), RVALUE_AGE(obj));
-    }
-    if (rgengc_remembered(objspace, (VALUE)obj)) rb_bug("newobj: %s is remembered.", obj_info(obj));
+    RB_VM_LOCK_LEAVE_NO_BARRIER();
 #endif
 
     if (UNLIKELY(wb_protected == FALSE)) {
@@ -2146,8 +2153,6 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
         }
     }
 #endif
-    check_rvalue_consistency(obj);
-
     // RUBY_DEBUG_LOG("obj:%p (%s)", (void *)obj, obj_type_name(obj));
     return obj;
 }
