@@ -148,6 +148,7 @@ typedef intptr_t pid_t;
 
 // The unit structure that holds metadata of ISeq for MJIT.
 struct rb_mjit_unit {
+    struct list_node unode;
     // Unique order number of unit.
     int id;
     // Dlopen handle of the loaded object file.
@@ -159,7 +160,6 @@ struct rb_mjit_unit {
 #endif
     // Only used by unload_units. Flag to check this unit is currently on stack or not.
     bool used_code_p;
-    struct list_node unode;
     // mjit_compile's optimization switches
     struct rb_mjit_compile_info compile_info;
     // captured CC values, they should be marked with iseq.
