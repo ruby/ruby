@@ -2401,7 +2401,7 @@ class TestModule < Test::Unit::TestCase
 
   def test_uninitialized_instance_variable
     a = AttrTest.new
-    assert_warning(/instance variable @ivar not initialized/) do
+    assert_warning('') do
       assert_nil(a.ivar)
     end
     a.instance_variable_set(:@ivar, 42)
@@ -2410,7 +2410,7 @@ class TestModule < Test::Unit::TestCase
     end
 
     name = "@\u{5909 6570}"
-    assert_warning(/instance variable #{name} not initialized/) do
+    assert_warning('') do
       assert_nil(a.instance_eval(name))
     end
   end

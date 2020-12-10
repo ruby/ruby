@@ -829,11 +829,9 @@ class TestJIT < Test::Unit::TestCase
         end
       end
 
-      verbose, $VERBOSE = $VERBOSE, false # suppress "instance variable @b not initialized"
       print(Foo.new.bar)
       print(Foo.new.bar)
       print(Foo.new.bar)
-      $VERBOSE = verbose
     end;
   end
 

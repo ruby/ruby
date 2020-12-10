@@ -1179,9 +1179,6 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
             return val;
         }
         else {
-            if (!is_attr && RTEST(ruby_verbose)) {
-                rb_warning("instance variable %"PRIsVALUE" not initialized", QUOTE_ID(id));
-            }
             return Qnil;
         }
     }
