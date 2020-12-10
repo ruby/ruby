@@ -431,8 +431,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
     begin
       require 'webrick'
     rescue LoadError
-      puts "webrick is not found. You may need to `gem install webrick` to install webrick."
-      exit
+      abort "webrick is not found. You may need to `gem install webrick` to install webrick."
     end
 
     Gem::RDoc.load_rdoc

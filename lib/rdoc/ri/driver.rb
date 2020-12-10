@@ -1554,8 +1554,7 @@ or the PAGER environment variable.
     begin
       require 'webrick'
     rescue LoadError
-      puts "webrick is not found. You may need to `gem install webrick` to install webrick."
-      exit
+      abort "webrick is not found. You may need to `gem install webrick` to install webrick."
     end
 
     server = WEBrick::HTTPServer.new :Port => @server

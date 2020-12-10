@@ -329,8 +329,7 @@ def httpd
     begin
       require 'webrick'
     rescue LoadError
-      puts "webrick is not found. You may need to `gem install webrick` to install webrick."
-      exit
+      abort "webrick is not found. You may need to `gem install webrick` to install webrick."
     end
     opt = options[:RequestTimeout] and options[:RequestTimeout] = opt.to_i
     [:Port, :MaxClients].each do |name|
