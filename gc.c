@@ -5082,6 +5082,8 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     struct heap_page *sweep_page = heap->sweeping_page;
     int unlink_limit = 3;
+    int swept_slots = 0;
+
 #if GC_ENABLE_INCREMENTAL_MARK
     int need_pool = will_be_incremental_marking(objspace) ? TRUE : FALSE;
 
@@ -5119,7 +5121,10 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
 	    }
 	    else {
                 if (heap_add_freepage(heap, sweep_page)) {
-                    break;
+                    swept_slots += free_slots;
+                    if (swept_slots > 2048) {
+                        break;
+                    }
                 }
 	    }
 #else
@@ -5140,8 +5145,8 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
     gc_prof_sweep_timer_stop(objspace);
 #endif
 
-    GC_ASSERT(gc_mode(objspace) == gc_mode_sweeping ?
-              heap->free_pages != NULL : 1);
+    GC_ASSERT(gc_mode(objspace) == gc_mode_sweeping ? heap->free_pages != NULL : 1);
+
     return heap->free_pages != NULL;
 }
 
