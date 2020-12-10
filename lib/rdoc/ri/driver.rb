@@ -1551,7 +1551,12 @@ or the PAGER environment variable.
   # Starts a WEBrick server for ri.
 
   def start_server
-    require 'webrick'
+    begin
+      require 'webrick'
+    rescue LoadError
+      puts "webrick is not found. You may need to `gem install webrick` to install webrick."
+      exit
+    end
 
     server = WEBrick::HTTPServer.new :Port => @server
 
