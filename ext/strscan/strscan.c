@@ -984,7 +984,7 @@ strscan_unscan(VALUE self)
 }
 
 /*
- * Returns +true+ iff the scan pointer is at the beginning of the line.
+ * Returns +true+ if the scan pointer is at the beginning of the line.
  *
  *   s = StringScanner.new("test\ntest\n")
  *   s.bol?           # => true
@@ -1037,7 +1037,7 @@ strscan_empty_p(VALUE self)
 }
 
 /*
- * Returns true iff there is more data in the string.  See #eos?.
+ * Returns true if there is more data in the string.  See #eos?.
  * This method is obsolete; use #eos? instead.
  *
  *   s = StringScanner.new('test string')
@@ -1054,7 +1054,7 @@ strscan_rest_p(VALUE self)
 }
 
 /*
- * Returns +true+ iff the last match was successful.
+ * Returns +true+ if the last match was successful.
  *
  *   s = StringScanner.new('test string')
  *   s.match?(/\w+/)     # => 4
