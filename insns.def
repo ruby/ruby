@@ -210,8 +210,6 @@ getinstancevariable
 (ID id, IVC ic)
 ()
 (VALUE val)
-/* "instance variable not initialized" warning can be hooked. */
-// attr bool leaf = false; /* has rb_warning() */
 {
     val = vm_getinstancevariable(GET_ISEQ(), GET_SELF(), id, ic);
 }
