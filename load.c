@@ -1079,10 +1079,10 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception)
     }
     EC_POP_TAG();
 
-    th = rb_ec_thread_ptr(ec);
-    th->top_self = self;
-    th->top_wrapper = wrapper;
-    if (reset_ext_config) ext_config_pop(th, &prev_ext_config);
+    rb_thread_t *th2 = rb_ec_thread_ptr(ec);
+    th2->top_self = self;
+    th2->top_wrapper = wrapper;
+    if (reset_ext_config) ext_config_pop(th2, &prev_ext_config);
 
     if (ftptr) load_unlock(RSTRING_PTR(path), !state);
 
