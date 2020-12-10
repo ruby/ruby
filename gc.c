@@ -3987,6 +3987,8 @@ id2ref_obj_tbl(rb_objspace_t *objspace, VALUE objid)
  *     r = ObjectSpace._id2ref(s.object_id)   #=> "I am a string"
  *     r == s                                 #=> true
  *
+ *  On multi-ractor mode, if the object is not sharable, it raises
+ *  RangeError.
  */
 
 static VALUE
@@ -4023,7 +4025,13 @@ id2ref(VALUE objid)
 
     if ((orig = id2ref_obj_tbl(objspace, objid)) != Qundef &&
         is_live_object(objspace, orig)) {
-        return orig;
+
+        if (!rb_multi_ractor_p() || rb_ractor_shareable_p(orig)) {
+            return orig;
+        }
+        else {
+            rb_raise(rb_eRangeError, "%+"PRIsVALUE" is id of the unshareable object on multi-ractor", rb_int2str(objid, 10));
+        }
     }
 
     if (rb_int_ge(objid, objspace->next_object_id)) {
