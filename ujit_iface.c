@@ -233,7 +233,7 @@ rb_ujit_compile_iseq(const rb_iseq_t *iseq)
     VALUE *encoded = (VALUE *)iseq->body->iseq_encoded;
 
     // Compile a block version starting at the first instruction
-    uint8_t* native_code_ptr = ujit_compile_block(iseq, 0);
+    uint8_t* native_code_ptr = ujit_compile_block(iseq, 0, true);
 
     if (native_code_ptr) {
         encoded[0] = (VALUE)native_code_ptr;
@@ -253,7 +253,7 @@ rb_ujit_init(void)
 
     rb_ujit_enabled = true;
 
-    // Initialize ujit codegen
+    ujit_init_core();
     ujit_init_codegen();
 
     // Initialize the GC hooks

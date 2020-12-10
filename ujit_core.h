@@ -20,6 +20,17 @@
 // Maximum number of versions per block
 #define MAX_VERSIONS 5
 
+// Tuple of (iseq, idx) used to idenfity basic blocks
+typedef struct BlockId
+{
+    // Instruction sequence
+    const rb_iseq_t *iseq;
+
+    // Instruction index
+    const unsigned int idx;
+
+} blockid_t;
+
 // Code generation context
 typedef struct ctx_struct
 {
@@ -48,11 +59,14 @@ typedef struct ctx_struct
 
 } ctx_t;
 
+// Context object methods
 int ctx_get_opcode(ctx_t *ctx);
 VALUE ctx_get_arg(ctx_t* ctx, size_t arg_idx);
 x86opnd_t ctx_sp_opnd(ctx_t* ctx, int32_t offset_bytes);
 x86opnd_t ctx_stack_push(ctx_t* ctx, size_t n);
 x86opnd_t ctx_stack_pop(ctx_t* ctx, size_t n);
 x86opnd_t ctx_stack_opnd(ctx_t* ctx, int32_t idx);
+
+void ujit_init_core(void);
 
 #endif // #ifndef UJIT_CORE_H
