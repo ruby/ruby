@@ -48,21 +48,21 @@ jobs:
       matrix:
         entry:
           - { key: default_cc, name: gcc-10,    value: gcc-10 }
-          - { key: default_cc, name: gcc-9,     value: gcc-9 }
-          - { key: default_cc, name: gcc-8,     value: gcc-8 }
-          - { key: default_cc, name: gcc-7,     value: gcc-7 }
-          - { key: default_cc, name: gcc-6,     value: gcc-6 }
-          - { key: default_cc, name: gcc-5,     value: gcc-5 }
+#         - { key: default_cc, name: gcc-9,     value: gcc-9 }
+#         - { key: default_cc, name: gcc-8,     value: gcc-8 }
+#         - { key: default_cc, name: gcc-7,     value: gcc-7 }
+#         - { key: default_cc, name: gcc-6,     value: gcc-6 }
+#         - { key: default_cc, name: gcc-5,     value: gcc-5 }
           - { key: default_cc, name: gcc-4.8,   value: gcc-4.8 }
           - { key: default_cc, name: clang-12,  value: clang-12 }
-          - { key: default_cc, name: clang-11,  value: clang-11 }
-          - { key: default_cc, name: clang-10,  value: clang-10 }
-          - { key: default_cc, name: clang-9,   value: clang-9 }
-          - { key: default_cc, name: clang-8,   value: clang-8 }
-          - { key: default_cc, name: clang-7,   value: clang-7 }
-          - { key: default_cc, name: clang-6.0, value: clang-6.0 }
-          - { key: default_cc, name: clang-5.0, value: clang-5.0 }
-          - { key: default_cc, name: clang-4.0, value: clang-4.0 }
+#         - { key: default_cc, name: clang-11,  value: clang-11 }
+#         - { key: default_cc, name: clang-10,  value: clang-10 }
+#         - { key: default_cc, name: clang-9,   value: clang-9 }
+#         - { key: default_cc, name: clang-8,   value: clang-8 }
+#         - { key: default_cc, name: clang-7,   value: clang-7 }
+#         - { key: default_cc, name: clang-6.0, value: clang-6.0 }
+#         - { key: default_cc, name: clang-5.0, value: clang-5.0 }
+#         - { key: default_cc, name: clang-4.0, value: clang-4.0 }
           - { key: default_cc, name: clang-3.9, value: clang-3.9 }
 
           - { key: crosshost, name: aarch64-linux-gnu,     value: aarch64-linux-gnu }
@@ -75,17 +75,17 @@ jobs:
           - { key: crosshost, name: x86_64-w64-mingw32,    value: x86_64-w64-mingw32 }
 
           - { key: append_cc, name: c99,   value: '-std=c99   -Werror=pedantic -pedantic-errors' }
-          - { key: append_cc, name: c11,   value: '-std=c11   -Werror=pedantic -pedantic-errors' }
-          - { key: append_cc, name: c17,   value: '-std=c17   -Werror=pedantic -pedantic-errors' }
+#         - { key: append_cc, name: c11,   value: '-std=c11   -Werror=pedantic -pedantic-errors' }
+#         - { key: append_cc, name: c17,   value: '-std=c17   -Werror=pedantic -pedantic-errors' }
           - { key: append_cc, name: c2x,   value: '-std=c2x   -Werror=pedantic -pedantic-errors' }
           - { key: CXXFLAGS,  name: c++98, value: '-std=c++98 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }
-          - { key: CXXFLAGS,  name: c++11, value: '-std=c++11 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }
-          - { key: CXXFLAGS,  name: c++14, value: '-std=c++14 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }
-          - { key: CXXFLAGS,  name: c++17, value: '-std=c++17 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }
+#         - { key: CXXFLAGS,  name: c++11, value: '-std=c++11 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }
+#         - { key: CXXFLAGS,  name: c++14, value: '-std=c++14 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }
+#         - { key: CXXFLAGS,  name: c++17, value: '-std=c++17 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }
           - { key: CXXFLAGS,  name: c++2a, value: '-std=c++2a -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }
 
           - { key: optflags, name: '-O0', value: '-O0 -march=x86-64 -mtune=generic' }
-          - { key: optflags, name: '-O3', value: '-O3 -march=x86-64 -mtune=generic' }
+#         - { key: optflags, name: '-O3', value: '-O3 -march=x86-64 -mtune=generic' }
 
           - { key: append_configure, name: gmp,                  value: '--with-gmp' }
           - { key: append_configure, name: jemalloc,             value: '--with-jemalloc' }
@@ -102,54 +102,54 @@ jobs:
 
           - { key: cppflags, name: NDEBUG,                         value: '-DNDEBUG' }
           - { key: cppflags, name: RUBY_DEBUG,                     value: '-DRUBY_DEBUG' }
-          - { key: cppflags, name: ARRAY_DEBUG,                    value: '-DARRAY_DEBUG' }
-          - { key: cppflags, name: BIGNUM_DEBUG,                   value: '-DBIGNUM_DEBUG' }
-          - { key: cppflags, name: CCAN_LIST_DEBUG,                value: '-DCCAN_LIST_DEBUG' }
-          - { key: cppflags, name: CPDEBUG=-1,                     value: '-DCPDEBUG=-1' }
-          - { key: cppflags, name: ENC_DEBUG,                      value: '-DENC_DEBUG' }
-          - { key: cppflags, name: GC_DEBUG,                       value: '-DGC_DEBUG' }
-          - { key: cppflags, name: HASH_DEBUG,                     value: '-DHASH_DEBUG' }
-          - { key: cppflags, name: ID_TABLE_DEBUG,                 value: '-DID_TABLE_DEBUG' }
-          - { key: cppflags, name: RGENGC_DEBUG=-1,                value: '-DRGENGC_DEBUG=-1' }
-          - { key: cppflags, name: SYMBOL_DEBUG,                   value: '-DSYMBOL_DEBUG' }
-          - { key: cppflags, name: THREAD_DEBUG=-1,                value: '-DTHREAD_DEBUG=-1' }
+#         - { key: cppflags, name: ARRAY_DEBUG,                    value: '-DARRAY_DEBUG' }
+#         - { key: cppflags, name: BIGNUM_DEBUG,                   value: '-DBIGNUM_DEBUG' }
+#         - { key: cppflags, name: CCAN_LIST_DEBUG,                value: '-DCCAN_LIST_DEBUG' }
+#         - { key: cppflags, name: CPDEBUG=-1,                     value: '-DCPDEBUG=-1' }
+#         - { key: cppflags, name: ENC_DEBUG,                      value: '-DENC_DEBUG' }
+#         - { key: cppflags, name: GC_DEBUG,                       value: '-DGC_DEBUG' }
+#         - { key: cppflags, name: HASH_DEBUG,                     value: '-DHASH_DEBUG' }
+#         - { key: cppflags, name: ID_TABLE_DEBUG,                 value: '-DID_TABLE_DEBUG' }
+#         - { key: cppflags, name: RGENGC_DEBUG=-1,                value: '-DRGENGC_DEBUG=-1' }
+#         - { key: cppflags, name: SYMBOL_DEBUG,                   value: '-DSYMBOL_DEBUG' }
+#         - { key: cppflags, name: THREAD_DEBUG=-1,                value: '-DTHREAD_DEBUG=-1' }
 
-          - { key: cppflags, name: RGENGC_CHECK_MODE,              value: '-DRGENGC_CHECK_MODE' }
-          - { key: cppflags, name: TRANSIENT_HEAP_CHECK_MODE,      value: '-DTRANSIENT_HEAP_CHECK_MODE' }
-          - { key: cppflags, name: VM_CHECK_MODE,                  value: '-DVM_CHECK_MODE' }
+#         - { key: cppflags, name: RGENGC_CHECK_MODE,              value: '-DRGENGC_CHECK_MODE' }
+#         - { key: cppflags, name: TRANSIENT_HEAP_CHECK_MODE,      value: '-DTRANSIENT_HEAP_CHECK_MODE' }
+#         - { key: cppflags, name: VM_CHECK_MODE,                  value: '-DVM_CHECK_MODE' }
 
           - { key: cppflags, name: USE_EMBED_CI=0,                 value: '-DUSE_EMBED_CI=0' }
           - { key: cppflags, name: USE_FLONUM=0,                   value: '-DUSE_FLONUM=0' }
 #         - { key: cppflags, name: USE_GC_MALLOC_OBJ_INFO_DETAILS, value: '-DUSE_GC_MALLOC_OBJ_INFO_DETAILS' }
           - { key: cppflags, name: USE_LAZY_LOAD,                  value: '-DUSE_LAZY_LOAD' }
-          - { key: cppflags, name: USE_RINCGC=0,                   value: '-DUSE_RINCGC=0' }
-          - { key: cppflags, name: USE_SYMBOL_GC=0,                value: '-DUSE_SYMBOL_GC=0' }
-          - { key: cppflags, name: USE_THREAD_CACHE=0,             value: '-DUSE_THREAD_CACHE=0' }
-          - { key: cppflags, name: USE_TRANSIENT_HEAP=0,           value: '-DUSE_TRANSIENT_HEAP=0' }
-          - { key: cppflags, name: USE_RUBY_DEBUG_LOG=1,           value: '-DUSE_RUBY_DEBUG_LOG=1' }
+#         - { key: cppflags, name: USE_RINCGC=0,                   value: '-DUSE_RINCGC=0' }
+#         - { key: cppflags, name: USE_SYMBOL_GC=0,                value: '-DUSE_SYMBOL_GC=0' }
+#         - { key: cppflags, name: USE_THREAD_CACHE=0,             value: '-DUSE_THREAD_CACHE=0' }
+#         - { key: cppflags, name: USE_TRANSIENT_HEAP=0,           value: '-DUSE_TRANSIENT_HEAP=0' }
+#         - { key: cppflags, name: USE_RUBY_DEBUG_LOG=1,           value: '-DUSE_RUBY_DEBUG_LOG=1' }
 
           - { key: cppflags, name: DEBUG_FIND_TIME_NUMGUESS,       value: '-DDEBUG_FIND_TIME_NUMGUESS' }
           - { key: cppflags, name: DEBUG_INTEGER_PACK,             value: '-DDEBUG_INTEGER_PACK' }
           - { key: cppflags, name: ENABLE_PATH_CHECK,              value: '-DENABLE_PATH_CHECK' }
 
           - { key: cppflags, name: GC_DEBUG_STRESS_TO_CLASS,       value: '-DGC_DEBUG_STRESS_TO_CLASS' }
-          - { key: cppflags, name: GC_ENABLE_LAZY_SWEEP=0,         value: '-DGC_ENABLE_LAZY_SWEEP=0' }
-          - { key: cppflags, name: GC_PROFILE_DETAIL_MEMOTY,       value: '-DGC_PROFILE_DETAIL_MEMOTY' }
-          - { key: cppflags, name: GC_PROFILE_MORE_DETAIL,         value: '-DGC_PROFILE_MORE_DETAIL' }
+#         - { key: cppflags, name: GC_ENABLE_LAZY_SWEEP=0,         value: '-DGC_ENABLE_LAZY_SWEEP=0' }
+#         - { key: cppflags, name: GC_PROFILE_DETAIL_MEMOTY,       value: '-DGC_PROFILE_DETAIL_MEMOTY' }
+#         - { key: cppflags, name: GC_PROFILE_MORE_DETAIL,         value: '-DGC_PROFILE_MORE_DETAIL' }
 
-          - { key: cppflags, name: CALC_EXACT_MALLOC_SIZE,         value: '-DCALC_EXACT_MALLOC_SIZE' }
-          - { key: cppflags, name: MALLOC_ALLOCATED_SIZE_CHECK,    value: '-DMALLOC_ALLOCATED_SIZE_CHECK' }
+#         - { key: cppflags, name: CALC_EXACT_MALLOC_SIZE,         value: '-DCALC_EXACT_MALLOC_SIZE' }
+#         - { key: cppflags, name: MALLOC_ALLOCATED_SIZE_CHECK,    value: '-DMALLOC_ALLOCATED_SIZE_CHECK' }
 
-          - { key: cppflags, name: IBF_ISEQ_ENABLE_LOCAL_BUFFER,   value: '-DIBF_ISEQ_ENABLE_LOCAL_BUFFER' }
+#         - { key: cppflags, name: IBF_ISEQ_ENABLE_LOCAL_BUFFER,   value: '-DIBF_ISEQ_ENABLE_LOCAL_BUFFER' }
 
-          - { key: cppflags, name: RGENGC_ESTIMATE_OLDMALLOC,      value: '-DRGENGC_ESTIMATE_OLDMALLOC' }
-          - { key: cppflags, name: RGENGC_FORCE_MAJOR_GC,          value: '-DRGENGC_FORCE_MAJOR_GC' }
-          - { key: cppflags, name: RGENGC_OBJ_INFO,                value: '-DRGENGC_OBJ_INFO' }
-          - { key: cppflags, name: RGENGC_OLD_NEWOBJ_CHECK,        value: '-DRGENGC_OLD_NEWOBJ_CHECK' }
-          - { key: cppflags, name: RGENGC_PROFILE,                 value: '-DRGENGC_PROFILE' }
+#         - { key: cppflags, name: RGENGC_ESTIMATE_OLDMALLOC,      value: '-DRGENGC_ESTIMATE_OLDMALLOC' }
+#         - { key: cppflags, name: RGENGC_FORCE_MAJOR_GC,          value: '-DRGENGC_FORCE_MAJOR_GC' }
+#         - { key: cppflags, name: RGENGC_OBJ_INFO,                value: '-DRGENGC_OBJ_INFO' }
+#         - { key: cppflags, name: RGENGC_OLD_NEWOBJ_CHECK,        value: '-DRGENGC_OLD_NEWOBJ_CHECK' }
+#         - { key: cppflags, name: RGENGC_PROFILE,                 value: '-DRGENGC_PROFILE' }
 
-          - { key: cppflags, name: VM_DEBUG_BP_CHECK,              value: '-DVM_DEBUG_BP_CHECK' }
-          - { key: cppflags, name: VM_DEBUG_VERIFY_METHOD_CACHE,   value: '-DVM_DEBUG_VERIFY_METHOD_CACHE' }
+#         - { key: cppflags, name: VM_DEBUG_BP_CHECK,              value: '-DVM_DEBUG_BP_CHECK' }
+#         - { key: cppflags, name: VM_DEBUG_VERIFY_METHOD_CACHE,   value: '-DVM_DEBUG_VERIFY_METHOD_CACHE' }
 
           - { key: cppflags, name: MJIT_FORCE_ENABLE,              value: '-DMJIT_FORCE_ENABLE' }
 
