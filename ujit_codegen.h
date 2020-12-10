@@ -3,7 +3,7 @@
 
 #include "stddef.h"
 
-uint8_t * ujit_compile_block(const rb_iseq_t *iseq, unsigned int insn_idx);
+uint8_t *ujit_compile_block(const rb_iseq_t *iseq, unsigned int insn_idx, bool gen_entry);
 
 void ujit_init_codegen(void);
 
