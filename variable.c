@@ -1217,14 +1217,8 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
 VALUE
 rb_ivar_get(VALUE obj, ID id)
 {
-    VALUE iv = rb_ivar_lookup(obj, id, Qundef);
+    VALUE iv = rb_ivar_lookup(obj, id, Qnil);
     RB_DEBUG_COUNTER_INC(ivar_get_base);
-
-    if (iv == Qundef) {
-	if (RTEST(ruby_verbose))
-	    rb_warning("instance variable %"PRIsVALUE" not initialized", QUOTE_ID(id));
-	iv = Qnil;
-    }
     return iv;
 }
 
@@ -3526,8 +3520,6 @@ rb_iv_get(VALUE obj, const char *name)
     ID id = rb_check_id_cstr(name, strlen(name), rb_usascii_encoding());
 
     if (!id) {
-        if (RTEST(ruby_verbose))
-            rb_warning("instance variable %s not initialized", name);
         return Qnil;
     }
     return rb_ivar_get(obj, id);

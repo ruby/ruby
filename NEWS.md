@@ -578,6 +578,8 @@ end
   message and backtrace are printed in order from the innermost.
   [[Feature #8661]]
 
+* Accessing an uninitialized instance variable no longer emits a
+  warning in verbose mode. [[Feature #17055]]
 
 [Bug #4352]:      https://bugs.ruby-lang.org/issues/4352
 [Bug #6087]:      https://bugs.ruby-lang.org/issues/6087
@@ -625,6 +627,7 @@ end
 [Feature #16815]: https://bugs.ruby-lang.org/issues/16815
 [Feature #16828]: https://bugs.ruby-lang.org/issues/16828
 [Misc #16961]:    https://bugs.ruby-lang.org/issues/16961
+[Feature #17055]: https://bugs.ruby-lang.org/issues/17055
 [Feature #17104]: https://bugs.ruby-lang.org/issues/17104
 [Feature #17122]: https://bugs.ruby-lang.org/issues/17122
 [Feature #17134]: https://bugs.ruby-lang.org/issues/17134
