@@ -6,7 +6,6 @@ https://ftp.osuosl.org/pub/blfs/conglomeration/libffi/$(pkg).tar.gz \
   sha512:980ca30a8d76f963fca722432b1fe5af77d7a4e4d2eac5144fbc5374d4c596609a293440573f4294207e1bdd9fda80ad1e1cafb2ffb543df5a275bc3bd546483 \
   #
 	win32/$(pkg)-mswin.patch -p0
-	win32/$(pkg)-cygwin.patch -p0
 
 $(pkg)/config.guess -> /tool/config.guess
 $(pkg)/config.sub -> /tool/config.sub

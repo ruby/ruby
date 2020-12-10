@@ -275,15 +275,15 @@ mdview_get_memory_view(VALUE obj, rb_memory_view_t *view, int flags)
         return 0;
     }
 
-    ssize_t i, ndim = RARRAY_LEN(shape_v);
-    ssize_t *shape = ALLOC_N(ssize_t, ndim);
-    ssize_t *strides = NULL;
-    if (!NIL_P(strides_v)) {
-        if (RARRAY_LEN(strides_v) != ndim) {
-            rb_raise(rb_eArgError, "strides has an invalid dimension");
-        }
+    ssize_t ndim = RARRAY_LEN(shape_v);
+    if (!NIL_P(strides_v) && RARRAY_LEN(strides_v) != ndim) {
+        rb_raise(rb_eArgError, "strides has an invalid dimension");
+    }
 
-        strides = ALLOC_N(ssize_t, ndim);
+    ssize_t *shape = ALLOC_N(ssize_t, ndim);
+    ssize_t *strides = ALLOC_N(ssize_t, ndim);
+    ssize_t i;
+    if (!NIL_P(strides_v)) {
         for (i = 0; i < ndim; ++i) {
             shape[i] = NUM2SSIZET(RARRAY_AREF(shape_v, i));
             strides[i] = NUM2SSIZET(RARRAY_AREF(strides_v, i));
@@ -292,6 +292,12 @@ mdview_get_memory_view(VALUE obj, rb_memory_view_t *view, int flags)
     else {
         for (i = 0; i < ndim; ++i) {
             shape[i] = NUM2SSIZET(RARRAY_AREF(shape_v, i));
+        }
+
+        i = ndim - 1;
+        strides[i] = item_size;
+        for (; i > 0; --i) {
+            strides[i-1] = strides[i] * shape[i];
         }
     }
 
