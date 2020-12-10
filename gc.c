@@ -7298,11 +7298,15 @@ gc_marks_finish(rb_objspace_t *objspace)
 	size_t max_free_slots = (size_t)(total_slots * gc_params.heap_free_slots_max_ratio);
 	size_t min_free_slots = (size_t)(total_slots * gc_params.heap_free_slots_min_ratio);
 	int full_marking = is_full_marking(objspace);
+        const int r_cnt = GET_VM()->ractor.cnt;
+        const int r_mul = r_cnt > 8 ? 8 : r_cnt; // upto 8
 
 	GC_ASSERT(heap->total_slots >= objspace->marked_slots);
 
 	/* setup free-able page counts */
-	if (max_free_slots < gc_params.heap_init_slots) max_free_slots = gc_params.heap_init_slots;
+        if (max_free_slots < gc_params.heap_init_slots * r_mul) {
+            max_free_slots = gc_params.heap_init_slots * r_mul;
+        }
 
 	if (sweep_slots > max_free_slots) {
 	    heap_pages_freeable_pages = (sweep_slots - max_free_slots) / HEAP_PAGE_OBJ_LIMIT;
@@ -7311,8 +7315,10 @@ gc_marks_finish(rb_objspace_t *objspace)
 	    heap_pages_freeable_pages = 0;
 	}
 
-	/* check free_min */
-	if (min_free_slots < gc_params.heap_free_slots) min_free_slots = gc_params.heap_free_slots;
+        /* check free_min */
+        if (min_free_slots < gc_params.heap_free_slots * r_mul) {
+            min_free_slots = gc_params.heap_free_slots * r_mul;
+        }
 
 	if (sweep_slots < min_free_slots) {
 	    if (!full_marking) {
