@@ -34,6 +34,9 @@ static void
 ujit_gen_entry(codeblock_t* cb)
 {
     cb_write_pre_call_bytes(cb);
+
+    // Load the current SP from the CFP into REG_SP
+    mov(cb, REG_SP, member_opnd(REG_CFP, rb_control_frame_t, sp));
 }
 
 /**
@@ -98,7 +101,7 @@ Compile a sequence of bytecode instructions starting at `insn_idx`.
 Returns `NULL` if compilation fails.
 */
 uint8_t *
-ujit_compile_block(const rb_iseq_t *iseq, unsigned int insn_idx)
+ujit_compile_block(const rb_iseq_t *iseq, unsigned int insn_idx, bool gen_entry)
 {
     assert (cb != NULL);
     unsigned first_insn_idx = insn_idx;
@@ -147,12 +150,10 @@ ujit_compile_block(const rb_iseq_t *iseq, unsigned int insn_idx)
             break;
         }
 
-        // Write the pre call bytes before the first instruction
-        if (num_instrs == 0) {
+        // If requested, write the interpreter entry
+        // prologue before the first instruction
+        if (gen_entry && num_instrs == 0) {
             ujit_gen_entry(cb);
-
-            // Load the current SP from the CFP into REG_SP
-            mov(cb, REG_SP, member_opnd(REG_CFP, rb_control_frame_t, sp));
         }
 
         // Call the code generation function
