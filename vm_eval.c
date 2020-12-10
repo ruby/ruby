@@ -302,6 +302,16 @@ stack_check(rb_execution_context_t *ec)
 
 #ifndef MJIT_HEADER
 
+void
+rb_check_stack_overflow(void)
+{
+#ifndef RB_THREAD_LOCAL_SPECIFIER
+    if (!ruby_current_ec_key) return;
+#endif
+    rb_execution_context_t *ec = GET_EC();
+    if (ec) stack_check(ec);
+}
+
 static inline const rb_callable_method_entry_t *rb_search_method_entry(VALUE recv, ID mid);
 static inline enum method_missing_reason rb_method_call_status(rb_execution_context_t *ec, const rb_callable_method_entry_t *me, call_type scope, VALUE self);
 
