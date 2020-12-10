@@ -423,6 +423,11 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
   ERB
 
   def self.run(options)
+    new(options[:gemdir], options[:port], options[:daemon],
+        options[:launch], options[:addresses]).run
+  end
+
+  def initialize(gem_dirs, port, daemon, launch = nil, addresses = nil)
     begin
       require 'webrick'
     rescue LoadError
@@ -430,11 +435,6 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
       exit
     end
 
-    new(options[:gemdir], options[:port], options[:daemon],
-        options[:launch], options[:addresses]).run
-  end
-
-  def initialize(gem_dirs, port, daemon, launch = nil, addresses = nil)
     Gem::RDoc.load_rdoc
     Socket.do_not_reverse_lookup = true
 
