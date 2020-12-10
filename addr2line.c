@@ -914,6 +914,7 @@ debug_info_reader_init(DebugInfoReader *reader, obj_info_t *obj)
     reader->p = obj->debug_info.ptr;
     reader->pend = obj->debug_info.ptr + obj->debug_info.size;
     reader->debug_line_cu_end = obj->debug_line.ptr;
+    reader->current_low_pc = 0;
 }
 
 static void
