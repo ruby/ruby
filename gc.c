@@ -2181,6 +2181,7 @@ ractor_cached_freeobj(rb_objspace_t *objspace, rb_ractor_t *cr)
     else {
         if (cr->newobj_cache.free_pages) {
             struct heap_page *page = cr->newobj_cache.free_pages;
+            asan_unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
             cr->newobj_cache.free_pages = page->free_next;
             ractor_cache_fill_freelist(objspace, cr, page);
             goto retry;
