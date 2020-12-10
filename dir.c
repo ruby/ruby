@@ -2274,6 +2274,8 @@ glob_helper(
     int escape = !(flags & FNM_NOESCAPE);
     size_t pathlen = baselen + namelen;
 
+    rb_check_stack_overflow();
+
     for (cur = beg; cur < end; ++cur) {
 	struct glob_pattern *p = *cur;
 	if (p->type == RECURSIVE) {
