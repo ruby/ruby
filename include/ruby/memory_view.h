@@ -134,7 +134,7 @@ ssize_t rb_memory_view_parse_item_format(const char *format,
 ssize_t rb_memory_view_item_size_from_format(const char *format, const char **err);
 void *rb_memory_view_get_item_pointer(rb_memory_view_t *view, const ssize_t *indices);
 VALUE rb_memory_view_extract_item_members(const void *ptr, const rb_memory_view_item_component_t *members, const size_t n_members);
-VALUE rb_memory_view_prepare_item_dexc(rb_memory_view_t *view);
+VALUE rb_memory_view_prepare_item_desc(rb_memory_view_t *view);
 VALUE rb_memory_view_get_item(rb_memory_view_t *view, const ssize_t *indices);
 
 int rb_memory_view_available_p(VALUE obj);
