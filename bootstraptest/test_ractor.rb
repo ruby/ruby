@@ -919,6 +919,19 @@ assert_equal '0', %q{
   }.take
 }
 
+# ObjectSpace._id2ref can not handle unshareable objects with Ractors
+assert_equal 'ok', %q{
+  s = 'hello'
+
+  Ractor.new s.object_id do |id ;s|
+    begin
+      s = ObjectSpace._id2ref(id)
+    rescue => e
+      :ok
+    end
+  end.take
+}
+
 # Ractor.make_shareable(obj)
 assert_equal 'true', %q{
   class C
