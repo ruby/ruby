@@ -137,6 +137,7 @@ struct rb_ractor_struct {
     struct {
         struct RVALUE *freelist;
         struct heap_page *using_page;
+        struct heap_page *free_pages;
     } newobj_cache;
 
     // gc.c rb_objspace_reachable_objects_from
