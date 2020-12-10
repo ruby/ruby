@@ -910,8 +910,8 @@ compile_compact_jit_code(char* c_file)
     }
     // We need to check again here because we could've waited on GC above
     bool iseq_gced = false;
-    struct rb_mjit_unit *child_unit = 0;
-    list_for_each(&active_units.head, child_unit, unode) {
+    struct rb_mjit_unit *child_unit = 0, *next;
+    list_for_each_safe(&active_units.head, child_unit, next, unode) {
         if (child_unit->iseq == NULL) { // ISeq is GC-ed
             iseq_gced = true;
             verbose(1, "JIT compaction: A method for JIT code u%d is obsoleted. Compaction will be skipped.", child_unit->id);
@@ -1303,7 +1303,7 @@ unload_units(void)
         prev_queue_calls = max_queue_calls;
 
         bool unloaded_p = false;
-        list_for_each(&active_units.head, unit, unode) {
+        list_for_each_safe(&active_units.head, unit, next, unode) {
             if (unit->used_code_p) // We can't unload code on stack.
                 continue;
 
