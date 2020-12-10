@@ -43,7 +43,7 @@ static void
 ujit_gen_exit(codeblock_t* cb, ctx_t* ctx, VALUE* exit_pc)
 {
     // Write the adjusted SP back into the CFP
-    if (ctx->stack_diff != 0)
+    if (ctx->stack_size != 0)
     {
         x86opnd_t stack_pointer = ctx_sp_opnd(ctx, 0);
         lea(cb, REG_SP, stack_pointer);
@@ -95,11 +95,10 @@ ujit_side_exit(codeblock_t* cb, ctx_t* ctx, VALUE* exit_pc)
 
 /*
 Compile a sequence of bytecode instructions starting at `insn_idx`.
-Return the index to the first instruction not compiled in the sequence
-through `next_ujit_idx`. Return `NULL` in case compilation fails.
+Returns `NULL` if compilation fails.
 */
 uint8_t *
-ujit_compile_insn(const rb_iseq_t *iseq, unsigned int insn_idx, unsigned int *next_ujit_idx)
+ujit_compile_block(const rb_iseq_t *iseq, unsigned int insn_idx)
 {
     assert (cb != NULL);
     unsigned first_insn_idx = insn_idx;
@@ -174,16 +173,13 @@ ujit_compile_insn(const rb_iseq_t *iseq, unsigned int insn_idx, unsigned int *ne
         }
     }
 
-    // Let the caller know how many instructions ujit compiled
-    *next_ujit_idx = insn_idx;
-
     // If no instructions were compiled
     if (num_instrs == 0) {
         return NULL;
     }
 
     // Generate code to exit to the interpreter
-    ujit_gen_exit(cb, &ctx, &encoded[*next_ujit_idx]);
+    ujit_gen_exit(cb, &ctx, &encoded[insn_idx]);
 
     map_addr2insn(code_ptr, first_opcode);
 
@@ -191,7 +187,7 @@ ujit_compile_insn(const rb_iseq_t *iseq, unsigned int insn_idx, unsigned int *ne
         // Dump list of compiled instrutions
         fprintf(stderr, "Compiled the following for iseq=%p:\n", (void *)iseq);
         VALUE *pc = &encoded[first_insn_idx];
-        VALUE *end_pc = &encoded[*next_ujit_idx];
+        VALUE *end_pc = &encoded[insn_idx];
         while (pc < end_pc) {
             int opcode = opcode_at_pc(iseq, pc);
             fprintf(stderr, "  %04td %s\n", pc - encoded, insn_name(opcode));

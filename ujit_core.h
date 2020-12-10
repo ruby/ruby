@@ -17,16 +17,18 @@
 #define REG0_32 EAX
 #define REG1_32 ECX
 
+// Maximum number of versions per block
+#define MAX_VERSIONS 5
+
 // Code generation context
 typedef struct ctx_struct
 {
-    // Current PC
-    VALUE *pc;
+    // TODO: we may want to remove information that is not
+    // strictly necessary for versioning from this struct
+    // Some of the information here is only needed during
+    // code generation, eg: current pc
 
-    // Difference between the current stack pointer and actual stack top
-    int32_t stack_diff;
-
-    // The iseq that owns the region that is compiling
+    // Instruction sequence this is associated with
     const rb_iseq_t *iseq;
 
     // Index in the iseq of the opcode we are replacing
@@ -34,6 +36,12 @@ typedef struct ctx_struct
 
     // The start of the generated code
     uint8_t *code_ptr;
+
+    // Current PC
+    VALUE *pc;
+
+    // Number of values pushed on the temporary stack
+    int32_t stack_size;
 
     // Whether we know self is a heap object
     bool self_is_object;

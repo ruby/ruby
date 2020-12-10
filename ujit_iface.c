@@ -232,25 +232,13 @@ rb_ujit_compile_iseq(const rb_iseq_t *iseq)
     RB_VM_LOCK_ENTER();
     VALUE *encoded = (VALUE *)iseq->body->iseq_encoded;
 
-    unsigned int insn_idx;
-    unsigned int next_ujit_idx = 0;
+    // Compile a block version starting at the first instruction
+    uint8_t* native_code_ptr = ujit_compile_block(iseq, 0);
 
-    for (insn_idx = 0; insn_idx < iseq->body->iseq_size; /* */) {
-        int insn = opcode_at_pc(iseq, &encoded[insn_idx]);
-        int len = insn_len(insn);
-
-        uint8_t *native_code_ptr = NULL;
-
-        // If ujit hasn't already compiled this instruction
-        if (insn_idx >= next_ujit_idx) {
-            native_code_ptr = ujit_compile_insn(iseq, insn_idx, &next_ujit_idx);
-        }
-
-        if (native_code_ptr) {
-            encoded[insn_idx] = (VALUE)native_code_ptr;
-        }
-        insn_idx += len;
+    if (native_code_ptr) {
+        encoded[0] = (VALUE)native_code_ptr;
     }
+
     RB_VM_LOCK_LEAVE();
 #endif
 }
