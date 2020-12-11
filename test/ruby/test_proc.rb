@@ -316,16 +316,20 @@ class TestProc < Test::Unit::TestCase
     lambda(&b)
   end
 
+  def_lambda_warning 'test_lambda_warning_pass_symbol_proc', '' do
+    lambda(&:to_s)
+  end
+
   def_lambda_warning 'test_lambda_warning_pass_proc', /deprecated/ do
     b = proc{}
     lambda(&b)
   end
 
-  def_lambda_warning 'test_lambda_warning_pass_proc', /deprecated/ do
+  def_lambda_warning 'test_lambda_warning_pass_block', /deprecated/ do
     helper_test_warn_lamda_with_passed_block{}
   end
 
-  def_lambda_warning 'test_lambda_warning_pass_proc', '' do
+  def_lambda_warning 'test_lambda_warning_pass_block_symbol_proc', '' do
     # Symbol#to_proc returns lambda
     helper_test_warn_lamda_with_passed_block(&:to_s)
   end

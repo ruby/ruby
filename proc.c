@@ -847,6 +847,34 @@ rb_block_lambda(void)
     return proc_new(rb_cProc, TRUE, FALSE);
 }
 
+static void
+f_lambda_warn(void)
+{
+    rb_control_frame_t *cfp = GET_EC()->cfp;
+    VALUE block_handler = rb_vm_frame_block_handler(cfp);
+
+    if (block_handler != VM_BLOCK_HANDLER_NONE) {
+        switch (vm_block_handler_type(block_handler)) {
+          case block_handler_type_iseq:
+            if (RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp)->ep == VM_BH_TO_ISEQ_BLOCK(block_handler)->ep) {
+                return;
+            }
+            break;
+          case block_handler_type_symbol:
+            return;
+          case block_handler_type_proc:
+            if (rb_proc_lambda_p(VM_BH_TO_PROC(block_handler))) {
+                return;
+            }
+            break;
+          case block_handler_type_ifunc:
+            break;
+        }
+    }
+
+    rb_warn_deprecated("lambda without a literal block", "the proc without lambda");
+}
+
 /*
  * call-seq:
  *   lambda { |...| block }  -> a_proc
@@ -858,27 +886,7 @@ rb_block_lambda(void)
 static VALUE
 f_lambda(VALUE _)
 {
-    rb_control_frame_t *cfp = GET_EC()->cfp;
-    VALUE block_handler = rb_vm_frame_block_handler(cfp);
-
-    if (block_handler != VM_BLOCK_HANDLER_NONE) {
-        switch (vm_block_handler_type(block_handler)) {
-          case block_handler_type_iseq:
-            if (RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp)->ep == VM_BH_TO_ISEQ_BLOCK(block_handler)->ep) {
-                break;
-            }
-          case block_handler_type_symbol:
-            break;
-          case block_handler_type_proc:
-            if (rb_proc_lambda_p(VM_BH_TO_PROC(block_handler))) {
-                break;
-            }
-          case block_handler_type_ifunc:
-            rb_warn_deprecated("lambda without a literal block", "the proc without lambda");
-            break;
-        }
-    }
-
+    f_lambda_warn();
     return rb_block_lambda();
 }
 
