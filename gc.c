@@ -2157,71 +2157,34 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
     return obj;
 }
 
-static inline void
-ractor_cache_fill_freelist(rb_objspace_t *objspace, rb_ractor_t *cr, struct heap_page *page)
-{
-    cr->newobj_cache.using_page = page;
-    cr->newobj_cache.freelist = page->freelist;
-    page->free_slots = 0;
-    page->freelist = NULL;
-}
-
 static inline VALUE
 ractor_cached_freeobj(rb_objspace_t *objspace, rb_ractor_t *cr)
 {
-  retry:;
     RVALUE *p = cr->newobj_cache.freelist;
 
-    if (LIKELY(p != NULL)) {
+    if (p) {
         VALUE obj = (VALUE)p;
         cr->newobj_cache.freelist = p->as.free.next;
         asan_unpoison_object(obj, true);
         return obj;
     }
     else {
-        if (cr->newobj_cache.free_pages) {
-            struct heap_page *page = cr->newobj_cache.free_pages;
-            asan_unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
-            cr->newobj_cache.free_pages = page->free_next;
-            ractor_cache_fill_freelist(objspace, cr, page);
-            goto retry;
-        }
-        return false;
+        return Qfalse;
     }
 }
 
-#define RACTOR_SLOT_CACHE_NUM 512
-
 static struct heap_page *
-heap_next_freepages(rb_objspace_t *objspace, rb_heap_t *heap)
+heap_next_freepage(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     ASSERT_vm_locking();
 
-    // find at least 1 page
+    struct heap_page *page;
+
     while (heap->free_pages == NULL) {
 	heap_prepare(objspace, heap);
     }
-
-    // cache another pages if available
-    struct heap_page *page = heap->free_pages;
-    size_t free_slots = page->free_slots;
-    struct heap_page *p = page;
-
-    int page_cnt = 1;
-
-    while (p->free_next) {
-        if (free_slots >= RACTOR_SLOT_CACHE_NUM) {
-            break;
-        }
-        free_slots += p->free_slots;
-        p = p->free_next;
-        page_cnt++;
-    }
-
-    heap->free_pages = p->free_next;
-    p->free_next = NULL;
-
-    RUBY_DEBUG_LOG("free_slots:%d pages:%d", page->free_next ? (int)free_slots : (int)page->free_slots, page_cnt);
+    page = heap->free_pages;
+    heap->free_pages = page->free_next;
 
     GC_ASSERT(page->free_slots != 0);
     RUBY_DEBUG_LOG("page:%p freelist:%p cnt:%d", page, page->freelist, page->free_slots);
@@ -2236,13 +2199,13 @@ ractor_cache_slots(rb_objspace_t *objspace, rb_ractor_t *cr)
 {
     ASSERT_vm_locking();
     GC_ASSERT(cr->newobj_cache.freelist == NULL);
-    GC_ASSERT(cr->newobj_cache.free_pages == NULL);
 
-    struct heap_page *page = heap_next_freepages(objspace, heap_eden);
-    struct heap_page *pages = page->free_next;
+    struct heap_page *page = heap_next_freepage(objspace, heap_eden);
 
-    ractor_cache_fill_freelist(objspace, cr, page);
-    cr->newobj_cache.free_pages = pages;
+    cr->newobj_cache.using_page = page;
+    cr->newobj_cache.freelist = page->freelist;
+    page->free_slots = 0;
+    page->freelist = NULL;
 
     GC_ASSERT(RB_TYPE_P((VALUE)cr->newobj_cache.freelist, T_NONE));
 }
@@ -2272,7 +2235,7 @@ newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *
         }
 
         // allocate new slot
-        while ((obj = ractor_cached_freeobj(objspace, cr)) == 0) {
+        while ((obj = ractor_cached_freeobj(objspace, cr)) == Qfalse) {
             ractor_cache_slots(objspace, cr);
         }
         GC_ASSERT(obj != 0);
@@ -5086,17 +5049,8 @@ gc_sweep_start_heap(rb_objspace_t *objspace, rb_heap_t *heap)
             *p = freelist;
         }
 
-#if 0
-        int free_slots = 0; 
-        for (RVALUE *p = freelist; p; p = p->as.free.next) free_slots++;
-        for (struct heap_page *page = r->newobj_cache.free_pages; page;
-             page = page->free_next) free_slots += page->free_slots;
-        fprintf(stderr, "r:%d unused free_slots:%d\n", r->id, free_slots);
-#endif
-
         r->newobj_cache.using_page = NULL;
         r->newobj_cache.freelist = NULL;
-        r->newobj_cache.free_pages = NULL;
     }
 }
 
