@@ -1311,6 +1311,43 @@ waitpid_no_SIGCHLD(struct waitpid_state *w)
         w->errnum = errno;
 }
 
+VALUE
+rb_process_status_wait(rb_pid_t pid, int flags)
+{
+    // We only enter the scheduler if we are "blocking":
+    if (!(flags & WNOHANG)) {
+        VALUE scheduler = rb_scheduler_current();
+        if (rb_scheduler_supports_process_wait(scheduler)) {
+            return rb_scheduler_process_wait(scheduler, pid, flags);
+        }
+    }
+
+    COROUTINE_STACK_LOCAL(struct waitpid_state, w);
+
+    waitpid_state_init(w, pid, flags);
+    w->ec = GET_EC();
+
+    if (WAITPID_USE_SIGCHLD) {
+        waitpid_wait(w);
+    }
+    else {
+        waitpid_no_SIGCHLD(w);
+    }
+
+    if (w->ret > 0) {
+        if (ruby_nocldwait) {
+            w->ret = -1;
+            w->errnum = ECHILD;
+        }
+    }
+
+    VALUE status = rb_process_status_new(w->ret, w->status, w->errnum);
+
+    COROUTINE_STACK_FREE(w);
+
+    return status;
+}
+
 /*
  *  call-seq:
  *     Process::Status.wait(pid=-1, flags=0)      -> Process::Status
@@ -1354,42 +1391,6 @@ waitpid_no_SIGCHLD(struct waitpid_state *w)
  *
  * EXPERIMENTAL FEATURE
  */
-VALUE
-rb_process_status_wait(rb_pid_t pid, int flags)
-{
-    // We only enter the scheduler if we are "blocking":
-    if (!(flags & WNOHANG)) {
-        VALUE scheduler = rb_scheduler_current();
-        if (rb_scheduler_supports_process_wait(scheduler)) {
-            return rb_scheduler_process_wait(scheduler, pid, flags);
-        }
-    }
-
-    COROUTINE_STACK_LOCAL(struct waitpid_state, w);
-
-    waitpid_state_init(w, pid, flags);
-    w->ec = GET_EC();
-
-    if (WAITPID_USE_SIGCHLD) {
-        waitpid_wait(w);
-    }
-    else {
-        waitpid_no_SIGCHLD(w);
-    }
-
-    if (w->ret > 0) {
-        if (ruby_nocldwait) {
-            w->ret = -1;
-            w->errnum = ECHILD;
-        }
-    }
-
-    VALUE status = rb_process_status_new(w->ret, w->status, w->errnum);
-
-    COROUTINE_STACK_FREE(w);
-
-    return status;
-}
 
 VALUE
 rb_process_status_waitv(int argc, VALUE *argv, VALUE _)
