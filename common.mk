@@ -1207,10 +1207,10 @@ $(srcdir)/ext/etc/constdefs.h: $(srcdir)/ext/etc/depend
 ##
 
 run: fake miniruby$(EXEEXT) PHONY
-	$(BTESTRUBY) $(TESTRUN_SCRIPT) $(RUNOPT)
+	$(BTESTRUBY) $(RUNOPT0) $(TESTRUN_SCRIPT) $(RUNOPT)
 
 runruby: $(PROGRAM) PHONY
-	$(RUNRUBY) $(TESTRUN_SCRIPT)
+	$(RUNRUBY) $(RUNOPT0) $(TESTRUN_SCRIPT) $(RUNOPT)
 
 parse: fake miniruby$(EXEEXT) PHONY
 	$(BTESTRUBY) --dump=parsetree_with_comment,insns $(TESTRUN_SCRIPT)
@@ -1253,18 +1253,18 @@ run.gdb:
 
 
 gdb: miniruby$(EXEEXT) run.gdb PHONY
-	gdb -x run.gdb --quiet --args $(MINIRUBY) $(TESTRUN_SCRIPT)
+	gdb -x run.gdb --quiet --args $(MINIRUBY) $(RUNOPT0) $(TESTRUN_SCRIPT) $(RUNOPT)
 
 gdb-ruby: $(PROGRAM) run.gdb PHONY
-	$(Q) $(RUNRUBY_COMMAND) $(RUNRUBY_DEBUGGER) -- $(TESTRUN_SCRIPT)
+	$(Q) $(RUNRUBY_COMMAND) $(RUNRUBY_DEBUGGER) -- $(RUNOPT0) $(TESTRUN_SCRIPT) $(RUNOPT)
 
 LLDB_INIT = command script import -r $(srcdir)/misc/lldb_cruby.py
 
 lldb: miniruby$(EXEEXT) PHONY
-	lldb -o '$(LLDB_INIT)' miniruby$(EXEEXT) -- $(TESTRUN_SCRIPT)
+	lldb -o '$(LLDB_INIT)' miniruby$(EXEEXT) -- $(RUNOPT0) $(TESTRUN_SCRIPT) $(RUNOPT)
 
 lldb-ruby: $(PROGRAM) PHONY
-	lldb $(enable_shared:yes=-o 'target modules add ${LIBRUBY_SO}') -o '$(LLDB_INIT)' $(PROGRAM) -- $(TESTRUN_SCRIPT)
+	lldb $(enable_shared:yes=-o 'target modules add ${LIBRUBY_SO}') -o '$(LLDB_INIT)' $(PROGRAM) -- $(RUNOPT0) $(TESTRUN_SCRIPT) $(RUNOPT)
 
 DISTPKGS = gzip,zip,all
 PKGSDIR = tmp
