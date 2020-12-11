@@ -1459,6 +1459,10 @@ class TestProcess < Test::Unit::TestCase
     end
   end
 
+  def test_status_fail
+    assert_nil(Process::Status.wait($$))
+  end
+
   def test_wait_without_arg
     with_tmpchdir do
       write_file("foo", "sleep 0.1")

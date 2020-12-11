@@ -572,7 +572,6 @@ static VALUE rb_cProcessStatus;
 struct rb_process_status {
     rb_pid_t pid;
     int status;
-    int error;
 };
 
 static const rb_data_type_t rb_process_status_type = {
@@ -620,29 +619,22 @@ proc_s_last_status(VALUE mod)
 }
 
 VALUE
-rb_process_status_new(rb_pid_t pid, int status, int error)
+rb_process_status_new(rb_pid_t pid, int status)
 {
     VALUE last_status = rb_process_status_allocate(rb_cProcessStatus);
 
     struct rb_process_status *data = RTYPEDDATA_DATA(last_status);
     data->pid = pid;
     data->status = status;
-    data->error = error;
 
     rb_obj_freeze(last_status);
     return last_status;
 }
 
-static void
-process_status_set(rb_pid_t pid, int status, int error)
-{
-    GET_THREAD()->last_status = rb_process_status_new(pid, status, error);
-}
-
 void
 rb_last_status_set(int status, rb_pid_t pid)
 {
-    process_status_set(pid, status, 0);
+    GET_THREAD()->last_status = rb_process_status_new(pid, status);
 }
 
 void
@@ -1334,14 +1326,16 @@ rb_process_status_wait(rb_pid_t pid, int flags)
         waitpid_no_SIGCHLD(w);
     }
 
-    if (w->ret > 0) {
-        if (ruby_nocldwait) {
-            w->ret = -1;
-            w->errnum = ECHILD;
-        }
+    VALUE status = Qnil;
+    if (w->ret == -1) {
+        errno = w->errnum;
     }
-
-    VALUE status = rb_process_status_new(w->ret, w->status, w->errnum);
+    else if (w->ret > 0 && ruby_nocldwait) {
+        errno = ECHILD;
+    }
+    else {
+        status = rb_process_status_new(w->ret, w->status);
+    }
 
     COROUTINE_STACK_FREE(w);
 
@@ -1415,19 +1409,16 @@ rb_pid_t
 rb_waitpid(rb_pid_t pid, int *st, int flags)
 {
     VALUE status = rb_process_status_wait(pid, flags);
+    if (NIL_P(status)) return -1;
+
     struct rb_process_status *data = RTYPEDDATA_DATA(status);
+    pid = data->pid;
 
     if (st) *st = data->status;
 
-    if (data->pid == -1) {
-        errno = data->error;
-    }
-    else {
-        GET_THREAD()->last_status = status;
-    }
+    GET_THREAD()->last_status = status;
 
-    RB_GC_GUARD(status);
-    return data->pid;
+    return pid;
 }
 
 static VALUE
