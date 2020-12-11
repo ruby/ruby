@@ -4460,17 +4460,6 @@ f_exit(int c, const VALUE *a, VALUE _)
     UNREACHABLE_RETURN(Qnil);
 }
 
-/*
- *  call-seq:
- *     abort
- *     Kernel::abort([msg])
- *     Process.abort([msg])
- *
- *  Terminate execution immediately, effectively by calling
- *  <code>Kernel.exit(false)</code>. If _msg_ is given, it is written
- *  to STDERR prior to terminating.
- */
-
 VALUE
 rb_f_abort(int argc, const VALUE *argv)
 {
@@ -4497,6 +4486,18 @@ rb_f_abort(int argc, const VALUE *argv)
 }
 
 NORETURN(static VALUE f_abort(int c, const VALUE *a, VALUE _));
+
+/*
+ *  call-seq:
+ *     abort
+ *     Kernel::abort([msg])
+ *     Process.abort([msg])
+ *
+ *  Terminate execution immediately, effectively by calling
+ *  <code>Kernel.exit(false)</code>. If _msg_ is given, it is written
+ *  to STDERR prior to terminating.
+ */
+
 static VALUE
 f_abort(int c, const VALUE *a, VALUE _)
 {
