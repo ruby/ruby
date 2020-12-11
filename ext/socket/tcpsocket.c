@@ -12,13 +12,12 @@
 
 /*
  * call-seq:
- *    TCPSocket.new(remote_host, remote_port, local_host=nil, local_port=nil, resolv_timeout: nil, connect_timeout: nil)
+ *    TCPSocket.new(remote_host, remote_port, local_host=nil, local_port=nil, connect_timeout: nil)
  *
  * Opens a TCP connection to +remote_host+ on +remote_port+.  If +local_host+
  * and +local_port+ are specified, then those parameters are used on the local
  * end to establish the connection.
  *
- * [:resolv_timeout] specify the name resolution timeout in seconds.
  * [:connect_timeout] specify the timeout in seconds.
  */
 static VALUE
