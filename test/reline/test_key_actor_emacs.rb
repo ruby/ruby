@@ -2139,7 +2139,7 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
       assert_byte_pointer_size("\u{1F468 200D 1F469 200D 1F467 200D}")
       assert_cursor(2)
       assert_cursor_max(2)
-      input_keys("\u{1F466}") # U+1F466 is boy "👦" 
+      input_keys("\u{1F466}") # U+1F466 is boy "👦"
       assert_line("\u{1F468 200D 1F469 200D 1F467 200D 1F466}")
       assert_byte_pointer_size("\u{1F468 200D 1F469 200D 1F467 200D 1F466}")
       assert_cursor(2)
