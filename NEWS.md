@@ -634,7 +634,6 @@ end
 [Feature #17055]: https://bugs.ruby-lang.org/issues/17055
 [Feature #17104]: https://bugs.ruby-lang.org/issues/17104
 [Feature #17122]: https://bugs.ruby-lang.org/issues/17122
-[Feature #17134]: https://bugs.ruby-lang.org/issues/17134
 [Feature #17136]: https://bugs.ruby-lang.org/issues/17136
 [Feature #17176]: https://bugs.ruby-lang.org/issues/17176
 [Feature #17187]: https://bugs.ruby-lang.org/issues/17187
