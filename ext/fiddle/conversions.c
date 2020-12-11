@@ -23,6 +23,18 @@ rb_fiddle_type_ensure(VALUE type)
 #ifdef TYPE_LONG_LONG
         ID long_long_id;
 #endif
+#ifdef TYPE_INT8_T
+        ID int8_t_id;
+#endif
+#ifdef TYPE_INT16_T
+        ID int16_t_id;
+#endif
+#ifdef TYPE_INT32_T
+        ID int32_t_id;
+#endif
+#ifdef TYPE_INT64_T
+        ID int64_t_id;
+#endif
         ID float_id;
         ID double_id;
         ID variadic_id;
@@ -40,6 +52,18 @@ rb_fiddle_type_ensure(VALUE type)
         RUBY_CONST_ID(long_id, "long");
 #ifdef TYPE_LONG_LONG
         RUBY_CONST_ID(long_long_id, "long_long");
+#endif
+#ifdef TYPE_INT8_T
+        RUBY_CONST_ID(int8_t_id, "int8_t");
+#endif
+#ifdef TYPE_INT16_T
+        RUBY_CONST_ID(int16_t_id, "int16_t");
+#endif
+#ifdef TYPE_INT32_T
+        RUBY_CONST_ID(int32_t_id, "int32_t");
+#endif
+#ifdef TYPE_INT64_T
+        RUBY_CONST_ID(int64_t_id, "int64_t");
 #endif
         RUBY_CONST_ID(float_id, "float");
         RUBY_CONST_ID(double_id, "double");
@@ -71,6 +95,26 @@ rb_fiddle_type_ensure(VALUE type)
 #ifdef TYPE_LONG_LONG
         else if (type_id == long_long_id) {
             return INT2NUM(TYPE_LONG_LONG);
+        }
+#endif
+#ifdef TYPE_INT8_T
+        else if (type_id == int8_t_id) {
+            return INT2NUM(TYPE_INT8_T);
+        }
+#endif
+#ifdef TYPE_INT16_T
+        else if (type_id == int16_t_id) {
+            return INT2NUM(TYPE_INT16_T);
+        }
+#endif
+#ifdef TYPE_INT32_T
+        else if (type_id == int32_t_id) {
+            return INT2NUM(TYPE_INT32_T);
+        }
+#endif
+#ifdef TYPE_INT64_T
+        else if (type_id == int64_t_id) {
+            return INT2NUM(TYPE_INT64_T);
         }
 #endif
         else if (type_id == float_id) {

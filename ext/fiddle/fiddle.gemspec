@@ -1,18 +1,13 @@
 # frozen_string_literal: true
 
-source_version = ["", "ext/fiddle/"].find do |dir|
-  begin
-    break File.open(File.join(__dir__, "#{dir}lib/fiddle/version.rb")) {|f|
-      f.gets("\n  VERSION = ")
-      f.gets[/\s*"(.+)"/, 1]
-    }
-  rescue Errno::ENOENT
-  end
+version_module = Module.new do
+  version_rb = File.join(__dir__, "lib/fiddle/version.rb")
+  module_eval(File.read(version_rb), version_rb, __LINE__)
 end
 
 Gem::Specification.new do |spec|
   spec.name          = "fiddle"
-  spec.version       = source_version
+  spec.version       = version_module::Fiddle::VERSION
   spec.authors       = ["Aaron Patterson", "SHIBATA Hiroshi"]
   spec.email         = ["aaron@tenderlovemaking.com", "hsbt@ruby-lang.org"]
 
@@ -39,6 +34,7 @@ Gem::Specification.new do |spec|
     "ext/fiddle/function.c",
     "ext/fiddle/function.h",
     "ext/fiddle/handle.c",
+    "ext/fiddle/memory_view.c",
     "ext/fiddle/pinned.c",
     "ext/fiddle/pointer.c",
     "ext/fiddle/win32/fficonfig.h",
