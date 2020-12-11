@@ -43,6 +43,7 @@
 #include "internal/thread.h"
 #include "ruby_atomic.h"
 #include "vm_core.h"
+#include "ractor_core.h"
 
 #ifdef NEED_RUBY_ATOMIC_OPS
 rb_atomic_t
@@ -1408,6 +1409,11 @@ sig_trap(int argc, VALUE *argv, VALUE _)
     else {
 	cmd = argv[1];
 	func = trap_handler(&cmd, sig);
+    }
+
+    if (rb_obj_is_proc(cmd) &&
+        !rb_ractor_main_p() && !rb_ractor_shareable_p(cmd)) {
+        cmd = rb_proc_isolate(cmd);
     }
 
     return trap(sig, func, cmd);

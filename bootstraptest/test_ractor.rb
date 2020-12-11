@@ -1133,6 +1133,24 @@ assert_equal '[true, false]', %q{
   }.take
 }
 
+# Can not trap with not isolated Proc on non-main ractor
+assert_equal '[:ok, :ok]', %q{
+  a = []
+  Ractor.new{
+    trap(:INT){p :ok}
+  }.take
+  a << :ok
+
+  begin
+    Ractor.new{
+      s = 'str'
+      trap(:INT){p s}
+    }.take
+  rescue => Ractor::RemoteError
+    a << :ok
+  end
+}
+
 ###
 ### Synchronization tests
 ###
