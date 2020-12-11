@@ -2105,6 +2105,68 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_line('')
   end
 
+  # Unicode emoji test
+  if RELINE_TEST_ENCODING == Encoding::UTF_8
+    def test_ed_insert_for_include_zwj_emoji
+      # U+1F468 U+200D U+1F469 U+200D U+1F467 U+200D U+1F466 is family: man, woman, girl, boy "👨‍👩‍👧‍👦"
+      input_keys("\u{1F468}") # U+1F468 is man "👨"
+      assert_line("\u{1F468}")
+      assert_byte_pointer_size("\u{1F468}")
+      assert_cursor(2)
+      assert_cursor_max(2)
+      input_keys("\u200D") # U+200D is ZERO WIDTH JOINER
+      assert_line("\u{1F468 200D}")
+      assert_byte_pointer_size("\u{1F468 200D}")
+      assert_cursor(2)
+      assert_cursor_max(2)
+      input_keys("\u{1F469}") # U+1F469 is woman "👩"
+      assert_line("\u{1F468 200D 1F469}")
+      assert_byte_pointer_size("\u{1F468 200D 1F469}")
+      assert_cursor(2)
+      assert_cursor_max(2)
+      input_keys("\u200D") # U+200D is ZERO WIDTH JOINER
+      assert_line("\u{1F468 200D 1F469 200D}")
+      assert_byte_pointer_size("\u{1F468 200D 1F469 200D}")
+      assert_cursor(2)
+      assert_cursor_max(2)
+      input_keys("\u{1F467}") # U+1F467 is girl "👧"
+      assert_line("\u{1F468 200D 1F469 200D 1F467}")
+      assert_byte_pointer_size("\u{1F468 200D 1F469 200D 1F467}")
+      assert_cursor(2)
+      assert_cursor_max(2)
+      input_keys("\u200D") # U+200D is ZERO WIDTH JOINER
+      assert_line("\u{1F468 200D 1F469 200D 1F467 200D}")
+      assert_byte_pointer_size("\u{1F468 200D 1F469 200D 1F467 200D}")
+      assert_cursor(2)
+      assert_cursor_max(2)
+      input_keys("\u{1F466}") # U+1F466 is boy "👦" 
+      assert_line("\u{1F468 200D 1F469 200D 1F467 200D 1F466}")
+      assert_byte_pointer_size("\u{1F468 200D 1F469 200D 1F467 200D 1F466}")
+      assert_cursor(2)
+      assert_cursor_max(2)
+      # U+1F468 U+200D U+1F469 U+200D U+1F467 U+200D U+1F466 is family: man, woman, girl, boy "👨‍👩‍👧‍👦"
+      input_keys("\u{1F468 200D 1F469 200D 1F467 200D 1F466}")
+      assert_line("\u{1F468 200D 1F469 200D 1F467 200D 1F466 1F468 200D 1F469 200D 1F467 200D 1F466}")
+      assert_byte_pointer_size("\u{1F468 200D 1F469 200D 1F467 200D 1F466 1F468 200D 1F469 200D 1F467 200D 1F466}")
+      assert_cursor(4)
+      assert_cursor_max(4)
+    end
+
+    def test_ed_insert_for_include_valiation_selector
+      # U+0030 U+FE00 is DIGIT ZERO + VARIATION SELECTOR-1 "0︀"
+      input_keys("\u0030") # U+0030 is DIGIT ZERO
+      assert_line("\u0030")
+      assert_byte_pointer_size("\u0030")
+      assert_cursor(1)
+      assert_cursor_max(1)
+      input_keys("\uFE00") # U+FE00 is VARIATION SELECTOR-1
+      assert_line("\u{0030 FE00}")
+      assert_byte_pointer_size("\u{0030 FE00}")
+      assert_cursor(1)
+      assert_cursor_max(1)
+    end
+  end
+
 =begin # TODO: move KeyStroke instance from Reline to LineEditor
   def test_key_delete
     input_keys('ab')

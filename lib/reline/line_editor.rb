@@ -1265,7 +1265,12 @@ class Reline::LineEditor
     else
       @line = byteinsert(@line, @byte_pointer, str)
     end
+    last_byte_size = Reline::Unicode.get_prev_mbchar_size(@line, @byte_pointer)
     @byte_pointer += bytesize
+    last_mbchar = @line.byteslice((@byte_pointer - bytesize - last_byte_size), last_byte_size)
+    if last_byte_size != 0 and (last_mbchar + str).grapheme_clusters.size == 1
+      width = 0
+    end
     @cursor += width
     @cursor_max += width
   end
