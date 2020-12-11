@@ -3108,6 +3108,8 @@ rb_f_exec(int argc, const VALUE *argv)
 }
 
 /*
+ *  Document-method: exec
+ *
  *  call-seq:
  *     exec([env,] command... [,options])
  *
@@ -4354,6 +4356,8 @@ exit_status_code(VALUE status)
 }
 
 /*
+ *  Document-method: exit!
+ *
  *  call-seq:
  *     Process.exit!(status=false)
  *
@@ -4411,6 +4415,8 @@ rb_f_exit(int argc, const VALUE *argv)
 }
 
 /*
+ *  Document-method: exit
+ *
  *  call-seq:
  *     exit(status=true)
  *     Kernel::exit(status=true)
@@ -4460,6 +4466,8 @@ f_exit(int c, const VALUE *a, VALUE _)
 }
 
 /*
+ *  Document-method: abort
+ *
  *  call-seq:
  *     abort
  *     Kernel::abort([msg])
