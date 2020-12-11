@@ -497,6 +497,47 @@ gen_setinstancevariable(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 }
 
 static bool
+gen_opt_lt(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
+{
+    // Create a size-exit to fall back to the interpreter
+    // Note: we generate the side-exit before popping operands from the stack
+    uint8_t* side_exit = ujit_side_exit(ocb, ctx, ctx->pc);
+
+    // TODO: make a helper function for guarding on op-not-redefined
+    // Make sure that minus isn't redefined for integers
+    mov(cb, RAX, const_ptr_opnd(ruby_current_vm_ptr));
+    test(
+        cb,
+        member_opnd_idx(RAX, rb_vm_t, redefined_flag, BOP_LT),
+        imm_opnd(INTEGER_REDEFINED_OP_FLAG)
+    );
+    jnz_ptr(cb, side_exit);
+
+    // Get the operands and destination from the stack
+    x86opnd_t arg1 = ctx_stack_pop(ctx, 1);
+    x86opnd_t arg0 = ctx_stack_pop(ctx, 1);
+
+    // If not fixnums, fall back
+    test(cb, arg0, imm_opnd(RUBY_FIXNUM_FLAG));
+    jz_ptr(cb, side_exit);
+    test(cb, arg1, imm_opnd(RUBY_FIXNUM_FLAG));
+    jz_ptr(cb, side_exit);
+
+    // Compare the arguments
+    mov(cb, REG0, arg0);
+    cmp(cb, REG0, arg1);
+    mov(cb, REG0, imm_opnd(Qfalse));
+    mov(cb, REG1, imm_opnd(Qtrue));
+    cmovl(cb, REG0, REG1);
+
+    // Push the output on the stack
+    x86opnd_t dst = ctx_stack_push(ctx, 1);
+    mov(cb, dst, REG0);
+
+    return true;
+}
+
+static bool
 gen_opt_minus(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
     // Create a size-exit to fall back to the interpreter
@@ -531,7 +572,7 @@ gen_opt_minus(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 
     // Push the output on the stack
     x86opnd_t dst = ctx_stack_push(ctx, 1);
-    mov(cb, dst, RAX);
+    mov(cb, dst, REG0);
 
     return true;
 }
@@ -571,7 +612,7 @@ gen_opt_plus(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 
     // Push the output on the stack
     x86opnd_t dst = ctx_stack_push(ctx, 1);
-    mov(cb, dst, RAX);
+    mov(cb, dst, REG0);
 
     return true;
 }
@@ -883,6 +924,7 @@ ujit_init_codegen(void)
     st_insert(gen_fns, (st_data_t)BIN(setlocal_WC_0), (st_data_t)&gen_setlocal_wc0);
     st_insert(gen_fns, (st_data_t)BIN(getinstancevariable), (st_data_t)&gen_getinstancevariable);
     st_insert(gen_fns, (st_data_t)BIN(setinstancevariable), (st_data_t)&gen_setinstancevariable);
+    st_insert(gen_fns, (st_data_t)BIN(opt_lt), (st_data_t)&gen_opt_lt);
     st_insert(gen_fns, (st_data_t)BIN(opt_minus), (st_data_t)&gen_opt_minus);
     st_insert(gen_fns, (st_data_t)BIN(opt_plus), (st_data_t)&gen_opt_plus);
     st_insert(gen_fns, (st_data_t)BIN(opt_send_without_block), (st_data_t)&gen_opt_send_without_block);
