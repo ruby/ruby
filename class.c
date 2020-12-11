@@ -908,6 +908,8 @@ rb_define_module_id_under(VALUE outer, ID id)
 		     " (%"PRIsVALUE")",
 		     outer, rb_id2str(id), rb_obj_class(module));
 	}
+        /* Module may have been defined in Ruby and not pin-rooted */
+        rb_gc_register_mark_object(module);
 	return module;
     }
     module = rb_module_new();
