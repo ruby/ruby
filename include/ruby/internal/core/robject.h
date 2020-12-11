@@ -45,21 +45,28 @@
 
 enum ruby_robject_flags { ROBJECT_EMBED = RUBY_FL_USER1 };
 
-enum ruby_robject_consts { ROBJECT_EMBED_LEN_MAX = RBIMPL_EMBED_LEN_MAX_OF(VALUE) };
+enum ruby_robject_consts { ROBJECT_EMBED_LEN_MAX = (RBIMPL_EMBED_LEN_MAX_OF(VALUE) - 1) };
 
 struct st_table;
 
 struct RObject {
     struct RBasic basic;
-    union {
-        struct {
-            uint32_t numiv;
-            VALUE *ivptr;
-            struct st_table *iv_index_tbl; /* shortcut for RCLASS_IV_INDEX_TBL(rb_obj_class(obj)) */
-        } heap;
+    struct {
         VALUE ary[ROBJECT_EMBED_LEN_MAX];
+        struct {
+            VALUE *ivptr;
+        } heap;
     } as;
 };
+
+RBIMPL_ATTR_ARTIFICIAL()
+static inline void
+ROBJECT_SET_NUMIV(VALUE obj, uint32_t numiv)
+{
+    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
+
+    ROBJECT(obj)->as.heap.ivptr[0] = (VALUE)numiv;
+}
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
@@ -68,12 +75,23 @@ ROBJECT_NUMIV(VALUE obj)
 {
     RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
 
-    if (RB_FL_ANY_RAW(obj, ROBJECT_EMBED)) {
+    if ((VALUE)ROBJECT(obj)->as.heap.ivptr == Qundef) {
         return ROBJECT_EMBED_LEN_MAX;
     }
     else {
-        return ROBJECT(obj)->as.heap.numiv;
+        return (uint32_t)ROBJECT(obj)->as.heap.ivptr[0];
     }
+}
+
+RBIMPL_ATTR_ARTIFICIAL()
+static inline void
+ROBJECT_SET_IVPTR(VALUE obj, VALUE * buf)
+{
+    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
+
+    struct RObject *const ptr = ROBJECT(obj);
+
+    ptr->as.heap.ivptr = buf;
 }
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
@@ -85,12 +103,45 @@ ROBJECT_IVPTR(VALUE obj)
 
     struct RObject *const ptr = ROBJECT(obj);
 
-    if (RB_FL_ANY_RAW(obj, ROBJECT_EMBED)) {
-        return ptr->as.ary;
+    return ptr->as.heap.ivptr;
+}
+
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
+RBIMPL_ATTR_ARTIFICIAL()
+static inline VALUE
+ROBJECT_IV_GET(VALUE obj, uint32_t idx)
+{
+    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
+
+    struct RObject *const ptr = ROBJECT(obj);
+
+    if (idx < ROBJECT_EMBED_LEN_MAX) {
+        return ptr->as.ary[idx];
     }
     else {
-        return ptr->as.heap.ivptr;
+        return ptr->as.heap.ivptr[idx + 1];
     }
+}
+
+RBIMPL_ATTR_ARTIFICIAL()
+static inline void
+ROBJECT_IV_SET(VALUE obj, uint32_t idx, VALUE v)
+{
+    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
+
+    VALUE *ivs;
+
+    struct RObject *const ptr = ROBJECT(obj);
+
+    if (idx < ROBJECT_EMBED_LEN_MAX) {
+        ivs = ptr->as.ary;
+    }
+    else {
+        idx++;
+        ivs = ptr->as.heap.ivptr;
+    }
+
+    RB_OBJ_WRITE(obj, &ivs[idx], v);
 }
 
 #endif /* RBIMPL_ROBJECT_H */

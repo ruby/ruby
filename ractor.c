@@ -1901,10 +1901,9 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
       case T_OBJECT:
         {
             uint32_t len = ROBJECT_NUMIV(obj);
-            VALUE *ptr = ROBJECT_IVPTR(obj);
 
             for (uint32_t i=0; i<len; i++) {
-                VALUE val = ptr[i];
+                VALUE val = ROBJECT_IV_GET(obj, i);
                 if (val != Qundef && obj_traverse_i(val, data)) return 1;
             }
         }
@@ -2318,11 +2317,17 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
 #endif
 
             uint32_t len = ROBJECT_NUMIV(obj);
-            VALUE *ptr = ROBJECT_IVPTR(obj);
 
             for (uint32_t i=0; i<len; i++) {
-                if (ptr[i] != Qundef) {
-                    CHECK_AND_REPLACE(ptr[i]);
+                VALUE e = ROBJECT_IV_GET(obj, i);
+
+                if (e != Qundef) {
+                    if (obj_traverse_replace_i(e, data)) {
+                        return 1;
+                    }
+                    else if (e != data->replacement) {
+                        ROBJECT_IV_SET(obj, i, data->replacement);
+                    }
                 }
             }
         }

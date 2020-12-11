@@ -928,18 +928,17 @@ class TestJIT < Test::Unit::TestCase
         def initialize
           @iv0 = nil
           @iv1 = []
-          @iv2 = nil
         end
 
         def test(add)
           @iv0.nil?
-          @iv2.nil?
+          @iv1.nil?
           add_ivar if add
           @iv1.empty?
         end
 
         def add_ivar
-          @iv3 = nil
+          @iv2 = nil
         end
       end
 

@@ -327,21 +327,21 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
 {
     RUBY_ASSERT(RBASIC(dest)->flags & ROBJECT_EMBED);
 
+    MEMCPY(ROBJECT(dest)->as.ary, ROBJECT(obj)->as.ary, VALUE, ROBJECT_EMBED_LEN_MAX);
+
     if (RBASIC(obj)->flags & ROBJECT_EMBED) {
-	MEMCPY(ROBJECT(dest)->as.ary, ROBJECT(obj)->as.ary, VALUE, ROBJECT_EMBED_LEN_MAX);
 	RBASIC(dest)->flags |= ROBJECT_EMBED;
     }
     else {
-	uint32_t len = ROBJECT(obj)->as.heap.numiv;
+	uint32_t len = ROBJECT_NUMIV(obj);
 	VALUE *ptr = 0;
 	if (len > 0) {
-	    ptr = ALLOC_N(VALUE, len);
-	    MEMCPY(ptr, ROBJECT(obj)->as.heap.ivptr, VALUE, len);
+	    ptr = ALLOC_N(VALUE, len + 1);
+	    MEMCPY(ptr, ROBJECT_IVPTR(obj), VALUE, len + 1);
 	}
-	ROBJECT(dest)->as.heap.ivptr = ptr;
-	ROBJECT(dest)->as.heap.numiv = len;
-	ROBJECT(dest)->as.heap.iv_index_tbl = ROBJECT(obj)->as.heap.iv_index_tbl;
 	RBASIC(dest)->flags &= ~ROBJECT_EMBED;
+        ROBJECT_SET_IVPTR(dest, ptr);
+        ROBJECT_SET_NUMIV(dest, len);
     }
 }
 

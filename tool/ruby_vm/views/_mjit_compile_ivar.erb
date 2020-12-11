@@ -48,12 +48,11 @@
 % # JIT: cache hit path of vm_getivar/vm_setivar, or cancel JIT (recompile it with exivar)
 % if insn.name == 'setinstancevariable'
             fprintf(f, "    if (LIKELY(RB_TYPE_P(obj, T_OBJECT) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && index < ROBJECT_NUMIV(obj) && !RB_OBJ_FROZEN(obj))) {\n");
-            fprintf(f, "        VALUE *ptr = ROBJECT_IVPTR(obj);\n");
-            fprintf(f, "        RB_OBJ_WRITE(obj, &ptr[index], stack[%d]);\n", b->stack_size - 1);
+            fprintf(f, "        ROBJECT_IV_SET(obj, index, stack[%d]);\n", b->stack_size - 1);
             fprintf(f, "    }\n");
 % else
             fprintf(f, "    VALUE val;\n");
-            fprintf(f, "    if (LIKELY(RB_TYPE_P(obj, T_OBJECT) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && index < ROBJECT_NUMIV(obj) && (val = ROBJECT_IVPTR(obj)[index]) != Qundef)) {\n");
+            fprintf(f, "    if (LIKELY(RB_TYPE_P(obj, T_OBJECT) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && index < ROBJECT_NUMIV(obj) && (val = ROBJECT_IV_GET(obj, index)) != Qundef)) {\n");
             fprintf(f, "        stack[%d] = val;\n", b->stack_size);
             fprintf(f, "    }\n");
 % end
