@@ -1095,6 +1095,21 @@ iv_index_tbl_lookup(struct st_table *iv_index_tbl, ID id, struct rb_iv_index_tbl
     return found ? true : false;
 }
 
+ALWAYS_INLINE(static void fill_ivar_cache(const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, int is_attr, struct rb_iv_index_tbl_entry *ent));
+
+static inline void
+fill_ivar_cache(const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, int is_attr, struct rb_iv_index_tbl_entry *ent)
+{
+    // fill cache
+    if (!is_attr) {
+        ic->entry = ent;
+        RB_OBJ_WRITTEN(iseq, Qundef, ent->class_value);
+    }
+    else {
+        vm_cc_attr_index_set(cc, (int)ent->index + 1);
+    }
+}
+
 ALWAYS_INLINE(static VALUE vm_getivar(VALUE, ID, const rb_iseq_t *, IVC, const struct rb_callcache *, int));
 static inline VALUE
 vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, int is_attr)
@@ -1116,62 +1131,43 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
         if (LIKELY(BUILTIN_TYPE(obj) == T_OBJECT) &&
             LIKELY(index < ROBJECT_NUMIV(obj))) {
             val = ROBJECT_IVPTR(obj)[index];
+
+            VM_ASSERT(rb_ractor_shareable_p(obj) ? rb_ractor_shareable_p(val) : true);
         }
         else if (FL_TEST_RAW(obj, FL_EXIVAR)) {
-            struct gen_ivtbl *ivtbl;
-
-            if (LIKELY(rb_ivar_generic_ivtbl_lookup(obj, &ivtbl)) &&
-                LIKELY(index < ivtbl->numiv)) {
-                val = ivtbl->ivptr[index];
-            }
+            val = rb_ivar_generic_lookup_with_index(obj, id, index);
         }
+
         goto ret;
     }
     else {
-        struct st_table *iv_index_tbl;
-        st_index_t numiv;
-        VALUE *ivptr;
+        struct rb_iv_index_tbl_entry *ent;
 
         if (BUILTIN_TYPE(obj) == T_OBJECT) {
-            iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
-            numiv = ROBJECT_NUMIV(obj);
-            ivptr = ROBJECT_IVPTR(obj);
-            goto fill;
-	}
-        else if (FL_TEST_RAW(obj, FL_EXIVAR)) {
-            struct gen_ivtbl *ivtbl;
-            if (LIKELY(rb_ivar_generic_ivtbl_lookup(obj, &ivtbl))) {
-                numiv = ivtbl->numiv;
-                ivptr = ivtbl->ivptr;
-                iv_index_tbl = RCLASS_IV_INDEX_TBL(rb_obj_class(obj));
-                goto fill;
+            struct st_table *iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
+
+            if (iv_index_tbl && iv_index_tbl_lookup(iv_index_tbl, id, &ent)) {
+                fill_ivar_cache(iseq, ic, cc, is_attr, ent);
+
+                // get value
+                if (ent->index < ROBJECT_NUMIV(obj)) {
+                    val = ROBJECT_IVPTR(obj)[ent->index];
+
+                    VM_ASSERT(rb_ractor_shareable_p(obj) ? rb_ractor_shareable_p(val) : true);
+                }
             }
-            else {
-                goto ret;
+        }
+        else if (FL_TEST_RAW(obj, FL_EXIVAR)) {
+            struct st_table *iv_index_tbl = RCLASS_IV_INDEX_TBL(rb_obj_class(obj));
+
+            if (iv_index_tbl && iv_index_tbl_lookup(iv_index_tbl, id, &ent)) {
+                fill_ivar_cache(iseq, ic, cc, is_attr, ent);
+                val = rb_ivar_generic_lookup_with_index(obj, id, ent->index);
             }
         }
         else {
             // T_CLASS / T_MODULE
             goto general_path;
-        }
-
-      fill:
-        if (iv_index_tbl) {
-            struct rb_iv_index_tbl_entry *ent;
-
-            if (iv_index_tbl_lookup(iv_index_tbl, id, &ent)) {
-                if (!is_attr) {
-                    ic->entry = ent;
-                    RB_OBJ_WRITTEN(iseq, Qundef, ent->class_value);
-                }
-                else { /* call_info */
-                    vm_cc_attr_index_set(cc, (int)ent->index + 1);
-                }
-
-                if (ent->index < numiv) {
-                    val = ivptr[ent->index];
-                }
-            }
         }
 
       ret:
@@ -1203,6 +1199,8 @@ vm_setivar(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, const str
     if (LIKELY(RB_TYPE_P(obj, T_OBJECT))) {
 	VALUE klass = RBASIC(obj)->klass;
 	uint32_t index;
+
+        VM_ASSERT(!rb_ractor_shareable_p(obj));
 
 	if (LIKELY(
 	    (!is_attr && RB_DEBUG_COUNTER_INC_UNLESS(ivar_set_ic_miss_serial, ic->entry && ic->entry->class_serial  == RCLASS_SERIAL(klass))) ||

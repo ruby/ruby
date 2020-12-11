@@ -926,6 +926,8 @@ generic_ivtbl(VALUE obj, ID id, bool force_check_ractor)
         !RB_OBJ_FROZEN_RAW(obj) &&
         UNLIKELY(!rb_ractor_main_p()) &&
         UNLIKELY(rb_ractor_shareable_p(obj))) {
+
+        // TODO: RuntimeError?
         rb_raise(rb_eRuntimeError, "can not access instance variables of shareable objects from non-main Ractors");
     }
     return generic_iv_tbl_;
@@ -959,6 +961,21 @@ MJIT_FUNC_EXPORTED int
 rb_ivar_generic_ivtbl_lookup(VALUE obj, struct gen_ivtbl **ivtbl)
 {
     return gen_ivtbl_get(obj, 0, ivtbl);
+}
+
+MJIT_FUNC_EXPORTED VALUE
+rb_ivar_generic_lookup_with_index(VALUE obj, ID id, uint32_t index)
+{
+    struct gen_ivtbl *ivtbl;
+
+    if (gen_ivtbl_get(obj, id, &ivtbl)) {
+        if (LIKELY(index < ivtbl->numiv)) {
+            VALUE val = ivtbl->ivptr[index];
+            return val;
+        }
+    }
+
+    return Qundef;
 }
 
 static VALUE

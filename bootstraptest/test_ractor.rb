@@ -809,6 +809,53 @@ assert_equal 'can not access instance variables of shareable objects from non-ma
   end
 }
 
+# ivar in shareable-objects are not allowed to access from non-main Ractor, by @iv (get)
+assert_equal 'can not access instance variables of shareable objects from non-main Ractors', %q{
+  class Ractor
+    def setup
+      @foo = ''
+    end
+
+    def foo
+      @foo
+    end
+  end
+
+  shared = Ractor.new{}
+  shared.setup
+
+  r = Ractor.new shared do |shared|
+    p shared.foo
+  end
+
+  begin
+    r.take
+  rescue Ractor::RemoteError => e
+    e.cause.message
+  end
+}
+
+# ivar in shareable-objects are not allowed to access from non-main Ractor, by @iv (set)
+assert_equal 'can not access instance variables of shareable objects from non-main Ractors', %q{
+  class Ractor
+    def setup
+      @foo = ''
+    end
+  end
+
+  shared = Ractor.new{}
+
+  r = Ractor.new shared do |shared|
+    p shared.setup
+  end
+
+  begin
+    r.take
+  rescue Ractor::RemoteError => e
+    e.cause.message
+  end
+}
+
 # But a shareable object is frozen, it is allowed to access ivars from non-main Ractor
 assert_equal '11', %q{
   [Object.new, [], ].map{|obj|
