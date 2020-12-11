@@ -291,6 +291,45 @@ class TestProc < Test::Unit::TestCase
     assert_equal(true, Proc.new(&l).lambda?)
   end
 
+  def self.helper_test_warn_lamda_with_passed_block &b
+    lambda(&b)
+  end
+
+  def self.def_lambda_warning name, warn
+    define_method(name, proc do
+      prev = Warning[:deprecated]
+      assert_warn warn do
+        Warning[:deprecated] = true
+        yield
+      end
+    ensure
+      Warning[:deprecated] = prev
+    end)
+  end
+
+  def_lambda_warning 'test_lambda_warning_normal', '' do
+    lambda{}
+  end
+
+  def_lambda_warning 'test_lambda_warning_pass_lambda', '' do
+    b = lambda{}
+    lambda(&b)
+  end
+
+  def_lambda_warning 'test_lambda_warning_pass_proc', /deprecated/ do
+    b = proc{}
+    lambda(&b)
+  end
+
+  def_lambda_warning 'test_lambda_warning_pass_proc', /deprecated/ do
+    helper_test_warn_lamda_with_passed_block{}
+  end
+
+  def_lambda_warning 'test_lambda_warning_pass_proc', '' do
+    # Symbol#to_proc returns lambda
+    helper_test_warn_lamda_with_passed_block(&:to_s)
+  end
+
   def test_curry_ski_fib
     s = proc {|f, g, x| f[x][g[x]] }.curry
     k = proc {|x, y| x }.curry
