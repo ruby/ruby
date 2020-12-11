@@ -2739,9 +2739,7 @@ AS_IF([test "$rb_cv_binary_elf" = yes], [
   AC_CHECK_HEADERS([elf.h elf_abi.h])
   AS_IF([test $ac_cv_header_elf_h = yes -o $ac_cv_header_elf_abi_h = yes], [
     AC_LIBOBJ([addr2line])
-    AS_IF([test "x$compress_debug_sections" = xzlib], [
-      AC_CHECK_LIB([z], [uncompress])
-    ])
+    AC_CHECK_LIB([z], [uncompress])
   ])
 ])
 
