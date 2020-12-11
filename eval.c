@@ -930,11 +930,6 @@ rb_jump_tag(int tag)
     EC_JUMP_TAG(GET_EC(), tag);
 }
 
-/*! Determines if the current method is given a block.
- * \retval zero if not given
- * \retval non-zero if given
- * \ingroup defmethod
- */
 int
 rb_block_given_p(void)
 {
@@ -956,11 +951,6 @@ rb_keyword_given_p(void)
 
 VALUE rb_eThreadError;
 
-/*! Declares that the current method needs a block.
- *
- * Raises a \c LocalJumpError if not given a block.
- * \ingroup defmethod
- */
 void
 rb_need_block(void)
 {
@@ -969,28 +959,6 @@ rb_need_block(void)
     }
 }
 
-/*! An equivalent of \c rescue clause.
- *
- * Equivalent to <code>begin .. rescue err_type .. end</code>
- *
- * \param[in] b_proc a function which potentially raises an exception.
- * \param[in] data1 the argument of \a b_proc
- * \param[in] r_proc a function which rescues an exception in \a b_proc.
- * \param[in] data2 the first argument of \a r_proc
- * \param[in] ... 1 or more exception classes. Must be terminated by \c (VALUE)0.
- *
- * First it calls the function \a b_proc, with \a data1 as the argument.
- * When \a b_proc raises an exception, it calls \a r_proc with \a data2 and
- * the exception object if the exception is a kind of one of the given
- * exception classes.
- *
- * \return the return value of \a b_proc if no exception occurs,
- *   or the return value of \a r_proc if otherwise.
- * \sa rb_rescue
- * \sa rb_ensure
- * \sa rb_protect
- * \ingroup exception
- */
 VALUE
 rb_rescue2(VALUE (* b_proc) (VALUE), VALUE data1,
            VALUE (* r_proc) (VALUE, VALUE), VALUE data2, ...)
@@ -1002,10 +970,6 @@ rb_rescue2(VALUE (* b_proc) (VALUE), VALUE data1,
     return ret;
 }
 
-/*!
- * \copydoc rb_rescue2
- * \param[in] args exception classes, terminated by (VALUE)0.
- */
 VALUE
 rb_vrescue2(VALUE (* b_proc) (VALUE), VALUE data1,
             VALUE (* r_proc) (VALUE, VALUE), VALUE data2,
@@ -1066,20 +1030,6 @@ rb_vrescue2(VALUE (* b_proc) (VALUE), VALUE data1,
     return result;
 }
 
-/*! An equivalent of \c rescue clause.
- *
- * Equivalent to <code>begin .. rescue .. end</code>.
- *
- * It is the same as
- * \code{cpp}
- * rb_rescue2(b_proc, data1, r_proc, data2, rb_eStandardError, (VALUE)0);
- * \endcode
- *
- * \sa rb_rescue2
- * \sa rb_ensure
- * \sa rb_protect
- * \ingroup exception
- */
 VALUE
 rb_rescue(VALUE (* b_proc)(VALUE), VALUE data1,
           VALUE (* r_proc)(VALUE, VALUE), VALUE data2)
@@ -1126,20 +1076,6 @@ rb_protect(VALUE (* proc) (VALUE), VALUE data, int *pstate)
     return result;
 }
 
-/*!
- * An equivalent to \c ensure clause.
- *
- * Equivalent to <code>begin .. ensure .. end</code>.
- *
- * Calls the function \a b_proc with \a data1 as the argument,
- * then calls \a e_proc with \a data2 when execution terminated.
- * \return The return value of \a b_proc if no exception occurred,
- *   or \c Qnil if otherwise.
- * \sa rb_rescue
- * \sa rb_rescue2
- * \sa rb_protect
- * \ingroup exception
- */
 VALUE
 rb_ensure(VALUE (*b_proc)(VALUE), VALUE data1, VALUE (*e_proc)(VALUE), VALUE data2)
 {
