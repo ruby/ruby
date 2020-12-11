@@ -519,7 +519,18 @@ def in_temporary_working_directory(dir)
 end
 
 def cleanup_coredump
-  FileUtils.rm_f 'core'
+  if File.file?('core')
+    require 'time'
+    Dir.glob('/tmp/bootstraptest-core.*').each do |f|
+      if Time.now - File.mtime(f) > 7 * 24 * 60 * 60 # 7 days
+        warn "Deleting an old core file: #{f}"
+        FileUtils.rm(f)
+      end
+    end
+    core_path = "/tmp/bootstraptest-core.#{Time.now.utc.iso8601}"
+    warn "A core file is found. Saving it at: #{core_path.dump}"
+    FileUtils.mv('core', core_path)
+  end
   FileUtils.rm_f Dir.glob('core.*')
   FileUtils.rm_f @ruby+'.stackdump' if @ruby
 end
