@@ -3107,8 +3107,6 @@ rb_f_exec(int argc, const VALUE *argv)
     UNREACHABLE_RETURN(Qnil);
 }
 
-NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
-
 /*
  *  call-seq:
  *     exec([env,] command... [,options])
@@ -3182,6 +3180,7 @@ NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
  *     # never get here
  */
 
+RBIMPL_ATTR_NORETURN()
 static VALUE
 f_exec(int c, const VALUE *a, VALUE _)
 {
@@ -4354,7 +4353,6 @@ exit_status_code(VALUE status)
     return istatus;
 }
 
-NORETURN(static VALUE rb_f_exit_bang(int argc, VALUE *argv, VALUE obj));
 /*
  *  call-seq:
  *     Process.exit!(status=false)
@@ -4366,6 +4364,7 @@ NORETURN(static VALUE rb_f_exit_bang(int argc, VALUE *argv, VALUE obj));
  *     Process.exit!(true)
  */
 
+RBIMPL_ATTR_NORETURN()
 static VALUE
 rb_f_exit_bang(int argc, VALUE *argv, VALUE obj)
 {
@@ -4411,7 +4410,6 @@ rb_f_exit(int argc, const VALUE *argv)
     UNREACHABLE_RETURN(Qnil);
 }
 
-NORETURN(static VALUE f_exit(int c, const VALUE *a, VALUE _));
 /*
  *  call-seq:
  *     exit(status=true)
@@ -4453,6 +4451,7 @@ NORETURN(static VALUE f_exit(int c, const VALUE *a, VALUE _));
  *     in finalizer
  */
 
+RBIMPL_ATTR_NORETURN()
 static VALUE
 f_exit(int c, const VALUE *a, VALUE _)
 {
@@ -4496,7 +4495,7 @@ rb_f_abort(int argc, const VALUE *argv)
     UNREACHABLE_RETURN(Qnil);
 }
 
-NORETURN(static VALUE f_abort(int c, const VALUE *a, VALUE _));
+RBIMPL_ATTR_NORETURN()
 static VALUE
 f_abort(int c, const VALUE *a, VALUE _)
 {
