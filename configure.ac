@@ -168,7 +168,10 @@ rb_test_CFLAGS=${CFLAGS+yes}
 rb_test_CXXFLAGS=${CXXFLAGS+yes}
 
 # BSD's ports and MacPorts prefix GNU binutils with 'g'
-# AC_PROG_CC_C99
+
+dnl Seems necessarily in order to add -std=gnu99 option for gcc 4.9.
+m4_version_prereq([2.70], [], [AC_PROG_CC_C99])
+
 AC_PROG_CXX
 AC_PROG_CPP
 AC_PROG_RANLIB
