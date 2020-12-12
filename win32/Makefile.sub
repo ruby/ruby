@@ -783,7 +783,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define PRI_LL_PREFIX "I64"
 #define PRI_PIDT_PREFIX PRI_INT_PREFIX
 #define GETGROUPS_T int
-#define RETSIGTYPE void
 #define TYPEOF_TIMEVAL_TV_SEC long
 !if $(RT_VER) >= 120
 #define HAVE_ACOSH 1
