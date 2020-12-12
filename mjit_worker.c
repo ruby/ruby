@@ -500,9 +500,14 @@ mjit_valid_class_serial_p(rb_serial_t class_serial)
 static struct rb_mjit_unit *
 get_from_list(struct rb_mjit_unit_list *list)
 {
-    struct rb_mjit_unit *unit = NULL, *next, *best = NULL;
+    while (in_gc) {
+        verbose(3, "Waiting wakeup from GC");
+        rb_native_cond_wait(&mjit_gc_wakeup, &mjit_engine_mutex);
+    }
+    in_jit = true; // Lock GC
 
     // Find iseq with max total_calls
+    struct rb_mjit_unit *unit = NULL, *next, *best = NULL;
     list_for_each_safe(&list->head, unit, next, unode) {
         if (unit->iseq == NULL) { // ISeq is GCed.
             remove_from_list(unit, list);
@@ -514,6 +519,11 @@ get_from_list(struct rb_mjit_unit_list *list)
             best = unit;
         }
     }
+
+    in_jit = false; // Unlock GC
+    verbose(3, "Sending wakeup signal to client in a mjit-worker for GC");
+    rb_native_cond_signal(&mjit_client_wakeup);
+
     if (best) {
         remove_from_list(best, list);
     }
