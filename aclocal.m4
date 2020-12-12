@@ -1,4 +1,4 @@
-# generated automatically by aclocal 1.16.2 -*- Autoconf -*-
+# generated automatically by aclocal 1.16.3 -*- Autoconf -*-
 
 # Copyright (C) 1996-2020 Free Software Foundation, Inc.
 
@@ -43,6 +43,5 @@ m4_include([tool/m4/ruby_stack_grow_direction.m4])
 m4_include([tool/m4/ruby_try_cflags.m4])
 m4_include([tool/m4/ruby_try_cxxflags.m4])
 m4_include([tool/m4/ruby_try_ldflags.m4])
-m4_include([tool/m4/ruby_type_attribute.m4])
 m4_include([tool/m4/ruby_universal_arch.m4])
 m4_include([tool/m4/ruby_werror_flag.m4])
