@@ -649,6 +649,8 @@ typedef struct rb_vm_struct {
     const struct rb_builtin_function *builtin_function_table;
     int builtin_inline_index;
 
+    struct rb_id_table *negative_cme_table;
+
 #if USE_VM_CLOCK
     uint32_t clock;
 #endif
