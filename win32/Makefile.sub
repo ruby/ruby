@@ -725,7 +725,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define rb_gid_t int
 #define rb_uid_t int
 #define HAVE_STRUCT_STAT_ST_RDEV 1
-#define HAVE_ST_RDEV 1
 #define HAVE_STRUCT_TIMEVAL 1
 !if $(MSC_VER) >= 1900
 #define HAVE_STRUCT_TIMESPEC
