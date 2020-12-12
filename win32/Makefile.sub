@@ -680,9 +680,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !if $(MSC_VER) < 1400
 #define SIZE_MAX UINT_MAX
 !endif
-#define HAVE_PROTOTYPES 1
-#define TOKEN_PASTE(x,y) x##y
-#define HAVE_STDARG_PROTOTYPES 1
 !if $(MSC_VER) >= 1800
 #define HAVE_VA_COPY 1
 !else
