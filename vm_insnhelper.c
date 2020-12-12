@@ -1534,11 +1534,11 @@ vm_ccs_create(VALUE klass, const rb_callable_method_entry_t *cme)
 #if VM_CHECK_MODE > 0
     ccs->debug_sig = ~(VALUE)ccs;
 #endif
-    ccs->capa = 4;
+    ccs->capa = 0;
     ccs->len = 0;
     RB_OBJ_WRITE(klass, &ccs->cme, cme);
     METHOD_ENTRY_CACHED_SET((rb_callable_method_entry_t *)cme);
-    ccs->entries = ALLOC_N(struct rb_class_cc_entries_entry, ccs->capa);
+    ccs->entries = NULL;
     return ccs;
 }
 
@@ -1553,12 +1553,14 @@ vm_ccs_push(VALUE klass, struct rb_class_cc_entries *ccs, const struct rb_callin
     }
 
     if (UNLIKELY(ccs->len == ccs->capa)) {
-        const int nsize = ccs->capa * 2;
-        struct rb_class_cc_entries_entry *nents = ALLOC_N(struct rb_class_cc_entries_entry, nsize);
-        ccs->capa = nsize;
-        MEMCPY(nents, &ccs->entries[0], struct rb_class_cc_entries_entry, ccs->len);
-        ruby_xfree(ccs->entries);
-        ccs->entries = nents;
+        if (ccs->capa == 0) {
+            ccs->capa = 1;
+            ccs->entries = ALLOC_N(struct rb_class_cc_entries_entry, ccs->capa);
+        }
+        else {
+            ccs->capa *= 2;
+            REALLOC_N(ccs->entries, struct rb_class_cc_entries_entry, ccs->capa);
+        }
     }
     VM_ASSERT(ccs->len < ccs->capa);
 
