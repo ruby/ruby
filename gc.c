@@ -6420,7 +6420,7 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_execution_context_t *ec
 {
     union {
 	rb_jmp_buf j;
-	VALUE v[sizeof(rb_jmp_buf) / sizeof(VALUE)];
+	VALUE v[sizeof(rb_jmp_buf) / (sizeof(VALUE))];
     } save_regs_gc_mark;
     VALUE *stack_start, *stack_end;
 
