@@ -20,7 +20,6 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Signal handling APIs.
  */
-#include "ruby/internal/config.h"      /* POSIX_SIGNAL / RETSIGTYPE */
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/value.h"
 
@@ -30,7 +29,7 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
 VALUE rb_f_kill(int, const VALUE*);
 #ifdef POSIX_SIGNAL
 #define posix_signal ruby_posix_signal
-RETSIGTYPE (*posix_signal(int, RETSIGTYPE (*)(int)))(int);
+void (*posix_signal(int, void (*)(int)))(int);
 #endif
 const char *ruby_signal_name(int);
 void ruby_default_signal(int);
