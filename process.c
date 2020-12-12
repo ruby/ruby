@@ -1367,8 +1367,8 @@ rb_process_status_wait(rb_pid_t pid, int flags)
  *  haven't been reported). Not all flags are available on all
  *  platforms, but a flag value of zero will work on all platforms.
  *
- *  Calling this method raises a SystemCallError if there are no child
- *  processes. Not available on all platforms.
+ *  Returns +nil+ if there are no child processes.
+ *  Not available on all platforms.
  *
  *  May invoke the scheduler hook _process_wait_.
  *
@@ -1383,7 +1383,7 @@ rb_process_status_wait(rb_pid_t pid, int flags)
  *     Process::Status.wait(pid, 0)                  #=> pid 27440 exit 99
  *     Time.now                                      #=> 2008-03-08 19:56:19 +0900
  *
- * EXPERIMENTAL FEATURE
+ *  This is an EXPERIMENTAL FEATURE.
  */
 
 VALUE
