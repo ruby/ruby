@@ -5671,6 +5671,8 @@ rb_resolve_me_location(const rb_method_entry_t *me, VALUE resolved_location[5])
 {
     VALUE path, beg_pos_lineno, beg_pos_column, end_pos_lineno, end_pos_column;
 
+    if (!me->def) return NULL; // negative cme
+
   retry:
     switch (me->def->type) {
       case VM_METHOD_TYPE_ISEQ: {

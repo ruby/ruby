@@ -2530,6 +2530,13 @@ rb_vm_each_stack_value(void *ptr, void (*cb)(VALUE, void*), void *ctx)
     }
 }
 
+static enum rb_id_table_iterator_result
+vm_mark_negative_cme(VALUE val, void *dmy)
+{
+    rb_gc_mark(val);
+    return ID_TABLE_CONTINUE;
+}
+
 void
 rb_vm_mark(void *ptr)
 {
@@ -2584,6 +2591,8 @@ rb_vm_mark(void *ptr)
 	rb_hook_list_mark(&vm->global_hooks);
 
 	rb_gc_mark_values(RUBY_NSIG, vm->trap_list.cmd);
+
+        rb_id_table_foreach_values(vm->negative_cme_table, vm_mark_negative_cme, NULL);
 
         mjit_mark();
     }
@@ -3660,6 +3669,7 @@ Init_BareVM(void)
 
     vm->objspace = rb_objspace_alloc();
     ruby_current_vm_ptr = vm;
+    vm->negative_cme_table = rb_id_table_create(16);
 
     Init_native_thread(th);
     th->vm = vm;
