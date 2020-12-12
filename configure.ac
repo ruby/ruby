@@ -1668,7 +1668,7 @@ AS_IF([test $rb_cv_stack_end_address != no], [
 
 dnl Checks for library functions.
 AC_TYPE_GETGROUPS
-AC_TYPE_SIGNAL
+AC_DEFINE(RETSIGTYPE, void)
 AS_CASE(["${target_cpu}-${target_os}:${target_archs}"],
 [powerpc-darwin*], [
   AC_LIBSOURCES(alloca.c)
