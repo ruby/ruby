@@ -11,7 +11,7 @@ jobs:
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     env:
       TESTOPTS: '-q --tty=no'
-      RUN_OPTS: '--disable-gems ${{ matrix.jit_opts }}'
+      RUN_OPTS: '--disable-gems ${{ matrix.jit_opts }} --jit-save-temps --jit-debug=-ggdb3'
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
     steps:
       - run: mkdir build
