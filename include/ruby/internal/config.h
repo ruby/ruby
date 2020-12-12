@@ -28,17 +28,20 @@
 
 #include "ruby/internal/compiler_since.h"
 
+#undef  HAVE_PROTOTYPES
+#define HAVE_PROTOTYPES 1
+
+#undef  HAVE_STDARG_PROTOTYPES
+#define HAVE_STDARG_PROTOTYPES 1
+
+#undef  TOKEN_PASTE
+#define TOKEN_PASTE(x,y) x##y
+
 #if defined(__cplusplus)
 #/* __builtin_choose_expr and __builtin_types_compatible aren't available
 # * on C++.  See https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html */
 # undef HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P
 # undef HAVE_BUILTIN___BUILTIN_TYPES_COMPATIBLE_P
-
-# undef  HAVE_PROTOTYPES
-# define HAVE_PROTOTYPES 1
-
-# undef  HAVE_STDARG_PROTOTYPES
-# define HAVE_STDARG_PROTOTYPES 1
 
 /* HAVE_VA_ARGS_MACRO is for C.  C++ situations might be different. */
 # undef HAVE_VA_ARGS_MACRO
