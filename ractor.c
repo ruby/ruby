@@ -888,7 +888,7 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yield
         {
             VM_ASSERT(cr->sync.wait.status == wait_none);
             cr->sync.wait.status = wait_status;
-            cr->sync.wait.wakeup_status == wakeup_none;
+            cr->sync.wait.wakeup_status = wakeup_none;
         }
         RACTOR_UNLOCK(cr);
 
