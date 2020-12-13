@@ -58,8 +58,8 @@ struct rb_objspace; /* in vm_core.h */
 
 #define UNALIGNED_MEMBER_PTR(ptr, mem) UNALIGNED_MEMBER_ACCESS(&(ptr)->mem)
 #define RB_OBJ_WRITE(a, slot, b) \
-    UNALIGNED_MEMBER_ACCESS(\
-        rb_obj_write((VALUE)(a), (VALUE *)(slot), (VALUE)(b), __FILE__, __LINE__))
+    rb_obj_write((VALUE)(a), UNALIGNED_MEMBER_ACCESS((VALUE *)(slot)), \
+                 (VALUE)(b), __FILE__, __LINE__)
 
 /* gc.c */
 extern VALUE *ruby_initial_gc_stress_ptr;
