@@ -426,6 +426,9 @@ Excluding feature bug fixes.
 
 * Integer#zero? overrides Numeric#zero? for optimization.  [[Misc #16961]]
 
+* Requiring 'open-uri' no longer redefines `Kernel#open`. 
+  Call `URI.open` directly or `use URI#open` instead. [[Misc #15893]]
+
 ## Stdlib compatibility issues
 
 * Default gems
@@ -640,6 +643,7 @@ end
 [Feature #16815]: https://bugs.ruby-lang.org/issues/16815
 [Feature #16828]: https://bugs.ruby-lang.org/issues/16828
 [Misc #16961]:    https://bugs.ruby-lang.org/issues/16961
+[Misc #15893]:    https://bugs.ruby-lang.org/issues/15893
 [Feature #17055]: https://bugs.ruby-lang.org/issues/17055
 [Feature #17104]: https://bugs.ruby-lang.org/issues/17104
 [Feature #17122]: https://bugs.ruby-lang.org/issues/17122
