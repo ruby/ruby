@@ -42,12 +42,17 @@ jobs:
       - run: make $JOBS incs
       - run: make $JOBS
       - run: sudo make $JOBS -s install
-      - run: ulimit -c unlimited
-      - run: make $JOBS -s test RUN_OPTS="$RUN_OPTS"
+      - run: |
+          ulimit -c unlimited
+           make $JOBS -s test RUN_OPTS="$RUN_OPTS"
         timeout-minutes: 60
-      - run: make $JOBS -s test-all RUN_OPTS="$RUN_OPTS"
+      - run: |
+          ulimit -c unlimited
+          make $JOBS -s test-all RUN_OPTS="$RUN_OPTS"
         timeout-minutes: 60
-      - run: make $JOBS -s test-spec RUN_OPTS="$RUN_OPTS"
+      - run: |
+          ulimit -c unlimited
+          make $JOBS -s test-spec RUN_OPTS="$RUN_OPTS"
         timeout-minutes: 60
       - uses: k0kubun/action-slack@v2.0.0
         with:
