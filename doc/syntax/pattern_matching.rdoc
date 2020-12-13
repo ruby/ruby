@@ -15,11 +15,13 @@ Pattern matching in Ruby is implemented with the +case+/+in+ expression:
       ...
     end
 
-or with the +=>+ operator, which can be used in a standalone expression:
+(Note that +in+ and +when+ branches can *not* be mixed in one +case+ expression.)
+
+or with the +=>+ operator and the +in+ operator, which can be used in a standalone expression:
 
     <expression> => <pattern>
 
-(Note that +in+ and +when+ branches can *not* be mixed in one +case+ expression.)
+    <expression> in <pattern>
 
 Pattern matching is _exhaustive_: if variable doesn't match pattern (in a separate +in+ clause), or doesn't matches any branch of +case+ expression (and +else+ branch is absent), +NoMatchingPatternError+ is raised.
 
@@ -45,6 +47,12 @@ whilst the +=>+ operator is most useful when expected data structure is known be
 
   puts "Connect with user '#{user}'"
   # Prints: "Connect with user 'admin'"
+
++<expression> in <pattern>+ is the same as +case <expression>; in <pattern>; true; else false; end+.
+You can use it when you only want to know if a pattern has been matched or not:
+
+  users = [{name: "Alice", age: 12}, {name: "Bob", age: 23}]
+  users.any? {|u| u in {name: /B/, age: 20..} } #=> true
 
 See below for more examples and explanations of the syntax.
 

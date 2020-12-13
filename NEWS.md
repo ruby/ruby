@@ -52,19 +52,28 @@ sufficient information, see the ChangeLog file or Redmine
   instead of a warning. yield in a class definition outside of a method
   is now a SyntaxError instead of a LocalJumpError.  [[Feature #15575]]
 
-* Pattern matching is no longer experimental. [[Feature #17260]]
+* Pattern matching(`case/in`) is no longer experimental. [[Feature #17260]]
 
-* One-line pattern matching now uses `=>` instead of `in`.  [EXPERIMENTAL]
-  [[Feature #17260]]
+* One-line pattern matching is redesgined.  [EXPERIMENTAL]
+    * `=>` is added. It can be used as like rightward assignment.
+      [[Feature #17260]]
+
+    ```ruby
+    0 => a
+    p a #=> 0
+
+    {b: 0, c: 1} => {b:}
+    p b #=> 0
+    ```
+
+    * `in` is changed to return `true` or `false`. [[Feature #17371]]
 
     ```ruby
     # version 3.0
-    {a: 0, b: 1} => {a:}
-    p a # => 0
+    0 in 1 #=> false
 
     # version 2.7
-    {a: 0, b: 1} in {a:}
-    p a # => 0
+    0 in 1 #=> raise NoMatchingPatternError
     ```
 
 * Find pattern is added.  [EXPERIMENTAL]
@@ -639,4 +648,5 @@ end
 [Feature #17187]: https://bugs.ruby-lang.org/issues/17187
 [Bug #17221]:     https://bugs.ruby-lang.org/issues/17221
 [Feature #17260]: https://bugs.ruby-lang.org/issues/17260
+[Feature #17371]: https://bugs.ruby-lang.org/issues/17371
 [GH-2991]:        https://github.com/ruby/ruby/pull/2991
