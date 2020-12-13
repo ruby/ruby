@@ -1933,6 +1933,100 @@ ractor_moved_missing(int argc, VALUE *argv, VALUE self)
     rb_raise(rb_eRactorMovedError, "can not send any methods to a moved object");
 }
 
+/*
+ *  Document-class: Ractor::ClosedError
+ *
+ *  Raised when an attempt is made to take something from the Ractor's outgoing port,
+ *  but it is closed with Ractor#close_outgoing, or to send something to Ractor's
+ *  incoming port, and it is closed with Ractor#close_incoming, or an attempt to
+ *  send/take something with ractor which was already terminated.
+ *
+ *     r = Ractor.new { sleep(500) }
+ *     r.close_outgoing
+ *     r.take # Ractor::ClosedError
+ *
+ *  ClosedError is a descendant of StopIteration, so the closing of the ractor will break
+ *  the loops without propagating the error:
+ *
+ *     r = Ractor.new { 3.times { puts "Received: " + receive } }
+ *
+ *     loop { r.send "test" }
+ *     puts "Continue successfully"
+ *
+ *  This will print:
+ *
+ *     Received: test
+ *     Received: test
+ *     Received: test
+ *     Continue successfully
+ */
+
+/*
+ *  Document-class: Ractor::RemoteError
+ *
+ *  Raised on attempt to Ractor#take if there was an uncaught exception in the Ractor.
+ *  Its +cause+ will contain the original exception, and +ractor+ is the original ractor
+ *  it was raised in.
+ *
+ *     r = Ractor.new { raise "Something weird happened" }
+ *
+ *     begin
+ *       r.take
+ *     rescue => e
+ *       p e             # => #<Ractor::RemoteError: thrown by remote Ractor.>
+ *       p e.ractor == r # => true
+ *       p e.cause       # => #<RuntimeError: Something weird happened>
+ *     end
+ *
+ */
+
+/*
+ *  Document-class: Ractor::MovedError
+ *
+ *  Raised on an attempt to access an object which was moved in Ractor#send or Ractor.yield.
+ *
+ *     r = Ractor.new { sleep }
+ *
+ *     ary = [1, 2, 3]
+ *     r.send(ary, move: true)
+ *     ary.inspect
+ *     # Ractor::MovedError (can not send any methods to a moved object)
+ *
+ */
+
+/*
+ *  Document-class: Ractor::MovedObject
+ *
+ *  A special object which replaces any value that was moved to another ractor in Ractor#send
+ *  or Ractor.yield. Any attempt to access the object results in Ractor::MovedError.
+ *
+ *     r = Ractor.new { receive }
+ *
+ *     ary = [1, 2, 3]
+ *     r.send(ary, move: true)
+ *     p Ractor::MovedObject === ary
+ *     # => true
+ *     ary.inspect
+ *     # Ractor::MovedError (can not send any methods to a moved object)
+ *
+ *  The class MovedObject is frozen to avoid tampering with it:
+ *
+ *     class Ractor::MovedObject
+ *       def inspect
+ *         "<MyMovedObject>"
+ *       end
+ *     end
+ *     # FrozenError (can't modify frozen class: Ractor::MovedObject)
+ */
+
+// Main docs are in ractor.rb, but without this clause there are weird artifacts
+// it their rendering.
+/*
+ *  Document-class: Ractor
+ *
+ */
+
+
 void
 Init_Ractor(void)
 {

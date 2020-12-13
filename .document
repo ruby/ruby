@@ -20,6 +20,7 @@ kernel.rb
 pack.rb
 trace_point.rb
 warning.rb
+ractor.rb
 
 # the lib/ directory (which has its own .document file)
 lib
