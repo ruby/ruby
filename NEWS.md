@@ -417,7 +417,7 @@ Excluding feature bug fixes.
       due to lambda's arity check.
 
     * This is experimental; if it brings a big incompatibility issue,
-      it may be reverted until 2.8/3.0 release.
+      it may be reverted until 3.0 release.
 
 * When writing to STDOUT redirected to a closed pipe, no broken pipe
   error message will be shown now.  [[Feature #14413]]
