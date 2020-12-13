@@ -370,7 +370,7 @@ reconfig config.status:	$(srcdir)/$(CONFIGURE) $(srcdir)/enc/Makefile.in \
 	set $(SHELL) $($@-args); $(reconfig-exec-$(V))
 
 $(srcdir)/$(CONFIGURE): $(srcdir)/configure.ac $(srcdir)/aclocal.m4
-	$(CHDIR) $(srcdir) && exec $(AUTOCONF) -o $(@F)
+	$(CHDIR) $(srcdir) && exec $(AUTOCONF)
 
 $(srcdir)/aclocal.m4:
 	$(CHDIR) $(srcdir) && \
