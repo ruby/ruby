@@ -390,7 +390,7 @@ Outstanding ones only.
 
     * Improved support for YAML [[Bug #8382]]
 
-    * Use officially discouraged. Read "Caveats" section.
+    * Use officially discouraged. Read OpenStruct@Caveats section.
 
 * Reline
 
