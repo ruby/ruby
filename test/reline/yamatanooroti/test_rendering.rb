@@ -105,7 +105,8 @@ begin
 
     def test_finish_autowrapped_line_in_the_middle_of_lines
       start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
-      write("[{'user'=>{'email'=>'abcdef@abcdef', 'id'=>'ABC'}, 'version'=>4, 'status'=>'succeeded'}]#{"\C-b"*7}\n")
+      write("[{'user'=>{'email'=>'abcdef@abcdef', 'id'=>'ABC'}, 'version'=>4, 'status'=>'succeeded'}]#{"\C-b"*7}")
+      write("\n")
       close
       assert_screen(<<~EOC)
         Multiline REPL.
@@ -449,6 +450,147 @@ begin
       assert_screen(<<~EOC)
         Multiline REPL.
         prompt>
+      EOC
+    end
+
+    def test_longer_than_screen_height
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
+      write(<<~EOC.chomp)
+        def each_top_level_statement
+          initialize_input
+          catch(:TERM_INPUT) do
+            loop do
+              begin
+                prompt
+                unless l = lex
+                  throw :TERM_INPUT if @line == ''
+                else
+                  @line_no += l.count("\n")
+                  next if l == "\n"
+                  @line.concat l
+                  if @code_block_open or @ltype or @continue or @indent > 0
+                    next
+                  end
+                end
+                if @line != "\n"
+                  @line.force_encoding(@io.encoding)
+                  yield @line, @exp_line_no
+                end
+                break if @io.eof?
+                @line = ''
+                @exp_line_no = @line_no
+                #
+                @indent = 0
+              rescue TerminateLineInput
+                initialize_input
+                prompt
+              end
+            end
+          end
+        end
+      EOC
+      close
+      assert_screen(<<~EOC)
+        prompt>         prompt
+        prompt>       end
+        prompt>     end
+        prompt>   end
+        prompt> end
+      EOC
+    end
+
+    def test_longer_than_screen_height_with_scroll_back
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
+      write(<<~EOC.chomp)
+        def each_top_level_statement
+          initialize_input
+          catch(:TERM_INPUT) do
+            loop do
+              begin
+                prompt
+                unless l = lex
+                  throw :TERM_INPUT if @line == ''
+                else
+                  @line_no += l.count("\n")
+                  next if l == "\n"
+                  @line.concat l
+                  if @code_block_open or @ltype or @continue or @indent > 0
+                    next
+                  end
+                end
+                if @line != "\n"
+                  @line.force_encoding(@io.encoding)
+                  yield @line, @exp_line_no
+                end
+                break if @io.eof?
+                @line = ''
+                @exp_line_no = @line_no
+                #
+                @indent = 0
+              rescue TerminateLineInput
+                initialize_input
+                prompt
+              end
+            end
+          end
+        end
+      EOC
+      write("\C-p" * 6)
+      close
+      assert_screen(<<~EOC)
+        prompt>       rescue Terminate
+        LineInput
+        prompt>         initialize_inp
+        ut
+        prompt>         prompt
+      EOC
+    end
+
+    def test_longer_than_screen_height_with_complex_scroll_back
+      start_terminal(4, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
+      write(<<~EOC.chomp)
+        def each_top_level_statement
+          initialize_input
+          catch(:TERM_INPUT) do
+            loop do
+              begin
+                prompt
+                unless l = lex
+                  throw :TERM_INPUT if @line == ''
+                else
+                  @line_no += l.count("\n")
+                  next if l == "\n"
+                  @line.concat l
+                  if @code_block_open or @ltype or @continue or @indent > 0
+                    next
+                  end
+                end
+                if @line != "\n"
+                  @line.force_encoding(@io.encoding)
+                  yield @line, @exp_line_no
+                end
+                break if @io.eof?
+                @line = ''
+                @exp_line_no = @line_no
+                #
+                @indent = 0
+              rescue TerminateLineInput
+                initialize_input
+                prompt
+              end
+            end
+          end
+        end
+      EOC
+      sleep 0.3
+      write("\C-p" * 5)
+      write("\C-n" * 3)
+      close
+      assert_screen(<<~EOC)
+        ut
+        prompt>         prompt
+        prompt>       end
+        prompt>     end
       EOC
     end
 
