@@ -42,6 +42,7 @@ jobs:
       - run: make $JOBS incs
       - run: make $JOBS
       - run: sudo make $JOBS -s install
+      - run: ulimit -c unlimited
       - run: make $JOBS -s test RUN_OPTS="$RUN_OPTS"
         timeout-minutes: 60
       - run: make $JOBS -s test-all RUN_OPTS="$RUN_OPTS"
