@@ -357,6 +357,7 @@ module Test
           core_path = "/tmp/test-unit-core.#{Time.now.utc.iso8601}"
           warn "A core file is found. Saving it at: #{core_path.dump}"
           FileUtils.mv('core', core_path)
+          system('gdb', RbConfig.ruby, '-c', core_path, '-ex', 'bt', '-batch')
         end
         STDERR.flush
         exit c
