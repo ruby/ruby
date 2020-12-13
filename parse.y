@@ -502,6 +502,7 @@ static NODE *new_find_pattern(struct parser_params *p, NODE *constant, NODE *fnd
 static NODE *new_find_pattern_tail(struct parser_params *p, ID pre_rest_arg, NODE *args, ID post_rest_arg, const YYLTYPE *loc);
 static NODE *new_hash_pattern(struct parser_params *p, NODE *constant, NODE *hshptn, const YYLTYPE *loc);
 static NODE *new_hash_pattern_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, const YYLTYPE *loc);
+static void warn_one_line_pattern_matching(struct parser_params *p, NODE *node, NODE *pattern);
 
 static NODE *new_kw_arg(struct parser_params *p, NODE *k, const YYLTYPE *loc);
 static NODE *args_with_numbered(struct parser_params*,NODE*,int);
@@ -1661,10 +1662,7 @@ expr		: command_call
 			p->ctxt.in_kwarg = $<ctxt>3.in_kwarg;
 		    /*%%%*/
 			$$ = NEW_CASE3($1, NEW_IN($5, 0, 0, &@5), &@$);
-
-			if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_EXPERIMENTAL))
-			    rb_warn0L(nd_line($$), "One-line pattern matching is experimental, and the behavior may change in future versions of Ruby!");
-
+			warn_one_line_pattern_matching(p, $$, $5);
 		    /*% %*/
 		    /*% ripper: case!($1, in!($5, Qnil, Qnil)) %*/
 		    }
@@ -11688,6 +11686,17 @@ new_hash_pattern_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, co
 
     p->ruby_sourceline = saved_line;
     return node;
+}
+
+static void
+warn_one_line_pattern_matching(struct parser_params *p, NODE *node, NODE *pattern)
+{
+    enum node_type type;
+    type = nd_type(pattern);
+
+    if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_EXPERIMENTAL) &&
+	!(type == NODE_LASGN || type == NODE_DASGN || type == NODE_DASGN_CURR))
+	rb_warn0L(nd_line(node), "One-line pattern matching is experimental, and the behavior may change in future versions of Ruby!");
 }
 
 static NODE*
