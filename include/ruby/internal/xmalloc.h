@@ -62,7 +62,7 @@ RBIMPL_ATTR_ALLOC_SIZE((1))
  *   - In case of `ENOMEM` it tries to GC to make some room.
  *
  * @param[in]  size          Requested amount of memory.
- * @throw      rb_eMemError  No space left for `size` bytes allocation.
+ * @exception  rb_eMemError  No space left for `size` bytes allocation.
  * @return     A valid pointer  to an allocated storage instance;  which has at
  *             least `size` bytes width, with appropriate alignment detected by
  *             the underlying malloc() routine.
@@ -91,8 +91,8 @@ RBIMPL_ATTR_ALLOC_SIZE((1,2))
  *
  * @param[in]  nelems        Number of elements.
  * @param[in]  elemsiz       Size of an element.
- * @throw      rb_eMemError  No space left for allocation.
- * @throw      rb_eArgError  `nelems` * `elemsiz` would overflow.
+ * @exception  rb_eMemError  No space left for allocation.
+ * @exception  rb_eArgError  `nelems` * `elemsiz` would overflow.
  * @return     A valid pointer  to an allocated storage instance;  which has at
  *             least  `nelems`  *  `elemsiz`   bytes  width,  with  appropriate
  *             alignment detected by the underlying malloc() routine.
@@ -120,8 +120,8 @@ RBIMPL_ATTR_ALLOC_SIZE((1,2))
  *
  * @param[in]  nelems        Number of elements.
  * @param[in]  elemsiz       Size of an element.
- * @throw      rb_eMemError  No space left for allocation.
- * @throw      rb_eArgError  `nelems` * `elemsiz` would overflow.
+ * @exception  rb_eMemError  No space left for allocation.
+ * @exception  rb_eArgError  `nelems` * `elemsiz` would overflow.
  * @return     A valid pointer  to an allocated storage instance;  which has at
  *             least  `nelems`  *  `elemsiz`   bytes  width,  with  appropriate
  *             alignment detected by the underlying calloc() routine.
@@ -149,7 +149,7 @@ RBIMPL_ATTR_ALLOC_SIZE((2))
  *                           ruby_xmalloc2(),  ruby_xcalloc(), ruby_xrealloc(),
  *                           or ruby_xrealloc2().
  * @param[in]  newsiz        Requested new amount of memory.
- * @throw      rb_eMemError  No space left for `newsiz` bytes allocation.
+ * @exception  rb_eMemError  No space left for `newsiz` bytes allocation.
  * @retval     ptr           In case  the function  returns the  passed pointer
  *                           as-is, the storage instance that the pointer holds
  *                           is  either  grown or  shrunken  to  have at  least
@@ -198,8 +198,8 @@ RBIMPL_ATTR_ALLOC_SIZE((2,3))
  *                           or ruby_xrealloc2().
  * @param[in]  newelems      Requested new number of elements.
  * @param[in]  newsiz        Requested new size of each element.
- * @throw      rb_eMemError  No space left for  allocation.
- * @throw      rb_eArgError  `newelems` * `newsiz` would overflow.
+ * @exception  rb_eMemError  No space left for  allocation.
+ * @exception  rb_eArgError  `newelems` * `newsiz` would overflow.
  * @retval     ptr           In case  the function  returns the  passed pointer
  *                           as-is, the storage instance that the pointer holds
  *                           is  either  grown or  shrunken  to  have at  least
