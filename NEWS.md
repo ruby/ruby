@@ -269,6 +269,17 @@ Outstanding ones only.
     * New class added to enable parallel execution. See doc/ractor.md for
       more details.
 
+* Random
+
+    * `Random::DEFAULT` now refers to the `Random` class instead of being a `Random` instance,
+      so it can work with `Ractor`.
+      [[Feature #17322]]
+
+    * `Random::DEFAULT` is deprecated since its value is now confusing and it is no longer global,
+      use `Kernel.rand`/`Random.rand` directly, or create a `Random` instance with `Random.new` instead.
+      [[Feature #17351]]
+
+
 * String
 
     * The following methods now return or yield String instances
@@ -652,5 +663,7 @@ end
 [Feature #17187]: https://bugs.ruby-lang.org/issues/17187
 [Bug #17221]:     https://bugs.ruby-lang.org/issues/17221
 [Feature #17260]: https://bugs.ruby-lang.org/issues/17260
+[Feature #17322]: https://bugs.ruby-lang.org/issues/17322
+[Feature #17351]: https://bugs.ruby-lang.org/issues/17351
 [Feature #17371]: https://bugs.ruby-lang.org/issues/17371
 [GH-2991]:        https://github.com/ruby/ruby/pull/2991

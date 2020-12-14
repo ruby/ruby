@@ -61,6 +61,7 @@
 #include "internal/numeric.h"
 #include "internal/random.h"
 #include "internal/sanitizers.h"
+#include "internal/variable.h"
 #include "ruby_atomic.h"
 #include "ruby/random.h"
 #include "ruby/ractor.h"
@@ -1716,6 +1717,7 @@ InitVM_Random(void)
     rb_define_method(rb_cRandom, "==", rand_mt_equal, 1);
 
     rb_define_const(rb_cRandom, "DEFAULT", rb_cRandom);
+    rb_deprecate_constant(rb_cRandom, "DEFAULT");
 
     rb_define_singleton_method(rb_cRandom, "srand", rb_f_srand, -1);
     rb_define_singleton_method(rb_cRandom, "rand", random_s_rand, -1);
