@@ -781,7 +781,7 @@ rb_print_backtrace(void)
 #endif
 
 #if defined __linux__
-# if defined __x86_64__ || defined __i386__
+# if defined __x86_64__ || defined __i386__ || defined __aarch64__ || defined __arm__
 #  define HAVE_PRINT_MACHINE_REGISTERS 1
 # endif
 #elif defined __APPLE__
@@ -811,7 +811,11 @@ print_machine_register(size_t reg, const char *reg_name, int col_count, int max_
     return col_count;
 }
 # ifdef __linux__
-#   define dump_machine_register(reg) (col_count = print_machine_register(mctx->gregs[REG_##reg], #reg, col_count, 80))
+#   if defined(__x86_64__) || defined(__i386__)
+#       define dump_machine_register(reg) (col_count = print_machine_register(mctx->gregs[REG_##reg], #reg, col_count, 80))
+#   elif defined(__aarch64__) || defined(__arm__)
+#       define dump_machine_register(reg, regstr) (col_count = print_machine_register(reg, #regstr, col_count, 80))
+#   endif
 # elif defined __APPLE__
 #   define dump_machine_register(reg) (col_count = print_machine_register(mctx->MCTX_SS_REG(reg), #reg, col_count, 80))
 # endif
@@ -867,6 +871,40 @@ rb_dump_machine_register(const ucontext_t *ctx)
 	dump_machine_register(EFL);
 	dump_machine_register(UESP);
 	dump_machine_register(SS);
+#   elif defined __aarch64__
+	dump_machine_register(mctx->regs[0], "x0");
+	dump_machine_register(mctx->regs[1], "x1");
+	dump_machine_register(mctx->regs[2], "x2");
+	dump_machine_register(mctx->regs[3], "x3");
+	dump_machine_register(mctx->regs[4], "x4");
+	dump_machine_register(mctx->regs[5], "x5");
+	dump_machine_register(mctx->regs[6], "x6");
+	dump_machine_register(mctx->regs[7], "x7");
+	dump_machine_register(mctx->regs[8], "x8");
+	dump_machine_register(mctx->regs[9], "x9");
+	dump_machine_register(mctx->regs[10], "x10");
+	dump_machine_register(mctx->regs[11], "x11");
+	dump_machine_register(mctx->regs[12], "x12");
+	dump_machine_register(mctx->regs[13], "x13");
+	dump_machine_register(mctx->regs[14], "x14");
+	dump_machine_register(mctx->regs[15], "x15");
+	dump_machine_register(mctx->regs[16], "x16");
+	dump_machine_register(mctx->sp, "sp");
+	dump_machine_register(mctx->fault_address, "fault_address");
+#   elif defined __arm__
+	dump_machine_register(mctx->arm_r0, "r0");
+	dump_machine_register(mctx->arm_r1, "r1");
+	dump_machine_register(mctx->arm_r2, "r2");
+	dump_machine_register(mctx->arm_r3, "r3");
+	dump_machine_register(mctx->arm_r4, "r4");
+	dump_machine_register(mctx->arm_r5, "r5");
+	dump_machine_register(mctx->arm_r6, "r6");
+	dump_machine_register(mctx->arm_r7, "r7");
+	dump_machine_register(mctx->arm_r8, "r8");
+	dump_machine_register(mctx->arm_r9, "r9");
+	dump_machine_register(mctx->arm_r10, "r10");
+	dump_machine_register(mctx->arm_sp, "sp");
+	dump_machine_register(mctx->fault_address, "fault_address");
 #   endif
     }
 # elif defined __APPLE__
