@@ -891,11 +891,6 @@ invokeblock
 // attr rb_snum_t sp_inc = sp_inc_of_invokeblock(cd->ci);
 // attr rb_snum_t comptime_sp_inc = sp_inc_of_invokeblock(ci);
 {
-    if (UNLIKELY(vm_cc_call(cd->cc) != vm_invokeblock_i)) {
-        const struct rb_callcache *cc = vm_cc_new(0, NULL, vm_invokeblock_i);
-        RB_OBJ_WRITE(GET_ISEQ(), &cd->cc, cc);
-    }
-
     VALUE bh = VM_BLOCK_HANDLER_NONE;
     val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_invokeblock);
 
