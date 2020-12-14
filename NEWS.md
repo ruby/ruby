@@ -58,23 +58,23 @@ sufficient information, see the ChangeLog file or Redmine
     * `=>` is added. It can be used as like rightward assignment.
       [[Feature #17260]]
 
-    ```ruby
-    0 => a
-    p a #=> 0
+        ```ruby
+        0 => a
+        p a #=> 0
 
-    {b: 0, c: 1} => {b:}
-    p b #=> 0
-    ```
+        {b: 0, c: 1} => {b:}
+        p b #=> 0
+        ```
 
     * `in` is changed to return `true` or `false`. [[Feature #17371]]
 
-    ```ruby
-    # version 3.0
-    0 in 1 #=> false
+        ```ruby
+        # version 3.0
+        0 in 1 #=> false
 
-    # version 2.7
-    0 in 1 #=> raise NoMatchingPatternError
-    ```
+        # version 2.7
+        0 in 1 #=> raise NoMatchingPatternError
+        ```
 
 * Find pattern is added.  [EXPERIMENTAL]
   [[Feature #16828]]
