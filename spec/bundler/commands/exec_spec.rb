@@ -938,6 +938,49 @@ __FILE__: #{path.to_s.inspect}
       end
     end
 
+    context "when gemfile and path are configured", :ruby_repo do
+      before do
+        skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
+
+        build_repo2 do
+          build_gem "rails", "6.1.0" do |s|
+            s.executables = "rails"
+          end
+        end
+
+        bundle "config set path vendor/bundle"
+        bundle "config set gemfile gemfiles/rack_6_1.gemfile"
+
+        create_file(bundled_app("gemfiles/rack_6_1.gemfile"), <<~RUBY)
+          source "#{file_uri_for(gem_repo2)}"
+
+          gem "rails", "6.1.0"
+        RUBY
+
+        # A Gemfile needs to be in the root to trick bundler's root resolution
+        create_file(bundled_app("Gemfile"))
+
+        bundle "install"
+      end
+
+      it "can still find gems after a nested subprocess" do
+        script = bundled_app("bin/myscript")
+
+        create_file(script, <<~RUBY)
+          #!#{Gem.ruby}
+
+          puts `bundle exec rails`
+        RUBY
+
+        script.chmod(0o777)
+
+        bundle "exec #{script}"
+
+        expect(err).to be_empty
+        expect(out).to eq("6.1.0")
+      end
+    end
+
     context "with a system gem that shadows a default gem" do
       let(:openssl_version) { "99.9.9" }
       let(:expected) { ruby "gem 'openssl', '< 999999'; require 'openssl'; puts OpenSSL::VERSION", :artifice => nil, :raise_on_error => false }

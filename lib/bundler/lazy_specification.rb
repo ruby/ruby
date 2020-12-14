@@ -82,7 +82,7 @@ module Bundler
         search_object = if source.is_a?(Source::Path)
           Dependency.new(name, version)
         else
-          self
+          ruby_platform_materializes_to_ruby_platform? ? self : Dependency.new(name, version)
         end
         platform_object = Gem::Platform.new(platform)
         candidates = source.specs.search(search_object)
@@ -128,6 +128,20 @@ module Bundler
       return super unless respond_to?(method)
 
       @specification.send(method, *args, &blk)
+    end
+
+    #
+    # Bundler 2.2.0 was the first version that records the full resolution
+    # including platform specific gems in the lockfile, which means that if a
+    # gem with RUBY platform is recorded, the RUBY platform version of the gem
+    # should be installed. Previously bundler would record only generic versions
+    # in the lockfile and then install the most specific platform variant if
+    # available.
+    #
+    def ruby_platform_materializes_to_ruby_platform?
+      locked_bundler_version = Bundler.locked_bundler_version
+
+      locked_bundler_version.nil? || Gem::Version.new(locked_bundler_version) >= Gem::Version.new("2.2.0")
     end
   end
 end

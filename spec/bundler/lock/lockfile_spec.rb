@@ -981,7 +981,7 @@ RSpec.describe "the lockfile format" do
     G
   end
 
-  it "persists the spec's platform and specific platform to the lockfile" do
+  it "persists the spec's specific platform to the lockfile" do
     build_repo2 do
       build_gem "platform_specific", "1.0" do |s|
         s.platform = Gem::Platform.new("universal-java-16")
@@ -999,11 +999,9 @@ RSpec.describe "the lockfile format" do
       GEM
         remote: #{file_uri_for(gem_repo2)}/
         specs:
-          platform_specific (1.0-java)
           platform_specific (1.0-universal-java-16)
 
       PLATFORMS
-        java
         universal-java-16
 
       DEPENDENCIES

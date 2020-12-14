@@ -311,6 +311,8 @@ RSpec.describe "bundle check" do
     end
 
     before do
+      bundle "config set --local path vendor/bundle"
+
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
@@ -336,9 +338,10 @@ RSpec.describe "bundle check" do
 
     context "is older" do
       it "does not change the lock" do
-        lockfile lock_with("1.10.1")
-        bundle :check, :raise_on_error => false
-        lockfile_should_be lock_with("1.10.1")
+        system_gems "bundler-1.18.0"
+        lockfile lock_with("1.18.0")
+        bundle :check
+        lockfile_should_be lock_with("1.18.0")
       end
     end
   end

@@ -75,7 +75,7 @@ module Bundler
       return unless debug?
       debug_info = yield
       debug_info = debug_info.inspect unless debug_info.is_a?(String)
-      warn debug_info.split("\n").map {|s| "BUNDLER: " + "  " * depth + s }
+      puts debug_info.split("\n").map {|s| "BUNDLER: " + "  " * depth + s }
     end
 
     def debug?
@@ -106,18 +106,19 @@ module Bundler
       specification.dependencies_for_activated_platforms
     end
 
-    def search_for(dependency)
-      platform = dependency.__platform
-      dependency = dependency.dep unless dependency.is_a? Gem::Dependency
-      search = @search_for[dependency] ||= begin
+    def search_for(dependency_proxy)
+      platform = dependency_proxy.__platform
+      dependency = dependency_proxy.dep
+      @search_for[dependency_proxy] ||= begin
+        name = dependency.name
         index = index_for(dependency)
-        results = index.search(dependency, @base[dependency.name])
+        results = index.search(dependency, @base[name])
 
-        if vertex = @base_dg.vertex_named(dependency.name)
+        if vertex = @base_dg.vertex_named(name)
           locked_requirement = vertex.payload.requirement
         end
 
-        if !@prerelease_specified[dependency.name] && (!@use_gvp || locked_requirement.nil?)
+        if !@prerelease_specified[name] && (!@use_gvp || locked_requirement.nil?)
           # Move prereleases to the beginning of the list, so they're considered
           # last during resolution.
           pre, results = results.partition {|spec| spec.version.prerelease? }
@@ -145,31 +146,25 @@ module Bundler
         end
         # GVP handles major itself, but it's still a bit risky to trust it with it
         # until we get it settled with new behavior. For 2.x it can take over all cases.
-        if !@use_gvp
+        search = if !@use_gvp
           spec_groups
         else
           @gem_version_promoter.sort_versions(dependency, spec_groups)
         end
-      end
-      selected_sgs = []
-      search.each do |sg|
-        next unless sg.for?(platform)
-        # Add a spec group for "non platform specific spec" as the fallback
-        # spec group.
-        sg_ruby = sg.copy_for(Gem::Platform::RUBY)
-        selected_sgs << sg_ruby if sg_ruby
-        sg_all_platforms = nil
-        all_platforms = @platforms + [platform]
-        self.class.sort_platforms(all_platforms).reverse_each do |other_platform|
-          if sg_all_platforms.nil?
-            sg_all_platforms = sg.copy_for(other_platform)
-          else
-            sg_all_platforms.activate_platform!(other_platform)
-          end
+        selected_sgs = []
+        search.each do |sg|
+          next unless sg.for?(platform)
+          sg_all_platforms = sg.copy_for(self.class.sort_platforms(@platforms).reverse)
+          selected_sgs << sg_all_platforms
+
+          next if sg_all_platforms.activated_platforms == [Gem::Platform::RUBY]
+          # Add a spec group for "non platform specific spec" as the fallback
+          # spec group.
+          sg_ruby = sg.copy_for([Gem::Platform::RUBY])
+          selected_sgs.insert(-2, sg_ruby) if sg_ruby
         end
-        selected_sgs << sg_all_platforms
+        selected_sgs
       end
-      selected_sgs
     end
 
     def index_for(dependency)
