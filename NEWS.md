@@ -109,8 +109,8 @@ sufficient information, see the ChangeLog file or Redmine
   `# frozen-string-literal: true` is used. [[Feature #17104]]
 
 * A static analysis foundation is introduced.  See "Static analysis" section in detail.
-  * RBS is introduced. It is a type definition language for Ruby programs.
-  * TypeProf is experimentally bundled. It is a type analysis tool for Ruby programs.
+    * RBS is introduced. It is a type definition language for Ruby programs.
+    * TypeProf is experimentally bundled. It is a type analysis tool for Ruby programs.
 
 ## Command line options
 
@@ -426,7 +426,7 @@ Excluding feature bug fixes.
 
 * Integer#zero? overrides Numeric#zero? for optimization.  [[Misc #16961]]
 
-* Requiring 'open-uri' no longer redefines `Kernel#open`. 
+* Requiring 'open-uri' no longer redefines `Kernel#open`.
   Call `URI.open` directly or `use URI#open` instead. [[Misc #15893]]
 
 ## Stdlib compatibility issues
@@ -494,26 +494,26 @@ Excluding feature bug fixes.
 
 * Memory view interface [EXPERIMENTAL]
 
-  * The memory view interface is a C-API set to exchange a raw memory area,
-    such as a numeric array and a bitmap image, between extension libraries.
-    The extension libraries can share also the metadata of the memory area
-    that consists of the shape, the element format, and so on.
-    Using these kinds of metadata, the extension libraries can share even
-    a multidimensional array appropriately.
-    This feature is designed by referring to Python's buffer protocol.
-    [[Feature #13767]] [[Feature #14722]]
+    * The memory view interface is a C-API set to exchange a raw memory area,
+      such as a numeric array and a bitmap image, between extension libraries.
+      The extension libraries can share also the metadata of the memory area
+      that consists of the shape, the element format, and so on.
+      Using these kinds of metadata, the extension libraries can share even
+      a multidimensional array appropriately.
+      This feature is designed by referring to Python's buffer protocol.
+      [[Feature #13767]] [[Feature #14722]]
 
 ## Implementation improvements
 
 * New method cache mechanism for Ractor [[Feature #16614]]
 
-  * Inline method caches pointed from ISeq can be accessed by multiple Ractors
-    in parallel and synchronization is needed even for method caches. However,
-    such synchronization can be overhead so introducing new inline method cache
-    mechanisms, (1) Disposable inline method cache (2) per-Class method cache
-    and (3) new invalidation mechanism. (1) can avoid per-method call
-    synchronization because it only uses atomic operations.
-    See the ticket for more details.
+    * Inline method caches pointed from ISeq can be accessed by multiple Ractors
+      in parallel and synchronization is needed even for method caches. However,
+      such synchronization can be overhead so introducing new inline method cache
+      mechanisms, (1) Disposable inline method cache (2) per-Class method cache
+      and (3) new invalidation mechanism. (1) can avoid per-method call
+      synchronization because it only uses atomic operations.
+      See the ticket for more details.
 
 * The number of hashes allocated when using a keyword splat in
   a method call has been reduced to a maximum of 1, and passing
@@ -531,7 +531,7 @@ Excluding feature bug fixes.
 
 * Not only pure Ruby methods but also some C methods skip pushing a method frame.
 
-  * `Kernel#class`, `Integer#zero?`
+    * `Kernel#class`, `Integer#zero?`
 
 * Always generate appropriate code for `==`, `nil?`, and `!` calls depending on
   a receiver class.
@@ -558,10 +558,10 @@ Excluding feature bug fixes.
 ### TypeProf
 
 * TypeProf is a type analysis tool for Ruby code based on abstract interpretation.
-  * It reads non-annotated Ruby code, tries inferring its type signature, and prints
-    the analysis result in RBS format.
-  * Though it supports only a subset of the Ruby language yet, we will continuously
-    improve the coverage of language features, the analysis performance, and usability.
+    * It reads non-annotated Ruby code, tries inferring its type signature, and prints
+      the analysis result in RBS format.
+    * Though it supports only a subset of the Ruby language yet, we will continuously
+      improve the coverage of language features, the analysis performance, and usability.
 
 ```ruby
 # test.rb
