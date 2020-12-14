@@ -108,9 +108,12 @@ sufficient information, see the ChangeLog file or Redmine
 * Interpolated String literals are no longer frozen when
   `# frozen-string-literal: true` is used. [[Feature #17104]]
 
-* A static analysis foundation is introduced.  See "Static analysis" section in detail.
-    * RBS is introduced. It is a type definition language for Ruby programs.
-    * TypeProf is experimentally bundled. It is a type analysis tool for Ruby programs.
+* A {static analysis}[rdoc-label:label-Static+analysis] foundation is
+  introduced.
+    * {RBS}[rdoc-label:label-RBS] is introduced. It is a type definition
+      language for Ruby programs.
+    * {TypeProf}[rdoc-label:label-TypeProf] is experimentally bundled. It is a
+      type analysis tool for Ruby programs.
 
 ## Command line options
 
