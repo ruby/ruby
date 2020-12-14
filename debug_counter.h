@@ -18,6 +18,11 @@
 RB_DEBUG_COUNTER(mc_inline_hit)              // IMC hit
 RB_DEBUG_COUNTER(mc_inline_miss_klass)       // IMC miss by different class
 RB_DEBUG_COUNTER(mc_inline_miss_invalidated) // IMC miss by invalidated ME
+RB_DEBUG_COUNTER(mc_inline_miss_empty)       // IMC miss because prev is empty slot
+RB_DEBUG_COUNTER(mc_inline_miss_same_cc)     // IMC miss, but same CC
+RB_DEBUG_COUNTER(mc_inline_miss_same_cme)    // IMC miss, but same CME
+RB_DEBUG_COUNTER(mc_inline_miss_diff)        // IMC miss, different methods
+
 RB_DEBUG_COUNTER(mc_cme_complement)          // number of acquiring complement CME
 RB_DEBUG_COUNTER(mc_cme_complement_hit)      // number of cache hit for complemented CME
 

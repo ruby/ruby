@@ -1684,7 +1684,26 @@ rb_vm_search_method_slowpath(VALUE cd_owner, struct rb_call_data *cd, VALUE klas
 {
     RB_VM_LOCK_ENTER();
     {
+#if USE_DEBUG_COUNTER
+        const struct rb_callcache *old_cc = cd->cc;
+#endif
         const struct rb_callcache *cc = vm_search_cc(klass, cd->ci);
+
+#if USE_DEBUG_COUNTER
+        if (old_cc == &vm_empty_cc) {
+            // empty
+            RB_DEBUG_COUNTER_INC(mc_inline_miss_empty);
+        }
+        else if (old_cc == cd->cc) {
+            RB_DEBUG_COUNTER_INC(mc_inline_miss_same_cc);
+        }
+        else if (vm_cc_cme(old_cc) == vm_cc_cme(cc)) {
+            RB_DEBUG_COUNTER_INC(mc_inline_miss_same_cme);
+        }
+        else {
+            RB_DEBUG_COUNTER_INC(mc_inline_miss_diff);
+        }
+#endif
 
         VM_ASSERT(cc);
         VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
