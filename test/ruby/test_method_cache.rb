@@ -27,7 +27,7 @@ class TestMethodCache < Test::Unit::TestCase
       undef foo
     end
 
-    c1 = Class.new(c0)
+    _c1 = Class.new(c0)
 
     assert_raise(NoMethodError) do
       c0.new.foo
@@ -45,7 +45,7 @@ class TestMethodCache < Test::Unit::TestCase
     c1 = Class.new(c0){ undef foo }
     c2 = Class.new(c1)
     c3 = Class.new(c2)
-    c4 = Class.new(c3)
+    _c4 = Class.new(c3)
 
     assert_raise(NoMethodError) do
       c3.new.foo
