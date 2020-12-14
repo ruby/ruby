@@ -880,15 +880,18 @@ rb_dump_machine_register(const ucontext_t *ctx)
 	dump_machine_register(mctx->regs[5], "x5");
 	dump_machine_register(mctx->regs[6], "x6");
 	dump_machine_register(mctx->regs[7], "x7");
-	dump_machine_register(mctx->regs[8], "x8");
-	dump_machine_register(mctx->regs[9], "x9");
-	dump_machine_register(mctx->regs[10], "x10");
-	dump_machine_register(mctx->regs[11], "x11");
-	dump_machine_register(mctx->regs[12], "x12");
-	dump_machine_register(mctx->regs[13], "x13");
-	dump_machine_register(mctx->regs[14], "x14");
-	dump_machine_register(mctx->regs[15], "x15");
-	dump_machine_register(mctx->regs[16], "x16");
+	dump_machine_register(mctx->regs[18], "x18");
+	dump_machine_register(mctx->regs[19], "x19");
+	dump_machine_register(mctx->regs[20], "x20");
+	dump_machine_register(mctx->regs[21], "x21");
+	dump_machine_register(mctx->regs[22], "x22");
+	dump_machine_register(mctx->regs[23], "x23");
+	dump_machine_register(mctx->regs[24], "x24");
+	dump_machine_register(mctx->regs[25], "x25");
+	dump_machine_register(mctx->regs[26], "x26");
+	dump_machine_register(mctx->regs[27], "x27");
+	dump_machine_register(mctx->regs[28], "x28");
+	dump_machine_register(mctx->regs[29], "x29");
 	dump_machine_register(mctx->sp, "sp");
 	dump_machine_register(mctx->fault_address, "fault_address");
 #   elif defined __arm__
