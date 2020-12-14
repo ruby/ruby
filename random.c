@@ -283,8 +283,11 @@ get_rnd(VALUE obj)
 {
     rb_random_t *ptr;
     TypedData_Get_Struct(obj, rb_random_t, &rb_random_data_type, ptr);
-    if (RTYPEDDATA_TYPE(obj) == &random_mt_type)
-        return rand_start((rb_random_mt_t *)ptr);
+    if (RTYPEDDATA_TYPE(obj) == &random_mt_type) {
+        rb_random_mt_t *rnd = (rb_random_mt_t *)ptr;
+        if (!rnd) rnd = default_rand();
+        return rand_start(rnd);
+    }
     return ptr;
 }
 
@@ -293,6 +296,7 @@ get_rnd_mt(VALUE obj)
 {
     rb_random_mt_t *ptr;
     TypedData_Get_Struct(obj, rb_random_mt_t, &random_mt_type, ptr);
+    if (!ptr) rand_start(ptr = default_rand());
     return ptr;
 }
 
@@ -303,8 +307,11 @@ try_get_rnd(VALUE obj)
 	return rand_start(default_rand());
     }
     if (!rb_typeddata_is_kind_of(obj, &rb_random_data_type)) return NULL;
-    if (RTYPEDDATA_TYPE(obj) == &random_mt_type)
-        return rand_start(DATA_PTR(obj));
+    if (RTYPEDDATA_TYPE(obj) == &random_mt_type) {
+        rb_random_mt_t *r = DATA_PTR(obj);
+        if (!r) r = default_rand();
+        return rand_start(r);
+    }
     rb_random_t *rnd = DATA_PTR(obj);
     if (!rnd) {
         rb_raise(rb_eArgError, "uninitialized random: %s",
@@ -757,7 +764,7 @@ random_s_left(VALUE klass)
 static VALUE
 rand_mt_dump(VALUE obj)
 {
-    rb_random_mt_t *rnd = rb_check_typeddata(obj, &random_mt_type);
+    rb_random_mt_t *rnd = get_rnd_mt(obj);
     VALUE dump = rb_ary_new2(3);
 
     rb_ary_push(dump, mt_state(&rnd->mt));
@@ -778,6 +785,7 @@ rand_mt_load(VALUE obj, VALUE dump)
 
     rb_check_copyable(obj, dump);
     Check_Type(dump, T_ARRAY);
+    if (!rnd) rb_raise(rb_eArgError, "can't load into Random::DEFAULT");
     switch (RARRAY_LEN(dump)) {
       case 3:
         seed = RARRAY_AREF(dump, 2);
@@ -1717,7 +1725,7 @@ InitVM_Random(void)
     rb_define_private_method(rb_cRandom, "left", rand_mt_left, 0);
     rb_define_method(rb_cRandom, "==", rand_mt_equal, 1);
 
-    rb_define_const(rb_cRandom, "DEFAULT", rb_cRandom);
+    rb_define_const(rb_cRandom, "DEFAULT", TypedData_Wrap_Struct(rb_cRandom, &random_mt_type, NULL));
 
     rb_define_singleton_method(rb_cRandom, "srand", rb_f_srand, -1);
     rb_define_singleton_method(rb_cRandom, "rand", random_s_rand, -1);
