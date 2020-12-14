@@ -198,6 +198,8 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
             if (rb_id_table_lookup(vm->negative_cme_table, mid, (VALUE *)&cme)) {
                 rb_id_table_delete(vm->negative_cme_table, mid);
                 vm_me_invalidate_cache((rb_callable_method_entry_t *)cme);
+
+                RB_DEBUG_COUNTER_INC(cc_invalidate_negative);
             }
         }
     }

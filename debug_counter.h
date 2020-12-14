@@ -45,6 +45,7 @@ RB_DEBUG_COUNTER(cc_invalidate_leaf_callable) //                        complime
 RB_DEBUG_COUNTER(cc_invalidate_tree)          // count for invalidating klass if klass has sublcasses
 RB_DEBUG_COUNTER(cc_invalidate_tree_cme)      //                        cme if cme is found in this class or superclasses
 RB_DEBUG_COUNTER(cc_invalidate_tree_callable) //                        complimented cache (subclasses)
+RB_DEBUG_COUNTER(cc_invalidate_negative)      // count for invalidating negative cache
 
 RB_DEBUG_COUNTER(ccs_free)   // count for free'ing ccs
 RB_DEBUG_COUNTER(ccs_maxlen) // maximum length of ccs
