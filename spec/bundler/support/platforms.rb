@@ -94,7 +94,7 @@ module Spec
     end
 
     def local_platforms
-      [local, specific_local_platform].uniq
+      [specific_local_platform]
     end
   end
 end

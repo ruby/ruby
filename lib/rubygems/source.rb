@@ -148,6 +148,7 @@ class Gem::Source
     spec = Gem::Util.inflate spec
 
     if update_cache?
+      require "fileutils"
       FileUtils.mkdir_p cache_dir
 
       File.open local_spec, 'wb' do |io|

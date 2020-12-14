@@ -56,6 +56,7 @@ class BundlerVCRHTTP < Net::HTTP
       response = http.request_without_vcr(request, body, &response_block)
       @recording = false
       unless @recording
+        require "fileutils"
         FileUtils.mkdir_p(File.dirname(request_path))
         binwrite(request_path, request_to_string(request))
         binwrite(response_path, response_to_string(response))

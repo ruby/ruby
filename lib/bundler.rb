@@ -212,6 +212,15 @@ module Bundler
         end
     end
 
+    def locked_bundler_version
+      return nil unless defined?(@definition) && @definition
+
+      locked_gems = definition.locked_gems
+      return nil unless locked_gems
+
+      locked_gems.bundler_version
+    end
+
     def ruby_scope
       "#{Bundler.rubygems.ruby_engine}/#{RbConfig::CONFIG["ruby_version"]}"
     end
@@ -602,8 +611,9 @@ EOF
       reset_rubygems!
     end
 
-    def reset_settings!
+    def reset_settings_and_root!
       @settings = nil
+      @root = nil
     end
 
     def reset_paths!

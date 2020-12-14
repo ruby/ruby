@@ -9,36 +9,67 @@ RSpec.describe "bundle install with specific platforms" do
   context "when on a darwin machine" do
     before { simulate_platform "x86_64-darwin-15" }
 
-    it "locks to both the specific darwin platform and ruby" do
+    it "locks to the specific darwin platform" do
       setup_multiplatform_gem
       install_gemfile(google_protobuf)
       allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
-      expect(the_bundle.locked_gems.platforms).to eq([pl("ruby"), pl("x86_64-darwin-15")])
+      expect(the_bundle.locked_gems.platforms).to eq([pl("x86_64-darwin-15")])
       expect(the_bundle).to include_gem("google-protobuf 3.0.0.alpha.5.0.5.1 universal-darwin")
       expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[
-        google-protobuf-3.0.0.alpha.5.0.5.1
         google-protobuf-3.0.0.alpha.5.0.5.1-universal-darwin
       ])
     end
 
-    it "caches both the universal-darwin and ruby gems when --all-platforms is passed and properly picks them up on further bundler invocations" do
+    it "understands that a non-plaform specific gem in a old lockfile doesn't necessarily mean installing the non-specific variant" do
+      setup_multiplatform_gem
+
+      system_gems "bundler-2.1.4"
+
+      # Consistent location to install and look for gems
+      bundle "config set --local path vendor/bundle", :env => { "BUNDLER_VERSION" => "2.1.4" }
+
+      install_gemfile(google_protobuf, :env => { "BUNDLER_VERSION" => "2.1.4" })
+
+      # simulate lockfile created with old bundler, which only locks for ruby platform
+      lockfile <<-L
+        GEM
+          remote: #{file_uri_for(gem_repo2)}/
+          specs:
+            google-protobuf (3.0.0.alpha.5.0.5.1)
+
+        PLATFORMS
+          ruby
+
+        DEPENDENCIES
+          google-protobuf
+
+        BUNDLED WITH
+           2.1.4
+      L
+
+      # force strict usage of the lock file by setting frozen mode
+      bundle "config set --local frozen true", :env => { "BUNDLER_VERSION" => "2.1.4" }
+
+      # make sure the platform that got actually installed with the old bundler is used
+      expect(the_bundle).to include_gem("google-protobuf 3.0.0.alpha.5.0.5.1 universal-darwin")
+    end
+
+    it "caches the universal-darwin gem when --all-platforms is passed and properly picks it up on further bundler invocations" do
       setup_multiplatform_gem
       gemfile(google_protobuf)
       bundle "cache --all-platforms"
-      expect([cached_gem("google-protobuf-3.0.0.alpha.5.0.5.1"), cached_gem("google-protobuf-3.0.0.alpha.5.0.5.1-universal-darwin")]).
-        to all(exist)
+      expect(cached_gem("google-protobuf-3.0.0.alpha.5.0.5.1-universal-darwin")).to exist
 
       bundle "install --verbose"
       expect(err).to be_empty
     end
 
-    it "caches both the universal-darwin and ruby gems when cache_all_platforms is configured and properly picks them up on further bundler invocations" do
+    it "caches the universal-darwin gem when cache_all_platforms is configured and properly picks it up on further bundler invocations" do
       setup_multiplatform_gem
       gemfile(google_protobuf)
       bundle "config set --local cache_all_platforms true"
       bundle "cache"
-      expect([cached_gem("google-protobuf-3.0.0.alpha.5.0.5.1"), cached_gem("google-protobuf-3.0.0.alpha.5.0.5.1-universal-darwin")]).
-        to all(exist)
+      expect(cached_gem("google-protobuf-3.0.0.alpha.5.0.5.1-universal-darwin")).to exist
 
       bundle "install --verbose"
       expect(err).to be_empty
@@ -87,10 +118,9 @@ RSpec.describe "bundle install with specific platforms" do
       G
       allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
 
-      expect(the_bundle.locked_gems.platforms).to eq([pl("ruby"), pl("x86_64-darwin-15")])
+      expect(the_bundle.locked_gems.platforms).to eq([pl("x86_64-darwin-15")])
       expect(the_bundle).to include_gems("facter 2.4.6 universal-darwin", "CFPropertyList 1.0")
       expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(["CFPropertyList-1.0",
-                                                                   "facter-2.4.6",
                                                                    "facter-2.4.6-universal-darwin"])
     end
 
@@ -104,9 +134,8 @@ RSpec.describe "bundle install with specific platforms" do
         install_gemfile(google_protobuf)
         bundle "lock --add-platform=#{x64_mingw}"
 
-        expect(the_bundle.locked_gems.platforms).to eq([rb, x64_mingw, pl("x86_64-darwin-15")])
+        expect(the_bundle.locked_gems.platforms).to eq([x64_mingw, pl("x86_64-darwin-15")])
         expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[
-          google-protobuf-3.0.0.alpha.5.0.5.1
           google-protobuf-3.0.0.alpha.5.0.5.1-universal-darwin
           google-protobuf-3.0.0.alpha.5.0.5.1-x64-mingw32
         ])
@@ -117,7 +146,7 @@ RSpec.describe "bundle install with specific platforms" do
         install_gemfile(google_protobuf)
         bundle "lock --add-platform=#{java}"
 
-        expect(the_bundle.locked_gems.platforms).to eq([java, rb, pl("x86_64-darwin-15")])
+        expect(the_bundle.locked_gems.platforms).to eq([java, pl("x86_64-darwin-15")])
         expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[
           google-protobuf-3.0.0.alpha.5.0.5.1
           google-protobuf-3.0.0.alpha.5.0.5.1-universal-darwin

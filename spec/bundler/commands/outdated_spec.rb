@@ -429,6 +429,17 @@ RSpec.describe "bundle outdated" do
       expect(out).to end_with(expected_output)
     end
 
+    it "doesn't crash when some deps unused on the current platform" do
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo2)}"
+        gem "activesupport", platforms: [:ruby_22]
+      G
+
+      bundle :outdated, filter_strict_option => true
+
+      expect(out).to end_with("Bundle up to date!")
+    end
+
     it "only reports gem dependencies when they can actually be updated" do
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
