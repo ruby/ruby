@@ -54,7 +54,8 @@ RB_DEBUG_COUNTER(cc_invalidate_negative)      // count for invalidating negative
 
 RB_DEBUG_COUNTER(ccs_free)   // count for free'ing ccs
 RB_DEBUG_COUNTER(ccs_maxlen) // maximum length of ccs
-RB_DEBUG_COUNTER(ccs_found)  // count for finding corresponding ccs on method lookup
+RB_DEBUG_COUNTER(ccs_found)      // count for finding corresponding ccs on method lookup
+RB_DEBUG_COUNTER(ccs_not_found)  // count for not found corresponding ccs on method lookup
 
 // iseq
 RB_DEBUG_COUNTER(iseq_num)    // number of total created iseq

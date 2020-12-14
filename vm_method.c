@@ -1072,6 +1072,8 @@ cached_callable_method_entry(VALUE klass, ID mid)
             rb_id_table_delete(cc_tbl, mid);
         }
     }
+
+    RB_DEBUG_COUNTER_INC(ccs_not_found);
     return NULL;
 }
 
