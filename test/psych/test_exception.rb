@@ -118,6 +118,18 @@ module Psych
       }
     end
 
+    def test_safe_load_file_exception
+      Tempfile.create(['loadfile', 'yml']) {|t|
+        t.binmode
+        t.write '--- `'
+        t.close
+        ex = assert_raises(Psych::SyntaxError) do
+          Psych.safe_load_file t.path
+        end
+        assert_equal t.path, ex.file
+      }
+    end
+
     def test_psych_parse_takes_file
       ex = assert_raises(Psych::SyntaxError) do
         Psych.parse '--- `'
