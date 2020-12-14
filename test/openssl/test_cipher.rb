@@ -147,13 +147,13 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
 
   def test_AES
     pt = File.read(__FILE__)
-    %w(ECB CBC CFB OFB).each{|mode|
-      c1 = OpenSSL::Cipher.new("AES-256-#{mode}")
+    %w(ecb cbc cfb ofb).each{|mode|
+      c1 = OpenSSL::Cipher.new("aes-256-#{mode}")
       c1.encrypt
       c1.pkcs5_keyivgen("passwd")
       ct = c1.update(pt) + c1.final
 
-      c2 = OpenSSL::Cipher.new("AES-256-#{mode}")
+      c2 = OpenSSL::Cipher.new("aes-256-#{mode}")
       c2.decrypt
       c2.pkcs5_keyivgen("passwd")
       assert_equal(pt, c2.update(ct) + c2.final)
@@ -163,7 +163,7 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
   def test_update_raise_if_key_not_set
     assert_raise(OpenSSL::Cipher::CipherError) do
       # it caused OpenSSL SEGV by uninitialized key [Bug #2768]
-      OpenSSL::Cipher.new("AES-128-ECB").update "." * 17
+      OpenSSL::Cipher.new("aes-128-ecb").update "." * 17
     end
   end
 
@@ -173,6 +173,48 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
     cipher = OpenSSL::Cipher.new('aes-128-cbc')
     assert_not_predicate(cipher, :authenticated?)
   end
+
+  def test_aes_ccm
+    # RFC 3610 Section 8, Test Case 1
+    key = ["c0c1c2c3c4c5c6c7c8c9cacbcccdcecf"].pack("H*")
+    iv =  ["00000003020100a0a1a2a3a4a5"].pack("H*")
+    aad = ["0001020304050607"].pack("H*")
+    pt =  ["08090a0b0c0d0e0f101112131415161718191a1b1c1d1e"].pack("H*")
+    ct =  ["588c979a61c663d2f066d0c2c0f989806d5f6b61dac384"].pack("H*")
+    tag = ["17e8d12cfdf926e0"].pack("H*")
+
+    kwargs = {auth_tag_len: 8, iv_len: 13, key: key, iv: iv}
+    cipher = new_encryptor("aes-128-ccm", **kwargs, ccm_data_len: pt.length, auth_data: aad)
+    assert_equal ct, cipher.update(pt) << cipher.final
+    assert_equal tag, cipher.auth_tag
+    cipher = new_decryptor("aes-128-ccm", **kwargs, ccm_data_len: ct.length, auth_tag: tag, auth_data: aad)
+    assert_equal pt, cipher.update(ct) << cipher.final
+
+    # truncated tag is accepted
+    cipher = new_encryptor("aes-128-ccm", **kwargs, ccm_data_len: pt.length, auth_data: aad)
+    assert_equal ct, cipher.update(pt) << cipher.final
+    assert_equal tag[0, 8], cipher.auth_tag(8)
+    cipher = new_decryptor("aes-128-ccm", **kwargs, ccm_data_len: ct.length, auth_tag: tag[0, 8], auth_data: aad)
+    assert_equal pt, cipher.update(ct) << cipher.final
+
+    # wrong tag is rejected
+    tag2 = tag.dup
+    tag2.setbyte(-1, (tag2.getbyte(-1) + 1) & 0xff)
+    cipher = new_decryptor("aes-128-ccm", **kwargs, ccm_data_len: ct.length, auth_tag: tag2, auth_data: aad)
+    assert_raise(OpenSSL::Cipher::CipherError) { cipher.update(ct) }
+
+    # wrong aad is rejected
+    aad2 = aad[0..-2] << aad[-1].succ
+    cipher = new_decryptor("aes-128-ccm", **kwargs, ccm_data_len: ct.length, auth_tag: tag, auth_data: aad2)
+    assert_raise(OpenSSL::Cipher::CipherError) { cipher.update(ct) }
+
+    # wrong ciphertext is rejected
+    ct2 = ct[0..-2] << ct[-1].succ
+    cipher = new_decryptor("aes-128-ccm", **kwargs, ccm_data_len: ct2.length, auth_tag: tag, auth_data: aad)
+    assert_raise(OpenSSL::Cipher::CipherError) { cipher.update(ct2) }
+  end if has_cipher?("aes-128-ccm") &&
+         OpenSSL::Cipher.new("aes-128-ccm").authenticated? &&
+         OpenSSL::OPENSSL_VERSION_NUMBER >= 0x10101000  # version >= v1.1.1
 
   def test_aes_gcm
     # GCM spec Appendix B Test Case 4

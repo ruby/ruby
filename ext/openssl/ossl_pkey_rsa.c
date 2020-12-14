@@ -45,53 +45,6 @@ VALUE cRSA;
 VALUE eRSAError;
 
 /*
- * Public
- */
-static VALUE
-rsa_instance(VALUE klass, RSA *rsa)
-{
-    EVP_PKEY *pkey;
-    VALUE obj;
-
-    if (!rsa) {
-	return Qfalse;
-    }
-    obj = NewPKey(klass);
-    if (!(pkey = EVP_PKEY_new())) {
-	return Qfalse;
-    }
-    if (!EVP_PKEY_assign_RSA(pkey, rsa)) {
-	EVP_PKEY_free(pkey);
-	return Qfalse;
-    }
-    SetPKey(obj, pkey);
-
-    return obj;
-}
-
-VALUE
-ossl_rsa_new(EVP_PKEY *pkey)
-{
-    VALUE obj;
-
-    if (!pkey) {
-	obj = rsa_instance(cRSA, RSA_new());
-    }
-    else {
-	obj = NewPKey(cRSA);
-	if (EVP_PKEY_base_id(pkey) != EVP_PKEY_RSA) {
-	    ossl_raise(rb_eTypeError, "Not a RSA key!");
-	}
-	SetPKey(obj, pkey);
-    }
-    if (obj == Qfalse) {
-	ossl_raise(eRSAError, NULL);
-    }
-
-    return obj;
-}
-
-/*
  * Private
  */
 struct rsa_blocking_gen_arg {
@@ -124,7 +77,7 @@ rsa_generate(int size, unsigned long exp)
 	RSA_free(rsa);
 	BN_free(e);
 	BN_GENCB_free(cb);
-	return NULL;
+        ossl_raise(eRSAError, "malloc failure");
     }
     for (i = 0; i < (int)sizeof(exp) * 8; ++i) {
 	if (exp & (1UL << i)) {
@@ -132,7 +85,7 @@ rsa_generate(int size, unsigned long exp)
 		BN_free(e);
 		RSA_free(rsa);
 		BN_GENCB_free(cb);
-		return NULL;
+                ossl_raise(eRSAError, "BN_set_bit");
 	    }
 	}
     }
@@ -161,7 +114,7 @@ rsa_generate(int size, unsigned long exp)
 	    ossl_clear_error();
 	    rb_jump_tag(cb_arg.state);
 	}
-	return NULL;
+        ossl_raise(eRSAError, "RSA_generate_key_ex");
     }
 
     return rsa;
@@ -180,26 +133,26 @@ static VALUE
 ossl_rsa_s_generate(int argc, VALUE *argv, VALUE klass)
 {
 /* why does this method exist?  why can't initialize take an optional exponent? */
+    EVP_PKEY *pkey;
     RSA *rsa;
     VALUE size, exp;
     VALUE obj;
 
     rb_scan_args(argc, argv, "11", &size, &exp);
+    obj = rb_obj_alloc(klass);
+    GetPKey(obj, pkey);
 
-    rsa = rsa_generate(NUM2INT(size), NIL_P(exp) ? RSA_F4 : NUM2ULONG(exp)); /* err handled by rsa_instance */
-    obj = rsa_instance(klass, rsa);
-
-    if (obj == Qfalse) {
-	RSA_free(rsa);
-	ossl_raise(eRSAError, NULL);
+    rsa = rsa_generate(NUM2INT(size), NIL_P(exp) ? RSA_F4 : NUM2ULONG(exp));
+    if (!EVP_PKEY_assign_RSA(pkey, rsa)) {
+        RSA_free(rsa);
+        ossl_raise(eRSAError, "EVP_PKEY_assign_RSA");
     }
-
     return obj;
 }
 
 /*
  * call-seq:
- *   RSA.new(key_size)                 => RSA instance
+ *   RSA.new(size [, exponent])        => RSA instance
  *   RSA.new(encoded_key)              => RSA instance
  *   RSA.new(encoded_key, pass_phrase) => RSA instance
  *
@@ -220,36 +173,34 @@ ossl_rsa_s_generate(int argc, VALUE *argv, VALUE klass)
 static VALUE
 ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
 {
-    EVP_PKEY *pkey;
-    RSA *rsa;
+    EVP_PKEY *pkey, *tmp;
+    RSA *rsa = NULL;
     BIO *in;
     VALUE arg, pass;
 
     GetPKey(self, pkey);
-    if(rb_scan_args(argc, argv, "02", &arg, &pass) == 0) {
+    rb_scan_args(argc, argv, "02", &arg, &pass);
+    if (argc == 0) {
 	rsa = RSA_new();
+        if (!rsa)
+            ossl_raise(eRSAError, "RSA_new");
     }
     else if (RB_INTEGER_TYPE_P(arg)) {
 	rsa = rsa_generate(NUM2INT(arg), NIL_P(pass) ? RSA_F4 : NUM2ULONG(pass));
-	if (!rsa) ossl_raise(eRSAError, NULL);
     }
     else {
 	pass = ossl_pem_passwd_value(pass);
 	arg = ossl_to_der_if_possible(arg);
 	in = ossl_obj2bio(&arg);
-	rsa = PEM_read_bio_RSAPrivateKey(in, NULL, ossl_pem_passwd_cb, (void *)pass);
-	if (!rsa) {
-	    OSSL_BIO_reset(in);
-	    rsa = PEM_read_bio_RSA_PUBKEY(in, NULL, NULL, NULL);
-	}
-	if (!rsa) {
-	    OSSL_BIO_reset(in);
-	    rsa = d2i_RSAPrivateKey_bio(in, NULL);
-	}
-	if (!rsa) {
-	    OSSL_BIO_reset(in);
-	    rsa = d2i_RSA_PUBKEY_bio(in, NULL);
-	}
+
+        tmp = ossl_pkey_read_generic(in, pass);
+        if (tmp) {
+            if (EVP_PKEY_base_id(tmp) != EVP_PKEY_RSA)
+                rb_raise(eRSAError, "incorrect pkey type: %s",
+                         OBJ_nid2sn(EVP_PKEY_base_id(tmp)));
+            rsa = EVP_PKEY_get1_RSA(tmp);
+            EVP_PKEY_free(tmp);
+        }
 	if (!rsa) {
 	    OSSL_BIO_reset(in);
 	    rsa = PEM_read_bio_RSAPublicKey(in, NULL, NULL, NULL);
@@ -260,12 +211,13 @@ ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
 	}
 	BIO_free(in);
 	if (!rsa) {
+            ossl_clear_error();
 	    ossl_raise(eRSAError, "Neither PUB key nor PRIV key");
 	}
     }
     if (!EVP_PKEY_assign_RSA(pkey, rsa)) {
 	RSA_free(rsa);
-	ossl_raise(eRSAError, NULL);
+	ossl_raise(eRSAError, "EVP_PKEY_assign_RSA");
     }
 
     return self;
@@ -327,6 +279,21 @@ ossl_rsa_is_private(VALUE self)
     return RSA_PRIVATE(self, rsa) ? Qtrue : Qfalse;
 }
 
+static int
+can_export_rsaprivatekey(VALUE self)
+{
+    RSA *rsa;
+    const BIGNUM *n, *e, *d, *p, *q, *dmp1, *dmq1, *iqmp;
+
+    GetRSA(self, rsa);
+
+    RSA_get0_key(rsa, &n, &e, &d);
+    RSA_get0_factors(rsa, &p, &q);
+    RSA_get0_crt_params(rsa, &dmp1, &dmq1, &iqmp);
+
+    return n && e && d && p && q && dmp1 && dmq1 && iqmp;
+}
+
 /*
  * call-seq:
  *   rsa.export([cipher, pass_phrase]) => PEM-format String
@@ -340,41 +307,10 @@ ossl_rsa_is_private(VALUE self)
 static VALUE
 ossl_rsa_export(int argc, VALUE *argv, VALUE self)
 {
-    RSA *rsa;
-    const BIGNUM *n, *e, *d, *p, *q, *dmp1, *dmq1, *iqmp;
-    BIO *out;
-    const EVP_CIPHER *ciph = NULL;
-    VALUE cipher, pass, str;
-
-    GetRSA(self, rsa);
-
-    rb_scan_args(argc, argv, "02", &cipher, &pass);
-
-    if (!NIL_P(cipher)) {
-	ciph = ossl_evp_get_cipherbyname(cipher);
-	pass = ossl_pem_passwd_value(pass);
-    }
-    if (!(out = BIO_new(BIO_s_mem()))) {
-	ossl_raise(eRSAError, NULL);
-    }
-    RSA_get0_key(rsa, &n, &e, &d);
-    RSA_get0_factors(rsa, &p, &q);
-    RSA_get0_crt_params(rsa, &dmp1, &dmq1, &iqmp);
-    if (n && e && d && p && q && dmp1 && dmq1 && iqmp) {
-	if (!PEM_write_bio_RSAPrivateKey(out, rsa, ciph, NULL, 0,
-					 ossl_pem_passwd_cb, (void *)pass)) {
-	    BIO_free(out);
-	    ossl_raise(eRSAError, NULL);
-	}
-    } else {
-	if (!PEM_write_bio_RSA_PUBKEY(out, rsa)) {
-	    BIO_free(out);
-	    ossl_raise(eRSAError, NULL);
-	}
-    }
-    str = ossl_membio2str(out);
-
-    return str;
+    if (can_export_rsaprivatekey(self))
+        return ossl_pkey_export_traditional(argc, argv, self, 0);
+    else
+        return ossl_pkey_export_spki(self, 0);
 }
 
 /*
@@ -386,30 +322,10 @@ ossl_rsa_export(int argc, VALUE *argv, VALUE self)
 static VALUE
 ossl_rsa_to_der(VALUE self)
 {
-    RSA *rsa;
-    const BIGNUM *n, *e, *d, *p, *q, *dmp1, *dmq1, *iqmp;
-    int (*i2d_func)(const RSA *, unsigned char **);
-    unsigned char *ptr;
-    long len;
-    VALUE str;
-
-    GetRSA(self, rsa);
-    RSA_get0_key(rsa, &n, &e, &d);
-    RSA_get0_factors(rsa, &p, &q);
-    RSA_get0_crt_params(rsa, &dmp1, &dmq1, &iqmp);
-    if (n && e && d && p && q && dmp1 && dmq1 && iqmp)
-	i2d_func = i2d_RSAPrivateKey;
+    if (can_export_rsaprivatekey(self))
+        return ossl_pkey_export_traditional(0, NULL, self, 1);
     else
-	i2d_func = (int (*)(const RSA *, unsigned char **))i2d_RSA_PUBKEY;
-    if((len = i2d_func(rsa, NULL)) <= 0)
-	ossl_raise(eRSAError, NULL);
-    str = rb_str_new(0, len);
-    ptr = (unsigned char *)RSTRING_PTR(str);
-    if(i2d_func(rsa, &ptr) < 0)
-	ossl_raise(eRSAError, NULL);
-    ossl_str_adjust(str, ptr);
-
-    return str;
+        return ossl_pkey_export_spki(self, 1);
 }
 
 /*
@@ -809,17 +725,20 @@ ossl_rsa_to_text(VALUE self)
 static VALUE
 ossl_rsa_to_public_key(VALUE self)
 {
-    EVP_PKEY *pkey;
+    EVP_PKEY *pkey, *pkey_new;
     RSA *rsa;
     VALUE obj;
 
     GetPKeyRSA(self, pkey);
-    /* err check performed by rsa_instance */
+    obj = rb_obj_alloc(rb_obj_class(self));
+    GetPKey(obj, pkey_new);
+
     rsa = RSAPublicKey_dup(EVP_PKEY_get0_RSA(pkey));
-    obj = rsa_instance(rb_obj_class(self), rsa);
-    if (obj == Qfalse) {
-	RSA_free(rsa);
-	ossl_raise(eRSAError, NULL);
+    if (!rsa)
+        ossl_raise(eRSAError, "RSAPublicKey_dup");
+    if (!EVP_PKEY_assign_RSA(pkey_new, rsa)) {
+        RSA_free(rsa);
+        ossl_raise(eRSAError, "EVP_PKEY_assign_RSA");
     }
     return obj;
 }

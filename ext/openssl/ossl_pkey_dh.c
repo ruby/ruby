@@ -30,52 +30,6 @@ VALUE cDH;
 VALUE eDHError;
 
 /*
- * Public
- */
-static VALUE
-dh_instance(VALUE klass, DH *dh)
-{
-    EVP_PKEY *pkey;
-    VALUE obj;
-
-    if (!dh) {
-	return Qfalse;
-    }
-    obj = NewPKey(klass);
-    if (!(pkey = EVP_PKEY_new())) {
-	return Qfalse;
-    }
-    if (!EVP_PKEY_assign_DH(pkey, dh)) {
-	EVP_PKEY_free(pkey);
-	return Qfalse;
-    }
-    SetPKey(obj, pkey);
-
-    return obj;
-}
-
-VALUE
-ossl_dh_new(EVP_PKEY *pkey)
-{
-    VALUE obj;
-
-    if (!pkey) {
-	obj = dh_instance(cDH, DH_new());
-    } else {
-	obj = NewPKey(cDH);
-	if (EVP_PKEY_base_id(pkey) != EVP_PKEY_DH) {
-	    ossl_raise(rb_eTypeError, "Not a DH key!");
-	}
-	SetPKey(obj, pkey);
-    }
-    if (obj == Qfalse) {
-	ossl_raise(eDHError, NULL);
-    }
-
-    return obj;
-}
-
-/*
  * Private
  */
 struct dh_blocking_gen_arg {
@@ -105,7 +59,7 @@ dh_generate(int size, int gen)
     if (!dh || !cb) {
 	DH_free(dh);
 	BN_GENCB_free(cb);
-	return NULL;
+        ossl_raise(eDHError, "malloc failure");
     }
 
     if (rb_block_given_p())
@@ -131,12 +85,12 @@ dh_generate(int size, int gen)
 	    ossl_clear_error();
 	    rb_jump_tag(cb_arg.state);
 	}
-	return NULL;
+        ossl_raise(eDHError, "DH_generate_parameters_ex");
     }
 
     if (!DH_generate_key(dh)) {
         DH_free(dh);
-        return NULL;
+        ossl_raise(eDHError, "DH_generate_key");
     }
 
     return dh;
@@ -157,6 +111,7 @@ dh_generate(int size, int gen)
 static VALUE
 ossl_dh_s_generate(int argc, VALUE *argv, VALUE klass)
 {
+    EVP_PKEY *pkey;
     DH *dh ;
     int g = 2;
     VALUE size, gen, obj;
@@ -164,13 +119,14 @@ ossl_dh_s_generate(int argc, VALUE *argv, VALUE klass)
     if (rb_scan_args(argc, argv, "11", &size, &gen) == 2) {
 	g = NUM2INT(gen);
     }
-    dh = dh_generate(NUM2INT(size), g);
-    obj = dh_instance(klass, dh);
-    if (obj == Qfalse) {
-	DH_free(dh);
-	ossl_raise(eDHError, NULL);
-    }
+    obj = rb_obj_alloc(klass);
+    GetPKey(obj, pkey);
 
+    dh = dh_generate(NUM2INT(size), g);
+    if (!EVP_PKEY_assign_DH(pkey, dh)) {
+        DH_free(dh);
+        ossl_raise(eDHError, "EVP_PKEY_assign_DH");
+    }
     return obj;
 }
 
@@ -216,9 +172,7 @@ ossl_dh_initialize(int argc, VALUE *argv, VALUE self)
 	if (!NIL_P(gen)) {
 	    g = NUM2INT(gen);
 	}
-	if (!(dh = dh_generate(NUM2INT(arg), g))) {
-	    ossl_raise(eDHError, NULL);
-	}
+        dh = dh_generate(NUM2INT(arg), g);
     }
     else {
 	arg = ossl_to_der_if_possible(arg);
@@ -455,17 +409,21 @@ ossl_dh_to_text(VALUE self)
 static VALUE
 ossl_dh_to_public_key(VALUE self)
 {
+    EVP_PKEY *pkey;
     DH *orig_dh, *dh;
     VALUE obj;
 
-    GetDH(self, orig_dh);
-    dh = DHparams_dup(orig_dh); /* err check perfomed by dh_instance */
-    obj = dh_instance(rb_obj_class(self), dh);
-    if (obj == Qfalse) {
-	DH_free(dh);
-	ossl_raise(eDHError, NULL);
-    }
+    obj = rb_obj_alloc(rb_obj_class(self));
+    GetPKey(obj, pkey);
 
+    GetDH(self, orig_dh);
+    dh = DHparams_dup(orig_dh);
+    if (!dh)
+        ossl_raise(eDHError, "DHparams_dup");
+    if (!EVP_PKEY_assign_DH(pkey, dh)) {
+        DH_free(dh);
+        ossl_raise(eDHError, "EVP_PKEY_assign_DH");
+    }
     return obj;
 }
 
@@ -516,40 +474,6 @@ ossl_dh_generate_key(VALUE self)
     if (!DH_generate_key(dh))
 	ossl_raise(eDHError, "Failed to generate key");
     return self;
-}
-
-/*
- *  call-seq:
- *     dh.compute_key(pub_bn) -> aString
- *
- * Returns a String containing a shared secret computed from the other party's public value.
- * See DH_compute_key() for further information.
- *
- * === Parameters
- * * _pub_bn_ is a OpenSSL::BN, *not* the DH instance returned by
- *   DH#public_key as that contains the DH parameters only.
- */
-static VALUE
-ossl_dh_compute_key(VALUE self, VALUE pub)
-{
-    DH *dh;
-    const BIGNUM *pub_key, *dh_p;
-    VALUE str;
-    int len;
-
-    GetDH(self, dh);
-    DH_get0_pqg(dh, &dh_p, NULL, NULL);
-    if (!dh_p)
-	ossl_raise(eDHError, "incomplete DH");
-    pub_key = GetBNPtr(pub);
-    len = DH_size(dh);
-    str = rb_str_new(0, len);
-    if ((len = DH_compute_key((unsigned char *)RSTRING_PTR(str), pub_key, dh)) < 0) {
-	ossl_raise(eDHError, NULL);
-    }
-    rb_str_set_len(str, len);
-
-    return str;
 }
 
 /*
@@ -629,7 +553,6 @@ Init_ossl_dh(void)
     rb_define_method(cDH, "public_key", ossl_dh_to_public_key, 0);
     rb_define_method(cDH, "params_ok?", ossl_dh_check_params, 0);
     rb_define_method(cDH, "generate_key!", ossl_dh_generate_key, 0);
-    rb_define_method(cDH, "compute_key", ossl_dh_compute_key, 1);
 
     DEF_OSSL_PKEY_BN(cDH, dh, p);
     DEF_OSSL_PKEY_BN(cDH, dh, q);

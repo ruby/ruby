@@ -7,14 +7,12 @@
  * This program is licensed under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
-#if !defined(OPENSSL_NO_HMAC)
-
 #include "ossl.h"
 
 #define NewHMAC(klass) \
     TypedData_Wrap_Struct((klass), &ossl_hmac_type, 0)
 #define GetHMAC(obj, ctx) do { \
-    TypedData_Get_Struct((obj), HMAC_CTX, &ossl_hmac_type, (ctx)); \
+    TypedData_Get_Struct((obj), EVP_MD_CTX, &ossl_hmac_type, (ctx)); \
     if (!(ctx)) { \
 	ossl_raise(rb_eRuntimeError, "HMAC wasn't initialized"); \
     } \
@@ -36,7 +34,7 @@ VALUE eHMACError;
 static void
 ossl_hmac_free(void *ctx)
 {
-    HMAC_CTX_free(ctx);
+    EVP_MD_CTX_free(ctx);
 }
 
 static const rb_data_type_t ossl_hmac_type = {
@@ -51,12 +49,12 @@ static VALUE
 ossl_hmac_alloc(VALUE klass)
 {
     VALUE obj;
-    HMAC_CTX *ctx;
+    EVP_MD_CTX *ctx;
 
     obj = NewHMAC(klass);
-    ctx = HMAC_CTX_new();
+    ctx = EVP_MD_CTX_new();
     if (!ctx)
-	ossl_raise(eHMACError, NULL);
+        ossl_raise(eHMACError, "EVP_MD_CTX");
     RTYPEDDATA_DATA(obj) = ctx;
 
     return obj;
@@ -76,8 +74,7 @@ ossl_hmac_alloc(VALUE klass)
  * === Example
  *
  *	key = 'key'
- * 	digest = OpenSSL::Digest.new('sha1')
- * 	instance = OpenSSL::HMAC.new(key, digest)
+ * 	instance = OpenSSL::HMAC.new(key, 'SHA1')
  * 	#=> f42bb0eeb018ebbd4597ae7213711ec60760843f
  * 	instance.class
  * 	#=> OpenSSL::HMAC
@@ -86,7 +83,7 @@ ossl_hmac_alloc(VALUE klass)
  *
  * Two instances can be securely compared with #== in constant time:
  *
- *	other_instance = OpenSSL::HMAC.new('key', OpenSSL::Digest.new('sha1'))
+ *	other_instance = OpenSSL::HMAC.new('key', 'SHA1')
  *  #=> f42bb0eeb018ebbd4597ae7213711ec60760843f
  *  instance == other_instance
  *  #=> true
@@ -95,12 +92,23 @@ ossl_hmac_alloc(VALUE klass)
 static VALUE
 ossl_hmac_initialize(VALUE self, VALUE key, VALUE digest)
 {
-    HMAC_CTX *ctx;
+    EVP_MD_CTX *ctx;
+    EVP_PKEY *pkey;
 
-    StringValue(key);
     GetHMAC(self, ctx);
-    HMAC_Init_ex(ctx, RSTRING_PTR(key), RSTRING_LENINT(key),
-		 ossl_evp_get_digestbyname(digest), NULL);
+    StringValue(key);
+    pkey = EVP_PKEY_new_mac_key(EVP_PKEY_HMAC, NULL,
+                                (unsigned char *)RSTRING_PTR(key),
+                                RSTRING_LENINT(key));
+    if (!pkey)
+        ossl_raise(eHMACError, "EVP_PKEY_new_mac_key");
+    if (EVP_DigestSignInit(ctx, NULL, ossl_evp_get_digestbyname(digest),
+                           NULL, pkey) != 1) {
+        EVP_PKEY_free(pkey);
+        ossl_raise(eHMACError, "EVP_DigestSignInit");
+    }
+    /* Decrement reference counter; EVP_MD_CTX still keeps it */
+    EVP_PKEY_free(pkey);
 
     return self;
 }
@@ -108,16 +116,15 @@ ossl_hmac_initialize(VALUE self, VALUE key, VALUE digest)
 static VALUE
 ossl_hmac_copy(VALUE self, VALUE other)
 {
-    HMAC_CTX *ctx1, *ctx2;
+    EVP_MD_CTX *ctx1, *ctx2;
 
     rb_check_frozen(self);
     if (self == other) return self;
 
     GetHMAC(self, ctx1);
     GetHMAC(other, ctx2);
-
-    if (!HMAC_CTX_copy(ctx1, ctx2))
-	ossl_raise(eHMACError, "HMAC_CTX_copy");
+    if (EVP_MD_CTX_copy(ctx1, ctx2) != 1)
+        ossl_raise(eHMACError, "EVP_MD_CTX_copy");
     return self;
 }
 
@@ -142,31 +149,14 @@ ossl_hmac_copy(VALUE self, VALUE other)
 static VALUE
 ossl_hmac_update(VALUE self, VALUE data)
 {
-    HMAC_CTX *ctx;
+    EVP_MD_CTX *ctx;
 
     StringValue(data);
     GetHMAC(self, ctx);
-    HMAC_Update(ctx, (unsigned char *)RSTRING_PTR(data), RSTRING_LEN(data));
+    if (EVP_DigestSignUpdate(ctx, RSTRING_PTR(data), RSTRING_LEN(data)) != 1)
+        ossl_raise(eHMACError, "EVP_DigestSignUpdate");
 
     return self;
-}
-
-static void
-hmac_final(HMAC_CTX *ctx, unsigned char *buf, unsigned int *buf_len)
-{
-    HMAC_CTX *final;
-
-    final = HMAC_CTX_new();
-    if (!final)
-	ossl_raise(eHMACError, "HMAC_CTX_new");
-
-    if (!HMAC_CTX_copy(final, ctx)) {
-	HMAC_CTX_free(final);
-	ossl_raise(eHMACError, "HMAC_CTX_copy");
-    }
-
-    HMAC_Final(final, buf, buf_len);
-    HMAC_CTX_free(final);
 }
 
 /*
@@ -176,7 +166,7 @@ hmac_final(HMAC_CTX *ctx, unsigned char *buf, unsigned int *buf_len)
  * Returns the authentication code an instance represents as a binary string.
  *
  * === Example
- *  instance = OpenSSL::HMAC.new('key', OpenSSL::Digest.new('sha1'))
+ *  instance = OpenSSL::HMAC.new('key', 'SHA1')
  *  #=> f42bb0eeb018ebbd4597ae7213711ec60760843f
  *  instance.digest
  *  #=> "\xF4+\xB0\xEE\xB0\x18\xEB\xBDE\x97\xAEr\x13q\x1E\xC6\a`\x84?"
@@ -184,15 +174,16 @@ hmac_final(HMAC_CTX *ctx, unsigned char *buf, unsigned int *buf_len)
 static VALUE
 ossl_hmac_digest(VALUE self)
 {
-    HMAC_CTX *ctx;
-    unsigned int buf_len;
+    EVP_MD_CTX *ctx;
+    size_t buf_len;
     VALUE ret;
 
     GetHMAC(self, ctx);
     ret = rb_str_new(NULL, EVP_MAX_MD_SIZE);
-    hmac_final(ctx, (unsigned char *)RSTRING_PTR(ret), &buf_len);
-    assert(buf_len <= EVP_MAX_MD_SIZE);
-    rb_str_set_len(ret, buf_len);
+    if (EVP_DigestSignFinal(ctx, (unsigned char *)RSTRING_PTR(ret),
+                            &buf_len) != 1)
+        ossl_raise(eHMACError, "EVP_DigestSignFinal");
+    rb_str_set_len(ret, (long)buf_len);
 
     return ret;
 }
@@ -207,13 +198,14 @@ ossl_hmac_digest(VALUE self)
 static VALUE
 ossl_hmac_hexdigest(VALUE self)
 {
-    HMAC_CTX *ctx;
+    EVP_MD_CTX *ctx;
     unsigned char buf[EVP_MAX_MD_SIZE];
-    unsigned int buf_len;
+    size_t buf_len;
     VALUE ret;
 
     GetHMAC(self, ctx);
-    hmac_final(ctx, buf, &buf_len);
+    if (EVP_DigestSignFinal(ctx, buf, &buf_len) != 1)
+        ossl_raise(eHMACError, "EVP_DigestSignFinal");
     ret = rb_str_new(NULL, buf_len * 2);
     ossl_bin2hex(buf, RSTRING_PTR(ret), buf_len);
 
@@ -230,7 +222,7 @@ ossl_hmac_hexdigest(VALUE self)
  * === Example
  *
  *	data = "The quick brown fox jumps over the lazy dog"
- * 	instance = OpenSSL::HMAC.new('key', OpenSSL::Digest.new('sha1'))
+ * 	instance = OpenSSL::HMAC.new('key', 'SHA1')
  * 	#=> f42bb0eeb018ebbd4597ae7213711ec60760843f
  *
  * 	instance.update(data)
@@ -242,82 +234,15 @@ ossl_hmac_hexdigest(VALUE self)
 static VALUE
 ossl_hmac_reset(VALUE self)
 {
-    HMAC_CTX *ctx;
+    EVP_MD_CTX *ctx;
+    EVP_PKEY *pkey;
 
     GetHMAC(self, ctx);
-    HMAC_Init_ex(ctx, NULL, 0, NULL, NULL);
+    pkey = EVP_PKEY_CTX_get0_pkey(EVP_MD_CTX_pkey_ctx(ctx));
+    if (EVP_DigestSignInit(ctx, NULL, EVP_MD_CTX_md(ctx), NULL, pkey) != 1)
+        ossl_raise(eHMACError, "EVP_DigestSignInit");
 
     return self;
-}
-
-/*
- *  call-seq:
- *     HMAC.digest(digest, key, data) -> aString
- *
- * Returns the authentication code as a binary string. The _digest_ parameter
- * specifies the digest algorithm to use. This may be a String representing
- * the algorithm name or an instance of OpenSSL::Digest.
- *
- * === Example
- *
- *	key = 'key'
- * 	data = 'The quick brown fox jumps over the lazy dog'
- *
- * 	hmac = OpenSSL::HMAC.digest('sha1', key, data)
- * 	#=> "\xDE|\x9B\x85\xB8\xB7\x8A\xA6\xBC\x8Az6\xF7\n\x90p\x1C\x9D\xB4\xD9"
- *
- */
-static VALUE
-ossl_hmac_s_digest(VALUE klass, VALUE digest, VALUE key, VALUE data)
-{
-    unsigned char *buf;
-    unsigned int buf_len;
-
-    StringValue(key);
-    StringValue(data);
-    buf = HMAC(ossl_evp_get_digestbyname(digest), RSTRING_PTR(key),
-	       RSTRING_LENINT(key), (unsigned char *)RSTRING_PTR(data),
-	       RSTRING_LEN(data), NULL, &buf_len);
-
-    return rb_str_new((const char *)buf, buf_len);
-}
-
-/*
- *  call-seq:
- *     HMAC.hexdigest(digest, key, data) -> aString
- *
- * Returns the authentication code as a hex-encoded string. The _digest_
- * parameter specifies the digest algorithm to use. This may be a String
- * representing the algorithm name or an instance of OpenSSL::Digest.
- *
- * === Example
- *
- *	key = 'key'
- * 	data = 'The quick brown fox jumps over the lazy dog'
- *
- * 	hmac = OpenSSL::HMAC.hexdigest('sha1', key, data)
- * 	#=> "de7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9"
- *
- */
-static VALUE
-ossl_hmac_s_hexdigest(VALUE klass, VALUE digest, VALUE key, VALUE data)
-{
-    unsigned char buf[EVP_MAX_MD_SIZE];
-    unsigned int buf_len;
-    VALUE ret;
-
-    StringValue(key);
-    StringValue(data);
-
-    if (!HMAC(ossl_evp_get_digestbyname(digest), RSTRING_PTR(key),
-	      RSTRING_LENINT(key), (unsigned char *)RSTRING_PTR(data),
-	      RSTRING_LEN(data), buf, &buf_len))
-	ossl_raise(eHMACError, "HMAC");
-
-    ret = rb_str_new(NULL, buf_len * 2);
-    ossl_bin2hex(buf, RSTRING_PTR(ret), buf_len);
-
-    return ret;
 }
 
 /*
@@ -350,11 +275,10 @@ Init_ossl_hmac(void)
      *
      * === HMAC-SHA256 using incremental interface
      *
-     *   data1 = File.read("file1")
-     *   data2 = File.read("file2")
+     *   data1 = File.binread("file1")
+     *   data2 = File.binread("file2")
      *   key = "key"
-     *   digest = OpenSSL::Digest.new('SHA256')
-     *   hmac = OpenSSL::HMAC.new(key, digest)
+     *   hmac = OpenSSL::HMAC.new(key, 'SHA256')
      *   hmac << data1
      *   hmac << data2
      *   mac = hmac.digest
@@ -364,8 +288,6 @@ Init_ossl_hmac(void)
     cHMAC = rb_define_class_under(mOSSL, "HMAC", rb_cObject);
 
     rb_define_alloc_func(cHMAC, ossl_hmac_alloc);
-    rb_define_singleton_method(cHMAC, "digest", ossl_hmac_s_digest, 3);
-    rb_define_singleton_method(cHMAC, "hexdigest", ossl_hmac_s_hexdigest, 3);
 
     rb_define_method(cHMAC, "initialize", ossl_hmac_initialize, 2);
     rb_define_method(cHMAC, "initialize_copy", ossl_hmac_copy, 1);
@@ -378,12 +300,3 @@ Init_ossl_hmac(void)
     rb_define_alias(cHMAC, "inspect", "hexdigest");
     rb_define_alias(cHMAC, "to_s", "hexdigest");
 }
-
-#else /* NO_HMAC */
-#  warning >>> OpenSSL is compiled without HMAC support <<<
-void
-Init_ossl_hmac(void)
-{
-    rb_warning("HMAC is not available: OpenSSL is compiled without HMAC.");
-}
-#endif /* NO_HMAC */

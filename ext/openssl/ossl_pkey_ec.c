@@ -63,47 +63,6 @@ static ID id_i_group;
 static VALUE ec_group_new(const EC_GROUP *group);
 static VALUE ec_point_new(const EC_POINT *point, const EC_GROUP *group);
 
-static VALUE ec_instance(VALUE klass, EC_KEY *ec)
-{
-    EVP_PKEY *pkey;
-    VALUE obj;
-
-    if (!ec) {
-	return Qfalse;
-    }
-    obj = NewPKey(klass);
-    if (!(pkey = EVP_PKEY_new())) {
-	return Qfalse;
-    }
-    if (!EVP_PKEY_assign_EC_KEY(pkey, ec)) {
-	EVP_PKEY_free(pkey);
-	return Qfalse;
-    }
-    SetPKey(obj, pkey);
-
-    return obj;
-}
-
-VALUE ossl_ec_new(EVP_PKEY *pkey)
-{
-    VALUE obj;
-
-    if (!pkey) {
-	obj = ec_instance(cEC, EC_KEY_new());
-    } else {
-	obj = NewPKey(cEC);
-	if (EVP_PKEY_base_id(pkey) != EVP_PKEY_EC) {
-	    ossl_raise(rb_eTypeError, "Not a EC key!");
-	}
-	SetPKey(obj, pkey);
-    }
-    if (obj == Qfalse) {
-	ossl_raise(eECError, NULL);
-    }
-
-    return obj;
-}
-
 /*
  * Creates a new EC_KEY on the EC group obj. arg can be an EC::Group or a String
  * representing an OID.
@@ -150,17 +109,18 @@ ec_key_new_from_group(VALUE arg)
 static VALUE
 ossl_ec_key_s_generate(VALUE klass, VALUE arg)
 {
+    EVP_PKEY *pkey;
     EC_KEY *ec;
     VALUE obj;
 
+    obj = rb_obj_alloc(klass);
+    GetPKey(obj, pkey);
+
     ec = ec_key_new_from_group(arg);
-
-    obj = ec_instance(klass, ec);
-    if (obj == Qfalse) {
-	EC_KEY_free(ec);
-	ossl_raise(eECError, NULL);
+    if (!EVP_PKEY_assign_EC_KEY(pkey, ec)) {
+        EC_KEY_free(ec);
+        ossl_raise(eECError, "EVP_PKEY_assign_EC_KEY");
     }
-
     if (!EC_KEY_generate_key(ec))
 	ossl_raise(eECError, "EC_KEY_generate_key");
 
@@ -181,7 +141,7 @@ ossl_ec_key_s_generate(VALUE klass, VALUE arg)
 static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
 {
     EVP_PKEY *pkey;
-    EC_KEY *ec;
+    EC_KEY *ec = NULL;
     VALUE arg, pass;
 
     GetPKey(self, pkey);
@@ -202,24 +162,17 @@ static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
     } else if (rb_obj_is_kind_of(arg, cEC_GROUP)) {
 	ec = ec_key_new_from_group(arg);
     } else {
-	BIO *in;
-
-	pass = ossl_pem_passwd_value(pass);
-	in = ossl_obj2bio(&arg);
-
-	ec = PEM_read_bio_ECPrivateKey(in, NULL, ossl_pem_passwd_cb, (void *)pass);
-	if (!ec) {
-	    OSSL_BIO_reset(in);
-	    ec = PEM_read_bio_EC_PUBKEY(in, NULL, ossl_pem_passwd_cb, (void *)pass);
-	}
-	if (!ec) {
-	    OSSL_BIO_reset(in);
-	    ec = d2i_ECPrivateKey_bio(in, NULL);
-	}
-	if (!ec) {
-	    OSSL_BIO_reset(in);
-	    ec = d2i_EC_PUBKEY_bio(in, NULL);
-	}
+        BIO *in = ossl_obj2bio(&arg);
+        EVP_PKEY *tmp;
+        pass = ossl_pem_passwd_value(pass);
+        tmp = ossl_pkey_read_generic(in, pass);
+        if (tmp) {
+            if (EVP_PKEY_base_id(tmp) != EVP_PKEY_EC)
+                rb_raise(eECError, "incorrect pkey type: %s",
+                         OBJ_nid2sn(EVP_PKEY_base_id(tmp)));
+            ec = EVP_PKEY_get1_EC_KEY(tmp);
+            EVP_PKEY_free(tmp);
+        }
 	BIO_free(in);
 
 	if (!ec) {
@@ -425,66 +378,6 @@ static VALUE ossl_ec_key_is_private(VALUE self)
     return EC_KEY_get0_private_key(ec) ? Qtrue : Qfalse;
 }
 
-static VALUE ossl_ec_key_to_string(VALUE self, VALUE ciph, VALUE pass, int format)
-{
-    EC_KEY *ec;
-    BIO *out;
-    int i = -1;
-    int private = 0;
-    VALUE str;
-    const EVP_CIPHER *cipher = NULL;
-
-    GetEC(self, ec);
-
-    if (EC_KEY_get0_public_key(ec) == NULL)
-        ossl_raise(eECError, "can't export - no public key set");
-
-    if (EC_KEY_check_key(ec) != 1)
-	ossl_raise(eECError, "can't export - EC_KEY_check_key failed");
-
-    if (EC_KEY_get0_private_key(ec))
-        private = 1;
-
-    if (!NIL_P(ciph)) {
-	cipher = ossl_evp_get_cipherbyname(ciph);
-	pass = ossl_pem_passwd_value(pass);
-    }
-
-    if (!(out = BIO_new(BIO_s_mem())))
-        ossl_raise(eECError, "BIO_new(BIO_s_mem())");
-
-    switch(format) {
-    case EXPORT_PEM:
-    	if (private) {
-            i = PEM_write_bio_ECPrivateKey(out, ec, cipher, NULL, 0, ossl_pem_passwd_cb, (void *)pass);
-    	} else {
-            i = PEM_write_bio_EC_PUBKEY(out, ec);
-        }
-
-    	break;
-    case EXPORT_DER:
-        if (private) {
-            i = i2d_ECPrivateKey_bio(out, ec);
-        } else {
-            i = i2d_EC_PUBKEY_bio(out, ec);
-        }
-
-    	break;
-    default:
-        BIO_free(out);
-    	ossl_raise(rb_eRuntimeError, "unknown format (internal error)");
-    }
-
-    if (i != 1) {
-        BIO_free(out);
-        ossl_raise(eECError, "outlen=%d", i);
-    }
-
-    str = ossl_membio2str(out);
-
-    return str;
-}
-
 /*
  *  call-seq:
  *     key.export([cipher, pass_phrase]) => String
@@ -495,11 +388,16 @@ static VALUE ossl_ec_key_to_string(VALUE self, VALUE ciph, VALUE pass, int forma
  * instance. Note that encryption will only be effective for a private key,
  * public keys will always be encoded in plain text.
  */
-static VALUE ossl_ec_key_export(int argc, VALUE *argv, VALUE self)
+static VALUE
+ossl_ec_key_export(int argc, VALUE *argv, VALUE self)
 {
-    VALUE cipher, passwd;
-    rb_scan_args(argc, argv, "02", &cipher, &passwd);
-    return ossl_ec_key_to_string(self, cipher, passwd, EXPORT_PEM);
+    EC_KEY *ec;
+
+    GetEC(self, ec);
+    if (EC_KEY_get0_private_key(ec))
+        return ossl_pkey_export_traditional(argc, argv, self, 0);
+    else
+        return ossl_pkey_export_spki(self, 0);
 }
 
 /*
@@ -508,9 +406,16 @@ static VALUE ossl_ec_key_export(int argc, VALUE *argv, VALUE self)
  *
  *  See the OpenSSL documentation for i2d_ECPrivateKey_bio()
  */
-static VALUE ossl_ec_key_to_der(VALUE self)
+static VALUE
+ossl_ec_key_to_der(VALUE self)
 {
-    return ossl_ec_key_to_string(self, Qnil, Qnil, EXPORT_DER);
+    EC_KEY *ec;
+
+    GetEC(self, ec);
+    if (EC_KEY_get0_private_key(ec))
+        return ossl_pkey_export_traditional(0, NULL, self, 1);
+    else
+        return ossl_pkey_export_spki(self, 1);
 }
 
 /*
@@ -581,37 +486,6 @@ static VALUE ossl_ec_key_check_key(VALUE self)
 
     return Qtrue;
 }
-
-/*
- *  call-seq:
- *     key.dh_compute_key(pubkey)   => String
- *
- *  See the OpenSSL documentation for ECDH_compute_key()
- */
-static VALUE ossl_ec_key_dh_compute_key(VALUE self, VALUE pubkey)
-{
-    EC_KEY *ec;
-    EC_POINT *point;
-    int buf_len;
-    VALUE str;
-
-    GetEC(self, ec);
-    GetECPoint(pubkey, point);
-
-/* BUG: need a way to figure out the maximum string size */
-    buf_len = 1024;
-    str = rb_str_new(0, buf_len);
-/* BUG: take KDF as a block */
-    buf_len = ECDH_compute_key(RSTRING_PTR(str), buf_len, point, ec, NULL);
-    if (buf_len < 0)
-         ossl_raise(eECError, "ECDH_compute_key");
-
-    rb_str_resize(str, buf_len);
-
-    return str;
-}
-
-/* sign_setup */
 
 /*
  *  call-seq:
@@ -1631,6 +1505,10 @@ static VALUE ossl_ec_point_mul(int argc, VALUE *argv, VALUE self)
 	if (EC_POINT_mul(group, point_result, bn_g, point_self, bn, ossl_bn_ctx) != 1)
 	    ossl_raise(eEC_POINT, NULL);
     } else {
+#if OPENSSL_VERSION_MAJOR+0 >= 3 || defined(LIBRESSL_VERSION_NUMBER)
+        rb_raise(rb_eNotImpError, "calling #mul with arrays is not" \
+                 "supported by this OpenSSL version");
+#else
 	/*
 	 * bignums | arg1[0] | arg1[1] | arg1[2] | ...
 	 * points  | self    | arg2[0] | arg2[1] | ...
@@ -1644,6 +1522,9 @@ static VALUE ossl_ec_point_mul(int argc, VALUE *argv, VALUE self)
 	Check_Type(arg2, T_ARRAY);
 	if (RARRAY_LEN(arg1) != RARRAY_LEN(arg2) + 1) /* arg2 must be 1 larger */
 	    ossl_raise(rb_eArgError, "bns must be 1 longer than points; see the documentation");
+
+        rb_warning("OpenSSL::PKey::EC::Point#mul(ary, ary) is deprecated; " \
+                   "use #mul(bn) form instead");
 
 	num = RARRAY_LEN(arg1);
 	bns_tmp = rb_ary_tmp_new(num);
@@ -1670,6 +1551,7 @@ static VALUE ossl_ec_point_mul(int argc, VALUE *argv, VALUE self)
 
 	ALLOCV_END(tmp_b);
 	ALLOCV_END(tmp_p);
+#endif
     }
 
     return result;
@@ -1752,7 +1634,6 @@ void Init_ossl_ec(void)
     rb_define_alias(cEC, "generate_key", "generate_key!");
     rb_define_method(cEC, "check_key", ossl_ec_key_check_key, 0);
 
-    rb_define_method(cEC, "dh_compute_key", ossl_ec_key_dh_compute_key, 1);
     rb_define_method(cEC, "dsa_sign_asn1", ossl_ec_key_dsa_sign_asn1, 1);
     rb_define_method(cEC, "dsa_verify_asn1", ossl_ec_key_dsa_verify_asn1, 2);
 /* do_sign/do_verify */

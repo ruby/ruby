@@ -44,52 +44,6 @@ VALUE cDSA;
 VALUE eDSAError;
 
 /*
- * Public
- */
-static VALUE
-dsa_instance(VALUE klass, DSA *dsa)
-{
-    EVP_PKEY *pkey;
-    VALUE obj;
-
-    if (!dsa) {
-	return Qfalse;
-    }
-    obj = NewPKey(klass);
-    if (!(pkey = EVP_PKEY_new())) {
-	return Qfalse;
-    }
-    if (!EVP_PKEY_assign_DSA(pkey, dsa)) {
-	EVP_PKEY_free(pkey);
-	return Qfalse;
-    }
-    SetPKey(obj, pkey);
-
-    return obj;
-}
-
-VALUE
-ossl_dsa_new(EVP_PKEY *pkey)
-{
-    VALUE obj;
-
-    if (!pkey) {
-	obj = dsa_instance(cDSA, DSA_new());
-    } else {
-	obj = NewPKey(cDSA);
-	if (EVP_PKEY_base_id(pkey) != EVP_PKEY_DSA) {
-	    ossl_raise(rb_eTypeError, "Not a DSA key!");
-	}
-	SetPKey(obj, pkey);
-    }
-    if (obj == Qfalse) {
-	ossl_raise(eDSAError, NULL);
-    }
-
-    return obj;
-}
-
-/*
  * Private
  */
 struct dsa_blocking_gen_arg {
@@ -121,9 +75,9 @@ dsa_generate(int size)
     unsigned long h;
 
     if (!dsa || !cb) {
-	DSA_free(dsa);
-	BN_GENCB_free(cb);
-	return NULL;
+        DSA_free(dsa);
+        BN_GENCB_free(cb);
+        ossl_raise(eDSAError, "malloc failure");
     }
 
     if (rb_block_given_p())
@@ -153,12 +107,12 @@ dsa_generate(int size)
 	    ossl_clear_error();
 	    rb_jump_tag(cb_arg.state);
 	}
-	return NULL;
+        ossl_raise(eDSAError, "DSA_generate_parameters_ex");
     }
 
     if (!DSA_generate_key(dsa)) {
-	DSA_free(dsa);
-	return NULL;
+        DSA_free(dsa);
+        ossl_raise(eDSAError, "DSA_generate_key");
     }
 
     return dsa;
@@ -178,14 +132,18 @@ dsa_generate(int size)
 static VALUE
 ossl_dsa_s_generate(VALUE klass, VALUE size)
 {
-    DSA *dsa = dsa_generate(NUM2INT(size)); /* err handled by dsa_instance */
-    VALUE obj = dsa_instance(klass, dsa);
+    EVP_PKEY *pkey;
+    DSA *dsa;
+    VALUE obj;
 
-    if (obj == Qfalse) {
-	DSA_free(dsa);
-	ossl_raise(eDSAError, NULL);
+    obj = rb_obj_alloc(klass);
+    GetPKey(obj, pkey);
+
+    dsa = dsa_generate(NUM2INT(size));
+    if (!EVP_PKEY_assign_DSA(pkey, dsa)) {
+        DSA_free(dsa);
+        ossl_raise(eDSAError, "EVP_PKEY_assign_DSA");
     }
-
     return obj;
 }
 
@@ -212,37 +170,34 @@ ossl_dsa_s_generate(VALUE klass, VALUE size)
 static VALUE
 ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
 {
-    EVP_PKEY *pkey;
-    DSA *dsa;
+    EVP_PKEY *pkey, *tmp;
+    DSA *dsa = NULL;
     BIO *in;
     VALUE arg, pass;
 
     GetPKey(self, pkey);
-    if(rb_scan_args(argc, argv, "02", &arg, &pass) == 0) {
+    rb_scan_args(argc, argv, "02", &arg, &pass);
+    if (argc == 0) {
         dsa = DSA_new();
+        if (!dsa)
+            ossl_raise(eDSAError, "DSA_new");
     }
-    else if (RB_INTEGER_TYPE_P(arg)) {
-	if (!(dsa = dsa_generate(NUM2INT(arg)))) {
-	    ossl_raise(eDSAError, NULL);
-	}
+    else if (argc == 1 && RB_INTEGER_TYPE_P(arg)) {
+        dsa = dsa_generate(NUM2INT(arg));
     }
     else {
 	pass = ossl_pem_passwd_value(pass);
 	arg = ossl_to_der_if_possible(arg);
 	in = ossl_obj2bio(&arg);
-	dsa = PEM_read_bio_DSAPrivateKey(in, NULL, ossl_pem_passwd_cb, (void *)pass);
-	if (!dsa) {
-	    OSSL_BIO_reset(in);
-	    dsa = PEM_read_bio_DSA_PUBKEY(in, NULL, NULL, NULL);
-	}
-	if (!dsa) {
-	    OSSL_BIO_reset(in);
-	    dsa = d2i_DSAPrivateKey_bio(in, NULL);
-	}
-	if (!dsa) {
-	    OSSL_BIO_reset(in);
-	    dsa = d2i_DSA_PUBKEY_bio(in, NULL);
-	}
+
+        tmp = ossl_pkey_read_generic(in, pass);
+        if (tmp) {
+            if (EVP_PKEY_base_id(tmp) != EVP_PKEY_DSA)
+                rb_raise(eDSAError, "incorrect pkey type: %s",
+                         OBJ_nid2sn(EVP_PKEY_base_id(tmp)));
+            dsa = EVP_PKEY_get1_DSA(tmp);
+            EVP_PKEY_free(tmp);
+        }
 	if (!dsa) {
 	    OSSL_BIO_reset(in);
 #define PEM_read_bio_DSAPublicKey(bp,x,cb,u) (DSA *)PEM_ASN1_read_bio( \
@@ -341,34 +296,12 @@ static VALUE
 ossl_dsa_export(int argc, VALUE *argv, VALUE self)
 {
     DSA *dsa;
-    BIO *out;
-    const EVP_CIPHER *ciph = NULL;
-    VALUE cipher, pass, str;
 
     GetDSA(self, dsa);
-    rb_scan_args(argc, argv, "02", &cipher, &pass);
-    if (!NIL_P(cipher)) {
-	ciph = ossl_evp_get_cipherbyname(cipher);
-	pass = ossl_pem_passwd_value(pass);
-    }
-    if (!(out = BIO_new(BIO_s_mem()))) {
-	ossl_raise(eDSAError, NULL);
-    }
-    if (DSA_HAS_PRIVATE(dsa)) {
-	if (!PEM_write_bio_DSAPrivateKey(out, dsa, ciph, NULL, 0,
-					 ossl_pem_passwd_cb, (void *)pass)){
-	    BIO_free(out);
-	    ossl_raise(eDSAError, NULL);
-	}
-    } else {
-	if (!PEM_write_bio_DSA_PUBKEY(out, dsa)) {
-	    BIO_free(out);
-	    ossl_raise(eDSAError, NULL);
-	}
-    }
-    str = ossl_membio2str(out);
-
-    return str;
+    if (DSA_HAS_PRIVATE(dsa))
+        return ossl_pkey_export_traditional(argc, argv, self, 0);
+    else
+        return ossl_pkey_export_spki(self, 0);
 }
 
 /*
@@ -382,25 +315,12 @@ static VALUE
 ossl_dsa_to_der(VALUE self)
 {
     DSA *dsa;
-    int (*i2d_func)(DSA *, unsigned char **);
-    unsigned char *p;
-    long len;
-    VALUE str;
 
     GetDSA(self, dsa);
-    if(DSA_HAS_PRIVATE(dsa))
-	i2d_func = (int (*)(DSA *,unsigned char **))i2d_DSAPrivateKey;
+    if (DSA_HAS_PRIVATE(dsa))
+        return ossl_pkey_export_traditional(0, NULL, self, 1);
     else
-	i2d_func = i2d_DSA_PUBKEY;
-    if((len = i2d_func(dsa, NULL)) <= 0)
-	ossl_raise(eDSAError, NULL);
-    str = rb_str_new(0, len);
-    p = (unsigned char *)RSTRING_PTR(str);
-    if(i2d_func(dsa, &p) < 0)
-	ossl_raise(eDSAError, NULL);
-    ossl_str_adjust(str, p);
-
-    return str;
+        return ossl_pkey_export_spki(self, 1);
 }
 
 
@@ -481,20 +401,23 @@ ossl_dsa_to_text(VALUE self)
 static VALUE
 ossl_dsa_to_public_key(VALUE self)
 {
-    EVP_PKEY *pkey;
+    EVP_PKEY *pkey, *pkey_new;
     DSA *dsa;
     VALUE obj;
 
     GetPKeyDSA(self, pkey);
-    /* err check performed by dsa_instance */
+    obj = rb_obj_alloc(rb_obj_class(self));
+    GetPKey(obj, pkey_new);
+
 #define DSAPublicKey_dup(dsa) (DSA *)ASN1_dup( \
 	(i2d_of_void *)i2d_DSAPublicKey, (d2i_of_void *)d2i_DSAPublicKey, (char *)(dsa))
     dsa = DSAPublicKey_dup(EVP_PKEY_get0_DSA(pkey));
 #undef DSAPublicKey_dup
-    obj = dsa_instance(rb_obj_class(self), dsa);
-    if (obj == Qfalse) {
-	DSA_free(dsa);
-	ossl_raise(eDSAError, NULL);
+    if (!dsa)
+        ossl_raise(eDSAError, "DSAPublicKey_dup");
+    if (!EVP_PKEY_assign_DSA(pkey_new, dsa)) {
+        DSA_free(dsa);
+        ossl_raise(eDSAError, "EVP_PKEY_assign_DSA");
     }
     return obj;
 }

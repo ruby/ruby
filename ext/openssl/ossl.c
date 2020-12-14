@@ -664,7 +664,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  * ahold of the key may use it unless it is encrypted.  In order to securely
  * export a key you may export it with a pass phrase.
  *
- *   cipher = OpenSSL::Cipher.new 'AES-256-CBC'
+ *   cipher = OpenSSL::Cipher.new 'aes-256-cbc'
  *   pass_phrase = 'my secure pass phrase goes here'
  *
  *   key_secure = key.export cipher, pass_phrase
@@ -679,13 +679,13 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *
  * A key can also be loaded from a file.
  *
- *   key2 = OpenSSL::PKey::RSA.new File.read 'private_key.pem'
+ *   key2 = OpenSSL::PKey.read File.read 'private_key.pem'
  *   key2.public? # => true
  *   key2.private? # => true
  *
  * or
  *
- *   key3 = OpenSSL::PKey::RSA.new File.read 'public_key.pem'
+ *   key3 = OpenSSL::PKey.read File.read 'public_key.pem'
  *   key3.public? # => true
  *   key3.private? # => false
  *
@@ -697,7 +697,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *
  *   key4_pem = File.read 'private.secure.pem'
  *   pass_phrase = 'my secure pass phrase goes here'
- *   key4 = OpenSSL::PKey::RSA.new key4_pem, pass_phrase
+ *   key4 = OpenSSL::PKey.read key4_pem, pass_phrase
  *
  * == RSA Encryption
  *
@@ -772,7 +772,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  * using PBKDF2. PKCS #5 v2.0 recommends at least 8 bytes for the salt,
  * the number of iterations largely depends on the hardware being used.
  *
- *   cipher = OpenSSL::Cipher.new 'AES-256-CBC'
+ *   cipher = OpenSSL::Cipher.new 'aes-256-cbc'
  *   cipher.encrypt
  *   iv = cipher.random_iv
  *
@@ -795,7 +795,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  * Use the same steps as before to derive the symmetric AES key, this time
  * setting the Cipher up for decryption.
  *
- *   cipher = OpenSSL::Cipher.new 'AES-256-CBC'
+ *   cipher = OpenSSL::Cipher.new 'aes-256-cbc'
  *   cipher.decrypt
  *   cipher.iv = iv # the one generated with #random_iv
  *
@@ -830,7 +830,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *
  * First set up the cipher for encryption
  *
- *   encryptor = OpenSSL::Cipher.new 'AES-256-CBC'
+ *   encryptor = OpenSSL::Cipher.new 'aes-256-cbc'
  *   encryptor.encrypt
  *   encryptor.pkcs5_keyivgen pass_phrase, salt
  *
@@ -843,7 +843,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *
  * Use a new Cipher instance set up for decryption
  *
- *   decryptor = OpenSSL::Cipher.new 'AES-256-CBC'
+ *   decryptor = OpenSSL::Cipher.new 'aes-256-cbc'
  *   decryptor.decrypt
  *   decryptor.pkcs5_keyivgen pass_phrase, salt
  *
@@ -931,7 +931,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *   ca_key = OpenSSL::PKey::RSA.new 2048
  *   pass_phrase = 'my secure pass phrase goes here'
  *
- *   cipher = OpenSSL::Cipher.new 'AES-256-CBC'
+ *   cipher = OpenSSL::Cipher.new 'aes-256-cbc'
  *
  *   open 'ca_key.pem', 'w', 0400 do |io|
  *     io.write ca_key.export(cipher, pass_phrase)
@@ -1069,13 +1069,13 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *   loop do
  *     ssl_connection = ssl_server.accept
  *
- *     data = connection.gets
+ *     data = ssl_connection.gets
  *
  *     response = "I got #{data.dump}"
  *     puts response
  *
- *     connection.puts "I got #{data.dump}"
- *     connection.close
+ *     ssl_connection.puts "I got #{data.dump}"
+ *     ssl_connection.close
  *   end
  *
  * === SSL client

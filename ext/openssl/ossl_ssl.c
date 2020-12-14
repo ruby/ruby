@@ -13,6 +13,12 @@
 
 #define numberof(ary) (int)(sizeof(ary)/sizeof((ary)[0]))
 
+#if !defined(TLS1_3_VERSION) && \
+    defined(LIBRESSL_VERSION_NUMBER) && \
+    LIBRESSL_VERSION_NUMBER >= 0x3020000fL
+#  define TLS1_3_VERSION 0x0304
+#endif
+
 #ifdef _WIN32
 #  define TO_SOCKET(s) _get_osfhandle(s)
 #else
@@ -32,14 +38,14 @@ VALUE cSSLSocket;
 static VALUE eSSLErrorWaitReadable;
 static VALUE eSSLErrorWaitWritable;
 
-static ID id_call, ID_callback_state, id_tmp_dh_callback, id_tmp_ecdh_callback,
+static ID id_call, ID_callback_state, id_tmp_dh_callback,
 	  id_npn_protocols_encoded;
 static VALUE sym_exception, sym_wait_readable, sym_wait_writable;
 
 static ID id_i_cert_store, id_i_ca_file, id_i_ca_path, id_i_verify_mode,
 	  id_i_verify_depth, id_i_verify_callback, id_i_client_ca,
 	  id_i_renegotiation_cb, id_i_cert, id_i_key, id_i_extra_chain_cert,
-	  id_i_client_cert_cb, id_i_tmp_ecdh_callback, id_i_timeout,
+	  id_i_client_cert_cb, id_i_timeout,
 	  id_i_session_id_context, id_i_session_get_cb, id_i_session_new_cb,
 	  id_i_session_remove_cb, id_i_npn_select_cb, id_i_npn_protocols,
 	  id_i_alpn_select_cb, id_i_alpn_protocols, id_i_servername_cb,
@@ -231,8 +237,7 @@ ossl_client_cert_cb(SSL *ssl, X509 **x509, EVP_PKEY **pkey)
     return 1;
 }
 
-#if !defined(OPENSSL_NO_DH) || \
-    !defined(OPENSSL_NO_EC) && defined(HAVE_SSL_CTX_SET_TMP_ECDH_CALLBACK)
+#if !defined(OPENSSL_NO_DH)
 struct tmp_dh_callback_args {
     VALUE ssl_obj;
     ID id;
@@ -288,35 +293,6 @@ ossl_tmp_dh_callback(SSL *ssl, int is_export, int keylength)
     return EVP_PKEY_get0_DH(pkey);
 }
 #endif /* OPENSSL_NO_DH */
-
-#if !defined(OPENSSL_NO_EC) && defined(HAVE_SSL_CTX_SET_TMP_ECDH_CALLBACK)
-static EC_KEY *
-ossl_tmp_ecdh_callback(SSL *ssl, int is_export, int keylength)
-{
-    VALUE rb_ssl;
-    EVP_PKEY *pkey;
-    struct tmp_dh_callback_args args;
-    int state;
-
-    rb_ssl = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
-    args.ssl_obj = rb_ssl;
-    args.id = id_tmp_ecdh_callback;
-    args.is_export = is_export;
-    args.keylength = keylength;
-    args.type = EVP_PKEY_EC;
-
-    pkey = (EVP_PKEY *)rb_protect((VALUE (*)(VALUE))ossl_call_tmp_dh_callback,
-				  (VALUE)&args, &state);
-    if (state) {
-	rb_ivar_set(rb_ssl, ID_callback_state, INT2NUM(state));
-	return NULL;
-    }
-    if (!pkey)
-	return NULL;
-
-    return EVP_PKEY_get0_EC_KEY(pkey);
-}
-#endif
 
 static VALUE
 call_verify_certificate_identity(VALUE ctx_v)
@@ -796,26 +772,6 @@ ossl_sslctx_setup(VALUE self)
 #if !defined(OPENSSL_NO_DH)
     SSL_CTX_set_tmp_dh_callback(ctx, ossl_tmp_dh_callback);
 #endif
-
-#if !defined(OPENSSL_NO_EC)
-    /* We added SSLContext#tmp_ecdh_callback= in Ruby 2.3.0,
-     * but SSL_CTX_set_tmp_ecdh_callback() was removed in OpenSSL 1.1.0. */
-    if (RTEST(rb_attr_get(self, id_i_tmp_ecdh_callback))) {
-# if defined(HAVE_SSL_CTX_SET_TMP_ECDH_CALLBACK)
-	rb_warn("#tmp_ecdh_callback= is deprecated; use #ecdh_curves= instead");
-	SSL_CTX_set_tmp_ecdh_callback(ctx, ossl_tmp_ecdh_callback);
-#  if defined(HAVE_SSL_CTX_SET_ECDH_AUTO)
-	/* tmp_ecdh_callback and ecdh_auto conflict; OpenSSL ignores
-	 * tmp_ecdh_callback. So disable ecdh_auto. */
-	if (!SSL_CTX_set_ecdh_auto(ctx, 0))
-	    ossl_raise(eSSLError, "SSL_CTX_set_ecdh_auto");
-#  endif
-# else
-	ossl_raise(eSSLError, "OpenSSL does not support tmp_ecdh_callback; "
-		   "use #ecdh_curves= instead");
-# endif
-    }
-#endif /* OPENSSL_NO_EC */
 
 #ifdef HAVE_SSL_CTX_SET_POST_HANDSHAKE_AUTH
     SSL_CTX_set_post_handshake_auth(ctx, 1);
@@ -2630,20 +2586,6 @@ Init_ossl_ssl(void)
      */
     rb_attr(cSSLContext, rb_intern_const("client_cert_cb"), 1, 1, Qfalse);
 
-#if !defined(OPENSSL_NO_EC) && defined(HAVE_SSL_CTX_SET_TMP_ECDH_CALLBACK)
-    /*
-     * A callback invoked when ECDH parameters are required.
-     *
-     * The callback is invoked with the Session for the key exchange, an
-     * flag indicating the use of an export cipher and the keylength
-     * required.
-     *
-     * The callback is deprecated. This does not work with recent versions of
-     * OpenSSL. Use OpenSSL::SSL::SSLContext#ecdh_curves= instead.
-     */
-    rb_attr(cSSLContext, rb_intern_const("tmp_ecdh_callback"), 1, 1, Qfalse);
-#endif
-
     /*
      * Sets the context in which a session can be reused.  This allows
      * sessions for multiple applications to be distinguished, for example, by
@@ -2995,7 +2937,6 @@ Init_ossl_ssl(void)
     sym_wait_writable = ID2SYM(rb_intern_const("wait_writable"));
 
     id_tmp_dh_callback = rb_intern_const("tmp_dh_callback");
-    id_tmp_ecdh_callback = rb_intern_const("tmp_ecdh_callback");
     id_npn_protocols_encoded = rb_intern_const("npn_protocols_encoded");
 
 #define DefIVarID(name) do \
@@ -3013,7 +2954,6 @@ Init_ossl_ssl(void)
     DefIVarID(key);
     DefIVarID(extra_chain_cert);
     DefIVarID(client_cert_cb);
-    DefIVarID(tmp_ecdh_callback);
     DefIVarID(timeout);
     DefIVarID(session_id_context);
     DefIVarID(session_get_cb);

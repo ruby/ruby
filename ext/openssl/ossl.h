@@ -24,7 +24,6 @@
 #include <openssl/ssl.h>
 #include <openssl/pkcs12.h>
 #include <openssl/pkcs7.h>
-#include <openssl/hmac.h>
 #include <openssl/rand.h>
 #include <openssl/conf.h>
 #ifndef OPENSSL_NO_TS

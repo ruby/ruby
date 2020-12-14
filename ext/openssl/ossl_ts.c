@@ -1280,7 +1280,7 @@ Init_ossl_ts(void)
      * ===Create a Response:
      *      #Assumes ts.p12 is a PKCS#12-compatible file with a private key
      *      #and a certificate that has an extended key usage of 'timeStamping'
-     *      p12 = OpenSSL::PKCS12.new(File.open('ts.p12', 'rb'), 'pwd')
+     *      p12 = OpenSSL::PKCS12.new(File.binread('ts.p12'), 'pwd')
      *      md = OpenSSL::Digest.new('SHA1')
      *      hash = md.digest(data) #some binary data to be timestamped
      *      req = OpenSSL::Timestamp::Request.new
@@ -1295,16 +1295,16 @@ Init_ossl_ts(void)
      *
      * ===Verify a timestamp response:
      *      #Assume we have a timestamp token in a file called ts.der
-     *      ts = OpenSSL::Timestamp::Response.new(File.open('ts.der', 'rb')
+     *      ts = OpenSSL::Timestamp::Response.new(File.binread('ts.der'))
      *      #Assume we have the Request for this token in a file called req.der
-     *      req = OpenSSL::Timestamp::Request.new(File.open('req.der', 'rb')
+     *      req = OpenSSL::Timestamp::Request.new(File.binread('req.der'))
      *      # Assume the associated root CA certificate is contained in a
      *      # DER-encoded file named root.cer
-     *      root = OpenSSL::X509::Certificate.new(File.open('root.cer', 'rb')
+     *      root = OpenSSL::X509::Certificate.new(File.binread('root.cer'))
      *      # get the necessary intermediate certificates, available in
      *      # DER-encoded form in inter1.cer and inter2.cer
-     *      inter1 = OpenSSL::X509::Certificate.new(File.open('inter1.cer', 'rb')
-     *      inter2 = OpenSSL::X509::Certificate.new(File.open('inter2.cer', 'rb')
+     *      inter1 = OpenSSL::X509::Certificate.new(File.binread('inter1.cer'))
+     *      inter2 = OpenSSL::X509::Certificate.new(File.binread('inter2.cer'))
      *      ts.verify(req, root, inter1, inter2) -> ts or raises an exception if validation fails
      *
      */
@@ -1437,9 +1437,9 @@ Init_ossl_ts(void)
      * timestamping certificate.
      *
      *      req = OpenSSL::Timestamp::Request.new(raw_bytes)
-     *      p12 = OpenSSL::PKCS12.new(File.open('ts.p12', 'rb'), 'pwd')
-     *      inter1 = OpenSSL::X509::Certificate.new(File.open('inter1.cer', 'rb')
-     *      inter2 = OpenSSL::X509::Certificate.new(File.open('inter2.cer', 'rb')
+     *      p12 = OpenSSL::PKCS12.new(File.binread('ts.p12'), 'pwd')
+     *      inter1 = OpenSSL::X509::Certificate.new(File.binread('inter1.cer'))
+     *      inter2 = OpenSSL::X509::Certificate.new(File.binread('inter2.cer'))
      *      fac = OpenSSL::Timestamp::Factory.new
      *      fac.gen_time = Time.now
      *      fac.serial_number = 1

@@ -45,9 +45,24 @@ void ossl_generate_cb_stop(void *ptr);
 
 VALUE ossl_pkey_new(EVP_PKEY *);
 void ossl_pkey_check_public_key(const EVP_PKEY *);
+EVP_PKEY *ossl_pkey_read_generic(BIO *, VALUE);
 EVP_PKEY *GetPKeyPtr(VALUE);
 EVP_PKEY *DupPKeyPtr(VALUE);
 EVP_PKEY *GetPrivPKeyPtr(VALUE);
+
+/*
+ * Serializes _self_ in X.509 SubjectPublicKeyInfo format and returns the
+ * resulting String. Sub-classes use this when overriding #to_der.
+ */
+VALUE ossl_pkey_export_spki(VALUE self, int to_der);
+/*
+ * Serializes the private key _self_ in the traditional private key format
+ * and returns the resulting String. Sub-classes use this when overriding
+ * #to_der.
+ */
+VALUE ossl_pkey_export_traditional(int argc, VALUE *argv, VALUE self,
+				   int to_der);
+
 void Init_ossl_pkey(void);
 
 /*
@@ -56,7 +71,6 @@ void Init_ossl_pkey(void);
 extern VALUE cRSA;
 extern VALUE eRSAError;
 
-VALUE ossl_rsa_new(EVP_PKEY *);
 void Init_ossl_rsa(void);
 
 /*
@@ -65,7 +79,6 @@ void Init_ossl_rsa(void);
 extern VALUE cDSA;
 extern VALUE eDSAError;
 
-VALUE ossl_dsa_new(EVP_PKEY *);
 void Init_ossl_dsa(void);
 
 /*
@@ -74,7 +87,6 @@ void Init_ossl_dsa(void);
 extern VALUE cDH;
 extern VALUE eDHError;
 
-VALUE ossl_dh_new(EVP_PKEY *);
 void Init_ossl_dh(void);
 
 /*

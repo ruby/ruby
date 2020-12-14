@@ -13,9 +13,6 @@
 #if !defined(OPENSSL_NO_ENGINE)
 # include <openssl/engine.h>
 #endif
-#if !defined(OPENSSL_NO_HMAC)
-# include <openssl/hmac.h>
-#endif
 #include <openssl/x509_vfy.h>
 
 #include "openssl_missing.h"
@@ -58,29 +55,6 @@ ossl_EC_curve_nist2nid(const char *name)
 #endif
 
 /*** added in 1.1.0 ***/
-#if !defined(HAVE_HMAC_CTX_NEW)
-HMAC_CTX *
-ossl_HMAC_CTX_new(void)
-{
-    HMAC_CTX *ctx = OPENSSL_malloc(sizeof(HMAC_CTX));
-    if (!ctx)
-	return NULL;
-    HMAC_CTX_init(ctx);
-    return ctx;
-}
-#endif
-
-#if !defined(HAVE_HMAC_CTX_FREE)
-void
-ossl_HMAC_CTX_free(HMAC_CTX *ctx)
-{
-    if (ctx) {
-	HMAC_CTX_cleanup(ctx);
-	OPENSSL_free(ctx);
-    }
-}
-#endif
-
 #if !defined(HAVE_X509_CRL_GET0_SIGNATURE)
 void
 ossl_X509_CRL_get0_signature(const X509_CRL *crl, const ASN1_BIT_STRING **psig,

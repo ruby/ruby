@@ -10,12 +10,14 @@ class OpenSSL::TestHMAC < OpenSSL::TestCase
     hmac.update("Hi There")
     assert_equal ["9294727a3638bb1c13f48ef8158bfc9d"].pack("H*"), hmac.digest
     assert_equal "9294727a3638bb1c13f48ef8158bfc9d", hmac.hexdigest
+    assert_equal "kpRyejY4uxwT9I74FYv8nQ==", hmac.base64digest
 
     # RFC 4231 4.2. Test Case 1
     hmac = OpenSSL::HMAC.new(["0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b"].pack("H*"), "SHA224")
     hmac.update("Hi There")
     assert_equal ["896fb1128abbdf196832107cd49df33f47b4b1169912ba4f53684b22"].pack("H*"), hmac.digest
     assert_equal "896fb1128abbdf196832107cd49df33f47b4b1169912ba4f53684b22", hmac.hexdigest
+    assert_equal "iW+xEoq73xloMhB81J3zP0e0sRaZErpPU2hLIg==", hmac.base64digest
   end
 
   def test_dup
@@ -48,6 +50,17 @@ class OpenSSL::TestHMAC < OpenSSL::TestCase
     assert_equal h1, h2
     refute_equal h1, h2.digest
     refute_equal h1, h3
+  end
+
+  def test_singleton_methods
+    # RFC 2202 2. Test Cases for HMAC-MD5
+    key = ["0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b"].pack("H*")
+    digest = OpenSSL::HMAC.digest("MD5", key, "Hi There")
+    assert_equal ["9294727a3638bb1c13f48ef8158bfc9d"].pack("H*"), digest
+    hexdigest = OpenSSL::HMAC.hexdigest("MD5", key, "Hi There")
+    assert_equal "9294727a3638bb1c13f48ef8158bfc9d", hexdigest
+    b64digest = OpenSSL::HMAC.base64digest("MD5", key, "Hi There")
+    assert_equal "kpRyejY4uxwT9I74FYv8nQ==", b64digest
   end
 end
 

@@ -372,15 +372,15 @@ Init_ossl_digest(void)
      *
      * === Hashing a file
      *
-     *   data = File.read('document')
+     *   data = File.binread('document')
      *   sha256 = OpenSSL::Digest.new('SHA256')
      *   digest = sha256.digest(data)
      *
      * === Hashing several pieces of data at once
      *
-     *   data1 = File.read('file1')
-     *   data2 = File.read('file2')
-     *   data3 = File.read('file3')
+     *   data1 = File.binread('file1')
+     *   data2 = File.binread('file2')
+     *   data3 = File.binread('file3')
      *   sha256 = OpenSSL::Digest.new('SHA256')
      *   sha256 << data1
      *   sha256 << data2
@@ -389,11 +389,11 @@ Init_ossl_digest(void)
      *
      * === Reuse a Digest instance
      *
-     *   data1 = File.read('file1')
+     *   data1 = File.binread('file1')
      *   sha256 = OpenSSL::Digest.new('SHA256')
      *   digest1 = sha256.digest(data1)
      *
-     *   data2 = File.read('file2')
+     *   data2 = File.binread('file2')
      *   sha256.reset
      *   digest2 = sha256.digest(data2)
      *

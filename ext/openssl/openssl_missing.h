@@ -54,14 +54,8 @@ int ossl_EC_curve_nist2nid(const char *);
 #  define EVP_MD_CTX_free EVP_MD_CTX_destroy
 #endif
 
-#if !defined(HAVE_HMAC_CTX_NEW)
-HMAC_CTX *ossl_HMAC_CTX_new(void);
-#  define HMAC_CTX_new ossl_HMAC_CTX_new
-#endif
-
-#if !defined(HAVE_HMAC_CTX_FREE)
-void ossl_HMAC_CTX_free(HMAC_CTX *);
-#  define HMAC_CTX_free ossl_HMAC_CTX_free
+#if !defined(HAVE_EVP_MD_CTX_PKEY_CTX)
+#  define EVP_MD_CTX_pkey_ctx(x) (x)->pctx
 #endif
 
 #if !defined(HAVE_X509_STORE_GET_EX_DATA)
