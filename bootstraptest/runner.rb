@@ -530,7 +530,7 @@ def cleanup_coredump
     core_path = "/tmp/bootstraptest-core.#{Time.now.utc.iso8601}"
     warn "A core file is found. Saving it at: #{core_path.dump}"
     FileUtils.mv('core', core_path)
-    system('gdb', RbConfig.ruby, '-c', core_path, '-ex', 'bt', '-batch')
+    system('gdb', @ruby, '-c', core_path, '-ex', 'bt', '-batch')
   end
   FileUtils.rm_f Dir.glob('core.*')
   FileUtils.rm_f @ruby+'.stackdump' if @ruby
