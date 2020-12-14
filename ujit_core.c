@@ -18,7 +18,7 @@ st_index_t blockid_hash(st_data_t arg)
 {
     const blockid_t *blockid = (const blockid_t*)arg;
     st_index_t hash0 = st_numhash((st_data_t)blockid->iseq);
-    st_index_t hash1 = st_numhash((st_data_t)blockid->idx);
+    st_index_t hash1 = st_numhash((st_data_t)(uint64_t)blockid->idx);
 
     // Use XOR to combine the hashes
     return hash0 ^ hash1;
@@ -31,7 +31,7 @@ static const struct st_hash_type hashtype_blockid = {
 
 // Retrieve a basic block version for an (iseq, idx) tuple
 // TODO: we need to add a versioning context here
-uint8_t* get_block_version(const rb_iseq_t *iseq, unsigned int idx /*, ctx_t* ctx */)
+uint8_t* get_block_version(const rb_iseq_t *iseq, uint32_t idx)
 {
     blockid_t blockid = { iseq, idx };
 
