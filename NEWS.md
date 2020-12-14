@@ -266,7 +266,7 @@ Outstanding ones only.
 
 * Ractor
 
-    * New class added to enable parallel execution. See doc/ractor.md for
+    * New class added to enable parallel execution. See rdoc-ref:ractor.md for
       more details.
 
 * Random
@@ -331,7 +331,7 @@ Outstanding ones only.
 
     * Introduce Fiber.set_scheduler for intercepting blocking operations and
       Fiber.scheduler for accessing the current scheduler. See
-      doc/scheduler.md for more details. [[Feature #16786]]
+      rdoc-ref:scheduler.md for more details. [[Feature #16786]]
 
     * Fiber.blocking? tells whether the current execution context is
       blocking. [[Feature #16786]]
