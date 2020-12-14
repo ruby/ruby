@@ -76,7 +76,7 @@ sufficient information, see the ChangeLog file or Redmine
         0 in 1 #=> raise NoMatchingPatternError
         ```
 
-* Find pattern is added.  [EXPERIMENTAL]
+* Find-pattern is added.  [EXPERIMENTAL]
   [[Feature #16828]]
 
     ```ruby
