@@ -1516,22 +1516,34 @@ void test(codeblock_t* cb, x86opnd_t rm_opnd, x86opnd_t test_opnd)
     if (test_opnd.type == OPND_IMM)
     {
         x86opnd_t imm_opnd = test_opnd;
-        assert (imm_opnd.as.imm >= 0);
-        assert (unsig_imm_size(imm_opnd.as.unsig_imm) <= 32);
-        assert (unsig_imm_size(imm_opnd.as.unsig_imm) <= rm_opnd.num_bits);
 
-        // Use the smallest operand size possible
-        rm_opnd = resize_opnd(rm_opnd, unsig_imm_size(imm_opnd.as.unsig_imm));
-
-        if (rm_opnd.num_bits == 8)
+        if (imm_opnd.as.imm >= 0)
         {
-            cb_write_rm(cb, false, false, NO_OPND, rm_opnd, 0x00, 1, 0xF6);
-            cb_write_int(cb, imm_opnd.as.imm, rm_opnd.num_bits);
+            assert (unsig_imm_size(imm_opnd.as.unsig_imm) <= 32);
+            assert (unsig_imm_size(imm_opnd.as.unsig_imm) <= rm_opnd.num_bits);
+
+            // Use the smallest operand size possible
+            rm_opnd = resize_opnd(rm_opnd, unsig_imm_size(imm_opnd.as.unsig_imm));
+
+            if (rm_opnd.num_bits == 8)
+            {
+                cb_write_rm(cb, false, false, NO_OPND, rm_opnd, 0x00, 1, 0xF6);
+                cb_write_int(cb, imm_opnd.as.imm, rm_opnd.num_bits);
+            }
+            else
+            {
+                cb_write_rm(cb, rm_opnd.num_bits == 16, false, NO_OPND, rm_opnd, 0x00, 1, 0xF7);
+                cb_write_int(cb, imm_opnd.as.imm, rm_opnd.num_bits);
+            }
         }
         else
         {
-            cb_write_rm(cb, rm_opnd.num_bits == 16, false, NO_OPND, rm_opnd, 0x00, 1, 0xF7);
-            cb_write_int(cb, imm_opnd.as.imm, rm_opnd.num_bits);
+            // This mode only applies to 64-bit R/M operands with 32-bit signed immediates
+            assert (imm_opnd.as.imm < 0);
+            assert (sig_imm_size(imm_opnd.as.imm) <= 32);
+            assert (rm_opnd.num_bits == 64);
+            cb_write_rm(cb, false, true, NO_OPND, rm_opnd, 0x00, 1, 0xF7);
+            cb_write_int(cb, imm_opnd.as.imm, 32);
         }
     }
     else
