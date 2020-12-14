@@ -65,7 +65,7 @@ ujit_gen_exit(codeblock_t* cb, ctx_t* ctx, VALUE* exit_pc)
 Generate an out-of-line exit to return to the interpreter
 */
 static uint8_t *
-ujit_side_exit(codeblock_t* cb, ctx_t* ctx, VALUE* exit_pc)
+ujit_side_exit(codeblock_t* cb, ctx_t* ctx)
 {
     uint8_t* code_ptr = cb_get_ptr(cb, cb->write_pos);
 
@@ -84,6 +84,7 @@ ujit_side_exit(codeblock_t* cb, ctx_t* ctx, VALUE* exit_pc)
     // Write back the old instruction at the exit PC
     // Otherwise the interpreter may jump right back to the
     // JITted code we're trying to exit
+    VALUE* exit_pc = &ctx->iseq->body->iseq_encoded[ctx->insn_idx];
     int exit_opcode = opcode_at_pc(ctx->iseq, exit_pc);
     void* exit_instr = (void*)table[exit_opcode];
     mov(cb, RAX, const_ptr_opnd(exit_pc));
@@ -101,10 +102,9 @@ Compile a sequence of bytecode instructions starting at `insn_idx`.
 Returns `NULL` if compilation fails.
 */
 uint8_t *
-ujit_compile_block(const rb_iseq_t *iseq, unsigned int insn_idx, bool gen_entry)
+ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, bool gen_entry)
 {
     assert (cb != NULL);
-    unsigned first_insn_idx = insn_idx;
     VALUE *encoded = iseq->body->iseq_encoded;
 
     // NOTE: if we are ever deployed in production, we
@@ -136,7 +136,8 @@ ujit_compile_block(const rb_iseq_t *iseq, unsigned int insn_idx, bool gen_entry)
     // For each instruction to compile
     unsigned num_instrs = 0;
     for (;;) {
-        // Set the current PC
+        // Set the current instruction
+        ctx.insn_idx = insn_idx;
         ctx.pc = &encoded[insn_idx];
 
         // Get the current opcode
@@ -187,7 +188,7 @@ ujit_compile_block(const rb_iseq_t *iseq, unsigned int insn_idx, bool gen_entry)
     if (UJIT_DUMP_MODE >= 2) {
         // Dump list of compiled instrutions
         fprintf(stderr, "Compiled the following for iseq=%p:\n", (void *)iseq);
-        VALUE *pc = &encoded[first_insn_idx];
+        VALUE *pc = &encoded[ctx.start_idx];
         VALUE *end_pc = &encoded[insn_idx];
         while (pc < end_pc) {
             int opcode = opcode_at_pc(iseq, pc);
@@ -198,15 +199,6 @@ ujit_compile_block(const rb_iseq_t *iseq, unsigned int insn_idx, bool gen_entry)
 
     return code_ptr;
 }
-
-
-
-
-
-
-
-
-
 
 static bool
 gen_dup(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
@@ -248,7 +240,7 @@ static bool
 gen_putobject(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
     // Load the argument from the bytecode sequence.
-    // We need to do this as the argument can chanage due to GC compaction.
+    // We need to do this as the argument can change due to GC compaction.
     x86opnd_t pc_imm = const_ptr_opnd((void*)ctx->pc);
     mov(cb, RAX, pc_imm);
     mov(cb, RAX, mem_opnd(64, RAX, 8)); // One after the opcode
@@ -330,7 +322,7 @@ gen_setlocal_wc0(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     test(cb, flags_opnd, imm_opnd(VM_ENV_FLAG_WB_REQUIRED));
 
     // Create a size-exit to fall back to the interpreter
-    uint8_t* side_exit = ujit_side_exit(ocb, ctx, ctx->pc);
+    uint8_t* side_exit = ujit_side_exit(ocb, ctx);
 
     // if (flags & VM_ENV_FLAG_WB_REQUIRED) != 0
     jnz_ptr(cb, side_exit);
@@ -386,7 +378,7 @@ gen_getinstancevariable(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     uint32_t ivar_index = ic->entry->index;
 
     // Create a size-exit to fall back to the interpreter
-    uint8_t* side_exit = ujit_side_exit(ocb, ctx, ctx->pc);
+    uint8_t* side_exit = ujit_side_exit(ocb, ctx);
 
     // Load self from CFP
     mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, self));
@@ -448,7 +440,7 @@ gen_setinstancevariable(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     uint32_t ivar_index = ic->entry->index;
 
     // Create a size-exit to fall back to the interpreter
-    uint8_t* side_exit = ujit_side_exit(ocb, ctx, ctx->pc);
+    uint8_t* side_exit = ujit_side_exit(ocb, ctx);
 
     // Load self from CFP
     mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, self));
@@ -501,7 +493,7 @@ gen_opt_lt(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
     // Create a size-exit to fall back to the interpreter
     // Note: we generate the side-exit before popping operands from the stack
-    uint8_t* side_exit = ujit_side_exit(ocb, ctx, ctx->pc);
+    uint8_t* side_exit = ujit_side_exit(ocb, ctx);
 
     // TODO: make a helper function for guarding on op-not-redefined
     // Make sure that minus isn't redefined for integers
@@ -542,7 +534,7 @@ gen_opt_minus(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
     // Create a size-exit to fall back to the interpreter
     // Note: we generate the side-exit before popping operands from the stack
-    uint8_t* side_exit = ujit_side_exit(ocb, ctx, ctx->pc);
+    uint8_t* side_exit = ujit_side_exit(ocb, ctx);
 
     // TODO: make a helper function for guarding on op-not-redefined
     // Make sure that minus isn't redefined for integers
@@ -582,7 +574,7 @@ gen_opt_plus(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
     // Create a size-exit to fall back to the interpreter
     // Note: we generate the side-exit before popping operands from the stack
-    uint8_t* side_exit = ujit_side_exit(ocb, ctx, ctx->pc);
+    uint8_t* side_exit = ujit_side_exit(ocb, ctx);
 
     // TODO: make a helper function for guarding on op-not-redefined
     // Make sure that plus isn't redefined for integers
@@ -711,7 +703,7 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     }
 
     // Create a size-exit to fall back to the interpreter
-    uint8_t* side_exit = ujit_side_exit(ocb, ctx, ctx->pc);
+    uint8_t* side_exit = ujit_side_exit(ocb, ctx);
 
     // Check for interrupts
     // RUBY_VM_CHECK_INTS(ec)
