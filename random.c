@@ -832,8 +832,8 @@ rand_mt_get_bytes(rb_random_t *rnd, void *ptr, size_t n)
  * call-seq:
  *   srand(number = Random.new_seed) -> old_seed
  *
- * Seeds the system pseudo-random number generator, Random::DEFAULT, with
- * +number+.  The previous seed value is returned.
+ * Seeds the system pseudo-random number generator, with +number+.
+ * The previous seed value is returned.
  *
  * If +number+ is omitted, seeds the generator using a source of entropy
  * provided by the operating system, if available (/dev/urandom on Unix systems
@@ -1569,8 +1569,6 @@ rb_f_rand(int argc, VALUE *argv, VALUE obj)
  * call-seq:
  *   Random.rand -> float
  *   Random.rand(max) -> number
- *
- * Alias of Random::DEFAULT.rand.
  */
 
 static VALUE
@@ -1646,7 +1644,7 @@ Init_RandomSeedCore(void)
       If failed to fill siphash's salt with random data, expand less random
       data with MT.
 
-      Don't reuse this MT for Random::DEFAULT. Random::DEFAULT::seed shouldn't
+      Don't reuse this MT for default_rand(). default_rand()::seed shouldn't
       provide a hint that an attacker guess siphash's seed.
     */
     struct MT mt;
@@ -1680,10 +1678,10 @@ rb_reset_random_seed(void)
  *
  * The class method Random.rand provides the base functionality of Kernel.rand
  * along with better handling of floating point values. These are both
- * interfaces to Random::DEFAULT, the Ruby system PRNG.
+ * interfaces to the Ruby system PRNG.
  *
- * Random.new will create a new PRNG with a state independent of
- * Random::DEFAULT, allowing multiple generators with different seed values or
+ * Random.new will create a new PRNG with a state independent of the Ruby
+ * system PRNG, allowing multiple generators with different seed values or
  * sequence positions to exist simultaneously. Random objects can be
  * marshaled, allowing sequences to be saved and resumed.
  *
