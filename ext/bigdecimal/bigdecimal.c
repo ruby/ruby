@@ -2366,9 +2366,9 @@ BigDecimal_power(int argc, VALUE*argv, VALUE self)
 	    goto retry;
 	}
         if (NIL_P(prec)) {
-            n += 15;
+            n += DBLE_FIG;
         }
-	exp = GetVpValueWithPrec(vexp, DBL_DIG+1, 1);
+        exp = GetVpValueWithPrec(vexp, DBLE_FIG, 1);
 	break;
 
       case T_RATIONAL:

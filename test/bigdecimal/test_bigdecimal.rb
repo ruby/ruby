@@ -1465,7 +1465,7 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(pow, pi.power(e))
 
     n = BigDecimal("2222")
-    assert_equal(BigDecimal("0.517135308457252589249242e12"), (n ** 3.5))
+    assert_equal(BigDecimal("0.5171353084572525892492416e12"), (n ** 3.5))
     assert_equal(BigDecimal("0.517135308457252592e12"), (n ** 3.5r))
     assert_equal(BigDecimal("0.517135308457252589249241582e12"), (n ** BigDecimal("3.5",15)))
   end
