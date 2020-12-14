@@ -27,7 +27,7 @@ typedef struct BlockId
     const rb_iseq_t *iseq;
 
     // Instruction index
-    const unsigned int idx;
+    const uint32_t idx;
 
 } blockid_t;
 
@@ -39,25 +39,30 @@ typedef struct ctx_struct
     // Some of the information here is only needed during
     // code generation, eg: current pc
 
+    // The start of the generated code
+    uint8_t *code_ptr;
+
     // Instruction sequence this is associated with
     const rb_iseq_t *iseq;
 
     // Index in the iseq of the opcode we are replacing
-    size_t start_idx;
+    uint32_t start_idx;
 
-    // The start of the generated code
-    uint8_t *code_ptr;
+    // Index of the current instruction being compiled
+    uint32_t insn_idx;
 
     // Current PC
     VALUE *pc;
 
     // Number of values pushed on the temporary stack
-    int32_t stack_size;
+    uint32_t stack_size;
 
     // Whether we know self is a heap object
     bool self_is_object;
 
 } ctx_t;
+
+uint8_t* get_block_version(const rb_iseq_t *iseq, uint32_t idx);
 
 // Context object methods
 int ctx_get_opcode(ctx_t *ctx);
