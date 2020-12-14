@@ -389,8 +389,8 @@ check_funcall_failed(VALUE v, VALUE e)
     struct rescue_funcall_args *args = (void *)v;
     int ret = args->respond;
     if (!ret) {
-	switch (rb_method_boundp(args->defined_class, args->mid,
-				 BOUND_PRIVATE|BOUND_RESPONDS)) {
+	switch (method_boundp(args->defined_class, args->mid,
+                              BOUND_PRIVATE|BOUND_RESPONDS)) {
 	  case 2:
 	    ret = TRUE;
 	    break;
