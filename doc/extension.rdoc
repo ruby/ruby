@@ -2087,3 +2087,4 @@ keyword in C.  RB_GC_GUARD has the following advantages:
 :enddoc: Local variables:
 :enddoc: fill-column: 70
 :enddoc: end:
+O
