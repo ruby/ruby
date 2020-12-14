@@ -10407,6 +10407,7 @@ random.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 random.$(OBJEXT): $(top_srcdir)/internal/serial.h
 random.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 random.$(OBJEXT): $(top_srcdir)/internal/string.h
+random.$(OBJEXT): $(top_srcdir)/internal/variable.h
 random.$(OBJEXT): $(top_srcdir)/internal/vm.h
 random.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 random.$(OBJEXT): {$(VPATH)}assert.h
@@ -10420,8 +10421,10 @@ random.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
 random.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 random.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 random.$(OBJEXT): {$(VPATH)}config.h
+random.$(OBJEXT): {$(VPATH)}constant.h
 random.$(OBJEXT): {$(VPATH)}defines.h
 random.$(OBJEXT): {$(VPATH)}encoding.h
+random.$(OBJEXT): {$(VPATH)}id_table.h
 random.$(OBJEXT): {$(VPATH)}intern.h
 random.$(OBJEXT): {$(VPATH)}internal.h
 random.$(OBJEXT): {$(VPATH)}internal/anyargs.h
