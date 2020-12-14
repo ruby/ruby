@@ -1694,11 +1694,15 @@ rb_vm_search_method_slowpath(VALUE cd_owner, struct rb_call_data *cd, VALUE klas
             // empty
             RB_DEBUG_COUNTER_INC(mc_inline_miss_empty);
         }
-        else if (old_cc == cd->cc) {
+        else if (old_cc == cc) {
             RB_DEBUG_COUNTER_INC(mc_inline_miss_same_cc);
         }
         else if (vm_cc_cme(old_cc) == vm_cc_cme(cc)) {
             RB_DEBUG_COUNTER_INC(mc_inline_miss_same_cme);
+        }
+        else if (vm_cc_cme(old_cc) && vm_cc_cme(cc) &&
+                 vm_cc_cme(old_cc)->def == vm_cc_cme(cc)->def) {
+            RB_DEBUG_COUNTER_INC(mc_inline_miss_same_def);
         }
         else {
             RB_DEBUG_COUNTER_INC(mc_inline_miss_diff);
