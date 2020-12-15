@@ -194,8 +194,7 @@ AS_IF([test "${CXX}" = "g++" -a -z "${GXX}"], [
     # AC_PROG_CXX sets $CXX to "g++" when it purposefully finds that there is
     # _no_ g++.  This brain-damaged design must be worked around.  Thankfully,
     # similar thing doesn't happen for AC_PROG_CC.
-    AC_MSG_NOTICE([C++ features disabled due to lack of a C++ compiler.])
-    AS_UNSET(CXX)
+    rb_there_is_in_fact_no_gplusplus_but_autoconf_is_cheating_us=true
 ])
 
 test x"$target_alias" = x &&
@@ -1134,7 +1133,10 @@ main()
 [	LIBS="-lm $LIBS"])
 : ${ORIG_LIBS=$LIBS}
 
-AS_IF([test -n "${CXX}"], [
+AS_IF([test -n "${rb_there_is_in_fact_no_gplusplus_but_autoconf_is_cheating_us}"], [
+    AC_MSG_NOTICE([Test skipped due to lack of a C++ compiler.])
+],
+[test -n "${CXX}"], [
     RUBY_WERROR_FLAG([
         AC_MSG_CHECKING([whether CXXFLAGS is valid])
         AC_LANG_PUSH(C++)
