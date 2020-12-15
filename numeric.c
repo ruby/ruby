@@ -4890,51 +4890,6 @@ int_size(VALUE num)
     return Qnil;
 }
 
-/*
- *  Document-method: Integer#bit_length
- *  call-seq:
- *     int.bit_length  ->  integer
- *
- *  Returns the number of bits of the value of +int+.
- *
- *  "Number of bits" means the bit position of the highest bit
- *  which is different from the sign bit
- *  (where the least significant bit has bit position 1).
- *  If there is no such bit (zero or minus one), zero is returned.
- *
- *  I.e. this method returns <i>ceil(log2(int < 0 ? -int : int+1))</i>.
- *
- *     (-2**1000-1).bit_length   #=> 1001
- *     (-2**1000).bit_length     #=> 1000
- *     (-2**1000+1).bit_length   #=> 1000
- *     (-2**12-1).bit_length     #=> 13
- *     (-2**12).bit_length       #=> 12
- *     (-2**12+1).bit_length     #=> 12
- *     -0x101.bit_length         #=> 9
- *     -0x100.bit_length         #=> 8
- *     -0xff.bit_length          #=> 8
- *     -2.bit_length             #=> 1
- *     -1.bit_length             #=> 0
- *     0.bit_length              #=> 0
- *     1.bit_length              #=> 1
- *     0xff.bit_length           #=> 8
- *     0x100.bit_length          #=> 9
- *     (2**12-1).bit_length      #=> 12
- *     (2**12).bit_length        #=> 13
- *     (2**12+1).bit_length      #=> 13
- *     (2**1000-1).bit_length    #=> 1000
- *     (2**1000).bit_length      #=> 1001
- *     (2**1000+1).bit_length    #=> 1001
- *
- *  This method can be used to detect overflow in Array#pack as follows:
- *
- *     if n.bit_length < 32
- *       [n].pack("l") # no overflow
- *     else
- *       raise "overflow"
- *     end
- */
-
 static VALUE
 rb_fix_bit_length(VALUE fix)
 {
