@@ -345,9 +345,11 @@ rb_call0(rb_execution_context_t *ec,
     }
 
     if (scope == CALL_PUBLIC) {
+        RB_DEBUG_COUNTER_INC(call0_public);
         me = rb_callable_method_entry_with_refinements(CLASS_OF(recv), mid, NULL);
     }
     else {
+        RB_DEBUG_COUNTER_INC(call0_other);
         me = rb_search_method_entry(recv, mid);
     }
     call_status = rb_method_call_status(ec, me, scope, self);

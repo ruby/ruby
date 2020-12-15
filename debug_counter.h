@@ -40,7 +40,8 @@ RB_DEBUG_COUNTER(ci_runtime) //           creating temporary CI
 // callcache
 RB_DEBUG_COUNTER(cc_new)        // number of CC
 RB_DEBUG_COUNTER(cc_temp)       //           dummy CC (stack-allocated)
-RB_DEBUG_COUNTER(cc_found_ccs)  // count for CC lookup success in CCS
+RB_DEBUG_COUNTER(cc_found_in_ccs)      // count for CC lookup success in CCS
+RB_DEBUG_COUNTER(cc_not_found_in_ccs)  // count for CC lookup success in CCS
 
 RB_DEBUG_COUNTER(cc_ent_invalidate) // count for invalidating cc (cc->klass = 0)
 RB_DEBUG_COUNTER(cc_cme_invalidate) // count for invalidating CME
@@ -57,6 +58,10 @@ RB_DEBUG_COUNTER(ccs_free)   // count for free'ing ccs
 RB_DEBUG_COUNTER(ccs_maxlen) // maximum length of ccs
 RB_DEBUG_COUNTER(ccs_found)      // count for finding corresponding ccs on method lookup
 RB_DEBUG_COUNTER(ccs_not_found)  // count for not found corresponding ccs on method lookup
+
+// vm_eval.c
+RB_DEBUG_COUNTER(call0_public)
+RB_DEBUG_COUNTER(call0_other)
 
 // iseq
 RB_DEBUG_COUNTER(iseq_num)    // number of total created iseq
