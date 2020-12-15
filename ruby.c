@@ -2214,6 +2214,26 @@ load_file_internal(VALUE argp_v)
     return (VALUE)ast;
 }
 
+/* disabling O_NONBLOCK, and returns 0 on success, otherwise errno */
+static inline int
+disable_nonblock(int fd)
+{
+#if defined(HAVE_FCNTL) && defined(F_SETFL)
+    if (fcntl(fd, F_SETFL, 0) < 0) {
+        const int e = errno;
+        ASSUME(e != 0);
+# if defined ENOTSUP
+        if (e == ENOTSUP) return 0;
+# endif
+# if defined B_UNSUPPORTED
+        if (e == B_UNSUPPORTED) return 0;
+# endif
+        return e;
+    }
+#endif
+    return 0;
+}
+
 static VALUE
 open_load_file(VALUE fname_v, int *xflag)
 {
@@ -2263,18 +2283,10 @@ open_load_file(VALUE fname_v, int *xflag)
 	}
 	rb_update_max_fd(fd);
 
-#if defined HAVE_FCNTL && MODE_TO_LOAD != O_RDONLY
-# ifdef ENOTSUP
-#   define IS_SUPPORTED_OP(e) ((e) != ENOTSUP)
-# else
-#   define IS_SUPPORTED_OP(e) ((void)(e), 1)
-# endif
-	/* disabling O_NONBLOCK */
-	if (fcntl(fd, F_SETFL, 0) < 0 && IS_SUPPORTED_OP(e = errno)) {
+	if (MODE_TO_LOAD != O_RDONLY && (e = disable_nonblock(fd)) != 0) {
 	    (void)close(fd);
 	    rb_load_fail(fname_v, strerror(e));
 	}
-#endif
 
 	e = ruby_is_fd_loadable(fd);
 	if (!e) {
