@@ -54,7 +54,7 @@ sufficient information, see the ChangeLog file or Redmine
 
 * Pattern matching(`case/in`) is no longer experimental. [[Feature #17260]]
 
-* One-line pattern matching is redesgined.  [EXPERIMENTAL]
+* One-line pattern matching is redesigned.  [EXPERIMENTAL]
     * `=>` is added. It can be used as like rightward assignment.
       [[Feature #17260]]
 
