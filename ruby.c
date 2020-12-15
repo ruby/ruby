@@ -2244,9 +2244,13 @@ open_load_file(VALUE fname_v, int *xflag)
 	rb_update_max_fd(fd);
 
 #if defined HAVE_FCNTL && MODE_TO_LOAD != O_RDONLY
+# ifdef ENOTSUP
+#   define IS_SUPPORTED_OP(e) ((e) != ENOTSUP)
+# else
+#   define IS_SUPPORTED_OP(e) ((void)(e), 1)
+# endif
 	/* disabling O_NONBLOCK */
-	if (fcntl(fd, F_SETFL, 0) < 0) {
-	    e = errno;
+	if (fcntl(fd, F_SETFL, 0) < 0 && IS_SUPPORTED_OP(e = errno)) {
 	    (void)close(fd);
 	    rb_load_fail(fname_v, strerror(e));
 	}
