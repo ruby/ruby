@@ -2734,7 +2734,7 @@ static inline void
 make_io_zombie(rb_objspace_t *objspace, VALUE obj)
 {
     rb_io_t *fptr = RANY(obj)->as.file.fptr;
-    make_zombie(objspace, obj, (void (*)(void*))rb_io_fptr_finalize, fptr);
+    make_zombie(objspace, obj, rb_io_fptr_finalize_internal, fptr);
 }
 
 static void
