@@ -185,7 +185,9 @@ class Ripper
     end
 
     def _push_token(tok)
-      @buf.push Elem.new([lineno(), column()], __callee__, tok, state())
+      e = Elem.new([lineno(), column()], __callee__, tok, state())
+      @buf.push(e)
+      e
     end
 
     def on_error(mesg)
