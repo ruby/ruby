@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |s|
   s.name = "json"
-  s.version = "2.3.1"
+  s.version = "2.4.0"
 
   s.summary = "JSON Implementation for Ruby"
   s.description = "This is a JSON implementation as a Ruby extension in C."
