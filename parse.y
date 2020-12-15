@@ -623,10 +623,11 @@ static VALUE new_regexp(struct parser_params *, VALUE, VALUE, const YYLTYPE *);
 static VALUE const_decl(struct parser_params *p, VALUE path);
 
 static VALUE var_field(struct parser_params *p, VALUE a);
-static VALUE assign_error(struct parser_params *p, VALUE a);
+static VALUE assign_error(struct parser_params *p, const char *mesg, VALUE a);
 
 static VALUE parser_reg_compile(struct parser_params*, VALUE, int, VALUE *);
 
+static VALUE backref_error(struct parser_params*, NODE *, VALUE);
 #endif /* !RIPPER */
 
 /* forward declaration */
@@ -1019,6 +1020,7 @@ endless_method_name(struct parser_params *p, NODE *defn, const YYLTYPE *loc)
 # define rb_warning4L(l,fmt,a,b,c,d) WARNING_CALL(WARNING_ARGS_L(l, fmt, 5), (a), (b), (c), (d))
 #ifdef RIPPER
 static ID id_warn, id_warning, id_gets, id_assoc;
+# define ERR_MESG() STR_NEW2(mesg) /* to bypass Ripper DSL */
 # define WARN_S_L(s,l) STR_NEW(s,l)
 # define WARN_S(s) STR_NEW2(s)
 # define WARN_I(i) INT2NUM(i)
@@ -1454,11 +1456,12 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		    }
 		| keyword_alias tGVAR tNTH_REF
 		    {
+			static const char mesg[] = "can't make alias for the number variables";
 		    /*%%%*/
-			yyerror1(&@3, "can't make alias for the number variables");
+			yyerror1(&@3, mesg);
 			$$ = NEW_BEGIN(0, &@$);
 		    /*% %*/
-		    /*% ripper[error]: alias_error!(var_alias!($2, $3)) %*/
+		    /*% ripper[error]: alias_error!(ERR_MESG(), var_alias!($2, $3)) %*/
 		    }
 		| keyword_undef undef_list
 		    {
@@ -1624,7 +1627,7 @@ command_asgn	: lhs '=' lex_ctxt command_rhs
 			rb_backref_error(p, $1);
 			$$ = NEW_BEGIN(0, &@$);
 		    /*% %*/
-		    /*% ripper[error]: assign_error!(assign!(var_field(p, $1), $4)) %*/
+		    /*% ripper[error]: backref_error(p, RNODE($1), assign!(var_field(p, $1), $4)) %*/
 		    }
 		;
 
@@ -2079,7 +2082,7 @@ mlhs_node	: user_variable
 			rb_backref_error(p, $1);
 			$$ = NEW_BEGIN(0, &@$);
 		    /*% %*/
-		    /*% ripper[error]: assign_error!(var_field(p, $1)) %*/
+		    /*% ripper[error]: backref_error(p, RNODE($1), var_field(p, $1)) %*/
 		    }
 		;
 
@@ -2145,16 +2148,17 @@ lhs		: user_variable
 			rb_backref_error(p, $1);
 			$$ = NEW_BEGIN(0, &@$);
 		    /*% %*/
-		    /*% ripper[error]: assign_error!(var_field(p, $1)) %*/
+		    /*% ripper[error]: backref_error(p, RNODE($1), var_field(p, $1)) %*/
 		    }
 		;
 
 cname		: tIDENTIFIER
 		    {
+			static const char mesg[] = "class/module name must be CONSTANT";
 		    /*%%%*/
-			yyerror1(&@1, "class/module name must be CONSTANT");
+			yyerror1(&@1, mesg);
 		    /*% %*/
-		    /*% ripper[error]: class_name_error!($1) %*/
+		    /*% ripper[error]: class_name_error!(ERR_MESG(), $1) %*/
 		    }
 		| tCONSTANT
 		;
@@ -2329,7 +2333,7 @@ arg		: lhs '=' lex_ctxt arg_rhs
 			rb_backref_error(p, $1);
 			$$ = NEW_BEGIN(0, &@$);
 		    /*% %*/
-		    /*% ripper[error]: assign_error!(opassign!(var_field(p, $1), $2, $4)) %*/
+		    /*% ripper[error]: backref_error(p, RNODE($1), opassign!(var_field(p, $1), $2, $4)) %*/
 		    }
 		| arg tDOT2 arg
 		    {
@@ -5143,35 +5147,39 @@ args_forward	: tBDOT3
 
 f_bad_arg	: tCONSTANT
 		    {
+			static const char mesg[] = "formal argument cannot be a constant";
 		    /*%%%*/
-			yyerror1(&@1, "formal argument cannot be a constant");
+			yyerror1(&@1, mesg);
 			$$ = 0;
 		    /*% %*/
-		    /*% ripper[error]: param_error!($1) %*/
+		    /*% ripper[error]: param_error!(ERR_MESG(), $1) %*/
 		    }
 		| tIVAR
 		    {
+			static const char mesg[] = "formal argument cannot be an instance variable";
 		    /*%%%*/
-			yyerror1(&@1, "formal argument cannot be an instance variable");
+			yyerror1(&@1, mesg);
 			$$ = 0;
 		    /*% %*/
-		    /*% ripper[error]: param_error!($1) %*/
+		    /*% ripper[error]: param_error!(ERR_MESG(), $1) %*/
 		    }
 		| tGVAR
 		    {
+			static const char mesg[] = "formal argument cannot be a global variable";
 		    /*%%%*/
-			yyerror1(&@1, "formal argument cannot be a global variable");
+			yyerror1(&@1, mesg);
 			$$ = 0;
 		    /*% %*/
-		    /*% ripper[error]: param_error!($1) %*/
+		    /*% ripper[error]: param_error!(ERR_MESG(), $1) %*/
 		    }
 		| tCVAR
 		    {
+			static const char mesg[] = "formal argument cannot be a class variable";
 		    /*%%%*/
-			yyerror1(&@1, "formal argument cannot be a class variable");
+			yyerror1(&@1, mesg);
 			$$ = 0;
 		    /*% %*/
-		    /*% ripper[error]: param_error!($1) %*/
+		    /*% ripper[error]: param_error!(ERR_MESG(), $1) %*/
 		    }
 		;
 
@@ -5657,7 +5665,7 @@ ripper_yylval_id(struct parser_params *p, ID x)
 # define set_yylval_id(x)  (void)(x)
 # define set_yylval_name(x) (void)(yylval.val = ripper_yylval_id(p, x))
 # define set_yylval_literal(x) add_mark_object(p, (x))
-# define set_yylval_node(x) (void)(x)
+# define set_yylval_node(x) (yylval.val = ripper_new_yylval(p, 0, 0, STR_NEW(p->lex.ptok, p->lex.pcur-p->lex.ptok)))
 # define yylval_id() yylval.id
 # define _cur_loc NULL_LOC /* dummy */
 #endif
@@ -7852,27 +7860,26 @@ formal_argument(struct parser_params *p, ID lhs)
       case ID_LOCAL:
 	break;
 #ifndef RIPPER
+# define ERR(mesg) yyerror0(mesg)
+#else
+# define ERR(mesg) (dispatch2(param_error, WARN_S(mesg), lhs), ripper_error(p))
+#endif
       case ID_CONST:
-	yyerror0("formal argument cannot be a constant");
+	ERR("formal argument cannot be a constant");
 	return 0;
       case ID_INSTANCE:
-	yyerror0("formal argument cannot be an instance variable");
+	ERR("formal argument cannot be an instance variable");
 	return 0;
       case ID_GLOBAL:
-	yyerror0("formal argument cannot be a global variable");
+	ERR("formal argument cannot be a global variable");
 	return 0;
       case ID_CLASS:
-	yyerror0("formal argument cannot be a class variable");
+	ERR("formal argument cannot be a class variable");
 	return 0;
       default:
-	yyerror0("formal argument must be local variable");
+	ERR("formal argument must be local variable");
 	return 0;
-#else
-      default:
-	lhs = dispatch1(param_error, lhs);
-	ripper_error(p);
-	return 0;
-#endif
+#undef ERR
     }
     shadowing_lvar(p, lhs);
     return lhs;
@@ -8840,7 +8847,8 @@ parse_gvar(struct parser_params *p, const enum lex_state_e last_state)
 	pushback(p, c);
 	if (IS_lex_state_for(last_state, EXPR_FNAME)) goto gvar;
 	tokfix(p);
-	set_yylval_node(NEW_NTH_REF(parse_numvar(p), &_cur_loc));
+	c = parse_numvar(p);
+	set_yylval_node(NEW_NTH_REF(c, &_cur_loc));
 	return tNTH_REF;
 
       default:
@@ -10782,7 +10790,7 @@ assignable(struct parser_params *p, VALUE lhs)
 {
     const char *err = 0;
     assignable0(p, get_id(lhs), &err);
-    if (err) lhs = assign_error(p, lhs);
+    if (err) lhs = assign_error(p, err, lhs);
     return lhs;
 }
 #endif
@@ -10876,7 +10884,17 @@ rb_backref_error(struct parser_params *p, NODE *node)
 	break;
     }
 }
+#else
+static VALUE
+backref_error(struct parser_params *p, NODE *ref, VALUE expr)
+{
+    VALUE mesg = rb_str_new_cstr("Can't set variable ");
+    rb_str_append(mesg, ref->nd_cval);
+    return dispatch2(assign_error, mesg, expr);
+}
+#endif
 
+#ifndef RIPPER
 static NODE *
 arg_append(struct parser_params *p, NODE *node1, NODE *node2, const YYLTYPE *loc)
 {
@@ -12176,16 +12194,15 @@ static VALUE
 const_decl(struct parser_params *p, VALUE path)
 {
     if (p->ctxt.in_def) {
-	path = dispatch1(assign_error, path);
-	ripper_error(p);
+	path = assign_error(p, "dynamic constant assignment", path);
     }
     return path;
 }
 
 static VALUE
-assign_error(struct parser_params *p, VALUE a)
+assign_error(struct parser_params *p, const char *mesg, VALUE a)
 {
-    a = dispatch1(assign_error, a);
+    a = dispatch2(assign_error, ERR_MESG(), a);
     ripper_error(p);
     return a;
 }
