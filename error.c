@@ -73,6 +73,8 @@ static VALUE rb_cWarningBuffer;
 
 static ID id_warn;
 static ID id_category;
+static ID id_deprecated;
+static ID id_experimental;
 static VALUE sym_category;
 static VALUE warning_categories;
 
@@ -160,10 +162,10 @@ rb_warning_category_from_name(VALUE category)
 {
     rb_warning_category_t cat = RB_WARN_CATEGORY_NONE;
     Check_Type(category, T_SYMBOL);
-    if (category == ID2SYM(rb_intern("deprecated"))) {
+    if (category == ID2SYM(id_deprecated)) {
         cat = RB_WARN_CATEGORY_DEPRECATED;
     }
-    else if (category == ID2SYM(rb_intern("experimental"))) {
+    else if (category == ID2SYM(id_experimental)) {
         cat = RB_WARN_CATEGORY_EXPERIMENTAL;
     }
     else {
@@ -475,7 +477,7 @@ rb_warn_deprecated(const char *fmt, const char *suggest, ...)
     rb_str_cat_cstr(mesg, " is deprecated");
     if (suggest) rb_str_catf(mesg, "; use %s instead", suggest);
     rb_str_cat_cstr(mesg, "\n");
-    rb_warn_category(mesg, ID2SYM(rb_intern("deprecated")));
+    rb_warn_category(mesg, ID2SYM(id_deprecated));
 }
 
 void
@@ -489,7 +491,7 @@ rb_warn_deprecated_to_remove(const char *fmt, const char *removal, ...)
     va_end(args);
     rb_str_set_len(mesg, RSTRING_LEN(mesg) - 1);
     rb_str_catf(mesg, " is deprecated and will be removed in Ruby %s\n", removal);
-    rb_warn_category(mesg, ID2SYM(rb_intern("deprecated")));
+    rb_warn_category(mesg, ID2SYM(id_deprecated));
 }
 
 static inline int
@@ -2824,6 +2826,8 @@ Init_Exception(void)
     id_i_path = rb_intern_const("@path");
     id_warn = rb_intern_const("warn");
     id_category = rb_intern_const("category");
+    id_deprecated = rb_intern_const("deprecated");
+    id_experimental = rb_intern_const("experimental");
     id_top = rb_intern_const("top");
     id_bottom = rb_intern_const("bottom");
     id_iseq = rb_make_internal_id();
