@@ -1607,9 +1607,9 @@ vm_ccs_verify(struct rb_class_cc_entries *ccs, ID mid, VALUE klass)
 
 #ifndef MJIT_HEADER
 static const struct rb_callcache *
-vm_search_cc(VALUE klass, const struct rb_callinfo *ci)
+vm_search_cc(const VALUE klass, const struct rb_callinfo * const ci)
 {
-    ID mid = vm_ci_mid(ci);
+    const ID mid = vm_ci_mid(ci);
     struct rb_id_table *cc_tbl = RCLASS_CC_TBL(klass);
     struct rb_class_cc_entries *ccs = NULL;
 
@@ -1632,7 +1632,7 @@ vm_search_cc(VALUE klass, const struct rb_callinfo *ci)
                     VM_ASSERT(IMEMO_TYPE_P(ccs_cc, imemo_callcache));
 
                     if (ccs_ci == ci) { // TODO: equality
-                        RB_DEBUG_COUNTER_INC(cc_found_ccs);
+                        RB_DEBUG_COUNTER_INC(cc_found_in_ccs);
 
                         VM_ASSERT(vm_cc_cme(ccs_cc)->called_id == mid);
                         VM_ASSERT(ccs_cc->klass == klass);
@@ -1648,35 +1648,56 @@ vm_search_cc(VALUE klass, const struct rb_callinfo *ci)
         cc_tbl = RCLASS_CC_TBL(klass) = rb_id_table_create(2);
     }
 
-    const rb_callable_method_entry_t *cme = rb_callable_method_entry(klass, mid);
+    RB_DEBUG_COUNTER_INC(cc_not_found_in_ccs);
+
+    const rb_callable_method_entry_t *cme;
+
+    if (ccs) {
+        cme = ccs->cme;
+        cme = UNDEFINED_METHOD_ENTRY_P(cme) ? NULL : cme;
+
+        VM_ASSERT(cme == rb_callable_method_entry(klass, mid));
+    }
+    else {
+        cme = rb_callable_method_entry(klass, mid);
+    }
+
+    VM_ASSERT(cme == NULL || IMEMO_TYPE_P(cme, imemo_ment));
 
     if (cme == NULL) {
         // undef or not found: can't cache the information
         VM_ASSERT(vm_cc_cme(&vm_empty_cc) == NULL);
         return &vm_empty_cc;
     }
-    else {
-        const struct rb_callcache *cc = vm_cc_new(klass, cme, vm_call_general);
-        METHOD_ENTRY_CACHED_SET((struct rb_callable_method_entry_struct *)cme);
 
-        if (ccs == NULL) {
-            VM_ASSERT(cc_tbl != NULL);
-            if (LIKELY(rb_id_table_lookup(cc_tbl, mid, (VALUE*)&ccs))) {
-                // rb_callable_method_entry() prepares ccs.
-            }
-            else {
-                // TODO: required?
-                ccs = vm_ccs_create(klass, cme);
-                rb_id_table_insert(cc_tbl, mid, (VALUE)ccs);
-            }
+#if VM_CHECK_MODE > 0
+    const rb_callable_method_entry_t *searched_cme = rb_callable_method_entry(klass, mid);
+    VM_ASSERT(cme == searched_cme);
+#endif
+
+    const struct rb_callcache *cc = vm_cc_new(klass, cme, vm_call_general);
+    METHOD_ENTRY_CACHED_SET((struct rb_callable_method_entry_struct *)cme);
+
+    if (ccs == NULL) {
+        VM_ASSERT(cc_tbl != NULL);
+
+        if (LIKELY(rb_id_table_lookup(cc_tbl, mid, (VALUE*)&ccs))) {
+            // rb_callable_method_entry() prepares ccs.
         }
-        vm_ccs_push(klass, ccs, ci, cc);
-
-        VM_ASSERT(vm_cc_cme(cc) != NULL);
-        VM_ASSERT(cme->called_id == mid);
-        VM_ASSERT(vm_cc_cme(cc)->called_id == mid);
-        return cc;
+        else {
+            // TODO: required?
+            ccs = vm_ccs_create(klass, cme);
+            rb_id_table_insert(cc_tbl, mid, (VALUE)ccs);
+        }
     }
+
+    vm_ccs_push(klass, ccs, ci, cc);
+
+    VM_ASSERT(vm_cc_cme(cc) != NULL);
+    VM_ASSERT(cme->called_id == mid);
+    VM_ASSERT(vm_cc_cme(cc)->called_id == mid);
+
+    return cc;
 }
 
 MJIT_FUNC_EXPORTED const struct rb_callcache *
@@ -1704,6 +1725,53 @@ rb_vm_search_method_slowpath(const struct rb_callinfo *ci, VALUE klass)
 #endif
 
 static const struct rb_callcache *
+vm_search_method_swlopath0(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
+{
+#if USE_DEBUG_COUNTER
+    const struct rb_callcache *old_cc = cd->cc;
+#endif
+
+    const struct rb_callcache *cc = rb_vm_search_method_slowpath(cd->ci, klass);
+
+#if OPT_INLINE_METHOD_CACHE
+    cd->cc = cc;
+
+    const struct rb_callcache *empty_cc =
+#ifdef MJIT_HEADER
+      rb_vm_empty_cc();
+#else
+      &vm_empty_cc;
+#endif
+    if (cd_owner && cc != empty_cc) RB_OBJ_WRITTEN(cd_owner, Qundef, cc);
+
+#if USE_DEBUG_COUNTER
+    if (old_cc == &empty_cc) {
+        // empty
+        RB_DEBUG_COUNTER_INC(mc_inline_miss_empty);
+    }
+    else if (old_cc == cc) {
+        RB_DEBUG_COUNTER_INC(mc_inline_miss_same_cc);
+    }
+    else if (vm_cc_cme(old_cc) == vm_cc_cme(cc)) {
+        RB_DEBUG_COUNTER_INC(mc_inline_miss_same_cme);
+    }
+    else if (vm_cc_cme(old_cc) && vm_cc_cme(cc) &&
+             vm_cc_cme(old_cc)->def == vm_cc_cme(cc)->def) {
+        RB_DEBUG_COUNTER_INC(mc_inline_miss_same_def);
+    }
+    else {
+        RB_DEBUG_COUNTER_INC(mc_inline_miss_diff);
+    }
+#endif
+#endif // OPT_INLINE_METHOD_CACHE
+
+    VM_ASSERT(vm_cc_cme(cc) == NULL ||
+              vm_cc_cme(cc)->called_id == vm_ci_mid(cd->ci));
+
+    return cc;
+}
+
+static const struct rb_callcache *
 vm_search_method_fastpath(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
 {
     const struct rb_callcache *cc = cd->cc;
@@ -1726,47 +1794,7 @@ vm_search_method_fastpath(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
     }
 #endif
 
-#if USE_DEBUG_COUNTER
-    const struct rb_callcache *old_cc = cd->cc;
-#endif
-
-    cc = rb_vm_search_method_slowpath(cd->ci, klass);
-
-#if OPT_INLINE_METHOD_CACHE
-    cd->cc = cc;
-
-    const struct rb_callcache *empty_cc =
-#ifdef MJIT_HEADER
-      rb_vm_empty_cc();
-#else
-      &vm_empty_cc;
-#endif
-    if (cd_owner && cc != empty_cc) RB_OBJ_WRITTEN(cd_owner, Qundef, cc);
-
-#if USE_DEBUG_COUNTER
-    if (old_cc == &vm_empty_cc) {
-        // empty
-        RB_DEBUG_COUNTER_INC(mc_inline_miss_empty);
-    }
-    else if (old_cc == cc) {
-        RB_DEBUG_COUNTER_INC(mc_inline_miss_same_cc);
-    }
-    else if (vm_cc_cme(old_cc) == vm_cc_cme(cc)) {
-        RB_DEBUG_COUNTER_INC(mc_inline_miss_same_cme);
-    }
-    else if (vm_cc_cme(old_cc) && vm_cc_cme(cc) &&
-             vm_cc_cme(old_cc)->def == vm_cc_cme(cc)->def) {
-        RB_DEBUG_COUNTER_INC(mc_inline_miss_same_def);
-    }
-    else {
-        RB_DEBUG_COUNTER_INC(mc_inline_miss_diff);
-    }
-#endif
-#endif // OPT_INLINE_METHOD_CACHE
-
-    VM_ASSERT(vm_cc_cme(cc) == NULL ||
-              vm_cc_cme(cc)->called_id == vm_ci_mid(cd->ci));
-    return cc;
+    return vm_search_method_swlopath0(cd_owner, cd, klass);
 }
 
 static const struct rb_callcache *
@@ -4384,7 +4412,14 @@ vm_invokeblock_i(struct rb_execution_context_struct *ec,
 static const struct rb_callcache *
 vm_search_invokeblock(const struct rb_control_frame_struct *reg_cfp, struct rb_call_data *cd, VALUE recv)
 {
-    static const struct rb_callcache cc = VM_CC_ON_STACK(0, vm_invokeblock_i, {0}, 0);
+    static const struct rb_callcache cc = {
+        .flags = T_IMEMO | (imemo_callcache << FL_USHIFT) | VM_CALLCACHE_UNMARKABLE,
+        .klass = 0,
+        .cme_  = 0,
+        .call_ = vm_invokeblock_i,
+        .aux_  = {0},
+    };
+
     return &cc;
 }
 
