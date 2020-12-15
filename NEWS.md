@@ -196,8 +196,8 @@ Outstanding ones only.
 
 * Hash
 
-    * Hash#transform_keys now accepts a hash that maps keys to new
-      keys.  [[Feature #16274]]
+    * Hash#transform_keys and transform_keys! now accepts a hash that maps
+      keys to new keys.  [[Feature #16274]]
 
     * Hash#except has been added, which returns a hash excluding the
       given keys and their values.  [[Feature #15822]]
