@@ -194,6 +194,8 @@ void mjit_finish(bool close_handle_p);
 
 # else // USE_MJIT
 
+static inline void rb_mjit_before_vm_ic_update(void){}
+static inline void rb_mjit_after_vm_ic_update(void){}
 static inline struct mjit_cont *mjit_cont_new(rb_execution_context_t *ec){return NULL;}
 static inline void mjit_cont_free(struct mjit_cont *cont){}
 static inline void mjit_gc_start_hook(void){}
