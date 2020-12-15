@@ -3372,8 +3372,9 @@ rb_opts_exception_p(VALUE opts, int default_value)
  *  integer string representation.  If <i>arg</i> is a String,
  *  when <i>base</i> is omitted or equals zero, radix indicators
  *  (<code>0</code>, <code>0b</code>, and <code>0x</code>) are honored.
- *  In any case, strings should be strictly conformed to numeric
- *  representation. This behavior is different from that of
+ *  In any case, strings should consist only of one or more digits, except
+ *  for that a sign, one underscore between two digits, and leading/trailing
+ *  spaces are optional.  This behavior is different from that of
  *  String#to_i.  Non string values will be converted by first
  *  trying <code>to_int</code>, then <code>to_i</code>.
  *
@@ -3387,6 +3388,7 @@ rb_opts_exception_p(VALUE opts, int default_value)
  *     Integer(Time.new)   #=> 1204973019
  *     Integer("0930", 10) #=> 930
  *     Integer("111", 2)   #=> 7
+ *     Integer(" +1_0 ")   #=> 10
  *     Integer(nil)        #=> TypeError: can't convert nil into Integer
  *     Integer("x")        #=> ArgumentError: invalid value for Integer(): "x"
  *
