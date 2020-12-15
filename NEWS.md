@@ -355,9 +355,13 @@ Outstanding ones only.
 
 Outstanding ones only.
 
+* BigDecimal
+
+    * Update to BigDecimal 2.0.2
+
 * Bundler
 
-    * Update to Bundler 2.2.0
+    * Update to Bundler 2.2.1
 
 * CSV
 
@@ -370,6 +374,10 @@ Outstanding ones only.
 * IRB
 
     * Update to IRB 1.2.6
+
+* JSON
+
+    * Update to JSON 2.4.0
 
 * Socket
 
@@ -406,13 +414,17 @@ Outstanding ones only.
 
     * Use officially discouraged. Read OpenStruct@Caveats section.
 
+* Psych
+
+    * Update to Psych 3.2.1
+
 * Reline
 
     * Update to Reline 0.1.5
 
 * RubyGems
 
-    * Update to RubyGems 3.2.0
+    * Update to RubyGems 3.2.1
 
 ## Compatibility issues
 
