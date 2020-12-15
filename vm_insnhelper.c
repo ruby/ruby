@@ -4553,12 +4553,11 @@ vm_opt_newarray_min(rb_num_t num, const VALUE *ptr)
 #undef id_cmp
 
 static int
-vm_ic_hit_p(IC ic, const VALUE *reg_ep)
+vm_ic_hit_p(const rb_serial_t ic_serial, const rb_cref_t *ic_cref, const VALUE *reg_ep)
 {
-    if (ic->ic_serial == GET_GLOBAL_CONSTANT_STATE() &&
-        rb_ractor_main_p()) {
-        return (ic->ic_cref == NULL || // no need to check CREF
-                ic->ic_cref == vm_get_cref(reg_ep));
+    if (ic_serial == GET_GLOBAL_CONSTANT_STATE() && rb_ractor_main_p()) {
+        return (ic_cref == NULL || // no need to check CREF
+                ic_cref == vm_get_cref(reg_ep));
     }
     return FALSE;
 }
@@ -4567,9 +4566,11 @@ static void
 vm_ic_update(IC ic, VALUE val, const VALUE *reg_ep)
 {
     VM_ASSERT(ic->value != Qundef);
+    rb_mjit_before_vm_ic_update();
     ic->value = val;
     ic->ic_serial = GET_GLOBAL_CONSTANT_STATE() - ruby_vm_const_missing_count;
     ic->ic_cref = vm_get_const_key_cref(reg_ep);
+    rb_mjit_after_vm_ic_update();
     ruby_vm_const_missing_count = 0;
 }
 

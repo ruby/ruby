@@ -1023,7 +1023,7 @@ opt_getinlinecache
 ()
 (VALUE val)
 {
-    if (vm_ic_hit_p(ic, GET_EP())) {
+    if (vm_ic_hit_p(ic->ic_serial, ic->ic_cref, GET_EP())) {
 	val = ic->value;
 	JUMP(dst);
     }

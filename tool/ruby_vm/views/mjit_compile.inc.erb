@@ -65,6 +65,8 @@ switch (insn) {
 <%=   render 'mjit_compile_ivar', locals: { insn: insn } -%>
 %   when 'invokebuiltin', 'opt_invokebuiltin_delegate'
 <%=   render 'mjit_compile_invokebuiltin', locals: { insn: insn } -%>
+%   when 'opt_getinlinecache'
+<%=   render 'mjit_compile_getinlinecache', locals: { insn: insn } -%>
 %   when 'leave', 'opt_invokebuiltin_delegate_leave'
 %     # opt_invokebuiltin_delegate_leave also implements leave insn. We need to handle it here for inlining.
 %     if insn.name == 'opt_invokebuiltin_delegate_leave'

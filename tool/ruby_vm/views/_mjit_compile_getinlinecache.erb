@@ -1,0 +1,36 @@
+% # -*- C -*-
+% # Copyright (c) 2020 Takashi Kokubun.  All rights reserved.
+% #
+% # This file is a part of  the programming language Ruby.  Permission is hereby
+% # granted, to either  redistribute and/or modify this file,  provided that the
+% # conditions mentioned  in the  file COPYING  are met.   Consult the  file for
+% # details.
+%
+% # compiler: Declare dst and ic
+% insn.opes.each_with_index do |ope, i|
+    <%= ope.fetch(:decl) %> = (<%= ope.fetch(:type) %>)operands[<%= i %>];
+% end
+
+% # compiler: Capture IC values, locking getinlinecache
+    rb_mjit_before_vm_ic_update();
+    rb_serial_t ic_serial = ic->ic_serial;
+    const rb_cref_t *ic_cref = ic->ic_cref;
+    VALUE ic_value = ic->value;
+    rb_mjit_after_vm_ic_update();
+
+    if (ic_serial && !status->compile_info->disable_const_cache) {
+%       # JIT: Inline everything in IC, and cancel the slow path
+        fprintf(f, "    if (vm_ic_hit_p((rb_serial_t)%"PRI_SERIALT_PREFIX"u, (const rb_cref_t *)0x%"PRIxVALUE", reg_cfp->ep)) {", ic_serial, (VALUE)ic_cref);
+        fprintf(f, "        stack[%d] = 0x%"PRIxVALUE";\n", b->stack_size, ic_value);
+        fprintf(f, "        goto label_%d;\n", pos + insn_len(insn) + (int)dst);
+        fprintf(f, "    }");
+        fprintf(f, "    else {");
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "        goto const_cancel;\n");
+        fprintf(f, "    }");
+
+%       # compiler: Move JIT compiler's internal stack pointer
+        b->stack_size += <%= insn.call_attribute('sp_inc') %>;
+        break;
+    }
