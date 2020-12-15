@@ -2579,6 +2579,8 @@ syserr_eqq(VALUE self, VALUE exc)
  */
 
 /*
+ *  Document-class: Exception
+ *
  *  \Class Exception and its subclasses are used to communicate between
  *  Kernel#raise and +rescue+ statements in <code>begin ... end</code> blocks.
  *
