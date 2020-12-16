@@ -513,6 +513,10 @@ Excluding feature bug fixes.
 
     * The issues of sdbm will be handled at https://github.com/ruby/sdbm
 
+* WEBrick have been removed from ruby standard library. [[Feature #17303]]
+
+    * The issues of sdbm will be handled at https://github.com/ruby/webrick
+
 ## C API updates
 
 * C API functions related to $SAFE have been removed.
@@ -681,6 +685,7 @@ end
 [Feature #17187]: https://bugs.ruby-lang.org/issues/17187
 [Bug #17221]:     https://bugs.ruby-lang.org/issues/17221
 [Feature #17260]: https://bugs.ruby-lang.org/issues/17260
+[Feature #17303]: https://bugs.ruby-lang.org/issues/17303
 [Feature #17322]: https://bugs.ruby-lang.org/issues/17322
 [Feature #17351]: https://bugs.ruby-lang.org/issues/17351
 [Feature #17371]: https://bugs.ruby-lang.org/issues/17371
