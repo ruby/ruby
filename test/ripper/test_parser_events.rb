@@ -96,7 +96,7 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
   end
 
   def test_alias_error
-    assert_equal '[aliaserr(valias($a,$1))]', parse('alias $a $1')
+    assert_equal '[aliaserr($1)]', parse('alias $a $1')
   end
 
   def test_arglist
