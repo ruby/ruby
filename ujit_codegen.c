@@ -15,9 +15,6 @@
 #include "ujit_asm.h"
 #include "ujit_utils.h"
 
-// Code generation function signature
-typedef bool (*codegen_fn)(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx);
-
 // Map from YARV opcodes to code generation functions
 static st_table *gen_fns;
 
@@ -885,6 +882,38 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
             imm_opnd(sizeof(rb_control_frame_t))
         );
     }
+
+    return true;
+}
+
+void 
+gen_branchunless_branch(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uint8_t shape)
+{
+    jz_ptr(cb, target0);
+    jmp_ptr(cb, target1);
+}
+
+static bool
+gen_branchunless(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
+{
+    // Get the branch target instruction offsets
+    int32_t jump_idx = (int32_t)ctx_get_arg(ctx, 0);
+    int32_t next_idx = ctx->insn_idx + 1;
+    blockid_t jump_block = { ctx->iseq, jump_idx };
+    blockid_t next_block = { ctx->iseq, next_idx };
+
+    // TODO: we need to eventually do an interrupt check when jumping/branching
+    // How can we do this while keeping the check logic out of line?
+	// RUBY_VM_CHECK_INTS(ec);
+
+    // Test if any bit (outside of the Qnil bit) is on
+    // RUBY_Qfalse  /* ...0000 0000 */
+    // RUBY_Qnil    /* ...0000 1000 */
+    x86opnd_t val_opnd = ctx_stack_pop(ctx, 1);
+    test(cb, val_opnd, imm_opnd(~Qnil));
+
+    // Generate the branch instructions
+    gen_branch(cb, ocb, jump_block, next_block, gen_branchunless_branch);
 
     return true;
 }
