@@ -3733,6 +3733,7 @@ debug_counter.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 debug_counter.$(OBJEXT): {$(VPATH)}missing.h
 debug_counter.$(OBJEXT): {$(VPATH)}st.h
 debug_counter.$(OBJEXT): {$(VPATH)}subst.h
+debug_counter.$(OBJEXT): {$(VPATH)}thread_native.h
 dir.$(OBJEXT): $(hdrdir)/ruby.h
 dir.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 dir.$(OBJEXT): $(top_srcdir)/internal/array.h
