@@ -607,7 +607,6 @@ static ID ripper_get_id(VALUE);
 static VALUE ripper_get_value(VALUE);
 #define get_value(val) ripper_get_value(val)
 #define get_num(num) (int)get_id(num)
-#define get_cval(val) RNODE(val)->nd_cval
 static VALUE assignable(struct parser_params*,VALUE);
 static int id_is_var(struct parser_params *p, ID id);
 
@@ -1462,7 +1461,7 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 			yyerror1(&@3, mesg);
 			$$ = NEW_BEGIN(0, &@$);
 		    /*% %*/
-		    /*% ripper[error]: alias_error!(ERR_MESG(), get_cval($3)) %*/
+		    /*% ripper[error]: alias_error!(ERR_MESG(), $3) %*/
 		    }
 		| keyword_undef undef_list
 		    {
