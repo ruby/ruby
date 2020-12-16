@@ -70,12 +70,13 @@ VALUE *rb_ruby_debug_ptr(void);
 
 /* reports if `-W' specified */
 PRINTF_ARGS(void rb_warning(const char*, ...), 1, 2);
-PRINTF_ARGS(void rb_category_warning(rb_warning_category_t category, const char*, ...), 2, 3);
+PRINTF_ARGS(void rb_category_warning(rb_warning_category_t, const char*, ...), 2, 3);
 PRINTF_ARGS(void rb_compile_warning(const char *, int, const char*, ...), 3, 4);
+PRINTF_ARGS(void rb_category_compile_warn(rb_warning_category_t, const char *, int, const char*, ...), 4, 5);
 PRINTF_ARGS(void rb_sys_warning(const char*, ...), 1, 2);
 /* reports always */
 COLDFUNC PRINTF_ARGS(void rb_warn(const char*, ...), 1, 2);
-COLDFUNC PRINTF_ARGS(void rb_category_warn(rb_warning_category_t category, const char*, ...), 2, 3);
+COLDFUNC PRINTF_ARGS(void rb_category_warn(rb_warning_category_t, const char*, ...), 2, 3);
 PRINTF_ARGS(void rb_compile_warn(const char *, int, const char*, ...), 3, 4);
 
 RBIMPL_SYMBOL_EXPORT_END()

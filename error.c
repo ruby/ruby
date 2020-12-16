@@ -375,6 +375,20 @@ rb_compile_warning(const char *file, int line, const char *fmt, ...)
     rb_write_warning_str(str);
 }
 
+void
+rb_category_compile_warn(rb_warning_category_t category, const char *file, int line, const char *fmt, ...)
+{
+    VALUE str;
+    va_list args;
+
+    if (NIL_P(ruby_verbose)) return;
+
+    va_start(args, fmt);
+    str = warn_vsprintf(NULL, file, line, fmt, args);
+    va_end(args);
+    rb_warn_category(str, rb_hash_fetch(warning_category_t_map, INT2NUM(category)));
+}
+
 static VALUE
 warning_string(rb_encoding *enc, const char *fmt, va_list args)
 {
