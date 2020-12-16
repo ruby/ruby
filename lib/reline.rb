@@ -200,7 +200,11 @@ module Reline
 
     private def inner_readline(prompt, add_hist, multiline, &confirm_multiline_termination)
       if ENV['RELINE_STDERR_TTY']
-        $stderr.reopen(ENV['RELINE_STDERR_TTY'], 'w')
+        if Reline::IOGate.win?
+          $stderr = File.open(ENV['RELINE_STDERR_TTY'], 'a')
+        else
+          $stderr.reopen(ENV['RELINE_STDERR_TTY'], 'w')
+        end
         $stderr.sync = true
         $stderr.puts "Reline is used by #{Process.pid}"
       end
