@@ -852,7 +852,7 @@ Init_MemoryView(void)
 {
     exported_object_table = rb_init_identtable();
 
-    // exported_object_table is refered through rb_memory_view_exported_object_registry
+    // exported_object_table is referred through rb_memory_view_exported_object_registry
     // in -test-/memory_view extension.
     VALUE obj = TypedData_Wrap_Struct(
         0, &rb_memory_view_exported_object_registry_data_type,
