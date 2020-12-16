@@ -69,8 +69,10 @@ const rb_data_type_t rb_memory_view_exported_object_registry_data_type = {
 };
 
 static int
-update_exported_object_ref_count(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
+exported_object_add_ref(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
 {
+    ASSERT_vm_locking();
+
     if (existing) {
         *val += 1;
     }
@@ -80,32 +82,33 @@ update_exported_object_ref_count(st_data_t *key, st_data_t *val, st_data_t arg, 
     return ST_CONTINUE;
 }
 
+static int
+exported_object_dec_ref(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
+{
+    ASSERT_vm_locking();
+
+    if (existing) {
+        *val -= 1;
+        if (*val == 0) {
+            return ST_DELETE;
+        }
+    }
+    return ST_CONTINUE;
+}
+
 static void
 register_exported_object(VALUE obj)
 {
     RB_VM_LOCK_ENTER();
-    st_update(exported_object_table, (st_data_t)obj, update_exported_object_ref_count, 0);
+    st_update(exported_object_table, (st_data_t)obj, exported_object_add_ref, 0);
     RB_VM_LOCK_LEAVE();
 }
 
 static void
 unregister_exported_object(VALUE obj)
 {
-    st_table *table = exported_object_table;
-    st_data_t count;
-
     RB_VM_LOCK_ENTER();
-
-    if (st_lookup(table, (st_data_t)obj, &count)) {
-        if (--count == 0) {
-            st_data_t key = (st_data_t)obj;
-            st_delete(table, &key, &count);
-        }
-        else {
-            st_insert(table, (st_data_t)obj, count);
-        }
-    }
-
+    st_update(exported_object_table, (st_data_t)obj, exported_object_dec_ref, 0);
     RB_VM_LOCK_LEAVE();
 }
 
