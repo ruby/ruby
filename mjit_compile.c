@@ -307,6 +307,10 @@ compile_cancel_handler(FILE *f, const struct rb_iseq_constant_body *body, struct
     fprintf(f, "    rb_mjit_recompile_exivar(original_iseq);\n");
     fprintf(f, "    goto cancel;\n");
 
+    fprintf(f, "\nconst_cancel:\n");
+    fprintf(f, "    rb_mjit_recompile_const(original_iseq);\n");
+    fprintf(f, "    goto cancel;\n");
+
     fprintf(f, "\ncancel:\n");
     fprintf(f, "    RB_DEBUG_COUNTER_INC(mjit_cancel);\n");
     if (status->local_stack_p) {
