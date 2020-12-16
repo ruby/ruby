@@ -94,10 +94,10 @@ class Ractor
     alias recv receive
   end
 
+  # same as Ractor.receive
   private def receive
     __builtin_cexpr! %q{
-      // TODO: check current actor
-      ractor_receive(ec, RACTOR_PTR(self))
+      ractor_receive(ec, rb_ec_ractor_ptr(ec))
     }
   end
   alias recv receive
