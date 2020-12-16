@@ -4464,6 +4464,7 @@ encoding.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
 encoding.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 encoding.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 encoding.$(OBJEXT): {$(VPATH)}config.h
+encoding.$(OBJEXT): {$(VPATH)}debug_counter.h
 encoding.$(OBJEXT): {$(VPATH)}defines.h
 encoding.$(OBJEXT): {$(VPATH)}encindex.h
 encoding.$(OBJEXT): {$(VPATH)}encoding.c
@@ -4639,6 +4640,7 @@ enum.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 enum.$(OBJEXT): $(top_srcdir)/internal/object.h
 enum.$(OBJEXT): $(top_srcdir)/internal/proc.h
 enum.$(OBJEXT): $(top_srcdir)/internal/rational.h
+enum.$(OBJEXT): $(top_srcdir)/internal/re.h
 enum.$(OBJEXT): $(top_srcdir)/internal/serial.h
 enum.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 enum.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -13824,6 +13826,7 @@ symbol.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
 symbol.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 symbol.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 symbol.$(OBJEXT): {$(VPATH)}config.h
+symbol.$(OBJEXT): {$(VPATH)}debug_counter.h
 symbol.$(OBJEXT): {$(VPATH)}defines.h
 symbol.$(OBJEXT): {$(VPATH)}encoding.h
 symbol.$(OBJEXT): {$(VPATH)}gc.h
@@ -15953,6 +15956,7 @@ vm_sync.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 vm_sync.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 vm_sync.$(OBJEXT): {$(VPATH)}config.h
 vm_sync.$(OBJEXT): {$(VPATH)}constant.h
+vm_sync.$(OBJEXT): {$(VPATH)}debug_counter.h
 vm_sync.$(OBJEXT): {$(VPATH)}defines.h
 vm_sync.$(OBJEXT): {$(VPATH)}gc.h
 vm_sync.$(OBJEXT): {$(VPATH)}id.h
