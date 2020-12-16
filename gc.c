@@ -413,7 +413,7 @@ int ruby_rgengc_debug;
  * 2: enable profiling for each types
  */
 #ifndef RGENGC_PROFILE
-#define RGENGC_PROFILE     1
+#define RGENGC_PROFILE     0
 #endif
 
 /* RGENGC_ESTIMATE_OLDMALLOC
