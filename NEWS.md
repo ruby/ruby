@@ -88,6 +88,10 @@ sufficient information, see the ChangeLog file or Redmine
 * Interpolated String literals are no longer frozen when
   `# frozen-string-literal: true` is used. [[Feature #17104]]
 
+* Magic comment `shareable_constant_value` added to freeze constants.
+  See {Magic Comments}[rdoc-ref:doc/syntax/comments.rdoc@Magic+Comments] for more details.
+  [[Feature #17273]]
+
 * A {static analysis}[rdoc-label:label-Static+analysis] foundation is
   introduced.
     * {RBS}[rdoc-label:label-RBS] is introduced. It is a type definition
@@ -757,6 +761,7 @@ end
 [Feature #17187]: https://bugs.ruby-lang.org/issues/17187
 [Bug #17221]:     https://bugs.ruby-lang.org/issues/17221
 [Feature #17260]: https://bugs.ruby-lang.org/issues/17260
+[Feature #17273]: https://bugs.ruby-lang.org/issues/17273
 [Feature #17303]: https://bugs.ruby-lang.org/issues/17303
 [Feature #17314]: https://bugs.ruby-lang.org/issues/17314
 [Feature #17322]: https://bugs.ruby-lang.org/issues/17322
