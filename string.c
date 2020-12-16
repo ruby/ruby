@@ -11052,6 +11052,26 @@ sym_inspect(VALUE sym)
     return str;
 }
 
+#if 0 /* for RDoc */
+/*
+ *  call-seq:
+ *     sym.name   -> string
+ *
+ *  Returns the name or string corresponding to <i>sym</i>. Unlike #to_s, the
+ *  returned string is frozen.
+ *
+ *     :fred.name         #=> "fred"
+ *     :fred.name.frozen? #=> true
+ *     :fred.to_s         #=> "fred"
+ *     :fred.to_s.frozen? #=> false
+ */
+VALUE
+rb_sym2str(VALUE sym)
+{
+
+}
+#endif
+
 
 /*
  *  call-seq:
@@ -11062,6 +11082,9 @@ sym_inspect(VALUE sym)
  *
  *     :fred.id2name   #=> "fred"
  *     :ginger.to_s    #=> "ginger"
+ *
+ *  Note that this string is not frozen (unlike the symbol itself).
+ *  To get a frozen string, use #name.
  */
 
 
