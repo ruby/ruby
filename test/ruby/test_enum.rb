@@ -66,22 +66,22 @@ class TestEnumerable < Test::Unit::TestCase
   def test_grep_optimization
     bug17030 = '[ruby-core:99156]'
     'set last match' =~ /set last (.*)/
-    assert_equal([:a, 'b', :c], [:a, 'b', 'z', :c, 42, nil].grep(/[a-d]/))
-    assert_equal(['z', 42, nil], [:a, 'b', 'z', :c, 42, nil].grep_v(/[a-d]/))
-    assert_equal('match', $1)
+    assert_equal([:a, 'b', :c], [:a, 'b', 'z', :c, 42, nil].grep(/[a-d]/), bug17030)
+    assert_equal(['z', 42, nil], [:a, 'b', 'z', :c, 42, nil].grep_v(/[a-d]/), bug17030)
+    assert_equal('match', $1, bug17030)
 
     regexp = Regexp.new('x')
-    assert_equal([], @obj.grep(regexp)) # sanity check
+    assert_equal([], @obj.grep(regexp), bug17030) # sanity check
     def regexp.===(other)
       true
     end
-    assert_equal([1, 2, 3, 1, 2], @obj.grep(regexp))
+    assert_equal([1, 2, 3, 1, 2], @obj.grep(regexp), bug17030)
 
     o = Object.new
     def o.to_str
       'hello'
     end
-    assert_same(o, [o].grep(/ll/).first)
+    assert_same(o, [o].grep(/ll/).first, bug17030)
   end
 
   def test_count
