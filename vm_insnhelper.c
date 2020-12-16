@@ -1262,12 +1262,6 @@ vm_setivar(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, const str
     return vm_setivar_slowpath(obj, id, val, iseq, ic, cc, is_attr);
 }
 
-VALUE
-rb_vm_setivar(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic)
-{
-    return vm_setivar(obj, id, val, iseq, ic, NULL, false);
-}
-
 static inline VALUE
 vm_getinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, IVC ic)
 {
