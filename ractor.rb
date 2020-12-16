@@ -5,12 +5,12 @@
 # the outer scope.
 #
 #     # The simplest ractor
-#     r = Ractor.new { puts "I am in Ractor!" }
-#     sleep(0.1) # allow it to finish
+#     r = Ractor.new {puts "I am in Ractor!"}
+#     r.take # allow it to finish
 #     # here "I am in Ractor!" would be printed
 #
 #     a = 1
-#     r = Ractor.new { puts "I am in Ractor! a=#{a}" }
+#     r = Ractor.new {puts "I am in Ractor! a=#{a}"}
 #     # fails immediately with
 #     # ArgumentError (can not isolate a Proc because it accesses outer variables (a).)
 #
@@ -21,12 +21,12 @@
 # sending and receiving messages, thus making them _actors_ ("Ractor" stands for "Ruby Actor").
 #
 #     a = 1
-#     r = Ractor.new {
+#     r = Ractor.new do
 #       a_in_ractor = receive # receive blocks till somebody will pass message
 #       puts "I am in Ractor! a=#{a_in_ractor}"
-#     }
+#     end
 #     r.send(a)  # pass it
-#     sleep(0.1)
+#     r.take
 #     # here "I am in Ractor! a=1" would be printed
 #
 # There are two pairs of methods for sending/receiving messages:
@@ -58,7 +58,7 @@
 #       srv.send 'pong'                           # The client sends a message specifically to the server
 #     end
 #
-#     sleep(0.1)
+#     [client, server].each(&:take)               # Wait till they both finish
 #
 # This will output:
 #
@@ -98,12 +98,12 @@
 # deep cloning of non-shareable parts of its structure.
 #
 #     data = ['foo', 'bar'.freeze]
-#     r = Ractor.new{
+#     r = Ractor.new do
 #       data2 = Ractor.receive
 #       puts "In ractor: #{data2.object_id}, #{data2[0].object_id}, #{data2[1].object_id}"
-#     }
+#     end
 #     r.send(data)
-#     sleep(0.1)
+#     r.take
 #     puts "Outside  : #{data.object_id}, #{data[0].object_id}, #{data[1].object_id}"
 #
 # This will output:
@@ -120,12 +120,12 @@
 # receiving ractor, making it inaccessible for a sending ractor.
 #
 #     data = ['foo', 'bar']
-#     r = Ractor.new{
+#     r = Ractor.new do
 #       data_in_ractor = Ractor.receive
 #       puts "In ractor: #{data_in_ractor.object_id}, #{data_in_ractor[0].object_id}"
-#     }
+#     end
 #     r.send(data, move: true)
-#     sleep(0.1)
+#     r.take
 #     puts "Outside: moved? #{Ractor::MovedObject === data}"
 #     puts "Outside: #{data.inspect}"
 #
@@ -149,11 +149,11 @@
 #
 #     C.tricky = 'test'
 #
-#     Ractor.new(C) { |cls|
+#     r = Ractor.new(C) do |cls|
 #       puts "I see #{cls}"
 #       puts "I can't see #{cls.tricky}"
-#     }
-#     sleep(0.1)
+#     end
+#     r.take
 #     # I see C
 #     # can not access instance variables of classes/modules from non-main Ractors (RuntimeError)
 #
@@ -163,21 +163,21 @@
 #     GOOD = 'good'.freeze
 #     BAD = 'bad'
 #
-#     Ractor.new {
+#     r = Ractor.new do
 #       puts "GOOD=#{GOOD}"
 #       puts "BAD=#{BAD}"
-#     }
-#     sleep(0.1)
+#     end
+#     r.take
 #     # GOOD=good
 #     # can not access non-shareable objects in constant Object::BAD by non-main Ractor. (NameError)
 #
 #     # Consider the same C class from above
 #
-#     Ractor.new {
+#     r = Ractor.new do
 #       puts "I see #{C}"
 #       puts "I can't see #{C.tricky}"
-#     }
-#     sleep(0.1)
+#     end
+#     r.take
 #     # I see C
 #     # can not access instance variables of classes/modules from non-main Ractors (RuntimeError)
 #
@@ -186,12 +186,24 @@
 # Each ractor creates its own thread. New threads can be created from inside ractor, having the full
 # access to its data (and, on CRuby, sharing GVL with other threads of this ractor).
 #
-#     Ractor.new {
+#     r = Ractor.new do
 #       a = 1
-#       Thread.new { puts "Thread in ractor: a=#{a}" }.join
-#     }
-#     sleep(0.1)
+#       Thread.new {puts "Thread in ractor: a=#{a}"}.join
+#     end
+#     r.take
 #     # Here "Thread in ractor: a=1" will be printed
+#
+# == Note on code examples
+#
+# In examples below, sometimes we use the following method to wait till ractors that
+# are not currently blocked will finish (or process till next blocking) method.
+#
+#     def wait
+#       sleep(0.1)
+#     end
+#
+# It is **only for demonstration purposes** and shouldn't be used in a real code.
+# Most of the times, just #take is used to wait till ractor will finish.
 #
 class Ractor
   # Create a new Ractor with args and a block.
@@ -199,8 +211,8 @@ class Ractor
   # A block (Proc) will be isolated (can't access to outer variables). +self+
   # inside the block will refer to the current Ractor.
   #
-  #    Ractor.new { puts "Hi, I am #{self.inspect}" }
-  #    sleep(0.1)
+  #    r = Ractor.new {puts "Hi, I am #{self.inspect}"}
+  #    r.take
   #    # Prints "Hi, I am #<Ractor:#2 test.rb:1 running>"
   #
   # +args+ passed to the method would be propagated to block args by the same rules as
@@ -209,13 +221,13 @@ class Ractor
   #
   #    arg = [1, 2, 3]
   #    puts "Passing: #{arg} (##{arg.object_id})"
-  #    Ractor.new(arg) { |received_arg|
+  #    r = Ractor.new(arg) {|received_arg|
   #     puts "Received: #{received_arg} (##{received_arg.object_id})"
   #    }
-  #    sleep(0.1)
+  #    r.take
   #    # Prints:
-  #    # Passing: [1, 2, 3] (#280)
-  #    # Received: [1, 2, 3] (#300)
+  #    #   Passing: [1, 2, 3] (#280)
+  #    #   Received: [1, 2, 3] (#300)
   #
   # Ractor's +name+ can be set for debugging purposes:
   #
@@ -237,20 +249,20 @@ class Ractor
   def self.current
     __builtin_cexpr! %q{
       rb_ec_ractor_ptr(ec)->self
-    }
+   }
   end
 
   # Returns total count of Ractors currently running.
   #
   #    Ractor.count                   #=> 1
-  #    r = Ractor.new(name: 'example') { sleep(0.1) }
+  #    r = Ractor.new(name: 'example') {sleep(0.1)}
   #    Ractor.count                   #=> 2 (main + example ractor)
   #    r.take                         # wait till r will finish
   #    Ractor.count                   #=> 1
   def self.count
     __builtin_cexpr! %q{
       ULONG2NUM(GET_VM()->ractor.cnt);
-    }
+   }
   end
 
   # call-seq: Ractor.select(*ractors, [yield_value:, move: false]) -> [ractor or symbol, obj]
@@ -258,8 +270,8 @@ class Ractor
   # Wait for the first ractor to have something in its outgoing port, reads from this ractor, and
   # returns that ractor and the object received.
   #
-  #    r1 = Ractor.new { Ractor.yield 'from 1' }
-  #    r2 = Ractor.new { Ractor.yield 'from 2' }
+  #    r1 = Ractor.new {Ractor.yield 'from 1'}
+  #    r2 = Ractor.new {Ractor.yield 'from 2'}
   #
   #    r, obj = Ractor.select(r1, r2)
   #
@@ -269,13 +281,13 @@ class Ractor
   # If one of the given ractors is the current ractor, and it would be selected, +r+ will contain
   # +:receive+ symbol instead of the ractor object.
   #
-  #    r1 = Ractor.new(Ractor.current) { |main|
+  #    r1 = Ractor.new(Ractor.current) do |main|
   #      main.send 'to main'
   #      Ractor.yield 'from 1'
-  #    }
-  #    r2 = Ractor.new {
+  #    end
+  #    r2 = Ractor.new do
   #      Ractor.yield 'from 2'
-  #    }
+  #    end
   #
   #    r, obj = Ractor.select(r1, r2, Ractor.current)
   #    puts "received #{obj.inspect} from #{r.inspect}"
@@ -284,13 +296,13 @@ class Ractor
   # If +yield_value+ is provided, that value may be yielded if another Ractor is calling #take.
   # In this case, the pair <tt>[:yield, nil]</tt> would be returned:
   #
-  #    r1 = Ractor.new(Ractor.current) { |main|
+  #    r1 = Ractor.new(Ractor.current) do |main|
   #      puts "Received from main: #{main.take}"
-  #    }
+  #    end
   #
   #    puts "Trying to select"
   #    r, obj = Ractor.select(r1, Ractor.current, yield_value: 123)
-  #    sleep(0.1)
+  #    wait
   #    puts "Received #{obj.inspect} from #{r.inspect}"
   #
   # This will print:
@@ -310,46 +322,46 @@ class Ractor
                               yield_unspecified == Qtrue ? Qundef : yield_value,
                               (bool)RTEST(move) ? true : false, &rv);
       return rb_ary_new_from_args(2, rv, v);
-    }
+   }
   end
 
   # Receive an incoming message from the current Ractor's incoming port's queue, which was
   # sent there by #send.
   #
-  #     r = Ractor.new {
+  #     r = Ractor.new do
   #       v1 = Ractor.receive
   #       puts "Received: #{v1}"
-  #     }
+  #     end
   #     r.send('message1')
-  #     sleep(0.1)
+  #     r.take
   #     # Here will be printed: "Received: message1"
   #
   # Alternatively, private instance method +receive+ may be used:
   #
-  #     r = Ractor.new {
+  #     r = Ractor.new do
   #       v1 = receive
   #       puts "Received: #{v1}"
-  #     }
+  #     end
   #     r.send('message1')
-  #     sleep(0.1)
+  #     r.take
   #     # Here will be printed: "Received: message1"
   #
   # The method blocks if the queue is empty.
   #
-  #     r = Ractor.new {
+  #     r = Ractor.new do
   #       puts "Before first receive"
   #       v1 = Ractor.receive
   #       puts "Received: #{v1}"
   #       v2 = Ractor.receive
   #       puts "Received: #{v2}"
-  #     }
-  #     sleep(0.1)
+  #     end
+  #     wait
   #     puts "Still not received"
   #     r.send('message1')
-  #     sleep(0.1)
+  #     wait
   #     puts "Still received only one"
   #     r.send('message2')
-  #     sleep(0.1)
+  #     r.take
   #
   # Output:
   #
@@ -361,17 +373,17 @@ class Ractor
   #
   # If close_incoming was called on the ractor, the method raises Ractor::ClosedError:
   #
-  #     Ractor.new {
+  #     Ractor.new do
   #       close_incoming
   #       receive
-  #     }
-  #     sleep(0.1)
+  #     end
+  #     wait
   #     # in `receive': The incoming port is already closed => #<Ractor:#2 test.rb:1 running> (Ractor::ClosedError)
   #
   def self.receive
     __builtin_cexpr! %q{
       ractor_receive(ec, rb_ec_ractor_ptr(ec))
-    }
+   }
   end
 
   class << self
@@ -382,7 +394,7 @@ class Ractor
   private def receive
     __builtin_cexpr! %q{
       ractor_receive(ec, rb_ec_ractor_ptr(ec))
-    }
+   }
   end
   alias recv receive
 
@@ -391,33 +403,55 @@ class Ractor
   # Instead of Ractor.receive, Ractor.receive_if can provide a pattern
   # by a block and you can choose the receiving message.
   #
-  # # Example:
-  # r = Ractor.new do
-  #   p Ractor.receive_if{|msg| /foo/ =~ msg} #=> "foo3"
-  #   p Ractor.receive_if{|msg| /bar/ =~ msg} #=> "bar1"
-  #   p Ractor.receive_if{|msg| /baz/ =~ msg} #=> "baz2"
-  # end
-  # r << "bar1"
-  # r << "baz2"
-  # r << "foo3"
-  # r.take
+  #     r = Ractor.new do
+  #       p Ractor.receive_if{|msg| msg.match?(/foo/)} #=> "foo3"
+  #       p Ractor.receive_if{|msg| msg.match?(/bar/)} #=> "bar1"
+  #       p Ractor.receive_if{|msg| msg.match?(/baz/)} #=> "baz2"
+  #     end
+  #     r << "bar1"
+  #     r << "baz2"
+  #     r << "foo3"
+  #     r.take
   #
-  # If the block returns truthy, the message will be removed from incoming queue
+  # This will output:
+  #
+  #     foo3
+  #     bar1
+  #     baz2
+  #
+  # If the block returns a truthy value, the message will be removed from the incoming queue
   # and return this method with the message.
   # When the block is escaped by break/return/exception and so on, the message also
   # removed from the incoming queue.
-  # Otherwise, the messsage is remained in the incoming queue and check next received
-  # message by the given block.
+  # Otherwise, the messsage remains in the incoming queue and the next received
+  # message is checked by the given block.
   #
-  # If there is no messages in the incoming queue, wait until arrival of other messages.
+  # If there is no messages in the incoming queue matching the check, the method will
+  # block until such message arrives.
+  #
+  #     r = Ractor.new do
+  #       val = Ractor.receive_if{|msg| msg.is_a?(Array)}
+  #       puts "Received successfully: #{val}"
+  #     end
+  #
+  #     r.send(1)
+  #     r.send('test')
+  #     wait
+  #     puts "2 non-matching sent, nothing received"
+  #     r.send([1, 2, 3])
+  #     wait
+  #
+  # Prints:
+  #
+  #     2 non-matching sent, nothing received
+  #     Received successfully: [1, 2, 3]
   #
   # Note that you can not call receive/receive_if in the given block recursively.
   # It means that you should not do any tasks in the block.
   #
-  # # Example:
-  # Ractor.current << true
-  # Ractor.receive_if{|msg| Ractor.receive}
-  # #=> `receive': can not call receive/receive_if recursively (Ractor::Error)
+  #     Ractor.current << true
+  #     Ractor.receive_if{|msg| Ractor.receive}
+  #     #=> `receive': can not call receive/receive_if recursively (Ractor::Error)
   #
   def self.receive_if &b
     Primitive.ractor_receive_if b
@@ -439,7 +473,7 @@ class Ractor
   # The method is non-blocking (will return immediately even if the ractor is not ready
   # to receive anything):
   #
-  #    r = Ractor.new { sleep(5) }
+  #    r = Ractor.new {sleep(5)}
   #    r.send('test')
   #    puts "Sent successfully"
   #    # Prints: "Sent successfully" immediately
@@ -447,7 +481,7 @@ class Ractor
   # Attempt to send to ractor which already finished its execution will raise Ractor::ClosedError.
   #
   #   r = Ractor.new {}
-  #   sleep(0.1)
+  #   r.take
   #   p r
   #   # "#<Ractor:#6 (irb):23 terminated>"
   #   r.send('test')
@@ -455,10 +489,10 @@ class Ractor
   #
   # If close_incoming was called on the ractor, the method also raises Ractor::ClosedError.
   #
-  #    r =  Ractor.new {
+  #    r =  Ractor.new do
   #      sleep(500)
   #      receive
-  #    }
+  #    end
   #    r.close_incoming
   #    r.send('test')
   #    # Ractor::ClosedError (The incoming-port is already closed)
@@ -468,10 +502,10 @@ class Ractor
   # If the <tt>move: true</tt> is passed, object is _moved_ into ractor and becomes
   # inaccessible to sender.
   #
-  #    r = Ractor.new { puts "Received: #{receive}" }
+  #    r = Ractor.new {puts "Received: #{receive}"}
   #    msg = 'message'
   #    r.send(msg, move: true)
-  #    sleep(0.1)
+  #    r.take
   #    p msg
   #
   # This prints:
@@ -481,12 +515,11 @@ class Ractor
   #
   # All references to the object and its parts will become invalid in sender.
   #
-  #    r = Ractor.new { puts "Received: #{receive}" }
+  #    r = Ractor.new {puts "Received: #{receive}"}
   #    s = 'message'
   #    ary = [s]
   #    copy = ary.dup
   #    r.send(ary, move: true)
-  #    sleep(0.1)
   #
   #    s.inspect
   #    # Ractor::MovedError (can not send any methods to a moved object)
@@ -500,7 +533,7 @@ class Ractor
   #
   # If the object was shareable, <tt>move: true</tt> has no effect on it:
   #
-  #    r = Ractor.new { puts "Received: #{receive}" }
+  #    r = Ractor.new {puts "Received: #{receive}"}
   #    s = 'message'.freeze
   #    r.send(s, move: true)
   #    s.inspect #=> "message", still available
@@ -508,24 +541,24 @@ class Ractor
   def send(obj, move: false)
     __builtin_cexpr! %q{
       ractor_send(ec, RACTOR_PTR(self), obj, move)
-    }
+   }
   end
   alias << send
 
   # Send a message to the current ractor's outgoing port to be consumed by #take.
   #
-  #    r = Ractor.new { Ractor.yield 'Hello from ractor' }
+  #    r = Ractor.new {Ractor.yield 'Hello from ractor'}
   #    puts r.take
   #    # Prints: "Hello from ractor"
   #
   # The method is blocking, and will return only when somebody consumes the
   # sent message.
   #
-  #    r = Ractor.new {
+  #    r = Ractor.new do
   #      Ractor.yield 'Hello from ractor'
   #      puts "Ractor: after yield"
-  #    }
-  #    sleep(0.1)
+  #    end
+  #    wait
   #    puts "Still not taken"
   #    puts r.take
   #
@@ -537,27 +570,27 @@ class Ractor
   #
   # If the outgoing port was closed with #close_outgoing, the method will raise:
   #
-  #    r = Ractor.new {
+  #    r = Ractor.new do
   #      close_outgoing
   #      Ractor.yield 'Hello from ractor'
-  #    }
-  #    sleep(0.1)
+  #    end
+  #    wait
   #    # `yield': The outgoing-port is already closed (Ractor::ClosedError)
   #
   # The meaning of +move+ argument is the same as for #send.
   def self.yield(obj, move: false)
     __builtin_cexpr! %q{
       ractor_yield(ec, rb_ec_ractor_ptr(ec), obj, move)
-    }
+   }
   end
 
   # Take a message from ractor's outgoing port, which was put there by Ractor.yield or at ractor's
   # finalization.
   #
-  #   r = Ractor.new {
+  #   r = Ractor.new do
   #     Ractor.yield 'explicit yield'
   #     'last value'
-  #   }
+  #   end
   #   puts r.take #=> 'explicit yield'
   #   puts r.take #=> 'last value'
   #   puts r.take # Ractor::ClosedError (The outgoing-port is already closed)
@@ -568,10 +601,10 @@ class Ractor
   #
   # If the outgoing port was closed with #close_outgoing, the method will raise Ractor::ClosedError.
   #
-  #    r = Ractor.new {
+  #    r = Ractor.new do
   #      sleep(500)
   #      Ractor.yield 'Hello from ractor'
-  #    }
+  #    end
   #    r.close_outgoing
   #    r.take
   #    # Ractor::ClosedError (The outgoing-port is already closed)
@@ -580,7 +613,7 @@ class Ractor
   # If an uncaught exception is raised in the Ractor, it is propagated on take as a
   # Ractor::RemoteError.
   #
-  #   r = Ractor.new { raise "Something weird happened" }
+  #   r = Ractor.new {raise "Something weird happened"}
   #
   #   begin
   #     r.take
@@ -593,12 +626,12 @@ class Ractor
   # Ractor::ClosedError is a descendant of StopIteration, so the closing of the ractor will break
   # the loops without propagating the error:
   #
-  #     r = Ractor.new {
-  #       3.times { |i| Ractor.yield "message #{i}" }
+  #     r = Ractor.new do
+  #       3.times {|i| Ractor.yield "message #{i}"}
   #       "finishing"
-  #     }
+  #     end
   #
-  #     loop { puts "Received: " + r.take }
+  #     loop {puts "Received: " + r.take}
   #     puts "Continue successfully"
   #
   # This will print:
@@ -611,22 +644,22 @@ class Ractor
    def take
     __builtin_cexpr! %q{
       ractor_take(ec, RACTOR_PTR(self))
-    }
+   }
   end
 
   def inspect # :nodoc:
-    loc  = __builtin_cexpr! %q{ RACTOR_PTR(self)->loc }
-    name = __builtin_cexpr! %q{ RACTOR_PTR(self)->name }
-    id   = __builtin_cexpr! %q{ INT2FIX(RACTOR_PTR(self)->id) }
+    loc  = __builtin_cexpr! %q{RACTOR_PTR(self)->loc}
+    name = __builtin_cexpr! %q{RACTOR_PTR(self)->name}
+    id   = __builtin_cexpr! %q{INT2FIX(RACTOR_PTR(self)->id)}
     status = __builtin_cexpr! %q{
       rb_str_new2(ractor_status_str(RACTOR_PTR(self)->status_))
-    }
+   }
     "#<Ractor:##{id}#{name ? ' '+name : ''}#{loc ? " " + loc : ''} #{status}>"
   end
 
   # The name set in Ractor.new, or +nil+.
   def name
-    __builtin_cexpr! %q{ RACTOR_PTR(self)->name }
+    __builtin_cexpr! %q{RACTOR_PTR(self)->name}
   end
 
   class RemoteError
@@ -637,7 +670,7 @@ class Ractor
   # All further attempts to Ractor.receive in the ractor, and #send to the ractor
   # will fail with Ractor::ClosedError.
   #
-  #   r = Ractor.new { sleep(500) }
+  #   r = Ractor.new {sleep(500)}
   #   r.close_incoming  #=> false
   #   r.close_incoming  #=> true
   #   r.send('test')
@@ -645,14 +678,14 @@ class Ractor
   def close_incoming
     __builtin_cexpr! %q{
       ractor_close_incoming(ec, RACTOR_PTR(self));
-    }
+   }
   end
 
   # Closes the outgoing port and returns its previous state.
   # All further attempts to Ractor.yield in the ractor, and #take from the ractor
   # will fail with Ractor::ClosedError.
   #
-  #   r = Ractor.new { sleep(500) }
+  #   r = Ractor.new {sleep(500)}
   #   r.close_outgoing  #=> false
   #   r.close_outgoing  #=> true
   #   r.take
@@ -660,7 +693,7 @@ class Ractor
   def close_outgoing
     __builtin_cexpr! %q{
       ractor_close_outgoing(ec, RACTOR_PTR(self));
-    }
+   }
   end
 
   # Checks if the object is shareable by ractors.
@@ -673,7 +706,7 @@ class Ractor
   def self.shareable? obj
     __builtin_cexpr! %q{
       rb_ractor_shareable_p(obj) ? Qtrue : Qfalse;
-    }
+   }
   end
 
   # Make +obj+ sharable.
