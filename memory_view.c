@@ -11,6 +11,7 @@
 #include "internal/variable.h"
 #include "internal/util.h"
 #include "ruby/memory_view.h"
+#include "vm_sync.h"
 
 #if SIZEOF_INTPTR_T == SIZEOF_LONG_LONG
 #   define INTPTR2NUM LL2NUM
@@ -30,6 +31,7 @@
 
 // Exported Object Registry
 
+static st_table *exported_object_table = NULL;
 VALUE rb_memory_view_exported_object_registry = Qundef;
 
 static int
@@ -42,16 +44,18 @@ exported_object_registry_mark_key_i(st_data_t key, st_data_t value, st_data_t da
 static void
 exported_object_registry_mark(void *ptr)
 {
-    st_table *table = ptr;
-    st_foreach(table, exported_object_registry_mark_key_i, 0);
+    // Don't use RB_VM_LOCK_ENTER here.  It is unnecessary during GC.
+    st_foreach(exported_object_table, exported_object_registry_mark_key_i, 0);
 }
 
 static void
 exported_object_registry_free(void *ptr)
 {
-    st_table *table = ptr;
-    st_clear(table);
-    st_free_table(table);
+    // Note that calling RB_VM_LOCK_ENTER here is unnecessary now.
+    // But it may be changed in the future.
+    st_clear(exported_object_table);
+    st_free_table(exported_object_table);
+    exported_object_table = NULL;
 }
 
 const rb_data_type_t rb_memory_view_exported_object_registry_data_type = {
@@ -63,30 +67,6 @@ const rb_data_type_t rb_memory_view_exported_object_registry_data_type = {
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
-
-static void
-init_exported_object_registry(void)
-{
-    if (rb_memory_view_exported_object_registry != Qundef) {
-        return;
-    }
-
-    st_table *table = rb_init_identtable();
-    VALUE obj = TypedData_Wrap_Struct(
-        0, &rb_memory_view_exported_object_registry_data_type, table);
-    rb_gc_register_mark_object(obj);
-    rb_memory_view_exported_object_registry = obj;
-}
-
-static inline st_table *
-get_exported_object_table(void)
-{
-    st_table *table;
-    TypedData_Get_Struct(rb_memory_view_exported_object_registry, st_table,
-                         &rb_memory_view_exported_object_registry_data_type,
-                         table);
-    return table;
-}
 
 static int
 update_exported_object_ref_count(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
@@ -103,36 +83,30 @@ update_exported_object_ref_count(st_data_t *key, st_data_t *val, st_data_t arg, 
 static void
 register_exported_object(VALUE obj)
 {
-    if (rb_memory_view_exported_object_registry == Qundef) {
-        init_exported_object_registry();
-    }
-
-    st_table *table = get_exported_object_table();
-
-    st_update(table, (st_data_t)obj, update_exported_object_ref_count, 0);
+    RB_VM_LOCK_ENTER();
+    st_update(exported_object_table, (st_data_t)obj, update_exported_object_ref_count, 0);
+    RB_VM_LOCK_LEAVE();
 }
 
 static void
 unregister_exported_object(VALUE obj)
 {
-    if (rb_memory_view_exported_object_registry == Qundef) {
-        return;
-    }
-
-    st_table *table = get_exported_object_table();
-
+    st_table *table = exported_object_table;
     st_data_t count;
-    if (!st_lookup(table, (st_data_t)obj, &count)) {
-        return;
+
+    RB_VM_LOCK_ENTER();
+
+    if (st_lookup(table, (st_data_t)obj, &count)) {
+        if (--count == 0) {
+            st_data_t key = (st_data_t)obj;
+            st_delete(table, &key, &count);
+        }
+        else {
+            st_insert(table, (st_data_t)obj, count);
+        }
     }
 
-    if (--count == 0) {
-        st_data_t key = (st_data_t)obj;
-        st_delete(table, &key, &count);
-    }
-    else {
-        st_insert(table, (st_data_t)obj, count);
-    }
+    RB_VM_LOCK_LEAVE();
 }
 
 // MemoryView
@@ -876,5 +850,15 @@ rb_memory_view_release(rb_memory_view_t* view)
 void
 Init_MemoryView(void)
 {
+    exported_object_table = rb_init_identtable();
+
+    // exported_object_table is refered through rb_memory_view_exported_object_registry
+    // in -test-/memory_view extension.
+    VALUE obj = TypedData_Wrap_Struct(
+        0, &rb_memory_view_exported_object_registry_data_type,
+        exported_object_table);
+    rb_gc_register_mark_object(obj);
+    rb_memory_view_exported_object_registry = obj;
+
     id_memory_view = rb_intern_const("__memory_view__");
 }
