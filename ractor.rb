@@ -139,7 +139,7 @@ class Ractor
     Primitive.ractor_receive_if b
   end
 
-  def receive_if &b
+  private def receive_if &b
     Primitive.ractor_receive_if b
   end
 
