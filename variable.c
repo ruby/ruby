@@ -1413,8 +1413,8 @@ rb_obj_transient_heap_evacuate(VALUE obj, int promote)
 }
 #endif
 
-void
-rb_init_iv_list(VALUE obj, uint32_t len, uint32_t newsize, st_table * index_tbl)
+static void
+init_iv_list(VALUE obj, uint32_t len, uint32_t newsize, st_table *index_tbl)
 {
     VALUE *ptr = ROBJECT_IVPTR(obj);
     VALUE *newptr;
@@ -1435,6 +1435,15 @@ rb_init_iv_list(VALUE obj, uint32_t len, uint32_t newsize, st_table * index_tbl)
     ROBJECT(obj)->as.heap.iv_index_tbl = index_tbl;
 }
 
+void
+rb_init_iv_list(VALUE obj)
+{
+    st_table *index_tbl = ROBJECT_IV_INDEX_TBL(obj);
+    uint32_t newsize = (uint32_t)index_tbl->num_entries;
+    uint32_t len = ROBJECT_NUMIV(obj);
+    init_iv_list(obj, len, newsize, index_tbl);
+}
+
 static VALUE
 obj_ivar_set(VALUE obj, ID id, VALUE val)
 {
@@ -1453,7 +1462,7 @@ obj_ivar_set(VALUE obj, ID id, VALUE val)
     len = ROBJECT_NUMIV(obj);
     if (len <= ivup.index) {
         uint32_t newsize = iv_index_tbl_newsize(&ivup);
-        rb_init_iv_list(obj, len, newsize, ivup.u.iv_index_tbl);
+        init_iv_list(obj, len, newsize, ivup.u.iv_index_tbl);
     }
     RB_OBJ_WRITE(obj, &ROBJECT_IVPTR(obj)[ivup.index], val);
 

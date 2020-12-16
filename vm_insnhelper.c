@@ -1190,70 +1190,82 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
     }
 }
 
+
+NOINLINE(static VALUE vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, int is_attr));
+
+static VALUE
+vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, int is_attr)
+{
+    rb_check_frozen_internal(obj);
+
+#if OPT_IC_FOR_IVAR
+    if (RB_TYPE_P(obj, T_OBJECT)) {
+        struct st_table *iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
+        struct rb_iv_index_tbl_entry *ent;
+
+        if (iv_index_tbl_lookup(iv_index_tbl, id, &ent)) {
+            if (!is_attr) {
+                ic->entry = ent;
+                RB_OBJ_WRITTEN(iseq, Qundef, ent->class_value);
+            }
+            else if (ent->index >= INT_MAX) {
+                rb_raise(rb_eArgError, "too many instance variables");
+            }
+            else {
+                vm_cc_attr_index_set(cc, (int)(ent->index + 1));
+            }
+
+            uint32_t index = ent->index;
+
+            if (UNLIKELY(index >= ROBJECT_NUMIV(obj))) {
+                rb_init_iv_list(obj);
+            }
+            VALUE *ptr = ROBJECT_IVPTR(obj);
+            RB_OBJ_WRITE(obj, &ptr[index], val);
+            RB_DEBUG_COUNTER_INC(ivar_set_ic_miss_iv_hit);
+
+            return val;
+        }
+    }
+#endif
+    RB_DEBUG_COUNTER_INC(ivar_set_ic_miss);
+    return rb_ivar_set(obj, id, val);
+}
+
 static inline VALUE
 vm_setivar(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, int is_attr)
 {
 #if OPT_IC_FOR_IVAR
-    rb_check_frozen_internal(obj);
-
-    if (LIKELY(RB_TYPE_P(obj, T_OBJECT))) {
-	VALUE klass = RBASIC(obj)->klass;
-	uint32_t index;
+    if (LIKELY(RB_TYPE_P(obj, T_OBJECT)) &&
+        LIKELY(!RB_OBJ_FROZEN_RAW(obj))) {
 
         VM_ASSERT(!rb_ractor_shareable_p(obj));
 
 	if (LIKELY(
-	    (!is_attr && RB_DEBUG_COUNTER_INC_UNLESS(ivar_set_ic_miss_serial, ic->entry && ic->entry->class_serial  == RCLASS_SERIAL(klass))) ||
+	    (!is_attr && RB_DEBUG_COUNTER_INC_UNLESS(ivar_set_ic_miss_serial, ic->entry && ic->entry->class_serial  == RCLASS_SERIAL(RBASIC(obj)->klass))) ||
             ( is_attr && RB_DEBUG_COUNTER_INC_UNLESS(ivar_set_ic_miss_unset, vm_cc_attr_index(cc) > 0)))) {
-	    VALUE *ptr = ROBJECT_IVPTR(obj);
-	    index = !is_attr ? ic->entry->index : vm_cc_attr_index(cc)-1;
+            uint32_t index = !is_attr ? ic->entry->index : vm_cc_attr_index(cc)-1;
 
-            if (index >= ROBJECT_NUMIV(obj)) {
-                st_table * iv_idx_tbl = ROBJECT_IV_INDEX_TBL(obj);
-                rb_init_iv_list(obj, ROBJECT_NUMIV(obj), (uint32_t)iv_idx_tbl->num_entries, iv_idx_tbl);
-                ptr = ROBJECT_IVPTR(obj);
+            if (UNLIKELY(index >= ROBJECT_NUMIV(obj))) {
+                rb_init_iv_list(obj);
             }
+            VALUE *ptr = ROBJECT_IVPTR(obj);
             RB_OBJ_WRITE(obj, &ptr[index], val);
             RB_DEBUG_COUNTER_INC(ivar_set_ic_hit);
             return val; /* inline cache hit */
-	}
-	else {
-	    struct st_table *iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
-            struct rb_iv_index_tbl_entry *ent;
-
-            if (iv_index_tbl_lookup(iv_index_tbl, id, &ent)) {
-                if (!is_attr) {
-                    ic->entry = ent;
-                    RB_OBJ_WRITTEN(iseq, Qundef, ent->class_value);
-                }
-		else if (ent->index >= INT_MAX) {
-		    rb_raise(rb_eArgError, "too many instance variables");
-		}
-		else {
-		    vm_cc_attr_index_set(cc, (int)(ent->index + 1));
-		}
-
-                index = ent->index;
-
-                VALUE *ptr = ROBJECT_IVPTR(obj);
-                if (index >= ROBJECT_NUMIV(obj)) {
-                    rb_init_iv_list(obj, ROBJECT_NUMIV(obj), (uint32_t)iv_index_tbl->num_entries, iv_index_tbl);
-                    ptr = ROBJECT_IVPTR(obj);
-                }
-                RB_OBJ_WRITE(obj, &ptr[index], val);
-                RB_DEBUG_COUNTER_INC(ivar_set_ic_miss_iv_hit);
-
-                return val;
-	    }
-	    /* fall through */
 	}
     }
     else {
 	RB_DEBUG_COUNTER_INC(ivar_set_ic_miss_noobject);
     }
 #endif /* OPT_IC_FOR_IVAR */
-    RB_DEBUG_COUNTER_INC(ivar_set_ic_miss);
-    return rb_ivar_set(obj, id, val);
+    return vm_setivar_slowpath(obj, id, val, iseq, ic, cc, is_attr);
+}
+
+VALUE
+rb_vm_setivar(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic)
+{
+    return vm_setivar(obj, id, val, iseq, ic, NULL, false);
 }
 
 static inline VALUE
