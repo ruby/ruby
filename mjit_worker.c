@@ -160,6 +160,8 @@ struct rb_mjit_unit {
 #endif
     // Only used by unload_units. Flag to check this unit is currently on stack or not.
     bool used_code_p;
+    // True if this is still in active_units but it's to be lazily removed
+    bool stale_p;
     // mjit_compile's optimization switches
     struct rb_mjit_compile_info compile_info;
     // captured CC values, they should be marked with iseq.
@@ -225,6 +227,8 @@ static rb_nativethread_cond_t mjit_gc_wakeup;
 static int in_gc = 0;
 // True when JIT is working.
 static bool in_jit = false;
+// True when active_units has at least one stale_p=true unit.
+static bool pending_stale_p = false;
 // The times when unload_units is requested. unload_units is called after some requests.
 static int unload_requests = 0;
 // The total number of unloaded units.
@@ -946,9 +950,7 @@ compile_compact_jit_code(char* c_file)
     // TODO: Consider using a more granular lock after we implement inlining across
     // compacted functions (not done yet).
     bool success = true;
-    CRITICAL_SECTION_START(3, "before active_units list_for_each");
-    list_for_each_safe(&active_units.head, child_unit, next, unode) {
-        CRITICAL_SECTION_FINISH(3, "after active_units list_for_each");
+    list_for_each(&active_units.head, child_unit, unode) {
         char funcname[MAXPATHLEN];
         sprint_funcname(funcname, child_unit);
 
@@ -962,10 +964,7 @@ compile_compact_jit_code(char* c_file)
         if (!iseq_label) iseq_label = sep = "";
         fprintf(f, "\n/* %s%s%s:%ld */\n", iseq_label, sep, iseq_path, iseq_lineno);
         success &= mjit_compile(f, child_unit->iseq, funcname, child_unit->id);
-
-        CRITICAL_SECTION_START(3, "before active_units list_for_each");
     }
-    CRITICAL_SECTION_FINISH(3, "after active_units list_for_each");
 
     // release blocking mjit_gc_start_hook
     CRITICAL_SECTION_START(3, "after mjit_compile to wakeup client for GC");
@@ -1376,9 +1375,22 @@ mjit_worker(void)
 
         // Wait until a unit becomes available
         CRITICAL_SECTION_START(3, "in worker dequeue");
-        while ((list_empty(&unit_queue.head) || active_units.length >= mjit_opts.max_cache_size) && !stop_worker_p) {
+        while ((pending_stale_p || list_empty(&unit_queue.head) || active_units.length >= mjit_opts.max_cache_size) && !stop_worker_p) {
             rb_native_cond_wait(&mjit_worker_wakeup, &mjit_engine_mutex);
             verbose(3, "Getting wakeup from client");
+
+            // Lazily move active_units to stale_units to avoid race conditions around active_units with compaction
+            if (pending_stale_p) {
+                pending_stale_p = false;
+                struct rb_mjit_unit *next;
+                list_for_each_safe(&active_units.head, unit, next, unode) {
+                    if (unit->stale_p) {
+                        unit->stale_p = false;
+                        remove_from_list(unit, &active_units);
+                        add_to_list(unit, &stale_units);
+                    }
+                }
+            }
 
             // Unload some units as needed
             if (unload_requests >= throttle_threshold) {
