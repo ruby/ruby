@@ -320,4 +320,22 @@ class TestMemoryView < Test::Unit::TestCase
     assert_equal([-1, -2], mv[[1, 0]])
     assert_equal([-7, -8], mv[[1, 3]])
   end
+
+  def test_ractor
+    assert_in_out_err([], <<-"end;", ["[5, 6]", "[-7, -8]"], [])
+      require "-test-/memory_view"
+      require "rbconfig/sizeof"
+      $VERBOSE = nil
+      r = Ractor.new RbConfig::SIZEOF["short"] do |sizeof_short|
+        buf = [ 1, 2,  3,  4,  5,  6,  7,  8,
+                -1, -2, -3, -4, -5, -6, -7, -8].pack("s*")
+        shape = [2, 4]
+        strides = [4*sizeof_short*2, sizeof_short*2]
+        mv = MemoryViewTestUtils::MultiDimensionalView.new(buf, "ss", shape, strides)
+        p mv[[0, 2]]
+        mv[[1, 3]]
+      end
+      p r.take
+    end;
+  end
 end

@@ -370,6 +370,7 @@ mdview_aref(VALUE obj, VALUE indices_v)
 void
 Init_memory_view(void)
 {
+    rb_ext_ractor_safe(true);
     VALUE mMemoryViewTestUtils = rb_define_module("MemoryViewTestUtils");
 
     rb_define_module_function(mMemoryViewTestUtils, "available?", memory_view_available_p, 1);
