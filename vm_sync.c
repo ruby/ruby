@@ -228,6 +228,8 @@ vm_barrier_finish_p(rb_vm_t *vm)
 void
 rb_vm_barrier(void)
 {
+    RB_DEBUG_COUNTER_INC(vm_sync_barrier);
+
     if (!rb_multi_ractor_p()) {
         // no other ractors
         return;

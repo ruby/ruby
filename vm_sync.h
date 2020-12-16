@@ -3,6 +3,7 @@
 #define RUBY_VM_SYNC_H
 
 #include "vm_debug.h"
+#include "debug_counter.h"
 
 #if USE_RUBY_DEBUG_LOG
 #define LOCATION_ARGS const char *file, int line
@@ -51,6 +52,8 @@ rb_multi_ractor_p(void)
 static inline void
 rb_vm_lock(const char *file, int line)
 {
+    RB_DEBUG_COUNTER_INC(vm_sync_lock);
+
     if (rb_multi_ractor_p()) {
         rb_vm_lock_body(LOCATION_PARAMS);
     }
@@ -67,6 +70,8 @@ rb_vm_unlock(const char *file, int line)
 static inline void
 rb_vm_lock_enter(unsigned int *lev, const char *file, int line)
 {
+    RB_DEBUG_COUNTER_INC(vm_sync_lock_enter);
+
     if (rb_multi_ractor_p()) {
         rb_vm_lock_enter_body(lev APPEND_LOCATION_PARAMS);
     }
@@ -75,6 +80,8 @@ rb_vm_lock_enter(unsigned int *lev, const char *file, int line)
 static inline void
 rb_vm_lock_enter_nb(unsigned int *lev, const char *file, int line)
 {
+    RB_DEBUG_COUNTER_INC(vm_sync_lock_enter_nb);
+
     if (rb_multi_ractor_p()) {
         rb_vm_lock_enter_body_nb(lev APPEND_LOCATION_PARAMS);
     }
@@ -91,6 +98,7 @@ rb_vm_lock_leave(unsigned int *lev, const char *file, int line)
 static inline void
 rb_vm_lock_enter_cr(struct rb_ractor_struct *cr, unsigned int *levp, const char *file, int line)
 {
+    RB_DEBUG_COUNTER_INC(vm_sync_lock_enter_cr);
     rb_vm_lock_enter_body_cr(cr, levp APPEND_LOCATION_PARAMS);
 }
 

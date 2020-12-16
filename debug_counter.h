@@ -322,6 +322,13 @@ RB_DEBUG_COUNTER(theap_alloc)
 RB_DEBUG_COUNTER(theap_alloc_fail)
 RB_DEBUG_COUNTER(theap_evacuate)
 
+// VM sync
+RB_DEBUG_COUNTER(vm_sync_lock)
+RB_DEBUG_COUNTER(vm_sync_lock_enter)
+RB_DEBUG_COUNTER(vm_sync_lock_enter_nb)
+RB_DEBUG_COUNTER(vm_sync_lock_enter_cr)
+RB_DEBUG_COUNTER(vm_sync_barrier)
+
 /* mjit_exec() counts */
 RB_DEBUG_COUNTER(mjit_exec)
 RB_DEBUG_COUNTER(mjit_exec_not_added)
