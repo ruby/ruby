@@ -515,7 +515,7 @@ Excluding feature bug fixes.
 
 * WEBrick have been removed from ruby standard library. [[Feature #17303]]
 
-    * The issues of sdbm will be handled at https://github.com/ruby/webrick
+    * The issues of webrick will be handled at https://github.com/ruby/webrick
 
 ## C API updates
 
