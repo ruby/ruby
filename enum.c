@@ -117,7 +117,7 @@ enum_grep0(VALUE obj, VALUE pat, VALUE test)
     struct MEMO *memo = MEMO_NEW(pat, ary, test);
     rb_block_call_func_t fn;
     if (rb_block_given_p()) {
-    	fn = grep_iter_i;
+	fn = grep_iter_i;
     }
     else if (RB_TYPE_P(pat, T_REGEXP) &&
       LIKELY(rb_method_basic_definition_p(CLASS_OF(pat), idEqq))) {
