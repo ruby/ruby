@@ -1725,7 +1725,7 @@ rb_vm_search_method_slowpath(const struct rb_callinfo *ci, VALUE klass)
 #endif
 
 static const struct rb_callcache *
-vm_search_method_swlopath0(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
+vm_search_method_slowpath0(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
 {
 #if USE_DEBUG_COUNTER
     const struct rb_callcache *old_cc = cd->cc;
@@ -1794,7 +1794,7 @@ vm_search_method_fastpath(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
     }
 #endif
 
-    return vm_search_method_swlopath0(cd_owner, cd, klass);
+    return vm_search_method_slowpath0(cd_owner, cd, klass);
 }
 
 static const struct rb_callcache *
