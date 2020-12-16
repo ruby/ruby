@@ -1190,8 +1190,9 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
     }
 }
 
-
-NOINLINE(static VALUE vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, int is_attr));
+ALWAYS_INLINE(static VALUE vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, int is_attr));
+NOINLINE(static VALUE vm_setivar_slowpath_ivar(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic));
+NOINLINE(static VALUE vm_setivar_slowpath_attr(VALUE obj, ID id, VALUE val, const struct rb_callcache *cc));
 
 static VALUE
 vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, int is_attr)
@@ -1232,6 +1233,18 @@ vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, 
     return rb_ivar_set(obj, id, val);
 }
 
+static VALUE
+vm_setivar_slowpath_ivar(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic)
+{
+    return vm_setivar_slowpath(obj, id, val, iseq, ic, NULL, false);
+}
+
+static VALUE
+vm_setivar_slowpath_attr(VALUE obj, ID id, VALUE val, const struct rb_callcache *cc)
+{
+    return vm_setivar_slowpath(obj, id, val, NULL, NULL, cc, true);
+}
+
 static inline VALUE
 vm_setivar(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, int is_attr)
 {
@@ -1259,7 +1272,12 @@ vm_setivar(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, const str
 	RB_DEBUG_COUNTER_INC(ivar_set_ic_miss_noobject);
     }
 #endif /* OPT_IC_FOR_IVAR */
-    return vm_setivar_slowpath(obj, id, val, iseq, ic, cc, is_attr);
+    if (is_attr) {
+        return vm_setivar_slowpath_attr(obj, id, val, cc);
+    }
+    else {
+        return vm_setivar_slowpath_ivar(obj, id, val, iseq, ic);
+    }
 }
 
 static inline VALUE
