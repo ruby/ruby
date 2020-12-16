@@ -63,6 +63,7 @@
 VALUE rb_iseqw_local_variables(VALUE iseqval);
 VALUE rb_iseqw_new(const rb_iseq_t *);
 int rb_str_end_with_asciichar(VALUE str, int c);
+VALUE rb_ident_hash_new(void);
 
 long rb_backtrace_length_limit = -1;
 VALUE rb_eEAGAIN;
@@ -161,18 +162,13 @@ rb_warning_category_mask(VALUE category)
 rb_warning_category_t
 rb_warning_category_from_name(VALUE category)
 {
-    rb_warning_category_t cat = RB_WARN_CATEGORY_NONE;
+    VALUE cat_value;
     Check_Type(category, T_SYMBOL);
-    if (category == ID2SYM(id_deprecated)) {
-        cat = RB_WARN_CATEGORY_DEPRECATED;
-    }
-    else if (category == ID2SYM(id_experimental)) {
-        cat = RB_WARN_CATEGORY_EXPERIMENTAL;
-    }
-    else {
+    cat_value = rb_hash_aref(warning_categories, category);
+    if (cat_value == Qnil) {
         rb_raise(rb_eArgError, "unknown category: %"PRIsVALUE, category);
     }
-    return cat;
+    return NUM2INT(cat_value);
 }
 
 void
@@ -318,7 +314,7 @@ rb_warn_category(VALUE str, VALUE category)
 {
     if (category != Qnil) {
         category = rb_to_symbol_type(category);
-        if (rb_hash_aref(warning_categories, category) != Qtrue) {
+        if (!RTEST(rb_hash_aref(warning_categories, category))) {
             rb_raise(rb_eArgError, "invalid warning category used: %s", rb_id2name(SYM2ID(category)));
         }
     }
@@ -2836,16 +2832,17 @@ Init_Exception(void)
 
     sym_category = ID2SYM(id_category);
 
-    warning_categories = rb_hash_new();
+    warning_categories = rb_ident_hash_new();
     rb_gc_register_mark_object(warning_categories);
-    rb_hash_aset(warning_categories, ID2SYM(rb_intern_const("deprecated")), Qtrue);
+    rb_hash_aset(warning_categories, ID2SYM(id_deprecated), INT2NUM(RB_WARN_CATEGORY_DEPRECATED));
+    rb_hash_aset(warning_categories, ID2SYM(id_experimental), INT2NUM(RB_WARN_CATEGORY_EXPERIMENTAL));
     rb_obj_freeze(warning_categories);
 
-    warning_category_t_map = rb_hash_new();
+    warning_category_t_map = rb_ident_hash_new();
     rb_gc_register_mark_object(warning_category_t_map);
     rb_hash_aset(warning_category_t_map, INT2NUM(RB_WARN_CATEGORY_NONE), Qnil);
-    rb_hash_aset(warning_category_t_map, INT2NUM(RB_WARN_CATEGORY_DEPRECATED), ID2SYM(rb_intern_const("deprecated")));
-    rb_hash_aset(warning_category_t_map, INT2NUM(RB_WARN_CATEGORY_EXPERIMENTAL), ID2SYM(rb_intern_const("experimental")));
+    rb_hash_aset(warning_category_t_map, INT2NUM(RB_WARN_CATEGORY_DEPRECATED), ID2SYM(id_deprecated));
+    rb_hash_aset(warning_category_t_map, INT2NUM(RB_WARN_CATEGORY_EXPERIMENTAL), ID2SYM(id_experimental));
     rb_obj_freeze(warning_category_t_map);
 }
 
