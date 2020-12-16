@@ -77,6 +77,7 @@ static ID id_deprecated;
 static ID id_experimental;
 static VALUE sym_category;
 static VALUE warning_categories;
+static VALUE warning_category_t_map;
 
 extern const char ruby_description[];
 
@@ -403,11 +404,11 @@ rb_warn(const char *fmt, ...)
 }
 
 void
-rb_category_warn(const char *category, const char *fmt, ...)
+rb_category_warn(rb_warning_category_t category, const char *fmt, ...)
 {
     if (!NIL_P(ruby_verbose)) {
         with_warning_string(mesg, 0, fmt) {
-            rb_warn_category(mesg, ID2SYM(rb_intern(category)));
+            rb_warn_category(mesg, rb_hash_fetch(warning_category_t_map, INT2NUM(category)));
         }
     }
 }
@@ -435,11 +436,11 @@ rb_warning(const char *fmt, ...)
 
 /* rb_category_warning() reports only in verbose mode */
 void
-rb_category_warning(const char *category, const char *fmt, ...)
+rb_category_warning(rb_warning_category_t category, const char *fmt, ...)
 {
     if (RTEST(ruby_verbose)) {
         with_warning_string(mesg, 0, fmt) {
-            rb_warn_category(mesg, ID2SYM(rb_intern(category)));
+            rb_warn_category(mesg, rb_hash_fetch(warning_category_t_map, INT2NUM(category)));
         }
     }
 }
@@ -2839,6 +2840,13 @@ Init_Exception(void)
     rb_gc_register_mark_object(warning_categories);
     rb_hash_aset(warning_categories, ID2SYM(rb_intern_const("deprecated")), Qtrue);
     rb_obj_freeze(warning_categories);
+
+    warning_category_t_map = rb_hash_new();
+    rb_gc_register_mark_object(warning_category_t_map);
+    rb_hash_aset(warning_category_t_map, INT2NUM(RB_WARN_CATEGORY_NONE), Qnil);
+    rb_hash_aset(warning_category_t_map, INT2NUM(RB_WARN_CATEGORY_DEPRECATED), ID2SYM(rb_intern_const("deprecated")));
+    rb_hash_aset(warning_category_t_map, INT2NUM(RB_WARN_CATEGORY_EXPERIMENTAL), ID2SYM(rb_intern_const("experimental")));
+    rb_obj_freeze(warning_category_t_map);
 }
 
 void
