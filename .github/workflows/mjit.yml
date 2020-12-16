@@ -42,15 +42,18 @@ jobs:
       - run: make $JOBS incs
       - run: make $JOBS
       - run: sudo make $JOBS -s install
-      - run: |
+      - name: Run test
+        run: |
           ulimit -c unlimited
-           make $JOBS -s test RUN_OPTS="$RUN_OPTS"
+          make $JOBS -s test RUN_OPTS="$RUN_OPTS"
         timeout-minutes: 60
-      - run: |
+      - name: Run test-all
+        run: |
           ulimit -c unlimited
           make $JOBS -s test-all RUN_OPTS="$RUN_OPTS"
         timeout-minutes: 60
-      - run: |
+      - name: Run test-spec
+        run: |
           ulimit -c unlimited
           make $JOBS -s test-spec RUN_OPTS="$RUN_OPTS"
         timeout-minutes: 60
