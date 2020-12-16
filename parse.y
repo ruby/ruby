@@ -1034,6 +1034,7 @@ static ID id_warn, id_warning, id_gets, id_assoc;
 # define WARN_ID(i) rb_id2str(i)
 # define WARN_IVAL(i) i
 # define PRIsWARN "s"
+# define rb_warn0L_experimental(l,fmt)         WARN_CALL(WARN_ARGS_L(l, fmt, 1))
 # define WARN_ARGS(fmt,n) p->value, id_warn, n, rb_usascii_str_new_lit(fmt)
 # define WARN_ARGS_L(l,fmt,n) WARN_ARGS(fmt,n)
 # ifdef HAVE_VA_ARGS_MACRO
@@ -1060,6 +1061,7 @@ PRINTF_ARGS(static void ripper_compile_error(struct parser_params*, const char *
 # define WARN_ARGS(fmt,n) WARN_ARGS_L(p->ruby_sourceline,fmt,n)
 # define WARN_ARGS_L(l,fmt,n) p->ruby_sourcefile, (l), (fmt)
 # define WARN_CALL rb_compile_warn
+# define rb_warn0L_experimental(l,fmt) rb_category_compile_warn(RB_WARN_CATEGORY_EXPERIMENTAL, WARN_ARGS_L(l, fmt, 1))
 # define WARNING_ARGS(fmt,n) WARN_ARGS(fmt,n)
 # define WARNING_ARGS_L(l,fmt,n) WARN_ARGS_L(l,fmt,n)
 # define WARNING_CALL rb_compile_warning
@@ -4229,7 +4231,7 @@ p_find		: p_rest ',' p_args_post ',' p_rest
 			$$ = new_find_pattern_tail(p, $1, $3, $5, &@$);
 
 			if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_EXPERIMENTAL))
-			    rb_warn0L(nd_line($$), "Find pattern is experimental, and the behavior may change in future versions of Ruby!");
+			    rb_warn0L_experimental(nd_line($$), "Find pattern is experimental, and the behavior may change in future versions of Ruby!");
 		    }
 		;
 
@@ -11955,7 +11957,7 @@ warn_one_line_pattern_matching(struct parser_params *p, NODE *node, NODE *patter
 
     if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_EXPERIMENTAL) &&
 	!(right_assign && (type == NODE_LASGN || type == NODE_DASGN || type == NODE_DASGN_CURR)))
-	rb_warn0L(nd_line(node), "One-line pattern matching is experimental, and the behavior may change in future versions of Ruby!");
+	rb_warn0L_experimental(nd_line(node), "One-line pattern matching is experimental, and the behavior may change in future versions of Ruby!");
 }
 
 static NODE*
