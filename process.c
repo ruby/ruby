@@ -631,6 +631,29 @@ rb_process_status_new(rb_pid_t pid, int status)
     return last_status;
 }
 
+static VALUE
+process_status_dump(VALUE status)
+{
+    VALUE dump = rb_class_new_instance(0, 0, rb_cObject);
+    struct rb_process_status *data = RTYPEDDATA_DATA(status);
+    if (data->pid) {
+        rb_ivar_set(dump, id_status, INT2NUM(data->status));
+        rb_ivar_set(dump, id_pid, PIDT2NUM(data->pid));
+    }
+    return dump;
+}
+
+static VALUE
+process_status_load(VALUE real_obj, VALUE load_obj)
+{
+    struct rb_process_status *data = rb_check_typeddata(real_obj, &rb_process_status_type);
+    VALUE status = rb_attr_get(load_obj, id_status);
+    VALUE pid = rb_attr_get(load_obj, id_pid);
+    data->pid = NIL_P(pid) ? 0 : NUM2PIDT(pid);
+    data->status = NIL_P(status) ? 0 : NUM2INT(status);
+    return real_obj;
+}
+
 void
 rb_last_status_set(int status, rb_pid_t pid)
 {
@@ -8638,6 +8661,8 @@ InitVM_process(void)
     rb_cProcessStatus = rb_define_class_under(rb_mProcess, "Status", rb_cObject);
     rb_define_alloc_func(rb_cProcessStatus, rb_process_status_allocate);
     rb_undef_method(CLASS_OF(rb_cProcessStatus), "new");
+    rb_marshal_define_compat(rb_cProcessStatus, rb_cObject,
+                             process_status_dump, process_status_load);
 
     rb_define_singleton_method(rb_cProcessStatus, "wait", rb_process_status_waitv, -1);
 

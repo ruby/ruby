@@ -1425,6 +1425,8 @@ class TestProcess < Test::Unit::TestCase
       assert_equal(s.to_i >> 1, s >> 1)
       assert_equal(false, s.stopped?)
       assert_equal(nil, s.stopsig)
+
+      assert_equal(s, Marshal.load(Marshal.dump(s)))
     end
   end
 
@@ -1442,6 +1444,8 @@ class TestProcess < Test::Unit::TestCase
       assert_equal(expected,
                    [s.exited?, s.signaled?, s.stopped?, s.success?],
                    "[s.exited?, s.signaled?, s.stopped?, s.success?]")
+
+      assert_equal(s, Marshal.load(Marshal.dump(s)))
     end
   end
 
@@ -1456,6 +1460,8 @@ class TestProcess < Test::Unit::TestCase
                    "[s.exited?, s.signaled?, s.stopped?, s.success?]")
       assert_equal("#<Process::Status: pid #{ s.pid } SIGQUIT (signal #{ s.termsig })>",
                    s.inspect.sub(/ \(core dumped\)(?=>\z)/, ''))
+
+      assert_equal(s, Marshal.load(Marshal.dump(s)))
     end
   end
 
