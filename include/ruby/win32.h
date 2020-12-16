@@ -191,7 +191,6 @@ struct stati128 {
   long st_ctimensec;
 };
 
-#if SIZEOF_OFF_T == 8
 #define off_t __int64
 #define stat stati128
 #undef SIZEOF_STRUCT_STAT_ST_INO
@@ -202,12 +201,6 @@ struct stati128 {
 #define HAVE_STRUCT_STAT_ST_CTIMENSEC
 #define fstat(fd,st)		rb_w32_fstati128(fd,st)
 #define stati128(path, st)	rb_w32_stati128(path,st)
-#else
-#define stat(path,st)		rb_w32_stat(path,st)
-#define fstat(fd,st)		rb_w32_fstat(fd,st)
-extern int rb_w32_stat(const char *, struct stat *);
-extern int rb_w32_fstat(int, struct stat *);
-#endif
 #define lstat(path,st)		rb_w32_lstati128(path,st)
 #define access(path,mode)	rb_w32_access(path,mode)
 
