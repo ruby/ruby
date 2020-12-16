@@ -503,11 +503,13 @@ ractor_sleep_wo_gvl(void *ptr)
 {
     rb_ractor_t *cr = ptr;
     RACTOR_LOCK_SELF(cr);
-    VM_ASSERT(cr->sync.wait.status != wait_none);
-    if (cr->sync.wait.wakeup_status == wakeup_none) {
-        ractor_cond_wait(cr);
+    {
+        VM_ASSERT(cr->sync.wait.status != wait_none);
+        if (cr->sync.wait.wakeup_status == wakeup_none) {
+            ractor_cond_wait(cr);
+        }
+        cr->sync.wait.status = wait_none;
     }
-    cr->sync.wait.status = wait_none;
     RACTOR_UNLOCK_SELF(cr);
     return NULL;
 }
@@ -567,10 +569,22 @@ ractor_sleep(rb_execution_context_t *ec, rb_ractor_t *cr)
     //                 wait_status_str(cr->sync.wait.status), wakeup_status_str(cr->sync.wait.wakeup_status));
 
     RACTOR_UNLOCK(cr);
-    rb_nogvl(ractor_sleep_wo_gvl, cr,
-             ractor_sleep_interrupt, cr,
-             RB_NOGVL_UBF_ASYNC_SAFE);
+    {
+        rb_nogvl(ractor_sleep_wo_gvl, cr,
+                 ractor_sleep_interrupt, cr,
+                 RB_NOGVL_UBF_ASYNC_SAFE | RB_NOGVL_INTR_FAIL);
+    }
     RACTOR_LOCK(cr);
+
+    // rb_nogvl() can be canceled by interrupts
+    if (cr->sync.wait.status != wait_none) {
+        cr->sync.wait.status = wait_none;
+        cr->sync.wait.wakeup_status = wakeup_by_interrupt;
+
+        RACTOR_UNLOCK(cr);
+        rb_thread_check_ints();
+        RACTOR_LOCK(cr); // reachable?
+    }
 }
 
 static bool
