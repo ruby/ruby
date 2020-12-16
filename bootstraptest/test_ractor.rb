@@ -136,7 +136,7 @@ assert_equal '[[:e1, 1], [:e2, 2]]', %q{
   end
 
   a = []
-  
+
   Ractor.receive_if do |msg|
     begin
       Ractor.receive
@@ -155,7 +155,7 @@ assert_equal '[[:e1, 1], [:e2, 2]]', %q{
     true # delete 2 from queue
   end
 
-  a # 
+  a #
 }
 
 ###
