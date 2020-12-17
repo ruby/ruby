@@ -350,6 +350,10 @@ mjit_recompile(const rb_iseq_t *iseq)
 
     verbose(1, "JIT recompile: %s@%s:%d", RSTRING_PTR(iseq->body->location.label),
             RSTRING_PTR(rb_iseq_path(iseq)), FIX2INT(iseq->body->location.first_lineno));
+    iseq->body->jit_func = (mjit_func_t)NOT_ADDED_JIT_ISEQ_FUNC;
+
+    if (iseq->body->jit_unit == NULL) // mjit_free_iseq is already called
+        return;
 
     // Lazily move active_units to stale_units to avoid race conditions around active_units with compaction
     CRITICAL_SECTION_START(3, "in rb_mjit_recompile_iseq");
@@ -357,7 +361,6 @@ mjit_recompile(const rb_iseq_t *iseq)
     pending_stale_p = true;
     CRITICAL_SECTION_FINISH(3, "in rb_mjit_recompile_iseq");
 
-    iseq->body->jit_func = (mjit_func_t)NOT_ADDED_JIT_ISEQ_FUNC;
     mjit_add_iseq_to_process(iseq, &iseq->body->jit_unit->compile_info);
     if (UNLIKELY(mjit_opts.wait)) {
         mjit_wait(iseq->body);
