@@ -1,5 +1,10 @@
-#include "internal.h"
+#include "vm_core.h"
+#include "vm_callinfo.h"
+#include "builtin.h"
+#include "insns.inc"
+#include "insns_info.inc"
 #include "ujit_asm.h"
+#include "ujit_utils.h"
 #include "ujit_iface.h"
 #include "ujit_core.h"
 #include "ujit_codegen.h"
@@ -19,6 +24,13 @@ int
 ctx_get_opcode(ctx_t *ctx)
 {
     return opcode_at_pc(ctx->iseq, ctx->pc);
+}
+
+// Get the index of the next instruction
+uint32_t
+ctx_next_idx(ctx_t* ctx)
+{
+    return ctx->insn_idx + insn_len(ctx_get_opcode(ctx));
 }
 
 // Get an instruction argument from the context object
@@ -119,40 +131,46 @@ uint8_t* branch_stub_hit(uint32_t branch_idx, uint32_t target_idx)
 {
     assert (branch_idx < num_branches);
     assert (target_idx < 2);
-    branch_t branch = branch_entries[branch_idx];
-    blockid_t target = branch.targets[target_idx];
+    branch_t *branch = &branch_entries[branch_idx];
+    blockid_t target = branch->targets[target_idx];
+
+    //fprintf(stderr, "\nstub hit, branch idx: %d, target idx: %d\n", branch_idx, target_idx);
 
     // If either of the target blocks will be placed next
-    if (cb->write_pos == branch.end_pos)
+    if (cb->write_pos == branch->end_pos)
     {
-        branch.shape = (uint8_t)target_idx;
+        branch->shape = (uint8_t)target_idx;
 
         // Rewrite the branch with the new, potentially more compact shape
-        cb_set_pos(cb, branch.start_pos);
-        branch.gen_fn(cb, branch.dst_addrs[0], branch.dst_addrs[1], branch.shape);
-        assert (cb->write_pos <= branch.end_pos);
+        cb_set_pos(cb, branch->start_pos);
+        branch->gen_fn(cb, branch->dst_addrs[0], branch->dst_addrs[1], branch->shape);
+        assert (cb->write_pos <= branch->end_pos);
     }
 
     // Try to find a compiled version of this block
-    uint8_t* code_ptr = find_block_version(target);
+    uint8_t* block_ptr = find_block_version(target);
 
     // If this block hasn't yet been compiled
-    if (!code_ptr)
+    if (!block_ptr)
     {
-        code_ptr = ujit_compile_block(target.iseq, target.idx, false);
-        st_insert(version_tbl, (st_data_t)&target, (st_data_t)code_ptr);
-        branch.dst_addrs[target_idx] = code_ptr;
+        //fprintf(stderr, "compiling block\n");
+
+        block_ptr = ujit_compile_block(target.iseq, target.idx, false);
+        st_insert(version_tbl, (st_data_t)&target, (st_data_t)block_ptr);
+        branch->dst_addrs[target_idx] = block_ptr;
     }
+
+    //fprintf(stderr, "rewrite branch at %d\n", branch->start_pos);
 
     // Rewrite the branch with the new jump target address
     size_t cur_pos = cb->write_pos;
-    cb_set_pos(cb, branch.start_pos);
-    branch.gen_fn(cb, branch.dst_addrs[0], branch.dst_addrs[1], branch.shape);
-    assert (cb->write_pos <= branch.end_pos);
+    cb_set_pos(cb, branch->start_pos);
+    branch->gen_fn(cb, branch->dst_addrs[0], branch->dst_addrs[1], branch->shape);
+    assert (cb->write_pos <= branch->end_pos);
     cb_set_pos(cb, cur_pos);
 
     // Return a pointer to the compiled block version
-    return code_ptr;
+    return block_ptr;
 }
 
 // Get a version or stub corresponding to a branch target
@@ -164,13 +182,27 @@ uint8_t* get_branch_target(codeblock_t* ocb, blockid_t target, uint32_t branch_i
     if (block_code)
         return block_code;
 
-    uint8_t* stub_addr = cb_get_ptr(ocb, ocb->write_pos);
-
     // Generate an outlined stub that will call
     // branch_stub_hit(uint32_t branch_idx, uint32_t target_idx)
+    uint8_t* stub_addr = cb_get_ptr(ocb, ocb->write_pos);
+
+    //fprintf(stderr, "REQUESTING STUB FOR IDX: %d\n", target.idx);
+
+    // Save the ujit registers
+    push(ocb, REG_CFP);
+    push(ocb, REG_EC);
+    push(ocb, REG_SP);
+    push(ocb, REG_SP);
+
     mov(ocb, RDI, imm_opnd(branch_idx));
     mov(ocb, RSI, imm_opnd(target_idx));
     call_ptr(ocb, REG0, (void *)&branch_stub_hit);
+
+    // Restore the ujit registers
+    pop(ocb, REG_SP);
+    pop(ocb, REG_SP);
+    pop(ocb, REG_EC);
+    pop(ocb, REG_CFP);
 
     // Jump to the address returned by the
     // branch_stub_hit call

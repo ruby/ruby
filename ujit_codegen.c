@@ -69,15 +69,6 @@ ujit_side_exit(codeblock_t* cb, ctx_t* ctx)
     // Table mapping opcodes to interpreter handlers
     const void * const *table = rb_vm_get_insns_address_table();
 
-    // Write back the old instruction at the entry PC
-    // To deotimize the code block this instruction belongs to
-    VALUE* entry_pc = &ctx->iseq->body->iseq_encoded[ctx->start_idx];
-    int entry_opcode = opcode_at_pc(ctx->iseq, entry_pc);
-    void* entry_instr = (void*)table[entry_opcode];
-    mov(cb, RAX, const_ptr_opnd(entry_pc));
-    mov(cb, RCX, const_ptr_opnd(entry_instr));
-    mov(cb, mem_opnd(64, RAX, 0), RCX);
-
     // Write back the old instruction at the exit PC
     // Otherwise the interpreter may jump right back to the
     // JITted code we're trying to exit
@@ -99,7 +90,7 @@ Compile a sequence of bytecode instructions starting at `insn_idx`.
 Returns `NULL` if compilation fails.
 */
 uint8_t *
-ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, bool gen_entry)
+ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, bool entry_point)
 {
     assert (cb != NULL);
     VALUE *encoded = iseq->body->iseq_encoded;
@@ -148,9 +139,9 @@ ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, bool gen_entry)
             break;
         }
 
-        // If requested, write the interpreter entry
-        // prologue before the first instruction
-        if (gen_entry && num_instrs == 0) {
+        // If this is an interpreter entry point, write the interpreter
+        // entry prologue before the first instruction
+        if (entry_point && num_instrs == 0) {
             ujit_gen_entry(cb);
         }
 
@@ -172,15 +163,20 @@ ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, bool gen_entry)
         }
     }
 
+    // FIXME: only generate exit if no instructions were compiled?
+    // or simply don't allow instructions to fail to compile anymore?
     // If no instructions were compiled
-    if (num_instrs == 0) {
-        return NULL;
-    }
+    //if (num_instrs == 0) {
+    //    return NULL;
+    //}
 
     // Generate code to exit to the interpreter
     ujit_gen_exit(cb, &ctx, &encoded[insn_idx]);
 
-    map_addr2insn(code_ptr, first_opcode);
+    // If this is an interpreter entry point
+    if (entry_point) {
+        map_addr2insn(code_ptr, first_opcode);
+    }
 
     if (UJIT_DUMP_MODE >= 2) {
         // Dump list of compiled instrutions
@@ -897,13 +893,15 @@ static bool
 gen_branchunless(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
     // Get the branch target instruction offsets
-    int32_t jump_idx = (int32_t)ctx_get_arg(ctx, 0);
-    int32_t next_idx = ctx->insn_idx + 1;
-    blockid_t jump_block = { ctx->iseq, jump_idx };
+    uint32_t next_idx = ctx_next_idx(ctx);
+    uint32_t jump_idx = next_idx + (uint32_t)ctx_get_arg(ctx, 0);
     blockid_t next_block = { ctx->iseq, next_idx };
+    blockid_t jump_block = { ctx->iseq, jump_idx };
 
     // TODO: we need to eventually do an interrupt check when jumping/branching
     // How can we do this while keeping the check logic out of line?
+    // Maybe we can push the check int into the next block or the stub?
+    //
 	// RUBY_VM_CHECK_INTS(ec);
 
     // Test if any bit (outside of the Qnil bit) is on
@@ -949,4 +947,5 @@ ujit_init_codegen(void)
     st_insert(gen_fns, (st_data_t)BIN(opt_minus), (st_data_t)&gen_opt_minus);
     st_insert(gen_fns, (st_data_t)BIN(opt_plus), (st_data_t)&gen_opt_plus);
     st_insert(gen_fns, (st_data_t)BIN(opt_send_without_block), (st_data_t)&gen_opt_send_without_block);
+    st_insert(gen_fns, (st_data_t)BIN(branchunless), (st_data_t)&gen_branchunless);
 }
