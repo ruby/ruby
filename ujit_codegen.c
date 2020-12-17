@@ -145,6 +145,9 @@ ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, bool entry_point)
             ujit_gen_entry(cb);
         }
 
+        //fprintf(stderr, "compiling %s\n", insn_name(opcode));
+        //print_str(cb, insn_name(opcode));
+
         // Call the code generation function
         codegen_fn gen_fn = (codegen_fn)st_gen_fn;
         if (!gen_fn(cb, ocb, &ctx)) {
@@ -163,13 +166,16 @@ ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, bool entry_point)
         }
     }
 
+    // FIXME: maybe we want a separate function to compile entry points?
+    // If this is an entry point and no instructions were compiled
+    if (entry_point && num_instrs == 0) {
+        return NULL;
+    }
+
+    //print_str(cb, "exiting to interpreter\n");
+
     // FIXME: only generate exit if no instructions were compiled?
     // or simply don't allow instructions to fail to compile anymore?
-    // If no instructions were compiled
-    //if (num_instrs == 0) {
-    //    return NULL;
-    //}
-
     // Generate code to exit to the interpreter
     ujit_gen_exit(cb, &ctx, &encoded[insn_idx]);
 
@@ -892,12 +898,6 @@ gen_branchunless_branch(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uin
 static bool
 gen_branchunless(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 {
-    // Get the branch target instruction offsets
-    uint32_t next_idx = ctx_next_idx(ctx);
-    uint32_t jump_idx = next_idx + (uint32_t)ctx_get_arg(ctx, 0);
-    blockid_t next_block = { ctx->iseq, next_idx };
-    blockid_t jump_block = { ctx->iseq, jump_idx };
-
     // TODO: we need to eventually do an interrupt check when jumping/branching
     // How can we do this while keeping the check logic out of line?
     // Maybe we can push the check int into the next block or the stub?
@@ -909,6 +909,12 @@ gen_branchunless(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     // RUBY_Qnil    /* ...0000 1000 */
     x86opnd_t val_opnd = ctx_stack_pop(ctx, 1);
     test(cb, val_opnd, imm_opnd(~Qnil));
+
+    // Get the branch target instruction offsets
+    uint32_t next_idx = ctx_next_idx(ctx);
+    uint32_t jump_idx = next_idx + (uint32_t)ctx_get_arg(ctx, 0);
+    blockid_t next_block = { ctx->iseq, next_idx };
+    blockid_t jump_block = { ctx->iseq, jump_idx };
 
     // Generate the branch instructions
     gen_branch(cb, ocb, jump_block, next_block, gen_branchunless_branch);
@@ -947,5 +953,5 @@ ujit_init_codegen(void)
     st_insert(gen_fns, (st_data_t)BIN(opt_minus), (st_data_t)&gen_opt_minus);
     st_insert(gen_fns, (st_data_t)BIN(opt_plus), (st_data_t)&gen_opt_plus);
     st_insert(gen_fns, (st_data_t)BIN(opt_send_without_block), (st_data_t)&gen_opt_send_without_block);
-    st_insert(gen_fns, (st_data_t)BIN(branchunless), (st_data_t)&gen_branchunless);
+    //st_insert(gen_fns, (st_data_t)BIN(branchunless), (st_data_t)&gen_branchunless);
 }
