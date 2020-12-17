@@ -2643,7 +2643,8 @@ rb_hash_except(int argc, VALUE *argv, VALUE hash)
     int i;
     VALUE key, result;
 
-    result = rb_obj_dup(hash);
+    result = hash_alloc(rb_cHash);
+    hash_copy(result, hash);
 
     for (i = 0; i < argc; i++) {
         key = argv[i];
