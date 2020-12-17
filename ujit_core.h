@@ -98,6 +98,7 @@ typedef struct BranchEntry
 
 // Context object methods
 int ctx_get_opcode(ctx_t *ctx);
+uint32_t ctx_next_idx(ctx_t* ctx);
 VALUE ctx_get_arg(ctx_t* ctx, size_t arg_idx);
 x86opnd_t ctx_sp_opnd(ctx_t* ctx, int32_t offset_bytes);
 x86opnd_t ctx_stack_push(ctx_t* ctx, size_t n);
