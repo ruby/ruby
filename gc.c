@@ -7059,7 +7059,6 @@ gc_verify_heap_pages(rb_objspace_t *objspace)
 static VALUE
 gc_verify_internal_consistency_m(VALUE dummy)
 {
-    ASSERT_vm_locking();
     gc_verify_internal_consistency(&rb_objspace);
     return Qnil;
 }
@@ -7143,6 +7142,9 @@ gc_verify_internal_consistency_(rb_objspace_t *objspace)
 static void
 gc_verify_internal_consistency(rb_objspace_t *objspace)
 {
+    ASSERT_vm_locking();
+    rb_vm_barrier(); // stop other ractors
+
     unsigned int prev_during_gc = during_gc;
     during_gc = FALSE; // stop gc here
     {
