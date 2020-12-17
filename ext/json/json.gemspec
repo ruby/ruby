@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |s|
   s.name = "json"
-  s.version = File.read('VERSION').chomp
+  s.version = File.read(File.expand_path('../VERSION', __FILE__)).chomp
 
   s.summary = "JSON Implementation for Ruby"
   s.description = "This is a JSON implementation as a Ruby extension in C."
