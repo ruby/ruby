@@ -7,7 +7,6 @@ require "rbconfig/sizeof"
 class TestArray < Test::Unit::TestCase
   def setup
     @verbose = $VERBOSE
-    $VERBOSE = nil
     @cls = Array
   end
 
@@ -662,7 +661,7 @@ class TestArray < Test::Unit::TestCase
     assert_equal(5, a.count)
     assert_equal(2, a.count(1))
     assert_equal(3, a.count {|x| x % 2 == 1 })
-    assert_equal(2, a.count(1) {|x| x % 2 == 1 })
+    assert_equal(2, assert_warning(/given block not used/) {a.count(1) {|x| x % 2 == 1 }})
     assert_raise(ArgumentError) { a.count(0, 1) }
 
     bug8654 = '[ruby-core:56072]'
@@ -1100,7 +1099,7 @@ class TestArray < Test::Unit::TestCase
     assert_nil(a.index('ca'))
     assert_nil(a.index([1,2]))
 
-    assert_equal(1, a.index(99) {|x| x == 'cat' })
+    assert_equal(1, assert_warn(/given block not used/) {a.index(99) {|x| x == 'cat' }})
   end
 
   def test_values_at
@@ -1111,42 +1110,42 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_join
-    $, = ""
+    assert_deprecated_warning {$, = ""}
     a = @cls[]
-    assert_equal("", a.join)
+    assert_equal("", assert_warn(/non-nil value/) {a.join})
     assert_equal("", a.join(','))
-    assert_equal(Encoding::US_ASCII, a.join.encoding)
+    assert_equal(Encoding::US_ASCII, assert_warn(/non-nil value/) {a.join}.encoding)
 
-    $, = ""
+    assert_deprecated_warning {$, = ""}
     a = @cls[1, 2]
-    assert_equal("12", a.join)
-    assert_equal("12", a.join(nil))
+    assert_equal("12", assert_warn(/non-nil value/) {a.join})
+    assert_equal("12", assert_warn(/non-nil value/) {a.join(nil)})
     assert_equal("1,2", a.join(','))
 
-    $, = ""
+    assert_deprecated_warning {$, = ""}
     a = @cls[1, 2, 3]
-    assert_equal("123", a.join)
-    assert_equal("123", a.join(nil))
+    assert_equal("123", assert_warn(/non-nil value/) {a.join})
+    assert_equal("123", assert_warn(/non-nil value/) {a.join(nil)})
     assert_equal("1,2,3", a.join(','))
 
-    $, = ":"
+    assert_deprecated_warning {$, = ":"}
     a = @cls[1, 2, 3]
-    assert_equal("1:2:3", a.join)
-    assert_equal("1:2:3", a.join(nil))
+    assert_equal("1:2:3", assert_warn(/non-nil value/) {a.join})
+    assert_equal("1:2:3", assert_warn(/non-nil value/) {a.join(nil)})
     assert_equal("1,2,3", a.join(','))
 
-    $, = ""
+    assert_deprecated_warning {$, = ""}
 
     e = ''.force_encoding('EUC-JP')
     u = ''.force_encoding('UTF-8')
-    assert_equal(Encoding::US_ASCII, [[]].join.encoding)
-    assert_equal(Encoding::US_ASCII, [1, [u]].join.encoding)
-    assert_equal(Encoding::UTF_8, [u, [e]].join.encoding)
-    assert_equal(Encoding::UTF_8, [u, [1]].join.encoding)
-    assert_equal(Encoding::UTF_8, [Struct.new(:to_str).new(u)].join.encoding)
+    assert_equal(Encoding::US_ASCII, assert_warn(/non-nil value/) {[[]].join}.encoding)
+    assert_equal(Encoding::US_ASCII, assert_warn(/non-nil value/) {[1, [u]].join}.encoding)
+    assert_equal(Encoding::UTF_8, assert_warn(/non-nil value/) {[u, [e]].join}.encoding)
+    assert_equal(Encoding::UTF_8, assert_warn(/non-nil value/) {[u, [1]].join}.encoding)
+    assert_equal(Encoding::UTF_8, assert_warn(/non-nil value/) {[Struct.new(:to_str).new(u)].join}.encoding)
     bug5379 = '[ruby-core:39776]'
-    assert_equal(Encoding::US_ASCII, [[], u, nil].join.encoding, bug5379)
-    assert_equal(Encoding::UTF_8, [[], "\u3042", nil].join.encoding, bug5379)
+    assert_equal(Encoding::US_ASCII, assert_warn(/non-nil value/) {[[], u, nil].join}.encoding, bug5379)
+    assert_equal(Encoding::UTF_8, assert_warn(/non-nil value/) {[[], "\u3042", nil].join}.encoding, bug5379)
   ensure
     $, = nil
   end
@@ -1440,7 +1439,7 @@ class TestArray < Test::Unit::TestCase
     assert_nil(a.rindex('ca'))
     assert_nil(a.rindex([1,2]))
 
-    assert_equal(3, a.rindex(99) {|x| x == [1,2,3] })
+    assert_equal(3, assert_warning(/given block not used/) {a.rindex(99) {|x| x == [1,2,3] }})
 
     bug15951 = "[Bug #15951]"
     o2 = Object.new
@@ -1734,19 +1733,19 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_to_s
-    $, = ""
+    assert_deprecated_warning {$, = ""}
     a = @cls[]
     assert_equal("[]", a.to_s)
 
-    $, = ""
+    assert_deprecated_warning {$, = ""}
     a = @cls[1, 2]
     assert_equal("[1, 2]", a.to_s)
 
-    $, = ""
+    assert_deprecated_warning {$, = ""}
     a = @cls[1, 2, 3]
     assert_equal("[1, 2, 3]", a.to_s)
 
-    $, = ":"
+    assert_deprecated_warning {$, = ""}
     a = @cls[1, 2, 3]
     assert_equal("[1, 2, 3]", a.to_s)
   ensure
@@ -2403,13 +2402,13 @@ class TestArray < Test::Unit::TestCase
 
   def test_initialize
     assert_nothing_raised { [].instance_eval { initialize } }
-    assert_nothing_raised { Array.new { } }
+    assert_warning(/given block not used/) { Array.new { } }
     assert_equal([1, 2, 3], Array.new([1, 2, 3]))
     assert_raise(ArgumentError) { Array.new(-1, 1) }
     assert_raise(ArgumentError) { Array.new(LONGP, 1) }
     assert_equal([1, 1, 1], Array.new(3, 1))
     assert_equal([1, 1, 1], Array.new(3) { 1 })
-    assert_equal([1, 1, 1], Array.new(3, 1) { 1 })
+    assert_equal([1, 1, 1], assert_warning(/block supersedes default value argument/) {Array.new(3, 1) { 1 }})
   end
 
   def test_aset_error
@@ -2462,7 +2461,7 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_fetch
-    assert_equal(1, [].fetch(0, 0) { 1 })
+    assert_equal(1, assert_warning(/block supersedes default value argument/) {[].fetch(0, 0) { 1 }})
     assert_equal(1, [0, 1].fetch(-1))
     assert_raise(IndexError) { [0, 1].fetch(2) }
     assert_raise(IndexError) { [0, 1].fetch(-3) }
@@ -3305,7 +3304,6 @@ end
 class TestArraySubclass < TestArray
   def setup
     @verbose = $VERBOSE
-    $VERBOSE = nil
     @cls = Class.new(Array)
   end
 

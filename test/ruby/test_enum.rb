@@ -27,7 +27,6 @@ class TestEnumerable < Test::Unit::TestCase
       end
     end
     @verbose = $VERBOSE
-    $VERBOSE = nil
   end
 
   def teardown
@@ -88,7 +87,7 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(5, @obj.count)
     assert_equal(2, @obj.count(1))
     assert_equal(3, @obj.count {|x| x % 2 == 1 })
-    assert_equal(2, @obj.count(1) {|x| x % 2 == 1 })
+    assert_equal(2, assert_warning(/given block not used/) {@obj.count(1) {|x| x % 2 == 1 }})
     assert_raise(ArgumentError) { @obj.count(0, 1) }
 
     if RUBY_ENGINE == "ruby"
@@ -116,7 +115,7 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(1, @obj.find_index {|x| x % 2 == 0 })
     assert_equal(nil, @obj.find_index {|x| false })
     assert_raise(ArgumentError) { @obj.find_index(0, 1) }
-    assert_equal(1, @obj.find_index(2) {|x| x == 1 })
+    assert_equal(1, assert_warning(/given block not used/) {@obj.find_index(2) {|x| x == 1 }})
   end
 
   def test_find_all
@@ -227,7 +226,7 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(48, @obj.inject {|z, x| z * 2 + x })
     assert_equal(12, @obj.inject(:*))
     assert_equal(24, @obj.inject(2) {|z, x| z * x })
-    assert_equal(24, @obj.inject(2, :*) {|z, x| z * x })
+    assert_equal(24, assert_warning(/given block not used/) {@obj.inject(2, :*) {|z, x| z * x }})
     assert_equal(nil, @empty.inject() {9})
   end
 
@@ -437,7 +436,7 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(false, [true, true, false].all?)
     assert_equal(true, [].all?)
     assert_equal(true, @empty.all?)
-    assert_equal(true, @obj.all?(Fixnum))
+    assert_equal(true, @obj.all?(Integer))
     assert_equal(false, @obj.all?(1..2))
   end
 

@@ -587,6 +587,13 @@ eom
         assert_warning(*args) {$VERBOSE = false; yield}
       end
 
+      def assert_deprecated_warning(mesg = /deprecated/)
+        assert_warning(mesg) do
+          Warning[:deprecated] = true
+          yield
+        end
+      end
+
       class << (AssertFile = Struct.new(:failure_message).new)
         include CoreAssertions
         def assert_file_predicate(predicate, *args)

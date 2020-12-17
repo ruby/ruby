@@ -8,7 +8,6 @@ class TestDir < Test::Unit::TestCase
 
   def setup
     @verbose = $VERBOSE
-    $VERBOSE = nil
     @root = File.realpath(Dir.mktmpdir('__test_dir__'))
     @nodir = File.join(@root, "dummy")
     @dirs = []

@@ -5,7 +5,6 @@ require 'test/unit'
 class TestRegexp < Test::Unit::TestCase
   def setup
     @verbose = $VERBOSE
-    $VERBOSE = nil
   end
 
   def teardown
@@ -43,13 +42,14 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_yoshidam_net_20041111_1
     s = "[\xC2\xA0-\xC3\xBE]"
-    assert_match(Regexp.new(s, nil, "u"), "\xC3\xBE")
+    r = assert_warning(/ignored/) {Regexp.new(s, nil, "u")}
+    assert_match(r, "\xC3\xBE")
   end
 
   def test_yoshidam_net_20041111_2
     assert_raise(RegexpError) do
       s = "[\xFF-\xFF]".force_encoding("utf-8")
-      Regexp.new(s, nil, "u")
+      assert_warning(/ignored/) {Regexp.new(s, nil, "u")}
     end
   end
 
@@ -469,7 +469,7 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_initialize
     assert_raise(ArgumentError) { Regexp.new }
-    assert_equal(/foo/, Regexp.new(/foo/, Regexp::IGNORECASE))
+    assert_equal(/foo/, assert_warning(/ignored/) {Regexp.new(/foo/, Regexp::IGNORECASE)})
 
     assert_equal(Encoding.find("US-ASCII"), Regexp.new("b..", nil, "n").encoding)
     assert_equal("bar", "foobarbaz"[Regexp.new("b..", nil, "n")])
@@ -561,7 +561,7 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("bc", /../.match('abc', -2)[0])
     assert_nil(/../.match("abc", -4))
     assert_nil(/../.match("abc", 4))
-    assert_equal('\x', /../n.match("\u3042" + '\x', 1)[0])
+    assert_equal('\x', assert_warning(/binary regexp/) {/../n.match("\u3042" + '\x', 1)}[0])
 
     r = nil
     /.../.match("abc") {|m| r = m[0] }
@@ -662,13 +662,9 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_ignorecase
-    assert_equal(false, $=)
-    assert_nothing_raised { $= = nil }
-  end
-
-  def test_ignorecase_warning
+    v = assert_warning(/variable \$= is no longer effective/) { $= }
+    assert_equal(false, v)
     assert_warning(/variable \$= is no longer effective; ignored/) { $= = nil }
-    assert_warning(/variable \$= is no longer effective/) { $= }
   end
 
   def test_match_setter
@@ -730,11 +726,11 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_rindex_regexp
-    assert_equal(3, "foobarbaz\u3042".rindex(/b../n, 5))
+    assert_equal(3, assert_warning(/binary regexp/) {"foobarbaz\u3042".rindex(/b../n, 5)})
   end
 
   def assert_regexp(re, ss, fs = [], msg = nil)
-    re = Regexp.new(re) unless re.is_a?(Regexp)
+    re = EnvUtil.suppress_warning {Regexp.new(re)} unless re.is_a?(Regexp)
     ss = [ss] unless ss.is_a?(Array)
     ss.each do |e, s|
       s ||= e
@@ -767,7 +763,7 @@ class TestRegexp < Test::Unit::TestCase
     check(/\A\80\z/, "80", ["\100", ""])
     check(/\A\77\z/, "?")
     check(/\A\78\z/, "\7" + '8', ["\100", ""])
-    check(eval('/\A\Qfoo\E\z/'), "QfooE")
+    check(assert_warning(/Unknown escape/) {eval('/\A\Qfoo\E\z/')}, "QfooE")
     check(/\Aa++\z/, "aaa")
     check('\Ax]\z', "x]")
     check(/x#foo/x, "x", "#foo")
@@ -811,8 +807,8 @@ class TestRegexp < Test::Unit::TestCase
     check(/^(A+|B(?>\g<1>)*)[AC]$/, %w(AAAC BBBAAAAC), %w(BBBAAA))
     check(/^()(?>\g<1>)*$/, "", "a")
     check(/^(?>(?=a)(#{ "a" * 1000 }|))++$/, ["a" * 1000, "a" * 2000, "a" * 3000], ["", "a" * 500, "b" * 1000])
-    check(eval('/^(?:a?)?$/'), ["", "a"], ["aa"])
-    check(eval('/^(?:a+)?$/'), ["", "a", "aa"], ["ab"])
+    check(assert_warning(/nested repeat operator/) {eval('/^(?:a?)?$/')}, ["", "a"], ["aa"])
+    check(assert_warning(/nested repeat operator/) {eval('/^(?:a+)?$/')}, ["", "a", "aa"], ["ab"])
     check(/^(?:a?)+?$/, ["", "a", "aa"], ["ab"])
     check(/^a??[ab]/, [["a", "a"], ["a", "aa"], ["b", "b"], ["a", "ab"]], ["c"])
     check(/^(?:a*){3,5}$/, ["", "a", "aa", "aaa", "aaaa", "aaaaa", "aaaaaa"], ["b"])
@@ -941,13 +937,13 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_posix_bracket
     check(/\A[[:alpha:]0]\z/, %w(0 a), %w(1 .))
-    check(eval('/\A[[:^alpha:]0]\z/'), %w(0 1 .), "a")
-    check(eval('/\A[[:alpha\:]]\z/'), %w(a l p h a :), %w(b 0 1 .))
-    check(eval('/\A[[:alpha:foo]0]\z/'), %w(0 a), %w(1 .))
+    check(assert_warning(/duplicated range/) {eval('/\A[[:^alpha:]0]\z/')}, %w(0 1 .), "a")
+    check(assert_warning(/duplicated range/) {eval('/\A[[:alpha\:]]\z/')}, %w(a l p h a :), %w(b 0 1 .))
+    check(assert_warning(/duplicated range/) {eval('/\A[[:alpha:foo]0]\z/')}, %w(0 a), %w(1 .))
     check(/\A[[:xdigit:]&&[:alpha:]]\z/, "a", %w(g 0))
     check('\A[[:abcdefghijklmnopqrstu:]]+\z', "[]")
     failcheck('[[:alpha')
-    failcheck('[[:alpha:')
+    assert_warning(/duplicated range/) {failcheck('[[:alpha:')}
     failcheck('[[:alp:]]')
 
     assert_match(/\A[[:digit:]]+\z/, "\uff10\uff11\uff12\uff13\uff14\uff15\uff16\uff17\uff18\uff19")
@@ -1114,13 +1110,17 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_regexp_popped
-    assert_nothing_raised { eval("a = 1; /\#{ a }/; a") }
-    assert_nothing_raised { eval("a = 1; /\#{ a }/o; a") }
+    EnvUtil.suppress_warning do
+      assert_nothing_raised { eval("a = 1; /\#{ a }/; a") }
+      assert_nothing_raised { eval("a = 1; /\#{ a }/o; a") }
+    end
   end
 
   def test_invalid_fragment
     bug2547 = '[ruby-core:27374]'
-    assert_raise(SyntaxError, bug2547) {eval('/#{"\\\\"}y/')}
+    assert_raise(SyntaxError, bug2547) do
+      assert_warning(/ignored/) {eval('/#{"\\\\"}y/')}
+    end
   end
 
   def test_dup_warn
@@ -1160,7 +1160,8 @@ class TestRegexp < Test::Unit::TestCase
   def test_raw_hyphen_and_tk_char_type_after_range
     bug6853 = '[ruby-core:47115]'
     # use Regexp.new instead of literal to ignore a parser warning.
-    check(Regexp.new('[0-1-\\s]'), [' ', '-'], ['2', 'a'], bug6853)
+    re = assert_warning(/without escape/) {Regexp.new('[0-1-\\s]')}
+    check(re, [' ', '-'], ['2', 'a'], bug6853)
   end
 
   def test_error_message_on_failed_conversion
@@ -1201,8 +1202,8 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal('aa', eval('/(?:a+?)*/').match('aa')[0])
 
     quantifiers = %w'? * + ?? *? +?'
-    quantifiers.each do |q1|
-      quantifiers.each do |q2|
+    quantifiers.product(quantifiers) do |q1, q2|
+      EnvUtil.suppress_warning do
         r1 = eval("/(a#{q1})#{q2}/").match('aa')[0]
         r2 = eval("/(?:a#{q1})#{q2}/").match('aa')[0]
         assert_equal(r1, r2)

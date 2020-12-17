@@ -35,7 +35,6 @@ class TestBignum < Test::Unit::TestCase
 
   def setup
     @verbose = $VERBOSE
-    $VERBOSE = nil
     @fmax = Float::MAX.to_i
     @fmax2 = @fmax * 2
     @big = (1 << BIGNUM_MIN_BITS) - 1
@@ -214,9 +213,11 @@ class TestBignum < Test::Unit::TestCase
 
   def test_to_f
     assert_nothing_raised { T31P.to_f.to_i }
-    assert_raise(FloatDomainError) { (1024**1024).to_f.to_i }
-    assert_equal(1, (2**50000).to_f.infinite?)
-    assert_equal(-1, (-(2**50000)).to_f.infinite?)
+    assert_raise(FloatDomainError) {
+      assert_warning(/out of Float range/) {(1024**1024).to_f}.to_i
+    }
+    assert_equal(1, assert_warning(/out of Float range/) {(2**50000).to_f}.infinite?)
+    assert_equal(-1, assert_warning(/out of Float range/) {(-(2**50000)).to_f}.infinite?)
   end
 
   def test_cmp
@@ -415,7 +416,7 @@ class TestBignum < Test::Unit::TestCase
   def test_divide
     bug5490 = '[ruby-core:40429]'
     assert_raise(ZeroDivisionError, bug5490) {T1024./(0)}
-    assert_equal(Float::INFINITY, T1024./(0.0), bug5490)
+    assert_equal(Float::INFINITY, assert_warning(/out of Float range/) {T1024./(0.0)}, bug5490)
   end
 
   def test_div
@@ -466,8 +467,8 @@ class TestBignum < Test::Unit::TestCase
   def test_pow
     assert_equal(1.0, T32 ** 0.0)
     assert_equal(1.0 / T32, T32 ** -1)
-    assert_equal(1, (T32 ** T32).infinite?)
-    assert_equal(1, (T32 ** (2**30-1)).infinite?)
+    assert_equal(1, assert_warning(/may be too big/) {T32 ** T32}.infinite?)
+    assert_equal(1, assert_warning(/may be too big/) {T32 ** (2**30-1)}.infinite?)
 
     ### rational changes the behavior of Bignum#**
     #assert_raise(TypeError) { T32**"foo" }
@@ -505,39 +506,57 @@ class TestBignum < Test::Unit::TestCase
   end
 
   def test_and_with_float
-    assert_raise(TypeError) { T1024 & 1.5 }
+    assert_raise(TypeError) {
+      assert_warning(/out of Float range/) {T1024 & 1.5}
+    }
   end
 
   def test_and_with_rational
-    assert_raise(TypeError, "#1792") { T1024 & Rational(3, 2) }
+    assert_raise(TypeError, "#1792") {
+      assert_warn(/out of Float range/) {T1024 & Rational(3, 2)}
+    }
   end
 
   def test_and_with_nonintegral_numeric
-    assert_raise(TypeError, "#1792") { T1024 & DummyNumeric.new }
+    assert_raise(TypeError, "#1792") {
+      assert_warn(/out of Float range/) {T1024 & DummyNumeric.new}
+    }
   end
 
   def test_or_with_float
-    assert_raise(TypeError) { T1024 | 1.5 }
+    assert_raise(TypeError) {
+      assert_warn(/out of Float range/) {T1024 | 1.5}
+    }
   end
 
   def test_or_with_rational
-    assert_raise(TypeError, "#1792") { T1024 | Rational(3, 2) }
+    assert_raise(TypeError, "#1792") {
+      assert_warn(/out of Float range/) {T1024 | Rational(3, 2)}
+    }
   end
 
   def test_or_with_nonintegral_numeric
-    assert_raise(TypeError, "#1792") { T1024 | DummyNumeric.new }
+    assert_raise(TypeError, "#1792") {
+      assert_warn(/out of Float range/) {T1024 | DummyNumeric.new}
+    }
   end
 
   def test_xor_with_float
-    assert_raise(TypeError) { T1024 ^ 1.5 }
+    assert_raise(TypeError) {
+      assert_warn(/out of Float range/) {T1024 ^ 1.5}
+    }
   end
 
   def test_xor_with_rational
-    assert_raise(TypeError, "#1792") { T1024 ^ Rational(3, 2) }
+    assert_raise(TypeError, "#1792") {
+      assert_warn(/out of Float range/) {T1024 ^ Rational(3, 2)}
+    }
   end
 
   def test_xor_with_nonintegral_numeric
-    assert_raise(TypeError, "#1792") { T1024 ^ DummyNumeric.new }
+    assert_raise(TypeError, "#1792") {
+      assert_warn(/out of Float range/) {T1024 ^ DummyNumeric.new}
+    }
   end
 
   def test_shift2
