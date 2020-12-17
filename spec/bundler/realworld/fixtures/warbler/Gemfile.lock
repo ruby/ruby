@@ -6,7 +6,7 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
-    jruby-jars (9.2.11.1)
+    jruby-jars (9.2.14.0)
     jruby-rack (1.1.21)
     rake (13.0.1)
     rubyzip (1.3.0)

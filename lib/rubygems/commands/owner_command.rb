@@ -105,7 +105,6 @@ permission to.
     rubygems_api_request method, "api/v1/gems/#{name}/owners", scope: get_owner_scope(method: method) do |request|
       request.set_form_data 'email' => owner
       request.add_field "Authorization", api_key
-      request.add_field "OTP", options[:otp] if options[:otp]
     end
   end
 
