@@ -426,6 +426,7 @@ begin
     end
 
     def test_enable_bracketed_paste
+      omit if Reline::IOGate.win?
       write_inputrc <<~LINES
         set enable-bracketed-paste on
       LINES
