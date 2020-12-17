@@ -4046,9 +4046,9 @@ cached_object_id(VALUE obj)
     VALUE id;
     rb_objspace_t *objspace = &rb_objspace;
 
+    RB_VM_LOCK_ENTER();
     if (st_lookup(objspace->obj_to_id_tbl, (st_data_t)obj, &id)) {
         GC_ASSERT(FL_TEST(obj, FL_SEEN_OBJ_ID));
-        return id;
     }
     else {
         GC_ASSERT(!FL_TEST(obj, FL_SEEN_OBJ_ID));
@@ -4061,9 +4061,10 @@ cached_object_id(VALUE obj)
         st_insert(objspace->id_to_obj_tbl, (st_data_t)id, (st_data_t)obj);
         if (already_disabled == Qfalse) rb_objspace_gc_enable(objspace);
         FL_SET(obj, FL_SEEN_OBJ_ID);
-
-        return id;
     }
+    RB_VM_LOCK_LEAVE();
+
+    return id;
 }
 
 static VALUE
