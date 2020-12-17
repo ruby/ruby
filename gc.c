@@ -9649,34 +9649,7 @@ enum gc_stat_sym {
     gc_stat_sym_last
 };
 
-enum gc_stat_compat_sym {
-    gc_stat_compat_sym_gc_stat_heap_used,
-    gc_stat_compat_sym_heap_eden_page_length,
-    gc_stat_compat_sym_heap_tomb_page_length,
-    gc_stat_compat_sym_heap_increment,
-    gc_stat_compat_sym_heap_length,
-    gc_stat_compat_sym_heap_live_slot,
-    gc_stat_compat_sym_heap_free_slot,
-    gc_stat_compat_sym_heap_final_slot,
-    gc_stat_compat_sym_heap_swept_slot,
-    gc_stat_compat_sym_remembered_shady_object,
-    gc_stat_compat_sym_remembered_shady_object_limit,
-    gc_stat_compat_sym_old_object,
-    gc_stat_compat_sym_old_object_limit,
-    gc_stat_compat_sym_total_allocated_object,
-    gc_stat_compat_sym_total_freed_object,
-    gc_stat_compat_sym_malloc_increase,
-    gc_stat_compat_sym_malloc_limit,
-#if RGENGC_ESTIMATE_OLDMALLOC
-    gc_stat_compat_sym_oldmalloc_increase,
-    gc_stat_compat_sym_oldmalloc_limit,
-#endif
-    gc_stat_compat_sym_last
-};
-
 static VALUE gc_stat_symbols[gc_stat_sym_last];
-static VALUE gc_stat_compat_symbols[gc_stat_compat_sym_last];
-static VALUE gc_stat_compat_table;
 
 static void
 setup_gc_stat_symbols(void)
@@ -9722,98 +9695,7 @@ setup_gc_stat_symbols(void)
 	S(total_remembered_shady_object_count);
 #endif /* RGENGC_PROFILE */
 #undef S
-#define S(s) gc_stat_compat_symbols[gc_stat_compat_sym_##s] = ID2SYM(rb_intern_const(#s))
-	S(gc_stat_heap_used);
-	S(heap_eden_page_length);
-	S(heap_tomb_page_length);
-	S(heap_increment);
-	S(heap_length);
-	S(heap_live_slot);
-	S(heap_free_slot);
-	S(heap_final_slot);
-	S(heap_swept_slot);
-	S(remembered_shady_object);
-	S(remembered_shady_object_limit);
-	S(old_object);
-	S(old_object_limit);
-	S(total_allocated_object);
-	S(total_freed_object);
-	S(malloc_increase);
-	S(malloc_limit);
-#if RGENGC_ESTIMATE_OLDMALLOC
-	S(oldmalloc_increase);
-	S(oldmalloc_limit);
-#endif
-#undef S
-
-	{
-	    VALUE table = gc_stat_compat_table = rb_hash_new();
-	    rb_obj_hide(table);
-	    rb_gc_register_mark_object(table);
-
-	    /* compatibility layer for Ruby 2.1 */
-#define OLD_SYM(s) gc_stat_compat_symbols[gc_stat_compat_sym_##s]
-#define NEW_SYM(s) gc_stat_symbols[gc_stat_sym_##s]
-	    rb_hash_aset(table, OLD_SYM(gc_stat_heap_used), NEW_SYM(heap_allocated_pages));
-	    rb_hash_aset(table, OLD_SYM(heap_eden_page_length), NEW_SYM(heap_eden_pages));
-	    rb_hash_aset(table, OLD_SYM(heap_tomb_page_length), NEW_SYM(heap_tomb_pages));
-	    rb_hash_aset(table, OLD_SYM(heap_increment), NEW_SYM(heap_allocatable_pages));
-	    rb_hash_aset(table, OLD_SYM(heap_length), NEW_SYM(heap_sorted_length));
-	    rb_hash_aset(table, OLD_SYM(heap_live_slot), NEW_SYM(heap_live_slots));
-	    rb_hash_aset(table, OLD_SYM(heap_free_slot), NEW_SYM(heap_free_slots));
-	    rb_hash_aset(table, OLD_SYM(heap_final_slot), NEW_SYM(heap_final_slots));
-	    rb_hash_aset(table, OLD_SYM(remembered_shady_object), NEW_SYM(remembered_wb_unprotected_objects));
-	    rb_hash_aset(table, OLD_SYM(remembered_shady_object_limit), NEW_SYM(remembered_wb_unprotected_objects_limit));
-	    rb_hash_aset(table, OLD_SYM(old_object), NEW_SYM(old_objects));
-	    rb_hash_aset(table, OLD_SYM(old_object_limit), NEW_SYM(old_objects_limit));
-	    rb_hash_aset(table, OLD_SYM(total_allocated_object), NEW_SYM(total_allocated_objects));
-	    rb_hash_aset(table, OLD_SYM(total_freed_object), NEW_SYM(total_freed_objects));
-	    rb_hash_aset(table, OLD_SYM(malloc_increase), NEW_SYM(malloc_increase_bytes));
-	    rb_hash_aset(table, OLD_SYM(malloc_limit), NEW_SYM(malloc_increase_bytes_limit));
-#if RGENGC_ESTIMATE_OLDMALLOC
-	    rb_hash_aset(table, OLD_SYM(oldmalloc_increase), NEW_SYM(oldmalloc_increase_bytes));
-	    rb_hash_aset(table, OLD_SYM(oldmalloc_limit), NEW_SYM(oldmalloc_increase_bytes_limit));
-#endif
-#undef OLD_SYM
-#undef NEW_SYM
-	    rb_obj_freeze(table);
-	}
     }
-}
-
-static VALUE
-compat_key(VALUE key)
-{
-    VALUE new_key = rb_hash_lookup(gc_stat_compat_table, key);
-
-    if (!NIL_P(new_key)) {
-	static int warned = 0;
-	if (warned == 0) {
-	    rb_warn("GC.stat keys were changed from Ruby 2.1. "
-		    "In this case, you refer to obsolete `%"PRIsVALUE"' (new key is `%"PRIsVALUE"'). "
-		    "Please check <https://bugs.ruby-lang.org/issues/9924> for more information.",
-		    key, new_key);
-	    warned = 1;
-	}
-    }
-
-    return new_key;
-}
-
-static VALUE
-default_proc_for_compat_func(RB_BLOCK_CALL_FUNC_ARGLIST(hash, _))
-{
-    VALUE key, new_key;
-
-    Check_Type(hash, T_HASH);
-    rb_check_arity(argc, 2, 2);
-    key = argv[1];
-
-    if ((new_key = compat_key(key)) != Qnil) {
-	return rb_hash_lookup(hash, new_key);
-    }
-
-    return Qnil;
 }
 
 static size_t
@@ -9826,15 +9708,6 @@ gc_stat_internal(VALUE hash_or_sym)
 
     if (RB_TYPE_P(hash_or_sym, T_HASH)) {
 	hash = hash_or_sym;
-
-	if (NIL_P(RHASH_IFNONE(hash))) {
-	    static VALUE default_proc_for_compat = 0;
-	    if (default_proc_for_compat == 0) { /* TODO: it should be */
-		default_proc_for_compat = rb_proc_new(default_proc_for_compat_func, Qnil);
-		rb_gc_register_mark_object(default_proc_for_compat);
-	    }
-	    rb_hash_set_default_proc(hash, default_proc_for_compat);
-	}
     }
     else if (SYMBOL_P(hash_or_sym)) {
 	key = hash_or_sym;
@@ -9849,7 +9722,6 @@ gc_stat_internal(VALUE hash_or_sym)
     else if (hash != Qnil) \
 	rb_hash_aset(hash, gc_stat_symbols[gc_stat_sym_##name], SIZET2NUM(attr));
 
-  again:
     SET(count, objspace->profile.count);
 
     /* implementation dependent counters */
@@ -9894,11 +9766,6 @@ gc_stat_internal(VALUE hash_or_sym)
 #undef SET
 
     if (!NIL_P(key)) { /* matched key should return above */
-	VALUE new_key;
-	if ((new_key = compat_key(key)) != Qnil) {
-	    key = new_key;
-	    goto again;
-	}
 	rb_raise(rb_eArgError, "unknown key: %"PRIsVALUE, rb_sym2str(key));
     }
 
