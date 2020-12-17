@@ -121,6 +121,7 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/tests", "test/json")
     cp_r("#{upstream}/lib", "ext/json")
     cp_r("#{upstream}/json.gemspec", "ext/json")
+    cp_r("#{upstream}/VERSION", "ext/json")
     rm_rf(%w[ext/json/lib/json/ext ext/json/lib/json/pure.rb ext/json/lib/json/pure])
     `git checkout ext/json/extconf.rb ext/json/parser/prereq.mk ext/json/generator/depend ext/json/parser/depend ext/json/depend`
   when "psych"
