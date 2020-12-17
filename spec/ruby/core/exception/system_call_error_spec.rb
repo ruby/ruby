@@ -31,7 +31,7 @@ describe "SystemCallError.new" do
     -> { SystemCallError.new }.should raise_error(ArgumentError)
   end
 
-  it "accepts single Fixnum argument as errno" do
+  it "accepts single Integer argument as errno" do
     SystemCallError.new(-2**24).errno.should == -2**24
     SystemCallError.new(-1).errno.should == -1
     SystemCallError.new(0).errno.should == 0

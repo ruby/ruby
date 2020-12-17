@@ -71,7 +71,7 @@ describe "CApiTimeSpecs" do
   end
 
   describe "rb_time_interval" do
-    it "creates a timeval interval for a Fixnum" do
+    it "creates a timeval interval for a Integer" do
       sec, usec = @s.rb_time_interval(1232141421)
       sec.should be_kind_of(Integer)
       sec.should == 1232141421
@@ -104,7 +104,7 @@ describe "CApiTimeSpecs" do
   end
 
   describe "rb_time_interval" do
-    it "creates a timeval interval for a Fixnum" do
+    it "creates a timeval interval for a Integer" do
       sec, usec = @s.rb_time_interval(1232141421)
       sec.should be_kind_of(Integer)
       sec.should == 1232141421
@@ -141,7 +141,7 @@ describe "CApiTimeSpecs" do
   end
 
   describe "rb_time_timeval" do
-    it "creates a timeval for a Fixnum" do
+    it "creates a timeval for a Integer" do
       sec, usec = @s.rb_time_timeval(1232141421)
       sec.should be_kind_of(Integer)
       sec.should == 1232141421
@@ -165,7 +165,7 @@ describe "CApiTimeSpecs" do
       usec.should == 500000
     end
 
-    it "creates a timeval for a negative Fixnum" do
+    it "creates a timeval for a negative Integer" do
       sec, usec = @s.rb_time_timeval(-1232141421)
       sec.should be_kind_of(Integer)
       sec.should == -1232141421
@@ -198,7 +198,7 @@ describe "CApiTimeSpecs" do
   end
 
   describe "rb_time_timespec" do
-    it "creates a timespec for a Fixnum" do
+    it "creates a timespec for a Integer" do
       sec, nsec = @s.rb_time_timespec(1232141421)
       sec.should be_kind_of(Integer)
       sec.should == 1232141421
@@ -222,7 +222,7 @@ describe "CApiTimeSpecs" do
       nsec.should == 500000000
     end
 
-    it "creates a timespec for a negative Fixnum" do
+    it "creates a timespec for a negative Integer" do
       sec, nsec = @s.rb_time_timespec(-1232141421)
       sec.should be_kind_of(Integer)
       sec.should == -1232141421

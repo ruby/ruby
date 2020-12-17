@@ -59,7 +59,7 @@ describe :rational_exponent, shared: true do
     end
   end
 
-  describe "when passed Bignum" do
+  describe "when passed Integer" do
     # #5713
     it "returns Rational(0) when self is Rational(0) and the exponent is positive" do
       (Rational(0) ** bignum_value).should eql(Rational(0))

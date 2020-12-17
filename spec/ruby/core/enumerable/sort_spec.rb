@@ -31,7 +31,7 @@ describe "Enumerable#sort" do
   it "compare values returned by block with 0" do
     EnumerableSpecs::Numerous.new.sort { |n, m| -(n+m) * (n <=> m) }.should == [6, 5, 4, 3, 2, 1]
     EnumerableSpecs::Numerous.new.sort { |n, m|
-      EnumerableSpecs::ComparableWithFixnum.new(-(n+m) * (n <=> m))
+      EnumerableSpecs::ComparableWithInteger.new(-(n+m) * (n <=> m))
     }.should == [6, 5, 4, 3, 2, 1]
     -> {
       EnumerableSpecs::Numerous.new.sort { |n, m| (n <=> m).to_s }

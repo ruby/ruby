@@ -60,7 +60,7 @@ describe :io_set_pos, shared: true do
     end
   end
 
-  it "does not accept Bignums that don't fit in a C long" do
+  it "does not accept Integers that don't fit in a C long" do
     File.open @fname do |io|
       -> { io.send @method, 2**128 }.should raise_error(RangeError)
     end

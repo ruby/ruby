@@ -75,7 +75,7 @@ describe "Integer#&" do
       (-@bignum & -0x4000000000000000).should == -13835058055282163712
     end
 
-    it "returns self bitwise AND other when both are negative and a multiple in bitsize of Fixnum::MIN" do
+    it "returns self bitwise AND other when both are negative and a multiple in bitsize of Integer::MIN" do
       val = - ((1 << 93) - 1)
       (val & val).should == val
 

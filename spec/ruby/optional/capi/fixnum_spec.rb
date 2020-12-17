@@ -2,16 +2,16 @@ require_relative 'spec_helper'
 
 load_extension("fixnum")
 
-describe "CApiFixnumSpecs" do
+describe "CApiIntegerSpecs" do
   before :each do
-    @s = CApiFixnumSpecs.new
+    @s = CApiIntegerSpecs.new
   end
 
   describe "FIX2INT" do
     max_int = (1 << 31) - 1
     min_int = -(1 << 31)
 
-    it "converts a Fixnum to a native int" do
+    it "converts a Integer to a native int" do
       @s.FIX2INT(42).should == 42
       @s.FIX2INT(-14).should == -14
       @s.FIX2INT(-1).should == -1
@@ -19,7 +19,7 @@ describe "CApiFixnumSpecs" do
     end
 
     guard -> { fixnum_min <= min_int and max_int <= fixnum_max } do
-      it "converts a Fixnum representing the minimum and maximum native int" do
+      it "converts a Integer representing the minimum and maximum native int" do
         @s.FIX2INT(max_int).should == max_int
         @s.FIX2INT(min_int).should == min_int
       end
@@ -34,7 +34,7 @@ describe "CApiFixnumSpecs" do
         @s.FIX2INT(25.4567).should == 25
       end
 
-      it "converts a negative Bignum into an signed number" do
+      it "converts a negative Integer into an signed number" do
         @s.FIX2INT(-2147442171).should == -2147442171
       end
 
@@ -62,14 +62,14 @@ describe "CApiFixnumSpecs" do
   describe "FIX2UINT" do
     max_uint = (1 << 32) - 1
 
-    it "converts a Fixnum" do
+    it "converts a Integer" do
       @s.FIX2UINT(0).should == 0
       @s.FIX2UINT(1).should == 1
       @s.FIX2UINT(42).should == 42
     end
 
     guard -> { max_uint <= fixnum_max } do
-      it "converts a Fixnum representing the maximum native uint" do
+      it "converts a Integer representing the maximum native uint" do
         @s.FIX2UINT(max_uint).should == max_uint
       end
     end

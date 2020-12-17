@@ -486,7 +486,7 @@ describe :array_slice, shared: true do
     end
   end
 
-  it "raises a RangeError when the start index is out of range of Fixnum" do
+  it "raises a RangeError when the start index is out of range of Integer" do
     array = [1, 2, 3, 4, 5, 6]
     obj = mock('large value')
     obj.should_receive(:to_int).and_return(bignum_value)
@@ -502,7 +502,7 @@ describe :array_slice, shared: true do
     array.send(@method, max_long.to_f.prev_float).should == nil
   end
 
-  it "raises a RangeError when the length is out of range of Fixnum" do
+  it "raises a RangeError when the length is out of range of Integer" do
     array = [1, 2, 3, 4, 5, 6]
     obj = mock('large value')
     obj.should_receive(:to_int).and_return(bignum_value)
