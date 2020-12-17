@@ -420,8 +420,10 @@ class TestTime < Test::Unit::TestCase
     def o.to_int; 0; end
     def o.to_r; nil; end
     assert_raise(TypeError) { Time.gm(2000, 1, 1, 0, 0, o, :foo, :foo) }
+    class << o; remove_method(:to_r); end
     def o.to_r; ""; end
     assert_raise(TypeError) { Time.gm(2000, 1, 1, 0, 0, o, :foo, :foo) }
+    class << o; remove_method(:to_r); end
     def o.to_r; Rational(11); end
     assert_equal(11, Time.gm(2000, 1, 1, 0, 0, o).sec)
     o = Object.new
@@ -711,7 +713,9 @@ class TestTime < Test::Unit::TestCase
     assert_equal("12:00:00 AM", t2000.strftime("%r"))
     assert_equal("Sat 2000-01-01T00:00:00", t2000.strftime("%3a %FT%T"))
 
-    assert_equal("", t2000.strftime(""))
+    assert_warning(/strftime called with empty format string/) do
+      assert_equal("", t2000.strftime(""))
+    end
     assert_equal("foo\0bar\x0000\x0000\x0000", t2000.strftime("foo\0bar\0%H\0%M\0%S"))
     assert_equal("foo" * 1000, t2000.strftime("foo" * 1000))
 

@@ -877,7 +877,7 @@ class TestHash < Test::Unit::TestCase
   def test_to_s
     h = @cls[ 1 => 2, "cat" => "dog", 1.5 => :fred ]
     assert_equal(h.inspect, h.to_s)
-    $, = ":"
+    assert_deprecated_warning { $, = ":" }
     assert_equal(h.inspect, h.to_s)
     h = @cls[]
     assert_equal(h.inspect, h.to_s)
@@ -1769,6 +1769,12 @@ class TestHash < Test::Unit::TestCase
     def setup
       @cls = SubHash
       super
+    end
+
+    def test_reject
+      assert_warning(/extra states are no longer copied/) do
+        super
+      end
     end
   end
 
