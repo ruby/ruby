@@ -8457,7 +8457,15 @@ gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_
 {
     // stop other ractors
     RB_VM_LOCK_ENTER_LEV(lock_lev);
-    rb_vm_barrier();
+
+    switch (event) {
+      case gc_enter_event_start:
+      case gc_enter_event_mark_continue:
+        rb_vm_barrier();
+        break;
+      default:
+        break;
+    }
 
     gc_enter_count(event);
     GC_ASSERT(during_gc == 0);
