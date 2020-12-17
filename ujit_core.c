@@ -163,6 +163,8 @@ uint8_t* branch_stub_hit(uint32_t branch_idx, uint32_t target_idx)
     //fprintf(stderr, "rewrite branch at %d\n", branch->start_pos);
 
     // Rewrite the branch with the new jump target address
+    assert (branch->dst_addrs[0] != NULL);
+    assert (branch->dst_addrs[1] != NULL);
     size_t cur_pos = cb->write_pos;
     cb_set_pos(cb, branch->start_pos);
     branch->gen_fn(cb, branch->dst_addrs[0], branch->dst_addrs[1], branch->shape);
