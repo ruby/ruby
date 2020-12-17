@@ -1795,7 +1795,9 @@ vm_search_method_slowpath0(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
     return cc;
 }
 
-static const struct rb_callcache *
+ALWAYS_INLINE(static const struct rb_callcache *vm_search_method_fastpath(VALUE cd_owner, struct rb_call_data *cd, VALUE klass));
+
+static inline const struct rb_callcache *
 vm_search_method_fastpath(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
 {
     const struct rb_callcache *cc = cd->cc;
@@ -4409,14 +4411,6 @@ vm_define_method(const rb_execution_context_t *ec, VALUE obj, ID id, VALUE iseqv
     }
 }
 
-static const struct rb_callcache *
-vm_search_method_wrap(const struct rb_control_frame_struct *reg_cfp,
-                      struct rb_call_data *cd,
-                      VALUE recv)
-{
-    return vm_search_method((VALUE)reg_cfp->iseq, cd, recv);
-}
-
 static VALUE
 vm_invokeblock_i(struct rb_execution_context_struct *ec,
                  struct rb_control_frame_struct *reg_cfp,
@@ -4433,47 +4427,47 @@ vm_invokeblock_i(struct rb_execution_context_struct *ec,
     }
 }
 
-static const struct rb_callcache *
-vm_search_invokeblock(const struct rb_control_frame_struct *reg_cfp, struct rb_call_data *cd, VALUE recv)
-{
-    static const struct rb_callcache cc = {
-        .flags = T_IMEMO | (imemo_callcache << FL_USHIFT) | VM_CALLCACHE_UNMARKABLE,
-        .klass = 0,
-        .cme_  = 0,
-        .call_ = vm_invokeblock_i,
-        .aux_  = {0},
-    };
+enum method_explorer_type {
+    mexp_search_method,
+    mexp_search_invokeblock,
+    mexp_search_super,
+};
 
-    return &cc;
-}
-
-static VALUE
+static inline VALUE
 vm_sendish(
     struct rb_execution_context_struct *ec,
     struct rb_control_frame_struct *reg_cfp,
     struct rb_call_data *cd,
     VALUE block_handler,
-    const struct rb_callcache *(*method_explorer)(
-        const struct rb_control_frame_struct *cfp,
-        struct rb_call_data *cd,
-        VALUE recv))
+    enum method_explorer_type method_explorer)
 {
     VALUE val;
-    int argc = vm_ci_argc(cd->ci);
+    const struct rb_callinfo *ci = cd->ci;
+    const struct rb_callcache *cc;
+    int argc = vm_ci_argc(ci);
     VALUE recv = TOPN(argc);
-    const struct rb_callcache *cc = method_explorer(GET_CFP(), cd, recv);
-    const struct rb_callinfo *ci = cd->ci; // TODO: vm_search_super_method can update ci!!
-
     struct rb_calling_info calling = {
-        .ci = cd->ci,
-        .cc = cc,
         .block_handler = block_handler,
         .kw_splat = IS_ARGS_KW_SPLAT(ci) > 0,
         .recv = recv,
         .argc = argc,
+        .ci = ci,
     };
 
-    val = vm_cc_call(cc)(ec, GET_CFP(), &calling);
+    switch (method_explorer) {
+      case mexp_search_method:
+        calling.cc = cc = vm_search_method_fastpath((VALUE)reg_cfp->iseq, cd, CLASS_OF(recv));
+        val = vm_cc_call(cc)(ec, GET_CFP(), &calling);
+        break;
+      case mexp_search_super:
+        calling.cc = cc = vm_search_super_method(reg_cfp, cd, recv);
+        calling.ci = cd->ci;  // TODO: does it safe?
+        val = vm_cc_call(cc)(ec, GET_CFP(), &calling);
+        break;
+      case mexp_search_invokeblock:
+        val = vm_invokeblock_i(ec, GET_CFP(), &calling);
+        break;
+    }
 
     if (val != Qundef) {
         return val;             /* CFUNC normal return */
