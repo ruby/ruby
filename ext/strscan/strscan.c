@@ -4,8 +4,8 @@
     Copyright (c) 1999-2006 Minero Aoki
 
     This program is free software.
-    You can distribute/modify this program under the terms of
-    the Ruby License. For details, see the file COPYING.
+    You can redistribute this program under the terms of the Ruby's or 2-clause
+    BSD License.  For details, see the COPYING and LICENSE.txt files.
 */
 
 #include "ruby/ruby.h"
