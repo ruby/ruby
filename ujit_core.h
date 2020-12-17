@@ -67,9 +67,9 @@ typedef struct BlockId
 /// Branch code shape enumeration
 enum uint8_t
 {
-    NEXT0,  // Target 0 is next
-    NEXT1,  // Target 1 is next
-    DEFAULT // Neither target is next
+    SHAPE_NEXT0,  // Target 0 is next
+    SHAPE_NEXT1,  // Target 1 is next
+    SHAPE_DEFAULT // Neither target is next
 };
 
 // Branch code generation function signature
@@ -85,8 +85,14 @@ typedef struct BranchEntry
     // Branch target blocks
     blockid_t targets[2];
 
+    // Jump target addresses
+    uint8_t* dst_addrs[2];
+
     // Branch code generation function
     branchgen_fn gen_fn;
+
+    // Shape of the branch
+    uint8_t shape;
 
 } branch_t;
 
@@ -97,8 +103,6 @@ x86opnd_t ctx_sp_opnd(ctx_t* ctx, int32_t offset_bytes);
 x86opnd_t ctx_stack_push(ctx_t* ctx, size_t n);
 x86opnd_t ctx_stack_pop(ctx_t* ctx, size_t n);
 x86opnd_t ctx_stack_opnd(ctx_t* ctx, int32_t idx);
-
-uint8_t* get_block_version(blockid_t block);
 
 void gen_branch(codeblock_t* cb, codeblock_t* ocb, blockid_t target0, blockid_t target1, branchgen_fn gen_fn);
 

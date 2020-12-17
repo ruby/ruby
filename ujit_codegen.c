@@ -20,11 +20,11 @@ static st_table *gen_fns;
 
 // Code block into which we write machine code
 static codeblock_t block;
-static codeblock_t* cb = NULL;
+codeblock_t* cb = NULL;
 
 // Code block into which we write out-of-line machine code
 static codeblock_t outline_block;
-static codeblock_t* ocb = NULL;
+codeblock_t* ocb = NULL;
 
 // Ruby instruction entry
 static void
