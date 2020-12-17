@@ -1004,8 +1004,18 @@ static int garbage_collect(rb_objspace_t *, int reason);
 
 static int  gc_start(rb_objspace_t *objspace, int reason);
 static void gc_rest(rb_objspace_t *objspace);
-static inline void gc_enter(rb_objspace_t *objspace, const char *event, unsigned int *lock_lev);
-static inline void gc_exit(rb_objspace_t *objspace, const char *event, unsigned int *lock_lev);
+
+enum gc_enter_event {
+    gc_enter_event_start,
+    gc_enter_event_mark_continue,
+    gc_enter_event_sweep_continue,
+    gc_enter_event_rest,
+    gc_enter_event_finalizer,
+    gc_enter_event_rb_memerror,
+};
+
+static inline void gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_lev);
+static inline void gc_exit(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_lev);
 
 static void gc_marks(rb_objspace_t *objspace, int full_mark);
 static void gc_marks_start(rb_objspace_t *objspace, int full);
@@ -3788,7 +3798,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 
     /* running data/file finalizers are part of garbage collection */
     unsigned int lock_lev;
-    gc_enter(objspace, "rb_objspace_call_finalizer", &lock_lev);
+    gc_enter(objspace, gc_enter_event_finalizer, &lock_lev);
 
     /* run data/file object's finalizers */
     for (i = 0; i < heap_allocated_pages; i++) {
@@ -3831,7 +3841,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 	}
     }
 
-    gc_exit(objspace, "rb_objspace_call_finalizer", &lock_lev);
+    gc_exit(objspace, gc_enter_event_finalizer, &lock_lev);
 
     if (heap_pages_deferred_final) {
 	finalize_list(objspace, heap_pages_deferred_final);
@@ -5175,9 +5185,9 @@ gc_sweep_continue(rb_objspace_t *objspace, rb_heap_t *heap)
     if (!GC_ENABLE_LAZY_SWEEP) return;
 
     unsigned int lock_lev;
-    gc_enter(objspace, "sweep_continue", &lock_lev);
+    gc_enter(objspace, gc_enter_event_sweep_continue, &lock_lev);
     gc_sweep_step(objspace, heap);
-    gc_exit(objspace, "sweep_continue", &lock_lev);
+    gc_exit(objspace, gc_enter_event_sweep_continue, &lock_lev);
 }
 
 static void
@@ -7426,7 +7436,7 @@ gc_marks_continue(rb_objspace_t *objspace, rb_heap_t *heap)
 #if GC_ENABLE_INCREMENTAL_MARK
 
     unsigned int lock_lev;
-    gc_enter(objspace, "marks_continue", &lock_lev);
+    gc_enter(objspace, gc_enter_event_mark_continue, &lock_lev);
 
     int slots = 0;
     const char *from;
@@ -7454,7 +7464,7 @@ gc_marks_continue(rb_objspace_t *objspace, rb_heap_t *heap)
         gc_marks_rest(objspace);
     }
 
-    gc_exit(objspace, "marks_continue", &lock_lev);
+    gc_exit(objspace, gc_enter_event_mark_continue, &lock_lev);
 #endif
 }
 
@@ -8219,7 +8229,7 @@ gc_start(rb_objspace_t *objspace, int reason)
     GC_ASSERT(!is_incremental_marking(objspace));
 
     unsigned int lock_lev;
-    gc_enter(objspace, "gc_start", &lock_lev);
+    gc_enter(objspace, gc_enter_event_start, &lock_lev);
 
 #if RGENGC_CHECK_MODE >= 2
     gc_verify_internal_consistency(objspace);
@@ -8308,7 +8318,7 @@ gc_start(rb_objspace_t *objspace, int reason)
     }
     gc_prof_timer_stop(objspace);
 
-    gc_exit(objspace, "gc_start", &lock_lev);
+    gc_exit(objspace, gc_enter_event_start, &lock_lev);
     return TRUE;
 }
 
@@ -8320,7 +8330,7 @@ gc_rest(rb_objspace_t *objspace)
 
     if (marking || sweeping) {
         unsigned int lock_lev;
-	gc_enter(objspace, "gc_rest", &lock_lev);
+	gc_enter(objspace, gc_enter_event_rest, &lock_lev);
 
         if (RGENGC_CHECK_MODE >= 2) gc_verify_internal_consistency(objspace);
 
@@ -8330,7 +8340,7 @@ gc_rest(rb_objspace_t *objspace)
 	if (is_lazy_sweeping(heap_eden)) {
 	    gc_sweep_rest(objspace);
 	}
-	gc_exit(objspace, "gc_rest", &lock_lev);
+	gc_exit(objspace, gc_enter_event_rest, &lock_lev);
     }
 }
 
@@ -8415,35 +8425,62 @@ gc_record(rb_objspace_t *objspace, int direction, const char *event)
 }
 #endif /* PRINT_ENTER_EXIT_TICK */
 
+static const char *
+gc_enter_event_cstr(enum gc_enter_event event)
+{
+    switch (event) {
+      case gc_enter_event_start: return "start";
+      case gc_enter_event_mark_continue: return "mark_continue";
+      case gc_enter_event_sweep_continue: return "sweep_continue";
+      case gc_enter_event_rest: return "rest";
+      case gc_enter_event_finalizer: return "finalizer";
+      case gc_enter_event_rb_memerror: return "rb_memerror";
+    }
+    return NULL;
+}
+
+static void
+gc_enter_count(enum gc_enter_event event)
+{
+    switch (event) {
+      case gc_enter_event_start:          RB_DEBUG_COUNTER_INC(gc_enter_start); break;
+      case gc_enter_event_mark_continue:  RB_DEBUG_COUNTER_INC(gc_enter_mark_continue); break;
+      case gc_enter_event_sweep_continue: RB_DEBUG_COUNTER_INC(gc_enter_sweep_continue); break;
+      case gc_enter_event_rest:           RB_DEBUG_COUNTER_INC(gc_enter_rest); break;
+      case gc_enter_event_finalizer:      RB_DEBUG_COUNTER_INC(gc_enter_finalizer); break;
+      case gc_enter_event_rb_memerror:    /* nothing */ break;
+    }
+}
+
 static inline void
-gc_enter(rb_objspace_t *objspace, const char *event, unsigned int *lock_lev)
+gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_lev)
 {
     // stop other ractors
-
     RB_VM_LOCK_ENTER_LEV(lock_lev);
     rb_vm_barrier();
 
+    gc_enter_count(event);
     GC_ASSERT(during_gc == 0);
     if (RGENGC_CHECK_MODE >= 3) gc_verify_internal_consistency(objspace);
 
     mjit_gc_start_hook();
 
     during_gc = TRUE;
-    RUBY_DEBUG_LOG("%s (%s)", event, gc_current_status(objspace));
-    gc_report(1, objspace, "gc_enter: %s [%s]\n", event, gc_current_status(objspace));
-    gc_record(objspace, 0, event);
+    RUBY_DEBUG_LOG("%s (%s)",gc_enter_event_cstr(event), gc_current_status(objspace));
+    gc_report(1, objspace, "gc_enter: %s [%s]\n", gc_enter_event_cstr(event), gc_current_status(objspace));
+    gc_record(objspace, 0, gc_enter_event_cstr(event));
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_ENTER, 0); /* TODO: which parameter should be passed? */
 }
 
 static inline void
-gc_exit(rb_objspace_t *objspace, const char *event, unsigned int *lock_lev)
+gc_exit(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_lev)
 {
     GC_ASSERT(during_gc != 0);
 
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_EXIT, 0); /* TODO: which parameter should be passsed? */
-    gc_record(objspace, 1, event);
-    RUBY_DEBUG_LOG("%s (%s)", event, gc_current_status(objspace));
-    gc_report(1, objspace, "gc_exit: %s [%s]\n", event, gc_current_status(objspace));
+    gc_record(objspace, 1, gc_enter_event_cstr(event));
+    RUBY_DEBUG_LOG("%s (%s)", gc_enter_event_cstr(event), gc_current_status(objspace));
+    gc_report(1, objspace, "gc_exit: %s [%s]\n", gc_enter_event_cstr(event), gc_current_status(objspace));
     during_gc = FALSE;
 
     mjit_gc_exit_hook();
@@ -10415,7 +10452,7 @@ rb_memerror(void)
 
     if (during_gc) {
         // TODO: OMG!! How to implement it?
-        gc_exit(objspace, "rb_memerror", NULL);
+        gc_exit(objspace, gc_enter_event_rb_memerror, NULL);
     }
 
     exc = nomem_error;
