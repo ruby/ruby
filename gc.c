@@ -8439,12 +8439,12 @@ gc_enter_count(enum gc_enter_event event)
 static inline void
 gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_lev)
 {
-    // stop other ractors
     RB_VM_LOCK_ENTER_LEV(lock_lev);
 
     switch (event) {
       case gc_enter_event_start:
       case gc_enter_event_mark_continue:
+        // stop other ractors
         rb_vm_barrier();
         break;
       default:
@@ -8452,7 +8452,7 @@ gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_
     }
 
     gc_enter_count(event);
-    GC_ASSERT(during_gc == 0);
+    if (UNLIKELY(during_gc != 0)) rb_bug("during_gc != 0");
     if (RGENGC_CHECK_MODE >= 3) gc_verify_internal_consistency(objspace);
 
     mjit_gc_start_hook();
