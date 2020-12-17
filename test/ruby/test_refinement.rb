@@ -1652,7 +1652,6 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_reopen_refinement_module
     assert_separately([], <<-"end;")
-      $VERBOSE = nil
       class C
       end
 
@@ -1669,6 +1668,7 @@ class TestRefinement < Test::Unit::TestCase
 
       module R
         refine C do
+          alias m m
           def m
             :bar
           end

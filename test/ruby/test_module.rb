@@ -27,7 +27,6 @@ class TestModule < Test::Unit::TestCase
 
   def setup
     @verbose = $VERBOSE
-    $VERBOSE = nil
     @deprecated = Warning[:deprecated]
     Warning[:deprecated] = true
   end
@@ -487,6 +486,7 @@ class TestModule < Test::Unit::TestCase
     end
     a2 = a.dup.new
     a.class_eval do
+      alias _b b
       def b; 1 end
     end
     assert_equal(2, a2.b)
@@ -900,14 +900,18 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_attr_obsoleted_flag
-    c = Class.new
-    c.class_eval do
+    c = Class.new do
+      extend Test::Unit::Assertions
       def initialize
         @foo = :foo
         @bar = :bar
       end
-      attr :foo, true
-      attr :bar, false
+      assert_warning(/optional boolean argument/) do
+        attr :foo, true
+      end
+      assert_warning(/optional boolean argument/) do
+        attr :bar, false
+      end
     end
     o = c.new
     assert_equal(true, o.respond_to?(:foo))
@@ -952,6 +956,7 @@ class TestModule < Test::Unit::TestCase
     assert_equal(:foo, c2.const_get(:Foo))
     assert_raise(NameError) { c2.const_get(:Foo, false) }
 
+    c1.__send__(:remove_const, :Foo)
     eval("c1::Foo = :foo")
     assert_raise(NameError) { c1::Bar }
     assert_raise(NameError) { c2::Bar }

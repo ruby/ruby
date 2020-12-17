@@ -4,7 +4,6 @@ require 'test/unit'
 class TestProc < Test::Unit::TestCase
   def setup
     @verbose = $VERBOSE
-    $VERBOSE = nil
   end
 
   def teardown
@@ -271,7 +270,7 @@ class TestProc < Test::Unit::TestCase
 
   def test_curry_given_blocks
     b = lambda {|x, y, &blk| blk.call(x + y) }.curry
-    b = b.call(2) { raise }
+    b = assert_warning(/given block not used/) {b.call(2) { raise }}
     b = b.call(3) {|x| x + 4 }
     assert_equal(9, b)
   end
@@ -281,7 +280,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal(false, l.lambda?)
     assert_equal(false, l.curry.lambda?, '[ruby-core:24127]')
     assert_equal(false, proc(&l).lambda?)
-    assert_equal(false, lambda(&l).lambda?)
+    assert_equal(false, assert_deprecated_warning {lambda(&l)}.lambda?)
     assert_equal(false, Proc.new(&l).lambda?)
     l = lambda {}
     assert_equal(true, l.lambda?)
@@ -434,7 +433,7 @@ class TestProc < Test::Unit::TestCase
 
   def test_proc_lambda
     assert_raise(ArgumentError) { proc }
-    assert_raise(ArgumentError) { lambda }
+    assert_raise(ArgumentError) { assert_warn(/deprecated/) {lambda} }
 
     o = Object.new
     def o.foo
@@ -442,14 +441,18 @@ class TestProc < Test::Unit::TestCase
       1.times { b = lambda }
       b
     end
-    assert_raise(ArgumentError) {o.foo { :foo }.call}
+    assert_raise(ArgumentError) do
+      assert_deprecated_warning {o.foo { :foo }}.call
+    end
 
-    def o.foo(&b)
+    def o.bar(&b)
       b = nil
       1.times { b = lambda }
       b
     end
-    assert_raise(ArgumentError) {o.foo { :foo }.call}
+    assert_raise(ArgumentError) do
+      assert_deprecated_warning {o.bar { :foo }}.call
+    end
   end
 
   def test_arity2

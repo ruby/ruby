@@ -7,7 +7,6 @@ require 'delegate'
 class TestTime < Test::Unit::TestCase
   def setup
     @verbose = $VERBOSE
-    $VERBOSE = nil
   end
 
   def teardown

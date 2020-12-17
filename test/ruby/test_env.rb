@@ -22,7 +22,6 @@ class TestEnv < Test::Unit::TestCase
 
   def setup
     @verbose = $VERBOSE
-    $VERBOSE = nil
     @backup = ENV.to_hash
     ENV.delete('test')
     ENV.delete('TEST')
