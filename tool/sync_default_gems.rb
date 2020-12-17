@@ -314,6 +314,7 @@ def sync_default_gems(gem)
     rm_rf(%w[ext/pathname test/pathname])
     cp_r("#{upstream}/ext/pathname", "ext")
     cp_r("#{upstream}/test/pathname", "test")
+    cp_r("#{upstream}/lib", "ext/pathname")
     cp_r("#{upstream}/pathname.gemspec", "ext/pathname")
     `git checkout ext/pathname/depend`
   when "digest"
