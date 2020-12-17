@@ -3,6 +3,10 @@
 
 #include "stddef.h"
 
+// Code blocks we generate code into
+codeblock_t* cb;
+codeblock_t* ocb;
+
 // Code generation function signature
 typedef bool (*codegen_fn)(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx);
 
