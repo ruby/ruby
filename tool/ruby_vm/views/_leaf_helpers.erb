@@ -10,6 +10,10 @@
 
 #include "iseq.h"
 
+// This is used to tell MJIT that this insn would be leaf if CHECK_INTS didn't exist.
+// It should be used only when RUBY_VM_CHECK_INTS is directly written in insns.def.
+static bool leafness_of_check_ints = false;
+
 static bool
 leafness_of_defined(rb_num_t op_type)
 {
