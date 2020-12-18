@@ -67,9 +67,19 @@ describe "Module#attr_accessor" do
     Module.should have_public_instance_method(:attr_accessor, false)
   end
 
-  it "returns an array of defined methods names as symbols" do
-    Class.new do
-      (attr_accessor :foo, 'bar').should == [:foo, :foo=, :bar, :bar=]
+  ruby_version_is ""..."3.0" do
+    it "returns nil" do
+      Class.new do
+        (attr_accessor :foo, 'bar').should == nil
+      end
+    end
+  end
+
+  ruby_version_is "3.0" do
+    it "returns an array of defined methods names as symbols" do
+      Class.new do
+        (attr_accessor :foo, 'bar').should == [:foo, :foo=, :bar, :bar=]
+      end
     end
   end
 
