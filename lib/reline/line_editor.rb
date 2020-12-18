@@ -1941,6 +1941,7 @@ class Reline::LineEditor
       @cursor = 0
     end
   end
+  alias_method :kill_line, :em_kill_line
 
   private def em_delete(key)
     if (not @is_multiline and @line.empty?) or (@is_multiline and @line.empty? and @buffer_of_lines.size == 1)
@@ -2139,9 +2140,10 @@ class Reline::LineEditor
       @byte_pointer -= byte_size
       @cursor -= width
       @cursor_max -= width
-      @kill_ring.append(deleted)
+      @kill_ring.append(deleted, true)
     end
   end
+  alias_method :unix_word_rubout, :em_kill_region
 
   private def copy_for_vi(text)
     if @config.editing_mode_is?(:vi_insert) or @config.editing_mode_is?(:vi_command)
