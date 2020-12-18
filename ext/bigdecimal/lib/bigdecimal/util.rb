@@ -43,7 +43,7 @@ class Float < Numeric
   #
   # See also BigDecimal::new.
   #
-  def to_d(precision=Float::DIG)
+  def to_d(precision=Float::DIG+1)
     BigDecimal(self, precision)
   end
 end
