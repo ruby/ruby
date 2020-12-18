@@ -63,6 +63,7 @@
 VALUE rb_iseqw_local_variables(VALUE iseqval);
 VALUE rb_iseqw_new(const rb_iseq_t *);
 int rb_str_end_with_asciichar(VALUE str, int c);
+VALUE rb_ident_hash_new(void);
 
 long rb_backtrace_length_limit = -1;
 VALUE rb_eEAGAIN;
@@ -77,6 +78,7 @@ static ID id_deprecated;
 static ID id_experimental;
 static VALUE sym_category;
 static VALUE warning_categories;
+static VALUE warning_category_t_map;
 
 extern const char ruby_description[];
 
@@ -160,18 +162,13 @@ rb_warning_category_mask(VALUE category)
 rb_warning_category_t
 rb_warning_category_from_name(VALUE category)
 {
-    rb_warning_category_t cat = RB_WARN_CATEGORY_NONE;
+    VALUE cat_value;
     Check_Type(category, T_SYMBOL);
-    if (category == ID2SYM(id_deprecated)) {
-        cat = RB_WARN_CATEGORY_DEPRECATED;
-    }
-    else if (category == ID2SYM(id_experimental)) {
-        cat = RB_WARN_CATEGORY_EXPERIMENTAL;
-    }
-    else {
+    cat_value = rb_hash_aref(warning_categories, category);
+    if (cat_value == Qnil) {
         rb_raise(rb_eArgError, "unknown category: %"PRIsVALUE, category);
     }
-    return cat;
+    return NUM2INT(cat_value);
 }
 
 void
@@ -317,7 +314,7 @@ rb_warn_category(VALUE str, VALUE category)
 {
     if (category != Qnil) {
         category = rb_to_symbol_type(category);
-        if (rb_hash_aref(warning_categories, category) != Qtrue) {
+        if (!RTEST(rb_hash_aref(warning_categories, category))) {
             rb_raise(rb_eArgError, "invalid warning category used: %s", rb_id2name(SYM2ID(category)));
         }
     }
@@ -378,6 +375,20 @@ rb_compile_warning(const char *file, int line, const char *fmt, ...)
     rb_write_warning_str(str);
 }
 
+void
+rb_category_compile_warn(rb_warning_category_t category, const char *file, int line, const char *fmt, ...)
+{
+    VALUE str;
+    va_list args;
+
+    if (NIL_P(ruby_verbose)) return;
+
+    va_start(args, fmt);
+    str = warn_vsprintf(NULL, file, line, fmt, args);
+    va_end(args);
+    rb_warn_category(str, rb_hash_fetch(warning_category_t_map, INT2NUM(category)));
+}
+
 static VALUE
 warning_string(rb_encoding *enc, const char *fmt, va_list args)
 {
@@ -403,11 +414,11 @@ rb_warn(const char *fmt, ...)
 }
 
 void
-rb_category_warn(const char *category, const char *fmt, ...)
+rb_category_warn(rb_warning_category_t category, const char *fmt, ...)
 {
     if (!NIL_P(ruby_verbose)) {
         with_warning_string(mesg, 0, fmt) {
-            rb_warn_category(mesg, ID2SYM(rb_intern(category)));
+            rb_warn_category(mesg, rb_hash_fetch(warning_category_t_map, INT2NUM(category)));
         }
     }
 }
@@ -435,11 +446,11 @@ rb_warning(const char *fmt, ...)
 
 /* rb_category_warning() reports only in verbose mode */
 void
-rb_category_warning(const char *category, const char *fmt, ...)
+rb_category_warning(rb_warning_category_t category, const char *fmt, ...)
 {
     if (RTEST(ruby_verbose)) {
         with_warning_string(mesg, 0, fmt) {
-            rb_warn_category(mesg, ID2SYM(rb_intern(category)));
+            rb_warn_category(mesg, rb_hash_fetch(warning_category_t_map, INT2NUM(category)));
         }
     }
 }
@@ -2835,10 +2846,18 @@ Init_Exception(void)
 
     sym_category = ID2SYM(id_category);
 
-    warning_categories = rb_hash_new();
+    warning_categories = rb_ident_hash_new();
     rb_gc_register_mark_object(warning_categories);
-    rb_hash_aset(warning_categories, ID2SYM(rb_intern_const("deprecated")), Qtrue);
+    rb_hash_aset(warning_categories, ID2SYM(id_deprecated), INT2NUM(RB_WARN_CATEGORY_DEPRECATED));
+    rb_hash_aset(warning_categories, ID2SYM(id_experimental), INT2NUM(RB_WARN_CATEGORY_EXPERIMENTAL));
     rb_obj_freeze(warning_categories);
+
+    warning_category_t_map = rb_ident_hash_new();
+    rb_gc_register_mark_object(warning_category_t_map);
+    rb_hash_aset(warning_category_t_map, INT2NUM(RB_WARN_CATEGORY_NONE), Qnil);
+    rb_hash_aset(warning_category_t_map, INT2NUM(RB_WARN_CATEGORY_DEPRECATED), ID2SYM(id_deprecated));
+    rb_hash_aset(warning_category_t_map, INT2NUM(RB_WARN_CATEGORY_EXPERIMENTAL), ID2SYM(id_experimental));
+    rb_obj_freeze(warning_category_t_map);
 }
 
 void

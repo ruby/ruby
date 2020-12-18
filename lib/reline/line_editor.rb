@@ -80,7 +80,15 @@ class Reline::LineEditor
     end
     return [prompt, calculate_width(prompt, true), [prompt] * buffer.size] if simplified_rendering?
     if @prompt_proc
-      if @cached_prompt_list and Time.now.to_f < (@prompt_cache_time + PROMPT_LIST_CACHE_TIMEOUT) and buffer.size == @cached_prompt_list.size
+      use_cached_prompt_list = false
+      if @cached_prompt_list
+        if @just_cursor_moving
+          use_cached_prompt_list = true
+        elsif Time.now.to_f < (@prompt_cache_time + PROMPT_LIST_CACHE_TIMEOUT) and buffer.size == @cached_prompt_list.size
+          use_cached_prompt_list = true
+        end
+      end
+      if use_cached_prompt_list
         prompt_list = @cached_prompt_list
       else
         prompt_list = @cached_prompt_list = @prompt_proc.(buffer)
@@ -1941,6 +1949,7 @@ class Reline::LineEditor
       @cursor = 0
     end
   end
+  alias_method :kill_line, :em_kill_line
 
   private def em_delete(key)
     if (not @is_multiline and @line.empty?) or (@is_multiline and @line.empty? and @buffer_of_lines.size == 1)
@@ -1991,6 +2000,7 @@ class Reline::LineEditor
       @byte_pointer += yanked.bytesize
     end
   end
+  alias_method :yank, :em_yank
 
   private def em_yank_pop(key)
     yanked, prev_yank = @kill_ring.yank_pop
@@ -2007,6 +2017,7 @@ class Reline::LineEditor
       @byte_pointer += yanked.bytesize
     end
   end
+  alias_method :yank_pop, :em_yank_pop
 
   private def ed_clear_screen(key)
     @cleared = true
@@ -2137,9 +2148,10 @@ class Reline::LineEditor
       @byte_pointer -= byte_size
       @cursor -= width
       @cursor_max -= width
-      @kill_ring.append(deleted)
+      @kill_ring.append(deleted, true)
     end
   end
+  alias_method :unix_word_rubout, :em_kill_region
 
   private def copy_for_vi(text)
     if @config.editing_mode_is?(:vi_insert) or @config.editing_mode_is?(:vi_command)

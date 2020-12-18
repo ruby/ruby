@@ -231,7 +231,7 @@ class TestBigDecimal < Test::Unit::TestCase
   end
 
   def test_s_allocate
-    assert_raise_with_message(NoMethodError, /undefined method `allocate'/) { BigDecimal.allocate }
+    assert_raise_with_message(TypeError, /allocator undefined for BigDecimal/) { BigDecimal.allocate }
   end
 
   def test_s_new

@@ -906,10 +906,10 @@ class TestModule < Test::Unit::TestCase
         @foo = :foo
         @bar = :bar
       end
-      assert_warning(/optional boolean argument/) do
+      assert_deprecated_warning(/optional boolean argument/) do
         attr :foo, true
       end
-      assert_warning(/optional boolean argument/) do
+      assert_deprecated_warning(/optional boolean argument/) do
         attr :bar, false
       end
     end

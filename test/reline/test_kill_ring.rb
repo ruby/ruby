@@ -253,4 +253,16 @@ class Reline::KillRing::Test < Reline::TestCase
     assert_equal(['AB', 'abcde'], @kill_ring.yank_pop)
     assert_equal(Reline::KillRing::State::YANK, @kill_ring.instance_variable_get(:@state))
   end
+
+  def test_enumerable
+    @kill_ring.append('a')
+    @kill_ring.process
+    @kill_ring.process
+    @kill_ring.append('b')
+    @kill_ring.process
+    @kill_ring.process
+    @kill_ring.append('c')
+    @kill_ring.process
+    assert_equal(%w{c b a}, @kill_ring.to_a)
+  end
 end

@@ -497,8 +497,11 @@ print_mem_leaks(VALUE self)
     int ret;
 #endif
 
-    BN_CTX_free(ossl_bn_ctx);
-    ossl_bn_ctx = NULL;
+#ifndef HAVE_RB_EXT_RACTOR_SAFE
+    // for Ruby 2.x
+    void ossl_bn_ctx_free(void); // ossl_bn.c
+    ossl_bn_ctx_free();
+#endif
 
 #if OPENSSL_VERSION_NUMBER >= 0x10100000
     ret = CRYPTO_mem_leaks_fp(stderr);

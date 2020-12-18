@@ -1034,6 +1034,7 @@ static ID id_warn, id_warning, id_gets, id_assoc;
 # define WARN_ID(i) rb_id2str(i)
 # define WARN_IVAL(i) i
 # define PRIsWARN "s"
+# define rb_warn0L_experimental(l,fmt)         WARN_CALL(WARN_ARGS_L(l, fmt, 1))
 # define WARN_ARGS(fmt,n) p->value, id_warn, n, rb_usascii_str_new_lit(fmt)
 # define WARN_ARGS_L(l,fmt,n) WARN_ARGS(fmt,n)
 # ifdef HAVE_VA_ARGS_MACRO
@@ -1060,6 +1061,7 @@ PRINTF_ARGS(static void ripper_compile_error(struct parser_params*, const char *
 # define WARN_ARGS(fmt,n) WARN_ARGS_L(p->ruby_sourceline,fmt,n)
 # define WARN_ARGS_L(l,fmt,n) p->ruby_sourcefile, (l), (fmt)
 # define WARN_CALL rb_compile_warn
+# define rb_warn0L_experimental(l,fmt) rb_category_compile_warn(RB_WARN_CATEGORY_EXPERIMENTAL, WARN_ARGS_L(l, fmt, 1))
 # define WARNING_ARGS(fmt,n) WARN_ARGS(fmt,n)
 # define WARNING_ARGS_L(l,fmt,n) WARN_ARGS_L(l,fmt,n)
 # define WARNING_CALL rb_compile_warning
@@ -4229,7 +4231,7 @@ p_find		: p_rest ',' p_args_post ',' p_rest
 			$$ = new_find_pattern_tail(p, $1, $3, $5, &@$);
 
 			if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_EXPERIMENTAL))
-			    rb_warn0L(nd_line($$), "Find pattern is experimental, and the behavior may change in future versions of Ruby!");
+			    rb_warn0L_experimental(nd_line($$), "Find pattern is experimental, and the behavior may change in future versions of Ruby!");
 		    }
 		;
 
@@ -11033,8 +11035,11 @@ shareable_literal_value(NODE *node)
 VALUE rb_ractor_make_shareable(VALUE obj);
 
 static NODE *
-shareable_literal_constant(struct parser_params *p, NODE *value, enum shareability shareable, const YYLTYPE *loc)
+shareable_literal_constant(struct parser_params *p, enum shareability shareable,
+			   NODE *value, const YYLTYPE *loc, size_t level)
 {
+# define shareable_literal_constant_next(n) \
+    shareable_literal_constant(p, shareable, (n), &(n)->nd_loc, level+1)
     VALUE lit;
 
     if (!value) return 0;
@@ -11062,12 +11067,11 @@ shareable_literal_constant(struct parser_params *p, NODE *value, enum shareabili
 	lit = rb_ary_new();
 	for (NODE *n = value; n; n = n->nd_next) {
 	    NODE *elt = n->nd_head;
-	    if (elt && !(elt = shareable_literal_constant(p, elt, shareable, &elt->nd_loc))) {
+	    if (elt && !(elt = shareable_literal_constant_next(elt))) {
 		if (lit) {
 		    rb_ary_clear(lit);
 		    lit = Qfalse;
 		}
-		continue;
 	    }
 	    if (lit) {
 		VALUE e = shareable_literal_value(elt);
@@ -11091,13 +11095,12 @@ shareable_literal_constant(struct parser_params *p, NODE *value, enum shareabili
 	for (NODE *n = value->nd_head; n; n = n->nd_next->nd_next) {
 	    NODE *key = n->nd_head;
 	    NODE *val = n->nd_next->nd_head;
-	    if ((key && !(key = shareable_literal_constant(p, key, shareable, &key->nd_loc))) ||
-		(val && !(val = shareable_literal_constant(p, val, shareable, &val->nd_loc)))) {
+	    if ((key && !(key = shareable_literal_constant_next(key))) ||
+		(val && !(val = shareable_literal_constant_next(val)))) {
 		if (lit) {
 		    rb_hash_clear(lit);
 		    lit = Qfalse;
 		}
-		continue;
 	    }
 	    if (lit) {
 		VALUE k = shareable_literal_value(key);
@@ -11117,11 +11120,12 @@ shareable_literal_constant(struct parser_params *p, NODE *value, enum shareabili
 	break;
 
       default:
-	if (shareable == shareable_literal)
+	if (shareable == shareable_literal && level > 0)
 	    yyerror1(loc, "unshareable expression");
 	return 0;
     }
     return value;
+# undef shareable_literal_constant_next
 }
 
 static NODE *
@@ -11135,7 +11139,7 @@ shareable_constant_value(struct parser_params *p, NODE *value, enum shareability
       case shareable_literal:
       case shareable_everything:
 	{
-	    NODE *lit = shareable_literal_constant(p, value, shareable, loc);
+	    NODE *lit = shareable_literal_constant(p, shareable, value, loc, 0);
 	    if (lit) return lit;
 	}
 	break;
@@ -11953,7 +11957,7 @@ warn_one_line_pattern_matching(struct parser_params *p, NODE *node, NODE *patter
 
     if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_EXPERIMENTAL) &&
 	!(right_assign && (type == NODE_LASGN || type == NODE_DASGN || type == NODE_DASGN_CURR)))
-	rb_warn0L(nd_line(node), "One-line pattern matching is experimental, and the behavior may change in future versions of Ruby!");
+	rb_warn0L_experimental(nd_line(node), "One-line pattern matching is experimental, and the behavior may change in future versions of Ruby!");
 }
 
 static NODE*

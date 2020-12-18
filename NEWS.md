@@ -369,7 +369,7 @@ Outstanding ones only.
 
 * Fiddle
 
-    * Update to Fiddle 1.0.2
+    * Update to Fiddle 1.0.4
 
 * IRB
 
@@ -425,6 +425,18 @@ Outstanding ones only.
 * RubyGems
 
     * Update to RubyGems 3.2.2
+
+* StringIO
+
+    * Update to StringIO 3.0.0
+
+    * This version is Ractor compatible.
+
+* StringScanner
+
+    * Update to StringScanner 3.0.0
+
+    * This version is Ractor compatible.
 
 ## Compatibility issues
 
