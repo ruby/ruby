@@ -1991,6 +1991,7 @@ class Reline::LineEditor
       @byte_pointer += yanked.bytesize
     end
   end
+  alias_method :yank, :em_yank
 
   private def em_yank_pop(key)
     yanked, prev_yank = @kill_ring.yank_pop
@@ -2007,6 +2008,7 @@ class Reline::LineEditor
       @byte_pointer += yanked.bytesize
     end
   end
+  alias_method :yank_pop, :em_yank_pop
 
   private def ed_clear_screen(key)
     @cleared = true

@@ -2167,6 +2167,24 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     end
   end
 
+  def test_em_yank_pop
+    input_keys("def hoge\C-w\C-b\C-f\C-w", false)
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    assert_line('')
+    input_keys("\C-y", false)
+    assert_byte_pointer_size('def ')
+    assert_cursor(4)
+    assert_cursor_max(4)
+    assert_line('def ')
+    input_keys("\M-\C-y", false)
+    assert_byte_pointer_size('hoge')
+    assert_cursor(4)
+    assert_cursor_max(4)
+    assert_line('hoge')
+  end
+
 =begin # TODO: move KeyStroke instance from Reline to LineEditor
   def test_key_delete
     input_keys('ab')
