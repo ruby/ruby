@@ -129,9 +129,12 @@ uint8_t* ujit_compile_entry(const rb_iseq_t *iseq, uint32_t insn_idx)
     // Write the interpreter entry prologue
     ujit_gen_entry(cb);
 
+    // Create codegen context
+    ctx_t ctx = { 0 };
+
     // Compile the block starting at this instruction
     uint32_t num_instrs = 0;
-    ujit_compile_block(iseq, insn_idx, &num_instrs);
+    ujit_compile_block(iseq, insn_idx, &ctx, &num_instrs);
 
     // If no instructions were compiled
     if (num_instrs == 0) {
@@ -152,7 +155,7 @@ uint8_t* ujit_compile_entry(const rb_iseq_t *iseq, uint32_t insn_idx)
 Compile a sequence of bytecode instructions starting at `insn_idx`.
 */
 uint8_t *
-ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, uint32_t* num_instrs)
+ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, ctx_t* ctx, uint32_t* num_instrs)
 {
     assert (cb != NULL);
     VALUE *encoded = iseq->body->iseq_encoded;
@@ -174,9 +177,6 @@ ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, uint32_t* num_instr
     jitstate_t jit = { 0 };
     jit.iseq = iseq;
     jit.start_idx = insn_idx;
-
-    // Create codegen context
-    ctx_t ctx = { 0 };
 
     // For each instruction to compile
     for (;;) {
@@ -201,7 +201,7 @@ ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, uint32_t* num_instr
 
         // Call the code generation function
         codegen_fn gen_fn = (codegen_fn)st_gen_fn;
-        if (!gen_fn(&jit, &ctx)) {
+        if (!gen_fn(&jit, ctx)) {
             break;
         }
 
@@ -222,7 +222,7 @@ ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, uint32_t* num_instr
     // FIXME: we only need to generate an exit if an instruction fails to compile
     //
     // Generate code to exit to the interpreter
-    ujit_gen_exit(&jit, &ctx, cb, &encoded[insn_idx]);
+    ujit_gen_exit(&jit, ctx, cb, &encoded[insn_idx]);
 
     if (UJIT_DUMP_MODE >= 2) {
         // Dump list of compiled instrutions
@@ -958,7 +958,7 @@ gen_branchunless(jitstate_t* jit, ctx_t* ctx)
     blockid_t jump_block = { jit->iseq, jump_idx };
 
     // Generate the branch instructions
-    gen_branch(cb, ocb, jump_block, next_block, gen_branchunless_branch);
+    gen_branch(ctx, jump_block, next_block, gen_branchunless_branch);
 
     return true;
 }

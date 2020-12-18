@@ -133,8 +133,9 @@ uint8_t* branch_stub_hit(uint32_t branch_idx, uint32_t target_idx)
     {
         //fprintf(stderr, "compiling block\n");
 
+        ctx_t ctx = branch->ctx;
         uint32_t num_instrs = 0;
-        block_ptr = ujit_compile_block(target.iseq, target.idx, &num_instrs);
+        block_ptr = ujit_compile_block(target.iseq, target.idx, &ctx, &num_instrs);
         st_insert(version_tbl, (st_data_t)&target, (st_data_t)block_ptr);
         branch->dst_addrs[target_idx] = block_ptr;
     }
@@ -192,7 +193,7 @@ uint8_t* get_branch_target(codeblock_t* ocb, blockid_t target, uint32_t branch_i
     return stub_addr;
 }
 
-void gen_branch(codeblock_t* cb, codeblock_t* ocb, blockid_t target0, blockid_t target1, branchgen_fn gen_fn)
+void gen_branch(ctx_t* ctx, blockid_t target0, blockid_t target1, branchgen_fn gen_fn)
 {
     // Get branch targets or stubs (code pointers)
     uint8_t* dst_addr0 = get_branch_target(ocb, target0, num_branches, 0);
@@ -207,6 +208,7 @@ void gen_branch(codeblock_t* cb, codeblock_t* ocb, blockid_t target0, blockid_t 
 
     // Register this branch entry
     branch_t branch_entry = {
+        *ctx,
         start_pos,
         end_pos,
         { target0, target1 },
