@@ -253,6 +253,9 @@ Outstanding ones only.
       methods now return array of defined methods names as symbols.
       [[Feature #17314]]
 
+    * Module#alias_method now returns the defined alias as symbol.
+      [[Feature #17314]]
+
 * Mutex
 
     * `Mutex` is now acquired per-`Fiber` instead of per-`Thread`. This change

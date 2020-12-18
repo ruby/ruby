@@ -1941,13 +1941,13 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
 
 /*
  *  call-seq:
- *     alias_method(new_name, old_name)   -> self
+ *     alias_method(new_name, old_name)   -> symbol
  *
  *  Makes <i>new_name</i> a new copy of the method <i>old_name</i>. This can
  *  be used to retain access to methods that are overridden.
  *
  *     module Mod
- *       alias_method :orig_exit, :exit
+ *       alias_method :orig_exit, :exit #=> :orig_exit
  *       def exit(code=0)
  *         puts "Exiting with code #{code}"
  *         orig_exit(code)
@@ -1968,8 +1968,9 @@ rb_mod_alias_method(VALUE mod, VALUE newname, VALUE oldname)
     if (!oldid) {
 	rb_print_undef_str(mod, oldname);
     }
-    rb_alias(mod, rb_to_id(newname), oldid);
-    return mod;
+    VALUE id = rb_to_id(newname);
+    rb_alias(mod, id, oldid);
+    return ID2SYM(id);
 }
 
 static void
