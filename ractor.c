@@ -1956,8 +1956,6 @@ Init_Ractor(void)
     rb_define_method(rb_cRactorMovedObject, "equal?", ractor_moved_missing, -1);
     rb_define_method(rb_cRactorMovedObject, "instance_eval", ractor_moved_missing, -1);
     rb_define_method(rb_cRactorMovedObject, "instance_exec", ractor_moved_missing, -1);
-
-    rb_obj_freeze(rb_cRactorMovedObject);
 }
 
 void
