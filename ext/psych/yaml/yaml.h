@@ -1734,7 +1734,7 @@ typedef struct yaml_emitter_s {
         size_t length;
         /** Does the scalar contain line breaks? */
         int multiline;
-        /** Can the scalar be expessed in the flow plain style? */
+        /** Can the scalar be expressed in the flow plain style? */
         int flow_plain_allowed;
         /** Can the scalar be expressed in the block plain style? */
         int block_plain_allowed;
