@@ -2332,7 +2332,7 @@ rb_mod_attr_writer(int argc, VALUE *argv, VALUE klass)
     for (i=0; i<argc; i++) {
 	ID id = id_for_attr(klass, argv[i]);
 	rb_attr(klass, id, FALSE, TRUE, TRUE);
-	rb_ary_push(names, ID2SYM(rb_id_attrset(id)));
+	rb_ary_push(names, rb_str_intern(rb_sprintf("%"PRIsVALUE"=", ID2SYM(id))));
     }
     return names;
 }
@@ -2363,10 +2363,11 @@ rb_mod_attr_accessor(int argc, VALUE *argv, VALUE klass)
 
     for (i=0; i<argc; i++) {
 	ID id = id_for_attr(klass, argv[i]);
+	VALUE idv = ID2SYM(id);
 
 	rb_attr(klass, id, TRUE, TRUE, TRUE);
-	rb_ary_push(names, ID2SYM(id));
-	rb_ary_push(names, ID2SYM(rb_id_attrset(id)));
+	rb_ary_push(names, idv);
+	rb_ary_push(names, rb_str_intern(rb_sprintf("%"PRIsVALUE"=", idv)));
     }
     return names;
 }
