@@ -155,6 +155,8 @@ module Bundler
         search.each do |sg|
           next unless sg.for?(platform)
           sg_all_platforms = sg.copy_for(self.class.sort_platforms(@platforms).reverse)
+          next unless sg_all_platforms
+
           selected_sgs << sg_all_platforms
 
           next if sg_all_platforms.activated_platforms == [Gem::Platform::RUBY]

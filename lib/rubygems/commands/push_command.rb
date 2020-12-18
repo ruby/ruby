@@ -91,7 +91,6 @@ The push command will use ~/.gem/credentials to authenticate to a server, but yo
       request.add_field "Content-Length", request.body.size
       request.add_field "Content-Type",   "application/octet-stream"
       request.add_field "Authorization",  api_key
-      request.add_field "OTP", options[:otp] if options[:otp]
     end
   end
 
