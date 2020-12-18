@@ -1176,6 +1176,22 @@ assert_equal 'can not make a Proc shareable because it accesses outer variables 
   end
 }
 
+# Ractor.make_shareable(obj, copy: true) makes copied shareable object.
+assert_equal '[false, false, true, true]', %q{
+  r = []
+  o1 = [1, 2, ["3"]]
+
+  o2 = Ractor.make_shareable(o1, copy: true)
+  r << Ractor.shareable?(o1) # false
+  r << (o1.object_id == o2.object_id) # false
+
+  o3 = Ractor.make_shareable(o1)
+  r << Ractor.shareable?(o1) # true
+  r << (o1.object_id == o3.object_id) # false
+  r
+}
+
+
 # Ractor deep copies frozen objects (ary)
 assert_equal '[true, false]', %q{
   Ractor.new([[]].freeze) { |ary|

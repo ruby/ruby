@@ -214,9 +214,28 @@ class Ractor
     }
   end
 
-  def self.make_shareable obj
-    __builtin_cexpr! %q{
-      rb_ractor_make_shareable(obj);
-    }
+  # make obj sharable.
+  #
+  # Basically, traverse referring objects from obj and freeze them.
+  # 
+  # When a sharable object is found in traversing, stop traversing
+  # from this shareable object.
+  #
+  # If copy keyword is true, it makes a deep copied object
+  # and make it sharable. This is safer option (but it can take more time).
+  #
+  # Note that the specification and implementation of this method are not
+  # matured and can be changed in a future.
+  #
+  def self.make_shareable obj, copy: false
+    if copy
+      __builtin_cexpr! %q{
+        rb_ractor_make_copy_shareable(obj);
+      }
+    else
+      __builtin_cexpr! %q{
+        rb_ractor_make_shareable(obj);
+      }
+    end
   end
 end

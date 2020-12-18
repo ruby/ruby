@@ -2347,6 +2347,16 @@ rb_ractor_make_shareable(VALUE obj)
     return obj;
 }
 
+VALUE
+rb_ractor_make_copy_shareable(VALUE obj)
+{
+    VALUE copy = ractor_copy(obj);
+    rb_obj_traverse(copy,
+                    make_shareable_check_shareable,
+                    null_leave, mark_shareable);
+    return copy;
+}
+
 static enum obj_traverse_iterator_result
 shareable_p_enter(VALUE obj)
 {
