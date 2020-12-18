@@ -3724,8 +3724,6 @@ finalize_deferred(rb_objspace_t *objspace)
 static void
 gc_finalize_deferred(void *dmy)
 {
-    rb_objspace_t *objspace = dmy;
-
     RB_VM_LOCK_ENTER();
     {
         rb_objspace_t *objspace = dmy;
