@@ -260,7 +260,7 @@ module Bundler
         end
 
         def to_s
-          "plugin source for #{options[:type]} with uri #{uri}"
+          "plugin source for #{@type} with uri #{@uri}"
         end
 
         # Note: Do not override if you don't know what you are doing.

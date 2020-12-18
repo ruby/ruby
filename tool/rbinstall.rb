@@ -871,16 +871,28 @@ install?(:ext, :arch, :gem, :'default-gems', :'default-gems-arch') do
   install_default_gem('ext', srcdir)
 end
 
-def load_gemspec(file)
+def load_gemspec(file, expanded = false)
   file = File.realpath(file)
   code = File.read(file, encoding: "utf-8:-")
-  code.gsub!(/`git.*?`/m, '""')
-  code.gsub!(/%x\[git.*?\]/m, '""')
+  code.gsub!(/(?:`git[^\`]*`|%x\[git[^\]]*\])\.split\([^\)]*\)/m) do
+    files = []
+    if expanded
+      base = File.dirname(file)
+      Dir.glob("**/*", File::FNM_DOTMATCH, base: base) do |n|
+        case File.basename(n); when ".", ".."; next; end
+        next if File.directory?(File.join(base, n))
+        files << n.dump
+      end
+    end
+    "[" + files.join(", ") + "]"
+  end
   spec = eval(code, binding, file)
   unless Gem::Specification === spec
     raise TypeError, "[#{file}] isn't a Gem::Specification (#{spec.class} instead)."
   end
   spec.loaded_from = file
+  spec.files.reject! {|n| n.end_with?(".gemspec") or n.start_with?(".git")}
+
   spec
 end
 
@@ -953,9 +965,14 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
     next if /^\s*(?:#|$)/ =~ name
     next unless /^(\S+)\s+(\S+).*/ =~ name
     gem_name = "#$1-#$2"
-    path = "#{srcdir}/.bundle/gems/#{gem_name}/#$1.gemspec"
-    next unless File.exist?(path)
-    spec = load_gemspec(path)
+    path = "#{srcdir}/.bundle/gems/#{gem_name}/#{gem_name}.gemspec"
+    if File.exist?(path)
+      spec = load_gemspec(path)
+    else
+      path = "#{srcdir}/.bundle/gems/#{gem_name}/#$1.gemspec"
+      next unless File.exist?(path)
+      spec = load_gemspec(path, true)
+    end
     next unless spec.platform == Gem::Platform::RUBY
     next unless spec.full_name == gem_name
     spec.extension_dir = "#{extensions_dir}/#{spec.full_name}"

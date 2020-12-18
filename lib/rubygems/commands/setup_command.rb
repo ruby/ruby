@@ -322,13 +322,10 @@ By default, this RubyGems will install gem as:
     libs.each do |tool, path|
       say "Installing #{tool}" if @verbose
 
-      lib_files = rb_files_in path
-      lib_files.concat(bundler_template_files) if tool == 'Bundler'
-
-      pem_files = pem_files_in path
+      lib_files = files_in path
 
       Dir.chdir path do
-        install_file_list(lib_files + pem_files, lib_dir)
+        install_file_list(lib_files, lib_dir)
       end
     end
   end
@@ -393,10 +390,6 @@ By default, this RubyGems will install gem as:
     specs_dir = Gem.default_specifications_dir
     specs_dir = File.join(options[:destdir], specs_dir) unless Gem.win_platform?
     mkdir_p specs_dir, :mode => 0755
-
-    # Workaround for non-git environment.
-    gemspec = File.open('bundler/bundler.gemspec', 'rb'){|f| f.read.gsub(/`git ls-files -z`/, "''") }
-    File.open('bundler/bundler.gemspec', 'w'){|f| f.write gemspec }
 
     bundler_spec = Gem::Specification.load("bundler/bundler.gemspec")
     bundler_spec.files = Dir.chdir("bundler") { Dir["{*.md,{lib,exe,man}/**/*}"] }
@@ -518,44 +511,24 @@ By default, this RubyGems will install gem as:
     [lib_dir, bin_dir]
   end
 
-  def pem_files_in(dir)
+  def files_in(dir)
     Dir.chdir dir do
-      Dir[File.join('**', '*pem')]
-    end
-  end
-
-  def rb_files_in(dir)
-    Dir.chdir dir do
-      Dir[File.join('**', '*rb')]
+      Dir.glob(File.join('**', '*'), File::FNM_DOTMATCH).
+        select{|f| !File.directory?(f) }
     end
   end
 
   # for installation of bundler as default gems
   def bundler_man1_files_in(dir)
     Dir.chdir dir do
-      Dir['bundle*.1{,.txt,.ronn}']
+      Dir['bundle*.1']
     end
   end
 
   # for installation of bundler as default gems
   def bundler_man5_files_in(dir)
     Dir.chdir dir do
-      Dir['gemfile.5{,.txt,.ronn}']
-    end
-  end
-
-  def bundler_template_files
-    Dir.chdir "bundler/lib" do
-      Dir.glob(File.join('bundler', 'templates', '**', '*'), File::FNM_DOTMATCH).
-        select{|f| !File.directory?(f) }
-    end
-  end
-
-  # for cleanup old bundler files
-  def template_files_in(dir)
-    Dir.chdir dir do
-      Dir.glob(File.join('templates', '**', '*'), File::FNM_DOTMATCH).
-        select{|f| !File.directory?(f) }
+      Dir['gemfile.5']
     end
   end
 
@@ -595,11 +568,9 @@ abort "#{deprecation_message}"
     lib_dirs = { File.join(lib_dir, 'rubygems') => 'lib/rubygems' }
     lib_dirs[File.join(lib_dir, 'bundler')] = 'bundler/lib/bundler'
     lib_dirs.each do |old_lib_dir, new_lib_dir|
-      lib_files = rb_files_in(new_lib_dir)
-      lib_files.concat(template_files_in(new_lib_dir)) if new_lib_dir =~ /bundler/
+      lib_files = files_in(new_lib_dir)
 
-      old_lib_files = rb_files_in(old_lib_dir)
-      old_lib_files.concat(template_files_in(old_lib_dir)) if old_lib_dir =~ /bundler/
+      old_lib_files = files_in(old_lib_dir)
 
       to_remove = old_lib_files - lib_files
 
@@ -617,16 +588,25 @@ abort "#{deprecation_message}"
   def remove_old_man_files(man_dir)
     man_dirs = { man_dir => "bundler/man" }
     man_dirs.each do |old_man_dir, new_man_dir|
-      ["1", "5"].each do |section|
-        man_files = send(:"bundler_man#{section}_files_in", new_man_dir)
+      man1_files = bundler_man1_files_in(new_man_dir)
 
-        old_man_dir_with_section = "#{old_man_dir}/man#{section}"
-        old_man_files = send(:"bundler_man#{section}_files_in", old_man_dir_with_section)
+      old_man1_dir = "#{old_man_dir}/man1"
+      old_man1_files = bundler_man1_files_in(old_man1_dir)
+      old_man1_files += Dir.chdir(old_man1_dir) { Dir["bundle*.1.{txt,ronn}"] }
 
-        man_to_remove = old_man_files - man_files
+      man1_to_remove = old_man1_files - man1_files
 
-        remove_file_list(man_to_remove, old_man_dir_with_section)
-      end
+      remove_file_list(man1_to_remove, old_man1_dir)
+
+      man5_files = bundler_man5_files_in(new_man_dir)
+
+      old_man5_dir = "#{old_man_dir}/man5"
+      old_man5_files = bundler_man5_files_in(old_man5_dir)
+      old_man5_files += Dir.chdir(old_man5_dir) { Dir["gemfile.5.{txt,ronn}"] }
+
+      man5_to_remove = old_man5_files - man5_files
+
+      remove_file_list(man5_to_remove, old_man5_dir)
     end
   end
 

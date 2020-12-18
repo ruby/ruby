@@ -1104,6 +1104,11 @@ class TestBigDecimal < Test::Unit::TestCase
       assert_equal(-1, x.round(0, BigDecimal::ROUND_HALF_DOWN), bug3803)
       assert_equal(-1, x.round(0, BigDecimal::ROUND_HALF_EVEN), bug3803)
     end
+
+    assert_instance_of(Integer, x.round)
+    assert_instance_of(Integer, x.round(0))
+    assert_instance_of(Integer, x.round(-1))
+    assert_instance_of(BigDecimal, x.round(1))
   end
 
   def test_round_half_even
@@ -1456,8 +1461,13 @@ class TestBigDecimal < Test::Unit::TestCase
   def test_power_without_prec
     pi  = BigDecimal("3.14159265358979323846264338327950288419716939937511")
     e   = BigDecimal("2.71828182845904523536028747135266249775724709369996")
-    pow = BigDecimal("22.4591577183610454734271522045437350275893151339967843873233068")
+    pow = BigDecimal("0.2245915771836104547342715220454373502758931513399678438732330680117143493477164265678321738086407229773690574073268002736527e2")
     assert_equal(pow, pi.power(e))
+
+    n = BigDecimal("2222")
+    assert_equal(BigDecimal("0.5171353084572525892492416e12"), (n ** 3.5))
+    assert_equal(BigDecimal("0.517135308457252592e12"), (n ** 3.5r))
+    assert_equal(BigDecimal("0.517135308457252589249241582e12"), (n ** BigDecimal("3.5",15)))
   end
 
   def test_power_with_prec

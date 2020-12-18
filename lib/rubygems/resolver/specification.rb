@@ -104,7 +104,7 @@ class Gem::Resolver::Specification
   # Returns true if this specification is installable on this platform.
 
   def installable_platform?
-    Gem::Platform.match spec.platform
+    Gem::Platform.match_spec? spec
   end
 
   def local? # :nodoc:

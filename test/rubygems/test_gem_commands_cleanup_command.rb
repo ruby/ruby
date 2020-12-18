@@ -221,7 +221,7 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
     @b_2 = util_spec 'b', 3
 
     install_gem @b_1
-    install_default_specs @b_default
+    install_default_gems @b_default
     install_gem @b_2
 
     @cmd.options[:args] = []

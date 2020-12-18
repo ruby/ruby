@@ -1174,6 +1174,51 @@ x = __ENCODING__
     assert_equal(1, ex.message.scan(w).size, "same #{w.inspect} warning should be just once")
   end
 
+  def test_shareable_constant_value
+    assert_warning(/invalid value/) do
+      assert_valid_syntax("# shareable_constant_value: invalid-option", verbose: true)
+    end
+    assert_warning(/ignored/) do
+      assert_valid_syntax("nil # shareable_constant_value: true", verbose: true)
+    end
+    a, b, c = Class.new.class_eval("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: experimental_everything
+      A = [[1]]
+      # shareable_constant_value: none
+      B = [[2]]
+      # shareable_constant_value: literal
+      C = [["shareable", "constant#{nil}"]]
+
+      [A, B, C]
+    end;
+    assert_send([Ractor, :shareable?, a])
+    assert_not_send([Ractor, :shareable?, b])
+    assert_send([Ractor, :shareable?, c])
+    assert_equal([1], a[0])
+    assert_send([Ractor, :shareable?, a[0]])
+    a, b = Class.new.class_eval("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: none
+      class X
+        # shareable_constant_value: experimental_everything
+        A = [[1]]
+      end
+      B = []
+      [X::A, B]
+    end;
+    assert_send([Ractor, :shareable?, a])
+    assert_not_send([Ractor, :shareable?, b])
+    assert_equal([1], a[0])
+    assert_send([Ractor, :shareable?, a[0]])
+
+    assert_syntax_error("#{<<~"begin;"}\n#{<<~'end;'}", /unshareable expression/)
+    begin;
+      # shareable_constant_value: literal
+      C = ["Not " + "shareable"]
+    end;
+  end
+
 =begin
   def test_past_scope_variable
     assert_warning(/past scope/) {catch {|tag| eval("BEGIN{throw tag}; tap {a = 1}; a")}}

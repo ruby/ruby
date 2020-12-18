@@ -2,7 +2,7 @@
 
 require 'rubygems/test_case'
 
-unless defined?(OpenSSL::SSL)
+unless Gem::HAVE_OPENSSL
   warn 'Skipping Gem::Security::Policy tests.  openssl not found.'
 end
 
@@ -532,4 +532,4 @@ class TestGemSecurityPolicy < Gem::TestCase
 
     return digests, signatures
   end
-end if defined?(OpenSSL::SSL)
+end if Gem::HAVE_OPENSSL

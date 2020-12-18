@@ -933,6 +933,7 @@ class Reline::LineEditor
       finish
       return
     end
+    old_line = @line.dup
     @first_char = false
     completion_occurs = false
     if @config.editing_mode_is?(:emacs, :vi_insert) and key.char == "\C-i".ord
@@ -964,7 +965,7 @@ class Reline::LineEditor
     if not Reline::IOGate.in_pasting? and @just_cursor_moving.nil?
       if @previous_line_index and @buffer_of_lines[@previous_line_index] == @line
         @just_cursor_moving = true
-      elsif @previous_line_index.nil? and @buffer_of_lines[@line_index] == @line
+      elsif @previous_line_index.nil? and @buffer_of_lines[@line_index] == @line and old_line == @line
         @just_cursor_moving = true
       else
         @just_cursor_moving = false
@@ -1264,7 +1265,12 @@ class Reline::LineEditor
     else
       @line = byteinsert(@line, @byte_pointer, str)
     end
+    last_byte_size = Reline::Unicode.get_prev_mbchar_size(@line, @byte_pointer)
     @byte_pointer += bytesize
+    last_mbchar = @line.byteslice((@byte_pointer - bytesize - last_byte_size), last_byte_size)
+    if last_byte_size != 0 and (last_mbchar + str).grapheme_clusters.size == 1
+      width = 0
+    end
     @cursor += width
     @cursor_max += width
   end

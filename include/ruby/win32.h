@@ -160,7 +160,7 @@ typedef int clockid_t;
 #define Sleep(msec)		(void)rb_w32_Sleep(msec)
 
 #undef execv
-#define execv(path,argv)	rb_w32_aspawn(P_OVERLAY,path,argv)
+#define execv(path,argv)	rb_w32_uaspawn(P_OVERLAY,path,argv)
 #undef isatty
 #define isatty(h)		rb_w32_isatty(h)
 
@@ -717,7 +717,7 @@ extern char *rb_w32_strerror(int);
 #define getcwd(b, s)		rb_w32_getcwd(b, s)
 
 #undef getenv
-#define getenv(n)		rb_w32_getenv(n)
+#define getenv(n)		rb_w32_ugetenv(n)
 
 #undef rename
 #define rename(o, n)		rb_w32_rename(o, n)

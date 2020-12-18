@@ -6,7 +6,7 @@ module Bundler
       include GemHelpers
 
       attr_accessor :name, :version, :source
-      attr_accessor :ignores_bundler_dependencies
+      attr_accessor :ignores_bundler_dependencies, :activated_platforms
 
       def initialize(all_specs)
         @all_specs = all_specs
@@ -32,17 +32,13 @@ module Bundler
         end.compact.uniq
       end
 
-      def activate_platform!(platform)
-        return unless for?(platform)
-        return if @activated_platforms.include?(platform)
-        @activated_platforms << platform
-      end
+      def copy_for(platforms)
+        platforms.select! {|p| for?(p) }
+        return unless platforms.any?
 
-      def copy_for(platform)
         copied_sg = self.class.new(@all_specs)
         copied_sg.ignores_bundler_dependencies = @ignores_bundler_dependencies
-        return nil unless copied_sg.for?(platform)
-        copied_sg.activate_platform!(platform)
+        copied_sg.activated_platforms = platforms
         copied_sg
       end
 

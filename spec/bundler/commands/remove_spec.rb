@@ -83,7 +83,7 @@ RSpec.describe "bundle remove" do
     end
   end
 
-  describe "remove mutiple gems from gemfile" do
+  describe "remove multiple gems from gemfile" do
     context "when all gems are present in gemfile" do
       it "shows success fir all removed gems" do
         gemfile <<-G
@@ -210,7 +210,7 @@ RSpec.describe "bundle remove" do
       end
     end
 
-    context "when the gem belongs to mutiple groups" do
+    context "when the gem belongs to multiple groups" do
       it "removes the groups" do
         gemfile <<-G
           source "#{file_uri_for(gem_repo1)}"
@@ -614,6 +614,86 @@ RSpec.describe "bundle remove" do
       bundle "remove foo"
 
       expect(out).to include("foo could not be removed.")
+    end
+  end
+
+  describe "with comments that mention gems" do
+    context "when comment is a separate line comment" do
+      it "does not remove the line comment" do
+        gemfile <<-G
+          source "#{file_uri_for(gem_repo1)}"
+
+          # gem "rack" might be used in the future
+          gem "rack"
+        G
+
+        bundle "remove rack"
+
+        expect(out).to include("rack was removed.")
+        gemfile_should_be <<-G
+          source "#{file_uri_for(gem_repo1)}"
+
+          # gem "rack" might be used in the future
+        G
+      end
+    end
+
+    context "when gem specified for removal has an inline comment" do
+      it "removes the inline comment" do
+        gemfile <<-G
+          source "#{file_uri_for(gem_repo1)}"
+
+          gem "rack" # this can be removed
+        G
+
+        bundle "remove rack"
+
+        expect(out).to include("rack was removed.")
+        gemfile_should_be <<-G
+          source "#{file_uri_for(gem_repo1)}"
+        G
+      end
+    end
+
+    context "when gem specified for removal is mentioned in other gem's comment" do
+      it "does not remove other gem" do
+        gemfile <<-G
+          source "#{file_uri_for(gem_repo1)}"
+          gem "puma" # implements interface provided by gem "rack"
+
+          gem "rack"
+        G
+
+        bundle "remove rack"
+
+        expect(out).to_not include("puma was removed.")
+        expect(out).to include("rack was removed.")
+        gemfile_should_be <<-G
+          source "#{file_uri_for(gem_repo1)}"
+          gem "puma" # implements interface provided by gem "rack"
+        G
+      end
+    end
+
+    context "when gem specified for removal has a comment that mentions other gem" do
+      it "does not remove other gem" do
+        gemfile <<-G
+          source "#{file_uri_for(gem_repo1)}"
+          gem "puma" # implements interface provided by gem "rack"
+
+          gem "rack"
+        G
+
+        bundle "remove puma"
+
+        expect(out).to include("puma was removed.")
+        expect(out).to_not include("rack was removed.")
+        gemfile_should_be <<-G
+          source "#{file_uri_for(gem_repo1)}"
+
+          gem "rack"
+        G
+      end
     end
   end
 end

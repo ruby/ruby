@@ -147,18 +147,18 @@ class TestRipper::Lexer < Test::Unit::TestCase
   end
 
   BAD_CODE = {
-    parse_error: 'def req(true) end',
-    assign_error: 'begin; nil = 1; end',
-    alias_error: 'begin; alias $x $1; end',
-    class_name_error: 'class bad; end',
-    param_error: 'def req(@a) end',
+    parse_error: ['def req(true) end', %r[unexpected `true']],
+    assign_error: ['begin; nil = 1; end', %r[assign to nil]],
+    alias_error: ['begin; alias $x $1; end', %r[number variables]],
+    class_name_error: ['class bad; end', %r[class/module name]],
+    param_error: ['def req(@a) end', %r[formal argument.*instance]],
   }
 
   def test_raise_errors_keyword
     all_assertions do |all|
-      BAD_CODE.each do |err, code|
+      BAD_CODE.each do |err, (code, message)|
         all.for(err) do
-          assert_raise(SyntaxError) { Ripper.tokenize(code, raise_errors: true) }
+          assert_raise_with_message(SyntaxError, message) { Ripper.tokenize(code, raise_errors: true) }
         end
       end
     end
@@ -166,7 +166,7 @@ class TestRipper::Lexer < Test::Unit::TestCase
 
   def test_tokenize_with_syntax_error
     all_assertions do |all|
-      BAD_CODE.each do |err, code|
+      BAD_CODE.each do |err, (code)|
         all.for(err) do
           assert_equal "end", Ripper.tokenize(code).last
         end
@@ -176,7 +176,7 @@ class TestRipper::Lexer < Test::Unit::TestCase
 
   def test_lex_with_syntax_error
     all_assertions do |all|
-      BAD_CODE.each do |err, code|
+      BAD_CODE.each do |err, (code)|
         all.for(err) do
           assert_equal [[1, code.size-3], :on_kw, "end", state(:EXPR_END)], Ripper.lex(code).last
         end

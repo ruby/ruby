@@ -79,19 +79,17 @@ module Bundler
       @specification = if source.is_a?(Source::Gemspec) && source.gemspec.name == name
         source.gemspec.tap {|s| s.source = source }
       else
-        search_object = Bundler.feature_flag.specific_platform? || Bundler.settings[:force_ruby_platform] ? self : Dependency.new(name, version)
+        search_object = if source.is_a?(Source::Path)
+          Dependency.new(name, version)
+        else
+          ruby_platform_materializes_to_ruby_platform? ? self : Dependency.new(name, version)
+        end
         platform_object = Gem::Platform.new(platform)
         candidates = source.specs.search(search_object)
         same_platform_candidates = candidates.select do |spec|
           MatchPlatform.platforms_match?(spec.platform, platform_object)
         end
         search = same_platform_candidates.last || candidates.last
-        if search && Gem::Platform.new(search.platform) != platform_object && !search.runtime_dependencies.-(dependencies.reject {|d| d.type == :development }).empty?
-          Bundler.ui.warn "Unable to use the platform-specific (#{search.platform}) version of #{name} (#{version}) " \
-            "because it has different dependencies from the #{platform} version. " \
-            "To use the platform-specific version of the gem, run `bundle config set --local specific_platform true` and install again."
-          search = source.specs.search(self).last
-        end
         search.dependencies = dependencies if search && (search.is_a?(RemoteSpecification) || search.is_a?(EndpointSpecification))
         search
       end
@@ -130,6 +128,20 @@ module Bundler
       return super unless respond_to?(method)
 
       @specification.send(method, *args, &blk)
+    end
+
+    #
+    # Bundler 2.2.0 was the first version that records the full resolution
+    # including platform specific gems in the lockfile, which means that if a
+    # gem with RUBY platform is recorded, the RUBY platform version of the gem
+    # should be installed. Previously bundler would record only generic versions
+    # in the lockfile and then install the most specific platform variant if
+    # available.
+    #
+    def ruby_platform_materializes_to_ruby_platform?
+      locked_bundler_version = Bundler.locked_bundler_version
+
+      locked_bundler_version.nil? || Gem::Version.new(locked_bundler_version) >= Gem::Version.new("2.2.0")
     end
   end
 end

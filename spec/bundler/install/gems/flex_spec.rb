@@ -166,8 +166,7 @@ RSpec.describe "bundle flex_install" do
 
       expect(the_bundle).to include_gems "rack_middleware 1.0", "rack 0.9.1"
 
-      build_repo2
-      update_repo2 do
+      build_repo2 do
         build_gem "rack-obama", "2.0" do |s|
           s.add_dependency "rack", "=1.2"
         end

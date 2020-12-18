@@ -3,8 +3,22 @@
 RSpec.describe "bundle info" do
   context "with a standard Gemfile" do
     before do
+      build_repo2 do
+        build_gem "has_metadata" do |s|
+          s.metadata = {
+            "bug_tracker_uri"   => "https://example.com/user/bestgemever/issues",
+            "changelog_uri"     => "https://example.com/user/bestgemever/CHANGELOG.md",
+            "documentation_uri" => "https://www.example.info/gems/bestgemever/0.0.1",
+            "homepage_uri"      => "https://bestgemever.example.io",
+            "mailing_list_uri"  => "https://groups.example.com/bestgemever",
+            "source_code_uri"   => "https://example.com/user/bestgemever",
+            "wiki_uri"          => "https://example.com/user/bestgemever/wiki",
+          }
+        end
+      end
+
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "rails"
         gem "has_metadata"
       G
@@ -66,7 +80,6 @@ RSpec.describe "bundle info" do
 \tHomepage: http://example.com
 \tDocumentation: https://www.example.info/gems/bestgemever/0.0.1
 \tSource Code: https://example.com/user/bestgemever
-\tFunding: https://example.com/has_metadata/funding
 \tWiki: https://example.com/user/bestgemever/wiki
 \tChangelog: https://example.com/user/bestgemever/CHANGELOG.md
 \tBug Tracker: https://example.com/user/bestgemever/issues

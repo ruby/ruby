@@ -378,6 +378,7 @@ VALUE rb_block_param_proxy;
 #define ruby_vm_redefined_flag GET_VM()->redefined_flag
 VALUE ruby_vm_const_missing_count = 0;
 rb_vm_t *ruby_current_vm_ptr = NULL;
+rb_ractor_t *ruby_single_main_ractor;
 
 #ifdef RB_THREAD_LOCAL_SPECIFIER
 RB_THREAD_LOCAL_SPECIFIER rb_execution_context_t *ruby_current_ec;
@@ -994,6 +995,7 @@ collect_outer_variable_names(ID id, VALUE val, void *ptr)
 }
 
 VALUE rb_ractor_error_class(void);
+VALUE rb_ractor_make_shareable(VALUE obj);
 
 static const rb_env_t *
 env_copy(const VALUE *src_ep, VALUE read_only_variables)
@@ -1809,7 +1811,9 @@ vm_redefinition_check_flag(VALUE klass)
     if (klass == rb_cArray)  return ARRAY_REDEFINED_OP_FLAG;
     if (klass == rb_cHash)   return HASH_REDEFINED_OP_FLAG;
     if (klass == rb_cSymbol) return SYMBOL_REDEFINED_OP_FLAG;
+#if 0
     if (klass == rb_cTime)   return TIME_REDEFINED_OP_FLAG;
+#endif
     if (klass == rb_cRegexp) return REGEXP_REDEFINED_OP_FLAG;
     if (klass == rb_cNilClass) return NIL_REDEFINED_OP_FLAG;
     if (klass == rb_cTrueClass) return TRUE_REDEFINED_OP_FLAG;
@@ -1919,7 +1923,7 @@ vm_init_redefined_flag(void)
     OP(Length, LENGTH), (C(Array), C(String), C(Hash));
     OP(Size, SIZE), (C(Array), C(String), C(Hash));
     OP(EmptyP, EMPTY_P), (C(Array), C(String), C(Hash));
-    OP(Succ, SUCC), (C(Integer), C(String), C(Time));
+    OP(Succ, SUCC), (C(Integer), C(String));
     OP(EqTilde, MATCH), (C(Regexp), C(String));
     OP(Freeze, FREEZE), (C(String));
     OP(UMinus, UMINUS), (C(String));
@@ -2527,6 +2531,13 @@ rb_vm_each_stack_value(void *ptr, void (*cb)(VALUE, void*), void *ctx)
     }
 }
 
+static enum rb_id_table_iterator_result
+vm_mark_negative_cme(VALUE val, void *dmy)
+{
+    rb_gc_mark(val);
+    return ID_TABLE_CONTINUE;
+}
+
 void
 rb_vm_mark(void *ptr)
 {
@@ -2581,6 +2592,8 @@ rb_vm_mark(void *ptr)
 	rb_hook_list_mark(&vm->global_hooks);
 
 	rb_gc_mark_values(RUBY_NSIG, vm->trap_list.cmd);
+
+        rb_id_table_foreach_values(vm->negative_cme_table, vm_mark_negative_cme, NULL);
 
         mjit_mark();
     }
@@ -3165,6 +3178,12 @@ m_core_hash_merge_kwd(VALUE recv, VALUE hash, VALUE kw)
 }
 
 static VALUE
+m_core_make_shareable(VALUE recv, VALUE obj)
+{
+    return rb_ractor_make_shareable(obj);
+}
+
+static VALUE
 core_hash_merge_kwd(VALUE hash, VALUE kw)
 {
     rb_hash_foreach(rb_to_hash_type(kw), kwmerge_i, hash);
@@ -3328,6 +3347,7 @@ Init_VM(void)
     rb_define_method_id(klass, id_core_raise, f_raise, -1);
     rb_define_method_id(klass, idProc, f_proc, 0);
     rb_define_method_id(klass, idLambda, f_lambda, 0);
+    rb_define_method(klass, "make_shareable", m_core_make_shareable, 1);
     rb_obj_freeze(fcore);
     RBASIC_CLEAR_CLASS(klass);
     rb_obj_freeze(klass);
@@ -3657,6 +3677,7 @@ Init_BareVM(void)
 
     vm->objspace = rb_objspace_alloc();
     ruby_current_vm_ptr = vm;
+    vm->negative_cme_table = rb_id_table_create(16);
 
     Init_native_thread(th);
     th->vm = vm;

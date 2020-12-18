@@ -52,7 +52,7 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
     end
 
     versions(req.name).each do |ver|
-      if req.dependency.match? req.name, ver[:number]
+      if req.dependency.match? req.name, ver[:number], @prerelease
         res << Gem::Resolver::APISpecification.new(self, ver)
       end
     end

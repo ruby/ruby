@@ -88,7 +88,7 @@ class Gem::S3URISigner
       "AWS4-HMAC-SHA256",
       date_time,
       credential_info,
-      Digest::SHA256.hexdigest(canonical_request)
+      Digest::SHA256.hexdigest(canonical_request),
     ].join("\n")
   end
 

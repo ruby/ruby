@@ -179,7 +179,6 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
 
         if (cme) {
             // invalidate cme if found to invalidate the inline method cache.
-
             if (METHOD_ENTRY_CACHED(cme)) {
                 if (METHOD_ENTRY_COMPLEMENTED(cme)) {
                     // do nothing
@@ -192,6 +191,7 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
                     VALUE origin = RCLASS_ORIGIN(owner);
                     rb_method_table_insert(origin, RCLASS_M_TBL(origin), mid, new_cme);
                 }
+
                 vm_me_invalidate_cache((rb_callable_method_entry_t *)cme);
                 RB_DEBUG_COUNTER_INC(cc_invalidate_tree_cme);
             }
@@ -207,6 +207,15 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
             }
 
             RB_DEBUG_COUNTER_INC(cc_invalidate_tree);
+        }
+        else {
+            rb_vm_t *vm = GET_VM();
+            if (rb_id_table_lookup(vm->negative_cme_table, mid, (VALUE *)&cme)) {
+                rb_id_table_delete(vm->negative_cme_table, mid);
+                vm_me_invalidate_cache((rb_callable_method_entry_t *)cme);
+
+                RB_DEBUG_COUNTER_INC(cc_invalidate_negative);
+            }
         }
     }
 }
@@ -1053,7 +1062,7 @@ static const rb_callable_method_entry_t *
 complemented_callable_method_entry(VALUE klass, ID id)
 {
     VALUE defined_class;
-    rb_method_entry_t *me = search_method_protect(klass, id, &defined_class);
+    rb_method_entry_t *me = search_method(klass, id, &defined_class);
     return prepare_callable_method_entry(defined_class, id, me, FALSE);
 }
 
@@ -1078,6 +1087,8 @@ cached_callable_method_entry(VALUE klass, ID mid)
             rb_id_table_delete(cc_tbl, mid);
         }
     }
+
+    RB_DEBUG_COUNTER_INC(ccs_not_found);
     return NULL;
 }
 
@@ -1085,6 +1096,7 @@ static void
 cache_callable_method_entry(VALUE klass, ID mid, const rb_callable_method_entry_t *cme)
 {
     ASSERT_vm_locking();
+    VM_ASSERT(cme != NULL);
 
     struct rb_id_table *cc_tbl = RCLASS_CC_TBL(klass);
     struct rb_class_cc_entries *ccs;
@@ -1103,6 +1115,21 @@ cache_callable_method_entry(VALUE klass, ID mid, const rb_callable_method_entry_
 }
 
 static const rb_callable_method_entry_t *
+negative_cme(ID mid)
+{
+    rb_vm_t *vm = GET_VM();
+    const rb_callable_method_entry_t *cme;
+
+    if (!rb_id_table_lookup(vm->negative_cme_table, mid, (VALUE *)&cme)) {
+        cme = (rb_callable_method_entry_t *)rb_method_entry_alloc(mid, Qnil, Qnil, NULL);
+        rb_id_table_insert(vm->negative_cme_table, mid, (VALUE)cme);
+    }
+
+    VM_ASSERT(cme != NULL);
+    return cme;
+}
+
+static const rb_callable_method_entry_t *
 callable_method_entry(VALUE klass, ID mid, VALUE *defined_class_ptr)
 {
     const rb_callable_method_entry_t *cme;
@@ -1117,15 +1144,22 @@ callable_method_entry(VALUE klass, ID mid, VALUE *defined_class_ptr)
         }
         else {
             VALUE defined_class;
-            rb_method_entry_t *me = search_method_protect(klass, mid, &defined_class);
+            rb_method_entry_t *me = search_method(klass, mid, &defined_class);
             if (defined_class_ptr) *defined_class_ptr = defined_class;
-            cme = prepare_callable_method_entry(defined_class, mid, me, TRUE);
-            if (cme) cache_callable_method_entry(klass, mid, cme);
+
+            if (me != NULL) {
+                cme = prepare_callable_method_entry(defined_class, mid, me, TRUE);
+            }
+            else {
+                cme = negative_cme(mid);
+            }
+
+            cache_callable_method_entry(klass, mid, cme);
         }
     }
     RB_VM_LOCK_LEAVE();
 
-    return cme;
+    return !UNDEFINED_METHOD_ENTRY_P(cme) ? cme : NULL;
 }
 
 MJIT_FUNC_EXPORTED const rb_callable_method_entry_t *
@@ -1165,18 +1199,31 @@ rb_method_entry_with_refinements(VALUE klass, ID id, VALUE *defined_class_ptr)
     return method_entry_resolve_refinement(klass, id, TRUE, defined_class_ptr);
 }
 
-MJIT_FUNC_EXPORTED const rb_callable_method_entry_t *
-rb_callable_method_entry_with_refinements(VALUE klass, ID id, VALUE *defined_class_ptr)
+static const rb_callable_method_entry_t *
+callable_method_entry_refeinements(VALUE klass, ID id, VALUE *defined_class_ptr, bool with_refinements)
 {
     const rb_callable_method_entry_t *cme = callable_method_entry(klass, id, defined_class_ptr);
+
     if (cme == NULL || cme->def->type != VM_METHOD_TYPE_REFINED) {
         return cme;
     }
     else {
         VALUE defined_class, *dcp = defined_class_ptr ? defined_class_ptr : &defined_class;
-        const rb_method_entry_t *me = method_entry_resolve_refinement(klass, id, TRUE, dcp);
+        const rb_method_entry_t *me = method_entry_resolve_refinement(klass, id, with_refinements, dcp);
         return prepare_callable_method_entry(*dcp, id, me, TRUE);
     }
+}
+
+MJIT_FUNC_EXPORTED const rb_callable_method_entry_t *
+rb_callable_method_entry_with_refinements(VALUE klass, ID id, VALUE *defined_class_ptr)
+{
+    return callable_method_entry_refeinements(klass, id, defined_class_ptr, true);
+}
+
+static const rb_callable_method_entry_t *
+callable_method_entry_without_refinements(VALUE klass, ID id, VALUE *defined_class_ptr)
+{
+    return callable_method_entry_refeinements(klass, id, defined_class_ptr, false);
 }
 
 const rb_method_entry_t *
@@ -1360,21 +1407,23 @@ rb_export_method(VALUE klass, ID name, rb_method_visibility_t visi)
 #define BOUND_PRIVATE  0x01
 #define BOUND_RESPONDS 0x02
 
-int
-rb_method_boundp(VALUE klass, ID id, int ex)
+static int
+method_boundp(VALUE klass, ID id, int ex)
 {
-    const rb_method_entry_t *me;
+    const rb_callable_method_entry_t *cme;
+
+    VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS));
 
     if (ex & BOUND_RESPONDS) {
-        me = method_entry_resolve_refinement(klass, id, TRUE, NULL);
+        cme = rb_callable_method_entry_with_refinements(klass, id, NULL);
     }
     else {
-        me = rb_method_entry_without_refinements(klass, id, NULL);
+        cme = callable_method_entry_without_refinements(klass, id, NULL);
     }
 
-    if (me != NULL) {
+    if (cme != NULL) {
         if (ex & ~BOUND_RESPONDS) {
-            switch (METHOD_ENTRY_VISI(me)) {
+            switch (METHOD_ENTRY_VISI(cme)) {
               case METHOD_VISI_PRIVATE:
                 return 0;
               case METHOD_VISI_PROTECTED:
@@ -1384,13 +1433,20 @@ rb_method_boundp(VALUE klass, ID id, int ex)
             }
 	}
 
-	if (me->def->type == VM_METHOD_TYPE_NOTIMPLEMENTED) {
+	if (cme->def->type == VM_METHOD_TYPE_NOTIMPLEMENTED) {
 	    if (ex & BOUND_RESPONDS) return 2;
 	    return 0;
 	}
 	return 1;
     }
     return 0;
+}
+
+// deprecated
+int
+rb_method_boundp(VALUE klass, ID id, int ex)
+{
+    return method_boundp(klass, id, ex);
 }
 
 static void
@@ -2367,7 +2423,7 @@ basic_obj_respond_to(rb_execution_context_t *ec, VALUE klass, VALUE obj, ID id, 
 {
     VALUE ret;
 
-    switch (rb_method_boundp(klass, id, pub|BOUND_RESPONDS)) {
+    switch (method_boundp(klass, id, pub|BOUND_RESPONDS)) {
       case 2:
 	return FALSE;
       case 0:

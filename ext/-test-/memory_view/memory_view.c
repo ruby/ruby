@@ -80,15 +80,15 @@ memory_view_parse_item_format(VALUE mod, VALUE format)
     const char *err = NULL;
 
     rb_memory_view_item_component_t *members;
-    ssize_t n_members;
+    size_t n_members;
     ssize_t item_size = rb_memory_view_parse_item_format(c_str, &members, &n_members, &err);
 
     VALUE result = rb_ary_new_capa(3);
     rb_ary_push(result, SSIZET2NUM(item_size));
 
     if (!err) {
-        VALUE ary = rb_ary_new_capa(n_members);
-        ssize_t i;
+        VALUE ary = rb_ary_new_capa((long)n_members);
+        size_t i;
         for (i = 0; i < n_members; ++i) {
             VALUE member = rb_hash_new();
             rb_hash_aset(member, sym_format, rb_str_new(&members[i].format, 1));
@@ -231,6 +231,26 @@ memory_view_ref_count_while_exporting(VALUE mod, VALUE obj, VALUE n)
 }
 
 static VALUE
+memory_view_extract_item_members(VALUE mod, VALUE str, VALUE format)
+{
+    StringValue(str);
+    StringValue(format);
+
+    rb_memory_view_item_component_t *members;
+    size_t n_members;
+    const char *err = NULL;
+    (void)rb_memory_view_parse_item_format(RSTRING_PTR(format), &members, &n_members, &err);
+    if (err != NULL) {
+        rb_raise(rb_eArgError, "Unable to parse item format");
+    }
+
+    VALUE item = rb_memory_view_extract_item_members(RSTRING_PTR(str), members, n_members);
+    xfree(members);
+
+    return item;
+}
+
+static VALUE
 expstr_initialize(VALUE obj, VALUE s)
 {
     if (!NIL_P(s)) {
@@ -244,18 +264,26 @@ static int
 mdview_get_memory_view(VALUE obj, rb_memory_view_t *view, int flags)
 {
     VALUE buf_v = rb_ivar_get(obj, id_str);
+    VALUE format_v = rb_ivar_get(obj, SYM2ID(sym_format));
     VALUE shape_v = rb_ivar_get(obj, SYM2ID(sym_shape));
     VALUE strides_v = rb_ivar_get(obj, SYM2ID(sym_strides));
 
-    ssize_t i, ndim = RARRAY_LEN(shape_v);
-    ssize_t *shape = ALLOC_N(ssize_t, ndim);
-    ssize_t *strides = NULL;
-    if (!NIL_P(strides_v)) {
-        if (RARRAY_LEN(strides_v) != ndim) {
-            rb_raise(rb_eArgError, "strides has an invalid dimension");
-        }
+    const char *format = RSTRING_PTR(format_v);
+    const char *err;
+    const ssize_t item_size = rb_memory_view_item_size_from_format(format, &err);
+    if (item_size < 0) {
+        return 0;
+    }
 
-        strides = ALLOC_N(ssize_t, ndim);
+    ssize_t ndim = RARRAY_LEN(shape_v);
+    if (!NIL_P(strides_v) && RARRAY_LEN(strides_v) != ndim) {
+        rb_raise(rb_eArgError, "strides has an invalid dimension");
+    }
+
+    ssize_t *shape = ALLOC_N(ssize_t, ndim);
+    ssize_t *strides = ALLOC_N(ssize_t, ndim);
+    ssize_t i;
+    if (!NIL_P(strides_v)) {
         for (i = 0; i < ndim; ++i) {
             shape[i] = NUM2SSIZET(RARRAY_AREF(shape_v, i));
             strides[i] = NUM2SSIZET(RARRAY_AREF(strides_v, i));
@@ -265,11 +293,17 @@ mdview_get_memory_view(VALUE obj, rb_memory_view_t *view, int flags)
         for (i = 0; i < ndim; ++i) {
             shape[i] = NUM2SSIZET(RARRAY_AREF(shape_v, i));
         }
+
+        i = ndim - 1;
+        strides[i] = item_size;
+        for (; i > 0; --i) {
+            strides[i-1] = strides[i] * shape[i];
+        }
     }
 
     rb_memory_view_init_as_byte_array(view, obj, RSTRING_PTR(buf_v), RSTRING_LEN(buf_v), true);
-    view->format = "l";
-    view->item_size = sizeof(long);
+    view->format = StringValueCStr(format_v);
+    view->item_size = item_size;
     view->ndim = ndim;
     view->shape = shape;
     view->strides = strides;
@@ -290,13 +324,15 @@ static const rb_memory_view_entry_t mdview_memory_view_entry = {
 };
 
 static VALUE
-mdview_initialize(VALUE obj, VALUE buf, VALUE shape, VALUE strides)
+mdview_initialize(VALUE obj, VALUE buf, VALUE format, VALUE shape, VALUE strides)
 {
     Check_Type(buf, T_STRING);
+    StringValue(format);
     Check_Type(shape, T_ARRAY);
     if (!NIL_P(strides)) Check_Type(strides, T_ARRAY);
 
     rb_ivar_set(obj, id_str, buf);
+    rb_ivar_set(obj, SYM2ID(sym_format), format);
     rb_ivar_set(obj, SYM2ID(sym_shape), shape);
     rb_ivar_set(obj, SYM2ID(sym_strides), strides);
     return Qnil;
@@ -324,11 +360,8 @@ mdview_aref(VALUE obj, VALUE indices_v)
         indices[i] = NUM2SSIZET(RARRAY_AREF(indices_v, i));
     }
 
-    char *ptr = rb_memory_view_get_item_pointer(&view, indices);
+    VALUE result = rb_memory_view_get_item(&view, indices);
     ALLOCV_END(buf_indices);
-
-    long x = *(long *)ptr;
-    VALUE result = LONG2FIX(x);
     rb_memory_view_release(&view);
 
     return result;
@@ -337,6 +370,7 @@ mdview_aref(VALUE obj, VALUE indices_v)
 void
 Init_memory_view(void)
 {
+    rb_ext_ractor_safe(true);
     VALUE mMemoryViewTestUtils = rb_define_module("MemoryViewTestUtils");
 
     rb_define_module_function(mMemoryViewTestUtils, "available?", memory_view_available_p, 1);
@@ -346,13 +380,14 @@ Init_memory_view(void)
     rb_define_module_function(mMemoryViewTestUtils, "get_memory_view_info", memory_view_get_memory_view_info, 1);
     rb_define_module_function(mMemoryViewTestUtils, "fill_contiguous_strides", memory_view_fill_contiguous_strides, 4);
     rb_define_module_function(mMemoryViewTestUtils, "ref_count_while_exporting", memory_view_ref_count_while_exporting, 2);
+    rb_define_module_function(mMemoryViewTestUtils, "extract_item_members", memory_view_extract_item_members, 2);
 
     VALUE cExportableString = rb_define_class_under(mMemoryViewTestUtils, "ExportableString", rb_cObject);
     rb_define_method(cExportableString, "initialize", expstr_initialize, 1);
     rb_memory_view_register(cExportableString, &exportable_string_memory_view_entry);
 
     VALUE cMDView = rb_define_class_under(mMemoryViewTestUtils, "MultiDimensionalView", rb_cObject);
-    rb_define_method(cMDView, "initialize", mdview_initialize, 3);
+    rb_define_method(cMDView, "initialize", mdview_initialize, 4);
     rb_define_method(cMDView, "[]", mdview_aref, 1);
     rb_memory_view_register(cMDView, &mdview_memory_view_entry);
 

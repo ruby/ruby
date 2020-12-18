@@ -1543,7 +1543,14 @@ str_replace(VALUE str, VALUE str2)
 }
 
 static inline VALUE
-str_duplicate(VALUE klass, VALUE str)
+ec_str_alloc(struct rb_execution_context_struct *ec, VALUE klass)
+{
+    RB_EC_NEWOBJ_OF(ec, str, struct RString, klass, T_STRING | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0));
+    return (VALUE)str;
+}
+
+static inline VALUE
+str_duplicate_setup(VALUE klass, VALUE str, VALUE dup)
 {
     enum {embed_size = RSTRING_EMBED_LEN_MAX + 1};
     const VALUE flag_mask =
@@ -1552,7 +1559,6 @@ str_duplicate(VALUE klass, VALUE str)
         FL_FREEZE
 	;
     VALUE flags = FL_TEST_RAW(str, flag_mask);
-    VALUE dup = str_alloc(klass);
     int encidx = 0;
     MEMCPY(RSTRING(dup)->as.ary, RSTRING(str)->as.ary,
 	   char, embed_size);
@@ -1582,6 +1588,20 @@ str_duplicate(VALUE klass, VALUE str)
     return dup;
 }
 
+static inline VALUE
+ec_str_duplicate(struct rb_execution_context_struct *ec, VALUE klass, VALUE str)
+{
+    VALUE dup = ec_str_alloc(ec, klass);
+    return str_duplicate_setup(klass, str, dup);
+}
+
+static inline VALUE
+str_duplicate(VALUE klass, VALUE str)
+{
+    VALUE dup = str_alloc(klass);
+    return str_duplicate_setup(klass, str, dup);
+}
+
 VALUE
 rb_str_dup(VALUE str)
 {
@@ -1593,6 +1613,13 @@ rb_str_resurrect(VALUE str)
 {
     RUBY_DTRACE_CREATE_HOOK(STRING, RSTRING_LEN(str));
     return str_duplicate(rb_cString, str);
+}
+
+VALUE
+rb_ec_str_resurrect(struct rb_execution_context_struct *ec, VALUE str)
+{
+    RUBY_DTRACE_CREATE_HOOK(STRING, RSTRING_LEN(str));
+    return ec_str_duplicate(ec, rb_cString, str);
 }
 
 /*

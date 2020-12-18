@@ -644,7 +644,7 @@ a (2 universal-darwin, 1 ruby x86-linux)
     spec_fetcher {|fetcher| fetcher.spec 'a', 2 }
 
     a1 = new_default_spec 'a', 1
-    install_default_specs a1
+    install_default_gems a1
 
     use_ui @stub_ui do
       @cmd.execute
@@ -663,7 +663,7 @@ EOF
   def test_execute_show_default_gems_with_platform
     a1 = new_default_spec 'a', 1
     a1.platform = 'java'
-    install_default_specs a1
+    install_default_gems a1
 
     use_ui @stub_ui do
       @cmd.execute
@@ -685,7 +685,7 @@ EOF
     end
 
     a1 = new_default_spec 'a', 1
-    install_default_specs a1
+    install_default_gems a1
 
     @cmd.handle_options %w[-l -d]
 

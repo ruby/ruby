@@ -52,7 +52,7 @@ def make_cfunc_name inlines, name, lineno
 end
 
 def collect_locals tree
-  type, name, (line, cols) = tree
+  _type, name, (line, _cols) = tree
   if locals = LOCALS_DB[[name, line]]
     locals
   else
@@ -65,7 +65,7 @@ end
 
 def collect_builtin base, tree, name, bs, inlines, locals = nil
   while tree
-    call = recv = sep = mid = args = nil
+    recv = sep = mid = args = nil
     case tree.first
     when :def
       locals = collect_locals(tree[1])

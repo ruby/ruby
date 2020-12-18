@@ -170,13 +170,9 @@ round_half_even(double x, double s)
     return x;
 }
 
-static VALUE fix_uminus(VALUE num);
-static VALUE fix_mul(VALUE x, VALUE y);
 static VALUE fix_lshift(long, unsigned long);
 static VALUE fix_rshift(long, unsigned long);
 static VALUE int_pow(long x, unsigned long y);
-static VALUE int_even_p(VALUE x);
-static int int_round_zero_p(VALUE num, int ndigits);
 static VALUE rb_int_floor(VALUE num, int ndigits);
 static VALUE rb_int_ceil(VALUE num, int ndigits);
 static VALUE flo_to_i(VALUE num);
@@ -1078,8 +1074,8 @@ rb_float_plus(VALUE x, VALUE y)
  * Returns a new Float which is the difference of +float+ and +other+.
  */
 
-static VALUE
-flo_minus(VALUE x, VALUE y)
+VALUE
+rb_float_minus(VALUE x, VALUE y)
 {
     if (RB_TYPE_P(y, T_FIXNUM)) {
 	return DBL2NUM(RFLOAT_VALUE(x) - (double)FIX2LONG(y));
@@ -1935,6 +1931,31 @@ flo_prev_float(VALUE vx)
     return flo_nextafter(vx, -HUGE_VAL);
 }
 
+VALUE
+rb_float_floor(VALUE num, int ndigits)
+{
+    double number, f;
+    number = RFLOAT_VALUE(num);
+    if (number == 0.0) {
+	return ndigits > 0 ? DBL2NUM(number) : INT2FIX(0);
+    }
+    if (ndigits > 0) {
+	int binexp;
+	frexp(number, &binexp);
+	if (float_round_overflow(ndigits, binexp)) return num;
+	if (number > 0.0 && float_round_underflow(ndigits, binexp))
+	    return DBL2NUM(0.0);
+	f = pow(10, ndigits);
+	f = floor(number * f) / f;
+	return DBL2NUM(f);
+    }
+    else {
+	num = dbl2ival(floor(number));
+	if (ndigits < 0) num = rb_int_floor(num, ndigits);
+	return num;
+    }
+}
+
 /*
  *  call-seq:
  *     float.floor([ndigits])  ->  integer or float
@@ -1977,31 +1998,11 @@ flo_prev_float(VALUE vx)
 static VALUE
 flo_floor(int argc, VALUE *argv, VALUE num)
 {
-    double number, f;
     int ndigits = 0;
-
     if (rb_check_arity(argc, 0, 1)) {
 	ndigits = NUM2INT(argv[0]);
     }
-    number = RFLOAT_VALUE(num);
-    if (number == 0.0) {
-	return ndigits > 0 ? DBL2NUM(number) : INT2FIX(0);
-    }
-    if (ndigits > 0) {
-	int binexp;
-	frexp(number, &binexp);
-	if (float_round_overflow(ndigits, binexp)) return num;
-	if (number > 0.0 && float_round_underflow(ndigits, binexp))
-	    return DBL2NUM(0.0);
-	f = pow(10, ndigits);
-	f = floor(number * f) / f;
-	return DBL2NUM(f);
-    }
-    else {
-	num = dbl2ival(floor(number));
-	if (ndigits < 0) num = rb_int_floor(num, ndigits);
-	return num;
-    }
+    return rb_float_floor(num, ndigits);
 }
 
 /*
@@ -4889,51 +4890,6 @@ int_size(VALUE num)
     return Qnil;
 }
 
-/*
- *  Document-method: Integer#bit_length
- *  call-seq:
- *     int.bit_length  ->  integer
- *
- *  Returns the number of bits of the value of +int+.
- *
- *  "Number of bits" means the bit position of the highest bit
- *  which is different from the sign bit
- *  (where the least significant bit has bit position 1).
- *  If there is no such bit (zero or minus one), zero is returned.
- *
- *  I.e. this method returns <i>ceil(log2(int < 0 ? -int : int+1))</i>.
- *
- *     (-2**1000-1).bit_length   #=> 1001
- *     (-2**1000).bit_length     #=> 1000
- *     (-2**1000+1).bit_length   #=> 1000
- *     (-2**12-1).bit_length     #=> 13
- *     (-2**12).bit_length       #=> 12
- *     (-2**12+1).bit_length     #=> 12
- *     -0x101.bit_length         #=> 9
- *     -0x100.bit_length         #=> 8
- *     -0xff.bit_length          #=> 8
- *     -2.bit_length             #=> 1
- *     -1.bit_length             #=> 0
- *     0.bit_length              #=> 0
- *     1.bit_length              #=> 1
- *     0xff.bit_length           #=> 8
- *     0x100.bit_length          #=> 9
- *     (2**12-1).bit_length      #=> 12
- *     (2**12).bit_length        #=> 13
- *     (2**12+1).bit_length      #=> 13
- *     (2**1000-1).bit_length    #=> 1000
- *     (2**1000).bit_length      #=> 1001
- *     (2**1000+1).bit_length    #=> 1001
- *
- *  This method can be used to detect overflow in Array#pack as follows:
- *
- *     if n.bit_length < 32
- *       [n].pack("l") # no overflow
- *     else
- *       raise "overflow"
- *     end
- */
-
 static VALUE
 rb_fix_bit_length(VALUE fix)
 {
@@ -5749,7 +5705,7 @@ Init_Numeric(void)
     rb_define_method(rb_cFloat, "coerce", flo_coerce, 1);
     rb_define_method(rb_cFloat, "-@", rb_float_uminus, 0);
     rb_define_method(rb_cFloat, "+", rb_float_plus, 1);
-    rb_define_method(rb_cFloat, "-", flo_minus, 1);
+    rb_define_method(rb_cFloat, "-", rb_float_minus, 1);
     rb_define_method(rb_cFloat, "*", rb_float_mul, 1);
     rb_define_method(rb_cFloat, "/", rb_float_div, 1);
     rb_define_method(rb_cFloat, "quo", flo_quo, 1);

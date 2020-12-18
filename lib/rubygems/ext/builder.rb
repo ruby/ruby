@@ -10,14 +10,6 @@ require_relative '../user_interaction'
 class Gem::Ext::Builder
   include Gem::UserInteraction
 
-  ##
-  # The builder shells-out to run various commands after changing the
-  # directory.  This means multiple installations cannot be allowed to build
-  # extensions in parallel as they may change each other's directories leading
-  # to broken extensions or failed installations.
-
-  CHDIR_MUTEX = Mutex.new # :nodoc:
-
   attr_accessor :build_args # :nodoc:
 
   def self.class_name
@@ -25,8 +17,8 @@ class Gem::Ext::Builder
     $1.downcase
   end
 
-  def self.make(dest_path, results)
-    unless File.exist? 'Makefile'
+  def self.make(dest_path, results, make_dir = Dir.pwd)
+    unless File.exist? File.join(make_dir, 'Makefile')
       raise Gem::InstallError, 'Makefile not found'
     end
 
@@ -44,32 +36,32 @@ class Gem::Ext::Builder
       cmd = [
         make_program,
         destdir,
-        target
+        target,
       ].join(' ').rstrip
       begin
-        run(cmd, results, "make #{target}".rstrip)
+        run(cmd, results, "make #{target}".rstrip, make_dir)
       rescue Gem::InstallError
         raise unless target == 'clean' # ignore clean failure
       end
     end
   end
 
-  def self.run(command, results, command_name = nil)
+  def self.run(command, results, command_name = nil, dir = Dir.pwd)
     verbose = Gem.configuration.really_verbose
 
     begin
       rubygems_gemdeps, ENV['RUBYGEMS_GEMDEPS'] = ENV['RUBYGEMS_GEMDEPS'], nil
       if verbose
-        puts("current directory: #{Dir.pwd}")
+        puts("current directory: #{dir}")
         p(command)
       end
-      results << "current directory: #{Dir.pwd}"
+      results << "current directory: #{dir}"
       results << (command.respond_to?(:shelljoin) ? command.shelljoin : command)
 
       require "open3"
       # Set $SOURCE_DATE_EPOCH for the subprocess.
       env = {'SOURCE_DATE_EPOCH' => Gem.source_date_epoch_string}
-      output, status = Open3.capture2e(env, *command)
+      output, status = Open3.capture2e(env, *command, :chdir => dir)
       if verbose
         puts output
       else
@@ -161,22 +153,10 @@ EOF
     begin
       FileUtils.mkdir_p dest_path
 
-      CHDIR_MUTEX.synchronize do
-        pwd = Dir.getwd
-        Dir.chdir extension_dir
-        begin
-          results = builder.build(extension, dest_path,
-                                  results, @build_args, lib_dir)
+      results = builder.build(extension, dest_path,
+                              results, @build_args, lib_dir, extension_dir)
 
-          verbose { results.join("\n") }
-        ensure
-          begin
-            Dir.chdir pwd
-          rescue SystemCallError
-            Dir.chdir dest_path
-          end
-        end
-      end
+      verbose { results.join("\n") }
 
       write_gem_make_out results.join "\n"
     rescue => e
@@ -201,6 +181,7 @@ EOF
 
     dest_path = @spec.extension_dir
 
+    require "fileutils"
     FileUtils.rm_f @spec.gem_build_complete_path
 
     @spec.extensions.each do |extension|

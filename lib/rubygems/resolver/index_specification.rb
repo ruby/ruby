@@ -33,6 +33,17 @@ class Gem::Resolver::IndexSpecification < Gem::Resolver::Specification
     spec.dependencies
   end
 
+  def ==(other)
+    self.class === other &&
+      @name == other.name &&
+      @version == other.version &&
+      @platform == other.platform
+  end
+
+  def hash
+    @name.hash ^ @version.hash ^ @platform.hash
+  end
+
   def inspect # :nodoc:
     '#<%s %s source %s>' % [self.class, full_name, @source]
   end

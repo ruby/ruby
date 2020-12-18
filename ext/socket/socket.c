@@ -393,7 +393,7 @@ sock_connect(VALUE sock, VALUE addr)
     addr = rb_str_new4(addr);
     GetOpenFile(sock, fptr);
     fd = fptr->fd;
-    n = rsock_connect(fd, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_SOCKLEN(addr), 0);
+    n = rsock_connect(fd, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_SOCKLEN(addr), 0, NULL);
     if (n < 0) {
 	rsock_sys_fail_raddrinfo_or_sockaddr("connect(2)", addr, rai);
     }
@@ -1185,11 +1185,7 @@ sock_s_getaddrinfo(int argc, VALUE *argv, VALUE _)
 	norevlookup = rsock_do_not_reverse_lookup;
     }
 
-#ifdef HAVE_GETADDRINFO_A
-    res = rsock_getaddrinfo_a(host, port, &hints, 0, Qnil);
-#else
     res = rsock_getaddrinfo(host, port, &hints, 0);
-#endif
 
     ret = make_addrinfo(res, norevlookup);
     rb_freeaddrinfo(res);

@@ -43,6 +43,7 @@
 #include "internal/thread.h"
 #include "ruby_atomic.h"
 #include "vm_core.h"
+#include "ractor_core.h"
 
 #ifdef NEED_RUBY_ATOMIC_OPS
 rb_atomic_t
@@ -414,7 +415,7 @@ ruby_default_signal(int sig)
     raise(sig);
 }
 
-static RETSIGTYPE sighandler(int sig);
+static void sighandler(int sig);
 static int signal_ignored(int sig);
 static void signal_enque(int sig);
 
@@ -518,7 +519,7 @@ typedef void ruby_sigaction_t(int, siginfo_t*, void*);
 #define SIGINFO_ARG , siginfo_t *info, void *ctx
 #define SIGINFO_CTX ctx
 #else
-typedef RETSIGTYPE ruby_sigaction_t(int);
+typedef void ruby_sigaction_t(int);
 #define SIGINFO_ARG
 #define SIGINFO_CTX 0
 #endif
@@ -711,7 +712,7 @@ static rb_atomic_t sigchld_hit;
 # define GET_SIGCHLD_HIT() 0
 #endif
 
-static RETSIGTYPE
+static void
 sighandler(int sig)
 {
     int old_errnum = errno;
@@ -929,7 +930,7 @@ NOINLINE(static void check_reserved_signal_(const char *name, size_t name_len));
 static sighandler_t default_sigbus_handler;
 NORETURN(static ruby_sigaction_t sigbus);
 
-static RETSIGTYPE
+static void
 sigbus(int sig SIGINFO_ARG)
 {
     check_reserved_signal("BUS");
@@ -951,7 +952,7 @@ sigbus(int sig SIGINFO_ARG)
 static sighandler_t default_sigsegv_handler;
 NORETURN(static ruby_sigaction_t sigsegv);
 
-static RETSIGTYPE
+static void
 sigsegv(int sig SIGINFO_ARG)
 {
     check_reserved_signal("SEGV");
@@ -965,7 +966,7 @@ sigsegv(int sig SIGINFO_ARG)
 static sighandler_t default_sigill_handler;
 NORETURN(static ruby_sigaction_t sigill);
 
-static RETSIGTYPE
+static void
 sigill(int sig SIGINFO_ARG)
 {
     check_reserved_signal("ILL");
@@ -1030,7 +1031,7 @@ check_reserved_signal_(const char *name, size_t name_len)
 #endif
 
 #if defined SIGPIPE || defined SIGSYS
-static RETSIGTYPE
+static void
 sig_do_nothing(int sig)
 {
 }
@@ -1408,6 +1409,11 @@ sig_trap(int argc, VALUE *argv, VALUE _)
     else {
 	cmd = argv[1];
 	func = trap_handler(&cmd, sig);
+    }
+
+    if (rb_obj_is_proc(cmd) &&
+        !rb_ractor_main_p() && !rb_ractor_shareable_p(cmd)) {
+        cmd = rb_proc_isolate(cmd);
     }
 
     return trap(sig, func, cmd);

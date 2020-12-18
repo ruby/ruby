@@ -74,12 +74,15 @@ require 'psych/class_loader'
 #
 # ==== Reading from a string
 #
-#   Psych.load("--- a")             # => 'a'
-#   Psych.load("---\n - a\n - b")   # => ['a', 'b']
+#   Psych.safe_load("--- a")             # => 'a'
+#   Psych.safe_load("---\n - a\n - b")   # => ['a', 'b']
+#   # From a trusted string:
+#   Psych.load("--- !ruby/range\nbegin: 0\nend: 42\nexcl: false\n") # => 0..42
 #
 # ==== Reading from a file
 #
-#   Psych.load_file("database.yml")
+#   Psych.safe_load_file("data.yml", permitted_classes: [Date])
+#   Psych.load_file("trusted_database.yml")
 #
 # ==== Exception handling
 #
@@ -276,8 +279,7 @@ module Psych
 
     result = parse(yaml, filename: filename)
     return fallback unless result
-    result = result.to_ruby(symbolize_names: symbolize_names, freeze: freeze) if result
-    result
+    result.to_ruby(symbolize_names: symbolize_names, freeze: freeze)
   end
 
   ###
@@ -571,9 +573,24 @@ module Psych
   # Load the document contained in +filename+.  Returns the yaml contained in
   # +filename+ as a Ruby object, or if the file is empty, it returns
   # the specified +fallback+ return value, which defaults to +false+.
+  #
+  # NOTE: This method *should not* be used to parse untrusted documents, such as
+  # YAML documents that are supplied via user input.  Instead, please use the
+  # safe_load_file method.
   def self.load_file filename, **kwargs
     File.open(filename, 'r:bom|utf-8') { |f|
       self.load f, filename: filename, **kwargs
+    }
+  end
+
+  ###
+  # Safely loads the document contained in +filename+.  Returns the yaml contained in
+  # +filename+ as a Ruby object, or if the file is empty, it returns
+  # the specified +fallback+ return value, which defaults to +false+.
+  # See safe_load for options.
+  def self.safe_load_file filename, **kwargs
+    File.open(filename, 'r:bom|utf-8') { |f|
+      self.safe_load f, filename: filename, **kwargs
     }
   end
 

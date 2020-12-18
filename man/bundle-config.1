@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "BUNDLE\-CONFIG" "1" "October 2020" "" ""
+.TH "BUNDLE\-CONFIG" "1" "November 2020" "" ""
 .
 .SH "NAME"
 \fBbundle\-config\fR \- Set bundler configuration options
@@ -262,9 +262,6 @@ The following is a list of all configuration keys and their purpose\. You can le
 \fBsilence_root_warning\fR (\fBBUNDLE_SILENCE_ROOT_WARNING\fR): Silence the warning Bundler prints when installing gems as root\.
 .
 .IP "\(bu" 4
-\fBspecific_platform\fR (\fBBUNDLE_SPECIFIC_PLATFORM\fR): Allow bundler to resolve for the specific running platform and store it in the lockfile, instead of only using a generic platform\. A specific platform is the exact platform triple reported by \fBGem::Platform\.local\fR, such as \fBx86_64\-darwin\-16\fR or \fBuniversal\-java\-1\.8\fR\. On the other hand, generic platforms are those such as \fBruby\fR, \fBmswin\fR, or \fBjava\fR\. In this example, \fBx86_64\-darwin\-16\fR would map to \fBruby\fR and \fBuniversal\-java\-1\.8\fR to \fBjava\fR\.
-.
-.IP "\(bu" 4
 \fBssl_ca_cert\fR (\fBBUNDLE_SSL_CA_CERT\fR): Path to a designated CA certificate file or folder containing multiple certificates for trusted CAs in PEM format\.
 .
 .IP "\(bu" 4
@@ -441,7 +438,7 @@ For gems with a git source with HTTP(S) URL you can specify credentials like so:
 .
 .nf
 
-bundle config set \-\-global https://github\.com/bundler/bundler\.git username:password
+bundle config set \-\-global https://github\.com/rubygems/rubygems\.git username:password
 .
 .fi
 .

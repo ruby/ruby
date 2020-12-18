@@ -1425,6 +1425,8 @@ class TestProcess < Test::Unit::TestCase
       assert_equal(s.to_i >> 1, s >> 1)
       assert_equal(false, s.stopped?)
       assert_equal(nil, s.stopsig)
+
+      assert_equal(s, Marshal.load(Marshal.dump(s)))
     end
   end
 
@@ -1442,6 +1444,8 @@ class TestProcess < Test::Unit::TestCase
       assert_equal(expected,
                    [s.exited?, s.signaled?, s.stopped?, s.success?],
                    "[s.exited?, s.signaled?, s.stopped?, s.success?]")
+
+      assert_equal(s, Marshal.load(Marshal.dump(s)))
     end
   end
 
@@ -1456,7 +1460,13 @@ class TestProcess < Test::Unit::TestCase
                    "[s.exited?, s.signaled?, s.stopped?, s.success?]")
       assert_equal("#<Process::Status: pid #{ s.pid } SIGQUIT (signal #{ s.termsig })>",
                    s.inspect.sub(/ \(core dumped\)(?=>\z)/, ''))
+
+      assert_equal(s, Marshal.load(Marshal.dump(s)))
     end
+  end
+
+  def test_status_fail
+    assert_nil(Process::Status.wait($$))
   end
 
   def test_wait_without_arg
@@ -2490,6 +2500,12 @@ EOS
   def test_last_status
     Process.wait spawn(RUBY, "-e", "exit 13")
     assert_same(Process.last_status, $?)
+  end
+
+  def test_last_status_failure
+    assert_nil system("sad")
+    assert_not_predicate $?, :success?
+    assert_equal $?.exitstatus, 127
   end
 
   def test_exec_failure_leaves_no_child

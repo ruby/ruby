@@ -2309,14 +2309,6 @@ rb_hash_key(VALUE hash, VALUE value)
     return args[1];
 }
 
-/* :nodoc: */
-static VALUE
-rb_hash_index(VALUE hash, VALUE value)
-{
-    rb_warn_deprecated("Hash#index", "Hash#key");
-    return rb_hash_key(hash, value);
-}
-
 int
 rb_hash_stlike_delete(VALUE hash, st_data_t *pkey, st_data_t *pval)
 {
@@ -3196,16 +3188,27 @@ transform_keys_i(VALUE key, VALUE value, VALUE result)
  *  call-seq:
  *    hash.transform_keys {|key| ... } -> new_hash
  *    hash.transform_keys(hash2) -> new_hash
+ *    hash.transform_keys(hash2) {|other_key| ...} -> new_hash
  *    hash.transform_keys -> new_enumerator
  *
  *  Returns a new \Hash object; each entry has:
  *  * A key provided by the block.
  *  * The value from +self+.
  *
+ *  An optional hash argument can be provided to map keys to new keys.
+ *  Any key not given will be mapped using the provided block,
+ *  or remain the same if no block is given.
+ *
  *  Transform keys:
  *      h = {foo: 0, bar: 1, baz: 2}
  *      h1 = h.transform_keys {|key| key.to_s }
  *      h1 # => {"foo"=>0, "bar"=>1, "baz"=>2}
+ *
+ *      h.transform_keys(foo: :bar, bar: :foo)
+ *      #=> {bar: 0, foo: 1, baz: 2}
+ *
+ *      h.transform_keys(foo: :hello, &:to_s)
+ *      #=> {:hello=>0, "bar"=>1, "baz"=>2}
  *
  *  Overwrites values for duplicate keys:
  *    h = {foo: 0, bar: 1, baz: 2}
@@ -3251,22 +3254,12 @@ static VALUE rb_hash_flatten(int argc, VALUE *argv, VALUE hash);
 /*
  *  call-seq:
  *    hash.transform_keys! {|key| ... } -> self
+ *    hash.transform_keys!(hash2) -> self
+ *    hash.transform_keys!(hash2) {|other_key| ...} -> self
  *    hash.transform_keys! -> new_enumerator
  *
- *  Returns +self+ with new keys provided by the block:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    h.transform_keys! {|key| key.to_s } # => {"foo"=>0, "bar"=>1, "baz"=>2}
- *
- *  Overwrites values for duplicate keys:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    h1 = h.transform_keys! {|key| :bat }
- *    h1 # => {:bat=>2}
- *
- *  Returns a new \Enumerator if no block given:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    e = h.transform_keys! # => #<Enumerator: {"foo"=>0, "bar"=>1, "baz"=>2}:transform_keys!>
- *    h1 = e.each { |key| key.to_s }
- *    h1 # => {"foo"=>0, "bar"=>1, "baz"=>2}
+ *  Same as Hash#transform_keys but modifies the receiver in place
+ *  instead of returning a new hash.
  */
 static VALUE
 rb_hash_transform_keys_bang(int argc, VALUE *argv, VALUE hash)
@@ -4823,22 +4816,7 @@ static char **my_environ;
 #undef environ
 #define environ my_environ
 #undef getenv
-static char *(*w32_getenv)(const char*);
-static char *
-w32_getenv_unknown(const char *name)
-{
-    char *(*func)(const char*);
-    if (rb_locale_encindex() == rb_ascii8bit_encindex()) {
-	func = rb_w32_getenv;
-    }
-    else {
-	func = rb_w32_ugetenv;
-    }
-    /* atomic assignment in flat memory model */
-    return (w32_getenv = func)(name);
-}
-static char *(*w32_getenv)(const char*) = w32_getenv_unknown;
-#define getenv(n) w32_getenv(n)
+#define getenv(n) rb_w32_ugetenv(n)
 #elif defined(__APPLE__)
 #undef environ
 #define environ (*_NSGetEnviron())
@@ -4857,20 +4835,20 @@ extern char **environ;
 #define ENVNMATCH(s1, s2, n) (memcmp((s1), (s2), (n)) == 0)
 #endif
 
+static inline rb_encoding *
+env_encoding()
+{
+#ifdef _WIN32
+    return rb_utf8_encoding();
+#else
+    return rb_locale_encoding();
+#endif
+}
+
 static VALUE
 env_enc_str_new(const char *ptr, long len, rb_encoding *enc)
 {
-#ifdef _WIN32
-    rb_encoding *internal = rb_default_internal_encoding();
-    const int ecflags = ECONV_INVALID_REPLACE | ECONV_UNDEF_REPLACE;
-    rb_encoding *utf8 = rb_utf8_encoding();
-    VALUE str = rb_enc_str_new(NULL, 0, (internal ? internal : enc));
-    if (NIL_P(rb_str_cat_conv_enc_opts(str, 0, ptr, len, utf8, ecflags, Qnil))) {
-        rb_str_initialize(str, ptr, len, NULL);
-    }
-#else
     VALUE str = rb_external_str_new_with_enc(ptr, len, enc);
-#endif
 
     rb_obj_freeze(str);
     return str;
@@ -4885,7 +4863,7 @@ env_enc_str_new_cstr(const char *ptr, rb_encoding *enc)
 static VALUE
 env_str_new(const char *ptr, long len)
 {
-    return env_enc_str_new(ptr, len, rb_locale_encoding());
+    return env_enc_str_new(ptr, len, env_encoding());
 }
 
 static VALUE
@@ -4897,46 +4875,23 @@ env_str_new2(const char *ptr)
 
 static const char TZ_ENV[] = "TZ";
 
-static rb_encoding *
-env_encoding_for(const char *name, const char *ptr)
-{
-    if (ENVMATCH(name, PATH_ENV)) {
-	return rb_filesystem_encoding();
-    }
-    else {
-	return rb_locale_encoding();
-    }
-}
-
 static VALUE
 env_name_new(const char *name, const char *ptr)
 {
-    return env_enc_str_new_cstr(ptr, env_encoding_for(name, ptr));
+    return env_enc_str_new_cstr(ptr, env_encoding());
 }
 
 static void *
 get_env_cstr(
-#ifdef _WIN32
-    volatile VALUE *pstr,
-#else
     VALUE str,
-#endif
     const char *name)
 {
-#ifdef _WIN32
-    VALUE str = *pstr;
-#endif
     char *var;
     rb_encoding *enc = rb_enc_get(str);
     if (!rb_enc_asciicompat(enc)) {
 	rb_raise(rb_eArgError, "bad environment variable %s: ASCII incompatible encoding: %s",
 		 name, rb_enc_name(enc));
     }
-#ifdef _WIN32
-    if (!rb_enc_str_asciionly_p(str)) {
-	*pstr = str = rb_str_conv_enc(str, NULL, rb_utf8_encoding());
-    }
-#endif
     var = RSTRING_PTR(str);
     if (memchr(var, '\0', RSTRING_LEN(str))) {
 	rb_raise(rb_eArgError, "bad environment variable %s: contains null byte", name);
@@ -4944,13 +4899,8 @@ get_env_cstr(
     return rb_str_fill_terminator(str, 1); /* ASCII compatible */
 }
 
-#ifdef _WIN32
-#define get_env_ptr(var, val) \
-    (var = get_env_cstr(&(val), #var))
-#else
 #define get_env_ptr(var, val) \
     (var = get_env_cstr(val, #var))
-#endif
 
 static inline const char *
 env_name(volatile VALUE *s)
@@ -4991,9 +4941,6 @@ env_delete(VALUE name)
 	VALUE value = env_str_new2(val);
 
 	ruby_setenv(nam, 0);
-	if (ENVMATCH(nam, PATH_ENV)) {
-	    RB_GC_GUARD(name);
-	}
 	return value;
     }
     return Qnil;
@@ -5415,9 +5362,6 @@ env_aset(VALUE nm, VALUE val)
     get_env_ptr(value, val);
 
     ruby_setenv(name, value);
-    if (ENVMATCH(name, PATH_ENV)) {
-	RB_GC_GUARD(nm);
-    }
     reset_by_modified_env(name);
     return val;
 }
@@ -6938,7 +6882,6 @@ Init_Hash(void)
     rb_define_method(rb_cHash, "default_proc", rb_hash_default_proc, 0);
     rb_define_method(rb_cHash, "default_proc=", rb_hash_set_default_proc, 1);
     rb_define_method(rb_cHash, "key", rb_hash_key, 1);
-    rb_define_method(rb_cHash, "index", rb_hash_index, 1);
     rb_define_method(rb_cHash, "size", rb_hash_size, 0);
     rb_define_method(rb_cHash, "length", rb_hash_size, 0);
     rb_define_method(rb_cHash, "empty?", rb_hash_empty_p, 0);

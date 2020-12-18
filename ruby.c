@@ -1145,7 +1145,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 		if (*++s) {
 		    v = scan_oct(s, 1, &numlen);
 		    if (numlen == 0)
-			v = 1;
+                        v = 2;
 		    s += numlen;
 		}
 		if (!opt->warning) {
@@ -1849,7 +1849,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	enc = rb_enc_from_index(opt->ext.enc.index);
     }
     else {
-	enc = lenc;
+	enc = IF_UTF8_PATH(uenc, lenc);
     }
     rb_enc_set_default_external(rb_enc_from_encoding(enc));
     if (opt->intern.enc.index >= 0) {
@@ -1954,7 +1954,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	enc = rb_enc_from_index(opt->ext.enc.index);
     }
     else {
-	enc = lenc;
+	enc = IF_UTF8_PATH(uenc, lenc);
     }
     rb_enc_set_default_external(rb_enc_from_encoding(enc));
     if (opt->intern.enc.index >= 0) {

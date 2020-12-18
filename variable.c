@@ -926,6 +926,8 @@ generic_ivtbl(VALUE obj, ID id, bool force_check_ractor)
         !RB_OBJ_FROZEN_RAW(obj) &&
         UNLIKELY(!rb_ractor_main_p()) &&
         UNLIKELY(rb_ractor_shareable_p(obj))) {
+
+        // TODO: RuntimeError?
         rb_raise(rb_eRuntimeError, "can not access instance variables of shareable objects from non-main Ractors");
     }
     return generic_iv_tbl_;
@@ -959,6 +961,21 @@ MJIT_FUNC_EXPORTED int
 rb_ivar_generic_ivtbl_lookup(VALUE obj, struct gen_ivtbl **ivtbl)
 {
     return gen_ivtbl_get(obj, 0, ivtbl);
+}
+
+MJIT_FUNC_EXPORTED VALUE
+rb_ivar_generic_lookup_with_index(VALUE obj, ID id, uint32_t index)
+{
+    struct gen_ivtbl *ivtbl;
+
+    if (gen_ivtbl_get(obj, id, &ivtbl)) {
+        if (LIKELY(index < ivtbl->numiv)) {
+            VALUE val = ivtbl->ivptr[index];
+            return val;
+        }
+    }
+
+    return Qundef;
 }
 
 static VALUE
@@ -1217,14 +1234,8 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
 VALUE
 rb_ivar_get(VALUE obj, ID id)
 {
-    VALUE iv = rb_ivar_lookup(obj, id, Qundef);
+    VALUE iv = rb_ivar_lookup(obj, id, Qnil);
     RB_DEBUG_COUNTER_INC(ivar_get_base);
-
-    if (iv == Qundef) {
-	if (RTEST(ruby_verbose))
-	    rb_warning("instance variable %"PRIsVALUE" not initialized", QUOTE_ID(id));
-	iv = Qnil;
-    }
     return iv;
 }
 
@@ -1402,8 +1413,8 @@ rb_obj_transient_heap_evacuate(VALUE obj, int promote)
 }
 #endif
 
-void
-rb_init_iv_list(VALUE obj, uint32_t len, uint32_t newsize, st_table * index_tbl)
+static void
+init_iv_list(VALUE obj, uint32_t len, uint32_t newsize, st_table *index_tbl)
 {
     VALUE *ptr = ROBJECT_IVPTR(obj);
     VALUE *newptr;
@@ -1424,6 +1435,15 @@ rb_init_iv_list(VALUE obj, uint32_t len, uint32_t newsize, st_table * index_tbl)
     ROBJECT(obj)->as.heap.iv_index_tbl = index_tbl;
 }
 
+void
+rb_init_iv_list(VALUE obj)
+{
+    st_table *index_tbl = ROBJECT_IV_INDEX_TBL(obj);
+    uint32_t newsize = (uint32_t)index_tbl->num_entries;
+    uint32_t len = ROBJECT_NUMIV(obj);
+    init_iv_list(obj, len, newsize, index_tbl);
+}
+
 static VALUE
 obj_ivar_set(VALUE obj, ID id, VALUE val)
 {
@@ -1442,7 +1462,7 @@ obj_ivar_set(VALUE obj, ID id, VALUE val)
     len = ROBJECT_NUMIV(obj);
     if (len <= ivup.index) {
         uint32_t newsize = iv_index_tbl_newsize(&ivup);
-        rb_init_iv_list(obj, len, newsize, ivup.u.iv_index_tbl);
+        init_iv_list(obj, len, newsize, ivup.u.iv_index_tbl);
     }
     RB_OBJ_WRITE(obj, &ROBJECT_IVPTR(obj)[ivup.index], val);
 
@@ -3526,8 +3546,6 @@ rb_iv_get(VALUE obj, const char *name)
     ID id = rb_check_id_cstr(name, strlen(name), rb_usascii_encoding());
 
     if (!id) {
-        if (RTEST(ruby_verbose))
-            rb_warning("instance variable %s not initialized", name);
         return Qnil;
     }
     return rb_ivar_get(obj, id);

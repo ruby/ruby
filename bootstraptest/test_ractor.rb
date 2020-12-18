@@ -163,6 +163,15 @@ assert_equal 30.times.map { 'ok' }.to_s, %q{
   }
 } unless ENV['RUN_OPTS'] =~ /--jit-min-calls=5/ # This always fails with --jit-wait --jit-min-calls=5
 
+# Exception for empty select
+assert_match /specify at least one ractor/, %q{
+  begin
+    Ractor.select
+  rescue ArgumentError => e
+    e.message
+  end
+}
+
 # Outgoing port of a ractor will be closed when the Ractor is terminated.
 assert_equal 'ok', %q{
   r = Ractor.new do
@@ -227,6 +236,26 @@ assert_equal 'ok', %q{
   else
     'ng'
   end
+}
+
+# Can mix with Thread#interrupt and Ractor#take [Bug #17366]
+assert_equal 'err', %q{
+  Ractor.new{
+    t = Thread.current
+    begin
+      Thread.new{ t.raise "err" }.join
+    rescue => e
+      e.message
+    end
+  }.take
+}
+
+# Killed Ractor's thread yields nil
+assert_equal 'nil', %q{
+  Ractor.new{
+    t = Thread.current
+    Thread.new{ t.kill }.join
+  }.take.inspect #=> nil
 }
 
 # Ractor.yield raises Ractor::ClosedError when outgoing port is closed.
@@ -780,6 +809,53 @@ assert_equal 'can not access instance variables of shareable objects from non-ma
   end
 }
 
+# ivar in shareable-objects are not allowed to access from non-main Ractor, by @iv (get)
+assert_equal 'can not access instance variables of shareable objects from non-main Ractors', %q{
+  class Ractor
+    def setup
+      @foo = ''
+    end
+
+    def foo
+      @foo
+    end
+  end
+
+  shared = Ractor.new{}
+  shared.setup
+
+  r = Ractor.new shared do |shared|
+    p shared.foo
+  end
+
+  begin
+    r.take
+  rescue Ractor::RemoteError => e
+    e.cause.message
+  end
+}
+
+# ivar in shareable-objects are not allowed to access from non-main Ractor, by @iv (set)
+assert_equal 'can not access instance variables of shareable objects from non-main Ractors', %q{
+  class Ractor
+    def setup
+      @foo = ''
+    end
+  end
+
+  shared = Ractor.new{}
+
+  r = Ractor.new shared do |shared|
+    p shared.setup
+  end
+
+  begin
+    r.take
+  rescue Ractor::RemoteError => e
+    e.cause.message
+  end
+}
+
 # But a shareable object is frozen, it is allowed to access ivars from non-main Ractor
 assert_equal '11', %q{
   [Object.new, [], ].map{|obj|
@@ -890,6 +966,19 @@ assert_equal '0', %q{
   }.take
 }
 
+# ObjectSpace._id2ref can not handle unshareable objects with Ractors
+assert_equal 'ok', %q{
+  s = 'hello'
+
+  Ractor.new s.object_id do |id ;s|
+    begin
+      s = ObjectSpace._id2ref(id)
+    rescue => e
+      :ok
+    end
+  end.take
+}
+
 # Ractor.make_shareable(obj)
 assert_equal 'true', %q{
   class C
@@ -897,7 +986,13 @@ assert_equal 'true', %q{
       @a = 'foo'
       @b = 'bar'
     end
-    attr_reader :a, :b
+
+    def freeze
+      @c = [:freeze_called]
+      super
+    end
+
+    attr_reader :a, :b, :c
   end
   S = Struct.new(:s1, :s2)
   str = "hello"
@@ -938,6 +1033,7 @@ assert_equal 'true', %q{
     when C
       raise o.a.inspect unless o.a.frozen?
       raise o.b.inspect unless o.b.frozen?
+      raise o.c.inspect unless o.c.frozen? && o.c == [:freeze_called]
     when Rational
       raise o.numerator.inspect unless o.numerator.frozen?
     when Complex
@@ -1035,6 +1131,24 @@ assert_equal '[true, false]', %q{
   Ractor.new(s) { |s|
     [s.frozen?, s.instance_variable_get(:@x).frozen?]
   }.take
+}
+
+# Can not trap with not isolated Proc on non-main ractor
+assert_equal '[:ok, :ok]', %q{
+  a = []
+  Ractor.new{
+    trap(:INT){p :ok}
+  }.take
+  a << :ok
+
+  begin
+    Ractor.new{
+      s = 'str'
+      trap(:INT){p s}
+    }.take
+  rescue => Ractor::RemoteError
+    a << :ok
+  end
 }
 
 ###

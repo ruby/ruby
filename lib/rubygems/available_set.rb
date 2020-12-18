@@ -73,7 +73,7 @@ class Gem::AvailableSet
   end
 
   def match_platform!
-    @set.reject! {|t| !Gem::Platform.match(t.spec.platform) }
+    @set.reject! {|t| !Gem::Platform.match_spec?(t.spec) }
     @sorted = nil
     self
   end

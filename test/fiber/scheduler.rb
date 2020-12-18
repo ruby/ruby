@@ -117,6 +117,13 @@ class Scheduler
     Process.clock_gettime(Process::CLOCK_MONOTONIC)
   end
 
+  def process_wait(pid, flags)
+    # This is a very simple way to implement a non-blocking wait:
+    Thread.new do
+      Process::Status.wait(pid, flags)
+    end.value
+  end
+
   def io_wait(io, events, duration)
     unless (events & IO::READABLE).zero?
       @readable[io] = Fiber.current

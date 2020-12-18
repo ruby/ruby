@@ -33,6 +33,7 @@ RSpec.describe "real source plugins" do
 
               def install(spec, opts)
                 mkdir_p(install_path.parent)
+                require 'fileutils'
                 FileUtils.cp_r(path, install_path)
 
                 spec_path = install_path.join("\#{spec.full_name}.gemspec")
@@ -66,32 +67,7 @@ RSpec.describe "real source plugins" do
       expect(the_bundle).to include_gems("a-path-gem 1.0")
     end
 
-    it "writes to lock file", :bundler => "< 3" do
-      bundle "install"
-
-      lockfile_should_be <<-G
-        PLUGIN SOURCE
-          remote: #{lib_path("a-path-gem-1.0")}
-          type: mpath
-          specs:
-            a-path-gem (1.0)
-
-        GEM
-          remote: #{file_uri_for(gem_repo2)}/
-          specs:
-
-        PLATFORMS
-          #{generic_local_platform}
-
-        DEPENDENCIES
-          a-path-gem!
-
-        BUNDLED WITH
-           #{Bundler::VERSION}
-      G
-    end
-
-    it "writes to lock file", :bundler => "3" do
+    it "writes to lock file" do
       bundle "install"
 
       lockfile_should_be <<-G
@@ -362,34 +338,7 @@ RSpec.describe "real source plugins" do
       expect(the_bundle).to include_gems("ma-gitp-gem 1.0")
     end
 
-    it "writes to lock file", :bundler => "< 3" do
-      revision = revision_for(lib_path("ma-gitp-gem-1.0"))
-      bundle "install"
-
-      lockfile_should_be <<-G
-        PLUGIN SOURCE
-          remote: #{file_uri_for(lib_path("ma-gitp-gem-1.0"))}
-          type: gitp
-          revision: #{revision}
-          specs:
-            ma-gitp-gem (1.0)
-
-        GEM
-          remote: #{file_uri_for(gem_repo2)}/
-          specs:
-
-        PLATFORMS
-          #{generic_local_platform}
-
-        DEPENDENCIES
-          ma-gitp-gem!
-
-        BUNDLED WITH
-           #{Bundler::VERSION}
-      G
-    end
-
-    it "writes to lock file", :bundler => "3" do
+    it "writes to lock file" do
       revision = revision_for(lib_path("ma-gitp-gem-1.0"))
       bundle "install"
 

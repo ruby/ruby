@@ -718,11 +718,11 @@ RSpec.describe "bundle install with explicit source paths" do
       expect(bar_file).not_to be_file
 
       build_lib "foo" do |s|
-        s.write("lib/rubygems_plugin.rb", "FileUtils.touch('#{foo_file}')")
+        s.write("lib/rubygems_plugin.rb", "require 'fileutils'; FileUtils.touch('#{foo_file}')")
       end
 
       build_git "bar" do |s|
-        s.write("lib/rubygems_plugin.rb", "FileUtils.touch('#{bar_file}')")
+        s.write("lib/rubygems_plugin.rb", "require 'fileutils'; FileUtils.touch('#{bar_file}')")
       end
 
       install_gemfile <<-G

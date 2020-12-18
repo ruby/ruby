@@ -4260,40 +4260,6 @@ time_minus(VALUE time1, VALUE time2)
     return time_add(tobj, time1, time2, -1);
 }
 
-/*
- * call-seq:
- *   time.succ   -> new_time
- *
- * Returns a new Time object, one second later than _time_.
- * Time#succ is obsolete since 1.9.2 for time is not a discrete value.
- *
- *     t = Time.now       #=> 2007-11-19 08:23:57 -0600
- *     t.succ             #=> 2007-11-19 08:23:58 -0600
- *
- * Use instead <code>time + 1</code>
- *
- *     t + 1              #=> 2007-11-19 08:23:58 -0600
- */
-
-VALUE
-rb_time_succ(VALUE time)
-{
-    struct time_object *tobj;
-    struct time_object *tobj2;
-
-    rb_warn("Time#succ is obsolete; use time + 1");
-    GetTimeval(time, tobj);
-    time = time_new_timew(rb_cTime, wadd(tobj->timew, WINT2FIXWV(TIME_SCALE)));
-    GetTimeval(time, tobj2);
-    TZMODE_COPY(tobj2, tobj);
-    if (TZMODE_LOCALTIME_P(tobj2) && maybe_tzobj_p(tobj2->vtm.zone)) {
-        zone_localtime(tobj2->vtm.zone, time);
-    }
-    return time;
-}
-
-#define time_succ rb_time_succ
-
 static VALUE
 ndigits_denominator(VALUE ndigits)
 {
@@ -5923,7 +5889,6 @@ Init_Time(void)
     rb_define_method(rb_cTime, "+", time_plus, 1);
     rb_define_method(rb_cTime, "-", time_minus, 1);
 
-    rb_define_method(rb_cTime, "succ", time_succ, 0);
     rb_define_method(rb_cTime, "round", time_round, -1);
     rb_define_method(rb_cTime, "floor", time_floor, -1);
     rb_define_method(rb_cTime, "ceil", time_ceil, -1);

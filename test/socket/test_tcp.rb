@@ -69,6 +69,12 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     end
   end
 
+  def test_initialize_connect_timeout
+    assert_raise(Errno::ETIMEDOUT) do
+      TCPSocket.new("192.0.2.1", 80, connect_timeout: 0)
+    end
+  end
+
   def test_recvfrom
     TCPServer.open("localhost", 0) {|svr|
       th = Thread.new {

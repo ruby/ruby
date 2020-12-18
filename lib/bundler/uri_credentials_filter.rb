@@ -8,6 +8,8 @@ module Bundler
       return uri_to_anonymize if uri_to_anonymize.nil?
       uri = uri_to_anonymize.dup
       if uri.is_a?(String)
+        return uri if File.exist?(uri)
+
         require_relative "vendored_uri"
         uri = Bundler::URI(uri)
       end

@@ -88,60 +88,52 @@ class TestDir < Test::Unit::TestCase
   end
 
   def test_chdir
-    @pwd = Dir.pwd
-    @env_home = ENV["HOME"]
-    @env_logdir = ENV["LOGDIR"]
+    pwd = Dir.pwd
+    env_home = ENV["HOME"]
+    env_logdir = ENV["LOGDIR"]
     ENV.delete("HOME")
     ENV.delete("LOGDIR")
 
     assert_raise(Errno::ENOENT) { Dir.chdir(@nodir) }
     assert_raise(ArgumentError) { Dir.chdir }
-    ENV["HOME"] = @pwd
+    ENV["HOME"] = pwd
     Dir.chdir do
-      assert_equal(@pwd, Dir.pwd)
+      assert_equal(pwd, Dir.pwd)
       assert_raise(RuntimeError) { Dir.chdir(@root) }
-      assert_equal(@pwd, Dir.pwd)
+      assert_equal(pwd, Dir.pwd)
       Dir.chdir(@root) do
         assert_equal(@root, Dir.pwd)
       end
-      assert_equal(@pwd, Dir.pwd)
+      assert_equal(pwd, Dir.pwd)
     end
 
   ensure
     begin
-      Dir.chdir(@pwd)
+      Dir.chdir(pwd)
     rescue
-      abort("cannot return the original directory: #{ @pwd }")
+      abort("cannot return the original directory: #{ pwd }")
     end
-    if @env_home
-      ENV["HOME"] = @env_home
-    else
-      ENV.delete("HOME")
-    end
-    if @env_logdir
-      ENV["LOGDIR"] = @env_logdir
-    else
-      ENV.delete("LOGDIR")
-    end
+    ENV["HOME"] = env_home
+    ENV["LOGDIR"] = env_logdir
   end
 
   def test_chdir_conflict
-    @pwd = Dir.pwd
+    pwd = Dir.pwd
     q = Queue.new
     t = Thread.new do
       q.pop
-      Dir.chdir(@pwd) rescue $!
+      Dir.chdir(pwd) rescue $!
     end
-    Dir.chdir(@pwd) do
+    Dir.chdir(pwd) do
       q.push nil
       assert_instance_of(RuntimeError, t.value)
     end
 
     t = Thread.new do
       q.pop
-      Dir.chdir(@pwd){} rescue $!
+      Dir.chdir(pwd){} rescue $!
     end
-    Dir.chdir(@pwd) do
+    Dir.chdir(pwd) do
       q.push nil
       assert_instance_of(RuntimeError, t.value)
     end

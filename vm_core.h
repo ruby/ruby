@@ -238,6 +238,8 @@ union iseq_inline_storage_entry {
 };
 
 struct rb_calling_info {
+    const struct rb_callinfo *ci;
+    const struct rb_callcache *cc;
     VALUE block_handler;
     VALUE recv;
     int argc;
@@ -648,6 +650,8 @@ typedef struct rb_vm_struct {
 
     const struct rb_builtin_function *builtin_function_table;
     int builtin_inline_index;
+
+    struct rb_id_table *negative_cme_table;
 
 #if USE_VM_CLOCK
     uint32_t clock;
@@ -1631,7 +1635,7 @@ extern void rb_vmdebug_debug_print_post(const rb_execution_context_t *ec, const 
 #define SDR() rb_vmdebug_stack_dump_raw(GET_EC(), GET_EC()->cfp)
 #define SDR2(cfp) rb_vmdebug_stack_dump_raw(GET_EC(), (cfp))
 void rb_vm_bugreport(const void *);
-typedef RETSIGTYPE (*ruby_sighandler_t)(int);
+typedef void (*ruby_sighandler_t)(int);
 NORETURN(void rb_bug_for_fatal_signal(ruby_sighandler_t default_sighandler, int sig, const void *, const char *fmt, ...));
 
 /* functions about thread/vm execution */
@@ -1733,6 +1737,7 @@ rb_execution_context_t *rb_vm_main_ractor_ec(rb_vm_t *vm); // ractor.c
 #if RUBY_VM_THREAD_MODEL == 2
 RUBY_SYMBOL_EXPORT_BEGIN
 
+RUBY_EXTERN struct rb_ractor_struct *ruby_single_main_ractor; // ractor.c
 RUBY_EXTERN rb_vm_t *ruby_current_vm_ptr;
 RUBY_EXTERN rb_event_flag_t ruby_vm_event_flags;
 RUBY_EXTERN rb_event_flag_t ruby_vm_event_enabled_global_flags;
@@ -1802,8 +1807,13 @@ rb_current_thread(void)
 static inline rb_ractor_t *
 rb_current_ractor(void)
 {
-    const rb_execution_context_t *ec = GET_EC();
-    return rb_ec_ractor_ptr(ec);
+    if (ruby_single_main_ractor) {
+        return ruby_single_main_ractor;
+    }
+    else {
+        const rb_execution_context_t *ec = GET_EC();
+        return rb_ec_ractor_ptr(ec);
+    }
 }
 
 static inline rb_vm_t *

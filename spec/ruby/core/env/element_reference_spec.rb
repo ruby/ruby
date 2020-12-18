@@ -59,6 +59,7 @@ describe "ENV.[]" do
     Encoding.default_internal = nil
 
     locale = Encoding.find('locale')
+    locale = Encoding::UTF_8 if platform_is :windows
     locale = Encoding::BINARY if locale == Encoding::US_ASCII
     ENV[@variable] = "\xC3\xB8"
     ENV[@variable].encoding.should == locale

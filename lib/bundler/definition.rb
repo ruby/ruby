@@ -118,7 +118,7 @@ module Bundler
       end
       @unlocking ||= @unlock[:ruby] ||= (!@locked_ruby_version ^ !@ruby_version)
 
-      add_platforms unless Bundler.frozen_bundle?
+      add_current_platform unless Bundler.frozen_bundle?
 
       converge_path_sources_to_gemspec_sources
       @path_changes = converge_paths
@@ -269,7 +269,9 @@ module Bundler
           else
             # Run a resolve against the locally available gems
             Bundler.ui.debug("Found changes from the lockfile, re-resolving dependencies because #{change_reason}")
-            last_resolve.merge Resolver.resolve(expanded_dependencies, index, source_requirements, last_resolve, gem_version_promoter, additional_base_requirements_for_resolve, platforms)
+            platforms_for_resolve = platforms.one? {|p| generic(p) == Gem::Platform::RUBY } ? platforms : platforms.reject{|p| p == Gem::Platform::RUBY }
+            expanded_dependencies = expand_dependencies(dependencies + metadata_dependencies, @remote, platforms_for_resolve.map {|p| generic(p) })
+            last_resolve.merge Resolver.resolve(expanded_dependencies, index, source_requirements, last_resolve, gem_version_promoter, additional_base_requirements_for_resolve, platforms_for_resolve)
           end
 
         # filter out gems that _can_ be installed on multiple platforms, but don't need
@@ -547,17 +549,8 @@ module Bundler
 
     private
 
-    def add_platforms
-      (@dependencies.flat_map(&:expanded_platforms) + current_platforms).uniq.each do |platform|
-        add_platform(platform)
-      end
-    end
-
-    def current_platforms
-      [].tap do |platforms|
-        platforms << local_platform if Bundler.feature_flag.specific_platform?
-        platforms << generic_local_platform
-      end
+    def add_current_platform
+      add_platform(local_platform)
     end
 
     def change_reason
@@ -852,14 +845,6 @@ module Bundler
       @locked_specs[dep].any? {|s| s.satisfies?(dep) && (!dep.source || s.source.include?(dep.source)) }
     end
 
-    # This list of dependencies is only used in #resolve, so it's OK to add
-    # the metadata dependencies here
-    def expanded_dependencies
-      @expanded_dependencies ||= begin
-        expand_dependencies(dependencies + metadata_dependencies, @remote)
-      end
-    end
-
     def metadata_dependencies
       @metadata_dependencies ||= begin
         ruby_versions = ruby_version_requirements(@ruby_version)
@@ -886,7 +871,8 @@ module Bundler
       end
     end
 
-    def expand_dependencies(dependencies, remote = false)
+    def expand_dependencies(dependencies, remote = false, platforms = nil)
+      platforms ||= @platforms
       deps = []
       dependencies.each do |dep|
         dep = Dependency.new(dep, ">= 0") unless dep.respond_to?(:name)

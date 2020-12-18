@@ -54,6 +54,12 @@ RSpec.describe "bundle install" do
     end
 
     it "works for gems with multiple versions in its dependencies" do
+      build_repo2 do
+        build_gem "multiple_versioned_deps" do |s|
+          s.add_dependency "weakling", ">= 0.0.1", "< 0.1"
+        end
+      end
+
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
 
@@ -93,6 +99,12 @@ RSpec.describe "bundle install" do
     it "causes a conflict if child dependencies conflict" do
       bundle "config set force_ruby_platform true"
 
+      update_repo2 do
+        build_gem "rails_pinned_to_old_activesupport" do |s|
+          s.add_dependency "activesupport", "= 1.2.3"
+        end
+      end
+
       install_gemfile <<-G, :raise_on_error => false
         source "#{file_uri_for(gem_repo2)}"
         gem "activemerchant"
@@ -114,6 +126,12 @@ RSpec.describe "bundle install" do
     it "causes a conflict if a child dependency conflicts with the Gemfile" do
       bundle "config set force_ruby_platform true"
 
+      update_repo2 do
+        build_gem "rails_pinned_to_old_activesupport" do |s|
+          s.add_dependency "activesupport", "= 1.2.3"
+        end
+      end
+
       install_gemfile <<-G, :raise_on_error => false
         source "#{file_uri_for(gem_repo2)}"
         gem "rails_pinned_to_old_activesupport"
@@ -132,6 +150,12 @@ RSpec.describe "bundle install" do
     end
 
     it "does not cause a conflict if new dependencies in the Gemfile require older dependencies than the lockfile" do
+      update_repo2 do
+        build_gem "rails_pinned_to_old_activesupport" do |s|
+          s.add_dependency "activesupport", "= 1.2.3"
+        end
+      end
+
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
         gem 'rails', "2.3.2"

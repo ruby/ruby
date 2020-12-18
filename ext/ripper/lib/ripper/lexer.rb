@@ -185,11 +185,13 @@ class Ripper
     end
 
     def _push_token(tok)
-      @buf.push Elem.new([lineno(), column()], __callee__, tok, state())
+      e = Elem.new([lineno(), column()], __callee__, tok, state())
+      @buf.push(e)
+      e
     end
 
-    def on_error(mesg)
-      @errors.push Elem.new([lineno(), column()], __callee__, token(), state(), mesg)
+    def on_error(mesg, tok = token())
+      @errors.push Elem.new([lineno(), column()], __callee__, tok, state(), mesg)
     end
     PARSER_EVENTS.grep(/_error\z/) do |e|
       alias_method "on_#{e}", :on_error

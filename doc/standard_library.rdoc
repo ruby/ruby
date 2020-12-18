@@ -79,7 +79,6 @@ Tracer:: Outputs a source level execution trace of a Ruby program
 TSort:: Topological sorting using Tarjan's algorithm
 un.rb:: Utilities to replace common UNIX commands
 URI:: A Ruby module providing support for Uniform Resource Identifiers
-WEBrick:: An HTTP server toolkit for Ruby
 YAML:: Ruby client library for the Psych YAML implementation
 WeakRef:: Allows a referenced object to be garbage-collected
 

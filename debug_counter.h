@@ -18,6 +18,12 @@
 RB_DEBUG_COUNTER(mc_inline_hit)              // IMC hit
 RB_DEBUG_COUNTER(mc_inline_miss_klass)       // IMC miss by different class
 RB_DEBUG_COUNTER(mc_inline_miss_invalidated) // IMC miss by invalidated ME
+RB_DEBUG_COUNTER(mc_inline_miss_empty)       // IMC miss because prev is empty slot
+RB_DEBUG_COUNTER(mc_inline_miss_same_cc)     // IMC miss, but same CC
+RB_DEBUG_COUNTER(mc_inline_miss_same_cme)    // IMC miss, but same CME
+RB_DEBUG_COUNTER(mc_inline_miss_same_def)    // IMC miss, but same definition
+RB_DEBUG_COUNTER(mc_inline_miss_diff)        // IMC miss, different methods
+
 RB_DEBUG_COUNTER(mc_cme_complement)          // number of acquiring complement CME
 RB_DEBUG_COUNTER(mc_cme_complement_hit)      // number of cache hit for complemented CME
 
@@ -34,7 +40,8 @@ RB_DEBUG_COUNTER(ci_runtime) //           creating temporary CI
 // callcache
 RB_DEBUG_COUNTER(cc_new)        // number of CC
 RB_DEBUG_COUNTER(cc_temp)       //           dummy CC (stack-allocated)
-RB_DEBUG_COUNTER(cc_found_ccs)  // count for CC lookup success in CCS
+RB_DEBUG_COUNTER(cc_found_in_ccs)      // count for CC lookup success in CCS
+RB_DEBUG_COUNTER(cc_not_found_in_ccs)  // count for CC lookup success in CCS
 
 RB_DEBUG_COUNTER(cc_ent_invalidate) // count for invalidating cc (cc->klass = 0)
 RB_DEBUG_COUNTER(cc_cme_invalidate) // count for invalidating CME
@@ -45,10 +52,16 @@ RB_DEBUG_COUNTER(cc_invalidate_leaf_callable) //                        complime
 RB_DEBUG_COUNTER(cc_invalidate_tree)          // count for invalidating klass if klass has sublcasses
 RB_DEBUG_COUNTER(cc_invalidate_tree_cme)      //                        cme if cme is found in this class or superclasses
 RB_DEBUG_COUNTER(cc_invalidate_tree_callable) //                        complimented cache (subclasses)
+RB_DEBUG_COUNTER(cc_invalidate_negative)      // count for invalidating negative cache
 
 RB_DEBUG_COUNTER(ccs_free)   // count for free'ing ccs
 RB_DEBUG_COUNTER(ccs_maxlen) // maximum length of ccs
-RB_DEBUG_COUNTER(ccs_found)  // count for finding corresponding ccs on method lookup
+RB_DEBUG_COUNTER(ccs_found)      // count for finding corresponding ccs on method lookup
+RB_DEBUG_COUNTER(ccs_not_found)  // count for not found corresponding ccs on method lookup
+
+// vm_eval.c
+RB_DEBUG_COUNTER(call0_public)
+RB_DEBUG_COUNTER(call0_other)
 
 // iseq
 RB_DEBUG_COUNTER(iseq_num)    // number of total created iseq
@@ -308,6 +321,13 @@ RB_DEBUG_COUNTER(heap_xfree)
 RB_DEBUG_COUNTER(theap_alloc)
 RB_DEBUG_COUNTER(theap_alloc_fail)
 RB_DEBUG_COUNTER(theap_evacuate)
+
+// VM sync
+RB_DEBUG_COUNTER(vm_sync_lock)
+RB_DEBUG_COUNTER(vm_sync_lock_enter)
+RB_DEBUG_COUNTER(vm_sync_lock_enter_nb)
+RB_DEBUG_COUNTER(vm_sync_lock_enter_cr)
+RB_DEBUG_COUNTER(vm_sync_barrier)
 
 /* mjit_exec() counts */
 RB_DEBUG_COUNTER(mjit_exec)

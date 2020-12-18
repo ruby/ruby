@@ -240,6 +240,11 @@ class TestGemSource < Gem::TestCase
     refute rubygems_source.typo_squatting?("rubysertgems.org")
   end
 
+  def test_typo_squatting_false_positive
+    rubygems_source = Gem::Source.new("https://rubygems.org")
+    refute rubygems_source.typo_squatting?("rubygems.org")
+  end
+
   def test_typo_squatting_custom_distance_threshold
     rubygems_source = Gem::Source.new("https://rubgems.org")
     distance_threshold = 5

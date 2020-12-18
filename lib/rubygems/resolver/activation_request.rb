@@ -28,10 +28,18 @@ class Gem::Resolver::ActivationRequest
     when Gem::Specification
       @spec == other
     when Gem::Resolver::ActivationRequest
-      @spec == other.spec && @request == other.request
+      @spec == other.spec
     else
       false
     end
+  end
+
+  def eql?(other)
+    self == other
+  end
+
+  def hash
+    @spec.hash
   end
 
   ##

@@ -451,7 +451,7 @@ rsock_socket(int domain, int type, int proto)
 
 /* emulate blocking connect behavior on EINTR or non-blocking socket */
 static int
-wait_connectable(int fd)
+wait_connectable(int fd, struct timeval *timeout)
 {
     int sockerr, revents;
     socklen_t sockerrlen;
@@ -488,7 +488,7 @@ wait_connectable(int fd)
      *
      * Note: rb_wait_for_single_fd already retries on EINTR/ERESTART
      */
-    revents = rb_wait_for_single_fd(fd, RB_WAITFD_IN|RB_WAITFD_OUT, NULL);
+    revents = rb_wait_for_single_fd(fd, RB_WAITFD_IN|RB_WAITFD_OUT, timeout);
 
     if (revents < 0)
         return -1;
@@ -503,6 +503,12 @@ wait_connectable(int fd)
        * be defensive in case some platforms set SO_ERROR on the original,
        * interrupted connect()
        */
+
+	/* when the connection timed out, no errno is set and revents is 0. */
+	if (timeout && revents == 0) {
+	    errno = ETIMEDOUT;
+	    return -1;
+	}
       case EINTR:
 #ifdef ERESTART
       case ERESTART:
@@ -550,7 +556,7 @@ socks_connect_blocking(void *data)
 #endif
 
 int
-rsock_connect(int fd, const struct sockaddr *sockaddr, int len, int socks)
+rsock_connect(int fd, const struct sockaddr *sockaddr, int len, int socks, struct timeval *timeout)
 {
     int status;
     rb_blocking_function_t *func = connect_blocking;
@@ -574,7 +580,7 @@ rsock_connect(int fd, const struct sockaddr *sockaddr, int len, int socks)
 #ifdef EINPROGRESS
           case EINPROGRESS:
 #endif
-            return wait_connectable(fd);
+            return wait_connectable(fd, timeout);
         }
     }
     return status;

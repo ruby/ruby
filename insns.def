@@ -210,8 +210,8 @@ getinstancevariable
 (ID id, IVC ic)
 ()
 (VALUE val)
-/* "instance variable not initialized" warning can be hooked. */
-// attr bool leaf = false; /* has rb_warning() */
+/* Ractor crashes when it accesses class/module-level instances variables. */
+// attr bool leaf = false; /* has IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR() */
 {
     val = vm_getinstancevariable(GET_ISEQ(), GET_SELF(), id, ic);
 }
@@ -363,7 +363,7 @@ putstring
 ()
 (VALUE val)
 {
-    val = rb_str_resurrect(str);
+    val = rb_ec_str_resurrect(ec, str);
 }
 
 /* put concatenate strings */
@@ -426,7 +426,7 @@ newarray
 (VALUE val)
 // attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
 {
-    val = rb_ary_new4(num, STACK_ADDR_FROM_TOP(num));
+    val = rb_ec_ary_new_from_values(ec, num, STACK_ADDR_FROM_TOP(num));
 }
 
 /* put new array initialized with num values on the stack. There
@@ -891,11 +891,6 @@ invokeblock
 // attr rb_snum_t sp_inc = sp_inc_of_invokeblock(cd->ci);
 // attr rb_snum_t comptime_sp_inc = sp_inc_of_invokeblock(ci);
 {
-    if (UNLIKELY(vm_cc_call(cd->cc) != vm_invokeblock_i)) {
-        const struct rb_callcache *cc = vm_cc_new(0, NULL, vm_invokeblock_i);
-        RB_OBJ_WRITE(GET_ISEQ(), &cd->cc, cc);
-    }
-
     VALUE bh = VM_BLOCK_HANDLER_NONE;
     val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_invokeblock);
 

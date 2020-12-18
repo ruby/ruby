@@ -1,5 +1,6 @@
 /* included by thread.c */
 #include "ccan/list/list.h"
+#include "coroutine/Stack.h"
 
 static VALUE rb_cMutex, rb_cQueue, rb_cSizedQueue, rb_cConditionVariable;
 static VALUE rb_eClosedQueueError;
@@ -270,9 +271,14 @@ static VALUE call_rb_scheduler_block(VALUE mutex) {
     return rb_scheduler_block(rb_scheduler_current(), mutex, Qnil);
 }
 
-static VALUE remove_from_mutex_lock_waiters(VALUE arg) {
-    struct list_node *node = (struct list_node*)arg;
-    list_del(node);
+static VALUE
+delete_from_waitq(VALUE v)
+{
+    struct sync_waiter *w = (void *)v;
+    list_del(&w->node);
+
+    COROUTINE_STACK_FREE(w);
+
     return Qnil;
 }
 
@@ -291,12 +297,6 @@ do_mutex_lock(VALUE self, int interruptible_p)
     }
 
     if (rb_mutex_trylock(self) == Qfalse) {
-        struct sync_waiter w = {
-            .self = self,
-            .th = th,
-            .fiber = fiber
-        };
-
         if (mutex->fiber == fiber) {
             rb_raise(rb_eThreadError, "deadlock; recursive locking");
         }
@@ -304,9 +304,14 @@ do_mutex_lock(VALUE self, int interruptible_p)
         while (mutex->fiber != fiber) {
             VALUE scheduler = rb_scheduler_current();
             if (scheduler != Qnil) {
-                list_add_tail(&mutex->waitq, &w.node);
+                COROUTINE_STACK_LOCAL(struct sync_waiter, w);
+                w->self = self;
+                w->th = th;
+                w->fiber = fiber;
 
-                rb_ensure(call_rb_scheduler_block, self, remove_from_mutex_lock_waiters, (VALUE)&w.node);
+                list_add_tail(&mutex->waitq, &w->node);
+
+                rb_ensure(call_rb_scheduler_block, self, delete_from_waitq, (VALUE)w);
 
                 if (!mutex->fiber) {
                     mutex->fiber = fiber;
@@ -330,11 +335,18 @@ do_mutex_lock(VALUE self, int interruptible_p)
                     patrol_thread = th;
                 }
 
-                list_add_tail(&mutex->waitq, &w.node);
+                COROUTINE_STACK_LOCAL(struct sync_waiter, w);
+                w->self = self;
+                w->th = th;
+                w->fiber = fiber;
+
+                list_add_tail(&mutex->waitq, &w->node);
 
                 native_sleep(th, timeout); /* release GVL */
 
-                list_del(&w.node);
+                list_del(&w->node);
+
+                COROUTINE_STACK_FREE(w);
 
                 if (!mutex->fiber) {
                     mutex->fiber = fiber;
@@ -949,6 +961,8 @@ queue_sleep_done(VALUE p)
     list_del(&qw->w.node);
     qw->as.q->num_waiting--;
 
+    COROUTINE_STACK_FREE(qw);
+
     return Qfalse;
 }
 
@@ -959,6 +973,8 @@ szqueue_sleep_done(VALUE p)
 
     list_del(&qw->w.node);
     qw->as.sq->num_waiting_push--;
+
+    COROUTINE_STACK_FREE(qw);
 
     return Qfalse;
 }
@@ -977,20 +993,21 @@ queue_do_pop(VALUE self, struct rb_queue *q, int should_block)
         }
         else {
             rb_execution_context_t *ec = GET_EC();
-            struct queue_waiter qw;
 
             assert(RARRAY_LEN(q->que) == 0);
             assert(queue_closed_p(self) == 0);
 
-            qw.w.self = self;
-            qw.w.th = ec->thread_ptr;
-            qw.w.fiber = ec->fiber_ptr;
+            COROUTINE_STACK_LOCAL(struct queue_waiter, qw);
 
-            qw.as.q = q;
-            list_add_tail(queue_waitq(qw.as.q), &qw.w.node);
-            qw.as.q->num_waiting++;
+            qw->w.self = self;
+            qw->w.th = ec->thread_ptr;
+            qw->w.fiber = ec->fiber_ptr;
 
-            rb_ensure(queue_sleep, self, queue_sleep_done, (VALUE)&qw);
+            qw->as.q = q;
+            list_add_tail(queue_waitq(qw->as.q), &qw->w.node);
+            qw->as.q->num_waiting++;
+
+            rb_ensure(queue_sleep, self, queue_sleep_done, (VALUE)qw);
         }
     }
 
@@ -1223,18 +1240,18 @@ rb_szqueue_push(int argc, VALUE *argv, VALUE self)
         }
         else {
             rb_execution_context_t *ec = GET_EC();
-            struct queue_waiter qw;
+            COROUTINE_STACK_LOCAL(struct queue_waiter, qw);
             struct list_head *pushq = szqueue_pushq(sq);
 
-            qw.w.self = self;
-            qw.w.th = ec->thread_ptr;
-            qw.w.fiber = ec->fiber_ptr;
+            qw->w.self = self;
+            qw->w.th = ec->thread_ptr;
+            qw->w.fiber = ec->fiber_ptr;
 
-            qw.as.sq = sq;
-            list_add_tail(pushq, &qw.w.node);
+            qw->as.sq = sq;
+            list_add_tail(pushq, &qw->w.node);
             sq->num_waiting_push++;
 
-            rb_ensure(queue_sleep, self, szqueue_sleep_done, (VALUE)&qw);
+            rb_ensure(queue_sleep, self, szqueue_sleep_done, (VALUE)qw);
         }
     }
 
@@ -1445,15 +1462,6 @@ do_sleep(VALUE args)
     return rb_funcallv(p->mutex, id_sleep, 1, &p->timeout);
 }
 
-static VALUE
-delete_from_waitq(VALUE v)
-{
-    struct sync_waiter *w = (void *)v;
-    list_del(&w->node);
-
-    return Qnil;
-}
-
 /*
  * Document-method: ConditionVariable#wait
  * call-seq: wait(mutex, timeout=nil)
@@ -1474,14 +1482,13 @@ rb_condvar_wait(int argc, VALUE *argv, VALUE self)
 
     rb_scan_args(argc, argv, "11", &args.mutex, &args.timeout);
 
-    struct sync_waiter w = {
-        .self = args.mutex,
-        .th = ec->thread_ptr,
-        .fiber = ec->fiber_ptr,
-    };
+    COROUTINE_STACK_LOCAL(struct sync_waiter, w);
+    w->self = args.mutex;
+    w->th = ec->thread_ptr;
+    w->fiber = ec->fiber_ptr;
 
-    list_add_tail(&cv->waitq, &w.node);
-    rb_ensure(do_sleep, (VALUE)&args, delete_from_waitq, (VALUE)&w);
+    list_add_tail(&cv->waitq, &w->node);
+    rb_ensure(do_sleep, (VALUE)&args, delete_from_waitq, (VALUE)w);
 
     return self;
 }

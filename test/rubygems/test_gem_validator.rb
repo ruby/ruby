@@ -26,7 +26,7 @@ class TestGemValidator < Gem::TestCase
       @spec.file_name => [
         Gem::Validator::ErrorData.new('lib/b.rb', 'Missing file'),
         Gem::Validator::ErrorData.new('lib/c.rb', 'Extra file'),
-      ]
+      ],
     }
 
     assert_equal expected, alien

@@ -319,6 +319,18 @@ class TestPsych < Psych::TestCase
     }
   end
 
+  def test_safe_load_file_with_permitted_classe
+    Tempfile.create(['false', 'yml']) {|t|
+      t.binmode
+      t.write("--- !ruby/range\nbegin: 0\nend: 42\nexcl: false\n")
+      t.close
+      assert_equal 0..42, Psych.safe_load_file(t.path, permitted_classes: [Range])
+      assert_raises(Psych::DisallowedClass) {
+        Psych.safe_load_file(t.path)
+      }
+    }
+  end
+
   def test_parse_file
     Tempfile.create(['yikes', 'yml']) {|t|
       t.binmode

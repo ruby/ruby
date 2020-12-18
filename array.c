@@ -790,6 +790,58 @@ rb_ary_new_from_values(long n, const VALUE *elts)
     return rb_ary_tmp_new_from_values(rb_cArray, n, elts);
 }
 
+static VALUE
+ec_ary_alloc(rb_execution_context_t *ec, VALUE klass)
+{
+    RB_EC_NEWOBJ_OF(ec, ary, struct RArray, klass, T_ARRAY | RARRAY_EMBED_FLAG | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0));
+    /* Created array is:
+     *   FL_SET_EMBED((VALUE)ary);
+     *   ARY_SET_EMBED_LEN((VALUE)ary, 0);
+     */
+    return (VALUE)ary;
+}
+
+static VALUE
+ec_ary_new(rb_execution_context_t *ec, VALUE klass, long capa)
+{
+    VALUE ary,*ptr;
+
+    if (capa < 0) {
+	rb_raise(rb_eArgError, "negative array size (or size too big)");
+    }
+    if (capa > ARY_MAX_SIZE) {
+	rb_raise(rb_eArgError, "array size too big");
+    }
+
+    RUBY_DTRACE_CREATE_HOOK(ARRAY, capa);
+
+    ary = ec_ary_alloc(ec, klass);
+
+    if (capa > RARRAY_EMBED_LEN_MAX) {
+        ptr = ary_heap_alloc(ary, capa);
+        FL_UNSET_EMBED(ary);
+        ARY_SET_PTR(ary, ptr);
+        ARY_SET_CAPA(ary, capa);
+        ARY_SET_HEAP_LEN(ary, 0);
+    }
+
+    return ary;
+}
+
+VALUE
+rb_ec_ary_new_from_values(rb_execution_context_t *ec, long n, const VALUE *elts)
+{
+    VALUE ary;
+
+    ary = ec_ary_new(ec, rb_cArray, n);
+    if (n > 0 && elts) {
+	ary_memcpy(ary, 0, n, elts);
+	ARY_SET_LEN(ary, n);
+    }
+
+    return ary;
+}
+
 VALUE
 rb_ary_tmp_new(long capa)
 {

@@ -13,7 +13,7 @@ jobs:
         # This also ensures the needed ruby_version_is guards are there, see spec/README.md.
         ruby:
           - ruby-2.5
-          - ruby-2.6
+#         - ruby-2.6
           - ruby-2.7
 
     steps:

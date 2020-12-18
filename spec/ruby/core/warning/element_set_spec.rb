@@ -10,11 +10,11 @@ ruby_version_is '2.7' do
     describe ":experimental" do
       before do
         ruby_version_is ""..."3.0" do
-          @src = 'case 0; in a; end'
+          @src = 'case [0, 1]; in [a, b]; end'
         end
 
         ruby_version_is "3.0" do
-          @src = '1 => a'
+          @src = '[0, 1] => [a, b]'
         end
       end
 

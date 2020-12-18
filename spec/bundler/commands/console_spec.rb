@@ -2,8 +2,43 @@
 
 RSpec.describe "bundle console", :bundler => "< 3", :readline => true do
   before :each do
+    build_repo2 do
+      # A minimal fake pry console
+      build_gem "pry" do |s|
+        s.write "lib/pry.rb", <<-RUBY
+          class Pry
+            class << self
+              def toplevel_binding
+                unless defined?(@toplevel_binding) && @toplevel_binding
+                  TOPLEVEL_BINDING.eval %{
+                    def self.__pry__; binding; end
+                    Pry.instance_variable_set(:@toplevel_binding, __pry__)
+                    class << self; undef __pry__; end
+                  }
+                end
+                @toplevel_binding.eval('private')
+                @toplevel_binding
+              end
+
+              def __pry__
+                while line = gets
+                  begin
+                    puts eval(line, toplevel_binding).inspect.sub(/^"(.*)"$/, '=> \\1')
+                  rescue Exception => e
+                    puts "\#{e.class}: \#{e.message}"
+                    puts e.backtrace.first
+                  end
+                end
+              end
+              alias start __pry__
+            end
+          end
+        RUBY
+      end
+    end
+
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "#{file_uri_for(gem_repo2)}"
       gem "rack"
       gem "activesupport", :group => :test
       gem "rack_middleware", :group => :development
@@ -28,7 +63,7 @@ RSpec.describe "bundle console", :bundler => "< 3", :readline => true do
 
   it "starts another REPL if configured as such" do
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "#{file_uri_for(gem_repo2)}"
       gem "pry"
     G
     bundle "config set console pry"
@@ -87,7 +122,7 @@ RSpec.describe "bundle console", :bundler => "< 3", :readline => true do
 
   it "performs an automatic bundle install" do
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "#{file_uri_for(gem_repo2)}"
       gem "rack"
       gem "activesupport", :group => :test
       gem "rack_middleware", :group => :development

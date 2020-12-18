@@ -15,6 +15,10 @@ RSpec.describe "bundle update" do
   describe "with no arguments", :bundler => "< 3" do
     it "updates the entire bundle" do
       update_repo2 do
+        build_gem "rack", "1.2" do |s|
+          s.executables = "rackup"
+        end
+
         build_gem "activesupport", "3.0"
       end
 
@@ -38,6 +42,10 @@ RSpec.describe "bundle update" do
   describe "with --all", :bundler => "3" do
     it "updates the entire bundle" do
       update_repo2 do
+        build_gem "rack", "1.2" do |s|
+          s.executables = "rackup"
+        end
+
         build_gem "activesupport", "3.0"
       end
 
@@ -103,6 +111,10 @@ RSpec.describe "bundle update" do
   describe "with a top level dependency" do
     it "unlocks all child dependencies that are unrelated to other locked dependencies" do
       update_repo2 do
+        build_gem "rack", "1.2" do |s|
+          s.executables = "rackup"
+        end
+
         build_gem "activesupport", "3.0"
       end
 
@@ -124,7 +136,12 @@ RSpec.describe "bundle update" do
 
   describe "with a child dependency" do
     it "should update the child dependency" do
-      update_repo2
+      update_repo2 do
+        build_gem "rack", "1.2" do |s|
+          s.executables = "rackup"
+        end
+      end
+
       bundle "update rack"
       expect(the_bundle).to include_gems "rack 1.2"
     end
@@ -217,6 +234,10 @@ RSpec.describe "bundle update" do
         gem "rack"
       G
       update_repo2 do
+        build_gem "rack", "1.2" do |s|
+          s.executables = "rackup"
+        end
+
         build_gem "activesupport", "3.0"
       end
       bundle "update --group development"
@@ -269,6 +290,10 @@ RSpec.describe "bundle update" do
           gem "rack"
         G
         update_repo2 do
+          build_gem "rack", "1.2" do |s|
+            s.executables = "rackup"
+          end
+
           build_gem "activesupport", "3.0"
         end
         bundle "update --group development"
@@ -446,6 +471,10 @@ RSpec.describe "bundle update in more complicated situations" do
     G
 
     update_repo2 do
+      build_gem "rack", "1.2" do |s|
+        s.executables = "rackup"
+      end
+
       build_gem "thin", "2.0" do |s|
         s.add_dependency "rack"
       end

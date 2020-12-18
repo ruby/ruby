@@ -44,7 +44,6 @@
 require "rubygems"
 require 'rubygems/security'
 require 'rubygems/user_interaction'
-require 'zlib'
 
 class Gem::Package
   include Gem::UserInteraction
@@ -186,6 +185,8 @@ class Gem::Package
   # Creates a new package that will read or write to the file +gem+.
 
   def initialize(gem, security_policy) # :notnew:
+    require 'zlib'
+
     @gem = gem
 
     @build_time      = Gem.source_date_epoch
@@ -297,7 +298,7 @@ class Gem::Package
 
     setup_signer(
       signer_options: {
-        expiration_length_days: Gem.configuration.cert_expiration_length_days
+        expiration_length_days: Gem.configuration.cert_expiration_length_days,
       }
     )
 

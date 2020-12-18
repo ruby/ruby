@@ -111,6 +111,18 @@ when /aix/
       end
     end
   end
+when /haiku/
+  libdir = '/system/lib'
+  case [0].pack('L!').size
+  when 4
+    # 32-bit ruby
+    libdir = '/system/lib/x86' if File.directory? '/system/lib/x86'
+  when 8
+    # 64-bit ruby
+    libdir = '/system/lib/' if File.directory? '/system/lib/'
+  end
+  libc_so = File.join(libdir, "libroot.so")
+  libm_so = File.join(libdir, "libroot.so")
 else
   libc_so = ARGV[0] if ARGV[0] && ARGV[0][0] == ?/
   libm_so = ARGV[1] if ARGV[1] && ARGV[1][0] == ?/

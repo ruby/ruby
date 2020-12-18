@@ -18,6 +18,7 @@ static ID id_block;
 static ID id_unblock;
 
 static ID id_kernel_sleep;
+static ID id_process_wait;
 
 static ID id_io_read;
 static ID id_io_write;
@@ -32,6 +33,7 @@ Init_Scheduler(void)
     id_unblock = rb_intern_const("unblock");
 
     id_kernel_sleep = rb_intern_const("kernel_sleep");
+    id_process_wait = rb_intern_const("process_wait");
 
     id_io_read = rb_intern_const("io_read");
     id_io_write = rb_intern_const("io_write");
@@ -39,7 +41,7 @@ Init_Scheduler(void)
 }
 
 VALUE
-rb_scheduler_get()
+rb_scheduler_get(void)
 {
     rb_thread_t *thread = GET_THREAD();
     VM_ASSERT(thread);
@@ -76,7 +78,7 @@ rb_threadptr_scheduler_current(rb_thread_t *thread)
 }
 
 VALUE
-rb_scheduler_current()
+rb_scheduler_current(void)
 {
     return rb_threadptr_scheduler_current(GET_THREAD());
 }
@@ -116,6 +118,18 @@ VALUE
 rb_scheduler_kernel_sleepv(VALUE scheduler, int argc, VALUE * argv)
 {
     return rb_funcallv(scheduler, id_kernel_sleep, argc, argv);
+}
+
+int
+rb_scheduler_supports_process_wait(VALUE scheduler)
+{
+    return rb_respond_to(scheduler, id_process_wait);
+}
+
+VALUE
+rb_scheduler_process_wait(VALUE scheduler, rb_pid_t pid, int flags)
+{
+    return rb_funcall(scheduler, id_process_wait, 2, PIDT2NUM(pid), RB_INT2NUM(flags));
 }
 
 VALUE

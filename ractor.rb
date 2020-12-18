@@ -71,6 +71,8 @@ class Ractor
   #   #   and r is :yield
   #
   def self.select(*ractors, yield_value: yield_unspecified = true, move: false)
+    raise ArgumentError, 'specify at least one ractor or `yield_value`' if yield_unspecified && ractors.empty?
+
     __builtin_cstmt! %q{
       const VALUE *rs = RARRAY_CONST_PTR_TRANSIENT(ractors);
       VALUE rv;
@@ -92,10 +94,10 @@ class Ractor
     alias recv receive
   end
 
+  # same as Ractor.receive
   private def receive
     __builtin_cexpr! %q{
-      // TODO: check current actor
-      ractor_receive(ec, RACTOR_PTR(self))
+      ractor_receive(ec, rb_ec_ractor_ptr(ec))
     }
   end
   alias recv receive

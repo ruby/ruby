@@ -33,7 +33,7 @@ module Net
     end
 
     def teardown
-      @server_thread&.exit
+      @server_thread&.exit&.join
       @server_socket&.close
       @client_socket&.close
     end

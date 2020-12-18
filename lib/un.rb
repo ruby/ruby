@@ -326,7 +326,11 @@ def httpd
         "ServerName=NAME", "ServerSoftware=NAME",
         "SSLCertificate=CERT", "SSLPrivateKey=KEY") do
     |argv, options|
-    require 'webrick'
+    begin
+      require 'webrick'
+    rescue LoadError
+      abort "webrick is not found. You may need to `gem install webrick` to install webrick."
+    end
     opt = options[:RequestTimeout] and options[:RequestTimeout] = opt.to_i
     [:Port, :MaxClients].each do |name|
       opt = options[name] and (options[name] = Integer(opt)) rescue nil

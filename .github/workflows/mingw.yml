@@ -107,6 +107,7 @@ jobs:
           [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding("IBM437")
           [Console]::InputEncoding  = [System.Text.Encoding]::GetEncoding("IBM437")
           $jobs = [int](1.5 * $env:NUMBER_OF_PROCESSORS)
+          if ($env:BUNDLER_VERSION) { Remove-Item env:\BUNDLER_VERSION }
           make test-all TESTOPTS="-j $jobs --retry --job-status=normal --show-skip --timeout-scale=1.5"
 
       - name: test-spec
@@ -119,7 +120,7 @@ jobs:
           [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding("IBM437")
           [Console]::InputEncoding  = [System.Text.Encoding]::GetEncoding("IBM437")
           ruby -v
-          ruby ../mspec/bin/mspec -j
+          ruby ../mspec/bin/mspec -I../../tool/lib -j
 
       - uses: k0kubun/action-slack@v2.0.0
         with:

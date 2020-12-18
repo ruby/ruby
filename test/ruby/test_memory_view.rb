@@ -197,6 +197,57 @@ class TestMemoryView < Test::Unit::TestCase
     assert_equal(expected_result, members)
   end
 
+  def test_rb_memory_view_extract_item_members
+    m = MemoryViewTestUtils
+    assert_equal(1, m.extract_item_members([1].pack("c"), "c"))
+    assert_equal([1, 2], m.extract_item_members([1, 2].pack("ii"), "ii"))
+    assert_equal([1, 2, 3], m.extract_item_members([1, 2, 3].pack("cls"), "cls"))
+  end
+
+  def test_rb_memory_view_extract_item_members_endianness
+    m = MemoryViewTestUtils
+    assert_equal([0x0102, 0x0304], m.extract_item_members([1, 2, 3, 4].pack("c*"), "S>2"))
+    assert_equal([0x0102, 0x0304], m.extract_item_members([1, 2, 3, 4].pack("c*"), "n2"))
+    assert_equal([0x0201, 0x0403], m.extract_item_members([1, 2, 3, 4].pack("c*"), "S<2"))
+    assert_equal([0x0201, 0x0403], m.extract_item_members([1, 2, 3, 4].pack("c*"), "v2"))
+    assert_equal(0x01020304, m.extract_item_members([1, 2, 3, 4].pack("c*"), "L>"))
+    assert_equal(0x01020304, m.extract_item_members([1, 2, 3, 4].pack("c*"), "N"))
+    assert_equal(0x04030201, m.extract_item_members([1, 2, 3, 4].pack("c*"), "L<"))
+    assert_equal(0x04030201, m.extract_item_members([1, 2, 3, 4].pack("c*"), "V"))
+    assert_equal(0x0102030405060708, m.extract_item_members([1, 2, 3, 4, 5, 6, 7, 8].pack("c*"), "Q>"))
+    assert_equal(0x0807060504030201, m.extract_item_members([1, 2, 3, 4, 5, 6, 7, 8].pack("c*"), "Q<"))
+  end
+
+  def test_rb_memory_view_extract_item_members_float
+    m = MemoryViewTestUtils
+    packed = [1.23].pack("f")
+    assert_equal(packed.unpack("f")[0], m.extract_item_members(packed, "f"))
+  end
+
+  def test_rb_memory_view_extract_item_members_float_endianness
+    m = MemoryViewTestUtils
+    hi, lo = [1.23].pack("f").unpack("L")[0].divmod(0x10000)
+    packed = [lo, hi].pack("S*")
+    assert_equal(packed.unpack("e")[0], m.extract_item_members(packed, "e"))
+    packed = [hi, lo].pack("S*")
+    assert_equal(packed.unpack("g")[0], m.extract_item_members(packed, "g"))
+  end
+
+  def test_rb_memory_view_extract_item_members_doble
+    m = MemoryViewTestUtils
+    packed = [1.23].pack("d")
+    assert_equal(1.23, m.extract_item_members(packed, "d"))
+  end
+
+  def test_rb_memory_view_extract_item_members_doble_endianness
+    m = MemoryViewTestUtils
+    hi, lo = [1.23].pack("d").unpack("Q")[0].divmod(0x10000)
+    packed = [lo, hi].pack("L*")
+    assert_equal(packed.unpack("E")[0], m.extract_item_members(packed, "E"))
+    packed = [hi, lo].pack("L*")
+    assert_equal(packed.unpack("G")[0], m.extract_item_members(packed, "G"))
+  end
+
   def test_rb_memory_view_available_p
     es = MemoryViewTestUtils::ExportableString.new("ruby")
     assert_equal(true, MemoryViewTestUtils.available?(es))
@@ -246,25 +297,45 @@ class TestMemoryView < Test::Unit::TestCase
                  column_major_strides)
   end
 
-  def test_rb_memory_view_get_item_pointer
+  def test_rb_memory_view_get_item_pointer_single_member
     buf = [ 1, 2, 3, 4,
             5, 6, 7, 8,
             9, 10, 11, 12 ].pack("l!*")
     shape = [3, 4]
-    mv = MemoryViewTestUtils::MultiDimensionalView.new(buf, shape, nil)
+    mv = MemoryViewTestUtils::MultiDimensionalView.new(buf, "l!", shape, nil)
     assert_equal(1, mv[[0, 0]])
     assert_equal(4, mv[[0, 3]])
     assert_equal(6, mv[[1, 1]])
     assert_equal(10, mv[[2, 1]])
+  end
 
+  def test_rb_memory_view_get_item_pointer_multiple_members
     buf = [ 1, 2,  3,  4,  5,  6,  7,  8,
-            9, 10, 11, 12, 13, 14, 15, 16 ].pack("l!*")
-    shape = [2, 8]
-    strides = [4*sizeof(:long)*2, sizeof(:long)*2]
-    mv = MemoryViewTestUtils::MultiDimensionalView.new(buf, shape, strides)
-    assert_equal(1, mv[[0, 0]])
-    assert_equal(5, mv[[0, 2]])
-    assert_equal(9, mv[[1, 0]])
-    assert_equal(15, mv[[1, 3]])
+            -1, -2, -3, -4, -5, -6, -7, -8].pack("s*")
+    shape = [2, 4]
+    strides = [4*sizeof(:short)*2, sizeof(:short)*2]
+    mv = MemoryViewTestUtils::MultiDimensionalView.new(buf, "ss", shape, strides)
+    assert_equal([1, 2], mv[[0, 0]])
+    assert_equal([5, 6], mv[[0, 2]])
+    assert_equal([-1, -2], mv[[1, 0]])
+    assert_equal([-7, -8], mv[[1, 3]])
+  end
+
+  def test_ractor
+    assert_in_out_err([], <<-"end;", ["[5, 6]", "[-7, -8]"], [])
+      require "-test-/memory_view"
+      require "rbconfig/sizeof"
+      $VERBOSE = nil
+      r = Ractor.new RbConfig::SIZEOF["short"] do |sizeof_short|
+        buf = [ 1, 2,  3,  4,  5,  6,  7,  8,
+                -1, -2, -3, -4, -5, -6, -7, -8].pack("s*")
+        shape = [2, 4]
+        strides = [4*sizeof_short*2, sizeof_short*2]
+        mv = MemoryViewTestUtils::MultiDimensionalView.new(buf, "ss", shape, strides)
+        p mv[[0, 2]]
+        mv[[1, 3]]
+      end
+      p r.take
+    end;
   end
 end

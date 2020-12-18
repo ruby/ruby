@@ -26,6 +26,7 @@
 #include "internal/imemo.h"
 #include "internal/numeric.h"
 #include "internal/range.h"
+#include "internal/rational.h"
 #include "ruby/ruby.h"
 
 /*
@@ -3601,6 +3602,88 @@ arith_seq_first(int argc, VALUE *argv, VALUE self)
     return rb_call_super(argc, argv);
 }
 
+static inline VALUE
+num_plus(VALUE a, VALUE b)
+{
+    if (RB_INTEGER_TYPE_P(a)) {
+        return rb_int_plus(a, b);
+    }
+    else if (RB_FLOAT_TYPE_P(a)) {
+        return rb_float_plus(a, b);
+    }
+    else if (RB_TYPE_P(a, T_RATIONAL)) {
+        return rb_rational_plus(a, b);
+    }
+    else {
+        return rb_funcallv(a, '+', 1, &b);
+    }
+}
+
+static inline VALUE
+num_minus(VALUE a, VALUE b)
+{
+    if (RB_INTEGER_TYPE_P(a)) {
+        return rb_int_minus(a, b);
+    }
+    else if (RB_FLOAT_TYPE_P(a)) {
+        return rb_float_minus(a, b);
+    }
+    else if (RB_TYPE_P(a, T_RATIONAL)) {
+        return rb_rational_minus(a, b);
+    }
+    else {
+        return rb_funcallv(a, '-', 1, &b);
+    }
+}
+
+static inline VALUE
+num_mul(VALUE a, VALUE b)
+{
+    if (RB_INTEGER_TYPE_P(a)) {
+        return rb_int_mul(a, b);
+    }
+    else if (RB_FLOAT_TYPE_P(a)) {
+        return rb_float_mul(a, b);
+    }
+    else if (RB_TYPE_P(a, T_RATIONAL)) {
+        return rb_rational_mul(a, b);
+    }
+    else {
+        return rb_funcallv(a, '*', 1, &b);
+    }
+}
+
+static inline VALUE
+num_idiv(VALUE a, VALUE b)
+{
+    VALUE q;
+    if (RB_INTEGER_TYPE_P(a)) {
+        q = rb_int_idiv(a, b);
+    }
+    else if (RB_FLOAT_TYPE_P(a)) {
+        q = rb_float_div(a, b);
+    }
+    else if (RB_TYPE_P(a, T_RATIONAL)) {
+        q = rb_rational_div(a, b);
+    }
+    else {
+        q = rb_funcallv(a, idDiv, 1, &b);
+    }
+
+    if (RB_INTEGER_TYPE_P(q)) {
+        return q;
+    }
+    else if (RB_FLOAT_TYPE_P(q)) {
+        return rb_float_floor(q, 0);
+    }
+    else if (RB_TYPE_P(q, T_RATIONAL)) {
+        return rb_rational_floor(q, 0);
+    }
+    else {
+        return rb_funcall(q, rb_intern("floor"), 0);
+    }
+}
+
 /*
  * call-seq:
  *   aseq.last    -> num or nil
@@ -3625,7 +3708,7 @@ arith_seq_last(int argc, VALUE *argv, VALUE self)
     b = arith_seq_begin(self);
     s = arith_seq_step(self);
 
-    len_1 = rb_int_idiv(rb_int_minus(e, b), s);
+    len_1 = num_idiv(num_minus(e, b), s);
     if (rb_num_negative_int_p(len_1)) {
         if (argc == 0) {
             return Qnil;
@@ -3633,9 +3716,9 @@ arith_seq_last(int argc, VALUE *argv, VALUE self)
         return rb_ary_new_capa(0);
     }
 
-    last = rb_int_plus(b, rb_int_mul(s, len_1));
+    last = num_plus(b, num_mul(s, len_1));
     if ((last_is_adjusted = arith_seq_exclude_end_p(self) && rb_equal(last, e))) {
-        last = rb_int_minus(last, s);
+        last = num_minus(last, s);
     }
 
     if (argc == 0) {
@@ -3844,22 +3927,22 @@ arith_seq_each(VALUE self)
         return self;
     }
 
-    len_1 = rb_int_idiv(rb_int_minus(e, c), s);
-    last = rb_int_plus(c, rb_int_mul(s, len_1));
+    len_1 = num_idiv(num_minus(e, c), s);
+    last = num_plus(c, num_mul(s, len_1));
     if (x && rb_equal(last, e)) {
-        last = rb_int_minus(last, s);
+        last = num_minus(last, s);
     }
 
     if (rb_num_negative_int_p(s)) {
         while (NUM_GE(c, last)) {
             rb_yield(c);
-            c = rb_int_plus(c, s);
+            c = num_plus(c, s);
         }
     }
     else {
         while (NUM_GE(last, c)) {
             rb_yield(c);
-            c = rb_int_plus(c, s);
+            c = num_plus(c, s);
         }
     }
 

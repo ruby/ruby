@@ -37,7 +37,7 @@
 
 /** @cond INTERNAL_MACRO */
 #define RBIMPL_EMBED_LEN_MAX_OF(T) \
-    RBIMPL_CAST((int)(sizeof(VALUE[RVALUE_EMBED_LEN_MAX]) / sizeof(T)))
+    RBIMPL_CAST((int)(sizeof(VALUE[RVALUE_EMBED_LEN_MAX]) / (sizeof(T))))
 /** @endcond */
 
 enum ruby_rvalue_flags { RVALUE_EMBED_LEN_MAX = 3 };

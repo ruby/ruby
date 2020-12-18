@@ -8,7 +8,7 @@ module Bundler
     class Index < Base
       def specs(_gem_names)
         Bundler.rubygems.fetch_all_remote_specs(remote)
-      rescue Gem::RemoteFetcher::FetchError, OpenSSL::SSL::SSLError, Net::HTTPFatalError => e
+      rescue Gem::RemoteFetcher::FetchError => e
         case e.message
         when /certificate verify failed/
           raise CertificateFailureError.new(display_uri)
@@ -19,8 +19,7 @@ module Bundler
           raise BadAuthenticationError, remote_uri if remote_uri.userinfo
           raise AuthenticationRequiredError, remote_uri
         else
-          Bundler.ui.trace e
-          raise HTTPError, "Could not fetch specs from #{display_uri}"
+          raise HTTPError, "Could not fetch specs from #{display_uri} due to underlying error <#{e.message}>"
         end
       end
 

@@ -361,10 +361,7 @@ RSpec.describe "install in deployment or frozen mode" do
       bundle "config --local deployment true"
       bundle :install, :raise_on_error => false
       expect(err).to include("deployment mode")
-      # The drive letter of the Windows environment is fragile value in GitHub Actions
-      unless Gem.win_platform?
-        expect(err).to include("You have deleted from the Gemfile:\n* source: #{lib_path("rack-1.0")} (at master@#{revision_for(lib_path("rack-1.0"))[0..6]}")
-      end
+      expect(err).to include("You have deleted from the Gemfile:\n* source: #{lib_path("rack-1.0")} (at master@#{revision_for(lib_path("rack-1.0"))[0..6]}")
       expect(err).not_to include("You have added to the Gemfile")
       expect(err).not_to include("You have changed in the Gemfile")
     end
@@ -388,10 +385,7 @@ RSpec.describe "install in deployment or frozen mode" do
       bundle "config --local deployment true"
       bundle :install, :raise_on_error => false
       expect(err).to include("deployment mode")
-      # The drive letter of the Windows environment is fragile value in GitHub Actions
-      unless Gem.win_platform?
-        expect(err).to include("You have changed in the Gemfile:\n* rack from `no specified source` to `#{lib_path("rack")} (at master@#{revision_for(lib_path("rack"))[0..6]})`")
-      end
+      expect(err).to include("You have changed in the Gemfile:\n* rack from `no specified source` to `#{lib_path("rack")} (at master@#{revision_for(lib_path("rack"))[0..6]})`")
       expect(err).not_to include("You have added to the Gemfile")
       expect(err).not_to include("You have deleted from the Gemfile")
     end

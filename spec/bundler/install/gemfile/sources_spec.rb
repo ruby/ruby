@@ -597,6 +597,10 @@ RSpec.describe "bundle install with gems on multiple sources" do
       G
 
       build_repo2 do
+        build_gem "rack", "1.2" do |s|
+          s.executables = "rackup"
+        end
+
         build_gem "bar"
       end
 

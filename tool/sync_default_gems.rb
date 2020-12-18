@@ -17,7 +17,6 @@ REPOSITORIES = {
   "io-nonblock": 'ruby/io-nonblock',
   "io-wait": 'ruby/io-wait',
   csv: 'ruby/csv',
-  webrick: 'ruby/webrick',
   dbm: 'ruby/dbm',
   gdbm: 'ruby/gdbm',
   etc: 'ruby/etc',
@@ -320,7 +319,7 @@ def sync_default_gems(gem)
     rm_rf(%w[ext/digest test/digest])
     cp_r("#{upstream}/ext/digest", "ext")
     mkdir_p("#{upstream}/ext/digest/lib")
-    cp_r("#{upstream}/lib/digest.rb", "ext/digest/lib")
+    cp_r("#{upstream}/lib/digest.rb", "ext/digest/lib/")
     cp_r("#{upstream}/test/digest", "test")
     cp_r("#{upstream}/digest.gemspec", "ext/digest")
     `git checkout ext/digest/depend ext/digest/*/depend`

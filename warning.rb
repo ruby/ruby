@@ -5,7 +5,7 @@ module Kernel
   module_function
 
   # call-seq:
-  #    warn(*msgs, uplevel: nil)   -> nil
+  #    warn(*msgs, uplevel: nil, category: nil)   -> nil
   #
   # If warnings have been disabled (for example with the
   # <code>-W0</code> flag), does nothing.  Otherwise,
@@ -38,6 +38,9 @@ module Kernel
   #  <em>produces:</em>
   #
   #    baz.rb:6: warning: invalid call to foo
+  #
+  # If the +category+ keyword argument is given, it is passed to
+  # Warning.warn method.
   #
   def warn(*msgs, uplevel: nil, category: nil)
     Primitive.rb_warn_m(msgs, uplevel, category)

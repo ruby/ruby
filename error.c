@@ -73,6 +73,8 @@ static VALUE rb_cWarningBuffer;
 
 static ID id_warn;
 static ID id_category;
+static ID id_deprecated;
+static ID id_experimental;
 static VALUE sym_category;
 static VALUE warning_categories;
 
@@ -160,10 +162,10 @@ rb_warning_category_from_name(VALUE category)
 {
     rb_warning_category_t cat = RB_WARN_CATEGORY_NONE;
     Check_Type(category, T_SYMBOL);
-    if (category == ID2SYM(rb_intern("deprecated"))) {
+    if (category == ID2SYM(id_deprecated)) {
         cat = RB_WARN_CATEGORY_DEPRECATED;
     }
-    else if (category == ID2SYM(rb_intern("experimental"))) {
+    else if (category == ID2SYM(id_experimental)) {
         cat = RB_WARN_CATEGORY_EXPERIMENTAL;
     }
     else {
@@ -186,7 +188,7 @@ rb_warning_category_enabled_p(rb_warning_category_t category)
 }
 
 /*
- * call-seq
+ * call-seq:
  *    Warning[category]  -> true or false
  *
  * Returns the flag to show the warning messages for +category+.
@@ -212,7 +214,7 @@ rb_warning_s_aref(VALUE mod, VALUE category)
 }
 
 /*
- * call-seq
+ * call-seq:
  *    Warning[category] = flag -> flag
  *
  * Sets the warning flags for +category+.
@@ -238,7 +240,7 @@ rb_warning_s_aset(VALUE mod, VALUE category, VALUE flag)
  *
  * Writes warning message +msg+ to $stderr. This method is called by
  * Ruby for all emitted warnings. A +category+ may be included with
- * the warning, but is ignored by default.
+ * the warning.
  *
  * See the documentation of the Warning module for how to customize this.
  */
@@ -248,13 +250,17 @@ rb_warning_s_warn(int argc, VALUE *argv, VALUE mod)
 {
     VALUE str;
     VALUE opt;
-    VALUE category;
+    VALUE category = Qnil;
 
     rb_scan_args(argc, argv, "1:", &str, &opt);
     if (!NIL_P(opt)) rb_get_kwargs(opt, &id_category, 0, 1, &category);
 
     Check_Type(str, T_STRING);
     rb_must_asciicompat(str);
+    if (!NIL_P(category)) {
+        rb_warning_category_t cat = rb_warning_category_from_name(category);
+        if (!rb_warning_category_enabled_p(cat)) return Qnil;
+    }
     rb_write_error_str(str);
     return Qnil;
 }
@@ -301,7 +307,8 @@ rb_warning_warn(VALUE mod, VALUE str)
 
 
 static int
-rb_warning_warn_arity(void) {
+rb_warning_warn_arity(void)
+{
     return rb_method_entry_arity(rb_method_entry(rb_singleton_class(rb_mWarning), id_warn));
 }
 
@@ -470,7 +477,7 @@ rb_warn_deprecated(const char *fmt, const char *suggest, ...)
     rb_str_cat_cstr(mesg, " is deprecated");
     if (suggest) rb_str_catf(mesg, "; use %s instead", suggest);
     rb_str_cat_cstr(mesg, "\n");
-    rb_warn_category(mesg, ID2SYM(rb_intern("deprecated")));
+    rb_warn_category(mesg, ID2SYM(id_deprecated));
 }
 
 void
@@ -484,7 +491,7 @@ rb_warn_deprecated_to_remove(const char *fmt, const char *removal, ...)
     va_end(args);
     rb_str_set_len(mesg, RSTRING_LEN(mesg) - 1);
     rb_str_catf(mesg, " is deprecated and will be removed in Ruby %s\n", removal);
-    rb_warn_category(mesg, ID2SYM(rb_intern("deprecated")));
+    rb_warn_category(mesg, ID2SYM(id_deprecated));
 }
 
 static inline int
@@ -2574,6 +2581,8 @@ syserr_eqq(VALUE self, VALUE exc)
  */
 
 /*
+ *  Document-class: Exception
+ *
  *  \Class Exception and its subclasses are used to communicate between
  *  Kernel#raise and +rescue+ statements in <code>begin ... end</code> blocks.
  *
@@ -2817,6 +2826,8 @@ Init_Exception(void)
     id_i_path = rb_intern_const("@path");
     id_warn = rb_intern_const("warn");
     id_category = rb_intern_const("category");
+    id_deprecated = rb_intern_const("deprecated");
+    id_experimental = rb_intern_const("experimental");
     id_top = rb_intern_const("top");
     id_bottom = rb_intern_const("bottom");
     id_iseq = rb_make_internal_id();

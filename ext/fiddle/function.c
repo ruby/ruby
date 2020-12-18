@@ -77,18 +77,6 @@ rb_fiddle_new_function(VALUE address, VALUE arg_types, VALUE ret_type)
     return rb_class_new_instance(3, argv, cFiddleFunction);
 }
 
-static int
-parse_keyword_arg_i(VALUE key, VALUE value, VALUE self)
-{
-    if (key == ID2SYM(rb_intern("name"))) {
-	rb_iv_set(self, "@name", value);
-    } else {
-	rb_raise(rb_eArgError, "unknown keyword: %"PRIsVALUE,
-		 RB_OBJ_STRING(key));
-    }
-    return ST_CONTINUE;
-}
-
 static VALUE
 normalize_argument_types(const char *name,
                          VALUE arg_types,
@@ -134,14 +122,39 @@ static VALUE
 initialize(int argc, VALUE argv[], VALUE self)
 {
     ffi_cif * cif;
-    VALUE ptr, arg_types, ret_type, abi, kwds;
+    VALUE ptr, arg_types, ret_type, abi, kwargs;
+    VALUE name = Qnil;
+    VALUE need_gvl = Qfalse;
     int c_ret_type;
     bool is_variadic = false;
     ffi_abi c_ffi_abi;
     void *cfunc;
 
-    rb_scan_args(argc, argv, "31:", &ptr, &arg_types, &ret_type, &abi, &kwds);
+    rb_scan_args(argc, argv, "31:", &ptr, &arg_types, &ret_type, &abi, &kwargs);
     rb_iv_set(self, "@closure", ptr);
+
+    if (!NIL_P(kwargs)) {
+        enum {
+            kw_name,
+            kw_need_gvl,
+            kw_max_,
+        };
+        static ID kw[kw_max_];
+        VALUE args[kw_max_];
+        if (!kw[0]) {
+            kw[kw_name] = rb_intern_const("name");
+            kw[kw_need_gvl] = rb_intern_const("need_gvl");
+        }
+        rb_get_kwargs(kwargs, kw, 0, kw_max_, args);
+        if (args[kw_name] != Qundef) {
+            name = args[kw_name];
+        }
+        if (args[kw_need_gvl] != Qundef) {
+            need_gvl = args[kw_need_gvl];
+        }
+    }
+    rb_iv_set(self, "@name", name);
+    rb_iv_set(self, "@need_gvl", need_gvl);
 
     ptr = rb_Integer(ptr);
     cfunc = NUM2PTR(ptr);
@@ -169,8 +182,6 @@ initialize(int argc, VALUE argv[], VALUE self)
     rb_iv_set(self, "@return_type", ret_type);
     rb_iv_set(self, "@abi", abi);
     rb_iv_set(self, "@is_variadic", is_variadic ? Qtrue : Qfalse);
-
-    if (!NIL_P(kwds)) rb_hash_foreach(kwds, parse_keyword_arg_i, self);
 
     TypedData_Get_Struct(self, ffi_cif, &function_data_type, cif);
     cif->arg_types = NULL;
@@ -205,6 +216,7 @@ function_call(int argc, VALUE argv[], VALUE self)
     VALUE arg_types;
     VALUE cPointer;
     VALUE is_variadic;
+    VALUE need_gvl;
     int n_arg_types;
     int n_fixed_args = 0;
     int n_call_args = 0;
@@ -218,6 +230,7 @@ function_call(int argc, VALUE argv[], VALUE self)
     arg_types = rb_iv_get(self, "@argument_types");
     cPointer = rb_const_get(mFiddle, rb_intern("Pointer"));
     is_variadic = rb_iv_get(self, "@is_variadic");
+    need_gvl = rb_iv_get(self, "@need_gvl");
 
     n_arg_types = RARRAY_LENINT(arg_types);
     n_fixed_args = n_arg_types;
@@ -355,7 +368,12 @@ function_call(int argc, VALUE argv[], VALUE self)
     args.values[i_call] = NULL;
     args.fn = (void(*)(void))NUM2PTR(cfunc);
 
-    (void)rb_thread_call_without_gvl(nogvl_ffi_call, &args, 0, 0);
+    if (RTEST(need_gvl)) {
+        ffi_call(args.cif, args.fn, &(args.retval), args.values);
+    }
+    else {
+        (void)rb_thread_call_without_gvl(nogvl_ffi_call, &args, 0, 0);
+    }
 
     rb_funcall(mFiddle, rb_intern("last_error="), 1, INT2NUM(errno));
 #if defined(_WIN32)
@@ -433,6 +451,9 @@ Init_fiddle_function(void)
      * Caller must ensure the underlying function is called in a
      * thread-safe manner if running in a multi-threaded process.
      *
+     * Note that many Ruby C-extension APIs are thread-safe to call
+     * only when the Function is constructed with <code>need_gvl: true</code>.
+     *
      * For an example see Fiddle::Function
      *
      */
@@ -440,13 +461,20 @@ Init_fiddle_function(void)
 
     /*
      * Document-method: new
-     * call-seq: new(ptr, args, ret_type, abi = DEFAULT)
+     * call-seq: new(ptr,
+     *               args,
+     *               ret_type,
+     *               abi = DEFAULT,
+     *               name: nil,
+     *               need_gvl: false)
      *
      * Constructs a Function object.
      * * +ptr+ is a referenced function, of a Fiddle::Handle
      * * +args+ is an Array of arguments, passed to the +ptr+ function
      * * +ret_type+ is the return type of the function
      * * +abi+ is the ABI of the function
+     * * +name+ is the name of the function
+     * * +need_gvl+ is whether GVL is needed to call the function
      *
      */
     rb_define_method(cFiddleFunction, "initialize", initialize, -1);

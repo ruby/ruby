@@ -27,8 +27,7 @@ struct rb_callable_method_entry_struct; /* in method.h */
 struct rb_method_definition_struct;     /* in method.h */
 struct rb_execution_context_struct;     /* in vm_core.h */
 struct rb_control_frame_struct;         /* in vm_core.h */
-struct rb_calling_info;                 /* in vm_core.h */
-struct rb_call_data;
+struct rb_callinfo;                     /* in vm_core.h */
 
 enum method_missing_reason {
     MISSING_NOENTRY   = 0x00,
@@ -93,7 +92,7 @@ VALUE rb_eql_opt(VALUE obj1, VALUE obj2);
 
 struct rb_iseq_struct;
 MJIT_SYMBOL_EXPORT_BEGIN
-void rb_vm_search_method_slowpath(VALUE cd_owner, struct rb_call_data *cd, VALUE klass);
+const struct rb_callcache *rb_vm_search_method_slowpath(const struct rb_callinfo *ci, VALUE klass);
 MJIT_SYMBOL_EXPORT_END
 
 /* vm_method.c */

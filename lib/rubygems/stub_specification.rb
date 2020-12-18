@@ -29,7 +29,7 @@ class Gem::StubSpecification < Gem::BasicSpecification
     # in their require paths, so lets take advantage of that by pre-allocating
     # a require path list for that case.
     REQUIRE_PATH_LIST = { # :nodoc:
-      'lib' => ['lib'].freeze
+      'lib' => ['lib'].freeze,
     }.freeze
 
     def initialize(data, extensions)

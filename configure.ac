@@ -194,8 +194,7 @@ AS_IF([test "${CXX}" = "g++" -a -z "${GXX}"], [
     # AC_PROG_CXX sets $CXX to "g++" when it purposefully finds that there is
     # _no_ g++.  This brain-damaged design must be worked around.  Thankfully,
     # similar thing doesn't happen for AC_PROG_CC.
-    AC_MSG_NOTICE([C++ features disabled due to lack of a C++ compiler.])
-    AS_UNSET(CXX)
+    rb_there_is_in_fact_no_gplusplus_but_autoconf_is_cheating_us=true
 ])
 
 test x"$target_alias" = x &&
@@ -681,7 +680,7 @@ AS_IF([test "$GCC" = yes], [
 
     # -fstack-protector
     AS_CASE(["$target_os"],
-    [mingw*], [
+    [mingw*|haiku*], [
 	stack_protector=no
     ])
     AS_IF([test -z "${stack_protector+set}"], [
@@ -1134,7 +1133,10 @@ main()
 [	LIBS="-lm $LIBS"])
 : ${ORIG_LIBS=$LIBS}
 
-AS_IF([test -n "${CXX}"], [
+AS_IF([test -n "${rb_there_is_in_fact_no_gplusplus_but_autoconf_is_cheating_us}"], [
+    AC_MSG_NOTICE([Test skipped due to lack of a C++ compiler.])
+],
+[test -n "${CXX}"], [
     RUBY_WERROR_FLAG([
         AC_MSG_CHECKING([whether CXXFLAGS is valid])
         AC_LANG_PUSH(C++)
@@ -1152,7 +1154,6 @@ AC_CHECK_LIB(crypt, crypt)      # glibc (GNU/Linux, GNU/Hurd, GNU/kFreeBSD)
 AC_CHECK_LIB(dl, dlopen)	# Dynamic linking for SunOS/Solaris and SYSV
 AC_CHECK_LIB(dld, shl_load)	# Dynamic linking for HP-UX
 AC_CHECK_LIB(socket, shutdown)  # SunOS/Solaris
-AC_CHECK_LIB(anl, getaddrinfo_a)
 
 dnl Checks for header files.
 AC_HEADER_DIRENT
@@ -1376,78 +1377,6 @@ RUBY_REPLACE_TYPE(clockid_t, [], CLOCKID, [@%:@ifdef HAVE_TIME_H
 @%:@ifdef HAVE_SYS_TIME_H
 @%:@ include <sys/time.h>
 @%:@endif])
-
-AC_CACHE_CHECK(for prototypes, rb_cv_have_prototypes,
-  [AC_TRY_COMPILE([int foo(int x) { return 0; }], [return foo(10);],
-	rb_cv_have_prototypes=yes,
-	rb_cv_have_prototypes=no)])
-AS_IF([test "$rb_cv_have_prototypes" = yes], [
-  AC_DEFINE(HAVE_PROTOTYPES)
-])
-
-AC_CACHE_CHECK(token paste string, rb_cv_tokenpaste,
-  [AC_TRY_COMPILE([@%:@define paste(a,b) a@%:@@%:@b],
-		  [int xy = 1; return paste(x,y);],
-		  rb_cv_tokenpaste=ansi,
-		  rb_cv_tokenpaste=knr)])
-AS_IF([test "$rb_cv_tokenpaste" = ansi], [
-  AC_DEFINE(TOKEN_PASTE(x,y),[x@%:@@%:@y])
-], [
-  AC_DEFINE(TOKEN_PASTE(x,y),[x/**/y])
-])
-
-AC_CACHE_CHECK(stringization, rb_cv_stringization, [
-  rb_cv_stringization=no
-  for string in "#expr" '"expr"'; do
-    AC_COMPILE_IFELSE([
-      AC_LANG_BOOL_COMPILE_TRY([
-#define STRINGIZE0(expr) $string
-#define STRINGIZE(expr) STRINGIZE0(expr)
-#undef real_test_for_stringization
-#define test_for_stringization -.real_test_for_stringization.-
-const char stringized[[]] = STRINGIZE(test_for_stringization);
-], [sizeof(stringized) == 32])],
-      [rb_cv_stringization="$string"; break],
-      [rb_cv_stringization=no])
-  done]
-)
-AC_DEFINE(STRINGIZE(expr),STRINGIZE0(expr))
-AS_IF([test x"$rb_cv_stringization" != xno -a "$rb_cv_stringization" != "#expr"], [
-  AC_DEFINE_UNQUOTED(STRINGIZE0(expr),$rb_cv_stringization)
-  AC_DEFINE(OLD_FASHIONED_STRINGIZATION,1)
-])
-
-AC_CACHE_CHECK([string literal concatenation],
-  rb_cv_string_literal_concatenation, [
-  AC_COMPILE_IFELSE([
-    AC_LANG_BOOL_COMPILE_TRY([
-const char concatenated_literal[[]] = "literals" "to"
-  "be" "concatenated.";
-], [sizeof(concatenated_literal) == 26])],
-    [rb_cv_string_literal_concatenation=yes],
-    [rb_cv_string_literal_concatenation=no])]
-)
-AS_IF([test "$rb_cv_string_literal_concatenation" = no], [
-  AC_MSG_ERROR([No string literal concatenation])
-])
-
-AC_CACHE_CHECK(for variable length prototypes and stdarg.h, rb_cv_stdarg,
-  [AC_TRY_COMPILE([
-#include <stdarg.h>
-int foo(int x, ...) {
-	va_list va;
-	va_start(va, x);
-	va_arg(va, int);
-	va_arg(va, char *);
-	va_arg(va, double);
-	return 0;
-}
-], [return foo(10, "", 3.14);],
-	rb_cv_stdarg=yes,
-	rb_cv_stdarg=no)])
-AS_IF([test "$rb_cv_stdarg" = yes], [
-  AC_DEFINE(HAVE_STDARG_PROTOTYPES)
-])
 
 # __VA_ARGS__ is also tested in AC_PROG_CC_C99 since autoconf 2.60a (around
 # 2006). The check below is redundant and should always success.  Remain not
@@ -1714,9 +1643,9 @@ RUBY_CHECK_SIZEOF(size_t, [int long void*], [], [@%:@include <sys/types.h>])
 RUBY_CHECK_SIZEOF(ptrdiff_t, size_t, [], [@%:@include <stddef.h>])
 RUBY_CHECK_PRINTF_PREFIX(size_t, z)
 RUBY_CHECK_PRINTF_PREFIX(ptrdiff_t, t)
-AC_STRUCT_ST_BLKSIZE
-AC_STRUCT_ST_BLOCKS
-AC_STRUCT_ST_RDEV
+AC_CHECK_MEMBERS([struct stat.st_blksize])
+AC_CHECK_MEMBERS([struct stat.st_blocks])
+AC_CHECK_MEMBERS([struct stat.st_rdev])
 RUBY_CHECK_SIZEOF([struct stat.st_size], [off_t int long "long long"], [], [@%:@include <sys/stat.h>])
 AS_IF([test "$ac_cv_member_struct_stat_st_blocks" = yes], [
     RUBY_CHECK_SIZEOF([struct stat.st_blocks], [off_t int long "long long"], [], [@%:@include <sys/stat.h>])
@@ -1816,7 +1745,6 @@ AS_IF([test $rb_cv_stack_end_address != no], [
 
 dnl Checks for library functions.
 AC_TYPE_GETGROUPS
-AC_TYPE_SIGNAL
 AS_CASE(["${target_cpu}-${target_os}:${target_archs}"],
 [powerpc-darwin*], [
   AC_LIBSOURCES(alloca.c)
@@ -1944,7 +1872,6 @@ AC_CHECK_FUNCS(fsync)
 AC_CHECK_FUNCS(ftruncate)
 AC_CHECK_FUNCS(ftruncate64)		# used for Win32 platform
 AC_CHECK_FUNCS(getattrlist)
-AC_CHECK_FUNCS(getaddrinfo_a)
 AC_CHECK_FUNCS(getcwd)
 AC_CHECK_FUNCS(getgidx)
 AC_CHECK_FUNCS(getgrnam)
@@ -2515,6 +2442,9 @@ AS_CASE([$rb_cv_coroutine], [yes|''], [
         [*-openbsd*], [
             rb_cv_coroutine=copy
         ],
+        [*-haiku*], [
+            rb_cv_coroutine=copy
+        ],
         [
             rb_cv_coroutine=ucontext
         ]
@@ -2741,9 +2671,7 @@ AS_IF([test "$rb_cv_binary_elf" = yes], [
   AC_CHECK_HEADERS([elf.h elf_abi.h])
   AS_IF([test $ac_cv_header_elf_h = yes -o $ac_cv_header_elf_abi_h = yes], [
     AC_LIBOBJ([addr2line])
-    AS_IF([test "x$compress_debug_sections" = xzlib], [
-      AC_CHECK_LIB([z], [uncompress])
-    ])
+    AC_CHECK_LIB([z], [uncompress])
   ])
 ])
 

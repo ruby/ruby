@@ -148,6 +148,7 @@ typedef intptr_t pid_t;
 
 // The unit structure that holds metadata of ISeq for MJIT.
 struct rb_mjit_unit {
+    struct list_node unode;
     // Unique order number of unit.
     int id;
     // Dlopen handle of the loaded object file.
@@ -159,7 +160,8 @@ struct rb_mjit_unit {
 #endif
     // Only used by unload_units. Flag to check this unit is currently on stack or not.
     bool used_code_p;
-    struct list_node unode;
+    // True if this is still in active_units but it's to be lazily removed
+    bool stale_p;
     // mjit_compile's optimization switches
     struct rb_mjit_compile_info compile_info;
     // captured CC values, they should be marked with iseq.
@@ -225,6 +227,8 @@ static rb_nativethread_cond_t mjit_gc_wakeup;
 static int in_gc = 0;
 // True when JIT is working.
 static bool in_jit = false;
+// True when active_units has at least one stale_p=true unit.
+static bool pending_stale_p = false;
 // The times when unload_units is requested. unload_units is called after some requests.
 static int unload_requests = 0;
 // The total number of unloaded units.
@@ -500,9 +504,14 @@ mjit_valid_class_serial_p(rb_serial_t class_serial)
 static struct rb_mjit_unit *
 get_from_list(struct rb_mjit_unit_list *list)
 {
-    struct rb_mjit_unit *unit = NULL, *next, *best = NULL;
+    while (in_gc) {
+        verbose(3, "Waiting wakeup from GC");
+        rb_native_cond_wait(&mjit_gc_wakeup, &mjit_engine_mutex);
+    }
+    in_jit = true; // Lock GC
 
     // Find iseq with max total_calls
+    struct rb_mjit_unit *unit = NULL, *next, *best = NULL;
     list_for_each_safe(&list->head, unit, next, unode) {
         if (unit->iseq == NULL) { // ISeq is GCed.
             remove_from_list(unit, list);
@@ -514,6 +523,11 @@ get_from_list(struct rb_mjit_unit_list *list)
             best = unit;
         }
     }
+
+    in_jit = false; // Unlock GC
+    verbose(3, "Sending wakeup signal to client in a mjit-worker for GC");
+    rb_native_cond_signal(&mjit_client_wakeup);
+
     if (best) {
         remove_from_list(best, list);
     }
@@ -910,8 +924,8 @@ compile_compact_jit_code(char* c_file)
     }
     // We need to check again here because we could've waited on GC above
     bool iseq_gced = false;
-    struct rb_mjit_unit *child_unit = 0;
-    list_for_each(&active_units.head, child_unit, unode) {
+    struct rb_mjit_unit *child_unit = 0, *next;
+    list_for_each_safe(&active_units.head, child_unit, next, unode) {
         if (child_unit->iseq == NULL) { // ISeq is GC-ed
             iseq_gced = true;
             verbose(1, "JIT compaction: A method for JIT code u%d is obsoleted. Compaction will be skipped.", child_unit->id);
@@ -1303,7 +1317,7 @@ unload_units(void)
         prev_queue_calls = max_queue_calls;
 
         bool unloaded_p = false;
-        list_for_each(&active_units.head, unit, unode) {
+        list_for_each_safe(&active_units.head, unit, next, unode) {
             if (unit->used_code_p) // We can't unload code on stack.
                 continue;
 
@@ -1359,16 +1373,40 @@ mjit_worker(void)
     while (!stop_worker_p) {
         struct rb_mjit_unit *unit;
 
-        // wait until unit is available
+        // Wait until a unit becomes available
         CRITICAL_SECTION_START(3, "in worker dequeue");
-        while ((list_empty(&unit_queue.head) || active_units.length >= mjit_opts.max_cache_size) && !stop_worker_p) {
+        while ((pending_stale_p || list_empty(&unit_queue.head) || active_units.length >= mjit_opts.max_cache_size) && !stop_worker_p) {
             rb_native_cond_wait(&mjit_worker_wakeup, &mjit_engine_mutex);
             verbose(3, "Getting wakeup from client");
 
+            // Lazily move active_units to stale_units to avoid race conditions around active_units with compaction
+            if (pending_stale_p) {
+                pending_stale_p = false;
+                struct rb_mjit_unit *next;
+                list_for_each_safe(&active_units.head, unit, next, unode) {
+                    if (unit->stale_p) {
+                        unit->stale_p = false;
+                        remove_from_list(unit, &active_units);
+                        add_to_list(unit, &stale_units);
+                    }
+                }
+            }
+
+            // Unload some units as needed
             if (unload_requests >= throttle_threshold) {
+                while (in_gc) {
+                    verbose(3, "Waiting wakeup from GC");
+                    rb_native_cond_wait(&mjit_gc_wakeup, &mjit_engine_mutex);
+                }
+                in_jit = true; // Lock GC
+
                 RB_DEBUG_COUNTER_INC(mjit_unload_units);
                 unload_units();
                 unload_requests = 0;
+
+                in_jit = false; // Unlock GC
+                verbose(3, "Sending wakeup signal to client in a mjit-worker for GC");
+                rb_native_cond_signal(&mjit_client_wakeup);
             }
             if (active_units.length == mjit_opts.max_cache_size && mjit_opts.wait) { // Sometimes all methods may be in use
                 mjit_opts.max_cache_size++; // avoid infinite loop on `rb_mjit_wait_call`. Note that --jit-wait is just for testing.

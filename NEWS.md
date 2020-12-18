@@ -52,22 +52,31 @@ sufficient information, see the ChangeLog file or Redmine
   instead of a warning. yield in a class definition outside of a method
   is now a SyntaxError instead of a LocalJumpError.  [[Feature #15575]]
 
-* Pattern matching is no longer experimental. [[Feature #17260]]
+* Pattern matching(`case/in`) is no longer experimental. [[Feature #17260]]
 
-* One-line pattern matching now uses `=>` instead of `in`.  [EXPERIMENTAL]
-  [[Feature #17260]]
+* One-line pattern matching is redesigned.  [EXPERIMENTAL]
+    * `=>` is added. It can be used as like rightward assignment.
+      [[Feature #17260]]
 
-    ```ruby
-    # version 3.0
-    {a: 0, b: 1} => {a:}
-    p a # => 0
+        ```ruby
+        0 => a
+        p a #=> 0
 
-    # version 2.7
-    {a: 0, b: 1} in {a:}
-    p a # => 0
-    ```
+        {b: 0, c: 1} => {b:}
+        p b #=> 0
+        ```
 
-* Find pattern is added.  [EXPERIMENTAL]
+    * `in` is changed to return `true` or `false`. [[Feature #17371]]
+
+        ```ruby
+        # version 3.0
+        0 in 1 #=> false
+
+        # version 2.7
+        0 in 1 #=> raise NoMatchingPatternError
+        ```
+
+* Find-pattern is added.  [EXPERIMENTAL]
   [[Feature #16828]]
 
     ```ruby
@@ -82,9 +91,12 @@ sufficient information, see the ChangeLog file or Redmine
 
 * When a class variable is overtaken by the same definition in an
   ancestor class/module, a RuntimeError is now raised (previously,
-  it only issued a warning in verbose mode.  Additionally, accessing a
+  it only issued a warning in verbose mode).  Additionally, accessing a
   class variable from the toplevel scope is now a RuntimeError.
   [[Bug #14541]]
+
+* Assigning to a numbered parameter is now a SyntaxError instead of
+  a warning.
 
 * Endless method definition is added.  [EXPERIMENTAL]
   [[Feature #16746]]
@@ -96,9 +108,12 @@ sufficient information, see the ChangeLog file or Redmine
 * Interpolated String literals are no longer frozen when
   `# frozen-string-literal: true` is used. [[Feature #17104]]
 
-* A static analysis foundation is introduced.  See "Static analysis" section in detail.
-  * RBS is introduced. It is a type definition language for Ruby programs.
-  * TypeProf is experimentally bundled. It is a type analysis tool for Ruby programs.
+* A {static analysis}[rdoc-label:label-Static+analysis] foundation is
+  introduced.
+    * {RBS}[rdoc-label:label-RBS] is introduced. It is a type definition
+      language for Ruby programs.
+    * {TypeProf}[rdoc-label:label-TypeProf] is experimentally bundled. It is a
+      type analysis tool for Ruby programs.
 
 ## Command line options
 
@@ -149,9 +164,15 @@ Outstanding ones only.
     * ENV.except has been added, which returns a hash excluding the
       given keys and their values.  [[Feature #15822]]
 
+    * Windows: Read ENV names and values as UTF-8 encoded Strings
+      [[Feature #12650]]
+
 * Encoding
 
     * Added new encoding IBM720.  [[Feature #16233]]
+
+    * Changed default for Encoding.default_external to UTF-8 on Windows
+      [[Feature #16604]]
 
 * Fiber
 
@@ -175,8 +196,8 @@ Outstanding ones only.
 
 * Hash
 
-    * Hash#transform_keys now accepts a hash that maps keys to new
-      keys.  [[Feature #16274]]
+    * Hash#transform_keys and transform_keys! now accepts a hash that maps
+      keys to new keys.  [[Feature #16274]]
 
     * Hash#except has been added, which returns a hash excluding the
       given keys and their values.  [[Feature #15822]]
@@ -248,8 +269,19 @@ Outstanding ones only.
 
 * Ractor
 
-    * New class added to enable parallel execution. See doc/ractor.md for
+    * New class added to enable parallel execution. See rdoc-ref:ractor.md for
       more details.
+
+* Random
+
+    * `Random::DEFAULT` now refers to the `Random` class instead of being a `Random` instance,
+      so it can work with `Ractor`.
+      [[Feature #17322]]
+
+    * `Random::DEFAULT` is deprecated since its value is now confusing and it is no longer global,
+      use `Kernel.rand`/`Random.rand` directly, or create a `Random` instance with `Random.new` instead.
+      [[Feature #17351]]
+
 
 * String
 
@@ -302,7 +334,7 @@ Outstanding ones only.
 
     * Introduce Fiber.set_scheduler for intercepting blocking operations and
       Fiber.scheduler for accessing the current scheduler. See
-      doc/scheduler.md for more details. [[Feature #16786]]
+      rdoc-ref:scheduler.md for more details. [[Feature #16786]]
 
     * Fiber.blocking? tells whether the current execution context is
       blocking. [[Feature #16786]]
@@ -323,9 +355,13 @@ Outstanding ones only.
 
 Outstanding ones only.
 
+* BigDecimal
+
+    * Update to BigDecimal 2.0.2
+
 * Bundler
 
-    * Update to Bundler 2.2.0.rc.1
+    * Update to Bundler 2.2.1
 
 * CSV
 
@@ -339,6 +375,14 @@ Outstanding ones only.
 
     * Update to IRB 1.2.6
 
+* JSON
+
+    * Update to JSON 2.4.0
+
+* Socket
+
+    * Add :connect_timeout to TCPSocket.new [[Feature #17187]]
+
 * Net::HTTP
 
     * Net::HTTP#verify_hostname= and Net::HTTP#verify_hostname have been
@@ -347,6 +391,14 @@ Outstanding ones only.
     * Net::HTTP.get, Net::HTTP.get_response, and Net::HTTP.get_print
       can take the request headers as a Hash in the second argument when the
       first argument is a URI.  [[Feature #16686]]
+
+* Net::SMTP
+
+    * Add SNI support.
+
+    * Net::SMTP.start arguments are keyword arguments.
+
+    * TLS should not check the host name by default.
 
 * OpenStruct
 
@@ -360,7 +412,11 @@ Outstanding ones only.
 
     * Improved support for YAML [[Bug #8382]]
 
-    * Use officially discouraged. Read "Caveats" section.
+    * Use officially discouraged. Read OpenStruct@Caveats section.
+
+* Psych
+
+    * Update to Psych 3.2.1
 
 * Reline
 
@@ -368,16 +424,7 @@ Outstanding ones only.
 
 * RubyGems
 
-    * Update to RubyGems 3.2.0.rc.1
-
-* Socket
-
-    * TCPSocket.new now supports `resolv_timeout`. [[Feature #17134]]
-
-      ```ruby
-      # it raises SocketError if name resolution is not finished within resolve_timeout.
-      tcp_socket = TCPSocket.new("example.com", 80, resolv_timeout: 10)
-      ```
+    * Update to RubyGems 3.2.1
 
 ## Compatibility issues
 
@@ -396,7 +443,7 @@ Excluding feature bug fixes.
       due to lambda's arity check.
 
     * This is experimental; if it brings a big incompatibility issue,
-      it may be reverted until 2.8/3.0 release.
+      it may be reverted until 3.0 release.
 
 * When writing to STDOUT redirected to a closed pipe, no broken pipe
   error message will be shown now.  [[Feature #14413]]
@@ -404,6 +451,12 @@ Excluding feature bug fixes.
 * `TRUE`/`FALSE`/`NIL` constants are no longer defined.
 
 * Integer#zero? overrides Numeric#zero? for optimization.  [[Misc #16961]]
+
+* Enumerable#grep and grep_v when passed a Regexp and no block no longer modify
+  Regexp.last_match [[Bug #17030]]
+
+* Requiring 'open-uri' no longer redefines `Kernel#open`.
+  Call `URI.open` directly or `use URI#open` instead. [[Misc #15893]]
 
 ## Stdlib compatibility issues
 
@@ -460,6 +513,10 @@ Excluding feature bug fixes.
 
     * The issues of sdbm will be handled at https://github.com/ruby/sdbm
 
+* WEBrick have been removed from ruby standard library. [[Feature #17303]]
+
+    * The issues of sdbm will be handled at https://github.com/ruby/webrick
+
 ## C API updates
 
 * C API functions related to $SAFE have been removed.
@@ -470,26 +527,26 @@ Excluding feature bug fixes.
 
 * Memory view interface [EXPERIMENTAL]
 
-  * The memory view interface is a C-API set to exchange a raw memory area,
-    such as a numeric array and a bitmap image, between extension libraries.
-    The extension libraries can share also the metadata of the memory area
-    that consists of the shape, the element format, and so on.
-    Using these kinds of metadata, the extension libraries can share even
-    a multidimensional array appropriately.
-    This feature is designed by referring to Python's buffer protocol.
-    [[Feature #13767]] [[Feature #14722]]
+    * The memory view interface is a C-API set to exchange a raw memory area,
+      such as a numeric array and a bitmap image, between extension libraries.
+      The extension libraries can share also the metadata of the memory area
+      that consists of the shape, the element format, and so on.
+      Using these kinds of metadata, the extension libraries can share even
+      a multidimensional array appropriately.
+      This feature is designed by referring to Python's buffer protocol.
+      [[Feature #13767]] [[Feature #14722]]
 
 ## Implementation improvements
 
 * New method cache mechanism for Ractor [[Feature #16614]]
 
-  * Inline method caches pointed from ISeq can be accessed by multiple Ractors
-    in parallel and synchronization is needed even for method caches. However,
-    such synchronization can be overhead so introducing new inline method cache
-    mechanisms, (1) Disposable inline method cache (2) per-Class method cache
-    and (3) new invalidation mechanism. (1) can avoid per-method call
-    synchronization because it only uses atomic operations.
-    See the ticket for more details.
+    * Inline method caches pointed from ISeq can be accessed by multiple Ractors
+      in parallel and synchronization is needed even for method caches. However,
+      such synchronization can be overhead so introducing new inline method cache
+      mechanisms, (1) Disposable inline method cache (2) per-Class method cache
+      and (3) new invalidation mechanism. (1) can avoid per-method call
+      synchronization because it only uses atomic operations.
+      See the ticket for more details.
 
 * The number of hashes allocated when using a keyword splat in
   a method call has been reduced to a maximum of 1, and passing
@@ -507,7 +564,7 @@ Excluding feature bug fixes.
 
 * Not only pure Ruby methods but also some C methods skip pushing a method frame.
 
-  * `Kernel#class`, `Integer#zero?`
+    * `Kernel#class`, `Integer#zero?`
 
 * Always generate appropriate code for `==`, `nil?`, and `!` calls depending on
   a receiver class.
@@ -534,10 +591,10 @@ Excluding feature bug fixes.
 ### TypeProf
 
 * TypeProf is a type analysis tool for Ruby code based on abstract interpretation.
-  * It reads non-annotated Ruby code, tries inferring its type signature, and prints
-    the analysis result in RBS format.
-  * Though it supports only a subset of the Ruby language yet, we will continuously
-    improve the coverage of language features, the analysis performance, and usability.
+    * It reads non-annotated Ruby code, tries inferring its type signature, and prints
+      the analysis result in RBS format.
+    * Though it supports only a subset of the Ruby language yet, we will continuously
+      improve the coverage of language features, the analysis performance, and usability.
 
 ```ruby
 # test.rb
@@ -570,6 +627,8 @@ end
   message and backtrace are printed in order from the innermost.
   [[Feature #8661]]
 
+* Accessing an uninitialized instance variable no longer emits a
+  warning in verbose mode. [[Feature #17055]]
 
 [Bug #4352]:      https://bugs.ruby-lang.org/issues/4352
 [Bug #6087]:      https://bugs.ruby-lang.org/issues/6087
@@ -581,6 +640,7 @@ end
 [Feature #9573]:  https://bugs.ruby-lang.org/issues/9573
 [Bug #10845]:     https://bugs.ruby-lang.org/issues/10845
 [Bug #12136]:     https://bugs.ruby-lang.org/issues/12136
+[Feature #12650]: https://bugs.ruby-lang.org/issues/12650
 [Bug #12706]:     https://bugs.ruby-lang.org/issues/12706
 [Feature #13767]: https://bugs.ruby-lang.org/issues/13767
 [Bug #13768]:     https://bugs.ruby-lang.org/issues/13768
@@ -594,6 +654,7 @@ end
 [Feature #15504]: https://bugs.ruby-lang.org/issues/15504
 [Feature #15575]: https://bugs.ruby-lang.org/issues/15575
 [Feature #15822]: https://bugs.ruby-lang.org/issues/15822
+[Misc #15893]:    https://bugs.ruby-lang.org/issues/15893
 [Feature #15921]: https://bugs.ruby-lang.org/issues/15921
 [Feature #15973]: https://bugs.ruby-lang.org/issues/15973
 [Feature #16131]: https://bugs.ruby-lang.org/issues/16131
@@ -606,6 +667,7 @@ end
 [Feature #16377]: https://bugs.ruby-lang.org/issues/16377
 [Feature #16378]: https://bugs.ruby-lang.org/issues/16378
 [Feature #16555]: https://bugs.ruby-lang.org/issues/16555
+[Feature #16604]: https://bugs.ruby-lang.org/issues/16604
 [Feature #16614]: https://bugs.ruby-lang.org/issues/16614
 [Feature #16686]: https://bugs.ruby-lang.org/issues/16686
 [Feature #16746]: https://bugs.ruby-lang.org/issues/16746
@@ -615,11 +677,17 @@ end
 [Feature #16815]: https://bugs.ruby-lang.org/issues/16815
 [Feature #16828]: https://bugs.ruby-lang.org/issues/16828
 [Misc #16961]:    https://bugs.ruby-lang.org/issues/16961
+[Feature #17055]: https://bugs.ruby-lang.org/issues/17055
 [Feature #17104]: https://bugs.ruby-lang.org/issues/17104
 [Feature #17122]: https://bugs.ruby-lang.org/issues/17122
-[Feature #17134]: https://bugs.ruby-lang.org/issues/17134
 [Feature #17136]: https://bugs.ruby-lang.org/issues/17136
 [Feature #17176]: https://bugs.ruby-lang.org/issues/17176
+[Feature #17187]: https://bugs.ruby-lang.org/issues/17187
 [Bug #17221]:     https://bugs.ruby-lang.org/issues/17221
 [Feature #17260]: https://bugs.ruby-lang.org/issues/17260
+[Feature #17303]: https://bugs.ruby-lang.org/issues/17303
+[Feature #17322]: https://bugs.ruby-lang.org/issues/17322
+[Feature #17351]: https://bugs.ruby-lang.org/issues/17351
+[Feature #17371]: https://bugs.ruby-lang.org/issues/17371
 [GH-2991]:        https://github.com/ruby/ruby/pull/2991
+[Bug #17030]:     https://bugs.ruby-lang.org/issues/17030

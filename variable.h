@@ -17,5 +17,6 @@ struct gen_ivtbl {
 };
 
 int rb_ivar_generic_ivtbl_lookup(VALUE obj, struct gen_ivtbl **);
+VALUE rb_ivar_generic_lookup_with_index(VALUE obj, ID id, uint32_t index);
 
 #endif /* RUBY_TOPLEVEL_VARIABLE_H */

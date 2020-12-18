@@ -227,6 +227,10 @@ module Bundler
       Gem.load_plugin_files(files) if Gem.respond_to?(:load_plugin_files)
     end
 
+    def load_env_plugins
+      Gem.load_env_plugins if Gem.respond_to?(:load_env_plugins)
+    end
+
     def ui=(obj)
       Gem::DefaultUserInteraction.ui = obj
     end
@@ -561,7 +565,6 @@ module Bundler
     end
 
     def all_specs
-      require_relative "remote_specification"
       Gem::Specification.stubs.map do |stub|
         StubSpecification.from_stub(stub)
       end

@@ -208,6 +208,19 @@ RSpec.describe "bundler plugin install" do
       plugin_should_be_installed("ga-plugin")
     end
 
+    it "accepts path sources" do
+      build_lib "ga-plugin" do |s|
+        s.write "plugins.rb"
+      end
+
+      install_gemfile <<-G
+        plugin 'ga-plugin', :path => "#{lib_path("ga-plugin-1.0")}"
+      G
+
+      expect(out).to include("Installed plugin ga-plugin")
+      plugin_should_be_installed("ga-plugin")
+    end
+
     context "in deployment mode" do
       it "installs plugins" do
         install_gemfile <<-G

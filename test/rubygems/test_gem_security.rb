@@ -2,7 +2,7 @@
 require 'rubygems/test_case'
 require 'rubygems/security'
 
-unless defined?(OpenSSL::SSL)
+unless Gem::HAVE_OPENSSL
   warn 'Skipping Gem::Security tests.  openssl not found.'
 end
 
@@ -309,4 +309,4 @@ class TestGemSecurity < Gem::TestCase
 
     assert_equal key.to_pem, key_from_file.to_pem
   end
-end if defined?(OpenSSL::SSL) && !Gem.java_platform?
+end if Gem::HAVE_OPENSSL && !Gem.java_platform?

@@ -76,14 +76,6 @@ module Spec
           s.add_dependency "activesupport", ">= 2.0.0"
         end
 
-        build_gem "rails_pinned_to_old_activesupport" do |s|
-          s.add_dependency "activesupport", "= 1.2.3"
-        end
-
-        build_gem "missing_dep" do |s|
-          s.add_dependency "not_here"
-        end
-
         build_gem "rspec", "1.2.7", :no_default => true do |s|
           s.write "lib/spec.rb", "SPEC = '1.2.7'"
         end
@@ -158,23 +150,6 @@ module Spec
 
         build_gem "duradura", "7.0"
 
-        build_gem "multiple_versioned_deps" do |s|
-          s.add_dependency "weakling", ">= 0.0.1", "< 0.1"
-        end
-
-        build_gem "not_released", "1.0.pre"
-
-        build_gem "has_prerelease", "1.0"
-        build_gem "has_prerelease", "1.1.pre"
-
-        build_gem "with_development_dependency" do |s|
-          s.add_development_dependency "activesupport", "= 2.3.5"
-        end
-
-        build_gem "with_license" do |s|
-          s.license = "MIT"
-        end
-
         build_gem "with_implicit_rake_dep" do |s|
           s.extensions << "Rakefile"
           s.write "Rakefile", <<-RUBY
@@ -215,10 +190,6 @@ module Spec
           s.write "lib/rubygems_plugin.rb", "require 'bundler/omg' ; puts 'FAIL'"
         end
 
-        build_gem "bundler_dep" do |s|
-          s.add_dependency "bundler"
-        end
-
         # The yard gem iterates over Gem.source_index looking for plugins
         build_gem "yard" do |s|
           s.write "lib/yard.rb", <<-Y
@@ -228,115 +199,12 @@ module Spec
           Y
         end
 
-        # The rcov gem is platform mswin32, but has no arch
-        build_gem "rcov" do |s|
-          s.platform = Gem::Platform.new([nil, "mswin32", nil])
-          s.write "lib/rcov.rb", "RCOV = '1.0.0'"
-        end
-
         build_gem "net-ssh"
         build_gem "net-sftp", "1.1.1" do |s|
           s.add_dependency "net-ssh", ">= 1.0.0", "< 1.99.0"
         end
 
-        # Test complicated gem dependencies for install
-        build_gem "net_a" do |s|
-          s.add_dependency "net_b"
-          s.add_dependency "net_build_extensions"
-        end
-
-        build_gem "net_b"
-
-        build_gem "net_build_extensions" do |s|
-          s.add_dependency "rake"
-          s.extensions << "Rakefile"
-          s.write "Rakefile", <<-RUBY
-            task :default do
-              path = File.expand_path("../lib", __FILE__)
-              FileUtils.mkdir_p(path)
-              File.open("\#{path}/net_build_extensions.rb", "w") do |f|
-                f.puts "NET_BUILD_EXTENSIONS = 'YES'"
-              end
-            end
-          RUBY
-        end
-
-        build_gem "net_c" do |s|
-          s.add_dependency "net_a"
-          s.add_dependency "net_d"
-        end
-
-        build_gem "net_d"
-
-        build_gem "net_e" do |s|
-          s.add_dependency "net_d"
-        end
-
-        # Capistrano did this (at least until version 2.5.10)
-        # RubyGems 2.2 doesn't allow the specifying of a dependency twice
-        # See https://github.com/rubygems/rubygems/commit/03dbac93a3396a80db258d9bc63500333c25bd2f
-        build_gem "double_deps", "1.0", :skip_validation => true do |s|
-          s.add_dependency "net-ssh", ">= 1.0.0"
-          s.add_dependency "net-ssh"
-        end
-
         build_gem "foo"
-
-        # A minimal fake pry console
-        build_gem "pry" do |s|
-          s.write "lib/pry.rb", <<-RUBY
-            class Pry
-              class << self
-                def toplevel_binding
-                  unless defined?(@toplevel_binding) && @toplevel_binding
-                    TOPLEVEL_BINDING.eval %{
-                      def self.__pry__; binding; end
-                      Pry.instance_variable_set(:@toplevel_binding, __pry__)
-                      class << self; undef __pry__; end
-                    }
-                  end
-                  @toplevel_binding.eval('private')
-                  @toplevel_binding
-                end
-
-                def __pry__
-                  while line = gets
-                    begin
-                      puts eval(line, toplevel_binding).inspect.sub(/^"(.*)"$/, '=> \\1')
-                    rescue Exception => e
-                      puts "\#{e.class}: \#{e.message}"
-                      puts e.backtrace.first
-                    end
-                  end
-                end
-                alias start __pry__
-              end
-            end
-          RUBY
-        end
-
-        build_gem "has_metadata" do |s|
-          s.metadata = {
-            "bug_tracker_uri"   => "https://example.com/user/bestgemever/issues",
-            "changelog_uri"     => "https://example.com/user/bestgemever/CHANGELOG.md",
-            "documentation_uri" => "https://www.example.info/gems/bestgemever/0.0.1",
-            "homepage_uri"      => "https://bestgemever.example.io",
-            "mailing_list_uri"  => "https://groups.example.com/bestgemever",
-            "funding_uri"       => "https://example.com/has_metadata/funding",
-            "source_code_uri"   => "https://example.com/user/bestgemever",
-            "wiki_uri"          => "https://example.com/user/bestgemever/wiki",
-          }
-        end
-
-        build_gem "has_funding", "1.2.3" do |s|
-          s.metadata = {
-            "funding_uri"       => "https://example.com/has_funding/funding",
-          }
-        end
-
-        build_gem "gem_with_dependent_funding", "1.0" do |s|
-          s.add_dependency "has_funding"
-        end
       end
     end
 
@@ -366,9 +234,6 @@ module Spec
 
     def update_repo2
       update_repo gem_repo2 do
-        build_gem "rack", "1.2" do |s|
-          s.executables = "rackup"
-        end
         yield if block_given?
       end
     end
@@ -658,6 +523,7 @@ module Spec
           file = Pathname.new(path).join(file)
           FileUtils.mkdir_p(file.dirname)
           File.open(file, "w") {|f| f.puts source }
+          File.chmod("+x", file) if @spec.executables.map {|exe| "#{@spec.bindir}/#{exe}" }.include?(file)
         end
         path
       end

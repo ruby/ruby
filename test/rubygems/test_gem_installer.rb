@@ -83,7 +83,7 @@ end
   end
 
   def test_check_executable_overwrite_default_bin_dir
-    installer = setup_base_installer
+    installer = setup_base_installer(false)
 
     bindir(Gem.bindir) do
       util_conflict_executable false
@@ -143,7 +143,7 @@ gem 'other', version
   end
 
   def test_check_executable_overwrite_other_gem
-    installer = setup_base_installer
+    installer = setup_base_installer(false)
 
     util_conflict_executable true
 
@@ -287,7 +287,7 @@ gem 'other', version
   end
 
   def test_ensure_loadable_spec_security_policy
-    skip 'openssl is missing' unless defined?(OpenSSL::SSL)
+    skip 'openssl is missing' unless Gem::HAVE_OPENSSL
 
     _, a_gem = util_gem 'a', 2 do |s|
       s.add_dependency 'garbage ~> 5'
@@ -345,7 +345,7 @@ gem 'other', version
 
     options = {
       :bin_dir => bin_dir,
-      :install_dir => "/non/existent"
+      :install_dir => "/non/existent",
     }
 
     inst = Gem::Installer.at '', options
@@ -794,8 +794,33 @@ gem 'other', version
 
     assert_equal spec, installer.install
 
-    assert !File.exist?(system_path), 'plugin not written to user plugins_dir'
+    assert !File.exist?(system_path), 'plugin incorrectly written to system plugins_dir'
     assert File.exist?(user_path), 'plugin not written to user plugins_dir'
+  end
+
+  def test_generate_plugins_with_build_root
+    spec = quick_gem 'a' do |s|
+      write_file File.join(@tempdir, 'lib', 'rubygems_plugin.rb') do |io|
+        io.write "puts __FILE__"
+      end
+
+      s.files += %w[lib/rubygems_plugin.rb]
+    end
+
+    util_build_gem spec
+
+    File.chmod(0555, Gem.plugindir)
+    system_path = File.join(Gem.plugindir, 'a_plugin.rb')
+
+    build_root = File.join(@tempdir, 'build_root')
+    build_root_path = File.join(build_root, Gem.plugindir.gsub(/^[a-zA-Z]:/, ''), 'a_plugin.rb')
+
+    installer = Gem::Installer.at spec.cache_file, :build_root => build_root
+
+    assert_equal spec, installer.install
+
+    assert !File.exist?(system_path), 'plugin written incorrect written to system plugins_dir'
+    assert File.exist?(build_root_path), 'plugin not written to build_root'
   end
 
   def test_keeps_plugins_up_to_date
@@ -1134,7 +1159,7 @@ gem 'other', version
         Gem::Package.build @spec
       end
     end
-    installer = Gem::Installer.at @gem
+    installer = Gem::Installer.at @gem, :force => true
     build_rake_in do
       use_ui @ui do
         assert_equal @spec, installer.install
@@ -1154,6 +1179,15 @@ gem 'other', version
 
     gem_dir = File.join(@gemhome, 'gems', 'old_ruby_required-1')
     assert_path_exists gem_dir
+  end
+
+  def test_install_build_root
+    build_root = File.join(@tempdir, 'build_root')
+
+    @gem = setup_base_gem
+    installer = Gem::Installer.at @gem, :build_root => build_root
+
+    assert_equal @spec, installer.install
   end
 
   def test_install_missing_dirs
@@ -1337,7 +1371,7 @@ gem 'other', version
 
     # reinstall the gem, this is also the same as pristine
     use_ui @ui do
-      installer = Gem::Installer.at path
+      installer = Gem::Installer.at path, :force => true
       installer.install
     end
 
@@ -1537,6 +1571,7 @@ gem 'other', version
     installer = setup_base_installer
     @spec.add_dependency 'b', '> 5'
     installer = util_setup_gem
+    installer.force = false
 
     use_ui @ui do
       assert_raises Gem::InstallError do
@@ -1781,13 +1816,24 @@ gem 'other', version
 
   def test_process_options_build_root
     build_root = File.join @tempdir, 'build_root'
+    bin_dir = File.join(build_root, @gemhome.gsub(/^[a-zA-Z]:/, ''), 'bin')
+    gem_home = File.join(build_root, @gemhome.gsub(/^[a-zA-Z]:/, ''))
+    plugins_dir = File.join(build_root, @gemhome.gsub(/^[a-zA-Z]:/, ''), 'plugins')
 
     @gem = setup_base_gem
-    installer = Gem::Installer.at @gem, :build_root => build_root
+    installer = use_ui(@ui) { Gem::Installer.at @gem, :build_root => build_root }
 
-    assert_equal Pathname(build_root), installer.build_root
-    assert_equal File.join(build_root, @gemhome, 'bin'), installer.bin_dir
-    assert_equal File.join(build_root, @gemhome), installer.gem_home
+    assert_equal build_root, installer.build_root
+    assert_equal bin_dir, installer.bin_dir
+    assert_equal gem_home, installer.gem_home
+
+    errors = @ui.error.split("\n")
+
+    assert_equal "WARNING:  You build with buildroot.", errors.shift
+    assert_equal "  Build root: #{build_root}", errors.shift
+    assert_equal "  Bin dir: #{bin_dir}", errors.shift
+    assert_equal "  Gem home: #{gem_home}", errors.shift
+    assert_equal "  Plugins dir: #{plugins_dir}", errors.shift
   end
 
   def test_shebang_arguments
@@ -2167,6 +2213,23 @@ gem 'other', version
     default_spec = eval File.read File.join(Gem.default_dir, 'specifications', 'default', 'c-2.gemspec')
     assert_equal Gem::Version.new("2"), default_spec.version
     assert_equal ['exe/executable'], default_spec.files
+  end
+
+  def test_default_gem_to_specific_install_dir
+    @gem = setup_base_gem
+    installer = util_installer @spec, "#{@gemhome}2"
+    installer.options[:install_as_default] = true
+
+    use_ui @ui do
+      installer.install
+    end
+
+    assert_directory_exists File.join("#{@gemhome}2", 'specifications')
+    assert_directory_exists File.join("#{@gemhome}2", 'specifications', 'default')
+
+    default_spec = eval File.read File.join("#{@gemhome}2", 'specifications', 'default', 'a-2.gemspec')
+    assert_equal Gem::Version.new("2"), default_spec.version
+    assert_equal ['bin/executable'], default_spec.files
   end
 
   def test_package_attribute

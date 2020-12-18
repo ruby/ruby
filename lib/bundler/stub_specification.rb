@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "remote_specification"
-
 module Bundler
   class StubSpecification < RemoteSpecification
     def self.from_stub(stub)

@@ -35,12 +35,37 @@ module Fiddle
     def parse_struct_signature(signature, tymap=nil)
       if signature.is_a?(String)
         signature = split_arguments(signature, /[,;]/)
+      elsif signature.is_a?(Hash)
+        signature = [signature]
       end
       mems = []
       tys  = []
       signature.each{|msig|
-        msig = compact(msig)
+        msig = compact(msig) if msig.is_a?(String)
         case msig
+        when Hash
+          msig.each do |struct_name, struct_signature|
+            struct_name = struct_name.to_s if struct_name.is_a?(Symbol)
+            struct_name = compact(struct_name)
+            struct_count = nil
+            if struct_name =~ /^([\w\*\s]+)\[(\d+)\]$/
+              struct_count = $2.to_i
+              struct_name = $1
+            end
+            if struct_signature.respond_to?(:entity_class)
+              struct_type = struct_signature
+            else
+              parsed_struct = parse_struct_signature(struct_signature, tymap)
+              struct_type = CStructBuilder.create(CStruct, *parsed_struct)
+            end
+            if struct_count
+              ty = [struct_type, struct_count]
+            else
+              ty = struct_type
+            end
+            mems.push([struct_name, struct_type.members])
+            tys.push(ty)
+          end
         when /^[\w\*\s]+[\*\s](\w+)$/
           mems.push($1)
           tys.push(parse_ctype(msig, tymap))
@@ -128,50 +153,90 @@ module Fiddle
         return [parse_ctype(ty[0], tymap), ty[1]]
       when 'void'
         return TYPE_VOID
-      when /^(?:(?:signed\s+)?long\s+long(?:\s+int\s+)?|int64_t)(?:\s+\w+)?$/
-        if( defined?(TYPE_LONG_LONG) )
-          return TYPE_LONG_LONG
-        else
+      when /\A(?:(?:signed\s+)?long\s+long(?:\s+int\s+)?|int64_t)(?:\s+\w+)?\z/
+        unless Fiddle.const_defined?(:TYPE_LONG_LONG)
           raise(RuntimeError, "unsupported type: #{ty}")
         end
-      when /^(?:unsigned\s+long\s+long(?:\s+int\s+)?|uint64_t)(?:\s+\w+)?$/
-        if( defined?(TYPE_LONG_LONG) )
-          return -TYPE_LONG_LONG
-        else
+        return TYPE_LONG_LONG
+      when /\A(?:unsigned\s+long\s+long(?:\s+int\s+)?|uint64_t)(?:\s+\w+)?\z/
+        unless Fiddle.const_defined?(:TYPE_LONG_LONG)
           raise(RuntimeError, "unsupported type: #{ty}")
         end
-      when /^(?:signed\s+)?long(?:\s+int\s+)?(?:\s+\w+)?$/
+        return -TYPE_LONG_LONG
+      when /\A(?:signed\s+)?long(?:\s+int\s+)?(?:\s+\w+)?\z/
         return TYPE_LONG
-      when /^unsigned\s+long(?:\s+int\s+)?(?:\s+\w+)?$/
+      when /\Aunsigned\s+long(?:\s+int\s+)?(?:\s+\w+)?\z/
         return -TYPE_LONG
-      when /^(?:signed\s+)?int(?:\s+\w+)?$/
+      when /\A(?:signed\s+)?int(?:\s+\w+)?\z/
         return TYPE_INT
-      when /^(?:unsigned\s+int|uint)(?:\s+\w+)?$/
+      when /\A(?:unsigned\s+int|uint)(?:\s+\w+)?\z/
         return -TYPE_INT
-      when /^(?:signed\s+)?short(?:\s+int\s+)?(?:\s+\w+)?$/
+      when /\A(?:signed\s+)?short(?:\s+int\s+)?(?:\s+\w+)?\z/
         return TYPE_SHORT
-      when /^unsigned\s+short(?:\s+int\s+)?(?:\s+\w+)?$/
+      when /\Aunsigned\s+short(?:\s+int\s+)?(?:\s+\w+)?\z/
         return -TYPE_SHORT
-      when /^(?:signed\s+)?char(?:\s+\w+)?$/
+      when /\A(?:signed\s+)?char(?:\s+\w+)?\z/
         return TYPE_CHAR
-      when /^unsigned\s+char(?:\s+\w+)?$/
+      when /\Aunsigned\s+char(?:\s+\w+)?\z/
         return  -TYPE_CHAR
-      when /^float(?:\s+\w+)?$/
+      when /\Aint8_t(?:\s+\w+)?\z/
+        unless Fiddle.const_defined?(:TYPE_INT8_T)
+          raise(RuntimeError, "unsupported type: #{ty}")
+        end
+        return TYPE_INT8_T
+      when /\Auint8_t(?:\s+\w+)?\z/
+        unless Fiddle.const_defined?(:TYPE_INT8_T)
+          raise(RuntimeError, "unsupported type: #{ty}")
+        end
+        return -TYPE_INT8_T
+      when /\Aint16_t(?:\s+\w+)?\z/
+        unless Fiddle.const_defined?(:TYPE_INT16_T)
+          raise(RuntimeError, "unsupported type: #{ty}")
+        end
+        return TYPE_INT16_T
+      when /\Auint16_t(?:\s+\w+)?\z/
+        unless Fiddle.const_defined?(:TYPE_INT16_T)
+          raise(RuntimeError, "unsupported type: #{ty}")
+        end
+        return -TYPE_INT16_T
+      when /\Aint32_t(?:\s+\w+)?\z/
+        unless Fiddle.const_defined?(:TYPE_INT32_T)
+          raise(RuntimeError, "unsupported type: #{ty}")
+        end
+        return TYPE_INT32_T
+      when /\Auint32_t(?:\s+\w+)?\z/
+        unless Fiddle.const_defined?(:TYPE_INT32_T)
+          raise(RuntimeError, "unsupported type: #{ty}")
+        end
+        return -TYPE_INT32_T
+      when /\Aint64_t(?:\s+\w+)?\z/
+        unless Fiddle.const_defined?(:TYPE_INT64_T)
+          raise(RuntimeError, "unsupported type: #{ty}")
+        end
+        return TYPE_INT64_T
+      when /\Auint64_t(?:\s+\w+)?\z/
+        unless Fiddle.const_defined?(:TYPE_INT64_T)
+          raise(RuntimeError, "unsupported type: #{ty}")
+        end
+        return -TYPE_INT64_T
+      when /\Afloat(?:\s+\w+)?\z/
         return TYPE_FLOAT
-      when /^double(?:\s+\w+)?$/
+      when /\Adouble(?:\s+\w+)?\z/
         return TYPE_DOUBLE
-      when /^size_t(?:\s+\w+)?$/
+      when /\Asize_t(?:\s+\w+)?\z/
         return TYPE_SIZE_T
-      when /^ssize_t(?:\s+\w+)?$/
+      when /\Assize_t(?:\s+\w+)?\z/
         return TYPE_SSIZE_T
-      when /^ptrdiff_t(?:\s+\w+)?$/
+      when /\Aptrdiff_t(?:\s+\w+)?\z/
         return TYPE_PTRDIFF_T
-      when /^intptr_t(?:\s+\w+)?$/
+      when /\Aintptr_t(?:\s+\w+)?\z/
         return TYPE_INTPTR_T
-      when /^uintptr_t(?:\s+\w+)?$/
+      when /\Auintptr_t(?:\s+\w+)?\z/
         return TYPE_UINTPTR_T
       when /\*/, /\[[\s\d]*\]/
         return TYPE_VOIDP
+      when "..."
+        return TYPE_VARIADIC
       else
         ty = ty.split(' ', 2)[0]
         if( tymap[ty] )
@@ -186,7 +251,7 @@ module Fiddle
 
     def split_arguments(arguments, sep=',')
       return [] if arguments.strip == 'void'
-      arguments.scan(/([\w\*\s]+\(\*\w*\)\(.*?\)|[\w\*\s\[\]]+)(?:#{sep}\s*|$)/).collect {|m| m[0]}
+      arguments.scan(/([\w\*\s]+\(\*\w*\)\(.*?\)|[\w\*\s\[\]]+|\.\.\.)(?:#{sep}\s*|\z)/).collect {|m| m[0]}
     end
 
     def compact(signature)

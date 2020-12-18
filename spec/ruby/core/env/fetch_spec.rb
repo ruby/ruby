@@ -56,7 +56,8 @@ describe "ENV.fetch" do
   end
 
   it "uses the locale encoding" do
+    encoding = platform_is(:windows) ? Encoding::UTF_8 : Encoding.find('locale')
     ENV["foo"] = "bar"
-    ENV.fetch("foo").encoding.should == Encoding.find('locale')
+    ENV.fetch("foo").encoding.should == encoding
   end
 end

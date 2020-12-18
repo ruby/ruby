@@ -90,7 +90,7 @@ class Gem::Package::TarTestCase < Gem::TestCase
       ASCIIZ("wheel", 32),   # char gname[32];     ASCIIZ
       Z(to_oct(0, 7)),       # char devmajor[8];   0 padded, octal, null
       Z(to_oct(0, 7)),       # char devminor[8];   0 padded, octal, null
-      ASCIIZ(dname, 155)     # char prefix[155];   ASCII + (Z unless filled)
+      ASCIIZ(dname, 155), # char prefix[155];   ASCII + (Z unless filled)
     ]
 
     h = arr.join

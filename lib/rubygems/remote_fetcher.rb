@@ -78,7 +78,6 @@ class Gem::RemoteFetcher
   def initialize(proxy=nil, dns=nil, headers={})
     require 'net/http'
     require 'stringio'
-    require 'time'
     require 'uri'
 
     Socket.do_not_reverse_lookup = true
@@ -263,7 +262,7 @@ class Gem::RemoteFetcher
   rescue Timeout::Error
     raise UnknownHostError.new('timed out', uri)
   rescue IOError, SocketError, SystemCallError,
-         *(OpenSSL::SSL::SSLError if defined?(OpenSSL)) => e
+         *(OpenSSL::SSL::SSLError if Gem::HAVE_OPENSSL) => e
     if e.message =~ /getaddrinfo/
       raise UnknownHostError.new('no such name', uri)
     else

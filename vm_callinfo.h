@@ -267,8 +267,7 @@ vm_ci_markable(const struct rb_callinfo *ci)
 typedef VALUE (*vm_call_handler)(
     struct rb_execution_context_struct *ec,
     struct rb_control_frame_struct *cfp,
-    struct rb_calling_info *calling,
-    struct rb_call_data *cd);
+    struct rb_calling_info *calling);
 
 // imemo_callcache
 

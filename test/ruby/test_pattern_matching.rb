@@ -1451,7 +1451,7 @@ END
 
   ################################################################
 
-  def test_assoc
+  def test_one_line
     1 => a
     assert_equal 1, a
     assert_raise(NoMatchingPatternError) do
@@ -1464,6 +1464,9 @@ END
     assert_syntax_error(%q{
       1 => a:
     }, /unexpected/, '[ruby-core:95098]')
+
+    assert_equal true, (1 in 1)
+    assert_equal false, (1 in 2)
   end
 
   def assert_experimental_warning(code)
@@ -1481,6 +1484,7 @@ END
   def test_experimental_warning
     assert_experimental_warning("case [0]; in [*, 0, *]; end")
     assert_experimental_warning("0 => 0")
+    assert_experimental_warning("0 in a")
   end
 end
 END_of_GUARD

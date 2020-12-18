@@ -77,18 +77,18 @@ class Gem::Specification < Gem::BasicSpecification
     -1 => ['(RubyGems versions up to and including 0.7 did not have versioned specifications)'],
     1  => [
       'Deprecated "test_suite_file" in favor of the new, but equivalent, "test_files"',
-      '"test_file=x" is a shortcut for "test_files=[x]"'
+      '"test_file=x" is a shortcut for "test_files=[x]"',
     ],
     2 => [
       'Added "required_rubygems_version"',
       'Now forward-compatible with future versions',
     ],
     3 => [
-      'Added Fixnum validation to the specification_version'
+      'Added Fixnum validation to the specification_version',
     ],
     4 => [
-      'Added sandboxed freeform metadata to the specification version.'
-    ]
+      'Added sandboxed freeform metadata to the specification version.',
+    ],
   }.freeze
 
   MARSHAL_FIELDS = { # :nodoc:
@@ -804,7 +804,7 @@ class Gem::Specification < Gem::BasicSpecification
       stubs = stubs.uniq {|stub| stub.full_name }
 
       _resort!(stubs)
-      @@stubs_by_name = stubs.select {|s| Gem::Platform.match s.platform }.group_by(&:name)
+      @@stubs_by_name = stubs.select {|s| Gem::Platform.match_spec? s }.group_by(&:name)
       stubs
     end
   end
@@ -831,7 +831,7 @@ class Gem::Specification < Gem::BasicSpecification
       @@stubs_by_name[name]
     else
       pattern = "#{name}-*.gemspec"
-      stubs = installed_stubs(dirs, pattern).select {|s| Gem::Platform.match s.platform } + default_stubs(pattern)
+      stubs = installed_stubs(dirs, pattern).select {|s| Gem::Platform.match_spec? s } + default_stubs(pattern)
       stubs = stubs.uniq {|stub| stub.full_name }.group_by(&:name)
       stubs.each_value {|v| _resort!(v) }
 
@@ -1344,7 +1344,7 @@ class Gem::Specification < Gem::BasicSpecification
       true, # has_rdoc
       @new_platform,
       @licenses,
-      @metadata
+      @metadata,
     ]
   end
 
@@ -2450,7 +2450,7 @@ class Gem::Specification < Gem::BasicSpecification
       :version,
       :has_rdoc,
       :default_executable,
-      :metadata
+      :metadata,
     ]
 
     @@attributes.each do |attr_name|

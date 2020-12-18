@@ -36,23 +36,20 @@ struct rb_ractor_waiting_list {
     rb_ractor_t **ractors;
 };
 
-struct rb_random_struct; // c.f. ruby/random.h
-
-struct rb_ractor_struct {
+struct rb_ractor_sync {
     // ractor lock
     rb_nativethread_lock_t lock;
 #if RACTOR_CHECK_MODE > 0
     VALUE locked_by;
 #endif
+    rb_nativethread_cond_t cond;
 
     // communication
     struct rb_ractor_queue  incoming_queue;
+    struct rb_ractor_waiting_list taking_ractors;
 
     bool incoming_port_closed;
     bool outgoing_port_closed;
-    bool yield_atexit;
-
-    struct rb_ractor_waiting_list taking_ractors;
 
     struct ractor_wait {
         enum ractor_wait_status {
@@ -72,11 +69,15 @@ struct rb_ractor_struct {
             wakeup_by_retry,
         } wakeup_status;
 
-        struct rb_ractor_basket taken_basket;
         struct rb_ractor_basket yielded_basket;
-
-        rb_nativethread_cond_t cond;
+        struct rb_ractor_basket taken_basket;
     } wait;
+};
+
+struct rb_ractor_struct {
+    struct rb_ractor_sync sync;
+
+    bool yield_atexit;
 
     // vm wide barrier synchronization
     rb_nativethread_cond_t barrier_wait_cond;
@@ -133,6 +134,11 @@ struct rb_ractor_struct {
     VALUE verbose;
     VALUE debug;
 
+    struct {
+        struct RVALUE *freelist;
+        struct heap_page *using_page;
+    } newobj_cache;
+
     // gc.c rb_objspace_reachable_objects_from
     struct gc_mark_func_data_struct {
         void *data;
@@ -176,12 +182,10 @@ void rb_ractor_local_storage_delkey(rb_ractor_local_key_t key);
 
 RUBY_SYMBOL_EXPORT_END
 
-RUBY_EXTERN bool ruby_multi_ractor;
-
 static inline bool
 rb_ractor_main_p(void)
 {
-    if (!ruby_multi_ractor) {
+    if (ruby_single_main_ractor) {
         return true;
     }
     else {

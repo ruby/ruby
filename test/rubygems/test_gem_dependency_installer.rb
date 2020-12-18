@@ -528,6 +528,40 @@ class TestGemDependencyInstaller < Gem::TestCase
     assert_equal %w[a-1 e-1], inst.installed_gems.map {|s| s.full_name }
   end
 
+  def test_install_no_minimal_deps
+    util_setup_gems
+
+    _, e1_gem = util_gem 'e', '1' do |s|
+      s.add_dependency 'b'
+    end
+
+    _, b2_gem = util_gem 'b', '2' do |s|
+      s.add_dependency 'a'
+    end
+
+    FileUtils.mv @a1_gem, @tempdir
+    FileUtils.mv @b1_gem, @tempdir
+    FileUtils.mv  b2_gem, @tempdir
+    FileUtils.mv  e1_gem, @tempdir
+
+    inst = nil
+
+    Dir.chdir @tempdir do
+      inst = Gem::DependencyInstaller.new :ignore_dependencies => true
+      inst.install 'b', req('= 1')
+    end
+
+    assert_equal %w[b-1], inst.installed_gems.map {|s| s.full_name },
+                 'sanity check'
+
+    Dir.chdir @tempdir do
+      inst = Gem::DependencyInstaller.new :minimal_deps => false
+      inst.install 'e'
+    end
+
+    assert_equal %w[a-1 b-2 e-1], inst.installed_gems.map {|s| s.full_name }
+  end
+
   def test_install_no_document
     util_setup_gems
 
@@ -749,7 +783,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     inst = nil
 
     Dir.chdir @tempdir do
-      inst = Gem::DependencyInstaller.new
+      inst = Gem::DependencyInstaller.new :force => true
       inst.install 'a'
     end
 
@@ -842,7 +876,7 @@ class TestGemDependencyInstaller < Gem::TestCase
 
   require 'rubygems/openssl'
 
-  if defined? OpenSSL
+  if Gem::HAVE_OPENSSL
     def test_install_security_policy
       util_setup_gems
 

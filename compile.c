@@ -8024,7 +8024,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	LABEL *lfin = NEW_LABEL(line);
 	LABEL *lassign;
 
-	if (nd_type(node) == NODE_OP_ASGN_OR) {
+	if (nd_type(node) == NODE_OP_ASGN_OR && nd_type(node->nd_head) != NODE_IVAR) {
 	    LABEL *lfinish[2];
 	    lfinish[0] = lfin;
 	    lfinish[1] = 0;

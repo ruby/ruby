@@ -30,10 +30,6 @@ Koichi Sasada (ko1)
 
 Yukihiro Matsumoto (matz)
 
-=== Documentation
-
-Zachary Scott (zzak)
-
 == Standard Library Maintainers
 
 === Libraries
@@ -75,9 +71,11 @@ Zachary Scott (zzak)
 [lib/abbrev.rb]
   Akinori MUSHA (knu)
   https://github.com/ruby/abbrev
+  https://rubygems.org/gems/abbrev
 [lib/base64.rb]
-  https://github.com/ruby/base64
   Yusuke Endoh (mame)
+  https://github.com/ruby/base64
+  https://rubygems.org/gems/base64
 [lib/benchmark.rb]
   _unmaintained_
   https://github.com/ruby/benchmark
@@ -97,8 +95,10 @@ Zachary Scott (zzak)
 [lib/English.rb]
   _unmaintained_
   https://github.com/ruby/English
+  https://rubygems.org/gems/English
 [lib/debug.rb]
   _unmaintained_
+  https://github.com/ruby/debug
 [lib/delegate.rb]
   _unmaintained_
   https://github.com/ruby/delegate
@@ -106,15 +106,19 @@ Zachary Scott (zzak)
 [lib/did_you_mean.rb]
   Yuki Nishijima (yuki24)
   https://github.com/ruby/did_you_mean
+  https://rubygems.org/gems/did_you_mean
 [ext/digest, ext/digest/*]
   Akinori MUSHA (knu)
   https://github.com/ruby/digest
+  https://rubygems.org/gems/digest
 [lib/drb.rb, lib/drb/*]
   Masatoshi SEKI (seki)
   https://github.com/ruby/drb
+  https://rubygems.org/gems/drb
 [lib/erb.rb]
   Masatoshi SEKI (seki), Takashi Kokubun (k0kubun)
   https://github.com/ruby/erb
+  https://rubygems.org/gems/erb
 [lib/fileutils.rb]
   _unmaintained_
   https://github.com/ruby/fileutils
@@ -122,6 +126,7 @@ Zachary Scott (zzak)
 [lib/find.rb]
   Kazuki Tsujimoto (ktsj)
   https://github.com/ruby/find
+  https://rubygems.org/gems/find
 [lib/forwardable.rb]
   Keiju ISHITSUKA (keiju)
   https://github.com/ruby/forwardable
@@ -135,7 +140,7 @@ Zachary Scott (zzak)
   https://github.com/ruby/ipaddr
   https://rubygems.org/gems/ipaddr
 [lib/irb.rb, lib/irb/*]
-  Keiju ISHITSUKA (keiju)
+  aycabta
   https://github.com/ruby/irb
   https://rubygems.org/gems/irb
 [lib/optparse.rb, lib/optparse/*]
@@ -146,7 +151,7 @@ Zachary Scott (zzak)
   https://github.com/ruby/logger
   https://rubygems.org/gems/logger
 [lib/matrix.rb]
-  Marc-Andre Lafortune (marcandre)
+  Marc-André Lafortune (marcandre)
   https://github.com/ruby/matrix
   https://rubygems.org/gems/matrix
 [lib/mutex_m.rb]
@@ -156,12 +161,15 @@ Zachary Scott (zzak)
 [lib/net/ftp.rb]
   Shugo Maeda (shugo)
   https://github.com/ruby/net-ftp
+  https://rubygems.org/gems/net-ftp
 [lib/net/http.rb, lib/net/https.rb]
   NARUSE, Yui (naruse)
   https://github.com/ruby/net-http
+  https://rubygems.org/gems/net-http
 [lib/net/imap.rb]
   Shugo Maeda (shugo)
   https://github.com/ruby/net-imap
+  https://rubygems.org/gems/net-imap
 [lib/net/pop.rb]
   _unmaintained_
   https://github.com/ruby/net-pop
@@ -173,9 +181,11 @@ Zachary Scott (zzak)
 [lib/net/protocol.rb]
   _unmaintained_
   https://github.com/ruby/net-protocol
+  https://rubygems.org/gems/net-protocol
 [lib/observer.rb]
   _unmaintained_
   https://github.com/ruby/observer
+  https://rubygems.org/gems/observer
 [lib/open3.rb]
   _unmaintained_
   https://github.com/ruby/open3
@@ -184,18 +194,21 @@ Zachary Scott (zzak)
   Tanaka Akira (akr)
   https://github.com/ruby/open-uri
 [lib/ostruct.rb]
-  Marc-Andre Lafortune (marcandre)
+  Marc-André Lafortune (marcandre)
   https://github.com/ruby/ostruct
   https://rubygems.org/gems/ostruct
 [lib/pp.rb]
   Tanaka Akira (akr)
   https://github.com/ruby/pp
+  https://rubygems.org/gems/pp
 [lib/prettyprint.rb]
   Tanaka Akira (akr)
   https://github.com/ruby/prettyprint
+  https://rubygems.org/gems/prettyprint
 [lib/prime.rb]
-  Yuki Sonoda (yugui)
+  Marc-André Lafortune (marcandre)
   https://github.com/ruby/prime
+  https://rubygems.org/gems/prime
 [lib/pstore.rb]
   _unmaintained_
   https://github.com/ruby/pstore
@@ -211,9 +224,11 @@ Zachary Scott (zzak)
 [lib/resolv.rb]
   Tanaka Akira (akr)
   https://github.com/ruby/resolv
+  https://rubygems.org/gems/resolv
 [lib/resolv-replace.rb]
   Tanaka Akira (akr)
   https://github.com/ruby/resolv-replace
+  https://rubygems.org/gems/resolv-replace
 [lib/rdoc.rb, lib/rdoc/*]
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
   https://github.com/ruby/rdoc
@@ -225,15 +240,19 @@ Zachary Scott (zzak)
 [lib/rinda/*]
   Masatoshi SEKI (seki)
   https://github.com/ruby/rinda
+  https://rubygems.org/gems/rinda
 [lib/securerandom.rb]
   Tanaka Akira (akr)
   https://github.com/ruby/securerandom
+  https://rubygems.org/gems/securerandom
 [lib/set.rb]
   Akinori MUSHA (knu)
   https://github.com/ruby/set
+  https://rubygems.org/gems/set
 [lib/shellwords.rb]
   Akinori MUSHA (knu)
   https://github.com/ruby/shellwords
+  https://rubygems.org/gems/shellwords
 [lib/singleton.rb]
   Yukihiro Matsumoto (matz)
   https://github.com/ruby/singleton
@@ -241,12 +260,15 @@ Zachary Scott (zzak)
 [lib/tempfile.rb]
   _unmaintained_
   https://github.com/ruby/tempfile
+  https://rubygems.org/gems/tempfile
 [lib/time.rb]
   Tanaka Akira (akr)
   https://github.com/ruby/time
+  https://rubygems.org/gems/time
 [lib/timeout.rb]
   Yukihiro Matsumoto (matz)
   https://github.com/ruby/timeout
+  https://rubygems.org/gems/timeout
 [lib/thwait.rb]
   Keiju ISHITSUKA (keiju)
   https://github.com/ruby/thwait
@@ -254,27 +276,31 @@ Zachary Scott (zzak)
 [lib/tmpdir.rb]
   _unmaintained_
   https://github.com/ruby/tmpdir
+  https://rubygems.org/gems/tmpdir
 [lib/tracer.rb]
   Keiju ISHITSUKA (keiju)
   https://github.com/ruby/tracer
+  https://rubygems.org/gems/tracer
 [lib/tsort.rb]
   Tanaka Akira (akr)
   https://github.com/ruby/tsort
+  https://rubygems.org/gems/tsort
 [lib/un.rb]
   WATANABE Hirofumi (eban)
+  https://github.com/ruby/un
+  https://rubygems.org/gems/un
 [lib/uri.rb, lib/uri/*]
   YAMADA, Akira (akira)
   https://github.com/ruby/uri
-[lib/webrick.rb, lib/webrick/*]
-  Eric Wong (normalperson)
-  https://bugs.ruby-lang.org/
-  https://rubygems.org/gems/webrick
+  https://rubygems.org/gems/uri
 [lib/yaml.rb, lib/yaml/*]
   Aaron Patterson (tenderlove), Hiroshi SHIBATA (hsbt)
   https://github.com/ruby/yaml
+  https://rubygems.org/gems/yaml
 [lib/weakref.rb]
   _unmaintained_
   https://github.com/ruby/weakref
+  https://rubygems.org/gems/weakref
 
 === Extensions
 
@@ -317,9 +343,11 @@ Zachary Scott (zzak)
 [ext/io/nonblock]
   Nobuyuki Nakada (nobu)
   https://github.com/ruby/io-nonblock
+  https://rubygems.org/gems/io-nonblock
 [ext/io/wait]
   Nobuyuki Nakada (nobu)
   https://github.com/ruby/io-wait
+  https://rubygems.org/gems/io-wait
 [ext/json]
   NARUSE, Yui (naruse), Hiroshi SHIBATA (hsbt)
   https://github.com/flori/json
@@ -327,6 +355,7 @@ Zachary Scott (zzak)
 [ext/nkf]
   NARUSE, Yui (naruse)
   https://github.com/ruby/nkf
+  https://rubygems.org/gems/nkf
 [ext/openssl]
   Kazuki Yamaguchi (rhe)
   https://github.com/ruby/openssl
@@ -334,6 +363,7 @@ Zachary Scott (zzak)
 [ext/pathname]
   Tanaka Akira (akr)
   https://github.com/ruby/pathname
+  https://rubygems.org/gems/pathname
 [ext/psych]
   Aaron Patterson (tenderlove), Hiroshi SHIBATA (hsbt)
   https://github.com/ruby/psych
@@ -357,8 +387,11 @@ Zachary Scott (zzak)
 [ext/syslog]
   Akinori MUSHA (knu)
   https://github.com/ruby/syslog
+  https://rubygems.org/gems/syslog
 [ext/win32ole]
   Masaki Suketa (suke)
+  https://github.com/ruby/win32ole
+  https://rubygems.org/gems/win32ole
 [ext/zlib]
   NARUSE, Yui (naruse)
   https://github.com/ruby/zlib

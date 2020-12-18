@@ -69,6 +69,9 @@ VALUE rb_str_concat_literals(size_t num, const VALUE *strary);
 VALUE rb_str_eql(VALUE str1, VALUE str2);
 VALUE rb_id_quote_unprintable(ID);
 VALUE rb_sym_proc_call(ID mid, int argc, const VALUE *argv, int kw_splat, VALUE passed_proc);
+
+struct rb_execution_context_struct;
+VALUE rb_ec_str_resurrect(struct rb_execution_context_struct *ec, VALUE str);
 MJIT_SYMBOL_EXPORT_END
 
 #define rb_fstring_lit(str) rb_fstring_new((str), rb_strlen_lit(str))

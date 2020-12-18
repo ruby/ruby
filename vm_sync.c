@@ -39,16 +39,17 @@ rb_vm_locked_p(void)
 }
 
 static void
-vm_lock_enter(rb_vm_t *vm, bool locked, unsigned int *lev APPEND_LOCATION_ARGS)
+vm_lock_enter(rb_ractor_t *cr, rb_vm_t *vm, bool locked, bool no_barrier, unsigned int *lev APPEND_LOCATION_ARGS)
 {
+    RUBY_DEBUG_LOG2(file, line, "start locked:%d", locked);
+
     if (locked) {
         ASSERT_vm_locking();
     }
     else {
-        rb_ractor_t *cr = GET_RACTOR();
 #if RACTOR_CHECK_MODE
         // locking ractor and acquire VM lock will cause deadlock
-        VM_ASSERT(cr->locked_by != cr->self);
+        VM_ASSERT(cr->sync.locked_by != cr->self);
 #endif
 
         // lock
@@ -56,43 +57,45 @@ vm_lock_enter(rb_vm_t *vm, bool locked, unsigned int *lev APPEND_LOCATION_ARGS)
         VM_ASSERT(vm->ractor.sync.lock_owner == NULL);
         vm->ractor.sync.lock_owner = cr;
 
-        // barrier
-        while (vm->ractor.sync.barrier_waiting) {
-            unsigned int barrier_cnt = vm->ractor.sync.barrier_cnt;
-            rb_thread_t *th = GET_THREAD();
-            bool running;
+        if (!no_barrier) {
+            // barrier
+            while (vm->ractor.sync.barrier_waiting) {
+                unsigned int barrier_cnt = vm->ractor.sync.barrier_cnt;
+                rb_thread_t *th = GET_THREAD();
+                bool running;
 
-            RB_GC_SAVE_MACHINE_CONTEXT(th);
+                RB_GC_SAVE_MACHINE_CONTEXT(th);
 
-            if (rb_ractor_status_p(cr, ractor_running)) {
-                rb_vm_ractor_blocking_cnt_inc(vm, cr, __FILE__, __LINE__);
-                running = true;
-            }
-            else {
-                running = false;
-            }
-            VM_ASSERT(rb_ractor_status_p(cr, ractor_blocking));
+                if (rb_ractor_status_p(cr, ractor_running)) {
+                    rb_vm_ractor_blocking_cnt_inc(vm, cr, __FILE__, __LINE__);
+                    running = true;
+                }
+                else {
+                    running = false;
+                }
+                VM_ASSERT(rb_ractor_status_p(cr, ractor_blocking));
 
-            if (vm_barrier_finish_p(vm)) {
-                RUBY_DEBUG_LOG("wakeup barrier owner", 0);
-                rb_native_cond_signal(&vm->ractor.sync.barrier_cond);
-            }
-            else {
-                RUBY_DEBUG_LOG("wait for barrier finish", 0);
-            }
+                if (vm_barrier_finish_p(vm)) {
+                    RUBY_DEBUG_LOG("wakeup barrier owner", 0);
+                    rb_native_cond_signal(&vm->ractor.sync.barrier_cond);
+                }
+                else {
+                    RUBY_DEBUG_LOG("wait for barrier finish", 0);
+                }
 
-            // wait for restart
-            while (barrier_cnt == vm->ractor.sync.barrier_cnt) {
-                vm->ractor.sync.lock_owner = NULL;
-                rb_native_cond_wait(&cr->barrier_wait_cond, &vm->ractor.sync.lock);
-                VM_ASSERT(vm->ractor.sync.lock_owner == NULL);
-                vm->ractor.sync.lock_owner = cr;
-            }
+                // wait for restart
+                while (barrier_cnt == vm->ractor.sync.barrier_cnt) {
+                    vm->ractor.sync.lock_owner = NULL;
+                    rb_native_cond_wait(&cr->barrier_wait_cond, &vm->ractor.sync.lock);
+                    VM_ASSERT(vm->ractor.sync.lock_owner == NULL);
+                    vm->ractor.sync.lock_owner = cr;
+                }
 
-            RUBY_DEBUG_LOG("barrier is released. Acquire vm_lock", 0);
+                RUBY_DEBUG_LOG("barrier is released. Acquire vm_lock", 0);
 
-            if (running) {
-                rb_vm_ractor_blocking_cnt_dec(vm, cr, __FILE__, __LINE__);
+                if (running) {
+                    rb_vm_ractor_blocking_cnt_dec(vm, cr, __FILE__, __LINE__);
+                }
             }
         }
 
@@ -128,7 +131,31 @@ MJIT_FUNC_EXPORTED void
 rb_vm_lock_enter_body(unsigned int *lev APPEND_LOCATION_ARGS)
 {
     rb_vm_t *vm = GET_VM();
-    vm_lock_enter(vm, vm_locked(vm), lev APPEND_LOCATION_PARAMS);
+    if (vm_locked(vm)) {
+        vm_lock_enter(NULL, vm, true, false, lev APPEND_LOCATION_PARAMS);
+    }
+    else {
+        vm_lock_enter(GET_RACTOR(), vm, false, false, lev APPEND_LOCATION_PARAMS);
+    }
+}
+
+MJIT_FUNC_EXPORTED void
+rb_vm_lock_enter_body_nb(unsigned int *lev APPEND_LOCATION_ARGS)
+{
+    rb_vm_t *vm = GET_VM();
+    if (vm_locked(vm)) {
+        vm_lock_enter(NULL, vm, true, true, lev APPEND_LOCATION_PARAMS);
+    }
+    else {
+        vm_lock_enter(GET_RACTOR(), vm, false, true, lev APPEND_LOCATION_PARAMS);
+    }
+}
+
+MJIT_FUNC_EXPORTED void
+rb_vm_lock_enter_body_cr(rb_ractor_t *cr, unsigned int *lev APPEND_LOCATION_ARGS)
+{
+    rb_vm_t *vm = GET_VM();
+    vm_lock_enter(cr, vm, vm_locked(vm), false, lev APPEND_LOCATION_PARAMS);
 }
 
 MJIT_FUNC_EXPORTED void
@@ -142,7 +169,8 @@ rb_vm_lock_body(LOCATION_ARGS)
 {
     rb_vm_t *vm = GET_VM();
     ASSERT_vm_unlocking();
-    vm_lock_enter(vm, false, &vm->ractor.sync.lock_rec APPEND_LOCATION_PARAMS);
+
+    vm_lock_enter(GET_RACTOR(), vm, false, false, &vm->ractor.sync.lock_rec APPEND_LOCATION_PARAMS);
 }
 
 void
@@ -200,6 +228,8 @@ vm_barrier_finish_p(rb_vm_t *vm)
 void
 rb_vm_barrier(void)
 {
+    RB_DEBUG_COUNTER_INC(vm_sync_barrier);
+
     if (!rb_multi_ractor_p()) {
         // no other ractors
         return;
