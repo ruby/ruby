@@ -840,11 +840,6 @@ class TestModule < Test::Unit::TestCase
     assert_equal(:aClass1, o.aClass1)
     assert_equal(:aClass2, o.aClass2)
 
-    o = (c = Class.new(AClass)).new
-    c.class_eval {public [:aClass1, :aClass2]}
-    assert_equal(:aClass1, o.aClass1)
-    assert_equal(:aClass2, o.aClass2)
-
     o = AClass.new
     assert_equal(:aClass, o.aClass)
     assert_raise(NoMethodError, /private method/) {o.aClass1}
@@ -859,11 +854,6 @@ class TestModule < Test::Unit::TestCase
 
     o = (c = Class.new(AClass)).new
     c.class_eval {private :aClass, :aClass2}
-    assert_raise(NoMethodError, /private method/) {o.aClass}
-    assert_raise(NoMethodError, /private method/) {o.aClass2}
-
-    o = (c = Class.new(AClass)).new
-    c.class_eval {private [:aClass, :aClass2]}
     assert_raise(NoMethodError, /private method/) {o.aClass}
     assert_raise(NoMethodError, /private method/) {o.aClass2}
 
@@ -888,13 +878,6 @@ class TestModule < Test::Unit::TestCase
 
     o = (c = Class.new(aclass)).new
     c.class_eval {protected :aClass, :aClass1}
-    assert_raise(NoMethodError, /protected method/) {o.aClass}
-    assert_raise(NoMethodError, /protected method/) {o.aClass1}
-    assert_equal(:aClass, c.new._aClass(o))
-    assert_equal(:aClass1, c.new._aClass1(o))
-
-    o = (c = Class.new(aclass)).new
-    c.class_eval {protected [:aClass, :aClass1]}
     assert_raise(NoMethodError, /protected method/) {o.aClass}
     assert_raise(NoMethodError, /protected method/) {o.aClass1}
     assert_equal(:aClass, c.new._aClass(o))
@@ -1232,15 +1215,6 @@ class TestModule < Test::Unit::TestCase
     assert_raise(NameError) do
       c.instance_eval { attr_reader :"." }
     end
-
-    assert_equal([:a], c.class_eval { attr :a })
-    assert_equal([:b, :c], c.class_eval { attr :b, :c })
-    assert_equal([:d], c.class_eval { attr_reader :d })
-    assert_equal([:e, :f], c.class_eval { attr_reader :e, :f })
-    assert_equal([:g=], c.class_eval { attr_writer :g })
-    assert_equal([:h=, :i=], c.class_eval { attr_writer :h, :i })
-    assert_equal([:g, :g=], c.class_eval { attr_accessor :g })
-    assert_equal([:h, :h=, :i, :i=], c.class_eval { attr_accessor :h, :i })
   end
 
   def test_alias_method
@@ -1250,10 +1224,9 @@ class TestModule < Test::Unit::TestCase
     o = c.new
     assert_respond_to(o, :foo)
     assert_not_respond_to(o, :bar)
-    r = c.class_eval {alias_method :bar, :foo}
+    c.class_eval {alias_method :bar, :foo}
     assert_respond_to(o, :bar)
     assert_equal(:foo, o.bar)
-    assert_equal(:bar, r)
   end
 
   def test_undef
