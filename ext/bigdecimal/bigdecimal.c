@@ -1278,7 +1278,7 @@ BigDecimal_mult(VALUE self, VALUE r)
 
     GUARD_OBJ(a, GetVpValue(self, 1));
     if (RB_TYPE_P(r, T_FLOAT)) {
-	b = GetVpValueWithPrec(r, DBL_DIG+1, 1);
+        b = GetVpValueWithPrec(r, DBLE_FIG, 1);
     }
     else if (RB_TYPE_P(r, T_RATIONAL)) {
 	b = GetVpValueWithPrec(r, a->Prec*VpBaseFig(), 1);
