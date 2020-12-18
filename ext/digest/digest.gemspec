@@ -3,7 +3,7 @@
 
 Gem::Specification.new do |spec|
   spec.name          = "digest"
-  spec.version       = "1.0.0"
+  spec.version       = "3.0.0"
   spec.authors       = ["Akinori MUSHA"]
   spec.email         = ["knu@idaemons.org"]
 
