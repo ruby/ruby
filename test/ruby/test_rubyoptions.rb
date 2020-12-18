@@ -504,6 +504,7 @@ class TestRubyOptions < Test::Unit::TestCase
           ["if false;", "end", "if true\nelse ", "end"],
           ["else", " end", "_ = if true\n"],
           ["begin\n    def f() = nil", "end"],
+          ["begin\n    def self.f() = nil", "end"],
         ].each do
           |b, e = 'end', pre = nil, post = nil|
           src = ["#{pre}#{b}\n", " #{e}\n#{post}"]

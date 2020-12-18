@@ -401,6 +401,12 @@ static int parser_yyerror(struct parser_params*, const YYLTYPE *yylloc, const ch
 #define yyerror(yylloc, p, msg) parser_yyerror(p, yylloc, msg)
 #define token_flush(ptr) ((ptr)->lex.ptok = (ptr)->lex.pcur)
 
+static void token_info_setup(token_info *ptinfo, const char *ptr, const rb_code_location_t *loc);
+static void token_info_push(struct parser_params*, const char *token, const rb_code_location_t *loc);
+static void token_info_pop(struct parser_params*, const char *token, const rb_code_location_t *loc);
+static void token_info_warn(struct parser_params *p, const char *token, token_info *ptinfo_beg, int same, const rb_code_location_t *loc);
+static void token_info_drop(struct parser_params *p, const char *token, rb_code_position_t beg_pos);
+
 #ifdef RIPPER
 #define compile_for_eval	(0)
 #else
@@ -986,6 +992,7 @@ endless_method_name(struct parser_params *p, NODE *defn, const YYLTYPE *loc)
     if (is_attrset_id(mid)) {
 	yyerror1(loc, "setter method cannot be defined in an endless method definition");
     }
+    token_info_drop(p, "def", loc->beg_pos);
 }
 
 #ifndef RIPPER
@@ -1059,12 +1066,6 @@ PRINTF_ARGS(static void ripper_compile_error(struct parser_params*, const char *
 PRINTF_ARGS(static void parser_compile_error(struct parser_params*, const char *fmt, ...), 2, 3);
 # define compile_error parser_compile_error
 #endif
-
-static void token_info_setup(token_info *ptinfo, const char *ptr, const rb_code_location_t *loc);
-static void token_info_push(struct parser_params*, const char *token, const rb_code_location_t *loc);
-static void token_info_pop(struct parser_params*, const char *token, const rb_code_location_t *loc);
-static void token_info_warn(struct parser_params *p, const char *token, token_info *ptinfo_beg, int same, const rb_code_location_t *loc);
-static void token_info_drop(struct parser_params *p, const char *token, rb_code_position_t beg_pos);
 
 #define WARN_EOL(tok) \
     (looking_at_eol_p(p) ? \
@@ -2499,7 +2500,6 @@ arg		: lhs '=' lex_ctxt arg_rhs
 		| defn_head f_opt_paren_args '=' arg
 		    {
 			endless_method_name(p, $<node>1, &@1);
-			token_info_drop(p, "def", @1.beg_pos);
 			restore_defun(p, $<node>1->nd_defn);
 		    /*%%%*/
 			$$ = set_defun_body(p, $1, $2, $4, &@$);
@@ -2510,7 +2510,6 @@ arg		: lhs '=' lex_ctxt arg_rhs
 		| defn_head f_opt_paren_args '=' arg modifier_rescue arg
 		    {
 			endless_method_name(p, $<node>1, &@1);
-			token_info_drop(p, "def", @1.beg_pos);
 			restore_defun(p, $<node>1->nd_defn);
 		    /*%%%*/
 			$4 = rescued_expr(p, $4, $6, &@4, &@5, &@6);
