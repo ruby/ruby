@@ -61,4 +61,10 @@ describe "Module#attr_reader" do
   it "is a public method" do
     Module.should have_public_instance_method(:attr_reader, false)
   end
+
+  it "returns an array of defined methods names as symbols" do
+    Class.new do
+      (attr_reader :foo, 'bar').should == [:foo, :bar]
+    end
+  end
 end

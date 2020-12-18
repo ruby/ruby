@@ -67,6 +67,12 @@ describe "Module#attr_accessor" do
     Module.should have_public_instance_method(:attr_accessor, false)
   end
 
+  it "returns an array of defined methods names as symbols" do
+    Class.new do
+      (attr_accessor :foo, 'bar').should == [:foo, :foo=, :bar, :bar=]
+    end
+  end
+
   describe "on immediates" do
     before :each do
       class Fixnum
