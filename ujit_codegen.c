@@ -26,7 +26,31 @@ codeblock_t* cb = NULL;
 static codeblock_t outline_block;
 codeblock_t* ocb = NULL;
 
-// Ruby instruction entry
+// Get the current instruction's opcode
+static int
+jit_get_opcode(jitstate_t* jit)
+{
+    return opcode_at_pc(jit->iseq, jit->pc);
+}
+
+// Get the index of the next instruction
+static uint32_t
+jit_next_idx(jitstate_t* jit)
+{
+    return jit->insn_idx + insn_len(jit_get_opcode(jit));
+}
+
+// Get an instruction argument by index
+static VALUE
+jit_get_arg(jitstate_t* jit, size_t arg_idx)
+{
+    assert (arg_idx + 1 < insn_len(jit_get_opcode(jit)));
+    return *(jit->pc + arg_idx + 1);
+}
+
+/**
+Generate code to enter from the Ruby interpreter into ujit code
+*/
 static void
 ujit_gen_entry(codeblock_t* cb)
 {
@@ -40,7 +64,7 @@ ujit_gen_entry(codeblock_t* cb)
 Generate an inline exit to return to the interpreter
 */
 static void
-ujit_gen_exit(codeblock_t* cb, ctx_t* ctx, VALUE* exit_pc)
+ujit_gen_exit(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb, VALUE* exit_pc)
 {
     // Write the adjusted SP back into the CFP
     if (ctx->stack_size != 0)
@@ -62,9 +86,9 @@ ujit_gen_exit(codeblock_t* cb, ctx_t* ctx, VALUE* exit_pc)
 Generate an out-of-line exit to return to the interpreter
 */
 static uint8_t *
-ujit_side_exit(codeblock_t* cb, ctx_t* ctx)
+ujit_side_exit(jitstate_t* jit, ctx_t* ctx)
 {
-    uint8_t* code_ptr = cb_get_ptr(cb, cb->write_pos);
+    uint8_t* code_ptr = cb_get_ptr(ocb, cb->write_pos);
 
     // Table mapping opcodes to interpreter handlers
     const void * const *table = rb_vm_get_insns_address_table();
@@ -72,15 +96,15 @@ ujit_side_exit(codeblock_t* cb, ctx_t* ctx)
     // Write back the old instruction at the exit PC
     // Otherwise the interpreter may jump right back to the
     // JITted code we're trying to exit
-    VALUE* exit_pc = &ctx->iseq->body->iseq_encoded[ctx->insn_idx];
-    int exit_opcode = opcode_at_pc(ctx->iseq, exit_pc);
+    VALUE* exit_pc = &jit->iseq->body->iseq_encoded[jit->insn_idx];
+    int exit_opcode = opcode_at_pc(jit->iseq, exit_pc);
     void* exit_instr = (void*)table[exit_opcode];
-    mov(cb, RAX, const_ptr_opnd(exit_pc));
-    mov(cb, RCX, const_ptr_opnd(exit_instr));
-    mov(cb, mem_opnd(64, RAX, 0), RCX);
+    mov(ocb, RAX, const_ptr_opnd(exit_pc));
+    mov(ocb, RCX, const_ptr_opnd(exit_instr));
+    mov(ocb, mem_opnd(64, RAX, 0), RCX);
 
     // Generate the code to exit to the interpreters
-    ujit_gen_exit(cb, ctx, exit_pc);
+    ujit_gen_exit(jit, ctx, ocb, exit_pc);
 
     return code_ptr;
 }
@@ -146,20 +170,24 @@ ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, uint32_t* num_instr
     // Get a pointer to the current write position in the code block
     uint8_t *code_ptr = cb_get_ptr(cb, cb->write_pos);
 
+    // Initialize JIT state object
+    jitstate_t jit = { 0 };
+    jit.iseq = iseq;
+    jit.start_idx = insn_idx;
+
     // Create codegen context
     ctx_t ctx = { 0 };
-    ctx.iseq = iseq;
-    ctx.code_ptr = code_ptr;
-    ctx.start_idx = insn_idx;
 
     // For each instruction to compile
     for (;;) {
         // Set the current instruction
-        ctx.insn_idx = insn_idx;
-        ctx.pc = &encoded[insn_idx];
+        jit.insn_idx = insn_idx;
+        jit.pc = &encoded[insn_idx];
 
         // Get the current opcode
-        int opcode = ctx_get_opcode(&ctx);
+        int opcode = jit_get_opcode(&jit);
+
+        //fprintf(stderr, "compiling %s\n", insn_name(opcode));
 
         // Lookup the codegen function for this instruction
         st_data_t st_gen_fn;
@@ -169,12 +197,11 @@ ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, uint32_t* num_instr
             break;
         }
 
-        //fprintf(stderr, "compiling %s\n", insn_name(opcode));
         //print_str(cb, insn_name(opcode));
 
         // Call the code generation function
         codegen_fn gen_fn = (codegen_fn)st_gen_fn;
-        if (!gen_fn(cb, ocb, &ctx)) {
+        if (!gen_fn(&jit, &ctx)) {
             break;
         }
 
@@ -195,12 +222,12 @@ ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, uint32_t* num_instr
     // FIXME: we only need to generate an exit if an instruction fails to compile
     //
     // Generate code to exit to the interpreter
-    ujit_gen_exit(cb, &ctx, &encoded[insn_idx]);
+    ujit_gen_exit(&jit, &ctx, cb, &encoded[insn_idx]);
 
     if (UJIT_DUMP_MODE >= 2) {
         // Dump list of compiled instrutions
         fprintf(stderr, "Compiled the following for iseq=%p:\n", (void *)iseq);
-        VALUE *pc = &encoded[ctx.start_idx];
+        VALUE *pc = &encoded[jit.start_idx];
         VALUE *end_pc = &encoded[insn_idx];
         while (pc < end_pc) {
             int opcode = opcode_at_pc(iseq, pc);
@@ -213,7 +240,7 @@ ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, uint32_t* num_instr
 }
 
 static bool
-gen_dup(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
+gen_dup(jitstate_t* jit, ctx_t* ctx)
 {
     x86opnd_t dup_val = ctx_stack_pop(ctx, 1);
     x86opnd_t loc0 = ctx_stack_push(ctx, 1);
@@ -225,14 +252,14 @@ gen_dup(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 }
 
 static bool
-gen_nop(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
+gen_nop(jitstate_t* jit, ctx_t* ctx)
 {
     // Do nothing
     return true;
 }
 
 static bool
-gen_pop(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
+gen_pop(jitstate_t* jit, ctx_t* ctx)
 {
     // Decrement SP
     ctx_stack_pop(ctx, 1);
@@ -240,7 +267,7 @@ gen_pop(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 }
 
 static bool
-gen_putnil(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
+gen_putnil(jitstate_t* jit, ctx_t* ctx)
 {
     // Write constant at SP
     x86opnd_t stack_top = ctx_stack_push(ctx, 1);
@@ -249,11 +276,11 @@ gen_putnil(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 }
 
 static bool
-gen_putobject(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
+gen_putobject(jitstate_t* jit, ctx_t* ctx)
 {
     // Load the argument from the bytecode sequence.
     // We need to do this as the argument can change due to GC compaction.
-    x86opnd_t pc_imm = const_ptr_opnd((void*)ctx->pc);
+    x86opnd_t pc_imm = const_ptr_opnd((void*)jit->pc);
     mov(cb, RAX, pc_imm);
     mov(cb, RAX, mem_opnd(64, RAX, 8)); // One after the opcode
 
@@ -265,9 +292,9 @@ gen_putobject(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 }
 
 static bool
-gen_putobject_int2fix(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
+gen_putobject_int2fix(jitstate_t* jit, ctx_t* ctx)
 {
-    int opcode = ctx_get_opcode(ctx);
+    int opcode = jit_get_opcode(jit);
     int cst_val = (opcode == BIN(putobject_INT2FIX_0_))? 0:1;
 
     // Write constant at SP
@@ -278,7 +305,7 @@ gen_putobject_int2fix(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 }
 
 static bool
-gen_putself(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
+gen_putself(jitstate_t* jit, ctx_t* ctx)
 {
     // Load self from CFP
     mov(cb, RAX, member_opnd(REG_CFP, rb_control_frame_t, self));
@@ -291,13 +318,13 @@ gen_putself(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 }
 
 static bool
-gen_getlocal_wc0(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
+gen_getlocal_wc0(jitstate_t* jit, ctx_t* ctx)
 {
     // Load environment pointer EP from CFP
     mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, ep));
 
     // Compute the offset from BP to the local
-    int32_t local_idx = (int32_t)ctx_get_arg(ctx, 0);
+    int32_t local_idx = (int32_t)jit_get_arg(jit, 0);
     const int32_t offs = -8 * local_idx;
 
     // Load the local from the block
@@ -311,7 +338,7 @@ gen_getlocal_wc0(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 }
 
 static bool
-gen_setlocal_wc0(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
+gen_setlocal_wc0(jitstate_t* jit, ctx_t* ctx)
 {
     /*
     vm_env_write(const VALUE *ep, int index, VALUE v)
@@ -334,7 +361,7 @@ gen_setlocal_wc0(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     test(cb, flags_opnd, imm_opnd(VM_ENV_FLAG_WB_REQUIRED));
 
     // Create a size-exit to fall back to the interpreter
-    uint8_t* side_exit = ujit_side_exit(ocb, ctx);
+    uint8_t* side_exit = ujit_side_exit(jit, ctx);
 
     // if (flags & VM_ENV_FLAG_WB_REQUIRED) != 0
     jnz_ptr(cb, side_exit);
@@ -344,7 +371,7 @@ gen_setlocal_wc0(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     mov(cb, REG1, stack_top);
 
     // Write the value at the environment pointer
-    int32_t local_idx = (int32_t)ctx_get_arg(ctx, 0);
+    int32_t local_idx = (int32_t)jit_get_arg(jit, 0);
     const int32_t offs = -8 * local_idx;
     mov(cb, mem_opnd(64, REG0, offs), REG1);
 
@@ -368,9 +395,9 @@ guard_self_is_object(codeblock_t *cb, x86opnd_t self_opnd, uint8_t *side_exit, c
 }
 
 static bool
-gen_getinstancevariable(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
+gen_getinstancevariable(jitstate_t* jit, ctx_t* ctx)
 {
-    IVC ic = (IVC)ctx_get_arg(ctx, 1);
+    IVC ic = (IVC)jit_get_arg(jit, 1);
 
     // Check that the inline cache has been set, slot index is known
     if (!ic->entry)
@@ -390,7 +417,7 @@ gen_getinstancevariable(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     uint32_t ivar_index = ic->entry->index;
 
     // Create a size-exit to fall back to the interpreter
-    uint8_t* side_exit = ujit_side_exit(ocb, ctx);
+    uint8_t* side_exit = ujit_side_exit(jit, ctx);
 
     // Load self from CFP
     mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, self));
@@ -430,9 +457,9 @@ gen_getinstancevariable(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 }
 
 static bool
-gen_setinstancevariable(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
+gen_setinstancevariable(jitstate_t* jit, ctx_t* ctx)
 {
-    IVC ic = (IVC)ctx_get_arg(ctx, 1);
+    IVC ic = (IVC)jit_get_arg(jit, 1);
 
     // Check that the inline cache has been set, slot index is known
     if (!ic->entry)
@@ -452,7 +479,7 @@ gen_setinstancevariable(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     uint32_t ivar_index = ic->entry->index;
 
     // Create a size-exit to fall back to the interpreter
-    uint8_t* side_exit = ujit_side_exit(ocb, ctx);
+    uint8_t* side_exit = ujit_side_exit(jit, ctx);
 
     // Load self from CFP
     mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, self));
@@ -501,11 +528,11 @@ gen_setinstancevariable(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 }
 
 static bool
-gen_opt_lt(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
+gen_opt_lt(jitstate_t* jit, ctx_t* ctx)
 {
     // Create a size-exit to fall back to the interpreter
     // Note: we generate the side-exit before popping operands from the stack
-    uint8_t* side_exit = ujit_side_exit(ocb, ctx);
+    uint8_t* side_exit = ujit_side_exit(jit, ctx);
 
     // TODO: make a helper function for guarding on op-not-redefined
     // Make sure that minus isn't redefined for integers
@@ -542,11 +569,11 @@ gen_opt_lt(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 }
 
 static bool
-gen_opt_minus(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
+gen_opt_minus(jitstate_t* jit, ctx_t* ctx)
 {
     // Create a size-exit to fall back to the interpreter
     // Note: we generate the side-exit before popping operands from the stack
-    uint8_t* side_exit = ujit_side_exit(ocb, ctx);
+    uint8_t* side_exit = ujit_side_exit(jit, ctx);
 
     // TODO: make a helper function for guarding on op-not-redefined
     // Make sure that minus isn't redefined for integers
@@ -582,11 +609,11 @@ gen_opt_minus(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 }
 
 static bool
-gen_opt_plus(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
+gen_opt_plus(jitstate_t* jit, ctx_t* ctx)
 {
     // Create a size-exit to fall back to the interpreter
     // Note: we generate the side-exit before popping operands from the stack
-    uint8_t* side_exit = ujit_side_exit(ocb, ctx);
+    uint8_t* side_exit = ujit_side_exit(jit, ctx);
 
     // TODO: make a helper function for guarding on op-not-redefined
     // Make sure that plus isn't redefined for integers
@@ -658,7 +685,7 @@ cfunc_needs_frame(const rb_method_cfunc_t *cfunc)
 }
 
 static bool
-gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
+gen_opt_send_without_block(jitstate_t* jit, ctx_t* ctx)
 {
     // Relevant definitions:
     // rb_execution_context_t       : vm_core.h
@@ -667,7 +694,7 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     // vm_call_cfunc_with_frame     : vm_insnhelper.c
     // rb_callcache                 : vm_callinfo.h
 
-    struct rb_call_data * cd = (struct rb_call_data *)ctx_get_arg(ctx, 0);
+    struct rb_call_data * cd = (struct rb_call_data *)jit_get_arg(jit, 0);
     int32_t argc = (int32_t)vm_ci_argc(cd->ci);
 
     // Don't JIT calls with keyword splat
@@ -715,7 +742,7 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     }
 
     // Create a size-exit to fall back to the interpreter
-    uint8_t* side_exit = ujit_side_exit(ocb, ctx);
+    uint8_t* side_exit = ujit_side_exit(jit, ctx);
 
     // Check for interrupts
     // RUBY_VM_CHECK_INTS(ec)
@@ -754,7 +781,7 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     jne_ptr(cb, side_exit);
 
     // Store incremented PC into current control frame in case callee raises.
-    mov(cb, REG0, const_ptr_opnd(ctx->pc + insn_len(BIN(opt_send_without_block))));
+    mov(cb, REG0, const_ptr_opnd(jit->pc + insn_len(BIN(opt_send_without_block))));
     mov(cb, mem_opnd(64, REG_CFP, offsetof(rb_control_frame_t, pc)), REG0);
 
     // If this function needs a Ruby stack frame
@@ -865,7 +892,8 @@ gen_opt_send_without_block(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
 
     //print_str(cb, "before C call");
 
-    assume_method_lookup_stable(cd->cc, cme, ctx);
+    // FIXME
+    //assume_method_lookup_stable(cd->cc, cme, ctx);
 
     // Call the C function
     // VALUE ret = (cfunc->func)(recv, argv[0], argv[1]);
@@ -909,7 +937,7 @@ gen_branchunless_branch(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uin
 }
 
 static bool
-gen_branchunless(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
+gen_branchunless(jitstate_t* jit, ctx_t* ctx)
 {
     // TODO: we need to eventually do an interrupt check when jumping/branching
     // How can we do this while keeping the check logic out of line?
@@ -924,10 +952,10 @@ gen_branchunless(codeblock_t* cb, codeblock_t* ocb, ctx_t* ctx)
     test(cb, val_opnd, imm_opnd(~Qnil));
 
     // Get the branch target instruction offsets
-    uint32_t next_idx = ctx_next_idx(ctx);
-    uint32_t jump_idx = next_idx + (uint32_t)ctx_get_arg(ctx, 0);
-    blockid_t next_block = { ctx->iseq, next_idx };
-    blockid_t jump_block = { ctx->iseq, jump_idx };
+    uint32_t next_idx = jit_next_idx(jit);
+    uint32_t jump_idx = next_idx + (uint32_t)jit_get_arg(jit, 0);
+    blockid_t next_block = { jit->iseq, next_idx };
+    blockid_t jump_block = { jit->iseq, jump_idx };
 
     // Generate the branch instructions
     gen_branch(cb, ocb, jump_block, next_block, gen_branchunless_branch);
@@ -965,6 +993,6 @@ ujit_init_codegen(void)
     st_insert(gen_fns, (st_data_t)BIN(opt_lt), (st_data_t)&gen_opt_lt);
     st_insert(gen_fns, (st_data_t)BIN(opt_minus), (st_data_t)&gen_opt_minus);
     st_insert(gen_fns, (st_data_t)BIN(opt_plus), (st_data_t)&gen_opt_plus);
-    st_insert(gen_fns, (st_data_t)BIN(opt_send_without_block), (st_data_t)&gen_opt_send_without_block);
-    //st_insert(gen_fns, (st_data_t)BIN(branchunless), (st_data_t)&gen_branchunless);
+    //st_insert(gen_fns, (st_data_t)BIN(opt_send_without_block), (st_data_t)&gen_opt_send_without_block);
+    st_insert(gen_fns, (st_data_t)BIN(branchunless), (st_data_t)&gen_branchunless);
 }

@@ -63,6 +63,7 @@ opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc)
     }
 }
 
+/*
 // GC root for interacting with the GC
 struct ujit_root_struct {};
 
@@ -142,7 +143,7 @@ add_lookup_dependency_i(st_data_t *key, st_data_t *value, st_data_t data, int ex
 
 // Remember that the currently compiling region is only valid while cme and cc are valid
 void
-assume_method_lookup_stable(const struct rb_callcache *cc, const rb_callable_method_entry_t *cme,  ctx_t *ctx)
+assume_method_lookup_stable(const struct rb_callcache *cc, const rb_callable_method_entry_t *cme, ctx_t *ctx)
 {
     st_update(method_lookup_dependency, (st_data_t)cme, add_lookup_dependency_i, (st_data_t)ctx);
     st_update(method_lookup_dependency, (st_data_t)cc, add_lookup_dependency_i, (st_data_t)ctx);
@@ -193,11 +194,13 @@ static const rb_data_type_t ujit_root_type = {
     {ujit_root_mark, ujit_root_free, ujit_root_memsize, },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
+*/
 
 // Callback when cme or cc become invalid
 void
 rb_ujit_method_lookup_change(VALUE cme_or_cc)
 {
+    /*
     if (!method_lookup_dependency) return;
 
     RUBY_ASSERT(IMEMO_TYPE_P(cme_or_cc, imemo_ment) || IMEMO_TYPE_P(cme_or_cc, imemo_callcache));
@@ -223,6 +226,7 @@ rb_ujit_method_lookup_change(VALUE cme_or_cc)
 
         array->size = 0;
     }
+    */
 }
 
 void
@@ -256,9 +260,11 @@ rb_ujit_init(void)
     ujit_init_core();
     ujit_init_codegen();
 
+    /*
     // Initialize the GC hooks
     method_lookup_dependency = st_init_numtable();
     struct ujit_root_struct *root;
     VALUE ujit_root = TypedData_Make_Struct(0, struct ujit_root_struct, &ujit_root_type, root);
     rb_gc_register_mark_object(ujit_root);
+    */
 }
