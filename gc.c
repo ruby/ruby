@@ -7142,15 +7142,18 @@ gc_verify_internal_consistency_(rb_objspace_t *objspace)
 static void
 gc_verify_internal_consistency(rb_objspace_t *objspace)
 {
-    ASSERT_vm_locking();
-    rb_vm_barrier(); // stop other ractors
-
-    unsigned int prev_during_gc = during_gc;
-    during_gc = FALSE; // stop gc here
+    RB_VM_LOCK_ENTER();
     {
-        gc_verify_internal_consistency_(objspace);
+        rb_vm_barrier(); // stop other ractors
+
+        unsigned int prev_during_gc = during_gc;
+        during_gc = FALSE; // stop gc here
+        {
+            gc_verify_internal_consistency_(objspace);
+        }
+        during_gc = prev_during_gc;
     }
-    during_gc = prev_during_gc;
+    RB_VM_LOCK_LEAVE();
 }
 
 void
