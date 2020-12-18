@@ -5308,7 +5308,7 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
             return;
         }
         else {
-            rb_hook_list_t *global_hooks = rb_vm_global_hooks(ec);
+            rb_hook_list_t *global_hooks = rb_ec_ractor_hooks(ec);
 
             if (0) {
                 fprintf(stderr, "vm_trace>>%4d (%4x) - %s:%d %s\n",

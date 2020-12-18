@@ -16316,6 +16316,7 @@ vm_trace.$(OBJEXT): {$(VPATH)}mjit.h
 vm_trace.$(OBJEXT): {$(VPATH)}node.h
 vm_trace.$(OBJEXT): {$(VPATH)}onigmo.h
 vm_trace.$(OBJEXT): {$(VPATH)}oniguruma.h
+vm_trace.$(OBJEXT): {$(VPATH)}ractor.h
 vm_trace.$(OBJEXT): {$(VPATH)}ruby_assert.h
 vm_trace.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 vm_trace.$(OBJEXT): {$(VPATH)}st.h

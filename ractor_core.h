@@ -138,6 +138,8 @@ struct rb_ractor_struct {
     VALUE verbose;
     VALUE debug;
 
+    rb_hook_list_t event_hooks;
+
     struct {
         struct RVALUE *freelist;
         struct heap_page *using_page;

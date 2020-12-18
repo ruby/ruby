@@ -197,6 +197,7 @@ ractor_mark(void *ptr)
     rb_gc_mark(r->r_stdin);
     rb_gc_mark(r->r_stdout);
     rb_gc_mark(r->r_stderr);
+    rb_hook_list_mark(&r->event_hooks);
 
     if (r->threads.cnt > 0) {
         rb_thread_t *th = 0;
@@ -230,6 +231,7 @@ ractor_free(void *ptr)
     ractor_queue_free(&r->sync.incoming_queue);
     ractor_waiting_list_free(&r->sync.taking_ractors);
     ractor_local_storage_free(r);
+    rb_hook_list_free(&r->event_hooks);
     ruby_xfree(r);
 }
 
@@ -2124,6 +2126,12 @@ rb_ractor_stderr_set(VALUE err)
         rb_ractor_t *cr = GET_RACTOR();
         RB_OBJ_WRITE(cr->self, &cr->r_stderr, err);
     }
+}
+
+rb_hook_list_t *
+rb_ractor_hooks(rb_ractor_t *cr)
+{
+    return &cr->event_hooks;
 }
 
 /// traverse function
