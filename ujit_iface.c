@@ -233,7 +233,7 @@ rb_ujit_compile_iseq(const rb_iseq_t *iseq)
     VALUE *encoded = (VALUE *)iseq->body->iseq_encoded;
 
     // Compile a block version starting at the first instruction
-    uint8_t* native_code_ptr = ujit_compile_block(iseq, 0, true);
+    uint8_t* native_code_ptr = ujit_compile_entry(iseq, 0);
 
     if (native_code_ptr) {
         encoded[0] = (VALUE)native_code_ptr;
