@@ -61,11 +61,6 @@ extern ID ruby_static_id_cause;
     (!SPECIAL_CONST_P(obj) && \
      (BUILTIN_TYPE(obj) == T_CLASS || BUILTIN_TYPE(obj) == T_MODULE))
 
-/*!
- * Initializes the VM and builtin libraries.
- * @retval 0 if succeeded.
- * @retval non-zero an error occurred.
- */
 int
 ruby_setup(void)
 {
@@ -99,11 +94,6 @@ ruby_setup(void)
     return state;
 }
 
-/*!
- * Calls ruby_setup() and check error.
- *
- * Prints errors and calls exit(3) if an error occurred.
- */
 void
 ruby_init(void)
 {
@@ -115,16 +105,6 @@ ruby_init(void)
     }
 }
 
-/*! Processes command line arguments and compiles the Ruby source to execute.
- *
- * This function does:
- * \li Processes the given command line flags and arguments for ruby(1)
- * \li compiles the source code from the given argument, -e or stdin, and
- * \li returns the compiled source as an opaque pointer to an internal data structure
- *
- * @return an opaque pointer to the compiled source or an internal special value.
- * @sa ruby_executable_node().
- */
 void *
 ruby_options(int argc, char **argv)
 {
@@ -184,13 +164,6 @@ rb_ec_finalize(rb_execution_context_t *ec)
     rb_objspace_call_finalizer(rb_ec_vm_ptr(ec)->objspace);
 }
 
-/** Runs the VM finalization processes.
- *
- * <code>END{}</code> and procs registered by <code>Kernel.#at_exit</code> are
- * executed here. See the Ruby language spec for more details.
- *
- * @note This function is allowed to raise an exception if an error occurred.
- */
 void
 ruby_finalize(void)
 {
@@ -199,16 +172,6 @@ ruby_finalize(void)
     rb_ec_finalize(ec);
 }
 
-/** Destructs the VM.
- *
- * Runs the VM finalization processes as well as ruby_finalize(), and frees
- * resources used by the VM.
- *
- * @param ex Default value to the return value.
- * @return If an error occurred returns a non-zero. If otherwise, returns the
- *         given ex.
- * @note This function does not raise any exception.
- */
 int
 ruby_cleanup(int ex)
 {
@@ -322,25 +285,12 @@ rb_ec_exec_node(rb_execution_context_t *ec, void *n)
     return state;
 }
 
-/*! Calls ruby_cleanup() and exits the process */
 void
 ruby_stop(int ex)
 {
     exit(ruby_cleanup(ex));
 }
 
-/*! Checks the return value of ruby_options().
- * @param n return value of ruby_options().
- * @param status pointer to the exit status of this process.
- *
- * ruby_options() sometimes returns a special value to indicate this process
- * should immediately exit. This function checks if the case. Also stores the
- * exit status that the caller have to pass to exit(3) into
- * <code>*status</code>.
- *
- * @retval non-zero if the given opaque pointer is actually a compiled source.
- * @retval 0 if the given value is such a special value.
- */
 int
 ruby_executable_node(void *n, int *status)
 {
@@ -358,10 +308,6 @@ ruby_executable_node(void *n, int *status)
     return FALSE;
 }
 
-/*! Runs the given compiled source and exits this process.
- * @retval 0 if successfully run the source
- * @retval non-zero if an error occurred.
-*/
 int
 ruby_run_node(void *n)
 {
@@ -375,7 +321,6 @@ ruby_run_node(void *n)
     return rb_ec_cleanup(ec, rb_ec_exec_node(ec, n));
 }
 
-/*! Runs the given compiled source */
 int
 ruby_exec_node(void *n)
 {
