@@ -1189,6 +1189,7 @@ x = __ENCODING__
       B = [[2]]
       # shareable_constant_value: literal
       C = [["shareable", "constant#{nil}"]]
+      D = A
 
       [A, B, C]
     end;

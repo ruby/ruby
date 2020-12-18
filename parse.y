@@ -11033,8 +11033,11 @@ shareable_literal_value(NODE *node)
 VALUE rb_ractor_make_shareable(VALUE obj);
 
 static NODE *
-shareable_literal_constant(struct parser_params *p, NODE *value, enum shareability shareable, const YYLTYPE *loc)
+shareable_literal_constant(struct parser_params *p, enum shareability shareable,
+			   NODE *value, const YYLTYPE *loc, size_t level)
 {
+# define shareable_literal_constant_next(n) \
+    shareable_literal_constant(p, shareable, (n), &(n)->nd_loc, level+1)
     VALUE lit;
 
     if (!value) return 0;
@@ -11062,12 +11065,11 @@ shareable_literal_constant(struct parser_params *p, NODE *value, enum shareabili
 	lit = rb_ary_new();
 	for (NODE *n = value; n; n = n->nd_next) {
 	    NODE *elt = n->nd_head;
-	    if (elt && !(elt = shareable_literal_constant(p, elt, shareable, &elt->nd_loc))) {
+	    if (elt && !(elt = shareable_literal_constant_next(elt))) {
 		if (lit) {
 		    rb_ary_clear(lit);
 		    lit = Qfalse;
 		}
-		continue;
 	    }
 	    if (lit) {
 		VALUE e = shareable_literal_value(elt);
@@ -11091,13 +11093,12 @@ shareable_literal_constant(struct parser_params *p, NODE *value, enum shareabili
 	for (NODE *n = value->nd_head; n; n = n->nd_next->nd_next) {
 	    NODE *key = n->nd_head;
 	    NODE *val = n->nd_next->nd_head;
-	    if ((key && !(key = shareable_literal_constant(p, key, shareable, &key->nd_loc))) ||
-		(val && !(val = shareable_literal_constant(p, val, shareable, &val->nd_loc)))) {
+	    if ((key && !(key = shareable_literal_constant_next(key))) ||
+		(val && !(val = shareable_literal_constant_next(val)))) {
 		if (lit) {
 		    rb_hash_clear(lit);
 		    lit = Qfalse;
 		}
-		continue;
 	    }
 	    if (lit) {
 		VALUE k = shareable_literal_value(key);
@@ -11117,11 +11118,12 @@ shareable_literal_constant(struct parser_params *p, NODE *value, enum shareabili
 	break;
 
       default:
-	if (shareable == shareable_literal)
+	if (shareable == shareable_literal && level > 0)
 	    yyerror1(loc, "unshareable expression");
 	return 0;
     }
     return value;
+# undef shareable_literal_constant_next
 }
 
 static NODE *
@@ -11135,7 +11137,7 @@ shareable_constant_value(struct parser_params *p, NODE *value, enum shareability
       case shareable_literal:
       case shareable_everything:
 	{
-	    NODE *lit = shareable_literal_constant(p, value, shareable, loc);
+	    NODE *lit = shareable_literal_constant(p, shareable, value, loc, 0);
 	    if (lit) return lit;
 	}
 	break;
