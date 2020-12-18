@@ -687,6 +687,7 @@ end
 [Feature #16815]: https://bugs.ruby-lang.org/issues/16815
 [Feature #16828]: https://bugs.ruby-lang.org/issues/16828
 [Misc #16961]:    https://bugs.ruby-lang.org/issues/16961
+[Bug #17030]:     https://bugs.ruby-lang.org/issues/17030
 [Feature #17055]: https://bugs.ruby-lang.org/issues/17055
 [Feature #17104]: https://bugs.ruby-lang.org/issues/17104
 [Feature #17122]: https://bugs.ruby-lang.org/issues/17122
@@ -696,9 +697,8 @@ end
 [Bug #17221]:     https://bugs.ruby-lang.org/issues/17221
 [Feature #17260]: https://bugs.ruby-lang.org/issues/17260
 [Feature #17303]: https://bugs.ruby-lang.org/issues/17303
+[Feature #17314]: https://bugs.ruby-lang.org/issues/17314
 [Feature #17322]: https://bugs.ruby-lang.org/issues/17322
 [Feature #17351]: https://bugs.ruby-lang.org/issues/17351
 [Feature #17371]: https://bugs.ruby-lang.org/issues/17371
 [GH-2991]:        https://github.com/ruby/ruby/pull/2991
-[Bug #17030]:     https://bugs.ruby-lang.org/issues/17030
-[Feature #17314]: https://bugs.ruby-lang.org/issues/17314
