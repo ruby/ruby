@@ -77,7 +77,7 @@ static ID id_half;
 #define BASE1 (BASE/10)
 
 #ifndef DBLE_FIG
-#define DBLE_FIG (DBL_DIG+1)    /* figure of double */
+#define DBLE_FIG rmpd_double_figures()    /* figure of double */
 #endif
 
 #ifndef RRATIONAL_ZERO_P
@@ -252,7 +252,7 @@ again:
     switch(TYPE(v)) {
       case T_FLOAT:
 	if (prec < 0) goto unable_to_coerce_without_prec;
-	if (prec > DBL_DIG+1) goto SomeOneMayDoIt;
+	if (prec > (long)DBLE_FIG) goto SomeOneMayDoIt;
 	d = RFLOAT_VALUE(v);
 	if (!isfinite(d)) {
 	    pv = VpCreateRbObject(1, NULL);
@@ -899,7 +899,7 @@ BigDecimal_coerce(VALUE self, VALUE other)
     Real *b;
 
     if (RB_TYPE_P(other, T_FLOAT)) {
-	GUARD_OBJ(b, GetVpValueWithPrec(other, DBL_DIG+1, 1));
+	GUARD_OBJ(b, GetVpValueWithPrec(other, DBLE_FIG, 1));
 	obj = rb_assoc_new(ToValue(b), self);
     }
     else {
@@ -957,7 +957,7 @@ BigDecimal_add(VALUE self, VALUE r)
 
     GUARD_OBJ(a, GetVpValue(self, 1));
     if (RB_TYPE_P(r, T_FLOAT)) {
-	b = GetVpValueWithPrec(r, DBL_DIG+1, 1);
+	b = GetVpValueWithPrec(r, DBLE_FIG, 1);
     }
     else if (RB_TYPE_P(r, T_RATIONAL)) {
 	b = GetVpValueWithPrec(r, a->Prec*VpBaseFig(), 1);
@@ -1015,7 +1015,7 @@ BigDecimal_sub(VALUE self, VALUE r)
 
     GUARD_OBJ(a, GetVpValue(self,1));
     if (RB_TYPE_P(r, T_FLOAT)) {
-	b = GetVpValueWithPrec(r, DBL_DIG+1, 1);
+	b = GetVpValueWithPrec(r, DBLE_FIG, 1);
     }
     else if (RB_TYPE_P(r, T_RATIONAL)) {
 	b = GetVpValueWithPrec(r, a->Prec*VpBaseFig(), 1);
@@ -1065,7 +1065,7 @@ BigDecimalCmp(VALUE self, VALUE r,char op)
 	break;
 
     case T_FLOAT:
-	GUARD_OBJ(b, GetVpValueWithPrec(r, DBL_DIG+1, 0));
+	GUARD_OBJ(b, GetVpValueWithPrec(r, DBLE_FIG, 0));
 	break;
 
     case T_RATIONAL:
@@ -1306,7 +1306,7 @@ BigDecimal_divide(Real **c, Real **res, Real **div, VALUE self, VALUE r)
 
     GUARD_OBJ(a, GetVpValue(self, 1));
     if (RB_TYPE_P(r, T_FLOAT)) {
-	b = GetVpValueWithPrec(r, DBL_DIG+1, 1);
+        b = GetVpValueWithPrec(r, DBLE_FIG, 1);
     }
     else if (RB_TYPE_P(r, T_RATIONAL)) {
 	b = GetVpValueWithPrec(r, a->Prec*VpBaseFig(), 1);
@@ -1372,7 +1372,7 @@ BigDecimal_DoDivmod(VALUE self, VALUE r, Real **div, Real **mod)
 
     GUARD_OBJ(a, GetVpValue(self, 1));
     if (RB_TYPE_P(r, T_FLOAT)) {
-	b = GetVpValueWithPrec(r, DBL_DIG+1, 1);
+	b = GetVpValueWithPrec(r, DBLE_FIG, 1);
     }
     else if (RB_TYPE_P(r, T_RATIONAL)) {
 	b = GetVpValueWithPrec(r, a->Prec*VpBaseFig(), 1);
@@ -1473,7 +1473,7 @@ BigDecimal_divremain(VALUE self, VALUE r, Real **dv, Real **rv)
 
     GUARD_OBJ(a, GetVpValue(self, 1));
     if (RB_TYPE_P(r, T_FLOAT)) {
-	b = GetVpValueWithPrec(r, DBL_DIG+1, 1);
+	b = GetVpValueWithPrec(r, DBLE_FIG, 1);
     }
     else if (RB_TYPE_P(r, T_RATIONAL)) {
 	b = GetVpValueWithPrec(r, a->Prec*VpBaseFig(), 1);
@@ -2685,7 +2685,7 @@ VpNewVarArg(int argc, VALUE *argv)
             VpDtoV(pv, d);
             return pv;
         }
-	if (mf > DBL_DIG+1) {
+	if (mf > DBLE_FIG) {
             if (!exc) {
                 return NULL;
             }
@@ -2980,7 +2980,7 @@ BigMath_s_exp(VALUE klass, VALUE x, VALUE vprec)
 	infinite = isinf(flo);
 	nan = isnan(flo);
 	if (!infinite && !nan) {
-	    vx = GetVpValueWithPrec(x, DBL_DIG+1, 0);
+	    vx = GetVpValueWithPrec(x, DBLE_FIG, 0);
 	}
 	break;
 
@@ -3133,7 +3133,7 @@ get_vp_value:
 	infinite = isinf(flo);
 	nan = isnan(flo);
 	if (!zero && !negative && !infinite && !nan) {
-	    vx = GetVpValueWithPrec(x, DBL_DIG+1, 1);
+	    vx = GetVpValueWithPrec(x, DBLE_FIG, 1);
 	}
 	break;
 
@@ -4023,7 +4023,7 @@ VpNumOfChars(Real *vp,const char *pszFmt)
  *   by one BDIGIT word in the computer used.
  *
  * [Returns]
- * 1+DBL_DIG   ... OK
+ *   DBLE_FIG   ... OK
  */
 VP_EXPORT size_t
 VpInit(BDIGIT BaseVal)
