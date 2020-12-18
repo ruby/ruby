@@ -619,9 +619,6 @@ typedef struct rb_vm_struct {
 	VALUE cmd[RUBY_NSIG];
     } trap_list;
 
-    /* hook */
-    rb_hook_list_t global_hooks;
-
     /* relation table of ensure - rollback for callcc */
     struct st_table *ensure_rollback_table;
 
@@ -1973,17 +1970,25 @@ rb_exec_event_hook_orig(rb_execution_context_t *ec, rb_hook_list_t *hooks, rb_ev
     rb_exec_event_hooks(&trace_arg, hooks, pop_p);
 }
 
+rb_hook_list_t *rb_ractor_hooks(rb_ractor_t *cr);;
+
 static inline rb_hook_list_t *
-rb_vm_global_hooks(const rb_execution_context_t *ec)
+rb_ec_ractor_hooks(const rb_execution_context_t *ec)
 {
-    return &rb_ec_vm_ptr(ec)->global_hooks;
+    rb_hook_list_t *hooks = rb_ractor_hooks(rb_ec_ractor_ptr(ec));
+    if (LIKELY(hooks == NULL)) {
+        return NULL;
+    }
+    else {
+        return hooks;
+    }
 }
 
 #define EXEC_EVENT_HOOK(ec_, flag_, self_, id_, called_id_, klass_, data_) \
-  EXEC_EVENT_HOOK_ORIG(ec_, rb_vm_global_hooks(ec_), flag_, self_, id_, called_id_, klass_, data_, 0)
+  EXEC_EVENT_HOOK_ORIG(ec_, rb_ec_ractor_hooks(ec_), flag_, self_, id_, called_id_, klass_, data_, 0)
 
 #define EXEC_EVENT_HOOK_AND_POP_FRAME(ec_, flag_, self_, id_, called_id_, klass_, data_) \
-  EXEC_EVENT_HOOK_ORIG(ec_, rb_vm_global_hooks(ec_), flag_, self_, id_, called_id_, klass_, data_, 1)
+  EXEC_EVENT_HOOK_ORIG(ec_, rb_ec_ractor_hooks(ec_), flag_, self_, id_, called_id_, klass_, data_, 1)
 
 static inline void
 rb_exec_event_hook_script_compiled(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE eval_script)

@@ -1199,6 +1199,19 @@ assert_equal '[false, false, true, true]', %q{
   r
 }
 
+# TracePoint with normal Proc should be Ractor local
+assert_equal '[4, 8]', %q{
+  rs = []
+  TracePoint.new(:line){|tp| rs << tp.lineno if tp.path == __FILE__}.enable do
+    Ractor.new{ # line 4
+      a = 1
+      b = 2
+    }.take
+    c = 3       # line 8
+  end
+  rs
+}
+
 # Ractor deep copies frozen objects (ary)
 assert_equal '[true, false]', %q{
   Ractor.new([[]].freeze) { |ary|
