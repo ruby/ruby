@@ -426,6 +426,12 @@ Outstanding ones only.
 
     * Update to RubyGems 3.2.2
 
+* StringIO
+
+    * Update to StringIO 3.0.0
+
+    * This version is Ractor compatible.
+
 ## Compatibility issues
 
 Excluding feature bug fixes.
