@@ -91,13 +91,29 @@ RSpec.describe "bundle install with groups" do
         expect(the_bundle).to include_gems "rack 1.0.0", :groups => [:default]
       end
 
-      it "respects global `without` configuration, but does not save it locally" do
-        bundle "config without emo"
+      it "respects global `without` configuration, and saves it locally", :bundler => "< 3" do
+        bundle "config set without emo"
+        bundle :install
+        expect(the_bundle).to include_gems "rack 1.0.0", :groups => [:default]
+        bundle "config list"
+        expect(out).to include("Set for your local app (#{bundled_app(".bundle/config")}): [:emo]")
+        expect(out).to include("Set for the current user (#{home(".bundle/config")}): [:emo]")
+      end
+
+      it "respects global `without` configuration, but does not save it locally", :bundler => "3" do
+        bundle "config set without emo"
         bundle :install
         expect(the_bundle).to include_gems "rack 1.0.0", :groups => [:default]
         bundle "config list"
         expect(out).not_to include("Set for your local app (#{bundled_app(".bundle/config")}): [:emo]")
         expect(out).to include("Set for the current user (#{home(".bundle/config")}): [:emo]")
+      end
+
+      it "allows running application where groups where configured by a different user", :bundler => "< 3" do
+        bundle "config set without emo"
+        bundle :install
+        bundle "exec ruby -e 'puts 42'", :env => { "BUNDLE_USER_HOME" => tmp("new_home").to_s }
+        expect(out).to include("42")
       end
 
       it "does not install gems from the excluded group" do

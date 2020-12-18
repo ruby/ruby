@@ -55,10 +55,10 @@ RSpec.describe "bundle console", :bundler => "< 3", :readline => true do
 
   it "uses IRB as default console" do
     bundle "console" do |input, _, _|
-      input.puts("__method__")
+      input.puts("__FILE__")
       input.puts("exit")
     end
-    expect(out).to include(":irb_binding")
+    expect(out).to include("(irb)")
   end
 
   it "starts another REPL if configured as such" do
@@ -80,10 +80,10 @@ RSpec.describe "bundle console", :bundler => "< 3", :readline => true do
     # make sure pry isn't there
 
     bundle "console" do |input, _, _|
-      input.puts("__method__")
+      input.puts("__FILE__")
       input.puts("exit")
     end
-    expect(out).to include(":irb_binding")
+    expect(out).to include("(irb)")
   end
 
   it "doesn't load any other groups" do

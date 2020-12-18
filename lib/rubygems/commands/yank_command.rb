@@ -74,7 +74,6 @@ data you will need to change them immediately and yank your gem.
     name = get_one_gem_name
     response = rubygems_api_request(method, api, host, scope: get_yank_scope) do |request|
       request.add_field("Authorization", api_key)
-      request.add_field("OTP", options[:otp]) if options[:otp]
 
       data = {
         'gem_name' => name,

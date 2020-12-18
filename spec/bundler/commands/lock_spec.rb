@@ -342,6 +342,47 @@ RSpec.describe "bundle lock" do
     G
   end
 
+  it "doesn't crash when an update candidate doesn't have any matching platform" do
+    build_repo4 do
+      build_gem "libv8", "8.4.255.0"
+      build_gem "libv8", "8.4.255.0" do |s|
+        s.platform = "x86_64-darwin-19"
+      end
+
+      build_gem "libv8", "15.0.71.48.1beta2" do |s|
+        s.platform = "x86_64-linux"
+      end
+    end
+
+    gemfile <<-G
+      source "#{file_uri_for(gem_repo4)}"
+
+      gem "libv8"
+    G
+
+    lockfile <<-G
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          libv8 (8.4.255.0)
+          libv8 (8.4.255.0-x86_64-darwin-19)
+
+      PLATFORMS
+        ruby
+        x86_64-darwin-19
+
+      DEPENDENCIES
+        libv8
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    G
+
+    simulate_platform(Gem::Platform.new("x86_64-darwin-19")) { bundle "lock --update" }
+
+    expect(out).to match(/Writing lockfile to.+Gemfile\.lock/)
+  end
+
   context "when an update is available" do
     let(:repo) { gem_repo2 }
 
