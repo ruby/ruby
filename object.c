@@ -2255,42 +2255,37 @@ id_for_attr(VALUE obj, VALUE name)
 
 /*
  *  call-seq:
- *     attr_reader(symbol, ...)  -> array
- *     attr(symbol, ...)         -> array
- *     attr_reader(string, ...)  -> array
- *     attr(string, ...)         -> array
+ *     attr_reader(symbol, ...)  -> nil
+ *     attr(symbol, ...)         -> nil
+ *     attr_reader(string, ...)  -> nil
+ *     attr(string, ...)         -> nil
  *
  *  Creates instance variables and corresponding methods that return the
  *  value of each instance variable. Equivalent to calling
  *  ``<code>attr</code><i>:name</i>'' on each name in turn.
  *  String arguments are converted to symbols.
- *  Returns an array of defined methods names as symbols.
  */
 
 static VALUE
 rb_mod_attr_reader(int argc, VALUE *argv, VALUE klass)
 {
     int i;
-    VALUE names = rb_ary_new2(argc);
 
     for (i=0; i<argc; i++) {
-	ID id = id_for_attr(klass, argv[i]);
-	rb_attr(klass, id, TRUE, FALSE, TRUE);
-	rb_ary_push(names, ID2SYM(id));
+	rb_attr(klass, id_for_attr(klass, argv[i]), TRUE, FALSE, TRUE);
     }
-    return names;
+    return Qnil;
 }
 
 /**
  *  call-seq:
- *    attr(name, ...) -> array
- *    attr(name, true) -> array
- *    attr(name, false) -> array
+ *    attr(name, ...) -> nil
+ *    attr(name, true) -> nil
+ *    attr(name, false) -> nil
  *
  *  The first form is equivalent to #attr_reader.
  *  The second form is equivalent to <code>attr_accessor(name)</code> but deprecated.
  *  The last form is equivalent to <code>attr_reader(name)</code> but deprecated.
- *  Returns an array of defined methods names as symbols.
  *--
  * \private
  * \todo can be static?
@@ -2300,57 +2295,47 @@ VALUE
 rb_mod_attr(int argc, VALUE *argv, VALUE klass)
 {
     if (argc == 2 && (argv[1] == Qtrue || argv[1] == Qfalse)) {
-	ID id = id_for_attr(klass, argv[0]);
-	VALUE names = rb_ary_new();
-
 	rb_warning("optional boolean argument is obsoleted");
-	rb_attr(klass, id, 1, RTEST(argv[1]), TRUE);
-	rb_ary_push(names, ID2SYM(id));
-	if (argv[1] == Qtrue) rb_ary_push(names, rb_str_intern(rb_sprintf("%"PRIsVALUE"=", ID2SYM(id))));
-	return names;
+	rb_attr(klass, id_for_attr(klass, argv[0]), 1, RTEST(argv[1]), TRUE);
+	return Qnil;
     }
     return rb_mod_attr_reader(argc, argv, klass);
 }
 
 /*
  *  call-seq:
- *      attr_writer(symbol, ...)    -> array
- *      attr_writer(string, ...)    -> array
+ *      attr_writer(symbol, ...)    -> nil
+ *      attr_writer(string, ...)    -> nil
  *
  *  Creates an accessor method to allow assignment to the attribute
  *  <i>symbol</i><code>.id2name</code>.
  *  String arguments are converted to symbols.
- *  Returns an array of defined methods names as symbols.
  */
 
 static VALUE
 rb_mod_attr_writer(int argc, VALUE *argv, VALUE klass)
 {
     int i;
-    VALUE names = rb_ary_new2(argc);
 
     for (i=0; i<argc; i++) {
-	ID id = id_for_attr(klass, argv[i]);
-	rb_attr(klass, id, FALSE, TRUE, TRUE);
-	rb_ary_push(names, rb_str_intern(rb_sprintf("%"PRIsVALUE"=", ID2SYM(id))));
+	rb_attr(klass, id_for_attr(klass, argv[i]), FALSE, TRUE, TRUE);
     }
-    return names;
+    return Qnil;
 }
 
 /*
  *  call-seq:
- *     attr_accessor(symbol, ...)    -> array
- *     attr_accessor(string, ...)    -> array
+ *     attr_accessor(symbol, ...)    -> nil
+ *     attr_accessor(string, ...)    -> nil
  *
  *  Defines a named attribute for this module, where the name is
  *  <i>symbol.</i><code>id2name</code>, creating an instance variable
  *  (<code>@name</code>) and a corresponding access method to read it.
  *  Also creates a method called <code>name=</code> to set the attribute.
  *  String arguments are converted to symbols.
- *  Returns an array of defined methods names as symbols.
  *
  *     module Mod
- *       attr_accessor(:one, :two) #=> [:one, :one=, :two, :two=]
+ *       attr_accessor(:one, :two)
  *     end
  *     Mod.instance_methods.sort   #=> [:one, :one=, :two, :two=]
  */
@@ -2359,17 +2344,11 @@ static VALUE
 rb_mod_attr_accessor(int argc, VALUE *argv, VALUE klass)
 {
     int i;
-    VALUE names = rb_ary_new2(argc * 2);
 
     for (i=0; i<argc; i++) {
-	ID id = id_for_attr(klass, argv[i]);
-	VALUE idv = ID2SYM(id);
-
-	rb_attr(klass, id, TRUE, TRUE, TRUE);
-	rb_ary_push(names, idv);
-	rb_ary_push(names, rb_str_intern(rb_sprintf("%"PRIsVALUE"=", idv)));
+	rb_attr(klass, id_for_attr(klass, argv[i]), TRUE, TRUE, TRUE);
     }
-    return names;
+    return Qnil;
 }
 
 /*

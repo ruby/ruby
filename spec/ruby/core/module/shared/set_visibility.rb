@@ -6,40 +6,6 @@ describe :set_visibility, shared: true do
   end
 
   describe "with argument" do
-    describe "one or more arguments" do
-      it "sets visibility of given method names" do
-        visibility = @method
-        old_visibility = [:protected, :private].find {|vis| vis != visibility }
-
-        mod = Module.new {
-          send old_visibility
-          def test1() end
-          def test2() end
-          send visibility, :test1, :test2
-        }
-        mod.should send(:"have_#{visibility}_instance_method", :test1, false)
-        mod.should send(:"have_#{visibility}_instance_method", :test2, false)
-      end
-    end
-
-    ruby_version_is "3.0" do
-      describe "array as a single argument" do
-        it "sets visibility of given method names" do
-          visibility = @method
-          old_visibility = [:protected, :private].find {|vis| vis != visibility }
-
-          mod = Module.new {
-            send old_visibility
-            def test1() end
-            def test2() end
-            send visibility, [:test1, :test2]
-          }
-          mod.should send(:"have_#{visibility}_instance_method", :test1, false)
-          mod.should send(:"have_#{visibility}_instance_method", :test2, false)
-        end
-      end
-    end
-
     it "does not clone method from the ancestor when setting to the same visibility in a child" do
       visibility = @method
       parent = Module.new {

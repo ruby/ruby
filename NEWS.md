@@ -249,16 +249,6 @@ Outstanding ones only.
         p C.ancestors #=> [C, M1, M2, Object, Kernel, BasicObject]
         ```
 
-    * Module#public, Module#protected and Module#private methods now accept single
-      array argument with a list of method names. [[Feature #17314]]
-
-    * Module#attr_accessor, Module#attr_reader, Module#attr_writer and Module#attr
-      methods now return array of defined methods names as symbols.
-      [[Feature #17314]]
-
-    * Module#alias_method now returns the defined alias as symbol.
-      [[Feature #17314]]
-
 * Mutex
 
     * `Mutex` is now acquired per-`Fiber` instead of per-`Thread`. This change
