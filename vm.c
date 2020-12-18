@@ -3595,7 +3595,6 @@ Init_VM(void)
     rb_define_singleton_method(rb_cRubyVM, "SDR", sdr, 0);
     rb_define_singleton_method(rb_cRubyVM, "NSDR", nsdr, 0);
     rb_define_singleton_method(rb_cRubyVM, "mtbl", vm_mtbl, 2);
-    rb_define_singleton_method(rb_cRubyVM, "mtbl", vm_mtbl, 2);
     rb_define_singleton_method(rb_cRubyVM, "mtbl2", vm_mtbl2, 2);
 #else
     (void)sdr;

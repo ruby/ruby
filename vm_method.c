@@ -25,12 +25,12 @@ static enum rb_id_table_iterator_result
 vm_ccs_dump_i(ID mid, VALUE val, void *data)
 {
     const struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)val;
-    fprintf(stderr,     "  | %s (%d) ", rb_id2name(mid), ccs->len);
+    fprintf(stderr,     "  | %s (len:%d) ", rb_id2name(mid), ccs->len);
     rp(ccs->cme);
 
     for (int i=0; i<ccs->len; i++) {
-        fprintf(stderr, "  | [%d] ", i); vm_ci_dump(ccs->entries[i].ci);
-        rp_m(           "  | ", ccs->entries[i].cc);
+        fprintf(stderr, "  | [%d]\t", i); vm_ci_dump(ccs->entries[i].ci);
+        rp_m(           "  |   \t", ccs->entries[i].cc);
     }
 
     return ID_TABLE_CONTINUE;
