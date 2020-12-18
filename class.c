@@ -1110,7 +1110,9 @@ move_refined_method(ID key, VALUE value, void *data)
     struct rb_id_table *tbl = RCLASS_M_TBL(klass);
 
     if (me->def->type == VM_METHOD_TYPE_REFINED) {
-	if (me->def->body.refined.orig_me) {
+        rb_clear_method_cache(klass, me->called_id);
+
+        if (me->def->body.refined.orig_me) {
 	    const rb_method_entry_t *orig_me = me->def->body.refined.orig_me, *new_me;
 	    RB_OBJ_WRITE(me, &me->def->body.refined.orig_me, NULL);
 	    new_me = rb_method_entry_clone(me);

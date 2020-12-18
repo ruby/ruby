@@ -2446,4 +2446,31 @@ class TestRefinement < Test::Unit::TestCase
   def eval_using(mod, s)
     eval("using #{mod}; #{s}", Sandbox::BINDING)
   end
+
+  # [Bug #17386]
+  def test_prepended_with_method_cache
+    foo = Class.new do
+      def foo
+        :Foo
+      end
+    end
+
+    code = Module.new do
+      def foo
+        :Code
+      end
+    end
+
+    _ext = Module.new do
+      refine foo do
+        def foo; end
+      end
+    end
+
+    obj = foo.new
+
+    assert_equal :Foo, obj.foo
+    foo.prepend code
+    assert_equal :Code, obj.foo
+  end
 end
