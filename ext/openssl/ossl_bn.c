@@ -9,6 +9,7 @@
  */
 /* modified by Michal Rokos <m.rokos@sh.cvut.cz> */
 #include "ossl.h"
+#include <ruby/ractor.h>
 
 #define NewBN(klass) \
   TypedData_Wrap_Struct((klass), &ossl_bn_type, 0)
@@ -150,12 +151,35 @@ ossl_bn_value_ptr(volatile VALUE *ptr)
 /*
  * Private
  */
-/*
- * BN_CTX - is used in more difficult math. ops
- * (Why just 1? Because Ruby itself isn't thread safe,
- *  we don't need to care about threads)
- */
-BN_CTX *ossl_bn_ctx;
+
+void
+ossl_bn_ctx_free(void *ptr)
+{
+    BN_CTX *ctx = (BN_CTX *)ptr;
+    BN_CTX_free(ctx);
+}
+
+struct rb_ractor_local_storage_type ossl_bn_ctx_key_type = {
+    NULL, // mark
+    ossl_bn_ctx_free,
+};
+
+rb_ractor_local_key_t ossl_bn_ctx_key;
+
+BN_CTX *
+ossl_bn_ctx_get(void)
+{
+    // stored in ractor local storage
+
+    BN_CTX *ctx = rb_ractor_local_storage_ptr(ossl_bn_ctx_key);
+    if (!ctx) {
+        if (!(ctx = BN_CTX_new())) {
+            ossl_raise(rb_eRuntimeError, "Cannot init BN_CTX");
+        }
+        rb_ractor_local_storage_ptr_set(ossl_bn_ctx_key, ctx);
+    }
+    return ctx;
+}
 
 static VALUE
 ossl_bn_alloc(VALUE klass)
@@ -1092,9 +1116,7 @@ Init_ossl_bn(void)
     eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
 #endif
 
-    if (!(ossl_bn_ctx = BN_CTX_new())) {
-	ossl_raise(rb_eRuntimeError, "Cannot init BN_CTX");
-    }
+    ossl_bn_ctx_key = rb_ractor_local_storage_ptr_newkey(&ossl_bn_ctx_key_type);
 
     eBNError = rb_define_class_under(mOSSL, "BNError", eOSSLError);
 
