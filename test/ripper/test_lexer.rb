@@ -147,11 +147,11 @@ class TestRipper::Lexer < Test::Unit::TestCase
   end
 
   BAD_CODE = {
-    parse_error: ['def req(true) end', %r[unexpected `true']],
-    assign_error: ['begin; nil = 1; end', %r[assign to nil]],
-    alias_error: ['begin; alias $x $1; end', %r[number variables]],
-    class_name_error: ['class bad; end', %r[class/module name]],
-    param_error: ['def req(@a) end', %r[formal argument.*instance]],
+    parse_error: ['def req(true) end', %r[unexpected `true'], 'true'],
+    assign_error: ['begin; nil = 1; end', %r[assign to nil], 'nil'],
+    alias_error: ['begin; alias $x $1; end', %r[number variables], '$1'],
+    class_name_error: ['class bad; end', %r[class/module name], 'bad'],
+    param_error: ['def req(@a) end', %r[formal argument.*instance], '@a'],
   }
 
   def test_raise_errors_keyword
@@ -179,6 +179,27 @@ class TestRipper::Lexer < Test::Unit::TestCase
       BAD_CODE.each do |err, (code)|
         all.for(err) do
           assert_equal [[1, code.size-3], :on_kw, "end", state(:EXPR_END)], Ripper.lex(code).last
+        end
+      end
+    end
+  end
+
+  def test_lexer_scan_with_syntax_error
+    all_assertions do |all|
+      BAD_CODE.each do |err, (code, message, token)|
+        all.for(err) do
+          lexer = Ripper::Lexer.new(code)
+          elems = lexer.scan
+          assert_predicate lexer, :error?
+          error = lexer.errors.first
+          assert_match message, error.message
+          i = elems.find_index{|e| e == error}
+          assert_operator 0...elems.size, :include?, i
+          elem = elems[i + 1]
+          assert_not_equal error.event, elem.event
+          assert_equal error.pos, elem.pos
+          assert_equal error.tok, elem.tok
+          assert_equal error.state, elem.state
         end
       end
     end
