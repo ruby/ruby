@@ -4548,6 +4548,10 @@ zlib_gunzip_run(VALUE arg)
 void
 Init_zlib(void)
 {
+#if HAVE_RB_EXT_RACTOR_SAFE
+    rb_ext_ractor_safe(true);
+#endif
+
 #undef rb_intern
     VALUE mZlib, cZStream, cDeflate, cInflate;
 #if GZIP_SUPPORT
