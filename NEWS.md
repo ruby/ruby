@@ -369,7 +369,7 @@ Outstanding ones only.
 
 * Fiddle
 
-    * Update to Fiddle 1.0.2
+    * Update to Fiddle 1.0.4
 
 * IRB
 
