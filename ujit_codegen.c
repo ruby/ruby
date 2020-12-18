@@ -86,11 +86,49 @@ ujit_side_exit(codeblock_t* cb, ctx_t* ctx)
 }
 
 /*
-Compile a sequence of bytecode instructions starting at `insn_idx`.
+Compile an interpreter entry point to be inserted into an iseq
 Returns `NULL` if compilation fails.
 */
+uint8_t* ujit_compile_entry(const rb_iseq_t *iseq, uint32_t insn_idx)
+{
+    assert (cb != NULL);
+
+    if (cb->write_pos + 1024 >= cb->mem_size) {
+        rb_bug("out of executable memory");
+    }
+
+    // Align the current write positon to cache line boundaries
+    cb_align_pos(cb, 64);
+
+    uint8_t *code_ptr = cb_get_ptr(cb, cb->write_pos);
+
+    // Write the interpreter entry prologue
+    ujit_gen_entry(cb);
+
+    // Compile the block starting at this instruction
+    uint32_t num_instrs = 0;
+    ujit_compile_block(iseq, insn_idx, &num_instrs);
+
+    // If no instructions were compiled
+    if (num_instrs == 0) {
+        return NULL;
+    }
+
+    // Get the first opcode in the sequence
+    VALUE *encoded = iseq->body->iseq_encoded;
+    int first_opcode = opcode_at_pc(iseq, &encoded[insn_idx]);
+
+    // Map the code address to the corresponding opcode
+    map_addr2insn(code_ptr, first_opcode);
+
+    return code_ptr;
+}
+
+/*
+Compile a sequence of bytecode instructions starting at `insn_idx`.
+*/
 uint8_t *
-ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, bool entry_point)
+ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, uint32_t* num_instrs)
 {
     assert (cb != NULL);
     VALUE *encoded = iseq->body->iseq_encoded;
@@ -105,15 +143,8 @@ ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, bool entry_point)
         rb_bug("out of executable memory (outlined block)");
     }
 
-    // Align the current write positon to cache line boundaries
-    cb_align_pos(cb, 64);
-
     // Get a pointer to the current write position in the code block
-    uint8_t *code_ptr = &cb->mem_block[cb->write_pos];
-    //printf("write pos: %ld\n", cb->write_pos);
-
-    // Get the first opcode in the sequence
-    int first_opcode = opcode_at_pc(iseq, &encoded[insn_idx]);
+    uint8_t *code_ptr = cb_get_ptr(cb, cb->write_pos);
 
     // Create codegen context
     ctx_t ctx = { 0 };
@@ -122,7 +153,6 @@ ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, bool entry_point)
     ctx.start_idx = insn_idx;
 
     // For each instruction to compile
-    unsigned num_instrs = 0;
     for (;;) {
         // Set the current instruction
         ctx.insn_idx = insn_idx;
@@ -139,12 +169,6 @@ ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, bool entry_point)
             break;
         }
 
-        // If this is an interpreter entry point, write the interpreter
-        // entry prologue before the first instruction
-        if (entry_point && num_instrs == 0) {
-            ujit_gen_entry(cb);
-        }
-
         //fprintf(stderr, "compiling %s\n", insn_name(opcode));
         //print_str(cb, insn_name(opcode));
 
@@ -156,7 +180,7 @@ ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, bool entry_point)
 
     	// Move to the next instruction
         insn_idx += insn_len(opcode);
-        num_instrs++;
+        (*num_instrs)++;
 
         // Ensure we only have one send per region. Our code invalidation mechanism can't
         // invalidate running code and one send could invalidate the other if we had
@@ -166,23 +190,12 @@ ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, bool entry_point)
         }
     }
 
-    // FIXME: maybe we want a separate function to compile entry points?
-    // If this is an entry point and no instructions were compiled
-    if (entry_point && num_instrs == 0) {
-        return NULL;
-    }
-
     //print_str(cb, "exiting to interpreter\n");
 
-    // FIXME: only generate exit if no instructions were compiled?
-    // or simply don't allow instructions to fail to compile anymore?
+    // FIXME: we only need to generate an exit if an instruction fails to compile
+    //
     // Generate code to exit to the interpreter
     ujit_gen_exit(cb, &ctx, &encoded[insn_idx]);
-
-    // If this is an interpreter entry point
-    if (entry_point) {
-        map_addr2insn(code_ptr, first_opcode);
-    }
 
     if (UJIT_DUMP_MODE >= 2) {
         // Dump list of compiled instrutions
