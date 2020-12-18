@@ -1894,6 +1894,8 @@ socket_s_ip_address_list(VALUE self)
 void
 Init_socket(void)
 {
+    rb_ext_ractor_safe(true);
+
     rsock_init_basicsocket();
 
     /*
