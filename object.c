@@ -2255,10 +2255,10 @@ id_for_attr(VALUE obj, VALUE name)
 
 /*
  *  call-seq:
- *     attr_reader(symbol, ...)  -> nil
- *     attr(symbol, ...)         -> nil
- *     attr_reader(string, ...)  -> nil
- *     attr(string, ...)         -> nil
+ *     attr_reader(symbol, ...)  -> array
+ *     attr(symbol, ...)         -> array
+ *     attr_reader(string, ...)  -> array
+ *     attr(string, ...)         -> array
  *
  *  Creates instance variables and corresponding methods that return the
  *  value of each instance variable. Equivalent to calling
@@ -2283,9 +2283,9 @@ rb_mod_attr_reader(int argc, VALUE *argv, VALUE klass)
 
 /**
  *  call-seq:
- *    attr(name, ...) -> nil
- *    attr(name, true) -> nil
- *    attr(name, false) -> nil
+ *    attr(name, ...) -> array
+ *    attr(name, true) -> array
+ *    attr(name, false) -> array
  *
  *  The first form is equivalent to #attr_reader.
  *  The second form is equivalent to <code>attr_accessor(name)</code> but deprecated.
@@ -2314,8 +2314,8 @@ rb_mod_attr(int argc, VALUE *argv, VALUE klass)
 
 /*
  *  call-seq:
- *      attr_writer(symbol, ...)    -> nil
- *      attr_writer(string, ...)    -> nil
+ *      attr_writer(symbol, ...)    -> array
+ *      attr_writer(string, ...)    -> array
  *
  *  Creates an accessor method to allow assignment to the attribute
  *  <i>symbol</i><code>.id2name</code>.
@@ -2339,8 +2339,8 @@ rb_mod_attr_writer(int argc, VALUE *argv, VALUE klass)
 
 /*
  *  call-seq:
- *     attr_accessor(symbol, ...)    -> nil
- *     attr_accessor(string, ...)    -> nil
+ *     attr_accessor(symbol, ...)    -> array
+ *     attr_accessor(string, ...)    -> array
  *
  *  Defines a named attribute for this module, where the name is
  *  <i>symbol.</i><code>id2name</code>, creating an instance variable
@@ -2350,7 +2350,7 @@ rb_mod_attr_writer(int argc, VALUE *argv, VALUE klass)
  *  Returns an array of defined methods names as symbols.
  *
  *     module Mod
- *       attr_accessor(:one, :two)
+ *       attr_accessor(:one, :two) #=> [:one, :one=, :two, :two=]
  *     end
  *     Mod.instance_methods.sort   #=> [:one, :one=, :two, :two=]
  */

@@ -249,6 +249,10 @@ Outstanding ones only.
         p C.ancestors #=> [C, M1, M2, Object, Kernel, BasicObject]
         ```
 
+    * Module#attr_accessor, Module#attr_reader, Module#attr_writer and Module#attr
+      methods now return array of defined methods names as symbols.
+      [[Feature #17314]]
+
 * Mutex
 
     * `Mutex` is now acquired per-`Fiber` instead of per-`Thread`. This change
@@ -704,3 +708,4 @@ end
 [Feature #17351]: https://bugs.ruby-lang.org/issues/17351
 [Feature #17371]: https://bugs.ruby-lang.org/issues/17371
 [GH-2991]:        https://github.com/ruby/ruby/pull/2991
+[Feature #17314]: https://bugs.ruby-lang.org/issues/17314
