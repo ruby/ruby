@@ -432,6 +432,12 @@ Outstanding ones only.
 
     * This version is Ractor compatible.
 
+* StringScanner
+
+    * Update to StringScanner 3.0.0
+
+    * This version is Ractor compatible.
+
 ## Compatibility issues
 
 Excluding feature bug fixes.
