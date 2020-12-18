@@ -2,6 +2,7 @@
 #define UJIT_CODEGEN_H 1
 
 #include "stddef.h"
+#include "ujit_core.h"
 
 // Code blocks we generate code into
 codeblock_t* cb;
@@ -29,7 +30,7 @@ typedef bool (*codegen_fn)(jitstate_t* jit, ctx_t* ctx);
 
 uint8_t* ujit_compile_entry(const rb_iseq_t *iseq, uint32_t insn_idx);
 
-uint8_t *ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, uint32_t* num_instrs);
+uint8_t *ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, ctx_t* ctx, uint32_t* num_instrs);
 
 void ujit_init_codegen(void);
 

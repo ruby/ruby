@@ -56,6 +56,9 @@ typedef void (*branchgen_fn)(codeblock_t* cb, uint8_t* target0, uint8_t* target1
 // Store info about an outgoing branch in a code segment
 typedef struct BranchEntry
 {
+    // Context right after the branch instruction
+    ctx_t ctx;
+
     // Positions where the generated code starts and ends
     uint32_t start_pos;
     uint32_t end_pos;
@@ -83,7 +86,7 @@ x86opnd_t ctx_stack_push(ctx_t* ctx, size_t n);
 x86opnd_t ctx_stack_pop(ctx_t* ctx, size_t n);
 x86opnd_t ctx_stack_opnd(ctx_t* ctx, int32_t idx);
 
-void gen_branch(codeblock_t* cb, codeblock_t* ocb, blockid_t target0, blockid_t target1, branchgen_fn gen_fn);
+void gen_branch(ctx_t* ctx, blockid_t target0, blockid_t target1, branchgen_fn gen_fn);
 
 void ujit_init_core(void);
 
