@@ -3725,9 +3725,15 @@ static void
 gc_finalize_deferred(void *dmy)
 {
     rb_objspace_t *objspace = dmy;
-    if (ATOMIC_EXCHANGE(finalizing, 1)) return;
-    finalize_deferred(objspace);
-    ATOMIC_SET(finalizing, 0);
+
+    RB_VM_LOCK_ENTER();
+    {
+        rb_objspace_t *objspace = dmy;
+        if (ATOMIC_EXCHANGE(finalizing, 1)) return;
+        finalize_deferred(objspace);
+        ATOMIC_SET(finalizing, 0);
+    }
+    RB_VM_LOCK_LEAVE();
 }
 
 static void
