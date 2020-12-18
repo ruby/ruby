@@ -561,7 +561,10 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("bc", /../.match('abc', -2)[0])
     assert_nil(/../.match("abc", -4))
     assert_nil(/../.match("abc", 4))
-    assert_equal('\x', assert_warning(/binary regexp/) {/../n.match("\u3042" + '\x', 1)}[0])
+
+    # use eval because only one warning is shown for the same regexp literal
+    pat = eval('/../n')
+    assert_equal('\x', assert_warning(/binary regexp/) {pat.match("\u3042" + '\x', 1)}[0])
 
     r = nil
     /.../.match("abc") {|m| r = m[0] }
@@ -726,7 +729,9 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_rindex_regexp
-    assert_equal(3, assert_warning(/binary regexp/) {"foobarbaz\u3042".rindex(/b../n, 5)})
+    # use eval because only one warning is shown for the same regexp literal
+    pat = eval('/b../n')
+    assert_equal(3, assert_warning(/binary regexp/) {"foobarbaz\u3042".rindex(pat, 5)})
   end
 
   def assert_regexp(re, ss, fs = [], msg = nil)
