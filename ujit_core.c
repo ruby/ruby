@@ -19,28 +19,6 @@ st_table * version_tbl;
 branch_t branch_entries[MAX_BRANCHES];
 uint32_t num_branches = 0;
 
-// Get the current instruction opcode from the context object
-int
-ctx_get_opcode(ctx_t *ctx)
-{
-    return opcode_at_pc(ctx->iseq, ctx->pc);
-}
-
-// Get the index of the next instruction
-uint32_t
-ctx_next_idx(ctx_t* ctx)
-{
-    return ctx->insn_idx + insn_len(ctx_get_opcode(ctx));
-}
-
-// Get an instruction argument from the context object
-VALUE
-ctx_get_arg(ctx_t* ctx, size_t arg_idx)
-{
-    assert (arg_idx + 1 < insn_len(ctx_get_opcode(ctx)));
-    return *(ctx->pc + arg_idx + 1);
-}
-
 /*
 Get an operand for the adjusted stack pointer address
 */

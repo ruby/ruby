@@ -20,41 +20,9 @@
 // Maximum number of versions per block
 #define MAX_VERSIONS 5
 
-// Code generation state
-typedef struct JITState
-{
-
-
-
-
-
-} jitstate_t;
-
 // Code generation context
 typedef struct CtxStruct
 {
-    // TODO: we may want to remove information that is not
-    // strictly necessary for versioning from this struct
-    // Some of the information here is only needed during
-    // code generation, eg: current pc
-
-    // FIXME: we probably don't need this? we just need to
-    // know which initial bytecode we're replacing
-    // The start of the generated code
-    uint8_t *code_ptr;
-
-    // Instruction sequence this is associated with
-    const rb_iseq_t *iseq;
-
-    // Index in the iseq of the opcode we are replacing
-    uint32_t start_idx;
-
-    // Index of the current instruction being compiled
-    uint32_t insn_idx;
-
-    // Current PC
-    VALUE *pc;
-
     // Number of values pushed on the temporary stack
     uint32_t stack_size;
 
