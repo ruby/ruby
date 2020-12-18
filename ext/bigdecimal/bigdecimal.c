@@ -3367,7 +3367,7 @@ Init_bigdecimal(void)
     rb_define_global_function("BigDecimal", f_BigDecimal, -1);
 
     /* Class methods */
-    rb_undef_method(CLASS_OF(rb_cBigDecimal), "allocate");
+    rb_undef_alloc_func(rb_cBigDecimal);
     rb_undef_method(CLASS_OF(rb_cBigDecimal), "new");
     rb_define_singleton_method(rb_cBigDecimal, "interpret_loosely", BigDecimal_s_interpret_loosely, 1);
     rb_define_singleton_method(rb_cBigDecimal, "mode", BigDecimal_mode, -1);
