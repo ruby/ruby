@@ -2004,8 +2004,7 @@ set_method_visibility(VALUE self, int argc, const VALUE *argv, rb_method_visibil
 	for (j = 0; j < RARRAY_LEN(v); j++) {
 	    check_and_export_method(self, RARRAY_AREF(v, j), visi);
 	}
-    }
-    else {
+    } else {
         for (i = 0; i < argc; i++) {
             check_and_export_method(self, argv[i], visi);
         }
