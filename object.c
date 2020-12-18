@@ -2306,7 +2306,7 @@ rb_mod_attr(int argc, VALUE *argv, VALUE klass)
 	rb_category_warning(RB_WARN_CATEGORY_DEPRECATED, "optional boolean argument is obsoleted");
 	rb_attr(klass, id, 1, RTEST(argv[1]), TRUE);
 	rb_ary_push(names, ID2SYM(id));
-	if (argv[1] == Qtrue) rb_ary_push(names, rb_str_intern(rb_sprintf("%"PRIsVALUE"=", ID2SYM(id))));
+	if (argv[1] == Qtrue) rb_ary_push(names, ID2SYM(rb_id_attrset(id)));
 	return names;
     }
     return rb_mod_attr_reader(argc, argv, klass);
