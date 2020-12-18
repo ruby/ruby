@@ -1154,6 +1154,15 @@ class TestModule < Test::Unit::TestCase
     assert_raise(NameError) do
       c.instance_eval { attr_reader :"." }
     end
+
+    assert_equal([:a], c.class_eval { attr :a })
+    assert_equal([:b, :c], c.class_eval { attr :b, :c })
+    assert_equal([:d], c.class_eval { attr_reader :d })
+    assert_equal([:e, :f], c.class_eval { attr_reader :e, :f })
+    assert_equal([:g=], c.class_eval { attr_writer :g })
+    assert_equal([:h=, :i=], c.class_eval { attr_writer :h, :i })
+    assert_equal([:g, :g=], c.class_eval { attr_accessor :g })
+    assert_equal([:h, :h=, :i, :i=], c.class_eval { attr_accessor :h, :i })
   end
 
   def test_undef
