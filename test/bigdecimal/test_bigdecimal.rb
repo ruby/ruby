@@ -1903,6 +1903,55 @@ class TestBigDecimal < Test::Unit::TestCase
     EOS
   end
 
+  def test_precision_only_integer
+    assert_equal(0, BigDecimal(0).precision)
+    assert_equal(1, BigDecimal(1).precision)
+    assert_equal(1, BigDecimal(-1).precision)
+    assert_equal(2, BigDecimal(10).precision)
+    assert_equal(2, BigDecimal(-10).precision)
+    assert_equal(21, BigDecimal(100_000_000_000_000_000_000).precision)
+    assert_equal(21, BigDecimal(-100_000_000_000_000_000_000).precision)
+    assert_equal(103, BigDecimal("111e100").precision)
+    assert_equal(103, BigDecimal("-111e100").precision)
+  end
+
+  def test_precision_only_fraction
+    assert_equal(1, BigDecimal("0.1").precision)
+    assert_equal(1, BigDecimal("-0.1").precision)
+    assert_equal(1, BigDecimal("0.01").precision)
+    assert_equal(1, BigDecimal("-0.01").precision)
+    assert_equal(2, BigDecimal("0.11").precision)
+    assert_equal(2, BigDecimal("-0.11").precision)
+    assert_equal(21, BigDecimal("0.000_000_000_000_000_000_001").precision)
+    assert_equal(21, BigDecimal("-0.000_000_000_000_000_000_001").precision)
+    assert_equal(100, BigDecimal("111e-100").precision)
+    assert_equal(100, BigDecimal("-111e-100").precision)
+  end
+
+  def test_precision_full
+    assert_equal(1, BigDecimal("0.1").precision)
+    assert_equal(1, BigDecimal("-0.1").precision)
+    assert_equal(1, BigDecimal("0.01").precision)
+    assert_equal(1, BigDecimal("-0.01").precision)
+    assert_equal(2, BigDecimal("0.11").precision)
+    assert_equal(2, BigDecimal("-0.11").precision)
+    assert_equal(5, BigDecimal("11111e-2").precision)
+    assert_equal(5, BigDecimal("-11111e-2").precision)
+    assert_equal(21, BigDecimal("100.000_000_000_000_000_001").precision)
+    assert_equal(21, BigDecimal("-100.000_000_000_000_000_001").precision)
+  end
+
+  def test_precision_special
+    BigDecimal.save_exception_mode do
+      BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW, false)
+      BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
+
+      assert_equal(0, BigDecimal("Infinity").precision)
+      assert_equal(0, BigDecimal("-Infinity").precision)
+      assert_equal(0, BigDecimal("NaN").precision)
+    end
+  end
+
   def test_initialize_copy_dup_clone_frozen_error
     bd = BigDecimal(1)
     bd2 = BigDecimal(2)

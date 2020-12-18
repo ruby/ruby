@@ -378,6 +378,73 @@ BigDecimal_prec(VALUE self)
 }
 
 /*
+ * call-seq:
+ *   big_decimal.precision  ->  intreger
+ *
+ * Returns the number of decimal digits in this number.
+ *
+ * Example:
+ *
+ *   BigDecimal("0").precision  # => 0
+ *   BigDecimal("1").precision  # => 1
+ *   BigDecimal("-1e20").precision  # => 21
+ *   BigDecimal("1e-20").precision  # => 20
+ *   BigDecimal("Infinity").precision  # => 0
+ *   BigDecimal("-Infinity").precision  # => 0
+ *   BigDecimal("NaN").precision  # => 0
+ */
+static VALUE
+BigDecimal_precision(VALUE self)
+{
+    ENTER(1);
+
+    Real *p;
+    GUARD_OBJ(p, GetVpValue(self, 1));
+
+    /*
+     * The most significant digit is frac[0], and the least significant digit is frac[Prec-1].
+     * When the exponent is zero, the decimal point is located just before frac[0].
+     * When the exponent is negative, the decimal point moves to leftward.
+     * Conversely, when the exponent is positive, the decimal point moves to rightward.
+     *
+     *    | frac[0] frac[1] frac[2] . frac[3] frac[4] ... frac[Prec-1]
+     *    |------------------------> exponent == 3
+     */
+
+    ssize_t ex = p->exponent;
+    ssize_t precision;
+    if (ex < 0) {
+        precision = (-ex + 1) * BASE_FIG;  /* 1 is for p->frac[0] */
+        ex = 0;
+    }
+    else if (p->Prec > 0) {
+        BDIGIT x = p->frac[0];
+        for (precision = 0; x > 0; x /= 10) {
+            ++precision;
+        }
+    }
+
+    if (ex > (ssize_t)p->Prec) {
+        precision += (ex - 1) * BASE_FIG;
+    }
+    else if (p->Prec > 0) {
+        ssize_t n = (ssize_t)p->Prec - 1;
+        while (n > 0 && p->frac[n] == 0) --n;
+
+        precision += n * BASE_FIG;
+
+        if (ex < (ssize_t)p->Prec) {
+            BDIGIT x = p->frac[n];
+            for (; x > 0 && x % 10 == 0; x /= 10) {
+                --precision;
+            }
+        }
+    }
+
+    return SSIZET2NUM(precision);
+}
+
+/*
  * call-seq: hash
  *
  * Creates a hash for this BigDecimal.
@@ -3509,6 +3576,7 @@ Init_bigdecimal(void)
 
     /* instance methods */
     rb_define_method(rb_cBigDecimal, "precs", BigDecimal_prec, 0);
+    rb_define_method(rb_cBigDecimal, "precision", BigDecimal_precision, 0);
 
     rb_define_method(rb_cBigDecimal, "add", BigDecimal_add2, 2);
     rb_define_method(rb_cBigDecimal, "sub", BigDecimal_sub2, 2);
