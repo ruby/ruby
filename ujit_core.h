@@ -20,8 +20,18 @@
 // Maximum number of versions per block
 #define MAX_VERSIONS 5
 
+// Code generation state
+typedef struct JITState
+{
+
+
+
+
+
+} jitstate_t;
+
 // Code generation context
-typedef struct ctx_struct
+typedef struct CtxStruct
 {
     // TODO: we may want to remove information that is not
     // strictly necessary for versioning from this struct

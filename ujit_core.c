@@ -155,7 +155,8 @@ uint8_t* branch_stub_hit(uint32_t branch_idx, uint32_t target_idx)
     {
         //fprintf(stderr, "compiling block\n");
 
-        block_ptr = ujit_compile_block(target.iseq, target.idx, false);
+        uint32_t num_instrs = 0;
+        block_ptr = ujit_compile_block(target.iseq, target.idx, &num_instrs);
         st_insert(version_tbl, (st_data_t)&target, (st_data_t)block_ptr);
         branch->dst_addrs[target_idx] = block_ptr;
     }
