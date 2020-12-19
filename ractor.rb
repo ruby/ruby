@@ -644,7 +644,7 @@ class Ractor
   #     Received: message 2
   #     Received: finishing
   #     Continue successfully
-   def take
+  def take
     __builtin_cexpr! %q{
       ractor_take(ec, RACTOR_PTR(self))
    }
