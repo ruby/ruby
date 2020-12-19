@@ -1623,7 +1623,7 @@ module FileUtils
 
   def fu_output_message(msg)   #:nodoc:
     output = @fileutils_output if defined?(@fileutils_output)
-    output ||= $stderr
+    output ||= $stdout
     if defined?(@fileutils_label)
       msg = @fileutils_label + msg
     end
