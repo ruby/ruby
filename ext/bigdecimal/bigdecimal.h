@@ -159,6 +159,10 @@ rb_sym2str(VALUE sym)
 # define vabs llabs
 #endif
 
+#if !defined(HAVE_RB_CATEGORY_WARN) || !defined(HAVE_CONST_RB_WARN_CATEGORY_DEPRECATED)
+#   define rb_category_warn(category, ...) rb_warn(__VA_ARGS__)
+#endif
+
 extern VALUE rb_cBigDecimal;
 
 #if 0 || SIZEOF_BDIGITS >= 16
