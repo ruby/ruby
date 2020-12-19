@@ -840,6 +840,11 @@ class TestModule < Test::Unit::TestCase
     assert_equal(:aClass1, o.aClass1)
     assert_equal(:aClass2, o.aClass2)
 
+    o = (c = Class.new(AClass)).new
+    c.class_eval {public [:aClass1, :aClass2]}
+    assert_equal(:aClass1, o.aClass1)
+    assert_equal(:aClass2, o.aClass2)
+
     o = AClass.new
     assert_equal(:aClass, o.aClass)
     assert_raise(NoMethodError, /private method/) {o.aClass1}
@@ -854,6 +859,11 @@ class TestModule < Test::Unit::TestCase
 
     o = (c = Class.new(AClass)).new
     c.class_eval {private :aClass, :aClass2}
+    assert_raise(NoMethodError, /private method/) {o.aClass}
+    assert_raise(NoMethodError, /private method/) {o.aClass2}
+
+    o = (c = Class.new(AClass)).new
+    c.class_eval {private [:aClass, :aClass2]}
     assert_raise(NoMethodError, /private method/) {o.aClass}
     assert_raise(NoMethodError, /private method/) {o.aClass2}
 
@@ -878,6 +888,13 @@ class TestModule < Test::Unit::TestCase
 
     o = (c = Class.new(aclass)).new
     c.class_eval {protected :aClass, :aClass1}
+    assert_raise(NoMethodError, /protected method/) {o.aClass}
+    assert_raise(NoMethodError, /protected method/) {o.aClass1}
+    assert_equal(:aClass, c.new._aClass(o))
+    assert_equal(:aClass1, c.new._aClass1(o))
+
+    o = (c = Class.new(aclass)).new
+    c.class_eval {protected [:aClass, :aClass1]}
     assert_raise(NoMethodError, /protected method/) {o.aClass}
     assert_raise(NoMethodError, /protected method/) {o.aClass1}
     assert_equal(:aClass, c.new._aClass(o))
