@@ -1512,6 +1512,10 @@ path_f_pathname(VALUE self, VALUE str)
 void
 Init_pathname(void)
 {
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    rb_ext_ractor_safe(true);
+#endif
+
     InitVM(pathname);
 
     rb_cPathname = rb_define_class("Pathname", rb_cObject);
