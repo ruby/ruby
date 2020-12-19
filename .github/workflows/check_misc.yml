@@ -1,8 +1,8 @@
-name: Check C-source encoding
+name: Miscellaneous checks
 on: [push, pull_request]
 
 jobs:
-  check_encoding:
+  checks:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
