@@ -2442,6 +2442,17 @@ rb_ractor_make_shareable_copy(VALUE obj)
     return copy;
 }
 
+VALUE
+rb_ractor_ensure_shareable(VALUE obj, VALUE name)
+{
+    if (!RTEST(rb_ractor_shareable_p(obj))) {
+        VALUE message = rb_sprintf("cannot assign unshareable object to %"PRIsVALUE,
+                                   name);
+        rb_exc_raise(rb_exc_new_str(rb_eRactorError, message));
+    }
+    return obj;
+}
+
 static enum obj_traverse_iterator_result
 shareable_p_enter(VALUE obj)
 {

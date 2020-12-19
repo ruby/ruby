@@ -11001,14 +11001,59 @@ mark_lvar_used(struct parser_params *p, NODE *rhs)
     }
 }
 
+static NODE *
+const_decl_path(struct parser_params *p, NODE **dest)
+{
+    NODE *n = *dest;
+    if (nd_type(n) != NODE_CALL) {
+	const YYLTYPE *loc = &n->nd_loc;
+	VALUE path;
+	if (n->nd_vid) {
+	     path = rb_id2str(n->nd_vid);
+	}
+	else {
+	    n = n->nd_else;
+	    path = rb_ary_new();
+	    for (; n && nd_type(n) == NODE_COLON2; n = n->nd_head) {
+		rb_ary_push(path, rb_id2str(n->nd_mid));
+	    }
+	    if (n && nd_type(n) == NODE_CONST) {
+		// Const::Name
+		rb_ary_push(path, rb_id2str(n->nd_vid));
+	    }
+	    else if (n && nd_type(n) == NODE_COLON3) {
+		// ::Const::Name
+		rb_ary_push(path, rb_str_new(0, 0));
+	    }
+	    else {
+		// expression::Name
+		rb_ary_push(path, rb_str_new_cstr("..."));
+	    }
+	    path = rb_ary_join(rb_ary_reverse(path), rb_str_new_cstr("::"));
+	    path = rb_fstring(path);
+	}
+	*dest = n = NEW_LIT(path, loc);
+    }
+    return n;
+}
+
 extern VALUE rb_mRubyVMFrozenCore;
 
 static NODE *
-shareable_literal_node(struct parser_params *p, NODE *value, const YYLTYPE *loc)
+make_shareable_node(struct parser_params *p, NODE *value, const YYLTYPE *loc)
 {
     NODE *fcore = NEW_LIT(rb_mRubyVMFrozenCore, loc);
     return NEW_CALL(fcore, rb_intern("make_shareable"),
 		    NEW_LIST(value, loc), loc);
+}
+
+static NODE *
+ensure_shareable_node(struct parser_params *p, NODE **dest, NODE *value, const YYLTYPE *loc)
+{
+    NODE *fcore = NEW_LIT(rb_mRubyVMFrozenCore, loc);
+    NODE *args = NEW_LIST(value, loc);
+    args = list_append(p, args, const_decl_path(p, dest));
+    return NEW_CALL(fcore, rb_intern("ensure_shareable"), args, loc);
 }
 
 static int is_static_content(NODE *node);
@@ -11032,15 +11077,19 @@ shareable_literal_value(NODE *node)
     }
 }
 
+#ifndef SHAREABLE_BARE_EXPRESSION
+#define SHAREABLE_BARE_EXPRESSION 0
+#endif
+
 VALUE rb_ractor_make_shareable(VALUE obj);
 
 static NODE *
 shareable_literal_constant(struct parser_params *p, enum shareability shareable,
-			   NODE *value, const YYLTYPE *loc, size_t level)
+			   NODE **dest, NODE *value, const YYLTYPE *loc, size_t level)
 {
 # define shareable_literal_constant_next(n) \
-    shareable_literal_constant(p, shareable, (n), &(n)->nd_loc, level+1)
-    VALUE lit;
+    shareable_literal_constant(p, shareable, dest, (n), &(n)->nd_loc, level+1)
+    VALUE lit = Qnil;
 
     if (!value) return 0;
     enum node_type type = nd_type(value);
@@ -11049,44 +11098,52 @@ shareable_literal_constant(struct parser_params *p, enum shareability shareable,
       case NODE_FALSE:
       case NODE_NIL:
       case NODE_LIT:
+	return value;
+
       case NODE_DSTR:
-	break;
+	if (shareable == shareable_literal) {
+	    value = NEW_CALL(value, idUMinus, 0, loc);
+	}
+	return value;
 
       case NODE_STR:
 	lit = rb_fstring(value->nd_lit);
 	nd_set_type(value, NODE_LIT);
 	RB_OBJ_WRITE(p->ast, &value->nd_lit, lit);
-	break;
+	return value;
 
       case NODE_ZLIST:
+	lit = rb_ary_new();
+	OBJ_FREEZE_RAW(lit);
 	nd_set_type(value, NODE_LIT);
-	RB_OBJ_WRITE(p->ast, &value->nd_lit, rb_ary_new());
-	break;
+	RB_OBJ_WRITE(p->ast, &value->nd_lit, lit);
+	return value;
 
       case NODE_LIST:
 	lit = rb_ary_new();
 	for (NODE *n = value; n; n = n->nd_next) {
 	    NODE *elt = n->nd_head;
-	    if (elt && !(elt = shareable_literal_constant_next(elt))) {
-		if (lit) {
+	    if (elt) {
+		elt = shareable_literal_constant_next(elt);
+		if (elt) {
+		    n->nd_head = elt;
+		}
+		else if (RTEST(lit)) {
 		    rb_ary_clear(lit);
 		    lit = Qfalse;
 		}
 	    }
-	    if (lit) {
+	    if (RTEST(lit)) {
 		VALUE e = shareable_literal_value(elt);
 		if (e != Qundef) {
 		    rb_ary_push(lit, e);
 		}
 		else {
 		    rb_ary_clear(lit);
-		    lit = Qfalse;
+		    lit = Qnil;	/* make shareable at runtime */
 		}
 	    }
 	}
-	if (!lit) return 0;
-	nd_set_type(value, NODE_LIT);
-	RB_OBJ_WRITE(p->ast, &value->nd_lit, rb_ractor_make_shareable(lit));
 	break;
 
       case NODE_HASH:
@@ -11095,14 +11152,27 @@ shareable_literal_constant(struct parser_params *p, enum shareability shareable,
 	for (NODE *n = value->nd_head; n; n = n->nd_next->nd_next) {
 	    NODE *key = n->nd_head;
 	    NODE *val = n->nd_next->nd_head;
-	    if ((key && !(key = shareable_literal_constant_next(key))) ||
-		(val && !(val = shareable_literal_constant_next(val)))) {
-		if (lit) {
+	    if (key) {
+		key = shareable_literal_constant_next(key);
+		if (key) {
+		    n->nd_head = key;
+		}
+		else if (RTEST(lit)) {
 		    rb_hash_clear(lit);
 		    lit = Qfalse;
 		}
 	    }
-	    if (lit) {
+	    if (val) {
+		val = shareable_literal_constant_next(val);
+		if (val) {
+		    n->nd_next->nd_head = val;
+		}
+		else if (RTEST(lit)) {
+		    rb_hash_clear(lit);
+		    lit = Qfalse;
+		}
+	    }
+	    if (RTEST(lit)) {
 		VALUE k = shareable_literal_value(key);
 		VALUE v = shareable_literal_value(val);
 		if (k != Qundef && v != Qundef) {
@@ -11110,26 +11180,39 @@ shareable_literal_constant(struct parser_params *p, enum shareability shareable,
 		}
 		else {
 		    rb_hash_clear(lit);
-		    lit = Qfalse;
+		    lit = Qnil;	/* make shareable at runtime */
 		}
 	    }
 	}
-	if (!lit) return 0;
-	nd_set_type(value, NODE_LIT);
-	RB_OBJ_WRITE(p->ast, &value->nd_lit, rb_ractor_make_shareable(lit));
 	break;
 
       default:
-	if (shareable == shareable_literal && level > 0)
-	    yyerror1(loc, "unshareable expression");
+	if (shareable == shareable_literal &&
+	    (SHAREABLE_BARE_EXPRESSION || level > 0)) {
+	    return ensure_shareable_node(p, dest, value, loc);
+	}
 	return 0;
     }
+
+    /* Array or Hash */
+    if (!lit) return 0;
+    if (NIL_P(lit)) {
+	// if shareable_literal, all elements should have been ensured
+	// as shareable
+	value = make_shareable_node(p, value, loc);
+    }
+    else {
+	nd_set_type(value, NODE_LIT);
+	RB_OBJ_WRITE(p->ast, &value->nd_lit, rb_ractor_make_shareable(lit));
+    }
+
     return value;
 # undef shareable_literal_constant_next
 }
 
 static NODE *
-shareable_constant_value(struct parser_params *p, NODE *value, enum shareability shareable, const YYLTYPE *loc)
+shareable_constant_value(struct parser_params *p, enum shareability shareable,
+			 NODE *lhs, NODE *value, const YYLTYPE *loc)
 {
     if (!value) return 0;
     switch (shareable) {
@@ -11137,18 +11220,24 @@ shareable_constant_value(struct parser_params *p, NODE *value, enum shareability
 	return value;
 
       case shareable_literal:
+	{
+	    NODE *lit = shareable_literal_constant(p, shareable, &lhs, value, loc, 0);
+	    if (lit) return lit;
+	    return value;
+	}
+	break;
+
       case shareable_everything:
 	{
-	    NODE *lit = shareable_literal_constant(p, shareable, value, loc, 0);
+	    NODE *lit = shareable_literal_constant(p, shareable, &lhs, value, loc, 0);
 	    if (lit) return lit;
+	    return make_shareable_node(p, value, loc);
 	}
 	break;
 
       default:
 	UNREACHABLE_RETURN(0);
     }
-
-    return shareable_literal_node(p, value, loc);
 }
 
 static NODE *
@@ -11158,7 +11247,7 @@ node_assign(struct parser_params *p, NODE *lhs, NODE *rhs, struct lex_context ct
 
     switch (nd_type(lhs)) {
       case NODE_CDECL:
-	rhs = shareable_constant_value(p, rhs, ctxt.shareable_constant_value, loc);
+	rhs = shareable_constant_value(p, ctxt.shareable_constant_value, lhs, rhs, loc);
 	/* fallthru */
 
       case NODE_GASGN:
@@ -12103,7 +12192,7 @@ new_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, struct lex_c
 	    }
 	}
 	if (op == tOROP) {
-	    rhs = shareable_constant_value(p, rhs, shareable, &rhs->nd_loc);
+	    rhs = shareable_constant_value(p, shareable, lhs, rhs, &rhs->nd_loc);
 	    lhs->nd_value = rhs;
 	    nd_set_loc(lhs, loc);
 	    asgn = NEW_OP_ASGN_OR(gettable(p, vid, &lhs_loc), lhs, loc);
@@ -12118,7 +12207,7 @@ new_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, struct lex_c
 	}
 	else if (op == tANDOP) {
 	    if (shareable) {
-		rhs = shareable_constant_value(p, rhs, shareable, &rhs->nd_loc);
+		rhs = shareable_constant_value(p, shareable, lhs, rhs, &rhs->nd_loc);
 	    }
 	    lhs->nd_value = rhs;
 	    nd_set_loc(lhs, loc);
@@ -12128,7 +12217,7 @@ new_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, struct lex_c
 	    asgn = lhs;
 	    rhs = NEW_CALL(gettable(p, vid, &lhs_loc), op, NEW_LIST(rhs, &rhs->nd_loc), loc);
 	    if (shareable) {
-		rhs = shareable_constant_value(p, rhs, shareable, &rhs->nd_loc);
+		rhs = shareable_constant_value(p, shareable, lhs, rhs, &rhs->nd_loc);
 	    }
 	    asgn->nd_value = rhs;
 	    nd_set_loc(asgn, loc);
@@ -12175,7 +12264,7 @@ new_const_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, struct
     NODE *asgn;
 
     if (lhs) {
-	rhs = shareable_constant_value(p, rhs, ctxt.shareable_constant_value, loc);
+	rhs = shareable_constant_value(p, ctxt.shareable_constant_value, lhs, rhs, loc);
 	asgn = NEW_OP_CDECL(lhs, op, rhs, loc);
     }
     else {
