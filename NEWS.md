@@ -367,7 +367,9 @@ Outstanding ones only.
 
 * BigDecimal
 
-    * Update to BigDecimal 2.0.2
+    * Update to BigDecimal 3.0.0
+
+    * This version is Ractor compatible.
 
 * Bundler
 
