@@ -432,6 +432,10 @@ Outstanding ones only.
 
     * Use officially discouraged. Read OpenStruct@Caveats section.
 
+* Pathname
+
+    * Ractor compatible.
+
 * Psych
 
     * Update to Psych 3.2.1
