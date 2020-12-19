@@ -1213,11 +1213,13 @@ x = __ENCODING__
     assert_equal([1], a[0])
     assert_send([Ractor, :shareable?, a[0]])
 
-    assert_syntax_error("#{<<~"begin;"}\n#{<<~'end;'}", /unshareable expression/)
-    begin;
-      # shareable_constant_value: literal
-      C = ["Not " + "shareable"]
-    end;
+    assert_raise_with_message(Ractor::Error, /unshareable/) do
+      Class.new.class_eval("#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
+        # shareable_constant_value: literal
+        C = ["Not " + "shareable"]
+      end;
+    end
   end
 
 =begin
