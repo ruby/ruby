@@ -1962,6 +1962,57 @@ class TestBigDecimal < Test::Unit::TestCase
     end
   end
 
+  def test_n_significant_digits_only_integer
+    assert_equal(0, BigDecimal(0).n_significant_digits)
+    assert_equal(1, BigDecimal(1).n_significant_digits)
+    assert_equal(1, BigDecimal(-1).n_significant_digits)
+    assert_equal(1, BigDecimal(10).n_significant_digits)
+    assert_equal(1, BigDecimal(-10).n_significant_digits)
+    assert_equal(3, BigDecimal(101).n_significant_digits)
+    assert_equal(3, BigDecimal(-101).n_significant_digits)
+    assert_equal(1, BigDecimal(100_000_000_000_000_000_000).n_significant_digits)
+    assert_equal(1, BigDecimal(-100_000_000_000_000_000_000).n_significant_digits)
+    assert_equal(21, BigDecimal(100_000_000_000_000_000_001).n_significant_digits)
+    assert_equal(21, BigDecimal(-100_000_000_000_000_000_001).n_significant_digits)
+    assert_equal(3, BigDecimal("111e100").n_significant_digits)
+    assert_equal(3, BigDecimal("-111e100").n_significant_digits)
+  end
+
+  def test_n_significant_digits_only_fraction
+    assert_equal(1, BigDecimal("0.1").n_significant_digits)
+    assert_equal(1, BigDecimal("-0.1").n_significant_digits)
+    assert_equal(1, BigDecimal("0.01").n_significant_digits)
+    assert_equal(1, BigDecimal("-0.01").n_significant_digits)
+    assert_equal(2, BigDecimal("0.11").n_significant_digits)
+    assert_equal(2, BigDecimal("-0.11").n_significant_digits)
+    assert_equal(1, BigDecimal("0.000_000_000_000_000_000_001").n_significant_digits)
+    assert_equal(1, BigDecimal("-0.000_000_000_000_000_000_001").n_significant_digits)
+    assert_equal(3, BigDecimal("111e-100").n_significant_digits)
+    assert_equal(3, BigDecimal("-111e-100").n_significant_digits)
+  end
+
+  def test_n_significant_digits_full
+    assert_equal(2, BigDecimal("1.1").n_significant_digits)
+    assert_equal(2, BigDecimal("-1.1").n_significant_digits)
+    assert_equal(3, BigDecimal("1.01").n_significant_digits)
+    assert_equal(3, BigDecimal("-1.01").n_significant_digits)
+    assert_equal(5, BigDecimal("11111e-2").n_significant_digits)
+    assert_equal(5, BigDecimal("-11111e-2").n_significant_digits)
+    assert_equal(21, BigDecimal("100.000_000_000_000_000_001").n_significant_digits)
+    assert_equal(21, BigDecimal("-100.000_000_000_000_000_001").n_significant_digits)
+  end
+
+  def test_n_significant_digits_special
+    BigDecimal.save_exception_mode do
+      BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW, false)
+      BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
+
+      assert_equal(0, BigDecimal("Infinity").n_significant_digits)
+      assert_equal(0, BigDecimal("-Infinity").n_significant_digits)
+      assert_equal(0, BigDecimal("NaN").n_significant_digits)
+    end
+  end
+
   def test_initialize_copy_dup_clone_frozen_error
     bd = BigDecimal(1)
     bd2 = BigDecimal(2)

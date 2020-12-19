@@ -359,8 +359,9 @@ BigDecimal_double_fig(VALUE self)
  *  internal storage properties.
  *
  *  This method is deprecated and will be removed in the future.
- *  Instead, use BigDecimal#precision for obtaining the number of decimal
- *  digits.
+ *  Instead, use BigDecimal#n_significant_digits for obtaining the number of
+ *  significant digits in scientific notation, and BigDecimal#precision for
+ *  obtaining the number of digits in decimal notation.
  *
  *     BigDecimal('5').precs #=> [9, 18]
  */
@@ -447,6 +448,32 @@ BigDecimal_precision(VALUE self)
     }
 
     return SSIZET2NUM(precision);
+}
+
+static VALUE
+BigDecimal_n_significant_digits(VALUE self)
+{
+    ENTER(1);
+
+    Real *p;
+    GUARD_OBJ(p, GetVpValue(self, 1));
+
+    ssize_t n = p->Prec;
+    while (n > 0 && p->frac[n-1] == 0) --n;
+    if (n <= 0) {
+        return INT2FIX(0);
+    }
+
+    int nlz, ntz;
+
+    BDIGIT x = p->frac[0];
+    for (nlz = BASE_FIG; x > 0; x /= 10) --nlz;
+
+    x = p->frac[n-1];
+    for (ntz = 0; x > 0 && x % 10 == 0; x /= 10) ++ntz;
+
+    ssize_t n_digits = BASE_FIG * n - nlz - ntz;
+    return SSIZET2NUM(n_digits);
 }
 
 /*
@@ -3582,6 +3609,7 @@ Init_bigdecimal(void)
     /* instance methods */
     rb_define_method(rb_cBigDecimal, "precs", BigDecimal_prec, 0);
     rb_define_method(rb_cBigDecimal, "precision", BigDecimal_precision, 0);
+    rb_define_method(rb_cBigDecimal, "n_significant_digits", BigDecimal_n_significant_digits, 0);
 
     rb_define_method(rb_cBigDecimal, "add", BigDecimal_add2, 2);
     rb_define_method(rb_cBigDecimal, "sub", BigDecimal_sub2, 2);
