@@ -330,6 +330,23 @@ eom
         raise marshal_error if marshal_error
       end
 
+      # Run Ractor-related test without influencing the main test suite
+      def assert_ractor(src, args: [], file: nil, line: nil, ignore_stderr: nil, **opt)
+        return unless defined?(Ractor)
+
+        if (req = opt.delete(:require))
+          req = "require #{req.inspect}"
+        end
+        assert_separately(args, file, line, <<~RUBY, ignore_stderr: ignore_stderr, **opt)
+          #{req}
+          previous_verbose = $VERBOSE
+          $VERBOSE = nil
+          Ractor.new {} # trigger initial warning
+          $VERBOSE = previous_verbose
+          #{src}
+        RUBY
+      end
+
       # :call-seq:
       #   assert_throw( tag, failure_message = nil, &block )
       #
