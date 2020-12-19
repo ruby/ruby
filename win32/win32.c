@@ -2270,7 +2270,7 @@ rb_w32_conv_from_wstr(const WCHAR *wstr, long *lenp, rb_encoding *enc)
     long len;
     char *ptr;
 
-    if (NIL_P(str)) return wstr_to_filecp(wstr, lenp);
+    if (NIL_P(str)) return wstr_to_utf8(wstr, lenp);
     *lenp = len = RSTRING_LEN(str);
     memcpy(ptr = malloc(len + 1), RSTRING_PTR(str), len);
     ptr[len] = '\0';
