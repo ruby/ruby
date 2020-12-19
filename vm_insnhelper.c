@@ -4438,7 +4438,14 @@ vm_search_method_wrap(const struct rb_control_frame_struct *reg_cfp, struct rb_c
 static const struct rb_callcache *
 vm_search_invokeblock(const struct rb_control_frame_struct *reg_cfp, struct rb_call_data *cd, VALUE recv)
 {
-    return rb_vm_empty_cc();
+    static const struct rb_callcache cc = {
+        .flags = T_IMEMO | (imemo_callcache << FL_USHIFT) | VM_CALLCACHE_UNMARKABLE,
+        .klass = 0,
+        .cme_  = 0,
+        .call_ = vm_invokeblock_i,
+        .aux_  = {0},
+    };
+    return &cc;
 }
 
 # define mexp_search_method vm_search_method_wrap
