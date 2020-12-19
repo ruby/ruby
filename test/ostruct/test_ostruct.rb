@@ -300,19 +300,18 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_equal 42, o.foo
   end
 
-=begin
-  # now Ractor should not use in test-all process
   def test_ractor
-    obj1 = OpenStruct.new(a: 42, b: 42)
-    obj1.c = 42
-    obj1.freeze
+    assert_ractor(<<~RUBY, require: 'ostruct')
+      obj1 = OpenStruct.new(a: 42, b: 42)
+      obj1.c = 42
+      obj1.freeze
 
-    obj2 = Ractor.new obj1 do |obj|
-      obj
-    end.take
-    assert obj1.object_id == obj2.object_id
-  end if defined?(Ractor)
-=end
+      obj2 = Ractor.new obj1 do |obj|
+        obj
+      end.take
+      assert obj1.object_id == obj2.object_id
+    RUBY
+  end
 
   def test_legacy_yaml
     s = "--- !ruby/object:OpenStruct\ntable:\n  :foo: 42\n"
