@@ -29,7 +29,7 @@
 #include "internal/object.h"
 #include "internal/thread.h"
 #include "internal/variable.h"
-#include "internal/scheduler.h"
+#include "ruby/fiber/scheduler.h"
 #include "iseq.h"
 #include "mjit.h"
 #include "probes.h"
@@ -147,13 +147,13 @@ ruby_options(int argc, char **argv)
 }
 
 static void
-rb_ec_scheduler_finalize(rb_execution_context_t *ec)
+rb_ec_fiber_scheduler_finalize(rb_execution_context_t *ec)
 {
     enum ruby_tag_type state;
 
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-        rb_scheduler_set(Qnil);
+        rb_fiber_scheduler_set(Qnil);
     }
     else {
         state = error_handle(ec, state);
@@ -165,7 +165,7 @@ static void
 rb_ec_teardown(rb_execution_context_t *ec)
 {
     // If the user code defined a scheduler for the top level thread, run it:
-    rb_ec_scheduler_finalize(ec);
+    rb_ec_fiber_scheduler_finalize(ec);
 
     EC_PUSH_TAG(ec);
     if (EC_EXEC_TAG() == TAG_NONE) {

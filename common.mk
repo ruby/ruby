@@ -3202,7 +3202,7 @@ cont.$(OBJEXT): $(top_srcdir)/internal/cont.h
 cont.$(OBJEXT): $(top_srcdir)/internal/gc.h
 cont.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 cont.$(OBJEXT): $(top_srcdir)/internal/proc.h
-cont.$(OBJEXT): $(top_srcdir)/internal/scheduler.h
+cont.$(OBJEXT): $(top_srcdir)/include/ruby/fiber/scheduler.h
 cont.$(OBJEXT): $(top_srcdir)/internal/serial.h
 cont.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 cont.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -5226,7 +5226,7 @@ eval.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 eval.$(OBJEXT): $(top_srcdir)/internal/inits.h
 eval.$(OBJEXT): $(top_srcdir)/internal/io.h
 eval.$(OBJEXT): $(top_srcdir)/internal/object.h
-eval.$(OBJEXT): $(top_srcdir)/internal/scheduler.h
+eval.$(OBJEXT): $(top_srcdir)/include/ruby/fiber/scheduler.h
 eval.$(OBJEXT): $(top_srcdir)/internal/serial.h
 eval.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 eval.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -6577,7 +6577,7 @@ io.$(OBJEXT): $(top_srcdir)/internal/io.h
 io.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 io.$(OBJEXT): $(top_srcdir)/internal/object.h
 io.$(OBJEXT): $(top_srcdir)/internal/process.h
-io.$(OBJEXT): $(top_srcdir)/internal/scheduler.h
+io.$(OBJEXT): $(top_srcdir)/include/ruby/fiber/scheduler.h
 io.$(OBJEXT): $(top_srcdir)/internal/serial.h
 io.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 io.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -10029,7 +10029,7 @@ process.$(OBJEXT): $(top_srcdir)/internal/hash.h
 process.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 process.$(OBJEXT): $(top_srcdir)/internal/object.h
 process.$(OBJEXT): $(top_srcdir)/internal/process.h
-process.$(OBJEXT): $(top_srcdir)/internal/scheduler.h
+process.$(OBJEXT): $(top_srcdir)/include/ruby/fiber/scheduler.h
 process.$(OBJEXT): $(top_srcdir)/internal/serial.h
 process.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 process.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -12361,7 +12361,7 @@ scheduler.$(OBJEXT): $(top_srcdir)/internal/array.h
 scheduler.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 scheduler.$(OBJEXT): $(top_srcdir)/internal/gc.h
 scheduler.$(OBJEXT): $(top_srcdir)/internal/imemo.h
-scheduler.$(OBJEXT): $(top_srcdir)/internal/scheduler.h
+scheduler.$(OBJEXT): $(top_srcdir)/include/ruby/fiber/scheduler.h
 scheduler.$(OBJEXT): $(top_srcdir)/internal/serial.h
 scheduler.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 scheduler.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -12381,6 +12381,7 @@ scheduler.$(OBJEXT): {$(VPATH)}config.h
 scheduler.$(OBJEXT): {$(VPATH)}defines.h
 scheduler.$(OBJEXT): {$(VPATH)}encoding.h
 scheduler.$(OBJEXT): {$(VPATH)}id.h
+scheduler.$(OBJEXT): {$(VPATH)}include/ruby/fiber/scheduler.h
 scheduler.$(OBJEXT): {$(VPATH)}intern.h
 scheduler.$(OBJEXT): {$(VPATH)}internal.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/anyargs.h
@@ -12512,7 +12513,7 @@ scheduler.$(OBJEXT): {$(VPATH)}internal/module.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/newobj.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/scan_args.h
-scheduler.$(OBJEXT): {$(VPATH)}internal/scheduler.h
+scheduler.$(OBJEXT): {$(VPATH)}include/ruby/fiber/scheduler.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/stdalign.h
@@ -14046,7 +14047,7 @@ thread.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 thread.$(OBJEXT): $(top_srcdir)/internal/io.h
 thread.$(OBJEXT): $(top_srcdir)/internal/object.h
 thread.$(OBJEXT): $(top_srcdir)/internal/proc.h
-thread.$(OBJEXT): $(top_srcdir)/internal/scheduler.h
+thread.$(OBJEXT): $(top_srcdir)/include/ruby/fiber/scheduler.h
 thread.$(OBJEXT): $(top_srcdir)/internal/serial.h
 thread.$(OBJEXT): $(top_srcdir)/internal/signal.h
 thread.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
