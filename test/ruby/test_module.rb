@@ -1233,9 +1233,10 @@ class TestModule < Test::Unit::TestCase
     o = c.new
     assert_respond_to(o, :foo)
     assert_not_respond_to(o, :bar)
-    c.class_eval {alias_method :bar, :foo}
+    r = c.class_eval {alias_method :bar, :foo}
     assert_respond_to(o, :bar)
     assert_equal(:foo, o.bar)
+    assert_equal(:bar, r)
   end
 
   def test_undef
