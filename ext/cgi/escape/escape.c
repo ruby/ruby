@@ -388,6 +388,10 @@ cgiesc_unescape(int argc, VALUE *argv, VALUE self)
 void
 Init_escape(void)
 {
+#if HAVE_RB_EXT_RACTOR_SAFE
+    rb_ext_ractor_safe(true);
+#endif
+
     id_accept_charset = rb_intern_const("@@accept_charset");
     InitVM(escape);
 }
