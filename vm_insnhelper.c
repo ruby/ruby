@@ -1795,9 +1795,10 @@ vm_search_method_slowpath0(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
     return cc;
 }
 
-ALWAYS_INLINE(static const struct rb_callcache *vm_search_method_fastpath(VALUE cd_owner, struct rb_call_data *cd, VALUE klass));
-
-static inline const struct rb_callcache *
+#ifndef MJIT_HEADER
+ALWAYS_INLINE(static inline const struct rb_callcache *vm_search_method_fastpath(VALUE cd_owner, struct rb_call_data *cd, VALUE klass));
+#endif
+static const struct rb_callcache *
 vm_search_method_fastpath(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
 {
     const struct rb_callcache *cc = cd->cc;
@@ -4427,20 +4428,46 @@ vm_invokeblock_i(struct rb_execution_context_struct *ec,
     }
 }
 
+#ifdef MJIT_HEADER
+static const struct rb_callcache *
+vm_search_method_wrap(const struct rb_control_frame_struct *reg_cfp, struct rb_call_data *cd, VALUE recv)
+{
+    return vm_search_method((VALUE)reg_cfp->iseq, cd, recv);
+}
+
+static const struct rb_callcache *
+vm_search_invokeblock(const struct rb_control_frame_struct *reg_cfp, struct rb_call_data *cd, VALUE recv)
+{
+    return rb_vm_empty_cc();
+}
+
+# define mexp_search_method vm_search_method_wrap
+# define mexp_search_super vm_search_super_method
+# define mexp_search_invokeblock vm_search_invokeblock
+#else
 enum method_explorer_type {
     mexp_search_method,
     mexp_search_invokeblock,
     mexp_search_super,
 };
+#endif
 
-static inline VALUE
+static
+#ifndef MJIT_HEADER
+inline
+#endif
+VALUE
 vm_sendish(
     struct rb_execution_context_struct *ec,
     struct rb_control_frame_struct *reg_cfp,
     struct rb_call_data *cd,
     VALUE block_handler,
-    enum method_explorer_type method_explorer)
-{
+#ifdef MJIT_HEADER
+    const struct rb_callcache *(*method_explorer)(const struct rb_control_frame_struct *cfp, struct rb_call_data *cd, VALUE recv)
+#else
+    enum method_explorer_type method_explorer
+#endif
+) {
     VALUE val;
     const struct rb_callinfo *ci = cd->ci;
     const struct rb_callcache *cc;
@@ -4454,6 +4481,11 @@ vm_sendish(
         .ci = ci,
     };
 
+// The enum-based branch and inlining are faster in VM, but function pointers without inlining are faster in JIT.
+#ifdef MJIT_HEADER
+    calling.cc = cc = method_explorer(GET_CFP(), cd, recv);
+    val = vm_cc_call(cc)(ec, GET_CFP(), &calling);
+#else
     switch (method_explorer) {
       case mexp_search_method:
         calling.cc = cc = vm_search_method_fastpath((VALUE)reg_cfp->iseq, cd, CLASS_OF(recv));
@@ -4468,6 +4500,7 @@ vm_sendish(
         val = vm_invokeblock_i(ec, GET_CFP(), &calling);
         break;
     }
+#endif
 
     if (val != Qundef) {
         return val;             /* CFUNC normal return */
