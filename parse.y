@@ -11524,7 +11524,8 @@ range_op(struct parser_params *p, NODE *node, const YYLTYPE *loc)
     value_expr(node);
     if (type == NODE_LIT && FIXNUM_P(node->nd_lit)) {
 	if (!e_option_supplied(p)) parser_warn(p, node, "integer literal in flip-flop");
-	return NEW_CALL(node, tEQ, NEW_LIST(NEW_GVAR(rb_intern("$."), loc), loc), loc);
+	ID lineno = rb_intern("$.");
+	return NEW_CALL(node, tEQ, NEW_LIST(NEW_GVAR(lineno, loc), loc), loc);
     }
     return cond0(p, node, COND_IN_FF, loc);
 }
@@ -12795,8 +12796,10 @@ parser_append_options(struct parser_params *p, NODE *node)
 
     if (p->do_loop) {
 	if (p->do_split) {
-	    NODE *args = NEW_LIST(NEW_GVAR(rb_intern("$;"), LOC), LOC);
-	    NODE *split = NEW_GASGN(rb_intern("$F"),
+	    ID ifs = rb_intern("$;");
+	    ID fields = rb_intern("$F");
+	    NODE *args = NEW_LIST(NEW_GVAR(ifs, LOC), LOC);
+	    NODE *split = NEW_GASGN(fields,
 				    NEW_CALL(NEW_GVAR(idLASTLINE, LOC),
 					     rb_intern("split"), args, LOC),
 				    LOC);
