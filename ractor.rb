@@ -217,7 +217,7 @@ class Ractor
   # make obj sharable.
   #
   # Basically, traverse referring objects from obj and freeze them.
-  # 
+  #
   # When a sharable object is found in traversing, stop traversing
   # from this shareable object.
   #
