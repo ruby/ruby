@@ -374,6 +374,12 @@ Outstanding ones only.
 
     * Update to CSV 3.1.9
 
+* Digest
+
+    * Update to Digest 3.0.0
+
+    * This version is Ractor compatible.
+
 * Fiddle
 
     * Update to Fiddle 1.0.4
