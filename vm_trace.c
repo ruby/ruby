@@ -68,6 +68,7 @@ static void clean_hooks(const rb_execution_context_t *ec, rb_hook_list_t *list);
 void
 rb_hook_list_free(rb_hook_list_t *hooks)
 {
+    hooks->need_clean = TRUE;
     clean_hooks(GET_EC(), hooks);
 }
 

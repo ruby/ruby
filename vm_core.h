@@ -1970,18 +1970,17 @@ rb_exec_event_hook_orig(rb_execution_context_t *ec, rb_hook_list_t *hooks, rb_ev
     rb_exec_event_hooks(&trace_arg, hooks, pop_p);
 }
 
-rb_hook_list_t *rb_ractor_hooks(rb_ractor_t *cr);;
+struct rb_ractor_pub {
+    VALUE self;
+    uint32_t id;
+    rb_hook_list_t hooks;
+};
 
 static inline rb_hook_list_t *
 rb_ec_ractor_hooks(const rb_execution_context_t *ec)
 {
-    rb_hook_list_t *hooks = rb_ractor_hooks(rb_ec_ractor_ptr(ec));
-    if (LIKELY(hooks == NULL)) {
-        return NULL;
-    }
-    else {
-        return hooks;
-    }
+    struct rb_ractor_pub *cr_pub = (struct rb_ractor_pub *)rb_ec_ractor_ptr(ec);
+    return &cr_pub->hooks;
 }
 
 #define EXEC_EVENT_HOOK(ec_, flag_, self_, id_, called_id_, klass_, data_) \

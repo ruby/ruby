@@ -79,6 +79,8 @@ struct rb_ractor_sync {
 };
 
 struct rb_ractor_struct {
+    struct rb_ractor_pub pub;
+
     struct rb_ractor_sync sync;
     VALUE receiving_mutex;
     bool yield_atexit;
@@ -98,9 +100,6 @@ struct rb_ractor_struct {
     } threads;
     VALUE thgroup_default;
 
-    // identity
-    VALUE self;
-    uint32_t id;
     VALUE name;
     VALUE loc;
 
@@ -138,8 +137,6 @@ struct rb_ractor_struct {
     VALUE verbose;
     VALUE debug;
 
-    rb_hook_list_t event_hooks;
-
     struct {
         struct RVALUE *freelist;
         struct heap_page *using_page;
@@ -152,9 +149,15 @@ struct rb_ractor_struct {
     } *mfd;
 }; // rb_ractor_t is defined in vm_core.h
 
+
+static inline VALUE
+rb_ractor_self(const rb_ractor_t *r)
+{
+    return r->pub.self;
+}
+
 rb_ractor_t *rb_ractor_main_alloc(void);
 void rb_ractor_main_setup(rb_vm_t *vm, rb_ractor_t *main_ractor, rb_thread_t *main_thread);
-VALUE rb_ractor_self(const rb_ractor_t *g);
 void rb_ractor_atexit(rb_execution_context_t *ec, VALUE result);
 void rb_ractor_atexit_exception(rb_execution_context_t *ec);
 void rb_ractor_teardown(rb_execution_context_t *ec);
@@ -276,7 +279,11 @@ rb_ractor_set_current_ec(rb_ractor_t *cr, rb_execution_context_t *ec)
 void rb_vm_ractor_blocking_cnt_inc(rb_vm_t *vm, rb_ractor_t *cr, const char *file, int line);
 void rb_vm_ractor_blocking_cnt_dec(rb_vm_t *vm, rb_ractor_t *cr, const char *file, int line);
 
-uint32_t rb_ractor_id(const rb_ractor_t *r);
+static inline uint32_t
+rb_ractor_id(const rb_ractor_t *r)
+{
+    return r->pub.id;
+}
 
 #if RACTOR_CHECK_MODE > 0
 uint32_t rb_ractor_current_id(void);
