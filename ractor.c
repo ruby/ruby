@@ -1936,10 +1936,10 @@ ractor_moved_missing(int argc, VALUE *argv, VALUE self)
 /*
  *  Document-class: Ractor::ClosedError
  *
- *  Raised when an attempt is made to take something from the Ractor's outgoing port,
- *  but it is closed with Ractor#close_outgoing, or to send something to Ractor's
- *  incoming port, and it is closed with Ractor#close_incoming, or an attempt to
- *  send/take something with ractor which was already terminated.
+ *  Raised when an attempt is made to send a message to a closed port,
+ *  or to retrieve a message from a closed and empty port.
+ *  Ports may be closed explicitly with Ractor#close_outgoing/close_incoming
+ *  and are closed implicitly when a Ractor terminates.
  *
  *     r = Ractor.new { sleep(500) }
  *     r.close_outgoing
