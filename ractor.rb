@@ -251,7 +251,7 @@ class Ractor
   #   Ractor.current #=> #<Ractor:#1 running>
   def self.current
     __builtin_cexpr! %q{
-      rb_ec_ractor_ptr(ec)->self
+      rb_ractor_self(rb_ec_ractor_ptr(ec));
     }
   end
 
@@ -650,10 +650,10 @@ class Ractor
     }
   end
 
-  def inspect # :nodoc:
-    loc  = __builtin_cexpr! %q{RACTOR_PTR(self)->loc}
-    name = __builtin_cexpr! %q{RACTOR_PTR(self)->name}
-    id   = __builtin_cexpr! %q{INT2FIX(RACTOR_PTR(self)->id)}
+  def inspect
+    loc  = __builtin_cexpr! %q{ RACTOR_PTR(self)->loc }
+    name = __builtin_cexpr! %q{ RACTOR_PTR(self)->name }
+    id   = __builtin_cexpr! %q{ INT2FIX(rb_ractor_id(RACTOR_PTR(self))) }
     status = __builtin_cexpr! %q{
       rb_str_new2(ractor_status_str(RACTOR_PTR(self)->status_))
     }

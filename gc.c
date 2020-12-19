@@ -12348,7 +12348,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
             else if (rb_ractor_p(obj)) {
                 rb_ractor_t *r = (void *)DATA_PTR(obj);
                 if (r) {
-                    APPENDF((BUFF_ARGS, "r:%d", r->id));
+                    APPENDF((BUFF_ARGS, "r:%d", r->pub.id));
                 }
             }
 	    else {

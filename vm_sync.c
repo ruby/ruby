@@ -49,7 +49,7 @@ vm_lock_enter(rb_ractor_t *cr, rb_vm_t *vm, bool locked, bool no_barrier, unsign
     else {
 #if RACTOR_CHECK_MODE
         // locking ractor and acquire VM lock will cause deadlock
-        VM_ASSERT(cr->sync.locked_by != cr->self);
+        VM_ASSERT(cr->sync.locked_by != rb_ractor_self(cr));
 #endif
 
         // lock
