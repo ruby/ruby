@@ -1569,7 +1569,7 @@ rb_w32_uaspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags)
 rb_pid_t
 rb_w32_aspawn(int mode, const char *prog, char *const *argv)
 {
-    return rb_w32_aspawn_flags(mode, prog, argv, 0);
+    return w32_aspawn_flags(mode, prog, argv, 0, filecp());
 }
 
 /* License: Ruby's */
@@ -5703,7 +5703,7 @@ rb_w32_stat(const char *path, struct stat *st)
 {
     struct stati128 tmp;
 
-    if (rb_w32_stati128(path, &tmp)) return -1;
+    if (w32_stati128(path, &tmp, filecp(), FALSE)) return -1;
     COPY_STAT(tmp, *st, (_off_t));
     return 0;
 }
@@ -5820,11 +5820,11 @@ rb_w32_lseek(int fd, off_t ofs, int whence)
 }
 
 /* License: Ruby's */
-int
-rb_w32_access(const char *path, int mode)
+static int
+w32_access(const char *path, int mode, UINT cp)
 {
     struct stati128 stat;
-    if (rb_w32_stati128(path, &stat) != 0)
+    if (w32_stati128(path, &stat, cp, FALSE) != 0)
 	return -1;
     mode <<= 6;
     if ((stat.st_mode & mode) != mode) {
@@ -5836,17 +5836,16 @@ rb_w32_access(const char *path, int mode)
 
 /* License: Ruby's */
 int
+rb_w32_access(const char *path, int mode)
+{
+    return w32_access(path, mode, filecp());
+}
+
+/* License: Ruby's */
+int
 rb_w32_uaccess(const char *path, int mode)
 {
-    struct stati128 stat;
-    if (rb_w32_ustati128(path, &stat) != 0)
-	return -1;
-    mode <<= 6;
-    if ((stat.st_mode & mode) != mode) {
-	errno = EACCES;
-	return -1;
-    }
-    return 0;
+    return w32_access(path, mode, CP_UTF8);
 }
 
 /* License: Ruby's */
@@ -7386,6 +7385,20 @@ wutimensat(int dirfd, const WCHAR *path, const struct timespec *times, int flags
 }
 
 /* License: Ruby's */
+static int
+w32_utimensat(int dirfd, const char *path, const struct timespec *times, int flags, UINT cp)
+{
+    WCHAR *wpath = mbstr_to_wstr(filecp(), path, -1, NULL);
+    int ret = -1;
+
+    if (wpath) {
+	ret = wutimensat(dirfd, wpath, times, flags);
+	free(wpath);
+    }
+    return ret;
+}
+
+/* License: Ruby's */
 int
 rb_w32_uutime(const char *path, const struct utimbuf *times)
 {
@@ -7395,7 +7408,7 @@ rb_w32_uutime(const char *path, const struct utimbuf *times)
     ts[0].tv_nsec = 0;
     ts[1].tv_sec = times->modtime;
     ts[1].tv_nsec = 0;
-    return rb_w32_uutimensat(AT_FDCWD, path, ts, 0);
+    return w32_utimensat(AT_FDCWD, path, ts, 0, CP_UTF8);
 }
 
 /* License: Ruby's */
@@ -7408,7 +7421,7 @@ rb_w32_utime(const char *path, const struct utimbuf *times)
     ts[0].tv_nsec = 0;
     ts[1].tv_sec = times->modtime;
     ts[1].tv_nsec = 0;
-    return rb_w32_utimensat(AT_FDCWD, path, ts, 0);
+    return w32_utimensat(AT_FDCWD, path, ts, 0, filecp());
 }
 
 /* License: Ruby's */
@@ -7421,7 +7434,7 @@ rb_w32_uutimes(const char *path, const struct timeval *times)
     ts[0].tv_nsec = times[0].tv_usec * 1000;
     ts[1].tv_sec = times[1].tv_sec;
     ts[1].tv_nsec = times[1].tv_usec * 1000;
-    return rb_w32_uutimensat(AT_FDCWD, path, ts, 0);
+    return w32_utimensat(AT_FDCWD, path, ts, 0, CP_UTF8);
 }
 
 /* License: Ruby's */
@@ -7434,35 +7447,21 @@ rb_w32_utimes(const char *path, const struct timeval *times)
     ts[0].tv_nsec = times[0].tv_usec * 1000;
     ts[1].tv_sec = times[1].tv_sec;
     ts[1].tv_nsec = times[1].tv_usec * 1000;
-    return rb_w32_utimensat(AT_FDCWD, path, ts, 0);
+    return w32_utimensat(AT_FDCWD, path, ts, 0, filecp());
 }
 
 /* License: Ruby's */
 int
 rb_w32_uutimensat(int dirfd, const char *path, const struct timespec *times, int flags)
 {
-    WCHAR *wpath;
-    int ret;
-
-    if (!(wpath = utf8_to_wstr(path, NULL)))
-	return -1;
-    ret = wutimensat(dirfd, wpath, times, flags);
-    free(wpath);
-    return ret;
+    return w32_utimensat(dirfd, path, times, flags, CP_UTF8);
 }
 
 /* License: Ruby's */
 int
 rb_w32_utimensat(int dirfd, const char *path, const struct timespec *times, int flags)
 {
-    WCHAR *wpath;
-    int ret;
-
-    if (!(wpath = filecp_to_wstr(path, NULL)))
-	return -1;
-    ret = wutimensat(dirfd, wpath, times, flags);
-    free(wpath);
-    return ret;
+    return w32_utimensat(dirfd, path, times, flags, filecp());
 }
 
 /* License: Ruby's */
