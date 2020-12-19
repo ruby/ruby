@@ -610,12 +610,22 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_operator(BigDecimal((2**100).to_s), :==, d)
   end
 
+  def test_precs_deprecated
+    assert_warn(/BigDecimal#precs is deprecated and will be removed in the future/) do
+      BigDecimal("1").precs
+    end
+  end
+
   def test_precs
-    a = BigDecimal("1").precs
-    assert_instance_of(Array, a)
-    assert_equal(2, a.size)
-    assert_kind_of(Integer, a[0])
-    assert_kind_of(Integer, a[1])
+    assert_separately(["-rbigdecimal"], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      $VERBOSE = nil
+      a = BigDecimal("1").precs
+      assert_instance_of(Array, a)
+      assert_equal(2, a.size)
+      assert_kind_of(Integer, a[0])
+      assert_kind_of(Integer, a[1])
+    end;
   end
 
   def test_hash
@@ -764,7 +774,7 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(BigDecimal("0.1"), a, '[ruby-core:34318]')
 
     a, b = BigDecimal("0.11111").coerce(1.quo(3))
-    assert_equal(BigDecimal("0." + "3"*a.precs[0]), a)
+    assert_equal(BigDecimal("0." + "3"*a.precision), a)
 
     assert_nothing_raised(TypeError, '#7176') do
       BigDecimal('1') + Rational(1)

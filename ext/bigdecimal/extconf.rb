@@ -42,6 +42,8 @@ have_func("rb_complex_imag", "ruby.h")
 have_func("rb_array_const_ptr", "ruby.h")
 have_func("rb_sym2str", "ruby.h")
 have_func("rb_opts_exception_p", "ruby.h")
+have_func("rb_category_warn", "ruby.h")
+have_const("RB_WARN_CATEGORY_DEPRECATED", "ruby.h")
 
 if File.file?(File.expand_path('../lib/bigdecimal.rb', __FILE__))
   bigdecimal_rb = "$(srcdir)/lib/bigdecimal.rb"
