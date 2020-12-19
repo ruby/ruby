@@ -1239,8 +1239,8 @@ class TestModule < Test::Unit::TestCase
     assert_equal([:e, :f], c.class_eval { attr_reader :e, :f })
     assert_equal([:g=], c.class_eval { attr_writer :g })
     assert_equal([:h=, :i=], c.class_eval { attr_writer :h, :i })
-    assert_equal([:g, :g=], c.class_eval { attr_accessor :g })
-    assert_equal([:h, :h=, :i, :i=], c.class_eval { attr_accessor :h, :i })
+    assert_equal([:j, :j=], c.class_eval { attr_accessor :j })
+    assert_equal([:k, :k=, :l, :l=], c.class_eval { attr_accessor :k, :l })
   end
 
   def test_alias_method
