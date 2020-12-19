@@ -38,11 +38,12 @@ void           rb_w32_rewinddir(DIR *);
 void           rb_w32_closedir(DIR *);
 char          *rb_w32_ugetcwd(char *, int);
 
-#define opendir(s)   rb_w32_opendir((s))
+#define opendir(s)   rb_w32_uopendir((s))
 #define readdir(d)   rb_w32_readdir((d), 0)
 #define telldir(d)   rb_w32_telldir((d))
 #define seekdir(d, l)   rb_w32_seekdir((d), (l))
 #define rewinddir(d) rb_w32_rewinddir((d))
 #define closedir(d)  rb_w32_closedir((d))
+#define getcwd(b, s) rb_w32_ugetcwd(b, s)
 
 #endif /* RUBY_WIN32_DIR_H */

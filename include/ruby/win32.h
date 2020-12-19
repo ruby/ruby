@@ -138,18 +138,18 @@ typedef int clockid_t;
 #undef stat
 #undef fstat
 #ifdef RUBY_EXPORT
-#define utime(_p, _t)		rb_w32_utime(_p, _t)
+#define utime(_p, _t)		rb_w32_uutime(_p, _t)
 #undef HAVE_UTIMES
 #define HAVE_UTIMES 1
-#define utimes(_p, _t)		rb_w32_utimes(_p, _t)
+#define utimes(_p, _t)		rb_w32_uutimes(_p, _t)
 #undef HAVE_UTIMENSAT
 #define HAVE_UTIMENSAT 1
 #define AT_FDCWD		-100
-#define utimensat(_d, _p, _t, _f)	rb_w32_utimensat(_d, _p, _t, _f)
+#define utimensat(_d, _p, _t, _f)	rb_w32_uutimensat(_d, _p, _t, _f)
 #define lseek(_f, _o, _w)	rb_w32_lseek(_f, _o, _w)
 
 #define pipe(p)			rb_w32_pipe(p)
-#define open			rb_w32_open
+#define open			rb_w32_uopen
 #define close(h)		rb_w32_close(h)
 #define fclose(f)		rb_w32_fclose(f)
 #define read(f, b, s)		rb_w32_read(f, b, s)
@@ -165,11 +165,11 @@ typedef int clockid_t;
 #define isatty(h)		rb_w32_isatty(h)
 
 #undef mkdir
-#define mkdir(p, m)		rb_w32_mkdir(p, m)
+#define mkdir(p, m)		rb_w32_umkdir(p, m)
 #undef rmdir
-#define rmdir(p)		rb_w32_rmdir(p)
+#define rmdir(p)		rb_w32_urmdir(p)
 #undef unlink
-#define unlink(p)		rb_w32_unlink(p)
+#define unlink(p)		rb_w32_uunlink(p)
 #endif /* RUBY_EXPORT */
 
 /* same with stati64 except the size of st_ino and nanosecond timestamps */
@@ -200,9 +200,9 @@ struct stati128 {
 #define HAVE_STRUCT_STAT_ST_MTIMENSEC
 #define HAVE_STRUCT_STAT_ST_CTIMENSEC
 #define fstat(fd,st)		rb_w32_fstati128(fd,st)
-#define stati128(path, st)	rb_w32_stati128(path,st)
-#define lstat(path,st)		rb_w32_lstati128(path,st)
-#define access(path,mode)	rb_w32_access(path,mode)
+#define stati128(path, st)	rb_w32_ustati128(path,st)
+#define lstat(path,st)		rb_w32_ulstati128(path,st)
+#define access(path,mode)	rb_w32_uaccess(path,mode)
 
 #define strcasecmp		_stricmp
 #define strncasecmp		_strnicmp
@@ -287,6 +287,7 @@ extern int    socketpair(int, int, int, int *);
 extern int    getifaddrs(struct ifaddrs **);
 extern void   freeifaddrs(struct ifaddrs *);
 extern char * rb_w32_getcwd(char *, int);
+extern char * rb_w32_ugetcwd(char *, int);
 extern char * rb_w32_ugetenv(const char *);
 extern char * rb_w32_getenv(const char *);
 extern int    rb_w32_rename(const char *, const char *);
@@ -433,11 +434,7 @@ extern int rb_w32_utruncate(const char *path, off_t length);
 
 #undef HAVE_TRUNCATE
 #define HAVE_TRUNCATE 1
-#if defined HAVE_TRUNCATE64
-#define truncate truncate64
-#else
-#define truncate rb_w32_truncate
-#endif
+#define truncate rb_w32_utruncate
 
 #if defined(_MSC_VER) && _MSC_VER >= 1400 && _MSC_VER < 1800
 #define strtoll  _strtoi64
@@ -706,13 +703,13 @@ extern char *rb_w32_strerror(int);
 #define get_osfhandle(h)	rb_w32_get_osfhandle(h)
 
 #undef getcwd
-#define getcwd(b, s)		rb_w32_getcwd(b, s)
+#define getcwd(b, s)		rb_w32_ugetcwd(b, s)
 
 #undef getenv
 #define getenv(n)		rb_w32_ugetenv(n)
 
 #undef rename
-#define rename(o, n)		rb_w32_rename(o, n)
+#define rename(o, n)		rb_w32_urename(o, n)
 
 #undef times
 #define times(t)		rb_w32_times(t)

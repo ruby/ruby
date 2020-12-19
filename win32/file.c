@@ -347,7 +347,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	if (path_cp == INVALID_CODE_PAGE || rb_enc_str_asciionly_p(path)) {
 	    /* use filesystem encoding if expanding home dir */
 	    path_encoding = rb_filesystem_encoding();
-	    cp = path_cp = system_code_page();
+	    cp = path_cp = code_page(path_encoding);
 	}
 
 	/* ignores dir since we are expanding home */
