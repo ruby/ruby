@@ -30,13 +30,15 @@ describe "Kernel#BigDecimal" do
     BigDecimal(rational, 100).to_s.should == "0.99999999999999999999e18"
   end
 
-  it "accepts significant digits >= given precision" do
-    BigDecimal("3.1415923", 10).precs[1].should >= 10
-  end
+  ruby_version_is ""..."3.0" do
+    it "accepts significant digits >= given precision" do
+      BigDecimal("3.1415923", 10).precs[1].should >= 10
+    end
 
-  it "determines precision from initial value" do
-    pi_string = "3.14159265358979323846264338327950288419716939937510582097494459230781640628620899862803482534211706798214808651328230664709384460955058223172535940812848111745028410270193852110555964462294895493038196442881097566593014782083152134043"
-    BigDecimal(pi_string).precs[1].should >= pi_string.size-1
+    it "determines precision from initial value" do
+      pi_string = "3.14159265358979323846264338327950288419716939937510582097494459230781640628620899862803482534211706798214808651328230664709384460955058223172535940812848111745028410270193852110555964462294895493038196442881097566593014782083152134043"
+      BigDecimal(pi_string).precs[1].should >= pi_string.size-1
+    end
   end
 
   it "ignores leading and trailing whitespace" do
@@ -223,12 +225,14 @@ describe "Kernel#BigDecimal" do
       Float(@b).to_s.should == "166.66666666666666"
     end
 
-    it "has the expected precision on the LHS" do
-      @a.precs[0].should == 18
-    end
+    ruby_version_is ""..."3.0" do
+      it "has the expected precision on the LHS" do
+        @a.precs[0].should == 18
+      end
 
-    it "has the expected maximum precision on the LHS" do
-      @a.precs[1].should == 27
+      it "has the expected maximum precision on the LHS" do
+        @a.precs[1].should == 27
+      end
     end
 
     it "produces the expected result when done via Float" do
@@ -241,32 +245,36 @@ describe "Kernel#BigDecimal" do
 
     # Check underlying methods work as we understand
 
-    it "BigDecimal precision is the number of digits rounded up to a multiple of nine" do
-      1.upto(100) do |n|
-        b = BigDecimal('4' * n)
-        precs, _ = b.precs
-        (precs >= 9).should be_true
-        (precs >= n).should be_true
-        (precs % 9).should == 0
+    ruby_version_is ""..."3.0" do
+      it "BigDecimal precision is the number of digits rounded up to a multiple of nine" do
+        1.upto(100) do |n|
+          b = BigDecimal('4' * n)
+          precs, _ = b.precs
+          (precs >= 9).should be_true
+          (precs >= n).should be_true
+          (precs % 9).should == 0
+        end
+        BigDecimal('NaN').precs[0].should == 9
       end
-      BigDecimal('NaN').precs[0].should == 9
-    end
 
-    it "BigDecimal maximum precision is nine more than precision except for abnormals" do
-      1.upto(100) do |n|
-        b = BigDecimal('4' * n)
-        precs, max = b.precs
-        max.should == precs + 9
+      it "BigDecimal maximum precision is nine more than precision except for abnormals" do
+        1.upto(100) do |n|
+          b = BigDecimal('4' * n)
+          precs, max = b.precs
+          max.should == precs + 9
+        end
+        BigDecimal('NaN').precs[1].should == 9
       end
-      BigDecimal('NaN').precs[1].should == 9
     end
 
     it "BigDecimal(Rational, 18) produces the result we expect" do
       BigDecimal(@b, 18).to_s.should == "0.166666666666666667e3"
     end
 
-    it "BigDecimal(Rational, BigDecimal.precs[0]) produces the result we expect" do
-      BigDecimal(@b, @a.precs[0]).to_s.should == "0.166666666666666667e3"
+    ruby_version_is ""..."3.0" do
+      it "BigDecimal(Rational, BigDecimal.precs[0]) produces the result we expect" do
+        BigDecimal(@b, @a.precs[0]).to_s.should == "0.166666666666666667e3"
+      end
     end
 
     # Check the top-level expression works as we expect
