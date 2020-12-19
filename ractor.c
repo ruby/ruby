@@ -12,6 +12,7 @@
 #include "internal/hash.h"
 #include "internal/rational.h"
 #include "internal/struct.h"
+#include "internal/symbol.h"
 #include "internal/thread.h"
 #include "variable.h"
 #include "gc.h"

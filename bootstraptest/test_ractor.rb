@@ -62,6 +62,28 @@ assert_match /^#<Ractor:#([^ ]*?) Test Ractor .+:[0-9]+ terminated>$/, %q{
   r.inspect
 }
 
+# Ractor#to_s is the same as #inspect
+assert_equal "#<Ractor:#1 running>", %q{
+  Ractor.current.to_s
+}
+
+# Ractor#status
+assert_equal ":running", %q{
+  Ractor.current.status.inspect
+}
+
+assert_equal ":terminated", %q{
+  r = Ractor.new {}
+  sleep(0.1) until r.inspect =~ /terminated/
+  r.status.inspect
+}
+
+assert_equal ":blocking", %q{
+  r = Ractor.new { Ractor.yield }
+  sleep(0.1) until r.inspect =~ /blocking/
+  r.status.inspect
+}
+
 # A return value of a Ractor block will be a message from the Ractor.
 assert_equal 'ok', %q{
   # join

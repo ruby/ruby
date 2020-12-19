@@ -660,9 +660,25 @@ class Ractor
     "#<Ractor:##{id}#{name ? ' '+name : ''}#{loc ? " " + loc : ''} #{status}>"
   end
 
+  alias to_s inspect
+
   # The name set in Ractor.new, or +nil+.
   def name
     __builtin_cexpr! %q{RACTOR_PTR(self)->name}
+  end
+
+  # Returns the current status of the ractor.
+  #
+  # Possible values are:
+  # * <tt>:created</tt> -- the ractor is just created
+  # * <tt>:running</tt> -- the ractor is running
+  # * <tt>:blocking</tt> -- the ractor is waiting on Ractor.receive or Ractor.yield
+  # * <tt>:terminated</tt> -- the ractor is finished
+  #
+  def status
+    __builtin_cexpr! %q{
+      rb_sym_intern_ascii_cstr(ractor_status_str(RACTOR_PTR(self)->status_))
+    }
   end
 
   class RemoteError
