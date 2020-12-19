@@ -2020,7 +2020,7 @@ ractor_moved_missing(int argc, VALUE *argv, VALUE self)
  */
 
 // Main docs are in ractor.rb, but without this clause there are weird artifacts
-// it their rendering.
+// in their rendering.
 /*
  *  Document-class: Ractor
  *

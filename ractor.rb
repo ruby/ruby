@@ -70,8 +70,8 @@
 #     Server received: pong
 #
 # It is said that Ractor receives messages via the <em>incoming port</em>, and sends them
-# to the <em>outgoing port</em>. Either one can be disabled with Ractor.close_incoming and
-# Ractor.close_outgoing respectively.
+# to the <em>outgoing port</em>. Either one can be disabled with Ractor#close_incoming and
+# Ractor#close_outgoing respectively.
 #
 # == Shareable and unshareable objects
 #
@@ -157,8 +157,8 @@
 #     # I see C
 #     # can not access instance variables of classes/modules from non-main Ractors (RuntimeError)
 #
-# Ractors also can't access constants from the main scope, but only if their values are frozen, or
-# they are classes/modules (but again, not their instance variables):
+# Ractors can access constants if they are shareable. The main Ractor is the only one that can
+# access non-shareable constants.
 #
 #     GOOD = 'good'.freeze
 #     BAD = 'bad'
@@ -180,6 +180,9 @@
 #     r.take
 #     # I see C
 #     # can not access instance variables of classes/modules from non-main Ractors (RuntimeError)
+#
+# See also the description of <tt># shareable_constant_value</tt> pragma in
+# {Comments syntax}[rdoc-ref:doc/syntax/comments.rdoc] explanation.
 #
 # == Ractors vs threads
 #
@@ -267,7 +270,7 @@ class Ractor
 
   # call-seq: Ractor.select(*ractors, [yield_value:, move: false]) -> [ractor or symbol, obj]
   #
-  # Wait for the first ractor to have something in its outgoing port, reads from this ractor, and
+  # Waits for the first ractor to have something in its outgoing port, reads from this ractor, and
   # returns that ractor and the object received.
   #
   #    r1 = Ractor.new {Ractor.yield 'from 1'}
@@ -698,7 +701,7 @@ class Ractor
 
   # Checks if the object is shareable by ractors.
   #
-  #     Ractor.shareable?(1)            #=> true -- numbers and other immutable basic values are
+  #     Ractor.shareable?(1)            #=> true -- numbers and other immutable basic values are frozen
   #     Ractor.shareable?('foo')        #=> false, unless the string is frozen due to # freeze_string_literals: true
   #     Ractor.shareable?('foo'.freeze) #=> true
   #
