@@ -10,17 +10,23 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
+#define HAVE_RUBY_DEBUG_H       1
 #define HAVE_RUBY_DEFINES_H     1
 #define HAVE_RUBY_ENCODING_H    1
 #define HAVE_RUBY_INTERN_H      1
 #define HAVE_RUBY_IO_H          1
+#define HAVE_RUBY_MEMORY_VIEW_H 1
 #define HAVE_RUBY_MISSING_H     1
+#define HAVE_RUBY_ONIGMO_H      1
 #define HAVE_RUBY_ONIGURUMA_H   1
+#define HAVE_RUBY_RACTOR_H      1
+#define HAVE_RUBY_RANDOM_H      1
 #define HAVE_RUBY_RE_H          1
 #define HAVE_RUBY_REGEX_H       1
 #define HAVE_RUBY_RUBY_H        1
 #define HAVE_RUBY_ST_H          1
 #define HAVE_RUBY_THREAD_H      1
+#define HAVE_RUBY_THREAD_NATIVE_H 1
 #define HAVE_RUBY_UTIL_H        1
 #define HAVE_RUBY_VERSION_H     1
 #define HAVE_RUBY_VM_H          1
