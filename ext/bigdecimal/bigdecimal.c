@@ -418,7 +418,7 @@ BigDecimal_precision(VALUE self)
      */
 
     ssize_t ex = p->exponent;
-    ssize_t precision;
+    ssize_t precision = 0;
     if (ex < 0) {
         precision = (-ex + 1) * BASE_FIG;  /* 1 is for p->frac[0] */
         ex = 0;
