@@ -446,9 +446,9 @@ Approximate syntax is:
                | Constant(*variable, pattern, ..., *variable)
                | Constant[*variable, pattern, ..., *variable]
 
-  hash_pattern: {key:, pattern, key:, ..., **variable}
-              | Constant(key:, pattern, key:, ..., **variable)
-              | Constant[key:, pattern, key:, ..., **variable]
+  hash_pattern: {key: pattern, key:, ..., **variable}
+              | Constant(key: pattern, key:, ..., **variable)
+              | Constant[key: pattern, key:, ..., **variable]
 
 == Appendix B. Some undefined behavior examples
 
