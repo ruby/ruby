@@ -60,15 +60,16 @@ See below for more examples and explanations of the syntax.
 
 Patterns can be:
 
-* any Ruby object (matched by <code>===</code> operator, like in +when+);
-* array pattern: <code>[<subpattern>, <subpattern>, <subpattern>, ...]</code>;
-* hash pattern: <code>{key: <subpattern>, key: <subpattern>, ...}</code>;
-* special match-anything pattern: <code>_</code>;
-* combination of patterns with <code>|</code>.
+* any Ruby object (matched by <code>===</code> operator, like in +when+); (_Value pattern_)
+* array pattern: <code>[<subpattern>, <subpattern>, <subpattern>, ...]</code>; (_Array pattern_)
+* find pattern: <code>[*variable, <subpattern>, <subpattern>, <subpattern>, ..., *variable]</code>; (_Find pattern_)
+* hash pattern: <code>{key: <subpattern>, key: <subpattern>, ...}</code>; (_Hash pattern_)
+* combination of patterns with <code>|</code>; (_Alternative pattern_)
+* variable capture: <code>variable</code> or <code><pattern> => variable</code>; (_Variable pattern_, _As pattern_)
 
-Any pattern can be nested inside array/hash patterns where <code><subpattern></code> is specified.
+Any pattern can be nested inside array/find/hash patterns where <code><subpattern></code> is specified.
 
-Array patterns match arrays, or objects that respond to +deconstruct+ (see below about the latter).
+Array patterns and find patterns match arrays, or objects that respond to +deconstruct+ (see below about the latter).
 Hash patterns match hashes, or objects that respond to +deconstruct_keys+ (see below about the latter). Note that only symbol keys are supported for hash patterns, at least for now.
 
 An important difference between array and hash patterns behavior is arrays match only a _whole_ array
@@ -121,7 +122,7 @@ Both array and hash patterns support "rest" specification:
   end
   #=> "matched"
 
-In +case+ (but not in +=>+) expression, parentheses around both kinds of patterns could be omitted
+In +case+ (but not in +=>+ and +in+) expression, parentheses around both kinds of patterns could be omitted
 
   case [1, 2]
   in Integer, Integer
@@ -138,6 +139,15 @@ In +case+ (but not in +=>+) expression, parentheses around both kinds of pattern
     "not matched"
   end
   #=> "matched"
+
+Find pattern is similar to array pattern but it can be used to check if the given object has any elements that match the pattern.
+
+  case ["a", 1, "b", "c", 2]
+  in [*, String, String, *]
+    "matched"
+  else
+    "not matched"
+  end
 
 == Variable binding
 
@@ -225,7 +235,7 @@ Binding to variables currently does NOT work for alternative patterns joined wit
   end
   # SyntaxError (illegal variable in alternative pattern (a))
 
-The match-anything pattern <code>_</code> is the only exclusion from this rule: it still binds the first match to local variable <code>_</code>, but allowed to be used in alternative patterns:
+<code>_</code> is the only exclusion from this rule: it still binds the first match to local variable <code>_</code>, but allowed to be used in alternative patterns:
 
   case {a: 1, b: 2}
   in {a: _} | Array
@@ -252,7 +262,7 @@ Due to variable binding feature, existing local variable can't be straightforwar
   # expected: "not matched. expectation was: 18"
   # real: "matched. expectation was: 1" -- local variable just rewritten
 
-For this case, "variable pinning" operator <code>^</code> can be used, to tell Ruby "just use this value as a part of pattern"
+For this case, the pin operator <code>^</code> can be used, to tell Ruby "just use this value as a part of pattern"
 
   expectation = 18
   case [1, 2]
@@ -286,7 +296,7 @@ One important usage of variable pinning is specifying the same value should happ
 
 == Matching non-primitive objects: +deconstruct_keys+ and +deconstruct+
 
-As already mentioned above, hash and array patterns besides literal arrays and hashes will try to match any object implementing +deconstruct+ (for array patterns) or +deconstruct_keys+ (for hash patterns).
+As already mentioned above, hash and array/find patterns besides literal arrays and hashes will try to match any object implementing +deconstruct+ (for array/find patterns) or +deconstruct_keys+ (for hash patterns).
 
   class Point
     def initialize(x, y)
@@ -392,7 +402,7 @@ As of Ruby 3.0, one-line pattern matching and find pattern are considered _exper
   # warning: Find pattern is experimental, and the behavior may change in future versions of Ruby!
   # warning: One-line pattern matching is experimental, and the behavior may change in future versions of Ruby!
 
-To suppress this warning, one may use newly introduced Warning::[]= method:
+To suppress this warning, one may use Warning::[]= method:
 
   Warning[:experimental] = false
   eval('[0] => [*, 0, *]')
@@ -406,3 +416,69 @@ Note that pattern-matching warning is raised at a compile time, so this will not
 So, only subsequently loaded files or `eval`-ed code is affected by switching the flag.
 
 Alternatively, command-line key <code>-W:no-experimental</code> can be used to turn off "experimental" feature warnings.
+
+== Appendix A. Pattern syntax
+Approximate syntax is:
+
+  pattern: value_pattern
+         | variable_pattern
+         | alternative_pattern
+         | as_pattern
+         | array_pattern
+         | find_pattern
+         | hash_pattern
+
+  value_pattern: literal
+               | Constant
+               | ^variable
+
+  variable_pattern: variable
+
+  alternative_pattern: pattern | pattern | ...
+
+  as_pattern: pattern => variable
+
+  array_pattern: [pattern, ..., *variable]
+               | Constant(pattern, ..., *variable)
+               | Constant[pattern, ..., *variable]
+
+  find_pattern: [*variable, pattern, ..., *variable]
+               | Constant(*variable, pattern, ..., *variable)
+               | Constant[*variable, pattern, ..., *variable]
+
+  hash_pattern: {key:, pattern, key:, ..., **variable}
+              | Constant(key:, pattern, key:, ..., **variable)
+              | Constant[key:, pattern, key:, ..., **variable]
+
+== Appendix B. Some undefined behavior examples
+
+To leave room for optimization in the future, the specification contains some undefined behavior.
+
+Use of a variable in an unmatched pattern:
+
+  case [0, 1]
+  in [a, 2]
+    "not matched"
+  in b
+    "matched"
+  in c
+    "not matched"
+  end
+  a #=> undefined
+  c #=> undefined
+
+Number of +deconstruct+, +deconstruct_keys+ method calls:
+
+  $i = 0
+  ary = [0]
+  def ary.deconstruct
+    $i += 1
+    self
+  end
+  case ary
+  in [0, 1]
+    "not matched"
+  in [0]
+    "matched"
+  end
+  $i #=> undefined
