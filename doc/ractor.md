@@ -163,7 +163,7 @@ Error in the given block will be propagated to the receiver of an outgoing messa
 
 ```ruby
 r = Ractor.new do
-  raise 'ok' # exception will be transferred receiver
+  raise 'ok' # exception will be transferred to the receiver
 end
 
 begin
