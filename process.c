@@ -670,7 +670,7 @@ rb_last_status_clear(void)
  *  call-seq:
  *     stat.to_i     -> integer
  *
- *  Returns the bits in _stat_ as a Integer. Poking
+ *  Returns the bits in _stat_ as an Integer. Poking
  *  around in these bits is platform dependent.
  *
  *     fork { exit 0xab }         #=> 26566

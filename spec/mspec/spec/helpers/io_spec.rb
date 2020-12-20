@@ -60,7 +60,7 @@ describe Object, "#new_fd" do
     rm_r @name
   end
 
-  it "returns a Integer that can be used to create an IO instance" do
+  it "returns an Integer that can be used to create an IO instance" do
     fd = new_fd @name
     fd.should be_kind_of(Integer)
 

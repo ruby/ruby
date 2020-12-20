@@ -11,7 +11,7 @@ describe :integer_equal, shared: true do
       10.send(@method, bignum_value).should == false
     end
 
-    it "calls 'other == self' if the given argument is not a Integer" do
+    it "calls 'other == self' if the given argument is not an Integer" do
       1.send(@method, '*').should == false
 
       obj = mock('one other')

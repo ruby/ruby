@@ -667,7 +667,7 @@ describe :marshal_load, shared: true do
     end
   end
 
-  describe "for a Integer" do
+  describe "for an Integer" do
     it "loads 0" do
       Marshal.send(@method, "\004\bi\000").should == 0
       Marshal.send(@method, "\004\bi\005").should == 0
