@@ -71,22 +71,27 @@ module JSON
       end
       self.state = generator::State
       const_set :State, self.state
-      const_set :SAFE_STATE_PROTOTYPE, State.new
-      const_set :FAST_STATE_PROTOTYPE, State.new(
+    ensure
+      $VERBOSE = old
+    end
+
+    def create_fast_state
+      State.new(
         :indent         => '',
         :space          => '',
         :object_nl      => "",
         :array_nl       => "",
         :max_nesting    => false
       )
-      const_set :PRETTY_STATE_PROTOTYPE, State.new(
+    end
+
+    def create_pretty_state
+      State.new(
         :indent         => '  ',
         :space          => ' ',
         :object_nl      => "\n",
         :array_nl       => "\n"
       )
-    ensure
-      $VERBOSE = old
     end
 
     # Returns the JSON generator module that is used by JSON. This is
@@ -276,7 +281,7 @@ module JSON
     if State === opts
       state, opts = opts, nil
     else
-      state = SAFE_STATE_PROTOTYPE.dup
+      state = State.new
     end
     if opts
       if opts.respond_to? :to_hash
@@ -315,7 +320,7 @@ module JSON
     if State === opts
       state, opts = opts, nil
     else
-      state = FAST_STATE_PROTOTYPE.dup
+      state = JSON.create_fast_state
     end
     if opts
       if opts.respond_to? :to_hash
@@ -370,7 +375,7 @@ module JSON
     if State === opts
       state, opts = opts, nil
     else
-      state = PRETTY_STATE_PROTOTYPE.dup
+      state = JSON.create_pretty_state
     end
     if opts
       if opts.respond_to? :to_hash
