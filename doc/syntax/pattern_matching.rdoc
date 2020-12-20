@@ -60,12 +60,12 @@ See below for more examples and explanations of the syntax.
 
 Patterns can be:
 
-* any Ruby object (matched by <code>===</code> operator, like in +when+); (_Value pattern_)
-* array pattern: <code>[<subpattern>, <subpattern>, <subpattern>, ...]</code>; (_Array pattern_)
-* find pattern: <code>[*variable, <subpattern>, <subpattern>, <subpattern>, ..., *variable]</code>; (_Find pattern_)
-* hash pattern: <code>{key: <subpattern>, key: <subpattern>, ...}</code>; (_Hash pattern_)
-* combination of patterns with <code>|</code>; (_Alternative pattern_)
-* variable capture: <code>variable</code> or <code><pattern> => variable</code>; (_Variable pattern_, _As pattern_)
+* any Ruby object (matched by <code>===</code> operator, like in +when+); (<em>Value pattern</em>)
+* array pattern: <code>[<subpattern>, <subpattern>, <subpattern>, ...]</code>; (<em>Array pattern</em>)
+* find pattern: <code>[*variable, <subpattern>, <subpattern>, <subpattern>, ..., *variable]</code>; (<em>Find pattern</em>)
+* hash pattern: <code>{key: <subpattern>, key: <subpattern>, ...}</code>; (<em>Hash pattern</em>)
+* combination of patterns with <code>|</code>; (<em>Alternative pattern</em>)
+* variable capture: <code>variable</code> or <code><pattern> => variable</code>; (<em>Variable pattern</em>, <em>As pattern</em>)
 
 Any pattern can be nested inside array/find/hash patterns where <code><subpattern></code> is specified.
 
@@ -443,8 +443,8 @@ Approximate syntax is:
                | Constant[pattern, ..., *variable]
 
   find_pattern: [*variable, pattern, ..., *variable]
-               | Constant(*variable, pattern, ..., *variable)
-               | Constant[*variable, pattern, ..., *variable]
+              | Constant(*variable, pattern, ..., *variable)
+              | Constant[*variable, pattern, ..., *variable]
 
   hash_pattern: {key: pattern, key:, ..., **variable}
               | Constant(key: pattern, key:, ..., **variable)
