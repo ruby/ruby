@@ -331,14 +331,13 @@ eom
       end
 
       # Run Ractor-related test without influencing the main test suite
-      def assert_ractor(src, args: [], file: nil, line: nil, ignore_stderr: nil, **opt)
+      def assert_ractor(src, args: [], require: nil, file: nil, line: nil, ignore_stderr: nil, **opt)
         return unless defined?(Ractor)
 
-        if (req = opt.delete(:require))
-          req = "require #{req.inspect}"
-        end
+        require = "require #{require.inspect}" if require
+
         assert_separately(args, file, line, <<~RUBY, ignore_stderr: ignore_stderr, **opt)
-          #{req}
+          #{require}
           previous_verbose = $VERBOSE
           $VERBOSE = nil
           Ractor.new {} # trigger initial warning
