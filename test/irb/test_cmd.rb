@@ -158,12 +158,9 @@ module TestIRB
           PROMPT_S: '> ',
           PROMPT_C: '> ',
           PROMPT_N: '> '
-        },
-        PROMPT_I: '> ',
-        PROMPT_S: '> ',
-        PROMPT_C: '> ',
-        PROMPT_N: '> '
+        }
       }
+      IRB.conf[:PROMPT_MODE] = :DEFAULT
       IRB.conf[:MEASURE] = false
       input = TestInputMethod.new([
         "3\n",
@@ -189,12 +186,9 @@ module TestIRB
           PROMPT_S: '> ',
           PROMPT_C: '> ',
           PROMPT_N: '> '
-        },
-        PROMPT_I: '> ',
-        PROMPT_S: '> ',
-        PROMPT_C: '> ',
-        PROMPT_N: '> '
+        }
       }
+      IRB.conf[:PROMPT_MODE] = :DEFAULT
       IRB.conf[:MEASURE] = true
       input = TestInputMethod.new([
         "3\n",
@@ -218,12 +212,9 @@ module TestIRB
           PROMPT_S: '> ',
           PROMPT_C: '> ',
           PROMPT_N: '> '
-        },
-        PROMPT_I: '> ',
-        PROMPT_S: '> ',
-        PROMPT_C: '> ',
-        PROMPT_N: '> '
+        }
       }
+      IRB.conf[:PROMPT_MODE] = :DEFAULT
       IRB.conf[:MEASURE] = true
       IRB.conf[:MEASURE_PROC][:CUSTOM] = proc { |line, line_no, &block|
         time = Time.now
@@ -254,12 +245,9 @@ module TestIRB
           PROMPT_S: '> ',
           PROMPT_C: '> ',
           PROMPT_N: '> '
-        },
-        PROMPT_I: '> ',
-        PROMPT_S: '> ',
-        PROMPT_C: '> ',
-        PROMPT_N: '> '
+        }
       }
+      IRB.conf[:PROMPT_MODE] = :DEFAULT
       IRB.conf[:MEASURE] = false
       IRB.conf[:MEASURE_PROC][:CUSTOM] = proc { |line, line_no, &block|
         time = Time.now
