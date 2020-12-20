@@ -63,15 +63,22 @@ class RubyLex
         tokens = ripper_lex_without_warning(lines.map{ |l| l + "\n" }.join)
         code = String.new
         partial_tokens = []
+        unprocessed_tokens = []
         line_num_offset = 0
         tokens.each do |t|
           code << t[2]
           partial_tokens << t
+          unprocessed_tokens << t
           if t[2].include?("\n")
             ltype, indent, continue, code_block_open = check_state(code, partial_tokens)
             result << @prompt.call(ltype, indent, continue || code_block_open, @line_no + line_num_offset)
             line_num_offset += 1
+            unprocessed_tokens = []
           end
+        end
+        unless unprocessed_tokens.empty?
+          ltype, indent, continue, code_block_open = check_state(code, unprocessed_tokens)
+          result << @prompt.call(ltype, indent, continue || code_block_open, @line_no + line_num_offset)
         end
         result
       end
