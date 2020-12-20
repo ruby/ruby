@@ -11007,7 +11007,7 @@ struct wait_for_single_fd {
     VALUE result;
 };
 
-void *
+static void *
 rb_thread_scheduler_wait_for_single_fd(void * _args)
 {
     struct wait_for_single_fd *args = (struct wait_for_single_fd *)_args;
