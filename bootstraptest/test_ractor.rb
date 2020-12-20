@@ -1149,6 +1149,14 @@ assert_equal '[:ok, false, false]', %q{
   [(Ractor.make_shareable(x) rescue :ok), Ractor.shareable?(x), Ractor.shareable?(y)]
 }
 
+# Ractor.make_shareable with Class/Module
+assert_equal '[C, M]', %q{
+  class C; end
+  module M; end
+
+  Ractor.make_shareable(ary = [C, M])
+}
+
 # define_method() can invoke different Ractor's proc if the proc is shareable.
 assert_equal '1', %q{
   class C
@@ -1190,7 +1198,6 @@ assert_equal '[false, false, true, true]', %q{
   r << (o1.object_id == o3.object_id) # false
   r
 }
-
 
 # Ractor deep copies frozen objects (ary)
 assert_equal '[true, false]', %q{

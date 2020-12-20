@@ -2396,7 +2396,7 @@ make_shareable_check_shareable(VALUE obj)
     VM_ASSERT(!SPECIAL_CONST_P(obj));
     bool made_shareable = false;
 
-    if (RB_OBJ_SHAREABLE_P(obj)) {
+    if (rb_ractor_shareable_p(obj)) {
         return traverse_skip;
     }
     else if (!frozen_shareable_p(obj, &made_shareable)) {
