@@ -59,7 +59,8 @@
 % end
 %
 % # JIT: We should evaluate ISeq modified for TracePoint if it's enabled. Note: This is slow.
-% unless insn.always_leaf?
+% #      leaf insn may not cancel JIT. leaf_without_check_ints is covered in RUBY_VM_CHECK_INTS of _mjit_compile_insn_body.erb.
+% unless insn.always_leaf? || insn.leaf_without_check_ints?
         fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
         fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)<%= insn.call_attribute('sp_inc') %>);
         if (!pc_moved_p) {
