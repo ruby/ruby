@@ -224,7 +224,6 @@ module TestIRB
       IRB.conf[:MEASURE_PROC][:CUSTOM] = proc { |line, line_no, &block|
         time = Time.now
         result = block.()
-        now = Time.now
         puts 'custom processing time: %fs' % (Time.now - time) if IRB.conf[:MEASURE]
         result
       }
@@ -258,7 +257,6 @@ module TestIRB
       IRB.conf[:MEASURE_PROC][:CUSTOM] = proc { |line, line_no, &block|
         time = Time.now
         result = block.()
-        now = Time.now
         puts 'custom processing time: %fs' % (Time.now - time) if IRB.conf[:MEASURE]
         result
       }
