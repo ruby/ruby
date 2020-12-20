@@ -85,17 +85,17 @@ describe "Module#attr_accessor" do
 
   describe "on immediates" do
     before :each do
-      class Fixnum
+      class Integer
         attr_accessor :foobar
       end
     end
 
     after :each do
-      if Fixnum.method_defined?(:foobar)
-        Fixnum.send(:remove_method, :foobar)
+      if Integer.method_defined?(:foobar)
+        Integer.send(:remove_method, :foobar)
       end
-      if Fixnum.method_defined?(:foobar=)
-        Fixnum.send(:remove_method, :foobar=)
+      if Integer.method_defined?(:foobar=)
+        Integer.send(:remove_method, :foobar=)
       end
     end
 

@@ -7,7 +7,7 @@ describe "Numeric#real" do
       20,             # Integer
       398.72,         # Float
       Rational(3, 4), # Rational
-      bignum_value,   # Bignum
+      bignum_value,   # Integer
       infinity_value,
       nan_value
     ].map{ |n| [n, -n] }.flatten

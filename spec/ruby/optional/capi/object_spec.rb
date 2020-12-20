@@ -372,22 +372,22 @@ describe "CApiObject" do
   end
 
   describe "rb_check_to_integer" do
-    it "returns the object when passed a Fixnum" do
+    it "returns the object when passed a Integer" do
       @o.rb_check_to_integer(5, "to_int").should equal(5)
     end
 
-    it "returns the object when passed a Bignum" do
+    it "returns the object when passed a Integer" do
       @o.rb_check_to_integer(bignum_value, "to_int").should == bignum_value
     end
 
-    it "calls the converting method and returns a Fixnum value" do
+    it "calls the converting method and returns a Integer value" do
       obj = mock("rb_check_to_integer")
       obj.should_receive(:to_integer).and_return(10)
 
       @o.rb_check_to_integer(obj, "to_integer").should equal(10)
     end
 
-    it "calls the converting method and returns a Bignum value" do
+    it "calls the converting method and returns a Integer value" do
       obj = mock("rb_check_to_integer")
       obj.should_receive(:to_integer).and_return(bignum_value)
 
@@ -448,7 +448,7 @@ describe "CApiObject" do
   describe "rb_class_of" do
     it "returns the class of an object" do
       @o.rb_class_of(nil).should == NilClass
-      @o.rb_class_of(0).should == Fixnum
+      @o.rb_class_of(0).should == Integer
       @o.rb_class_of(0.1).should == Float
       @o.rb_class_of(ObjectTest.new).should == ObjectTest
     end
@@ -464,7 +464,7 @@ describe "CApiObject" do
   describe "rb_obj_classname" do
     it "returns the class name of an object" do
       @o.rb_obj_classname(nil).should == 'NilClass'
-      @o.rb_obj_classname(0).should == Fixnum.to_s
+      @o.rb_obj_classname(0).should == Integer.to_s
       @o.rb_obj_classname(0.1).should == 'Float'
       @o.rb_obj_classname(ObjectTest.new).should == 'ObjectTest'
     end
@@ -553,7 +553,7 @@ describe "CApiObject" do
       @o.rb_special_const_p(:test).should be_true
     end
 
-    it "returns true if passed a Fixnum" do
+    it "returns true if passed a Integer" do
       @o.rb_special_const_p(10).should be_true
     end
 
@@ -716,7 +716,7 @@ describe "CApiObject" do
       @o.rb_to_int(5).should == 5
     end
 
-    it "returns self when called on a Bignum" do
+    it "returns self when called on a Integer" do
       @o.rb_to_int(bignum_value).should == bignum_value
     end
 

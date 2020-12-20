@@ -6,7 +6,7 @@ describe :numeric_rect, shared: true do
       20,             # Integer
       398.72,         # Float
       Rational(3, 4), # Rational
-      99999999**99, # Bignum
+      99999999**99, # Integer
       infinity_value,
       nan_value
     ]

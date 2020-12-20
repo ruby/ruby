@@ -452,38 +452,38 @@ describe "C-API String function" do
   end
 
   describe "rb_cstr2inum" do
-    it "converts a C string to a Fixnum given a base" do
+    it "converts a C string to a Integer given a base" do
       @s.rb_cstr2inum("10", 10).should == 10
       @s.rb_cstr2inum("10", 16).should == 16
     end
 
-    it "converts a C string to a Bignum given a base" do
+    it "converts a C string to a Integer given a base" do
       @s.rb_cstr2inum(bignum_value.to_s, 10).should == bignum_value
     end
 
-    it "converts a C string to a Fixnum non-strictly if base is not 0" do
+    it "converts a C string to a Integer non-strictly if base is not 0" do
       @s.rb_cstr2inum("1234a", 10).should == 1234
     end
 
-    it "converts a C string to a Fixnum strictly if base is 0" do
+    it "converts a C string to a Integer strictly if base is 0" do
       -> { @s.rb_cstr2inum("1234a", 0) }.should raise_error(ArgumentError)
     end
   end
 
   describe "rb_cstr_to_inum" do
-    it "converts a C string to a Fixnum given a base" do
+    it "converts a C string to a Integer given a base" do
       @s.rb_cstr_to_inum("1234", 10, true).should == 1234
     end
 
-    it "converts a C string to a Bignum given a base" do
+    it "converts a C string to a Integer given a base" do
       @s.rb_cstr_to_inum(bignum_value.to_s, 10, true).should == bignum_value
     end
 
-    it "converts a C string to a Fixnum non-strictly" do
+    it "converts a C string to a Integer non-strictly" do
       @s.rb_cstr_to_inum("1234a", 10, false).should == 1234
     end
 
-    it "converts a C string to a Fixnum strictly" do
+    it "converts a C string to a Integer strictly" do
       -> { @s.rb_cstr_to_inum("1234a", 10, true) }.should raise_error(ArgumentError)
     end
   end

@@ -16,7 +16,7 @@ static VALUE fixnum_spec_FIX2UINT(VALUE self, VALUE value) {
 }
 
 void Init_fixnum_spec(void) {
-  VALUE cls = rb_define_class("CApiFixnumSpecs", rb_cObject);
+  VALUE cls = rb_define_class("CApiIntegerSpecs", rb_cObject);
   rb_define_method(cls, "FIX2INT", fixnum_spec_FIX2INT, 1);
   rb_define_method(cls, "FIX2UINT", fixnum_spec_FIX2UINT, 1);
 }

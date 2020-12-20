@@ -15,16 +15,16 @@ describe "C-API Hash function" do
       @s.rb_hash(obj).should == 5
     end
 
-    it "converts a Bignum returned by #hash to a Fixnum" do
+    it "converts a Integer returned by #hash to a Integer" do
       obj = mock("rb_hash bignum")
       obj.should_receive(:hash).and_return(bignum_value)
 
       # The actual conversion is an implementation detail.
-      # We only care that ultimately we get a Fixnum instance.
-      @s.rb_hash(obj).should be_an_instance_of(Fixnum)
+      # We only care that ultimately we get a Integer instance.
+      @s.rb_hash(obj).should be_an_instance_of(Integer)
     end
 
-    it "calls #to_int to converts a value returned by #hash to a Fixnum" do
+    it "calls #to_int to converts a value returned by #hash to a Integer" do
       obj = mock("rb_hash to_int")
       obj.should_receive(:hash).and_return(obj)
       obj.should_receive(:to_int).and_return(12)

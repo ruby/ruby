@@ -87,7 +87,7 @@ static VALUE bignum_spec_rb_big_pack_array(VALUE self, VALUE val, VALUE len) {
 }
 
 void Init_bignum_spec(void) {
-  VALUE cls = rb_define_class("CApiBignumSpecs", rb_cObject);
+  VALUE cls = rb_define_class("CApiIntegerSpecs", rb_cObject);
   rb_define_method(cls, "rb_big2dbl", bignum_spec_rb_big2dbl, 1);
   rb_define_method(cls, "rb_dbl2big", bignum_spec_rb_dbl2big, 1);
   rb_define_method(cls, "rb_big2ll", bignum_spec_rb_big2ll, 1);

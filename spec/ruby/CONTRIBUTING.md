@@ -8,7 +8,7 @@ Spec are grouped in 5 separate top-level groups:
 
 * `command_line`: for the ruby executable command-line flags (`-v`, `-e`, etc)
 * `language`: for the language keywords and syntax constructs (`if`, `def`, `A::B`, etc)
-* `core`: for the core methods (`Fixnum#+`, `String#upcase`, no need to require anything)
+* `core`: for the core methods (`Integer#+`, `String#upcase`, no need to require anything)
 * `library`: for the standard libraries methods (`CSV.new`, `YAML.parse`, need to require the stdlib)
 * `optional/capi`: for functions available to the Ruby C-extension API
 
@@ -89,7 +89,7 @@ File.should.equal?(File) # Calls #equal? (tests identity)
 Numeric.should be_ancestor_of(Float) # Float.ancestors.include?(Numeric)
 
 3.14.should.respond_to?(:to_i)
-Fixnum.should have_instance_method(:+)
+Integer.should have_instance_method(:+)
 Array.should have_method(:new)
 ```
 
@@ -124,8 +124,8 @@ If an exception is raised, it will fail the example anyway.
 
 ```ruby
 -> {
-  Fixnum
-}.should complain(/constant ::Fixnum is deprecated/) # Expect a warning
+  Integer
+}.should complain(/constant ::Integer is deprecated/) # Expect a warning
 ```
 
 ### Guards

@@ -16,11 +16,11 @@ describe "CApiNumericSpecs" do
       @s.NUM2INT(4.2).should == 4
     end
 
-    it "converts a Bignum" do
+    it "converts a Integer" do
       @s.NUM2INT(0x7fff_ffff).should == 0x7fff_ffff
     end
 
-    it "converts a Fixnum" do
+    it "converts a Integer" do
       @s.NUM2INT(5).should == 5
     end
 
@@ -28,7 +28,7 @@ describe "CApiNumericSpecs" do
       @s.NUM2INT(-1).should == -1
     end
 
-    it "converts a negative Bignum into an signed number" do
+    it "converts a negative Integer into an signed number" do
       @s.NUM2INT(-2147442171).should == -2147442171
     end
 
@@ -52,11 +52,11 @@ describe "CApiNumericSpecs" do
       @s.NUM2UINT(4.2).should == 4
     end
 
-    it "converts a Bignum" do
+    it "converts a Integer" do
       @s.NUM2UINT(0xffff_ffff).should == 0xffff_ffff
     end
 
-    it "converts a Fixnum" do
+    it "converts a Integer" do
       @s.NUM2UINT(5).should == 5
     end
 
@@ -98,11 +98,11 @@ describe "CApiNumericSpecs" do
       @s.NUM2LONG(4.2).should == 4
     end
 
-    it "converts a Bignum" do
+    it "converts a Integer" do
       @s.NUM2LONG(0x7fff_ffff).should == 0x7fff_ffff
     end
 
-    it "converts a Fixnum" do
+    it "converts a Integer" do
       @s.NUM2LONG(5).should == 5
     end
 
@@ -111,7 +111,7 @@ describe "CApiNumericSpecs" do
         @s.NUM2LONG(-1).should == -1
       end
 
-      it "converts a negative Bignum into an signed number" do
+      it "converts a negative Integer into an signed number" do
         @s.NUM2LONG(-2147442171).should == -2147442171
       end
 
@@ -125,7 +125,7 @@ describe "CApiNumericSpecs" do
         @s.NUM2LONG(-1).should == -1
       end
 
-      it "converts a negative Bignum into an signed number" do
+      it "converts a negative Integer into an signed number" do
         @s.NUM2LONG(-9223372036854734331).should == -9223372036854734331
       end
 
@@ -152,7 +152,7 @@ describe "CApiNumericSpecs" do
       @s.NUM2SHORT(4.2).should == 4
     end
 
-    it "converts a Fixnum" do
+    it "converts a Integer" do
       @s.NUM2SHORT(5).should == 5
     end
 
@@ -180,15 +180,15 @@ describe "CApiNumericSpecs" do
       @s.INT2NUM(4.2).should == 4
     end
 
-    it "raises a RangeError when passed a Bignum" do
+    it "raises a RangeError when passed a Integer" do
       -> { @s.INT2NUM(bignum_value) }.should raise_error(RangeError)
     end
 
-    it "converts a Fixnum" do
+    it "converts a Integer" do
       @s.INT2NUM(5).should == 5
     end
 
-    it "converts a negative Fixnum" do
+    it "converts a negative Integer" do
       @s.INT2NUM(-11).should == -11
     end
   end
@@ -202,11 +202,11 @@ describe "CApiNumericSpecs" do
       @s.NUM2ULONG(4.2).should == 4
     end
 
-    it "converts a Bignum" do
+    it "converts a Integer" do
       @s.NUM2ULONG(0xffff_ffff).should == 0xffff_ffff
     end
 
-    it "converts a Fixnum" do
+    it "converts a Integer" do
       @s.NUM2ULONG(5).should == 5
     end
 
@@ -215,11 +215,11 @@ describe "CApiNumericSpecs" do
         @s.NUM2ULONG(-1).should == 4294967295
       end
 
-      it "converts a negative Bignum into an unsigned number" do
+      it "converts a negative Integer into an unsigned number" do
         @s.NUM2ULONG(-2147442171).should == 2147525125
       end
 
-      it "converts positive Bignums if the values is less than 64bits" do
+      it "converts positive Integers if the values is less than 64bits" do
         @s.NUM2ULONG(0xffff_ffff).should == 0xffff_ffff
         @s.NUM2ULONG(2**30).should == 2**30
         @s.NUM2ULONG(fixnum_max+1).should == fixnum_max+1
@@ -236,11 +236,11 @@ describe "CApiNumericSpecs" do
         @s.NUM2ULONG(-1).should == 18446744073709551615
       end
 
-      it "converts a negative Bignum into an unsigned number" do
+      it "converts a negative Integer into an unsigned number" do
         @s.NUM2ULONG(-9223372036854734331).should == 9223372036854817285
       end
 
-      it "converts positive Bignums if the values is less than 64bits" do
+      it "converts positive Integers if the values is less than 64bits" do
         @s.NUM2ULONG(0xffff_ffff_ffff_ffff).should == 0xffff_ffff_ffff_ffff
         @s.NUM2ULONG(2**62).should == 2**62
         @s.NUM2ULONG(fixnum_max+1).should == fixnum_max+1
@@ -270,45 +270,45 @@ describe "CApiNumericSpecs" do
   end
 
   describe "rb_ll2inum" do
-    it "creates a Fixnum from a small signed long long" do
+    it "creates a Integer from a small signed long long" do
       i = @s.rb_ll2inum_14()
-      i.should be_kind_of(Fixnum)
+      i.should be_kind_of(Integer)
       i.should eql(14)
     end
   end
 
   describe "rb_ull2inum" do
-    it "creates a Fixnum from a small unsigned long long" do
+    it "creates a Integer from a small unsigned long long" do
       i = @s.rb_ull2inum_14()
-      i.should be_kind_of(Fixnum)
+      i.should be_kind_of(Integer)
       i.should eql(14)
     end
 
-    it "creates a positive Bignum from a negative long long" do
+    it "creates a positive Integer from a negative long long" do
       i = @s.rb_ull2inum_n14()
-      i.should be_kind_of(Bignum)
+      i.should be_kind_of(Integer)
       i.should eql(2 ** (@s.size_of_long_long * 8) - 14)
     end
   end
 
   describe "rb_int2inum" do
-    it "creates a Fixnum from a long" do
+    it "creates a Integer from a long" do
       i = @s.rb_int2inum_14()
-      i.should be_kind_of(Fixnum)
+      i.should be_kind_of(Integer)
       i.should eql(14)
     end
   end
 
   describe "rb_uint2inum" do
-    it "creates a Fixnum from a long" do
+    it "creates a Integer from a long" do
       i = @s.rb_uint2inum_14()
-      i.should be_kind_of(Fixnum)
+      i.should be_kind_of(Integer)
       i.should eql(14)
     end
 
-    it "creates a positive Bignum from a negative long" do
+    it "creates a positive Integer from a negative long" do
       i = @s.rb_uint2inum_n14()
-      i.should be_kind_of(Bignum)
+      i.should be_kind_of(Integer)
       i.should eql(2 ** (@s.size_of_VALUE * 8) - 14)
     end
   end
@@ -326,11 +326,11 @@ describe "CApiNumericSpecs" do
       @s.NUM2DBL(4.2).should == 4.2
     end
 
-    it "converts a Bignum" do
+    it "converts a Integer" do
       @s.NUM2DBL(2**70).should == (2**70).to_f
     end
 
-    it "converts a Fixnum" do
+    it "converts a Integer" do
       @s.NUM2DBL(5).should == 5.0
     end
 
@@ -366,7 +366,7 @@ describe "CApiNumericSpecs" do
   end
 
   describe "rb_cmpint" do
-    it "returns a Fixnum if passed one" do
+    it "returns a Integer if passed one" do
       @s.rb_cmpint(1, 2).should == 1
     end
 
