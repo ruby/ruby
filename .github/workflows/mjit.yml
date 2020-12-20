@@ -13,7 +13,7 @@ jobs:
       RUN_OPTS: '--disable-gems ${{ matrix.jit_opts }} --jit-debug=-ggdb3'
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
     steps:
-      - run: apt install -y gdb
+      - run: sudo apt-get install gdb
       - run: gdb -h
 
 defaults:
