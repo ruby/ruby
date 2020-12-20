@@ -18,11 +18,9 @@ jobs:
     steps:
       - run: mkdir build
         working-directory:
-      - name: Install libraries
-        run: |
-          set -x
-          sudo apt-get update -q || :
-          sudo apt-get install gdb
+      - run: gdb -h || false
+      - run: sudo apt-get install gdb
+      - run: gdb -h
 
 defaults:
   run:
