@@ -2356,6 +2356,14 @@ rb_w32_readdir(DIR *dirp, rb_encoding *enc)
 	return readdir_internal(dirp, ruby_direct_conv, enc);
 }
 
+/* License: Ruby's */
+struct direct  *
+rb_w32_ureaddir(DIR *dirp)
+{
+    const UINT cp = CP_UTF8;
+    return readdir_internal(dirp, win32_direct_conv, &cp);
+}
+
 //
 // Telldir returns the current string pointer position
 //
