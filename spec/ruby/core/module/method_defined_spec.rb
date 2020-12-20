@@ -30,7 +30,7 @@ describe "Module#method_defined?" do
     m.method_defined?(:module_specs_public_method_on_kernel).should be_false
   end
 
-  it "raises a TypeError when the given object is not a string/symbol/fixnum" do
+  it "raises a TypeError when the given object is not a string/symbol" do
     c = Class.new
     o = mock('123')
 
