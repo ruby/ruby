@@ -10,7 +10,7 @@ describe "Integer#-@" do
       -8.send(:-@).should == 8
     end
 
-    it "negates self at Fixnum/Bignum boundaries" do
+    it "negates self at Integer/Integer boundaries" do
       (-fixnum_max).should == (0 - fixnum_max)
       (-fixnum_max).should < 0
       (-fixnum_min).should == (0 - fixnum_min)

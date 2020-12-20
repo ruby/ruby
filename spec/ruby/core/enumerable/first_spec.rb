@@ -17,7 +17,7 @@ describe "Enumerable#first" do
     EnumerableSpecs::YieldsMixed2.new.to_enum.first.should == nil
   end
 
-  it "raises a RangeError when passed a Bignum" do
+  it "raises a RangeError when passed an Integer" do
     enum = EnumerableSpecs::Empty.new
     -> { enum.first(bignum_value) }.should raise_error(RangeError)
   end

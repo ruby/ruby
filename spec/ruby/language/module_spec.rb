@@ -43,7 +43,7 @@ describe "The module keyword" do
     -> { module ModuleSpecs::Modules::A; end }.should raise_error(TypeError)
   end
 
-  it "raises a TypeError if the constant is a Fixnum" do
+  it "raises a TypeError if the constant is an Integer" do
     -> { module ModuleSpecs::Modules::B; end }.should raise_error(TypeError)
   end
 

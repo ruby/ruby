@@ -7,7 +7,7 @@ describe "Regexp.last_match" do
     Regexp.last_match.should be_kind_of(MatchData)
   end
 
-  it "returns the nth field in this MatchData when passed a Fixnum" do
+  it "returns the nth field in this MatchData when passed an Integer" do
     /c(.)t/ =~ 'cat'
     Regexp.last_match(1).should == 'a'
   end

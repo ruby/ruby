@@ -31,7 +31,7 @@ describe "Module#protected_method_defined?" do
     ModuleSpecs::CountsMixin.protected_method_defined?(:protected_3).should == true
   end
 
-  it "raises a TypeError if passed a Fixnum" do
+  it "raises a TypeError if passed an Integer" do
     -> do
       ModuleSpecs::CountsMixin.protected_method_defined?(1)
     end.should raise_error(TypeError)

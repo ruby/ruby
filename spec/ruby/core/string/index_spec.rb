@@ -27,7 +27,7 @@ describe "String#index" do
     "abc".index("c", offset).should == 2
   end
 
-  it "raises a TypeError if passed a Fixnum" do
+  it "raises a TypeError if passed an Integer" do
     -> { "abc".index 97 }.should raise_error(TypeError)
   end
 end

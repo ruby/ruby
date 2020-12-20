@@ -26,15 +26,15 @@ describe "Integer#gcdlcm" do
     200.gcdlcm(20)[1].should == 200.lcm(20)
   end
 
-  it "accepts a Bignum argument" do
+  it "accepts an Integer argument" do
     bignum = 91999**99
-    bignum.should be_kind_of(Bignum)
+    bignum.should be_kind_of(Integer)
     99.gcdlcm(bignum).should == [99.gcd(bignum), 99.lcm(bignum)]
   end
 
-  it "works if self is a Bignum" do
+  it "works if self is an Integer" do
     bignum = 9999**89
-    bignum.should be_kind_of(Bignum)
+    bignum.should be_kind_of(Integer)
     bignum.gcdlcm(99).should == [bignum.gcd(99), bignum.lcm(99)]
   end
 

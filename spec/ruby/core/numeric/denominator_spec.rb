@@ -6,7 +6,7 @@ describe "Numeric#denominator" do
   before :each do
     @numbers = [
       20,             # Integer
-      99999999**99,   # Bignum
+      99999999**99,   # Integer
     ]
   end
 

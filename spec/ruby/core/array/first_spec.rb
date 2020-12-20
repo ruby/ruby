@@ -33,7 +33,7 @@ describe "Array#first" do
     -> { [1, 2].first(-1) }.should raise_error(ArgumentError)
   end
 
-  it "raises a RangeError when count is a Bignum" do
+  it "raises a RangeError when count is an Integer" do
     -> { [].first(bignum_value) }.should raise_error(RangeError)
   end
 

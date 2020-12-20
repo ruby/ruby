@@ -22,7 +22,7 @@ describe :strscan_peek, shared: true do
     -> { @s.send(@method, -2) }.should raise_error(ArgumentError)
   end
 
-  it "raises a RangeError when the passed argument is a Bignum" do
+  it "raises a RangeError when the passed argument is an Integer" do
     -> { @s.send(@method, bignum_value) }.should raise_error(RangeError)
   end
 

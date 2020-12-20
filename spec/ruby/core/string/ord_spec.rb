@@ -1,8 +1,8 @@
 require_relative '../../spec_helper'
 
 describe "String#ord" do
-  it "returns a Fixnum" do
-    'a'.ord.should be_an_instance_of(Fixnum)
+  it "returns an Integer" do
+    'a'.ord.should be_an_instance_of(Integer)
   end
 
   it "returns the codepoint of the first character in the String" do

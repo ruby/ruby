@@ -19,7 +19,7 @@ describe "Complex#coerce" do
     result.last.should be_kind_of(Complex)
   end
 
-  it "returns an array containing other and self as Complex when other is a Bignum" do
+  it "returns an array containing other and self as Complex when other is an Integer" do
     result = @one.coerce(4294967296)
     result.should == [4294967296, 1]
     result.first.should be_kind_of(Complex)

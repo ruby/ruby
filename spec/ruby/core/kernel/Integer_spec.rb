@@ -2,11 +2,11 @@ require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
 describe :kernel_integer, shared: true do
-  it "returns a Bignum for a Bignum" do
+  it "returns an Integer for an Integer" do
     Integer(2e100).should == 2e100
   end
 
-  it "returns a Fixnum for a Fixnum" do
+  it "returns an Integer for an Integer" do
     Integer(100).should == 100
   end
 
@@ -39,9 +39,9 @@ describe :kernel_integer, shared: true do
     -> { Integer(nil) }.should raise_error(TypeError)
   end
 
-  it "returns a Fixnum or Bignum object" do
-    Integer(2).should be_an_instance_of(Fixnum)
-    Integer(9**99).should be_an_instance_of(Bignum)
+  it "returns an Integer or Integer object" do
+    Integer(2).should be_an_instance_of(Integer)
+    Integer(9**99).should be_an_instance_of(Integer)
   end
 
   it "truncates Floats" do
@@ -54,14 +54,14 @@ describe :kernel_integer, shared: true do
     Integer(3.quo(2)).should == 1
   end
 
-  it "returns the value of to_int if the result is a Fixnum" do
+  it "returns the value of to_int if the result is an Integer" do
     obj = mock("object")
     obj.should_receive(:to_int).and_return(1)
     obj.should_not_receive(:to_i)
     Integer(obj).should == 1
   end
 
-  it "returns the value of to_int if the result is a Bignum" do
+  it "returns the value of to_int if the result is an Integer" do
     obj = mock("object")
     obj.should_receive(:to_int).and_return(2 * 10**100)
     obj.should_not_receive(:to_i)

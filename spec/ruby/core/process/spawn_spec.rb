@@ -48,10 +48,10 @@ describe "Process.spawn" do
     -> { Process.wait Process.spawn("echo spawn") }.should output_to_fd("spawn\n")
   end
 
-  it "returns the process ID of the new process as a Fixnum" do
+  it "returns the process ID of the new process as an Integer" do
     pid = Process.spawn(*ruby_exe, "-e", "exit")
     Process.wait pid
-    pid.should be_an_instance_of(Fixnum)
+    pid.should be_an_instance_of(Integer)
   end
 
   it "returns immediately" do
@@ -457,7 +457,7 @@ describe "Process.spawn" do
 
   # redirection
 
-  it "redirects STDOUT to the given file descriptor if out: Fixnum" do
+  it "redirects STDOUT to the given file descriptor if out: Integer" do
     File.open(@name, 'w') do |file|
       -> do
         Process.wait Process.spawn("echo glark", out: file.fileno)
@@ -483,7 +483,7 @@ describe "Process.spawn" do
     File.read(@name).should == "glark\n"
   end
 
-  it "redirects STDERR to the given file descriptor if err: Fixnum" do
+  it "redirects STDERR to the given file descriptor if err: Integer" do
     File.open(@name, 'w') do |file|
       -> do
         Process.wait Process.spawn("echo glark>&2", err: file.fileno)

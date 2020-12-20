@@ -16,11 +16,11 @@ describe "Matrix#*" do
     (@a * Vector[1,2]).should == Vector[5, 11]
   end
 
-  it "returns the result of multiplying the elements of self and a Fixnum" do
+  it "returns the result of multiplying the elements of self and an Integer" do
     (@a * 2).should == Matrix[ [2, 4], [6, 8] ]
   end
 
-  it "returns the result of multiplying the elements of self and a Bignum" do
+  it "returns the result of multiplying the elements of self and an Integer" do
     (@a * bignum_value).should == Matrix[
       [9223372036854775808, 18446744073709551616],
       [27670116110564327424, 36893488147419103232]

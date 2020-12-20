@@ -435,11 +435,11 @@ describe "The defined? keyword for an expression" do
     end
   end
 
-  it "returns 'expression' when passed a Fixnum literal" do
+  it "returns 'expression' when passed an Integer literal" do
     defined?(42).should == "expression"
   end
 
-  it "returns 'expression' when passed a Bignum literal" do
+  it "returns 'expression' when passed an Integer literal" do
     defined?(0xdead_beef_deed_feed).should == "expression"
   end
 

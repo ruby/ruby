@@ -4,10 +4,10 @@ require 'bigdecimal'
 
 describe "Integer#coerce" do
   context "fixnum" do
-    describe "when given a Fixnum" do
-      it "returns an array containing two Fixnums" do
+    describe "when given an Integer" do
+      it "returns an array containing two Integers" do
         1.coerce(2).should == [2, 1]
-        1.coerce(2).map { |i| i.class }.should == [Fixnum, Fixnum]
+        1.coerce(2).map { |i| i.class }.should == [Integer, Integer]
       end
     end
 
@@ -42,26 +42,26 @@ describe "Integer#coerce" do
   end
 
   context "bignum" do
-    it "coerces other to a Bignum and returns [other, self] when passed a Fixnum" do
+    it "coerces other to an Integer and returns [other, self] when passed an Integer" do
       a = bignum_value
       ary = a.coerce(2)
 
-      ary[0].should be_kind_of(Bignum)
-      ary[1].should be_kind_of(Bignum)
+      ary[0].should be_kind_of(Integer)
+      ary[1].should be_kind_of(Integer)
       ary.should == [2, a]
     end
 
-    it "returns [other, self] when passed a Bignum" do
+    it "returns [other, self] when passed an Integer" do
       a = bignum_value
       b = bignum_value
       ary = a.coerce(b)
 
-      ary[0].should be_kind_of(Bignum)
-      ary[1].should be_kind_of(Bignum)
+      ary[0].should be_kind_of(Integer)
+      ary[1].should be_kind_of(Integer)
       ary.should == [b, a]
     end
 
-    it "raises a TypeError when not passed a Fixnum or Bignum" do
+    it "raises a TypeError when not passed an Integer" do
       a = bignum_value
 
       -> { a.coerce(nil)         }.should raise_error(TypeError)

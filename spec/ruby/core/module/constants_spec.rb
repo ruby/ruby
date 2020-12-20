@@ -13,9 +13,9 @@ describe "Module.constants" do
 
   it "returns an array of Symbol names" do
     # This in NOT an exhaustive list
-    Module.constants.should include(:Array, :Bignum, :Class, :Comparable, :Dir,
+    Module.constants.should include(:Array, :Class, :Comparable, :Dir,
                                     :Enumerable, :ENV, :Exception, :FalseClass,
-                                    :File, :Fixnum, :Float, :Hash, :Integer, :IO,
+                                    :File, :Float, :Hash, :Integer, :IO,
                                     :Kernel, :Math, :Method, :Module, :NilClass,
                                     :Numeric, :Object, :Range, :Regexp, :String,
                                     :Symbol, :Thread, :Time, :TrueClass)

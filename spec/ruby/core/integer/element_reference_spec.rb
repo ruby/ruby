@@ -68,14 +68,14 @@ describe "Integer#[]" do
       -> { 3[obj] }.should raise_error(TypeError)
     end
 
-    it "calls #to_int to coerce a String to a Bignum and returns 0" do
+    it "calls #to_int to coerce a String to an Integer and returns 0" do
       obj = mock('bignum value')
       obj.should_receive(:to_int).and_return(bignum_value)
 
       3[obj].should == 0
     end
 
-    it "returns 0 when passed a Float in the range of a Bignum" do
+    it "returns 0 when passed a Float in the range of an Integer" do
       3[bignum_value.to_f].should == 0
     end
 

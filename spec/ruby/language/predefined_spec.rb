@@ -518,7 +518,7 @@ $\               String          The string appended to the output of every call
                                  Kernel#print and IO#write. The default value is nil.
 $,               String          The separator string output between the parameters to methods such as
                                  Kernel#print and Array#join. Defaults to nil, which adds no text.
-$.               Fixnum          The number of the last line read from the current input file.
+$.               Integer          The number of the last line read from the current input file.
 $;               String          The default separator pattern used by String#split. May be set from the
                                  command line using the -F flag.
 $<               Object          An object that provides access to the concatenation of the contents of all
@@ -583,7 +583,7 @@ describe "Predefined global $/" do
     -> { $/ = obj }.should raise_error(TypeError)
   end
 
-  it "raises a TypeError if assigned a Fixnum" do
+  it "raises a TypeError if assigned an Integer" do
     -> { $/ = 1 }.should raise_error(TypeError)
   end
 
@@ -632,7 +632,7 @@ describe "Predefined global $-0" do
     -> { $-0 = obj }.should raise_error(TypeError)
   end
 
-  it "raises a TypeError if assigned a Fixnum" do
+  it "raises a TypeError if assigned an Integer" do
     -> { $-0 = 1 }.should raise_error(TypeError)
   end
 
@@ -781,7 +781,7 @@ $*               Array           An array of strings containing the command-line
                                  tion of the program. Options used by the Ruby interpreter will have been
                                  removed. [r/o]
 $"               Array           An array containing the filenames of modules loaded by require. [r/o]
-$$               Fixnum          The process number of the program being executed. [r/o]
+$$               Integer          The process number of the program being executed. [r/o]
 $?               Process::Status The exit status of the last child process to terminate. [r/o, thread]
 $:               Array           An array of strings, where each string specifies a directory to be searched for
                                  Ruby scripts and binary extensions used by the load and require methods.

@@ -60,7 +60,7 @@ describe :kernel_require_basic, shared: true do
       -> { @object.send(@method, nil) }.should raise_error(TypeError)
     end
 
-    it "raises a TypeError if passed a Fixnum" do
+    it "raises a TypeError if passed an Integer" do
       -> { @object.send(@method, 42) }.should raise_error(TypeError)
     end
 

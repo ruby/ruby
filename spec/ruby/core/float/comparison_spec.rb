@@ -48,7 +48,7 @@ describe "Float#<=>" do
 
   # The 4 tests below are taken from matz's revision 23730 for Ruby trunk
   #
-  it "returns 1 when self is Infinity and other is a Bignum" do
+  it "returns 1 when self is Infinity and other is an Integer" do
     (infinity_value <=> Float::MAX.to_i*2).should == 1
   end
 

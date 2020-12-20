@@ -37,12 +37,12 @@ describe "IO#ungetbyte" do
   end
 
   ruby_version_is ''...'2.6' do
-    it "puts back one byte for a Fixnum argument..." do
+    it "puts back one byte for an Integer argument..." do
       @io.ungetbyte(4095).should be_nil
       @io.getbyte.should == 255
     end
 
-    it "... but not for Bignum argument (eh?)" do
+    it "... but not for Integer argument (eh?)" do
       -> {
         @io.ungetbyte(0x4f7574206f6620636861722072616e6765)
       }.should raise_error(TypeError)
