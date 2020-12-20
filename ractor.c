@@ -12,6 +12,7 @@
 #include "internal/hash.h"
 #include "internal/rational.h"
 #include "internal/struct.h"
+#include "internal/thread.h"
 #include "variable.h"
 #include "gc.h"
 #include "transient_heap.h"
@@ -473,7 +474,7 @@ ractor_basket_accept(struct rb_ractor_basket *b)
 static void
 ractor_recursive_receive_if(rb_ractor_t *r)
 {
-    if (r->receiving_mutex && rb_mutex_locked_p(r->receiving_mutex)) {
+    if (r->receiving_mutex && rb_mutex_owned_p(r->receiving_mutex)) {
         rb_raise(rb_eRactorError, "can not call receive/receive_if recursively");
     }
 }
