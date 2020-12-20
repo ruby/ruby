@@ -276,6 +276,7 @@ regcomp(const char *source, long len, int opt)
     VALUE pat;
 
     pat = rb_reg_new(source, len, opt);
+    rb_obj_freeze(pat);
     rb_gc_register_mark_object(pat);
     return pat;
 }
