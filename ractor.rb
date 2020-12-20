@@ -748,7 +748,7 @@ class Ractor
   def self.make_shareable obj, copy: false
     if copy
       __builtin_cexpr! %q{
-        rb_ractor_make_copy_shareable(obj);
+        rb_ractor_make_shareable_copy(obj);
       }
     else
       __builtin_cexpr! %q{
