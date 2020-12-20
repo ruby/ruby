@@ -42,6 +42,7 @@ jobs:
       - run: make $JOBS incs
       - run: make $JOBS
       - run: sudo make $JOBS -s install
+      - run: sudo apt-get install gdb # used by test / test-all failure
       - name: Run test
         run: |
           ulimit -c unlimited
