@@ -170,13 +170,15 @@ module TestIRB
         "measure :off\n",
         "3\n",
       ])
-      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
+      c = Class.new(Object)
+      irb = IRB::Irb.new(IRB::WorkSpace.new(c.new), input)
       irb.context.return_format = "=> %s\n"
       out, err = capture_output do
         irb.eval_input
       end
       assert_empty err
       assert_match(/\A=> 3\nTIME is added\.\n=> nil\nprocessing time: .+\n=> 3\n=> nil\n=> 3\n/, out)
+      assert_empty(c.class_variables)
     end
 
     def test_measure_enabled_by_rc
