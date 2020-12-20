@@ -18,7 +18,6 @@ jobs:
     steps:
       - run: mkdir build
         working-directory:
-      - run: gdb -h || false
       - run: sudo apt-get install gdb
       - run: gdb -h
 
