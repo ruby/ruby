@@ -160,6 +160,7 @@ module TestIRB
           PROMPT_N: '> '
         }
       }
+      IRB.conf[:VERBOSE] = false
       IRB.conf[:PROMPT_MODE] = :DEFAULT
       IRB.conf[:MEASURE] = false
       input = TestInputMethod.new([
@@ -188,6 +189,7 @@ module TestIRB
           PROMPT_N: '> '
         }
       }
+      IRB.conf[:VERBOSE] = false
       IRB.conf[:PROMPT_MODE] = :DEFAULT
       IRB.conf[:MEASURE] = true
       input = TestInputMethod.new([
@@ -214,6 +216,7 @@ module TestIRB
           PROMPT_N: '> '
         }
       }
+      IRB.conf[:VERBOSE] = false
       IRB.conf[:PROMPT_MODE] = :DEFAULT
       IRB.conf[:MEASURE] = true
       IRB.conf[:MEASURE_PROC][:CUSTOM] = proc { |line, line_no, &block|
@@ -247,6 +250,7 @@ module TestIRB
           PROMPT_N: '> '
         }
       }
+      IRB.conf[:VERBOSE] = false
       IRB.conf[:PROMPT_MODE] = :DEFAULT
       IRB.conf[:MEASURE] = false
       IRB.conf[:MEASURE_PROC][:CUSTOM] = proc { |line, line_no, &block|
