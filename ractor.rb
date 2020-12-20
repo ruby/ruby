@@ -252,7 +252,7 @@ class Ractor
   def self.current
     __builtin_cexpr! %q{
       rb_ec_ractor_ptr(ec)->self
-   }
+    }
   end
 
   # Returns total count of Ractors currently running.
@@ -265,7 +265,7 @@ class Ractor
   def self.count
     __builtin_cexpr! %q{
       ULONG2NUM(GET_VM()->ractor.cnt);
-   }
+    }
   end
 
   # call-seq: Ractor.select(*ractors, [yield_value:, move: false]) -> [ractor or symbol, obj]
@@ -325,7 +325,7 @@ class Ractor
                               yield_unspecified == Qtrue ? Qundef : yield_value,
                               (bool)RTEST(move) ? true : false, &rv);
       return rb_ary_new_from_args(2, rv, v);
-   }
+    }
   end
 
   # Receive an incoming message from the current Ractor's incoming port's queue, which was
@@ -386,7 +386,7 @@ class Ractor
   def self.receive
     __builtin_cexpr! %q{
       ractor_receive(ec, rb_ec_ractor_ptr(ec))
-   }
+    }
   end
 
   class << self
@@ -397,7 +397,7 @@ class Ractor
   private def receive
     __builtin_cexpr! %q{
       ractor_receive(ec, rb_ec_ractor_ptr(ec))
-   }
+    }
   end
   alias recv receive
 
@@ -544,7 +544,7 @@ class Ractor
   def send(obj, move: false)
     __builtin_cexpr! %q{
       ractor_send(ec, RACTOR_PTR(self), obj, move)
-   }
+    }
   end
   alias << send
 
@@ -584,7 +584,7 @@ class Ractor
   def self.yield(obj, move: false)
     __builtin_cexpr! %q{
       ractor_yield(ec, rb_ec_ractor_ptr(ec), obj, move)
-   }
+    }
   end
 
   # Take a message from ractor's outgoing port, which was put there by Ractor.yield or at ractor's
@@ -647,7 +647,7 @@ class Ractor
   def take
     __builtin_cexpr! %q{
       ractor_take(ec, RACTOR_PTR(self))
-   }
+    }
   end
 
   def inspect # :nodoc:
@@ -656,7 +656,7 @@ class Ractor
     id   = __builtin_cexpr! %q{INT2FIX(RACTOR_PTR(self)->id)}
     status = __builtin_cexpr! %q{
       rb_str_new2(ractor_status_str(RACTOR_PTR(self)->status_))
-   }
+    }
     "#<Ractor:##{id}#{name ? ' '+name : ''}#{loc ? " " + loc : ''} #{status}>"
   end
 
@@ -681,7 +681,7 @@ class Ractor
   def close_incoming
     __builtin_cexpr! %q{
       ractor_close_incoming(ec, RACTOR_PTR(self));
-   }
+    }
   end
 
   # Closes the outgoing port and returns its previous state.
@@ -696,7 +696,7 @@ class Ractor
   def close_outgoing
     __builtin_cexpr! %q{
       ractor_close_outgoing(ec, RACTOR_PTR(self));
-   }
+    }
   end
 
   # Checks if the object is shareable by ractors.
@@ -709,7 +709,7 @@ class Ractor
   def self.shareable? obj
     __builtin_cexpr! %q{
       rb_ractor_shareable_p(obj) ? Qtrue : Qfalse;
-   }
+    }
   end
 
   # Make +obj+ sharable.
