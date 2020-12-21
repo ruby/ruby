@@ -36,7 +36,7 @@ module Reline
     attr_accessor :config
     attr_accessor :key_stroke
     attr_accessor :line_editor
-    attr_accessor :ambiguous_width
+    attr_writer :ambiguous_width
     attr_accessor :last_incremental_search
     attr_reader :output
 
@@ -356,9 +356,14 @@ module Reline
       end
     end
 
+    def ambiguous_width
+      may_req_ambiguous_char_width unless defined? @ambiguous_width
+      @ambiguous_width
+    end
+
     private def may_req_ambiguous_char_width
       @ambiguous_width = 2 if Reline::IOGate == Reline::GeneralIO or STDOUT.is_a?(File)
-      return if ambiguous_width
+      return if @ambiguous_width
       Reline::IOGate.move_cursor_column(0)
       begin
         output.write "\u{25bd}"
