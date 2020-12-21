@@ -403,7 +403,7 @@ class TestEnv < Test::Unit::TestCase
       assert_equal("foo", v)
     end
     assert_invalid_env {|var| ENV.assoc(var)}
-    encoding = /mswin|mingw/ =~ RUBY_PLATFORM ? Encoding::UTF_8 : Encoding.find("locale")
+    encoding = Encoding.find("locale")
     assert_equal(encoding, v.encoding)
   end
 
