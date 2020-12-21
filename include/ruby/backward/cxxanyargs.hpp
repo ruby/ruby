@@ -366,7 +366,7 @@ rb_catch_obj(VALUE q, type *w, VALUE e)
 /// @{
 
 RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprecated")
-/// @brief       Creates a @ref rb_cFiber instance.
+/// @brief       Creates a rb_cFiber instance.
 /// @param[in]   q  The fiber body.
 /// @param[in]   w  Passed to `q`.
 /// @return      What was allocated.
