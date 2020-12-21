@@ -488,7 +488,7 @@ static int value_expr_gen(struct parser_params*,NODE*);
 static void void_expr(struct parser_params*,NODE*);
 static NODE *remove_begin(NODE*);
 static NODE *remove_begin_all(NODE*);
-#define value_expr(node) value_expr_gen(p, (node) = remove_begin(node))
+#define value_expr(node) value_expr_gen(p, (node))
 static NODE *void_stmts(struct parser_params*,NODE*);
 static void reduce_nodes(struct parser_params*,NODE**);
 static void block_dup_check(struct parser_params*,NODE*,NODE*);
