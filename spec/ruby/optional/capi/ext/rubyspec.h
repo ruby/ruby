@@ -34,14 +34,6 @@
 #define RUBY_VERSION_IS_2_6
 #endif
 
-#if RUBY_VERSION_MAJOR > 2 || (RUBY_VERSION_MAJOR == 2 && RUBY_VERSION_MINOR >= 5)
-#define RUBY_VERSION_IS_2_5
-#endif
-
-#if RUBY_VERSION_MAJOR > 2 || (RUBY_VERSION_MAJOR == 2 && RUBY_VERSION_MINOR >= 4)
-#define RUBY_VERSION_IS_2_4
-#endif
-
 #if defined(__cplusplus) && !defined(RUBY_VERSION_IS_2_7)
 /* Ruby < 2.7 needs this to let these function with callbacks and compile in C++ code */
 #define rb_define_method(mod, name, func, argc) rb_define_method(mod, name, RUBY_METHOD_FUNC(func), argc)

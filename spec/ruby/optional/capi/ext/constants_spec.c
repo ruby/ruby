@@ -59,9 +59,7 @@ defconstfunc(rb_mErrno)
 defconstfunc(rb_eException)
 defconstfunc(rb_eFatal)
 defconstfunc(rb_eFloatDomainError)
-#ifdef RUBY_VERSION_IS_2_5
 defconstfunc(rb_eFrozenError)
-#endif
 defconstfunc(rb_eIndexError)
 defconstfunc(rb_eInterrupt)
 defconstfunc(rb_eIOError)
@@ -144,9 +142,7 @@ void Init_constants_spec(void) {
   rb_define_method(cls, "rb_eException", constants_spec_rb_eException, 0);
   rb_define_method(cls, "rb_eFatal", constants_spec_rb_eFatal, 0);
   rb_define_method(cls, "rb_eFloatDomainError", constants_spec_rb_eFloatDomainError, 0);
-  #ifdef RUBY_VERSION_IS_2_5
   rb_define_method(cls, "rb_eFrozenError", constants_spec_rb_eFrozenError, 0);
-  #endif
   rb_define_method(cls, "rb_eIndexError", constants_spec_rb_eIndexError, 0);
   rb_define_method(cls, "rb_eInterrupt", constants_spec_rb_eInterrupt, 0);
   rb_define_method(cls, "rb_eIOError", constants_spec_rb_eIOError, 0);
