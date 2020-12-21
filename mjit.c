@@ -935,14 +935,22 @@ mjit_finish(bool close_handle_p)
     verbose(1, "Successful MJIT finish");
 }
 
-// Called by rb_vm_mark() to mark active_units so that we do not GC ISeq which
-// may still be referred to by mjit_recompile() or compact_all_jit_code().
+// Called by rb_vm_mark().
+//
+// Mark an ISeq being compiled to prevent its CCs from being GC-ed, which
+// an MJIT worker may concurrently see.
+//
+// Also mark active_units so that we do not GC ISeq which may still be
+// referred to by mjit_recompile() or compact_all_jit_code().
 void
 mjit_mark(void)
 {
     if (!mjit_enabled)
         return;
     RUBY_MARK_ENTER("mjit");
+
+    if (compiling_iseq != NULL)
+        rb_gc_mark((VALUE)compiling_iseq);
 
     // We need to release a lock when calling rb_gc_mark to avoid doubly acquiring
     // a lock by by mjit_gc_start_hook inside rb_gc_mark.
