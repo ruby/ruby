@@ -39,7 +39,10 @@
 #include "debug_counter.h"
 #include "transient_heap.h"
 #include "mjit.h"
+
+#ifdef USE_THIRD_PARTY_HEAP
 #include "mmtk.h"
+#endif
 
 #undef rb_data_object_wrap
 
@@ -1586,7 +1589,13 @@ RVALUE_WHITE_P(VALUE obj)
 static inline void *
 calloc1(size_t n)
 {
+#ifdef USE_THIRD_PARTY_HEAP
+    void* mem = alloc(objspace->mutator, size, 8, 0, 0);
+    memset(mem, 0, size);
+    return mem;
+#else
     return calloc(1, n);
+#endif
 }
 
 rb_objspace_t *
@@ -4105,7 +4114,11 @@ count_objects(int argc, VALUE *argv, VALUE os)
 static size_t
 objspace_available_slots(rb_objspace_t *objspace)
 {
+#ifdef USE_THIRD_PARTY_HEAP
+    return total_bytes();
+#else
     return heap_eden->total_slots + heap_tomb->total_slots;
+#endif
 }
 
 static size_t
@@ -4117,7 +4130,11 @@ objspace_live_slots(rb_objspace_t *objspace)
 static size_t
 objspace_free_slots(rb_objspace_t *objspace)
 {
+#ifdef USE_THIRD_PARTY_HEAP
+    return free_bytes();
+#else
     return objspace_available_slots(objspace) - objspace_live_slots(objspace) - heap_pages_final_slots;
+#endif
 }
 
 static void
@@ -9232,7 +9249,9 @@ rb_gc_enable(void)
 
     dont_gc = FALSE;
 #ifdef USE_THIRD_PARTY_HEAP
+    dont_gc = TRUE;
     start_control_collector(0); // TODO use pointer to TLS
+    return false;
 #endif
     return old ? Qtrue : Qfalse;
 }
@@ -9860,7 +9879,11 @@ objspace_xmalloc0(rb_objspace_t *objspace, size_t size)
     void *mem;
 
     size = objspace_malloc_prepare(objspace, size);
+#ifdef USE_THIRD_PARTY_HEAP
+    mem = alloc(objspace->mutator, size, 8, 0, 0); // Default allocation semantics
+#else
     TRY_WITH_GC(mem = malloc(size));
+#endif
     RB_DEBUG_COUNTER_INC(heap_xmalloc);
     return objspace_malloc_fixup(objspace, mem, size);
 }
@@ -9931,7 +9954,12 @@ objspace_xrealloc(rb_objspace_t *objspace, void *ptr, size_t new_size, size_t ol
 #endif
 
     old_size = objspace_malloc_size(objspace, ptr, old_size);
+#ifdef USE_THIRD_PARTY_HEAP
+    mem = alloc(objspace->mutator, new_size, 8, 0, 0);
+    memcpy(mem, ptr, (old_size < new_size ? old_size : new_size));
+#else
     TRY_WITH_GC(mem = realloc(ptr, new_size));
+#endif
     new_size = objspace_malloc_size(objspace, mem, new_size);
 
 #if CALC_EXACT_MALLOC_SIZE
@@ -10112,7 +10140,11 @@ objspace_xcalloc(rb_objspace_t *objspace, size_t size)
     void *mem;
 
     size = objspace_malloc_prepare(objspace, size);
+#ifdef USE_THIRD_PARTY_HEAP
+    mem = calloc1(size)
+#else
     TRY_WITH_GC(mem = calloc1(size));
+#endif
     return objspace_malloc_fixup(objspace, mem, size);
 }
 
