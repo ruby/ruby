@@ -350,10 +350,7 @@ mjit_recompile(const rb_iseq_t *iseq)
 
     verbose(1, "JIT recompile: %s@%s:%d", RSTRING_PTR(iseq->body->location.label),
             RSTRING_PTR(rb_iseq_path(iseq)), FIX2INT(iseq->body->location.first_lineno));
-    iseq->body->jit_func = (mjit_func_t)NOT_ADDED_JIT_ISEQ_FUNC;
-
-    if (iseq->body->jit_unit == NULL) // mjit_free_iseq is already called
-        return;
+    assert(iseq->body->jit_unit != NULL);
 
     // Lazily move active_units to stale_units to avoid race conditions around active_units with compaction
     CRITICAL_SECTION_START(3, "in rb_mjit_recompile_iseq");
@@ -361,6 +358,7 @@ mjit_recompile(const rb_iseq_t *iseq)
     pending_stale_p = true;
     CRITICAL_SECTION_FINISH(3, "in rb_mjit_recompile_iseq");
 
+    iseq->body->jit_func = (mjit_func_t)NOT_ADDED_JIT_ISEQ_FUNC;
     mjit_add_iseq_to_process(iseq, &iseq->body->jit_unit->compile_info);
     if (UNLIKELY(mjit_opts.wait)) {
         mjit_wait(iseq->body);
@@ -935,6 +933,41 @@ mjit_finish(bool close_handle_p)
 
     mjit_enabled = false;
     verbose(1, "Successful MJIT finish");
+}
+
+// Called by rb_vm_mark() to mark active_units so that we do not GC ISeq which
+// may still be referred to by mjit_recompile() or compact_all_jit_code().
+void
+mjit_mark(void)
+{
+    if (!mjit_enabled)
+        return;
+    RUBY_MARK_ENTER("mjit");
+
+    // We need to release a lock when calling rb_gc_mark to avoid doubly acquiring
+    // a lock by by mjit_gc_start_hook inside rb_gc_mark.
+    //
+    // Because an MJIT worker may modify active_units anytime, we need to convert
+    // the linked list to an array to safely loop its ISeqs without keeping a lock.
+    CRITICAL_SECTION_START(4, "mjit_mark");
+    int length = active_units.length;
+    rb_iseq_t **iseqs = ALLOCA_N(rb_iseq_t *, length);
+
+    struct rb_mjit_unit *unit = NULL;
+    int i = 0;
+    list_for_each(&active_units.head, unit, unode) {
+        iseqs[i] = unit->iseq;
+        i++;
+    }
+    CRITICAL_SECTION_FINISH(4, "mjit_mark");
+
+    for (i = 0; i < length; i++) {
+        if (iseqs[i] == NULL) // ISeq is GC-ed
+            continue;
+        rb_gc_mark((VALUE)iseqs[i]);
+    }
+
+    RUBY_MARK_LEAVE("mjit");
 }
 
 // Called by rb_iseq_mark() to mark cc_entries captured for MJIT
