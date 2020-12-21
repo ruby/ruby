@@ -233,9 +233,9 @@ require 'psych/class_loader'
 
 module Psych
   # The version of libyaml Psych is using
-  LIBYAML_VERSION = Psych.libyaml_version.join '.'
+  LIBYAML_VERSION = Psych.libyaml_version.join('.').freeze
   # Deprecation guard
-  NOT_GIVEN = Object.new
+  NOT_GIVEN = Object.new.freeze
   private_constant :NOT_GIVEN
 
   ###
