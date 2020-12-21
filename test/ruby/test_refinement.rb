@@ -2441,12 +2441,6 @@ class TestRefinement < Test::Unit::TestCase
     $VERBOSE = verbose_bak
   end
 
-  private
-
-  def eval_using(mod, s)
-    eval("using #{mod}; #{s}", Sandbox::BINDING)
-  end
-
   # [Bug #17386]
   def test_prepended_with_method_cache
     foo = Class.new do
@@ -2472,5 +2466,31 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal :Foo, obj.foo
     foo.prepend code
     assert_equal :Code, obj.foo
+  end
+
+  # [Bug #17417]
+  def test_prepended_with_method_cache_17417
+    assert_normal_exit %q{
+      module M
+        def hoge; end
+      end
+
+      module R
+        refine Hash do
+          def except *args; end
+        end
+      end
+
+      h = {}
+      h.method(:except) # put it on pCMC
+      Hash.prepend(M)
+      h.method(:except)
+    }
+  end
+
+  private
+
+  def eval_using(mod, s)
+    eval("using #{mod}; #{s}", Sandbox::BINDING)
   end
 end
