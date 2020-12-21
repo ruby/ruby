@@ -619,13 +619,18 @@ static size_t State_memsize(const void *ptr)
     return size;
 }
 
+#ifndef HAVE_RB_EXT_RACTOR_SAFE
+#   undef RUBY_TYPED_FROZEN_SHAREABLE
+#   define RUBY_TYPED_FROZEN_SHAREABLE 0
+#endif
+
 #ifdef NEW_TYPEDDATA_WRAPPER
 static const rb_data_type_t JSON_Generator_State_type = {
     "JSON/Generator/State",
     {NULL, State_free, State_memsize,},
 #ifdef RUBY_TYPED_FREE_IMMEDIATELY
     0, 0,
-    RUBY_TYPED_FREE_IMMEDIATELY,
+    RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_FROZEN_SHAREABLE,
 #endif
 };
 #endif
@@ -1497,6 +1502,10 @@ static VALUE cState_buffer_initial_length_set(VALUE self, VALUE buffer_initial_l
  */
 void Init_generator(void)
 {
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    rb_ext_ractor_safe(true);
+#endif
+
 #undef rb_intern
     rb_require("json/common");
 
