@@ -2009,15 +2009,6 @@ ractor_moved_missing(int argc, VALUE *argv, VALUE self)
  *     # => true
  *     ary.inspect
  *     # Ractor::MovedError (can not send any methods to a moved object)
- *
- *  The class MovedObject is frozen to avoid tampering with it:
- *
- *     class Ractor::MovedObject
- *       def inspect
- *         "<MyMovedObject>"
- *       end
- *     end
- *     # FrozenError (can't modify frozen class: Ractor::MovedObject)
  */
 
 // Main docs are in ractor.rb, but without this clause there are weird artifacts
