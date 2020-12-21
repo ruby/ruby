@@ -1769,26 +1769,12 @@ errinfo_getter(ID id, VALUE *_)
     return get_errinfo();
 }
 
-/*! The current exception in the current thread.
- *
- * Same as \c $! in Ruby.
- * \return the current exception or \c Qnil
- * \ingroup exception
- */
 VALUE
 rb_errinfo(void)
 {
     return GET_EC()->errinfo;
 }
 
-/*! Sets the current exception (\c $!) to the given value
- *
- * \param[in] err an \c Exception object or \c Qnil.
- * \exception TypeError if \a err is neither an exception nor \c nil.
- * \note this function does not raise the exception.
- *   Use \c rb_raise() when you want to raise.
- * \ingroup exception
- */
 void
 rb_set_errinfo(VALUE err)
 {
