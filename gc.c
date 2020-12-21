@@ -1589,19 +1589,12 @@ RVALUE_WHITE_P(VALUE obj)
 static inline void *
 calloc1(size_t n)
 {
-#ifdef USE_THIRD_PARTY_HEAP
-    void* mem = alloc(objspace->mutator, size, 8, 0, 0);
-    memset(mem, 0, size);
-    return mem;
-#else
     return calloc(1, n);
-#endif
 }
 
 rb_objspace_t *
 rb_objspace_alloc(void)
 {
-    // TODO: comment out this?
     rb_objspace_t *objspace = calloc1(sizeof(rb_objspace_t));
     malloc_limit = gc_params.malloc_limit_min;
     list_head_init(&objspace->eden_heap.pages);
@@ -1811,12 +1804,14 @@ heap_page_allocate(rb_objspace_t *objspace)
     size_t hi, lo, mid;
     int limit = HEAP_PAGE_OBJ_LIMIT;
 
+    // TODO - stop this from running when third party heap activated
     /* assign heap_page body (contains heap_page_header and RVALUEs) */
     page_body = (struct heap_page_body *)rb_aligned_malloc(HEAP_PAGE_ALIGN, HEAP_PAGE_SIZE);
     if (page_body == 0) {
 	rb_memerror();
     }
 
+    // TODO also stop this from running
     /* assign heap_page entry */
     page = calloc1(sizeof(struct heap_page));
     if (page == 0) {
@@ -2259,9 +2254,9 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_protect
     rb_objspace_t *objspace = &rb_objspace;
     VALUE obj;
 #ifdef USE_THIRD_PARTY_HEAP
-    VALUE obj = alloc(objspace->mutator, sizeof(VALUE), 8, 0, 0); // Default allocation semantics
+    obj = (VALUE) alloc(objspace->mutator, sizeof(VALUE), 8, 0, 0); // Default allocation semantics
     return newobj_init(klass, flags, v1, v2, v3, wb_protected, objspace, obj);
-#else
+#endif
 
     RB_DEBUG_COUNTER_INC(obj_newobj);
     (void)RB_DEBUG_COUNTER_INC_IF(obj_newobj_wb_unprotected, !wb_protected);
@@ -2287,7 +2282,6 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_protect
 	  newobj_slowpath_wb_protected(klass, flags, v1, v2, v3, objspace) :
 	  newobj_slowpath_wb_unprotected(klass, flags, v1, v2, v3, objspace);
     }
-#endif
 }
 
 VALUE
@@ -10141,7 +10135,8 @@ objspace_xcalloc(rb_objspace_t *objspace, size_t size)
 
     size = objspace_malloc_prepare(objspace, size);
 #ifdef USE_THIRD_PARTY_HEAP
-    mem = calloc1(size)
+    mem = alloc(objspace->mutator, size, 8, 0, 0);
+    memset(mem, 0, size);
 #else
     TRY_WITH_GC(mem = calloc1(size));
 #endif

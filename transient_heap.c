@@ -442,11 +442,7 @@ Init_TransientHeap(void)
     theap->promoted_objects_size = TRANSIENT_HEAP_PROMOTED_DEFAULT_SIZE;
     theap->promoted_objects_index = 0;
     /* should not use ALLOC_N to be free from GC */
-#ifdef USE_THIRD_PARTY_HEAP
-    theap->promoted_objects = alloc(objspace->mutator, sizeof(VALUE) * theap->promoted_objects_size, 8, 0, 0);
-#else
     theap->promoted_objects = malloc(sizeof(VALUE) * theap->promoted_objects_size);
-#endif
     STATIC_ASSERT(
         integer_overflow,
         sizeof(VALUE) <= SIZE_MAX / TRANSIENT_HEAP_PROMOTED_DEFAULT_SIZE);
