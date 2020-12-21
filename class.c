@@ -10,16 +10,7 @@
 **********************************************************************/
 
 /*!
- * \defgroup class Classes and their hierarchy.
- * \par Terminology
- * - class: same as in Ruby.
- * - singleton class: class for a particular object
- * - eigenclass: = singleton class
- * - metaclass: class of a class. metaclass is a kind of singleton class.
- * - metametaclass: class of a metaclass.
- * - meta^(n)-class: class of a meta^(n-1)-class.
- * - attached object: A singleton class knows its unique instance.
- *   The instance is called the attached object for the singleton class.
+ * \addtogroup class
  * \{
  */
 
@@ -734,23 +725,6 @@ rb_class_inherited(VALUE super, VALUE klass)
     return rb_funcall(super, inherited, 1, klass);
 }
 
-
-
-/*!
- * Defines a top-level class.
- * \param name   name of the class
- * \param super  a class from which the new class will derive.
- * \return the created class
- * \throw TypeError if the constant name \a name is already taken but
- *                  the constant is not a \c Class.
- * \throw TypeError if the class is already defined but the class can not
- *                  be reopened because its superclass is not \a super.
- * \throw ArgumentError if the \a super is NULL.
- * \post top-level constant named \a name refers the returned class.
- *
- * \note if a class named \a name is already defined and its superclass is
- *       \a super, the function just returns the defined class.
- */
 VALUE
 rb_define_class(const char *name, VALUE super)
 {
@@ -783,24 +757,6 @@ rb_define_class(const char *name, VALUE super)
     return klass;
 }
 
-
-/*!
- * Defines a class under the namespace of \a outer.
- * \param outer  a class which contains the new class.
- * \param name   name of the new class
- * \param super  a class from which the new class will derive.
- *               NULL means \c Object class.
- * \return the created class
- * \throw TypeError if the constant name \a name is already taken but
- *                  the constant is not a \c Class.
- * \throw TypeError if the class is already defined but the class can not
- *                  be reopened because its superclass is not \a super.
- * \post top-level constant named \a name refers the returned class.
- *
- * \note if a class named \a name is already defined and its superclass is
- *       \a super, the function just returns the defined class.
- * \note the compaction GC does not move classes returned by this function.
- */
 VALUE
 rb_define_class_under(VALUE outer, const char *name, VALUE super)
 {
@@ -876,9 +832,6 @@ rb_define_module_id(ID id)
     return rb_module_new();
 }
 
-/*!
- * \note the compaction GC does not move modules returned by this function.
- */
 VALUE
 rb_define_module(const char *name)
 {
@@ -903,9 +856,6 @@ rb_define_module(const char *name)
     return module;
 }
 
-/*!
- * \note the compaction GC does not move modules returned by this function.
- */
 VALUE
 rb_define_module_under(VALUE outer, const char *name)
 {
