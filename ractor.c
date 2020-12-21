@@ -3135,7 +3135,6 @@ ractor_local_value(rb_execution_context_t *ec, VALUE self, VALUE sym)
     VALUE val;
 
     if (id && tbl && rb_id_table_lookup(tbl, id, &val)) {
-        rp(val);
         return val;
     }
     else {
