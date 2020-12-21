@@ -2568,7 +2568,7 @@ rsock_init_addrinfo(void)
      */
     id_timeout = rb_intern("timeout");
 
-    rb_cAddrinfo = rb_define_class("Addrinfo", rb_cData);
+    rb_cAddrinfo = rb_define_class("Addrinfo", rb_cObject);
     rb_define_alloc_func(rb_cAddrinfo, addrinfo_s_allocate);
     rb_define_method(rb_cAddrinfo, "initialize", addrinfo_initialize, -1);
     rb_define_method(rb_cAddrinfo, "inspect", addrinfo_inspect, 0);
