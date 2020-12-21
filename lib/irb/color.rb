@@ -60,6 +60,10 @@ module IRB # :nodoc:
         on_words_beg:       [[RED, BOLD],             ALL],
         on_parse_error:     [[RED, REVERSE],          ALL],
         compile_error:      [[RED, REVERSE],          ALL],
+        on_assign_error:    [[RED, REVERSE],          ALL],
+        on_alias_error:     [[RED, REVERSE],          ALL],
+        on_class_name_error:[[RED, REVERSE],          ALL],
+        on_param_error:     [[RED, REVERSE],          ALL],
       }
     rescue NameError
       # Give up highlighting Ripper-incompatible older Ruby
