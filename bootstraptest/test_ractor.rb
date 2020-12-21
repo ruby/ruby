@@ -396,6 +396,13 @@ assert_equal 'ok', %q{
   end
 }
 
+# Ractor.main returns main ractor
+assert_equal 'true', %q{
+  Ractor.new{
+    Ractor.main
+  }.take == Ractor.current
+}
+
 # a ractor with closed outgoing port should terminate
 assert_equal 'ok', %q{
   Ractor.new do
