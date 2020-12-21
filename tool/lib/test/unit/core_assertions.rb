@@ -331,10 +331,15 @@ eom
       end
 
       # Run Ractor-related test without influencing the main test suite
-      def assert_ractor(src, args: [], require: nil, file: nil, line: nil, ignore_stderr: nil, **opt)
+      def assert_ractor(src, args: [], require: nil, require_relative: nil, file: nil, line: nil, ignore_stderr: nil, **opt)
         return unless defined?(Ractor)
 
         require = "require #{require.inspect}" if require
+        if require_relative
+          dir = File.dirname(caller_locations[0,1][0].absolute_path)
+          full_path = File.expand_path(require_relative, dir)
+          require = "#{require}; require #{full_path.inspect}"
+        end
 
         assert_separately(args, file, line, <<~RUBY, ignore_stderr: ignore_stderr, **opt)
           #{require}
