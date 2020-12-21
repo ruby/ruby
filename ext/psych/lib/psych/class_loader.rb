@@ -69,7 +69,7 @@ module Psych
       rescue
         nil
       end
-    }.compact]
+    }.compact].freeze
 
     class Restricted < ClassLoader
       def initialize classes, symbols
