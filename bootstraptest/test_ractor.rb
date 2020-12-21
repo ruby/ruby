@@ -1245,6 +1245,20 @@ assert_equal '[:ok, :ok]', %q{
   end
 }
 
+# Ractor-local storage
+assert_equal '[nil, "b", "a"]', %q{
+  ans = []
+  Ractor.current[:key] = 'a'
+  r = Ractor.new{
+    Ractor.yield self[:key]
+    self[:key] = 'b'
+    self[:key]
+  }
+  ans << r.take
+  ans << r.take
+  ans << Ractor.current[:key]
+}
+
 ###
 ### Synchronization tests
 ###

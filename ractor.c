@@ -2928,6 +2928,13 @@ ractor_local_storage_mark_i(st_data_t key, st_data_t val, st_data_t dmy)
     return ST_CONTINUE;
 }
 
+static enum rb_id_table_iterator_result
+idkey_local_storage_mark_i(ID id, VALUE val, void *dmy)
+{
+    rb_gc_mark(val);
+    return ID_TABLE_CONTINUE;
+}
+
 static void
 ractor_local_storage_mark(rb_ractor_t *r)
 {
@@ -2942,6 +2949,10 @@ ractor_local_storage_mark(rb_ractor_t *r)
                 (*key->type->free)((void *)val);
             }
         }
+    }
+
+    if (r->idkey_local_storage) {
+        rb_id_table_foreach(r->idkey_local_storage, idkey_local_storage_mark_i, NULL);
     }
 }
 
@@ -2959,6 +2970,10 @@ ractor_local_storage_free(rb_ractor_t *r)
     if (r->local_storage) {
         st_foreach(r->local_storage, ractor_local_storage_free_i, 0);
         st_free_table(r->local_storage);
+    }
+
+    if (r->idkey_local_storage) {
+        rb_id_table_free(r->idkey_local_storage);
     }
 }
 
@@ -3101,6 +3116,37 @@ rb_ractor_finish_marking(void)
         freed_ractor_local_keys.capa = DEFAULT_KEYS_CAPA;
         REALLOC_N(freed_ractor_local_keys.keys, rb_ractor_local_key_t, DEFAULT_KEYS_CAPA);
     }
+}
+
+static VALUE
+ractor_local_value(rb_execution_context_t *ec, VALUE self, VALUE sym)
+{
+    rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
+    ID id = rb_check_id(&sym);
+    struct rb_id_table *tbl = cr->idkey_local_storage;
+    VALUE val;
+
+    if (id && tbl && rb_id_table_lookup(tbl, id, &val)) {
+        rp(val);
+        return val;
+    }
+    else {
+        return Qnil;
+    }
+}
+
+static VALUE
+ractor_local_value_set(rb_execution_context_t *ec, VALUE self, VALUE sym, VALUE val)
+{
+    rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
+    ID id = SYM2ID(rb_to_symbol(sym));
+    struct rb_id_table *tbl = cr->idkey_local_storage;
+
+    if (tbl == NULL) {
+        tbl = cr->idkey_local_storage = rb_id_table_create(2);
+    }
+    rb_id_table_insert(tbl, id, val);
+    return val;
 }
 
 #include "ractor.rbinc"
