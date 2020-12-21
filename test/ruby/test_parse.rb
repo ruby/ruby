@@ -1192,13 +1192,19 @@ x = __ENCODING__
     assert !Ractor.shareable?(obj), ->{"Expected #{mu_pp(obj)} not to be ractor shareable"}
   end
 
-  def test_shareable_constant_value
+  def test_shareable_constant_value_invalid
     assert_warning(/invalid value/) do
       assert_valid_syntax("# shareable_constant_value: invalid-option", verbose: true)
     end
+  end
+
+  def test_shareable_constant_value_ignored
     assert_warning(/ignored/) do
       assert_valid_syntax("nil # shareable_constant_value: true", verbose: true)
     end
+  end
+
+  def test_shareable_constant_value_simple
     a, b, c = eval_separately("#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       # shareable_constant_value: experimental_everything
@@ -1216,7 +1222,9 @@ x = __ENCODING__
     assert_ractor_shareable(c)
     assert_equal([1], a[0])
     assert_ractor_shareable(a[0])
+  end
 
+  def test_shareable_constant_value_nested
     a, b = eval_separately("#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       # shareable_constant_value: none
@@ -1232,13 +1240,17 @@ x = __ENCODING__
     assert_not_ractor_shareable(b)
     assert_equal([1], a[0])
     assert_ractor_shareable(a[0])
+  end
 
+  def test_shareable_constant_value_unshareable_literal
     assert_ractor_error(/unshareable/, "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       # shareable_constant_value: literal
       C = ["Not " + "shareable"]
     end;
+  end
 
+  def test_shareable_constant_value_nonliteral
     c, d = eval_separately("#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       # shareable_constant_value: literal
@@ -1249,7 +1261,9 @@ x = __ENCODING__
     end;
     assert_not_ractor_shareable(c)
     assert_not_ractor_shareable(d)
+  end
 
+  def test_shareable_constant_value_unfrozen
     assert_ractor_error(/does not freeze object correctly/, "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       # shareable_constant_value: experimental_everything
