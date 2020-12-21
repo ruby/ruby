@@ -405,6 +405,8 @@ Outstanding ones only.
 
     * Update to JSON 2.4.0
 
+    * Ractor compatible.
+
 * Socket
 
     * Add :connect_timeout to TCPSocket.new [[Feature #17187]]
