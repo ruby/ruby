@@ -1614,6 +1614,8 @@ class Reline::LineEditor
         @waiting_proc = nil
         @cursor_max = calculate_width(@line)
         @cursor = @byte_pointer = 0
+        @rerender_all = true
+        @cached_prompt_list = nil
         searcher.resume(-1)
       when "\C-g".ord
         if @is_multiline
@@ -1657,6 +1659,8 @@ class Reline::LineEditor
           @waiting_proc = nil
           @cursor_max = calculate_width(@line)
           @cursor = @byte_pointer = 0
+          @rerender_all = true
+          @cached_prompt_list = nil
           searcher.resume(-1)
         end
       end

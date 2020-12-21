@@ -399,6 +399,17 @@ begin
       EOC
     end
 
+    def test_multiline_incremental_search_finish
+      start_terminal(6, 25, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
+      write("def a\n  8\nend\ndef b\n  3\nend\C-r8\C-j")
+      close
+      assert_screen(<<~EOC)
+        prompt> def a
+        prompt>   8
+        prompt> end
+      EOC
+    end
+
     def test_binding_for_vi_movement_mode
       write_inputrc <<~LINES
         set editing-mode vi
