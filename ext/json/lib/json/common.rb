@@ -103,11 +103,6 @@ module JSON
     # either JSON::Ext::Generator::State or JSON::Pure::Generator::State:
     #   JSON.state # => JSON::Ext::Generator::State
     attr_accessor :state
-
-    # Sets or returns create identifier, which is used to decide if the _json_create_
-    # hook of a class should be called; initial value is +json_class+:
-    #   JSON.create_id # => 'json_class'
-    attr_accessor :create_id
   end
 
   DEFAULT_CREATE_ID = 'json_class'.freeze
@@ -116,12 +111,17 @@ module JSON
   CREATE_ID_TLS_KEY = "JSON.create_id".freeze
   private_constant :CREATE_ID_TLS_KEY
 
-  def self.create_id
-    Thread.current[CREATE_ID_TLS_KEY] || DEFAULT_CREATE_ID
-  end
-
+  # Sets create identifier, which is used to decide if the _json_create_
+  # hook of a class should be called; initial value is +json_class+:
+  #   JSON.create_id # => 'json_class'
   def self.create_id=(new_value)
     Thread.current[CREATE_ID_TLS_KEY] = new_value.dup.freeze
+  end
+
+  # Returns the current create identifier.
+  # See also JSON.create_id=.
+  def self.create_id
+    Thread.current[CREATE_ID_TLS_KEY] || DEFAULT_CREATE_ID
   end
 
   NaN           = 0.0/0
