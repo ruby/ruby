@@ -879,6 +879,10 @@ static VALUE cParser_source(VALUE self)
 
 void Init_parser(void)
 {
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    rb_ext_ractor_safe(true);
+#endif
+
 #undef rb_intern
     rb_require("json/common");
     mJSON = rb_define_module("JSON");
