@@ -2010,8 +2010,9 @@ extern void rb_reset_coverages(void);
 
 void rb_postponed_job_flush(rb_vm_t *vm);
 
-extern VALUE rb_eRactorUnsafeError; // ractor.c
-extern VALUE rb_eRactorIsolationError;
+// ractor.c
+RUBY_EXTERN VALUE rb_eRactorUnsafeError;
+RUBY_EXTERN VALUE rb_eRactorIsolationError;
 
 RUBY_SYMBOL_EXPORT_END
 
