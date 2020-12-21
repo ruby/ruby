@@ -1,13 +1,18 @@
 # Ractor is a Actor-model abstraction for Ruby that provides thread-safe parallel execution.
 #
-# To achieve this, ractors severely limit data sharing between different ractors.
-# Unlike threads, ractors can't access each other's data, nor any data through variables of
-# the outer scope.
+# Ractor.new can make new Ractor and it will run in parallel.
 #
 #     # The simplest ractor
 #     r = Ractor.new {puts "I am in Ractor!"}
-#     r.take # allow it to finish
+#     r.take # wait it to finish
 #     # here "I am in Ractor!" would be printed
+#
+# Ractors do not share usual objects, so the some kind of thread-safety concerns such as data-race,
+# race-conditions are not available on multi-ractor programming.
+#
+# To achieve this, ractors severely limit object sharing between different ractors.
+# For example, unlike threads, ractors can't access each other's objects, nor any objects through
+# variables of the outer scope.
 #
 #     a = 1
 #     r = Ractor.new {puts "I am in Ractor! a=#{a}"}
@@ -17,8 +22,8 @@
 # On CRuby (the default implementation), Global Virtual Machine Lock (GVL) is held per ractor, so
 # ractors are performed in parallel without locking each other.
 #
-# Instead of accessing the shared state, the data should be passed to and from ractors via
-# sending and receiving messages, thus making them _actors_ ("Ractor" stands for "Ruby Actor").
+# Instead of accessing the shared state, the objects should be passed to and from ractors via
+# sending and receiving objects as messages.
 #
 #     a = 1
 #     r = Ractor.new do
@@ -71,14 +76,17 @@
 #
 # It is said that Ractor receives messages via the <em>incoming port</em>, and sends them
 # to the <em>outgoing port</em>. Either one can be disabled with Ractor#close_incoming and
-# Ractor#close_outgoing respectively.
+# Ractor#close_outgoing respectively. If a ractor terminated, its ports will be closed
+# automatically.
 #
 # == Shareable and unshareable objects
 #
 # When the object is sent to and from the ractor, it is important to understand whether the
-# object is shareable or not. Shareable objects are basically those which can be used by several
-# threads without compromising thread-safety; e.g. immutable ones. Ractor.shareable? allows to
-# check this, and Ractor.make_shareable tries to make object shareable if it is not.
+# object is shareable or unshareable. Most of objects are unshareable objects.
+#
+# Shareable objects are basically those which can be used by several threads without compromising
+# thread-safety; e.g. immutable ones. Ractor.shareable? allows to check this, and Ractor.make_shareable
+# tries to make object shareable if it is not.
 #
 #     Ractor.shareable?(1)            #=> true -- numbers and other immutable basic values are
 #     Ractor.shareable?('foo')        #=> false, unless the string is frozen due to # freeze_string_literals: true
@@ -115,7 +123,7 @@
 # the ractor, showing it is different objects. But the second array's element, which is a
 # shareable frozen string, has the same object_id.)
 #
-# Deep cloning of the data may be slow, and sometimes impossible. Alternatively,
+# Deep cloning of the objects may be slow, and sometimes impossible. Alternatively,
 # <tt>move: true</tt> may be used on sending. This will <em>move</em> the object to the
 # receiving ractor, making it inaccessible for a sending ractor.
 #
@@ -138,8 +146,13 @@
 # Notice that even +inspect+ (and more basic methods like <tt>__id__</tt>) is inaccessible
 # on a moved object.
 #
-# Besides frozen objects, shareable objects are instances of Module, Class and Ractor itself. Modules
-# and classes, though, can not access instance variables from ractors other than main:
+# Besides frozen objects, there are shareable objects. Class and Module objects are shareable so
+# the Class/Module definitons are shared between ractors. Ractor objects are also shareable objects.
+# All operations for the shareable mutable objects are thread-safe, so the thread-safety property
+# will be kept. We can not define mutable sharable objects in Ruby, but C extensions can introduce them.
+#
+# It is prohibited to access instance variables of mutable shareable objects (especially Modules and classes)
+# from ractors other than main:
 #
 #     class C
 #       class << self
@@ -186,8 +199,8 @@
 #
 # == Ractors vs threads
 #
-# Each ractor creates its own thread. New threads can be created from inside ractor, having the full
-# access to its data (and, on CRuby, sharing GVL with other threads of this ractor).
+# Each ractor creates its own thread. New threads can be created from inside ractor
+# (and, on CRuby, sharing GVL with other threads of this ractor).
 #
 #     r = Ractor.new do
 #       a = 1
@@ -207,6 +220,10 @@
 #
 # It is **only for demonstration purposes** and shouldn't be used in a real code.
 # Most of the times, just #take is used to wait till ractor will finish.
+#
+# == Reference
+#
+# See {Ractor desgin doc}[rdoc-ref:doc/ractor.md] for more details.
 #
 class Ractor
   # Create a new Ractor with args and a block.
@@ -258,8 +275,9 @@ class Ractor
   # Returns total count of Ractors currently running.
   #
   #    Ractor.count                   #=> 1
-  #    r = Ractor.new(name: 'example') {sleep(0.1)}
+  #    r = Ractor.new(name: 'example') { Ractor.yield(1) }
   #    Ractor.count                   #=> 2 (main + example ractor)
+  #    r.take                         # wait for Ractor.yield(1)
   #    r.take                         # wait till r will finish
   #    Ractor.count                   #=> 1
   def self.count
@@ -374,7 +392,8 @@ class Ractor
   #     Still received only one
   #     Received: message2
   #
-  # If close_incoming was called on the ractor, the method raises Ractor::ClosedError:
+  # If close_incoming was called on the ractor, the method raises Ractor::ClosedError
+  # if there are no more messages in incoming queue:
   #
   #     Ractor.new do
   #       close_incoming
