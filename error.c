@@ -45,7 +45,7 @@
 #include "builtin.h"
 
 /*!
- * \defgroup exception Exception handlings
+ * \addtogroup exception
  * \{
  */
 
