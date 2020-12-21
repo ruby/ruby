@@ -1593,9 +1593,11 @@ class Reline::LineEditor
     searcher = generate_searcher
     searcher.resume(key)
     @searching_prompt = "(reverse-i-search)`': "
+    termination_keys = ["\C-j".ord]
+    termination_keys.concat(@config.isearch_terminators&.chars&.map(&:ord)) if @config.isearch_terminators
     @waiting_proc = ->(k) {
       case k
-      when "\C-j".ord
+      when *termination_keys
         if @history_pointer
           buffer = Reline::HISTORY[@history_pointer]
         else
