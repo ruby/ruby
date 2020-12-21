@@ -632,9 +632,29 @@ module Psych
   private_class_method :warn_with_uplevel, :parse_caller
 
   class << self
-    attr_accessor :load_tags
-    attr_accessor :dump_tags
-    attr_accessor :domain_types
+    if defined?(Ractor)
+      require 'forwardable'
+      extend Forwardable
+
+      class Config
+        attr_accessor :load_tags, :dump_tags, :domain_types
+        def initialize
+          @load_tags = {}
+          @dump_tags = {}
+          @domain_types = {}
+        end
+      end
+
+      def config
+        Ractor.current[:PsychConfig] ||= Config.new
+      end
+
+      def_delegators :config, :load_tags, :dump_tags, :domain_types, :load_tags=, :dump_tags=, :domain_types=
+    else
+      attr_accessor :load_tags
+      attr_accessor :dump_tags
+      attr_accessor :domain_types
+    end
   end
   self.load_tags = {}
   self.dump_tags = {}
