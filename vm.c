@@ -994,7 +994,6 @@ collect_outer_variable_names(ID id, VALUE val, void *ptr)
     return ID_TABLE_CONTINUE;
 }
 
-VALUE rb_ractor_error_class(void);
 VALUE rb_ractor_make_shareable(VALUE obj);
 
 static const rb_env_t *
@@ -1015,7 +1014,7 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
                 if (id ==  src_env->iseq->body->local_table[j]) {
                     VALUE v = src_env->env[j];
                     if (!rb_ractor_shareable_p(v)) {
-                        rb_raise(rb_ractor_error_class(),
+                        rb_raise(rb_eRactorIsolationError,
                                  "can not make shareable Proc because it can refer unshareable object %"
                                  PRIsVALUE" from variable `%s'", rb_inspect(v), rb_id2name(id));
                     }
