@@ -130,6 +130,7 @@ struct rb_ractor_struct {
     // ractor local data
 
     st_table *local_storage;
+    struct rb_id_table *idkey_local_storage;
 
     VALUE r_stdin;
     VALUE r_stdout;
