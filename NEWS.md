@@ -348,17 +348,20 @@ Outstanding ones only.
     * Symbol#name has been added, which returns the name of the symbol
       if it is named.  The returned string is frozen.  [[Feature #16150]]
 
-* Thread
+* Fiber
 
     * Introduce Fiber.set_scheduler for intercepting blocking operations and
       Fiber.scheduler for accessing the current scheduler. See
-      rdoc-ref:scheduler.md for more details. [[Feature #16786]]
+      rdoc-ref:fiber.md for more details about what operations are supported and
+      how to implement the scheduler hooks. [[Feature #16786]]
 
     * Fiber.blocking? tells whether the current execution context is
       blocking. [[Feature #16786]]
 
     * Thread#join invokes the scheduler hooks `block`/`unblock` in a
       non-blocking execution context. [[Feature #16786]]
+
+* Thread
 
     * Thread.ignore_deadlock accessor has been added for disabling the
       default deadlock detection, allowing the use of signal handlers to
