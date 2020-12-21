@@ -1178,8 +1178,8 @@ x = __ENCODING__
     Class.new.class_eval(code)
   end
 
-  def assert_ractor_error(message, code)
-    assert_raise_with_message(Ractor::Error, message) do
+  def assert_raise_separately(error, message, code)
+    assert_raise_with_message(error, message) do
       eval_separately(code)
     end
   end
@@ -1243,7 +1243,8 @@ x = __ENCODING__
   end
 
   def test_shareable_constant_value_unshareable_literal
-    assert_ractor_error(/unshareable/, "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_raise_separately(Ractor::IsolationError, /unshareable/,
+                            "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       # shareable_constant_value: literal
       C = ["Not " + "shareable"]
@@ -1264,7 +1265,8 @@ x = __ENCODING__
   end
 
   def test_shareable_constant_value_unfrozen
-    assert_ractor_error(/does not freeze object correctly/, "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_raise_separately(Ractor::Error, /does not freeze object correctly/,
+                            "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       # shareable_constant_value: experimental_everything
       o = Object.new
