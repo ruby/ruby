@@ -402,6 +402,22 @@ END
     end
   end
 
+  def test_pin_operator_expr_pattern
+    assert_block do
+      case 'abc'
+      in ^(/a/)
+        true
+      end
+    end
+
+    assert_block do
+      case {name: '2.6', released_at: Time.new(2018, 12, 25)}
+      in {released_at: ^(Time.new(2010)..Time.new(2020))}
+        true
+      end
+    end
+  end
+
   def test_array_pattern
     assert_block do
       [[0], C.new([0])].all? do |i|

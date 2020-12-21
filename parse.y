@@ -1191,7 +1191,7 @@ static int looking_at_eol_p(struct parser_params *p);
 %type <node> p_case_body p_cases p_top_expr p_top_expr_body
 %type <node> p_expr p_as p_alt p_expr_basic p_find
 %type <node> p_args p_args_head p_args_tail p_args_post p_arg
-%type <node> p_value p_primitive p_variable p_var_ref p_const
+%type <node> p_value p_primitive p_variable p_var_ref p_expr_ref p_const
 %type <node> p_kwargs p_kwarg p_kw
 %type <id>   keyword_variable user_variable sym operation operation2 operation3
 %type <id>   cname fname op f_rest_arg f_block_arg opt_f_block_arg f_norm_arg f_bad_arg
@@ -4397,6 +4397,7 @@ p_value 	: p_primitive
 		    }
 		| p_variable
 		| p_var_ref
+		| p_expr_ref
 		| p_const
 		| tBDOT2 p_primitive
 		    {
@@ -4456,6 +4457,8 @@ p_var_ref	: '^' tIDENTIFIER
 		    /*% ripper: var_ref!($2) %*/
 		    }
 		;
+
+p_expr_ref	: '^' tLPAREN expr_value ')' {$$ = $3;} ;
 
 p_const 	: tCOLON3 cname
 		    {
