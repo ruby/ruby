@@ -1034,6 +1034,8 @@ main()
 		  AC_MSG_RESULT($define_xopen_source)
 		  AS_IF([test x"$define_xopen_source" != xno], [
 		    RUBY_APPEND_OPTIONS(CPPFLAGS, -D_XOPEN_SOURCE=$define_xopen_source)
+		    # _XOPEN_SOURCE should not be defined for C++ on Solaris.
+		    RUBY_APPEND_OPTIONS(CXXFLAGS, -U_XOPEN_SOURCE)
 		  ])
 		])
 		],
