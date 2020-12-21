@@ -253,9 +253,9 @@ print_backtrace(const VALUE eclass, const VALUE errat, const VALUE str, int reve
         }
 
         // skip for explicit limit
-        if (rb_backtrace_length_limit >= 0 && len > rb_backtrace_length_limit + 1) {
+        if (rb_backtrace_length_limit >= 0 && len > rb_backtrace_length_limit + 2) {
             skip_start = rb_backtrace_length_limit + 1;
-            skip_len = len - rb_backtrace_length_limit;
+            skip_len = len - skip_start;
         }
 
 	for (i = 1; i < len; i++) {
