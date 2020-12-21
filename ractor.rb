@@ -762,7 +762,7 @@ class Ractor
   #   obj2s = Ractor.make_shareable(obj2, copy: true)
   #   obj2.frozen?                        #=> false
   #   obj2s.frozen?                       #=> true
-  #   obj2s.object_id == obj1.object_id   #=> false
+  #   obj2s.object_id == obj2.object_id   #=> false
   #   obj2s[0].object_id == obj2[0].object_id #=> false
   #
   # See also the "Shareable and unshareable objects" section in the Ractor class docs.
