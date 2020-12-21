@@ -660,6 +660,8 @@ class Ractor
     "#<Ractor:##{id}#{name ? ' '+name : ''}#{loc ? " " + loc : ''} #{status}>"
   end
 
+  alias to_s inspect
+
   # The name set in Ractor.new, or +nil+.
   def name
     __builtin_cexpr! %q{RACTOR_PTR(self)->name}
