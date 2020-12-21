@@ -1755,7 +1755,7 @@ Init_stringio(void)
   rb_ext_ractor_safe(true);
 #endif
 
-    VALUE StringIO = rb_define_class("StringIO", rb_cData);
+    VALUE StringIO = rb_define_class("StringIO", rb_cObject);
 
     rb_define_const(StringIO, "VERSION", rb_str_new_cstr(STRINGIO_VERSION));
 
