@@ -32,28 +32,6 @@
  * @{
  */
 
-RBIMPL_SYMBOL_EXPORT_BEGIN()
-
-/**
- * This is the same as `$!` in Ruby.
- *
- * @retval   RUBY_Qnil  Not handling exceptions at the moment.
- * @retval   otherwise  The current exception in the current thread.
- * @ingroup  exception
- */
-VALUE rb_errinfo(void);
-
-/**
- * Sets the current exception (`$!`) to the given value.
- *
- * @exception  rb_eTypeError  What  is given  was  neither ::rb_eException  nor
- *                            ::RUBY_Qnil.
- * @note       Use  rb_raise()  instead to  raise  `err`.   This function  just
- *             assigns the given object to the global variable.
- * @ingroup    exception
- */
-void rb_set_errinfo(VALUE);
-
 /**
  * Warning  categories.  A  warning issued  using this  API can  be selectively
  * requested   /   suppressed   by   the  end-users.   For   instance   passing
@@ -81,6 +59,28 @@ enum rb_io_wait_readwrite {RB_IO_WAIT_READABLE, RB_IO_WAIT_WRITABLE};
 #define RB_IO_WAIT_READABLE RB_IO_WAIT_READABLE
 #define RB_IO_WAIT_WRITABLE RB_IO_WAIT_WRITABLE
 /** @endcond */
+
+RBIMPL_SYMBOL_EXPORT_BEGIN()
+
+/**
+ * This is the same as `$!` in Ruby.
+ *
+ * @retval   RUBY_Qnil  Not handling exceptions at the moment.
+ * @retval   otherwise  The current exception in the current thread.
+ * @ingroup  exception
+ */
+VALUE rb_errinfo(void);
+
+/**
+ * Sets the current exception (`$!`) to the given value.
+ *
+ * @exception  rb_eTypeError  What  is given  was  neither ::rb_eException  nor
+ *                            ::RUBY_Qnil.
+ * @note       Use  rb_raise()  instead to  raise  `err`.   This function  just
+ *             assigns the given object to the global variable.
+ * @ingroup    exception
+ */
+void rb_set_errinfo(VALUE);
 
 RBIMPL_ATTR_NORETURN()
 RBIMPL_ATTR_NONNULL((2))
