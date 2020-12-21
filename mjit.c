@@ -937,33 +937,6 @@ mjit_finish(bool close_handle_p)
     verbose(1, "Successful MJIT finish");
 }
 
-// Called by rb_vm_mark() to mark iseq being JIT-ed and iseqs in the unit queue.
-void
-mjit_mark(void)
-{
-    if (!mjit_enabled)
-        return;
-    RUBY_MARK_ENTER("mjit");
-
-    struct rb_mjit_unit *unit = NULL;
-    CRITICAL_SECTION_START(4, "mjit_mark");
-    list_for_each(&unit_queue.head, unit, unode) {
-        if (unit->iseq) { // ISeq is still not GCed
-            VALUE iseq = (VALUE)unit->iseq;
-            CRITICAL_SECTION_FINISH(4, "mjit_mark rb_gc_mark");
-
-            // Don't wrap critical section with this. This may trigger GC,
-            // and in that case mjit_gc_start_hook causes deadlock.
-            rb_gc_mark(iseq);
-
-            CRITICAL_SECTION_START(4, "mjit_mark rb_gc_mark");
-        }
-    }
-    CRITICAL_SECTION_FINISH(4, "mjit_mark");
-
-    RUBY_MARK_LEAVE("mjit");
-}
-
 // Called by rb_iseq_mark() to mark cc_entries captured for MJIT
 void
 mjit_mark_cc_entries(const struct rb_iseq_constant_body *const body)
