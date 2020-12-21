@@ -148,6 +148,20 @@ module Kernel
     yield(self)
   end
 
+  #
+  #  call-seq:
+  #     obj.itself    -> obj
+  #
+  #  Returns the receiver.
+  #
+  #     string = "my string"
+  #     string.itself.object_id == string.object_id   #=> true
+  #
+  #
+  def itself
+    return self
+  end
+
   module_function
 
   #

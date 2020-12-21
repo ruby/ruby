@@ -1,0 +1,18 @@
+prelude: |
+  obj = Object.new
+  ary = Array.new
+  str = String.new
+  int = 42
+  flt = 4.2
+benchmark:
+  object: |
+    obj.itself
+  array: |
+    ary.itself
+  string: |
+    str.itself
+  integer: |
+    int.itself
+  float: |
+    flt.itself
+loop_count: 20000000

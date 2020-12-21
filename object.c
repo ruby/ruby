@@ -570,23 +570,6 @@ rb_obj_dup(VALUE obj)
     return dup;
 }
 
-/*
- *  call-seq:
- *     obj.itself    -> obj
- *
- *  Returns the receiver.
- *
- *     string = "my string"
- *     string.itself.object_id == string.object_id   #=> true
- *
- */
-
-static VALUE
-rb_obj_itself(VALUE obj)
-{
-    return obj;
-}
-
 VALUE
 rb_obj_size(VALUE self, VALUE args, VALUE obj)
 {
@@ -4540,7 +4523,6 @@ InitVM_Object(void)
 
     rb_define_method(rb_mKernel, "singleton_class", rb_obj_singleton_class, 0);
     rb_define_method(rb_mKernel, "dup", rb_obj_dup, 0);
-    rb_define_method(rb_mKernel, "itself", rb_obj_itself, 0);
     rb_define_method(rb_mKernel, "initialize_copy", rb_obj_init_copy, 1);
     rb_define_method(rb_mKernel, "initialize_dup", rb_obj_init_dup_clone, 1);
     rb_define_method(rb_mKernel, "initialize_clone", rb_obj_init_clone, -1);
