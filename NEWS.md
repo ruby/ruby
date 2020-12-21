@@ -149,6 +149,14 @@ Outstanding ones only.
         * Array#uniq
         * Array#*
 
+    * Can be sliced with Enumerator::ArithmeticSequence
+
+        ```ruby
+        dirty_data = ['--', 'data1', '--', 'data2', '--', 'data3']
+        dirty_data[(1..).step(2)] # take each second element
+        # => ["data1", "data2", "data3"]
+        ```
+
 * ConditionVariable
 
     * ConditionVariable#wait may now invoke the `block`/`unblock` scheduler
