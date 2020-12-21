@@ -768,4 +768,11 @@ class Ractor
   def []=(sym, val)
     Primitive.ractor_local_value_set(sym, val)
   end
+
+  # returns main ractor
+  def self.main
+    __builtin_cexpr! %q{
+      rb_ractor_self(GET_VM()->ractor.main_ractor);
+    }
+  end
 end
