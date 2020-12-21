@@ -1,4 +1,34 @@
-# Scheduler
+# Fiber
+
+Fibers provide a mechanism for cooperative concurrency.
+
+## Context Switching
+
+Fibers execute a user-provided block. During the execution, the block may call `Fiber.yield` or `Fiber.transfer` to switch to another fiber. `Fiber#resume` is used to continue execution from the point where `Fiber.yield` was called.
+
+``` ruby
+#!/usr/bin/env ruby
+
+puts "1: Start program."
+
+f = Fiber.new do
+  puts "3: Entered fiber."
+  Fiber.yield
+  puts "5: Resumed fiber."
+end
+
+puts "2: Resume fiber first time."
+f.resume
+
+puts "4: Resume fiber second time."
+f.resume
+
+puts "6: Finished."
+```
+
+This program demonstrates the flow control of fibers.
+
+## Scheduler
 
 The scheduler interface is used to intercept blocking operations. A typical
 implementation would be a wrapper for a gem like `EventMachine` or `Async`. This
@@ -6,11 +36,23 @@ design provides separation of concerns between the event loop implementation
 and application code. It also allows for layered schedulers which can perform
 instrumentation.
 
-## Interface
+To set the scheduler for the current thread:
+
+``` ruby
+Fiber.set_schduler(MyScheduler.new)
+```
+
+When the thread exits, there is an implicit call to `set_scheduler`:
+
+``` ruby
+Fiber.set_scheduler(nil)
+```
+
+### Interface
 
 This is the interface you need to implement.
 
-~~~ ruby
+``` ruby
 class Scheduler
   # Wait for the specified process ID to exit.
   # This hook is optional.
@@ -67,23 +109,23 @@ class Scheduler
     # Implement event loop here.
   end
 end
-~~~
+```
 
 Additional hooks may be introduced in the future, we will use feature detection
 in order to enable these hooks.
 
-## Non-blocking Execution
+### Non-blocking Execution
 
 The scheduler hooks will only be used in special non-blocking execution
 contexts. Non-blocking execution contexts introduce non-determinism because the
 execution of scheduler hooks may introduce context switching points into your
 program.
 
-### Fibers
+#### Fibers
 
 Fibers can be used to create non-blocking execution contexts.
 
-~~~ ruby
+``` ruby
 Fiber.new do
   puts Fiber.current.blocking? # false
 
@@ -96,43 +138,54 @@ Fiber.new do
   # Will invoke `Fiber.scheduler&.kernel_sleep`.
   sleep(n)
 end.resume
-~~~
+```
 
 We also introduce a new method which simplifies the creation of these
 non-blocking fibers:
 
-~~~ ruby
+``` ruby
 Fiber.schedule do
   puts Fiber.current.blocking? # false
 end
-~~~
+```
 
 The purpose of this method is to allow the scheduler to internally decide the
 policy for when to start the fiber, and whether to use symmetric or asymmetric
 fibers.
 
-### IO
+You can also create blocking execution contexts:
+
+``` ruby
+Fiber.new(blocking: true) do
+  # Won't use the scheduler:
+  sleep(n)
+end
+```
+
+However you should generally avoid this unless you are implementing a scheduler.
+
+#### IO
 
 By default, I/O is non-blocking. Not all operating systems support non-blocking
 I/O. Windows is a notable example where socket I/O can be non-blocking but pipe
 I/O is blocking. Provided that there *is* a scheduler and the current thread *is
 non-blocking*, the operation will invoke the scheduler.
 
-### Mutex
+#### Mutex
 
 The `Mutex` class can be used in a non-blocking context and is fiber specific.
 
-### ConditionVariable
+#### ConditionVariable
 
 The `ConditionVariable` class can be used in a non-blocking context and is
 fiber-specific.
 
-### Queue / SizedQueue
+#### Queue / SizedQueue
 
 The `Queue` and `SizedQueue` classses can be used in a non-blocking context and
 are fiber-specific.
 
-### Thread
+#### Thread
 
 The `Thread#join` operation can be used in a non-blocking context and is
 fiber-specific.
