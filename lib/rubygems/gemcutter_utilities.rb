@@ -260,8 +260,8 @@ module Gem::GemcutterUtilities
   end
 
   def get_key_name(scope)
-    hostname = Socket.gethostname || "unkown-host"
-    user = ENV["USER"] || ENV["USERNAME"] || "unkown-user"
+    hostname = Socket.gethostname || "unknown-host"
+    user = ENV["USER"] || ENV["USERNAME"] || "unknown-user"
     ts = Time.now.strftime("%Y%m%d%H%M%S")
     default_key_name = "#{hostname}-#{user}-#{ts}"
 

@@ -383,7 +383,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
     realworld_system_gems "fileutils --version 1.4.1"
 
-    realworld_system_gems "fiddle" # not sure why, but this is needed on Windows to boot rubygems succesfully
+    realworld_system_gems "fiddle" # not sure why, but this is needed on Windows to boot rubygems successfully
 
     realworld_system_gems "timeout uri" # this spec uses net/http which requires these default gems
 
