@@ -1222,7 +1222,8 @@ x = __ENCODING__
       # shareable_constant_value: none
       class X
         # shareable_constant_value: experimental_everything
-        A = [[1]]
+        var = [[1]]
+        A = var
       end
       B = []
       [X::A, B]
@@ -1236,6 +1237,25 @@ x = __ENCODING__
     begin;
       # shareable_constant_value: literal
       C = ["Not " + "shareable"]
+    end;
+
+    c, d = eval_separately("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: literal
+      var = [:not_frozen]
+      C = var
+      D = begin [] end
+      [C, D]
+    end;
+    assert_not_ractor_shareable(c)
+    assert_not_ractor_shareable(d)
+
+    assert_ractor_error(/does not freeze object correctly/, "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: experimental_everything
+      o = Object.new
+      def o.freeze; self; end
+      C = [o]
     end;
   end
 
