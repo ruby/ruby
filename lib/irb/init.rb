@@ -120,7 +120,7 @@ module IRB # :nodoc:
       puts 'processing time: %fs' % (now - time) if IRB.conf[:MEASURE]
       result
     }
-    @CONF[:MEASURE_PROC][:STACKPROF] = proc { |context, code, line_no, &block|
+    @CONF[:MEASURE_PROC][:STACKPROF] = proc { |context, code, line_no, arg, &block|
       success = false
       begin
         require 'stackprof'
@@ -130,7 +130,7 @@ module IRB # :nodoc:
       end
       if success
         result = nil
-        stackprof_result = StackProf.run(mode: :cpu) do
+        stackprof_result = StackProf.run(mode: arg ? arg : :cpu) do
           result = block.()
         end
         StackProf::Report.new(stackprof_result).print_text if IRB.conf[:MEASURE]
@@ -146,17 +146,17 @@ module IRB # :nodoc:
     @CONF[:AT_EXIT] = []
   end
 
-  def IRB.set_measure_callback(type = nil)
+  def IRB.set_measure_callback(type = nil, arg = nil)
     added = nil
     if type
       type_sym = type.upcase.to_sym
       if IRB.conf[:MEASURE_PROC][type_sym]
-        added = [type_sym, IRB.conf[:MEASURE_PROC][type_sym]]
+        added = [type_sym, IRB.conf[:MEASURE_PROC][type_sym], arg]
       end
     elsif IRB.conf[:MEASURE_PROC][:CUSTOM]
-      added = [:CUSTOM, IRB.conf[:MEASURE_PROC][:CUSTOM]]
+      added = [:CUSTOM, IRB.conf[:MEASURE_PROC][:CUSTOM], arg]
     else
-      added = [:TIME, IRB.conf[:MEASURE_PROC][:TIME]]
+      added = [:TIME, IRB.conf[:MEASURE_PROC][:TIME], arg]
     end
     IRB.conf[:MEASURE_CALLBACKS] << added if added
     added
@@ -167,7 +167,7 @@ module IRB # :nodoc:
       IRB.conf[:MEASURE_CALLBACKS].clear
     else
       type_sym = type.upcase.to_sym
-      IRB.conf[:MEASURE_CALLBACKS].reject!{ |t, c| t == type_sym }
+      IRB.conf[:MEASURE_CALLBACKS].reject!{ |t, | t == type_sym }
     end
   end
 

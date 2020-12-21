@@ -544,9 +544,10 @@ module IRB
             if IRB.conf[:MEASURE] && !IRB.conf[:MEASURE_CALLBACKS].empty?
               result = nil
               last_proc = proc{ result = @context.evaluate(line, line_no, exception: exc) }
-              IRB.conf[:MEASURE_CALLBACKS].map{ |s| s.last }.inject(last_proc) { |chain, item|
+              IRB.conf[:MEASURE_CALLBACKS].inject(last_proc) { |chain, item|
+                _name, callback, arg = item
                 proc {
-                  item.(@context, line, line_no, exception: exc) do
+                  callback.(@context, line, line_no, arg, exception: exc) do
                     chain.call
                   end
                 }
