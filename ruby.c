@@ -1647,6 +1647,23 @@ setup_pager_env(void)
     if (!getenv("LESS")) ruby_setenv("LESS", "-R"); // Output "raw" control characters.
 }
 
+#ifdef _WIN32
+static int
+tty_enabled(void)
+{
+    HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+    DWORD m;
+    if (!GetConsoleMode(h, &m)) return 0;
+# ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
+#   define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x200
+# endif
+    if (!(m & ENABLE_VIRTUAL_TERMINAL_PROCESSING)) return 0;
+    return 1;
+}
+#elif !defined(HAVE_WORKING_FORK)
+# define tty_enabled() 0
+#endif
+
 static VALUE
 process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 {
@@ -1707,10 +1724,10 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
                     int oldout = dup(1);
                     int olderr = dup(2);
                     int fd = RFILE(port)->fptr->fd;
+                    tty = tty_enabled();
                     dup2(fd, 1);
                     dup2(fd, 2);
-                    /* more.com doesn't support CSI sequence */
-                    usage(progname, 1, 0, columns);
+                    usage(progname, 1, tty, columns);
                     fflush(stdout);
                     dup2(oldout, 1);
                     dup2(olderr, 2);
