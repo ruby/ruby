@@ -7580,13 +7580,14 @@ rb_str_tr(VALUE str, VALUE src, VALUE repl)
     return str;
 }
 
-#define TR_TABLE_SIZE 257
+#define TR_TABLE_MAX (UCHAR_MAX+1)
+#define TR_TABLE_SIZE (TR_TABLE_MAX+1)
 static void
 tr_setup_table(VALUE str, char stable[TR_TABLE_SIZE], int first,
 	       VALUE *tablep, VALUE *ctablep, rb_encoding *enc)
 {
     const unsigned int errc = -1;
-    char buf[256];
+    char buf[TR_TABLE_MAX];
     struct tr tr;
     unsigned int c;
     VALUE table = 0, ptable = 0;
@@ -7600,26 +7601,26 @@ tr_setup_table(VALUE str, char stable[TR_TABLE_SIZE], int first,
 	tr.p += l;
     }
     if (first) {
-	for (i=0; i<256; i++) {
+	for (i=0; i<TR_TABLE_MAX; i++) {
 	    stable[i] = 1;
 	}
-	stable[256] = cflag;
+	stable[TR_TABLE_MAX] = cflag;
     }
-    else if (stable[256] && !cflag) {
-	stable[256] = 0;
+    else if (stable[TR_TABLE_MAX] && !cflag) {
+	stable[TR_TABLE_MAX] = 0;
     }
-    for (i=0; i<256; i++) {
+    for (i=0; i<TR_TABLE_MAX; i++) {
 	buf[i] = cflag;
     }
 
     while ((c = trnext(&tr, enc)) != errc) {
-	if (c < 256) {
-	    buf[c & 0xff] = !cflag;
+	if (c < TR_TABLE_MAX) {
+	    buf[(unsigned char)c] = !cflag;
 	}
 	else {
 	    VALUE key = UINT2NUM(c);
 
-	    if (!table && (first || *tablep || stable[256])) {
+	    if (!table && (first || *tablep || stable[TR_TABLE_MAX])) {
 		if (cflag) {
 		    ptable = *ctablep;
 		    table = ptable ? ptable : rb_hash_new();
@@ -7636,7 +7637,7 @@ tr_setup_table(VALUE str, char stable[TR_TABLE_SIZE], int first,
 	    }
 	}
     }
-    for (i=0; i<256; i++) {
+    for (i=0; i<TR_TABLE_MAX; i++) {
 	stable[i] = stable[i] && buf[i];
     }
     if (!table && !cflag) {
@@ -7648,7 +7649,7 @@ tr_setup_table(VALUE str, char stable[TR_TABLE_SIZE], int first,
 static int
 tr_find(unsigned int c, const char table[TR_TABLE_SIZE], VALUE del, VALUE nodel)
 {
-    if (c < 256) {
+    if (c < TR_TABLE_MAX) {
 	return table[c] != 0;
     }
     else {
@@ -7663,7 +7664,7 @@ tr_find(unsigned int c, const char table[TR_TABLE_SIZE], VALUE del, VALUE nodel)
 	else if (nodel && !NIL_P(rb_hash_lookup(nodel, v))) {
 	    return FALSE;
 	}
-	return table[256] ? TRUE : FALSE;
+	return table[TR_TABLE_MAX] ? TRUE : FALSE;
     }
 }
 
@@ -8647,7 +8648,7 @@ rb_str_enumerate_bytes(VALUE str, VALUE ary)
     long i;
 
     for (i=0; i<RSTRING_LEN(str); i++) {
-	ENUM_ELEM(ary, INT2FIX(RSTRING_PTR(str)[i] & 0xff));
+	ENUM_ELEM(ary, INT2FIX((unsigned char)RSTRING_PTR(str)[i]));
     }
     if (ary)
 	return ary;
