@@ -2687,6 +2687,17 @@ init_stdhandle(void)
     }
     if (nullfd >= 0 && !keep) close(nullfd);
     setvbuf(stderr, NULL, _IONBF, 0);
+
+    {
+        HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+        DWORD m;
+        if (GetConsoleMode(h, &m)) {
+#ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
+#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x200
+#endif
+            SetConsoleMode(h, m | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+        }
+    }
 }
 
 #undef getsockopt
