@@ -109,7 +109,20 @@ module JSON
     #   JSON.create_id # => 'json_class'
     attr_accessor :create_id
   end
-  self.create_id = 'json_class'
+
+  DEFAULT_CREATE_ID = 'json_class'.freeze
+  private_constant :DEFAULT_CREATE_ID
+
+  CREATE_ID_TLS_KEY = "JSON.create_id".freeze
+  private_constant :CREATE_ID_TLS_KEY
+
+  def self.create_id
+    Thread.current[CREATE_ID_TLS_KEY] || DEFAULT_CREATE_ID
+  end
+
+  def self.create_id=(new_value)
+    Thread.current[CREATE_ID_TLS_KEY] = new_value.dup.freeze
+  end
 
   NaN           = 0.0/0
 
