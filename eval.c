@@ -1713,12 +1713,6 @@ rb_obj_call_init_kw(VALUE obj, int argc, const VALUE *argv, int kw_splat)
     rb_funcallv_kw(obj, idInitialize, argc, argv, kw_splat);
 }
 
-/*!
- * Extend the object with the module.
- *
- * Same as \c Module\#extend_object.
- * \ingroup class
- */
 void
 rb_extend_object(VALUE obj, VALUE module)
 {
