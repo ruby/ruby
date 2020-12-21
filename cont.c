@@ -2369,12 +2369,77 @@ rb_fiber_raise(int argc, VALUE *argv, VALUE fiber_value)
     }
 }
 
+/*
+ *  call-seq:
+ *     fiber.backtrace -> array
+ *     fiber.backtrace(start) -> array
+ *     fiber.backtrace(start, count) -> array
+ *     fiber.backtrace(start..end) -> array
+ *
+ *  Returns the current execution stack of the fiber. +start+, +count+ and +end+ allow
+ *  to select only parts of the backtrace.
+ *
+ *     def level3
+ *       Fiber.yield
+ *     end
+ *
+ *     def level2
+ *       level3
+ *     end
+ *
+ *     def level1
+ *       level2
+ *     end
+ *
+ *     f = Fiber.new { level1 }
+ *
+ *     # It is empty before the fiber started
+ *     f.backtrace
+ *     #=> []
+ *
+ *     f.resume
+ *
+ *     f.backtrace
+ *     #=> ["test.rb:2:in `yield'", "test.rb:2:in `level3'", "test.rb:6:in `level2'", "test.rb:10:in `level1'", "test.rb:13:in `block in <main>'"]
+ *     p f.backtrace(1) # start from the item 1
+ *     #=> ["test.rb:2:in `level3'", "test.rb:6:in `level2'", "test.rb:10:in `level1'", "test.rb:13:in `block in <main>'"]
+ *     p f.backtrace(2, 2) # start from item 2, take 2
+ *     #=> ["test.rb:6:in `level2'", "test.rb:10:in `level1'"]
+ *     p f.backtrace(1..3) # take items from 1 to 3
+ *     #=> ["test.rb:2:in `level3'", "test.rb:6:in `level2'", "test.rb:10:in `level1'"]
+ *
+ *     f.resume
+ *
+ *     # It is empty after the fiber is finished
+ *     f.backtrace
+ *     #=> []
+ *
+ */
 static VALUE
 rb_fiber_backtrace(int argc, VALUE *argv, VALUE fiber)
 {
     return rb_vm_backtrace(argc, argv, &fiber_ptr(fiber)->cont.saved_ec);
 }
 
+/*
+ *  call-seq:
+ *     fiber.backtrace_locations -> array
+ *     fiber.backtrace_locations(start) -> array
+ *     fiber.backtrace_locations(start, count) -> array
+ *     fiber.backtrace_locations(start..end) -> array
+ *
+ *  Like #backtrace, but returns each line of the execution stack as a
+ *  Thread::Backtrace::Location. Accepts the same arguments as #backtrace.
+ *
+ *    f = Fiber.new { Fiber.yield }
+ *    f.resume
+ *    loc = f.backtrace_locations.first
+ *    loc.label  #=> "yield"
+ *    loc.path   #=> "test.rb"
+ *    loc.lineno #=> 1
+ *
+ *
+ */
 static VALUE
 rb_fiber_backtrace_locations(int argc, VALUE *argv, VALUE fiber)
 {
