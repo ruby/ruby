@@ -102,19 +102,19 @@ fiddle_ptr_check_memory_view(VALUE obj)
     return data;
 }
 
-static int
+static bool
 fiddle_ptr_memory_view_available_p(VALUE obj)
 {
     return fiddle_ptr_check_memory_view(obj) != NULL;
 }
 
-static int
+static bool
 fiddle_ptr_get_memory_view(VALUE obj, rb_memory_view_t *view, int flags)
 {
     struct ptr_data *data = fiddle_ptr_check_memory_view(obj);
     rb_memory_view_init_as_byte_array(view, obj, data->ptr, data->size, true);
 
-    return 1;
+    return true;
 }
 
 static const rb_memory_view_entry_t fiddle_ptr_memory_view_entry = {
