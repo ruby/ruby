@@ -1252,16 +1252,18 @@ x = __ENCODING__
   end
 
   def test_shareable_constant_value_nonliteral
-    c, d = eval_separately("#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_raise_separately(Ractor::IsolationError, /unshareable/, "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       # shareable_constant_value: literal
       var = [:not_frozen]
       C = var
-      D = begin [] end
-      [C, D]
     end;
-    assert_not_ractor_shareable(c)
-    assert_not_ractor_shareable(d)
+
+    assert_raise_separately(Ractor::IsolationError, /unshareable/, "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: literal
+      D = begin [] end
+    end;
   end
 
   def test_shareable_constant_value_unfrozen

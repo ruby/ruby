@@ -11085,7 +11085,7 @@ shareable_literal_value(NODE *node)
 }
 
 #ifndef SHAREABLE_BARE_EXPRESSION
-#define SHAREABLE_BARE_EXPRESSION 0
+#define SHAREABLE_BARE_EXPRESSION 1
 #endif
 
 VALUE rb_ractor_make_shareable(VALUE obj);
