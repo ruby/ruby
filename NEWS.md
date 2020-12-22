@@ -14,15 +14,6 @@ sufficient information, see the ChangeLog file or Redmine
   Code that resulted in deprecation warnings in Ruby 2.7 will now
   result in ArgumentError or different behavior. [[Feature #14183]]
 
-* Arguments forwarding (`...`) now supports leading arguments.
-  [[Feature #16378]]
-
-    ```ruby
-    def method_missing(meth, ...)
-      send(:"do_#{meth}", ...)
-    end
-    ```
-
 * Procs accepting a single rest argument and keywords are no longer
   subject to autosplatting.  This now matches the behavior of Procs
   accepting a single rest argument and no keywords.
@@ -38,6 +29,15 @@ sufficient information, see the ChangeLog file or Redmine
     pr.call([1, {a: 1}])
     # 2.7 => [[1], {:a=>1}] # and deprecation warning
     # 3.0 => [[[1, {:a=>1}]], {}]
+    ```
+
+* Arguments forwarding (`...`) now supports leading arguments.
+  [[Feature #16378]]
+
+    ```ruby
+    def method_missing(meth, ...)
+      send(:"do_#{meth}", ...)
+    end
     ```
 
 * Pattern matching(`case/in`) is no longer experimental. [[Feature #17260]]
