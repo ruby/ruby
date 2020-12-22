@@ -169,4 +169,27 @@ class TestEtc < Test::Unit::TestCase
     assert_operator(1, :<=, n)
   end
 
+  def test_ractor
+    return unless Etc.passwd # => skip test if no platform support
+
+    assert_ractor(<<~RUBY, require: 'etc')
+      ractor = Ractor.new do
+        Etc.passwd do |s|
+          Ractor.yield :sync
+          Ractor.yield s.name
+          break :done
+        end
+      end
+      ractor.take # => :sync
+      assert_raise RuntimeError, /parallel/ do
+        Etc.passwd {}
+      end
+      name = ractor.take # => first name
+      ractor.take # => :done
+      name2 = Etc.passwd do |s|
+        break s.name
+      end
+      assert_equal(name2, name)
+    RUBY
+  end
 end

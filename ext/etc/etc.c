@@ -62,6 +62,10 @@ void rb_deprecate_constant(VALUE mod, const char *name);
 
 #include "constdefs.h"
 
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+#include "ruby/thread_native.h"
+#else
+/* Implement rb_native_mutex_x using an int */
 typedef int rb_nativethread_lock_t;
 static int rb_native_mutex_trylock(int *mutex) {
     if (*mutex) {
@@ -74,6 +78,7 @@ static void rb_native_mutex_unlock(int *mutex) {
     *mutex = 0;
 }
 #define rb_native_mutex_initialize rb_native_mutex_unlock
+#endif
 
 /* call-seq:
  *	getlogin	->  String
@@ -1087,6 +1092,9 @@ Init_etc(void)
 {
     VALUE mEtc;
 
+    #ifdef HAVE_RB_EXT_RACTOR_SAFE
+	RB_EXT_RACTOR_SAFE(true);
+    #endif
     mEtc = rb_define_module("Etc");
     rb_define_const(mEtc, "VERSION", rb_str_new_cstr(RUBY_ETC_VERSION));
     init_constants(mEtc);
