@@ -2460,42 +2460,68 @@ rb_fiber_backtrace_locations(int argc, VALUE *argv, VALUE fiber)
  *  a resume call. Arguments passed to transfer are treated like those
  *  passed to resume.
  *
- *  You cannot call +resume+ on a fiber that has been transferred to.
- *  If you call +transfer+ on a fiber, and later call +resume+ on the
- *  the fiber, a +FiberError+ will be raised. Once you call +transfer+ on
- *  a fiber, the only way to resume processing the fiber is to
- *  call +transfer+ on it again.
+ *  The two style of control passing to and from fiber (one is #resume and
+ *  Fiber::yield, another is #transfer to and from fiber) can't be freely
+ *  mixed.
+ *
+ *  * If the Fiber's lifecycle had started with transfer, it will never
+ *    be able to participate in yield/resume control passing, only
+ *    finish or transfer back.
+ *  * If the Fiber's lifecycle had started with resume, it can yield
+ *    or transfer to another Fiber, but can receive control back only
+ *    the way compatible with the way it was given away: if it had
+ *    transferred, it only can be transferred back, and if it had
+ *    yielded, it only can be resumed back. After that, it again can
+ *    transfer or yield
+ *
+ *  If those rules are broken FiberError is raised.
+ *
  *
  *  Example:
  *
- *    fiber1 = Fiber.new do
- *      puts "In Fiber 1"
- *      Fiber.yield
- *      puts "In Fiber 1 again"
- *    end
+ *     require 'fiber'
  *
- *    fiber2 = Fiber.new do
- *      puts "In Fiber 2"
- *      fiber1.transfer
- *      puts "Never see this message"
- *    end
+ *     manager = nil # For local var to be visible inside worker block
  *
- *    fiber3 = Fiber.new do
- *      puts "In Fiber 3"
- *    end
+ *     # This fiber would be started with transfer
+ *     # It can't yield, and can't be resumed
+ *     worker = Fiber.new { |work|
+ *       puts "Worker: starts"
+ *       puts "Worker: Performed #{work.inspect}, transferring back"
+ *       # Fiber.yield     # this would raise FiberError: attempt to yield on a not resumed fiber
+ *       # manager.resume  # this would raise FiberError: attempt to resume a resumed fiber (double resume)
+ *       manager.transfer(work.capitalize)
+ *     }
  *
- *    fiber2.resume
- *    fiber3.resume
- *    fiber1.resume rescue (p $!)
- *    fiber1.transfer
+ *     # This fiber would be started with resume
+ *     # It can yield or transfer, and can be transferred
+ *     # back or resumed
+ *     manager = Fiber.new {
+ *       puts "Manager: starts"
+ *       puts "Manager: transferring 'something' to worker"
+ *       result = worker.transfer('something')
+ *       puts "Manager: worker returned #{result.inspect}"
+ *       # worker.resume    # this would raise FiberError: attempt to resume a transferring fiber
+ *       Fiber.yield        # this is OK, the fiber transferred from and to, now it can yield
+ *       puts "Manager: finished"
+ *     }
+ *
+ *     puts "Starting the manager"
+ *     manager.resume
+ *     puts "Resuming the manager"
+ *     # manager.transfer  # this would raise FiberError: attempt to transfer to a yielding fiber
+ *     manager.resume
  *
  *  <em>produces</em>
  *
- *    In Fiber 2
- *    In Fiber 1
- *    In Fiber 3
- *    #<FiberError: cannot resume transferred Fiber>
- *    In Fiber 1 again
+ *     Starting the manager
+ *     Manager: starts
+ *     Manager: transferring 'something' to worker
+ *     Worker: starts
+ *     Worker: Performed "something", transferring back
+ *     Manager: worker returned "Something"
+ *     Resuming the manager
+ *     Manager: finished
  *
  */
 static VALUE
