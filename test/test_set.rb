@@ -759,6 +759,11 @@ class TC_Set < Test::Unit::TestCase
     assert_equal Set[1,2,3], set1
   end if Kernel.instance_method(:initialize_clone).arity != 1
 
+  def test_join
+    assert_equal('123', Set[1, 2, 3].join)
+    assert_equal('1 & 2 & 3', Set[1, 2, 3].join(' & '))
+  end
+
   def test_inspect
     set1 = Set[1, 2]
     assert_equal('#<Set: {1, 2}>', set1.inspect)
