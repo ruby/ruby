@@ -2744,6 +2744,9 @@ ruby_Init_Continuation_body(void)
 void
 ruby_Init_Fiber_as_Coroutine(void)
 {
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    rb_ext_ractor_safe(true);
+#endif
     rb_define_method(rb_cFiber, "transfer", rb_fiber_m_transfer, -1);
     rb_define_method(rb_cFiber, "alive?", rb_fiber_alive_p, 0);
     rb_define_singleton_method(rb_cFiber, "current", rb_fiber_s_current, 0);
