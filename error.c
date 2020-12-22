@@ -484,34 +484,49 @@ rb_enc_warning(rb_encoding *enc, const char *fmt, ...)
 }
 #endif
 
-void
-rb_warn_deprecated(const char *fmt, const char *suggest, ...)
+static bool
+deprecation_warning_enabled(void)
 {
-    if (NIL_P(ruby_verbose)) return;
-    if (!rb_warning_category_enabled_p(RB_WARN_CATEGORY_DEPRECATED)) return;
-    va_list args;
-    va_start(args, suggest);
-    VALUE mesg = warning_string(0, fmt, args);
-    va_end(args);
+    if (NIL_P(ruby_verbose)) return false;
+    if (!rb_warning_category_enabled_p(RB_WARN_CATEGORY_DEPRECATED)) return false;
+    return true;
+}
+
+static void
+warn_deprecated(VALUE mesg, bool removal, const char *suggest)
+{
     rb_str_set_len(mesg, RSTRING_LEN(mesg) - 1);
     rb_str_cat_cstr(mesg, " is deprecated");
+    if (removal) rb_str_cat_cstr(mesg, ", and is planned for removal");
     if (suggest) rb_str_catf(mesg, "; use %s instead", suggest);
     rb_str_cat_cstr(mesg, "\n");
     rb_warn_category(mesg, ID2SYM(id_deprecated));
 }
 
 void
-rb_warn_deprecated_to_remove(const char *fmt, const char *removal, ...)
+rb_warn_deprecated(const char *fmt, const char *suggest, ...)
 {
-    if (NIL_P(ruby_verbose)) return;
-    if (!rb_warning_category_enabled_p(RB_WARN_CATEGORY_DEPRECATED)) return;
+    if (!deprecation_warning_enabled()) return;
+
     va_list args;
-    va_start(args, removal);
+    va_start(args, suggest);
     VALUE mesg = warning_string(0, fmt, args);
     va_end(args);
-    rb_str_set_len(mesg, RSTRING_LEN(mesg) - 1);
-    rb_str_catf(mesg, " is deprecated and will be removed in Ruby %s\n", removal);
-    rb_warn_category(mesg, ID2SYM(id_deprecated));
+
+    warn_deprecated(mesg, false, suggest);
+}
+
+void
+rb_warn_deprecated_to_remove(const char *fmt, const char *suggest, ...)
+{
+    if (!deprecation_warning_enabled()) return;
+
+    va_list args;
+    va_start(args, suggest);
+    VALUE mesg = warning_string(0, fmt, args);
+    va_end(args);
+
+    warn_deprecated(mesg, true, suggest);
 }
 
 static inline int
@@ -3296,14 +3311,14 @@ rb_check_frozen(VALUE obj)
 void
 rb_error_untrusted(VALUE obj)
 {
-    rb_warn_deprecated_to_remove("rb_error_untrusted", "3.2");
+    rb_warn_deprecated_to_remove_at("3.2", "rb_error_untrusted", NULL);
 }
 
 #undef rb_check_trusted
 void
 rb_check_trusted(VALUE obj)
 {
-    rb_warn_deprecated_to_remove("rb_check_trusted", "3.2");
+    rb_warn_deprecated_to_remove_at("3.2", "rb_check_trusted", NULL);
 }
 
 void
