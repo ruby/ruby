@@ -157,6 +157,10 @@ Outstanding ones only.
         # => ["data1", "data2", "data3"]
         ```
 
+* Binding#eval when called with one arguments will use "(eval)"
+  for `__FILE__` and 1 for `__LINE__` in the evaluated code.
+  [[Bug #4352]] [[Bug #17419]]
+
 * ConditionVariable
 
     * ConditionVariable#wait may now invoke the `block`/`unblock` scheduler
@@ -734,3 +738,4 @@ end
 [Feature #17371]: https://bugs.ruby-lang.org/issues/17371
 [GH-2991]:        https://github.com/ruby/ruby/pull/2991
 [Feature #17314]: https://bugs.ruby-lang.org/issues/17314
+[Bug #17419]:     https://bugs.ruby-lang.org/issues/17419
