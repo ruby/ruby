@@ -654,7 +654,11 @@ RUBY_SYMBOL_EXPORT_END
 static void error_duplicate_pattern_variable(struct parser_params *p, ID id, const YYLTYPE *loc);
 static void error_duplicate_pattern_key(struct parser_params *p, ID id, const YYLTYPE *loc);
 static void parser_token_value_print(struct parser_params *p, enum yytokentype type, const YYSTYPE *valp);
+#ifndef RIPPER
 static ID formal_argument(struct parser_params*, ID);
+#else
+static ID formal_argument(struct parser_params*, VALUE);
+#endif
 static ID shadowing_lvar(struct parser_params*,ID);
 static void new_bv(struct parser_params*,ID);
 
@@ -5187,7 +5191,7 @@ f_bad_arg	: tCONSTANT
 f_norm_arg	: f_bad_arg
 		| tIDENTIFIER
 		    {
-			formal_argument(p, get_id($1));
+			formal_argument(p, $1);
 			p->max_numparam = ORDINAL_PARAM;
 			$$ = $1;
 		    }
@@ -5248,9 +5252,8 @@ f_arg		: f_arg_item
 
 f_label 	: tLABEL
 		    {
-			ID id = get_id($1);
-			arg_var(p, formal_argument(p, id));
-			p->cur_arg = id;
+			arg_var(p, formal_argument(p, $1));
+			p->cur_arg = get_id($1);
 			p->max_numparam = ORDINAL_PARAM;
 			$$ = $1;
 		    }
@@ -7855,9 +7858,13 @@ arg_ambiguous(struct parser_params *p, char c)
 }
 
 static ID
+#ifndef RIPPER
 formal_argument(struct parser_params *p, ID lhs)
+#else
+formal_argument(struct parser_params *p, VALUE lhs)
+#endif
 {
-    switch (id_type(lhs)) {
+    switch (id_type(get_id(lhs))) {
       case ID_LOCAL:
 	break;
 #ifndef RIPPER
