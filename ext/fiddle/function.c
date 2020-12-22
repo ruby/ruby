@@ -451,8 +451,9 @@ Init_fiddle_function(void)
      * Caller must ensure the underlying function is called in a
      * thread-safe manner if running in a multi-threaded process.
      *
-     * Note that many Ruby C-extension APIs are thread-safe to call
-     * only when the Function is constructed with <code>need_gvl: true</code>.
+     * Note that it is not thread-safe to use this method to
+     * directly or indirectly call many Ruby C-extension APIs unless
+     * you don't pass +need_gvl: true+ to Fiddle::Function#new.
      *
      * For an example see Fiddle::Function
      *

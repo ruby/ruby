@@ -404,7 +404,7 @@ Outstanding ones only.
 
 * Fiddle
 
-    * Update to Fiddle 1.0.4
+    * Update to Fiddle 1.0.5
 
 * IRB
 
