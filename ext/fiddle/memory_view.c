@@ -48,7 +48,7 @@ static size_t
 fiddle_memview_memsize(const void *ptr)
 {
     const struct memview_data *data = ptr;
-    return sizeof(*data) + sizeof(rb_memory_view_item_component_t)*data->n_members + (size_t)data->view.len;
+    return sizeof(*data) + sizeof(rb_memory_view_item_component_t)*data->n_members + (size_t)data->view.byte_size;
 }
 
 static const rb_data_type_t fiddle_memview_data_type = {
@@ -96,7 +96,7 @@ rb_fiddle_memview_get_length(VALUE obj)
     TypedData_Get_Struct(obj, struct memview_data, &fiddle_memview_data_type, data);
 
     if (NIL_P(data->view.obj)) return Qnil;
-    return SSIZET2NUM(data->view.len);
+    return SSIZET2NUM(data->view.byte_size);
 }
 
 static VALUE

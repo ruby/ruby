@@ -46,7 +46,7 @@ typedef struct {
     void *data;
 
     /* The number of bytes in data. */
-    ssize_t len;
+    ssize_t byte_size;
 
     /* true for readonly memory, false for writable memory. */
     bool readonly;
