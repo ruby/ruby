@@ -40,10 +40,11 @@ sufficient information, see the ChangeLog file or Redmine
     end
     ```
 
-* Pattern matching(`case/in`) is no longer experimental. [[Feature #17260]]
+* Pattern matching (`case/in`) is no longer experimental. [[Feature #17260]]
 
 * One-line pattern matching is redesigned.  [EXPERIMENTAL]
-    * `=>` is added. It can be used as like rightward assignment.
+
+    * `=>` is added. It can be used like rightward assignment.
       [[Feature #17260]]
 
         ```ruby
@@ -120,13 +121,13 @@ sufficient information, see the ChangeLog file or Redmine
 ### `--help` option
 
 When the environment variable `RUBY_PAGER` or `PAGER` is present and has
-non-empty value, and the standard input and output are tty, `--help`
+non-empty value, and the standard input and output are tty, the `--help`
 option shows the help message via the pager designated by the value.
 [[Feature #16754]]
 
 ### `--backtrace-limit` option
 
-`--backtrace-limit` option limits the maximum length of backtrace.
+The `--backtrace-limit` option limits the maximum length of backtrace.
 [[Feature #8661]]
 
 ## Core classes updates
@@ -159,7 +160,7 @@ Outstanding ones only.
 
 * Binding
 
-    * Binding#eval when called with one arguments will use "(eval)"
+    * Binding#eval when called with one argument will use "(eval)"
       for `__FILE__` and 1 for `__LINE__` in the evaluated code.
       [[Bug #4352]] [[Bug #17419]]
 
@@ -171,7 +172,7 @@ Outstanding ones only.
 * Dir
 
     * Dir.glob and Dir.[] now sort the results by default, and
-      accept `sort:` keyword option.  [[Feature #8709]]
+      accept the `sort:` keyword option.  [[Feature #8709]]
 
 * ENV
 
@@ -195,7 +196,7 @@ Outstanding ones only.
 
     * Fiber#blocking? tells whether the fiber is non-blocking. [[Feature #16786]]
 
-    * Fiber#backtrace & Fiber#backtrace_locations provide per-fiber backtrace.
+    * Fiber#backtrace and Fiber#backtrace_locations provide per-fiber backtrace.
       [[Feature #16815]]
 
     * The limitation of Fiber#transfer is relaxed. [[Bug #17221]]
@@ -210,7 +211,7 @@ Outstanding ones only.
 
 * Hash
 
-    * Hash#transform_keys and transform_keys! now accepts a hash that maps
+    * Hash#transform_keys and Hash#transform_keys! now accept a hash that maps
       keys to new keys.  [[Feature #16274]]
 
     * Hash#except has been added, which returns a hash excluding the
@@ -227,11 +228,11 @@ Outstanding ones only.
 
 * Kernel
 
-    * Kernel#clone when called with `freeze: false` keyword will call
+    * Kernel#clone when called with the `freeze: false` keyword will call
       `#initialize_clone` with the `freeze: false` keyword.
       [[Bug #14266]]
 
-    * Kernel#clone when called with `freeze: true` keyword will call
+    * Kernel#clone when called with the `freeze: true` keyword will call
       `#initialize_clone` with the `freeze: true` keyword, and will
       return a frozen copy even if the receiver is unfrozen.
       [[Feature #16175]]
@@ -267,7 +268,7 @@ Outstanding ones only.
       array argument with a list of method names. [[Feature #17314]]
 
     * Module#attr_accessor, Module#attr_reader, Module#attr_writer and Module#attr
-      methods now return array of defined methods names as symbols.
+      methods now return an array of defined methods names as symbols.
       [[Feature #17314]]
 
     * Module#alias_method now returns the defined alias as symbol.
@@ -449,7 +450,7 @@ Outstanding ones only.
 
 * OpenStruct
 
-    * Initialization no longer lazy [[Bug #12136]]
+    * Initialization is no longer lazy. [[Bug #12136]]
 
     * Builtin methods can now be overridden safely. [[Bug #15409]]
 
@@ -457,7 +458,7 @@ Outstanding ones only.
 
     * Ractor compatible.
 
-    * Improved support for YAML [[Bug #8382]]
+    * Improved support for YAML. [[Bug #8382]]
 
     * Use officially discouraged. Read OpenStruct@Caveats section.
 
@@ -493,14 +494,14 @@ Outstanding ones only.
 
 Excluding feature bug fixes.
 
-* Regexp literals and all Range objects are frozen [[Feature #8948]] [[Feature #16377]] [[Feature #15504]]
+* Regexp literals and all Range objects are frozen. [[Feature #8948]] [[Feature #16377]] [[Feature #15504]]
 
     ```ruby
     /foo/.frozen? #=> true
     (42...).frozen? # => true
     ```
 
-* EXPERIMENTAL: Hash#each consistently yields a 2-element array [[Bug #12706]]
+* EXPERIMENTAL: Hash#each consistently yields a 2-element array. [[Bug #12706]]
 
     * Now `{ a: 1 }.each(&->(k, v) { })` raises an ArgumentError
       due to lambda's arity check.
@@ -512,8 +513,8 @@ Excluding feature bug fixes.
 
 * Integer#zero? overrides Numeric#zero? for optimization.  [[Misc #16961]]
 
-* Enumerable#grep and grep_v when passed a Regexp and no block no longer modify
-  Regexp.last_match [[Bug #17030]]
+* Enumerable#grep and Enumerable#grep_v when passed a Regexp and no block no longer modify
+  Regexp.last_match. [[Bug #17030]]
 
 * Requiring 'open-uri' no longer redefines `Kernel#open`.
   Call `URI.open` directly or `use URI#open` instead. [[Misc #15893]]
@@ -524,7 +525,7 @@ Excluding feature bug fixes.
 
 * Default gems
 
-    * The following libraries are promoted the default gems from stdlib.
+    * The following libraries are promoted to default gems from stdlib.
 
         * English
         * abbrev
@@ -554,7 +555,7 @@ Excluding feature bug fixes.
         * un
         * weakref
 
-    * The following extensions are promoted the default gems from stdlib.
+    * The following extensions are promoted to default gems from stdlib.
 
         * digest
         * io-nonblock
@@ -571,26 +572,28 @@ Excluding feature bug fixes.
       your plan to https://github.com/ruby/xmlrpc
       or https://github.com/ruby/net-telnet.
 
-* SDBM have been removed from ruby standard library. [[Bug #8446]]
+* SDBM has been removed from the Ruby standard library. [[Bug #8446]]
 
     * The issues of sdbm will be handled at https://github.com/ruby/sdbm
 
-* WEBrick have been removed from ruby standard library. [[Feature #17303]]
+* WEBrick has been removed from the Ruby standard library. [[Feature #17303]]
 
-    * The issues of webrick will be handled at https://github.com/ruby/webrick
+    * The issues of WEBrick will be handled at https://github.com/ruby/webrick
 
 ## C API updates
 
 * C API functions related to $SAFE have been removed.
   [[Feature #16131]]
 
-* C API header file `ruby/ruby.h` was split. [[GH-2991]] Should have no impact
-  on extension libraries, but users might experience slow compilations.
+* C API header file `ruby/ruby.h` was split. [[GH-2991]]
+
+    This should have no impact on extension libraries,
+    but users might experience slow compilations.
 
 * Memory view interface [EXPERIMENTAL]
 
     * The memory view interface is a C-API set to exchange a raw memory area,
-      such as a numeric array and a bitmap image, between extension libraries.
+      such as a numeric array or a bitmap image, between extension libraries.
       The extension libraries can share also the metadata of the memory area
       that consists of the shape, the element format, and so on.
       Using these kinds of metadata, the extension libraries can share even
@@ -602,7 +605,7 @@ Excluding feature bug fixes.
 
 ## Implementation improvements
 
-* New method cache mechanism for Ractor [[Feature #16614]]
+* New method cache mechanism for Ractor. [[Feature #16614]]
 
     * Inline method caches pointed from ISeq can be accessed by multiple Ractors
       in parallel and synchronization is needed even for method caches. However,
@@ -655,8 +658,10 @@ Excluding feature bug fixes.
 ### TypeProf
 
 * TypeProf is a type analysis tool for Ruby code based on abstract interpretation.
+
     * It reads non-annotated Ruby code, tries inferring its type signature, and prints
       the analysis result in RBS format.
+
     * Though it supports only a subset of the Ruby language yet, we will continuously
       improve the coverage of language features, the analysis performance, and usability.
 
