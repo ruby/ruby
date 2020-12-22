@@ -593,6 +593,8 @@ Excluding feature bug fixes.
       This feature is designed by referring to Python's buffer protocol.
       [[Feature #13767]] [[Feature #14722]]
 
+* Ractor related C APIs are introduced (experimental) in "include/ruby/ractor.h".
+
 ## Implementation improvements
 
 * New method cache mechanism for Ractor [[Feature #16614]]
