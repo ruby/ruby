@@ -307,6 +307,16 @@ mdview_get_memory_view(VALUE obj, rb_memory_view_t *view, int flags)
     view->ndim = ndim;
     view->shape = shape;
     view->strides = strides;
+    view->sub_offsets = NULL;
+
+    return true;
+}
+
+static bool
+mdview_release_memory_view(VALUE obj, rb_memory_view_t *view)
+{
+    if (view->shape) xfree(view->shape);
+    if (view->strides) xfree(view->strides);
 
     return true;
 }
@@ -319,7 +329,7 @@ mdview_memory_view_available_p(VALUE obj)
 
 static const rb_memory_view_entry_t mdview_memory_view_entry = {
     mdview_get_memory_view,
-    NULL,
+    mdview_release_memory_view,
     mdview_memory_view_available_p
 };
 
