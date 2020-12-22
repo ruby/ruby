@@ -33,6 +33,7 @@ Gem::Specification.new do |spec|
     "lib/irb/cmd/fork.rb",
     "lib/irb/cmd/help.rb",
     "lib/irb/cmd/load.rb",
+    "lib/irb/cmd/measure.rb",
     "lib/irb/cmd/nop.rb",
     "lib/irb/cmd/pushws.rb",
     "lib/irb/cmd/subirb.rb",
