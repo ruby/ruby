@@ -187,7 +187,11 @@ mjit_exec(rb_execution_context_t *ec)
 
 void mjit_child_after_fork(void);
 
+#  ifdef MJIT_HEADER
+#define mjit_enabled true
+#  else // MJIT_HEADER
 extern bool mjit_enabled;
+#  endif // MJIT_HEADER
 VALUE mjit_pause(bool wait_p);
 VALUE mjit_resume(void);
 void mjit_finish(bool close_handle_p);
@@ -207,7 +211,7 @@ static inline void mjit_remove_class_serial(rb_serial_t class_serial){}
 static inline VALUE mjit_exec(rb_execution_context_t *ec) { return Qundef; /* unreachable */ }
 static inline void mjit_child_after_fork(void){}
 
-#define mjit_enabled 0
+#define mjit_enabled false
 static inline VALUE mjit_pause(bool wait_p){ return Qnil; } // unreachable
 static inline VALUE mjit_resume(void){ return Qnil; } // unreachable
 static inline void mjit_finish(bool close_handle_p){}
