@@ -7,7 +7,7 @@ Gem::Specification.new do |spec|
   spec.summary       = %q{Provides a class to deal with collections of unordered, unique values}
   spec.description   = %q{Provides a class to deal with collections of unordered, unique values}
   spec.homepage      = "https://github.com/ruby/set"
-  spec.license       = "BSD-2-Clause"
+  spec.licenses      = ["Ruby", "BSD-2-Clause"]
   spec.required_ruby_version = Gem::Requirement.new(">= 2.3.0")
 
   spec.metadata["homepage_uri"] = spec.homepage
