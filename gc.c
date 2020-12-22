@@ -2123,6 +2123,13 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
     // TODO: make it atomic, or ractor local
     objspace->total_allocated_objects++;
 
+#if THREAD_TRACE_MEMORY_ALLOCATIONS
+    rb_thread_t *th = ruby_threadptr_for_trace_memory_allocations();
+    if (th) {
+	ATOMIC_SIZE_INC(th->memory_allocations.total_allocated_objects);
+    }
+#endif
+
 #if RGENGC_PROFILE
     if (wb_protected) {
         objspace->profile.total_generated_normal_object_count++;
@@ -10486,6 +10493,19 @@ objspace_malloc_increase(rb_objspace_t *objspace, void *mem, size_t new_size, si
 	atomic_sub_nounderflow(&objspace->rgengc.oldmalloc_increase, old_size - new_size);
 #endif
     }
+
+#if THREAD_TRACE_MEMORY_ALLOCATIONS
+    rb_thread_t *th = ruby_threadptr_for_trace_memory_allocations();
+    if (th) {
+	if (new_size > old_size) {
+	    ATOMIC_SIZE_ADD(th->memory_allocations.total_malloc_bytes, new_size - old_size);
+	}
+
+	if (type == MEMOP_TYPE_MALLOC) {
+	    ATOMIC_SIZE_INC(th->memory_allocations.total_mallocs);
+	}
+    }
+#endif
 
     if (type == MEMOP_TYPE_MALLOC) {
       retry:
