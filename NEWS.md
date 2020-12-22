@@ -157,9 +157,11 @@ Outstanding ones only.
         # => ["data1", "data2", "data3"]
         ```
 
-* Binding#eval when called with one arguments will use "(eval)"
-  for `__FILE__` and 1 for `__LINE__` in the evaluated code.
-  [[Bug #4352]] [[Bug #17419]]
+* Binding
+
+    * Binding#eval when called with one arguments will use "(eval)"
+      for `__FILE__` and 1 for `__LINE__` in the evaluated code.
+      [[Bug #4352]] [[Bug #17419]]
 
 * ConditionVariable
 
