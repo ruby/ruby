@@ -37,7 +37,7 @@
 % #   GET_SP(): refers to `reg_cfp->sp`, or `(stack + stack_size)` if local_stack_p
 % #   GET_SELF(): refers to `cfp_self`
 % #   GET_LEP(): refers to `VM_EP_LEP(reg_cfp->ep)`
-% #   EXEC_EC_CFP(): refers to `val = vm_exec(ec, TRUE)` with frame setup
+% #   EXEC_EC_CFP(): refers to `val = vm_exec(ec, true)` with frame setup
 % #   CALL_METHOD(): using `GET_CFP()` and `EXEC_EC_CFP()`
 % #   TOPN(): refers to `reg_cfp->sp`, or `*(stack + (stack_size - num - 1))` if local_stack_p
 % #   STACK_ADDR_FROM_TOP(): refers to `reg_cfp->sp`, or `stack + (stack_size - num)` if local_stack_p

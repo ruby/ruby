@@ -61,7 +61,7 @@ MJIT_STATIC VALUE ruby_vm_special_exception_copy(VALUE);
 PUREFUNC(st_table *rb_vm_fstring_table(void));
 
 MJIT_SYMBOL_EXPORT_BEGIN
-VALUE vm_exec(struct rb_execution_context_struct *, int); /* used in JIT-ed code */
+VALUE vm_exec(struct rb_execution_context_struct *, bool); /* used in JIT-ed code */
 MJIT_SYMBOL_EXPORT_END
 
 /* vm_eval.c */
