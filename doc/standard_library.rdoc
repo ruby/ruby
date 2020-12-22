@@ -34,7 +34,6 @@ CSV:: Provides an interface to read and write CSV files and data
 DEBUGGER__:: Debugging functionality for Ruby
 Delegator:: Provides three abilities to delegate method calls to an object
 DidYouMean:: "Did you mean?" experience in Ruby
-Digest:: Provides a framework for message digest libraries
 DRb:: Distributed object system for Ruby
 English:: Provides references to special global variables with less cryptic names
 ERB:: An easy to use but powerful templating system for Ruby
@@ -57,12 +56,10 @@ Observable:: Provides a mechanism for publish/subscribe pattern in Ruby
 Open3:: Provides access to stdin, stdout and stderr when running other programs
 OpenStruct:: Class to build custom data structures, similar to a Hash
 OpenURI:: An easy-to-use wrapper for Net::HTTP, Net::HTTPS and Net::FTP
-Pathname:: Representation of the name of a file or directory on the filesystem
 PP:: Provides a PrettyPrinter for Ruby objects
 PrettyPrinter:: Implements a pretty printing algorithm for readable structure
 Prime:: Prime numbers and factorization library
 PStore:: Implements a file based persistence mechanism based on a Hash
-Racc:: A LALR(1) parser generator written in Ruby.
 Resolv::  Thread-aware DNS resolver library in Ruby
 resolv-replace.rb:: Replace Socket DNS with Resolv
 RDoc:: Produces HTML and command-line documentation for Ruby
@@ -88,6 +85,7 @@ BigDecimal:: Provides arbitrary-precision floating point decimal arithmetic
 Date:: A subclass of Object includes Comparable module for handling dates
 DateTime:: Subclass of Date to handling dates, hours, minutes, seconds, offsets
 DBM:: Provides a wrapper for the UNIX-style Database Manager Library
+Digest:: Provides a framework for message digest libraries
 Etc:: Provides access to information typically stored in UNIX /etc directory
 Fcntl:: Loads constants defined in the OS fcntl.h C header file
 Fiddle:: A libffi wrapper for Ruby
@@ -96,7 +94,9 @@ IO:: Extensions for Ruby IO class, including #wait, #nonblock and ::console
 JSON:: Implements Javascript Object Notation for Ruby
 NKF:: Ruby extension for Network Kanji Filter
 OpenSSL:: Provides SSL, TLS and general purpose cryptography for Ruby
+Pathname:: Representation of the name of a file or directory on the filesystem
 Psych:: A YAML parser and emitter for Ruby
+Racc:: A LALR(1) parser generator written in Ruby.
 Readline:: Provides an interface for GNU Readline and Edit Line (libedit)
 StringIO:: Pseudo I/O on String objects
 StringScanner:: Provides lexical scanning operations on a String
