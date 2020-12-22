@@ -62,6 +62,19 @@ void rb_deprecate_constant(VALUE mod, const char *name);
 
 #include "constdefs.h"
 
+typedef int rb_nativethread_lock_t;
+static int rb_native_mutex_trylock(int *mutex) {
+    if (*mutex) {
+    	return 1;
+    }
+    *mutex = 1;
+    return 0;
+}
+static void rb_native_mutex_unlock(int *mutex) {
+    *mutex = 0;
+}
+#define rb_native_mutex_initialize rb_native_mutex_unlock
+
 /* call-seq:
  *	getlogin	->  String
  *
@@ -240,12 +253,12 @@ etc_getpwnam(VALUE obj, VALUE nam)
 }
 
 #ifdef HAVE_GETPWENT
-static int passwd_blocking = 0;
+static rb_nativethread_lock_t passwd_blocking;
 static VALUE
 passwd_ensure(VALUE _)
 {
     endpwent();
-    passwd_blocking = (int)Qfalse;
+    rb_native_mutex_unlock(&passwd_blocking);
     return Qnil;
 }
 
@@ -264,10 +277,9 @@ passwd_iterate(VALUE _)
 static void
 each_passwd(void)
 {
-    if (passwd_blocking) {
+    if (rb_native_mutex_trylock(&passwd_blocking)) {
 	rb_raise(rb_eRuntimeError, "parallel passwd iteration");
     }
-    passwd_blocking = (int)Qtrue;
     rb_ensure(passwd_iterate, 0, passwd_ensure, 0);
 }
 #endif
@@ -483,12 +495,12 @@ etc_getgrnam(VALUE obj, VALUE nam)
 }
 
 #ifdef HAVE_GETGRENT
-static int group_blocking = 0;
+static rb_nativethread_lock_t group_blocking;
 static VALUE
 group_ensure(VALUE _)
 {
     endgrent();
-    group_blocking = (int)Qfalse;
+    rb_native_mutex_unlock(&group_blocking);
     return Qnil;
 }
 
@@ -508,10 +520,9 @@ group_iterate(VALUE _)
 static void
 each_group(void)
 {
-    if (group_blocking) {
+    if (rb_native_mutex_trylock(&group_blocking)) {
 	rb_raise(rb_eRuntimeError, "parallel group iteration");
     }
-    group_blocking = (int)Qtrue;
     rb_ensure(group_iterate, 0, group_ensure, 0);
 }
 #endif
@@ -1180,8 +1191,11 @@ Init_etc(void)
     rb_deprecate_constant(rb_cStruct, "Passwd");
     rb_extend_object(sPasswd, rb_mEnumerable);
     rb_define_singleton_method(sPasswd, "each", etc_each_passwd, 0);
-
+#ifdef HAVE_GETPWENT
+    rb_native_mutex_initialize(&passwd_blocking);
+#endif
 #ifdef HAVE_GETGRENT
+    rb_native_mutex_initialize(&group_blocking);
     sGroup = rb_struct_define_under(mEtc, "Group", "name",
 #ifdef HAVE_STRUCT_GROUP_GR_PASSWD
 				    "passwd",
