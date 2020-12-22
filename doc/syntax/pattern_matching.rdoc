@@ -261,7 +261,7 @@ Variables that start with <code>_</code> are the only exclusions from this rule:
   else
     "not matched"
   end
-  # => "matched: 1"
+  # => "matched: 1, 2"
 
 It is, though, not advised to reuse bound value, as these pattern's goal is to signify discarded value.
 
