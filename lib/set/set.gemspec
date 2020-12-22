@@ -1,6 +1,6 @@
 Gem::Specification.new do |spec|
   spec.name          = "set"
-  spec.version       = "1.0.0"
+  spec.version       = "1.0.1"
   spec.authors       = ["Akinori MUSHA"]
   spec.email         = ["knu@idaemons.org"]
 

@@ -22,7 +22,7 @@ class TC_SortedSet < Test::Unit::TestCase
       rescue Exception => e
         e.message
       end
-      raise r unless r.match? /has been extracted/
+      raise r unless r.match?(/has been extracted/)
     RUBY
   end
 
