@@ -49,14 +49,12 @@ DOXYFILE_ENCODING      = UTF-8
 # title of most generated pages and in a few other places.
 # The default value is: My Project.
 
-# PROJECT_NAME           = "My Project"
 PROJECT_NAME           = Ruby
 
 # The PROJECT_NUMBER tag can be used to enter a project or revision number. This
 # could be handy for archiving the generated documentation or if some version
 # control system is used.
 
-# PROJECT_NUMBER         =
 PROJECT_NUMBER         = <%=RUBY_VERSION%><%= RUBY_PATCHLEVEL < 0 ? 'dev' : "p#{RUBY_PATCHLEVEL}" %> (<%=RUBY_RELEASE_DATE%> revision <%=RUBY_REVISION%>)
 
 # Using the PROJECT_BRIEF tag one can provide an optional one line description
@@ -77,7 +75,6 @@ PROJECT_LOGO           =
 # entered, it will be relative to the location where doxygen was started. If
 # left blank the current directory will be used.
 
-# OUTPUT_DIRECTORY       =
 OUTPUT_DIRECTORY       = doc/capi
 
 # If the CREATE_SUBDIRS tag is set to YES then doxygen will create 4096 sub-
@@ -88,7 +85,6 @@ OUTPUT_DIRECTORY       = doc/capi
 # performance problems for the file system.
 # The default value is: NO.
 
-# CREATE_SUBDIRS         = NO
 CREATE_SUBDIRS         = YES
 
 # If the ALLOW_UNICODE_NAMES tag is set to YES, doxygen will allow non-ASCII
@@ -147,17 +143,6 @@ REPEAT_BRIEF           = YES
 # the entity):The $name class, The $name widget, The $name file, is, provides,
 # specifies, contains, represents, a, an and the.
 
-# ABBREVIATE_BRIEF       = "The $name class" \
-#                          "The $name widget" \
-#                          "The $name file" \
-#                          is \
-#                          provides \
-#                          specifies \
-#                          contains \
-#                          represents \
-#                          a \
-#                          an \
-#                          the
 ABBREVIATE_BRIEF       =
 
 # If the ALWAYS_DETAILED_SEC and REPEAT_BRIEF tags are both set to YES then
@@ -165,7 +150,6 @@ ABBREVIATE_BRIEF       =
 # description.
 # The default value is: NO.
 
-# ALWAYS_DETAILED_SEC    = NO
 ALWAYS_DETAILED_SEC    = YES
 
 # If the INLINE_INHERITED_MEMB tag is set to YES, doxygen will show all
@@ -193,7 +177,6 @@ FULL_PATH_NAMES        = YES
 # will be relative from the directory where doxygen is started.
 # This tag requires that the tag FULL_PATH_NAMES is set to YES.
 
-# STRIP_FROM_PATH        =
 STRIP_FROM_PATH        = <%=srcdir%>
 
 # The STRIP_FROM_INC_PATH tag can be used to strip a user-defined part of the
@@ -219,7 +202,6 @@ SHORT_NAMES            = NO
 # description.)
 # The default value is: NO.
 
-# JAVADOC_AUTOBRIEF      = NO
 JAVADOC_AUTOBRIEF      = YES
 
 # If the JAVADOC_BANNER tag is set to YES then doxygen will interpret a line
@@ -238,7 +220,6 @@ JAVADOC_BANNER         = NO
 # requiring an explicit \brief command for a brief description.)
 # The default value is: NO.
 
-# QT_AUTOBRIEF           = NO
 QT_AUTOBRIEF           = YES
 
 # The MULTILINE_CPP_IS_BRIEF tag can be set to YES to make doxygen treat a
@@ -278,7 +259,6 @@ SEPARATE_MEMBER_PAGES  = NO
 # uses this value to replace tabs by spaces in code fragments.
 # Minimum value: 1, maximum value: 16, default value: 4.
 
-# TAB_SIZE               = 4
 TAB_SIZE               = 8
 
 # This tag can be used to specify a number of aliases that act as commands in
@@ -304,7 +284,6 @@ ALIASES                =
 # members will be omitted, etc.
 # The default value is: NO.
 
-# OPTIMIZE_OUTPUT_FOR_C  = NO
 OPTIMIZE_OUTPUT_FOR_C  = YES
 
 # Set the OPTIMIZE_OUTPUT_JAVA tag to YES if your project consists of Java or
@@ -417,7 +396,6 @@ SIP_SUPPORT            = NO
 # should set this option to NO.
 # The default value is: YES.
 
-# IDL_PROPERTY_SUPPORT   = YES
 IDL_PROPERTY_SUPPORT   = NO
 
 # If member grouping is used in the documentation and the DISTRIBUTE_GROUP_DOC
@@ -514,7 +492,6 @@ NUM_PROC_THREADS       = 1
 # normally produced when WARNINGS is set to YES.
 # The default value is: NO.
 
-# EXTRACT_ALL            = NO
 EXTRACT_ALL            = YES
 
 # If the EXTRACT_PRIVATE tag is set to YES, all private members of a class will
@@ -601,7 +578,6 @@ HIDE_FRIEND_COMPOUNDS  = NO
 # blocks will be appended to the function's detailed documentation block.
 # The default value is: NO.
 
-# HIDE_IN_BODY_DOCS      = NO
 HIDE_IN_BODY_DOCS      = YES
 
 # The INTERNAL_DOCS tag determines if documentation that is typed after a
@@ -625,7 +601,6 @@ INTERNAL_DOCS          = NO
 # YES.
 # The default value is: system dependent.
 
-# CASE_SENSE_NAMES       = YES
 CASE_SENSE_NAMES       = NO
 
 # If the HIDE_SCOPE_NAMES tag is set to NO then doxygen will show members with
@@ -792,7 +767,6 @@ SHOW_NAMESPACES        = YES
 # by doxygen. Whatever the program writes to standard output is used as the file
 # version. For an example see the documentation.
 
-# FILE_VERSION_FILTER    =
 FILE_VERSION_FILTER    = "<%=miniruby%> <%=srcdir%>/tool/file2lastrev.rb -q --srcdir=<%=srcdir%>"
 
 # The LAYOUT_FILE tag can be used to specify a layout file which will be parsed
@@ -897,7 +871,6 @@ WARN_LOGFILE           =
 # spaces. See also FILE_PATTERNS and EXTENSION_MAPPING
 # Note: If this tag is empty the current directory is searched.
 
-# INPUT                  =
 INPUT                  = <%=srcdir%> .
 
 # This tag can be used to specify the character encoding of the source files
@@ -927,59 +900,12 @@ INPUT_ENCODING         = UTF-8
 # *.py, *.pyw, *.f90, *.f95, *.f03, *.f08, *.f18, *.f, *.for, *.vhd, *.vhdl,
 # *.ucf, *.qsf and *.ice.
 
-# FILE_PATTERNS          = *.c \
-#                          *.cc \
-#                          *.cxx \
-#                          *.cpp \
-#                          *.c++ \
-#                          *.java \
-#                          *.ii \
-#                          *.ixx \
-#                          *.ipp \
-#                          *.i++ \
-#                          *.inl \
-#                          *.idl \
-#                          *.ddl \
-#                          *.odl \
-#                          *.h \
-#                          *.hh \
-#                          *.hxx \
-#                          *.hpp \
-#                          *.h++ \
-#                          *.cs \
-#                          *.d \
-#                          *.php \
-#                          *.php4 \
-#                          *.php5 \
-#                          *.phtml \
-#                          *.inc \
-#                          *.m \
-#                          *.markdown \
-#                          *.md \
-#                          *.mm \
-#                          *.dox \
-#                          *.py \
-#                          *.pyw \
-#                          *.f90 \
-#                          *.f95 \
-#                          *.f03 \
-#                          *.f08 \
-#                          *.f18 \
-#                          *.f \
-#                          *.for \
-#                          *.vhd \
-#                          *.vhdl \
-#                          *.ucf \
-#                          *.qsf \
-#                          *.ice
-
 FILE_PATTERNS          = *.c *.h *.hpp *.y *.def
 
 # The RECURSIVE tag can be used to specify whether or not subdirectories should
 # be searched for input files as well.
 # The default value is: NO.
 
-# RECURSIVE              = NO
 RECURSIVE              = YES
 
 
@@ -990,7 +916,6 @@ RECURSIVE              = YES
 # Note that relative paths are relative to the directory from which doxygen is
 # run.
 
-# EXCLUDE                =
 EXCLUDE                = <%=srcdir%>/ext/dl/callback <%=srcdir%>/ccan <%=srcdir%>/ext/psych/yaml
 
 # The EXCLUDE_SYMLINKS tag can be used to select whether or not files or
@@ -998,7 +923,6 @@ EXCLUDE                = <%=srcdir%>/ext/dl/callback <%=srcdir%>/ccan <%=srcdir%
 # from the input.
 # The default value is: NO.
 
-# EXCLUDE_SYMLINKS       = NO
 EXCLUDE_SYMLINKS       = YES
 
 # If the value of the INPUT tag contains directories, you can use the
@@ -1008,7 +932,6 @@ EXCLUDE_SYMLINKS       = YES
 # Note that the wildcards are matched against the file with absolute path, so to
 # exclude all test directories for example use the pattern */test/*
 
-# EXCLUDE_PATTERNS       =
 EXCLUDE_PATTERNS       = *.src doc enc build */ext/-test-/* tmp test yarvtest lib bootstraptest spec .ext .git .svn extconf.h *prelude.c encdb.h transdb.h insns.def rb_mjit_header.h
 
 # The EXCLUDE_SYMBOLS tag can be used to specify one or more symbol names
@@ -1033,7 +956,6 @@ EXAMPLE_PATH           =
 # *.h) to filter out the source-files in the directories. If left blank all
 # files are included.
 
-# EXAMPLE_PATTERNS       = *
 EXAMPLE_PATTERNS       =
 
 # If the EXAMPLE_RECURSIVE tag is set to YES then subdirectories will be
@@ -1047,7 +969,6 @@ EXAMPLE_RECURSIVE      = NO
 # that contain images that are to be included in the documentation (see the
 # \image command).
 
-# IMAGE_PATH             =
 IMAGE_PATH             = <%=srcdir%>/doc/images
 
 # The INPUT_FILTER tag can be used to specify a program that doxygen should
@@ -1069,7 +990,6 @@ IMAGE_PATH             = <%=srcdir%>/doc/images
 # need to set EXTENSION_MAPPING for the extension otherwise the files are not
 # properly processed by doxygen.
 
-# INPUT_FILTER           =
 INPUT_FILTER           = "<%=miniruby%> <%=srcdir%>/tool/strip-rdoc.rb"
 
 # The FILTER_PATTERNS tag can be used to specify filters on a per file pattern
@@ -1090,7 +1010,6 @@ FILTER_PATTERNS        =
 # producing the source files to browse (i.e. when SOURCE_BROWSER is set to YES).
 # The default value is: NO.
 
-# FILTER_SOURCE_FILES    = NO
 FILTER_SOURCE_FILES    = YES
 
 # The FILTER_SOURCE_PATTERNS tag can be used to specify source filters per file
@@ -1119,7 +1038,6 @@ USE_MDFILE_AS_MAINPAGE =
 # also VERBATIM_HEADERS is set to NO.
 # The default value is: NO.
 
-# SOURCE_BROWSER         = NO
 SOURCE_BROWSER         = YES
 
 # Setting the INLINE_SOURCES tag to YES will include the body of functions,
@@ -1139,14 +1057,12 @@ STRIP_CODE_COMMENTS    = YES
 # entity all documented functions referencing it will be listed.
 # The default value is: NO.
 
-# REFERENCED_BY_RELATION = NO
 REFERENCED_BY_RELATION = YES
 
 # If the REFERENCES_RELATION tag is set to YES then for each documented function
 # all documented entities called/used by that function will be listed.
 # The default value is: NO.
 
-# REFERENCES_RELATION    = NO
 REFERENCES_RELATION    = YES
 
 # If the REFERENCES_LINK_SOURCE tag is set to YES and SOURCE_BROWSER tag is set
@@ -1724,7 +1640,6 @@ MATHJAX_CODEFILE       =
 # The default value is: YES.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-# SEARCHENGINE           = YES
 SEARCHENGINE           = NO
 
 # When the SERVER_BASED_SEARCH tag is enabled the search engine will be
@@ -1801,7 +1716,6 @@ EXTRA_SEARCH_MAPPINGS  =
 # If the GENERATE_LATEX tag is set to YES, doxygen will generate LaTeX output.
 # The default value is: YES.
 
-# GENERATE_LATEX         = YES
 GENERATE_LATEX         = NO
 
 # The LATEX_OUTPUT tag is used to specify where the LaTeX docs will be put. If a
@@ -1822,7 +1736,6 @@ LATEX_OUTPUT           = latex
 # the output language.
 # This tag requires that the tag GENERATE_LATEX is set to YES.
 
-# LATEX_CMD_NAME         =
 LATEX_CMD_NAME         = latex
 
 # The MAKEINDEX_CMD_NAME tag can be used to specify the command name to generate
@@ -1860,7 +1773,6 @@ COMPACT_LATEX          = NO
 # The default value is: a4.
 # This tag requires that the tag GENERATE_LATEX is set to YES.
 
-# PAPER_TYPE             = a4
 PAPER_TYPE             = a4wide
 
 # The EXTRA_PACKAGES tag can be used to specify one or more LaTeX package names
@@ -2228,7 +2140,6 @@ ENABLE_PREPROCESSING   = YES
 # The default value is: NO.
 # This tag requires that the tag ENABLE_PREPROCESSING is set to YES.
 
-# MACRO_EXPANSION        = NO
 MACRO_EXPANSION        = YES
 
 # If the EXPAND_ONLY_PREDEF and MACRO_EXPANSION tags are both set to YES then
@@ -2237,7 +2148,6 @@ MACRO_EXPANSION        = YES
 # The default value is: NO.
 # This tag requires that the tag ENABLE_PREPROCESSING is set to YES.
 
-# EXPAND_ONLY_PREDEF     = NO
 EXPAND_ONLY_PREDEF     = YES
 
 # If the SEARCH_INCLUDES tag is set to YES, the include files in the
@@ -2252,7 +2162,6 @@ SEARCH_INCLUDES        = YES
 # preprocessor.
 # This tag requires that the tag SEARCH_INCLUDES is set to YES.
 
-# INCLUDE_PATH           =
 INCLUDE_PATH           = <%=srcdir%> <%=srcdir%>/include
 
 # You can use the INCLUDE_FILE_PATTERNS tag to specify one or more wildcard
@@ -2271,7 +2180,6 @@ INCLUDE_FILE_PATTERNS  =
 # recursively expanded use the := operator instead of the = operator.
 # This tag requires that the tag ENABLE_PREPROCESSING is set to YES.
 
-# PREDEFINED             =
 PREDEFINED             = \
     ALWAYS_INLINE(_)=_ \
     COLDFUNC= \
@@ -2389,7 +2297,6 @@ EXTERNAL_PAGES         = YES
 # powerful graphs.
 # The default value is: YES.
 
-# CLASS_DIAGRAMS         = YES
 CLASS_DIAGRAMS         = NO
 
 # You can include diagrams made with dia in doxygen documentation. Doxygen will
@@ -2412,7 +2319,6 @@ HIDE_UNDOC_RELATIONS   = YES
 # set to NO
 # The default value is: NO.
 
-# HAVE_DOT               = NO
 HAVE_DOT               = <%= have_dot %>
 
 # The DOT_NUM_THREADS specifies the number of dot invocations doxygen is allowed
@@ -2433,7 +2339,6 @@ DOT_NUM_THREADS        = 0
 # The default value is: Helvetica.
 # This tag requires that the tag HAVE_DOT is set to YES.
 
-# DOT_FONTNAME           = Helvetica
 DOT_FONTNAME           = FreeSans
 
 # The DOT_FONTSIZE tag can be used to set the size (in points) of the font of
@@ -2456,7 +2361,6 @@ DOT_FONTPATH           =
 # The default value is: YES.
 # This tag requires that the tag HAVE_DOT is set to YES.
 
-# CLASS_GRAPH            = YES
 CLASS_GRAPH            = NO
 
 # If the COLLABORATION_GRAPH tag is set to YES then doxygen will generate a
@@ -2466,7 +2370,6 @@ CLASS_GRAPH            = NO
 # The default value is: YES.
 # This tag requires that the tag HAVE_DOT is set to YES.
 
-# COLLABORATION_GRAPH    = YES
 COLLABORATION_GRAPH    = NO
 
 # If the GROUP_GRAPHS tag is set to YES then doxygen will generate a graph for
@@ -2574,7 +2477,6 @@ CALLER_GRAPH           = NO
 # The default value is: YES.
 # This tag requires that the tag HAVE_DOT is set to YES.
 
-# GRAPHICAL_HIERARCHY    = YES
 GRAPHICAL_HIERARCHY    = NO
 
 # If the DIRECTORY_GRAPH tag is set to YES then doxygen will show the
@@ -2584,7 +2486,6 @@ GRAPHICAL_HIERARCHY    = NO
 # The default value is: YES.
 # This tag requires that the tag HAVE_DOT is set to YES.
 
-# DIRECTORY_GRAPH        = YES
 DIRECTORY_GRAPH        = NO
 
 # The DOT_IMAGE_FORMAT tag can be used to set the image format of the images
