@@ -268,9 +268,8 @@ mdview_get_memory_view(VALUE obj, rb_memory_view_t *view, int flags)
     VALUE shape_v = rb_ivar_get(obj, SYM2ID(sym_shape));
     VALUE strides_v = rb_ivar_get(obj, SYM2ID(sym_strides));
 
-    const char *format = RSTRING_PTR(format_v);
     const char *err;
-    const ssize_t item_size = rb_memory_view_item_size_from_format(format, &err);
+    const ssize_t item_size = rb_memory_view_item_size_from_format(RSTRING_PTR(format_v), &err);
     if (item_size < 0) {
         return false;
     }
@@ -302,7 +301,7 @@ mdview_get_memory_view(VALUE obj, rb_memory_view_t *view, int flags)
     }
 
     rb_memory_view_init_as_byte_array(view, obj, RSTRING_PTR(buf_v), RSTRING_LEN(buf_v), true);
-    view->format = StringValueCStr(format_v);
+    view->format = RSTRING_PTR(format_v);
     view->item_size = item_size;
     view->ndim = ndim;
     view->shape = shape;
