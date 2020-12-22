@@ -49,7 +49,6 @@ VALUE rb_mKernel; /*!< Kernel module */
 VALUE rb_cObject; /*!< Object class */
 VALUE rb_cModule; /*!< Module class */
 VALUE rb_cClass; /*!< Class class */
-VALUE rb_cData; /*!< Data class */
 
 VALUE rb_cNilClass; /*!< NilClass class */
 VALUE rb_cTrueClass; /*!< TrueClass class */
