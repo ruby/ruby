@@ -40,14 +40,6 @@ sufficient information, see the ChangeLog file or Redmine
     # 3.0 => [[[1, {:a=>1}]], {}]
     ```
 
-* $SAFE is now a normal global variable with no special behavior.
-  C-API methods related to $SAFE have been removed.
-  [[Feature #16131]]
-
-* $KCODE is now a normal global variable with no special behavior.  No
-  warnings are emitted by access/assignment to it, and the assigned
-  value will be returned.  [[Feature #17136]]
-
 * Pattern matching(`case/in`) is no longer experimental. [[Feature #17260]]
 
 * One-line pattern matching is redesigned.  [EXPERIMENTAL]
@@ -101,6 +93,10 @@ sufficient information, see the ChangeLog file or Redmine
       language for Ruby programs.
     * {TypeProf}[rdoc-label:label-TypeProf] is experimentally bundled. It is a
       type analysis tool for Ruby programs.
+
+* $SAFE and $KCODE are now normal global variables with no special behavior.
+  C-API methods related to $SAFE have been removed.
+  [[Feature #16131]] [[Feature #17136]]
 
 * yield in singleton class definitions in methods is now a SyntaxError
   instead of a warning. yield in a class definition outside of a method
