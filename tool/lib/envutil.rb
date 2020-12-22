@@ -53,7 +53,7 @@ module EnvUtil
       @original_internal_encoding = Encoding.default_internal
       @original_external_encoding = Encoding.default_external
       @original_verbose = $VERBOSE
-      @original_warning = %i[deprecated experimental].to_h {|i| [i, Warning[i]]}
+      @original_warning = %i[deprecated experimental].to_h {|i| [i, Warning[i]]} if RUBY_VERSION > "2.7"
     end
   end
 
