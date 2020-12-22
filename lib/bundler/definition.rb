@@ -118,7 +118,7 @@ module Bundler
       end
       @unlocking ||= @unlock[:ruby] ||= (!@locked_ruby_version ^ !@ruby_version)
 
-      add_current_platform unless Bundler.frozen_bundle?
+      add_current_platform unless current_ruby_platform_locked? || Bundler.frozen_bundle?
 
       converge_path_sources_to_gemspec_sources
       @path_changes = converge_paths
@@ -157,7 +157,7 @@ module Bundler
     end
 
     def resolve_remotely!
-      raise "Specs already loaded" if @specs
+      return if @specs
       @remote = true
       sources.remote!
       specs
@@ -269,9 +269,8 @@ module Bundler
           else
             # Run a resolve against the locally available gems
             Bundler.ui.debug("Found changes from the lockfile, re-resolving dependencies because #{change_reason}")
-            platforms_for_resolve = platforms.one? {|p| generic(p) == Gem::Platform::RUBY } ? platforms : platforms.reject{|p| p == Gem::Platform::RUBY }
-            expanded_dependencies = expand_dependencies(dependencies + metadata_dependencies, @remote, platforms_for_resolve.map {|p| generic(p) })
-            last_resolve.merge Resolver.resolve(expanded_dependencies, index, source_requirements, last_resolve, gem_version_promoter, additional_base_requirements_for_resolve, platforms_for_resolve)
+            expanded_dependencies = expand_dependencies(dependencies + metadata_dependencies, @remote)
+            last_resolve.merge Resolver.resolve(expanded_dependencies, index, source_requirements, last_resolve, gem_version_promoter, additional_base_requirements_for_resolve, platforms)
           end
 
         # filter out gems that _can_ be installed on multiple platforms, but don't need
@@ -507,15 +506,11 @@ module Bundler
     end
 
     def validate_platforms!
-      return if @platforms.any? do |bundle_platform|
-        Bundler.rubygems.platforms.any? do |local_platform|
-          MatchPlatform.platforms_match?(bundle_platform, local_platform)
-        end
-      end
+      return if current_platform_locked?
 
       raise ProductionError, "Your bundle only supports platforms #{@platforms.map(&:to_s)} " \
-        "but your local platforms are #{Bundler.rubygems.platforms.map(&:to_s)}, and " \
-        "there's no compatible match between those two lists."
+        "but your local platform is #{Bundler.local_platform}. " \
+        "Add the current platform to the lockfile with `bundle lock --add-platform #{Bundler.local_platform}` and try again."
     end
 
     def add_platform(platform)
@@ -526,6 +521,12 @@ module Bundler
     def remove_platform(platform)
       return if @platforms.delete(Gem::Platform.new(platform))
       raise InvalidOption, "Unable to remove the platform `#{platform}` since the only platforms are #{@platforms.join ", "}"
+    end
+
+    def most_specific_locked_platform
+      @platforms.min_by do |bundle_platform|
+        platform_specificity_match(bundle_platform, local_platform)
+      end
     end
 
     def find_resolved_spec(current_spec)
@@ -548,6 +549,18 @@ module Bundler
     end
 
     private
+
+    def current_ruby_platform_locked?
+      return false unless generic_local_platform == Gem::Platform::RUBY
+
+      current_platform_locked?
+    end
+
+    def current_platform_locked?
+      @platforms.any? do |bundle_platform|
+        MatchPlatform.platforms_match?(bundle_platform, Bundler.local_platform)
+      end
+    end
 
     def add_current_platform
       add_platform(local_platform)
@@ -871,8 +884,7 @@ module Bundler
       end
     end
 
-    def expand_dependencies(dependencies, remote = false, platforms = nil)
-      platforms ||= @platforms
+    def expand_dependencies(dependencies, remote = false)
       deps = []
       dependencies.each do |dep|
         dep = Dependency.new(dep, ">= 0") unless dep.respond_to?(:name)

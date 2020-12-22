@@ -110,11 +110,6 @@ module Bundler
       obj.to_s
     end
 
-    def platforms
-      return [Gem::Platform::RUBY] if Bundler.settings[:force_ruby_platform]
-      Gem.platforms
-    end
-
     def configuration
       require_relative "psyched_yaml"
       Gem.configuration

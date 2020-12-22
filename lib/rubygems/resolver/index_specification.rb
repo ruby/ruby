@@ -33,6 +33,21 @@ class Gem::Resolver::IndexSpecification < Gem::Resolver::Specification
     spec.dependencies
   end
 
+  ##
+  # The required_ruby_version constraint for this specification
+
+  def required_ruby_version
+    spec.required_ruby_version
+  end
+
+  ##
+  # The required_rubygems_version constraint for this specification
+  #
+
+  def required_rubygems_version
+    spec.required_rubygems_version
+  end
+
   def ==(other)
     self.class === other &&
       @name == other.name &&

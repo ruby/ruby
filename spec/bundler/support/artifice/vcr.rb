@@ -39,7 +39,7 @@ class BundlerVCRHTTP < Net::HTTP
         response_io = ::Net::BufferedIO.new(response_file)
         ::Net::HTTPResponse.read_new(response_io).tap do |response|
           response.decode_content = request.decode_content if request.respond_to?(:decode_content)
-          response.uri = request.uri if request.respond_to?(:uri)
+          response.uri = request.uri
 
           response.reading_body(response_io, request.response_body_permitted?) do
             response_block.call(response) if response_block

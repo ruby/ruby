@@ -39,7 +39,7 @@ class TestGemResolverAPISpecification < Gem::TestCase
 
     rails = specs['rails-3.0.3']
 
-    repo = @gem_repo + 'api/v1/dependencies'
+    repo = @gem_repo + 'info'
 
     set = Gem::Resolver::APISet.new repo
 
@@ -123,7 +123,7 @@ class TestGemResolverAPISpecification < Gem::TestCase
       fetcher.spec 'a', 1
     end
 
-    dep_uri = URI(@gem_repo) + 'api/v1/dependencies'
+    dep_uri = URI(@gem_repo) + 'info'
     set = Gem::Resolver::APISet.new dep_uri
     data = {
       :name         => 'a',
@@ -147,7 +147,7 @@ class TestGemResolverAPISpecification < Gem::TestCase
       end
     end
 
-    dep_uri = URI(@gem_repo) + 'api/v1/dependencies'
+    dep_uri = URI(@gem_repo) + 'info'
     set = Gem::Resolver::APISet.new dep_uri
     data = {
       :name         => 'j',

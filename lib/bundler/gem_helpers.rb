@@ -35,40 +35,32 @@ module Bundler
 
     def platform_specificity_match(spec_platform, user_platform)
       spec_platform = Gem::Platform.new(spec_platform)
-      return PlatformMatch::EXACT_MATCH if spec_platform == user_platform
-      return PlatformMatch::WORST_MATCH if spec_platform.nil? || spec_platform == Gem::Platform::RUBY || user_platform == Gem::Platform::RUBY
 
-      PlatformMatch.new(
-        PlatformMatch.os_match(spec_platform, user_platform),
-        PlatformMatch.cpu_match(spec_platform, user_platform),
-        PlatformMatch.platform_version_match(spec_platform, user_platform)
-      )
+      PlatformMatch.specificity_score(spec_platform, user_platform)
     end
     module_function :platform_specificity_match
 
     def select_best_platform_match(specs, platform)
-      specs.select {|spec| spec.match_platform(platform) }.
-        min_by {|spec| platform_specificity_match(spec.platform, platform) }
+      matching = specs.select {|spec| spec.match_platform(platform) }
+      exact = matching.select {|spec| spec.platform == platform }
+      return exact if exact.any?
+
+      sorted_matching = matching.sort_by {|spec| platform_specificity_match(spec.platform, platform) }
+      exemplary_spec = sorted_matching.first
+
+      sorted_matching.take_while{|spec| same_specificity(platform, spec, exemplary_spec) && same_deps(spec, exemplary_spec) }
     end
     module_function :select_best_platform_match
 
-    PlatformMatch = Struct.new(:os_match, :cpu_match, :platform_version_match)
     class PlatformMatch
-      def <=>(other)
-        return nil unless other.is_a?(PlatformMatch)
+      def self.specificity_score(spec_platform, user_platform)
+        return -1 if spec_platform == user_platform
+        return 1_000_000 if spec_platform.nil? || spec_platform == Gem::Platform::RUBY || user_platform == Gem::Platform::RUBY
 
-        m = os_match <=> other.os_match
-        return m unless m.zero?
-
-        m = cpu_match <=> other.cpu_match
-        return m unless m.zero?
-
-        m = platform_version_match <=> other.platform_version_match
-        m
+        os_match(spec_platform, user_platform) +
+          cpu_match(spec_platform, user_platform) * 10 +
+          platform_version_match(spec_platform, user_platform) * 100
       end
-
-      EXACT_MATCH = new(-1, -1, -1).freeze
-      WORST_MATCH = new(1_000_000, 1_000_000, 1_000_000).freeze
 
       def self.os_match(spec_platform, user_platform)
         if spec_platform.os == user_platform.os
@@ -100,5 +92,19 @@ module Bundler
         end
       end
     end
+
+    def same_specificity(platform, spec, exemplary_spec)
+      platform_specificity_match(spec.platform, platform) == platform_specificity_match(exemplary_spec.platform, platform)
+    end
+    module_function :same_specificity
+
+    def same_deps(spec, exemplary_spec)
+      same_runtime_deps = spec.dependencies.sort == exemplary_spec.dependencies.sort
+      return same_runtime_deps unless spec.is_a?(Gem::Specification) && exemplary_spec.is_a?(Gem::Specification)
+
+      same_metadata_deps = spec.required_ruby_version == exemplary_spec.required_ruby_version && spec.required_rubygems_version == exemplary_spec.required_rubygems_version
+      same_runtime_deps && same_metadata_deps
+    end
+    module_function :same_deps
   end
 end
