@@ -595,28 +595,25 @@ module Psych
   end
 
   # :stopdoc:
-  @domain_types = {}
   def self.add_domain_type domain, type_tag, &block
     key = ['tag', domain, type_tag].join ':'
-    @domain_types[key] = [key, block]
-    @domain_types["tag:#{type_tag}"] = [key, block]
+    domain_types[key] = [key, block]
+    domain_types["tag:#{type_tag}"] = [key, block]
   end
 
   def self.add_builtin_type type_tag, &block
     domain = 'yaml.org,2002'
     key = ['tag', domain, type_tag].join ':'
-    @domain_types[key] = [key, block]
+    domain_types[key] = [key, block]
   end
 
   def self.remove_type type_tag
-    @domain_types.delete type_tag
+    domain_types.delete type_tag
   end
 
-  @load_tags = {}
-  @dump_tags = {}
   def self.add_tag tag, klass
-    @load_tags[tag] = klass.name
-    @dump_tags[klass] = tag
+    load_tags[tag] = klass.name
+    dump_tags[klass] = tag
   end
 
   # Workaround for emulating `warn '...', uplevel: 1` in Ruby 2.4 or lower.
@@ -639,5 +636,8 @@ module Psych
     attr_accessor :dump_tags
     attr_accessor :domain_types
   end
+  self.load_tags = {}
+  self.dump_tags = {}
+  self.domain_types = {}
   # :startdoc:
 end
