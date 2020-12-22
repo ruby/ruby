@@ -199,7 +199,7 @@ rb_memory_view_init_as_byte_array(rb_memory_view_t *view, VALUE obj, void *data,
 {
     view->obj = obj;
     view->data = data;
-    view->len = len;
+    view->byte_size = len;
     view->readonly = readonly;
     view->format = NULL;
     view->item_size = 1;

@@ -48,7 +48,7 @@ static size_t
 fiddle_memview_memsize(const void *ptr)
 {
     const struct memview_data *data = ptr;
-    return sizeof(*data) + sizeof(rb_memory_view_item_component_t)*data->n_members + (size_t)data->view.len;
+    return sizeof(*data) + sizeof(rb_memory_view_item_component_t)*data->n_members + (size_t)data->view.byte_size;
 }
 
 static const rb_data_type_t fiddle_memview_data_type = {
@@ -90,13 +90,13 @@ rb_fiddle_memview_get_obj(VALUE obj)
 }
 
 static VALUE
-rb_fiddle_memview_get_length(VALUE obj)
+rb_fiddle_memview_get_byte_size(VALUE obj)
 {
     struct memview_data *data;
     TypedData_Get_Struct(obj, struct memview_data, &fiddle_memview_data_type, data);
 
     if (NIL_P(data->view.obj)) return Qnil;
-    return SSIZET2NUM(data->view.len);
+    return SSIZET2NUM(data->view.byte_size);
 }
 
 static VALUE
@@ -240,7 +240,7 @@ Init_fiddle_memory_view(void)
     rb_define_alloc_func(rb_cMemoryView, rb_fiddle_memview_s_allocate);
     rb_define_method(rb_cMemoryView, "initialize", rb_fiddle_memview_initialize, 1);
     rb_define_method(rb_cMemoryView, "obj", rb_fiddle_memview_get_obj, 0);
-    rb_define_method(rb_cMemoryView, "length", rb_fiddle_memview_get_length, 0);
+    rb_define_method(rb_cMemoryView, "byte_size", rb_fiddle_memview_get_byte_size, 0);
     rb_define_method(rb_cMemoryView, "readonly?", rb_fiddle_memview_get_readonly, 0);
     rb_define_method(rb_cMemoryView, "format", rb_fiddle_memview_get_format, 0);
     rb_define_method(rb_cMemoryView, "item_size", rb_fiddle_memview_get_item_size, 0);

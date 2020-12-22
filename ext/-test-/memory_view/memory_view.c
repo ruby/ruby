@@ -12,7 +12,7 @@ static VALUE sym_offset;
 static VALUE sym_size;
 static VALUE sym_repeat;
 static VALUE sym_obj;
-static VALUE sym_len;
+static VALUE sym_byte_size;
 static VALUE sym_readonly;
 static VALUE sym_format;
 static VALUE sym_item_size;
@@ -122,7 +122,7 @@ memory_view_get_memory_view_info(VALUE mod, VALUE obj)
 
     VALUE hash = rb_hash_new();
     rb_hash_aset(hash, sym_obj, view.obj);
-    rb_hash_aset(hash, sym_len, SSIZET2NUM(view.len));
+    rb_hash_aset(hash, sym_byte_size, SSIZET2NUM(view.byte_size));
     rb_hash_aset(hash, sym_readonly, view.readonly ? Qtrue : Qfalse);
     rb_hash_aset(hash, sym_format, view.format ? rb_str_new_cstr(view.format) : Qnil);
     rb_hash_aset(hash, sym_item_size, SSIZET2NUM(view.item_size));
@@ -398,7 +398,7 @@ Init_memory_view(void)
     sym_size = ID2SYM(rb_intern_const("size"));
     sym_repeat = ID2SYM(rb_intern_const("repeat"));
     sym_obj = ID2SYM(rb_intern_const("obj"));
-    sym_len = ID2SYM(rb_intern_const("len"));
+    sym_byte_size = ID2SYM(rb_intern_const("byte_size"));
     sym_readonly = ID2SYM(rb_intern_const("readonly"));
     sym_format = ID2SYM(rb_intern_const("format"));
     sym_item_size = ID2SYM(rb_intern_const("item_size"));
