@@ -48,7 +48,7 @@ typedef struct {
     /* The number of bytes in data. */
     ssize_t len;
 
-    /* 1 for readonly memory, 0 for writable memory. */
+    /* true for readonly memory, false for writable memory. */
     bool readonly;
 
     /* A string to describe the format of an element, or NULL for unsigned byte.
@@ -105,9 +105,9 @@ typedef struct {
     void *const private;
 } rb_memory_view_t;
 
-typedef int (* rb_memory_view_get_func_t)(VALUE obj, rb_memory_view_t *view, int flags);
-typedef int (* rb_memory_view_release_func_t)(VALUE obj, rb_memory_view_t *view);
-typedef int (* rb_memory_view_available_p_func_t)(VALUE obj);
+typedef bool (* rb_memory_view_get_func_t)(VALUE obj, rb_memory_view_t *view, int flags);
+typedef bool (* rb_memory_view_release_func_t)(VALUE obj, rb_memory_view_t *view);
+typedef bool (* rb_memory_view_available_p_func_t)(VALUE obj);
 
 typedef struct {
     rb_memory_view_get_func_t get_func;
@@ -127,7 +127,7 @@ bool rb_memory_view_is_column_major_contiguous(const rb_memory_view_t *view);
 RBIMPL_ATTR_NOALIAS()
 void rb_memory_view_fill_contiguous_strides(const ssize_t ndim, const ssize_t item_size, const ssize_t *const shape, const bool row_major_p, ssize_t *const strides);
 RBIMPL_ATTR_NOALIAS()
-int rb_memory_view_init_as_byte_array(rb_memory_view_t *view, VALUE obj, void *data, const ssize_t len, const bool readonly);
+bool rb_memory_view_init_as_byte_array(rb_memory_view_t *view, VALUE obj, void *data, const ssize_t len, const bool readonly);
 ssize_t rb_memory_view_parse_item_format(const char *format,
                                          rb_memory_view_item_component_t **members,
                                          size_t *n_members, const char **err);
@@ -137,9 +137,9 @@ VALUE rb_memory_view_extract_item_members(const void *ptr, const rb_memory_view_
 void rb_memory_view_prepare_item_desc(rb_memory_view_t *view);
 VALUE rb_memory_view_get_item(rb_memory_view_t *view, const ssize_t *indices);
 
-int rb_memory_view_available_p(VALUE obj);
-int rb_memory_view_get(VALUE obj, rb_memory_view_t* memory_view, int flags);
-int rb_memory_view_release(rb_memory_view_t* memory_view);
+bool rb_memory_view_available_p(VALUE obj);
+bool rb_memory_view_get(VALUE obj, rb_memory_view_t* memory_view, int flags);
+bool rb_memory_view_release(rb_memory_view_t* memory_view);
 
 /* for testing */
 RUBY_EXTERN VALUE rb_memory_view_exported_object_registry;

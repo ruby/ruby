@@ -24,15 +24,15 @@ static VALUE sym_endianness;
 static VALUE sym_little_endian;
 static VALUE sym_big_endian;
 
-static int
+static bool
 exportable_string_get_memory_view(VALUE obj, rb_memory_view_t *view, int flags)
 {
     VALUE str = rb_ivar_get(obj, id_str);
     rb_memory_view_init_as_byte_array(view, obj, RSTRING_PTR(str), RSTRING_LEN(str), true);
-    return 1;
+    return true;
 }
 
-static int
+static bool
 exportable_string_memory_view_available_p(VALUE obj)
 {
     VALUE str = rb_ivar_get(obj, id_str);
@@ -260,7 +260,7 @@ expstr_initialize(VALUE obj, VALUE s)
     return Qnil;
 }
 
-static int
+static bool
 mdview_get_memory_view(VALUE obj, rb_memory_view_t *view, int flags)
 {
     VALUE buf_v = rb_ivar_get(obj, id_str);
@@ -272,7 +272,7 @@ mdview_get_memory_view(VALUE obj, rb_memory_view_t *view, int flags)
     const char *err;
     const ssize_t item_size = rb_memory_view_item_size_from_format(format, &err);
     if (item_size < 0) {
-        return 0;
+        return false;
     }
 
     ssize_t ndim = RARRAY_LEN(shape_v);
@@ -308,10 +308,10 @@ mdview_get_memory_view(VALUE obj, rb_memory_view_t *view, int flags)
     view->shape = shape;
     view->strides = strides;
 
-    return 1;
+    return true;
 }
 
-static int
+static bool
 mdview_memory_view_available_p(VALUE obj)
 {
     return true;
