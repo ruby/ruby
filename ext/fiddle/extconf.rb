@@ -137,8 +137,10 @@ else
   have_func('ffi_closure_alloc', ffi_header)
 end
 
-if libffi
-  $defs << "-DHAVE_FFI_PREP_CIF_VAR"
+if libffi_version
+  if (libffi_version <=> [3, 0, 11]) >= 0
+    $defs << "-DHAVE_FFI_PREP_CIF_VAR"
+  end
 else
   have_func('ffi_prep_cif_var', ffi_header)
 end
