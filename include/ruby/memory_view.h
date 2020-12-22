@@ -80,7 +80,7 @@ typedef struct {
          * item structure.  rb_memory_view_prepare_item_desc and
          * rb_memory_view_get_item allocate this memory if needed,
          * and rb_memory_view_release frees it. */
-        rb_memory_view_item_component_t *components;
+        const rb_memory_view_item_component_t *components;
 
         /* The number of components in an item. */
         size_t length;
@@ -91,15 +91,15 @@ typedef struct {
 
     /* ndim size array indicating the number of elements in each dimension.
      * This can be NULL when ndim == 1. */
-    ssize_t *shape;
+    const ssize_t *shape;
 
     /* ndim size array indicating the number of bytes to skip to go to the
      * next element in each dimension. */
-    ssize_t *strides;
+    const ssize_t *strides;
 
     /* The offset in each dimension when this memory view exposes a nested array.
      * Or, NULL when this memory view exposes a flat array. */
-    ssize_t *sub_offsets;
+    const ssize_t *sub_offsets;
 
     /* the private data for managing this exported memory */
     void *const private;
