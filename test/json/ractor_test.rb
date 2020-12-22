@@ -4,10 +4,6 @@
 require 'test_helper'
 
 class JSONInRactorTest < Test::Unit::TestCase
-  def setup
-    skip unless defined? Ractor
-  end
-
   def test_generate
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
@@ -31,4 +27,4 @@ class JSONInRactorTest < Test::Unit::TestCase
       assert_equal(JSON.parse(expected_json), r.take)
     end;
   end
-end
+end if defined?(Ractor)
