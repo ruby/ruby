@@ -638,27 +638,6 @@ class Gem::Installer
     end
   end
 
-  def ensure_required_ruby_version_met # :nodoc:
-    if rrv = spec.required_ruby_version
-      ruby_version = Gem.ruby_version
-      unless rrv.satisfied_by? ruby_version
-        raise Gem::RuntimeRequirementNotMetError,
-          "#{spec.name} requires Ruby version #{rrv}. The current ruby version is #{ruby_version}."
-      end
-    end
-  end
-
-  def ensure_required_rubygems_version_met # :nodoc:
-    if rrgv = spec.required_rubygems_version
-      unless rrgv.satisfied_by? Gem.rubygems_version
-        rg_version = Gem::VERSION
-        raise Gem::RuntimeRequirementNotMetError,
-          "#{spec.name} requires RubyGems version #{rrgv}. The current RubyGems version is #{rg_version}. " +
-          "Try 'gem update --system' to update RubyGems itself."
-      end
-    end
-  end
-
   def ensure_dependencies_met # :nodoc:
     deps = spec.runtime_dependencies
     deps |= spec.development_dependencies if @development
@@ -914,8 +893,6 @@ TEXT
 
     return true if @force
 
-    ensure_required_ruby_version_met
-    ensure_required_rubygems_version_met
     ensure_dependencies_met unless @ignore_dependencies
 
     true

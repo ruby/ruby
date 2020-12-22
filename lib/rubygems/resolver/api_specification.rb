@@ -35,6 +35,8 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
     @dependencies = api_data[:dependencies].map do |name, ver|
       Gem::Dependency.new(name, ver.split(/\s*,\s*/)).freeze
     end.freeze
+    @required_ruby_version = Gem::Requirement.new(api_data.dig(:requirements, :ruby)).freeze
+    @required_rubygems_version = Gem::Requirement.new(api_data.dig(:requirements, :rubygems)).freeze
   end
 
   def ==(other) # :nodoc:
@@ -42,12 +44,11 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
       @set          == other.set and
       @name         == other.name and
       @version      == other.version and
-      @platform     == other.platform and
-      @dependencies == other.dependencies
+      @platform     == other.platform
   end
 
   def hash
-    @set.hash ^ @name.hash ^ @version.hash ^ @platform.hash ^ @dependencies.hash
+    @set.hash ^ @name.hash ^ @version.hash ^ @platform.hash
   end
 
   def fetch_development_dependencies # :nodoc:

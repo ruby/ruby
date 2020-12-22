@@ -630,4 +630,47 @@ RSpec.describe "bundle install with gem sources" do
                         "setting them for authentication.")
     end
   end
+
+  context "in a frozen bundle" do
+    before do
+      build_repo4 do
+        build_gem "libv8", "8.4.255.0" do |s|
+          s.platform = "x86_64-darwin-19"
+        end
+      end
+
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+
+        gem "libv8"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            libv8 (8.4.255.0-x86_64-darwin-19)
+
+        PLATFORMS
+          x86_64-darwin-19
+
+        DEPENDENCIES
+          libv8
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "config set --local deployment true"
+    end
+
+    it "should fail loudly if the lockfile platforms don't include the current platform" do
+      simulate_platform(Gem::Platform.new("x86_64-linux")) { bundle "install", :raise_on_error => false }
+
+      expect(err).to eq(
+        "Your bundle only supports platforms [\"x86_64-darwin-19\"] but your local platform is x86_64-linux. " \
+        "Add the current platform to the lockfile with `bundle lock --add-platform x86_64-linux` and try again."
+      )
+    end
+  end
 end

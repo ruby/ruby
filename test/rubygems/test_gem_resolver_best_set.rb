@@ -39,7 +39,7 @@ class TestGemResolverBestSet < Gem::TestCase
 
     set = @DR::BestSet.new
 
-    api_uri = URI(@gem_repo) + './api/v1/dependencies'
+    api_uri = URI(@gem_repo)
 
     set.sets << Gem::Resolver::APISet.new(api_uri)
 
@@ -99,12 +99,12 @@ class TestGemResolverBestSet < Gem::TestCase
   def test_replace_failed_api_set
     set = @DR::BestSet.new
 
-    api_uri = URI(@gem_repo) + './api/v1/dependencies'
+    api_uri = URI(@gem_repo) + './info/'
     api_set = Gem::Resolver::APISet.new api_uri
 
     set.sets << api_set
 
-    error_uri = api_uri + '?gems=a'
+    error_uri = api_uri + 'a'
 
     error = Gem::RemoteFetcher::FetchError.new 'bogus', error_uri
 

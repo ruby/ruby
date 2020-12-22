@@ -67,6 +67,32 @@ RSpec.describe "bundle exec" do
     expect(out).to eq(Gem::VERSION)
   end
 
+  it "works when exec'ing back to bundler with a lockfile that doesn't include the current platform" do
+    install_gemfile <<-G
+      gem "rack", "0.9.1"
+    G
+
+    # simulate lockfile generated with old version not including specific platform
+    lockfile <<-L
+      GEM
+        specs:
+          rack (0.9.1)
+
+      PLATFORMS
+        RUBY
+
+      DEPENDENCIES
+        rack (= 0.9.1)
+
+      BUNDLED WITH
+          2.1.4
+    L
+
+    bundle "exec bundle cache", :env => { "BUNDLER_VERSION" => Bundler::VERSION }
+
+    expect(out).to include("Updating files in vendor/cache")
+  end
+
   it "respects custom process title when loading through ruby" do
     skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
 
