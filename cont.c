@@ -2410,9 +2410,9 @@ rb_fiber_raise(int argc, VALUE *argv, VALUE fiber_value)
  *
  *     f.resume
  *
- *     # It is empty after the fiber is finished
+ *     # It is nil after the fiber is finished
  *     f.backtrace
- *     #=> []
+ *     #=> nil
  *
  */
 static VALUE
