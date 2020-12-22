@@ -25,11 +25,15 @@ module Bundler
 
       def to_specs
         @activated_platforms.map do |p|
-          next unless s = @specs[p]
-          lazy_spec = LazySpecification.new(name, version, s.platform, source)
-          lazy_spec.dependencies.replace s.dependencies
-          lazy_spec
-        end.compact.uniq
+          specs = @specs[p]
+          next unless specs.any?
+
+          specs.map do |s|
+            lazy_spec = LazySpecification.new(name, version, s.platform, source)
+            lazy_spec.dependencies.replace s.dependencies
+            lazy_spec
+          end
+        end.flatten.compact.uniq
       end
 
       def copy_for(platforms)
@@ -42,12 +46,8 @@ module Bundler
         copied_sg
       end
 
-      def spec_for(platform)
-        @specs[platform]
-      end
-
       def for?(platform)
-        !spec_for(platform).nil?
+        @specs[platform].any?
       end
 
       def to_s
@@ -58,7 +58,7 @@ module Bundler
       def dependencies_for_activated_platforms
         dependencies = @activated_platforms.map {|p| __dependencies[p] }
         metadata_dependencies = @activated_platforms.map do |platform|
-          metadata_dependencies(@specs[platform], platform)
+          metadata_dependencies(@specs[platform].first, platform)
         end
         dependencies.concat(metadata_dependencies).flatten
       end
@@ -94,7 +94,8 @@ module Bundler
       def __dependencies
         @dependencies = Hash.new do |dependencies, platform|
           dependencies[platform] = []
-          if spec = @specs[platform]
+          specs = @specs[platform]
+          if spec = specs.first
             spec.dependencies.each do |dep|
               next if dep.type == :development
               next if @ignores_bundler_dependencies && dep.name == "bundler".freeze
@@ -106,10 +107,7 @@ module Bundler
       end
 
       def metadata_dependencies(spec, platform)
-        return [] unless spec
-        # Only allow endpoint specifications since they won't hit the network to
-        # fetch the full gemspec when calling required_ruby_version
-        return [] if !spec.is_a?(EndpointSpecification) && !spec.is_a?(Gem::Specification)
+        return [] unless spec && spec.is_a?(Gem::Specification)
         dependencies = []
         if !spec.required_ruby_version.nil? && !spec.required_ruby_version.none?
           dependencies << DepProxy.new(Gem::Dependency.new("Ruby\0", spec.required_ruby_version), platform)

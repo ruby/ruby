@@ -195,19 +195,8 @@ class Gem::RequestSet
             yield req, installer if block_given?
           end
         rescue Gem::RuntimeRequirementNotMetError => e
-          recent_match = req.spec.set.find_all(req.request).sort_by(&:version).reverse_each.find do |s|
-            s = s.spec
-            s.required_ruby_version.satisfied_by?(Gem.ruby_version) &&
-              s.required_rubygems_version.satisfied_by?(Gem.rubygems_version) &&
-              Gem::Platform.installable?(s)
-          end
-          if recent_match
-            suggestion = "The last version of #{req.request} to support your Ruby & RubyGems was #{recent_match.version}. Try installing it with `gem install #{recent_match.name} -v #{recent_match.version}`"
-            suggestion += " and then running the current command again" unless @always_install.include?(req.spec.spec)
-          else
-            suggestion = "There are no versions of #{req.request} compatible with your Ruby & RubyGems"
-            suggestion += ". Maybe try installing an older version of the gem you're looking for?" unless @always_install.include?(req.spec.spec)
-          end
+          suggestion = "There are no versions of #{req.request} compatible with your Ruby & RubyGems"
+          suggestion += ". Maybe try installing an older version of the gem you're looking for?" unless @always_install.include?(req.spec.spec)
           e.suggestion = suggestion
           raise
         end
