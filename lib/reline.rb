@@ -36,7 +36,6 @@ module Reline
     attr_accessor :config
     attr_accessor :key_stroke
     attr_accessor :line_editor
-    attr_writer :ambiguous_width
     attr_accessor :last_incremental_search
     attr_reader :output
 
