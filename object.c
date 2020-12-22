@@ -41,19 +41,19 @@
 #include "builtin.h"
 
 /*!
- * \defgroup object Core objects and their operations
+ * \addtogroup object
  * \{
  */
 
-VALUE rb_cBasicObject; /*!< BasicObject class */
-VALUE rb_mKernel; /*!< Kernel module */
-VALUE rb_cObject; /*!< Object class */
-VALUE rb_cModule; /*!< Module class */
-VALUE rb_cClass; /*!< Class class */
+VALUE rb_cBasicObject;
+VALUE rb_mKernel;
+VALUE rb_cObject;
+VALUE rb_cModule;
+VALUE rb_cClass;
 
-VALUE rb_cNilClass; /*!< NilClass class */
-VALUE rb_cTrueClass; /*!< TrueClass class */
-VALUE rb_cFalseClass; /*!< FalseClass class */
+VALUE rb_cNilClass;
+VALUE rb_cTrueClass;
+VALUE rb_cFalseClass;
 
 static VALUE rb_cNilClass_to_s;
 static VALUE rb_cTrueClass_to_s;
