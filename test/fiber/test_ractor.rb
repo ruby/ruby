@@ -10,6 +10,7 @@ class TestFiberCurrentRactor < Test::Unit::TestCase
   def test_ractor_shareable
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
+      $VERBOSE = nil
       require "fiber"
       r = Ractor.new do
         Fiber.new do
