@@ -325,6 +325,9 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/test/digest", "test")
     cp_r("#{upstream}/digest.gemspec", "ext/digest")
     `git checkout ext/digest/depend ext/digest/*/depend`
+  when "set"
+    sync_lib gem, upstream
+    cp_r("#{upstream}/test", ".")
   else
     sync_lib gem, upstream
   end
