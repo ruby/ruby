@@ -48,10 +48,6 @@ sufficient information, see the ChangeLog file or Redmine
   warnings are emitted by access/assignment to it, and the assigned
   value will be returned.  [[Feature #17136]]
 
-* yield in singleton class definitions in methods is now a SyntaxError
-  instead of a warning. yield in a class definition outside of a method
-  is now a SyntaxError instead of a LocalJumpError.  [[Feature #15575]]
-
 * Pattern matching(`case/in`) is no longer experimental. [[Feature #17260]]
 
 * One-line pattern matching is redesigned.  [EXPERIMENTAL]
@@ -89,15 +85,6 @@ sufficient information, see the ChangeLog file or Redmine
     end
     ```
 
-* When a class variable is overtaken by the same definition in an
-  ancestor class/module, a RuntimeError is now raised (previously,
-  it only issued a warning in verbose mode).  Additionally, accessing a
-  class variable from the toplevel scope is now a RuntimeError.
-  [[Bug #14541]]
-
-* Assigning to a numbered parameter is now a SyntaxError instead of
-  a warning.
-
 * Endless method definition is added.  [EXPERIMENTAL]
   [[Feature #16746]]
 
@@ -114,6 +101,19 @@ sufficient information, see the ChangeLog file or Redmine
       language for Ruby programs.
     * {TypeProf}[rdoc-label:label-TypeProf] is experimentally bundled. It is a
       type analysis tool for Ruby programs.
+
+* yield in singleton class definitions in methods is now a SyntaxError
+  instead of a warning. yield in a class definition outside of a method
+  is now a SyntaxError instead of a LocalJumpError.  [[Feature #15575]]
+
+* When a class variable is overtaken by the same definition in an
+  ancestor class/module, a RuntimeError is now raised (previously,
+  it only issued a warning in verbose mode).  Additionally, accessing a
+  class variable from the toplevel scope is now a RuntimeError.
+  [[Bug #14541]]
+
+* Assigning to a numbered parameter is now a SyntaxError instead of
+  a warning.
 
 ## Command line options
 
