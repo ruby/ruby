@@ -2804,7 +2804,7 @@ Init_Exception(void)
     rb_eNoMemError = rb_define_class("NoMemoryError", rb_eException);
     rb_eEncodingError = rb_define_class("EncodingError", rb_eStandardError);
     rb_eEncCompatError = rb_define_class_under(rb_cEncoding, "CompatibilityError", rb_eEncodingError);
-    rb_eNoMatchingPatternError = rb_define_class("NoMatchingPatternError", rb_eRuntimeError);
+    rb_eNoMatchingPatternError = rb_define_class("NoMatchingPatternError", rb_eStandardError);
 
     syserr_tbl = st_init_numtable();
     rb_eSystemCallError = rb_define_class("SystemCallError", rb_eStandardError);

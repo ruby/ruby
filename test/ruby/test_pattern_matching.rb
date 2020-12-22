@@ -1162,6 +1162,10 @@ END
     end
   end
 
+  def test_nomatchingpatternerror
+    assert_equal(StandardError, NoMatchingPatternError.superclass)
+  end
+
   def test_invalid_syntax
     assert_syntax_error(%q{
       case 0
