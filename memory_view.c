@@ -748,7 +748,9 @@ rb_memory_view_prepare_item_desc(rb_memory_view_t *view)
 {
     if (view->item_desc.components == NULL) {
         const char *err;
-        ssize_t n = rb_memory_view_parse_item_format(view->format, &view->item_desc.components, &view->item_desc.length, &err);
+        rb_memory_view_item_component_t **p_components =
+            (rb_memory_view_item_component_t **)&view->item_desc.components;
+        ssize_t n = rb_memory_view_parse_item_format(view->format, p_components, &view->item_desc.length, &err);
         if (n < 0) {
             rb_raise(rb_eRuntimeError,
                      "Unable to parse item format at %"PRIdSIZE" in \"%s\"",
@@ -841,7 +843,7 @@ rb_memory_view_release(rb_memory_view_t* view)
             unregister_exported_object(view->obj);
             view->obj = Qnil;
             if (view->item_desc.components) {
-                xfree(view->item_desc.components);
+                xfree((void *)view->item_desc.components);
             }
         }
         return rv;
