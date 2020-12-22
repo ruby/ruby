@@ -102,7 +102,7 @@ end
 # <tt>:verbose</tt> flags to methods in FileUtils.
 #
 module FileUtils
-  VERSION = "1.4.1"
+  VERSION = "1.5.0"
 
   def self.private_module_function(name)   #:nodoc:
     module_function name

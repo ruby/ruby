@@ -1,14 +1,14 @@
 Gem::Specification.new do |spec|
   spec.name          = "tmpdir"
-  spec.version       = "0.1.0"
-  spec.authors = ["Yukihiro Matsumoto"]
-  spec.email = ["matz@ruby-lang.org"]
+  spec.version       = "0.1.1"
+  spec.authors       = ["Yukihiro Matsumoto"]
+  spec.email         = ["matz@ruby-lang.org"]
 
   spec.summary       = %q{Extends the Dir class to manage the OS temporary file path.}
   spec.description   = %q{Extends the Dir class to manage the OS temporary file path.}
   spec.homepage      = "https://github.com/ruby/tmpdir"
-  spec.required_ruby_version = Gem::Requirement.new(">= 2.3.0")
   spec.licenses      = ["Ruby", "BSD-2-Clause"]
+  spec.required_ruby_version = Gem::Requirement.new(">= 2.3.0")
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage

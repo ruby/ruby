@@ -40,7 +40,7 @@
 #
 module Mutex_m
 
-  VERSION = "0.1.0"
+  VERSION = "0.1.1"
 
   def Mutex_m.define_aliases(cl) # :nodoc:
     cl.module_eval %q{
