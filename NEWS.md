@@ -411,6 +411,16 @@ Outstanding ones only.
 
     * Ractor compatible.
 
+* Set
+
+    * Update to set 1.0.0
+
+    * SortedSet has been removed for dependency and performance reasons.
+
+    * Set#join is added as a shorthand for `.to_a.join`.
+
+    * Set#<=> is added.
+
 * Socket
 
     * Add :connect_timeout to TCPSocket.new [[Feature #17187]]
@@ -502,6 +512,8 @@ Excluding feature bug fixes.
 
 * Requiring 'open-uri' no longer redefines `Kernel#open`.
   Call `URI.open` directly or `use URI#open` instead. [[Misc #15893]]
+
+* SortedSet has been removed for dependency and performance reasons.
 
 ## Stdlib compatibility issues
 
