@@ -66,14 +66,19 @@ class RubyLex
         unprocessed_tokens = []
         line_num_offset = 0
         tokens.each do |t|
-          code << t[2]
           partial_tokens << t
           unprocessed_tokens << t
           if t[2].include?("\n")
-            ltype, indent, continue, code_block_open = check_state(code, partial_tokens)
-            result << @prompt.call(ltype, indent, continue || code_block_open, @line_no + line_num_offset)
-            line_num_offset += 1
+            t_str = t[2]
+            t_str.each_line("\n") do |s|
+              code << s << "\n"
+              ltype, indent, continue, code_block_open = check_state(code, partial_tokens)
+              result << @prompt.call(ltype, indent, continue || code_block_open, @line_no + line_num_offset)
+              line_num_offset += 1
+            end
             unprocessed_tokens = []
+          else
+            code << t[2]
           end
         end
         unless unprocessed_tokens.empty?
