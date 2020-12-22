@@ -94,6 +94,10 @@ sufficient information, see the ChangeLog file or Redmine
     * {TypeProf}[rdoc-label:label-TypeProf] is experimentally bundled. It is a
       type analysis tool for Ruby programs.
 
+* Deprecation warnings are no longer shown by default (since Ruby 2.7.2).
+  Turn them on with `-W:deprecated` (or with `-w` to show other warnings too).
+  [[Feature #16345]]
+
 * $SAFE and $KCODE are now normal global variables with no special behavior.
   C-API methods related to $SAFE have been removed.
   [[Feature #16131]] [[Feature #17136]]
@@ -724,6 +728,7 @@ end
 [Feature #16233]: https://bugs.ruby-lang.org/issues/16233
 [Feature #16260]: https://bugs.ruby-lang.org/issues/16260
 [Feature #16274]: https://bugs.ruby-lang.org/issues/16274
+[Feature #16345]: https://bugs.ruby-lang.org/issues/16345
 [Feature #16377]: https://bugs.ruby-lang.org/issues/16377
 [Feature #16378]: https://bugs.ruby-lang.org/issues/16378
 [Feature #16555]: https://bugs.ruby-lang.org/issues/16555
