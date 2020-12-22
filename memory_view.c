@@ -51,11 +51,11 @@ exported_object_registry_mark(void *ptr)
 static void
 exported_object_registry_free(void *ptr)
 {
-    // Note that calling RB_VM_LOCK_ENTER here is unnecessary now.
-    // But it may be changed in the future.
+    RB_VM_LOCK_ENTER();
     st_clear(exported_object_table);
     st_free_table(exported_object_table);
     exported_object_table = NULL;
+    RB_VM_LOCK_LEAVE();
 }
 
 const rb_data_type_t rb_memory_view_exported_object_registry_data_type = {
