@@ -3,6 +3,7 @@ coverage.o: $(RUBY_EXTCONF_H)
 coverage.o: $(arch_hdrdir)/ruby/config.h
 coverage.o: $(hdrdir)/ruby.h
 coverage.o: $(hdrdir)/ruby/assert.h
+coverage.o: $(hdrdir)/ruby/atomic.h
 coverage.o: $(hdrdir)/ruby/backward.h
 coverage.o: $(hdrdir)/ruby/backward/2/assume.h
 coverage.o: $(hdrdir)/ruby/backward/2/attributes.h

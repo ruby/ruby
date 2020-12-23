@@ -10,6 +10,7 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
+#define HAVE_RUBY_ATOMIC_H      1
 #define HAVE_RUBY_DEBUG_H       1
 #define HAVE_RUBY_DEFINES_H     1
 #define HAVE_RUBY_ENCODING_H    1
