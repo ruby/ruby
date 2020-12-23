@@ -62,22 +62,12 @@ void rb_deprecate_constant(VALUE mod, const char *name);
 
 #include "constdefs.h"
 
-#ifdef HAVE_RB_EXT_RACTOR_SAFE
-#include "ruby/thread_native.h"
+#ifdef HAVE_RUBY_ATOMIC_H
+# include "ruby/atomic.h"
 #else
-/* Implement rb_native_mutex_x using an int */
-typedef int rb_nativethread_lock_t;
-static int rb_native_mutex_trylock(int *mutex) {
-    if (*mutex) {
-    	return 1;
-    }
-    *mutex = 1;
-    return 0;
-}
-static void rb_native_mutex_unlock(int *mutex) {
-    *mutex = 0;
-}
-#define rb_native_mutex_initialize rb_native_mutex_unlock
+typedef int rb_atomic_t;
+# define RUBY_ATOMIC_CAS(var, oldval, newval) \
+    ((var) == (oldval) ? ((var) = (newval), (oldval)) : (var))
 #endif
 
 /* call-seq:
@@ -258,12 +248,12 @@ etc_getpwnam(VALUE obj, VALUE nam)
 }
 
 #ifdef HAVE_GETPWENT
-static rb_nativethread_lock_t passwd_blocking;
+static rb_atomic_t passwd_blocking;
 static VALUE
 passwd_ensure(VALUE _)
 {
     endpwent();
-    rb_native_mutex_unlock(&passwd_blocking);
+    passwd_blocking = 0;
     return Qnil;
 }
 
@@ -282,7 +272,7 @@ passwd_iterate(VALUE _)
 static void
 each_passwd(void)
 {
-    if (rb_native_mutex_trylock(&passwd_blocking)) {
+    if (RUBY_ATOMIC_CAS(passwd_blocking, 0, 1)) {
 	rb_raise(rb_eRuntimeError, "parallel passwd iteration");
     }
     rb_ensure(passwd_iterate, 0, passwd_ensure, 0);
@@ -500,12 +490,12 @@ etc_getgrnam(VALUE obj, VALUE nam)
 }
 
 #ifdef HAVE_GETGRENT
-static rb_nativethread_lock_t group_blocking;
+static rb_atomic_t group_blocking;
 static VALUE
 group_ensure(VALUE _)
 {
     endgrent();
-    rb_native_mutex_unlock(&group_blocking);
+    group_blocking = 0;
     return Qnil;
 }
 
@@ -525,7 +515,7 @@ group_iterate(VALUE _)
 static void
 each_group(void)
 {
-    if (rb_native_mutex_trylock(&group_blocking)) {
+    if (RUBY_ATOMIC_CAS(group_blocking, 0, 1)) {
 	rb_raise(rb_eRuntimeError, "parallel group iteration");
     }
     rb_ensure(group_iterate, 0, group_ensure, 0);
@@ -1199,11 +1189,7 @@ Init_etc(void)
     rb_deprecate_constant(rb_cStruct, "Passwd");
     rb_extend_object(sPasswd, rb_mEnumerable);
     rb_define_singleton_method(sPasswd, "each", etc_each_passwd, 0);
-#ifdef HAVE_GETPWENT
-    rb_native_mutex_initialize(&passwd_blocking);
-#endif
 #ifdef HAVE_GETGRENT
-    rb_native_mutex_initialize(&group_blocking);
     sGroup = rb_struct_define_under(mEtc, "Group", "name",
 #ifdef HAVE_STRUCT_GROUP_GR_PASSWD
 				    "passwd",
