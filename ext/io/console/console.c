@@ -1574,6 +1574,10 @@ str_chomp(VALUE str)
  * Reads and returns a line without echo back.
  * Prints +prompt+ unless it is +nil+.
  *
+ * The newline character that terminates the
+ * read line is removed from the returned string,
+ * see String#chomp!.
+ *
  * You must require 'io/console' to use this method.
  */
 static VALUE
