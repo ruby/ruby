@@ -1477,6 +1477,24 @@ rb_ractor_main_alloc(void)
     return r;
 }
 
+#if defined(HAVE_WORKING_FORK)
+void
+rb_ractor_atfork(rb_vm_t *vm, rb_thread_t *th)
+{
+    // initialize as a main ractor
+    vm->ractor.cnt = 0;
+    vm->ractor.blocking_cnt = 0;
+    ruby_single_main_ractor = th->ractor;
+    th->ractor->status_ = ractor_created;
+
+    rb_ractor_living_threads_init(th->ractor);
+    rb_ractor_living_threads_insert(th->ractor, th);
+
+    VM_ASSERT(vm->ractor.blocking_cnt == 0);
+    VM_ASSERT(vm->ractor.cnt == 1);
+}
+#endif
+
 void rb_gvl_init(rb_global_vm_lock_t *gvl);
 
 void
