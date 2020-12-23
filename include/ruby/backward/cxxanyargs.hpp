@@ -1,7 +1,7 @@
 #ifndef RUBY_BACKWARD_CXXANYARGS_HPP                       //-*-C++-*-vi:ft=cpp
 #define RUBY_BACKWARD_CXXANYARGS_HPP
 /// @file
-/// @author     \@shyouhei
+/// @author     @shyouhei
 /// @copyright  This  file  is  a  part   of  the  programming  language  Ruby.
 ///             Permission  is hereby  granted, to  either redistribute  and/or
 ///             modify this file, provided that the conditions mentioned in the
