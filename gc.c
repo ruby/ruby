@@ -2259,7 +2259,7 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_protect
     rb_objspace_t *objspace = &rb_objspace;
     VALUE obj;
 #ifdef USE_THIRD_PARTY_HEAP
-    obj = (VALUE) alloc(objspace->mutator, sizeof(VALUE), 8, 0, 0); // Default allocation semantics
+    obj = (VALUE) alloc(objspace->mutator, sizeof(RVALUE), 8, 0, 0); // Default allocation semantics
     return newobj_init(klass, flags, v1, v2, v3, wb_protected, objspace, obj);
 #endif
 
@@ -10037,6 +10037,12 @@ rb_malloc_info_show_results(void)
 static void
 objspace_xfree(rb_objspace_t *objspace, void *ptr, size_t old_size)
 {
+#ifdef USE_THIRD_PARTY_HEAP
+    if (is_mapped_address(ptr)) {
+        return; // Don't try and free() MMTk managed memory
+    } // Otherwise continue (the memory was allocated before MMTk was initialised)
+#endif
+
     if (!ptr) {
         /*
          * ISO/IEC 9899 says "If ptr is a null pointer, no action occurs" since
