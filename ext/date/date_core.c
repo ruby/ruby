@@ -2973,6 +2973,10 @@ d_lite_memsize(const void *ptr)
     return complex_dat_p(dat) ? sizeof(struct ComplexDateData) : sizeof(struct SimpleDateData);
 }
 
+#ifndef HAVE_RB_EXT_RACTOR_SAFE
+#   define RUBY_TYPED_FROZEN_SHAREABLE 0
+#endif
+
 static const rb_data_type_t d_lite_type = {
     "Date",
     {d_lite_gc_mark, RUBY_TYPED_DEFAULT_FREE, d_lite_memsize,},
