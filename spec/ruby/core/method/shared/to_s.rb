@@ -62,6 +62,12 @@ describe :method_to_s, shared: true do
       @m = obj.method(:bar)
       @string = @m.send(@method)
       @string.should.start_with? "#<Method: MethodSpecs::MySub(MethodSpecs::MyMod)#bar"
+
+      c = MethodSpecs::MySub.dup
+      m = Module.new{def bar; end}
+      c.extend(m)
+      @string = c.method(:bar).send(@method)
+      @string.should.start_with? "#<Method: #<Class:#{c.inspect}>(#{m.inspect})#bar"
     end
   end
 

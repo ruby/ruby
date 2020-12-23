@@ -472,6 +472,20 @@ class TestMethod < Test::Unit::TestCase
     o.singleton_class
     m4 = o.method(:bar)
     assert_equal("#<Method: #{c4.inspect}(#{c.inspect})#bar(foo)() #{__FILE__}:#{line_no}>", m4.inspect, bug15608)
+
+    bug17428 = '[ruby-core:101635] [Bug #17428]'
+    c4 = Class.new(c)
+    c4.class_eval { alias bar foo }
+    o = c4.new
+    o.singleton_class
+    m4 = o.method(:bar)
+    assert_equal("#<Method: #<Class:String>(Module)#prepend(*)>", String.method(:prepend).inspect, bug17428)
+
+    c5 = Class.new(String)
+    m = Module.new{def prepend; end; alias prep prepend}; line_no = __LINE__
+    c5.extend(m)
+    c6 = Class.new(c5)
+    assert_equal("#<Method: #<Class:#{c6.inspect}>(#{m.inspect})#prep(prepend)() #{__FILE__}:#{line_no}>", c6.method(:prep).inspect, bug17428)
   end
 
   def test_callee_top_level
