@@ -1386,13 +1386,13 @@ cancel_single_ractor_mode(void)
     rb_gc_start();
     rb_transient_heap_evacuate();
 
+    ruby_single_main_ractor = NULL;
+
     if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_EXPERIMENTAL)) {
         rb_category_warn(RB_WARN_CATEGORY_EXPERIMENTAL,
                          "Ractor is experimental, and the behavior may change in future versions of Ruby! "
                          "Also there are many implementation issues.");
     }
-
-    ruby_single_main_ractor = NULL;
 }
 
 static void
