@@ -100,6 +100,7 @@ class PP < PrettyPrint
       def sharing_detection
         Ractor.current[:pp_sharing_detection]
       end
+      # Sets the sharing detection flag to b.
       def sharing_detection=(b)
         Ractor.current[:pp_sharing_detection] = b
       end
