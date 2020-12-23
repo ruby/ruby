@@ -100,8 +100,8 @@ Note that each entry is kept to a minimum, see links for details.
   Turn them on with `-W:deprecated` (or with `-w` to show other warnings too).
   [[Feature #16345]]
 
-* $SAFE and $KCODE are now normal global variables with no special behavior.
-  C-API methods related to $SAFE have been removed.
+* `$SAFE` and `$KCODE` are now normal global variables with no special behavior.
+  C-API methods related to `$SAFE` have been removed.
   [[Feature #16131]] [[Feature #17136]]
 
 * yield in singleton class definitions in methods is now a SyntaxError
@@ -161,8 +161,8 @@ Outstanding ones only.
 
 * Binding
 
-    * Binding#eval when called with one argument will use "(eval)"
-      for `__FILE__` and 1 for `__LINE__` in the evaluated code.
+    * Binding#eval when called with one argument will use `"(eval)"`
+      for `__FILE__` and `1` for `__LINE__` in the evaluated code.
       [[Bug #4352]] [[Bug #17419]]
 
 * ConditionVariable
@@ -205,7 +205,7 @@ Outstanding ones only.
 * GC
 
     * GC.auto_compact= and GC.auto_compact have been added to control
-      when compaction runs.  Setting `auto_compact=` to true will cause
+      when compaction runs.  Setting `auto_compact=` to `true` will cause
       compaction to occur during major collections.  At the moment,
       compaction adds significant overhead to major collections, so please
       test first!  [[Feature #17176]]
@@ -238,8 +238,8 @@ Outstanding ones only.
       return a frozen copy even if the receiver is unfrozen.
       [[Feature #16175]]
 
-    * Kernel#eval when called with two arguments will use "(eval)"
-      for `__FILE__` and 1 for `__LINE__` in the evaluated code.
+    * Kernel#eval when called with two arguments will use `"(eval)"`
+      for `__FILE__` and `1` for `__LINE__` in the evaluated code.
       [[Bug #4352]]
 
     * Kernel#lambda now warns if called without a literal block.
@@ -604,7 +604,7 @@ Excluding feature bug fixes.
 
 ## C API updates
 
-* C API functions related to $SAFE have been removed.
+* C API functions related to `$SAFE` have been removed.
   [[Feature #16131]]
 
 * C API header file `ruby/ruby.h` was split. [[GH-2991]]
