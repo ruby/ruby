@@ -2994,17 +2994,22 @@ method_inspect(VALUE method)
 	}
 	else {
 	    rb_str_buf_append(str, rb_inspect(data->recv));
-	    rb_str_buf_cat2(str, "(");
+	    rb_str_buf_cat2(str, ".(");
 	    rb_str_buf_append(str, rb_inspect(v));
-	    rb_str_buf_cat2(str, ")");
-	    sharp = ".";
+	    rb_str_buf_cat2(str, "#)");
+	    goto method_name;
 	}
     }
     else {
         mklass = data->klass;
         if (FL_TEST(mklass, FL_SINGLETON)) {
             VALUE v = rb_ivar_get(mklass, attached);
-            if (!(RB_TYPE_P(v, T_CLASS) || RB_TYPE_P(v, T_MODULE))) {
+            if (RB_TYPE_P(v, T_CLASS) || RB_TYPE_P(v, T_MODULE)) {
+                rb_str_buf_append(str, rb_inspect(v));
+                rb_str_catf(str, ".(% "PRIsVALUE"#)", defined_class);
+                goto method_name;
+            }
+            else {
                 do {
                    mklass = RCLASS_SUPER(mklass);
                 } while (RB_TYPE_P(mklass, T_ICLASS));
@@ -3016,6 +3021,7 @@ method_inspect(VALUE method)
 	}
     }
     rb_str_buf_cat2(str, sharp);
+method_name:
     rb_str_append(str, rb_id2str(data->me->called_id));
     if (data->me->called_id != data->me->def->original_id) {
 	rb_str_catf(str, "(%"PRIsVALUE")",
