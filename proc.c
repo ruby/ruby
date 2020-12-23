@@ -3003,9 +3003,12 @@ method_inspect(VALUE method)
     else {
         mklass = data->klass;
         if (FL_TEST(mklass, FL_SINGLETON)) {
-            do {
-               mklass = RCLASS_SUPER(mklass);
-            } while (RB_TYPE_P(mklass, T_ICLASS));
+            VALUE v = rb_ivar_get(mklass, attached);
+            if (!(RB_TYPE_P(v, T_CLASS) || RB_TYPE_P(v, T_MODULE))) {
+                do {
+                   mklass = RCLASS_SUPER(mklass);
+                } while (RB_TYPE_P(mklass, T_ICLASS));
+            }
         }
 	rb_str_buf_append(str, rb_inspect(mklass));
 	if (defined_class != mklass) {
