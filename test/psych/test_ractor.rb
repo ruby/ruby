@@ -24,6 +24,9 @@ class TestPsychRactor < Test::Unit::TestCase
   end
 
   def test_ractor_config
+    # Config is ractor-local
+    # Test is to make sure it works, even though usage is probably very low.
+    # The methods are not documented and might be deprecated one day
     assert_ractor(<<~RUBY, require_relative: 'helper')
       r = Ractor.new do
         Psych.add_builtin_type 'omap' do |type, val|
