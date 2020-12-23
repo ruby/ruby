@@ -30,14 +30,14 @@
             fprintf(f, "    VM_ASSERT((rb_serial_t)%"PRI_SERIALT_PREFIX"u == RCLASS_SERIAL(RBASIC(obj)->klass));\n", ic_copy->entry->class_serial);
             fprintf(f, "    VM_ASSERT(index < ROBJECT_NUMIV(obj));\n");
 % if insn.name == 'setinstancevariable'
-            fprintf(f, "    if (LIKELY(!RB_OBJ_FROZEN_RAW(obj) && %sRB_FL_ANY_RAW(obj, ROBJECT_EMBED))) {\n", status->max_ivar_index >= ROBJECT_EMBED_LEN_MAX ? "!" : "");
+            fprintf(f, "    if (LIKELY(!RB_OBJ_FROZEN_RAW(obj) && %s)) {\n", status->max_ivar_index >= ROBJECT_EMBED_LEN_MAX ? "true" : "RB_FL_ANY_RAW(obj, ROBJECT_EMBED)");
             fprintf(f, "        RB_OBJ_WRITE(obj, &ROBJECT(obj)->as.%s, stack[%d]);\n",
                     status->max_ivar_index >= ROBJECT_EMBED_LEN_MAX ? "heap.ivptr[index]" : "ary[index]", b->stack_size - 1);
             fprintf(f, "    }\n");
 % else
             fprintf(f, "    VALUE val;\n");
-            fprintf(f, "    if (LIKELY(%sRB_FL_ANY_RAW(obj, ROBJECT_EMBED) && (val = ROBJECT(obj)->as.%s) != Qundef)) {\n",
-                    status->max_ivar_index >= ROBJECT_EMBED_LEN_MAX ? "!" : "",
+            fprintf(f, "    if (LIKELY(%s && (val = ROBJECT(obj)->as.%s) != Qundef)) {\n",
+                    status->max_ivar_index >= ROBJECT_EMBED_LEN_MAX ? "true" : "RB_FL_ANY_RAW(obj, ROBJECT_EMBED)",
                     status->max_ivar_index >= ROBJECT_EMBED_LEN_MAX ? "heap.ivptr[index]" : "ary[index]");
             fprintf(f, "        stack[%d] = val;\n", b->stack_size);
             fprintf(f, "    }\n");
