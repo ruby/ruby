@@ -1,4 +1,29 @@
 class Integer
+  # call-seq:
+  #    -int  ->  integer
+  #
+  # Returns +int+, negated.
+  def -@
+    Primitive.attr! 'inline'
+    Primitive.cexpr! 'rb_int_uminus(self)'
+  end
+
+  # call-seq:
+  #   ~int  ->  integer
+  #
+  # One's complement: returns a number where each bit is flipped.
+  #
+  # Inverts the bits in an Integer. As integers are conceptually of
+  # infinite length, the result acts as if it had an infinite number of
+  # one bits to the left. In hex representations, this is displayed
+  # as two periods to the left of the digits.
+  #
+  #   sprintf("%X", ~0x1122334455)    #=> "..FEEDDCCBBAA"
+  def ~
+    Primitive.attr! 'inline'
+    Primitive.cexpr! 'rb_int_comp(self)'
+  end
+
   def abs
     Primitive.attr! 'inline'
     Primitive.cexpr! 'rb_int_abs(self)'
