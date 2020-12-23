@@ -2465,16 +2465,23 @@ rb_fiber_backtrace_locations(int argc, VALUE *argv, VALUE fiber)
  *  mixed.
  *
  *  * If the Fiber's lifecycle had started with transfer, it will never
- *    be able to participate in yield/resume control passing, only
- *    finish or transfer back.
+ *    be able to yield or be resumed control passing, only
+ *    finish or transfer back. (It still can resume other fibers that
+ *    are allowed to be resumed.)
  *  * If the Fiber's lifecycle had started with resume, it can yield
  *    or transfer to another Fiber, but can receive control back only
  *    the way compatible with the way it was given away: if it had
  *    transferred, it only can be transferred back, and if it had
  *    yielded, it only can be resumed back. After that, it again can
- *    transfer or yield
+ *    transfer or yield.
  *
  *  If those rules are broken FiberError is raised.
+ *
+ *  For an individual Fiber design, yield/resume is more easy to use
+ *  style (the Fiber just gives away control, it doesn't need to think
+ *  about who the control is given to), while transfer is more flexible
+ *  for complex cases, allowing to build arbitrary graphs of Fibers
+ *  dependent on each other.
  *
  *
  *  Example:
