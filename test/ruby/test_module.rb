@@ -799,6 +799,11 @@ class TestModule < Test::Unit::TestCase
     assert_raise(ExpectedException) { AClass.cm1 }
     assert_raise(ExpectedException) { AClass.cm3 }
     assert_equal("cm1cm2cm3", AClass.cm2)
+
+    c = Class.new(AClass)
+    c.class_eval {private_class_method [:cm1, :cm2]}
+    assert_raise(NoMethodError, /private method/) {c.cm1}
+    assert_raise(NoMethodError, /private method/) {c.cm2}
   end
 
   def test_private_instance_methods
@@ -821,6 +826,11 @@ class TestModule < Test::Unit::TestCase
     assert_equal("cm1",       MyClass.cm1)
     assert_equal("cm1cm2cm3", MyClass.cm2)
     assert_raise(ExpectedException) { eval "MyClass.cm3" }
+
+    c = Class.new(AClass)
+    c.class_eval {public_class_method [:cm1, :cm2]}
+    assert_equal("cm1",       c.cm1)
+    assert_equal("cm1cm2cm3", c.cm2)
   end
 
   def test_public_instance_methods
@@ -1403,13 +1413,25 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_top_public_private
-    assert_in_out_err([], <<-INPUT, %w([:foo] [:bar]), [])
+    assert_in_out_err([], <<-INPUT, %w([:foo] [:bar] [:foo,\ :bar] [] [:foo,\ :bar] []), [])
       private
       def foo; :foo; end
       public
       def bar; :bar; end
       p self.private_methods.grep(/^foo$|^bar$/)
       p self.methods.grep(/^foo$|^bar$/)
+
+      private :foo, :bar
+      p self.private_methods.grep(/^foo$|^bar$/)
+
+      public :foo, :bar
+      p self.private_methods.grep(/^foo$|^bar$/)
+
+      private [:foo, :bar]
+      p self.private_methods.grep(/^foo$|^bar$/)
+
+      public [:foo, :bar]
+      p self.private_methods.grep(/^foo$|^bar$/)
     INPUT
   end
 

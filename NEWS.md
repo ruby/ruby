@@ -264,8 +264,9 @@ Outstanding ones only.
         p C.ancestors #=> [C, M1, M2, Object, Kernel, BasicObject]
         ```
 
-    * Module#public, Module#protected and Module#private methods now accept single
-      array argument with a list of method names. [[Feature #17314]]
+    * Module#public, Module#protected, Module#private, Module#public_class_method,
+      Module#private_class_method, toplevel "private" and "public" methods
+      now accept single array argument with a list of method names. [[Feature #17314]]
 
     * Module#attr_accessor, Module#attr_reader, Module#attr_writer and Module#attr
       methods now return an array of defined methods names as symbols.

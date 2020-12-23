@@ -2035,6 +2035,7 @@ set_visibility(int argc, const VALUE *argv, VALUE module, rb_method_visibility_t
  *  defined methods to public. With arguments, sets the named methods to
  *  have public visibility.
  *  String arguments are converted to symbols.
+ *  An Array of Symbols and/or Strings are also accepted.
  */
 
 static VALUE
@@ -2054,6 +2055,7 @@ rb_mod_public(int argc, VALUE *argv, VALUE module)
  *  defined methods to protected. With arguments, sets the named methods
  *  to have protected visibility.
  *  String arguments are converted to symbols.
+ *  An Array of Symbols and/or Strings are also accepted.
  *
  *  If a method has protected visibility, it is callable only where
  *  <code>self</code> of the context is the same as the method.
@@ -2082,6 +2084,7 @@ rb_mod_protected(int argc, VALUE *argv, VALUE module)
  *  defined methods to private. With arguments, sets the named methods
  *  to have private visibility.
  *  String arguments are converted to symbols.
+ *  An Array of Symbols and/or Strings are also accepted.
  *
  *     module Mod
  *       def a()  end
@@ -2214,10 +2217,12 @@ rb_mod_ruby2_keywords(int argc, VALUE *argv, VALUE module)
  *  call-seq:
  *     mod.public_class_method(symbol, ...)    -> mod
  *     mod.public_class_method(string, ...)    -> mod
+ *     mod.public_class_method(array)          -> mod
  *
  *  Makes a list of existing class methods public.
  *
  *  String arguments are converted to symbols.
+ *  An Array of Symbols and/or Strings are also accepted.
  */
 
 static VALUE
@@ -2231,11 +2236,13 @@ rb_mod_public_method(int argc, VALUE *argv, VALUE obj)
  *  call-seq:
  *     mod.private_class_method(symbol, ...)   -> mod
  *     mod.private_class_method(string, ...)   -> mod
+ *     mod.private_class_method(array)         -> mod
  *
  *  Makes existing class methods private. Often used to hide the default
  *  constructor <code>new</code>.
  *
  *  String arguments are converted to symbols.
+ *  An Array of Symbols and/or Strings are also accepted.
  *
  *     class SimpleSingleton  # Not thread safe
  *       private_class_method :new
@@ -2258,12 +2265,14 @@ rb_mod_private_method(int argc, VALUE *argv, VALUE obj)
  *     public
  *     public(symbol, ...)
  *     public(string, ...)
+ *     public(array)
  *
  *  With no arguments, sets the default visibility for subsequently
  *  defined methods to public. With arguments, sets the named methods to
  *  have public visibility.
  *
  *  String arguments are converted to symbols.
+ *  An Array of Symbols and/or Strings are also accepted.
  */
 
 static VALUE
@@ -2277,12 +2286,14 @@ top_public(int argc, VALUE *argv, VALUE _)
  *     private
  *     private(symbol, ...)
  *     private(string, ...)
+ *     private(array)
  *
  *  With no arguments, sets the default visibility for subsequently
  *  defined methods to private. With arguments, sets the named methods to
  *  have private visibility.
  *
  *  String arguments are converted to symbols.
+ *  An Array of Symbols and/or Strings are also accepted.
  */
 static VALUE
 top_private(int argc, VALUE *argv, VALUE _)
