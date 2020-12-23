@@ -281,8 +281,14 @@ module TestIRB
       skip if RUBY_ENGINE == 'truffleruby'
       ruby_lex = RubyLex.new()
       io = MockIO_DynamicPrompt.new(lines) do |prompt_list|
-        error_message = "Calculated the wrong number of spaces for:\n #{lines.join("\n")}"
-        assert_equal(expected_prompt_list, prompt_list)
+        error_message = <<~EOM
+          Expected dynamic prompt:
+          #{expected_prompt_list.join("\n")}
+
+          Actual dynamic prompt:
+          #{prompt_list.join("\n")}
+        EOM
+        assert_equal(expected_prompt_list, prompt_list, error_message)
       end
       ruby_lex.set_prompt do |ltype, indent, continue, line_no|
         '%03d:%01d:%1s:%s ' % [line_no, indent, ltype, continue ? '*' : '>']
