@@ -56,17 +56,17 @@ other files are unaffected.
 
 Magic comments may consist of a single directive (as in the example above).
 Alternatively, multiple directives may appear on the same line if separated by ";"
-and wrapped between "-*-" (See Emacs' {file variables}[https://www.gnu.org/software/emacs/manual/html_node/emacs/Specifying-File-Variables.html])
+and wrapped between "-*-" (see Emacs' {file variables}[https://www.gnu.org/software/emacs/manual/html_node/emacs/Specifying-File-Variables.html]).
 
   # emacs-compatible; -*- coding: big5; mode: ruby -*-
 
   p 'hello'.frozen? # => true
   p 'hello'.encoding # => #<Encoding:Big5>
 
-=== <code>encoding</code> Directive
+=== +encoding+ Directive
 
 Indicates which string encoding should be used for string literals,
-regexp literals and `__ENCODING__`:
+regexp literals and <code>__ENCODING__</code>:
 
   # encoding: big5
 
@@ -74,13 +74,13 @@ regexp literals and `__ENCODING__`:
 
 Default encoding is UTF-8.
 
-It must appear in the first comment section of a file
+It must appear in the first comment section of a file.
 
 The word "coding" may be used instead of "encoding".
 
-=== <code>frozen_string_literal</code> Directive
+=== +frozen_string_literal+ Directive
 
-When appears in the top section of a file, indicates that string literals should be allocated once at parse time and frozen.
+Indicates that string literals should be allocated once at parse time and frozen.
 
   # frozen_string_literal: true
 
@@ -89,7 +89,7 @@ When appears in the top section of a file, indicates that string literals should
   end
   p 'world'.frozen? # => true
 
-The default is false; this can be changed with `--enable=frozen-string-literal`.
+The default is false; this can be changed with <code>--enable=frozen-string-literal</code>.
 Without the directive, or with <code># frozen_string_literal: false</code>,
 the example above would print 3 different numbers and "false".
 
@@ -99,11 +99,11 @@ Starting in Ruby 3.0, string literals that are dynamic are not frozen nor reused
 
   p "Addition: #{2 + 2}".frozen? # => false
 
-It must appear in the first comment section of a file
+It must appear in the first comment section of a file.
 
-=== <code>warn_indent</code> Directive
+=== +warn_indent+ Directive
 
-This directive can turn detection of bad indentation for statements that follow it:
+This directive can turn on detection of bad indentation for statements that follow it:
 
   def foo
     end # => no warning
@@ -114,7 +114,7 @@ This directive can turn detection of bad indentation for statements that follow 
 
 Another way to get these warnings to show is by running Ruby with warnings (<code>ruby -w</code>). Using a directive to set this false will prevent these warnings to show.
 
-=== <code>shareable_constant_value</code> Directive
+=== +shareable_constant_value+ Directive
 
 Note: This directive is experimental in Ruby 3.0 and may change in future releases.
 
@@ -177,7 +177,7 @@ In this mode, all values assigned to constants are made shareable.
   var.frozen? # => true
 
 This mode is "experimental", because it might be too error prone,
-for example by deep-freezing the constants of an exernal resource
+for example by deep-freezing the constants of an external resource
 which could cause errors:
 
   # shareable_constant_value: experimental_everything
@@ -210,7 +210,7 @@ This directive can be used multiple times in the same file:
   E.frozen? # => true
   E.all(&:frozen?) # => true
 
-The directive affect only subsequent constants and only for the current scope:
+The directive affects only subsequent constants and only for the current scope:
 
   module Mod
     # shareable_constant_value: literal
