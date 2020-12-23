@@ -238,8 +238,8 @@ EOT
       # compatibility with test-unit
       alias pend skip
 
-      def assert_syntax_error(code, error, *args)
-        prepare_syntax_check(code, *args) do |src, fname, line, mesg|
+      def assert_syntax_error(code, error, *args, **opt)
+        prepare_syntax_check(code, *args, **opt) do |src, fname, line, mesg|
           yield if defined?(yield)
           e = assert_raise(SyntaxError, mesg) do
             syntax_check(src, fname, line)
