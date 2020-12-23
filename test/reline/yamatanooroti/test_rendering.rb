@@ -224,6 +224,20 @@ begin
       EOC
     end
 
+    def test_mode_icon_vi_changing
+      write_inputrc <<~LINES
+        set editing-mode vi
+        set show-mode-in-prompt on
+      LINES
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
+      write(":a\C-[ab\C-[ac\C-h\C-h\C-h\C-h:a")
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        (ins)prompt> :a
+      EOC
+    end
+
     def test_prompt_with_escape_sequence
       ENV['RELINE_TEST_PROMPT'] = "\1\e[30m\2prompt> \1\e[m\2"
       start_terminal(5, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
