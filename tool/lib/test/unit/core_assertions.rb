@@ -264,7 +264,7 @@ module Test
         at_exit {
           out.puts [Marshal.dump($!)].pack('m'), "assertions=\#{self._assertions}"
         }
-        Test::Unit::Runner.class_variable_set(:@@stop_auto_run, true)
+        Test::Unit::Runner.class_variable_set(:@@stop_auto_run, true) if defined?(Test::Unit::Runner)
       end
 
       def assert_separately(args, file = nil, line = nil, src, ignore_stderr: nil, **opt)
@@ -276,7 +276,7 @@ module Test
         capture_stdout = true
         unless /mswin|mingw/ =~ RUBY_PLATFORM
           capture_stdout = false
-          opt[:out] = MiniTest::Unit.output
+          opt[:out] = MiniTest::Unit.output if defined?(MiniTest::Unit)
           res_p, res_c = IO.pipe
           opt[res_c.fileno] = res_c.fileno
         end
