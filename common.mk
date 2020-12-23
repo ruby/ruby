@@ -1878,6 +1878,7 @@ ast.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 ast.$(OBJEXT): {$(VPATH)}assert.h
 ast.$(OBJEXT): {$(VPATH)}ast.c
 ast.$(OBJEXT): {$(VPATH)}ast.rbinc
+ast.$(OBJEXT): {$(VPATH)}atomic.h
 ast.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 ast.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 ast.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -2246,6 +2247,7 @@ builtin.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 builtin.$(OBJEXT): $(top_srcdir)/internal/vm.h
 builtin.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 builtin.$(OBJEXT): {$(VPATH)}assert.h
+builtin.$(OBJEXT): {$(VPATH)}atomic.h
 builtin.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 builtin.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 builtin.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -2437,6 +2439,7 @@ class.$(OBJEXT): $(top_srcdir)/internal/variable.h
 class.$(OBJEXT): $(top_srcdir)/internal/vm.h
 class.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 class.$(OBJEXT): {$(VPATH)}assert.h
+class.$(OBJEXT): {$(VPATH)}atomic.h
 class.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 class.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 class.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -2810,6 +2813,7 @@ compile.$(OBJEXT): $(top_srcdir)/internal/variable.h
 compile.$(OBJEXT): $(top_srcdir)/internal/vm.h
 compile.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 compile.$(OBJEXT): {$(VPATH)}assert.h
+compile.$(OBJEXT): {$(VPATH)}atomic.h
 compile.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 compile.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 compile.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -3201,6 +3205,7 @@ cont.$(OBJEXT): $(top_srcdir)/internal/vm.h
 cont.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 cont.$(OBJEXT): {$(VPATH)}$(COROUTINE_H)
 cont.$(OBJEXT): {$(VPATH)}assert.h
+cont.$(OBJEXT): {$(VPATH)}atomic.h
 cont.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 cont.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 cont.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -3392,6 +3397,7 @@ debug.$(OBJEXT): $(top_srcdir)/internal/util.h
 debug.$(OBJEXT): $(top_srcdir)/internal/vm.h
 debug.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 debug.$(OBJEXT): {$(VPATH)}assert.h
+debug.$(OBJEXT): {$(VPATH)}atomic.h
 debug.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 debug.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 debug.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -5021,6 +5027,7 @@ error.$(OBJEXT): $(top_srcdir)/internal/variable.h
 error.$(OBJEXT): $(top_srcdir)/internal/vm.h
 error.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 error.$(OBJEXT): {$(VPATH)}assert.h
+error.$(OBJEXT): {$(VPATH)}atomic.h
 error.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 error.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 error.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -5223,6 +5230,7 @@ eval.$(OBJEXT): $(top_srcdir)/internal/variable.h
 eval.$(OBJEXT): $(top_srcdir)/internal/vm.h
 eval.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 eval.$(OBJEXT): {$(VPATH)}assert.h
+eval.$(OBJEXT): {$(VPATH)}atomic.h
 eval.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 eval.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 eval.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -5645,6 +5653,7 @@ gc.$(OBJEXT): $(top_srcdir)/internal/variable.h
 gc.$(OBJEXT): $(top_srcdir)/internal/vm.h
 gc.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 gc.$(OBJEXT): {$(VPATH)}assert.h
+gc.$(OBJEXT): {$(VPATH)}atomic.h
 gc.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 gc.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 gc.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -5855,6 +5864,7 @@ golf_prelude.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 golf_prelude.$(OBJEXT): $(top_srcdir)/internal/vm.h
 golf_prelude.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 golf_prelude.$(OBJEXT): {$(VPATH)}assert.h
+golf_prelude.$(OBJEXT): {$(VPATH)}atomic.h
 golf_prelude.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 golf_prelude.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 golf_prelude.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -6572,6 +6582,7 @@ io.$(OBJEXT): $(top_srcdir)/internal/variable.h
 io.$(OBJEXT): $(top_srcdir)/internal/vm.h
 io.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 io.$(OBJEXT): {$(VPATH)}assert.h
+io.$(OBJEXT): {$(VPATH)}atomic.h
 io.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 io.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 io.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -6778,6 +6789,7 @@ iseq.$(OBJEXT): $(top_srcdir)/internal/variable.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/vm.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 iseq.$(OBJEXT): {$(VPATH)}assert.h
+iseq.$(OBJEXT): {$(VPATH)}atomic.h
 iseq.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 iseq.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 iseq.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -6984,6 +6996,7 @@ load.$(OBJEXT): $(top_srcdir)/internal/variable.h
 load.$(OBJEXT): $(top_srcdir)/internal/vm.h
 load.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 load.$(OBJEXT): {$(VPATH)}assert.h
+load.$(OBJEXT): {$(VPATH)}atomic.h
 load.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 load.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 load.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -8189,6 +8202,7 @@ miniinit.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 miniinit.$(OBJEXT): {$(VPATH)}array.rb
 miniinit.$(OBJEXT): {$(VPATH)}assert.h
 miniinit.$(OBJEXT): {$(VPATH)}ast.rb
+miniinit.$(OBJEXT): {$(VPATH)}atomic.h
 miniinit.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 miniinit.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 miniinit.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -8381,6 +8395,7 @@ miniprelude.$(OBJEXT): $(hdrdir)/ruby.h
 miniprelude.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 miniprelude.$(OBJEXT): {$(VPATH)}assert.h
 miniprelude.$(OBJEXT): {$(VPATH)}ast.rb
+miniprelude.$(OBJEXT): {$(VPATH)}atomic.h
 miniprelude.$(OBJEXT): {$(VPATH)}config.h
 miniprelude.$(OBJEXT): {$(VPATH)}defines.h
 miniprelude.$(OBJEXT): {$(VPATH)}gc.rb
@@ -8424,6 +8439,7 @@ mjit.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 mjit.$(OBJEXT): $(top_srcdir)/internal/vm.h
 mjit.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 mjit.$(OBJEXT): {$(VPATH)}assert.h
+mjit.$(OBJEXT): {$(VPATH)}atomic.h
 mjit.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 mjit.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 mjit.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -8637,6 +8653,7 @@ mjit_compile.$(OBJEXT): $(top_srcdir)/internal/variable.h
 mjit_compile.$(OBJEXT): $(top_srcdir)/internal/vm.h
 mjit_compile.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 mjit_compile.$(OBJEXT): {$(VPATH)}assert.h
+mjit_compile.$(OBJEXT): {$(VPATH)}atomic.h
 mjit_compile.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 mjit_compile.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 mjit_compile.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -8833,6 +8850,7 @@ node.$(OBJEXT): $(top_srcdir)/internal/variable.h
 node.$(OBJEXT): $(top_srcdir)/internal/vm.h
 node.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 node.$(OBJEXT): {$(VPATH)}assert.h
+node.$(OBJEXT): {$(VPATH)}atomic.h
 node.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 node.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 node.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -9771,6 +9789,7 @@ prelude.$(OBJEXT): $(CCAN_DIR)/str/str.h
 prelude.$(OBJEXT): $(hdrdir)/ruby.h
 prelude.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 prelude.$(OBJEXT): {$(VPATH)}assert.h
+prelude.$(OBJEXT): {$(VPATH)}atomic.h
 prelude.$(OBJEXT): {$(VPATH)}config.h
 prelude.$(OBJEXT): {$(VPATH)}defines.h
 prelude.$(OBJEXT): {$(VPATH)}gem_prelude.rb
@@ -9812,6 +9831,7 @@ proc.$(OBJEXT): $(top_srcdir)/internal/symbol.h
 proc.$(OBJEXT): $(top_srcdir)/internal/vm.h
 proc.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 proc.$(OBJEXT): {$(VPATH)}assert.h
+proc.$(OBJEXT): {$(VPATH)}atomic.h
 proc.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 proc.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 proc.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -10013,6 +10033,7 @@ process.$(OBJEXT): $(top_srcdir)/internal/vm.h
 process.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 process.$(OBJEXT): {$(VPATH)}$(COROUTINE_H)
 process.$(OBJEXT): {$(VPATH)}assert.h
+process.$(OBJEXT): {$(VPATH)}atomic.h
 process.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 process.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 process.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -10217,6 +10238,7 @@ ractor.$(OBJEXT): $(top_srcdir)/internal/thread.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/vm.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 ractor.$(OBJEXT): {$(VPATH)}assert.h
+ractor.$(OBJEXT): {$(VPATH)}atomic.h
 ractor.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 ractor.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 ractor.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -10419,6 +10441,7 @@ random.$(OBJEXT): $(top_srcdir)/internal/variable.h
 random.$(OBJEXT): $(top_srcdir)/internal/vm.h
 random.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 random.$(OBJEXT): {$(VPATH)}assert.h
+random.$(OBJEXT): {$(VPATH)}atomic.h
 random.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 random.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 random.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -12144,6 +12167,7 @@ ruby.$(OBJEXT): $(top_srcdir)/internal/variable.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/vm.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 ruby.$(OBJEXT): {$(VPATH)}assert.h
+ruby.$(OBJEXT): {$(VPATH)}atomic.h
 ruby.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 ruby.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 ruby.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -12337,6 +12361,7 @@ scheduler.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 scheduler.$(OBJEXT): $(top_srcdir)/internal/vm.h
 scheduler.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 scheduler.$(OBJEXT): {$(VPATH)}assert.h
+scheduler.$(OBJEXT): {$(VPATH)}atomic.h
 scheduler.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 scheduler.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 scheduler.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -12688,6 +12713,7 @@ signal.$(OBJEXT): $(top_srcdir)/internal/thread.h
 signal.$(OBJEXT): $(top_srcdir)/internal/vm.h
 signal.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 signal.$(OBJEXT): {$(VPATH)}assert.h
+signal.$(OBJEXT): {$(VPATH)}atomic.h
 signal.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 signal.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 signal.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -13635,6 +13661,7 @@ struct.$(OBJEXT): $(top_srcdir)/internal/symbol.h
 struct.$(OBJEXT): $(top_srcdir)/internal/vm.h
 struct.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 struct.$(OBJEXT): {$(VPATH)}assert.h
+struct.$(OBJEXT): {$(VPATH)}atomic.h
 struct.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 struct.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 struct.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -14024,6 +14051,7 @@ thread.$(OBJEXT): $(top_srcdir)/internal/vm.h
 thread.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 thread.$(OBJEXT): {$(VPATH)}$(COROUTINE_H)
 thread.$(OBJEXT): {$(VPATH)}assert.h
+thread.$(OBJEXT): {$(VPATH)}atomic.h
 thread.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 thread.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 thread.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -14590,6 +14618,7 @@ transient_heap.$(OBJEXT): $(top_srcdir)/internal/variable.h
 transient_heap.$(OBJEXT): $(top_srcdir)/internal/vm.h
 transient_heap.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 transient_heap.$(OBJEXT): {$(VPATH)}assert.h
+transient_heap.$(OBJEXT): {$(VPATH)}atomic.h
 transient_heap.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 transient_heap.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 transient_heap.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -14955,6 +14984,7 @@ variable.$(OBJEXT): $(top_srcdir)/internal/variable.h
 variable.$(OBJEXT): $(top_srcdir)/internal/vm.h
 variable.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 variable.$(OBJEXT): {$(VPATH)}assert.h
+variable.$(OBJEXT): {$(VPATH)}atomic.h
 variable.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 variable.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 variable.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -15152,6 +15182,7 @@ version.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 version.$(OBJEXT): $(top_srcdir)/revision.h
 version.$(OBJEXT): $(top_srcdir)/version.h
 version.$(OBJEXT): {$(VPATH)}assert.h
+version.$(OBJEXT): {$(VPATH)}atomic.h
 version.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 version.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 version.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -15356,6 +15387,7 @@ vm.$(OBJEXT): $(top_srcdir)/internal/variable.h
 vm.$(OBJEXT): $(top_srcdir)/internal/vm.h
 vm.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 vm.$(OBJEXT): {$(VPATH)}assert.h
+vm.$(OBJEXT): {$(VPATH)}atomic.h
 vm.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 vm.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 vm.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -15572,6 +15604,7 @@ vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/vm.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}assert.h
+vm_backtrace.$(OBJEXT): {$(VPATH)}atomic.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -15761,6 +15794,7 @@ vm_dump.$(OBJEXT): $(top_srcdir)/internal/vm.h
 vm_dump.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 vm_dump.$(OBJEXT): {$(VPATH)}addr2line.h
 vm_dump.$(OBJEXT): {$(VPATH)}assert.h
+vm_dump.$(OBJEXT): {$(VPATH)}atomic.h
 vm_dump.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 vm_dump.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 vm_dump.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -15951,6 +15985,7 @@ vm_sync.$(OBJEXT): $(top_srcdir)/internal/vm.h
 vm_sync.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 vm_sync.$(OBJEXT): {$(VPATH)}addr2line.h
 vm_sync.$(OBJEXT): {$(VPATH)}assert.h
+vm_sync.$(OBJEXT): {$(VPATH)}atomic.h
 vm_sync.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 vm_sync.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 vm_sync.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -16150,6 +16185,7 @@ vm_trace.$(OBJEXT): $(top_srcdir)/internal/symbol.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/vm.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 vm_trace.$(OBJEXT): {$(VPATH)}assert.h
+vm_trace.$(OBJEXT): {$(VPATH)}atomic.h
 vm_trace.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 vm_trace.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 vm_trace.$(OBJEXT): {$(VPATH)}backward/2/bool.h
