@@ -9668,6 +9668,7 @@ parser_yylex(struct parser_params *p)
 	p->lex.paren_nest++;
 	if (IS_AFTER_OPERATOR()) {
 	    if ((c = nextc(p)) == ']') {
+		p->lex.paren_nest--;
 		SET_LEX_STATE(EXPR_ARG);
 		if ((c = nextc(p)) == '=') {
 		    return tASET;
