@@ -65,6 +65,14 @@ sufficient information, see the ChangeLog file or Redmine
         0 in 1 #=> raise NoMatchingPatternError
         ```
 
+* Expression pattern `^(expression)` is added.
+  [[Feature #17411]]
+
+    ```ruby
+    version = {name: '2.6', released_at: Time.new(2018, 12, 25)}
+    version in {released_at: ^(Time.new(2010)..Time.new(2020))}
+    ```
+
 * Find-pattern is added.  [EXPERIMENTAL]
   [[Feature #16828]]
 
@@ -769,4 +777,5 @@ end
 [Feature #17371]: https://bugs.ruby-lang.org/issues/17371
 [GH-2991]:        https://github.com/ruby/ruby/pull/2991
 [Feature #17314]: https://bugs.ruby-lang.org/issues/17314
+[Feature #17411]: https://bugs.ruby-lang.org/issues/17411
 [Bug #17419]:     https://bugs.ruby-lang.org/issues/17419

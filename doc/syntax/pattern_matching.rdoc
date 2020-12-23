@@ -312,6 +312,16 @@ One important usage of variable pinning is specifying the same value should happ
   end
   #=> "not matched"
 
+== Expression match
+
+When a match should be made against an expression, the syntax `^(expr)` may be used.
+Like with pin syntax `^var`, the expression is a match if it is `===`.
+
+  version in {released_at: ^(Time.new(2010)..Time.new(2020))}
+  # equivalent to
+  date_range = Time.new(2010)..Time.new(2020)
+  version in {released_at: ^date_range}
+
 == Matching non-primitive objects: +deconstruct+ and +deconstruct_keys+
 
 As already mentioned above, array/find and hash patterns besides literal arrays and hashes will try to match any object implementing +deconstruct+ (for array/find patterns) or +deconstruct_keys+ (for hash patterns).
