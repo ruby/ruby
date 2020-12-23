@@ -1672,21 +1672,33 @@ rb_ractor_living_thread_num(const rb_ractor_t *r)
 VALUE
 rb_ractor_thread_list(rb_ractor_t *r)
 {
-    VALUE ary = rb_ary_new();
     rb_thread_t *th = 0;
+    VALUE *ts;
+    int ts_cnt;
 
     RACTOR_LOCK(r);
-    list_for_each(&r->threads.set, th, lt_node) {
-        switch (th->status) {
-          case THREAD_RUNNABLE:
-          case THREAD_STOPPED:
-          case THREAD_STOPPED_FOREVER:
-            rb_ary_push(ary, th->self);
-          default:
-            break;
+    {
+        ts = ALLOCA_N(VALUE, r->threads.cnt);
+        ts_cnt = 0;
+
+        list_for_each(&r->threads.set, th, lt_node) {
+            switch (th->status) {
+              case THREAD_RUNNABLE:
+              case THREAD_STOPPED:
+              case THREAD_STOPPED_FOREVER:
+                ts[ts_cnt++] = th->self;
+              default:
+                break;
+            }
         }
     }
     RACTOR_UNLOCK(r);
+
+    VALUE ary = rb_ary_new();
+    for (int i=0; i<ts_cnt; i++) {
+        rb_ary_push(ary, ts[i]);
+    }
+
     return ary;
 }
 
