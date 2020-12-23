@@ -937,6 +937,34 @@ rb_funcallv_kw(VALUE recv, ID mid, int argc, const VALUE *argv, int kw_splat)
 }
 
 /*!
+ * Calls a method only if it is the basic method of `ancestor`
+ * otherwise returns Qundef;
+ * \param recv   receiver of the method
+ * \param mid    an ID that represents the name of the method
+ * \param ancestor the Class that defined the basic method
+ * \param argc   the number of arguments
+ * \param argv   pointer to an array of method arguments
+ * \param kw_splat bool
+ */
+VALUE
+rb_check_funcall_basic_kw(VALUE recv, ID mid, VALUE ancestor, int argc, const VALUE *argv, int kw_splat)
+{
+    const rb_callable_method_entry_t *cme;
+    rb_execution_context_t *ec;
+    VALUE klass = CLASS_OF(recv);
+    if (!klass) return Qundef; /* hidden object */
+
+    cme = rb_callable_method_entry(klass, mid);
+    if (cme && METHOD_ENTRY_BASIC(cme) && RBASIC_CLASS(cme->defined_class) == ancestor) {
+	ec = GET_EC();
+	return rb_vm_call0(ec, recv, mid, argc, argv, cme, kw_splat);
+    }
+
+    return Qundef;
+}
+
+
+/*!
  * Calls a method.
  *
  * Same as rb_funcallv but this function can call only public methods.
