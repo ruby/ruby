@@ -4743,10 +4743,9 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
 
     // threads
     vm->ractor.cnt = 0;
-    vm->ractor.blocking_cnt = 0;
     rb_ractor_living_threads_init(th->ractor);
     rb_ractor_living_threads_insert(th->ractor, th);
-    rb_vm_ractor_blocking_cnt_dec(th->vm, th->ractor, __FILE__, __LINE__);
+
 
     /* may be held by MJIT threads in parent */
     rb_native_mutex_initialize(&vm->waitpid_lock);
