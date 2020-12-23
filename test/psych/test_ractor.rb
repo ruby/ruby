@@ -47,4 +47,4 @@ class TestPsychRactor < Test::Unit::TestCase
       assert_equal true, r
     RUBY
   end
-end
+end if defined?(Test::Unit::TestCase)
