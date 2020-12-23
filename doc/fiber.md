@@ -39,7 +39,7 @@ instrumentation.
 To set the scheduler for the current thread:
 
 ``` ruby
-Fiber.set_schduler(MyScheduler.new)
+Fiber.set_scheduler(MyScheduler.new)
 ```
 
 When the thread exits, there is an implicit call to `set_scheduler`:
@@ -182,7 +182,7 @@ fiber-specific.
 
 #### Queue / SizedQueue
 
-The `Queue` and `SizedQueue` classses can be used in a non-blocking context and
+The `Queue` and `SizedQueue` classes can be used in a non-blocking context and
 are fiber-specific.
 
 #### Thread
