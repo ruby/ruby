@@ -12,7 +12,7 @@ module Psych
       def self.dispatch_cache
         Hash.new do |hash, klass|
           hash[klass] = :"visit_#{klass.name.gsub('::', '_')}"
-        end
+        end.compare_by_identity
       end
 
       if defined?(Ractor)
