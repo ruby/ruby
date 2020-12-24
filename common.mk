@@ -5015,6 +5015,7 @@ error.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 error.$(OBJEXT): $(top_srcdir)/internal/error.h
 error.$(OBJEXT): $(top_srcdir)/internal/eval.h
 error.$(OBJEXT): $(top_srcdir)/internal/gc.h
+error.$(OBJEXT): $(top_srcdir)/internal/hash.h
 error.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 error.$(OBJEXT): $(top_srcdir)/internal/io.h
 error.$(OBJEXT): $(top_srcdir)/internal/load.h
