@@ -37,9 +37,7 @@ typedef struct {
 } rb_memory_view_item_component_t;
 
 typedef struct {
-    /* The original object that has the memory exported via this memory view.
-     * The consumer of this memory view has the responsibility to call rb_gc_mark
-     * for preventing this obj collected by GC.  */
+    /* The original object that has the memory exported via this memory view.  */
     VALUE obj;
 
     /* The pointer to the exported memory. */
