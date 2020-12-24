@@ -178,22 +178,22 @@ In this mode, all values assigned to constants are made shareable.
   X = var # => calls `Ractor.make_shareable(var)`
   var.frozen? # => true
 
-This mode is "experimental", because it might be error prone, for 
-example by deep-freezing the constants of an external resource which 
+This mode is "experimental", because it might be error prone, for
+example by deep-freezing the constants of an external resource which
 could cause errors:
 
   # shareable_constant_value: experimental_everything
   FOO = SomeGem::Something::FOO
   # => deep freezes the gem's constant!
 
-We will revisit to consider removing "experimental_" or removing this 
-mode by checking usages before Ruby 3.1.
+This will be revisited before Ruby 3.1 to either allow `everything`
+or to instead remove this mode.
 
 The method Module#const_set is not affected.
 
 ==== Mode +experimental_copy+
 
-In this mode, all values assigned to constants are copyied deeply and
+In this mode, all values assigned to constants are deeply copied and
 made shareable. It is safer mode than +experimental_everything+.
 
   # shareable_constant_value: experimental_everything
@@ -204,9 +204,9 @@ made shareable. It is safer mode than +experimental_everything+.
   Ractor.shareable?(X) #=> true
   var.object_id == X.object_id #=> false
 
-This mode is "experimental", because it is not discussed enough.
-We will revisit to consider removing "experimental_" or removing this 
-mode by checking usages before Ruby 3.1.
+This mode is "experimental" and has not been discussed thoroughly.
+This will be revisited before Ruby 3.1 to either allow `copy`
+or to instead remove this mode.
 
 The method Module#const_set is not affected.
 
@@ -224,7 +224,7 @@ This directive can be used multiple times in the same file:
   B.frozen? # => true
   B[:foo].frozen? # => true
 
-  C = [Object.new] # => cannot assign unshareable object to C (Ractor::Error)
+  C = [Object.new] # => cannot assign unshareable object to C (Ractor::IsolationError)
 
   D = [Object.new.freeze]
   D.frozen? # => true
