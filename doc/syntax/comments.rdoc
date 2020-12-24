@@ -125,6 +125,7 @@ The directive can specify special treatment for values assigned to constants:
 * +none+: (default)
 * +literal+: literals are implicitly frozen, others must be Ractor-shareable
 * +experimental_everything+: all made shareable
+* +experimental_copy+: copy deeply and make it shareable
 
 ==== Mode +none+ (default)
 
@@ -168,21 +169,45 @@ The method Module#const_set is not affected.
 In this mode, all values assigned to constants are made shareable.
 
   # shareable_constant_value: experimental_everything
-  FOO = Set.new[1, 2, {foo: []}] # => ok, since this is
-      # same as `Set.new[1, 2, {foo: [].freeze}.freeze].freeze`
+  FOO = Set[1, 2, {foo: []}]
+  # same as FOO = Ractor.make_sharable(...)
+  # OR same as `FOO = Set[1, 2, {foo: [].freeze}.freeze].freeze`
 
   var = [{foo: []}]
   var.frozen? # => false (assignment was made to local variable)
   X = var # => calls `Ractor.make_shareable(var)`
   var.frozen? # => true
 
-This mode is "experimental", because it might be too error prone,
-for example by deep-freezing the constants of an external resource
-which could cause errors:
+This mode is "experimental", because it might be error prone, for 
+example by deep-freezing the constants of an external resource which 
+could cause errors:
 
   # shareable_constant_value: experimental_everything
   FOO = SomeGem::Something::FOO
   # => deep freezes the gem's constant!
+
+We will revisit to consider removing "experimental_" or removing this 
+mode by checking usages before Ruby 3.1.
+
+The method Module#const_set is not affected.
+
+==== Mode +experimental_copy+
+
+In this mode, all values assigned to constants are copyied deeply and
+made shareable. It is safer mode than +experimental_everything+.
+
+  # shareable_constant_value: experimental_everything
+  var = [{foo: []}]
+  var.frozen? # => false (assignment was made to local variable)
+  X = var # => calls `Ractor.make_shareable(var, copy: true)`
+  var.frozen? # => false
+  Ractor.shareable?(var) #=> false
+  Ractor.shareable?(X) #=> true
+  var.object_id == X.object_id #=> false
+
+This mode is "experimental", because it is not discussed enough.
+We will revisit to consider removing "experimental_" or removing this 
+mode by checking usages before Ruby 3.1.
 
 The method Module#const_set is not affected.
 

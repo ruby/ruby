@@ -58,6 +58,7 @@ struct lex_context;
 enum shareability {
     shareable_none,
     shareable_literal,
+    shareable_copy,
     shareable_everything,
 };
 
@@ -8053,6 +8054,10 @@ parser_set_shareable_constant_value(struct parser_params *p, const char *name, c
 	}
 	break;
       case 'e': case 'E':
+	if (STRCASECMP(val, "experimental_copy") == 0) {
+	    p->ctxt.shareable_constant_value = shareable_copy;
+	    return;
+	}
 	if (STRCASECMP(val, "experimental_everything") == 0) {
 	    p->ctxt.shareable_constant_value = shareable_everything;
 	    return;
@@ -11048,11 +11053,18 @@ const_decl_path(struct parser_params *p, NODE **dest)
 extern VALUE rb_mRubyVMFrozenCore;
 
 static NODE *
-make_shareable_node(struct parser_params *p, NODE *value, const YYLTYPE *loc)
+make_shareable_node(struct parser_params *p, NODE *value, bool copy, const YYLTYPE *loc)
 {
     NODE *fcore = NEW_LIT(rb_mRubyVMFrozenCore, loc);
-    return NEW_CALL(fcore, rb_intern("make_shareable"),
-		    NEW_LIST(value, loc), loc);
+
+    if (copy) {
+        return NEW_CALL(fcore, rb_intern("make_shareable_copy"),
+                        NEW_LIST(value, loc), loc);
+    }
+    else {
+        return NEW_CALL(fcore, rb_intern("make_shareable"),
+                        NEW_LIST(value, loc), loc);
+    }
 }
 
 static NODE *
@@ -11088,8 +11100,6 @@ shareable_literal_value(NODE *node)
 #ifndef SHAREABLE_BARE_EXPRESSION
 #define SHAREABLE_BARE_EXPRESSION 1
 #endif
-
-VALUE rb_ractor_make_shareable(VALUE obj);
 
 static NODE *
 shareable_literal_constant(struct parser_params *p, enum shareability shareable,
@@ -11207,7 +11217,7 @@ shareable_literal_constant(struct parser_params *p, enum shareability shareable,
     if (NIL_P(lit)) {
 	// if shareable_literal, all elements should have been ensured
 	// as shareable
-	value = make_shareable_node(p, value, loc);
+	value = make_shareable_node(p, value, false, loc);
     }
     else {
 	nd_set_type(value, NODE_LIT);
@@ -11235,11 +11245,12 @@ shareable_constant_value(struct parser_params *p, enum shareability shareable,
 	}
 	break;
 
+      case shareable_copy:
       case shareable_everything:
 	{
 	    NODE *lit = shareable_literal_constant(p, shareable, &lhs, value, loc, 0);
 	    if (lit) return lit;
-	    return make_shareable_node(p, value, loc);
+	    return make_shareable_node(p, value, shareable == shareable_copy, loc);
 	}
 	break;
 

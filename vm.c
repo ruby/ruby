@@ -994,9 +994,6 @@ collect_outer_variable_names(ID id, VALUE val, void *ptr)
     return ID_TABLE_CONTINUE;
 }
 
-VALUE rb_ractor_make_shareable(VALUE obj);
-VALUE rb_ractor_ensure_shareable(VALUE obj, VALUE name);
-
 static const rb_env_t *
 env_copy(const VALUE *src_ep, VALUE read_only_variables)
 {
@@ -3182,6 +3179,12 @@ m_core_make_shareable(VALUE recv, VALUE obj)
 }
 
 static VALUE
+m_core_make_shareable_copy(VALUE recv, VALUE obj)
+{
+    return rb_ractor_make_shareable_copy(obj);
+}
+
+static VALUE
 m_core_ensure_shareable(VALUE recv, VALUE obj, VALUE name)
 {
     return rb_ractor_ensure_shareable(obj, name);
@@ -3352,6 +3355,7 @@ Init_VM(void)
     rb_define_method_id(klass, idProc, f_proc, 0);
     rb_define_method_id(klass, idLambda, f_lambda, 0);
     rb_define_method(klass, "make_shareable", m_core_make_shareable, 1);
+    rb_define_method(klass, "make_shareable_copy", m_core_make_shareable_copy, 1);
     rb_define_method(klass, "ensure_shareable", m_core_ensure_shareable, 2);
     rb_obj_freeze(fcore);
     RBASIC_CLEAR_CLASS(klass);

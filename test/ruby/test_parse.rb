@@ -1205,6 +1205,7 @@ x = __ENCODING__
   end
 
   def test_shareable_constant_value_simple
+    obj = [['unsharable_value']]
     a, b, c = eval_separately("#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       # shareable_constant_value: experimental_everything
@@ -1222,6 +1223,18 @@ x = __ENCODING__
     assert_ractor_shareable(c)
     assert_equal([1], a[0])
     assert_ractor_shareable(a[0])
+
+    a, obj = eval_separately(<<~'end;')
+      # shareable_constant_value: experimental_copy
+      obj = [["unshareable"]]
+      A = obj
+      [A, obj]
+    end;
+
+    assert_ractor_shareable(a)
+    assert_not_ractor_shareable(obj)
+    assert_equal obj, a
+    assert !obj.equal?(a)
   end
 
   def test_shareable_constant_value_nested
