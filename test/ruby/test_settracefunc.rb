@@ -1713,19 +1713,19 @@ class TestSetTraceFunc < Test::Unit::TestCase
     c = Class.new{
       alias initialize itself
     }
-    TracePoint.new(:c_call, &capture_events).enable{
+    TracePoint.new(:call, &capture_events).enable{
       c.new
     }
-    assert_equal [:c_call, :itself, :initialize], events[1]
+    assert_equal [:call, :itself, :initialize], events[0]
     events.clear
 
     o = Class.new{
       alias alias_itself itself
     }.new
-    TracePoint.new(:c_call, :c_return, &capture_events).enable{
+    TracePoint.new(:call, :return, &capture_events).enable{
       o.alias_itself
     }
-    assert_equal [[:c_call, :itself, :alias_itself], [:c_return, :itself, :alias_itself]], events
+    assert_equal [[:call, :itself, :alias_itself], [:return, :itself, :alias_itself]], events
     events.clear
   end
 
