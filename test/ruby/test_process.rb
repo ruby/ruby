@@ -1466,7 +1466,22 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_status_fail
-    assert_nil(Process::Status.wait($$))
+    ret = Process::Status.wait($$)
+    assert_instance_of(Process::Status, ret)
+    assert_equal(-1, ret.pid)
+  end
+
+
+  def test_status_wait
+    IO.popen([RUBY, "-e", "gets"], "w") do |io|
+      pid = io.pid
+      assert_nil(Process::Status.wait(pid, Process::WNOHANG))
+      io.puts
+      ret = Process::Status.wait(pid)
+      assert_instance_of(Process::Status, ret)
+      assert_equal(pid, ret.pid)
+      assert_predicate(ret, :exited?)
+    end
   end
 
   def test_wait_without_arg
