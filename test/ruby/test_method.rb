@@ -474,11 +474,6 @@ class TestMethod < Test::Unit::TestCase
     assert_equal("#<Method: #{c4.inspect}(#{c.inspect})#bar(foo)() #{__FILE__}:#{line_no}>", m4.inspect, bug15608)
 
     bug17428 = '[ruby-core:101635] [Bug #17428]'
-    c4 = Class.new(c)
-    c4.class_eval { alias bar foo }
-    o = c4.new
-    o.singleton_class
-    m4 = o.method(:bar)
     assert_equal("#<Method: #<Class:String>(Module)#prepend(*)>", String.method(:prepend).inspect, bug17428)
 
     c5 = Class.new(String)
