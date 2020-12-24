@@ -155,6 +155,7 @@ eom
     date = Time.now.utc # use utc to use previous day in midnight
     entry = <<eom
 - version: #{ver}
+  tag: v#{ver.tr('-.', '_')}
   date: #{date.strftime("%Y-%m-%d")}
   post: /en/news/#{date.strftime("%Y/%m/%d")}/ruby-#{ver.tr('.', '-')}-released/
   stats:
