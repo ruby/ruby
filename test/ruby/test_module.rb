@@ -1413,7 +1413,7 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_top_public_private
-    assert_in_out_err([], <<-INPUT, %w([:foo] [:bar] [:foo,\ :bar] [] [:foo,\ :bar] []), [])
+    assert_in_out_err([], <<-INPUT, %w([:foo] [:bar] [:bar,\ :foo] [] [:bar,\ :foo] []), [])
       private
       def foo; :foo; end
       public
@@ -1422,16 +1422,16 @@ class TestModule < Test::Unit::TestCase
       p self.methods.grep(/^foo$|^bar$/)
 
       private :foo, :bar
-      p self.private_methods.grep(/^foo$|^bar$/)
+      p self.private_methods.grep(/^foo$|^bar$/).sort
 
       public :foo, :bar
-      p self.private_methods.grep(/^foo$|^bar$/)
+      p self.private_methods.grep(/^foo$|^bar$/).sort
 
       private [:foo, :bar]
-      p self.private_methods.grep(/^foo$|^bar$/)
+      p self.private_methods.grep(/^foo$|^bar$/).sort
 
       public [:foo, :bar]
-      p self.private_methods.grep(/^foo$|^bar$/)
+      p self.private_methods.grep(/^foo$|^bar$/).sort
     INPUT
   end
 
