@@ -54,6 +54,19 @@ module Fiddle
       assert_equal 10, func.call(10)
     end
 
+    def test_const_string
+      closure_class = Class.new(Closure) do
+        def call(string)
+          @return_string = "Hello! #{string}"
+          @return_string
+        end
+      end
+      closure = closure_class.new(:const_string, [:const_string])
+
+      func = Function.new(closure, [:const_string], :const_string)
+      assert_equal("Hello! World!", func.call("World!"))
+    end
+
     def test_block_caller
       cb = Closure::BlockCaller.new(TYPE_INT, [TYPE_INT]) do |one|
         one

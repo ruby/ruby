@@ -130,6 +130,10 @@ with_gvl_callback(void *ptr)
 	    rb_ary_push(params, ULL2NUM(*(unsigned LONG_LONG *)x->args[i]));
 	    break;
 #endif
+	  case TYPE_CONST_STRING:
+	    rb_ary_push(params,
+                        rb_str_new_cstr(*((const char **)(x->args[i]))));
+	    break;
 	  default:
 	    rb_raise(rb_eRuntimeError, "closure args: %d", type);
         }
@@ -175,6 +179,10 @@ with_gvl_callback(void *ptr)
 	*(unsigned LONG_LONG *)x->resp = NUM2ULL(ret);
 	break;
 #endif
+      case TYPE_CONST_STRING:
+        /* Dangerous. Callback must keep reference of the String. */
+        *((const char **)(x->resp)) = StringValueCStr(ret);
+        break;
       default:
 	rb_raise(rb_eRuntimeError, "closure retval: %d", type);
     }
