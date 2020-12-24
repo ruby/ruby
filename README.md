@@ -24,8 +24,8 @@ It is simple, straightforward, and extensible.
 *   Garbage Collection
 *   Dynamic Loading of Object Files (on some architectures)
 *   Highly Portable (works on many Unix-like/POSIX compatible platforms as
-    well as Windows, macOS, Haiku, etc.) cf.
-    https://github.com/ruby/ruby/blob/master/doc/contributing.rdoc#platform-maintainers
+    well as Windows, macOS, etc.) cf.
+    https://github.com/ruby/ruby/blob/master/doc/contributing.rdoc#label-Platform+Maintainers
 
 
 ## How to get Ruby
