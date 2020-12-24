@@ -1,18 +1,9 @@
 prelude: |
-  obj = Object.new
-  ary = Array.new
-  str = String.new
-  int = 42
-  flt = 4.2
-benchmark:
-  object: |
-    obj.itself
+  ary = [1,2,3,4,5,1,2,2,3] 
+  str = "hello world"
+benchmark: 
   array: |
-    ary.itself
+    ary.group_by(&:itself)
   string: |
-    str.itself
-  integer: |
-    int.itself
-  float: |
-    flt.itself
+    str.chars.group_by(&:itself) 
 loop_count: 20000000
