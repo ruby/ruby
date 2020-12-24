@@ -572,6 +572,7 @@ static VALUE rb_cProcessStatus;
 struct rb_process_status {
     rb_pid_t pid;
     int status;
+    int error;
 };
 
 static const rb_data_type_t rb_process_status_type = {
@@ -619,13 +620,14 @@ proc_s_last_status(VALUE mod)
 }
 
 VALUE
-rb_process_status_new(rb_pid_t pid, int status)
+rb_process_status_new(rb_pid_t pid, int status, int error)
 {
     VALUE last_status = rb_process_status_allocate(rb_cProcessStatus);
 
     struct rb_process_status *data = RTYPEDDATA_DATA(last_status);
     data->pid = pid;
     data->status = status;
+    data->error = error;
 
     rb_obj_freeze(last_status);
     return last_status;
@@ -657,7 +659,7 @@ process_status_load(VALUE real_obj, VALUE load_obj)
 void
 rb_last_status_set(int status, rb_pid_t pid)
 {
-    GET_THREAD()->last_status = rb_process_status_new(pid, status);
+    GET_THREAD()->last_status = rb_process_status_new(pid, status, 0);
 }
 
 void
@@ -1164,6 +1166,7 @@ waitpid_state_init(struct waitpid_state *w, rb_pid_t pid, int options)
     w->pid = pid;
     w->options = options;
     w->errnum = 0;
+    w->status = 0;
 }
 
 static const rb_hrtime_t *
@@ -1349,20 +1352,17 @@ rb_process_status_wait(rb_pid_t pid, int flags)
         waitpid_no_SIGCHLD(w);
     }
 
-    VALUE status = Qnil;
-    if (w->ret == -1) {
-        errno = w->errnum;
-    }
-    else if (w->ret > 0 && ruby_nocldwait) {
-        errno = ECHILD;
-    }
-    else {
-        status = rb_process_status_new(w->ret, w->status);
-    }
-
+    rb_pid_t ret = w->ret;
+    int s = w->status, e = w->errnum;
     COROUTINE_STACK_FREE(w);
 
-    return status;
+    if (ret == 0) return Qnil;
+    if (ret > 0 && ruby_nocldwait) {
+        ret = -1;
+        e = ECHILD;
+    }
+
+    return rb_process_status_new(ret, s, e);
 }
 
 /*
@@ -1432,14 +1432,19 @@ rb_pid_t
 rb_waitpid(rb_pid_t pid, int *st, int flags)
 {
     VALUE status = rb_process_status_wait(pid, flags);
-    if (NIL_P(status)) return -1;
+    if (NIL_P(status)) return 0;
 
     struct rb_process_status *data = RTYPEDDATA_DATA(status);
     pid = data->pid;
 
     if (st) *st = data->status;
 
-    GET_THREAD()->last_status = status;
+    if (pid == -1) {
+        errno = data->error;
+    }
+    else {
+        GET_THREAD()->last_status = status;
+    }
 
     return pid;
 }
