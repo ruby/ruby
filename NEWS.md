@@ -630,22 +630,51 @@ Excluding feature bug fixes.
 
 ### JIT
 
-* Native functions shared by multiple methods are deduplicated on JIT compaction.
+* Performance improvements of JIT-ed code
 
-* Decrease code size of hot paths by some optimizations and partitioning cold paths.
+    * Microarchitectural optimizations
 
-* Not only pure Ruby methods but also some C methods skip pushing a method frame.
+        * Native functions shared by multiple methods are deduplicated on JIT compaction.
 
-    * `Kernel#class`, `Integer#zero?`
+        * Decrease code size of hot paths by some optimizations and partitioning cold paths.
 
-* Always generate appropriate code for `==`, `nil?`, and `!` calls depending on
-  a receiver class.
+    * Instance variables
 
-* Optimize instance variable access in some core classes like Hash and their subclasses.
+        * Eliminate some redundant checks.
 
-* Eliminate VM register access on a method return.
+        * Skip checking a class and a object multiple times in a method when possible.
 
-* Optimize C method calls a little.
+        * Optimize accesses in some core classes like Hash and their subclasses.
+
+    * Method inlining support for some C methods
+
+        * `Kernel`: `#class`, `#frozen?`
+
+        * `Integer`: `#-@`, `#~`, `#abs`, `#bit_length`, `#even?`, `#integer?`, `#magnitude`,
+          `#odd?`, `#ord`, `#to_i`, `#to_int`, `#zero?`
+
+        * `Struct`: reader methods for 10th or later members
+
+    * Constant references are inlined.
+
+    * Always generate appropriate code for `==`, `nil?`, and `!` calls depending on
+      a receiver class.
+
+    * Reduce the number of VM register accesses on branches and method returns.
+
+    * Optimize C method calls a little.
+
+* Compilation process improvements
+
+    * It does not keep temporary files in /tmp anymore.
+
+    * Throttle GC and compaction of JIT-ed code.
+
+    * Avoid GC-ing JIT-ed code when not necessary.
+
+    * GC-ing JIT-ed code is executed in a background thread.
+
+    * Reduce the number of locks between Ruby and JIT threads.
 
 ## Static analysis
 
