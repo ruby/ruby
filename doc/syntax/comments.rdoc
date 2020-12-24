@@ -201,7 +201,6 @@ made shareable. It is safer mode than +experimental_everything+.
   var.frozen? # => false (assignment was made to local variable)
   X = var # => calls `Ractor.make_shareable(var, copy: true)`
   var.frozen? # => false
-  Ractor.shareable?(var) #=> false
   Ractor.shareable?(X) #=> true
   var.object_id == X.object_id #=> false
 
