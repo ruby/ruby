@@ -219,6 +219,7 @@ class Reline::LineEditor
     @continuous_insertion_buffer = String.new(encoding: @encoding)
     @scroll_partial_screen = nil
     @prev_mode_icon = nil
+    @drop_terminate_spaces = false
     reset_line
   end
 
@@ -2188,7 +2189,7 @@ class Reline::LineEditor
 
   private def vi_next_word(key, arg: 1)
     if @line.bytesize > @byte_pointer
-      byte_size, width = Reline::Unicode.vi_forward_word(@line, @byte_pointer)
+      byte_size, width = Reline::Unicode.vi_forward_word(@line, @byte_pointer, @drop_terminate_spaces)
       @byte_pointer += byte_size
       @cursor += width
     end
@@ -2316,6 +2317,7 @@ class Reline::LineEditor
   end
 
   private def vi_change_meta(key, arg: 1)
+    @drop_terminate_spaces = true
     @waiting_operator_proc = proc { |cursor_diff, byte_pointer_diff|
       if byte_pointer_diff > 0
         @line, cut = byteslice!(@line, @byte_pointer, byte_pointer_diff)
@@ -2327,6 +2329,7 @@ class Reline::LineEditor
       @cursor_max -= cursor_diff.abs
       @byte_pointer += byte_pointer_diff if byte_pointer_diff < 0
       @config.editing_mode = :vi_insert
+      @drop_terminate_spaces = false
     }
     @waiting_operator_vi_arg = arg
   end
