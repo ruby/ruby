@@ -13,7 +13,7 @@ A module maintainer is responsible for a certain part of Ruby.
 * They have "developer" role on the Redmine to modify issues.
 * They have authority to decide the feature of their part. But they should always respect discussions on ruby-core/ruby-dev.
 
-A submaintainer of a module is like a maintainer. But The submaintainer does
+A submaintainer of a module is like a maintainer. But the submaintainer does
 not have authority to change/add a feature on his/her part. They need consensus
 on ruby-core/ruby-dev before changing/adding. Some of submaintainers have
 commit right, others don't.
