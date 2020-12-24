@@ -668,6 +668,20 @@ rb_last_status_clear(void)
     GET_THREAD()->last_status = Qnil;
 }
 
+static rb_pid_t
+pst_pid(VALUE pst)
+{
+    struct rb_process_status *data = RTYPEDDATA_DATA(pst);
+    return data->pid;
+}
+
+static int
+pst_status(VALUE pst)
+{
+    struct rb_process_status *data = RTYPEDDATA_DATA(pst);
+    return data->status;
+}
+
 /*
  *  call-seq:
  *     stat.to_i     -> integer
@@ -683,12 +697,11 @@ rb_last_status_clear(void)
 static VALUE
 pst_to_i(VALUE self)
 {
-    struct rb_process_status *data = RTYPEDDATA_DATA(self);
-
-    return RB_INT2NUM(data->status);
+    int status = pst_status(self);
+    return RB_INT2NUM(status);
 }
 
-#define PST2INT(st) NUM2INT(pst_to_i(st))
+#define PST2INT(st) pst_status(st)
 
 /*
  *  call-seq:
@@ -702,11 +715,10 @@ pst_to_i(VALUE self)
  */
 
 static VALUE
-pst_pid(VALUE self)
+pst_pid_m(VALUE self)
 {
-    struct rb_process_status *data = RTYPEDDATA_DATA(self);
-
-    return PIDT2NUM(data->pid);
+    rb_pid_t pid = pst_pid(self);
+    return PIDT2NUM(pid);
 }
 
 static VALUE pst_message_status(VALUE str, int status);
@@ -771,7 +783,7 @@ pst_to_s(VALUE st)
     int status;
     VALUE str;
 
-    pid = NUM2PIDT(pst_pid(st));
+    pid = pst_pid(st);
     status = PST2INT(st);
 
     str = rb_str_buf_new(0);
@@ -796,13 +808,12 @@ pst_inspect(VALUE st)
 {
     rb_pid_t pid;
     int status;
-    VALUE vpid, str;
+    VALUE str;
 
-    vpid = pst_pid(st);
-    if (NIL_P(vpid)) {
+    pid = pst_pid(st);
+    if (!pid) {
         return rb_sprintf("#<%s: uninitialized>", rb_class2name(CLASS_OF(st)));
     }
-    pid = NUM2PIDT(vpid);
     status = PST2INT(st);
 
     str = rb_sprintf("#<%s: ", rb_class2name(CLASS_OF(st)));
@@ -8677,7 +8688,7 @@ InitVM_process(void)
     rb_define_method(rb_cProcessStatus, "to_s", pst_to_s, 0);
     rb_define_method(rb_cProcessStatus, "inspect", pst_inspect, 0);
 
-    rb_define_method(rb_cProcessStatus, "pid", pst_pid, 0);
+    rb_define_method(rb_cProcessStatus, "pid", pst_pid_m, 0);
 
     rb_define_method(rb_cProcessStatus, "stopped?", pst_wifstopped, 0);
     rb_define_method(rb_cProcessStatus, "stopsig", pst_wstopsig, 0);
