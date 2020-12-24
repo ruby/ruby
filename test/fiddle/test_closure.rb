@@ -20,6 +20,18 @@ module Fiddle
       end
     end
 
+    def test_type_symbol
+      closure = Closure.new(:int, [:void])
+      assert_equal([
+                     TYPE_INT,
+                     [TYPE_VOID],
+                   ],
+                   [
+                     closure.instance_variable_get(:@ctype),
+                     closure.instance_variable_get(:@args),
+                   ])
+    end
+
     def test_call
       closure = Class.new(Closure) {
         def call
