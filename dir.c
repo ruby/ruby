@@ -1064,8 +1064,10 @@ dir_s_chdir(int argc, VALUE *argv, VALUE obj)
     }
 
     if (chdir_blocking > 0) {
-	if (!rb_block_given_p() || rb_thread_current() != chdir_thread)
+	if (rb_thread_current() != chdir_thread)
             rb_raise(rb_eRuntimeError, "conflicting chdir during another chdir block");
+        if (!rb_block_given_p())
+            rb_warn("conflicting chdir during another chdir block");
     }
 
     if (rb_block_given_p()) {
