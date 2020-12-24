@@ -44,7 +44,7 @@ sufficient information, see the ChangeLog file or Redmine
 
 * One-line pattern matching is redesigned.  [EXPERIMENTAL]
 
-    * `=>` is added. It can be used like rightward assignment.
+    * `=>` is added. It can be used like a rightward assignment.
       [[Feature #17260]]
 
         ```ruby
@@ -125,13 +125,13 @@ sufficient information, see the ChangeLog file or Redmine
 ### `--help` option
 
 When the environment variable `RUBY_PAGER` or `PAGER` is present and has
-non-empty value, and the standard input and output are tty, the `--help`
+a non-empty value, and the standard input and output are tty, the `--help`
 option shows the help message via the pager designated by the value.
 [[Feature #16754]]
 
 ### `--backtrace-limit` option
 
-The `--backtrace-limit` option limits the maximum length of backtrace.
+The `--backtrace-limit` option limits the maximum length of a backtrace.
 [[Feature #8661]]
 
 ## Core classes updates
@@ -273,10 +273,10 @@ Outstanding ones only.
       now accept single array argument with a list of method names. [[Feature #17314]]
 
     * Module#attr_accessor, Module#attr_reader, Module#attr_writer and Module#attr
-      methods now return an array of defined methods names as symbols.
+      methods now return an array of defined method names as symbols.
       [[Feature #17314]]
 
-    * Module#alias_method now returns the defined alias as symbol.
+    * Module#alias_method now returns the defined alias as a symbol.
       [[Feature #17314]]
 
 * Mutex
@@ -668,7 +668,7 @@ Excluding feature bug fixes.
       the analysis result in RBS format.
 
     * Though it supports only a subset of the Ruby language yet, we will continuously
-      improve the coverage of language features, the analysis performance, and usability.
+      improve the coverage of language features, analysis performance, and usability.
 
 ```ruby
 # test.rb
