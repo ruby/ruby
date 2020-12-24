@@ -36,7 +36,7 @@ typedef unsigned int rb_atomic_t; /* Anything OK */
 # define RUBY_ATOMIC_GENERIC_MACRO 1
 
 #elif defined _WIN32
-#if MSC_VERSION_SINCE(1300)
+#if RBIMPL_COMPILER_SINCE(MSVC, 13, 0, 0)
 #pragma intrinsic(_InterlockedOr)
 #endif
 typedef LONG rb_atomic_t;
@@ -48,7 +48,7 @@ typedef LONG rb_atomic_t;
 # define RUBY_ATOMIC_FETCH_SUB(var, val) InterlockedExchangeAdd(&(var), -(LONG)(val))
 #if defined __GNUC__
 # define RUBY_ATOMIC_OR(var, val) __asm__("lock\n\t" "orl\t%1, %0" : "=m"(var) : "Ir"(val))
-#elif MSC_VERSION_BEFORE(1300)
+#elif RBIMPL_COMPILER_BEFORE(MSVC, 13, 0, 0)
 # define RUBY_ATOMIC_OR(var, val) rb_w32_atomic_or(&(var), (val))
 static inline void
 rb_w32_atomic_or(volatile rb_atomic_t *var, rb_atomic_t val)
@@ -66,7 +66,7 @@ rb_w32_atomic_or(volatile rb_atomic_t *var, rb_atomic_t val)
 #endif
 # define RUBY_ATOMIC_EXCHANGE(var, val) InterlockedExchange(&(var), (val))
 # define RUBY_ATOMIC_CAS(var, oldval, newval) InterlockedCompareExchange(&(var), (newval), (oldval))
-# if MSC_VERSION_BEFORE(1300)
+# if RBIMPL_COMPILER_BEFORE(MSVC, 13, 0, 0)
 static inline rb_atomic_t
 rb_w32_atomic_cas(volatile rb_atomic_t *var, rb_atomic_t oldval, rb_atomic_t newval)
 {
