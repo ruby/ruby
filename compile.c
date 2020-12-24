@@ -6379,7 +6379,7 @@ compile_case3(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
         LABEL *l1;
 
         if (branch_id) {
-                ADD_INSN(body_seq, line, putnil);
+            ADD_INSN(body_seq, line, putnil);
         }
         l1 = NEW_LABEL(line);
         ADD_LABEL(body_seq, l1);
@@ -6428,7 +6428,7 @@ compile_case3(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
         ADD_INSNL(cond_seq, line, jump, endlabel);
         ADD_INSN(cond_seq, line, putnil);
         if (popped) {
-                ADD_INSN(cond_seq, line, putnil);
+            ADD_INSN(cond_seq, line, putnil);
         }
     }
     else {
@@ -6448,7 +6448,7 @@ compile_case3(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
         ADD_INSNL(cond_seq, nd_line(orig_node), jump, endlabel);
         ADD_INSN(cond_seq, line, putnil);
         if (popped) {
-                ADD_INSN(cond_seq, line, putnil);
+            ADD_INSN(cond_seq, line, putnil);
         }
     }
 
