@@ -660,7 +660,7 @@ Excluding feature bug fixes.
     * Always generate appropriate code for `==`, `nil?`, and `!` calls depending on
       a receiver class.
 
-    * Reduce the number of VM register accesses on branches and method returns.
+    * Reduce the number of PC accesses on branches and method returns.
 
     * Optimize C method calls a little.
 
