@@ -615,6 +615,24 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     assert_cursor_max(6)
   end
 
+  def test_vi_replace_char_with_mbchar
+    input_keys("あいうえお\C-[0l")
+    assert_line('あいうえお')
+    assert_byte_pointer_size('あ')
+    assert_cursor(2)
+    assert_cursor_max(10)
+    input_keys('rx')
+    assert_line('あxうえお')
+    assert_byte_pointer_size('あ')
+    assert_cursor(2)
+    assert_cursor_max(9)
+    input_keys('l2ry')
+    assert_line('あxyyお')
+    assert_byte_pointer_size('あxyy')
+    assert_cursor(5)
+    assert_cursor_max(7)
+  end
+
   def test_vi_next_char
     input_keys("abcdef\C-[0")
     assert_line('abcdef')

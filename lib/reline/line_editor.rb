@@ -2478,7 +2478,7 @@ class Reline::LineEditor
         byte_size = Reline::Unicode.get_next_mbchar_size(@line, @byte_pointer)
         before = @line.byteslice(0, @byte_pointer)
         remaining_point = @byte_pointer + byte_size
-        after = @line.byteslice(remaining_point, @line.size - remaining_point)
+        after = @line.byteslice(remaining_point, @line.bytesize - remaining_point)
         @line = before + k.chr + after
         @cursor_max = calculate_width(@line)
         @waiting_proc = nil
@@ -2489,7 +2489,7 @@ class Reline::LineEditor
         end
         before = @line.byteslice(0, @byte_pointer)
         remaining_point = @byte_pointer + byte_size
-        after = @line.byteslice(remaining_point, @line.size - remaining_point)
+        after = @line.byteslice(remaining_point, @line.bytesize - remaining_point)
         replaced = k.chr * arg
         @line = before + replaced + after
         @byte_pointer += replaced.bytesize
