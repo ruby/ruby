@@ -71,7 +71,7 @@ describe "Module#attr_writer" do
   end
 
   ruby_version_is "3.0" do
-    it "returns an array of defined methods names as symbols" do
+    it "returns an array of defined method names as symbols" do
       Class.new do
         (attr_writer :foo, 'bar').should == [:foo=, :bar=]
       end
