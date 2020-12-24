@@ -1884,7 +1884,7 @@ rb_fiber_initialize_kw(int argc, VALUE* argv, VALUE self, int kw_splat)
  *      # ... and so on ...
  *
  *  if <tt>blocking: false</tt> is passed to the <tt>Fiber.new</tt>, _and_ current thread
- *  has Fiber.scheduler defined, the Fiber becames non-blocking (see "Non-blocking
+ *  has Fiber.scheduler defined, the Fiber becomes non-blocking (see "Non-blocking
  *  fibers" section in class docs).
  */
 static VALUE
