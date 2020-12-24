@@ -122,6 +122,7 @@ class Reline::LineEditor
       mode_icon = check_mode_icon
       prompt_list = prompt_list.map{ |pr| mode_icon + pr } if mode_icon
       prompt = prompt_list[@line_index]
+      prompt = prompt_list[0] if prompt.nil?
       prompt_width = calculate_width(prompt, true)
       [prompt, prompt_width, prompt_list]
     else
