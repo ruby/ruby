@@ -158,8 +158,18 @@ module IRB # :nodoc:
     else
       added = [:TIME, IRB.conf[:MEASURE_PROC][:TIME], arg]
     end
-    IRB.conf[:MEASURE_CALLBACKS] << added if added
-    added
+    if added
+      found = IRB.conf[:MEASURE_CALLBACKS].find{ |m| m[0] == added[0] && m[2] == added[2] }
+      if found
+        # already added
+        nil
+      else
+        IRB.conf[:MEASURE_CALLBACKS] << added if added
+        added
+      end
+    else
+      nil
+    end
   end
 
   def IRB.unset_measure_callback(type = nil)

@@ -20,11 +20,11 @@ module IRB
         when :on
           IRB.conf[:MEASURE] = true
           added = IRB.set_measure_callback(type, arg)
-          puts "#{added[0]} is added."
+          puts "#{added[0]} is added." if added
         else
           IRB.conf[:MEASURE] = true
           added = IRB.set_measure_callback(type, arg)
-          puts "#{added[0]} is added."
+          puts "#{added[0]} is added." if added
         end
         nil
       end
