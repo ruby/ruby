@@ -10,7 +10,7 @@ require "envutil"
 class TestTRICK2013 < Test::Unit::TestCase
   def test_kinaba
     src = File.join(__dir__, "../sample/trick2013/kinaba/entry.rb")
-    expected = " !\"\#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+    expected = [*" ".."~"].join("") # all ASCII printables
     assert_in_out_err(["-W0", src], "", [expected])
     assert_equal(expected, File.read(src).chomp.chars.sort.join)
   end
