@@ -37,7 +37,7 @@ typedef struct {
 } rb_memory_view_item_component_t;
 
 typedef struct {
-    /* The original object that have the memory exported via this memory view.
+    /* The original object that has the memory exported via this memory view.
      * The consumer of this memory view has the responsibility to call rb_gc_mark
      * for preventing this obj collected by GC.  */
     VALUE obj;
@@ -51,15 +51,15 @@ typedef struct {
     /* true for readonly memory, false for writable memory. */
     bool readonly;
 
-    /* A string to describe the format of an element, or NULL for unsigned byte.
-     * The format string is a sequence the following pack-template specifiers:
+    /* A string to describe the format of an element, or NULL for unsigned bytes.
+     * The format string is a sequence of the following pack-template specifiers:
      *
      *   c, C, s, s!, S, S!, n, v, i, i!, I, I!, l, l!, L, L!,
      *   N, V, f, e, g, q, q!, Q, Q!, d, E, G, j, J, x
      *
      * For example, "dd" for an element that consists of two double values,
      * and "CCC" for an element that consists of three bytes, such as
-     * a RGB color triplet.
+     * an RGB color triplet.
      *
      * Also, the value endianness can be explicitly specified by '<' or '>'
      * following a value type specifier.
