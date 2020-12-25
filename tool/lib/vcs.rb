@@ -521,7 +521,7 @@ class VCS
 
     def branch_beginning(url)
       cmd_read(%W[ #{COMMAND} log -n1 --format=format:%H
-                   --author=matz --committer=matz --grep=has\ started
+                   --author=matz --committer=matz --grep=started\\.$
                    #{url.to_str} -- version.h include/ruby/version.h])
     end
 
