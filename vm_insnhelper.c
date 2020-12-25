@@ -237,7 +237,7 @@ static bool vm_stack_canary_was_born = false;
 
 #ifndef MJIT_HEADER
 MJIT_FUNC_EXPORTED void
-vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
+rb_vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
 {
     const struct rb_control_frame_struct *reg_cfp = ec->cfp;
     const struct rb_iseq_struct *iseq;
@@ -284,6 +284,7 @@ vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
     rb_bug("see above.");
 }
 #endif
+#define vm_check_canary(ec, sp) rb_vm_check_canary(ec, sp)
 
 #else
 #define vm_check_canary(ec, sp)
@@ -5334,7 +5335,7 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
 
 #if VM_CHECK_MODE > 0
 NORETURN( NOINLINE( COLDFUNC
-void vm_canary_is_found_dead(enum ruby_vminsn_type i, VALUE c)));
+void rb_vm_canary_is_found_dead(enum ruby_vminsn_type i, VALUE c)));
 
 void
 Init_vm_stack_canary(void)
@@ -5349,7 +5350,7 @@ Init_vm_stack_canary(void)
 
 #ifndef MJIT_HEADER
 MJIT_FUNC_EXPORTED void
-vm_canary_is_found_dead(enum ruby_vminsn_type i, VALUE c)
+rb_vm_canary_is_found_dead(enum ruby_vminsn_type i, VALUE c)
 {
     /* Because a method has already been called, why not call
      * another one. */

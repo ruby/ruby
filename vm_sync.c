@@ -14,7 +14,7 @@ vm_locked(rb_vm_t *vm)
 
 #if RUBY_DEBUG > 0
 void
-ASSERT_vm_locking(void)
+RUBY_ASSERT_vm_locking(void)
 {
     if (rb_multi_ractor_p()) {
         rb_vm_t *vm = GET_VM();
@@ -23,7 +23,7 @@ ASSERT_vm_locking(void)
 }
 
 void
-ASSERT_vm_unlocking(void)
+RUBY_ASSERT_vm_unlocking(void)
 {
     if (rb_multi_ractor_p()) {
         rb_vm_t *vm = GET_VM();
