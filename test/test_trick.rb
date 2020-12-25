@@ -154,7 +154,7 @@ class TestTRICK2018 < Test::Unit::TestCase
   def test_04_colin
     src = File.join(__dir__, "../sample/trick2018/04-colin/entry.rb")
 
-    code = "# encoding: UTF-8\n" + File.read(src) + <<END
+    code = "# encoding: UTF-8\n" + File.read(src, encoding: "UTF-8") + <<END
 \u{1F914} "Math" do
   \u{1F914} "Addition" do
     \u{1F914} "One plus one equals two.",
@@ -171,7 +171,7 @@ class TestTRICK2018 < Test::Unit::TestCase
   end
 end
 END
-    assert_in_out_err(["-W0"], code, <<END.lines(chomp: true))
+    assert_in_out_err(["-W0"], code, <<END.lines(chomp: true), encoding: "UTF-8")
 Math
     Addition
         One plus one equals two.
