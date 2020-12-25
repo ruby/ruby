@@ -4640,7 +4640,7 @@ static void read_barrier_handler(intptr_t address)
 }
 
 #if defined(_WIN32)
-LPTOP_LEVEL_EXCEPTION_FILTER old_handler;
+static LPTOP_LEVEL_EXCEPTION_FILTER old_handler;
 typedef void (*signal_handler)(int);
 static signal_handler old_sigsegv_handler;
 
@@ -4659,13 +4659,15 @@ static LONG WINAPI read_barrier_signal(EXCEPTION_POINTERS * info)
     }
 }
 
-static void uninstall_handlers(void)
+static void
+uninstall_handlers(void)
 {
     signal(SIGSEGV, old_sigsegv_handler);
     SetUnhandledExceptionFilter(old_handler);
 }
 
-static void install_handlers(void)
+static void
+install_handlers(void)
 {
     /* Remove SEGV handler so that the Unhandled Exception Filter handles it */
     old_sigsegv_handler = signal(SIGSEGV, NULL);
@@ -4701,13 +4703,15 @@ read_barrier_signal(int sig, siginfo_t * info, void * data)
     sigprocmask(SIG_SETMASK, &prev_set, NULL);
 }
 
-static void uninstall_handlers(void)
+static void
+uninstall_handlers(void)
 {
     sigaction(SIGBUS, &old_sigbus_handler, NULL);
     sigaction(SIGSEGV, &old_sigsegv_handler, NULL);
 }
 
-static void install_handlers(void)
+static void
+install_handlers(void)
 {
     struct sigaction action;
     memset(&action, 0, sizeof(struct sigaction));
