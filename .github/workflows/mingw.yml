@@ -86,6 +86,8 @@ jobs:
           $jobs = [int](2 * $env:NUMBER_OF_PROCESSORS)
           make -j $jobs
 
+      - run: make leaked-globals
+
       - name: make install
         run: |
           # Actions uses UTF8, causes test failures, similar to normal OS setup
