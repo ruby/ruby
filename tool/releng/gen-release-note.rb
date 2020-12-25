@@ -30,7 +30,7 @@ confirm_w_r_l_o_wd
 
   # Write release note article
   path = Time.parse(src[/^date: (.*)/, 1]).
-    strftime("./#{src[/^lang: (\w+)/, 1]}/news/_posts/%Y-%m-%d-ruby-#{version}-released.md")
+    strftime("./#{src[/^lang: (\w+)/, 1]}/news/_posts/%Y-%m-%d-ruby-#{version.tr('.', '-')}-released.md")
   puts path
   File.write(path, src)
 end
