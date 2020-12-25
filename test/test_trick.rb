@@ -18,7 +18,7 @@ class TestTRICK2013 < Test::Unit::TestCase
   def test_mame
     src = File.join(__dir__, "../sample/trick2013/mame/entry.rb")
     ignore_dsp = "def open(_file, _mode); s = ''; def s.flush; self;end; yield s; end;"
-    assert_in_out_err(["-W0"], ignore_dsp + File.read(src), File.read(src).lines(chomp: true))
+    assert_in_out_err(["-W0"], ignore_dsp + File.read(src), File.read(src).lines(chomp: true), timeout: 60)
   end
 
   def test_shinh
@@ -34,7 +34,7 @@ end
 
 class TestTRICK2015 < Test::Unit::TestCase
   def test_kinaba
-    src = File.join(__dir__, "../sample/trick2015/kinaba/entry.rb")
+    src = File.join(__dir__, "../sample/trick2015/kinaba/entry.rb", timeout: 60)
 
     # calculate the first 10000 digits of Pi
     n = 10000
