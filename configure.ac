@@ -3422,6 +3422,9 @@ AS_CASE(["${enable_dtrace}"],
 ], [
     rb_cv_dtrace_available=no
 ])
+AS_CASE(["$target_os"],[freebsd*],[
+         rb_cv_dtrace_available=no
+	 ])
 AS_IF([test "${enable_dtrace}" = yes], [dnl
     AS_IF([test -z "$DTRACE"], [dnl
 	AC_MSG_ERROR([dtrace(1) is missing])
