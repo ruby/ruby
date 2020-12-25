@@ -396,15 +396,33 @@ Outstanding ones only.
 
 * Bundler
 
-    * Update to Bundler 2.2.2
+    * Update to Bundler 2.2.3
+
+* CGI
+
+    * Update to 0.2.0
+
+    * This version is Ractor compatible.
 
 * CSV
 
     * Update to CSV 3.1.9
 
+* Date
+
+    * Update to Date 3.1.1
+
+    * This version is Ractor compatible.
+
 * Digest
 
     * Update to Digest 3.0.0
+
+    * This version is Ractor compatible.
+
+* Etc
+
+    * Update to Etc 1.2.0
 
     * This version is Ractor compatible.
 
@@ -418,9 +436,9 @@ Outstanding ones only.
 
 * JSON
 
-    * Update to JSON 2.4.0
+    * Update to JSON 2.5.0
 
-    * Ractor compatible.
+    * This version is Ractor compatible.
 
 * Set
 
@@ -473,7 +491,9 @@ Outstanding ones only.
 
 * Psych
 
-    * Update to Psych 3.2.1
+    * Update to Psych 3.3.0
+
+    * This version is Ractor compatible.
 
 * Reline
 
@@ -481,7 +501,7 @@ Outstanding ones only.
 
 * RubyGems
 
-    * Update to RubyGems 3.2.2
+    * Update to RubyGems 3.2.3
 
 * StringIO
 
