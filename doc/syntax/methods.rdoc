@@ -540,7 +540,7 @@ as the keyword arguments:
   my_method(a: 1, 'a' => 2)   # [{"a"=>2}, 1]
   my_method({a: 1, 'a' => 2}) # [{"a"=>2}, 1]
 
-== Block Argument
+=== Block Argument
 
 The block argument is indicated by <code>&</code> and must come last:
 
