@@ -816,6 +816,5 @@ end
 [Feature #17322]: https://bugs.ruby-lang.org/issues/17322
 [Feature #17351]: https://bugs.ruby-lang.org/issues/17351
 [Feature #17371]: https://bugs.ruby-lang.org/issues/17371
-[GH-2991]:        https://github.com/ruby/ruby/pull/2991
-[Feature #17314]: https://bugs.ruby-lang.org/issues/17314
 [Bug #17419]:     https://bugs.ruby-lang.org/issues/17419
+[GH-2991]:        https://github.com/ruby/ruby/pull/2991
