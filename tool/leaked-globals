@@ -16,7 +16,9 @@ end
 config = ARGV.shift
 count = 0
 col = Colorize.new
-REPLACE = File.read(config).scan(/\bAC_(?:REPLACE|CHECK)_FUNCS?\(\K\w+/)
+config_code = File.read(config)
+REPLACE = config_code.scan(/\bAC_(?:REPLACE|CHECK)_FUNCS?\(\K\w+/)
+REPLACE << 'memcmp' if /\bAC_FUNC_MEMCMP\b/ =~ config_code
 print "Checking leaked global symbols..."
 STDOUT.flush
 IO.foreach("|#{NM} -Pgp #{ARGV.join(' ')}") do |line|
