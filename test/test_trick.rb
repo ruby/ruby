@@ -34,7 +34,7 @@ end
 
 class TestTRICK2015 < Test::Unit::TestCase
   def test_kinaba
-    src = File.join(__dir__, "../sample/trick2015/kinaba/entry.rb", timeout: 60)
+    src = File.join(__dir__, "../sample/trick2015/kinaba/entry.rb")
 
     # calculate the first 10000 digits of Pi
     n = 10000
@@ -44,7 +44,7 @@ class TestTRICK2015 < Test::Unit::TestCase
     end
     pi = "3#{ a - b }"
 
-    assert_in_out_err(["-W0", src], "", [pi])
+    assert_in_out_err(["-W0", src], "", [pi], timeout: 60)
     assert_equal(pi[0, 242], Ripper.tokenize(File.read(src)).grep(/\S/).map{|t|t.size%10}.join)
   end
 
