@@ -429,7 +429,7 @@ You can use multiple field converters in either of these ways:
 
 ===== Recipe: Specify Multiple Field Converters in Option +:converters+
 
-Apply multiple field converters by specifying them in option +:conveters+:
+Apply multiple field converters by specifying them in option +:converters+:
   source = "Name,Value\nfoo,0\nbar,1.0\nbaz,2.0\n"
   parsed = CSV.parse(source, headers: true, converters: [:integer, :float])
   parsed['Value'] # => [0, 1.0, 2.0]
@@ -498,7 +498,7 @@ You can use multiple header converters in either of these ways:
 
 ===== Recipe: Specify Multiple Header Converters in Option :header_converters
 
-Apply multiple header converters by specifying them in option +:header_conveters+:
+Apply multiple header converters by specifying them in option +:header_converters+:
   source = "Name,Value\nfoo,0\nbar,1.0\nbaz,2.0\n"
   parsed = CSV.parse(source, headers: true, header_converters: [:downcase, :symbol])
   parsed.headers # => [:name, :value]
