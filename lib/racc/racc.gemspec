@@ -1,8 +1,14 @@
 # -*- encoding: utf-8 -*-
 
+begin
+  require_relative "lib/racc/info"
+rescue LoadError # Fallback to load version file in ruby core repository
+  require_relative "info"
+end
+
 Gem::Specification.new do |s|
   s.name = "racc"
-  s.version = "1.5.1"
+  s.version = Racc::VERSION
   s.summary = "Racc is a LALR(1) parser generator"
   s.description = <<DESC
 Racc is a LALR(1) parser generator.
