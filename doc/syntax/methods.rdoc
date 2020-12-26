@@ -11,8 +11,8 @@ A method definition consists of the +def+ keyword, a method name, the body of
 the method, +return+ value and the +end+ keyword.  When called the method will
 execute the body of the method.  This method returns +2+.
 
-Since Ruby 3.0, there is also shorthand syntax for methods consisting of exactly
-one expression:
+Since Ruby 3.0, there is also a shorthand syntax for methods consisting
+of exactly one expression:
 
    def one_plus_one = 1 + 1
 
@@ -80,11 +80,11 @@ Methods that end with an equals sign indicate an assignment method.
   end
 
   c = C.new
-  c.attr #=> nil
-  c.attr = 10 # calls "attr="
-  c.attr #=> 10
+  c.attr      #=> nil
+  c.attr = 10 # calls "attr=(10)"
+  c.attr      #=> 10
 
-Assignment methods can't be defined with shorthand syntax.
+Assignment methods can not be defined using the shorthand syntax.
 
 These are method names for the various Ruby operators.  Each of these
 operators accepts only one argument.  Following the operator is the typical
@@ -280,7 +280,7 @@ The parentheses around the arguments are optional:
     value + 1
   end
 
-The parentheses are mandatory in shorthand method definition:
+The parentheses are mandatory in shorthand method definitions:
 
   # OK
   def add_one(value) = value + 1
@@ -592,9 +592,9 @@ in this section:
     yield self
   end
 
-=== Argument forwarding
+=== Argument Forwarding
 
-Since Ruby 2.7, all-arguments forwarding syntax is available:
+Since Ruby 2.7, an all-arguments forwarding syntax is available:
 
   def concrete_method(*positional_args, **keyword_args, &block)
     [positional_args, keyword_args, block]
@@ -607,16 +607,16 @@ Since Ruby 2.7, all-arguments forwarding syntax is available:
   forwarding_method(1, b: 2) { puts 3 }
   #=>  [[1], {:b=>2}, #<Proc:...skip...>]
 
-Calling with forwarding <code>...</code> available only in methods defined with
-<code>...</code>.
+Calling with forwarding <code>...</code> is available only in methods
+defined with <code>...</code>.
 
   def regular_method(arg, **kwarg)
-    other_method(...) # Syntax error
+    concrete_method(...) # Syntax error
   end
 
-There could be leading arguments before <code>...</code> both in definition and
-in invokation (but in definition they can be only positional arguments without
-default values).
+Since Ruby 3.0, there can be leading arguments before <code>...</code>
+both in definitions and in invokations (but in definitions they can be
+only positional arguments without default values).
 
   def request(method, path, **headers)
     puts "#{method.upcase} #{path} #{headers}"
@@ -629,7 +629,7 @@ default values).
   get('http://ruby-lang.org', 'Accept' => 'text/html')
   # Prints: GET http://ruby-lang.org {"Accept"=>"text/html"}
 
-  def logged_get(msg, ...) # leading argument on definition
+  def logged_get(msg, ...) # leading argument in definition
     puts "Invoking #get: #{msg}"
     get(...)
   end
@@ -639,10 +639,12 @@ default values).
   #   Invoking #get: Ruby site
   #   GET http://ruby-lang.org {}
 
-Note that omitting parentheses in forwarding calls may lead to unexpected results:
+Note that omitting parentheses in forwarding calls may lead to
+unexpected results:
 
   def log(...)
-    puts ...   # This would be treated as puts()..., e.g. endless range from puts result
+    puts ...  # This would be treated as `puts()...',
+              # i.e. endless range from puts result
   end
 
   log("test")
