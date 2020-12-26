@@ -248,18 +248,17 @@ Connection example: Ractor.yield(obj) on r1 and r2,
 ```
 
 ```ruby
-  r = Ractor.new do
-    msg = Ractor.receive # Receive from r's incoming queue
-    msg # send back msg as block return value
-  end
-  r.send 'ok' # Send 'ok' to r's incoming port -> incoming queue
-  r.take      # Receive from r's outgoing port
+r = Ractor.new do
+  msg = Ractor.receive # Receive from r's incoming queue
+  msg # send back msg as block return value
+end
+r.send 'ok' # Send 'ok' to r's incoming port -> incoming queue
+r.take      # Receive from r's outgoing port
 ```
 
 The last example shows the following ractor network.
 
 ```
-       
   +------+        +---+
   * main |------> * r *---+
   +-----+         +---+   |
@@ -270,16 +269,16 @@ The last example shows the following ractor network.
 And this code can be rewrite more simple way by using an argument for `Ractor.new`.
 
 ```ruby
-  # Actual argument 'ok' for `Ractor.new()` will be send to created Ractor.
-  r = Ractor.new 'ok' do |msg|
-    # Values for formal parameters will be received from incoming queue.
-    # Similar to: msg = Ractor.receive
+# Actual argument 'ok' for `Ractor.new()` will be send to created Ractor.
+r = Ractor.new 'ok' do |msg|
+  # Values for formal parameters will be received from incoming queue.
+  # Similar to: msg = Ractor.receive
 
-    msg # Return value of the given block will be sent via outgoing port
-  end
+  msg # Return value of the given block will be sent via outgoing port
+end
 
-  # receive from the r's outgoing port.
-  r.take #=> `ok`
+# receive from the r's outgoing port.
+r.take #=> `ok`
 ```
 
 ### Return value of a block for `Ractor.new`
@@ -338,27 +337,27 @@ as.sort == ['r1', 'r2'] #=> true
 Complex example:
 
 ```ruby
-  pipe = Ractor.new do
-    loop do
-      Ractor.yield Ractor.receive
-    end
+pipe = Ractor.new do
+  loop do
+    Ractor.yield Ractor.receive
   end
+end
 
-  RN = 10
-  rs = RN.times.map{|i|
-    Ractor.new pipe, i do |pipe, i|
-      msg = pipe.take
-      msg # ping-pong
-    end
-  }
-  RN.times{|i|
-    pipe << i
-  }
-  RN.times.map{
-    r, n = Ractor.select(*rs)
-    rs.delete r
-    n
-  }.sort #=> [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+RN = 10
+rs = RN.times.map{|i|
+  Ractor.new pipe, i do |pipe, i|
+    msg = pipe.take
+    msg # ping-pong
+  end
+}
+RN.times{|i|
+  pipe << i
+}
+RN.times.map{
+  r, n = Ractor.select(*rs)
+  rs.delete r
+  n
+}.sort #=> [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 ```
 
 Multiple Ractors can send to one Ractor.
@@ -367,22 +366,22 @@ Multiple Ractors can send to one Ractor.
 # Create 10 ractors and they send objects to pipe ractor.
 # pipe ractor yield received objects
 
-  pipe = Ractor.new do
-    loop do
-      Ractor.yield Ractor.receive
-    end
+pipe = Ractor.new do
+  loop do
+    Ractor.yield Ractor.receive
   end
+end
 
-  RN = 10
-  rs = RN.times.map{|i|
-    Ractor.new pipe, i do |pipe, i|
-      pipe << i
-    end
-  }
+RN = 10
+rs = RN.times.map{|i|
+  Ractor.new pipe, i do |pipe, i|
+    pipe << i
+  end
+}
 
-  RN.times.map{
-    pipe.take
-  }.sort #=> [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+RN.times.map{
+  pipe.take
+}.sort #=> [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 ```
 
 TODO: Current `Ractor.select()` has the same issue of `select(2)`, so this interface should be refined.
@@ -404,34 +403,34 @@ TODO: `select` syntax of go-language uses round-robin technique to make fair sch
 Example (try to take from closed Ractor):
 
 ```ruby
-  r = Ractor.new do
-    'finish'
-  end
-  r.take # success (will return 'finish')
-  begin
-    o = r.take # try to take from closed Ractor
-  rescue Ractor::ClosedError
-    'ok'
-  else
-    "ng: #{o}"
-  end
+r = Ractor.new do
+  'finish'
+end
+r.take # success (will return 'finish')
+begin
+  o = r.take # try to take from closed Ractor
+rescue Ractor::ClosedError
+  'ok'
+else
+  "ng: #{o}"
+end
 ```
 
 Example (try to send to closed (terminated) Ractor):
 
 ```ruby
-  r = Ractor.new do
-  end
+r = Ractor.new do
+end
 
-  r.take # wait terminate
+r.take # wait terminate
 
-  begin
-    r.send(1)
-  rescue Ractor::ClosedError
-    'ok'
-  else
-    'ng'
-  end
+begin
+  r.send(1)
+rescue Ractor::ClosedError
+  'ok'
+else
+  'ng'
+end
 ```
 
 When multiple Ractors waiting for `Ractor.yield()`, `Ractor#close_outgoing` will cancel all blocking by raise an exception (`ClosedError`).
@@ -494,19 +493,19 @@ end
 ```
 
 ```ruby
-  # move with Ractor.yield
-  r = Ractor.new do
-    obj = 'hello'
-    Ractor.yield obj, move: true
-    obj << 'world'  # raise Ractor::MovedError
-  end
+# move with Ractor.yield
+r = Ractor.new do
+  obj = 'hello'
+  Ractor.yield obj, move: true
+  obj << 'world'  # raise Ractor::MovedError
+end
 
-  str = r.take
-  begin
-    r.take
-  rescue Ractor::RemoteError
-    p str #=> "hello"
-  end
+str = r.take
+begin
+  r.take
+rescue Ractor::RemoteError
+  p str #=> "hello"
+end
 ```
 
 Some objects are not supported to move, and an exception will be raise.
@@ -549,16 +548,16 @@ Note that without using Ractors, these additional semantics is not needed (100% 
 Only the main Ractor (a Ractor created at starting of interpreter) can access global variables.
 
 ```ruby
-  $gv = 1
-  r = Ractor.new do
-    $gv
-  end
+$gv = 1
+r = Ractor.new do
+  $gv
+end
 
-  begin
-    r.take
-  rescue Ractor::RemoteError => e
-    e.cause.message #=> 'can not access global variables from non-main Ractors'
-  end
+begin
+  r.take
+rescue Ractor::RemoteError => e
+  e.cause.message #=> 'can not access global variables from non-main Ractors'
+end
 ```
 
 Note that some special global variables are ractor-local, like `$stdin`, `$stdout`, `$stderr`. See [[Bug #17268]](https://bugs.ruby-lang.org/issues/17268) for more details.
@@ -568,37 +567,37 @@ Note that some special global variables are ractor-local, like `$stdin`, `$stdou
 Only the main Ractor can access instance variables of shareable objects.
 
 ```ruby
+class C
+  @iv = 'str'
+end
+
+r = Ractor.new do
   class C
-    @iv = 'str'
+    p @iv
   end
-
-  r = Ractor.new do
-    class C
-      p @iv
-    end
-  end
+end
 
 
-  begin
-    r.take
-  rescue => e
-    e.class #=> Ractor::IsolationError
-  end
+begin
+  r.take
+rescue => e
+  e.class #=> Ractor::IsolationError
+end
 ```
 
 ```ruby
-  shared = Ractor.new{}
-  shared.instance_variable_set(:@iv, 'str')
+shared = Ractor.new{}
+shared.instance_variable_set(:@iv, 'str')
 
-  r = Ractor.new shared do |shared|
-    p shared.instance_variable_get(:@iv)
-  end
+r = Ractor.new shared do |shared|
+  p shared.instance_variable_get(:@iv)
+end
 
-  begin
-    r.take
-  rescue Ractor::RemoteError => e
-    e.cause.message #=> can not access instance variables of shareable objects from non-main Ractors (Ractor::IsolationError)
-  end
+begin
+  r.take
+rescue Ractor::RemoteError => e
+  e.cause.message #=> can not access instance variables of shareable objects from non-main Ractors (Ractor::IsolationError)
+end
 ```
 
 Note that instance variables for class/module objects are also prohibited on Ractors.
@@ -608,22 +607,22 @@ Note that instance variables for class/module objects are also prohibited on Rac
 Only the main Ractor can access class variables.
 
 ```ruby
+class C
+  @@cv = 'str'
+end
+
+r = Ractor.new do
   class C
-    @@cv = 'str'
+    p @@cv
   end
-
-  r = Ractor.new do
-    class C
-      p @@cv
-    end
-  end
+end
 
 
-  begin
-    r.take
-  rescue => e
-    e.class #=> Ractor::IsolationError
-  end
+begin
+  r.take
+rescue => e
+  e.class #=> Ractor::IsolationError
+end
 ```
 
 ### Constants
@@ -631,32 +630,32 @@ Only the main Ractor can access class variables.
 Only the main Ractor can read constants which refer to the unshareable object.
 
 ```ruby
-  class C
-    CONST = 'str'
-  end
-  r = Ractor.new do
-    C::CONST
-  end
-  begin
-    r.take
-  rescue => e
-    e.class #=> Ractor::IsolationError
-  end
+class C
+  CONST = 'str'
+end
+r = Ractor.new do
+  C::CONST
+end
+begin
+  r.take
+rescue => e
+  e.class #=> Ractor::IsolationError
+end
 ```
 
 Only the main Ractor can define constants which refer to the unshareable object.
 
 ```ruby
-  class C
-  end
-  r = Ractor.new do
-    C::CONST = 'str'
-  end
-  begin
-    r.take
-  rescue => e
-    e.class #=> Ractor::IsolationError
-  end
+class C
+end
+r = Ractor.new do
+  C::CONST = 'str'
+end
+begin
+  r.take
+rescue => e
+  e.class #=> Ractor::IsolationError
+end
 ```
 
 To make multi-ractor supported library, the constants should only refer sharable objects.
