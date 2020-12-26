@@ -410,7 +410,7 @@ class RubyLex
 
       case t[1]
       when :on_ignored_nl, :on_nl, :on_comment
-        if index != (@tokens.size - 1)
+        if index != (@tokens.size - 1) and in_oneliner_def != :BODY
           depth_difference = 0
           open_brace_on_line = 0
         end
@@ -488,11 +488,13 @@ class RubyLex
 
       case t[1]
       when :on_ignored_nl, :on_nl, :on_comment
-        corresponding_token_depth = nil
-        spaces_at_line_head = 0
-        is_first_spaces_of_line = true
-        is_first_printable_of_line = true
-        open_brace_on_line = 0
+        if in_oneliner_def != :BODY
+          corresponding_token_depth = nil
+          spaces_at_line_head = 0
+          is_first_spaces_of_line = true
+          is_first_printable_of_line = true
+          open_brace_on_line = 0
+        end
         next
       when :on_sp
         spaces_at_line_head = t[2].count(' ') if is_first_spaces_of_line
