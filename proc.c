@@ -1277,7 +1277,7 @@ rb_proc_get_iseq(VALUE self, int *is_proc)
  *   prc == other -> true or false
  *   prc.eql?(other) -> true or false
  *
- * Two proc are the same if, and only if, they were created from the same code block.
+ * Two procs are the same if, and only if, they were created from the same code block.
  *
  *   def return_block(&block)
  *     block
