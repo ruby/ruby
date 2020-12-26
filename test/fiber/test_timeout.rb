@@ -5,7 +5,7 @@ require_relative 'scheduler'
 require 'timeout'
 
 class TestFiberTimeout < Test::Unit::TestCase
-  def test_timeout_raise
+  def test_timeout_after
     error = nil
 
     thread = Thread.new do

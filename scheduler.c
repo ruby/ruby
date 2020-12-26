@@ -17,7 +17,7 @@ static ID id_close;
 static ID id_block;
 static ID id_unblock;
 
-static ID id_timeout_raise;
+static ID id_timeout_after;
 static ID id_kernel_sleep;
 static ID id_process_wait;
 
@@ -33,7 +33,7 @@ Init_Fiber_Scheduler(void)
     id_block = rb_intern_const("block");
     id_unblock = rb_intern_const("unblock");
 
-    id_timeout_raise = rb_intern_const("timeout_raise");
+    id_timeout_after = rb_intern_const("timeout_after");
     id_kernel_sleep = rb_intern_const("kernel_sleep");
     id_process_wait = rb_intern_const("process_wait");
 
@@ -110,19 +110,20 @@ rb_fiber_scheduler_make_timeout(struct timeval *timeout)
     return Qnil;
 }
 
-VALUE rb_fiber_scheduler_timeout_raise(VALUE scheduler, VALUE timeout, VALUE exception, VALUE message)
+VALUE
+rb_fiber_scheduler_timeout_after(VALUE scheduler, VALUE timeout, VALUE exception, VALUE message)
 {
     VALUE arguments[] = {
         timeout, exception, message
     };
 
-    return rb_check_funcall(scheduler, id_timeout_raise, 3, arguments);
+    return rb_check_funcall(scheduler, id_timeout_after, 3, arguments);
 }
 
 VALUE
-rb_fiber_scheduler_timeout_raisev(VALUE scheduler, int argc, VALUE * argv)
+rb_fiber_scheduler_timeout_afterv(VALUE scheduler, int argc, VALUE * argv)
 {
-    return rb_check_funcall(scheduler, id_timeout_raise, argc, argv);
+    return rb_check_funcall(scheduler, id_timeout_after, argc, argv);
 }
 
 VALUE

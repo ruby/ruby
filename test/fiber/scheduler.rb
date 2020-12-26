@@ -129,7 +129,7 @@ class Scheduler
     Process.clock_gettime(Process::CLOCK_MONOTONIC)
   end
 
-  def timeout_raise(duration, klass, message, &block)
+  def timeout_after(duration, klass, message, &block)
     fiber = Fiber.current
 
     self.fiber do
