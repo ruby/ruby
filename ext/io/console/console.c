@@ -80,8 +80,11 @@ static ID id_getc, id_console, id_close, id_min, id_time, id_intr;
 static ID id_gets, id_chomp_bang;
 #endif
 
-#ifdef HAVE_RB_SCHEDULER_TIMEOUT
-extern VALUE rb_fiber_scheduler_make_timeout(struct timeval *timeout);
+#if defined HAVE_RUBY_FIBER_SCHEDULER_H
+# include "ruby/fiber/scheduler.h"
+#elif defined HAVE_RB_SCHEDULER_TIMEOUT
+extern VALUE rb_scheduler_timeout(struct timeval *timeout);
+# define rb_fiber_scheduler_timeout rb_scheduler_timeout
 #endif
 
 #define sys_fail_fptr(fptr) rb_sys_fail_str((fptr)->pathv)
