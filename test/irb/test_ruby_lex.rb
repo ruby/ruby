@@ -263,6 +263,23 @@ module TestIRB
       end
     end
 
+    def test_oneliner_def_in_multiple_lines
+      input_with_correct_indents = [
+        Row.new(%q(def a()=[), nil, 4, 2),
+        Row.new(%q(  1,), nil, 4, 1),
+        Row.new(%q(].), 0, 0, 0),
+        Row.new(%q(to_s), nil, 0, 0),
+      ]
+
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_indenting(lines, row.current_line_spaces, false)
+        assert_indenting(lines, row.new_line_spaces, true)
+        assert_nesting_level(lines, row.nesting_level)
+      end
+    end
+
     PromptRow = Struct.new(:prompt, :content)
 
     class MockIO_DynamicPrompt
