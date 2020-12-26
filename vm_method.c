@@ -2035,7 +2035,7 @@ set_visibility(int argc, const VALUE *argv, VALUE module, rb_method_visibility_t
  *  defined methods to public. With arguments, sets the named methods to
  *  have public visibility.
  *  String arguments are converted to symbols.
- *  An Array of Symbols and/or Strings are also accepted.
+ *  An Array of Symbols and/or Strings is also accepted.
  */
 
 static VALUE
@@ -2055,7 +2055,7 @@ rb_mod_public(int argc, VALUE *argv, VALUE module)
  *  defined methods to protected. With arguments, sets the named methods
  *  to have protected visibility.
  *  String arguments are converted to symbols.
- *  An Array of Symbols and/or Strings are also accepted.
+ *  An Array of Symbols and/or Strings is also accepted.
  *
  *  If a method has protected visibility, it is callable only where
  *  <code>self</code> of the context is the same as the method.
@@ -2084,7 +2084,7 @@ rb_mod_protected(int argc, VALUE *argv, VALUE module)
  *  defined methods to private. With arguments, sets the named methods
  *  to have private visibility.
  *  String arguments are converted to symbols.
- *  An Array of Symbols and/or Strings are also accepted.
+ *  An Array of Symbols and/or Strings is also accepted.
  *
  *     module Mod
  *       def a()  end
@@ -2222,7 +2222,7 @@ rb_mod_ruby2_keywords(int argc, VALUE *argv, VALUE module)
  *  Makes a list of existing class methods public.
  *
  *  String arguments are converted to symbols.
- *  An Array of Symbols and/or Strings are also accepted.
+ *  An Array of Symbols and/or Strings is also accepted.
  */
 
 static VALUE
@@ -2242,7 +2242,7 @@ rb_mod_public_method(int argc, VALUE *argv, VALUE obj)
  *  constructor <code>new</code>.
  *
  *  String arguments are converted to symbols.
- *  An Array of Symbols and/or Strings are also accepted.
+ *  An Array of Symbols and/or Strings is also accepted.
  *
  *     class SimpleSingleton  # Not thread safe
  *       private_class_method :new
@@ -2272,7 +2272,7 @@ rb_mod_private_method(int argc, VALUE *argv, VALUE obj)
  *  have public visibility.
  *
  *  String arguments are converted to symbols.
- *  An Array of Symbols and/or Strings are also accepted.
+ *  An Array of Symbols and/or Strings is also accepted.
  */
 
 static VALUE
@@ -2293,7 +2293,7 @@ top_public(int argc, VALUE *argv, VALUE _)
  *  have private visibility.
  *
  *  String arguments are converted to symbols.
- *  An Array of Symbols and/or Strings are also accepted.
+ *  An Array of Symbols and/or Strings is also accepted.
  */
 static VALUE
 top_private(int argc, VALUE *argv, VALUE _)
