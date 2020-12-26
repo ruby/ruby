@@ -1381,7 +1381,7 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 
     if (scheduler != Qnil) {
         return RTEST(
-            rb_fiber_scheduler_io_wait(scheduler, rb_io_from_fd(fd), RB_INT2NUM(events), rb_fiber_scheduler_timeout(timeout))
+            rb_fiber_scheduler_io_wait(scheduler, rb_io_from_fd(fd), RB_INT2NUM(events), rb_fiber_scheduler_make_timeout(timeout))
         );
     }
 
@@ -11040,7 +11040,7 @@ STATIC_ASSERT(pollout_expected, POLLOUT == RB_WAITFD_OUT);
 static int
 nogvl_wait_for_single_fd(VALUE th, int fd, short events)
 {
-    VALUE scheduler = rb_thread_fiber_scheduler_current(th);
+    VALUE scheduler = rb_fiber_scheduler_current_for_thread(th);
     if (scheduler != Qnil) {
         struct wait_for_single_fd args = {.scheduler = scheduler, .fd = fd, .events = events};
         rb_thread_call_with_gvl(rb_thread_fiber_scheduler_wait_for_single_fd, &args);
@@ -11059,7 +11059,7 @@ nogvl_wait_for_single_fd(VALUE th, int fd, short events)
 static int
 nogvl_wait_for_single_fd(VALUE th, int fd, short events)
 {
-    VALUE scheduler = rb_thread_fiber_scheduler_current(th);
+    VALUE scheduler = rb_fiber_scheduler_current_for_thread(th);
     if (scheduler != Qnil) {
         struct wait_for_single_fd args = {.scheduler = scheduler, .fd = fd, .events = events};
         rb_thread_call_with_gvl(rb_thread_fiber_scheduler_wait_for_single_fd, &args);

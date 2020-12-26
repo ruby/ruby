@@ -16,9 +16,9 @@ VALUE rb_fiber_scheduler_get();
 VALUE rb_fiber_scheduler_set(VALUE scheduler);
 
 VALUE rb_fiber_scheduler_current();
-VALUE rb_thread_fiber_scheduler_current(VALUE thread);
+VALUE rb_fiber_scheduler_current_for_thread(VALUE thread);
 
-VALUE rb_fiber_scheduler_timeout(struct timeval *timeout);
+VALUE rb_fiber_scheduler_make_timeout(struct timeval *timeout);
 
 VALUE rb_fiber_scheduler_close(VALUE scheduler);
 

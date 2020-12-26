@@ -66,7 +66,7 @@ rb_fiber_scheduler_set(VALUE scheduler)
 }
 
 static VALUE
-rb_threadptr_fiber_scheduler_current(rb_thread_t *thread)
+rb_fiber_scheduler_current_for_threadptr(rb_thread_t *thread)
 {
     VM_ASSERT(thread);
 
@@ -80,12 +80,12 @@ rb_threadptr_fiber_scheduler_current(rb_thread_t *thread)
 VALUE
 rb_fiber_scheduler_current(void)
 {
-    return rb_threadptr_fiber_scheduler_current(GET_THREAD());
+    return rb_fiber_scheduler_current_for_threadptr(GET_THREAD());
 }
 
-VALUE rb_thread_fiber_scheduler_current(VALUE thread)
+VALUE rb_fiber_scheduler_current_for_thread(VALUE thread)
 {
-    return rb_threadptr_fiber_scheduler_current(rb_thread_ptr(thread));
+    return rb_fiber_scheduler_current_for_threadptr(rb_thread_ptr(thread));
 }
 
 VALUE
@@ -99,7 +99,7 @@ rb_fiber_scheduler_close(VALUE scheduler)
 }
 
 VALUE
-rb_fiber_scheduler_timeout(struct timeval *timeout)
+rb_fiber_scheduler_make_timeout(struct timeval *timeout)
 {
     if (timeout) {
         return rb_float_new((double)timeout->tv_sec + (0.000001f * timeout->tv_usec));
