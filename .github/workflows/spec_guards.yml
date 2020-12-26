@@ -15,6 +15,7 @@ jobs:
           - ruby-2.5
 #         - ruby-2.6
           - ruby-2.7
+          - ruby-3.0
 
     steps:
       - uses: actions/checkout@v2
@@ -22,6 +23,7 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler: none
+      - run: gem install webrick
       - run: ruby ../mspec/bin/mspec
         working-directory: spec/ruby
       - uses: k0kubun/action-slack@v2.0.0
