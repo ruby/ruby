@@ -1134,7 +1134,7 @@ opt_mod
 (CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
-/* Same discussion as opt_mod. */
+/* Same discussion as opt_div. */
 // attr bool leaf = false;
 {
     val = vm_opt_mod(recv, obj);
