@@ -501,7 +501,7 @@ In Ruby 3.0, if the method definition does not include keyword arguments,
 keyword arguments provided when calling the method will continue to be
 treated as a final positional hash argument.
 
-Currently, the keyword and positional arguments are not separated,
+In Ruby 2.7, the keyword and positional arguments are not separated,
 but cases where behavior will change in Ruby 3.0 will result in a
 warning being emitted.
 
