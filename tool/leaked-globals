@@ -7,6 +7,8 @@ until ARGV.empty?
     SYMBOL_PREFIX = $1
   when /\ANM=(.*)/              # may be multiple words
     NM = $1
+  when /\APLATFORM=(.+)?/
+    platform = $1
   else
     break
   end
@@ -20,6 +22,19 @@ config_code = File.read(config)
 REPLACE = config_code.scan(/\bAC_(?:REPLACE|CHECK)_FUNCS?\((\w+)/).flatten
 # REPLACE << 'memcmp' if /\bAC_FUNC_MEMCMP\b/ =~ config_code
 REPLACE.push('main', 'DllMain')
+if platform and !platform.empty?
+  begin
+    h = File.read(platform)
+  rescue Errno::ENOENT
+  else
+    REPLACE.concat(
+      h .gsub(%r[/\*.*?\*/]m, " ") # delete block comments
+        .gsub(%r[//.*], ' ')       # delete oneline comments
+        .gsub(/^\s*#.*(?:\\\n.*)*/, "") # delete preprocessor directives
+        .scan(/\b((?!rb_|DEPRECATED|_)\w+)\s*\(.*\);/)
+        .flatten)
+  end
+end
 missing = File.dirname(config) + "/missing/"
 ARGV.reject! do |n|
   unless (src = Dir.glob(missing + File.basename(n, ".*") + ".[cS]")).empty?
