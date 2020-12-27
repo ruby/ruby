@@ -13,6 +13,11 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     assert_equal(-7 * 3600, t.utc_offset)
   end
 
+  def test_rfc2822_ractor
+    actual = Ractor.new { Time.rfc2822("Fri, 21 Nov 1997 09:55:06 -0600") }.take
+    assert_equal(Time.utc(1997, 11, 21, 9, 55, 6) + 6 * 3600, actual)
+  end
+
   def test_rfc2822
     t = Time.rfc2822("Fri, 21 Nov 1997 09:55:06 -0600")
     assert_equal(Time.utc(1997, 11, 21, 9, 55, 6) + 6 * 3600, t)

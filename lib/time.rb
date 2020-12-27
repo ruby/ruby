@@ -47,7 +47,7 @@ class Time
       'G' => +7, 'H' => +8, 'I' => +9, 'K' => +10, 'L' => +11, 'M' => +12,
       'N' => -1, 'O' => -2, 'P' => -3, 'Q' => -4,  'R' => -5,  'S' => -6,
       'T' => -7, 'U' => -8, 'V' => -9, 'W' => -10, 'X' => -11, 'Y' => -12,
-    }
+    }.freeze
 
     #
     # Return the number of seconds the specified time zone differs
@@ -134,8 +134,8 @@ class Time
     end
     private :force_zone!
 
-    LeapYearMonthDays = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] # :nodoc:
-    CommonYearMonthDays = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] # :nodoc:
+    LeapYearMonthDays = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31].freeze # :nodoc:
+    CommonYearMonthDays = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31].freeze # :nodoc:
     def month_days(y, m)
       if ((y % 4 == 0) && (y % 100 != 0)) || (y % 400 == 0)
         LeapYearMonthDays[m-1]
@@ -480,7 +480,7 @@ class Time
     MonthValue = { # :nodoc:
       'JAN' => 1, 'FEB' => 2, 'MAR' => 3, 'APR' => 4, 'MAY' => 5, 'JUN' => 6,
       'JUL' => 7, 'AUG' => 8, 'SEP' => 9, 'OCT' =>10, 'NOV' =>11, 'DEC' =>12
-    }
+    }.freeze
 
     #
     # Parses +date+ as date-time defined by RFC 2822 and converts it to a Time
@@ -681,12 +681,12 @@ class Time
 
   RFC2822_DAY_NAME = [ # :nodoc:
     'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'
-  ]
+  ].freeze
 
   RFC2822_MONTH_NAME = [ # :nodoc:
     'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-  ]
+  ].freeze
 
   #
   # Returns a string which represents the time as RFC 1123 date of HTTP-date
