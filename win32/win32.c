@@ -4211,6 +4211,7 @@ freeifaddrs(struct ifaddrs *ifp)
 }
 #endif
 
+#if 0 // Have never been used
 //
 // Networking stubs
 //
@@ -4237,6 +4238,7 @@ void setnetent (int stayopen) {}
 void setprotoent (int stayopen) {}
 
 void setservent (int stayopen) {}
+#endif
 
 /* License: Ruby's */
 static int
