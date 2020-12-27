@@ -1,9 +1,12 @@
 require 'mspec/guards/version'
 
 # Always enable deprecation warnings when running MSpec, as ruby/spec tests for them,
-# and like in most test frameworks, all warnings should be enabled by default (same as -w).
+# and like in most test frameworks, deprecation warnings should be enabled by default,
+# so that deprecations are noticed before the breaking change.
+# Disable experimental warnings, we want to test new experimental features in ruby/spec.
 if Object.const_defined?(:Warning) and Warning.respond_to?(:[]=)
   Warning[:deprecated] = true
+  Warning[:experimental] = false
 end
 
 if Object.const_defined?(:Warning) and Warning.respond_to?(:warn)
@@ -39,15 +42,6 @@ if Object.const_defined?(:Warning) and Warning.respond_to?(:warn)
     when /passing a block to String#(bytes|chars|codepoints|lines) is deprecated/
     when /core\/string\/modulo_spec\.rb:\d+: warning: too many arguments for format string/
     when /regexp\/shared\/new_ascii(_8bit)?\.rb:\d+: warning: Unknown escape .+ is ignored/
-
-    # $VERBOSE = false warnings
-    when /constant ::(Fixnum|Bignum) is deprecated/
-    when /\/(argf|io|stringio)\/.+(ARGF|IO)#(lines|chars|bytes|codepoints) is deprecated/
-    when /Thread\.exclusive is deprecated.+\n.+thread\/exclusive_spec\.rb/
-    when /hash\/shared\/index\.rb:\d+: warning: Hash#index is deprecated; use Hash#key/
-    when /exponent(_spec)?\.rb:\d+: warning: in a\*\*b, b may be too big/
-    when /enumerator\/(new_spec|initialize_spec)\.rb:\d+: warning: Enumerator\.new without a block is deprecated/
-    when /Pattern matching is experimental, and the behavior may change in future versions of Ruby!/
     else
       $stderr.write message
     end
