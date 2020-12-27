@@ -185,9 +185,6 @@ memory_view_fill_contiguous_strides(VALUE mod, VALUE ndim_v, VALUE item_size_v, 
 static VALUE
 memory_view_get_ref_count(VALUE obj)
 {
-    extern VALUE rb_memory_view_exported_object_registry;
-    extern const rb_data_type_t rb_memory_view_exported_object_registry_data_type;
-
     if (rb_memory_view_exported_object_registry == Qundef) {
         return Qnil;
     }
