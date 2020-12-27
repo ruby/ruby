@@ -13,7 +13,9 @@ describe "Enumerator#initialize" do
 
   ruby_version_is ''...'3.0' do
     it "returns self when given an object" do
-      @uninitialized.send(:initialize, Object.new).should equal(@uninitialized)
+      suppress_warning do
+        @uninitialized.send(:initialize, Object.new).should equal(@uninitialized)
+      end
     end
   end
 

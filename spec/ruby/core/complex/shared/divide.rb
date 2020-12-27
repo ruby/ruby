@@ -12,7 +12,7 @@ describe :complex_divide, shared: true do
     end
   end
 
-  describe "with Integer" do
+  describe "with Fixnum" do
     it "divides both parts of the Complex number" do
       Complex(20, 40).send(@method, 2).should == Complex(10, 20)
       Complex(30, 30).send(@method, 10).should == Complex(3, 3)
@@ -27,7 +27,7 @@ describe :complex_divide, shared: true do
     end
   end
 
-  describe "with Integer" do
+  describe "with Bignum" do
     it "divides both parts of the Complex number" do
       Complex(20, 40).send(@method, 2).should == Complex(10, 20)
       Complex(15, 16).send(@method, 2.0).should be_close(Complex(7.5, 8), TOLERANCE)

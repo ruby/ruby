@@ -13,7 +13,7 @@ describe "Integer#to_r" do
     298.to_r.denominator.should == 1
   end
 
-  it "works even if self is an Integer" do
+  it "works even if self is a Bignum" do
     bignum = 99999**999
     bignum.should be_an_instance_of(Integer)
     bignum.to_r.should == Rational(bignum, 1)

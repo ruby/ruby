@@ -74,7 +74,7 @@ describe "A singleton class" do
   end
 
   it "doesn't have singleton class" do
-    -> { bignum_value.singleton_class.superclass.should == Integer }.should raise_error(TypeError)
+    -> { bignum_value.singleton_class }.should raise_error(TypeError)
   end
 end
 

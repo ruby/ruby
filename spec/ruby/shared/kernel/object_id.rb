@@ -16,7 +16,7 @@ describe :object_id, shared: true do
     o1.__send__(@method).should_not == o2.__send__(@method)
   end
 
-  it "returns the same value for two Integers with the same value" do
+  it "returns the same value for two Fixnums with the same value" do
     o1 = 1
     o2 = 1
     o1.send(@method).should == o2.send(@method)
@@ -46,7 +46,7 @@ describe :object_id, shared: true do
     o1.send(@method).should == o2.send(@method)
   end
 
-  it "returns a different value for two Integer literals" do
+  it "returns a different value for two Bignum literals" do
     o1 = 2e100.to_i
     o2 = 2e100.to_i
     o1.send(@method).should_not == o2.send(@method)
@@ -64,14 +64,14 @@ describe :object_id, shared: true do
     o1.send(@method).should_not == o2.send(@method)
   end
 
-  it "returns a different value for two numbers near the 32 bit Integer limit" do
+  it "returns a different value for two numbers near the 32 bit Fixnum limit" do
     o1 = -1
     o2 = 2 ** 30 - 1
 
     o1.send(@method).should_not == o2.send(@method)
   end
 
-  it "returns a different value for two numbers near the 64 bit Integer limit" do
+  it "returns a different value for two numbers near the 64 bit Fixnum limit" do
     o1 = -1
     o2 = 2 ** 62 - 1
 

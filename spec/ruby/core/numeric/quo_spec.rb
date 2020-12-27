@@ -11,7 +11,7 @@ describe "Numeric#quo" do
     2.quo(2.5).should eql(0.8)
   end
 
-  it "returns the result of self divided by the given Integer as a Float" do
+  it "returns the result of self divided by the given Bignum as a Float" do
     45.quo(bignum_value).should be_close(1.04773789668636e-08, TOLERANCE)
   end
 

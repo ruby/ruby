@@ -49,18 +49,18 @@ describe "Random.rand" do
   end
 end
 
-describe "Random#rand with Integer" do
+describe "Random#rand with Fixnum" do
   it "returns an Integer" do
     Random.new.rand(20).should be_an_instance_of(Integer)
   end
 
-  it "returns an Integer greater than or equal to 0" do
+  it "returns a Fixnum greater than or equal to 0" do
     prng = Random.new
     ints = 20.times.map { prng.rand(5) }
     ints.min.should >= 0
   end
 
-  it "returns an Integer less than the argument" do
+  it "returns a Fixnum less than the argument" do
     prng = Random.new
     ints = 20.times.map { prng.rand(5) }
     ints.max.should <= 4
@@ -92,19 +92,19 @@ describe "Random#rand with Integer" do
   end
 end
 
-describe "Random#rand with Integer" do
-  it "typically returns an Integer" do
+describe "Random#rand with Bignum" do
+  it "typically returns a Bignum" do
     rnd = Random.new(1)
     10.times.map{ rnd.rand(bignum_value*2) }.max.should be_an_instance_of(Integer)
   end
 
-  it "returns an Integer greater than or equal to 0" do
+  it "returns a Bignum greater than or equal to 0" do
     prng = Random.new
     bigs = 20.times.map { prng.rand(bignum_value) }
     bigs.min.should >= 0
   end
 
-  it "returns an Integer less than the argument" do
+  it "returns a Bignum less than the argument" do
     prng = Random.new
     bigs = 20.times.map { prng.rand(bignum_value) }
     bigs.max.should < bignum_value

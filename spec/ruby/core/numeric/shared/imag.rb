@@ -6,7 +6,7 @@ describe :numeric_imag, shared: true do
       20,             # Integer
       398.72,         # Float
       Rational(3, 4), # Rational
-      bignum_value, # Integer
+      bignum_value, # Bignum
       infinity_value,
       nan_value
     ].map{|n| [n,-n]}.flatten

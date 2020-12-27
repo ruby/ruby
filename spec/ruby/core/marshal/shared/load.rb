@@ -211,14 +211,14 @@ describe :marshal_load, shared: true do
         y.first.tainted?.should be_false
       end
 
-      it "does not taint Integers" do
+      it "does not taint Fixnums" do
         x = [1]
         y = Marshal.send(@method, Marshal.dump(x).taint)
         y.tainted?.should be_true
         y.first.tainted?.should be_false
       end
 
-      it "does not taint Integers" do
+      it "does not taint Bignums" do
         x = [bignum_value]
         y = Marshal.send(@method, Marshal.dump(x).taint)
         y.tainted?.should be_true
@@ -740,16 +740,16 @@ describe :marshal_load, shared: true do
     end
   end
 
-  describe "for an Integer" do
+  describe "for a Bignum" do
     platform_is wordsize: 64 do
-      context "that is Integer on 32-bit platforms but Integer on 64-bit" do
-        it "dumps an Integer" do
+      context "that is Bignum on 32-bit platforms but Fixnum on 64-bit" do
+        it "dumps a Fixnum" do
           val = Marshal.send(@method, "\004\bl+\ab:wU")
           val.should == 1433877090
           val.class.should == Integer
         end
 
-        it "dumps an array containing multiple references to the Integer as an array of Integer" do
+        it "dumps an array containing multiple references to the Bignum as an array of Fixnum" do
           arr = Marshal.send(@method, "\004\b[\al+\a\223BwU@\006")
           arr.should == [1433879187, 1433879187]
           arr.each { |v| v.class.should == Integer }

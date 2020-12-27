@@ -289,7 +289,7 @@ describe "C-API Util function" do
 
   describe "rb_sourceline" do
     it "returns the current ruby file" do
-      @o.rb_sourceline.should be_kind_of(Fixnum)
+      @o.rb_sourceline.should be_kind_of(Integer)
     end
   end
 

@@ -16,11 +16,11 @@ describe "Matrix#/" do
 
   # Guard against the Mathn library
   guard -> { !defined?(Math.rsqrt) } do
-    it "returns the result of dividing self by an Integer" do
+    it "returns the result of dividing self by a Fixnum" do
       (@a / 2).should == Matrix[ [0, 1], [1, 2] ]
     end
 
-    it "returns the result of dividing self by an Integer" do
+    it "returns the result of dividing self by a Bignum" do
       (@a / bignum_value).should == Matrix[ [0, 0], [0, 0] ]
     end
   end

@@ -59,7 +59,7 @@ describe :rational_exponent, shared: true do
     end
   end
 
-  describe "when passed Integer" do
+  describe "when passed Bignum" do
     # #5713
     it "returns Rational(0) when self is Rational(0) and the exponent is positive" do
       (Rational(0) ** bignum_value).should eql(Rational(0))
@@ -85,13 +85,21 @@ describe :rational_exponent, shared: true do
     end
 
     it "returns positive Infinity when self is > 1" do
-      (Rational(2) ** bignum_value).infinite?.should == 1
-      (Rational(fixnum_max) ** bignum_value).infinite?.should == 1
+      -> {
+        (Rational(2) ** bignum_value).infinite?.should == 1
+      }.should complain(/warning: in a\*\*b, b may be too big/)
+      -> {
+        (Rational(fixnum_max) ** bignum_value).infinite?.should == 1
+      }.should complain(/warning: in a\*\*b, b may be too big/)
     end
 
     it "returns 0.0 when self is > 1 and the exponent is negative" do
-      (Rational(2) ** -bignum_value).should eql(0.0)
-      (Rational(fixnum_max) ** -bignum_value).should eql(0.0)
+      -> {
+        (Rational(2) ** -bignum_value).should eql(0.0)
+      }.should complain(/warning: in a\*\*b, b may be too big/)
+      -> {
+        (Rational(fixnum_max) ** -bignum_value).should eql(0.0)
+      }.should complain(/warning: in a\*\*b, b may be too big/)
     end
 
     # Fails on linux due to pow() bugs in glibc: http://sources.redhat.com/bugzilla/show_bug.cgi?id=3866

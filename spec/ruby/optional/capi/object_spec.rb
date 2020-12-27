@@ -448,7 +448,7 @@ describe "CApiObject" do
   describe "rb_class_of" do
     it "returns the class of an object" do
       @o.rb_class_of(nil).should == NilClass
-      @o.rb_class_of(0).should == Fixnum
+      @o.rb_class_of(0).should == Integer
       @o.rb_class_of(0.1).should == Float
       @o.rb_class_of(ObjectTest.new).should == ObjectTest
     end
@@ -464,7 +464,7 @@ describe "CApiObject" do
   describe "rb_obj_classname" do
     it "returns the class name of an object" do
       @o.rb_obj_classname(nil).should == 'NilClass'
-      @o.rb_obj_classname(0).should == Fixnum.to_s
+      @o.rb_obj_classname(0).should == 'Integer'
       @o.rb_obj_classname(0.1).should == 'Float'
       @o.rb_obj_classname(ObjectTest.new).should == 'ObjectTest'
     end

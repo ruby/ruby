@@ -1,5 +1,6 @@
 # -*- encoding: binary -*-
 require_relative '../../spec_helper'
+require_relative 'fixtures/common'
 
 describe "ENV.[]" do
   before :each do
@@ -58,8 +59,7 @@ describe "ENV.[]" do
   it "uses the locale encoding if Encoding.default_internal is nil" do
     Encoding.default_internal = nil
 
-    locale = Encoding.find('locale')
-    locale = Encoding::UTF_8 if platform_is :windows
+    locale = ENVSpecs.encoding
     locale = Encoding::BINARY if locale == Encoding::US_ASCII
     ENV[@variable] = "\xC3\xB8"
     ENV[@variable].encoding.should == locale

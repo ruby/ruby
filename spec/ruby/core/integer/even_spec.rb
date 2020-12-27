@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 
 describe "Integer#even?" do
   context "fixnum" do
-    it "returns true for an Integer when it is an even number" do
+    it "returns true for a Fixnum when it is an even number" do
       (-2).even?.should be_true
       (-1).even?.should be_false
 
@@ -11,7 +11,7 @@ describe "Integer#even?" do
       2.even?.should be_true
     end
 
-    it "returns true for an Integer when it is an even number" do
+    it "returns true for a Bignum when it is an even number" do
       bignum_value(0).even?.should be_true
       bignum_value(1).even?.should be_false
 

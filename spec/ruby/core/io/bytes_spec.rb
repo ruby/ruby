@@ -6,9 +6,11 @@ ruby_version_is ''...'3.0' do
   describe "IO#bytes" do
     before :each do
       @io = IOSpecs.io_fixture "lines.txt"
+      @verbose, $VERBOSE = $VERBOSE, nil
     end
 
     after :each do
+      $VERBOSE = @verbose
       @io.close unless @io.closed?
     end
 

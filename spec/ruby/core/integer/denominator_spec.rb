@@ -7,7 +7,7 @@ describe "Integer#denominator" do
     @numbers = [
       20,             # Integer
       -2709,          # Negative Integer
-      99999999**99,   # Integer
+      99999999**99,   # Bignum
       -99999**621,    # Negative BigNum
       0,
       1

@@ -23,7 +23,7 @@ describe :string_times, shared: true do
     -> { @object.call("cool", min_long) }.should raise_error(ArgumentError)
   end
 
-  it "raises a RangeError when given integer is an Integer" do
+  it "raises a RangeError when given integer is a Bignum" do
     -> { @object.call("cool", 999999999999999999999) }.should raise_error(RangeError)
     -> { @object.call("", 999999999999999999999) }.should raise_error(RangeError)
   end

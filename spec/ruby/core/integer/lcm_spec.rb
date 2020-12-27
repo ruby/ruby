@@ -31,13 +31,13 @@ describe "Integer#lcm" do
     -100.lcm(-100).should == 100
   end
 
-  it "accepts an Integer argument" do
+  it "accepts a Bignum argument" do
     bignum = 9999**99
     bignum.should be_kind_of(Integer)
     99.lcm(bignum).should == bignum
   end
 
-  it "works if self is an Integer" do
+  it "works if self is a Bignum" do
     bignum = 9999**99
     bignum.should be_kind_of(Integer)
     bignum.lcm(99).should == bignum

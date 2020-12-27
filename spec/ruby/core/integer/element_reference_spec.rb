@@ -68,14 +68,14 @@ describe "Integer#[]" do
       -> { 3[obj] }.should raise_error(TypeError)
     end
 
-    it "calls #to_int to coerce a String to an Integer and returns 0" do
+    it "calls #to_int to coerce a String to a Bignum and returns 0" do
       obj = mock('bignum value')
       obj.should_receive(:to_int).and_return(bignum_value)
 
       3[obj].should == 0
     end
 
-    it "returns 0 when passed a Float in the range of an Integer" do
+    it "returns 0 when passed a Float in the range of a Bignum" do
       3[bignum_value.to_f].should == 0
     end
 
@@ -131,16 +131,10 @@ describe "Integer#[]" do
           0b000001[-3, 4].should == 0b1000
         end
 
-        it "ignores negative upper boundary" do
-          0b101001101[1..-1].should == 0b10100110
-          0b101001101[1..-2].should == 0b10100110
-          0b101001101[1..-3].should == 0b10100110
-        end
-
         it "ignores upper boundary smaller than lower boundary" do
           0b101001101[4..1].should == 0b10100
           0b101001101[4..2].should == 0b10100
-          0b101001101[4..3].should == 0b10100
+          0b101001101[-4..-5].should == 0b1010011010000
         end
 
         it "raises FloatDomainError if any boundary is infinity" do

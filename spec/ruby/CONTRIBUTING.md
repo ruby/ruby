@@ -124,8 +124,8 @@ If an exception is raised, it will fail the example anyway.
 
 ```ruby
 -> {
-  Integer
-}.should complain(/constant ::Integer is deprecated/) # Expect a warning
+  Fixnum
+}.should complain(/constant ::Fixnum is deprecated/) # Expect a warning
 ```
 
 ### Guards

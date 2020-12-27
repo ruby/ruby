@@ -13,3 +13,11 @@ ruby_version_is ''...'3.0' do
     end
   end
 end
+
+ruby_version_is '3.0' do
+  describe "Data" do
+    it "does not exist anymore" do
+      Object.should_not have_constant(:Data)
+    end
+  end
+end

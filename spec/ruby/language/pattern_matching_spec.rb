@@ -5,7 +5,7 @@ ruby_version_is "2.7" do
     # TODO: Remove excessive eval calls when support of previous version
     #       Ruby 2.6 will be dropped
 
-    before do
+    before :each do
       ScratchPad.record []
     end
 
@@ -41,7 +41,7 @@ ruby_version_is "2.7" do
     end
 
     describe "warning" do
-      before do
+      before :each do
         ruby_version_is ""..."3.0" do
           @src = 'case [0, 1]; in [a, b]; end'
         end
@@ -49,6 +49,12 @@ ruby_version_is "2.7" do
         ruby_version_is "3.0" do
           @src = '[0, 1] => [a, b]'
         end
+
+        @experimental, Warning[:experimental] = Warning[:experimental], true
+      end
+
+      after :each do
+        Warning[:experimental] = @experimental
       end
 
       it "warns about pattern matching is experimental feature" do
@@ -128,6 +134,19 @@ ruby_version_is "2.7" do
           end
         RUBY
       }.should raise_error(SyntaxError, /unexpected/)
+    end
+
+    it "evaluates the case expression once for multiple patterns, caching the result" do
+      eval(<<~RUBY).should == true
+        case (ScratchPad << :foo; 1)
+        in 0
+          false
+        in 1
+          true
+        end
+      RUBY
+
+      ScratchPad.recorded.should == [:foo]
     end
 
     describe "guards" do
@@ -508,6 +527,47 @@ ruby_version_is "2.7" do
         RUBY
       end
 
+      ruby_version_is "3.0" do
+        it "calls #deconstruct once for multiple patterns, caching the result" do
+          obj = Object.new
+
+          def obj.deconstruct
+            ScratchPad << :deconstruct
+            [0, 1]
+          end
+
+          eval(<<~RUBY).should == true
+            case obj
+            in [1, 2]
+              false
+            in [0, 1]
+              true
+            end
+          RUBY
+
+          ScratchPad.recorded.should == [:deconstruct]
+        end
+      end
+
+      it "calls #deconstruct even on objects that are already an array" do
+        obj = [1, 2]
+        def obj.deconstruct
+          ScratchPad << :deconstruct
+          [3, 4]
+        end
+
+        eval(<<~RUBY).should == true
+          case obj
+          in [3, 4]
+            true
+          else
+            false
+          end
+        RUBY
+
+        ScratchPad.recorded.should == [:deconstruct]
+      end
+
       it "does not match object if Constant === object returns false" do
         eval(<<~RUBY).should == false
           case [0, 1, 2]
@@ -521,6 +581,7 @@ ruby_version_is "2.7" do
 
       it "does not match object without #deconstruct method" do
         obj = Object.new
+        obj.should_receive(:respond_to?).with(:deconstruct)
 
         eval(<<~RUBY).should == false
           case obj
@@ -544,6 +605,26 @@ ruby_version_is "2.7" do
             end
           RUBY
         }.should raise_error(TypeError, /deconstruct must return Array/)
+      end
+
+      it "accepts a subclass of Array from #deconstruct" do
+        obj = Object.new
+        def obj.deconstruct
+          subarray = Class.new(Array).new(2)
+          def subarray.[](n)
+            n
+          end
+          subarray
+        end
+
+        eval(<<~RUBY).should == true
+          case obj
+          in [1, 2]
+            false
+          in [0, 1]
+            true
+          end
+        RUBY
       end
 
       it "does not match object if elements of array returned by #deconstruct method does not match elements in pattern" do
@@ -778,6 +859,26 @@ ruby_version_is "2.7" do
         RUBY
       end
 
+      it "calls #deconstruct_keys per pattern" do
+        obj = Object.new
+
+        def obj.deconstruct_keys(*)
+          ScratchPad << :deconstruct_keys
+          {a: 1}
+        end
+
+        eval(<<~RUBY).should == true
+          case obj
+          in {b: 1}
+            false
+          in {a: 1}
+            true
+          end
+        RUBY
+
+        ScratchPad.recorded.should == [:deconstruct_keys, :deconstruct_keys]
+      end
+
       it "does not match object if Constant === object returns false" do
         eval(<<~RUBY).should == false
           case {a: 1}
@@ -791,6 +892,7 @@ ruby_version_is "2.7" do
 
       it "does not match object without #deconstruct_keys method" do
         obj = Object.new
+        obj.should_receive(:respond_to?).with(:deconstruct_keys)
 
         eval(<<~RUBY).should == false
           case obj
