@@ -4236,7 +4236,7 @@ enum_uniq(VALUE obj)
  * #chunk::          Returns elements organized into chunks as specified by the given block.
  * #chunk_while::    Returns elements organized into chunks as specified by the given block.
  *
- * === Methods for Searching
+ * === Methods for Searching and Filtering
  *
  * These methods return elements that meet a specified criterion.
  *
@@ -4261,12 +4261,12 @@ enum_uniq(VALUE obj)
  *                     (slightly different from #each).
  * #each_with_index::  Calls the block with each successive element and its index.
  * #each_with_object:: Calls the block with each successive element and a given object.
- * #each_slice::       Calls the block with successive slices of elements.
- * #each_cons::        Calls the block with successive slices of elements
+ * #each_slice::       Calls the block with successive non-overlapping slices.
+ * #each_cons::        Calls the block with successive overlapping slices.
  *                     (different from #each_slice).
  * #reverse_each::     Calls the block with each successive element, in reverse order.
  *
- * === Methods for Filtering
+ * === Other Methods
  *
  * #map, #collect::             Returns objects returned by the block.
  * #filter_map::                Returns truthy objects returned by the block.
