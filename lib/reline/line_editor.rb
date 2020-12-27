@@ -471,7 +471,7 @@ class Reline::LineEditor
         calculate_height_by_lines(@buffer_of_lines[0..(@line_index - 1)], prompt_list || prompt)
       end
     first_line_diff = new_first_line_started_from - @first_line_started_from
-    new_cursor, _, new_started_from, _ = calculate_nearest_cursor(@line, @cursor, @started_from, @byte_pointer, false)
+    new_cursor, new_cursor_max, new_started_from, new_byte_pointer = calculate_nearest_cursor(@buffer_of_lines[@line_index], @cursor, @started_from, @byte_pointer, false)
     new_started_from = calculate_height_by_width(prompt_width + new_cursor) - 1
     calculate_scroll_partial_screen(@highest_in_all, new_first_line_started_from + new_started_from)
     @previous_line_index = nil
@@ -485,6 +485,8 @@ class Reline::LineEditor
       @first_line_started_from = new_first_line_started_from
       @started_from = new_started_from
       @cursor = new_cursor
+      @cursor_max = new_cursor_max
+      @byte_pointer = new_byte_pointer
       move_cursor_down(first_line_diff + @started_from)
       Reline::IOGate.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
       false

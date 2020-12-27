@@ -620,6 +620,24 @@ begin
       EOC
     end
 
+    def test_update_cursor_correctly_when_just_cursor_moving
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
+      puts %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}.inspect
+      write("def hoge\n  01234678")
+      write("\C-p")
+      write("\C-b")
+      write("\C-n")
+      write('5')
+      write("\C-e")
+      write('9')
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> def hoge
+        prompt>   0123456789
+      EOC
+    end
+
     private def write_inputrc(content)
       File.open(@inputrc_file, 'w') do |f|
         f.write content
