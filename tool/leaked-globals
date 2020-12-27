@@ -18,8 +18,15 @@ count = 0
 col = Colorize.new
 config_code = File.read(config)
 REPLACE = config_code.scan(/\bAC_(?:REPLACE|CHECK)_FUNCS?\((\w+)/).flatten
-REPLACE << 'memcmp' if /\bAC_FUNC_MEMCMP\b/ =~ config_code
+# REPLACE << 'memcmp' if /\bAC_FUNC_MEMCMP\b/ =~ config_code
 REPLACE.push('main', 'DllMain')
+missing = File.dirname(config) + "/missing/"
+ARGV.reject! do |n|
+  unless (src = Dir.glob(missing + File.basename(n, ".*") + ".[cS]")).empty?
+    puts "Ignore #{n} because of #{src.map {|s| File.basename(s)}.join(', ')} under missing"
+    true
+  end
+end
 print "Checking leaked global symbols..."
 STDOUT.flush
 IO.foreach("|#{NM} -Pgp #{ARGV.join(' ')}") do |line|
