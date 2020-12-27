@@ -8157,6 +8157,10 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 		if (local_body->param.flags.has_kwrest) {
 		    int idx = local_body->local_table_size - local_kwd->rest_start;
 		    ADD_GETLOCAL(args, line, idx, lvar_level);
+                    if (local_kwd->num > 0) {
+                        ADD_SEND(args, line, rb_intern("dup"), INT2FIX(0));
+                        flag |= VM_CALL_KW_SPLAT_MUT;
+                    }
 		}
 		else {
 		    ADD_INSN1(args, line, newhash, INT2FIX(0));

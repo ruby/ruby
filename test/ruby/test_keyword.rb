@@ -3681,6 +3681,25 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([42, {:bar=>"x"}], b.new.foo(42), bug8236)
   end
 
+  def test_super_with_keyword_kwrest
+    base = Class.new do
+      def foo(**h)
+        h
+      end
+    end
+    a = Class.new(base) do
+      attr_reader :h
+      def foo(a:, b:, **h)
+        @h = h
+        super
+      end
+    end
+
+    o = a.new
+    assert_equal({a: 1, b: 2, c: 3}, o.foo(a: 1, b: 2, c: 3))
+    assert_equal({c: 3}, o.h)
+  end
+
   def test_zsuper_only_named_kwrest
     bug8416 = '[ruby-core:55033] [Bug #8416]'
     base = Class.new do
@@ -3689,11 +3708,15 @@ class TestKeywordArguments < Test::Unit::TestCase
       end
     end
     a = Class.new(base) do
+      attr_reader :h
       def foo(**h)
+        @h = h
         super
       end
     end
-    assert_equal({:bar=>"x"}, a.new.foo(bar: "x"), bug8416)
+    o = a.new
+    assert_equal({:bar=>"x"}, o.foo(bar: "x"), bug8416)
+    assert_equal({:bar=>"x"}, o.h)
   end
 
   def test_zsuper_only_anonymous_kwrest
