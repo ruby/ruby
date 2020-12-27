@@ -1670,7 +1670,7 @@ class CSV
     #
     # Calls CSV.read with +source+, +options+, and certain default options:
     # - +headers+: +true+
-    # - +converbers+: +:numeric+
+    # - +converters+: +:numeric+
     # - +header_converters+: +:symbol+
     #
     # Returns a CSV::Table object.
