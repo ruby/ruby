@@ -18,5 +18,5 @@ module URI
     # A Default port of 443 for URI::WSS
     DEFAULT_PORT = 443
   end
-  @@schemes['WSS'] = WSS
+  register_scheme('WSS', WSS)
 end

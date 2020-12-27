@@ -16,6 +16,7 @@ module URI
   REGEXP = RFC2396_REGEXP
   Parser = RFC2396_Parser
   RFC3986_PARSER = RFC3986_Parser.new
+  Ractor.make_shareable(RFC3986_PARSER)
 
   # URI::Parser.new
   DEFAULT_PARSER = Parser.new
@@ -27,6 +28,7 @@ module URI
   DEFAULT_PARSER.regexp.each_pair do |sym, str|
     const_set(sym, str)
   end
+  Ractor.make_shareable(DEFAULT_PARSER)
 
   module Util # :nodoc:
     def make_components_hash(klass, array_hash)
@@ -62,10 +64,36 @@ module URI
 
   include REGEXP
 
-  @@schemes = {}
+  SCHEMES = {}
+  private_constant :SCHEMES
+
   # Returns a Hash of the defined schemes.
   def self.scheme_list
-    @@schemes
+    SCHEMES
+  end
+
+  # Registers a new scheme when adding custom URIs.
+  # Example:
+  #   module URI
+  #     class RSYNC < Generic
+  #       DEFAULT_PORT = 873
+  #     end
+  #     register_scheme('RSYNC', RSYNC)
+  #   end
+  def self.register_scheme(name, mod)
+    if SCHEMES.frozen?
+      updated = SCHEMES.merge("#{name}" => mod)
+      remove_const(:SCHEMES)
+      const_set(:SCHEMES, updated)
+      freeze_schemes
+    else
+      SCHEMES[name] = mod
+    end
+  end
+
+  def self.freeze_schemes
+    SCHEMES.freeze
+    Ractor.make_shareable(SCHEMES)
   end
 
   #
@@ -74,7 +102,7 @@ module URI
   #
   def self.for(scheme, *arguments, default: Generic)
     if scheme
-      uri_class = @@schemes[scheme.upcase] || default
+      uri_class = SCHEMES[scheme.upcase] || default
     else
       uri_class = default
     end

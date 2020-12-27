@@ -33,6 +33,25 @@ class TestCommon < Test::Unit::TestCase
     end
   end
 
+  def test_ractor
+    r = Ractor.new { URI.parse("https://ruby-lang.org/") }
+    assert_equal(URI.parse("https://ruby-lang.org/"), r.take)
+  end
+
+  def test_register_scheme
+    assert_equal(["FILE", "FTP", "HTTP", "HTTPS", "LDAP", "LDAPS", "MAILTO"].sort, URI.scheme_list.keys.sort)
+
+    original = URI.scheme_list.dup
+    begin
+      URI.register_scheme('FOOBAR', Module.new)
+      assert_equal(["FILE", "FTP", "HTTP", "HTTPS", "LDAP", "LDAPS", "MAILTO", "FOOBAR"].sort, URI.scheme_list.keys.sort)
+    ensure
+      URI.send(:remove_const, :SCHEMES)
+      URI.send(:const_set, :SCHEMES, original)
+      URI.freeze_schemes
+    end
+  end
+
   def test_regexp
     EnvUtil.suppress_warning do
       assert_instance_of Regexp, URI.regexp

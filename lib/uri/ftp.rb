@@ -262,5 +262,5 @@ module URI
       return str
     end
   end
-  @@schemes['FTP'] = FTP
+  register_scheme('FTP', FTP)
 end
