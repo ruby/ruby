@@ -5211,7 +5211,7 @@ symlink(const char *src, const char *link)
 }
 
 /* License: Ruby's */
-int
+rb_pid_t
 wait(int *status)
 {
     return waitpid(-1, status, 0);
