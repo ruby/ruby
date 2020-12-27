@@ -259,9 +259,10 @@ r.take      # Receive from r's outgoing port
 The last example shows the following ractor network.
 
 ```
+
   +------+        +---+
   * main |------> * r *---+
-  +-----+         +---+   |
+  +------+        +---+   |
       ^                   |
       +-------------------+
 ```
