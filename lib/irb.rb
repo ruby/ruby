@@ -578,6 +578,29 @@ module IRB
       end
     end
 
+    def convert_invalid_byte_sequence(str)
+      str = str.force_encoding(Encoding::ASCII_8BIT)
+      conv = Encoding::Converter.new(Encoding::ASCII_8BIT, Encoding::UTF_8)
+      dst = String.new
+      begin
+        ret = conv.primitive_convert(str, dst)
+        case ret
+        when :invalid_byte_sequence
+          conf.insert_output(conf.primitive_errinfo[3].dump[1..-2])
+          redo
+        when :undefined_conversion
+          c = conv.primitive_errinfo[3].dup.force_encoding(conv.primitive_errinfo[1])
+          conv.insert_output(c.dump[1..-2])
+          redo
+        when :incomplete_input
+          conv.insert_output(conv.primitive_errinfo[3].dump[1..-2])
+        when :finished
+        end
+        break
+      end while nil
+      dst
+    end
+
     def handle_exception(exc)
       if exc.backtrace && exc.backtrace[0] =~ /\/irb(2)?(\/.*|-.*|\.rb)?:/ && exc.class.to_s !~ /^IRB/ &&
          !(SyntaxError === exc) && !(EncodingError === exc)
@@ -621,7 +644,8 @@ module IRB
         end
         puts messages.reverse
       end
-      m = exc.to_s.split(/\n/)
+      converted_exc_s = convert_invalid_byte_sequence(exc.to_s.dup)
+      m = converted_exc_s.split(/\n/)
       print "#{attr[1]}#{exc.class} (#{attr[4]}#{m.shift}#{attr[0, 1]})#{attr[]}\n"
       puts m.map {|s| "#{attr[1]}#{s}#{attr[]}\n"}
       if attr == ATTR_PLAIN
