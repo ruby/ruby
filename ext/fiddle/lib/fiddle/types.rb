@@ -44,11 +44,11 @@ module Fiddle
         typealias "HANDLE", "uintptr_t"
         typealias "PHANDLE", "void*"
         typealias "PVOID", "void*"
-        typealias "LPCSTR", "char*"
+        typealias "LPCSTR", "const char*"
         typealias "LPSTR", "char*"
-        typealias "HINSTANCE", "unsigned int"
-        typealias "HDC", "unsigned int"
-        typealias "HWND", "unsigned int"
+        typealias "HINSTANCE", "HANDLE"
+        typealias "HDC", "HANDLE"
+        typealias "HWND", "HANDLE"
       }
     end
     module_function :included
