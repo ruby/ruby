@@ -1907,7 +1907,7 @@ rb_timespec_now(struct timespec *ts)
 }
 
 static VALUE
-time_init_0(VALUE time)
+time_init_now(rb_execution_context_t *ec, VALUE time, VALUE zone)
 {
     struct time_object *tobj;
     struct timespec ts;
@@ -1920,6 +1920,9 @@ time_init_0(VALUE time)
     rb_timespec_now(&ts);
     tobj->timew = timespec2timew(&ts);
 
+    if (!NIL_P(zone)) {
+        time_zonelocal(time, zone);
+    }
     return time;
 }
 
@@ -2312,45 +2315,41 @@ find_timezone(VALUE time, VALUE zone)
 }
 
 static VALUE
-time_init_1(int argc, VALUE *argv, VALUE time)
+time_init_args(rb_execution_context_t *ec, VALUE time, VALUE year, VALUE mon, VALUE mday, VALUE hour, VALUE min, VALUE sec, VALUE zone)
 {
     struct vtm vtm;
-    VALUE zone = Qnil;
     VALUE utc = Qnil;
-    VALUE v[7];
     struct time_object *tobj;
 
     vtm.wday = VTM_WDAY_INITVAL;
     vtm.yday = 0;
     vtm.zone = str_empty;
 
-    /*                             year  mon   mday  hour  min   sec   off */
-    rb_scan_args(argc, argv, "16", &v[0],&v[1],&v[2],&v[3],&v[4],&v[5],&v[6]);
+    vtm.year = obj2vint(year);
 
-    vtm.year = obj2vint(v[0]);
+    vtm.mon = NIL_P(mon) ? 1 : month_arg(mon);
 
-    vtm.mon = NIL_P(v[1]) ? 1 : month_arg(v[1]);
+    vtm.mday = NIL_P(mday) ? 1 : obj2ubits(mday, 5);
 
-    vtm.mday = NIL_P(v[2]) ? 1 : obj2ubits(v[2], 5);
+    vtm.hour = NIL_P(hour) ? 0 : obj2ubits(hour, 5);
 
-    vtm.hour = NIL_P(v[3]) ? 0 : obj2ubits(v[3], 5);
+    vtm.min  = NIL_P(min) ? 0 : obj2ubits(min, 6);
 
-    vtm.min  = NIL_P(v[4]) ? 0 : obj2ubits(v[4], 6);
-
-    if (NIL_P(v[5])) {
+    if (NIL_P(sec)) {
         vtm.sec = 0;
         vtm.subsecx = INT2FIX(0);
     }
     else {
         VALUE subsecx;
-        vtm.sec = obj2subsecx(v[5], &subsecx);
+        vtm.sec = obj2subsecx(sec, &subsecx);
         vtm.subsecx = subsecx;
     }
 
     vtm.isdst = VTM_ISDST_INITVAL;
     vtm.utc_offset = Qnil;
-    if (!NIL_P(v[6])) {
-        VALUE arg = v[6];
+    VALUE arg = zone;
+    if (!NIL_P(arg)) {
+        zone = Qnil;
         if (arg == ID2SYM(rb_intern("dst")))
             vtm.isdst = 1;
         else if (arg == ID2SYM(rb_intern("std")))
@@ -2405,64 +2404,6 @@ time_init_1(int argc, VALUE *argv, VALUE time)
         tobj->timew = timelocalw(&vtm);
         return time_localtime(time);
     }
-}
-
-
-/*
- *  call-seq:
- *     Time.new -> time
- *     Time.new(year, month=nil, day=nil, hour=nil, min=nil, sec=nil, tz=nil) -> time
- *
- *  Returns a Time object.
- *
- *  It is initialized to the current system time if no argument is given.
- *
- *  *Note:* The new object will use the resolution available on your
- *  system clock, and may include subsecond.
- *
- *  If one or more arguments are specified, the time is initialized to the
- *  specified time.
- *
- *  +sec+ may have subsecond if it is a rational.
- *
- *  +tz+ specifies the timezone.
- *  It can be an offset from UTC, given either as a string such as "+09:00"
- *  or a single letter "A".."Z" excluding "J" (so-called military time zone),
- *  or as a number of seconds such as 32400.
- *  Or it can be a timezone object,
- *  see {Timezone argument}[#class-Time-label-Timezone+argument] for details.
- *
- *     a = Time.new      #=> 2020-07-21 01:27:44.917547285 +0900
- *     b = Time.new      #=> 2020-07-21 01:27:44.917617713 +0900
- *     a == b            #=> false
- *     "%.6f" % a.to_f   #=> "1595262464.917547"
- *     "%.6f" % b.to_f   #=> "1595262464.917618"
- *
- *     Time.new(2008,6,21, 13,30,0, "+09:00") #=> 2008-06-21 13:30:00 +0900
- *
- *     # A trip for RubyConf 2007
- *     t1 = Time.new(2007,11,1,15,25,0, "+09:00") # JST (Narita)
- *     t2 = Time.new(2007,11,1,12, 5,0, "-05:00") # CDT (Minneapolis)
- *     t3 = Time.new(2007,11,1,13,25,0, "-05:00") # CDT (Minneapolis)
- *     t4 = Time.new(2007,11,1,16,53,0, "-04:00") # EDT (Charlotte)
- *     t5 = Time.new(2007,11,5, 9,24,0, "-05:00") # EST (Charlotte)
- *     t6 = Time.new(2007,11,5,11,21,0, "-05:00") # EST (Detroit)
- *     t7 = Time.new(2007,11,5,13,45,0, "-05:00") # EST (Detroit)
- *     t8 = Time.new(2007,11,6,17,10,0, "+09:00") # JST (Narita)
- *     (t2-t1)/3600.0                             #=> 10.666666666666666
- *     (t4-t3)/3600.0                             #=> 2.466666666666667
- *     (t6-t5)/3600.0                             #=> 1.95
- *     (t8-t7)/3600.0                             #=> 13.416666666666666
- *
- */
-
-static VALUE
-time_init(int argc, VALUE *argv, VALUE time)
-{
-    if (argc == 0)
-        return time_init_0(time);
-    else
-        return time_init_1(argc, argv, time);
 }
 
 static void
@@ -2737,17 +2678,6 @@ struct timespec
 rb_time_timespec_interval(VALUE num)
 {
     return time_timespec(num, TRUE);
-}
-
-static VALUE
-time_s_now(rb_execution_context_t *ec, VALUE klass, VALUE zone)
-{
-    VALUE t;
-    t = rb_class_new_instance(0, NULL, klass);
-    if (!NIL_P(zone)) {
-        time_zonelocal(t, zone);
-    }
-    return t;
 }
 
 static int
@@ -5809,7 +5739,6 @@ Init_Time(void)
     rb_define_method(rb_cTime, "<=>", time_cmp, 1);
     rb_define_method(rb_cTime, "eql?", time_eql, 1);
     rb_define_method(rb_cTime, "hash", time_hash, 0);
-    rb_define_method(rb_cTime, "initialize", time_init, -1);
     rb_define_method(rb_cTime, "initialize_copy", time_init_copy, 1);
 
     rb_define_method(rb_cTime, "localtime", time_localtime_m, -1);
