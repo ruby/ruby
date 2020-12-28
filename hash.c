@@ -3998,13 +3998,13 @@ rb_hash_update(int argc, VALUE *argv, VALUE self)
 
     rb_hash_modify(self);
     for (i = 0; i < argc; i++){
-       VALUE hash = to_hash(argv[i]);
-       if (block_given) {
-           rb_hash_foreach(hash, rb_hash_update_block_i, self);
-       }
-       else {
-           rb_hash_foreach(hash, rb_hash_update_i, self);
-       }
+        VALUE hash = to_hash(argv[i]);
+        if (block_given) {
+            rb_hash_foreach(hash, rb_hash_update_block_i, self);
+        }
+        else {
+            rb_hash_foreach(hash, rb_hash_update_i, self);
+        }
     }
     return self;
 }
