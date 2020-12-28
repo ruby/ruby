@@ -49,7 +49,7 @@ NORETURN(void rb_async_bug_errno(const char *,int));
 const char *rb_builtin_type_name(int t);
 const char *rb_builtin_class_name(VALUE x);
 PRINTF_ARGS(void rb_warn_deprecated(const char *fmt, const char *suggest, ...), 1, 3);
-PRINTF_ARGS(void rb_warn_deprecated_to_remove(const char *fmt, const char *suggest, ...), 1, 3);
+PRINTF_ARGS(void rb_warn_deprecated_to_remove(const char *removal, const char *fmt, const char *suggest, ...), 2, 4);
 #if RUBY_DEBUG && (RBIMPL_HAS_ATTRIBUTE(diagnose_if) || defined(__OPTIMIZE__))
 # include "ruby/version.h"
 
@@ -88,10 +88,10 @@ void rb_deprecated_method_to_be_removed(const char *);
 # endif
 # define rb_warn_deprecated_to_remove_at(removal, ...) \
     (rb_deprecated_method_to_be_removed(removal), \
-     rb_warn_deprecated_to_remove(__VA_ARGS__))
+     rb_warn_deprecated_to_remove(removal, __VA_ARGS__))
 #else
 # define rb_warn_deprecated_to_remove_at(removal, ...) \
-        rb_warn_deprecated_to_remove(__VA_ARGS__)
+        rb_warn_deprecated_to_remove(removal, __VA_ARGS__)
 #endif
 VALUE rb_syntax_error_append(VALUE, VALUE, int, int, rb_encoding*, const char*, va_list);
 PRINTF_ARGS(void rb_enc_warn(rb_encoding *enc, const char *fmt, ...), 2, 3);

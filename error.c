@@ -493,11 +493,13 @@ deprecation_warning_enabled(void)
 }
 
 static void
-warn_deprecated(VALUE mesg, bool removal, const char *suggest)
+warn_deprecated(VALUE mesg, const char *removal, const char *suggest)
 {
     rb_str_set_len(mesg, RSTRING_LEN(mesg) - 1);
     rb_str_cat_cstr(mesg, " is deprecated");
-    if (removal) rb_str_cat_cstr(mesg, ", and is planned for removal");
+    if (removal) {
+        rb_str_catf(mesg, " and will be removed in Ruby %s", removal);
+    }
     if (suggest) rb_str_catf(mesg, "; use %s instead", suggest);
     rb_str_cat_cstr(mesg, "\n");
     rb_warn_category(mesg, ID2SYM(id_deprecated));
@@ -513,11 +515,11 @@ rb_warn_deprecated(const char *fmt, const char *suggest, ...)
     VALUE mesg = warning_string(0, fmt, args);
     va_end(args);
 
-    warn_deprecated(mesg, false, suggest);
+    warn_deprecated(mesg, NULL, suggest);
 }
 
 void
-rb_warn_deprecated_to_remove(const char *fmt, const char *suggest, ...)
+rb_warn_deprecated_to_remove(const char *removal, const char *fmt, const char *suggest, ...)
 {
     if (!deprecation_warning_enabled()) return;
 
@@ -526,7 +528,7 @@ rb_warn_deprecated_to_remove(const char *fmt, const char *suggest, ...)
     VALUE mesg = warning_string(0, fmt, args);
     va_end(args);
 
-    warn_deprecated(mesg, true, suggest);
+    warn_deprecated(mesg, removal, suggest);
 }
 
 static inline int
