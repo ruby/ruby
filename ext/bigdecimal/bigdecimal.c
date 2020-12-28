@@ -2830,7 +2830,7 @@ VpNewVarArg(int argc, VALUE *argv)
 }
 
 /* call-seq:
- *   BigDecimal(initial, digits, exception: true)
+ *   BigDecimal(initial, digits=0, exception: true)
  *
  * Create a new BigDecimal object.
  *
