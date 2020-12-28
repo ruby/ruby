@@ -2870,19 +2870,17 @@ f_BigDecimal(int argc, VALUE *argv, VALUE self)
 {
     ENTER(1);
     Real *pv;
-    VALUE obj;
 
     if (argc > 0 && CLASS_OF(argv[0]) == rb_cBigDecimal) {
         if (argc == 1 || (argc == 2 && RB_TYPE_P(argv[1], T_HASH))) return argv[0];
     }
-    obj = TypedData_Wrap_Struct(rb_cBigDecimal, &BigDecimal_data_type, 0);
     pv = VpNewVarArg(argc, argv);
     if (pv == NULL) return Qnil;
     SAVE(pv);
     if (ToValue(pv)) pv = VpCopy(NULL, pv);
-    RTYPEDDATA_DATA(obj) = pv;
-    RB_OBJ_FREEZE(obj);
-    return pv->obj = obj;
+    pv->obj = TypedData_Wrap_Struct(rb_cBigDecimal, &BigDecimal_data_type, pv);
+    RB_OBJ_FREEZE(pv->obj);
+    return pv->obj;
 }
 
 static VALUE
