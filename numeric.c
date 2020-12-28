@@ -6290,10 +6290,6 @@ Init_Numeric(void)
         rb_gc_register_mark_object(rb_fix_to_s_static[i]);
     }
 
-    /* An obsolete class, use Integer */
-    rb_define_const(rb_cObject, "Fixnum", rb_cInteger);
-    rb_deprecate_constant(rb_cObject, "Fixnum");
-
     rb_cFloat  = rb_define_class("Float", rb_cNumeric);
 
     rb_undef_alloc_func(rb_cFloat);
