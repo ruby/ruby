@@ -2753,20 +2753,16 @@ VpNewVarArg(int argc, VALUE *argv)
         mf = (size_t)n;
     }
 
-    if (SPECIAL_CONST_P(iniValue)) {
-        switch (iniValue) {
-          case Qnil:
-            if (!exc) return NULL;
-            rb_raise(rb_eTypeError, "can't convert nil into BigDecimal");
-          case Qtrue:
-            if (!exc) return NULL;
-            rb_raise(rb_eTypeError, "can't convert true into BigDecimal");
-          case Qfalse:
-            if (!exc) return NULL;
-            rb_raise(rb_eTypeError, "can't convert false into BigDecimal");
-          default:
-            break;
-        }
+    switch (iniValue) {
+      case Qnil:
+      case Qtrue:
+      case Qfalse:
+        if (!exc) return NULL;
+        rb_raise(rb_eTypeError,
+                 "can't convert %"PRIsVALUE" into BigDecimal", iniValue);
+
+      default:
+        break;
     }
 
   retry:
