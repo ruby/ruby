@@ -2369,7 +2369,8 @@ rb_newobj_of(VALUE klass, VALUE flags)
 {
     if ((flags & RUBY_T_MASK) == T_OBJECT) {
         return newobj_of(klass, (flags | ROBJECT_EMBED) & ~FL_WB_PROTECTED , Qundef, Qundef, Qundef, flags & FL_WB_PROTECTED);
-    } else {
+    }
+    else {
         return newobj_of(klass, flags & ~FL_WB_PROTECTED, 0, 0, 0, flags & FL_WB_PROTECTED);
     }
 }
@@ -3131,7 +3132,8 @@ object_id_cmp(st_data_t x, st_data_t y)
 {
     if (RB_TYPE_P(x, T_BIGNUM)) {
         return !rb_big_eql(x, y);
-    } else {
+    }
+    else {
         return x != y;
     }
 }
@@ -3141,7 +3143,8 @@ object_id_hash(st_data_t n)
 {
     if (RB_TYPE_P(n, T_BIGNUM)) {
         return FIX2LONG(rb_big_hash(n));
-    } else {
+    }
+    else {
         return st_numhash(n);
     }
 }
@@ -4014,7 +4017,8 @@ id2ref(VALUE objid)
 
     if (rb_int_ge(objid, objspace->next_object_id)) {
         rb_raise(rb_eRangeError, "%+"PRIsVALUE" is not id value", rb_int2str(objid, 10));
-    } else {
+    }
+    else {
         rb_raise(rb_eRangeError, "%+"PRIsVALUE" is recycled object", rb_int2str(objid, 10));
     }
 }
@@ -4496,7 +4500,8 @@ lock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
     if(mprotect(body, HEAP_PAGE_SIZE, PROT_NONE)) {
 #endif
         rb_bug("Couldn't protect page %p", (void *)body);
-    } else {
+    }
+    else {
         gc_report(5, objspace, "Protecting page in move %p\n", (void *)body);
     }
 }
@@ -4517,7 +4522,8 @@ unlock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
     if(mprotect(body, HEAP_PAGE_SIZE, PROT_READ | PROT_WRITE)) {
 #endif
         rb_bug("Couldn't unprotect page %p", (void *)body);
-    } else {
+    }
+    else {
         gc_report(5, objspace, "Unprotecting page in move %p\n", (void *)body);
     }
 }
@@ -4619,7 +4625,8 @@ gc_unprotect_pages(rb_objspace_t *objspace, rb_heap_t *heap)
 static void gc_update_references(rb_objspace_t * objspace, rb_heap_t *heap);
 static void invalidate_moved_page(rb_objspace_t *objspace, struct heap_page *page);
 
-static void read_barrier_handler(intptr_t address)
+static void
+read_barrier_handler(intptr_t address)
 {
     VALUE obj;
     rb_objspace_t * objspace = &rb_objspace;
@@ -4644,7 +4651,8 @@ static LPTOP_LEVEL_EXCEPTION_FILTER old_handler;
 typedef void (*signal_handler)(int);
 static signal_handler old_sigsegv_handler;
 
-static LONG WINAPI read_barrier_signal(EXCEPTION_POINTERS * info)
+static LONG WINAPI
+read_barrier_signal(EXCEPTION_POINTERS * info)
 {
     /* EXCEPTION_ACCESS_VIOLATION is what's raised by access to protected pages */
     if (info->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
@@ -4654,7 +4662,8 @@ static LONG WINAPI read_barrier_signal(EXCEPTION_POINTERS * info)
          * Use this address to invalidate the page */
         read_barrier_handler((intptr_t)info->ExceptionRecord->ExceptionInformation[1]);
         return EXCEPTION_CONTINUE_EXECUTION;
-    } else {
+    }
+    else {
         return EXCEPTION_CONTINUE_SEARCH;
     }
 }
@@ -4815,12 +4824,14 @@ gc_fill_swept_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *s
                     if (finished_compacting) {
                         if (BUILTIN_TYPE(dest) == T_NONE) {
                             (*empty_slots)++;
-                        } else {
+                        }
+                        else {
                             (*freed_slots)++;
                         }
                         (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)dest, sizeof(RVALUE));
                         heap_page_add_freeobj(objspace, sweep_page, dest);
-                    } else {
+                    }
+                    else {
                         /* Zombie slots don't get marked, but we can't reuse
                          * their memory until they have their finalizers run.*/
                         if (BUILTIN_TYPE(dest) != T_ZOMBIE) {
@@ -4830,12 +4841,14 @@ gc_fill_swept_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *s
                                 gc_report(5, objspace, "Quit compacting, couldn't find an object to move\n");
                                 if (BUILTIN_TYPE(dest) == T_NONE) {
                                     (*empty_slots)++;
-                                } else {
+                                }
+                                else {
                                     (*freed_slots)++;
                                 }
                                 heap_page_add_freeobj(objspace, sweep_page, dest);
                                 gc_report(3, objspace, "page_sweep: %s is added to freelist\n", obj_info(dest));
-                            } else {
+                            }
+                            else {
                                 moved_slots++;
                             }
                         }
@@ -4868,7 +4881,8 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
             /* The compaction cursor and sweep page met, so we need to quit compacting */
             gc_report(5, objspace, "Quit compacting, mark and compact cursor met\n");
             gc_compact_finish(objspace, heap);
-        } else {
+        }
+        else {
             /* We anticipate filling the page, so NULL out the freelist. */
             asan_unpoison_memory_region(&sweep_page->freelist, sizeof(RVALUE*), false);
             sweep_page->freelist = NULL;
@@ -4915,7 +4929,8 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
                             if (heap->compact_cursor) {
                                 /* We *want* to fill this slot */
                                 MARK_IN_BITMAP(GET_HEAP_PINNED_BITS(vp), vp);
-                            } else {
+                            }
+                            else {
                                 (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
                                 heap_page_add_freeobj(objspace, sweep_page, vp);
                                 gc_report(3, objspace, "page_sweep: %s is added to freelist\n", obj_info(vp));
@@ -4938,7 +4953,8 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
                         gc_report(3, objspace, "page_sweep: %s is added to freelist\n", obj_info(vp));
                         if (FL_TEST(vp, FL_FROM_FREELIST)) {
                             empty_slots++;
-                        } else {
+                        }
+                        else {
                             freed_slots++;
                         }
                         heap_page_add_freeobj(objspace, sweep_page, vp);
@@ -4950,7 +4966,8 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
                         if (heap->compact_cursor) {
                             /* We *want* to fill this slot */
                             MARK_IN_BITMAP(GET_HEAP_PINNED_BITS(vp), vp);
-                        } else {
+                        }
+                        else {
                             /* When we started sweeping this page, we were in
                              * compacting mode and nulled the free list for
                              * the page. But compaction finished, so we need to
@@ -5237,7 +5254,8 @@ invalidate_moved_page(rb_objspace_t *objspace, struct heap_page *page)
 
                         if (FL_TEST(forwarding_object, FL_FROM_FREELIST)) {
                             empty_slots++; /* already freed */
-                        } else {
+                        }
+                        else {
                             freed_slots++;
                         }
 
@@ -8532,7 +8550,8 @@ gc_start_internal(rb_execution_context_t *ec, VALUE self, VALUE full_mark, VALUE
     /* For now, compact implies full mark / sweep, so ignore other flags */
     if (RTEST(compact)) {
         reason |= GPR_FLAG_COMPACT;
-    } else {
+    }
+    else {
         if (!RTEST(full_mark))       reason &= ~GPR_FLAG_FULL_MARK;
         if (!RTEST(immediate_mark))  reason &= ~GPR_FLAG_IMMEDIATE_MARK;
         if (!RTEST(immediate_sweep)) reason &= ~GPR_FLAG_IMMEDIATE_SWEEP;
@@ -9318,7 +9337,8 @@ gc_ref_update(void *vstart, void *vend, size_t stride, rb_objspace_t * objspace,
                 if (RVALUE_MARKED(v)) {
                     gc_update_object_references(objspace, v);
                 }
-            } else {
+            }
+            else {
                 gc_update_object_references(objspace, v);
             }
         }

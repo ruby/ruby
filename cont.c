@@ -593,7 +593,8 @@ fiber_pool_allocation_free(struct fiber_pool_allocation * allocation)
 
 // Acquire a stack from the given fiber pool. If none are available, allocate more.
 static struct fiber_pool_stack
-fiber_pool_stack_acquire(struct fiber_pool * fiber_pool) {
+fiber_pool_stack_acquire(struct fiber_pool * fiber_pool)
+{
     struct fiber_pool_vacancy * vacancy = fiber_pool_vacancy_pop(fiber_pool);
 
     if (DEBUG) fprintf(stderr, "fiber_pool_stack_acquire: %p used=%"PRIuSIZE"\n", (void*)fiber_pool->vacancies, fiber_pool->used);
@@ -1906,7 +1907,8 @@ rb_f_fiber_kw(int argc, VALUE* argv, int kw_splat)
 
     if (scheduler != Qnil) {
         fiber = rb_funcall_passing_block_kw(scheduler, rb_intern("fiber"), argc, argv, kw_splat);
-    } else {
+    }
+    else {
         rb_raise(rb_eRuntimeError, "No scheduler is available!");
     }
 
