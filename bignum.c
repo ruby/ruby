@@ -7169,10 +7169,6 @@ rb_int_powm(int const argc, VALUE * const argv, VALUE const num)
 void
 Init_Bignum(void)
 {
-    /* An obsolete class, use Integer */
-    rb_define_const(rb_cObject, "Bignum", rb_cInteger);
-    rb_deprecate_constant(rb_cObject, "Bignum");
-
     rb_define_method(rb_cInteger, "coerce", rb_int_coerce, 1);
 
 #ifdef USE_GMP
