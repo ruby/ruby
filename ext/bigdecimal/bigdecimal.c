@@ -2725,108 +2725,138 @@ opts_exception_p(VALUE opts)
 }
 #endif
 
-static Real *
-VpNewVarArg(int argc, VALUE *argv)
+static VALUE
+check_exception(VALUE bd)
 {
-    size_t mf;
-    VALUE  opts = Qnil;
-    VALUE  nFig;
-    VALUE  iniValue;
-    double d;
-    int    exc;
+    assert(is_kind_of_BigDecimal(bd));
 
-    argc = rb_scan_args(argc, argv, "11:", &iniValue, &nFig, &opts);
-    exc = opts_exception_p(opts);
+    Real *vp;
+    TypedData_Get_Struct(bd, Real, &BigDecimal_data_type, vp);
+    ToValue(vp); /* ToValue performs exception check */
 
-    if (argc == 1) {
-        mf = 0;
+    return bd;
+}
+
+static VALUE
+rb_inum_convert_to_BigDecimal(VALUE val, RB_UNUSED_VAR(size_t digs), int raise_exception)
+{
+    Real *vp = GetVpValue(val, 1);
+    return check_exception(vp->obj);
+}
+
+static VALUE
+rb_float_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception)
+{
+    double d = RFLOAT_VALUE(val);
+    if (!isfinite(d)) {
+        Real *vp = VpCreateRbObject(1, NULL);  /* vp->obj is allocated */
+        VpDtoV(vp, d);
+        return check_exception(vp->obj);
     }
-    else {
-        /* expand GetPrecisionInt for exception suppression */
-        ssize_t n = NUM2INT(nFig);
-        if (n < 0) {
-            if (!exc) {
-                return NULL;
-            }
-            rb_raise(rb_eArgError, "negative precision");
-        }
-        mf = (size_t)n;
+
+    if (digs == SIZE_MAX) {
+        if (!raise_exception)
+            return Qnil;
+        rb_raise(rb_eArgError,
+                 "can't omit precision for a %"PRIsVALUE".",
+                 CLASS_OF(val));
+    }
+    else if (digs > DBLE_FIG) {
+        if (!raise_exception)
+            return Qnil;
+        rb_raise(rb_eArgError, "precision too large.");
     }
 
-    switch (iniValue) {
+    Real *vp = GetVpValueWithPrec(val, digs, 1);
+    return check_exception(vp->obj);
+}
+
+static VALUE
+rb_rational_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception)
+{
+    if (digs == SIZE_MAX) {
+        if (!raise_exception)
+            return Qnil;
+        rb_raise(rb_eArgError,
+                 "can't omit precision for a %"PRIsVALUE".",
+                 CLASS_OF(val));
+    }
+    Real *vp = GetVpValueWithPrec(val, digs, 1);
+    return check_exception(vp->obj);
+}
+
+static VALUE
+rb_str_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception)
+{
+    if (digs == SIZE_MAX)
+        digs = 0;
+
+    const char *c_str = StringValueCStr(val);
+    Real *vp = VpAlloc(digs, c_str, 1, raise_exception);
+    if (!vp)
+        return Qnil;
+    vp->obj = TypedData_Wrap_Struct(rb_cBigDecimal, &BigDecimal_data_type, vp);
+    RB_OBJ_FREEZE(vp->obj);
+    return check_exception(vp->obj);
+}
+
+static VALUE
+rb_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception)
+{
+    switch (val) {
       case Qnil:
       case Qtrue:
       case Qfalse:
-        if (!exc) return NULL;
+        if (!raise_exception)
+            return Qnil;
         rb_raise(rb_eTypeError,
-                 "can't convert %"PRIsVALUE" into BigDecimal", iniValue);
+                 "can't convert %"PRIsVALUE" into BigDecimal", val);
 
       default:
         break;
     }
 
-  retry:
-    switch (TYPE(iniValue)) {
-      case T_DATA:
-	if (is_kind_of_BigDecimal(iniValue)) {
-	    return DATA_PTR(iniValue);
-	}
-	break;
+    if (is_kind_of_BigDecimal(val)) {
+        if (digs == SIZE_MAX)
+            return check_exception(val);
 
-      case T_FIXNUM:
-	/* fall through */
-      case T_BIGNUM:
-	return GetVpValue(iniValue, 1);
-
-      case T_FLOAT:
-        d = RFLOAT_VALUE(iniValue);
-        if (!isfinite(d)) {
-            Real *pv = VpCreateRbObject(1, NULL);
-            VpDtoV(pv, d);
-            return pv;
-        }
-	if (mf > DBLE_FIG) {
-            if (!exc) {
-                return NULL;
-            }
-	    rb_raise(rb_eArgError, "precision too large.");
-	}
-	/* fall through */
-      case T_RATIONAL:
-	if (NIL_P(nFig)) {
-            if (!exc) {
-                return NULL;
-            }
-	    rb_raise(rb_eArgError,
-		     "can't omit precision for a %"PRIsVALUE".",
-		     RB_OBJ_CLASSNAME(iniValue));
-	}
-	return GetVpValueWithPrec(iniValue, mf, 1);
-
-      case T_COMPLEX:
-        {
-            VALUE im;
-            im = rb_complex_imag(iniValue);
-            if (!is_zero(im)) {
-                rb_raise(rb_eArgError,
-                         "Unable to make a BigDecimal from non-zero imaginary number");
-            }
-            iniValue = rb_complex_real(iniValue);
-            goto retry;
-        }
-
-      case T_STRING:
-	/* fall through */
-      default:
-	break;
+        Real *vp;
+        TypedData_Get_Struct(val, Real, &BigDecimal_data_type, vp);
+        vp = VpCopy(NULL, vp);
+        vp->obj = TypedData_Wrap_Struct(rb_cBigDecimal, &BigDecimal_data_type, vp);
+        RB_OBJ_FREEZE(vp->obj);
+        return check_exception(vp->obj);
     }
-    /* TODO: support to_d */
-    if (!exc) {
-        iniValue = rb_check_convert_type(iniValue, T_STRING, "String", "to_str");
-        if (NIL_P(iniValue)) return NULL;
+    else if (RB_INTEGER_TYPE_P(val)) {
+        return rb_inum_convert_to_BigDecimal(val, digs, raise_exception);
     }
-    StringValueCStr(iniValue);
-    return VpAlloc(mf, RSTRING_PTR(iniValue), 1, exc);
+    else if (RB_FLOAT_TYPE_P(val)) {
+        return rb_float_convert_to_BigDecimal(val, digs, raise_exception);
+    }
+    else if (RB_TYPE_P(val, T_RATIONAL)) {
+        return rb_rational_convert_to_BigDecimal(val, digs, raise_exception);
+    }
+    else if (RB_TYPE_P(val, T_COMPLEX)) {
+        VALUE im = rb_complex_imag(val);
+        if (!is_zero(im)) {
+            /* TODO: handle raise_exception */
+            rb_raise(rb_eArgError,
+                     "Unable to make a BigDecimal from non-zero imaginary number");
+        }
+        return rb_convert_to_BigDecimal(rb_complex_real(val), digs, raise_exception);
+    }
+    else if (RB_TYPE_P(val, T_STRING)) {
+        return rb_str_convert_to_BigDecimal(val, digs, raise_exception);
+    }
+    /* TODO: chheck to_d */
+    /* TODO: chheck to_int */
+    if (!raise_exception) {
+        VALUE str = rb_check_convert_type(val, T_STRING, "String", "to_str");
+        if (NIL_P(str))
+            return Qnil;
+        val = str;
+    }
+    return rb_str_convert_to_BigDecimal(val, digs, raise_exception);
 }
 
 /* call-seq:
@@ -2868,19 +2898,31 @@ VpNewVarArg(int argc, VALUE *argv)
 static VALUE
 f_BigDecimal(int argc, VALUE *argv, VALUE self)
 {
-    ENTER(1);
-    Real *pv;
+    VALUE val, digs_v, opts = Qnil;
+    argc = rb_scan_args(argc, argv, "11:", &val, &digs_v, &opts);
+    int exception = opts_exception_p(opts);
 
-    if (argc > 0 && CLASS_OF(argv[0]) == rb_cBigDecimal) {
-        if (argc == 1 || (argc == 2 && RB_TYPE_P(argv[1], T_HASH))) return argv[0];
+    size_t digs = SIZE_MAX; /* this means digs is omitted */
+    if (argc > 1) {
+        digs_v = rb_to_int(digs_v);
+        if (FIXNUM_P(digs_v)) {
+            long n = FIX2LONG(digs_v);
+            if (n < 0)
+                goto negative_digs;
+            digs = (size_t)n;
+        }
+        else {
+            if (RBIGNUM_NEGATIVE_P(digs_v)) {
+              negative_digs:
+                if (!exception)
+                    return Qnil;
+                rb_raise(rb_eArgError, "negative precision");
+            }
+            digs = NUM2SIZET(digs_v);
+        }
     }
-    pv = VpNewVarArg(argc, argv);
-    if (pv == NULL) return Qnil;
-    SAVE(pv);
-    if (ToValue(pv)) pv = VpCopy(NULL, pv);
-    pv->obj = TypedData_Wrap_Struct(rb_cBigDecimal, &BigDecimal_data_type, pv);
-    RB_OBJ_FREEZE(pv->obj);
-    return pv->obj;
+
+    return rb_convert_to_BigDecimal(val, digs, exception);
 }
 
 static VALUE
