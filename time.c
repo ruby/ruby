@@ -43,6 +43,8 @@
 #include "ruby/encoding.h"
 #include "timev.h"
 
+#include "builtin.h"
+
 static ID id_submicro, id_nano_num, id_nano_den, id_offset, id_zone;
 static ID id_nanosecond, id_microsecond, id_millisecond, id_nsec, id_usec;
 static ID id_local_to_utc, id_utc_to_local, id_find_timezone;
@@ -5944,4 +5946,7 @@ Init_Time(void)
 #endif
 
     rb_cTimeTM = Init_tm(rb_cTime, "tm");
+    if (0) get_tmopt(Qnil, NULL);
 }
+
+#include "time.rbinc"

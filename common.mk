@@ -1028,6 +1028,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/array.rb \
 		$(srcdir)/kernel.rb \
 		$(srcdir)/ractor.rb \
+		$(srcdir)/time.rb \
 		$(srcdir)/prelude.rb \
 		$(srcdir)/gem_prelude.rb \
 		$(empty)
@@ -8386,6 +8387,7 @@ miniinit.$(OBJEXT): {$(VPATH)}st.h
 miniinit.$(OBJEXT): {$(VPATH)}subst.h
 miniinit.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 miniinit.$(OBJEXT): {$(VPATH)}thread_native.h
+miniinit.$(OBJEXT): {$(VPATH)}time.rb
 miniinit.$(OBJEXT): {$(VPATH)}trace_point.rb
 miniinit.$(OBJEXT): {$(VPATH)}vm_core.h
 miniinit.$(OBJEXT): {$(VPATH)}vm_opts.h
@@ -14269,6 +14271,7 @@ time.$(OBJEXT): {$(VPATH)}backward/2/limits.h
 time.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
 time.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 time.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+time.$(OBJEXT): {$(VPATH)}builtin.h
 time.$(OBJEXT): {$(VPATH)}config.h
 time.$(OBJEXT): {$(VPATH)}constant.h
 time.$(OBJEXT): {$(VPATH)}defines.h
@@ -14424,6 +14427,7 @@ time.$(OBJEXT): {$(VPATH)}ruby_assert.h
 time.$(OBJEXT): {$(VPATH)}st.h
 time.$(OBJEXT): {$(VPATH)}subst.h
 time.$(OBJEXT): {$(VPATH)}time.c
+time.$(OBJEXT): {$(VPATH)}time.rbinc
 time.$(OBJEXT): {$(VPATH)}timev.h
 transcode.$(OBJEXT): $(hdrdir)/ruby.h
 transcode.$(OBJEXT): $(hdrdir)/ruby/ruby.h
