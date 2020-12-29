@@ -104,7 +104,7 @@ module IRB # :nodoc:
   end
 
   Inspector.def_inspector([false, :to_s, :raw]){|v| v.to_s}
-  Inspector.def_inspector([true, :p, :inspect]){|v|
+  Inspector.def_inspector([:p, :inspect]){|v|
     begin
       result = v.inspect
       if IRB.conf[:MAIN_CONTEXT]&.use_colorize? && Color.inspect_colorable?(v)
@@ -116,12 +116,12 @@ module IRB # :nodoc:
       ''
     end
   }
-  Inspector.def_inspector([:pp, :pretty_inspect], proc{require "pp"}){|v|
-    result = v.pretty_inspect.chomp
-    if IRB.conf[:MAIN_CONTEXT]&.use_colorize? && Color.inspect_colorable?(v)
-      result = Color.colorize_code(result)
+  Inspector.def_inspector([true, :pp, :pretty_inspect], proc{require "irb/color_printer"}){|v|
+    if IRB.conf[:MAIN_CONTEXT]&.use_colorize?
+      IRB::ColorPrinter.pp(v, '')
+    else
+      v.pretty_inspect.chomp
     end
-    result
   }
   Inspector.def_inspector([:yaml, :YAML], proc{require "yaml"}){|v|
     begin

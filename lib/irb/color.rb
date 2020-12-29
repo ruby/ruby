@@ -107,7 +107,7 @@ module IRB # :nodoc:
       # If `complete` is false (code is incomplete), this does not warn compile_error.
       # This option is needed to avoid warning a user when the compile_error is happening
       # because the input is not wrong but just incomplete.
-      def colorize_code(code, complete: true)
+      def colorize_code(code, complete: true, ignore_error: false)
         return code unless colorable?
 
         symbol_state = SymbolState.new
@@ -118,7 +118,7 @@ module IRB # :nodoc:
           in_symbol = symbol_state.scan_token(token)
           str.each_line do |line|
             line = Reline::Unicode.escape_for_print(line)
-            if seq = dispatch_seq(token, expr, line, in_symbol: in_symbol)
+            if seq = dispatch_seq(token, expr, line, in_symbol: in_symbol, ignore_error: ignore_error)
               colored << seq.map { |s| "\e[#{s}m" }.join('')
               colored << line.sub(/\Z/, clear)
             else
@@ -183,9 +183,9 @@ module IRB # :nodoc:
         $VERBOSE = verbose
       end
 
-      def dispatch_seq(token, expr, str, in_symbol:)
+      def dispatch_seq(token, expr, str, in_symbol:, ignore_error:)
         if token == :on_parse_error or token == :compile_error
-          TOKEN_SEQ_EXPRS[token][0]
+          ignore_error ? nil : TOKEN_SEQ_EXPRS[token][0]
         elsif in_symbol
           [YELLOW]
         elsif TOKEN_KEYWORDS.fetch(token, []).include?(str)
