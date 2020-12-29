@@ -200,7 +200,7 @@ TESTRUN_SCRIPT = $(srcdir)/test.rb
 COMPILE_PRELUDE = $(tooldir)/generic_erb.rb $(srcdir)/template/prelude.c.tmpl \
 	$(tooldir)/ruby_vm/helpers/c_escape.rb
 
-SHOWFLAGS = showflags
+SHOWFLAGS = $(no_silence:no=showflags)
 
 MAKE_LINK = $(MINIRUBY) -rfileutils -e "include FileUtils::Verbose" \
 	  -e "src, dest = ARGV" \
