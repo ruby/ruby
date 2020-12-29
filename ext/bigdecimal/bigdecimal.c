@@ -2792,12 +2792,14 @@ rb_str_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception)
         digs = 0;
 
     const char *c_str = StringValueCStr(val);
+    VALUE obj = TypedData_Wrap_Struct(rb_cBigDecimal, &BigDecimal_data_type, 0);
     Real *vp = VpAlloc(digs, c_str, 1, raise_exception);
     if (!vp)
         return Qnil;
-    vp->obj = TypedData_Wrap_Struct(rb_cBigDecimal, &BigDecimal_data_type, vp);
-    RB_OBJ_FREEZE(vp->obj);
-    return check_exception(vp->obj);
+    RTYPEDDATA_DATA(obj) = vp;
+    vp->obj = obj;
+    RB_OBJ_FREEZE(obj);
+    return VpCheckGetValue(vp);
 }
 
 static VALUE
@@ -2822,10 +2824,13 @@ rb_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception)
 
         Real *vp;
         TypedData_Get_Struct(val, Real, &BigDecimal_data_type, vp);
+
+        VALUE copy = TypedData_Wrap_Struct(rb_cBigDecimal, &BigDecimal_data_type, 0);
         vp = VpCopy(NULL, vp);
-        vp->obj = TypedData_Wrap_Struct(rb_cBigDecimal, &BigDecimal_data_type, vp);
+        RTYPEDDATA_DATA(copy) = vp;
+        vp->obj = copy;
         RB_OBJ_FREEZE(vp->obj);
-        return check_exception(vp->obj);
+        return VpCheckGetValue(vp);
     }
     else if (RB_INTEGER_TYPE_P(val)) {
         return rb_inum_convert_to_BigDecimal(val, digs, raise_exception);
@@ -2929,14 +2934,16 @@ static VALUE
 BigDecimal_s_interpret_loosely(VALUE klass, VALUE str)
 {
     ENTER(1);
-    char const *c_str;
-    Real *pv;
 
-    c_str = StringValueCStr(str);
+    char const *c_str = StringValueCStr(str);
+    VALUE obj = TypedData_Wrap_Struct(klass, &BigDecimal_data_type, 0);
+
+    Real *pv;
     GUARD_OBJ(pv, VpAlloc(0, c_str, 0, 1));
-    pv->obj = TypedData_Wrap_Struct(klass, &BigDecimal_data_type, pv);
+    RTYPEDDATA_DATA(obj) = pv;
+    pv->obj = obj;
     RB_OBJ_FREEZE(pv->obj);
-    return pv->obj;
+    return obj;
 }
 
  /* call-seq:
