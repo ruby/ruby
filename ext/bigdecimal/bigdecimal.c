@@ -208,20 +208,28 @@ is_kind_of_BigDecimal(VALUE const v)
     return rb_typeddata_is_kind_of(v, &BigDecimal_data_type);
 }
 
-static VALUE
-ToValue(Real *p)
+static void
+VpCheckException(Real *p, bool always)
 {
     if (VpIsNaN(p)) {
-        VpException(VP_EXCEPTION_NaN, "Computation results to 'NaN'(Not a Number)", 0);
+        VpException(VP_EXCEPTION_NaN, "Computation results to 'NaN'(Not a Number)", always);
     }
     else if (VpIsPosInf(p)) {
-        VpException(VP_EXCEPTION_INFINITY, "Computation results to 'Infinity'", 0);
+        VpException(VP_EXCEPTION_INFINITY, "Computation results to 'Infinity'", always);
     }
     else if (VpIsNegInf(p)) {
-        VpException(VP_EXCEPTION_INFINITY, "Computation results to '-Infinity'", 0);
+        VpException(VP_EXCEPTION_INFINITY, "Computation results to '-Infinity'", always);
     }
+}
+
+static VALUE
+VpCheckGetValue(Real *p)
+{
+    VpCheckException(p, false);
     return p->obj;
 }
+
+#define ToValue(p) VpCheckGetValue(p)
 
 NORETURN(static void cannot_be_coerced_into_BigDecimal(VALUE, VALUE));
 
@@ -838,15 +846,7 @@ BigDecimal_IsFinite(VALUE self)
 static void
 BigDecimal_check_num(Real *p)
 {
-    if (VpIsNaN(p)) {
-	VpException(VP_EXCEPTION_NaN, "Computation results to 'NaN'(Not a Number)", 1);
-    }
-    else if (VpIsPosInf(p)) {
-	VpException(VP_EXCEPTION_INFINITY, "Computation results to 'Infinity'", 1);
-    }
-    else if (VpIsNegInf(p)) {
-	VpException(VP_EXCEPTION_INFINITY, "Computation results to '-Infinity'", 1);
-    }
+    VpCheckException(p, true);
 }
 
 static VALUE BigDecimal_split(VALUE self);
