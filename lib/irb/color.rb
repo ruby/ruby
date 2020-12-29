@@ -130,7 +130,7 @@ module IRB # :nodoc:
           in_symbol = symbol_state.scan_token(token)
           str.each_line do |line|
             line = Reline::Unicode.escape_for_print(line)
-            if seq = dispatch_seq(token, expr, line, in_symbol: in_symbol, ignore_error: ignore_error)
+            if seq = dispatch_seq(token, expr, line, in_symbol: in_symbol)
               colored << seq.map { |s| "\e[#{s}m" }.join('')
               colored << line.sub(/\Z/, clear)
             else
@@ -195,9 +195,9 @@ module IRB # :nodoc:
         $VERBOSE = verbose
       end
 
-      def dispatch_seq(token, expr, str, in_symbol:, ignore_error:)
+      def dispatch_seq(token, expr, str, in_symbol:)
         if ERROR_TOKENS.include?(token)
-          ignore_error ? nil : TOKEN_SEQ_EXPRS[token][0]
+          TOKEN_SEQ_EXPRS[token][0]
         elsif in_symbol
           [YELLOW]
         elsif TOKEN_KEYWORDS.fetch(token, []).include?(str)
