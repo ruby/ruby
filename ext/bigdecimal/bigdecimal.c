@@ -3779,9 +3779,6 @@ VP_EXPORT void *
 VpMemAlloc(size_t mb)
 {
     void *p = xmalloc(mb);
-    if (!p) {
-	VpException(VP_EXCEPTION_MEMORY, "failed to allocate memory", 1);
-    }
     memset(p, 0, mb);
 #ifdef BIGDECIMAL_DEBUG
     gnAlloc++; /* Count allocation call */
@@ -3792,11 +3789,7 @@ VpMemAlloc(size_t mb)
 VP_EXPORT void *
 VpMemRealloc(void *ptr, size_t mb)
 {
-    void *p = xrealloc(ptr, mb);
-    if (!p) {
-	VpException(VP_EXCEPTION_MEMORY, "failed to allocate memory", 1);
-    }
-    return p;
+    return xrealloc(ptr, mb);
 }
 
 VP_EXPORT void
@@ -4348,7 +4341,6 @@ VpAlloc(size_t mx, const char *szVal, int strict_p, int exc)
         /* at least mx digits. */
         /* szVal==NULL ==> allocate zero value. */
         vp = VpAllocReal(mx);
-        /* xmalloc() always returns(or throw interruption) */
         vp->MaxPrec = mx;    /* set max precision */
         VpSetZero(vp, 1);    /* initialize vp to zero. */
         return vp;
@@ -4524,7 +4516,6 @@ VpAlloc(size_t mx, const char *szVal, int strict_p, int exc)
     nalloc = Max(nalloc, mx);
     mx = nalloc;
     vp = VpAllocReal(mx);
-    /* xmalloc() always returns(or throw interruption) */
     vp->MaxPrec = mx;        /* set max precision */
     VpSetZero(vp, sign);
     VpCtoV(vp, psz, ni, psz + ipf, nf, psz + ipe, ne);
