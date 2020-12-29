@@ -152,7 +152,7 @@ begin
       EOC
     end
 
-    def test_mode_icon_emacs
+    def test_mode_string_emacs
       write_inputrc <<~LINES
         set show-mode-in-prompt on
       LINES
@@ -164,7 +164,7 @@ begin
       EOC
     end
 
-    def test_mode_icon_vi
+    def test_mode_string_vi
       write_inputrc <<~LINES
         set editing-mode vi
         set show-mode-in-prompt on
@@ -180,7 +180,7 @@ begin
       EOC
     end
 
-    def test_original_mode_icon_emacs
+    def test_original_mode_string_emacs
       write_inputrc <<~LINES
         set show-mode-in-prompt on
         set emacs-mode-string [emacs]
@@ -193,7 +193,7 @@ begin
       EOC
     end
 
-    def test_original_mode_icon_with_quote
+    def test_original_mode_string_with_quote
       write_inputrc <<~LINES
         set show-mode-in-prompt on
         set emacs-mode-string "[emacs]"
@@ -206,7 +206,7 @@ begin
       EOC
     end
 
-    def test_original_mode_icon_vi
+    def test_original_mode_string_vi
       write_inputrc <<~LINES
         set editing-mode vi
         set show-mode-in-prompt on
@@ -224,7 +224,7 @@ begin
       EOC
     end
 
-    def test_mode_icon_vi_changing
+    def test_mode_string_vi_changing
       write_inputrc <<~LINES
         set editing-mode vi
         set show-mode-in-prompt on
