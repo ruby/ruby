@@ -97,7 +97,7 @@ $(ENCSOS) $(TRANSSOS): $(ENC_TRANS_SO_D)
 
 <%=transvpath_prefix%>.trans<%=transvpath_prefix%>.c:
 	$(ECHO) generating table from $@
-	$(Q)$(MINIRUBY) "$(tooldir)/transcode-tblgen.rb" -vo "$@" "$<"
+	$(Q)$(MINIRUBY) "$(tooldir)/transcode-tblgen.rb" -v$(V0:1=v)o "$@" "$<"
 
 % unless ENCS.empty? or TRANS.empty?
 

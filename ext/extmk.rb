@@ -647,6 +647,7 @@ FileUtils.makedirs(File.dirname($command_output))
 begin
   atomic_write_open($command_output) do |mf|
     mf.puts "V = 0"
+    mf.puts "V0 = $(V:0=)"
     mf.puts "Q1 = $(V:1=)"
     mf.puts "Q = $(Q1:0=@)"
     mf.puts "ECHO1 = $(V:1=@:)"
