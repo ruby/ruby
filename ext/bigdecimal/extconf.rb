@@ -28,6 +28,8 @@ end
 
 check_bigdecimal_version(gemspec_path)
 
+have_header("stdbool.h")
+
 have_func("labs", "stdlib.h")
 have_func("llabs", "stdlib.h")
 have_func("finite", "math.h")

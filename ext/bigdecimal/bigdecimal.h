@@ -14,6 +14,20 @@
 #include "ruby/ruby.h"
 #include <float.h>
 
+#if defined(__bool_true_false_are_defined)
+# /* Take that. */
+
+#elif defined(HAVE_STDBOOL_H)
+# include <stdbool.h>
+
+#else
+typedef unsigned char _Bool;
+# define bool _Bool
+# define true  ((_Bool)+1)
+# define false ((_Bool)-1)
+# define __bool_true_false_are_defined
+#endif
+
 #ifndef RB_UNUSED_VAR
 # ifdef __GNUC__
 #  define RB_UNUSED_VAR(x) x __attribute__ ((unused))
