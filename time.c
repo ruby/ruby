@@ -2725,22 +2725,6 @@ rb_time_timespec_interval(VALUE num)
     return time_timespec(num, TRUE);
 }
 
-enum {
-    TMOPT_IN,
-    TMOPT_MAX_
-};
-
-static bool
-get_tmopt(VALUE opts, VALUE vals[TMOPT_MAX_])
-{
-    ID ids[TMOPT_MAX_];
-
-    if (NIL_P(opts)) return false;
-    CONST_ID(ids[TMOPT_IN], "in");
-    rb_get_kwargs(opts, ids, 0, TMOPT_MAX_, vals);
-    return true;
-}
-
 static VALUE
 time_s_now(rb_execution_context_t *ec, VALUE klass, VALUE zone)
 {
@@ -5878,7 +5862,6 @@ Init_Time(void)
 #endif
 
     rb_cTimeTM = Init_tm(rb_cTime, "tm");
-    if (0) get_tmopt(Qnil, NULL);
 }
 
 #include "timev.rbinc"
