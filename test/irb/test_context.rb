@@ -234,7 +234,7 @@ module TestIRB
         irb.eval_input
       end
       assert_empty err
-      assert_equal("=> #{value.inspect}\n", out)
+      assert_equal("=> \n#{value.pretty_inspect}", out)
 
       input.reset
       irb.context.echo = true
@@ -243,7 +243,7 @@ module TestIRB
         irb.eval_input
       end
       assert_empty err
-      assert_equal("=> #{value.inspect[0..(input.winsize.last - 9)]}...\e[0m\n=> #{value.inspect}\n", out)
+      assert_equal("=> \n#{value.pretty_inspect[0..3]}...\n=> \n#{value.pretty_inspect}", out)
 
       input.reset
       irb.context.echo = true
@@ -252,7 +252,7 @@ module TestIRB
         irb.eval_input
       end
       assert_empty err
-      assert_equal("=> #{value.inspect}\n=> #{value.inspect}\n", out)
+      assert_equal("=> \n#{value.pretty_inspect}=> \n#{value.pretty_inspect}", out)
 
       input.reset
       irb.context.echo = false
