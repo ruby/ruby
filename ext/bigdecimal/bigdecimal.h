@@ -221,7 +221,6 @@ extern VALUE rb_cBigDecimal;
 
 /* Following 2 exceptions can't controlled by user */
 #define VP_EXCEPTION_OP         ((unsigned short)0x0020)
-#define VP_EXCEPTION_MEMORY     ((unsigned short)0x0040)
 
 #define RMPD_EXCEPTION_MODE_DEFAULT 0U
 

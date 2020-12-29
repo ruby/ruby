@@ -4007,7 +4007,7 @@ VpException(unsigned short f, const char *str,int always)
 {
     unsigned short const exception_mode = VpGetException();
 
-    if (f == VP_EXCEPTION_OP || f == VP_EXCEPTION_MEMORY) always = 1;
+    if (f == VP_EXCEPTION_OP) always = 1;
 
     if (always || (exception_mode & f)) {
 	switch(f) {
@@ -4019,7 +4019,6 @@ VpException(unsigned short f, const char *str,int always)
 	  case VP_EXCEPTION_OP:
 	    rb_raise(rb_eFloatDomainError, "%s", str);
 	    break;
-	  case VP_EXCEPTION_MEMORY:
 	  default:
 	    rb_fatal("%s", str);
 	}
