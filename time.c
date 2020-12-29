@@ -2741,24 +2741,12 @@ get_tmopt(VALUE opts, VALUE vals[TMOPT_MAX_])
     return true;
 }
 
-/*
- *  call-seq:
- *     Time.now -> time
- *
- *  Creates a new Time object for the current time.
- *  This is same as Time.new without arguments.
- *
- *     Time.now            #=> 2009-06-24 12:39:54 +0900
- */
-
 static VALUE
-time_s_now(int argc, VALUE *argv, VALUE klass)
+time_s_now(rb_execution_context_t *ec, VALUE klass, VALUE zone)
 {
-    VALUE vals[TMOPT_MAX_], opts, t, zone = Qundef;
-    rb_scan_args(argc, argv, ":", &opts);
-    if (get_tmopt(opts, vals)) zone = vals[TMOPT_IN];
+    VALUE t;
     t = rb_class_new_instance(0, NULL, klass);
-    if (zone != Qundef) {
+    if (!NIL_P(zone)) {
         time_zonelocal(t, zone);
     }
     return t;
@@ -5859,7 +5847,6 @@ Init_Time(void)
     rb_include_module(rb_cTime, rb_mComparable);
 
     rb_define_alloc_func(rb_cTime, time_s_alloc);
-    rb_define_singleton_method(rb_cTime, "now", time_s_now, -1);
     rb_define_singleton_method(rb_cTime, "at", time_s_at, -1);
     rb_define_singleton_method(rb_cTime, "utc", time_s_mkutc, -1);
     rb_define_singleton_method(rb_cTime, "gm", time_s_mkutc, -1);
