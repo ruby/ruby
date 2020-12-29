@@ -2769,70 +2769,16 @@ get_scale(VALUE unit)
     }
 }
 
-/*
- *  call-seq:
- *     Time.at(time) -> time
- *     Time.at(seconds_with_frac) -> time
- *     Time.at(seconds, microseconds_with_frac) -> time
- *     Time.at(seconds, milliseconds, :millisecond) -> time
- *     Time.at(seconds, microseconds, :usec) -> time
- *     Time.at(seconds, microseconds, :microsecond) -> time
- *     Time.at(seconds, nanoseconds, :nsec) -> time
- *     Time.at(seconds, nanoseconds, :nanosecond) -> time
- *     Time.at(time, in: tz) -> time
- *     Time.at(seconds_with_frac, in: tz) -> time
- *     Time.at(seconds, microseconds_with_frac, in: tz) -> time
- *     Time.at(seconds, milliseconds, :millisecond, in: tz) -> time
- *     Time.at(seconds, microseconds, :usec, in: tz) -> time
- *     Time.at(seconds, microseconds, :microsecond, in: tz) -> time
- *     Time.at(seconds, nanoseconds, :nsec, in: tz) -> time
- *     Time.at(seconds, nanoseconds, :nanosecond, in: tz) -> time
- *
- *  Creates a new Time object with the value given by +time+,
- *  the given number of +seconds_with_frac+, or
- *  +seconds+ and +microseconds_with_frac+ since the Epoch.
- *  +seconds_with_frac+ and +microseconds_with_frac+
- *  can be an Integer, Float, Rational, or other Numeric.
- *
- *  If +in+ argument is given, the result is in that timezone or UTC offset, or
- *  if a numeric argument is given, the result is in local time.
- *  The +in+ argument accepts the same types of arguments as +tz+ argument of
- *  Time.new: string, number of seconds, or a timezone object.
- *
- *
- *     Time.at(0)                                #=> 1969-12-31 18:00:00 -0600
- *     Time.at(Time.at(0))                       #=> 1969-12-31 18:00:00 -0600
- *     Time.at(946702800)                        #=> 1999-12-31 23:00:00 -0600
- *     Time.at(-284061600)                       #=> 1960-12-31 00:00:00 -0600
- *     Time.at(946684800.2).usec                 #=> 200000
- *     Time.at(946684800, 123456.789).nsec       #=> 123456789
- *     Time.at(946684800, 123456789, :nsec).nsec #=> 123456789
- *
- *     Time.at(1582721899, in: "+09:00")         #=> 2020-02-26 21:58:19 +0900
- *     Time.at(1582721899, in: "UTC")            #=> 2020-02-26 12:58:19 UTC
- *     Time.at(1582721899, in: "C")              #=> 2020-02-26 13:58:19 +0300
- *     Time.at(1582721899, in: 32400)            #=> 2020-02-26 21:58:19 +0900
- *
- *     require 'tzinfo'
- *     Time.at(1582721899, in: TZInfo::Timezone.get('Europe/Kiev'))
- *                                               #=> 2020-02-26 14:58:19 +0200
- */
-
 static VALUE
-time_s_at(int argc, VALUE *argv, VALUE klass)
+time_s_at(rb_execution_context_t *ec, VALUE klass, VALUE time, VALUE subsec, VALUE unit, VALUE zone, VALUE nosubsec, VALUE nounit)
 {
-    VALUE time, t, unit = Qundef, zone = Qundef, opts;
-    VALUE vals[TMOPT_MAX_];
+    VALUE t;
     wideval_t timew;
 
-    argc = rb_scan_args(argc, argv, "12:", &time, &t, &unit, &opts);
-    if (get_tmopt(opts, vals)) {
-        zone = vals[0];
-    }
-    if (argc >= 2) {
-        int scale = argc == 3 ? get_scale(unit) : 1000000;
+    if (!RTEST(nosubsec)) {
+        int scale = !RTEST(nounit) ? get_scale(unit) : 1000000;
         time = num_exact(time);
-        t = num_exact(t);
+        t = num_exact(subsec);
         timew = wadd(rb_time_magnify(v2w(time)), wmulquoll(v2w(t), TIME_SCALE, scale));
         t = time_new_timew(klass, timew);
     }
@@ -2847,7 +2793,7 @@ time_s_at(int argc, VALUE *argv, VALUE klass)
         timew = rb_time_magnify(v2w(num_exact(time)));
         t = time_new_timew(klass, timew);
     }
-    if (zone != Qundef) {
+    if (!NIL_P(zone)) {
         time_zonelocal(t, zone);
     }
 
@@ -5847,7 +5793,6 @@ Init_Time(void)
     rb_include_module(rb_cTime, rb_mComparable);
 
     rb_define_alloc_func(rb_cTime, time_s_alloc);
-    rb_define_singleton_method(rb_cTime, "at", time_s_at, -1);
     rb_define_singleton_method(rb_cTime, "utc", time_s_mkutc, -1);
     rb_define_singleton_method(rb_cTime, "gm", time_s_mkutc, -1);
     rb_define_singleton_method(rb_cTime, "local", time_s_mktime, -1);
