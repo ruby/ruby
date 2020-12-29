@@ -7056,6 +7056,15 @@ compile_evstr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
     return COMPILE_OK;
 }
 
+static void
+compile_lvar(rb_iseq_t *iseq, LINK_ANCHOR *const ret, int line, ID id)
+{
+    int idx = iseq->body->local_iseq->body->local_table_size - get_local_var_idx(iseq, id);
+
+    debugs("id: %s idx: %d\n", rb_id2name(id), idx);
+    ADD_GETLOCAL(ret, line, idx, get_lvar_level(iseq));
+}
+
 static LABEL *
 qcall_branch_start(rb_iseq_t *iseq, LINK_ANCHOR *const recv, VALUE *branches, const NODE *node, int line)
 {
@@ -7281,6 +7290,20 @@ compile_builtin_function_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NOD
                 // There's only "inline" attribute for now
                 iseq->body->builtin_inline_p = true;
                 return COMPILE_OK;
+            }
+            else if (strcmp("arg!", builtin_func) == 0) {
+                if (!args_node) goto bad_arg;
+                if (nd_type(args_node) != NODE_LIST) goto bad_arg;
+                if (args_node->nd_next) goto bad_arg;
+                args_node = args_node->nd_head;
+                if (nd_type(args_node) != NODE_LIT) goto bad_arg;
+                if (!SYMBOL_P(args_node->nd_lit)) goto bad_arg;
+                if (!popped) {
+                    compile_lvar(iseq, ret, line, SYM2ID(args_node->nd_lit));
+                }
+                return COMPILE_OK;
+              bad_arg:
+                rb_bug("unexpected argument to arg!");
             }
             else if (1) {
                 rb_bug("can't find builtin function:%s", builtin_func);
@@ -8272,11 +8295,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
       }
       case NODE_LVAR:{
 	if (!popped) {
-	    ID id = node->nd_vid;
-	    int idx = body->local_iseq->body->local_table_size - get_local_var_idx(iseq, id);
-
-	    debugs("id: %s idx: %d\n", rb_id2name(id), idx);
-	    ADD_GETLOCAL(ret, line, idx, get_lvar_level(iseq));
+	    compile_lvar(iseq, ret, line, node->nd_vid);
 	}
 	break;
       }

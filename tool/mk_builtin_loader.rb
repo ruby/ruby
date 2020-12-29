@@ -156,6 +156,12 @@ def collect_builtin base, tree, name, bs, inlines, locals = nil
             func_name = nil # required
             inlines[inlines.size] = [lineno, text, nil, nil]
             argc -= 1
+          when 'arg'
+            argc == 1 or raise "unexpected argument number #{argc}"
+            (arg = args.first)[0] == :symbol_literal or raise "symbol literal expected #{args}"
+            (arg = arg[1])[0] == :symbol or raise "symbol expected #{arg}"
+            (var = arg[1] and var = var[1]) or raise "argument name expected #{arg}"
+            func_name = nil
           end
         end
 
