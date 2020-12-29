@@ -71,6 +71,9 @@ module IRB # :nodoc:
     end
     private_constant :TOKEN_SEQ_EXPRS
 
+    ERROR_TOKENS = TOKEN_SEQ_EXPRS.keys.select { |k| k.to_s.end_with?('error') }
+    private_constant :ERROR_TOKENS
+
     class << self
       def colorable?
         $stdout.tty? && supported? && (/mswin|mingw/ =~ RUBY_PLATFORM || (ENV.key?('TERM') && ENV['TERM'] != 'dumb'))
@@ -119,6 +122,11 @@ module IRB # :nodoc:
         length = 0
 
         scan(code, allow_last_error: !complete) do |token, str, expr|
+          # IRB::ColorPrinter skips colorizing fragments with any invalid token
+          if ignore_error && ERROR_TOKENS.include?(token)
+            return Reline::Unicode.escape_for_print(code)
+          end
+
           in_symbol = symbol_state.scan_token(token)
           str.each_line do |line|
             line = Reline::Unicode.escape_for_print(line)
@@ -188,7 +196,7 @@ module IRB # :nodoc:
       end
 
       def dispatch_seq(token, expr, str, in_symbol:, ignore_error:)
-        if token == :on_parse_error or token == :compile_error
+        if ERROR_TOKENS.include?(token)
           ignore_error ? nil : TOKEN_SEQ_EXPRS[token][0]
         elsif in_symbol
           [YELLOW]
