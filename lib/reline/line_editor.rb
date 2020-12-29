@@ -68,24 +68,24 @@ class Reline::LineEditor
     end
   end
 
-  private def check_mode_icon
-    mode_icon = nil
+  private def check_mode_string
+    mode_string = nil
     if @config.show_mode_in_prompt
       if @config.editing_mode_is?(:vi_command)
-        mode_icon = @config.vi_cmd_mode_icon
+        mode_string = @config.vi_cmd_mode_string
       elsif @config.editing_mode_is?(:vi_insert)
-        mode_icon = @config.vi_ins_mode_icon
+        mode_string = @config.vi_ins_mode_string
       elsif @config.editing_mode_is?(:emacs)
-        mode_icon = @config.emacs_mode_string
+        mode_string = @config.emacs_mode_string
       else
-        mode_icon = '?'
+        mode_string = '?'
       end
     end
-    if mode_icon != @prev_mode_icon
+    if mode_string != @prev_mode_string
       @rerender_all = true
     end
-    @prev_mode_icon = mode_icon
-    mode_icon
+    @prev_mode_string = mode_string
+    mode_string
   end
 
   private def check_multiline_prompt(buffer, prompt)
@@ -99,8 +99,8 @@ class Reline::LineEditor
       prompt = @prompt
     end
     if simplified_rendering?
-      mode_icon = check_mode_icon
-      prompt = mode_icon + prompt if mode_icon
+      mode_string = check_mode_string
+      prompt = mode_string + prompt if mode_string
       return [prompt, calculate_width(prompt, true), [prompt] * buffer.size]
     end
     if @prompt_proc
@@ -119,15 +119,15 @@ class Reline::LineEditor
         @prompt_cache_time = Time.now.to_f
       end
       prompt_list.map!{ prompt } if @vi_arg or @searching_prompt
-      mode_icon = check_mode_icon
-      prompt_list = prompt_list.map{ |pr| mode_icon + pr } if mode_icon
+      mode_string = check_mode_string
+      prompt_list = prompt_list.map{ |pr| mode_string + pr } if mode_string
       prompt = prompt_list[@line_index]
       prompt = prompt_list[0] if prompt.nil?
       prompt_width = calculate_width(prompt, true)
       [prompt, prompt_width, prompt_list]
     else
-      mode_icon = check_mode_icon
-      prompt = mode_icon + prompt if mode_icon
+      mode_string = check_mode_string
+      prompt = mode_string + prompt if mode_string
       prompt_width = calculate_width(prompt, true)
       [prompt, prompt_width, nil]
     end
@@ -218,7 +218,7 @@ class Reline::LineEditor
     @eof = false
     @continuous_insertion_buffer = String.new(encoding: @encoding)
     @scroll_partial_screen = nil
-    @prev_mode_icon = nil
+    @prev_mode_string = nil
     @drop_terminate_spaces = false
     reset_line
   end

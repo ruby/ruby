@@ -34,8 +34,8 @@ class Reline::Config
     show-all-if-unmodified
     visible-stats
     show-mode-in-prompt
-    vi-cmd-mode-icon
-    vi-ins-mode-icon
+    vi-cmd-mode-string
+    vi-ins-mode-string
     emacs-mode-string
     enable-bracketed-paste
     isearch-terminators
@@ -56,8 +56,8 @@ class Reline::Config
     @key_actors[:emacs] = Reline::KeyActor::Emacs.new
     @key_actors[:vi_insert] = Reline::KeyActor::ViInsert.new
     @key_actors[:vi_command] = Reline::KeyActor::ViCommand.new
-    @vi_cmd_mode_icon = '(cmd)'
-    @vi_ins_mode_icon = '(ins)'
+    @vi_cmd_mode_string = '(cmd)'
+    @vi_ins_mode_string = '(ins)'
     @emacs_mode_string = '@'
     # https://tiswww.case.edu/php/chet/readline/readline.html#IDX25
     @history_size = -1 # unlimited
@@ -270,9 +270,9 @@ class Reline::Config
         @show_mode_in_prompt = false
       end
     when 'vi-cmd-mode-string'
-      @vi_cmd_mode_icon = retrieve_string(value)
+      @vi_cmd_mode_string = retrieve_string(value)
     when 'vi-ins-mode-string'
-      @vi_ins_mode_icon = retrieve_string(value)
+      @vi_ins_mode_string = retrieve_string(value)
     when 'emacs-mode-string'
       @emacs_mode_string = retrieve_string(value)
     when *VARIABLE_NAMES then
