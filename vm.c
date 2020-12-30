@@ -366,7 +366,6 @@ rb_serial_t
 rb_next_class_serial(void)
 {
     rb_serial_t class_serial = NEXT_CLASS_SERIAL();
-    mjit_add_class_serial(class_serial);
     return class_serial;
 }
 

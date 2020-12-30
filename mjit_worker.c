@@ -240,9 +240,6 @@ static bool worker_stopped;
 
 // Path of "/tmp", which can be changed to $TMP in MinGW.
 static char *tmp_dir;
-// Hash like { 1 => true, 2 => true, ... } whose keys are valid `class_serial`s.
-// This is used to invalidate obsoleted CALL_CACHE.
-static VALUE valid_class_serials;
 
 // Used C compiler path.
 static const char *cc_path;
@@ -487,16 +484,6 @@ real_ms_time(void)
 # endif
 }
 #endif
-
-// Return true if class_serial is not obsoleted. This is used by mjit_compile.c.
-bool
-mjit_valid_class_serial_p(rb_serial_t class_serial)
-{
-    CRITICAL_SECTION_START(3, "in valid_class_serial_p");
-    bool found_p = rb_hash_stlike_lookup(valid_class_serials, LONG2FIX(class_serial), NULL);
-    CRITICAL_SECTION_FINISH(3, "in valid_class_serial_p");
-    return found_p;
-}
 
 // Return the best unit from list.  The best is the first
 // high priority unit or the unit whose iseq has the biggest number

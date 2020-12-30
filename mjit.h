@@ -101,8 +101,6 @@ extern void mjit_update_references(const rb_iseq_t *iseq);
 extern void mjit_mark(void);
 extern struct mjit_cont *mjit_cont_new(rb_execution_context_t *ec);
 extern void mjit_cont_free(struct mjit_cont *cont);
-extern void mjit_add_class_serial(rb_serial_t class_serial);
-extern void mjit_remove_class_serial(rb_serial_t class_serial);
 extern void mjit_mark_cc_entries(const struct rb_iseq_constant_body *const body);
 
 // A threshold used to reject long iseqs from JITting as such iseqs
@@ -206,8 +204,6 @@ static inline void mjit_gc_start_hook(void){}
 static inline void mjit_gc_exit_hook(void){}
 static inline void mjit_free_iseq(const rb_iseq_t *iseq){}
 static inline void mjit_mark(void){}
-static inline void mjit_add_class_serial(rb_serial_t class_serial){}
-static inline void mjit_remove_class_serial(rb_serial_t class_serial){}
 static inline VALUE mjit_exec(rb_execution_context_t *ec) { return Qundef; /* unreachable */ }
 static inline void mjit_child_after_fork(void){}
 

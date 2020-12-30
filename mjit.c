@@ -521,19 +521,6 @@ init_header_filename(void)
     return true;
 }
 
-static enum rb_id_table_iterator_result
-valid_class_serials_add_i(ID key, VALUE v, void *unused)
-{
-    rb_const_entry_t *ce = (rb_const_entry_t *)v;
-    VALUE value = ce->value;
-
-    if (!rb_is_const_id(key)) return ID_TABLE_CONTINUE;
-    if (RB_TYPE_P(value, T_MODULE) || RB_TYPE_P(value, T_CLASS)) {
-        mjit_add_class_serial(RCLASS_SERIAL(value));
-    }
-    return ID_TABLE_CONTINUE;
-}
-
 #ifdef _WIN32
 UINT rb_w32_system_tmpdir(WCHAR *path, UINT len);
 #endif
@@ -737,16 +724,6 @@ mjit_init(const struct mjit_options *opts)
     // meaning mjit_cont_new is skipped for the root_fiber. Therefore we need to call
     // rb_fiber_init_mjit_cont again with mjit_enabled=true to set the root_fiber's mjit_cont.
     rb_fiber_init_mjit_cont(GET_EC()->fiber_ptr);
-
-    // Initialize class_serials cache for compilation
-    valid_class_serials = rb_hash_new();
-    rb_obj_hide(valid_class_serials);
-    rb_gc_register_mark_object(valid_class_serials);
-    mjit_add_class_serial(RCLASS_SERIAL(rb_cObject));
-    mjit_add_class_serial(RCLASS_SERIAL(CLASS_OF(rb_vm_top_self())));
-    if (RCLASS_CONST_TBL(rb_cObject)) {
-        rb_id_table_foreach(RCLASS_CONST_TBL(rb_cObject), valid_class_serials_add_i, NULL);
-    }
 
     // Initialize worker thread
     start_worker();
@@ -996,28 +973,4 @@ mjit_mark_cc_entries(const struct rb_iseq_constant_body *const body)
     }
 }
 
-// A hook to update valid_class_serials.
-void
-mjit_add_class_serial(rb_serial_t class_serial)
-{
-    if (!mjit_enabled)
-        return;
-
-    // Do not wrap CRITICAL_SECTION here. This function is only called in main thread
-    // and guarded by GVL, and `rb_hash_aset` may cause GC and deadlock in it.
-    rb_hash_aset(valid_class_serials, LONG2FIX(class_serial), Qtrue);
-}
-
-// A hook to update valid_class_serials.
-void
-mjit_remove_class_serial(rb_serial_t class_serial)
-{
-    if (!mjit_enabled)
-        return;
-
-    CRITICAL_SECTION_START(3, "in mjit_remove_class_serial");
-    rb_hash_delete_entry(valid_class_serials, LONG2FIX(class_serial));
-    CRITICAL_SECTION_FINISH(3, "in mjit_remove_class_serial");
-}
-
-#endif
+#endif // USE_MJIT
