@@ -9232,7 +9232,7 @@ rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
  *  Returns a new String with the given record separator removed
  *  from the end of <i>str</i> (if present). If <code>$/</code> has not been
  *  changed from the default Ruby record separator, then <code>chomp</code> also
- *  removes carriage return characters (that is it will remove <code>\n</code>,
+ *  removes carriage return characters (that is, it will remove <code>\n</code>,
  *  <code>\r</code>, and <code>\r\n</code>). If <code>$/</code> is an empty string,
  *  it will remove all trailing newlines from the string.
  *
