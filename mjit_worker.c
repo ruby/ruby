@@ -1331,11 +1331,10 @@ unload_units(void)
     }
 }
 
-// The function implementing a worker. It is executed in a separate
-// thread by rb_thread_create_mjit_thread. It compiles precompiled header
-// and then compiles requested ISeqs.
-void
-mjit_worker(void)
+// The function implementing a worker. It is executed in a Ractor by `RubyVM::MJITWorker.start`.
+// It compiles precompiled header and then compiles requested ISeqs.
+VALUE
+mjit_worker(RB_UNUSED_VAR(rb_execution_context_t *ec), RB_UNUSED_VAR(VALUE self))
 {
     // Allow only `max_cache_size / 10` times (default: 10) of compaction.
     // Note: GC of compacted code has not been implemented yet.
@@ -1358,7 +1357,7 @@ mjit_worker(void)
         verbose(3, "Sending wakeup signal to client in a mjit-worker");
         rb_native_cond_signal(&mjit_client_wakeup);
         CRITICAL_SECTION_FINISH(3, "in worker to update worker_stopped");
-        return; // TODO: do the same thing in the latter half of mjit_finish
+        return Qnil; // TODO: do the same thing in the latter half of mjit_finish
     }
 
     // main worker loop
@@ -1443,4 +1442,6 @@ mjit_worker(void)
 
     // To keep mutex unlocked when it is destroyed by mjit_finish, don't wrap CRITICAL_SECTION here.
     worker_stopped = true;
+
+    return Qnil;
 }
