@@ -223,15 +223,10 @@ any_hash(VALUE a, st_index_t (*other_func)(VALUE))
       default:
 	hnum = other_func(a);
     }
-#if SIZEOF_LONG < SIZEOF_ST_INDEX_T
-    if (hnum > 0)
-	hnum &= (unsigned long)-1 >> 2;
+    if ((SIGNED_VALUE)hnum > 0)
+	hnum &= FIXNUM_MAX;
     else
-	hnum |= ~((unsigned long)-1 >> 2);
-#else
-    hnum <<= 1;
-    hnum = RSHIFT(hnum, 1);
-#endif
+	hnum |= FIXNUM_MIN;
     return (long)hnum;
 }
 

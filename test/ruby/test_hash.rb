@@ -1865,4 +1865,30 @@ class TestHash < Test::Unit::TestCase
       {a: 1}.each(&->(k, v) {})
     end
   end
+
+  def test_any_hash_fixable
+    20.times do
+      assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
+        require "delegate"
+        typename = DelegateClass(String)
+
+        hash = {
+          "Int" => true,
+          "Float" => true,
+          "String" => true,
+          "Boolean" => true,
+          "WidgetFilter" => true,
+          "WidgetAggregation" => true,
+          "WidgetEdge" => true,
+          "WidgetSortOrder" => true,
+          "WidgetGrouping" => true,
+        }
+
+        hash.each_key do |key|
+          assert_send([hash, :key?, typename.new(key)])
+        end
+      end;
+    end
+  end
 end
