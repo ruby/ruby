@@ -211,7 +211,8 @@ any_hash(VALUE a, st_index_t (*other_func)(VALUE))
 	hnum = rb_objid_hash((st_index_t)a);
         break;
       case T_STRING:
-	hnum = rb_str_hash(a);
+        /* make hnum fixable to support delegated hash method: [Bug #17488] */
+        hnum = FIX2LONG(ST2FIX(rb_str_hash(a)));
         break;
       case T_BIGNUM:
 	hval = rb_big_hash(a);
