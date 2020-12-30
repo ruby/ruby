@@ -285,10 +285,9 @@ typedef struct {
  *  ------------------
  */
 
-VP_EXPORT  Real *
-VpNewRbClass(size_t mx, char const *str, VALUE klass);
+VP_EXPORT Real *VpNewRbClass(size_t mx, char const *str, VALUE klass, bool strict_p, bool raise_exception);
 
-VP_EXPORT  Real *VpCreateRbObject(size_t mx,const char *str);
+VP_EXPORT Real *VpCreateRbObject(size_t mx, const char *str, bool raise_exception);
 
 static inline BDIGIT
 rmpd_base_value(void) { return RMPD_BASE; }
