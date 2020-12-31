@@ -285,7 +285,8 @@ class Time
   # :include: doc/time/sec.rdoc
   # :include: doc/time/zone_and_in.rdoc
   #
-  def initialize(year = (now = true), mon = nil, mday = nil, hour = nil, min = nil, sec = nil, zone = nil, in: nil)
+  def initialize(year = (now = true), mon = (time = String.try_convert(year); nil),
+                 mday = nil, hour = nil, min = nil, sec = nil, zone = nil, in: nil)
     if zone
       if __builtin.arg!(:in)
         raise ArgumentError, "timezone argument given as positional and keyword arguments"
@@ -296,6 +297,22 @@ class Time
 
     if now
       return __builtin.time_init_now(zone)
+    end
+
+    if time and !(year = Integer(time, 10, exception: false))
+      year = time
+      %r[\A\s*
+        (?<year>[-+]?\d{2,})-(?<mon>\d\d)
+        (?:-(?<mday>\d\d)
+          (?:(?:T|\s+)
+            (?<hour>\d\d)
+            (?::(?<min>\d\d)
+              (?::(?<sec>\d\d(?:\.\d+)?))?)?)?)?\s*
+        (?<z>[-+]\d\d(?:(?:\d\d){0,2}|(?::\d\d){0,2})|
+          [A-IK-Z]|
+          (?i:[a-z]+/[a-z]+(?:_[a-z]+)*))?
+      \s*\z]x =~ time or raise ArgumentError, "cannot parse: #{time}"
+      zone = z if z
     end
 
     __builtin.time_init_args(year, mon, mday, hour, min, sec, zone)

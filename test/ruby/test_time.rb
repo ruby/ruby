@@ -37,6 +37,7 @@ class TestTime < Test::Unit::TestCase
   end
 
   def test_new
+    assert_equal(Time.new(2000,1,1,0,0,0), Time.new(2000))
     assert_equal(Time.utc(2000,2,10), Time.new(2000,2,10, 11,0,0, 3600*11))
     assert_equal(Time.utc(2000,2,10), Time.new(2000,2,9, 13,0,0, -3600*11))
     assert_equal(Time.utc(2000,2,10), Time.new(2000,2,10, 11,0,0, "+11:00"))
@@ -47,6 +48,11 @@ class TestTime < Test::Unit::TestCase
     assert_equal([2001,2,28,23,59,30,-43200], [t.year, t.month, t.mday, t.hour, t.min, t.sec, t.gmt_offset], bug4090)
     assert_raise(ArgumentError) { Time.new(2000,1,1, 0,0,0, "+01:60") }
     assert_raise(ArgumentError) { Time.new(2021, 1, 1, "+09:99") }
+
+    t = Time.utc(2020, 12, 24, 15, 56, 17)
+    assert_equal(t, Time.new("2020-12-24T15:56:17Z"))
+    assert_equal(t, Time.new("2020-12-25 00:56:17 +09:00"))
+    assert_equal(t, Time.new("2020-12-25 00:57:47 +09:01:30"))
   end
 
   def test_time_add()
