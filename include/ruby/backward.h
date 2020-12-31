@@ -13,7 +13,7 @@
 #include "ruby/backward/2/attributes.h"
 
 #define RBIMPL_ATTR_DEPRECATED_SINCE(ver) RBIMPL_ATTR_DEPRECATED(("since " #ver))
-#define RBIMPL_ATTR_INTERNAL() RBIMPL_ATTR_DEPRECATED(("internal function"))
+#define RBIMPL_ATTR_DEPRECATED_INTERNAL(ver) RBIMPL_ATTR_DEPRECATED(("since "#ver", also internal"))
 
 /* eval.c */
 RBIMPL_ATTR_DEPRECATED_SINCE(2.2) void rb_disable_super();
@@ -31,29 +31,29 @@ RBIMPL_ATTR_DEPRECATED_SINCE(2.2) void rb_str_associated();
 RBIMPL_ATTR_DEPRECATED_SINCE(2.5) void rb_autoload();
 
 /* eval.c */
-RBIMPL_ATTR_INTERNAL() RBIMPL_ATTR_DEPRECATED_SINCE(2.6) void rb_frozen_class_p();
-RBIMPL_ATTR_INTERNAL() RBIMPL_ATTR_DEPRECATED_SINCE(2.7) void rb_exec_end_proc();
+RBIMPL_ATTR_DEPRECATED_INTERNAL(2.6) void rb_frozen_class_p();
+RBIMPL_ATTR_DEPRECATED_INTERNAL(2.7) void rb_exec_end_proc();
 
 /* error.c */
-RBIMPL_ATTR_INTERNAL() RBIMPL_ATTR_DEPRECATED_SINCE(2.3) void rb_compile_error();
-RBIMPL_ATTR_INTERNAL() RBIMPL_ATTR_DEPRECATED_SINCE(2.3) void rb_compile_error_with_enc();
-RBIMPL_ATTR_INTERNAL() RBIMPL_ATTR_DEPRECATED_SINCE(2.3) void rb_compile_error_append();
+RBIMPL_ATTR_DEPRECATED_INTERNAL(2.3) void rb_compile_error();
+RBIMPL_ATTR_DEPRECATED_INTERNAL(2.3) void rb_compile_error_with_enc();
+RBIMPL_ATTR_DEPRECATED_INTERNAL(2.3) void rb_compile_error_append();
 
 /* gc.c */
-RBIMPL_ATTR_INTERNAL() RBIMPL_ATTR_DEPRECATED_SINCE(2.7) void rb_gc_call_finalizer_at_exit();
+RBIMPL_ATTR_DEPRECATED_INTERNAL(2.7) void rb_gc_call_finalizer_at_exit();
 
 /* signal.c */
-RBIMPL_ATTR_INTERNAL() RBIMPL_ATTR_DEPRECATED_SINCE(2.7) void rb_trap_exit();
+RBIMPL_ATTR_DEPRECATED_INTERNAL(2.7) void rb_trap_exit();
 
 /* struct.c */
-RBIMPL_ATTR_INTERNAL() RBIMPL_ATTR_DEPRECATED_SINCE(2.4) void rb_struct_ptr();
+RBIMPL_ATTR_DEPRECATED_INTERNAL(2.4) void rb_struct_ptr();
 
 /* thread.c */
-RBIMPL_ATTR_INTERNAL() RBIMPL_ATTR_DEPRECATED_SINCE(2.7) void rb_clear_trace_func();
+RBIMPL_ATTR_DEPRECATED_INTERNAL(2.7) void rb_clear_trace_func();
 
 /* variable.c */
-RBIMPL_ATTR_INTERNAL() RBIMPL_ATTR_DEPRECATED_SINCE(2.7) void rb_generic_ivar_table();
-RBIMPL_ATTR_INTERNAL() RBIMPL_ATTR_DEPRECATED_SINCE(2.6) VALUE rb_mod_const_missing(VALUE, VALUE);
+RBIMPL_ATTR_DEPRECATED_INTERNAL(2.7) void rb_generic_ivar_table();
+RBIMPL_ATTR_DEPRECATED_INTERNAL(2.6) VALUE rb_mod_const_missing(VALUE, VALUE);
 
 /* from version.c */
 #if defined(RUBY_SHOW_COPYRIGHT_TO_DIE) && !!(RUBY_SHOW_COPYRIGHT_TO_DIE+0)
