@@ -124,6 +124,7 @@ class RubyLex
           prev_spaces = md.nil? ? 0 : md[1].count(' ')
           @tokens = ripper_lex_without_warning(lines[0..line_index].join("\n"))
           depth_difference = check_newline_depth_difference
+          depth_difference = 0 if depth_difference < 0
           prev_spaces + depth_difference * 2
         else
           code = line_index.zero? ? '' : lines[0..(line_index - 1)].map{ |l| l + "\n" }.join
@@ -360,14 +361,8 @@ class RubyLex
         next if index > 0 and tokens[index - 1][3].allbits?(Ripper::EXPR_FNAME)
         case t[2]
         when 'do'
-          if index > 0 and tokens[index - 1][3].anybits?(Ripper::EXPR_CMDARG | Ripper::EXPR_ENDFN | Ripper::EXPR_ARG)
-            # method_with_block do; end
-            indent += 1
-          else
-            # while cond do; end # also "until" or "for"
-            # This "do" doesn't increment indent because "while" already
-            # incremented.
-          end
+          syntax_of_do = take_corresponding_syntax_to_kw_do(tokens, index)
+          indent += 1 if syntax_of_do == :method_calling
         when 'def', 'case', 'for', 'begin', 'class', 'module'
           indent += 1
         when 'if', 'unless', 'while', 'until'
@@ -380,6 +375,40 @@ class RubyLex
       # percent literals are not indented
     }
     indent
+  end
+
+  def take_corresponding_syntax_to_kw_do(tokens, index)
+    syntax_of_do = nil
+    # Finding a syntax correnponding to "do".
+    index.downto(0) do |i|
+      tk = tokens[i]
+      # In "continue", the token isn't the corresponding syntax to "do".
+      #is_continue = process_continue(@tokens[0..(i - 1)])
+      # continue ではなく、直前に (:on_ignored_nl|:on_nl|:on_comment):on_sp* みたいなのがあるかどうかを調べる
+      non_sp_index = tokens[0..(i - 1)].rindex{ |t| t[1] != :on_sp }
+      first_in_fomula = false
+      if non_sp_index.nil?
+        first_in_fomula = true
+      elsif [:on_ignored_nl, :on_nl, :on_comment].include?(tokens[non_sp_index][1])
+        first_in_fomula = true
+      end
+      if tk[3].anybits?(Ripper::EXPR_CMDARG) and tk[1] == :on_ident
+        # The target method call to pass the block with "do".
+        syntax_of_do = :method_calling
+        break if first_in_fomula
+      elsif tk[1] == :on_kw && %w{while until for}.include?(tk[2])
+        # A loop syntax in front of "do" found.
+        #
+        #   while cond do # also "until" or "for"
+        #   end
+        #
+        # This "do" doesn't increment indent because the loop syntax already
+        # incremented.
+        syntax_of_do = :loop_syntax
+        break if first_in_fomula
+      end
+    end
+    syntax_of_do
   end
 
   def check_newline_depth_difference
@@ -428,14 +457,8 @@ class RubyLex
         next if index > 0 and @tokens[index - 1][3].allbits?(Ripper::EXPR_FNAME)
         case t[2]
         when 'do'
-          if index > 0 and @tokens[index - 1][3].anybits?(Ripper::EXPR_CMDARG | Ripper::EXPR_ENDFN | Ripper::EXPR_ARG)
-            # method_with_block do; end
-            depth_difference += 1
-          else
-            # while cond do; end # also "until" or "for"
-            # This "do" doesn't increment indent because "while" already
-            # incremented.
-          end
+          syntax_of_do = take_corresponding_syntax_to_kw_do(@tokens, index)
+          depth_difference += 1 if syntax_of_do == :method_calling
         when 'def', 'case', 'for', 'begin', 'class', 'module'
           depth_difference += 1
         when 'if', 'unless', 'while', 'until', 'rescue'
@@ -445,6 +468,8 @@ class RubyLex
           end
         when 'else', 'elsif', 'ensure', 'when', 'in'
           depth_difference += 1
+        when 'end'
+          depth_difference -= 1
         end
       end
     end
@@ -516,7 +541,12 @@ class RubyLex
       when :on_kw
         next if index > 0 and @tokens[index - 1][3].allbits?(Ripper::EXPR_FNAME)
         case t[2]
-        when 'def', 'do', 'case', 'for', 'begin', 'class', 'module'
+        when 'do'
+          syntax_of_do = take_corresponding_syntax_to_kw_do(@tokens, index)
+          if syntax_of_do == :method_calling
+            spaces_of_nest.push(spaces_at_line_head)
+          end
+        when 'def', 'case', 'for', 'begin', 'class', 'module'
           spaces_of_nest.push(spaces_at_line_head)
         when 'rescue'
           unless t[3].allbits?(Ripper::EXPR_LABEL)

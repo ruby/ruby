@@ -263,6 +263,76 @@ module TestIRB
       end
     end
 
+    def test_corresponding_syntax_to_keyword_do_in_class
+      input_with_correct_indents = [
+        Row.new(%q(class C), nil, 2, 1),
+        Row.new(%q(  while method_name do), nil, 4, 2),
+        Row.new(%q(    3), nil, 4, 2),
+        Row.new(%q(  end), 2, 2, 1),
+        Row.new(%q(  foo do), nil, 4, 2),
+        Row.new(%q(    3), nil, 4, 2),
+        Row.new(%q(  end), 2, 2, 1),
+        Row.new(%q(end), 0, 0, 0),
+      ]
+
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_indenting(lines, row.current_line_spaces, false)
+        assert_indenting(lines, row.new_line_spaces, true)
+        assert_nesting_level(lines, row.nesting_level)
+      end
+    end
+
+    def test_corresponding_syntax_to_keyword_do
+      input_with_correct_indents = [
+        Row.new(%q(while i > 0), nil, 2, 1),
+        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(end), 0, 0, 0),
+        Row.new(%q(while true), nil, 2, 1),
+        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(end), 0, 0, 0),
+        Row.new(%q(while ->{i > 0}.call), nil, 2, 1),
+        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(end), 0, 0, 0),
+        Row.new(%q(while ->{true}.call), nil, 2, 1),
+        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(end), 0, 0, 0),
+        Row.new(%q(while i > 0 do), nil, 2, 1),
+        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(end), 0, 0, 0),
+        Row.new(%q(while true do), nil, 2, 1),
+        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(end), 0, 0, 0),
+        Row.new(%q(while ->{i > 0}.call do), nil, 2, 1),
+        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(end), 0, 0, 0),
+        Row.new(%q(while ->{true}.call do), nil, 2, 1),
+        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(end), 0, 0, 0),
+        Row.new(%q(foo do), nil, 2, 1),
+        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(end), 0, 0, 0),
+        Row.new(%q(foo true do), nil, 2, 1),
+        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(end), 0, 0, 0),
+        Row.new(%q(foo ->{true} do), nil, 2, 1),
+        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(end), 0, 0, 0),
+        Row.new(%q(foo ->{i > 0} do), nil, 2, 1),
+        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(end), 0, 0, 0),
+      ]
+
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_indenting(lines, row.current_line_spaces, false)
+        assert_indenting(lines, row.new_line_spaces, true)
+        assert_nesting_level(lines, row.nesting_level)
+      end
+    end
+
     def test_oneliner_def_in_multiple_lines
       input_with_correct_indents = [
         Row.new(%q(def a()=[), nil, 4, 2),
