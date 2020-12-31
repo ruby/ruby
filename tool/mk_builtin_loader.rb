@@ -101,7 +101,7 @@ def collect_builtin base, tree, name, bs, inlines, locals = nil
       _, recv, sep, mid, (_, args) = tree
     end
     if mid
-      raise "unknown sexp: #{mid.inspect}" unless mid.first == :@ident
+      raise "unknown sexp: #{mid.inspect}" unless %i[@ident @const].include?(mid.first)
       _, mid, (lineno,) = mid
       if recv
         func_name = nil
