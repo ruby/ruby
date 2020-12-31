@@ -53,7 +53,7 @@ RBIMPL_ATTR_DEPRECATED_INTERNAL(2.7) void rb_clear_trace_func();
 
 /* variable.c */
 RBIMPL_ATTR_DEPRECATED_INTERNAL(2.7) void rb_generic_ivar_table();
-RBIMPL_ATTR_DEPRECATED_INTERNAL(2.6) VALUE rb_mod_const_missing(VALUE, VALUE);
+RBIMPL_ATTR_DEPRECATED_INTERNAL(2.6) NORETURN(VALUE rb_mod_const_missing(VALUE, VALUE));
 
 /* from version.c */
 #if defined(RUBY_SHOW_COPYRIGHT_TO_DIE) && !!(RUBY_SHOW_COPYRIGHT_TO_DIE+0)
