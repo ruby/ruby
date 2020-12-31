@@ -40,7 +40,7 @@ jobs:
           tool/travis_retry.sh brew install gdbm gmp libffi openssl@1.1 zlib autoconf automake libtool readline
       - name: Set ENV
         run: |
-          echo '::set-env name=JOBS::'-j$((1 + $(sysctl -n hw.activecpu)))
+          echo "JOBS=-j$((1 + $(sysctl -n hw.activecpu)))" >> $GITHUB_ENV
       - name: Autoconf
         run: |
           cd src
