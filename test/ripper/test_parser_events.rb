@@ -132,9 +132,17 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
   end
 
   def test_args_forward
-    thru_args_forward = false
-    parse('def m(...) n(...) end', :on_args_forward) {thru_args_forward = true}
-    assert_equal true, thru_args_forward
+    [
+      'def m(...) n(...) end',
+      'def m(...) end',
+      'def m(a, ...) n(1, ...) end',
+      'def m(...) n(1, ...) end',
+      'def m(a, ...) n(...) end'
+    ].each do |code|
+      thru_args_forward = false
+      parse(code, :on_args_forward) {thru_args_forward = true}
+      assert_equal true, thru_args_forward, "no args_forward for: #{code}"
+    end
   end
 
   def test_arg_paren
