@@ -96,7 +96,7 @@ rb_call_builtin_inits(void)
     BUILTIN(warning);
     BUILTIN(array);
     BUILTIN(kernel);
-    BUILTIN(time);
+    BUILTIN(timev);
     Init_builtin_prelude();
 }
 #undef CALL
