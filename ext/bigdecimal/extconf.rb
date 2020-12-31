@@ -16,6 +16,20 @@ def check_bigdecimal_version(gemspec_path)
   message "#{bigdecimal_version}\n"
 end
 
+def have_builtin_func(name, check_expr, opt = "", &b)
+  checking_for checking_message(name.funcall_style, nil, opt) do
+    if try_compile(<<SRC, opt, &b)
+int foo;
+int main() { #{check_expr}; return 0; }
+SRC
+      $defs.push(format("-DHAVE_BUILTIN_%s", name.tr_cpp))
+      true
+    else
+      false
+    end
+  end
+end
+
 gemspec_name = gemspec_path = nil
 unless ['', '../../'].any? {|dir|
          gemspec_name = "#{dir}bigdecimal.gemspec"
@@ -28,12 +42,19 @@ end
 
 check_bigdecimal_version(gemspec_path)
 
+have_builtin_func("__builtin_clz", "__builtin_clz(0)")
+have_builtin_func("__builtin_clzl", "__builtin_clzl(0)")
+
 have_header("stdbool.h")
+have_header("x86intrin.h")
 
 have_func("labs", "stdlib.h")
 have_func("llabs", "stdlib.h")
 have_func("finite", "math.h")
 have_func("isfinite", "math.h")
+
+have_header("ruby/internal/has/builtin.h")
+have_header("ruby/internal/static_assert.h")
 
 have_type("struct RRational", "ruby.h")
 have_func("rb_rational_num", "ruby.h")

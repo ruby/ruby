@@ -30,17 +30,18 @@
 #include <ieeefp.h>
 #endif
 
+#include "bits.h"
+#include "static_assert.h"
+
 /* #define ENABLE_NUMERIC_STRING */
 
-#define MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, min, max) ( \
-    (a) == 0 ? 0 : \
-    (a) == -1 ? (b) < -(max) : \
-    (a) > 0 ? \
-      ((b) > 0 ? (max) / (a) < (b) : (min) / (a) > (b)) : \
-      ((b) > 0 ? (min) / (a) < (b) : (max) / (a) > (b)))
 #define SIGNED_VALUE_MAX INTPTR_MAX
 #define SIGNED_VALUE_MIN INTPTR_MIN
 #define MUL_OVERFLOW_SIGNED_VALUE_P(a, b) MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, SIGNED_VALUE_MIN, SIGNED_VALUE_MAX)
+
+#define numberof(array) ((int)(sizeof(array) / sizeof((array)[0])))
+#define roomof(x, y) (((x) + (y) - 1) / (y))
+#define type_roomof(x, y) roomof(sizeof(x), sizeof(y))
 
 VALUE rb_cBigDecimal;
 VALUE rb_mBigMath;
@@ -79,6 +80,8 @@ static ID id_half;
 #ifndef DBLE_FIG
 #define DBLE_FIG rmpd_double_figures()    /* figure of double */
 #endif
+
+#define LOG10_2 0.3010299956639812
 
 #ifndef RRATIONAL_ZERO_P
 # define RRATIONAL_ZERO_P(x) (FIXNUM_P(rb_rational_num(x)) && \
@@ -2754,10 +2757,78 @@ check_exception(VALUE bd)
 }
 
 static VALUE
-rb_inum_convert_to_BigDecimal(VALUE val, RB_UNUSED_VAR(size_t digs), int raise_exception)
+rb_uint64_convert_to_BigDecimal(uint64_t uval, RB_UNUSED_VAR(size_t digs), int raise_exception)
+{
+    VALUE obj = TypedData_Wrap_Struct(rb_cBigDecimal, &BigDecimal_data_type, 0);
+
+    Real *vp;
+    if (uval == 0) {
+        vp = VpAllocReal(1);
+        vp->MaxPrec = 1;
+        vp->Prec = 1;
+        vp->exponent = 1;
+        VpSetZero(vp, 1);
+        vp->frac[0] = 0;
+    }
+    else if (uval < BASE) {
+        vp = VpAllocReal(1);
+        vp->MaxPrec = 1;
+        vp->Prec = 1;
+        vp->exponent = 1;
+        VpSetSign(vp, 1);
+        vp->frac[0] = (BDIGIT)uval;
+    }
+    else {
+        const size_t len10 = ceil(LOG10_2 * bit_length(uval));
+        size_t len = roomof(len10, BASE_FIG);
+
+        vp = VpAllocReal(len);
+        vp->MaxPrec = len;
+        vp->Prec = len;
+        vp->exponent = len;
+        VpSetSign(vp, 1);
+
+        size_t i;
+        for (i = 0; i < len; ++i) {
+            BDIGIT r = uval % BASE;
+            vp->frac[len - i - 1] = r;
+            uval /= BASE;
+        }
+    }
+
+    return BigDecimal_wrap_struct(obj, vp);
+}
+
+static VALUE
+rb_int64_convert_to_BigDecimal(int64_t ival, size_t digs, int raise_exception)
+{
+    const uint64_t uval = (ival < 0) ? (((uint64_t)-(ival+1))+1) : (uint64_t)ival;
+    VALUE bd = rb_uint64_convert_to_BigDecimal(uval, digs, raise_exception);
+    if (ival < 0) {
+        Real *vp;
+        TypedData_Get_Struct(bd, Real, &BigDecimal_data_type, vp);
+        VpSetSign(vp, -1);
+    }
+    return bd;
+}
+
+static VALUE
+rb_big_convert_to_BigDecimal(VALUE val, RB_UNUSED_VAR(size_t digs), int raise_exception)
 {
     Real *vp = GetVpValue(val, 1);
     return check_exception(vp->obj);
+}
+
+static VALUE
+rb_inum_convert_to_BigDecimal(VALUE val, RB_UNUSED_VAR(size_t digs), int raise_exception)
+{
+    assert(RB_INTEGER_TYPE_P(val));
+    if (FIXNUM_P(val)) {
+        return rb_int64_convert_to_BigDecimal(FIX2LONG(val), digs, raise_exception);
+    }
+    else {
+        return rb_big_convert_to_BigDecimal(val, digs, raise_exception);
+    }
 }
 
 static VALUE

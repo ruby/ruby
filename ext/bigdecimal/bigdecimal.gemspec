@@ -19,6 +19,9 @@ Gem::Specification.new do |s|
     bigdecimal.gemspec
     ext/bigdecimal/bigdecimal.c
     ext/bigdecimal/bigdecimal.h
+    ext/bigdecimal/bits.h
+    ext/bigdecimal/feature.h
+    ext/bigdecimal/static_assert.h
     lib/bigdecimal.rb
     lib/bigdecimal/jacobian.rb
     lib/bigdecimal/ludcmp.rb

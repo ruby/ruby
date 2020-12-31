@@ -1,6 +1,7 @@
 # frozen_string_literal: false
 require_relative "testbase"
 require 'bigdecimal/math'
+require 'rbconfig/sizeof'
 
 class TestBigDecimal < Test::Unit::TestCase
   include TestBigDecimalBase
@@ -104,10 +105,26 @@ class TestBigDecimal < Test::Unit::TestCase
   end
 
   def test_BigDecimal_with_integer
+    assert_equal(BigDecimal("0"), BigDecimal(0))
     assert_equal(BigDecimal("1"), BigDecimal(1))
     assert_equal(BigDecimal("-1"), BigDecimal(-1))
     assert_equal(BigDecimal((2**100).to_s), BigDecimal(2**100))
     assert_equal(BigDecimal((-2**100).to_s), BigDecimal(-2**100))
+
+    assert_equal(BigDecimal(RbConfig::LIMITS["FIXNUM_MIN"].to_s),
+                 BigDecimal(RbConfig::LIMITS["FIXNUM_MIN"]))
+
+    assert_equal(BigDecimal(RbConfig::LIMITS["FIXNUM_MAX"].to_s),
+                 BigDecimal(RbConfig::LIMITS["FIXNUM_MAX"]))
+
+    assert_equal(BigDecimal(RbConfig::LIMITS["INT64_MIN"].to_s),
+                 BigDecimal(RbConfig::LIMITS["INT64_MIN"]))
+
+    assert_equal(BigDecimal(RbConfig::LIMITS["INT64_MAX"].to_s),
+                 BigDecimal(RbConfig::LIMITS["INT64_MAX"]))
+
+    assert_equal(BigDecimal(RbConfig::LIMITS["UINT64_MAX"].to_s),
+                 BigDecimal(RbConfig::LIMITS["UINT64_MAX"]))
   end
 
   def test_BigDecimal_with_rational
