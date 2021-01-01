@@ -116,13 +116,32 @@ class RubyLex
     tokens
   end
 
+  def find_prev_spaces(line_index)
+    return 0 if @tokens.size == 0
+    md = @tokens[0][2].match(/(\A +)/)
+    prev_spaces = md.nil? ? 0 : md[1].count(' ')
+    line_count = 0
+    @tokens.each_with_index do |t, i|
+      if t[2].include?("\n")
+        line_count += t[2].count("\n")
+        if line_count >= line_index
+          return prev_spaces
+        end
+        if (@tokens.size - 1) > i
+          md = @tokens[i + 1][2].match(/(\A +)/)
+          prev_spaces = md.nil? ? 0 : md[1].count(' ')
+        end
+      end
+    end
+    prev_spaces
+  end
+
   def set_auto_indent(context)
     if @io.respond_to?(:auto_indent) and context.auto_indent_mode
       @io.auto_indent do |lines, line_index, byte_pointer, is_newline|
         if is_newline
-          md = lines[line_index - 1].match(/(\A +)/)
-          prev_spaces = md.nil? ? 0 : md[1].count(' ')
           @tokens = ripper_lex_without_warning(lines[0..line_index].join("\n"))
+          prev_spaces = find_prev_spaces(line_index)
           depth_difference = check_newline_depth_difference
           depth_difference = 0 if depth_difference < 0
           prev_spaces + depth_difference * 2
