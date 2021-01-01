@@ -255,8 +255,27 @@ class TestAst < Test::Unit::TestCase
     assert_equal(:SCOPE, defn.type)
   end
 
+  def test_defn_endless
+    node = RubyVM::AbstractSyntaxTree.parse("def a = nil")
+    _, _, body = *node.children
+    assert_equal(:DEFN, body.type)
+    mid, defn = body.children
+    assert_equal(:a, mid)
+    assert_equal(:SCOPE, defn.type)
+  end
+
   def test_defs
     node = RubyVM::AbstractSyntaxTree.parse("def a.b; end")
+    _, _, body = *node.children
+    assert_equal(:DEFS, body.type)
+    recv, mid, defn = body.children
+    assert_equal(:VCALL, recv.type)
+    assert_equal(:b, mid)
+    assert_equal(:SCOPE, defn.type)
+  end
+
+  def test_defs_endless
+    node = RubyVM::AbstractSyntaxTree.parse("def a.b = nil")
     _, _, body = *node.children
     assert_equal(:DEFS, body.type)
     recv, mid, defn = body.children
