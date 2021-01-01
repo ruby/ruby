@@ -6,6 +6,21 @@ require 'rbconfig/sizeof'
 class TestBigDecimal < Test::Unit::TestCase
   include TestBigDecimalBase
 
+  if defined? RbConfig::LIMITS
+    LIMITS = RbConfig::LIMITS
+  else
+    require 'fiddle'
+    LONG_MAX = (1 << (Fiddle::SIZEOF_LONG*8 - 1)) - 1
+    LONG_MIN = [LONG_MAX + 1].pack("L!").unpack("l!")[0]
+    LIMITS = {
+      "FIXNUM_MIN" => LONG_MIN / 2,
+      "FIXNUM_MAX" => LONG_MAX / 2,
+      "INT64_MIN"  => -9223372036854775808,
+      "INT64_MAX"  => 9223372036854775807,
+      "UINT64_MAX" => 18446744073709551615,
+    }.freeze
+  end
+
   ROUNDING_MODE_MAP = [
     [ BigDecimal::ROUND_UP,        :up],
     [ BigDecimal::ROUND_DOWN,      :down],
@@ -111,20 +126,15 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(BigDecimal((2**100).to_s), BigDecimal(2**100))
     assert_equal(BigDecimal((-2**100).to_s), BigDecimal(-2**100))
 
-    assert_equal(BigDecimal(RbConfig::LIMITS["FIXNUM_MIN"].to_s),
-                 BigDecimal(RbConfig::LIMITS["FIXNUM_MIN"]))
+    assert_equal(BigDecimal(LIMITS["FIXNUM_MIN"].to_s), BigDecimal(LIMITS["FIXNUM_MIN"]))
 
-    assert_equal(BigDecimal(RbConfig::LIMITS["FIXNUM_MAX"].to_s),
-                 BigDecimal(RbConfig::LIMITS["FIXNUM_MAX"]))
+    assert_equal(BigDecimal(LIMITS["FIXNUM_MAX"].to_s), BigDecimal(LIMITS["FIXNUM_MAX"]))
 
-    assert_equal(BigDecimal(RbConfig::LIMITS["INT64_MIN"].to_s),
-                 BigDecimal(RbConfig::LIMITS["INT64_MIN"]))
+    assert_equal(BigDecimal(LIMITS["INT64_MIN"].to_s), BigDecimal(LIMITS["INT64_MIN"]))
 
-    assert_equal(BigDecimal(RbConfig::LIMITS["INT64_MAX"].to_s),
-                 BigDecimal(RbConfig::LIMITS["INT64_MAX"]))
+    assert_equal(BigDecimal(LIMITS["INT64_MAX"].to_s), BigDecimal(LIMITS["INT64_MAX"]))
 
-    assert_equal(BigDecimal(RbConfig::LIMITS["UINT64_MAX"].to_s),
-                 BigDecimal(RbConfig::LIMITS["UINT64_MAX"]))
+    assert_equal(BigDecimal(LIMITS["UINT64_MAX"].to_s), BigDecimal(LIMITS["UINT64_MAX"]))
   end
 
   def test_BigDecimal_with_rational
