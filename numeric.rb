@@ -148,3 +148,60 @@ class Integer
     Primitive.cexpr! 'rb_int_zero_p(self)'
   end
 end
+
+class Float
+  #
+  # call-seq:
+  #    float.to_f  ->  self
+  #
+  # Since +float+ is already a Float, returns +self+.
+  #
+  def to_f
+    return self
+  end
+
+  #
+  #  call-seq:
+  #     float.abs        ->  float
+  #     float.magnitude  ->  float
+  #
+  #  Returns the absolute value of +float+.
+  #
+  #     (-34.56).abs   #=> 34.56
+  #     -34.56.abs     #=> 34.56
+  #     34.56.abs      #=> 34.56
+  #
+  #  Float#magnitude is an alias for Float#abs.
+  #
+  def abs
+    Primitive.attr! 'inline'
+    Primitive.cexpr! 'rb_float_abs(self)'
+  end
+
+  def magnitude
+    Primitive.attr! 'inline'
+    Primitive.cexpr! 'rb_float_abs(self)'
+  end
+
+  #
+  # call-seq:
+  #    -float  ->  float
+  #
+  # Returns +float+, negated.
+  #
+  def -@
+    Primitive.attr! 'inline'
+    Primitive.cexpr! 'rb_float_uminus(self)'
+  end
+
+  #
+  #  call-seq:
+  #     float.zero?  ->  true or false
+  #
+  #  Returns +true+ if +float+ is 0.0.
+  #
+  def zero?
+    Primitive.attr! 'inline'
+    Primitive.cexpr! 'flo_iszero(self) ? Qtrue : Qfalse'
+  end
+end

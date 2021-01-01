@@ -1030,13 +1030,6 @@ flo_coerce(VALUE x, VALUE y)
     return rb_assoc_new(rb_Float(y), x);
 }
 
-/*
- * call-seq:
- *    -float  ->  float
- *
- * Returns +float+, negated.
- */
-
 VALUE
 rb_float_uminus(VALUE flt)
 {
@@ -1701,51 +1694,11 @@ rb_float_eql(VALUE x, VALUE y)
 
 #define flo_eql rb_float_eql
 
-/*
- * call-seq:
- *    float.to_f  ->  self
- *
- * Since +float+ is already a Float, returns +self+.
- */
-
-static VALUE
-flo_to_f(VALUE num)
-{
-    return num;
-}
-
-/*
- *  call-seq:
- *     float.abs        ->  float
- *     float.magnitude  ->  float
- *
- *  Returns the absolute value of +float+.
- *
- *     (-34.56).abs   #=> 34.56
- *     -34.56.abs     #=> 34.56
- *     34.56.abs      #=> 34.56
- *
- *  Float#magnitude is an alias for Float#abs.
- */
-
 VALUE
 rb_float_abs(VALUE flt)
 {
     double val = fabs(RFLOAT_VALUE(flt));
     return DBL2NUM(val);
-}
-
-/*
- *  call-seq:
- *     float.zero?  ->  true or false
- *
- *  Returns +true+ if +float+ is 0.0.
- */
-
-static VALUE
-flo_zero_p(VALUE num)
-{
-    return flo_iszero(num) ? Qtrue : Qfalse;
 }
 
 /*
@@ -5677,7 +5630,6 @@ Init_Numeric(void)
     rb_define_method(rb_cFloat, "to_s", flo_to_s, 0);
     rb_define_alias(rb_cFloat, "inspect", "to_s");
     rb_define_method(rb_cFloat, "coerce", flo_coerce, 1);
-    rb_define_method(rb_cFloat, "-@", rb_float_uminus, 0);
     rb_define_method(rb_cFloat, "+", rb_float_plus, 1);
     rb_define_method(rb_cFloat, "-", rb_float_minus, 1);
     rb_define_method(rb_cFloat, "*", rb_float_mul, 1);
@@ -5697,10 +5649,6 @@ Init_Numeric(void)
     rb_define_method(rb_cFloat, "<=", flo_le, 1);
     rb_define_method(rb_cFloat, "eql?", flo_eql, 1);
     rb_define_method(rb_cFloat, "hash", flo_hash, 0);
-    rb_define_method(rb_cFloat, "to_f", flo_to_f, 0);
-    rb_define_method(rb_cFloat, "abs", rb_float_abs, 0);
-    rb_define_method(rb_cFloat, "magnitude", rb_float_abs, 0);
-    rb_define_method(rb_cFloat, "zero?", flo_zero_p, 0);
 
     rb_define_method(rb_cFloat, "to_i", flo_to_i, 0);
     rb_define_method(rb_cFloat, "to_int", flo_to_i, 0);
@@ -5732,4 +5680,4 @@ rb_float_new(double d)
     return rb_float_new_inline(d);
 }
 
-#include "integer.rbinc"
+#include "numeric.rbinc"
