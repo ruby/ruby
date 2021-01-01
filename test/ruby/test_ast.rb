@@ -253,6 +253,8 @@ class TestAst < Test::Unit::TestCase
     mid, defn = body.children
     assert_equal(:a, mid)
     assert_equal(:SCOPE, defn.type)
+    _, args, = defn.children
+    assert_equal(:ARGS, args.type)
   end
 
   def test_defn_endless
@@ -262,6 +264,8 @@ class TestAst < Test::Unit::TestCase
     mid, defn = body.children
     assert_equal(:a, mid)
     assert_equal(:SCOPE, defn.type)
+    _, args, = defn.children
+    assert_equal(:ARGS, args.type)
   end
 
   def test_defs
@@ -272,6 +276,8 @@ class TestAst < Test::Unit::TestCase
     assert_equal(:VCALL, recv.type)
     assert_equal(:b, mid)
     assert_equal(:SCOPE, defn.type)
+    _, args, = defn.children
+    assert_equal(:ARGS, args.type)
   end
 
   def test_defs_endless
@@ -282,6 +288,8 @@ class TestAst < Test::Unit::TestCase
     assert_equal(:VCALL, recv.type)
     assert_equal(:b, mid)
     assert_equal(:SCOPE, defn.type)
+    _, args, = defn.children
+    assert_equal(:ARGS, args.type)
   end
 
   def test_dstr
