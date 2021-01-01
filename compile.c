@@ -7257,6 +7257,35 @@ delegate_call_p(const rb_iseq_t *iseq, unsigned int argc, const LINK_ANCHOR *arg
 }
 
 static int
+compile_builtin_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int line, int popped)
+{
+    if (!node) goto no_arg;
+    if (nd_type(node) != NODE_LIST) goto bad_arg;
+    if (node->nd_next) goto too_many_arg;
+    node = node->nd_head;
+    if (!node) goto no_arg;
+    if (nd_type(node) != NODE_LIT) goto bad_arg;
+    VALUE name = node->nd_lit;
+    if (!SYMBOL_P(name)) goto non_symbol_arg;
+    if (!popped) {
+        compile_lvar(iseq, ret, line, SYM2ID(name));
+    }
+    return COMPILE_OK;
+  no_arg:
+    COMPILE_ERROR(ERROR_ARGS "arg!: no argument");
+    return COMPILE_NG;
+  too_many_arg:
+    COMPILE_ERROR(ERROR_ARGS "arg!: too many argument");
+    return COMPILE_NG;
+  non_symbol_arg:
+    COMPILE_ERROR(ERROR_ARGS "non symbol argument to arg!: %s",
+                  rb_builtin_class_name(name));
+    return COMPILE_NG;
+  bad_arg:
+    UNKNOWN_NODE("arg!", node, COMPILE_NG);
+}
+
+static int
 compile_builtin_function_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int line, int popped,
                               const rb_iseq_t *parent_block, LINK_ANCHOR *args, const char *builtin_func)
 {
@@ -7292,18 +7321,7 @@ compile_builtin_function_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NOD
                 return COMPILE_OK;
             }
             else if (strcmp("arg!", builtin_func) == 0) {
-                if (!args_node) goto bad_arg;
-                if (nd_type(args_node) != NODE_LIST) goto bad_arg;
-                if (args_node->nd_next) goto bad_arg;
-                args_node = args_node->nd_head;
-                if (nd_type(args_node) != NODE_LIT) goto bad_arg;
-                if (!SYMBOL_P(args_node->nd_lit)) goto bad_arg;
-                if (!popped) {
-                    compile_lvar(iseq, ret, line, SYM2ID(args_node->nd_lit));
-                }
-                return COMPILE_OK;
-              bad_arg:
-                rb_bug("unexpected argument to arg!");
+                return compile_builtin_arg(iseq, ret, args_node, line, popped);
             }
             else if (1) {
                 rb_bug("can't find builtin function:%s", builtin_func);
