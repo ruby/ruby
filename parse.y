@@ -5009,6 +5009,7 @@ f_opt_paren_args: f_paren_args
 			$$ = new_args_tail(p, Qnone, Qnone, Qnone, &@0);
 			$$ = new_args(p, Qnone, Qnone, Qnone, Qnone, $$, &@0);
 		    }
+		;
 
 f_paren_args	: '(' f_args rparen
 		    {
