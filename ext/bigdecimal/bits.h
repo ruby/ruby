@@ -87,7 +87,7 @@ nlz_int64(uint64_t x)
     unsigned long r;
     return _BitScanReverse64(&r, x) ? (63u - (unsigned int)r) : 64;
 
-#elif __has_builtin(__builtin_clzl)
+#elif __has_builtin(__builtin_clzl) && !(defined(__sun) && defined(__sparc))
     if (x == 0) {
         return 64;
     }
