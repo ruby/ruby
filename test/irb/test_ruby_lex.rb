@@ -367,6 +367,25 @@ module TestIRB
       end
     end
 
+    def test_broken_heredoc
+      if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.7.0')
+        skip 'This test needs Ripper::Lexer#scan to take broken tokens'
+      end
+      input_with_correct_indents = [
+        Row.new(%q(def foo), nil, 2, 1),
+        Row.new(%q(  <<~Q), nil, 2, 1),
+        Row.new(%q(  Qend), nil, 2, 1),
+      ]
+
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_indenting(lines, row.current_line_spaces, false)
+        assert_indenting(lines, row.new_line_spaces, true)
+        assert_nesting_level(lines, row.nesting_level)
+      end
+    end
+
     PromptRow = Struct.new(:prompt, :content)
 
     class MockIO_DynamicPrompt
