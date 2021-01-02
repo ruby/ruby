@@ -4,7 +4,7 @@
 #include "feature.h"
 #include "static_assert.h"
 
-#if defined(HAVE_X86INTRIN_H)
+#if defined(__x86_64__) && defined(HAVE_X86INTRIN_H)
 # include <x86intrin.h>         /* for _lzcnt_u64 */
 #elif defined(_MSC_VER) && _MSC_VER >= 1310
 # include <intrin.h>            /* for the following intrinsics */
