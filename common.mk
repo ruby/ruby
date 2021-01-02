@@ -1225,7 +1225,7 @@ bisect-ruby: PHONY
 
 COMPARE_RUBY = $(BASERUBY)
 BENCH_RUBY = $(RUNRUBY)
-BENCH_OPTS = --output=markdown --output-compare
+BENCH_OPTS = --output=markdown --output-compare -v
 ITEM =
 ARGS = $$(find $(srcdir)/benchmark -maxdepth 1 -name '$(ITEM)' -o -name '*$(ITEM)*.yml' -o -name '*$(ITEM)*.rb' | sort)
 OPTS =
