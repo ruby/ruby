@@ -121,6 +121,29 @@ class Integer
     return self
   end
 
+  #  Document-method: Integer#times
+  #  call-seq:
+  #     int.times {|i| block }  ->  self
+  #     int.times               ->  an_enumerator
+  #
+  #  Iterates the given block +int+ times, passing in values from zero to
+  #  <code>int - 1</code>.
+  #
+  #  If no block is given, an Enumerator is returned instead.
+  #
+  #     5.times {|i| print i, " " }   #=> 0 1 2 3 4
+  def times
+    unless Primitive.block_given_p
+      return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, int_dotimes_size)'
+    end
+    i = 0
+    while i < self
+      yield i
+      i += 1
+    end
+    return self
+  end
+
   #  call-seq:
   #     int.to_i    ->  integer
   #

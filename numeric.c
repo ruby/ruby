@@ -5086,19 +5086,11 @@ int_downto(VALUE from, VALUE to)
     return from;
 }
 
-/*
- *  Document-method: Integer#times
- *  call-seq:
- *     int.times {|i| block }  ->  self
- *     int.times               ->  an_enumerator
- *
- *  Iterates the given block +int+ times, passing in values from zero to
- *  <code>int - 1</code>.
- *
- *  If no block is given, an Enumerator is returned instead.
- *
- *     5.times {|i| print i, " " }   #=> 0 1 2 3 4
- */
+static VALUE
+block_given_p(rb_execution_context_t *ec, VALUE self)
+{
+    return rb_block_given_p() ? Qtrue : Qfalse;
+}
 
 static VALUE
 int_dotimes_size(VALUE num, VALUE args, VALUE eobj)
@@ -5108,31 +5100,6 @@ int_dotimes_size(VALUE num, VALUE args, VALUE eobj)
     }
     else {
 	if (RTEST(rb_funcall(num, '<', 1, INT2FIX(0)))) return INT2FIX(0);
-    }
-    return num;
-}
-
-static VALUE
-int_dotimes(VALUE num)
-{
-    RETURN_SIZED_ENUMERATOR(num, 0, 0, int_dotimes_size);
-
-    if (FIXNUM_P(num)) {
-	long i, end;
-
-	end = FIX2LONG(num);
-	for (i=0; i<end; i++) {
-	    rb_yield_1(LONG2FIX(i));
-	}
-    }
-    else {
-	VALUE i = INT2FIX(0);
-
-	for (;;) {
-	    if (!RTEST(rb_funcall(i, '<', 1, num))) break;
-	    rb_yield(i);
-	    i = rb_funcall(i, '+', 1, INT2FIX(1));
-	}
     }
     return num;
 }
@@ -5540,7 +5507,6 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "nobits?", int_nobits_p, 1);
     rb_define_method(rb_cInteger, "upto", int_upto, 1);
     rb_define_method(rb_cInteger, "downto", int_downto, 1);
-    rb_define_method(rb_cInteger, "times", int_dotimes, 0);
     rb_define_method(rb_cInteger, "succ", int_succ, 0);
     rb_define_method(rb_cInteger, "next", int_succ, 0);
     rb_define_method(rb_cInteger, "pred", int_pred, 0);
