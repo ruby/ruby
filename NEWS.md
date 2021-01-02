@@ -16,6 +16,14 @@ sufficient information, see the ChangeLog file or Redmine
 
 Outstanding ones only.
 
+* Enumerable
+
+    * Enumerable#compact is added. [[Feature #17312]]
+
+* Enumerator::Lazy
+
+    * Enumerator::Lazy#compact is added. [[Feature #17312]]
+
 ## Stdlib updates
 
 Outstanding ones only.
@@ -39,3 +47,6 @@ Excluding feature bug fixes.
 ### TypeProf
 
 ## Miscellaneous changes
+
+
+[Feature #17312]: https://bugs.ruby-lang.org/issues/17312
