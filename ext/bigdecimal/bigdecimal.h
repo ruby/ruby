@@ -14,6 +14,10 @@
 #include "ruby/ruby.h"
 #include <float.h>
 
+#ifdef RUBY_EXTCONF_H
+# include RUBY_EXTCONF_H
+#endif
+
 #if defined(__bool_true_false_are_defined)
 # /* Take that. */
 
