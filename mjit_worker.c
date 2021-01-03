@@ -236,7 +236,7 @@ static int total_unloads = 0;
 // Set to true to stop worker.
 static bool stop_worker_p;
 // Set to true if worker is stopped.
-static bool worker_stopped;
+static bool worker_stopped = true;
 
 // Path of "/tmp", which can be changed to $TMP in MinGW.
 static char *tmp_dir;

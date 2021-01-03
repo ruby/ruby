@@ -328,6 +328,9 @@ mjit_wait(struct rb_iseq_constant_body *body)
 VALUE
 rb_mjit_wait_call(rb_execution_context_t *ec, struct rb_iseq_constant_body *body)
 {
+    if (worker_stopped)
+        return Qundef;
+
     mjit_wait(body);
     if ((uintptr_t)body->jit_func <= (uintptr_t)LAST_JIT_ISEQ_FUNC) {
         return Qundef;
