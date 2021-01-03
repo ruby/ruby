@@ -53,6 +53,7 @@ class TestTime < Test::Unit::TestCase
     assert_equal(t, Time.new("2020-12-24T15:56:17Z"))
     assert_equal(t, Time.new("2020-12-25 00:56:17 +09:00"))
     assert_equal(t, Time.new("2020-12-25 00:57:47 +09:01:30"))
+    assert_equal(t, Time.new("20201225T005617 +0900"))
   end
 
   def test_time_add()

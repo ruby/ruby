@@ -301,17 +301,46 @@ class Time
 
     if time and !(year = Integer(time, 10, exception: false))
       year = time
+      # :x is for Extensions
+      # :b is for Basic Rules
       %r[\A\s*
-        (?<year>[-+]?\d{2,})-(?<mon>\d\d)
-        (?:-(?<mday>\d\d)
-          (?:(?:T|\s+)
-            (?<hour>\d\d)
-            (?::(?<min>\d\d)
-              (?::(?<sec>\d\d(?:\.\d+)?))?)?)?)?\s*
-        (?<z>[-+]\d\d(?:(?:\d\d){0,2}|(?::\d\d){0,2})|
-          [A-IK-Z]|
-          (?i:[a-z]+/[a-z]+(?:_[a-z]+)*))?
+        (?<year>  [-+]?\d{4,}                        ){0}
+        (?<mon>   \d\d                               ){0}
+        (?<mday>  \d\d                               ){0}
+        (?<date:x>\g<year>(?:-\g<mon>(?:-\g<mday>)?)?){0}
+        (?<date:b>\g<year>\g<mon>\g<mday>            ){0}
+
+        (?<hour>  \d\d                               ){0}
+        (?<min>   \d\d                               ){0}
+        (?<sec>   \d\d                               ){0}
+        (?<t:sub> (?:[.,](?<sub>\d+))?               ){0}
+        (?<time:x>\g<hour>(?::\g<min>(?::\g<sec>)?)?
+                  \g<t:sub>                          ){0}
+        (?<time:b>\g<hour>\g<min>(?:\g<sec>)?
+                  \g<t:sub>                          ){0}
+
+        (?<z:mil> [A-IK-Z]                           ){0}
+        (?<z:fix> [-+]\d\d
+                  (?:(?:\d\d){0,2}|(?::\d\d){0,2})   ){0}
+        (?<z:tz>  (?i:[a-z]+/[a-z]+(?:_[a-z]+)*)     ){0}
+
+        (?:\g<date:x>(?:[T\s]\g<time:x>)?|
+           \g<date:b>(?:[T\s]\g<time:b>)?|
+           \g<time:x>|\g<time:b>
+        )
+        (?:(?<z>\g<z:mil>)|
+           \s*(?<z>\g<z:fix>)|
+           \s+(?<z>\g<z:tz>))?
       \s*\z]x =~ time or raise ArgumentError, "cannot parse: #{time}"
+      if sub
+        if sec
+          sec << '.' << sub
+        elsif min
+          sec = Rational("0.#{sub}") * 60
+        else
+          min, sec = (Rational("0.#{sub}") * 3600).divmod(60)
+        end
+      end
       zone = z if z
     end
 
