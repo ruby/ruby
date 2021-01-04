@@ -4610,26 +4610,34 @@ vm_opt_newarray_min(rb_num_t num, const VALUE *ptr)
 
 #undef id_cmp
 
+#define IMEMO_CONST_CACHE_SHAREABLE IMEMO_FL_USER0
+
 static int
-vm_ic_hit_p(const rb_serial_t ic_serial, const rb_cref_t *ic_cref, const VALUE *reg_ep)
+vm_ic_hit_p(const struct iseq_inline_constant_cache_entry *ice, const VALUE *reg_ep)
 {
-    if (ic_serial == GET_GLOBAL_CONSTANT_STATE() && rb_ractor_main_p()) {
-        return (ic_cref == NULL || // no need to check CREF
-                ic_cref == vm_get_cref(reg_ep));
+    VM_ASSERT(IMEMO_TYPE_P(ice, imemo_constcache));
+    if (ice->ic_serial == GET_GLOBAL_CONSTANT_STATE() &&
+        (FL_TEST_RAW((VALUE)ice, IMEMO_CONST_CACHE_SHAREABLE) || rb_ractor_main_p())) {
+
+        VM_ASSERT(FL_TEST_RAW((VALUE)ice, IMEMO_CONST_CACHE_SHAREABLE) ? rb_ractor_shareable_p(ice->value) : true);
+
+        return (ice->ic_cref == NULL || // no need to check CREF
+                ice->ic_cref == vm_get_cref(reg_ep));
     }
     return FALSE;
 }
 
 static void
-vm_ic_update(IC ic, VALUE val, const VALUE *reg_ep)
+vm_ic_update(const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep)
 {
-    VM_ASSERT(ic->value != Qundef);
-    rb_mjit_before_vm_ic_update();
-    ic->value = val;
-    ic->ic_serial = GET_GLOBAL_CONSTANT_STATE() - ruby_vm_const_missing_count;
-    ic->ic_cref = vm_get_const_key_cref(reg_ep);
-    rb_mjit_after_vm_ic_update();
+
+    struct iseq_inline_constant_cache_entry *ice = (struct iseq_inline_constant_cache_entry *)rb_imemo_new(imemo_constcache, 0, 0, 0, 0);
+    RB_OBJ_WRITE(ice, &ice->value, val);
+    ice->ic_cref = vm_get_const_key_cref(reg_ep);
+    ice->ic_serial = GET_GLOBAL_CONSTANT_STATE() - ruby_vm_const_missing_count;
+    if (rb_ractor_shareable_p(val)) ice->flags |= IMEMO_CONST_CACHE_SHAREABLE;
     ruby_vm_const_missing_count = 0;
+    RB_OBJ_WRITE(iseq, &ic->entry, ice);
 }
 
 static VALUE

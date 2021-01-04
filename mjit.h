@@ -83,8 +83,6 @@ RUBY_EXTERN bool mjit_call_p;
 extern void rb_mjit_add_iseq_to_process(const rb_iseq_t *iseq);
 extern VALUE rb_mjit_wait_call(rb_execution_context_t *ec, struct rb_iseq_constant_body *body);
 extern struct rb_mjit_compile_info* rb_mjit_iseq_compile_info(const struct rb_iseq_constant_body *body);
-extern void rb_mjit_before_vm_ic_update(void);
-extern void rb_mjit_after_vm_ic_update(void);
 extern void rb_mjit_recompile_send(const rb_iseq_t *iseq);
 extern void rb_mjit_recompile_ivar(const rb_iseq_t *iseq);
 extern void rb_mjit_recompile_exivar(const rb_iseq_t *iseq);
@@ -198,8 +196,6 @@ void mjit_finish(bool close_handle_p);
 
 # else // USE_MJIT
 
-static inline void rb_mjit_before_vm_ic_update(void){}
-static inline void rb_mjit_after_vm_ic_update(void){}
 static inline struct mjit_cont *mjit_cont_new(rb_execution_context_t *ec){return NULL;}
 static inline void mjit_cont_free(struct mjit_cont *cont){}
 static inline void mjit_gc_start_hook(void){}

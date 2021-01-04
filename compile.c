@@ -2359,11 +2359,8 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			    }
 			    break;
 			}
-		      case TS_ISE: /* inline storage entry */
-			/* Treated as an IC, but may contain a markable VALUE */
-                        FL_SET(iseqv, ISEQ_MARKABLE_ISEQ);
-                        /* fall through */
 		      case TS_IC: /* inline cache */
+		      case TS_ISE: /* inline storage entry */
 		      case TS_IVC: /* inline ivar cache */
 			{
 			    unsigned int ic_index = FIX2UINT(operands[j]);
@@ -2375,8 +2372,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                                               ic_index, body->is_size);
 			    }
 			    generated_iseq[code_index + 1 + j] = (VALUE)ic;
-
-                            if (type == TS_IVC) FL_SET(iseqv, ISEQ_MARKABLE_ISEQ);
+                            FL_SET(iseqv, ISEQ_MARKABLE_ISEQ);
 			    break;
 			}
                         case TS_CALLDATA:
@@ -9440,14 +9436,13 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
 			}
 			break;
 		      case TS_ISE:
-                        FL_SET((VALUE)iseq, ISEQ_MARKABLE_ISEQ);
-                        /* fall through */
 		      case TS_IC:
                       case TS_IVC:  /* inline ivar cache */
 			argv[j] = op;
 			if (NUM2UINT(op) >= iseq->body->is_size) {
 			    iseq->body->is_size = NUM2INT(op) + 1;
 			}
+                        FL_SET((VALUE)iseq, ISEQ_MARKABLE_ISEQ);
 			break;
                       case TS_CALLDATA:
 			argv[j] = iseq_build_callinfo_from_hash(iseq, op);
@@ -10425,14 +10420,13 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
                     break;
                 }
               case TS_ISE:
-                FL_SET(iseqv, ISEQ_MARKABLE_ISEQ);
-                /* fall through */
               case TS_IC:
               case TS_IVC:
                 {
                     VALUE op = ibf_load_small_value(load, &reading_pos);
                     code[code_index] = (VALUE)&is_entries[op];
                 }
+                FL_SET(iseqv, ISEQ_MARKABLE_ISEQ);
                 break;
               case TS_CALLDATA:
                 {

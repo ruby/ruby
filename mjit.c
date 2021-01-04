@@ -82,24 +82,6 @@ mjit_gc_exit_hook(void)
     CRITICAL_SECTION_FINISH(4, "mjit_gc_exit_hook");
 }
 
-// Lock setinlinecache
-void
-rb_mjit_before_vm_ic_update(void)
-{
-    if (!mjit_enabled)
-        return;
-    CRITICAL_SECTION_START(3, "before vm_ic_update");
-}
-
-// Unlock setinlinecache
-void
-rb_mjit_after_vm_ic_update(void)
-{
-    if (!mjit_enabled)
-        return;
-    CRITICAL_SECTION_FINISH(3, "after vm_ic_update");
-}
-
 // Deal with ISeq movement from compactor
 void
 mjit_update_references(const rb_iseq_t *iseq)
