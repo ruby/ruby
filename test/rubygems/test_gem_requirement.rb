@@ -253,7 +253,6 @@ class TestGemRequirement < Gem::TestCase
     assert_satisfied_by "1.0.0.0",     "= 1.0"
     assert_satisfied_by "10.3.2",      "!= 9.3.4"
     assert_satisfied_by "10.3.2",      "> 9.3.2"
-    assert_satisfied_by "10.3.2",      "> 9.3.2"
     assert_satisfied_by " 9.3.2",      ">= 9.3.2"
     assert_satisfied_by "9.3.2 ",      ">= 9.3.2"
     assert_satisfied_by "",            "= 0"

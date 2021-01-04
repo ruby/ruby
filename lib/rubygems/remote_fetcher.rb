@@ -26,12 +26,14 @@ class Gem::RemoteFetcher
     ##
     # The URI which was being accessed when the exception happened.
 
-    attr_accessor :uri
+    attr_accessor :uri, :original_uri
 
     def initialize(message, uri)
       super message
 
       uri = parse_uri(uri)
+
+      @original_uri = uri.dup
 
       uri.password = 'REDACTED' if uri.respond_to?(:password) && uri.password
 
