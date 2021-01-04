@@ -81,7 +81,7 @@ class Ripper
           q.breakable
           q.text("#{event}@#{pos[0]}:#{pos[1]}")
           q.breakable
-          q.text(state)
+          state.pretty_print(q)
           q.breakable
           q.text("token: ")
           tok.pretty_print(q)
