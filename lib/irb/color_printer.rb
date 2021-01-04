@@ -10,7 +10,12 @@ module IRB
       out
     end
 
-    def text(str, width = str.length)
+    def text(str, width = nil)
+      unless str.is_a?(String)
+        str = str.inspect
+      end
+      width ||= str.length
+
       case str
       when /\A#</, '=', '>'
         super(Color.colorize(str, [:GREEN]), width)
