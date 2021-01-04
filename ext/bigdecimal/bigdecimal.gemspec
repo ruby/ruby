@@ -21,6 +21,7 @@ Gem::Specification.new do |s|
     ext/bigdecimal/bigdecimal.h
     ext/bigdecimal/bits.h
     ext/bigdecimal/feature.h
+    ext/bigdecimal/missing.h
     ext/bigdecimal/static_assert.h
     lib/bigdecimal.rb
     lib/bigdecimal/jacobian.rb

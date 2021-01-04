@@ -15,6 +15,10 @@
 # pragma intrinsic(__lzcnt64)
 #endif
 
+#define numberof(array) ((int)(sizeof(array) / sizeof((array)[0])))
+#define roomof(x, y) (((x) + (y) - 1) / (y))
+#define type_roomof(x, y) roomof(sizeof(x), sizeof(y))
+
 #define MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, min, max) ( \
     (a) == 0 ? 0 : \
     (a) == -1 ? (b) < -(max) : \

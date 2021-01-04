@@ -39,10 +39,6 @@
 #define SIGNED_VALUE_MIN INTPTR_MIN
 #define MUL_OVERFLOW_SIGNED_VALUE_P(a, b) MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, SIGNED_VALUE_MIN, SIGNED_VALUE_MAX)
 
-#define numberof(array) ((int)(sizeof(array) / sizeof((array)[0])))
-#define roomof(x, y) (((x) + (y) - 1) / (y))
-#define type_roomof(x, y) roomof(sizeof(x), sizeof(y))
-
 VALUE rb_cBigDecimal;
 VALUE rb_mBigMath;
 
@@ -104,54 +100,6 @@ static ID id_half;
 # define PRIsVALUE "s"
 # define RB_OBJ_CLASSNAME(obj) rb_obj_classname(obj)
 # define RB_OBJ_STRING(obj) StringValueCStr(obj)
-#endif
-
-#ifndef HAVE_RB_RATIONAL_NUM
-static inline VALUE
-rb_rational_num(VALUE rat)
-{
-#ifdef HAVE_TYPE_STRUCT_RRATIONAL
-    return RRATIONAL(rat)->num;
-#else
-    return rb_funcall(rat, rb_intern("numerator"), 0);
-#endif
-}
-#endif
-
-#ifndef HAVE_RB_RATIONAL_DEN
-static inline VALUE
-rb_rational_den(VALUE rat)
-{
-#ifdef HAVE_TYPE_STRUCT_RRATIONAL
-    return RRATIONAL(rat)->den;
-#else
-    return rb_funcall(rat, rb_intern("denominator"), 0);
-#endif
-}
-#endif
-
-#ifndef HAVE_RB_COMPLEX_REAL
-static inline VALUE
-rb_complex_real(VALUE cmp)
-{
-#ifdef HAVE_TYPE_STRUCT_RCOMPLEX
-  return RCOMPLEX(cmp)->real;
-#else
-  return rb_funcall(cmp, rb_intern("real"), 0);
-#endif
-}
-#endif
-
-#ifndef HAVE_RB_COMPLEX_IMAG
-static inline VALUE
-rb_complex_imag(VALUE cmp)
-{
-#ifdef HAVE_TYPE_STRUCT_RCOMPLEX
-  return RCOMPLEX(cmp)->imag;
-#else
-  return rb_funcall(cmp, rb_intern("imag"), 0);
-#endif
-}
 #endif
 
 #define BIGDECIMAL_POSITIVE_P(bd) ((bd)->sign > 0)

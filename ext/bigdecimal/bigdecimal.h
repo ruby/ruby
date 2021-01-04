@@ -10,34 +10,11 @@
 #define  RUBY_BIG_DECIMAL_H 1
 
 #define RUBY_NO_OLD_COMPATIBILITY
-
 #include "ruby/ruby.h"
-#include <float.h>
+#include "missing.h"
 
-#if defined(__bool_true_false_are_defined)
-# /* Take that. */
-
-#elif defined(HAVE_STDBOOL_H)
-# include <stdbool.h>
-
-#else
-typedef unsigned char _Bool;
-# define bool _Bool
-# define true  ((_Bool)+1)
-# define false ((_Bool)-1)
-# define __bool_true_false_are_defined
-#endif
-
-#ifndef RB_UNUSED_VAR
-# ifdef __GNUC__
-#  define RB_UNUSED_VAR(x) x __attribute__ ((unused))
-# else
-#  define RB_UNUSED_VAR(x) x
-# endif
-#endif
-
-#ifndef UNREACHABLE
-# define UNREACHABLE		/* unreachable */
+#ifdef HAVE_FLOAT_H
+# include <float.h>
 #endif
 
 #undef BDIGIT
@@ -86,95 +63,6 @@ extern "C" {
 #if 0
 } /* satisfy cc-mode */
 #endif
-#endif
-
-#ifndef HAVE_LABS
-static inline long
-labs(long const x)
-{
-    if (x < 0) return -x;
-    return x;
-}
-#endif
-
-#ifndef HAVE_LLABS
-static inline LONG_LONG
-llabs(LONG_LONG const x)
-{
-    if (x < 0) return -x;
-    return x;
-}
-#endif
-
-#ifndef HAVE_FINITE
-static int
-finite(double)
-{
-    return !isnan(n) && !isinf(n);
-}
-#endif
-
-#ifndef isfinite
-# ifndef HAVE_ISFINITE
-#  define HAVE_ISFINITE 1
-#  define isfinite(x) finite(x)
-# endif
-#endif
-
-#ifndef FIX_CONST_VALUE_PTR
-# if defined(__fcc__) || defined(__fcc_version) || \
-    defined(__FCC__) || defined(__FCC_VERSION)
-/* workaround for old version of Fujitsu C Compiler (fcc) */
-#  define FIX_CONST_VALUE_PTR(x) ((const VALUE *)(x))
-# else
-#  define FIX_CONST_VALUE_PTR(x) (x)
-# endif
-#endif
-
-#ifndef HAVE_RB_ARRAY_CONST_PTR
-static inline const VALUE *
-rb_array_const_ptr(VALUE a)
-{
-    return FIX_CONST_VALUE_PTR((RBASIC(a)->flags & RARRAY_EMBED_FLAG) ?
-	RARRAY(a)->as.ary : RARRAY(a)->as.heap.ptr);
-}
-#endif
-
-#ifndef RARRAY_CONST_PTR
-# define RARRAY_CONST_PTR(a) rb_array_const_ptr(a)
-#endif
-
-#ifndef RARRAY_AREF
-# define RARRAY_AREF(a, i) (RARRAY_CONST_PTR(a)[i])
-#endif
-
-#ifndef HAVE_RB_SYM2STR
-static inline VALUE
-rb_sym2str(VALUE sym)
-{
-    return rb_id2str(SYM2ID(sym));
-}
-#endif
-
-#ifndef ST2FIX
-# undef RB_ST2FIX
-# define RB_ST2FIX(h) LONG2FIX((long)(h))
-# define ST2FIX(h) RB_ST2FIX(h)
-#endif
-
-#ifdef vabs
-# undef vabs
-#endif
-#if SIZEOF_VALUE <= SIZEOF_INT
-# define vabs abs
-#elif SIZEOF_VALUE <= SIZEOF_LONG
-# define vabs labs
-#elif SIZEOF_VALUE <= SIZEOF_LONG_LONG
-# define vabs llabs
-#endif
-
-#if !defined(HAVE_RB_CATEGORY_WARN) || !defined(HAVE_CONST_RB_WARN_CATEGORY_DEPRECATED)
-#   define rb_category_warn(category, ...) rb_warn(__VA_ARGS__)
 #endif
 
 extern VALUE rb_cBigDecimal;
