@@ -131,7 +131,7 @@ RSpec.describe "bundle install with explicit source paths" do
       gem 'foo', :path => File.expand_path("../foo-1.0", __FILE__)
     G
 
-    bundle "config --local frozen true"
+    bundle "config set --local frozen true"
     bundle :install
   end
 

@@ -31,6 +31,16 @@ RSpec.describe Bundler::Definition do
           to raise_error(Bundler::TemporaryResourceError, /temporarily unavailable/)
       end
     end
+    context "when Bundler::Definition.no_lock is set to true" do
+      subject { Bundler::Definition.new(nil, [], Bundler::SourceList.new, []) }
+      before { Bundler::Definition.no_lock = true }
+      after { Bundler::Definition.no_lock = false }
+
+      it "does not create a lock file" do
+        subject.lock("Gemfile.lock")
+        expect(File.file?("Gemfile.lock")).to eq false
+      end
+    end
   end
 
   describe "detects changes" do

@@ -69,8 +69,8 @@ module Bundler
                   :HTTPUnsupportedMediaType, :HTTPVersionNotSupported].freeze
     FAIL_ERRORS = begin
       fail_errors = [AuthenticationRequiredError, BadAuthenticationError, FallbackError]
-      fail_errors << Gem::Requirement::BadRequirementError if defined?(Gem::Requirement::BadRequirementError)
-      fail_errors.concat(NET_ERRORS.map {|e| SharedHelpers.const_get_safely(e, Net) }.compact)
+      fail_errors << Gem::Requirement::BadRequirementError
+      fail_errors.concat(NET_ERRORS.map {|e| Net.const_get(e) })
     end.freeze
 
     class << self

@@ -124,7 +124,7 @@ RSpec.describe "bundle check" do
       gem "rack", :group => :foo
     G
 
-    bundle "config --local without foo"
+    bundle "config set --local without foo"
     bundle :install
 
     gemfile <<-G
@@ -217,7 +217,7 @@ RSpec.describe "bundle check" do
       gem "foo"
     G
 
-    bundle "config --local deployment true"
+    bundle "config set --local deployment true"
     bundle "install"
     FileUtils.rm(bundled_app_lock)
 

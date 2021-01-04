@@ -1202,7 +1202,7 @@ RSpec.describe "the lockfile format" do
       gem "omg", :git => "#{lib_path("omg")}", :branch => 'master'
     G
 
-    bundle "config --local path vendor"
+    bundle "config set --local path vendor"
     bundle :install
     expect(the_bundle).to include_gems "omg 1.0"
 

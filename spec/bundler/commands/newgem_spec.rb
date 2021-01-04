@@ -536,7 +536,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "builds spec skeleton" do
-        expect(bundled_app("#{gem_name}/test/#{require_path}_test.rb")).to exist
+        expect(bundled_app("#{gem_name}/test/test_#{require_path}.rb")).to exist
         expect(bundled_app("#{gem_name}/test/test_helper.rb")).to exist
       end
     end
@@ -556,7 +556,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "builds spec skeleton" do
-        expect(bundled_app("#{gem_name}/test/#{require_path}_test.rb")).to exist
+        expect(bundled_app("#{gem_name}/test/test_#{require_path}.rb")).to exist
         expect(bundled_app("#{gem_name}/test/test_helper.rb")).to exist
       end
 
@@ -565,11 +565,11 @@ RSpec.describe "bundle gem" do
       end
 
       it "requires 'test_helper'" do
-        expect(bundled_app("#{gem_name}/test/#{require_path}_test.rb").read).to include(%(require "test_helper"))
+        expect(bundled_app("#{gem_name}/test/test_#{require_path}.rb").read).to include(%(require "test_helper"))
       end
 
       it "creates a default test which fails" do
-        expect(bundled_app("#{gem_name}/test/#{require_path}_test.rb").read).to include("assert false")
+        expect(bundled_app("#{gem_name}/test/test_#{require_path}.rb").read).to include("assert false")
       end
     end
 
@@ -589,7 +589,7 @@ RSpec.describe "bundle gem" do
           Rake::TestTask.new(:test) do |t|
             t.libs << "test"
             t.libs << "lib"
-            t.test_files = FileList["test/**/*_test.rb"]
+            t.test_files = FileList["test/**/test_*.rb"]
           end
 
           task default: :test

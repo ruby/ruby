@@ -7,6 +7,11 @@ module Bundler
   class Definition
     include GemHelpers
 
+    class << self
+      # Do not create or modify a lockfile (Makes #lock a noop)
+      attr_accessor :no_lock
+    end
+
     attr_reader(
       :dependencies,
       :locked_deps,
@@ -336,6 +341,8 @@ module Bundler
     end
 
     def lock(file, preserve_unknown_sections = false)
+      return if Definition.no_lock
+
       contents = to_lock
 
       # Convert to \r\n if the existing lock has them

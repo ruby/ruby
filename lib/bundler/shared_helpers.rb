@@ -109,19 +109,12 @@ module Bundler
       raise VirtualProtocolError.new
     rescue Errno::ENOSPC
       raise NoSpaceOnDeviceError.new(path, action)
-    rescue *[const_get_safely(:ENOTSUP, Errno)].compact
+    rescue Errno::ENOTSUP
       raise OperationNotSupportedError.new(path, action)
     rescue Errno::EEXIST, Errno::ENOENT
       raise
     rescue SystemCallError => e
       raise GenericSystemCallError.new(e, "There was an error accessing `#{path}`.")
-    end
-
-    def const_get_safely(constant_name, namespace)
-      const_in_namespace = namespace.constants.include?(constant_name.to_s) ||
-        namespace.constants.include?(constant_name.to_sym)
-      return nil unless const_in_namespace
-      namespace.const_get(constant_name)
     end
 
     def major_deprecation(major_version, message, print_caller_location: false)
