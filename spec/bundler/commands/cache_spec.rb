@@ -221,7 +221,7 @@ RSpec.describe "bundle cache" do
         end
       end
 
-      bundle "config --local without wo"
+      bundle "config set --local without wo"
       install_gemfile <<-G
         source "file:#{gem_repo1}"
         gem "rack"
@@ -237,7 +237,7 @@ RSpec.describe "bundle cache" do
       expect(the_bundle).to include_gem "rack 1.0"
       expect(the_bundle).not_to include_gems "weakling", "uninstallable"
 
-      bundle "config --local without wo"
+      bundle "config set --local without wo"
       bundle :install
       expect(the_bundle).to include_gem "rack 1.0"
       expect(the_bundle).not_to include_gems "weakling", "uninstallable"
@@ -254,7 +254,7 @@ RSpec.describe "bundle cache" do
     end
 
     subject do
-      bundle "config --local frozen true"
+      bundle "config set --local frozen true"
       bundle :cache, :raise_on_error => false
     end
 
@@ -304,8 +304,8 @@ RSpec.describe "bundle install with gem sources" do
       simulate_new_machine
       FileUtils.rm_rf gem_repo2
 
-      bundle "config --local deployment true"
-      bundle "config --local path vendor/bundle"
+      bundle "config set --local deployment true"
+      bundle "config set --local path vendor/bundle"
       bundle :install
       expect(the_bundle).to include_gems "rack 1.0.0"
     end

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "bundler/settings"
+require "openssl"
 
 RSpec.describe Bundler::Env do
   let(:git_proxy_stub) { Bundler::Source::Git::GitProxy.new(nil, nil, nil) }

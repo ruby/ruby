@@ -80,8 +80,8 @@ RSpec.describe "compact index api" do
     G
     bundle :install, :artifice => "compact_index"
 
-    bundle "config --local deployment true"
-    bundle "config --local path vendor/bundle"
+    bundle "config set --local deployment true"
+    bundle "config set --local path vendor/bundle"
     bundle :install, :artifice => "compact_index"
     expect(out).to include("Fetching gem metadata from #{source_uri}")
     expect(the_bundle).to include_gems "rack 1.0.0"
@@ -118,7 +118,7 @@ RSpec.describe "compact index api" do
 
     bundle :install, :artifice => "compact_index"
 
-    bundle "config --local deployment true"
+    bundle "config set --local deployment true"
     bundle :install, :artifice => "compact_index"
 
     expect(the_bundle).to include_gems("rails 2.3.2")
@@ -132,7 +132,7 @@ RSpec.describe "compact index api" do
     G
 
     bundle "install", :artifice => "compact_index"
-    bundle "config --local deployment true"
+    bundle "config set --local deployment true"
     bundle :install, :artifice => "compact_index"
 
     expect(the_bundle).to include_gems("foo 1.0")
@@ -503,7 +503,7 @@ The checksum of /versions does not match the checksum provided by the server! So
     G
 
     bundle :install, :artifice => "compact_index_extra"
-    bundle "config --local deployment true"
+    bundle "config set --local deployment true"
     bundle :install, :artifice => "compact_index_extra"
     expect(the_bundle).to include_gems "back_deps 1.0"
   end
