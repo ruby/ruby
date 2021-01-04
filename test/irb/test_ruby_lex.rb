@@ -442,5 +442,37 @@ module TestIRB
       expected_prompt_list = input_with_prompt.map(&:prompt)
       assert_dynamic_prompt(lines, expected_prompt_list)
     end
+
+    def test_broken_percent_literal
+      if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.7.0')
+        skip 'This test needs Ripper::Lexer#scan to take broken tokens'
+      end
+
+      ruby_lex = RubyLex.new
+      tokens = ruby_lex.ripper_lex_without_warning('%wwww')
+      pos_to_index = {}
+      tokens.each_with_index { |t, i|
+        assert_nil(pos_to_index[t[0]], "There is already another token in the position of #{t.inspect}.")
+        pos_to_index[t[0]] = i
+      }
+    end
+
+    def test_broken_percent_literal_in_method
+      if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.7.0')
+        skip 'This test needs Ripper::Lexer#scan to take broken tokens'
+      end
+
+      ruby_lex = RubyLex.new
+      tokens = ruby_lex.ripper_lex_without_warning(<<~EOC.chomp)
+        def foo
+          %wwww
+        end
+      EOC
+      pos_to_index = {}
+      tokens.each_with_index { |t, i|
+        assert_nil(pos_to_index[t[0]], "There is already another token in the position of #{t.inspect}.")
+        pos_to_index[t[0]] = i
+      }
+    end
   end
 end

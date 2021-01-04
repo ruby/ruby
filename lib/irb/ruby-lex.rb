@@ -66,7 +66,6 @@ class RubyLex
         unprocessed_tokens = []
         line_num_offset = 0
         tokens.each do |t|
-          next if t[1] == :on_parse_error || t[1] == :compile_error
           partial_tokens << t
           unprocessed_tokens << t
           if t[2].include?("\n")
@@ -107,13 +106,35 @@ class RubyLex
     end
   end
 
+  ERROR_TOKENS = [
+    :on_parse_error,
+    :compile_error,
+    :on_assign_error,
+    :on_alias_error,
+    :on_class_name_error,
+    :on_param_error
+  ]
+
   def ripper_lex_without_warning(code)
     verbose, $VERBOSE = $VERBOSE, nil
     tokens = nil
     self.class.compile_with_errors_suppressed(code) do |inner_code, line_no|
       lexer = Ripper::Lexer.new(inner_code, '-', line_no)
       if lexer.respond_to?(:scan) # Ruby 2.7+
-        tokens = lexer.scan
+        tokens = []
+        pos_to_index = {}
+        lexer.scan.each do |t|
+          if pos_to_index.has_key?(t[0])
+            index = pos_to_index[t[0]]
+            found_tk = tokens[index]
+            if ERROR_TOKENS.include?(found_tk[1]) && !ERROR_TOKENS.include?(t[1])
+              tokens[index] = t
+            end
+          else
+            pos_to_index[t[0]] = tokens.size
+            tokens << t
+          end
+        end
       else
         tokens = lexer.parse
       end
@@ -128,7 +149,6 @@ class RubyLex
     prev_spaces = md.nil? ? 0 : md[1].count(' ')
     line_count = 0
     @tokens.each_with_index do |t, i|
-      next if t[1] == :on_parse_error || t[1] == :compile_error
       if t[2].include?("\n")
         line_count += t[2].count("\n")
         if line_count >= line_index
@@ -357,7 +377,6 @@ class RubyLex
     indent = 0
     in_oneliner_def = nil
     tokens.each_with_index { |t, index|
-      next if t[1] == :on_parse_error || t[1] == :compile_error
       # detecting one-liner method definition
       if in_oneliner_def.nil?
         if t[3].allbits?(Ripper::EXPR_ENDFN)
@@ -443,7 +462,6 @@ class RubyLex
     open_brace_on_line = 0
     in_oneliner_def = nil
     @tokens.each_with_index do |t, index|
-      next if t[1] == :on_parse_error || t[1] == :compile_error
       # detecting one-liner method definition
       if in_oneliner_def.nil?
         if t[3].allbits?(Ripper::EXPR_ENDFN)
@@ -513,7 +531,6 @@ class RubyLex
     open_brace_on_line = 0
     in_oneliner_def = nil
     @tokens.each_with_index do |t, index|
-      next if t[1] == :on_parse_error || t[1] == :compile_error
       # detecting one-liner method definition
       if in_oneliner_def.nil?
         if t[3].allbits?(Ripper::EXPR_ENDFN)
