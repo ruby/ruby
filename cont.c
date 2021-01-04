@@ -3060,6 +3060,7 @@ Init_Cont(void)
     rb_define_alloc_func(rb_cFiber, fiber_alloc);
     rb_eFiberError = rb_define_class("FiberError", rb_eStandardError);
     rb_define_singleton_method(rb_cFiber, "yield", rb_fiber_s_yield, -1);
+    rb_define_singleton_method(rb_cFiber, "current", rb_fiber_s_current, 0);
     rb_define_method(rb_cFiber, "initialize", rb_fiber_initialize, -1);
     rb_define_method(rb_cFiber, "blocking?", rb_fiber_blocking_p, 0);
     rb_define_method(rb_cFiber, "resume", rb_fiber_m_resume, -1);
@@ -3068,6 +3069,8 @@ Init_Cont(void)
     rb_define_method(rb_cFiber, "backtrace_locations", rb_fiber_backtrace_locations, -1);
     rb_define_method(rb_cFiber, "to_s", fiber_to_s, 0);
     rb_define_alias(rb_cFiber, "inspect", "to_s");
+    rb_define_method(rb_cFiber, "transfer", rb_fiber_m_transfer, -1);
+    rb_define_method(rb_cFiber, "alive?", rb_fiber_alive_p, 0);
 
     rb_define_singleton_method(rb_cFiber, "blocking?", rb_f_fiber_blocking_p, 0);
     rb_define_singleton_method(rb_cFiber, "scheduler", rb_fiber_scheduler, 0);
@@ -3092,6 +3095,8 @@ Init_Cont(void)
     rb_define_alloc_func(rb_cFiberPool, fiber_pool_alloc);
     rb_define_method(rb_cFiberPool, "initialize", rb_fiber_pool_initialize, -1);
 #endif
+
+    rb_provide("fiber.so");
 }
 
 RUBY_SYMBOL_EXPORT_BEGIN
@@ -3105,17 +3110,6 @@ ruby_Init_Continuation_body(void)
     rb_define_method(rb_cContinuation, "call", rb_cont_call, -1);
     rb_define_method(rb_cContinuation, "[]", rb_cont_call, -1);
     rb_define_global_function("callcc", rb_callcc, 0);
-}
-
-void
-ruby_Init_Fiber_as_Coroutine(void)
-{
-#ifdef HAVE_RB_EXT_RACTOR_SAFE
-    rb_ext_ractor_safe(true);
-#endif
-    rb_define_method(rb_cFiber, "transfer", rb_fiber_m_transfer, -1);
-    rb_define_method(rb_cFiber, "alive?", rb_fiber_alive_p, 0);
-    rb_define_singleton_method(rb_cFiber, "current", rb_fiber_s_current, 0);
 }
 
 RUBY_SYMBOL_EXPORT_END
