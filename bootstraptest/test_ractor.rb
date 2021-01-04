@@ -967,6 +967,18 @@ assert_equal 'can not access non-shareable objects in constant C::CONST by non-m
   end
 }
 
+# Constant cache should care about non-sharable constants
+assert_equal "can not access non-shareable objects in constant Object::STR by non-main Ractor.", %q{
+  STR = "hello"
+  def str; STR; end
+  s = str() # fill const cache
+  begin
+    Ractor.new{ str() }.take
+  rescue Ractor::RemoteError => e
+    e.cause.message
+  end
+}
+
 # Setting non-shareable objects into constants by other Ractors is not allowed
 assert_equal 'can not set constants with non-shareable objects by non-main Ractors', %q{
   class C

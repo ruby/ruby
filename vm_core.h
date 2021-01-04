@@ -218,10 +218,18 @@ struct rb_control_frame_struct;
 /* iseq data type */
 typedef struct rb_compile_option_struct rb_compile_option_t;
 
-struct iseq_inline_cache_entry {
-    rb_serial_t ic_serial;
-    const rb_cref_t *ic_cref;
-    VALUE value;
+// imemo_constcache
+struct iseq_inline_constant_cache_entry {
+    VALUE flags;
+
+    VALUE value;              // v0
+    const rb_cref_t *ic_cref; // v1
+    rb_serial_t ic_serial;    // v2
+                              // v3
+};
+
+struct iseq_inline_constant_cache {
+    struct iseq_inline_constant_cache_entry *entry;
 };
 
 struct iseq_inline_iv_cache_entry {
@@ -233,7 +241,7 @@ union iseq_inline_storage_entry {
 	struct rb_thread_struct *running_thread;
 	VALUE value;
     } once;
-    struct iseq_inline_cache_entry cache;
+    struct iseq_inline_constant_cache ic_cache;
     struct iseq_inline_iv_cache_entry iv_cache;
 };
 
@@ -1126,7 +1134,7 @@ enum vm_svar_index {
 };
 
 /* inline cache */
-typedef struct iseq_inline_cache_entry *IC;
+typedef struct iseq_inline_constant_cache *IC;
 typedef struct iseq_inline_iv_cache_entry *IVC;
 typedef union iseq_inline_storage_entry *ISE;
 typedef const struct rb_callinfo *CALL_INFO;

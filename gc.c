@@ -2398,6 +2398,7 @@ rb_imemo_name(enum imemo_type type)
         IMEMO_NAME(parser_strterm);
         IMEMO_NAME(callinfo);
         IMEMO_NAME(callcache);
+        IMEMO_NAME(constcache);
 #undef IMEMO_NAME
     }
     return "unknown";
@@ -3102,9 +3103,9 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
           case imemo_callcache:
             RB_DEBUG_COUNTER_INC(obj_imemo_callcache);
             break;
-	  default:
-            /* unreachable */
-	    break;
+          case imemo_constcache:
+            RB_DEBUG_COUNTER_INC(obj_imemo_constcache);
+            break;
 	}
 	return 0;
 
@@ -6260,6 +6261,12 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
             gc_mark(objspace, (VALUE)vm_cc_cme(cc));
         }
         return;
+      case imemo_constcache:
+        {
+            const struct iseq_inline_constant_cache_entry *ice = (struct iseq_inline_constant_cache_entry *)obj;
+            gc_mark(objspace, ice->value);
+        }
+        return;
 #if VM_CHECK_MODE > 0
       default:
 	VM_UNREACHABLE(gc_mark_imemo);
@@ -8983,6 +8990,12 @@ gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
                     *((struct rb_callable_method_entry_struct **)(&cc->cme_)) = (struct rb_callable_method_entry_struct *)0;
                 }
             }
+        }
+        break;
+      case imemo_constcache:
+        {
+            const struct iseq_inline_constant_cache_entry *ice = (struct iseq_inline_constant_cache_entry *)obj;
+            UPDATE_IF_MOVED(objspace, ice->value);
         }
         break;
       case imemo_parser_strterm:

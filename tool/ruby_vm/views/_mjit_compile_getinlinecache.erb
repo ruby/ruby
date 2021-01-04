@@ -12,11 +12,13 @@
 % end
 
 % # compiler: Capture IC values, locking getinlinecache
-    rb_mjit_before_vm_ic_update();
-    rb_serial_t ic_serial = ic->ic_serial;
-    const rb_cref_t *ic_cref = ic->ic_cref;
-    VALUE ic_value = ic->value;
-    rb_mjit_after_vm_ic_update();
+    struct iseq_inline_constant_cache_entry *ice = ic->entry;
+    if (ice == NULL) {
+        goto getinlinecache_cancel;
+    }
+    rb_serial_t ic_serial = ice->ic_serial;
+    const rb_cref_t *ic_cref = ice->ic_cref;
+    VALUE ic_value = ice->value;
 
     if (ic_serial && !status->compile_info->disable_const_cache) {
 %       # JIT: Inline everything in IC, and cancel the slow path
@@ -34,3 +36,4 @@
         b->stack_size += <%= insn.call_attribute('sp_inc') %>;
         break;
     }
+    getinlinecache_cancel:;

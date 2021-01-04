@@ -1023,9 +1023,10 @@ opt_getinlinecache
 ()
 (VALUE val)
 {
-    if (vm_ic_hit_p(ic->ic_serial, ic->ic_cref, GET_EP())) {
-	val = ic->value;
-	JUMP(dst);
+    struct iseq_inline_constant_cache_entry *ice = ic->entry;
+    if (ice && vm_ic_hit_p(ice, GET_EP())) {
+        val = ice->value;
+        JUMP(dst);
     }
     else {
 	val = Qnil;
@@ -1039,7 +1040,7 @@ opt_setinlinecache
 (VALUE val)
 (VALUE val)
 {
-    vm_ic_update(ic, val, GET_EP());
+    vm_ic_update(GET_ISEQ(), ic, val, GET_EP());
 }
 
 /* run iseq only once */
