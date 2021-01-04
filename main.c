@@ -29,9 +29,6 @@
 #if defined RUBY_DEBUG_ENV && !RUBY_DEBUG_ENV
 # undef RUBY_DEBUG_ENV
 #endif
-#ifdef RUBY_DEBUG_ENV
-#include <stdlib.h>
-#endif
 
 int
 main(int argc, char **argv)
