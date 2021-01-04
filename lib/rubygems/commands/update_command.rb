@@ -19,9 +19,13 @@ class Gem::Commands::UpdateCommand < Gem::Command
   attr_reader :updated # :nodoc:
 
   def initialize
-    super 'update', 'Update installed gems to the latest version',
-      :document => %w[rdoc ri],
-      :force    => false
+    options = {
+      :force => false,
+    }
+
+    options.merge!(install_update_options)
+
+    super 'update', 'Update installed gems to the latest version', options
 
     add_install_update_options
 
@@ -51,7 +55,8 @@ class Gem::Commands::UpdateCommand < Gem::Command
   end
 
   def defaults_str # :nodoc:
-    "--document --no-force --install-dir #{Gem.dir}"
+    "--no-force --install-dir #{Gem.dir}\n" +
+    install_update_defaults_str
   end
 
   def description # :nodoc:

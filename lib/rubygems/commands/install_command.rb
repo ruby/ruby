@@ -27,6 +27,8 @@ class Gem::Commands::InstallCommand < Gem::Command
       :without_groups    => [],
     })
 
+    defaults.merge!(install_update_options)
+
     super 'install', 'Install a gem into the local repository', defaults
 
     add_install_update_options
@@ -43,8 +45,9 @@ class Gem::Commands::InstallCommand < Gem::Command
   end
 
   def defaults_str # :nodoc:
-    "--both --version '#{Gem::Requirement.default}' --document --no-force\n" +
-    "--install-dir #{Gem.dir} --lock"
+    "--both --version '#{Gem::Requirement.default}' --no-force\n" +
+    "--install-dir #{Gem.dir} --lock\n" +
+    install_update_defaults_str
   end
 
   def description # :nodoc:

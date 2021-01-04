@@ -1200,10 +1200,8 @@ dependencies: []
     Gem.platforms = orig_platform
   end
 
-  DATA_PATH = File.expand_path "../data", __FILE__
-
   def test_handles_private_null_type
-    path = File.join DATA_PATH, "null-type.gemspec.rz"
+    path = File.expand_path "../data/null-type.gemspec.rz", __FILE__
 
     data = Marshal.load Gem::Util.inflate(Gem.read_binary(path))
 

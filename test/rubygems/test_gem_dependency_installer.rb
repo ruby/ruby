@@ -946,6 +946,31 @@ class TestGemDependencyInstaller < Gem::TestCase
     assert_equal %w[d-2], inst.installed_gems.map {|s| s.full_name }
   end
 
+  def test_install_legacy_spec_with_nil_required_rubygems_version
+    path = File.expand_path "../data/null-required-rubygems-version.gemspec.rz", __FILE__
+    spec = Marshal.load Gem.read_binary(path)
+    def spec.validate(*args); end
+
+    util_build_gem spec
+
+    cache_file = File.join @tempdir, 'gems', "#{spec.original_name}.gem"
+    FileUtils.mkdir_p File.dirname cache_file
+    FileUtils.mv spec.cache_file, cache_file
+
+    util_setup_spec_fetcher spec
+
+    data = Gem.read_binary(cache_file)
+
+    @fetcher.data['http://gems.example.com/gems/activesupport-1.0.0.gem'] = data
+
+    dep = Gem::Dependency.new 'activesupport'
+
+    inst = Gem::DependencyInstaller.new
+    inst.install dep
+
+    assert_equal %w[activesupport-1.0.0], Gem::Specification.map(&:full_name)
+  end
+
   def test_find_gems_gems_with_sources
     util_setup_gems
 
@@ -1102,45 +1127,9 @@ class TestGemDependencyInstaller < Gem::TestCase
     assert_equal %w[a-1], requests
   end
 
-  def util_write_a1_bin
-    write_file File.join('gems', 'a-1', 'bin', 'a_bin') do |fp|
-      fp.puts "#!/usr/bin/ruby"
-    end
-  end
-
-  def util_setup_c1_pre
-    @c1_pre, @c1_pre_gem = util_spec 'c', '1.a' do |s|
-      s.add_dependency 'a', '1.a'
-      s.add_dependency 'b', '1'
-    end
-
-    util_reset_gems
-  end
-
   def util_setup_d
     @d1, @d1_gem = util_gem 'd', '1'
     @d2, @d2_gem = util_gem 'd', '2'
-
-    util_reset_gems
-  end
-
-  def util_setup_wxyz
-    @x1_m, @x1_m_gem = util_spec 'x', '1' do |s|
-      s.platform = Gem::Platform.new %w[cpu my_platform 1]
-    end
-
-    @x1_o, @x1_o_gem = util_spec 'x', '1' do |s|
-      s.platform = Gem::Platform.new %w[cpu other_platform 1]
-    end
-
-    @w1, @w1_gem = util_spec 'w', '1', 'x' => nil
-
-    @y1, @y1_gem = util_spec 'y', '1'
-    @y1_1_p, @y1_1_p_gem = util_spec 'y', '1.1' do |s|
-      s.platform = Gem::Platform.new %w[cpu my_platform 1]
-    end
-
-    @z1, @z1_gem = util_spec 'z', '1', 'y' => nil
 
     util_reset_gems
   end
@@ -1149,18 +1138,9 @@ class TestGemDependencyInstaller < Gem::TestCase
     @a1     ||= nil
     @b1     ||= nil
     @a1_pre ||= nil
-    @c1_pre ||= nil
     @d1     ||= nil
     @d2     ||= nil
-    @w1     ||= nil
-    @x1_m   ||= nil
-    @x1_o   ||= nil
-    @y1     ||= nil
-    @y1_1_p ||= nil
-    @z1     ||= nil
 
-    util_setup_spec_fetcher(*[@a1, @a1_pre, @b1, @c1_pre,
-                              @d1, @d2, @x1_m, @x1_o, @w1, @y1,
-                              @y1_1_p, @z1].compact)
+    util_setup_spec_fetcher(*[@a1, @a1_pre, @b1, @d1, @d2].compact)
   end
 end
