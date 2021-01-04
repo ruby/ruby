@@ -799,18 +799,15 @@ proc_new(VALUE klass, int8_t is_lambda, int8_t kernel)
 /*
  *  call-seq:
  *     Proc.new {|...| block } -> a_proc
- *     Proc.new                -> a_proc
  *
- *  Creates a new Proc object, bound to the current context. Proc::new
- *  may be called without a block only within a method with an
- *  attached block, in which case that block is converted to the Proc
- *  object.
+ *  Creates a new Proc object, bound to the current context.
  *
- *     def proc_from
- *       Proc.new
- *     end
- *     proc = proc_from { "hello" }
+ *     proc = Proc.new { "hello" }
  *     proc.call   #=> "hello"
+ *
+ *  Raises ArgumentError if called without a block.
+ *
+ *     Proc.new    #=> ArgumentError
  */
 
 static VALUE
