@@ -4187,7 +4187,7 @@ enum_uniq(VALUE obj)
  * - {Searching}[#module-Enumerable-label-Methods+for+Searching]
  * - {Sorting}[#module-Enumerable-label-Methods+for+Sorting]
  * - {Iterating}[#module-Enumerable-label-Methods+for+Iterating]
- * - {Filtering}[#module-Enumerable-label-Methods+for+Filtering]
+ * - {And more....}[#module-Enumerable-label-Other+Methods]
  *
  * === Methods for Querying
  *
@@ -4242,8 +4242,6 @@ enum_uniq(VALUE obj)
  *
  * #find, #detect::              Returns an element selected by the block.
  * #find_all, #filter, #select:: Returns elements selected by the block.
- * #grep::                       Returns elements selected by a given object or block.
- * #grep_v::                     Returns elements selected by a given object or block.
  * #find_index::                 Returns the index of an element selected by a given object or block.
  * #reject::                     Returns elements not rejected by the block.
  * #uniq::                       Returns elements that are not duplicates.
@@ -4271,6 +4269,10 @@ enum_uniq(VALUE obj)
  * #map, #collect::             Returns objects returned by the block.
  * #filter_map::                Returns truthy objects returned by the block.
  * #flat_map, #collect_concat:: Returns flattened objects returned by the block.
+ * #grep::                      Returns elements selected by a given object
+ *                              or objects returned by a given block.
+ * #grep_v::                    Returns elements selected by a given object
+ *                              or objects returned by a given block.
  * #reduce, #inject::           Returns the object formed by combining all elements.
  * #sum::                       Returns the sum of the elements, using method +++.
  * #zip::                       Combines each element with elements from other enumerables;
@@ -4285,13 +4287,9 @@ enum_uniq(VALUE obj)
  * - Implement method <tt>#each</tt>
  *   which must yield successive elements of the collection.
  *   This method will be called by almost any \Enumerable method.
- * - Implement method <tt><=></tt> (or just inherit
- *   {Object#<=>}[https://ruby-doc.org/core/Object.html#method-i-3C-3D-3E]).
- *   The method will be called by many \Enumerable methods, including
- *   <tt>#max</tt>, <tt>#min</tt>, and <tt>#sort</tt>.
  *
  * == \Enumerable in Ruby Core Classes
- * Some Ruby classes include module \Enumerable:
+ * Some Ruby classes include \Enumerable:
  * - Array
  * - Dir
  * - Hash
