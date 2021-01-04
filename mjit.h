@@ -107,15 +107,6 @@ extern void mjit_mark_cc_entries(const struct rb_iseq_constant_body *const body)
 // takes too much time to be compiled.
 #define JIT_ISEQ_SIZE_THRESHOLD 1000
 
-// Return TRUE if given ISeq body should be compiled by MJIT
-static inline int
-mjit_target_iseq_p(struct rb_iseq_constant_body *body)
-{
-    return (body->type == ISEQ_TYPE_METHOD || body->type == ISEQ_TYPE_BLOCK)
-        && !body->builtin_inline_p
-        && body->iseq_size < JIT_ISEQ_SIZE_THRESHOLD;
-}
-
 #  ifdef MJIT_HEADER
 NOINLINE(static COLDFUNC VALUE mjit_exec_slowpath(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_iseq_constant_body *body));
 #  else
@@ -129,7 +120,7 @@ mjit_exec_slowpath(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_
     switch ((enum rb_mjit_iseq_func)func_i) {
       case NOT_ADDED_JIT_ISEQ_FUNC:
         RB_DEBUG_COUNTER_INC(mjit_exec_not_added);
-        if (body->total_calls == mjit_opts.min_calls && mjit_target_iseq_p(body)) {
+        if (body->total_calls == mjit_opts.min_calls) {
             rb_mjit_add_iseq_to_process(iseq);
             if (UNLIKELY(mjit_opts.wait)) {
                 return rb_mjit_wait_call(ec, body);

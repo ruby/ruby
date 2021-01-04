@@ -263,11 +263,25 @@ create_unit(const rb_iseq_t *iseq)
     iseq->body->jit_unit = unit;
 }
 
+// Return true if given ISeq body should be compiled by MJIT
+static inline int
+mjit_target_iseq_p(struct rb_iseq_constant_body *body)
+{
+    return (body->type == ISEQ_TYPE_METHOD || body->type == ISEQ_TYPE_BLOCK)
+        && !body->builtin_inline_p
+        && body->iseq_size < JIT_ISEQ_SIZE_THRESHOLD;
+}
+
 static void
 mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_info *compile_info)
 {
     if (!mjit_enabled || pch_status == PCH_FAILED)
         return;
+
+    if (!mjit_target_iseq_p(iseq->body)) {
+        iseq->body->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC; // skip mjit_wait
+        return;
+    }
 
     RB_DEBUG_COUNTER_INC(mjit_add_iseq_to_process);
     iseq->body->jit_func = (mjit_func_t)NOT_READY_JIT_ISEQ_FUNC;
