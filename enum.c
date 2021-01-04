@@ -4196,10 +4196,10 @@ compact_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
  *  Returns an array of all non-+nil+ elements from enumeration.
  *
  *      def with_nils
- *          yield 1
- *          yield 2
- *          yield nil
- *          yield 3
+ *        yield 1
+ *        yield 2
+ *        yield nil
+ *        yield 3
  *      end
  *
  *      to_enum(:with_nils).compact
