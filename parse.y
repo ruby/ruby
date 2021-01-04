@@ -8659,7 +8659,8 @@ parse_percent(struct parser_params *p, const int space_seen, const enum lex_stat
 
 	c = nextc(p);
       quotation:
-	if (c == -1 || !ISALNUM(c)) {
+	if (c == -1) goto unterminated;
+	if (!ISALNUM(c)) {
 	    term = c;
 	    if (!ISASCII(c)) goto unknown;
 	    c = 'Q';
@@ -8677,6 +8678,7 @@ parse_percent(struct parser_params *p, const int space_seen, const enum lex_stat
 	    }
 	}
 	if (term == -1) {
+	  unterminated:
 	    compile_error(p, "unterminated quoted string meets end of file");
 	    return 0;
 	}
