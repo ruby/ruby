@@ -3275,7 +3275,7 @@ incremental_enable(VALUE _)
  *       This means that you can not walk through all Ruby object page
  *       including freed object page.
  *
- * Note: On this implementation, 'stride' is same as sizeof(RVALUE).
+ * Note: On this implementation, 'stride' is the same as sizeof(RVALUE).
  *       However, there are possibilities to pass variable values with
  *       'stride' with some reasons.  You must use stride instead of
  *       use some constant value in the iteration.

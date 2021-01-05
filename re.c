@@ -1113,7 +1113,7 @@ match_regexp(VALUE match)
  *    mtch.names   -> [name1, name2, ...]
  *
  * Returns a list of names of captures as an array of strings.
- * It is same as mtch.regexp.names.
+ * This is the same as mtch.regexp.names.
  *
  *     /(?<foo>.)(?<bar>.)(?<baz>.)/.match("hoge").names
  *     #=> ["foo", "bar", "baz"]

@@ -271,7 +271,7 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
 	int flags = O_RDWR|O_NOCTTY;
 # if defined(O_CLOEXEC)
 	/* glibc posix_openpt() in GNU/Linux calls open("/dev/ptmx", flags) internally.
-	 * So version dependency on GNU/Linux is same as O_CLOEXEC with open().
+	 * So version dependency on GNU/Linux is the same as O_CLOEXEC with open().
 	 * O_CLOEXEC is available since Linux 2.6.23.  Linux 2.6.18 silently ignore it. */
 	flags |= O_CLOEXEC;
 # endif

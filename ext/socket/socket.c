@@ -1154,7 +1154,7 @@ sock_s_getservbyport(int argc, VALUE *argv, VALUE _)
  * be one of below.  If _reverse_lookup_ is omitted, the default value is +nil+.
  *
  *   +true+, +:hostname+:  hostname is obtained from numeric address using reverse lookup, which may take a time.
- *   +false+, +:numeric+:  hostname is same as numeric address.
+ *   +false+, +:numeric+:  hostname is the same as numeric address.
  *   +nil+:              obey to the current +do_not_reverse_lookup+ flag.
  *
  * If Addrinfo object is preferred, use Addrinfo.getaddrinfo.

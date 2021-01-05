@@ -2226,7 +2226,7 @@ fiber_switch(rb_fiber_t *fiber, int argc, const VALUE *argv, int kw_splat, VALUE
 
     if (th->ec->fiber_ptr == fiber) {
         /* ignore fiber context switch
-         * because destination fiber is same as current fiber
+         * because destination fiber is the same as current fiber
          */
         return make_passing_arg(argc, argv);
     }

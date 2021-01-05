@@ -809,7 +809,7 @@ math_erfc(VALUE unused_obj, VALUE x)
  *
  *  Calculates the gamma function of x.
  *
- *  Note that gamma(n) is same as fact(n-1) for integer n > 0.
+ *  Note that gamma(n) is the same as fact(n-1) for integer n > 0.
  *  However gamma(n) returns float and can be an approximation.
  *
  *   def fact(n) (1..n).inject(1) {|r,i| r*i } end
@@ -900,9 +900,9 @@ math_gamma(VALUE unused_obj, VALUE x)
  *
  *  Calculates the logarithmic gamma of +x+ and the sign of gamma of +x+.
  *
- *  Math.lgamma(x) is same as
+ *  Math.lgamma(x) is the same as
  *   [Math.log(Math.gamma(x).abs), Math.gamma(x) < 0 ? -1 : 1]
- *  but avoid overflow by Math.gamma(x) for large x.
+ *  but avoids overflow by Math.gamma(x) for large x.
  *
  *    Math.lgamma(0) #=> [Infinity, 1]
  *

@@ -1704,7 +1704,7 @@ eval_string_wrap_protect(VALUE data)
 
 /**
  * Evaluates the given string under a module binding in an isolated binding.
- * This is same as the binding for loaded libraries on "load('foo', true)".
+ * This is the same as the binding for loaded libraries on "load('foo', true)".
  *
  * __FILE__ will be "(eval)", and __LINE__ starts from 1 in the evaluation.
  *

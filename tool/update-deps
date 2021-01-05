@@ -20,7 +20,7 @@
 # Other usages:
 #   *  Fix makefiles using previously detected dependency problems
 #      Ex.  ruby tool/update-deps --actual-fix [file]
-#      "ruby tool/update-deps --fix" is same as "ruby tool/update-deps | ruby tool/update-deps --actual-fix".
+#      "ruby tool/update-deps --fix" is the same as "ruby tool/update-deps | ruby tool/update-deps --actual-fix".
 
 require 'optparse'
 require 'stringio'

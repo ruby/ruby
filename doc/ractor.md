@@ -192,7 +192,7 @@ For message sending and receiving, there are two types APIs: push type and pull 
 * (1-1) send/receive (push type)
   * `Ractor#send(obj)` (`Ractor#<<(obj)` is an aliases) send a message to the Ractor's incoming port. Incoming port is connected to the infinite size incoming queue so `Ractor#send` will never block.
   * `Ractor.receive` dequeue a message from its own incoming queue. If the incoming queue is empty, `Ractor.receive` calling will block.
-  * `Ractor.receive_if{|msg| filter_expr }` is variant of `Ractor.receive`. `receive_if` only receives a message which `filter_expr` is true (So `Ractor.receive` is same as `Ractor.receive_if{ true }`.
+  * `Ractor.receive_if{|msg| filter_expr }` is variant of `Ractor.receive`. `receive_if` only receives a message which `filter_expr` is true (So `Ractor.receive` is the same as `Ractor.receive_if{ true }`.
 * (1-2) yield/take (pull type)
   * `Ractor.yield(obj)` send an message to a Ractor which are calling `Ractor#take` via outgoing port . If no Ractors are waiting for it, the `Ractor.yield(obj)` will block. If multiple Ractors are waiting for `Ractor.yield(obj)`, only one Ractor can receive the message.
   * `Ractor#take` receives a message which is waiting by `Ractor.yield(obj)` method from the specified Ractor. If the Ractor does not call `Ractor.yield` yet, the `Ractor#take` call will block.

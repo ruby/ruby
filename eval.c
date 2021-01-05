@@ -1062,7 +1062,7 @@ rb_vrescue2(VALUE (* b_proc) (VALUE), VALUE data1,
  *
  * Equivalent to <code>begin .. rescue .. end</code>.
  *
- * It is same as
+ * It is the same as
  * \code{cpp}
  * rb_rescue2(b_proc, data1, r_proc, data2, rb_eStandardError, (VALUE)0);
  * \endcode

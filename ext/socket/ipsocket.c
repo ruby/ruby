@@ -258,7 +258,7 @@ ip_inspect(VALUE sock)
  * If +reverse_lookup+ is +true+ or +:hostname+,
  * hostname is obtained from numeric_address using reverse lookup.
  * Or if it is +false+, or +:numeric+,
- * hostname is same as numeric_address.
+ * hostname is the same as numeric_address.
  * Or if it is +nil+ or omitted, obeys to +ipsocket.do_not_reverse_lookup+.
  * See +Socket.getaddrinfo+ also.
  *
@@ -299,7 +299,7 @@ ip_addr(int argc, VALUE *argv, VALUE sock)
  * If +reverse_lookup+ is +true+ or +:hostname+,
  * hostname is obtained from numeric_address using reverse lookup.
  * Or if it is +false+, or +:numeric+,
- * hostname is same as numeric_address.
+ * hostname is the same as numeric_address.
  * Or if it is +nil+ or omitted, obeys to +ipsocket.do_not_reverse_lookup+.
  * See +Socket.getaddrinfo+ also.
  *
@@ -341,7 +341,7 @@ ip_peeraddr(int argc, VALUE *argv, VALUE sock)
  *
  * _flags_ should be a bitwise OR of Socket::MSG_* constants.
  *
- * ipaddr is same as IPSocket#{peeraddr,addr}.
+ * ipaddr is the same as IPSocket#{peeraddr,addr}.
  *
  *   u1 = UDPSocket.new
  *   u1.bind("127.0.0.1", 4913)
