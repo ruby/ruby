@@ -450,6 +450,18 @@ begin
       EOC
     end
 
+    def test_broken_prompt_list
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl --broken-dynamic-prompt}, startup_message: 'Multiline REPL.')
+      write("def hoge\n  3\nend")
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        [0000]> def hoge
+        [0001]>   3
+        [0001]> end
+      EOC
+    end
+
     def test_enable_bracketed_paste
       omit if Reline::IOGate.win?
       write_inputrc <<~LINES
