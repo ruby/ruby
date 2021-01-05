@@ -84,9 +84,10 @@ REPOSITORIES = {
 }
 
 def sync_default_gems(gem)
-  puts "Sync #{REPOSITORIES[gem.to_sym]}"
+  repo = REPOSITORIES[gem.to_sym]
+  puts "Sync #{repo}"
 
-  upstream = File.join("..", "..", REPOSITORIES[gem.to_sym])
+  upstream = File.join("..", "..", repo)
 
   case gem
   when "rubygems"
@@ -342,11 +343,12 @@ IGNORE_FILE_PATTERN =
   )\z/x
 
 def sync_default_gems_with_commits(gem, ranges, edit: nil)
-  puts "Sync #{REPOSITORIES[gem.to_sym]} with commit history."
+  repo = REPOSITORIES[gem.to_sym]
+  puts "Sync #{repo} with commit history."
 
   IO.popen(%W"git remote") do |f|
     unless f.read.split.include?(gem)
-      `git remote add #{gem} git@github.com:#{REPOSITORIES[gem.to_sym]}.git`
+      `git remote add #{gem} git@github.com:#{repo}.git`
     end
   end
   system(*%W"git fetch --no-tags #{gem}")
@@ -376,7 +378,7 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
   ENV["FILTER_BRANCH_SQUELCH_WARNING"] = "1"
 
   commits.each do |sha, subject|
-    puts "Pick #{sha} from #{REPOSITORIES[gem.to_sym]}."
+    puts "Pick #{sha} from #{repo}."
 
     skipped = false
     result = IO.popen(%W"git cherry-pick #{sha}", &:read)
@@ -421,9 +423,8 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
 
     puts "Update commit message: #{sha}"
 
-    prefix = "[#{(REPOSITORIES[gem.to_sym])}]".gsub(/\//, '\/')
-    suffix = "https://github.com/#{(REPOSITORIES[gem.to_sym])}/commit/#{sha[0,10]}"
-    `git filter-branch -f --msg-filter 'grep "" - | sed "1s/^/#{prefix} /" && echo && echo #{suffix}' -- HEAD~1..HEAD`
+    suffix = "https://github.com/#{repo}/commit/#{sha[0,10]}"
+    `git filter-branch -f --msg-filter 'grep "" - | sed "1s|^|[#{repo}] |" && echo && echo #{suffix}' -- HEAD~1..HEAD`
     unless $?.success?
       puts "Failed to modify commit message of #{sha}"
       break
