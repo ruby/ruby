@@ -220,6 +220,6 @@ Init_monitor(void)
     rb_define_method(rb_cMonitor, "mon_check_owner", monitor_check_owner, 0);
     rb_define_method(rb_cMonitor, "mon_owned?", monitor_owned_p, 0);
 
-    /* internal methods for MonitorMixin::ConditionalVariable */
+    /* internal methods for MonitorMixin::ConditionVariable */
     rb_define_method(rb_cMonitor, "wait_for_cond", monitor_wait_for_cond, 2);
 }
