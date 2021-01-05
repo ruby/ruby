@@ -1562,7 +1562,7 @@ static VALUE
 str_chomp(VALUE str)
 {
     if (!NIL_P(str)) {
-	str = rb_funcallv(str, rb_intern("chomp!"), 0, 0);
+	rb_funcallv(str, rb_intern("chomp!"), 0, 0);
     }
     return str;
 }
