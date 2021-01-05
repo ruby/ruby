@@ -132,21 +132,23 @@ enum_grep0(VALUE obj, VALUE pat, VALUE test)
 }
 
 /*
- *  call-seq:
- *     enum.grep(pattern)                  -> array
- *     enum.grep(pattern) { |obj| block }  -> array
+ * call-seq:
+ *   grep(object) -> new_array
+ *   grep(object) {|element| ... } -> new_array
  *
- *  Returns an array of every element in <i>enum</i> for which
- *  <code>Pattern === element</code>. If the optional <em>block</em> is
- *  supplied, each matching element is passed to it, and the block's
- *  result is stored in the output array.
+ * Returns a new \Array selected by a given object or block.
  *
- *     (1..100).grep 38..44   #=> [38, 39, 40, 41, 42, 43, 44]
- *     c = IO.constants
- *     c.grep(/SEEK/)         #=> [:SEEK_SET, :SEEK_CUR, :SEEK_END]
- *     res = c.grep(/SEEK/) { |v| IO.const_get(v) }
- *     res                    #=> [0, 1, 2]
- *
+ * With no block given, returns a new \Array containing each element
+ * for which <tt>object === element</tt> is +true+:
+ *   a = IO.constants
+ *   a.grep(/SEEK/) # => [:SEEK_END, :SEEK_SET, :SEEK_CUR]
+ *   (1..10).grep(3..8) # => [3, 4, 5, 6, 7, 8]
+ *   ['a', 'b', 0, 1].grep(Integer) # => [0, 1]
+ * With block given,
+ * calls the block with each element, returns a new \Array containing each
+ * object returned by the block:
+ *   a = IO.constants
+ *   a.grep(/SEEK/) {|element| IO.const_get(element) } # => [0, 1, 2]
  */
 
 static VALUE
@@ -156,18 +158,24 @@ enum_grep(VALUE obj, VALUE pat)
 }
 
 /*
- *  call-seq:
- *     enum.grep_v(pattern)                  -> array
- *     enum.grep_v(pattern) { |obj| block }  -> array
+ * call-seq:
+ *   grep_v(object) -> new_array
+ *   grep_v(object) {|element| ... } -> new_array
  *
- *  Inverted version of Enumerable#grep.
- *  Returns an array of every element in <i>enum</i> for which
- *  not <code>Pattern === element</code>.
+ * Returns a new \Array selected by a given object or block.
  *
- *     (1..10).grep_v 2..5   #=> [1, 6, 7, 8, 9, 10]
- *     res =(1..10).grep_v(2..5) { |v| v * 2 }
- *     res                    #=> [2, 12, 14, 16, 18, 20]
- *
+ * With no block given, returns a new \Array containing each element
+ * for which <tt>object === element</tt> is +false+:
+ *   a = Float.constants
+ *   a.grep_v(/MIN|MAX/) # => [:ROUNDS, :RADIX, :MANT_DIG, :DIG, :EPSILON, :INFINITY, :NAN]
+ *   (1..10).grep_v(3..8) # => [1, 2, 9, 10]
+ *   a = ['a', 'b', 0, 1].grep_v(Integer) # => ["a", "b"]
+ * With a block given,
+ * calls the block with each element, returns a new \Array containing each
+ * object returned by the block:
+ *   a = Float.constants
+ *   a1 = a.grep_v(/MIN|MAX/) {|element| Float.const_get(element) }
+ *   a1 # => [1, 2, 53, 15, 2.220446049250313e-16, Infinity, NaN]
  */
 
 static VALUE
@@ -238,21 +246,23 @@ count_all_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
 }
 
 /*
- *  call-seq:
- *     enum.count                 -> int
- *     enum.count(item)           -> int
- *     enum.count { |obj| block } -> int
+ * call-seq:
+ *   count -> integer
+ *   count(object) -> integer
+ *   count {|element| ... } -> integer
  *
- *  Returns the number of items in +enum+ through enumeration.
- *  If an argument is given, the number of items in +enum+ that
- *  are equal to +item+ are counted.  If a block is given, it
- *  counts the number of elements yielding a true value.
+ * Returns the count of elements, based on an argument or block criterion, if given.
  *
- *     ary = [1, 2, 4, 2]
- *     ary.count               #=> 4
- *     ary.count(2)            #=> 2
- *     ary.count{ |x| x%2==0 } #=> 3
- *
+ * With no argument and no block given, returns the number of elements:
+ *   [0, 1, 2].count # => 3
+ *   {foo: 0, bar: 1, baz: 2}.count # => 3
+ * With argument +object+ given,
+ * returns the number of elements that are <tt>==</tt> to +object+:
+ *   [0, 1, 2, 1].count(1) # => 2
+ * With a block given, calls the block with each element
+ * and returns the number of elements for which the block returns a truthy value:
+ *   [0, 1, 2, 3].count {|element| element < 2} # => 2
+ *   {foo: 0, bar: 1, baz: 2}.count {|key, value| value < 2} # => 2
  */
 
 static VALUE
@@ -298,29 +308,27 @@ find_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
 }
 
 /*
- *  call-seq:
- *     enum.detect(ifnone = nil) { |obj| block } -> obj or nil
- *     enum.find(ifnone = nil)   { |obj| block } -> obj or nil
- *     enum.detect(ifnone = nil)                 -> an_enumerator
- *     enum.find(ifnone = nil)                   -> an_enumerator
+ * call-seq:
+ *   find(if_none_proc = nil) {|element| ... } -> obj or nil
+ *   find(if_none_proc = nil) -> new_enumerator
  *
- *  Passes each entry in <i>enum</i> to <em>block</em>. Returns the
- *  first for which <em>block</em> is not false.  If no
- *  object matches, calls <i>ifnone</i> and returns its result when it
- *  is specified, or returns <code>nil</code> otherwise.
+ * Returns the first element for which the block returns a truthy value.
  *
- *  If no block is given, an enumerator is returned instead.
+ * With a block given, calls the block with successive elements of the collection;
+ * returns the first element for which the block returns a truthy value:
+ *   (0..9).find {|element| element > 2} # => 3
+ *   (0..9).find(proc {false}) {|element| element > 12} # => false
  *
- *     (1..100).detect  #=> #<Enumerator: 1..100:detect>
- *     (1..100).find    #=> #<Enumerator: 1..100:find>
+ * If no such element is found, calls +if_none_proc+ and returns its return value.
+ *   {foo: 0, bar: 1, baz: 2}.find {|key, value| key.start_with?('b') } # => [:bar, 1]
+ *   {foo: 0, bar: 1, baz: 2}.find(proc {[]}) {|key, value| key.start_with?('c') } # => []
  *
- *     (1..10).detect         { |i| i % 5 == 0 && i % 7 == 0 }   #=> nil
- *     (1..10).find           { |i| i % 5 == 0 && i % 7 == 0 }   #=> nil
- *     (1..10).detect(-> {0}) { |i| i % 5 == 0 && i % 7 == 0 }   #=> 0
- *     (1..10).find(-> {0})   { |i| i % 5 == 0 && i % 7 == 0 }   #=> 0
- *     (1..100).detect        { |i| i % 5 == 0 && i % 7 == 0 }   #=> 35
- *     (1..100).find          { |i| i % 5 == 0 && i % 7 == 0 }   #=> 35
+ * Raises an exception if a call to +if_none_proc+ fails.
  *
+ * With no block given, returns a new \Enumerator:
+ *   (0..9).find(proc {false}) # => #<Enumerator: 0..9:find(#<Proc:>)>
+ *
+ * Enumerable#detect is an alias for Enumerable#find.
  */
 
 static VALUE
@@ -371,22 +379,26 @@ find_index_iter_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
 }
 
 /*
- *  call-seq:
- *     enum.find_index(value)          -> int or nil
- *     enum.find_index { |obj| block } -> int or nil
- *     enum.find_index                 -> an_enumerator
+ * call-seq:
+ *   find_index(object) -> integer or nil
+ *   find_index {|element| ... } -> integer or nil
+ *   find_index -> new_enumerator
  *
- *  Compares each entry in <i>enum</i> with <em>value</em> or passes
- *  to <em>block</em>.  Returns the index for the first for which the
- *  evaluated value is non-false.  If no object matches, returns
- *  <code>nil</code>
+ * Returns the index of the first element that meets a specified criterion,
+ * or +nil+ if no such element is found.
  *
- *  If neither block nor argument is given, an enumerator is returned instead.
+ * With argument +object+ given,
+ * returns the index of the first element that is <tt>==</tt> +object+:
+ *   %w/foo bar baz bar/.find_index('bar') # => 1
  *
- *     (1..10).find_index  { |i| i % 5 == 0 && i % 7 == 0 }  #=> nil
- *     (1..100).find_index { |i| i % 5 == 0 && i % 7 == 0 }  #=> 34
- *     (1..100).find_index(50)                               #=> 49
+ * With a block given, calls the block with successive elements;
+ * returns the first element for which the block returns a truthy value:
+ *   %w/foo bar baz bar/.find_index {|element| element.start_with?('b') } # => 1
+ *   {foo: 0, bar: 1, baz: 2}.find_index {|key, value| value > 1 } # => 2
  *
+ * With no argument and no block given, returns a new \Enumerator:
+ *   %w/foo bar baz bar/.find_index # => #<Enumerator: ["foo", "bar", "baz", "bar"]:find_index>
+ *   {foo: 0, bar: 1, baz: 2}.find_index # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:find_index>
  */
 
 static VALUE
