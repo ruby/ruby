@@ -353,6 +353,11 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
   end
   system(*%W"git fetch --no-tags #{gem}")
 
+  if ranges == true
+    log = IO.popen(%W"git log --fixed-strings --grep=[#{repo}] -n1 --format=%B", &:read)
+    ranges = ["#{log[%r[https://github\.com/#{Regexp.quote(repo)}/commit/(\h+)\s*\Z], 1]}..#{gem}/master"]
+  end
+
   commits = ranges.flat_map do |range|
     unless range.include?("..")
       range = "#{range}~1..#{range}"
@@ -523,13 +528,21 @@ when nil, "-h", "--help"
 
   exit
 else
-  if ARGV[0] == "-e"
-    edit = true
-    ARGV.shift
+  while /\A-/ =~ ARGV[0]
+    case ARGV[0]
+    when "-e"
+      edit = true
+      ARGV.shift
+    when "-a"
+      auto = true
+      ARGV.shift
+    end
   end
   gem = ARGV.shift
   if ARGV[0]
     sync_default_gems_with_commits(gem, ARGV, edit: edit)
+  elsif auto
+    sync_default_gems_with_commits(gem, true, edit: edit)
   else
     sync_default_gems(gem)
   end
