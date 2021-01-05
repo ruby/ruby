@@ -892,6 +892,12 @@ AS_CASE(["$target_os"],
 dnl Checks for libraries.
 AS_CASE(["$target_os"],[*bsd*|dragonfly*],[],[ac_cv_func_daemon=no])
 
+AS_CASE(["$target_os"], [*android*], [
+	AS_CASE(["$target_cpu"], [arm*], [
+		ac_cv_func___builtin_setjmp=no
+	])
+])
+
 AS_UNSET(ORIG_LIBS)
 POSTLINK=:
 AC_SUBST(POSTLINK)
