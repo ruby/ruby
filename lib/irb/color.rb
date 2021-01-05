@@ -192,6 +192,7 @@ module IRB # :nodoc:
             end
           end
         end
+      ensure
         $VERBOSE = verbose
       end
 

@@ -139,8 +139,9 @@ class RubyLex
         tokens = lexer.parse
       end
     end
-    $VERBOSE = verbose
     tokens
+  ensure
+    $VERBOSE = verbose
   end
 
   def find_prev_spaces(line_index)
