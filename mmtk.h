@@ -4,9 +4,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 typedef void* MMTk_Mutator;
 typedef void* MMTk_TraceLocal;
@@ -76,9 +73,5 @@ extern void add_phantom_candidate(void* ref, void* referent);
 
 extern void harness_begin(void *tls);
 extern void harness_end();
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // MMTK_H

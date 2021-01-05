@@ -1216,18 +1216,33 @@ tick(void)
 #define FL_SET2(x,f)   FL_CHECK2("FL_SET2",   x, RBASIC(x)->flags |= (f))
 #define FL_UNSET2(x,f) FL_CHECK2("FL_UNSET2", x, RBASIC(x)->flags &= ~(f))
 
+// Comment for easy location 
+#ifdef USE_THIRD_PARTY_HEAP
+#define RVALUE_MARK_BITMAP(obj)           0
+#define RVALUE_PIN_BITMAP(obj)            0
+#define RVALUE_PAGE_MARKED(page, obj)     0
+#else
 #define RVALUE_MARK_BITMAP(obj)           MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(obj), (obj))
 #define RVALUE_PIN_BITMAP(obj)            MARKED_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), (obj))
 #define RVALUE_PAGE_MARKED(page, obj)     MARKED_IN_BITMAP((page)->mark_bits, (obj))
+#endif
 
 #if USE_RGENGC
+#ifndef USE_THIRD_PARTY_HEAP
 #define RVALUE_WB_UNPROTECTED_BITMAP(obj) MARKED_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), (obj))
 #define RVALUE_UNCOLLECTIBLE_BITMAP(obj)  MARKED_IN_BITMAP(GET_HEAP_UNCOLLECTIBLE_BITS(obj), (obj))
 #define RVALUE_MARKING_BITMAP(obj)        MARKED_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), (obj))
-
 #define RVALUE_PAGE_WB_UNPROTECTED(page, obj) MARKED_IN_BITMAP((page)->wb_unprotected_bits, (obj))
 #define RVALUE_PAGE_UNCOLLECTIBLE(page, obj)  MARKED_IN_BITMAP((page)->uncollectible_bits, (obj))
 #define RVALUE_PAGE_MARKING(page, obj)        MARKED_IN_BITMAP((page)->marking_bits, (obj))
+#else
+#define RVALUE_WB_UNPROTECTED_BITMAP(obj) 0
+#define RVALUE_UNCOLLECTIBLE_BITMAP(obj)  0
+#define RVALUE_MARKING_BITMAP(obj)        0
+#define RVALUE_PAGE_WB_UNPROTECTED(page, obj) 0
+#define RVALUE_PAGE_UNCOLLECTIBLE(page, obj)  0
+#define RVALUE_PAGE_MARKING(page, obj)        0
+#endif
 
 #define RVALUE_OLD_AGE   3
 #define RVALUE_AGE_SHIFT 5 /* FL_PROMOTED0 bit */
@@ -1257,6 +1272,7 @@ check_rvalue_consistency_force(const VALUE obj, int terminate)
         err++;
     }
     else if (!is_pointer_to_heap(objspace, (void *)obj)) {
+#ifndef USE_THIRD_PARTY_HEAP
         /* check if it is in tomb_pages */
         struct heap_page *page = NULL;
         list_for_each(&heap_tomb->pages, page, page_node) {
@@ -1268,12 +1284,15 @@ check_rvalue_consistency_force(const VALUE obj, int terminate)
                 goto skip;
             }
         }
+#endif
         fprintf(stderr, "check_rvalue_consistency: %p is not a Ruby object.\n", (void *)obj);
         err++;
       skip:
         ;
     }
     else {
+#ifndef USE_THIRD_PARTY_HEAP
+        // TODO remove these
         const int wb_unprotected_bit = RVALUE_WB_UNPROTECTED_BITMAP(obj) != 0;
         const int uncollectible_bit = RVALUE_UNCOLLECTIBLE_BITMAP(obj) != 0;
         const int mark_bit = RVALUE_MARK_BITMAP(obj) != 0;
@@ -1284,6 +1303,7 @@ check_rvalue_consistency_force(const VALUE obj, int terminate)
             fprintf(stderr, "check_rvalue_consistency: %s is in tomb page.\n", obj_info(obj));
             err++;
         }
+#endif
         if (BUILTIN_TYPE(obj) == T_NONE) {
             fprintf(stderr, "check_rvalue_consistency: %s is T_NONE.\n", obj_info(obj));
             err++;
@@ -1295,6 +1315,7 @@ check_rvalue_consistency_force(const VALUE obj, int terminate)
 
         obj_memsize_of((VALUE)obj, FALSE);
 
+#ifndef USE_THIRD_PARTY_HEAP
         /* check generation
          *
          * OLD == age == 3 && old-bitmap && mark-bit (except incremental marking)
@@ -1335,6 +1356,7 @@ check_rvalue_consistency_force(const VALUE obj, int terminate)
                 err++;
             }
         }
+#endif
     }
 
     if (err > 0 && terminate) {
@@ -1614,6 +1636,7 @@ static void heap_page_free(rb_objspace_t *objspace, struct heap_page *page);
 void
 rb_objspace_free(rb_objspace_t *objspace)
 {
+    // TODO fix for MMTk?
     if (is_lazy_sweeping(heap_eden))
 	rb_bug("lazy sweeping underway when freeing object space");
 
@@ -2162,9 +2185,11 @@ newobj_init(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_prote
 #endif
 
 #if USE_RGENGC
+#ifndef USE_THIRD_PARTY_HEAP
     if (UNLIKELY(wb_protected == FALSE)) {
 	MARK_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), obj);
     }
+#endif
 #endif
 
 #if RGENGC_PROFILE
@@ -2462,6 +2487,9 @@ PUREFUNC(static inline int is_pointer_to_heap(rb_objspace_t *objspace, void *ptr
 static inline int
 is_pointer_to_heap(rb_objspace_t *objspace, void *ptr)
 {
+#ifdef USE_THIRD_PARTY_HEAP
+    return is_mapped_address(ptr);
+#endif
     register RVALUE *p = RANY(ptr);
     register struct heap_page *page;
     register size_t hi, lo, mid;
@@ -2931,20 +2959,18 @@ Init_heap(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
 
-#ifdef USE_THIRD_PARTY_HEAP
-    return;
-#endif
-
     objspace->next_object_id = INT2FIX(OBJ_ID_INITIAL);
     objspace->id_to_obj_tbl = st_init_table(&object_id_hash_type);
     objspace->obj_to_id_tbl = st_init_numtable();
 
+#ifndef USE_THIRD_PARTY_HEAP
 #if RGENGC_ESTIMATE_OLDMALLOC
     objspace->rgengc.oldmalloc_increase_limit = gc_params.oldmalloc_limit_min;
 #endif
 
     heap_add_pages(objspace, heap_eden, gc_params.heap_init_slots / HEAP_PAGE_OBJ_LIMIT);
     init_mark_stack(&objspace->mark_stack);
+#endif
 
     objspace->profile.invoke_time = getrusage_time();
     finalizer_table = st_init_numtable();
@@ -6765,6 +6791,7 @@ rgengc_mark_and_rememberset_clear(rb_objspace_t *objspace, rb_heap_t *heap)
 }
 
 /* RGENGC: APIs */
+// TODO: Go through all of the below and disable things that need to be disabled?
 
 NOINLINE(static void gc_writebarrier_generational(VALUE a, VALUE b, rb_objspace_t *objspace));
 
@@ -6867,6 +6894,13 @@ rb_gc_writebarrier(VALUE a, VALUE b)
     }
 }
 
+#ifdef USE_THIRD_PARTY_HEAP
+void
+rb_gc_writebarrier_unprotect(VALUE obj)
+{
+    return;
+}
+#else
 void
 rb_gc_writebarrier_unprotect(VALUE obj)
 {
@@ -6900,6 +6934,7 @@ rb_gc_writebarrier_unprotect(VALUE obj)
 	MARK_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), obj);
     }
 }
+#endif
 
 /*
  * remember `obj' if needed.
@@ -7043,6 +7078,9 @@ rb_obj_gc_flags(VALUE obj, ID* flags, size_t max)
 void
 rb_gc_force_recycle(VALUE obj)
 {
+#ifdef USE_THIRD_PARTY_HEAP
+    return; // Third party heap is responsible for freeing memory
+#endif
     rb_objspace_t *objspace = &rb_objspace;
 
 #if USE_RGENGC
