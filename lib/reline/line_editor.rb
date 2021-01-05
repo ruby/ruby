@@ -112,6 +112,7 @@ class Reline::LineEditor
           use_cached_prompt_list = true
         end
       end
+      use_cached_prompt_list = false if @rerender_all
       if use_cached_prompt_list
         prompt_list = @cached_prompt_list
       else
@@ -123,6 +124,12 @@ class Reline::LineEditor
       prompt_list = prompt_list.map{ |pr| mode_string + pr } if mode_string
       prompt = prompt_list[@line_index]
       prompt = prompt_list[0] if prompt.nil?
+      prompt = prompt_list.last if prompt.nil?
+      if buffer.size > prompt_list.size
+        (buffer.size - prompt_list.size).times do
+          prompt_list << prompt_list.last
+        end
+      end
       prompt_width = calculate_width(prompt, true)
       [prompt, prompt_width, prompt_list]
     else
