@@ -136,17 +136,21 @@ enum_grep0(VALUE obj, VALUE pat, VALUE test)
  *   grep(object) -> new_array
  *   grep(object) {|element| ... } -> new_array
  *
- * Returns a new \Array selected by a given object or block.
+ * Returns a new \Array of objects either selected by the given +object+
+ *  or returned by the block.
  *
  * With no block given, returns a new \Array containing each element
  * for which <tt>object === element</tt> is +true+:
+ *
  *   a = IO.constants
- *   a.grep(/SEEK/) # => [:SEEK_END, :SEEK_SET, :SEEK_CUR]
- *   (1..10).grep(3..8) # => [3, 4, 5, 6, 7, 8]
+ *   a.grep(/SEEK/)                 # => [:SEEK_END, :SEEK_SET, :SEEK_CUR]
+ *   (1..10).grep(3..8)             # => [3, 4, 5, 6, 7, 8]
  *   ['a', 'b', 0, 1].grep(Integer) # => [0, 1]
+ *
  * With block given,
- * calls the block with each element, returns a new \Array containing each
+ * calls the block with each matching element, returns a new \Array containing each
  * object returned by the block:
+ *
  *   a = IO.constants
  *   a.grep(/SEEK/) {|element| IO.const_get(element) } # => [0, 1, 2]
  */
@@ -166,13 +170,16 @@ enum_grep(VALUE obj, VALUE pat)
  *
  * With no block given, returns a new \Array containing each element
  * for which <tt>object === element</tt> is +false+:
+ *
  *   a = Float.constants
- *   a.grep_v(/MIN|MAX/) # => [:ROUNDS, :RADIX, :MANT_DIG, :DIG, :EPSILON, :INFINITY, :NAN]
- *   (1..10).grep_v(3..8) # => [1, 2, 9, 10]
- *   a = ['a', 'b', 0, 1].grep_v(Integer) # => ["a", "b"]
+ *   a.grep_v(/MIN|MAX/)              # => [:ROUNDS, :RADIX, :MANT_DIG, :DIG, :EPSILON, :INFINITY, :NAN]
+ *   (1..10).grep_v(3..8)             # => [1, 2, 9, 10]
+ *   ['a', 'b', 0, 1].grep_v(Integer) # => ["a", "b"]
+ *
  * With a block given,
  * calls the block with each element, returns a new \Array containing each
  * object returned by the block:
+ *
  *   a = Float.constants
  *   a1 = a.grep_v(/MIN|MAX/) {|element| Float.const_get(element) }
  *   a1 # => [1, 2, 53, 15, 2.220446049250313e-16, Infinity, NaN]
@@ -254,14 +261,19 @@ count_all_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
  * Returns the count of elements, based on an argument or block criterion, if given.
  *
  * With no argument and no block given, returns the number of elements:
- *   [0, 1, 2].count # => 3
+ *
+ *   [0, 1, 2].count                # => 3
  *   {foo: 0, bar: 1, baz: 2}.count # => 3
+ *
  * With argument +object+ given,
  * returns the number of elements that are <tt>==</tt> to +object+:
+ *
  *   [0, 1, 2, 1].count(1) # => 2
+ *
  * With a block given, calls the block with each element
  * and returns the number of elements for which the block returns a truthy value:
- *   [0, 1, 2, 3].count {|element| element < 2} # => 2
+ *
+ *   [0, 1, 2, 3].count {|element| element < 2}              # => 2
  *   {foo: 0, bar: 1, baz: 2}.count {|key, value| value < 2} # => 2
  */
 
@@ -316,16 +328,19 @@ find_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
  *
  * With a block given, calls the block with successive elements of the collection;
  * returns the first element for which the block returns a truthy value:
- *   (0..9).find {|element| element > 2} # => 3
+ *
+ *   (0..9).find {|element| element > 2}                # => 3
  *   (0..9).find(proc {false}) {|element| element > 12} # => false
  *
  * If no such element is found, calls +if_none_proc+ and returns its return value.
- *   {foo: 0, bar: 1, baz: 2}.find {|key, value| key.start_with?('b') } # => [:bar, 1]
+ *
+ *   {foo: 0, bar: 1, baz: 2}.find {|key, value| key.start_with?('b') }            # => [:bar, 1]
  *   {foo: 0, bar: 1, baz: 2}.find(proc {[]}) {|key, value| key.start_with?('c') } # => []
  *
  * Raises an exception if a call to +if_none_proc+ fails.
  *
  * With no block given, returns a new \Enumerator:
+ *
  *   (0..9).find(proc {false}) # => #<Enumerator: 0..9:find(#<Proc:>)>
  *
  * Enumerable#detect is an alias for Enumerable#find.
@@ -389,14 +404,17 @@ find_index_iter_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
  *
  * With argument +object+ given,
  * returns the index of the first element that is <tt>==</tt> +object+:
+ *
  *   %w/foo bar baz bar/.find_index('bar') # => 1
  *
  * With a block given, calls the block with successive elements;
  * returns the first element for which the block returns a truthy value:
+ *
  *   %w/foo bar baz bar/.find_index {|element| element.start_with?('b') } # => 1
- *   {foo: 0, bar: 1, baz: 2}.find_index {|key, value| value > 1 } # => 2
+ *   {foo: 0, bar: 1, baz: 2}.find_index {|key, value| value > 1 }        # => 2
  *
  * With no argument and no block given, returns a new \Enumerator:
+ *
  *   %w/foo bar baz bar/.find_index # => #<Enumerator: ["foo", "bar", "baz", "bar"]:find_index>
  *   {foo: 0, bar: 1, baz: 2}.find_index # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:find_index>
  */
