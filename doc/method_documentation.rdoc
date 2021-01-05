@@ -181,3 +181,26 @@ of the method.
 Methods are documented using RDoc syntax.  See the
 {RDoc Markup Reference}[https://docs.ruby-lang.org/en/master/RDoc/Markup.html#class-RDoc::Markup-label-RDoc+Markup+Reference]
 for more information on formatting with RDoc syntax.
+
+=== Code Blocks
+
+A code block should be preceded and followed by a blank line.
+This is unnecessary for the HTML output, but helps in the ri output.
+
+Consider whether <tt>=> ...</tt> in successive lines should be aligned.
+Alignment may sometimes aid readability.
+
+=== Lists
+
+A list should be preceded and followed by a blank line.
+This is unnecessary for the HTML output, but helps in the ri output.
+
+=== Auto-Links
+
+Consider whether an auto-link (e.g., to +Array+)
+should be suppressed (<tt>\Array</tt>) or allowed (Array).
+
+It's usually best to suppress when local;
+that is, in the documentation for class \Array, suppress auto-links to the class itself.
+
+For an "off-class" reference, the decision to suppress or not may depend on context.
