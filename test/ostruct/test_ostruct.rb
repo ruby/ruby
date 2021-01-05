@@ -249,6 +249,14 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_equal(:bar, os.format)
   end
 
+  def test_super
+    c = Class.new(OpenStruct) {
+      def foo; super; end
+    }
+    os = c.new(foo: :bar)
+    assert_equal(:bar, os.foo)
+  end
+  
   def test_overridden_public_methods
     os = OpenStruct.new(method: :foo, class: :bar)
     assert_equal(:foo, os.method)
