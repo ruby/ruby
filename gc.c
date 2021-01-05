@@ -9996,6 +9996,27 @@ objspace_xrealloc(rb_objspace_t *objspace, void *ptr, size_t new_size, size_t ol
 
     old_size = objspace_malloc_size(objspace, ptr, old_size);
 #ifdef USE_THIRD_PARTY_HEAP
+    old_size = new_size; // TODO: remove this hack.
+    // When reallocating an array from heap to heap (i.e. not just promoting from embedded),
+    // the following stack trace occurs:
+    //
+    // #0  objspace_xrealloc (objspace=0x555555b5b180, ptr=0x200002ba070, new_size=296, old_size=0) at gc.c:10017
+    // #1  0x00005555556308dc in ruby_sized_xrealloc2 (ptr=0x200002ba070, n=37, size=8, old_n=0) at gc.c:10251
+    // #2  0x0000555555630910 in ruby_xrealloc2_body (ptr=0x200002ba070, n=37, size=8) at gc.c:10257
+    // #3  0x0000555555634376 in ruby_xrealloc2 (ptr=0x200002ba070, n=37, new_size=8) at gc.c:12126
+    // #4  0x000055555557c43c in ary_heap_realloc (ary=2199026114632, new_capa=37) at array.c:362
+    // #5  0x000055555557c53a in ary_resize_capa (ary=2199026114632, capacity=37) at array.c:439
+    // #6  0x000055555557c774 in ary_double_capa (ary=2199026114632, min=21) at array.c:485
+    // #7  0x000055555557cec8 in ary_ensure_room_for_push (ary=2199026114632, add_len=1) at array.c:630
+    // #8  0x000055555557e40a in rb_ary_cat (ary=2199026114632, argv=0x20000000080, len=1) at array.c:1211
+    // #9  0x000055555557e4c6 in rb_ary_push_m (argc=1, argv=0x20000000080, ary=2199026114632) at array.c:1237
+    // #10 0x00005555557da531 in call_cfunc_m1 (recv=2199026114632, argc=1, argv=0x20000000080, func=0x55555557e49a <rb_ary_push_m>) at vm_insnhelper.c:2336
+    // ...etc
+    //
+    // For some weird reason, ruby_xrealloc_body says old size is zero?!?!?!
+    // How on earth did this work?
+    // For now, we just changed the old size, however this hack may be vulnerable if we need to
+    // reallocate something to a smaller chunk of memory. FIXME!
     mem = alloc(objspace->mutator, new_size, 8, 0, 0);
     memcpy(mem, ptr, (old_size < new_size ? old_size : new_size));
 #else
