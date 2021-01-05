@@ -637,6 +637,20 @@ begin
       EOC
     end
 
+    def test_suppress_auto_indent_just_after_pasted
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl --auto-indent}, startup_message: 'Multiline REPL.')
+      write("def hoge\n  [[\n      3]]\ned")
+      write("\C-bn")
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> def hoge
+        prompt>   [[
+        prompt>       3]]
+        prompt> end
+      EOC
+    end
+
     private def write_inputrc(content)
       File.open(@inputrc_file, 'w') do |f|
         f.write content
