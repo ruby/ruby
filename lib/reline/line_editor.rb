@@ -1339,7 +1339,7 @@ class Reline::LineEditor
       cursor_line = @line.byteslice(0, @byte_pointer)
       insert_new_line(cursor_line, next_line)
       @cursor = 0
-      @check_new_auto_indent = true
+      @check_new_auto_indent = true unless Reline::IOGate.in_pasting?
     end
   end
 

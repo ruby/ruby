@@ -663,6 +663,21 @@ begin
       EOC
     end
 
+    def test_suppress_auto_indent_for_adding_newlines_in_pasting
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl --auto-indent}, startup_message: 'Multiline REPL.')
+      write("<<~Q\n")
+      write("{\n  #\n}")
+      write("#")
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> <<~Q
+        prompt> {
+        prompt>   #
+        prompt> }#
+      EOC
+    end
+
     private def write_inputrc(content)
       File.open(@inputrc_file, 'w') do |f|
         f.write content
