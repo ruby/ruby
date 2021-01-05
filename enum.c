@@ -449,30 +449,24 @@ enum_size_over_p(VALUE obj, long n)
 }
 
 /*
- *  call-seq:
- *     enum.find_all { |obj| block } -> array
- *     enum.select   { |obj| block } -> array
- *     enum.filter   { |obj| block } -> array
- *     enum.find_all                 -> an_enumerator
- *     enum.select                   -> an_enumerator
- *     enum.filter                   -> an_enumerator
+ * call-seq:
+ *   select {|element| ... } -> new_array
+ *   select -> new_enumerator
  *
- *  Returns an array containing all elements of +enum+
- *  for which the given +block+ returns a true value.
+ * Returns a new \Array containing elements selected by the block.
  *
- *  The <i>find_all</i> and <i>select</i> methods are aliases.
- *  There is no performance benefit to either.
+ * With a block given, calls the block with successive elements;
+ * returns a new \Array with those elements for which the block returns a truthy value:
+ *   (0..9).select {|element| element % 3 == 0 } # => [0, 3, 6, 9]
+ *   a = {foo: 0, bar: 1, baz: 2}.select {|key, value| key.start_with?('b') }
+ *   a # => {:bar=>1, :baz=>2}
+ * With no block given, returns a new \Enumerator:
+ *   (0..9).select # => #<Enumerator: 0..9:select>
+ *   {foo: 0, bar: 1, baz: 2}.select # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:select>
  *
- *  If no block is given, an Enumerator is returned instead.
+ * Enumerable#find_all and Enumerable#filter are aliases for Enumerable#select.
  *
- *
- *     (1..10).find_all { |i|  i % 3 == 0 }   #=> [3, 6, 9]
- *
- *     [1,2,3,4,5].select { |num|  num.even?  }   #=> [2, 4]
- *
- *     [:foo, :bar].filter { |x| x == :foo }   #=> [:foo]
- *
- *  See also Enumerable#reject, Enumerable#grep.
+ * Related: Enumerable#reject, Enumerable#grep.
  */
 
 static VALUE
@@ -501,18 +495,21 @@ filter_map_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 }
 
 /*
- *  call-seq:
- *     enum.filter_map { |obj| block } -> array
- *     enum.filter_map                 -> an_enumerator
+ * call-seq:
+ *   filter_map {|element| ... } -> new_array
+ *   filter_map -> new_enumerator
  *
- *  Returns a new array containing the truthy results (everything except
- *  +false+ or +nil+) of running the +block+ for every element in +enum+.
+ * Returns a new \Array containing elements determined by the block.
  *
- *  If no block is given, an Enumerator is returned instead.
+ * With a block given, calls the block with successive elements;
+ * returns an \Array containing each truthy value returned by the block:
+ *   (0..9).filter_map {|i| i * 2 if i.even? } # => [0, 4, 8, 12, 16]
+ *   {foo: 0, bar: 1, baz: 2}.filter_map {|key, value| key if value.even? } # => [:foo, :baz]
  *
- *
- *     (1..10).filter_map { |i| i * 2 if i.even? } #=> [4, 8, 12, 16, 20]
- *
+ * When no block given, returns a new \Enumerator:
+ *   (0..9).filter_map # => #<Enumerator: 0..9:filter_map>
+ *   e = {foo: 0, bar: 1, baz:2}.filter_map
+ *   e # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:filter_map>
  */
 static VALUE
 enum_filter_map(VALUE obj)
@@ -540,20 +537,21 @@ reject_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 }
 
 /*
- *  call-seq:
- *     enum.reject { |obj| block } -> array
- *     enum.reject                 -> an_enumerator
+ * call-seq:
+ *   reject {|element| ... } -> new_array
+ *   reject -> new_enumerator
  *
- *  Returns an array for all elements of +enum+ for which the given
- *  +block+ returns <code>false</code>.
+ * Returns a new \Array of objects returned by the block.
  *
- *  If no block is given, an Enumerator is returned instead.
+ * With a block given, calls the block with successive elements;
+ * returns an \Array of those elements for which the block returns +nil+ or +false+:
+ *   (0..9).reject {|i| i * 2 if i.even? } # => [1, 3, 5, 7, 9]
+ *   {foo: 0, bar: 1, baz: 2}.reject {|key, value| key if value.odd? } # => {:foo=>0, :baz=>2}
  *
- *     (1..10).reject { |i|  i % 3 == 0 }   #=> [1, 2, 4, 5, 7, 8, 10]
- *
- *     [1, 2, 3, 4, 5].reject { |num| num.even? } #=> [1, 3, 5]
- *
- *  See also Enumerable#find_all.
+ * When no block given, returns a new \Enumerator:
+ *   (0..9).reject # => #<Enumerator: 0..9:reject>
+ *   e = {foo: 0, bar: 1, baz:2}.reject
+ *   e # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:reject>
  */
 
 static VALUE
@@ -586,20 +584,22 @@ collect_all(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 }
 
 /*
- *  call-seq:
- *     enum.collect { |obj| block } -> array
- *     enum.map     { |obj| block } -> array
- *     enum.collect                 -> an_enumerator
- *     enum.map                     -> an_enumerator
+ * call-seq:
+ *   map {|element| ... } -> new_array
+ *   map -> new__enumerator
  *
- *  Returns a new array with the results of running <em>block</em> once
- *  for every element in <i>enum</i>.
+ * Returns a new \Array of objects returned by the block.
  *
- *  If no block is given, an enumerator is returned instead.
+ * With a block given, calls the block with successive elements;
+ * returns an \Array of the objects returned by the block:
+ *   (0..4).map {|i| i*i } # => [0, 1, 4, 9, 16]
+ *   {foo: 0, bar: 1, baz: 2}.map {|key, value| value*2} # => [0, 2, 4]
  *
- *     (1..4).map { |i| i*i }      #=> [1, 4, 9, 16]
- *     (1..4).collect { "cat"  }   #=> ["cat", "cat", "cat", "cat"]
+ * With no block given, returns an \Enumerator:
+ *   (0..4).map # => #<Enumerator: 0..4:map>
+ *   {foo: 0, bar: 1, baz: 2}.map # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:map>
  *
+ * Enumerable#collect is an alias for Enumerable#map.
  */
 
 static VALUE
@@ -635,20 +635,25 @@ flat_map_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 }
 
 /*
- *  call-seq:
- *     enum.flat_map       { |obj| block } -> array
- *     enum.collect_concat { |obj| block } -> array
- *     enum.flat_map                       -> an_enumerator
- *     enum.collect_concat                 -> an_enumerator
+ * call-seq:
+ *   flat_map {|element| ... } -> new_array
+ *   flat_map -> new_enumerator
  *
- *  Returns a new array with the concatenated results of running
- *  <em>block</em> once for every element in <i>enum</i>.
+ * Returns a new \Array of flattened objects returned by the block.
  *
- *  If no block is given, an enumerator is returned instead.
+ * With a block given, calls the block with successive elements;
+ * returns a flattened \Array of objects returned by the block:
+ *   [0, 1, 2, 3].flat_map {|element| -element } # => [0, -1, -2, -3]
+ *   [0, 1, 2, 3].flat_map {|element| [element, -element] } # => [0, 0, 1, -1, 2, -2, 3, -3]
+ *   [[0, 1], [2, 3]].flat_map {|e| e + [100] } # => [0, 1, 100, 2, 3, 100]
+ *   {foo: 0, bar: 1, baz: 2}.flat_map {|key, value| [key, value] } # => [:foo, 0, :bar, 1, :baz, 2]
  *
- *     [1, 2, 3, 4].flat_map { |e| [e, -e] } #=> [1, -1, 2, -2, 3, -3, 4, -4]
- *     [[1, 2], [3, 4]].flat_map { |e| e + [100] } #=> [1, 2, 100, 3, 4, 100]
+ * With no block given, returns an Enumerator:
+ *   [0, 1, 2, 3].flat_map # => #<Enumerator: [0, 1, 2, 3]:flat_map>
+ *   [[0, 1], [2, 3]].flat_map # => #<Enumerator: [[0, 1], [2, 3]]:flat_map>
+ *   {foo: 0, bar: 1, baz: 2}.flat_map # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:flat_map>
  *
+ * Enumerable#collect_concat is an alias for Enumerable#flat_map.
  */
 
 static VALUE
