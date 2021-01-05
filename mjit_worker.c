@@ -87,6 +87,8 @@
 
 #include "vm_core.h"
 #include "vm_callinfo.h"
+#include "vm_sync.h"
+#include "ractor_core.h"
 #include "mjit.h"
 #include "gc.h"
 #include "ruby_assert.h"
@@ -1331,6 +1333,25 @@ unload_units(void)
     }
 }
 
+// Used to unblock GC in other Ractors. This should be called between CRITICAL_SECTION_START and CRITICAL_SECTION_FINISH.
+#define GC_UNBLOCKING(vm, cr, block) do { \
+    CRITICAL_SECTION_FINISH(3, "before RB_VM_LOCK"); \
+    RB_VM_LOCK(); \
+    rb_vm_ractor_blocking_cnt_inc(vm, cr, __FILE__, __LINE__); \
+    RB_VM_UNLOCK(); \
+    CRITICAL_SECTION_START(3, "after RB_VM_LOCK"); \
+    \
+    do { \
+        block \
+    } while (0); \
+    \
+    CRITICAL_SECTION_FINISH(3, "before RB_VM_LOCK"); \
+    RB_VM_LOCK(); \
+    rb_vm_ractor_blocking_cnt_dec(vm, cr, __FILE__, __LINE__); \
+    RB_VM_UNLOCK(); \
+    CRITICAL_SECTION_START(3, "after RB_VM_LOCK"); \
+} while (0);
+
 // The function implementing a worker. It is executed in a Ractor by `RubyVM::MJITWorker.start`.
 // It compiles precompiled header and then compiles requested ISeqs.
 VALUE
@@ -1361,13 +1382,17 @@ mjit_worker(RB_UNUSED_VAR(rb_execution_context_t *ec), RB_UNUSED_VAR(VALUE self)
     }
 
     // main worker loop
+    rb_vm_t *vm = GET_VM();
+    rb_ractor_t *cr = GET_RACTOR();
     while (!stop_worker_p) {
         struct rb_mjit_unit *unit;
 
         // Wait until a unit becomes available
         CRITICAL_SECTION_START(3, "in worker dequeue");
         while ((pending_stale_p || list_empty(&unit_queue.head) || active_units.length >= mjit_opts.max_cache_size) && !stop_worker_p) {
-            rb_native_cond_wait(&mjit_worker_wakeup, &mjit_engine_mutex);
+            GC_UNBLOCKING(vm, cr, {
+                rb_native_cond_wait(&mjit_worker_wakeup, &mjit_engine_mutex);
+            });
             verbose(3, "Getting wakeup from client");
 
             // Lazily move active_units to stale_units to avoid race conditions around active_units with compaction
