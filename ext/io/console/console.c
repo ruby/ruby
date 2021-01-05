@@ -1223,8 +1223,8 @@ console_key_pressed_p(VALUE io, VALUE k)
 }
 #else
 struct query_args {
-    const char *qstr;
-    int opt;
+    char qstr[6];
+    unsigned char opt;
 };
 
 static int
