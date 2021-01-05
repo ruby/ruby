@@ -133,14 +133,14 @@ enum_grep0(VALUE obj, VALUE pat, VALUE test)
 
 /*
  * call-seq:
- *   grep(object) -> new_array
- *   grep(object) {|element| ... } -> new_array
+ *   grep(pattern) -> new_array
+ *   grep(pattern) {|element| ... } -> new_array
  *
- * Returns a new \Array of objects either selected by the given +object+
+ * Returns a new \Array of objects either selected by the given +pattern+
  *  or returned by the block.
  *
  * With no block given, returns a new \Array containing each element
- * for which <tt>object === element</tt> is +true+:
+ * for which <tt>pattern === element</tt> is +true+:
  *
  *   a = IO.constants
  *   a.grep(/SEEK/)                 # => [:SEEK_END, :SEEK_SET, :SEEK_CUR]
@@ -163,13 +163,14 @@ enum_grep(VALUE obj, VALUE pat)
 
 /*
  * call-seq:
- *   grep_v(object) -> new_array
- *   grep_v(object) {|element| ... } -> new_array
+ *   grep_v(pattern) -> new_array
+ *   grep_v(pattern) {|element| ... } -> new_array
  *
- * Returns a new \Array selected by a given object or block.
+ * Returns a new \Array of objects either selected by the given +pattern+
+ *  or returned by the block.
  *
  * With no block given, returns a new \Array containing each element
- * for which <tt>object === element</tt> is +false+:
+ * for which <tt>pattern === element</tt> is +false+:
  *
  *   a = Float.constants
  *   a.grep_v(/MIN|MAX/)              # => [:ROUNDS, :RADIX, :MANT_DIG, :DIG, :EPSILON, :INFINITY, :NAN]
