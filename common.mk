@@ -1213,7 +1213,7 @@ run: fake miniruby$(EXEEXT) PHONY
 	$(BTESTRUBY) $(RUNOPT0) $(TESTRUN_SCRIPT) $(RUNOPT)
 
 runruby: $(PROGRAM) PHONY
-	$(RUNRUBY) $(RUNOPT0) $(TESTRUN_SCRIPT) $(RUNOPT)
+	RUBY_ON_BUG='gdb -x $(srcdir)/.gdbinit -p' $(RUNRUBY) $(RUNOPT0) $(TESTRUN_SCRIPT) $(RUNOPT)
 
 parse: fake miniruby$(EXEEXT) PHONY
 	$(BTESTRUBY) --dump=parsetree_with_comment,insns $(TESTRUN_SCRIPT)
