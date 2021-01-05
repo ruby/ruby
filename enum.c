@@ -665,17 +665,15 @@ enum_flat_map(VALUE obj)
 }
 
 /*
- *  call-seq:
- *     enum.to_a(*args)      -> array
- *     enum.entries(*args)   -> array
+ * call-seq:
+ *   to_a -> new_array
  *
- *  Returns an array containing the items in <i>enum</i>.
+ * Returns a new \Array containing the collection's elements:
+ *   Dir.new('.').to_a.take(2) # => [".", ".."]
  *
- *     (1..7).to_a                       #=> [1, 2, 3, 4, 5, 6, 7]
- *     { 'a'=>1, 'b'=>2, 'c'=>3 }.to_a   #=> [["a", 1], ["b", 2], ["c", 3]]
+ * Many Ruby classes override this method, including Array, Hash, Range, Set, and Struct.
  *
- *     require 'prime'
- *     Prime.entries 10                  #=> [2, 3, 5, 7]
+ * Enumerable#entries is an alias for Enumerable#to_a
  */
 static VALUE
 enum_to_a(int argc, VALUE *argv, VALUE obj)
@@ -709,21 +707,22 @@ enum_to_h_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 }
 
 /*
- *  call-seq:
- *     enum.to_h(*args)        -> hash
- *     enum.to_h(*args) {...}  -> hash
+ * call-seq:
+ *   to_h -> new_hash
+ *   to_h {|element_0, element_1| ...}  -> new_hash
  *
- *  Returns the result of interpreting <i>enum</i> as a list of
- *  <tt>[key, value]</tt> pairs.
+ * Returns a new \Hash formed from the collection.
  *
- *     %i[hello world].each_with_index.to_h
- *       # => {:hello => 0, :world => 1}
+ * With no block given, returns a new \Hash formed from paired elements:
+ *   %w/hello world/.each_with_index.to_h # => {"hello"=>0, "world"=>1}
  *
- *  If a block is given, the results of the block on each element of
- *  the enum will be used as pairs.
+ * With a block given, calls the block with successive elements;
+ * the block must return a 2-element \Array which become the key and value
+ * of a hash element;
+ * returns the \Hash containing those elements:
+ *   (0..3).to_h {|i| [i, i** 2]} # => {0=>0, 1=>1, 2=>4, 3=>9}
  *
- *     (1..5).to_h {|x| [x, x ** 2]}
- *       #=> {1=>1, 2=>4, 3=>9, 4=>16, 5=>25}
+ * Some Ruby classes override this method, including Array, Hash, and Struct.
  */
 
 static VALUE
@@ -831,50 +830,50 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
 }
 
 /*
- *  call-seq:
- *     enum.inject(initial, sym) -> obj
- *     enum.inject(sym)          -> obj
- *     enum.inject(initial) { |memo, obj| block }  -> obj
- *     enum.inject          { |memo, obj| block }  -> obj
- *     enum.reduce(initial, sym) -> obj
- *     enum.reduce(sym)          -> obj
- *     enum.reduce(initial) { |memo, obj| block }  -> obj
- *     enum.reduce          { |memo, obj| block }  -> obj
+ * call-seq:
+ *   inject(method) -> object
+ *   inject(initial_value, method) -> object
+ *   inject {|memo, element| ... } -> object
+ *   inject(initial_value) {|memo, element| ... } -> object
  *
- *  Combines all elements of <i>enum</i> by applying a binary
- *  operation, specified by a block or a symbol that names a
- *  method or operator.
+ * Returns the new object formed by combining all elements
+ * using either a specified method or the given block.
  *
- *  The <i>inject</i> and <i>reduce</i> methods are aliases. There
- *  is no performance benefit to either.
+ * With no block given and no +initial_value+,
+ * uses the given +method+ to accumulate all elements
+ * into an accumulator object +memo+, which is returned.
  *
- *  If you specify a block, then for each element in <i>enum</i>
- *  the block is passed an accumulator value (<i>memo</i>) and the element.
- *  If you specify a symbol instead, then each element in the collection
- *  will be passed to the named method of <i>memo</i>.
- *  In either case, the result becomes the new value for <i>memo</i>.
- *  At the end of the iteration, the final value of <i>memo</i> is the
- *  return value for the method.
+ * If +initial_value+ is not given,
+ * +memo+ is initialized with the first element,
+ * and each successive element is combined with it:
+ *   (0..9).inject(:+) # => 45
  *
- *  If you do not explicitly specify an <i>initial</i> value for <i>memo</i>,
- *  then the first element of collection is used as the initial value
- *  of <i>memo</i>.
+ * If +initial_value+ is given,
+ * +memo+ is initialized with that value,
+ * all successive elements are combined with it:
+ *   (0..9).inject(100, :+) # => 145
  *
+ * With a block given,
+ * calls the block with successive elements,
+ * each time also passing an accumulator object +memo+,
+ * which is returned.
  *
- *     # Sum some numbers
- *     (5..10).reduce(:+)                             #=> 45
- *     # Same using a block and inject
- *     (5..10).inject { |sum, n| sum + n }            #=> 45
- *     # Multiply some numbers
- *     (5..10).reduce(1, :*)                          #=> 151200
- *     # Same using a block
- *     (5..10).inject(1) { |product, n| product * n } #=> 151200
- *     # find the longest word
- *     longest = %w{ cat sheep bear }.inject do |memo, word|
- *        memo.length > word.length ? memo : word
- *     end
- *     longest                                        #=> "sheep"
+ * If +initial_value+ is not given,
+ * +memo+ is initialized with the first element,
+ * and the block calls begin with the second element:
+ *   (1..4).inject {|memo, n| memo * n } # => 24
+ * Note that the block may choose to _replace_ +memo+ outright,
+ * rather than just combining it with other elements.
+ *   %w/long longer longest/.inject do |memo, word|
+ *     memo.length > word.length ? memo : word
+ *   end # => "longest"
  *
+ * If +initial_value+ is given,
+ * +memo+ is initialized with that value,
+ * and the block calls begin with the first element:
+ *   (1..4).inject(2) {|memo, n| memo * n } # => 48
+ *
+ * Enumerable#reduce is an alias for Enumerable#inject.
  */
 static VALUE
 enum_inject(int argc, VALUE *argv, VALUE obj)
@@ -938,18 +937,23 @@ partition_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, arys))
 }
 
 /*
- *  call-seq:
- *     enum.partition { |obj| block } -> [ true_array, false_array ]
- *     enum.partition                 -> an_enumerator
+ * call-seq:
+ *   partition {|element| ... } -> [true_array, false_array]
+ *   partition -> new_enumerator
  *
- *  Returns two arrays, the first containing the elements of
- *  <i>enum</i> for which the block evaluates to true, the second
- *  containing the rest.
+ * Returns elements partitioned into two new Arrays, as determined by the given block.
  *
- *  If no block is given, an enumerator is returned instead.
+ * With a block given, calls the block with successive elements;
+ * each element for which the block returns a truthy value
+ * is added to +true_array+;
+ * other elements are added to +false_array+;
+ * returns <tt>[true_array, false_array]</tt>:
+ *   (0..5).partition {|i| i.even? } # => [[0, 2, 4], [1, 3, 5]]
  *
- *     (1..6).partition { |v| v.even? }  #=> [[2, 4, 6], [1, 3, 5]]
+ * With no block given, returns a new  \Enumerator:
+ *   (0..5).partition # => #<Enumerator: 0..5:partition>
  *
+ * Related: #group_by.
  */
 
 static VALUE
@@ -986,18 +990,21 @@ group_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 }
 
 /*
- *  call-seq:
- *     enum.group_by { |obj| block } -> a_hash
- *     enum.group_by                 -> an_enumerator
+ * call-seq:
+ *   group_by {|element| ... } -> new_hash
+ *   group_by -> new_enumerator
  *
- *  Groups the collection by result of the block.  Returns a hash where the
- *  keys are the evaluated result from the block and the values are
- *  arrays of elements in the collection that correspond to the key.
+ * Returns a \Hash that partitions the elements into groups.
  *
- *  If no block is given an enumerator is returned.
+ * With a block given, calls the block with successive elements.
+ * - The block return value becomes (or is already) a key in the \Hash,
+ *   whose value is a new or existing \Array.
+ * - The element is added to that \Array.
+ * Example:
+ *   (0..5).group_by {|i| i%3 } # => {0=>[0, 3], 1=>[1, 4], 2=>[2, 5]}
  *
- *     (1..6).group_by { |i| i%3 }   #=> {0=>[3, 6], 1=>[1, 4], 2=>[2, 5]}
- *
+ * With no block given, returns a new \Enumerator:
+ *   (0..5).group_by # => #<Enumerator: 0..5:group_by>
  */
 
 static VALUE
