@@ -867,7 +867,7 @@ mjit_finish(bool close_handle_p)
     // threads can produce temp files.  And even if the temp files are
     // removed, the used C compiler still complaint about their
     // absence.  So wait for a clean finish of the threads.
-    while (pch_status == PCH_NOT_READY) {
+    while (pch_status == PCH_NOT_READY && !worker_stopped) {
         verbose(3, "Waiting wakeup from make_pch");
         rb_native_cond_wait(&mjit_pch_wakeup, &mjit_engine_mutex);
     }
