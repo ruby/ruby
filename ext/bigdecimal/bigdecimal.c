@@ -115,7 +115,7 @@ static ID id_half;
  */
 static unsigned short VpGetException(void);
 static void  VpSetException(unsigned short f);
-static void  VpInternalRound(Real *c, size_t ixDigit, BDIGIT vPrev, BDIGIT v);
+static void  VpInternalRound(Real *c, size_t ixDigit, DECDIG vPrev, DECDIG v);
 static int   VpLimitRound(Real *c, size_t ixDigit);
 static Real *VpCopy(Real *pv, Real const* const x);
 
@@ -137,7 +137,7 @@ static size_t
 BigDecimal_memsize(const void *ptr)
 {
     const Real *pv = ptr;
-    return (sizeof(*pv) + pv->MaxPrec * sizeof(BDIGIT));
+    return (sizeof(*pv) + pv->MaxPrec * sizeof(DECDIG));
 }
 
 #ifndef HAVE_RB_EXT_RACTOR_SAFE
@@ -381,7 +381,7 @@ BigDecimal_precision(VALUE self)
         ex = 0;
     }
     else if (p->Prec > 0) {
-        BDIGIT x = p->frac[0];
+        DECDIG x = p->frac[0];
         for (precision = 0; x > 0; x /= 10) {
             ++precision;
         }
@@ -397,7 +397,7 @@ BigDecimal_precision(VALUE self)
         precision += n * BASE_FIG;
 
         if (ex < (ssize_t)p->Prec) {
-            BDIGIT x = p->frac[n];
+            DECDIG x = p->frac[n];
             for (; x > 0 && x % 10 == 0; x /= 10) {
                 --precision;
             }
@@ -423,7 +423,7 @@ BigDecimal_n_significant_digits(VALUE self)
 
     int nlz, ntz;
 
-    BDIGIT x = p->frac[0];
+    DECDIG x = p->frac[0];
     for (nlz = BASE_FIG; x > 0; x /= 10) --nlz;
 
     x = p->frac[n-1];
@@ -452,8 +452,8 @@ BigDecimal_hash(VALUE self)
     hash = (st_index_t)p->sign;
     /* hash!=2: the case for 0(1),NaN(0) or +-Infinity(3) is sign itself */
     if(hash == 2 || hash == (st_index_t)-2) {
-	hash ^= rb_memhash(p->frac, sizeof(BDIGIT)*p->Prec);
-	hash += p->exponent;
+        hash ^= rb_memhash(p->frac, sizeof(DECDIG)*p->Prec);
+        hash += p->exponent;
     }
     return ST2FIX(hash);
 }
@@ -760,8 +760,8 @@ VpCreateRbObject(size_t mx, const char *str, bool raise_exception)
     return VpNewRbClass(mx, str, rb_cBigDecimal, true, raise_exception);
 }
 
-#define VpAllocReal(prec) (Real *)VpMemAlloc(offsetof(Real, frac) + (prec) * sizeof(BDIGIT))
-#define VpReallocReal(ptr, prec) (Real *)VpMemRealloc((ptr), offsetof(Real, frac) + (prec) * sizeof(BDIGIT))
+#define VpAllocReal(prec) (Real *)VpMemAlloc(offsetof(Real, frac) + (prec) * sizeof(DECDIG))
+#define VpReallocReal(ptr, prec) (Real *)VpMemRealloc((ptr), offsetof(Real, frac) + (prec) * sizeof(DECDIG))
 
 static Real *
 VpCopy(Real *pv, Real const* const x)
@@ -774,7 +774,7 @@ VpCopy(Real *pv, Real const* const x)
     pv->exponent = x->exponent;
     pv->sign = x->sign;
     pv->flag = x->flag;
-    MEMCPY(pv->frac, x->frac, BDIGIT, pv->MaxPrec);
+    MEMCPY(pv->frac, x->frac, DECDIG, pv->MaxPrec);
 
     return pv;
 }
@@ -836,7 +836,7 @@ BigDecimal_to_i(VALUE self)
     if (e <= 0) return INT2FIX(0);
     nf = VpBaseFig();
     if (e <= nf) {
-        return LONG2NUM((long)(VpGetSign(p) * (BDIGIT_DBL_SIGNED)p->frac[0]));
+        return LONG2NUM((long)(VpGetSign(p) * (DECDIG_DBL_SIGNED)p->frac[0]));
     }
     else {
 	VALUE a = BigDecimal_split(self);
@@ -1424,7 +1424,7 @@ BigDecimal_div(VALUE self, VALUE r)
      */
     /* Round */
     if (VpHasVal(div)) { /* frac[0] must be zero for NaN,INF,Zero */
-	VpInternalRound(c, 0, c->frac[c->Prec-1], (BDIGIT)(VpBaseVal() * (BDIGIT_DBL)res->frac[0] / div->frac[0]));
+        VpInternalRound(c, 0, c->frac[c->Prec-1], (DECDIG)(VpBaseVal() * (DECDIG_DBL)res->frac[0] / div->frac[0]));
     }
     return VpCheckGetValue(c);
 }
@@ -2724,7 +2724,7 @@ rb_uint64_convert_to_BigDecimal(uint64_t uval, RB_UNUSED_VAR(size_t digs), int r
         vp->Prec = 1;
         vp->exponent = 1;
         VpSetSign(vp, 1);
-        vp->frac[0] = (BDIGIT)uval;
+        vp->frac[0] = (DECDIG)uval;
     }
     else {
         const size_t len10 = ceil(LOG10_2 * bit_length(uval));
@@ -2738,7 +2738,7 @@ rb_uint64_convert_to_BigDecimal(uint64_t uval, RB_UNUSED_VAR(size_t digs), int r
 
         size_t i;
         for (i = 0; i < len; ++i) {
-            BDIGIT r = uval % BASE;
+            DECDIG r = uval % BASE;
             vp->frac[len - i - 1] = r;
             uval /= BASE;
         }
@@ -3809,9 +3809,9 @@ enum op_sw {
 
 static int VpIsDefOP(Real *c, Real *a, Real *b, enum op_sw sw);
 static int AddExponent(Real *a, SIGNED_VALUE n);
-static BDIGIT VpAddAbs(Real *a,Real *b,Real *c);
-static BDIGIT VpSubAbs(Real *a,Real *b,Real *c);
-static size_t VpSetPTR(Real *a, Real *b, Real *c, size_t *a_pos, size_t *b_pos, size_t *c_pos, BDIGIT *av, BDIGIT *bv);
+static DECDIG VpAddAbs(Real *a,Real *b,Real *c);
+static DECDIG VpSubAbs(Real *a,Real *b,Real *c);
+static size_t VpSetPTR(Real *a, Real *b, Real *c, size_t *a_pos, size_t *b_pos, size_t *c_pos, DECDIG *av, DECDIG *bv);
 static int VpNmlz(Real *a);
 static void VpFormatSt(char *psz, size_t fFmt);
 static int VpRdup(Real *m, size_t ind_m);
@@ -4215,13 +4215,13 @@ VpNumOfChars(Real *vp,const char *pszFmt)
  *   that BASE is as large as possible satisfying the
  *   relation MaxVal <= BASE*(BASE+1). Where the value
  *   MaxVal is the largest value which can be represented
- *   by one BDIGIT word in the computer used.
+ *   by one DECDIG word in the computer used.
  *
  * [Returns]
  *   DBLE_FIG   ... OK
  */
 VP_EXPORT size_t
-VpInit(BDIGIT BaseVal)
+VpInit(DECDIG BaseVal)
 {
     /* Setup +/- Inf  NaN -0 */
     VpGetDoubleNegZero();
@@ -4236,12 +4236,12 @@ VpInit(BDIGIT BaseVal)
 
 #ifdef BIGDECIMAL_DEBUG
     if (gfDebug) {
-	printf("VpInit: BaseVal   = %"PRIuBDIGIT"\n", BaseVal);
-	printf("\tBASE      = %"PRIuBDIGIT"\n", BASE);
-	printf("\tHALF_BASE = %"PRIuBDIGIT"\n", HALF_BASE);
-	printf("\tBASE1     = %"PRIuBDIGIT"\n", BASE1);
-	printf("\tBASE_FIG  = %u\n", BASE_FIG);
-	printf("\tDBLE_FIG  = %d\n", DBLE_FIG);
+        printf("VpInit: BaseVal   = %"PRIuDECDIG"\n", BaseVal);
+        printf("\tBASE      = %"PRIuDECDIG"\n", BASE);
+        printf("\tHALF_BASE = %"PRIuDECDIG"\n", HALF_BASE);
+        printf("\tBASE1     = %"PRIuDECDIG"\n", BASE1);
+        printf("\tBASE_FIG  = %u\n", BASE_FIG);
+        printf("\tDBLE_FIG  = %d\n", DBLE_FIG);
     }
 #endif /* BIGDECIMAL_DEBUG */
 
@@ -4601,7 +4601,7 @@ VpAsgn(Real *c, Real *a, int isw)
 	VpSetSign(c, isw * VpGetSign(a));    /* set sign */
 	n = (a->Prec < c->MaxPrec) ? (a->Prec) : (c->MaxPrec);
 	c->Prec = n;
-	memcpy(c->frac, a->frac, n * sizeof(BDIGIT));
+        memcpy(c->frac, a->frac, n * sizeof(DECDIG));
 	/* Needs round ? */
 	if (isw != 10) {
 	    /* Not in ActiveRound */
@@ -4632,7 +4632,7 @@ VpAddSub(Real *c, Real *a, Real *b, int operation)
     short sw, isw;
     Real *a_ptr, *b_ptr;
     size_t n, na, nb, i;
-    BDIGIT mrv;
+    DECDIG mrv;
 
 #ifdef BIGDECIMAL_DEBUG
     if (gfDebug) {
@@ -4760,7 +4760,7 @@ end_if:
  * a and b assuming abs(a)>abs(b).
  *   c = abs(a) + abs(b) ; where |a|>=|b|
  */
-static BDIGIT
+static DECDIG
 VpAddAbs(Real *a, Real *b, Real *c)
 {
     size_t word_shift;
@@ -4770,7 +4770,7 @@ VpAddAbs(Real *a, Real *b, Real *c)
     size_t a_pos;
     size_t b_pos, b_pos_with_word_shift;
     size_t c_pos;
-    BDIGIT av, bv, carry, mrv;
+    DECDIG av, bv, carry, mrv;
 
 #ifdef BIGDECIMAL_DEBUG
     if (gfDebug) {
@@ -4855,7 +4855,7 @@ Exit:
 /*
  * c = abs(a) - abs(b)
  */
-static BDIGIT
+static DECDIG
 VpSubAbs(Real *a, Real *b, Real *c)
 {
     size_t word_shift;
@@ -4865,7 +4865,7 @@ VpSubAbs(Real *a, Real *b, Real *c)
     size_t a_pos;
     size_t b_pos, b_pos_with_word_shift;
     size_t c_pos;
-    BDIGIT av, bv, borrow, mrv;
+    DECDIG av, bv, borrow, mrv;
 
 #ifdef BIGDECIMAL_DEBUG
     if (gfDebug) {
@@ -4972,7 +4972,7 @@ Exit:
  *      c_pos      =      |
  */
 static size_t
-VpSetPTR(Real *a, Real *b, Real *c, size_t *a_pos, size_t *b_pos, size_t *c_pos, BDIGIT *av, BDIGIT *bv)
+VpSetPTR(Real *a, Real *b, Real *c, size_t *a_pos, size_t *b_pos, size_t *c_pos, DECDIG *av, DECDIG *bv)
 {
     size_t left_word, right_word, word_shift;
 
@@ -5087,8 +5087,8 @@ VpMult(Real *c, Real *a, Real *b)
     size_t MxIndA, MxIndB, MxIndAB, MxIndC;
     size_t ind_c, i, ii, nc;
     size_t ind_as, ind_ae, ind_bs;
-    BDIGIT carry;
-    BDIGIT_DBL s;
+    DECDIG carry;
+    DECDIG_DBL s;
     Real *w;
 
 #ifdef BIGDECIMAL_DEBUG
@@ -5142,7 +5142,7 @@ VpMult(Real *c, Real *a, Real *b)
     VpSetSign(c, VpGetSign(a) * VpGetSign(b));    /* set sign  */
     carry = 0;
     nc = ind_c = MxIndAB;
-    memset(c->frac, 0, (nc + 1) * sizeof(BDIGIT));        /* Initialize c  */
+    memset(c->frac, 0, (nc + 1) * sizeof(DECDIG));        /* Initialize c  */
     c->Prec = nc + 1;        /* set precision */
     for (nc = 0; nc < MxIndAB; ++nc, --ind_c) {
 	if (nc < MxIndB) {    /* The left triangle of the Fig. */
@@ -5162,15 +5162,15 @@ VpMult(Real *c, Real *a, Real *b)
 	}
 
 	for (i = ind_as; i <= ind_ae; ++i) {
-	    s = (BDIGIT_DBL)a->frac[i] * b->frac[ind_bs--];
-	    carry = (BDIGIT)(s / BASE);
-	    s -= (BDIGIT_DBL)carry * BASE;
-	    c->frac[ind_c] += (BDIGIT)s;
-	    if (c->frac[ind_c] >= BASE) {
-		s = c->frac[ind_c] / BASE;
-		carry += (BDIGIT)s;
-		c->frac[ind_c] -= (BDIGIT)(s * BASE);
-	    }
+            s = (DECDIG_DBL)a->frac[i] * b->frac[ind_bs--];
+            carry = (DECDIG)(s / BASE);
+            s -= (DECDIG_DBL)carry * BASE;
+            c->frac[ind_c] += (DECDIG)s;
+            if (c->frac[ind_c] >= BASE) {
+                s = c->frac[ind_c] / BASE;
+                carry += (DECDIG)s;
+                c->frac[ind_c] -= (DECDIG)(s * BASE);
+            }
 	    if (carry) {
 		ii = ind_c;
 		while (ii-- > 0) {
@@ -5216,9 +5216,9 @@ VpDivd(Real *c, Real *r, Real *a, Real *b)
     size_t word_a, word_b, word_c, word_r;
     size_t i, n, ind_a, ind_b, ind_c, ind_r;
     size_t nLoop;
-    BDIGIT_DBL q, b1, b1p1, b1b2, b1b2p1, r1r2;
-    BDIGIT borrow, borrow1, borrow2;
-    BDIGIT_DBL qb;
+    DECDIG_DBL q, b1, b1p1, b1b2, b1b2p1, r1r2;
+    DECDIG borrow, borrow1, borrow2;
+    DECDIG_DBL qb;
 
 #ifdef BIGDECIMAL_DEBUG
     if (gfDebug) {
@@ -5290,7 +5290,7 @@ VpDivd(Real *c, Real *r, Real *a, Real *b)
 	    ++ind_c;
 	    continue;
 	}
-	r1r2 = (BDIGIT_DBL)r->frac[ind_c] * BASE + r->frac[ind_c + 1];
+        r1r2 = (DECDIG_DBL)r->frac[ind_c] * BASE + r->frac[ind_c + 1];
 	if (r1r2 == b1b2) {
 	    /* The first two word digits is the same */
 	    ind_b = 2;
@@ -5327,17 +5327,17 @@ VpDivd(Real *c, Real *r, Real *a, Real *b)
 	/* The first two word digits is not the same, */
 	/* then compare magnitude, and divide actually. */
 	if (r1r2 >= b1b2p1) {
-	    q = r1r2 / b1b2p1;  /* q == (BDIGIT)q  */
-	    c->frac[ind_c] += (BDIGIT)q;
-	    ind_r = b->Prec + ind_c - 1;
-	    goto sub_mult;
+            q = r1r2 / b1b2p1;  /* q == (DECDIG)q  */
+            c->frac[ind_c] += (DECDIG)q;
+            ind_r = b->Prec + ind_c - 1;
+            goto sub_mult;
 	}
 
 div_b1p1:
-	if (ind_c + 1 >= word_c) goto out_side;
-	q = r1r2 / b1p1;  /* q == (BDIGIT)q */
-	c->frac[ind_c + 1] += (BDIGIT)q;
-	ind_r = b->Prec + ind_c;
+        if (ind_c + 1 >= word_c) goto out_side;
+        q = r1r2 / b1p1;  /* q == (DECDIG)q */
+        c->frac[ind_c + 1] += (DECDIG)q;
+        ind_r = b->Prec + ind_c;
 
 sub_mult:
 	borrow1 = borrow2 = 0;
@@ -5349,16 +5349,16 @@ sub_mult:
 	    qb = q * b->frac[ind_b];
 	    if (qb < BASE) borrow1 = 0;
 	    else {
-		borrow1 = (BDIGIT)(qb / BASE);
-		qb -= (BDIGIT_DBL)borrow1 * BASE;	/* get qb < BASE */
+                borrow1 = (DECDIG)(qb / BASE);
+                qb -= (DECDIG_DBL)borrow1 * BASE;	/* get qb < BASE */
 	    }
 	    if(r->frac[ind_r] < qb) {
-		r->frac[ind_r] += (BDIGIT)(BASE - qb);
-		borrow2 = borrow2 + borrow1 + 1;
+                r->frac[ind_r] += (DECDIG)(BASE - qb);
+                borrow2 = borrow2 + borrow1 + 1;
 	    }
 	    else {
-		r->frac[ind_r] -= (BDIGIT)qb;
-		borrow2 += borrow1;
+                r->frac[ind_r] -= (DECDIG)qb;
+                borrow2 += borrow1;
 	    }
 	    if (borrow2) {
 		if(r->frac[ind_r - 1] < borrow2) {
@@ -5440,9 +5440,9 @@ VpNmlz(Real *a)
 	    i = 0;
 	    while (a->frac[i] == 0) ++i;        /* skip the first few zeros */
 	    if (i) {
-		a->Prec -= i;
-		if (!AddExponent(a, -(SIGNED_VALUE)i)) return 0;
-		memmove(&a->frac[0], &a->frac[i], a->Prec*sizeof(BDIGIT));
+                a->Prec -= i;
+                if (!AddExponent(a, -(SIGNED_VALUE)i)) return 0;
+                memmove(&a->frac[0], &a->frac[i], a->Prec*sizeof(DECDIG));
 	    }
 	    return 1;
 	}
@@ -5565,7 +5565,7 @@ static int
 VPrint(FILE *fp, const char *cntl_chr, Real *a)
 {
     size_t i, j, nc, nd, ZeroSup, sep = 10;
-    BDIGIT m, e, nn;
+    DECDIG m, e, nn;
 
     j = 0;
     nd = nc = 0;        /*  nd : number of digits in fraction part(every 10 digits, */
@@ -5709,7 +5709,7 @@ VP_EXPORT void
 VpSzMantissa(Real *a,char *psz)
 {
     size_t i, n, ZeroSup;
-    BDIGIT_DBL m, e, nn;
+    DECDIG_DBL m, e, nn;
 
     if (VpIsNaN(a)) {
 	sprintf(psz, SZ_NaN);
@@ -5792,7 +5792,7 @@ VpToString(Real *a, char *psz, size_t fFmt, int fPlus)
 /* fPlus = 0: default, 1: set ' ' before digits, 2: set '+' before digits. */
 {
     size_t i, n, ZeroSup;
-    BDIGIT shift, m, e, nn;
+    DECDIG shift, m, e, nn;
     char *pszSav = psz;
     ssize_t ex;
 
@@ -5840,7 +5840,7 @@ VpToFString(Real *a, char *psz, size_t fFmt, int fPlus)
 /* fPlus = 0: default, 1: set ' ' before digits, 2: set '+' before digits. */
 {
     size_t i, n;
-    BDIGIT m, e, nn;
+    DECDIG m, e, nn;
     char *pszSav = psz;
     ssize_t ex;
 
@@ -5915,7 +5915,7 @@ VpCtoV(Real *a, const char *int_chr, size_t ni, const char *frac, size_t nf, con
     me = ne;
     signe = 1;
     exponent_overflow = 0;
-    memset(a->frac, 0, ma * sizeof(BDIGIT));
+    memset(a->frac, 0, ma * sizeof(DECDIG));
     if (ne > 0) {
 	i = 0;
 	if (exp_chr[0] == '-') {
@@ -6130,7 +6130,7 @@ VpDtoV(Real *m, double d)
 {
     size_t ind_m, mm;
     SIGNED_VALUE ne;
-    BDIGIT i;
+    DECDIG i;
     double  val, val2;
 
     if (isnan(d)) {
@@ -6165,12 +6165,12 @@ VpDtoV(Real *m, double d)
     /* Now val = 0.xxxxx*BASE**ne */
 
     mm = m->MaxPrec;
-    memset(m->frac, 0, mm * sizeof(BDIGIT));
+    memset(m->frac, 0, mm * sizeof(DECDIG));
     for (ind_m = 0; val > 0.0 && ind_m < mm; ind_m++) {
-	val *= (double)BASE;
-	i = (BDIGIT)val;
-	val -= (double)i;
-	m->frac[ind_m] = i;
+        val *= (double)BASE;
+        i = (DECDIG)val;
+        val -= (double)i;
+        m->frac[ind_m] = i;
     }
     if (ind_m >= mm) ind_m = mm - 1;
     VpSetSign(m, (d > 0.0) ? 1 : -1);
@@ -6178,7 +6178,7 @@ VpDtoV(Real *m, double d)
     m->exponent = ne;
 
     VpInternalRound(m, 0, (m->Prec > 0) ? m->frac[m->Prec-1] : 0,
-		    (BDIGIT)(val*(double)BASE));
+                    (DECDIG)(val*(double)BASE));
 
 Exit:
 #ifdef BIGDECIMAL_DEBUG
@@ -6374,8 +6374,8 @@ VpMidRound(Real *y, unsigned short f, ssize_t nf)
     /* exptoadd: number of digits needed to compensate negative nf */
     int fracf, fracf_1further;
     ssize_t n,i,ix,ioffset, exptoadd;
-    BDIGIT v, shifter;
-    BDIGIT div;
+    DECDIG v, shifter;
+    DECDIG div;
 
     nf += y->exponent * (ssize_t)BASE_FIG;
     exptoadd=0;
@@ -6397,8 +6397,8 @@ VpMidRound(Real *y, unsigned short f, ssize_t nf)
     n = (ssize_t)BASE_FIG - ioffset - 1;
     for (shifter = 1, i = 0; i < n; ++i) shifter *= 10;
 
-    /* so the representation used (in y->frac) is an array of BDIGIT, where
-       each BDIGIT contains a value between 0 and BASE-1, consisting of BASE_FIG
+    /* so the representation used (in y->frac) is an array of DECDIG, where
+       each DECDIG contains a value between 0 and BASE-1, consisting of BASE_FIG
        decimal places.
 
        (that numbers of decimal places are typed as ssize_t is somewhat confusing)
@@ -6406,10 +6406,10 @@ VpMidRound(Real *y, unsigned short f, ssize_t nf)
        nf is now position (in decimal places) of the digit from the start of
        the array.
 
-       ix is the position (in BDIGITS) of the BDIGIT containing the decimal digit,
+       ix is the position (in DECDIGs) of the DECDIG containing the decimal digit,
        from the start of the array.
 
-       v is the value of this BDIGIT
+       v is the value of this DECDIG
 
        ioffset is the number of extra decimal places along of this decimal digit
        within v.
@@ -6435,7 +6435,7 @@ VpMidRound(Real *y, unsigned short f, ssize_t nf)
        now fracf_1further is whether any of the remaining digits within v are non-zero
        */
 
-    /* now check all the remaining BDIGITS for zero-ness a whole BDIGIT at a time.
+    /* now check all the remaining DECDIGs for zero-ness a whole DECDIG at a time.
        if we spot any non-zeroness, that means that we found a positive digit under
        rounding position, and we also found a positive digit under one further than
        the rounding position, so both searches (to see if any such non-zero digit exists)
@@ -6454,7 +6454,7 @@ VpMidRound(Real *y, unsigned short f, ssize_t nf)
        now v = the first digit under the rounding position */
 
     /* drop digits after pointed digit */
-    memset(y->frac + ix + 1, 0, (y->Prec - (ix + 1)) * sizeof(BDIGIT));
+    memset(y->frac + ix + 1, 0, (y->Prec - (ix + 1)) * sizeof(DECDIG));
 
     switch (f) {
       case VP_ROUND_DOWN: /* Truncate */
@@ -6482,11 +6482,11 @@ VpMidRound(Real *y, unsigned short f, ssize_t nf)
 	    }
 	    else {
 		if (ioffset == 0) {
-		    /* v is the first decimal digit of its BDIGIT;
-		       need to grab the previous BDIGIT if present
-		       to check for evenness of the previous decimal
-		       digit (which is same as that of the BDIGIT since
-		       base 10 has a factor of 2) */
+                    /* v is the first decimal digit of its DECDIG;
+                       need to grab the previous DECDIG if present
+                       to check for evenness of the previous decimal
+                       digit (which is same as that of the DECDIG since
+                       base 10 has a factor of 2) */
 		    if (ix && (y->frac[ix-1] % 2)) ++div;
 		}
 		else {
@@ -6534,7 +6534,7 @@ VpLeftRound(Real *y, unsigned short f, ssize_t nf)
  * Round from the left hand side of the digits.
  */
 {
-    BDIGIT v;
+    DECDIG v;
     if (!VpHasVal(y)) return 0; /* Unable to round */
     v = y->frac[0];
     nf -= VpExponent(y) * (ssize_t)BASE_FIG;
@@ -6565,7 +6565,7 @@ VpLimitRound(Real *c, size_t ixDigit)
 /* If I understand correctly, this is only ever used to round off the final decimal
    digit of precision */
 static void
-VpInternalRound(Real *c, size_t ixDigit, BDIGIT vPrev, BDIGIT v)
+VpInternalRound(Real *c, size_t ixDigit, DECDIG vPrev, DECDIG v)
 {
     int f = 0;
 
@@ -6615,7 +6615,7 @@ VpInternalRound(Real *c, size_t ixDigit, BDIGIT vPrev, BDIGIT v)
 static int
 VpRdup(Real *m, size_t ind_m)
 {
-    BDIGIT carry;
+    DECDIG carry;
 
     if (!ind_m) ind_m = m->Prec;
 
@@ -6810,12 +6810,12 @@ VpVarCheck(Real * v)
     }
     for (i = 0; i < v->Prec; ++i) {
 	if (v->frac[i] >= BASE) {
-	    printf("ERROR(VpVarCheck): Illegal fraction\n");
-	    printf("       Frac[%"PRIuSIZE"]=%"PRIuBDIGIT"\n", i, v->frac[i]);
-	    printf("       Prec.   =%"PRIuSIZE"\n", v->Prec);
-	    printf("       Exp. =%"PRIdVALUE"\n", v->exponent);
-	    printf("       BASE =%"PRIuBDIGIT"\n", BASE);
-	    return 3;
+            printf("ERROR(VpVarCheck): Illegal fraction\n");
+            printf("       Frac[%"PRIuSIZE"]=%"PRIuDECDIG"\n", i, v->frac[i]);
+            printf("       Prec.   =%"PRIuSIZE"\n", v->Prec);
+            printf("       Exp. =%"PRIdVALUE"\n", v->exponent);
+            printf("       BASE =%"PRIuDECDIG"\n", BASE);
+            return 3;
 	}
     }
     return 0;
