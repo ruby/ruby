@@ -30,7 +30,7 @@ class TestRubyVMMJIT < Test::Unit::TestCase
     EOS
     assert_equal('truefalsefalse', out)
     assert_equal(
-      5, err.scan(/#{JITSupport::JIT_SUCCESS_PREFIX}/).size,
+      5, strip_mjit_deps(err).scan(/#{JITSupport::JIT_SUCCESS_PREFIX}/).size,
       "unexpected stdout:\n```\n#{out}```\n\nstderr:\n```\n#{err}```",
     )
   end
@@ -41,6 +41,7 @@ class TestRubyVMMJIT < Test::Unit::TestCase
       def b() end; b
       RubyVM::MJIT.pause
     EOS
+    err = strip_mjit_deps(err)
     assert_equal(
       2, err.scan(/#{JITSupport::JIT_SUCCESS_PREFIX}/).size,
       "unexpected stdout:\n```\n#{out}```\n\nstderr:\n```\n#{err}```",
@@ -86,6 +87,13 @@ class TestRubyVMMJIT < Test::Unit::TestCase
       print RubyVM::MJIT.pause
     EOS
     assert_equal('falsetruetruefalsetrue', out)
-    assert_equal(0, err.scan(/#{JITSupport::JIT_SUCCESS_PREFIX}/).size)
+    assert_equal(0, strip_mjit_deps(err).scan(/#{JITSupport::JIT_SUCCESS_PREFIX}/).size)
+  end
+
+  private
+
+  # Ignore MJIT's own dependencies
+  def strip_mjit_deps(err)
+    err.gsub(/^#{JIT_SUCCESS_PREFIX}: new@<internal:ractor>:\d+ -> [^ ]+\n/, '')
   end
 end
