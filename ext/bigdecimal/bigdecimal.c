@@ -2736,12 +2736,15 @@ rb_uint64_convert_to_BigDecimal(uint64_t uval, RB_UNUSED_VAR(size_t digs), int r
         vp->exponent = len;
         VpSetSign(vp, 1);
 
-        size_t i;
+        size_t i, ntz = 0;
         for (i = 0; i < len; ++i) {
             DECDIG r = uval % BASE;
             vp->frac[len - i - 1] = r;
+            if (r == 0) ++ntz;
             uval /= BASE;
         }
+
+        vp->Prec -= ntz;
     }
 
     return BigDecimal_wrap_struct(obj, vp);
