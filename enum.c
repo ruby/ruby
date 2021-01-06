@@ -1393,27 +1393,39 @@ DEFINE_ENUMFUNCS(any)
 }
 
 /*
- *  call-seq:
- *     enum.any? [{ |obj| block }]   -> true or false
- *     enum.any?(pattern)            -> true or false
+ * call-seq:
+ *   any? -> true or false
+ *   any?(object) -> true or false
+ *   any? {|element| ... } -> true or false
  *
- *  Passes each element of the collection to the given block. The method
- *  returns <code>true</code> if the block ever returns a value other
- *  than <code>false</code> or <code>nil</code>. If the block is not
- *  given, Ruby adds an implicit block of <code>{ |obj| obj }</code> that
- *  will cause #any? to return +true+ if at least one of the collection
- *  members is not +false+ or +nil+.
+ * Returns +true+ if any element meets a specified criterion; +false+ otherwise.
  *
- *  If instead a pattern is supplied, the method returns whether
- *  <code>pattern === element</code> for any collection member.
+ * With no argument and no block given,
+ * returns whether any element is a truthy value:
  *
- *     %w[ant bear cat].any? { |word| word.length >= 3 } #=> true
- *     %w[ant bear cat].any? { |word| word.length >= 4 } #=> true
- *     %w[ant bear cat].any?(/d/)                        #=> false
- *     [nil, true, 99].any?(Integer)                     #=> true
- *     [nil, true, 99].any?                              #=> true
- *     [].any?                                           #=> false
+ *   [nil, false, 0].any? # => true
+ *   [nil, false].any?    # => false
  *
+ * With argument +object+ given, evaluates the expression <tt>object === element</tt>
+ * for each element +element+;
+ * returns +true+ if any such expression evaluates to a truthy value;
+ * returns +false+ otherwise:
+ *
+ *   %w/bar, baz, bat/.any?(/at/) # => true
+ *   %w/bar, baz, bat/.any?(/xx/) # => false
+ *   [0, 1, 'two'].any?(String)   # => true
+ *   (0..10).any?(String)         # => false
+ *
+ * With a block given, calls the block with successive elements;
+ * returns +true+ if the block returns any truthy value;
+ * returns +false+ otherwise:
+ *
+ *   %w/foo bar baz/.any?{|word| word.match(/oo/)}           # => true
+ *   %w/foo bar baz/.any?{|word| word.match(/xx/)}           # => false
+ *   {foo: 0, bar: 1, baz: 2}.any? {|key, value| value > 1 } # => true
+ *   {foo: 0, bar: 1, baz: 2}.any? {|key, value| value > 2 } # => false
+ *
+ * Related: #all?, #one?, #none?.
  */
 
 static VALUE
@@ -1662,28 +1674,41 @@ rb_nmin_run(VALUE obj, VALUE num, int by, int rev, int ary)
 }
 
 /*
- *  call-seq:
- *     enum.one? [{ |obj| block }]   -> true or false
- *     enum.one?(pattern)            -> true or false
+ * call-seq:
+ *   one? -> true or false
+ *   one?(object) -> true or false
+ *   one? {|element| ... } -> true or false
  *
- *  Passes each element of the collection to the given block. The method
- *  returns <code>true</code> if the block returns <code>true</code>
- *  exactly once. If the block is not given, <code>one?</code> will return
- *  <code>true</code> only if exactly one of the collection members is
- *  true.
+ * Returns +true+ if exactly one element meets a specified criterion; +false+ otherwise.
  *
- *  If instead a pattern is supplied, the method returns whether
- *  <code>pattern === element</code> for exactly one collection member.
+ * With no argument and no block given,
+ * returns whether exactly one element is a truthy value:
  *
- *     %w{ant bear cat}.one? { |word| word.length == 4 }  #=> true
- *     %w{ant bear cat}.one? { |word| word.length > 4 }   #=> false
- *     %w{ant bear cat}.one? { |word| word.length < 4 }   #=> false
- *     %w{ant bear cat}.one?(/t/)                         #=> false
- *     [ nil, true, 99 ].one?                             #=> false
- *     [ nil, true, false ].one?                          #=> true
- *     [ nil, true, 99 ].one?(Integer)                    #=> true
- *     [].one?                                            #=> false
+ *   [nil, false, 0].one? # => true
+ *   [nil, false].one?    # => false
+ *   [true, true].one?    # => false
  *
+ * With argument +object+ given, evaluates the expression <tt>object === element</tt>
+ * for each element +element+;
+ * returns +true+ if exactly one such expression evaluates to a truthy value;
+ * returns +false+ otherwise:
+ *
+ *   %w/bar, baz, bat/.one?(/at/) # => true
+ *   %w/bar, baz, bat/.one?(/ba/) # => false
+ *   %w/bar, baz, bat/.one?(/xx/) # => false
+ *
+ * With a block given, calls the block with successive elements;
+ * returns +true+ if the block returns exactly one truthy value;
+ * returns +false+ otherwise:
+ *
+ *   %w/foo bar baz/.one?{|word| word.match(/oo/)}           # => true
+ *   %w/foo bar baz/.one?{|word| word.match(/ba/)}           # => false
+ *   %w/foo bar baz/.one?{|word| word.match(/xx/)}           # => false
+ *   {foo: 0, bar: 1, baz: 2}.one? {|key, value| value > 1 } # => true
+ *   {foo: 0, bar: 1, baz: 2}.one? {|key, value| value > 0 } # => false
+ *   {foo: 0, bar: 1, baz: 2}.one? {|key, value| value > 2 } # => false
+ *
+ * Related: #any?, #all?, #none?.
  */
 static VALUE
 enum_one(int argc, VALUE *argv, VALUE obj)
@@ -1708,26 +1733,37 @@ DEFINE_ENUMFUNCS(none)
 }
 
 /*
- *  call-seq:
- *     enum.none? [{ |obj| block }]   -> true or false
- *     enum.none?(pattern)            -> true or false
+ * call-seq:
+ *   none? -> true or false
+ *   none?(object) -> true or false
+ *   none? {|element| ... } -> true or false
  *
- *  Passes each element of the collection to the given block. The method
- *  returns <code>true</code> if the block never returns <code>true</code>
- *  for all elements. If the block is not given, <code>none?</code> will return
- *  <code>true</code> only if none of the collection members is true.
+ * Returns +true+ if no element meets a specified criterion; +false+ otherwise.
  *
- *  If instead a pattern is supplied, the method returns whether
- *  <code>pattern === element</code> for none of the collection members.
+ * With no argument and no block given,
+ * returns whether no element is a truthy value:
  *
- *     %w{ant bear cat}.none? { |word| word.length == 5 } #=> true
- *     %w{ant bear cat}.none? { |word| word.length >= 4 } #=> false
- *     %w{ant bear cat}.none?(/d/)                        #=> true
- *     [1, 3.14, 42].none?(Float)                         #=> false
- *     [].none?                                           #=> true
- *     [nil].none?                                        #=> true
- *     [nil, false].none?                                 #=> true
- *     [nil, false, true].none?                           #=> false
+ *   [nil, false].none?    # => true
+ *   [nil, false, 0].none? # => false
+ *
+ * With argument +object+ given, evaluates the expression <tt>object === element</tt>
+ * for each element +element+;
+ * returns +true+ if bi such expression evaluates to truthy values;
+ * returns +false+ otherwise:
+ *
+ *   %w/bar, baz, bat/.none?(/xx/) # => true
+ *   %w/bar, baz, bat/.none?(/az/) # => false
+ *
+ * With a block given, calls the block with successive elements;
+ * returns +true+ if the block returns no truthy values;
+ * returns +false+ if the block returns any truthy value:
+ *
+ *   %w/foo bar baz/.none?{|word| word.include?('xx')}        # => true
+ *   %w/foo bar baz/.none?{|word| word.include?('oo')}        # => false
+ *   {foo: 0, bar: 1, baz: 2}.none? {|key, value| value > 2 } # => true
+ *   {foo: 0, bar: 1, baz: 2}.none? {|key, value| value > 1 } # => false
+ *
+ * Related: #any?, #one?, #none?.
  */
 static VALUE
 enum_none(int argc, VALUE *argv, VALUE obj)
@@ -1784,27 +1820,69 @@ min_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 
 
 /*
- *  call-seq:
- *     enum.min                     -> obj
- *     enum.min { |a, b| block }    -> obj
- *     enum.min(n)                  -> array
- *     enum.min(n) { |a, b| block } -> array
+ * call-seq:
+ *   min -> element
+ *   min(n) -> new_array
+ *   min {|a, b| ... } -> element
+ *   min(n) {|a, b| ... } -> new_array
  *
- *  Returns the object in _enum_ with the minimum value. The
- *  first form assumes all objects implement <code><=></code>;
- *  the second uses the block to return <em>a <=> b</em>.
+ * Returns the elements whose values are least among the elements.
+ * For duplicates, the ordering is indeterminate, and may be unstable.
  *
- *     a = %w(albatross dog horse)
- *     a.min                                   #=> "albatross"
- *     a.min { |a, b| a.length <=> b.length }  #=> "dog"
+ * With no argument and no block given,
+ * returns the smallest element, based on comparisons using <tt><=></tt>:
  *
- *  If the +n+ argument is given, minimum +n+ elements are returned
- *  as a sorted array.
+ *   (0..4).min                   # => 0
+ *   %w/foo bar baz/.min          # => "bar"
+ *   {foo: 0, bar: 1, baz: 2}.min # => [:bar, 1]
  *
- *     a = %w[albatross dog horse]
- *     a.min(2)                                  #=> ["albatross", "dog"]
- *     a.min(2) {|a, b| a.length <=> b.length }  #=> ["dog", "horse"]
- *     [5, 1, 3, 4, 2].min(3)                    #=> [1, 2, 3]
+ * With argument +n+ and no block given,
+ * returns the an \Array containing the smallest +n+ elements,
+ * based on comparisons using <tt><=></tt>:
+ *
+ *   (0..4).min(2)                   # => [0, 1]
+ *   %w/foo bar baz/.min(2)          # => ["bar", "baz"]
+ *   {foo: 0, bar: 1, baz: 2}.min(2) # => [[:bar, 1], [:baz, 2]]
+ *   (0..4).min(500)                 # => [0, 1, 2, 3, 4]
+ *
+ * With a block given and no argument,
+ * calls the block with successive element pairs +a+ and +b+;
+ * returns the smallest element as determined by the block;
+ * the block's return value should be:
+ *
+ * - Negative if +b+ should follow +a+.
+ * - Zero if +a+ and +b+ are equivalent.
+ * - Positive if +a+ should follow +b+.
+ *
+ * Examples:
+ *
+ *   (0..4).min {|a, b| -a <=> -b }                                 # => 4
+ *   %w/foo bar baz/.min {|a, b| a.reverse <=> b.reverse }          # => "foo"
+ *   {foo: 0, bar: 1, baz: 2}.min {|a, b| p [a, b]; a[1] <=> b[1] } # => [:foo, 0]
+ *
+ * In the last example, using a \Hash,
+ * the output shows that +a+ and +b+ are 2-element Arrays, not 1-element Hashes:
+ *
+ *   [[:bar, 1], [:foo, 0]]
+ *   [[:baz, 2], [:foo, 0]]
+ *
+ * With argument +n+ and a block given,
+ * calls the block with successive element pairs +a+ and +b+;
+ * returns an \Array containing the smallest +n+ elements,
+ * as determined by the block;
+ * the block's return value should be:
+ *
+ * - Negative if +b+ should follow +a+.
+ * - Zero if +a+ and +b+ are equivalent.
+ * - Positive if +a+ should follow +b+.
+ *
+ * Examples:
+ *
+ *   (0..4).min(2) {|a, b| -a <=> -b }                        # => [4, 3]
+ *   %w/foo bar baz/.min(2) {|a, b| a.reverse <=> b.reverse } # => ["foo", "bar"]
+ *   {foo: 0, bar: 1, baz: 2}.min(2) {|a, b| a[1] <=> b[1] }  # => [[:foo, 0], [:bar, 1]]
+ *
+ * Related: #min_by, #max
  */
 
 static VALUE
@@ -1876,27 +1954,70 @@ max_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 }
 
 /*
- *  call-seq:
- *     enum.max                     -> obj
- *     enum.max { |a, b| block }    -> obj
- *     enum.max(n)                  -> array
- *     enum.max(n) { |a, b| block } -> array
+ * call-seq:
+ *   max -> element
+ *   max(n) -> new_array
+ *   max {|a, b| ... } -> element
+ *   max(n) {|a, b| ... } -> new_array
  *
- *  Returns the object in _enum_ with the maximum value. The
- *  first form assumes all objects implement <code><=></code>;
- *  the second uses the block to return <em>a <=> b</em>.
+ * Returns the elements whose values are largest among the elements,
+ * as determined by <tt><=></tt> or a given block.
+ * For duplicates, the ordering is indeterminate, and may be unstable.
  *
- *     a = %w(albatross dog horse)
- *     a.max                                   #=> "horse"
- *     a.max { |a, b| a.length <=> b.length }  #=> "albatross"
+ * With no argument and no block given,
+ * returns the largest element, based on comparisons using <tt><=></tt>:
  *
- *  If the +n+ argument is given, maximum +n+ elements are returned
- *  as an array, sorted in descending order.
+ *   (0..4).max                   # => 4
+ *   %w/foo bar baz/.max          # => "foo"
+ *   {foo: 0, bar: 1, baz: 2}.max # => [:foo, 0]
  *
- *     a = %w[albatross dog horse]
- *     a.max(2)                                  #=> ["horse", "dog"]
- *     a.max(2) {|a, b| a.length <=> b.length }  #=> ["albatross", "horse"]
- *     [5, 1, 3, 4, 2].max(3)                    #=> [5, 4, 3]
+ * With argument +n+ and no block given,
+ * returns the an \Array containing the largest +n+ elements,
+ * based on comparisons using <tt><=></tt>:
+ *
+ *   (0..4).max(2)                   # => [4, 3]
+ *   %w/foo bar baz/.max(2)          # => ["foo", "baz"]
+ *   {foo: 0, bar: 1, baz: 2}.max(2) # => [[:foo, 0], [:baz, 2]]
+ *   (0..4).max(500)                 # => [4, 3, 2, 1, 0]
+ *
+ * With a block given and no argument,
+ * calls the block with successive element pairs +a+ and +b+;
+ * returns the largest element as determined by the block;
+ * the block's return value should be:
+ *
+ * - Negative if +b+ should follow +a+.
+ * - Zero if +a+ and +b+ are equivalent.
+ * - Positive if +a+ should follow +b+.
+ *
+ * Examples:
+ *
+ *   (0..4).max {|a, b| -a <=> -b }                                 # => 0
+ *   %w/foo bar baz/.max {|a, b| a.reverse <=> b.reverse }          # => "baz"
+ *   {foo: 0, bar: 1, baz: 2}.max {|a, b| p [a, b]; a[1] <=> b[1] } # => [:baz, 2]
+ *
+ * In the last example, using a \Hash,
+ * the output shows that +a+ and +b+ are 2-element Arrays, not 1-element Hashes:
+ *
+ *   [[:bar, 1], [:foo, 0]]
+ *   [[:baz, 2], [:bar, 1]]
+ *
+ * With argument +n+ and a block given,
+ * calls the block with successive element pairs +a+ and +b+;
+ * returns an \Array containing the largest +n+ elements,
+ * as determined by the block;
+ * the block's return value should be:
+ *
+ * - Negative if +b+ should follow +a+.
+ * - Zero if +a+ and +b+ are equivalent.
+ * - Positive if +a+ should follow +b+.
+ *
+ * Examples:
+ *
+ *   (0..4).max(2) {|a, b| -a <=> -b }                        # => [0, 1]
+ *   %w/foo bar baz/.max(2) {|a, b| a.reverse <=> b.reverse } # => ["baz", "bar"]
+ *   {foo: 0, bar: 1, baz: 2}.max(2) {|a, b| a[1] <=> b[1] }  # => [[:baz, 2], [:bar, 1]]
+ *
+ * Related: #max_by, #min
  */
 
 static VALUE
