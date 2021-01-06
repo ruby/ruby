@@ -2763,8 +2763,32 @@ rb_int64_convert_to_BigDecimal(int64_t ival, size_t digs, int raise_exception)
 static VALUE
 rb_big_convert_to_BigDecimal(VALUE val, RB_UNUSED_VAR(size_t digs), int raise_exception)
 {
-    Real *vp = GetVpValue(val, 1);
-    return check_exception(vp->obj);
+    assert(RB_TYPE_P(val, T_BIGNUM));
+
+    size_t size = rb_absint_size(val, NULL);
+    int sign = rb_big_cmp(val, INT2FIX(0));
+    if (size <= sizeof(long)) {
+        if (sign < 0) {
+            return rb_int64_convert_to_BigDecimal(NUM2LONG(val), digs, raise_exception);
+        }
+        else {
+            return rb_uint64_convert_to_BigDecimal(NUM2ULONG(val), digs, raise_exception);
+        }
+    }
+#if defined(SIZEOF_LONG_LONG) && SIZEOF_LONG < SIZEOF_LONG_LONG
+    else if (size <= sizeof(LONG_LONG)) {
+        if (sign < 0) {
+            return rb_int64_convert_to_BigDecimal(NUM2LL(val), digs, raise_exception);
+        }
+        else {
+            return rb_uint64_convert_to_BigDecimal(NUM2ULL(val), digs, raise_exception);
+        }
+    }
+#endif
+    else {
+        Real *vp = GetVpValue(val, 1);
+        return check_exception(vp->obj);
+    }
 }
 
 static VALUE
