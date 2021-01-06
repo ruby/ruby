@@ -457,11 +457,14 @@ enum_size_over_p(VALUE obj, long n)
  *
  * With a block given, calls the block with successive elements;
  * returns a new \Array with those elements for which the block returns a truthy value:
+ *
  *   (0..9).select {|element| element % 3 == 0 } # => [0, 3, 6, 9]
  *   a = {foo: 0, bar: 1, baz: 2}.select {|key, value| key.start_with?('b') }
  *   a # => {:bar=>1, :baz=>2}
+ *
  * With no block given, returns a new \Enumerator:
- *   (0..9).select # => #<Enumerator: 0..9:select>
+ *
+ *   (0..9).select                   # => #<Enumerator: 0..9:select>
  *   {foo: 0, bar: 1, baz: 2}.select # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:select>
  *
  * Enumerable#find_all and Enumerable#filter are aliases for Enumerable#select.
@@ -503,10 +506,12 @@ filter_map_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
  *
  * With a block given, calls the block with successive elements;
  * returns an \Array containing each truthy value returned by the block:
- *   (0..9).filter_map {|i| i * 2 if i.even? } # => [0, 4, 8, 12, 16]
+ *
+ *   (0..9).filter_map {|i| i * 2 if i.even? }                              # => [0, 4, 8, 12, 16]
  *   {foo: 0, bar: 1, baz: 2}.filter_map {|key, value| key if value.even? } # => [:foo, :baz]
  *
  * When no block given, returns a new \Enumerator:
+ *
  *   (0..9).filter_map # => #<Enumerator: 0..9:filter_map>
  *   e = {foo: 0, bar: 1, baz:2}.filter_map
  *   e # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:filter_map>
@@ -545,10 +550,12 @@ reject_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
  *
  * With a block given, calls the block with successive elements;
  * returns an \Array of those elements for which the block returns +nil+ or +false+:
- *   (0..9).reject {|i| i * 2 if i.even? } # => [1, 3, 5, 7, 9]
+ *
+ *   (0..9).reject {|i| i * 2 if i.even? }                             # => [1, 3, 5, 7, 9]
  *   {foo: 0, bar: 1, baz: 2}.reject {|key, value| key if value.odd? } # => {:foo=>0, :baz=>2}
  *
  * When no block given, returns a new \Enumerator:
+ *
  *   (0..9).reject # => #<Enumerator: 0..9:reject>
  *   e = {foo: 0, bar: 1, baz:2}.reject
  *   e # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:reject>
@@ -592,11 +599,13 @@ collect_all(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
  *
  * With a block given, calls the block with successive elements;
  * returns an \Array of the objects returned by the block:
- *   (0..4).map {|i| i*i } # => [0, 1, 4, 9, 16]
+ *
+ *   (0..4).map {|i| i*i }                               # => [0, 1, 4, 9, 16]
  *   {foo: 0, bar: 1, baz: 2}.map {|key, value| value*2} # => [0, 2, 4]
  *
  * With no block given, returns an \Enumerator:
- *   (0..4).map # => #<Enumerator: 0..4:map>
+ *
+ *   (0..4).map                   # => #<Enumerator: 0..4:map>
  *   {foo: 0, bar: 1, baz: 2}.map # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:map>
  *
  * Enumerable#collect is an alias for Enumerable#map.
@@ -643,14 +652,16 @@ flat_map_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
  *
  * With a block given, calls the block with successive elements;
  * returns a flattened \Array of objects returned by the block:
- *   [0, 1, 2, 3].flat_map {|element| -element } # => [0, -1, -2, -3]
- *   [0, 1, 2, 3].flat_map {|element| [element, -element] } # => [0, 0, 1, -1, 2, -2, 3, -3]
- *   [[0, 1], [2, 3]].flat_map {|e| e + [100] } # => [0, 1, 100, 2, 3, 100]
+ *
+ *   [0, 1, 2, 3].flat_map {|element| -element }                    # => [0, -1, -2, -3]
+ *   [0, 1, 2, 3].flat_map {|element| [element, -element] }         # => [0, 0, 1, -1, 2, -2, 3, -3]
+ *   [[0, 1], [2, 3]].flat_map {|e| e + [100] }                     # => [0, 1, 100, 2, 3, 100]
  *   {foo: 0, bar: 1, baz: 2}.flat_map {|key, value| [key, value] } # => [:foo, 0, :bar, 1, :baz, 2]
  *
  * With no block given, returns an Enumerator:
- *   [0, 1, 2, 3].flat_map # => #<Enumerator: [0, 1, 2, 3]:flat_map>
- *   [[0, 1], [2, 3]].flat_map # => #<Enumerator: [[0, 1], [2, 3]]:flat_map>
+ *
+ *   [0, 1, 2, 3].flat_map                  # => #<Enumerator: [0, 1, 2, 3]:flat_map>
+ *   [[0, 1], [2, 3]].flat_map              # => #<Enumerator: [[0, 1], [2, 3]]:flat_map>
  *   {foo: 0, bar: 1, baz: 2}.flat_map # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:flat_map>
  *
  * Enumerable#collect_concat is an alias for Enumerable#flat_map.
