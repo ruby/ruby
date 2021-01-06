@@ -1085,9 +1085,11 @@ typedef struct {
     unsigned int is_isolated: 1;        /* bool */
 } rb_proc_t;
 
+RUBY_SYMBOL_EXPORT_BEGIN
 VALUE rb_proc_isolate(VALUE self);
 VALUE rb_proc_isolate_bang(VALUE self);
 VALUE rb_proc_ractor_make_shareable(VALUE self);
+RUBY_SYMBOL_EXPORT_END
 
 typedef struct {
     VALUE flags; /* imemo header */
