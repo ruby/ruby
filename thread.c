@@ -5149,7 +5149,7 @@ recursive_list_access(VALUE sym)
 }
 
 /*
- * Returns Qtrue iff obj (or the pair <obj, paired_obj>) is already
+ * Returns Qtrue if and only if obj (or the pair <obj, paired_obj>) is already
  * in the recursion list.
  * Assumes the recursion list is valid.
  */
