@@ -32,6 +32,7 @@ void rb_ractor_stderr_set(VALUE);
 
 rb_ractor_local_key_t rb_ractor_local_storage_value_newkey(void);
 VALUE rb_ractor_local_storage_value(rb_ractor_local_key_t key);
+bool rb_ractor_local_storage_value_lookup(rb_ractor_local_key_t key, VALUE *val);
 void  rb_ractor_local_storage_value_set(rb_ractor_local_key_t key, VALUE val);
 
 RUBY_EXTERN const struct rb_ractor_local_storage_type rb_ractor_local_storage_type_free;
@@ -40,6 +41,9 @@ RUBY_EXTERN const struct rb_ractor_local_storage_type rb_ractor_local_storage_ty
 rb_ractor_local_key_t rb_ractor_local_storage_ptr_newkey(const struct rb_ractor_local_storage_type *type);
 void *rb_ractor_local_storage_ptr(rb_ractor_local_key_t key);
 void  rb_ractor_local_storage_ptr_set(rb_ractor_local_key_t key, void *ptr);
+
+VALUE rb_ractor_make_shareable(VALUE obj);
+VALUE rb_ractor_make_shareable_copy(VALUE obj);
 
 RUBY_SYMBOL_EXPORT_END
 
@@ -60,8 +64,5 @@ rb_ractor_shareable_p(VALUE obj)
         return rb_ractor_shareable_p_continue(obj);
     }
 }
-
-VALUE rb_ractor_make_shareable(VALUE obj);
-VALUE rb_ractor_make_shareable_copy(VALUE obj);
 
 #endif /* RUBY_RACTOR_H */
