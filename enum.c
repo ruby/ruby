@@ -669,6 +669,7 @@ enum_flat_map(VALUE obj)
  *   to_a -> new_array
  *
  * Returns a new \Array containing the collection's elements:
+ *
  *   Dir.new('.').to_a.take(2) # => [".", ".."]
  *
  * Many Ruby classes override this method, including Array, Hash, Range, Set, and Struct.
@@ -714,12 +715,14 @@ enum_to_h_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
  * Returns a new \Hash formed from the collection.
  *
  * With no block given, returns a new \Hash formed from paired elements:
+ *
  *   %w/hello world/.each_with_index.to_h # => {"hello"=>0, "world"=>1}
  *
  * With a block given, calls the block with successive elements;
  * the block must return a 2-element \Array which become the key and value
  * of a hash element;
  * returns the \Hash containing those elements:
+ *
  *   (0..3).to_h {|i| [i, i** 2]} # => {0=>0, 1=>1, 2=>4, 3=>9}
  *
  * Some Ruby classes override this method, including Array, Hash, and Struct.
@@ -846,11 +849,13 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
  * If +initial_value+ is not given,
  * +memo+ is initialized with the first element,
  * and each successive element is combined with it:
+ *
  *   (0..9).inject(:+) # => 45
  *
  * If +initial_value+ is given,
  * +memo+ is initialized with that value,
  * all successive elements are combined with it:
+ *
  *   (0..9).inject(100, :+) # => 145
  *
  * With a block given,
@@ -861,9 +866,12 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
  * If +initial_value+ is not given,
  * +memo+ is initialized with the first element,
  * and the block calls begin with the second element:
+ *
  *   (1..4).inject {|memo, n| memo * n } # => 24
+ *
  * Note that the block may choose to _replace_ +memo+ outright,
  * rather than just combining it with other elements.
+ *
  *   %w/long longer longest/.inject do |memo, word|
  *     memo.length > word.length ? memo : word
  *   end # => "longest"
@@ -871,6 +879,7 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
  * If +initial_value+ is given,
  * +memo+ is initialized with that value,
  * and the block calls begin with the first element:
+ *
  *   (1..4).inject(2) {|memo, n| memo * n } # => 48
  *
  * Enumerable#reduce is an alias for Enumerable#inject.
@@ -948,9 +957,11 @@ partition_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, arys))
  * is added to +true_array+;
  * other elements are added to +false_array+;
  * returns <tt>[true_array, false_array]</tt>:
+ *
  *   (0..5).partition {|i| i.even? } # => [[0, 2, 4], [1, 3, 5]]
  *
  * With no block given, returns a new  \Enumerator:
+ *
  *   (0..5).partition # => #<Enumerator: 0..5:partition>
  *
  * Related: #group_by.
@@ -1001,9 +1012,11 @@ group_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
  *   whose value is a new or existing \Array.
  * - The element is added to that \Array.
  * Example:
+ *
  *   (0..5).group_by {|i| i%3 } # => {0=>[0, 3], 1=>[1, 4], 2=>[2, 5]}
  *
  * With no block given, returns a new \Enumerator:
+ *
  *   (0..5).group_by # => #<Enumerator: 0..5:group_by>
  */
 
