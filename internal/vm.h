@@ -61,7 +61,7 @@ MJIT_STATIC VALUE ruby_vm_special_exception_copy(VALUE);
 PUREFUNC(st_table *rb_vm_fstring_table(void));
 
 MJIT_SYMBOL_EXPORT_BEGIN
-VALUE vm_exec(struct rb_execution_context_struct *, int); /* used in JIT-ed code */
+VALUE vm_exec(struct rb_execution_context_struct *, bool); /* used in JIT-ed code */
 MJIT_SYMBOL_EXPORT_END
 
 /* vm_eval.c */
@@ -74,6 +74,7 @@ VALUE rb_check_funcall_with_hook_kw(VALUE recv, ID mid, int argc, const VALUE *a
                                  rb_check_funcall_hook *hook, VALUE arg, int kw_splat);
 const char *rb_type_str(enum ruby_value_type type);
 VALUE rb_check_funcall_default(VALUE, ID, int, const VALUE *, VALUE);
+VALUE rb_check_funcall_basic_kw(VALUE, ID, VALUE, int, const VALUE*, int);
 VALUE rb_yield_1(VALUE val);
 VALUE rb_yield_force_blockarg(VALUE values);
 VALUE rb_lambda_call(VALUE obj, ID mid, int argc, const VALUE *argv,

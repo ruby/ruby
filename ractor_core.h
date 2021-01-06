@@ -14,11 +14,13 @@ enum rb_ractor_basket_type {
     basket_type_copy,
     basket_type_move,
     basket_type_will,
+    basket_type_deleted,
+    basket_type_reserved,
 };
 
 struct rb_ractor_basket {
-    enum rb_ractor_basket_type type;
     bool exception;
+    enum rb_ractor_basket_type type;
     VALUE v;
     VALUE sender;
 };
@@ -28,6 +30,8 @@ struct rb_ractor_queue {
     int start;
     int cnt;
     int size;
+    unsigned int serial;
+    unsigned int reserved_cnt;
 };
 
 struct rb_ractor_waiting_list {
@@ -75,8 +79,10 @@ struct rb_ractor_sync {
 };
 
 struct rb_ractor_struct {
-    struct rb_ractor_sync sync;
+    struct rb_ractor_pub pub;
 
+    struct rb_ractor_sync sync;
+    VALUE receiving_mutex;
     bool yield_atexit;
 
     // vm wide barrier synchronization
@@ -94,9 +100,6 @@ struct rb_ractor_struct {
     } threads;
     VALUE thgroup_default;
 
-    // identity
-    VALUE self;
-    uint32_t id;
     VALUE name;
     VALUE loc;
 
@@ -127,6 +130,7 @@ struct rb_ractor_struct {
     // ractor local data
 
     st_table *local_storage;
+    struct rb_id_table *idkey_local_storage;
 
     VALUE r_stdin;
     VALUE r_stdout;
@@ -146,9 +150,15 @@ struct rb_ractor_struct {
     } *mfd;
 }; // rb_ractor_t is defined in vm_core.h
 
+
+static inline VALUE
+rb_ractor_self(const rb_ractor_t *r)
+{
+    return r->pub.self;
+}
+
 rb_ractor_t *rb_ractor_main_alloc(void);
 void rb_ractor_main_setup(rb_vm_t *vm, rb_ractor_t *main_ractor, rb_thread_t *main_thread);
-VALUE rb_ractor_self(const rb_ractor_t *g);
 void rb_ractor_atexit(rb_execution_context_t *ec, VALUE result);
 void rb_ractor_atexit_exception(rb_execution_context_t *ec);
 void rb_ractor_teardown(rb_execution_context_t *ec);
@@ -172,6 +182,9 @@ void rb_ractor_terminate_interrupt_main_thread(rb_ractor_t *r);
 void rb_ractor_terminate_all(void);
 bool rb_ractor_main_p_(void);
 void rb_ractor_finish_marking(void);
+void rb_ractor_atfork(rb_vm_t *vm, rb_thread_t *th);
+
+VALUE rb_ractor_ensure_shareable(VALUE obj, VALUE name);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 bool rb_ractor_shareable_p_continue(VALUE obj);
@@ -270,7 +283,11 @@ rb_ractor_set_current_ec(rb_ractor_t *cr, rb_execution_context_t *ec)
 void rb_vm_ractor_blocking_cnt_inc(rb_vm_t *vm, rb_ractor_t *cr, const char *file, int line);
 void rb_vm_ractor_blocking_cnt_dec(rb_vm_t *vm, rb_ractor_t *cr, const char *file, int line);
 
-uint32_t rb_ractor_id(const rb_ractor_t *r);
+static inline uint32_t
+rb_ractor_id(const rb_ractor_t *r)
+{
+    return r->pub.id;
+}
 
 #if RACTOR_CHECK_MODE > 0
 uint32_t rb_ractor_current_id(void);

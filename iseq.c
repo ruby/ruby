@@ -185,6 +185,17 @@ iseq_extract_values(VALUE *code, size_t pos, iseq_value_itr_t * func, void *data
               }
             }
             break;
+          case TS_IC:
+            {
+                IC ic = (IC)code[pos + op_no + 1];
+                if (ic->entry) {
+                    VALUE nv = func(data, (VALUE)ic->entry);
+                    if ((VALUE)ic->entry != nv) {
+                        ic->entry = (void *)nv;
+                    }
+                }
+            }
+            break;
           case TS_IVC:
             {
                 IVC ivc = (IVC)code[pos + op_no + 1];

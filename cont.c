@@ -593,7 +593,8 @@ fiber_pool_allocation_free(struct fiber_pool_allocation * allocation)
 
 // Acquire a stack from the given fiber pool. If none are available, allocate more.
 static struct fiber_pool_stack
-fiber_pool_stack_acquire(struct fiber_pool * fiber_pool) {
+fiber_pool_stack_acquire(struct fiber_pool * fiber_pool)
+{
     struct fiber_pool_vacancy * vacancy = fiber_pool_vacancy_pop(fiber_pool);
 
     if (DEBUG) fprintf(stderr, "fiber_pool_stack_acquire: %p used=%"PRIuSIZE"\n", (void*)fiber_pool->vacancies, fiber_pool->used);
@@ -1734,6 +1735,26 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
  *    1000000
  *    FiberError: dead fiber called
  *
+ *  == Non-blocking Fibers
+ *
+ *  The concept of <em>non-blocking fiber</em> was introduced in Ruby 3.0.
+ *  A non-blocking fiber, when reaching a operation that would normally block
+ *  the fiber (like <code>sleep</code>, or wait for another process or I/O)
+ #  will yield control to other fibers and allow the <em>scheduler</em> to
+ #  handle blocking and waking up (resuming) this fiber when it can proceed.
+ *
+ *  For a Fiber to behave as non-blocking, it need to be created in Fiber.new with
+ *  <tt>blocking: false</tt> (which is the default), and Fiber.scheduler
+ *  should be set with Fiber.set_scheduler. If Fiber.scheduler is not set in
+ *  the current thread, blocking and non-blocking fibers' behavior is identical.
+ *
+ *  Ruby doesn't provide a scheduler class: it is expected to be implemented by
+ *  the user and correspond to Fiber::SchedulerInterface.
+ *
+ *  There is also Fiber.schedule method, which is expected to immediately perform
+ *  the given block in a non-blocking manner. Its actual implementation is up to
+ *  the scheduler.
+ *
  */
 
 static const rb_data_type_t fiber_data_type = {
@@ -1842,7 +1863,29 @@ rb_fiber_initialize_kw(int argc, VALUE* argv, VALUE self, int kw_splat)
     return fiber_initialize(self, rb_block_proc(), rb_fiber_pool_default(pool), RTEST(blocking));
 }
 
-/* :nodoc: */
+/*
+ *  call-seq:
+ *     Fiber.new(blocking: false) { |*args| ... } -> fiber
+ *
+ *  Creates new Fiber. Initially, the fiber is not running and can be resumed with
+ *  #resume. Arguments to the first #resume call will be passed to the block:
+ *
+ *      f = Fiber.new do |initial|
+ *         current = initial
+ *         loop do
+ *           puts "current: #{current.inspect}"
+ *           current = Fiber.yield
+ *         end
+ *      end
+ *      f.resume(100)     # prints: current: 100
+ *      f.resume(1, 2, 3) # prints: current: [1, 2, 3]
+ *      f.resume          # prints: current: nil
+ *      # ... and so on ...
+ *
+ *  If <tt>blocking: false</tt> is passed to <tt>Fiber.new</tt>, _and_ current thread
+ *  has a Fiber.scheduler defined, the Fiber becomes non-blocking (see "Non-blocking
+ *  Fibers" section in class docs).
+ */
 static VALUE
 rb_fiber_initialize(int argc, VALUE* argv, VALUE self)
 {
@@ -1864,25 +1907,93 @@ rb_f_fiber_kw(int argc, VALUE* argv, int kw_splat)
 
     if (scheduler != Qnil) {
         fiber = rb_funcall_passing_block_kw(scheduler, rb_intern("fiber"), argc, argv, kw_splat);
-    } else {
+    }
+    else {
         rb_raise(rb_eRuntimeError, "No scheduler is available!");
     }
 
     return fiber;
 }
 
+/*
+ *  call-seq:
+ *     Fiber.schedule { |*args| ... } -> fiber
+ *
+ *  The method is <em>expected</em> to immediately run the provided block of code in a
+ *  separate non-blocking fiber.
+ *
+ *     puts "Go to sleep!"
+ *
+ *     Fiber.set_scheduler(MyScheduler.new)
+ *
+ *     Fiber.schedule do
+ *       puts "Going to sleep"
+ *       sleep(1)
+ *       puts "I slept well"
+ *     end
+ *
+ *     puts "Wakey-wakey, sleepyhead"
+ *
+ *  Assuming MyScheduler is properly implemented, this program will produce:
+ *
+ *     Go to sleep!
+ *     Going to sleep
+ *     Wakey-wakey, sleepyhead
+ *     ...1 sec pause here...
+ *     I slept well
+ *
+ *  ...e.g. on the first blocking operation inside the Fiber (<tt>sleep(1)</tt>),
+ *  the control is yielded to the outside code (main fiber), and <em>at the end
+ *  of that execution</em>, the scheduler takes care of properly resuming all the
+ *  blocked fibers.
+ *
+ *  Note that the behavior described above is how the method is <em>expected</em>
+ *  to behave, actual behavior is up to the current scheduler's implementation of
+ *  Fiber::SchedulerInterface#fiber method. Ruby doesn't enforce this method to
+ *  behave in any particular way.
+ *
+ *  If the scheduler is not set, the method raises
+ *  <tt>RuntimeError (No scheduler is available!)</tt>.
+ *
+ */
 static VALUE
 rb_f_fiber(int argc, VALUE *argv, VALUE obj)
 {
     return rb_f_fiber_kw(argc, argv, rb_keyword_given_p());
 }
 
+/*
+ *  call-seq:
+ *     Fiber.scheduler -> obj or nil
+ *
+ *  Returns the Fiber scheduler, that was last set for the current thread with Fiber.set_scheduler.
+ *  Returns +nil+ if no scheduler is set (which is the default), and non-blocking fibers'
+ #  behavior is the same as blocking.
+ *  (see "Non-blocking fibers" section in class docs for details about the scheduler concept).
+ *
+ */
 static VALUE
 rb_fiber_scheduler(VALUE klass)
 {
     return rb_scheduler_get();
 }
 
+/*
+ *  call-seq:
+ *     Fiber.set_scheduler(scheduler) -> scheduler
+ *
+ *  Sets the Fiber scheduler for the current thread. If the scheduler is set, non-blocking
+ *  fibers (created by Fiber.new with <tt>blocking: false</tt>, or by Fiber.schedule)
+ *  call that scheduler's hook methods on potentially blocking operations, and the current
+ *  thread will call scheduler's +close+ method on finalization (allowing the scheduler to
+ *  properly manage all non-finished fibers).
+ *
+ *  +scheduler+ can be an object of any class corresponding to Fiber::SchedulerInterface. Its
+ *  implementation is up to the user.
+ *
+ *  See also the "Non-blocking fibers" section in class docs.
+ *
+ */
 static VALUE
 rb_fiber_set_scheduler(VALUE klass, VALUE scheduler)
 {
@@ -2196,12 +2307,44 @@ rb_fiber_transfer(VALUE fiber_value, int argc, const VALUE *argv)
     return fiber_switch(fiber_ptr(fiber_value), argc, argv, RB_NO_KEYWORDS, Qfalse, false);
 }
 
+/*
+ *  call-seq:
+ *     fiber.blocking? -> true or false
+ *
+ *  Returns +true+ if +fiber+ is blocking and +false+ otherwise.
+ *  Fiber is non-blocking if it was created via passing <tt>blocking: false</tt>
+ *  to Fiber.new, or via Fiber.schedule.
+ *
+ *  Note that, even if the method returns +false+, the fiber behaves differently
+ *  only if Fiber.scheduler is set in the current thread.
+ *
+ *  See the "Non-blocking fibers" section in class docs for details.
+ *
+ */
 VALUE
 rb_fiber_blocking_p(VALUE fiber)
 {
     return (fiber_ptr(fiber)->blocking == 0) ? Qfalse : Qtrue;
 }
 
+/*
+ *  call-seq:
+ *     Fiber.blocking? -> false or 1
+ *
+ *  Returns +false+ if the current fiber is non-blocking.
+ *  Fiber is non-blocking if it was created via passing <tt>blocking: false</tt>
+ *  to Fiber.new, or via Fiber.schedule.
+ *
+ *  If the current Fiber is blocking, the method returns 1.
+ *  Future developments may allow for situations where larger integers
+ *  could be returned.
+ *
+ *  Note that, even if the method returns +false+, Fiber behaves differently
+ *  only if Fiber.scheduler is set in the current thread.
+ *
+ *  See the "Non-blocking fibers" section in class docs for details.
+ *
+ */
 static VALUE
 rb_f_fiber_blocking_p(VALUE klass)
 {
@@ -2300,7 +2443,7 @@ rb_fiber_reset_root_local_storage(rb_thread_t *th)
  *
  *  Returns true if the fiber can still be resumed (or transferred
  *  to). After finishing execution of the fiber block this method will
- *  always return false. You need to <code>require 'fiber'</code>
+ *  always return +false+. You need to <code>require 'fiber'</code>
  *  before using this method.
  */
 VALUE
@@ -2369,12 +2512,77 @@ rb_fiber_raise(int argc, VALUE *argv, VALUE fiber_value)
     }
 }
 
+/*
+ *  call-seq:
+ *     fiber.backtrace -> array
+ *     fiber.backtrace(start) -> array
+ *     fiber.backtrace(start, count) -> array
+ *     fiber.backtrace(start..end) -> array
+ *
+ *  Returns the current execution stack of the fiber. +start+, +count+ and +end+ allow
+ *  to select only parts of the backtrace.
+ *
+ *     def level3
+ *       Fiber.yield
+ *     end
+ *
+ *     def level2
+ *       level3
+ *     end
+ *
+ *     def level1
+ *       level2
+ *     end
+ *
+ *     f = Fiber.new { level1 }
+ *
+ *     # It is empty before the fiber started
+ *     f.backtrace
+ *     #=> []
+ *
+ *     f.resume
+ *
+ *     f.backtrace
+ *     #=> ["test.rb:2:in `yield'", "test.rb:2:in `level3'", "test.rb:6:in `level2'", "test.rb:10:in `level1'", "test.rb:13:in `block in <main>'"]
+ *     p f.backtrace(1) # start from the item 1
+ *     #=> ["test.rb:2:in `level3'", "test.rb:6:in `level2'", "test.rb:10:in `level1'", "test.rb:13:in `block in <main>'"]
+ *     p f.backtrace(2, 2) # start from item 2, take 2
+ *     #=> ["test.rb:6:in `level2'", "test.rb:10:in `level1'"]
+ *     p f.backtrace(1..3) # take items from 1 to 3
+ *     #=> ["test.rb:2:in `level3'", "test.rb:6:in `level2'", "test.rb:10:in `level1'"]
+ *
+ *     f.resume
+ *
+ *     # It is nil after the fiber is finished
+ *     f.backtrace
+ *     #=> nil
+ *
+ */
 static VALUE
 rb_fiber_backtrace(int argc, VALUE *argv, VALUE fiber)
 {
     return rb_vm_backtrace(argc, argv, &fiber_ptr(fiber)->cont.saved_ec);
 }
 
+/*
+ *  call-seq:
+ *     fiber.backtrace_locations -> array
+ *     fiber.backtrace_locations(start) -> array
+ *     fiber.backtrace_locations(start, count) -> array
+ *     fiber.backtrace_locations(start..end) -> array
+ *
+ *  Like #backtrace, but returns each line of the execution stack as a
+ *  Thread::Backtrace::Location. Accepts the same arguments as #backtrace.
+ *
+ *    f = Fiber.new { Fiber.yield }
+ *    f.resume
+ *    loc = f.backtrace_locations.first
+ *    loc.label  #=> "yield"
+ *    loc.path   #=> "test.rb"
+ *    loc.lineno #=> 1
+ *
+ *
+ */
 static VALUE
 rb_fiber_backtrace_locations(int argc, VALUE *argv, VALUE fiber)
 {
@@ -2391,46 +2599,79 @@ rb_fiber_backtrace_locations(int argc, VALUE *argv, VALUE fiber)
  *  Fiber.yield. You need to <code>require 'fiber'</code>
  *  before using this method.
  *
- *  The fiber which receives the transfer call is treats it much like
+ *  The fiber which receives the transfer call treats it much like
  *  a resume call. Arguments passed to transfer are treated like those
  *  passed to resume.
  *
- *  You cannot call +resume+ on a fiber that has been transferred to.
- *  If you call +transfer+ on a fiber, and later call +resume+ on the
- *  the fiber, a +FiberError+ will be raised. Once you call +transfer+ on
- *  a fiber, the only way to resume processing the fiber is to
- *  call +transfer+ on it again.
+ *  The two style of control passing to and from fiber (one is #resume and
+ *  Fiber::yield, another is #transfer to and from fiber) can't be freely
+ *  mixed.
+ *
+ *  * If the Fiber's lifecycle had started with transfer, it will never
+ *    be able to yield or be resumed control passing, only
+ *    finish or transfer back. (It still can resume other fibers that
+ *    are allowed to be resumed.)
+ *  * If the Fiber's lifecycle had started with resume, it can yield
+ *    or transfer to another Fiber, but can receive control back only
+ *    the way compatible with the way it was given away: if it had
+ *    transferred, it only can be transferred back, and if it had
+ *    yielded, it only can be resumed back. After that, it again can
+ *    transfer or yield.
+ *
+ *  If those rules are broken FiberError is raised.
+ *
+ *  For an individual Fiber design, yield/resume is easier to use
+ *  (the Fiber just gives away control, it doesn't need to think
+ *  about who the control is given to), while transfer is more flexible
+ *  for complex cases, allowing to build arbitrary graphs of Fibers
+ *  dependent on each other.
+ *
  *
  *  Example:
  *
- *    fiber1 = Fiber.new do
- *      puts "In Fiber 1"
- *      Fiber.yield
- *      puts "In Fiber 1 again"
- *    end
+ *     require 'fiber'
  *
- *    fiber2 = Fiber.new do
- *      puts "In Fiber 2"
- *      fiber1.transfer
- *      puts "Never see this message"
- *    end
+ *     manager = nil # For local var to be visible inside worker block
  *
- *    fiber3 = Fiber.new do
- *      puts "In Fiber 3"
- *    end
+ *     # This fiber would be started with transfer
+ *     # It can't yield, and can't be resumed
+ *     worker = Fiber.new { |work|
+ *       puts "Worker: starts"
+ *       puts "Worker: Performed #{work.inspect}, transferring back"
+ *       # Fiber.yield     # this would raise FiberError: attempt to yield on a not resumed fiber
+ *       # manager.resume  # this would raise FiberError: attempt to resume a resumed fiber (double resume)
+ *       manager.transfer(work.capitalize)
+ *     }
  *
- *    fiber2.resume
- *    fiber3.resume
- *    fiber1.resume rescue (p $!)
- *    fiber1.transfer
+ *     # This fiber would be started with resume
+ *     # It can yield or transfer, and can be transferred
+ *     # back or resumed
+ *     manager = Fiber.new {
+ *       puts "Manager: starts"
+ *       puts "Manager: transferring 'something' to worker"
+ *       result = worker.transfer('something')
+ *       puts "Manager: worker returned #{result.inspect}"
+ *       # worker.resume    # this would raise FiberError: attempt to resume a transferring fiber
+ *       Fiber.yield        # this is OK, the fiber transferred from and to, now it can yield
+ *       puts "Manager: finished"
+ *     }
+ *
+ *     puts "Starting the manager"
+ *     manager.resume
+ *     puts "Resuming the manager"
+ *     # manager.transfer  # this would raise FiberError: attempt to transfer to a yielding fiber
+ *     manager.resume
  *
  *  <em>produces</em>
  *
- *    In Fiber 2
- *    In Fiber 1
- *    In Fiber 3
- *    #<FiberError: cannot resume transferred Fiber>
- *    In Fiber 1 again
+ *     Starting the manager
+ *     Manager: starts
+ *     Manager: transferring 'something' to worker
+ *     Worker: starts
+ *     Worker: Performed "something", transferring back
+ *     Manager: worker returned "Something"
+ *     Resuming the manager
+ *     Manager: finished
  *
  */
 static VALUE
@@ -2470,7 +2711,7 @@ rb_fiber_s_yield(int argc, VALUE *argv, VALUE klass)
 
 /*
  *  call-seq:
- *     Fiber.current() -> fiber
+ *     Fiber.current -> fiber
  *
  *  Returns the current fiber. You need to <code>require 'fiber'</code>
  *  before using this method. If you are not running in the context of
@@ -2481,14 +2722,6 @@ rb_fiber_s_current(VALUE klass)
 {
     return rb_fiber_current();
 }
-
-/*
- * call-seq:
- *   fiber.to_s   -> string
- *
- * Returns fiber information string.
- *
- */
 
 static VALUE
 fiber_to_s(VALUE fiber_value)
@@ -2609,6 +2842,193 @@ rb_fiber_pool_initialize(int argc, VALUE* argv, VALUE self)
  *     fiber.resume #=> FiberError: dead fiber called
  */
 
+/*
+ *  Document-class: Fiber::SchedulerInterface
+ *
+ *  This is not an existing class, but documentation of the interface that Scheduler
+ *  object should comply to in order to be used as argument to Fiber.scheduler and handle non-blocking
+ *  fibers. See also the "Non-blocking fibers" section in Fiber class docs for explanations
+ *  of some concepts.
+ *
+ *  Scheduler's behavior and usage are expected to be as follows:
+ *
+ *  * When the execution in the non-blocking Fiber reaches some blocking operation (like
+ *    sleep, wait for a process, or a non-ready I/O), it calls some of the scheduler's
+ *    hook methods, listed below.
+ *  * Scheduler somehow registers what the current fiber is waiting on, and yields control
+ *    to other fibers with Fiber.yield (so the fiber would be suspended while expecting its
+ *    wait to end, and other fibers in the same thread can perform)
+ *  * At the end of the current thread execution, the scheduler's method #close is called
+ *  * The scheduler runs into a wait loop, checking all the blocked fibers (which it has
+ *    registered on hook calls) and resuming them when the awaited resource is ready
+ *    (e.g. I/O ready or sleep time elapsed).
+ *
+ *  A typical implementation would probably rely for this closing loop on a gem like
+ *  EventMachine[https://github.com/eventmachine/eventmachine] or
+ *  Async[https://github.com/socketry/async].
+ *
+ *  This way concurrent execution will be achieved transparently for every
+ *  individual Fiber's code.
+ *
+ *  Hook methods are:
+ *
+ *  * #io_wait
+ *  * #process_wait
+ *  * #kernel_sleep
+ *  * #block and #unblock
+ *  * (the list is expanded as Ruby developers make more methods having non-blocking calls)
+ *
+ *  When not specified otherwise, the hook implementations are mandatory: if they are not
+ *  implemented, the methods trying to call hook will fail. To provide backward compatibility,
+ *  in the future hooks will be optional (if they are not implemented, due to the scheduler
+ *  being created for the older Ruby version, the code which needs this hook will not fail,
+ *  and will just behave in a blocking fashion).
+ *
+ *  It is also strongly recommended that the scheduler implements the #fiber method, which is
+ *  delegated to by Fiber.schedule.
+ *
+ *  Sample _toy_ implementation of the scheduler can be found in Ruby's code, in
+ *  <tt>test/fiber/scheduler.rb</tt>
+ *
+ */
+
+#if 0 /* for RDoc */
+/*
+ *
+ *  Document-method: Fiber::SchedulerInterface#close
+ *
+ *  Called when the current thread exits. The scheduler is expected to implement this
+ *  method in order to allow all waiting fibers to finalize their execution.
+ *
+ *  The suggested pattern is to implement the main event loop in the #close method.
+ *
+ */
+static VALUE
+rb_fiber_scheduler_interface_close(VALUE self)
+{
+}
+
+/*
+ *  Document-method: SchedulerInterface#process_wait
+ *  call-seq: process_wait(pid, flags)
+ *
+ *  Invoked by Process::Status.wait in order to wait for a specified process.
+ *  See that method description for arguments description.
+ *
+ *  Suggested minimal implementation:
+ *
+ *      Thread.new do
+ *        Process::Status.wait(pid, flags)
+ *      end.value
+ *
+ *  This hook is optional: if it is not present in the current scheduler,
+ *  Process::Status.wait will behave as a blocking method.
+ *
+ *  Expected to return a Process::Status instance.
+ */
+static VALUE
+rb_fiber_scheduler_interface_process_wait(VALUE self)
+{
+}
+
+/*
+ *  Document-method: SchedulerInterface#io_wait
+ *  call-seq: io_wait(io, events, timeout)
+ *
+ *  Invoked by IO#wait, IO#wait_readable, IO#wait_writable to ask whether the
+ *  specified descriptor is ready for specified events within
+ *  the specified +timeout+.
+ *
+ *  +events+ is a bit mask of <tt>IO::READABLE</tt>, <tt>IO::WRITABLE</tt>, and
+ *  <tt>IO::PRIORITY</tt>.
+ *
+ *  Suggested implementation should register which Fiber is waiting for which
+ *  resources and immediately calling Fiber.yield to pass control to other
+ *  fibers. Then, in the #close method, the scheduler might dispatch all the
+ *  I/O resources to fibers waiting for it.
+ *
+ *  Expected to return the subset of events that are ready immediately.
+ *
+ */
+static VALUE
+rb_fiber_scheduler_interface_io_wait(VALUE self)
+{
+}
+
+/*
+ *  Document-method: SchedulerInterface#kernel_sleep
+ *  call-seq: kernel_sleep(duration = nil)
+ *
+ *  Invoked by Kernel#sleep and Mutex#sleep and is expected to provide
+ *  an implementation of sleeping in a non-blocking way. Implementation might
+ *  register the current fiber in some list of "which fiber wait until what
+ *  moment", call Fiber.yield to pass control, and then in #close resume
+ *  the fibers whose wait period has elapsed.
+ *
+ */
+static VALUE
+rb_fiber_scheduler_interface_kernel_sleep(VALUE self)
+{
+}
+
+/*
+ *  Document-method: SchedulerInterface#block
+ *  call-seq: block(blocker, timeout = nil)
+ *
+ *  Invoked by methods like Thread.join, and by Mutex, to signify that current
+ *  Fiber is blocked until further notice (e.g. #unblock) or until +timeout+ has
+ *  elapsed.
+ *
+ *  +blocker+ is what we are waiting on, informational only (for debugging and
+ *  logging). There are no guarantee about its value.
+ *
+ *  Expected to return boolean, specifying whether the blocking operation was
+ *  successful or not.
+ */
+static VALUE
+rb_fiber_scheduler_interface_block(VALUE self)
+{
+}
+
+/*
+ *  Document-method: SchedulerInterface#unblock
+ *  call-seq: unblock(blocker, fiber)
+ *
+ *  Invoked to wake up Fiber previously blocked with #block (for example, Mutex#lock
+ *  calls #block and Mutex#unlock calls #unblock). The scheduler should use
+ *  the +fiber+ parameter to understand which fiber is unblocked.
+ *
+ *  +blocker+ is what was awaited for, but it is informational only (for debugging
+ *  and logging), and it is not guaranteed to be the same value as the +blocker+ for
+ *  #block.
+ *
+ */
+static VALUE
+rb_fiber_scheduler_interface_unblock(VALUE self)
+{
+}
+
+/*
+ *  Document-method: SchedulerInterface#fiber
+ *  call-seq: fiber(&block)
+ *
+ *  Implementation of the Fiber.schedule. The method is <em>expected</em> to immediately
+ *  run the given block of code in a separate non-blocking fiber, and to return that Fiber.
+ *
+ *  Minimal suggested implementation is:
+ *
+ *     def fiber(&block)
+ *       fiber = Fiber.new(blocking: false, &block)
+ *       fiber.resume
+ *       fiber
+ *     end
+ */
+static VALUE
+rb_fiber_scheduler_interface_fiber(VALUE self)
+{
+}
+#endif
+
 void
 Init_Cont(void)
 {
@@ -2656,6 +3076,17 @@ Init_Cont(void)
     rb_define_singleton_method(rb_cFiber, "schedule", rb_f_fiber, -1);
     //rb_define_global_function("Fiber", rb_f_fiber, -1);
 
+#if 0 /* for RDoc */
+    rb_cFiberScheduler = rb_define_class_under(rb_cFiber, "SchedulerInterface", rb_cObject);
+    rb_define_method(rb_cFiberScheduler, "close", rb_fiber_scheduler_interface_close, 0);
+    rb_define_method(rb_cFiberScheduler, "process_wait", rb_fiber_scheduler_interface_process_wait, 0);
+    rb_define_method(rb_cFiberScheduler, "io_wait", rb_fiber_scheduler_interface_io_wait, 0);
+    rb_define_method(rb_cFiberScheduler, "kernel_sleep", rb_fiber_scheduler_interface_kernel_sleep, 0);
+    rb_define_method(rb_cFiberScheduler, "block", rb_fiber_scheduler_interface_block, 0);
+    rb_define_method(rb_cFiberScheduler, "unblock", rb_fiber_scheduler_interface_unblock, 0);
+    rb_define_method(rb_cFiberScheduler, "fiber", rb_fiber_scheduler_interface_fiber, 0);
+#endif
+
 #ifdef RB_EXPERIMENTAL_FIBER_POOL
     rb_cFiberPool = rb_define_class("Pool", rb_cFiber);
     rb_define_alloc_func(rb_cFiberPool, fiber_pool_alloc);
@@ -2679,6 +3110,9 @@ ruby_Init_Continuation_body(void)
 void
 ruby_Init_Fiber_as_Coroutine(void)
 {
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    rb_ext_ractor_safe(true);
+#endif
     rb_define_method(rb_cFiber, "transfer", rb_fiber_m_transfer, -1);
     rb_define_method(rb_cFiber, "alive?", rb_fiber_alive_p, 0);
     rb_define_singleton_method(rb_cFiber, "current", rb_fiber_s_current, 0);

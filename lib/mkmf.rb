@@ -616,7 +616,7 @@ MSG
     MakeMakefile.rm_f "#{CONFTEST}*"
   end
 
-  alias_method :try_header, (config_string('try_header') || :try_cpp)
+  alias try_header try_compile
 
   def cpp_include(header)
     if header
@@ -1931,6 +1931,7 @@ SHELL = /bin/sh
 
 # V=0 quiet, V=1 verbose.  other values don't work.
 V = 0
+V0 = $(V:0=)
 Q1 = $(V:1=)
 Q = $(Q1:0=@)
 ECHO1 = $(V:1=@ #{CONFIG['NULLCMD']})

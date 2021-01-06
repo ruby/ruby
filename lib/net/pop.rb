@@ -195,7 +195,7 @@ module Net
   #
   class POP3 < Protocol
     # version of this library
-    VERSION = "0.1.0"
+    VERSION = "0.1.1"
 
     #
     # Class Parameters

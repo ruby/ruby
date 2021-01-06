@@ -37,6 +37,7 @@ VALUE rb_require_string(VALUE);
 // extension configuration
 void rb_ext_ractor_safe(bool flag);
 #define RB_EXT_RACTOR_SAFE(f) rb_ext_ractor_safe(f)
+#define HAVE_RB_EXT_RACTOR_SAFE 1
 
 RBIMPL_SYMBOL_EXPORT_END()
 

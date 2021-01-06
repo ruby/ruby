@@ -105,7 +105,8 @@ begin
 
     def test_finish_autowrapped_line_in_the_middle_of_lines
       start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
-      write("[{'user'=>{'email'=>'abcdef@abcdef', 'id'=>'ABC'}, 'version'=>4, 'status'=>'succeeded'}]#{"\C-b"*7}\n")
+      write("[{'user'=>{'email'=>'abcdef@abcdef', 'id'=>'ABC'}, 'version'=>4, 'status'=>'succeeded'}]#{"\C-b"*7}")
+      write("\n")
       close
       assert_screen(<<~EOC)
         Multiline REPL.
@@ -220,6 +221,20 @@ begin
         {InS}prompt> :a
         => :a
         {CmD}prompt> :a
+      EOC
+    end
+
+    def test_mode_icon_vi_changing
+      write_inputrc <<~LINES
+        set editing-mode vi
+        set show-mode-in-prompt on
+      LINES
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
+      write(":a\C-[ab\C-[ac\C-h\C-h\C-h\C-h:a")
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        (ins)prompt> :a
       EOC
     end
 
@@ -398,6 +413,17 @@ begin
       EOC
     end
 
+    def test_multiline_incremental_search_finish
+      start_terminal(6, 25, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
+      write("def a\n  8\nend\ndef b\n  3\nend\C-r8\C-j")
+      close
+      assert_screen(<<~EOC)
+        prompt> def a
+        prompt>   8
+        prompt> end
+      EOC
+    end
+
     def test_binding_for_vi_movement_mode
       write_inputrc <<~LINES
         set editing-mode vi
@@ -425,6 +451,7 @@ begin
     end
 
     def test_enable_bracketed_paste
+      omit if Reline::IOGate.win?
       write_inputrc <<~LINES
         set enable-bracketed-paste on
       LINES
@@ -449,6 +476,147 @@ begin
       assert_screen(<<~EOC)
         Multiline REPL.
         prompt>
+      EOC
+    end
+
+    def test_longer_than_screen_height
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
+      write(<<~EOC.chomp)
+        def each_top_level_statement
+          initialize_input
+          catch(:TERM_INPUT) do
+            loop do
+              begin
+                prompt
+                unless l = lex
+                  throw :TERM_INPUT if @line == ''
+                else
+                  @line_no += l.count("\n")
+                  next if l == "\n"
+                  @line.concat l
+                  if @code_block_open or @ltype or @continue or @indent > 0
+                    next
+                  end
+                end
+                if @line != "\n"
+                  @line.force_encoding(@io.encoding)
+                  yield @line, @exp_line_no
+                end
+                break if @io.eof?
+                @line = ''
+                @exp_line_no = @line_no
+                #
+                @indent = 0
+              rescue TerminateLineInput
+                initialize_input
+                prompt
+              end
+            end
+          end
+        end
+      EOC
+      close
+      assert_screen(<<~EOC)
+        prompt>         prompt
+        prompt>       end
+        prompt>     end
+        prompt>   end
+        prompt> end
+      EOC
+    end
+
+    def test_longer_than_screen_height_with_scroll_back
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
+      write(<<~EOC.chomp)
+        def each_top_level_statement
+          initialize_input
+          catch(:TERM_INPUT) do
+            loop do
+              begin
+                prompt
+                unless l = lex
+                  throw :TERM_INPUT if @line == ''
+                else
+                  @line_no += l.count("\n")
+                  next if l == "\n"
+                  @line.concat l
+                  if @code_block_open or @ltype or @continue or @indent > 0
+                    next
+                  end
+                end
+                if @line != "\n"
+                  @line.force_encoding(@io.encoding)
+                  yield @line, @exp_line_no
+                end
+                break if @io.eof?
+                @line = ''
+                @exp_line_no = @line_no
+                #
+                @indent = 0
+              rescue TerminateLineInput
+                initialize_input
+                prompt
+              end
+            end
+          end
+        end
+      EOC
+      write("\C-p" * 6)
+      close
+      assert_screen(<<~EOC)
+        prompt>       rescue Terminate
+        LineInput
+        prompt>         initialize_inp
+        ut
+        prompt>         prompt
+      EOC
+    end
+
+    def test_longer_than_screen_height_with_complex_scroll_back
+      start_terminal(4, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
+      write(<<~EOC.chomp)
+        def each_top_level_statement
+          initialize_input
+          catch(:TERM_INPUT) do
+            loop do
+              begin
+                prompt
+                unless l = lex
+                  throw :TERM_INPUT if @line == ''
+                else
+                  @line_no += l.count("\n")
+                  next if l == "\n"
+                  @line.concat l
+                  if @code_block_open or @ltype or @continue or @indent > 0
+                    next
+                  end
+                end
+                if @line != "\n"
+                  @line.force_encoding(@io.encoding)
+                  yield @line, @exp_line_no
+                end
+                break if @io.eof?
+                @line = ''
+                @exp_line_no = @line_no
+                #
+                @indent = 0
+              rescue TerminateLineInput
+                initialize_input
+                prompt
+              end
+            end
+          end
+        end
+      EOC
+      sleep 0.3
+      write("\C-p" * 5)
+      write("\C-n" * 3)
+      close
+      assert_screen(<<~EOC)
+        ut
+        prompt>         prompt
+        prompt>       end
+        prompt>     end
       EOC
     end
 

@@ -9,4 +9,8 @@ class Reline::Unicode::Test < Reline::TestCase
   def test_get_mbchar_width
     assert_equal Reline.ambiguous_width, Reline::Unicode.get_mbchar_width('é')
   end
+
+  def test_ambiguous_width
+    assert_equal 2, Reline::Unicode.calculate_width('√', true)
+  end
 end

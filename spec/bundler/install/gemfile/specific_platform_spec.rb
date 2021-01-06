@@ -54,6 +54,56 @@ RSpec.describe "bundle install with specific platforms" do
       expect(the_bundle).to include_gem("google-protobuf 3.0.0.alpha.5.0.5.1 universal-darwin")
     end
 
+    it "understands that a non-plaform specific gem in a new lockfile locked only to RUBY doesn't necessarily mean installing the non-specific variant" do
+      setup_multiplatform_gem
+
+      system_gems "bundler-2.1.4"
+
+      # Consistent location to install and look for gems
+      bundle "config set --local path vendor/bundle", :env => { "BUNDLER_VERSION" => "2.1.4" }
+
+      gemfile google_protobuf
+
+      # simulate lockfile created with old bundler, which only locks for ruby platform
+      lockfile <<-L
+        GEM
+          remote: #{file_uri_for(gem_repo2)}/
+          specs:
+            google-protobuf (3.0.0.alpha.4.0)
+
+        PLATFORMS
+          ruby
+
+        DEPENDENCIES
+          google-protobuf
+
+        BUNDLED WITH
+           2.1.4
+      L
+
+      bundle "update", :env => { "BUNDLER_VERSION" => Bundler::VERSION }
+
+      # make sure the platform that the platform specific dependency is used, since we're only locked to ruby
+      expect(the_bundle).to include_gem("google-protobuf 3.0.0.alpha.5.0.5.1 universal-darwin")
+
+      # make sure we're still only locked to ruby
+      lockfile_should_be <<-L
+        GEM
+          remote: #{file_uri_for(gem_repo2)}/
+          specs:
+            google-protobuf (3.0.0.alpha.5.0.5.1)
+
+        PLATFORMS
+          ruby
+
+        DEPENDENCIES
+          google-protobuf
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+
     it "caches the universal-darwin gem when --all-platforms is passed and properly picks it up on further bundler invocations" do
       setup_multiplatform_gem
       gemfile(google_protobuf)

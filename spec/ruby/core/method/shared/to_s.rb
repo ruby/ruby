@@ -62,6 +62,12 @@ describe :method_to_s, shared: true do
       @m = obj.method(:bar)
       @string = @m.send(@method)
       @string.should.start_with? "#<Method: MethodSpecs::MySub(MethodSpecs::MyMod)#bar"
+
+      c = MethodSpecs::MySub.dup
+      m = Module.new{def bar; end}
+      c.extend(m)
+      @string = c.method(:bar).send(@method)
+      @string.should.start_with? "#<Method: #<Class:#{c.inspect}>(#{m.inspect})#bar"
     end
   end
 
@@ -71,5 +77,13 @@ describe :method_to_s, shared: true do
     @m = obj.method(:bar)
     @string = @m.send(@method).sub(/0x\h+/, '0xXXXXXX')
     @string.should.start_with? "#<Method: #<MethodSpecs::MySub:0xXXXXXX>.bar"
+  end
+
+  ruby_version_is '2.7' do
+    ruby_bug '#17428', '2.7'...'3.0' do
+      it "shows the metaclass and the owner for a Module instance method retrieved from a class" do
+        String.method(:include).inspect.should.start_with?("#<Method: #<Class:String>(Module)#include")
+      end
+    end
   end
 end

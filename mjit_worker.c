@@ -236,13 +236,10 @@ static int total_unloads = 0;
 // Set to true to stop worker.
 static bool stop_worker_p;
 // Set to true if worker is stopped.
-static bool worker_stopped;
+static bool worker_stopped = true;
 
 // Path of "/tmp", which can be changed to $TMP in MinGW.
 static char *tmp_dir;
-// Hash like { 1 => true, 2 => true, ... } whose keys are valid `class_serial`s.
-// This is used to invalidate obsoleted CALL_CACHE.
-static VALUE valid_class_serials;
 
 // Used C compiler path.
 static const char *cc_path;
@@ -487,16 +484,6 @@ real_ms_time(void)
 # endif
 }
 #endif
-
-// Return true if class_serial is not obsoleted. This is used by mjit_compile.c.
-bool
-mjit_valid_class_serial_p(rb_serial_t class_serial)
-{
-    CRITICAL_SECTION_START(3, "in valid_class_serial_p");
-    bool found_p = rb_hash_stlike_lookup(valid_class_serials, LONG2FIX(class_serial), NULL);
-    CRITICAL_SECTION_FINISH(3, "in valid_class_serial_p");
-    return found_p;
-}
 
 // Return the best unit from list.  The best is the first
 // high priority unit or the unit whose iseq has the biggest number
@@ -1103,6 +1090,8 @@ compile_prelude(FILE *f)
 #endif
 }
 
+static rb_iseq_t *compiling_iseq = NULL;
+
 // Compile ISeq in UNIT and return function pointer of JIT-ed code.
 // It may return NOT_COMPILED_JIT_ISEQ_FUNC if something went wrong.
 static mjit_func_t
@@ -1136,6 +1125,8 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     }
     // We need to check again here because we could've waited on GC above
     in_jit = (unit->iseq != NULL);
+    if (in_jit)
+        compiling_iseq = unit->iseq;
     CRITICAL_SECTION_FINISH(3, "before mjit_compile to wait GC finish");
     if (!in_jit) {
         fclose(f);
@@ -1160,6 +1151,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
 
     // release blocking mjit_gc_start_hook
     CRITICAL_SECTION_START(3, "after mjit_compile to wakeup client for GC");
+    compiling_iseq = NULL;
     in_jit = false;
     verbose(3, "Sending wakeup signal to client in a mjit-worker for GC");
     rb_native_cond_signal(&mjit_client_wakeup);

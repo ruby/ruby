@@ -174,6 +174,12 @@ RB_DEBUG_COUNTER(gc_major_shady)
 RB_DEBUG_COUNTER(gc_major_force)
 RB_DEBUG_COUNTER(gc_major_oldmalloc)
 
+RB_DEBUG_COUNTER(gc_enter_start)
+RB_DEBUG_COUNTER(gc_enter_mark_continue)
+RB_DEBUG_COUNTER(gc_enter_sweep_continue)
+RB_DEBUG_COUNTER(gc_enter_rest)
+RB_DEBUG_COUNTER(gc_enter_finalizer)
+
 RB_DEBUG_COUNTER(gc_isptr_trial)
 RB_DEBUG_COUNTER(gc_isptr_range)
 RB_DEBUG_COUNTER(gc_isptr_align)
@@ -303,6 +309,7 @@ RB_DEBUG_COUNTER(obj_imemo_memo)
 RB_DEBUG_COUNTER(obj_imemo_parser_strterm)
 RB_DEBUG_COUNTER(obj_imemo_callinfo)
 RB_DEBUG_COUNTER(obj_imemo_callcache)
+RB_DEBUG_COUNTER(obj_imemo_constcache)
 
 /* ar_table */
 RB_DEBUG_COUNTER(artable_hint_hit)
@@ -391,12 +398,19 @@ enum rb_debug_counter_type {
 
 #if USE_DEBUG_COUNTER
 extern size_t rb_debug_counter[];
+RUBY_EXTERN struct rb_ractor_struct *ruby_single_main_ractor;
+RUBY_EXTERN void rb_debug_counter_add_atomic(enum rb_debug_counter_type type, int add);
 
 inline static int
 rb_debug_counter_add(enum rb_debug_counter_type type, int add, int cond)
 {
     if (cond) {
-	rb_debug_counter[(int)type] += add;
+        if (ruby_single_main_ractor != NULL) {
+            rb_debug_counter[(int)type] += add;
+        }
+        else {
+            rb_debug_counter_add_atomic(type, add);
+        }
     }
     return cond;
 }
@@ -404,6 +418,7 @@ rb_debug_counter_add(enum rb_debug_counter_type type, int add, int cond)
 inline static int
 rb_debug_counter_max(enum rb_debug_counter_type type, unsigned int num)
 {
+    // TODO: sync
     if (rb_debug_counter[(int)type] < num) {
         rb_debug_counter[(int)type] = num;
         return 1;

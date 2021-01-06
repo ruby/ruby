@@ -68,7 +68,6 @@
 #endif
 
 #include "ruby/internal/dllexport.h"
-#include "ruby/internal/dosish.h"
 #include "ruby/internal/xmalloc.h"
 #include "ruby/backward/2/assume.h"
 #include "ruby/backward/2/attributes.h"
@@ -77,6 +76,7 @@
 #include "ruby/backward/2/long_long.h"
 #include "ruby/backward/2/stdalign.h"
 #include "ruby/backward/2/stdarg.h"
+#include "ruby/internal/dosish.h"
 #include "ruby/missing.h"
 
 #define RUBY

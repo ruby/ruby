@@ -163,6 +163,26 @@ describe "Array#slice!" do
       a = [1, 2, 3]
       a.slice!(eval("(2...)")).should == [3]
       a.should == [1, 2]
+
+      a = [1, 2, 3]
+      a.slice!(eval("(-2..)")).should == [2, 3]
+      a.should == [1]
+
+      a = [1, 2, 3]
+      a.slice!(eval("(-1...)")).should == [3]
+      a.should == [1, 2]
+    end
+  end
+
+  ruby_version_is "2.7" do
+    it "works with beginless ranges" do
+      a = [0,1,2,3,4]
+      a.slice!(eval("(..3)")).should == [0, 1, 2, 3]
+      a.should == [4]
+
+      a = [0,1,2,3,4]
+      a.slice!(eval("(...-2)")).should == [0, 1, 2]
+      a.should == [3, 4]
     end
   end
 end

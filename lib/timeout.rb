@@ -23,7 +23,7 @@
 # Copyright:: (C) 2000  Information-technology Promotion Agency, Japan
 
 module Timeout
-  VERSION = "0.1.0"
+  VERSION = "0.1.1"
 
   # Raised by Timeout.timeout when the block times out.
   class Error < RuntimeError
@@ -119,16 +119,4 @@ module Timeout
   end
 
   module_function :timeout
-end
-
-def timeout(*args, &block)
-  warn "Object##{__method__} is deprecated, use Timeout.timeout instead.", uplevel: 1
-  Timeout.timeout(*args, &block)
-end
-
-# Another name for Timeout::Error, defined for backwards compatibility with
-# earlier versions of timeout.rb.
-TimeoutError = Timeout::Error
-class Object
-  deprecate_constant :TimeoutError
 end

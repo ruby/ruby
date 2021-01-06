@@ -54,7 +54,7 @@ describe :io_readlines_options_19, shared: true do
       (result ? result : ScratchPad.recorded).should == IOSpecs.lines_space_separator
     end
 
-    describe "when the object is a Fixnum" do
+    describe "when the object is an Integer" do
       before :each do
         @sep = $/
       end
@@ -69,7 +69,7 @@ describe :io_readlines_options_19, shared: true do
         (result ? result : ScratchPad.recorded).should == IOSpecs.lines_space_separator_limit
       end
 
-      it "uses the object as a limit if it is a Fixnum" do
+      it "uses the object as a limit if it is an Integer" do
         result = IO.send(@method, @name, 10, &@object)
         (result ? result : ScratchPad.recorded).should == IOSpecs.lines_limit
       end
@@ -96,7 +96,7 @@ describe :io_readlines_options_19, shared: true do
   end
 
   describe "when passed name, object, object" do
-    describe "when the first object is a Fixnum" do
+    describe "when the first object is an Integer" do
       it "uses the second object as an options Hash" do
         -> do
           IO.send(@method, @filename, 10, mode: "w", &@object)
@@ -113,7 +113,7 @@ describe :io_readlines_options_19, shared: true do
     end
 
     describe "when the first object is a String" do
-      it "uses the second object as a limit if it is a Fixnum" do
+      it "uses the second object as a limit if it is an Integer" do
         result = IO.send(@method, @name, " ", 10, &@object)
         (result ? result : ScratchPad.recorded).should == IOSpecs.lines_space_separator_limit
       end
@@ -140,7 +140,7 @@ describe :io_readlines_options_19, shared: true do
       end
     end
 
-    describe "when the first object is not a String or Fixnum" do
+    describe "when the first object is not a String or Integer" do
       it "calls #to_str to convert the object to a String" do
         sep = mock("io readlines separator")
         sep.should_receive(:to_str).at_least(1).and_return(" ")
@@ -148,7 +148,7 @@ describe :io_readlines_options_19, shared: true do
         (result ? result : ScratchPad.recorded).should == IOSpecs.lines_space_separator_limit
       end
 
-      it "uses the second object as a limit if it is a Fixnum" do
+      it "uses the second object as a limit if it is an Integer" do
         result = IO.send(@method, @name, " ", 10, mode: "r", &@object)
         (result ? result : ScratchPad.recorded).should == IOSpecs.lines_space_separator_limit
       end

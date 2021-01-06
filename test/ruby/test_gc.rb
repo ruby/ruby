@@ -92,19 +92,23 @@ class TestGc < Test::Unit::TestCase
     assert_kind_of(Integer, res[:count])
 
     stat, count = {}, {}
-    GC.start
-    GC.stat(stat)
-    ObjectSpace.count_objects(count)
-    # repeat same methods invocation for cache object creation.
-    GC.stat(stat)
-    ObjectSpace.count_objects(count)
+    2.times{ # to ignore const cache imemo creation
+      GC.start
+      GC.stat(stat)
+      ObjectSpace.count_objects(count)
+      # repeat same methods invocation for cache object creation.
+      GC.stat(stat)
+      ObjectSpace.count_objects(count)
+    }
     assert_equal(count[:TOTAL]-count[:FREE], stat[:heap_live_slots])
     assert_equal(count[:FREE], stat[:heap_free_slots])
 
     # measure again without GC.start
-    1000.times{ "a" + "b" }
-    GC.stat(stat)
-    ObjectSpace.count_objects(count)
+    2.times{ # to ignore const cache imemo creation
+      1000.times{ "a" + "b" }
+      GC.stat(stat)
+      ObjectSpace.count_objects(count)
+    }
     assert_equal(count[:FREE], stat[:heap_free_slots])
   end
 
@@ -232,12 +236,6 @@ class TestGc < Test::Unit::TestCase
 
     # always full GC when RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR < 1.0
     assert_in_out_err([env, "-e", "1000_000.times{Object.new}; p(GC.stat[:minor_gc_count] < GC.stat[:major_gc_count])"], "", ['true'], //, "") if use_rgengc?
-
-    # check obsolete
-    assert_in_out_err([{'RUBY_FREE_MIN' => '100'}, '-w', '-eexit'], '', [],
-      /RUBY_FREE_MIN is obsolete. Use RUBY_GC_HEAP_FREE_SLOTS instead/)
-    assert_in_out_err([{'RUBY_HEAP_MIN_SLOTS' => '100'}, '-w', '-eexit'], '', [],
-      /RUBY_HEAP_MIN_SLOTS is obsolete. Use RUBY_GC_HEAP_INIT_SLOTS instead/)
 
     env = {
       "RUBY_GC_MALLOC_LIMIT"               => "60000000",

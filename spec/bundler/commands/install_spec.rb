@@ -291,7 +291,7 @@ RSpec.describe "bundle install with gem sources" do
       end
 
       it "works" do
-        bundle "config --local path vendor"
+        bundle "config set --local path vendor"
         bundle "install"
         expect(the_bundle).to include_gems "rack 1.0"
       end
@@ -580,8 +580,10 @@ RSpec.describe "bundle install with gem sources" do
   end
 
   describe "when bundle path does not have write access", :permissions do
+    let(:bundle_path) { bundled_app("vendor") }
+
     before do
-      FileUtils.mkdir_p(bundled_app("vendor"))
+      FileUtils.mkdir_p(bundle_path)
       gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem 'rack'
@@ -589,11 +591,32 @@ RSpec.describe "bundle install with gem sources" do
     end
 
     it "should display a proper message to explain the problem" do
-      FileUtils.chmod(0o500, bundled_app("vendor"))
+      FileUtils.chmod(0o500, bundle_path)
 
-      bundle "config --local path vendor"
+      bundle "config set --local path vendor"
       bundle :install, :raise_on_error => false
-      expect(err).to include(bundled_app("vendor").to_s)
+      expect(err).to include(bundle_path.to_s)
+      expect(err).to include("grant write permissions")
+    end
+  end
+
+  describe "when bundle cache path does not have write access", :permissions do
+    let(:cache_path) { bundled_app("vendor/#{Bundler.ruby_scope}/cache") }
+
+    before do
+      FileUtils.mkdir_p(cache_path)
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem 'rack'
+      G
+    end
+
+    it "should display a proper message to explain the problem" do
+      FileUtils.chmod(0o500, cache_path)
+
+      bundle "config set --local path vendor"
+      bundle :install, :raise_on_error => false
+      expect(err).to include(cache_path.to_s)
       expect(err).to include("grant write permissions")
     end
   end
@@ -604,7 +627,7 @@ RSpec.describe "bundle install with gem sources" do
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
-      bundle "config --local path bundle"
+      bundle "config set --local path bundle"
       bundle "install", :standalone => true
     end
 
@@ -628,6 +651,49 @@ RSpec.describe "bundle install with gem sources" do
       expect(exitstatus).to eq(17)
       expect(err).to eq("Please CGI escape your usernames and passwords before " \
                         "setting them for authentication.")
+    end
+  end
+
+  context "in a frozen bundle" do
+    before do
+      build_repo4 do
+        build_gem "libv8", "8.4.255.0" do |s|
+          s.platform = "x86_64-darwin-19"
+        end
+      end
+
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+
+        gem "libv8"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            libv8 (8.4.255.0-x86_64-darwin-19)
+
+        PLATFORMS
+          x86_64-darwin-19
+
+        DEPENDENCIES
+          libv8
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "config set --local deployment true"
+    end
+
+    it "should fail loudly if the lockfile platforms don't include the current platform" do
+      simulate_platform(Gem::Platform.new("x86_64-linux")) { bundle "install", :raise_on_error => false }
+
+      expect(err).to eq(
+        "Your bundle only supports platforms [\"x86_64-darwin-19\"] but your local platform is x86_64-linux. " \
+        "Add the current platform to the lockfile with `bundle lock --add-platform x86_64-linux` and try again."
+      )
     end
   end
 end

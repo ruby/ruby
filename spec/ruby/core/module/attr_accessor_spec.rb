@@ -36,7 +36,7 @@ describe "Module#attr_accessor" do
     -> { true.spec_attr_accessor = "a" }.should raise_error(RuntimeError)
   end
 
-  it "converts non string/symbol/fixnum names to strings using to_str" do
+  it "converts non string/symbol names to strings using to_str" do
     (o = mock('test')).should_receive(:to_str).any_number_of_times.and_return("test")
     c = Class.new do
       attr_accessor o
@@ -67,19 +67,35 @@ describe "Module#attr_accessor" do
     Module.should have_public_instance_method(:attr_accessor, false)
   end
 
+  ruby_version_is ""..."3.0" do
+    it "returns nil" do
+      Class.new do
+        (attr_accessor :foo, 'bar').should == nil
+      end
+    end
+  end
+
+  ruby_version_is "3.0" do
+    it "returns an array of defined method names as symbols" do
+      Class.new do
+        (attr_accessor :foo, 'bar').should == [:foo, :foo=, :bar, :bar=]
+      end
+    end
+  end
+
   describe "on immediates" do
     before :each do
-      class Fixnum
+      class Integer
         attr_accessor :foobar
       end
     end
 
     after :each do
-      if Fixnum.method_defined?(:foobar)
-        Fixnum.send(:remove_method, :foobar)
+      if Integer.method_defined?(:foobar)
+        Integer.send(:remove_method, :foobar)
       end
-      if Fixnum.method_defined?(:foobar=)
-        Fixnum.send(:remove_method, :foobar=)
+      if Integer.method_defined?(:foobar=)
+        Integer.send(:remove_method, :foobar=)
       end
     end
 

@@ -38,6 +38,7 @@ class Reline::Config
     vi-ins-mode-icon
     emacs-mode-string
     enable-bracketed-paste
+    isearch-terminators
   }
   VARIABLE_NAME_SYMBOLS = VARIABLE_NAMES.map { |v| :"#{v.tr(?-, ?_)}" }
   VARIABLE_NAME_SYMBOLS.each do |v|
@@ -238,7 +239,7 @@ class Reline::Config
     when 'completion-query-items'
       @completion_query_items = value.to_i
     when 'isearch-terminators'
-      @isearch_terminators = instance_eval(value)
+      @isearch_terminators = retrieve_string(value)
     when 'editing-mode'
       case value
       when 'emacs'

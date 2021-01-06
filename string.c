@@ -7580,13 +7580,14 @@ rb_str_tr(VALUE str, VALUE src, VALUE repl)
     return str;
 }
 
-#define TR_TABLE_SIZE 257
+#define TR_TABLE_MAX (UCHAR_MAX+1)
+#define TR_TABLE_SIZE (TR_TABLE_MAX+1)
 static void
 tr_setup_table(VALUE str, char stable[TR_TABLE_SIZE], int first,
 	       VALUE *tablep, VALUE *ctablep, rb_encoding *enc)
 {
     const unsigned int errc = -1;
-    char buf[256];
+    char buf[TR_TABLE_MAX];
     struct tr tr;
     unsigned int c;
     VALUE table = 0, ptable = 0;
@@ -7600,26 +7601,26 @@ tr_setup_table(VALUE str, char stable[TR_TABLE_SIZE], int first,
 	tr.p += l;
     }
     if (first) {
-	for (i=0; i<256; i++) {
+	for (i=0; i<TR_TABLE_MAX; i++) {
 	    stable[i] = 1;
 	}
-	stable[256] = cflag;
+	stable[TR_TABLE_MAX] = cflag;
     }
-    else if (stable[256] && !cflag) {
-	stable[256] = 0;
+    else if (stable[TR_TABLE_MAX] && !cflag) {
+	stable[TR_TABLE_MAX] = 0;
     }
-    for (i=0; i<256; i++) {
+    for (i=0; i<TR_TABLE_MAX; i++) {
 	buf[i] = cflag;
     }
 
     while ((c = trnext(&tr, enc)) != errc) {
-	if (c < 256) {
-	    buf[c & 0xff] = !cflag;
+	if (c < TR_TABLE_MAX) {
+	    buf[(unsigned char)c] = !cflag;
 	}
 	else {
 	    VALUE key = UINT2NUM(c);
 
-	    if (!table && (first || *tablep || stable[256])) {
+	    if (!table && (first || *tablep || stable[TR_TABLE_MAX])) {
 		if (cflag) {
 		    ptable = *ctablep;
 		    table = ptable ? ptable : rb_hash_new();
@@ -7636,7 +7637,7 @@ tr_setup_table(VALUE str, char stable[TR_TABLE_SIZE], int first,
 	    }
 	}
     }
-    for (i=0; i<256; i++) {
+    for (i=0; i<TR_TABLE_MAX; i++) {
 	stable[i] = stable[i] && buf[i];
     }
     if (!table && !cflag) {
@@ -7648,7 +7649,7 @@ tr_setup_table(VALUE str, char stable[TR_TABLE_SIZE], int first,
 static int
 tr_find(unsigned int c, const char table[TR_TABLE_SIZE], VALUE del, VALUE nodel)
 {
-    if (c < 256) {
+    if (c < TR_TABLE_MAX) {
 	return table[c] != 0;
     }
     else {
@@ -7663,7 +7664,7 @@ tr_find(unsigned int c, const char table[TR_TABLE_SIZE], VALUE del, VALUE nodel)
 	else if (nodel && !NIL_P(rb_hash_lookup(nodel, v))) {
 	    return FALSE;
 	}
-	return table[256] ? TRUE : FALSE;
+	return table[TR_TABLE_MAX] ? TRUE : FALSE;
     }
 }
 
@@ -7941,6 +7942,7 @@ rb_str_count(int argc, VALUE *argv, VALUE str)
     char *s, *send;
     int i;
     int ascompat;
+    size_t n = 0;
 
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
 
@@ -7953,7 +7955,6 @@ rb_str_count(int argc, VALUE *argv, VALUE str)
 	    (ptstr = RSTRING_PTR(tstr),
 	     ONIGENC_IS_ALLOWED_REVERSE_MATCH(enc, (const unsigned char *)ptstr, (const unsigned char *)ptstr+1)) &&
 	    !is_broken_string(str)) {
-	    int n = 0;
 	    int clen;
 	    unsigned char c = rb_enc_codepoint_len(ptstr, ptstr+1, &clen, enc);
 
@@ -7963,7 +7964,7 @@ rb_str_count(int argc, VALUE *argv, VALUE str)
 	    while (s < send) {
 		if (*(unsigned char*)s++ == c) n++;
 	    }
-	    return INT2NUM(n);
+	    return SIZET2NUM(n);
 	}
     }
 
@@ -7979,13 +7980,12 @@ rb_str_count(int argc, VALUE *argv, VALUE str)
     if (!s || RSTRING_LEN(str) == 0) return INT2FIX(0);
     send = RSTRING_END(str);
     ascompat = rb_enc_asciicompat(enc);
-    i = 0;
     while (s < send) {
 	unsigned int c;
 
 	if (ascompat && (c = *(unsigned char*)s) < 0x80) {
 	    if (table[c]) {
-		i++;
+		n++;
 	    }
 	    s++;
 	}
@@ -7993,13 +7993,13 @@ rb_str_count(int argc, VALUE *argv, VALUE str)
 	    int clen;
 	    c = rb_enc_codepoint_len(s, send, &clen, enc);
 	    if (tr_find(c, table, del, nodel)) {
-		i++;
+		n++;
 	    }
 	    s += clen;
 	}
     }
 
-    return INT2NUM(i);
+    return SIZET2NUM(n);
 }
 
 static VALUE
@@ -8187,7 +8187,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	rb_raise(rb_eTypeError, "value of $; must be String or Regexp");
     }
     else {
-        rb_warn("$; is set to non-nil value");
+        rb_category_warn(RB_WARN_CATEGORY_DEPRECATED, "$; is set to non-nil value");
     }
     if (split_type != SPLIT_TYPE_AWK) {
         switch (BUILTIN_TYPE(spat)) {
@@ -8413,7 +8413,7 @@ get_rs(void)
 	(!RB_TYPE_P(rs, T_STRING) ||
 	 RSTRING_LEN(rs) != 1 ||
 	 RSTRING_PTR(rs)[0] != '\n')) {
-        rb_warn("$/ is set to non-default value");
+        rb_category_warn(RB_WARN_CATEGORY_DEPRECATED, "$/ is set to non-default value");
     }
     return rs;
 }
@@ -8647,7 +8647,7 @@ rb_str_enumerate_bytes(VALUE str, VALUE ary)
     long i;
 
     for (i=0; i<RSTRING_LEN(str); i++) {
-	ENUM_ELEM(ary, INT2FIX(RSTRING_PTR(str)[i] & 0xff));
+	ENUM_ELEM(ary, INT2FIX((unsigned char)RSTRING_PTR(str)[i]));
     }
     if (ary)
 	return ary;
@@ -9232,7 +9232,7 @@ rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
  *  Returns a new String with the given record separator removed
  *  from the end of <i>str</i> (if present). If <code>$/</code> has not been
  *  changed from the default Ruby record separator, then <code>chomp</code> also
- *  removes carriage return characters (that is it will remove <code>\n</code>,
+ *  removes carriage return characters (that is, it will remove <code>\n</code>,
  *  <code>\r</code>, and <code>\r\n</code>). If <code>$/</code> is an empty string,
  *  it will remove all trailing newlines from the string.
  *
@@ -11051,6 +11051,26 @@ sym_inspect(VALUE sym)
     return str;
 }
 
+#if 0 /* for RDoc */
+/*
+ *  call-seq:
+ *     sym.name   -> string
+ *
+ *  Returns the name or string corresponding to <i>sym</i>. Unlike #to_s, the
+ *  returned string is frozen.
+ *
+ *     :fred.name         #=> "fred"
+ *     :fred.name.frozen? #=> true
+ *     :fred.to_s         #=> "fred"
+ *     :fred.to_s.frozen? #=> false
+ */
+VALUE
+rb_sym2str(VALUE sym)
+{
+
+}
+#endif
+
 
 /*
  *  call-seq:
@@ -11061,6 +11081,9 @@ sym_inspect(VALUE sym)
  *
  *     :fred.id2name   #=> "fred"
  *     :ginger.to_s    #=> "ginger"
+ *
+ *  Note that this string is not frozen (unlike the symbol itself).
+ *  To get a frozen string, use #name.
  */
 
 

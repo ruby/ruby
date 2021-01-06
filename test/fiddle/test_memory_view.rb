@@ -33,7 +33,7 @@ module Fiddle
       ptr = Pointer[str]
       mview = MemoryView.new(ptr)
       assert_same(ptr, mview.obj)
-      assert_equal(str.length, mview.length)
+      assert_equal(str.bytesize, mview.byte_size)
       assert_equal(true, mview.readonly?)
       assert_equal(nil, mview.format)
       assert_equal(1, mview.item_size)
@@ -43,7 +43,7 @@ module Fiddle
       assert_equal(nil, mview.sub_offsets)
 
       codes = str.codepoints
-      assert_equal(codes, (0...str.length).map {|i| mview[i] })
+      assert_equal(codes, (0...str.bytesize).map {|i| mview[i] })
     end
 
     def test_memory_view_multi_dimensional
@@ -55,7 +55,7 @@ module Fiddle
       shape = [3, 4]
       md = MemoryViewTestUtils::MultiDimensionalView.new(buf, "l!", shape, nil)
       mview = Fiddle::MemoryView.new(md)
-      assert_equal(buf.length, mview.length)
+      assert_equal(buf.bytesize, mview.byte_size)
       assert_equal("l!", mview.format)
       assert_equal(Fiddle::SIZEOF_LONG, mview.item_size)
       assert_equal(2, mview.ndim)
@@ -79,7 +79,7 @@ module Fiddle
       mview = Fiddle::MemoryView.new(md)
       assert_equal("l!", mview.format)
       assert_equal(Fiddle::SIZEOF_LONG, mview.item_size)
-      assert_equal(buf.length, mview.length)
+      assert_equal(buf.bytesize, mview.byte_size)
       assert_equal(2, mview.ndim)
       assert_equal(shape, mview.shape)
       assert_equal(strides, mview.strides)
@@ -101,7 +101,7 @@ module Fiddle
       mview = Fiddle::MemoryView.new(md)
       assert_equal("ss", mview.format)
       assert_equal(Fiddle::SIZEOF_SHORT*2, mview.item_size)
-      assert_equal(buf.length, mview.length)
+      assert_equal(buf.bytesize, mview.byte_size)
       assert_equal(2, mview.ndim)
       assert_equal(shape, mview.shape)
       assert_equal(strides, mview.strides)

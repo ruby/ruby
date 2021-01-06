@@ -142,7 +142,11 @@ hash_recursive(VALUE obj, VALUE arg, int recurse)
 VALUE
 rb_hash(VALUE obj)
 {
-    VALUE hval = rb_exec_recursive_outer(hash_recursive, obj, 0);
+    VALUE hval = rb_check_funcall_basic_kw(obj, id_hash, rb_mKernel, 0, 0, 0);
+
+    if (hval == Qundef) {
+	hval = rb_exec_recursive_outer(hash_recursive, obj, 0);
+    }
 
     while (!FIXNUM_P(hval)) {
         if (RB_TYPE_P(hval, T_BIGNUM)) {
@@ -219,15 +223,10 @@ any_hash(VALUE a, st_index_t (*other_func)(VALUE))
       default:
 	hnum = other_func(a);
     }
-#if SIZEOF_LONG < SIZEOF_ST_INDEX_T
-    if (hnum > 0)
-	hnum &= (unsigned long)-1 >> 2;
+    if ((SIGNED_VALUE)hnum > 0)
+	hnum &= FIXNUM_MAX;
     else
-	hnum |= ~((unsigned long)-1 >> 2);
-#else
-    hnum <<= 1;
-    hnum = RSHIFT(hnum, 1);
-#endif
+	hnum |= FIXNUM_MIN;
     return (long)hnum;
 }
 
@@ -2643,7 +2642,8 @@ rb_hash_except(int argc, VALUE *argv, VALUE hash)
     int i;
     VALUE key, result;
 
-    result = rb_obj_dup(hash);
+    result = hash_alloc(rb_cHash);
+    hash_copy(result, hash);
 
     for (i = 0; i < argc; i++) {
         key = argv[i];
@@ -3993,13 +3993,13 @@ rb_hash_update(int argc, VALUE *argv, VALUE self)
 
     rb_hash_modify(self);
     for (i = 0; i < argc; i++){
-       VALUE hash = to_hash(argv[i]);
-       if (block_given) {
-           rb_hash_foreach(hash, rb_hash_update_block_i, self);
-       }
-       else {
-           rb_hash_foreach(hash, rb_hash_update_i, self);
-       }
+        VALUE hash = to_hash(argv[i]);
+        if (block_given) {
+            rb_hash_foreach(hash, rb_hash_update_block_i, self);
+        }
+        else {
+            rb_hash_foreach(hash, rb_hash_update_i, self);
+        }
     }
     return self;
 }

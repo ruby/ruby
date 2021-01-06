@@ -20,4 +20,9 @@ describe "Regexps with grouping" do
     # Parsing precedence
     /(?:xdigit:)/.match("xdigit:").to_a.should == ["xdigit:"]
   end
+
+  it "group names cannot start with digits or minus" do
+    -> { Regexp.new("(?<1a>a)") }.should raise_error(RegexpError)
+    -> { Regexp.new("(?<-a>a)") }.should raise_error(RegexpError)
+  end
 end

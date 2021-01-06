@@ -4,11 +4,11 @@ require_relative 'shared/accessor'
 
 describe "Struct#hash" do
 
-  it "returns the same fixnum for structs with the same content" do
+  it "returns the same integer for structs with the same content" do
     [StructClasses::Ruby.new("1.8.6", "PPC"),
      StructClasses::Car.new("Hugo", "Foo", "1972")].each do |stc|
       stc.hash.should == stc.dup.hash
-      stc.hash.should be_kind_of(Fixnum)
+      stc.hash.should be_kind_of(Integer)
     end
   end
 

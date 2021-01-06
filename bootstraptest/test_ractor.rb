@@ -100,6 +100,64 @@ assert_equal 'ok', %q{
   r.take
 }
 
+# Ractor#receive_if can filter the message
+assert_equal '[2, 3, 1]', %q{
+  r = Ractor.new Ractor.current do |main|
+    main << 1
+    main << 2
+    main << 3
+  end
+  a = []
+  a << Ractor.receive_if{|msg| msg == 2}
+  a << Ractor.receive_if{|msg| msg == 3}
+  a << Ractor.receive
+}
+
+# Ractor#receive_if with break
+assert_equal '[2, [1, :break], 3]', %q{
+  r = Ractor.new Ractor.current do |main|
+    main << 1
+    main << 2
+    main << 3
+  end
+
+  a = []
+  a << Ractor.receive_if{|msg| msg == 2}
+  a << Ractor.receive_if{|msg| break [msg, :break]}
+  a << Ractor.receive
+}
+
+# Ractor#receive_if can't be called recursively
+assert_equal '[[:e1, 1], [:e2, 2]]', %q{
+  r = Ractor.new Ractor.current do |main|
+    main << 1
+    main << 2
+    main << 3
+  end
+
+  a = []
+
+  Ractor.receive_if do |msg|
+    begin
+      Ractor.receive
+    rescue Ractor::Error
+      a << [:e1, msg]
+    end
+    true # delete 1 from queue
+  end
+
+  Ractor.receive_if do |msg|
+    begin
+      Ractor.receive_if{}
+    rescue Ractor::Error
+      a << [:e2, msg]
+    end
+    true # delete 2 from queue
+  end
+
+  a #
+}
+
 ###
 ###
 # Ractor still has several memory corruption so skip huge number of tests
@@ -336,6 +394,13 @@ assert_equal 'ok', %q{
   else
     'ok'
   end
+}
+
+# Ractor.main returns main ractor
+assert_equal 'true', %q{
+  Ractor.new{
+    Ractor.main
+  }.take == Ractor.current
 }
 
 # a ractor with closed outgoing port should terminate
@@ -902,6 +967,18 @@ assert_equal 'can not access non-shareable objects in constant C::CONST by non-m
   end
 }
 
+# Constant cache should care about non-sharable constants
+assert_equal "can not access non-shareable objects in constant Object::STR by non-main Ractor.", %q{
+  STR = "hello"
+  def str; STR; end
+  s = str() # fill const cache
+  begin
+    Ractor.new{ str() }.take
+  rescue Ractor::RemoteError => e
+    e.cause.message
+  end
+}
+
 # Setting non-shareable objects into constants by other Ractors is not allowed
 assert_equal 'can not set constants with non-shareable objects by non-main Ractors', %q{
   class C
@@ -1091,6 +1168,14 @@ assert_equal '[:ok, false, false]', %q{
   [(Ractor.make_shareable(x) rescue :ok), Ractor.shareable?(x), Ractor.shareable?(y)]
 }
 
+# Ractor.make_shareable with Class/Module
+assert_equal '[C, M]', %q{
+  class C; end
+  module M; end
+
+  Ractor.make_shareable(ary = [C, M])
+}
+
 # define_method() can invoke different Ractor's proc if the proc is shareable.
 assert_equal '1', %q{
   class C
@@ -1116,6 +1201,34 @@ assert_equal 'can not make a Proc shareable because it accesses outer variables 
   rescue => e
     e.message
   end
+}
+
+# Ractor.make_shareable(obj, copy: true) makes copied shareable object.
+assert_equal '[false, false, true, true]', %q{
+  r = []
+  o1 = [1, 2, ["3"]]
+
+  o2 = Ractor.make_shareable(o1, copy: true)
+  r << Ractor.shareable?(o1) # false
+  r << (o1.object_id == o2.object_id) # false
+
+  o3 = Ractor.make_shareable(o1)
+  r << Ractor.shareable?(o1) # true
+  r << (o1.object_id == o3.object_id) # false
+  r
+}
+
+# TracePoint with normal Proc should be Ractor local
+assert_equal '[4, 8]', %q{
+  rs = []
+  TracePoint.new(:line){|tp| rs << tp.lineno if tp.path == __FILE__}.enable do
+    Ractor.new{ # line 4
+      a = 1
+      b = 2
+    }.take
+    c = 3       # line 8
+  end
+  rs
 }
 
 # Ractor deep copies frozen objects (ary)
@@ -1149,6 +1262,20 @@ assert_equal '[:ok, :ok]', %q{
   rescue => Ractor::RemoteError
     a << :ok
   end
+}
+
+# Ractor-local storage
+assert_equal '[nil, "b", "a"]', %q{
+  ans = []
+  Ractor.current[:key] = 'a'
+  r = Ractor.new{
+    Ractor.yield self[:key]
+    self[:key] = 'b'
+    self[:key]
+  }
+  ans << r.take
+  ans << r.take
+  ans << Ractor.current[:key]
 }
 
 ###

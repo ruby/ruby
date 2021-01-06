@@ -253,6 +253,19 @@ class TestAst < Test::Unit::TestCase
     mid, defn = body.children
     assert_equal(:a, mid)
     assert_equal(:SCOPE, defn.type)
+    _, args, = defn.children
+    assert_equal(:ARGS, args.type)
+  end
+
+  def test_defn_endless
+    node = RubyVM::AbstractSyntaxTree.parse("def a = nil")
+    _, _, body = *node.children
+    assert_equal(:DEFN, body.type)
+    mid, defn = body.children
+    assert_equal(:a, mid)
+    assert_equal(:SCOPE, defn.type)
+    _, args, = defn.children
+    assert_equal(:ARGS, args.type)
   end
 
   def test_defs
@@ -263,6 +276,20 @@ class TestAst < Test::Unit::TestCase
     assert_equal(:VCALL, recv.type)
     assert_equal(:b, mid)
     assert_equal(:SCOPE, defn.type)
+    _, args, = defn.children
+    assert_equal(:ARGS, args.type)
+  end
+
+  def test_defs_endless
+    node = RubyVM::AbstractSyntaxTree.parse("def a.b = nil")
+    _, _, body = *node.children
+    assert_equal(:DEFS, body.type)
+    recv, mid, defn = body.children
+    assert_equal(:VCALL, recv.type)
+    assert_equal(:b, mid)
+    assert_equal(:SCOPE, defn.type)
+    _, args, = defn.children
+    assert_equal(:ARGS, args.type)
   end
 
   def test_dstr

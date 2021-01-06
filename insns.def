@@ -767,7 +767,7 @@ send
 // attr rb_snum_t comptime_sp_inc = sp_inc_of_sendish(ci);
 {
     VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, false);
-    val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);
+    val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);
 
     if (val == Qundef) {
         RESTORE_REGS();
@@ -786,7 +786,7 @@ opt_send_without_block
 // attr rb_snum_t comptime_sp_inc = sp_inc_of_sendish(ci);
 {
     VALUE bh = VM_BLOCK_HANDLER_NONE;
-    val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);
+    val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);
 
     if (val == Qundef) {
         RESTORE_REGS();
@@ -873,7 +873,7 @@ invokesuper
 // attr rb_snum_t comptime_sp_inc = sp_inc_of_sendish(ci);
 {
     VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, true);
-    val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_super_method);
+    val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_super);
 
     if (val == Qundef) {
         RESTORE_REGS();
@@ -892,7 +892,7 @@ invokeblock
 // attr rb_snum_t comptime_sp_inc = sp_inc_of_invokeblock(ci);
 {
     VALUE bh = VM_BLOCK_HANDLER_NONE;
-    val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_invokeblock);
+    val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_invokeblock);
 
     if (val == Qundef) {
         RESTORE_REGS();
@@ -961,7 +961,7 @@ jump
 ()
 ()
 /* Same discussion as leave. */
-// attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
+// attr bool leaf = leafness_of_check_ints; /* has rb_threadptr_execute_interrupts() */
 {
     RUBY_VM_CHECK_INTS(ec);
     JUMP(dst);
@@ -974,7 +974,7 @@ branchif
 (VALUE val)
 ()
 /* Same discussion as jump. */
-// attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
+// attr bool leaf = leafness_of_check_ints; /* has rb_threadptr_execute_interrupts() */
 {
     if (RTEST(val)) {
 	RUBY_VM_CHECK_INTS(ec);
@@ -989,7 +989,7 @@ branchunless
 (VALUE val)
 ()
 /* Same discussion as jump. */
-// attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
+// attr bool leaf = leafness_of_check_ints; /* has rb_threadptr_execute_interrupts() */
 {
     if (!RTEST(val)) {
 	RUBY_VM_CHECK_INTS(ec);
@@ -1004,7 +1004,7 @@ branchnil
 (VALUE val)
 ()
 /* Same discussion as jump. */
-// attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
+// attr bool leaf = leafness_of_check_ints; /* has rb_threadptr_execute_interrupts() */
 {
     if (NIL_P(val)) {
 	RUBY_VM_CHECK_INTS(ec);
@@ -1023,9 +1023,10 @@ opt_getinlinecache
 ()
 (VALUE val)
 {
-    if (vm_ic_hit_p(ic, GET_EP())) {
-	val = ic->value;
-	JUMP(dst);
+    struct iseq_inline_constant_cache_entry *ice = ic->entry;
+    if (ice && vm_ic_hit_p(ice, GET_EP())) {
+        val = ice->value;
+        JUMP(dst);
     }
     else {
 	val = Qnil;
@@ -1039,7 +1040,7 @@ opt_setinlinecache
 (VALUE val)
 (VALUE val)
 {
-    vm_ic_update(ic, val, GET_EP());
+    vm_ic_update(GET_ISEQ(), ic, val, GET_EP());
 }
 
 /* run iseq only once */
@@ -1134,7 +1135,7 @@ opt_mod
 (CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
-/* Same discussion as opt_mod. */
+/* Same discussion as opt_div. */
 // attr bool leaf = false;
 {
     val = vm_opt_mod(recv, obj);

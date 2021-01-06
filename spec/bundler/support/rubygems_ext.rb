@@ -71,6 +71,26 @@ module Spec
       install_gems(test_gemfile, test_lockfile)
     end
 
+    def check_source_control_changes(success_message:, error_message:)
+      require "open3"
+
+      output, status = Open3.capture2e("git status --porcelain")
+
+      if status.success? && output.empty?
+        puts
+        puts success_message
+        puts
+      else
+        system("git status --porcelain")
+
+        puts
+        puts error_message
+        puts
+
+        exit(1)
+      end
+    end
+
     private
 
     # Some rubygems versions include loaded specs when loading gemspec stubs

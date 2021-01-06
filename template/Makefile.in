@@ -2,6 +2,9 @@
 
 SHELL = /bin/sh
 NULLCMD = @NULLCMD@
+silence = no # yes/no
+yes_silence = $(silence:no=)
+no_silence = $(silence:yes=)
 n=$(NULLCMD)
 ECHO1 = $(V:1=$n)
 RUNCMD = $(SHELL)
@@ -356,8 +359,8 @@ uncommon.mk: $(srcdir)/common.mk
 		sed 's/{\$$([^(){}]*)[^{}]*}//g' $< > $@
 
 .PHONY: reconfig
-reconfig-args = $(srcdir)/$(CONFIGURE) $(configure_args)
-config.status-args = ./config.status --recheck
+reconfig-args = $(srcdir)/$(CONFIGURE) $(yes_silence:yes=--silent) $(configure_args)
+config.status-args = ./config.status $(yes_silence:yes=--silent) --recheck
 reconfig-exec-0 = test -t 1 && { : $${CONFIGURE_TTY=yes}; export CONFIGURE_TTY; }; exec 3>&1; exit `exec 4>&1; { "$$@" 3>&- 4>&-; echo $$? 1>&4; } | fgrep -v '(cached)' 1>&3 3>&- 4>&-`
 reconfig-exec-1 = set -x; "$$@"
 
@@ -686,4 +689,4 @@ mjit_build_dir.$(SOEXT): $(MJIT_MIN_HEADER) $(srcdir)/ruby-runner.c ruby-runner.
 
 # yes-test-basic: leaked-globals
 leaked-globals: $(COMMONOBJS) prog $(tooldir)/leaked-globals PHONY
-	$(Q) $(XRUBY) $(tooldir)/leaked-globals NM=$(NM) SYMBOL_PREFIX=$(SYMBOL_PREFIX) $(srcdir)/configure.ac $(COMMONOBJS)
+	$(Q) $(XRUBY) $(tooldir)/leaked-globals NM=$(NM) SYMBOL_PREFIX=$(SYMBOL_PREFIX) PLATFORM=$(hdrdir)/ruby/$(PLATFORM_DIR).h $(srcdir)/configure.ac $(COMMONOBJS)

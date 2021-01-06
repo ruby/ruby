@@ -418,9 +418,16 @@ rb_encoding *
 rb_enc_from_index(int index)
 {
     rb_encoding *enc;
-    GLOBAL_ENC_TABLE_EVAL(enc_table,
-                          enc = enc_from_index(enc_table, index));
-    return enc;
+
+    switch (index) {
+      case ENCINDEX_ASCII:    return global_enc_ascii;
+      case ENCINDEX_UTF_8:    return global_enc_utf_8;
+      case ENCINDEX_US_ASCII: return global_enc_us_ascii;
+      default:
+        GLOBAL_ENC_TABLE_EVAL(enc_table,
+                              enc = enc_from_index(enc_table, index));
+        return enc;
+    }
 }
 
 int

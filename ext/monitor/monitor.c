@@ -203,6 +203,10 @@ monitor_synchronize(VALUE monitor)
 void
 Init_monitor(void)
 {
+#if HAVE_RB_EXT_RACTOR_SAFE
+    rb_ext_ractor_safe(true);
+#endif
+
     VALUE rb_cMonitor = rb_define_class("Monitor", rb_cObject);
     rb_define_alloc_func(rb_cMonitor, monitor_alloc);
 

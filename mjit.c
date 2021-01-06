@@ -245,11 +245,25 @@ create_unit(const rb_iseq_t *iseq)
     iseq->body->jit_unit = unit;
 }
 
+// Return true if given ISeq body should be compiled by MJIT
+static inline int
+mjit_target_iseq_p(struct rb_iseq_constant_body *body)
+{
+    return (body->type == ISEQ_TYPE_METHOD || body->type == ISEQ_TYPE_BLOCK)
+        && !body->builtin_inline_p
+        && body->iseq_size < JIT_ISEQ_SIZE_THRESHOLD;
+}
+
 static void
 mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_info *compile_info)
 {
     if (!mjit_enabled || pch_status == PCH_FAILED)
         return;
+
+    if (!mjit_target_iseq_p(iseq->body)) {
+        iseq->body->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC; // skip mjit_wait
+        return;
+    }
 
     RB_DEBUG_COUNTER_INC(mjit_add_iseq_to_process);
     iseq->body->jit_func = (mjit_func_t)NOT_READY_JIT_ISEQ_FUNC;
@@ -310,6 +324,9 @@ mjit_wait(struct rb_iseq_constant_body *body)
 VALUE
 rb_mjit_wait_call(rb_execution_context_t *ec, struct rb_iseq_constant_body *body)
 {
+    if (worker_stopped)
+        return Qundef;
+
     mjit_wait(body);
     if ((uintptr_t)body->jit_func <= (uintptr_t)LAST_JIT_ISEQ_FUNC) {
         return Qundef;
@@ -332,6 +349,7 @@ mjit_recompile(const rb_iseq_t *iseq)
 
     verbose(1, "JIT recompile: %s@%s:%d", RSTRING_PTR(iseq->body->location.label),
             RSTRING_PTR(rb_iseq_path(iseq)), FIX2INT(iseq->body->location.first_lineno));
+    assert(iseq->body->jit_unit != NULL);
 
     // Lazily move active_units to stale_units to avoid race conditions around active_units with compaction
     CRITICAL_SECTION_START(3, "in rb_mjit_recompile_iseq");
@@ -375,6 +393,14 @@ void
 rb_mjit_recompile_inlining(const rb_iseq_t *iseq)
 {
     rb_mjit_iseq_compile_info(iseq->body)->disable_inlining = true;
+    mjit_recompile(iseq);
+}
+
+// Recompile iseq, disabling getconstant inlining
+void
+rb_mjit_recompile_const(const rb_iseq_t *iseq)
+{
+    rb_mjit_iseq_compile_info(iseq->body)->disable_const_cache = true;
     mjit_recompile(iseq);
 }
 
@@ -492,19 +518,6 @@ init_header_filename(void)
 #endif
 
     return true;
-}
-
-static enum rb_id_table_iterator_result
-valid_class_serials_add_i(ID key, VALUE v, void *unused)
-{
-    rb_const_entry_t *ce = (rb_const_entry_t *)v;
-    VALUE value = ce->value;
-
-    if (!rb_is_const_id(key)) return ID_TABLE_CONTINUE;
-    if (RB_TYPE_P(value, T_MODULE) || RB_TYPE_P(value, T_CLASS)) {
-        mjit_add_class_serial(RCLASS_SERIAL(value));
-    }
-    return ID_TABLE_CONTINUE;
 }
 
 #ifdef _WIN32
@@ -711,16 +724,6 @@ mjit_init(const struct mjit_options *opts)
     // rb_fiber_init_mjit_cont again with mjit_enabled=true to set the root_fiber's mjit_cont.
     rb_fiber_init_mjit_cont(GET_EC()->fiber_ptr);
 
-    // Initialize class_serials cache for compilation
-    valid_class_serials = rb_hash_new();
-    rb_obj_hide(valid_class_serials);
-    rb_gc_register_mark_object(valid_class_serials);
-    mjit_add_class_serial(RCLASS_SERIAL(rb_cObject));
-    mjit_add_class_serial(RCLASS_SERIAL(CLASS_OF(rb_vm_top_self())));
-    if (RCLASS_CONST_TBL(rb_cObject)) {
-        rb_id_table_foreach(RCLASS_CONST_TBL(rb_cObject), valid_class_serials_add_i, NULL);
-    }
-
     // Initialize worker thread
     start_worker();
 }
@@ -908,7 +911,13 @@ mjit_finish(bool close_handle_p)
     verbose(1, "Successful MJIT finish");
 }
 
-// Called by rb_vm_mark() to mark iseq being JIT-ed and iseqs in the unit queue.
+// Called by rb_vm_mark().
+//
+// Mark an ISeq being compiled to prevent its CCs from being GC-ed, which
+// an MJIT worker may concurrently see.
+//
+// Also mark active_units so that we do not GC ISeq which may still be
+// referred to by mjit_recompile() or compact_all_jit_code().
 void
 mjit_mark(void)
 {
@@ -916,21 +925,31 @@ mjit_mark(void)
         return;
     RUBY_MARK_ENTER("mjit");
 
-    struct rb_mjit_unit *unit = NULL;
+    if (compiling_iseq != NULL)
+        rb_gc_mark((VALUE)compiling_iseq);
+
+    // We need to release a lock when calling rb_gc_mark to avoid doubly acquiring
+    // a lock by by mjit_gc_start_hook inside rb_gc_mark.
+    //
+    // Because an MJIT worker may modify active_units anytime, we need to convert
+    // the linked list to an array to safely loop its ISeqs without keeping a lock.
     CRITICAL_SECTION_START(4, "mjit_mark");
-    list_for_each(&unit_queue.head, unit, unode) {
-        if (unit->iseq) { // ISeq is still not GCed
-            VALUE iseq = (VALUE)unit->iseq;
-            CRITICAL_SECTION_FINISH(4, "mjit_mark rb_gc_mark");
+    int length = active_units.length;
+    rb_iseq_t **iseqs = ALLOCA_N(rb_iseq_t *, length);
 
-            // Don't wrap critical section with this. This may trigger GC,
-            // and in that case mjit_gc_start_hook causes deadlock.
-            rb_gc_mark(iseq);
-
-            CRITICAL_SECTION_START(4, "mjit_mark rb_gc_mark");
-        }
+    struct rb_mjit_unit *unit = NULL;
+    int i = 0;
+    list_for_each(&active_units.head, unit, unode) {
+        iseqs[i] = unit->iseq;
+        i++;
     }
     CRITICAL_SECTION_FINISH(4, "mjit_mark");
+
+    for (i = 0; i < length; i++) {
+        if (iseqs[i] == NULL) // ISeq is GC-ed
+            continue;
+        rb_gc_mark((VALUE)iseqs[i]);
+    }
 
     RUBY_MARK_LEAVE("mjit");
 }
@@ -953,28 +972,4 @@ mjit_mark_cc_entries(const struct rb_iseq_constant_body *const body)
     }
 }
 
-// A hook to update valid_class_serials.
-void
-mjit_add_class_serial(rb_serial_t class_serial)
-{
-    if (!mjit_enabled)
-        return;
-
-    // Do not wrap CRITICAL_SECTION here. This function is only called in main thread
-    // and guarded by GVL, and `rb_hash_aset` may cause GC and deadlock in it.
-    rb_hash_aset(valid_class_serials, LONG2FIX(class_serial), Qtrue);
-}
-
-// A hook to update valid_class_serials.
-void
-mjit_remove_class_serial(rb_serial_t class_serial)
-{
-    if (!mjit_enabled)
-        return;
-
-    CRITICAL_SECTION_START(3, "in mjit_remove_class_serial");
-    rb_hash_delete_entry(valid_class_serials, LONG2FIX(class_serial));
-    CRITICAL_SECTION_FINISH(3, "in mjit_remove_class_serial");
-}
-
-#endif
+#endif // USE_MJIT

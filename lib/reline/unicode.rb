@@ -458,8 +458,8 @@ class Reline::Unicode
     [byte_size, width]
   end
 
-  def self.vi_forward_word(line, byte_pointer)
-    if (line.bytesize - 1) > byte_pointer
+  def self.vi_forward_word(line, byte_pointer, drop_terminate_spaces = false)
+    if line.bytesize > byte_pointer
       size = get_next_mbchar_size(line, byte_pointer)
       mbchar = line.byteslice(byte_pointer, size)
       if mbchar =~ /\w/
@@ -474,7 +474,7 @@ class Reline::Unicode
     else
       return [0, 0]
     end
-    while (line.bytesize - 1) > (byte_pointer + byte_size)
+    while line.bytesize > (byte_pointer + byte_size)
       size = get_next_mbchar_size(line, byte_pointer + byte_size)
       mbchar = line.byteslice(byte_pointer + byte_size, size)
       case started_by
@@ -488,7 +488,8 @@ class Reline::Unicode
       width += get_mbchar_width(mbchar)
       byte_size += size
     end
-    while (line.bytesize - 1) > (byte_pointer + byte_size)
+    return [byte_size, width] if drop_terminate_spaces
+    while line.bytesize > (byte_pointer + byte_size)
       size = get_next_mbchar_size(line, byte_pointer + byte_size)
       mbchar = line.byteslice(byte_pointer + byte_size, size)
       break if mbchar =~ /\S/

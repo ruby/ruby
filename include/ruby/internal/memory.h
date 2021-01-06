@@ -250,8 +250,9 @@ rbimpl_size_mul_or_raise(size_t x, size_t y)
 static inline void *
 rb_alloc_tmp_buffer2(volatile VALUE *store, long count, size_t elsize)
 {
-    return rb_alloc_tmp_buffer_with_count(
-        store, rbimpl_size_mul_or_raise(count, elsize), count);
+    const size_t total_size = rbimpl_size_mul_or_raise(count, elsize);
+    const size_t cnt = (total_size + sizeof(VALUE) - 1) / sizeof(VALUE);
+    return rb_alloc_tmp_buffer_with_count(store, total_size, cnt);
 }
 
 #ifndef __MINGW32__

@@ -218,10 +218,18 @@ struct rb_control_frame_struct;
 /* iseq data type */
 typedef struct rb_compile_option_struct rb_compile_option_t;
 
-struct iseq_inline_cache_entry {
-    rb_serial_t ic_serial;
-    const rb_cref_t *ic_cref;
-    VALUE value;
+// imemo_constcache
+struct iseq_inline_constant_cache_entry {
+    VALUE flags;
+
+    VALUE value;              // v0
+    const rb_cref_t *ic_cref; // v1
+    rb_serial_t ic_serial;    // v2
+                              // v3
+};
+
+struct iseq_inline_constant_cache {
+    struct iseq_inline_constant_cache_entry *entry;
 };
 
 struct iseq_inline_iv_cache_entry {
@@ -233,7 +241,7 @@ union iseq_inline_storage_entry {
 	struct rb_thread_struct *running_thread;
 	VALUE value;
     } once;
-    struct iseq_inline_cache_entry cache;
+    struct iseq_inline_constant_cache ic_cache;
     struct iseq_inline_iv_cache_entry iv_cache;
 };
 
@@ -618,9 +626,6 @@ typedef struct rb_vm_struct {
     struct {
 	VALUE cmd[RUBY_NSIG];
     } trap_list;
-
-    /* hook */
-    rb_hook_list_t global_hooks;
 
     /* relation table of ensure - rollback for callcc */
     struct st_table *ensure_rollback_table;
@@ -1129,7 +1134,7 @@ enum vm_svar_index {
 };
 
 /* inline cache */
-typedef struct iseq_inline_cache_entry *IC;
+typedef struct iseq_inline_constant_cache *IC;
 typedef struct iseq_inline_iv_cache_entry *IVC;
 typedef union iseq_inline_storage_entry *ISE;
 typedef const struct rb_callinfo *CALL_INFO;
@@ -1973,17 +1978,24 @@ rb_exec_event_hook_orig(rb_execution_context_t *ec, rb_hook_list_t *hooks, rb_ev
     rb_exec_event_hooks(&trace_arg, hooks, pop_p);
 }
 
+struct rb_ractor_pub {
+    VALUE self;
+    uint32_t id;
+    rb_hook_list_t hooks;
+};
+
 static inline rb_hook_list_t *
-rb_vm_global_hooks(const rb_execution_context_t *ec)
+rb_ec_ractor_hooks(const rb_execution_context_t *ec)
 {
-    return &rb_ec_vm_ptr(ec)->global_hooks;
+    struct rb_ractor_pub *cr_pub = (struct rb_ractor_pub *)rb_ec_ractor_ptr(ec);
+    return &cr_pub->hooks;
 }
 
 #define EXEC_EVENT_HOOK(ec_, flag_, self_, id_, called_id_, klass_, data_) \
-  EXEC_EVENT_HOOK_ORIG(ec_, rb_vm_global_hooks(ec_), flag_, self_, id_, called_id_, klass_, data_, 0)
+  EXEC_EVENT_HOOK_ORIG(ec_, rb_ec_ractor_hooks(ec_), flag_, self_, id_, called_id_, klass_, data_, 0)
 
 #define EXEC_EVENT_HOOK_AND_POP_FRAME(ec_, flag_, self_, id_, called_id_, klass_, data_) \
-  EXEC_EVENT_HOOK_ORIG(ec_, rb_vm_global_hooks(ec_), flag_, self_, id_, called_id_, klass_, data_, 1)
+  EXEC_EVENT_HOOK_ORIG(ec_, rb_ec_ractor_hooks(ec_), flag_, self_, id_, called_id_, klass_, data_, 1)
 
 static inline void
 rb_exec_event_hook_script_compiled(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE eval_script)
@@ -2010,7 +2022,9 @@ extern void rb_reset_coverages(void);
 
 void rb_postponed_job_flush(rb_vm_t *vm);
 
-extern VALUE rb_eRactorUnsafeError; // ractor.c
+// ractor.c
+RUBY_EXTERN VALUE rb_eRactorUnsafeError;
+RUBY_EXTERN VALUE rb_eRactorIsolationError;
 
 RUBY_SYMBOL_EXPORT_END
 

@@ -1,0 +1,20 @@
+name: "Update bundled_gems"
+
+on:
+  schedule:
+    - cron: '10 8 * * *'
+
+jobs:
+  Update-bundled_gems:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Update
+      run: |
+        ruby -rrubygems tool/update-bundled_gems.rb gems/bundled_gems |
+        tool/ifchange gems/bundled_gems -
+        git diff --no-ext-diff --ignore-submodules --exit-code

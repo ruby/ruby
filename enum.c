@@ -4178,6 +4178,48 @@ enum_uniq(VALUE obj)
     return ret;
 }
 
+static VALUE
+compact_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
+{
+    ENUM_WANT_SVALUE();
+
+    if (!NIL_P(i)) {
+        rb_ary_push(ary, i);
+    }
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.compact -> array
+ *
+ *  Returns an array of all non-+nil+ elements from enumeration.
+ *
+ *      def with_nils
+ *        yield 1
+ *        yield 2
+ *        yield nil
+ *        yield 3
+ *      end
+ *
+ *      to_enum(:with_nils).compact
+ *      # => [1, 2, 3]
+ *
+ *  See also Array#compact.
+ */
+
+static VALUE
+enum_compact(VALUE obj)
+{
+    VALUE ary;
+
+    ary = rb_ary_new();
+    rb_block_call(obj, id_each, 0, 0, compact_i, ary);
+
+    return ary;
+}
+
+
 /*
  *  The Enumerable mixin provides collection classes with several
  *  traversal and searching methods, and with the ability to sort. The
@@ -4251,6 +4293,7 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "chunk_while", enum_chunk_while, 0);
     rb_define_method(rb_mEnumerable, "sum", enum_sum, -1);
     rb_define_method(rb_mEnumerable, "uniq", enum_uniq, 0);
+    rb_define_method(rb_mEnumerable, "compact", enum_compact, 0);
 
     id_next = rb_intern_const("next");
 }

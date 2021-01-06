@@ -264,7 +264,7 @@ module Test
         at_exit {
           out.puts [Marshal.dump($!)].pack('m'), "assertions=\#{self._assertions}"
         }
-        Test::Unit::Runner.class_variable_set(:@@stop_auto_run, true)
+        Test::Unit::Runner.class_variable_set(:@@stop_auto_run, true) if defined?(Test::Unit::Runner)
       end
 
       def assert_separately(args, file = nil, line = nil, src, ignore_stderr: nil, **opt)
@@ -276,7 +276,7 @@ module Test
         capture_stdout = true
         unless /mswin|mingw/ =~ RUBY_PLATFORM
           capture_stdout = false
-          opt[:out] = MiniTest::Unit.output
+          opt[:out] = MiniTest::Unit.output if defined?(MiniTest::Unit)
           res_p, res_c = IO.pipe
           opt[res_c.fileno] = res_c.fileno
         end
@@ -328,6 +328,27 @@ eom
         end
         assert(status.success?, FailDesc[status, "assert_separately failed", stderr])
         raise marshal_error if marshal_error
+      end
+
+      # Run Ractor-related test without influencing the main test suite
+      def assert_ractor(src, args: [], require: nil, require_relative: nil, file: nil, line: nil, ignore_stderr: nil, **opt)
+        return unless defined?(Ractor)
+
+        require = "require #{require.inspect}" if require
+        if require_relative
+          dir = File.dirname(caller_locations[0,1][0].absolute_path)
+          full_path = File.expand_path(require_relative, dir)
+          require = "#{require}; require #{full_path.inspect}"
+        end
+
+        assert_separately(args, file, line, <<~RUBY, ignore_stderr: ignore_stderr, **opt)
+          #{require}
+          previous_verbose = $VERBOSE
+          $VERBOSE = nil
+          Ractor.new {} # trigger initial warning
+          $VERBOSE = previous_verbose
+          #{src}
+        RUBY
       end
 
       # :call-seq:
@@ -585,6 +606,20 @@ eom
 
       def assert_warn(*args)
         assert_warning(*args) {$VERBOSE = false; yield}
+      end
+
+      def assert_deprecated_warning(mesg = /deprecated/)
+        assert_warning(mesg) do
+          Warning[:deprecated] = true
+          yield
+        end
+      end
+
+      def assert_deprecated_warn(mesg = /deprecated/)
+        assert_warn(mesg) do
+          Warning[:deprecated] = true
+          yield
+        end
       end
 
       class << (AssertFile = Struct.new(:failure_message).new)

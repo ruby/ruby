@@ -1105,12 +1105,13 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
 static enum rb_id_table_iterator_result
 move_refined_method(ID key, VALUE value, void *data)
 {
-    rb_method_entry_t *me = (rb_method_entry_t *) value;
-    VALUE klass = (VALUE)data;
-    struct rb_id_table *tbl = RCLASS_M_TBL(klass);
+    rb_method_entry_t *me = (rb_method_entry_t *)value;
 
     if (me->def->type == VM_METHOD_TYPE_REFINED) {
-	if (me->def->body.refined.orig_me) {
+        VALUE klass = (VALUE)data;
+        struct rb_id_table *tbl = RCLASS_M_TBL(klass);
+
+        if (me->def->body.refined.orig_me) {
 	    const rb_method_entry_t *orig_me = me->def->body.refined.orig_me, *new_me;
 	    RB_OBJ_WRITE(me, &me->def->body.refined.orig_me, NULL);
 	    new_me = rb_method_entry_clone(me);
@@ -1128,6 +1129,19 @@ move_refined_method(ID key, VALUE value, void *data)
     }
 }
 
+static enum rb_id_table_iterator_result
+cache_clear_refined_method(ID key, VALUE value, void *data)
+{
+    rb_method_entry_t *me = (rb_method_entry_t *) value;
+
+    if (me->def->type == VM_METHOD_TYPE_REFINED) {
+        VALUE klass = (VALUE)data;
+        rb_clear_method_cache(klass, me->called_id);
+    }
+
+    return ID_TABLE_CONTINUE;
+}
+
 static void
 ensure_origin(VALUE klass)
 {
@@ -1139,6 +1153,7 @@ ensure_origin(VALUE klass)
 	RCLASS_SET_ORIGIN(klass, origin);
 	RCLASS_M_TBL(origin) = RCLASS_M_TBL(klass);
 	RCLASS_M_TBL_INIT(klass);
+        rb_id_table_foreach(RCLASS_M_TBL(origin), cache_clear_refined_method, (void *)klass);
 	rb_id_table_foreach(RCLASS_M_TBL(origin), move_refined_method, (void *)klass);
     }
 }
@@ -1879,7 +1894,7 @@ rb_singleton_class_get(VALUE obj)
  * Returns the singleton class of \a obj. Creates it if necessary.
  *
  * \param obj an arbitrary object.
- * \throw TypeError if \a obj is a Integer or a Symbol.
+ * \throw TypeError if \a obj is an Integer or a Symbol.
  * \return the singleton class.
  *
  * \post \a obj has its own singleton class.

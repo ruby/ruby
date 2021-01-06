@@ -24,9 +24,6 @@ REVISION_FORCE = PHONY
 !ifndef CROSS_COMPILING
 CROSS_COMPILING = no
 !endif
-!ifndef LARGEFILE_SUPPORT
-LARGEFILE_SUPPORT = 1
-!endif
 !ifndef win_srcdir
 win_srcdir = $(srcdir)/win32
 !endif
@@ -639,11 +636,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #ifndef _INTEGRAL_MAX_BITS
 #define _INTEGRAL_MAX_BITS 64
 #endif
-!if $(LARGEFILE_SUPPORT)
 #define SIZEOF_OFF_T 8
-!else
-#define SIZEOF_OFF_T 4
-!endif
 !if "$(ARCH)" == "x64"
 #define SIZEOF_VOIDP 8
 !else

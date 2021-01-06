@@ -349,7 +349,7 @@ rb_find_global_entry(ID id)
     }
 
     if (UNLIKELY(!rb_ractor_main_p()) && (!entry || !entry->ractor_local)) {
-        rb_raise(rb_eRuntimeError, "can not access global variables %s from non-main Ractors", rb_id2name(id));
+        rb_raise(rb_eRactorIsolationError, "can not access global variables %s from non-main Ractors", rb_id2name(id));
     }
 
     return entry;
@@ -814,7 +814,7 @@ rb_f_global_variables(void)
     VALUE sym, backref = rb_backref_get();
 
     if (!rb_ractor_main_p()) {
-        rb_raise(rb_eRuntimeError, "can not access global variables from non-main Ractors");
+        rb_raise(rb_eRactorIsolationError, "can not access global variables from non-main Ractors");
     }
 
     rb_id_table_foreach(rb_global_tbl, gvar_i, (void *)ary);
@@ -847,7 +847,7 @@ rb_alias_variable(ID name1, ID name2)
     struct rb_id_table *gtbl = rb_global_tbl;
 
     if (!rb_ractor_main_p()) {
-        rb_raise(rb_eRuntimeError, "can not access global variables from non-main Ractors");
+        rb_raise(rb_eRactorIsolationError, "can not access global variables from non-main Ractors");
     }
 
     entry2 = rb_global_entry(name2);
@@ -907,14 +907,14 @@ IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(ID id)
 {
     if (UNLIKELY(!rb_ractor_main_p())) {
         if (rb_is_instance_id(id)) { // check only normal ivars
-            rb_raise(rb_eRuntimeError, "can not access instance variables of classes/modules from non-main Ractors");
+            rb_raise(rb_eRactorIsolationError, "can not access instance variables of classes/modules from non-main Ractors");
         }
     }
 }
 
 #define CVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR() \
   if (UNLIKELY(!rb_ractor_main_p())) { \
-      rb_raise(rb_eRuntimeError, "can not access class variables from non-main Ractors"); \
+      rb_raise(rb_eRactorIsolationError, "can not access class variables from non-main Ractors"); \
   }
 
 static inline struct st_table *
@@ -927,8 +927,7 @@ generic_ivtbl(VALUE obj, ID id, bool force_check_ractor)
         UNLIKELY(!rb_ractor_main_p()) &&
         UNLIKELY(rb_ractor_shareable_p(obj))) {
 
-        // TODO: RuntimeError?
-        rb_raise(rb_eRuntimeError, "can not access instance variables of shareable objects from non-main Ractors");
+        rb_raise(rb_eRactorIsolationError, "can not access instance variables of shareable objects from non-main Ractors");
     }
     return generic_iv_tbl_;
 }
@@ -2349,7 +2348,13 @@ autoload_const_set(struct autoload_const *ac)
     VALUE klass = ac->mod;
     ID id = ac->id;
     check_before_mod_set(klass, id, ac->value, "constant");
-    const_tbl_update(ac);
+
+    RB_VM_LOCK_ENTER();
+    {
+        const_tbl_update(ac);
+    }
+    RB_VM_LOCK_LEAVE();
+
     return 0;			/* ignored */
 }
 
@@ -2530,10 +2535,10 @@ rb_const_warn_if_deprecated(const rb_const_entry_t *ce, VALUE klass, ID id)
     if (RB_CONST_DEPRECATED_P(ce) &&
         rb_warning_category_enabled_p(RB_WARN_CATEGORY_DEPRECATED)) {
 	if (klass == rb_cObject) {
-	    rb_warn("constant ::%"PRIsVALUE" is deprecated", QUOTE_ID(id));
+            rb_category_warn(RB_WARN_CATEGORY_DEPRECATED, "constant ::%"PRIsVALUE" is deprecated", QUOTE_ID(id));
 	}
 	else {
-	    rb_warn("constant %"PRIsVALUE"::%"PRIsVALUE" is deprecated",
+            rb_category_warn(RB_WARN_CATEGORY_DEPRECATED, "constant %"PRIsVALUE"::%"PRIsVALUE" is deprecated",
 		    rb_class_name(klass), QUOTE_ID(id));
 	}
     }
@@ -2546,7 +2551,7 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
     if (c != Qundef) {
         if (UNLIKELY(!rb_ractor_main_p())) {
             if (!rb_ractor_shareable_p(c)) {
-                rb_raise(rb_eNameError, "can not access non-shareable objects in constant %"PRIsVALUE"::%s by non-main Ractor.", rb_class_path(klass), rb_id2name(id));
+                rb_raise(rb_eRactorIsolationError, "can not access non-shareable objects in constant %"PRIsVALUE"::%s by non-main Ractor.", rb_class_path(klass), rb_id2name(id));
             }
         }
         return c;
@@ -2782,8 +2787,13 @@ rb_local_constants(VALUE mod)
 
     if (!tbl) return rb_ary_new2(0);
 
-    ary = rb_ary_new2(rb_id_table_size(tbl));
-    rb_id_table_foreach(tbl, rb_local_constants_i, (void *)ary);
+    RB_VM_LOCK_ENTER();
+    {
+        ary = rb_ary_new2(rb_id_table_size(tbl));
+        rb_id_table_foreach(tbl, rb_local_constants_i, (void *)ary);
+    }
+    RB_VM_LOCK_LEAVE();
+
     return ary;
 }
 
@@ -2795,7 +2805,11 @@ rb_mod_const_at(VALUE mod, void *data)
 	tbl = st_init_numtable();
     }
     if (RCLASS_CONST_TBL(mod)) {
-	rb_id_table_foreach(RCLASS_CONST_TBL(mod), sv_i, tbl);
+        RB_VM_LOCK_ENTER();
+        {
+            rb_id_table_foreach(RCLASS_CONST_TBL(mod), sv_i, tbl);
+        }
+        RB_VM_LOCK_LEAVE();
     }
     return tbl;
 }
@@ -2971,20 +2985,24 @@ static void
 set_namespace_path(VALUE named_namespace, VALUE namespace_path)
 {
     struct rb_id_table *const_table = RCLASS_CONST_TBL(named_namespace);
-    if (!RCLASS_IV_TBL(named_namespace)) {
-        RCLASS_IV_TBL(named_namespace) = st_init_numtable();
+
+    RB_VM_LOCK_ENTER();
+    {
+        if (!RCLASS_IV_TBL(named_namespace)) {
+            RCLASS_IV_TBL(named_namespace) = st_init_numtable();
+        }
+        rb_class_ivar_set(named_namespace, classpath, namespace_path);
+        if (const_table) {
+            rb_id_table_foreach(const_table, set_namespace_path_i, &namespace_path);
+        }
     }
-    rb_class_ivar_set(named_namespace, classpath, namespace_path);
-    if (const_table) {
-        rb_id_table_foreach(const_table, set_namespace_path_i, &namespace_path);
-    }
+    RB_VM_LOCK_LEAVE();
 }
 
 void
 rb_const_set(VALUE klass, ID id, VALUE val)
 {
     rb_const_entry_t *ce;
-    struct rb_id_table *tbl = RCLASS_CONST_TBL(klass);
 
     if (NIL_P(klass)) {
 	rb_raise(rb_eTypeError, "no class/module to define constant %"PRIsVALUE"",
@@ -2992,25 +3010,32 @@ rb_const_set(VALUE klass, ID id, VALUE val)
     }
 
     if (!rb_ractor_main_p() && !rb_ractor_shareable_p(val)) {
-        rb_raise(rb_eNameError, "can not set constants with non-shareable objects by non-main Ractors");
+        rb_raise(rb_eRactorIsolationError, "can not set constants with non-shareable objects by non-main Ractors");
     }
 
     check_before_mod_set(klass, id, val, "constant");
-    if (!tbl) {
-	RCLASS_CONST_TBL(klass) = tbl = rb_id_table_create(0);
-	rb_clear_constant_cache();
-	ce = ZALLOC(rb_const_entry_t);
-	rb_id_table_insert(tbl, id, (VALUE)ce);
-	setup_const_entry(ce, klass, val, CONST_PUBLIC);
+
+    RB_VM_LOCK_ENTER();
+    {
+        struct rb_id_table *tbl = RCLASS_CONST_TBL(klass);
+        if (!tbl) {
+            RCLASS_CONST_TBL(klass) = tbl = rb_id_table_create(0);
+            rb_clear_constant_cache();
+            ce = ZALLOC(rb_const_entry_t);
+            rb_id_table_insert(tbl, id, (VALUE)ce);
+            setup_const_entry(ce, klass, val, CONST_PUBLIC);
+        }
+        else {
+            struct autoload_const ac = {
+                .mod = klass, .id = id,
+                .value = val, .flag = CONST_PUBLIC,
+                /* fill the rest with 0 */
+            };
+            const_tbl_update(&ac);
+        }
     }
-    else {
-        struct autoload_const ac = {
-            .mod = klass, .id = id,
-            .value = val, .flag = CONST_PUBLIC,
-            /* fill the rest with 0 */
-        };
-	const_tbl_update(&ac);
-    }
+    RB_VM_LOCK_LEAVE();
+
     /*
      * Resolve and cache class name immediately to resolve ambiguity
      * and avoid order-dependency on const_tbl
@@ -3589,10 +3614,17 @@ MJIT_FUNC_EXPORTED rb_const_entry_t *
 rb_const_lookup(VALUE klass, ID id)
 {
     struct rb_id_table *tbl = RCLASS_CONST_TBL(klass);
-    VALUE val;
 
-    if (tbl && rb_id_table_lookup(tbl, id, &val)) {
-	return (rb_const_entry_t *)val;
+    if (tbl) {
+        VALUE val;
+        bool r;
+        RB_VM_LOCK_ENTER();
+        {
+            r = rb_id_table_lookup(tbl, id, &val);
+        }
+        RB_VM_LOCK_LEAVE();
+
+        if (r) return (rb_const_entry_t *)val;
     }
-    return 0;
+    return NULL;
 }

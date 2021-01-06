@@ -35,3 +35,219 @@ syntax error:
     Will not work
     =end
   end
+
+== Magic Comments
+
+While comments are typically ignored by Ruby, special "magic comments" contain
+directives that affect how the code is interpreted.
+
+Top-level magic comments must start on the first line, or on the second line if
+the first line looks like <tt>#! shebang line</tt>.
+
+NOTE: Magic comments affect only the file in which they appear;
+other files are unaffected.
+
+  # frozen_string_literal: true
+
+  var = 'hello'
+  var.frozen? # => true
+
+=== Alternative syntax
+
+Magic comments may consist of a single directive (as in the example above).
+Alternatively, multiple directives may appear on the same line if separated by ";"
+and wrapped between "-*-" (see Emacs' {file variables}[https://www.gnu.org/software/emacs/manual/html_node/emacs/Specifying-File-Variables.html]).
+
+  # emacs-compatible; -*- coding: big5; mode: ruby -*-
+
+  p 'hello'.frozen? # => true
+  p 'hello'.encoding # => #<Encoding:Big5>
+
+=== +encoding+ Directive
+
+Indicates which string encoding should be used for string literals,
+regexp literals and <code>__ENCODING__</code>:
+
+  # encoding: big5
+
+  ''.encoding # => #<Encoding:Big5>
+
+Default encoding is UTF-8.
+
+It must appear in the first comment section of a file.
+
+The word "coding" may be used instead of "encoding".
+
+=== +frozen_string_literal+ Directive
+
+Indicates that string literals should be allocated once at parse time and frozen.
+
+  # frozen_string_literal: true
+
+  3.times do
+    p 'hello'.object_id # => prints same number
+  end
+  p 'world'.frozen? # => true
+
+The default is false; this can be changed with <code>--enable=frozen-string-literal</code>.
+Without the directive, or with <code># frozen_string_literal: false</code>,
+the example above would print 3 different numbers and "false".
+
+Starting in Ruby 3.0, string literals that are dynamic are not frozen nor reused:
+
+  # frozen_string_literal: true
+
+  p "Addition: #{2 + 2}".frozen? # => false
+
+It must appear in the first comment section of a file.
+
+=== +warn_indent+ Directive
+
+This directive can turn on detection of bad indentation for statements that follow it:
+
+  def foo
+    end # => no warning
+
+  # warn_indent: true
+  def bar
+    end # => warning: mismatched indentations at 'end' with 'def' at 6
+
+Another way to get these warnings to show is by running Ruby with warnings (<code>ruby -w</code>). Using a directive to set this false will prevent these warnings to show.
+
+=== +shareable_constant_value+ Directive
+
+Note: This directive is experimental in Ruby 3.0 and may change in future releases.
+
+This special directive helps to create constants that hold only immutable objects, or {Ractor-shareable}[rdoc-ref:Ractor@Shareable+and+unshareable+objects] constants.
+
+The directive can specify special treatment for values assigned to constants:
+
+* +none+: (default)
+* +literal+: literals are implicitly frozen, others must be Ractor-shareable
+* +experimental_everything+: all made shareable
+* +experimental_copy+: copy deeply and make it shareable
+
+==== Mode +none+ (default)
+
+No special treatment in this mode (as in Ruby 2.x): no automatic freezing and no checks.
+
+It has always been a good idea to deep-freeze constants; Ractor makes this
+an even better idea as only the main ractor can access non-shareable constants:
+
+  # shareable_constant_value: none
+  A = {foo: []}
+  A.frozen? # => false
+  Ractor.new { puts A } # => can not access non-shareable objects by non-main Ractor.
+
+==== Mode +literal+
+
+In "literal" mode, constants assigned to literals will be deeply-frozen:
+
+  # shareable_constant_value: literal
+  X = [{foo: []}] # => same as [{foo: [].freeze}.freeze].freeze
+
+Other values must be shareable:
+
+  # shareable_constant_value: literal
+  X = Object.new # => cannot assign unshareable object to X
+
+Note that only literals directly assigned to constants, or recursively held in such literals will be frozen:
+
+  # shareable_constant_value: literal
+  var = [{foo: []}]
+  var.frozen? # => false (assignment was made to local variable)
+  X = var # => cannot assign unshareable object to X
+
+  X = Set[1, 2, {foo: []}].freeze # => cannot assign unshareable object to X
+                                  # (`Set[...]` is not a literal and
+                                  # `{foo: []}` is an argument to `Set.[]`)
+
+The method Module#const_set is not affected.
+
+==== Mode +experimental_everything+
+
+In this mode, all values assigned to constants are made shareable.
+
+  # shareable_constant_value: experimental_everything
+  FOO = Set[1, 2, {foo: []}]
+  # same as FOO = Ractor.make_sharable(...)
+  # OR same as `FOO = Set[1, 2, {foo: [].freeze}.freeze].freeze`
+
+  var = [{foo: []}]
+  var.frozen? # => false (assignment was made to local variable)
+  X = var # => calls `Ractor.make_shareable(var)`
+  var.frozen? # => true
+
+This mode is "experimental", because it might be error prone, for
+example by deep-freezing the constants of an external resource which
+could cause errors:
+
+  # shareable_constant_value: experimental_everything
+  FOO = SomeGem::Something::FOO
+  # => deep freezes the gem's constant!
+
+This will be revisited before Ruby 3.1 to either allow `everything`
+or to instead remove this mode.
+
+The method Module#const_set is not affected.
+
+==== Mode +experimental_copy+
+
+In this mode, all values assigned to constants are deeply copied and
+made shareable. It is safer mode than +experimental_everything+.
+
+  # shareable_constant_value: experimental_everything
+  var = [{foo: []}]
+  var.frozen? # => false (assignment was made to local variable)
+  X = var # => calls `Ractor.make_shareable(var, copy: true)`
+  var.frozen? # => false
+  Ractor.shareable?(X) #=> true
+  var.object_id == X.object_id #=> false
+
+This mode is "experimental" and has not been discussed thoroughly.
+This will be revisited before Ruby 3.1 to either allow `copy`
+or to instead remove this mode.
+
+The method Module#const_set is not affected.
+
+==== Scope
+
+This directive can be used multiple times in the same file:
+
+  # shareable_constant_value: none
+  A = {foo: []}
+  A.frozen? # => false
+  Ractor.new { puts A } # => can not access non-shareable objects by non-main Ractor.
+
+  # shareable_constant_value: literal
+  B = {foo: []}
+  B.frozen? # => true
+  B[:foo].frozen? # => true
+
+  C = [Object.new] # => cannot assign unshareable object to C (Ractor::IsolationError)
+
+  D = [Object.new.freeze]
+  D.frozen? # => true
+
+  # shareable_constant_value: experimental_everything
+  E = Set[1, 2, Object.new]
+  E.frozen? # => true
+  E.all(&:frozen?) # => true
+
+The directive affects only subsequent constants and only for the current scope:
+
+  module Mod
+    # shareable_constant_value: literal
+    A = [1, 2, 3]
+    module Sub
+      B = [4, 5]
+    end
+  end
+
+  C = [4, 5]
+
+  module Mod
+    D = [6]
+  end
+  p Mod::A.frozen?, Mod::Sub::B.frozen? # => true, true
+  p C.frozen?, Mod::D.frozen? # => false, false

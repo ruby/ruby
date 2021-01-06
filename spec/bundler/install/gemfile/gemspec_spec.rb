@@ -291,7 +291,7 @@ RSpec.describe "bundle install from an existing gemspec" do
           s.add_dependency "activesupport", ">= 1.0.1"
         end
 
-        bundle "config --local deployment true"
+        bundle "config set --local deployment true"
         bundle :install, :raise_on_error => false
 
         expect(err).to include("changed")
@@ -558,7 +558,7 @@ RSpec.describe "bundle install from an existing gemspec" do
     it "installs the ruby platform gemspec and skips dev deps with `without development` configured" do
       simulate_platform "ruby"
 
-      bundle "config --local without development"
+      bundle "config set --local without development"
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gemspec :path => '#{tmp.join("foo")}', :name => 'foo'

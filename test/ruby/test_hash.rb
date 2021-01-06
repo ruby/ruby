@@ -86,7 +86,6 @@ class TestHash < Test::Unit::TestCase
       'nil' => nil
     ]
     @verbose = $VERBOSE
-    $VERBOSE = nil
   end
 
   def teardown
@@ -878,7 +877,7 @@ class TestHash < Test::Unit::TestCase
   def test_to_s
     h = @cls[ 1 => 2, "cat" => "dog", 1.5 => :fred ]
     assert_equal(h.inspect, h.to_s)
-    $, = ":"
+    assert_deprecated_warning { $, = ":" }
     assert_equal(h.inspect, h.to_s)
     h = @cls[]
     assert_equal(h.inspect, h.to_s)
@@ -947,7 +946,7 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_fetch2
-    assert_equal(:bar, @h.fetch(0, :foo) { :bar })
+    assert_equal(:bar, assert_warning(/block supersedes default value argument/) {@h.fetch(0, :foo) { :bar }})
   end
 
   def test_default_proc
@@ -1112,6 +1111,7 @@ class TestHash < Test::Unit::TestCase
     def o.to_hash; @cls[]; end
     def o.==(x); true; end
     assert_equal({}, o)
+    o.singleton_class.remove_method(:==)
     def o.==(x); false; end
     assert_not_equal({}, o)
 
@@ -1128,6 +1128,7 @@ class TestHash < Test::Unit::TestCase
     def o.to_hash; @cls[]; end
     def o.eql?(x); true; end
     assert_send([@cls[], :eql?, o])
+    o.singleton_class.remove_method(:eql?)
     def o.eql?(x); false; end
     assert_not_send([@cls[], :eql?, o])
   end
@@ -1769,6 +1770,12 @@ class TestHash < Test::Unit::TestCase
       @cls = SubHash
       super
     end
+
+    def test_reject
+      assert_warning(/extra states are no longer copied/) do
+        super
+      end
+    end
   end
 
   ruby2_keywords def get_flagged_hash(*args)
@@ -1856,6 +1863,32 @@ class TestHash < Test::Unit::TestCase
   def test_bug_12706
     assert_raise(ArgumentError) do
       {a: 1}.each(&->(k, v) {})
+    end
+  end
+
+  def test_any_hash_fixable
+    20.times do
+      assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
+        require "delegate"
+        typename = DelegateClass(String)
+
+        hash = {
+          "Int" => true,
+          "Float" => true,
+          "String" => true,
+          "Boolean" => true,
+          "WidgetFilter" => true,
+          "WidgetAggregation" => true,
+          "WidgetEdge" => true,
+          "WidgetSortOrder" => true,
+          "WidgetGrouping" => true,
+        }
+
+        hash.each_key do |key|
+          assert_send([hash, :key?, typename.new(key)])
+        end
+      end;
     end
   end
 end

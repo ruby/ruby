@@ -206,13 +206,14 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
 * `global_gem_cache` (`BUNDLE_GLOBAL_GEM_CACHE`):
    Whether Bundler should cache all gems globally, rather than locally to the
    installing Ruby installation.
-* `ignore_messages` (`BUNDLE_IGNORE_MESSAGES`): When set, no post install
-   messages will be printed. To silence a single gem, use dot notation like
-   `ignore_messages.httparty true`.
-* `init_gems_rb` (`BUNDLE_INIT_GEMS_RB`)
+* `ignore_messages` (`BUNDLE_IGNORE_MESSAGES`):
+   When set, no post install messages will be printed. To silence a single gem,
+   use dot notation like `ignore_messages.httparty true`.
+* `init_gems_rb` (`BUNDLE_INIT_GEMS_RB`):
    Generate a `gems.rb` instead of a `Gemfile` when running `bundle init`.
 * `jobs` (`BUNDLE_JOBS`):
-   The number of gems Bundler can install in parallel. Defaults to 1.
+   The number of gems Bundler can install in parallel. Defaults to 1 on Windows,
+   and to the the number of processors on other platforms.
 * `no_install` (`BUNDLE_NO_INSTALL`):
    Whether `bundle package` should skip installing gems.
 * `no_prune` (`BUNDLE_NO_PRUNE`):
@@ -233,7 +234,7 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    Enable Bundler's experimental plugin system.
 * `prefer_patch` (BUNDLE_PREFER_PATCH):
    Prefer updating only to next patch version during updates. Makes `bundle update` calls equivalent to `bundler update --patch`.
-* `print_only_version_number` (`BUNDLE_PRINT_ONLY_VERSION_NUMBER`)
+* `print_only_version_number` (`BUNDLE_PRINT_ONLY_VERSION_NUMBER`):
    Print only version number from `bundler --version`.
 * `redirect` (`BUNDLE_REDIRECT`):
    The number of redirects allowed for network requests. Defaults to `5`.
@@ -269,7 +270,7 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
 * `unlock_source_unlocks_spec` (`BUNDLE_UNLOCK_SOURCE_UNLOCKS_SPEC`):
    Whether running `bundle update --source NAME` unlocks a gem with the given
    name. Defaults to `true`.
-* `update_requires_all_flag` (`BUNDLE_UPDATE_REQUIRES_ALL_FLAG`)
+* `update_requires_all_flag` (`BUNDLE_UPDATE_REQUIRES_ALL_FLAG`):
    Require passing `--all` to `bundle update` when everything should be updated,
    and disallow passing no options to `bundle update`.
 * `user_agent` (`BUNDLE_USER_AGENT`):
@@ -369,7 +370,7 @@ Or you can set the credentials as an environment variable like so:
 
     export BUNDLE_GITHUB__COM=username:password
 
-This is especially useful for private repositories on hosts such as Github,
+This is especially useful for private repositories on hosts such as GitHub,
 where you can use personal OAuth tokens:
 
     export BUNDLE_GITHUB__COM=abcd0123generatedtoken:x-oauth-basic

@@ -74,6 +74,7 @@ struct RData {
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 VALUE rb_data_object_wrap(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_FUNC dfree);
 VALUE rb_data_object_zalloc(VALUE klass, size_t size, RUBY_DATA_FUNC dmark, RUBY_DATA_FUNC dfree);
+RUBY_EXTERN VALUE rb_cObject;
 RBIMPL_SYMBOL_EXPORT_END()
 
 #define Data_Wrap_Struct(klass, mark, free, sval) \
@@ -161,6 +162,15 @@ rb_data_object_alloc(VALUE klass, void *data, RUBY_DATA_FUNC dmark, RUBY_DATA_FU
 {
     return rb_data_object_wrap(klass, data, dmark, dfree);
 }
+
+RBIMPL_ATTR_DEPRECATED(("by: rb_cObject.  Will be removed in 3.1."))
+RBIMPL_ATTR_PURE()
+static inline VALUE
+rb_cData(void)
+{
+    return rb_cObject;
+}
+#define rb_cData rb_cData()
 
 #define rb_data_object_wrap_0 rb_data_object_wrap
 #define rb_data_object_wrap_1 rb_data_object_wrap_warning

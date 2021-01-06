@@ -237,7 +237,7 @@ static bool vm_stack_canary_was_born = false;
 
 #ifndef MJIT_HEADER
 MJIT_FUNC_EXPORTED void
-vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
+rb_vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
 {
     const struct rb_control_frame_struct *reg_cfp = ec->cfp;
     const struct rb_iseq_struct *iseq;
@@ -284,6 +284,7 @@ vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
     rb_bug("see above.");
 }
 #endif
+#define vm_check_canary(ec, sp) rb_vm_check_canary(ec, sp)
 
 #else
 #define vm_check_canary(ec, sp)
@@ -1002,7 +1003,7 @@ vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, bool allow_
                         else {
                             if (UNLIKELY(!rb_ractor_main_p())) {
                                 if (!rb_ractor_shareable_p(val)) {
-                                    rb_raise(rb_eNameError,
+                                    rb_raise(rb_eRactorIsolationError,
                                              "can not access non-shareable objects in constant %"PRIsVALUE"::%s by non-main ractor.", rb_class_path(klass), rb_id2name(id));
                                 }
                             }
@@ -1795,6 +1796,9 @@ vm_search_method_slowpath0(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
     return cc;
 }
 
+#ifndef MJIT_HEADER
+ALWAYS_INLINE(static const struct rb_callcache *vm_search_method_fastpath(VALUE cd_owner, struct rb_call_data *cd, VALUE klass));
+#endif
 static const struct rb_callcache *
 vm_search_method_fastpath(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
 {
@@ -2945,7 +2949,7 @@ vm_call_bmethod_body(rb_execution_context_t *ec, struct rb_calling_info *calling
     VALUE procv = cme->def->body.bmethod.proc;
 
     if (!RB_OBJ_SHAREABLE_P(procv) &&
-        cme->def->body.bmethod.defined_ractor != rb_ec_ractor_ptr(ec)->self) {
+        cme->def->body.bmethod.defined_ractor != rb_ractor_self(rb_ec_ractor_ptr(ec))) {
         rb_raise(rb_eRuntimeError, "defined in a different Ractor");
     }
 
@@ -4409,14 +4413,6 @@ vm_define_method(const rb_execution_context_t *ec, VALUE obj, ID id, VALUE iseqv
     }
 }
 
-static const struct rb_callcache *
-vm_search_method_wrap(const struct rb_control_frame_struct *reg_cfp,
-                      struct rb_call_data *cd,
-                      VALUE recv)
-{
-    return vm_search_method((VALUE)reg_cfp->iseq, cd, recv);
-}
-
 static VALUE
 vm_invokeblock_i(struct rb_execution_context_struct *ec,
                  struct rb_control_frame_struct *reg_cfp,
@@ -4433,6 +4429,13 @@ vm_invokeblock_i(struct rb_execution_context_struct *ec,
     }
 }
 
+#ifdef MJIT_HEADER
+static const struct rb_callcache *
+vm_search_method_wrap(const struct rb_control_frame_struct *reg_cfp, struct rb_call_data *cd, VALUE recv)
+{
+    return vm_search_method((VALUE)reg_cfp->iseq, cd, recv);
+}
+
 static const struct rb_callcache *
 vm_search_invokeblock(const struct rb_control_frame_struct *reg_cfp, struct rb_call_data *cd, VALUE recv)
 {
@@ -4443,37 +4446,69 @@ vm_search_invokeblock(const struct rb_control_frame_struct *reg_cfp, struct rb_c
         .call_ = vm_invokeblock_i,
         .aux_  = {0},
     };
-
     return &cc;
 }
 
-static VALUE
+# define mexp_search_method vm_search_method_wrap
+# define mexp_search_super vm_search_super_method
+# define mexp_search_invokeblock vm_search_invokeblock
+#else
+enum method_explorer_type {
+    mexp_search_method,
+    mexp_search_invokeblock,
+    mexp_search_super,
+};
+#endif
+
+static
+#ifndef MJIT_HEADER
+inline
+#endif
+VALUE
 vm_sendish(
     struct rb_execution_context_struct *ec,
     struct rb_control_frame_struct *reg_cfp,
     struct rb_call_data *cd,
     VALUE block_handler,
-    const struct rb_callcache *(*method_explorer)(
-        const struct rb_control_frame_struct *cfp,
-        struct rb_call_data *cd,
-        VALUE recv))
-{
+#ifdef MJIT_HEADER
+    const struct rb_callcache *(*method_explorer)(const struct rb_control_frame_struct *cfp, struct rb_call_data *cd, VALUE recv)
+#else
+    enum method_explorer_type method_explorer
+#endif
+) {
     VALUE val;
-    int argc = vm_ci_argc(cd->ci);
+    const struct rb_callinfo *ci = cd->ci;
+    const struct rb_callcache *cc;
+    int argc = vm_ci_argc(ci);
     VALUE recv = TOPN(argc);
-    const struct rb_callcache *cc = method_explorer(GET_CFP(), cd, recv);
-    const struct rb_callinfo *ci = cd->ci; // TODO: vm_search_super_method can update ci!!
-
     struct rb_calling_info calling = {
-        .ci = cd->ci,
-        .cc = cc,
         .block_handler = block_handler,
         .kw_splat = IS_ARGS_KW_SPLAT(ci) > 0,
         .recv = recv,
         .argc = argc,
+        .ci = ci,
     };
 
+// The enum-based branch and inlining are faster in VM, but function pointers without inlining are faster in JIT.
+#ifdef MJIT_HEADER
+    calling.cc = cc = method_explorer(GET_CFP(), cd, recv);
     val = vm_cc_call(cc)(ec, GET_CFP(), &calling);
+#else
+    switch (method_explorer) {
+      case mexp_search_method:
+        calling.cc = cc = vm_search_method_fastpath((VALUE)reg_cfp->iseq, cd, CLASS_OF(recv));
+        val = vm_cc_call(cc)(ec, GET_CFP(), &calling);
+        break;
+      case mexp_search_super:
+        calling.cc = cc = vm_search_super_method(reg_cfp, cd, recv);
+        calling.ci = cd->ci;  // TODO: does it safe?
+        val = vm_cc_call(cc)(ec, GET_CFP(), &calling);
+        break;
+      case mexp_search_invokeblock:
+        val = vm_invokeblock_i(ec, GET_CFP(), &calling);
+        break;
+    }
+#endif
 
     if (val != Qundef) {
         return val;             /* CFUNC normal return */
@@ -4576,25 +4611,34 @@ vm_opt_newarray_min(rb_num_t num, const VALUE *ptr)
 
 #undef id_cmp
 
+#define IMEMO_CONST_CACHE_SHAREABLE IMEMO_FL_USER0
+
 static int
-vm_ic_hit_p(IC ic, const VALUE *reg_ep)
+vm_ic_hit_p(const struct iseq_inline_constant_cache_entry *ice, const VALUE *reg_ep)
 {
-    if (ic->ic_serial == GET_GLOBAL_CONSTANT_STATE() &&
-        rb_ractor_main_p()) {
-        return (ic->ic_cref == NULL || // no need to check CREF
-                ic->ic_cref == vm_get_cref(reg_ep));
+    VM_ASSERT(IMEMO_TYPE_P(ice, imemo_constcache));
+    if (ice->ic_serial == GET_GLOBAL_CONSTANT_STATE() &&
+        (FL_TEST_RAW((VALUE)ice, IMEMO_CONST_CACHE_SHAREABLE) || rb_ractor_main_p())) {
+
+        VM_ASSERT(FL_TEST_RAW((VALUE)ice, IMEMO_CONST_CACHE_SHAREABLE) ? rb_ractor_shareable_p(ice->value) : true);
+
+        return (ice->ic_cref == NULL || // no need to check CREF
+                ice->ic_cref == vm_get_cref(reg_ep));
     }
     return FALSE;
 }
 
 static void
-vm_ic_update(IC ic, VALUE val, const VALUE *reg_ep)
+vm_ic_update(const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep)
 {
-    VM_ASSERT(ic->value != Qundef);
-    ic->value = val;
-    ic->ic_serial = GET_GLOBAL_CONSTANT_STATE() - ruby_vm_const_missing_count;
-    ic->ic_cref = vm_get_const_key_cref(reg_ep);
+
+    struct iseq_inline_constant_cache_entry *ice = (struct iseq_inline_constant_cache_entry *)rb_imemo_new(imemo_constcache, 0, 0, 0, 0);
+    RB_OBJ_WRITE(ice, &ice->value, val);
+    ice->ic_cref = vm_get_const_key_cref(reg_ep);
+    ice->ic_serial = GET_GLOBAL_CONSTANT_STATE() - ruby_vm_const_missing_count;
+    if (rb_ractor_shareable_p(val)) ice->flags |= IMEMO_CONST_CACHE_SHAREABLE;
     ruby_vm_const_missing_count = 0;
+    RB_OBJ_WRITE(iseq, &ic->entry, ice);
 }
 
 static VALUE
@@ -5273,7 +5317,7 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
             return;
         }
         else {
-            rb_hook_list_t *global_hooks = rb_vm_global_hooks(ec);
+            rb_hook_list_t *global_hooks = rb_ec_ractor_hooks(ec);
 
             if (0) {
                 fprintf(stderr, "vm_trace>>%4d (%4x) - %s:%d %s\n",
@@ -5299,7 +5343,7 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
 
 #if VM_CHECK_MODE > 0
 NORETURN( NOINLINE( COLDFUNC
-void vm_canary_is_found_dead(enum ruby_vminsn_type i, VALUE c)));
+void rb_vm_canary_is_found_dead(enum ruby_vminsn_type i, VALUE c)));
 
 void
 Init_vm_stack_canary(void)
@@ -5314,7 +5358,7 @@ Init_vm_stack_canary(void)
 
 #ifndef MJIT_HEADER
 MJIT_FUNC_EXPORTED void
-vm_canary_is_found_dead(enum ruby_vminsn_type i, VALUE c)
+rb_vm_canary_is_found_dead(enum ruby_vminsn_type i, VALUE c)
 {
     /* Because a method has already been called, why not call
      * another one. */

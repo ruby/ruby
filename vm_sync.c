@@ -14,7 +14,7 @@ vm_locked(rb_vm_t *vm)
 
 #if RUBY_DEBUG > 0
 void
-ASSERT_vm_locking(void)
+RUBY_ASSERT_vm_locking(void)
 {
     if (rb_multi_ractor_p()) {
         rb_vm_t *vm = GET_VM();
@@ -23,7 +23,7 @@ ASSERT_vm_locking(void)
 }
 
 void
-ASSERT_vm_unlocking(void)
+RUBY_ASSERT_vm_unlocking(void)
 {
     if (rb_multi_ractor_p()) {
         rb_vm_t *vm = GET_VM();
@@ -49,7 +49,7 @@ vm_lock_enter(rb_ractor_t *cr, rb_vm_t *vm, bool locked, bool no_barrier, unsign
     else {
 #if RACTOR_CHECK_MODE
         // locking ractor and acquire VM lock will cause deadlock
-        VM_ASSERT(cr->sync.locked_by != cr->self);
+        VM_ASSERT(cr->sync.locked_by != rb_ractor_self(cr));
 #endif
 
         // lock

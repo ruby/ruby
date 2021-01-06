@@ -2359,11 +2359,8 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			    }
 			    break;
 			}
-		      case TS_ISE: /* inline storage entry */
-			/* Treated as an IC, but may contain a markable VALUE */
-                        FL_SET(iseqv, ISEQ_MARKABLE_ISEQ);
-                        /* fall through */
 		      case TS_IC: /* inline cache */
+		      case TS_ISE: /* inline storage entry */
 		      case TS_IVC: /* inline ivar cache */
 			{
 			    unsigned int ic_index = FIX2UINT(operands[j]);
@@ -2375,8 +2372,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                                               ic_index, body->is_size);
 			    }
 			    generated_iseq[code_index + 1 + j] = (VALUE)ic;
-
-                            if (type == TS_IVC) FL_SET(iseqv, ISEQ_MARKABLE_ISEQ);
+                            FL_SET(iseqv, ISEQ_MARKABLE_ISEQ);
 			    break;
 			}
                         case TS_CALLDATA:
@@ -6379,7 +6375,7 @@ compile_case3(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
         LABEL *l1;
 
         if (branch_id) {
-                ADD_INSN(body_seq, line, putnil);
+            ADD_INSN(body_seq, line, putnil);
         }
         l1 = NEW_LABEL(line);
         ADD_LABEL(body_seq, l1);
@@ -6428,7 +6424,7 @@ compile_case3(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
         ADD_INSNL(cond_seq, line, jump, endlabel);
         ADD_INSN(cond_seq, line, putnil);
         if (popped) {
-                ADD_INSN(cond_seq, line, putnil);
+            ADD_INSN(cond_seq, line, putnil);
         }
     }
     else {
@@ -6448,7 +6444,7 @@ compile_case3(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
         ADD_INSNL(cond_seq, nd_line(orig_node), jump, endlabel);
         ADD_INSN(cond_seq, line, putnil);
         if (popped) {
-                ADD_INSN(cond_seq, line, putnil);
+            ADD_INSN(cond_seq, line, putnil);
         }
     }
 
@@ -7056,6 +7052,15 @@ compile_evstr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
     return COMPILE_OK;
 }
 
+static void
+compile_lvar(rb_iseq_t *iseq, LINK_ANCHOR *const ret, int line, ID id)
+{
+    int idx = iseq->body->local_iseq->body->local_table_size - get_local_var_idx(iseq, id);
+
+    debugs("id: %s idx: %d\n", rb_id2name(id), idx);
+    ADD_GETLOCAL(ret, line, idx, get_lvar_level(iseq));
+}
+
 static LABEL *
 qcall_branch_start(rb_iseq_t *iseq, LINK_ANCHOR *const recv, VALUE *branches, const NODE *node, int line)
 {
@@ -7248,6 +7253,35 @@ delegate_call_p(const rb_iseq_t *iseq, unsigned int argc, const LINK_ANCHOR *arg
 }
 
 static int
+compile_builtin_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int line, int popped)
+{
+    if (!node) goto no_arg;
+    if (nd_type(node) != NODE_LIST) goto bad_arg;
+    if (node->nd_next) goto too_many_arg;
+    node = node->nd_head;
+    if (!node) goto no_arg;
+    if (nd_type(node) != NODE_LIT) goto bad_arg;
+    VALUE name = node->nd_lit;
+    if (!SYMBOL_P(name)) goto non_symbol_arg;
+    if (!popped) {
+        compile_lvar(iseq, ret, line, SYM2ID(name));
+    }
+    return COMPILE_OK;
+  no_arg:
+    COMPILE_ERROR(ERROR_ARGS "arg!: no argument");
+    return COMPILE_NG;
+  too_many_arg:
+    COMPILE_ERROR(ERROR_ARGS "arg!: too many argument");
+    return COMPILE_NG;
+  non_symbol_arg:
+    COMPILE_ERROR(ERROR_ARGS "non symbol argument to arg!: %s",
+                  rb_builtin_class_name(name));
+    return COMPILE_NG;
+  bad_arg:
+    UNKNOWN_NODE("arg!", node, COMPILE_NG);
+}
+
+static int
 compile_builtin_function_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int line, int popped,
                               const rb_iseq_t *parent_block, LINK_ANCHOR *args, const char *builtin_func)
 {
@@ -7281,6 +7315,9 @@ compile_builtin_function_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NOD
                 // There's only "inline" attribute for now
                 iseq->body->builtin_inline_p = true;
                 return COMPILE_OK;
+            }
+            else if (strcmp("arg!", builtin_func) == 0) {
+                return compile_builtin_arg(iseq, ret, args_node, line, popped);
             }
             else if (1) {
                 rb_bug("can't find builtin function:%s", builtin_func);
@@ -8157,6 +8194,10 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 		if (local_body->param.flags.has_kwrest) {
 		    int idx = local_body->local_table_size - local_kwd->rest_start;
 		    ADD_GETLOCAL(args, line, idx, lvar_level);
+                    if (local_kwd->num > 0) {
+                        ADD_SEND(args, line, rb_intern("dup"), INT2FIX(0));
+                        flag |= VM_CALL_KW_SPLAT_MUT;
+                    }
 		}
 		else {
 		    ADD_INSN1(args, line, newhash, INT2FIX(0));
@@ -8268,11 +8309,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
       }
       case NODE_LVAR:{
 	if (!popped) {
-	    ID id = node->nd_vid;
-	    int idx = body->local_iseq->body->local_table_size - get_local_var_idx(iseq, id);
-
-	    debugs("id: %s idx: %d\n", rb_id2name(id), idx);
-	    ADD_GETLOCAL(ret, line, idx, get_lvar_level(iseq));
+	    compile_lvar(iseq, ret, line, node->nd_vid);
 	}
 	break;
       }
@@ -9440,14 +9477,13 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
 			}
 			break;
 		      case TS_ISE:
-                        FL_SET((VALUE)iseq, ISEQ_MARKABLE_ISEQ);
-                        /* fall through */
 		      case TS_IC:
                       case TS_IVC:  /* inline ivar cache */
 			argv[j] = op;
 			if (NUM2UINT(op) >= iseq->body->is_size) {
 			    iseq->body->is_size = NUM2INT(op) + 1;
 			}
+                        FL_SET((VALUE)iseq, ISEQ_MARKABLE_ISEQ);
 			break;
                       case TS_CALLDATA:
 			argv[j] = iseq_build_callinfo_from_hash(iseq, op);
@@ -10425,14 +10461,13 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
                     break;
                 }
               case TS_ISE:
-                FL_SET(iseqv, ISEQ_MARKABLE_ISEQ);
-                /* fall through */
               case TS_IC:
               case TS_IVC:
                 {
                     VALUE op = ibf_load_small_value(load, &reading_pos);
                     code[code_index] = (VALUE)&is_entries[op];
                 }
+                FL_SET(iseqv, ISEQ_MARKABLE_ISEQ);
                 break;
               case TS_CALLDATA:
                 {

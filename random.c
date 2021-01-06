@@ -1716,6 +1716,13 @@ InitVM_Random(void)
     rb_define_private_method(rb_cRandom, "left", rand_mt_left, 0);
     rb_define_method(rb_cRandom, "==", rand_mt_equal, 1);
 
+#if 0 /* for RDoc: it can't handle unnamed base class */
+    rb_define_method(rb_cRandom, "initialize", random_init, -1);
+    rb_define_method(rb_cRandom, "rand", random_rand, -1);
+    rb_define_method(rb_cRandom, "bytes", random_bytes, 1);
+    rb_define_method(rb_cRandom, "seed", random_get_seed, 0);
+#endif
+
     rb_define_const(rb_cRandom, "DEFAULT", rb_cRandom);
     rb_deprecate_constant(rb_cRandom, "DEFAULT");
 

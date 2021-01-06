@@ -458,17 +458,10 @@ AC_TRY_COMPILE([
 	AC_MSG_RESULT(yes)
 	target_os=${target_os}-android
 	AC_MSG_CHECKING([for Android API version])
-	AC_TRY_COMPILE([
-		@%:@ifndef __ANDROID_API__
-		@%:@error android
-		@%:@endif
-	], [],
-	[AC_MSG_RESULT(defined by the compiler)],
-	[
-		rb_android_api=`getprop ro.build.version.sdk`
-		AC_MSG_RESULT($rb_android_api)
-		RUBY_APPEND_OPTIONS(CPPFLAGS, -D__ANDROID_API__=$rb_android_api)
-	])
+        # hacky workaround: https://github.com/termux/termux-packages/issues/6176
+        rb_android_api=`getprop ro.build.version.sdk`
+        AC_MSG_RESULT($rb_android_api)
+        RUBY_APPEND_OPTIONS(CPPFLAGS, -D__ANDROID_API__=$rb_android_api -Wno-macro-redefined)
 ])
 
 AC_SUBST(RM, ['rm -f'])
@@ -1034,6 +1027,8 @@ main()
 		  AC_MSG_RESULT($define_xopen_source)
 		  AS_IF([test x"$define_xopen_source" != xno], [
 		    RUBY_APPEND_OPTIONS(CPPFLAGS, -D_XOPEN_SOURCE=$define_xopen_source)
+		    # _XOPEN_SOURCE should not be defined for C++ on Solaris.
+		    RUBY_APPEND_OPTIONS(CXXFLAGS, -U_XOPEN_SOURCE)
 		  ])
 		])
 		],
@@ -3427,6 +3422,9 @@ AS_CASE(["${enable_dtrace}"],
 ], [
     rb_cv_dtrace_available=no
 ])
+AS_CASE(["$target_os"],[freebsd*],[
+         rb_cv_dtrace_available=no
+	 ])
 AS_IF([test "${enable_dtrace}" = yes], [dnl
     AS_IF([test -z "$DTRACE"], [dnl
 	AC_MSG_ERROR([dtrace(1) is missing])

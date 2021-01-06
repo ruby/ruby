@@ -7,7 +7,7 @@ module TestIRB
   class TestRubyLex < Test::Unit::TestCase
     Row = Struct.new(:content, :current_line_spaces, :new_line_spaces, :nesting_level)
 
-    class MockIO
+    class MockIO_AutoIndent
       def initialize(params, &assertion)
         @params = params
         @assertion = assertion
@@ -25,7 +25,7 @@ module TestIRB
       byte_pointer = lines.last.length
 
       ruby_lex = RubyLex.new()
-      io = MockIO.new([lines, last_line_index, byte_pointer, add_new_line]) do |auto_indent|
+      io = MockIO_AutoIndent.new([lines, last_line_index, byte_pointer, add_new_line]) do |auto_indent|
         error_message = "Calculated the wrong number of spaces for:\n #{lines.join("\n")}"
         assert_equal(correct_space_count, auto_indent, error_message)
       end
@@ -261,6 +261,63 @@ module TestIRB
         assert_indenting(lines, row.new_line_spaces, true)
         assert_nesting_level(lines, row.nesting_level)
       end
+    end
+
+    PromptRow = Struct.new(:prompt, :content)
+
+    class MockIO_DynamicPrompt
+      def initialize(params, &assertion)
+        @params = params
+        @assertion = assertion
+      end
+
+      def dynamic_prompt(&block)
+        result = block.call(@params)
+        @assertion.call(result)
+      end
+    end
+
+    def assert_dynamic_prompt(lines, expected_prompt_list)
+      skip if RUBY_ENGINE == 'truffleruby'
+      ruby_lex = RubyLex.new()
+      io = MockIO_DynamicPrompt.new(lines) do |prompt_list|
+        error_message = <<~EOM
+          Expected dynamic prompt:
+          #{expected_prompt_list.join("\n")}
+
+          Actual dynamic prompt:
+          #{prompt_list.join("\n")}
+        EOM
+        assert_equal(expected_prompt_list, prompt_list, error_message)
+      end
+      ruby_lex.set_prompt do |ltype, indent, continue, line_no|
+        '%03d:%01d:%1s:%s ' % [line_no, indent, ltype, continue ? '*' : '>']
+      end
+      ruby_lex.set_input(io)
+    end
+
+    def test_dyanmic_prompt
+      input_with_prompt = [
+        PromptRow.new('001:1: :* ', %q(def hoge)),
+        PromptRow.new('002:1: :* ', %q(  3)),
+        PromptRow.new('003:0: :> ', %q(end)),
+      ]
+
+      lines = input_with_prompt.map(&:content)
+      expected_prompt_list = input_with_prompt.map(&:prompt)
+      assert_dynamic_prompt(lines, expected_prompt_list)
+    end
+
+    def test_dyanmic_prompt_with_blank_line
+      input_with_prompt = [
+        PromptRow.new('001:0:]:* ', %q(%w[)),
+        PromptRow.new('002:0:]:* ', %q()),
+        PromptRow.new('003:0: :> ', %q(])),
+      ]
+
+      lines = input_with_prompt.map(&:content)
+      expected_prompt_list = input_with_prompt.map(&:prompt)
+      assert_dynamic_prompt(lines, expected_prompt_list)
     end
   end
 end

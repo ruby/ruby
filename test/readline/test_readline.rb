@@ -176,7 +176,7 @@ module BasetestReadline
       assert_equal("", line2)
       begin
         assert_equal("", Readline.line_buffer)
-      rescue NotimplementedError
+      rescue NotImplementedError
       end
     end
   end

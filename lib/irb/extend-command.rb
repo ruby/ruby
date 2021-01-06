@@ -125,6 +125,10 @@ module IRB # :nodoc:
         :irb_info, :Info, "irb/cmd/info"
       ],
 
+      [
+        :measure, :Measure, "irb/cmd/measure"
+      ],
+
     ]
 
     # Installs the default irb commands:
@@ -173,9 +177,9 @@ module IRB # :nodoc:
             args << "&block"
             args = args.join(", ")
             line = __LINE__; eval %[
-              unless self.class.class_variable_defined?(:@@#{cmd_name}_)
-              self.class.class_variable_set(:@@#{cmd_name}_, true)
-                def #{cmd_name}_(\#{args})
+              unless singleton_class.class_variable_defined?(:@@#{cmd_name}_)
+                singleton_class.class_variable_set(:@@#{cmd_name}_, true)
+                def self.#{cmd_name}_(\#{args})
                   ExtendCommand::#{cmd_class}.execute(irb_context, \#{args})
                 end
               end

@@ -198,6 +198,17 @@ module GC
     Primitive.gc_compact_stats
   end
 
+  #  call-seq:
+  #     GC.compact
+  #
+  # This function compacts objects together in Ruby's heap.  It eliminates
+  # unused space (or fragmentation) in the heap by moving objects in to that
+  # unused space.  This function returns a hash which contains statistics about
+  # which objects were moved.  See `GC.latest_gc_info` for details about
+  # compaction statistics.
+  #
+  # This method is implementation specific and not expected to be implemented
+  # in any implementation besides MRI.
   def self.compact
     Primitive.gc_compact
   end

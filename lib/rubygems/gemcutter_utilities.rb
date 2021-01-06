@@ -94,20 +94,16 @@ module Gem::GemcutterUtilities
     end
 
     uri = URI.parse "#{self.host}/#{path}"
-
-    request_method = Net::HTTP.const_get method.to_s.capitalize
-    response = Gem::RemoteFetcher.fetcher.request(uri, request_method, &block)
+    response = request_with_otp(method, uri, &block)
 
     if mfa_unauthorized?(response)
-      response = Gem::RemoteFetcher.fetcher.request(uri, request_method) do |req|
-        req.add_field "OTP", get_otp
-        block.call(req)
-      end
+      ask_otp
+      response = request_with_otp(method, uri, &block)
     end
 
     if api_key_forbidden?(response)
       update_scope(scope)
-      Gem::RemoteFetcher.fetcher.request(uri, request_method, &block)
+      request_with_otp(method, uri, &block)
     else
       response
     end
@@ -115,11 +111,6 @@ module Gem::GemcutterUtilities
 
   def mfa_unauthorized?(response)
     response.kind_of?(Net::HTTPUnauthorized) && response.body.start_with?('You have enabled multifactor authentication')
-  end
-
-  def get_otp
-    say 'You have enabled multi-factor authentication. Please enter OTP code.'
-    ask 'Code: '
   end
 
   def update_scope(scope)
@@ -135,7 +126,7 @@ module Gem::GemcutterUtilities
     response = rubygems_api_request(:put, "api/v1/api_key",
                                     sign_in_host, scope: scope) do |request|
       request.basic_auth email, password
-      request.add_field "OTP", options[:otp] if options[:otp]
+      request["OTP"] = options[:otp] if options[:otp]
       request.body = URI.encode_www_form({:api_key => api_key }.merge(update_scope_params))
     end
 
@@ -168,7 +159,7 @@ module Gem::GemcutterUtilities
     response = rubygems_api_request(:post, "api/v1/api_key",
                                     sign_in_host, scope: scope) do |request|
       request.basic_auth email, password
-      request.add_field "OTP", options[:otp] if options[:otp]
+      request["OTP"] = options[:otp] if options[:otp]
       request.body = URI.encode_www_form({ name: key_name }.merge(scope_params))
     end
 
@@ -229,6 +220,20 @@ module Gem::GemcutterUtilities
 
   private
 
+  def request_with_otp(method, uri, &block)
+    request_method = Net::HTTP.const_get method.to_s.capitalize
+
+    Gem::RemoteFetcher.fetcher.request(uri, request_method) do |req|
+      req["OTP"] = options[:otp] if options[:otp]
+      block.call(req)
+    end
+  end
+
+  def ask_otp
+    say 'You have enabled multi-factor authentication. Please enter OTP code.'
+    options[:otp] = ask 'Code: '
+  end
+
   def pretty_host(host)
     if Gem::DEFAULT_HOST == host
       'RubyGems.org'
@@ -255,8 +260,8 @@ module Gem::GemcutterUtilities
   end
 
   def get_key_name(scope)
-    hostname = Socket.gethostname || "unkown-host"
-    user = ENV["USER"] || ENV["USERNAME"] || "unkown-user"
+    hostname = Socket.gethostname || "unknown-host"
+    user = ENV["USER"] || ENV["USERNAME"] || "unknown-user"
     ts = Time.now.strftime("%Y%m%d%H%M%S")
     default_key_name = "#{hostname}-#{user}-#{ts}"
 

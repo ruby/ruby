@@ -29,6 +29,7 @@
 #include "mjit.h"
 #include "ruby/debug.h"
 #include "vm_core.h"
+#include "ruby/ractor.h"
 
 #include "builtin.h"
 
@@ -67,6 +68,7 @@ static void clean_hooks(const rb_execution_context_t *ec, rb_hook_list_t *list);
 void
 rb_hook_list_free(rb_hook_list_t *hooks)
 {
+    hooks->need_clean = TRUE;
     clean_hooks(GET_EC(), hooks);
 }
 
@@ -136,7 +138,7 @@ hook_list_connect(VALUE list_owner, rb_hook_list_t *list, rb_event_hook_t *hook,
 static void
 connect_event_hook(const rb_execution_context_t *ec, rb_event_hook_t *hook)
 {
-    rb_hook_list_t *list = rb_vm_global_hooks(ec);
+    rb_hook_list_t *list = rb_ec_ractor_hooks(ec);
     hook_list_connect(Qundef, list, hook, TRUE);
 }
 
@@ -195,7 +197,7 @@ clean_hooks(const rb_execution_context_t *ec, rb_hook_list_t *list)
 	}
     }
 
-    if (list == rb_vm_global_hooks(ec)) {
+    if (list == rb_ec_ractor_hooks(ec)) {
         /* global events */
         update_global_event_hook(list->events);
     }
@@ -220,8 +222,7 @@ clean_hooks_check(const rb_execution_context_t *ec, rb_hook_list_t *list)
 static int
 remove_event_hook(const rb_execution_context_t *ec, const rb_thread_t *filter_th, rb_event_hook_func_t func, VALUE data)
 {
-    rb_vm_t *vm = rb_ec_vm_ptr(ec);
-    rb_hook_list_t *list = &vm->global_hooks;
+    rb_hook_list_t *list = rb_ec_ractor_hooks(ec);
     int ret = 0;
     rb_event_hook_t *hook = list->hooks;
 
@@ -374,7 +375,7 @@ rb_exec_event_hooks(rb_trace_arg_t *trace_arg, rb_hook_list_t *hooks, int pop_p)
 
             ec->trace_arg = trace_arg;
             /* only global hooks */
-            exec_hooks_unprotected(ec, rb_vm_global_hooks(ec), trace_arg);
+            exec_hooks_unprotected(ec, rb_ec_ractor_hooks(ec), trace_arg);
             ec->trace_arg = prev_trace_arg;
 	}
     }
@@ -708,6 +709,7 @@ typedef struct rb_tp_struct {
     void (*func)(VALUE tpval, void *data);
     void *data;
     VALUE proc;
+    rb_ractor_t *ractor;
     VALUE self;
 } rb_tp_t;
 
@@ -1113,7 +1115,9 @@ tp_call_trace(VALUE tpval, rb_trace_arg_t *trace_arg)
 	(*tp->func)(tpval, tp->data);
     }
     else {
-	rb_proc_call_with_block((VALUE)tp->proc, 1, &tpval, Qnil);
+        if (tp->ractor == NULL || tp->ractor == GET_RACTOR()) {
+            rb_proc_call_with_block((VALUE)tp->proc, 1, &tpval, Qnil);
+        }
     }
 }
 
@@ -1360,6 +1364,7 @@ tracepoint_new(VALUE klass, rb_thread_t *target_th, rb_event_flag_t events, void
     TypedData_Get_Struct(tpval, rb_tp_t, &tp_data_type, tp);
 
     tp->proc = proc;
+    tp->ractor = rb_ractor_shareable_p(proc) ? NULL : GET_RACTOR();
     tp->func = func;
     tp->data = data;
     tp->events = events;
@@ -1513,7 +1518,7 @@ tracepoint_stat_s(rb_execution_context_t *ec, VALUE self)
     rb_vm_t *vm = GET_VM();
     VALUE stat = rb_hash_new();
 
-    tracepoint_stat_event_hooks(stat, vm->self, vm->global_hooks.hooks);
+    tracepoint_stat_event_hooks(stat, vm->self, rb_ec_ractor_hooks(ec)->hooks);
     /* TODO: thread local hooks */
 
     return stat;

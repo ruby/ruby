@@ -1,35 +1,31 @@
-#--
 # frozen_string_literal: true
+# :markup: markdown
 #
 # set.rb - defines the Set class
-#++
-# Copyright (c) 2002-2016 Akinori MUSHA <knu@iDaemons.org>
+#
+# Copyright (c) 2002-2020 Akinori MUSHA <knu@iDaemons.org>
 #
 # Documentation by Akinori MUSHA and Gavin Sinclair.
 #
 # All rights reserved.  You can redistribute and/or modify it under the same
 # terms as Ruby.
-#
-#   $Id$
-#
-# == Overview
-#
+
+
+##
 # This library provides the Set class, which deals with a collection
 # of unordered values with no duplicates.  It is a hybrid of Array's
 # intuitive inter-operation facilities and Hash's fast lookup.
 #
-# The method +to_set+ is added to Enumerable for convenience.
-
-
+# The method `to_set` is added to Enumerable for convenience.
 #
 # Set implements a collection of unordered values with no duplicates.
 # This is a hybrid of Array's intuitive inter-operation facilities and
 # Hash's fast lookup.
 #
-# Set is easy to use with Enumerable objects (implementing +each+).
+# Set is easy to use with Enumerable objects (implementing `each`).
 # Most of the initializer methods and binary operators accept generic
 # Enumerable objects besides sets and arrays.  An Enumerable object
-# can be converted to Set using the +to_set+ method.
+# can be converted to Set using the `to_set` method.
 #
 # Set uses Hash as storage, so you must note the following points:
 #
@@ -42,27 +38,29 @@
 # * When a string is to be stored, a frozen copy of the string is
 #   stored instead unless the original string is already frozen.
 #
-# == Comparison
+# ## Comparison
 #
-# The comparison operators <, >, <=, and >= are implemented as
-# shorthand for the {proper_,}{subset?,superset?} methods.
-# The <=> operator reflects this order, or return `nil` for
-# sets that both have distinct elements ({x, y} vs. {x, z} for example).
+# The comparison operators `<`, `>`, `<=`, and `>=` are implemented as
+# shorthand for the {proper_,}{subset?,superset?} methods.  The `<=>`
+# operator reflects this order, or return `nil` for sets that both
+# have distinct elements (`{x, y}` vs. `{x, z}` for example).
 #
-# == Example
+# ## Example
 #
-#   require 'set'
-#   s1 = Set[1, 2]                        #=> #<Set: {1, 2}>
-#   s2 = [1, 2].to_set                    #=> #<Set: {1, 2}>
-#   s1 == s2                              #=> true
-#   s1.add("foo")                         #=> #<Set: {1, 2, "foo"}>
-#   s1.merge([2, 6])                      #=> #<Set: {1, 2, "foo", 6}>
-#   s1.subset?(s2)                        #=> false
-#   s2.subset?(s1)                        #=> true
+# ```ruby
+# require 'set'
+# s1 = Set[1, 2]                        #=> #<Set: {1, 2}>
+# s2 = [1, 2].to_set                    #=> #<Set: {1, 2}>
+# s1 == s2                              #=> true
+# s1.add("foo")                         #=> #<Set: {1, 2, "foo"}>
+# s1.merge([2, 6])                      #=> #<Set: {1, 2, "foo", 6}>
+# s1.subset?(s2)                        #=> false
+# s2.subset?(s1)                        #=> true
+# ```
 #
-# == Contact
+# ## Contact
 #
-#   - Akinori MUSHA <knu@iDaemons.org> (current maintainer)
+# - Akinori MUSHA <<knu@iDaemons.org>> (current maintainer)
 #
 class Set
   include Enumerable
@@ -199,9 +197,9 @@ class Set
   end
 
   # Returns self if no arguments are given.  Otherwise, converts the
-  # set to another with klass.new(self, *args, &block).
+  # set to another with `klass.new(self, *args, &block)`.
   #
-  # In subclasses, returns klass.new(self, *args, &block) unless
+  # In subclasses, returns `klass.new(self, *args, &block)` unless
   # overridden.
   def to_set(klass = Set, *args, &block)
     return self if instance_of?(Set) && klass == Set && block.nil? && args.empty?
@@ -318,8 +316,8 @@ class Set
   # Returns true if the set and the given set have at least one
   # element in common.
   #
-  #   Set[1, 2, 3].intersect? Set[4, 5]   #=> false
-  #   Set[1, 2, 3].intersect? Set[3, 4]   #=> true
+  #     Set[1, 2, 3].intersect? Set[4, 5]   #=> false
+  #     Set[1, 2, 3].intersect? Set[3, 4]   #=> true
   def intersect?(set)
     set.is_a?(Set) or raise ArgumentError, "value must be a set"
     if size < set.size
@@ -330,10 +328,10 @@ class Set
   end
 
   # Returns true if the set and the given set have no element in
-  # common.  This method is the opposite of +intersect?+.
+  # common.  This method is the opposite of `intersect?`.
   #
-  #   Set[1, 2, 3].disjoint? Set[3, 4]   #=> false
-  #   Set[1, 2, 3].disjoint? Set[4, 5]   #=> true
+  #     Set[1, 2, 3].disjoint? Set[3, 4]   #=> false
+  #     Set[1, 2, 3].disjoint? Set[4, 5]   #=> true
   def disjoint?(set)
     !intersect?(set)
   end
@@ -347,7 +345,7 @@ class Set
     self
   end
 
-  # Adds the given object to the set and returns self.  Use +merge+ to
+  # Adds the given object to the set and returns self.  Use `merge` to
   # add many elements at once.
   #
   #     Set[1, 2].add(3)                    #=> #<Set: {1, 2, 3}>
@@ -369,8 +367,8 @@ class Set
     add(o) unless include?(o)
   end
 
-  # Deletes the given object from the set and returns self.  Use +subtract+ to
-  # delete many items at once.
+  # Deletes the given object from the set and returns self.  Use
+  # `subtract` to delete many items at once.
   def delete(o)
     @hash.delete(o)
     self
@@ -404,7 +402,7 @@ class Set
     self
   end
 
-  # Replaces the elements with ones returned by collect().
+  # Replaces the elements with ones returned by `collect()`.
   # Returns an enumerator if no block is given.
   def collect!
     block_given? or return enum_for(__method__) { size }
@@ -496,8 +494,8 @@ class Set
   alias intersection &
 
   # Returns a new set containing elements exclusive between the set
-  # and the given enumerable object.  (set ^ enum) is equivalent to
-  # ((set | enum) - (set & enum)).
+  # and the given enumerable object.  `(set ^ enum)` is equivalent to
+  # `((set | enum) - (set & enum))`.
   #
   #     Set[1, 2] ^ Set[2, 3]                   #=> #<Set: {3, 1}>
   #     Set[1, 'b', 'c'] ^ ['b', 'd']           #=> #<Set: {"d", 1, "c"}>
@@ -553,20 +551,20 @@ class Set
   #
   # Used in case statements:
   #
-  #   require 'set'
+  #     require 'set'
   #
-  #   case :apple
-  #   when Set[:potato, :carrot]
-  #     "vegetable"
-  #   when Set[:apple, :banana]
-  #     "fruit"
-  #   end
-  #   # => "fruit"
+  #     case :apple
+  #     when Set[:potato, :carrot]
+  #       "vegetable"
+  #     when Set[:apple, :banana]
+  #       "fruit"
+  #     end
+  #     # => "fruit"
   #
   # Or by itself:
   #
-  #   Set[1, 2, 3] === 2   #=> true
-  #   Set[1, 2, 3] === 4   #=> false
+  #     Set[1, 2, 3] === 2   #=> true
+  #     Set[1, 2, 3] === 4   #=> false
   #
   alias === include?
 
@@ -575,12 +573,12 @@ class Set
   # called once for each element of the set, passing the element as
   # parameter.
   #
-  #   require 'set'
-  #   files = Set.new(Dir.glob("*.rb"))
-  #   hash = files.classify { |f| File.mtime(f).year }
-  #   hash       #=> {2000=>#<Set: {"a.rb", "b.rb"}>,
-  #              #    2001=>#<Set: {"c.rb", "d.rb", "e.rb"}>,
-  #              #    2002=>#<Set: {"f.rb"}>}
+  #     require 'set'
+  #     files = Set.new(Dir.glob("*.rb"))
+  #     hash = files.classify { |f| File.mtime(f).year }
+  #     hash       #=> {2000=>#<Set: {"a.rb", "b.rb"}>,
+  #                #    2001=>#<Set: {"c.rb", "d.rb", "e.rb"}>,
+  #                #    2002=>#<Set: {"f.rb"}>}
   #
   # Returns an enumerator if no block is given.
   def classify # :yields: o
@@ -602,13 +600,13 @@ class Set
   # if block.call(o1, o2) is true.  Otherwise, elements o1 and o2 are
   # in common if block.call(o1) == block.call(o2).
   #
-  #   require 'set'
-  #   numbers = Set[1, 3, 4, 6, 9, 10, 11]
-  #   set = numbers.divide { |i,j| (i - j).abs == 1 }
-  #   set        #=> #<Set: {#<Set: {1}>,
-  #              #           #<Set: {11, 9, 10}>,
-  #              #           #<Set: {3, 4}>,
-  #              #           #<Set: {6}>}>
+  #     require 'set'
+  #     numbers = Set[1, 3, 4, 6, 9, 10, 11]
+  #     set = numbers.divide { |i,j| (i - j).abs == 1 }
+  #     set        #=> #<Set: {#<Set: {1}>,
+  #                #           #<Set: {11, 9, 10}>,
+  #                #           #<Set: {3, 4}>,
+  #                #           #<Set: {6}>}>
   #
   # Returns an enumerator if no block is given.
   def divide(&func)
@@ -639,6 +637,12 @@ class Set
     else
       Set.new(classify(&func).values)
     end
+  end
+
+  # Returns a string created by converting each element of the set to a string
+  # See also: Array#join
+  def join(separator=nil)
+    to_a.join(separator)
   end
 
   InspectKey = :__inspect_key__         # :nodoc:
@@ -679,8 +683,10 @@ end
 
 module Enumerable
   # Makes a set from the enumerable object with given arguments.
-  # Needs to +require "set"+ to use this method.
+  # Needs to `require "set"` to use this method.
   def to_set(klass = Set, *args, &block)
     klass.new(self, *args, &block)
   end
 end
+
+autoload :SortedSet, "#{__dir__}/set/sorted_set"

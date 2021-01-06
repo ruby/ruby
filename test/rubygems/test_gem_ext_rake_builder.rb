@@ -47,6 +47,31 @@ class TestGemExtRakeBuilder < Gem::TestCase
     end
   end
 
+  def test_class_no_openssl_override
+    create_temp_mkrf_file('task :default')
+
+    rake = util_spec 'rake' do |s|
+      s.executables = %w[rake]
+      s.files = %w[bin/rake]
+    end
+
+    output = []
+
+    write_file File.join(@tempdir, 'bin', 'rake') do |fp|
+      fp.puts "#!/usr/bin/ruby"
+      fp.puts "require 'openssl'; puts OpenSSL"
+    end
+
+    install_gem rake
+
+    Gem::Ext::RakeBuilder.build 'mkrf_conf.rb', @dest_path, output, [''], nil, @ext
+
+    output = output.join "\n"
+
+    assert_match "OpenSSL", output
+    assert_match %r{^#{Regexp.escape Gem.ruby} mkrf_conf\.rb}, output
+  end
+
   def test_class_build_no_mkrf_passes_args
     output = []
 

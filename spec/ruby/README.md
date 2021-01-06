@@ -34,7 +34,8 @@ More precisely, every latest stable MRI release should [pass](https://travis-ci.
 
 ### Synchronization with Ruby Implementations
 
-The specs are synchronized both ways around once a month by @eregon between ruby/spec, MRI, JRuby and TruffleRuby.
+The specs are synchronized both ways around once a month by @eregon between ruby/spec, MRI, JRuby and TruffleRuby,
+using [this script](https://github.com/ruby/mspec/blob/master/tool/sync/sync-rubyspec.rb).
 Each of these repositories has a full copy of the specs under `spec/ruby` to ease editing specs.
 Any of these repositories can be used to add or edit specs, use what is most convenient for you.
 

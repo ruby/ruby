@@ -91,7 +91,7 @@ psych/psych_yaml_tree.c
 pty/lib
 pty/pty.c
 racc/cparse/cparse.c
-rbconfig
+rbconfig/sizeof/*.c
 readline/readline.c
 ripper/lib
 socket
@@ -99,7 +99,8 @@ stringio/stringio.c
 strscan/strscan.c
 syslog/syslog.c
 syslog/lib
-win32
+win32/lib
+win32/resolv/*.c
 win32ole/lib
 win32ole/*.c
 zlib/zlib.c

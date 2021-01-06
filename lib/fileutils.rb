@@ -102,7 +102,7 @@ end
 # <tt>:verbose</tt> flags to methods in FileUtils.
 #
 module FileUtils
-  VERSION = "1.4.1"
+  VERSION = "1.5.0"
 
   def self.private_module_function(name)   #:nodoc:
     module_function name
@@ -1623,7 +1623,7 @@ module FileUtils
 
   def fu_output_message(msg)   #:nodoc:
     output = @fileutils_output if defined?(@fileutils_output)
-    output ||= $stderr
+    output ||= $stdout
     if defined?(@fileutils_label)
       msg = @fileutils_label + msg
     end

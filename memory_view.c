@@ -51,11 +51,11 @@ exported_object_registry_mark(void *ptr)
 static void
 exported_object_registry_free(void *ptr)
 {
-    // Note that calling RB_VM_LOCK_ENTER here is unnecessary now.
-    // But it may be changed in the future.
+    RB_VM_LOCK_ENTER();
     st_clear(exported_object_table);
     st_free_table(exported_object_table);
     exported_object_table = NULL;
+    RB_VM_LOCK_LEAVE();
 }
 
 const rb_data_type_t rb_memory_view_exported_object_registry_data_type = {
@@ -194,12 +194,12 @@ rb_memory_view_fill_contiguous_strides(const ssize_t ndim, const ssize_t item_si
 }
 
 /* Initialize view to expose a simple byte array */
-int
+bool
 rb_memory_view_init_as_byte_array(rb_memory_view_t *view, VALUE obj, void *data, const ssize_t len, const bool readonly)
 {
     view->obj = obj;
     view->data = data;
-    view->len = len;
+    view->byte_size = len;
     view->readonly = readonly;
     view->format = NULL;
     view->item_size = 1;
@@ -211,7 +211,7 @@ rb_memory_view_init_as_byte_array(rb_memory_view_t *view, VALUE obj, void *data,
     view->sub_offsets = NULL;
     *((void **)&view->private) = NULL;
 
-    return 1;
+    return true;
 }
 
 #ifdef HAVE_TRUE_LONG_LONG
@@ -748,7 +748,9 @@ rb_memory_view_prepare_item_desc(rb_memory_view_t *view)
 {
     if (view->item_desc.components == NULL) {
         const char *err;
-        ssize_t n = rb_memory_view_parse_item_format(view->format, &view->item_desc.components, &view->item_desc.length, &err);
+        rb_memory_view_item_component_t **p_components =
+            (rb_memory_view_item_component_t **)&view->item_desc.components;
+        ssize_t n = rb_memory_view_parse_item_format(view->format, p_components, &view->item_desc.length, &err);
         if (n < 0) {
             rb_raise(rb_eRuntimeError,
                      "Unable to parse item format at %"PRIdSIZE" in \"%s\"",
@@ -794,7 +796,7 @@ lookup_memory_view_entry(VALUE klass)
 }
 
 /* Examine whether the given object supports memory view. */
-int
+bool
 rb_memory_view_available_p(VALUE obj)
 {
     VALUE klass = CLASS_OF(obj);
@@ -802,38 +804,38 @@ rb_memory_view_available_p(VALUE obj)
     if (entry)
         return (* entry->available_p_func)(obj);
     else
-        return 0;
+        return false;
 }
 
 /* Obtain a memory view from obj, and substitute the information to view. */
-int
+bool
 rb_memory_view_get(VALUE obj, rb_memory_view_t* view, int flags)
 {
     VALUE klass = CLASS_OF(obj);
     const rb_memory_view_entry_t *entry = lookup_memory_view_entry(klass);
     if (entry) {
         if (!(*entry->available_p_func)(obj)) {
-            return 0;
+            return false;
         }
 
-        int rv = (*entry->get_func)(obj, view, flags);
+        bool rv = (*entry->get_func)(obj, view, flags);
         if (rv) {
             register_exported_object(view->obj);
         }
         return rv;
     }
     else
-        return 0;
+        return false;
 }
 
 /* Release the memory view obtained from obj. */
-int
+bool
 rb_memory_view_release(rb_memory_view_t* view)
 {
     VALUE klass = CLASS_OF(view->obj);
     const rb_memory_view_entry_t *entry = lookup_memory_view_entry(klass);
     if (entry) {
-        int rv = 1;
+        bool rv = true;
         if (entry->release_func) {
             rv = (*entry->release_func)(view->obj, view);
         }
@@ -841,13 +843,13 @@ rb_memory_view_release(rb_memory_view_t* view)
             unregister_exported_object(view->obj);
             view->obj = Qnil;
             if (view->item_desc.components) {
-                xfree(view->item_desc.components);
+                xfree((void *)view->item_desc.components);
             }
         }
         return rv;
     }
     else
-        return 0;
+        return false;
 }
 
 void

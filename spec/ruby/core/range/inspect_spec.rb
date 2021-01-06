@@ -19,6 +19,18 @@ describe "Range#inspect" do
     end
   end
 
+  ruby_version_is '2.7' do
+    it "works for beginless ranges" do
+      eval("(..1)").inspect.should ==  "..1"
+      eval("(...0.1)").inspect.should ==  "...0.1"
+    end
+
+    it "works for nil ... nil ranges" do
+      eval("(..nil)").inspect.should ==  "nil..nil"
+      eval("(nil...)").inspect.should ==  "nil...nil"
+    end
+  end
+
   ruby_version_is ''...'2.7' do
     it "returns a tainted string if either end is tainted" do
       (("a".taint)..."c").inspect.tainted?.should be_true

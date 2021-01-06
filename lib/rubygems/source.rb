@@ -35,6 +35,7 @@ class Gem::Source
     end
 
     @uri = uri
+    @update_cache = nil
   end
 
   ##
@@ -79,7 +80,15 @@ class Gem::Source
   def dependency_resolver_set # :nodoc:
     return Gem::Resolver::IndexSet.new self if 'file' == uri.scheme
 
-    bundler_api_uri = enforce_trailing_slash(uri) + './api/v1/dependencies'
+    fetch_uri = if uri.host == "rubygems.org"
+                  index_uri = uri.dup
+                  index_uri.host = "index.rubygems.org"
+                  index_uri
+                else
+                  uri
+                end
+
+    bundler_api_uri = enforce_trailing_slash(fetch_uri)
 
     begin
       fetcher = Gem::RemoteFetcher.fetcher
@@ -87,11 +96,7 @@ class Gem::Source
     rescue Gem::RemoteFetcher::FetchError
       Gem::Resolver::IndexSet.new self
     else
-      if response.respond_to? :uri
-        Gem::Resolver::APISet.new response.uri
-      else
-        Gem::Resolver::APISet.new bundler_api_uri
-      end
+      Gem::Resolver::APISet.new response.uri + "./info/"
     end
   end
 
@@ -114,7 +119,8 @@ class Gem::Source
   # Returns true when it is possible and safe to update the cache directory.
 
   def update_cache?
-    @update_cache ||=
+    return @update_cache unless @update_cache.nil?
+    @update_cache =
       begin
         File.stat(Gem.user_home).uid == Process.uid
       rescue Errno::ENOENT

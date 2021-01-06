@@ -22,10 +22,11 @@ module Bundler
         break unless dep = deps.shift
         next if !handled.add?(dep) || skip.include?(dep.name)
 
-        if spec = spec_for_dependency(dep, match_current_platform)
-          specs << spec
+        specs_for_dep = spec_for_dependency(dep, match_current_platform)
+        if specs_for_dep.any?
+          specs += specs_for_dep
 
-          spec.dependencies.each do |d|
+          specs_for_dep.first.dependencies.each do |d|
             next if d.type == :development
             d = DepProxy.new(d, dep.__platform) unless match_current_platform
             deps << d
@@ -184,11 +185,7 @@ module Bundler
     def spec_for_dependency(dep, match_current_platform)
       specs_for_platforms = lookup[dep.name]
       if match_current_platform
-        Bundler.rubygems.platforms.reverse_each do |pl|
-          match = GemHelpers.select_best_platform_match(specs_for_platforms, pl)
-          return match if match
-        end
-        nil
+        GemHelpers.select_best_platform_match(specs_for_platforms, Bundler.local_platform)
       else
         GemHelpers.select_best_platform_match(specs_for_platforms, dep.__platform)
       end

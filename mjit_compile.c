@@ -280,7 +280,7 @@ compile_inlined_cancel_handler(FILE *f, const struct rb_iseq_constant_body *body
     }
     // We're not just returning Qundef here so that caller's normal cancel handler can
     // push back `stack` to `cfp->sp`.
-    fprintf(f, "    return vm_exec(ec, FALSE);\n");
+    fprintf(f, "    return vm_exec(ec, false);\n");
 }
 
 // Print the block to cancel JIT execution.
@@ -305,6 +305,10 @@ compile_cancel_handler(FILE *f, const struct rb_iseq_constant_body *body, struct
     fprintf(f, "\nexivar_cancel:\n");
     fprintf(f, "    RB_DEBUG_COUNTER_INC(mjit_cancel_exivar_inline);\n");
     fprintf(f, "    rb_mjit_recompile_exivar(original_iseq);\n");
+    fprintf(f, "    goto cancel;\n");
+
+    fprintf(f, "\nconst_cancel:\n");
+    fprintf(f, "    rb_mjit_recompile_const(original_iseq);\n");
     fprintf(f, "    goto cancel;\n");
 
     fprintf(f, "\ncancel:\n");

@@ -819,6 +819,10 @@ reduce0(RB_BLOCK_CALL_FUNC_ARGLIST(_, data))
 void
 Init_cparse(void)
 {
+#if HAVE_RB_EXT_RACTOR_SAFE
+    rb_ext_ractor_safe(true);
+#endif
+
     VALUE Racc, Parser;
     ID id_racc = rb_intern_const("Racc");
 

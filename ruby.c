@@ -1655,6 +1655,23 @@ setup_pager_env(void)
     if (!getenv("LESS")) ruby_setenv("LESS", "-R"); // Output "raw" control characters.
 }
 
+#ifdef _WIN32
+static int
+tty_enabled(void)
+{
+    HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+    DWORD m;
+    if (!GetConsoleMode(h, &m)) return 0;
+# ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
+#   define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x200
+# endif
+    if (!(m & ENABLE_VIRTUAL_TERMINAL_PROCESSING)) return 0;
+    return 1;
+}
+#elif !defined(HAVE_WORKING_FORK)
+# define tty_enabled() 0
+#endif
+
 static VALUE
 process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 {
@@ -1715,10 +1732,10 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
                     int oldout = dup(1);
                     int olderr = dup(2);
                     int fd = RFILE(port)->fptr->fd;
+                    tty = tty_enabled();
                     dup2(fd, 1);
                     dup2(fd, 2);
-                    /* more.com doesn't support CSI sequence */
-                    usage(progname, 1, 0, columns);
+                    usage(progname, 1, tty, columns);
                     fflush(stdout);
                     dup2(oldout, 1);
                     dup2(olderr, 2);
@@ -1755,7 +1772,10 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     }
 
     if (opt->src.enc.name)
-	rb_warning("-K is specified; it is for 1.8 compatibility and may cause odd behavior");
+        /* cannot set deprecated category, as enabling deprecation warnings based on flags
+         * has not happened yet.
+         */
+        rb_warning("-K is specified; it is for 1.8 compatibility and may cause odd behavior");
 
     if (opt->features.set & FEATURE_BIT(ujit))
         rb_ujit_init();
@@ -2204,6 +2224,26 @@ load_file_internal(VALUE argp_v)
     return (VALUE)ast;
 }
 
+/* disabling O_NONBLOCK, and returns 0 on success, otherwise errno */
+static inline int
+disable_nonblock(int fd)
+{
+#if defined(HAVE_FCNTL) && defined(F_SETFL)
+    if (fcntl(fd, F_SETFL, 0) < 0) {
+        const int e = errno;
+        ASSUME(e != 0);
+# if defined ENOTSUP
+        if (e == ENOTSUP) return 0;
+# endif
+# if defined B_UNSUPPORTED
+        if (e == B_UNSUPPORTED) return 0;
+# endif
+        return e;
+    }
+#endif
+    return 0;
+}
+
 static VALUE
 open_load_file(VALUE fname_v, int *xflag)
 {
@@ -2253,14 +2293,10 @@ open_load_file(VALUE fname_v, int *xflag)
 	}
 	rb_update_max_fd(fd);
 
-#if defined HAVE_FCNTL && MODE_TO_LOAD != O_RDONLY
-	/* disabling O_NONBLOCK */
-	if (fcntl(fd, F_SETFL, 0) < 0) {
-	    e = errno;
+	if (MODE_TO_LOAD != O_RDONLY && (e = disable_nonblock(fd)) != 0) {
 	    (void)close(fd);
 	    rb_load_fail(fname_v, strerror(e));
 	}
-#endif
 
 	e = ruby_is_fd_loadable(fd);
 	if (!e) {

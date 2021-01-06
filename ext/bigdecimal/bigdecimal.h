@@ -10,20 +10,11 @@
 #define  RUBY_BIG_DECIMAL_H 1
 
 #define RUBY_NO_OLD_COMPATIBILITY
-
 #include "ruby/ruby.h"
-#include <float.h>
+#include "missing.h"
 
-#ifndef RB_UNUSED_VAR
-# ifdef __GNUC__
-#  define RB_UNUSED_VAR(x) x __attribute__ ((unused))
-# else
-#  define RB_UNUSED_VAR(x) x
-# endif
-#endif
-
-#ifndef UNREACHABLE
-# define UNREACHABLE		/* unreachable */
+#ifdef HAVE_FLOAT_H
+# include <float.h>
 #endif
 
 #undef BDIGIT
@@ -74,91 +65,6 @@ extern "C" {
 #endif
 #endif
 
-#ifndef HAVE_LABS
-static inline long
-labs(long const x)
-{
-    if (x < 0) return -x;
-    return x;
-}
-#endif
-
-#ifndef HAVE_LLABS
-static inline LONG_LONG
-llabs(LONG_LONG const x)
-{
-    if (x < 0) return -x;
-    return x;
-}
-#endif
-
-#ifndef HAVE_FINITE
-static int
-finite(double)
-{
-    return !isnan(n) && !isinf(n);
-}
-#endif
-
-#ifndef isfinite
-# ifndef HAVE_ISFINITE
-#  define HAVE_ISFINITE 1
-#  define isfinite(x) finite(x)
-# endif
-#endif
-
-#ifndef FIX_CONST_VALUE_PTR
-# if defined(__fcc__) || defined(__fcc_version) || \
-    defined(__FCC__) || defined(__FCC_VERSION)
-/* workaround for old version of Fujitsu C Compiler (fcc) */
-#  define FIX_CONST_VALUE_PTR(x) ((const VALUE *)(x))
-# else
-#  define FIX_CONST_VALUE_PTR(x) (x)
-# endif
-#endif
-
-#ifndef HAVE_RB_ARRAY_CONST_PTR
-static inline const VALUE *
-rb_array_const_ptr(VALUE a)
-{
-    return FIX_CONST_VALUE_PTR((RBASIC(a)->flags & RARRAY_EMBED_FLAG) ?
-	RARRAY(a)->as.ary : RARRAY(a)->as.heap.ptr);
-}
-#endif
-
-#ifndef RARRAY_CONST_PTR
-# define RARRAY_CONST_PTR(a) rb_array_const_ptr(a)
-#endif
-
-#ifndef RARRAY_AREF
-# define RARRAY_AREF(a, i) (RARRAY_CONST_PTR(a)[i])
-#endif
-
-#ifndef HAVE_RB_SYM2STR
-static inline VALUE
-rb_sym2str(VALUE sym)
-{
-    return rb_id2str(SYM2ID(sym));
-}
-#endif
-
-#ifndef ST2FIX
-# undef RB_ST2FIX
-# define RB_ST2FIX(h) LONG2FIX((long)(h))
-# define ST2FIX(h) RB_ST2FIX(h)
-#endif
-
-#ifdef vabs
-# undef vabs
-#endif
-#if SIZEOF_VALUE <= SIZEOF_INT
-# define vabs abs
-#elif SIZEOF_VALUE <= SIZEOF_LONG
-# define vabs labs
-#elif SIZEOF_VALUE <= SIZEOF_LONG_LONG
-# define vabs llabs
-#endif
-
 extern VALUE rb_cBigDecimal;
 
 #if 0 || SIZEOF_BDIGITS >= 16
@@ -203,7 +109,6 @@ extern VALUE rb_cBigDecimal;
 
 /* Following 2 exceptions can't controlled by user */
 #define VP_EXCEPTION_OP         ((unsigned short)0x0020)
-#define VP_EXCEPTION_MEMORY     ((unsigned short)0x0040)
 
 #define RMPD_EXCEPTION_MODE_DEFAULT 0U
 
@@ -268,10 +173,9 @@ typedef struct {
  *  ------------------
  */
 
-VP_EXPORT  Real *
-VpNewRbClass(size_t mx, char const *str, VALUE klass);
+VP_EXPORT Real *VpNewRbClass(size_t mx, char const *str, VALUE klass, bool strict_p, bool raise_exception);
 
-VP_EXPORT  Real *VpCreateRbObject(size_t mx,const char *str);
+VP_EXPORT Real *VpCreateRbObject(size_t mx, const char *str, bool raise_exception);
 
 static inline BDIGIT
 rmpd_base_value(void) { return RMPD_BASE; }

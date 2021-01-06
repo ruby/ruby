@@ -57,7 +57,7 @@ RUBY_FUNC_EXPORTED
 #else
 MJIT_FUNC_EXPORTED
 #endif
-VALUE vm_exec(rb_execution_context_t *, int);
+VALUE vm_exec(rb_execution_context_t *, bool);
 
 PUREFUNC(static inline const VALUE *VM_EP_LEP(const VALUE *));
 static inline const VALUE *
@@ -366,7 +366,6 @@ rb_serial_t
 rb_next_class_serial(void)
 {
     rb_serial_t class_serial = NEXT_CLASS_SERIAL();
-    mjit_add_class_serial(class_serial);
     return class_serial;
 }
 
@@ -994,9 +993,6 @@ collect_outer_variable_names(ID id, VALUE val, void *ptr)
     return ID_TABLE_CONTINUE;
 }
 
-VALUE rb_ractor_error_class(void);
-VALUE rb_ractor_make_shareable(VALUE obj);
-
 static const rb_env_t *
 env_copy(const VALUE *src_ep, VALUE read_only_variables)
 {
@@ -1015,7 +1011,7 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
                 if (id ==  src_env->iseq->body->local_table[j]) {
                     VALUE v = src_env->env[j];
                     if (!rb_ractor_shareable_p(v)) {
-                        rb_raise(rb_ractor_error_class(),
+                        rb_raise(rb_eRactorIsolationError,
                                  "can not make shareable Proc because it can refer unshareable object %"
                                  PRIsVALUE" from variable `%s'", rb_inspect(v), rb_id2name(id));
                     }
@@ -1263,7 +1259,7 @@ invoke_block(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE self, cons
 		  ec->cfp->sp + arg_size,
 		  iseq->body->local_table_size - arg_size,
 		  iseq->body->stack_max);
-    return vm_exec(ec, TRUE);
+    return vm_exec(ec, true);
 }
 
 static VALUE
@@ -1293,7 +1289,7 @@ invoke_bmethod(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE self, co
                                 me->def->original_id, me->called_id, me->owner, Qnil, FALSE);
     }
     VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);
-    ret = vm_exec(ec, TRUE);
+    ret = vm_exec(ec, true);
 
     EXEC_EVENT_HOOK(ec, RUBY_EVENT_RETURN, self, me->def->original_id, me->called_id, me->owner, ret);
     if ((hooks = me->def->body.bmethod.hooks) != NULL &&
@@ -2152,7 +2148,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
                          VALUE errinfo, VALUE *initial);
 
 VALUE
-vm_exec(rb_execution_context_t *ec, int mjit_enable_p)
+vm_exec(rb_execution_context_t *ec, bool mjit_enable_p)
 {
     enum ruby_tag_type state;
     VALUE result = Qundef;
@@ -2409,7 +2405,7 @@ rb_iseq_eval(const rb_iseq_t *iseq)
     rb_execution_context_t *ec = GET_EC();
     VALUE val;
     vm_set_top_stack(ec, iseq);
-    val = vm_exec(ec, TRUE);
+    val = vm_exec(ec, true);
     return val;
 }
 
@@ -2420,7 +2416,7 @@ rb_iseq_eval_main(const rb_iseq_t *iseq)
     VALUE val;
 
     vm_set_main_stack(ec, iseq);
-    val = vm_exec(ec, TRUE);
+    val = vm_exec(ec, true);
     return val;
 }
 
@@ -2588,8 +2584,6 @@ rb_vm_mark(void *ptr)
 	if (vm->loading_table) {
 	    rb_mark_tbl(vm->loading_table);
 	}
-
-	rb_hook_list_mark(&vm->global_hooks);
 
 	rb_gc_mark_values(RUBY_NSIG, vm->trap_list.cmd);
 
@@ -3184,6 +3178,18 @@ m_core_make_shareable(VALUE recv, VALUE obj)
 }
 
 static VALUE
+m_core_make_shareable_copy(VALUE recv, VALUE obj)
+{
+    return rb_ractor_make_shareable_copy(obj);
+}
+
+static VALUE
+m_core_ensure_shareable(VALUE recv, VALUE obj, VALUE name)
+{
+    return rb_ractor_ensure_shareable(obj, name);
+}
+
+static VALUE
 core_hash_merge_kwd(VALUE hash, VALUE kw)
 {
     rb_hash_foreach(rb_to_hash_type(kw), kwmerge_i, hash);
@@ -3348,6 +3354,8 @@ Init_VM(void)
     rb_define_method_id(klass, idProc, f_proc, 0);
     rb_define_method_id(klass, idLambda, f_lambda, 0);
     rb_define_method(klass, "make_shareable", m_core_make_shareable, 1);
+    rb_define_method(klass, "make_shareable_copy", m_core_make_shareable_copy, 1);
+    rb_define_method(klass, "ensure_shareable", m_core_ensure_shareable, 2);
     rb_obj_freeze(fcore);
     RBASIC_CLEAR_CLASS(klass);
     rb_obj_freeze(klass);
@@ -3594,7 +3602,6 @@ Init_VM(void)
 #if VMDEBUG
     rb_define_singleton_method(rb_cRubyVM, "SDR", sdr, 0);
     rb_define_singleton_method(rb_cRubyVM, "NSDR", nsdr, 0);
-    rb_define_singleton_method(rb_cRubyVM, "mtbl", vm_mtbl, 2);
     rb_define_singleton_method(rb_cRubyVM, "mtbl", vm_mtbl, 2);
     rb_define_singleton_method(rb_cRubyVM, "mtbl2", vm_mtbl2, 2);
 #else

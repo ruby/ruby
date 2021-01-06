@@ -374,7 +374,7 @@ Since the `github` method is a specialization of `git_source`, it accepts a `:br
 
 ### GIST
 
-If the git repository you want to use is hosted as a Github Gist and is public, you can use
+If the git repository you want to use is hosted as a GitHub Gist and is public, you can use
 the :gist shorthand to specify the gist identifier (without the trailing ".git").
 
     gem "the_hatch", :gist => "4815162342"

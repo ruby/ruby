@@ -749,6 +749,14 @@ RUBY_TYPED_WB_PROTECTED ::
   More about write barriers can be found in "Generational GC" in
   Appendix D.
 
+RUBY_TYPED_FROZEN_SHAREABLE ::
+
+  This flag indicates that the object is shareable object
+  if the object is frozen. See Appendix F more details.
+
+  If this flag is not set, the object can not become a shareable
+  object by Ractor.make_shareable() method.
+
 You can allocate and wrap the structure in one step.
 
   TypedData_Make_Struct(klass, type, data_type, sval)
@@ -2083,6 +2091,89 @@ keyword in C.  RB_GC_GUARD has the following advantages:
 3. "volatile" implementations may be buggy/inconsistent in some
    compilers and architectures. RB_GC_GUARD is customizable for broken
    systems/compilers without negatively affecting other systems.
+
+== Appendix F. Ractor support
+
+Ractor is parallel execution mechanism introduced from Ruby 3.0. All
+ractrors can run in parallel by different OS thread (underlying system
+provided thread), so the C extension should be thread-safe. Now we call
+the property that C extension can run in multiple ractors "Ractor-safe".
+
+By default, all C extensions are recognized as Ractor-unsafe. If C
+extension becomes Ractor-safe, the extension should call
+rb_ext_ractor_safe(true) at the Init_ function and all defined method
+marked as Ractor-safe. Ractor-unsafe C-methods only been called from
+main-ractor. If non-main ractor calls it, then Ractor::UnsafeError is
+raised.
+
+BTW non-"Ractor-safe" extensions raises an error on non-main ractors, so
+that it is "safe" because unsafe operations are not allowed.
+"Ractor-safe" property means "multi-Ractor-ready" or "safe on
+multi-ractors execution". "Ractor-safe" term comes from "Thread-safe".
+
+To make "Ractor-safe" C extension, we need to check the following points:
+
+(1) Do not share unshareable objects between ractors
+
+For example, C's global variable can lead sharing an unshareable objects
+betwee ractors.
+
+  VALUE g_var;
+  VALUE set(VALUE self, VALUE v){ return g_var = v; }
+  VALUE get(VALUE self){ return g_var; }
+
+set() and get() pair can share an unshareable objects using g_var, and
+it is Ractor-unsafe.
+
+Not only using global variables directly, some indirect data structure
+such as global st_table can share the objects, so please take care.
+
+Note that class and module objects are shareable objects, so you can
+keep the code "cFoo = rb_define_class(...)" with C's global variables.
+
+(2) Check the thread-safety of the extension
+
+An extension should be thread-safe. For example, the following code is
+not thread-safe:
+
+  bool g_called = false;
+  VALUE call(VALUE self) {
+    if (g_called) rb_raise("recursive call is not allowed.");
+    g_called = true;
+    VALUE ret = do_something();
+    g_called = false;
+    return ret;
+  }
+
+because g_called global variable should be synchronized by other
+ractor's threads. To avoid such data-race, some synchronization should
+be used. Check include/ruby/thread_native.h and include/ruby/atomic.h.
+
+On the Ractor mechanism, most of objects given by the method parameters
+or the receiver are isolated by Ractor's boundary, it is easy to make
+thread-safe code than usual thread-programming in general. For example,
+we don't need to lock an array object to access the element of it.
+
+(3) Check the thread-safety of using library
+
+If an extension relies on the external library libfoo and the function
+foo(), the function foo() should be thread safe.
+
+(4) Make an object shareable
+
+This is not required to make an extension Ractor-safe.
+
+If an extension provides special objects defined by rb_data_type_t,
+consider these objects can become shareable or not.
+
+RUBY_TYPED_FROZEN_SHAREABLE flag indicates that these objects can be
+shareable objects if the object is frozen. This means that if the object
+is frozen, the mutation of wrapped data is not allowed.
+
+(5) Others
+
+Maybe there are more points which should be considered to make
+Ractor-safe extension, so this document will be extended.
 
 :enddoc: Local variables:
 :enddoc: fill-column: 70

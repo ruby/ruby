@@ -1775,11 +1775,22 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *    a[4..0] # => nil
  *    a[4..-1] # => nil
  *
- *  When a single argument +aseq+ is given,
- *  ...(to be described)
+ *  When a single Enumerator::ArithmeticSequence argument +aseq+ is given,
+ *  returns an Array of elements corresponding to the indexes produced by
+ *  the sequence.
+ *    a = ['--', 'data1', '--', 'data2', '--', 'data3']
+ *    a[(1..).step(2)] # => ["data1", "data2", "data3"]
  *
- *  Raises an exception if given a single argument
- *  that is not an \Integer-convertible object or a \Range object:
+ *  Unlike slicing with range, if the start or the end of the arithmetic sequence
+ *  is larger than array size, throws RangeError.
+ *    a = ['--', 'data1', '--', 'data2', '--', 'data3']
+ *    a[(1..11).step(2)]
+ *    # RangeError (((1..11).step(2)) out of range)
+ *    a[(7..).step(2)]
+ *    # RangeError (((7..).step(2)) out of range)
+ *
+ *  If given a single argument, and its type is not one of the listed, tries to
+ *  convert it to Integer, and raises if it is impossible:
  *    a = [:foo, 'bar', 2]
  *    # Raises TypeError (no implicit conversion of Symbol into Integer):
  *    a[:foo]
@@ -2835,7 +2846,7 @@ rb_ary_join_m(int argc, VALUE *argv, VALUE ary)
     if (rb_check_arity(argc, 0, 1) == 0 || NIL_P(sep = argv[0])) {
         sep = rb_output_fs;
         if (!NIL_P(sep)) {
-            rb_warn("$, is set to non-nil value");
+            rb_category_warn(RB_WARN_CATEGORY_DEPRECATED, "$, is set to non-nil value");
         }
     }
 

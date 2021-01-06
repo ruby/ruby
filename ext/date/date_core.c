@@ -53,6 +53,8 @@ static double positive_inf, negative_inf;
 #define f_add3(x,y,z) f_add(f_add(x, y), z)
 #define f_sub3(x,y,z) f_sub(f_sub(x, y), z)
 
+#define f_frozen_ary(...) rb_obj_freeze(rb_ary_new3(__VA_ARGS__))
+
 static VALUE date_initialize(int argc, VALUE *argv, VALUE self);
 static VALUE datetime_initialize(int argc, VALUE *argv, VALUE self);
 
@@ -2971,11 +2973,15 @@ d_lite_memsize(const void *ptr)
     return complex_dat_p(dat) ? sizeof(struct ComplexDateData) : sizeof(struct SimpleDateData);
 }
 
+#ifndef HAVE_RB_EXT_RACTOR_SAFE
+#   define RUBY_TYPED_FROZEN_SHAREABLE 0
+#endif
+
 static const rb_data_type_t d_lite_type = {
     "Date",
     {d_lite_gc_mark, RUBY_TYPED_DEFAULT_FREE, d_lite_memsize,},
     0, 0,
-    RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED,
+    RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED|RUBY_TYPED_FROZEN_SHAREABLE,
 };
 
 inline static VALUE
@@ -3767,89 +3773,89 @@ rt_complete_frags(VALUE klass, VALUE hash)
     VALUE k, a, d;
 
     if (NIL_P(tab)) {
-	tab = rb_ary_new3(11,
-			  rb_ary_new3(2,
+	tab = f_frozen_ary(11,
+			  f_frozen_ary(2,
 				      sym("time"),
-				      rb_ary_new3(3,
+				      f_frozen_ary(3,
 						  sym("hour"),
 						  sym("min"),
 						  sym("sec"))),
-			  rb_ary_new3(2,
+			  f_frozen_ary(2,
 				      Qnil,
-				      rb_ary_new3(1,
+				      f_frozen_ary(1,
 						  sym("jd"))),
-			  rb_ary_new3(2,
+			  f_frozen_ary(2,
 				      sym("ordinal"),
-				      rb_ary_new3(5,
+				      f_frozen_ary(5,
 						  sym("year"),
 						  sym("yday"),
 						  sym("hour"),
 						  sym("min"),
 						  sym("sec"))),
-			  rb_ary_new3(2,
+			  f_frozen_ary(2,
 				      sym("civil"),
-				      rb_ary_new3(6,
+				      f_frozen_ary(6,
 						  sym("year"),
 						  sym("mon"),
 						  sym("mday"),
 						  sym("hour"),
 						  sym("min"),
 						  sym("sec"))),
-			  rb_ary_new3(2,
+			  f_frozen_ary(2,
 				      sym("commercial"),
-				      rb_ary_new3(6,
+				      f_frozen_ary(6,
 						  sym("cwyear"),
 						  sym("cweek"),
 						  sym("cwday"),
 						  sym("hour"),
 						  sym("min"),
 						  sym("sec"))),
-			  rb_ary_new3(2,
+			  f_frozen_ary(2,
 				      sym("wday"),
-				      rb_ary_new3(4,
+				      f_frozen_ary(4,
 						  sym("wday"),
 						  sym("hour"),
 						  sym("min"),
 						  sym("sec"))),
-			  rb_ary_new3(2,
+			  f_frozen_ary(2,
 				      sym("wnum0"),
-				      rb_ary_new3(6,
+				      f_frozen_ary(6,
 						  sym("year"),
 						  sym("wnum0"),
 						  sym("wday"),
 						  sym("hour"),
 						  sym("min"),
 						  sym("sec"))),
-			  rb_ary_new3(2,
+			  f_frozen_ary(2,
 				      sym("wnum1"),
-				      rb_ary_new3(6,
+				      f_frozen_ary(6,
 						  sym("year"),
 						  sym("wnum1"),
 						  sym("wday"),
 						  sym("hour"),
 						  sym("min"),
 						  sym("sec"))),
-			  rb_ary_new3(2,
+			  f_frozen_ary(2,
 				      Qnil,
-				      rb_ary_new3(6,
+				      f_frozen_ary(6,
 						  sym("cwyear"),
 						  sym("cweek"),
 						  sym("wday"),
 						  sym("hour"),
 						  sym("min"),
 						  sym("sec"))),
-			  rb_ary_new3(2,
+			  f_frozen_ary(2,
 				      Qnil,
-				      rb_ary_new3(6,
+				      f_frozen_ary(6,
 						  sym("year"),
 						  sym("wnum0"),
 						  sym("cwday"),
 						  sym("hour"),
 						  sym("min"),
 						  sym("sec"))),
-			  rb_ary_new3(2,
+			  f_frozen_ary(2,
 				      Qnil,
-				      rb_ary_new3(6,
+				      f_frozen_ary(6,
 						  sym("year"),
 						  sym("wnum1"),
 						  sym("cwday"),
@@ -9116,6 +9122,9 @@ d_lite_zero(VALUE x)
 void
 Init_date_core(void)
 {
+    #ifdef HAVE_RB_EXT_RACTOR_SAFE
+	RB_EXT_RACTOR_SAFE(true);
+    #endif
     id_cmp = rb_intern_const("<=>");
     id_le_p = rb_intern_const("<=");
     id_ge_p = rb_intern_const(">=");

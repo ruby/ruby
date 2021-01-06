@@ -1894,6 +1894,36 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_cursor_max(0)
   end
 
+  def test_search_history_with_isearch_terminator
+    @config.read_lines(<<~LINES.split(/(?<=\n)/))
+      set isearch-terminators "XYZ"
+    LINES
+    Reline::HISTORY.concat([
+      '1235', # old
+      '12aa',
+      '1234' # new
+    ])
+    assert_line('')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    input_keys("\C-r12a")
+    assert_line('12aa')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0) # doesn't determine yet
+    input_keys('Y')
+    assert_line('12aa')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(4)
+    input_keys('x')
+    assert_line('x12aa')
+    assert_byte_pointer_size('x')
+    assert_cursor(1)
+    assert_cursor_max(5)
+  end
+
   def test_em_set_mark_and_em_exchange_mark
     input_keys('aaa bbb ccc ddd')
     assert_byte_pointer_size('aaa bbb ccc ddd')
@@ -2165,6 +2195,42 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
       assert_cursor(1)
       assert_cursor_max(1)
     end
+  end
+
+  def test_em_yank_pop
+    input_keys("def hoge\C-w\C-b\C-f\C-w", false)
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    assert_line('')
+    input_keys("\C-y", false)
+    assert_byte_pointer_size('def ')
+    assert_cursor(4)
+    assert_cursor_max(4)
+    assert_line('def ')
+    input_keys("\M-\C-y", false)
+    assert_byte_pointer_size('hoge')
+    assert_cursor(4)
+    assert_cursor_max(4)
+    assert_line('hoge')
+  end
+
+  def test_em_kill_region_with_kill_ring
+    input_keys("def hoge\C-b\C-b\C-b\C-b", false)
+    assert_byte_pointer_size('def ')
+    assert_cursor(4)
+    assert_cursor_max(8)
+    assert_line('def hoge')
+    input_keys("\C-k\C-w", false)
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    assert_line('')
+    input_keys("\C-y", false)
+    assert_byte_pointer_size('def hoge')
+    assert_cursor(8)
+    assert_cursor_max(8)
+    assert_line('def hoge')
   end
 
 =begin # TODO: move KeyStroke instance from Reline to LineEditor

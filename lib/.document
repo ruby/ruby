@@ -11,7 +11,8 @@ irb
 matrix
 net
 optparse
-racc
+racc/*.rb
+racc/rdoc
 rdoc
 rexml
 rinda

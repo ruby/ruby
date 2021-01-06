@@ -125,7 +125,7 @@ numhash_delete_safe(VALUE self, VALUE key)
 void
 Init_numhash(void)
 {
-    VALUE st = rb_define_class_under(rb_define_module("Bug"), "StNumHash", rb_cData);
+    VALUE st = rb_define_class_under(rb_define_module("Bug"), "StNumHash", rb_cObject);
     rb_define_alloc_func(st, numhash_alloc);
     rb_define_method(st, "initialize", numhash_init, 0);
     rb_define_method(st, "[]", numhash_aref, 1);

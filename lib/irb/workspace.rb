@@ -51,11 +51,13 @@ EOF
           end
           @binding = BINDING_QUEUE.pop
 
-        when 3	# binding in function on TOPLEVEL_BINDING(default)
+        when 3	# binding in function on TOPLEVEL_BINDING
           @binding = eval("self.class.remove_method(:irb_binding) if defined?(irb_binding); private; def irb_binding; binding; end; irb_binding",
                           TOPLEVEL_BINDING,
                           __FILE__,
                           __LINE__ - 3)
+        when 4  # binding is a copy of TOPLEVEL_BINDING (default)
+          @binding = TOPLEVEL_BINDING.dup
         end
       end
 

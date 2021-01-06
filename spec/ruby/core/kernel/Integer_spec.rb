@@ -39,9 +39,9 @@ describe :kernel_integer, shared: true do
     -> { Integer(nil) }.should raise_error(TypeError)
   end
 
-  it "returns a Fixnum or Bignum object" do
-    Integer(2).should be_an_instance_of(Fixnum)
-    Integer(9**99).should be_an_instance_of(Bignum)
+  it "returns an Integer object" do
+    Integer(2).should be_an_instance_of(Integer)
+    Integer(9**99).should be_an_instance_of(Integer)
   end
 
   it "truncates Floats" do

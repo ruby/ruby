@@ -30,6 +30,7 @@
 #include "internal.h"
 #include "internal/error.h"
 #include "internal/eval.h"
+#include "internal/hash.h"
 #include "internal/io.h"
 #include "internal/load.h"
 #include "internal/object.h"
@@ -63,6 +64,7 @@
 VALUE rb_iseqw_local_variables(VALUE iseqval);
 VALUE rb_iseqw_new(const rb_iseq_t *);
 int rb_str_end_with_asciichar(VALUE str, int c);
+VALUE rb_ident_hash_new(void);
 
 long rb_backtrace_length_limit = -1;
 VALUE rb_eEAGAIN;
@@ -76,7 +78,9 @@ static ID id_category;
 static ID id_deprecated;
 static ID id_experimental;
 static VALUE sym_category;
-static VALUE warning_categories;
+static struct {
+    st_table *id2enum, *enum2id;
+} warning_categories;
 
 extern const char ruby_description[];
 
@@ -160,18 +164,24 @@ rb_warning_category_mask(VALUE category)
 rb_warning_category_t
 rb_warning_category_from_name(VALUE category)
 {
-    rb_warning_category_t cat = RB_WARN_CATEGORY_NONE;
+    st_data_t cat_value;
+    ID cat_id;
     Check_Type(category, T_SYMBOL);
-    if (category == ID2SYM(id_deprecated)) {
-        cat = RB_WARN_CATEGORY_DEPRECATED;
-    }
-    else if (category == ID2SYM(id_experimental)) {
-        cat = RB_WARN_CATEGORY_EXPERIMENTAL;
-    }
-    else {
+    if (!(cat_id = rb_check_id(&category)) ||
+        !st_lookup(warning_categories.id2enum, cat_id, &cat_value)) {
         rb_raise(rb_eArgError, "unknown category: %"PRIsVALUE, category);
     }
-    return cat;
+    return (rb_warning_category_t)cat_value;
+}
+
+static VALUE
+rb_warning_category_to_name(rb_warning_category_t category)
+{
+    st_data_t id;
+    if (!st_lookup(warning_categories.enum2id, category, &id)) {
+        rb_raise(rb_eArgError, "invalid category: %d", (int)category);
+    }
+    return id ? ID2SYM(id) : Qnil;
 }
 
 void
@@ -315,11 +325,8 @@ rb_warning_warn_arity(void)
 static VALUE
 rb_warn_category(VALUE str, VALUE category)
 {
-    if (category != Qnil) {
-        category = rb_to_symbol_type(category);
-        if (rb_hash_aref(warning_categories, category) != Qtrue) {
-            rb_raise(rb_eArgError, "invalid warning category used: %s", rb_id2name(SYM2ID(category)));
-        }
+    if (RUBY_DEBUG && !NIL_P(category)) {
+        rb_warning_category_from_name(category);
     }
 
     if (rb_warning_warn_arity() == 1) {
@@ -378,6 +385,20 @@ rb_compile_warning(const char *file, int line, const char *fmt, ...)
     rb_write_warning_str(str);
 }
 
+void
+rb_category_compile_warn(rb_warning_category_t category, const char *file, int line, const char *fmt, ...)
+{
+    VALUE str;
+    va_list args;
+
+    if (NIL_P(ruby_verbose)) return;
+
+    va_start(args, fmt);
+    str = warn_vsprintf(NULL, file, line, fmt, args);
+    va_end(args);
+    rb_warn_category(str, rb_warning_category_to_name(category));
+}
+
 static VALUE
 warning_string(rb_encoding *enc, const char *fmt, va_list args)
 {
@@ -403,11 +424,11 @@ rb_warn(const char *fmt, ...)
 }
 
 void
-rb_category_warn(const char *category, const char *fmt, ...)
+rb_category_warn(rb_warning_category_t category, const char *fmt, ...)
 {
     if (!NIL_P(ruby_verbose)) {
         with_warning_string(mesg, 0, fmt) {
-            rb_warn_category(mesg, ID2SYM(rb_intern(category)));
+            rb_warn_category(mesg, rb_warning_category_to_name(category));
         }
     }
 }
@@ -435,11 +456,11 @@ rb_warning(const char *fmt, ...)
 
 /* rb_category_warning() reports only in verbose mode */
 void
-rb_category_warning(const char *category, const char *fmt, ...)
+rb_category_warning(rb_warning_category_t category, const char *fmt, ...)
 {
     if (RTEST(ruby_verbose)) {
         with_warning_string(mesg, 0, fmt) {
-            rb_warn_category(mesg, ID2SYM(rb_intern(category)));
+            rb_warn_category(mesg, rb_warning_category_to_name(category));
         }
     }
 }
@@ -550,6 +571,11 @@ rb_warn_m(rb_execution_context_t *ec, VALUE exc, VALUE msgs, VALUE uplevel, VALU
 	    rb_io_puts(argc, argv, str);
 	    RBASIC_SET_CLASS(str, rb_cString);
 	}
+
+        if (!NIL_P(category)) {
+            category = rb_to_symbol_type(category);
+            rb_warning_category_from_name(category);
+        }
 
 	if (exc == rb_mWarning) {
 	    rb_must_asciicompat(str);
@@ -2775,7 +2801,7 @@ Init_Exception(void)
     rb_define_method(rb_eNameError, "name", name_err_name, 0);
     rb_define_method(rb_eNameError, "receiver", name_err_receiver, 0);
     rb_define_method(rb_eNameError, "local_variables", name_err_local_variables, 0);
-    rb_cNameErrorMesg = rb_define_class_under(rb_eNameError, "message", rb_cData);
+    rb_cNameErrorMesg = rb_define_class_under(rb_eNameError, "message", rb_cObject);
     rb_define_method(rb_cNameErrorMesg, "==", name_err_mesg_equal, 1);
     rb_define_method(rb_cNameErrorMesg, "to_str", name_err_mesg_to_str, 0);
     rb_define_method(rb_cNameErrorMesg, "_dump", name_err_mesg_dump, 1);
@@ -2793,7 +2819,7 @@ Init_Exception(void)
     rb_eNoMemError = rb_define_class("NoMemoryError", rb_eException);
     rb_eEncodingError = rb_define_class("EncodingError", rb_eStandardError);
     rb_eEncCompatError = rb_define_class_under(rb_cEncoding, "CompatibilityError", rb_eEncodingError);
-    rb_eNoMatchingPatternError = rb_define_class("NoMatchingPatternError", rb_eRuntimeError);
+    rb_eNoMatchingPatternError = rb_define_class("NoMatchingPatternError", rb_eStandardError);
 
     syserr_tbl = st_init_numtable();
     rb_eSystemCallError = rb_define_class("SystemCallError", rb_eStandardError);
@@ -2835,10 +2861,14 @@ Init_Exception(void)
 
     sym_category = ID2SYM(id_category);
 
-    warning_categories = rb_hash_new();
-    rb_gc_register_mark_object(warning_categories);
-    rb_hash_aset(warning_categories, ID2SYM(rb_intern_const("deprecated")), Qtrue);
-    rb_obj_freeze(warning_categories);
+    warning_categories.id2enum = rb_init_identtable();
+    st_add_direct(warning_categories.id2enum, id_deprecated, RB_WARN_CATEGORY_DEPRECATED);
+    st_add_direct(warning_categories.id2enum, id_experimental, RB_WARN_CATEGORY_EXPERIMENTAL);
+
+    warning_categories.enum2id = rb_init_identtable();
+    st_add_direct(warning_categories.enum2id, RB_WARN_CATEGORY_NONE, 0);
+    st_add_direct(warning_categories.enum2id, RB_WARN_CATEGORY_DEPRECATED, id_deprecated);
+    st_add_direct(warning_categories.enum2id, RB_WARN_CATEGORY_EXPERIMENTAL, id_experimental);
 }
 
 void

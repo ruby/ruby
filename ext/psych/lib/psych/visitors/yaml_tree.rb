@@ -80,7 +80,7 @@ module Psych
           raise(TypeError, "Can't dump #{target.class}") unless method
 
           h[klass] = method
-        end
+        end.compare_by_identity
       end
 
       def start encoding = Nodes::Stream::UTF8

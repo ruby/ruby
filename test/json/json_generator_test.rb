@@ -48,35 +48,6 @@ EOT
     $VERBOSE = v
   end
 
-  def test_remove_const_segv
-    stress = GC.stress
-    const = JSON::SAFE_STATE_PROTOTYPE.dup
-
-    bignum_too_long_to_embed_as_string = 1234567890123456789012345
-    expect = bignum_too_long_to_embed_as_string.to_s
-    GC.stress = true
-
-    10.times do |i|
-      tmp = bignum_too_long_to_embed_as_string.to_json
-      raise "'\#{expect}' is expected, but '\#{tmp}'" unless tmp == expect
-    end
-
-    silence do
-      JSON.const_set :SAFE_STATE_PROTOTYPE, nil
-    end
-
-    10.times do |i|
-      assert_raise TypeError do
-        bignum_too_long_to_embed_as_string.to_json
-      end
-    end
-  ensure
-    GC.stress = stress
-    silence do
-      JSON.const_set :SAFE_STATE_PROTOTYPE, const
-    end
-  end if JSON.const_defined?("Ext") && RUBY_ENGINE != 'jruby'
-
   def test_generate
     json = generate(@hash)
     assert_equal(parse(@json2), parse(json))
@@ -171,7 +142,7 @@ EOT
   end
 
   def test_pretty_state
-    state = PRETTY_STATE_PROTOTYPE.dup
+    state = JSON.create_pretty_state
     assert_equal({
       :allow_nan             => false,
       :array_nl              => "\n",
@@ -188,7 +159,7 @@ EOT
   end
 
   def test_safe_state
-    state = SAFE_STATE_PROTOTYPE.dup
+    state = JSON::State.new
     assert_equal({
       :allow_nan             => false,
       :array_nl              => "",
@@ -205,7 +176,7 @@ EOT
   end
 
   def test_fast_state
-    state = FAST_STATE_PROTOTYPE.dup
+    state = JSON.create_fast_state
     assert_equal({
       :allow_nan             => false,
       :array_nl              => "",
@@ -241,12 +212,8 @@ EOT
 
   def test_depth
     ary = []; ary << ary
-    assert_equal 0, JSON::SAFE_STATE_PROTOTYPE.depth
     assert_raise(JSON::NestingError) { generate(ary) }
-    assert_equal 0, JSON::SAFE_STATE_PROTOTYPE.depth
-    assert_equal 0, JSON::PRETTY_STATE_PROTOTYPE.depth
     assert_raise(JSON::NestingError) { JSON.pretty_generate(ary) }
-    assert_equal 0, JSON::PRETTY_STATE_PROTOTYPE.depth
     s = JSON.state.new
     assert_equal 0, s.depth
     assert_raise(JSON::NestingError) { ary.to_json(s) }
@@ -265,7 +232,7 @@ EOT
   end
 
   def test_gc
-    if respond_to?(:assert_in_out_err)
+    if respond_to?(:assert_in_out_err) && !(RUBY_PLATFORM =~ /java/)
       assert_in_out_err(%w[-rjson --disable-gems], <<-EOS, [], [])
         bignum_too_long_to_embed_as_string = 1234567890123456789012345
         expect = bignum_too_long_to_embed_as_string.to_s

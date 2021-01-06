@@ -57,8 +57,8 @@ RSpec.describe "bundle install" do
           foo!
       L
 
-      bundle "config --local path vendor/bundle"
-      bundle "config --local without development"
+      bundle "config set --local path vendor/bundle"
+      bundle "config set --local without development"
       bundle :install
 
       expect(out).to include("Bundle complete!")

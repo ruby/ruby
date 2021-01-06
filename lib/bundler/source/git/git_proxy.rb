@@ -67,13 +67,13 @@ module Bundler
 
         def branch
           @branch ||= allowed_with_path do
-            git("rev-parse --abbrev-ref HEAD", :dir => path).strip
+            git("rev-parse", "--abbrev-ref", "HEAD", :dir => path).strip
           end
         end
 
         def contains?(commit)
           allowed_with_path do
-            result, status = git_null("branch --contains #{commit}", :dir => path)
+            result, status = git_null("branch", "--contains", commit, :dir => path)
             status.success? && result =~ /^\* (.*)$/
           end
         end
@@ -88,20 +88,22 @@ module Bundler
 
         def checkout
           return if path.exist? && has_revision_cached?
-          extra_ref = "#{Shellwords.shellescape(ref)}:#{Shellwords.shellescape(ref)}" if ref && ref.start_with?("refs/")
+          extra_ref = "#{ref}:#{ref}" if ref && ref.start_with?("refs/")
 
           Bundler.ui.info "Fetching #{URICredentialsFilter.credential_filtered_uri(uri)}"
+
+          configured_uri = configured_uri_for(uri).to_s
 
           unless path.exist?
             SharedHelpers.filesystem_access(path.dirname) do |p|
               FileUtils.mkdir_p(p)
             end
-            git_retry %(clone #{uri_escaped_with_configured_credentials} "#{path}" --bare --no-hardlinks --quiet)
+            git_retry "clone", configured_uri, path.to_s, "--bare", "--no-hardlinks", "--quiet"
             return unless extra_ref
           end
 
           with_path do
-            git_retry %(fetch --force --quiet --tags #{uri_escaped_with_configured_credentials} "refs/heads/*:refs/heads/*" #{extra_ref}), :dir => path
+            git_retry(*["fetch", "--force", "--quiet", "--tags", configured_uri, "refs/heads/*:refs/heads/*", extra_ref].compact, :dir => path)
           end
         end
 
@@ -115,7 +117,7 @@ module Bundler
               SharedHelpers.filesystem_access(destination) do |p|
                 FileUtils.rm_rf(p)
               end
-              git_retry %(clone --no-checkout --quiet "#{path}" "#{destination}")
+              git_retry "clone", "--no-checkout", "--quiet", path.to_s, destination.to_s
               File.chmod(((File.stat(destination).mode | 0o777) & ~File.umask), destination)
             rescue Errno::EEXIST => e
               file_path = e.message[%r{.*?((?:[a-zA-Z]:)?/.*)}, 1]
@@ -125,46 +127,45 @@ module Bundler
             end
           end
           # method 2
-          git_retry %(fetch --force --quiet --tags "#{path}"), :dir => destination
+          git_retry "fetch", "--force", "--quiet", "--tags", path.to_s, :dir => destination
 
           begin
-            git "reset --hard #{@revision}", :dir => destination
+            git "reset", "--hard", @revision, :dir => destination
           rescue GitCommandError => e
             raise MissingGitRevisionError.new(e.command, path, destination, @revision, URICredentialsFilter.credential_filtered_uri(uri))
           end
 
           if submodules
-            git_retry "submodule update --init --recursive", :dir => destination
+            git_retry "submodule", "update", "--init", "--recursive", :dir => destination
           elsif Gem::Version.create(version) >= Gem::Version.create("2.9.0")
             inner_command = "git -C $toplevel submodule deinit --force $sm_path"
-            inner_command = inner_command.gsub("$") { '\$' } unless Bundler::WINDOWS
-            git_retry "submodule foreach --quiet \"#{inner_command}\"", :dir => destination
+            git_retry "submodule", "foreach", "--quiet", inner_command, :dir => destination
           end
         end
 
         private
 
-        def git_null(command, dir: SharedHelpers.pwd)
+        def git_null(*command, dir: SharedHelpers.pwd)
           check_allowed(command)
 
           out, status = SharedHelpers.with_clean_git_env do
-            capture_and_ignore_stderr("git #{command}", :chdir => dir.to_s)
+            capture_and_ignore_stderr("git", "-C", dir.to_s, *command)
           end
 
           [URICredentialsFilter.credential_filtered_string(out, uri), status]
         end
 
-        def git_retry(command, dir: SharedHelpers.pwd)
-          Bundler::Retry.new("`git #{URICredentialsFilter.credential_filtered_string(command, uri)}`", GitNotAllowedError).attempts do
-            git(command, :dir => dir)
+        def git_retry(*command, dir: SharedHelpers.pwd)
+          Bundler::Retry.new("`git -C #{dir} #{URICredentialsFilter.credential_filtered_string(command.shelljoin, uri)}`", GitNotAllowedError).attempts do
+            git(*command, :dir => dir)
           end
         end
 
-        def git(command, dir: SharedHelpers.pwd)
+        def git(*command, dir: SharedHelpers.pwd)
           command_with_no_credentials = check_allowed(command)
 
           out, status = SharedHelpers.with_clean_git_env do
-            capture_and_filter_stderr(uri, "git #{command}", :chdir => dir.to_s)
+            capture_and_filter_stderr("git", "-C", dir.to_s, *command)
           end
 
           raise GitCommandError.new(command_with_no_credentials, path, dir) unless status.success?
@@ -174,7 +175,7 @@ module Bundler
 
         def has_revision_cached?
           return unless @revision
-          with_path { git("cat-file -e #{@revision}", :dir => path) }
+          with_path { git("cat-file", "-e", @revision, :dir => path) }
           true
         rescue GitError
           false
@@ -186,24 +187,10 @@ module Bundler
 
         def find_local_revision
           allowed_with_path do
-            git("rev-parse --verify #{Shellwords.shellescape(ref)}", :dir => path).strip
+            git("rev-parse", "--verify", ref, :dir => path).strip
           end
         rescue GitCommandError => e
           raise MissingGitRevisionError.new(e.command, path, path, ref, URICredentialsFilter.credential_filtered_uri(uri))
-        end
-
-        # Escape the URI for git commands
-        def uri_escaped_with_configured_credentials
-          remote = configured_uri_for(uri)
-          if Bundler::WINDOWS
-            # Windows quoting requires double quotes only, with double quotes
-            # inside the string escaped by being doubled.
-            '"' + remote.gsub('"') { '""' } + '"'
-          else
-            # Bash requires single quoted strings, with the single quotes escaped
-            # by ending the string, escaping the quote, and restarting the string.
-            "'" + remote.gsub("'") { "'\\''" } + "'"
-          end
         end
 
         # Adds credentials to the URI as Fetcher#configured_uri_for does
@@ -233,21 +220,21 @@ module Bundler
         end
 
         def check_allowed(command)
-          command_with_no_credentials = URICredentialsFilter.credential_filtered_string(command, uri)
+          command_with_no_credentials = URICredentialsFilter.credential_filtered_string(command.shelljoin, uri)
           raise GitNotAllowedError.new(command_with_no_credentials) unless allow?
           command_with_no_credentials
         end
 
-        def capture_and_filter_stderr(uri, cmd, chdir: SharedHelpers.pwd)
+        def capture_and_filter_stderr(*cmd)
           require "open3"
-          return_value, captured_err, status = Open3.capture3(cmd, :chdir => chdir)
-          Bundler.ui.warn URICredentialsFilter.credential_filtered_string(captured_err, uri) if uri && !captured_err.empty?
+          return_value, captured_err, status = Open3.capture3(*cmd)
+          Bundler.ui.warn URICredentialsFilter.credential_filtered_string(captured_err, uri) unless captured_err.empty?
           [return_value, status]
         end
 
-        def capture_and_ignore_stderr(cmd, chdir: SharedHelpers.pwd)
+        def capture_and_ignore_stderr(*cmd)
           require "open3"
-          return_value, _, status = Open3.capture3(cmd, :chdir => chdir)
+          return_value, _, status = Open3.capture3(*cmd)
           [return_value, status]
         end
       end

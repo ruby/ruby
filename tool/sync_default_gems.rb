@@ -119,8 +119,10 @@ def sync_default_gems(gem)
     rm_rf(%w[ext/json test/json])
     cp_r("#{upstream}/ext/json/ext", "ext/json")
     cp_r("#{upstream}/tests", "test/json")
+    rm_rf("test/json/lib")
     cp_r("#{upstream}/lib", "ext/json")
     cp_r("#{upstream}/json.gemspec", "ext/json")
+    cp_r("#{upstream}/VERSION", "ext/json")
     rm_rf(%w[ext/json/lib/json/ext ext/json/lib/json/pure.rb ext/json/lib/json/pure])
     `git checkout ext/json/extconf.rb ext/json/parser/prereq.mk ext/json/generator/depend ext/json/parser/depend ext/json/depend`
   when "psych"
@@ -313,6 +315,7 @@ def sync_default_gems(gem)
     rm_rf(%w[ext/pathname test/pathname])
     cp_r("#{upstream}/ext/pathname", "ext")
     cp_r("#{upstream}/test/pathname", "test")
+    cp_r("#{upstream}/lib", "ext/pathname")
     cp_r("#{upstream}/pathname.gemspec", "ext/pathname")
     `git checkout ext/pathname/depend`
   when "digest"
@@ -323,6 +326,9 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/test/digest", "test")
     cp_r("#{upstream}/digest.gemspec", "ext/digest")
     `git checkout ext/digest/depend ext/digest/*/depend`
+  when "set"
+    sync_lib gem, upstream
+    cp_r("#{upstream}/test", ".")
   else
     sync_lib gem, upstream
   end

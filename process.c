@@ -572,6 +572,7 @@ static VALUE rb_cProcessStatus;
 struct rb_process_status {
     rb_pid_t pid;
     int status;
+    int error;
 };
 
 static const rb_data_type_t rb_process_status_type = {
@@ -619,13 +620,14 @@ proc_s_last_status(VALUE mod)
 }
 
 VALUE
-rb_process_status_new(rb_pid_t pid, int status)
+rb_process_status_new(rb_pid_t pid, int status, int error)
 {
     VALUE last_status = rb_process_status_allocate(rb_cProcessStatus);
 
     struct rb_process_status *data = RTYPEDDATA_DATA(last_status);
     data->pid = pid;
     data->status = status;
+    data->error = error;
 
     rb_obj_freeze(last_status);
     return last_status;
@@ -657,7 +659,7 @@ process_status_load(VALUE real_obj, VALUE load_obj)
 void
 rb_last_status_set(int status, rb_pid_t pid)
 {
-    GET_THREAD()->last_status = rb_process_status_new(pid, status);
+    GET_THREAD()->last_status = rb_process_status_new(pid, status, 0);
 }
 
 void
@@ -666,11 +668,25 @@ rb_last_status_clear(void)
     GET_THREAD()->last_status = Qnil;
 }
 
+static rb_pid_t
+pst_pid(VALUE pst)
+{
+    struct rb_process_status *data = RTYPEDDATA_DATA(pst);
+    return data->pid;
+}
+
+static int
+pst_status(VALUE pst)
+{
+    struct rb_process_status *data = RTYPEDDATA_DATA(pst);
+    return data->status;
+}
+
 /*
  *  call-seq:
  *     stat.to_i     -> integer
  *
- *  Returns the bits in _stat_ as a Integer. Poking
+ *  Returns the bits in _stat_ as an Integer. Poking
  *  around in these bits is platform dependent.
  *
  *     fork { exit 0xab }         #=> 26566
@@ -681,12 +697,11 @@ rb_last_status_clear(void)
 static VALUE
 pst_to_i(VALUE self)
 {
-    struct rb_process_status *data = RTYPEDDATA_DATA(self);
-
-    return RB_INT2NUM(data->status);
+    int status = pst_status(self);
+    return RB_INT2NUM(status);
 }
 
-#define PST2INT(st) NUM2INT(pst_to_i(st))
+#define PST2INT(st) pst_status(st)
 
 /*
  *  call-seq:
@@ -700,11 +715,10 @@ pst_to_i(VALUE self)
  */
 
 static VALUE
-pst_pid(VALUE self)
+pst_pid_m(VALUE self)
 {
-    struct rb_process_status *data = RTYPEDDATA_DATA(self);
-
-    return PIDT2NUM(data->pid);
+    rb_pid_t pid = pst_pid(self);
+    return PIDT2NUM(pid);
 }
 
 static VALUE pst_message_status(VALUE str, int status);
@@ -769,7 +783,7 @@ pst_to_s(VALUE st)
     int status;
     VALUE str;
 
-    pid = NUM2PIDT(pst_pid(st));
+    pid = pst_pid(st);
     status = PST2INT(st);
 
     str = rb_str_buf_new(0);
@@ -794,13 +808,12 @@ pst_inspect(VALUE st)
 {
     rb_pid_t pid;
     int status;
-    VALUE vpid, str;
+    VALUE str;
 
-    vpid = pst_pid(st);
-    if (NIL_P(vpid)) {
+    pid = pst_pid(st);
+    if (!pid) {
         return rb_sprintf("#<%s: uninitialized>", rb_class2name(CLASS_OF(st)));
     }
-    pid = NUM2PIDT(vpid);
     status = PST2INT(st);
 
     str = rb_sprintf("#<%s: ", rb_class2name(CLASS_OF(st)));
@@ -1164,6 +1177,7 @@ waitpid_state_init(struct waitpid_state *w, rb_pid_t pid, int options)
     w->pid = pid;
     w->options = options;
     w->errnum = 0;
+    w->status = 0;
 }
 
 static const rb_hrtime_t *
@@ -1349,20 +1363,17 @@ rb_process_status_wait(rb_pid_t pid, int flags)
         waitpid_no_SIGCHLD(w);
     }
 
-    VALUE status = Qnil;
-    if (w->ret == -1) {
-        errno = w->errnum;
-    }
-    else if (w->ret > 0 && ruby_nocldwait) {
-        errno = ECHILD;
-    }
-    else {
-        status = rb_process_status_new(w->ret, w->status);
-    }
-
+    rb_pid_t ret = w->ret;
+    int s = w->status, e = w->errnum;
     COROUTINE_STACK_FREE(w);
 
-    return status;
+    if (ret == 0) return Qnil;
+    if (ret > 0 && ruby_nocldwait) {
+        ret = -1;
+        e = ECHILD;
+    }
+
+    return rb_process_status_new(ret, s, e);
 }
 
 /*
@@ -1432,14 +1443,19 @@ rb_pid_t
 rb_waitpid(rb_pid_t pid, int *st, int flags)
 {
     VALUE status = rb_process_status_wait(pid, flags);
-    if (NIL_P(status)) return -1;
+    if (NIL_P(status)) return 0;
 
     struct rb_process_status *data = RTYPEDDATA_DATA(status);
     pid = data->pid;
 
     if (st) *st = data->status;
 
-    GET_THREAD()->last_status = status;
+    if (pid == -1) {
+        errno = data->error;
+    }
+    else {
+        GET_THREAD()->last_status = status;
+    }
 
     return pid;
 }
@@ -2075,12 +2091,11 @@ check_exec_redirect1(VALUE ary, VALUE key, VALUE param)
         rb_ary_push(ary, hide_obj(rb_assoc_new(fd, param)));
     }
     else {
-        int i, n=0;
+        int i;
         for (i = 0 ; i < RARRAY_LEN(key); i++) {
             VALUE v = RARRAY_AREF(key, i);
             VALUE fd = check_exec_redirect_fd(v, !NIL_P(param));
             rb_ary_push(ary, hide_obj(rb_assoc_new(fd, param)));
-            n++;
         }
     }
     return ary;
@@ -8673,7 +8688,7 @@ InitVM_process(void)
     rb_define_method(rb_cProcessStatus, "to_s", pst_to_s, 0);
     rb_define_method(rb_cProcessStatus, "inspect", pst_inspect, 0);
 
-    rb_define_method(rb_cProcessStatus, "pid", pst_pid, 0);
+    rb_define_method(rb_cProcessStatus, "pid", pst_pid_m, 0);
 
     rb_define_method(rb_cProcessStatus, "stopped?", pst_wifstopped, 0);
     rb_define_method(rb_cProcessStatus, "stopsig", pst_wstopsig, 0);
@@ -8975,9 +8990,6 @@ InitVM_process(void)
 #if defined(HAVE_TIMES) || defined(_WIN32)
     /* Placeholder for rusage */
     rb_cProcessTms = rb_struct_define_under(rb_mProcess, "Tms", "utime", "stime", "cutime", "cstime", NULL);
-    /* An obsolete name of Process::Tms for backward compatibility */
-    rb_define_const(rb_cStruct, "Tms", rb_cProcessTms);
-    rb_deprecate_constant(rb_cStruct, "Tms");
 #endif
 
     SAVED_USER_ID = geteuid();

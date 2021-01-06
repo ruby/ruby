@@ -29,7 +29,7 @@ ruby_version_is "2.7" do
     it "can not be used in both outer and nested blocks at the same time" do
       -> {
         eval("-> { _1; -> { _2 } }")
-      }.should raise_error(SyntaxError, /numbered parameter is already used in.+ outer block here/m)
+      }.should raise_error(SyntaxError, /numbered parameter is already used in/m)
     end
 
     ruby_version_is '2.7'...'3.0' do

@@ -6,15 +6,25 @@ ruby_version_is ''...'3.0' do
 
   # See redmine #1667
   describe "IO#codepoints" do
+    before :each do
+      @verbose, $VERBOSE = $VERBOSE, nil
+    end
+
+    after :each do
+      $VERBOSE = @verbose
+    end
+
     it_behaves_like :io_codepoints, :codepoints
   end
 
   describe "IO#codepoints" do
     before :each do
       @io = IOSpecs.io_fixture "lines.txt"
+      @verbose, $VERBOSE = $VERBOSE, nil
     end
 
     after :each do
+      $VERBOSE = @verbose
       @io.close unless @io.closed?
     end
 

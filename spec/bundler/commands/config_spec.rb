@@ -45,7 +45,7 @@ RSpec.describe ".bundle/config" do
 
     it "can be moved with an environment variable" do
       ENV["BUNDLE_APP_CONFIG"] = tmp("foo/bar").to_s
-      bundle "config --local path vendor/bundle"
+      bundle "config set --local path vendor/bundle"
       bundle "install"
 
       expect(bundled_app(".bundle")).not_to exist
@@ -57,7 +57,7 @@ RSpec.describe ".bundle/config" do
       FileUtils.mkdir_p bundled_app("omg")
 
       ENV["BUNDLE_APP_CONFIG"] = "../foo"
-      bundle "config --local path vendor/bundle"
+      bundle "config set --local path vendor/bundle"
       bundle "install", :dir => bundled_app("omg")
 
       expect(bundled_app(".bundle")).not_to exist

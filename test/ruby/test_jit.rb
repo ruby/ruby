@@ -1070,6 +1070,14 @@ class TestJIT < Test::Unit::TestCase
     end;
   end
 
+  def test_mjit_pause_wait
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '', success_count: 0, min_calls: 1)
+    begin;
+      RubyVM::MJIT.pause
+      proc {}.call
+    end;
+  end
+
   def test_caller_locations_without_catch_table
     out, _ = eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", min_calls: 1)
     begin;

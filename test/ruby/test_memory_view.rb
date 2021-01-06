@@ -269,7 +269,7 @@ class TestMemoryView < Test::Unit::TestCase
     memory_view_info = MemoryViewTestUtils.get_memory_view_info(es)
     assert_equal({
                    obj: es,
-                   len: 4,
+                   byte_size: 4,
                    readonly: true,
                    format: nil,
                    item_size: 1,

@@ -68,6 +68,7 @@ module TestIRB
     end
 
     def test_evaluate_with_encoding_error_without_lineno
+      skip if RUBY_ENGINE == 'truffleruby'
       assert_raise_with_message(EncodingError, /invalid symbol/) {
         @context.evaluate(%q[{"\xAE": 1}], 1)
         # The backtrace of this invalid encoding hash doesn't contain lineno.
@@ -75,6 +76,7 @@ module TestIRB
     end
 
     def test_evaluate_with_onigmo_warning
+      skip if RUBY_ENGINE == 'truffleruby'
       assert_warning("(irb):1: warning: character class has duplicated range: /[aa]/\n") do
         @context.evaluate('/[aa]/', 1)
       end
@@ -232,7 +234,7 @@ module TestIRB
         irb.eval_input
       end
       assert_empty err
-      assert_equal("=> #{value.inspect}\n", out)
+      assert_equal("=> \n#{value.pretty_inspect}", out)
 
       input.reset
       irb.context.echo = true
@@ -241,7 +243,7 @@ module TestIRB
         irb.eval_input
       end
       assert_empty err
-      assert_equal("=> #{value.inspect[0..(input.winsize.last - 9)]}...\e[0m\n=> #{value.inspect}\n", out)
+      assert_equal("=> \n#{value.pretty_inspect[0..3]}...\n=> \n#{value.pretty_inspect}", out)
 
       input.reset
       irb.context.echo = true
@@ -250,7 +252,7 @@ module TestIRB
         irb.eval_input
       end
       assert_empty err
-      assert_equal("=> #{value.inspect}\n=> #{value.inspect}\n", out)
+      assert_equal("=> \n#{value.pretty_inspect}=> \n#{value.pretty_inspect}", out)
 
       input.reset
       irb.context.echo = false

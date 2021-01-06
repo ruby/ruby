@@ -32,6 +32,12 @@ describe "Range#each" do
     a.should == [x, y]
   end
 
+  it "works for non-ASCII ranges" do
+    a = []
+    ('Σ'..'Ω').each { |i| a << i }
+    a.should == ["Σ", "Τ", "Υ", "Φ", "Χ", "Ψ", "Ω"]
+  end
+
   ruby_version_is "2.6" do
     it "works with endless ranges" do
       a = []
@@ -51,6 +57,12 @@ describe "Range#each" do
       a = []
       eval("('A'...)").each { |x| break if x > "D"; a << x }
       a.should == ["A", "B", "C", "D"]
+    end
+  end
+
+  ruby_version_is "2.7" do
+    it "raises a TypeError beginless ranges" do
+      -> { eval("(..2)").each { |x| x } }.should raise_error(TypeError)
     end
   end
 

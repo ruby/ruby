@@ -799,18 +799,15 @@ proc_new(VALUE klass, int8_t is_lambda, int8_t kernel)
 /*
  *  call-seq:
  *     Proc.new {|...| block } -> a_proc
- *     Proc.new                -> a_proc
  *
- *  Creates a new Proc object, bound to the current context. Proc::new
- *  may be called without a block only within a method with an
- *  attached block, in which case that block is converted to the Proc
- *  object.
+ *  Creates a new Proc object, bound to the current context.
  *
- *     def proc_from
- *       Proc.new
- *     end
- *     proc = proc_from { "hello" }
+ *     proc = Proc.new { "hello" }
  *     proc.call   #=> "hello"
+ *
+ *  Raises ArgumentError if called without a block.
+ *
+ *     Proc.new    #=> ArgumentError
  */
 
 static VALUE
@@ -1273,6 +1270,32 @@ rb_proc_get_iseq(VALUE self, int *is_proc)
     return NULL;
 }
 
+/* call-seq:
+ *   prc == other -> true or false
+ *   prc.eql?(other) -> true or false
+ *
+ * Two procs are the same if, and only if, they were created from the same code block.
+ *
+ *   def return_block(&block)
+ *     block
+ *   end
+ *
+ *   def pass_block_twice(&block)
+ *     [return_block(&block), return_block(&block)]
+ *   end
+ *
+ *   block1, block2 = pass_block_twice { puts 'test' }
+ *   # Blocks might be instantiated into Proc's lazily, so they may, or may not,
+ *   # be the same object.
+ *   # But they are produced from the same code block, so they are equal
+ *   block1 == block2
+ *   #=> true
+ *
+ *   # Another Proc will never be equal, even if the code is the "same"
+ *   block1 == proc { puts 'test' }
+ *   #=> false
+ *
+ */
 static VALUE
 proc_eq(VALUE self, VALUE other)
 {
@@ -2977,9 +3000,12 @@ method_inspect(VALUE method)
     else {
         mklass = data->klass;
         if (FL_TEST(mklass, FL_SINGLETON)) {
-            do {
-               mklass = RCLASS_SUPER(mklass);
-            } while (RB_TYPE_P(mklass, T_ICLASS));
+            VALUE v = rb_ivar_get(mklass, attached);
+            if (!(RB_TYPE_P(v, T_CLASS) || RB_TYPE_P(v, T_MODULE))) {
+                do {
+                   mklass = RCLASS_SUPER(mklass);
+                } while (RB_TYPE_P(mklass, T_ICLASS));
+            }
         }
 	rb_str_buf_append(str, rb_inspect(mklass));
 	if (defined_class != mklass) {

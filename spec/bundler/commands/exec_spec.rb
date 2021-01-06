@@ -67,6 +67,32 @@ RSpec.describe "bundle exec" do
     expect(out).to eq(Gem::VERSION)
   end
 
+  it "works when exec'ing back to bundler with a lockfile that doesn't include the current platform" do
+    install_gemfile <<-G
+      gem "rack", "0.9.1"
+    G
+
+    # simulate lockfile generated with old version not including specific platform
+    lockfile <<-L
+      GEM
+        specs:
+          rack (0.9.1)
+
+      PLATFORMS
+        RUBY
+
+      DEPENDENCIES
+        rack (= 0.9.1)
+
+      BUNDLED WITH
+          2.1.4
+    L
+
+    bundle "exec bundle cache", :env => { "BUNDLER_VERSION" => Bundler::VERSION }
+
+    expect(out).to include("Updating files in vendor/cache")
+  end
+
   it "respects custom process title when loading through ruby" do
     skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
 
@@ -269,7 +295,7 @@ RSpec.describe "bundle exec" do
   end
 
   it "handles gems installed with --without" do
-    bundle "config --local without middleware"
+    bundle "config set --local without middleware"
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "rack" # rack 0.9.1 and 1.0 exist
@@ -422,35 +448,35 @@ RSpec.describe "bundle exec" do
           with_fake_man do
             bundle "#{exec} --help cat"
           end
-          expect(out).to include(%(["#{root}/man/bundle-exec.1"]))
+          expect(out).to include(%(["#{man_dir}/bundle-exec.1"]))
         end
 
         it "shows bundle-exec's man page when --help is before exec" do
           with_fake_man do
             bundle "--help #{exec}"
           end
-          expect(out).to include(%(["#{root}/man/bundle-exec.1"]))
+          expect(out).to include(%(["#{man_dir}/bundle-exec.1"]))
         end
 
         it "shows bundle-exec's man page when -h is before exec" do
           with_fake_man do
             bundle "-h #{exec}"
           end
-          expect(out).to include(%(["#{root}/man/bundle-exec.1"]))
+          expect(out).to include(%(["#{man_dir}/bundle-exec.1"]))
         end
 
         it "shows bundle-exec's man page when --help is after exec" do
           with_fake_man do
             bundle "#{exec} --help"
           end
-          expect(out).to include(%(["#{root}/man/bundle-exec.1"]))
+          expect(out).to include(%(["#{man_dir}/bundle-exec.1"]))
         end
 
         it "shows bundle-exec's man page when -h is after exec" do
           with_fake_man do
             bundle "#{exec} -h"
           end
-          expect(out).to include(%(["#{root}/man/bundle-exec.1"]))
+          expect(out).to include(%(["#{man_dir}/bundle-exec.1"]))
         end
       end
     end

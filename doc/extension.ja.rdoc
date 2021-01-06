@@ -1829,6 +1829,17 @@ rb_ary_store() などの，適切な API 関数を利用するようにして下
 そのほか，対応についての詳細は extension.rdoc の「Appendix D. Generational
 GC」を参照して下さい．
 
+== Appendix E. Ractor サポート
+
+Ruby 3.0 から、Ruby プログラムを並列に実行するための仕組みである Ractor
+が導入されました。適切に並列に実行するためには、Ractor サポートが必要に
+なります。サポートしていないライブラリは、メイン Ractor 以外で実行すると
+エラーになります（Ractor::UnsafeError）。
+
+Ractor をサポートするための詳細は、extension.rdoc の「Appendix F. Ractor
+support」を参照してください。
+
+
 :enddoc: Local variables:
 :enddoc: fill-column: 60
 :enddoc: end:

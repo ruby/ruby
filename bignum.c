@@ -5512,7 +5512,7 @@ rb_big_le(VALUE x, VALUE y)
  *
  *  Returns <code>true</code> only if <i>obj</i> has the same value
  *  as <i>big</i>. Contrast this with Integer#eql?, which requires
- *  <i>obj</i> to be a Integer.
+ *  <i>obj</i> to be an Integer.
  *
  *     68719476736 == 68719476736.0   #=> true
  */

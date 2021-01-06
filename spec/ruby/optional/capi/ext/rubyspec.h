@@ -22,20 +22,16 @@
    (RUBY_VERSION_MAJOR == (major) && RUBY_VERSION_MINOR < (minor)) || \
    (RUBY_VERSION_MAJOR == (major) && RUBY_VERSION_MINOR == (minor) && RUBY_VERSION_TEENY < (teeny)))
 
+#if RUBY_VERSION_MAJOR > 3 || (RUBY_VERSION_MAJOR == 3 && RUBY_VERSION_MINOR >= 0)
+#define RUBY_VERSION_IS_3_0
+#endif
+
 #if RUBY_VERSION_MAJOR > 2 || (RUBY_VERSION_MAJOR == 2 && RUBY_VERSION_MINOR >= 7)
 #define RUBY_VERSION_IS_2_7
 #endif
 
 #if RUBY_VERSION_MAJOR > 2 || (RUBY_VERSION_MAJOR == 2 && RUBY_VERSION_MINOR >= 6)
 #define RUBY_VERSION_IS_2_6
-#endif
-
-#if RUBY_VERSION_MAJOR > 2 || (RUBY_VERSION_MAJOR == 2 && RUBY_VERSION_MINOR >= 5)
-#define RUBY_VERSION_IS_2_5
-#endif
-
-#if RUBY_VERSION_MAJOR > 2 || (RUBY_VERSION_MAJOR == 2 && RUBY_VERSION_MINOR >= 4)
-#define RUBY_VERSION_IS_2_4
 #endif
 
 #if defined(__cplusplus) && !defined(RUBY_VERSION_IS_2_7)

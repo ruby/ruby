@@ -61,8 +61,8 @@ RBIMPL_ATTR_ALLOC_SIZE((1))
  *   - It raises Ruby exceptions instead of returning NULL, and
  *   - In case of `ENOMEM` it tries to GC to make some room.
  *
- * @param[in]  size          Requested amount of memory.
- * @throw      rb_eMemError  No space left for `size` bytes allocation.
+ * @param[in]  size            Requested amount of memory.
+ * @exception  rb_eNoMemError  No space left for `size` bytes allocation.
  * @return     A valid pointer  to an allocated storage instance;  which has at
  *             least `size` bytes width, with appropriate alignment detected by
  *             the underlying malloc() routine.
@@ -89,10 +89,10 @@ RBIMPL_ATTR_ALLOC_SIZE((1,2))
  * exceptions  instead.  If  there  is  no integer  overflow  the behaviour  is
  * exactly the same as `ruby_xmalloc(nelems*elemsiz)`.
  *
- * @param[in]  nelems        Number of elements.
- * @param[in]  elemsiz       Size of an element.
- * @throw      rb_eMemError  No space left for allocation.
- * @throw      rb_eArgError  `nelems` * `elemsiz` would overflow.
+ * @param[in]  nelems          Number of elements.
+ * @param[in]  elemsiz         Size of an element.
+ * @exception  rb_eNoMemError  No space left for allocation.
+ * @exception  rb_eArgError    `nelems` * `elemsiz` would overflow.
  * @return     A valid pointer  to an allocated storage instance;  which has at
  *             least  `nelems`  *  `elemsiz`   bytes  width,  with  appropriate
  *             alignment detected by the underlying malloc() routine.
@@ -118,10 +118,10 @@ RBIMPL_ATTR_ALLOC_SIZE((1,2))
  * returns.  This could also be seen  as a routine identical to ruby_xmalloc(),
  * except it calls calloc() instead of malloc() internally.
  *
- * @param[in]  nelems        Number of elements.
- * @param[in]  elemsiz       Size of an element.
- * @throw      rb_eMemError  No space left for allocation.
- * @throw      rb_eArgError  `nelems` * `elemsiz` would overflow.
+ * @param[in]  nelems          Number of elements.
+ * @param[in]  elemsiz         Size of an element.
+ * @exception  rb_eNoMemError  No space left for allocation.
+ * @exception  rb_eArgError    `nelems` * `elemsiz` would overflow.
  * @return     A valid pointer  to an allocated storage instance;  which has at
  *             least  `nelems`  *  `elemsiz`   bytes  width,  with  appropriate
  *             alignment detected by the underlying calloc() routine.
@@ -144,21 +144,21 @@ RBIMPL_ATTR_ALLOC_SIZE((2))
 /**
  * Resize the storage instance.
  *
- * @param[in]  ptr           A  valid pointer  to a  storage instance  that was
- *                           previously  returned  from either  ruby_xmalloc(),
- *                           ruby_xmalloc2(),  ruby_xcalloc(), ruby_xrealloc(),
- *                           or ruby_xrealloc2().
- * @param[in]  newsiz        Requested new amount of memory.
- * @throw      rb_eMemError  No space left for `newsiz` bytes allocation.
- * @retval     ptr           In case  the function  returns the  passed pointer
- *                           as-is, the storage instance that the pointer holds
- *                           is  either  grown or  shrunken  to  have at  least
- *                           `newsiz` bytes.
- * @retval     otherwise     A  valid  pointer  to a  newly  allocated  storage
- *                           instance which has at  least `newsiz` bytes width,
- *                           and  holds previous  contents of  `ptr`.  In  this
- *                           case `ptr` is  invalidated as if it  was passed to
- *                           ruby_xfree().
+ * @param[in]  ptr             A valid  pointer to a storage  instance that was
+ *                             previously returned  from either ruby_xmalloc(),
+ *                             ruby_xmalloc2(),                 ruby_xcalloc(),
+ *                             ruby_xrealloc(), or ruby_xrealloc2().
+ * @param[in]  newsiz          Requested new amount of memory.
+ * @exception  rb_eNoMemError  No space left for `newsiz` bytes allocation.
+ * @retval     ptr             In case the function  returns the passed pointer
+ *                             as-is,  the storage  instance  that the  pointer
+ *                             holds  is either  grown or  shrunken to  have at
+ *                             least `newsiz` bytes.
+ * @retval     otherwise       A  valid pointer  to a  newly allocated  storage
+ *                             instance  which  has  at  least  `newsiz`  bytes
+ *                             width, and holds previous contents of `ptr`.  In
+ *                             this  case `ptr`  is  invalidated as  if it  was
+ *                             passed to ruby_xfree().
  * @note       It doesn't return NULL.
  * @warning    Unlike some realloc() implementations, passing zero to `elemsiz`
  *             is not the  same as calling ruby_xfree(),  because this function
@@ -192,23 +192,24 @@ RBIMPL_ATTR_ALLOC_SIZE((2,3))
  * This  is   roughly  the  same   as  reallocarray()  function   that  OpenBSD
  * etc. provides, but also interacts with our GC.
  *
- * @param[in]  ptr           A  valid pointer  to a  storage instance  that was
- *                           previously  returned  from either  ruby_xmalloc(),
- *                           ruby_xmalloc2(),  ruby_xcalloc(), ruby_xrealloc(),
- *                           or ruby_xrealloc2().
- * @param[in]  newelems      Requested new number of elements.
- * @param[in]  newsiz        Requested new size of each element.
- * @throw      rb_eMemError  No space left for  allocation.
- * @throw      rb_eArgError  `newelems` * `newsiz` would overflow.
- * @retval     ptr           In case  the function  returns the  passed pointer
- *                           as-is, the storage instance that the pointer holds
- *                           is  either  grown or  shrunken  to  have at  least
- *                           `newelems` * `newsiz` bytes.
- * @retval     otherwise     A  valid  pointer  to a  newly  allocated  storage
- *                           instance which has at  least `newelems` * `newsiz`
- *                           bytes width, and holds previous contents of `ptr`.
- *                           In this  case `ptr`  is invalidated  as if  it was
- *                           passed to ruby_xfree().
+ * @param[in]  ptr             A valid  pointer to a storage  instance that was
+ *                             previously returned  from either ruby_xmalloc(),
+ *                             ruby_xmalloc2(),                 ruby_xcalloc(),
+ *                             ruby_xrealloc(), or ruby_xrealloc2().
+
+ * @param[in]  newelems        Requested new number of elements.
+ * @param[in]  newsiz          Requested new size of each element.
+ * @exception  rb_eNoMemError  No space left for  allocation.
+ * @exception  rb_eArgError    `newelems` * `newsiz` would overflow.
+ * @retval     ptr             In case the function  returns the passed pointer
+ *                             as-is,  the storage  instance  that the  pointer
+ *                             holds  is either  grown or  shrunken to  have at
+ *                             least `newelems` * `newsiz` bytes.
+ * @retval     otherwise       A  valid pointer  to a  newly allocated  storage
+ *                             instance  which   has  at  least   `newelems`  *
+ *                             `newsiz`   bytes  width,   and  holds   previous
+ *                             contents  of  `ptr`.   In  this  case  `ptr`  is
+ *                             invalidated as if it was passed to ruby_xfree().
  * @note       It doesn't return NULL.
  * @warning    Unlike some  realloc() implementations,  passing zero  to either
  *             `newelems`   or  `elemsiz`   are   not  the   same  as   calling

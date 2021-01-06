@@ -27,7 +27,6 @@ class TestModule < Test::Unit::TestCase
 
   def setup
     @verbose = $VERBOSE
-    $VERBOSE = nil
     @deprecated = Warning[:deprecated]
     Warning[:deprecated] = true
   end
@@ -487,6 +486,7 @@ class TestModule < Test::Unit::TestCase
     end
     a2 = a.dup.new
     a.class_eval do
+      alias _b b
       def b; 1 end
     end
     assert_equal(2, a2.b)
@@ -799,6 +799,11 @@ class TestModule < Test::Unit::TestCase
     assert_raise(ExpectedException) { AClass.cm1 }
     assert_raise(ExpectedException) { AClass.cm3 }
     assert_equal("cm1cm2cm3", AClass.cm2)
+
+    c = Class.new(AClass)
+    c.class_eval {private_class_method [:cm1, :cm2]}
+    assert_raise(NoMethodError, /private method/) {c.cm1}
+    assert_raise(NoMethodError, /private method/) {c.cm2}
   end
 
   def test_private_instance_methods
@@ -821,11 +826,94 @@ class TestModule < Test::Unit::TestCase
     assert_equal("cm1",       MyClass.cm1)
     assert_equal("cm1cm2cm3", MyClass.cm2)
     assert_raise(ExpectedException) { eval "MyClass.cm3" }
+
+    c = Class.new(AClass)
+    c.class_eval {public_class_method [:cm1, :cm2]}
+    assert_equal("cm1",       c.cm1)
+    assert_equal("cm1cm2cm3", c.cm2)
   end
 
   def test_public_instance_methods
     assert_equal([:aClass],  AClass.public_instance_methods(false))
     assert_equal([:bClass1], BClass.public_instance_methods(false))
+  end
+
+  def test_s_public
+    o = (c = Class.new(AClass)).new
+    assert_raise(NoMethodError, /private method/) {o.aClass1}
+    assert_raise(NoMethodError, /protected method/) {o.aClass2}
+    c.class_eval {public :aClass1}
+    assert_equal(:aClass1, o.aClass1)
+
+    o = (c = Class.new(AClass)).new
+    c.class_eval {public :aClass1, :aClass2}
+    assert_equal(:aClass1, o.aClass1)
+    assert_equal(:aClass2, o.aClass2)
+
+    o = (c = Class.new(AClass)).new
+    c.class_eval {public [:aClass1, :aClass2]}
+    assert_equal(:aClass1, o.aClass1)
+    assert_equal(:aClass2, o.aClass2)
+
+    o = AClass.new
+    assert_equal(:aClass, o.aClass)
+    assert_raise(NoMethodError, /private method/) {o.aClass1}
+    assert_raise(NoMethodError, /protected method/) {o.aClass2}
+  end
+
+  def test_s_private
+    o = (c = Class.new(AClass)).new
+    assert_equal(:aClass, o.aClass)
+    c.class_eval {private :aClass}
+    assert_raise(NoMethodError, /private method/) {o.aClass}
+
+    o = (c = Class.new(AClass)).new
+    c.class_eval {private :aClass, :aClass2}
+    assert_raise(NoMethodError, /private method/) {o.aClass}
+    assert_raise(NoMethodError, /private method/) {o.aClass2}
+
+    o = (c = Class.new(AClass)).new
+    c.class_eval {private [:aClass, :aClass2]}
+    assert_raise(NoMethodError, /private method/) {o.aClass}
+    assert_raise(NoMethodError, /private method/) {o.aClass2}
+
+    o = AClass.new
+    assert_equal(:aClass, o.aClass)
+    assert_raise(NoMethodError, /private method/) {o.aClass1}
+    assert_raise(NoMethodError, /protected method/) {o.aClass2}
+  end
+
+  def test_s_protected
+    aclass = Class.new(AClass) do
+      def _aClass(o) o.aClass; end
+      def _aClass1(o) o.aClass1; end
+      def _aClass2(o) o.aClass2; end
+    end
+
+    o = (c = Class.new(aclass)).new
+    assert_equal(:aClass, o.aClass)
+    c.class_eval {protected :aClass}
+    assert_raise(NoMethodError, /protected method/) {o.aClass}
+    assert_equal(:aClass, c.new._aClass(o))
+
+    o = (c = Class.new(aclass)).new
+    c.class_eval {protected :aClass, :aClass1}
+    assert_raise(NoMethodError, /protected method/) {o.aClass}
+    assert_raise(NoMethodError, /protected method/) {o.aClass1}
+    assert_equal(:aClass, c.new._aClass(o))
+    assert_equal(:aClass1, c.new._aClass1(o))
+
+    o = (c = Class.new(aclass)).new
+    c.class_eval {protected [:aClass, :aClass1]}
+    assert_raise(NoMethodError, /protected method/) {o.aClass}
+    assert_raise(NoMethodError, /protected method/) {o.aClass1}
+    assert_equal(:aClass, c.new._aClass(o))
+    assert_equal(:aClass1, c.new._aClass1(o))
+
+    o = AClass.new
+    assert_equal(:aClass, o.aClass)
+    assert_raise(NoMethodError, /private method/) {o.aClass1}
+    assert_raise(NoMethodError, /protected method/) {o.aClass2}
   end
 
   def test_s_constants
@@ -900,14 +988,18 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_attr_obsoleted_flag
-    c = Class.new
-    c.class_eval do
+    c = Class.new do
+      extend Test::Unit::Assertions
       def initialize
         @foo = :foo
         @bar = :bar
       end
-      attr :foo, true
-      attr :bar, false
+      assert_deprecated_warning(/optional boolean argument/) do
+        attr :foo, true
+      end
+      assert_deprecated_warning(/optional boolean argument/) do
+        attr :bar, false
+      end
     end
     o = c.new
     assert_equal(true, o.respond_to?(:foo))
@@ -952,6 +1044,7 @@ class TestModule < Test::Unit::TestCase
     assert_equal(:foo, c2.const_get(:Foo))
     assert_raise(NameError) { c2.const_get(:Foo, false) }
 
+    c1.__send__(:remove_const, :Foo)
     eval("c1::Foo = :foo")
     assert_raise(NameError) { c1::Bar }
     assert_raise(NameError) { c2::Bar }
@@ -1149,6 +1242,28 @@ class TestModule < Test::Unit::TestCase
     assert_raise(NameError) do
       c.instance_eval { attr_reader :"." }
     end
+
+    assert_equal([:a], c.class_eval { attr :a })
+    assert_equal([:b, :c], c.class_eval { attr :b, :c })
+    assert_equal([:d], c.class_eval { attr_reader :d })
+    assert_equal([:e, :f], c.class_eval { attr_reader :e, :f })
+    assert_equal([:g=], c.class_eval { attr_writer :g })
+    assert_equal([:h=, :i=], c.class_eval { attr_writer :h, :i })
+    assert_equal([:j, :j=], c.class_eval { attr_accessor :j })
+    assert_equal([:k, :k=, :l, :l=], c.class_eval { attr_accessor :k, :l })
+  end
+
+  def test_alias_method
+    c = Class.new do
+      def foo; :foo end
+    end
+    o = c.new
+    assert_respond_to(o, :foo)
+    assert_not_respond_to(o, :bar)
+    r = c.class_eval {alias_method :bar, :foo}
+    assert_respond_to(o, :bar)
+    assert_equal(:foo, o.bar)
+    assert_equal(:bar, r)
   end
 
   def test_undef
@@ -1298,13 +1413,25 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_top_public_private
-    assert_in_out_err([], <<-INPUT, %w([:foo] [:bar]), [])
+    assert_in_out_err([], <<-INPUT, %w([:foo] [:bar] [:bar,\ :foo] [] [:bar,\ :foo] []), [])
       private
       def foo; :foo; end
       public
       def bar; :bar; end
       p self.private_methods.grep(/^foo$|^bar$/)
       p self.methods.grep(/^foo$|^bar$/)
+
+      private :foo, :bar
+      p self.private_methods.grep(/^foo$|^bar$/).sort
+
+      public :foo, :bar
+      p self.private_methods.grep(/^foo$|^bar$/).sort
+
+      private [:foo, :bar]
+      p self.private_methods.grep(/^foo$|^bar$/).sort
+
+      public [:foo, :bar]
+      p self.private_methods.grep(/^foo$|^bar$/).sort
     INPUT
   end
 

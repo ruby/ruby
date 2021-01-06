@@ -1,9 +1,25 @@
 # frozen_string_literal: false
 require_relative "testbase"
 require 'bigdecimal/math'
+require 'rbconfig/sizeof'
 
 class TestBigDecimal < Test::Unit::TestCase
   include TestBigDecimalBase
+
+  if defined? RbConfig::LIMITS
+    LIMITS = RbConfig::LIMITS
+  else
+    require 'fiddle'
+    LONG_MAX = (1 << (Fiddle::SIZEOF_LONG*8 - 1)) - 1
+    LONG_MIN = [LONG_MAX + 1].pack("L!").unpack("l!")[0]
+    LIMITS = {
+      "FIXNUM_MIN" => LONG_MIN / 2,
+      "FIXNUM_MAX" => LONG_MAX / 2,
+      "INT64_MIN"  => -9223372036854775808,
+      "INT64_MAX"  => 9223372036854775807,
+      "UINT64_MAX" => 18446744073709551615,
+    }.freeze
+  end
 
   ROUNDING_MODE_MAP = [
     [ BigDecimal::ROUND_UP,        :up],
@@ -104,10 +120,21 @@ class TestBigDecimal < Test::Unit::TestCase
   end
 
   def test_BigDecimal_with_integer
+    assert_equal(BigDecimal("0"), BigDecimal(0))
     assert_equal(BigDecimal("1"), BigDecimal(1))
     assert_equal(BigDecimal("-1"), BigDecimal(-1))
     assert_equal(BigDecimal((2**100).to_s), BigDecimal(2**100))
     assert_equal(BigDecimal((-2**100).to_s), BigDecimal(-2**100))
+
+    assert_equal(BigDecimal(LIMITS["FIXNUM_MIN"].to_s), BigDecimal(LIMITS["FIXNUM_MIN"]))
+
+    assert_equal(BigDecimal(LIMITS["FIXNUM_MAX"].to_s), BigDecimal(LIMITS["FIXNUM_MAX"]))
+
+    assert_equal(BigDecimal(LIMITS["INT64_MIN"].to_s), BigDecimal(LIMITS["INT64_MIN"]))
+
+    assert_equal(BigDecimal(LIMITS["INT64_MAX"].to_s), BigDecimal(LIMITS["INT64_MAX"]))
+
+    assert_equal(BigDecimal(LIMITS["UINT64_MAX"].to_s), BigDecimal(LIMITS["UINT64_MAX"]))
   end
 
   def test_BigDecimal_with_rational
@@ -231,7 +258,7 @@ class TestBigDecimal < Test::Unit::TestCase
   end
 
   def test_s_allocate
-    assert_raise_with_message(NoMethodError, /undefined method `allocate'/) { BigDecimal.allocate }
+    assert_raise_with_message(TypeError, /allocator undefined for BigDecimal/) { BigDecimal.allocate }
   end
 
   def test_s_new
@@ -610,12 +637,26 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_operator(BigDecimal((2**100).to_s), :==, d)
   end
 
+  def test_precs_deprecated
+    saved = Warning[:deprecated]
+    Warning[:deprecated] = true
+    assert_warn(/BigDecimal#precs is deprecated and will be removed in the future/) do
+      BigDecimal("1").precs
+    end
+  ensure
+    Warning[:deprecated] = saved
+  end
+
   def test_precs
-    a = BigDecimal("1").precs
-    assert_instance_of(Array, a)
-    assert_equal(2, a.size)
-    assert_kind_of(Integer, a[0])
-    assert_kind_of(Integer, a[1])
+    assert_separately(["-rbigdecimal"], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      $VERBOSE = nil
+      a = BigDecimal("1").precs
+      assert_instance_of(Array, a)
+      assert_equal(2, a.size)
+      assert_kind_of(Integer, a[0])
+      assert_kind_of(Integer, a[1])
+    end;
   end
 
   def test_hash
@@ -764,7 +805,7 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(BigDecimal("0.1"), a, '[ruby-core:34318]')
 
     a, b = BigDecimal("0.11111").coerce(1.quo(3))
-    assert_equal(BigDecimal("0." + "3"*a.precs[0]), a)
+    assert_equal(BigDecimal("0." + "3"*a.precision), a)
 
     assert_nothing_raised(TypeError, '#7176') do
       BigDecimal('1') + Rational(1)
@@ -1481,16 +1522,17 @@ class TestBigDecimal < Test::Unit::TestCase
   end
 
   def test_limit
-    BigDecimal.limit(1)
-    x = BigDecimal("3")
-    assert_equal(90, x ** 4) # OK? must it be 80?
-    # 3 * 3 * 3 * 3 = 10 * 3 * 3 = 30 * 3 = 90 ???
-    assert_raise(ArgumentError) { BigDecimal.limit(-1) }
-
-    bug7458 = '[ruby-core:50269] [#7458]'
-    one = BigDecimal('1')
-    epsilon = BigDecimal('0.7E-18')
     BigDecimal.save_limit do
+      BigDecimal.limit(1)
+      x = BigDecimal("3")
+      assert_equal(90, x ** 4) # OK? must it be 80?
+      # 3 * 3 * 3 * 3 = 10 * 3 * 3 = 30 * 3 = 90 ???
+      assert_raise(ArgumentError) { BigDecimal.limit(-1) }
+
+      bug7458 = '[ruby-core:50269] [#7458]'
+      one = BigDecimal('1')
+      epsilon = BigDecimal('0.7E-18')
+
       BigDecimal.limit(0)
       assert_equal(BigDecimal("1.0000000000000000007"), one + epsilon, "limit(0) #{bug7458}")
 
@@ -1901,6 +1943,106 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_in_out_err(%w[-rbigdecimal --disable-gems], <<-EOS, [], [])
     Thread.current.keys.to_s
     EOS
+  end
+
+  def test_precision_only_integer
+    assert_equal(0, BigDecimal(0).precision)
+    assert_equal(1, BigDecimal(1).precision)
+    assert_equal(1, BigDecimal(-1).precision)
+    assert_equal(2, BigDecimal(10).precision)
+    assert_equal(2, BigDecimal(-10).precision)
+    assert_equal(21, BigDecimal(100_000_000_000_000_000_000).precision)
+    assert_equal(21, BigDecimal(-100_000_000_000_000_000_000).precision)
+    assert_equal(103, BigDecimal("111e100").precision)
+    assert_equal(103, BigDecimal("-111e100").precision)
+  end
+
+  def test_precision_only_fraction
+    assert_equal(1, BigDecimal("0.1").precision)
+    assert_equal(1, BigDecimal("-0.1").precision)
+    assert_equal(1, BigDecimal("0.01").precision)
+    assert_equal(1, BigDecimal("-0.01").precision)
+    assert_equal(2, BigDecimal("0.11").precision)
+    assert_equal(2, BigDecimal("-0.11").precision)
+    assert_equal(21, BigDecimal("0.000_000_000_000_000_000_001").precision)
+    assert_equal(21, BigDecimal("-0.000_000_000_000_000_000_001").precision)
+    assert_equal(100, BigDecimal("111e-100").precision)
+    assert_equal(100, BigDecimal("-111e-100").precision)
+  end
+
+  def test_precision_full
+    assert_equal(1, BigDecimal("0.1").precision)
+    assert_equal(1, BigDecimal("-0.1").precision)
+    assert_equal(1, BigDecimal("0.01").precision)
+    assert_equal(1, BigDecimal("-0.01").precision)
+    assert_equal(2, BigDecimal("0.11").precision)
+    assert_equal(2, BigDecimal("-0.11").precision)
+    assert_equal(5, BigDecimal("11111e-2").precision)
+    assert_equal(5, BigDecimal("-11111e-2").precision)
+    assert_equal(21, BigDecimal("100.000_000_000_000_000_001").precision)
+    assert_equal(21, BigDecimal("-100.000_000_000_000_000_001").precision)
+  end
+
+  def test_precision_special
+    BigDecimal.save_exception_mode do
+      BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW, false)
+      BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
+
+      assert_equal(0, BigDecimal("Infinity").precision)
+      assert_equal(0, BigDecimal("-Infinity").precision)
+      assert_equal(0, BigDecimal("NaN").precision)
+    end
+  end
+
+  def test_n_significant_digits_only_integer
+    assert_equal(0, BigDecimal(0).n_significant_digits)
+    assert_equal(1, BigDecimal(1).n_significant_digits)
+    assert_equal(1, BigDecimal(-1).n_significant_digits)
+    assert_equal(1, BigDecimal(10).n_significant_digits)
+    assert_equal(1, BigDecimal(-10).n_significant_digits)
+    assert_equal(3, BigDecimal(101).n_significant_digits)
+    assert_equal(3, BigDecimal(-101).n_significant_digits)
+    assert_equal(1, BigDecimal(100_000_000_000_000_000_000).n_significant_digits)
+    assert_equal(1, BigDecimal(-100_000_000_000_000_000_000).n_significant_digits)
+    assert_equal(21, BigDecimal(100_000_000_000_000_000_001).n_significant_digits)
+    assert_equal(21, BigDecimal(-100_000_000_000_000_000_001).n_significant_digits)
+    assert_equal(3, BigDecimal("111e100").n_significant_digits)
+    assert_equal(3, BigDecimal("-111e100").n_significant_digits)
+  end
+
+  def test_n_significant_digits_only_fraction
+    assert_equal(1, BigDecimal("0.1").n_significant_digits)
+    assert_equal(1, BigDecimal("-0.1").n_significant_digits)
+    assert_equal(1, BigDecimal("0.01").n_significant_digits)
+    assert_equal(1, BigDecimal("-0.01").n_significant_digits)
+    assert_equal(2, BigDecimal("0.11").n_significant_digits)
+    assert_equal(2, BigDecimal("-0.11").n_significant_digits)
+    assert_equal(1, BigDecimal("0.000_000_000_000_000_000_001").n_significant_digits)
+    assert_equal(1, BigDecimal("-0.000_000_000_000_000_000_001").n_significant_digits)
+    assert_equal(3, BigDecimal("111e-100").n_significant_digits)
+    assert_equal(3, BigDecimal("-111e-100").n_significant_digits)
+  end
+
+  def test_n_significant_digits_full
+    assert_equal(2, BigDecimal("1.1").n_significant_digits)
+    assert_equal(2, BigDecimal("-1.1").n_significant_digits)
+    assert_equal(3, BigDecimal("1.01").n_significant_digits)
+    assert_equal(3, BigDecimal("-1.01").n_significant_digits)
+    assert_equal(5, BigDecimal("11111e-2").n_significant_digits)
+    assert_equal(5, BigDecimal("-11111e-2").n_significant_digits)
+    assert_equal(21, BigDecimal("100.000_000_000_000_000_001").n_significant_digits)
+    assert_equal(21, BigDecimal("-100.000_000_000_000_000_001").n_significant_digits)
+  end
+
+  def test_n_significant_digits_special
+    BigDecimal.save_exception_mode do
+      BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW, false)
+      BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
+
+      assert_equal(0, BigDecimal("Infinity").n_significant_digits)
+      assert_equal(0, BigDecimal("-Infinity").n_significant_digits)
+      assert_equal(0, BigDecimal("NaN").n_significant_digits)
+    end
   end
 
   def test_initialize_copy_dup_clone_frozen_error

@@ -245,7 +245,9 @@ set_debug_option(const char *str, int len, void *arg)
     }
 }
 
+#ifdef USE_RUBY_DEBUG_LOG
 STATIC_ASSERT(USE_RUBY_DEBUG_LOG, USE_RUBY_DEBUG_LOG ? RUBY_DEVEL : 1);
+#endif
 
 #if RUBY_DEVEL
 static void setup_debug_log(void);

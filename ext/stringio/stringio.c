@@ -11,7 +11,7 @@
 
 **********************************************************************/
 
-#define STRINGIO_VERSION "0.1.4"
+#define STRINGIO_VERSION "3.0.0"
 
 #include "ruby.h"
 #include "ruby/io.h"
@@ -1750,7 +1750,12 @@ void
 Init_stringio(void)
 {
 #undef rb_intern
-    VALUE StringIO = rb_define_class("StringIO", rb_cData);
+
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+  rb_ext_ractor_safe(true);
+#endif
+
+    VALUE StringIO = rb_define_class("StringIO", rb_cObject);
 
     rb_define_const(StringIO, "VERSION", rb_str_new_cstr(STRINGIO_VERSION));
 

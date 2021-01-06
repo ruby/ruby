@@ -37,7 +37,7 @@ describe "Kernel#taint" do
       v.should_not.tainted?
     end
 
-    it "no raises error on fixnum values" do
+    it "no raises error on integer values" do
       [1].each do |v|
         -> { v.taint }.should_not raise_error(RuntimeError)
         v.should_not.tainted?

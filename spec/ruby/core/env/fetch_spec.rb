@@ -1,5 +1,6 @@
 require_relative '../../spec_helper'
 require_relative '../../shared/hash/key_error'
+require_relative 'fixtures/common'
 
 describe "ENV.fetch" do
   before :each do
@@ -56,8 +57,7 @@ describe "ENV.fetch" do
   end
 
   it "uses the locale encoding" do
-    encoding = platform_is(:windows) ? Encoding::UTF_8 : Encoding.find('locale')
     ENV["foo"] = "bar"
-    ENV.fetch("foo").encoding.should == encoding
+    ENV.fetch("foo").encoding.should == ENVSpecs.encoding
   end
 end

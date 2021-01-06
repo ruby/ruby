@@ -8,7 +8,6 @@ class TestMarshal < Test::Unit::TestCase
 
   def setup
     @verbose = $VERBOSE
-    $VERBOSE = nil
   end
 
   def teardown
@@ -157,20 +156,29 @@ class TestMarshal < Test::Unit::TestCase
   end
 
   def test_change_class_name
+    self.class.__send__(:remove_const, :C3) if self.class.const_defined?(:C3)
     eval("class C3; def _dump(s); 'foo'; end; end")
     m = Marshal.dump(C3.new)
     assert_raise(TypeError) { Marshal.load(m) }
+    self.class.__send__(:remove_const, :C3)
     eval("C3 = nil")
     assert_raise(TypeError) { Marshal.load(m) }
+  ensure
+    self.class.__send__(:remove_const, :C3) if self.class.const_defined?(:C3)
   end
 
   def test_change_struct
+    self.class.__send__(:remove_const, :C3) if self.class.const_defined?(:C3)
     eval("C3 = Struct.new(:foo, :bar)")
     m = Marshal.dump(C3.new("FOO", "BAR"))
+    self.class.__send__(:remove_const, :C3)
     eval("C3 = Struct.new(:foo)")
     assert_raise(TypeError) { Marshal.load(m) }
+    self.class.__send__(:remove_const, :C3)
     eval("C3 = Struct.new(:foo, :baz)")
     assert_raise(TypeError) { Marshal.load(m) }
+  ensure
+    self.class.__send__(:remove_const, :C3) if self.class.const_defined?(:C3)
   end
 
   class C4
@@ -542,7 +550,7 @@ class TestMarshal < Test::Unit::TestCase
   end
 
   class TestForRespondToFalse
-    def respond_to?(a)
+    def respond_to?(a, priv = false)
       false
     end
   end
@@ -570,7 +578,7 @@ class TestMarshal < Test::Unit::TestCase
   end
 
   def test_continuation
-    require "continuation"
+    EnvUtil.suppress_warning {require "continuation"}
     c = Bug9523.new
     assert_raise_with_message(RuntimeError, /Marshal\.dump reentered at marshal_dump/) do
       Marshal.dump(c)

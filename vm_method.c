@@ -26,12 +26,12 @@ static enum rb_id_table_iterator_result
 vm_ccs_dump_i(ID mid, VALUE val, void *data)
 {
     const struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)val;
-    fprintf(stderr,     "  | %s (%d) ", rb_id2name(mid), ccs->len);
+    fprintf(stderr,     "  | %s (len:%d) ", rb_id2name(mid), ccs->len);
     rp(ccs->cme);
 
     for (int i=0; i<ccs->len; i++) {
-        fprintf(stderr, "  | [%d] ", i); vm_ci_dump(ccs->entries[i].ci);
-        rp_m(           "  | ", ccs->entries[i].cc);
+        fprintf(stderr, "  | [%d]\t", i); vm_ci_dump(ccs->entries[i].ci);
+        rp_m(           "  |   \t", ccs->entries[i].cc);
     }
 
     return ID_TABLE_CONTINUE;
@@ -484,7 +484,7 @@ rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *de
 	    }
 	  case VM_METHOD_TYPE_BMETHOD:
             RB_OBJ_WRITE(me, &def->body.bmethod.proc, (VALUE)opts);
-            RB_OBJ_WRITE(me, &def->body.bmethod.defined_ractor, GET_THREAD()->ractor->self);
+            RB_OBJ_WRITE(me, &def->body.bmethod.defined_ractor, rb_ractor_self(GET_RACTOR()));
 	    return;
 	  case VM_METHOD_TYPE_NOTIMPLEMENTED:
 	    setup_method_cfunc_struct(UNALIGNED_MEMBER_PTR(def, body.cfunc), rb_f_notimplement, -1);
@@ -1956,13 +1956,13 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
 
 /*
  *  call-seq:
- *     alias_method(new_name, old_name)   -> self
+ *     alias_method(new_name, old_name)   -> symbol
  *
  *  Makes <i>new_name</i> a new copy of the method <i>old_name</i>. This can
  *  be used to retain access to methods that are overridden.
  *
  *     module Mod
- *       alias_method :orig_exit, :exit
+ *       alias_method :orig_exit, :exit #=> :orig_exit
  *       def exit(code=0)
  *         puts "Exiting with code #{code}"
  *         orig_exit(code)
@@ -1983,8 +1983,19 @@ rb_mod_alias_method(VALUE mod, VALUE newname, VALUE oldname)
     if (!oldid) {
 	rb_print_undef_str(mod, oldname);
     }
-    rb_alias(mod, rb_to_id(newname), oldid);
-    return mod;
+    VALUE id = rb_to_id(newname);
+    rb_alias(mod, id, oldid);
+    return ID2SYM(id);
+}
+
+static void
+check_and_export_method(VALUE self, VALUE name, rb_method_visibility_t visi)
+{
+    ID id = rb_check_id(&name);
+    if (!id) {
+	rb_print_undef_str(self, name);
+    }
+    rb_export_method(self, id, visi);
 }
 
 static void
@@ -1999,13 +2010,19 @@ set_method_visibility(VALUE self, int argc, const VALUE *argv, rb_method_visibil
 	return;
     }
 
-    for (i = 0; i < argc; i++) {
-	VALUE v = argv[i];
-	ID id = rb_check_id(&v);
-	if (!id) {
-	    rb_print_undef_str(self, v);
+
+    VALUE v;
+
+    if (argc == 1 && (v = rb_check_array_type(argv[0])) != Qnil) {
+        long j;
+
+	for (j = 0; j < RARRAY_LEN(v); j++) {
+	    check_and_export_method(self, RARRAY_AREF(v, j), visi);
 	}
-	rb_export_method(self, id, visi);
+    } else {
+        for (i = 0; i < argc; i++) {
+            check_and_export_method(self, argv[i], visi);
+        }
     }
 }
 
@@ -2027,11 +2044,13 @@ set_visibility(int argc, const VALUE *argv, VALUE module, rb_method_visibility_t
  *     public                 -> self
  *     public(symbol, ...)    -> self
  *     public(string, ...)    -> self
+ *     public(array)          -> self
  *
  *  With no arguments, sets the default visibility for subsequently
  *  defined methods to public. With arguments, sets the named methods to
  *  have public visibility.
  *  String arguments are converted to symbols.
+ *  An Array of Symbols and/or Strings is also accepted.
  */
 
 static VALUE
@@ -2045,11 +2064,13 @@ rb_mod_public(int argc, VALUE *argv, VALUE module)
  *     protected                -> self
  *     protected(symbol, ...)   -> self
  *     protected(string, ...)   -> self
+ *     protected(array)         -> self
  *
  *  With no arguments, sets the default visibility for subsequently
  *  defined methods to protected. With arguments, sets the named methods
  *  to have protected visibility.
  *  String arguments are converted to symbols.
+ *  An Array of Symbols and/or Strings is also accepted.
  *
  *  If a method has protected visibility, it is callable only where
  *  <code>self</code> of the context is the same as the method.
@@ -2072,11 +2093,13 @@ rb_mod_protected(int argc, VALUE *argv, VALUE module)
  *     private                 -> self
  *     private(symbol, ...)    -> self
  *     private(string, ...)    -> self
+ *     private(array)          -> self
  *
  *  With no arguments, sets the default visibility for subsequently
  *  defined methods to private. With arguments, sets the named methods
  *  to have private visibility.
  *  String arguments are converted to symbols.
+ *  An Array of Symbols and/or Strings is also accepted.
  *
  *     module Mod
  *       def a()  end
@@ -2209,10 +2232,12 @@ rb_mod_ruby2_keywords(int argc, VALUE *argv, VALUE module)
  *  call-seq:
  *     mod.public_class_method(symbol, ...)    -> mod
  *     mod.public_class_method(string, ...)    -> mod
+ *     mod.public_class_method(array)          -> mod
  *
  *  Makes a list of existing class methods public.
  *
  *  String arguments are converted to symbols.
+ *  An Array of Symbols and/or Strings is also accepted.
  */
 
 static VALUE
@@ -2226,11 +2251,13 @@ rb_mod_public_method(int argc, VALUE *argv, VALUE obj)
  *  call-seq:
  *     mod.private_class_method(symbol, ...)   -> mod
  *     mod.private_class_method(string, ...)   -> mod
+ *     mod.private_class_method(array)         -> mod
  *
  *  Makes existing class methods private. Often used to hide the default
  *  constructor <code>new</code>.
  *
  *  String arguments are converted to symbols.
+ *  An Array of Symbols and/or Strings is also accepted.
  *
  *     class SimpleSingleton  # Not thread safe
  *       private_class_method :new
@@ -2253,12 +2280,14 @@ rb_mod_private_method(int argc, VALUE *argv, VALUE obj)
  *     public
  *     public(symbol, ...)
  *     public(string, ...)
+ *     public(array)
  *
  *  With no arguments, sets the default visibility for subsequently
  *  defined methods to public. With arguments, sets the named methods to
  *  have public visibility.
  *
  *  String arguments are converted to symbols.
+ *  An Array of Symbols and/or Strings is also accepted.
  */
 
 static VALUE
@@ -2272,12 +2301,14 @@ top_public(int argc, VALUE *argv, VALUE _)
  *     private
  *     private(symbol, ...)
  *     private(string, ...)
+ *     private(array)
  *
  *  With no arguments, sets the default visibility for subsequently
  *  defined methods to private. With arguments, sets the named methods to
  *  have private visibility.
  *
  *  String arguments are converted to symbols.
+ *  An Array of Symbols and/or Strings is also accepted.
  */
 static VALUE
 top_private(int argc, VALUE *argv, VALUE _)
@@ -2465,7 +2496,8 @@ vm_respond_to(rb_execution_context_t *ec, VALUE klass, VALUE obj, ID id, int pri
 	    }
 	    else if (!NIL_P(ruby_verbose)) {
 		VALUE location = rb_method_entry_location((const rb_method_entry_t *)cme);
-		rb_warn("%"PRIsVALUE"%c""respond_to?(:%"PRIsVALUE") uses"
+                rb_category_warn(RB_WARN_CATEGORY_DEPRECATED,
+                        "%"PRIsVALUE"%c""respond_to?(:%"PRIsVALUE") uses"
 			" the deprecated method signature, which takes one parameter",
 			(FL_TEST(klass, FL_SINGLETON) ? obj : klass),
 			(FL_TEST(klass, FL_SINGLETON) ? '.' : '#'),

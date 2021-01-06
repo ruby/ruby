@@ -8,12 +8,26 @@ module Psych
 
       private
 
-      DISPATCH = Hash.new do |hash, klass|
-        hash[klass] = "visit_#{klass.name.gsub('::', '_')}"
+      # @api private
+      def self.dispatch_cache
+        Hash.new do |hash, klass|
+          hash[klass] = :"visit_#{klass.name.gsub('::', '_')}"
+        end.compare_by_identity
+      end
+
+      if defined?(Ractor)
+        def dispatch
+          Ractor.current[:Psych_Visitors_Visitor] ||= Visitor.dispatch_cache
+        end
+      else
+        DISPATCH = dispatch_cache
+        def dispatch
+          DISPATCH
+        end
       end
 
       def visit target
-        send DISPATCH[target.class], target
+        send dispatch[target.class], target
       end
     end
   end

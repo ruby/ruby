@@ -819,14 +819,14 @@ class TestMatrix < Test::Unit::TestCase
     assert_equal(Matrix.empty(0,2), @e1.adjoint)
   end
 
-=begin
   def test_ractor
-    obj1 = @m1.freeze
+    assert_ractor(<<~RUBY, require: 'matrix')
+      obj1 = Matrix[[1, 2], [3, 4]].freeze
 
-    obj2 = Ractor.new obj1 do |obj|
-      obj
-    end.take
-    assert_same obj1, obj2
-  end if defined?(Ractor)
-=end
+      obj2 = Ractor.new obj1 do |obj|
+        obj
+      end.take
+      assert_same obj1, obj2
+    RUBY
+  end
 end

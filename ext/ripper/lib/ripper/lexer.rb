@@ -81,7 +81,7 @@ class Ripper
           q.breakable
           q.text("#{event}@#{pos[0]}:#{pos[1]}")
           q.breakable
-          q.text(state)
+          state.pretty_print(q)
           q.breakable
           q.text("token: ")
           tok.pretty_print(q)
@@ -190,13 +190,18 @@ class Ripper
       e
     end
 
-    def on_error(mesg, tok = token())
-      @errors.push Elem.new([lineno(), column()], __callee__, tok, state(), mesg)
+    def on_error1(mesg)
+      @errors.push Elem.new([lineno(), column()], __callee__, token(), state(), mesg)
+    end
+
+    def on_error2(mesg, elem)
+      @errors.push Elem.new(elem.pos, __callee__, elem.tok, elem.state, mesg)
     end
     PARSER_EVENTS.grep(/_error\z/) do |e|
-      alias_method "on_#{e}", :on_error
+      arity = PARSER_EVENT_TABLE.fetch(e)
+      alias_method "on_#{e}", "on_error#{arity}"
     end
-    alias compile_error on_error
+    alias compile_error on_error1
 
     (SCANNER_EVENTS.map {|event|:"on_#{event}"} - private_instance_methods(false)).each do |event|
       alias_method event, :_push_token

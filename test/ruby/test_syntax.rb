@@ -619,6 +619,11 @@ WARN
   def test_do_block_after_lambda
     bug11380 = '[ruby-core:70067] [Bug #11380]'
     assert_valid_syntax('p -> { :hello }, a: 1 do end', bug11380)
+
+    assert_valid_syntax('->(opt = (foo.[] bar)) {}')
+    assert_valid_syntax('->(opt = (foo.[]= bar)) {}')
+    assert_valid_syntax('->(opt = (foo.[] bar)) do end')
+    assert_valid_syntax('->(opt = (foo.[]= bar)) do end')
   end
 
   def test_reserved_method_no_args
@@ -998,6 +1003,19 @@ eom
     assert_warn('') {eval("(1...)")}
     assert_warn('') {eval("(1...\n2)")}
     assert_warn('') {eval("{a: 1...\n2}")}
+
+    assert_warn(/\.\.\. at EOL/) do
+      assert_valid_syntax('foo.[]= ...', verbose: true)
+    end
+    assert_warn(/\.\.\. at EOL/) do
+      assert_valid_syntax('foo.[] ...', verbose: true)
+    end
+    assert_warn(/\.\.\. at EOL/) do
+      assert_syntax_error('foo.[]= bar, ...', /unexpected/, verbose: true)
+    end
+    assert_warn(/\.\.\. at EOL/) do
+      assert_syntax_error('foo.[] bar, ...', /unexpected/, verbose: true)
+    end
   end
 
   def test_too_big_nth_ref

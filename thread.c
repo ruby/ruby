@@ -980,7 +980,7 @@ thread_create_core(VALUE thval, struct thread_create_params *params)
 
     rb_native_mutex_initialize(&th->interrupt_lock);
 
-    RUBY_DEBUG_LOG("r:%u th:%p", th->ractor->id, th);
+    RUBY_DEBUG_LOG("r:%u th:%p", rb_ractor_id(th->ractor), th);
 
     rb_ractor_living_threads_insert(th->ractor, th);
 
@@ -4719,6 +4719,7 @@ rb_clear_coverages(void)
 }
 
 #if defined(HAVE_WORKING_FORK)
+
 static void
 rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const rb_thread_t *))
 {
@@ -4741,11 +4742,7 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
     }
     rb_vm_living_threads_init(vm);
 
-    // threads
-    vm->ractor.cnt = 0;
-    rb_ractor_living_threads_init(th->ractor);
-    rb_ractor_living_threads_insert(th->ractor, th);
-
+    rb_ractor_atfork(vm, th);
 
     /* may be held by MJIT threads in parent */
     rb_native_mutex_initialize(&vm->waitpid_lock);
@@ -4758,6 +4755,7 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
     rb_ractor_sleeper_threads_clear(th->ractor);
     rb_clear_coverages();
 
+    VM_ASSERT(vm->ractor.blocking_cnt == 0);
     VM_ASSERT(vm->ractor.cnt == 1);
 }
 

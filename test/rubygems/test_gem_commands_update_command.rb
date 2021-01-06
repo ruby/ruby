@@ -552,7 +552,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
     expected = {
       :args     => [],
-      :document => %w[rdoc ri],
+      :document => %w[ri],
       :force    => false,
       :system   => true,
     }
@@ -571,7 +571,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
     expected = {
       :args     => [],
-      :document => %w[rdoc ri],
+      :document => %w[ri],
       :force    => false,
       :system   => "1.3.7",
     }

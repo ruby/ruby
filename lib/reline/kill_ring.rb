@@ -1,4 +1,6 @@
 class Reline::KillRing
+  include Enumerable
+
   module State
     FRESH = :fresh
     CONTINUED = :continued
@@ -108,6 +110,16 @@ class Reline::KillRing
       [@ring_pointer.str, prev_yank]
     else
       nil
+    end
+  end
+
+  def each
+    start = head = @ring.head
+    loop do
+      break if head.nil?
+      yield head.str
+      head = head.backward
+      break if head == start
     end
   end
 end

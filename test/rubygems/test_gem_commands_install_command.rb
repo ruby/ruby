@@ -504,6 +504,137 @@ ERROR:  Possible alternatives: non_existent_with_hint
     assert_equal %w[a-2], @cmd.installed_specs.map {|spec| spec.full_name }
   end
 
+  def test_execute_required_ruby_version
+    next_ruby = Gem.ruby_version.segments.map.with_index{|n, i| i == 1 ? n + 1 : n }.join(".")
+
+    local = Gem::Platform.local
+    spec_fetcher do |fetcher|
+      fetcher.download 'a', 2
+      fetcher.download 'a', 2 do |s|
+        s.required_ruby_version = "< #{RUBY_VERSION}.a"
+        s.platform = local
+      end
+      fetcher.download 'a', 3 do |s|
+        s.required_ruby_version = ">= #{next_ruby}"
+      end
+      fetcher.download 'a', 3 do |s|
+        s.required_ruby_version = ">= #{next_ruby}"
+        s.platform = local
+      end
+    end
+
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+        @cmd.execute
+      end
+    end
+
+    assert_equal %w[a-2], @cmd.installed_specs.map {|spec| spec.full_name }
+  end
+
+  def test_execute_required_ruby_version_upper_bound
+    local = Gem::Platform.local
+    spec_fetcher do |fetcher|
+      fetcher.gem 'a', 2.0
+      fetcher.gem 'a', 2.0 do |s|
+        s.required_ruby_version = "< #{RUBY_VERSION}.a"
+        s.platform = local
+      end
+    end
+
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+        @cmd.execute
+      end
+    end
+
+    assert_equal %w[a-2.0], @cmd.installed_specs.map {|spec| spec.full_name }
+  end
+
+  def test_execute_required_ruby_version_specific_not_met
+    spec_fetcher do |fetcher|
+      fetcher.gem 'a', '1.0' do |s|
+        s.required_ruby_version = '= 1.4.6'
+      end
+    end
+
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      assert_raises Gem::MockGemUi::TermError do
+        @cmd.execute
+      end
+    end
+
+    errs = @ui.error.split("\n")
+    assert_equal "ERROR:  Error installing a:", errs.shift
+    assert_equal "\ta-1.0 requires Ruby version = 1.4.6. The current ruby version is #{Gem.ruby_version}.", errs.shift
+  end
+
+  def test_execute_required_ruby_version_specific_prerelease_met
+    spec_fetcher do |fetcher|
+      fetcher.gem 'a', '1.0' do |s|
+        s.required_ruby_version = '>= 1.4.6.preview2'
+      end
+    end
+
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+        @cmd.execute
+      end
+    end
+
+    assert_equal %w[a-1.0], @cmd.installed_specs.map {|spec| spec.full_name }
+  end
+
+  def test_execute_required_ruby_version_specific_prerelease_not_met
+    next_ruby_pre = Gem.ruby_version.segments.map.with_index{|n, i| i == 1 ? n + 1 : n }.join(".") + ".a"
+
+    spec_fetcher do |fetcher|
+      fetcher.gem 'a', '1.0' do |s|
+        s.required_ruby_version = "> #{next_ruby_pre}"
+      end
+    end
+
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      assert_raises Gem::MockGemUi::TermError do
+        @cmd.execute
+      end
+    end
+
+    errs = @ui.error.split("\n")
+    assert_equal "ERROR:  Error installing a:", errs.shift
+    assert_equal "\ta-1.0 requires Ruby version > #{next_ruby_pre}. The current ruby version is #{Gem.ruby_version}.", errs.shift
+  end
+
+  def test_execute_required_rubygems_version_wrong
+    spec_fetcher do |fetcher|
+      fetcher.gem 'a', '1.0' do |s|
+        s.required_rubygems_version = '< 0'
+      end
+    end
+
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      assert_raises Gem::MockGemUi::TermError do
+        @cmd.execute
+      end
+    end
+
+    errs = @ui.error.split("\n")
+    assert_equal "ERROR:  Error installing a:", errs.shift
+    assert_equal "\ta-1.0 requires RubyGems version < 0. The current RubyGems version is #{Gem.rubygems_version}. Try 'gem update --system' to update RubyGems itself.", errs.shift
+  end
+
   def test_execute_rdoc
     specs = spec_fetcher do |fetcher|
       fetcher.gem 'a', 2

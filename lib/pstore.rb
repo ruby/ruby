@@ -92,7 +92,7 @@ require "digest"
 # Needless to say, if you're storing valuable data with PStore, then you should
 # backup the PStore files from time to time.
 class PStore
-  VERSION = "0.1.0"
+  VERSION = "0.1.1"
 
   RDWR_ACCESS = {mode: IO::RDWR | IO::CREAT | IO::BINARY, encoding: Encoding::ASCII_8BIT}.freeze
   RD_ACCESS = {mode: IO::RDONLY | IO::BINARY, encoding: Encoding::ASCII_8BIT}.freeze

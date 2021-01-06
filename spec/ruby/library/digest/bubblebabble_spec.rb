@@ -23,7 +23,7 @@ describe "Digest.bubblebabble" do
     -> { Digest.bubblebabble(nil) }.should raise_error(TypeError)
   end
 
-  it "raises a TypeError when passed a Fixnum" do
+  it "raises a TypeError when passed an Integer" do
     -> { Digest.bubblebabble(9001) }.should raise_error(TypeError)
   end
 end
