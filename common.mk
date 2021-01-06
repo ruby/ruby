@@ -8457,6 +8457,7 @@ mjit.$(OBJEXT): {$(VPATH)}backward/2/limits.h
 mjit.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
 mjit.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 mjit.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+mjit.$(OBJEXT): {$(VPATH)}builtin.h
 mjit.$(OBJEXT): {$(VPATH)}config.h
 mjit.$(OBJEXT): {$(VPATH)}constant.h
 mjit.$(OBJEXT): {$(VPATH)}debug.h
@@ -8613,13 +8614,15 @@ mjit.$(OBJEXT): {$(VPATH)}method.h
 mjit.$(OBJEXT): {$(VPATH)}missing.h
 mjit.$(OBJEXT): {$(VPATH)}mjit.c
 mjit.$(OBJEXT): {$(VPATH)}mjit.h
-mjit.$(OBJEXT): {$(VPATH)}mjit_worker.rb
-mjit.$(OBJEXT): {$(VPATH)}mjit_worker.rbinc
 mjit.$(OBJEXT): {$(VPATH)}mjit_config.h
 mjit.$(OBJEXT): {$(VPATH)}mjit_worker.c
+mjit.$(OBJEXT): {$(VPATH)}mjit_worker.rb
+mjit.$(OBJEXT): {$(VPATH)}mjit_worker.rbinc
 mjit.$(OBJEXT): {$(VPATH)}node.h
 mjit.$(OBJEXT): {$(VPATH)}onigmo.h
 mjit.$(OBJEXT): {$(VPATH)}oniguruma.h
+mjit.$(OBJEXT): {$(VPATH)}ractor.h
+mjit.$(OBJEXT): {$(VPATH)}ractor_core.h
 mjit.$(OBJEXT): {$(VPATH)}ruby_assert.h
 mjit.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 mjit.$(OBJEXT): {$(VPATH)}st.h
@@ -8630,7 +8633,9 @@ mjit.$(OBJEXT): {$(VPATH)}thread_native.h
 mjit.$(OBJEXT): {$(VPATH)}util.h
 mjit.$(OBJEXT): {$(VPATH)}vm_callinfo.h
 mjit.$(OBJEXT): {$(VPATH)}vm_core.h
+mjit.$(OBJEXT): {$(VPATH)}vm_debug.h
 mjit.$(OBJEXT): {$(VPATH)}vm_opts.h
+mjit.$(OBJEXT): {$(VPATH)}vm_sync.h
 mjit_build_dir.$(OBJEXT): {$(VPATH)}config.h
 mjit_build_dir.$(OBJEXT): {$(VPATH)}internal/compiler_is.h
 mjit_build_dir.$(OBJEXT): {$(VPATH)}internal/compiler_is/apple.h
@@ -14432,8 +14437,8 @@ time.$(OBJEXT): {$(VPATH)}ruby_assert.h
 time.$(OBJEXT): {$(VPATH)}st.h
 time.$(OBJEXT): {$(VPATH)}subst.h
 time.$(OBJEXT): {$(VPATH)}time.c
-time.$(OBJEXT): {$(VPATH)}timev.rbinc
 time.$(OBJEXT): {$(VPATH)}timev.h
+time.$(OBJEXT): {$(VPATH)}timev.rbinc
 transcode.$(OBJEXT): $(hdrdir)/ruby.h
 transcode.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 transcode.$(OBJEXT): $(top_srcdir)/internal/array.h
