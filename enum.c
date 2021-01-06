@@ -137,7 +137,7 @@ enum_grep0(VALUE obj, VALUE pat, VALUE test)
  *   grep(pattern) {|element| ... } -> new_array
  *
  * Returns a new \Array of objects either selected by the given +pattern+
- *  or returned by the block.
+ * or returned by the block.
  *
  * With no block given, returns a new \Array containing each element
  * for which <tt>pattern === element</tt> is +true+:
