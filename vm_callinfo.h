@@ -357,6 +357,17 @@ vm_cc_markable(const struct rb_callcache *cc)
     return FL_TEST_RAW((VALUE)cc, VM_CALLCACHE_UNMARKABLE) == 0;
 }
 
+static inline bool
+vm_cc_invalidated_p(const struct rb_callcache *cc)
+{
+    if (cc->klass && METHOD_ENTRY_INVALIDATED(vm_cc_cme(cc))) {
+        return false;
+    }
+    else {
+        return true;
+    }
+}
+
 // For MJIT. cc_cme is supposed to have inlined `vm_cc_cme(cc)`.
 static inline bool
 vm_cc_valid_p(const struct rb_callcache *cc, const rb_callable_method_entry_t *cc_cme, VALUE klass)
