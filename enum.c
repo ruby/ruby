@@ -1354,7 +1354,7 @@ DEFINE_ENUMFUNCS(all)
  *   {foo: 0, bar: 1, baz: 2}.all? {|key, value| value < 3 } # => true
  *   {foo: 0, bar: 1, baz: 2}.all? {|key, value| value < 2 } # => false
  *
- * Related: #any, #one, #none.
+ * Related: #any?, #one?, #none?.
  */
 
 static VALUE
