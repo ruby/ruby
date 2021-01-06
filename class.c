@@ -955,6 +955,9 @@ ensure_includable(VALUE klass, VALUE module)
     if (!NIL_P(rb_refinement_module_get_refined_class(module))) {
 	rb_raise(rb_eArgError, "refinement module is not allowed");
     }
+    if (!NIL_P(rb_refinement_module_get_refined_class(klass))) {
+        rb_raise(rb_eArgError, "cannot include or prepend module into refinement");
+    }
 }
 
 void

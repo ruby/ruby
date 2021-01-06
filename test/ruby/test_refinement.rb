@@ -747,132 +747,6 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
 
-  module IncludeIntoRefinement
-    class C
-      def bar
-        return "C#bar"
-      end
-
-      def baz
-        return "C#baz"
-      end
-    end
-
-    module Mixin
-      def foo
-        return "Mixin#foo"
-      end
-
-      def bar
-        return super << " Mixin#bar"
-      end
-
-      def baz
-        return super << " Mixin#baz"
-      end
-    end
-
-    module M
-      refine C do
-        include Mixin
-
-        def baz
-          return super << " M#baz"
-        end
-      end
-    end
-  end
-
-  eval <<-EOF, Sandbox::BINDING
-    using TestRefinement::IncludeIntoRefinement::M
-
-    module TestRefinement::IncludeIntoRefinement::User
-      def self.invoke_foo_on(x)
-        x.foo
-      end
-
-      def self.invoke_bar_on(x)
-        x.bar
-      end
-
-      def self.invoke_baz_on(x)
-        x.baz
-      end
-    end
-  EOF
-
-  def test_include_into_refinement
-    x = IncludeIntoRefinement::C.new
-    assert_equal("Mixin#foo", IncludeIntoRefinement::User.invoke_foo_on(x))
-    assert_equal("C#bar Mixin#bar",
-                 IncludeIntoRefinement::User.invoke_bar_on(x))
-    assert_equal("C#baz Mixin#baz M#baz",
-                 IncludeIntoRefinement::User.invoke_baz_on(x))
-  end
-
-  module PrependIntoRefinement
-    class C
-      def bar
-        return "C#bar"
-      end
-
-      def baz
-        return "C#baz"
-      end
-    end
-
-    module Mixin
-      def foo
-        return "Mixin#foo"
-      end
-
-      def bar
-        return super << " Mixin#bar"
-      end
-
-      def baz
-        return super << " Mixin#baz"
-      end
-    end
-
-    module M
-      refine C do
-        prepend Mixin
-
-        def baz
-          return super << " M#baz"
-        end
-      end
-    end
-  end
-
-  eval <<-EOF, Sandbox::BINDING
-    using TestRefinement::PrependIntoRefinement::M
-
-    module TestRefinement::PrependIntoRefinement::User
-      def self.invoke_foo_on(x)
-        x.foo
-      end
-
-      def self.invoke_bar_on(x)
-        x.bar
-      end
-
-      def self.invoke_baz_on(x)
-        x.baz
-      end
-    end
-  EOF
-
-  def test_prepend_into_refinement
-    x = PrependIntoRefinement::C.new
-    assert_equal("Mixin#foo", PrependIntoRefinement::User.invoke_foo_on(x))
-    assert_equal("C#bar Mixin#bar",
-                 PrependIntoRefinement::User.invoke_bar_on(x))
-    assert_equal("C#baz M#baz Mixin#baz",
-                 PrependIntoRefinement::User.invoke_baz_on(x))
-  end
-
   PrependAfterRefine_CODE = <<-EOC
   module PrependAfterRefine
     class C
@@ -932,6 +806,16 @@ class TestRefinement < Test::Unit::TestCase
                    "TestRefinement::PrependAfterRefine::C.new.bar")
     assert_equal("refined", y)
     assert_equal("mixin", TestRefinement::PrependAfterRefine::C.new.bar)
+  end
+
+  def test_prepend_or_include_inside_refinement
+    check = self
+    Module.new do
+      refine self do
+        check.assert_raise(ArgumentError) { include Module.new }
+        check.assert_raise(ArgumentError) { prepend Module.new }
+      end
+    end
   end
 
   module SuperInBlock
