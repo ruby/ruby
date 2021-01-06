@@ -586,7 +586,7 @@ module IRB
         ret = conv.primitive_convert(str, dst)
         case ret
         when :invalid_byte_sequence
-          conf.insert_output(conf.primitive_errinfo[3].dump[1..-2])
+          conv.insert_output(conf.primitive_errinfo[3].dump[1..-2])
           redo
         when :undefined_conversion
           c = conv.primitive_errinfo[3].dup.force_encoding(conv.primitive_errinfo[1])
