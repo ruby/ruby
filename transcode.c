@@ -3959,7 +3959,7 @@ econv_finish(VALUE self)
  *   ec = Encoding::Converter.new("EUC-JP", "Shift_JIS")
  *   ec.primitive_convert(src="\xff", dst="", nil, 10)
  *   p ec.primitive_errinfo
- *   #=> [:invalid_byte_sequence, "EUC-JP", "UTF-8", "\xFF", ""]
+ *   #=> [:invalid_byte_sequence, "EUC-JP", "Shift_JIS", "\xFF", ""]
  *
  *   # HIRAGANA LETTER A (\xa4\xa2 in EUC-JP) is not representable in ISO-8859-1.
  *   # Since this error is occur in UTF-8 to ISO-8859-1 conversion,
