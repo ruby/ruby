@@ -1423,6 +1423,64 @@ iseq_insert_nop_between_end_and_cont(rb_iseq_t *iseq)
     }
 }
 
+static void
+iseq_remove_nop(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
+{
+    LINK_ELEMENT *list;
+    if (iseq->body->type == ISEQ_TYPE_BLOCK) {
+        const VALUE *tptr, *ptr;
+        unsigned int tlen, i;
+        if (!RTEST(ISEQ_COMPILE_DATA(iseq)->catch_table_ary)) {
+            return;
+        }
+        tlen = (int)RARRAY_LEN(ISEQ_COMPILE_DATA(iseq)->catch_table_ary);
+        tptr = RARRAY_CONST_PTR_TRANSIENT(ISEQ_COMPILE_DATA(iseq)->catch_table_ary);
+
+	for (i = 0; i < tlen; i++) {
+            ptr = RARRAY_CONST_PTR_TRANSIENT(tptr[i]);
+	    enum catch_type type = (enum catch_type)(ptr[0] & 0xffff);
+            if (type != CATCH_TYPE_NEXT && type != CATCH_TYPE_REDO) {
+                return;
+            }
+        }
+
+        list = FIRST_ELEMENT(anchor);
+        // Can we kill nops?
+        while (list) {
+            if (IS_INSN(list)) {
+                INSN * item = (INSN *)list;
+                int j, len;
+                const char *types;
+
+                types = insn_op_types(INSN_OF(item));
+                len = insn_len(INSN_OF(item));
+                for (j = 0; types[j]; j++) {
+                    char type = types[j];
+                    /* printf("--> [%c - (%d-%d)]\n", type, k, j); */
+                    switch (type) {
+                        case TS_ISEQ:
+                        case TS_FUNCPTR:
+                        case TS_BUILTIN:
+                            return;
+                    }
+                }
+            }
+            list = list->next;
+        }
+
+        list = FIRST_ELEMENT(anchor);
+        while (list) {
+            if (IS_INSN(list)) {
+                INSN * item = (INSN *)list;
+                if (IS_INSN_ID(item, nop)) {
+                    ELEM_REMOVE(list);
+                }
+            }
+            list = list->next;
+        }
+    }
+}
+
 static int
 iseq_setup_insn(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 {
@@ -1458,6 +1516,8 @@ iseq_setup_insn(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     iseq_insert_nop_between_end_and_cont(iseq);
     if (compile_debug > 5)
         dump_disasm_list(FIRST_ELEMENT(anchor));
+
+    iseq_remove_nop(iseq, anchor);
 
     return COMPILE_OK;
 }
