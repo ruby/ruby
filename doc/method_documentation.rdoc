@@ -187,7 +187,7 @@ for more information on formatting with RDoc syntax.
 A code block should be preceded and followed by a blank line.
 This is unnecessary for the HTML output, but helps in the ri output.
 
-Consider whether <tt>=> ...</tt> in successive lines should be aligned.
+Consider whether <tt># => ...</tt> in successive codeblock lines should be aligned.
 Alignment may sometimes aid readability.
 
 === Lists
