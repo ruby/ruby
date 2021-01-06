@@ -1,9 +1,10 @@
 # frozen_string_literal: false
-require_relative "testbase"
-
+require_relative "helper"
 require 'bigdecimal/util'
 
 class TestBigDecimalUtil < Test::Unit::TestCase
+  include TestBigDecimalBase
+
   def test_BigDecimal_to_d
     x = BigDecimal(1)
     assert_same(x, x.to_d)
