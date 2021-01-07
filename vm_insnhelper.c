@@ -1695,10 +1695,7 @@ vm_search_cc(const VALUE klass, const struct rb_callinfo * const ci)
         return &vm_empty_cc;
     }
 
-#if VM_CHECK_MODE > 0
-    const rb_callable_method_entry_t *searched_cme = rb_callable_method_entry(klass, mid);
-    VM_ASSERT(cme == searched_cme);
-#endif
+    VM_ASSERT(cme == rb_callable_method_entry(klass, mid));
 
     const struct rb_callcache *cc = vm_cc_new(klass, cme, vm_call_general);
     METHOD_ENTRY_CACHED_SET((struct rb_callable_method_entry_struct *)cme);
