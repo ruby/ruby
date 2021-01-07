@@ -41,7 +41,7 @@ bool rb_ujit_enabled_p(void)
     return rb_ujit_enabled;
 }
 
-#define UJIT_CALL_THRESHOLD (10u)
+#define UJIT_CALL_THRESHOLD (1u)
 
 void rb_ujit_method_lookup_change(VALUE cme_or_cc);
 void rb_ujit_compile_iseq(const rb_iseq_t *iseq);
