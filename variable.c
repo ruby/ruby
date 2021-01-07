@@ -39,6 +39,8 @@
 #include "ractor_core.h"
 #include "vm_sync.h"
 
+RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
+
 typedef void rb_gvar_compact_t(void *var);
 
 static struct rb_id_table *rb_global_tbl;
@@ -3325,6 +3327,30 @@ cvar_overtaken(VALUE front, VALUE target, ID id)
     }
 }
 
+static VALUE
+find_cvar(VALUE klass, VALUE * front, VALUE * target, ID id)
+{
+    VALUE v = Qundef;
+    CVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR();
+    if (cvar_lookup_at(klass, id, (&v))) {
+        if (!*front) {
+            *front = klass;
+        }
+        *target = klass;
+    }
+
+    for (klass = cvar_front_klass(klass); klass; klass = RCLASS_SUPER(klass)) {
+	if (cvar_lookup_at(klass, id, (&v))) {
+            if (!*front) {
+                *front = klass;
+            }
+            *target = klass;
+        }
+    }
+
+    return v;
+}
+
 #define CVAR_FOREACH_ANCESTORS(klass, v, r) \
     for (klass = cvar_front_klass(klass); klass; klass = RCLASS_SUPER(klass)) { \
 	if (cvar_lookup_at(klass, id, (v))) { \
@@ -3337,6 +3363,20 @@ cvar_overtaken(VALUE front, VALUE target, ID id)
     if (cvar_lookup_at(klass, id, (v))) {r;}\
     CVAR_FOREACH_ANCESTORS(klass, v, r);\
 } while(0)
+
+static void
+check_for_cvar_table(VALUE subclass, VALUE key)
+{
+    st_table *tbl = RCLASS_IV_TBL(subclass);
+
+    if (tbl && st_lookup(tbl, key, NULL)) {
+        RB_DEBUG_COUNTER_INC(cvar_class_invalidate);
+        ruby_vm_global_cvar_state++;
+        return;
+    }
+
+    rb_class_foreach_subclass(subclass, check_for_cvar_table, key);
+}
 
 void
 rb_cvar_set(VALUE klass, ID id, VALUE val)
@@ -3357,23 +3397,40 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
     }
     check_before_mod_set(target, id, val, "class variable");
 
-    rb_class_ivar_set(target, id, val);
+    int result = rb_class_ivar_set(target, id, val);
+
+    // Break the cvar cache if this is a new class variable
+    // and target is a module or a subclass with the same
+    // cvar in this lookup.
+    if (result == 0) {
+        if (RB_TYPE_P(target, T_CLASS)) {
+            if (RCLASS_SUBCLASSES(target)) {
+                rb_class_foreach_subclass(target, check_for_cvar_table, id);
+            }
+        }
+    }
+}
+
+VALUE
+rb_cvar_find(VALUE klass, ID id, VALUE *front)
+{
+    VALUE target = 0;
+    VALUE value;
+
+    value = find_cvar(klass, front, &target, id);
+    if (!target) {
+	rb_name_err_raise("uninitialized class variable %1$s in %2$s",
+			  klass, ID2SYM(id));
+    }
+    cvar_overtaken(*front, target, id);
+    return (VALUE)value;
 }
 
 VALUE
 rb_cvar_get(VALUE klass, ID id)
 {
-    VALUE tmp, front = 0, target = 0;
-    st_data_t value;
-
-    tmp = klass;
-    CVAR_LOOKUP(&value, {if (!front) front = klass; target = klass;});
-    if (!target) {
-	rb_name_err_raise("uninitialized class variable %1$s in %2$s",
-			  tmp, ID2SYM(id));
-    }
-    cvar_overtaken(front, target, id);
-    return (VALUE)value;
+    VALUE front = 0;
+    return rb_cvar_find(klass, id, &front);
 }
 
 VALUE
