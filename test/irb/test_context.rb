@@ -106,15 +106,22 @@ module TestIRB
 
     def test_eval_object_without_inspect_method
       verbose, $VERBOSE = $VERBOSE, nil
-      input = TestInputMethod.new([
-        "BasicObject.new\n",
-      ])
-      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
-      out, err = capture_output do
-        irb.eval_input
+      all_assertions do |all|
+        IRB::Inspector::INSPECTORS.invert.each_value do |mode|
+          all.for(mode) do
+            input = TestInputMethod.new([
+                "[BasicObject.new, Class.new]\n",
+              ])
+            irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
+            irb.context.inspect_mode = mode
+            out, err = capture_output do
+              irb.eval_input
+            end
+            assert_empty err
+            assert_match(/\(Object doesn't support #inspect\)\n(=> )?\n/, out)
+          end
+        end
       end
-      assert_empty err
-      assert(/\(Object doesn't support #inspect\)\n(=> )?\n/, out)
     ensure
       $VERBOSE = verbose
     end
