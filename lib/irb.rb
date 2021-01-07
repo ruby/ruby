@@ -640,8 +640,8 @@ module IRB
             lines = lines.map { |l| @context.workspace.filter_backtrace(l) }.compact
             if lines.size > @context.back_trace_limit
               omit = lines.size - @context.back_trace_limit
-              lines[0..(@context.back_trace_limit - 1)]
-              lines << '... %d levels...' % omit
+              lines = lines[0..(@context.back_trace_limit - 1)]
+              lines << "\t... %d levels..." % omit
             end
           end
           lines = lines.reverse if order == :bottom
