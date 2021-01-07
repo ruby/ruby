@@ -944,14 +944,14 @@ rb_enc_str_new_static(const char *ptr, long len, rb_encoding *enc)
 VALUE
 rb_tainted_str_new(const char *ptr, long len)
 {
-    rb_warn_deprecated_to_remove_at("3.2", "rb_tainted_str_new", NULL);
+    rb_warn_deprecated_to_remove_at(3.2, "rb_tainted_str_new", NULL);
     return rb_str_new(ptr, len);
 }
 
 VALUE
 rb_tainted_str_new_cstr(const char *ptr)
 {
-    rb_warn_deprecated_to_remove_at("3.2", "rb_tainted_str_new_cstr", NULL);
+    rb_warn_deprecated_to_remove_at(3.2, "rb_tainted_str_new_cstr", NULL);
     return rb_str_new_cstr(ptr);
 }
 

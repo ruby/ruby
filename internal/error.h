@@ -88,11 +88,11 @@ void rb_deprecated_method_to_be_removed(const char *);
      RBIMPL_ASSERT_NOTHING)
 # endif
 # define rb_warn_deprecated_to_remove_at(removal, ...) \
-    (rb_deprecated_method_to_be_removed(removal), \
-     rb_warn_deprecated_to_remove(removal, __VA_ARGS__))
+    (rb_deprecated_method_to_be_removed(#removal), \
+     rb_warn_deprecated_to_remove(#removal, __VA_ARGS__))
 #else
 # define rb_warn_deprecated_to_remove_at(removal, ...) \
-        rb_warn_deprecated_to_remove(removal, __VA_ARGS__)
+        rb_warn_deprecated_to_remove(#removal, __VA_ARGS__)
 #endif
 VALUE rb_syntax_error_append(VALUE, VALUE, int, int, rb_encoding*, const char*, va_list);
 PRINTF_ARGS(void rb_enc_warn(rb_encoding *enc, const char *fmt, ...), 2, 3);
