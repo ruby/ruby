@@ -83,6 +83,7 @@ module TestIRB
     end
 
     def test_eval_input
+      skip if RUBY_ENGINE == 'truffleruby'
       verbose, $VERBOSE = $VERBOSE, nil
       input = TestInputMethod.new([
         "raise 'Foo'\n",
@@ -95,7 +96,7 @@ module TestIRB
         irb.eval_input
       end
       assert_empty err
-      assert_pattern_list([:*, /RuntimeError \(.*Foo.*\).*\n/,
+      assert_pattern_list([:*, /\(irb\):1:in `<main>': Foo \(RuntimeError\)\n/,
                            :*, /#<RuntimeError: Foo>\n/,
                            :*, /0$/,
                            :*, /0$/,
@@ -414,6 +415,66 @@ module TestIRB
       assert_empty err
       assert_equal("=> abc\ndef\n",
                    out)
+    end
+
+    def test_eval_input_with_exception
+      skip if RUBY_ENGINE == 'truffleruby'
+      verbose, $VERBOSE = $VERBOSE, nil
+      input = TestInputMethod.new([
+        "def hoge() fuga; end; def fuga() raise; end; hoge\n",
+      ])
+      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
+      out, err = capture_output do
+        irb.eval_input
+      end
+      assert_empty err
+      if '2.5.0' <= RUBY_VERSION && RUBY_VERSION < '3.0.0'
+        expected = [
+          :*, /Traceback \(most recent call last\):\n/,
+          :*, /\t 2: from \(irb\):1:in `<main>'\n/,
+          :*, /\t 1: from \(irb\):1:in `hoge'\n/,
+          :*, /\(irb\):1:in `fuga': unhandled exception\n/,
+        ]
+      else
+        expected = [
+          :*, /\(irb\):1:in `fuga': unhandled exception\n/,
+          :*, /\tfrom \(irb\):1:in `hoge'\n/,
+          :*, /\tfrom \(irb\):1:in `<main>'\n/,
+        ]
+      end
+      assert_pattern_list(expected, out)
+    ensure
+      $VERBOSE = verbose
+    end
+
+    def test_eval_input_with_invalid_byte_sequence_exception
+      skip if RUBY_ENGINE == 'truffleruby'
+      verbose, $VERBOSE = $VERBOSE, nil
+      input = TestInputMethod.new([
+        %Q{def hoge() fuga; end; def fuga() raise "A\\xF3B"; end; hoge\n},
+      ])
+      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
+      out, err = capture_output do
+        irb.eval_input
+      end
+      assert_empty err
+      if '2.5.0' <= RUBY_VERSION && RUBY_VERSION < '3.0.0'
+        expected = [
+          :*, /Traceback \(most recent call last\):\n/,
+          :*, /\t 2: from \(irb\):1:in `<main>'\n/,
+          :*, /\t 1: from \(irb\):1:in `hoge'\n/,
+          :*, /\(irb\):1:in `fuga': A\\xF3B \(RuntimeError\)\n/,
+        ]
+      else
+        expected = [
+          :*, /\(irb\):1:in `fuga': A\\xF3B \(RuntimeError\)\n/,
+          :*, /\tfrom \(irb\):1:in `hoge'\n/,
+          :*, /\tfrom \(irb\):1:in `<main>'\n/,
+        ]
+      end
+      assert_pattern_list(expected, out)
+    ensure
+      $VERBOSE = verbose
     end
   end
 end
