@@ -75,6 +75,7 @@ PRINTF_ARGS(void rb_warn_deprecated_to_remove(const char *removal, const char *f
 RBIMPL_ATTR_FORCEINLINE()
 static void
 rb_deprecated_method_to_be_removed(const char *removal)
+    RBIMPL_ATTR_DIAGNOSE_IF(!RUBY_VERSION_isdigit(removal[0]), "malformed version number", "error")
     RBIMPL_ATTR_DIAGNOSE_IF(RUBY_VERSION_SINCE(removal), "deprecated method to be removed", "error")
 {
 }
@@ -82,7 +83,7 @@ rb_deprecated_method_to_be_removed(const char *removal)
 RBIMPL_ATTR_ERROR(("deprecated"))
 void rb_deprecated_method_to_be_removed(const char *);
 #   define rb_deprecated_method_to_be_removed(removal) \
-    (sizeof(char[1-2*RUBY_VERSION_SINCE(removal)])!=1 ? \
+    (sizeof(char[1-2*(!RUBY_VERSION_isdigit(removal[0]) || RUBY_VERSION_SINCE(removal))])!=1 ? \
      rb_deprecated_method_to_be_removed(removal) : \
      RBIMPL_ASSERT_NOTHING)
 # endif
