@@ -28,6 +28,18 @@ typedef struct JITState
 // Code generation function signature
 typedef bool (*codegen_fn)(jitstate_t* jit, ctx_t* ctx);
 
+// Meta-information associated with a given opcode
+typedef struct OpDesc
+{
+    // Code generation function
+    codegen_fn gen_fn;
+
+    // Indicates that this is a branch instruction
+    // which terminates a block
+    bool is_branch;
+
+} opdesc_t;
+
 uint8_t* ujit_compile_entry(const rb_iseq_t *iseq, uint32_t insn_idx);
 
 uint8_t *ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, ctx_t* ctx, uint32_t* num_instrs);

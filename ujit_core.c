@@ -69,28 +69,6 @@ ctx_stack_opnd(ctx_t* ctx, int32_t idx)
     return opnd;
 }
 
-int blockid_cmp(st_data_t arg0, st_data_t arg1)
-{
-    const blockid_t *block0 = (const blockid_t*)arg0;
-    const blockid_t *block1 = (const blockid_t*)arg1;
-    return block0->iseq == block1->iseq && block0->idx == block1->idx;
-}
-
-st_index_t blockid_hash(st_data_t arg)
-{
-    const blockid_t *blockid = (const blockid_t*)arg;
-    st_index_t hash0 = st_numhash((st_data_t)blockid->iseq);
-    st_index_t hash1 = st_numhash((st_data_t)(uint64_t)blockid->idx);
-
-    // Use XOR to combine the hashes
-    return hash0 ^ hash1;
-}
-
-static const struct st_hash_type hashtype_blockid = {
-    blockid_cmp,
-    blockid_hash,
-};
-
 // Retrieve a basic block version for an (iseq, idx) tuple
 uint8_t* find_block_version(blockid_t block)
 {
@@ -113,10 +91,13 @@ uint8_t* branch_stub_hit(uint32_t branch_idx, uint32_t target_idx)
     blockid_t target = branch->targets[target_idx];
 
     //fprintf(stderr, "\nstub hit, branch idx: %d, target idx: %d\n", branch_idx, target_idx);
+    //fprintf(stderr, "cb->write_pos=%ld\n", cb->write_pos);
+    //fprintf(stderr, "branch->end_pos=%d\n", branch->end_pos);
 
     // If either of the target blocks will be placed next
     if (cb->write_pos == branch->end_pos)
     {
+        //fprintf(stderr, "target idx %d will be placed next\n", target_idx);
         branch->shape = (uint8_t)target_idx;
 
         // Rewrite the branch with the new, potentially more compact shape
@@ -221,6 +202,28 @@ void gen_branch(ctx_t* ctx, blockid_t target0, blockid_t target1, branchgen_fn g
     branch_entries[num_branches] = branch_entry;
     num_branches++;
 }
+
+int blockid_cmp(st_data_t arg0, st_data_t arg1)
+{
+    const blockid_t *block0 = (const blockid_t*)arg0;
+    const blockid_t *block1 = (const blockid_t*)arg1;
+    return block0->iseq == block1->iseq && block0->idx == block1->idx;
+}
+
+st_index_t blockid_hash(st_data_t arg)
+{
+    const blockid_t *blockid = (const blockid_t*)arg;
+    st_index_t hash0 = st_numhash((st_data_t)blockid->iseq);
+    st_index_t hash1 = st_numhash((st_data_t)(uint64_t)blockid->idx);
+
+    // Use XOR to combine the hashes
+    return hash0 ^ hash1;
+}
+
+static const struct st_hash_type hashtype_blockid = {
+    blockid_cmp,
+    blockid_hash,
+};
 
 void
 ujit_init_core(void)

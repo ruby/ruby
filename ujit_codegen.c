@@ -173,6 +173,9 @@ ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, ctx_t* ctx, uint32_
     // Get a pointer to the current write position in the code block
     uint8_t *code_ptr = cb_get_ptr(cb, cb->write_pos);
 
+    // Last operation that was successfully compiled
+    opdesc_t* p_last_op = NULL;
+
     // Initialize JIT state object
     jitstate_t jit = { 0 };
     jit.iseq = iseq;
@@ -187,42 +190,40 @@ ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, ctx_t* ctx, uint32_
         // Get the current opcode
         int opcode = jit_get_opcode(&jit);
 
-        //fprintf(stderr, "compiling %s\n", insn_name(opcode));
-
         // Lookup the codegen function for this instruction
-        st_data_t st_gen_fn;
-        if (!rb_st_lookup(gen_fns, opcode, &st_gen_fn)) {
-            //print_int(cb, imm_opnd(num_instrs));
-            //print_str(cb, insn_name(opcode));
+        st_data_t st_op_desc;
+        if (!rb_st_lookup(gen_fns, opcode, &st_op_desc)) {
             break;
         }
 
+        //fprintf(stderr, "compiling %s\n", insn_name(opcode));
         //print_str(cb, insn_name(opcode));
 
         // Call the code generation function
-        codegen_fn gen_fn = (codegen_fn)st_gen_fn;
-        if (!gen_fn(&jit, ctx)) {
+        opdesc_t* p_desc = (opdesc_t*)st_op_desc;
+        bool success = p_desc->gen_fn(&jit, ctx);
+
+        // If we can't compile this instruction
+        if (!success) {
             break;
         }
 
     	// Move to the next instruction
+        p_last_op = p_desc;
         insn_idx += insn_len(opcode);
         (*num_instrs)++;
 
-        // Ensure we only have one send per region. Our code invalidation mechanism can't
-        // invalidate running code and one send could invalidate the other if we had
-        // multiple in the same region.
-        if (opcode == BIN(opt_send_without_block)) {
+        // If this instruction terminates this block
+        if (p_desc->is_branch) {
             break;
         }
     }
 
-    //print_str(cb, "exiting to interpreter\n");
-
-    // FIXME: we only need to generate an exit if an instruction fails to compile
-    //
+    // If the last instruction compiled did not properly terminate the block
     // Generate code to exit to the interpreter
-    ujit_gen_exit(&jit, ctx, cb, &encoded[insn_idx]);
+    if (!p_last_op || !p_last_op->is_branch) {
+        ujit_gen_exit(&jit, ctx, cb, &encoded[insn_idx]);
+    }
 
     if (UJIT_DUMP_MODE >= 2) {
         // Dump list of compiled instrutions
@@ -976,6 +977,21 @@ gen_branchunless(jitstate_t* jit, ctx_t* ctx)
     return true;
 }
 
+void ujit_reg_op(int opcode, codegen_fn gen_fn, bool is_branch)
+{
+    // Check that the op wasn't previously registered
+    st_data_t st_desc;
+    if (rb_st_lookup(gen_fns, opcode, &st_desc)) {
+        rb_bug("op already registered");
+    }
+
+    opdesc_t* p_desc = (opdesc_t*)malloc(sizeof(opdesc_t));
+    p_desc->gen_fn = gen_fn;
+    p_desc->is_branch = is_branch;
+
+    st_insert(gen_fns, (st_data_t)opcode, (st_data_t)p_desc);
+}
+
 void
 ujit_init_codegen(void)
 {
@@ -991,21 +1007,21 @@ ujit_init_codegen(void)
     gen_fns = rb_st_init_numtable();
 
     // Map YARV opcodes to the corresponding codegen functions
-    st_insert(gen_fns, (st_data_t)BIN(dup), (st_data_t)&gen_dup);
-    st_insert(gen_fns, (st_data_t)BIN(nop), (st_data_t)&gen_nop);
-    st_insert(gen_fns, (st_data_t)BIN(pop), (st_data_t)&gen_pop);
-    st_insert(gen_fns, (st_data_t)BIN(putnil), (st_data_t)&gen_putnil);
-    st_insert(gen_fns, (st_data_t)BIN(putobject), (st_data_t)&gen_putobject);
-    st_insert(gen_fns, (st_data_t)BIN(putobject_INT2FIX_0_), (st_data_t)&gen_putobject_int2fix);
-    st_insert(gen_fns, (st_data_t)BIN(putobject_INT2FIX_1_), (st_data_t)&gen_putobject_int2fix);
-    st_insert(gen_fns, (st_data_t)BIN(putself), (st_data_t)&gen_putself);
-    st_insert(gen_fns, (st_data_t)BIN(getlocal_WC_0), (st_data_t)&gen_getlocal_wc0);
-    st_insert(gen_fns, (st_data_t)BIN(setlocal_WC_0), (st_data_t)&gen_setlocal_wc0);
-    st_insert(gen_fns, (st_data_t)BIN(getinstancevariable), (st_data_t)&gen_getinstancevariable);
-    st_insert(gen_fns, (st_data_t)BIN(setinstancevariable), (st_data_t)&gen_setinstancevariable);
-    st_insert(gen_fns, (st_data_t)BIN(opt_lt), (st_data_t)&gen_opt_lt);
-    st_insert(gen_fns, (st_data_t)BIN(opt_minus), (st_data_t)&gen_opt_minus);
-    st_insert(gen_fns, (st_data_t)BIN(opt_plus), (st_data_t)&gen_opt_plus);
-    //st_insert(gen_fns, (st_data_t)BIN(opt_send_without_block), (st_data_t)&gen_opt_send_without_block);
-    st_insert(gen_fns, (st_data_t)BIN(branchunless), (st_data_t)&gen_branchunless);
+    ujit_reg_op(BIN(dup), gen_dup, false);
+    ujit_reg_op(BIN(nop), gen_nop, false);
+    ujit_reg_op(BIN(pop), gen_pop, false);
+    ujit_reg_op(BIN(putnil), gen_putnil, false);
+    ujit_reg_op(BIN(putobject), gen_putobject, false);
+    ujit_reg_op(BIN(putobject_INT2FIX_0_), gen_putobject_int2fix, false);
+    ujit_reg_op(BIN(putobject_INT2FIX_1_), gen_putobject_int2fix, false);
+    ujit_reg_op(BIN(putself), gen_putself, false);
+    ujit_reg_op(BIN(getlocal_WC_0), gen_getlocal_wc0, false);
+    ujit_reg_op(BIN(setlocal_WC_0), gen_setlocal_wc0, false);
+    ujit_reg_op(BIN(getinstancevariable), gen_getinstancevariable, false);
+    ujit_reg_op(BIN(setinstancevariable), gen_setinstancevariable, false);
+    ujit_reg_op(BIN(opt_lt), gen_opt_lt, false);
+    ujit_reg_op(BIN(opt_minus), gen_opt_minus, false);
+    ujit_reg_op(BIN(opt_plus), gen_opt_plus, false);
+    //ujit_reg_op(BIN(opt_send_without_block), gen_opt_send_without_block);
+    ujit_reg_op(BIN(branchunless), gen_branchunless, true);
 }
