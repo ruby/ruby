@@ -1205,7 +1205,7 @@ rb_obj_dummy1(VALUE _x, VALUE _y)
 VALUE
 rb_obj_tainted(VALUE obj)
 {
-    rb_warn_deprecated_to_remove_at("3.2", "Object#tainted?", NULL);
+    rb_warn_deprecated_to_remove_at(3.2, "Object#tainted?", NULL);
     return Qfalse;
 }
 
@@ -1219,7 +1219,7 @@ rb_obj_tainted(VALUE obj)
 VALUE
 rb_obj_taint(VALUE obj)
 {
-    rb_warn_deprecated_to_remove_at("3.2", "Object#taint", NULL);
+    rb_warn_deprecated_to_remove_at(3.2, "Object#taint", NULL);
     return obj;
 }
 
@@ -1234,7 +1234,7 @@ rb_obj_taint(VALUE obj)
 VALUE
 rb_obj_untaint(VALUE obj)
 {
-    rb_warn_deprecated_to_remove_at("3.2", "Object#untaint", NULL);
+    rb_warn_deprecated_to_remove_at(3.2, "Object#untaint", NULL);
     return obj;
 }
 
@@ -1248,7 +1248,7 @@ rb_obj_untaint(VALUE obj)
 VALUE
 rb_obj_untrusted(VALUE obj)
 {
-    rb_warn_deprecated_to_remove_at("3.2", "Object#untrusted?", NULL);
+    rb_warn_deprecated_to_remove_at(3.2, "Object#untrusted?", NULL);
     return Qfalse;
 }
 
@@ -1262,7 +1262,7 @@ rb_obj_untrusted(VALUE obj)
 VALUE
 rb_obj_untrust(VALUE obj)
 {
-    rb_warn_deprecated_to_remove_at("3.2", "Object#untrust", NULL);
+    rb_warn_deprecated_to_remove_at(3.2, "Object#untrust", NULL);
     return obj;
 }
 
@@ -1277,7 +1277,7 @@ rb_obj_untrust(VALUE obj)
 VALUE
 rb_obj_trust(VALUE obj)
 {
-    rb_warn_deprecated_to_remove_at("3.2", "Object#trust", NULL);
+    rb_warn_deprecated_to_remove_at(3.2, "Object#trust", NULL);
     return obj;
 }
 
@@ -1288,7 +1288,7 @@ rb_obj_trust(VALUE obj)
 void
 rb_obj_infect(VALUE victim, VALUE carrier)
 {
-    rb_warn_deprecated_to_remove_at("3.2", "rb_obj_infect", NULL);
+    rb_warn_deprecated_to_remove_at(3.2, "rb_obj_infect", NULL);
 }
 
 /**

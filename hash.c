@@ -5043,7 +5043,7 @@ env_fetch(int argc, VALUE *argv, VALUE _)
 int
 rb_env_path_tainted(void)
 {
-    rb_warn_deprecated_to_remove_at("3.2", "rb_env_path_tainted", NULL);
+    rb_warn_deprecated_to_remove_at(3.2, "rb_env_path_tainted", NULL);
     return 0;
 }
 
