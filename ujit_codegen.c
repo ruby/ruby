@@ -88,19 +88,19 @@ Generate an out-of-line exit to return to the interpreter
 static uint8_t *
 ujit_side_exit(jitstate_t* jit, ctx_t* ctx)
 {
-    uint8_t* code_ptr = cb_get_ptr(ocb, cb->write_pos);
+    uint8_t* code_ptr = cb_get_ptr(ocb, ocb->write_pos);
 
     // Table mapping opcodes to interpreter handlers
-    const void * const *table = rb_vm_get_insns_address_table();
+    const void * const *handler_table = rb_vm_get_insns_address_table();
 
     // Write back the old instruction at the exit PC
     // Otherwise the interpreter may jump right back to the
     // JITted code we're trying to exit
     VALUE* exit_pc = &jit->iseq->body->iseq_encoded[jit->insn_idx];
     int exit_opcode = opcode_at_pc(jit->iseq, exit_pc);
-    void* exit_instr = (void*)table[exit_opcode];
+    void* handler_addr = (void*)handler_table[exit_opcode];
     mov(ocb, RAX, const_ptr_opnd(exit_pc));
-    mov(ocb, RCX, const_ptr_opnd(exit_instr));
+    mov(ocb, RCX, const_ptr_opnd(handler_addr));
     mov(ocb, mem_opnd(64, RAX, 0), RCX);
 
     // Generate the code to exit to the interpreters
@@ -932,8 +932,21 @@ gen_opt_send_without_block(jitstate_t* jit, ctx_t* ctx)
 void 
 gen_branchunless_branch(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uint8_t shape)
 {
-    jz_ptr(cb, target0);
-    jmp_ptr(cb, target1);
+    switch (shape)
+    {
+        case SHAPE_NEXT0:
+        jnz_ptr(cb, target1);
+        break;
+
+        case SHAPE_NEXT1:
+        jz_ptr(cb, target0);
+        break;
+
+        case SHAPE_DEFAULT:
+        jz_ptr(cb, target0);
+        jmp_ptr(cb, target1);
+        break;
+    }
 }
 
 static bool
