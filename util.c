@@ -97,6 +97,8 @@ NO_SANITIZE("unsigned-integer-overflow", extern unsigned long ruby_scan_digits(c
 unsigned long
 ruby_scan_digits(const char *str, ssize_t len, int base, size_t *retlen, int *overflow)
 {
+    RBIMPL_ASSERT_OR_ASSUME(base >= 2);
+    RBIMPL_ASSERT_OR_ASSUME(base <= 36);
 
     const char *start = str;
     unsigned long ret = 0, x;
@@ -135,6 +137,11 @@ ruby_strtoul(const char *str, char **endptr, int base)
     size_t len;
     unsigned long ret;
     const char *subject_found = str;
+
+    if (base < 0) {
+        errno = EINVAL;
+        return 0;
+    }
 
     if (base == 1 || 36 < base) {
         errno = EINVAL;
