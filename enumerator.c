@@ -1711,13 +1711,13 @@ lazy_generator_init(VALUE enumerator, VALUE procs)
  *
  *    # This will fetch all URLs before selecting
  *    # necessary data
- *    URLS.map { |u| JSON.parse(open(u).read) }
+ *    URLS.map { |u| JSON.parse(URI.open(u).read) }
  *      .select { |data| data.key?('stats') }
  *      .first(5)
  *
  *    # This will fetch URLs one-by-one, only till
  *    # there is enough data to satisfy the condition
- *    URLS.lazy.map { |u| JSON.parse(open(u).read) }
+ *    URLS.lazy.map { |u| JSON.parse(URI.open(u).read) }
  *      .select { |data| data.key?('stats') }
  *      .first(5)
  *
