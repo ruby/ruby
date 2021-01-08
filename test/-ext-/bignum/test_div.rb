@@ -5,8 +5,8 @@ require "-test-/bignum"
 class Test_Bignum < Test::Unit::TestCase
   class TestDiv < Test::Unit::TestCase
 
-    SIZEOF_BDIGIT = Integer::SIZEOF_BDIGIT
-    BITSPERDIG = Integer::BITSPERDIG
+    SIZEOF_BDIGIT = Bug::Bignum::SIZEOF_BDIGIT
+    BITSPERDIG = Bug::Bignum::BITSPERDIG
     BDIGMAX = (1 << BITSPERDIG) - 1
 
     def test_divrem_normal
@@ -14,7 +14,7 @@ class Test_Bignum < Test::Unit::TestCase
       y = (1 << BITSPERDIG) | 1
       q = (1 << BITSPERDIG) | 1
       r = 2
-      assert_equal([q, r], x.big_divrem_normal(y))
+      assert_equal([q, r], Bug::Bignum.big_divrem_normal(x, y))
     end
 
     def test_divrem_gmp
@@ -22,7 +22,7 @@ class Test_Bignum < Test::Unit::TestCase
       y = (1 << BITSPERDIG) | 1
       q = (1 << BITSPERDIG) | 1
       r = 2
-      assert_equal([q, r], x.big_divrem_gmp(y))
+      assert_equal([q, r], Bug::Bignum.big_divrem_gmp(x, y))
     rescue NotImplementedError
     end
   end
