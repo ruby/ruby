@@ -8,7 +8,7 @@ module IRB
       q = ColorPrinter.new(out, width)
       q.guard_inspect_key {q.pp obj}
       q.flush
-      out
+      out << "\n"
     end
 
     def text(str, width = nil)

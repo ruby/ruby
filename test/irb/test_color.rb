@@ -158,9 +158,9 @@ module TestIRB
         skip 'Ripper::Lexer#scan is supported in Ruby 2.7+'
       end
       {
-        1 => "#{BLUE}#{BOLD}1#{CLEAR}",
-        Struct.new('IRBTestColorPrinter', :a).new('test') => "#{GREEN}#<struct Struct::IRBTestColorPrinter#{CLEAR} a#{GREEN}=#{CLEAR}#{RED}#{BOLD}\"#{CLEAR}#{RED}test#{CLEAR}#{RED}#{BOLD}\"#{CLEAR}#{GREEN}>#{CLEAR}",
-        Ripper::Lexer.new('1').scan => "[#{GREEN}#<Ripper::Lexer::Elem:#{CLEAR} on_int@1:0 END token: #{RED}#{BOLD}\"#{CLEAR}#{RED}1#{CLEAR}#{RED}#{BOLD}\"#{CLEAR}#{GREEN}>#{CLEAR}]",
+        1 => "#{BLUE}#{BOLD}1#{CLEAR}\n",
+        Struct.new('IRBTestColorPrinter', :a).new('test') => "#{GREEN}#<struct Struct::IRBTestColorPrinter#{CLEAR} a#{GREEN}=#{CLEAR}#{RED}#{BOLD}\"#{CLEAR}#{RED}test#{CLEAR}#{RED}#{BOLD}\"#{CLEAR}#{GREEN}>#{CLEAR}\n",
+        Ripper::Lexer.new('1').scan => "[#{GREEN}#<Ripper::Lexer::Elem:#{CLEAR} on_int@1:0 END token: #{RED}#{BOLD}\"#{CLEAR}#{RED}1#{CLEAR}#{RED}#{BOLD}\"#{CLEAR}#{GREEN}>#{CLEAR}]\n",
       }.each do |object, result|
         actual = with_term { IRB::ColorPrinter.pp(object, '') }
         assert_equal(result, actual, "Case: IRB::ColorPrinter.pp(#{object.inspect}, '')")
