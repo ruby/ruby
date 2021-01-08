@@ -1732,7 +1732,7 @@ class Reline::LineEditor
       @buffer_of_lines = Reline::HISTORY[@history_pointer].split("\n")
       @buffer_of_lines = [String.new(encoding: @encoding)] if @buffer_of_lines.empty?
       @line_index = line_no
-      @line = @buffer_of_lines.last
+      @line = @buffer_of_lines[@line_index]
       @rerender_all = true
     else
       @line = Reline::HISTORY[@history_pointer]
@@ -1780,7 +1780,7 @@ class Reline::LineEditor
         @line_index = line_no
       end
       @buffer_of_lines = [String.new(encoding: @encoding)] if @buffer_of_lines.empty?
-      @line = @buffer_of_lines.last
+      @line = @buffer_of_lines[@line_index]
       @rerender_all = true
     else
       if @history_pointer.nil? and substr.empty?
