@@ -25,6 +25,8 @@ class TestBigDecimalUtil < Test::Unit::TestCase
     assert_equal(9.05, 9.05.to_d.to_f)
     assert_equal("9.050000000000001", 9.05.to_d.to_s('F'))
 
+    assert_equal(Math::PI, Math::PI.to_d.to_f)
+
     bug9214 = '[ruby-core:58858]'
     assert_equal((-0.0).to_d.sign, -1, bug9214)
 
@@ -49,6 +51,10 @@ class TestBigDecimalUtil < Test::Unit::TestCase
   def test_Float_to_d_bug13331
     assert_equal(64.4.to_d,
                  1.to_d * 64.4,
+                 "[ruby-core:80234] [Bug #13331]")
+
+    assert_equal((2*Math::PI).to_d,
+                 2.to_d * Math::PI,
                  "[ruby-core:80234] [Bug #13331]")
   end
 
