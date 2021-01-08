@@ -166,6 +166,7 @@ nav {
   width: 260px;
   font-family: Helvetica, sans-serif;
   font-size: 14px;
+  border-right: 1px solid #ccc;
 }
 
 main {
