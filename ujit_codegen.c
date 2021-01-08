@@ -972,7 +972,70 @@ gen_branchunless(jitstate_t* jit, ctx_t* ctx)
     blockid_t jump_block = { jit->iseq, jump_idx };
 
     // Generate the branch instructions
-    gen_branch(ctx, jump_block, next_block, gen_branchunless_branch);
+    gen_branch(
+        ctx,
+        jump_block,
+        ctx,
+        next_block,
+        ctx,
+        gen_branchunless_branch
+    );
+
+    return true;
+}
+
+void
+gen_jump_branch(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uint8_t shape)
+{
+    switch (shape)
+    {
+        case SHAPE_NEXT0:
+        break;
+
+        case SHAPE_NEXT1:
+        assert (false);
+        break;
+
+        case SHAPE_DEFAULT:
+        jmp_ptr(cb, target0);
+        break;
+    }
+}
+
+static bool
+gen_jump(jitstate_t* jit, ctx_t* ctx)
+{
+    // Get the branch target instruction offsets
+    uint32_t next_idx = jit_next_idx(jit);
+    uint32_t jump_idx = next_idx + (uint32_t)jit_get_arg(jit, 0);
+    blockid_t jump_block = { jit->iseq, jump_idx };
+
+    //
+    // TODO:
+	// RUBY_VM_CHECK_INTS(ec);
+    //
+
+    //print_str(cb, "jump!");
+    //print_int(cb, imm_opnd(jump_idx));
+
+    // If the jump target was already compiled
+    if (find_block_version(jump_block, ctx))
+    {
+        // Generate the jump instruction
+        gen_branch(
+            ctx,
+            jump_block,
+            ctx,
+            BLOCKID_NULL,
+            ctx,
+            gen_jump_branch
+        );
+    }
+    else
+    {
+        // No need for a jump, compile the target block right here
+        gen_block_version(jump_block, ctx);
+    }
 
     return true;
 }
@@ -1024,4 +1087,5 @@ ujit_init_codegen(void)
     ujit_reg_op(BIN(opt_plus), gen_opt_plus, false);
     //ujit_reg_op(BIN(opt_send_without_block), gen_opt_send_without_block);
     ujit_reg_op(BIN(branchunless), gen_branchunless, true);
+    ujit_reg_op(BIN(jump), gen_jump, true);
 }

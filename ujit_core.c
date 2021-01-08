@@ -70,7 +70,7 @@ ctx_stack_opnd(ctx_t* ctx, int32_t idx)
 }
 
 // Retrieve a basic block version for an (iseq, idx) tuple
-uint8_t* find_block_version(blockid_t block)
+uint8_t* find_block_version(blockid_t block, const ctx_t* ctx)
 {
     // If there exists a version for this block id
     st_data_t st_version;
@@ -78,7 +78,26 @@ uint8_t* find_block_version(blockid_t block)
         return (uint8_t*)st_version;
     }
 
+    //
+    // TODO: use the ctx parameter to search available versions
+    //
+
     return NULL;
+}
+
+// Compile a new block version immediately
+uint8_t* gen_block_version(blockid_t block, const ctx_t* ctx)
+{
+    // Copy the context object to avoid modifying it
+    ctx_t ctx_copy = *ctx;
+
+    uint32_t num_instrs = 0;
+    uint8_t* block_ptr = ujit_compile_block(block.iseq, block.idx, &ctx_copy, &num_instrs);
+
+    // Keep track of the new block version
+    st_insert(version_tbl, (st_data_t)&block, (st_data_t)block_ptr);
+
+    return block_ptr;
 }
 
 // Called by the generated code when a branch stub is executed
@@ -89,6 +108,7 @@ uint8_t* branch_stub_hit(uint32_t branch_idx, uint32_t target_idx)
     assert (target_idx < 2);
     branch_t *branch = &branch_entries[branch_idx];
     blockid_t target = branch->targets[target_idx];
+    ctx_t* target_ctx = &branch->target_ctxs[target_idx];
 
     //fprintf(stderr, "\nstub hit, branch idx: %d, target idx: %d\n", branch_idx, target_idx);
     //fprintf(stderr, "cb->write_pos=%ld\n", cb->write_pos);
@@ -107,19 +127,17 @@ uint8_t* branch_stub_hit(uint32_t branch_idx, uint32_t target_idx)
     }
 
     // Try to find a compiled version of this block
-    uint8_t* block_ptr = find_block_version(target);
+    uint8_t* block_ptr = find_block_version(target, target_ctx);
 
     // If this block hasn't yet been compiled
     if (!block_ptr)
     {
         //fprintf(stderr, "compiling block\n");
-
-        ctx_t ctx = branch->ctx;
-        uint32_t num_instrs = 0;
-        block_ptr = ujit_compile_block(target.iseq, target.idx, &ctx, &num_instrs);
-        st_insert(version_tbl, (st_data_t)&target, (st_data_t)block_ptr);
-        branch->dst_addrs[target_idx] = block_ptr;
+        block_ptr = gen_block_version(target, target_ctx);
     }
+
+    // Update the branch target address
+    branch->dst_addrs[target_idx] = block_ptr;
 
     //fprintf(stderr, "rewrite branch at %d\n", branch->start_pos);
 
@@ -138,9 +156,15 @@ uint8_t* branch_stub_hit(uint32_t branch_idx, uint32_t target_idx)
 
 // Get a version or stub corresponding to a branch target
 // TODO: need incoming and target versioning contexts
-uint8_t* get_branch_target(codeblock_t* ocb, blockid_t target, uint32_t branch_idx, uint32_t target_idx)
+uint8_t* get_branch_target(
+    blockid_t target,
+    const ctx_t* ctx,
+    codeblock_t* ocb,
+    uint32_t branch_idx,
+    uint32_t target_idx
+)
 {
-    uint8_t* block_code = find_block_version(target);
+    uint8_t* block_code = find_block_version(target, ctx);
 
     if (block_code)
         return block_code;
@@ -174,11 +198,18 @@ uint8_t* get_branch_target(codeblock_t* ocb, blockid_t target, uint32_t branch_i
     return stub_addr;
 }
 
-void gen_branch(ctx_t* ctx, blockid_t target0, blockid_t target1, branchgen_fn gen_fn)
+void gen_branch(
+    const ctx_t* src_ctx,
+    blockid_t target0, 
+    const ctx_t* ctx0,
+    blockid_t target1, 
+    const ctx_t* ctx1,
+    branchgen_fn gen_fn
+)
 {
     // Get branch targets or stubs (code pointers)
-    uint8_t* dst_addr0 = get_branch_target(ocb, target0, num_branches, 0);
-    uint8_t* dst_addr1 = get_branch_target(ocb, target1, num_branches, 1);
+    uint8_t* dst_addr0 = get_branch_target(target0, ctx0, ocb, num_branches, 0);
+    uint8_t* dst_addr1 = get_branch_target(target1, ctx1, ocb, num_branches, 1);
 
     uint32_t start_pos = (uint32_t)cb->write_pos;
 
@@ -189,10 +220,11 @@ void gen_branch(ctx_t* ctx, blockid_t target0, blockid_t target1, branchgen_fn g
 
     // Register this branch entry
     branch_t branch_entry = {
-        *ctx,
         start_pos,
         end_pos,
+        *src_ctx,
         { target0, target1 },
+        { *ctx0, *ctx1 },
         { dst_addr0, dst_addr1 },
         gen_fn,
         SHAPE_DEFAULT

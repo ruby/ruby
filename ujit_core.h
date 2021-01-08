@@ -42,6 +42,9 @@ typedef struct BlockId
 
 } blockid_t;
 
+// Null block id constant
+static const blockid_t BLOCKID_NULL = { 0, 0 };
+
 /// Branch code shape enumeration
 enum uint8_t
 {
@@ -56,15 +59,16 @@ typedef void (*branchgen_fn)(codeblock_t* cb, uint8_t* target0, uint8_t* target1
 // Store info about an outgoing branch in a code segment
 typedef struct BranchEntry
 {
-    // Context right after the branch instruction
-    ctx_t ctx;
-
     // Positions where the generated code starts and ends
     uint32_t start_pos;
     uint32_t end_pos;
 
-    // Branch target blocks
+    // Context right after the branch instruction
+    ctx_t src_ctx;
+
+    // Branch target blocks and their contexts
     blockid_t targets[2];
+    ctx_t target_ctxs[2];
 
     // Jump target addresses
     uint8_t* dst_addrs[2];
@@ -86,7 +90,17 @@ x86opnd_t ctx_stack_push(ctx_t* ctx, size_t n);
 x86opnd_t ctx_stack_pop(ctx_t* ctx, size_t n);
 x86opnd_t ctx_stack_opnd(ctx_t* ctx, int32_t idx);
 
-void gen_branch(ctx_t* ctx, blockid_t target0, blockid_t target1, branchgen_fn gen_fn);
+uint8_t* find_block_version(blockid_t block, const ctx_t* ctx);
+uint8_t* gen_block_version(blockid_t block, const ctx_t* ctx);
+
+void gen_branch(
+    const ctx_t* src_ctx,
+    blockid_t target0,
+    const ctx_t* ctx0,
+    blockid_t target1,
+    const ctx_t* ctx1,
+    branchgen_fn gen_fn
+);
 
 void ujit_init_core(void);
 
