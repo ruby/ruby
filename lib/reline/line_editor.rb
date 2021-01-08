@@ -2395,6 +2395,9 @@ class Reline::LineEditor
       width = Reline::Unicode.get_mbchar_width(mbchar)
       @cursor_max -= width
       if @cursor > 0 and @cursor >= @cursor_max
+        byte_size = Reline::Unicode.get_prev_mbchar_size(@line, @byte_pointer)
+        mbchar = @line.byteslice(@byte_pointer - byte_size, byte_size)
+        width = Reline::Unicode.get_mbchar_width(mbchar)
         @byte_pointer -= byte_size
         @cursor -= width
       end
