@@ -1434,4 +1434,22 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     assert_cursor(4)
     assert_cursor_max(4)
   end
+
+  def test_ed_delete_next_char_at_eol
+    input_keys('"あ"')
+    assert_line('"あ"')
+    assert_byte_pointer_size('"あ"')
+    assert_cursor(4)
+    assert_cursor_max(4)
+    input_keys("\C-[")
+    assert_line('"あ"')
+    assert_byte_pointer_size('"あ')
+    assert_cursor(3)
+    assert_cursor_max(4)
+    input_keys('xa"')
+    assert_line('"あ"')
+    assert_byte_pointer_size('"あ"')
+    assert_cursor(4)
+    assert_cursor_max(4)
+  end
 end
