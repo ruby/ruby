@@ -624,7 +624,7 @@ module IRB
             message = exc.full_message(order: :top)
             order = :top
           end
-        else # RUBY_VERSION < '2.5.0' || '3.0.0' <= RUBY_VERSION
+        else # '3.0.0' <= RUBY_VERSION
           message = exc.full_message(order: :top)
           order = :top
         end
