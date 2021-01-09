@@ -2315,7 +2315,7 @@ find_timezone(VALUE time, VALUE zone)
 }
 
 static VALUE
-time_init_args(rb_execution_context_t *ec, VALUE time, VALUE year, VALUE mon, VALUE mday, VALUE hour, VALUE min, VALUE sec, VALUE zone)
+time_init_args(rb_execution_context_t *ec, VALUE time, VALUE year, VALUE mon, VALUE mday, VALUE hour, VALUE min, VALUE sec, VALUE zone, VALUE base)
 {
     struct vtm vtm;
     VALUE utc = Qnil;
@@ -2325,25 +2325,28 @@ time_init_args(rb_execution_context_t *ec, VALUE time, VALUE year, VALUE mon, VA
     vtm.yday = 0;
     vtm.zone = str_empty;
 
-    vtm.year = obj2vint(year);
+#define base_time(var, x, y) \
+    (!NIL_P(var) ? (lesser = true, (x)) : \
+     (lesser && !NIL_P(base)) ? NUM2INT(rb_funcall(base, rb_intern(#var), 0, 0)) : \
+     (y))
 
-    vtm.mon = NIL_P(mon) ? 1 : month_arg(mon);
-
-    vtm.mday = NIL_P(mday) ? 1 : obj2ubits(mday, 5);
-
-    vtm.hour = NIL_P(hour) ? 0 : obj2ubits(hour, 5);
-
-    vtm.min  = NIL_P(min) ? 0 : obj2ubits(min, 6);
-
+    bool lesser = false;
     if (NIL_P(sec)) {
         vtm.sec = 0;
         vtm.subsecx = INT2FIX(0);
     }
     else {
         VALUE subsecx;
+        lesser = true;
         vtm.sec = obj2subsecx(sec, &subsecx);
         vtm.subsecx = subsecx;
     }
+
+    vtm.min  = base_time(min, obj2ubits(min, 6), 0);
+    vtm.hour = base_time(hour, obj2ubits(hour, 5), 0);
+    vtm.mday = base_time(mday, obj2ubits(mday, 5), 1);
+    vtm.mon = base_time(mon, month_arg(mon), 1);
+    vtm.year = base_time(year, obj2vint(year), obj2vint(year));
 
     vtm.isdst = VTM_ISDST_INITVAL;
     vtm.utc_offset = Qnil;
