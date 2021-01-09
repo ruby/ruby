@@ -2799,6 +2799,8 @@ static VALUE rb_rational_convert_to_BigDecimal(VALUE val, size_t digs, int raise
 static VALUE
 rb_float_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception)
 {
+    assert(RB_FLOAT_TYPE_P(val));
+
     double d = RFLOAT_VALUE(val);
 
     if (!isfinite(d)) {
@@ -2838,6 +2840,8 @@ rb_float_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception)
 static VALUE
 rb_rational_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception)
 {
+    assert(RB_TYPE_P(val, T_RATIONAL));
+
     if (digs == SIZE_MAX) {
         if (!raise_exception)
             return Qnil;
