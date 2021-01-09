@@ -205,17 +205,18 @@ static VALUE rb_rational_convert_to_BigDecimal(VALUE val, size_t digs, int raise
 static Real*
 GetVpValueWithPrec(VALUE v, long prec, int must)
 {
+    const size_t digs = prec < 0 ? SIZE_MAX : (long)prec;
     Real *pv;
 
     switch(TYPE(v)) {
       case T_FLOAT: {
-        VALUE obj = rb_float_convert_to_BigDecimal(v, prec, must);
+        VALUE obj = rb_float_convert_to_BigDecimal(v, digs, must);
         TypedData_Get_Struct(obj, Real, &BigDecimal_data_type, pv);
         return pv;
       }
 
       case T_RATIONAL: {
-        VALUE obj = rb_rational_convert_to_BigDecimal(v, prec, must);
+        VALUE obj = rb_rational_convert_to_BigDecimal(v, digs, must);
         TypedData_Get_Struct(obj, Real, &BigDecimal_data_type, pv);
         return pv;
       }
