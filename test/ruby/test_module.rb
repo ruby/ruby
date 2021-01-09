@@ -987,27 +987,6 @@ class TestModule < Test::Unit::TestCase
     end
   end
 
-  def test_attr_obsoleted_flag
-    c = Class.new do
-      extend Test::Unit::Assertions
-      def initialize
-        @foo = :foo
-        @bar = :bar
-      end
-      assert_deprecated_warning(/optional boolean argument/) do
-        attr :foo, true
-      end
-      assert_deprecated_warning(/optional boolean argument/) do
-        attr :bar, false
-      end
-    end
-    o = c.new
-    assert_equal(true, o.respond_to?(:foo))
-    assert_equal(true, o.respond_to?(:foo=))
-    assert_equal(true, o.respond_to?(:bar))
-    assert_equal(false, o.respond_to?(:bar=))
-  end
-
   def test_attr_public_at_toplevel
     s = Object.new
     TOPLEVEL_BINDING.eval(<<-END).call(s.singleton_class)
