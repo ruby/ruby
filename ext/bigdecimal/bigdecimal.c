@@ -205,7 +205,7 @@ static VALUE rb_rational_convert_to_BigDecimal(VALUE val, size_t digs, int raise
 static Real*
 GetVpValueWithPrec(VALUE v, long prec, int must)
 {
-    const size_t digs = prec < 0 ? SIZE_MAX : (long)prec;
+    const size_t digs = prec < 0 ? SIZE_MAX : (size_t)prec;
     Real *pv;
 
     switch(TYPE(v)) {
