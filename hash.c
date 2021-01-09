@@ -6842,6 +6842,138 @@ env_update(VALUE env, VALUE hash)
  *    synonyms.keys # => [:hello, :world]
  *
  *  Note that setting the default proc will clear the default value and vice versa.
+ *
+ *  === What's Here
+ *
+ *  \Class \Hash provides methods that are useful for:
+ *
+ *  - {Creating a Hash}[#class-Hash-label-Methods+for+Creating+a+Hash]
+ *  - {Setting Hash State}[#class-Hash-label-Methods+for+Setting+Hash+State]
+ *  - {Querying}[#class-Hash-label-Methods+for+Querying]
+ *  - {Comparing}[#class-Hash-label-Methods+for+Comparing]
+ *  - {Fetching}[#class-Hash-label-Methods+for+Fetching]
+ *  - {Assigning}[#class-Hash-label-Methods+for+Assigning]
+ *  - {Deleting}[#class-Hash-label-Methods+for+Deleting]
+ *  - {Iterating}[#class-Hash-label-Methods+for+Iterating]
+ *  - {Converting}[#class-Hash-label-Methods+for+Converting]
+ *  - {Transforming Keys and Values}[#class-Hash-label-Methods+for+Transforming+Keys+and+Values]
+ *  - {And more....}[#class-Hash-label-Other+Methods]
+ *
+ *  \Class \Hash also includes methods from module Enumerable.
+ *
+ *  ==== Methods for Creating a \Hash
+ *
+ *  ::[]:: Returns a new hash populated with given objects.
+ *  ::new:: Returns a new empty hash.
+ *  ::try_convert:: Returns a new hash created from a given object.
+ *
+ *  ==== Methods for Setting \Hash State
+ *
+ *  #compare_by_identity:: Sets +self+ to consider only identity in comparing keys.
+ *  #default=:: Sets the default to a given value.
+ *  #default_proc=:: Sets the default proc to a given proc.
+ *  #rehash:: Rebuilds the hash table by recomputing the hash index for each key.
+ *
+ *  ==== Methods for Querying
+ *
+ *  #any?:: Returns +true+ if any element satisfies a given criterion; +false+ otherwise.
+ *  #compare_by_identity?:: Returns +true+ if compare_by_identity has been called, +false+ otherwise.
+ *  #default:: Returns the default value, or the default value for a given key.
+ *  #default_proc:: Returns the default proc.
+ *  #empty?:: Returns +true+ if there are no entries, +false+ otherwise.
+ *  #eql?:: Returns +true+ if a given object is equal to +self+, +false+ otherwise.
+ *  #hash:: Returns the integer hash code.
+ *  #has_key?:: Returns +true+ if a given object is a key in +self+, otherwise +false+.
+ *  #has_value?:: Returns +true+ if a given object is a value in +self+, otherwise +false+.
+ *  #include?:: Returns +true+ if a given object is a key in +self+, otherwise +false+.
+ *  #key?:: Returns +true+ if a given object is a key in +self+, otherwise +false+.
+ *  #length:: Returns the count of entries.
+ *  #member?:: Returns +true+ if a given object is a key in +self+, otherwise +false+.
+ *  #size::  Returns the count of entries.
+ *  #value?:: Returns +true+ if a given object is a value in +self+, otherwise +false+.
+ *
+ *  ==== Methods for Comparing
+ *
+ *  {#<}[#method-i-3C]:: Returns +true+ if +self+ is a proper subset of a given object, +false+ otherwise.
+ *  {#<=}[#method-i-3C-3D]:: Returns +true+ if +self+ is a subset of a given object, +false+ otherwise.
+ *  {#==}[#method-i-3D-3D]:: Returns +true+ if a given object is equal to +self+, +false+ otherwise.
+ *  {#>}[#method-i-3E]:: Returns +true+ if +self+ is a proper superset of a given object, +false+ otherwise
+ *  {#>=}[#method-i-3E-3D]:: Returns +true+ if +self+ is a proper superset of a given object, +false+ otherwise.
+ *
+ *  ==== Methods for Fetching
+ *
+ *  #[]:: Returns the value associated with a given key.
+ *  #assoc:: Returns a 2-element array containing a given key and its value.
+ *  #dig:: Returns the object in nested objects that is specified by a given key and identifiers.
+ *  #fetch:: Returns the value for a given key.
+ *  #fetch_values:: Returns array containing the values associated with given keys.
+ *  #key:: Returns the key for the first-found entry with a given value.
+ *  #keys:: Returns an array containing all keys in +self+.
+ *  #rassoc:: Returns a 2-element array consisting of the key and value
+              of the first-found entry having a given value.
+ *  #slice:: Returns a hash containing the entries for given keys.
+ *  #values:: Returns an array containing all values in +self+/
+ *  #values_at:: Returns an array containing values for given keys.
+ *
+ *  ==== Methods for Assigning
+ *
+ *  #[]=:: Associates a given value with a given key.
+ *  #merge:: Returns the hash formed by merging each given hash into a copy of +self+.
+ *  #merge!:: Merges each given hash into +self+.
+ *  #replace:: Replaces the entire contents of +self+ with the contents of a givan hash.
+ *  #store:: Associates a given value with a given key.
+ *  #update:: Merges each given hash into +self+.
+ *
+ *  ==== Methods for Deleting
+ *
+ *  These methods remove entries from +self+:
+ *
+ *  #clear:: Removes all entries from +self+.
+ *  #compact!:: Removes all +nil+-valued entries from +self+.
+ *  #delete:: Removes the entry for a given key.
+ *  #delete_if:: Removes entries selected by a given block.
+ *  #filter!:: Removes entries selected by a given block.
+ *  #keep_if:: Removes entries selected by a given block.
+ *  #reject!:: Removes entries selected by a given block.
+ *  #select!:: Removes entries selected by a given block.
+ *  #shift:: Removes and returns the first entry.
+ *
+ *  These methods return a copy of +self+ with some entries removed:
+ *
+ *  #compact:: Returns a copy of +self+ with all +nil+-valued entries removed.
+ *  #except:: Returns a copy of +self+ with entries removed for specified keys.
+ *  #filter:: Returns a copy of +self+ with entries removed as specified by a given block.
+ *  #reject:: Returns a copy of +self+ with entries removed as specified by a given block.
+ *  #select:: Returns a copy of +self+ with entries removed as specified by a given block.
+ *
+ *  ==== Methods for Iterating
+ *  #each:: Calls a given block with each key-value pair.
+ *  #each_key:: Calls a given block with each key.
+ *  #each_pair:: Calls a given block with each key-value pair.
+ *  #each_value:: Calls a given block with each value.
+ *
+ *  ==== Methods for Converting
+ *
+ *  #inspect:: Returns a new String containing the hash entries.
+ *  #to_a:: Returns a new array of 2-element arrays;
+ *          each nested array contains a key-value pair from +self+.
+ *  #to_h:: Returns +self+ if a \Hash;
+ *          if a subclass of \Hash, returns a \Hash containing the entries from +self+.
+ *  #to_hash:: Returns +self+.
+ *  #to_proc:: Returns a proc that maps a given key to its value.
+ *  #to_s:: Returns a new String containing the hash entries.
+ *
+ *  ==== Methods for Transforming Keys and Values
+ *
+ *  #transform_keys:: Returns a copy of +self+ with modified keys.
+ *  #transform_keys!:: Modifies keys in +self+
+ *  #transform_values:: Returns a copy of +self+ with modified values.
+ *  #transform_values!:: Modifies values in +self+.
+ *
+ *  ==== Other Methods
+ *  #flatten:: Returns an array that is a 1-dimensional flattening of +self+.
+ *  #invert:: Returns a hash with the each key-value pair inverted.
+ *
  */
 
 void
