@@ -1150,7 +1150,7 @@ static __inline__ tick_t
 tick(void)
 {
     unsigned long val;
-    __asm__ __volatile__ ("mrs %0, cntvct_el0", : "=r" (val));
+    __asm__ __volatile__ ("mrs %0, cntvct_el0" : "=r" (val));
     return val;
 }
 
