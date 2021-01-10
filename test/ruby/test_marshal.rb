@@ -58,6 +58,8 @@ class TestMarshal < Test::Unit::TestCase
     TestMarshal.instance_eval { remove_const :StructOrNot }
     TestMarshal.const_set :StructOrNot, Class.new
     assert_raise(TypeError, "[ruby-dev:31709]") { Marshal.load(s) }
+  ensure
+    TestMarshal.instance_eval { remove_const :StructOrNot }
   end
 
   def test_struct_invalid_members
@@ -66,6 +68,8 @@ class TestMarshal < Test::Unit::TestCase
       Marshal.load("\004\bIc&TestMarshal::StructInvalidMembers\006:\020__members__\"\bfoo")
       TestMarshal::StructInvalidMembers.members
     }
+  ensure
+    TestMarshal.instance_eval { remove_const :StructInvalidMembers }
   end
 
   class C
