@@ -501,6 +501,19 @@ extern double rnd_prod(double, double), rnd_quot(double, double);
 #define FREE_DTOA_LOCK(n)	/*unused right now*/
 #endif
 
+#ifndef ATOMIC_PTR_CAS
+#define ATOMIC_PTR_CAS(var, old, new) ((var) = (new), (old))
+#endif
+#ifndef LIKELY
+#define LIKELY(x) (x)
+#endif
+#ifndef UNLIKELY
+#define UNLIKELY(x) (x)
+#endif
+#ifndef ASSUME
+#define ASSUME(x) (void)(x)
+#endif
+
 #define Kmax 15
 
 struct Bigint {
@@ -522,22 +535,39 @@ Balloc(int k)
     size_t len;
 #endif
 
+    rv = 0;
     ACQUIRE_DTOA_LOCK(0);
-    if (k <= Kmax && (rv = freelist[k]) != 0) {
-        freelist[k] = rv->next;
+    if (k <= Kmax) {
+        rv = freelist[k];
+        while (rv) {
+            Bigint *rvn = rv;
+            rv = ATOMIC_PTR_CAS(freelist[k], rv, rv->next);
+            if (LIKELY(rvn == rv)) {
+                ASSUME(rv);
+                break;
+            }
+        }
     }
-    else {
+    if (!rv) {
         x = 1 << k;
 #ifdef Omit_Private_Memory
         rv = (Bigint *)MALLOC(sizeof(Bigint) + (x-1)*sizeof(ULong));
 #else
         len = (sizeof(Bigint) + (x-1)*sizeof(ULong) + sizeof(double) - 1)
                 /sizeof(double);
-        if (k <= Kmax && pmem_next - private_mem + len <= PRIVATE_mem) {
-            rv = (Bigint*)pmem_next;
-            pmem_next += len;
+        if (k <= Kmax) {
+            double *pnext = pmem_next;
+            while (pnext - private_mem + len <= PRIVATE_mem) {
+                double *p = pnext;
+                pnext = ATOMIC_PTR_CAS(pmem_next, pnext, pnext + len);
+                if (LIKELY(p == pnext)) {
+                    rv = (Bigint*)pnext;
+                    ASSUME(rv);
+                    break;
+                }
+            }
         }
-        else
+        if (!rv)
             rv = (Bigint*)MALLOC(len*sizeof(double));
 #endif
         rv->k = k;
@@ -551,14 +581,16 @@ Balloc(int k)
 static void
 Bfree(Bigint *v)
 {
+    Bigint *vn;
     if (v) {
         if (v->k > Kmax) {
             FREE(v);
             return;
         }
         ACQUIRE_DTOA_LOCK(0);
-        v->next = freelist[v->k];
-        freelist[v->k] = v;
+        do {
+            vn = v->next = freelist[v->k];
+        } while (UNLIKELY(ATOMIC_PTR_CAS(freelist[v->k], vn, v) != vn));
         FREE_DTOA_LOCK(0);
     }
 }
@@ -841,6 +873,7 @@ static Bigint *
 pow5mult(Bigint *b, int k)
 {
     Bigint *b1, *p5, *p51;
+    Bigint *p5tmp;
     int i;
     static const int p05[3] = { 5, 25, 125 };
 
@@ -851,17 +884,17 @@ pow5mult(Bigint *b, int k)
         return b;
     if (!(p5 = p5s)) {
         /* first time */
-#ifdef MULTIPLE_THREADS
         ACQUIRE_DTOA_LOCK(1);
         if (!(p5 = p5s)) {
-            p5 = p5s = i2b(625);
+            p5 = i2b(625);
             p5->next = 0;
+            p5tmp = ATOMIC_PTR_CAS(p5s, NULL, p5);
+            if (UNLIKELY(p5tmp)) {
+                Bfree(p5);
+                p5 = p5tmp;
+            }
         }
         FREE_DTOA_LOCK(1);
-#else
-        p5 = p5s = i2b(625);
-        p5->next = 0;
-#endif
     }
     for (;;) {
         if (k & 1) {
@@ -872,17 +905,17 @@ pow5mult(Bigint *b, int k)
         if (!(k >>= 1))
             break;
         if (!(p51 = p5->next)) {
-#ifdef MULTIPLE_THREADS
             ACQUIRE_DTOA_LOCK(1);
             if (!(p51 = p5->next)) {
-                p51 = p5->next = mult(p5,p5);
+                p51 = mult(p5,p5);
                 p51->next = 0;
+                p5tmp = ATOMIC_PTR_CAS(p5->next, NULL, p51);
+                if (UNLIKELY(p5tmp)) {
+                    Bfree(p51);
+                    p51 = p5tmp;
+                }
             }
             FREE_DTOA_LOCK(1);
-#else
-            p51 = p5->next = mult(p5,p5);
-            p51->next = 0;
-#endif
         }
         p5 = p51;
     }
