@@ -6930,14 +6930,14 @@ env_update(VALUE env, VALUE hash)
  *  #keep_if:: Keep only those entries selected by a given block.
  *  #reject!:: Removes entries selected by a given block.
  *  #shift:: Removes and returns the first entry.
- *  #slice:: Returns a hash containing the entries for given keys.
  *
  *  These methods return a copy of +self+ with some entries removed:
  *
  *  #compact:: Returns a copy of +self+ with all +nil+-valued entries removed.
  *  #except:: Returns a copy of +self+ with entries removed for specified keys.
- *  #filter, #select:: Returns a copy of +self+ with entries removed as specified by a given block.
+ *  #filter, #select:: Returns a copy of +self+ with only those entries selected by a given block.
  *  #reject:: Returns a copy of +self+ with entries removed as specified by a given block.
+ *  #slice:: Returns a hash containing the entries for given keys.
  *
  *  ==== Methods for Iterating
  *  #each, #each_pair:: Calls a given block with each key-value pair.
