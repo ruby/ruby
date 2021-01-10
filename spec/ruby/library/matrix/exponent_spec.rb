@@ -21,17 +21,30 @@ describe "Matrix#**" do
       -> { m ** 0 }.should raise_error(Matrix::ErrDimensionMismatch)
     end
 
-    describe "that is <= 0" do
+    describe "that is < 0" do
       it "returns the inverse of **(-n)" do
         m = Matrix[ [1, 1], [1, 2] ]
         (m ** -2).should == Matrix[ [5, -3], [-3, 2]]
         (m ** -4).should == (m.inverse ** 4)
       end
 
-      it "raises a ErrDimensionMismatch for irregular matrices" do
+      it "raises a ErrNotRegular for irregular matrices" do
         m = Matrix[ [1, 1], [1, 1] ]
         -> { m ** -2 }.should raise_error(Matrix::ErrNotRegular)
-        -> { m ** 0 }.should raise_error(Matrix::ErrNotRegular)
+      end
+    end
+
+    ruby_bug '#17521', ''..'3.0.0' do
+      describe "that is 0" do
+        it "returns the identity for square matrices" do
+          m = Matrix[ [1, 1], [1, 1] ]
+          (m ** 0).should == Matrix.identity(2)
+        end
+
+        it "raises an ErrDimensionMismatch for non-square matrices" do
+          m = Matrix[ [1, 1] ]
+          -> { m ** 0 }.should raise_error(Matrix::ErrDimensionMismatch)
+        end
       end
     end
   end
