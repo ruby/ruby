@@ -1239,7 +1239,7 @@ class Matrix
     when Integer
       case
       when exp == 0
-        _make_sure_it_is_invertible = inverse
+        raise ErrDimensionMismatch unless square?
         self.class.identity(column_count)
       when exp < 0
         inverse.power_int(-exp)
