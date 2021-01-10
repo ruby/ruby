@@ -183,12 +183,16 @@
 #undef Long
 #undef ULong
 
-#if SIZEOF_INT == 4
+#include <limits.h>
+
+#if (INT_MAX >> 30) && !(INT_MAX >> 31)
 #define Long int
 #define ULong unsigned int
-#elif SIZEOF_LONG == 4
+#elif (LONG_MAX >> 30) && !(LONG_MAX >> 31)
 #define Long long int
 #define ULong unsigned long int
+#else
+#error No 32bit integer
 #endif
 
 #if HAVE_LONG_LONG
@@ -202,6 +206,11 @@
 #define Bug(x) {fprintf(stderr, "%s\n", (x)); exit(EXIT_FAILURE);}
 #endif
 
+#ifndef ISDIGIT
+#include <ctype.h>
+#define ISDIGIT(c) isdigit(c)
+#endif
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -218,6 +227,9 @@ extern void *MALLOC(size_t);
 extern void FREE(void*);
 #else
 #define FREE xfree
+#endif
+#ifndef NO_SANITIZE
+#define NO_SANITIZE(x, y) y
 #endif
 
 #ifndef Omit_Private_Memory
@@ -280,7 +292,7 @@ extern "C" {
 #endif
 
 #ifndef hexdigit
-static const char hexdigits[] = "0123456789abcdef0123456789ABCDEF";
+static const char hexdigit[] = "0123456789abcdef0123456789ABCDEF";
 #endif
 
 #if defined(IEEE_LITTLE_ENDIAN) + defined(IEEE_BIG_ENDIAN) + defined(VAX) + defined(IBM) != 1
@@ -2520,10 +2532,10 @@ static char *dtoa_result;
 static char *
 rv_alloc(int i)
 {
-    return dtoa_result = xmalloc(i);
+    return dtoa_result = MALLOC(i);
 }
 #else
-#define rv_alloc(i) xmalloc(i)
+#define rv_alloc(i) MALLOC(i)
 #endif
 
 static char *
@@ -2550,7 +2562,7 @@ nrv_alloc(const char *s, char **rve, size_t n)
 static void
 freedtoa(char *s)
 {
-    xfree(s);
+    FREE(s);
 }
 #endif
 
