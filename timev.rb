@@ -110,9 +110,8 @@ class Time
   def initialize(year = (now = true), mon = nil, mday = nil, hour = nil, min = nil, sec = nil, zone = nil, in: zone)
     zone = __builtin.arg!(:in)
     if now
-      __builtin.time_init_now(zone)
-    else
-      __builtin.time_init_args(year, mon, mday, hour, min, sec, zone)
+      return __builtin.time_init_now(zone)
     end
+    __builtin.time_init_args(year, mon, mday, hour, min, sec, zone)
   end
 end
