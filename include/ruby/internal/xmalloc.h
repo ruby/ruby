@@ -196,7 +196,6 @@ RBIMPL_ATTR_ALLOC_SIZE((2,3))
  *                             previously returned  from either ruby_xmalloc(),
  *                             ruby_xmalloc2(),                 ruby_xcalloc(),
  *                             ruby_xrealloc(), or ruby_xrealloc2().
-
  * @param[in]  newelems        Requested new number of elements.
  * @param[in]  newsiz          Requested new size of each element.
  * @exception  rb_eNoMemError  No space left for  allocation.
@@ -253,7 +252,7 @@ void ruby_xfree(void *ptr)
 RBIMPL_ATTR_NOEXCEPT(free(ptr))
 ;
 
-#if USE_GC_MALLOC_OBJ_INFO_DETAILS || defined(__DOXYGEN)
+#if USE_GC_MALLOC_OBJ_INFO_DETAILS
 # define ruby_xmalloc(s1)            ruby_xmalloc_with_location(s1, __FILE__, __LINE__)
 # define ruby_xmalloc2(s1, s2)       ruby_xmalloc2_with_location(s1, s2, __FILE__, __LINE__)
 # define ruby_xcalloc(s1, s2)        ruby_xcalloc_with_location(s1, s2, __FILE__, __LINE__)
