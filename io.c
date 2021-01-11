@@ -8025,6 +8025,10 @@ prep_stdio(FILE *f, int fmode, VALUE klass, const char *path)
 #endif
     fptr->stdio_file = f;
 
+#ifdef USE_THIRD_PARTY_HEAP
+    make_last_io_zombie(io);
+#endif
+
     return io;
 }
 
@@ -8301,6 +8305,11 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
 	fp->stdio_file = stderr;
 
     if (fmode & FMODE_SETENC_BY_BOM) io_set_encoding_by_bom(io);
+
+#ifdef USE_THIRD_PARTY_HEAP
+    make_last_io_zombie(io);
+#endif
+
     return io;
 }
 

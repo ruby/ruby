@@ -834,6 +834,8 @@ typedef struct rb_objspace {
 
 #ifdef USE_THIRD_PARTY_HEAP
     void* mutator;
+    VALUE last_finalizers; // RZombie objects which will be used to finalize IO
+                           // etc just before VM shutdown
 #endif
 } rb_objspace_t;
 
@@ -2561,6 +2563,21 @@ make_io_zombie(rb_objspace_t *objspace, VALUE obj)
     make_zombie(objspace, obj, (void (*)(void*))rb_io_fptr_finalize, fptr);
 }
 
+#ifdef USE_THIRD_PARTY_HEAP
+void
+make_last_io_zombie(VALUE obj)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    // TODO: This might be GCed if we're not careful?
+    struct RZombie *zombie = ALLOC(struct RZombie);
+    zombie->basic.flags = T_ZOMBIE;
+    zombie->dfree = (void (*)(void*))rb_io_fptr_finalize;
+    zombie->data = RANY(obj)->as.file.fptr;
+    zombie->next = objspace->last_finalizers;
+    objspace->last_finalizers = (VALUE)zombie;
+}
+#endif
+
 static void
 obj_free_object_id(rb_objspace_t *objspace, VALUE obj)
 {
@@ -3419,13 +3436,18 @@ finalize_list(rb_objspace_t *objspace, VALUE zombie)
 {
     while (zombie) {
         VALUE next_zombie;
-        struct heap_page *page;
         asan_unpoison_object(zombie, false);
         next_zombie = RZOMBIE(zombie)->next;
+#ifndef USE_THIRD_PARTY_HEAP
+        struct heap_page *page;
         page = GET_HEAP_PAGE(zombie);
+#endif
 
 	run_final(objspace, zombie);
 
+#ifndef USE_THIRD_PARTY_HEAP
+        // TODO: will probably need to re-enable this section when we
+        // implement object/ID bijective mappings
         GC_ASSERT(BUILTIN_TYPE(zombie) == T_ZOMBIE);
         if (FL_TEST(zombie, FL_SEEN_OBJ_ID)) {
             obj_free_object_id(objspace, zombie);
@@ -3436,7 +3458,7 @@ finalize_list(rb_objspace_t *objspace, VALUE zombie)
 	page->final_slots--;
 	page->free_slots++;
 	heap_page_add_freeobj(objspace, GET_HEAP_PAGE(zombie), zombie);
-
+#endif
 	objspace->profile.total_freed_objects++;
 
 	zombie = next_zombie;
@@ -3568,9 +3590,28 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 
     gc_exit(objspace, "rb_objspace_call_finalizer");
 
+#ifdef USE_THIRD_PARTY_HEAP
+    /*
+    TODO before merging third-party-heap
+    Currently the finalisation process runs whenever slots that are zombies are recycled
+    But, because GC features will be refactored away under MMTk, we want this to be
+    handled separately. (we no longer have access to heap pages)
+    For now, we will brute force a finalisation, but this can be done better
+    I'm doing this by creating a linked list of all of the things that need finalising, 
+    but there are a few issues with this.
+        - When files are closed, they need to be removed from the linked list
+        - RData objects don't get finalised
+        - Are all types of IO included in this?
+    Note: to reproduce this issue, you need to be running a program not pointing to a TTY.
+    e.g. piping to a file. To emulate this behaviour whilst using debugging tools, add this to io.c:
+        #define isatty(x) 0
+    */
+    finalize_list(objspace, objspace->last_finalizers);
+#else
     if (heap_pages_deferred_final) {
 	finalize_list(objspace, heap_pages_deferred_final);
     }
+#endif
 
     st_free_table(finalizer_table);
     finalizer_table = 0;
@@ -3849,6 +3890,7 @@ rb_obj_id(VALUE obj)
      *  40 if 64-bit
      */
 
+    // TODO I need to make this work?
     return rb_find_object_id(obj, cached_object_id);
 }
 
