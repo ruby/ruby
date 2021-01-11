@@ -2564,6 +2564,7 @@ make_io_zombie(rb_objspace_t *objspace, VALUE obj)
 }
 
 #ifdef USE_THIRD_PARTY_HEAP
+// Used to add a finaliser to flush out the IO at the end of the program
 void
 make_last_io_zombie(VALUE obj)
 {

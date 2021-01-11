@@ -7027,6 +7027,10 @@ rb_io_s_open(int argc, VALUE *argv, VALUE klass)
 {
     VALUE io = rb_class_new_instance_kw(argc, argv, klass, RB_PASS_CALLED_KEYWORDS);
 
+#ifdef USE_THIRD_PARTY_HEAP
+    make_last_io_zombie(io);
+#endif
+
     if (rb_block_given_p()) {
 	return rb_ensure(rb_yield, io, io_close, io);
     }
@@ -7212,6 +7216,10 @@ rb_f_open(int argc, VALUE *argv, VALUE _)
     }
     if (redirect) {
         VALUE io = rb_funcallv_kw(argv[0], to_open, argc-1, argv+1, RB_PASS_CALLED_KEYWORDS);
+
+#ifdef USE_THIRD_PARTY_HEAP
+        make_last_io_zombie(io);
+#endif
 
 	if (rb_block_given_p()) {
 	    return rb_ensure(rb_yield, io, io_close, io);
