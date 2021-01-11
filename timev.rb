@@ -107,11 +107,9 @@ class Time
   #    (t4-t3)/3600.0                             #=> 2.466666666666667
   #    (t6-t5)/3600.0                             #=> 1.95
   #    (t8-t7)/3600.0                             #=> 13.416666666666666
-  def initialize(year = (now = true), mon = nil, mday = nil, hour = nil, min = nil, sec = nil, zone = nil, in: zone)
+  def initialize(year = now = true, mon = nil, mday = nil, hour = nil, min = nil, sec = nil, zone = nil, in: zone)
     zone = __builtin.arg!(:in)
-    if now
-      return __builtin.time_init_now(zone)
-    end
+    return __builtin.time_init_now(zone) if now
     __builtin.time_init_args(year, mon, mday, hour, min, sec, zone)
   end
 end
