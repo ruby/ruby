@@ -31,7 +31,7 @@ module Bundler
 
     def specific_failure_message(e)
       message = "#{e.class}: #{e.message}\n"
-      message += "  " + e.backtrace.join("\n  ") + "\n\n" if Bundler.ui.debug?
+      message += "  " + e.backtrace.join("\n  ") + "\n\n"
       message = message.lines.first + Bundler.ui.add_color(message.lines.drop(1).join, :clear)
       message + Bundler.ui.add_color(failure_message, :red)
     end
