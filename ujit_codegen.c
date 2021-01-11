@@ -1006,17 +1006,13 @@ static bool
 gen_jump(jitstate_t* jit, ctx_t* ctx)
 {
     // Get the branch target instruction offsets
-    uint32_t next_idx = jit_next_idx(jit);
-    uint32_t jump_idx = next_idx + (uint32_t)jit_get_arg(jit, 0);
+    uint32_t jump_idx = jit_next_idx(jit) + (int32_t)jit_get_arg(jit, 0);
     blockid_t jump_block = { jit->iseq, jump_idx };
 
     //
     // TODO:
 	// RUBY_VM_CHECK_INTS(ec);
     //
-
-    //print_str(cb, "jump!");
-    //print_int(cb, imm_opnd(jump_idx));
 
     // If the jump target was already compiled
     if (find_block_version(jump_block, ctx))
