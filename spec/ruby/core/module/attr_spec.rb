@@ -169,4 +169,11 @@ describe "Module#attr" do
       end
     end
   end
+
+  ruby_version_is "3.1" do
+    it "raises a TypeError when the given boolean argument" do
+      -> { Class.new { attr :foo, true } }.should raise_error(TypeError)
+      -> { Class.new { attr :foo, false } }.should raise_error(TypeError)
+    end
+  end
 end
