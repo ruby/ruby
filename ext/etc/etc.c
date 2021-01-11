@@ -68,6 +68,15 @@ void rb_deprecate_constant(VALUE mod, const char *name);
 typedef int rb_atomic_t;
 # define RUBY_ATOMIC_CAS(var, oldval, newval) \
     ((var) == (oldval) ? ((var) = (newval), (oldval)) : (var))
+# define RUBY_ATOMIC_EXCHANGE(var, newval) \
+    atomic_exchange(&var, newval)
+static inline rb_atomic_t
+atomic_exchange(volatile rb_atomic_t *var, rb_atomic_t newval)
+{
+    rb_atomic_t oldval = *var;
+    *var = newval;
+    return oldval;
+}
 #endif
 
 /* call-seq:
