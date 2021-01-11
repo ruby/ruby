@@ -253,7 +253,9 @@ static VALUE
 passwd_ensure(VALUE _)
 {
     endpwent();
-    passwd_blocking = 0;
+    if (RUBY_ATOMIC_EXCHANGE(passwd_blocking, 0) != 1) {
+	rb_raise(rb_eRuntimeError, "unexpected passwd_blocking");
+    }
     return Qnil;
 }
 
@@ -495,7 +497,9 @@ static VALUE
 group_ensure(VALUE _)
 {
     endgrent();
-    group_blocking = 0;
+    if (RUBY_ATOMIC_EXCHANGE(group_blocking, 0) != 1) {
+	rb_raise(rb_eRuntimeError, "unexpected group_blocking");
+    }
     return Qnil;
 }
 
