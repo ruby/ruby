@@ -84,8 +84,7 @@ switch (insn) {
         fprintf(f, "    if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(ec))) {\n");
         fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
         fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
-        fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_leave);\n");
-        fprintf(f, "        goto cancel;\n");
+        fprintf(f, "        rb_threadptr_execute_interrupts(rb_ec_thread_ptr(ec), 0);\n");
         fprintf(f, "    }\n");
         fprintf(f, "    ec->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(reg_cfp);\n"); // vm_pop_frame
     }
