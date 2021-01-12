@@ -7,7 +7,7 @@
 // Print the bytes in a code block
 void print_bytes(codeblock_t* cb)
 {
-    for (size_t i = 0; i < cb->write_pos; ++i)
+    for (uint32_t i = 0; i < cb->write_pos; ++i)
     {
         printf("%02X", (int)cb->mem_block[i]);
     }
@@ -26,7 +26,7 @@ void check_bytes(codeblock_t* cb, const char* bytes)
 
     if (cb->write_pos != num_bytes)
     {
-        fprintf(stderr, "incorrect encoding length, expected %ld, got %ld\n",
+        fprintf(stderr, "incorrect encoding length, expected %ld, got %d\n",
             num_bytes,
             cb->write_pos
         );
@@ -35,7 +35,7 @@ void check_bytes(codeblock_t* cb, const char* bytes)
         exit(-1);
     }
 
-    for (size_t i = 0; i < num_bytes; ++i)
+    for (uint32_t i = 0; i < num_bytes; ++i)
     {
         char byte_str[] = {0, 0, 0, 0};
         strncpy(byte_str, bytes + (2 * i), 2);
@@ -46,7 +46,7 @@ void check_bytes(codeblock_t* cb, const char* bytes)
 
         if (cb_byte != byte)
         {
-            fprintf(stderr, "incorrect encoding at position %ld, expected %02X, got %02X\n",
+            fprintf(stderr, "incorrect encoding at position %d, expected %02X, got %02X\n",
                 i,
                 (int)byte,
                 (int)cb_byte
@@ -92,7 +92,7 @@ void run_tests()
     // call
     {
         cb_set_pos(cb, 0);
-        size_t fn_label = cb_new_label(cb, "foo");
+        uint32_t fn_label = cb_new_label(cb, "foo");
         call_label(cb, fn_label);
         cb_link_labels(cb);
         check_bytes(cb, "E8FBFFFFFF");
@@ -131,14 +131,14 @@ void run_tests()
     // jcc
     {
         cb_set_pos(cb, 0);
-        size_t loop_label = cb_new_label(cb, "loop");
+        uint32_t loop_label = cb_new_label(cb, "loop");
         jge(cb, loop_label);
         cb_link_labels(cb);
         check_bytes(cb, "0F8DFAFFFFFF");
     }
     {
         cb_set_pos(cb, 0);
-        size_t loop_label = cb_new_label(cb, "loop");
+        uint32_t loop_label = cb_new_label(cb, "loop");
         jo(cb, loop_label);
         cb_link_labels(cb);
         check_bytes(cb, "0F80FAFFFFFF");
