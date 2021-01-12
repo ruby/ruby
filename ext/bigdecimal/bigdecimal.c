@@ -74,7 +74,7 @@ static ID id_half;
 #define BASE1 (BASE/10)
 
 #ifndef DBLE_FIG
-#define DBLE_FIG rmpd_double_figures()    /* figure of double */
+#define DBLE_FIG RMPD_DOUBLE_FIGURES  /* figure of double */
 #endif
 
 #define LOG10_2 0.3010299956639812
@@ -205,6 +205,7 @@ cannot_be_coerced_into_BigDecimal(VALUE exc_class, VALUE v)
 }
 
 static inline VALUE BigDecimal_div2(VALUE, VALUE, VALUE);
+static VALUE rb_inum_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception);
 static VALUE rb_float_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception);
 static VALUE rb_rational_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception);
 static VALUE rb_cstr_convert_to_BigDecimal(const char *c_str, size_t digs, int raise_exception);
@@ -2824,8 +2825,118 @@ rb_float_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception)
         rb_raise(rb_eArgError, "precision too large.");
     }
 
-    val = rb_funcall(val, id_to_r, 0);
-    return rb_rational_convert_to_BigDecimal(val, digs, raise_exception);
+    /* Use the same logic in flo_to_s to convert a float to a decimal string */
+    char buf[DBLE_FIG + BASE_FIG + 2 + 1];
+    int decpt, negative_p;
+    char *e;
+    char *p = BigDecimal_dtoa(d, 2, digs, &decpt, &negative_p, &e);
+    int len10 = (int)(e - p);
+    if (len10 >= (int)sizeof(buf))
+        len10 = (int)sizeof(buf) - 1;
+    memcpy(buf, p, len10);
+    xfree(p);
+
+    VALUE inum;
+    size_t RB_UNUSED_VAR(prec) = 0;
+    size_t exp = 0;
+    if (decpt > 0) {
+        if (decpt < len10) {
+            /*
+             *     len10 |---------------|
+             *           :       |-------| frac_len10 = len10 - decpt
+             *     decpt |-------|       |--| ntz10 = BASE_FIG - frac_len10 % BASE_FIG
+             *           :       :       :
+             *         00 dd dddd.dddd dd 00
+             *   prec |-----.----.----.-----| prec = exp + roomof(frac_len, BASE_FIG)
+             *   exp  |-----.----| exp = roomof(decpt, BASE_FIG)
+             */
+            const size_t frac_len10 = len10 - decpt;
+            const size_t ntz10 = BASE_FIG - frac_len10 % BASE_FIG;
+            memset(buf + len10, '0', ntz10);
+            buf[len10 + ntz10] = '\0';
+            inum = rb_cstr_to_inum(buf, 10, false);
+
+            exp = roomof(decpt, BASE_FIG);
+            prec = exp + roomof(frac_len10, BASE_FIG);
+        }
+        else {
+            /*
+             *      decpt |-----------------------|
+             *      len10 |----------|            :
+             *            :          |------------| exp10
+             *            :          :            :
+             *          00 dd dddd dd 00 0000 0000.0
+             *         :             :  :         :
+             *         :             |--| ntz10 = exp10 % BASE_FIG
+             *    prec |-----.----.-----|         :
+             *         :                |----.----| exp10 / BASE_FIG
+             *     exp |-----.----.-----.----.----|
+             */
+            const size_t exp10 = decpt - len10;
+            const size_t ntz10 = exp10 % BASE_FIG;
+
+            memset(buf + len10, '0', ntz10);
+            buf[len10 + ntz10] = '\0';
+            inum = rb_cstr_to_inum(buf, 10, false);
+
+            prec = roomof(len10 + ntz10, BASE_FIG);
+            exp = prec + exp10 / BASE_FIG;
+        }
+    }
+    else if (decpt == 0) {
+        /*
+         *   len10 |------------|
+         *         :            :
+         *        0.dddd dddd dd 00
+         *         :            :  :
+         *         :            |--| ntz10 = prec * BASE_FIG - len10
+         *    prec |----.----.-----| roomof(len10, BASE_FIG)
+         */
+        prec = roomof(len10, BASE_FIG);
+        const size_t ntz10 = prec * BASE_FIG - len10;
+
+        memset(buf + len10, '0', ntz10);
+        buf[len10 + ntz10] = '\0';
+        inum = rb_cstr_to_inum(buf, 10, false);
+    }
+    else {
+        /*
+         *           len10 |---------------|
+         *                 :               :
+         *   decpt |-------|               |--| ntz10 = prec * BASE_FIG - nlz10 - len10
+         *         :       :               :
+         *        0.0000 00 dd dddd dddd dd 00
+         *              :  :                  :
+         *        nlz10 |--|                  : decpt % BASE_FIG
+         *         prec |-----.----.----.-----| roomof(decpt + len10, BASE_FIG) - exp
+         *    exp  |----| decpt / BASE_FIG
+         */
+        decpt = -decpt;
+
+        const size_t nlz10 = decpt % BASE_FIG;
+        exp = decpt / BASE_FIG;
+        prec = roomof(decpt + len10, BASE_FIG) - exp;
+        const size_t ntz10 = prec * BASE_FIG - nlz10 - len10;
+
+        if (nlz10 > 0) {
+            memmove(buf + nlz10, buf, len10);
+            memset(buf, '0', nlz10);
+        }
+        memset(buf + nlz10 + len10, '0', ntz10);
+        buf[nlz10 + len10 + ntz10] = '\0';
+        inum = rb_cstr_to_inum(buf, 10, false);
+
+        exp = -exp;
+    }
+
+    VALUE bd = rb_inum_convert_to_BigDecimal(inum, SIZE_MAX, raise_exception);
+    Real *vp;
+    TypedData_Get_Struct(bd, Real, &BigDecimal_data_type, vp);
+    assert(vp->Prec == prec);
+    vp->exponent = exp;
+
+    if (negative_p) VpSetSign(vp, -1);
+    return bd;
 }
 
 static VALUE

@@ -66,6 +66,7 @@ have_func("llabs", "stdlib.h")
 have_func("finite", "math.h")
 have_func("isfinite", "math.h")
 
+have_header("ruby/atomic.h")
 have_header("ruby/internal/has/builtin.h")
 have_header("ruby/internal/static_assert.h")
 

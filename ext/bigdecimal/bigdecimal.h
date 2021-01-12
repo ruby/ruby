@@ -77,6 +77,7 @@ extern VALUE rb_cBigDecimal;
 # define RMPD_BASE ((DECDIG)100U)
 #endif
 
+#define RMPD_DOUBLE_FIGURES (1+DBL_DIG)
 
 /*
  *  NaN & Infinity
@@ -175,7 +176,7 @@ rmpd_base_value(void) { return RMPD_BASE; }
 static inline size_t
 rmpd_component_figures(void) { return RMPD_COMPONENT_FIGURES; }
 static inline size_t
-rmpd_double_figures(void) { return 1+DBL_DIG; }
+rmpd_double_figures(void) { return RMPD_DOUBLE_FIGURES; }
 
 #define VpBaseFig() rmpd_component_figures()
 #define VpDblFig() rmpd_double_figures()
