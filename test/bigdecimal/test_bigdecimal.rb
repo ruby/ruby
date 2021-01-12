@@ -150,17 +150,23 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_raise(ArgumentError) { BigDecimal(0.1, Float::DIG + 2) }
     assert_nothing_raised { BigDecimal(0.1, Float::DIG + 1) }
 
+    assert_same(BigDecimal(0.0), BigDecimal(0.0))
+    assert_same(BigDecimal(-0.0), BigDecimal(-0.0))
+
     bug9214 = '[ruby-core:58858]'
-    assert_equal(BigDecimal(-0.0, Float::DIG).sign, -1, bug9214)
+    assert_equal(BigDecimal(-0.0).sign, -1, bug9214)
 
     BigDecimal.save_exception_mode do
       BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
       assert_nan(BigDecimal(Float::NAN))
+      assert_same(BigDecimal(Float::NAN), BigDecimal(Float::NAN))
     end
     BigDecimal.save_exception_mode do
       BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, false)
       assert_positive_infinite(BigDecimal(Float::INFINITY))
+      assert_same(BigDecimal(Float::INFINITY), BigDecimal(Float::INFINITY))
       assert_negative_infinite(BigDecimal(-Float::INFINITY))
+      assert_same(BigDecimal(-Float::INFINITY), BigDecimal(-Float::INFINITY))
     end
   end
 
