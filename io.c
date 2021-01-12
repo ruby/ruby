@@ -1306,12 +1306,7 @@ rb_io_from_fd(int fd)
 int
 rb_io_wait_readable(int f)
 {
-    VALUE scheduler = rb_scheduler_current();
-    if (scheduler != Qnil) {
-        return RTEST(
-            rb_scheduler_io_wait_readable(scheduler, rb_io_from_fd(f))
-        );
-    }
+    VALUE scheduler;
 
     io_fd_check_closed(f);
     switch (errno) {
@@ -1326,6 +1321,9 @@ rb_io_wait_readable(int f)
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
       case EWOULDBLOCK:
 #endif
+	if (!NIL_P(scheduler = rb_scheduler_current())) {
+            return RTEST(rb_scheduler_io_wait_readable(scheduler, rb_io_from_fd(f)));
+	}
 	rb_thread_wait_fd(f);
 	return TRUE;
 
@@ -1337,12 +1335,7 @@ rb_io_wait_readable(int f)
 int
 rb_io_wait_writable(int f)
 {
-    VALUE scheduler = rb_scheduler_current();
-    if (scheduler != Qnil) {
-        return RTEST(
-            rb_scheduler_io_wait_writable(scheduler, rb_io_from_fd(f))
-        );
-    }
+    VALUE scheduler;
 
     io_fd_check_closed(f);
     switch (errno) {
@@ -1366,6 +1359,9 @@ rb_io_wait_writable(int f)
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
       case EWOULDBLOCK:
 #endif
+	if (!NIL_P(scheduler = rb_scheduler_current())) {
+            return RTEST(rb_scheduler_io_wait_writable(scheduler, rb_io_from_fd(f)));
+	}
 	rb_thread_fd_writable(f);
 	return TRUE;
 
