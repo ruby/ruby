@@ -154,7 +154,7 @@ uint8_t* ujit_compile_entry(const rb_iseq_t *iseq, uint32_t insn_idx)
 /*
 Compile a sequence of bytecode instructions starting at `insn_idx`.
 */
-uint8_t *
+void
 ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, ctx_t* ctx, uint32_t* num_instrs)
 {
     assert (cb != NULL);
@@ -170,16 +170,14 @@ ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, ctx_t* ctx, uint32_
         rb_bug("out of executable memory (outlined block)");
     }
 
-    // Get a pointer to the current write position in the code block
-    uint8_t *code_ptr = cb_get_ptr(cb, cb->write_pos);
-
     // Last operation that was successfully compiled
     opdesc_t* p_last_op = NULL;
 
     // Initialize JIT state object
-    jitstate_t jit = { 0 };
-    jit.iseq = iseq;
-    jit.start_idx = insn_idx;
+    jitstate_t jit = {
+        iseq,
+        insn_idx
+    };
 
     // For each instruction to compile
     for (;;) {
@@ -236,8 +234,6 @@ ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, ctx_t* ctx, uint32_
             pc += insn_len(opcode);
         }
     }
-
-    return code_ptr;
 }
 
 static bool
@@ -1055,7 +1051,7 @@ void
 ujit_init_codegen(void)
 {
     // Initialize the code blocks
-    size_t mem_size = 128 * 1024 * 1024;
+    uint32_t mem_size = 128 * 1024 * 1024;
     uint8_t* mem_block = alloc_exec_mem(mem_size);
     cb = &block;
     cb_init(cb, mem_block, mem_size/2);
