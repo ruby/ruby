@@ -928,9 +928,8 @@ RECURSIVE              = YES
 # run.
 
 EXCLUDE                =
-EXCLUDE               += <%=srcdir%>/ext/dl/callback
 EXCLUDE               += <%=srcdir%>/ccan
-EXCLUDE               += <%=srcdir%>/ext/psych/yaml
+EXCLUDE               += <%=srcdir%>/ext
 
 # The EXCLUDE_SYMLINKS tag can be used to select whether or not files or
 # directories that are symbolic links (a Unix file system feature) are excluded
@@ -948,7 +947,6 @@ EXCLUDE_SYMLINKS       = YES
 
 EXCLUDE_PATTERNS       =
 EXCLUDE_PATTERNS      += *.src
-EXCLUDE_PATTERNS      += */ext/-test-/*
 EXCLUDE_PATTERNS      += *prelude.c
 EXCLUDE_PATTERNS      += .ext
 EXCLUDE_PATTERNS      += .git
