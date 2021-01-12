@@ -165,7 +165,7 @@ class TestDir < Test::Unit::TestCase
   end
 
   def test_glob
-    assert_equal((%w(. ..) + ("a".."z").to_a).map{|f| File.join(@root, f) },
+    assert_equal((%w(.) + ("a".."z").to_a).map{|f| File.join(@root, f) },
                  Dir.glob(File.join(@root, "*"), File::FNM_DOTMATCH))
     assert_equal([@root] + ("a".."z").map {|f| File.join(@root, f) },
                  Dir.glob([@root, File.join(@root, "*")]))
@@ -202,6 +202,9 @@ class TestDir < Test::Unit::TestCase
     bug8006 = '[ruby-core:53108] [Bug #8006]'
     Dir.chdir(@root) do
       assert_include(Dir.glob("a/**/*", File::FNM_DOTMATCH), "a/.", bug8006)
+
+      Dir.mkdir("a/b")
+      assert_not_include(Dir.glob("a/**/*", File::FNM_DOTMATCH), "a/b/.")
 
       FileUtils.mkdir_p("a/b/c/d/e/f")
       assert_equal(["a/b/c/d/e/f"], Dir.glob("a/**/e/f"), bug6977)
