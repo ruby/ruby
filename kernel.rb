@@ -105,7 +105,7 @@ module Kernel
   #     require 'json'
   #
   #     construct_url(arguments).
-  #       then {|url| URI.open(url).read }.
+  #       then {|url| URI(url).read }.
   #       then {|response| JSON.parse(response) }
   #
   #  When called without block, the method returns +Enumerator+,
@@ -138,7 +138,7 @@ module Kernel
   #     require 'json'
   #
   #     construct_url(arguments).
-  #       then {|url| URI.open(url).read }.
+  #       then {|url| URI(url).read }.
   #       then {|response| JSON.parse(response) }
   #
   def yield_self
