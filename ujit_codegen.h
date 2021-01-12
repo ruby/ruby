@@ -11,6 +11,9 @@ codeblock_t* ocb;
 // Code generation state
 typedef struct JITState
 {
+    // Block version being compiled
+    version_t* version;
+
     // Instruction sequence this is associated with
     const rb_iseq_t *iseq;
 
@@ -42,7 +45,7 @@ typedef struct OpDesc
 
 uint8_t* ujit_compile_entry(const rb_iseq_t *iseq, uint32_t insn_idx);
 
-void ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, ctx_t* ctx, uint32_t* num_instrs);
+uint32_t ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, ctx_t* ctx);
 
 void ujit_init_codegen(void);
 

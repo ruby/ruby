@@ -122,6 +122,8 @@ void gen_branch(
     branchgen_fn gen_fn
 );
 
+void invalidate(version_t* version);
+
 void ujit_init_core(void);
 
 #endif // #ifndef UJIT_CORE_H

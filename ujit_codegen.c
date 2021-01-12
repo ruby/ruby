@@ -133,8 +133,7 @@ uint8_t* ujit_compile_entry(const rb_iseq_t *iseq, uint32_t insn_idx)
     ctx_t ctx = { 0 };
 
     // Compile the block starting at this instruction
-    uint32_t num_instrs = 0;
-    ujit_compile_block(iseq, insn_idx, &ctx, &num_instrs);
+    uint32_t num_instrs = ujit_compile_block(iseq, insn_idx, &ctx);
 
     // If no instructions were compiled
     if (num_instrs == 0) {
@@ -154,8 +153,8 @@ uint8_t* ujit_compile_entry(const rb_iseq_t *iseq, uint32_t insn_idx)
 /*
 Compile a sequence of bytecode instructions starting at `insn_idx`.
 */
-void
-ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, ctx_t* ctx, uint32_t* num_instrs)
+uint32_t
+ujit_compile_block(/*version_t* version,*/ const rb_iseq_t *iseq, uint32_t insn_idx, ctx_t* ctx)
 {
     assert (cb != NULL);
     VALUE *encoded = iseq->body->iseq_encoded;
@@ -175,9 +174,12 @@ ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, ctx_t* ctx, uint32_
 
     // Initialize JIT state object
     jitstate_t jit = {
+        NULL,
         iseq,
         insn_idx
     };
+
+    uint32_t num_instrs = 0;
 
     // For each instruction to compile
     for (;;) {
@@ -209,7 +211,7 @@ ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, ctx_t* ctx, uint32_
     	// Move to the next instruction
         p_last_op = p_desc;
         insn_idx += insn_len(opcode);
-        (*num_instrs)++;
+        num_instrs++;
 
         // If this instruction terminates this block
         if (p_desc->is_branch) {
@@ -234,6 +236,8 @@ ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, ctx_t* ctx, uint32_
             pc += insn_len(opcode);
         }
     }
+
+    return num_instrs;
 }
 
 static bool
