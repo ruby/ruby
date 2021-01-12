@@ -95,9 +95,8 @@ version_t* gen_block_version(blockid_t blockid, const ctx_t* ctx)
 
     // Compile the block version
     ctx_t ctx_copy = *ctx;
-    uint32_t num_instrs = 0;
     p_version->start_pos = cb->write_pos;
-    ujit_compile_block(blockid.iseq, blockid.idx, &ctx_copy, &num_instrs);
+    ujit_compile_block(blockid.iseq, blockid.idx, &ctx_copy);
     p_version->end_pos = cb->write_pos;
 
     // Keep track of the new block version
@@ -159,7 +158,7 @@ uint8_t* branch_stub_hit(uint32_t branch_idx, uint32_t target_idx)
 }
 
 // Get a version or stub corresponding to a branch target
-// TODO: need incoming and target versioning contexts
+// TODO: need incoming and target contexts
 uint8_t* get_branch_target(
     blockid_t target,
     const ctx_t* ctx,
@@ -237,6 +236,30 @@ void gen_branch(
     assert (num_branches < MAX_BRANCHES);
     branch_entries[num_branches] = branch_entry;
     num_branches++;
+}
+
+// Invalidate one specific block version
+void invalidate(version_t* version)
+{
+    // All branches jumping to the block should be atomically patched with jumps going to a stub instead.
+
+    // There can also be other blocks falling through to the invalidated block because they immediately precede it.
+    // - If an incoming fall-through branch is too short to be patched, we may need to invalidate its block
+    // - This may not be an issue in practice, because the block we go to could have space
+    // - We can force any block that may need to be invalidated to have sufficient space to contain a jump to a stub
+
+    // If the block is an entry point, it needs to be unmapped from its iseq
+    // Unmap/remap anything at this iseq/idx
+
+    // Optional: may want to recompile a new deoptimized entry point
+    // Call continuation addresses on the stack can also be atomically replaced by jumps going to the stub.
+
+
+
+
+
+
+
 }
 
 int blockid_cmp(st_data_t arg0, st_data_t arg1)
