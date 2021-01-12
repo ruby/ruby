@@ -201,60 +201,57 @@ cannot_be_coerced_into_BigDecimal(VALUE exc_class, VALUE v)
 static inline VALUE BigDecimal_div2(VALUE, VALUE, VALUE);
 static VALUE rb_float_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception);
 static VALUE rb_rational_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception);
+static VALUE rb_cstr_convert_to_BigDecimal(const char *cstr, size_t digs, int raise_exception);
 
 static Real*
 GetVpValueWithPrec(VALUE v, long prec, int must)
 {
     const size_t digs = prec < 0 ? SIZE_MAX : (size_t)prec;
-    Real *pv;
 
     switch(TYPE(v)) {
-      case T_FLOAT: {
-        VALUE obj = rb_float_convert_to_BigDecimal(v, digs, must);
-        TypedData_Get_Struct(obj, Real, &BigDecimal_data_type, pv);
-        return pv;
-      }
+      case T_FLOAT:
+        v = rb_float_convert_to_BigDecimal(v, digs, must);
+        break;
 
-      case T_RATIONAL: {
-        VALUE obj = rb_rational_convert_to_BigDecimal(v, digs, must);
-        TypedData_Get_Struct(obj, Real, &BigDecimal_data_type, pv);
-        return pv;
-      }
+      case T_RATIONAL:
+        v = rb_rational_convert_to_BigDecimal(v, digs, must);
+        break;
 
       case T_DATA:
-	if (is_kind_of_BigDecimal(v)) {
-	    pv = DATA_PTR(v);
-	    return pv;
-	}
-	else {
-	    goto SomeOneMayDoIt;
-	}
-	break;
+        if (!is_kind_of_BigDecimal(v)) {
+            goto SomeOneMayDoIt;
+        }
+        break;
 
       case T_FIXNUM: {
         char szD[128];
-	sprintf(szD, "%ld", FIX2LONG(v));
-        return VpCreateRbObject(VpBaseFig() * 2 + 1, szD, true);
+        sprintf(szD, "%ld", FIX2LONG(v));
+        v = rb_cstr_convert_to_BigDecimal(szD, VpBaseFig() * 2 + 1, must);
+        break;
       }
 
 #ifdef ENABLE_NUMERIC_STRING
-      case T_STRING:
-	StringValueCStr(v);
-        return VpCreateRbObject(RSTRING_LEN(v) + VpBaseFig() + 1,
-                                RSTRING_PTR(v), true);
+      case T_STRING: {
+        const char *c_str = StringValueCStr(v);
+        v = rb_cstr_convert_to_BigDecimal(c_str, RSTRING_LEN(v) + VpBaseFig() + 1, must);
+        break;
+      }
 #endif /* ENABLE_NUMERIC_STRING */
 
       case T_BIGNUM: {
 	VALUE bg = rb_big2str(v, 10);
-        pv = VpCreateRbObject(strlen(RSTRING_PTR(bg)) + VpBaseFig() + 1,
-                              RSTRING_PTR(bg), true);
+        v = rb_cstr_convert_to_BigDecimal(RSTRING_PTR(bg), RSTRING_LEN(bg) + VpBaseFig() + 1, must);
         RB_GC_GUARD(bg);
-        return pv;
+        break;
       }
 
       default:
 	goto SomeOneMayDoIt;
     }
+
+    Real *vp;
+    TypedData_Get_Struct(v, Real, &BigDecimal_data_type, vp);
+    return vp;
 
 SomeOneMayDoIt:
     if (must) {
