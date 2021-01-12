@@ -290,6 +290,40 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_equal('hello', o.to_s)
   end
 
+  def test_override_submodule
+    m = Module.new {
+      def foo; :protect_me; end
+      private def bar; :protect_me; end
+      def inspect; 'protect me'; end
+    }
+    m2 = Module.new {
+      def added_to_all_open_struct; :override_me; end
+    }
+    OpenStruct.class_eval do
+      include m2
+      # prepend case tbd
+      def added_to_all_open_struct_2; :override_me; end
+    end
+    c = Class.new(OpenStruct) { include m }
+    o = c.new(
+      foo: 1, bar: 2, inspect: '3', # in subclass: protected
+      table!: 4, # bang method: protected
+      each_pair: 5, to_s: 'hello', # others: not protected
+                                   # including those added by the user:
+      added_to_all_open_struct: 6, added_to_all_open_struct_2: 7,
+    )
+    # protected:
+    assert_equal(:protect_me, o.foo)
+    assert_equal(:protect_me, o.send(:bar))
+    assert_equal('protect me', o.inspect)
+    assert_not_equal(4, o.send(:table!))
+    # not protected:
+    assert_equal(5, o.each_pair)
+    assert_equal('hello', o.to_s)
+    assert_equal(6, o.added_to_all_open_struct)
+    assert_equal(7, o.added_to_all_open_struct_2)
+  end
+
   def test_mistaken_subclass
     sub = Class.new(OpenStruct) do
       def [](k)
