@@ -2839,16 +2839,22 @@ rb_rational_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception)
 }
 
 static VALUE
-rb_str_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception)
+rb_cstr_convert_to_BigDecimal(const char *c_str, size_t digs, int raise_exception)
 {
     if (digs == SIZE_MAX)
         digs = 0;
 
-    const char *c_str = StringValueCStr(val);
     Real *vp = VpCreateRbObject(digs, c_str, raise_exception);
     if (!vp)
         return Qnil;
     return VpCheckGetValue(vp);
+}
+
+static inline VALUE
+rb_str_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception)
+{
+    const char *c_str = StringValueCStr(val);
+    return rb_cstr_convert_to_BigDecimal(c_str, digs, raise_exception);
 }
 
 static VALUE
