@@ -228,14 +228,26 @@ class TestBigDecimal < Test::Unit::TestCase
     # assert_nothing_raised(RangeError) {
     #   assert_equal(nil, BigDecimal(1i, exception: false))
     # }
-    assert_raise(TypeError) {
+    assert_raise_with_message(TypeError, "can't convert nil into BigDecimal") {
       BigDecimal(nil, exception: true)
+    }
+    assert_raise_with_message(TypeError, "can't convert true into BigDecimal") {
+      BigDecimal(true, exception: true)
+    }
+    assert_raise_with_message(TypeError, "can't convert false into BigDecimal") {
+      BigDecimal(false, exception: true)
+    }
+    assert_raise_with_message(TypeError, "can't convert Object into BigDecimal") {
+      BigDecimal(Object.new, exception: true)
     }
     assert_nothing_raised(TypeError) {
       assert_equal(nil, BigDecimal(nil, exception: false))
     }
     assert_nothing_raised(TypeError) {
       assert_equal(nil, BigDecimal(:test, exception: false))
+    }
+    assert_nothing_raised(TypeError) {
+      assert_equal(nil, BigDecimal(Object.new, exception: false))
     }
     assert_nothing_raised(TypeError) {
       assert_equal(nil, BigDecimal(Object.new, exception: false))

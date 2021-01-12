@@ -201,7 +201,7 @@ cannot_be_coerced_into_BigDecimal(VALUE exc_class, VALUE v)
 static inline VALUE BigDecimal_div2(VALUE, VALUE, VALUE);
 static VALUE rb_float_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception);
 static VALUE rb_rational_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception);
-static VALUE rb_cstr_convert_to_BigDecimal(const char *cstr, size_t digs, int raise_exception);
+static VALUE rb_cstr_convert_to_BigDecimal(const char *c_str, size_t digs, int raise_exception);
 
 static Real*
 GetVpValueWithPrec(VALUE v, long prec, int must)
@@ -2860,10 +2860,15 @@ rb_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception)
       case Qnil:
       case Qtrue:
       case Qfalse:
-        if (!raise_exception)
-            return Qnil;
-        rb_raise(rb_eTypeError,
-                 "can't convert %"PRIsVALUE" into BigDecimal", val);
+        if (raise_exception) {
+            const char *cname = NIL_P(val)    ? "nil"   :
+                                val == Qtrue  ? "true"  :
+                                val == Qfalse ? "false" :
+                                NULL;
+            rb_raise(rb_eTypeError,
+                       "can't convert %s into BigDecimal", cname);
+        }
+        return Qnil;
 
       default:
         break;
@@ -2902,15 +2907,19 @@ rb_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception)
     else if (RB_TYPE_P(val, T_STRING)) {
         return rb_str_convert_to_BigDecimal(val, digs, raise_exception);
     }
+
     /* TODO: chheck to_d */
     /* TODO: chheck to_int */
-    if (!raise_exception) {
-        VALUE str = rb_check_convert_type(val, T_STRING, "String", "to_str");
-        if (NIL_P(str))
-            return Qnil;
-        val = str;
+
+    VALUE str = rb_check_convert_type(val, T_STRING, "String", "to_str");
+    if (!RB_TYPE_P(str, T_STRING)) {
+        if (raise_exception) {
+            rb_raise(rb_eTypeError,
+                     "can't convert %"PRIsVALUE" into BigDecimal", rb_obj_class(val));
+        }
+        return Qnil;
     }
-    return rb_str_convert_to_BigDecimal(val, digs, raise_exception);
+    return rb_str_convert_to_BigDecimal(str, digs, raise_exception);
 }
 
 /* call-seq:
