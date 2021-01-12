@@ -86,18 +86,23 @@ uint8_t* find_block_version(blockid_t block, const ctx_t* ctx)
 }
 
 // Compile a new block version immediately
-uint8_t* gen_block_version(blockid_t block, const ctx_t* ctx)
+uint8_t* gen_block_version(blockid_t blockid, const ctx_t* ctx)
 {
     // Copy the context object to avoid modifying it
     ctx_t ctx_copy = *ctx;
 
     uint32_t num_instrs = 0;
-    uint8_t* block_ptr = ujit_compile_block(block.iseq, block.idx, &ctx_copy, &num_instrs);
+    uint8_t* p_block = ujit_compile_block(blockid.iseq, blockid.idx, &ctx_copy, &num_instrs);
+
+    // Need to allocate the blockid on the heap
+    // to store it in the hash table
+    blockid_t* p_blockid = (blockid_t*)malloc(sizeof(blockid_t));
+    memcpy(p_blockid, &blockid, sizeof(blockid_t));
 
     // Keep track of the new block version
-    st_insert(version_tbl, (st_data_t)&block, (st_data_t)block_ptr);
+    st_insert(version_tbl, (st_data_t)p_blockid, (st_data_t)p_block);
 
-    return block_ptr;
+    return p_block;
 }
 
 // Called by the generated code when a branch stub is executed
