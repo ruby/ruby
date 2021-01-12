@@ -4099,7 +4099,14 @@ time_inspect(VALUE time)
         rb_str_cat_cstr(str, " UTC");
     }
     else {
-        rb_str_concat(str, strftimev(" %z", time, rb_usascii_encoding()));
+        /* ?TODO: subsecond offset */
+        long off = NUM2LONG(rb_funcall(tobj->vtm.utc_offset, rb_intern("round"), 0));
+        char sign = (off < 0) ? (off = -off, '-') : '+';
+        int sec = off % 60;
+        int min = (off /= 60) % 60;
+        off /= 60;
+        rb_str_catf(str, " %c%.2d%.2d", sign, (int)off, min);
+        if (sec) rb_str_catf(str, "%.2d", sec);
     }
     return str;
 }

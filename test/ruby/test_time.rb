@@ -584,6 +584,10 @@ class TestTime < Test::Unit::TestCase
 
     t2000 = get_t2000.localtime(9*3600) + 1/10r
     assert_equal("2000-01-01 09:00:00.1 +0900", t2000.inspect)
+
+    t2000 = get_t2000
+    assert_equal("2000-01-01 09:12:00 +0912", t2000.localtime(9*3600+12*60).inspect)
+    assert_equal("2000-01-01 09:12:34 +091234", t2000.localtime(9*3600+12*60+34).inspect)
   end
 
   def assert_zone_encoding(time)
