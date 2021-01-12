@@ -536,6 +536,9 @@ else
     when "-a"
       auto = true
       ARGV.shift
+    else
+      $stderr.puts "Unknown command line option: #{ARGV[0]}"
+      exit 1
     end
   end
   gem = ARGV.shift
