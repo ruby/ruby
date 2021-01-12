@@ -776,7 +776,10 @@ gen_opt_send_without_block(jitstate_t* jit, ctx_t* ctx)
     // Pointer to the klass field of the receiver &(recv->klass)
     x86opnd_t klass_opnd = mem_opnd(64, REG0, offsetof(struct RBasic, klass));
 
-    // Bail if receiver class is different from compiled time call cache class
+    // FIXME
+    //assume_method_lookup_stable(cd->cc, cme, ctx);
+
+    // Bail if receiver class is different from compile-time call cache class
     mov(cb, REG1, imm_opnd(cd->cc->klass));
     cmp(cb, klass_opnd, REG1);
     jne_ptr(cb, side_exit);
@@ -892,9 +895,6 @@ gen_opt_send_without_block(jitstate_t* jit, ctx_t* ctx)
     ctx_stack_pop(ctx, argc + 1);
 
     //print_str(cb, "before C call");
-
-    // FIXME
-    //assume_method_lookup_stable(cd->cc, cme, ctx);
 
     // Call the C function
     // VALUE ret = (cfunc->func)(recv, argv[0], argv[1]);
