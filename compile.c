@@ -1413,11 +1413,19 @@ iseq_insert_nop_between_end_and_cont(rb_iseq_t *iseq)
         LINK_ELEMENT *end = (LINK_ELEMENT *)(ptr[2] & ~1);
         LINK_ELEMENT *cont = (LINK_ELEMENT *)(ptr[4] & ~1);
         LINK_ELEMENT *e;
-        for (e = end; e && (IS_LABEL(e) || IS_TRACE(e)); e = e->next) {
-            if (e == cont) {
-                INSN *nop = new_insn_core(iseq, 0, BIN(nop), 0, 0);
-                ELEM_INSERT_NEXT(end, &nop->link);
-                break;
+
+        enum catch_type ct = (enum catch_type)(ptr[0] & 0xffff);
+
+        if (ct != CATCH_TYPE_BREAK
+            && ct != CATCH_TYPE_NEXT
+            && ct != CATCH_TYPE_REDO) {
+
+            for (e = end; e && (IS_LABEL(e) || IS_TRACE(e)); e = e->next) {
+                if (e == cont) {
+                    INSN *nop = new_insn_core(iseq, 0, BIN(nop), 0, 0);
+                    ELEM_INSERT_NEXT(end, &nop->link);
+                    break;
+                }
             }
         }
     }
