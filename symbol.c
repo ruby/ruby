@@ -1053,17 +1053,6 @@ rb_is_attrset_sym(VALUE sym)
     return is_attrset_sym(sym);
 }
 
-/**
- * Returns ID for the given name if it is interned already, or 0.
- *
- * \param namep   the pointer to the name object
- * \return        the ID for *namep
- * \pre           the object referred by \p namep must be a Symbol or
- *                a String, or possible to convert with to_str method.
- * \post          the object referred by \p namep is a Symbol or a
- *                String if non-zero value is returned, or is a String
- *                if 0 is returned.
- */
 ID
 rb_check_id(volatile VALUE *namep)
 {
@@ -1097,18 +1086,6 @@ rb_check_id(volatile VALUE *namep)
     return lookup_str_id(name);
 }
 
-/**
- * Returns Symbol for the given name if it is interned already, or
- * nil.
- *
- * \param namep   the pointer to the name object
- * \return        the Symbol for *namep
- * \pre           the object referred by \p namep must be a Symbol or
- *                a String, or possible to convert with to_str method.
- * \post          the object referred by \p namep is a Symbol or a
- *                String if non-nil value is returned, or is a String
- *                if nil is returned.
- */
 VALUE
 rb_check_symbol(volatile VALUE *namep)
 {
