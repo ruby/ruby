@@ -223,7 +223,15 @@ class OpenStruct
     elsif name.end_with?('!')
       true
     else
-      method!(name).owner < OpenStruct
+      owner = method!(name).owner
+      if owner.class == ::Class
+        owner < ::OpenStruct
+      else
+        self.class.ancestors.any? do |mod|
+          return false if mod == ::OpenStruct
+          mod == owner
+        end
+      end
     end
   end
 
