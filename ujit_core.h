@@ -45,6 +45,26 @@ typedef struct BlockId
 // Null block id constant
 static const blockid_t BLOCKID_NULL = { 0, 0 };
 
+// Basic block version
+typedef struct BlockVersion
+{
+    // Basic block this is a version of
+    blockid_t blockid;
+
+    // Context at the start of the block
+    ctx_t ctx;
+
+    // Positions where the generated code starts and ends
+    uint32_t start_pos;
+    uint32_t end_pos;
+
+    // TODO
+    // TODO: list of incoming branches, branch entries
+    // TODO
+    // incoming;
+
+} version_t;
+
 /// Branch code shape enumeration
 enum uint8_t
 {
@@ -90,8 +110,8 @@ x86opnd_t ctx_stack_push(ctx_t* ctx, size_t n);
 x86opnd_t ctx_stack_pop(ctx_t* ctx, size_t n);
 x86opnd_t ctx_stack_opnd(ctx_t* ctx, int32_t idx);
 
-uint8_t* find_block_version(blockid_t block, const ctx_t* ctx);
-uint8_t* gen_block_version(blockid_t block, const ctx_t* ctx);
+version_t* find_block_version(blockid_t block, const ctx_t* ctx);
+version_t* gen_block_version(blockid_t block, const ctx_t* ctx);
 
 void gen_branch(
     const ctx_t* src_ctx,

@@ -15,10 +15,10 @@
 typedef struct LabelRef
 {
     // Position in the code block where the label reference exists
-    size_t pos;
+    uint32_t pos;
 
     // Label which this refers to
-    size_t label_idx;
+    uint32_t label_idx;
 
 } labelref_t;
 
@@ -29,13 +29,13 @@ typedef struct CodeBlock
     uint8_t* mem_block;
 
     // Memory block size
-    size_t mem_size;
+    uint32_t mem_size;
 
     /// Current writing position
-    size_t write_pos;
+    uint32_t write_pos;
 
     // Table of registered label addresses
-    size_t label_addrs[MAX_LABELS];
+    uint32_t label_addrs[MAX_LABELS];
 
     // Table of registered label names
     // Note that these should be constant strings only
@@ -45,10 +45,10 @@ typedef struct CodeBlock
     labelref_t label_refs[MAX_LABEL_REFS];
 
     // Number of labels registeered
-    size_t num_labels;
+    uint32_t num_labels;
 
     // Number of references to labels
-    size_t num_refs;
+    uint32_t num_refs;
 
     // TODO: system for disassembly/comment strings, indexed by position
 
@@ -214,7 +214,7 @@ static const x86opnd_t R15B = { OPND_REG, 8, .as.reg = { REG_GP, 15 }};
 #define C_ARG_REGS ( (x86opnd_t[]){ RDI, RSI, RDX, RCX, R8, R9 } )
 
 // Memory operand with base register and displacement/offset
-x86opnd_t mem_opnd(size_t num_bits, x86opnd_t base_reg, int32_t disp);
+x86opnd_t mem_opnd(uint32_t num_bits, x86opnd_t base_reg, int32_t disp);
 
 // Immediate number operand
 x86opnd_t imm_opnd(int64_t val);
@@ -238,24 +238,24 @@ x86opnd_t const_ptr_opnd(const void *ptr);
 )
 
 // Code block methods
-uint8_t* alloc_exec_mem(size_t mem_size);
-void cb_init(codeblock_t* cb, uint8_t* mem_block, size_t mem_size);
-void cb_align_pos(codeblock_t* cb, size_t multiple);
-void cb_set_pos(codeblock_t* cb, size_t pos);
-uint8_t* cb_get_ptr(codeblock_t* cb, size_t index);
+uint8_t* alloc_exec_mem(uint32_t mem_size);
+void cb_init(codeblock_t* cb, uint8_t* mem_block, uint32_t mem_size);
+void cb_align_pos(codeblock_t* cb, uint32_t multiple);
+void cb_set_pos(codeblock_t* cb, uint32_t pos);
+uint8_t* cb_get_ptr(codeblock_t* cb, uint32_t index);
 void cb_write_byte(codeblock_t* cb, uint8_t byte);
-void cb_write_bytes(codeblock_t* cb, size_t num_bytes, ...);
-void cb_write_int(codeblock_t* cb, uint64_t val, size_t num_bits);
-size_t cb_new_label(codeblock_t* cb, const char* name);
-void cb_write_label(codeblock_t* cb, size_t label_idx);
-void cb_label_ref(codeblock_t* cb, size_t label_idx);
+void cb_write_bytes(codeblock_t* cb, uint32_t num_bytes, ...);
+void cb_write_int(codeblock_t* cb, uint64_t val, uint32_t num_bits);
+uint32_t cb_new_label(codeblock_t* cb, const char* name);
+void cb_write_label(codeblock_t* cb, uint32_t label_idx);
+void cb_label_ref(codeblock_t* cb, uint32_t label_idx);
 void cb_link_labels(codeblock_t* cb);
 
 // Encode individual instructions into a code block
 void add(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
 void and(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
 void call_ptr(codeblock_t* cb, x86opnd_t scratch_reg, uint8_t* dst_ptr);
-void call_label(codeblock_t* cb, size_t label_idx);
+void call_label(codeblock_t* cb, uint32_t label_idx);
 void call(codeblock_t* cb, x86opnd_t opnd);
 void cmova(codeblock_t* cb, x86opnd_t dst, x86opnd_t src);
 void cmovae(codeblock_t* cb, x86opnd_t dst, x86opnd_t src);
@@ -291,36 +291,36 @@ void cmp(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
 void cdq(codeblock_t* cb);
 void cqo(codeblock_t* cb);
 void int3(codeblock_t* cb);
-void ja(codeblock_t* cb, size_t label_idx);
-void jae(codeblock_t* cb, size_t label_idx);
-void jb(codeblock_t* cb, size_t label_idx);
-void jbe(codeblock_t* cb, size_t label_idx);
-void jc(codeblock_t* cb, size_t label_idx);
-void je(codeblock_t* cb, size_t label_idx);
-void jg(codeblock_t* cb, size_t label_idx);
-void jge(codeblock_t* cb, size_t label_idx);
-void jl(codeblock_t* cb, size_t label_idx);
-void jle(codeblock_t* cb, size_t label_idx);
-void jna(codeblock_t* cb, size_t label_idx);
-void jnae(codeblock_t* cb, size_t label_idx);
-void jnb(codeblock_t* cb, size_t label_idx);
-void jnbe(codeblock_t* cb, size_t label_idx);
-void jnc(codeblock_t* cb, size_t label_idx);
-void jne(codeblock_t* cb, size_t label_idx);
-void jng(codeblock_t* cb, size_t label_idx);
-void jnge(codeblock_t* cb, size_t label_idx);
-// void jnl(codeblock_t* cb, size_t label_idx); // this conflicts with jnl(3)
-void jnle(codeblock_t* cb, size_t label_idx);
-void jno(codeblock_t* cb, size_t label_idx);
-void jnp(codeblock_t* cb, size_t label_idx);
-void jns(codeblock_t* cb, size_t label_idx);
-void jnz(codeblock_t* cb, size_t label_idx);
-void jo(codeblock_t* cb, size_t label_idx);
-void jp(codeblock_t* cb, size_t label_idx);
-void jpe(codeblock_t* cb, size_t label_idx);
-void jpo(codeblock_t* cb, size_t label_idx);
-void js(codeblock_t* cb, size_t label_idx);
-void jz(codeblock_t* cb, size_t label_idx);
+void ja(codeblock_t* cb, uint32_t label_idx);
+void jae(codeblock_t* cb, uint32_t label_idx);
+void jb(codeblock_t* cb, uint32_t label_idx);
+void jbe(codeblock_t* cb, uint32_t label_idx);
+void jc(codeblock_t* cb, uint32_t label_idx);
+void je(codeblock_t* cb, uint32_t label_idx);
+void jg(codeblock_t* cb, uint32_t label_idx);
+void jge(codeblock_t* cb, uint32_t label_idx);
+void jl(codeblock_t* cb, uint32_t label_idx);
+void jle(codeblock_t* cb, uint32_t label_idx);
+void jna(codeblock_t* cb, uint32_t label_idx);
+void jnae(codeblock_t* cb, uint32_t label_idx);
+void jnb(codeblock_t* cb, uint32_t label_idx);
+void jnbe(codeblock_t* cb, uint32_t label_idx);
+void jnc(codeblock_t* cb, uint32_t label_idx);
+void jne(codeblock_t* cb, uint32_t label_idx);
+void jng(codeblock_t* cb, uint32_t label_idx);
+void jnge(codeblock_t* cb, uint32_t label_idx);
+// void jnl(codeblock_t* cb, uint32_t label_idx); // this conflicts with jnl(3)
+void jnle(codeblock_t* cb, uint32_t label_idx);
+void jno(codeblock_t* cb, uint32_t label_idx);
+void jnp(codeblock_t* cb, uint32_t label_idx);
+void jns(codeblock_t* cb, uint32_t label_idx);
+void jnz(codeblock_t* cb, uint32_t label_idx);
+void jo(codeblock_t* cb, uint32_t label_idx);
+void jp(codeblock_t* cb, uint32_t label_idx);
+void jpe(codeblock_t* cb, uint32_t label_idx);
+void jpo(codeblock_t* cb, uint32_t label_idx);
+void js(codeblock_t* cb, uint32_t label_idx);
+void jz(codeblock_t* cb, uint32_t label_idx);
 void ja_ptr(codeblock_t* cb, uint8_t* ptr);
 void jae_ptr(codeblock_t* cb, uint8_t* ptr);
 void jb_ptr(codeblock_t* cb, uint8_t* ptr);
@@ -351,7 +351,7 @@ void jpe_ptr(codeblock_t* cb, uint8_t* ptr);
 void jpo_ptr(codeblock_t* cb, uint8_t* ptr);
 void js_ptr(codeblock_t* cb, uint8_t* ptr);
 void jz_ptr(codeblock_t* cb, uint8_t* ptr);
-void jmp(codeblock_t* cb, size_t label_idx);
+void jmp(codeblock_t* cb, uint32_t label_idx);
 void jmp_ptr(codeblock_t* cb, uint8_t* ptr);
 void jmp_rm(codeblock_t* cb, x86opnd_t opnd);
 void jmp32(codeblock_t* cb, int32_t offset);
@@ -359,7 +359,7 @@ void lea(codeblock_t* cb, x86opnd_t dst, x86opnd_t src);
 void mov(codeblock_t* cb, x86opnd_t dst, x86opnd_t src);
 void movsx(codeblock_t* cb, x86opnd_t dst, x86opnd_t src);
 void neg(codeblock_t* cb, x86opnd_t opnd);
-void nop(codeblock_t* cb, size_t length);
+void nop(codeblock_t* cb, uint32_t length);
 void not(codeblock_t* cb, x86opnd_t opnd);
 void or(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
 void pop(codeblock_t* cb, x86opnd_t reg);

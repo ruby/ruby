@@ -14,7 +14,7 @@
 #include "ujit_asm.h"
 
 // Compute the number of bits needed to encode a signed value
-size_t sig_imm_size(int64_t imm)
+uint32_t sig_imm_size(int64_t imm)
 {
     // Compute the smallest size this immediate fits in
     if (imm >= -128 && imm <= 127)
@@ -28,7 +28,7 @@ size_t sig_imm_size(int64_t imm)
 }
 
 // Compute the number of bits needed to encode an unsigned value
-size_t unsig_imm_size(uint64_t imm)
+uint32_t unsig_imm_size(uint64_t imm)
 {
     // Compute the smallest size this immediate fits in
     if (imm <= 255)
@@ -41,7 +41,7 @@ size_t unsig_imm_size(uint64_t imm)
     return 64;
 }
 
-x86opnd_t mem_opnd(size_t num_bits, x86opnd_t base_reg, int32_t disp)
+x86opnd_t mem_opnd(uint32_t num_bits, x86opnd_t base_reg, int32_t disp)
 {
     bool is_iprel = base_reg.as.reg.reg_type == REG_IP;
 
@@ -54,7 +54,7 @@ x86opnd_t mem_opnd(size_t num_bits, x86opnd_t base_reg, int32_t disp)
     return opnd;
 }
 
-x86opnd_t resize_opnd(x86opnd_t opnd, size_t num_bits)
+x86opnd_t resize_opnd(x86opnd_t opnd, uint32_t num_bits)
 {
     assert (num_bits % 8 == 0);
     x86opnd_t sub = opnd;
@@ -85,7 +85,7 @@ x86opnd_t const_ptr_opnd(const void *ptr)
 }
 
 // Allocate a block of executable memory
-uint8_t* alloc_exec_mem(size_t mem_size)
+uint8_t* alloc_exec_mem(uint32_t mem_size)
 {
 #ifndef _WIN32
     // Map the memory as executable
@@ -112,7 +112,7 @@ uint8_t* alloc_exec_mem(size_t mem_size)
 }
 
 // Initialize a code block object
-void cb_init(codeblock_t* cb, uint8_t* mem_block, size_t mem_size)
+void cb_init(codeblock_t* cb, uint8_t* mem_block, uint32_t mem_size)
 {
     cb->mem_block = mem_block;
     cb->mem_size = mem_size;
@@ -122,30 +122,30 @@ void cb_init(codeblock_t* cb, uint8_t* mem_block, size_t mem_size)
 }
 
 // Align the current write position to a multiple of bytes
-void cb_align_pos(codeblock_t* cb, size_t multiple)
+void cb_align_pos(codeblock_t* cb, uint32_t multiple)
 {
     // Compute the pointer modulo the given alignment boundary
     uint8_t* ptr = &cb->mem_block[cb->write_pos];
-    size_t rem = ((size_t)ptr) % multiple;
+    uint32_t rem = ((uint32_t)ptr) % multiple;
 
     // If the pointer is already aligned, stop
     if (rem != 0)
         return;
 
     // Pad the pointer by the necessary amount to align it
-    size_t pad = multiple - rem;
+    uint32_t pad = multiple - rem;
     cb->write_pos += pad;
 }
 
 // Set the current write position
-void cb_set_pos(codeblock_t* cb, size_t pos)
+void cb_set_pos(codeblock_t* cb, uint32_t pos)
 {
     assert (pos < cb->mem_size);
     cb->write_pos = pos;
 }
 
 // Get a direct pointer into the executable memory block
-uint8_t* cb_get_ptr(codeblock_t* cb, size_t index)
+uint8_t* cb_get_ptr(codeblock_t* cb, uint32_t index)
 {
     assert (index < cb->mem_size);
     return &cb->mem_block[index];
@@ -160,12 +160,12 @@ void cb_write_byte(codeblock_t* cb, uint8_t byte)
 }
 
 // Write multiple bytes starting from the current position
-void cb_write_bytes(codeblock_t* cb, size_t num_bytes, ...)
+void cb_write_bytes(codeblock_t* cb, uint32_t num_bytes, ...)
 {
     va_list va;
     va_start(va, num_bytes);
 
-    for (size_t i = 0; i < num_bytes; ++i)
+    for (uint32_t i = 0; i < num_bytes; ++i)
     {
         uint8_t byte = va_arg(va, int);
         cb_write_byte(cb, byte);
@@ -175,7 +175,7 @@ void cb_write_bytes(codeblock_t* cb, size_t num_bytes, ...)
 }
 
 // Write a signed integer over a given number of bits at the current position
-void cb_write_int(codeblock_t* cb, uint64_t val, size_t num_bits)
+void cb_write_int(codeblock_t* cb, uint64_t val, uint32_t num_bits)
 {
     assert (num_bits > 0);
     assert (num_bits % 8 == 0);
@@ -210,10 +210,10 @@ void cb_write_int(codeblock_t* cb, uint64_t val, size_t num_bits)
         default:
         {
             // Compute the size in bytes
-            size_t num_bytes = num_bits / 8;
+            uint32_t num_bytes = num_bits / 8;
 
             // Write out the bytes
-            for (size_t i = 0; i < num_bytes; ++i)
+            for (uint32_t i = 0; i < num_bytes; ++i)
             {
                 uint8_t byte_val = (uint8_t)(val & 0xFF);
                 cb_write_byte(cb, byte_val);
@@ -224,7 +224,7 @@ void cb_write_int(codeblock_t* cb, uint64_t val, size_t num_bits)
 }
 
 // Allocate a new label with a given name
-size_t cb_new_label(codeblock_t* cb, const char* name)
+uint32_t cb_new_label(codeblock_t* cb, const char* name)
 {
     //if (hasASM)
     //    writeString(to!string(label) ~ ":");
@@ -232,7 +232,7 @@ size_t cb_new_label(codeblock_t* cb, const char* name)
     assert (cb->num_labels < MAX_LABELS);
 
     // Allocate the new label
-    size_t label_idx = cb->num_labels++;
+    uint32_t label_idx = cb->num_labels++;
 
     // This label doesn't have an address yet
     cb->label_addrs[label_idx] = 0;
@@ -242,14 +242,14 @@ size_t cb_new_label(codeblock_t* cb, const char* name)
 }
 
 // Write a label at the current address
-void cb_write_label(codeblock_t* cb, size_t label_idx)
+void cb_write_label(codeblock_t* cb, uint32_t label_idx)
 {
     assert (label_idx < MAX_LABELS);
     cb->label_addrs[label_idx] = cb->write_pos;
 }
 
 // Add a label reference at the current write position
-void cb_label_ref(codeblock_t* cb, size_t label_idx)
+void cb_label_ref(codeblock_t* cb, uint32_t label_idx)
 {
     assert (label_idx < MAX_LABELS);
     assert (cb->num_refs < MAX_LABEL_REFS);
@@ -262,17 +262,17 @@ void cb_label_ref(codeblock_t* cb, size_t label_idx)
 // Link internal label references
 void cb_link_labels(codeblock_t* cb)
 {
-    size_t orig_pos = cb->write_pos;
+    uint32_t orig_pos = cb->write_pos;
 
     // For each label reference
-    for (size_t i = 0; i < cb->num_refs; ++i)
+    for (uint32_t i = 0; i < cb->num_refs; ++i)
     {
-        size_t ref_pos = cb->label_refs[i].pos;
-        size_t label_idx = cb->label_refs[i].label_idx;
+        uint32_t ref_pos = cb->label_refs[i].pos;
+        uint32_t label_idx = cb->label_refs[i].label_idx;
         assert (ref_pos < cb->mem_size);
         assert (label_idx < MAX_LABELS);
 
-        size_t label_addr = cb->label_addrs[label_idx];
+        uint32_t label_addr = cb->label_addrs[label_idx];
         assert (label_addr < cb->mem_size);
 
         // Compute the offset from the reference's end to the label
@@ -327,7 +327,7 @@ bool sib_needed(x86opnd_t opnd)
 }
 
 // Compute the size of the displacement field needed for a memory operand
-size_t disp_size(x86opnd_t opnd)
+uint32_t disp_size(x86opnd_t opnd)
 {
     assert (opnd.type == OPND_MEM);
 
@@ -340,7 +340,7 @@ size_t disp_size(x86opnd_t opnd)
     // Compute the required displacement size
     if (opnd.as.mem.disp != 0)
     {
-        size_t num_bits = sig_imm_size(opnd.as.mem.disp);
+        uint32_t num_bits = sig_imm_size(opnd.as.mem.disp);
         assert (num_bits <= 32 && "displacement does not fit in 32 bits");
 
         // x86 can only encode 8-bit and 32-bit displacements
@@ -400,7 +400,7 @@ void cb_write_rm(
     x86opnd_t r_opnd,
     x86opnd_t rm_opnd,
     uint8_t opExt,
-    size_t op_len,
+    uint32_t op_len,
     ...)
 {
     assert (op_len > 0 && op_len <= 3);
@@ -455,7 +455,7 @@ void cb_write_rm(
     // Write the opcode bytes to the code block
     va_list va;
     va_start(va, op_len);
-    for (size_t i = 0; i < op_len; ++i)
+    for (uint32_t i = 0; i < op_len; ++i)
     {
         uint8_t byte = va_arg(va, int);
         cb_write_byte(cb, byte);
@@ -479,7 +479,7 @@ void cb_write_rm(
     }
     else
     {
-        size_t dsize = disp_size(rm_opnd);
+        uint32_t dsize = disp_size(rm_opnd);
         if (dsize == 0 || rm_opnd.as.mem.is_iprel)
             mod = 0;
         else if (dsize == 8)
@@ -547,7 +547,7 @@ void cb_write_rm(
     // Add the displacement
     if (rm_opnd.type == OPND_MEM)
     {
-        size_t dsize = disp_size(rm_opnd);
+        uint32_t dsize = disp_size(rm_opnd);
         if (dsize > 0)
             cb_write_int(cb, rm_opnd.as.mem.disp, dsize);
     }
@@ -566,7 +566,7 @@ void write_rm_unary(
     //cb.writeASM(mnem, opnd);
 
     // Check the size of opnd0
-    size_t opndSize;
+    uint32_t opndSize;
     if (opnd.type == OPND_REG || opnd.type == OPND_MEM)
         opndSize = opnd.num_bits;
     else
@@ -608,7 +608,7 @@ void cb_write_rm_multi(
     */
 
     // Check the size of opnd0
-    size_t opndSize = opnd0.num_bits;
+    uint32_t opndSize = opnd0.num_bits;
 
     // Check the size of opnd1
     if (opnd1.type == OPND_REG || opnd1.type == OPND_MEM)
@@ -696,7 +696,7 @@ void cb_write_shift(
     //cb.writeASM(mnem, opnd0, opnd1);
 
     // Check the size of opnd0
-    size_t opndSize;
+    uint32_t opndSize;
     if (opnd0.type == OPND_REG || opnd0.type == OPND_MEM)
         opndSize = opnd0.num_bits;
     else
@@ -733,7 +733,7 @@ void cb_write_shift(
 
 // Encode a relative jump to a label (direct or conditional)
 // Note: this always encodes a 32-bit offset
-void cb_write_jcc(codeblock_t* cb, const char* mnem, uint8_t op0, uint8_t op1, size_t label_idx)
+void cb_write_jcc(codeblock_t* cb, const char* mnem, uint8_t op0, uint8_t op1, uint32_t label_idx)
 {
     //cb.writeASM(mnem, label);
 
@@ -857,7 +857,7 @@ void call_ptr(codeblock_t* cb, x86opnd_t scratch_reg, uint8_t* dst_ptr)
 }
 
 /// call - Call to label with 32-bit offset
-void call_label(codeblock_t* cb, size_t label_idx)
+void call_label(codeblock_t* cb, uint32_t label_idx)
 {
     //cb.writeASM("call", label);
 
@@ -1049,37 +1049,37 @@ void imul(CodeBlock cb, X86Opnd opnd0, X86Opnd opnd1, X86Opnd opnd2)
 */
 
 /// jcc - relative jumps to a label
-void ja  (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "ja"  , 0x0F, 0x87, label_idx); }
-void jae (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jae" , 0x0F, 0x83, label_idx); }
-void jb  (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jb"  , 0x0F, 0x82, label_idx); }
-void jbe (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jbe" , 0x0F, 0x86, label_idx); }
-void jc  (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jc"  , 0x0F, 0x82, label_idx); }
-void je  (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "je"  , 0x0F, 0x84, label_idx); }
-void jg  (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jg"  , 0x0F, 0x8F, label_idx); }
-void jge (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jge" , 0x0F, 0x8D, label_idx); }
-void jl  (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jl"  , 0x0F, 0x8C, label_idx); }
-void jle (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jle" , 0x0F, 0x8E, label_idx); }
-void jna (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jna" , 0x0F, 0x86, label_idx); }
-void jnae(codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jnae", 0x0F, 0x82, label_idx); }
-void jnb (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jnb" , 0x0F, 0x83, label_idx); }
-void jnbe(codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jnbe", 0x0F, 0x87, label_idx); }
-void jnc (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jnc" , 0x0F, 0x83, label_idx); }
-void jne (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jne" , 0x0F, 0x85, label_idx); }
-void jng (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jng" , 0x0F, 0x8E, label_idx); }
-void jnge(codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jnge", 0x0F, 0x8C, label_idx); }
-void jnl (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jnl" , 0x0F, 0x8D, label_idx); }
-void jnle(codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jnle", 0x0F, 0x8F, label_idx); }
-void jno (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jno" , 0x0F, 0x81, label_idx); }
-void jnp (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jnp" , 0x0F, 0x8b, label_idx); }
-void jns (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jns" , 0x0F, 0x89, label_idx); }
-void jnz (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jnz" , 0x0F, 0x85, label_idx); }
-void jo  (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jo"  , 0x0F, 0x80, label_idx); }
-void jp  (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jp"  , 0x0F, 0x8A, label_idx); }
-void jpe (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jpe" , 0x0F, 0x8A, label_idx); }
-void jpo (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jpo" , 0x0F, 0x8B, label_idx); }
-void js  (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "js"  , 0x0F, 0x88, label_idx); }
-void jz  (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jz"  , 0x0F, 0x84, label_idx); }
-void jmp (codeblock_t* cb, size_t label_idx) { cb_write_jcc(cb, "jmp" , 0xFF, 0xE9, label_idx); }
+void ja  (codeblock_t* cb, uint32_t label_idx) { cb_write_jcc(cb, "ja"  , 0x0F, 0x87, label_idx); }
+void jae (codeblock_t* cb, uint32_t label_idx) { cb_write_jcc(cb, "jae" , 0x0F, 0x83, label_idx); }
+void jb  (codeblock_t* cb, uint32_t label_idx) { cb_write_jcc(cb, "jb"  , 0x0F, 0x82, label_idx); }
+void jbe (codeblock_t* cb, uint32_t label_idx) { cb_write_jcc(cb, "jbe" , 0x0F, 0x86, label_idx); }
+void jc  (codeblock_t* cb, uint32_t label_idx) { cb_write_jcc(cb, "jc"  , 0x0F, 0x82, label_idx); }
+void je  (codeblock_t* cb, uint32_t label_idx) { cb_write_jcc(cb, "je"  , 0x0F, 0x84, label_idx); }
+void jg  (codeblock_t* cb, uint32_t label_idx) { cb_write_jcc(cb, "jg"  , 0x0F, 0x8F, label_idx); }
+void jge (codeblock_t* cb, uint32_t label_idx) { cb_write_jcc(cb, "jge" , 0x0F, 0x8D, label_idx); }
+void jl  (codeblock_t* cb, uint32_t label_idx) { cb_write_jcc(cb, "jl"  , 0x0F, 0x8C, label_idx); }
+void jle (codeblock_t* cb, uint32_t label_idx) { cb_write_jcc(cb, "jle" , 0x0F, 0x8E, label_idx); }
+void jna (codeblock_t* cb, uint32_t label_idx) { cb_write_jcc(cb, "jna" , 0x0F, 0x86, label_idx); }
+void jnae(codeblock_t* cb, uint32_t label_idx) { cb_write_jcc(cb, "jnae", 0x0F, 0x82, label_idx); }
+void jnb (codeblock_t* cb, uint32_t label_idx) { cb_write_jcc(cb, "jnb" , 0x0F, 0x83, label_idx); }
+void jnbe(codeblock_t* cb, uint32_t label_idx) { cb_write_jcc(cb, "jnbe", 0x0F, 0x87, label_idx); }
+void jnc (codeblock_t* cb, uint32_t label_idx) { cb_write_jcc(cb, "jnc" , 0x0F, 0x83, label_idx); }
+void jne (codeblock_t* cb, uint32_t label_idx) { cb_write_jcc(cb, "jne" , 0x0F, 0x85, label_idx); }
+void jng (codeblock_t* cb, uint32_t label_idx) { cb_write_jcc(cb, "jng" , 0x0F, 0x8E, label_idx); }
+void jnge(codeblock_t* cb, uint32_t label_idx) { cb_write_jcc(cb, "jnge", 0x0F, 0x8C, label_idx); }
+void jnl (codeblock_t* cb, uint32_t label_idx) { cb_write_jcc(cb, "jnl" , 0x0F, 0x8D, label_idx); }
+void jnle(codeblock_t* cb, uint32_t label_idx) { cb_write_jcc(cb, "jnle", 0x0F, 0x8F, label_idx); }
+void jno (codeblock_t* cb, uint32_t label_idx) { cb_write_jcc(cb, "jno" , 0x0F, 0x81, label_idx); }
+void jnp (codeblock_t* cb, uint32_t label_idx) { cb_write_jcc(cb, "jnp" , 0x0F, 0x8b, label_idx); }
+void jns (codeblock_t* cb, uint32_t label_idx) { cb_write_jcc(cb, "jns" , 0x0F, 0x89, label_idx); }
+void jnz (codeblock_t* cb, uint32_t label_idx) { cb_write_jcc(cb, "jnz" , 0x0F, 0x85, label_idx); }
+void jo  (codeblock_t* cb, uint32_t label_idx) { cb_write_jcc(cb, "jo"  , 0x0F, 0x80, label_idx); }
+void jp  (codeblock_t* cb, uint32_t label_idx) { cb_write_jcc(cb, "jp"  , 0x0F, 0x8A, label_idx); }
+void jpe (codeblock_t* cb, uint32_t label_idx) { cb_write_jcc(cb, "jpe" , 0x0F, 0x8A, label_idx); }
+void jpo (codeblock_t* cb, uint32_t label_idx) { cb_write_jcc(cb, "jpo" , 0x0F, 0x8B, label_idx); }
+void js  (codeblock_t* cb, uint32_t label_idx) { cb_write_jcc(cb, "js"  , 0x0F, 0x88, label_idx); }
+void jz  (codeblock_t* cb, uint32_t label_idx) { cb_write_jcc(cb, "jz"  , 0x0F, 0x84, label_idx); }
+void jmp (codeblock_t* cb, uint32_t label_idx) { cb_write_jcc(cb, "jmp" , 0xFF, 0xE9, label_idx); }
 
 /// jcc - relative jumps to a pointer (32-bit offset)
 void ja_ptr  (codeblock_t* cb, uint8_t* ptr) { cb_write_jcc_ptr(cb, "ja"  , 0x0F, 0x87, ptr); }
@@ -1233,13 +1233,13 @@ void movzx(codeblock_t* cb, x86opnd_t dst, x86opnd_t src)
 {
     cb.writeASM("movzx", dst, src);
 
-    size_t dstSize;
+    uint32_t dstSize;
     if (dst.isReg)
         dstSize = dst.reg.size;
     else
         assert (false, "movzx dst must be a register");
 
-    size_t srcSize;
+    uint32_t srcSize;
     if (src.isReg)
         srcSize = src.reg.size;
     else if (src.isMem)
@@ -1281,7 +1281,7 @@ void neg(codeblock_t* cb, x86opnd_t opnd)
 }
 
 // nop - Noop, one or multiple bytes long
-void nop(codeblock_t* cb, size_t length)
+void nop(codeblock_t* cb, uint32_t length)
 {
     switch (length)
     {
@@ -1335,7 +1335,7 @@ void nop(codeblock_t* cb, size_t length)
 
         default:
         {
-            size_t written = 0;
+            uint32_t written = 0;
             while (written + 9 <= length)
             {
                 nop(cb, 9);

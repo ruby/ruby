@@ -70,12 +70,12 @@ ctx_stack_opnd(ctx_t* ctx, int32_t idx)
 }
 
 // Retrieve a basic block version for an (iseq, idx) tuple
-uint8_t* find_block_version(blockid_t block, const ctx_t* ctx)
+version_t* find_block_version(blockid_t block, const ctx_t* ctx)
 {
     // If there exists a version for this block id
     st_data_t st_version;
     if (rb_st_lookup(version_tbl, (st_data_t)&block, &st_version)) {
-        return (uint8_t*)st_version;
+        return (version_t*)st_version;
     }
 
     //
@@ -86,23 +86,24 @@ uint8_t* find_block_version(blockid_t block, const ctx_t* ctx)
 }
 
 // Compile a new block version immediately
-uint8_t* gen_block_version(blockid_t blockid, const ctx_t* ctx)
+version_t* gen_block_version(blockid_t blockid, const ctx_t* ctx)
 {
-    // Copy the context object to avoid modifying it
+    // Allocate a version object
+    version_t* p_version = malloc(sizeof(version_t));
+    memcpy(&p_version->blockid, &blockid, sizeof(blockid_t));
+    memcpy(&p_version->ctx, ctx, sizeof(ctx_t));
+
+    // Compile the block version
     ctx_t ctx_copy = *ctx;
-
     uint32_t num_instrs = 0;
-    uint8_t* p_block = ujit_compile_block(blockid.iseq, blockid.idx, &ctx_copy, &num_instrs);
-
-    // Need to allocate the blockid on the heap
-    // to store it in the hash table
-    blockid_t* p_blockid = (blockid_t*)malloc(sizeof(blockid_t));
-    memcpy(p_blockid, &blockid, sizeof(blockid_t));
+    p_version->start_pos = cb->write_pos;
+    ujit_compile_block(blockid.iseq, blockid.idx, &ctx_copy, &num_instrs);
+    p_version->end_pos = cb->write_pos;
 
     // Keep track of the new block version
-    st_insert(version_tbl, (st_data_t)p_blockid, (st_data_t)p_block);
+    st_insert(version_tbl, (st_data_t)&p_version->blockid, (st_data_t)p_version);
 
-    return p_block;
+    return p_version;
 }
 
 // Called by the generated code when a branch stub is executed
@@ -132,31 +133,29 @@ uint8_t* branch_stub_hit(uint32_t branch_idx, uint32_t target_idx)
     }
 
     // Try to find a compiled version of this block
-    uint8_t* block_ptr = find_block_version(target, target_ctx);
+    version_t* p_version = find_block_version(target, target_ctx);
 
     // If this block hasn't yet been compiled
-    if (!block_ptr)
+    if (!p_version)
     {
-        //fprintf(stderr, "compiling block\n");
-        block_ptr = gen_block_version(target, target_ctx);
+        p_version = gen_block_version(target, target_ctx);
     }
 
     // Update the branch target address
-    branch->dst_addrs[target_idx] = block_ptr;
-
-    //fprintf(stderr, "rewrite branch at %d\n", branch->start_pos);
+    uint8_t* dst_addr = cb_get_ptr(cb, p_version->start_pos);
+    branch->dst_addrs[target_idx] = dst_addr;
 
     // Rewrite the branch with the new jump target address
     assert (branch->dst_addrs[0] != NULL);
     assert (branch->dst_addrs[1] != NULL);
-    size_t cur_pos = cb->write_pos;
+    uint32_t cur_pos = cb->write_pos;
     cb_set_pos(cb, branch->start_pos);
     branch->gen_fn(cb, branch->dst_addrs[0], branch->dst_addrs[1], branch->shape);
     assert (cb->write_pos <= branch->end_pos);
     cb_set_pos(cb, cur_pos);
 
     // Return a pointer to the compiled block version
-    return block_ptr;
+    return dst_addr;
 }
 
 // Get a version or stub corresponding to a branch target
@@ -169,10 +168,12 @@ uint8_t* get_branch_target(
     uint32_t target_idx
 )
 {
-    uint8_t* block_code = find_block_version(target, ctx);
+    version_t* p_version = find_block_version(target, ctx);
 
-    if (block_code)
-        return block_code;
+    if (p_version)
+    {
+        return cb_get_ptr(cb, p_version->start_pos);
+    }
 
     // Generate an outlined stub that will call
     // branch_stub_hit(uint32_t branch_idx, uint32_t target_idx)
@@ -216,12 +217,10 @@ void gen_branch(
     uint8_t* dst_addr0 = get_branch_target(target0, ctx0, ocb, num_branches, 0);
     uint8_t* dst_addr1 = get_branch_target(target1, ctx1, ocb, num_branches, 1);
 
-    uint32_t start_pos = (uint32_t)cb->write_pos;
-
     // Call the branch generation function
+    uint32_t start_pos = cb->write_pos;
     gen_fn(cb, dst_addr0, dst_addr1, SHAPE_DEFAULT);
-
-    uint32_t end_pos = (uint32_t)cb->write_pos;
+    uint32_t end_pos = cb->write_pos;
 
     // Register this branch entry
     branch_t branch_entry = {
