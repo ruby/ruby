@@ -5174,8 +5174,9 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
                 }
 	    }
 #else
-	    heap_add_freepage(heap, sweep_page);
-	    break;
+            if (heap_add_freepage(heap, sweep_page)) {
+                break;
+            }
 #endif
 	}
 	else {
