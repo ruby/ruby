@@ -112,6 +112,7 @@ x86opnd_t ctx_stack_opnd(ctx_t* ctx, int32_t idx);
 
 version_t* find_block_version(blockid_t block, const ctx_t* ctx);
 version_t* gen_block_version(blockid_t block, const ctx_t* ctx);
+uint8_t*  gen_entry_point(const rb_iseq_t *iseq, uint32_t insn_idx);
 
 void gen_branch(
     const ctx_t* src_ctx,

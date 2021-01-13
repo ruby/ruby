@@ -237,10 +237,14 @@ rb_ujit_compile_iseq(const rb_iseq_t *iseq)
     VALUE *encoded = (VALUE *)iseq->body->iseq_encoded;
 
     // Compile a block version starting at the first instruction
-    uint8_t* native_code_ptr = ujit_compile_entry(iseq, 0);
+    uint8_t* code_ptr = gen_entry_point(iseq, 0);
 
-    if (native_code_ptr) {
-        encoded[0] = (VALUE)native_code_ptr;
+    if (code_ptr)
+    {
+        // Map the code address to the corresponding opcode
+        int first_opcode = opcode_at_pc(iseq, &encoded[0]);
+        map_addr2insn(code_ptr, first_opcode);
+        encoded[0] = (VALUE)code_ptr;
     }
 
     RB_VM_LOCK_LEAVE();

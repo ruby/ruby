@@ -49,18 +49,6 @@ jit_get_arg(jitstate_t* jit, size_t arg_idx)
 }
 
 /**
-Generate code to enter from the Ruby interpreter into ujit code
-*/
-static void
-ujit_gen_entry(codeblock_t* cb)
-{
-    cb_write_pre_call_bytes(cb);
-
-    // Load the current SP from the CFP into REG_SP
-    mov(cb, REG_SP, member_opnd(REG_CFP, rb_control_frame_t, sp));
-}
-
-/**
 Generate an inline exit to return to the interpreter
 */
 static void
@@ -110,10 +98,11 @@ ujit_side_exit(jitstate_t* jit, ctx_t* ctx)
 }
 
 /*
-Compile an interpreter entry point to be inserted into an iseq
+Compile an interpreter entry block to be inserted into an iseq
 Returns `NULL` if compilation fails.
 */
-uint8_t* ujit_compile_entry(const rb_iseq_t *iseq, uint32_t insn_idx)
+uint8_t*
+ujit_gen_entry(version_t* version)
 {
     assert (cb != NULL);
 
@@ -127,36 +116,37 @@ uint8_t* ujit_compile_entry(const rb_iseq_t *iseq, uint32_t insn_idx)
     uint8_t *code_ptr = cb_get_ptr(cb, cb->write_pos);
 
     // Write the interpreter entry prologue
-    ujit_gen_entry(cb);
+    cb_write_pre_call_bytes(cb);
 
-    // Create codegen context
-    ctx_t ctx = { 0 };
+    // Load the current SP from the CFP into REG_SP
+    mov(cb, REG_SP, member_opnd(REG_CFP, rb_control_frame_t, sp));
 
     // Compile the block starting at this instruction
-    uint32_t num_instrs = ujit_compile_block(iseq, insn_idx, &ctx);
+    uint32_t num_instrs = ujit_gen_code(version);
 
+    // FIXME: can we eliminate this check?
     // If no instructions were compiled
     if (num_instrs == 0) {
         return NULL;
     }
 
-    // Get the first opcode in the sequence
-    VALUE *encoded = iseq->body->iseq_encoded;
-    int first_opcode = opcode_at_pc(iseq, &encoded[insn_idx]);
-
-    // Map the code address to the corresponding opcode
-    map_addr2insn(code_ptr, first_opcode);
-
     return code_ptr;
 }
 
 /*
-Compile a sequence of bytecode instructions starting at `insn_idx`.
+Compile a sequence of bytecode instructions
 */
 uint32_t
-ujit_compile_block(/*version_t* version,*/ const rb_iseq_t *iseq, uint32_t insn_idx, ctx_t* ctx)
+ujit_gen_code(version_t* version)
 {
     assert (cb != NULL);
+
+    // Copy the version's context to avoid mutating it
+    ctx_t ctx_copy = version->ctx;
+    ctx_t* ctx = &ctx_copy;
+
+    const rb_iseq_t *iseq = version->blockid.iseq;
+    uint32_t insn_idx = version->blockid.idx;
     VALUE *encoded = iseq->body->iseq_encoded;
 
     // NOTE: if we are ever deployed in production, we
@@ -174,9 +164,8 @@ ujit_compile_block(/*version_t* version,*/ const rb_iseq_t *iseq, uint32_t insn_
 
     // Initialize JIT state object
     jitstate_t jit = {
-        NULL,
-        iseq,
-        insn_idx
+        version,
+        iseq
     };
 
     uint32_t num_instrs = 0;
@@ -219,7 +208,7 @@ ujit_compile_block(/*version_t* version,*/ const rb_iseq_t *iseq, uint32_t insn_
         }
     }
 
-    // If the last instruction compiled did not properly terminate the block
+    // If the last instruction compiled did not terminate the block
     // Generate code to exit to the interpreter
     if (!p_last_op || !p_last_op->is_branch) {
         ujit_gen_exit(&jit, ctx, cb, &encoded[insn_idx]);
@@ -228,7 +217,7 @@ ujit_compile_block(/*version_t* version,*/ const rb_iseq_t *iseq, uint32_t insn_
     if (UJIT_DUMP_MODE >= 2) {
         // Dump list of compiled instrutions
         fprintf(stderr, "Compiled the following for iseq=%p:\n", (void *)iseq);
-        VALUE *pc = &encoded[jit.start_idx];
+        VALUE *pc = &encoded[version->blockid.idx];
         VALUE *end_pc = &encoded[insn_idx];
         while (pc < end_pc) {
             int opcode = opcode_at_pc(iseq, pc);

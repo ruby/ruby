@@ -84,7 +84,6 @@ version_t* find_block_version(blockid_t block, const ctx_t* ctx)
 
     return NULL;
 }
-
 // Compile a new block version immediately
 version_t* gen_block_version(blockid_t blockid, const ctx_t* ctx)
 {
@@ -94,15 +93,37 @@ version_t* gen_block_version(blockid_t blockid, const ctx_t* ctx)
     memcpy(&p_version->ctx, ctx, sizeof(ctx_t));
 
     // Compile the block version
-    ctx_t ctx_copy = *ctx;
     p_version->start_pos = cb->write_pos;
-    ujit_compile_block(blockid.iseq, blockid.idx, &ctx_copy);
+    ujit_gen_code(p_version);
     p_version->end_pos = cb->write_pos;
 
     // Keep track of the new block version
     st_insert(version_tbl, (st_data_t)&p_version->blockid, (st_data_t)p_version);
 
     return p_version;
+}
+
+// Generate a block version that is an entry point inserted into an iseq
+uint8_t* gen_entry_point(const rb_iseq_t *iseq, uint32_t insn_idx)
+{
+    // Allocate a version object
+    version_t* p_version = malloc(sizeof(version_t));
+    blockid_t blockid = { iseq, insn_idx };
+    memcpy(&p_version->blockid, &blockid, sizeof(blockid_t));
+
+    // The entry context makes no assumptions about types
+    ctx_t ctx = { 0 };
+    memcpy(&p_version->ctx, &ctx, sizeof(ctx_t));
+
+    // Compile the block version
+    p_version->start_pos = cb->write_pos;
+    uint8_t* code_ptr = ujit_gen_entry(p_version);
+    p_version->end_pos = cb->write_pos;
+
+    // Keep track of the new block version
+    st_insert(version_tbl, (st_data_t)&p_version->blockid, (st_data_t)p_version);
+
+    return code_ptr;
 }
 
 // Called by the generated code when a branch stub is executed
