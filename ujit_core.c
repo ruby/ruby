@@ -91,6 +91,8 @@ version_t* gen_block_version(blockid_t blockid, const ctx_t* ctx)
     version_t* p_version = malloc(sizeof(version_t));
     memcpy(&p_version->blockid, &blockid, sizeof(blockid_t));
     memcpy(&p_version->ctx, ctx, sizeof(ctx_t));
+    p_version->incoming = NULL;
+    p_version->num_incoming = 0;
 
     // Compile the block version
     p_version->start_pos = cb->write_pos;
@@ -110,6 +112,8 @@ uint8_t* gen_entry_point(const rb_iseq_t *iseq, uint32_t insn_idx)
     version_t* p_version = malloc(sizeof(version_t));
     blockid_t blockid = { iseq, insn_idx };
     memcpy(&p_version->blockid, &blockid, sizeof(blockid_t));
+    p_version->incoming = NULL;
+    p_version->num_incoming = 0;
 
     // The entry context makes no assumptions about types
     ctx_t ctx = { 0 };
@@ -120,10 +124,29 @@ uint8_t* gen_entry_point(const rb_iseq_t *iseq, uint32_t insn_idx)
     uint8_t* code_ptr = ujit_gen_entry(p_version);
     p_version->end_pos = cb->write_pos;
 
+    // If we couldn't generate any code
+    if (!code_ptr)
+    {
+        free(p_version);
+        return NULL;
+    }
+
     // Keep track of the new block version
     st_insert(version_tbl, (st_data_t)&p_version->blockid, (st_data_t)p_version);
 
     return code_ptr;
+}
+
+// Add an incoming branch for a given block version
+static void add_incoming(version_t* p_version, uint32_t branch_idx)
+{
+    // Add this branch to the list of incoming branches for the target
+    uint32_t* new_list = malloc(sizeof(uint32_t) * p_version->num_incoming + 1);
+    memcpy(new_list, p_version->incoming, p_version->num_incoming);
+    new_list[p_version->num_incoming] = branch_idx;
+    p_version->incoming = new_list;
+    p_version->num_incoming += 1;
+    //fprintf(stderr, "num_incoming: %d\n", p_version->num_incoming);
 }
 
 // Called by the generated code when a branch stub is executed
@@ -161,6 +184,9 @@ uint8_t* branch_stub_hit(uint32_t branch_idx, uint32_t target_idx)
         p_version = gen_block_version(target, target_ctx);
     }
 
+    // Add this branch to the list of incoming branches for the target
+    add_incoming(p_version, branch_idx);
+
     // Update the branch target address
     uint8_t* dst_addr = cb_get_ptr(cb, p_version->start_pos);
     branch->dst_addrs[target_idx] = dst_addr;
@@ -192,6 +218,9 @@ uint8_t* get_branch_target(
 
     if (p_version)
     {
+        // Add an incoming branch for this version
+        add_incoming(p_version, branch_idx);
+
         return cb_get_ptr(cb, p_version->start_pos);
     }
 
@@ -233,9 +262,35 @@ void gen_branch(
     branchgen_fn gen_fn
 )
 {
-    // Get branch targets or stubs (code pointers)
-    uint8_t* dst_addr0 = get_branch_target(target0, ctx0, ocb, num_branches, 0);
-    uint8_t* dst_addr1 = get_branch_target(target1, ctx1, ocb, num_branches, 1);
+    assert (num_branches < MAX_BRANCHES);
+    uint32_t branch_idx = num_branches;
+
+    // Branch targets or stub adddresses (code pointers)
+    uint8_t* dst_addr0;
+    uint8_t* dst_addr1;
+
+    // If there's only one branch target
+    if (target1.iseq == NULL)
+    {
+        version_t* p_version = find_block_version(target0, ctx0);
+
+        // If the version doesn't already exist
+        if (!p_version)
+        {
+            // No need for a jump, compile the target block right here
+            p_version = gen_block_version(target0, ctx0);
+        }
+
+        add_incoming(p_version, branch_idx);
+        dst_addr0 = cb_get_ptr(cb, p_version->start_pos);
+        dst_addr1 = NULL;
+    }
+    else
+    {
+        // Get the branch targets or stubs
+        dst_addr0 = get_branch_target(target0, ctx0, ocb, branch_idx, 0);
+        dst_addr1 = get_branch_target(target1, ctx1, ocb, branch_idx, 1);
+    }
 
     // Call the branch generation function
     uint32_t start_pos = cb->write_pos;
@@ -254,7 +309,6 @@ void gen_branch(
         SHAPE_DEFAULT
     };
 
-    assert (num_branches < MAX_BRANCHES);
     branch_entries[num_branches] = branch_entry;
     num_branches++;
 }

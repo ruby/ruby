@@ -124,7 +124,6 @@ ujit_gen_entry(version_t* version)
     // Compile the block starting at this instruction
     uint32_t num_instrs = ujit_gen_code(version);
 
-    // FIXME: can we eliminate this check?
     // If no instructions were compiled
     if (num_instrs == 0) {
         return NULL;
@@ -1003,24 +1002,15 @@ gen_jump(jitstate_t* jit, ctx_t* ctx)
 	// RUBY_VM_CHECK_INTS(ec);
     //
 
-    // If the jump target was already compiled
-    if (find_block_version(jump_block, ctx))
-    {
-        // Generate the jump instruction
-        gen_branch(
-            ctx,
-            jump_block,
-            ctx,
-            BLOCKID_NULL,
-            ctx,
-            gen_jump_branch
-        );
-    }
-    else
-    {
-        // No need for a jump, compile the target block right here
-        gen_block_version(jump_block, ctx);
-    }
+    // Generate the jump instruction
+    gen_branch(
+        ctx,
+        jump_block,
+        ctx,
+        BLOCKID_NULL,
+        ctx,
+        gen_jump_branch
+    );
 
     return true;
 }
