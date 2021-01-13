@@ -530,13 +530,13 @@ The following objects are shareable.
   * Frozen native objects
     * Numeric objects: `Float`, `Complex`, `Rational`, big integers (`T_BIGNUM` in internal)
     * All Symbols.
-  * Frozen `String` and `Regexp` objects (their instance variables should refer only sharable objects)
+  * Frozen `String` and `Regexp` objects (their instance variables should refer only shareable objects)
 * Class, Module objects (`T_CLASS`, `T_MODULE` and `T_ICLASS` in internal)
 * `Ractor` and other special objects which care about synchronization.
 
 Implementation: Now shareable objects (`RVALUE`) have `FL_SHAREABLE` flag. This flag can be added lazily.
 
-To make sharable objects, `Ractor.make_shareable(obj)` method is provided. In this case, try to make sharaeble by freezing `obj` and recursively travasible objects. This method accepts `copy:` keyword (default value is false).`Ractor.make_sharable(obj, copy: true)` tries to make a deep copy of `obj` and make the copied object sharable.
+To make shareable objects, `Ractor.make_shareable(obj)` method is provided. In this case, try to make sharaeble by freezing `obj` and recursively travasible objects. This method accepts `copy:` keyword (default value is false).`Ractor.make_shareable(obj, copy: true)` tries to make a deep copy of `obj` and make the copied object shareable.
 
 ## Language changes to isolate unshareable objects between Ractors
 
@@ -659,16 +659,16 @@ rescue => e
 end
 ```
 
-To make multi-ractor supported library, the constants should only refer sharable objects.
+To make multi-ractor supported library, the constants should only refer shareable objects.
 
 ```ruby
 TABLE = {a: 'ko1', b: 'ko2', c: 'ko3'}
 ```
 
-In this case, `TABLE` references an unshareable Hash object. So that other ractors can not refer `TABLE` constant. To make it shareable, we can use `Ractor.make_sharable()` like that.
+In this case, `TABLE` references an unshareable Hash object. So that other ractors can not refer `TABLE` constant. To make it shareable, we can use `Ractor.make_shareable()` like that.
 
 ```ruby
-TABLE = Ractor.make_sharable( {a: 'ko1', b: 'ko2', c: 'ko3'} )
+TABLE = Ractor.make_shareable( {a: 'ko1', b: 'ko2', c: 'ko3'} )
 ```
 
 To make it easy, Ruby 3.0 introduced new `shareable_constant_value` Directive.
@@ -677,19 +677,19 @@ To make it easy, Ruby 3.0 introduced new `shareable_constant_value` Directive.
 shareable_constant_value: literal
 
 TABLE = {a: 'ko1', b: 'ko2', c: 'ko3'}
-#=> Same as: TABLE = Ractor.make_sharable( {a: 'ko1', b: 'ko2', c: 'ko3'} )
+#=> Same as: TABLE = Ractor.make_shareable( {a: 'ko1', b: 'ko2', c: 'ko3'} )
 ```
 
 `shareable_constant_value` directive accepts the following modes (descriptions use the example: `CONST = expr`):
 
 * none: Do nothing. Same as: `CONST = expr`
 * literal:
-  * if `expr` is consites of literals, replaced to `CONST = Ractor.make_sharable(expr)`.
+  * if `expr` is consites of literals, replaced to `CONST = Ractor.make_shareable(expr)`.
   * otherwise: replaced to `CONST = expr.tap{|o| raise unless Ractor.shareable?}`.
-* experimental_everything: replaced to `CONST = Ractor.make_sharable(expr)`.
-* experimental_copy: replaced to `CONST = Ractor.make_sharable(expr, copy: true)`.
+* experimental_everything: replaced to `CONST = Ractor.make_shareable(expr)`.
+* experimental_copy: replaced to `CONST = Ractor.make_shareable(expr, copy: true)`.
 
-Except the `none` mode (default), it is guaranteed that the assigned constants refer to only sharable objects.
+Except the `none` mode (default), it is guaranteed that the assigned constants refer to only shareable objects.
 
 See [doc/syntax/comment.rdoc](syntax/comment.rdoc) for more details.
 
