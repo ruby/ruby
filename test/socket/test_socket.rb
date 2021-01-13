@@ -430,6 +430,9 @@ class TestSocket < Test::Unit::TestCase
       rescue NotImplementedError, Errno::ENOSYS
         skipped = true
         skip "need sendmsg and recvmsg: #{$!}"
+      rescue RuntimeError
+        skipped = true
+        skip "UDP server is no response: #{$!}"
       ensure
         if th
           if skipped
