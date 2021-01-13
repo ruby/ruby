@@ -377,6 +377,7 @@ class Reline::LineEditor
     end
     new_highest_in_this = calculate_height_by_width(prompt_width + calculate_width(@line.nil? ? '' : @line))
     # FIXME: end of logical line sometimes breaks
+    rendered = false
     if @add_newline_to_end_of_buffer
       rerender_added_newline
       @add_newline_to_end_of_buffer = false
