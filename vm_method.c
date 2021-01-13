@@ -114,7 +114,7 @@ rb_vm_mtbl_dump(const char *msg, VALUE klass, ID target_mid)
 }
 
 static inline void
-vm_me_invalidate_cache(rb_callable_method_entry_t *cme)
+vm_cme_invalidate(rb_callable_method_entry_t *cme)
 {
     VM_ASSERT(IMEMO_TYPE_P(cme, imemo_ment));
     VM_ASSERT(callable_method_entry_p(cme));
@@ -126,6 +126,21 @@ void
 rb_clear_constant_cache(void)
 {
     INC_GLOBAL_CONSTANT_STATE();
+}
+
+static void
+invaldate_negative_cache(ID mid, bool invalidate_cme)
+{
+    const rb_callable_method_entry_t *cme;
+    rb_vm_t *vm = GET_VM();
+
+    if (rb_id_table_lookup(vm->negative_cme_table, mid, (VALUE *)&cme)) {
+        rb_id_table_delete(vm->negative_cme_table, mid);
+        if (invalidate_cme) {
+            vm_cme_invalidate((rb_callable_method_entry_t *)cme);
+            RB_DEBUG_COUNTER_INC(cc_invalidate_negative);
+        }
+    }
 }
 
 static rb_method_entry_t *rb_method_entry_alloc(ID called_id, VALUE owner, VALUE defined_class, const rb_method_definition_t *def);
@@ -146,6 +161,7 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
 
         // invalidate CCs
         if (cc_tbl && rb_id_table_lookup(cc_tbl, mid, (VALUE *)&ccs)) {
+            if (NIL_P(ccs->cme->owner)) invaldate_negative_cache(mid, false);
             rb_vm_ccs_free(ccs);
             rb_id_table_delete(cc_tbl, mid);
             RB_DEBUG_COUNTER_INC(cc_invalidate_leaf_ccs);
@@ -177,7 +193,7 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
                     rb_method_table_insert(origin, RCLASS_M_TBL(origin), mid, new_cme);
                 }
 
-                vm_me_invalidate_cache((rb_callable_method_entry_t *)cme);
+                vm_cme_invalidate((rb_callable_method_entry_t *)cme);
                 RB_DEBUG_COUNTER_INC(cc_invalidate_tree_cme);
             }
 
@@ -194,13 +210,7 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
             RB_DEBUG_COUNTER_INC(cc_invalidate_tree);
         }
         else {
-            rb_vm_t *vm = GET_VM();
-            if (rb_id_table_lookup(vm->negative_cme_table, mid, (VALUE *)&cme)) {
-                rb_id_table_delete(vm->negative_cme_table, mid);
-                vm_me_invalidate_cache((rb_callable_method_entry_t *)cme);
-
-                RB_DEBUG_COUNTER_INC(cc_invalidate_negative);
-            }
+            invaldate_negative_cache(mid, true);
         }
     }
 }
