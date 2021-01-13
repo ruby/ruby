@@ -222,6 +222,7 @@ typedef enum {
 #define FNM_SHORTNAME	0
 #endif
 #define FNM_GLOB_NOSORT 0x40
+#define FNM_GLOB_SKIPDOT 0x80
 
 #define FNM_NOMATCH	1
 #define FNM_ERROR	2
@@ -2273,6 +2274,8 @@ glob_helper(
     int escape = !(flags & FNM_NOESCAPE);
     size_t pathlen = baselen + namelen;
 
+    rb_check_stack_overflow();
+
     for (cur = beg; cur < end; ++cur) {
 	struct glob_pattern *p = *cur;
 	if (p->type == RECURSIVE) {
@@ -2413,6 +2416,10 @@ glob_helper(
             }
             return status;
         }
+
+	int skipdot = (flags & FNM_GLOB_SKIPDOT);
+	flags |= FNM_GLOB_SKIPDOT;
+
 	while ((dp = glob_getent(&globent, flags, enc)) != NULL) {
 	    char *buf;
 	    rb_pathtype_t new_pathtype = path_unknown;
@@ -2423,11 +2430,12 @@ glob_helper(
 
 	    name = dp->d_name;
 	    namlen = dp->d_namlen;
-	    if (recursive && name[0] == '.') {
+	    if (name[0] == '.') {
 		++dotfile;
 		if (namlen == 1) {
 		    /* unless DOTMATCH, skip current directories not to recurse infinitely */
-		    if (!(flags & FNM_DOTMATCH)) continue;
+		    if (recursive && !(flags & FNM_DOTMATCH)) continue;
+		    if (skipdot) continue;
 		    ++dotfile;
 		    new_pathtype = path_directory; /* force to skip stat/lstat */
 		}

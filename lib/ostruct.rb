@@ -107,7 +107,7 @@
 # For all these reasons, consider not using OpenStruct at all.
 #
 class OpenStruct
-  VERSION = "0.3.1"
+  VERSION = "0.3.3"
 
   #
   # Creates a new OpenStruct object.  By default, the resulting OpenStruct
@@ -223,7 +223,15 @@ class OpenStruct
     elsif name.end_with?('!')
       true
     else
-      method!(name).owner < OpenStruct
+      owner = method!(name).owner
+      if owner.class == ::Class
+        owner < ::OpenStruct
+      else
+        self.class.ancestors.any? do |mod|
+          return false if mod == ::OpenStruct
+          mod == owner
+        end
+      end
     end
   end
 
@@ -240,6 +248,7 @@ class OpenStruct
       end
       set_ostruct_member_value!(mname, args[0])
     elsif len == 0
+      @table[mid]
     else
       begin
         super

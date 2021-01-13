@@ -3128,6 +3128,17 @@ rb_ractor_local_storage_value(rb_ractor_local_key_t key)
     }
 }
 
+bool
+rb_ractor_local_storage_value_lookup(rb_ractor_local_key_t key, VALUE *val)
+{
+    if (ractor_local_ref(key, (void **)val)) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
 void
 rb_ractor_local_storage_value_set(rb_ractor_local_key_t key, VALUE val)
 {

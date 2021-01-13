@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require_relative "testbase"
+require_relative "helper"
 
 class TestBigDecimalRactor < Test::Unit::TestCase
   include TestBigDecimalBase

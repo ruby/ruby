@@ -17,46 +17,39 @@
 # include <float.h>
 #endif
 
-#undef BDIGIT
-#undef SIZEOF_BDIGITS
-#undef BDIGIT_DBL
-#undef BDIGIT_DBL_SIGNED
-#undef PRI_BDIGIT_PREFIX
-#undef PRI_BDIGIT_DBL_PREFIX
-
 #ifdef HAVE_INT64_T
-# define BDIGIT uint32_t
-# define BDIGIT_DBL uint64_t
-# define BDIGIT_DBL_SIGNED int64_t
-# define SIZEOF_BDIGITS 4
-# define PRI_BDIGIT_PREFIX ""
+# define DECDIG uint32_t
+# define DECDIG_DBL uint64_t
+# define DECDIG_DBL_SIGNED int64_t
+# define SIZEOF_DECDIG 4
+# define PRI_DECDIG_PREFIX ""
 # ifdef PRI_LL_PREFIX
-# define PRI_BDIGIT_DBL_PREFIX PRI_LL_PREFIX
+# define PRI_DECDIG_DBL_PREFIX PRI_LL_PREFIX
 # else
-# define PRI_BDIGIT_DBL_PREFIX "l"
+# define PRI_DECDIG_DBL_PREFIX "l"
 # endif
 #else
-# define BDIGIT uint16_t
-# define BDIGIT_DBL uint32_t
-# define BDIGIT_DBL_SIGNED int32_t
-# define SIZEOF_BDIGITS 2
-# define PRI_BDIGIT_PREFIX "h"
-# define PRI_BDIGIT_DBL_PREFIX ""
+# define DECDIG uint16_t
+# define DECDIG_DBL uint32_t
+# define DECDIG_DBL_SIGNED int32_t
+# define SIZEOF_DECDIG 2
+# define PRI_DECDIG_PREFIX "h"
+# define PRI_DECDIG_DBL_PREFIX ""
 #endif
 
-#define PRIdBDIGIT PRI_BDIGIT_PREFIX"d"
-#define PRIiBDIGIT PRI_BDIGIT_PREFIX"i"
-#define PRIoBDIGIT PRI_BDIGIT_PREFIX"o"
-#define PRIuBDIGIT PRI_BDIGIT_PREFIX"u"
-#define PRIxBDIGIT PRI_BDIGIT_PREFIX"x"
-#define PRIXBDIGIT PRI_BDIGIT_PREFIX"X"
+#define PRIdDECDIG PRI_DECDIG_PREFIX"d"
+#define PRIiDECDIG PRI_DECDIG_PREFIX"i"
+#define PRIoDECDIG PRI_DECDIG_PREFIX"o"
+#define PRIuDECDIG PRI_DECDIG_PREFIX"u"
+#define PRIxDECDIG PRI_DECDIG_PREFIX"x"
+#define PRIXDECDIG PRI_DECDIG_PREFIX"X"
 
-#define PRIdBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"d"
-#define PRIiBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"i"
-#define PRIoBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"o"
-#define PRIuBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"u"
-#define PRIxBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"x"
-#define PRIXBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"X"
+#define PRIdDECDIG_DBL PRI_DECDIG_DBL_PREFIX"d"
+#define PRIiDECDIG_DBL PRI_DECDIG_DBL_PREFIX"i"
+#define PRIoDECDIG_DBL PRI_DECDIG_DBL_PREFIX"o"
+#define PRIuDECDIG_DBL PRI_DECDIG_DBL_PREFIX"u"
+#define PRIxDECDIG_DBL PRI_DECDIG_DBL_PREFIX"x"
+#define PRIXDECDIG_DBL PRI_DECDIG_DBL_PREFIX"X"
 
 #if defined(__cplusplus)
 extern "C" {
@@ -67,23 +60,24 @@ extern "C" {
 
 extern VALUE rb_cBigDecimal;
 
-#if 0 || SIZEOF_BDIGITS >= 16
+#if 0 || SIZEOF_DECDIG >= 16
 # define RMPD_COMPONENT_FIGURES 38
-# define RMPD_BASE ((BDIGIT)100000000000000000000000000000000000000U)
-#elif SIZEOF_BDIGITS >= 8
+# define RMPD_BASE ((DECDIG)100000000000000000000000000000000000000U)
+#elif SIZEOF_DECDIG >= 8
 # define RMPD_COMPONENT_FIGURES 19
-# define RMPD_BASE ((BDIGIT)10000000000000000000U)
-#elif SIZEOF_BDIGITS >= 4
+# define RMPD_BASE ((DECDIG)10000000000000000000U)
+#elif SIZEOF_DECDIG >= 4
 # define RMPD_COMPONENT_FIGURES 9
-# define RMPD_BASE ((BDIGIT)1000000000U)
-#elif SIZEOF_BDIGITS >= 2
+# define RMPD_BASE ((DECDIG)1000000000U)
+#elif SIZEOF_DECDIG >= 2
 # define RMPD_COMPONENT_FIGURES 4
-# define RMPD_BASE ((BDIGIT)10000U)
+# define RMPD_BASE ((DECDIG)10000U)
 #else
 # define RMPD_COMPONENT_FIGURES 2
-# define RMPD_BASE ((BDIGIT)100U)
+# define RMPD_BASE ((DECDIG)100U)
 #endif
 
+#define RMPD_DOUBLE_FIGURES (1+DBL_DIG)
 
 /*
  *  NaN & Infinity
@@ -164,7 +158,7 @@ typedef struct {
                      *         -3 : Negative infinite number
                      */
     short  flag;    /* Not used in vp_routines,space for user.  */
-    BDIGIT frac[FLEXIBLE_ARRAY_SIZE]; /* Array of fraction part. */
+    DECDIG frac[FLEXIBLE_ARRAY_SIZE]; /* Array of fraction part. */
 } Real;
 
 /*
@@ -177,12 +171,12 @@ VP_EXPORT Real *VpNewRbClass(size_t mx, char const *str, VALUE klass, bool stric
 
 VP_EXPORT Real *VpCreateRbObject(size_t mx, const char *str, bool raise_exception);
 
-static inline BDIGIT
+static inline DECDIG
 rmpd_base_value(void) { return RMPD_BASE; }
 static inline size_t
 rmpd_component_figures(void) { return RMPD_COMPONENT_FIGURES; }
 static inline size_t
-rmpd_double_figures(void) { return 1+DBL_DIG; }
+rmpd_double_figures(void) { return RMPD_DOUBLE_FIGURES; }
 
 #define VpBaseFig() rmpd_component_figures()
 #define VpDblFig() rmpd_double_figures()
@@ -208,7 +202,7 @@ VP_EXPORT int VpException(unsigned short f,const char *str,int always);
 VP_EXPORT int VpIsNegDoubleZero(double v);
 #endif
 VP_EXPORT size_t VpNumOfChars(Real *vp,const char *pszFmt);
-VP_EXPORT size_t VpInit(BDIGIT BaseVal);
+VP_EXPORT size_t VpInit(DECDIG BaseVal);
 VP_EXPORT void *VpMemAlloc(size_t mb);
 VP_EXPORT void *VpMemRealloc(void *ptr, size_t mb);
 VP_EXPORT void VpFree(Real *pv);

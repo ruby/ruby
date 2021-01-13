@@ -1150,7 +1150,7 @@ static __inline__ tick_t
 tick(void)
 {
     unsigned long val;
-    __asm__ __volatile__ ("mrs %0, cntvct_el0", : "=r" (val));
+    __asm__ __volatile__ ("mrs %0, cntvct_el0" : "=r" (val));
     return val;
 }
 
@@ -3275,7 +3275,7 @@ incremental_enable(VALUE _)
  *       This means that you can not walk through all Ruby object page
  *       including freed object page.
  *
- * Note: On this implementation, 'stride' is same as sizeof(RVALUE).
+ * Note: On this implementation, 'stride' is the same as sizeof(RVALUE).
  *       However, there are possibilities to pass variable values with
  *       'stride' with some reasons.  You must use stride instead of
  *       use some constant value in the iteration.
@@ -12442,11 +12442,14 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
                 {
                     const struct rb_callcache *cc = (const struct rb_callcache *)obj;
                     VALUE class_path = cc->klass ? rb_class_path_cached(cc->klass) : Qnil;
+                    const rb_callable_method_entry_t *cme = vm_cc_cme(cc);
 
-                    APPENDF((BUFF_ARGS, "(klass:%s, cme:%s (%p) call:%p",
-                             NIL_P(class_path) ? "??" : RSTRING_PTR(class_path),
-                             vm_cc_cme(cc) ? rb_id2name(vm_cc_cme(cc)->called_id) : "<NULL>",
-                             (void *)vm_cc_cme(cc), (void *)vm_cc_call(cc)));
+                    APPENDF((BUFF_ARGS, "(klass:%s cme:%s%s (%p) call:%p",
+                             NIL_P(class_path) ? (cc->klass ? "??" : "<NULL>") : RSTRING_PTR(class_path),
+                             cme ? rb_id2name(cme->called_id) : "<NULL>",
+                             cme ? (METHOD_ENTRY_INVALIDATED(cme) ? " [inv]" : "") : "",
+                             (void *)cme,
+                             (void *)vm_cc_call(cc)));
                     break;
                 }
 	      default:

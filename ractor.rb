@@ -1,13 +1,13 @@
 # Ractor is a Actor-model abstraction for Ruby that provides thread-safe parallel execution.
 #
-# Ractor.new can make new Ractor and it will run in parallel.
+# Ractor.new can make a new Ractor, and it will run in parallel.
 #
 #     # The simplest ractor
 #     r = Ractor.new {puts "I am in Ractor!"}
-#     r.take # wait it to finish
+#     r.take # wait for it to finish
 #     # here "I am in Ractor!" would be printed
 #
-# Ractors do not share usual objects, so the some kind of thread-safety concerns such as data-race,
+# Ractors do not share usual objects, so the same kinds of thread-safety concerns such as data-race,
 # race-conditions are not available on multi-ractor programming.
 #
 # To achieve this, ractors severely limit object sharing between different ractors.

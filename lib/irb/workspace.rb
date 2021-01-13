@@ -128,6 +128,7 @@ EOF
     def filter_backtrace(bt)
       return nil if bt =~ /\/irb\/.*\.rb/
       return nil if bt =~ /\/irb\.rb/
+      return nil if bt =~ /tool\/lib\/.*\.rb|runner\.rb/ # for tests in Ruby repository
       case IRB.conf[:CONTEXT_MODE]
       when 1
         return nil if bt =~ %r!/tmp/irb-binding!

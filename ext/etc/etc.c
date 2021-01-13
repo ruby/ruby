@@ -68,6 +68,15 @@ void rb_deprecate_constant(VALUE mod, const char *name);
 typedef int rb_atomic_t;
 # define RUBY_ATOMIC_CAS(var, oldval, newval) \
     ((var) == (oldval) ? ((var) = (newval), (oldval)) : (var))
+# define RUBY_ATOMIC_EXCHANGE(var, newval) \
+    atomic_exchange(&var, newval)
+static inline rb_atomic_t
+atomic_exchange(volatile rb_atomic_t *var, rb_atomic_t newval)
+{
+    rb_atomic_t oldval = *var;
+    *var = newval;
+    return oldval;
+}
 #endif
 
 /* call-seq:
@@ -253,7 +262,9 @@ static VALUE
 passwd_ensure(VALUE _)
 {
     endpwent();
-    passwd_blocking = 0;
+    if (RUBY_ATOMIC_EXCHANGE(passwd_blocking, 0) != 1) {
+	rb_raise(rb_eRuntimeError, "unexpected passwd_blocking");
+    }
     return Qnil;
 }
 
@@ -495,7 +506,9 @@ static VALUE
 group_ensure(VALUE _)
 {
     endgrent();
-    group_blocking = 0;
+    if (RUBY_ATOMIC_EXCHANGE(group_blocking, 0) != 1) {
+	rb_raise(rb_eRuntimeError, "unexpected group_blocking");
+    }
     return Qnil;
 }
 

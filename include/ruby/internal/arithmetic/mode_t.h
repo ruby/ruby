@@ -31,4 +31,8 @@
 # define MODET2NUM RB_INT2NUM
 #endif
 
+#ifndef PRI_MODET_PREFIX
+# define PRI_MODET_PREFIX PRI_INT_PREFIX
+#endif
+
 #endif /* RBIMPL_ARITHMETIC_MODE_T_H */

@@ -2087,7 +2087,7 @@ utc_offset_arg(VALUE arg)
     VALUE tmp;
     if (!NIL_P(tmp = rb_check_string_type(arg))) {
         int n = 0;
-        char *s = RSTRING_PTR(tmp);
+        const char *s = RSTRING_PTR(tmp), *min = NULL, *sec = NULL;
         if (!rb_enc_str_asciicompat_p(tmp)) {
             goto invalid_utc_offset;
 	}
@@ -2115,24 +2115,38 @@ utc_offset_arg(VALUE arg)
             if (STRNCASECMP("UTC", s, 3) == 0) {
                 return UTC_ZONE;
             }
-            goto invalid_utc_offset;
-	  case 9:
-	    if (s[6] != ':') goto invalid_utc_offset;
-	    if (!ISDIGIT(s[7]) || !ISDIGIT(s[8])) goto invalid_utc_offset;
-	    n += (s[7] * 10 + s[8] - '0' * 11);
-            /* fall through */
-	  case 6:
-	    if (s[0] != '+' && s[0] != '-') goto invalid_utc_offset;
-	    if (!ISDIGIT(s[1]) || !ISDIGIT(s[2])) goto invalid_utc_offset;
-	    if (s[3] != ':') goto invalid_utc_offset;
-	    if (!ISDIGIT(s[4]) || !ISDIGIT(s[5])) goto invalid_utc_offset;
-	    if (s[4] > '5') goto invalid_utc_offset;
-	    break;
+            break; /* +HH */
+          case 5: /* +HHMM */
+            min = s+3;
+            break;
+          case 6: /* +HH:MM */
+            min = s+4;
+            break;
+          case 7: /* +HHMMSS */
+            sec = s+5;
+            min = s+3;
+            break;
+          case 9: /* +HH:MM:SS */
+            sec = s+7;
+            min = s+4;
+            break;
 	  default:
 	    goto invalid_utc_offset;
 	}
+        if (sec) {
+            if (sec == s+7 && *(sec-1) != ':') goto invalid_utc_offset;
+            if (!ISDIGIT(sec[0]) || !ISDIGIT(sec[1])) goto invalid_utc_offset;
+            n += (sec[0] * 10 + sec[1] - '0' * 11);
+        }
+        if (min) {
+            if (min == s+4 && *(min-1) != ':') goto invalid_utc_offset;
+            if (!ISDIGIT(min[0]) || !ISDIGIT(min[1])) goto invalid_utc_offset;
+            if (min[0] > '5') goto invalid_utc_offset;
+            n += (min[0] * 10 + min[1] - '0' * 11) * 60;
+        }
+        if (s[0] != '+' && s[0] != '-') goto invalid_utc_offset;
+        if (!ISDIGIT(s[1]) || !ISDIGIT(s[2])) goto invalid_utc_offset;
         n += (s[1] * 10 + s[2] - '0' * 11) * 3600;
-        n += (s[4] * 10 + s[5] - '0' * 11) * 60;
         if (s[0] == '-')
             n = -n;
         return INT2FIX(n);
@@ -2793,7 +2807,7 @@ static int
 obj2int(VALUE obj)
 {
     if (RB_TYPE_P(obj, T_STRING)) {
-	obj = rb_str_to_inum(obj, 10, FALSE);
+	obj = rb_str_to_inum(obj, 10, TRUE);
     }
 
     return NUM2INT(obj);
@@ -2815,7 +2829,7 @@ static VALUE
 obj2vint(VALUE obj)
 {
     if (RB_TYPE_P(obj, T_STRING)) {
-	obj = rb_str_to_inum(obj, 10, FALSE);
+	obj = rb_str_to_inum(obj, 10, TRUE);
     }
     else {
         obj = rb_to_int(obj);
@@ -2830,7 +2844,7 @@ obj2subsecx(VALUE obj, VALUE *subsecx)
     VALUE subsec;
 
     if (RB_TYPE_P(obj, T_STRING)) {
-	obj = rb_str_to_inum(obj, 10, FALSE);
+	obj = rb_str_to_inum(obj, 10, TRUE);
         *subsecx = INT2FIX(0);
     }
     else {
@@ -2844,7 +2858,7 @@ static VALUE
 usec2subsecx(VALUE obj)
 {
     if (RB_TYPE_P(obj, T_STRING)) {
-	obj = rb_str_to_inum(obj, 10, FALSE);
+	obj = rb_str_to_inum(obj, 10, TRUE);
     }
 
     return mulquov(num_exact(obj), INT2FIX(TIME_SCALE), INT2FIX(1000000));
@@ -4099,7 +4113,14 @@ time_inspect(VALUE time)
         rb_str_cat_cstr(str, " UTC");
     }
     else {
-        rb_str_concat(str, strftimev(" %z", time, rb_usascii_encoding()));
+        /* ?TODO: subsecond offset */
+        long off = NUM2LONG(rb_funcall(tobj->vtm.utc_offset, rb_intern("round"), 0));
+        char sign = (off < 0) ? (off = -off, '-') : '+';
+        int sec = off % 60;
+        int min = (off /= 60) % 60;
+        off /= 60;
+        rb_str_catf(str, " %c%.2d%.2d", sign, (int)off, min);
+        if (sec) rb_str_catf(str, "%.2d", sec);
     }
     return str;
 }

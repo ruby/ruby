@@ -10179,7 +10179,7 @@ rb_io_fcntl(int argc, VALUE *argv, VALUE io)
  *  Arguments for the function can follow _num_. They must be either
  *  +String+ objects or +Integer+ objects. A +String+ object is passed
  *  as a pointer to the byte sequence. An +Integer+ object is passed
- *  as an integer whose bit size is same as a pointer.
+ *  as an integer whose bit size is the same as a pointer.
  *  Up to nine parameters may be passed.
  *
  *  The function identified by _num_ is system

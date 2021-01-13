@@ -117,6 +117,9 @@ finite(double)
 # endif
 #endif
 
+/* dtoa */
+char *BigDecimal_dtoa(double d_, int mode, int ndigits, int *decpt, int *sign, char **rve);
+
 /* rational */
 
 #ifndef HAVE_RB_RATIONAL_NUM

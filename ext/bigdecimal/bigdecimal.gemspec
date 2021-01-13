@@ -21,7 +21,9 @@ Gem::Specification.new do |s|
     ext/bigdecimal/bigdecimal.h
     ext/bigdecimal/bits.h
     ext/bigdecimal/feature.h
+    ext/bigdecimal/missing.c
     ext/bigdecimal/missing.h
+    ext/bigdecimal/missing/dtoa.c
     ext/bigdecimal/static_assert.h
     lib/bigdecimal.rb
     lib/bigdecimal/jacobian.rb
@@ -40,5 +42,5 @@ Gem::Specification.new do |s|
   s.add_development_dependency "rake", ">= 12.3.3"
   s.add_development_dependency "rake-compiler", ">= 0.9"
   s.add_development_dependency "minitest", "< 5.0.0"
-  s.add_development_dependency "pry"
+  s.add_development_dependency "irb"
 end

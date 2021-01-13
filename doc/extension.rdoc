@@ -1868,13 +1868,13 @@ NORETURN_STYLE_NEW ::
 HAVE_RB_DEFINE_ALLOC_FUNC ::
 
   Means that function rb_define_alloc_func() is provided, that means the
-  allocation framework is used.  This is same as the result of
+  allocation framework is used.  This is the same as the result of
   have_func("rb_define_alloc_func", "ruby.h").
 
 HAVE_RB_REG_NEW_STR ::
 
   Means that function rb_reg_new_str() is provided, that creates Regexp
-  object from String object.  This is same as the result of
+  object from String object.  This is the same as the result of
   have_func("rb_reg_new_str", "ruby.h").
 
 HAVE_RB_IO_T ::

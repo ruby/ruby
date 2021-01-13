@@ -7871,7 +7871,9 @@ formal_argument(struct parser_params *p, ID lhs)
 formal_argument(struct parser_params *p, VALUE lhs)
 #endif
 {
-    switch (id_type(get_id(lhs))) {
+    ID id = get_id(lhs);
+
+    switch (id_type(id)) {
       case ID_LOCAL:
 	break;
 #ifndef RIPPER
@@ -7896,7 +7898,7 @@ formal_argument(struct parser_params *p, VALUE lhs)
 	return 0;
 #undef ERR
     }
-    shadowing_lvar(p, lhs);
+    shadowing_lvar(p, id);
     return lhs;
 }
 

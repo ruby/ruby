@@ -47,5 +47,13 @@ module TestIRB
         assert_include candidates, word
       end
     end
+
+    def test_complete_predicate?
+      candidates = IRB::InputCompletor.retrieve_completion_data("1.posi", bind: binding)
+      assert_include candidates, '1.positive?'
+
+      namespace = IRB::InputCompletor.retrieve_completion_data("1.positive?", bind: binding, doc_namespace: true)
+      assert_equal "Integer.positive?", namespace
+    end
   end
 end

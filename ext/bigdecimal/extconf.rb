@@ -44,21 +44,29 @@ check_bigdecimal_version(gemspec_path)
 
 have_builtin_func("__builtin_clz", "__builtin_clz(0)")
 have_builtin_func("__builtin_clzl", "__builtin_clzl(0)")
+have_builtin_func("__builtin_clzll", "__builtin_clzll(0)")
 
 have_header("float.h")
 have_header("math.h")
 have_header("stdbool.h")
 have_header("stdlib.h")
 
-if have_func("_lzcnt_u64", "x86intrin.h") # check availability
-  $defs << "-DHAVE_X86INTRIN_H"
-end
+have_header("x86intrin.h")
+have_func("_lzcnt_u32", "x86intrin.h")
+have_func("_lzcnt_u64", "x86intrin.h")
+
+have_header("intrin.h")
+have_func("__lzcnt", "intrin.h")
+have_func("__lzcnt64", "intrin.h")
+have_func("_BitScanReverse", "intrin.h")
+have_func("_BitScanReverse64", "intrin.h")
 
 have_func("labs", "stdlib.h")
 have_func("llabs", "stdlib.h")
 have_func("finite", "math.h")
 have_func("isfinite", "math.h")
 
+have_header("ruby/atomic.h")
 have_header("ruby/internal/has/builtin.h")
 have_header("ruby/internal/static_assert.h")
 

@@ -1695,10 +1695,7 @@ vm_search_cc(const VALUE klass, const struct rb_callinfo * const ci)
         return &vm_empty_cc;
     }
 
-#if VM_CHECK_MODE > 0
-    const rb_callable_method_entry_t *searched_cme = rb_callable_method_entry(klass, mid);
-    VM_ASSERT(cme == searched_cme);
-#endif
+    VM_ASSERT(cme == rb_callable_method_entry(klass, mid));
 
     const struct rb_callcache *cc = vm_cc_new(klass, cme, vm_call_general);
     METHOD_ENTRY_CACHED_SET((struct rb_callable_method_entry_struct *)cme);
@@ -4000,7 +3997,7 @@ vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_
       }
       case DEFINED_FUNC:
 	klass = CLASS_OF(v);
-	if (rb_ec_obj_respond_to(ec, klass, v, SYM2ID(obj), TRUE)) {
+	if (rb_ec_obj_respond_to(ec, v, SYM2ID(obj), TRUE)) {
 	    expr_type = DEFINED_METHOD;
 	}
 	break;
@@ -4041,7 +4038,7 @@ vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_
 		VALUE klass = vm_search_normal_superclass(me->defined_class);
 		ID id = me->def->original_id;
 
-		if (rb_ec_obj_respond_to(ec, klass, GET_SELF(), id, TRUE)) {
+		if (rb_method_boundp(klass, id, 0)) {
 		    expr_type = DEFINED_ZSUPER;
 		}
 	    }
@@ -4613,19 +4610,26 @@ vm_opt_newarray_min(rb_num_t num, const VALUE *ptr)
 
 #define IMEMO_CONST_CACHE_SHAREABLE IMEMO_FL_USER0
 
-static int
+// For MJIT inlining
+static inline bool
+vm_inlined_ic_hit_p(VALUE flags, VALUE value, const rb_cref_t *ic_cref, rb_serial_t ic_serial, const VALUE *reg_ep)
+{
+    if (ic_serial == GET_GLOBAL_CONSTANT_STATE() &&
+        ((flags & IMEMO_CONST_CACHE_SHAREABLE) || rb_ractor_main_p())) {
+
+        VM_ASSERT((flags & IMEMO_CONST_CACHE_SHAREABLE) ? rb_ractor_shareable_p(value) : true);
+
+        return (ic_cref == NULL || // no need to check CREF
+                ic_cref == vm_get_cref(reg_ep));
+    }
+    return false;
+}
+
+static bool
 vm_ic_hit_p(const struct iseq_inline_constant_cache_entry *ice, const VALUE *reg_ep)
 {
     VM_ASSERT(IMEMO_TYPE_P(ice, imemo_constcache));
-    if (ice->ic_serial == GET_GLOBAL_CONSTANT_STATE() &&
-        (FL_TEST_RAW((VALUE)ice, IMEMO_CONST_CACHE_SHAREABLE) || rb_ractor_main_p())) {
-
-        VM_ASSERT(FL_TEST_RAW((VALUE)ice, IMEMO_CONST_CACHE_SHAREABLE) ? rb_ractor_shareable_p(ice->value) : true);
-
-        return (ice->ic_cref == NULL || // no need to check CREF
-                ice->ic_cref == vm_get_cref(reg_ep));
-    }
-    return FALSE;
+    return vm_inlined_ic_hit_p(ice->flags, ice->value, ice->ic_cref, ice->ic_serial, reg_ep);
 }
 
 static void

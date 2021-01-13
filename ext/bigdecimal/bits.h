@@ -5,8 +5,8 @@
 #include "static_assert.h"
 
 #if defined(__x86_64__) && defined(HAVE_X86INTRIN_H)
-# include <x86intrin.h>         /* for _lzcnt_u64 */
-#elif defined(_MSC_VER) && _MSC_VER >= 1310
+# include <x86intrin.h>         /* for _lzcnt_u64, etc. */
+#elif defined(_MSC_VER) && defined(HAVE_INTRIN_H)
 # include <intrin.h>            /* for the following intrinsics */
 #endif
 
@@ -48,17 +48,17 @@ static inline unsigned nlz_int128(uint128_t x);
 static inline unsigned int
 nlz_int32(uint32_t x)
 {
-#if defined(_MSC_VER) && defined(__AVX2__)
+#if defined(_MSC_VER) && defined(__AVX2__) && defined(HAVE___LZCNT)
     /* Note: It seems there is no such thing like __LZCNT__ predefined in MSVC.
      * AMD  CPUs have  had this  instruction for  decades (since  K10) but  for
      * Intel, Haswell is  the oldest one.  We need to  use __AVX2__ for maximum
      * safety. */
     return (unsigned int)__lzcnt(x);
 
-#elif defined(__x86_64__) && defined(__LZCNT__) /* && ! defined(MJIT_HEADER) */
+#elif defined(__x86_64__) && defined(__LZCNT__) && defined(HAVE__LZCNT_U32)
     return (unsigned int)_lzcnt_u32(x);
 
-#elif defined(_MSC_VER) && _MSC_VER >= 1400 /* &&! defined(__AVX2__) */
+#elif defined(_MSC_VER) && defined(HAVE__BITSCANREVERSE)
     unsigned long r;
     return _BitScanReverse(&r, x) ? (31 - (int)r) : 32;
 
@@ -81,17 +81,17 @@ nlz_int32(uint32_t x)
 static inline unsigned int
 nlz_int64(uint64_t x)
 {
-#if defined(_MSC_VER) && defined(__AVX2__)
+#if defined(_MSC_VER) && defined(__AVX2__) && defined(HAVE___LZCNT64)
     return (unsigned int)__lzcnt64(x);
 
-#elif defined(__x86_64__) && defined(__LZCNT__) /* && ! defined(MJIT_HEADER) */
+#elif defined(__x86_64__) && defined(__LZCNT__) && defined(HAVE__LZCNT_U64)
     return (unsigned int)_lzcnt_u64(x);
 
-#elif defined(_WIN64) && defined(_MSC_VER) && _MSC_VER >= 1400 /* &&! defined(__AVX2__) */
+#elif defined(_WIN64) && defined(_MSC_VER) && defined(HAVE__BITSCANREVERSE64)
     unsigned long r;
     return _BitScanReverse64(&r, x) ? (63u - (unsigned int)r) : 64;
 
-#elif __has_builtin(__builtin_clzl) && !(defined(__sun) && defined(__sparc))
+#elif __has_builtin(__builtin_clzl) && __has_builtin(__builtin_clzll) && !(defined(__sun) && defined(__sparc))
     if (x == 0) {
         return 64;
     }

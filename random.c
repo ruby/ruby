@@ -583,7 +583,7 @@ ruby_fill_random_bytes(void *seed, size_t size, int need_secure)
 static void
 fill_random_seed(uint32_t *seed, size_t cnt)
 {
-    static int n = 0;
+    static rb_atomic_t n = 0;
 #if defined HAVE_CLOCK_GETTIME
     struct timespec tv;
 #elif defined HAVE_GETTIMEOFDAY
@@ -606,7 +606,7 @@ fill_random_seed(uint32_t *seed, size_t cnt)
 #if SIZEOF_TIME_T > SIZEOF_INT
     seed[0] ^= (uint32_t)((time_t)tv.tv_sec >> SIZEOF_INT * CHAR_BIT);
 #endif
-    seed[2] ^= getpid() ^ (n++ << 16);
+    seed[2] ^= getpid() ^ (ATOMIC_FETCH_ADD(n, 1) << 16);
     seed[3] ^= (uint32_t)(VALUE)&seed;
 #if SIZEOF_VOIDP > SIZEOF_INT
     seed[2] ^= (uint32_t)((VALUE)&seed >> SIZEOF_INT * CHAR_BIT);

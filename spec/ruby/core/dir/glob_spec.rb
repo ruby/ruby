@@ -39,7 +39,7 @@ describe "Dir.glob" do
   end
 
   it "matches both dot and non-dotfiles with '*' and option File::FNM_DOTMATCH" do
-    Dir.glob('*', File::FNM_DOTMATCH).sort.should == DirSpecs.expected_paths
+    Dir.glob('*', File::FNM_DOTMATCH).sort.should == DirSpecs.expected_glob_paths
   end
 
   it "matches files with any beginning with '*<non-special characters>' and option File::FNM_DOTMATCH" do
@@ -47,7 +47,7 @@ describe "Dir.glob" do
   end
 
   it "matches any files in the current directory with '**' and option File::FNM_DOTMATCH" do
-    Dir.glob('**', File::FNM_DOTMATCH).sort.should == DirSpecs.expected_paths
+    Dir.glob('**', File::FNM_DOTMATCH).sort.should == DirSpecs.expected_glob_paths
   end
 
   it "recursively matches any subdirectories except './' or '../' with '**/' from the current directory and option File::FNM_DOTMATCH" do
@@ -70,16 +70,31 @@ describe "Dir.glob" do
     Dir.glob('**/', File::FNM_DOTMATCH).sort.should == expected
   end
 
-  it "recursively matches files and directories in nested dot subdirectory with 'nested/**/*' from the current directory and option File::FNM_DOTMATCH" do
-    expected = %w[
-      nested/.
-      nested/.dotsubir
-      nested/.dotsubir/.
-      nested/.dotsubir/.dotfile
-      nested/.dotsubir/nondotfile
-    ]
+  ruby_version_is ''...'3.1' do
+    it "recursively matches files and directories in nested dot subdirectory with 'nested/**/*' from the current directory and option File::FNM_DOTMATCH" do
+      expected = %w[
+        nested/.
+        nested/.dotsubir
+        nested/.dotsubir/.
+        nested/.dotsubir/.dotfile
+        nested/.dotsubir/nondotfile
+      ]
 
-    Dir.glob('nested/**/*', File::FNM_DOTMATCH).sort.should == expected.sort
+      Dir.glob('nested/**/*', File::FNM_DOTMATCH).sort.should == expected.sort
+    end
+  end
+
+  ruby_version_is '3.1' do
+    it "recursively matches files and directories in nested dot subdirectory except . with 'nested/**/*' from the current directory and option File::FNM_DOTMATCH" do
+      expected = %w[
+       nested/.
+       nested/.dotsubir
+       nested/.dotsubir/.dotfile
+       nested/.dotsubir/nondotfile
+     ]
+
+      Dir.glob('nested/**/*', File::FNM_DOTMATCH).sort.should == expected.sort
+    end
   end
 
   # This is a separate case to check **/ coming after a constant

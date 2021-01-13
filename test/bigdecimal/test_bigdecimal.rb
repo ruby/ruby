@@ -1,5 +1,5 @@
 # frozen_string_literal: false
-require_relative "testbase"
+require_relative "helper"
 require 'bigdecimal/math'
 require 'rbconfig/sizeof'
 
@@ -150,17 +150,23 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_raise(ArgumentError) { BigDecimal(0.1, Float::DIG + 2) }
     assert_nothing_raised { BigDecimal(0.1, Float::DIG + 1) }
 
+    assert_same(BigDecimal(0.0), BigDecimal(0.0))
+    assert_same(BigDecimal(-0.0), BigDecimal(-0.0))
+
     bug9214 = '[ruby-core:58858]'
-    assert_equal(BigDecimal(-0.0, Float::DIG).sign, -1, bug9214)
+    assert_equal(BigDecimal(-0.0).sign, -1, bug9214)
 
     BigDecimal.save_exception_mode do
       BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
       assert_nan(BigDecimal(Float::NAN))
+      assert_same(BigDecimal(Float::NAN), BigDecimal(Float::NAN))
     end
     BigDecimal.save_exception_mode do
       BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, false)
       assert_positive_infinite(BigDecimal(Float::INFINITY))
+      assert_same(BigDecimal(Float::INFINITY), BigDecimal(Float::INFINITY))
       assert_negative_infinite(BigDecimal(-Float::INFINITY))
+      assert_same(BigDecimal(-Float::INFINITY), BigDecimal(-Float::INFINITY))
     end
   end
 
@@ -228,14 +234,26 @@ class TestBigDecimal < Test::Unit::TestCase
     # assert_nothing_raised(RangeError) {
     #   assert_equal(nil, BigDecimal(1i, exception: false))
     # }
-    assert_raise(TypeError) {
+    assert_raise_with_message(TypeError, "can't convert nil into BigDecimal") {
       BigDecimal(nil, exception: true)
+    }
+    assert_raise_with_message(TypeError, "can't convert true into BigDecimal") {
+      BigDecimal(true, exception: true)
+    }
+    assert_raise_with_message(TypeError, "can't convert false into BigDecimal") {
+      BigDecimal(false, exception: true)
+    }
+    assert_raise_with_message(TypeError, "can't convert Object into BigDecimal") {
+      BigDecimal(Object.new, exception: true)
     }
     assert_nothing_raised(TypeError) {
       assert_equal(nil, BigDecimal(nil, exception: false))
     }
     assert_nothing_raised(TypeError) {
       assert_equal(nil, BigDecimal(:test, exception: false))
+    }
+    assert_nothing_raised(TypeError) {
+      assert_equal(nil, BigDecimal(Object.new, exception: false))
     }
     assert_nothing_raised(TypeError) {
       assert_equal(nil, BigDecimal(Object.new, exception: false))
@@ -899,6 +917,7 @@ class TestBigDecimal < Test::Unit::TestCase
 
   def test_mult_with_float
     assert_kind_of(BigDecimal, BigDecimal("3") * 1.5)
+    assert_equal(BigDecimal("64.4"), BigDecimal(1) * 64.4)
   end
 
   def test_mult_with_rational
@@ -937,6 +956,7 @@ class TestBigDecimal < Test::Unit::TestCase
 
   def test_div_with_float
     assert_kind_of(BigDecimal, BigDecimal("3") / 1.5)
+    assert_equal(BigDecimal("0.5"), BigDecimal(1) / 2.0)
   end
 
   def test_div_with_rational
@@ -1951,6 +1971,10 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(1, BigDecimal(-1).precision)
     assert_equal(2, BigDecimal(10).precision)
     assert_equal(2, BigDecimal(-10).precision)
+    assert_equal(9, BigDecimal(100_000_000).precision)
+    assert_equal(9, BigDecimal(-100_000_000).precision)
+    assert_equal(12, BigDecimal(100_000_000_000).precision)
+    assert_equal(12, BigDecimal(-100_000_000_000).precision)
     assert_equal(21, BigDecimal(100_000_000_000_000_000_000).precision)
     assert_equal(21, BigDecimal(-100_000_000_000_000_000_000).precision)
     assert_equal(103, BigDecimal("111e100").precision)

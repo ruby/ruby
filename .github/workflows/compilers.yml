@@ -130,7 +130,7 @@ jobs:
 
           - { key: cppflags, name: DEBUG_FIND_TIME_NUMGUESS,       value: '-DDEBUG_FIND_TIME_NUMGUESS' }
           - { key: cppflags, name: DEBUG_INTEGER_PACK,             value: '-DDEBUG_INTEGER_PACK' }
-          - { key: cppflags, name: ENABLE_PATH_CHECK,              value: '-DENABLE_PATH_CHECK' }
+#         - { key: cppflags, name: ENABLE_PATH_CHECK,              value: '-DENABLE_PATH_CHECK' }
 
           - { key: cppflags, name: GC_DEBUG_STRESS_TO_CLASS,       value: '-DGC_DEBUG_STRESS_TO_CLASS' }
 #         - { key: cppflags, name: GC_ENABLE_LAZY_SWEEP=0,         value: '-DGC_ENABLE_LAZY_SWEEP=0' }

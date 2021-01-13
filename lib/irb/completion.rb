@@ -47,7 +47,7 @@ module IRB
       when /^((["'`]).*\2)\.([^.]*)$/
         # String
         receiver = $1
-        message = Regexp.quote($3)
+        message = $3
 
         candidates = String.instance_methods.collect{|m| m.to_s}
         if doc_namespace
@@ -59,7 +59,7 @@ module IRB
       when /^(\/[^\/]*\/)\.([^.]*)$/
         # Regexp
         receiver = $1
-        message = Regexp.quote($2)
+        message = $2
 
         candidates = Regexp.instance_methods.collect{|m| m.to_s}
         if doc_namespace
@@ -71,7 +71,7 @@ module IRB
       when /^([^\]]*\])\.([^.]*)$/
         # Array
         receiver = $1
-        message = Regexp.quote($2)
+        message = $2
 
         candidates = Array.instance_methods.collect{|m| m.to_s}
         if doc_namespace
@@ -83,7 +83,7 @@ module IRB
       when /^([^\}]*\})\.([^.]*)$/
         # Proc or Hash
         receiver = $1
-        message = Regexp.quote($2)
+        message = $2
 
         proc_candidates = Proc.instance_methods.collect{|m| m.to_s}
         hash_candidates = Hash.instance_methods.collect{|m| m.to_s}
@@ -117,7 +117,7 @@ module IRB
       when /^([A-Z].*)::([^:.]*)$/
         # Constant or class methods
         receiver = $1
-        message = Regexp.quote($2)
+        message = $2
         begin
           candidates = eval("#{receiver}.constants.collect{|m| m.to_s}", bind)
           candidates |= eval("#{receiver}.methods.collect{|m| m.to_s}", bind)
@@ -134,7 +134,7 @@ module IRB
         # Symbol
         receiver = $1
         sep = $2
-        message = Regexp.quote($3)
+        message = $3
 
         candidates = Symbol.instance_methods.collect{|m| m.to_s}
         if doc_namespace
@@ -147,7 +147,7 @@ module IRB
         # Numeric
         receiver = $~[:num]
         sep = $~[:sep]
-        message = Regexp.quote($~[:mes])
+        message = $~[:mes]
 
         begin
           instance = eval(receiver, bind)
@@ -169,7 +169,7 @@ module IRB
         # Numeric(0xFFFF)
         receiver = $1
         sep = $2
-        message = Regexp.quote($3)
+        message = $3
 
         begin
           instance = eval(receiver, bind)
@@ -201,7 +201,7 @@ module IRB
         # variable.func or func.func
         receiver = $1
         sep = $2
-        message = Regexp.quote($3)
+        message = $3
 
         gv = eval("global_variables", bind).collect{|m| m.to_s}.push("true", "false", "nil")
         lv = eval("local_variables", bind).collect{|m| m.to_s}
@@ -244,7 +244,7 @@ module IRB
         # unknown(maybe String)
 
         receiver = ""
-        message = Regexp.quote($1)
+        message = $1
 
         candidates = String.instance_methods(true).collect{|m| m.to_s}
         if doc_namespace
@@ -294,7 +294,7 @@ module IRB
     Operators = %w[% & * ** + - / < << <= <=> == === =~ > >= >> [] []= ^ ! != !~]
 
     def self.select_message(receiver, message, candidates, sep = ".")
-      candidates.grep(/^#{message}/).collect do |e|
+      candidates.grep(/^#{Regexp.quote(message)}/).collect do |e|
         case e
         when /^[a-zA-Z_]/
           receiver + sep + e

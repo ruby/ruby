@@ -46,6 +46,7 @@ class TestTime < Test::Unit::TestCase
     t = Time.new(*tm, "-12:00")
     assert_equal([2001,2,28,23,59,30,-43200], [t.year, t.month, t.mday, t.hour, t.min, t.sec, t.gmt_offset], bug4090)
     assert_raise(ArgumentError) { Time.new(2000,1,1, 0,0,0, "+01:60") }
+    assert_raise(ArgumentError) { Time.new(2021, 1, 1, "+09:99") }
   end
 
   def test_time_add()
@@ -584,6 +585,10 @@ class TestTime < Test::Unit::TestCase
 
     t2000 = get_t2000.localtime(9*3600) + 1/10r
     assert_equal("2000-01-01 09:00:00.1 +0900", t2000.inspect)
+
+    t2000 = get_t2000
+    assert_equal("2000-01-01 09:12:00 +0912", t2000.localtime(9*3600+12*60).inspect)
+    assert_equal("2000-01-01 09:12:34 +091234", t2000.localtime(9*3600+12*60+34).inspect)
   end
 
   def assert_zone_encoding(time)
@@ -1218,6 +1223,12 @@ class TestTime < Test::Unit::TestCase
     assert_equal [00, 00,  9,  1,  1, 2000], t.getlocal("+09:00").to_a[0, 6]
     assert_equal [20, 29, 21, 31, 12, 1999], t.getlocal("-02:30:40").to_a[0, 6]
     assert_equal [35, 10,  9,  1,  1, 2000], t.getlocal("+09:10:35").to_a[0, 6]
+    assert_equal [00, 30, 21, 31, 12, 1999], t.getlocal("-0230").to_a[0, 6]
+    assert_equal [00, 00,  9,  1,  1, 2000], t.getlocal("+0900").to_a[0, 6]
+    assert_equal [20, 29, 21, 31, 12, 1999], t.getlocal("-023040").to_a[0, 6]
+    assert_equal [35, 10,  9,  1,  1, 2000], t.getlocal("+091035").to_a[0, 6]
+    assert_raise(ArgumentError) {t.getlocal("-02:3040")}
+    assert_raise(ArgumentError) {t.getlocal("+0910:35")}
   end
 
   def test_getlocal_nil

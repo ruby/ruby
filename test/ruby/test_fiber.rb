@@ -420,7 +420,7 @@ class TestFiber < Test::Unit::TestCase
   def test_fatal_in_fiber
     assert_in_out_err(["-r-test-/fatal/rb_fatal", "-e", <<-EOS], "", [], /ok/)
       Fiber.new{
-        rb_fatal "ok"
+        Bug.rb_fatal "ok"
       }.resume
       puts :ng # unreachable.
     EOS

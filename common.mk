@@ -742,7 +742,8 @@ clean-spec: PHONY
 
 check: main test test-tool test-all test-spec
 	$(ECHO) check succeeded
-	-$(Q) if [ x"$(GIT)" != x ] && $(CHDIR) "$(srcdir)" && \
+	-$(Q) : : "run only on sh"; \
+	if [ x"$(GIT)" != x ] && $(CHDIR) "$(srcdir)" && \
 	    b=`$(GIT) symbolic-ref --short HEAD 2>&1` && \
 	    u=`$(GIT) branch --list --format='%(upstream:short)' $$b`; then \
 	  set -x; $(GIT) --no-pager log --format=oneline -G "^ *# *include" $$u..HEAD --; \
@@ -1219,7 +1220,7 @@ run: fake miniruby$(EXEEXT) PHONY
 	$(BTESTRUBY) $(RUNOPT0) $(TESTRUN_SCRIPT) $(RUNOPT)
 
 runruby: $(PROGRAM) PHONY
-	$(RUNRUBY) $(RUNOPT0) $(TESTRUN_SCRIPT) $(RUNOPT)
+	RUBY_ON_BUG='gdb -x $(srcdir)/.gdbinit -p' $(RUNRUBY) $(RUNOPT0) $(TESTRUN_SCRIPT) $(RUNOPT)
 
 parse: fake miniruby$(EXEEXT) PHONY
 	$(BTESTRUBY) --dump=parsetree_with_comment,insns $(TESTRUN_SCRIPT)
@@ -15023,6 +15024,7 @@ util.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 util.$(OBJEXT): $(top_srcdir)/internal/util.h
 util.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 util.$(OBJEXT): {$(VPATH)}assert.h
+util.$(OBJEXT): {$(VPATH)}atomic.h
 util.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 util.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 util.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -15178,6 +15180,7 @@ util.$(OBJEXT): {$(VPATH)}internal/variable.h
 util.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 util.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 util.$(OBJEXT): {$(VPATH)}missing.h
+util.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 util.$(OBJEXT): {$(VPATH)}st.h
 util.$(OBJEXT): {$(VPATH)}subst.h
 util.$(OBJEXT): {$(VPATH)}util.c

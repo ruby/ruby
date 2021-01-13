@@ -814,7 +814,7 @@ print_machine_register(size_t reg, const char *reg_name, int col_count, int max_
 #   if defined(__x86_64__) || defined(__i386__)
 #       define dump_machine_register(reg) (col_count = print_machine_register(mctx->gregs[REG_##reg], #reg, col_count, 80))
 #   elif defined(__aarch64__) || defined(__arm__)
-#       define dump_machine_register(reg, regstr) (col_count = print_machine_register(reg, #regstr, col_count, 80))
+#       define dump_machine_register(reg, regstr) (col_count = print_machine_register(reg, regstr, col_count, 80))
 #   endif
 # elif defined __APPLE__
 #   define dump_machine_register(reg) (col_count = print_machine_register(mctx->MCTX_SS_REG(reg), #reg, col_count, 80))

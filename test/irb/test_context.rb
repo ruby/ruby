@@ -83,6 +83,7 @@ module TestIRB
     end
 
     def test_eval_input
+      skip if RUBY_ENGINE == 'truffleruby'
       verbose, $VERBOSE = $VERBOSE, nil
       input = TestInputMethod.new([
         "raise 'Foo'\n",
@@ -95,7 +96,7 @@ module TestIRB
         irb.eval_input
       end
       assert_empty err
-      assert_pattern_list([:*, /RuntimeError \(.*Foo.*\).*\n/,
+      assert_pattern_list([:*, /\(irb\):1:in `<main>': Foo \(RuntimeError\)\n/,
                            :*, /#<RuntimeError: Foo>\n/,
                            :*, /0$/,
                            :*, /0$/,
@@ -106,15 +107,22 @@ module TestIRB
 
     def test_eval_object_without_inspect_method
       verbose, $VERBOSE = $VERBOSE, nil
-      input = TestInputMethod.new([
-        "BasicObject.new\n",
-      ])
-      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
-      out, err = capture_output do
-        irb.eval_input
+      all_assertions do |all|
+        IRB::Inspector::INSPECTORS.invert.each_value do |mode|
+          all.for(mode) do
+            input = TestInputMethod.new([
+                "[BasicObject.new, Class.new]\n",
+              ])
+            irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
+            irb.context.inspect_mode = mode
+            out, err = capture_output do
+              irb.eval_input
+            end
+            assert_empty err
+            assert_match(/\(Object doesn't support #inspect\)\n(=> )?\n/, out)
+          end
+        end
       end
-      assert_empty err
-      assert(/\(Object doesn't support #inspect\)\n(=> )?\n/, out)
     ensure
       $VERBOSE = verbose
     end
@@ -407,6 +415,132 @@ module TestIRB
       assert_empty err
       assert_equal("=> abc\ndef\n",
                    out)
+    end
+
+    def test_eval_input_with_exception
+      skip if RUBY_ENGINE == 'truffleruby'
+      verbose, $VERBOSE = $VERBOSE, nil
+      input = TestInputMethod.new([
+        "def hoge() fuga; end; def fuga() raise; end; hoge\n",
+      ])
+      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
+      out, err = capture_output do
+        irb.eval_input
+      end
+      assert_empty err
+      if '2.5.0' <= RUBY_VERSION && RUBY_VERSION < '3.0.0'
+        expected = [
+          :*, /Traceback \(most recent call last\):\n/,
+          :*, /\t 2: from \(irb\):1:in `<main>'\n/,
+          :*, /\t 1: from \(irb\):1:in `hoge'\n/,
+          :*, /\(irb\):1:in `fuga': unhandled exception\n/,
+        ]
+      else
+        expected = [
+          :*, /\(irb\):1:in `fuga': unhandled exception\n/,
+          :*, /\tfrom \(irb\):1:in `hoge'\n/,
+          :*, /\tfrom \(irb\):1:in `<main>'\n/,
+        ]
+      end
+      assert_pattern_list(expected, out)
+    ensure
+      $VERBOSE = verbose
+    end
+
+    def test_eval_input_with_invalid_byte_sequence_exception
+      skip if RUBY_ENGINE == 'truffleruby'
+      verbose, $VERBOSE = $VERBOSE, nil
+      input = TestInputMethod.new([
+        %Q{def hoge() fuga; end; def fuga() raise "A\\xF3B"; end; hoge\n},
+      ])
+      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
+      out, err = capture_output do
+        irb.eval_input
+      end
+      assert_empty err
+      if '2.5.0' <= RUBY_VERSION && RUBY_VERSION < '3.0.0'
+        expected = [
+          :*, /Traceback \(most recent call last\):\n/,
+          :*, /\t 2: from \(irb\):1:in `<main>'\n/,
+          :*, /\t 1: from \(irb\):1:in `hoge'\n/,
+          :*, /\(irb\):1:in `fuga': A\\xF3B \(RuntimeError\)\n/,
+        ]
+      else
+        expected = [
+          :*, /\(irb\):1:in `fuga': A\\xF3B \(RuntimeError\)\n/,
+          :*, /\tfrom \(irb\):1:in `hoge'\n/,
+          :*, /\tfrom \(irb\):1:in `<main>'\n/,
+        ]
+      end
+      assert_pattern_list(expected, out)
+    ensure
+      $VERBOSE = verbose
+    end
+
+    def test_eval_input_with_long_exception
+      skip if RUBY_ENGINE == 'truffleruby'
+      verbose, $VERBOSE = $VERBOSE, nil
+      nesting = 20
+      generated_code = ''
+      nesting.times do |i|
+        generated_code << "def a#{i}() a#{i + 1}; end; "
+      end
+      generated_code << "def a#{nesting}() raise; end; a0\n"
+      input = TestInputMethod.new([
+        generated_code
+      ])
+      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
+      out, err = capture_output do
+        irb.eval_input
+      end
+      assert_empty err
+      if '2.5.0' <= RUBY_VERSION && RUBY_VERSION < '3.0.0'
+        expected = [
+          :*, /Traceback \(most recent call last\):\n/,
+          :*, /\t... 5 levels...\n/,
+          :*, /\t16: from \(irb\):1:in `a4'\n/,
+          :*, /\t15: from \(irb\):1:in `a5'\n/,
+          :*, /\t14: from \(irb\):1:in `a6'\n/,
+          :*, /\t13: from \(irb\):1:in `a7'\n/,
+          :*, /\t12: from \(irb\):1:in `a8'\n/,
+          :*, /\t11: from \(irb\):1:in `a9'\n/,
+          :*, /\t10: from \(irb\):1:in `a10'\n/,
+          :*, /\t 9: from \(irb\):1:in `a11'\n/,
+          :*, /\t 8: from \(irb\):1:in `a12'\n/,
+          :*, /\t 7: from \(irb\):1:in `a13'\n/,
+          :*, /\t 6: from \(irb\):1:in `a14'\n/,
+          :*, /\t 5: from \(irb\):1:in `a15'\n/,
+          :*, /\t 4: from \(irb\):1:in `a16'\n/,
+          :*, /\t 3: from \(irb\):1:in `a17'\n/,
+          :*, /\t 2: from \(irb\):1:in `a18'\n/,
+          :*, /\t 1: from \(irb\):1:in `a19'\n/,
+          :*, /\(irb\):1:in `a20': unhandled exception\n/,
+        ]
+      else
+        expected = [
+          :*, /\(irb\):1:in `a20': unhandled exception\n/,
+          :*, /\tfrom \(irb\):1:in `a19'\n/,
+          :*, /\tfrom \(irb\):1:in `a18'\n/,
+          :*, /\tfrom \(irb\):1:in `a17'\n/,
+          :*, /\tfrom \(irb\):1:in `a16'\n/,
+          :*, /\tfrom \(irb\):1:in `a15'\n/,
+          :*, /\tfrom \(irb\):1:in `a14'\n/,
+          :*, /\tfrom \(irb\):1:in `a13'\n/,
+          :*, /\tfrom \(irb\):1:in `a12'\n/,
+          :*, /\tfrom \(irb\):1:in `a11'\n/,
+          :*, /\tfrom \(irb\):1:in `a10'\n/,
+          :*, /\tfrom \(irb\):1:in `a9'\n/,
+          :*, /\tfrom \(irb\):1:in `a8'\n/,
+          :*, /\tfrom \(irb\):1:in `a7'\n/,
+          :*, /\tfrom \(irb\):1:in `a6'\n/,
+          :*, /\tfrom \(irb\):1:in `a5'\n/,
+          :*, /\tfrom \(irb\):1:in `a4'\n/,
+          :*, /\t... 5 levels...\n/,
+        ]
+      end
+      assert_pattern_list(expected, out)
+    ensure
+      $VERBOSE = verbose
     end
   end
 end

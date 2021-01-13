@@ -457,11 +457,13 @@ AC_TRY_COMPILE([
 [
 	AC_MSG_RESULT(yes)
 	target_os=${target_os}-android
-	AC_MSG_CHECKING([for Android API version])
-        # hacky workaround: https://github.com/termux/termux-packages/issues/6176
-        rb_android_api=`getprop ro.build.version.sdk`
-        AC_MSG_RESULT($rb_android_api)
-        RUBY_APPEND_OPTIONS(CPPFLAGS, -D__ANDROID_API__=$rb_android_api -Wno-macro-redefined)
+	AS_IF([test "x$cross_compiling" = xno], [
+                AC_MSG_CHECKING([for Android API version])
+                # hacky workaround: https://github.com/termux/termux-packages/issues/6176
+                rb_android_api=`getprop ro.build.version.sdk`
+                AC_MSG_RESULT($rb_android_api)
+                RUBY_APPEND_OPTIONS(CPPFLAGS, -D__ANDROID_API__=$rb_android_api -Wno-macro-redefined)
+	])
 ])
 
 AC_SUBST(RM, ['rm -f'])
@@ -889,6 +891,12 @@ AS_CASE(["$target_os"],
 
 dnl Checks for libraries.
 AS_CASE(["$target_os"],[*bsd*|dragonfly*],[],[ac_cv_func_daemon=no])
+
+AS_CASE(["$target_os"], [*android*], [
+	AS_CASE(["$target_cpu"], [arm*], [
+		ac_cv_func___builtin_setjmp=no
+	])
+])
 
 AS_UNSET(ORIG_LIBS)
 POSTLINK=:
