@@ -17,7 +17,7 @@ module IRB # :nodoc:
     CYAN      = 36
 
     TOKEN_KEYWORDS = {
-      on_kw: ['nil', 'self', 'true', 'false', '__FILE__', '__LINE__'],
+      on_kw: ['nil', 'self', 'true', 'false', '__FILE__', '__LINE__', '__ENCODING__'],
       on_const: ['ENV'],
     }
     private_constant :TOKEN_KEYWORDS

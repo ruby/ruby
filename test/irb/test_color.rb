@@ -50,7 +50,7 @@ module TestIRB
         '"#{}"' => "#{RED}#{BOLD}\"#{CLEAR}#{RED}\#{#{CLEAR}#{RED}}#{CLEAR}#{RED}#{BOLD}\"#{CLEAR}",
         ':"a#{}b"' => "#{YELLOW}:\"#{CLEAR}#{YELLOW}a#{CLEAR}#{YELLOW}\#{#{CLEAR}#{YELLOW}}#{CLEAR}#{YELLOW}b#{CLEAR}#{YELLOW}\"#{CLEAR}",
         ':"a#{ def b; end; \'c\' + "#{ :d }" }e"' => "#{YELLOW}:\"#{CLEAR}#{YELLOW}a#{CLEAR}#{YELLOW}\#{#{CLEAR} #{GREEN}def#{CLEAR} #{BLUE}#{BOLD}b#{CLEAR}; #{GREEN}end#{CLEAR}; #{RED}#{BOLD}'#{CLEAR}#{RED}c#{CLEAR}#{RED}#{BOLD}'#{CLEAR} + #{RED}#{BOLD}\"#{CLEAR}#{RED}\#{#{CLEAR} #{YELLOW}:#{CLEAR}#{YELLOW}d#{CLEAR} #{RED}}#{CLEAR}#{RED}#{BOLD}\"#{CLEAR} #{YELLOW}}#{CLEAR}#{YELLOW}e#{CLEAR}#{YELLOW}\"#{CLEAR}",
-        "[__FILE__, __LINE__]" => "[#{CYAN}#{BOLD}__FILE__#{CLEAR}, #{CYAN}#{BOLD}__LINE__#{CLEAR}]",
+        "[__FILE__, __LINE__, __ENCODING__]" => "[#{CYAN}#{BOLD}__FILE__#{CLEAR}, #{CYAN}#{BOLD}__LINE__#{CLEAR}, #{CYAN}#{BOLD}__ENCODING__#{CLEAR}]",
         ":self" => "#{YELLOW}:#{CLEAR}#{YELLOW}self#{CLEAR}",
         ":class" => "#{YELLOW}:#{CLEAR}#{YELLOW}class#{CLEAR}",
         "[:end, 2]" => "[#{YELLOW}:#{CLEAR}#{YELLOW}end#{CLEAR}, #{BLUE}#{BOLD}2#{CLEAR}]",
@@ -163,6 +163,7 @@ module TestIRB
         1 => "#{BLUE}#{BOLD}1#{CLEAR}\n",
         IRBTestColorPrinter.new('test') => "#{GREEN}#<struct TestIRB::TestColor::IRBTestColorPrinter#{CLEAR} a#{GREEN}=#{CLEAR}#{RED}#{BOLD}\"#{CLEAR}#{RED}test#{CLEAR}#{RED}#{BOLD}\"#{CLEAR}#{GREEN}>#{CLEAR}\n",
         Ripper::Lexer.new('1').scan => "[#{GREEN}#<Ripper::Lexer::Elem:#{CLEAR} on_int@1:0 END token: #{RED}#{BOLD}\"#{CLEAR}#{RED}1#{CLEAR}#{RED}#{BOLD}\"#{CLEAR}#{GREEN}>#{CLEAR}]\n",
+        Class.new{define_method(:pretty_print){|q| q.text("[__FILE__, __LINE__, __ENCODING__]")}}.new => "[#{CYAN}#{BOLD}__FILE__#{CLEAR}, #{CYAN}#{BOLD}__LINE__#{CLEAR}, #{CYAN}#{BOLD}__ENCODING__#{CLEAR}]\n",
       }.each do |object, result|
         actual = with_term { IRB::ColorPrinter.pp(object, '') }
         assert_equal(result, actual, "Case: IRB::ColorPrinter.pp(#{object.inspect}, '')")
