@@ -947,7 +947,7 @@ BigDecimal_coerce(VALUE self, VALUE other)
     Real *b;
 
     if (RB_TYPE_P(other, T_FLOAT)) {
-	GUARD_OBJ(b, GetVpValueWithPrec(other, DBLE_FIG, 1));
+	GUARD_OBJ(b, GetVpValueWithPrec(other, 0, 1));
         obj = rb_assoc_new(VpCheckGetValue(b), self);
     }
     else {
@@ -1005,7 +1005,7 @@ BigDecimal_add(VALUE self, VALUE r)
 
     GUARD_OBJ(a, GetVpValue(self, 1));
     if (RB_TYPE_P(r, T_FLOAT)) {
-	b = GetVpValueWithPrec(r, DBLE_FIG, 1);
+	b = GetVpValueWithPrec(r, 0, 1);
     }
     else if (RB_TYPE_P(r, T_RATIONAL)) {
 	b = GetVpValueWithPrec(r, a->Prec*VpBaseFig(), 1);
@@ -1063,7 +1063,7 @@ BigDecimal_sub(VALUE self, VALUE r)
 
     GUARD_OBJ(a, GetVpValue(self,1));
     if (RB_TYPE_P(r, T_FLOAT)) {
-	b = GetVpValueWithPrec(r, DBLE_FIG, 1);
+	b = GetVpValueWithPrec(r, 0, 1);
     }
     else if (RB_TYPE_P(r, T_RATIONAL)) {
 	b = GetVpValueWithPrec(r, a->Prec*VpBaseFig(), 1);
@@ -1113,7 +1113,7 @@ BigDecimalCmp(VALUE self, VALUE r,char op)
 	break;
 
     case T_FLOAT:
-	GUARD_OBJ(b, GetVpValueWithPrec(r, DBLE_FIG, 0));
+	GUARD_OBJ(b, GetVpValueWithPrec(r, 0, 0));
 	break;
 
     case T_RATIONAL:
@@ -1326,7 +1326,7 @@ BigDecimal_mult(VALUE self, VALUE r)
 
     GUARD_OBJ(a, GetVpValue(self, 1));
     if (RB_TYPE_P(r, T_FLOAT)) {
-        b = GetVpValueWithPrec(r, DBLE_FIG, 1);
+        b = GetVpValueWithPrec(r, 0, 1);
     }
     else if (RB_TYPE_P(r, T_RATIONAL)) {
 	b = GetVpValueWithPrec(r, a->Prec*VpBaseFig(), 1);
@@ -1354,7 +1354,7 @@ BigDecimal_divide(Real **c, Real **res, Real **div, VALUE self, VALUE r)
 
     GUARD_OBJ(a, GetVpValue(self, 1));
     if (RB_TYPE_P(r, T_FLOAT)) {
-        b = GetVpValueWithPrec(r, DBLE_FIG, 1);
+        b = GetVpValueWithPrec(r, 0, 1);
     }
     else if (RB_TYPE_P(r, T_RATIONAL)) {
 	b = GetVpValueWithPrec(r, a->Prec*VpBaseFig(), 1);
@@ -1420,7 +1420,7 @@ BigDecimal_DoDivmod(VALUE self, VALUE r, Real **div, Real **mod)
 
     GUARD_OBJ(a, GetVpValue(self, 1));
     if (RB_TYPE_P(r, T_FLOAT)) {
-	b = GetVpValueWithPrec(r, DBLE_FIG, 1);
+	b = GetVpValueWithPrec(r, 0, 1);
     }
     else if (RB_TYPE_P(r, T_RATIONAL)) {
 	b = GetVpValueWithPrec(r, a->Prec*VpBaseFig(), 1);
@@ -1521,7 +1521,7 @@ BigDecimal_divremain(VALUE self, VALUE r, Real **dv, Real **rv)
 
     GUARD_OBJ(a, GetVpValue(self, 1));
     if (RB_TYPE_P(r, T_FLOAT)) {
-	b = GetVpValueWithPrec(r, DBLE_FIG, 1);
+	b = GetVpValueWithPrec(r, 0, 1);
     }
     else if (RB_TYPE_P(r, T_RATIONAL)) {
 	b = GetVpValueWithPrec(r, a->Prec*VpBaseFig(), 1);
@@ -2416,7 +2416,7 @@ BigDecimal_power(int argc, VALUE*argv, VALUE self)
         if (NIL_P(prec)) {
             n += DBLE_FIG;
         }
-        exp = GetVpValueWithPrec(vexp, DBLE_FIG, 1);
+        exp = GetVpValueWithPrec(vexp, 0, 1);
 	break;
 
       case T_RATIONAL:
@@ -2829,7 +2829,8 @@ rb_float_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception)
     char buf[DBLE_FIG + BASE_FIG + 2 + 1];
     int decpt, negative_p;
     char *e;
-    char *p = BigDecimal_dtoa(d, 2, digs, &decpt, &negative_p, &e);
+    const int mode = digs == 0 ? 0 : 2;
+    char *p = BigDecimal_dtoa(d, mode, digs, &decpt, &negative_p, &e);
     int len10 = (int)(e - p);
     if (len10 >= (int)sizeof(buf))
         len10 = (int)sizeof(buf) - 1;
@@ -3006,6 +3007,7 @@ rb_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception)
 
         VALUE copy = TypedData_Wrap_Struct(rb_cBigDecimal, &BigDecimal_data_type, 0);
         vp = VpCopy(NULL, vp);
+        /* TODO: rounding */
         BigDecimal_wrap_struct(copy, vp);
         return VpCheckGetValue(vp);
     }
@@ -3046,19 +3048,28 @@ rb_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception)
 }
 
 /* call-seq:
- *   BigDecimal(initial, digits=0, exception: true)
+ *   BigDecimal(arg, exception: true)
+ *   BigDecimal(arg, digits, exception: true)
  *
- * Create a new BigDecimal object.
+ * Returns <i>arg</i> converted to a BigDecimal.  Numeric types are converted
+ * directly.  Other types except for String are first converted to String
+ * by <code>to_str</code>.  Strings can be converted when it has appropriate
+ * forms of decimal numbers.  Exceptions can be suppressed by passing
+ * <code>exception: false</code>.
  *
- * initial:: The initial value, as an Integer, a Float, a Rational,
- *           a BigDecimal, or a String.
+ * When <i>arg</i> is a Float and <i>digits</i> is <code>0</code>, the number
+ * of digits is determined by the algorithm of <code>dtoa</code> function
+ * written by David M. Gay.  That algorithm is based on "How to Print Floating-
+ * Point Numbers Accurately" by Guy L. Steele, Jr. and Jon L. White [Proc. ACM
+ * SIGPLAN '90, pp. 112-126].
  *
- *           If it is a String, spaces are ignored and unrecognized characters
- *           terminate the value.
+ * arg:: The value converted to a BigDecimal.
  *
- * digits:: The number of significant digits, as an Integer. If omitted or 0,
- *          the number of significant digits is determined from the initial
- *          value.
+ *       If it is a String, spaces are ignored and unrecognized characters
+ *       terminate the value.
+ *
+ * digits:: The number of significant digits, as an Integer. If omitted,
+ *          the number of significant digits is determined from <i>arg</i>.
  *
  *          The actual number of significant digits used in computation is
  *          usually larger than the specified number.
@@ -3303,7 +3314,7 @@ BigMath_s_exp(VALUE klass, VALUE x, VALUE vprec)
 	infinite = isinf(flo);
 	nan = isnan(flo);
 	if (!infinite && !nan) {
-	    vx = GetVpValueWithPrec(x, DBLE_FIG, 0);
+	    vx = GetVpValueWithPrec(x, 0, 0);
 	}
 	break;
 
@@ -3456,7 +3467,7 @@ get_vp_value:
 	infinite = isinf(flo);
 	nan = isnan(flo);
 	if (!zero && !negative && !infinite && !nan) {
-	    vx = GetVpValueWithPrec(x, DBLE_FIG, 1);
+	    vx = GetVpValueWithPrec(x, 0, 1);
 	}
 	break;
 

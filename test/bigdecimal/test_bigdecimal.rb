@@ -917,6 +917,7 @@ class TestBigDecimal < Test::Unit::TestCase
 
   def test_mult_with_float
     assert_kind_of(BigDecimal, BigDecimal("3") * 1.5)
+    assert_equal(BigDecimal("64.4"), BigDecimal(1) * 64.4)
   end
 
   def test_mult_with_rational
@@ -955,6 +956,7 @@ class TestBigDecimal < Test::Unit::TestCase
 
   def test_div_with_float
     assert_kind_of(BigDecimal, BigDecimal("3") / 1.5)
+    assert_equal(BigDecimal("0.5"), BigDecimal(1) / 2.0)
   end
 
   def test_div_with_rational

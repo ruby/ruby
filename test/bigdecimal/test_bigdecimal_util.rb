@@ -19,11 +19,11 @@ class TestBigDecimalUtil < Test::Unit::TestCase
 
   def test_Float_to_d_without_precision
     delta = 1.0/10**(Float::DIG+1)
-    assert_in_delta(BigDecimal(0.5, Float::DIG+1), 0.5.to_d, delta)
-    assert_in_delta(BigDecimal(355.0/113.0, Float::DIG+1), (355.0/113.0).to_d, delta)
+    assert_in_delta(BigDecimal(0.5, 0), 0.5.to_d, delta)
+    assert_in_delta(BigDecimal(355.0/113.0, 0), (355.0/113.0).to_d, delta)
 
     assert_equal(9.05, 9.05.to_d.to_f)
-    assert_equal("9.050000000000001", 9.05.to_d.to_s('F'))
+    assert_equal("9.05", 9.05.to_d.to_s('F'))
 
     assert_equal(Math::PI, Math::PI.to_d.to_f)
 
@@ -34,6 +34,8 @@ class TestBigDecimalUtil < Test::Unit::TestCase
     assert_raise(TypeError) { 0.3.to_d(false) }
 
     assert(1.1.to_d.frozen?)
+
+    assert_equal(BigDecimal("999_999.9999"), 999_999.9999.to_d)
   end
 
   def test_Float_to_d_with_precision
