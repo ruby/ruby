@@ -1302,12 +1302,15 @@ static INSN *
 new_insn_send(rb_iseq_t *iseq, int line_no, ID id, VALUE argc, const rb_iseq_t *blockiseq, VALUE flag, struct rb_callinfo_kwarg *keywords)
 {
     VALUE *operands = compile_data_calloc2(iseq, sizeof(VALUE), 2);
-    operands[0] = (VALUE)new_callinfo(iseq, id, FIX2INT(argc), FIX2INT(flag), keywords, blockiseq != NULL);
+    VALUE ci = (VALUE)new_callinfo(iseq, id, FIX2INT(argc), FIX2INT(flag), keywords, blockiseq != NULL);
+    operands[0] = ci;
     operands[1] = (VALUE)blockiseq;
     if (blockiseq) {
         RB_OBJ_WRITTEN(iseq, Qundef, blockiseq);
     }
-    return new_insn_core(iseq, line_no, BIN(send), 2, operands);
+    INSN *insn = new_insn_core(iseq, line_no, BIN(send), 2, operands);
+    RB_GC_GUARD(ci);
+    return insn;
 }
 
 static rb_iseq_t *
