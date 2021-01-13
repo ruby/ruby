@@ -14,14 +14,12 @@ begin
         FileUtils.rm_rf(@tmpdir)
         Dir.mkdir(@tmpdir)
       end
-      Dir.chdir(@tmpdir)
       @inputrc_backup = ENV['INPUTRC']
       @inputrc_file = ENV['INPUTRC'] = File.join(@tmpdir, 'temporaty_inputrc')
       File.unlink(@inputrc_file) if File.exist?(@inputrc_file)
     end
 
     def teardown
-      Dir.chdir(@pwd)
       FileUtils.rm_rf(@tmpdir)
       ENV['INPUTRC'] = @inputrc_backup
       ENV.delete('RELINE_TEST_PROMPT') if ENV['RELINE_TEST_PROMPT']
