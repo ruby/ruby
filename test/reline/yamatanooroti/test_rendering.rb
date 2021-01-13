@@ -525,6 +525,7 @@ begin
           end
         end
       EOC
+      sleep 1
       close
       assert_screen(<<~EOC)
         prompt>         prompt
@@ -571,6 +572,7 @@ begin
           end
         end
       EOC
+      sleep 1
       write("\C-p" * 6)
       close
       assert_screen(<<~EOC)
@@ -618,7 +620,7 @@ begin
           end
         end
       EOC
-      sleep 0.3
+      sleep 1
       write("\C-p" * 5)
       write("\C-n" * 3)
       close
