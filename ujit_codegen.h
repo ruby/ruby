@@ -17,9 +17,6 @@ typedef struct JITState
     // Instruction sequence this is associated with
     const rb_iseq_t *iseq;
 
-    // Index in the iseq of the opcode we are replacing
-    const uint32_t start_idx;
-
     // Index of the current instruction being compiled
     uint32_t insn_idx;
 
@@ -43,9 +40,9 @@ typedef struct OpDesc
 
 } opdesc_t;
 
-uint8_t* ujit_compile_entry(const rb_iseq_t *iseq, uint32_t insn_idx);
+uint8_t* ujit_gen_entry(version_t* version);
 
-uint32_t ujit_compile_block(const rb_iseq_t *iseq, uint32_t insn_idx, ctx_t* ctx);
+uint32_t ujit_gen_code(version_t* version);
 
 void ujit_init_codegen(void);
 
