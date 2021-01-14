@@ -24,6 +24,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
       lib/rubygems/test_case.rb
       lib/rubygems/ssl_certs/rubygems.org/foo.pem
       bundler/exe/bundle
+      bundler/exe/bundler
       bundler/lib/bundler.rb
       bundler/lib/bundler/b.rb
       bundler/bin/bundler/man/bundle-b.1
@@ -41,7 +42,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     gemspec.name = "bundler"
     gemspec.version = BUNDLER_VERS
     gemspec.bindir = "exe"
-    gemspec.executables = ["bundle"]
+    gemspec.executables = ["bundle", "bundler"]
 
     File.open 'bundler/bundler.gemspec', 'w' do |io|
       io.puts gemspec.to_ruby
@@ -135,6 +136,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     exec_line = out.shift until exec_line == "RubyGems installed the following executables:"
     assert_equal "\t#{default_gem_bin_path}", out.shift
     assert_equal "\t#{default_bundle_bin_path}", out.shift
+    assert_equal "\t#{default_bundler_bin_path}", out.shift
   end
 
   def test_env_shebang_flag
@@ -152,6 +154,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     bin_env = win_platform? ? "" : %w[/usr/bin/env /bin/env].find {|f| File.executable?(f) } + " "
     assert_match %r{\A#!\s*#{bin_env}#{ruby_exec}}, File.read(default_gem_bin_path)
     assert_match %r{\A#!\s*#{bin_env}#{ruby_exec}}, File.read(default_bundle_bin_path)
+    assert_match %r{\A#!\s*#{bin_env}#{ruby_exec}}, File.read(default_bundler_bin_path)
     assert_match %r{\A#!\s*#{bin_env}#{ruby_exec}}, File.read(gem_bin_path)
   end
 
@@ -386,5 +389,9 @@ class TestGemCommandsSetupCommand < Gem::TestCase
 
   def default_bundle_bin_path
     File.join @install_dir, 'bin', 'bundle'
+  end
+
+  def default_bundler_bin_path
+    File.join @install_dir, 'bin', 'bundler'
   end
 end unless Gem.java_platform?
