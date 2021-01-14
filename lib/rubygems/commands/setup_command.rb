@@ -375,9 +375,7 @@ By default, this RubyGems will install gem as:
     specs_dir = File.join(options[:destdir], specs_dir) unless Gem.win_platform?
     mkdir_p specs_dir, :mode => 0755
 
-    bundler_spec = Gem::Specification.load("bundler/bundler.gemspec")
-    bundler_spec.files = Dir.chdir("bundler") { Dir["{*.md,{lib,exe}/**/*}"] }
-    bundler_spec.executables -= %w[bundler bundle_ruby]
+    bundler_spec = Dir.chdir("bundler") { Gem::Specification.load("bundler.gemspec") }
 
     # Remove bundler-*.gemspec in default specification directory.
     Dir.entries(specs_dir).

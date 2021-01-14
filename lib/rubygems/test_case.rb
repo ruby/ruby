@@ -26,7 +26,20 @@ begin
 rescue LoadError
 end
 
-require 'bundler'
+if File.exist?(bundler_gemspec)
+  require_relative '../../bundler/lib/bundler'
+else
+  require 'bundler'
+end
+
+# Enable server plugin needed for bisection
+if ENV["RG_BISECT_SERVER_PLUGIN"]
+  require ENV["RG_BISECT_SERVER_PLUGIN"]
+
+  Minitest.extensions << "server"
+end
+
+ENV["MT_NO_PLUGINS"] = "true"
 
 require 'minitest/autorun'
 
