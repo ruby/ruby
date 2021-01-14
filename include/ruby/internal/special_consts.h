@@ -17,7 +17,7 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Defines enum ::ruby_special_consts.
  * @see        Sasada,  K.,  "A   Lighweight  Representation  of  Floting-Point
  *             Numbers  on  Ruby Interpreter",  in  proceedings  of 10th  JSSST

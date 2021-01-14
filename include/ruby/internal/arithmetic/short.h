@@ -17,7 +17,7 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Arithmetic conversion between C's `short` and Ruby's.
  *
  * Shyouhei  wonders:  why  there  is   no  SHORT2NUM,  given  there  are  both
