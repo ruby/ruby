@@ -676,6 +676,8 @@ cfunc_needs_frame(const rb_method_cfunc_t *cfunc)
 static bool
 gen_opt_send_without_block(jitstate_t* jit, ctx_t* ctx)
 {
+    //fprintf(stderr, "gen_opt_send_without_block\n");
+
     // Relevant definitions:
     // rb_execution_context_t       : vm_core.h
     // invoker, cfunc logic         : method.h, vm_method.c
@@ -745,7 +747,7 @@ gen_opt_send_without_block(jitstate_t* jit, ctx_t* ctx)
     mov(cb, REG0, recv);
 
     // Callee method ID
-    //ID mid = vm_ci_mid(cd->ci);
+    ID mid = vm_ci_mid(cd->ci);
     //printf("JITting call to C function \"%s\", argc: %lu\n", rb_id2name(mid), argc);
     //print_str(cb, "");
     //print_str(cb, "calling CFUNC:");
@@ -764,8 +766,7 @@ gen_opt_send_without_block(jitstate_t* jit, ctx_t* ctx)
     // Pointer to the klass field of the receiver &(recv->klass)
     x86opnd_t klass_opnd = mem_opnd(64, REG0, offsetof(struct RBasic, klass));
 
-    // FIXME
-    //assume_method_lookup_stable(cd->cc, cme, ctx);
+    assume_method_lookup_stable(cd->cc, cme, jit->block);
 
     // Bail if receiver class is different from compile-time call cache class
     mov(cb, REG1, imm_opnd(cd->cc->klass));
@@ -1062,7 +1063,7 @@ ujit_init_codegen(void)
     ujit_reg_op(BIN(opt_lt), gen_opt_lt, false);
     ujit_reg_op(BIN(opt_minus), gen_opt_minus, false);
     ujit_reg_op(BIN(opt_plus), gen_opt_plus, false);
-    //ujit_reg_op(BIN(opt_send_without_block), gen_opt_send_without_block);
+    ujit_reg_op(BIN(opt_send_without_block), gen_opt_send_without_block, false);
     ujit_reg_op(BIN(branchunless), gen_branchunless, true);
     ujit_reg_op(BIN(jump), gen_jump, true);
 }

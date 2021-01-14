@@ -63,7 +63,6 @@ opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc)
     }
 }
 
-/*
 // GC root for interacting with the GC
 struct ujit_root_struct {};
 
@@ -74,20 +73,16 @@ static st_table *method_lookup_dependency;
 struct compiled_region_array {
     int32_t size;
     int32_t capa;
-    struct compiled_region {
-        const rb_iseq_t *iseq;
-        size_t start_idx;
-        uint8_t *code;
-    } data[];
+    block_t* data[];
 };
 
 // Add an element to a region array, or allocate a new region array.
 static struct compiled_region_array *
-add_compiled_region(struct compiled_region_array *array, const rb_iseq_t *iseq, size_t start_idx, uint8_t *code)
+add_compiled_region(struct compiled_region_array *array, block_t* block)
 {
     if (!array) {
         // Allocate a brand new array with space for one
-        array = malloc(sizeof(*array) + sizeof(struct compiled_region));
+        array = malloc(sizeof(*array) + sizeof(block_t*));
         if (!array) {
             return NULL;
         }
@@ -99,7 +94,7 @@ add_compiled_region(struct compiled_region_array *array, const rb_iseq_t *iseq, 
     }
     // Check if the region is already present
     for (int32_t i = 0; i < array->size; i++) {
-        if (array->data[i].iseq == iseq && array->data[i].start_idx == start_idx) {
+        if (array->data[i] == block) {
             return array;
         }
     }
@@ -110,7 +105,7 @@ add_compiled_region(struct compiled_region_array *array, const rb_iseq_t *iseq, 
         if (new_capa != double_capa) {
             return NULL;
         }
-        array = realloc(array, sizeof(*array) + new_capa * sizeof(struct compiled_region));
+        array = realloc(array, sizeof(*array) + new_capa * sizeof(block_t*));
         if (array == NULL) {
             return NULL;
         }
@@ -118,9 +113,7 @@ add_compiled_region(struct compiled_region_array *array, const rb_iseq_t *iseq, 
     }
 
     int32_t size = array->size;
-    array->data[size].iseq = iseq;
-    array->data[size].start_idx = start_idx;
-    array->data[size].code = code;
+    array->data[size] = block;
     array->size++;
     return array;
 }
@@ -128,12 +121,13 @@ add_compiled_region(struct compiled_region_array *array, const rb_iseq_t *iseq, 
 static int
 add_lookup_dependency_i(st_data_t *key, st_data_t *value, st_data_t data, int existing)
 {
-    ctx_t *ctx = (ctx_t *)data;
+    block_t *block = (block_t *)data;
+
     struct compiled_region_array *regions = NULL;
     if (existing) {
         regions = (struct compiled_region_array *)*value;
     }
-    regions = add_compiled_region(regions, ctx->iseq, ctx->start_idx, ctx->code_ptr);
+    regions = add_compiled_region(regions, block);
     if (!regions) {
         rb_bug("ujit: failed to add method lookup dependency"); // TODO: we could bail out of compiling instead
     }
@@ -143,10 +137,11 @@ add_lookup_dependency_i(st_data_t *key, st_data_t *value, st_data_t data, int ex
 
 // Remember that the currently compiling region is only valid while cme and cc are valid
 void
-assume_method_lookup_stable(const struct rb_callcache *cc, const rb_callable_method_entry_t *cme, ctx_t *ctx)
+assume_method_lookup_stable(const struct rb_callcache *cc, const rb_callable_method_entry_t *cme, block_t* block)
 {
-    st_update(method_lookup_dependency, (st_data_t)cme, add_lookup_dependency_i, (st_data_t)ctx);
-    st_update(method_lookup_dependency, (st_data_t)cc, add_lookup_dependency_i, (st_data_t)ctx);
+    assert (block != NULL);
+    st_update(method_lookup_dependency, (st_data_t)cme, add_lookup_dependency_i, (st_data_t)block);
+    st_update(method_lookup_dependency, (st_data_t)cc, add_lookup_dependency_i, (st_data_t)block);
     // FIXME: This is a leak! When either the cme or the cc become invalid, the other also needs to go
 }
 
@@ -158,7 +153,7 @@ ujit_root_mark_i(st_data_t k, st_data_t v, st_data_t ignore)
     rb_gc_mark((VALUE)k);
     struct compiled_region_array *regions = (void *)v;
     for (int32_t i = 0; i < regions->size; i++) {
-        rb_gc_mark((VALUE)regions->data[i].iseq);
+        rb_gc_mark((VALUE)regions->data[i]->blockid.iseq);
     }
 
     return ST_CONTINUE;
@@ -194,25 +189,29 @@ static const rb_data_type_t ujit_root_type = {
     {ujit_root_mark, ujit_root_free, ujit_root_memsize, },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
-*/
 
 // Callback when cme or cc become invalid
 void
 rb_ujit_method_lookup_change(VALUE cme_or_cc)
 {
-    /*
-    if (!method_lookup_dependency) return;
+    if (!method_lookup_dependency)
+        return;
 
     RUBY_ASSERT(IMEMO_TYPE_P(cme_or_cc, imemo_ment) || IMEMO_TYPE_P(cme_or_cc, imemo_callcache));
 
     st_data_t image;
     if (st_lookup(method_lookup_dependency, (st_data_t)cme_or_cc, &image)) {
         struct compiled_region_array *array = (void *)image;
+
         // Invalidate all regions that depend on the cme or cc
         for (int32_t i = 0; i < array->size; i++) {
+            block_t* block = array->data[i];
+
+            /*
             struct compiled_region *region = &array->data[i];
             const struct rb_iseq_constant_body *body = region->iseq->body;
             RUBY_ASSERT((unsigned int)region->start_idx < body->iseq_size);
+
             // Restore region address to interpreter address in bytecode sequence
             if (body->iseq_encoded[region->start_idx] == (VALUE)region->code) {
                 const void *const *code_threading_table = rb_vm_get_insns_address_table();
@@ -222,11 +221,13 @@ rb_ujit_method_lookup_change(VALUE cme_or_cc)
                     fprintf(stderr, "cc_or_cme=%p now out of date. Restored idx=%u in iseq=%p\n", (void *)cme_or_cc, (unsigned)region->start_idx, (void *)region->iseq);
                 }
             }
+            */
+
+            invalidate(block);
         }
 
         array->size = 0;
     }
-    */
 }
 
 void
@@ -264,11 +265,9 @@ rb_ujit_init(void)
     ujit_init_core();
     ujit_init_codegen();
 
-    /*
     // Initialize the GC hooks
     method_lookup_dependency = st_init_numtable();
     struct ujit_root_struct *root;
     VALUE ujit_root = TypedData_Make_Struct(0, struct ujit_root_struct, &ujit_root_type, root);
     rb_gc_register_mark_object(ujit_root);
-    */
 }
