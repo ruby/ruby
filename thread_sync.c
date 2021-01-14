@@ -884,7 +884,7 @@ queue_do_push(VALUE self, struct rb_queue *q, VALUE obj)
  *
  * ClosedQueueError is inherited from StopIteration, so that you can break loop block.
  *
- *  Example:
+ * Example:
  *
  *    	q = Queue.new
  *      Thread.new{
