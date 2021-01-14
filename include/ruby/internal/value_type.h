@@ -53,40 +53,40 @@
 # error Bail out due to conflicting definition of T_DATA.
 #endif
 
-#define T_ARRAY    RUBY_T_ARRAY
-#define T_BIGNUM   RUBY_T_BIGNUM
-#define T_CLASS    RUBY_T_CLASS
-#define T_COMPLEX  RUBY_T_COMPLEX
-#define T_DATA     RUBY_T_DATA
-#define T_FALSE    RUBY_T_FALSE
-#define T_FILE     RUBY_T_FILE
-#define T_FIXNUM   RUBY_T_FIXNUM
-#define T_FLOAT    RUBY_T_FLOAT
-#define T_HASH     RUBY_T_HASH
-#define T_ICLASS   RUBY_T_ICLASS
-#define T_IMEMO    RUBY_T_IMEMO
-#define T_MASK     RUBY_T_MASK
-#define T_MATCH    RUBY_T_MATCH
-#define T_MODULE   RUBY_T_MODULE
-#define T_MOVED    RUBY_T_MOVED
-#define T_NIL      RUBY_T_NIL
-#define T_NODE     RUBY_T_NODE
-#define T_NONE     RUBY_T_NONE
-#define T_OBJECT   RUBY_T_OBJECT
-#define T_RATIONAL RUBY_T_RATIONAL
-#define T_REGEXP   RUBY_T_REGEXP
-#define T_STRING   RUBY_T_STRING
-#define T_STRUCT   RUBY_T_STRUCT
-#define T_SYMBOL   RUBY_T_SYMBOL
-#define T_TRUE     RUBY_T_TRUE
-#define T_UNDEF    RUBY_T_UNDEF
-#define T_ZOMBIE   RUBY_T_ZOMBIE
+#define T_ARRAY    RUBY_T_ARRAY    /**< @old{RUBY_T_ARRAY} */
+#define T_BIGNUM   RUBY_T_BIGNUM   /**< @old{RUBY_T_BIGNUM} */
+#define T_CLASS    RUBY_T_CLASS    /**< @old{RUBY_T_CLASS} */
+#define T_COMPLEX  RUBY_T_COMPLEX  /**< @old{RUBY_T_COMPLEX} */
+#define T_DATA     RUBY_T_DATA     /**< @old{RUBY_T_DATA} */
+#define T_FALSE    RUBY_T_FALSE    /**< @old{RUBY_T_FALSE} */
+#define T_FILE     RUBY_T_FILE     /**< @old{RUBY_T_FILE} */
+#define T_FIXNUM   RUBY_T_FIXNUM   /**< @old{RUBY_T_FIXNUM} */
+#define T_FLOAT    RUBY_T_FLOAT    /**< @old{RUBY_T_FLOAT} */
+#define T_HASH     RUBY_T_HASH     /**< @old{RUBY_T_HASH} */
+#define T_ICLASS   RUBY_T_ICLASS   /**< @old{RUBY_T_ICLASS} */
+#define T_IMEMO    RUBY_T_IMEMO    /**< @old{RUBY_T_IMEMO} */
+#define T_MASK     RUBY_T_MASK     /**< @old{RUBY_T_MASK} */
+#define T_MATCH    RUBY_T_MATCH    /**< @old{RUBY_T_MATCH} */
+#define T_MODULE   RUBY_T_MODULE   /**< @old{RUBY_T_MODULE} */
+#define T_MOVED    RUBY_T_MOVED    /**< @old{RUBY_T_MOVED} */
+#define T_NIL      RUBY_T_NIL      /**< @old{RUBY_T_NIL} */
+#define T_NODE     RUBY_T_NODE     /**< @old{RUBY_T_NODE} */
+#define T_NONE     RUBY_T_NONE     /**< @old{RUBY_T_NONE} */
+#define T_OBJECT   RUBY_T_OBJECT   /**< @old{RUBY_T_OBJECT} */
+#define T_RATIONAL RUBY_T_RATIONAL /**< @old{RUBY_T_RATIONAL} */
+#define T_REGEXP   RUBY_T_REGEXP   /**< @old{RUBY_T_REGEXP} */
+#define T_STRING   RUBY_T_STRING   /**< @old{RUBY_T_STRING} */
+#define T_STRUCT   RUBY_T_STRUCT   /**< @old{RUBY_T_STRUCT} */
+#define T_SYMBOL   RUBY_T_SYMBOL   /**< @old{RUBY_T_SYMBOL} */
+#define T_TRUE     RUBY_T_TRUE     /**< @old{RUBY_T_TRUE} */
+#define T_UNDEF    RUBY_T_UNDEF    /**< @old{RUBY_T_UNDEF} */
+#define T_ZOMBIE   RUBY_T_ZOMBIE   /**< @old{RUBY_T_ZOMBIE} */
 
-#define BUILTIN_TYPE      RB_BUILTIN_TYPE
-#define DYNAMIC_SYM_P     RB_DYNAMIC_SYM_P
-#define RB_INTEGER_TYPE_P rb_integer_type_p
-#define SYMBOL_P          RB_SYMBOL_P
-#define rb_type_p         RB_TYPE_P
+#define BUILTIN_TYPE      RB_BUILTIN_TYPE   /**< @old{RB_BUILTIN_TYPE} */
+#define DYNAMIC_SYM_P     RB_DYNAMIC_SYM_P  /**< @old{RB_DYNAMIC_SYM_P} */
+#define RB_INTEGER_TYPE_P rb_integer_type_p /**< @old{rb_integer_type_p} */
+#define SYMBOL_P          RB_SYMBOL_P       /**< @old{RB_SYMBOL_P} */
+#define rb_type_p         RB_TYPE_P         /**< @alias{RB_TYPE_P} */
 
 /** @cond INTERNAL_MACRO */
 #define RB_BUILTIN_TYPE   RB_BUILTIN_TYPE
@@ -103,6 +103,7 @@
 #endif
 /** @endcond */
 
+/** @old{rb_type} */
 #define TYPE(_)           RBIMPL_CAST((int)rb_type(_))
 
 /** C-level type of an object. */
@@ -140,16 +141,42 @@ ruby_value_type {
     RUBY_T_ZOMBIE   = 0x1d, /**< @see struct ::RZombie */
     RUBY_T_MOVED    = 0x1e, /**< @see struct ::RMoved */
 
-    RUBY_T_MASK     = 0x1f
+    RUBY_T_MASK     = 0x1f  /**< Bitmask of ::ruby_value_type. */
 };
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 RBIMPL_ATTR_COLD()
+/**
+ * @private
+ *
+ * This was  the old implementation  of Check_Type(), but they  diverged.  This
+ * one remains  for theoretical backwards compatibility.   People normally need
+ * not use it.
+ *
+ * @param[in]  obj            An object.
+ * @param[in]  t              A type.
+ * @exception  rb_eTypeError  `obj` is not of type `t`.
+ * @exception  rb_eFatal      `obj` is corrupt.
+ * @post       Upon successful return `obj` is guaranteed to have type `t`.
+ *
+ * @internal
+ *
+ * The second argument shall have been enum ::ruby_value_type.  But at the time
+ * matz designed this  function he still used  K&R C.  There was  no such thing
+ * like a function prototype.  We can no longer change this API.
+ */
 void rb_check_type(VALUE obj, int t);
 RBIMPL_SYMBOL_EXPORT_END()
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
+/**
+ * Queries the type of the object.
+ *
+ * @param[in]  obj  Object in question.
+ * @pre        `obj` must not be a special constant.
+ * @return     The type of `obj`.
+ */
 static inline enum ruby_value_type
 RB_BUILTIN_TYPE(VALUE obj)
 {
@@ -165,6 +192,13 @@ RB_BUILTIN_TYPE(VALUE obj)
 }
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
+/**
+ * Queries if the object is an instance of ::rb_cInteger.
+ *
+ * @param[in]  obj    Object in question.
+ * @retval     true   It is.
+ * @retval     false  It isn't.
+ */
 static inline bool
 rb_integer_type_p(VALUE obj)
 {
@@ -180,6 +214,12 @@ rb_integer_type_p(VALUE obj)
 }
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
+/**
+ * Identical to RB_BUILTIN_TYPE(), except it can also accept special constants.
+ *
+ * @param[in]  obj  Object in question.
+ * @return     The type of `obj`.
+ */
 static inline enum ruby_value_type
 rb_type(VALUE obj)
 {
@@ -212,6 +252,13 @@ rb_type(VALUE obj)
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
+/**
+ * Queries if the object is an instance of ::rb_cFloat.
+ *
+ * @param[in]  obj    Object in question.
+ * @retval     true   It is.
+ * @retval     false  It isn't.
+ */
 static inline bool
 RB_FLOAT_TYPE_P(VALUE obj)
 {
@@ -228,6 +275,13 @@ RB_FLOAT_TYPE_P(VALUE obj)
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
+/**
+ * Queries if the object is a dynamic symbol.
+ *
+ * @param[in]  obj    Object in question.
+ * @retval     true   It is.
+ * @retval     false  It isn't.
+ */
 static inline bool
 RB_DYNAMIC_SYM_P(VALUE obj)
 {
@@ -241,6 +295,13 @@ RB_DYNAMIC_SYM_P(VALUE obj)
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
+/**
+ * Queries if the object is an instance of ::rb_cSymbol.
+ *
+ * @param[in]  obj    Object in question.
+ * @retval     true   It is.
+ * @retval     false  It isn't.
+ */
 static inline bool
 RB_SYMBOL_P(VALUE obj)
 {
@@ -250,6 +311,16 @@ RB_SYMBOL_P(VALUE obj)
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_FORCEINLINE()
+/**
+ * @private
+ *
+ * This is an implementation detail of RB_TYPE_P().  Just don't use it.
+ *
+ * @param[in]  obj    An object.
+ * @param[in]  t      A type.
+ * @retval     true   `obj` is of type `t`.
+ * @retval     false  Otherwise.
+ */
 static bool
 rbimpl_RB_TYPE_P_fastpath(VALUE obj, enum ruby_value_type t)
 {
@@ -287,6 +358,19 @@ rbimpl_RB_TYPE_P_fastpath(VALUE obj, enum ruby_value_type t)
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
+/**
+ * Queries if the given object is of given type.
+ *
+ * @param[in]  obj    An object.
+ * @param[in]  t      A type.
+ * @retval     true   `obj` is of type `t`.
+ * @retval     false  Otherwise.
+ *
+ * @internal
+ *
+ * This  function is  a super-duper  hot  path.  Optimised  targeting modern  C
+ * compilers and x86_64 architecture.
+ */
 static inline bool
 RB_TYPE_P(VALUE obj, enum ruby_value_type t)
 {
@@ -327,10 +411,23 @@ RB_TYPE_P(VALUE obj, enum ruby_value_type t)
 
 RBIMPL_ATTR_PURE()
 RBIMPL_ATTR_ARTIFICIAL()
-/* Defined in ruby/internal/core/rtypeddata.h */
+/**
+ * @private
+ * Defined in ruby/internal/core/rtypeddata.h
+ */
 static inline bool rbimpl_rtypeddata_p(VALUE obj);
 
 RBIMPL_ATTR_ARTIFICIAL()
+/**
+ * Identical  to  RB_TYPE_P(),  except  it  raises  exceptions  on  predication
+ * failure.
+ *
+ * @param[in]  v              An object.
+ * @param[in]  t              A type.
+ * @exception  rb_eTypeError  `obj` is not of type `t`.
+ * @exception  rb_eFatal      `obj` is corrupt.
+ * @post       Upon successful return `obj` is guaranteed to have type `t`.
+ */
 static inline void
 Check_Type(VALUE v, enum ruby_value_type t)
 {
