@@ -1636,7 +1636,8 @@ BigDecimal_divmod(VALUE self, VALUE r)
 }
 
 /*
- * See BigDecimal#quo
+ * Do the same manner as Float#div when n is nil.
+ * Do the same manner as BigDecimal#quo when n is 0.
  */
 static inline VALUE
 BigDecimal_div2(VALUE self, VALUE b, VALUE n)
