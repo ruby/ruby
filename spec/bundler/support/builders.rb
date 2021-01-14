@@ -547,9 +547,11 @@ module Spec
 
     class GitBuilder < LibBuilder
       def _build(options)
+        default_branch = options[:default_branch] || "master"
         path = options[:path] || _default_path
         source = options[:source] || "git@#{path}"
         super(options.merge(:path => path, :source => source))
+        @context.git("config --global init.defaultBranch #{default_branch}", path)
         @context.git("init", path)
         @context.git("add *", path)
         @context.git("config user.email lol@wut.com", path)

@@ -256,6 +256,16 @@ RSpec.describe Bundler::GemHelper do
 
             Rake.application["release"].invoke
           end
+
+          it "also works when releasing from an ambiguous reference" do
+            # Create a branch with the same name as the tag
+            sys_exec("git checkout -b v#{app_version}", :dir => app_path)
+            sys_exec("git push -u origin v#{app_version}", :dir => app_path)
+
+            expect(subject).to receive(:rubygem_push).with(app_gem_path.to_s)
+
+            Rake.application["release"].invoke
+          end
         end
 
         context "on releasing with a custom tag prefix" do

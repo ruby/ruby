@@ -22,7 +22,7 @@ module Bundler
         @uri        = options["uri"] || ""
         @safe_uri   = URICredentialsFilter.credential_filtered_uri(@uri)
         @branch     = options["branch"]
-        @ref        = options["ref"] || options["branch"] || options["tag"] || "master"
+        @ref        = options["ref"] || options["branch"] || options["tag"]
         @submodules = options["submodules"]
         @name       = options["name"]
         @version    = options["version"].to_s.strip.gsub("-", ".pre.")
@@ -60,25 +60,27 @@ module Bundler
       alias_method :==, :eql?
 
       def to_s
-        at = if local?
-          path
-        elsif user_ref = options["ref"]
-          if ref =~ /\A[a-z0-9]{4,}\z/i
-            shortref_for_display(user_ref)
+        begin
+          at = if local?
+            path
+          elsif user_ref = options["ref"]
+            if ref =~ /\A[a-z0-9]{4,}\z/i
+              shortref_for_display(user_ref)
+            else
+              user_ref
+            end
+          elsif ref
+            ref
           else
-            user_ref
+            git_proxy.branch
           end
-        else
-          ref
+
+          rev = " (at #{at}@#{shortref_for_display(revision)})"
+        rescue GitError
+          ""
         end
 
-        rev = begin
-                "@#{shortref_for_display(revision)}"
-              rescue GitError
-                nil
-              end
-
-        "#{@safe_uri} (at #{at}#{rev})"
+        "#{@safe_uri}#{rev}"
       end
 
       def name

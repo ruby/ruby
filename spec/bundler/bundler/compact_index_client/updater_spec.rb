@@ -17,7 +17,6 @@ RSpec.describe Bundler::CompactIndexClient::Updater do
     let(:response) { double(:response, :body => "abc123") }
 
     it "treats the response as an update" do
-      expect(response).to receive(:[]).with("Content-Encoding") { "" }
       expect(response).to receive(:[]).with("ETag") { nil }
       expect(fetcher).to receive(:call) { response }
 
@@ -29,8 +28,7 @@ RSpec.describe Bundler::CompactIndexClient::Updater do
     let(:response) { double(:response, :body => "") }
 
     it "raises HTTPError" do
-      expect(response).to receive(:[]).with("Content-Encoding") { "gzip" }
-      expect(fetcher).to receive(:call) { response }
+      expect(fetcher).to receive(:call).and_raise(Zlib::GzipFile::Error)
 
       expect do
         updater.update(local_path, remote_path)

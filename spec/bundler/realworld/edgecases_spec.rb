@@ -451,9 +451,35 @@ RSpec.describe "real world edgecases", :realworld => true, :sometimes => true do
     bundle :lock, :env => { "DEBUG_RESOLVER" => "1" }
 
     if Bundler.feature_flag.bundler_3_mode?
-      expect(out).to include("BUNDLER: Finished resolution (2492 steps)")
+      expect(out).to include("BUNDLER: Finished resolution (1336 steps)")
     else
-      expect(out).to include("BUNDLER: Finished resolution (2722 steps)")
+      expect(out).to include("BUNDLER: Finished resolution (1395 steps)")
+    end
+  end
+
+  it "doesn't hang on tricky gemfile" do
+    skip "Only for ruby 2.7.2" if RUBY_VERSION != "2.7.2"
+
+    gemfile <<~G
+      source 'https://rubygems.org'
+
+      group :development do
+        gem "puppet-module-posix-default-r2.7", '~> 0.3'
+        gem "puppet-module-posix-dev-r2.7", '~> 0.3'
+        gem "beaker-rspec"
+        gem "beaker-puppet"
+        gem "beaker-docker"
+        gem "beaker-puppet_install_helper"
+        gem "beaker-module_install_helper"
+      end
+    G
+
+    bundle :lock, :env => { "DEBUG_RESOLVER" => "1" }
+
+    if Bundler.feature_flag.bundler_3_mode?
+      expect(out).to include("BUNDLER: Finished resolution (366 steps)")
+    else
+      expect(out).to include("BUNDLER: Finished resolution (372 steps)")
     end
   end
 end
