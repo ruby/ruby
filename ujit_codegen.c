@@ -102,7 +102,7 @@ Compile an interpreter entry block to be inserted into an iseq
 Returns `NULL` if compilation fails.
 */
 uint8_t*
-ujit_gen_entry(version_t* version)
+ujit_gen_entry(block_t* block)
 {
     assert (cb != NULL);
 
@@ -122,7 +122,7 @@ ujit_gen_entry(version_t* version)
     mov(cb, REG_SP, member_opnd(REG_CFP, rb_control_frame_t, sp));
 
     // Compile the block starting at this instruction
-    uint32_t num_instrs = ujit_gen_code(version);
+    uint32_t num_instrs = ujit_gen_code(block);
 
     // If no instructions were compiled
     if (num_instrs == 0) {
@@ -133,19 +133,19 @@ ujit_gen_entry(version_t* version)
 }
 
 /*
-Compile a sequence of bytecode instructions
+Compile a sequence of bytecode instructions for a given basic block version
 */
 uint32_t
-ujit_gen_code(version_t* version)
+ujit_gen_code(block_t* block)
 {
     assert (cb != NULL);
 
-    // Copy the version's context to avoid mutating it
-    ctx_t ctx_copy = version->ctx;
+    // Copy the block's context to avoid mutating it
+    ctx_t ctx_copy = block->ctx;
     ctx_t* ctx = &ctx_copy;
 
-    const rb_iseq_t *iseq = version->blockid.iseq;
-    uint32_t insn_idx = version->blockid.idx;
+    const rb_iseq_t *iseq = block->blockid.iseq;
+    uint32_t insn_idx = block->blockid.idx;
     VALUE *encoded = iseq->body->iseq_encoded;
 
     // NOTE: if we are ever deployed in production, we
@@ -163,7 +163,7 @@ ujit_gen_code(version_t* version)
 
     // Initialize JIT state object
     jitstate_t jit = {
-        version,
+        block,
         iseq
     };
 
@@ -216,7 +216,7 @@ ujit_gen_code(version_t* version)
     if (UJIT_DUMP_MODE >= 2) {
         // Dump list of compiled instrutions
         fprintf(stderr, "Compiled the following for iseq=%p:\n", (void *)iseq);
-        VALUE *pc = &encoded[version->blockid.idx];
+        VALUE *pc = &encoded[block->blockid.idx];
         VALUE *end_pc = &encoded[insn_idx];
         while (pc < end_pc) {
             int opcode = opcode_at_pc(iseq, pc);
@@ -961,6 +961,7 @@ gen_branchunless(jitstate_t* jit, ctx_t* ctx)
 
     // Generate the branch instructions
     gen_branch(
+        jit->block,
         ctx,
         jump_block,
         ctx,
@@ -1004,6 +1005,7 @@ gen_jump(jitstate_t* jit, ctx_t* ctx)
 
     // Generate the jump instruction
     gen_branch(
+        jit->block,
         ctx,
         jump_block,
         ctx,

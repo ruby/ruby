@@ -70,12 +70,12 @@ ctx_stack_opnd(ctx_t* ctx, int32_t idx)
 }
 
 // Retrieve a basic block version for an (iseq, idx) tuple
-version_t* find_block_version(blockid_t block, const ctx_t* ctx)
+block_t* find_block_version(blockid_t blockid, const ctx_t* ctx)
 {
     // If there exists a version for this block id
     st_data_t st_version;
-    if (rb_st_lookup(version_tbl, (st_data_t)&block, &st_version)) {
-        return (version_t*)st_version;
+    if (rb_st_lookup(version_tbl, (st_data_t)&blockid, &st_version)) {
+        return (block_t*)st_version;
     }
 
     //
@@ -85,68 +85,79 @@ version_t* find_block_version(blockid_t block, const ctx_t* ctx)
     return NULL;
 }
 // Compile a new block version immediately
-version_t* gen_block_version(blockid_t blockid, const ctx_t* ctx)
+block_t* gen_block_version(blockid_t blockid, const ctx_t* ctx)
 {
     // Allocate a version object
-    version_t* p_version = malloc(sizeof(version_t));
-    memcpy(&p_version->blockid, &blockid, sizeof(blockid_t));
-    memcpy(&p_version->ctx, ctx, sizeof(ctx_t));
-    p_version->incoming = NULL;
-    p_version->num_incoming = 0;
+    block_t* p_block = malloc(sizeof(block_t));
+    memcpy(&p_block->blockid, &blockid, sizeof(blockid_t));
+    memcpy(&p_block->ctx, ctx, sizeof(ctx_t));
+    p_block->incoming = NULL;
+    p_block->num_incoming = 0;
+    p_block->end_pos = 0;
+
+    // The block starts at the current position
+    p_block->start_pos = cb->write_pos;
 
     // Compile the block version
-    p_version->start_pos = cb->write_pos;
-    ujit_gen_code(p_version);
-    p_version->end_pos = cb->write_pos;
+    ujit_gen_code(p_block);
+
+    // The block may have been terminated in gen_branch
+    if (p_block->end_pos == 0)
+        p_block->end_pos = cb->write_pos;
 
     // Keep track of the new block version
-    st_insert(version_tbl, (st_data_t)&p_version->blockid, (st_data_t)p_version);
+    st_insert(version_tbl, (st_data_t)&p_block->blockid, (st_data_t)p_block);
 
-    return p_version;
+    return p_block;
 }
 
 // Generate a block version that is an entry point inserted into an iseq
 uint8_t* gen_entry_point(const rb_iseq_t *iseq, uint32_t insn_idx)
 {
     // Allocate a version object
-    version_t* p_version = malloc(sizeof(version_t));
+    block_t* p_block = malloc(sizeof(block_t));
     blockid_t blockid = { iseq, insn_idx };
-    memcpy(&p_version->blockid, &blockid, sizeof(blockid_t));
-    p_version->incoming = NULL;
-    p_version->num_incoming = 0;
+    memcpy(&p_block->blockid, &blockid, sizeof(blockid_t));
+    p_block->incoming = NULL;
+    p_block->num_incoming = 0;
+    p_block->end_pos = 0;
 
     // The entry context makes no assumptions about types
     ctx_t ctx = { 0 };
-    memcpy(&p_version->ctx, &ctx, sizeof(ctx_t));
+    memcpy(&p_block->ctx, &ctx, sizeof(ctx_t));
+
+    // The block starts at the current position
+    p_block->start_pos = cb->write_pos;
 
     // Compile the block version
-    p_version->start_pos = cb->write_pos;
-    uint8_t* code_ptr = ujit_gen_entry(p_version);
-    p_version->end_pos = cb->write_pos;
+    uint8_t* code_ptr = ujit_gen_entry(p_block);
+
+    // The block may have been terminated in gen_branch
+    if (p_block->end_pos == 0)
+        p_block->end_pos = cb->write_pos;
 
     // If we couldn't generate any code
     if (!code_ptr)
     {
-        free(p_version);
+        free(p_block);
         return NULL;
     }
 
     // Keep track of the new block version
-    st_insert(version_tbl, (st_data_t)&p_version->blockid, (st_data_t)p_version);
+    st_insert(version_tbl, (st_data_t)&p_block->blockid, (st_data_t)p_block);
 
     return code_ptr;
 }
 
 // Add an incoming branch for a given block version
-static void add_incoming(version_t* p_version, uint32_t branch_idx)
+static void add_incoming(block_t* p_block, uint32_t branch_idx)
 {
     // Add this branch to the list of incoming branches for the target
-    uint32_t* new_list = malloc(sizeof(uint32_t) * p_version->num_incoming + 1);
-    memcpy(new_list, p_version->incoming, p_version->num_incoming);
-    new_list[p_version->num_incoming] = branch_idx;
-    p_version->incoming = new_list;
-    p_version->num_incoming += 1;
-    //fprintf(stderr, "num_incoming: %d\n", p_version->num_incoming);
+    uint32_t* new_list = malloc(sizeof(uint32_t) * p_block->num_incoming + 1);
+    memcpy(new_list, p_block->incoming, p_block->num_incoming);
+    new_list[p_block->num_incoming] = branch_idx;
+    p_block->incoming = new_list;
+    p_block->num_incoming += 1;
 }
 
 // Called by the generated code when a branch stub is executed
@@ -176,19 +187,19 @@ uint8_t* branch_stub_hit(uint32_t branch_idx, uint32_t target_idx)
     }
 
     // Try to find a compiled version of this block
-    version_t* p_version = find_block_version(target, target_ctx);
+    block_t* p_block = find_block_version(target, target_ctx);
 
     // If this block hasn't yet been compiled
-    if (!p_version)
+    if (!p_block)
     {
-        p_version = gen_block_version(target, target_ctx);
+        p_block = gen_block_version(target, target_ctx);
     }
 
     // Add this branch to the list of incoming branches for the target
-    add_incoming(p_version, branch_idx);
+    add_incoming(p_block, branch_idx);
 
     // Update the branch target address
-    uint8_t* dst_addr = cb_get_ptr(cb, p_version->start_pos);
+    uint8_t* dst_addr = cb_get_ptr(cb, p_block->start_pos);
     branch->dst_addrs[target_idx] = dst_addr;
 
     // Rewrite the branch with the new jump target address
@@ -198,6 +209,7 @@ uint8_t* branch_stub_hit(uint32_t branch_idx, uint32_t target_idx)
     cb_set_pos(cb, branch->start_pos);
     branch->gen_fn(cb, branch->dst_addrs[0], branch->dst_addrs[1], branch->shape);
     assert (cb->write_pos <= branch->end_pos);
+    branch->end_pos = cb->write_pos;
     cb_set_pos(cb, cur_pos);
 
     // Return a pointer to the compiled block version
@@ -209,19 +221,18 @@ uint8_t* branch_stub_hit(uint32_t branch_idx, uint32_t target_idx)
 uint8_t* get_branch_target(
     blockid_t target,
     const ctx_t* ctx,
-    codeblock_t* ocb,
     uint32_t branch_idx,
     uint32_t target_idx
 )
 {
-    version_t* p_version = find_block_version(target, ctx);
+    block_t* p_block = find_block_version(target, ctx);
 
-    if (p_version)
+    if (p_block)
     {
         // Add an incoming branch for this version
-        add_incoming(p_version, branch_idx);
+        add_incoming(p_block, branch_idx);
 
-        return cb_get_ptr(cb, p_version->start_pos);
+        return cb_get_ptr(cb, p_block->start_pos);
     }
 
     // Generate an outlined stub that will call
@@ -254,6 +265,7 @@ uint8_t* get_branch_target(
 }
 
 void gen_branch(
+    block_t* src_version,
     const ctx_t* src_ctx,
     blockid_t target0, 
     const ctx_t* ctx0,
@@ -272,24 +284,27 @@ void gen_branch(
     // If there's only one branch target
     if (target1.iseq == NULL)
     {
-        version_t* p_version = find_block_version(target0, ctx0);
+        block_t* p_block = find_block_version(target0, ctx0);
 
         // If the version doesn't already exist
-        if (!p_version)
+        if (!p_block)
         {
             // No need for a jump, compile the target block right here
-            p_version = gen_block_version(target0, ctx0);
+            p_block = gen_block_version(target0, ctx0);
+
+            // The current version ends where the next version begins
+            src_version->end_pos = p_block->start_pos;
         }
 
-        add_incoming(p_version, branch_idx);
-        dst_addr0 = cb_get_ptr(cb, p_version->start_pos);
+        add_incoming(p_block, branch_idx);
+        dst_addr0 = cb_get_ptr(cb, p_block->start_pos);
         dst_addr1 = NULL;
     }
     else
     {
         // Get the branch targets or stubs
-        dst_addr0 = get_branch_target(target0, ctx0, ocb, branch_idx, 0);
-        dst_addr1 = get_branch_target(target1, ctx1, ocb, branch_idx, 1);
+        dst_addr0 = get_branch_target(target0, ctx0, branch_idx, 0);
+        dst_addr1 = get_branch_target(target1, ctx1, branch_idx, 1);
     }
 
     // Call the branch generation function
@@ -314,27 +329,74 @@ void gen_branch(
 }
 
 // Invalidate one specific block version
-void invalidate(version_t* version)
+void invalidate(block_t* block)
 {
-    // All branches jumping to the block should be atomically patched with jumps going to a stub instead.
+    // Remove the version object from the map so we can re-generate stubs
+    st_delete(version_tbl, (st_data_t*)&block->blockid, NULL);
 
-    // There can also be other blocks falling through to the invalidated block because they immediately precede it.
-    // - If an incoming fall-through branch is too short to be patched, we may need to invalidate its block
-    // - This may not be an issue in practice, because the block we go to could have space
-    // - We can force any block that may need to be invalidated to have sufficient space to contain a jump to a stub
+    uint8_t* code_ptr = cb_get_ptr(cb, block->start_pos);
+
+    // For each incoming branch
+    for (uint32_t i = 0; i < block->num_incoming; ++i)
+    {
+        uint32_t branch_idx = block->incoming[i];
+        branch_t* branch = &branch_entries[branch_idx];
+        uint32_t target_idx = (branch->dst_addrs[0] == code_ptr)? 0:1;
+
+        // Create a stub for this branch target
+        branch->dst_addrs[target_idx] = get_branch_target(
+            block->blockid,
+            &block->ctx,
+            branch_idx,
+            target_idx
+        );
+
+        // Check if the invalidated block immediately follows
+        bool target_next = block->start_pos == branch->end_pos;
+
+        if (target_next)
+        {
+            // Reset the branch shape
+            branch->shape = SHAPE_DEFAULT;
+        }
+
+        // Rewrite the branch with the new jump target address
+        assert (branch->dst_addrs[0] != NULL);
+        assert (branch->dst_addrs[1] != NULL);
+        uint32_t cur_pos = cb->write_pos;
+        cb_set_pos(cb, branch->start_pos);
+        branch->gen_fn(cb, branch->dst_addrs[0], branch->dst_addrs[1], branch->shape);
+        branch->end_pos = cb->write_pos;
+        cb_set_pos(cb, cur_pos);
+
+        if (target_next && branch->end_pos > block->end_pos)
+        {
+            rb_bug("ujit invalidate rewrote branch past block end");
+        }
+    }
 
     // If the block is an entry point, it needs to be unmapped from its iseq
-    // Unmap/remap anything at this iseq/idx
+    const rb_iseq_t* iseq = block->blockid.iseq;
+    uint32_t idx = block->blockid.idx;
+    VALUE* entry_pc = &iseq->body->iseq_encoded[idx];
+    int entry_opcode = opcode_at_pc(iseq, entry_pc);
 
+    // TODO: unmap_addr2insn in ujit_iface.c? Maybe we can write a function to encompass this logic?
+    // Should check how it's used in exit and side-exit
+    const void * const *handler_table = rb_vm_get_insns_address_table();
+    void* handler_addr = (void*)handler_table[entry_opcode];
+    iseq->body->iseq_encoded[idx] = (VALUE)handler_addr;    
+
+    //
     // Optional: may want to recompile a new deoptimized entry point
+    //
+
+    // TODO:
     // Call continuation addresses on the stack can also be atomically replaced by jumps going to the stub.
+    // For now this isn't an issue
 
-
-
-
-
-
-
+    // Free the block version object
+    free(block);
 }
 
 int blockid_cmp(st_data_t arg0, st_data_t arg1)

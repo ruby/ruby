@@ -84,7 +84,7 @@ typedef struct BranchEntry
 // Basic block version
 typedef struct BlockVersion
 {
-    // Basic block this is a version of
+    // Bytecode sequence (iseq, idx) this is a version of
     blockid_t blockid;
 
     // Context at the start of the block
@@ -98,7 +98,7 @@ typedef struct BlockVersion
     uint32_t* incoming;
     uint32_t num_incoming;
 
-} version_t;
+} block_t;
 
 // Context object methods
 int ctx_get_opcode(ctx_t *ctx);
@@ -109,11 +109,12 @@ x86opnd_t ctx_stack_push(ctx_t* ctx, size_t n);
 x86opnd_t ctx_stack_pop(ctx_t* ctx, size_t n);
 x86opnd_t ctx_stack_opnd(ctx_t* ctx, int32_t idx);
 
-version_t* find_block_version(blockid_t block, const ctx_t* ctx);
-version_t* gen_block_version(blockid_t block, const ctx_t* ctx);
+block_t* find_block_version(blockid_t blockid, const ctx_t* ctx);
+block_t* gen_block_version(blockid_t blockid, const ctx_t* ctx);
 uint8_t*  gen_entry_point(const rb_iseq_t *iseq, uint32_t insn_idx);
 
 void gen_branch(
+    block_t* src_block,
     const ctx_t* src_ctx,
     blockid_t target0,
     const ctx_t* ctx0,
@@ -122,7 +123,7 @@ void gen_branch(
     branchgen_fn gen_fn
 );
 
-void invalidate(version_t* version);
+void invalidate(block_t* block);
 
 void ujit_init_core(void);
 

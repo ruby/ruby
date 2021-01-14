@@ -12,7 +12,7 @@ codeblock_t* ocb;
 typedef struct JITState
 {
     // Block version being compiled
-    version_t* version;
+    block_t* block;
 
     // Instruction sequence this is associated with
     const rb_iseq_t *iseq;
@@ -40,9 +40,9 @@ typedef struct OpDesc
 
 } opdesc_t;
 
-uint8_t* ujit_gen_entry(version_t* version);
+uint8_t* ujit_gen_entry(block_t* block);
 
-uint32_t ujit_gen_code(version_t* version);
+uint32_t ujit_gen_code(block_t* block);
 
 void ujit_init_codegen(void);
 
