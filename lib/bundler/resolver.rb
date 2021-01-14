@@ -163,7 +163,12 @@ module Bundler
           # Add a spec group for "non platform specific spec" as the fallback
           # spec group.
           sg_ruby = sg.copy_for([Gem::Platform::RUBY])
-          selected_sgs.insert(-2, sg_ruby) if sg_ruby
+          next unless sg_ruby
+
+          sg_ruby_deps = sg_ruby.dependencies_for_activated_platforms.map(&:dep)
+          sg_all_platforms_deps = sg_all_platforms.dependencies_for_activated_platforms.map(&:dep)
+
+          selected_sgs.insert(-2, sg_ruby) if sg_ruby_deps != sg_all_platforms_deps
         end
         selected_sgs
       end
