@@ -2704,7 +2704,7 @@ rb_uint64_convert_to_BigDecimal(uint64_t uval, RB_UNUSED_VAR(size_t digs), int r
         vp->frac[0] = (DECDIG)uval;
     }
     else {
-        const size_t len = (size_t)ceil(log10(uval) / BASE_FIG);
+        const size_t len = (size_t)ceil(log10((double)uval) / BASE_FIG);
 
         vp = VpAllocReal(len);
         vp->MaxPrec = len;
