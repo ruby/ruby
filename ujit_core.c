@@ -331,9 +331,12 @@ void gen_branch(
 // Invalidate one specific block version
 void invalidate(block_t* block)
 {
+    fprintf(stderr, "invalidata block (%p, %d)\n", block->blockid.iseq, block->blockid.idx);
+
     // Remove the version object from the map so we can re-generate stubs
     st_delete(version_tbl, (st_data_t*)&block->blockid, NULL);
 
+    // Get a pointer to the generated code for this block
     uint8_t* code_ptr = cb_get_ptr(cb, block->start_pos);
 
     // For each incoming branch
