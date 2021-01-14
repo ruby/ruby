@@ -8,7 +8,7 @@ class Reline::WithinPipeTest < Reline::TestCase
     @reader, @output_writer = IO.pipe((RELINE_TEST_ENCODING rescue Encoding.default_external))
     @output = Reline.output = @output_writer
     @config = Reline.send(:core).config
-    @config.keyseq_timeout *= 600 if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # for --jit-wait CI
+    @config.keyseq_timeout *= 600 if defined?(RubyVM::JIT) && RubyVM::JIT.enabled? # for --jit-wait CI
     @line_editor = Reline.send(:core).line_editor
   end
 

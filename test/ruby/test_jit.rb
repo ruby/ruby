@@ -1085,7 +1085,7 @@ class TestJIT < Test::Unit::TestCase
   def test_mjit_pause_wait
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '', success_count: 0, min_calls: 1)
     begin;
-      RubyVM::MJIT.pause
+      RubyVM::JIT.pause
       proc {}.call
     end;
   end

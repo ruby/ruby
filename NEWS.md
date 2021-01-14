@@ -37,6 +37,8 @@ Excluding feature bug fixes.
 
 ### JIT
 
+* `RubyVM::MJIT` is renamed to `RubyVM::JIT`.
+
 ## Static analysis
 
 ### RBS
