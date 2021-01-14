@@ -41,6 +41,7 @@
 #include "ruby/st.h"
 #include "ruby_assert.h"
 #include "vm_core.h"
+#include "eval_error.h"
 
 #include "builtin.h"
 
@@ -1193,9 +1194,6 @@ exc_to_s(VALUE exc)
     if (NIL_P(mesg)) return rb_class_name(CLASS_OF(exc));
     return rb_String(mesg);
 }
-
-/* FIXME: Include eval_error.c */
-void rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE highlight, VALUE reverse);
 
 VALUE
 rb_get_message(VALUE exc)

@@ -5048,6 +5048,7 @@ error.$(OBJEXT): {$(VPATH)}constant.h
 error.$(OBJEXT): {$(VPATH)}defines.h
 error.$(OBJEXT): {$(VPATH)}encoding.h
 error.$(OBJEXT): {$(VPATH)}error.c
+error.$(OBJEXT): {$(VPATH)}eval_error.h
 error.$(OBJEXT): {$(VPATH)}eval_intern.h
 error.$(OBJEXT): {$(VPATH)}id.h
 error.$(OBJEXT): {$(VPATH)}id_table.h
