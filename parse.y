@@ -11148,9 +11148,7 @@ shareable_literal_constant(struct parser_params *p, enum shareability shareable,
       case NODE_ZLIST:
 	lit = rb_ary_new();
 	OBJ_FREEZE_RAW(lit);
-	nd_set_type(value, NODE_LIT);
-	RB_OBJ_WRITE(p->ast, &value->nd_lit, lit);
-	return value;
+	return NEW_LIT(lit, loc);
 
       case NODE_LIST:
 	lit = rb_ary_new();
@@ -11235,8 +11233,7 @@ shareable_literal_constant(struct parser_params *p, enum shareability shareable,
 	value = make_shareable_node(p, value, false, loc);
     }
     else {
-	nd_set_type(value, NODE_LIT);
-	RB_OBJ_WRITE(p->ast, &value->nd_lit, rb_ractor_make_shareable(lit));
+	value = NEW_LIT(rb_ractor_make_shareable(lit), loc);
     }
 
     return value;
