@@ -209,6 +209,7 @@ static VALUE rb_inum_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exc
 static VALUE rb_float_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception);
 static VALUE rb_rational_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception);
 static VALUE rb_cstr_convert_to_BigDecimal(const char *c_str, size_t digs, int raise_exception);
+static VALUE rb_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception);
 
 static Real*
 GetVpValueWithPrec(VALUE v, long prec, int must)
@@ -1352,18 +1353,25 @@ BigDecimal_divide(VALUE self, VALUE r, Real **c, Real **res, Real **div)
     Real *a, *b;
     size_t mx;
 
-    GUARD_OBJ(a, GetVpValue(self, 1));
+    TypedData_Get_Struct(self, Real, &BigDecimal_data_type, a);
+    SAVE(a);
+
+    VALUE rr = Qnil;
     if (RB_TYPE_P(r, T_FLOAT)) {
-        b = GetVpValueWithPrec(r, 0, 1);
+        rr = rb_float_convert_to_BigDecimal(r, 0, true);
     }
     else if (RB_TYPE_P(r, T_RATIONAL)) {
-	b = GetVpValueWithPrec(r, a->Prec*VpBaseFig(), 1);
-     }
+        rr = rb_rational_convert_to_BigDecimal(r, a->Prec*BASE_FIG, true);
+    }
     else {
-	b = GetVpValue(r, 0);
+        rr = rb_convert_to_BigDecimal(r, 0, false);
     }
 
-    if (!b) return DoSomeOne(self, r, '/');
+    if (!is_kind_of_BigDecimal(rr)) {
+        return DoSomeOne(self, r, '/');
+    }
+
+    TypedData_Get_Struct(rr, Real, &BigDecimal_data_type, b);
     SAVE(b);
 
     *div = b;
