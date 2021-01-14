@@ -249,7 +249,7 @@ RSpec.describe "The library itself" do
   end
 
   it "does not use require internally, but require_relative" do
-    exempt = %r{templates/|man/|vendor/}
+    exempt = %r{templates/|\.5|\.1|vendor/}
     all_bad_requires = []
     lib_tracked_files.each do |filename|
       next if filename =~ exempt

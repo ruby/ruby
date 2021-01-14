@@ -448,35 +448,35 @@ RSpec.describe "bundle exec" do
           with_fake_man do
             bundle "#{exec} --help cat"
           end
-          expect(out).to include(%(["#{root}/man/bundle-exec.1"]))
+          expect(out).to include(%(["#{man_dir}/bundle-exec.1"]))
         end
 
         it "shows bundle-exec's man page when --help is before exec" do
           with_fake_man do
             bundle "--help #{exec}"
           end
-          expect(out).to include(%(["#{root}/man/bundle-exec.1"]))
+          expect(out).to include(%(["#{man_dir}/bundle-exec.1"]))
         end
 
         it "shows bundle-exec's man page when -h is before exec" do
           with_fake_man do
             bundle "-h #{exec}"
           end
-          expect(out).to include(%(["#{root}/man/bundle-exec.1"]))
+          expect(out).to include(%(["#{man_dir}/bundle-exec.1"]))
         end
 
         it "shows bundle-exec's man page when --help is after exec" do
           with_fake_man do
             bundle "#{exec} --help"
           end
-          expect(out).to include(%(["#{root}/man/bundle-exec.1"]))
+          expect(out).to include(%(["#{man_dir}/bundle-exec.1"]))
         end
 
         it "shows bundle-exec's man page when -h is after exec" do
           with_fake_man do
             bundle "#{exec} -h"
           end
-          expect(out).to include(%(["#{root}/man/bundle-exec.1"]))
+          expect(out).to include(%(["#{man_dir}/bundle-exec.1"]))
         end
       end
     end

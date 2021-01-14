@@ -122,9 +122,7 @@ module Bundler
       else command = "bundle-#{cli}"
       end
 
-      man_path = File.expand_path("../../../man", __FILE__)
-      # man files are located under ruby's mandir with the default gems of bundler
-      man_path = RbConfig::CONFIG["mandir"] unless File.directory?(man_path)
+      man_path = File.expand_path("man", __dir__)
       man_pages = Hash[Dir.glob(File.join(man_path, "**", "*")).grep(/.*\.\d*\Z/).collect do |f|
         [File.basename(f, ".*"), f]
       end]
@@ -134,8 +132,7 @@ module Bundler
         if Bundler.which("man") && man_path !~ %r{^file:/.+!/META-INF/jruby.home/.+}
           Kernel.exec "man #{man_page}"
         else
-          fallback_man_path = File.expand_path("../man", __FILE__)
-          puts File.read("#{fallback_man_path}/#{File.basename(man_page)}.ronn")
+          puts File.read("#{man_path}/#{File.basename(man_page)}.ronn")
         end
       elsif command_path = Bundler.which("bundler-#{cli}")
         Kernel.exec(command_path, "--help")
