@@ -2830,7 +2830,7 @@ rb_float_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception)
     int decpt, negative_p;
     char *e;
     const int mode = digs == 0 ? 0 : 2;
-    char *p = BigDecimal_dtoa(d, mode, digs, &decpt, &negative_p, &e);
+    char *p = BigDecimal_dtoa(d, mode, (int)digs, &decpt, &negative_p, &e);
     int len10 = (int)(e - p);
     if (len10 >= (int)sizeof(buf))
         len10 = (int)sizeof(buf) - 1;
