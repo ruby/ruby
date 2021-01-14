@@ -1309,6 +1309,7 @@ new_insn_send(rb_iseq_t *iseq, int line_no, ID id, VALUE argc, const rb_iseq_t *
         RB_OBJ_WRITTEN(iseq, Qundef, blockiseq);
     }
     INSN *insn = new_insn_core(iseq, line_no, BIN(send), 2, operands);
+    RB_OBJ_WRITTEN(iseq, Qundef, ci);
     RB_GC_GUARD(ci);
     return insn;
 }
