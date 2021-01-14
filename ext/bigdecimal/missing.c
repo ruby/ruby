@@ -8,6 +8,16 @@
 # define ATOMIC_PTR_CAS(var, old, new) RUBY_ATOMIC_PTR_CAS(var, old, new)
 #endif
 
+#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6))
+/* GCC warns about unknown sanitizer, which is annoying. */
+# undef NO_SANITIZE
+# define NO_SANITIZE(x, y) \
+    _Pragma("GCC diagnostic push") \
+    _Pragma("GCC diagnostic ignored \"-Wattributes\"") \
+    __attribute__((__no_sanitize__(x))) y; \
+    _Pragma("GCC diagnostic pop")
+#endif
+
 #undef strtod
 #define strtod BigDecimal_strtod
 #undef dtoa
