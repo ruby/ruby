@@ -683,7 +683,7 @@ rb_struct_initialize_m(int argc, const VALUE *argv, VALUE self)
 	    rb_raise(rb_eArgError, "struct size differs");
 	}
         if (keyword_init == Qnil && argc == 1 && RB_TYPE_P(argv[0], T_HASH) && rb_keyword_given_p()) {
-            rb_warn("Passing only keyword arguments to Struct#initialize will behave differently in Ruby 3.2. "\
+            rb_warn("Passing only keyword arguments to Struct#initialize will behave differently from Ruby 3.2. "\
                     "Please use a Hash literal like .new({k: v}) instead of .new(k: v).");
         }
 	for (i=0; i<argc; i++) {
