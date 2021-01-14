@@ -1010,36 +1010,43 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
     VALUE p, iclass, origin_stack = 0;
     int method_changed = 0, constant_changed = 0, add_subclass;
     long origin_len;
-    struct rb_id_table *const klass_m_tbl = RCLASS_M_TBL(RCLASS_ORIGIN(klass));
+    VALUE klass_origin = RCLASS_ORIGIN(klass);
+    struct rb_id_table *const klass_m_tbl = RCLASS_M_TBL(klass_origin);
     VALUE original_klass = klass;
 
     while (module) {
-        int origin_seen = FALSE;
+        int c_seen = FALSE;
 	int superclass_seen = FALSE;
 	struct rb_id_table *tbl;
 
-        if (klass == c)
-            origin_seen = TRUE;
+        if (klass == c) {
+            c_seen = TRUE;
+        }
 	if (klass_m_tbl && klass_m_tbl == RCLASS_M_TBL(module))
 	    return -1;
-	/* ignore if the module included already in superclasses */
-        for (p = RCLASS_SUPER(klass); p; p = RCLASS_SUPER(p)) {
-	    int type = BUILTIN_TYPE(p);
-            if (c == p)
-                origin_seen = TRUE;
-	    if (type == T_ICLASS) {
-		if (RCLASS_M_TBL(p) == RCLASS_M_TBL(module)) {
-                    if (!superclass_seen && origin_seen) {
-			c = p;  /* move insertion point */
-		    }
-		    goto skip;
-		}
-	    }
-	    else if (type == T_CLASS) {
-		if (!search_super) break;
-                superclass_seen = TRUE;
-	    }
-	}
+        if (klass_origin != c || search_super) {
+            /* ignore if the module included already in superclasses for include,
+             * ignore if the module included before origin class for prepend
+             */
+            for (p = RCLASS_SUPER(klass); p; p = RCLASS_SUPER(p)) {
+                int type = BUILTIN_TYPE(p);
+                if (klass_origin == p && !search_super)
+                    break;
+                if (c == p)
+                    c_seen = TRUE;
+                if (type == T_ICLASS) {
+                    if (RCLASS_M_TBL(p) == RCLASS_M_TBL(module)) {
+                        if (!superclass_seen && c_seen) {
+                            c = p;  /* move insertion point */
+                        }
+                        goto skip;
+                    }
+                }
+                else if (type == T_CLASS) {
+                    superclass_seen = TRUE;
+                }
+            }
+        }
 
         VALUE super_class = RCLASS_SUPER(c);
 
