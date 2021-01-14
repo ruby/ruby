@@ -1345,7 +1345,7 @@ BigDecimal_mult(VALUE self, VALUE r)
 }
 
 static VALUE
-BigDecimal_divide(Real **c, Real **res, Real **div, VALUE self, VALUE r)
+BigDecimal_divide(VALUE self, VALUE r, Real **c, Real **res, Real **div)
 /* For c = self.div(r): with round operation */
 {
     ENTER(5);
@@ -1392,7 +1392,7 @@ BigDecimal_div(VALUE self, VALUE r)
 {
     ENTER(5);
     Real *c=NULL, *res=NULL, *div = NULL;
-    r = BigDecimal_divide(&c, &res, &div, self, r);
+    r = BigDecimal_divide(self, r, &c, &res, &div);
     if (!NIL_P(r)) return r; /* coerced by other */
     SAVE(c); SAVE(res); SAVE(div);
     /* a/b = c + r/b */
