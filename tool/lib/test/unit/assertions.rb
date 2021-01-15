@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 require 'minitest/unit'
-require 'test/unit/core_assertions'
+require_relative '../../core_assertions'
 require 'pp'
 
 module Test

@@ -25,7 +25,7 @@ module Test
 
     module CoreAssertions
       if defined?(MiniTest)
-        require_relative '../../envutil'
+        require_relative 'envutil'
         # for ruby core testing
         include MiniTest::Assertions
 
