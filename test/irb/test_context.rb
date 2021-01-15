@@ -105,6 +105,24 @@ module TestIRB
       $VERBOSE = verbose
     end
 
+    def test_eval_input_raise2x
+      input = TestInputMethod.new([
+        "raise 'Foo'\n",
+        "raise 'Bar'\n",
+        "_\n",
+      ])
+      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
+      out, err = capture_output do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_pattern_list([
+          :*, /\(irb\):1:in `<main>': Foo \(RuntimeError\)\n/,
+          :*, /\(irb\):2:in `<main>': Bar \(RuntimeError\)\n/,
+          :*, /#<RuntimeError: Bar>\n/,
+        ], out)
+    end
+
     def test_eval_object_without_inspect_method
       verbose, $VERBOSE = $VERBOSE, nil
       all_assertions do |all|
