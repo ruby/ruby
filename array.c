@@ -8188,7 +8188,7 @@ rb_ary_deconstruct(VALUE ary)
  *  #delete_if:: Removes elements specified by a given block.
  *  #keep_if:: Removes elements not specified by a given block.
  *  #reject!:: Removes elements specified by a given block.
- *  #select!, #filter:: Removes elements not specified by a given block.
+ *  #select!, #filter!:: Removes elements not specified by a given block.
  *  #slice!:: Removes and returns a sequence of elements.
  *  #uniq!:: Removes duplicates.
  *
@@ -8226,6 +8226,7 @@ rb_ary_deconstruct(VALUE ary)
  *  === Methods for Converting
  *
  *  #map, #collect:: Returns an array containing the block return-value for each element.
+ *  #map!, #collect!:: Replaces each element with a block return-value.
  *  #flatten:: Returns an array that is a recursive flattening of +self+.
  *  #flatten!:: Replaces each nested array in +self+ with the elements from that array.
  *  #inspect, #to_s:: Returns a new String containing the elements.
@@ -8245,7 +8246,6 @@ rb_ary_deconstruct(VALUE ary)
  *       - With string argument +field_separator+, a new string that is equivalent to
  *         <tt>join(field_separator)</tt>.
  *  #abbrev:: Returns a hash of unambiguous abbreviations for elements.
- *  #map!, #collect!:: Replaces each element with a block return-value.
  *  #pack:: Packs the the elements into a binary sequence.
  *  #sum:: Returns a sum of elements according to either <tt>+</tt> or a given block.
  */
