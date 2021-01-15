@@ -156,9 +156,9 @@ For methods that accept multiple argument types, in some cases it can
 be useful to document the different argument types separately.  It's
 best to use a separate paragraph for each case you are discussing.
 
-== Use of English
+== Use of \English
 
-Readers of this documentation may not be native speakers of English.
+Readers of this documentation may not be native speakers of \English.
 Documentation should be written with this in mind.
 
 Use short sentences and group them into paragraphs that cover a single
@@ -181,3 +181,31 @@ of the method.
 Methods are documented using RDoc syntax.  See the
 {RDoc Markup Reference}[https://docs.ruby-lang.org/en/master/RDoc/Markup.html#class-RDoc::Markup-label-RDoc+Markup+Reference]
 for more information on formatting with RDoc syntax.
+
+=== Output from irb
+
+Consider whether <tt># => ...</tt> in successive codeblock lines should be aligned.
+Alignment may sometimes aid readability.
+
+=== Lists
+
+A list should be preceded by and followed by a blank line.
+This is unnecessary for the HTML output, but helps in the +ri+ output.
+
+=== Call-Seq
+
+A +call-seq+ block should have <tt>{|x| ... }</tt>, not <tt>{|x| block }</tt> or <tt>{|x| code }</tt>.
+
+A +call-seq+ output should:
+- Have +self+, not +receiver+ or +array+.
+- Begin with +new_+ if and only if the output object is a new instance of the receiver's class,
+  to emphasize that the output object is not +self+.
+
+=== Auto-Links
+
+In general, RDoc's auto-linking should not be suppressed.
+For example, we should write +Array+, not <tt>\Array</tt>.
+
+We might consider whether to suppress when:
+- The word in question does not refer to a Ruby class (e.g., some uses of _Class_ or _English_).
+- The reference is to the current class (e.g., _Array_ in the documentation for class +Array+)..
