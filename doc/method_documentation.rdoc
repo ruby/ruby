@@ -192,27 +192,11 @@ Alignment may sometimes aid readability.
 A list should be preceded by and followed by a blank line.
 This is unnecessary for the HTML output, but helps in the +ri+ output.
 
-=== Auto-Links
-
-Consider whether an auto-link (e.g., to +Array+)
-should be suppressed (<tt>\Array</tt>) or allowed (Array).
-
-It may be best to suppress when local;
-that is, in the documentation for class \Array, suppress auto-links to \Array.
-
-For an "off-class" reference, the decision to suppress or not may depend on context.
-
-For some classes, this decision may be avoided
-by using an \English word instead of a class name
-(e.g., _array_ instead of _Array_, _string_ instead of _String_).
-
 === Call-Seq
 
 A +call-seq+ block should have <tt>{|x| ... }</tt>, not <tt>{|x| block }</tt> or <tt>{|x| code }</tt>.
 
 A +call-seq+ output should:
 - Have +self+, not +receiver+ or +array+.
-- Begin with +new_+ if the output object is a new instance of the receiver's class,
+- Begin with +new_+ if and only if the output object is a new instance of the receiver's class,
   to emphasize that the output object is not +self+.
-
-A +call-seq+ output may begin with +new_+ for any object that actually is new.
