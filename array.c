@@ -8093,7 +8093,7 @@ rb_ary_deconstruct(VALUE ary)
  *  === Methods for Creating an \Array
  *
  *  ::[]:: Returns a new array populated with given objects.
- *  ::new:: Returns a new empty array.
+ *  ::new:: Returns a new array.
  *  ::try_convert:: Returns a new array created from a given object.
  *
  *  === Methods for Querying
@@ -8125,7 +8125,7 @@ rb_ary_deconstruct(VALUE ary)
  *  #[]:: Returns one or more elements.
  *  #fetch:: Returns the element at a given offset.
  *  #first:: Returns one or more leading elements.
- *  #last:: Returns one or more trailing element.
+ *  #last:: Returns one or more trailing elements.
  *  #max:: Returns one or more maximum-valued elements,
  *         as determined by <tt><=></tt> or a given block.
  *  #max:: Returns one or more minimum-valued elements,
@@ -8134,8 +8134,8 @@ rb_ary_deconstruct(VALUE ary)
  *            as determined by <tt><=></tt> or a given block.
  *  #assoc:: Returns the first element that is an array
  *           whose first element <tt>==</tt> a given object.
- *  #assoc:: Returns the last element that is an array
- *           whose first element <tt>==</tt> a given object.
+ *  #rassoc:: Returns the first element that is an array
+ *            whose second element <tt>==</tt> a given object.
  *  #at:: Returns the element at a given offset.
  *  #values_at:: Returns the elements at given offsets.
  *  #dig:: Returns the object in nested objects
@@ -8147,6 +8147,9 @@ rb_ary_deconstruct(VALUE ary)
  *  #slice:: Returns consecutive elements as determined by a given argument.
  *  #sort:: Returns all elements in an order determined by <tt><=></tt> or a given block.
  *  #reverse:: Returns all elements in reverse order.
+ *  #compact:: Returns an array containing all non-+nil+ elements.
+ *  #select, #filter:: Returns an array containing elements selected by a given block.
+ *  #uniq:: Returns an array containing non-duplicate elements.
  *  #rotate:: Returns all elements with some rotated from one end to the other.
  *  #bsearch:: Returns an element selected via a binary search
  *             as determined by a given block.
@@ -8157,7 +8160,7 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  === Methods for Assigning
  *
- *  These methods add or replace elements in +self+.
+ *  These methods add, replace, or reorder elements in +self+.
  *
  *  #[]=:: Assigns specified elements with a given object.
  *  #push, #append, #<<:: Appends trailing elements.
@@ -8172,7 +8175,6 @@ rb_ary_deconstruct(VALUE ary)
  *  #sort!:: Replaces +self+ with its elements sorted,
  *           as determined by <tt><=></tt> or a given block.
  *  #sort_by!:: Replaces +self+ with its elements sorted, as determined by a given block.
- *  #slice!:: Removes and returns a sequence of elements.
  *
  *  === Methods for Deleting
  *
@@ -8180,20 +8182,15 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  #pop:: Removes and returns the last element.
  *  #shift::  Removes and returns the first element.
+ *  #compact!:: Removes all non-+nil+ elements.
  *  #delete:: Removes elements equal to a given object.
  *  #delete_at:: Removes the element at a given offset.
  *  #delete_if:: Removes elements specified by a given block.
  *  #keep_if:: Removes elements not specified by a given block.
  *  #reject!:: Removes elements specified by a given block.
- *  #select!:: Removes elements not specified by a given block.
+ *  #select!, #filter:: Removes elements not specified by a given block.
+ *  #slice!:: Removes and returns a sequence of elements.
  *  #uniq!:: Removes duplicates.
- *  #filter!:: Removes elements not specified by a given block.
- *
- *  Each of these methods returns a copy of +self+ with some elements removed.
- *
- *  #compact:: Returns an array containing all non-+nil+ elements.
- *  #select, #filter:: Returns an array containing elements selected by a given block.
- *  #uniq:: Returns an array containing non-duplicate elements.
  *
  *  === Methods for Combining
  *
@@ -8228,6 +8225,7 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  === Methods for Converting
  *
+ *  #map, #collect:: Returns an array containing the block return-value for each element.
  *  #flatten:: Returns an array that is a recursive flattening of +self+.
  *  #flatten!:: Replaces each nested array in +self+ with the elements from that array.
  *  #inspect, #to_s:: Returns a new String containing the elements.
@@ -8247,7 +8245,6 @@ rb_ary_deconstruct(VALUE ary)
  *       - With string argument +field_separator+, a new string that is equivalent to
  *         <tt>join(field_separator)</tt>.
  *  #abbrev:: Returns a hash of unambiguous abbreviations for elements.
- *  #map, #collect:: Returns an array containing the block return-value for each element.
  *  #map!, #collect!:: Replaces each element with a block return-value.
  *  #pack:: Packs the the elements into a binary sequence.
  *  #sum:: Returns a sum of elements according to either <tt>+</tt> or a given block.
