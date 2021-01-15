@@ -92,6 +92,7 @@ class Time
       off
     end
 
+    # :stopdoc:
     def zone_utc?(zone)
       # * +0000
       #   In RFC 2822, +0000 indicate a time zone at Universal Time.
@@ -267,6 +268,7 @@ class Time
       end
     end
     private :make_time
+    # :startdoc:
 
     #
     # Takes a string representation of a Time and attempts to parse it
