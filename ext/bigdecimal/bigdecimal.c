@@ -1426,18 +1426,25 @@ BigDecimal_DoDivmod(VALUE self, VALUE r, Real **div, Real **mod)
     Real *a, *b;
     size_t mx;
 
-    GUARD_OBJ(a, GetVpValue(self, 1));
+    TypedData_Get_Struct(self, Real, &BigDecimal_data_type, a);
+    SAVE(a);
+
+    VALUE rr = Qnil;
     if (RB_TYPE_P(r, T_FLOAT)) {
-	b = GetVpValueWithPrec(r, 0, 1);
+        rr = rb_float_convert_to_BigDecimal(r, 0, true);
     }
     else if (RB_TYPE_P(r, T_RATIONAL)) {
-	b = GetVpValueWithPrec(r, a->Prec*VpBaseFig(), 1);
+        rr = rb_rational_convert_to_BigDecimal(r, a->Prec*BASE_FIG, true);
     }
     else {
-	b = GetVpValue(r, 0);
+        rr = rb_convert_to_BigDecimal(r, 0, false);
     }
 
-    if (!b) return Qfalse;
+    if (!is_kind_of_BigDecimal(rr)) {
+        return Qfalse;
+    }
+
+    TypedData_Get_Struct(rr, Real, &BigDecimal_data_type, b);
     SAVE(b);
 
     if (VpIsNaN(a) || VpIsNaN(b)) goto NaN;
