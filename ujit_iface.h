@@ -22,8 +22,12 @@ struct rb_callcache;
 
 void cb_write_pre_call_bytes(codeblock_t* cb);
 void cb_write_post_call_bytes(codeblock_t* cb);
+
 void map_addr2insn(void *code_ptr, int insn);
 int opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc);
+
+void check_cfunc_dispatch(VALUE receiver, struct rb_call_data *cd, void *callee, rb_callable_method_entry_t *compile_time_cme);
+bool cfunc_needs_frame(const rb_method_cfunc_t *cfunc);
 void assume_method_lookup_stable(const struct rb_callcache *cc, const rb_callable_method_entry_t *cme, block_t* block);
 
 #endif // #ifndef UJIT_IFACE_H

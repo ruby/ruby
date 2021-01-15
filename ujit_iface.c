@@ -63,6 +63,42 @@ opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc)
     }
 }
 
+// Verify that calling with cd on receiver goes to callee
+void
+check_cfunc_dispatch(VALUE receiver, struct rb_call_data *cd, void *callee, rb_callable_method_entry_t *compile_time_cme)
+{
+    if (METHOD_ENTRY_INVALIDATED(compile_time_cme)) {
+        rb_bug("ujit: output code uses invalidated cme %p", (void *)compile_time_cme);
+    }
+
+    bool callee_correct = false;
+    const rb_callable_method_entry_t *cme = rb_callable_method_entry(CLASS_OF(receiver), vm_ci_mid(cd->ci));
+    if (cme->def->type == VM_METHOD_TYPE_CFUNC) {
+        const rb_method_cfunc_t *cfunc = UNALIGNED_MEMBER_PTR(cme->def, body.cfunc);
+        if ((void *)cfunc->func == callee) {
+            callee_correct = true;
+        }
+    }
+    if (!callee_correct) {
+        rb_bug("ujit: output code calls wrong method cd->cc->klass: %p", (void *)cd->cc->klass);
+    }
+}
+
+MJIT_FUNC_EXPORTED VALUE rb_hash_has_key(VALUE hash, VALUE key);
+
+bool
+cfunc_needs_frame(const rb_method_cfunc_t *cfunc)
+{
+    void* fptr = (void*)cfunc->func;
+
+    // Leaf C functions do not need a stack frame
+    // or a stack overflow check
+    return !(
+        // Hash#key?
+        fptr == (void*)rb_hash_has_key
+    );
+}
+
 // GC root for interacting with the GC
 struct ujit_root_struct {};
 
