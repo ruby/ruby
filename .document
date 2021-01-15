@@ -18,6 +18,7 @@ numeric.rb
 io.rb
 kernel.rb
 pack.rb
+timev.rb
 trace_point.rb
 warning.rb
 ractor.rb
