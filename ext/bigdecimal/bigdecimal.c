@@ -1356,15 +1356,18 @@ BigDecimal_divide(VALUE self, VALUE r, Real **c, Real **res, Real **div)
     TypedData_Get_Struct(self, Real, &BigDecimal_data_type, a);
     SAVE(a);
 
-    VALUE rr = Qnil;
-    if (RB_TYPE_P(r, T_FLOAT)) {
+    VALUE rr = r;
+    if (is_kind_of_BigDecimal(rr)) {
+        /* do nothing */
+    }
+    else if (RB_INTEGER_TYPE_P(r)) {
+        rr = rb_inum_convert_to_BigDecimal(r, 0, true);
+    }
+    else if (RB_TYPE_P(r, T_FLOAT)) {
         rr = rb_float_convert_to_BigDecimal(r, 0, true);
     }
     else if (RB_TYPE_P(r, T_RATIONAL)) {
         rr = rb_rational_convert_to_BigDecimal(r, a->Prec*BASE_FIG, true);
-    }
-    else {
-        rr = rb_convert_to_BigDecimal(r, 0, false);
     }
 
     if (!is_kind_of_BigDecimal(rr)) {
@@ -1429,15 +1432,18 @@ BigDecimal_DoDivmod(VALUE self, VALUE r, Real **div, Real **mod)
     TypedData_Get_Struct(self, Real, &BigDecimal_data_type, a);
     SAVE(a);
 
-    VALUE rr = Qnil;
-    if (RB_TYPE_P(r, T_FLOAT)) {
+    VALUE rr = r;
+    if (is_kind_of_BigDecimal(rr)) {
+        /* do nothing */
+    }
+    else if (RB_INTEGER_TYPE_P(r)) {
+        rr = rb_inum_convert_to_BigDecimal(r, 0, true);
+    }
+    else if (RB_TYPE_P(r, T_FLOAT)) {
         rr = rb_float_convert_to_BigDecimal(r, 0, true);
     }
     else if (RB_TYPE_P(r, T_RATIONAL)) {
         rr = rb_rational_convert_to_BigDecimal(r, a->Prec*BASE_FIG, true);
-    }
-    else {
-        rr = rb_convert_to_BigDecimal(r, 0, false);
     }
 
     if (!is_kind_of_BigDecimal(rr)) {
