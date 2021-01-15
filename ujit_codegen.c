@@ -640,40 +640,103 @@ gen_opt_plus(jitstate_t* jit, ctx_t* ctx)
     return true;
 }
 
-// Verify that calling with cd on receiver goes to callee
-static void
-check_cfunc_dispatch(VALUE receiver, struct rb_call_data *cd, void *callee, rb_callable_method_entry_t *compile_time_cme)
+void 
+gen_branchunless_branch(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uint8_t shape)
 {
-    if (METHOD_ENTRY_INVALIDATED(compile_time_cme)) {
-        rb_bug("ujit: output code uses invalidated cme %p", (void *)compile_time_cme);
-    }
+    switch (shape)
+    {
+        case SHAPE_NEXT0:
+        jnz_ptr(cb, target1);
+        break;
 
-    bool callee_correct = false;
-    const rb_callable_method_entry_t *cme = rb_callable_method_entry(CLASS_OF(receiver), vm_ci_mid(cd->ci));
-    if (cme->def->type == VM_METHOD_TYPE_CFUNC) {
-        const rb_method_cfunc_t *cfunc = UNALIGNED_MEMBER_PTR(cme->def, body.cfunc);
-        if ((void *)cfunc->func == callee) {
-            callee_correct = true;
-        }
-    }
-    if (!callee_correct) {
-        rb_bug("ujit: output code calls wrong method cd->cc->klass: %p", (void *)cd->cc->klass);
+        case SHAPE_NEXT1:
+        jz_ptr(cb, target0);
+        break;
+
+        case SHAPE_DEFAULT:
+        jz_ptr(cb, target0);
+        jmp_ptr(cb, target1);
+        break;
     }
 }
 
-MJIT_FUNC_EXPORTED VALUE rb_hash_has_key(VALUE hash, VALUE key);
+static bool
+gen_branchunless(jitstate_t* jit, ctx_t* ctx)
+{
+    // TODO: we need to eventually do an interrupt check when jumping/branching
+    // How can we do this while keeping the check logic out of line?
+    // Maybe we can push the check int into the next block or the stub?
+    //
+	// RUBY_VM_CHECK_INTS(ec);
+
+    // Test if any bit (outside of the Qnil bit) is on
+    // RUBY_Qfalse  /* ...0000 0000 */
+    // RUBY_Qnil    /* ...0000 1000 */
+    x86opnd_t val_opnd = ctx_stack_pop(ctx, 1);
+    test(cb, val_opnd, imm_opnd(~Qnil));
+
+    // Get the branch target instruction offsets
+    uint32_t next_idx = jit_next_idx(jit);
+    uint32_t jump_idx = next_idx + (uint32_t)jit_get_arg(jit, 0);
+    blockid_t next_block = { jit->iseq, next_idx };
+    blockid_t jump_block = { jit->iseq, jump_idx };
+
+    // Generate the branch instructions
+    gen_branch(
+        jit->block,
+        ctx,
+        jump_block,
+        ctx,
+        next_block,
+        ctx,
+        gen_branchunless_branch
+    );
+
+    return true;
+}
+
+void
+gen_jump_branch(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uint8_t shape)
+{
+    switch (shape)
+    {
+        case SHAPE_NEXT0:
+        break;
+
+        case SHAPE_NEXT1:
+        assert (false);
+        break;
+
+        case SHAPE_DEFAULT:
+        jmp_ptr(cb, target0);
+        break;
+    }
+}
 
 static bool
-cfunc_needs_frame(const rb_method_cfunc_t *cfunc)
+gen_jump(jitstate_t* jit, ctx_t* ctx)
 {
-    void* fptr = (void*)cfunc->func;
+    // Get the branch target instruction offsets
+    uint32_t jump_idx = jit_next_idx(jit) + (int32_t)jit_get_arg(jit, 0);
+    blockid_t jump_block = { jit->iseq, jump_idx };
 
-    // Leaf C functions do not need a stack frame
-    // or a stack overflow check
-    return !(
-        // Hash#key?
-        fptr == (void*)rb_hash_has_key
+    //
+    // TODO:
+	// RUBY_VM_CHECK_INTS(ec);
+    //
+
+    // Generate the jump instruction
+    gen_branch(
+        jit->block,
+        ctx,
+        jump_block,
+        ctx,
+        BLOCKID_NULL,
+        ctx,
+        gen_jump_branch
     );
+
+    return true;
 }
 
 static bool
@@ -750,7 +813,7 @@ gen_opt_send_without_block(jitstate_t* jit, ctx_t* ctx)
     mov(cb, REG0, recv);
 
     // Callee method ID
-    ID mid = vm_ci_mid(cd->ci);
+    //ID mid = vm_ci_mid(cd->ci);
     //printf("JITting call to C function \"%s\", argc: %lu\n", rb_id2name(mid), argc);
     //print_str(cb, "");
     //print_str(cb, "calling CFUNC:");
@@ -919,99 +982,13 @@ gen_opt_send_without_block(jitstate_t* jit, ctx_t* ctx)
         );
     }
 
-    return true;
-}
-
-void 
-gen_branchunless_branch(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uint8_t shape)
-{
-    switch (shape)
-    {
-        case SHAPE_NEXT0:
-        jnz_ptr(cb, target1);
-        break;
-
-        case SHAPE_NEXT1:
-        jz_ptr(cb, target0);
-        break;
-
-        case SHAPE_DEFAULT:
-        jz_ptr(cb, target0);
-        jmp_ptr(cb, target1);
-        break;
-    }
-}
-
-static bool
-gen_branchunless(jitstate_t* jit, ctx_t* ctx)
-{
-    // TODO: we need to eventually do an interrupt check when jumping/branching
-    // How can we do this while keeping the check logic out of line?
-    // Maybe we can push the check int into the next block or the stub?
-    //
-	// RUBY_VM_CHECK_INTS(ec);
-
-    // Test if any bit (outside of the Qnil bit) is on
-    // RUBY_Qfalse  /* ...0000 0000 */
-    // RUBY_Qnil    /* ...0000 1000 */
-    x86opnd_t val_opnd = ctx_stack_pop(ctx, 1);
-    test(cb, val_opnd, imm_opnd(~Qnil));
-
-    // Get the branch target instruction offsets
-    uint32_t next_idx = jit_next_idx(jit);
-    uint32_t jump_idx = next_idx + (uint32_t)jit_get_arg(jit, 0);
-    blockid_t next_block = { jit->iseq, next_idx };
-    blockid_t jump_block = { jit->iseq, jump_idx };
-
-    // Generate the branch instructions
+    // Jump (fall through) to the call continuation block
+    // We do this to end the current block after the call
+    blockid_t cont_block = { jit->iseq, jit_next_idx(jit) };
     gen_branch(
         jit->block,
         ctx,
-        jump_block,
-        ctx,
-        next_block,
-        ctx,
-        gen_branchunless_branch
-    );
-
-    return true;
-}
-
-void
-gen_jump_branch(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uint8_t shape)
-{
-    switch (shape)
-    {
-        case SHAPE_NEXT0:
-        break;
-
-        case SHAPE_NEXT1:
-        assert (false);
-        break;
-
-        case SHAPE_DEFAULT:
-        jmp_ptr(cb, target0);
-        break;
-    }
-}
-
-static bool
-gen_jump(jitstate_t* jit, ctx_t* ctx)
-{
-    // Get the branch target instruction offsets
-    uint32_t jump_idx = jit_next_idx(jit) + (int32_t)jit_get_arg(jit, 0);
-    blockid_t jump_block = { jit->iseq, jump_idx };
-
-    //
-    // TODO:
-	// RUBY_VM_CHECK_INTS(ec);
-    //
-
-    // Generate the jump instruction
-    gen_branch(
-        jit->block,
-        ctx,
-        jump_block,
+        cont_block,
         ctx,
         BLOCKID_NULL,
         ctx,
@@ -1066,7 +1043,7 @@ ujit_init_codegen(void)
     ujit_reg_op(BIN(opt_lt), gen_opt_lt, false);
     ujit_reg_op(BIN(opt_minus), gen_opt_minus, false);
     ujit_reg_op(BIN(opt_plus), gen_opt_plus, false);
-    ujit_reg_op(BIN(opt_send_without_block), gen_opt_send_without_block, false);
     ujit_reg_op(BIN(branchunless), gen_branchunless, true);
     ujit_reg_op(BIN(jump), gen_jump, true);
+    ujit_reg_op(BIN(opt_send_without_block), gen_opt_send_without_block, true);
 }
