@@ -87,6 +87,9 @@ typedef struct BlockVersion
     // Bytecode sequence (iseq, idx) this is a version of
     blockid_t blockid;
 
+    // Index just past the last instruction in the iseq
+    uint32_t end_idx;
+
     // Context at the start of the block
     ctx_t ctx;
 
