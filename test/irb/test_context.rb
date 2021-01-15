@@ -106,6 +106,7 @@ module TestIRB
     end
 
     def test_eval_input_raise2x
+      skip if RUBY_ENGINE == 'truffleruby'
       input = TestInputMethod.new([
         "raise 'Foo'\n",
         "raise 'Bar'\n",
