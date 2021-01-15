@@ -200,3 +200,12 @@ A +call-seq+ output should:
 - Have +self+, not +receiver+ or +array+.
 - Begin with +new_+ if and only if the output object is a new instance of the receiver's class,
   to emphasize that the output object is not +self+.
+
+=== Auto-Links
+
+In general, RDoc's auto-linking should not be suppressed.
+For example, we should write +Array+, not <tt>\Array</tt>.
+
+We might consider whether to suppress when:
+- The word in question does not refer to a Ruby class (e.g., some uses of _Class_ or _English_).
+- The reference is to the current class (e.g., _Array_ in the documentation for class +Array+)..
