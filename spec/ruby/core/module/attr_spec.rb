@@ -33,64 +33,66 @@ describe "Module#attr" do
     o.send(:attr3).should == "test3"
   end
 
-  it "creates a setter for the given attribute name if writable is true" do
-    c = Class.new do
-      attr :attr, true
-      attr "attr3", true
+  ruby_version_is ""..."3.1" do
+    it "creates a setter for the given attribute name if writable is true" do
+      c = Class.new do
+        attr :attr, true
+        attr "attr3", true
 
-      def initialize
-        @attr, @attr2, @attr3 = "test", "test2", "test3"
+        def initialize
+          @attr, @attr2, @attr3 = "test", "test2", "test3"
+        end
       end
-    end
 
-    o = c.new
+      o = c.new
 
-    %w{attr attr3}.each do |a|
-      o.respond_to?(a).should == true
-      o.respond_to?("#{a}=").should == true
-    end
-
-    o.attr = "test updated"
-    o.attr3 = "test3 updated"
-  end
-
-  it "creates a getter and setter for the given attribute name if called with and without writable is true" do
-    c = Class.new do
-      attr :attr, true
-      attr :attr
-
-      attr "attr3", true
-      attr "attr3"
-
-      def initialize
-        @attr, @attr2, @attr3 = "test", "test2", "test3"
+      %w{attr attr3}.each do |a|
+        o.respond_to?(a).should == true
+        o.respond_to?("#{a}=").should == true
       end
+
+      o.attr = "test updated"
+      o.attr3 = "test3 updated"
     end
 
-    o = c.new
+    it "creates a getter and setter for the given attribute name if called with and without writable is true" do
+      c = Class.new do
+        attr :attr, true
+        attr :attr
 
-    %w{attr attr3}.each do |a|
-      o.respond_to?(a).should == true
-      o.respond_to?("#{a}=").should == true
+        attr "attr3", true
+        attr "attr3"
+
+        def initialize
+          @attr, @attr2, @attr3 = "test", "test2", "test3"
+        end
+      end
+
+      o = c.new
+
+      %w{attr attr3}.each do |a|
+        o.respond_to?(a).should == true
+        o.respond_to?("#{a}=").should == true
+      end
+
+      o.attr.should == "test"
+      o.attr = "test updated"
+      o.attr.should == "test updated"
+
+      o.attr3.should == "test3"
+      o.attr3 = "test3 updated"
+      o.attr3.should == "test3 updated"
     end
 
-    o.attr.should == "test"
-    o.attr = "test updated"
-    o.attr.should == "test updated"
+    it "applies current visibility to methods created" do
+      c = Class.new do
+        protected
+        attr :foo, true
+      end
 
-    o.attr3.should == "test3"
-    o.attr3 = "test3 updated"
-    o.attr3.should == "test3 updated"
-  end
-
-  it "applies current visibility to methods created" do
-    c = Class.new do
-      protected
-      attr :foo, true
+      -> { c.new.foo }.should raise_error(NoMethodError)
+      -> { c.new.foo=1 }.should raise_error(NoMethodError)
     end
-
-    -> { c.new.foo }.should raise_error(NoMethodError)
-    -> { c.new.foo=1 }.should raise_error(NoMethodError)
   end
 
   it "creates a getter but no setter for all given attribute names" do
@@ -136,14 +138,16 @@ describe "Module#attr" do
     -> { Class.new { attr o } }.should raise_error(TypeError)
   end
 
-  it "with a boolean argument emits a warning when $VERBOSE is true" do
-    -> {
-      Class.new { attr :foo, true }
-    }.should complain(/boolean argument is obsoleted/, verbose: true)
-  end
+  ruby_version_is ""..."3.1" do
+    it "with a boolean argument emits a warning when $VERBOSE is true" do
+      -> {
+        Class.new { attr :foo, true }
+      }.should complain(/boolean argument is obsoleted/, verbose: true)
+    end
 
-  it "is a public method" do
-    Module.should have_public_instance_method(:attr, false)
+    it "is a public method" do
+      Module.should have_public_instance_method(:attr, false)
+    end
   end
 
   ruby_version_is ""..."3.0" do
@@ -156,13 +160,20 @@ describe "Module#attr" do
     end
   end
 
-  ruby_version_is "3.0" do
+  ruby_version_is "3.0"..."3.1" do
     it "returns an array of defined method names as symbols" do
       Class.new do
         (attr :foo, 'bar').should == [:foo, :bar]
         (attr :baz, false).should == [:baz]
         (attr :qux, true).should == [:qux, :qux=]
       end
+    end
+  end
+
+  ruby_version_is "3.1" do
+    it "raises a TypeError when the given boolean argument" do
+      -> { Class.new { attr :foo, true } }.should raise_error(TypeError)
+      -> { Class.new { attr :foo, false } }.should raise_error(TypeError)
     end
   end
 end
