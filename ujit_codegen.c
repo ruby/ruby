@@ -207,6 +207,9 @@ ujit_gen_code(block_t* block)
         }
     }
 
+    // Store the index of the last instruction in the block
+    block->end_idx = insn_idx;
+
     // If the last instruction compiled did not terminate the block
     // Generate code to exit to the interpreter
     if (!p_last_op || !p_last_op->is_branch) {
