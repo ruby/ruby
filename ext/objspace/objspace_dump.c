@@ -471,10 +471,15 @@ dump_object(VALUE obj, struct dump_config *dc)
         dump_append(dc, "]");
 
     if (ainfo) {
-        dump_append(dc, ", \"file\":\"");
-        dump_append(dc, ainfo->path);
-        dump_append(dc, "\", \"line\":");
-        dump_append_lu(dc, ainfo->line);
+        if (ainfo->path) {
+            dump_append(dc, ", \"file\":\"");
+            dump_append(dc, ainfo->path);
+            dump_append(dc, "\"");
+        }
+        if (ainfo->line) {
+            dump_append(dc, ", \"line\":");
+            dump_append_lu(dc, ainfo->line);
+        }
         if (RTEST(ainfo->mid)) {
             VALUE m = rb_sym2str(ainfo->mid);
             dump_append(dc, ", \"method\":");
