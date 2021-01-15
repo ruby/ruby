@@ -8077,7 +8077,7 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  == What's Here
  *
- *  \Class \Array provides methods that are useful for:
+ *  Class Array provides methods that are useful for:
  *
  *  - {Creating an Array}[#class-Array-label-Methods+for+Creating+an+Array]
  *  - {Querying}[#class-Array-label-Methods+for+Querying]
@@ -8090,7 +8090,7 @@ rb_ary_deconstruct(VALUE ary)
  *  - {Converting}[#class-Array-label-Methods+for+Converting]
  *  - {And more....}[#class-Array-label-Other+Methods]
  *
- *  === Methods for Creating an \Array
+ *  === Methods for Creating an Array
  *
  *  ::[]:: Returns a new array populated with given objects.
  *  ::new:: Returns a new array.
