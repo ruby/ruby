@@ -1450,28 +1450,32 @@ BigDecimal_DoDivmod(VALUE self, VALUE r, Real **div, Real **mod)
     if (VpIsNaN(a) || VpIsNaN(b)) goto NaN;
     if (VpIsInf(a) && VpIsInf(b)) goto NaN;
     if (VpIsZero(b)) {
-	rb_raise(rb_eZeroDivError, "divided by 0");
+        rb_raise(rb_eZeroDivError, "divided by 0");
     }
     if (VpIsInf(a)) {
-        GUARD_OBJ(d, VpCreateRbObject(1, "0", true));
-	VpSetInf(d, (SIGNED_VALUE)(VpGetSign(a) == VpGetSign(b) ? 1 : -1));
-        GUARD_OBJ(c, VpCreateRbObject(1, "NaN", true));
-	*div = d;
-	*mod = c;
-	return Qtrue;
+        if (VpGetSign(a) == VpGetSign(b)) {
+            VALUE inf = BigDecimal_positive_infinity();
+            TypedData_Get_Struct(inf, Real, &BigDecimal_data_type, *div);
+        }
+        else {
+            VALUE inf = BigDecimal_negative_infinity();
+            TypedData_Get_Struct(inf, Real, &BigDecimal_data_type, *div);
+        }
+        VALUE nan = BigDecimal_nan();
+        TypedData_Get_Struct(nan, Real, &BigDecimal_data_type, *mod);
+        return Qtrue;
     }
     if (VpIsInf(b)) {
-        GUARD_OBJ(d, VpCreateRbObject(1, "0", true));
-	*div = d;
-	*mod = a;
-	return Qtrue;
+        VALUE zero = BigDecimal_positive_zero();
+        TypedData_Get_Struct(zero, Real, &BigDecimal_data_type, *div);
+        *mod = a;
+        return Qtrue;
     }
     if (VpIsZero(a)) {
-        GUARD_OBJ(c, VpCreateRbObject(1, "0", true));
-        GUARD_OBJ(d, VpCreateRbObject(1, "0", true));
-	*div = d;
-	*mod = c;
-	return Qtrue;
+        VALUE zero = BigDecimal_positive_zero();
+        TypedData_Get_Struct(zero, Real, &BigDecimal_data_type, *div);
+        TypedData_Get_Struct(zero, Real, &BigDecimal_data_type, *mod);
+        return Qtrue;
     }
 
     mx = a->Prec + vabs(a->exponent);
@@ -1497,11 +1501,12 @@ BigDecimal_DoDivmod(VALUE self, VALUE r, Real **div, Real **mod)
     }
     return Qtrue;
 
-NaN:
-    GUARD_OBJ(c, VpCreateRbObject(1, "NaN", true));
-    GUARD_OBJ(d, VpCreateRbObject(1, "NaN", true));
-    *div = d;
-    *mod = c;
+  NaN:
+    {
+        VALUE nan = BigDecimal_nan();
+        TypedData_Get_Struct(nan, Real, &BigDecimal_data_type, *div);
+        TypedData_Get_Struct(nan, Real, &BigDecimal_data_type, *mod);
+    }
     return Qtrue;
 }
 
