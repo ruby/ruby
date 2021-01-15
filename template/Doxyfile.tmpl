@@ -871,7 +871,9 @@ WARN_LOGFILE           =
 # spaces. See also FILE_PATTERNS and EXTENSION_MAPPING
 # Note: If this tag is empty the current directory is searched.
 
-INPUT                  = <%=srcdir%> .
+INPUT                  =
+INPUT                 += <%=srcdir%>
+INPUT                 += .
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
@@ -900,7 +902,12 @@ INPUT_ENCODING         = UTF-8
 # *.py, *.pyw, *.f90, *.f95, *.f03, *.f08, *.f18, *.f, *.for, *.vhd, *.vhdl,
 # *.ucf, *.qsf and *.ice.
 
-FILE_PATTERNS          = *.c *.h *.hpp *.y *.def
+FILE_PATTERNS          =
+FILE_PATTERNS         += *.c
+FILE_PATTERNS         += *.h
+FILE_PATTERNS         += *.hpp
+FILE_PATTERNS         += *.y
+FILE_PATTERNS         +=*.def
 
 # The RECURSIVE tag can be used to specify whether or not subdirectories should
 # be searched for input files as well.
@@ -916,7 +923,10 @@ RECURSIVE              = YES
 # Note that relative paths are relative to the directory from which doxygen is
 # run.
 
-EXCLUDE                = <%=srcdir%>/ext/dl/callback <%=srcdir%>/ccan <%=srcdir%>/ext/psych/yaml
+EXCLUDE                =
+EXCLUDE               += <%=srcdir%>/ext/dl/callback
+EXCLUDE               += <%=srcdir%>/ccan
+EXCLUDE               += <%=srcdir%>/ext/psych/yaml
 
 # The EXCLUDE_SYMLINKS tag can be used to select whether or not files or
 # directories that are symbolic links (a Unix file system feature) are excluded
@@ -932,7 +942,27 @@ EXCLUDE_SYMLINKS       = YES
 # Note that the wildcards are matched against the file with absolute path, so to
 # exclude all test directories for example use the pattern */test/*
 
-EXCLUDE_PATTERNS       = *.src doc enc build */ext/-test-/* tmp test yarvtest lib bootstraptest spec .ext .git .svn extconf.h *prelude.c encdb.h transdb.h insns.def rb_mjit_header.h
+EXCLUDE_PATTERNS       =
+EXCLUDE_PATTERNS      += *.src
+EXCLUDE_PATTERNS      += */ext/-test-/*
+EXCLUDE_PATTERNS      += *prelude.c
+EXCLUDE_PATTERNS      += .ext
+EXCLUDE_PATTERNS      += .git
+EXCLUDE_PATTERNS      += .svn
+EXCLUDE_PATTERNS      += bootstraptest
+EXCLUDE_PATTERNS      += build
+EXCLUDE_PATTERNS      += doc
+EXCLUDE_PATTERNS      += enc
+EXCLUDE_PATTERNS      += encdb.h
+EXCLUDE_PATTERNS      += extconf.h
+EXCLUDE_PATTERNS      += insns.def
+EXCLUDE_PATTERNS      += lib
+EXCLUDE_PATTERNS      += rb_mjit_header.h
+EXCLUDE_PATTERNS      += spec
+EXCLUDE_PATTERNS      += test
+EXCLUDE_PATTERNS      += tmp
+EXCLUDE_PATTERNS      += transdb.h
+EXCLUDE_PATTERNS      += yarvtest
 
 # The EXCLUDE_SYMBOLS tag can be used to specify one or more symbol names
 # (namespaces, classes, functions, etc.) that should be excluded from the
@@ -2162,7 +2192,9 @@ SEARCH_INCLUDES        = YES
 # preprocessor.
 # This tag requires that the tag SEARCH_INCLUDES is set to YES.
 
-INCLUDE_PATH           = <%=srcdir%> <%=srcdir%>/include
+INCLUDE_PATH           =
+INCLUDE_PATH          += <%=srcdir%>
+INCLUDE_PATH          += <%=srcdir%>/include
 
 # You can use the INCLUDE_FILE_PATTERNS tag to specify one or more wildcard
 # patterns (like *.h and *.hpp) to filter out the header-files in the
@@ -2180,46 +2212,46 @@ INCLUDE_FILE_PATTERNS  =
 # recursively expanded use the := operator instead of the = operator.
 # This tag requires that the tag ENABLE_PREPROCESSING is set to YES.
 
-PREDEFINED             = \
-    ALWAYS_INLINE(_)=_ \
-    COLDFUNC= \
-    CONSTFUNC(_)=_ \
-    DEPRECATED(_)=_ \
-    DEPRECATED_BY(__,_)=_ \
-    ERRORFUNC(__,_)=_ \
-    MJIT_FUNC_EXPORTED= \
-    MJIT_STATIC=extern \
-    MJIT_SYMBOL_EXPORT_BEGIN= \
-    MJIT_SYMBOL_EXPORT_END= \
-    NOINLINE(_)=_ \
-    NORETURN(_)=_ \
-    PRINTF_ARGS(_,__,___)=_ \
-    PUREFUNC(_)=_ \
-    RUBY_EXTERN=extern \
-    RUBY_FUNC_EXPORTED= \
-    RUBY_FUNC_NONNULL(__,_)=_ \
-    RUBY_SYMBOL_EXPORT_BEGIN= \
-    RUBY_SYMBOL_EXPORT_END= \
-    WARNINGFUNC(__,_)=_ \
-    _MSC_VER=1924 \
-    __DOXYGEN__ \
-    __GNUC_MINOR__=0 \
-    __GNUC_PATCHLEVEL__=0 \
-    __GNUC__=10 \
-    __STDC_VERSION__=201710L \
-    __clang__=10 \
-    __clang_major__=10 \
-    __clang_minor__=0 \
-    __clang_patchlevel__=0 \
-    __cplusplus=201704L \
-    __has_attribute(_)=1 \
-    __has_builtin(_)=1 \
-    __has_c_attribute(_)=1 \
-    __has_cpp_attribute(_)=1 \
-    __has_declspec_attribute(_)=1 \
-    __has_extension(_)=1 \
-    __has_feature(_)=1 \
-    __has_warning(_)=1
+PREDEFINED             =
+PREDEFINED            += ALWAYS_INLINE(_)=_
+PREDEFINED            += COLDFUNC=
+PREDEFINED            += CONSTFUNC(_)=_
+PREDEFINED            += DEPRECATED(_)=_
+PREDEFINED            += DEPRECATED_BY(__,_)=_
+PREDEFINED            += ERRORFUNC(__,_)=_
+PREDEFINED            += MJIT_FUNC_EXPORTED=
+PREDEFINED            += MJIT_STATIC=extern
+PREDEFINED            += MJIT_SYMBOL_EXPORT_BEGIN=
+PREDEFINED            += MJIT_SYMBOL_EXPORT_END=
+PREDEFINED            += NOINLINE(_)=_
+PREDEFINED            += NORETURN(_)=_
+PREDEFINED            += PRINTF_ARGS(_,__,___)=_
+PREDEFINED            += PUREFUNC(_)=_
+PREDEFINED            += RUBY_EXTERN=extern
+PREDEFINED            += RUBY_FUNC_EXPORTED=
+PREDEFINED            += RUBY_FUNC_NONNULL(__,_)=_
+PREDEFINED            += RUBY_SYMBOL_EXPORT_BEGIN=
+PREDEFINED            += RUBY_SYMBOL_EXPORT_END=
+PREDEFINED            += WARNINGFUNC(__,_)=_
+PREDEFINED            += _MSC_VER=1924
+PREDEFINED            += __DOXYGEN__
+PREDEFINED            += __GNUC_MINOR__=0
+PREDEFINED            += __GNUC_PATCHLEVEL__=0
+PREDEFINED            += __GNUC__=10
+PREDEFINED            += __STDC_VERSION__=201710L
+PREDEFINED            += __clang__=10
+PREDEFINED            += __clang_major__=10
+PREDEFINED            += __clang_minor__=0
+PREDEFINED            += __clang_patchlevel__=0
+PREDEFINED            += __cplusplus=201704L
+PREDEFINED            += __has_attribute(_)=1
+PREDEFINED            += __has_builtin(_)=1
+PREDEFINED            += __has_c_attribute(_)=1
+PREDEFINED            += __has_cpp_attribute(_)=1
+PREDEFINED            += __has_declspec_attribute(_)=1
+PREDEFINED            += __has_extension(_)=1
+PREDEFINED            += __has_feature(_)=1
+PREDEFINED            += __has_warning(_)=1
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then this
 # tag can be used to specify a list of macro names that should be expanded. The
