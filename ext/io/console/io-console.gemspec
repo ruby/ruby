@@ -22,11 +22,6 @@ Gem::Specification.new do |s|
   ]
   s.extensions = %w[ext/io/console/extconf.rb]
 
-  if i = ARGV.index("--") and !(argv = ARGV[i+1..-1]).empty?
-    OptionParser.new(__FILE__) do |opt|
-      opt.on("--platform=PLATFORM") {|p| s.platform = p}
-    end.parse!(argv)
-  end
   if Gem::Platform === s.platform and s.platform =~ 'java'
     s.files.delete_if {|f| f.start_with?("ext/")}
     s.extensions.clear
