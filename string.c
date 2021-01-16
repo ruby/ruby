@@ -4935,26 +4935,113 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
 
 /*
  *  call-seq:
- *     str[integer] = new_str
- *     str[integer, integer] = new_str
- *     str[range] = aString
- *     str[regexp] = new_str
- *     str[regexp, integer] = new_str
- *     str[regexp, name] = new_str
- *     str[other_str] = new_str
+ *     string[index] = other_string -> other_string or nil
+ *     string[start, length] = other_string -> other_string or nil
+ *     string[range] = other_string -> other_string
+ *     string[regexp, capture = 0] = other_string -> other_string
+ *     string[substring] = other_string -> other_string
  *
- *  Element Assignment---Replaces some or all of the content of
- *  <i>str</i>. The portion of the string affected is determined using
- *  the same criteria as String#[]. If the replacement string is not
- *  the same length as the text it is replacing, the string will be
- *  adjusted accordingly. If the regular expression or string is used
- *  as the index doesn't match a position in the string, IndexError is
- *  raised. If the regular expression form is used, the optional
- *  second Integer allows you to specify which portion of the match to
- *  replace (effectively using the MatchData indexing rules. The forms
- *  that take an Integer will raise an IndexError if the value is out
- *  of range; the Range form will raise a RangeError, and the Regexp
- *  and String will raise an IndexError on negative match.
+ *  Replaces some or all of the content of +self+ with +other_string+;
+ *  returns +other_string+ if any replacement occurred, or +nil+ otherwise.
+ *
+ *  When the single integer argument +index+ is given,
+ *  replaces the single character at offset +index+:
+ *
+ *    s = 'foo'
+ *    s[2] = 'x'
+ *    s # => "fox"
+ *    s[1] = 'zz'
+ *    s # => "fzzx"
+ *
+ *  Counts backward from the end of +self+ if +index+ is negative:
+ *
+ *    s = 'foo'
+ *    s[-2] = 'x'
+ *    s # => "fxo"
+ *
+ *  Returns +nil+ if +index+ is out of range:
+ *
+ *    s[3] # => nil
+ *    [-4] # => nil
+ *
+ *  When the two integer arguments +start+ and +length+ are given,
+ *  replaces the substring of length +length+ that begins at offset +start+:
+ *
+ *    s = '0123456789'
+ *    s[2, 3] = 'xxxxxx'
+ *    s # => "01xxxxxx56789"
+ *
+ *  Counts backward from the end of +self+ if +start+ is negative:
+ *
+ *    s = '0123456789'
+ *    s[-5, 3] = 'xxxxx'
+ *    s # => "01234xxxxx89"
+ *
+ *  Appends +other_string+ if +start+ is equal to the length of +self+:
+ *    s = '0123456789'
+ *    s[10] = 'xxx'
+ *    s # => "0123456789xxx"
+ *
+ *  Returns +nil+ if +start+ is out of range:
+ *
+ *    s = 'foo'
+ *    s[4, 2]  = 'xxx' # => nil
+ *    s[-4, 2] = 'xxx' # => nil
+ *    s # => "foo"
+ *
+ *  Replaces the trailing substring of +self+ if +length+ is large:
+ *
+ *    s = 'foo'
+ *    s[1, 50] = 'xxx'
+ *    s # => "fxxx"
+ *
+ *  Raises an exception if +length+ is negative.
+ *
+ *  When the single Range argument +range+ is given,
+ *  derives +start+ and +length+ values from the given +range+,
+ *  and returns values as above:
+ *
+ *  - <tt>s[0..1] = 'xxx'</tt> is equivalent to <tt>s[0, 2] = 'xxx'</tt>.
+ *  - <tt>s[0...1] = 'xxx'</tt> is equivalent to <tt>'s[0, 1] = 'xxx'</tt>.
+ *
+ *  When the Regexp argument +regexp+ is given,
+ *  and the +capture+ argument is <tt>0</tt>,
+ *  replaces the first matching substring found in +self+,
+ *  or +nil+ if none found:
+ *
+ *    s = 'foofoo'
+ *    s[/oo/] = 'xxx'
+ *    s # => "fxxxfoo"
+ *    s[/xx/] = 'xxx' # => nil
+ *    s = 'hello there'
+ *    s[/[aeiou](.)\1/] = 'xxx'
+ *    s # => "hxxxo there"
+ *    s = 'hello there'
+ *    s[/[aeiou](.)\1/, 0] = 'xxx'
+ *    s # => "hxxxo there"
+ *
+ *  If argument +capture+ is given and not <tt>0</tt>,
+ *  it should be either an integer capture group index or a string or symbol capture group name;
+ *  the method call replaces only the specified capture
+ *  (see {Regexp Capturing}[Regexp.html#class-Regexp-label-Capturing]):
+ *
+ *    s = 'hello there'
+ *    s[/[aeiou](.)\1/, 1] = 'xxx'
+ *    s # => "hexxxlo there"
+ *    s = 'hello there'
+ *    s[/(?<vowel>[aeiou])(?<non_vowel>[^aeiou])/, "non_vowel"] = 'xxx'
+ *    s # => "hexxxlo there"
+ *    s = 'hello there'
+ *    s[/(?<vowel>[aeiou])(?<non_vowel>[^aeiou])/, :vowel] = 'xxx'
+ *    s # => "hxxxllo there"
+ *
+ *  Raises an exception if an invalid capture group index or capture group name is given.
+ *
+ *  When the single string argument +substring+ is given,
+ *  replaces the substring from +self+ if found, otherwise raises an exception:
+ *    s = 'foo'
+ *    s['oo'] = 'xxx'
+ *    s # => "fxxx"
  */
 
 static VALUE
