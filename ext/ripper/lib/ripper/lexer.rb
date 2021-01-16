@@ -130,6 +130,7 @@ class Ripper
       @buf = []
       @stack = []
       super()
+      @buf = @stack.pop unless @stack.empty?
       if raise_errors and !@errors.empty?
         raise SyntaxError, @errors.map(&:message).join(' ;')
       end
