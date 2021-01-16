@@ -2101,11 +2101,15 @@ fail:
  * and returns strlen(binary_filename).
  * it is NUL terminated.
  */
-#if defined(__linux__)
+#if defined(__linux__) || defined(__NetBSD__)
 static ssize_t
 main_exe_path(void)
 {
-# define PROC_SELF_EXE "/proc/self/exe"
+# if defined(__linux__)
+#  define PROC_SELF_EXE "/proc/self/exe"
+# elif defined(__NetBSD__)
+#  define PROC_SELF_EXE "/proc/curproc/exe"
+# endif
     ssize_t len = readlink(PROC_SELF_EXE, binary_filename, PATH_MAX);
     if (len < 0) return 0;
     binary_filename[len] = 0;
