@@ -2160,7 +2160,7 @@ rb_str_times(VALUE str, VALUE times)
  *    "%05d" % 123 # => "00123"
  *
  *  If +self+ contains multiple substitutions, +object+ must be
- *  an \Array or \Hash containing the values to be substituted:
+ *  an array or hash containing the values to be substituted:
  *
  *    "%-5s: %016x" % [ "ID", self.object_id ] # => "ID   : 00002b054ec93168"
  *    "foo = %{foo}" % {foo: 'bar'} # => "foo = bar"
@@ -2461,7 +2461,7 @@ rb_check_string_type(VALUE str)
  *  Otherwise if +object+ responds to <tt>:to_str</tt>,
  *  calls <tt>object.to_str</tt> and returns the result.
  *
- *  Returns +nil+ if +object+ does not respond to <tt>:to_str</tt>
+ *  Returns +nil+ if +object+ does not respond to <tt>:to_str</tt>.
  */
 static VALUE
 rb_str_s_try_convert(VALUE dummy, VALUE str)
@@ -3584,7 +3584,7 @@ str_casecmp(VALUE str1, VALUE str2)
  *    'FOO'.casecmp?('foo') # => true
  *    'foo'.casecmp?('FOO') # => true
  *
- *  Returns +nil+ if the two values are incomparable:
+ *  Returns +nil+ if the two values are incomparable.
  */
 
 static VALUE
@@ -3865,7 +3865,7 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
  *    'foo'.rindex('oo') # => 1
  *    'foo'.rindex('ooo') # => nil
  *
- *  Returns the index of the _last_ match for the given \Regexp +regexp+,
+ *  Returns the index of the _last_ match for the given Regexp +regexp+,
  *  or +nil+ if none found:
  *
  *    'foo'.rindex(/f/) # => 0
@@ -3998,7 +3998,7 @@ static VALUE get_pat(VALUE);
  *
  *      regexp = Regexp.new(pattern)
  *
- *  - Computes +matchdata+, which will be either a \MatchData object or +nil+
+ *  - Computes +matchdata+, which will be either a MatchData object or +nil+
  *    (see Regexp#match):
  *
  *      matchdata = <tt>regexp.match(self)
@@ -4009,7 +4009,7 @@ static VALUE get_pat(VALUE);
  *    'foo'.match('o') # => #<MatchData "o">
  *    'foo'.match('x') # => nil
  *
- *  If \Integer argument +offset+ is given, the search begins at index +offset+:
+ *  If integer argument +offset+ is given, the search begins at index +offset+:
  *
  *    'foo'.match('f', 1) # => nil
  *    'foo'.match('o', 1) # => #<MatchData "o">
@@ -4050,14 +4050,14 @@ rb_str_match_m(int argc, VALUE *argv, VALUE str)
  *
  *    regexp = Regexp.new(pattern)
  *
- *  Returns +true+ if <tt>self+.match(regexp)</tt> returns a \Matchdata object,
+ *  Returns +true+ if <tt>self+.match(regexp)</tt> returns a Matchdata object,
  *  +false+ otherwise:
  *
  *    'foo'.match?(/o/) # => true
  *    'foo'.match?('o') # => true
  *    'foo'.match?(/x/) # => false
  *
- *  If \Integer argument +offset+ is given, the search begins at index +offset+:
+ *  If integer argument +offset+ is given, the search begins at index +offset+:
  *
  *    'foo'.match?('f', 1) # => false
  *    'foo'.match?('o', 1) # => true
@@ -4448,27 +4448,35 @@ str_upto_i(VALUE str, VALUE arg)
 /*
  *  call-seq:
  *    string.upto(other_string, exclusive = false) {|string| ... } -> self
- *    string.upto(other_string, exclusive = false) -> new_enumerator
+ *    string.upto(other_string, exclusive = false) -> enumerator
  *
- *  With a block given, calls the block with each \String value
+ *  With a block given, calls the block with each string value
  *  returned by successive calls to String#succ;
  *  the first value is +self+, the next is <tt>self.succ</tt>, and so on;
  *  the sequence terminates when value +other_string+ is reached;
  *  returns +self+:
+ *
  *    'a8'.upto('b6') {|s| print s, ' ' } # => "a8"
+ *
  *  Output:
+ *
  *    a8 a9 b0 b1 b2 b3 b4 b5 b6
  *
  *  If argument +exclusive+ is given as a truthy object, the last value is omitted:
+ *
  *    'a8'.upto('b6', true) {|s| print s, ' ' } # => "a8"
+ *
  *  Output:
+ *
  *    a8 a9 b0 b1 b2 b3 b4 b5
  *
  *  If +other_string+ would not be reached, does not call the block:
+ *
  *    '25'.upto('5') {|s| fail s }
  *    'aa'.upto('a') {|s| fail s }
  *
- *  With no block given, returns a new \Enumerator:
+ *  With no block given, returns an Enumerator:
+ *
  *    'a8'.upto('b6') # => #<Enumerator: "a8":upto("b6")>
  */
 
@@ -4716,41 +4724,58 @@ rb_str_aref(VALUE str, VALUE indx)
  *
  *  Returns the substring of +self+ specified by the arguments.
  *
- *  When the single \Integer argument +index+ is given,
+ *  When the single integer argument +index+ is given,
  *  returns the 1-character substring found in +self+ at offset +index+:
+ *
  *    'bar'[2] # => "r"
+ *
  *  Counts backward from the end of +self+ if +index+ is negative:
+ *
  *    'foo'[-3] # => "f"
+ *
  *  Returns +nil+ if +index+ is out of range:
+ *
  *    'foo'[3] # => nil
  *    'foo'[-4] # => nil
  *
- *  When the two \Integer arguments  +start+ and +length+ are given,
+ *  When the two integer arguments  +start+ and +length+ are given,
  *  returns the substring of the given +length+ found in +self+ at offset +start+:
+ *
  *    'foo'[0, 2] # => "fo"
  *    'foo'[0, 0] # => ""
+ *
  *  Counts backward from the end of +self+ if +start+ is negative:
+ *
  *    'foo'[-2, 2] # => "oo"
- *  Special case: returns a new empty \String if +start+ is equal to the length of +self+:
+ *
+ *  Special case: returns a new empty string if +start+ is equal to the length of +self+:
+ *
  *    'foo'[3, 2] # => ""
+ *
  *  Returns +nil+ if +start+ is out of range:
+ *
  *    'foo'[4, 2] # => nil
  *    'foo'[-4, 2] # => nil
+ *
  *  Returns the trailing substring of +self+ if +length+ is large:
+ *
  *    'foo'[1, 50] # => "oo"
- *  Returns +nil+ if +length+ is negative:
+ *
+ *  Returns +nil+ if +length+ is negative.
  *    'foo'[0, -1] # => nil
  *
- *  When the single \Range argument +range+ is given,
+ *  When the single Range argument +range+ is given,
  *  derives +start+ and +length+ values from the given +range+,
  *  and returns values as above:
+ *
  *  - <tt>'foo'[0..1]</tt> is equivalent to <tt>'foo'[0, 2]</tt>.
  *  - <tt>'foo'[0...1]</tt> is equivalent to <tt>'foo'[0, 1]</tt>.
  *
- *  When the \Regexp argument +regexp+ is given,
+ *  When the Regexp argument +regexp+ is given,
  *  and the +capture+ argument is <tt>0</tt>,
  *  returns the first matching substring found in +self+,
  *  or +nil+ if none found:
+ *
  *    'foo'[/o/] # => "o"
  *    'foo'[/x/] # => nil
  *    s = 'hello there'
@@ -4758,9 +4783,10 @@ rb_str_aref(VALUE str, VALUE indx)
  *    s[/[aeiou](.)\1/, 0] # => "ell"
  *
  *  If argument +capture+ is given and not <tt>0</tt>,
- *  it should be either an \Integer capture group index or a \String or \Symbol capture group name;
+ *  it should be either an integer capture group index or a string or symbol capture group name;
  *  the method call returns only the specified capture
  *  (see {Regexp Capturing}[Regexp.html#class-Regexp-label-Capturing]):
+ *
  *    s = 'hello there'
  *    s[/[aeiou](.)\1/, 1] # => "l"
  *    s[/(?<vowel>[aeiou])(?<non_vowel>[^aeiou])/, "non_vowel"] # => "l"
@@ -4769,8 +4795,9 @@ rb_str_aref(VALUE str, VALUE indx)
  *  If an invalid capture group index is given, +nil+ is returned.  If an invalid
  *  capture group name is given, +IndexError+ is raised.
  *
- *  When the single \String argument +substring+ is given,
+ *  When the single string argument +substring+ is given,
  *  returns the substring from +self+ if found, otherwise +nil+:
+ *
  *    'foo'['oo'] # => "oo"
  *    'foo'['xx'] # => nil
  *
@@ -5024,10 +5051,10 @@ rb_str_aset_m(int argc, VALUE *argv, VALUE str)
  *
  *  Inserts the given +other_string+ into +self+; returns +self+.
  *
- *  If the \Integer +index+ is positive, inserts +other_string+ at offset +index+:
+ *  If the integer +index+ is positive, inserts +other_string+ at offset +index+:
  *    'foo'.insert(1, 'bar') # => "fbaroo"
  *
- *  If the \Integer +index+ is negative, counts backward from the end of +self+
+ *  If the integer +index+ is negative, counts backward from the end of +self+
  *  and inserts +other_string+ at offset <tt>index+1</tt>
  *  (that is, _after_ <tt>self[index]</tt>):
  *    'foo'.insert(-2, 'bar') # => "fobaro"
