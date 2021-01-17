@@ -4473,7 +4473,7 @@ vm_sendish(
     enum method_explorer_type method_explorer
 #endif
 ) {
-    VALUE val;
+    VALUE val = Qundef;
     const struct rb_callinfo *ci = cd->ci;
     const struct rb_callcache *cc;
     int argc = vm_ci_argc(ci);
