@@ -657,12 +657,13 @@ static VALUE
 rb_struct_initialize_m(int argc, const VALUE *argv, VALUE self)
 {
     VALUE klass = rb_obj_class(self);
-    long i, n;
-
     rb_struct_modify(self);
-    n = num_members(klass);
-    if (argc == 0)
+    long n = num_members(klass);
+    if (argc == 0) {
+        rb_mem_clear((VALUE *)RSTRUCT_CONST_PTR(self), n);
         return Qnil;
+    }
+
     VALUE keyword_init = rb_struct_s_keyword_init(klass);
     if (RTEST(keyword_init)) {
 	struct struct_hash_set_arg arg;
@@ -686,7 +687,7 @@ rb_struct_initialize_m(int argc, const VALUE *argv, VALUE self)
             rb_warn("Passing only keyword arguments to Struct#initialize will behave differently from Ruby 3.2. "\
                     "Please use a Hash literal like .new({k: v}) instead of .new(k: v).");
         }
-	for (i=0; i<argc; i++) {
+        for (long i=0; i<argc; i++) {
 	    RSTRUCT_SET(self, i, argv[i]);
 	}
 	if (n > argc) {
