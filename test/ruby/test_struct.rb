@@ -350,6 +350,18 @@ module TestStruct
     end
   end
 
+  def test_keyword_args_warning
+    warning = /warning: Passing only keyword arguments to Struct#initialize will behave differently from Ruby 3\.2\./
+    assert_match(warning, EnvUtil.verbose_warning { assert_equal({a: 1}, @Struct.new(:a).new(a: 1).a) })
+    assert_match(warning, EnvUtil.verbose_warning { assert_equal({a: 1}, @Struct.new(:a, keyword_init: nil).new(a: 1).a) })
+    assert_warn('') { assert_equal({a: 1}, @Struct.new(:a).new({a: 1}).a) }
+    assert_warn('') { assert_equal({a: 1}, @Struct.new(:a, :b).new(1, a: 1).b) }
+    assert_warn('') { assert_equal(1, @Struct.new(:a, keyword_init: true).new(a: 1).a) }
+    assert_warn('') { assert_equal({a: 1}, @Struct.new(:a, keyword_init: nil).new({a: 1}).a) }
+    assert_warn('') { assert_equal({a: 1}, @Struct.new(:a, keyword_init: false).new(a: 1).a) }
+    assert_warn('') { assert_equal({a: 1}, @Struct.new(:a, keyword_init: false).new({a: 1}).a) }
+  end
+
   def test_nonascii
     struct_test = @Struct.new(name = "R\u{e9}sum\u{e9}", :"r\u{e9}sum\u{e9}")
     assert_equal(@Struct.const_get("R\u{e9}sum\u{e9}"), struct_test, '[ruby-core:24849]')

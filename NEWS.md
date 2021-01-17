@@ -28,6 +28,12 @@ Outstanding ones only.
       modify the ancestor chain if the receiver has already prepended
       the argument. [[Bug #17423]]
 
+* Struct
+
+    * Passing only keyword arguments to Struct#initialize is warned.
+      You need to use a Hash literal to set a Hash to a first member.
+      [[Feature #16806]]
+
 ## Stdlib updates
 
 Outstanding ones only.
@@ -55,5 +61,6 @@ Excluding feature bug fixes.
 ## Miscellaneous changes
 
 
+[Feature #16806]: https://bugs.ruby-lang.org/issues/16806
 [Feature #17312]: https://bugs.ruby-lang.org/issues/17312
 [Bug #17423]: https://bugs.ruby-lang.org/issues/17423
