@@ -55,6 +55,10 @@
 # include <linux/random.h>
 #endif
 
+#if defined __APPLE__
+# include <AvailabilityMacros.h>
+#endif
+
 #include "internal.h"
 #include "internal/array.h"
 #include "internal/compilers.h"
