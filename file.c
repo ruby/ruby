@@ -3467,6 +3467,20 @@ rb_enc_path_end(const char *path, const char *end, rb_encoding *enc)
     return chompdirsep(path, end, enc);
 }
 
+static rb_encoding *
+fs_enc_check(VALUE path1, VALUE path2)
+{
+    rb_encoding *enc = rb_enc_check(path1, path2);
+    int encidx = rb_enc_to_index(enc);
+    if (encidx == ENCINDEX_US_ASCII) {
+        encidx = rb_enc_get_index(path1);
+        if (encidx == ENCINDEX_US_ASCII)
+            encidx = rb_enc_get_index(path2);
+        enc = rb_enc_from_index(encidx);
+    }
+    return enc;
+}
+
 #if USE_NTFS
 static char *
 ntfs_tail(const char *path, const char *end, rb_encoding *enc)
@@ -3667,7 +3681,7 @@ append_fspath(VALUE result, VALUE fname, char *dir, rb_encoding **enc, rb_encodi
     size_t dirlen = strlen(dir), buflen = rb_str_capacity(result);
 
     if (NORMALIZE_UTF8PATH || *enc != fsenc) {
-	rb_encoding *direnc = rb_enc_check(fname, dirname = ospath_new(dir, dirlen, fsenc));
+	rb_encoding *direnc = fs_enc_check(fname, dirname = ospath_new(dir, dirlen, fsenc));
 	if (direnc != fsenc) {
 	    dirname = rb_str_conv_enc(dirname, fsenc, direnc);
 	    RSTRING_GETMEM(dirname, cwdp, dirlen);
@@ -3763,7 +3777,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 		p = e;
 	    }
 	    else {
-		rb_enc_associate(result, enc = rb_enc_check(result, fname));
+		rb_enc_associate(result, enc = fs_enc_check(result, fname));
 		p = pend;
 	    }
 	    p = chompdirsep(skiproot(buf, p, enc), p, enc);
@@ -3774,7 +3788,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     else if (!rb_is_absolute_path(s)) {
 	if (!NIL_P(dname)) {
 	    rb_file_expand_path_internal(dname, Qnil, abs_mode, long_name, result);
-	    rb_enc_associate(result, rb_enc_check(result, fname));
+	    rb_enc_associate(result, fs_enc_check(result, fname));
 	    BUFINIT();
 	    p = pend;
 	}
@@ -3802,7 +3816,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	BUFCHECK(bdiff >= buflen);
 	memset(buf, '/', len);
 	rb_str_set_len(result, len);
-	rb_enc_associate(result, rb_enc_check(result, fname));
+	rb_enc_associate(result, fs_enc_check(result, fname));
     }
     if (p > buf && p[-1] == '/')
 	--p;
@@ -4263,7 +4277,7 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE f
 			rb_encoding *tmpenc, *linkenc = rb_enc_get(link);
 			link_orig = link;
 			link = rb_str_subseq(link, 0, link_prefixlen);
-			tmpenc = rb_enc_check(*resolvedp, link);
+			tmpenc = fs_enc_check(*resolvedp, link);
 			if (tmpenc != linkenc) link = rb_str_conv_enc(link, linkenc, tmpenc);
 			*resolvedp = link;
 			*prefixlenp = link_prefixlen;
@@ -4937,7 +4951,7 @@ rb_file_join(VALUE ary)
 		rb_str_cat(result, "/", 1);
 	    }
 	}
-	enc = rb_enc_check(result, tmp);
+	enc = fs_enc_check(result, tmp);
 	rb_str_buf_append(result, tmp);
 	rb_enc_associate(result, enc);
     }

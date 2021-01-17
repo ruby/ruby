@@ -10362,12 +10362,17 @@ new_defined(struct parser_params *p, NODE *expr, const YYLTYPE *loc)
 static NODE*
 symbol_append(struct parser_params *p, NODE *symbols, NODE *symbol)
 {
-    if (nd_type(symbol) == NODE_DSTR) {
+    enum node_type type = nd_type(symbol);
+    switch (type) {
+      case NODE_DSTR:
 	nd_set_type(symbol, NODE_DSYM);
-    }
-    else {
+	break;
+      case NODE_STR:
 	nd_set_type(symbol, NODE_LIT);
 	RB_OBJ_WRITTEN(p->ast, Qnil, symbol->nd_lit = rb_str_intern(symbol->nd_lit));
+	break;
+      default:
+	compile_error(p, "unexpected node as symbol: %s", ruby_node_name(type));
     }
     return list_append(p, symbols, symbol);
 }
@@ -11143,9 +11148,7 @@ shareable_literal_constant(struct parser_params *p, enum shareability shareable,
       case NODE_ZLIST:
 	lit = rb_ary_new();
 	OBJ_FREEZE_RAW(lit);
-	nd_set_type(value, NODE_LIT);
-	RB_OBJ_WRITE(p->ast, &value->nd_lit, lit);
-	return value;
+	return NEW_LIT(lit, loc);
 
       case NODE_LIST:
 	lit = rb_ary_new();
@@ -11230,8 +11233,7 @@ shareable_literal_constant(struct parser_params *p, enum shareability shareable,
 	value = make_shareable_node(p, value, false, loc);
     }
     else {
-	nd_set_type(value, NODE_LIT);
-	RB_OBJ_WRITE(p->ast, &value->nd_lit, rb_ractor_make_shareable(lit));
+	value = NEW_LIT(rb_ractor_make_shareable(lit), loc);
     }
 
     return value;

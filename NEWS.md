@@ -21,6 +21,13 @@ Outstanding ones only.
 
     * Enumerator::Lazy#compact is added. [[Feature #17312]]
 
+* Module
+
+    * Module#prepend now modifies the ancestor chain if the receiver
+      already includes the argument. Module#prepend still does not
+      modify the ancestor chain if the receiver has already prepended
+      the argument. [[Bug #17423]]
+
 * Struct
 
     * Passing only keyword arguments to Struct#initialize is warned.
@@ -56,3 +63,4 @@ Excluding feature bug fixes.
 
 [Feature #16806]: https://bugs.ruby-lang.org/issues/16806
 [Feature #17312]: https://bugs.ruby-lang.org/issues/17312
+[Bug #17423]: https://bugs.ruby-lang.org/issues/17423
