@@ -129,7 +129,7 @@ rb_clear_constant_cache(void)
 }
 
 static void
-invaldate_negative_cache(ID mid, bool invalidate_cme)
+invalidate_negative_cache(ID mid, bool invalidate_cme)
 {
     const rb_callable_method_entry_t *cme;
     rb_vm_t *vm = GET_VM();
@@ -162,7 +162,7 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
 
         // invalidate CCs
         if (cc_tbl && rb_id_table_lookup(cc_tbl, mid, (VALUE *)&ccs)) {
-            if (NIL_P(ccs->cme->owner)) invaldate_negative_cache(mid, false);
+            if (NIL_P(ccs->cme->owner)) invalidate_negative_cache(mid, false);
             rb_vm_ccs_free(ccs);
             rb_id_table_delete(cc_tbl, mid);
             RB_DEBUG_COUNTER_INC(cc_invalidate_leaf_ccs);
@@ -211,7 +211,7 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
             RB_DEBUG_COUNTER_INC(cc_invalidate_tree);
         }
         else {
-            invaldate_negative_cache(mid, true);
+            invalidate_negative_cache(mid, true);
         }
     }
 }
