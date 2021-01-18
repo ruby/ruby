@@ -1150,7 +1150,11 @@ static __inline__ tick_t
 tick(void)
 {
     unsigned long val;
+#ifndef __APPLE__
     __asm__ __volatile__ ("mrs %0, cntvct_el0" : "=r" (val));
+#else
+    __asm__ __volatile__ ("mrs %0, cntpct_el0" : "=r" (val));
+#endif
     return val;
 }
 
