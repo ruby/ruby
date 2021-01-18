@@ -81,6 +81,9 @@ ujit_side_exit(jitstate_t* jit, ctx_t* ctx)
     // Table mapping opcodes to interpreter handlers
     const void * const *handler_table = rb_vm_get_insns_address_table();
 
+    // FIXME: rewriting the old instruction is only necessary if we're
+    // exiting right at an interpreter entry point
+
     // Write back the old instruction at the exit PC
     // Otherwise the interpreter may jump right back to the
     // JITted code we're trying to exit
@@ -102,7 +105,7 @@ Compile an interpreter entry block to be inserted into an iseq
 Returns `NULL` if compilation fails.
 */
 uint8_t*
-ujit_gen_entry(block_t* block)
+ujit_entry_prologue()
 {
     assert (cb != NULL);
 
@@ -121,28 +124,17 @@ ujit_gen_entry(block_t* block)
     // Load the current SP from the CFP into REG_SP
     mov(cb, REG_SP, member_opnd(REG_CFP, rb_control_frame_t, sp));
 
-    // Compile the block starting at this instruction
-    uint32_t num_instrs = ujit_gen_code(block);
-
-    // If no instructions were compiled
-    if (num_instrs == 0) {
-        return NULL;
-    }
-
     return code_ptr;
 }
 
 /*
 Compile a sequence of bytecode instructions for a given basic block version
 */
-uint32_t
-ujit_gen_code(block_t* block)
+void
+ujit_gen_block(ctx_t* ctx, block_t* block)
 {
     assert (cb != NULL);
-
-    // Copy the block's context to avoid mutating it
-    ctx_t ctx_copy = block->ctx;
-    ctx_t* ctx = &ctx_copy;
+    assert (block != NULL);
 
     const rb_iseq_t *iseq = block->blockid.iseq;
     uint32_t insn_idx = block->blockid.idx;
@@ -158,16 +150,19 @@ ujit_gen_code(block_t* block)
         rb_bug("out of executable memory (outlined block)");
     }
 
+    // Initialize a JIT state object
+    jitstate_t jit = {
+        block,
+        block->blockid.iseq,
+        0,
+        0
+    };
+
     // Last operation that was successfully compiled
     opdesc_t* p_last_op = NULL;
 
-    // Initialize JIT state object
-    jitstate_t jit = {
-        block,
-        iseq
-    };
-
-    uint32_t num_instrs = 0;
+    // Mark the start position of the block
+    block->start_pos = cb->write_pos;
 
     // For each instruction to compile
     for (;;) {
@@ -191,7 +186,7 @@ ujit_gen_code(block_t* block)
         opdesc_t* p_desc = (opdesc_t*)st_op_desc;
         bool success = p_desc->gen_fn(&jit, ctx);
 
-        // If we can't compile this instruction
+        // If we can't compile this instruction, stop
         if (!success) {
             break;
         }
@@ -199,7 +194,6 @@ ujit_gen_code(block_t* block)
     	// Move to the next instruction
         p_last_op = p_desc;
         insn_idx += insn_len(opcode);
-        num_instrs++;
 
         // If this instruction terminates this block
         if (p_desc->is_branch) {
@@ -207,14 +201,17 @@ ujit_gen_code(block_t* block)
         }
     }
 
-    // Store the index of the last instruction in the block
-    block->end_idx = insn_idx;
-
     // If the last instruction compiled did not terminate the block
     // Generate code to exit to the interpreter
     if (!p_last_op || !p_last_op->is_branch) {
         ujit_gen_exit(&jit, ctx, cb, &encoded[insn_idx]);
     }
+
+    // Mark the end position of the block
+    block->end_pos = cb->write_pos;
+
+    // Store the index of the last instruction in the block
+    block->end_idx = insn_idx;
 
     if (UJIT_DUMP_MODE >= 2) {
         // Dump list of compiled instrutions
@@ -227,8 +224,6 @@ ujit_gen_code(block_t* block)
             pc += insn_len(opcode);
         }
     }
-
-    return num_instrs;
 }
 
 static bool
@@ -683,7 +678,6 @@ gen_branchunless(jitstate_t* jit, ctx_t* ctx)
 
     // Generate the branch instructions
     gen_branch(
-        jit->block,
         ctx,
         jump_block,
         ctx,
@@ -727,7 +721,6 @@ gen_jump(jitstate_t* jit, ctx_t* ctx)
 
     // Generate the jump instruction
     gen_branch(
-        jit->block,
         ctx,
         jump_block,
         ctx,
@@ -986,7 +979,6 @@ gen_opt_send_without_block(jitstate_t* jit, ctx_t* ctx)
     // We do this to end the current block after the call
     blockid_t cont_block = { jit->iseq, jit_next_idx(jit) };
     gen_branch(
-        jit->block,
         ctx,
         cont_block,
         ctx,
