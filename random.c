@@ -50,7 +50,9 @@
 #endif
 
 #if defined HAVE_GETRANDOM || defined HAVE_GETENTROPY
-# include <sys/random.h>
+# if defined(HAVE_SYS_RANDOM_H)
+#  include <sys/random.h>
+# endif
 #elif defined __linux__ && defined __NR_getrandom
 # include <linux/random.h>
 #endif
