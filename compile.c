@@ -6408,11 +6408,11 @@ compile_case3(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
             int pat_line = nd_line(pattern);
             LABEL *next_pat = NEW_LABEL(pat_line);
             ADD_INSN (cond_seq, pat_line, dup);
-
             // NOTE: set deconstructed_pos to the current cached value location
             // (it's "under" the matchee value, so it's position is 2)
             CHECK(iseq_compile_pattern_each(iseq, cond_seq, pattern, l1, next_pat, FALSE, 2));
             ADD_LABEL(cond_seq, next_pat);
+            LABEL_UNREMOVABLE(next_pat);
         }
         else {
             COMPILE_ERROR(ERROR_ARGS "unexpected node");

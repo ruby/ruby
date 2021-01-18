@@ -791,6 +791,16 @@ END
         true
       end
     end
+
+    # https://bugs.ruby-lang.org/issues/17534
+    assert_block do
+      case [0, 1, 2]
+      in x
+        true
+      in [*, 2, *]
+        false
+      end
+    end
   end
 
   def test_hash_pattern
