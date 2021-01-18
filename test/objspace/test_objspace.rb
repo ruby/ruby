@@ -276,6 +276,12 @@ class TestObjSpace < Test::Unit::TestCase
     assert_dump_object(info, line)
   end
 
+  def test_dump_singleton_class_name
+    assert_include(ObjectSpace.dump(Object), '"name":"Object"')
+    assert_include(ObjectSpace.dump(Kernel), '"name":"Kernel"')
+    assert_include(ObjectSpace.dump(Object.new.singleton_class), '"name":"Object"')
+  end
+
   def assert_dump_object(info, line)
     loc = caller_locations(1, 1)[0]
     assert_match(/"type":"STRING"/, info)
