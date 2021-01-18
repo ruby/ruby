@@ -37,8 +37,8 @@ typedef struct BlockId
     // Instruction sequence
     const rb_iseq_t *iseq;
 
-    // Instruction index
-    const uint32_t idx;
+    // Index in the iseq where the block starts
+    uint32_t idx;
 
 } blockid_t;
 
@@ -87,7 +87,7 @@ typedef struct BlockVersion
     // Bytecode sequence (iseq, idx) this is a version of
     blockid_t blockid;
 
-    // Index just past the last instruction in the iseq
+    // Index one past the last instruction in the iseq
     uint32_t end_idx;
 
     // Context at the start of the block
@@ -117,7 +117,6 @@ block_t* gen_block_version(blockid_t blockid, const ctx_t* ctx);
 uint8_t*  gen_entry_point(const rb_iseq_t *iseq, uint32_t insn_idx);
 
 void gen_branch(
-    block_t* src_block,
     const ctx_t* src_ctx,
     blockid_t target0,
     const ctx_t* ctx0,

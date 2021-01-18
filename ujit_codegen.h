@@ -40,9 +40,9 @@ typedef struct OpDesc
 
 } opdesc_t;
 
-uint8_t* ujit_gen_entry(block_t* block);
+uint8_t* ujit_entry_prologue();
 
-uint32_t ujit_gen_code(block_t* block);
+void ujit_gen_block(ctx_t* ctx, block_t* block);
 
 void ujit_init_codegen(void);
 
