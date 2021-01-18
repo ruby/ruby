@@ -11525,6 +11525,178 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  without a ``!'' return a new String.  However, there are
  *  exceptions, such as String#[]=.
  *
+ *  == What's Here
+ *
+ *  === Methods for Creating a \String
+ *  - ::new::
+ *  - ::try_convert::
+ *  === Methods for Setting \String State
+ *  - #+@::
+ *  - #-@::
+ *  - #freeze::
+ *  - #kconv::
+ *  === Methods for Querying
+ *  - #=~::
+ *  - #ascii_only?::
+ *  - #bytesize::
+ *  - #count::
+ *  - #empty?::
+ *  - #encoding::
+ *  - #end_with?::
+ *  - #eql?::
+ *  - #hash::
+ *  - #include?::
+ *  - #index::
+ *  - #iseuc::
+ *  - #isjis::
+ *  - #issjis::
+ *  - #isutf8::
+ *  - #length::
+ *  - #match::
+ *  - #match?::
+ *  - #rindex::
+ *  - #size::
+ *  - #start_with?::
+ *  - #sum::
+ *  - #unicode_normalized?::
+ *  - #valid_encoding?::
+ *  === Methods for Comparing
+ *  - #<=>::
+ *  - #==::
+ *  - #===::
+ *  - #casecmp::
+ *  - #casecmp?::
+ *  === Methods for Fetching
+ *  - #[]::
+ *  - #byteslice::
+ *  - #chr::
+ *  - #getbyte::
+ *  === Methods for Modifying
+ *  - #<<::
+ *  - #[]=::
+ *  - #capitalize!::
+ *  - #chomp!::
+ *  - #chop!::
+ *  - #downcase!::
+ *  - #encode!::
+ *  - #gsub!::
+ *  - #force_encoding::
+ *  - #initialize_copy::
+ *  - #insert::
+ *  - #lstrip!::
+ *  - #next!::
+ *  - #replace::
+ *  - #reverse!::
+ *  - #scrub!::
+ *  - #rstrip!::
+ *  - #setbyte::
+ *  - #slice!::
+ *  - #sub!::
+ *  - #succ!::
+ *  - #swapcase!::
+ *  - #tr!::
+ *  - #tr_s!::
+ *  === Methods for Deleting
+ *  - #clear
+ *  - #delete::
+ *  - #delete_prefix::
+ *  - #delete_suffix::
+ *  - #slice::
+ *  - #squeeze!::
+ *  - #strip!::
+ *  - #unicode_normalize!::
+ *  - #upcase!::
+ *  === Methods for Iterating
+ *  - #each_byte::
+ *  - #each_char::
+ *  - #each_codepoint::
+ *  - #each_grapheme_cluster::
+ *  - #each_line::
+ *  - #upto::
+ *  === Methods for Converting
+ *  - #*::
+ *  - #+::
+ *  - #bytes::
+ *  - #capitalize::
+ *  - #center::
+ *  - #chars::
+ *  - #chomp::
+ *  - #chop::
+ *  - #codepoints::
+ *  - #concat::
+ *  - #downcase::
+ *  - #dump::
+ *  - #encode::
+ *  - #gsub::
+ *  - #grapheme_clusters::
+ *  - #hex::
+ *  - #inspect::
+ *  - #intern::
+ *  - #lines::
+ *  - #ljust::
+ *  - #lstrip::
+ *  - #next::
+ *  - #oct::
+ *  - #ord::
+ *  - #partition::
+ *  - #prepend::
+ *  - #reverse::
+ *  - #rjust::
+ *  - #rpartition::
+ *  - #rstrip::
+ *  - #scan::
+ *  - #scrub::
+ *  - #split::
+ *  - #squeeze::
+ *  - #strip::
+ *  - #sub::
+ *  - #succ::
+ *  - #swapcase::
+ *  - #to_c::
+ *  - #to_d::
+ *  - #to_f::
+ *  - #to_i::
+ *  - #to_r::
+ *  - #to_s::
+ *  - #to_str::
+ *  - #to_sym::
+ *  - #toeuc::
+ *  - #tojis::
+ *  - #tolocale::
+ *  - #tosjis::
+ *  - #toutf16::
+ *  - #toutf32::
+ *  - #toutf8::
+ *  - #tr::
+ *  - #tr_s::
+ *  - #undump::
+ *  - #unicode_normalize::
+ *  - #unpack::
+ *  - #unpack1::
+ *  - #upcase::
+ *  === Methods for Formatting
+ *  - #%::
+ *  === Methods for Encoding
+ *  - #b::
+ *  - #encode::
+ *  - #encode!::
+ *  - #encoding::
+ *  - #force_encoding::
+ *  - #iseuc::
+ *  - #isjis::
+ *  - #issjis::
+ *  - #isutf8::
+ *  - #kconv::
+ *  - #toeuc::
+ *  - #tojis::
+ *  - #tolocale::
+ *  - #tosjis::
+ *  - #toutf16::
+ *  - #toutf32::
+ *  - #toutf8::
+ *  === Other Methods
+ *  - #shellescape::
+ *  - #shellsplit::
  */
 
 void
