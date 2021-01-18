@@ -1030,7 +1030,7 @@ flo_coerce(VALUE x, VALUE y)
     return rb_assoc_new(rb_Float(y), x);
 }
 
-VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_float_uminus(VALUE flt)
 {
     return DBL2NUM(-RFLOAT_VALUE(flt));
@@ -1106,12 +1106,6 @@ rb_float_mul(VALUE x, VALUE y)
     else {
 	return rb_num_coerce_bin(x, y, '*');
     }
-}
-
-static bool
-flo_iszero(VALUE f)
-{
-    return FLOAT_ZERO_P(f);
 }
 
 static double
@@ -1694,7 +1688,7 @@ rb_float_eql(VALUE x, VALUE y)
 
 #define flo_eql rb_float_eql
 
-VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_float_abs(VALUE flt)
 {
     double val = fabs(RFLOAT_VALUE(flt));

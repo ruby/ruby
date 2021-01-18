@@ -202,6 +202,6 @@ class Float
   #
   def zero?
     Primitive.attr! 'inline'
-    Primitive.cexpr! 'flo_iszero(self) ? Qtrue : Qfalse'
+    Primitive.cexpr! 'FLOAT_ZERO_P(self) ? Qtrue : Qfalse'
   end
 end

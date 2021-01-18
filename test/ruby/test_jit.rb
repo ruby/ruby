@@ -777,6 +777,20 @@ class TestJIT < Test::Unit::TestCase
     end;
   end
 
+  def test_inlined_builtin_methods
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '', success_count: 1, min_calls: 2)
+    begin;
+      def test
+        float = 0.0
+        float.abs
+        -float
+        float.zero?
+      end
+      test
+      test
+    end;
+  end
+
   def test_inlined_c_method
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "aaa", success_count: 2, recompile_count: 1, min_calls: 2)
     begin;
