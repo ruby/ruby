@@ -536,10 +536,6 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
     }
 }
 
-/*!
- * Attach a object to a singleton class.
- * @pre \a klass is the singleton class of \a obj.
- */
 void
 rb_singleton_class_attached(VALUE klass, VALUE obj)
 {
