@@ -1323,6 +1323,7 @@ rb_ary_cat(VALUE ary, const VALUE *argv, long len)
 /*
  *  call-seq:
  *    array.push(*objects) -> self
+ *    array.append(*objects) -> self
  *
  *  Appends trailing elements.
  *
