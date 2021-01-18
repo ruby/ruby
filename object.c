@@ -115,14 +115,6 @@ rb_obj_reveal(VALUE obj, VALUE klass)
     return obj;
 }
 
-/*!
- * Fills common (\c RBasic) fields in \a obj.
- *
- * \note Prefer rb_newobj_of() to this function.
- * \param[in,out] obj a Ruby object to be set up.
- * \param[in] klass \c obj will belong to this class.
- * \param[in] type one of \c ruby_value_type
- */
 VALUE
 rb_obj_setup(VALUE obj, VALUE klass, VALUE type)
 {
