@@ -1625,7 +1625,10 @@ rb_objspace_alloc(void)
     list_head_init(&objspace->tomb_heap.pages);
 
 #ifdef USE_THIRD_PARTY_HEAP
-    gc_init(gc_params.heap_init_slots * sizeof(RVALUE));
+#ifndef THIRD_PARTY_HEAP_LIMIT
+#define THIRD_PARTY_HEAP_LIMIT (gc_params.heap_init_slots * sizeof(RVALUE))
+#endif
+    gc_init(THIRD_PARTY_HEAP_LIMIT);
     objspace->mutator = bind_mutator(10); // TODO replace with pointer to start of TLS
 #endif
 
@@ -6231,6 +6234,9 @@ gc_verify_internal_consistency_m(VALUE dummy)
 static void
 gc_verify_internal_consistency(rb_objspace_t *objspace)
 {
+#ifdef USE_THIRD_PARTY_HEAP
+    return;
+#endif
     struct verify_internal_consistency_struct data = {0};
 
     data.objspace = objspace;

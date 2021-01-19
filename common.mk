@@ -187,7 +187,7 @@ INSTALL_DATA_MODE = 0644
 
 TESTSDIR      = $(srcdir)/test
 TOOL_TESTSDIR = $(srcdir)/tool/test
-TEST_EXCLUDES = --excludes-dir=$(TESTSDIR)/excludes --name=!/memory_leak/
+TEST_EXCLUDES = --excludes-dir=$(TESTSDIR)/excludes $(ADDITIONAL_EXCLUDES) --name=!/memory_leak/
 TESTWORKDIR   = testwork
 TESTOPTS      = $(RUBY_TESTOPTS)
 

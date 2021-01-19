@@ -1,0 +1,1 @@
+exclude :test_no_leak, "NoGC causes memory leaks by design"
