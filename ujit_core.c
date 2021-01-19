@@ -115,6 +115,7 @@ block_t* gen_block_version(blockid_t blockid, const ctx_t* start_ctx)
 
     // Keep track of the new block version
     st_insert(version_tbl, (st_data_t)&block->blockid, (st_data_t)block);
+    RUBY_ASSERT(find_block_version(blockid, start_ctx) != NULL);
 
     // For each successor block to compile
     for (;;) {
@@ -482,7 +483,7 @@ int blockid_cmp(st_data_t arg0, st_data_t arg1)
 {
     const blockid_t *block0 = (const blockid_t*)arg0;
     const blockid_t *block1 = (const blockid_t*)arg1;
-    return (block0->iseq == block1->iseq) && (block0->idx == block1->idx);
+    return (block0->iseq != block1->iseq) || (block0->idx != block1->idx);
 }
 
 st_index_t blockid_hash(st_data_t arg)
