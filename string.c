@@ -11534,7 +11534,6 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  - #+@::
  *  - #-@::
  *  - #freeze::
- *  - #kconv::
  *  === Methods for Querying
  *  - #=~::
  *  - #ascii_only?::
@@ -11680,18 +11679,6 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  - #encode!::
  *  - #encoding::
  *  - #force_encoding::
- *  - #iseuc::
- *  - #isjis::
- *  - #issjis::
- *  - #isutf8::
- *  - #kconv::
- *  - #toeuc::
- *  - #tojis::
- *  - #tolocale::
- *  - #tosjis::
- *  - #toutf16::
- *  - #toutf32::
- *  - #toutf8::
  *  === Other Methods
  *  - #shellescape::
  *  - #shellsplit::
