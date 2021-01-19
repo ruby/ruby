@@ -11567,7 +11567,7 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  - #casecmp::
  *  - #casecmp?::
  *  === Methods for Fetching
- *  - #[]::
+ *  - #[], #slice::
  *  - #byteslice::
  *  - #chr::
  *  - #getbyte::
@@ -11575,8 +11575,6 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  - #<<::
  *  - #[]=::
  *  - #capitalize!::
- *  - #chomp!::
- *  - #chop!::
  *  - #downcase!::
  *  - #encode!::
  *  - #gsub!::
@@ -11587,21 +11585,24 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  - #next!::
  *  - #replace::
  *  - #reverse!::
- *  - #scrub!::
  *  - #rstrip!::
  *  - #setbyte::
- *  - #slice!::
  *  - #sub!::
  *  - #succ!::
  *  - #swapcase!::
  *  - #tr!::
  *  - #tr_s!::
  *  === Methods for Deleting
+ *  - #chomp!::
+ *  - #chop!::
  *  - #clear
  *  - #delete::
  *  - #delete_prefix::
  *  - #delete_suffix::
- *  - #slice::
+ *  - #lstrip::
+ *  - #rstrip::
+ *  - #scrub!::
+ *  - #slice!
  *  - #squeeze!::
  *  - #strip!::
  *  - #unicode_normalize!::
@@ -11614,6 +11615,7 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  - #each_line::
  *  - #upto::
  *  === Methods for Converting
+ *  - #%::
  *  - #*::
  *  - #+::
  *  - #bytes::
@@ -11634,7 +11636,6 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  - #intern::
  *  - #lines::
  *  - #ljust::
- *  - #lstrip::
  *  - #next::
  *  - #oct::
  *  - #ord::
@@ -11643,7 +11644,6 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  - #reverse::
  *  - #rjust::
  *  - #rpartition::
- *  - #rstrip::
  *  - #scan::
  *  - #scrub::
  *  - #split::
@@ -11674,8 +11674,6 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  - #unpack::
  *  - #unpack1::
  *  - #upcase::
- *  === Methods for Formatting
- *  - #%::
  *  === Methods for Encoding
  *  - #b::
  *  - #encode::
