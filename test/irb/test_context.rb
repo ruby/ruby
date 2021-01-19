@@ -447,7 +447,7 @@ module TestIRB
         irb.eval_input
       end
       assert_empty err
-      if '2.5.0' <= RUBY_VERSION && RUBY_VERSION < '3.0.0'
+      if '2.5.0' <= RUBY_VERSION && RUBY_VERSION < '3.0.0' && STDOUT.tty?
         expected = [
           :*, /Traceback \(most recent call last\):\n/,
           :*, /\t 2: from \(irb\):1:in `<main>'\n/,
@@ -477,7 +477,7 @@ module TestIRB
         irb.eval_input
       end
       assert_empty err
-      if '2.5.0' <= RUBY_VERSION && RUBY_VERSION < '3.0.0'
+      if '2.5.0' <= RUBY_VERSION && RUBY_VERSION < '3.0.0' && STDOUT.tty?
         expected = [
           :*, /Traceback \(most recent call last\):\n/,
           :*, /\t 2: from \(irb\):1:in `<main>'\n/,
@@ -513,7 +513,7 @@ module TestIRB
         irb.eval_input
       end
       assert_empty err
-      if '2.5.0' <= RUBY_VERSION && RUBY_VERSION < '3.0.0'
+      if '2.5.0' <= RUBY_VERSION && RUBY_VERSION < '3.0.0' && STDOUT.tty?
         expected = [
           :*, /Traceback \(most recent call last\):\n/,
           :*, /\t... 5 levels...\n/,
