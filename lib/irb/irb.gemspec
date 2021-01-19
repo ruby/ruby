@@ -38,6 +38,7 @@ Gem::Specification.new do |spec|
     "lib/irb/cmd/pushws.rb",
     "lib/irb/cmd/subirb.rb",
     "lib/irb/color.rb",
+    "lib/irb/color_printer.rb",
     "lib/irb/completion.rb",
     "lib/irb/context.rb",
     "lib/irb/easter-egg.rb",

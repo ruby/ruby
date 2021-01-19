@@ -14,14 +14,12 @@ begin
         FileUtils.rm_rf(@tmpdir)
         Dir.mkdir(@tmpdir)
       end
-      Dir.chdir(@tmpdir)
       @inputrc_backup = ENV['INPUTRC']
       @inputrc_file = ENV['INPUTRC'] = File.join(@tmpdir, 'temporaty_inputrc')
       File.unlink(@inputrc_file) if File.exist?(@inputrc_file)
     end
 
     def teardown
-      Dir.chdir(@pwd)
       FileUtils.rm_rf(@tmpdir)
       ENV['INPUTRC'] = @inputrc_backup
       ENV.delete('RELINE_TEST_PROMPT') if ENV['RELINE_TEST_PROMPT']
@@ -152,7 +150,7 @@ begin
       EOC
     end
 
-    def test_mode_icon_emacs
+    def test_mode_string_emacs
       write_inputrc <<~LINES
         set show-mode-in-prompt on
       LINES
@@ -164,7 +162,7 @@ begin
       EOC
     end
 
-    def test_mode_icon_vi
+    def test_mode_string_vi
       write_inputrc <<~LINES
         set editing-mode vi
         set show-mode-in-prompt on
@@ -180,7 +178,7 @@ begin
       EOC
     end
 
-    def test_original_mode_icon_emacs
+    def test_original_mode_string_emacs
       write_inputrc <<~LINES
         set show-mode-in-prompt on
         set emacs-mode-string [emacs]
@@ -193,7 +191,7 @@ begin
       EOC
     end
 
-    def test_original_mode_icon_with_quote
+    def test_original_mode_string_with_quote
       write_inputrc <<~LINES
         set show-mode-in-prompt on
         set emacs-mode-string "[emacs]"
@@ -206,7 +204,7 @@ begin
       EOC
     end
 
-    def test_original_mode_icon_vi
+    def test_original_mode_string_vi
       write_inputrc <<~LINES
         set editing-mode vi
         set show-mode-in-prompt on
@@ -224,7 +222,7 @@ begin
       EOC
     end
 
-    def test_mode_icon_vi_changing
+    def test_mode_string_vi_changing
       write_inputrc <<~LINES
         set editing-mode vi
         set show-mode-in-prompt on
@@ -450,6 +448,18 @@ begin
       EOC
     end
 
+    def test_broken_prompt_list
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl --broken-dynamic-prompt}, startup_message: 'Multiline REPL.')
+      write("def hoge\n  3\nend")
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        [0000]> def hoge
+        [0001]>   3
+        [0001]> end
+      EOC
+    end
+
     def test_enable_bracketed_paste
       omit if Reline::IOGate.win?
       write_inputrc <<~LINES
@@ -515,6 +525,7 @@ begin
           end
         end
       EOC
+      sleep 1
       close
       assert_screen(<<~EOC)
         prompt>         prompt
@@ -561,6 +572,7 @@ begin
           end
         end
       EOC
+      sleep 1
       write("\C-p" * 6)
       close
       assert_screen(<<~EOC)
@@ -608,7 +620,7 @@ begin
           end
         end
       EOC
-      sleep 0.3
+      sleep 1
       write("\C-p" * 5)
       write("\C-n" * 3)
       close
@@ -617,6 +629,52 @@ begin
         prompt>         prompt
         prompt>       end
         prompt>     end
+      EOC
+    end
+
+    def test_update_cursor_correctly_when_just_cursor_moving
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
+      write("def hoge\n  01234678")
+      write("\C-p")
+      write("\C-b")
+      write("\C-n")
+      write('5')
+      write("\C-e")
+      write('9')
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> def hoge
+        prompt>   0123456789
+      EOC
+    end
+
+    def test_suppress_auto_indent_just_after_pasted
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl --auto-indent}, startup_message: 'Multiline REPL.')
+      write("def hoge\n  [[\n      3]]\ned")
+      write("\C-bn")
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> def hoge
+        prompt>   [[
+        prompt>       3]]
+        prompt> end
+      EOC
+    end
+
+    def test_suppress_auto_indent_for_adding_newlines_in_pasting
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl --auto-indent}, startup_message: 'Multiline REPL.')
+      write("<<~Q\n")
+      write("{\n  #\n}")
+      write("#")
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> <<~Q
+        prompt> {
+        prompt>   #
+        prompt> }#
       EOC
     end
 

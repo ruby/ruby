@@ -96,4 +96,18 @@ class Reline::TestCase < Test::Unit::TestCase
   def assert_cursor_max(expected)
     assert_equal(expected, @line_editor.instance_variable_get(:@cursor_max))
   end
+
+  def assert_line_index(expected)
+    assert_equal(expected, @line_editor.instance_variable_get(:@line_index))
+  end
+
+  def assert_whole_lines(expected)
+    previous_line_index = @line_editor.instance_variable_get(:@previous_line_index)
+    if previous_line_index
+      lines = @line_editor.whole_lines(index: previous_line_index)
+    else
+      lines = @line_editor.whole_lines
+    end
+    assert_equal(expected, lines)
+  end
 end

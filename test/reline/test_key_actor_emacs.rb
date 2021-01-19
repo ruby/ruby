@@ -2233,6 +2233,53 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_line('def hoge')
   end
 
+  def test_ed_search_prev_next_history_in_multibyte
+    Reline::HISTORY.concat([
+      "def hoge\n  67890\n  12345\nend", # old
+      "def aiu\n  0xDEADBEEF\nend",
+      "def foo\n  12345\nend" # new
+    ])
+    @line_editor.multiline_on
+    input_keys('  123')
+    # The ed_search_prev_history doesn't have default binding
+    @line_editor.__send__(:ed_search_prev_history, "\C-p".ord)
+    assert_whole_lines(['def foo', '  12345', 'end'])
+    assert_line_index(1)
+    assert_whole_lines(['def foo', '  12345', 'end'])
+    assert_byte_pointer_size('  123')
+    assert_cursor(5)
+    assert_cursor_max(7)
+    assert_line('  12345')
+    @line_editor.__send__(:ed_search_prev_history, "\C-p".ord)
+    assert_line_index(2)
+    assert_whole_lines(['def hoge', '  67890', '  12345', 'end'])
+    assert_byte_pointer_size('  123')
+    assert_cursor(5)
+    assert_cursor_max(7)
+    assert_line('  12345')
+    @line_editor.__send__(:ed_search_prev_history, "\C-p".ord)
+    assert_line_index(2)
+    assert_whole_lines(['def hoge', '  67890', '  12345', 'end'])
+    assert_byte_pointer_size('  123')
+    assert_cursor(5)
+    assert_cursor_max(7)
+    assert_line('  12345')
+    @line_editor.__send__(:ed_search_next_history, "\C-n".ord)
+    assert_line_index(1)
+    assert_whole_lines(['def foo', '  12345', 'end'])
+    assert_byte_pointer_size('  123')
+    assert_cursor(5)
+    assert_cursor_max(7)
+    assert_line('  12345')
+    @line_editor.__send__(:ed_search_next_history, "\C-n".ord)
+    assert_line_index(1)
+    assert_whole_lines(['def foo', '  12345', 'end'])
+    assert_byte_pointer_size('  123')
+    assert_cursor(5)
+    assert_cursor_max(7)
+    assert_line('  12345')
+  end
+
 =begin # TODO: move KeyStroke instance from Reline to LineEditor
   def test_key_delete
     input_keys('ab')

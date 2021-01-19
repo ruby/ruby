@@ -263,6 +263,129 @@ module TestIRB
       end
     end
 
+    def test_corresponding_syntax_to_keyword_do_in_class
+      input_with_correct_indents = [
+        Row.new(%q(class C), nil, 2, 1),
+        Row.new(%q(  while method_name do), nil, 4, 2),
+        Row.new(%q(    3), nil, 4, 2),
+        Row.new(%q(  end), 2, 2, 1),
+        Row.new(%q(  foo do), nil, 4, 2),
+        Row.new(%q(    3), nil, 4, 2),
+        Row.new(%q(  end), 2, 2, 1),
+        Row.new(%q(end), 0, 0, 0),
+      ]
+
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_indenting(lines, row.current_line_spaces, false)
+        assert_indenting(lines, row.new_line_spaces, true)
+        assert_nesting_level(lines, row.nesting_level)
+      end
+    end
+
+    def test_corresponding_syntax_to_keyword_do
+      input_with_correct_indents = [
+        Row.new(%q(while i > 0), nil, 2, 1),
+        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(end), 0, 0, 0),
+        Row.new(%q(while true), nil, 2, 1),
+        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(end), 0, 0, 0),
+        Row.new(%q(while ->{i > 0}.call), nil, 2, 1),
+        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(end), 0, 0, 0),
+        Row.new(%q(while ->{true}.call), nil, 2, 1),
+        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(end), 0, 0, 0),
+        Row.new(%q(while i > 0 do), nil, 2, 1),
+        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(end), 0, 0, 0),
+        Row.new(%q(while true do), nil, 2, 1),
+        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(end), 0, 0, 0),
+        Row.new(%q(while ->{i > 0}.call do), nil, 2, 1),
+        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(end), 0, 0, 0),
+        Row.new(%q(while ->{true}.call do), nil, 2, 1),
+        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(end), 0, 0, 0),
+        Row.new(%q(foo do), nil, 2, 1),
+        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(end), 0, 0, 0),
+        Row.new(%q(foo true do), nil, 2, 1),
+        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(end), 0, 0, 0),
+        Row.new(%q(foo ->{true} do), nil, 2, 1),
+        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(end), 0, 0, 0),
+        Row.new(%q(foo ->{i > 0} do), nil, 2, 1),
+        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(end), 0, 0, 0),
+      ]
+
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_indenting(lines, row.current_line_spaces, false)
+        assert_indenting(lines, row.new_line_spaces, true)
+        assert_nesting_level(lines, row.nesting_level)
+      end
+    end
+
+    def test_heredoc_with_indent
+      input_with_correct_indents = [
+        Row.new(%q(<<~Q), nil, 0, 0),
+        Row.new(%q({), nil, 0, 0),
+        Row.new(%q(  #), nil, 0, 0),
+        Row.new(%q(}), nil, 0, 0),
+      ]
+
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_indenting(lines, row.current_line_spaces, false)
+        assert_indenting(lines, row.new_line_spaces, true)
+        assert_nesting_level(lines, row.nesting_level)
+      end
+    end
+
+    def test_oneliner_def_in_multiple_lines
+      input_with_correct_indents = [
+        Row.new(%q(def a()=[), nil, 4, 2),
+        Row.new(%q(  1,), nil, 4, 1),
+        Row.new(%q(].), 0, 0, 0),
+        Row.new(%q(to_s), nil, 0, 0),
+      ]
+
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_indenting(lines, row.current_line_spaces, false)
+        assert_indenting(lines, row.new_line_spaces, true)
+        assert_nesting_level(lines, row.nesting_level)
+      end
+    end
+
+    def test_broken_heredoc
+      if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.7.0')
+        skip 'This test needs Ripper::Lexer#scan to take broken tokens'
+      end
+      input_with_correct_indents = [
+        Row.new(%q(def foo), nil, 2, 1),
+        Row.new(%q(  <<~Q), nil, 2, 1),
+        Row.new(%q(  Qend), nil, 2, 1),
+      ]
+
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_indenting(lines, row.current_line_spaces, false)
+        assert_indenting(lines, row.new_line_spaces, true)
+        assert_nesting_level(lines, row.nesting_level)
+      end
+    end
+
     PromptRow = Struct.new(:prompt, :content)
 
     class MockIO_DynamicPrompt
@@ -318,6 +441,38 @@ module TestIRB
       lines = input_with_prompt.map(&:content)
       expected_prompt_list = input_with_prompt.map(&:prompt)
       assert_dynamic_prompt(lines, expected_prompt_list)
+    end
+
+    def test_broken_percent_literal
+      if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.7.0')
+        skip 'This test needs Ripper::Lexer#scan to take broken tokens'
+      end
+
+      ruby_lex = RubyLex.new
+      tokens = ruby_lex.ripper_lex_without_warning('%wwww')
+      pos_to_index = {}
+      tokens.each_with_index { |t, i|
+        assert_nil(pos_to_index[t[0]], "There is already another token in the position of #{t.inspect}.")
+        pos_to_index[t[0]] = i
+      }
+    end
+
+    def test_broken_percent_literal_in_method
+      if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.7.0')
+        skip 'This test needs Ripper::Lexer#scan to take broken tokens'
+      end
+
+      ruby_lex = RubyLex.new
+      tokens = ruby_lex.ripper_lex_without_warning(<<~EOC.chomp)
+        def foo
+          %wwww
+        end
+      EOC
+      pos_to_index = {}
+      tokens.each_with_index { |t, i|
+        assert_nil(pos_to_index[t[0]], "There is already another token in the position of #{t.inspect}.")
+        pos_to_index[t[0]] = i
+      }
     end
   end
 end

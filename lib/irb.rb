@@ -574,8 +574,33 @@ module IRB
             next
           end
           handle_exception(exc)
+          @context.workspace.local_variable_set(:_, exc)
+          exc = nil
         end
       end
+    end
+
+    def convert_invalid_byte_sequence(str)
+      str = str.force_encoding(Encoding::ASCII_8BIT)
+      conv = Encoding::Converter.new(Encoding::ASCII_8BIT, Encoding::UTF_8)
+      dst = String.new
+      begin
+        ret = conv.primitive_convert(str, dst)
+        case ret
+        when :invalid_byte_sequence
+          conv.insert_output(conf.primitive_errinfo[3].dump[1..-2])
+          redo
+        when :undefined_conversion
+          c = conv.primitive_errinfo[3].dup.force_encoding(conv.primitive_errinfo[1])
+          conv.insert_output(c.dump[1..-2])
+          redo
+        when :incomplete_input
+          conv.insert_output(conv.primitive_errinfo[3].dump[1..-2])
+        when :finished
+        end
+        break
+      end while nil
+      dst
     end
 
     def handle_exception(exc)
@@ -587,49 +612,44 @@ module IRB
         irb_bug = false
       end
 
-      if STDOUT.tty?
-        attr = ATTR_TTY
-        print "#{attr[1]}Traceback#{attr[]} (most recent call last):\n"
-      else
-        attr = ATTR_PLAIN
-      end
-      messages = []
-      lasts = []
-      levels = 0
       if exc.backtrace
-        count = 0
-        exc.backtrace.each do |m|
-          m = @context.workspace.filter_backtrace(m) or next unless irb_bug
-          count += 1
-          if attr == ATTR_TTY
-            m = sprintf("%9d: from %s", count, m)
+        order = nil
+        if '2.5.0' == RUBY_VERSION
+          # Exception#full_message doesn't have keyword arguments.
+          message = exc.full_message # the same of (highlight: true, order: bottom)
+          order = :bottom
+        elsif '2.5.1' <= RUBY_VERSION && RUBY_VERSION < '3.0.0'
+          if STDOUT.tty?
+            message = exc.full_message(order: :bottom)
+            order = :bottom
           else
-            m = "\tfrom #{m}"
+            message = exc.full_message(order: :top)
+            order = :top
           end
-          if messages.size < @context.back_trace_limit
-            messages.push(m)
-          elsif lasts.size < @context.back_trace_limit
-            lasts.push(m).shift
-            levels += 1
+        else # '3.0.0' <= RUBY_VERSION
+          message = exc.full_message(order: :top)
+          order = :top
+        end
+        message = convert_invalid_byte_sequence(message)
+        message = message.gsub(/((?:^\t.+$\n)+)/)  { |m|
+          case order
+          when :top
+            lines = m.split("\n")
+          when :bottom
+            lines = m.split("\n").reverse
           end
-        end
-      end
-      if attr == ATTR_TTY
-        unless lasts.empty?
-          puts lasts.reverse
-          printf "... %d levels...\n", levels if levels > 0
-        end
-        puts messages.reverse
-      end
-      m = exc.to_s.split(/\n/)
-      print "#{attr[1]}#{exc.class} (#{attr[4]}#{m.shift}#{attr[0, 1]})#{attr[]}\n"
-      puts m.map {|s| "#{attr[1]}#{s}#{attr[]}\n"}
-      if attr == ATTR_PLAIN
-        puts messages
-        unless lasts.empty?
-          puts lasts
-          printf "... %d levels...\n", levels if levels > 0
-        end
+          unless irb_bug
+            lines = lines.map { |l| @context.workspace.filter_backtrace(l) }.compact
+            if lines.size > @context.back_trace_limit
+              omit = lines.size - @context.back_trace_limit
+              lines = lines[0..(@context.back_trace_limit - 1)]
+              lines << "\t... %d levels..." % omit
+            end
+          end
+          lines = lines.reverse if order == :bottom
+          lines.map{ |l| l + "\n" }.join
+        }
+        puts message
       end
       print "Maybe IRB bug!\n" if irb_bug
     end
