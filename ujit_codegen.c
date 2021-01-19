@@ -689,24 +689,6 @@ gen_branchunless(jitstate_t* jit, ctx_t* ctx)
     return true;
 }
 
-void
-gen_jump_branch(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uint8_t shape)
-{
-    switch (shape)
-    {
-        case SHAPE_NEXT0:
-        break;
-
-        case SHAPE_NEXT1:
-        assert (false);
-        break;
-
-        case SHAPE_DEFAULT:
-        jmp_ptr(cb, target0);
-        break;
-    }
-}
-
 static bool
 gen_jump(jitstate_t* jit, ctx_t* ctx)
 {
@@ -720,13 +702,9 @@ gen_jump(jitstate_t* jit, ctx_t* ctx)
     //
 
     // Generate the jump instruction
-    gen_branch(
+    gen_direct_jump(
         ctx,
-        jump_block,
-        ctx,
-        BLOCKID_NULL,
-        ctx,
-        gen_jump_branch
+        jump_block
     );
 
     return true;
@@ -978,13 +956,9 @@ gen_opt_send_without_block(jitstate_t* jit, ctx_t* ctx)
     // Jump (fall through) to the call continuation block
     // We do this to end the current block after the call
     blockid_t cont_block = { jit->iseq, jit_next_idx(jit) };
-    gen_branch(
+    gen_direct_jump(
         ctx,
-        cont_block,
-        ctx,
-        BLOCKID_NULL,
-        ctx,
-        gen_jump_branch
+        cont_block
     );
 
     return true;
