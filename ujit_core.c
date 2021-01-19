@@ -292,49 +292,17 @@ void gen_branch(
 )
 {
     assert (target0.iseq != NULL);
+    assert (target1.iseq != NULL);
     assert (num_branches < MAX_BRANCHES);
     uint32_t branch_idx = num_branches++;
 
-    // Branch targets or stub adddresses (code pointers)
-    uint8_t* dst_addr0;
-    uint8_t* dst_addr1;
-
-    // Shape of the branch
-    uint8_t branch_shape;
-
-    // If there's only one branch target
-    if (target1.iseq == NULL)
-    {
-        block_t* p_block = find_block_version(target0, ctx0);
-
-        // If the version already exists
-        if (p_block)
-        {
-            add_incoming(p_block, branch_idx);
-            dst_addr0 = cb_get_ptr(cb, p_block->start_pos);
-            dst_addr1 = NULL;
-            branch_shape = SHAPE_DEFAULT;
-        }
-        else
-        {
-            // The target block will follow next
-            // It will be compiled in gen_block_version()
-            dst_addr0 = NULL;
-            dst_addr1 = NULL;
-            branch_shape = SHAPE_NEXT0;
-        }
-    }
-    else
-    {
-        // Get the branch targets or stubs
-        dst_addr0 = get_branch_target(target0, ctx0, branch_idx, 0);
-        dst_addr1 = get_branch_target(target1, ctx1, branch_idx, 1);
-        branch_shape = SHAPE_DEFAULT;
-    }
+    // Get the branch targets or stubs
+    uint8_t* dst_addr0 = get_branch_target(target0, ctx0, branch_idx, 0);
+    uint8_t* dst_addr1 = get_branch_target(target1, ctx1, branch_idx, 1);
 
     // Call the branch generation function
     uint32_t start_pos = cb->write_pos;
-    gen_fn(cb, dst_addr0, dst_addr1, branch_shape);
+    gen_fn(cb, dst_addr0, dst_addr1, SHAPE_DEFAULT);
     uint32_t end_pos = cb->write_pos;
 
     // Register this branch entry
@@ -346,6 +314,82 @@ void gen_branch(
         { *ctx0, *ctx1 },
         { dst_addr0, dst_addr1 },
         gen_fn,
+        SHAPE_DEFAULT
+    };
+
+    branch_entries[branch_idx] = branch_entry;
+}
+
+void
+gen_jump_branch(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uint8_t shape)
+{
+    switch (shape)
+    {
+        case SHAPE_NEXT0:
+        break;
+
+        case SHAPE_NEXT1:
+        assert (false);
+        break;
+
+        case SHAPE_DEFAULT:
+        jmp_ptr(cb, target0);
+        break;
+    }
+}
+
+void gen_direct_jump(
+    const ctx_t* ctx,
+    blockid_t target0
+)
+{
+    assert (target0.iseq != NULL);
+    assert (num_branches < MAX_BRANCHES);
+    uint32_t branch_idx = num_branches++;
+
+    // Branch targets or stub adddress
+    uint8_t* dst_addr0;
+
+    // Shape of the branch
+    uint8_t branch_shape;
+
+    // Branch start and end positions
+    uint32_t start_pos;
+    uint32_t end_pos;
+
+    block_t* p_block = find_block_version(target0, ctx);
+
+    // If the version already exists
+    if (p_block)
+    {
+        add_incoming(p_block, branch_idx);
+        dst_addr0 = cb_get_ptr(cb, p_block->start_pos);
+        branch_shape = SHAPE_DEFAULT;
+
+        // Call the branch generation function
+        start_pos = cb->write_pos;
+        gen_jump_branch(cb, dst_addr0, NULL, branch_shape);
+        end_pos = cb->write_pos;
+    }
+    else
+    {
+        // The target block will follow next
+        // It will be compiled in gen_block_version()
+        dst_addr0 = NULL;
+        branch_shape = SHAPE_NEXT0;
+        start_pos = cb->write_pos;
+        end_pos = cb->write_pos;
+    }
+
+    // Register this branch entry
+    branch_t branch_entry = {
+        start_pos,
+        end_pos,
+        *ctx,
+        { target0, BLOCKID_NULL },
+        { *ctx, *ctx },
+        { dst_addr0, NULL },
+        gen_jump_branch,
         branch_shape
     };
 
