@@ -189,8 +189,7 @@ uint8_t* branch_stub_hit(uint32_t branch_idx, uint32_t target_idx)
     ctx_t* target_ctx = &branch->target_ctxs[target_idx];
 
     //fprintf(stderr, "\nstub hit, branch idx: %d, target idx: %d\n", branch_idx, target_idx);
-    //fprintf(stderr, "cb->write_pos=%ld\n", cb->write_pos);
-    //fprintf(stderr, "branch->end_pos=%d\n", branch->end_pos);
+    //fprintf(stderr, "blockid.iseq=%p, blockid.idx=%d\n", target.iseq, target.idx);
 
     // If either of the target blocks will be placed next
     if (cb->write_pos == branch->end_pos)
@@ -243,6 +242,8 @@ uint8_t* get_branch_target(
     uint32_t target_idx
 )
 {
+    //fprintf(stderr, "get_branch_target, block (%p, %d)\n", target.iseq, target.idx);
+
     block_t* p_block = find_block_version(target, ctx);
 
     if (p_block)
@@ -256,8 +257,6 @@ uint8_t* get_branch_target(
     // Generate an outlined stub that will call
     // branch_stub_hit(uint32_t branch_idx, uint32_t target_idx)
     uint8_t* stub_addr = cb_get_ptr(ocb, ocb->write_pos);
-
-    //fprintf(stderr, "REQUESTING STUB FOR IDX: %d\n", target.idx);
 
     // Save the ujit registers
     push(ocb, REG_CFP);
@@ -400,9 +399,14 @@ void gen_direct_jump(
 void invalidate(block_t* block)
 {
     fprintf(stderr, "invalidating block (%p, %d)\n", block->blockid.iseq, block->blockid.idx);
+    fprintf(stderr, "block=%p\n", block);
 
     // Remove the version object from the map so we can re-generate stubs
-    st_delete(version_tbl, (st_data_t*)&block->blockid, NULL);
+    st_data_t key = (st_data_t)&block->blockid;
+    int success = st_delete(version_tbl, &key, NULL);
+    if (!success) {
+        rb_bug("failed to delete invalidated version");
+    }
 
     // Get a pointer to the generated code for this block
     uint8_t* code_ptr = cb_get_ptr(cb, block->start_pos);
@@ -413,6 +417,8 @@ void invalidate(block_t* block)
         uint32_t branch_idx = block->incoming[i];
         branch_t* branch = &branch_entries[branch_idx];
         uint32_t target_idx = (branch->dst_addrs[0] == code_ptr)? 0:1;
+        //fprintf(stderr, "branch_idx=%d, target_idx=%d\n", branch_idx, target_idx);
+        //fprintf(stderr, "blockid.iseq=%p, blockid.idx=%d\n", block->blockid.iseq, block->blockid.idx);
 
         // Create a stub for this branch target
         branch->dst_addrs[target_idx] = get_branch_target(
@@ -427,7 +433,7 @@ void invalidate(block_t* block)
 
         if (target_next)
         {
-            // Reset the branch shape
+            // The new block will no longer be adjacent
             branch->shape = SHAPE_DEFAULT;
         }
 
@@ -466,15 +472,17 @@ void invalidate(block_t* block)
     // Call continuation addresses on the stack can also be atomically replaced by jumps going to the stub.
     // For now this isn't an issue
 
-    // Free the block version object
+    // Free the old block version object
     free(block);
+
+    fprintf(stderr, "invalidation done\n");
 }
 
 int blockid_cmp(st_data_t arg0, st_data_t arg1)
 {
     const blockid_t *block0 = (const blockid_t*)arg0;
     const blockid_t *block1 = (const blockid_t*)arg1;
-    return block0->iseq == block1->iseq && block0->idx == block1->idx;
+    return (block0->iseq == block1->iseq) && (block0->idx == block1->idx);
 }
 
 st_index_t blockid_hash(st_data_t arg)
