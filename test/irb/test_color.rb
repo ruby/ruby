@@ -19,7 +19,6 @@ module TestIRB
     CYAN      = "\e[36m"
 
     def setup
-      super
       @get_screen_size = Reline.method(:get_screen_size)
       Reline.instance_eval { undef :get_screen_size }
       def Reline.get_screen_size
@@ -30,7 +29,6 @@ module TestIRB
     def teardown
       Reline.instance_eval { undef :get_screen_size }
       Reline.define_singleton_method(:get_screen_size, @get_screen_size)
-      super
     end
 
     def test_colorize_code
