@@ -281,7 +281,7 @@ usage(const char *name, int help, int highlight, int columns)
 	M("-Cdirectory",   "",			   "cd to directory before executing your script"),
 	M("-d",		   ", --debug",		   "set debugging flags (set $DEBUG to true)"),
 	M("-e 'command'",  "",			   "one line of script. Several -e's allowed. Omit [programfile]"),
-	M("-Eex[:in]",     ", --encoding=ex[:in]", "specify the default external and internal character encodings"),
+	M("-Eexternal-encoding[:internal-encoding]",", --encoding=external-encoding[:internal-encoding]","specify the default external and internal character encodings"),
 	M("-Fpattern",	   "",			   "split() pattern for autosplit (-a)"),
 	M("-i[extension]", "",			   "edit ARGV files in place (make backup if extension supplied)"),
 	M("-Idirectory",   "",			   "specify $LOAD_PATH directory (may be used more than once)"),
