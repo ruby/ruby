@@ -778,6 +778,7 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_inlined_builtin_methods
+    verbose_bak, $VERBOSE = $VERBOSE, nil
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '', success_count: 1, min_calls: 2)
     begin;
       def test
@@ -789,6 +790,8 @@ class TestJIT < Test::Unit::TestCase
       test
       test
     end;
+  ensure
+    $VERBOSE = verbose_bak
   end
 
   def test_inlined_c_method
