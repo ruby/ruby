@@ -11528,37 +11528,43 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  == What's Here
  *
  *  === Methods for Creating a \String
- *  - ::new::
- *  - ::try_convert::
+
+ *  - ::new:: Returns a new string.
+ *  - ::try_convert:: Returns a new string created from a given object.
+ *
  *  === Methods for Setting \String State
- *  - #+@::
- *  - #-@::
- *  - #freeze::
+ *
+ *  - {#+string}[#method-i-2B-40]:: Returns a string that is not frozen:
+   *                                +self+, of not frozen; +self.dup+ otherwise.
+ *  - {#-string}[#method-i-2D-40]:: Returns a frozen copy of +self+.
+ *  - #freeze:: Freezes +self+, if not already frozen; returns +self+.
+ *
  *  === Methods for Querying
- *  - #=~::
- *  - #ascii_only?::
- *  - #bytesize::
- *  - #count::
- *  - #empty?::
- *  - #encoding::
- *  - #end_with?::
- *  - #eql?::
- *  - #hash::
- *  - #include?::
- *  - #index::
- *  - #iseuc::
- *  - #isjis::
- *  - #issjis::
- *  - #isutf8::
- *  - #length::
- *  - #match::
- *  - #match?::
- *  - #rindex::
- *  - #size::
- *  - #start_with?::
- *  - #sum::
- *  - #unicode_normalized?::
- *  - #valid_encoding?::
+ *
+ *  - {#=~}[#method-i-3D~]:: Returns the index of the first substring that matches a given Regexp or other object;
+ *                           returns +nil+ if no match is found.
+ *  - #ascii_only?:: Returns +true+ if the string has only ASCII characters; +false+ otherwise.
+ *  - #bytesize:: Returns the count of bytes.
+ *  - #count:: Returns the count of substrings matching given strings.
+ *  - #empty?:: Returns +true+ if +self.length+ is zero; +false+ otherwise.
+ *  - #encoding:: Returns the Encoding object associated with the string.
+ *  - #end_with?:: Returns +true+ if the string ends with any of the given substrings.
+ *  - #eql?:: Returns +true+ if the content is the same a a given other string.
+ *  - #hash:: Returns the integer hash code.
+ *  - #include?:: Returns +true+ if the string contains a given substring; +false+ otherwise.
+ *  - #index:: Returns the index of the first occurrence of a given substring;
+ *             returns +nil+ if none found.
+ *  - #length, #size:: Returns the count of characters (not bytes).
+ *  - #match:: Returns a MatchData object if the string matches a given Regexp; +nil+ otherwise.
+ *  - #match?:: Returns +true+ if the string matches a given Regexp; +false+ otherwise.
+ *  - #index:: Returns the index of the _last_ occurrence of a given substring;
+ *             returns +nil+ if none found.
+ *  - #start_with?:: Returns +true+ if the string begins with any of the given substrings.
+ *  - #sum:: Returns a basic checksum for the string.
+ *  - #unicode_normalized?:: Returns +true+ if the string is in Unicode normalized form; +false+ otherwise.
+ *  - #valid_encoding?:: Returns +true+ if the string contains only characters that are valid
+ *                       for its encoding.
+ *
  *  === Methods for Comparing
  *  - #<=>::
  *  - #==::
@@ -11679,6 +11685,8 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  - #encode!::
  *  - #encoding::
  *  - #force_encoding::
+ *  - #valid_encoding?:: Returns +true+ if the string contains only characters that are valid
+ *                       for its encoding.
  *  === Other Methods
  *  - #shellescape::
  *  - #shellsplit::
