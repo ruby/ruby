@@ -4,7 +4,7 @@ require 'irb/color'
 
 module IRB
   class ColorPrinter < ::PP
-    def self.pp(obj, out = $>, width = 79)
+    def self.pp(obj, out = $>, width = Reline.get_screen_size.last)
       q = ColorPrinter.new(out, width)
       q.guard_inspect_key {q.pp obj}
       q.flush
