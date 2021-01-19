@@ -2620,7 +2620,7 @@ rb_mod_ruby2_keywords(int argc, VALUE *argv, VALUE module)
             rb_warn("Skipping set of ruby2_keywords flag for %s (can only set in method defining module)", rb_id2name(name));
         }
     }
-    return Qnil;
+    return module;
 }
 
 /*
@@ -2713,7 +2713,7 @@ top_private(int argc, VALUE *argv, VALUE _)
 
 /*
  *  call-seq:
- *     ruby2_keywords(method_name, ...) -> self
+ *     ruby2_keywords(method_name, ...)
  *
  *  For the given method names, marks the method as passing keywords through
  *  a normal argument splat.  See Module#ruby2_keywords in detail.
