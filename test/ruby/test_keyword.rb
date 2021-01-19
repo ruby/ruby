@@ -2654,7 +2654,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([[1, h1], {}], o.foo(:pass_cfunc, 1, :a=>1))
 
     assert_warn(/Skipping set of ruby2_keywords flag for bar \(method accepts keywords or method does not accept argument splat\)/) do
-      assert_nil(c.send(:ruby2_keywords, :bar))
+      c.send(:ruby2_keywords, :bar)
     end
 
     o = Object.new
@@ -2662,7 +2662,7 @@ class TestKeywordArguments < Test::Unit::TestCase
       alias bar p
     end
     assert_warn(/Skipping set of ruby2_keywords flag for bar \(method not defined in Ruby\)/) do
-      assert_nil(o.singleton_class.send(:ruby2_keywords, :bar))
+      o.singleton_class.send(:ruby2_keywords, :bar)
     end
     sc = Class.new(c)
     assert_warn(/Skipping set of ruby2_keywords flag for bar \(can only set in method defining module\)/) do
