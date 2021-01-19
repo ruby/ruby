@@ -2208,7 +2208,7 @@ rb_mod_ruby2_keywords(int argc, VALUE *argv, VALUE module)
                     else {
                         rb_warn("Skipping set of ruby2_keywords flag for %s (method accepts keywords or method does not accept argument splat)", rb_id2name(name));
                     }
-                    return Qnil;
+                    break;
                 }
               }
               /* fallthrough */
