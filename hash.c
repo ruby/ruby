@@ -6845,7 +6845,10 @@ env_update(VALUE env, VALUE hash)
  *
  *  === What's Here
  *
- *  \Class \Hash provides methods that are useful for:
+ *  First, what's elsewhere. \Hash includes the module Enumerable,
+ *  which provides dozens of additional methods.
+ *
+ *  Here, class \Hash provides methods that are useful for:
  *
  *  - {Creating a Hash}[#class-Hash-label-Methods+for+Creating+a+Hash]
  *  - {Setting Hash State}[#class-Hash-label-Methods+for+Setting+Hash+State]
