@@ -67,4 +67,10 @@ describe 'Socket.tcp' do
       connection.close
     end
   end
+
+  it 'accepts tcp timeout' do
+    @client = Socket.tcp(@host, @port, resolv_timeout: 1)
+    @client.write('hello')
+    @client.close
+  end
 end

@@ -760,6 +760,11 @@ module Net   #:nodoc:
     # Net::OpenTimeout exception. The default value is 60 seconds.
     attr_accessor :open_timeout
 
+    # Specify the DNS name resolution timeout in seconds. If the name
+    # cannot be resolved in this many seconds, it raises a
+    # SocketError exception. The default value is set by operation system.
+    attr_accessor :resolv_timeout
+
     # Number of seconds to wait for one block to be read (via one read(2)
     # call). Any number may be used, including Floats for fractional
     # seconds. If the HTTP object cannot read data in this many seconds,
@@ -981,14 +986,15 @@ module Net   #:nodoc:
       end
 
       D "opening connection to #{conn_addr}:#{conn_port}..."
-      s = Timeout.timeout(@open_timeout, Net::OpenTimeout) {
+      s =
         begin
-          TCPSocket.open(conn_addr, conn_port, @local_host, @local_port)
+          Socket.tcp(conn_address, conn_port, @local_host, @local_port, connect_timeout: @open_timeout, resolv_timeout: @resolv_timeout)
+        rescue Errno::ETIMEDOUT
+          raise Net::OpenTimeout
         rescue => e
           raise e, "Failed to open TCP connection to " +
             "#{conn_addr}:#{conn_port} (#{e.message})"
         end
-      }
       s.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1)
       D "opened"
       if use_ssl?
