@@ -125,6 +125,11 @@ void gen_branch(
     branchgen_fn gen_fn
 );
 
+void gen_direct_jump(
+    const ctx_t* ctx,
+    blockid_t target0
+);
+
 void invalidate(block_t* block);
 
 void ujit_init_core(void);
