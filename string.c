@@ -11545,6 +11545,8 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *                           returns +nil+ if no match is found.
  *  - #ascii_only?:: Returns +true+ if the string has only ASCII characters; +false+ otherwise.
  *  - #bytesize:: Returns the count of bytes.
+ *  - #casecmp?:: Returns +true+ if the string is equal to a given string after Unicode case folding;
+ *                +false+ otherwise.
  *  - #count:: Returns the count of substrings matching given strings.
  *  - #empty?:: Returns +true+ if +self.length+ is zero; +false+ otherwise.
  *  - #encoding:: Returns the Encoding object associated with the string.
@@ -11566,17 +11568,23 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *                       for its encoding.
  *
  *  === Methods for Comparing
+ *
  *  - #<=>::
  *  - #==::
  *  - #===::
  *  - #casecmp::
- *  - #casecmp?::
+ *  - #casecmp?:: Returns +true+ if the string is equal to a given string after Unicode case folding;
+ *                +false+ otherwise.
+ *
  *  === Methods for Fetching
+ *
  *  - #[], #slice::
  *  - #byteslice::
  *  - #chr::
  *  - #getbyte::
+ *
  *  === Methods for Modifying
+ *
  *  - #<<::
  *  - #[]=::
  *  - #capitalize!::
@@ -11597,7 +11605,9 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  - #swapcase!::
  *  - #tr!::
  *  - #tr_s!::
+ *
  *  === Methods for Deleting
+ *
  *  - #chomp!::
  *  - #chop!::
  *  - #clear
@@ -11612,14 +11622,18 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  - #strip!::
  *  - #unicode_normalize!::
  *  - #upcase!::
+ *
  *  === Methods for Iterating
+ *
  *  - #each_byte::
  *  - #each_char::
  *  - #each_codepoint::
  *  - #each_grapheme_cluster::
  *  - #each_line::
  *  - #upto::
+ *
  *  === Methods for Converting
+ *
  *  - #%::
  *  - #*::
  *  - #+::
@@ -11679,7 +11693,9 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  - #unpack::
  *  - #unpack1::
  *  - #upcase::
+ *
  *  === Methods for Encoding
+ *
  *  - #b::
  *  - #encode::
  *  - #encode!::
@@ -11687,7 +11703,9 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  - #force_encoding::
  *  - #valid_encoding?:: Returns +true+ if the string contains only characters that are valid
  *                       for its encoding.
+ *
  *  === Other Methods
+ *
  *  - #shellescape::
  *  - #shellsplit::
  */
