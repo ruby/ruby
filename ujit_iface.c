@@ -14,6 +14,17 @@
 #include "ujit_core.h"
 #include "ujit_hooks.inc"
 
+VALUE cUjitBlock;
+
+extern st_table * version_tbl;
+extern codeblock_t *cb;
+
+static const rb_data_type_t ujit_block_type = {
+    "UJIT/Block",
+    {0, 0, 0, },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+};
+
 bool rb_ujit_enabled;
 
 // Hash table of encoded instructions
@@ -288,6 +299,87 @@ rb_ujit_compile_iseq(const rb_iseq_t *iseq)
 #endif
 }
 
+struct ujit_block_itr {
+    const rb_iseq_t *iseq;
+    VALUE list;
+};
+
+static int
+iseqw_ujit_collect_blocks(st_data_t key, st_data_t value, st_data_t argp)
+{
+    block_t * block = (block_t *)value;
+    struct ujit_block_itr * itr = (struct ujit_block_itr *)argp;
+
+    if (block->blockid.iseq == itr->iseq) {
+        VALUE rb_block = TypedData_Wrap_Struct(cUjitBlock, &ujit_block_type, block);
+        rb_ary_push(itr->list, rb_block);
+    }
+    return ST_CONTINUE;
+}
+
+/* Get a list of the UJIT blocks associated with `rb_iseq` */
+static VALUE
+ujit_blocks_for(VALUE mod, VALUE rb_iseq)
+{
+    const rb_iseq_t *iseq = rb_iseqw_to_iseq(rb_iseq);
+    st_table * vt = (st_table *)version_tbl;
+    struct ujit_block_itr itr;
+    itr.iseq = iseq;
+    itr.list = rb_ary_new();
+
+    rb_st_foreach(vt, iseqw_ujit_collect_blocks, (st_data_t)&itr);
+
+    return itr.list;
+}
+
+static VALUE
+ujit_insert(VALUE mod, VALUE iseq)
+{
+    rb_ujit_compile_iseq(rb_iseqw_to_iseq(iseq));
+    return iseq;
+}
+
+/* Get the address of the UJIT::Block */
+static VALUE
+block_address(VALUE self)
+{
+    block_t * block;
+    TypedData_Get_Struct(self, block_t, &ujit_block_type, block);
+    return LONG2NUM((intptr_t)block);
+}
+
+/* Get the machine code for UJIT::Block as a binary string */
+static VALUE
+block_code(VALUE self)
+{
+    block_t * block;
+    TypedData_Get_Struct(self, block_t, &ujit_block_type, block);
+
+    return rb_str_new(cb->mem_block + block->start_pos, block->end_pos - block->start_pos);
+}
+
+/* Get the start index in the Instruction Sequence that corresponds to this
+ * UJIT::Block */
+static VALUE
+iseq_start_index(VALUE self)
+{
+    block_t * block;
+    TypedData_Get_Struct(self, block_t, &ujit_block_type, block);
+
+    return INT2NUM(block->blockid.idx);
+}
+
+/* Get the end index in the Instruction Sequence that corresponds to this
+ * UJIT::Block */
+static VALUE
+iseq_end_index(VALUE self)
+{
+    block_t * block;
+    TypedData_Get_Struct(self, block_t, &ujit_block_type, block);
+
+    return INT2NUM(block->end_idx);
+}
+
 void
 rb_ujit_init(void)
 {
@@ -300,6 +392,16 @@ rb_ujit_init(void)
 
     ujit_init_core();
     ujit_init_codegen();
+
+    VALUE mUjit = rb_define_module("UJIT");
+    rb_define_module_function(mUjit, "install_entry", ujit_insert, 1);
+    rb_define_module_function(mUjit, "blocks_for", ujit_blocks_for, 1);
+
+    cUjitBlock = rb_define_class_under(mUjit, "Block", rb_cObject);
+    rb_define_method(cUjitBlock, "address", block_address, 0);
+    rb_define_method(cUjitBlock, "code", block_code, 0);
+    rb_define_method(cUjitBlock, "iseq_start_index", iseq_start_index, 0);
+    rb_define_method(cUjitBlock, "iseq_end_index", iseq_end_index, 0);
 
     // Initialize the GC hooks
     method_lookup_dependency = st_init_numtable();
