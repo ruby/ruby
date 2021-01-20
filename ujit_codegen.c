@@ -230,8 +230,8 @@ static bool
 gen_dup(jitstate_t* jit, ctx_t* ctx)
 {
     x86opnd_t dup_val = ctx_stack_pop(ctx, 1);
-    x86opnd_t loc0 = ctx_stack_push(ctx, 1);
-    x86opnd_t loc1 = ctx_stack_push(ctx, 1);
+    x86opnd_t loc0 = ctx_stack_push(ctx, T_NONE);
+    x86opnd_t loc1 = ctx_stack_push(ctx, T_NONE);
     mov(cb, RAX, dup_val);
     mov(cb, loc0, RAX);
     mov(cb, loc1, RAX);
@@ -257,7 +257,7 @@ static bool
 gen_putnil(jitstate_t* jit, ctx_t* ctx)
 {
     // Write constant at SP
-    x86opnd_t stack_top = ctx_stack_push(ctx, 1);
+    x86opnd_t stack_top = ctx_stack_push(ctx, T_NIL);
     mov(cb, stack_top, imm_opnd(Qnil));
     return true;
 }
@@ -272,7 +272,7 @@ gen_putobject(jitstate_t* jit, ctx_t* ctx)
     mov(cb, RAX, mem_opnd(64, RAX, 8)); // One after the opcode
 
     // Write argument at SP
-    x86opnd_t stack_top = ctx_stack_push(ctx, 1);
+    x86opnd_t stack_top = ctx_stack_push(ctx, T_NONE);
     mov(cb, stack_top, RAX);
 
     return true;
@@ -285,7 +285,7 @@ gen_putobject_int2fix(jitstate_t* jit, ctx_t* ctx)
     int cst_val = (opcode == BIN(putobject_INT2FIX_0_))? 0:1;
 
     // Write constant at SP
-    x86opnd_t stack_top = ctx_stack_push(ctx, 1);
+    x86opnd_t stack_top = ctx_stack_push(ctx, T_FIXNUM);
     mov(cb, stack_top, imm_opnd(INT2FIX(cst_val)));
 
     return true;
@@ -298,7 +298,7 @@ gen_putself(jitstate_t* jit, ctx_t* ctx)
     mov(cb, RAX, member_opnd(REG_CFP, rb_control_frame_t, self));
 
     // Write it on the stack
-    x86opnd_t stack_top = ctx_stack_push(ctx, 1);
+    x86opnd_t stack_top = ctx_stack_push(ctx, T_NONE);
     mov(cb, stack_top, RAX);
 
     return true;
@@ -318,7 +318,7 @@ gen_getlocal_wc0(jitstate_t* jit, ctx_t* ctx)
     mov(cb, REG0, mem_opnd(64, REG0, offs));
 
     // Write the local at SP
-    x86opnd_t stack_top = ctx_stack_push(ctx, 1);
+    x86opnd_t stack_top = ctx_stack_push(ctx, T_NONE);
     mov(cb, stack_top, REG0);
 
     return true;
@@ -437,7 +437,7 @@ gen_getinstancevariable(jitstate_t* jit, ctx_t* ctx)
     je_ptr(cb, side_exit);
 
     // Push the ivar on the stack
-    x86opnd_t out_opnd = ctx_stack_push(ctx, 1);
+    x86opnd_t out_opnd = ctx_stack_push(ctx, T_NONE);
     mov(cb, out_opnd, REG0);
 
     return true;
@@ -549,7 +549,7 @@ gen_opt_lt(jitstate_t* jit, ctx_t* ctx)
     cmovl(cb, REG0, REG1);
 
     // Push the output on the stack
-    x86opnd_t dst = ctx_stack_push(ctx, 1);
+    x86opnd_t dst = ctx_stack_push(ctx, T_NONE);
     mov(cb, dst, REG0);
 
     return true;
@@ -589,7 +589,7 @@ gen_opt_minus(jitstate_t* jit, ctx_t* ctx)
     add(cb, REG0, imm_opnd(1));
 
     // Push the output on the stack
-    x86opnd_t dst = ctx_stack_push(ctx, 1);
+    x86opnd_t dst = ctx_stack_push(ctx, T_NONE);
     mov(cb, dst, REG0);
 
     return true;
@@ -613,14 +613,20 @@ gen_opt_plus(jitstate_t* jit, ctx_t* ctx)
     jnz_ptr(cb, side_exit);
 
     // Get the operands and destination from the stack
+    int arg1_type = ctx_get_top_type(ctx);
     x86opnd_t arg1 = ctx_stack_pop(ctx, 1);
+    int arg0_type = ctx_get_top_type(ctx);
     x86opnd_t arg0 = ctx_stack_pop(ctx, 1);
 
     // If not fixnums, fall back
-    test(cb, arg0, imm_opnd(RUBY_FIXNUM_FLAG));
-    jz_ptr(cb, side_exit);
-    test(cb, arg1, imm_opnd(RUBY_FIXNUM_FLAG));
-    jz_ptr(cb, side_exit);
+    if (arg0_type != T_FIXNUM) {
+        test(cb, arg0, imm_opnd(RUBY_FIXNUM_FLAG));
+        jz_ptr(cb, side_exit);
+    }
+    if (arg1_type != T_FIXNUM) {
+        test(cb, arg1, imm_opnd(RUBY_FIXNUM_FLAG));
+        jz_ptr(cb, side_exit);
+    }
 
     // Add arg0 + arg1 and test for overflow
     mov(cb, REG0, arg0);
@@ -629,7 +635,7 @@ gen_opt_plus(jitstate_t* jit, ctx_t* ctx)
     jo_ptr(cb, side_exit);
 
     // Push the output on the stack
-    x86opnd_t dst = ctx_stack_push(ctx, 1);
+    x86opnd_t dst = ctx_stack_push(ctx, T_NONE);
     mov(cb, dst, REG0);
 
     return true;
@@ -938,7 +944,7 @@ gen_opt_send_without_block(jitstate_t* jit, ctx_t* ctx)
     pop(cb, REG_CFP);
 
     // Push the return value on the Ruby stack
-    x86opnd_t stack_ret = ctx_stack_push(ctx, 1);
+    x86opnd_t stack_ret = ctx_stack_push(ctx, T_NONE);
     mov(cb, stack_ret, RAX);
 
     // If this function needs a Ruby stack frame

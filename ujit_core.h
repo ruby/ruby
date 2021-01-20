@@ -112,13 +112,11 @@ typedef struct BlockVersion
 } block_t;
 
 // Context object methods
-int ctx_get_opcode(ctx_t *ctx);
-uint32_t ctx_next_idx(ctx_t* ctx);
-VALUE ctx_get_arg(ctx_t* ctx, size_t arg_idx);
 x86opnd_t ctx_sp_opnd(ctx_t* ctx, int32_t offset_bytes);
-x86opnd_t ctx_stack_push(ctx_t* ctx, size_t n);
+x86opnd_t ctx_stack_push(ctx_t* ctx, int type);
 x86opnd_t ctx_stack_pop(ctx_t* ctx, size_t n);
 x86opnd_t ctx_stack_opnd(ctx_t* ctx, int32_t idx);
+int ctx_get_top_type(ctx_t* ctx);
 
 block_t* find_block_version(blockid_t blockid, const ctx_t* ctx);
 block_t* gen_block_version(blockid_t blockid, const ctx_t* ctx);
