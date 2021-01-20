@@ -17,19 +17,6 @@ module TestIRB
     MAGENTA   = "\e[35m"
     CYAN      = "\e[36m"
 
-    def setup
-      @get_screen_size = Reline.method(:get_screen_size)
-      Reline.instance_eval { undef :get_screen_size }
-      def Reline.get_screen_size
-        [36, 80]
-      end
-    end
-
-    def teardown
-      Reline.instance_eval { undef :get_screen_size }
-      Reline.define_singleton_method(:get_screen_size, @get_screen_size)
-    end
-
     def test_colorize_code
       # Common behaviors. Warn parser error, but do not warn compile error.
       tests = {
