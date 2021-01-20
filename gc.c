@@ -1625,10 +1625,18 @@ rb_objspace_alloc(void)
     list_head_init(&objspace->tomb_heap.pages);
 
 #ifdef USE_THIRD_PARTY_HEAP
-#ifndef THIRD_PARTY_HEAP_LIMIT
-#define THIRD_PARTY_HEAP_LIMIT (gc_params.heap_init_slots * sizeof(RVALUE))
-#endif
-    gc_init(THIRD_PARTY_HEAP_LIMIT);
+    const char *envval;
+    long heap_size;
+    if ((envval = getenv("THIRD_PARTY_HEAP_LIMIT")) != 0) {
+	    heap_size = atol(envval);
+    } else {
+        heap_size = gc_params.heap_init_slots * sizeof(RVALUE);
+    }
+
+    // Note: this limit is currently broken for NoGC, but we still attempt to
+    // initialise it properly regardless.
+    // See https://github.com/mmtk/mmtk-core/issues/214
+    gc_init(heap_size);
     objspace->mutator = bind_mutator(10); // TODO replace with pointer to start of TLS
 #endif
 
