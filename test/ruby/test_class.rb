@@ -730,4 +730,11 @@ class TestClass < Test::Unit::TestCase
     end;
 
   end
+
+  def test_assign_frozen_class_to_const
+    c = Class.new.freeze
+    assert_same(c, Module.new.module_eval("self::Foo = c"))
+    c = Class.new.freeze
+    assert_same(c, Module.new.const_set(:Foo, c))
+  end
 end
