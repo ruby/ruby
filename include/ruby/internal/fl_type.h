@@ -22,6 +22,7 @@
  */
 #include "ruby/internal/config.h"      /* for ENUM_OVER_INT */
 #include "ruby/internal/attr/artificial.h"
+#include "ruby/internal/attr/deprecated.h"
 #include "ruby/internal/attr/flag_enum.h"
 #include "ruby/internal/attr/forceinline.h"
 #include "ruby/internal/attr/noalias.h"
@@ -165,9 +166,13 @@ ruby_fl_type {
     RUBY_FL_PROMOTED1    = (1<<6),
     RUBY_FL_PROMOTED     = RUBY_FL_PROMOTED0 | RUBY_FL_PROMOTED1,
     RUBY_FL_FINALIZE     = (1<<7),
-    RUBY_FL_TAINT        = (1<<8),
+    RUBY_FL_TAINT
+    RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
+                         = (1<<8),
     RUBY_FL_SHAREABLE    = (1<<8),
-    RUBY_FL_UNTRUSTED    = RUBY_FL_TAINT,
+    RUBY_FL_UNTRUSTED
+    RBIMPL_ATTR_DEPRECATED(("trustedness turned out to be a wrong idea."))
+                         = (1<<8),
     RUBY_FL_SEEN_OBJ_ID  = (1<<9),
     RUBY_FL_EXIVAR       = (1<<10),
     RUBY_FL_FREEZE       = (1<<11),
@@ -359,6 +364,7 @@ RB_FL_REVERSE(VALUE obj, VALUE flags)
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
 static inline bool
 RB_OBJ_TAINTABLE(VALUE obj)
 {
@@ -367,6 +373,7 @@ RB_OBJ_TAINTABLE(VALUE obj)
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
 static inline VALUE
 RB_OBJ_TAINTED_RAW(VALUE obj)
 {
@@ -375,6 +382,7 @@ RB_OBJ_TAINTED_RAW(VALUE obj)
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
 static inline bool
 RB_OBJ_TAINTED(VALUE obj)
 {
@@ -382,6 +390,7 @@ RB_OBJ_TAINTED(VALUE obj)
 }
 
 RBIMPL_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
 static inline void
 RB_OBJ_TAINT_RAW(VALUE obj)
 {
@@ -389,6 +398,7 @@ RB_OBJ_TAINT_RAW(VALUE obj)
 }
 
 RBIMPL_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
 static inline void
 RB_OBJ_TAINT(VALUE obj)
 {
@@ -396,6 +406,7 @@ RB_OBJ_TAINT(VALUE obj)
 }
 
 RBIMPL_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
 static inline void
 RB_OBJ_INFECT_RAW(VALUE dst, VALUE src)
 {
@@ -403,6 +414,7 @@ RB_OBJ_INFECT_RAW(VALUE dst, VALUE src)
 }
 
 RBIMPL_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
 static inline void
 RB_OBJ_INFECT(VALUE dst, VALUE src)
 {
