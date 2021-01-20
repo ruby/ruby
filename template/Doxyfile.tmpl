@@ -2221,6 +2221,7 @@ PREDEFINED            += COLDFUNC=
 PREDEFINED            += CONSTFUNC(_)=_
 PREDEFINED            += DEPRECATED(_)=_
 PREDEFINED            += DEPRECATED_BY(__,_)=_
+PREDEFINED            += ENUM_OVER_INT=1
 PREDEFINED            += ERRORFUNC(__,_)=_
 PREDEFINED            += MJIT_FUNC_EXPORTED=
 PREDEFINED            += MJIT_STATIC=extern
@@ -2265,6 +2266,7 @@ PREDEFINED            += __has_warning(_)=1
 # This tag requires that the tag ENABLE_PREPROCESSING is set to YES.
 
 EXPAND_AS_DEFINED      =
+EXPAND_AS_DEFINED     += RBIMPL_FL_USER_N
 
 # If the SKIP_FUNCTION_MACROS tag is set to YES then doxygen's preprocessor will
 # remove all references to function-like macros that are alone on a line, have
