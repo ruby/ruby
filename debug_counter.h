@@ -62,6 +62,9 @@ RB_DEBUG_COUNTER(ccs_not_found)  // count for not found corresponding ccs on met
 // vm_eval.c
 RB_DEBUG_COUNTER(call0_public)
 RB_DEBUG_COUNTER(call0_other)
+RB_DEBUG_COUNTER(gccct_hit)
+RB_DEBUG_COUNTER(gccct_miss)
+RB_DEBUG_COUNTER(gccct_null)
 
 // iseq
 RB_DEBUG_COUNTER(iseq_num)    // number of total created iseq
