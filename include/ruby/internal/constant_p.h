@@ -28,6 +28,7 @@
  */
 #include "ruby/internal/has/builtin.h"
 
+/** Wraps (or simulates) `__builtin_constant_p` */
 #if RBIMPL_HAS_BUILTIN(__builtin_constant_p)
 # define RBIMPL_CONSTANT_P(expr) __builtin_constant_p(expr)
 #else
