@@ -31,13 +31,18 @@ ctx_sp_opnd(ctx_t* ctx, int32_t offset_bytes)
 }
 
 /*
-Make space on the stack for N values
+Push one new value on the temp stack
 Return a pointer to the new stack top
 */
 x86opnd_t
-ctx_stack_push(ctx_t* ctx, size_t n)
+ctx_stack_push(ctx_t* ctx, int type)
 {
-    ctx->stack_size += n;
+    // Keep track of the type of the value
+    RUBY_ASSERT(type <= RUBY_T_MASK);
+    if (ctx->stack_size < MAX_TEMP_TYPES)
+        ctx->temp_types[ctx->stack_size] = type;
+
+    ctx->stack_size += 1;
 
     // SP points just above the topmost value
     int32_t offset = (ctx->stack_size - 1) * 8;
@@ -51,15 +56,28 @@ Return a pointer to the stack top before the pop operation
 x86opnd_t
 ctx_stack_pop(ctx_t* ctx, size_t n)
 {
+    RUBY_ASSERT(n <= ctx->stack_size);
+
     // SP points just above the topmost value
     int32_t offset = (ctx->stack_size - 1) * 8;
     x86opnd_t top = mem_opnd(64, REG_SP, offset);
+
+    // Clear the types of the popped values
+    for (size_t i = 0; i < n; ++i)
+    {
+        size_t idx = ctx->stack_size - i - 1;
+        if (idx < MAX_TEMP_TYPES)
+            ctx->temp_types[idx] = T_NONE;
+    }
 
     ctx->stack_size -= n;
 
     return top;
 }
 
+/**
+Get an operand pointing to a slot on the temp stack
+*/
 x86opnd_t
 ctx_stack_opnd(ctx_t* ctx, int32_t idx)
 {
@@ -68,6 +86,21 @@ ctx_stack_opnd(ctx_t* ctx, int32_t idx)
     x86opnd_t opnd = mem_opnd(64, REG_SP, offset);
 
     return opnd;
+}
+
+/**
+Get the type of the topmost value on the temp stack
+Returns T_NONE if unknown
+*/
+int
+ctx_get_top_type(ctx_t* ctx)
+{
+    RUBY_ASSERT(n <= ctx->stack_size);
+
+    if (ctx->stack_size > MAX_TEMP_TYPES)
+        return T_NONE;
+
+    return ctx->temp_types[ctx->stack_size - 1];
 }
 
 // Add an incoming branch for a given block version
