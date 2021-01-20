@@ -41,6 +41,7 @@ bool rb_ujit_enabled_p(void)
     return rb_ujit_enabled;
 }
 
+// Threshold==1 means compile on first execution
 #define UJIT_CALL_THRESHOLD (2u)
 
 void rb_ujit_method_lookup_change(VALUE cme_or_cc);

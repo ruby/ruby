@@ -912,7 +912,6 @@ gen_opt_send_without_block(jitstate_t* jit, ctx_t* ctx)
     for (int32_t i = 0; i < argc + 1; ++i)
     {
         x86opnd_t stack_opnd = mem_opnd(64, RAX, -(argc + 1 - i) * 8);
-        //print_ptr(cb, stack_opnd);
         x86opnd_t c_arg_reg = C_ARG_REGS[i];
         mov(cb, c_arg_reg, stack_opnd);
     }

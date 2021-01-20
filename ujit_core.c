@@ -3,6 +3,7 @@
 #include "builtin.h"
 #include "insns.inc"
 #include "insns_info.inc"
+#include "vm_sync.h"
 #include "ujit_asm.h"
 #include "ujit_utils.h"
 #include "ujit_iface.h"
@@ -162,7 +163,7 @@ uint8_t* gen_entry_point(const rb_iseq_t *iseq, uint32_t insn_idx)
 {
     // The entry context makes no assumptions about types
     blockid_t blockid = { iseq, insn_idx };
-    ctx_t ctx = { 0 };
+    ctx_t ctx = { { 0 }, 0 };
 
     // Write the interpreter entry prologue
     uint8_t* code_ptr = ujit_entry_prologue();
@@ -183,6 +184,10 @@ uint8_t* gen_entry_point(const rb_iseq_t *iseq, uint32_t insn_idx)
 // Triggers compilation of branches and code patching
 uint8_t* branch_stub_hit(uint32_t branch_idx, uint32_t target_idx)
 {
+    uint8_t* dst_addr;
+
+    RB_VM_LOCK_ENTER();
+
     assert (branch_idx < num_branches);
     assert (target_idx < 2);
     branch_t *branch = &branch_entries[branch_idx];
@@ -217,7 +222,7 @@ uint8_t* branch_stub_hit(uint32_t branch_idx, uint32_t target_idx)
     add_incoming(p_block, branch_idx);
 
     // Update the branch target address
-    uint8_t* dst_addr = cb_get_ptr(cb, p_block->start_pos);
+    dst_addr = cb_get_ptr(cb, p_block->start_pos);
     branch->dst_addrs[target_idx] = dst_addr;
 
     // Rewrite the branch with the new jump target address
@@ -229,6 +234,8 @@ uint8_t* branch_stub_hit(uint32_t branch_idx, uint32_t target_idx)
     assert (cb->write_pos <= branch->end_pos);
     branch->end_pos = cb->write_pos;
     cb_set_pos(cb, cur_pos);
+
+    RB_VM_LOCK_LEAVE();
 
     // Return a pointer to the compiled block version
     return dst_addr;
