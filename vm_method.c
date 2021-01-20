@@ -1196,11 +1196,10 @@ rb_method_entry_with_refinements(VALUE klass, ID id, VALUE *defined_class_ptr)
 }
 
 static const rb_callable_method_entry_t *
-callable_method_entry_refeinements(VALUE klass, ID id, VALUE *defined_class_ptr, bool with_refinements)
+callable_method_entry_refeinements0(VALUE klass, ID id, VALUE *defined_class_ptr, bool with_refinements,
+                                    const rb_callable_method_entry_t *cme)
 {
-    const rb_callable_method_entry_t *cme = callable_method_entry(klass, id, defined_class_ptr);
-
-    if (cme == NULL || cme->def->type != VM_METHOD_TYPE_REFINED) {
+    if (cme == NULL || LIKELY(cme->def->type != VM_METHOD_TYPE_REFINED)) {
         return cme;
     }
     else {
@@ -1208,6 +1207,13 @@ callable_method_entry_refeinements(VALUE klass, ID id, VALUE *defined_class_ptr,
         const rb_method_entry_t *me = method_entry_resolve_refinement(klass, id, with_refinements, dcp);
         return prepare_callable_method_entry(*dcp, id, me, TRUE);
     }
+}
+
+static const rb_callable_method_entry_t *
+callable_method_entry_refeinements(VALUE klass, ID id, VALUE *defined_class_ptr, bool with_refinements)
+{
+    const rb_callable_method_entry_t *cme = callable_method_entry(klass, id, defined_class_ptr);
+    return callable_method_entry_refeinements0(klass, id, defined_class_ptr, with_refinements, cme);
 }
 
 MJIT_FUNC_EXPORTED const rb_callable_method_entry_t *

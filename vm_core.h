@@ -658,6 +658,11 @@ typedef struct rb_vm_struct {
 
     struct rb_id_table *negative_cme_table;
 
+#ifndef VM_GLOBAL_CC_CACHE_TABLE_SIZE
+#define VM_GLOBAL_CC_CACHE_TABLE_SIZE 1023
+#endif
+    const struct rb_callcache *global_cc_cache_table[VM_GLOBAL_CC_CACHE_TABLE_SIZE]; // vm_eval.c
+
 #if USE_VM_CLOCK
     uint32_t clock;
 #endif
