@@ -204,7 +204,7 @@ ruby_fl_type {
     RUBY_FL_SINGLETON = RUBY_FL_USER0,
 };
 
-enum { RUBY_FL_DUPPED = RUBY_T_MASK | RUBY_FL_EXIVAR | RUBY_FL_TAINT };
+enum { RUBY_FL_DUPPED = RUBY_T_MASK | RUBY_FL_EXIVAR | RUBY_FL_SHAREABLE };
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 void rb_obj_infect(VALUE victim, VALUE carrier);
@@ -362,18 +362,7 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 RB_OBJ_TAINTABLE(VALUE obj)
 {
-    if (! RB_FL_ABLE(obj)) {
-        return false;
-    }
-    else if (RB_TYPE_P(obj, RUBY_T_BIGNUM)) {
-        return false;
-    }
-    else if (RB_TYPE_P(obj, RUBY_T_FLOAT)) {
-        return false;
-    }
-    else {
-        return true;
-    }
+    return false;
 }
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
@@ -381,7 +370,7 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline VALUE
 RB_OBJ_TAINTED_RAW(VALUE obj)
 {
-    return RB_FL_TEST_RAW(obj, RUBY_FL_TAINT);
+    return false;
 }
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
@@ -389,41 +378,35 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 RB_OBJ_TAINTED(VALUE obj)
 {
-    return RB_FL_ANY(obj, RUBY_FL_TAINT);
+    return false;
 }
 
 RBIMPL_ATTR_ARTIFICIAL()
 static inline void
 RB_OBJ_TAINT_RAW(VALUE obj)
 {
-    RB_FL_SET_RAW(obj, RUBY_FL_TAINT);
+    return;
 }
 
 RBIMPL_ATTR_ARTIFICIAL()
 static inline void
 RB_OBJ_TAINT(VALUE obj)
 {
-    if (RB_OBJ_TAINTABLE(obj)) {
-        RB_OBJ_TAINT_RAW(obj);
-    }
+    return;
 }
 
 RBIMPL_ATTR_ARTIFICIAL()
 static inline void
 RB_OBJ_INFECT_RAW(VALUE dst, VALUE src)
 {
-    RBIMPL_ASSERT_OR_ASSUME(RB_OBJ_TAINTABLE(dst));
-    RBIMPL_ASSERT_OR_ASSUME(RB_FL_ABLE(src));
-    RB_FL_SET_RAW(dst, RB_OBJ_TAINTED_RAW(src));
+    return;
 }
 
 RBIMPL_ATTR_ARTIFICIAL()
 static inline void
 RB_OBJ_INFECT(VALUE dst, VALUE src)
 {
-    if (RB_OBJ_TAINTABLE(dst) && RB_FL_ABLE(src)) {
-        RB_OBJ_INFECT_RAW(dst, src);
-    }
+    return;
 }
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
