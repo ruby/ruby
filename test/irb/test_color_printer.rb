@@ -8,13 +8,9 @@ module TestIRB
   class TestColorPrinter < Test::Unit::TestCase
     CLEAR     = "\e[0m"
     BOLD      = "\e[1m"
-    UNDERLINE = "\e[4m"
-    REVERSE   = "\e[7m"
     RED       = "\e[31m"
     GREEN     = "\e[32m"
-    YELLOW    = "\e[33m"
     BLUE      = "\e[34m"
-    MAGENTA   = "\e[35m"
     CYAN      = "\e[36m"
 
     def setup
