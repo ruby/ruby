@@ -28,8 +28,10 @@
 #include "ruby/internal/attr/noalias.h"
 #include "ruby/internal/attr/pure.h"
 #include "ruby/internal/cast.h"
+#include "ruby/internal/compiler_since.h"
 #include "ruby/internal/core/rbasic.h"
 #include "ruby/internal/dllexport.h"
+#include "ruby/internal/has/extension.h"
 #include "ruby/internal/special_consts.h"
 #include "ruby/internal/stdbool.h"
 #include "ruby/internal/value.h"
@@ -167,11 +169,27 @@ ruby_fl_type {
     RUBY_FL_PROMOTED     = RUBY_FL_PROMOTED0 | RUBY_FL_PROMOTED1,
     RUBY_FL_FINALIZE     = (1<<7),
     RUBY_FL_TAINT
+
+#if RBIMPL_HAS_EXTENSION(enumerator_attributes)
     RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
+#elif RBIMPL_COMPILER_SINCE(GCC, 6, 0, 0)
+    RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
+#elif defined(_MSC_VER)
+# pragma deprecated(RUBY_FL_TAINT)
+#endif
+
                          = (1<<8),
     RUBY_FL_SHAREABLE    = (1<<8),
     RUBY_FL_UNTRUSTED
+
+#if RBIMPL_HAS_EXTENSION(enumerator_attributes)
     RBIMPL_ATTR_DEPRECATED(("trustedness turned out to be a wrong idea."))
+#elif RBIMPL_COMPILER_SINCE(GCC, 6, 0, 0)
+    RBIMPL_ATTR_DEPRECATED(("trustedness turned out to be a wrong idea."))
+#elif defined(_MSC_VER)
+# pragma deprecated(RUBY_FL_UNTRUSTED)
+#endif
+
                          = (1<<8),
     RUBY_FL_SEEN_OBJ_ID  = (1<<9),
     RUBY_FL_EXIVAR       = (1<<10),
