@@ -1269,10 +1269,6 @@ rb_obj_trust(VALUE obj)
     return obj;
 }
 
-/**
- * Does nothing. This method is deprecated and will be removed in Ruby 3.2.
- */
-
 void
 rb_obj_infect(VALUE victim, VALUE carrier)
 {
