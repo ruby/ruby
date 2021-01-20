@@ -20,9 +20,17 @@
 // Maximum number of versions per block
 #define MAX_VERSIONS 5
 
+// Maximum number of temp value types we keep track of
+#define MAX_TEMP_TYPES 8
+
 // Code generation context
 typedef struct CtxStruct
 {
+    // Temporary variable types we keep track of
+    // Values are `ruby_value_type`
+    // T_NONE==0 is the unknown type
+    uint8_t temp_types[MAX_TEMP_TYPES];
+
     // Number of values pushed on the temporary stack
     uint32_t stack_size;
 
