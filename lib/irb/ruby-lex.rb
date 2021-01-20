@@ -430,8 +430,6 @@ class RubyLex
     index.downto(0) do |i|
       tk = tokens[i]
       # In "continue", the token isn't the corresponding syntax to "do".
-      #is_continue = process_continue(@tokens[0..(i - 1)])
-      # continue ではなく、直前に (:on_ignored_nl|:on_nl|:on_comment):on_sp* みたいなのがあるかどうかを調べる
       non_sp_index = tokens[0..(i - 1)].rindex{ |t| t[1] != :on_sp }
       first_in_fomula = false
       if non_sp_index.nil?
