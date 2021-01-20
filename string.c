@@ -11574,8 +11574,6 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  - #==::
  *  - #===::
  *  - #casecmp::
- *  - #casecmp?:: Returns +true+ if the string is equal to a given string after Unicode case folding;
- *                +false+ otherwise.
  *
  *  === Methods for Fetching
  *
@@ -11702,8 +11700,6 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  - #encode!::
  *  - #encoding::
  *  - #force_encoding::
- *  - #valid_encoding?:: Returns +true+ if the string contains only characters that are valid
- *                       for its encoding.
  *
  *  === Other Methods
  *
