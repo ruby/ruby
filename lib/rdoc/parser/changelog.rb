@@ -131,6 +131,12 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
 
   def parse_entries
     @time_cache ||= {}
+
+    if /\A(?:.*\n){,3}commit\s/ =~ @content
+      class << self; prepend Git; end
+      return parse_entries
+    end
+
     entries = []
     entry_name = nil
     entry_body = []
@@ -190,6 +196,7 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
 
   def scan
     @time_cache = {}
+
     entries = parse_entries
     grouped_entries = group_entries entries
 
@@ -200,5 +207,33 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
     @top_level
   end
 
+  module Git
+    def parse_entries
+      entries = []
+
+      @content.scan(/^commit\s+(\h+)\n *Author: *(.+)\n *Date: *(.+)\n\n((?: {4}.*\n+)*)/) do
+        entry_name, author, date, entry_body = $1, $2, $3, $4.gsub(/^ {4}/, '')
+        if /(\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+) *([-+]\d\d)(\d\d)/ =~ date
+          time = Time.new($1, $2, $3, $4, $5, $6, "#{$7}:#{$8}")
+          @time_cache[entry_name] = time
+          entries << [entry_name, [author, date, entry_body]]
+        end
+      end
+
+      entries
+    end
+
+    def create_entries entries
+      # git log entries have no strictly itemized style like the old
+      # style, just assume Markdown.
+      entries.map do |entry, (author, date, body)|
+        list = RDoc::Markup::List.new(:NOTE)
+        author = RDoc::Markup::Paragraph.new(author)
+        list << RDoc::Markup::ListItem.new(date, author)
+        RDoc::Markdown.parse(body).parts.each {|b| list << b}
+        list
+      end
+    end
+  end
 end
 

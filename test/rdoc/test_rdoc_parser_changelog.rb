@@ -270,6 +270,24 @@ Other note that will be ignored
     assert_equal expected, parser.parse_entries
   end
 
+  def test_parse_entries_git
+    parser = util_parser <<-ChangeLog
+commit\ 709bed2afaee50e2ce803f87bf1ee8291bea41e3
+  Author: git <svn-admin@ruby-lang.org>
+  Date:   2021-01-21 01:03:52 +0900
+
+    * 2021-01-21 [ci skip]
+ChangeLog
+
+    expected = [
+      [ "709bed2afaee50e2ce803f87bf1ee8291bea41e3",
+       [ "git <svn-admin@ruby-lang.org>",
+         "2021-01-21 01:03:52 +0900",
+         "* 2021-01-21 [ci skip]\n"]]]
+
+    assert_equal expected, parser.parse_entries
+  end
+
   def test_scan
     parser = util_parser <<-ChangeLog
 Tue Dec  4 08:32:10 2012  Eric Hodel  <drbrain@segment7.net>
@@ -303,6 +321,44 @@ Mon Dec  3 20:37:22 2012  Koichi Sasada  <ko1@atdot.net>
       blank_line,
       list(:NOTE,
         item('vm_exec.c', para('check VM_COLLECT_USAGE_DETAILS.'))))
+
+    expected.file = @top_level
+
+    assert_equal expected, @top_level.comment
+  end
+
+  def test_scan_git
+    parser = util_parser <<-ChangeLog
+commit\ 709bed2afaee50e2ce803f87bf1ee8291bea41e3
+  Author: git <svn-admin@ruby-lang.org>
+  Date:   2021-01-21 01:03:52 +0900
+
+    * 2021-01-21 [ci skip]
+
+commit\ a8dc5156e183489c5121fb1759bda5d9406d9175
+  Author: git <svn-admin@ruby-lang.org>
+  Date:   2021-01-20 01:58:26 +0900
+
+    * 2021-01-20 [ci skip]
+ChangeLog
+
+    parser.scan
+
+    expected = doc(
+      head(1, File.basename(@tempfile.path)),
+      blank_line,
+      head(2, '2021-01-21'),
+      blank_line,
+      list(:NOTE,
+        item('2021-01-21 01:03:52 +0900',
+          para('git <svn-admin@ruby-lang.org>')),
+        list(:BULLET, item(nil, para('2021-01-21 [ci skip]')))),
+      head(2, '2021-01-20'),
+      blank_line,
+      list(:NOTE,
+        item('2021-01-20 01:58:26 +0900',
+          para('git <svn-admin@ruby-lang.org>')),
+        list(:BULLET, item(nil, para('2021-01-20 [ci skip]')))))
 
     expected.file = @top_level
 
