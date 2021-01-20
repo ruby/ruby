@@ -579,7 +579,8 @@ class VCS
               fix = $1
               s = s.lines
               fix.each_line do |x|
-                if %r[^ +(\d+)s/(.+)/(.*)/] =~ x
+                case x
+                when %r[^ +(\d+)s/(.+)/(.*)/]
                   begin
                     s[$1.to_i][$2] = $3
                   rescue IndexError
@@ -593,6 +594,8 @@ class VCS
                     end
                     raise message.join('')
                   end
+                when %r[^( +)(\d+)i/(.+)/]
+                  s[$2.to_i, 0] = "#{$1}#{$3}\n"
                 end
               end
               s = s.join('')
