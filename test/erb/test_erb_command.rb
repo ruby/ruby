@@ -6,7 +6,7 @@ class TestErbCommand < Test::Unit::TestCase
   def test_var
     pend 'this test has not supported Ruby 2.5' if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.6.0')
     assert_in_out_err(["-w",
-                       File.expand_path("../../../libexec/erb", __FILE__),
+                       File.expand_path("../../libexec/erb", __dir__),
                        "var=hoge"],
                       "<%=var%>", ["hoge"])
   end
@@ -14,7 +14,7 @@ class TestErbCommand < Test::Unit::TestCase
   def test_template_file_encoding
     pend 'this test has not supported Ruby 2.5' if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.6.0')
     assert_in_out_err(["-w",
-                       File.expand_path("../../../libexec/erb", __FILE__)],
+                       File.expand_path("../../libexec/erb", __dir__)],
                       "<%=''.encoding.to_s%>", ["UTF-8"])
   end
 
@@ -26,7 +26,7 @@ class TestErbCommand < Test::Unit::TestCase
       /\n.+\/libexec\/erb:\d+: warning: Passing safe_level with the 2nd argument of ERB\.new is deprecated\. Do not use it, and specify other arguments as keyword arguments\.\n/,
     ]
     assert_in_out_err(["-w",
-                       File.expand_path("../../../libexec/erb", __FILE__),
+                       File.expand_path("../../libexec/erb", __dir__),
                        "-S", "0"],
                       "hoge", ["hoge"], warnings)
   end
