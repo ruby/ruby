@@ -3058,7 +3058,7 @@ rb_const_set(VALUE klass, ID id, VALUE val)
                     set_namespace_path(val, build_const_path(parental_path, id));
                 }
                 else if (!parental_path_permanent && NIL_P(val_path)) {
-                    rb_ivar_set(val, tmp_classpath, build_const_path(parental_path, id));
+                    ivar_set(val, tmp_classpath, build_const_path(parental_path, id));
                 }
 	    }
 	}
