@@ -880,6 +880,8 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_equal("#{Dir.pwd}/#{path}", File.expand_path(path))
 
     assert_incompatible_encoding {|d| File.expand_path(d)}
+
+    assert_equal(Encoding::UTF_8, File.expand_path("foo", "#{drive}/").encoding)
   end
 
   def test_expand_path_encoding_filesystem

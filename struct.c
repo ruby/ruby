@@ -554,7 +554,7 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
 static VALUE
 rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE name, rest, keyword_init = Qfalse;
+    VALUE name, rest, keyword_init = Qnil;
     long i;
     VALUE st;
     st_table *tbl;
@@ -577,7 +577,7 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
 	}
         rb_get_kwargs(argv[argc-1], keyword_ids, 0, 1, &keyword_init);
         if (keyword_init == Qundef) {
-            keyword_init = Qfalse;
+            keyword_init = Qnil;
         }
 	--argc;
     }
@@ -657,11 +657,15 @@ static VALUE
 rb_struct_initialize_m(int argc, const VALUE *argv, VALUE self)
 {
     VALUE klass = rb_obj_class(self);
-    long i, n;
-
     rb_struct_modify(self);
-    n = num_members(klass);
-    if (argc > 0 && RTEST(rb_struct_s_keyword_init(klass))) {
+    long n = num_members(klass);
+    if (argc == 0) {
+        rb_mem_clear((VALUE *)RSTRUCT_CONST_PTR(self), n);
+        return Qnil;
+    }
+
+    VALUE keyword_init = rb_struct_s_keyword_init(klass);
+    if (RTEST(keyword_init)) {
 	struct struct_hash_set_arg arg;
 	if (argc > 1 || !RB_TYPE_P(argv[0], T_HASH)) {
 	    rb_raise(rb_eArgError, "wrong number of arguments (given %d, expected 0)", argc);
@@ -679,7 +683,11 @@ rb_struct_initialize_m(int argc, const VALUE *argv, VALUE self)
 	if (n < argc) {
 	    rb_raise(rb_eArgError, "struct size differs");
 	}
-	for (i=0; i<argc; i++) {
+        if (keyword_init == Qnil && argc == 1 && RB_TYPE_P(argv[0], T_HASH) && rb_keyword_given_p()) {
+            rb_warn("Passing only keyword arguments to Struct#initialize will behave differently from Ruby 3.2. "\
+                    "Please use a Hash literal like .new({k: v}) instead of .new(k: v).");
+        }
+        for (long i=0; i<argc; i++) {
 	    RSTRUCT_SET(self, i, argv[i]);
 	}
 	if (n > argc) {

@@ -1,5 +1,5 @@
 # -*- ruby -*-
-_VERSION = "0.5.6"
+_VERSION = "0.5.7"
 
 Gem::Specification.new do |s|
   s.name = "io-console"
@@ -21,5 +21,21 @@ Gem::Specification.new do |s|
     lib/io/console/size.rb
   ]
   s.extensions = %w[ext/io/console/extconf.rb]
+
+  if Gem::Platform === s.platform and s.platform =~ 'java'
+    s.files.delete_if {|f| f.start_with?("ext/")}
+    s.extensions.clear
+    s.require_paths.unshift("jruby")
+    s.files.concat(%w[
+      jruby/io/console.rb
+      jruby/io/console/bsd_console.rb
+      jruby/io/console/common.rb
+      jruby/io/console/linux_console.rb
+      jruby/io/console/native_console.rb
+      jruby/io/console/stty_console.rb
+      jruby/io/console/stub_console.rb
+    ])
+  end
+
   s.licenses = ["Ruby", "BSD-2-Clause"]
 end

@@ -209,6 +209,7 @@ static VALUE rb_inum_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exc
 static VALUE rb_float_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception);
 static VALUE rb_rational_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception);
 static VALUE rb_cstr_convert_to_BigDecimal(const char *c_str, size_t digs, int raise_exception);
+static VALUE rb_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception);
 
 static Real*
 GetVpValueWithPrec(VALUE v, long prec, int must)
@@ -1345,25 +1346,35 @@ BigDecimal_mult(VALUE self, VALUE r)
 }
 
 static VALUE
-BigDecimal_divide(Real **c, Real **res, Real **div, VALUE self, VALUE r)
+BigDecimal_divide(VALUE self, VALUE r, Real **c, Real **res, Real **div)
 /* For c = self.div(r): with round operation */
 {
     ENTER(5);
     Real *a, *b;
     size_t mx;
 
-    GUARD_OBJ(a, GetVpValue(self, 1));
-    if (RB_TYPE_P(r, T_FLOAT)) {
-        b = GetVpValueWithPrec(r, 0, 1);
+    TypedData_Get_Struct(self, Real, &BigDecimal_data_type, a);
+    SAVE(a);
+
+    VALUE rr = r;
+    if (is_kind_of_BigDecimal(rr)) {
+        /* do nothing */
+    }
+    else if (RB_INTEGER_TYPE_P(r)) {
+        rr = rb_inum_convert_to_BigDecimal(r, 0, true);
+    }
+    else if (RB_TYPE_P(r, T_FLOAT)) {
+        rr = rb_float_convert_to_BigDecimal(r, 0, true);
     }
     else if (RB_TYPE_P(r, T_RATIONAL)) {
-	b = GetVpValueWithPrec(r, a->Prec*VpBaseFig(), 1);
-     }
-    else {
-	b = GetVpValue(r, 0);
+        rr = rb_rational_convert_to_BigDecimal(r, a->Prec*BASE_FIG, true);
     }
 
-    if (!b) return DoSomeOne(self, r, '/');
+    if (!is_kind_of_BigDecimal(rr)) {
+        return DoSomeOne(self, r, '/');
+    }
+
+    TypedData_Get_Struct(rr, Real, &BigDecimal_data_type, b);
     SAVE(b);
 
     *div = b;
@@ -1392,7 +1403,7 @@ BigDecimal_div(VALUE self, VALUE r)
 {
     ENTER(5);
     Real *c=NULL, *res=NULL, *div = NULL;
-    r = BigDecimal_divide(&c, &res, &div, self, r);
+    r = BigDecimal_divide(self, r, &c, &res, &div);
     if (!NIL_P(r)) return r; /* coerced by other */
     SAVE(c); SAVE(res); SAVE(div);
     /* a/b = c + r/b */
@@ -1418,45 +1429,59 @@ BigDecimal_DoDivmod(VALUE self, VALUE r, Real **div, Real **mod)
     Real *a, *b;
     size_t mx;
 
-    GUARD_OBJ(a, GetVpValue(self, 1));
-    if (RB_TYPE_P(r, T_FLOAT)) {
-	b = GetVpValueWithPrec(r, 0, 1);
+    TypedData_Get_Struct(self, Real, &BigDecimal_data_type, a);
+    SAVE(a);
+
+    VALUE rr = r;
+    if (is_kind_of_BigDecimal(rr)) {
+        /* do nothing */
+    }
+    else if (RB_INTEGER_TYPE_P(r)) {
+        rr = rb_inum_convert_to_BigDecimal(r, 0, true);
+    }
+    else if (RB_TYPE_P(r, T_FLOAT)) {
+        rr = rb_float_convert_to_BigDecimal(r, 0, true);
     }
     else if (RB_TYPE_P(r, T_RATIONAL)) {
-	b = GetVpValueWithPrec(r, a->Prec*VpBaseFig(), 1);
-    }
-    else {
-	b = GetVpValue(r, 0);
+        rr = rb_rational_convert_to_BigDecimal(r, a->Prec*BASE_FIG, true);
     }
 
-    if (!b) return Qfalse;
+    if (!is_kind_of_BigDecimal(rr)) {
+        return Qfalse;
+    }
+
+    TypedData_Get_Struct(rr, Real, &BigDecimal_data_type, b);
     SAVE(b);
 
     if (VpIsNaN(a) || VpIsNaN(b)) goto NaN;
     if (VpIsInf(a) && VpIsInf(b)) goto NaN;
     if (VpIsZero(b)) {
-	rb_raise(rb_eZeroDivError, "divided by 0");
+        rb_raise(rb_eZeroDivError, "divided by 0");
     }
     if (VpIsInf(a)) {
-        GUARD_OBJ(d, VpCreateRbObject(1, "0", true));
-	VpSetInf(d, (SIGNED_VALUE)(VpGetSign(a) == VpGetSign(b) ? 1 : -1));
-        GUARD_OBJ(c, VpCreateRbObject(1, "NaN", true));
-	*div = d;
-	*mod = c;
-	return Qtrue;
+        if (VpGetSign(a) == VpGetSign(b)) {
+            VALUE inf = BigDecimal_positive_infinity();
+            TypedData_Get_Struct(inf, Real, &BigDecimal_data_type, *div);
+        }
+        else {
+            VALUE inf = BigDecimal_negative_infinity();
+            TypedData_Get_Struct(inf, Real, &BigDecimal_data_type, *div);
+        }
+        VALUE nan = BigDecimal_nan();
+        TypedData_Get_Struct(nan, Real, &BigDecimal_data_type, *mod);
+        return Qtrue;
     }
     if (VpIsInf(b)) {
-        GUARD_OBJ(d, VpCreateRbObject(1, "0", true));
-	*div = d;
-	*mod = a;
-	return Qtrue;
+        VALUE zero = BigDecimal_positive_zero();
+        TypedData_Get_Struct(zero, Real, &BigDecimal_data_type, *div);
+        *mod = a;
+        return Qtrue;
     }
     if (VpIsZero(a)) {
-        GUARD_OBJ(c, VpCreateRbObject(1, "0", true));
-        GUARD_OBJ(d, VpCreateRbObject(1, "0", true));
-	*div = d;
-	*mod = c;
-	return Qtrue;
+        VALUE zero = BigDecimal_positive_zero();
+        TypedData_Get_Struct(zero, Real, &BigDecimal_data_type, *div);
+        TypedData_Get_Struct(zero, Real, &BigDecimal_data_type, *mod);
+        return Qtrue;
     }
 
     mx = a->Prec + vabs(a->exponent);
@@ -1482,11 +1507,12 @@ BigDecimal_DoDivmod(VALUE self, VALUE r, Real **div, Real **mod)
     }
     return Qtrue;
 
-NaN:
-    GUARD_OBJ(c, VpCreateRbObject(1, "NaN", true));
-    GUARD_OBJ(d, VpCreateRbObject(1, "NaN", true));
-    *div = d;
-    *mod = c;
+  NaN:
+    {
+        VALUE nan = BigDecimal_nan();
+        TypedData_Get_Struct(nan, Real, &BigDecimal_data_type, *div);
+        TypedData_Get_Struct(nan, Real, &BigDecimal_data_type, *mod);
+    }
     return Qtrue;
 }
 
@@ -2704,7 +2730,7 @@ rb_uint64_convert_to_BigDecimal(uint64_t uval, RB_UNUSED_VAR(size_t digs), int r
         vp->frac[0] = (DECDIG)uval;
     }
     else {
-        const size_t len = (size_t)ceil(log10(uval) / BASE_FIG);
+        const size_t len = (size_t)ceil(log10((double)uval) / BASE_FIG);
 
         vp = VpAllocReal(len);
         vp->MaxPrec = len;
@@ -2830,7 +2856,7 @@ rb_float_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception)
     int decpt, negative_p;
     char *e;
     const int mode = digs == 0 ? 0 : 2;
-    char *p = BigDecimal_dtoa(d, mode, digs, &decpt, &negative_p, &e);
+    char *p = BigDecimal_dtoa(d, mode, (int)digs, &decpt, &negative_p, &e);
     int len10 = (int)(e - p);
     if (len10 >= (int)sizeof(buf))
         len10 = (int)sizeof(buf) - 1;

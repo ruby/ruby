@@ -31,7 +31,7 @@ module Net
     def setup
       # Avoid hanging at fake_server_start's IO.select on --jit-wait CI like http://ci.rvm.jp/results/trunk-mjit-wait@phosphorus-docker/3302796
       # Unfortunately there's no way to configure read_timeout for Net::SMTP.start.
-      if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
+      if defined?(RubyVM::JIT) && RubyVM::JIT.enabled?
         Net::SMTP.prepend Module.new {
           def initialize(*)
             super

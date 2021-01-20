@@ -2770,7 +2770,7 @@ distclean-rb::
 distclean-so::
 distclean-static::
 distclean: clean distclean-so distclean-static distclean-rb-default distclean-rb
-\t\t-$(Q)$(RM) Makefile $(RUBY_EXTCONF_H) #{CONFTEST}.* mkmf.log
+\t\t-$(Q)$(RM) Makefile $(RUBY_EXTCONF_H) #{CONFTEST}.* mkmf.log#{' exts.mk' if $extmk}
 \t\t-$(Q)$(RM) core ruby$(EXEEXT) *~ $(DISTCLEANFILES#{sep})
 \t\t-$(Q)$(RMDIRS) $(DISTCLEANDIRS#{sep})#{$ignore_error}
 

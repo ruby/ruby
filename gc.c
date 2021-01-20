@@ -2217,7 +2217,9 @@ ractor_cache_slots(rb_objspace_t *objspace, rb_ractor_t *cr)
     page->free_slots = 0;
     page->freelist = NULL;
 
+    asan_unpoison_object((VALUE)cr->newobj_cache.freelist, false);
     GC_ASSERT(RB_TYPE_P((VALUE)cr->newobj_cache.freelist, T_NONE));
+    asan_poison_object((VALUE)cr->newobj_cache.freelist);
 }
 
 ALWAYS_INLINE(static VALUE newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *cr, int wb_protected));
@@ -5079,11 +5081,22 @@ gc_sweep_start_heap(rb_objspace_t *objspace, rb_heap_t *heap)
         RUBY_DEBUG_LOG("ractor using_page:%p freelist:%p", page, freelist);
 
         if (page && freelist) {
-            RVALUE **p = &page->freelist;
-            while (*p) {
-                p = &(*p)->as.free.next;
+            asan_unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
+            if (page->freelist) {
+                RVALUE *p = page->freelist;
+                asan_unpoison_object((VALUE)p, false);
+                while (p->as.free.next) {
+                    RVALUE *prev = p;
+                    p = p->as.free.next;
+                    asan_poison_object((VALUE)prev);
+                    asan_unpoison_object((VALUE)p, false);
+                }
+                p->as.free.next = freelist;
+                asan_poison_object((VALUE)p);
+            } else {
+                page->freelist = freelist;
             }
-            *p = freelist;
+            asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
         }
 
         r->newobj_cache.using_page = NULL;

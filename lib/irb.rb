@@ -574,6 +574,8 @@ module IRB
             next
           end
           handle_exception(exc)
+          @context.workspace.local_variable_set(:_, exc)
+          exc = nil
         end
       end
     end

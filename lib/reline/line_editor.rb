@@ -377,6 +377,7 @@ class Reline::LineEditor
     end
     new_highest_in_this = calculate_height_by_width(prompt_width + calculate_width(@line.nil? ? '' : @line))
     # FIXME: end of logical line sometimes breaks
+    rendered = false
     if @add_newline_to_end_of_buffer
       rerender_added_newline
       @add_newline_to_end_of_buffer = false
@@ -675,17 +676,13 @@ class Reline::LineEditor
       Reline::IOGate.move_cursor_column(0)
       if line.nil?
         if calculate_width(visual_lines[index - 1], true) == Reline::IOGate.get_screen_size.last
-          # reaches the end of line
-          if Reline::IOGate.win?
-            # A newline is automatically inserted if a character is rendered at
-            # eol on command prompt.
-          else
-            # When the cursor is at the end of the line and erases characters
-            # after the cursor, some terminals delete the character at the
-            # cursor position.
-            move_cursor_down(1)
-            Reline::IOGate.move_cursor_column(0)
-          end
+          # Reaches the end of line.
+          #
+          # When the cursor is at the end of the line and erases characters
+          # after the cursor, some terminals delete the character at the
+          # cursor position.
+          move_cursor_down(1)
+          Reline::IOGate.move_cursor_column(0)
         else
           Reline::IOGate.erase_after_cursor
           move_cursor_down(1)
@@ -694,10 +691,6 @@ class Reline::LineEditor
         next
       end
       @output.write line
-      if Reline::IOGate.win? and calculate_width(line, true) == Reline::IOGate.get_screen_size.last
-        # A newline is automatically inserted if a character is rendered at eol on command prompt.
-        @rest_height -= 1 if @rest_height > 0
-      end
       @output.flush
       if @first_prompt
         @first_prompt = false

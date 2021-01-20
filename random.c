@@ -49,10 +49,16 @@
 # include <sys/param.h>
 #endif
 
-#if defined HAVE_GETRANDOM
-# include <sys/random.h>
+#if defined HAVE_GETRANDOM || defined HAVE_GETENTROPY
+# if defined(HAVE_SYS_RANDOM_H)
+#  include <sys/random.h>
+# endif
 #elif defined __linux__ && defined __NR_getrandom
 # include <linux/random.h>
+#endif
+
+#if defined __APPLE__
+# include <AvailabilityMacros.h>
 #endif
 
 #include "internal.h"
@@ -421,7 +427,23 @@ random_init(int argc, VALUE *argv, VALUE obj)
 # define USE_DEV_URANDOM 0
 #endif
 
-#if USE_DEV_URANDOM
+#if HAVE_GETENTROPY
+# define MAX_SEED_LEN_PER_READ 256
+static int
+fill_random_bytes_urandom(void *seed, size_t size)
+{
+     unsigned char *p = (unsigned char *)seed;
+     while (size) {
+	size_t len = size < MAX_SEED_LEN_PER_READ ? size : MAX_SEED_LEN_PER_READ;
+	if (getentropy(p, len) != 0) {
+            return -1;
+	}
+	p += len;
+	size -= len;
+     }
+     return 0;
+}
+#elif USE_DEV_URANDOM
 static int
 fill_random_bytes_urandom(void *seed, size_t size)
 {

@@ -360,7 +360,7 @@ vm_cc_markable(const struct rb_callcache *cc)
 static inline bool
 vm_cc_invalidated_p(const struct rb_callcache *cc)
 {
-    if (cc->klass && METHOD_ENTRY_INVALIDATED(vm_cc_cme(cc))) {
+    if (cc->klass && !METHOD_ENTRY_INVALIDATED(vm_cc_cme(cc))) {
         return false;
     }
     else {

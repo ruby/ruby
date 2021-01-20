@@ -90,7 +90,7 @@ class ExtLibs
       $stdout.puts "applying #{patch} under #{dest}"
       $stdout.flush
     end
-    Process.wait(Process.spawn("patch", "-d", dest, "-i", patch, *args))
+    Process.wait(Process.spawn(ENV.fetch("PATCH", "patch"), "-d", dest, "-i", patch, *args))
     $?.success? or raise "failed to patch #{patch}"
   end
 

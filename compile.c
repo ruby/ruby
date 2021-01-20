@@ -1302,12 +1302,16 @@ static INSN *
 new_insn_send(rb_iseq_t *iseq, int line_no, ID id, VALUE argc, const rb_iseq_t *blockiseq, VALUE flag, struct rb_callinfo_kwarg *keywords)
 {
     VALUE *operands = compile_data_calloc2(iseq, sizeof(VALUE), 2);
-    operands[0] = (VALUE)new_callinfo(iseq, id, FIX2INT(argc), FIX2INT(flag), keywords, blockiseq != NULL);
+    VALUE ci = (VALUE)new_callinfo(iseq, id, FIX2INT(argc), FIX2INT(flag), keywords, blockiseq != NULL);
+    operands[0] = ci;
     operands[1] = (VALUE)blockiseq;
     if (blockiseq) {
         RB_OBJ_WRITTEN(iseq, Qundef, blockiseq);
     }
-    return new_insn_core(iseq, line_no, BIN(send), 2, operands);
+    INSN *insn = new_insn_core(iseq, line_no, BIN(send), 2, operands);
+    RB_OBJ_WRITTEN(iseq, Qundef, ci);
+    RB_GC_GUARD(ci);
+    return insn;
 }
 
 static rb_iseq_t *
@@ -1413,11 +1417,19 @@ iseq_insert_nop_between_end_and_cont(rb_iseq_t *iseq)
         LINK_ELEMENT *end = (LINK_ELEMENT *)(ptr[2] & ~1);
         LINK_ELEMENT *cont = (LINK_ELEMENT *)(ptr[4] & ~1);
         LINK_ELEMENT *e;
-        for (e = end; e && (IS_LABEL(e) || IS_TRACE(e)); e = e->next) {
-            if (e == cont) {
-                INSN *nop = new_insn_core(iseq, 0, BIN(nop), 0, 0);
-                ELEM_INSERT_NEXT(end, &nop->link);
-                break;
+
+        enum catch_type ct = (enum catch_type)(ptr[0] & 0xffff);
+
+        if (ct != CATCH_TYPE_BREAK
+            && ct != CATCH_TYPE_NEXT
+            && ct != CATCH_TYPE_REDO) {
+
+            for (e = end; e && (IS_LABEL(e) || IS_TRACE(e)); e = e->next) {
+                if (e == cont) {
+                    INSN *nop = new_insn_core(iseq, 0, BIN(nop), 0, 0);
+                    ELEM_INSERT_NEXT(end, &nop->link);
+                    break;
+                }
             }
         }
     }
@@ -6396,11 +6408,11 @@ compile_case3(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
             int pat_line = nd_line(pattern);
             LABEL *next_pat = NEW_LABEL(pat_line);
             ADD_INSN (cond_seq, pat_line, dup);
-
             // NOTE: set deconstructed_pos to the current cached value location
             // (it's "under" the matchee value, so it's position is 2)
             CHECK(iseq_compile_pattern_each(iseq, cond_seq, pattern, l1, next_pat, FALSE, 2));
             ADD_LABEL(cond_seq, next_pat);
+            LABEL_UNREMOVABLE(next_pat);
         }
         else {
             COMPILE_ERROR(ERROR_ARGS "unexpected node");

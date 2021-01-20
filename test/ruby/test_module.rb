@@ -641,6 +641,41 @@ class TestModule < Test::Unit::TestCase
     assert_equal([:p, :a, :s, :q, :r, :c], a.new.m)
   end
 
+  def test_prepend_after_include
+    c = Class.new{def m; [:c] end}
+    sc = Class.new(c){def m; [:sc] + super end}
+    m = Module.new{def m; [:m] + super end}
+    sc.include m
+    sc.prepend m
+    sc.prepend m
+    assert_equal([:m, :sc, :m, :c], sc.new.m)
+
+    c = Class.new{def m; [:c] end}
+    sc = Class.new(c){def m; [:sc] + super end}
+    m0 = Module.new{def m; [:m0] + super end}
+    m1 = Module.new{def m; [:m1] + super end}
+    m1.prepend m0
+    sc.include m1
+    sc.prepend m1
+    assert_equal([:m0, :m1, :sc, :m0, :m1, :c], sc.new.m)
+    sc.prepend m
+    assert_equal([:m, :m0, :m1, :sc, :m0, :m1, :c], sc.new.m)
+    sc.prepend m1
+    assert_equal([:m, :m0, :m1, :sc, :m0, :m1, :c], sc.new.m)
+
+
+    c = Class.new{def m; [:c] end}
+    sc = Class.new(c){def m; [:sc] + super end}
+    m0 = Module.new{def m; [:m0] + super end}
+    m1 = Module.new{def m; [:m1] + super end}
+    m1.include m0
+    sc.include m1
+    sc.prepend m
+    sc.prepend m1
+    sc.prepend m1
+    assert_equal([:m1, :m0, :m, :sc, :m1, :m0, :c], sc.new.m)
+  end
+
   def test_instance_methods
     assert_equal([:user, :user2], User.instance_methods(false).sort)
     assert_equal([:user, :user2, :mixin].sort, User.instance_methods(true).sort)
@@ -2158,7 +2193,7 @@ class TestModule < Test::Unit::TestCase
     assert_equal([:c2, :m0, :m1, :m2, :c0], c2.new.x)
 
     m3 = labeled_module("m3") {include m1; prepend m1}
-    assert_equal([m3, m0, m1], m3.ancestors)
+    assert_equal([m0, m1, m3, m0, m1], m3.ancestors)
     m3 = labeled_module("m3") {prepend m1; include m1}
     assert_equal([m0, m1, m3], m3.ancestors)
     m3 = labeled_module("m3") {prepend m1; prepend m1}

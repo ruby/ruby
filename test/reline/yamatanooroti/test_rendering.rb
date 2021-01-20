@@ -14,14 +14,12 @@ begin
         FileUtils.rm_rf(@tmpdir)
         Dir.mkdir(@tmpdir)
       end
-      Dir.chdir(@tmpdir)
       @inputrc_backup = ENV['INPUTRC']
       @inputrc_file = ENV['INPUTRC'] = File.join(@tmpdir, 'temporaty_inputrc')
       File.unlink(@inputrc_file) if File.exist?(@inputrc_file)
     end
 
     def teardown
-      Dir.chdir(@pwd)
       FileUtils.rm_rf(@tmpdir)
       ENV['INPUTRC'] = @inputrc_backup
       ENV.delete('RELINE_TEST_PROMPT') if ENV['RELINE_TEST_PROMPT']
@@ -527,6 +525,7 @@ begin
           end
         end
       EOC
+      sleep 1
       close
       assert_screen(<<~EOC)
         prompt>         prompt
@@ -573,6 +572,7 @@ begin
           end
         end
       EOC
+      sleep 1
       write("\C-p" * 6)
       close
       assert_screen(<<~EOC)
@@ -620,7 +620,7 @@ begin
           end
         end
       EOC
-      sleep 0.3
+      sleep 1
       write("\C-p" * 5)
       write("\C-n" * 3)
       close

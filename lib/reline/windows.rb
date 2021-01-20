@@ -258,6 +258,7 @@ class Reline::Windows
     cursor = csbi[4, 4].unpack('L').first
     written = 0.chr * 4
     @@FillConsoleOutputCharacter.call(@@hConsoleHandle, 0x20, get_screen_size.last - cursor_pos.x, cursor, written)
+    @@FillConsoleOutputAttribute.call(@@hConsoleHandle, 0, get_screen_size.last - cursor_pos.x, cursor, written)
   end
 
   def self.scroll_down(val)
