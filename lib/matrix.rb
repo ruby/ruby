@@ -1016,7 +1016,7 @@ class Matrix
   #++
 
   #
-  # Returns +true+ if and only if the two matrices contain equal elements.
+  # Returns whether the two matrices contain equal elements.
   #
   def ==(other)
     return false unless Matrix === other &&
@@ -2134,7 +2134,7 @@ class Vector
   #++
 
   #
-  # Returns +true+ iff all of vectors are linearly independent.
+  # Returns whether all of vectors are linearly independent.
   #
   #   Vector.independent?(Vector[1,0], Vector[0,1])
   #   #  => true
@@ -2152,7 +2152,7 @@ class Vector
   end
 
   #
-  # Returns +true+ iff all of vectors are linearly independent.
+  # Returns whether all of vectors are linearly independent.
   #
   #   Vector[1,0].independent?(Vector[0,1])
   #   # => true
@@ -2165,7 +2165,7 @@ class Vector
   end
 
   #
-  # Returns +true+ iff all elements are zero.
+  # Returns whether all elements are zero.
   #
   def zero?
     all?(&:zero?)
@@ -2193,7 +2193,7 @@ class Vector
   #++
 
   #
-  # Returns +true+ iff the two vectors have the same elements in the same order.
+  # Returns whether the two vectors have the same elements in the same order.
   #
   def ==(other)
     return false unless Vector === other
