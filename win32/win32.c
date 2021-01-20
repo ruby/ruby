@@ -4773,7 +4773,6 @@ static void *
 getcwd_value(int size, void *arg)
 {
     VALUE str = *(VALUE *)arg = rb_utf8_str_new(0, size - 1);
-    OBJ_TAINT(str);
     return RSTRING_PTR(str);
 }
 
