@@ -11595,10 +11595,10 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *
  *  === Methods for Comparing
  *
- *  - #==:: Returns +true+ if a given other string has the same content as +self+.
+ *  - {#==}[#method-i-3D-3D]:: Returns +true+ if a given other string has the same content as +self+.
  *  - #===:: Returns +true+ if a given other string has the same content as +self+.
  *  - #eql?:: Returns +true+ if the content is the same as the given other string.
- *  - #<=>:: Returns -1, 0, or 1 as a given other string is smaller than, equal to, or larger than +self+.
+ *  - {#<=>}[#method-i-3C-3D-3E]:: Returns -1, 0, or 1 as a given other string is smaller than, equal to, or larger than +self+.
  *  - #casecmp:: Ignoring case, returns -1, 0, or 1 as a given
  *               other string is smaller than, equal to, or larger than +self+.
  *  - #casecmp?:: Returns +true+ if the string is equal to a given string after Unicode case folding;
@@ -11749,11 +11749,11 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  - #partition:: Returns a 3-element array determined by the first substring that matches
  *                 a given substring or regexp,
  *  - #rpartition:: Returns a 3-element array determined by the last substring that matches
- *                 a given substring or regexp,
+ *                  a given substring or regexp,
  *  - #scan:: Returns an array of substrings matching a given regexp or string, or,
  *            if a block given, passes each matching substring to the  block.
  *  - #split, #to_a:: Returns an array of substrings determined by a given delimiter -- regexp or string --
- *             or, if a block given, passes those substrings to the block.
+ *                    or, if a block given, passes those substrings to the block.
  *  - #to_f:: Returns the floating-point value of leading characters, interpreted as a floating-point number.
  *  - #to_i:: Returns the integer value of leading characters, interpreted as an integer.
  *  - #to_sym:: Returns the symbol corresponding to +self+.
