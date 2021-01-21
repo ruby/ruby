@@ -27,21 +27,80 @@
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/special_consts.h"
 
-#define RB_NUM2SHORT  rb_num2short_inline
-#define RB_NUM2USHORT rb_num2ushort
-#define NUM2SHORT     RB_NUM2SHORT
-#define NUM2USHORT    RB_NUM2USHORT
-#define USHORT2NUM    RB_INT2FIX
-#define RB_FIX2SHORT  rb_fix2short
-#define FIX2SHORT     RB_FIX2SHORT
+#define RB_NUM2SHORT  rb_num2short_inline /**< @alias{rb_num2short_inline} */
+#define RB_NUM2USHORT rb_num2ushort       /**< @alias{rb_num2ushort} */
+#define NUM2SHORT     RB_NUM2SHORT        /**< @old{RB_NUM2SHORT} */
+#define NUM2USHORT    RB_NUM2USHORT       /**< @old{RB_NUM2USHORT} */
+#define USHORT2NUM    RB_INT2FIX          /**< @old{RB_INT2FIX} */
+#define RB_FIX2SHORT  rb_fix2short        /**< @alias{rb_fix2ushort} */
+#define FIX2SHORT     RB_FIX2SHORT        /**< @old{RB_FIX2SHORT} */
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
-short rb_num2short(VALUE);
-unsigned short rb_num2ushort(VALUE);
-short rb_fix2short(VALUE);
-unsigned short rb_fix2ushort(VALUE);
+
+/**
+ * Converts an instance of ::rb_cNumeric into C's `short`.
+ *
+ * @param[in]  num             Something numeric.
+ * @exception  rb_eTypeError   `num` is not a numeric.
+ * @exception  rb_eRangeError  `num` is out of range of `short`.
+ * @return     The passed value converted into C's `short`.
+ */
+short rb_num2short(VALUE num);
+
+/**
+ * Converts an instance of ::rb_cNumeric into C's `unsigned short`.
+ *
+ * @param[in]  num             Something numeric.
+ * @exception  rb_eTypeError   `num` is not a numeric.
+ * @exception  rb_eRangeError  `num` is out of range of `unsigned short`.
+ * @return     The passed value converted into C's `unsigned short`.
+ */
+unsigned short rb_num2ushort(VALUE num);
+
+/**
+ * Identical to rb_num2short().
+ *
+ * @param[in]  num             Something numeric.
+ * @exception  rb_eTypeError   `num` is not a numeric.
+ * @exception  rb_eRangeError  `num` is out of range of `short`.
+ * @return     The passed value converted into C's `short`.
+ *
+ * @internal
+ *
+ * This function seems to be a complete  waste of disk space.  @shyouhei has no
+ * idea why this is a different thing from rb_num2short().
+ */
+short rb_fix2short(VALUE num);
+
+/**
+ * Identical to rb_num2ushort().
+ *
+ * @param[in]  num             Something numeric.
+ * @exception  rb_eTypeError   `num` is not a numeric.
+ * @exception  rb_eRangeError  `num` is out of range of `unsigned short`.
+ * @return     The passed value converted into C's `unsigned short`.
+ *
+ * @internal
+ *
+ * This function seems to be a complete  waste of disk space.  @shyouhei has no
+ * idea why this is a different thing from rb_num2ushort().
+ */
+unsigned short rb_fix2ushort(VALUE num);
 RBIMPL_SYMBOL_EXPORT_END()
 
+/**
+ * Identical to rb_num2short().
+ *
+ * @param[in]  x               Something numeric.
+ * @exception  rb_eTypeError   `x` is not a numeric.
+ * @exception  rb_eRangeError  `x` is out of range of `short`.
+ * @return     The passed value converted into C's `short`.
+ *
+ * @internal
+ *
+ * This function seems to  be a complete waste of time.   @shyouhei has no idea
+ * why this is a different thing from rb_num2short().
+ */
 static inline short
 rb_num2short_inline(VALUE x)
 {
@@ -51,4 +110,4 @@ rb_num2short_inline(VALUE x)
         return rb_num2short(x);
 }
 
-#endif /* RBIMPL_ARITHMETIC_SOHRT_H */
+#endif /* RBIMPL_ARITHMETIC_SHORT_H */
