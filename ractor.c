@@ -1979,7 +1979,7 @@ rb_ractor_terminate_all(void)
     RB_VM_UNLOCK();
 }
 
-rb_execution_context_t *
+MJIT_FUNC_EXPORTED rb_execution_context_t *
 rb_vm_main_ractor_ec(rb_vm_t *vm)
 {
     return vm->ractor.main_ractor->threads.running_ec;

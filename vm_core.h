@@ -1788,6 +1788,8 @@ rb_ec_vm_ptr(const rb_execution_context_t *ec)
     }
 }
 
+static inline rb_vm_t * rb_current_vm(void);
+
 static inline rb_execution_context_t *
 rb_current_execution_context(void)
 {
@@ -1800,6 +1802,11 @@ rb_current_execution_context(void)
 #else
     rb_execution_context_t *ec = native_tls_get(ruby_current_ec_key);
 #endif
+
+    if (ec == NULL) {
+	    ec = rb_vm_main_ractor_ec(GET_VM());
+    }
+
     VM_ASSERT(ec != NULL);
     return ec;
 }
