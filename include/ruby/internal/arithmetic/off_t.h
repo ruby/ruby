@@ -26,6 +26,7 @@
 #include "ruby/internal/arithmetic/long_long.h"
 #include "ruby/backward/2/long_long.h"
 
+/** Converts a C's `off_t` into an instance of ::rb_cInteger. */
 #ifdef OFFT2NUM
 # /* take that. */
 #elif SIZEOF_OFF_T == SIZEOF_LONG_LONG
@@ -36,6 +37,7 @@
 # define OFFT2NUM RB_INT2NUM
 #endif
 
+/** Converts an instance of ::rb_cNumeric into C's `off_t`. */
 #ifdef NUM2OFFT
 # /* take that. */
 #elif SIZEOF_OFF_T == SIZEOF_LONG_LONG
@@ -46,6 +48,7 @@
 # define NUM2OFFT RB_NUM2INT
 #endif
 
+/** A rb_sprintf() format prefix to be used for an `off_t` parameter. */
 #ifdef PRI_OFFT_PREFIX
 # /* take that. */
 #elif SIZEOF_OFF_T == SIZEOF_LONG_LONG
