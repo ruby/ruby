@@ -11528,11 +11528,11 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  == What's Here
  *
  *  === Methods for Creating a \String
-
+ *
  *  - ::new:: Returns a new string.
  *  - ::try_convert:: Returns a new string created from a given object.
  *
- *  === Methods for Setting \String State
+ *  === Methods for a Frozen/Unfrozen String
  *
  *  - {#+string}[#method-i-2B-40]:: Returns a string that is not frozen:
    *                                +self+, if not frozen; +self.dup+ otherwise.
@@ -11542,85 +11542,210 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *
  *  === Methods for Querying
  *
+ *  _Indexes_
+ *
  *  - {#=~}[#method-i-3D~]:: Returns the index of the first substring that matches a given Regexp or other object;
  *                           returns +nil+ if no match is found.
- *  - #ascii_only?:: Returns +true+ if the string has only ASCII characters; +false+ otherwise.
- *  - #bytesize:: Returns the count of bytes.
- *  - #casecmp?:: Returns +true+ if the string is equal to a given string after Unicode case folding;
- *                +false+ otherwise.
- *  - #count:: Returns the count of substrings matching given strings.
- *  - #empty?:: Returns +true+ if +self.length+ is zero; +false+ otherwise.
- *  - #encoding:: Returns the Encoding object associated with the string.
- *  - #end_with?:: Returns +true+ if the string ends with any of the given substrings.
- *  - #eql?:: Returns +true+ if the content is the same as the given other string.
- *  - #hash:: Returns the integer hash code.
- *  - #include?:: Returns +true+ if the string contains a given substring; +false+ otherwise.
  *  - #index:: Returns the index of the first occurrence of a given substring;
  *             returns +nil+ if none found.
- *  - #length, #size:: Returns the count of characters (not bytes).
- *  - #match:: Returns a MatchData object if the string matches a given Regexp; +nil+ otherwise.
- *  - #match?:: Returns +true+ if the string matches a given Regexp; +false+ otherwise.
  *  - #rindex:: Returns the index of the _last_ occurrence of a given substring;
  *              returns +nil+ if none found.
+ *
+ *  _Counts_
+ *
+ *  - #length, #size:: Returns the count of characters (not bytes).
+ *  - #empty?:: Returns +true+ if +self.length+ is zero; +false+ otherwise.
+ *  - #bytesize:: Returns the count of bytes.
+ *  - #count:: Returns the count of substrings matching given strings.
+ *
+ *  _Substrings_
+ *
+ *  - #include?:: Returns +true+ if the string contains a given substring; +false+ otherwise.
+ *  - #match:: Returns a MatchData object if the string matches a given Regexp; +nil+ otherwise.
+ *  - #match?:: Returns +true+ if the string matches a given Regexp; +false+ otherwise.
  *  - #start_with?:: Returns +true+ if the string begins with any of the given substrings.
- *  - #sum:: Returns a basic checksum for the string: the sum of each byte.
+ *  - #end_with?:: Returns +true+ if the string ends with any of the given substrings.
+ *
+ *  _Encodings_
+ *
+ *  - #encoding:: Returns the Encoding object that represents the encoding o
  *  - #unicode_normalized?:: Returns +true+ if the string is in Unicode normalized form; +false+ otherwise.
  *  - #valid_encoding?:: Returns +true+ if the string contains only characters that are valid
  *                       for its encoding.
+ *  - #ascii_only?:: Returns +true+ if the string has only ASCII characters; +false+ otherwise.
+ *
+ *  _Other_
+ *
+ *  - #sum:: Returns a basic checksum for the string: the sum of each byte.
+ *  - #hash:: Returns the integer hash code.
  *
  *  === Methods for Comparing
  *
- *  - #<=>::
- *  - #==::
- *  - #===::
- *  - #casecmp::
+ *  - #==:: Returns +true+ if a given other string has the same content as +self+.
+ *  - #===:: Returns +true+ if a given other string has the same content as +self+.
+ *  - #eql?:: Returns +true+ if the content is the same as the given other string.
+ *  - #<=>:: Returns -1, 0, or 1 as a given other string is smaller than, equal to, or larger than +self+.
+ *  - #casecmp:: Ignoring case, returns -1, 0, or 1 as a given
+ *               other string is smaller than, equal to, or larger than +self+.
+ *  - #casecmp?:: Returns +true+ if the string is equal to a given string after Unicode case folding;
+ *                +false+ otherwise.
  *
  *  === Methods for Fetching
  *
- *  - #[], #slice::
- *  - #byteslice::
- *  - #chr::
- *  - #getbyte::
+ *  - #[], #slice:: Returns a substring determined by a given index, start/length, or range, or string.
+ *  - #byteslice:: Returns a substring determined by a given index, start/length, or range.
+ *  - #chr:: Returns the first character.
  *
- *  === Methods for Modifying
+ *  === Methods for Modifying +self+
  *
- *  - #<<::
- *  - #[]=::
- *  - #capitalize!::
- *  - #downcase!::
- *  - #encode!::
- *  - #gsub!::
- *  - #force_encoding::
- *  - #initialize_copy::
- *  - #insert::
- *  - #lstrip!::
- *  - #next!::
- *  - #replace::
- *  - #reverse!::
- *  - #rstrip!::
- *  - #setbyte::
- *  - #sub!::
- *  - #succ!::
- *  - #swapcase!::
- *  - #tr!::
- *  - #tr_s!::
+ *  Each of these methods modifies +self+.
  *
- *  === Methods for Deleting
+ *  _Insertion_
  *
- *  - #chomp!::
- *  - #chop!::
- *  - #clear
- *  - #delete::
- *  - #delete_prefix::
- *  - #delete_suffix::
- *  - #lstrip::
- *  - #rstrip::
- *  - #scrub!::
- *  - #slice!
- *  - #squeeze!::
- *  - #strip!::
- *  - #unicode_normalize!::
- *  - #upcase!::
+ *  - #insert:: Returns +self+ with a given string inserted at a given offset.
+ *
+ *  _Substitution_
+ *
+ *  - #sub!:: Replaces the first substring that matches a given pattern with a given replacement string;
+ *            returns +self+ if any changes, +nil+ otherwise.
+ *  - #gsub!:: Replaces each substring that matches a given pattern with a given replacement string;
+ *             returns +self+ if any changes, +nil+ otherwise.
+ *  - #succ!, #next!:: Returns +self+ modified to become its own successor.
+ *  - #replace, #initialize_copy:: Returns +self+ with its entire content replaced by a given string.
+ *  - #reverse!:: Returns +self+ with is characters in reverse order.
+ *  - #setbyte:: Sets the byte at a given integer offset to a given value; returns the argument.
+ *  - #tr!:: Replaces specified characters in +self+ with specified replacement characters;
+ *           returns +self+ if any changes, +nil+ otherwise.
+ *  - #tr_s!:: Replaces specified characters in +self+ with specified replacement characters,
+ *             removing duplicates from the substrings that were modified;
+ *             returns +self+ if any changes, +nil+ otherwise.
+ *
+ *  _Casing_
+ *
+ *  - #capitalize!:: Upcases the initial character and downcases all others;
+ *                   returns +self+ if any changes, +nil+ otherwise.
+ *  - #downcase!:: Downcases all characters; returns +self+ if any changes, +nil+ otherwise.
+ *  - #upcase!:: Upcases all characters; returns +self+ if any changes, +nil+ otherwise.
+ *  - #swapcase!:: Upcases each downcase character and downcases each upcase character;
+ *                 returns +self+ if any changes, +nil+ otherwise.
+ *
+ *  _Encoding_
+ *
+ *  - #encode!:: Returns +self+ with all characters transcoded from one given encoding into another.
+ *  - #force_encoding:: Returns +self+ with all characters transcoded into a given encoding.
+ *  - #unicode_normalize!:: Unicode-normalizes +self+; returns +self+.
+ *  - #scrub!:: Replaces each invalid byte with a given character; returns +self+.
+ *  - #encode!:: Transcodes +self+ from one given encoding to another.
+ *  - #force_encoding:: Changes the encoding to a given encoding; returns +self+.
+ *
+ *  _Deletion_
+ *
+ *  - #clear:: Removes all content, so that +self+ is empty; returns +self+.
+ *  - #slice!:: Removes a substring determined by a given index, start/length, range, regexp, or substring.
+ *  - #squeeze!:: Removes contiguous duplicate characters; returns +self+.
+ *  - #delete!:: Removes characters as determined by the intersection of substring arguments.
+ *  - #lstrip!:: Removes leading whitespace; returns +self+ if any changes, +nil+ otherwise.
+ *  - #rstrip!:: Removes trailing whitespace; returns +self+ if any changes, +nil+ otherwise.
+ *  - #strip!:: Removes leading and trailing whitespace; returns +self+ if any changes, +nil+ otherwise.
+ *  - #chomp!:: Removes trailing record separator, if found; returns +self+ if any changes, +nil+ otherwise.
+ *  - #chop!:: Removes trailing whitespace if found, otherwise removes the last character;
+ *             returns +self+ if any changes, +nil+ otherwise.
+ *
+ *  === Methods for Converting to New \String
+ *
+ *  Each of these methods returns a new \String based on +self+,
+ *  often just a modified copy of +self+.
+ *
+ *  _Extension_
+ *
+ *  - #*:: Returns the concatenation of multiple copies of +self+,
+ *  - #+:: Returns the concatenation of +self+ and a given other string.
+ *  - #<<:: Returns a copy of +self+ concatenated with a given sting or integer.
+ *  - #center:: Returns a copy of +self+ centered between pad substring.
+ *  - #concat:: Returns the concatenation of +self+ with given other strings.
+ *  - #prepend::
+ *  - #ljust:: Returns a copy of +self+ of a given length, right-padded with a given other string.
+ *  - #rjust:: Returns a copy of +self+ of a given length, left-padded with a given other string.
+ *
+ *  _Substitution_
+ *
+ *  - #b:: Returns a copy of +self+ with ASCII-8BIT encoding.
+ *  - #dump:: Returns a copy of +self with all non-printing characters replaced by \xHH notation
+ *            and all special characters escaped.
+ *  - #undump:: Returns a copy of +self with all <tt>\xNN</tt> notation replace by <tt>\uNNNN</tt> notation
+ *              and all escaped characters unescaped.
+ *  - #gsub::
+ *  - #sub::
+ *  - #next::
+ *  - #succ::
+ *  - #reverse::
+ *  - #scrub:: Returns a copy of +self+ with each invalid byte replaced with a given character.
+ *  - #tr:: Returns a copy of +self+ with specified characters replaced with specified replacement characters.
+ *  - #tr_s:: Returns a copy of +self+ with specified characters replaced with specified replacement characters,
+ *            removing duplicates from the substrings that were modified.
+ *  - #%:: Returns the string resulting from formatting a given object into +self+
+ *
+ *  _Casing
+ *
+ *  - #capitalize:: Returns a copy of +self+ with the first character upcased
+ *                  and all other characters downcased.
+ *  - #downcase:: Returns a copy of +self+ with all characters downcased.
+ *  - #upcase:: Returns a copy of +self+ with all characters upcased.
+ *  - #swapcase:: Returns a copy of +self+ with all upcase characters downcased
+ *                and all downcase characters upcased.
+ *
+ *  _Encoding_
+ *
+ *  - #unicode_normalize::
+ *  - #encode::
+ *
+ *  _Deletion_
+ *
+ *  - #delete:: Returns a copy of +self+ with characters removed
+ *  - #delete_prefix:: Returns a copy of +self+ with a given prefix removed.
+ *  - #delete_suffix:: Returns a copy of +self+ with a given suffix removed.
+ *  - #lstrip:: Returns a copy of +self+ with leading whitespace removed.
+ *  - #rstrip:: Returns a copy of +self+ with trailing whitespace removed.
+ *  - #strip:: Returns a copy of +self+ with leading and trailing whitespace removed.
+ *  - #[]=:: Returns a substring o +self+ determined by given index, range, regexp, or string.
+ *  - #chomp:: Returns a copy of +self+ with a trailing record separator removed, if found.
+ *  - #chop:: Returns a copy of +self+ with trailing whitespace or the last character removed.
+ *  - #squeeze:: Returns a copy of +self+ with contiguous duplicate characters removed.
+ *
+ *  _Duplication_
+ *
+ *  - #to_s:: If +self+ is a subclass of \String, returns +self+ copied into a \String;
+ *            otherwise, returns +self+.
+ *  - #to_str:: If +self+ is a subclass of \String, returns +self+ copied into a \String;
+ *              otherwise, returns +self+.
+ *
+ *  === Methods for Converting to Non-\String
+ *
+ *  Each of these methods converts the contents of +self+ to a non-\String.
+ *
+ *  - #bytes::
+ *  - #chars::
+ *  - #codepoints::
+ *  - #getbyte:: Returns an integer byte as determined by a given index.
+ *  - #grapheme_clusters::
+ *  - #hex::
+ *  - #inspect::
+ *  - #intern::
+ *  - #lines::
+ *  - #oct::
+ *  - #ord::
+ *  - #partition::
+ *  - #rpartition::
+ *  - #scan::
+ *  - #split::
+ *  - #to_c::
+ *  - #to_d::
+ *  - #to_f::
+ *  - #to_i::
+ *  - #to_r::
+ *  - #to_sym::
+ *  - #unpack::
+ *  - #unpack1::
  *
  *  === Methods for Iterating
  *
@@ -11630,81 +11755,6 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  - #each_grapheme_cluster::
  *  - #each_line::
  *  - #upto::
- *
- *  === Methods for Converting
- *
- *  - #%::
- *  - #*::
- *  - #+::
- *  - #bytes::
- *  - #capitalize::
- *  - #center::
- *  - #chars::
- *  - #chomp::
- *  - #chop::
- *  - #codepoints::
- *  - #concat::
- *  - #downcase::
- *  - #dump::
- *  - #encode::
- *  - #gsub::
- *  - #grapheme_clusters::
- *  - #hex::
- *  - #inspect::
- *  - #intern::
- *  - #lines::
- *  - #ljust::
- *  - #next::
- *  - #oct::
- *  - #ord::
- *  - #partition::
- *  - #prepend::
- *  - #reverse::
- *  - #rjust::
- *  - #rpartition::
- *  - #scan::
- *  - #scrub::
- *  - #split::
- *  - #squeeze::
- *  - #strip::
- *  - #sub::
- *  - #succ::
- *  - #swapcase::
- *  - #to_c::
- *  - #to_d::
- *  - #to_f::
- *  - #to_i::
- *  - #to_r::
- *  - #to_s::
- *  - #to_str::
- *  - #to_sym::
- *  - #toeuc::
- *  - #tojis::
- *  - #tolocale::
- *  - #tosjis::
- *  - #toutf16::
- *  - #toutf32::
- *  - #toutf8::
- *  - #tr::
- *  - #tr_s::
- *  - #undump::
- *  - #unicode_normalize::
- *  - #unpack::
- *  - #unpack1::
- *  - #upcase::
- *
- *  === Methods for Encoding
- *
- *  - #b::
- *  - #encode::
- *  - #encode!::
- *  - #encoding::
- *  - #force_encoding::
- *
- *  === Other Methods
- *
- *  - #shellescape::
- *  - #shellsplit::
  */
 
 void
