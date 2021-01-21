@@ -641,6 +641,63 @@ gen_opt_plus(jitstate_t* jit, ctx_t* ctx)
     return true;
 }
 
+void
+gen_branchif_branch(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uint8_t shape)
+{
+    switch (shape)
+    {
+        case SHAPE_NEXT0:
+        jz_ptr(cb, target1);
+        break;
+
+        case SHAPE_NEXT1:
+        jnz_ptr(cb, target0);
+        break;
+
+        case SHAPE_DEFAULT:
+        jnz_ptr(cb, target0);
+        jmp_ptr(cb, target1);
+        break;
+    }
+}
+
+static bool
+gen_branchif(jitstate_t* jit, ctx_t* ctx)
+{
+    // TODO: we need to eventually do an interrupt check
+    // The check is supposed to happen only when we jump to the jump target block
+    //
+    // How can we do this while keeping the check logic out of line?
+    // Can we push the VM_CHECK_INTS() into the next block or the stub?
+    // Maybe into a transition edge block
+    //
+	// RUBY_VM_CHECK_INTS(ec);
+
+    // Test if any bit (outside of the Qnil bit) is on
+    // RUBY_Qfalse  /* ...0000 0000 */
+    // RUBY_Qnil    /* ...0000 1000 */
+    x86opnd_t val_opnd = ctx_stack_pop(ctx, 1);
+    test(cb, val_opnd, imm_opnd(~Qnil));
+
+    // Get the branch target instruction offsets
+    uint32_t next_idx = jit_next_idx(jit);
+    uint32_t jump_idx = next_idx + (uint32_t)jit_get_arg(jit, 0);
+    blockid_t next_block = { jit->iseq, next_idx };
+    blockid_t jump_block = { jit->iseq, jump_idx };
+
+    // Generate the branch instructions
+    gen_branch(
+        ctx,
+        jump_block,
+        ctx,
+        next_block,
+        ctx,
+        gen_branchif_branch
+    );
+
+    return true;
+}
+
 void 
 gen_branchunless_branch(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uint8_t shape)
 {
@@ -664,9 +721,12 @@ gen_branchunless_branch(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uin
 static bool
 gen_branchunless(jitstate_t* jit, ctx_t* ctx)
 {
-    // TODO: we need to eventually do an interrupt check when jumping/branching
+    // TODO: we need to eventually do an interrupt check
+    // The check is supposed to happen only when we jump to the jump target block
+    //
     // How can we do this while keeping the check logic out of line?
-    // Maybe we can push the check int into the next block or the stub?
+    // Can we push the VM_CHECK_INTS() into the next block or the stub?
+    // Maybe into a transition edge block
     //
 	// RUBY_VM_CHECK_INTS(ec);
 
@@ -1014,6 +1074,7 @@ ujit_init_codegen(void)
     ujit_reg_op(BIN(opt_lt), gen_opt_lt, false);
     ujit_reg_op(BIN(opt_minus), gen_opt_minus, false);
     ujit_reg_op(BIN(opt_plus), gen_opt_plus, false);
+    ujit_reg_op(BIN(branchif), gen_branchif, true);
     ujit_reg_op(BIN(branchunless), gen_branchunless, true);
     ujit_reg_op(BIN(jump), gen_jump, true);
     ujit_reg_op(BIN(opt_send_without_block), gen_opt_send_without_block, true);
