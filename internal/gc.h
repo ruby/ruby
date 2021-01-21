@@ -39,6 +39,14 @@ struct rb_objspace; /* in vm_core.h */
 #define NEWOBJ_OF(var, T, c, f) RB_NEWOBJ_OF((var), T, (c), (f))
 #define RB_OBJ_GC_FLAGS_MAX 6   /* used in ext/objspace */
 
+#if USE_RVARGC
+#define RB_NEWOBJ_OF_SIZE(var, T, c, f, s) \
+  T *(var) = (T *)(((f) & FL_WB_PROTECTED) ? \
+                   rb_wb_protected_newobj_of_with_size((c), (f) & ~FL_WB_PROTECTED, s) : \
+                   rb_wb_unprotected_newobj_of_with_size((c), (f), s))
+#define NEWOBJ_OF_SIZE RB_NEWOBJ_OF_SIZE
+#endif
+
 #ifndef USE_UNALIGNED_MEMBER_ACCESS
 # define UNALIGNED_MEMBER_ACCESS(expr) (expr)
 #elif ! USE_UNALIGNED_MEMBER_ACCESS
@@ -92,6 +100,11 @@ const char *rb_objspace_data_type_name(VALUE obj);
 VALUE rb_wb_protected_newobj_of(VALUE, VALUE);
 VALUE rb_wb_unprotected_newobj_of(VALUE, VALUE);
 VALUE rb_ec_wb_protected_newobj_of(struct rb_execution_context_struct *ec, VALUE klass, VALUE flags);
+#if USE_RVARGC
+VALUE rb_wb_unprotected_newobj_of_with_size(VALUE klass, VALUE flags, size_t size);
+VALUE rb_wb_protected_newobj_of_with_size(VALUE klass, VALUE flags, size_t size);
+void *rb_payload_data_start_ptr(VALUE obj);
+#endif
 size_t rb_obj_memsize_of(VALUE);
 void rb_gc_verify_internal_consistency(void);
 size_t rb_obj_gc_flags(VALUE, ID[], size_t);

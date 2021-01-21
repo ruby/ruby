@@ -2514,6 +2514,31 @@ rb_ec_wb_protected_newobj_of(rb_execution_context_t *ec, VALUE klass, VALUE flag
 }
 
 #if USE_RVARGC
+static inline VALUE
+newobj_of_with_size(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_protected, size_t payload_size)
+{
+    rb_ractor_t *cr = GET_RACTOR();
+    unsigned short slots = (unsigned short)roomof(payload_size + sizeof(struct RPayloadHead), sizeof(RVALUE));
+    GC_ASSERT(cr->newobj_cache.requested_payload_slots == 0);
+    GC_ASSERT(slots > 0);
+    cr->newobj_cache.requested_payload_slots = slots;
+    return newobj_of_cr(cr, klass, flags, v1, v2, v3, wb_protected);
+}
+
+VALUE
+rb_wb_unprotected_newobj_of_with_size(VALUE klass, VALUE flags, size_t payload_size)
+{
+    GC_ASSERT((flags & FL_WB_PROTECTED) == 0);
+    return newobj_of_with_size(klass, flags, 0, 0, 0, FALSE, payload_size);
+}
+
+VALUE
+rb_wb_protected_newobj_of_with_size(VALUE klass, VALUE flags, size_t payload_size)
+{
+    GC_ASSERT((flags & FL_WB_PROTECTED) == 0);
+    return newobj_of_with_size(klass, flags, 0, 0, 0, TRUE, payload_size);
+}
+
 void *
 rb_payload_start_zero(VALUE obj)
 {
