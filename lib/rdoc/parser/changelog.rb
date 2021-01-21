@@ -226,13 +226,13 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
     def create_entries entries
       # git log entries have no strictly itemized style like the old
       # style, just assume Markdown.
-      entries.map do |entry, (author, date, body)|
-        list = RDoc::Markup::List.new(:NOTE)
-        author = RDoc::Markup::Paragraph.new(author)
-        list << RDoc::Markup::ListItem.new(date, author)
-        RDoc::Markdown.parse(body).parts.each {|b| list << b}
-        list
+      out = []
+      entries.each do |entry, (author, date, body)|
+        title = RDoc::Markup::Heading.new(3, "#{date} #{author}")
+        out << title
+        out.concat RDoc::Markdown.parse(body).parts
       end
+      out
     end
   end
 end

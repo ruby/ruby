@@ -349,16 +349,12 @@ ChangeLog
       blank_line,
       head(2, '2021-01-21'),
       blank_line,
-      list(:NOTE,
-        item('2021-01-21 01:03:52 +0900',
-          para('git <svn-admin@ruby-lang.org>')),
-        list(:BULLET, item(nil, para('2021-01-21 [ci skip]')))),
+      head(3, '2021-01-21 01:03:52 +0900 git <svn-admin@ruby-lang.org>'),
+      list(:BULLET, item(nil, para('2021-01-21 [ci skip]'))),
       head(2, '2021-01-20'),
       blank_line,
-      list(:NOTE,
-        item('2021-01-20 01:58:26 +0900',
-          para('git <svn-admin@ruby-lang.org>')),
-        list(:BULLET, item(nil, para('2021-01-20 [ci skip]')))))
+      head(3, '2021-01-20 01:58:26 +0900 git <svn-admin@ruby-lang.org>'),
+      list(:BULLET, item(nil, para('2021-01-20 [ci skip]'))))
 
     expected.file = @top_level
 
