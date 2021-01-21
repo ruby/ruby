@@ -916,7 +916,7 @@ static VALUE ractor_move(VALUE obj); // in this file
 static VALUE ractor_copy(VALUE obj); // in this file
 
 static void
-ractor_basket_setup(rb_execution_context_t *ec, struct rb_ractor_basket *basket, VALUE obj, VALUE move, bool exc, bool is_will)
+ractor_basket_setup(rb_execution_context_t *ec, struct rb_ractor_basket *basket, VALUE obj, VALUE move, bool exc, bool is_will, bool is_yield)
 {
     basket->sender = rb_ec_ractor_ptr(ec)->pub.self;
     basket->exception = exc;
@@ -935,7 +935,13 @@ ractor_basket_setup(rb_execution_context_t *ec, struct rb_ractor_basket *basket,
     }
     else {
         basket->type = basket_type_move;
-        basket->v = ractor_move(obj);
+
+        if (is_yield) {
+            basket->v = obj; // call ractor_move() when yielding timing.
+        }
+        else {
+            basket->v = ractor_move(obj);
+        }
     }
 }
 
@@ -943,7 +949,7 @@ static VALUE
 ractor_send(rb_execution_context_t *ec, rb_ractor_t *r, VALUE obj, VALUE move)
 {
     struct rb_ractor_basket basket;
-    ractor_basket_setup(ec, &basket, obj, move, false, false);
+    ractor_basket_setup(ec, &basket, obj, move, false, false, false);
     ractor_send_basket(ec, r, &basket);
     return r->pub.self;
 }
@@ -958,16 +964,22 @@ ractor_try_take(rb_execution_context_t *ec, rb_ractor_t *r)
 
     RACTOR_LOCK(r);
     {
-        if (ractor_wakeup(r, wait_yielding, wakeup_by_take)) {
+        if (ractor_sleeping_by(r, wait_yielding)) {
+            MAYBE_UNUSED(bool) wakeup_result;
             VM_ASSERT(r->sync.wait.yielded_basket.type != basket_type_none);
-            basket = r->sync.wait.yielded_basket;
-            ractor_basket_clear(&r->sync.wait.yielded_basket);
+
+            if (r->sync.wait.yielded_basket.type == basket_type_move) {
+                wakeup_result = ractor_wakeup(r, wait_yielding, wakeup_by_retry);
+            }
+            else {
+                wakeup_result = ractor_wakeup(r, wait_yielding, wakeup_by_take);
+                basket = r->sync.wait.yielded_basket;
+                ractor_basket_clear(&r->sync.wait.yielded_basket);
+            }
+            VM_ASSERT(wakeup_result);
         }
         else if (r->sync.outgoing_port_closed) {
             closed = true;
-        }
-        else {
-            // not reached.
         }
     }
     RACTOR_UNLOCK(r);
@@ -983,6 +995,12 @@ ractor_try_take(rb_execution_context_t *ec, rb_ractor_t *r)
     else {
         return ractor_basket_accept(&basket);
     }
+}
+
+static VALUE
+ractor_yield_move_body(VALUE v)
+{
+    return ractor_move(v);
 }
 
 static bool
@@ -1009,8 +1027,34 @@ ractor_try_yield(rb_execution_context_t *ec, rb_ractor_t *cr, struct rb_ractor_b
 
         RACTOR_LOCK(r);
         {
-            if (ractor_wakeup(r, wait_taking, wakeup_by_yield)) {
+            if (ractor_sleeping_by(r, wait_taking)) {
                 VM_ASSERT(r->sync.wait.taken_basket.type == basket_type_none);
+
+                if (basket->type == basket_type_move) {
+                    enum ractor_wait_status prev_wait_status = r->sync.wait.status;
+                    r->sync.wait.status = wait_moving;
+
+                    RACTOR_UNLOCK(r);
+                    {
+                        int state;
+                        VALUE moved_value = rb_protect(ractor_yield_move_body, basket->v, &state);
+                        if (state) {
+                            r->sync.wait.status = prev_wait_status;
+                            rb_jump_tag(state);
+                        }
+                        else {
+                            basket->v = moved_value;
+                        }
+                    }
+                    RACTOR_LOCK(r);
+
+                    if (!ractor_wakeup(r, wait_moving, wakeup_by_yield)) {
+                        // terminating?
+                    }
+                }
+                else {
+                    ractor_wakeup(r, wait_taking, wakeup_by_yield);
+                }
                 r->sync.wait.taken_basket = *basket;
             }
             else {
@@ -1080,15 +1124,14 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, const int rs_len, VAL
     }
     rs = NULL;
 
+  restart:
+
     if (yield_p) {
         actions[rs_len].type = ractor_select_action_yield;
         actions[rs_len].v = Qundef;
         wait_status |= wait_yielding;
-
-        ractor_basket_setup(ec, &cr->sync.wait.yielded_basket, yielded_value, move, false, false);
+        ractor_basket_setup(ec, &cr->sync.wait.yielded_basket, yielded_value, move, false, false, true);
     }
-
-  restart:
 
     // TODO: shuffle actions
 
@@ -1580,7 +1623,7 @@ ractor_yield_atexit(rb_execution_context_t *ec, rb_ractor_t *cr, VALUE v, bool e
     ASSERT_ractor_unlocking(cr);
 
     struct rb_ractor_basket basket;
-    ractor_basket_setup(ec, &basket, v, Qfalse, exc, true);
+    ractor_basket_setup(ec, &basket, v, Qfalse, exc, true, true /* this flag is ignored because move is Qfalse */);
 
   retry:
     if (ractor_try_yield(ec, cr, &basket)) {
