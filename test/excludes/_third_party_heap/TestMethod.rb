@@ -1,0 +1,1 @@
+exclude :test_method_list, "relies on ObjSpace which is GC implementation-dependent"
