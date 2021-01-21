@@ -86,7 +86,7 @@ jobs:
           $jobs = [int](2 * $env:NUMBER_OF_PROCESSORS)
           make -j $jobs
 
-      - run: make leaked-globals
+#      - run: make leaked-globals
 
       - name: make install
         run: |
