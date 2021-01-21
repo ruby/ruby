@@ -28,13 +28,14 @@ class Gem::Ext::Builder
     unless make_program
       make_program = (/mswin/ =~ RUBY_PLATFORM) ? 'nmake' : 'make'
     end
+    make_program = Shellwords.split(make_program)
 
     destdir = 'DESTDIR=%s' % ENV['DESTDIR']
 
     ['clean', '', 'install'].each do |target|
       # Pass DESTDIR via command line to override what's in MAKEFLAGS
       cmd = [
-        make_program,
+        *make_program,
         destdir,
         target,
       ].reject(&:empty?)

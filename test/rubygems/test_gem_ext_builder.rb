@@ -14,6 +14,7 @@ class TestGemExtBuilder < Gem::TestCase
     FileUtils.mkdir_p @dest_path
 
     @orig_DESTDIR = ENV['DESTDIR']
+    @orig_make = ENV['make']
 
     @spec = util_spec 'a'
 
@@ -22,6 +23,7 @@ class TestGemExtBuilder < Gem::TestCase
 
   def teardown
     ENV['DESTDIR'] = @orig_DESTDIR
+    ENV['make'] = @orig_make
 
     super
   end
@@ -79,6 +81,28 @@ install:
     assert_match %r{DESTDIR\\=#{ENV['DESTDIR']} clean$},   results
     assert_match %r{DESTDIR\\=#{ENV['DESTDIR']}$},         results
     assert_match %r{DESTDIR\\=#{ENV['DESTDIR']} install$}, results
+  end
+
+  def test_custom_make_with_options
+    ENV['make'] = 'make V=1'
+    results = []
+    File.open File.join(@ext, 'Makefile'), 'w' do |io|
+      io.puts <<-MAKEFILE
+all:
+\t@#{Gem.ruby} -e "puts 'all: OK'"
+
+clean:
+\t@#{Gem.ruby} -e "puts 'clean: OK'"
+
+install:
+\t@#{Gem.ruby} -e "puts 'install: OK'"
+      MAKEFILE
+    end
+    Gem::Ext::Builder.make @dest_path, results, @ext
+    results = results.join("\n").b
+    assert_match %r{clean: OK}, results
+    assert_match %r{all: OK}, results
+    assert_match %r{install: OK}, results
   end
 
   def test_build_extensions

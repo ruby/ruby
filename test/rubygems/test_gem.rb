@@ -692,6 +692,11 @@ class TestGem < Gem::TestCase
     ensure
       FileUtils.chmod 0600, parent
     end
+
+    def test_self_ensure_gem_directories_non_existent_paths
+      Gem.ensure_gem_subdirectories '/proc/0123456789/bogus' # should not raise
+      Gem.ensure_gem_subdirectories 'classpath:/bogus/x' # JRuby embed scenario
+    end
   end
 
   def test_self_extension_dir_shared

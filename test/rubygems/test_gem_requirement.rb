@@ -402,6 +402,27 @@ class TestGemRequirement < Gem::TestCase
     assert_equal r1.hash, r2.hash
   end
 
+  def test_hash_returns_equal_hashes_for_equivalent_requirements
+    refute_requirement_hash_equal "= 1.2", "= 1.3"
+    refute_requirement_hash_equal "= 1.3", "= 1.2"
+
+    refute_requirement_hash_equal "~> 1.3", "~> 1.3.0"
+    refute_requirement_hash_equal "~> 1.3.0", "~> 1.3"
+
+    assert_requirement_hash_equal ["> 2", "~> 1.3", "~> 1.3.1"], ["~> 1.3.1", "~> 1.3", "> 2"]
+
+    assert_requirement_hash_equal ["> 2", "~> 1.3"], ["> 2.0", "~> 1.3"]
+    assert_requirement_hash_equal ["> 2.0", "~> 1.3"], ["> 2", "~> 1.3"]
+
+    assert_requirement_hash_equal "= 1.0", "= 1.0.0"
+    assert_requirement_hash_equal "= 1.1", "= 1.1.0"
+    assert_requirement_hash_equal "= 1", "= 1.0.0"
+
+    assert_requirement_hash_equal "1.0", "1.0.0"
+    assert_requirement_hash_equal "1.1", "1.1.0"
+    assert_requirement_hash_equal "1", "1.0.0"
+  end
+
   # Assert that two requirements are equal. Handles Gem::Requirements,
   # strings, arrays, numbers, and versions.
 
@@ -416,6 +437,13 @@ class TestGemRequirement < Gem::TestCase
       "#{requirement} is satisfied by #{version}"
   end
 
+  # Assert that two requirement hashes are equal. Handles Gem::Requirements,
+  # strings, arrays, numbers, and versions.
+
+  def assert_requirement_hash_equal(expected, actual)
+    assert_equal req(expected).hash, req(actual).hash
+  end
+
   # Refute the assumption that two requirements are equal.
 
   def refute_requirement_equal(unexpected, actual)
@@ -427,5 +455,11 @@ class TestGemRequirement < Gem::TestCase
   def refute_satisfied_by(version, requirement)
     refute req(requirement).satisfied_by?(v(version)),
       "#{requirement} is not satisfied by #{version}"
+  end
+
+  # Refute the assumption that two requirements hashes are equal.
+
+  def refute_requirement_hash_equal(unexpected, actual)
+    refute_equal req(unexpected).hash, req(actual).hash
   end
 end
