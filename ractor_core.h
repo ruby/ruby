@@ -61,6 +61,7 @@ struct rb_ractor_sync {
             wait_receiving = 0x01,
             wait_taking    = 0x02,
             wait_yielding  = 0x04,
+            wait_moving    = 0x08,
         } status;
 
         enum ractor_wakeup_status {
