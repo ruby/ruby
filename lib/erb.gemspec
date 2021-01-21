@@ -2,7 +2,7 @@ begin
   require_relative 'lib/erb/version'
 rescue LoadError
   # for Ruby core repository
-  require_relative 'version'
+  require_relative 'erb/version'
 end
 
 Gem::Specification.new do |spec|
