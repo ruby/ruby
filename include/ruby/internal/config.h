@@ -1,7 +1,6 @@
 #ifndef RBIMPL_CONFIG_H                              /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_CONFIG_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
