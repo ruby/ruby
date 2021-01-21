@@ -8,7 +8,7 @@
 require 'rbconfig'
 
 module Gem
-  VERSION = "3.2.5".freeze
+  VERSION = "3.2.6".freeze
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -469,7 +469,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
       next if File.exist? subdir
       begin
         FileUtils.mkdir_p subdir, **options
-      rescue Errno::EACCES
+      rescue SystemCallError
       end
     end
   ensure

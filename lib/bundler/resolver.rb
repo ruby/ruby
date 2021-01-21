@@ -32,7 +32,7 @@ module Bundler
       @base_dg = Molinillo::DependencyGraph.new
       @base.each do |ls|
         dep = Dependency.new(ls.name, ls.version)
-        @base_dg.add_vertex(ls.name, DepProxy.new(dep, ls.platform), true)
+        @base_dg.add_vertex(ls.name, DepProxy.get_proxy(dep, ls.platform), true)
       end
       additional_base_requirements.each {|d| @base_dg.add_vertex(d.name, d) }
       @platforms = platforms
@@ -75,7 +75,7 @@ module Bundler
       return unless debug?
       debug_info = yield
       debug_info = debug_info.inspect unless debug_info.is_a?(String)
-      puts debug_info.split("\n").map {|s| "BUNDLER: " + "  " * depth + s }
+      puts debug_info.split("\n").map {|s| depth == 0 ? "BUNDLER: #{s}" : "BUNDLER(#{depth}): #{s}" }
     end
 
     def debug?

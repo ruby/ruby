@@ -121,10 +121,6 @@ class Gem::Platform
     end
   end
 
-  def inspect
-    "%s @cpu=%p, @os=%p, @version=%p>" % [super[0..-2], *to_a]
-  end
-
   def to_a
     [@cpu, @os, @version]
   end

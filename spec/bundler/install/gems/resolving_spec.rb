@@ -88,7 +88,7 @@ RSpec.describe "bundle install with install-time dependencies" do
     end
 
     it "installs plugins depended on by other plugins" do
-      install_gemfile <<-G
+      install_gemfile <<-G, :env => { "DEBUG" => "1" }
         source "#{file_uri_for(gem_repo2)}"
         gem "net_a"
       G
@@ -97,7 +97,7 @@ RSpec.describe "bundle install with install-time dependencies" do
     end
 
     it "installs multiple levels of dependencies" do
-      install_gemfile <<-G
+      install_gemfile <<-G, :env => { "DEBUG" => "1" }
         source "#{file_uri_for(gem_repo2)}"
         gem "net_c"
         gem "net_e"
@@ -114,7 +114,7 @@ RSpec.describe "bundle install with install-time dependencies" do
           gem "net_e"
         G
 
-        bundle :install, :env => { "BUNDLER_DEBUG_RESOLVER" => "1" }
+        bundle :install, :env => { "BUNDLER_DEBUG_RESOLVER" => "1", "DEBUG" => "1" }
 
         expect(out).to include("BUNDLER: Starting resolution")
       end
@@ -128,7 +128,7 @@ RSpec.describe "bundle install with install-time dependencies" do
           gem "net_e"
         G
 
-        bundle :install, :env => { "DEBUG_RESOLVER" => "1" }
+        bundle :install, :env => { "DEBUG_RESOLVER" => "1", "DEBUG" => "1" }
 
         expect(out).to include("BUNDLER: Starting resolution")
       end
