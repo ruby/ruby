@@ -1035,7 +1035,7 @@ ractor_try_yield(rb_execution_context_t *ec, rb_ractor_t *cr, struct rb_ractor_b
 
 // select(r1, r2, r3, receive: true, yield: obj)
 static VALUE
-ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yielded_value, bool move, VALUE *ret_r)
+ractor_select(rb_execution_context_t *ec, const VALUE *rs, const int rs_len, VALUE yielded_value, bool move, VALUE *ret_r)
 {
     rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
     VALUE crv = cr->pub.self;
@@ -1044,7 +1044,7 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yield
     bool interrupted = false;
     enum ractor_wait_status wait_status = 0;
     bool yield_p = (yielded_value != Qundef) ? true : false;
-    const int rs_len = alen;
+    const int alen = rs_len + (yield_p ? 1 : 0);
 
     struct ractor_select_action {
         enum ractor_select_action_type {
@@ -1053,7 +1053,7 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yield
             ractor_select_action_yield,
         } type;
         VALUE v;
-    } *actions = ALLOCA_N(struct ractor_select_action, alen + (yield_p ? 1 : 0));
+    } *actions = ALLOCA_N(struct ractor_select_action, alen);
 
     VM_ASSERT(cr->sync.wait.status == wait_none);
     VM_ASSERT(cr->sync.wait.wakeup_status == wakeup_none);
@@ -1061,7 +1061,7 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yield
     VM_ASSERT(cr->sync.wait.yielded_basket.type == basket_type_none);
 
     // setup actions
-    for (i=0; i<alen; i++) {
+    for (i=0; i<rs_len; i++) {
         VALUE v = rs[i];
 
         if (v == crv) {
@@ -1080,16 +1080,15 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, int alen, VALUE yield
     }
     rs = NULL;
 
-  restart:
-
     if (yield_p) {
         actions[rs_len].type = ractor_select_action_yield;
         actions[rs_len].v = Qundef;
         wait_status |= wait_yielding;
-        alen++;
 
         ractor_basket_setup(ec, &cr->sync.wait.yielded_basket, yielded_value, move, false, false);
     }
+
+  restart:
 
     // TODO: shuffle actions
 
