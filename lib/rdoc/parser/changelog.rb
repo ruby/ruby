@@ -229,10 +229,28 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
       out = []
       entries.each do |entry, (author, date, body)|
         title = RDoc::Markup::Heading.new(3, "#{date} #{author}")
+        title.extend(Aref)
+        title.aref = "label-#{entry}"
         out << title
-        out.concat RDoc::Markdown.parse(body).parts
+        out.concat parse_log_entry(body, entry)
       end
       out
+    end
+
+    def parse_log_entry(content, sha)
+      RDoc::Markdown.parse(content).parts.each do |body|
+        case body
+        when RDoc::Markup::Heading
+          body.level += 3
+          label = body.aref.sub(/\Alabel-/, "label-#{sha}-")
+          body.extend(Aref)
+          body.aref = label
+        end
+      end
+    end
+
+    module Aref
+      attr_accessor :aref
     end
   end
 end

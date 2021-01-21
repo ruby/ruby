@@ -340,6 +340,29 @@ commit\ a8dc5156e183489c5121fb1759bda5d9406d9175
   Date:   2021-01-20 01:58:26 +0900
 
     * 2021-01-20 [ci skip]
+
+commit de5f8a92d5001799bedb3b1a271a2d9b23c6c8fb
+  Author: Masataka Pocke Kuwabara <kuwabara@pocke.me>
+  Date:   2021-01-01 14:25:08 +0900
+
+    Make args info for RubyVM::AST to available on endless method without parens
+
+    Problem
+    ===
+
+    Arguments information is missing for endless method without parens.
+    For example:
+
+    ```ruby
+    # ok
+    ```
+
+    It causes an error if a program expects `args` node exists.
+
+    Solution
+    ===
+
+    Call `new_args` on this case.
 ChangeLog
 
     parser.scan
@@ -354,7 +377,18 @@ ChangeLog
       head(2, '2021-01-20'),
       blank_line,
       head(3, '2021-01-20 01:58:26 +0900 git <svn-admin@ruby-lang.org>'),
-      list(:BULLET, item(nil, para('2021-01-20 [ci skip]'))))
+      list(:BULLET, item(nil, para('2021-01-20 [ci skip]'))),
+      head(2, '2021-01-01'),
+      blank_line,
+      head(3, '2021-01-01 14:25:08 +0900 Masataka Pocke Kuwabara <kuwabara@pocke.me>'),
+      para('Make args info for RubyVM::AST to available on endless method without parens'),
+      head(4, 'Problem'),
+      para("Arguments information is missing for endless method without parens.\n" +
+           "For example:"),
+      verb("# ok\n").tap {|v| v.format = :ruby},
+      para('It causes an error if a program expects <code>args</code> node exists.'),
+      head(4, 'Solution'),
+      para('Call <code>new_args</code> on this case.'))
 
     expected.file = @top_level
 
