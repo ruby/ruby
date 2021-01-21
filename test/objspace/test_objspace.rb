@@ -299,6 +299,21 @@ class TestObjSpace < Test::Unit::TestCase
     assert_equal('{"type":"SYMBOL", "value":"foo"}', ObjectSpace.dump(:foo))
   end
 
+  def test_dump_singleton_class
+    assert_include(ObjectSpace.dump(Object), '"name":"Object"')
+    assert_include(ObjectSpace.dump(Kernel), '"name":"Kernel"')
+    assert_include(ObjectSpace.dump(Object.new.singleton_class), '"real_class_name":"Object"')
+
+    singleton = Object.new.singleton_class
+    singleton_dump = ObjectSpace.dump(singleton)
+    assert_include(singleton_dump, '"singleton":true')
+    if defined?(JSON)
+      assert_equal(Object, singleton.superclass)
+      superclass_address = JSON.parse(ObjectSpace.dump(Object)).fetch('address')
+      assert_equal(superclass_address, JSON.parse(singleton_dump).fetch('superclass'))
+    end
+  end
+
   def test_dump_special_floats
     assert_match(/"value":"NaN"/, ObjectSpace.dump(Float::NAN))
     assert_match(/"value":"Inf"/, ObjectSpace.dump(Float::INFINITY))
