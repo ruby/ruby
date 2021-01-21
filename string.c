@@ -11612,7 +11612,7 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *             returns +self+ if any changes, +nil+ otherwise.
  *  - #succ!, #next!:: Returns +self+ modified to become its own successor.
  *  - #replace, #initialize_copy:: Returns +self+ with its entire content replaced by a given string.
- *  - #reverse!:: Returns +self+ with is characters in reverse order.
+ *  - #reverse!:: Returns +self+ with its characters in reverse order.
  *  - #setbyte:: Sets the byte at a given integer offset to a given value; returns the argument.
  *  - #tr!:: Replaces specified characters in +self+ with specified replacement characters;
  *           returns +self+ if any changes, +nil+ otherwise.
@@ -11663,7 +11663,7 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  - #<<:: Returns a copy of +self+ concatenated with a given sting or integer.
  *  - #center:: Returns a copy of +self+ centered between pad substring.
  *  - #concat:: Returns the concatenation of +self+ with given other strings.
- *  - #prepend::
+ *  - #prepend:: Returns the concatentation of a given other string with +self+.
  *  - #ljust:: Returns a copy of +self+ of a given length, right-padded with a given other string.
  *  - #rjust:: Returns a copy of +self+ of a given length, left-padded with a given other string.
  *
@@ -11674,16 +11674,19 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *            and all special characters escaped.
  *  - #undump:: Returns a copy of +self with all <tt>\xNN</tt> notation replace by <tt>\uNNNN</tt> notation
  *              and all escaped characters unescaped.
- *  - #gsub::
- *  - #sub::
- *  - #next::
- *  - #succ::
- *  - #reverse::
+ *  - #sub:: Returns a copy of +self+ with the first substring matching a given pattern
+ *           replaced with a given replacement string;.
+ *  - #gsub:: Returns a copy of +self+ with each substring that matches a given pattern
+ *            replaced with a given replacement string.
+ *  - #succ, #next:: Returns the string that is the successor to +self+.
+ *  - #reverse:: Returns a copy of +self+ with its characters in reverse order.
  *  - #scrub:: Returns a copy of +self+ with each invalid byte replaced with a given character.
  *  - #tr:: Returns a copy of +self+ with specified characters replaced with specified replacement characters.
  *  - #tr_s:: Returns a copy of +self+ with specified characters replaced with specified replacement characters,
  *            removing duplicates from the substrings that were modified.
  *  - #%:: Returns the string resulting from formatting a given object into +self+
+ *  - #unicode_normalize:: Returns a copy of +self+ with each character Unicode-normalized.
+ *  - #encode:: Returns a copy of +self+ with all characters transcoded from one given encoding into another.
  *
  *  _Casing
  *
@@ -11693,11 +11696,6 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  - #upcase:: Returns a copy of +self+ with all characters upcased.
  *  - #swapcase:: Returns a copy of +self+ with all upcase characters downcased
  *                and all downcase characters upcased.
- *
- *  _Encoding_
- *
- *  - #unicode_normalize::
- *  - #encode::
  *
  *  _Deletion_
  *
@@ -11723,38 +11721,40 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *
  *  Each of these methods converts the contents of +self+ to a non-\String.
  *
- *  - #bytes::
- *  - #chars::
- *  - #codepoints::
+ *  - #bytes:: Returns an array of the bytes in +self+.
+ *  - #chars:: Returns an array of the characters in +self+.
+ *  - #codepoints:: Returns an array of the integer ordinals in +self+.
  *  - #getbyte:: Returns an integer byte as determined by a given index.
- *  - #grapheme_clusters::
- *  - #hex::
- *  - #inspect::
- *  - #intern::
- *  - #lines::
- *  - #oct::
- *  - #ord::
- *  - #partition::
- *  - #rpartition::
- *  - #scan::
- *  - #split::
- *  - #to_c::
- *  - #to_d::
- *  - #to_f::
- *  - #to_i::
- *  - #to_r::
- *  - #to_sym::
- *  - #unpack::
- *  - #unpack1::
+ *  - #grapheme_clusters:: Returns an array of the grapheme clusters in +self+.
+ *  - #hex:: Returns the integer value of the leading characters, interpreted as hexadecimal digits.
+ *  - #inspect:: Returns copy of +self+, enclosed in double-quotes, with special characters escaped.
+ *  - #intern:: Returns the symbol corresponding to +self+.
+ *  - #lines:: Returns an array of the lines in +self+, as determined by a given record separator.
+ *  - #:: Returns the integer value of the leading characters, interpreted as octal digits.
+ *  - #ord:: Returns the integer ordinal of the first character in +self+.
+ *  - #partition:: Returns a 3-element array determined by the first substring that matches
+ *                 a given substring or regexp,
+ *  - #rpartition:: Returns a 3-element array determined by the last substring that matches
+ *                 a given substring or regexp,
+ *  - #scan:: Returns an array of substrings matching a given regexp or string, or,
+ *            if a block given, passes each matching substring to the  block.
+ *  - #split:: Returns an array of substrings determined by a given delimiter -- regexp or string --
+ *             or, if a block given, passes those substrings to the block.
+ *  - #to_f:: Returns the floating-point value of leading characters, interpreted as a floating-point number.
+ *  - #to_i:: Returns the integer value of leading characters, interpreted as an integer.
+ *  - #to_sym:: Returns the symbol corresponding to +self+.
+ *  - #unpack:: Returns an array of substrings extracted from +self+ according to a given format.
+ *  - #unpack1:: Returns the first substring extracted from +self+ according to a given format.
  *
  *  === Methods for Iterating
  *
- *  - #each_byte::
- *  - #each_char::
- *  - #each_codepoint::
- *  - #each_grapheme_cluster::
- *  - #each_line::
- *  - #upto::
+ *  - #each_byte:: Calls the given block with each successive byte in +self+.
+ *  - #each_char:: Calls the given block with each successive character in +self+.
+ *  - #each_codepoint:: Calls the given block with each successive integer codepoint in +self+.
+ *  - #each_grapheme_cluster:: Calls the given block with each successive grapheme cluster in +self+.
+ *  - #each_line:: Calls the given block with each successive line in +self+,
+ *                 as determined by a given record separator.
+ *  - #upto:: Calls the given block with each string value returned by successive calls to #succ.
  */
 
 void
