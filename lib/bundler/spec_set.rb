@@ -28,7 +28,7 @@ module Bundler
 
           specs_for_dep.first.dependencies.each do |d|
             next if d.type == :development
-            d = DepProxy.new(d, dep.__platform) unless match_current_platform
+            d = DepProxy.get_proxy(d, dep.__platform) unless match_current_platform
             deps << d
           end
         elsif check

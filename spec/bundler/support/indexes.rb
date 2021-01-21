@@ -22,7 +22,7 @@ module Spec
       @deps.each do |d|
         @platforms.each do |p|
           source_requirements[d.name] = d.source = default_source
-          deps << Bundler::DepProxy.new(d, p)
+          deps << Bundler::DepProxy.get_proxy(d, p)
         end
       end
       source_requirements ||= {}

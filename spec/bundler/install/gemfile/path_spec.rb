@@ -581,6 +581,71 @@ RSpec.describe "bundle install with explicit source paths" do
 
       expect(the_bundle).to include_gems "rack 0.9.1"
     end
+
+    it "keeps using the same version even when another dependency is added" do
+      build_lib "foo", "1.0", :path => lib_path("foo") do |s|
+        s.add_dependency "rack", "0.9.1"
+      end
+
+      bundle "install"
+
+      expect(the_bundle).to include_gems "rack 0.9.1"
+
+      lockfile_should_be <<-G
+        PATH
+          remote: #{lib_path("foo")}
+          specs:
+            foo (1.0)
+              rack (= 0.9.1)
+
+        GEM
+          remote: #{file_uri_for(gem_repo1)}/
+          specs:
+            rack (0.9.1)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          foo!
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      G
+
+      build_lib "foo", "1.0", :path => lib_path("foo") do |s|
+        s.add_dependency "rack"
+        s.add_dependency "rake", "13.0.1"
+      end
+
+      bundle "install"
+
+      lockfile_should_be <<-G
+        PATH
+          remote: #{lib_path("foo")}
+          specs:
+            foo (1.0)
+              rack
+              rake (= 13.0.1)
+
+        GEM
+          remote: #{file_uri_for(gem_repo1)}/
+          specs:
+            rack (0.9.1)
+            rake (13.0.1)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          foo!
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      G
+
+      expect(the_bundle).to include_gems "rack 0.9.1"
+    end
   end
 
   describe "switching sources" do

@@ -818,11 +818,6 @@ module Bundler
           # commonly happens if the version changed in the gemspec
           next unless new_spec
 
-          new_runtime_deps = new_spec.dependencies.select {|d| d.type != :development }
-          old_runtime_deps = s.dependencies.select {|d| d.type != :development }
-          # If the dependencies of the path source have changed and locked spec can't satisfy new dependencies, unlock it
-          next unless new_runtime_deps.sort == old_runtime_deps.sort || new_runtime_deps.all? {|d| satisfies_locked_spec?(d) }
-
           s.dependencies.replace(new_spec.dependencies)
         end
 
@@ -897,7 +892,7 @@ module Bundler
 
     def expand_dependency_with_platforms(dep, platforms)
       platforms.map do |p|
-        DepProxy.new(dep, p)
+        DepProxy.get_proxy(dep, p)
       end
     end
 
@@ -977,7 +972,7 @@ module Bundler
         next requirements if @locked_gems.dependencies[name] != dependency
         next requirements if dependency.source.is_a?(Source::Path)
         dep = Gem::Dependency.new(name, ">= #{locked_spec.version}")
-        requirements[name] = DepProxy.new(dep, locked_spec.platform)
+        requirements[name] = DepProxy.get_proxy(dep, locked_spec.platform)
         requirements
       end.values
     end
