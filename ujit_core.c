@@ -95,8 +95,6 @@ Returns T_NONE if unknown
 int
 ctx_get_top_type(ctx_t* ctx)
 {
-    RUBY_ASSERT(n <= ctx->stack_size);
-
     if (ctx->stack_size > MAX_TEMP_TYPES)
         return T_NONE;
 
