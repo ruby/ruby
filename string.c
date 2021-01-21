@@ -11527,8 +11527,19 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *
  *  == What's Here
  *
- *  First, what's elsewhere.  \Class \String includes the module Comparable,
+ *  First, what's elsewhere. \String includes the module Comparable,
  *  which provides several very useful methods.
+ *
+ *  Here, class \String provides methods that are useful for:
+ *
+ *  - {Creating a String}[#class-String-label-Methods+for+Creating+a+String]
+ *  - {Frozen/Unfrozen Strings}[#class-String-label-Methods+for+a+Frozen-2FUnfrozen+String]
+ *  - {Querying}[#class-String-label-Methods+for+Querying]
+ *  - {Comparing}[#class-String-label-Methods+for+Comparing]
+ *  - {Modifying +self+}[#class-String-label-Methods+for+Modifying+self]
+ *  - {Converting to New String}[#class-String-label-Methods+for+Converting+to+New+String]
+ *  - {Converting to Non-String}[#class-String-label-Methods+for+Converting+to+Non--5CString]
+ *  - {Iterating}[#class-String-label-Methods+for+Iterating]
  *
  *  === Methods for Creating a \String
  *
