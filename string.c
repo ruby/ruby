@@ -11527,6 +11527,9 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *
  *  == What's Here
  *
+ *  First, what's elsewhere.  \Class \String includes the module Comparable,
+ *  which provides several very useful methods.
+ *
  *  === Methods for Creating a \String
  *
  *  - ::new:: Returns a new string.
@@ -11738,7 +11741,7 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *                 a given substring or regexp,
  *  - #scan:: Returns an array of substrings matching a given regexp or string, or,
  *            if a block given, passes each matching substring to the  block.
- *  - #split:: Returns an array of substrings determined by a given delimiter -- regexp or string --
+ *  - #split, #to_a:: Returns an array of substrings determined by a given delimiter -- regexp or string --
  *             or, if a block given, passes those substrings to the block.
  *  - #to_f:: Returns the floating-point value of leading characters, interpreted as a floating-point number.
  *  - #to_i:: Returns the integer value of leading characters, interpreted as an integer.
