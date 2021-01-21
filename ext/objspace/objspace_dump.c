@@ -419,14 +419,37 @@ dump_object(VALUE obj, struct dump_config *dc)
             dump_append(dc, ", \"embedded\":true");
         break;
 
+      case T_ICLASS:
+        if (rb_class_get_superclass(obj)) {
+            dump_append(dc, ", \"superclass\":");
+            dump_append_ref(dc, rb_class_get_superclass(obj));
+        }
+        break;
+
       case T_CLASS:
       case T_MODULE:
+        if (rb_class_get_superclass(obj)) {
+            dump_append(dc, ", \"superclass\":");
+            dump_append_ref(dc, rb_class_get_superclass(obj));
+        }
+
         if (dc->cur_obj_klass) {
             VALUE mod_name = rb_mod_name(obj);
             if (!NIL_P(mod_name)) {
                 dump_append(dc, ", \"name\":\"");
                 dump_append(dc, RSTRING_PTR(mod_name));
                 dump_append(dc, "\"");
+            } else {
+                VALUE real_mod_name = rb_mod_name(rb_class_real(obj));
+                if (RTEST(real_mod_name)) {
+                    dump_append(dc, ", \"real_class_name\":\"");
+                    dump_append(dc, RSTRING_PTR(real_mod_name));
+                    dump_append(dc, "\"");
+                }
+            }
+
+            if (FL_TEST(obj, FL_SINGLETON)) {
+                dump_append(dc, ", \"singleton\":true");
             }
         }
         break;
