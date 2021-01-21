@@ -258,10 +258,11 @@ require 'erb/version'
 #
 class ERB
   Revision = '$Date::                           $' # :nodoc: #'
+  deprecate_constant :Revision
 
   # Returns revision information for the erb.rb module.
   def self.version
-    "erb.rb [#{VERSION} #{ERB::Revision.split[1]}]"
+    VERSION
   end
 end
 
