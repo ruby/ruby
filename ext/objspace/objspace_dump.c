@@ -357,6 +357,12 @@ dump_object(VALUE obj, struct dump_config *dc)
     dump_append_ref(dc, obj);
 
     dump_append(dc, ", \"type\":\"");
+#if USE_RVARGC
+    if (rb_is_payload_object(obj)) {
+        dump_append(dc, "PAYLOAD\" }\n");
+        return;
+    }
+#endif
     dump_append(dc, obj_type(obj));
     dump_append(dc, "\"");
 
@@ -636,7 +642,11 @@ objspace_dump_all(VALUE os, VALUE output, VALUE full, VALUE since)
     }
 
     /* dump all objects */
+#if USE_RVARGC
+    rb_objspace_each_objects_with_payload(heap_i, &dc);
+#else
     rb_objspace_each_objects(heap_i, &dc);
+#endif
 
     return dump_result(&dc);
 }

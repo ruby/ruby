@@ -131,6 +131,14 @@ void rb_objspace_each_objects(
     int (*callback)(void *start, void *end, size_t stride, void *data),
     void *data);
 
+#if USE_RVARGC
+void rb_objspace_each_objects_with_payload(
+    int (*callback)(void *start, void *end, size_t stride, void *data),
+    void *data);
+
+int rb_is_payload_object(VALUE obj);
+#endif
+
 void rb_objspace_each_objects_without_setup(
     int (*callback)(void *, void *, size_t, void *),
     void *data);

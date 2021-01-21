@@ -830,6 +830,7 @@ typedef struct rb_objspace {
 #if USE_RVARGC
     struct {
         unsigned short requested_slots;
+        bool dump_payload;
     } rvargc;
 #endif
 
@@ -1620,7 +1621,7 @@ RVALUE_WHITE_P(VALUE obj)
 int
 rb_is_payload_object(VALUE obj)
 {
-    return !!MARKED_IN_BITMAP(GET_HEAP_PAYLOAD_BITS(obj), obj);
+    return !!RVALUE_PAYLOAD_BITMAP(obj);
 }
 #endif
 
@@ -3467,8 +3468,9 @@ objspace_each_objects_without_setup(rb_objspace_t *objspace, each_obj_callback *
 
 #if USE_RVARGC
         RVALUE *p = pstart;
+
         while (p < pend) {
-            if (!MARKED_IN_BITMAP(page->payload_bits, p)) {
+            if (!MARKED_IN_BITMAP(page->payload_bits, p) || objspace->rvargc.dump_payload) {
                 if ((*callback)(p, p + 1, sizeof(RVALUE), data)) {
                     break;
                 }
@@ -3542,6 +3544,16 @@ rb_objspace_each_objects(each_obj_callback *callback, void *data)
 {
     objspace_each_objects(&rb_objspace, callback, data);
 }
+
+#if USE_RVARGC
+void
+rb_objspace_each_objects_with_payload(each_obj_callback *callback, void *data)
+{
+    rb_objspace.rvargc.dump_payload = TRUE;
+    objspace_each_objects(&rb_objspace, callback, data);
+    rb_objspace.rvargc.dump_payload = FALSE;
+}
+#endif
 
 static void
 objspace_each_objects(rb_objspace_t *objspace, each_obj_callback *callback, void *data)
