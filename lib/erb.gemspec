@@ -1,6 +1,13 @@
+begin
+  require_relative 'lib/erb/version'
+rescue LoadError
+  # for Ruby core repository
+  require_relative 'version'
+end
+
 Gem::Specification.new do |spec|
   spec.name          = 'erb'
-  spec.version       = '2.2.0'
+  spec.version       = ERB.const_get(:VERSION, false)
   spec.authors       = ['Masatoshi SEKI']
   spec.email         = ['seki@ruby-lang.org']
 

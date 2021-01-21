@@ -12,7 +12,8 @@
 #
 # You can redistribute it and/or modify it under the same terms as Ruby.
 
-require "cgi/util"
+require 'cgi/util'
+require 'erb/version'
 
 #
 # = ERB -- Ruby Templating
@@ -260,7 +261,7 @@ class ERB
 
   # Returns revision information for the erb.rb module.
   def self.version
-    "erb.rb [2.2.0 #{ERB::Revision.split[1]}]"
+    "erb.rb [#{VERSION} #{ERB::Revision.split[1]}]"
   end
 end
 
