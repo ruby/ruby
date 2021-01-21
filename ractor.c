@@ -491,6 +491,31 @@ ractor_try_receive(rb_execution_context_t *ec, rb_ractor_t *r)
     return ractor_basket_accept(&basket);
 }
 
+static bool
+ractor_sleeping_by(const rb_ractor_t *r, enum ractor_wait_status wait_status)
+{
+    return (r->sync.wait.status & wait_status) && r->sync.wait.wakeup_status == wakeup_none;
+}
+
+static bool
+ractor_wakeup(rb_ractor_t *r, enum ractor_wait_status wait_status, enum ractor_wakeup_status wakeup_status)
+{
+    ASSERT_ractor_locking(r);
+
+    // fprintf(stderr, "%s r:%p status:%s/%s wakeup_status:%s/%s\n", __func__, r,
+    //         wait_status_str(r->sync.wait.status), wait_status_str(wait_status),
+    //         wakeup_status_str(r->sync.wait.wakeup_status), wakeup_status_str(wakeup_status));
+
+    if (ractor_sleeping_by(r, wait_status)) {
+        r->sync.wait.wakeup_status = wakeup_status;
+        rb_native_cond_signal(&r->sync.cond);
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
 static void *
 ractor_sleep_wo_gvl(void *ptr)
 {
@@ -513,9 +538,8 @@ ractor_sleep_interrupt(void *ptr)
     rb_ractor_t *r = ptr;
 
     RACTOR_LOCK(r);
-    if (r->sync.wait.wakeup_status == wakeup_none) {
-        r->sync.wait.wakeup_status = wakeup_by_interrupt;
-        rb_native_cond_signal(&r->sync.cond);
+    {
+        ractor_wakeup(r, wait_receiving | wait_taking | wait_yielding, wakeup_by_interrupt);
     }
     RACTOR_UNLOCK(r);
 }
@@ -577,31 +601,6 @@ ractor_sleep(rb_execution_context_t *ec, rb_ractor_t *cr)
         RACTOR_UNLOCK(cr);
         rb_thread_check_ints();
         RACTOR_LOCK(cr); // reachable?
-    }
-}
-
-static bool
-ractor_sleeping_by(const rb_ractor_t *r, enum ractor_wait_status wait_status)
-{
-    return (r->sync.wait.status & wait_status) && r->sync.wait.wakeup_status == wakeup_none;
-}
-
-static bool
-ractor_wakeup(rb_ractor_t *r, enum ractor_wait_status wait_status, enum ractor_wakeup_status wakeup_status)
-{
-    ASSERT_ractor_locking(r);
-
-    // fprintf(stderr, "%s r:%p status:%s/%s wakeup_status:%s/%s\n", __func__, r,
-    //         wait_status_str(r->sync.wait.status), wait_status_str(wait_status),
-    //         wakeup_status_str(r->sync.wait.wakeup_status), wakeup_status_str(wakeup_status));
-
-    if (ractor_sleeping_by(r, wait_status)) {
-        r->sync.wait.wakeup_status = wakeup_status;
-        rb_native_cond_signal(&r->sync.cond);
-        return true;
-    }
-    else {
-        return false;
     }
 }
 
