@@ -729,6 +729,9 @@ rb_type_str(enum ruby_value_type type)
       case type_case(T_ICLASS);
       case type_case(T_ZOMBIE);
       case type_case(T_MOVED);
+#if USE_RVARGC
+      case type_case(T_PAYLOAD);
+#endif
       case T_MASK: break;
     }
 #undef type_case

@@ -80,6 +80,9 @@
 #define T_TRUE     RUBY_T_TRUE
 #define T_UNDEF    RUBY_T_UNDEF
 #define T_ZOMBIE   RUBY_T_ZOMBIE
+#if USE_RVARGC
+#define T_PAYLOAD  RUBY_T_PAYLOAD
+#endif
 
 #define BUILTIN_TYPE      RB_BUILTIN_TYPE
 #define DYNAMIC_SYM_P     RB_DYNAMIC_SYM_P
@@ -132,6 +135,10 @@ ruby_value_type {
     RUBY_T_SYMBOL   = 0x14, /**< @see struct ::RSymbol */
     RUBY_T_FIXNUM   = 0x15, /**< Integers formerly known as Fixnums. */
     RUBY_T_UNDEF    = 0x16, /**< @see ::RUBY_Qundef */
+#if USE_RVARGC
+    RUBY_T_PAYLOAD  = 0x17, /**< @see struct ::RPayload */
+#endif
+
 
     RUBY_T_IMEMO    = 0x1a, /**< @see struct ::RIMemo */
     RUBY_T_NODE     = 0x1b, /**< @see struct ::RNode */
