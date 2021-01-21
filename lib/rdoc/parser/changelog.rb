@@ -211,7 +211,7 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
     def parse_entries
       entries = []
 
-      @content.scan(/^commit\s+(\h+)\n *Author: *(.+)\n *Date: *(.+)\n\n((?: {4}.*\n+)*)/) do
+      @content.scan(/^commit\s+(\h{20})\h*\n *Author: *(.+)\n *Date: *(.+)\n\n((?: {4}.*\n+)*)/) do
         entry_name, author, date, entry_body = $1, $2, $3, $4.gsub(/^ {4}/, '')
         if /(\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+) *([-+]\d\d)(\d\d)/ =~ date
           time = Time.new($1, $2, $3, $4, $5, $6, "#{$7}:#{$8}")

@@ -280,7 +280,7 @@ commit\ 709bed2afaee50e2ce803f87bf1ee8291bea41e3
 ChangeLog
 
     expected = [
-      [ "709bed2afaee50e2ce803f87bf1ee8291bea41e3",
+      [ "709bed2afaee50e2ce80",
        [ "git <svn-admin@ruby-lang.org>",
          "2021-01-21 01:03:52 +0900",
          "* 2021-01-21 [ci skip]\n"]]]
