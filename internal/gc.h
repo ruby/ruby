@@ -103,7 +103,7 @@ VALUE rb_ec_wb_protected_newobj_of(struct rb_execution_context_struct *ec, VALUE
 #if USE_RVARGC
 VALUE rb_wb_unprotected_newobj_of_with_size(VALUE klass, VALUE flags, size_t size);
 VALUE rb_wb_protected_newobj_of_with_size(VALUE klass, VALUE flags, size_t size);
-void *rb_payload_data_start_ptr(VALUE obj);
+void *rb_payload_start_zero(VALUE obj);
 #endif
 size_t rb_obj_memsize_of(VALUE);
 void rb_gc_verify_internal_consistency(void);

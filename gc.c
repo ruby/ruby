@@ -1616,6 +1616,14 @@ RVALUE_WHITE_P(VALUE obj)
     return RVALUE_MARKED(obj) == FALSE;
 }
 
+#if USE_RVARGC
+int
+rb_is_payload_object(VALUE obj)
+{
+    return !!MARKED_IN_BITMAP(GET_HEAP_PAYLOAD_BITS(obj), obj);
+}
+#endif
+
 /*
   --------------------------- ObjectSpace -----------------------------
 */
@@ -2962,6 +2970,30 @@ obj_free_object_id(rb_objspace_t *objspace, VALUE obj)
     }
 }
 
+#if USE_RVARGC
+static void
+gc_payload_free(rb_objspace_t *objspace, void *ptr)
+{
+    VALUE pstart = (VALUE)ptr - sizeof(struct RPayloadHead);
+    GC_ASSERT(pstart % sizeof(RVALUE) == 0);
+    GC_ASSERT(BUILTIN_TYPE(pstart) == T_PAYLOAD);
+
+    int size = RPAYLOAD(pstart)->head.length;
+
+    struct heap_page *page = GET_HEAP_PAGE(pstart);
+
+    for (int i = 0; i < size; i++) {
+        VALUE slot = pstart + i * sizeof(RVALUE);
+
+        GC_ASSERT(GET_HEAP_PAGE(slot) == page);
+        heap_page_add_freeobj(objspace, page, slot);
+
+        GC_ASSERT(RVALUE_PAYLOAD_BITMAP(slot));
+        CLEAR_IN_BITMAP(page->payload_bits, slot);
+    }
+}
+#endif
+
 static int
 obj_free(rb_objspace_t *objspace, VALUE obj)
 {
@@ -3038,8 +3070,12 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	}
 	rb_class_remove_from_module_subclasses(obj);
 	rb_class_remove_from_super_subclasses(obj);
-	if (RCLASS_EXT(obj))
+	if (RANY(obj)->as.klass.ptr)
+#if USE_RVARGC
+            gc_payload_free(objspace, RANY(obj)->as.klass.ptr);
+#else
 	    xfree(RCLASS_EXT(obj));
+#endif
 	RCLASS_EXT(obj) = NULL;
 
         (void)RB_DEBUG_COUNTER_INC_IF(obj_module_ptr, BUILTIN_TYPE(obj) == T_MODULE);
@@ -3209,7 +3245,11 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
         cc_table_free(objspace, obj, FALSE);
 	rb_class_remove_from_module_subclasses(obj);
 	rb_class_remove_from_super_subclasses(obj);
+#if USE_RVARGC
+        gc_payload_free(objspace, RCLASS_EXT(obj));
+#else
 	xfree(RCLASS_EXT(obj));
+#endif
 	RCLASS_EXT(obj) = NULL;
 
         RB_DEBUG_COUNTER_INC(obj_iclass_ptr);
@@ -7382,7 +7422,15 @@ gc_verify_internal_consistency_(rb_objspace_t *objspace)
 
     /* check relations */
 
+#if USE_RVARGC
+    objspace->rvargc.dump_payload = TRUE;
+#endif
+
     objspace_each_objects_without_setup(objspace, verify_internal_consistency_i, &data);
+
+#if USE_RVARGC
+    objspace->rvargc.dump_payload = FALSE;
+#endif
 
     if (data.err_count != 0) {
 #if RGENGC_CHECK_MODE >= 5
