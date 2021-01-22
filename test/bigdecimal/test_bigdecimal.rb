@@ -953,9 +953,13 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(2, BigDecimal("2") / 1)
     assert_equal(-2, BigDecimal("2") / -1)
 
-    assert_equal(BigDecimal('1486.868686869'), BigDecimal('1472.0') / BigDecimal('0.99'), '[ruby-core:59365] [#9316]')
+    assert_equal(BigDecimal('1486.868686869'),
+                 (BigDecimal('1472.0') / BigDecimal('0.99')).round(9),
+                 '[ruby-core:59365] [#9316]')
 
-    assert_equal(4.124045235, BigDecimal('0.9932') / (700 * BigDecimal('0.344045') / BigDecimal('1000.0')), '[#9305]')
+    assert_in_delta(4.124045235,
+                    (BigDecimal('0.9932') / (700 * BigDecimal('0.344045') / BigDecimal('1000.0'))).round(9, half: :up),
+                    10**Float::MIN_10_EXP, '[#9305]')
 
     BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, false)
     assert_positive_zero(BigDecimal("1.0")  / BigDecimal("Infinity"))
@@ -967,6 +971,15 @@ class TestBigDecimal < Test::Unit::TestCase
     BigDecimal.mode(BigDecimal::EXCEPTION_ZERODIVIDE, false)
     assert_raise_with_message(FloatDomainError, "Computation results in 'Infinity'") { BigDecimal("1") / 0 }
     assert_raise_with_message(FloatDomainError, "Computation results in '-Infinity'") { BigDecimal("-1") / 0 }
+  end
+
+  def test_dev_precision
+    bug13754 = '[ruby-core:82107] [Bug #13754]'
+    a = BigDecimal('101')
+    b = BigDecimal('0.9163472602589686')
+    c = a/b
+    assert(c.precision > b.precision,
+           "(101/0.9163472602589686).precision >= (0.9163472602589686).precision #{bug13754}")
   end
 
   def test_div_with_float
