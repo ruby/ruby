@@ -525,7 +525,7 @@ module IRB
                 printf "Use \"exit\" to leave %s\n", @context.ap_name
               end
             else
-              print "\n"
+              print "\n" if @context.prompting?
             end
           end
           l
