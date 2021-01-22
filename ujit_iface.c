@@ -13,8 +13,15 @@
 #include "ujit_codegen.h"
 #include "ujit_core.h"
 #include "ujit_hooks.inc"
+#include "ujit.rbinc"
+
+#if HAVE_LIBCAPSTONE
+#include <capstone/capstone.h>
+#endif
 
 VALUE cUjitBlock;
+VALUE cUjitDisasm;
+VALUE cUjitDisasmInsn;
 
 extern st_table * version_tbl;
 extern codeblock_t *cb;
@@ -366,6 +373,44 @@ iseq_end_index(VALUE self)
     return INT2NUM(block->end_idx);
 }
 
+#if HAVE_LIBCAPSTONE
+static const rb_data_type_t ujit_disasm_type = {
+    "UJIT/Disasm",
+    {0, (void(*)(void *))cs_close, 0, },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+};
+
+static VALUE
+ujit_disasm_init(VALUE klass)
+{
+    csh * handle;
+    VALUE disasm = TypedData_Make_Struct(klass, csh, &ujit_disasm_type, handle);
+    cs_open(CS_ARCH_X86, CS_MODE_64, handle);
+    return disasm;
+}
+
+static VALUE
+ujit_disasm(VALUE self, VALUE code, VALUE from)
+{
+    size_t count;
+    csh * handle;
+    cs_insn *insns;
+
+    TypedData_Get_Struct(self, csh, &ujit_disasm_type, handle);
+    count = cs_disasm(*handle, StringValuePtr(code), RSTRING_LEN(code), NUM2INT(from), 0, &insns);
+    VALUE insn_list = rb_ary_new_capa(count);
+
+    for (size_t i = 0; i < count; i++) {
+        VALUE vals = rb_ary_new_from_args(3, LONG2NUM(insns[i].address),
+                rb_str_new2(insns[i].mnemonic),
+                rb_str_new2(insns[i].op_str));
+        rb_ary_push(insn_list, rb_struct_alloc(cUjitDisasmInsn, vals));
+    }
+    cs_free(insns, count);
+    return insn_list;
+}
+#endif
+
 void
 rb_ujit_init(void)
 {
@@ -388,6 +433,14 @@ rb_ujit_init(void)
     rb_define_method(cUjitBlock, "code", block_code, 0);
     rb_define_method(cUjitBlock, "iseq_start_index", iseq_start_index, 0);
     rb_define_method(cUjitBlock, "iseq_end_index", iseq_end_index, 0);
+
+#if HAVE_LIBCAPSTONE
+    cUjitDisasm = rb_define_class_under(mUjit, "Disasm", rb_cObject);
+    rb_define_alloc_func(cUjitDisasm, ujit_disasm_init);
+    rb_define_method(cUjitDisasm, "disasm", ujit_disasm, 2);
+
+    cUjitDisasmInsn = rb_struct_define_under(cUjitDisasm, "Insn", "address", "mnemonic", "op_str", NULL);
+#endif
 
     // Initialize the GC hooks
     method_lookup_dependency = st_init_numtable();
