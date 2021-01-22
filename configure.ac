@@ -2412,6 +2412,9 @@ AS_CASE([$rb_cv_coroutine], [yes|''], [
     AC_MSG_CHECKING(native coroutine implementation for ${target_cpu}-${target_os})
     rb_cv_coroutine=
     AS_CASE(["$target_cpu-$target_os"],
+        [universal-darwin*], [
+            rb_cv_coroutine=universal
+        ],
         [x*64-darwin*], [
             rb_cv_coroutine=amd64
         ],
