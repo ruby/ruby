@@ -23,7 +23,10 @@
 // Maximum number of temp value types we keep track of
 #define MAX_TEMP_TYPES 8
 
-// Code generation context
+/**
+Code generation context
+Contains information we can use to optimize code
+*/
 typedef struct CtxStruct
 {
     // Temporary variable types we keep track of
@@ -64,7 +67,10 @@ enum uint8_t
 // Branch code generation function signature
 typedef void (*branchgen_fn)(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uint8_t shape);
 
-// Store info about an outgoing branch in a code segment
+/**
+Store info about an outgoing branch in a code segment
+Note: care must be taken to minimize the size of branch_t objects
+*/
 typedef struct BranchEntry
 {
     // Positions where the generated code starts and ends
@@ -89,7 +95,11 @@ typedef struct BranchEntry
 
 } branch_t;
 
-// Basic block version
+/**
+Basic block version
+Represents a portion of an iseq compiled with a given context
+Note: care must be taken to minimize the size of block_t objects
+*/
 typedef struct BlockVersion
 {
     // Bytecode sequence (iseq, idx) this is a version of
