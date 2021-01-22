@@ -1229,6 +1229,17 @@ AC_CHECK_LIB(dl, dlopen)	# Dynamic linking for SunOS/Solaris and SYSV
 AC_CHECK_LIB(dld, shl_load)	# Dynamic linking for HP-UX
 AC_CHECK_LIB(socket, shutdown)  # SunOS/Solaris
 
+if pkg-config --exists capstone; then
+   CAPSTONE_CFLAGS=`pkg-config --cflags capstone`
+   CAPSTONE_LIB_L=`pkg-config --libs-only-L capstone`
+   LDFLAGS="$LDFLAGS $CAPSTONE_LIB_L"
+   CFLAGS="$CFLAGS $CAPSTONE_CFLAGS"
+else
+   AC_MSG_ERROR(Please install capstone and pkg-config)
+fi
+
+AC_CHECK_LIB(capstone, cs_open) # Capstone
+
 dnl Checks for header files.
 AC_HEADER_DIRENT
 dnl AC_HEADER_STDC has been checked in AC_USE_SYSTEM_EXTENSIONS
