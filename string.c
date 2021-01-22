@@ -11616,7 +11616,7 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  - #gsub!:: Replaces each substring that matches a given pattern with a given replacement string;
  *             returns +self+ if any changes, +nil+ otherwise.
  *  - #succ!, #next!:: Returns +self+ modified to become its own successor.
- *  - #replace, #initialize_copy:: Returns +self+ with its entire content replaced by a given string.
+ *  - #replace:: Returns +self+ with its entire content replaced by a given string.
  *  - #reverse!:: Returns +self+ with its characters in reverse order.
  *  - #setbyte:: Sets the byte at a given integer offset to a given value; returns the argument.
  *  - #tr!:: Replaces specified characters in +self+ with specified replacement characters;
@@ -11637,16 +11637,14 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  _Encoding_
  *
  *  - #encode!:: Returns +self+ with all characters transcoded from one given encoding into another.
- *  - #force_encoding:: Returns +self+ with all characters transcoded into a given encoding.
  *  - #unicode_normalize!:: Unicode-normalizes +self+; returns +self+.
  *  - #scrub!:: Replaces each invalid byte with a given character; returns +self+.
- *  - #encode!:: Transcodes +self+ from one given encoding to another.
  *  - #force_encoding:: Changes the encoding to a given encoding; returns +self+.
  *
  *  _Deletion_
  *
  *  - #clear:: Removes all content, so that +self+ is empty; returns +self+.
- *  - #slice!:: Removes a substring determined by a given index, start/length, range, regexp, or substring.
+ *  - #slice!, #[]=:: Removes a substring determined by a given index, start/length, range, regexp, or substring.
  *  - #squeeze!:: Removes contiguous duplicate characters; returns +self+.
  *  - #delete!:: Removes characters as determined by the intersection of substring arguments.
  *  - #lstrip!:: Removes leading whitespace; returns +self+ if any changes, +nil+ otherwise.
@@ -11671,9 +11669,15 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  - #ljust:: Returns a copy of +self+ of a given length, right-padded with a given other string.
  *  - #rjust:: Returns a copy of +self+ of a given length, left-padded with a given other string.
  *
- *  _Substitution_
+ *  _Encoding_
  *
  *  - #b:: Returns a copy of +self+ with ASCII-8BIT encoding.
+ *  - #scrub:: Returns a copy of +self+ with each invalid byte replaced with a given character.
+ *  - #unicode_normalize:: Returns a copy of +self+ with each character Unicode-normalized.
+ *  - #encode:: Returns a copy of +self+ with all characters transcoded from one given encoding into another.
+ *
+ *  _Substitution_
+ *
  *  - #dump:: Returns a copy of +self with all non-printing characters replaced by \xHH notation
  *            and all special characters escaped.
  *  - #undump:: Returns a copy of +self with all <tt>\xNN</tt> notation replace by <tt>\uNNNN</tt> notation
@@ -11684,13 +11688,10 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *            replaced with a given replacement string.
  *  - #succ, #next:: Returns the string that is the successor to +self+.
  *  - #reverse:: Returns a copy of +self+ with its characters in reverse order.
- *  - #scrub:: Returns a copy of +self+ with each invalid byte replaced with a given character.
  *  - #tr:: Returns a copy of +self+ with specified characters replaced with specified replacement characters.
  *  - #tr_s:: Returns a copy of +self+ with specified characters replaced with specified replacement characters,
  *            removing duplicates from the substrings that were modified.
  *  - #%:: Returns the string resulting from formatting a given object into +self+
- *  - #unicode_normalize:: Returns a copy of +self+ with each character Unicode-normalized.
- *  - #encode:: Returns a copy of +self+ with all characters transcoded from one given encoding into another.
  *
  *  _Casing_
  *
