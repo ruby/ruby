@@ -7803,6 +7803,7 @@ rb_gc_writebarrier(VALUE a, VALUE b)
     if (RGENGC_CHECK_MODE && SPECIAL_CONST_P(a)) rb_bug("rb_gc_writebarrier: a is special const");
     if (RGENGC_CHECK_MODE && SPECIAL_CONST_P(b)) rb_bug("rb_gc_writebarrier: b is special const");
 
+  retry:
     if (!is_incremental_marking(objspace)) {
         if (!RVALUE_OLD_P(a) || RVALUE_OLD_P(b)) {
             // do nothing
@@ -7812,12 +7813,20 @@ rb_gc_writebarrier(VALUE a, VALUE b)
         }
     }
     else {
+        bool retry = false;
         /* slow path */
         RB_VM_LOCK_ENTER_NO_BARRIER();
         {
-            gc_writebarrier_incremental(a, b, objspace);
+            if (is_incremental_marking(objspace)) {
+                gc_writebarrier_incremental(a, b, objspace);
+            }
+            else {
+                retry = true;
+            }
         }
         RB_VM_LOCK_LEAVE_NO_BARRIER();
+
+        if (retry) goto retry;
     }
     return;
 }
