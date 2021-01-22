@@ -119,6 +119,9 @@ typedef struct BlockVersion
     uint32_t* incoming;
     uint32_t num_incoming;
 
+    // Next block version for this blockid (singly-linked list)
+    struct BlockVersion* next;
+
 } block_t;
 
 // Context object methods

@@ -44,7 +44,7 @@ jit_next_idx(jitstate_t* jit)
 static VALUE
 jit_get_arg(jitstate_t* jit, size_t arg_idx)
 {
-    assert (arg_idx + 1 < insn_len(jit_get_opcode(jit)));
+    RUBY_ASSERT(arg_idx + 1 < (size_t)insn_len(jit_get_opcode(jit)));
     return *(jit->pc + arg_idx + 1);
 }
 
@@ -107,7 +107,7 @@ Returns `NULL` if compilation fails.
 uint8_t*
 ujit_entry_prologue()
 {
-    assert (cb != NULL);
+    RUBY_ASSERT(cb != NULL);
 
     if (cb->write_pos + 1024 >= cb->mem_size) {
         rb_bug("out of executable memory");
@@ -133,8 +133,8 @@ Compile a sequence of bytecode instructions for a given basic block version
 void
 ujit_gen_block(ctx_t* ctx, block_t* block)
 {
-    assert (cb != NULL);
-    assert (block != NULL);
+    RUBY_ASSERT(cb != NULL);
+    RUBY_ASSERT(block != NULL);
 
     const rb_iseq_t *iseq = block->blockid.iseq;
     uint32_t insn_idx = block->blockid.idx;
