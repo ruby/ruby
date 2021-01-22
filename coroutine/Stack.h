@@ -1,3 +1,6 @@
+#ifndef COROUTINE_STACK_H
+#define COROUTINE_STACK_H 1
+
 /*
  *  This file is part of the "Coroutine" project and released under the MIT License.
  *
@@ -14,3 +17,5 @@
 #define COROUTINE_STACK_LOCAL(type, name) type name##_local; type * name = &name##_local
 #define COROUTINE_STACK_FREE(name)
 #endif
+
+#endif /* COROUTINE_STACK_H */

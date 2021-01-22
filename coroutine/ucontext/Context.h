@@ -1,3 +1,6 @@
+#ifndef COROUTINE_UCONTEXT_CONTEXT_H
+#define COROUTINE_UCONTEXT_CONTEXT_H 1
+
 /*
  *  This file is part of the "Coroutine" project and released under the MIT License.
  *
@@ -68,3 +71,5 @@ static inline void coroutine_destroy(struct coroutine_context * context)
     context->state.uc_stack.ss_size = 0;
     context->from = NULL;
 }
+
+#endif /* COROUTINE_UCONTEXT_CONTEXT_H */
