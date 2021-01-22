@@ -333,6 +333,38 @@ module TestIRB
       end
     end
 
+    def test_corresponding_syntax_to_keyword_for
+      input_with_correct_indents = [
+        Row.new(%q(for i in [1]), nil, 2, 1),
+        Row.new(%q(  puts i), nil, 2, 1),
+        Row.new(%q(end), 0, 0, 0),
+      ]
+
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_indenting(lines, row.current_line_spaces, false)
+        assert_indenting(lines, row.new_line_spaces, true)
+        assert_nesting_level(lines, row.nesting_level)
+      end
+    end
+
+    def test_corresponding_syntax_to_keyword_for_with_do
+      input_with_correct_indents = [
+        Row.new(%q(for i in [1] do), nil, 2, 1),
+        Row.new(%q(  puts i), nil, 2, 1),
+        Row.new(%q(end), 0, 0, 0),
+      ]
+
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_indenting(lines, row.current_line_spaces, false)
+        assert_indenting(lines, row.new_line_spaces, true)
+        assert_nesting_level(lines, row.nesting_level)
+      end
+    end
+
     def test_heredoc_with_indent
       input_with_correct_indents = [
         Row.new(%q(<<~Q), nil, 0, 0),
