@@ -1630,9 +1630,11 @@ BigDecimal_DoDivmod(VALUE self, VALUE r, Real **div, Real **mod)
     VpAddSub(c, a, res, -1);
 
     if (!VpIsZero(c) && (VpGetSign(a) * VpGetSign(b) < 0)) {
-        /* remainder adjustment for negative case */
+        /* result adjustment for negative case */
+        res = VpReallocReal(res, d->MaxPrec);
+        res->MaxPrec = d->MaxPrec;
         VpAddSub(res, d, VpOne(), -1);
-        GUARD_OBJ(d, VpCreateRbObject(GetAddSubPrec(c, b)*(VpBaseFig() + 1), "0", true));
+        GUARD_OBJ(d, VpCreateRbObject(GetAddSubPrec(c, b) * 2*BASE_FIG, "0", true));
         VpAddSub(d, c, b, 1);
         *div = res;
         *mod = d;
