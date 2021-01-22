@@ -11536,7 +11536,7 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  - {Frozen/Unfrozen Strings}[#class-String-label-Methods+for+a+Frozen-2FUnfrozen+String]
  *  - {Querying}[#class-String-label-Methods+for+Querying]
  *  - {Comparing}[#class-String-label-Methods+for+Comparing]
- *  - {Modifying +self+}[#class-String-label-Methods+for+Modifying+self]
+ *  - {Modifying a String}[#class-String-label-Methods+for+Modifying+a+String]
  *  - {Converting to New String}[#class-String-label-Methods+for+Converting+to+New+String]
  *  - {Converting to Non-String}[#class-String-label-Methods+for+Converting+to+Non--5CString]
  *  - {Iterating}[#class-String-label-Methods+for+Iterating]
@@ -11556,15 +11556,6 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *
  *  === Methods for Querying
  *
- *  _Indexes_
- *
- *  - {#=~}[#method-i-3D~]:: Returns the index of the first substring that matches a given Regexp or other object;
- *                           returns +nil+ if no match is found.
- *  - #index:: Returns the index of the first occurrence of a given substring;
- *             returns +nil+ if none found.
- *  - #rindex:: Returns the index of the _last_ occurrence of a given substring;
- *              returns +nil+ if none found.
- *
  *  _Counts_
  *
  *  - #length, #size:: Returns the count of characters (not bytes).
@@ -11574,6 +11565,12 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *
  *  _Substrings_
  *
+ *  - {#=~}[#method-i-3D~]:: Returns the index of the first substring that matches a given Regexp or other object;
+ *                           returns +nil+ if no match is found.
+ *  - #index:: Returns the index of the _first_ occurrence of a given substring;
+ *             returns +nil+ if none found.
+ *  - #rindex:: Returns the index of the _last_ occurrence of a given substring;
+ *              returns +nil+ if none found.
  *  - #include?:: Returns +true+ if the string contains a given substring; +false+ otherwise.
  *  - #match:: Returns a MatchData object if the string matches a given Regexp; +nil+ otherwise.
  *  - #match?:: Returns +true+ if the string matches a given Regexp; +false+ otherwise.
@@ -11582,7 +11579,7 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *
  *  _Encodings_
  *
- *  - #encoding:: Returns the Encoding object that represents the encoding o
+ *  - #encoding:: Returns the Encoding object that represents the encoding of the string.
  *  - #unicode_normalized?:: Returns +true+ if the string is in Unicode normalized form; +false+ otherwise.
  *  - #valid_encoding?:: Returns +true+ if the string contains only characters that are valid
  *                       for its encoding.
@@ -11595,8 +11592,7 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *
  *  === Methods for Comparing
  *
- *  - {#==}[#method-i-3D-3D]:: Returns +true+ if a given other string has the same content as +self+.
- *  - #===:: Returns +true+ if a given other string has the same content as +self+.
+ *  - {#==, #===}[#method-i-3D-3D]:: Returns +true+ if a given other string has the same content as +self+.
  *  - #eql?:: Returns +true+ if the content is the same as the given other string.
  *  - {#<=>}[#method-i-3C-3D-3E]:: Returns -1, 0, or 1 as a given other string is smaller than, equal to, or larger than +self+.
  *  - #casecmp:: Ignoring case, returns -1, 0, or 1 as a given
@@ -11611,6 +11607,7 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  _Insertion_
  *
  *  - #insert:: Returns +self+ with a given string inserted at a given offset.
+ *  - #<<:: Returns +self+ concatenated with a given string or integer.
  *
  *  _Substitution_
  *
@@ -11668,7 +11665,6 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *
  *  - #*:: Returns the concatenation of multiple copies of +self+,
  *  - #+:: Returns the concatenation of +self+ and a given other string.
- *  - #<<:: Returns a copy of +self+ concatenated with a given string or integer.
  *  - #center:: Returns a copy of +self+ centered between pad substring.
  *  - #concat:: Returns the concatenation of +self+ with given other strings.
  *  - #prepend:: Returns the concatenation of a given other string with +self+.
@@ -11713,7 +11709,6 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  - #lstrip:: Returns a copy of +self+ with leading whitespace removed.
  *  - #rstrip:: Returns a copy of +self+ with trailing whitespace removed.
  *  - #strip:: Returns a copy of +self+ with leading and trailing whitespace removed.
- *  - #[]=:: Returns a substring o +self+ determined by given index, range, regexp, or string.
  *  - #chomp:: Returns a copy of +self+ with a trailing record separator removed, if found.
  *  - #chop:: Returns a copy of +self+ with trailing whitespace or the last character removed.
  *  - #squeeze:: Returns a copy of +self+ with contiguous duplicate characters removed.
@@ -11723,21 +11718,20 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *
  *  _Duplication_
  *
- *  - #to_s:: If +self+ is a subclass of \String, returns +self+ copied into a \String;
- *            otherwise, returns +self+.
- *  - #to_str:: If +self+ is a subclass of \String, returns +self+ copied into a \String;
- *              otherwise, returns +self+.
+ *  - #to_s, $to_str:: If +self+ is a subclass of \String, returns +self+ copied into a \String;
+ *                     otherwise, returns +self+.
  *
  *  === Methods for Converting to Non-\String
  *
  *  Each of these methods converts the contents of +self+ to a non-\String.
  *
- *  <em>Characters and Bytes</em>
+ *  <em>Characters, Bytes, and Clusters</em>
  *
  *  - #bytes:: Returns an array of the bytes in +self+.
  *  - #chars:: Returns an array of the characters in +self+.
  *  - #codepoints:: Returns an array of the integer ordinals in +self+.
  *  - #getbyte:: Returns an integer byte as determined by a given index.
+ *  - #grapheme_clusters:: Returns an array of the grapheme clusters in +self+.
  *
  *  _Splitting_
  *
@@ -11746,8 +11740,8 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *                 a given substring or regexp,
  *  - #rpartition:: Returns a 3-element array determined by the last substring that matches
  *                  a given substring or regexp,
- *  - #split, #to_a:: Returns an array of substrings determined by a given delimiter -- regexp or string --
- *                    or, if a block given, passes those substrings to the block.
+ *  - #split:: Returns an array of substrings determined by a given delimiter -- regexp or string --
+ *             or, if a block given, passes those substrings to the block.
  *
  *  _Matching_
  *
@@ -11755,7 +11749,6 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *            if a block given, passes each matching substring to the  block.
  *  - #unpack:: Returns an array of substrings extracted from +self+ according to a given format.
  *  - #unpack1:: Returns the first substring extracted from +self+ according to a given format.
- *  - #grapheme_clusters:: Returns an array of the grapheme clusters in +self+.
  *
  *  _Numerics_
  *
