@@ -285,6 +285,7 @@ module TestIRB
           "irb_source '#{@tmpdir}/a.rb'\n",
           "a\n",
         ])
+      IRB.conf[:VERBOSE] = false
       IRB.conf[:PROMPT_MODE] = :SIMPLE
       irb = IRB::Irb.new(IRB::WorkSpace.new, input)
       IRB.conf[:MAIN_CONTEXT] = irb.context
@@ -295,10 +296,8 @@ module TestIRB
       assert_pattern_list([
           /=> "bug17564"\n/,
           /=> "bug17564"\n/,
-          />> a = 'hi'\n/,
-          /=> "hi"\n/,
-          />> \n/,
-          /=> nil\n/,
+          /   => "hi"\n/,
+          /   => nil\n/,
           /=> "hi"\n/,
         ], out)
     end
@@ -312,6 +311,7 @@ module TestIRB
           "irb_load '#{@tmpdir}/a.rb'\n",
           "a\n",
         ])
+      IRB.conf[:VERBOSE] = false
       IRB.conf[:PROMPT_MODE] = :SIMPLE
       irb = IRB::Irb.new(IRB::WorkSpace.new, input)
       IRB.conf[:MAIN_CONTEXT] = irb.context
@@ -322,10 +322,8 @@ module TestIRB
       assert_pattern_list([
           /=> "bug17564"\n/,
           /=> "bug17564"\n/,
-          />> a = 'hi'\n/,
-          /=> "hi"\n/,
-          />> \n/,
-          /=> nil\n/,
+          /   => "hi"\n/,
+          /   => nil\n/,
           /=> "bug17564"\n/,
         ], out)
     end
