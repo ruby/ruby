@@ -1613,26 +1613,33 @@ BigDecimal_DoDivmod(VALUE self, VALUE r, Real **div, Real **mod)
         return Qtrue;
     }
 
-    mx = a->Prec + vabs(a->exponent);
-    if (mx<b->Prec + vabs(b->exponent)) mx = b->Prec + vabs(b->exponent);
-    mx = (mx + 1) * VpBaseFig();
-    GUARD_OBJ(c, VpCreateRbObject(mx, "0", true));
-    GUARD_OBJ(res, VpCreateRbObject((mx+1) * 2 +(VpBaseFig() + 1), "#0", true));
+    mx = (a->Prec > b->Prec) ? a->Prec : b->Prec;
+    mx *= BASE_FIG;
+    if (2*BIGDECIMAL_DOUBLE_FIGURES > mx)
+        mx = 2*BIGDECIMAL_DOUBLE_FIGURES;
+
+    GUARD_OBJ(c, VpCreateRbObject(mx + 2*BASE_FIG, "0", true));
+    GUARD_OBJ(res, VpCreateRbObject(mx*2 + 2*BASE_FIG, "#0", true));
     VpDivd(c, res, a, b);
-    mx = c->Prec * (VpBaseFig() + 1);
+
+    mx = c->Prec * BASE_FIG;
     GUARD_OBJ(d, VpCreateRbObject(mx, "0", true));
     VpActiveRound(d, c, VP_ROUND_DOWN, 0);
+
     VpMult(res, d, b);
     VpAddSub(c, a, res, -1);
+
     if (!VpIsZero(c) && (VpGetSign(a) * VpGetSign(b) < 0)) {
-	VpAddSub(res, d, VpOne(), -1);
+        /* remainder adjustment for negative case */
+        VpAddSub(res, d, VpOne(), -1);
         GUARD_OBJ(d, VpCreateRbObject(GetAddSubPrec(c, b)*(VpBaseFig() + 1), "0", true));
-	VpAddSub(d, c, b, 1);
-	*div = res;
-	*mod = d;
-    } else {
-	*div = d;
-	*mod = c;
+        VpAddSub(d, c, b, 1);
+        *div = res;
+        *mod = d;
+    }
+    else {
+        *div = d;
+        *mod = c;
     }
     return Qtrue;
 
