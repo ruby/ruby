@@ -275,5 +275,59 @@ module TestIRB
       assert_empty err
       assert_match(/\A=> 3\nCUSTOM is added\.\n=> nil\ncustom processing time: .+\n=> 3\n=> nil\n=> 3\n/, out)
     end
+
+    def test_irb_source
+      IRB.init_config(nil)
+      File.write("#{@tmpdir}/a.rb", "a = 'hi'\n")
+      input = TestInputMethod.new([
+          "a = 'bug17564'\n",
+          "a\n",
+          "irb_source '#{@tmpdir}/a.rb'\n",
+          "a\n",
+        ])
+      IRB.conf[:PROMPT_MODE] = :SIMPLE
+      irb = IRB::Irb.new(IRB::WorkSpace.new, input)
+      IRB.conf[:MAIN_CONTEXT] = irb.context
+      out, err = capture_output do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_pattern_list([
+          /=> "bug17564"\n/,
+          /=> "bug17564"\n/,
+          />> a = 'hi'\n/,
+          /=> "hi"\n/,
+          />> \n/,
+          /=> nil\n/,
+          /=> "hi"\n/,
+        ], out)
+    end
+
+    def test_irb_load
+      IRB.init_config(nil)
+      File.write("#{@tmpdir}/a.rb", "a = 'hi'\n")
+      input = TestInputMethod.new([
+          "a = 'bug17564'\n",
+          "a\n",
+          "irb_load '#{@tmpdir}/a.rb'\n",
+          "a\n",
+        ])
+      IRB.conf[:PROMPT_MODE] = :SIMPLE
+      irb = IRB::Irb.new(IRB::WorkSpace.new, input)
+      IRB.conf[:MAIN_CONTEXT] = irb.context
+      out, err = capture_output do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_pattern_list([
+          /=> "bug17564"\n/,
+          /=> "bug17564"\n/,
+          />> a = 'hi'\n/,
+          /=> "hi"\n/,
+          />> \n/,
+          /=> nil\n/,
+          /=> "bug17564"\n/,
+        ], out)
+    end
   end
 end
