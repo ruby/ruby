@@ -44,6 +44,7 @@ module JITSupport
   end
 
   def supported?
+    return false if RbConfig::CONFIG["CFLAGS"].include?("USE_THIRD_PARTY_HEAP")
     return @supported if defined?(@supported)
     @supported = UNSUPPORTED_COMPILERS.all? do |regexp|
       !regexp.match?(RbConfig::CONFIG['MJIT_CC'])
