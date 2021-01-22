@@ -5,8 +5,8 @@
 #include "ujit_core.h"
 
 // Code blocks we generate code into
-codeblock_t* cb;
-codeblock_t* ocb;
+extern codeblock_t *cb;
+extern codeblock_t *ocb;
 
 // Code generation state
 typedef struct JITState
