@@ -8462,6 +8462,7 @@ miniinit.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 miniinit.$(OBJEXT): {$(VPATH)}thread_native.h
 miniinit.$(OBJEXT): {$(VPATH)}timev.rb
 miniinit.$(OBJEXT): {$(VPATH)}trace_point.rb
+miniinit.$(OBJEXT): {$(VPATH)}ujit.rb
 miniinit.$(OBJEXT): {$(VPATH)}vm_core.h
 miniinit.$(OBJEXT): {$(VPATH)}vm_opts.h
 miniinit.$(OBJEXT): {$(VPATH)}warning.rb
@@ -15642,7 +15643,6 @@ ujit_core.$(OBJEXT): {$(VPATH)}vm_core.h
 ujit_core.$(OBJEXT): {$(VPATH)}vm_debug.h
 ujit_core.$(OBJEXT): {$(VPATH)}vm_opts.h
 ujit_core.$(OBJEXT): {$(VPATH)}vm_sync.h
-ujit_iface.$(OBJEXT): {$(VPATH)}ujit.rbinc
 ujit_iface.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 ujit_iface.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 ujit_iface.$(OBJEXT): $(CCAN_DIR)/list/list.h
@@ -15831,6 +15831,7 @@ ujit_iface.$(OBJEXT): {$(VPATH)}subst.h
 ujit_iface.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 ujit_iface.$(OBJEXT): {$(VPATH)}thread_native.h
 ujit_iface.$(OBJEXT): {$(VPATH)}ujit.h
+ujit_iface.$(OBJEXT): {$(VPATH)}ujit.rbinc
 ujit_iface.$(OBJEXT): {$(VPATH)}ujit_asm.h
 ujit_iface.$(OBJEXT): {$(VPATH)}ujit_codegen.h
 ujit_iface.$(OBJEXT): {$(VPATH)}ujit_core.h
