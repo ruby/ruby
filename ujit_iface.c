@@ -253,23 +253,6 @@ rb_ujit_method_lookup_change(VALUE cme_or_cc)
         // Invalidate all regions that depend on the cme or cc
         for (int32_t i = 0; i < array->size; i++) {
             block_t* block = array->data[i];
-
-            /*
-            struct compiled_region *region = &array->data[i];
-            const struct rb_iseq_constant_body *body = region->iseq->body;
-            RUBY_ASSERT((unsigned int)region->start_idx < body->iseq_size);
-
-            // Restore region address to interpreter address in bytecode sequence
-            if (body->iseq_encoded[region->start_idx] == (VALUE)region->code) {
-                const void *const *code_threading_table = rb_vm_get_insns_address_table();
-                int opcode = rb_vm_insn_addr2insn(region->code);
-                body->iseq_encoded[region->start_idx] = (VALUE)code_threading_table[opcode];
-                if (UJIT_DUMP_MODE > 0) {
-                    fprintf(stderr, "cc_or_cme=%p now out of date. Restored idx=%u in iseq=%p\n", (void *)cme_or_cc, (unsigned)region->start_idx, (void *)region->iseq);
-                }
-            }
-            */
-
             invalidate(block);
         }
 
@@ -333,7 +316,7 @@ ujit_blocks_for(VALUE mod, VALUE rb_iseq)
 }
 
 static VALUE
-ujit_insert(VALUE mod, VALUE iseq)
+ujit_install_entry(VALUE mod, VALUE iseq)
 {
     rb_ujit_compile_iseq(rb_iseqw_to_iseq(iseq));
     return iseq;
@@ -355,7 +338,10 @@ block_code(VALUE self)
     block_t * block;
     TypedData_Get_Struct(self, block_t, &ujit_block_type, block);
 
-    return rb_str_new(cb->mem_block + block->start_pos, block->end_pos - block->start_pos);
+    return (VALUE)rb_str_new(
+        (const char*)cb->mem_block + block->start_pos,
+        block->end_pos - block->start_pos
+    );
 }
 
 /* Get the start index in the Instruction Sequence that corresponds to this
@@ -394,7 +380,7 @@ rb_ujit_init(void)
     ujit_init_codegen();
 
     VALUE mUjit = rb_define_module("UJIT");
-    rb_define_module_function(mUjit, "install_entry", ujit_insert, 1);
+    rb_define_module_function(mUjit, "install_entry", ujit_install_entry, 1);
     rb_define_module_function(mUjit, "blocks_for", ujit_blocks_for, 1);
 
     cUjitBlock = rb_define_class_under(mUjit, "Block", rb_cObject);
