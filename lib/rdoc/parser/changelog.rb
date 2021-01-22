@@ -217,9 +217,14 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
     def parse_entries
       entries = []
 
-      @content.scan(/^commit\s+(\h{20})\h*\n *Author: *(.+)\n *Date: *(.+)\n\n((?: {4}.*\n+)*)/) do
-        entry_name, author, date, entry_body = $1, $2, $3, $4.gsub(/^ {4}/, '')
-        if /(\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+) *([-+]\d\d)(\d\d)/ =~ date
+      @content.scan(/^commit\s+(\h{20})\h*\n((?:.+\n)*)\n((?: {4}.*\n+)*)/) do
+        entry_name, header, entry_body = $1, $2, $3.gsub(/^ {4}/, '')
+        # header = header.scan(/^ *(\S+?): +(.*)/).to_h
+        # date = header["CommitDate"] || header["Date"]
+        date = header[/^ *(?:Author)?Date: +(.*)/, 1]
+        author = header[/^ *Author: +(.*)/, 1]
+        if /(\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+) *([-+]\d\d)(\d\d)/ =~
+           (header[/^ *CommitDate: +(.*)/, 1] || date)
           time = Time.new($1, $2, $3, $4, $5, $6, "#{$7}:#{$8}")
           @time_cache[entry_name] = time
           author.sub!(/\s*<(.*)>/, '')

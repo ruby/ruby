@@ -398,6 +398,46 @@ ChangeLog
     assert_equal expected, @top_level.comment
   end
 
+  def test_scan_git_commit_date
+    parser = util_parser <<-ChangeLog
+commit\ ee1e690a2df901adb279d7a63fbd92c64e0a5ae6
+  Author:     Igor Zubkov <igor.zubkov@gmail.com>
+  AuthorDate: 2016-10-25 03:56:11 +0900
+  Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  CommitDate: 2021-01-07 13:40:42 +0900
+
+    We don't need "require 'uri'" after "require 'net/http'".
+
+commit\ 4d0985a7bd8f591dff4b430e288bfd83af782e51
+  Author:     git <svn-admin@ruby-lang.org>
+  AuthorDate: 2021-01-07 10:21:34 +0900
+  Commit:     git <svn-admin@ruby-lang.org>
+  CommitDate: 2021-01-07 10:21:34 +0900
+
+    * 2021-01-07 [ci skip]
+ChangeLog
+
+    parser.scan
+
+    expected = doc(
+      head(1, File.basename(@tempfile.path)),
+      blank_line,
+      head(2, "2021-01-07"),
+      blank_line,
+      log_entry(nil, 'ee1e690a2df901adb279',
+                'Igor Zubkov', 'igor.zubkov@gmail.com',
+                '2016-10-25 03:56:11 +0900',
+                [head(4, %[We don't need "require 'uri'" after "require 'net/http'".])]),
+      log_entry(nil, '4d0985a7bd8f591dff4b',
+                'git', 'svn-admin@ruby-lang.org',
+                '2021-01-07 10:21:34 +0900',
+                [list(:BULLET, item(nil, para("2021-01-07 [ci skip]")))]))
+
+    expected.file = @top_level
+
+    assert_equal expected, @top_level.comment
+  end
+
   def util_parser content = ''
     RDoc::Parser::ChangeLog.new \
       @top_level, @tempfile.path, content, @options, @stats
