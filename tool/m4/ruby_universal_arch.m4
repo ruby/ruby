@@ -39,7 +39,7 @@ AS_IF([test ${target_archs+set}], [
 	    echo 'int main(){return 0;}' > conftest.c
 	    AS_IF([$CC $CFLAGS $ARCH_FLAG -o conftest conftest.c > /dev/null 2>&1], [
 		rm -fr conftest.*
-	    ], [
+	    ], [test -z "$ARCH_FLAG"], [
 		RUBY_DEFAULT_ARCH("$target_archs")
 	    ])
 	])
