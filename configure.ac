@@ -1234,8 +1234,6 @@ if pkg-config --exists capstone; then
    CAPSTONE_LIB_L=`pkg-config --libs-only-L capstone`
    LDFLAGS="$LDFLAGS $CAPSTONE_LIB_L"
    CFLAGS="$CFLAGS $CAPSTONE_CFLAGS"
-else
-   AC_MSG_ERROR(Please install capstone and pkg-config)
 fi
 
 AC_CHECK_LIB(capstone, cs_open) # Capstone

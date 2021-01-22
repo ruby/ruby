@@ -1,14 +1,11 @@
 module UJIT
-  def omg
-  end
-
   def self.disasm(iseq)
     blocks = UJIT.blocks_for(iseq)
     return if blocks.empty?
 
     str = ""
 
-    cs = UJIT::Disasm.open(UJIT::Disasm::ARCH_X86, UJIT::Disasm::MODE_64)
+    cs = UJIT::Disasm.new
 
     str << iseq.disasm
     str << "\n"
@@ -27,5 +24,5 @@ module UJIT
       end
     end
     str
-  end
+  end if defined?(Disasm)
 end
