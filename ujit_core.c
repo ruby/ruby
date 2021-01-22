@@ -106,16 +106,16 @@ ctx_get_top_type(ctx_t* ctx)
 /**
 Compute a difference score for two context objects
 Returns 0 if the two contexts are the same
-Returns -1 if incompatible
 Returns > 0 if different but compatible
+Returns INT_MAX if incompatible
 */
 int ctx_diff(const ctx_t* src, const ctx_t* dst)
 {
     if (dst->stack_size != src->stack_size)
-        return -1;
+        return INT_MAX;
 
     if (dst->self_is_object != src->self_is_object)
-        return -1;
+        return INT_MAX;
 
     // Difference sum
     int diff = 0;
@@ -132,7 +132,7 @@ int ctx_diff(const ctx_t* src, const ctx_t* dst)
             if (t_dst == T_NONE)
                 diff += 1;
             else
-                return -1;
+                return INT_MAX;
         }
     }
 
@@ -158,14 +158,28 @@ block_t* find_block_version(blockid_t blockid, const ctx_t* ctx)
     if (!rb_st_lookup(version_tbl, (st_data_t)&blockid, (st_data_t*)&first_version))
         return NULL;
 
-    //
-    // TODO: use the ctx parameter to search existing versions for a match
-    //
+    // Best match found
+    block_t* best_version = NULL;
+    int best_diff = INT_MAX;
 
-    // Check that the version found is actually compatible
-    RUBY_ASSERT(ctx_diff(ctx, &first_version->ctx) >= 0);
+    // For each version matching the blockid
+    for (block_t* version = first_version; version != NULL; version = version->next)
+    {
+        int diff = ctx_diff(ctx, &version->ctx);
 
-    return first_version;
+        if (diff < best_diff)
+        {
+            best_version = version;
+            best_diff = diff;
+        }
+    }
+
+    if (best_version == NULL)
+    {
+        return NULL;
+    }
+
+    return best_version;
 }
 // Compile a new block version immediately
 block_t* gen_block_version(blockid_t blockid, const ctx_t* start_ctx)
