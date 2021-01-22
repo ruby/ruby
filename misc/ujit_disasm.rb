@@ -1,6 +1,12 @@
 begin
-require "crabstone"
-require "stringio"
+    require "crabstone"
+    require "stringio"
+rescue LoadError => e
+  puts "Please install crabstone, which is needed by the disassembler:"
+  puts "  $ brew install capstone"
+  puts "  $ gem install capstone"
+  raise e
+end
 
 module UJIT
   def self.disasm(iseq)
@@ -26,9 +32,4 @@ module UJIT
     end
     io.string
   end
-end
-rescue
-  puts "Please install crabstone like this:"
-  puts "  $ brew install capstone"
-  puts "  $ gem install capstone"
 end
