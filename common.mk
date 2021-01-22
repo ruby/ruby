@@ -1063,6 +1063,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/nilclass.rb \
 		$(srcdir)/prelude.rb \
 		$(srcdir)/gem_prelude.rb \
+		$(srcdir)/ujit.rb \
 		$(empty)
 BUILTIN_RB_INCS = $(BUILTIN_RB_SRCS:.rb=.rbinc)
 
@@ -15641,6 +15642,7 @@ ujit_core.$(OBJEXT): {$(VPATH)}vm_core.h
 ujit_core.$(OBJEXT): {$(VPATH)}vm_debug.h
 ujit_core.$(OBJEXT): {$(VPATH)}vm_opts.h
 ujit_core.$(OBJEXT): {$(VPATH)}vm_sync.h
+ujit_iface.$(OBJEXT): {$(VPATH)}ujit.rbinc
 ujit_iface.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 ujit_iface.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 ujit_iface.$(OBJEXT): $(CCAN_DIR)/list/list.h
