@@ -281,7 +281,7 @@ ChangeLog
 
     expected = [
       [ "709bed2afaee50e2ce80",
-       [ "git <svn-admin@ruby-lang.org>",
+       [ "git", "svn-admin@ruby-lang.org",
          "2021-01-21 01:03:52 +0900",
          "* 2021-01-21 [ci skip]\n"]]]
 
@@ -341,7 +341,7 @@ commit\ a8dc5156e183489c5121fb1759bda5d9406d9175
 
     * 2021-01-20 [ci skip]
 
-commit de5f8a92d5001799bedb3b1a271a2d9b23c6c8fb
+commit\ de5f8a92d5001799bedb3b1a271a2d9b23c6c8fb
   Author: Masataka Pocke Kuwabara <kuwabara@pocke.me>
   Date:   2021-01-01 14:25:08 +0900
 
@@ -372,23 +372,26 @@ ChangeLog
       blank_line,
       head(2, '2021-01-21'),
       blank_line,
-      head(3, '2021-01-21 01:03:52 +0900 git <svn-admin@ruby-lang.org>'),
-      list(:BULLET, item(nil, para('2021-01-21 [ci skip]'))),
+      log_entry(nil, '709bed2afaee50e2ce80',
+                'git', 'svn-admin@ruby-lang.org', '2021-01-21 01:03:52 +0900',
+                [list(:BULLET, item(nil, para('2021-01-21 [ci skip]')))]),
       head(2, '2021-01-20'),
       blank_line,
-      head(3, '2021-01-20 01:58:26 +0900 git <svn-admin@ruby-lang.org>'),
-      list(:BULLET, item(nil, para('2021-01-20 [ci skip]'))),
+      log_entry(nil, 'a8dc5156e183489c5121',
+                'git', 'svn-admin@ruby-lang.org', '2021-01-20 01:58:26 +0900',
+                [list(:BULLET, item(nil, para('2021-01-20 [ci skip]')))]),
       head(2, '2021-01-01'),
       blank_line,
-      head(3, '2021-01-01 14:25:08 +0900 Masataka Pocke Kuwabara <kuwabara@pocke.me>'),
-      para('Make args info for RubyVM::AST to available on endless method without parens'),
-      head(4, 'Problem'),
-      para("Arguments information is missing for endless method without parens.\n" +
-           "For example:"),
-      verb("# ok\n").tap {|v| v.format = :ruby},
-      para('It causes an error if a program expects <code>args</code> node exists.'),
-      head(4, 'Solution'),
-      para('Call <code>new_args</code> on this case.'))
+      log_entry(nil, 'de5f8a92d5001799bedb',
+                'Masataka Pocke Kuwabara', 'kuwabara@pocke.me', '2021-01-01 14:25:08 +0900',
+                [head(4, 'Make args info for RubyVM::AST to available on endless method without parens'),
+                 head(5, 'Problem'),
+                 para("Arguments information is missing for endless method without parens.\n" +
+                      "For example:"),
+                 verb("# ok\n").tap {|v| v.format = :ruby},
+                 para('It causes an error if a program expects <code>args</code> node exists.'),
+                 head(5, 'Solution'),
+                 para('Call <code>new_args</code> on this case.')]))
 
     expected.file = @top_level
 
@@ -400,5 +403,8 @@ ChangeLog
       @top_level, @tempfile.path, content, @options, @stats
   end
 
+  def log_entry(*a)
+    RDoc::Parser::ChangeLog::Git::LogEntry.new(*a)
+  end
 end
 

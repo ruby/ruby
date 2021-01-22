@@ -132,8 +132,9 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
   def parse_entries
     @time_cache ||= {}
 
-    if /\A(?:.*\n){,3}commit\s/ =~ @content
+    if /\A((?:.*\n){,3})commit\s/ =~ @content
       class << self; prepend Git; end
+      parse_info($1)
       return parse_entries
     end
 
@@ -208,6 +209,11 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
   end
 
   module Git
+    def parse_info(info)
+      /^\s*base-url\s*=\s*(.*\S)/ =~ info
+      @base_url = $1
+    end
+
     def parse_entries
       entries = []
 
@@ -216,7 +222,9 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
         if /(\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+) *([-+]\d\d)(\d\d)/ =~ date
           time = Time.new($1, $2, $3, $4, $5, $6, "#{$7}:#{$8}")
           @time_cache[entry_name] = time
-          entries << [entry_name, [author, date, entry_body]]
+          author.sub!(/\s*<(.*)>/, '')
+          email = $1
+          entries << [entry_name, [author, email, date, entry_body]]
         end
       end
 
@@ -226,31 +234,88 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
     def create_entries entries
       # git log entries have no strictly itemized style like the old
       # style, just assume Markdown.
-      out = []
-      entries.each do |entry, (author, date, body)|
-        title = RDoc::Markup::Heading.new(3, "#{date} #{author}")
-        title.extend(Aref)
-        title.aref = "label-#{entry}"
-        out << title
-        out.concat parse_log_entry(body, entry)
+      entries.map do |commit, entry|
+        LogEntry.new(@base_url, commit, *entry)
       end
-      out
     end
 
-    def parse_log_entry(content, sha)
-      RDoc::Markdown.parse(content).parts.each do |body|
-        case body
-        when RDoc::Markup::Heading
-          body.level += 3
-          label = body.aref.sub(/\Alabel-/, "label-#{sha}-")
-          body.extend(Aref)
-          body.aref = label
+    LogEntry = Struct.new(:base, :commit, :author, :email, :date, :contents) do
+      HEADING_LEVEL = 3
+
+      def initialize(base, commit, author, email, date, contents)
+        case contents
+        when String
+          contents = RDoc::Markdown.parse(contents).parts.each do |body|
+            case body
+            when RDoc::Markup::Heading
+              body.level += HEADING_LEVEL + 1
+            end
+          end
+          case first = contents[0]
+          when RDoc::Markup::Paragraph
+            contents[0] = RDoc::Markup::Heading.new(HEADING_LEVEL + 1, first.text)
+          end
+        end
+        super
+      end
+
+      def level
+        HEADING_LEVEL
+      end
+
+      def aref
+        "label-#{commit}"
+      end
+
+      def label context = nil
+        aref
+      end
+
+      def text
+        case base
+        when nil
+          "#{date}"
+        when /%s/
+          "{#{date}}[#{base % commit}]"
+        else
+          "{#{date}}[#{base}#{commit}]"
+        end + " {#{author}}[mailto:#{email}]"
+      end
+
+      def accept visitor
+        visitor.accept_heading self
+        begin
+          if visitor.respond_to?(:code_object=)
+            code_object = visitor.code_object
+            visitor.code_object = self
+          end
+          contents.each do |body|
+            body.accept visitor
+          end
+        ensure
+          if visitor.respond_to?(:code_object)
+            visitor.code_object = code_object
+          end
         end
       end
-    end
 
-    module Aref
-      attr_accessor :aref
+      def pretty_print q # :nodoc:
+        q.group(2, '[log_entry: ', ']') do
+          q.text commit
+          q.text ','
+          q.breakable
+          q.group(2, '[date: ', ']') { q.text date }
+          q.text ','
+          q.breakable
+          q.group(2, '[author: ', ']') { q.text author }
+          q.text ','
+          q.breakable
+          q.group(2, '[email: ', ']') { q.text email }
+          q.text ','
+          q.breakable
+          q.pp contents
+        end
+      end
     end
   end
 end
