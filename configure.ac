@@ -83,9 +83,9 @@ AC_CANONICAL_TARGET
 AS_CASE(["$target_cpu-$target_os"],
     [aarch64-darwin*], [
         target_cpu=arm64
-        AS_CASE(["$target_vendor"], [unknown], [target_vendor=apple])
-        target="$target_cpu-$target_vendor-$target_os"
-        target_alias="$target_cpu-$target_os"
+        AS_CASE(["$target_vendor"], [unknown], [target_vendor=apple target=${target/-unknown-/-apple-}])
+        target="${target/aarch64/arm64}"
+        target_alias="${target_alias/aarch64/arm64}"
     ])
 
 AC_ARG_PROGRAM
