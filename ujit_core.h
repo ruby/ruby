@@ -130,6 +130,7 @@ x86opnd_t ctx_stack_push(ctx_t* ctx, int type);
 x86opnd_t ctx_stack_pop(ctx_t* ctx, size_t n);
 x86opnd_t ctx_stack_opnd(ctx_t* ctx, int32_t idx);
 int ctx_get_top_type(ctx_t* ctx);
+int ctx_diff(const ctx_t* src, const ctx_t* dst);
 
 block_t* find_block_version(blockid_t blockid, const ctx_t* ctx);
 block_t* gen_block_version(blockid_t blockid, const ctx_t* ctx);
