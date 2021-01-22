@@ -11604,12 +11604,6 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  - #casecmp?:: Returns +true+ if the string is equal to a given string after Unicode case folding;
  *                +false+ otherwise.
  *
- *  === Methods for Fetching
- *
- *  - #[], #slice:: Returns a substring determined by a given index, start/length, or range, or string.
- *  - #byteslice:: Returns a substring determined by a given index, start/length, or range.
- *  - #chr:: Returns the first character.
- *
  *  === Methods for Modifying +self+
  *
  *  Each of these methods modifies +self+.
@@ -11674,10 +11668,10 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *
  *  - #*:: Returns the concatenation of multiple copies of +self+,
  *  - #+:: Returns the concatenation of +self+ and a given other string.
- *  - #<<:: Returns a copy of +self+ concatenated with a given sting or integer.
+ *  - #<<:: Returns a copy of +self+ concatenated with a given string or integer.
  *  - #center:: Returns a copy of +self+ centered between pad substring.
  *  - #concat:: Returns the concatenation of +self+ with given other strings.
- *  - #prepend:: Returns the concatentation of a given other string with +self+.
+ *  - #prepend:: Returns the concatenation of a given other string with +self+.
  *  - #ljust:: Returns a copy of +self+ of a given length, right-padded with a given other string.
  *  - #rjust:: Returns a copy of +self+ of a given length, left-padded with a given other string.
  *
@@ -11702,7 +11696,7 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  - #unicode_normalize:: Returns a copy of +self+ with each character Unicode-normalized.
  *  - #encode:: Returns a copy of +self+ with all characters transcoded from one given encoding into another.
  *
- *  _Casing
+ *  _Casing_
  *
  *  - #capitalize:: Returns a copy of +self+ with the first character upcased
  *                  and all other characters downcased.
@@ -11723,6 +11717,9 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  - #chomp:: Returns a copy of +self+ with a trailing record separator removed, if found.
  *  - #chop:: Returns a copy of +self+ with trailing whitespace or the last character removed.
  *  - #squeeze:: Returns a copy of +self+ with contiguous duplicate characters removed.
+ *  - #[], #slice:: Returns a substring determined by a given index, start/length, or range, or string.
+ *  - #byteslice:: Returns a substring determined by a given index, start/length, or range.
+ *  - #chr:: Returns the first character.
  *
  *  _Duplication_
  *
