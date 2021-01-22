@@ -11735,30 +11735,43 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *
  *  Each of these methods converts the contents of +self+ to a non-\String.
  *
+ *  <em>Characters and Bytes</em>
+ *
  *  - #bytes:: Returns an array of the bytes in +self+.
  *  - #chars:: Returns an array of the characters in +self+.
  *  - #codepoints:: Returns an array of the integer ordinals in +self+.
  *  - #getbyte:: Returns an integer byte as determined by a given index.
- *  - #grapheme_clusters:: Returns an array of the grapheme clusters in +self+.
- *  - #hex:: Returns the integer value of the leading characters, interpreted as hexadecimal digits.
- *  - #inspect:: Returns copy of +self+, enclosed in double-quotes, with special characters escaped.
- *  - #intern:: Returns the symbol corresponding to +self+.
+ *
+ *  _Splitting_
+ *
  *  - #lines:: Returns an array of the lines in +self+, as determined by a given record separator.
- *  - #:: Returns the integer value of the leading characters, interpreted as octal digits.
- *  - #ord:: Returns the integer ordinal of the first character in +self+.
  *  - #partition:: Returns a 3-element array determined by the first substring that matches
  *                 a given substring or regexp,
  *  - #rpartition:: Returns a 3-element array determined by the last substring that matches
  *                  a given substring or regexp,
- *  - #scan:: Returns an array of substrings matching a given regexp or string, or,
- *            if a block given, passes each matching substring to the  block.
  *  - #split, #to_a:: Returns an array of substrings determined by a given delimiter -- regexp or string --
  *                    or, if a block given, passes those substrings to the block.
- *  - #to_f:: Returns the floating-point value of leading characters, interpreted as a floating-point number.
- *  - #to_i:: Returns the integer value of leading characters, interpreted as an integer.
- *  - #to_sym:: Returns the symbol corresponding to +self+.
+ *
+ *  _Matching_
+ *
+ *  - #scan:: Returns an array of substrings matching a given regexp or string, or,
+ *            if a block given, passes each matching substring to the  block.
  *  - #unpack:: Returns an array of substrings extracted from +self+ according to a given format.
  *  - #unpack1:: Returns the first substring extracted from +self+ according to a given format.
+ *  - #grapheme_clusters:: Returns an array of the grapheme clusters in +self+.
+ *
+ *  _Numerics_
+ *
+ *  - #hex:: Returns the integer value of the leading characters, interpreted as hexadecimal digits.
+ *  - #oct:: Returns the integer value of the leading characters, interpreted as octal digits.
+ *  - #ord:: Returns the integer ordinal of the first character in +self+.
+ *  - #to_i:: Returns the integer value of leading characters, interpreted as an integer.
+ *  - #to_f:: Returns the floating-point value of leading characters, interpreted as a floating-point number.
+ *
+ *  <em>Strings and Symbols</em>
+ *
+ *  - #inspect:: Returns copy of +self+, enclosed in double-quotes, with special characters escaped.
+ *  - #to_sym, #intern:: Returns the symbol corresponding to +self+.
  *
  *  === Methods for Iterating
  *
