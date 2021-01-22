@@ -11632,17 +11632,37 @@ static void
 ibf_dump_object_symbol(struct ibf_dump *dump, VALUE obj)
 {
     VALUE str = rb_sym2str(obj);
-    VALUE str_index = ibf_dump_object(dump, str);
 
-    ibf_dump_write_small_value(dump, str_index);
+    long encindex = (long)rb_enc_get_index(str);
+    long len = RSTRING_LEN(str);
+    const char *ptr = RSTRING_PTR(str);
+
+    if (encindex > RUBY_ENCINDEX_BUILTIN_MAX) {
+        rb_encoding *enc = rb_enc_from_index((int)encindex);
+        const char *enc_name = rb_enc_name(enc);
+        encindex = RUBY_ENCINDEX_BUILTIN_MAX + ibf_dump_object(dump, rb_str_new2(enc_name));
+    }
+
+    ibf_dump_write_small_value(dump, encindex);
+    ibf_dump_write_small_value(dump, len);
+    IBF_WP(ptr, char, len);
 }
 
 static VALUE
 ibf_load_object_symbol(const struct ibf_load *load, const struct ibf_object_header *header, ibf_offset_t offset)
 {
-    VALUE str_index = ibf_load_small_value(load, &offset);
-    VALUE str = ibf_load_object(load, str_index);
-    ID id = rb_intern_str(str);
+    ibf_offset_t reading_pos = offset;
+
+    int encindex = (int)ibf_load_small_value(load, &reading_pos);
+    const long len = (long)ibf_load_small_value(load, &reading_pos);
+    const char *ptr = load->current_buffer->buff + reading_pos;
+
+    if (encindex > RUBY_ENCINDEX_BUILTIN_MAX) {
+        VALUE enc_name_str = ibf_load_object(load, encindex - RUBY_ENCINDEX_BUILTIN_MAX);
+        encindex = rb_enc_find_index(RSTRING_PTR(enc_name_str));
+    }
+
+    ID id = rb_intern3(ptr, len, rb_enc_from_index(encindex));
     return ID2SYM(id);
 }
 
