@@ -185,7 +185,7 @@ block_t* gen_block_version(blockid_t blockid, const ctx_t* start_ctx)
         // Patch the last branch address
         last_branch->dst_addrs[0] = cb_get_ptr(cb, block->start_pos);
         add_incoming(block, branch_idx);
-        assert (block->start_pos == last_branch->end_pos);
+        RUBY_ASSERT(block->start_pos == last_branch->end_pos);
     }
 
     return first_block;
@@ -221,8 +221,8 @@ uint8_t* branch_stub_hit(uint32_t branch_idx, uint32_t target_idx)
 
     RB_VM_LOCK_ENTER();
 
-    assert (branch_idx < num_branches);
-    assert (target_idx < 2);
+    RUBY_ASSERT(branch_idx < num_branches);
+    RUBY_ASSERT(target_idx < 2);
     branch_t *branch = &branch_entries[branch_idx];
     blockid_t target = branch->targets[target_idx];
     ctx_t* target_ctx = &branch->target_ctxs[target_idx];
@@ -239,7 +239,7 @@ uint8_t* branch_stub_hit(uint32_t branch_idx, uint32_t target_idx)
         // Rewrite the branch with the new, potentially more compact shape
         cb_set_pos(cb, branch->start_pos);
         branch->gen_fn(cb, branch->dst_addrs[0], branch->dst_addrs[1], branch->shape);
-        assert (cb->write_pos <= branch->end_pos);
+        RUBY_ASSERT(cb->write_pos <= branch->end_pos);
     }
 
     // Try to find a compiled version of this block
@@ -259,12 +259,11 @@ uint8_t* branch_stub_hit(uint32_t branch_idx, uint32_t target_idx)
     branch->dst_addrs[target_idx] = dst_addr;
 
     // Rewrite the branch with the new jump target address
-    assert (branch->dst_addrs[0] != NULL);
-    assert (branch->dst_addrs[1] != NULL);
+    RUBY_ASSERT(branch->dst_addrs[0] != NULL);
     uint32_t cur_pos = cb->write_pos;
     cb_set_pos(cb, branch->start_pos);
     branch->gen_fn(cb, branch->dst_addrs[0], branch->dst_addrs[1], branch->shape);
-    assert (cb->write_pos <= branch->end_pos);
+    RUBY_ASSERT(cb->write_pos <= branch->end_pos);
     branch->end_pos = cb->write_pos;
     cb_set_pos(cb, cur_pos);
 
@@ -331,9 +330,9 @@ void gen_branch(
     branchgen_fn gen_fn
 )
 {
-    assert (target0.iseq != NULL);
-    assert (target1.iseq != NULL);
-    assert (num_branches < MAX_BRANCHES);
+    RUBY_ASSERT(target0.iseq != NULL);
+    RUBY_ASSERT(target1.iseq != NULL);
+    RUBY_ASSERT(num_branches < MAX_BRANCHES);
     uint32_t branch_idx = num_branches++;
 
     // Get the branch targets or stubs
@@ -369,7 +368,7 @@ gen_jump_branch(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uint8_t sha
         break;
 
         case SHAPE_NEXT1:
-        assert (false);
+        RUBY_ASSERT(false);
         break;
 
         case SHAPE_DEFAULT:
@@ -383,8 +382,8 @@ void gen_direct_jump(
     blockid_t target0
 )
 {
-    assert (target0.iseq != NULL);
-    assert (num_branches < MAX_BRANCHES);
+    RUBY_ASSERT(target0.iseq != NULL);
+    RUBY_ASSERT(num_branches < MAX_BRANCHES);
     uint32_t branch_idx = num_branches++;
 
     // Branch targets or stub adddress
@@ -442,11 +441,30 @@ void invalidate(block_t* block)
     fprintf(stderr, "invalidating block (%p, %d)\n", block->blockid.iseq, block->blockid.idx);
     fprintf(stderr, "block=%p\n", block);
 
+    // Find the first version for this blockid
+    block_t* first_block = NULL;
+    rb_st_lookup(version_tbl, (st_data_t)&block->blockid, (st_data_t*)&first_block);
+    RUBY_ASSERT(first_block != NULL);
+
     // Remove the version object from the map so we can re-generate stubs
-    st_data_t key = (st_data_t)&block->blockid;
-    int success = st_delete(version_tbl, &key, NULL);
-    if (!success) {
-        rb_bug("failed to delete invalidated version");
+    if (first_block == block)
+    {
+        st_data_t key = (st_data_t)&block->blockid;
+        int success = st_delete(version_tbl, &key, NULL);
+        RUBY_ASSERT(success);
+    }
+    else
+    {
+        bool deleted = false;
+        for (block_t* cur = first_block; cur != NULL; cur = cur->next)
+        {
+            if (cur->next == block)
+            {
+                cur->next = cur->next->next;
+                break;
+            }
+        }
+        RUBY_ASSERT(deleted);
     }
 
     // Get a pointer to the generated code for this block
@@ -479,8 +497,7 @@ void invalidate(block_t* block)
         }
 
         // Rewrite the branch with the new jump target address
-        assert (branch->dst_addrs[0] != NULL);
-        assert (branch->dst_addrs[1] != NULL);
+        RUBY_ASSERT(branch->dst_addrs[0] != NULL);
         uint32_t cur_pos = cb->write_pos;
         cb_set_pos(cb, branch->start_pos);
         branch->gen_fn(cb, branch->dst_addrs[0], branch->dst_addrs[1], branch->shape);

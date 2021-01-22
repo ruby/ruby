@@ -186,7 +186,7 @@ add_lookup_dependency_i(st_data_t *key, st_data_t *value, st_data_t data, int ex
 void
 assume_method_lookup_stable(const struct rb_callcache *cc, const rb_callable_method_entry_t *cme, block_t* block)
 {
-    assert (block != NULL);
+    RUBY_ASSERT(block != NULL);
     st_update(method_lookup_dependency, (st_data_t)cme, add_lookup_dependency_i, (st_data_t)block);
     st_update(method_lookup_dependency, (st_data_t)cc, add_lookup_dependency_i, (st_data_t)block);
     // FIXME: This is a leak! When either the cme or the cc become invalid, the other also needs to go
