@@ -44,7 +44,7 @@
 #  define USE_EVENTFD (0)
 #endif
 
-#if defined(SIGVTALRM) && !defined(__CYGWIN__)
+#if defined(SIGVTALRM) && !defined(__CYGWIN__) && !defined(__EMSCRIPTEN__)
 #  define USE_UBF_LIST 1
 #endif
 
