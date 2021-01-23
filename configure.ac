@@ -1138,7 +1138,8 @@ main()
 		])
 		],
 [emscripten*], [LIBS="-lm -lc $LIBS"
-		RUBY_APPEND_OPTIONS(LDFLAGS, -s ALLOW_MEMORY_GROWTH=1)
+		RUBY_APPEND_OPTIONS(LDFLAGS, "-s ALLOW_MEMORY_GROWTH=1")
+		RUBY_APPEND_OPTIONS(LDFLAGS, "-s ASYNCIFY")
 		],
 [	LIBS="-lm $LIBS"])
 : ${ORIG_LIBS=$LIBS}
@@ -2460,6 +2461,9 @@ AS_CASE([$rb_cv_coroutine], [yes|''], [
         ],
         [*-haiku*], [
             rb_cv_coroutine=copy
+        ],
+        [*-emscripten*], [
+            rb_cv_coroutine=emscripten
         ],
         [
             rb_cv_coroutine=ucontext
