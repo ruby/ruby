@@ -1137,6 +1137,9 @@ main()
 			ac_cv_func___builtin_setjmp=no
 		])
 		],
+[emscripten*], [LIBS="-lm -lc $LIBS"
+		RUBY_APPEND_OPTIONS(LDFLAGS, -s ALLOW_MEMORY_GROWTH=1)
+		],
 [	LIBS="-lm $LIBS"])
 : ${ORIG_LIBS=$LIBS}
 
