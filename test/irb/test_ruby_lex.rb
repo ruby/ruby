@@ -365,6 +365,70 @@ module TestIRB
       end
     end
 
+    def test_bracket_corresponding_to_times
+      input_with_correct_indents = [
+        Row.new(%q(3.times { |i|), nil, 2, 1),
+        Row.new(%q(  puts i), nil, 2, 1),
+        Row.new(%q(}), 0, 0, 0),
+      ]
+
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_indenting(lines, row.current_line_spaces, false)
+        assert_indenting(lines, row.new_line_spaces, true)
+        assert_nesting_level(lines, row.nesting_level)
+      end
+    end
+
+    def test_do_corresponding_to_times
+      input_with_correct_indents = [
+        Row.new(%q(3.times do |i|), nil, 2, 1),
+        #Row.new(%q(  puts i), nil, 2, 1),
+        #Row.new(%q(end), 0, 0, 0),
+      ]
+
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_indenting(lines, row.current_line_spaces, false)
+        assert_indenting(lines, row.new_line_spaces, true)
+        assert_nesting_level(lines, row.nesting_level)
+      end
+    end
+
+    def test_bracket_corresponding_to_loop
+      input_with_correct_indents = [
+        Row.new(%q(loop {), nil, 2, 1),
+        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(}), 0, 0, 0),
+      ]
+
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_indenting(lines, row.current_line_spaces, false)
+        assert_indenting(lines, row.new_line_spaces, true)
+        assert_nesting_level(lines, row.nesting_level)
+      end
+    end
+
+    def test_do_corresponding_to_loop
+      input_with_correct_indents = [
+        Row.new(%q(loop do), nil, 2, 1),
+        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(end), 0, 0, 0),
+      ]
+
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_indenting(lines, row.current_line_spaces, false)
+        assert_indenting(lines, row.new_line_spaces, true)
+        assert_nesting_level(lines, row.nesting_level)
+      end
+    end
+
     def test_heredoc_with_indent
       input_with_correct_indents = [
         Row.new(%q(<<~Q), nil, 0, 0),
