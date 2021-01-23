@@ -258,6 +258,23 @@ class TestDefined < Test::Unit::TestCase
     assert_separately([], "assert_nil(defined?(super))")
   end
 
+  def test_respond_to
+    obj = "#{self.class.name}##{__method__}"
+    class << obj
+      def respond_to?(mid)
+        true
+      end
+    end
+    assert_warn(/deprecated method signature.*\n.*respond_to\? is defined here/) do
+      Warning[:deprecated] = true
+      defined?(obj.foo)
+    end
+    assert_warn('') do
+      Warning[:deprecated] = false
+      defined?(obj.foo)
+    end
+  end
+
   class ExampleRespondToMissing
     attr_reader :called
 

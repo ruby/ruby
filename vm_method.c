@@ -2503,7 +2503,8 @@ vm_respond_to(rb_execution_context_t *ec, VALUE klass, VALUE obj, ID id, int pri
 		    VALUE path = RARRAY_AREF(location, 0);
 		    VALUE line = RARRAY_AREF(location, 1);
 		    if (!NIL_P(path)) {
-			rb_compile_warn(RSTRING_PTR(path), NUM2INT(line),
+			rb_category_compile_warn(RB_WARN_CATEGORY_DEPRECATED,
+					RSTRING_PTR(path), NUM2INT(line),
 					"respond_to? is defined here");
 		    }
 		}
