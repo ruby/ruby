@@ -1868,7 +1868,7 @@ VALUE
 rb_rational_reciprocal(VALUE x)
 {
     get_dat1(x);
-    return f_rational_new_no_reduce2(CLASS_OF(x), dat->den, dat->num);
+    return nurat_convert(CLASS_OF(x), dat->den, dat->num, FALSE);
 }
 
 /*
