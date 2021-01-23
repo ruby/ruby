@@ -3689,10 +3689,10 @@ rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t na
         if (u == 0)
             return LONG2FIX(0);
 	if (0 < sign && POSFIXABLE(u))
-            return LONG2FIX(u);
+            return LONG2FIX((long)u);
 	if (sign < 0 && BDIGIT_MSB(fixbuf[1]) == 0 &&
                 NEGFIXABLE(-(BDIGIT_DBL_SIGNED)u))
-            return LONG2FIX(-(BDIGIT_DBL_SIGNED)u);
+            return LONG2FIX((long)-(BDIGIT_DBL_SIGNED)u);
         val = bignew((long)num_bdigits, 0 <= sign);
         MEMCPY(BDIGITS(val), fixbuf, BDIGIT, num_bdigits);
     }
@@ -4487,14 +4487,14 @@ rb_ll2big(LONG_LONG n)
 VALUE
 rb_ull2inum(unsigned LONG_LONG n)
 {
-    if (POSFIXABLE(n)) return LONG2FIX(n);
+    if (POSFIXABLE(n)) return LONG2FIX((long)n);
     return rb_ull2big(n);
 }
 
 VALUE
 rb_ll2inum(LONG_LONG n)
 {
-    if (FIXABLE(n)) return LONG2FIX(n);
+    if (FIXABLE(n)) return LONG2FIX((long)n);
     return rb_ll2big(n);
 }
 
