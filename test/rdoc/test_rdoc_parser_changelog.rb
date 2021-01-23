@@ -212,6 +212,8 @@ Mon Dec  3 20:28:02 2012  Koichi Sasada  <ko1@atdot.net>
 	  change condition of using `opt_send_simple'.
 	  More method invocations can be simple.
 
+commit\ 8187228de0142d3ac7950b7d977c2849e934c637
+
 Other note that will be ignored
 
     ChangeLog

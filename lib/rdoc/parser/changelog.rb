@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require 'time'
 
 ##
 # A ChangeLog file parser.
@@ -106,11 +105,29 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
     entries.group_by do |title, _|
       begin
         time = @time_cache[title]
-        (time || Time.parse(title)).strftime '%Y-%m-%d'
+        (time || parse_date(title)).strftime '%Y-%m-%d'
       rescue NoMethodError, ArgumentError
         time, = title.split '  ', 2
-        Time.parse(time).strftime '%Y-%m-%d'
+        parse_date(time).strftime '%Y-%m-%d'
       end
+    end
+  end
+
+  ##
+  # Parse date in ISO-8601, RFC-2822, or default of Git
+
+  def parse_date(date)
+    case date
+    when /\A\s*(\d+)-(\d+)-(\d+)(?: (\d+):(\d+):(\d+) *([-+]\d\d)(\d\d))?\b/
+      Time.new($1, $2, $3, $4, $5, $6, ("#{$7}:#{$8}" if $7))
+    when /\A\s*\w{3}, +(\d+) (\w{3}) (\d+) (\d+):(\d+):(\d+) *(?:([-+]\d\d)(\d\d))\b/
+      Time.new($3, $2, $1, $4, $5, $6, ("#{$7}:#{$8}" if $7))
+    when /\A\s*\w{3} (\w{3}) +(\d+) (\d+) (\d+):(\d+):(\d+) *(?:([-+]\d\d)(\d\d))\b/
+      Time.new($3, $1, $2, $4, $5, $6, ("#{$7}:#{$8}" if $7))
+    when /\A\s*\w{3} (\w{3}) +(\d+) (\d+):(\d+):(\d+) (\d+)\b/
+      Time.new($6, $1, $2, $3, $4, $5)
+    else
+      raise ArgumentError, "bad date: #{date}"
     end
   end
 
@@ -152,19 +169,10 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
         entry_name = $&
 
         begin
-          time = Time.parse entry_name
+          time = parse_date entry_name
           @time_cache[entry_name] = time
-          # HACK Ruby 1.8 does not raise ArgumentError for Time.parse "Other"
-          entry_name = nil unless entry_name =~ /#{time.year}/
-        rescue NoMethodError
-          # HACK Ruby 2.1.2 and earlier raises NoMethodError if time part is absent
-          entry_name.split '  ', 2
         rescue ArgumentError
-          if /out of range/ =~ $!.message
-            Time.parse(entry_name.split('  ', 2)[0]) rescue entry_name = nil
-          else
-            entry_name = nil
-          end
+          entry_name = nil
         end
 
         entry_body = []
