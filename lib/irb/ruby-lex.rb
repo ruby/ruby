@@ -424,6 +424,24 @@ class RubyLex
     indent
   end
 
+  def is_method_calling?(tokens, index)
+    tk = tokens[index]
+    if tk[3].anybits?(Ripper::EXPR_CMDARG) and tk[1] == :on_ident
+      # The target method call to pass the block with "do".
+      return true
+    elsif tk[3].anybits?(Ripper::EXPR_ARG) and tk[1] == :on_ident
+      non_sp_index = tokens[0..(index - 1)].rindex{ |t| t[1] != :on_sp }
+      if non_sp_index
+        prev_tk = tokens[non_sp_index]
+        if prev_tk[3].anybits?(Ripper::EXPR_DOT) and prev_tk[1] == :on_period
+          # The target method call with receiver to pass the block with "do".
+          return true
+        end
+      end
+    end
+    false
+  end
+
   def take_corresponding_syntax_to_kw_do(tokens, index)
     syntax_of_do = nil
     # Finding a syntax correnponding to "do".
@@ -437,8 +455,7 @@ class RubyLex
       elsif [:on_ignored_nl, :on_nl, :on_comment].include?(tokens[non_sp_index][1])
         first_in_fomula = true
       end
-      if tk[3].anybits?(Ripper::EXPR_CMDARG) and tk[1] == :on_ident
-        # The target method call to pass the block with "do".
+      if is_method_calling?(tokens, i)
         syntax_of_do = :method_calling
         break if first_in_fomula
       elsif tk[1] == :on_kw && %w{while until for}.include?(tk[2])
