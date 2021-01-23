@@ -11389,17 +11389,20 @@ ibf_load_object_string(const struct ibf_load *load, const struct ibf_object_head
     const long len = (long)ibf_load_small_value(load, &reading_pos);
     const char *ptr = load->current_buffer->buff + reading_pos;
 
-    VALUE str = rb_str_new(ptr, len);
-
     if (encindex > RUBY_ENCINDEX_BUILTIN_MAX) {
         VALUE enc_name_str = ibf_load_object(load, encindex - RUBY_ENCINDEX_BUILTIN_MAX);
         encindex = rb_enc_find_index(RSTRING_PTR(enc_name_str));
     }
-    rb_enc_associate_index(str, encindex);
 
-    if (header->internal) rb_obj_hide(str);
-    if (header->frozen)   str = rb_fstring(str);
+    VALUE str;
+    if (header->frozen && !header->internal) {
+        str = rb_enc_interned_str(ptr, len, rb_enc_from_index(encindex));
+    } else {
+        str = rb_enc_str_new(ptr, len, rb_enc_from_index(encindex));
 
+        if (header->internal) rb_obj_hide(str);
+        if (header->frozen)   str = rb_fstring(str);
+    }
     return str;
 }
 
