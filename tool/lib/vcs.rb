@@ -562,7 +562,7 @@ class VCS
 
     def format_changelog(path, arg)
       env = {'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'}
-      cmd = %W"#{COMMAND} log --format=medium --notes=commits --notes=log-fix --topo-order --no-merges"
+      cmd = %W"#{COMMAND} log --format=fuller --notes=commits --notes=log-fix --topo-order --no-merges"
       date = "--date=iso-local"
       unless system(env, *cmd, date, chdir: @srcdir, out: NullDevice, exception: false)
         date = "--date=iso"
@@ -574,7 +574,7 @@ class VCS
         cmd_pipe(env, cmd, chdir: @srcdir) do |r|
           while s = r.gets("\ncommit ")
             h, s = s.split(/^$/, 2)
-            h.gsub!(/^(?:Author|Date): /, '  \&')
+            h.gsub!(/^(?:(?:Author|Commit)(?:Date)?|Date): /, '  \&')
             if s.sub!(/\nNotes \(log-fix\):\n((?: +.*\n)+)/, '')
               fix = $1
               s = s.lines
