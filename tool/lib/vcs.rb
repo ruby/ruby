@@ -541,12 +541,13 @@ class VCS
         warn "no starting commit found", uplevel: 1
         from = nil
       end
-      unless svn or system(*%W"#{COMMAND} fetch origin refs/notes/commits:refs/notes/commits",
+      if svn or system(*%W"#{COMMAND} fetch origin refs/notes/commits:refs/notes/commits",
                            chdir: @srcdir, exception: false)
-        abort "Could not fetch notes/commits tree"
-      end
-      system(*%W"#{COMMAND} fetch origin refs/notes/log-fix:refs/notes/log-fix",
+        system(*%W"#{COMMAND} fetch origin refs/notes/log-fix:refs/notes/log-fix",
                chdir: @srcdir, exception: false)
+      else
+        warn "Could not fetch notes/commits tree", uplevel: 1
+      end
       to ||= url.to_str
       if from
         arg = ["#{from}^..#{to}"]
