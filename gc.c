@@ -5535,11 +5535,6 @@ init_mark_stack(mark_stack_t *stack)
 #define STACK_END (ec->machine.stack_end)
 #define STACK_LEVEL_MAX (ec->machine.stack_maxsize/sizeof(VALUE))
 
-#ifdef __EMSCRIPTEN__
-#undef STACK_GROW_DIRECTION
-#define STACK_GROW_DIRECTION 1
-#endif
-
 #if STACK_GROW_DIRECTION < 0
 # define STACK_LENGTH  (size_t)(STACK_START - STACK_END)
 #elif STACK_GROW_DIRECTION > 0
@@ -5578,7 +5573,7 @@ ruby_stack_length(VALUE **p)
 # define PREVENT_STACK_OVERFLOW 0
 #endif
 #endif
-#if PREVENT_STACK_OVERFLOW
+#if PREVENT_STACK_OVERFLOW && !defined(__EMSCRIPTEN__)
 static int
 stack_check(rb_execution_context_t *ec, int water_mark)
 {
