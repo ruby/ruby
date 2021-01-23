@@ -14428,8 +14428,8 @@ time.$(OBJEXT): {$(VPATH)}ruby_assert.h
 time.$(OBJEXT): {$(VPATH)}st.h
 time.$(OBJEXT): {$(VPATH)}subst.h
 time.$(OBJEXT): {$(VPATH)}time.c
-time.$(OBJEXT): {$(VPATH)}timev.rbinc
 time.$(OBJEXT): {$(VPATH)}timev.h
+time.$(OBJEXT): {$(VPATH)}timev.rbinc
 transcode.$(OBJEXT): $(hdrdir)/ruby.h
 transcode.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 transcode.$(OBJEXT): $(top_srcdir)/internal/array.h
