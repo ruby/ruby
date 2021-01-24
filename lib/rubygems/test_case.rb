@@ -301,6 +301,9 @@ class Gem::TestCase < Minitest::Test
 
   def setup
     @orig_env = ENV.to_hash
+    @tmp = File.expand_path("tmp")
+
+    FileUtils.mkdir_p @tmp
 
     ENV['GEM_VENDOR'] = nil
     ENV['GEMRC'] = nil
@@ -309,6 +312,7 @@ class Gem::TestCase < Minitest::Test
     ENV['XDG_DATA_HOME'] = nil
     ENV['SOURCE_DATE_EPOCH'] = nil
     ENV['BUNDLER_VERSION'] = nil
+    ENV["TMPDIR"] = @tmp
 
     @current_dir = Dir.pwd
     @fetcher     = nil
@@ -319,10 +323,13 @@ class Gem::TestCase < Minitest::Test
     # capture output
     Gem::DefaultUserInteraction.ui = Gem::MockGemUi.new
 
-    tmpdir = File.realpath(Dir.mktmpdir("test_rubygems_"))
+    tmpdir = File.realpath Dir.tmpdir
     tmpdir.tap(&Gem::UNTAINT)
-    ENV["TMPDIR"] = @tmp = File.dirname(tmpdir)
-    @tempdir = tmpdir
+
+    @tempdir = File.join(tmpdir, "test_rubygems_#{$$}")
+    @tempdir.tap(&Gem::UNTAINT)
+
+    FileUtils.mkdir_p @tempdir
 
     @orig_SYSTEM_WIDE_CONFIG_FILE = Gem::ConfigFile::SYSTEM_WIDE_CONFIG_FILE
     Gem::ConfigFile.send :remove_const, :SYSTEM_WIDE_CONFIG_FILE
