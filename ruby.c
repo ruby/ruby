@@ -1340,6 +1340,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 	    }
 	    s++;
 
+#       define in_rubyopt (envopt ? " in RUBYOPT" : "")
 #	define is_option_end(c, allow_hyphen) \
 	    (!(c) || ((allow_hyphen) && (c) == '-') || (c) == '=')
 #	define check_envopt(name, allow_envopt) \
@@ -1447,7 +1448,8 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
             }
 	    else {
 		rb_raise(rb_eRuntimeError,
-			 "invalid option --%s  (-h will show valid options)", s);
+			 "invalid option --%s%s  (-h will show valid options)",
+                         s, in_rubyopt);
 	    }
 	    break;
 
@@ -1458,8 +1460,8 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 	  default:
 	    {
                 rb_raise(rb_eRuntimeError,
-			"invalid option -%c  (-h will show valid options)",
-                        (int)(unsigned char)*s);
+                         "invalid option -%c%s  (-h will show valid options)",
+                         (int)(unsigned char)*s, in_rubyopt);
 	    }
 	    goto switch_end;
 
