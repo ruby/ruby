@@ -121,8 +121,11 @@ class TestRubyOptions < Test::Unit::TestCase
       assert_in_out_err(["-w", "-e", "p Warning[:#{category}]"], "", level > 1 ? %w(false) : %w(true), [])
       assert_in_out_err(["-W", "-e", "p Warning[:#{category}]"], "", level > 1 ? %w(false) : %w(true), [])
       assert_in_out_err(["-We", "p Warning[:#{category}]"], "", level > 1 ? %w(false) : %w(true), [])
+      assert_in_out_err(["--warning=#{category}", "-e", "p Warning[:#{category}]"], "", %w(true), [])
+      assert_in_out_err(["--warning=no-#{category}", "-e", "p Warning[:#{category}]"], "", %w(false), [])
     end
     assert_in_out_err(%w(-W:qux), "", [], /unknown warning category: 'qux'/)
+    assert_in_out_err(%w(--warning=qux), "", [], /unknown warning category: 'qux'/)
 
     def categories.expected(lev = 1, **warnings)
       [
@@ -140,6 +143,8 @@ class TestRubyOptions < Test::Unit::TestCase
       categories.each do |category, |
         assert_in_out_err(["-r#{t.path}", "-W:#{category}", '-e', code], "", [categories.expected(category => 'true')]*2, [])
         assert_in_out_err(["-r#{t.path}", "-W:no-#{category}", '-e', code], "", [categories.expected(category => 'false')]*2, [])
+        assert_in_out_err(["-r#{t.path}", "--warning=#{category}", '-e', code], "", [categories.expected(category => 'true')]*2, [])
+        assert_in_out_err(["-r#{t.path}", "--warning=no-#{category}", '-e', code], "", [categories.expected(category => 'false')]*2, [])
       end
     end
   ensure
