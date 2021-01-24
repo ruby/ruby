@@ -85,6 +85,11 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(%w(-W -e) + ['p Warning[:deprecated]'], "", %w(true), [])
     assert_in_out_err(%w(-We) + ['p Warning[:deprecated]'], "", %w(true), [])
     assert_in_out_err(%w(-e) + ['p Warning[:deprecated]'], "", %w(false), [])
+    assert_in_out_err(%w(--warning=deprecated -e) + ['p Warning[:deprecated]'], "", %w(true), [])
+    assert_in_out_err(%w(--warning=no-deprecated -e) + ['p Warning[:deprecated]'], "", %w(false), [])
+    assert_in_out_err(%w(--warning=experimental -e) + ['p Warning[:experimental]'], "", %w(true), [])
+    assert_in_out_err(%w(--warning=no-experimental -e) + ['p Warning[:experimental]'], "", %w(false), [])
+    assert_in_out_err(%w(--warning=qux), "", [], /unknown warning category: `qux'/)
     code = 'puts "#{$VERBOSE}:#{Warning[:deprecated]}:#{Warning[:experimental]}"'
     Tempfile.create(["test_ruby_test_rubyoption", ".rb"]) do |t|
       t.puts code
@@ -93,6 +98,8 @@ class TestRubyOptions < Test::Unit::TestCase
       assert_in_out_err(["-r#{t.path}", '-w', '-e', code], "", %w(true:true:true true:true:true), [])
       assert_in_out_err(["-r#{t.path}", '-W:deprecated', '-e', code], "", %w(false:true:true false:true:true), [])
       assert_in_out_err(["-r#{t.path}", '-W:no-experimental', '-e', code], "", %w(false:false:false false:false:false), [])
+      assert_in_out_err(["-r#{t.path}", '--warning=deprecated', '-e', code], "", %w(false:true:true false:true:true), [])
+      assert_in_out_err(["-r#{t.path}", '--warning=no-experimental', '-e', code], "", %w(false:false:false false:false:false), [])
     end
   ensure
     ENV['RUBYOPT'] = save_rubyopt

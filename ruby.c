@@ -308,6 +308,7 @@ usage(const char *name, int help, int highlight, int columns)
 	M("--external-encoding=encoding",           ", --internal-encoding=encoding",
 	  "specify the default external or internal character encoding"),
 	M("--backtrace-limit=num",                  "", "limit the maximum length of backtrace"),
+	M("--warning=category",                     "", "enable or disable warning category"),
 	M("--verbose",                              "", "turn on verbose mode and disable script from stdin"),
 	M("--version",                              "", "print the version number, then exit"),
 	M("--help",			            "", "show this message, -h for short message"),
@@ -1052,6 +1053,27 @@ setup_mjit_options(const char *s, struct mjit_options *mjit_opt)
 }
 #endif
 
+static void
+porc_warning_category(ruby_cmdline_options_t *opt, const char *s)
+{
+    unsigned int bits = 0;
+    static const char no_prefix[] = "no-";
+    int enable = strncmp(s, no_prefix, sizeof(no_prefix)-1) != 0;
+    if (!enable) s += sizeof(no_prefix)-1;
+    size_t len = strlen(s);
+    if (NAME_MATCH_P("deprecated", s, len)) {
+        bits = 1U << RB_WARN_CATEGORY_DEPRECATED;
+    }
+    else if (NAME_MATCH_P("experimental", s, len)) {
+        bits = 1U << RB_WARN_CATEGORY_EXPERIMENTAL;
+    }
+    else {
+        rb_warn("unknown warning category: `%s'", s);
+        return;
+    }
+    FEATURE_SET_TO(opt->warn, bits, enable ? bits : 0);
+}
+
 static long
 proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 {
@@ -1116,21 +1138,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 
 	  case 'W':
             if (s[1] == ':') {
-                unsigned int bits = 0;
-                static const char no_prefix[] = "no-";
-                int enable = strncmp(s += 2, no_prefix, sizeof(no_prefix)-1) != 0;
-                if (!enable) s += sizeof(no_prefix)-1;
-                size_t len = strlen(s);
-                if (NAME_MATCH_P("deprecated", s, len)) {
-                    bits = 1U << RB_WARN_CATEGORY_DEPRECATED;
-                }
-                else if (NAME_MATCH_P("experimental", s, len)) {
-                    bits = 1U << RB_WARN_CATEGORY_EXPERIMENTAL;
-                }
-                else {
-                    rb_warn("unknown warning category: `%s'", s);
-                }
-                if (bits) FEATURE_SET_TO(opt->warn, bits, enable ? bits : 0);
+                porc_warning_category(opt, s + 2);
                 break;
             }
 	    {
@@ -1444,6 +1452,9 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
                 long n = strtol(s, &e, 10);
                 if (errno == ERANGE || n < 0 || *e) rb_raise(rb_eRuntimeError, "wrong limit for backtrace length");
                 rb_backtrace_length_limit = n;
+            }
+            else if (is_option_with_arg("warning", Qfalse, Qtrue)) {
+                porc_warning_category(opt, s);
             }
 	    else {
 		rb_raise(rb_eRuntimeError,
