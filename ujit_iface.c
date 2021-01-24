@@ -335,7 +335,8 @@ block_address(VALUE self)
 {
     block_t * block;
     TypedData_Get_Struct(self, block_t, &ujit_block_type, block);
-    return LONG2NUM((intptr_t)block);
+    uint8_t* code_addr = cb_get_ptr(cb, block->start_pos);
+    return LONG2NUM((intptr_t)code_addr);
 }
 
 /* Get the machine code for UJIT::Block as a binary string */
