@@ -301,9 +301,7 @@ class Gem::TestCase < Minitest::Test
 
   def setup
     @orig_env = ENV.to_hash
-    @tmp = File.expand_path("tmp")
-
-    FileUtils.mkdir_p @tmp
+    @tmp = Dir.mktmpdir("tmp", Dir.pwd)
 
     ENV['GEM_VENDOR'] = nil
     ENV['GEMRC'] = nil
@@ -451,6 +449,7 @@ class Gem::TestCase < Minitest::Test
     Dir.chdir @current_dir
 
     FileUtils.rm_rf @tempdir
+    FileUtils.rm_rf @tmp
 
     ENV.replace(@orig_env)
 
