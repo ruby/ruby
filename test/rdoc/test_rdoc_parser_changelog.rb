@@ -343,6 +343,12 @@ Date:   Sat, 23 Jan 2021 06:01:39 +0900
 
     * 2021-01-23 [ci skip]
 
+commit\ a3efbda7128ef20b55505b32d1608ea48f80af4a
+Author: git <svn-admin@ruby-lang.org>
+Date:   2021-01-22T02:49:39+09:00
+
+    * 2021-01-22 [ci skip]
+
 commit\ 709bed2afaee50e2ce803f87bf1ee8291bea41e3
   Author: git <svn-admin@ruby-lang.org>
   Date:   2021-01-21 01:03:52 +0900
@@ -394,6 +400,11 @@ ChangeLog
       log_entry(nil, 'db7d0b89f6eca66cc7eb',
                 'git', 'svn-admin@ruby-lang.org', 'Sat, 23 Jan 2021 06:01:39 +0900',
                 [list(:BULLET, item(nil, para('2021-01-23 [ci skip]')))]),
+      head(2, '2021-01-22'),
+      blank_line,
+      log_entry(nil, 'a3efbda7128ef20b5550',
+                'git', 'svn-admin@ruby-lang.org', '2021-01-22T02:49:39+09:00',
+                [list(:BULLET, item(nil, para('2021-01-22 [ci skip]')))]),
       head(2, '2021-01-21'),
       blank_line,
       log_entry(nil, '709bed2afaee50e2ce80',
