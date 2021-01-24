@@ -231,13 +231,13 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
         # date = header["CommitDate"] || header["Date"]
         date = header[/^ *(?:Author)?Date: +(.*)/, 1]
         author = header[/^ *Author: +(.*)/, 1]
-        if /(\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+) *([-+]\d\d)(\d\d)/ =~
-           (header[/^ *CommitDate: +(.*)/, 1] || date)
-          time = Time.new($1, $2, $3, $4, $5, $6, "#{$7}:#{$8}")
+        begin
+          time = parse_date(header[/^ *CommitDate: +(.*)/, 1] || date)
           @time_cache[entry_name] = time
           author.sub!(/\s*<(.*)>/, '')
           email = $1
           entries << [entry_name, [author, email, date, entry_body]]
+        rescue ArgumentError
         end
       end
 

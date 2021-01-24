@@ -331,6 +331,18 @@ Mon Dec  3 20:37:22 2012  Koichi Sasada  <ko1@atdot.net>
 
   def test_scan_git
     parser = util_parser <<-ChangeLog
+commit\ 38816887962ec167ee46acf500f68df5c3013163
+Author: git <svn-admin@ruby-lang.org>
+Date:   Sun Jan 24 14:35:51 2021 +0900
+
+    * 2021-01-24 [ci skip]
+
+commit\ db7d0b89f6eca66cc7eb155c95f9123133da1ffc
+Author: git <svn-admin@ruby-lang.org>
+Date:   Sat, 23 Jan 2021 06:01:39 +0900
+
+    * 2021-01-23 [ci skip]
+
 commit\ 709bed2afaee50e2ce803f87bf1ee8291bea41e3
   Author: git <svn-admin@ruby-lang.org>
   Date:   2021-01-21 01:03:52 +0900
@@ -372,6 +384,16 @@ ChangeLog
     expected = doc(
       head(1, File.basename(@tempfile.path)),
       blank_line,
+      head(2, '2021-01-24'),
+      blank_line,
+      log_entry(nil, '38816887962ec167ee46',
+                'git', 'svn-admin@ruby-lang.org', 'Sun Jan 24 14:35:51 2021 +0900',
+                [list(:BULLET, item(nil, para('2021-01-24 [ci skip]')))]),
+      head(2, '2021-01-23'),
+      blank_line,
+      log_entry(nil, 'db7d0b89f6eca66cc7eb',
+                'git', 'svn-admin@ruby-lang.org', 'Sat, 23 Jan 2021 06:01:39 +0900',
+                [list(:BULLET, item(nil, para('2021-01-23 [ci skip]')))]),
       head(2, '2021-01-21'),
       blank_line,
       log_entry(nil, '709bed2afaee50e2ce80',
