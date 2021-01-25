@@ -265,15 +265,31 @@ gen_putnil(jitstate_t* jit, ctx_t* ctx)
 static bool
 gen_putobject(jitstate_t* jit, ctx_t* ctx)
 {
-    // Load the argument from the bytecode sequence.
-    // We need to do this as the argument can change due to GC compaction.
-    x86opnd_t pc_imm = const_ptr_opnd((void*)jit->pc);
-    mov(cb, RAX, pc_imm);
-    mov(cb, RAX, mem_opnd(64, RAX, 8)); // One after the opcode
+    VALUE arg = jit_get_arg(jit, 0);
 
-    // Write argument at SP
-    x86opnd_t stack_top = ctx_stack_push(ctx, T_NONE);
-    mov(cb, stack_top, RAX);
+    if (FIXNUM_P(arg))
+    {
+        // Keep track of the fixnum type tag
+        x86opnd_t stack_top = ctx_stack_push(ctx, T_FIXNUM);
+        mov(cb, stack_top, imm_opnd((int64_t)arg));
+    }
+    else if (arg == Qtrue || arg == Qfalse)
+    {
+        x86opnd_t stack_top = ctx_stack_push(ctx, T_NONE);
+        mov(cb, stack_top, imm_opnd((int64_t)arg));
+    }
+    else
+    {
+        // Load the argument from the bytecode sequence.
+        // We need to do this as the argument can change due to GC compaction.
+        x86opnd_t pc_plus_one = const_ptr_opnd((void*)(jit->pc + 1));
+        mov(cb, RAX, pc_plus_one);
+        mov(cb, RAX, mem_opnd(64, RAX, 0));
+
+        // Write argument at SP
+        x86opnd_t stack_top = ctx_stack_push(ctx, T_NONE);
+        mov(cb, stack_top, RAX);
+    }
 
     return true;
 }
