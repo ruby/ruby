@@ -218,7 +218,7 @@ block_t* gen_block_version(blockid_t blockid, const ctx_t* start_ctx)
     ujit_gen_block(ctx, block);
 
     // Keep track of the new block version
-    add_block_version(blockid, block);
+    add_block_version(block->blockid, block);
 
     // For each successor block to compile
     for (;;) {
@@ -249,7 +249,7 @@ block_t* gen_block_version(blockid_t blockid, const ctx_t* start_ctx)
         ujit_gen_block(ctx, block);
 
         // Keep track of the new block version
-        add_block_version(blockid, block);
+        add_block_version(block->blockid, block);
 
         // Patch the last branch address
         last_branch->dst_addrs[0] = cb_get_ptr(cb, block->start_pos);
