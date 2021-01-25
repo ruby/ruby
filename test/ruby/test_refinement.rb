@@ -2488,6 +2488,32 @@ class TestRefinement < Test::Unit::TestCase
     }
   end
 
+  def test_instance_methods_prepend
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 1)
+    begin;
+      Object.prepend(Module.new)
+
+      m = Module.new {
+        refine Object do
+          def hello; end
+        end
+      }
+      using(m)
+
+      Object.new.hello
+
+      module M
+        def hello; end
+      end
+
+      class A
+        include M
+      end
+
+      assert_include(Object.instance_methods, :hello)
+    end;
+  end
+
   private
 
   def eval_using(mod, s)
