@@ -179,7 +179,7 @@ ujit_gen_block(ctx_t* ctx, block_t* block)
             break;
         }
 
-        //fprintf(stderr, "compiling %s\n", insn_name(opcode));
+        //fprintf(stderr, "compiling %d: %s\n", insn_idx, insn_name(opcode));
         //print_str(cb, insn_name(opcode));
 
         // Call the code generation function

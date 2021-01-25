@@ -329,7 +329,7 @@ ujit_install_entry(VALUE mod, VALUE iseq)
     return iseq;
 }
 
-/* Get the address of the UJIT::Block */
+/* Get the address of the the code associated with a UJIT::Block */
 static VALUE
 block_address(VALUE self)
 {
@@ -425,21 +425,23 @@ rb_ujit_init(void)
     ujit_init_core();
     ujit_init_codegen();
 
+    // UJIT Ruby module
     VALUE mUjit = rb_define_module("UJIT");
     rb_define_module_function(mUjit, "install_entry", ujit_install_entry, 1);
     rb_define_module_function(mUjit, "blocks_for", ujit_blocks_for, 1);
 
+    // UJIT::Block (block version, code block)
     cUjitBlock = rb_define_class_under(mUjit, "Block", rb_cObject);
     rb_define_method(cUjitBlock, "address", block_address, 0);
     rb_define_method(cUjitBlock, "code", block_code, 0);
     rb_define_method(cUjitBlock, "iseq_start_index", iseq_start_index, 0);
     rb_define_method(cUjitBlock, "iseq_end_index", iseq_end_index, 0);
 
+    // UJIT disassembler interface
 #if HAVE_LIBCAPSTONE
     cUjitDisasm = rb_define_class_under(mUjit, "Disasm", rb_cObject);
     rb_define_alloc_func(cUjitDisasm, ujit_disasm_init);
     rb_define_method(cUjitDisasm, "disasm", ujit_disasm, 2);
-
     cUjitDisasmInsn = rb_struct_define_under(cUjitDisasm, "Insn", "address", "mnemonic", "op_str", NULL);
 #endif
 
