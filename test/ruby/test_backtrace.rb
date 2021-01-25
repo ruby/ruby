@@ -138,6 +138,18 @@ class TestBacktrace < Test::Unit::TestCase
     rec[m]
   end
 
+  def test_caller_with_limit
+    x = nil
+    c = Class.new do
+      define_method(:bar) do
+        x = caller(1, 1)
+      end
+    end
+    [c.new].group_by(&:bar)
+    assert_equal 1, x.length
+    assert_equal caller(0), caller(0, nil)
+  end
+
   def test_caller_with_nil_length
     assert_equal caller(0), caller(0, nil)
   end
