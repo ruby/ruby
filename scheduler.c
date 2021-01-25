@@ -120,16 +120,14 @@ rb_fiber_scheduler_kernel_sleepv(VALUE scheduler, int argc, VALUE * argv)
     return rb_funcallv(scheduler, id_kernel_sleep, argc, argv);
 }
 
-int
-rb_fiber_scheduler_supports_process_wait(VALUE scheduler)
-{
-    return rb_respond_to(scheduler, id_process_wait);
-}
-
 VALUE
 rb_fiber_scheduler_process_wait(VALUE scheduler, rb_pid_t pid, int flags)
 {
-    return rb_funcall(scheduler, id_process_wait, 2, PIDT2NUM(pid), RB_INT2NUM(flags));
+    VALUE arguments[] = {
+        PIDT2NUM(pid), RB_INT2NUM(flags)
+    };
+  
+    return rb_check_funcall(scheduler, id_process_wait, 2, arguments);
 }
 
 VALUE

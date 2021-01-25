@@ -1346,9 +1346,8 @@ rb_process_status_wait(rb_pid_t pid, int flags)
     // We only enter the scheduler if we are "blocking":
     if (!(flags & WNOHANG)) {
         VALUE scheduler = rb_fiber_scheduler_current();
-        if (rb_fiber_scheduler_supports_process_wait(scheduler)) {
-            return rb_fiber_scheduler_process_wait(scheduler, pid, flags);
-        }
+        VALUE result = rb_fiber_scheduler_process_wait(scheduler, pid, flags);
+        if (result != Qundef) return result;
     }
 
     COROUTINE_STACK_LOCAL(struct waitpid_state, w);
