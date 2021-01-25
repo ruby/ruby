@@ -28,6 +28,13 @@ module UJIT
         )
       end
     end
+
+    block_sizes = blocks.map { |block| block.code.length }
+    total_bytes = block_sizes.reduce(0, :+)
+    str << "\n"
+    str << "Total code size: #{total_bytes} bytes"
+    str << "\n"
+
     str
   end if defined?(Disasm)
 end
