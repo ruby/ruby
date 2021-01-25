@@ -82,6 +82,7 @@ class RDoc::Markup::ToTableOfContents < RDoc::Markup::Formatter
   alias accept_list_item_end   ignore
   alias accept_list_end_bullet ignore
   alias accept_list_start      ignore
+  alias accept_table           ignore
   # :startdoc:
 
 end

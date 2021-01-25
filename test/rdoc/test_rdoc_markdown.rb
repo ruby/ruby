@@ -1012,6 +1012,29 @@ and an extra note.[^2]
     assert_equal expected, doc
   end
 
+  def test_gfm_table
+    doc = parse <<~MD
+    |      |                 |compare-ruby|built-ruby|
+    |------|:----------------|-----------:|---------:|
+    |test  | 1               |     11.618M|   10.757M|
+    |      |                 |       1.08x|         -|
+    |test  | 10              |      1.849M|    1.723M|
+    |      |                 |       1.07x|         -|
+    MD
+
+    head = ["", "", "compare-ruby", "built-ruby"]
+    align = [nil, :left, :right, :right]
+    body = [
+      ["test", "1", "11.618M", "10.757M"],
+      ["", "", "1.08x", "-"],
+      ["test", "10", "1.849M", "1.723M"],
+      ["", "", "1.07x", "-"],
+    ]
+    expected = doc(@RM::Table.new(head, align, body))
+
+    assert_equal expected, doc
+  end
+
   def parse text
     @parser.parse text
   end
