@@ -23,14 +23,17 @@
 #include "ruby/internal/config.h"
 #include "ruby/internal/arithmetic/long.h"
 
+/** Converts a C's `gid_t` into an instance of ::rb_cInteger. */
 #ifndef GIDT2NUM
 # define GIDT2NUM RB_LONG2NUM
 #endif
 
+/** Converts an instance of ::rb_cNumeric into C's `gid_t`. */
 #ifndef NUM2GIDT
 # define NUM2GIDT RB_NUM2LONG
 #endif
 
+/** A rb_sprintf() format prefix to be used for a `gid_t` parameter. */
 #ifndef PRI_GIDT_PREFIX
 # define PRI_GIDT_PREFIX PRI_LONG_PREFIX
 #endif
