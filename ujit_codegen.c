@@ -611,7 +611,7 @@ gen_opt_minus(jitstate_t* jit, ctx_t* ctx)
     add(cb, REG0, imm_opnd(1));
 
     // Push the output on the stack
-    x86opnd_t dst = ctx_stack_push(ctx, T_NONE);
+    x86opnd_t dst = ctx_stack_push(ctx, T_FIXNUM);
     mov(cb, dst, REG0);
 
     return true;
@@ -657,7 +657,7 @@ gen_opt_plus(jitstate_t* jit, ctx_t* ctx)
     jo_ptr(cb, side_exit);
 
     // Push the output on the stack
-    x86opnd_t dst = ctx_stack_push(ctx, T_NONE);
+    x86opnd_t dst = ctx_stack_push(ctx, T_FIXNUM);
     mov(cb, dst, REG0);
 
     return true;
