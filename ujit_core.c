@@ -139,6 +139,24 @@ int ctx_diff(const ctx_t* src, const ctx_t* dst)
     return diff;
 }
 
+// Add a block version to the map
+static void add_block_version(blockid_t blockid, block_t* block)
+{
+    // If there exists a version for this block id
+    block_t* first_version = NULL;
+    st_lookup(version_tbl, (st_data_t)&blockid, (st_data_t*)&first_version);
+
+    // Link to the next version in a linked list
+    if (first_version != NULL) {
+        RUBY_ASSERT(block->next == NULL);
+        block->next = first_version;
+    }
+
+    // Add the block version to the map
+    st_insert(version_tbl, (st_data_t)&blockid, (st_data_t)block);
+    RUBY_ASSERT(find_block_version(blockid, &block->ctx) != NULL);
+}
+
 // Add an incoming branch for a given block version
 static void add_incoming(block_t* p_block, uint32_t branch_idx)
 {
@@ -200,8 +218,7 @@ block_t* gen_block_version(blockid_t blockid, const ctx_t* start_ctx)
     ujit_gen_block(ctx, block);
 
     // Keep track of the new block version
-    st_insert(version_tbl, (st_data_t)&block->blockid, (st_data_t)block);
-    RUBY_ASSERT(find_block_version(blockid, start_ctx) != NULL);
+    add_block_version(blockid, block);
 
     // For each successor block to compile
     for (;;) {
@@ -232,7 +249,7 @@ block_t* gen_block_version(blockid_t blockid, const ctx_t* start_ctx)
         ujit_gen_block(ctx, block);
 
         // Keep track of the new block version
-        st_insert(version_tbl, (st_data_t)&block->blockid, (st_data_t)block);
+        add_block_version(blockid, block);
 
         // Patch the last branch address
         last_branch->dst_addrs[0] = cb_get_ptr(cb, block->start_pos);
