@@ -1369,7 +1369,7 @@ method_entry_i(ID key, VALUE value, void *data)
 
     if (me->def->type == VM_METHOD_TYPE_REFINED) {
 	VALUE owner = me->owner;
-	me = rb_resolve_refined_method(Qnil, me);
+	me = rb_method_entry_with_refinements(owner, me->called_id, NULL);
 	if (!me) return ID_TABLE_CONTINUE;
 	if (!arg->recur && me->owner != owner) return ID_TABLE_CONTINUE;
     }
