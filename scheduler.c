@@ -162,27 +162,23 @@ rb_fiber_scheduler_io_wait_writable(VALUE scheduler, VALUE io)
     return rb_fiber_scheduler_io_wait(scheduler, io, RB_UINT2NUM(RUBY_IO_WRITABLE), Qnil);
 }
 
-int
-rb_fiber_scheduler_supports_io_read(VALUE scheduler)
-{
-    return rb_respond_to(scheduler, id_io_read);
-}
-
 VALUE
 rb_fiber_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t offset, size_t length)
 {
-    return rb_funcall(scheduler, id_io_read, 4, io, buffer, SIZET2NUM(offset), SIZET2NUM(length));
-}
-
-int
-rb_fiber_scheduler_supports_io_write(VALUE scheduler)
-{
-    return rb_respond_to(scheduler, id_io_write);
+    VALUE arguments[] = {
+        io, buffer, SIZET2NUM(offset), SIZET2NUM(length)
+    };
+  
+    return rb_check_funcall(scheduler, id_io_read, 4, arguments);
 }
 
 VALUE
 rb_fiber_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, size_t offset, size_t length)
 {
+    VALUE arguments[] = {
+        io, buffer, SIZET2NUM(offset), SIZET2NUM(length)
+    };
+
     // We should ensure string has capacity to receive data, and then resize it afterwards.
-    return rb_funcall(scheduler, id_io_write, 4, io, buffer, SIZET2NUM(offset), SIZET2NUM(length));
+    return rb_check_funcall(scheduler, id_io_write, 4, arguments);
 }

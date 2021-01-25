@@ -1539,14 +1539,16 @@ io_binwrite(VALUE str, const char *ptr, long len, rb_io_t *fptr, int nosync)
     if ((n = len) <= 0) return n;
 
     VALUE scheduler = rb_fiber_scheduler_current();
-    if (scheduler != Qnil && rb_fiber_scheduler_supports_io_write(scheduler)) {
-        ssize_t length = RB_NUM2SSIZE(
-            rb_fiber_scheduler_io_write(scheduler, fptr->self, str, offset, len)
-        );
+    if (scheduler != Qnil) {
+        VALUE result = rb_fiber_scheduler_io_write(scheduler, fptr->self, str, offset, len);
 
-        if (length < 0) rb_sys_fail_path(fptr->pathv);
+        if (result != Qundef) {
+          ssize_t length = RB_NUM2SSIZE(result);
 
-        return length;
+          if (length < 0) rb_sys_fail_path(fptr->pathv);
+
+          return length;
+        }
     }
 
     if (fptr->wbuf.ptr == NULL && !(!nosync && (fptr->mode & FMODE_SYNC))) {
@@ -2624,14 +2626,16 @@ static long
 io_fread(VALUE str, long offset, long size, rb_io_t *fptr)
 {
     VALUE scheduler = rb_fiber_scheduler_current();
-    if (scheduler != Qnil && rb_fiber_scheduler_supports_io_read(scheduler)) {
-        ssize_t length = RB_NUM2SSIZE(
-            rb_fiber_scheduler_io_read(scheduler, fptr->self, str, offset, size)
-        );
+    if (scheduler != Qnil) {
+        VALUE result = rb_fiber_scheduler_io_read(scheduler, fptr->self, str, offset, size);
 
-        if (length < 0) rb_sys_fail_path(fptr->pathv);
+        if (result != Qundef) {
+          ssize_t length = RB_NUM2SSIZE(result);
 
-        return length;
+          if (length < 0) rb_sys_fail_path(fptr->pathv);
+
+          return length;
+        }
     }
 
     long len;

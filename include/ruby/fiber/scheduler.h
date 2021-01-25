@@ -34,11 +34,7 @@ VALUE rb_fiber_scheduler_unblock(VALUE scheduler, VALUE blocker, VALUE fiber);
 VALUE rb_fiber_scheduler_io_wait(VALUE scheduler, VALUE io, VALUE events, VALUE timeout);
 VALUE rb_fiber_scheduler_io_wait_readable(VALUE scheduler, VALUE io);
 VALUE rb_fiber_scheduler_io_wait_writable(VALUE scheduler, VALUE io);
-
-int rb_fiber_scheduler_supports_io_read(VALUE scheduler);
 VALUE rb_fiber_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t offset, size_t length);
-
-int rb_fiber_scheduler_supports_io_write(VALUE scheduler);
 VALUE rb_fiber_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, size_t offset, size_t length);
 
 #endif /* RUBY_FIBER_SCHEDULER_H */
