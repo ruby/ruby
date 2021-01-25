@@ -532,14 +532,20 @@ gen_opt_lt(jitstate_t* jit, ctx_t* ctx)
     jnz_ptr(cb, side_exit);
 
     // Get the operands and destination from the stack
+    int arg1_type = ctx_get_top_type(ctx);
     x86opnd_t arg1 = ctx_stack_pop(ctx, 1);
+    int arg0_type = ctx_get_top_type(ctx);
     x86opnd_t arg0 = ctx_stack_pop(ctx, 1);
 
     // If not fixnums, fall back
-    test(cb, arg0, imm_opnd(RUBY_FIXNUM_FLAG));
-    jz_ptr(cb, side_exit);
-    test(cb, arg1, imm_opnd(RUBY_FIXNUM_FLAG));
-    jz_ptr(cb, side_exit);
+    if (arg0_type != T_FIXNUM) {
+        test(cb, arg0, imm_opnd(RUBY_FIXNUM_FLAG));
+        jz_ptr(cb, side_exit);
+    }
+    if (arg1_type != T_FIXNUM) {
+        test(cb, arg1, imm_opnd(RUBY_FIXNUM_FLAG));
+        jz_ptr(cb, side_exit);
+    }
 
     // Compare the arguments
     mov(cb, REG0, arg0);
