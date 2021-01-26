@@ -23,19 +23,23 @@ VALUE cUjitBlock;
 VALUE cUjitDisasm;
 VALUE cUjitDisasmInsn;
 
+bool rb_ujit_enabled;
+
+static int64_t vm_insns_count = 0;
+int64_t rb_ujit_exec_insns_count = 0;
+
 extern st_table * version_tbl;
 extern codeblock_t *cb;
+// Hash table of encoded instructions
+extern st_table *rb_encoded_insn_data;
+
+struct rb_ujit_options rb_ujit_opts;
 
 static const rb_data_type_t ujit_block_type = {
     "UJIT/Block",
     {0, 0, 0, },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
-
-bool rb_ujit_enabled;
-
-// Hash table of encoded instructions
-extern st_table *rb_encoded_insn_data;
 
 // Write the uJIT entry point pre-call bytes
 void 
@@ -412,13 +416,35 @@ ujit_disasm(VALUE self, VALUE code, VALUE from)
 }
 #endif
 
+__attribute__((destructor))
+static void
+print_ujit_stats(void)
+{
+    if (rb_ujit_opts.gen_stats) {
+        double double_ujit_exec_insns_count = rb_ujit_exec_insns_count;
+        double total_insns_count = vm_insns_count + rb_ujit_exec_insns_count;
+        double ratio = double_ujit_exec_insns_count / total_insns_count;
+
+        fprintf(stderr, "vm_insns_count:        %10" PRId64 "\n", vm_insns_count);
+        fprintf(stderr, "ujit_exec_insns_count: %10" PRId64 "\n", rb_ujit_exec_insns_count);
+        fprintf(stderr, "ratio_in_ujit:         %9.1f%%\n", ratio * 100);
+    }
+}
+
+void rb_ujit_collect_vm_usage_insn(int insn)
+{
+    vm_insns_count++;
+}
+
 void
-rb_ujit_init(void)
+rb_ujit_init(struct rb_ujit_options *options)
 {
     if (!ujit_scrape_successful || !PLATFORM_SUPPORTED_P)
     {
         return;
     }
+
+    rb_ujit_opts = *options;
 
     rb_ujit_enabled = true;
 
