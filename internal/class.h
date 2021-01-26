@@ -95,6 +95,7 @@ typedef struct rb_classext_struct rb_classext_t;
 #define RCLASS_PARENT_SUBCLASSES(c) (RCLASS_EXT(c)->parent_subclasses)
 #define RCLASS_MODULE_SUBCLASSES(c) (RCLASS_EXT(c)->module_subclasses)
 #define RCLASS_ALLOCATOR(c) (RCLASS_EXT(c)->allocator)
+#define RCLASS_SUBCLASSES(c) (RCLASS_EXT(c)->subclasses)
 
 #define RICLASS_IS_ORIGIN FL_USER5
 #define RCLASS_CLONED     FL_USER6
