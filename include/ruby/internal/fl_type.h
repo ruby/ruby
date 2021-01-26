@@ -40,6 +40,12 @@
 #include "ruby/defines.h"
 
 /** @cond INTERNAL_MACRO */
+#if RBIMPL_HAS_EXTENSION(enumerator_attributes)
+# define RBIMPL_HAVE_ENUM_ATTRIBUTE 1
+#elif RBIMPL_COMPILER_SINCE(GCC, 6, 0, 0)
+# define RBIMPL_HAVE_ENUM_ATTRIBUTE 1
+#endif
+
 #ifdef ENUM_OVER_INT
 # define RBIMPL_WIDER_ENUM 1
 #elif SIZEOF_INT * CHAR_BIT > 12+19+1
@@ -170,9 +176,7 @@ ruby_fl_type {
     RUBY_FL_FINALIZE     = (1<<7),
     RUBY_FL_TAINT
 
-#if RBIMPL_HAS_EXTENSION(enumerator_attributes)
-    RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
-#elif RBIMPL_COMPILER_SINCE(GCC, 6, 0, 0)
+#if defined(RBIMPL_HAVE_ENUM_ATTRIBUTE)
     RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
 #elif defined(_MSC_VER)
 # pragma deprecated(RUBY_FL_TAINT)
@@ -182,9 +186,7 @@ ruby_fl_type {
     RUBY_FL_SHAREABLE    = (1<<8),
     RUBY_FL_UNTRUSTED
 
-#if RBIMPL_HAS_EXTENSION(enumerator_attributes)
-    RBIMPL_ATTR_DEPRECATED(("trustedness turned out to be a wrong idea."))
-#elif RBIMPL_COMPILER_SINCE(GCC, 6, 0, 0)
+#if defined(RBIMPL_HAVE_ENUM_ATTRIBUTE)
     RBIMPL_ATTR_DEPRECATED(("trustedness turned out to be a wrong idea."))
 #elif defined(_MSC_VER)
 # pragma deprecated(RUBY_FL_UNTRUSTED)
@@ -230,9 +232,7 @@ ruby_fl_type {
 enum {
     RUBY_FL_DUPPED
 
-#if RBIMPL_HAS_EXTENSION(enumerator_attributes)
-    RBIMPL_ATTR_DEPRECATED(("It seems there is no actual usage of this enum."))
-#elif RBIMPL_COMPILER_SINCE(GCC, 6, 0, 0)
+#if defined(RBIMPL_HAVE_ENUM_ATTRIBUTE)
     RBIMPL_ATTR_DEPRECATED(("It seems there is no actual usage of this enum."))
 #elif defined(_MSC_VER)
 # pragma deprecated(RUBY_FL_UNTRUSTED)
@@ -240,6 +240,8 @@ enum {
 
     = RUBY_T_MASK | RUBY_FL_EXIVAR
 };
+
+#undef RBIMPL_HAVE_ENUM_ATTRIBUTE
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 void rb_obj_infect(VALUE victim, VALUE carrier);
