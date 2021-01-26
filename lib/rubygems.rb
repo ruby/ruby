@@ -9,7 +9,7 @@
 require 'rbconfig'
 
 module Gem
-  VERSION = "3.1.5".freeze
+  VERSION = "3.1.6".freeze
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -659,22 +659,25 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
     index = $LOAD_PATH.index RbConfig::CONFIG['sitelibdir']
 
-    index
+    index || 0
+  end
+
+  ##
+  # The number of paths in the `$LOAD_PATH` from activated gems. Used to
+  # prioritize `-I` and `ENV['RUBYLIB`]` entries during `require`.
+
+  def self.activated_gem_paths
+    @activated_gem_paths ||= 0
   end
 
   ##
   # Add a list of paths to the $LOAD_PATH at the proper place.
 
   def self.add_to_load_path(*paths)
-    insert_index = load_path_insert_index
+    @activated_gem_paths = activated_gem_paths + paths.size
 
-    if insert_index
-      # gem directories must come after -I and ENV['RUBYLIB']
-      $LOAD_PATH.insert(insert_index, *paths)
-    else
-      # we are probably testing in core, -I and RUBYLIB don't apply
-      $LOAD_PATH.unshift(*paths)
-    end
+    # gem directories must come after -I and ENV['RUBYLIB']
+    $LOAD_PATH.insert(Gem.load_path_insert_index, *paths)
   end
 
   @yaml_loaded = false

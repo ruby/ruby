@@ -385,6 +385,7 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
     Gem::Security.reset
 
     Gem.loaded_specs.clear
+    Gem.instance_variable_set(:@activated_gem_paths, 0)
     Gem.clear_default_specs
     Bundler.reset!
 

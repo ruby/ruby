@@ -45,6 +45,35 @@ class TestGemRequire < Gem::TestCase
     refute require(path), "'#{path}' was not yet required"
   end
 
+  def test_respect_loaded_features_caching_like_standard_require
+    dir = Dir.mktmpdir("test_require", @tempdir)
+
+    lp1 = File.join dir, 'foo1'
+    foo1 = File.join lp1, 'foo.rb'
+
+    FileUtils.mkdir_p lp1
+    File.open(foo1, 'w') { |f| f.write "class Object; HELLO = 'foo1' end" }
+
+    lp = $LOAD_PATH.dup
+
+    $LOAD_PATH.unshift lp1
+    assert_require 'foo'
+    assert_equal "foo1", ::Object::HELLO
+
+    lp2 = File.join dir, 'foo2'
+    foo2 = File.join lp2, 'foo.rb'
+
+    FileUtils.mkdir_p lp2
+    File.open(foo2, 'w') { |f| f.write "class Object; HELLO = 'foo2' end" }
+
+    $LOAD_PATH.unshift lp2
+    refute_require 'foo'
+    assert_equal "foo1", ::Object::HELLO
+  ensure
+    $LOAD_PATH.replace lp
+    Object.send :remove_const, :HELLO if Object.const_defined? :HELLO
+  end
+
   # Providing -I on the commandline should always beat gems
   def test_dash_i_beats_gems
     a1 = util_spec "a", "1", {"b" => "= 1"}, "lib/test_gem_require_a.rb"
@@ -118,6 +147,24 @@ class TestGemRequire < Gem::TestCase
   ensure
     $LOAD_PATH.replace lp
     Object.send :remove_const, :HELLO if Object.const_defined? :HELLO
+  end
+
+  def test_dash_i_respects_default_library_extension_priority
+    skip "extensions don't quite work on jruby" if Gem.java_platform?
+
+    dash_i_ext_arg = util_install_extension_file('a')
+    dash_i_lib_arg = util_install_ruby_file('a')
+
+    lp = $LOAD_PATH.dup
+
+    begin
+      $LOAD_PATH.unshift dash_i_lib_arg
+      $LOAD_PATH.unshift dash_i_ext_arg
+      assert_require 'a'
+      assert_match(/a\.rb$/, $LOADED_FEATURES.last)
+    ensure
+      $LOAD_PATH.replace lp
+    end
   end
 
   def test_concurrent_require
@@ -364,6 +411,17 @@ class TestGemRequire < Gem::TestCase
     assert_equal 0, times_called
   end
 
+  def test_second_gem_require_does_not_resolve_path_manually_before_going_through_standard_require
+    a1 = util_spec "a", "1", nil, "lib/test_gem_require_a.rb"
+    install_gem a1
+
+    assert_require "test_gem_require_a"
+
+    stub(:gem_original_require, ->(path) { assert_equal "test_gem_require_a", path }) do
+      require "test_gem_require_a"
+    end
+  end
+
   def test_realworld_default_gem
     testing_ruby_repo = !ENV["GEM_COMMAND"].nil?
     skip "this test can't work under ruby-core setup" if testing_ruby_repo || java_platform?
@@ -537,6 +595,52 @@ class TestGemRequire < Gem::TestCase
     yield
   ensure
     $VERBOSE = old_verbose
+  end
+
+  def util_install_extension_file(name)
+    spec = quick_gem name
+    util_build_gem spec
+
+    spec.extensions << "extconf.rb"
+    write_file File.join(@tempdir, "extconf.rb") do |io|
+      io.write <<-RUBY
+        require "mkmf"
+        CONFIG['LDSHARED'] = '$(TOUCH) $@ ||'
+        create_makefile("#{name}")
+      RUBY
+    end
+
+    write_file File.join(@tempdir, "#{name}.c") do |io|
+      io.write <<-C
+        void Init_#{name}() { }
+      C
+    end
+
+    write_file File.join(@tempdir, "depend")
+
+    spec.files += ["extconf.rb", "depend", "#{name}.c"]
+
+    so = File.join(spec.gem_dir, "#{name}.#{RbConfig::CONFIG["DLEXT"]}")
+    refute_path_exists so
+
+    path = Gem::Package.build spec
+    installer = Gem::Installer.at path
+    installer.install
+    assert_path_exists so
+
+    spec.gem_dir
+  end
+
+  def util_install_ruby_file(name)
+    dir_lib = Dir.mktmpdir("test_require_lib", @tempdir)
+    dash_i_lib_arg = File.join dir_lib
+
+    a_rb = File.join dash_i_lib_arg, "#{name}.rb"
+
+    FileUtils.mkdir_p File.dirname a_rb
+    File.open(a_rb, 'w') { |f| f.write "# #{name}.rb" }
+
+    dash_i_lib_arg
   end
 
 end

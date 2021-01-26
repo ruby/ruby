@@ -62,5 +62,6 @@ if ENV["CI"] || ENV["TEST_SSL"]
     def test_accessing_new_index
       assert_https('index.rubygems.org')
     end
+
   end
 end
