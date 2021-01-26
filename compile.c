@@ -1497,6 +1497,12 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     debugs("[compile step 6 (update_catch_except_flags)] \n");
     update_catch_except_flags(iseq->body);
 
+    debugs("[compile step 6.1 (remove unused catch tables)] \n");
+    if (!iseq->body->catch_except_p && iseq->body->catch_table) {
+        xfree(iseq->body->catch_table);
+        iseq->body->catch_table = NULL;
+    }
+
 #if VM_INSN_INFO_TABLE_IMPL == 2
     if (iseq->body->insns_info.succ_index_table == NULL) {
         debugs("[compile step 7 (rb_iseq_insns_info_encode_positions)] \n");
@@ -3525,6 +3531,12 @@ iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 
     list = FIRST_ELEMENT(anchor);
 
+    int do_block_optimization = 0;
+
+    if (iseq->body->type == ISEQ_TYPE_BLOCK && !iseq->body->catch_except_p) {
+        do_block_optimization = 1;
+    }
+
     while (list) {
 	if (IS_INSN(list)) {
 	    if (do_peepholeopt) {
@@ -3536,6 +3548,13 @@ iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 	    if (do_ou) {
 		insn_operands_unification((INSN *)list);
 	    }
+
+            if (do_block_optimization) {
+                INSN * item = (INSN *)list;
+                if (IS_INSN_ID(item, jump)) {
+                    do_block_optimization = 0;
+                }
+            }
 	}
 	if (IS_LABEL(list)) {
 	    switch (((LABEL *)list)->rescued) {
@@ -3549,6 +3568,13 @@ iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 	    }
 	}
 	list = list->next;
+    }
+
+    if (do_block_optimization) {
+        LINK_ELEMENT * le = FIRST_ELEMENT(anchor)->next;
+        if (IS_INSN(le) && IS_INSN_ID((INSN *)le, nop)) {
+            ELEM_REMOVE(le);
+        }
     }
     return COMPILE_OK;
 }
