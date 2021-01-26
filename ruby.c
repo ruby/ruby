@@ -1041,6 +1041,10 @@ setup_ujit_options(const char *s, struct rb_ujit_options *ujit_opt)
     if (opt_match_noarg(s, l, "stats")) {
         ujit_opt->gen_stats = true;
     }
+    else {
+        rb_raise(rb_eRuntimeError,
+                 "invalid ujit option `%s' (--help will show valid ujit options)", s);
+    }
 }
 
 #if USE_MJIT
