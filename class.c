@@ -76,11 +76,11 @@ rb_module_add_to_subclasses_list(VALUE module, VALUE iclass)
     head = RCLASS_EXT(module)->subclasses;
     if (head) {
 	entry->next = head;
-	RCLASS_EXT(head->klass)->module_subclasses = &entry->next;
+	RCLASS_MODULE_SUBCLASSES(head->klass) = &entry->next;
     }
 
     RCLASS_EXT(module)->subclasses = entry;
-    RCLASS_EXT(iclass)->module_subclasses = &RCLASS_EXT(module)->subclasses;
+    RCLASS_MODULE_SUBCLASSES(iclass) = &RCLASS_EXT(module)->subclasses;
 }
 
 void
@@ -106,18 +106,18 @@ rb_class_remove_from_module_subclasses(VALUE klass)
 {
     rb_subclass_entry_t *entry;
 
-    if (RCLASS_EXT(klass)->module_subclasses) {
-	entry = *RCLASS_EXT(klass)->module_subclasses;
-	*RCLASS_EXT(klass)->module_subclasses = entry->next;
+    if (RCLASS_MODULE_SUBCLASSES(klass)) {
+	entry = *RCLASS_MODULE_SUBCLASSES(klass);
+	*RCLASS_MODULE_SUBCLASSES(klass) = entry->next;
 
 	if (entry->next) {
-	    RCLASS_EXT(entry->next->klass)->module_subclasses = RCLASS_EXT(klass)->module_subclasses;
+	    RCLASS_MODULE_SUBCLASSES(entry->next->klass) = RCLASS_MODULE_SUBCLASSES(klass);
 	}
 
 	xfree(entry);
     }
 
-    RCLASS_EXT(klass)->module_subclasses = NULL;
+    RCLASS_MODULE_SUBCLASSES(klass) = NULL;
 }
 
 void
@@ -183,7 +183,7 @@ class_alloc(VALUE flags, VALUE klass)
       RCLASS_SET_SUPER((VALUE)obj, 0);
       RCLASS_EXT(obj)->subclasses = NULL;
       RCLASS_PARENT_SUBCLASSES(obj) = NULL;
-      RCLASS_EXT(obj)->module_subclasses = NULL;
+      RCLASS_MODULE_SUBCLASSES(obj) = NULL;
      */
     RCLASS_SET_ORIGIN((VALUE)obj, (VALUE)obj);
     RCLASS_SERIAL(obj) = rb_next_class_serial();
