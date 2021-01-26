@@ -597,6 +597,9 @@ class VCS
                   end
                 when %r[^( +)(\d+)i/(.*)/]
                   s[$2.to_i, 0] = "#{$1}#{$3}\n"
+                when %r[^ +(\d+)(?:,(\d+))?d]
+                  n = $1.to_i
+                  s[n..($2&.to_i || n)] = []
                 end
               end
               s = s.join('')
