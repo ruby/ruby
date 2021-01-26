@@ -941,7 +941,7 @@ void
 rb_define_alloc_func(VALUE klass, VALUE (*func)(VALUE))
 {
     Check_Type(klass, T_CLASS);
-    RCLASS_EXT(klass)->allocator = func;
+    RCLASS_ALLOCATOR(klass) = func;
 }
 
 void
@@ -956,7 +956,7 @@ rb_get_alloc_func(VALUE klass)
     Check_Type(klass, T_CLASS);
 
     for (; klass; klass = RCLASS_SUPER(klass)) {
-	rb_alloc_func_t allocator = RCLASS_EXT(klass)->allocator;
+	rb_alloc_func_t allocator = RCLASS_ALLOCATOR(klass);
 	if (allocator == UNDEF_ALLOC_FUNC) break;
 	if (allocator) return allocator;
     }
