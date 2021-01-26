@@ -35,10 +35,10 @@ typedef struct CtxStruct
     uint8_t temp_types[MAX_TEMP_TYPES];
 
     // Number of values pushed on the temporary stack
-    uint32_t stack_size;
+    uint16_t stack_size;
 
     // Whether we know self is a heap object
-    bool self_is_object;
+    bool self_is_object : 1;
 
 } ctx_t;
 
