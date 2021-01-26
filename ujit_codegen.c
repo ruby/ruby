@@ -179,6 +179,11 @@ ujit_gen_block(ctx_t* ctx, block_t* block)
             break;
         }
 
+#if RUBY_DEBUG
+        mov(cb, REG0, const_ptr_opnd((void *)&rb_ujit_exec_insns_count));
+        add(cb, mem_opnd(64, REG0, 0), imm_opnd(1));
+#endif
+
         //fprintf(stderr, "compiling %d: %s\n", insn_idx, insn_name(opcode));
         //print_str(cb, insn_name(opcode));
 

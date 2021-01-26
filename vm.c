@@ -37,6 +37,7 @@
 #include "vm_insnhelper.h"
 #include "ractor_core.h"
 #include "vm_sync.h"
+#include "ujit.h"
 
 #include "builtin.h"
 
@@ -342,6 +343,10 @@ vm_bind_update_env(VALUE bindval, rb_binding_t *bind, VALUE envval)
 static void vm_collect_usage_operand(int insn, int n, VALUE op);
 static void vm_collect_usage_insn(int insn);
 static void vm_collect_usage_register(int reg, int isset);
+#endif
+
+#if RUBY_DEBUG
+static void vm_ujit_collect_usage_insn(int insn);
 #endif
 
 static VALUE vm_make_env_object(const rb_execution_context_t *ec, rb_control_frame_t *cfp);
@@ -4052,6 +4057,14 @@ MAYBE_UNUSED(static void (*ruby_vm_collect_usage_func_insn)(int insn)) = 0;
 MAYBE_UNUSED(static void (*ruby_vm_collect_usage_func_operand)(int insn, int n, VALUE op)) = 0;
 MAYBE_UNUSED(static void (*ruby_vm_collect_usage_func_register)(int reg, int isset)) = 0;
 
+#endif
+
+#if RUBY_DEBUG
+static void
+vm_ujit_collect_usage_insn(int insn)
+{
+    rb_ujit_collect_vm_usage_insn(insn);
+}
 #endif
 
 #if VM_COLLECT_USAGE_DETAILS
