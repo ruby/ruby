@@ -20,6 +20,7 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines #NEWOBJ.
  */
+#include "ruby/internal/attr/deprecated.h"
 #include "ruby/internal/cast.h"
 #include "ruby/internal/core/rbasic.h"
 #include "ruby/internal/dllexport.h"
@@ -47,27 +48,18 @@ void rb_singleton_class_attached(VALUE,VALUE);
 void rb_copy_generic_ivar(VALUE,VALUE);
 RBIMPL_SYMBOL_EXPORT_END()
 
+RBIMPL_ATTR_DEPRECATED(("This is no longer how Object#clone works."))
 static inline void
 rb_clone_setup(VALUE clone, VALUE obj)
 {
-    RBIMPL_ASSERT_OR_ASSUME(! RB_SPECIAL_CONST_P(obj));
-    RBIMPL_ASSERT_OR_ASSUME(! RB_SPECIAL_CONST_P(clone));
-
-    const VALUE flags = RUBY_FL_PROMOTED0 | RUBY_FL_PROMOTED1 | RUBY_FL_FINALIZE;
-    rb_obj_setup(clone, rb_singleton_class_clone(obj),
-                 RB_FL_TEST_RAW(obj, ~flags));
-    rb_singleton_class_attached(RBASIC_CLASS(clone), clone);
-    if (RB_FL_TEST(obj, RUBY_FL_EXIVAR)) rb_copy_generic_ivar(clone, obj);
+    return;
 }
 
+RBIMPL_ATTR_DEPRECATED(("This is no longer how Object#dup works."))
 static inline void
 rb_dup_setup(VALUE dup, VALUE obj)
 {
-    RBIMPL_ASSERT_OR_ASSUME(! RB_SPECIAL_CONST_P(obj));
-    RBIMPL_ASSERT_OR_ASSUME(! RB_SPECIAL_CONST_P(dup));
-
-    rb_obj_setup(dup, rb_obj_class(obj), RB_FL_TEST_RAW(obj, RUBY_FL_DUPPED));
-    if (RB_FL_TEST(obj, RUBY_FL_EXIVAR)) rb_copy_generic_ivar(dup, obj);
+    return;
 }
 
 #endif /* RBIMPL_NEWOBJ_H */
