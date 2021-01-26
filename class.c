@@ -56,11 +56,11 @@ rb_class_subclass_add(VALUE super, VALUE klass)
 	head = RCLASS_EXT(super)->subclasses;
 	if (head) {
 	    entry->next = head;
-	    RCLASS_EXT(head->klass)->parent_subclasses = &entry->next;
+	    RCLASS_PARENT_SUBCLASSES(head->klass) = &entry->next;
 	}
 
 	RCLASS_EXT(super)->subclasses = entry;
-	RCLASS_EXT(klass)->parent_subclasses = &RCLASS_EXT(super)->subclasses;
+	RCLASS_PARENT_SUBCLASSES(klass) = &RCLASS_EXT(super)->subclasses;
     }
 }
 
@@ -88,17 +88,17 @@ rb_class_remove_from_super_subclasses(VALUE klass)
 {
     rb_subclass_entry_t *entry;
 
-    if (RCLASS_EXT(klass)->parent_subclasses) {
-	entry = *RCLASS_EXT(klass)->parent_subclasses;
+    if (RCLASS_PARENT_SUBCLASSES(klass)) {
+	entry = *RCLASS_PARENT_SUBCLASSES(klass);
 
-	*RCLASS_EXT(klass)->parent_subclasses = entry->next;
+	*RCLASS_PARENT_SUBCLASSES(klass) = entry->next;
 	if (entry->next) {
-	    RCLASS_EXT(entry->next->klass)->parent_subclasses = RCLASS_EXT(klass)->parent_subclasses;
+	    RCLASS_PARENT_SUBCLASSES(entry->next->klass) = RCLASS_PARENT_SUBCLASSES(klass);
 	}
 	xfree(entry);
     }
 
-    RCLASS_EXT(klass)->parent_subclasses = NULL;
+    RCLASS_PARENT_SUBCLASSES(klass) = NULL;
 }
 
 void
@@ -182,7 +182,7 @@ class_alloc(VALUE flags, VALUE klass)
       RCLASS_IV_INDEX_TBL(obj) = 0;
       RCLASS_SET_SUPER((VALUE)obj, 0);
       RCLASS_EXT(obj)->subclasses = NULL;
-      RCLASS_EXT(obj)->parent_subclasses = NULL;
+      RCLASS_PARENT_SUBCLASSES(obj) = NULL;
       RCLASS_EXT(obj)->module_subclasses = NULL;
      */
     RCLASS_SET_ORIGIN((VALUE)obj, (VALUE)obj);
