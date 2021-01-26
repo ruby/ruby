@@ -595,7 +595,7 @@ class VCS
                     end
                     raise message.join('')
                   end
-                when %r[^( +)(\d+)i/(.+)/]
+                when %r[^( +)(\d+)i/(.*)/]
                   s[$2.to_i, 0] = "#{$1}#{$3}\n"
                 end
               end
