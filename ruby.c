@@ -189,6 +189,8 @@ struct ruby_cmdline_options {
 #if USE_MJIT
     struct mjit_options mjit;
 #endif
+    struct rb_ujit_options ujit;
+
     int sflag, xflag;
     unsigned int warning: 1;
     unsigned int verbose: 1;
@@ -1018,10 +1020,6 @@ set_option_encoding_once(const char *type, VALUE *name, const char *e, long elen
 #define set_source_encoding_once(opt, e, elen) \
     set_option_encoding_once("source", &(opt)->src.enc.name, (e), (elen))
 
-#if USE_MJIT
-static void
-setup_mjit_options(const char *s, struct mjit_options *mjit_opt)
-{
 #define opt_match(s, l, name) \
     ((((l) > rb_strlen_lit(name)) ? (s)[rb_strlen_lit(name)] == '=' : \
       (l) == rb_strlen_lit(name)) && \
@@ -1031,6 +1029,24 @@ setup_mjit_options(const char *s, struct mjit_options *mjit_opt)
     opt_match(s, l, name) && (*(s) ? (rb_warn("argument to --jit-" name " is ignored"), 1) : 1)
 #define opt_match_arg(s, l, name) \
     opt_match(s, l, name) && (*(s) ? 1 : (rb_raise(rb_eRuntimeError, "--jit-" name " needs an argument"), 0))
+
+static void
+setup_ujit_options(const char *s, struct rb_ujit_options *ujit_opt)
+{
+    *ujit_opt = (struct rb_ujit_options) { 0 };
+
+    if (*s != '-') return;
+    const size_t l = strlen(++s);
+
+    if (opt_match_noarg(s, l, "stats")) {
+        ujit_opt->gen_stats = true;
+    }
+}
+
+#if USE_MJIT
+static void
+setup_mjit_options(const char *s, struct mjit_options *mjit_opt)
+{
     if (*s != '-') return;
     const size_t l = strlen(++s);
     if (*s == 0) return;
@@ -1442,6 +1458,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
             }
             else if (strncmp("ujit", s, 4) == 0) {
                 FEATURE_SET(opt->features, FEATURE_BIT(ujit));
+                setup_ujit_options(s + 4, &opt->ujit);
             }
 	    else if (strcmp("yydebug", s) == 0) {
 		if (envopt) goto noenvopt_long;
@@ -1804,7 +1821,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         rb_warning("-K is specified; it is for 1.8 compatibility and may cause odd behavior");
 
     if (opt->features.set & FEATURE_BIT(ujit))
-        rb_ujit_init();
+        rb_ujit_init(&opt->ujit);
 #if USE_MJIT
     if (opt->features.set & FEATURE_BIT(jit)) {
         opt->mjit.on = TRUE; /* set mjit.on for ruby_show_version() API and check to call mjit_init() */
