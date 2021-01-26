@@ -227,7 +227,19 @@ ruby_fl_type {
     RUBY_FL_SINGLETON = RUBY_FL_USER0,
 };
 
-enum { RUBY_FL_DUPPED = RUBY_T_MASK | RUBY_FL_EXIVAR | RUBY_FL_SHAREABLE };
+enum {
+    RUBY_FL_DUPPED
+
+#if RBIMPL_HAS_EXTENSION(enumerator_attributes)
+    RBIMPL_ATTR_DEPRECATED(("It seems there is no actual usage of this enum."))
+#elif RBIMPL_COMPILER_SINCE(GCC, 6, 0, 0)
+    RBIMPL_ATTR_DEPRECATED(("It seems there is no actual usage of this enum."))
+#elif defined(_MSC_VER)
+# pragma deprecated(RUBY_FL_UNTRUSTED)
+#endif
+
+    = RUBY_T_MASK | RUBY_FL_EXIVAR
+};
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 void rb_obj_infect(VALUE victim, VALUE carrier);

@@ -56,6 +56,23 @@ static VALUE proc_binding(VALUE self);
 
 #define IS_METHOD_PROC_IFUNC(ifunc) ((ifunc)->func == bmcall)
 
+/* :FIXME: The way procs are cloned has been historically different from the
+ * way everything else are.  @shyouhei is not sure for the intention though.
+ */
+#undef CLONESETUP
+static inline void
+CLONESETUP(VALUE clone, VALUE obj)
+{
+    RBIMPL_ASSERT_OR_ASSUME(! RB_SPECIAL_CONST_P(obj));
+    RBIMPL_ASSERT_OR_ASSUME(! RB_SPECIAL_CONST_P(clone));
+
+    const VALUE flags = RUBY_FL_PROMOTED0 | RUBY_FL_PROMOTED1 | RUBY_FL_FINALIZE;
+    rb_obj_setup(clone, rb_singleton_class_clone(obj),
+                 RB_FL_TEST_RAW(obj, ~flags));
+    rb_singleton_class_attached(RBASIC_CLASS(clone), clone);
+    if (RB_FL_TEST(obj, RUBY_FL_EXIVAR)) rb_copy_generic_ivar(clone, obj);
+}
+
 static void
 block_mark(const struct rb_block *block)
 {
