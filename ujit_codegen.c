@@ -570,9 +570,9 @@ gen_opt_lt(jitstate_t* jit, ctx_t* ctx)
     }
 
     // Compare the arguments
-    mov(cb, REG0, arg0);
-    cmp(cb, REG0, arg1);
-    mov(cb, REG0, imm_opnd(Qfalse));
+    xor(cb, REG0_32, REG0_32); // REG0 = Qfalse
+    mov(cb, REG1, arg0);
+    cmp(cb, REG1, arg1);
     mov(cb, REG1, imm_opnd(Qtrue));
     cmovl(cb, REG0, REG1);
 
