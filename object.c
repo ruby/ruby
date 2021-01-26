@@ -3624,13 +3624,6 @@ rb_num_to_dbl(VALUE val)
     return RFLOAT_VALUE(val);
 }
 
-/*!
- * Converts a \c Numeric object to \c double.
- * \param[in] val a \c Numeric object
- * \return the converted value
- * \exception TypeError if \a val is not a \c Numeric or
- *   it does not support conversion to a floating point number.
- */
 double
 rb_num2dbl(VALUE val)
 {
