@@ -11600,7 +11600,7 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  - #casecmp?:: Returns +true+ if the string is equal to a given string after Unicode case folding;
  *                +false+ otherwise.
  *
- *  === Methods for Modifying +self+
+ *  === Methods for Modifying a \String
  *
  *  Each of these methods modifies +self+.
  *
