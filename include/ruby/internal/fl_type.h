@@ -235,7 +235,7 @@ enum {
 #if defined(RBIMPL_HAVE_ENUM_ATTRIBUTE)
     RBIMPL_ATTR_DEPRECATED(("It seems there is no actual usage of this enum."))
 #elif defined(_MSC_VER)
-# pragma deprecated(RUBY_FL_UNTRUSTED)
+# pragma deprecated(RUBY_FL_DUPPED)
 #endif
 
     = RUBY_T_MASK | RUBY_FL_EXIVAR
