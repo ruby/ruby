@@ -17,9 +17,6 @@
 #define REG0_32 EAX
 #define REG1_32 ECX
 
-// Maximum number of versions per block
-#define MAX_VERSIONS 5
-
 // Maximum number of temp value types we keep track of
 #define MAX_TEMP_TYPES 8
 
