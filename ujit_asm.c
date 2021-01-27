@@ -54,6 +54,45 @@ x86opnd_t mem_opnd(uint32_t num_bits, x86opnd_t base_reg, int32_t disp)
     return opnd;
 }
 
+x86opnd_t mem_opnd_sib(uint32_t num_bits, x86opnd_t base_reg, x86opnd_t index_reg, int32_t scale, int32_t disp)
+{
+    uint8_t scale_exp;
+    switch (scale) {
+    case 8:
+        scale_exp = 3;
+        break;
+    case 4:
+        scale_exp = 2;
+        break;
+    case 2:
+        scale_exp = 1;
+        break;
+    case 1:
+        scale_exp = 0;
+        break;
+    default:
+        assert(false && "scale not one of 1,2,4,8");
+        break;
+    }
+
+    bool is_iprel = base_reg.as.reg.reg_type == REG_IP;
+
+    x86opnd_t opnd = {
+        OPND_MEM,
+        num_bits,
+        .as.mem = {
+            .base_reg_no = base_reg.as.reg.reg_no,
+            .idx_reg_no = index_reg.as.reg.reg_no,
+            .has_idx = 1,
+            .scale_exp = scale_exp,
+            .is_iprel = is_iprel,
+            .disp = disp
+        }
+    };
+
+    return opnd;
+}
+
 x86opnd_t resize_opnd(x86opnd_t opnd, uint32_t num_bits)
 {
     assert (num_bits % 8 == 0);
