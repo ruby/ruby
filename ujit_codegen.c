@@ -66,6 +66,11 @@ ujit_gen_exit(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb, VALUE* exit_pc)
     mov(cb, RAX, const_ptr_opnd(exit_pc));
     mov(cb, member_opnd(REG_CFP, rb_control_frame_t, pc), RAX);
 
+#if RUBY_DEBUG
+    mov(cb, RDI, const_ptr_opnd(exit_pc));
+    call_ptr(cb, RSI, (void *)&rb_ujit_count_side_exit_op);
+#endif
+
     // Write the post call bytes
     cb_write_post_call_bytes(cb);
 }
