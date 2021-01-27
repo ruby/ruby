@@ -27,6 +27,7 @@ bool rb_ujit_enabled;
 
 static int64_t vm_insns_count = 0;
 int64_t rb_ujit_exec_insns_count = 0;
+static int64_t exit_op_count[VM_INSTRUCTION_SIZE] = { 0 };
 
 extern st_table * version_tbl;
 extern codeblock_t *cb;
@@ -416,25 +417,95 @@ ujit_disasm(VALUE self, VALUE code, VALUE from)
 }
 #endif
 
+
+#if RUBY_DEBUG
+// implementation for --ujit-stats
+
+void
+rb_ujit_collect_vm_usage_insn(int insn)
+{
+    vm_insns_count++;
+}
+
+const VALUE *
+rb_ujit_count_side_exit_op(const VALUE *exit_pc)
+{
+    int insn = rb_vm_insn_addr2opcode((const void *)*exit_pc);
+    exit_op_count[insn]++;
+    return exit_pc; // This function must return exit_pc!
+}
+
+struct insn_count {
+    int64_t insn;
+    int64_t count;
+};
+
+static int
+insn_count_sort_comp(const void *a, const void *b)
+{
+    const struct insn_count *count_a = a;
+    const struct insn_count *count_b = b;
+    if (count_a->count > count_b->count) {
+        return -1;
+    }
+    else if (count_a->count < count_b->count) {
+        return 1;
+    }
+    return 0;
+}
+
+static struct insn_count insn_sorting_buffer[VM_INSTRUCTION_SIZE];
+static const struct insn_count *
+sort_insn_count_array(int64_t *array)
+{
+    for (int i = 0; i < VM_INSTRUCTION_SIZE; i++) {
+        insn_sorting_buffer[i] = (struct insn_count) { i, array[i] };
+    }
+    qsort(insn_sorting_buffer, VM_INSTRUCTION_SIZE, sizeof(insn_sorting_buffer[0]), &insn_count_sort_comp);
+    return insn_sorting_buffer;
+}
+
+static void
+print_insn_count_buffer(const struct insn_count *buffer, int how_many, int left_pad)
+{
+    size_t longest_insn_len = 0;
+    for (int i = 0; i < how_many; i++) {
+        const char *instruction_name = insn_name(buffer[i].insn);
+        size_t len = strlen(instruction_name);
+        if (len > longest_insn_len) {
+            longest_insn_len = len;
+        }
+    }
+
+    for (int i = 0; i < how_many; i++) {
+        const char *instruction_name = insn_name(buffer[i].insn);
+        size_t padding = left_pad + longest_insn_len - strlen(instruction_name);
+        for (size_t j = 0; j < padding; j++) {
+            fputc(' ', stderr);
+        }
+        fprintf(stderr, "%s: %10" PRId64 "\n", instruction_name, buffer[i].count);
+    }
+}
+
 __attribute__((destructor))
 static void
 print_ujit_stats(void)
 {
-    if (rb_ujit_opts.gen_stats) {
-        double double_ujit_exec_insns_count = rb_ujit_exec_insns_count;
-        double total_insns_count = vm_insns_count + rb_ujit_exec_insns_count;
-        double ratio = double_ujit_exec_insns_count / total_insns_count;
+    if (!rb_ujit_opts.gen_stats) return;
 
-        fprintf(stderr, "vm_insns_count:        %10" PRId64 "\n", vm_insns_count);
-        fprintf(stderr, "ujit_exec_insns_count: %10" PRId64 "\n", rb_ujit_exec_insns_count);
-        fprintf(stderr, "ratio_in_ujit:         %9.1f%%\n", ratio * 100);
-    }
-}
+    const struct insn_count *sorted_exit_ops = sort_insn_count_array(exit_op_count);
 
-void rb_ujit_collect_vm_usage_insn(int insn)
-{
-    vm_insns_count++;
+    double double_ujit_exec_insns_count = rb_ujit_exec_insns_count;
+    double total_insns_count = vm_insns_count + rb_ujit_exec_insns_count;
+    double ratio = double_ujit_exec_insns_count / total_insns_count;
+
+    fprintf(stderr, "vm_insns_count:        %10" PRId64 "\n", vm_insns_count);
+    fprintf(stderr, "ujit_exec_insns_count: %10" PRId64 "\n", rb_ujit_exec_insns_count);
+    fprintf(stderr, "ratio_in_ujit:         %9.1f%%\n", ratio * 100);
+    fprintf(stderr, "most frequent exit op:\n");
+    print_insn_count_buffer(sorted_exit_ops, 5, 4);
 }
+#endif // if RUBY_DEBUG
 
 void
 rb_ujit_init(struct rb_ujit_options *options)

@@ -216,6 +216,9 @@ static const x86opnd_t R15B = { OPND_REG, 8, .as.reg = { REG_GP, 15 }};
 // Memory operand with base register and displacement/offset
 x86opnd_t mem_opnd(uint32_t num_bits, x86opnd_t base_reg, int32_t disp);
 
+// Scale-index-base memory operand
+x86opnd_t mem_opnd_sib(uint32_t num_bits, x86opnd_t base_reg, x86opnd_t index_reg, int32_t scale, int32_t disp);
+
 // Immediate number operand
 x86opnd_t imm_opnd(int64_t val);
 
