@@ -2718,9 +2718,9 @@ AC_SUBST(ARCH_FLAG)dnl
 AC_SUBST(MJIT_HEADER_FLAGS)dnl
 AC_SUBST(MJIT_HEADER_INSTALL_DIR)dnl
 AC_SUBST(MJIT_CC)dnl
-AS_IF([test "$GCC" = "yes"], [
-    AS_CASE(["$target_os"],[aix*],[mjit_std_cflag="-std=gnu99"])
-])
+AS_CASE(["$GCC:$target_os"],
+    [yes:aix*], [mjit_std_cflag="-std=gnu99"],
+    [mjit_std_cflag=])
 AC_SUBST(MJIT_CFLAGS, [${MJIT_CFLAGS-"-w ${mjit_std_cflag} ${orig_cflags}"}])dnl
 AC_SUBST(MJIT_OPTFLAGS, [${MJIT_OPTFLAGS-'$(optflags)'}])dnl
 AC_SUBST(MJIT_DEBUGFLAGS, [${MJIT_DEBUGFLAGS-'$(debugflags)'}])dnl
