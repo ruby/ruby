@@ -10,8 +10,14 @@
 #include "ujit_core.h"
 #include "ujit_codegen.h"
 
+// Maximum number of versions per block
+#define MAX_VERSIONS 4
+
 // Maximum number of branch instructions we can track
 #define MAX_BRANCHES 32768
+
+// Default versioning context (no type information)
+const ctx_t DEFAULT_CTX = { { 0 }, 0 };
 
 // Table of block versions indexed by (iseq, index) tuples
 st_table * version_tbl;
@@ -168,6 +174,25 @@ static void add_incoming(block_t* p_block, uint32_t branch_idx)
     p_block->num_incoming += 1;
 }
 
+// Count the number of block versions matching a given blockid
+static size_t count_block_versions(blockid_t blockid)
+{
+    // If there exists a version for this block id
+    block_t* first_version;
+    if (!rb_st_lookup(version_tbl, (st_data_t)&blockid, (st_data_t*)&first_version))
+        return 0;
+
+    size_t count = 0;
+
+    // For each version matching the blockid
+    for (block_t* version = first_version; version != NULL; version = version->next)
+    {
+        count += 1;
+    }
+
+    return count;
+}
+
 // Retrieve a basic block version for an (iseq, idx) tuple
 block_t* find_block_version(blockid_t blockid, const ctx_t* ctx)
 {
@@ -199,6 +224,7 @@ block_t* find_block_version(blockid_t blockid, const ctx_t* ctx)
 
     return best_version;
 }
+
 // Compile a new block version immediately
 block_t* gen_block_version(blockid_t blockid, const ctx_t* start_ctx)
 {
@@ -265,13 +291,12 @@ uint8_t* gen_entry_point(const rb_iseq_t *iseq, uint32_t insn_idx)
 {
     // The entry context makes no assumptions about types
     blockid_t blockid = { iseq, insn_idx };
-    ctx_t ctx = { { 0 }, 0 };
 
     // Write the interpreter entry prologue
     uint8_t* code_ptr = ujit_entry_prologue();
 
     // Try to generate code for the entry block
-    block_t* block = gen_block_version(blockid, &ctx);
+    block_t* block = gen_block_version(blockid, &DEFAULT_CTX);
 
     // If we couldn't generate any code
     if (block->end_idx == insn_idx)
@@ -294,7 +319,7 @@ uint8_t* branch_stub_hit(uint32_t branch_idx, uint32_t target_idx)
     RUBY_ASSERT(target_idx < 2);
     branch_t *branch = &branch_entries[branch_idx];
     blockid_t target = branch->targets[target_idx];
-    ctx_t* target_ctx = &branch->target_ctxs[target_idx];
+    const ctx_t* target_ctx = &branch->target_ctxs[target_idx];
 
     //fprintf(stderr, "\nstub hit, branch idx: %d, target idx: %d\n", branch_idx, target_idx);
     //fprintf(stderr, "blockid.iseq=%p, blockid.idx=%d\n", target.iseq, target.idx);
@@ -309,6 +334,15 @@ uint8_t* branch_stub_hit(uint32_t branch_idx, uint32_t target_idx)
         cb_set_pos(cb, branch->start_pos);
         branch->gen_fn(cb, branch->dst_addrs[0], branch->dst_addrs[1], branch->shape);
         RUBY_ASSERT(cb->write_pos <= branch->end_pos);
+    }
+
+    // Limit the number of block versions
+    ctx_t generic_ctx = DEFAULT_CTX;
+    generic_ctx.stack_size = target_ctx->stack_size;
+    if (count_block_versions(target) >= MAX_VERSIONS - 1)
+    {
+        fprintf(stderr, "version limit hit in branch_stub_hit\n");
+        target_ctx = &generic_ctx;
     }
 
     // Try to find a compiled version of this block
@@ -464,6 +498,15 @@ void gen_direct_jump(
     // Branch start and end positions
     uint32_t start_pos;
     uint32_t end_pos;
+
+    // Limit the number of block versions
+    ctx_t generic_ctx = DEFAULT_CTX;
+    generic_ctx.stack_size = ctx->stack_size;
+    if (count_block_versions(target0) >= MAX_VERSIONS - 1)
+    {
+        fprintf(stderr, "version limit hit in branch_stub_hit\n");
+        ctx = &generic_ctx;
+    }
 
     block_t* p_block = find_block_version(target0, ctx);
 
