@@ -8077,7 +8077,10 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  == What's Here
  *
- *  Class Array provides methods that are useful for:
+ *  First, what's elsewhere. \Array includes the module Enumerable,
+ *  which provides dozens of additional methods.
+ *
+ *  Here, class \Array provides methods that are useful for:
  *
  *  - {Creating an Array}[#class-Array-label-Methods+for+Creating+an+Array]
  *  - {Querying}[#class-Array-label-Methods+for+Querying]

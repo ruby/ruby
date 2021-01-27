@@ -4,11 +4,21 @@ require 'irb/color'
 
 module IRB
   class ColorPrinter < ::PP
-    def self.pp(obj, out = $>, width = Reline.get_screen_size.last)
-      q = ColorPrinter.new(out, width)
-      q.guard_inspect_key {q.pp obj}
-      q.flush
-      out << "\n"
+    class << self
+      def pp(obj, out = $>, width = screen_width)
+        q = ColorPrinter.new(out, width)
+        q.guard_inspect_key {q.pp obj}
+        q.flush
+        out << "\n"
+      end
+
+      private
+
+      def screen_width
+        Reline.get_screen_size.last
+      rescue Errno::EINVAL # in `winsize': Invalid argument - <STDIN>
+        79
+      end
     end
 
     def text(str, width = nil)

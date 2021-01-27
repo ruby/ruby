@@ -2223,7 +2223,7 @@ rb_mod_ruby2_keywords(int argc, VALUE *argv, VALUE module)
                     else {
                         rb_warn("Skipping set of ruby2_keywords flag for %s (method accepts keywords or method does not accept argument splat)", rb_id2name(name));
                     }
-                    return Qnil;
+                    break;
                 }
               }
               /* fallthrough */
@@ -2518,7 +2518,8 @@ vm_respond_to(rb_execution_context_t *ec, VALUE klass, VALUE obj, ID id, int pri
 		    VALUE path = RARRAY_AREF(location, 0);
 		    VALUE line = RARRAY_AREF(location, 1);
 		    if (!NIL_P(path)) {
-			rb_compile_warn(RSTRING_PTR(path), NUM2INT(line),
+			rb_category_compile_warn(RB_WARN_CATEGORY_DEPRECATED,
+					RSTRING_PTR(path), NUM2INT(line),
 					"respond_to? is defined here");
 		    }
 		}

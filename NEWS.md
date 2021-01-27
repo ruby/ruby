@@ -44,6 +44,9 @@ Excluding feature bug fixes.
 
 ## Stdlib compatibility issues
 
+* `ERB#initialize` warns `safe_level` and later arguments even without -w.
+  [[Feature #14256]]
+
 ## C API updates
 
 ## Implementation improvements
@@ -61,6 +64,7 @@ Excluding feature bug fixes.
 ## Miscellaneous changes
 
 
+[Feature #14256]: https://bugs.ruby-lang.org/issues/14256
 [Feature #16806]: https://bugs.ruby-lang.org/issues/16806
 [Feature #17312]: https://bugs.ruby-lang.org/issues/17312
 [Bug #17423]: https://bugs.ruby-lang.org/issues/17423

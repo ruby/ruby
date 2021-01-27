@@ -6647,6 +6647,7 @@ rb_execarg_fixup_v(VALUE execarg_obj)
 char *rb_execarg_commandline(const struct rb_execarg *eargp, VALUE *prog);
 #endif
 
+#ifndef __EMSCRIPTEN__
 static VALUE
 pipe_open(VALUE execarg_obj, const char *modestr, int fmode,
 	  const convconfig_t *convconfig)
@@ -6876,6 +6877,14 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode,
 #endif
     return port;
 }
+#else
+static VALUE
+pipe_open(VALUE execarg_obj, const char *modestr, int fmode,
+	  const convconfig_t *convconfig)
+{
+    rb_raise(rb_eNotImpError, "popen() is not available");
+}
+#endif
 
 static int
 is_popen_fork(VALUE prog)

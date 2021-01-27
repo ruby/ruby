@@ -15,9 +15,12 @@ static VALUE object_spec_FL_ABLE(VALUE self, VALUE obj) {
 
 static int object_spec_FL_TEST_flag(VALUE flag_string) {
   char *flag_cstr = StringValueCStr(flag_string);
+#ifndef RUBY_VERSION_IS_3_1
   if (strcmp(flag_cstr, "FL_TAINT") == 0) {
     return FL_TAINT;
-  } else if (strcmp(flag_cstr, "FL_FREEZE") == 0) {
+  }
+#endif
+  if (strcmp(flag_cstr, "FL_FREEZE") == 0) {
     return FL_FREEZE;
   }
   return 0;
@@ -27,6 +30,7 @@ static VALUE object_spec_FL_TEST(VALUE self, VALUE obj, VALUE flag) {
   return INT2FIX(FL_TEST(obj, object_spec_FL_TEST_flag(flag)));
 }
 
+#ifndef RUBY_VERSION_IS_3_1
 static VALUE object_spec_OBJ_TAINT(VALUE self, VALUE obj) {
   OBJ_TAINT(obj);
   return Qnil;
@@ -40,6 +44,7 @@ static VALUE object_spec_OBJ_INFECT(VALUE self, VALUE host, VALUE source) {
   OBJ_INFECT(host, source);
   return Qnil;
 }
+#endif
 
 static VALUE object_spec_rb_any_to_s(VALUE self, VALUE obj) {
   return rb_any_to_s(obj);
@@ -388,9 +393,11 @@ void Init_object_spec(void) {
   VALUE cls = rb_define_class("CApiObjectSpecs", rb_cObject);
   rb_define_method(cls, "FL_ABLE", object_spec_FL_ABLE, 1);
   rb_define_method(cls, "FL_TEST", object_spec_FL_TEST, 2);
+#ifndef RUBY_VERSION_IS_3_1
   rb_define_method(cls, "OBJ_TAINT", object_spec_OBJ_TAINT, 1);
   rb_define_method(cls, "OBJ_TAINTED", object_spec_OBJ_TAINTED, 1);
   rb_define_method(cls, "OBJ_INFECT", object_spec_OBJ_INFECT, 2);
+#endif
   rb_define_method(cls, "rb_any_to_s", object_spec_rb_any_to_s, 1);
   rb_define_method(cls, "rb_attr_get", so_attr_get, 2);
   rb_define_method(cls, "rb_obj_instance_variables", object_spec_rb_obj_instance_variables, 1);

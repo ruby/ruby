@@ -2481,7 +2481,7 @@ rb_autoload_load(VALUE mod, ID id)
 
 	/*
 	 * autoload_reset will wake up any threads added to this
-	 * iff the GVL is released during autoload_require
+	 * if and only if the GVL is released during autoload_require
 	 */
 	list_head_init((struct list_head *)&state.waitq);
     }
@@ -3058,7 +3058,7 @@ rb_const_set(VALUE klass, ID id, VALUE val)
                     set_namespace_path(val, build_const_path(parental_path, id));
                 }
                 else if (!parental_path_permanent && NIL_P(val_path)) {
-                    rb_ivar_set(val, tmp_classpath, build_const_path(parental_path, id));
+                    ivar_set(val, tmp_classpath, build_const_path(parental_path, id));
                 }
 	    }
 	}

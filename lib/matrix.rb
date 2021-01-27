@@ -1016,7 +1016,7 @@ class Matrix
   #++
 
   #
-  # Returns +true+ if and only if the two matrices contain equal elements.
+  # Returns whether the two matrices contain equal elements.
   #
   def ==(other)
     return false unless Matrix === other &&
@@ -1456,6 +1456,35 @@ class Matrix
   def rank_e
     warn "Matrix#rank_e is deprecated; use #rank", uplevel: 1
     rank
+  end
+
+  #
+  # Returns a new matrix with rotated elements.
+  # The argument specifies the rotation (defaults to `:clockwise`):
+  # * :clockwise, 1, -3, etc.: "turn right" - first row becomes last column
+  # * :half_turn, 2, -2, etc.: first row becomes last row, elements in reverse order
+  # * :counter_clockwise, -1, 3: "turn left" - first row becomes first column
+  #   (but with elements in reverse order)
+  #
+  #   m = Matrix[ [1, 2], [3, 4] ]
+  #   r = m.rotate_entries(:clockwise)
+  #   #  => Matrix[[3, 1], [4, 2]]
+  #
+  def rotate_entries(rotation = :clockwise)
+    rotation %= 4 if rotation.respond_to? :to_int
+
+    case rotation
+    when 0
+      dup
+    when 1, :clockwise
+      new_matrix @rows.transpose.each(&:reverse!), row_count
+    when 2, :half_turn
+      new_matrix @rows.map(&:reverse).reverse!, column_count
+    when 3, :counter_clockwise
+      new_matrix @rows.transpose.reverse!, row_count
+    else
+      raise ArgumentError, "expected #{rotation.inspect} to be one of :clockwise, :counter_clockwise, :half_turn or an integer"
+    end
   end
 
   # Returns a matrix with entries rounded to the given precision
@@ -2105,7 +2134,7 @@ class Vector
   #++
 
   #
-  # Returns +true+ iff all of vectors are linearly independent.
+  # Returns whether all of vectors are linearly independent.
   #
   #   Vector.independent?(Vector[1,0], Vector[0,1])
   #   #  => true
@@ -2123,7 +2152,7 @@ class Vector
   end
 
   #
-  # Returns +true+ iff all of vectors are linearly independent.
+  # Returns whether all of vectors are linearly independent.
   #
   #   Vector[1,0].independent?(Vector[0,1])
   #   # => true
@@ -2136,7 +2165,7 @@ class Vector
   end
 
   #
-  # Returns +true+ iff all elements are zero.
+  # Returns whether all elements are zero.
   #
   def zero?
     all?(&:zero?)
@@ -2164,7 +2193,7 @@ class Vector
   #++
 
   #
-  # Returns +true+ iff the two vectors have the same elements in the same order.
+  # Returns whether the two vectors have the same elements in the same order.
   #
   def ==(other)
     return false unless Vector === other

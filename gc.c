@@ -377,6 +377,8 @@ static ruby_gc_params_t gc_params = {
 #endif
 #if RGENGC_DEBUG < 0 && !defined(_MSC_VER)
 # define RGENGC_DEBUG_ENABLED(level) (-(RGENGC_DEBUG) >= (level) && ruby_rgengc_debug >= (level))
+#elif HAVE_VA_ARGS_MACRO
+# define RGENGC_DEBUG_ENABLED(level) ((RGENGC_DEBUG) >= (level))
 #else
 # define RGENGC_DEBUG_ENABLED(level) 0
 #endif
@@ -4489,11 +4491,6 @@ static VALUE gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free);
 static void
 lock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
 {
-    /* If this is an explicit compaction (GC.compact), we don't need a read
-     * barrier, so just return early. */
-    if (objspace->flags.during_compacting >> 1) {
-        return;
-    }
 #if defined(_WIN32)
     DWORD old_protect;
 
@@ -4511,11 +4508,6 @@ lock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
 static void
 unlock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
 {
-    /* If this is an explicit compaction (GC.compact), we don't need a read
-     * barrier, so just return early. */
-    if (objspace->flags.during_compacting >> 1) {
-        return;
-    }
 #if defined(_WIN32)
     DWORD old_protect;
 
@@ -4761,12 +4753,8 @@ gc_compact_finish(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     GC_ASSERT(heap->sweeping_page == heap->compact_cursor);
 
-    /* If this is an explicit compaction (GC.compact), no read barrier was set
-     * so we don't need to unprotect pages or uninstall the SEGV handler */
-    if (!(objspace->flags.during_compacting >> 1)) {
-        gc_unprotect_pages(objspace, heap);
-        uninstall_handlers();
-    }
+    gc_unprotect_pages(objspace, heap);
+    uninstall_handlers();
 
     /* The mutator is allowed to run during incremental sweeping. T_MOVED
      * objects can get pushed on the stack and when the compaction process
@@ -5306,12 +5294,6 @@ gc_compact_start(rb_objspace_t *objspace, rb_heap_t *heap)
     memset(objspace->rcompactor.considered_count_table, 0, T_MASK * sizeof(size_t));
     memset(objspace->rcompactor.moved_count_table, 0, T_MASK * sizeof(size_t));
 
-    /* If this is an explicit compaction (GC.compact), we don't need a read
-     * barrier, so just return early. */
-    if (objspace->flags.during_compacting >> 1) {
-        return;
-    }
-
     /* Set up read barrier for pages containing MOVED objects */
     install_handlers();
 }
@@ -5555,11 +5537,6 @@ init_mark_stack(mark_stack_t *stack)
 #define STACK_END (ec->machine.stack_end)
 #define STACK_LEVEL_MAX (ec->machine.stack_maxsize/sizeof(VALUE))
 
-#ifdef __EMSCRIPTEN__
-#undef STACK_GROW_DIRECTION
-#define STACK_GROW_DIRECTION 1
-#endif
-
 #if STACK_GROW_DIRECTION < 0
 # define STACK_LENGTH  (size_t)(STACK_START - STACK_END)
 #elif STACK_GROW_DIRECTION > 0
@@ -5598,7 +5575,7 @@ ruby_stack_length(VALUE **p)
 # define PREVENT_STACK_OVERFLOW 0
 #endif
 #endif
-#if PREVENT_STACK_OVERFLOW
+#if PREVENT_STACK_OVERFLOW && !defined(__EMSCRIPTEN__)
 static int
 stack_check(rb_execution_context_t *ec, int water_mark)
 {
@@ -6754,12 +6731,17 @@ allrefs_roots_i(VALUE obj, void *ptr)
 	push_mark_stack(&data->mark_stack, obj);
     }
 }
+#define PUSH_MARK_FUNC_DATA(v) do { \
+    struct gc_mark_func_data_struct *prev_mark_func_data = GET_RACTOR()->mfd; \
+    GET_RACTOR()->mfd = (v);
+
+#define POP_MARK_FUNC_DATA() GET_RACTOR()->mfd = prev_mark_func_data;} while (0)
 
 static st_table *
 objspace_allrefs(rb_objspace_t *objspace)
 {
     struct allrefs data;
-    struct mark_func_data_struct mfd;
+    struct gc_mark_func_data_struct mfd;
     VALUE obj;
     int prev_dont_gc = dont_gc_val();
     dont_gc_on();
@@ -6773,7 +6755,7 @@ objspace_allrefs(rb_objspace_t *objspace)
 
     /* traverse root objects */
     PUSH_MARK_FUNC_DATA(&mfd);
-    objspace->mark_func_data = &mfd;
+    GET_RACTOR()->mfd = &mfd;
     gc_mark_roots(objspace, &data.category);
     POP_MARK_FUNC_DATA();
 
@@ -7823,6 +7805,7 @@ rb_gc_writebarrier(VALUE a, VALUE b)
     if (RGENGC_CHECK_MODE && SPECIAL_CONST_P(a)) rb_bug("rb_gc_writebarrier: a is special const");
     if (RGENGC_CHECK_MODE && SPECIAL_CONST_P(b)) rb_bug("rb_gc_writebarrier: b is special const");
 
+  retry:
     if (!is_incremental_marking(objspace)) {
         if (!RVALUE_OLD_P(a) || RVALUE_OLD_P(b)) {
             // do nothing
@@ -7832,12 +7815,20 @@ rb_gc_writebarrier(VALUE a, VALUE b)
         }
     }
     else {
+        bool retry = false;
         /* slow path */
         RB_VM_LOCK_ENTER_NO_BARRIER();
         {
-            gc_writebarrier_incremental(a, b, objspace);
+            if (is_incremental_marking(objspace)) {
+                gc_writebarrier_incremental(a, b, objspace);
+            }
+            else {
+                retry = true;
+            }
         }
         RB_VM_LOCK_LEAVE_NO_BARRIER();
+
+        if (retry) goto retry;
     }
     return;
 }
@@ -9487,11 +9478,7 @@ heap_check_moved_i(void *vstart, void *vend, size_t stride, void *data)
 static VALUE
 gc_compact(rb_execution_context_t *ec, VALUE self)
 {
-    /* Clear the heap. */
-    gc_start_internal(ec, self, Qtrue, Qtrue, Qtrue, Qfalse);
-
-    /* At this point, all references are live and the mutator is not allowed
-     * to run, so we don't need a read barrier. */
+    /* Run GC with compaction enabled */
     gc_start_internal(ec, self, Qtrue, Qtrue, Qtrue, Qtrue);
 
     return gc_compact_stats(ec, self);

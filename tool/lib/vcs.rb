@@ -541,12 +541,13 @@ class VCS
         warn "no starting commit found", uplevel: 1
         from = nil
       end
-      unless svn or system(*%W"#{COMMAND} fetch origin refs/notes/commits:refs/notes/commits",
+      if svn or system(*%W"#{COMMAND} fetch origin refs/notes/commits:refs/notes/commits",
                            chdir: @srcdir, exception: false)
-        abort "Could not fetch notes/commits tree"
-      end
-      system(*%W"#{COMMAND} fetch origin refs/notes/log-fix:refs/notes/log-fix",
+        system(*%W"#{COMMAND} fetch origin refs/notes/log-fix:refs/notes/log-fix",
                chdir: @srcdir, exception: false)
+      else
+        warn "Could not fetch notes/commits tree", uplevel: 1
+      end
       to ||= url.to_str
       if from
         arg = ["#{from}^..#{to}"]
@@ -562,7 +563,7 @@ class VCS
 
     def format_changelog(path, arg)
       env = {'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'}
-      cmd = %W"#{COMMAND} log --format=medium --notes=commits --notes=log-fix --topo-order --no-merges"
+      cmd = %W"#{COMMAND} log --format=fuller --notes=commits --notes=log-fix --topo-order --no-merges"
       date = "--date=iso-local"
       unless system(env, *cmd, date, chdir: @srcdir, out: NullDevice, exception: false)
         date = "--date=iso"
@@ -574,12 +575,13 @@ class VCS
         cmd_pipe(env, cmd, chdir: @srcdir) do |r|
           while s = r.gets("\ncommit ")
             h, s = s.split(/^$/, 2)
-            h.gsub!(/^(?:Author|Date): /, '  \&')
+            h.gsub!(/^(?:(?:Author|Commit)(?:Date)?|Date): /, '  \&')
             if s.sub!(/\nNotes \(log-fix\):\n((?: +.*\n)+)/, '')
               fix = $1
               s = s.lines
               fix.each_line do |x|
-                if %r[^ +(\d+)s/(.+)/(.*)/] =~ x
+                case x
+                when %r[^ +(\d+)s/(.+)/(.*)/]
                   begin
                     s[$1.to_i][$2] = $3
                   rescue IndexError
@@ -593,6 +595,12 @@ class VCS
                     end
                     raise message.join('')
                   end
+                when %r[^( +)(\d+)i/(.*)/]
+                  s[$2.to_i, 0] = "#{$1}#{$3}\n"
+                when %r[^ +(\d+)(?:,(\d+))?d]
+                  n = $1.to_i
+                  e = $2
+                  s[n..(e ? e.to_i : n)] = []
                 end
               end
               s = s.join('')

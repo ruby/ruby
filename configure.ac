@@ -80,6 +80,14 @@ dnl checks for alternative programs
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 AC_CANONICAL_TARGET
+AS_CASE(["$target_cpu-$target_os"],
+    [aarch64-darwin*], [
+        target_cpu=arm64
+        AS_CASE(["$target_vendor"], [unknown], [target_vendor=apple target=${target/-unknown-/-apple-}])
+        target="${target/aarch64/arm64}"
+        target_alias="${target_alias/aarch64/arm64}"
+    ])
+
 AC_ARG_PROGRAM
 RUBY_RM_RECURSIVE
 AC_ARG_WITH(gcc,
@@ -671,7 +679,7 @@ AS_IF([test "$GCC" = yes], [
 
     # -fstack-protector
     AS_CASE(["$target_os"],
-    [mingw*|haiku*], [
+    [mingw*|haiku*|emscripten*], [
 	stack_protector=no
     ])
     AS_IF([test -z "${stack_protector+set}"], [
@@ -805,7 +813,7 @@ AS_IF([test "$GCC" = yes], [
 
     # disable fast-math
     for oflag in -fno-fast-math; do
-	RUBY_TRY_CFLAGS($oflag, [RUBY_APPEND_OPTION(CFLAGS, $oflag)])
+	RUBY_TRY_CFLAGS($oflag, [RUBY_APPEND_OPTION(optflags, $oflag)])
     done
     for oflag in -fexcess-precision=standard -fp-model\ precise; do
 	RUBY_TRY_CFLAGS($oflag, [RUBY_APPEND_OPTION(XCFLAGS, $oflag)])
@@ -1128,6 +1136,10 @@ main()
 		AS_IF([test "$cf_protection" = yes], [
 			ac_cv_func___builtin_setjmp=no
 		])
+		],
+[emscripten*], [LIBS="-lm -lc $LIBS"
+		RUBY_APPEND_OPTIONS(LDFLAGS, "-s ALLOW_MEMORY_GROWTH=1")
+		RUBY_APPEND_OPTIONS(LDFLAGS, "-s ASYNCIFY")
 		],
 [	LIBS="-lm $LIBS"])
 : ${ORIG_LIBS=$LIBS}
@@ -2413,6 +2425,9 @@ AS_CASE([$rb_cv_coroutine], [yes|''], [
     AC_MSG_CHECKING(native coroutine implementation for ${target_cpu}-${target_os})
     rb_cv_coroutine=
     AS_CASE(["$target_cpu-$target_os"],
+        [universal-darwin*], [
+            rb_cv_coroutine=universal
+        ],
         [x*64-darwin*], [
             rb_cv_coroutine=amd64
         ],
@@ -2455,6 +2470,9 @@ AS_CASE([$rb_cv_coroutine], [yes|''], [
         ],
         [*-haiku*], [
             rb_cv_coroutine=copy
+        ],
+        [*-emscripten*], [
+            rb_cv_coroutine=emscripten
         ],
         [
             rb_cv_coroutine=ucontext
@@ -2709,9 +2727,9 @@ AC_SUBST(ARCH_FLAG)dnl
 AC_SUBST(MJIT_HEADER_FLAGS)dnl
 AC_SUBST(MJIT_HEADER_INSTALL_DIR)dnl
 AC_SUBST(MJIT_CC)dnl
-AS_IF([test "$GCC" = "yes"], [
-    AS_CASE(["$target_os"],[aix*],[mjit_std_cflag="-std=gnu99"])
-])
+AS_CASE(["$GCC:$target_os"],
+    [yes:aix*], [mjit_std_cflag="-std=gnu99"],
+    [mjit_std_cflag=])
 AC_SUBST(MJIT_CFLAGS, [${MJIT_CFLAGS-"-w ${mjit_std_cflag} ${orig_cflags}"}])dnl
 AC_SUBST(MJIT_OPTFLAGS, [${MJIT_OPTFLAGS-'$(optflags)'}])dnl
 AC_SUBST(MJIT_DEBUGFLAGS, [${MJIT_DEBUGFLAGS-'$(debugflags)'}])dnl

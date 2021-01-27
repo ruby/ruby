@@ -723,7 +723,7 @@ sighandler(int sig)
         rb_vm_t *vm = GET_VM();
         ATOMIC_EXCHANGE(sigchld_hit, 1);
 
-        /* avoid spurious wakeup in main thread iff nobody uses trap(:CHLD) */
+        /* avoid spurious wakeup in main thread if and only if nobody uses trap(:CHLD) */
         if (vm && ACCESS_ONCE(VALUE, vm->trap_list.cmd[sig])) {
             signal_enque(sig);
         }

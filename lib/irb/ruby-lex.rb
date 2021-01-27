@@ -233,7 +233,7 @@ class RubyLex
             @line.force_encoding(@io.encoding)
             yield @line, @exp_line_no
           end
-          break if @io.eof?
+          raise TerminateLineInput if @io.eof?
           @line = ''
           @exp_line_no = @line_no
 
@@ -424,14 +424,30 @@ class RubyLex
     indent
   end
 
+  def is_method_calling?(tokens, index)
+    tk = tokens[index]
+    if tk[3].anybits?(Ripper::EXPR_CMDARG) and tk[1] == :on_ident
+      # The target method call to pass the block with "do".
+      return true
+    elsif tk[3].anybits?(Ripper::EXPR_ARG) and tk[1] == :on_ident
+      non_sp_index = tokens[0..(index - 1)].rindex{ |t| t[1] != :on_sp }
+      if non_sp_index
+        prev_tk = tokens[non_sp_index]
+        if prev_tk[3].anybits?(Ripper::EXPR_DOT) and prev_tk[1] == :on_period
+          # The target method call with receiver to pass the block with "do".
+          return true
+        end
+      end
+    end
+    false
+  end
+
   def take_corresponding_syntax_to_kw_do(tokens, index)
     syntax_of_do = nil
     # Finding a syntax correnponding to "do".
     index.downto(0) do |i|
       tk = tokens[i]
       # In "continue", the token isn't the corresponding syntax to "do".
-      #is_continue = process_continue(@tokens[0..(i - 1)])
-      # continue ではなく、直前に (:on_ignored_nl|:on_nl|:on_comment):on_sp* みたいなのがあるかどうかを調べる
       non_sp_index = tokens[0..(i - 1)].rindex{ |t| t[1] != :on_sp }
       first_in_fomula = false
       if non_sp_index.nil?
@@ -439,8 +455,7 @@ class RubyLex
       elsif [:on_ignored_nl, :on_nl, :on_comment].include?(tokens[non_sp_index][1])
         first_in_fomula = true
       end
-      if tk[3].anybits?(Ripper::EXPR_CMDARG) and tk[1] == :on_ident
-        # The target method call to pass the block with "do".
+      if is_method_calling?(tokens, i)
         syntax_of_do = :method_calling
         break if first_in_fomula
       elsif tk[1] == :on_kw && %w{while until for}.include?(tk[2])
@@ -456,6 +471,34 @@ class RubyLex
       end
     end
     syntax_of_do
+  end
+
+  def is_the_in_correspond_to_a_for(tokens, index)
+    syntax_of_in = nil
+    # Finding a syntax correnponding to "do".
+    index.downto(0) do |i|
+      tk = tokens[i]
+      # In "continue", the token isn't the corresponding syntax to "do".
+      non_sp_index = tokens[0..(i - 1)].rindex{ |t| t[1] != :on_sp }
+      first_in_fomula = false
+      if non_sp_index.nil?
+        first_in_fomula = true
+      elsif [:on_ignored_nl, :on_nl, :on_comment].include?(tokens[non_sp_index][1])
+        first_in_fomula = true
+      end
+      if tk[1] == :on_kw && tk[2] == 'for'
+        # A loop syntax in front of "do" found.
+        #
+        #   while cond do # also "until" or "for"
+        #   end
+        #
+        # This "do" doesn't increment indent because the loop syntax already
+        # incremented.
+        syntax_of_in = :for
+      end
+      break if first_in_fomula
+    end
+    syntax_of_in
   end
 
   def check_newline_depth_difference
@@ -513,8 +556,12 @@ class RubyLex
           unless t[3].allbits?(Ripper::EXPR_LABEL)
             depth_difference += 1
           end
-        when 'else', 'elsif', 'ensure', 'when', 'in'
+        when 'else', 'elsif', 'ensure', 'when'
           depth_difference += 1
+        when 'in'
+          unless is_the_in_correspond_to_a_for(@tokens, index)
+            depth_difference += 1
+          end
         when 'end'
           depth_difference -= 1
         end

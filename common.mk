@@ -248,7 +248,7 @@ $(MJIT_MIN_HEADER:.h=)$(MJIT_HEADER_SUFFIX).h: \
 		$(tooldir)/transform_mjit_header.rb $(PREP) \
 		$(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).h
 	$(ECHO) building $@
-	$(MINIRUBY) $(tooldir)/transform_mjit_header.rb "$(CC) $(ARCH_FLAG) $(CFLAGS)" $(MJIT_HEADER:.h=)$(MJIT_HEADER_ARCH).h $@
+	$(MINIRUBY) $(tooldir)/transform_mjit_header.rb "$(CC) $(CFLAGS)" $(MJIT_HEADER:.h=)$(MJIT_HEADER_ARCH).h $@
 	$(Q) $(MAKEDIRS) $(MJIT_HEADER_INSTALL_DIR)
 	$(Q) $(MAKE_LINK) $@ $(MJIT_HEADER_INSTALL_DIR)/$(@F)
 
@@ -630,7 +630,7 @@ clean-html: PHONY
 clean-capi: PHONY
 clean-platform: PHONY
 clean-extout: PHONY
-	-$(Q)$(RMDIR) $(EXTOUT)/$(arch) $(EXTOUT) 2> $(NULL) || $(NULLCMD)
+	-$(Q)$(RMDIR) $(EXTOUT)/$(arch) $(RUBYCOMMONDIR) $(EXTOUT) 2> $(NULL) || $(NULLCMD)
 clean-docs: clean-rdoc clean-html clean-capi
 clean-spec: PHONY
 clean-rubyspec: clean-spec

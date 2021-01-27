@@ -768,7 +768,7 @@ rebuild_table(st_table *tab)
    guarantees traversing all table bins in extreme case.
 
    According the Hull-Dobell theorem a generator
-   "Xnext = (a*Xprev + c) mod m" is a full cycle generator iff
+   "Xnext = (a*Xprev + c) mod m" is a full cycle generator if and only if
      o m and c are relatively prime
      o a-1 is divisible by all prime factors of m
      o a-1 is divisible by 4 if m is divisible by 4.
