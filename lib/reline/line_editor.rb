@@ -231,6 +231,8 @@ class Reline::LineEditor
     @scroll_partial_screen = nil
     @prev_mode_string = nil
     @drop_terminate_spaces = false
+    @in_pasting = false
+    @auto_indent_proc = nil
     reset_line
   end
 
