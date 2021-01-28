@@ -371,7 +371,7 @@ gen_setlocal_wc0(jitstate_t* jit, ctx_t* ctx)
     mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, ep));
 
     // flags & VM_ENV_FLAG_WB_REQUIRED
-    x86opnd_t flags_opnd = mem_opnd(64, REG0, 8 * VM_ENV_DATA_INDEX_FLAGS);
+    x86opnd_t flags_opnd = mem_opnd(64, REG0, sizeof(VALUE) * VM_ENV_DATA_INDEX_FLAGS);
     test(cb, flags_opnd, imm_opnd(VM_ENV_FLAG_WB_REQUIRED));
 
     // Create a size-exit to fall back to the interpreter
@@ -1062,6 +1062,47 @@ gen_opt_send_without_block(jitstate_t* jit, ctx_t* ctx)
     return true;
 }
 
+static bool
+gen_leave(jitstate_t* jit, ctx_t* ctx)
+{
+    // Only the return value should be on the stack
+    RUBY_ASSERT(ctx->stack_size == 1);
+
+    // Create a size-exit to fall back to the interpreter
+    uint8_t* side_exit = ujit_side_exit(jit, ctx);
+
+    // Load environment pointer EP from CFP
+    mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, ep));
+
+    // flags & VM_FRAME_FLAG_FINISH
+    x86opnd_t flags_opnd = mem_opnd(64, REG0, sizeof(VALUE) * VM_ENV_DATA_INDEX_FLAGS);
+    test(cb, flags_opnd, imm_opnd(VM_FRAME_FLAG_FINISH));
+
+    // if (flags & VM_FRAME_FLAG_FINISH) != 0
+    jnz_ptr(cb, side_exit);
+
+    // TODO:
+    // RUBY_VM_CHECK_INTS(ec);
+
+    // Load the return value
+    mov(cb, REG0, ctx_stack_pop(ctx, 1));
+
+    // Pop the current CFP (ec->cfp++)
+    // Note: the return PC is already in the previous CFP
+    add(cb, REG_CFP, imm_opnd(sizeof(rb_control_frame_t)));
+    mov(cb, member_opnd(REG_EC, rb_execution_context_t, cfp), REG_CFP);
+
+    // Push the return value on the caller frame
+    mov(cb, REG1, member_opnd(REG_CFP, rb_control_frame_t, sp));
+    mov(cb, mem_opnd(64, REG1, 0), REG0);
+    add(cb, member_opnd(REG_CFP, rb_control_frame_t, sp), imm_opnd(SIZEOF_VALUE));
+
+    // Write the post call bytes
+    cb_write_post_call_bytes(cb);
+
+    return true;
+}
+
 void ujit_reg_op(int opcode, codegen_fn gen_fn, bool is_branch)
 {
     // Check that the op wasn't previously registered
@@ -1111,4 +1152,5 @@ ujit_init_codegen(void)
     ujit_reg_op(BIN(branchunless), gen_branchunless, true);
     ujit_reg_op(BIN(jump), gen_jump, true);
     ujit_reg_op(BIN(opt_send_without_block), gen_opt_send_without_block, true);
+    ujit_reg_op(BIN(leave), gen_leave, true);
 }
