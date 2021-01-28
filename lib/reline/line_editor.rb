@@ -466,7 +466,6 @@ class Reline::LineEditor
 
   private def rerender_added_newline(prompt, prompt_width)
     scroll_down(1)
-    new_lines = whole_lines(index: @previous_line_index, line: @line)
     @buffer_of_lines[@previous_line_index] = @line
     @line = @buffer_of_lines[@line_index]
     unless @in_pasting
