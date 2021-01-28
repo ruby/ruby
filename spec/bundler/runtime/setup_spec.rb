@@ -1340,7 +1340,8 @@ end
       # override the default gem.
       def load_path_exclusions_hack_for(name)
         if ruby_core?
-          ext_folder = source_root.join(".ext/common")
+          # .ext/common is relative from build directory
+          ext_folder = Pathname(ENV["PWD"]) + ".ext/common"
           require_name = name.tr("-", "/")
           if File.exist?(ext_folder.join("#{require_name}.rb"))
             { :exclude_from_load_path => ext_folder.to_s }
