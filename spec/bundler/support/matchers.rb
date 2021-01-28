@@ -123,7 +123,10 @@ module Spec
           require_path = name == "bundler" ? "#{lib_dir}/bundler" : name.tr("-", "/")
           version_const = name == "bundler" ? "Bundler::VERSION" : Spec::Builders.constantize(name)
           code = []
-          code << "$LOAD_PATH.delete '#{exclude_from_load_path}'" if exclude_from_load_path
+          if exclude_from_load_path
+            code << "exclude_from_load_path = File.expand_path('#{exclude_from_load_path}')"
+            code << "$LOAD_PATH.delete_if { |path| File.expand_path(path) == exclude_from_load_path }"
+          end
           code << "require '#{require_path}.rb'"
           code << "puts #{version_const}"
           run code.join("; "), *groups
