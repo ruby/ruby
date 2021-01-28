@@ -471,6 +471,14 @@ describe "String#split with Regexp" do
         a.should == ["Chunky", "Bacon"]
       end
 
+      it "yields each split substring with default pattern for a non-ASCII string" do
+        a = []
+        returned_object = "l'été arrive bientôt".split { |str| a << str }
+
+        returned_object.should == "l'été arrive bientôt"
+        a.should == ["l'été", "arrive", "bientôt"]
+      end
+
       it "yields the string when limit is 1" do
         a = []
         returned_object = "chunky bacon".split("", 1) { |str| a << str.capitalize }

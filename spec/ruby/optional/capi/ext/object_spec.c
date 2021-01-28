@@ -462,6 +462,7 @@ void Init_object_spec(void) {
   rb_define_method(cls, "rb_undef_alloc_func", undef_alloc_func, 1);
   rb_define_method(cls, "speced_allocator?", speced_allocator_p, 1);
   rb_define_method(cls, "custom_alloc_func?", custom_alloc_func_p, 1);
+  rb_define_method(cls, "not_implemented_method", rb_f_notimplement, 1);
 }
 
 #ifdef __cplusplus

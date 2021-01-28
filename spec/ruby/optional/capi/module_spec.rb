@@ -134,6 +134,10 @@ describe "CApiModule" do
       @m.rb_const_get(CApiModuleSpecs::A, :X).should == 1
     end
 
+    it "returns a constant defined in the module for multiple constants" do
+      [:Q, :R, :S, :T].each { |x| @m.rb_const_get(CApiModuleSpecs::A, x).should == CApiModuleSpecs::A.const_get(x) }
+    end
+
     it "returns a constant defined at toplevel" do
       @m.rb_const_get(CApiModuleSpecs::A, :Integer).should == Integer
     end
