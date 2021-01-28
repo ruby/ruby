@@ -176,10 +176,9 @@ module RubyVM::MicroJIT
       disassemble(handler_offset)
     end
 
-    def make_result(success, without_pc, with_pc)
+    def make_result(success, with_pc)
       [success ? 1 : 0,
        [
-         ['ujit_without_ec', without_pc],
          ['ujit_with_ec', with_pc],
        ]
       ]
@@ -193,19 +192,18 @@ module RubyVM::MicroJIT
       when :linux
         linux_scrape(instruction_id)
       else
-        raise 'Unkonwn platform. Only Mach-O on macOS and ELF on Linux are supported'
+        raise 'Unknown platform. Only Mach-O on macOS and ELF on Linux are supported'
       end
     end
 
     def scrape
-      without_ec = scrape_instruction(RubyVM::Instructions.find_index { |insn| insn.name == 'ujit_call_example' })
       with_ec = scrape_instruction(RubyVM::Instructions.find_index { |insn| insn.name == 'ujit_call_example_with_ec' })
-      make_result(true, without_ec, with_ec)
+      make_result(true, with_ec)
     rescue => e
       print_warning("scrape failed: #{e.message}")
       int3 = '0xcc'
       failure_result = ScrapeResult.new(int3, int3, ['int3'])
-      make_result(false, failure_result, failure_result)
+      make_result(false, failure_result)
     end
 
     def print_warning(text)
