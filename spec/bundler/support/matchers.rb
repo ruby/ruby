@@ -127,6 +127,7 @@ module Spec
             code << "exclude_from_load_path = File.expand_path('#{exclude_from_load_path}')"
             code << "$LOAD_PATH.delete_if { |path| File.expand_path(path) == exclude_from_load_path }"
           end
+          code << "$LOADED_FEATURES.delete_if { |feature| File.basename(feature, '.*') == '#{require_path}' }"
           code << "require '#{require_path}.rb'"
           code << "puts #{version_const}"
           run code.join("; "), *groups
