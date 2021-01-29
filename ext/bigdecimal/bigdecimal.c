@@ -2856,14 +2856,16 @@ rb_float_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception)
     }
 
     /* Use the same logic in flo_to_s to convert a float to a decimal string */
-    char buf[DBLE_FIG + BASE_FIG + 2 + 1];
+    char buf[DBLE_FIG + BASE_FIG + 2 + 1];  /* sizeof(buf) == 28 in the typical case */
     int decpt, negative_p;
     char *e;
     const int mode = digs == 0 ? 0 : 2;
     char *p = BigDecimal_dtoa(d, mode, (int)digs, &decpt, &negative_p, &e);
     int len10 = (int)(e - p);
-    if (len10 >= (int)sizeof(buf))
-        len10 = (int)sizeof(buf) - 1;
+    if (len10 > DBLE_FIG) {
+        /* TODO: Presumably, rounding should be done here. */
+        len10 = DBLE_FIG;
+    }
     memcpy(buf, p, len10);
     xfree(p);
 
