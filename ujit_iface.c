@@ -413,6 +413,13 @@ iseq_end_index(VALUE self)
     return INT2NUM(block->end_idx);
 }
 
+/* Called when a basic operation is redefined */
+void
+rb_ujit_bop_redefined(VALUE klass, const rb_method_entry_t *me)
+{
+    //fprintf(stderr, "bop redefined\n");
+}
+
 #if HAVE_LIBCAPSTONE
 static const rb_data_type_t ujit_disasm_type = {
     "UJIT/Disasm",
