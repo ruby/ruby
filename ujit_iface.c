@@ -417,7 +417,6 @@ ujit_disasm(VALUE self, VALUE code, VALUE from)
 }
 #endif
 
-
 #if RUBY_DEBUG
 // implementation for --ujit-stats
 
@@ -469,12 +468,15 @@ static void
 print_insn_count_buffer(const struct insn_count *buffer, int how_many, int left_pad)
 {
     size_t longest_insn_len = 0;
+    size_t total_exit_count = 0;
+
     for (int i = 0; i < how_many; i++) {
         const char *instruction_name = insn_name(buffer[i].insn);
         size_t len = strlen(instruction_name);
         if (len > longest_insn_len) {
             longest_insn_len = len;
         }
+        total_exit_count += buffer[i].count;
     }
 
     for (int i = 0; i < how_many; i++) {
@@ -483,7 +485,8 @@ print_insn_count_buffer(const struct insn_count *buffer, int how_many, int left_
         for (size_t j = 0; j < padding; j++) {
             fputc(' ', stderr);
         }
-        fprintf(stderr, "%s: %10" PRId64 "\n", instruction_name, buffer[i].count);
+        double percent = 100 * buffer[i].count / (double)total_exit_count;
+        fprintf(stderr, "%s: %10" PRId64 " (%.1f%%)\n", instruction_name, buffer[i].count, percent);
     }
 }
 
@@ -495,15 +498,14 @@ print_ujit_stats(void)
 
     const struct insn_count *sorted_exit_ops = sort_insn_count_array(exit_op_count);
 
-    double double_ujit_exec_insns_count = rb_ujit_exec_insns_count;
     double total_insns_count = vm_insns_count + rb_ujit_exec_insns_count;
-    double ratio = double_ujit_exec_insns_count / total_insns_count;
+    double ratio = rb_ujit_exec_insns_count / total_insns_count;
 
     fprintf(stderr, "vm_insns_count:        %10" PRId64 "\n", vm_insns_count);
     fprintf(stderr, "ujit_exec_insns_count: %10" PRId64 "\n", rb_ujit_exec_insns_count);
     fprintf(stderr, "ratio_in_ujit:         %9.1f%%\n", ratio * 100);
     fprintf(stderr, "most frequent exit op:\n");
-    print_insn_count_buffer(sorted_exit_ops, 5, 4);
+    print_insn_count_buffer(sorted_exit_ops, 10, 4);
 }
 #endif // if RUBY_DEBUG
 
