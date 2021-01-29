@@ -52,5 +52,6 @@ void rb_ujit_collect_vm_usage_insn(int insn);
 void rb_ujit_method_lookup_change(VALUE cme_or_cc);
 void rb_ujit_compile_iseq(const rb_iseq_t *iseq);
 void rb_ujit_init(struct rb_ujit_options *options);
+void rb_ujit_bop_redefined(VALUE klass, const rb_method_entry_t *me);
 
 #endif // #ifndef UJIT_H
