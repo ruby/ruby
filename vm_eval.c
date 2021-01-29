@@ -770,45 +770,42 @@ rb_search_method_entry(VALUE recv, ID mid)
 static inline enum method_missing_reason
 rb_method_call_status(rb_execution_context_t *ec, const rb_callable_method_entry_t *me, call_type scope, VALUE self)
 {
-    VALUE klass;
-    ID oid;
-    rb_method_visibility_t visi;
-
-    if (UNDEFINED_METHOD_ENTRY_P(me)) {
+    if (UNLIKELY(UNDEFINED_METHOD_ENTRY_P(me))) {
         goto undefined;
     }
-    if (me->def->type == VM_METHOD_TYPE_REFINED) {
-	me = rb_resolve_refined_method_callable(Qnil, me);
-	if (UNDEFINED_METHOD_ENTRY_P(me)) goto undefined;
+    else if (UNLIKELY(me->def->type == VM_METHOD_TYPE_REFINED)) {
+        me = rb_resolve_refined_method_callable(Qnil, me);
+        if (UNDEFINED_METHOD_ENTRY_P(me)) goto undefined;
     }
 
-    klass = me->owner;
-    oid = me->def->original_id;
-    visi = METHOD_ENTRY_VISI(me);
+    rb_method_visibility_t visi = METHOD_ENTRY_VISI(me);
 
-    if (oid != idMethodMissing) {
-	/* receiver specified form for private method */
-	if (UNLIKELY(visi != METHOD_VISI_PUBLIC)) {
-	    if (visi == METHOD_VISI_PRIVATE && scope == CALL_PUBLIC) {
-		return MISSING_PRIVATE;
-	    }
+    /* receiver specified form for private method */
+    if (UNLIKELY(visi != METHOD_VISI_PUBLIC)) {
+        if (me->def->original_id == idMethodMissing) {
+            return MISSING_NONE;
+        }
+        else if (visi == METHOD_VISI_PRIVATE &&
+                 scope == CALL_PUBLIC) {
+            return MISSING_PRIVATE;
+        }
+        /* self must be kind of a specified form for protected method */
+        else if (visi == METHOD_VISI_PROTECTED &&
+                 scope == CALL_PUBLIC) {
 
-	    /* self must be kind of a specified form for protected method */
-	    if (visi == METHOD_VISI_PROTECTED && scope == CALL_PUBLIC) {
-		VALUE defined_class = klass;
+            VALUE defined_class = me->owner;
+            if (RB_TYPE_P(defined_class, T_ICLASS)) {
+                defined_class = RBASIC(defined_class)->klass;
+            }
 
-		if (RB_TYPE_P(defined_class, T_ICLASS)) {
-		    defined_class = RBASIC(defined_class)->klass;
-		}
-
-		if (self == Qundef || !rb_obj_is_kind_of(self, defined_class)) {
-		    return MISSING_PROTECTED;
-		}
-	    }
-	}
+            if (self == Qundef || !rb_obj_is_kind_of(self, defined_class)) {
+                return MISSING_PROTECTED;
+            }
+        }
     }
 
     return MISSING_NONE;
+
   undefined:
     return scope == CALL_VCALL ? MISSING_VCALL : MISSING_NOENTRY;
 }
