@@ -115,11 +115,15 @@ module Psych
     end
 
     def test_scan_strings_starting_with_underscores
-      assert_equal "_100", ss.tokenize('_100')
+      assert_equal '_100', ss.tokenize('_100')
+    end
+
+    def test_scan_strings_starting_with_number
+      assert_equal '450D', ss.tokenize('450D')
     end
 
     def test_scan_strings_ending_with_underscores
-      assert_equal "100_", ss.tokenize('100_')
+      assert_equal '100_', ss.tokenize('100_')
     end
 
     def test_scan_int_commas_and_underscores
