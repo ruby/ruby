@@ -150,6 +150,13 @@ class Reline::LineEditor
     @screen_height = @screen_size.first
     reset_variables(prompt, encoding: encoding)
     @old_trap = Signal.trap('SIGINT') {
+      if @scroll_partial_screen
+        move_cursor_down(@screen_height - (@line_index - @scroll_partial_screen) - 1)
+      else
+        move_cursor_down(@highest_in_all - @line_index - 1)
+      end
+      Reline::IOGate.move_cursor_column(0)
+      scroll_down(1)
       @old_trap.call if @old_trap.respond_to?(:call) # can also be string, ex: "DEFAULT"
       raise Interrupt
     }
@@ -420,6 +427,7 @@ class Reline::LineEditor
         end
       end
       @buffer_of_lines[@line_index] = @line
+      @rest_height = 0 if @scroll_partial_screen
     else
       line = modify_lines(whole_lines)[@line_index]
       render_partial(prompt, prompt_width, line, 0)
