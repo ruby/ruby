@@ -785,7 +785,7 @@ rb_print_backtrace(void)
 #  define HAVE_PRINT_MACHINE_REGISTERS 1
 # endif
 #elif defined __APPLE__
-# if defined __x86_64__ || defined __i386__
+# if defined __x86_64__ || defined __i386__ || defined __aarch64__
 #  define HAVE_PRINT_MACHINE_REGISTERS 1
 # endif
 #endif
@@ -949,6 +949,28 @@ rb_dump_machine_register(const ucontext_t *ctx)
 	dump_machine_register(es);
 	dump_machine_register(fs);
 	dump_machine_register(gs);
+#   elif defined __aarch64__
+	dump_machine_register(x[0]);
+	dump_machine_register(x[1]);
+	dump_machine_register(x[2]);
+	dump_machine_register(x[3]);
+	dump_machine_register(x[4]);
+	dump_machine_register(x[5]);
+	dump_machine_register(x[6]);
+	dump_machine_register(x[7]);
+	dump_machine_register(x[18]);
+	dump_machine_register(x[19]);
+	dump_machine_register(x[20]);
+	dump_machine_register(x[21]);
+	dump_machine_register(x[22]);
+	dump_machine_register(x[23]);
+	dump_machine_register(x[24]);
+	dump_machine_register(x[25]);
+	dump_machine_register(x[26]);
+	dump_machine_register(x[27]);
+	dump_machine_register(x[28]);
+	dump_machine_register(fp);
+	dump_machine_register(sp);
 #   endif
     }
 # endif
