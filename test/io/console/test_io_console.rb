@@ -545,14 +545,14 @@ end
 
 TestIO_Console.class_eval do
   def test_stringio_getch
-    assert_separately %w"--disable=gems -rstringio -rio/console", %q{
-      assert_operator(StringIO, :method_defined?, :getch)
+    assert_ruby_status %w"--disable=gems -rstringio -rio/console", %q{
+      abort unless StringIO.method_defined?(:getch)
     }
-    assert_separately %w"--disable=gems -rio/console -rstringio", %q{
-      assert_operator(StringIO, :method_defined?, :getch)
+    assert_ruby_status %w"--disable=gems -rio/console -rstringio", %q{
+      abort unless StringIO.method_defined?(:getch)
     }
-    assert_separately %w"--disable=gems -rstringio", %q{
-      assert_not_operator(StringIO, :method_defined?, :getch)
+    assert_ruby_status %w"--disable=gems -rstringio", %q{
+      abort if StringIO.method_defined?(:getch)
     }
   end
 end
