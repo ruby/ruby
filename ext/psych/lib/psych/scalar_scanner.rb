@@ -13,10 +13,10 @@ module Psych
     FLOAT = /^(?:[-+]?([0-9][0-9_,]*)?\.[0-9]*([eE][-+][0-9]+)?(?# base 10))$/x
 
     # Taken from http://yaml.org/type/int.html
-    INTEGER = /^(?:[-+]?0b[0-1_,]+          (?# base 2)
-                  |[-+]?0[0-7_,]+           (?# base 8)
-                  |[-+]?(?:0|[1-9][0-9_,]*) (?# base 10)
-                  |[-+]?0x[0-9a-fA-F_,]+    (?# base 16))$/x
+    INTEGER = /^(?:[-+]?0b[0-1_,]+               (?# base 2)
+                  |[-+]?0[0-7_,]+                (?# base 8)
+                  |[-+]?(?:\d|[1-9][0-9_,]*[^_]) (?# base 10)
+                  |[-+]?0x[0-9a-fA-F_,]+         (?# base 16))$/x
 
     attr_reader :class_loader
 
