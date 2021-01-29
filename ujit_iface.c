@@ -132,16 +132,20 @@ static st_table *method_lookup_dependency;
 struct compiled_region_array {
     int32_t size;
     int32_t capa;
-    block_t* data[];
+    struct compiled_region {
+        block_t *block;
+        const struct rb_callcache *cc;
+        const rb_callable_method_entry_t *cme;
+    } data[];
 };
 
 // Add an element to a region array, or allocate a new region array.
 static struct compiled_region_array *
-add_compiled_region(struct compiled_region_array *array, block_t* block)
+add_compiled_region(struct compiled_region_array *array, struct compiled_region *region)
 {
     if (!array) {
         // Allocate a brand new array with space for one
-        array = malloc(sizeof(*array) + sizeof(block_t*));
+        array = malloc(sizeof(*array) + sizeof(array->data[0]));
         if (!array) {
             return NULL;
         }
@@ -153,7 +157,7 @@ add_compiled_region(struct compiled_region_array *array, block_t* block)
     }
     // Check if the region is already present
     for (int32_t i = 0; i < array->size; i++) {
-        if (array->data[i] == block) {
+        if (array->data[i].block == region->block && array->data[i].cc == region->cc && array->data[i].cme == region->cme) {
             return array;
         }
     }
@@ -164,15 +168,14 @@ add_compiled_region(struct compiled_region_array *array, block_t* block)
         if (new_capa != double_capa) {
             return NULL;
         }
-        array = realloc(array, sizeof(*array) + new_capa * sizeof(block_t*));
+        array = realloc(array, sizeof(*array) + new_capa * sizeof(array->data[0]));
         if (array == NULL) {
             return NULL;
         }
         array->capa = new_capa;
     }
 
-    int32_t size = array->size;
-    array->data[size] = block;
+    array->data[array->size] = *region;
     array->size++;
     return array;
 }
@@ -180,13 +183,13 @@ add_compiled_region(struct compiled_region_array *array, block_t* block)
 static int
 add_lookup_dependency_i(st_data_t *key, st_data_t *value, st_data_t data, int existing)
 {
-    block_t *block = (block_t *)data;
+    struct compiled_region *region = (struct compiled_region *)data;
 
     struct compiled_region_array *regions = NULL;
     if (existing) {
         regions = (struct compiled_region_array *)*value;
     }
-    regions = add_compiled_region(regions, block);
+    regions = add_compiled_region(regions, region);
     if (!regions) {
         rb_bug("ujit: failed to add method lookup dependency"); // TODO: we could bail out of compiling instead
     }
@@ -199,8 +202,9 @@ void
 assume_method_lookup_stable(const struct rb_callcache *cc, const rb_callable_method_entry_t *cme, block_t* block)
 {
     RUBY_ASSERT(block != NULL);
-    st_update(method_lookup_dependency, (st_data_t)cme, add_lookup_dependency_i, (st_data_t)block);
-    st_update(method_lookup_dependency, (st_data_t)cc, add_lookup_dependency_i, (st_data_t)block);
+    struct compiled_region region = { .block = block, .cc = cc, .cme = cme };
+    st_update(method_lookup_dependency, (st_data_t)cme, add_lookup_dependency_i, (st_data_t)&region);
+    st_update(method_lookup_dependency, (st_data_t)cc, add_lookup_dependency_i, (st_data_t)&region);
     // FIXME: This is a leak! When either the cme or the cc become invalid, the other also needs to go
 }
 
@@ -212,7 +216,7 @@ ujit_root_mark_i(st_data_t k, st_data_t v, st_data_t ignore)
     rb_gc_mark((VALUE)k);
     struct compiled_region_array *regions = (void *)v;
     for (int32_t i = 0; i < regions->size; i++) {
-        rb_gc_mark((VALUE)regions->data[i]->blockid.iseq);
+        rb_gc_mark((VALUE)regions->data[i].block->blockid.iseq);
     }
 
     return ST_CONTINUE;
@@ -256,20 +260,50 @@ rb_ujit_method_lookup_change(VALUE cme_or_cc)
     if (!method_lookup_dependency)
         return;
 
+    RB_VM_LOCK_ENTER();
+
     RUBY_ASSERT(IMEMO_TYPE_P(cme_or_cc, imemo_ment) || IMEMO_TYPE_P(cme_or_cc, imemo_callcache));
 
-    st_data_t image;
+    st_data_t image, other_image;
     if (st_lookup(method_lookup_dependency, (st_data_t)cme_or_cc, &image)) {
         struct compiled_region_array *array = (void *)image;
 
         // Invalidate all regions that depend on the cme or cc
         for (int32_t i = 0; i < array->size; i++) {
-            block_t* block = array->data[i];
-            invalidate(block);
+            struct compiled_region *region = &array->data[i];
+            
+            VALUE other_key;
+            if (IMEMO_TYPE_P(cme_or_cc, imemo_ment)) {
+                other_key = (VALUE)region->cc;
+            }
+            else {
+                other_key = (VALUE)region->cme;
+            }
+
+            if (!st_lookup(method_lookup_dependency, (st_data_t)other_key, &other_image)) {
+                // See assume_method_lookup_stable() for why this should always hit.
+                rb_bug("method lookup dependency bookkeeping bug");
+            }
+            struct compiled_region_array *other_region_array = (void *)other_image;
+            const int32_t other_size = other_region_array->size;
+            // Find the block we are invalidating in the other region array
+            for (int32_t i = 0; i < other_size; i++) {
+                if (other_region_array->data[i].block == region->block) {
+                    // Do a shuffle remove. Order in the region array doesn't matter.
+                    other_region_array->data[i] = other_region_array->data[other_size - 1];
+                    other_region_array->size--;
+                    break;
+                }
+            }
+            RUBY_ASSERT(other_region_array->size < other_size);
+
+            invalidate_block_version(region->block);
         }
 
         array->size = 0;
     }
+
+    RB_VM_LOCK_LEAVE();
 }
 
 void
