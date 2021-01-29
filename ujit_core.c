@@ -20,7 +20,7 @@
 const ctx_t DEFAULT_CTX = { { 0 }, 0 };
 
 // Table of block versions indexed by (iseq, index) tuples
-st_table * version_tbl;
+st_table *version_tbl;
 
 // Registered branch entries
 branch_t branch_entries[MAX_BRANCHES];
@@ -159,7 +159,7 @@ static void add_block_version(blockid_t blockid, block_t* block)
     }
 
     // Add the block version to the map
-    st_insert(version_tbl, (st_data_t)&blockid, (st_data_t)block);
+    st_insert(version_tbl, (st_data_t)&block->blockid, (st_data_t)block);
     RUBY_ASSERT(find_block_version(blockid, &block->ctx) != NULL);
 }
 
@@ -548,7 +548,8 @@ void gen_direct_jump(
 }
 
 // Invalidate one specific block version
-void invalidate(block_t* block)
+void
+invalidate_block_version(block_t* block)
 {
     fprintf(stderr, "invalidating block (%p, %d)\n", block->blockid.iseq, block->blockid.idx);
     fprintf(stderr, "block=%p\n", block);

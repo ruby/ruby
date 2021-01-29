@@ -147,7 +147,7 @@ void gen_direct_jump(
     blockid_t target0
 );
 
-void invalidate(block_t* block);
+void invalidate_block_version(block_t* block);
 
 void ujit_init_core(void);
 
