@@ -24,6 +24,7 @@ module Psych
         super()
         @st = {}
         @ss = ss
+        @load_tags = Psych.load_tags
         @domain_types = Psych.domain_types
         @class_loader = class_loader
         @symbolize_names = symbolize_names
@@ -48,7 +49,7 @@ module Psych
       end
 
       def deserialize o
-        if klass = resolve_class(Psych.load_tags[o.tag])
+        if klass = resolve_class(@load_tags[o.tag])
           instance = klass.allocate
 
           if instance.respond_to?(:init_with)
@@ -128,7 +129,7 @@ module Psych
       end
 
       def visit_Psych_Nodes_Sequence o
-        if klass = resolve_class(Psych.load_tags[o.tag])
+        if klass = resolve_class(@load_tags[o.tag])
           instance = klass.allocate
 
           if instance.respond_to?(:init_with)
@@ -160,8 +161,8 @@ module Psych
       end
 
       def visit_Psych_Nodes_Mapping o
-        if Psych.load_tags[o.tag]
-          return revive(resolve_class(Psych.load_tags[o.tag]), o)
+        if @load_tags[o.tag]
+          return revive(resolve_class(@load_tags[o.tag]), o)
         end
         return revive_hash(register(o, {}), o) unless o.tag
 
@@ -326,6 +327,7 @@ module Psych
       end
 
       private
+
       def register node, object
         @st[node.anchor] = object if node.anchor
         object
