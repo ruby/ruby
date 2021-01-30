@@ -2727,23 +2727,22 @@ rb_uint64_convert_to_BigDecimal(uint64_t uval, RB_UNUSED_VAR(size_t digs), int r
         vp->frac[0] = (DECDIG)uval;
     }
     else {
-        const size_t len = (size_t)ceil(log10((double)uval) / BASE_FIG);
-
-        vp = VpAllocReal(len);
-        vp->MaxPrec = len;
-        vp->Prec = len;
-        vp->exponent = len;
-        VpSetSign(vp, 1);
-
-        size_t i, ntz = 0;
-        for (i = 0; i < len; ++i) {
+        DECDIG buf[BIGDECIMAL_INT64_MAX_LENGTH] = {0,};
+        size_t exp = 0, ntz = 0;
+        for (; uval > 0; ++exp) {
             DECDIG r = uval % BASE;
-            vp->frac[len - i - 1] = r;
             if (r == 0) ++ntz;
+            buf[BIGDECIMAL_INT64_MAX_LENGTH - exp - 1] = r;
             uval /= BASE;
         }
 
-        vp->Prec -= ntz;
+        const size_t len = exp - ntz;
+        vp = VpAllocReal(len);
+        vp->MaxPrec = len;
+        vp->Prec = len;
+        vp->exponent = exp;
+        VpSetSign(vp, 1);
+        MEMCPY(vp->frac, buf + BIGDECIMAL_INT64_MAX_LENGTH - exp, DECDIG, len);
     }
 
     return BigDecimal_wrap_struct(obj, vp);

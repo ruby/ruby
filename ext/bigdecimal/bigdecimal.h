@@ -54,9 +54,25 @@
 #if SIZEOF_DECDIG == 4
 # define BIGDECIMAL_BASE ((DECDIG)1000000000U)
 # define BIGDECIMAL_COMPONENT_FIGURES 9
+/*
+ * The number of components required for a 64-bit integer.
+ *
+ *   INT64_MAX:   9_223372036_854775807
+ *   UINT64_MAX: 18_446744073_709551615
+ */
+# define BIGDECIMAL_INT64_MAX_LENGTH 3
+
 #elif SIZEOF_DECDIG == 2
 # define BIGDECIMAL_BASE ((DECDIG)10000U)
 # define BIGDECIMAL_COMPONENT_FIGURES 4
+/*
+ * The number of components required for a 64-bit integer.
+ *
+ *   INT64_MAX:   922_3372_0368_5477_5807
+ *   UINT64_MAX: 1844_6744_0737_0955_1615
+ */
+# define BIGDECIMAL_INT64_MAX_LENGTH 5
+
 #else
 # error Unknown size of DECDIG
 #endif
