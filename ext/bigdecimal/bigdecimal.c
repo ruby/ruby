@@ -67,15 +67,11 @@ static ID id_half;
 #define SAVE(p)  PUSH((p)->obj)
 #define GUARD_OBJ(p,y) ((p)=(y), SAVE(p))
 
-#define BASE_FIG  RMPD_COMPONENT_FIGURES
-#define BASE      RMPD_BASE
+#define BASE_FIG  BIGDECIMAL_COMPONENT_FIGURES
+#define BASE      BIGDECIMAL_BASE
 
 #define HALF_BASE (BASE/2)
 #define BASE1 (BASE/10)
-
-#ifndef DBLE_FIG
-#define DBLE_FIG RMPD_DOUBLE_FIGURES  /* figure of double */
-#endif
 
 #define LOG10_2 0.3010299956639812
 
@@ -2371,7 +2367,7 @@ is_even(VALUE x)
 }
 
 static VALUE
-rmpd_power_by_big_decimal(Real const* x, Real const* exp, ssize_t const n)
+bigdecimal_power_by_bigdecimal(Real const* x, Real const* exp, ssize_t const n)
 {
     VALUE log_x, multiplied, y;
     volatile VALUE obj = exp->obj;
@@ -2441,7 +2437,7 @@ BigDecimal_power(int argc, VALUE*argv, VALUE self)
 	    goto retry;
 	}
         if (NIL_P(prec)) {
-            n += DBLE_FIG;
+            n += BIGDECIMAL_DOUBLE_FIGURES;
         }
         exp = GetVpValueWithPrec(vexp, 0, 1);
 	break;
@@ -2573,7 +2569,7 @@ BigDecimal_power(int argc, VALUE*argv, VALUE self)
     }
 
     if (exp != NULL) {
-	return rmpd_power_by_big_decimal(x, exp, n);
+	return bigdecimal_power_by_bigdecimal(x, exp, n);
     }
     else if (RB_TYPE_P(vexp, T_BIGNUM)) {
 	VALUE abs_value = BigDecimal_abs(self);
@@ -2630,7 +2626,7 @@ BigDecimal_power(int argc, VALUE*argv, VALUE self)
     else {
         GUARD_OBJ(y, VpCreateRbObject(1, "0", true));
     }
-    VpPower(y, x, int_exp);
+    VpPowerByInt(y, x, int_exp);
     if (!NIL_P(prec) && VpIsDef(y)) {
 	VpMidRound(y, VpGetRoundMode(), n);
     }
@@ -2849,22 +2845,22 @@ rb_float_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception)
                  "can't omit precision for a %"PRIsVALUE".",
                  CLASS_OF(val));
     }
-    else if (digs > DBLE_FIG) {
+    else if (digs > BIGDECIMAL_DOUBLE_FIGURES) {
         if (!raise_exception)
             return Qnil;
         rb_raise(rb_eArgError, "precision too large.");
     }
 
     /* Use the same logic in flo_to_s to convert a float to a decimal string */
-    char buf[DBLE_FIG + BASE_FIG + 2 + 1];  /* sizeof(buf) == 28 in the typical case */
+    char buf[BIGDECIMAL_DOUBLE_FIGURES + BASE_FIG + 2 + 1];  /* sizeof(buf) == 28 in the typical case */
     int decpt, negative_p;
     char *e;
     const int mode = digs == 0 ? 0 : 2;
     char *p = BigDecimal_dtoa(d, mode, (int)digs, &decpt, &negative_p, &e);
     int len10 = (int)(e - p);
-    if (len10 > DBLE_FIG) {
+    if (len10 > BIGDECIMAL_DOUBLE_FIGURES) {
         /* TODO: Presumably, rounding should be done here. */
-        len10 = DBLE_FIG;
+        len10 = BIGDECIMAL_DOUBLE_FIGURES;
     }
     memcpy(buf, p, len10);
     xfree(p);
@@ -3381,7 +3377,7 @@ BigMath_s_exp(VALUE klass, VALUE x, VALUE vprec)
     }
     x = vx->obj;
 
-    n = prec + rmpd_double_figures();
+    n = prec + BIGDECIMAL_DOUBLE_FIGURES;
     negative = BIGDECIMAL_NEGATIVE_P(vx);
     if (negative) {
         VALUE x_zero = INT2NUM(1);
@@ -3406,8 +3402,8 @@ BigMath_s_exp(VALUE klass, VALUE x, VALUE vprec)
 	if (m <= 0) {
 	    break;
 	}
-	else if ((size_t)m < rmpd_double_figures()) {
-	    m = rmpd_double_figures();
+	else if ((size_t)m < BIGDECIMAL_DOUBLE_FIGURES) {
+	    m = BIGDECIMAL_DOUBLE_FIGURES;
 	}
 
 	d = BigDecimal_mult(d, x);                             /* d <- d * x */
@@ -3543,7 +3539,7 @@ get_vp_value:
     RB_GC_GUARD(one) = VpCheckGetValue(VpCreateRbObject(1, "1", true));
     RB_GC_GUARD(two) = VpCheckGetValue(VpCreateRbObject(1, "2", true));
 
-    n = prec + rmpd_double_figures();
+    n = prec + BIGDECIMAL_DOUBLE_FIGURES;
     RB_GC_GUARD(vn) = SSIZET2NUM(n);
     expo = VpExponent10(vx);
     if (expo < 0 || expo >= 3) {
@@ -3567,8 +3563,8 @@ get_vp_value:
 	if (m <= 0) {
 	    break;
 	}
-	else if ((size_t)m < rmpd_double_figures()) {
-	    m = rmpd_double_figures();
+	else if ((size_t)m < BIGDECIMAL_DOUBLE_FIGURES) {
+	    m = BIGDECIMAL_DOUBLE_FIGURES;
 	}
 
 	x = BigDecimal_mult2(x2, x, vn);
@@ -4095,7 +4091,7 @@ VpFree(Real *pv)
  * EXCEPTION Handling.
  */
 
-#define rmpd_set_thread_local_exception_mode(mode) \
+#define bigdecimal_set_thread_local_exception_mode(mode) \
     rb_thread_local_aset( \
 	rb_thread_current(), \
 	id_BigDecimal_exception_mode, \
@@ -4111,8 +4107,8 @@ VpGetException (void)
     );
 
     if (NIL_P(vmode)) {
-	rmpd_set_thread_local_exception_mode(RMPD_EXCEPTION_MODE_DEFAULT);
-	return RMPD_EXCEPTION_MODE_DEFAULT;
+	bigdecimal_set_thread_local_exception_mode(BIGDECIMAL_EXCEPTION_MODE_DEFAULT);
+	return BIGDECIMAL_EXCEPTION_MODE_DEFAULT;
     }
 
     return NUM2USHORT(vmode);
@@ -4121,20 +4117,20 @@ VpGetException (void)
 static void
 VpSetException(unsigned short f)
 {
-    rmpd_set_thread_local_exception_mode(f);
+    bigdecimal_set_thread_local_exception_mode(f);
 }
 
 /*
  * Precision limit.
  */
 
-#define rmpd_set_thread_local_precision_limit(limit) \
+#define bigdecimal_set_thread_local_precision_limit(limit) \
     rb_thread_local_aset( \
 	rb_thread_current(), \
 	id_BigDecimal_precision_limit, \
 	SIZET2NUM(limit) \
     )
-#define RMPD_PRECISION_LIMIT_DEFAULT ((size_t)0)
+#define BIGDECIMAL_PRECISION_LIMIT_DEFAULT ((size_t)0)
 
 /* These 2 functions added at v1.1.7 */
 VP_EXPORT size_t
@@ -4146,8 +4142,8 @@ VpGetPrecLimit(void)
     );
 
     if (NIL_P(vlimit)) {
-	rmpd_set_thread_local_precision_limit(RMPD_PRECISION_LIMIT_DEFAULT);
-	return RMPD_PRECISION_LIMIT_DEFAULT;
+	bigdecimal_set_thread_local_precision_limit(BIGDECIMAL_PRECISION_LIMIT_DEFAULT);
+	return BIGDECIMAL_PRECISION_LIMIT_DEFAULT;
     }
 
     return NUM2SIZET(vlimit);
@@ -4157,7 +4153,7 @@ VP_EXPORT size_t
 VpSetPrecLimit(size_t n)
 {
     size_t const s = VpGetPrecLimit();
-    rmpd_set_thread_local_precision_limit(n);
+    bigdecimal_set_thread_local_precision_limit(n);
     return s;
 }
 
@@ -4165,7 +4161,7 @@ VpSetPrecLimit(size_t n)
  * Rounding mode.
  */
 
-#define rmpd_set_thread_local_rounding_mode(mode) \
+#define bigdecimal_set_thread_local_rounding_mode(mode) \
     rb_thread_local_aset( \
 	rb_thread_current(), \
 	id_BigDecimal_rounding_mode, \
@@ -4181,8 +4177,8 @@ VpGetRoundMode(void)
     );
 
     if (NIL_P(vmode)) {
-	rmpd_set_thread_local_rounding_mode(RMPD_ROUNDING_MODE_DEFAULT);
-	return RMPD_ROUNDING_MODE_DEFAULT;
+	bigdecimal_set_thread_local_rounding_mode(BIGDECIMAL_ROUNDING_MODE_DEFAULT);
+	return BIGDECIMAL_ROUNDING_MODE_DEFAULT;
     }
 
     return NUM2USHORT(vmode);
@@ -4210,7 +4206,7 @@ VP_EXPORT unsigned short
 VpSetRoundMode(unsigned short n)
 {
     if (VpIsRoundMode(n)) {
-	rmpd_set_thread_local_rounding_mode(n);
+	bigdecimal_set_thread_local_rounding_mode(n);
 	return n;
     }
 
@@ -4450,7 +4446,7 @@ VpNumOfChars(Real *vp,const char *pszFmt)
  *   by one DECDIG word in the computer used.
  *
  * [Returns]
- *   DBLE_FIG   ... OK
+ *   BIGDECIMAL_DOUBLE_FIGURES  ... OK
  */
 VP_EXPORT size_t
 VpInit(DECDIG BaseVal)
@@ -4468,16 +4464,16 @@ VpInit(DECDIG BaseVal)
 
 #ifdef BIGDECIMAL_DEBUG
     if (gfDebug) {
-        printf("VpInit: BaseVal   = %"PRIuDECDIG"\n", BaseVal);
+        printf("VpInit: BaseVal = %"PRIuDECDIG"\n", BaseVal);
         printf("\tBASE      = %"PRIuDECDIG"\n", BASE);
         printf("\tHALF_BASE = %"PRIuDECDIG"\n", HALF_BASE);
         printf("\tBASE1     = %"PRIuDECDIG"\n", BASE1);
         printf("\tBASE_FIG  = %u\n", BASE_FIG);
-        printf("\tDBLE_FIG  = %d\n", DBLE_FIG);
+        printf("\tBIGDECIMAL_DOUBLE_FIGURES = %d\n", BIGDECIMAL_DOUBLE_FIGURES);
     }
 #endif /* BIGDECIMAL_DEBUG */
 
-    return rmpd_double_figures();
+    return BIGDECIMAL_DOUBLE_FIGURES;
 }
 
 VP_EXPORT Real *
@@ -4525,7 +4521,7 @@ overflow:
 }
 
 Real *
-rmpd_parse_special_string(const char *str)
+bigdecimal_parse_special_string(const char *str)
 {
     static const struct {
         const char *str;
@@ -4626,7 +4622,7 @@ VpAlloc(size_t mx, const char *szVal, int strict_p, int exc)
     }
 
     /* Check on Inf & NaN */
-    if ((vp = rmpd_parse_special_string(szVal)) != NULL) {
+    if ((vp = bigdecimal_parse_special_string(szVal)) != NULL) {
         return vp;
     }
 
@@ -5832,7 +5828,7 @@ VPrint(FILE *fp, const char *cntl_chr, Real *a)
 		case '0': case 'z':
 		    ZeroSup = 0;
 		    ++j;
-		    sep = cntl_chr[j] == 'z' ? RMPD_COMPONENT_FIGURES : 10;
+		    sep = cntl_chr[j] == 'z' ? BIGDECIMAL_COMPONENT_FIGURES : 10;
 		    break;
 		}
 		for (i = 0; i < a->Prec; ++i) {
@@ -6284,7 +6280,7 @@ Final:
  * [Output]
  *   *d  ... fraction part of m(d = 0.xxxxxxx). where # of 'x's is fig.
  *   *e  ... exponent of m.
- * DBLE_FIG ... Number of digits in a double variable.
+ * BIGDECIMAL_DOUBLE_FIGURES ... Number of digits in a double variable.
  *
  *  m -> d*10**e, 0<d<BASE
  * [Returns]
@@ -6331,7 +6327,7 @@ VpVtoD(double *d, SIGNED_VALUE *e, Real *m)
 	goto Exit;
     }
     /* Normal number */
-    fig = (DBLE_FIG + BASE_FIG - 1) / BASE_FIG;
+    fig = roomof(BIGDECIMAL_DOUBLE_FIGURES, BASE_FIG);
     ind_m = 0;
     mm = Min(fig, m->Prec);
     *d = 0.0;
@@ -6348,7 +6344,7 @@ Exit:
     if (gfDebug) {
 	VPrint(stdout, " VpVtoD: m=%\n", m);
 	printf("   d=%e * 10 **%ld\n", *d, *e);
-	printf("   DBLE_FIG = %d\n", DBLE_FIG);
+	printf("   BIGDECIMAL_DOUBLE_FIGURES = %d\n", BIGDECIMAL_DOUBLE_FIGURES);
     }
 #endif /*BIGDECIMAL_DEBUG */
     return f;
@@ -6549,7 +6545,7 @@ VpSqrt(Real *y, Real *x)
     }
     VpDtoV(y, sqrt(val));    /* y <- sqrt(val) */
     y->exponent += n;
-    n = (SIGNED_VALUE)((DBLE_FIG + BASE_FIG - 1) / BASE_FIG);
+    n = (SIGNED_VALUE)roomof(BIGDECIMAL_DOUBLE_FIGURES, BASE_FIG);
     y->MaxPrec = Min((size_t)n , y_prec);
     f->MaxPrec = y->MaxPrec + 1;
     n = (SIGNED_VALUE)(y_prec * BASE_FIG);
@@ -6919,7 +6915,7 @@ Exit:
  *   y = x ** n
  */
 VP_EXPORT int
-VpPower(Real *y, Real *x, SIGNED_VALUE n)
+VpPowerByInt(Real *y, Real *x, SIGNED_VALUE n)
 {
     size_t s, ss;
     ssize_t sign;
@@ -7006,8 +7002,8 @@ VpPower(Real *y, Real *x, SIGNED_VALUE n)
 Exit:
 #ifdef BIGDECIMAL_DEBUG
     if (gfDebug) {
-	VPrint(stdout, "VpPower y=%\n", y);
-	VPrint(stdout, "VpPower x=%\n", x);
+	VPrint(stdout, "VpPowerByInt y=%\n", y);
+	VPrint(stdout, "VpPowerByInt x=%\n", x);
 	printf("  n=%"PRIdVALUE"\n", n);
     }
 #endif /* BIGDECIMAL_DEBUG */
