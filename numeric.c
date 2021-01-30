@@ -5269,8 +5269,6 @@ DEFINE_INT_SQRT(BDIGIT, rb_bdigit_dbl, BDIGIT_DBL)
 #define domain_error(msg) \
     rb_raise(rb_eMathDomainError, "Numerical argument is out of domain - " #msg)
 
-VALUE rb_big_isqrt(VALUE);
-
 /*
  *  Document-method: Integer::sqrt
  *  call-seq:
