@@ -66,6 +66,9 @@ AS_IF([test ${target_archs+set}], [
 #ifdef __ppc64__
 "processor-name=powerpc64"
 #endif
+#ifdef __arm64__
+"processor-name=arm64"
+#endif
 EOF
 	    sed -n 's/^"processor-name=\(.*\)"/\1/p'`
 	    target="$target_cpu${target}"
