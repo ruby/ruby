@@ -4073,6 +4073,34 @@ rb_str_cmp(VALUE str1, VALUE str2)
     if (str1 == str2) return 0;
     RSTRING_GETMEM(str1, ptr1, len1);
     RSTRING_GETMEM(str2, ptr2, len2);
+
+    rb_encoding *enc1 = rb_enc_get(str1);
+    rb_encoding *enc2 = rb_enc_get(str2);
+    if (rb_enc_mbminlen(enc1) > 1 && rb_enc_mbminlen(enc2) > 1 &&
+	rb_str_comparable(str1, str2)) {
+	/* wchar-base encoding */
+	const char *end1 = ptr1 + len1, *end2 = ptr2 + len2;
+	unsigned int c1, c2;
+	int r1, r2;
+
+	while (len1 > 0 && len2 > 0) {
+	    if (!MBCLEN_CHARFOUND_P(r1 = rb_enc_precise_mbclen(ptr1, end1, enc1)))
+		break;
+	    if (!MBCLEN_CHARFOUND_P(r2 = rb_enc_precise_mbclen(ptr2, end2, enc2)))
+		break;
+	    c1 = rb_enc_mbc_to_codepoint(ptr1, end1, enc1);
+	    c2 = rb_enc_mbc_to_codepoint(ptr2, end2, enc2);
+	    len1 = end1 - (ptr1 += MBCLEN_CHARFOUND_LEN(r1));
+	    len2 = end2 - (ptr2 += MBCLEN_CHARFOUND_LEN(r2));
+	    if (c1 != c2) {
+		return c1 < c2 ? -1 : 1;
+	    }
+	}
+	if (len1 == 0 && len2 == 0) return 0;
+	if (len1 == 0) return -1;
+	if (len2 == 0) return 1;
+    }
+
     if (ptr1 == ptr2 || (retval = memcmp(ptr1, ptr2, lesser(len1, len2))) == 0) {
         if (len1 == len2) {
             if (!rb_str_comparable(str1, str2)) {
