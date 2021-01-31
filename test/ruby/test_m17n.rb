@@ -1584,13 +1584,16 @@ class TestM17N < Test::Unit::TestCase
     assert_equal([0x30BB, 0x309A], "\u30BB\u309A".codepoints.to_a)
   end
 
-  def each_encoding(*strings)
-    Encoding.list.each do |enc|
+  def assert_each_encoding(*strings)
+    all = AllFailures.new
+    all.foreach(*Encoding.list) do |enc|
       next if enc.dummy?
       strs = strings.map {|s| s.encode(enc)} rescue next
       yield(*strs)
     end
+    assert(all.pass?, message {all.message.chomp(".")})
   end
+  alias each_encoding assert_each_encoding
 
   def test_str_b
     s = "\u3042"
