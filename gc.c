@@ -552,8 +552,8 @@ struct RMoved {
 
 #define RMOVED(obj) ((struct RMoved *)(obj))
 
-#if defined(_MSC_VER) || defined(__CYGWIN__)
-#pragma pack(push, 1) /* magic for reducing sizeof(RVALUE): 24 -> 20 */
+#if (SIZEOF_DOUBLE > SIZEOF_VALUE) && (defined(_MSC_VER) || defined(__CYGWIN__))
+#pragma pack(push, 4) /* == SIZEOF_VALUE: magic for reducing sizeof(RVALUE): 24 -> 20 */
 #endif
 
 typedef struct RVALUE {
@@ -604,9 +604,11 @@ typedef struct RVALUE {
 #endif
 } RVALUE;
 
-#if defined(_MSC_VER) || defined(__CYGWIN__)
+#if (SIZEOF_DOUBLE > SIZEOF_VALUE) && (defined(_MSC_VER) || defined(__CYGWIN__))
 #pragma pack(pop)
 #endif
+
+STATIC_ASSERT(sizeof_rvalue, sizeof(RVALUE) == 5*SIZEOF_VALUE);
 
 typedef uintptr_t bits_t;
 enum {
