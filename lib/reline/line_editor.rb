@@ -600,7 +600,13 @@ class Reline::LineEditor
       new_first_line_started_from = calculate_height_by_lines(new_buffer[0..(@line_index - 1)], prompt_list || prompt)
     end
     new_started_from = calculate_height_by_width(prompt_width + @cursor) - 1
-    if back > old_highest_in_all
+    calculate_scroll_partial_screen(back, new_first_line_started_from + new_started_from)
+    if @scroll_partial_screen
+      move_cursor_up(@first_line_started_from + @started_from)
+      scroll_down(@screen_height - 1)
+      move_cursor_up(@screen_height)
+      Reline::IOGate.move_cursor_column(0)
+    elsif back > old_highest_in_all
       scroll_down(back - 1)
       move_cursor_up(back - 1)
     elsif back < old_highest_in_all
@@ -612,7 +618,6 @@ class Reline::LineEditor
       end
       move_cursor_up(old_highest_in_all - 1)
     end
-    calculate_scroll_partial_screen(back, new_first_line_started_from + new_started_from)
     render_whole_lines(new_buffer, prompt_list || prompt, prompt_width)
     if @prompt_proc
       prompt = prompt_list[@line_index]
