@@ -102,7 +102,7 @@ AS_IF([test ! -z "$ac_cv_prog_CC" -a ! -z "$CC" -a "$CC" != "$ac_cv_prog_CC"], [
   AC_MSG_ERROR(cached CC is different -- throw away $cache_file
 (it is also a good idea to do 'make clean' before compiling))
 ])
-AS_CASE(["${build_os}"], [linux*|cygwin*], [
+AS_CASE(["${build_os}"], [linux*|cygwin*|msys*], [
     AC_CHECK_TOOLS([CC], [gcc clang cc])
 ], [
     # OpenBSD wants to prefer cc over gcc.
@@ -168,7 +168,7 @@ AS_CASE(["${build_os}"],
     AC_PATH_TOOL([NM], [nm], [/usr/ccs/bin/nm], [/usr/ccs/bin:$PATH])
 ])
 AS_CASE(["${target_os}"],
-[cygwin*|mingw*], [
+[cygwin*|msys*|mingw*], [
     ac_cv_prog_ac_ct_OBJCOPY=":"
 ])
 
@@ -394,7 +394,7 @@ AC_SUBST(ARFLAGS, ["$rb_cv_arflags "])
 AC_SUBST(ASFLAGS)
 
 AS_CASE(["$target_os"],
-[cygwin*|mingw*], [
+[cygwin*|msys*|mingw*], [
     AC_CHECK_TOOL(WINDRES, windres)
     AC_CHECK_TOOL(DLLWRAP, dllwrap)
     target=`echo $target | sed "s/^$target_cpu-/-/"`
@@ -741,7 +741,7 @@ AS_IF([test "$GCC" = yes], [
 	AC_DEFINE(RUBY_MINGW64_BROKEN_FREXP_MODF)
       ])
     ],
-    [cygwin*|darwin*|netbsd*], [
+    [cygwin*|msys*|darwin*|netbsd*], [
       # need lgamma_r(), finite()
     ])
 
@@ -1047,7 +1047,8 @@ main()
 [haiku*], [
 		LIBS="$LIBS" # m lib is include in root
 		],
-[cygwin*], [	ac_cv_header_langinfo_h=yes
+[cygwin*|msys*], [
+		ac_cv_header_langinfo_h=yes
 		RUBY_APPEND_OPTIONS(CPPFLAGS, -D_XOPEN_SOURCE -D_GNU_SOURCE)
 		AC_CHECK_FUNCS(cygwin_conv_path)
 		AC_LIBOBJ([langinfo])
@@ -2020,7 +2021,7 @@ main(int argc, char **argv)
 	    rb_cv_getcwd_malloc=yes,
 	    rb_cv_getcwd_malloc=no,
 	    AS_CASE($target_os,
-		[linux*|darwin*|*bsd|cygwin*|mingw*|mswin*],
+		[linux*|darwin*|*bsd|cygwin*|msys*|mingw*|mswin*],
 		[rb_cv_getcwd_malloc=yes],
 		[rb_cv_getcwd_malloc=no]))])
     AS_IF([test "$rb_cv_getcwd_malloc" = no], [AC_DEFINE(NO_GETCWD_MALLOC, 1)])
@@ -2751,7 +2752,7 @@ AS_IF([test "$with_dln_a_out" != yes], [
       # mkmf.rb's have_header() to fail if the desired resource happens to be
       # installed in the /usr/local tree.
       RUBY_APPEND_OPTION(CCDLFLAGS, -fno-common)],
-    [bsdi*|cygwin*|mingw*|aix*|interix*], [ ],
+    [bsdi*|cygwin*|msys*|mingw*|aix*|interix*], [ ],
     [
       RUBY_APPEND_OPTION(CCDLFLAGS, -fPIC)])
   ], [
@@ -2855,7 +2856,7 @@ AS_IF([test "$with_dln_a_out" != yes], [
 			: ${LDSHARED='$(LD) -Bshareable -x'}
 			LDFLAGS="$LDFLAGS -L/lib -L/usr/lib -L/usr/local/lib"
 			rb_cv_dlopen=yes],
-	[cygwin*|mingw*], [
+	[cygwin*|msys*|mingw*], [
 			: ${LDSHARED='$(CC) -shared'}
 			XLDFLAGS="$XLDFLAGS -Wl,--stack,0x00200000,--enable-auto-import"
 			DLDFLAGS="${DLDFLAGS} -Wl,--enable-auto-image-base,--enable-auto-import"
@@ -3052,7 +3053,7 @@ AS_IF([test "$dln_a_out_works" = yes], [
     [darwin*], [
 	SOEXT=dylib
 	DLEXT=bundle],
-    [cygwin*|mingw*|*djgpp*], [
+    [cygwin*|msys*|mingw*|*djgpp*], [
 	LOAD_RELATIVE=1
 	SOEXT=dll
 	DLEXT=so],
@@ -3217,7 +3218,7 @@ LIBRUBYARG='$(LIBRUBYARG_STATIC)'
 SOLIBS='$(MAINLIBS)'
 
 AS_CASE(["$target_os"],
-  [cygwin*|mingw*|haiku*|darwin*], [
+  [cygwin*|msys*|mingw*|haiku*|darwin*], [
     : ${DLDLIBS=""}
     ],
   [
@@ -3369,7 +3370,7 @@ AS_CASE("$enable_shared", [yes], [
     [interix*], [
 	LIBRUBYARG_SHARED='-L. -L${libdir} -l$(RUBY_SO_NAME)'
 	],
-    [mingw*|cygwin*|mswin*], [
+    [cygwin*|msys*|mingw*|mswin*], [
 	LIBRUBY_RELATIVE=yes
 	])
 ], [
@@ -3615,7 +3616,7 @@ AS_CASE(["$target_os"],
 	  CFLAGS="$CFLAGS -std"
 	])
 	],
-    [cygwin*|mingw*], [
+    [cygwin*|msys*|mingw*], [
 	LIBRUBY_DLDFLAGS="${LIBRUBY_DLDFLAGS}"' -Wl,--out-implib=$(LIBRUBY)'
 	AS_CASE(["$target_os"],
 	[cygwin*], [
@@ -3822,7 +3823,7 @@ test "$program_suffix" != NONE &&
 
 RUBY_INSTALL_NAME="${ri_prefix}"'$(RUBY_BASE_NAME)'"${ri_suffix}"
 AS_CASE(["$target_os"],
-  [cygwin*|mingw*], [
+  [cygwin*|msys*|mingw*], [
     RUBYW_INSTALL_NAME="${ri_prefix}"'$(RUBYW_BASE_NAME)'"${ri_suffix}"
     rubyw_install_name='$(RUBYW_INSTALL_NAME)'
     ])
