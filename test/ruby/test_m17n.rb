@@ -1171,6 +1171,12 @@ class TestM17N < Test::Unit::TestCase
     assert_raise(Encoding::CompatibilityError){s1.upto(s2) {|x| break }}
   end
 
+  def test_CMP
+    each_encoding(*%W"a \u{0101}") do |a, a_macron|
+      assert_operator(a, :<, a_macron)
+    end
+  end
+
   def test_casecmp
     s1 = s("\x81\x41")
     s2 = s("\x81\x61")
