@@ -45,7 +45,7 @@ class TestNetHTTPS < Test::Unit::TestCase
       assert_equal($test_net_http_data, res.body)
     }
     # TODO: OpenSSL 1.1.1h seems to yield only SERVER_CERT; need to check the incompatibility
-    certs.zip([SERVER_CERT, CA_CERT]) do |actual, expected|
+    certs.zip([CA_CERT, SERVER_CERT]) do |actual, expected|
       assert_equal(expected.to_der, actual.to_der)
     end
   rescue SystemCallError
