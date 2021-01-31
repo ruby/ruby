@@ -608,8 +608,6 @@ typedef struct RVALUE {
 #pragma pack(pop)
 #endif
 
-STATIC_ASSERT(sizeof_rvalue, sizeof(RVALUE) == 5*SIZEOF_VALUE);
-
 typedef uintptr_t bits_t;
 enum {
     BITS_SIZE = sizeof(bits_t),
