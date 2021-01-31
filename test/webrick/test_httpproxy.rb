@@ -213,7 +213,7 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
         end
       end
     end
-  end
+  end if RUBY_VERSION >= '2.5'
 
   def make_certificate(key, cn)
     subject = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=#{cn}")
