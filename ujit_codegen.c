@@ -589,6 +589,50 @@ gen_opt_lt(jitstate_t* jit, ctx_t* ctx)
 }
 
 static bool
+gen_opt_and(jitstate_t* jit, ctx_t* ctx)
+{
+    // Create a size-exit to fall back to the interpreter
+    // Note: we generate the side-exit before popping operands from the stack
+    uint8_t* side_exit = ujit_side_exit(jit, ctx);
+
+    // TODO: make a helper function for guarding on op-not-redefined
+    // Make sure that plus isn't redefined for integers
+    mov(cb, RAX, const_ptr_opnd(ruby_current_vm_ptr));
+    test(
+        cb,
+        member_opnd_idx(RAX, rb_vm_t, redefined_flag, BOP_AND),
+        imm_opnd(INTEGER_REDEFINED_OP_FLAG)
+    );
+    jnz_ptr(cb, side_exit);
+
+    // Get the operands and destination from the stack
+    int arg1_type = ctx_get_top_type(ctx);
+    x86opnd_t arg1 = ctx_stack_pop(ctx, 1);
+    int arg0_type = ctx_get_top_type(ctx);
+    x86opnd_t arg0 = ctx_stack_pop(ctx, 1);
+
+    // If not fixnums, fall back
+    if (arg0_type != T_FIXNUM) {
+        test(cb, arg0, imm_opnd(RUBY_FIXNUM_FLAG));
+        jz_ptr(cb, side_exit);
+    }
+    if (arg1_type != T_FIXNUM) {
+        test(cb, arg1, imm_opnd(RUBY_FIXNUM_FLAG));
+        jz_ptr(cb, side_exit);
+    }
+
+    // Do the bitwise and arg0 & arg1
+    mov(cb, REG0, arg0);
+    and(cb, REG0, arg1);
+
+    // Push the output on the stack
+    x86opnd_t dst = ctx_stack_push(ctx, T_FIXNUM);
+    mov(cb, dst, REG0);
+
+    return true;
+}
+
+static bool
 gen_opt_minus(jitstate_t* jit, ctx_t* ctx)
 {
     // Create a size-exit to fall back to the interpreter
@@ -1146,6 +1190,7 @@ ujit_init_codegen(void)
     ujit_reg_op(BIN(getinstancevariable), gen_getinstancevariable, false);
     ujit_reg_op(BIN(setinstancevariable), gen_setinstancevariable, false);
     ujit_reg_op(BIN(opt_lt), gen_opt_lt, false);
+    ujit_reg_op(BIN(opt_and), gen_opt_and, false);
     ujit_reg_op(BIN(opt_minus), gen_opt_minus, false);
     ujit_reg_op(BIN(opt_plus), gen_opt_plus, false);
     ujit_reg_op(BIN(branchif), gen_branchif, true);
