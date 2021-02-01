@@ -1,6 +1,19 @@
 # frozen_string_literal: true
 
 RSpec.describe "bundle cache" do
+  it "doesn't update the cache multiple times, even if it already exists" do
+    gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
+      gem "rack"
+    G
+
+    bundle :cache
+    expect(out).to include("Updating files in vendor/cache").once
+
+    bundle :cache
+    expect(out).to include("Updating files in vendor/cache").once
+  end
+
   context "with --gemfile" do
     it "finds the gemfile" do
       gemfile bundled_app("NotGemfile"), <<-G

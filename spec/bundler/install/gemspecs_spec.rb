@@ -28,8 +28,6 @@ RSpec.describe "bundle install" do
   end
 
   it "should use gemspecs in the system cache when available" do
-    skip "weird incompatible marshal file format error" if Gem.win_platform?
-
     gemfile <<-G
       source "http://localtestserver.gem"
       gem 'rack'

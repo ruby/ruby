@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "../../rubygems_gem_installer"
+
 module Bundler
   class Source
     class Path

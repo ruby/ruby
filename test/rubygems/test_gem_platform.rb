@@ -134,7 +134,9 @@ class TestGemPlatform < Gem::TestCase
       'i386-solaris2.8'        => ['x86',       'solaris',   '2.8'],
       'mswin32'                => ['x86',       'mswin32',   nil],
       'x86_64-linux'           => ['x86_64',    'linux',     nil],
+      'x86_64-linux-gnu'       => ['x86_64',    'linux',     nil],
       'x86_64-linux-musl'      => ['x86_64',    'linux',     'musl'],
+      'x86_64-linux-uclibc'    => ['x86_64',    'linux',     'uclibc'],
       'x86_64-openbsd3.9'      => ['x86_64',    'openbsd',   '3.9'],
       'x86_64-openbsd4.0'      => ['x86_64',    'openbsd',   '4.0'],
       'x86_64-openbsd'         => ['x86_64',    'openbsd',   nil],
@@ -143,6 +145,7 @@ class TestGemPlatform < Gem::TestCase
     test_cases.each do |arch, expected|
       platform = Gem::Platform.new arch
       assert_equal expected, platform.to_a, arch.inspect
+      assert_equal expected, Gem::Platform.new(platform.to_s).to_a, arch.inspect
     end
   end
 
@@ -261,6 +264,32 @@ class TestGemPlatform < Gem::TestCase
     assert((with_x86_arch === with_nil_arch), 'x86 =~ nil')
   end
 
+  def test_nil_version_is_treated_as_any_version
+    x86_darwin_8 = Gem::Platform.new 'i686-darwin8.0'
+    x86_darwin_nil = Gem::Platform.new 'i686-darwin'
+
+    assert((x86_darwin_8 === x86_darwin_nil), '8.0 =~ nil')
+    assert((x86_darwin_nil === x86_darwin_8), 'nil =~ 8.0')
+  end
+
+  def test_nil_version_is_stricter_for_linux_os
+    x86_linux = Gem::Platform.new 'i686-linux'
+    x86_linux_gnu = Gem::Platform.new 'i686-linux-gnu'
+    x86_linux_musl = Gem::Platform.new 'i686-linux-musl'
+    x86_linux_uclibc = Gem::Platform.new 'i686-linux-uclibc'
+
+    assert((x86_linux === x86_linux_gnu), 'linux =~ linux-gnu')
+    assert((x86_linux_gnu === x86_linux), 'linux-gnu =~ linux')
+    assert(!(x86_linux_gnu === x86_linux_musl), 'linux-gnu =~ linux-musl')
+    assert(!(x86_linux_musl === x86_linux_gnu), 'linux-musl =~ linux-gnu')
+    assert(!(x86_linux_uclibc === x86_linux_musl), 'linux-uclibc =~ linux-musl')
+    assert(!(x86_linux_musl === x86_linux_uclibc), 'linux-musl =~ linux-uclibc')
+    assert(!(x86_linux === x86_linux_musl), 'linux =~ linux-musl')
+    assert(!(x86_linux_musl === x86_linux), 'linux-musl =~ linux')
+    assert(!(x86_linux === x86_linux_uclibc), 'linux =~ linux-uclibc')
+    assert(!(x86_linux_uclibc === x86_linux), 'linux-uclibc =~ linux')
+  end
+
   def test_equals3_cpu_arm
     arm   = Gem::Platform.new 'arm-linux'
     armv5 = Gem::Platform.new 'armv5-linux'
@@ -354,6 +383,14 @@ class TestGemPlatform < Gem::TestCase
 
     util_set_arch 'sparc-solaris2.8'
     assert_local_match 'sparc-solaris2.8-mq5.3'
+  end
+
+  def test_inspect
+    result = Gem::Platform.new("universal-java11").inspect
+
+    assert_equal 1, result.scan(/@cpu=/).size
+    assert_equal 1, result.scan(/@os=/).size
+    assert_equal 1, result.scan(/@version=/).size
   end
 
   def assert_local_match(name)

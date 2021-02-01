@@ -1134,7 +1134,7 @@ RSpec.describe "the lockfile format" do
     G
 
     expect(bundled_app_lock).not_to exist
-    expect(err).to include "rack (>= 0) should come from an unspecified source and git://hubz.com (at master)"
+    expect(err).to include "rack (>= 0) should come from an unspecified source and git://hubz.com"
   end
 
   it "works correctly with multiple version dependencies" do

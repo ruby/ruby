@@ -12,10 +12,10 @@ RSpec.describe "bundle gem" do
 
   def bundle_exec_rubocop
     prepare_gemspec(bundled_app(gem_name, "#{gem_name}.gemspec"))
-    rubocop_version = RUBY_VERSION > "2.4" ? "0.90.0" : "0.80.1"
+    rubocop_version = RUBY_VERSION > "2.4" ? "1.7.0" : "0.81.0"
     gems = ["minitest", "rake", "rake-compiler", "rspec", "rubocop -v #{rubocop_version}", "test-unit"]
     gems.unshift "parallel -v 1.19.2" if RUBY_VERSION < "2.5"
-    gems += ["rubocop-ast -v 0.4.0"] if rubocop_version == "0.90.0"
+    gems += ["rubocop-ast -v 1.4.0"] if rubocop_version == "1.7.0"
     path = Bundler.feature_flag.default_install_uses_path? ? local_gem_path(:base => bundled_app(gem_name)) : system_gem_path
     realworld_system_gems gems, :path => path
     bundle "exec rubocop --debug --config .rubocop.yml", :dir => bundled_app(gem_name)
@@ -28,44 +28,9 @@ RSpec.describe "bundle gem" do
   let(:require_path) { "mygem" }
 
   before do
-    git_config_content = <<-EOF
-    [user]
-      name = "Bundler User"
-      email = user@example.com
-    [github]
-      user = bundleuser
-    EOF
-    @git_config_location = ENV["GIT_CONFIG"]
-    path = "#{tmp}/test_git_config.txt"
-    File.open(path, "w") {|f| f.write(git_config_content) }
-    ENV["GIT_CONFIG"] = path
-  end
-
-  after do
-    FileUtils.rm(ENV["GIT_CONFIG"]) if File.exist?(ENV["GIT_CONFIG"])
-    ENV["GIT_CONFIG"] = @git_config_location
-  end
-
-  shared_examples_for "git config is present" do
-    context "git config user.{name,email} present" do
-      it "sets gemspec author to git user.name if available" do
-        expect(generated_gemspec.authors.first).to eq("Bundler User")
-      end
-
-      it "sets gemspec email to git user.email if available" do
-        expect(generated_gemspec.email.first).to eq("user@example.com")
-      end
-    end
-  end
-
-  shared_examples_for "git config is absent" do
-    it "sets gemspec author to default message if git user.name is not set or empty" do
-      expect(generated_gemspec.authors.first).to eq("TODO: Write your name")
-    end
-
-    it "sets gemspec email to default message if git user.email is not set or empty" do
-      expect(generated_gemspec.email.first).to eq("TODO: Write your email address")
-    end
+    sys_exec("git config --global user.name 'Bundler User'")
+    sys_exec("git config --global user.email user@example.com")
+    sys_exec("git config --global github.user bundleuser")
   end
 
   describe "git repo initialization" do
@@ -125,19 +90,24 @@ RSpec.describe "bundle gem" do
   end
 
   shared_examples_for "--coc flag" do
-    before do
-      bundle "gem #{gem_name} --coc"
-    end
     it "generates a gem skeleton with MIT license" do
+      bundle "gem #{gem_name} --coc"
       gem_skeleton_assertions
       expect(bundled_app("#{gem_name}/CODE_OF_CONDUCT.md")).to exist
     end
 
-    describe "README additions" do
-      it "generates the README with a section for the Code of Conduct" do
-        expect(bundled_app("#{gem_name}/README.md").read).to include("## Code of Conduct")
-        expect(bundled_app("#{gem_name}/README.md").read).to include("https://github.com/bundleuser/#{gem_name}/blob/master/CODE_OF_CONDUCT.md")
-      end
+    it "generates the README with a section for the Code of Conduct" do
+      bundle "gem #{gem_name} --coc"
+      expect(bundled_app("#{gem_name}/README.md").read).to include("## Code of Conduct")
+      expect(bundled_app("#{gem_name}/README.md").read).to match(%r{https://github\.com/bundleuser/#{gem_name}/blob/.*/CODE_OF_CONDUCT.md})
+    end
+
+    it "generates the README with a section for the Code of Conduct, respecting the configured git default branch" do
+      sys_exec("git config --global init.defaultBranch main")
+      bundle "gem #{gem_name} --coc"
+
+      expect(bundled_app("#{gem_name}/README.md").read).to include("## Code of Conduct")
+      expect(bundled_app("#{gem_name}/README.md").read).to include("https://github.com/bundleuser/#{gem_name}/blob/main/CODE_OF_CONDUCT.md")
     end
   end
 
@@ -150,11 +120,29 @@ RSpec.describe "bundle gem" do
       expect(bundled_app("#{gem_name}/CODE_OF_CONDUCT.md")).to_not exist
     end
 
-    describe "README additions" do
-      it "generates the README without a section for the Code of Conduct" do
-        expect(bundled_app("#{gem_name}/README.md").read).not_to include("## Code of Conduct")
-        expect(bundled_app("#{gem_name}/README.md").read).not_to include("https://github.com/bundleuser/#{gem_name}/blob/master/CODE_OF_CONDUCT.md")
-      end
+    it "generates the README without a section for the Code of Conduct" do
+      expect(bundled_app("#{gem_name}/README.md").read).not_to include("## Code of Conduct")
+      expect(bundled_app("#{gem_name}/README.md").read).not_to match(%r{https://github\.com/bundleuser/#{gem_name}/blob/.*/CODE_OF_CONDUCT.md})
+    end
+  end
+
+  shared_examples_for "--changelog flag" do
+    before do
+      bundle "gem #{gem_name} --changelog"
+    end
+    it "generates a gem skeleton with a CHANGELOG", :readline do
+      gem_skeleton_assertions
+      expect(bundled_app("#{gem_name}/CHANGELOG.md")).to exist
+    end
+  end
+
+  shared_examples_for "--no-changelog flag" do
+    before do
+      bundle "gem #{gem_name} --no-changelog"
+    end
+    it "generates a gem skeleton without a CHANGELOG", :readline do
+      gem_skeleton_assertions
+      expect(bundled_app("#{gem_name}/CHANGELOG.md")).to_not exist
     end
   end
 
@@ -282,7 +270,7 @@ RSpec.describe "bundle gem" do
 
     context "git config github.user is absent" do
       before do
-        sys_exec("git config --unset github.user")
+        sys_exec("git config --global --unset github.user")
         bundle "gem #{gem_name}"
       end
 
@@ -393,17 +381,29 @@ RSpec.describe "bundle gem" do
         bundle "gem #{gem_name}"
       end
 
-      it_should_behave_like "git config is present"
+      it "sets gemspec author to git user.name if available" do
+        expect(generated_gemspec.authors.first).to eq("Bundler User")
+      end
+
+      it "sets gemspec email to git user.email if available" do
+        expect(generated_gemspec.email.first).to eq("user@example.com")
+      end
     end
 
     context "git config user.{name,email} is not set" do
       before do
-        sys_exec("git config --unset user.name", :dir => bundled_app)
-        sys_exec("git config --unset user.email", :dir => bundled_app)
+        sys_exec("git config --global --unset user.name")
+        sys_exec("git config --global --unset user.email")
         bundle "gem #{gem_name}"
       end
 
-      it_should_behave_like "git config is absent"
+      it "sets gemspec author to default message if git user.name is not set or empty" do
+        expect(generated_gemspec.authors.first).to eq("TODO: Write your name")
+      end
+
+      it "sets gemspec email to default message if git user.email is not set or empty" do
+        expect(generated_gemspec.email.first).to eq("TODO: Write your email address")
+      end
     end
 
     it "sets gemspec metadata['allowed_push_host']" do
@@ -416,9 +416,7 @@ RSpec.describe "bundle gem" do
     it "sets a minimum ruby version" do
       bundle "gem #{gem_name}"
 
-      bundler_gemspec = Bundler::GemHelper.new(gemspec_dir).gemspec
-
-      expect(bundler_gemspec.required_ruby_version).to eq(generated_gemspec.required_ruby_version)
+      expect(generated_gemspec.required_ruby_version).to eq(Gem::Requirement.new(Gem.ruby_version < Gem::Version.new("2.4.a") ? ">= 2.3.0" : ">= 2.4.0"))
     end
 
     it "requires the version file" do
@@ -904,6 +902,22 @@ RSpec.describe "bundle gem" do
       it_behaves_like "--rubocop flag"
       it_behaves_like "--no-rubocop flag"
     end
+
+    context "with changelog option in bundle config settings set to true" do
+      before do
+        global_config "BUNDLE_GEM__CHANGELOG" => "true"
+      end
+      it_behaves_like "--changelog flag"
+      it_behaves_like "--no-changelog flag"
+    end
+
+    context "with changelog option in bundle config settings set to false" do
+      before do
+        global_config "BUNDLE_GEM__CHANGELOG" => "false"
+      end
+      it_behaves_like "--changelog flag"
+      it_behaves_like "--no-changelog flag"
+    end
   end
 
   context "gem naming with underscore", :readline do
@@ -1089,13 +1103,24 @@ Usage: "bundle gem NAME [OPTIONS]"
 
       expect(bundled_app("foobar/CODE_OF_CONDUCT.md")).to exist
     end
+
+    it "asks about CHANGELOG" do
+      global_config "BUNDLE_GEM__MIT" => "false", "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__CI" => "false", "BUNDLE_GEM__RUBOCOP" => "false",
+                    "BUNDLE_GEM__COC" => "false"
+
+      bundle "gem foobar" do |input, _, _|
+        input.puts "yes"
+      end
+
+      expect(bundled_app("foobar/CHANGELOG.md")).to exist
+    end
   end
 
   context "on conflicts with a previously created file", :readline do
     it "should fail gracefully" do
       FileUtils.touch(bundled_app("conflict-foobar"))
       bundle "gem conflict-foobar", :raise_on_error => false
-      expect(err).to include("Errno::ENOTDIR")
+      expect(err).to eq("Couldn't create a new gem named `conflict-foobar` because there's an existing file named `conflict-foobar`.")
       expect(exitstatus).to eql(32)
     end
   end

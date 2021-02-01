@@ -88,14 +88,15 @@ RSpec.describe "bundle install across platforms" do
     simulate_new_machine
 
     simulate_platform "ruby"
-    install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-
-      gem "nokogiri"
-    G
+    bundle "install"
 
     expect(the_bundle).to include_gems "nokogiri 1.4.2"
     expect(the_bundle).not_to include_gems "weakling"
+
+    simulate_platform "java"
+    bundle "install"
+
+    expect(the_bundle).to include_gems "nokogiri 1.4.2 JAVA", "weakling 0.0.3"
   end
 
   it "does not keep unneeded platforms for gems that are used" do
@@ -241,20 +242,6 @@ RSpec.describe "bundle install across platforms" do
     end
   end
 
-  it "works the other way with gems that have different dependencies" do
-    simulate_platform "ruby"
-    install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-
-      gem "nokogiri"
-    G
-
-    simulate_platform "java"
-    bundle "install"
-
-    expect(the_bundle).to include_gems "nokogiri 1.4.2 JAVA", "weakling 0.0.3"
-  end
-
   it "works with gems with platform-specific dependency having different requirements order" do
     simulate_platform x64_mac
 
@@ -298,6 +285,48 @@ RSpec.describe "bundle install across platforms" do
 
     bundle :install
     expect(vendored_gems("gems/rack-1.0.0")).to exist
+  end
+
+  it "keeps existing platforms when installing with force_ruby_platform" do
+    lockfile <<-G
+      GEM
+        remote: #{file_uri_for(gem_repo1)}/
+        specs:
+          platform_specific (1.0-java)
+
+      PLATFORMS
+        java
+
+      DEPENDENCIES
+        platform_specific
+    G
+
+    bundle "config set --local force_ruby_platform true"
+
+    install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
+      gem "platform_specific"
+    G
+
+    expect(the_bundle).to include_gem "platform_specific 1.0 RUBY"
+
+    lockfile_should_be <<-G
+      GEM
+        remote: #{file_uri_for(gem_repo1)}/
+        specs:
+          platform_specific (1.0)
+          platform_specific (1.0-java)
+
+      PLATFORMS
+        java
+        ruby
+
+      DEPENDENCIES
+        platform_specific
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    G
   end
 end
 

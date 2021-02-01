@@ -275,14 +275,12 @@ module Spec
     def install_gemfile(*args)
       gemfile(*args)
       opts = args.last.is_a?(Hash) ? args.last : {}
-      opts[:retry] ||= 0
       bundle :install, opts
     end
 
     def lock_gemfile(*args)
       gemfile(*args)
       opts = args.last.is_a?(Hash) ? args.last : {}
-      opts[:retry] ||= 0
       bundle :lock, opts
     end
 

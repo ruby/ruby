@@ -88,7 +88,7 @@ RSpec.describe "bundle install with install-time dependencies" do
     end
 
     it "installs plugins depended on by other plugins" do
-      install_gemfile <<-G
+      install_gemfile <<-G, :env => { "DEBUG" => "1" }
         source "#{file_uri_for(gem_repo2)}"
         gem "net_a"
       G
@@ -97,7 +97,7 @@ RSpec.describe "bundle install with install-time dependencies" do
     end
 
     it "installs multiple levels of dependencies" do
-      install_gemfile <<-G
+      install_gemfile <<-G, :env => { "DEBUG" => "1" }
         source "#{file_uri_for(gem_repo2)}"
         gem "net_c"
         gem "net_e"
@@ -114,7 +114,7 @@ RSpec.describe "bundle install with install-time dependencies" do
           gem "net_e"
         G
 
-        bundle :install, :env => { "BUNDLER_DEBUG_RESOLVER" => "1" }
+        bundle :install, :env => { "BUNDLER_DEBUG_RESOLVER" => "1", "DEBUG" => "1" }
 
         expect(out).to include("BUNDLER: Starting resolution")
       end
@@ -128,7 +128,7 @@ RSpec.describe "bundle install with install-time dependencies" do
           gem "net_e"
         G
 
-        bundle :install, :env => { "DEBUG_RESOLVER" => "1" }
+        bundle :install, :env => { "DEBUG_RESOLVER" => "1", "DEBUG" => "1" }
 
         expect(out).to include("BUNDLER: Starting resolution")
       end
@@ -142,10 +142,13 @@ RSpec.describe "bundle install with install-time dependencies" do
           gem "net_e"
         G
 
-        bundle :install, :env => { "DEBUG_RESOLVER_TREE" => "1" }
+        bundle :install, :env => { "DEBUG_RESOLVER_TREE" => "1", "DEBUG" => "1" }
 
-        activated_groups = "net_b (1.0) (ruby)"
-        activated_groups += ", net_b (1.0) (#{local_platforms.join(", ")})" if local_platforms.any? && local_platforms != ["ruby"]
+        activated_groups = if local_platforms.any?
+          "net_b (1.0) (ruby), net_b (1.0) (#{local_platforms.join(", ")})"
+        else
+          "net_b (1.0) (ruby)"
+        end
 
         expect(out).to include(" net_b").
           and include("BUNDLER: Starting resolution").
@@ -157,10 +160,6 @@ RSpec.describe "bundle install with install-time dependencies" do
 
   describe "when a required ruby version" do
     context "allows only an older version" do
-      before do
-        skip "gem not found" if Gem.win_platform?
-      end
-
       it "installs the older version" do
         build_repo2 do
           build_gem "rack", "1.2" do |s|
@@ -239,7 +238,6 @@ RSpec.describe "bundle install with install-time dependencies" do
 
       let(:ruby_requirement) { %("#{RUBY_VERSION}") }
       let(:error_message_requirement) { "~> #{RUBY_VERSION}.0" }
-      let(:error_message_platform) { " #{Bundler.local_platform}" }
 
       shared_examples_for "ruby version conflicts" do
         it "raises an error during resolution" do
@@ -256,9 +254,9 @@ RSpec.describe "bundle install with install-time dependencies" do
           nice_error = strip_whitespace(<<-E).strip
             Bundler found conflicting requirements for the Ruby\0 version:
               In Gemfile:
-                Ruby\0 (#{error_message_requirement})#{error_message_platform}
+                Ruby\0 (#{error_message_requirement})
 
-                require_ruby#{error_message_platform} was resolved to 1.0, which depends on
+                require_ruby was resolved to 1.0, which depends on
                   Ruby\0 (> 9000)
 
             Ruby\0 (> 9000), which is required by gem 'require_ruby', is not available in the local ruby installation
