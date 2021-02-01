@@ -11634,21 +11634,7 @@ ibf_load_object_complex_rational(const struct ibf_load *load, const struct ibf_o
 static void
 ibf_dump_object_symbol(struct ibf_dump *dump, VALUE obj)
 {
-    VALUE str = rb_sym2str(obj);
-
-    long encindex = (long)rb_enc_get_index(str);
-    long len = RSTRING_LEN(str);
-    const char *ptr = RSTRING_PTR(str);
-
-    if (encindex > RUBY_ENCINDEX_BUILTIN_MAX) {
-        rb_encoding *enc = rb_enc_from_index((int)encindex);
-        const char *enc_name = rb_enc_name(enc);
-        encindex = RUBY_ENCINDEX_BUILTIN_MAX + ibf_dump_object(dump, rb_str_new2(enc_name));
-    }
-
-    ibf_dump_write_small_value(dump, encindex);
-    ibf_dump_write_small_value(dump, len);
-    IBF_WP(ptr, char, len);
+    ibf_dump_object_string(dump, rb_sym2str(obj));
 }
 
 static VALUE
