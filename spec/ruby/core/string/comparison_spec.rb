@@ -60,9 +60,18 @@ describe "String#<=> with String" do
     ("ÄÖÜ" <=> "ÄÖÛ").should == 1
   end
 
-  it "ignores encoding difference" do
-    ("ÄÖÛ".dup.force_encoding("utf-8") <=> "ÄÖÜ".dup.force_encoding("iso-8859-1")).should == -1
-    ("ÄÖÜ".dup.force_encoding("utf-8") <=> "ÄÖÛ".dup.force_encoding("iso-8859-1")).should == 1
+  ruby_version_is ''...'3.4' do
+    it "ignores encoding difference" do
+      ("ÄÖÛ".dup.force_encoding("utf-8") <=> "ÄÖÜ".dup.force_encoding("iso-8859-1")).should == -1
+      ("ÄÖÜ".dup.force_encoding("utf-8") <=> "ÄÖÛ".dup.force_encoding("iso-8859-1")).should == 1
+    end
+  end
+
+  ruby_version_is '3.4' do
+    it "ignores encoding difference" do
+      ("ÄÖÛ" <=> "ÄÖÜ".encode("iso-8859-1")).should == -1
+      ("ÄÖÜ" <=> "ÄÖÛ".encode("iso-8859-1")).should == 1
+    end
   end
 
   it "returns 0 with identical ASCII-compatible bytes of different encodings" do
