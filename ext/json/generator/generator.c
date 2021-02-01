@@ -1,11 +1,6 @@
 #include "../fbuffer/fbuffer.h"
 #include "generator.h"
 
-#ifdef HAVE_RUBY_ENCODING_H
-static VALUE CEncoding_UTF_8;
-static ID i_encoding, i_encode;
-#endif
-
 static VALUE mJSON, mExt, mGenerator, cState, mGeneratorMethods, mObject,
              mHash, mArray,
 #ifdef RUBY_INTEGER_UNIFICATION
@@ -948,7 +943,7 @@ static void generate_json_string(FBuffer *buffer, VALUE Vstate, JSON_Generator_S
     fbuffer_append_char(buffer, '"');
 #ifdef HAVE_RUBY_ENCODING_H
     if (!enc_utf8_compatible_p(rb_enc_get(obj))) {
-        obj = rb_str_encode(obj, CEncoding_UTF_8, 0, Qnil);
+        obj = rb_str_export_to_enc(obj, rb_utf8_encoding());
     }
 #endif
     if (state->ascii_only) {
@@ -1610,9 +1605,4 @@ void Init_generator(void)
     i_match = rb_intern("match");
     i_keys = rb_intern("keys");
     i_dup = rb_intern("dup");
-#ifdef HAVE_RUBY_ENCODING_H
-    CEncoding_UTF_8 = rb_funcall(rb_path2class("Encoding"), rb_intern("find"), 1, rb_str_new2("utf-8"));
-    i_encoding = rb_intern("encoding");
-    i_encode = rb_intern("encode");
-#endif
 }
