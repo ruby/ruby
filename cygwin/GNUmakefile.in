@@ -4,7 +4,10 @@ include Makefile
 
 ENABLE_SHARED=@ENABLE_SHARED@
 DLLWRAP = @DLLWRAP@ --target=@target_os@ --driver-name="$(CC)"
-WINDRES = @WINDRES@ --preprocessor="$(CPP) -xc" -DRC_INVOKED
+windres-cpp := $(CPP) -xc
+windres-cpp := --preprocessor=$(firstword $(windres-cpp)) \
+	$(addprefix --preprocessor-arg=,$(wordlist 2,$(words $(windres-cpp)),$(windres-cpp)))
+WINDRES = @WINDRES@ $(windres-cpp) -DRC_INVOKED
 STRIP = @STRIP@
 
 ifeq (@target_os@,cygwin)
