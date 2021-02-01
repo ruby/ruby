@@ -854,50 +854,8 @@ gen_jump(jitstate_t* jit, ctx_t* ctx)
 }
 
 static bool
-gen_opt_send_without_block(jitstate_t* jit, ctx_t* ctx)
+gen_opt_swb_cfunc(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb_callable_method_entry_t *cme, int32_t argc)
 {
-    //fprintf(stderr, "gen_opt_send_without_block\n");
-
-    // Relevant definitions:
-    // rb_execution_context_t       : vm_core.h
-    // invoker, cfunc logic         : method.h, vm_method.c
-    // rb_callable_method_entry_t   : method.h
-    // vm_call_cfunc_with_frame     : vm_insnhelper.c
-    // rb_callcache                 : vm_callinfo.h
-
-    struct rb_call_data * cd = (struct rb_call_data *)jit_get_arg(jit, 0);
-    int32_t argc = (int32_t)vm_ci_argc(cd->ci);
-
-    // Don't JIT calls with keyword splat
-    if (vm_ci_flag(cd->ci) & VM_CALL_KW_SPLAT)
-    {
-        return false;
-    }
-
-    // Don't JIT calls that aren't simple
-    if (!(vm_ci_flag(cd->ci) & VM_CALL_ARGS_SIMPLE))
-    {
-        return false;
-    }
-
-    // Don't JIT if the inline cache is not set
-    if (!cd->cc || !cd->cc->klass) {
-        return false;
-    }
-
-    const rb_callable_method_entry_t *cme = vm_cc_cme(cd->cc);
-
-    // Don't JIT if the method entry is out of date
-    if (METHOD_ENTRY_INVALIDATED(cme)) {
-        return false;
-    }
-
-    // Don't JIT if this is not a C call
-    if (cme->def->type != VM_METHOD_TYPE_CFUNC)
-    {
-        return false;
-    }
-
     const rb_method_cfunc_t *cfunc = UNALIGNED_MEMBER_PTR(cme->def, body.cfunc);
 
     // Don't JIT if the argument count doesn't match
@@ -1104,6 +1062,190 @@ gen_opt_send_without_block(jitstate_t* jit, ctx_t* ctx)
     );
 
     return true;
+}
+
+static bool
+gen_opt_swb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb_callable_method_entry_t *cme, int32_t argc)
+{
+    const rb_iseq_t *iseq = def_iseq_ptr(cme->def);
+    const VALUE* start_pc = iseq->body->iseq_encoded;
+    int num_params = iseq->body->param.size;
+    int num_locals = iseq->body->local_table_size - num_params;
+
+    rb_gc_register_mark_object((VALUE)iseq); // FIXME: intentional LEAK!
+
+    if (num_params != argc) {
+        //fprintf(stderr, "param argc mismatch\n");
+        return false;
+    }
+
+    // Create a size-exit to fall back to the interpreter
+    uint8_t* side_exit = ujit_side_exit(jit, ctx);
+
+    // Check for interrupts
+    // RUBY_VM_CHECK_INTS(ec)
+    mov(cb, REG0_32, member_opnd(REG_EC, rb_execution_context_t, interrupt_mask));
+    not(cb, REG0_32);
+    test(cb, member_opnd(REG_EC, rb_execution_context_t, interrupt_flag), REG0_32);
+    jnz_ptr(cb, side_exit);
+
+    // Points to the receiver operand on the stack
+    x86opnd_t recv = ctx_stack_opnd(ctx, argc);
+    mov(cb, REG0, recv);
+
+    // Callee method ID
+    //ID mid = vm_ci_mid(cd->ci);
+    //printf("JITting call to Ruby function \"%s\", argc: %d\n", rb_id2name(mid), argc);
+    //print_str(cb, "");
+    //print_str(cb, "recv");
+    //print_ptr(cb, recv);
+
+    // Check that the receiver is a heap object
+    test(cb, REG0, imm_opnd(RUBY_IMMEDIATE_MASK));
+    jnz_ptr(cb, side_exit);
+    cmp(cb, REG0, imm_opnd(Qfalse));
+    je_ptr(cb, side_exit);
+    cmp(cb, REG0, imm_opnd(Qnil));
+    je_ptr(cb, side_exit);
+
+    // Pointer to the klass field of the receiver &(recv->klass)
+    x86opnd_t klass_opnd = mem_opnd(64, REG0, offsetof(struct RBasic, klass));
+
+    assume_method_lookup_stable(cd->cc, cme, jit->block);
+
+    // Bail if receiver class is different from compile-time call cache class
+    mov(cb, REG1, imm_opnd(cd->cc->klass));
+    cmp(cb, klass_opnd, REG1);
+    jne_ptr(cb, side_exit);
+
+    // Store incremented PC into current control frame in case callee raises.
+    mov(cb, REG0, const_ptr_opnd(jit->pc + insn_len(BIN(opt_send_without_block))));
+    mov(cb, mem_opnd(64, REG_CFP, offsetof(rb_control_frame_t, pc)), REG0);
+
+    // Store the updated SP on the CFP (pop arguments and self)
+    lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * -(argc + 1)));
+    mov(cb, member_opnd(REG_CFP, rb_control_frame_t, sp), REG0);
+
+    // Stack overflow check
+    // #define CHECK_VM_STACK_OVERFLOW0(cfp, sp, margin)
+    // REG_CFP <= REG_SP + 4 * sizeof(VALUE) + sizeof(rb_control_frame_t)
+    lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * 4 + sizeof(rb_control_frame_t)));
+    cmp(cb, REG_CFP, REG0);
+    jle_ptr(cb, side_exit);
+    
+    // Adjust the callee's stack pointer
+    lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * (3 + num_locals)));
+
+    // Initialize local variables to Qnil
+    for (int i=0; i < num_locals; i++) {
+        mov(cb, mem_opnd(64, REG0, sizeof(VALUE) * (i - num_locals - 3)), imm_opnd(Qnil));
+    }
+
+    // Put compile time cme into REG1. It's assumed to be valid because we are notified when
+    // any cme we depend on become outdated. See rb_ujit_method_lookup_change().
+    mov(cb, REG1, const_ptr_opnd(cme));
+    // Write method entry at sp[-3]
+    // sp[-3] = me;
+    mov(cb, mem_opnd(64, REG0, 8 * -3), REG1);
+
+    // Write block handler at sp[-2]
+    // sp[-2] = block_handler;
+    mov(cb, mem_opnd(64, REG0, 8 * -2), imm_opnd(VM_BLOCK_HANDLER_NONE));
+
+    // Write env flags at sp[-1]
+    // sp[-1] = frame_type;
+    uint64_t frame_type = VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL;
+    mov(cb, mem_opnd(64, REG0, 8 * -1), imm_opnd(frame_type));
+
+    // Allocate a new CFP (ec->cfp--)
+    sub(
+        cb,
+        member_opnd(REG_EC, rb_execution_context_t, cfp),
+        imm_opnd(sizeof(rb_control_frame_t))
+    );
+
+    // Setup the new frame
+    // *cfp = (const struct rb_control_frame_struct) {
+    //    .pc         = 0,
+    //    .sp         = sp,
+    //    .iseq       = 0,
+    //    .self       = recv,
+    //    .ep         = sp - 1,
+    //    .block_code = 0,
+    //    .__bp__     = sp,
+    // };
+    mov(cb, REG1, member_opnd(REG_EC, rb_execution_context_t, cfp));
+    mov(cb, member_opnd(REG1, rb_control_frame_t, block_code), imm_opnd(0));
+    mov(cb, member_opnd(REG1, rb_control_frame_t, sp), REG0);
+    mov(cb, member_opnd(REG1, rb_control_frame_t, __bp__), REG0);
+    sub(cb, REG0, imm_opnd(sizeof(VALUE)));
+    mov(cb, member_opnd(REG1, rb_control_frame_t, ep), REG0);
+    mov(cb, REG0, recv);
+    mov(cb, member_opnd(REG1, rb_control_frame_t, self), REG0);
+    mov(cb, REG0, const_ptr_opnd(iseq));
+    mov(cb, member_opnd(REG1, rb_control_frame_t, iseq), REG0);
+    mov(cb, REG0, const_ptr_opnd(start_pc));
+    mov(cb, member_opnd(REG1, rb_control_frame_t, pc), REG0);
+
+    //print_str(cb, "calling Ruby func:");
+    //print_str(cb, rb_id2name(mid));
+
+    // Write the post call bytes, exit to the interpreter
+    cb_write_post_call_bytes(cb);
+
+    return true;
+}
+
+static bool
+gen_opt_send_without_block(jitstate_t* jit, ctx_t* ctx)
+{
+    // Relevant definitions:
+    // rb_execution_context_t       : vm_core.h
+    // invoker, cfunc logic         : method.h, vm_method.c
+    // rb_callable_method_entry_t   : method.h
+    // vm_call_cfunc_with_frame     : vm_insnhelper.c
+    // rb_callcache                 : vm_callinfo.h
+
+    struct rb_call_data * cd = (struct rb_call_data *)jit_get_arg(jit, 0);
+    int32_t argc = (int32_t)vm_ci_argc(cd->ci);
+
+    // Don't JIT calls with keyword splat
+    if (vm_ci_flag(cd->ci) & VM_CALL_KW_SPLAT)
+    {
+        return false;
+    }
+
+    // Don't JIT calls that aren't simple
+    if (!(vm_ci_flag(cd->ci) & VM_CALL_ARGS_SIMPLE))
+    {
+        return false;
+    }
+
+    // Don't JIT if the inline cache is not set
+    if (!cd->cc || !cd->cc->klass) {
+        return false;
+    }
+
+    const rb_callable_method_entry_t *cme = vm_cc_cme(cd->cc);
+
+    // Don't JIT if the method entry is out of date
+    if (METHOD_ENTRY_INVALIDATED(cme)) {
+        return false;
+    }
+
+    // If this is a C call
+    if (cme->def->type == VM_METHOD_TYPE_CFUNC)
+    {
+        return gen_opt_swb_cfunc(jit, ctx, cd, cme, argc);
+    }
+
+    // If this is a Ruby call
+    if (cme->def->type == VM_METHOD_TYPE_ISEQ)
+    {
+        return gen_opt_swb_iseq(jit, ctx, cd, cme, argc);
+    }
+
+    return false;
 }
 
 static bool
