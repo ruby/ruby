@@ -136,6 +136,7 @@ static void
 clear_method_cache_by_id_in_class(VALUE klass, ID mid)
 {
     VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS));
+    if (rb_objspace_garbage_object_p(klass)) return;
 
     if (LIKELY(RCLASS_EXT(klass)->subclasses == NULL)) {
         // no subclasses
