@@ -1510,6 +1510,8 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
         }
     }
 
+    rb_warning_category_update(opt->warn.mask, opt->warn.set);
+
     Init_ext(); /* load statically linked extensions before rubygems */
     rb_call_builtin_inits();
     ruby_init_prelude();
@@ -1946,7 +1948,6 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         ruby_set_script_name(progname);
 	rb_parser_set_options(parser, opt->do_print, opt->do_loop,
 			      opt->do_line, opt->do_split);
-        rb_warning_category_update(opt->warn.mask, opt->warn.set);
 	ast = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
     }
     else {
@@ -2186,7 +2187,6 @@ load_file_internal(VALUE argp_v)
     }
     rb_parser_set_options(parser, opt->do_print, opt->do_loop,
 			  opt->do_line, opt->do_split);
-    rb_warning_category_update(opt->warn.mask, opt->warn.set);
     if (NIL_P(f)) {
 	f = rb_str_new(0, 0);
 	rb_enc_associate(f, enc);
