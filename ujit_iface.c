@@ -520,6 +520,9 @@ print_insn_count_buffer(const struct insn_count *buffer, int how_many, int left_
         total_exit_count += buffer[i].count;
     }
 
+    fprintf(stderr, "total_exit_count:      %10ld\n", total_exit_count);
+    fprintf(stderr, "most frequent exit op:\n");
+
     for (int i = 0; i < how_many; i++) {
         const char *instruction_name = insn_name(buffer[i].insn);
         size_t padding = left_pad + longest_insn_len - strlen(instruction_name);
@@ -545,7 +548,6 @@ print_ujit_stats(void)
     fprintf(stderr, "vm_insns_count:        %10" PRId64 "\n", vm_insns_count);
     fprintf(stderr, "ujit_exec_insns_count: %10" PRId64 "\n", rb_ujit_exec_insns_count);
     fprintf(stderr, "ratio_in_ujit:         %9.1f%%\n", ratio * 100);
-    fprintf(stderr, "most frequent exit op:\n");
     print_insn_count_buffer(sorted_exit_ops, 10, 4);
 }
 #endif // if RUBY_DEBUG
