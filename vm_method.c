@@ -2435,8 +2435,9 @@ basic_obj_respond_to_missing(rb_execution_context_t *ec, VALUE klass, VALUE obj,
 }
 
 static inline int
-basic_obj_respond_to(rb_execution_context_t *ec, VALUE klass, VALUE obj, ID id, int pub)
+basic_obj_respond_to(rb_execution_context_t *ec, VALUE obj, ID id, int pub)
 {
+    VALUE klass = CLASS_OF(obj);
     VALUE ret;
 
     switch (method_boundp(klass, id, pub|BOUND_RESPONDS)) {
@@ -2506,14 +2507,15 @@ int
 rb_obj_respond_to(VALUE obj, ID id, int priv)
 {
     rb_execution_context_t *ec = GET_EC();
-    return rb_ec_obj_respond_to(ec, CLASS_OF(obj), obj, id, priv);
+    return rb_ec_obj_respond_to(ec, obj, id, priv);
 }
 
 int
-rb_ec_obj_respond_to(rb_execution_context_t *ec, VALUE klass, VALUE obj, ID id, int priv)
+rb_ec_obj_respond_to(rb_execution_context_t *ec, VALUE obj, ID id, int priv)
 {
+    VALUE klass = CLASS_OF(obj);
     int ret = vm_respond_to(ec, klass, obj, id, priv);
-    if (ret == -1) ret = basic_obj_respond_to(ec, klass, obj, id, !priv);
+    if (ret == -1) ret = basic_obj_respond_to(ec, obj, id, !priv);
     return ret;
 }
 
@@ -2558,7 +2560,7 @@ obj_respond_to(int argc, VALUE *argv, VALUE obj)
 	if (ret == Qundef) ret = Qfalse;
 	return ret;
     }
-    if (basic_obj_respond_to(ec, CLASS_OF(obj), obj, id, !RTEST(priv)))
+    if (basic_obj_respond_to(ec, obj, id, !RTEST(priv)))
 	return Qtrue;
     return Qfalse;
 }
