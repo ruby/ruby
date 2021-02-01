@@ -1139,7 +1139,7 @@ void
 rb_node_init(NODE *n, enum node_type type, VALUE a0, VALUE a1, VALUE a2)
 {
     n->flags = T_NODE;
-    nd_set_type(n, type);
+    nd_init_type(n, type);
     n->u1.value = a0;
     n->u2.value = a1;
     n->u3.value = a2;
@@ -1238,10 +1238,10 @@ ast_newnode_in_bucket(node_buffer_list_t *nb)
     return &nb->head->buf[nb->idx++];
 }
 
-NODE *
-rb_ast_newnode(rb_ast_t *ast, enum node_type type)
+RBIMPL_ATTR_PURE()
+static bool
+nodetype_markable_p(enum node_type type)
 {
-    node_buffer_t *nb = ast->node_buffer;
     switch (type) {
       case NODE_MATCH:
       case NODE_LIT:
@@ -1254,9 +1254,28 @@ rb_ast_newnode(rb_ast_t *ast, enum node_type type)
       case NODE_ARGS:
       case NODE_ARYPTN:
       case NODE_FNDPTN:
-        return ast_newnode_in_bucket(&nb->markable);
+        return true;
       default:
-        return ast_newnode_in_bucket(&nb->unmarkable);
+        return false;
+    }
+}
+
+NODE *
+rb_ast_newnode(rb_ast_t *ast, enum node_type type)
+{
+    node_buffer_t *nb = ast->node_buffer;
+    node_buffer_list_t *bucket =
+        (nodetype_markable_p(type) ? &nb->markable : &nb->unmarkable);
+    return ast_newnode_in_bucket(bucket);
+}
+
+void
+rb_ast_node_type_change(NODE *n, enum node_type type)
+{
+    enum node_type old_type = nd_type(n);
+    if (nodetype_markable_p(old_type) != nodetype_markable_p(type)) {
+        rb_bug("node type changed: %s -> %s",
+               ruby_node_name(old_type), ruby_node_name(type));
     }
 }
 
