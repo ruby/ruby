@@ -2366,6 +2366,11 @@ class TestKeywordArguments < Test::Unit::TestCase
         baz(*args)
       end
 
+      define_method(:block_splat) {|*args| }
+      ruby2_keywords :block_splat, def foo_bar_after_bmethod(*args)
+        bar(*args)
+      end
+
       ruby2_keywords def foo_baz2(*args)
         baz(*args)
         baz(*args)
@@ -2501,6 +2506,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, h1], o.foo(:foo_baz, 1, :a=>1))
     assert_equal([[1], h1], o.foo_foo_bar(1, :a=>1))
     assert_equal([1, h1], o.foo_foo_baz(1, :a=>1))
+    assert_equal([[1], h1], o.foo_bar_after_bmethod(1, :a=>1))
 
     assert_equal([[1], h1], o.foo(:bar, 1, **h1))
     assert_equal([1, h1], o.foo(:baz, 1, **h1))
@@ -2516,6 +2522,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, h1], o.foo(:foo_baz, 1, **h1))
     assert_equal([[1], h1], o.foo_foo_bar(1, **h1))
     assert_equal([1, h1], o.foo_foo_baz(1, **h1))
+    assert_equal([[1], h1], o.foo_bar_after_bmethod(1, **h1))
 
     assert_equal([[h1], {}], o.foo(:bar, h1, **{}))
     assert_equal([h1], o.foo(:baz, h1, **{}))
@@ -2531,6 +2538,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([h1], o.foo(:foo_baz, h1, **{}))
     assert_equal([[h1], {}], o.foo_foo_bar(h1, **{}))
     assert_equal([h1], o.foo_foo_baz(h1, **{}))
+    assert_equal([[h1], {}], o.foo_bar_after_bmethod(h1, **{}))
 
     assert_equal([[1, h1], {}], o.foo(:bar, 1, h1))
     assert_equal([1, h1], o.foo(:baz, 1, h1))
@@ -2540,6 +2548,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, h1], o.store_foo(:baz, 1, h1))
     assert_equal([[1, h1], {}], o.foo_bar(1, h1))
     assert_equal([1, h1], o.foo_baz(1, h1))
+    assert_equal([[1, h1], {}], o.foo_bar_after_bmethod(1, h1))
 
     assert_equal([[1, h1, 1], {}], o.foo_mod(:bar, 1, :a=>1))
     assert_equal([1, h1, 1], o.foo_mod(:baz, 1, :a=>1))
