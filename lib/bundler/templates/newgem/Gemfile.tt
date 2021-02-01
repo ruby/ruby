@@ -16,5 +16,5 @@ gem "<%= config[:test] %>", "~> <%= config[:test_framework_version] %>"
 <%- end -%>
 <%- if config[:rubocop] -%>
 
-gem "rubocop", "~> 0.80"
+gem "rubocop", "~> <%= config[:rubocop_version] %>"
 <%- end -%>

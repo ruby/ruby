@@ -9,7 +9,8 @@ RSpec.describe Bundler::GemHelper do
   let(:app_gemspec_path) { app_path.join("#{app_name}.gemspec") }
 
   before(:each) do
-    global_config "BUNDLE_GEM__MIT" => "false", "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__COC" => "false", "BUNDLE_GEM__RUBOCOP" => "false", "BUNDLE_GEM__CI" => "false"
+    global_config "BUNDLE_GEM__MIT" => "false", "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__COC" => "false", "BUNDLE_GEM__RUBOCOP" => "false",
+                  "BUNDLE_GEM__CI" => "false", "BUNDLE_GEM__CHANGELOG" => "false"
     bundle "gem #{app_name}"
     prepare_gemspec(app_gemspec_path)
   end
@@ -262,6 +263,14 @@ RSpec.describe Bundler::GemHelper do
             # Create a branch with the same name as the tag
             sys_exec("git checkout -b v#{app_version}", :dir => app_path)
             sys_exec("git push -u origin v#{app_version}", :dir => app_path)
+
+            expect(subject).to receive(:rubygem_push).with(app_gem_path.to_s)
+
+            Rake.application["release"].invoke
+          end
+
+          it "also works with releasing from a branch not yet pushed" do
+            sys_exec("git checkout -b module_function", :dir => app_path)
 
             expect(subject).to receive(:rubygem_push).with(app_gem_path.to_s)
 

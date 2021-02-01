@@ -275,7 +275,7 @@ module Gem
 
     unless spec = specs.first
       msg = "can't find gem #{dep} with executable #{exec_name}"
-      if name == "bundler" && bundler_message = Gem::BundlerVersionFinder.missing_version_message
+      if dep.filters_bundler? && bundler_message = Gem::BundlerVersionFinder.missing_version_message
         msg = bundler_message
       end
       raise Gem::GemNotFoundException, msg
@@ -469,7 +469,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
       next if File.exist? subdir
       begin
         FileUtils.mkdir_p subdir, **options
-      rescue Errno::EACCES
+      rescue SystemCallError
       end
     end
   ensure

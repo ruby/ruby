@@ -27,7 +27,6 @@ module Bundler
 
     (1..10).each {|v| define_method("bundler_#{v}_mode?") { major_version >= v } }
 
-    settings_flag(:allow_bundler_dependency_conflicts) { bundler_3_mode? }
     settings_flag(:allow_offline_install) { bundler_3_mode? }
     settings_flag(:auto_clean_without_path) { bundler_3_mode? }
     settings_flag(:cache_all) { bundler_3_mode? }

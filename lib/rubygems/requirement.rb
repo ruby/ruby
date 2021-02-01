@@ -190,7 +190,7 @@ class Gem::Requirement
   end
 
   def hash # :nodoc:
-    requirements.sort.hash
+    requirements.map {|r| r.first == "~>" ? [r[0], r[1].to_s] : r }.sort.hash
   end
 
   def marshal_dump # :nodoc:

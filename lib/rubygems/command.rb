@@ -634,6 +634,7 @@ RubyGems is a package manager for Ruby.
     gem install rake
     gem list --local
     gem build package.gemspec
+    gem push package-0.0.1.gem
     gem help install
 
   Further help:

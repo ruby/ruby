@@ -301,7 +301,9 @@ class Gem::TestCase < Minitest::Test
 
   def setup
     @orig_env = ENV.to_hash
-    @tmp = Dir.mktmpdir("tmp", Dir.pwd)
+    @tmp = File.expand_path("tmp")
+
+    FileUtils.mkdir_p @tmp
 
     ENV['GEM_VENDOR'] = nil
     ENV['GEMRC'] = nil
@@ -310,7 +312,6 @@ class Gem::TestCase < Minitest::Test
     ENV['XDG_DATA_HOME'] = nil
     ENV['SOURCE_DATE_EPOCH'] = nil
     ENV['BUNDLER_VERSION'] = nil
-    ENV["TMPDIR"] = @tmp
 
     @current_dir = Dir.pwd
     @fetcher     = nil
@@ -321,13 +322,10 @@ class Gem::TestCase < Minitest::Test
     # capture output
     Gem::DefaultUserInteraction.ui = Gem::MockGemUi.new
 
-    tmpdir = File.realpath Dir.tmpdir
-    tmpdir.tap(&Gem::UNTAINT)
-
-    @tempdir = File.join(tmpdir, "test_rubygems_#{$$}")
+    @tempdir = Dir.mktmpdir("test_rubygems_", @tmp)
     @tempdir.tap(&Gem::UNTAINT)
 
-    FileUtils.mkdir_p @tempdir
+    ENV["TMPDIR"] = @tempdir
 
     @orig_SYSTEM_WIDE_CONFIG_FILE = Gem::ConfigFile::SYSTEM_WIDE_CONFIG_FILE
     Gem::ConfigFile.send :remove_const, :SYSTEM_WIDE_CONFIG_FILE
@@ -366,7 +364,9 @@ class Gem::TestCase < Minitest::Test
     Dir.chdir @tempdir
 
     ENV['HOME'] = @userhome
+    Gem.instance_variable_set :@config_file, nil
     Gem.instance_variable_set :@user_home, nil
+    Gem.instance_variable_set :@config_home, nil
     Gem.instance_variable_set :@data_home, nil
     Gem.instance_variable_set :@gemdeps, nil
     Gem.instance_variable_set :@env_requirements_by_name, nil
@@ -449,7 +449,6 @@ class Gem::TestCase < Minitest::Test
     Dir.chdir @current_dir
 
     FileUtils.rm_rf @tempdir
-    FileUtils.rm_rf @tmp
 
     ENV.replace(@orig_env)
 

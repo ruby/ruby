@@ -1161,6 +1161,14 @@ dependencies: []
     Gem::Specification.class_variable_set(:@@stubs, nil)
   end
 
+  def test_self_stubs_for_no_lazy_loading_after_all_specs_setup
+    Gem::Specification.all = [util_spec('a', '1')]
+
+    save_gemspec('b-1', '1', File.join(Gem.dir, 'specifications')){|s| s.name = 'b' }
+
+    assert_equal [], Gem::Specification.stubs_for('b').map {|s| s.full_name }
+  end
+
   def test_self_stubs_for_mult_platforms
     # gems for two different platforms are installed with --user-install
     # the correct one should be returned in the array
@@ -1198,6 +1206,16 @@ dependencies: []
     end
 
     Gem.platforms = orig_platform
+  end
+
+  def test_self_stubs_returns_only_specified_named_specs
+    dir_standard_specs = File.join Gem.dir, 'specifications'
+
+    save_gemspec('a-1', '1', dir_standard_specs){|s| s.name = 'a' }
+    save_gemspec('a-2', '2', dir_standard_specs){|s| s.name = 'a' }
+    save_gemspec('a-a', '3', dir_standard_specs){|s| s.name = 'a-a' }
+
+    assert_equal ['a-1', 'a-2'], Gem::Specification.stubs_for('a').map(&:full_name).sort
   end
 
   def test_handles_private_null_type
@@ -1610,20 +1628,6 @@ dependencies: []
     @a1.build_extensions
 
     refute_path_exists @a1.extension_dir
-  end
-
-  def test_build_extensions_old
-    skip "extensions don't quite work on jruby" if Gem.java_platform?
-    ext_spec
-
-    refute_empty @ext.extensions, 'sanity check'
-
-    @ext.installed_by_version = v(0)
-
-    @ext.build_extensions
-
-    gem_make_out = File.join @ext.extension_dir, 'gem_make.out'
-    refute_path_exists gem_make_out
   end
 
   def test_build_extensions_preview
@@ -3522,19 +3526,6 @@ Did you mean 'Ruby'?
     specfile.delete
   end
 
-  ##
-  # KEEP p-1-x86-darwin-8
-  # KEEP p-1
-  # KEEP c-1.2
-  # KEEP a_evil-9
-  #      a-1
-  #      a-1-x86-my_platform-1
-  # KEEP a-2
-  #      a-2-x86-other_platform-1
-  # KEEP a-2-x86-my_platform-1
-  #      a-3.a
-  # KEEP a-3-x86-other_platform-1
-
   def test_latest_specs
     spec_fetcher do |fetcher|
       fetcher.spec 'a', 1 do |s|
@@ -3557,8 +3548,6 @@ Did you mean 'Ruby'?
     end
 
     expected = %W[
-      a-2
-      a-2-x86-my_platform-1
       a-3-x86-other_platform-1
     ]
 
@@ -3732,18 +3721,6 @@ end
     spec.extensions << 'extconf.rb'
 
     refute spec.missing_extensions?
-  end
-
-  def test_missing_extensions_eh_legacy
-    ext_spec
-
-    @ext.installed_by_version = v '2.2.0.preview.2'
-
-    assert @ext.missing_extensions?
-
-    @ext.installed_by_version = v '2.2.0.preview.1'
-
-    refute @ext.missing_extensions?
   end
 
   def test_missing_extensions_eh_none

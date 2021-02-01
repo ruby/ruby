@@ -17,7 +17,6 @@ RSpec.describe Bundler::CompactIndexClient::Updater do
     let(:response) { double(:response, :body => "abc123") }
 
     it "treats the response as an update" do
-      expect(response).to receive(:[]).with("Content-Encoding") { "" }
       expect(response).to receive(:[]).with("ETag") { nil }
       expect(fetcher).to receive(:call) { response }
 
@@ -29,8 +28,7 @@ RSpec.describe Bundler::CompactIndexClient::Updater do
     let(:response) { double(:response, :body => "") }
 
     it "raises HTTPError" do
-      expect(response).to receive(:[]).with("Content-Encoding") { "gzip" }
-      expect(fetcher).to receive(:call) { response }
+      expect(fetcher).to receive(:call).and_raise(Zlib::GzipFile::Error)
 
       expect do
         updater.update(local_path, remote_path)
@@ -46,6 +44,27 @@ RSpec.describe Bundler::CompactIndexClient::Updater do
       expect do
         updater.update(local_path, remote_path)
       end.to raise_error(Bundler::PermissionError)
+    end
+  end
+
+  context "when receiving non UTF-8 data and default internal encoding set to ASCII" do
+    let(:response) { double(:response, :body => "\x8B".b) }
+
+    it "works just fine" do
+      old_verbose = $VERBOSE
+      previous_internal_encoding = Encoding.default_internal
+
+      begin
+        $VERBOSE = false
+        Encoding.default_internal = "ASCII"
+        expect(response).to receive(:[]).with("ETag") { nil }
+        expect(fetcher).to receive(:call) { response }
+
+        updater.update(local_path, remote_path)
+      ensure
+        Encoding.default_internal = previous_internal_encoding
+        $VERBOSE = old_verbose
+      end
     end
   end
 end

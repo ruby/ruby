@@ -46,8 +46,6 @@ RSpec.describe "bundler/inline#gemfile" do
   end
 
   it "requires the gems" do
-    skip "gems not found" if Gem.win_platform?
-
     script <<-RUBY
       gemfile do
         path "#{lib_path}" do
@@ -94,8 +92,6 @@ RSpec.describe "bundler/inline#gemfile" do
   end
 
   it "lets me use my own ui object" do
-    skip "prints just one CONFIRMED" if Gem.win_platform?
-
     script <<-RUBY, :artifice => "endpoint"
       require '#{lib_dir}/bundler'
       class MyBundlerUI < Bundler::UI::Silent

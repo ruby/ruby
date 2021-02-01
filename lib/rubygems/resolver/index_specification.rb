@@ -35,9 +35,12 @@ class Gem::Resolver::IndexSpecification < Gem::Resolver::Specification
 
   ##
   # The required_ruby_version constraint for this specification
+  #
+  # A fallback is included because when generated, some marshalled specs have it
+  # set to +nil+.
 
   def required_ruby_version
-    spec.required_ruby_version
+    spec.required_ruby_version || Gem::Requirement.default
   end
 
   ##
