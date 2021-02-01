@@ -32,6 +32,7 @@ static int64_t compiled_iseq_count = 0;
 
 extern st_table * version_tbl;
 extern codeblock_t *cb;
+extern codeblock_t *ocb;
 // Hash table of encoded instructions
 extern st_table *rb_encoded_insn_data;
 
@@ -548,6 +549,8 @@ print_ujit_stats(void)
     double ratio = rb_ujit_exec_insns_count / total_insns_count;
 
     fprintf(stderr, "compiled_iseq_count:   %10" PRId64 "\n", compiled_iseq_count);
+    fprintf(stderr, "main_block_code_size:  %6.1f MiB\n", ((double)cb->write_pos) / 1048576.0);
+    fprintf(stderr, "side_block_code_size:  %6.1f MiB\n", ((double)ocb->write_pos) / 1048576.0);
     fprintf(stderr, "vm_insns_count:        %10" PRId64 "\n", vm_insns_count);
     fprintf(stderr, "ujit_exec_insns_count: %10" PRId64 "\n", rb_ujit_exec_insns_count);
     fprintf(stderr, "ratio_in_ujit:         %9.1f%%\n", ratio * 100);
