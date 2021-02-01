@@ -175,6 +175,16 @@ class TestGc < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, /\u{30eb 30d3 30fc}/) {GC.latest_gc_info(:"\u{30eb 30d3 30fc}")}
   end
 
+  def test_stress_compile_send
+    assert_in_out_err(%w[--disable-gems], <<-EOS, [], [], "")
+      GC.stress = true
+      begin
+        eval("A::B.c(1, 1, d: 234)")
+      rescue
+      end
+    EOS
+  end
+
   def test_singleton_method
     assert_in_out_err(%w[--disable-gems], <<-EOS, [], [], "[ruby-dev:42832]")
       GC.stress = true
