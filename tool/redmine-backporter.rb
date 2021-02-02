@@ -244,6 +244,11 @@ def find_git_log(pattern)
   `git #{RUBY_REPO_PATH ? "-C #{RUBY_REPO_PATH.shellescape}" : ""} log --grep="#{pattern}"`
 end
 
+def has_commit(commit, branch)
+  base = RUBY_REPO_PATH ? ["-C", RUBY_REPO_PATH.shellescape] : nil
+  system("git", *base, "merge-base", "--is-ancestor", commit, branch)
+end
+
 def show_last_journal(http, uri)
   res = http.get("#{uri.path}?include=journals")
   res.value
@@ -269,14 +274,8 @@ def backport_command_string
     @changesets = @changesets.select do |c|
       next false if c.match(/\A\d{1,6}\z/) # skip SVN revision
 
-      # check if the Git revision is included in trunk
-      begin
-        uri = URI("#{REDMINE_BASE}/projects/ruby-master/repository/git/revisions/#{c}")
-        uri.read($openuri_options)
-        true
-      rescue
-        false
-      end
+      # check if the Git revision is included in master
+      has_commit(c, "master")
     end
     @changesets.define_singleton_method(:validated){true}
   end
