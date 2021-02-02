@@ -429,6 +429,7 @@ class Reline::LineEditor
         line = modify_lines(whole_lines)[@line_index]
         prompt, prompt_width, prompt_list = check_multiline_prompt(whole_lines, prompt)
         render_partial(prompt, prompt_width, line, @first_line_started_from)
+        move_cursor_down(@highest_in_all - (@first_line_started_from + @highest_in_this - 1) - 1)
         scroll_down(1)
         Reline::IOGate.move_cursor_column(0)
         Reline::IOGate.erase_after_cursor
