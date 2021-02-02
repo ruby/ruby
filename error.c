@@ -751,7 +751,7 @@ die(void)
 }
 
 void
-rb_bug_without_die(const char *fmt, ...)
+rb_bug_without_die(const char *fmt, va_list args)
 {
     const char *file = NULL;
     int line = 0;
@@ -760,7 +760,7 @@ rb_bug_without_die(const char *fmt, ...)
         file = rb_source_location_cstr(&line);
     }
 
-    report_bug(file, line, fmt, NULL);
+    report_bug_valist(file, line, fmt, NULL, args);
 }
 
 void
