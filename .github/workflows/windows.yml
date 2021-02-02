@@ -12,6 +12,7 @@ jobs:
     env:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
       VCVARS: C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat
+      PATCH: C:\msys64\usr\bin\patch.exe
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
       - run: md build
@@ -39,6 +40,8 @@ jobs:
           choco install --no-progress winflexbison3 --version=2.5.18.20190508
       - name: git config
         run: |
+          git config --global core.autocrlf false
+          git config --global core.eol lf
           git config --global advice.detachedHead 0
       - uses: actions/checkout@v2
         with:
