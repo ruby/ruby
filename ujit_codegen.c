@@ -1128,11 +1128,10 @@ gen_opt_swb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb
 
     // Stack overflow check
     // #define CHECK_VM_STACK_OVERFLOW0(cfp, sp, margin)
-    // REG_CFP <= REG_SP + 4 * sizeof(VALUE) + sizeof(rb_control_frame_t)
-    lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * 4 + sizeof(rb_control_frame_t)));
+    lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * (num_locals + iseq->body->stack_max) + sizeof(rb_control_frame_t)));
     cmp(cb, REG_CFP, REG0);
     jle_ptr(cb, side_exit);
-    
+
     // Adjust the callee's stack pointer
     lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * (3 + num_locals)));
 
