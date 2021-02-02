@@ -2462,11 +2462,23 @@ class Reline::LineEditor
 
   private def vi_histedit(key)
     path = Tempfile.open { |fp|
-      fp.write @line
+      if @is_multiline
+        fp.write whole_lines.join("\n")
+      else
+        fp.write @line
+      end
       fp.path
     }
     system("#{ENV['EDITOR']} #{path}")
-    @line = File.read(path)
+    if @is_multiline
+      @buffer_of_lines = File.read(path).split("\n")
+      @buffer_of_lines = [String.new(encoding: @encoding)] if @buffer_of_lines.empty?
+      @line_index = 0
+      @line = @buffer_of_lines[@line_index]
+      @rerender_all = true
+    else
+      @line = File.read(path)
+    end
     finish
   end
 
