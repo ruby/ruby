@@ -528,6 +528,15 @@ class TestObjSpace < Test::Unit::TestCase
     children.each {|child| ObjectSpace.internal_class_of(child).itself} # this used to crash
   end
 
+  def test_name_error_message
+    begin
+      bar
+    rescue => err
+      _, m = ObjectSpace.reachable_objects_from(err)
+    end
+    assert_equal(m, m.clone)
+  end
+
   def traverse_super_classes klass
     while klass
       klass = ObjectSpace.internal_super_of(klass)
