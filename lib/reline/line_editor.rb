@@ -491,8 +491,8 @@ class Reline::LineEditor
     @line = @buffer_of_lines[@line_index]
     unless @in_pasting
       render_partial(prompt, prompt_width, @line, @first_line_started_from + @started_from + 1, with_control: false)
-      @cursor = @cursor_max = calculate_width(@line)
     end
+    @cursor = @cursor_max = calculate_width(@line)
     @byte_pointer = @line.bytesize
     @highest_in_all += @highest_in_this
     @highest_in_this = calculate_height_by_width(prompt_width + @cursor_max)
