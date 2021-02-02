@@ -37,7 +37,6 @@ module Bundler
       additional_base_requirements.each {|d| @base_dg.add_vertex(d.name, d) }
       @platforms = platforms
       @gem_version_promoter = gem_version_promoter
-      @allow_bundler_dependency_conflicts = Bundler.feature_flag.allow_bundler_dependency_conflicts?
       @use_gvp = Bundler.feature_flag.use_gem_version_promoter_for_major_updates? || !@gem_version_promoter.major?
       @lockfile_uses_separate_rubygems_sources = Bundler.feature_flag.disable_multisource?
     end
@@ -138,7 +137,6 @@ module Bundler
           nested.reduce([]) do |groups, (version, specs)|
             next groups if locked_requirement && !locked_requirement.satisfied_by?(version)
             spec_group = SpecGroup.new(specs)
-            spec_group.ignores_bundler_dependencies = @allow_bundler_dependency_conflicts
             groups << spec_group
           end
         else
@@ -165,10 +163,7 @@ module Bundler
           sg_ruby = sg.copy_for([Gem::Platform::RUBY])
           next unless sg_ruby
 
-          sg_ruby_deps = sg_ruby.dependencies_for_activated_platforms.map(&:dep)
-          sg_all_platforms_deps = sg_all_platforms.dependencies_for_activated_platforms.map(&:dep)
-
-          selected_sgs.insert(-2, sg_ruby) if sg_ruby_deps != sg_all_platforms_deps
+          selected_sgs.insert(-2, sg_ruby)
         end
         selected_sgs
       end
@@ -209,6 +204,10 @@ module Bundler
 
     def requirement_satisfied_by?(requirement, activated, spec)
       requirement.matches_spec?(spec) || spec.source.is_a?(Source::Gemspec)
+    end
+
+    def dependencies_equal?(dependencies, other_dependencies)
+      dependencies.map(&:dep) == other_dependencies.map(&:dep)
     end
 
     def relevant_sources_for_vertex(vertex)
@@ -329,10 +328,16 @@ module Bundler
     def version_conflict_message(e)
       # only show essential conflicts, if possible
       conflicts = e.conflicts.dup
-      conflicts.delete_if do |_name, conflict|
-        deps = conflict.requirement_trees.map(&:last).flatten(1)
-        !Bundler::VersionRanges.empty?(*Bundler::VersionRanges.for_many(deps.map(&:requirement)))
+
+      if conflicts["bundler"]
+        conflicts.replace("bundler" => conflicts["bundler"])
+      else
+        conflicts.delete_if do |_name, conflict|
+          deps = conflict.requirement_trees.map(&:last).flatten(1)
+          !Bundler::VersionRanges.empty?(*Bundler::VersionRanges.for_many(deps.map(&:requirement)))
+        end
       end
+
       e = Molinillo::VersionConflict.new(conflicts, e.specification_provider) unless conflicts.empty?
 
       solver_name = "Bundler"
@@ -360,15 +365,25 @@ module Bundler
         :additional_message_for_conflict => lambda do |o, name, conflict|
           if name == "bundler"
             o << %(\n  Current Bundler version:\n    bundler (#{Bundler::VERSION}))
-            other_bundler_required = !conflict.requirement.requirement.satisfied_by?(Gem::Version.new(Bundler::VERSION))
-          end
 
-          if name == "bundler" && other_bundler_required
-            o << "\n"
-            o << "This Gemfile requires a different version of Bundler.\n"
-            o << "Perhaps you need to update Bundler by running `gem install bundler`?\n"
-          end
-          if conflict.locked_requirement
+            conflict_dependency = conflict.requirement
+            conflict_requirement = conflict_dependency.requirement
+            other_bundler_required = !conflict_requirement.satisfied_by?(Gem::Version.new(Bundler::VERSION))
+
+            if other_bundler_required
+              o << "\n\n"
+
+              candidate_specs = @source_requirements[:default_bundler].specs.search(conflict_dependency)
+              if candidate_specs.any?
+                target_version = candidate_specs.last.version
+                new_command = [File.basename($PROGRAM_NAME), "_#{target_version}_", *ARGV].join(" ")
+                o << "Your bundle requires a different version of Bundler than the one you're running.\n"
+                o << "Install the necessary version with `gem install bundler:#{target_version}` and rerun bundler using `#{new_command}`\n"
+              else
+                o << "Your bundle requires a different version of Bundler than the one you're running, and that version could not be found.\n"
+              end
+            end
+          elsif conflict.locked_requirement
             o << "\n"
             o << %(Running `bundle update` will rebuild your snapshot from scratch, using only\n)
             o << %(the gems in your Gemfile, which may resolve the conflict.\n)

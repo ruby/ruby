@@ -140,7 +140,7 @@ module Bundler
     # explicitly add a more specific platform.
     #
     def ruby_platform_materializes_to_ruby_platform?
-      !Bundler.most_specific_locked_platform?(Gem::Platform::RUBY)
+      !Bundler.most_specific_locked_platform?(Gem::Platform::RUBY) || Bundler.settings[:force_ruby_platform]
     end
   end
 end

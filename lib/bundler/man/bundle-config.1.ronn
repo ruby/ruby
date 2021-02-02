@@ -133,9 +133,6 @@ the environment variable `BUNDLE_LOCAL__RACK`.
 The following is a list of all configuration keys and their purpose. You can
 learn more about their operation in [bundle install(1)](bundle-install.1.html).
 
-* `allow_bundler_dependency_conflicts` (`BUNDLE_ALLOW_BUNDLER_DEPENDENCY_CONFLICTS`):
-   Allow resolving to specifications that have dependencies on `bundler` that
-   are incompatible with the running Bundler version.
 * `allow_deployment_source_credential_changes` (`BUNDLE_ALLOW_DEPLOYMENT_SOURCE_CREDENTIAL_CHANGES`):
    When in deployment mode, allow changing the credentials to a gem's source.
    Ex: `https://some.host.com/gems/path/` -> `https://user_name:password@some.host.com/gems/path`
@@ -178,6 +175,9 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
 * `disable_local_branch_check` (`BUNDLE_DISABLE_LOCAL_BRANCH_CHECK`):
    Allow Bundler to use a local git override without a branch specified in the
    Gemfile.
+* `disable_local_revision_check` (`BUNDLE_DISABLE_LOCAL_REVISION_CHECK`):
+   Allow Bundler to use a local git override without checking if the revision
+   present in the lockfile is present in the repository.
 * `disable_multisource` (`BUNDLE_DISABLE_MULTISOURCE`):
    When set, Gemfiles containing multiple sources will produce errors
    instead of warnings.

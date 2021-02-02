@@ -84,10 +84,22 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
     expect(the_bundle).to include_gems "nokogiri 1.4.2", "platform_specific 1.0 x86-darwin-100"
   end
 
-  it "allows specifying only-ruby-platform" do
-    simulate_platform "java"
-
+  it "allows specifying only-ruby-platform on jruby", :jruby do
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
+      gem "nokogiri"
+      gem "platform_specific"
+    G
+
+    bundle "config set force_ruby_platform true"
+
+    bundle "install"
+
+    expect(the_bundle).to include_gems "nokogiri 1.4.2", "platform_specific 1.0 RUBY"
+  end
+
+  it "allows specifying only-ruby-platform" do
+    gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "nokogiri"
       gem "platform_specific"

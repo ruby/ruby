@@ -598,6 +598,24 @@ RSpec.describe "bundle install with git sources" do
       bundle :install, :raise_on_error => false
       expect(err).to match(/The Gemfile lock is pointing to revision \w+/)
     end
+
+    it "does not explode on invalid revision on install" do
+      build_git "rack", "0.8"
+
+      build_git "rack", "0.8", :path => lib_path("local-rack") do |s|
+        s.write "lib/rack.rb", "puts :LOCAL"
+      end
+
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "master"
+      G
+
+      bundle %(config set local.rack #{lib_path("local-rack")})
+      bundle %(config set disable_local_revision_check true)
+      bundle :install
+      expect(out).to match(/Bundle complete!/)
+    end
   end
 
   describe "specified inline" do

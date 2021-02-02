@@ -266,6 +266,14 @@ RSpec.describe Bundler::GemHelper do
 
             Rake.application["release"].invoke
           end
+
+          it "also works with releasing from a branch not yet pushed" do
+            sys_exec("git checkout -b module_function", :dir => app_path)
+
+            expect(subject).to receive(:rubygem_push).with(app_gem_path.to_s)
+
+            Rake.application["release"].invoke
+          end
         end
 
         context "on releasing with a custom tag prefix" do
