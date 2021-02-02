@@ -2192,13 +2192,6 @@ rb_class_superclass(VALUE klass)
     return super;
 }
 
-/**
- * Returns the superclass of \a klass
- * The return value might be an iclass of a module, unlike rb_class_superclass.
- *
- * Also it returns Qfalse when \a klass does not have a parent class.
- * \sa rb_class_superclass
- */
 VALUE
 rb_class_get_superclass(VALUE klass)
 {
