@@ -422,9 +422,10 @@ eom
   },
 
   "done" => proc{|args|
-    raise CommandSyntaxError unless /\A(\d+)?(?:\s*-- +(.*))?\z/ =~ args
-    notes = $2
+    raise CommandSyntaxError unless /\A(\d+)?(?: by (\h+))?(?:\s*-- +(.*))?\z/ =~ args
+    notes = $3
     notes.strip! if notes
+    rev = $2
     if $1
       i = $1.to_i
       i = @issues[i]["id"] if @issues && i < @issues.size
@@ -435,7 +436,8 @@ eom
       next
     end
 
-    if system("svn info #{RUBY_REPO_PATH&.shellescape}", %i(out err) => IO::NULL) # SVN
+    if rev
+    elsif system("svn info #{RUBY_REPO_PATH&.shellescape}", %i(out err) => IO::NULL) # SVN
       if (log = find_svn_log("##@issue]")) && (/revision="(?<rev>\d+)/ =~ log)
         rev = "r#{rev}"
       end
@@ -457,6 +459,10 @@ eom
         str << notes
       end
       notes = str
+    elsif rev && has_commit(rev, "ruby_#{TARGET_VERSION.tr('.','_')}")
+      # Backport commit's log doesn't have the issue number.
+      # Instead of that manually it's provided.
+      notes = "ruby_#{TARGET_VERSION.tr('.','_')} commit:#{rev}."
     else
       puts "no commit is found whose log include ##@issue"
       next
