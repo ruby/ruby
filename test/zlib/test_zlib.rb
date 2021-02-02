@@ -1278,11 +1278,20 @@ if defined? Zlib
     end
 
     def test_inflate
-      TestZlibInflate.new(__name__).test_inflate
+      s = Zlib::Deflate.deflate("foo")
+      z = Zlib::Inflate.new
+      s = z.inflate(s)
+      s << z.inflate(nil)
+      assert_equal("foo", s)
+      z.inflate("foo") # ???
+      z << "foo" # ???
     end
 
     def test_deflate
-      TestZlibDeflate.new(__name__).test_deflate
+      s = Zlib::Deflate.deflate("foo")
+      assert_equal("foo", Zlib::Inflate.inflate(s))
+
+      assert_raise(Zlib::StreamError) { Zlib::Deflate.deflate("foo", 10000) }
     end
 
     def test_deflate_stream
