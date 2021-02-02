@@ -39,7 +39,7 @@ jobs:
           choco install --no-progress winflexbison3 --version=2.5.18.20190508
       - name: git config
         run: |
-          git config --system advice.detachedHead 0
+          git config --global advice.detachedHead 0
       - uses: actions/checkout@v2
         with:
           path: src
