@@ -53,6 +53,7 @@ static ID id_abs, id_integer_p,
 #define f_to_s rb_obj_as_string
 
 static VALUE nurat_to_f(VALUE self);
+static VALUE float_to_r(VALUE self);
 
 inline static VALUE
 f_add(VALUE x, VALUE y)
@@ -1174,11 +1175,17 @@ nurat_coerce(VALUE self, VALUE other)
 	return rb_assoc_new(other, self);
     }
     else if (RB_TYPE_P(other, T_COMPLEX)) {
-	if (k_exact_zero_p(RCOMPLEX(other)->imag))
-	    return rb_assoc_new(f_rational_new_bang1
-				(CLASS_OF(self), RCOMPLEX(other)->real), self);
-	else
+	if (!k_exact_zero_p(RCOMPLEX(other)->imag))
 	    return rb_assoc_new(other, rb_Complex(self, INT2FIX(0)));
+        other = RCOMPLEX(other)->real;
+        if (RB_FLOAT_TYPE_P(other)) {
+            other = float_to_r(other);
+            RBASIC_SET_CLASS(other, CLASS_OF(self));
+        }
+        else {
+            other = f_rational_new_bang1(CLASS_OF(self), other);
+        }
+        return rb_assoc_new(other, self);
     }
 
     rb_raise(rb_eTypeError, "%s can't be coerced into %s",
@@ -1870,7 +1877,7 @@ VALUE
 rb_rational_reciprocal(VALUE x)
 {
     get_dat1(x);
-    return f_rational_new_no_reduce2(CLASS_OF(x), dat->den, dat->num);
+    return nurat_convert(CLASS_OF(x), dat->den, dat->num, FALSE);
 }
 
 /*
@@ -2062,7 +2069,6 @@ integer_denominator(VALUE self)
     return INT2FIX(1);
 }
 
-static VALUE float_to_r(VALUE self);
 /*
  * call-seq:
  *    flo.numerator  ->  integer
