@@ -913,6 +913,7 @@ module Bundler
       metadata_dependencies.each do |dep|
         source_requirements[dep.name] = sources.metadata_source
       end
+      source_requirements[:default_bundler] = source_requirements["bundler"] || source_requirements[:default]
       source_requirements["bundler"] = sources.metadata_source # needs to come last to override
       source_requirements
     end

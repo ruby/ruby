@@ -353,7 +353,6 @@ module Bundler
       def installed_specs
         @installed_specs ||= Index.build do |idx|
           Bundler.rubygems.all_specs.reverse_each do |spec|
-            next if spec.name == "bundler"
             spec.source = self
             if Bundler.rubygems.spec_missing_extensions?(spec, false)
               Bundler.ui.debug "Source #{self} is ignoring #{spec} because it is missing extensions"

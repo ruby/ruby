@@ -121,7 +121,7 @@ module Bundler::Molinillo
           t = ''.dup
           depth = 2
           tree.each do |req|
-            t << '  ' * depth << req.to_s
+            t << '  ' * depth << printable_requirement.call(req)
             unless tree.last == req
               if spec = conflict.activated_by_name[name_for(req)]
                 t << %( was resolved to #{version_for_spec.call(spec)}, which)

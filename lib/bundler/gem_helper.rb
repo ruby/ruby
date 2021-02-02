@@ -116,19 +116,21 @@ module Bundler
 
     def git_push(remote = nil)
       remote ||= default_remote
-      perform_git_push remote
+      perform_git_push "#{remote} refs/heads/#{current_branch}"
       perform_git_push "#{remote} refs/tags/#{version_tag}"
       Bundler.ui.confirm "Pushed git commits and release tag."
     end
 
     def default_remote
+      remote_for_branch, status = sh_with_status(%W[git config --get branch.#{current_branch}.remote])
+      return "origin" unless status.success?
+
+      remote_for_branch.strip
+    end
+
+    def current_branch
       # We can replace this with `git branch --show-current` once we drop support for git < 2.22.0
-      current_branch = sh(%w[git rev-parse --abbrev-ref HEAD]).gsub(%r{\Aheads/}, "").strip
-
-      remote_for_branch = sh(%W[git config --get branch.#{current_branch}.remote]).strip
-      return "origin" if remote_for_branch.empty?
-
-      remote_for_branch
+      sh(%w[git rev-parse --abbrev-ref HEAD]).gsub(%r{\Aheads/}, "").strip
     end
 
     def allowed_push_host

@@ -82,7 +82,6 @@ module Bundler
 
         if resolve_if_needed(options)
           ensure_specs_are_compatible!
-          warn_on_incompatible_bundler_deps
           load_plugins
           options.delete(:jobs)
         else
@@ -261,22 +260,6 @@ module Bundler
         unless required_rubygems_version.satisfied_by?(rubygems_version)
           raise InstallError, "#{spec.full_name} requires rubygems version #{required_rubygems_version}, " \
             "which is incompatible with the current version, #{rubygems_version}"
-        end
-      end
-    end
-
-    def warn_on_incompatible_bundler_deps
-      bundler_version = Gem::Version.create(Bundler::VERSION)
-      @definition.specs.each do |spec|
-        spec.dependencies.each do |dep|
-          next if dep.type == :development
-          next unless dep.name == "bundler".freeze
-          next if dep.requirement.satisfied_by?(bundler_version)
-
-          Bundler.ui.warn "#{spec.name} (#{spec.version}) has dependency" \
-            " #{SharedHelpers.pretty_dependency(dep)}" \
-            ", which is unsatisfied by the current bundler version #{VERSION}" \
-            ", so the dependency is being ignored"
         end
       end
     end

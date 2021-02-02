@@ -807,7 +807,7 @@ module Bundler::Molinillo
 
         possibilities.reverse_each do |possibility|
           dependencies = dependencies_for(possibility)
-          if current_possibility_set && current_possibility_set.dependencies == dependencies
+          if current_possibility_set && dependencies_equal?(current_possibility_set.dependencies, dependencies)
             current_possibility_set.possibilities.unshift(possibility)
           else
             possibility_sets.unshift(PossibilitySet.new(dependencies, [possibility]))

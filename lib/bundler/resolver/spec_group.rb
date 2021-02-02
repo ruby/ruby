@@ -6,7 +6,7 @@ module Bundler
       include GemHelpers
 
       attr_accessor :name, :version, :source
-      attr_accessor :ignores_bundler_dependencies, :activated_platforms
+      attr_accessor :activated_platforms
 
       def initialize(all_specs)
         @all_specs = all_specs
@@ -20,7 +20,6 @@ module Bundler
         @specs        = Hash.new do |specs, platform|
           specs[platform] = select_best_platform_match(all_specs, platform)
         end
-        @ignores_bundler_dependencies = true
       end
 
       def to_specs
@@ -41,7 +40,6 @@ module Bundler
         return unless platforms.any?
 
         copied_sg = self.class.new(@all_specs)
-        copied_sg.ignores_bundler_dependencies = @ignores_bundler_dependencies
         copied_sg.activated_platforms = platforms
         copied_sg
       end
@@ -98,7 +96,6 @@ module Bundler
           if spec = specs.first
             spec.dependencies.each do |dep|
               next if dep.type == :development
-              next if @ignores_bundler_dependencies && dep.name == "bundler".freeze
               dependencies[platform] << DepProxy.get_proxy(dep, platform)
             end
           end

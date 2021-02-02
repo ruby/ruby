@@ -137,7 +137,6 @@ module Bundler
       end
 
       specs.each do |name, version, platform, dependencies, metadata|
-        next if name == "bundler"
         spec = if dependencies
           EndpointSpecification.new(name, version, platform, dependencies, metadata)
         else
