@@ -330,7 +330,7 @@ rsock_sock_s_socketpair(int argc, VALUE *argv, VALUE klass)
  * * Errno::EOPNOTSUPP - the calling +socket+ is listening and cannot be connected
  * * Errno::EPROTOTYPE - the _sockaddr_ has a different type than the socket
  *   bound to the specified peer address
- * * Errno::ETIMEDOUT - the attempt to connect time out before a connection
+ * * Errno::ETIMEDOUT - the attempt to connect timed out before a connection
  *   was made.
  *
  * On unix-based systems if the address family of the calling +socket+ is
@@ -371,7 +371,7 @@ rsock_sock_s_socketpair(int argc, VALUE *argv, VALUE klass)
  * * Errno::EHOSTUNREACH - no route to the network is present
  * * Errno::ENOBUFS - no buffer space is available
  * * Errno::ENOTSOCK - the +socket+ argument does not refer to a socket
- * * Errno::ETIMEDOUT - the attempt to connect time out before a connection
+ * * Errno::ETIMEDOUT - the attempt to connect timed out before a connection
  *   was made.
  * * Errno::EWOULDBLOCK - the socket is marked as nonblocking and the
  *   connection cannot be completed immediately
