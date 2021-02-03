@@ -141,6 +141,7 @@ vm_cme_invalidate(rb_callable_method_entry_t *cme)
 void
 rb_clear_constant_cache(void)
 {
+    rb_ujit_constant_state_changed();
     INC_GLOBAL_CONSTANT_STATE();
 }
 
