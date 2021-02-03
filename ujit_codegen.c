@@ -1112,6 +1112,8 @@ gen_opt_swb_cfunc(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const r
     return true;
 }
 
+bool rb_simple_iseq_p(const rb_iseq_t *iseq);
+
 static bool
 gen_opt_swb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb_callable_method_entry_t *cme, int32_t argc)
 {
@@ -1120,12 +1122,18 @@ gen_opt_swb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb
     int num_params = iseq->body->param.size;
     int num_locals = iseq->body->local_table_size - num_params;
 
-    rb_gc_register_mark_object((VALUE)iseq); // FIXME: intentional LEAK!
-
     if (num_params != argc) {
         //fprintf(stderr, "param argc mismatch\n");
         return false;
     }
+
+    if (!rb_simple_iseq_p(iseq)) {
+        // Only handle iseqs that have simple parameters.
+        // See vm_callee_setup_arg().
+        return false;
+    }
+
+    rb_gc_register_mark_object((VALUE)iseq); // FIXME: intentional LEAK!
 
     // Create a size-exit to fall back to the interpreter
     uint8_t* side_exit = ujit_side_exit(jit, ctx);
@@ -1375,7 +1383,7 @@ ujit_init_codegen(void)
     ujit_reg_op(BIN(putobject_INT2FIX_1_), gen_putobject_int2fix, false);
     ujit_reg_op(BIN(putself), gen_putself, false);
     ujit_reg_op(BIN(getlocal_WC_0), gen_getlocal_wc0, false);
-    //ujit_reg_op(BIN(getlocal_WC_1), gen_getlocal_wc1, false);
+    ujit_reg_op(BIN(getlocal_WC_1), gen_getlocal_wc1, false);
     ujit_reg_op(BIN(setlocal_WC_0), gen_setlocal_wc0, false);
     ujit_reg_op(BIN(getinstancevariable), gen_getinstancevariable, false);
     ujit_reg_op(BIN(setinstancevariable), gen_setinstancevariable, false);
