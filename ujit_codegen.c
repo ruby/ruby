@@ -339,7 +339,7 @@ gen_getlocal_wc0(jitstate_t* jit, ctx_t* ctx)
 
     // Compute the offset from BP to the local
     int32_t local_idx = (int32_t)jit_get_arg(jit, 0);
-    const int32_t offs = -8 * local_idx;
+    const int32_t offs = -sizeof(VALUE) * local_idx;
 
     // Load the local from the block
     mov(cb, REG0, mem_opnd(64, REG0, offs));
@@ -541,8 +541,11 @@ gen_setinstancevariable(jitstate_t* jit, ctx_t* ctx)
     return true;
 }
 
+// Conditional move operation used by comparison operators
+typedef void (*cmov_fn)(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
+
 static bool
-gen_opt_lt(jitstate_t* jit, ctx_t* ctx)
+gen_fixnum_cmp(jitstate_t* jit, ctx_t* ctx, cmov_fn cmov_op)
 {
     // Create a size-exit to fall back to the interpreter
     // Note: we generate the side-exit before popping operands from the stack
@@ -579,13 +582,31 @@ gen_opt_lt(jitstate_t* jit, ctx_t* ctx)
     mov(cb, REG1, arg0);
     cmp(cb, REG1, arg1);
     mov(cb, REG1, imm_opnd(Qtrue));
-    cmovl(cb, REG0, REG1);
+    cmov_op(cb, REG0, REG1);
 
     // Push the output on the stack
     x86opnd_t dst = ctx_stack_push(ctx, T_NONE);
     mov(cb, dst, REG0);
 
     return true;
+}
+
+static bool
+gen_opt_lt(jitstate_t* jit, ctx_t* ctx)
+{
+    return gen_fixnum_cmp(jit, ctx, cmovl);
+}
+
+static bool
+gen_opt_le(jitstate_t* jit, ctx_t* ctx)
+{
+    return gen_fixnum_cmp(jit, ctx, cmovle);
+}
+
+static bool
+gen_opt_ge(jitstate_t* jit, ctx_t* ctx)
+{
+    return gen_fixnum_cmp(jit, ctx, cmovge);
 }
 
 static bool
@@ -1331,6 +1352,8 @@ ujit_init_codegen(void)
     ujit_reg_op(BIN(getinstancevariable), gen_getinstancevariable, false);
     ujit_reg_op(BIN(setinstancevariable), gen_setinstancevariable, false);
     ujit_reg_op(BIN(opt_lt), gen_opt_lt, false);
+    ujit_reg_op(BIN(opt_le), gen_opt_le, false);
+    ujit_reg_op(BIN(opt_ge), gen_opt_ge, false);
     ujit_reg_op(BIN(opt_and), gen_opt_and, false);
     ujit_reg_op(BIN(opt_minus), gen_opt_minus, false);
     ujit_reg_op(BIN(opt_plus), gen_opt_plus, false);
