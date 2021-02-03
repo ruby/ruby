@@ -1892,9 +1892,9 @@ rb_hash_method_definition(st_index_t hash, const rb_method_definition_t *def)
       case VM_METHOD_TYPE_REFINED:
       case VM_METHOD_TYPE_ALIAS:
 	break; /* unreachable */
-	}
-	rb_bug("rb_hash_method_definition: unsupported method type (%d)\n", def->type);
     }
+    rb_bug("rb_hash_method_definition: unsupported method type (%d)\n", def->type);
+}
 
 st_index_t
 rb_hash_method_entry(st_index_t hash, const rb_method_entry_t *me)
