@@ -157,6 +157,8 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
     const struct rb_callcache *cc = calling->cc;
     VALUE ret;
 
+  retry:
+
     switch (vm_cc_cme(cc)->def->type) {
       case VM_METHOD_TYPE_ISEQ:
 	{
@@ -222,7 +224,20 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
             return vm_call0_super(ec, calling, argv, klass, 0);
 	}
       case VM_METHOD_TYPE_ALIAS:
-        return vm_call0_cme(ec, calling, argv, aliased_callable_method_entry(vm_cc_cme(cc)));
+        {
+            const rb_callable_method_entry_t *cme = vm_cc_cme(cc);
+            const rb_callable_method_entry_t *orig_cme = aliased_callable_method_entry(cme);
+
+            if (cme == orig_cme) rb_bug("same!!");
+
+            if (vm_cc_markable(cc)) {
+                return vm_call0_cme(ec, calling, argv, orig_cme);
+            }
+            else {
+                *((const rb_callable_method_entry_t **)&cc->cme_) = orig_cme;
+                goto retry;
+            }
+        }
       case VM_METHOD_TYPE_MISSING:
 	{
             vm_passed_block_handler_set(ec, calling->block_handler);
