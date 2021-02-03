@@ -77,18 +77,6 @@ static VALUE rb_cFalseClass_to_s;
 
 /*! \endcond */
 
-/*!
- * Make the object invisible from Ruby code.
- *
- * It is useful to let Ruby's GC manage your internal data structure --
- * The object keeps being managed by GC, but \c ObjectSpace.each_object
- * never yields the object.
- *
- * Note that the object also lose a way to call a method on it.
- *
- * \param[in] obj a Ruby object
- * \sa rb_obj_reveal
- */
 VALUE
 rb_obj_hide(VALUE obj)
 {
@@ -98,14 +86,6 @@ rb_obj_hide(VALUE obj)
     return obj;
 }
 
-/*!
- * Make a hidden object visible again.
- *
- * It is the caller's responsibility to pass the right \a klass
- * which \a obj originally used to belong to.
- *
- * \sa rb_obj_hide
- */
 VALUE
 rb_obj_reveal(VALUE obj, VALUE klass)
 {
