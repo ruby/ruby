@@ -53,5 +53,6 @@ void rb_ujit_method_lookup_change(VALUE cme_or_cc);
 void rb_ujit_compile_iseq(const rb_iseq_t *iseq);
 void rb_ujit_init(struct rb_ujit_options *options);
 void rb_ujit_bop_redefined(VALUE klass, const rb_method_entry_t *me, enum ruby_basic_operators bop);
+void rb_ujit_constant_state_changed(void);
 
 #endif // #ifndef UJIT_H
