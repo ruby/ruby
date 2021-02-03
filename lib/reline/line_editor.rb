@@ -704,8 +704,8 @@ class Reline::LineEditor
         @highest_in_this = height
       end
       move_cursor_up(@started_from)
-      cursor_up_from_last_line = height - 1 - @started_from
       @started_from = calculate_height_by_width(prompt_width + @cursor) - 1
+      cursor_up_from_last_line = height - 1 - @started_from
     end
     if Reline::Unicode::CSI_REGEXP.match?(prompt + line_to_render)
       @output.write "\e[0m" # clear character decorations
