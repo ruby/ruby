@@ -103,12 +103,51 @@ enum rtimer_state {
 #if UBF_TIMER == UBF_TIMER_POSIX
 static const struct itimerspec zero;
 static struct {
-    rb_atomic_t state; /* rtimer_state */
+    rb_atomic_t state_; /* rtimer_state */
     rb_pid_t owner;
     timer_t timerid;
 } timer_posix = {
     /* .state = */ RTIMER_DEAD,
 };
+
+#define TIMER_STATE_DEBUG 0
+
+static const char *
+rtimer_state_name(enum rtimer_state state)
+{
+    switch (state) {
+      case RTIMER_DISARM: return "disarm";
+      case RTIMER_ARMING: return "arming";
+      case RTIMER_ARMED:  return "armed";
+      case RTIMER_DEAD:   return "dead";
+      default: rb_bug("unreachable");
+    }
+}
+
+static enum rtimer_state
+timer_state_exchange(enum rtimer_state state)
+{
+    enum rtimer_state prev = ATOMIC_EXCHANGE(timer_posix.state_, state);
+    if (TIMER_STATE_DEBUG) fprintf(stderr, "state (exc): %s->%s\n", rtimer_state_name(prev), rtimer_state_name(state));
+    return prev;
+}
+
+static enum rtimer_state
+timer_state_cas(enum rtimer_state expected_prev, enum rtimer_state state)
+{
+    enum rtimer_state prev = ATOMIC_CAS(timer_posix.state_, expected_prev, state);
+
+    if (TIMER_STATE_DEBUG) {
+        if (prev == expected_prev) {
+            fprintf(stderr, "state (cas): %s->%s\n", rtimer_state_name(prev), rtimer_state_name(state));
+        }
+        else {
+            fprintf(stderr, "state (cas): %s (expected:%s)\n", rtimer_state_name(prev), rtimer_state_name(expected_prev));
+        }
+    }
+
+    return prev;
+}
 
 #elif UBF_TIMER == UBF_TIMER_PTHREAD
 static void *timer_pthread_fn(void *);
@@ -1423,7 +1462,7 @@ ubf_timer_arm(rb_pid_t current) /* async signal safe */
 {
 #if UBF_TIMER == UBF_TIMER_POSIX
     if ((!current || timer_posix.owner == current) &&
-            !ATOMIC_CAS(timer_posix.state, RTIMER_DISARM, RTIMER_ARMING)) {
+        timer_state_cas(RTIMER_DISARM, RTIMER_ARMING) == RTIMER_DISARM) {
         struct itimerspec it;
 
         it.it_interval.tv_sec = it.it_value.tv_sec = 0;
@@ -1432,7 +1471,7 @@ ubf_timer_arm(rb_pid_t current) /* async signal safe */
         if (timer_settime(timer_posix.timerid, 0, &it, 0))
             rb_async_bug_errno("timer_settime (arm)", errno);
 
-        switch (ATOMIC_CAS(timer_posix.state, RTIMER_ARMING, RTIMER_ARMED)) {
+        switch (timer_state_cas(RTIMER_ARMING, RTIMER_ARMED)) {
           case RTIMER_DISARM:
             /* somebody requested a disarm while we were arming */
             /* may race harmlessly with ubf_timer_destroy */
@@ -1714,7 +1753,7 @@ ubf_timer_create(rb_pid_t current)
     sev.sigev_value.sival_ptr = &timer_posix;
 
     if (!timer_create(UBF_TIMER_CLOCK, &sev, &timer_posix.timerid)) {
-        rb_atomic_t prev = ATOMIC_EXCHANGE(timer_posix.state, RTIMER_DISARM);
+        rb_atomic_t prev = timer_state_exchange(RTIMER_DISARM);
 
         if (prev != RTIMER_DEAD) {
             rb_bug("timer_posix was not dead: %u\n", (unsigned)prev);
@@ -1759,7 +1798,7 @@ ubf_timer_disarm(void)
 #if UBF_TIMER == UBF_TIMER_POSIX
     rb_atomic_t prev;
 
-    prev = ATOMIC_CAS(timer_posix.state, RTIMER_ARMED, RTIMER_DISARM);
+    prev = timer_state_cas(RTIMER_ARMED, RTIMER_DISARM);
     switch (prev) {
       case RTIMER_DISARM: return; /* likely */
       case RTIMER_ARMING: return; /* ubf_timer_arm will disarm itself */
@@ -1768,7 +1807,7 @@ ubf_timer_disarm(void)
             int err = errno;
 
             if (err == EINVAL) {
-                prev = ATOMIC_CAS(timer_posix.state, RTIMER_DISARM, RTIMER_DISARM);
+                prev = timer_state_cas(RTIMER_DISARM, RTIMER_DISARM);
 
                 /* main thread may have killed the timer */
                 if (prev == RTIMER_DEAD) return;
@@ -1797,7 +1836,7 @@ ubf_timer_destroy(void)
 
         /* prevent signal handler from arming: */
         for (i = 0; i < max; i++) {
-            switch (ATOMIC_CAS(timer_posix.state, expect, RTIMER_DEAD)) {
+            switch (timer_state_cas(expect, RTIMER_DEAD)) {
               case RTIMER_DISARM:
                 if (expect == RTIMER_DISARM) goto done;
                 expect = RTIMER_DISARM;
@@ -1823,7 +1862,7 @@ done:
         if (timer_delete(timer_posix.timerid) < 0)
             rb_sys_fail("timer_delete");
 
-        VM_ASSERT(ATOMIC_EXCHANGE(timer_posix.state, RTIMER_DEAD) == RTIMER_DEAD);
+        VM_ASSERT(timer_state_exchange(RTIMER_DEAD) == RTIMER_DEAD);
     }
 #elif UBF_TIMER == UBF_TIMER_PTHREAD
     int err;

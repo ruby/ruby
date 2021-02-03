@@ -53,14 +53,14 @@ rb_class_subclass_add(VALUE super, VALUE klass)
 	entry->klass = klass;
 	entry->next = NULL;
 
-	head = RCLASS_EXT(super)->subclasses;
+	head = RCLASS_SUBCLASSES(super);
 	if (head) {
 	    entry->next = head;
-	    RCLASS_EXT(head->klass)->parent_subclasses = &entry->next;
+	    RCLASS_PARENT_SUBCLASSES(head->klass) = &entry->next;
 	}
 
-	RCLASS_EXT(super)->subclasses = entry;
-	RCLASS_EXT(klass)->parent_subclasses = &RCLASS_EXT(super)->subclasses;
+	RCLASS_SUBCLASSES(super) = entry;
+	RCLASS_PARENT_SUBCLASSES(klass) = &RCLASS_SUBCLASSES(super);
     }
 }
 
@@ -73,14 +73,14 @@ rb_module_add_to_subclasses_list(VALUE module, VALUE iclass)
     entry->klass = iclass;
     entry->next = NULL;
 
-    head = RCLASS_EXT(module)->subclasses;
+    head = RCLASS_SUBCLASSES(module);
     if (head) {
 	entry->next = head;
-	RCLASS_EXT(head->klass)->module_subclasses = &entry->next;
+	RCLASS_MODULE_SUBCLASSES(head->klass) = &entry->next;
     }
 
-    RCLASS_EXT(module)->subclasses = entry;
-    RCLASS_EXT(iclass)->module_subclasses = &RCLASS_EXT(module)->subclasses;
+    RCLASS_SUBCLASSES(module) = entry;
+    RCLASS_MODULE_SUBCLASSES(iclass) = &RCLASS_SUBCLASSES(module);
 }
 
 void
@@ -88,17 +88,17 @@ rb_class_remove_from_super_subclasses(VALUE klass)
 {
     rb_subclass_entry_t *entry;
 
-    if (RCLASS_EXT(klass)->parent_subclasses) {
-	entry = *RCLASS_EXT(klass)->parent_subclasses;
+    if (RCLASS_PARENT_SUBCLASSES(klass)) {
+	entry = *RCLASS_PARENT_SUBCLASSES(klass);
 
-	*RCLASS_EXT(klass)->parent_subclasses = entry->next;
+	*RCLASS_PARENT_SUBCLASSES(klass) = entry->next;
 	if (entry->next) {
-	    RCLASS_EXT(entry->next->klass)->parent_subclasses = RCLASS_EXT(klass)->parent_subclasses;
+	    RCLASS_PARENT_SUBCLASSES(entry->next->klass) = RCLASS_PARENT_SUBCLASSES(klass);
 	}
 	xfree(entry);
     }
 
-    RCLASS_EXT(klass)->parent_subclasses = NULL;
+    RCLASS_PARENT_SUBCLASSES(klass) = NULL;
 }
 
 void
@@ -106,24 +106,24 @@ rb_class_remove_from_module_subclasses(VALUE klass)
 {
     rb_subclass_entry_t *entry;
 
-    if (RCLASS_EXT(klass)->module_subclasses) {
-	entry = *RCLASS_EXT(klass)->module_subclasses;
-	*RCLASS_EXT(klass)->module_subclasses = entry->next;
+    if (RCLASS_MODULE_SUBCLASSES(klass)) {
+	entry = *RCLASS_MODULE_SUBCLASSES(klass);
+	*RCLASS_MODULE_SUBCLASSES(klass) = entry->next;
 
 	if (entry->next) {
-	    RCLASS_EXT(entry->next->klass)->module_subclasses = RCLASS_EXT(klass)->module_subclasses;
+	    RCLASS_MODULE_SUBCLASSES(entry->next->klass) = RCLASS_MODULE_SUBCLASSES(klass);
 	}
 
 	xfree(entry);
     }
 
-    RCLASS_EXT(klass)->module_subclasses = NULL;
+    RCLASS_MODULE_SUBCLASSES(klass) = NULL;
 }
 
 void
 rb_class_foreach_subclass(VALUE klass, void (*f)(VALUE, VALUE), VALUE arg)
 {
-    rb_subclass_entry_t *cur = RCLASS_EXT(klass)->subclasses;
+    rb_subclass_entry_t *cur = RCLASS_SUBCLASSES(klass);
 
     /* do not be tempted to simplify this loop into a for loop, the order of
        operations is important here if `f` modifies the linked list */
@@ -181,14 +181,14 @@ class_alloc(VALUE flags, VALUE klass)
       RCLASS_M_TBL(obj) = 0;
       RCLASS_IV_INDEX_TBL(obj) = 0;
       RCLASS_SET_SUPER((VALUE)obj, 0);
-      RCLASS_EXT(obj)->subclasses = NULL;
-      RCLASS_EXT(obj)->parent_subclasses = NULL;
-      RCLASS_EXT(obj)->module_subclasses = NULL;
+      RCLASS_SUBCLASSES(obj) = NULL;
+      RCLASS_PARENT_SUBCLASSES(obj) = NULL;
+      RCLASS_MODULE_SUBCLASSES(obj) = NULL;
      */
     RCLASS_SET_ORIGIN((VALUE)obj, (VALUE)obj);
     RCLASS_SERIAL(obj) = rb_next_class_serial();
     RB_OBJ_WRITE(obj, &RCLASS_REFINED_CLASS(obj), Qnil);
-    RCLASS_EXT(obj)->allocator = 0;
+    RCLASS_ALLOCATOR(obj) = 0;
 
     return (VALUE)obj;
 }
@@ -372,7 +372,7 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
         RBASIC_SET_CLASS(clone, rb_singleton_class_clone(orig));
         rb_singleton_class_attached(RBASIC(clone)->klass, (VALUE)clone);
     }
-    RCLASS_EXT(clone)->allocator = RCLASS_EXT(orig)->allocator;
+    RCLASS_ALLOCATOR(clone) = RCLASS_ALLOCATOR(orig);
     copy_tables(clone, orig);
     if (RCLASS_M_TBL(orig)) {
 	struct clone_method_arg arg;
@@ -409,7 +409,7 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
             RCLASS_M_TBL(clone_p) = RCLASS_M_TBL(p);
             RCLASS_CONST_TBL(clone_p) = RCLASS_CONST_TBL(p);
             RCLASS_IV_TBL(clone_p) = RCLASS_IV_TBL(p);
-            RCLASS_EXT(clone_p)->allocator = RCLASS_EXT(p)->allocator;
+            RCLASS_ALLOCATOR(clone_p) = RCLASS_ALLOCATOR(p);
             if (RB_TYPE_P(clone, T_CLASS)) {
                 RCLASS_SET_INCLUDER(clone_p, clone);
             }
@@ -492,7 +492,7 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
 	}
 
 	RCLASS_SET_SUPER(clone, RCLASS_SUPER(klass));
-	RCLASS_EXT(clone)->allocator = RCLASS_EXT(klass)->allocator;
+	RCLASS_ALLOCATOR(clone) = RCLASS_ALLOCATOR(klass);
 	if (RCLASS_IV_TBL(klass)) {
 	    rb_iv_tbl_copy(clone, klass);
 	}
@@ -979,7 +979,7 @@ rb_include_module(VALUE klass, VALUE module)
 	rb_raise(rb_eArgError, "cyclic include detected");
 
     if (RB_TYPE_P(klass, T_MODULE)) {
-        rb_subclass_entry_t *iclass = RCLASS_EXT(klass)->subclasses;
+        rb_subclass_entry_t *iclass = RCLASS_SUBCLASSES(klass);
         int do_include = 1;
         while (iclass) {
             VALUE check_class = iclass->klass;
@@ -1190,7 +1190,7 @@ rb_prepend_module(VALUE klass, VALUE module)
 	rb_vm_check_redefinition_by_prepend(klass);
     }
     if (RB_TYPE_P(klass, T_MODULE)) {
-        rb_subclass_entry_t *iclass = RCLASS_EXT(klass)->subclasses;
+        rb_subclass_entry_t *iclass = RCLASS_SUBCLASSES(klass);
         VALUE klass_origin = RCLASS_ORIGIN(klass);
         struct rb_id_table *klass_m_tbl = RCLASS_M_TBL(klass);
         struct rb_id_table *klass_origin_m_tbl = RCLASS_M_TBL(klass_origin);

@@ -115,6 +115,11 @@ describe "CApiObject" do
       @o.rb_respond_to(true, :object_id).should == true
       @o.rb_respond_to(14, :succ).should == true
     end
+
+    it "returns 0 if the method has been defined as rb_f_notimplement" do
+      @o.respond_to?(:not_implemented_method).should == false
+      @o.rb_respond_to(@o, :not_implemented_method).should == false
+    end
   end
 
   describe "rb_obj_respond_to" do

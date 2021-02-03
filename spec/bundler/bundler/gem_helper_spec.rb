@@ -97,6 +97,7 @@ RSpec.describe Bundler::GemHelper do
         context "before installation" do
           it "raises an error with appropriate message" do
             task_names.each do |name|
+              skip "Rake::FileTask '#{name}' exists" if File.exist?(name)
               expect { Rake.application[name] }.
                 to raise_error(/^Don't know how to build task '#{name}'/)
             end

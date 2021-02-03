@@ -551,11 +551,24 @@ describe "Module#private_constant marked constants" do
     end
 
     it "can be accessed from classes that include the module" do
-      ConstantVisibility::PrivConstModuleChild.new.private_constant_from_include.should be_true
+      ConstantVisibility::ClassIncludingPrivConstModule.new.private_constant_from_include.should be_true
+    end
+
+    it "can be accessed from modules that include the module" do
+      ConstantVisibility::ModuleIncludingPrivConstModule.private_constant_from_include.should be_true
+    end
+
+    it "raises a NameError when accessed directly from modules that include the module" do
+      -> do
+        ConstantVisibility::ModuleIncludingPrivConstModule.private_constant_self_from_include
+      end.should raise_error(NameError)
+      -> do
+        ConstantVisibility::ModuleIncludingPrivConstModule.private_constant_named_from_include
+      end.should raise_error(NameError)
     end
 
     it "is defined? from classes that include the module" do
-      ConstantVisibility::PrivConstModuleChild.new.defined_from_include.should == "constant"
+      ConstantVisibility::ClassIncludingPrivConstModule.new.defined_from_include.should == "constant"
     end
   end
 
@@ -673,7 +686,7 @@ describe "Module#private_constant marked constants" do
       }
 
       -> do
-        ConstantVisibility::PrivConstModuleChild::PRIVATE_CONSTANT_MODULE
+        ConstantVisibility::ClassIncludingPrivConstModule::PRIVATE_CONSTANT_MODULE
       end.should raise_error(NameError) {|e|
         e.receiver.should == ConstantVisibility::PrivConstModule
         e.name.should == :PRIVATE_CONSTANT_MODULE

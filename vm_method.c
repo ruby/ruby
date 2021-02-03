@@ -168,7 +168,7 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
     VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS));
     if (rb_objspace_garbage_object_p(klass)) return;
 
-    if (LIKELY(RCLASS_EXT(klass)->subclasses == NULL)) {
+    if (LIKELY(RCLASS_SUBCLASSES(klass) == NULL)) {
         // no subclasses
         // check only current class
 
@@ -956,7 +956,7 @@ void
 rb_define_alloc_func(VALUE klass, VALUE (*func)(VALUE))
 {
     Check_Type(klass, T_CLASS);
-    RCLASS_EXT(klass)->allocator = func;
+    RCLASS_ALLOCATOR(klass) = func;
 }
 
 void
@@ -971,7 +971,7 @@ rb_get_alloc_func(VALUE klass)
     Check_Type(klass, T_CLASS);
 
     for (; klass; klass = RCLASS_SUPER(klass)) {
-	rb_alloc_func_t allocator = RCLASS_EXT(klass)->allocator;
+	rb_alloc_func_t allocator = RCLASS_ALLOCATOR(klass);
 	if (allocator == UNDEF_ALLOC_FUNC) break;
 	if (allocator) return allocator;
     }
@@ -1211,11 +1211,10 @@ rb_method_entry_with_refinements(VALUE klass, ID id, VALUE *defined_class_ptr)
 }
 
 static const rb_callable_method_entry_t *
-callable_method_entry_refeinements(VALUE klass, ID id, VALUE *defined_class_ptr, bool with_refinements)
+callable_method_entry_refeinements0(VALUE klass, ID id, VALUE *defined_class_ptr, bool with_refinements,
+                                    const rb_callable_method_entry_t *cme)
 {
-    const rb_callable_method_entry_t *cme = callable_method_entry(klass, id, defined_class_ptr);
-
-    if (cme == NULL || cme->def->type != VM_METHOD_TYPE_REFINED) {
+    if (cme == NULL || LIKELY(cme->def->type != VM_METHOD_TYPE_REFINED)) {
         return cme;
     }
     else {
@@ -1223,6 +1222,13 @@ callable_method_entry_refeinements(VALUE klass, ID id, VALUE *defined_class_ptr,
         const rb_method_entry_t *me = method_entry_resolve_refinement(klass, id, with_refinements, dcp);
         return prepare_callable_method_entry(*dcp, id, me, TRUE);
     }
+}
+
+static const rb_callable_method_entry_t *
+callable_method_entry_refeinements(VALUE klass, ID id, VALUE *defined_class_ptr, bool with_refinements)
+{
+    const rb_callable_method_entry_t *cme = callable_method_entry(klass, id, defined_class_ptr);
+    return callable_method_entry_refeinements0(klass, id, defined_class_ptr, with_refinements, cme);
 }
 
 MJIT_FUNC_EXPORTED const rb_callable_method_entry_t *
@@ -1901,9 +1907,9 @@ rb_hash_method_definition(st_index_t hash, const rb_method_definition_t *def)
       case VM_METHOD_TYPE_REFINED:
       case VM_METHOD_TYPE_ALIAS:
 	break; /* unreachable */
-	}
-	rb_bug("rb_hash_method_definition: unsupported method type (%d)\n", def->type);
     }
+    rb_bug("rb_hash_method_definition: unsupported method type (%d)\n", def->type);
+}
 
 st_index_t
 rb_hash_method_entry(st_index_t hash, const rb_method_entry_t *me)
@@ -1941,11 +1947,17 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
 	}
     }
 
-    if (orig_me->def->type == VM_METHOD_TYPE_ZSUPER) {
+    switch (orig_me->def->type) {
+      case VM_METHOD_TYPE_ZSUPER:
 	klass = RCLASS_SUPER(klass);
 	original_name = orig_me->def->original_id;
 	visi = METHOD_ENTRY_VISI(orig_me);
 	goto again;
+      case VM_METHOD_TYPE_ALIAS:
+        orig_me = orig_me->def->body.alias.original_me;
+        VM_ASSERT(orig_me->def->type != VM_METHOD_TYPE_ALIAS);
+        break;
+      default: break;
     }
 
     if (visi == METHOD_VISI_UNDEF) visi = METHOD_ENTRY_VISI(orig_me);

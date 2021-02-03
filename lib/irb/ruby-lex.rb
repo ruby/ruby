@@ -223,7 +223,10 @@ class RubyLex
             throw :TERM_INPUT if @line == ''
           else
             @line_no += l.count("\n")
-            next if l == "\n"
+            if l == "\n"
+              @exp_line_no += 1
+              next
+            end
             @line.concat l
             if @code_block_open or @ltype or @continue or @indent > 0
               next

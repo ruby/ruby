@@ -552,8 +552,8 @@ struct RMoved {
 
 #define RMOVED(obj) ((struct RMoved *)(obj))
 
-#if defined(_MSC_VER) || defined(__CYGWIN__)
-#pragma pack(push, 1) /* magic for reducing sizeof(RVALUE): 24 -> 20 */
+#if (SIZEOF_DOUBLE > SIZEOF_VALUE) && (defined(_MSC_VER) || defined(__CYGWIN__))
+#pragma pack(push, 4) /* == SIZEOF_VALUE: magic for reducing sizeof(RVALUE): 24 -> 20 */
 #endif
 
 typedef struct RVALUE {
@@ -604,7 +604,7 @@ typedef struct RVALUE {
 #endif
 } RVALUE;
 
-#if defined(_MSC_VER) || defined(__CYGWIN__)
+#if (SIZEOF_DOUBLE > SIZEOF_VALUE) && (defined(_MSC_VER) || defined(__CYGWIN__))
 #pragma pack(pop)
 #endif
 
@@ -2836,20 +2836,20 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	if (RCLASS_IV_INDEX_TBL(obj)) {
             iv_index_tbl_free(RCLASS_IV_INDEX_TBL(obj));
 	}
-	if (RCLASS_EXT(obj)->subclasses) {
+	if (RCLASS_SUBCLASSES(obj)) {
 	    if (BUILTIN_TYPE(obj) == T_MODULE) {
 		rb_class_detach_module_subclasses(obj);
 	    }
 	    else {
 		rb_class_detach_subclasses(obj);
 	    }
-	    RCLASS_EXT(obj)->subclasses = NULL;
+	    RCLASS_SUBCLASSES(obj) = NULL;
 	}
 	rb_class_remove_from_module_subclasses(obj);
 	rb_class_remove_from_super_subclasses(obj);
-	if (RANY(obj)->as.klass.ptr)
-	    xfree(RANY(obj)->as.klass.ptr);
-	RANY(obj)->as.klass.ptr = NULL;
+	if (RCLASS_EXT(obj))
+	    xfree(RCLASS_EXT(obj));
+	RCLASS_EXT(obj) = NULL;
 
         (void)RB_DEBUG_COUNTER_INC_IF(obj_module_ptr, BUILTIN_TYPE(obj) == T_MODULE);
         (void)RB_DEBUG_COUNTER_INC_IF(obj_class_ptr, BUILTIN_TYPE(obj) == T_CLASS);
@@ -3008,15 +3008,15 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	if (RCLASS_CALLABLE_M_TBL(obj) != NULL) {
 	    rb_id_table_free(RCLASS_CALLABLE_M_TBL(obj));
 	}
-	if (RCLASS_EXT(obj)->subclasses) {
+	if (RCLASS_SUBCLASSES(obj)) {
 	    rb_class_detach_subclasses(obj);
-	    RCLASS_EXT(obj)->subclasses = NULL;
+	    RCLASS_SUBCLASSES(obj) = NULL;
 	}
         cc_table_free(objspace, obj, FALSE);
 	rb_class_remove_from_module_subclasses(obj);
 	rb_class_remove_from_super_subclasses(obj);
-	xfree(RANY(obj)->as.klass.ptr);
-	RANY(obj)->as.klass.ptr = NULL;
+	xfree(RCLASS_EXT(obj));
+	RCLASS_EXT(obj) = NULL;
 
         RB_DEBUG_COUNTER_INC(obj_iclass_ptr);
 	break;
@@ -5174,8 +5174,9 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
                 }
 	    }
 #else
-	    heap_add_freepage(heap, sweep_page);
-	    break;
+            if (heap_add_freepage(heap, sweep_page)) {
+                break;
+            }
 #endif
 	}
 	else {

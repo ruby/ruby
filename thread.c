@@ -1650,6 +1650,8 @@ rb_nogvl(void *(*func)(void *), void *data1,
     void *val = 0;
     rb_execution_context_t *ec = GET_EC();
     rb_thread_t *th = rb_ec_thread_ptr(ec);
+    rb_vm_t *vm = rb_ec_vm_ptr(ec);
+    bool is_main_thread = vm->ractor.main_thread == th;
     int saved_errno = 0;
     VALUE ubf_th = Qfalse;
 
@@ -1658,8 +1660,8 @@ rb_nogvl(void *(*func)(void *), void *data1,
 	data2 = th;
     }
     else if (ubf && rb_ractor_living_thread_num(th->ractor) == 1) {
-        if (flags & RB_NOGVL_UBF_ASYNC_SAFE) {
-            th->vm->ubf_async_safe = 1;
+        if (is_main_thread && flags & RB_NOGVL_UBF_ASYNC_SAFE) {
+            vm->ubf_async_safe = 1;
         }
         else {
             ubf_th = rb_thread_start_unblock_thread();
@@ -1671,7 +1673,7 @@ rb_nogvl(void *(*func)(void *), void *data1,
 	saved_errno = errno;
     }, ubf, data2, flags & RB_NOGVL_INTR_FAIL);
 
-    th->vm->ubf_async_safe = 0;
+    if (is_main_thread) vm->ubf_async_safe = 0;
 
     if ((flags & RB_NOGVL_INTR_FAIL) == 0) {
 	RUBY_VM_CHECK_INTS_BLOCKING(ec);

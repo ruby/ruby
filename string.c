@@ -3497,7 +3497,7 @@ str_casecmp(VALUE str1, VALUE str2)
 {
     long len;
     rb_encoding *enc;
-    char *p1, *p1end, *p2, *p2end;
+    const char *p1, *p1end, *p2, *p2end;
 
     enc = rb_enc_compatible(str1, str2);
     if (!enc) {

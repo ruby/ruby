@@ -220,8 +220,7 @@ class << Merger
     else
       current_branch = IO.popen(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], &:read).strip
       execute('git', 'add', '.') &&
-        execute('git', 'commit', '-F', file) &&
-        execute('git', 'push', ORIGIN, current_branch)
+        execute('git', 'commit', '-F', file)
     end
   end
 

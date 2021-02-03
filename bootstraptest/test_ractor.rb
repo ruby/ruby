@@ -1350,4 +1350,17 @@ assert_equal "#{n}#{n}", %Q{
   }.map{|r| r.take}.join
 }
 
+# NameError
+assert_equal "ok", %q{
+  begin
+    bar
+  rescue => err
+  end
+  begin
+    Ractor.new{} << err
+  rescue TypeError
+    'ok'
+  end
+}
+
 end # if !ENV['GITHUB_WORKFLOW']

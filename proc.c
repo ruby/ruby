@@ -1709,18 +1709,24 @@ mnew_from_me(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
 }
 
 static VALUE
-mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
+mnew_callable(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
 {
     const rb_method_entry_t *me;
     VALUE iclass = Qnil;
 
-    if (obj == Qundef) { /* UnboundMethod */
-        me = rb_method_entry_with_refinements(klass, id, &iclass);
-    }
-    else {
-        me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(klass, id, &iclass);
-    }
+    ASSUME(obj != Qundef);
+    me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(klass, id, &iclass);
     return mnew_from_me(me, klass, iclass, obj, id, mclass, scope);
+}
+
+static VALUE
+mnew_unbound(VALUE klass, ID id, VALUE mclass, int scope)
+{
+    const rb_method_entry_t *me;
+    VALUE iclass = Qnil;
+
+    me = rb_method_entry_with_refinements(klass, id, &iclass);
+    return mnew_from_me(me, klass, iclass, Qundef, id, mclass, scope);
 }
 
 static inline VALUE
@@ -1960,7 +1966,7 @@ obj_method(VALUE obj, VALUE vid, int scope)
         if (m) return m;
 	rb_method_name_error(klass, vid);
     }
-    return mnew(klass, obj, id, mclass, scope);
+    return mnew_callable(klass, obj, id, mclass, scope);
 }
 
 /*
@@ -2121,7 +2127,7 @@ rb_mod_instance_method(VALUE mod, VALUE vid)
     if (!id) {
 	rb_method_name_error(mod, vid);
     }
-    return mnew(mod, Qundef, id, rb_cUnboundMethod, FALSE);
+    return mnew_unbound(mod, id, rb_cUnboundMethod, FALSE);
 }
 
 /*
@@ -2138,7 +2144,7 @@ rb_mod_public_instance_method(VALUE mod, VALUE vid)
     if (!id) {
 	rb_method_name_error(mod, vid);
     }
-    return mnew(mod, Qundef, id, rb_cUnboundMethod, TRUE);
+    return mnew_unbound(mod, id, rb_cUnboundMethod, TRUE);
 }
 
 /*
