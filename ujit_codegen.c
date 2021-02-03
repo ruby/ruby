@@ -339,9 +339,36 @@ gen_getlocal_wc0(jitstate_t* jit, ctx_t* ctx)
 
     // Compute the offset from BP to the local
     int32_t local_idx = (int32_t)jit_get_arg(jit, 0);
-    const int32_t offs = -sizeof(VALUE) * local_idx;
+    const int32_t offs = -(SIZEOF_VALUE * local_idx);
 
     // Load the local from the block
+    mov(cb, REG0, mem_opnd(64, REG0, offs));
+
+    // Write the local at SP
+    x86opnd_t stack_top = ctx_stack_push(ctx, T_NONE);
+    mov(cb, stack_top, REG0);
+
+    return true;
+}
+
+static bool
+gen_getlocal_wc1(jitstate_t* jit, ctx_t* ctx)
+{
+    //fprintf(stderr, "gen_getlocal_wc1\n");
+
+    // Load environment pointer EP from CFP
+    mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, ep));
+
+    // Get the previous EP from the current EP
+    // See GET_PREV_EP(ep) macro
+    // VALUE* prev_ep = ((VALUE *)((ep)[VM_ENV_DATA_INDEX_SPECVAL] & ~0x03))
+    mov(cb, REG0, mem_opnd(64, REG0, SIZEOF_VALUE * VM_ENV_DATA_INDEX_SPECVAL));
+    and(cb, REG0, imm_opnd(~0x03));
+
+    // Load the local from the block
+    // val = *(vm_get_ep(GET_EP(), level) - idx);
+    int32_t local_idx = (int32_t)jit_get_arg(jit, 0);
+    const int32_t offs = -(SIZEOF_VALUE * local_idx);
     mov(cb, REG0, mem_opnd(64, REG0, offs));
 
     // Write the local at SP
@@ -1186,9 +1213,9 @@ gen_opt_swb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb
 
     // Setup the new frame
     // *cfp = (const struct rb_control_frame_struct) {
-    //    .pc         = 0,
+    //    .pc         = pc,
     //    .sp         = sp,
-    //    .iseq       = 0,
+    //    .iseq       = iseq,
     //    .self       = recv,
     //    .ep         = sp - 1,
     //    .block_code = 0,
@@ -1348,6 +1375,7 @@ ujit_init_codegen(void)
     ujit_reg_op(BIN(putobject_INT2FIX_1_), gen_putobject_int2fix, false);
     ujit_reg_op(BIN(putself), gen_putself, false);
     ujit_reg_op(BIN(getlocal_WC_0), gen_getlocal_wc0, false);
+    //ujit_reg_op(BIN(getlocal_WC_1), gen_getlocal_wc1, false);
     ujit_reg_op(BIN(setlocal_WC_0), gen_setlocal_wc0, false);
     ujit_reg_op(BIN(getinstancevariable), gen_getinstancevariable, false);
     ujit_reg_op(BIN(setinstancevariable), gen_setinstancevariable, false);
