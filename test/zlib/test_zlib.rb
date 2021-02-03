@@ -516,14 +516,14 @@ if defined? Zlib
         gz.close
 
         results = []
-        t = File.open(t.path)
+        t = File.open(t.path, 'rb')
         Zlib::GzipReader.zcat(t) do |str|
           results << str
         end
         assert_equal(["foo", "bar"], results)
         t.close
 
-        t = File.open(t.path)
+        t = File.open(t.path, 'rb')
         assert_equal("foobar", Zlib::GzipReader.zcat(t))
         t.close
       }
