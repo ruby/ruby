@@ -510,22 +510,24 @@ if defined? Zlib
         gz = Zlib::GzipWriter.new(t)
         gz.print("foo")
         gz.close
-        t = File.open(t.path, 'ab')
-        gz = Zlib::GzipWriter.new(t)
-        gz.print("bar")
-        gz.close
+        File.open(t.path, 'ab') do |f|
+          gz = Zlib::GzipWriter.new(f)
+          gz.print("bar")
+          gz.close
+        end
 
         results = []
-        t = File.open(t.path, 'rb')
-        Zlib::GzipReader.zcat(t) do |str|
-          results << str
+        File.open(t.path, 'rb') do |f|
+          Zlib::GzipReader.zcat(f) do |str|
+            results << str
+          end
         end
         assert_equal(["foo", "bar"], results)
-        t.close
 
-        t = File.open(t.path, 'rb')
-        assert_equal("foobar", Zlib::GzipReader.zcat(t))
-        t.close
+        results = File.open(t.path, 'rb') do |f|
+          Zlib::GzipReader.zcat(f)
+        end
+        assert_equal("foobar", results)
       }
     end
 
