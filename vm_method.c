@@ -1932,11 +1932,17 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
 	}
     }
 
-    if (orig_me->def->type == VM_METHOD_TYPE_ZSUPER) {
+    switch (orig_me->def->type) {
+      case VM_METHOD_TYPE_ZSUPER:
 	klass = RCLASS_SUPER(klass);
 	original_name = orig_me->def->original_id;
 	visi = METHOD_ENTRY_VISI(orig_me);
 	goto again;
+      case VM_METHOD_TYPE_ALIAS:
+        orig_me = orig_me->def->body.alias.original_me;
+        VM_ASSERT(orig_me->def->type != VM_METHOD_TYPE_ALIAS);
+        break;
+      default: break;
     }
 
     if (visi == METHOD_VISI_UNDEF) visi = METHOD_ENTRY_VISI(orig_me);
