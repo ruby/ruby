@@ -25,15 +25,15 @@ Gem::Specification.new do |s|
   if Gem::Platform === s.platform and s.platform =~ 'java'
     s.files.delete_if {|f| f.start_with?("ext/")}
     s.extensions.clear
-    s.require_paths.unshift("jruby")
     s.files.concat(%w[
-      jruby/io/console.rb
-      jruby/io/console/bsd_console.rb
-      jruby/io/console/common.rb
-      jruby/io/console/linux_console.rb
-      jruby/io/console/native_console.rb
-      jruby/io/console/stty_console.rb
-      jruby/io/console/stub_console.rb
+      lib/io/console.rb
+      lib/io/console/ffi/bsd_console.rb
+      lib/io/console/ffi/common.rb
+      lib/io/console/ffi/console.rb
+      lib/io/console/ffi/linux_console.rb
+      lib/io/console/ffi/native_console.rb
+      lib/io/console/ffi/stty_console.rb
+      lib/io/console/ffi/stub_console.rb
     ])
   end
 
