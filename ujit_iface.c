@@ -353,7 +353,7 @@ iseqw_ujit_collect_blocks(st_data_t key, st_data_t value, st_data_t argp)
 static VALUE
 ujit_blocks_for(VALUE mod, VALUE rb_iseq)
 {
-    if (!rb_obj_is_iseq(rb_iseq)) {
+    if (CLASS_OF(rb_iseq) != rb_cISeq) {
         return rb_ary_new();
     }
     const rb_iseq_t *iseq = rb_iseqw_to_iseq(rb_iseq);
@@ -370,7 +370,7 @@ ujit_blocks_for(VALUE mod, VALUE rb_iseq)
 static VALUE
 ujit_install_entry(VALUE mod, VALUE iseq)
 {
-    if (!rb_obj_is_iseq(iseq)) {
+    if (CLASS_OF(iseq) != rb_cISeq) {
 	rb_raise(rb_eTypeError, "not an InstructionSequence");
     }
     rb_ujit_compile_iseq(rb_iseqw_to_iseq(iseq));
