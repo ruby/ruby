@@ -1,4 +1,3 @@
-#include <assert.h>
 #include "insns.inc"
 #include "internal.h"
 #include "vm_core.h"
@@ -35,7 +34,7 @@ jit_get_opcode(jitstate_t* jit)
 
 // Get the index of the next instruction
 static uint32_t
-jit_next_idx(jitstate_t* jit)
+jit_next_insn_idx(jitstate_t* jit)
 {
     return jit->insn_idx + insn_len(jit_get_opcode(jit));
 }
@@ -140,6 +139,7 @@ ujit_gen_block(ctx_t* ctx, block_t* block)
 {
     RUBY_ASSERT(cb != NULL);
     RUBY_ASSERT(block != NULL);
+    RUBY_ASSERT(!(block->blockid.idx == 0 && ctx->stack_size > 0));
 
     const rb_iseq_t *iseq = block->blockid.iseq;
     uint32_t insn_idx = block->blockid.idx;
@@ -805,7 +805,7 @@ gen_branchif(jitstate_t* jit, ctx_t* ctx)
     test(cb, val_opnd, imm_opnd(~Qnil));
 
     // Get the branch target instruction offsets
-    uint32_t next_idx = jit_next_idx(jit);
+    uint32_t next_idx = jit_next_insn_idx(jit);
     uint32_t jump_idx = next_idx + (uint32_t)jit_get_arg(jit, 0);
     blockid_t next_block = { jit->iseq, next_idx };
     blockid_t jump_block = { jit->iseq, jump_idx };
@@ -862,7 +862,7 @@ gen_branchunless(jitstate_t* jit, ctx_t* ctx)
     test(cb, val_opnd, imm_opnd(~Qnil));
 
     // Get the branch target instruction offsets
-    uint32_t next_idx = jit_next_idx(jit);
+    uint32_t next_idx = jit_next_insn_idx(jit);
     uint32_t jump_idx = next_idx + (uint32_t)jit_get_arg(jit, 0);
     blockid_t next_block = { jit->iseq, next_idx };
     blockid_t jump_block = { jit->iseq, jump_idx };
@@ -884,7 +884,7 @@ static bool
 gen_jump(jitstate_t* jit, ctx_t* ctx)
 {
     // Get the branch target instruction offsets
-    uint32_t jump_idx = jit_next_idx(jit) + (int32_t)jit_get_arg(jit, 0);
+    uint32_t jump_idx = jit_next_insn_idx(jit) + (int32_t)jit_get_arg(jit, 0);
     blockid_t jump_block = { jit->iseq, jump_idx };
 
     //
@@ -1103,7 +1103,7 @@ gen_opt_swb_cfunc(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const r
 
     // Jump (fall through) to the call continuation block
     // We do this to end the current block after the call
-    blockid_t cont_block = { jit->iseq, jit_next_idx(jit) };
+    blockid_t cont_block = { jit->iseq, jit_next_insn_idx(jit) };
     gen_direct_jump(
         ctx,
         cont_block
@@ -1150,8 +1150,7 @@ gen_opt_swb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb
     mov(cb, REG0, recv);
 
     // Callee method ID
-    //ID mid = vm_ci_mid(cd->ci);
-    //printf("JITting call to Ruby function \"%s\", argc: %d\n", rb_id2name(mid), argc);
+    //printf("JITting call to Ruby function \"%s\", argc: %d\n", rb_id2name(vm_ci_mid(cd->ci)), argc);
     //print_str(cb, "");
     //print_str(cb, "recv");
     //print_ptr(cb, recv);
@@ -1242,11 +1241,43 @@ gen_opt_swb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb
     mov(cb, REG0, const_ptr_opnd(start_pc));
     mov(cb, member_opnd(REG1, rb_control_frame_t, pc), REG0);
 
+
+
+
     //print_str(cb, "calling Ruby func:");
-    //print_str(cb, rb_id2name(mid));
+    //print_str(cb, rb_id2name(vm_ci_mid(cd->ci)));
+
+
 
     // Write the post call bytes, exit to the interpreter
     cb_write_post_call_bytes(cb);
+
+
+
+    /*
+    // Directly jump to the entry point of the callee
+    gen_direct_jump(
+        &DEFAULT_CTX,
+        (blockid_t){ iseq, 0 }
+    );
+    */
+
+
+
+
+
+
+
+    // TODO: need to pop args in the caller ctx
+
+    // TODO: stub so we can return to JITted code
+    //blockid_t cont_block = { jit->iseq, jit_next_insn_idx(jit) };
+
+
+
+
+
+
 
     return true;
 }
@@ -1305,7 +1336,7 @@ gen_opt_send_without_block(jitstate_t* jit, ctx_t* ctx)
 
 static bool
 gen_leave(jitstate_t* jit, ctx_t* ctx)
-{
+{ 
     // Only the return value should be on the stack
     RUBY_ASSERT(ctx->stack_size == 1);
 

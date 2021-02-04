@@ -20,6 +20,9 @@
 // Maximum number of temp value types we keep track of
 #define MAX_TEMP_TYPES 8
 
+// Default versioning context (no type information)
+#define DEFAULT_CTX ( (ctx_t){ { 0 }, 0 } )
+
 /**
 Code generation context
 Contains information we can use to optimize code

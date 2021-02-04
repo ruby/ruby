@@ -16,9 +16,6 @@
 // Maximum number of branch instructions we can track
 #define MAX_BRANCHES 32768
 
-// Default versioning context (no type information)
-const ctx_t DEFAULT_CTX = { { 0 }, 0 };
-
 // Table of block versions indexed by (iseq, index) tuples
 st_table *version_tbl;
 
@@ -270,6 +267,9 @@ block_t* gen_block_version(blockid_t blockid, const ctx_t* start_ctx)
         block = calloc(1, sizeof(block_t));
         block->blockid = last_branch->targets[0];
         memcpy(&block->ctx, ctx, sizeof(ctx_t));
+
+        // Use the context from the branch
+        *ctx = last_branch->target_ctxs[0];
 
         // Generate code for the current block
         ujit_gen_block(ctx, block);

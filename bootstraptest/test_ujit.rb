@@ -29,7 +29,21 @@ assert_equal '1', %q{
     retval
 }
 
-# test for GC safety. Don't invalidate dead iseqs.
+# Ruby-to-Ruby call and C call
+assert_normal_exit %q{
+  def bar
+    puts('hi!')
+  end
+
+  def foo
+    bar
+  end
+
+  foo()
+  foo()
+}
+
+# Test for GC safety. Don't invalidate dead iseqs.
 assert_normal_exit %q{
   Class.new do
     def foo
