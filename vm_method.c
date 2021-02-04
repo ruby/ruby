@@ -2210,7 +2210,7 @@ rb_mod_ruby2_keywords(int argc, VALUE *argv, VALUE module)
 
                 if (vm_block_handler_type(procval) == block_handler_type_iseq) {
                     const struct rb_captured_block *captured = VM_BH_TO_ISEQ_BLOCK(procval);
-                    const rb_iseq_t *iseq = rb_iseq_check(captured->code.iseq);
+                    const rb_iseq_t *iseq = captured->code.iseq;
                     if (iseq->body->param.flags.has_rest &&
                             !iseq->body->param.flags.has_kw &&
                             !iseq->body->param.flags.has_kwrest) {

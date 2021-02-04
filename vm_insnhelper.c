@@ -3805,7 +3805,7 @@ vm_invoke_iseq_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
                      bool is_lambda, VALUE block_handler)
 {
     const struct rb_captured_block *captured = VM_BH_TO_ISEQ_BLOCK(block_handler);
-    const rb_iseq_t *iseq = rb_iseq_check(captured->code.iseq);
+    const rb_iseq_t *iseq = captured->code.iseq;
     const int arg_size = iseq->body->param.size;
     VALUE * const rsp = GET_SP() - calling->argc;
     int opt_pc = vm_callee_setup_block_arg(ec, calling, ci, iseq, rsp, is_lambda ? arg_setup_method : arg_setup_block);

@@ -462,25 +462,6 @@ struct rb_iseq_struct {
     } aux;
 };
 
-#ifndef USE_LAZY_LOAD
-#define USE_LAZY_LOAD 0
-#endif
-
-#if USE_LAZY_LOAD
-const rb_iseq_t *rb_iseq_complete(const rb_iseq_t *iseq);
-#endif
-
-static inline const rb_iseq_t *
-rb_iseq_check(const rb_iseq_t *iseq)
-{
-#if USE_LAZY_LOAD
-    if (iseq->body == NULL) {
-	rb_iseq_complete((rb_iseq_t *)iseq);
-    }
-#endif
-    return iseq;
-}
-
 static inline const rb_iseq_t *
 def_iseq_ptr(rb_method_definition_t *def)
 {
@@ -488,7 +469,7 @@ def_iseq_ptr(rb_method_definition_t *def)
 #if VM_CHECK_MODE > 0
     if (def->type != VM_METHOD_TYPE_ISEQ) rb_bug("def_iseq_ptr: not iseq (%d)", def->type);
 #endif
-    return rb_iseq_check(def->body.iseq.iseqptr);
+    return def->body.iseq.iseqptr;
 }
 
 enum ruby_special_exceptions {
@@ -1563,7 +1544,7 @@ static inline const rb_iseq_t *
 vm_block_iseq(const struct rb_block *block)
 {
     switch (vm_block_type(block)) {
-      case block_type_iseq: return rb_iseq_check(block->as.captured.code.iseq);
+      case block_type_iseq: return block->as.captured.code.iseq;
       case block_type_proc: return vm_proc_iseq(block->as.proc);
       case block_type_ifunc:
       case block_type_symbol: return NULL;

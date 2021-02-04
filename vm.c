@@ -1311,7 +1311,7 @@ invoke_iseq_block_from_c(rb_execution_context_t *ec, const struct rb_captured_bl
 			 VALUE self, int argc, const VALUE *argv, int kw_splat, VALUE passed_block_handler,
                          const rb_cref_t *cref, int is_lambda, const rb_callable_method_entry_t *me)
 {
-    const rb_iseq_t *iseq = rb_iseq_check(captured->code.iseq);
+    const rb_iseq_t *iseq = captured->code.iseq;
     int i, opt_pc;
     VALUE type = VM_FRAME_MAGIC_BLOCK | (is_lambda ? VM_FRAME_FLAG_LAMBDA : 0);
     rb_control_frame_t *cfp = ec->cfp;
@@ -2360,7 +2360,6 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
 	    /* enter catch scope */
 	    const int arg_size = 1;
 
-	    rb_iseq_check(catch_iseq);
 	    cfp->sp = vm_base_ptr(cfp) + cont_sp;
 	    cfp->pc = cfp->iseq->body->iseq_encoded + cont_pc;
 

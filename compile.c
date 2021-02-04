@@ -9997,7 +9997,6 @@ struct ibf_load {
     struct ibf_load_buffer global_buffer;
     VALUE loader_obj;
     rb_iseq_t *iseq;
-    VALUE str;
     struct ibf_load_buffer *current_buffer;
 };
 
@@ -11966,15 +11965,6 @@ rb_ibf_load_iseq_complete(rb_iseq_t *iseq)
     load->iseq = prev_src_iseq;
 }
 
-#if USE_LAZY_LOAD
-MJIT_FUNC_EXPORTED const rb_iseq_t *
-rb_iseq_complete(const rb_iseq_t *iseq)
-{
-    rb_ibf_load_iseq_complete((rb_iseq_t *)iseq);
-    return iseq;
-}
-#endif
-
 static rb_iseq_t *
 ibf_load_iseq(const struct ibf_load *load, const rb_iseq_t *index_iseq)
 {
@@ -12010,16 +12000,10 @@ ibf_load_iseq(const struct ibf_load *load, const rb_iseq_t *index_iseq)
 #endif
 	    pinned_list_store(load->iseq_list, iseq_index, (VALUE)iseq);
 
-#if !USE_LAZY_LOAD
 #if IBF_ISEQ_DEBUG
 	    fprintf(stderr, "ibf_load_iseq: loading iseq=%p\n", (void *)iseq);
 #endif
             rb_ibf_load_iseq_complete(iseq);
-#else
-            if (GET_VM()->builtin_function_table) {
-                rb_ibf_load_iseq_complete(iseq);
-            }
-#endif /* !USE_LAZY_LOAD */
 
 #if IBF_ISEQ_DEBUG
 	    fprintf(stderr, "ibf_load_iseq: iseq=%p loaded %p\n",
@@ -12076,19 +12060,13 @@ ibf_load_setup(struct ibf_load *load, VALUE loader_obj, VALUE str)
         rb_raise(rb_eRuntimeError, "broken binary format");
     }
 
-#if USE_LAZY_LOAD
-    str = rb_str_new(RSTRING_PTR(str), RSTRING_LEN(str));
-#endif
-
     ibf_load_setup_bytes(load, loader_obj, StringValuePtr(str), RSTRING_LEN(str));
-    RB_OBJ_WRITE(loader_obj, &load->str, str);
 }
 
 static void
 ibf_loader_mark(void *ptr)
 {
     struct ibf_load *load = (struct ibf_load *)ptr;
-    rb_gc_mark(load->str);
     rb_gc_mark(load->iseq_list);
     rb_gc_mark(load->global_buffer.obj_list);
 }

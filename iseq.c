@@ -1970,7 +1970,7 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
       case TS_ISEQ:		/* iseq */
 	{
 	    if (op) {
-		const rb_iseq_t *iseq = rb_iseq_check((rb_iseq_t *)op);
+		const rb_iseq_t *iseq = (rb_iseq_t *)op;
 		ret = iseq->body->location.label;
 		if (child) {
 		    rb_ary_push(child, (VALUE)iseq);
@@ -2242,7 +2242,7 @@ rb_iseq_disasm_recursive(const rb_iseq_t *iseq, VALUE indent)
 			catch_type((int)entry->type), (int)entry->start,
 			(int)entry->end, (int)entry->sp, (int)entry->cont);
 	    if (entry->iseq && !(done_iseq && st_is_member(done_iseq, (st_data_t)entry->iseq))) {
-		rb_str_concat(str, rb_iseq_disasm_recursive(rb_iseq_check(entry->iseq), indent));
+		rb_str_concat(str, rb_iseq_disasm_recursive(entry->iseq, indent));
 		if (!done_iseq) {
                     done_iseq = st_init_numtable();
                     done_iseq_wrapper = TypedData_Wrap_Struct(0, &tmp_set, done_iseq);
@@ -2323,7 +2323,7 @@ rb_iseq_disasm_recursive(const rb_iseq_t *iseq, VALUE indent)
 	VALUE isv = rb_ary_entry(child, l);
 	if (done_iseq && st_is_member(done_iseq, (st_data_t)isv)) continue;
 	rb_str_cat_cstr(str, "\n");
-	rb_str_concat(str, rb_iseq_disasm_recursive(rb_iseq_check((rb_iseq_t *)isv), indent));
+	rb_str_concat(str, rb_iseq_disasm_recursive((rb_iseq_t *)isv, indent));
 	indent_str = RSTRING_PTR(indent);
     }
     RB_GC_GUARD(done_iseq_wrapper);
@@ -2797,7 +2797,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 		{
 		    const rb_iseq_t *iseq = (rb_iseq_t *)*seq;
 		    if (iseq) {
-			VALUE val = iseq_data_to_ary(rb_iseq_check(iseq));
+			VALUE val = iseq_data_to_ary(iseq);
 			rb_ary_push(ary, val);
 		    }
 		    else {
@@ -2903,7 +2903,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 	    UNALIGNED_MEMBER_PTR(iseq_body->catch_table, entries[i]);
 	rb_ary_push(ary, exception_type2symbol(entry->type));
 	if (entry->iseq) {
-	    rb_ary_push(ary, iseq_data_to_ary(rb_iseq_check(entry->iseq)));
+	    rb_ary_push(ary, iseq_data_to_ary(entry->iseq));
 	}
 	else {
 	    rb_ary_push(ary, Qnil);
@@ -3367,7 +3367,7 @@ trace_set_i(void *vstart, void *vend, size_t stride, void *data)
         asan_unpoison_object(v, false);
 
 	if (rb_obj_is_iseq(v)) {
-	    rb_iseq_trace_set(rb_iseq_check((rb_iseq_t *)v), turnon_events);
+	    rb_iseq_trace_set((rb_iseq_t *)v, turnon_events);
 	}
 
         asan_poison_object_if(ptr, v);

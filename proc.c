@@ -1100,7 +1100,7 @@ rb_vm_block_min_max_arity(const struct rb_block *block, int *max)
   again:
     switch (vm_block_type(block)) {
       case block_type_iseq:
-	return rb_iseq_min_max_arity(rb_iseq_check(block->as.captured.code.iseq), max);
+	return rb_iseq_min_max_arity(block->as.captured.code.iseq, max);
       case block_type_proc:
 	block = vm_proc_block(block->as.proc);
 	goto again;
@@ -1264,7 +1264,7 @@ rb_proc_get_iseq(VALUE self, int *is_proc)
 
     switch (vm_block_type(block)) {
       case block_type_iseq:
-	return rb_iseq_check(block->as.captured.code.iseq);
+	return block->as.captured.code.iseq;
       case block_type_proc:
 	return rb_proc_get_iseq(block->as.proc, is_proc);
       case block_type_ifunc:
@@ -1376,7 +1376,6 @@ iseq_location(const rb_iseq_t *iseq)
     VALUE loc[2];
 
     if (!iseq) return Qnil;
-    rb_iseq_check(iseq);
     loc[0] = rb_iseq_path(iseq);
     loc[1] = iseq->body->location.first_lineno;
 
@@ -1514,7 +1513,7 @@ rb_block_to_s(VALUE self, const struct rb_block *block, const char *additional_i
 	goto again;
       case block_type_iseq:
 	{
-	    const rb_iseq_t *iseq = rb_iseq_check(block->as.captured.code.iseq);
+	    const rb_iseq_t *iseq = block->as.captured.code.iseq;
             rb_str_catf(str, "%p %"PRIsVALUE":%d", (void *)self,
 			rb_iseq_path(iseq),
 			FIX2INT(iseq->body->location.first_lineno));
@@ -2669,7 +2668,7 @@ rb_method_entry_min_max_arity(const rb_method_entry_t *me, int *max)
       case VM_METHOD_TYPE_BMETHOD:
         return rb_proc_min_max_arity(def->body.bmethod.proc, max);
       case VM_METHOD_TYPE_ISEQ:
-	return rb_iseq_min_max_arity(rb_iseq_check(def->body.iseq.iseqptr), max);
+	return rb_iseq_min_max_arity(def->body.iseq.iseqptr, max);
       case VM_METHOD_TYPE_UNDEF:
       case VM_METHOD_TYPE_NOTIMPLEMENTED:
 	return *max = 0;
@@ -2832,7 +2831,7 @@ method_def_iseq(const rb_method_definition_t *def)
 {
     switch (def->type) {
       case VM_METHOD_TYPE_ISEQ:
-	return rb_iseq_check(def->body.iseq.iseqptr);
+	return def->body.iseq.iseqptr;
       case VM_METHOD_TYPE_BMETHOD:
         return rb_proc_get_iseq(def->body.bmethod.proc, 0);
       case VM_METHOD_TYPE_ALIAS:
@@ -3355,7 +3354,6 @@ proc_binding(VALUE self)
     RB_OBJ_WRITTEN(bindval, Qundef, VM_ENV_ENVVAL(env->ep));
 
     if (iseq) {
-	rb_iseq_check(iseq);
 	RB_OBJ_WRITE(bindval, &bind->pathobj, iseq->body->location.pathobj);
 	bind->first_lineno = FIX2INT(rb_iseq_first_lineno(iseq));
     }
