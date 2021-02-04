@@ -323,8 +323,6 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   end
 
   def test_cursor_position
-    return if RUBY_ENGINE == 'jruby'
-
     run_pty("#{<<~"begin;"}\n#{<<~'end;'}") do |r, w, _|
       begin;
         con = IO.console
@@ -421,6 +419,8 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   end
 
   def run_pty(src, n = 1)
+    pend("PTY.spawn cannot control terminal on JRuby") if RUBY_ENGINE == 'jruby'
+
     r, w, pid = PTY.spawn(EnvUtil.rubybin, "-I#{TestIO_Console::PATHS.join(File::PATH_SEPARATOR)}", "-rio/console", "-e", src)
   rescue RuntimeError
     omit $!
