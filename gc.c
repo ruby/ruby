@@ -8051,6 +8051,9 @@ rb_gc_force_recycle(VALUE obj)
 void
 rb_gc_register_mark_object(VALUE obj)
 {
+    if (!is_pointer_to_heap(&rb_objspace, (void *)obj))
+        return;
+
     RB_VM_LOCK_ENTER();
     {
         VALUE ary_ary = GET_VM()->mark_object_ary;
