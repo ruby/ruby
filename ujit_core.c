@@ -574,6 +574,7 @@ invalidate_block_version(block_t* block)
             if (cur->next == block)
             {
                 cur->next = cur->next->next;
+                deleted = true;
                 break;
             }
         }

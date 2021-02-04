@@ -28,3 +28,21 @@ assert_equal '1', %q{
 
     retval
 }
+
+# test for GC safety. Don't invalidate dead iseqs.
+assert_normal_exit %q{
+  Class.new do
+    def foo
+      itself
+    end
+
+    new.foo
+    UJIT.install_entry(RubyVM::InstructionSequence.of(instance_method(:foo)))
+    new.foo
+  end
+
+  4.times { GC.start }
+  def itself
+    self
+  end
+}
