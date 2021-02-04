@@ -637,6 +637,78 @@ gen_opt_ge(jitstate_t* jit, ctx_t* ctx)
 }
 
 static bool
+gen_opt_aref(jitstate_t* jit, ctx_t* ctx)
+{
+    struct rb_call_data * cd = (struct rb_call_data *)jit_get_arg(jit, 0);
+    int32_t argc = (int32_t)vm_ci_argc(cd->ci);
+
+    // Only JIT one arg calls like `ary[6]`
+    if (argc != 1) {
+        return false;
+    }
+
+    const rb_callable_method_entry_t *cme = vm_cc_cme(cd->cc);
+
+    // Bail if the inline cache has been filled.  Currently, certain types
+    // (including arrays) don't use the inline cache, so if the inline cache
+    // has an entry, then this must be used by some other type.
+    if (cme) {
+        return false;
+    }
+
+    // Create a size-exit to fall back to the interpreter
+    uint8_t* side_exit = ujit_side_exit(jit, ctx);
+
+    x86opnd_t recv = ctx_stack_pop(ctx, 1);
+    mov(cb, REG0, recv);
+
+    // if (SPECIAL_CONST_P(recv)) {
+    // Bail if it's not a heap object
+    test(cb, REG0, imm_opnd(RUBY_IMMEDIATE_MASK));
+    jnz_ptr(cb, side_exit);
+    cmp(cb, REG0, imm_opnd(Qfalse));
+    je_ptr(cb, side_exit);
+    cmp(cb, REG0, imm_opnd(Qnil));
+    je_ptr(cb, side_exit);
+
+    // Bail if recv is *not* an array
+    x86opnd_t klass_opnd = mem_opnd(64, REG0, offsetof(struct RBasic, klass));
+    mov(cb, REG0, klass_opnd);
+    mov(cb, REG1, const_ptr_opnd((void *)rb_cArray));
+    cmp(cb, REG0, REG1);
+    jne_ptr(cb, side_exit);
+
+    // Bail if arg0 is *not* an FIXNUM
+    x86opnd_t operand = ctx_stack_pop(ctx, 1);
+    mov(cb, REG1, operand);
+    test(cb, REG1, imm_opnd(RUBY_FIXNUM_FLAG));
+    jz_ptr(cb, side_exit);
+
+    // Save MicroJIT registers
+    push(cb, REG_CFP);
+    push(cb, REG_EC);
+    push(cb, REG_SP);
+    // Maintain 16-byte RSP alignment
+    sub(cb, RSP, imm_opnd(8));
+
+    mov(cb, RDI, recv);
+    sar(cb, REG1, imm_opnd(1)); // Convert fixnum to int
+    mov(cb, RSI, REG1);
+    call_ptr(cb, REG0, (void *)rb_ary_entry_internal);
+
+    // Restore registers
+    add(cb, RSP, imm_opnd(8));
+    pop(cb, REG_SP);
+    pop(cb, REG_EC);
+    pop(cb, REG_CFP);
+
+    x86opnd_t stack_ret = ctx_stack_push(ctx, T_NONE);
+    mov(cb, stack_ret, RAX);
+
+    return true;
+}
+
+static bool
 gen_opt_and(jitstate_t* jit, ctx_t* ctx)
 {
     // Create a size-exit to fall back to the interpreter
@@ -1192,7 +1264,7 @@ gen_opt_swb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb
     lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * (3 + num_locals)));
 
     // Initialize local variables to Qnil
-    for (int i=0; i < num_locals; i++) {
+    for (int i = 0; i < num_locals; i++) {
         mov(cb, mem_opnd(64, REG0, sizeof(VALUE) * (i - num_locals - 3)), imm_opnd(Qnil));
     }
 
@@ -1390,6 +1462,7 @@ ujit_init_codegen(void)
     ujit_reg_op(BIN(opt_lt), gen_opt_lt, false);
     ujit_reg_op(BIN(opt_le), gen_opt_le, false);
     ujit_reg_op(BIN(opt_ge), gen_opt_ge, false);
+    ujit_reg_op(BIN(opt_aref), gen_opt_aref, false);
     ujit_reg_op(BIN(opt_and), gen_opt_and, false);
     ujit_reg_op(BIN(opt_minus), gen_opt_minus, false);
     ujit_reg_op(BIN(opt_plus), gen_opt_plus, false);
