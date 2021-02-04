@@ -159,6 +159,7 @@ RBIMPL_ATTR_NONNULL(())
  * @param[in]   name             Name of the undef.
  * @exception   rb_eTypeError    `klass` is a non-module.
  * @exception   rb_eFrozenError  `klass` is frozen.
+ * @see         rb_remove_method
  */
 void rb_undef_method(VALUE klass, const char *name);
 

@@ -1061,14 +1061,6 @@ rb_funcallv_kw(VALUE recv, ID mid, int argc, const VALUE *argv, int kw_splat)
     return rb_call(recv, mid, argc, argv, kw_splat ? CALL_FCALL_KW : CALL_FCALL);
 }
 
-/*!
- * Calls a method
- * \param recv   receiver of the method
- * \param mid    an ID that represents the name of the method
- * \param args   an Array object which contains method arguments
- *
- * \pre \a args must refer an Array object.
- */
 VALUE
 rb_apply(VALUE recv, ID mid, VALUE args)
 {
