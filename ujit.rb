@@ -1,8 +1,6 @@
 module UJIT
   def self.disasm(iseq)
-    if iseq.is_a? Method
-        iseq = RubyVM::InstructionSequence.of(iseq)
-    end
+    iseq = RubyVM::InstructionSequence.of(iseq)
 
     blocks = UJIT.blocks_for(iseq)
     return if blocks.empty?
