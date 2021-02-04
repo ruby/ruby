@@ -197,7 +197,6 @@ VALUE rb_cSymbol;
     ((len) <= RSTRING_EMBED_LEN_MAX + 1 - (termlen))
 
 static VALUE str_replace_shared_without_enc(VALUE str2, VALUE str);
-static VALUE str_new_shared(VALUE klass, VALUE str);
 static VALUE str_new_frozen(VALUE klass, VALUE orig);
 static VALUE str_new_frozen_buffer(VALUE klass, VALUE orig, int copy_encoding);
 static VALUE str_new_static(VALUE klass, const char *ptr, long len, int encindex);
