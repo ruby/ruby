@@ -148,6 +148,9 @@ int ctx_diff(const ctx_t* src, const ctx_t* dst)
 // Add a block version to the map
 static void add_block_version(blockid_t blockid, block_t* block)
 {
+    // Function entry blocks must have stack size 0
+    RUBY_ASSERT(!(block->blockid.idx == 0 && block->ctx.stack_size > 0));
+
     // If there exists a version for this block id
     block_t* first_version = NULL;
     st_lookup(version_tbl, (st_data_t)&blockid, (st_data_t*)&first_version);
@@ -265,6 +268,9 @@ block_t* gen_block_version(blockid_t blockid, const ctx_t* start_ctx)
         if (last_branch->targets[0].iseq == NULL) {
             rb_bug("invalid target for last branch");
         }
+
+        // Use the context from the branch
+        *ctx = last_branch->target_ctxs[0];
 
         // Allocate a new block version object
         block = calloc(1, sizeof(block_t));
