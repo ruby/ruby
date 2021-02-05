@@ -28,3 +28,49 @@ assert_equal '1', %q{
 
     retval
 }
+
+# foo leaves a temp on the stack before the call
+assert_equal '6', %q{
+    def bar
+        return 5
+    end
+
+    def foo
+        return 1 + bar
+    end
+
+    foo()
+    retval = foo()
+}
+
+# Ruby-to-Ruby call and C call
+assert_normal_exit %q{
+  def bar
+    puts('hi!')
+  end
+
+  def foo
+    bar
+  end
+
+  foo()
+  foo()
+}
+
+# Test for GC safety. Don't invalidate dead iseqs.
+assert_normal_exit %q{
+  Class.new do
+    def foo
+      itself
+    end
+
+    new.foo
+    UJIT.install_entry(RubyVM::InstructionSequence.of(instance_method(:foo)))
+    new.foo
+  end
+
+  4.times { GC.start }
+  def itself
+    self
+  end
+}
