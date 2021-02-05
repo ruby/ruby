@@ -1,7 +1,7 @@
 # frozen_string_literal: false
 require 'mkmf'
 
-ok = true if RUBY_ENGINE == "ruby"
+ok = true if RUBY_ENGINE == "ruby" || RUBY_ENGINE == "truffleruby"
 hdr = nil
 case
 when macro_defined?("_WIN32", "")
