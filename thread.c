@@ -1659,8 +1659,8 @@ rb_nogvl(void *(*func)(void *), void *data1,
 	ubf = ubf_select;
 	data2 = th;
     }
-    else if (ubf && rb_ractor_living_thread_num(th->ractor) == 1) {
-        if (is_main_thread && flags & RB_NOGVL_UBF_ASYNC_SAFE) {
+    else if (ubf && rb_ractor_living_thread_num(th->ractor) == 1 && is_main_thread) {
+        if (flags & RB_NOGVL_UBF_ASYNC_SAFE) {
             vm->ubf_async_safe = 1;
         }
         else {
