@@ -29,6 +29,20 @@ assert_equal '1', %q{
     retval
 }
 
+# foo leaves a temp on the stack before the call
+assert_equal '6', %q{
+    def bar
+        return 5
+    end
+
+    def foo
+        return 1 + bar
+    end
+
+    foo()
+    retval = foo()
+}
+
 # Ruby-to-Ruby call and C call
 assert_normal_exit %q{
   def bar
