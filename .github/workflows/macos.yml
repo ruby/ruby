@@ -13,10 +13,6 @@ jobs:
     steps:
       - run: mkdir build
         working-directory:
-      - name: Disable Firewall
-        run: |
-          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
-          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate
       - name: git config
         run: |
           git config --global advice.detachedHead 0
