@@ -394,7 +394,12 @@ class Reline::LineEditor
       Reline::IOGate.move_cursor_column(0)
       @scroll_partial_screen = nil
       prompt, prompt_width, prompt_list = check_multiline_prompt(whole_lines, prompt)
-      modify_lines(whole_lines).each_with_index do |line, index|
+      if @previous_line_index
+        new_lines = whole_lines(index: @previous_line_index, line: @line)
+      else
+        new_lines = whole_lines
+      end
+      modify_lines(new_lines).each_with_index do |line, index|
         @output.write "#{prompt_list ? prompt_list[index] : prompt}#{line}\n"
         Reline::IOGate.erase_after_cursor
       end
@@ -426,8 +431,13 @@ class Reline::LineEditor
     if @is_multiline
       if finished?
         # Always rerender on finish because output_modifier_proc may return a different output.
-        line = modify_lines(whole_lines)[@line_index]
-        prompt, prompt_width, prompt_list = check_multiline_prompt(whole_lines, prompt)
+        if @previous_line_index
+          new_lines = whole_lines(index: @previous_line_index, line: @line)
+        else
+          new_lines = whole_lines
+        end
+        line = modify_lines(new_lines)[@line_index]
+        prompt, prompt_width, prompt_list = check_multiline_prompt(new_lines, prompt)
         render_partial(prompt, prompt_width, line, @first_line_started_from)
         move_cursor_down(@highest_in_all - (@first_line_started_from + @highest_in_this - 1) - 1)
         scroll_down(1)
@@ -1324,7 +1334,11 @@ class Reline::LineEditor
     if @buffer_of_lines.size == 1 and @line.nil?
       nil
     else
-      whole_lines.join("\n")
+      if @previous_line_index
+        whole_lines(index: @previous_line_index, line: @line).join("\n")
+      else
+        whole_lines.join("\n")
+      end
     end
   end
 
