@@ -62,6 +62,9 @@ ujit_gen_exit(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb, VALUE* exit_pc)
         mov(cb, member_opnd(REG_CFP, rb_control_frame_t, sp), REG_SP);
     }
 
+    // Update the CFP on the EC
+    mov(cb, member_opnd(REG_EC, rb_execution_context_t, cfp), REG_CFP);
+
     // Directly return the next PC, which is a constant
     mov(cb, RAX, const_ptr_opnd(exit_pc));
     mov(cb, member_opnd(REG_CFP, rb_control_frame_t, pc), RAX);
@@ -1250,7 +1253,7 @@ gen_opt_swb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb
     mov(cb, REG0, const_ptr_opnd(jit->pc + insn_len(BIN(opt_send_without_block))));
     mov(cb, mem_opnd(64, REG_CFP, offsetof(rb_control_frame_t, pc)), REG0);
 
-    // Store the updated SP on the CFP (pop arguments and self)
+    // Store the updated SP on the CFP (pop arguments and receiver)
     lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * -(argc + 1)));
     mov(cb, member_opnd(REG_CFP, rb_control_frame_t, sp), REG0);
 
@@ -1285,11 +1288,8 @@ gen_opt_swb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb
     mov(cb, mem_opnd(64, REG0, 8 * -1), imm_opnd(frame_type));
 
     // Allocate a new CFP (ec->cfp--)
-    sub(
-        cb,
-        member_opnd(REG_EC, rb_execution_context_t, cfp),
-        imm_opnd(sizeof(rb_control_frame_t))
-    );
+    sub(cb, REG_CFP, imm_opnd(sizeof(rb_control_frame_t)));
+    mov(cb, member_opnd(REG_EC, rb_execution_context_t, cfp), REG_CFP);
 
     // Setup the new frame
     // *cfp = (const struct rb_control_frame_struct) {
@@ -1315,10 +1315,31 @@ gen_opt_swb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb
     mov(cb, member_opnd(REG1, rb_control_frame_t, pc), REG0);
 
     //print_str(cb, "calling Ruby func:");
-    //print_str(cb, rb_id2name(mid));
+    //print_str(cb, rb_id2name(vm_ci_mid(cd->ci)));
 
-    // Write the post call bytes, exit to the interpreter
-    cb_write_post_call_bytes(cb);
+    // Load the updated SP
+    mov(cb, REG_SP, member_opnd(REG_CFP, rb_control_frame_t, sp));
+   
+    // Directly jump to the entry point of the callee
+    gen_direct_jump(
+        &DEFAULT_CTX,
+        (blockid_t){ iseq, 0 }
+    );
+    
+
+
+    // TODO: create stub for call continuation
+
+    // TODO: need to pop args in the caller ctx
+
+    // TODO: stub so we can return to JITted code
+    //blockid_t cont_block = { jit->iseq, jit_next_insn_idx(jit) };
+
+
+
+
+
+
 
     return true;
 }
@@ -1387,11 +1408,9 @@ gen_leave(jitstate_t* jit, ctx_t* ctx)
     // Load environment pointer EP from CFP
     mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, ep));
 
-    // flags & VM_FRAME_FLAG_FINISH
+    // if (flags & VM_FRAME_FLAG_FINISH) != 0
     x86opnd_t flags_opnd = mem_opnd(64, REG0, sizeof(VALUE) * VM_ENV_DATA_INDEX_FLAGS);
     test(cb, flags_opnd, imm_opnd(VM_FRAME_FLAG_FINISH));
-
-    // if (flags & VM_FRAME_FLAG_FINISH) != 0
     jnz_ptr(cb, side_exit);
 
     // TODO:
@@ -1400,15 +1419,16 @@ gen_leave(jitstate_t* jit, ctx_t* ctx)
     // Load the return value
     mov(cb, REG0, ctx_stack_pop(ctx, 1));
 
-    // Pop the current CFP (ec->cfp++)
+    // Pop the current frame (ec->cfp++)
     // Note: the return PC is already in the previous CFP
     add(cb, REG_CFP, imm_opnd(sizeof(rb_control_frame_t)));
     mov(cb, member_opnd(REG_EC, rb_execution_context_t, cfp), REG_CFP);
 
     // Push the return value on the caller frame
-    mov(cb, REG1, member_opnd(REG_CFP, rb_control_frame_t, sp));
-    mov(cb, mem_opnd(64, REG1, 0), REG0);
+    // The SP points one above the topmost value
     add(cb, member_opnd(REG_CFP, rb_control_frame_t, sp), imm_opnd(SIZEOF_VALUE));
+    mov(cb, REG_SP, member_opnd(REG_CFP, rb_control_frame_t, sp));
+    mov(cb, mem_opnd(64, REG_SP, -SIZEOF_VALUE), REG0);
 
     // Write the post call bytes
     cb_write_post_call_bytes(cb);
