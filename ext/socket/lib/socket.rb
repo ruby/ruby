@@ -610,7 +610,11 @@ class Socket < BasicSocket
     rescue ClosedQueueError
       # timed out. ignore exception
     ensure
-      queue.push(:getaddrinfo_v6_done) rescue nil
+      begin
+        queue.push(:getaddrinfo_v6_done)
+      rescue ClosedQueueError
+        # timed out. ignore exception
+      end
     end
   end
   private_class_method :start_getaddrinfo_v6
@@ -636,7 +640,11 @@ class Socket < BasicSocket
     rescue ClosedQueueError
       # timed out. ignore exception
     ensure
-      queue.push(:getaddrinfo_v4_done) rescue nil
+      begin
+        queue.push(:getaddrinfo_v4_done)
+      rescue ClosedQueueError
+        # timed out. ignore exception
+      end
     end
   end
   private_class_method :start_getaddrinfo_v4
@@ -648,6 +656,7 @@ class Socket < BasicSocket
       begin
         socket.connect_nonblock(socket.remote_address)
       rescue Errno::EISCONN # already connected
+        error = nil
         true
       rescue => ex
         error = ex
@@ -662,6 +671,16 @@ class Socket < BasicSocket
   CONNECTION_ATTEMPT_DELAY = 0.25
   private_constant :CONNECTION_ATTEMPT_DELAY
 
+  def self.cleanup_socket_tcp(getaddrinfo_v6_th, getaddrinfo_v4_th, timeout_th, socket_list)
+    getaddrinfo_v6_th&.exit
+    getaddrinfo_v4_th&.exit
+    timeout_th&.exit
+    socket_list&.each do |socket|
+      socket.close if socket != ret # close other sockets
+    end
+  end
+  private_class_method :cleanup_socket_tcp
+
   # :call-seq:
   #   Socket.tcp(host, port, local_host=nil, local_port=nil, [opts]) {|socket| ... }
   #   Socket.tcp(host, port, local_host=nil, local_port=nil, [opts])
@@ -674,7 +693,7 @@ class Socket < BasicSocket
   # The optional last argument _opts_ is options represented by a hash.
   # _opts_ may have following options:
   #
-  # [:connect_timeout] specify the timeout in seconds.
+  # [:connect_timeout] specify the timeout for name resolution and connection attempts in seconds.
   # [:resolv_timeout] specify the name resolution timeout in seconds.
   #
   # If a block is given, the block is called with the socket.
@@ -702,7 +721,7 @@ class Socket < BasicSocket
     end
 
     local_addr_list = nil
-    if local_host && local_port
+    if local_host != nil || local_port != nil
       local_addr_list = Addrinfo.getaddrinfo(local_host, local_port, nil, :STREAM, nil)
       attempt_v6 = local_addr_list.any? {|local_ai| local_ai.afamily == Socket::AF_INET6 }
       attempt_v4 = local_addr_list.any? {|local_ai| local_ai.afamily == Socket::AF_INET }
@@ -755,6 +774,7 @@ class Socket < BasicSocket
             ret, error = find_connected_socket(writable_sockets)
             last_error = error if error
             break if ret
+            socket_list -= writable_sockets # remove sockets resulted in error from socket_list
           end
         rescue SystemCallError => ex
           last_error = ex
@@ -765,27 +785,26 @@ class Socket < BasicSocket
       end
     end
 
-    # wait for sockets to be connected
-    if !ret && !socket_list.empty?
-      begin
-        if connect_timeout
-          if queue.closed? # timed out
-            timeout = 0 # returns immediately
-          else
-            # wait until connect_timeout
-            elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
-            timeout = connect_timeout - elapsed
-            timeout = 0 if timeout.negative?
-          end
+    timeout = nil # wait forever
+    while !ret && !socket_list.empty? && timeout != 0
+      if connect_timeout
+        if queue.closed? # timed out
+          timeout = 0 # returns immediately
         else
-          timeout = nil # wait forever
+          # wait until connect_timeout
+          elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
+          timeout = connect_timeout - elapsed
+          timeout = 0 if timeout.negative?
         end
+      end
+      begin
         _, writable_sockets, = IO.select(nil, socket_list, nil, timeout)
       rescue SystemCallError => ex
         last_error = ex
       end
       ret, error = find_connected_socket(writable_sockets)
       last_error = error if error
+      socket_list -= writable_sockets # remove sockets resulted in error from socket_list
     end
 
     unless ret
@@ -801,6 +820,7 @@ class Socket < BasicSocket
     ret.nonblock = false
 
     if block_given?
+      cleanup_socket_tcp(getaddrinfo_v6_th, getaddrinfo_v4_th, timeout_th, socket_list)
       begin
         yield ret
       ensure
@@ -810,13 +830,7 @@ class Socket < BasicSocket
       return ret
     end
   ensure
-    # cleanup
-    getaddrinfo_v6_th&.exit
-    getaddrinfo_v4_th&.exit
-    timeout_th&.exit
-    socket_list&.each do |socket|
-      socket.close if socket != ret # close other sockets
-    end
+    cleanup_socket_tcp(getaddrinfo_v6_th, getaddrinfo_v4_th, timeout_th, socket_list) unless block_given?
   end
 
   # :stopdoc:
