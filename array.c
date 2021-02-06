@@ -7679,7 +7679,7 @@ finish_exact_sum(long n, VALUE r, VALUE v, int z)
  *    sum = init
  *    array.each {|element| sum += element }
  *    sum
- *  For example, <tt>[e1, e2, e3].sum</tt> returns </tt>init + e1 + e2 + e3</tt>.
+ *  For example, <tt>[e1, e2, e3].sum</tt> returns <tt>init + e1 + e2 + e3</tt>.
  *
  *  Examples:
  *    a = [0, 1, 2, 3]
