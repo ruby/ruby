@@ -5291,6 +5291,7 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
     long i;
 
     ary2 = to_ary(ary2);
+    if (RARRAY_LEN(ary2) == 0) { return ary_make_shared_copy(ary1); }
     ary3 = rb_ary_new();
 
     if (RARRAY_LEN(ary1) <= SMALL_ARRAY_LEN || RARRAY_LEN(ary2) <= SMALL_ARRAY_LEN) {
