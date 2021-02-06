@@ -294,6 +294,13 @@ module TestIRB
         "measure { |context, code, line_no, &block|\n",
         "  result = block.()\n",
         "  puts 'aaa' if IRB.conf[:MEASURE]\n",
+        "  result\n",
+        "}\n",
+        "3\n",
+        "measure { |context, code, line_no, &block|\n",
+        "  result = block.()\n",
+        "  puts 'bbb' if IRB.conf[:MEASURE]\n",
+        "  result\n",
         "}\n",
         "3\n",
         "measure :off\n",
@@ -306,7 +313,7 @@ module TestIRB
         irb.eval_input
       end
       assert_empty err
-      assert_match(/\A=> 3\nBLOCK is added\.\n=> nil\naaa\n=> 3\n=> nil\n=> 3\n/, out)
+      assert_match(/\A=> 3\nBLOCK is added\.\n=> nil\naaa\n=> 3\nBLOCK is added.\naaa\n=> nil\nbbb\n=> 3\n=> nil\n=> 3\n/, out)
       assert_empty(c.class_variables)
     end
 
