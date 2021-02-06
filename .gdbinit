@@ -1102,11 +1102,11 @@ define print_id
           set $arylen = $ary->as.heap.len
         end
         set $result = $aryptr[($serial % ID_ENTRY_UNIT) * ID_ENTRY_SIZE + $t]
-	if $result != RUBY_Qnil
+        if $result != RUBY_Qnil
           print_string $result
-	else
-	  echo undef
-	end
+        else
+          echo undef
+        end
       end
     end
   end
