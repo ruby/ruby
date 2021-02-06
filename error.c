@@ -662,7 +662,7 @@ preface_dump(FILE *out)
     static const char msg[] = ""
 	"-- Crash Report log information "
 	"--------------------------------------------\n"
-	"   See Crash Report log file under the one of following:\n"
+	"   See Crash Report log file in one of the following locations:\n"
 # if MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_6
 	"     * ~/Library/Logs/CrashReporter\n"
 	"     * /Library/Logs/CrashReporter\n"
