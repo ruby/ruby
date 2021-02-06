@@ -15,9 +15,9 @@ module IRB
     class Nop
 
 
-      def self.execute(conf, *opts)
+      def self.execute(conf, *opts, &block)
         command = new(conf)
-        command.execute(*opts)
+        command.execute(*opts, &block)
       end
 
       def initialize(conf)
