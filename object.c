@@ -980,6 +980,32 @@ rb_class_search_ancestor(VALUE cl, VALUE c)
  *
  */
 
+/* Document-method: method_undefined
+ *
+ * call-seq:
+ *   method_undefined(method_name)
+ *
+ * Invoked as a callback whenever an instance method is undefined from the
+ * receiver.
+ *
+ *   module Chatty
+ *     def self.method_undefined(method_name)
+ *       puts "Undefining #{method_name.inspect}"
+ *     end
+ *     def self.some_class_method() end
+ *     def some_instance_method() end
+ *     class << self
+ *       undef_method :some_class_method
+ *     end
+ *     undef_method :some_instance_method
+ *   end
+ *
+ * <em>produces:</em>
+ *
+ *   Undefining :some_instance_method
+ *
+ */
+
 /*
  * Document-method: singleton_method_added
  *
