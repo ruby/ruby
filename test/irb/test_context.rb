@@ -42,6 +42,17 @@ module TestIRB
       IRB.conf[:VERBOSE] = false
       workspace = IRB::WorkSpace.new(Object.new)
       @context = IRB::Context.new(nil, workspace, TestInputMethod.new)
+
+      @get_screen_size = Reline.method(:get_screen_size)
+      Reline.instance_eval { undef :get_screen_size }
+      def Reline.get_screen_size
+        [36, 80]
+      end
+    end
+
+    def teardown
+      Reline.instance_eval { undef :get_screen_size }
+      Reline.define_singleton_method(:get_screen_size, @get_screen_size)
     end
 
     def test_last_value
@@ -447,7 +458,7 @@ module TestIRB
         irb.eval_input
       end
       assert_empty err
-      if '2.5.0' <= RUBY_VERSION && RUBY_VERSION < '3.0.0'
+      if '2.5.0' <= RUBY_VERSION && RUBY_VERSION < '3.0.0' && STDOUT.tty?
         expected = [
           :*, /Traceback \(most recent call last\):\n/,
           :*, /\t 2: from \(irb\):1:in `<main>'\n/,
@@ -477,7 +488,7 @@ module TestIRB
         irb.eval_input
       end
       assert_empty err
-      if '2.5.0' <= RUBY_VERSION && RUBY_VERSION < '3.0.0'
+      if '2.5.0' <= RUBY_VERSION && RUBY_VERSION < '3.0.0' && STDOUT.tty?
         expected = [
           :*, /Traceback \(most recent call last\):\n/,
           :*, /\t 2: from \(irb\):1:in `<main>'\n/,
@@ -513,7 +524,7 @@ module TestIRB
         irb.eval_input
       end
       assert_empty err
-      if '2.5.0' <= RUBY_VERSION && RUBY_VERSION < '3.0.0'
+      if '2.5.0' <= RUBY_VERSION && RUBY_VERSION < '3.0.0' && STDOUT.tty?
         expected = [
           :*, /Traceback \(most recent call last\):\n/,
           :*, /\t... 5 levels...\n/,
@@ -560,6 +571,27 @@ module TestIRB
       assert_pattern_list(expected, out)
     ensure
       $VERBOSE = verbose
+    end
+
+    def test_lineno
+      input = TestInputMethod.new([
+        "\n",
+        "__LINE__\n",
+        "__LINE__\n",
+        "\n",
+        "\n",
+        "__LINE__\n",
+      ])
+      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
+      out, err = capture_output do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_pattern_list([
+          :*, /\b2\n/,
+          :*, /\b3\n/,
+          :*, /\b6\n/,
+        ], out)
     end
   end
 end

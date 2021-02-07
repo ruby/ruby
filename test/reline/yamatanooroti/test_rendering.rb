@@ -678,6 +678,34 @@ begin
       EOC
     end
 
+    def test_autowrap_in_the_middle_of_a_line
+      start_terminal(5, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
+      write("def abcdefg; end\C-b\C-b\C-b\C-b\C-b")
+      %w{h i}.each do |c|
+        write(c)
+      end
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> def abcdefgh
+        i; end
+      EOC
+    end
+
+    def test_terminate_in_the_middle_of_lines
+      start_terminal(5, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/bin/multiline_repl}, startup_message: 'Multiline REPL.')
+      write("def hoge\n  1\n  2\n  3\n  4\nend\n")
+      write("\C-p\C-p\C-p\C-e\n")
+      close
+      assert_screen(<<~EOC)
+        prompt>   3
+        prompt>   4
+        prompt> end
+        => :hoge
+        prompt>
+      EOC
+    end
+
     private def write_inputrc(content)
       File.open(@inputrc_file, 'w') do |f|
         f.write content
