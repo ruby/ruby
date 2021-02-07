@@ -931,7 +931,7 @@ rb_class_search_ancestor(VALUE cl, VALUE c)
  *    New subclass: Bar
  *    New subclass: Baz
  */
-#define rb_class_inherited rb_obj_dummy1
+#define rb_obj_class_inherited rb_obj_dummy1
 
 /* Document-method: method_added
  *
@@ -954,7 +954,7 @@ rb_class_search_ancestor(VALUE cl, VALUE c)
  *   Adding :some_instance_method
  *
  */
-#define rb_mod_method_added rb_obj_dummy1
+#define rb_obj_mod_method_added rb_obj_dummy1
 
 /* Document-method: method_removed
  *
@@ -981,7 +981,7 @@ rb_class_search_ancestor(VALUE cl, VALUE c)
  *   Removing :some_instance_method
  *
  */
-#define rb_mod_method_removed rb_obj_dummy1
+#define rb_obj_mod_method_removed rb_obj_dummy1
 
 /* Document-method: method_undefined
  *
@@ -1008,7 +1008,7 @@ rb_class_search_ancestor(VALUE cl, VALUE c)
  *   Undefining :some_instance_method
  *
  */
-#define rb_mod_method_undefined rb_obj_dummy1
+#define rb_obj_mod_method_undefined rb_obj_dummy1
 
 /*
  * Document-method: singleton_method_added
@@ -1109,7 +1109,7 @@ rb_class_search_ancestor(VALUE cl, VALUE c)
  *        end
  *         # => prints "A extended in Enumerable"
  */
-#define rb_mod_extended rb_obj_dummy1
+#define rb_obj_mod_extended rb_obj_dummy1
 
 /*
  * Document-method: included
@@ -1132,7 +1132,7 @@ rb_class_search_ancestor(VALUE cl, VALUE c)
  *        end
  *         # => prints "A included in Enumerable"
  */
-#define rb_mod_included rb_obj_dummy1
+#define rb_obj_mod_included rb_obj_dummy1
 
 /*
  * Document-method: prepended
@@ -1152,7 +1152,7 @@ rb_class_search_ancestor(VALUE cl, VALUE c)
  *        end
  *         # => prints "A prepended to Enumerable"
  */
-#define rb_mod_prepended rb_obj_dummy1
+#define rb_obj_mod_prepended rb_obj_dummy1
 
 /*
  * Document-method: initialize
@@ -4559,13 +4559,13 @@ InitVM_Object(void)
      */
     rb_mKernel = rb_define_module("Kernel");
     rb_include_module(rb_cObject, rb_mKernel);
-    rb_define_private_method(rb_cClass, "inherited", rb_class_inherited, 1);
-    rb_define_private_method(rb_cModule, "included", rb_mod_included, 1);
-    rb_define_private_method(rb_cModule, "extended", rb_mod_extended, 1);
-    rb_define_private_method(rb_cModule, "prepended", rb_mod_prepended, 1);
-    rb_define_private_method(rb_cModule, "method_added", rb_mod_method_added, 1);
-    rb_define_private_method(rb_cModule, "method_removed", rb_mod_method_removed, 1);
-    rb_define_private_method(rb_cModule, "method_undefined", rb_mod_method_undefined, 1);
+    rb_define_private_method(rb_cClass, "inherited", rb_obj_class_inherited, 1);
+    rb_define_private_method(rb_cModule, "included", rb_obj_mod_included, 1);
+    rb_define_private_method(rb_cModule, "extended", rb_obj_mod_extended, 1);
+    rb_define_private_method(rb_cModule, "prepended", rb_obj_mod_prepended, 1);
+    rb_define_private_method(rb_cModule, "method_added", rb_obj_mod_method_added, 1);
+    rb_define_private_method(rb_cModule, "method_removed", rb_obj_mod_method_removed, 1);
+    rb_define_private_method(rb_cModule, "method_undefined", rb_obj_mod_method_undefined, 1);
 
     rb_define_method(rb_mKernel, "nil?", rb_false, 0);
     rb_define_method(rb_mKernel, "===", case_equal, 1);
