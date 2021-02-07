@@ -3728,15 +3728,17 @@ append_values_at_single(VALUE result, VALUE ary, long olen, VALUE idx)
  *    array.values_at(*indexes) -> new_array
  *
  *  Returns a new \Array whose elements are the elements
- *  of +self+ at the given \Integer +indexes+.
+ *  of +self+ at the given \Integer or \Range +indexes+.
  *
  *  For each positive +index+, returns the element at offset +index+:
  *    a = [:foo, 'bar', 2]
  *    a.values_at(0, 2) # => [:foo, 2]
+ *    a.values_at(0..1) # => [:foo, "bar"]
  *
  *  The given +indexes+ may be in any order, and may repeat:
  *    a = [:foo, 'bar', 2]
  *    a.values_at(2, 0, 1, 0, 2) # => [2, :foo, "bar", :foo, 2]
+ *    a.values_at(1, 0..2) # => ["bar", :foo, "bar", 2]
  *
  *  Assigns +nil+ for an +index+ that is too large:
  *    a = [:foo, 'bar', 2]

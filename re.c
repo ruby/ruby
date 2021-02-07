@@ -2077,6 +2077,7 @@ match_aref(int argc, VALUE *argv, VALUE match)
  *     m = /(.)(.)(\d+)(\d)/.match("THX1138: The Movie")
  *     m.to_a               #=> ["HX1138", "H", "X", "113", "8"]
  *     m.values_at(0, 2, -2)   #=> ["HX1138", "X", "113"]
+ *     m.values_at(1..2, -1)   #=> ["H", "X", "8"]
  *
  *     m = /(?<a>\d+) *(?<op>[+\-*\/]) *(?<b>\d+)/.match("1 + 2")
  *     m.to_a               #=> ["1 + 2", "1", "+", "2"]
