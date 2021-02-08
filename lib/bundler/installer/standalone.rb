@@ -55,9 +55,10 @@ module Bundler
       kernel = (class << ::Kernel; self; end)
       [kernel, ::Kernel].each do |k|
         if k.private_method_defined?(:gem_original_require)
+          private_require = k.private_method_defined?(:require)
           k.send(:remove_method, :require)
           k.send(:define_method, :require, k.instance_method(:gem_original_require))
-          k.send(:private, :require)
+          k.send(:private, :require) if private_require
         end
       end
       END

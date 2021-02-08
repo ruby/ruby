@@ -1252,7 +1252,7 @@ end
         exempts << "fiddle" if Gem.win_platform? && Gem::Version.new(Gem::VERSION) >= Gem::Version.new("2.7")
         exempts << "uri" if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new("2.7")
         exempts << "pathname" if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new("3.0")
-        exempts << "set" if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new("3.0")
+        exempts << "set" unless Gem::Version.new(Gem::VERSION) >= Gem::Version.new("3.2.6")
         exempts << "tsort" if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new("3.0")
         exempts
       end
@@ -1334,31 +1334,8 @@ end
         expect(out).to eq("The Gemfile's dependencies are satisfied")
       end
 
-      # bundler respects paths specified directly in RUBYLIB or RUBYOPT, and
-      # that happens when running ruby from the ruby-core setup. To
-      # workaround, we manually remove those for these tests when they would
-      # override the default gem.
-      def load_path_exclusions_hack_for(name)
-        if ruby_core?
-          ext_folder = source_root.join(".ext/common")
-          require_name = name.tr("-", "/")
-          if File.exist?(ext_folder.join("#{require_name}.rb"))
-            { :exclude_from_load_path => ext_folder.to_s }
-          else
-            lib_folder = source_lib_dir
-            if File.exist?(lib_folder.join("#{require_name}.rb"))
-              { :exclude_from_load_path => lib_folder.to_s }
-            else
-              {}
-            end
-          end
-        else
-          {}
-        end
-      end
-
       Gem::Specification.select(&:default_gem?).map(&:name).each do |g|
-        it "activates newer versions of #{g}" do
+        it "activates newer versions of #{g}", :ruby_repo do
           skip if exemptions.include?(g)
 
           build_repo4 do
@@ -1370,11 +1347,10 @@ end
             gem "#{g}", "999999"
           G
 
-          opts = { :env => { "RUBYOPT" => activation_warning_hack_rubyopt } }
-          expect(the_bundle).to include_gem("#{g} 999999", opts.merge(load_path_exclusions_hack_for(g)))
+          expect(the_bundle).to include_gem("#{g} 999999", :env => { "RUBYOPT" => activation_warning_hack_rubyopt })
         end
 
-        it "activates older versions of #{g}" do
+        it "activates older versions of #{g}", :ruby_repo do
           skip if exemptions.include?(g)
 
           build_repo4 do
@@ -1386,8 +1362,7 @@ end
             gem "#{g}", "0.0.0.a"
           G
 
-          opts = { :env => { "RUBYOPT" => activation_warning_hack_rubyopt } }
-          expect(the_bundle).to include_gem("#{g} 0.0.0.a", opts.merge(load_path_exclusions_hack_for(g)))
+          expect(the_bundle).to include_gem("#{g} 0.0.0.a", :env => { "RUBYOPT" => activation_warning_hack_rubyopt })
         end
       end
     end

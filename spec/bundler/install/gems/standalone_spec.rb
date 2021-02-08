@@ -32,6 +32,21 @@ RSpec.shared_examples "bundle install --standalone" do
       expect(out).to eq(expected_gems.values.join("\n"))
     end
 
+    it "makes the gems available without bundler via Kernel.require" do
+      testrb = String.new <<-RUBY
+        $:.unshift File.expand_path("bundle")
+        require "bundler/setup"
+
+      RUBY
+      expected_gems.each do |k, _|
+        testrb << "\nKernel.require \"#{k}\""
+        testrb << "\nputs #{k.upcase}"
+      end
+      ruby testrb
+
+      expect(out).to eq(expected_gems.values.join("\n"))
+    end
+
     it "makes system gems unavailable without bundler" do
       system_gems "rack-1.0.0"
 
