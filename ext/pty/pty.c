@@ -464,7 +464,7 @@ pty_close_pty(VALUE assoc)
 /*
  * call-seq:
  *   PTY.open => [master_io, slave_file]
- *   PTY.open {|master_io, slave_file| ... } => block value
+ *   PTY.open {|(master_io, slave_file)| ... } => block value
  *
  * Allocates a pty (pseudo-terminal).
  *
