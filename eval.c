@@ -1021,7 +1021,7 @@ rb_vrescue2(VALUE (* b_proc) (VALUE), VALUE data1,
     else if (result) {
 	/* escape from r_proc */
 	if (state == TAG_RETRY) {
-	    state = 0;
+	    state = TAG_NONE;
 	    ec->errinfo = Qnil;
 	    result = Qfalse;
 	    goto retry_entry;
@@ -1043,7 +1043,7 @@ rb_vrescue2(VALUE (* b_proc) (VALUE), VALUE data1,
 
 	    if (handle) {
 		result = Qnil;
-		state = 0;
+		state = TAG_NONE;
 		if (r_proc) {
 		    result = (*r_proc) (data2, ec->errinfo);
 		}
