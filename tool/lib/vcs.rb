@@ -525,7 +525,7 @@ class VCS
                    #{url.to_str} -- version.h include/ruby/version.h])
     end
 
-    def export_changelog(url = '@', from = nil, to = nil, _path = nil, path: _path)
+    def export_changelog(url = '@', from = nil, to = nil, _path = nil, path: _path, base_url: nil)
       svn = nil
       from, to = [from, to].map do |rev|
         rev or next
@@ -558,7 +558,17 @@ class VCS
         if svn
           format_changelog_as_svn(path, arg)
         else
-          format_changelog(path, arg)
+          if base_url == true
+            remote, = upstream
+            if remote &&= cmd_read(env, %W[#{COMMAND} remote get-url --no-push #{remote}])
+              remote.chomp!
+              # hack to redirect git.r-l.o to github
+              remote.sub!(/\Agit@git\.ruby-lang\.org:/, 'git@github.com:ruby/')
+              remote.sub!(/\Agit@(.*?):(.*?)(?:\.git)?\z/, 'https://\1/\2/commit/')
+            end
+            base_url = remote
+          end
+          format_changelog(path, arg, base_url)
         end
       if !path or path == '-'
         writer[$stdout]
@@ -567,7 +577,7 @@ class VCS
       end
     end
 
-    def format_changelog(path, arg)
+    def format_changelog(path, arg, base_url = nil)
       env = {'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'}
       cmd = %W"#{COMMAND} log --format=fuller --notes=commits --notes=log-fix --topo-order --no-merges"
       date = "--date=iso-local"
@@ -578,6 +588,7 @@ class VCS
       cmd.concat(arg)
       proc do |w|
         w.print "-*- coding: utf-8 -*-\n\n"
+        w.print "base-url = #{base_url}\n\n" if base_url
         cmd_pipe(env, cmd, chdir: @srcdir) do |r|
           while s = r.gets("\ncommit ")
             h, s = s.split(/^$/, 2)
