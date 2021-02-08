@@ -263,7 +263,8 @@ const rb_data_type_t rb_random_data_type = {
 static void
 random_mt_free(void *ptr)
 {
-    if (ptr != default_rand())
+    rb_random_mt_t *rnd = rb_ractor_local_storage_ptr(default_rand_key);
+    if (ptr != rnd)
 	xfree(ptr);
 }
 
