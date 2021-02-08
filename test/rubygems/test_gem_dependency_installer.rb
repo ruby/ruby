@@ -946,6 +946,31 @@ class TestGemDependencyInstaller < Gem::TestCase
     assert_equal %w[d-2], inst.installed_gems.map {|s| s.full_name }
   end
 
+  def test_install_legacy_spec_with_nil_required_ruby_version
+    path = File.expand_path "../data/null-required-ruby-version.gemspec.rz", __FILE__
+    spec = Marshal.load Gem.read_binary(path)
+    def spec.validate(*args); end
+
+    util_build_gem spec
+
+    cache_file = File.join @tempdir, 'gems', "#{spec.original_name}.gem"
+    FileUtils.mkdir_p File.dirname cache_file
+    FileUtils.mv spec.cache_file, cache_file
+
+    util_setup_spec_fetcher spec
+
+    data = Gem.read_binary(cache_file)
+
+    @fetcher.data['http://gems.example.com/gems/activesupport-1.0.0.gem'] = data
+
+    dep = Gem::Dependency.new 'activesupport'
+
+    inst = Gem::DependencyInstaller.new
+    inst.install dep
+
+    assert_equal %w[activesupport-1.0.0], Gem::Specification.map(&:full_name)
+  end
+
   def test_install_legacy_spec_with_nil_required_rubygems_version
     path = File.expand_path "../data/null-required-rubygems-version.gemspec.rz", __FILE__
     spec = Marshal.load Gem.read_binary(path)
