@@ -2254,7 +2254,6 @@ newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *
         }
         GC_ASSERT(obj != 0);
         newobj_init(klass, flags, wb_protected, objspace, obj);
-        gc_event_hook(objspace, RUBY_INTERNAL_EVENT_NEWOBJ, obj);
     }
     RB_VM_LOCK_LEAVE_CR_LEV(cr, &lev);
 
@@ -2279,7 +2278,17 @@ newobj_slowpath_wb_unprotected(VALUE klass, VALUE flags, rb_objspace_t *objspace
 }
 
 static inline VALUE
-newobj_of0(VALUE klass, VALUE flags, int wb_protected, rb_ractor_t *cr)
+newobj_fill(VALUE obj, VALUE v1, VALUE v2, VALUE v3)
+{
+    RVALUE *p = (RVALUE *)obj;
+    p->as.values.v1 = v1;
+    p->as.values.v2 = v2;
+    p->as.values.v3 = v3;
+    return obj;
+}
+
+static inline VALUE
+newobj_of_cr(rb_ractor_t *cr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_protected)
 {
     VALUE obj;
     rb_objspace_t *objspace = &rb_objspace;
@@ -2303,6 +2312,7 @@ newobj_of0(VALUE klass, VALUE flags, int wb_protected, rb_ractor_t *cr)
          (obj = ractor_cached_freeobj(objspace, cr)) != Qfalse)) {
 
         newobj_init(klass, flags, wb_protected, objspace, obj);
+        newobj_fill(obj, v1, v2, v3);
     }
     else {
         RB_DEBUG_COUNTER_INC(obj_newobj_slowpath);
@@ -2310,33 +2320,17 @@ newobj_of0(VALUE klass, VALUE flags, int wb_protected, rb_ractor_t *cr)
         obj = wb_protected ?
           newobj_slowpath_wb_protected(klass, flags, objspace, cr) :
           newobj_slowpath_wb_unprotected(klass, flags, objspace, cr);
+        newobj_fill(obj, v1, v2, v3);
+        gc_event_hook(objspace, RUBY_INTERNAL_EVENT_NEWOBJ, obj);
     }
 
     return obj;
 }
 
 static inline VALUE
-newobj_fill(VALUE obj, VALUE v1, VALUE v2, VALUE v3)
-{
-    RVALUE *p = (RVALUE *)obj;
-    p->as.values.v1 = v1;
-    p->as.values.v2 = v2;
-    p->as.values.v3 = v3;
-    return obj;
-}
-
-static inline VALUE
 newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_protected)
 {
-    VALUE obj = newobj_of0(klass, flags, wb_protected, GET_RACTOR());
-    return newobj_fill(obj, v1, v2, v3);
-}
-
-static inline VALUE
-newobj_of_cr(rb_ractor_t *cr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_protected)
-{
-    VALUE obj = newobj_of0(klass, flags, wb_protected, cr);
-    return newobj_fill(obj, v1, v2, v3);
+    return newobj_of_cr(GET_RACTOR(), klass, flags, v1, v2, v3, wb_protected);
 }
 
 VALUE
