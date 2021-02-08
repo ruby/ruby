@@ -69,10 +69,11 @@ ujit_gen_exit(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb, VALUE* exit_pc)
     mov(cb, RAX, const_ptr_opnd(exit_pc));
     mov(cb, member_opnd(REG_CFP, rb_control_frame_t, pc), RAX);
 
-#if RUBY_DEBUG
-    mov(cb, RDI, const_ptr_opnd(exit_pc));
-    call_ptr(cb, RSI, (void *)&rb_ujit_count_side_exit_op);
-#endif
+    // Accumulate stats about interpreter exits
+    if (rb_ujit_opts.gen_stats) {
+        mov(cb, RDI, const_ptr_opnd(exit_pc));
+        call_ptr(cb, RSI, (void *)&rb_ujit_count_side_exit_op);
+    }
 
     // Write the post call bytes
     cb_write_post_call_bytes(cb);
@@ -187,11 +188,12 @@ ujit_gen_block(ctx_t* ctx, block_t* block)
             break;
         }
 
-#if RUBY_DEBUG
-        // Count instructions executed by the JIT
-        mov(cb, REG0, const_ptr_opnd((void *)&rb_ujit_exec_insns_count));
-        add(cb, mem_opnd(64, REG0, 0), imm_opnd(1));
-#endif
+        // Accumulate stats about instructions executed
+        if (rb_ujit_opts.gen_stats) {
+            // Count instructions executed by the JIT
+            mov(cb, REG0, const_ptr_opnd((void *)&rb_ujit_exec_insns_count));
+            add(cb, mem_opnd(64, REG0, 0), imm_opnd(1));
+        }
 
         //fprintf(stderr, "compiling %d: %s\n", insn_idx, insn_name(opcode));
         //print_str(cb, insn_name(opcode));
