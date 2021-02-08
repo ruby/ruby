@@ -175,7 +175,7 @@ EOF
       body = (start_pos..end_pos).map do |current_pos|
         sprintf(fmt, pos == current_pos ? '=>' : '', current_pos + 1, lines[current_pos])
       end.join("")
-      "\nFrom: #{file} @ line #{pos + 1} :\n\n#{body}#{Color.clear}\n"
+      "\nFrom: #{file} @ line #{pos + 1} :\n\n#{body}#{Color.clear if use_colorize}\n"
     end
 
     def IRB.delete_caller
