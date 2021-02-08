@@ -477,12 +477,12 @@ rb_call0(rb_execution_context_t *ec,
     call_type scope = call_scope;
     int kw_splat = RB_NO_KEYWORDS;
 
-    switch(scope) {
-      case(CALL_PUBLIC_KW):
+    switch (scope) {
+      case CALL_PUBLIC_KW:
         scope = CALL_PUBLIC;
         kw_splat = 1;
         break;
-      case(CALL_FCALL_KW):
+      case CALL_FCALL_KW:
         scope = CALL_FCALL;
         kw_splat = 1;
         break;
