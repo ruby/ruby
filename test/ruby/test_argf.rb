@@ -1013,6 +1013,9 @@ class TestArgf < Test::Unit::TestCase
     ensure
       argf.close
     end
+
+    assert_in_out_err(['-e', 'p readlines(chomp: true)'], "a\nb\n",
+                      ["[\"a\", \"b\"]"], [])
   end
 
   def test_readline_chomp
@@ -1023,6 +1026,9 @@ class TestArgf < Test::Unit::TestCase
     ensure
       argf.close
     end
+
+    assert_in_out_err(['-e', 'p readline(chomp: true)'], "a\nb\n",
+                      ["\"a\""], [])
   end
 
   def test_gets_chomp
@@ -1033,6 +1039,9 @@ class TestArgf < Test::Unit::TestCase
     ensure
       argf.close
     end
+
+    assert_in_out_err(['-e', 'p gets(chomp: true)'], "a\nb\n",
+                      ["\"a\""], [])
   end
 
   def test_readlines_twice

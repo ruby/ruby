@@ -7803,6 +7803,13 @@ rb_io_putc(VALUE io, VALUE ch)
     return ch;
 }
 
+#define forward(obj, id, argc, argv) \
+    rb_funcallv_kw(obj, id, argc, argv, RB_PASS_CALLED_KEYWORDS)
+#define forward_public(obj, id, argc, argv) \
+    rb_funcallv_public_kw(obj, id, argc, argv, RB_PASS_CALLED_KEYWORDS)
+#define forward_current(id, argc, argv) \
+    forward_public(ARGF.current_file, id, argc, argv)
+
 /*
  *  call-seq:
  *     putc(int)   -> int
@@ -7822,7 +7829,7 @@ rb_f_putc(VALUE recv, VALUE ch)
     if (recv == r_stdout) {
 	return rb_io_putc(recv, ch);
     }
-    return rb_funcallv(r_stdout, rb_intern("putc"), 1, &ch);
+    return forward(r_stdout, rb_intern("putc"), 1, &ch);
 }
 
 
@@ -7937,7 +7944,7 @@ rb_f_puts(int argc, VALUE *argv, VALUE recv)
     if (recv == r_stdout) {
 	return rb_io_puts(argc, argv, recv);
     }
-    return rb_funcallv(r_stdout, rb_intern("puts"), argc, argv);
+    return forward(r_stdout, rb_intern("puts"), argc, argv);
 }
 
 static VALUE
@@ -8772,7 +8779,7 @@ argf_lineno(VALUE argf)
 static VALUE
 argf_forward(int argc, VALUE *argv, VALUE argf)
 {
-    return rb_funcall3(ARGF.current_file, rb_frame_this_func(), argc, argv);
+    return forward_current(rb_frame_this_func(), argc, argv);
 }
 
 #define next_argv() argf_next_argv(argf)
@@ -8987,7 +8994,7 @@ argf_getline(int argc, VALUE *argv, VALUE argf)
   retry:
     if (!next_argv()) return Qnil;
     if (ARGF_GENERIC_INPUT_P()) {
-	line = rb_funcall3(ARGF.current_file, idGets, argc, argv);
+	line = forward_current(idGets, argc, argv);
     }
     else {
 	if (argc == 0 && rb_rs == rb_default_rs) {
@@ -9065,7 +9072,7 @@ rb_f_gets(int argc, VALUE *argv, VALUE recv)
     if (recv == argf) {
 	return argf_gets(argc, argv, argf);
     }
-    return rb_funcallv(argf, idGets, argc, argv);
+    return forward(argf, idGets, argc, argv);
 }
 
 /*
@@ -9141,7 +9148,7 @@ rb_f_readline(int argc, VALUE *argv, VALUE recv)
     if (recv == argf) {
 	return argf_readline(argc, argv, argf);
     }
-    return rb_funcallv(argf, rb_intern("readline"), argc, argv);
+    return forward(argf, rb_intern("readline"), argc, argv);
 }
 
 
@@ -9195,7 +9202,7 @@ rb_f_readlines(int argc, VALUE *argv, VALUE recv)
     if (recv == argf) {
 	return argf_readlines(argc, argv, argf);
     }
-    return rb_funcallv(argf, rb_intern("readlines"), argc, argv);
+    return forward(argf, rb_intern("readlines"), argc, argv);
 }
 
 /*
@@ -9223,7 +9230,7 @@ argf_readlines(int argc, VALUE *argv, VALUE argf)
     ary = rb_ary_new();
     while (next_argv()) {
 	if (ARGF_GENERIC_INPUT_P()) {
-	    lines = rb_funcall3(ARGF.current_file, rb_intern("readlines"), argc, argv);
+	    lines = forward_current(rb_intern("readlines"), argc, argv);
 	}
 	else {
 	    lines = rb_io_readlines(argc, argv, ARGF.current_file);
@@ -11979,7 +11986,7 @@ rb_io_set_encoding(int argc, VALUE *argv, VALUE io)
     VALUE v1, v2, opt;
 
     if (!RB_TYPE_P(io, T_FILE)) {
-        return rb_funcallv(io, id_set_encoding, argc, argv);
+        return forward(io, id_set_encoding, argc, argv);
     }
 
     argc = rb_scan_args(argc, argv, "11:", &v1, &v2, &opt);
@@ -12495,7 +12502,7 @@ argf_getc(VALUE argf)
   retry:
     if (!next_argv()) return Qnil;
     if (ARGF_GENERIC_INPUT_P()) {
-	ch = rb_funcall3(ARGF.current_file, rb_intern("getc"), 0, 0);
+	ch = forward_current(rb_intern("getc"), 0, 0);
     }
     else {
 	ch = rb_io_getc(ARGF.current_file);
@@ -12535,7 +12542,7 @@ argf_getbyte(VALUE argf)
   retry:
     if (!next_argv()) return Qnil;
     if (!RB_TYPE_P(ARGF.current_file, T_FILE)) {
-	ch = rb_funcall3(ARGF.current_file, rb_intern("getbyte"), 0, 0);
+	ch = forward_current(rb_intern("getbyte"), 0, 0);
     }
     else {
 	ch = rb_io_getbyte(ARGF.current_file);
@@ -12575,7 +12582,7 @@ argf_readchar(VALUE argf)
   retry:
     if (!next_argv()) rb_eof_error();
     if (!RB_TYPE_P(ARGF.current_file, T_FILE)) {
-	ch = rb_funcall3(ARGF.current_file, rb_intern("getc"), 0, 0);
+	ch = forward_current(rb_intern("getc"), 0, 0);
     }
     else {
 	ch = rb_io_getc(ARGF.current_file);
