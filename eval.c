@@ -1033,14 +1033,18 @@ rb_vrescue2(VALUE (* b_proc) (VALUE), VALUE data1,
 	if (state == TAG_RAISE) {
 	    int handle = FALSE;
 	    VALUE eclass;
+	    va_list ap;
 
 	    result = Qnil;
-	    while ((eclass = va_arg(args, VALUE)) != 0) {
+	    /* reuses args when raised again after retrying in r_proc */
+	    va_copy(ap, args);
+	    while ((eclass = va_arg(ap, VALUE)) != 0) {
 		if (rb_obj_is_kind_of(ec->errinfo, eclass)) {
 		    handle = TRUE;
 		    break;
 		}
 	    }
+	    va_end(ap);
 
 	    if (handle) {
 		state = TAG_NONE;
