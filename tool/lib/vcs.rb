@@ -65,7 +65,8 @@ class VCS
     @@dirs << [dir, self, pred]
   end
 
-  def self.detect(path = '.', options = {}, parser = nil)
+  def self.detect(path = '.', options = {}, parser = nil, **opts)
+    options.update(opts)
     uplevel_limit = options.fetch(:uplevel_limit, 0)
     curr = path
     begin
