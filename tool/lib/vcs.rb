@@ -341,7 +341,7 @@ class VCS
       rev.to_i if rev
     end
 
-    def export_changelog(url, from, to, path)
+    def export_changelog(url = '.', from = nil, to = nil, _path = nil, path: _path)
       range = [to || 'HEAD', (from ? from+1 : branch_beginning(url))].compact.join(':')
       IO.popen({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'},
                %W"#{COMMAND} log -r#{range} #{url}") do |r|
@@ -525,7 +525,7 @@ class VCS
                    #{url.to_str} -- version.h include/ruby/version.h])
     end
 
-    def export_changelog(url, from, to, path)
+    def export_changelog(url = '@', from = nil, to = nil, _path = nil, path: _path)
       svn = nil
       from, to = [from, to].map do |rev|
         rev or next
@@ -554,10 +554,16 @@ class VCS
       else
         arg = ["--since=25 Dec 00:00:00", to]
       end
-      if svn
-        format_changelog_as_svn(path, arg)
+      writer =
+        if svn
+          format_changelog_as_svn(path, arg)
+        else
+          format_changelog(path, arg)
+        end
+      if !path or path == '-'
+        writer[$stdout]
       else
-        format_changelog(path, arg)
+        File.open(path, 'wb', &writer)
       end
     end
 
@@ -570,7 +576,7 @@ class VCS
       end
       cmd << date
       cmd.concat(arg)
-      File.open(path, 'w') do |w|
+      proc do |w|
         w.print "-*- coding: utf-8 -*-\n\n"
         cmd_pipe(env, cmd, chdir: @srcdir) do |r|
           while s = r.gets("\ncommit ")
@@ -616,7 +622,7 @@ class VCS
     def format_changelog_as_svn(path, arg)
       cmd = %W"#{COMMAND} log --topo-order --no-notes -z --format=%an%n%at%n%B"
       cmd.concat(arg)
-      File.open(path, 'w') do |w|
+      proc do |w|
         sep = "-"*72 + "\n"
         w.print sep
         cmd_pipe(cmd) do |r|
