@@ -2472,7 +2472,10 @@ AS_CASE([$rb_cv_coroutine], [yes|''], [
             rb_cv_coroutine=emscripten
         ],
         [
-            rb_cv_coroutine=ucontext
+            AC_CHECK_FUNCS([getcontext swapcontext makecontext],
+                [rb_cv_coroutine=ucontext],
+                [rb_cv_coroutine=copy; break]
+            )
         ]
     )
     AC_MSG_RESULT(${rb_cv_coroutine})
