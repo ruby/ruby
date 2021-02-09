@@ -2998,24 +2998,35 @@ timegm_noleapsecond(struct tm *tm)
 #define DEBUG_GUESSRANGE
 #endif
 
+static const bool debug_guessrange =
 #ifdef DEBUG_GUESSRANGE
-#define DEBUG_REPORT_GUESSRANGE fprintf(stderr, "find time guess range: %ld - %ld : %"PRI_TIMET_PREFIX"u\n", guess_lo, guess_hi, (unsigned_time_t)(guess_hi-guess_lo))
+    true;
 #else
-#define DEBUG_REPORT_GUESSRANGE
+    false;
 #endif
 
+#define DEBUG_REPORT_GUESSRANGE (void)\
+    (debug_guessrange ? \
+     fprintf(stderr, "find time guess range: %ld - %ld : %"PRI_TIMET_PREFIX"u\n", \
+             guess_lo, guess_hi, (unsigned_time_t)(guess_hi-guess_lo)) : 0)
+
+static const bool debug_find_time_numguess =
 #ifdef DEBUG_FIND_TIME_NUMGUESS
-#define DEBUG_FIND_TIME_NUMGUESS_INC find_time_numguess++,
+    true;
+#else
+    false;
+#endif
+
+#define DEBUG_FIND_TIME_NUMGUESS_INC \
+    (void)(debug_find_time_numguess && find_time_numguess++),
 static unsigned long long find_time_numguess;
 
 static VALUE
 find_time_numguess_getter(ID name, VALUE *data)
 {
-    return ULL2NUM(find_time_numguess);
+    unsigned long long *numguess = (void *)data;
+    return ULL2NUM(*numguess);
 }
-#else
-#define DEBUG_FIND_TIME_NUMGUESS_INC
-#endif
 
 static const char *
 find_time_t(struct tm *tptr, int utc_p, time_t *tp)
@@ -3163,10 +3174,10 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
             }
             if (guess <= guess_lo || guess_hi <= guess) {
                 /* Previous guess is invalid. try binary search. */
-#ifdef DEBUG_GUESSRANGE
-                if (guess <= guess_lo) fprintf(stderr, "too small guess: %ld <= %ld\n", guess, guess_lo);
-                if (guess_hi <= guess) fprintf(stderr, "too big guess: %ld <= %ld\n", guess_hi, guess);
-#endif
+                if (debug_guessrange) {
+                    if (guess <= guess_lo) fprintf(stderr, "too small guess: %ld <= %ld\n", guess, guess_lo);
+                    if (guess_hi <= guess) fprintf(stderr, "too big guess: %ld <= %ld\n", guess_hi, guess);
+                }
                 status = 0;
                 goto binsearch;
             }
@@ -5808,9 +5819,10 @@ Init_Time(void)
     rb_define_private_method(rb_cTime, "marshal_load", time_mload, 1);
 #endif
 
-#ifdef DEBUG_FIND_TIME_NUMGUESS
-    rb_define_virtual_variable("$find_time_numguess", find_time_numguess_getter, NULL);
-#endif
+    if (debug_find_time_numguess) {
+        rb_define_hooked_variable("$find_time_numguess", (VALUE *)&find_time_numguess,
+                                  find_time_numguess_getter, NULL);
+    }
 
     rb_cTimeTM = Init_tm(rb_cTime, "tm");
 }
