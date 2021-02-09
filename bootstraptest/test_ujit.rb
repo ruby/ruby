@@ -43,6 +43,34 @@ assert_equal '6', %q{
     retval = foo()
 }
 
+# foo leaves a temp on the stack before the call
+assert_equal '0', %q{
+    def bar(a, b)
+        return a - b
+    end
+
+    def foo
+        return 1 + bar(1, 2)
+    end
+
+    foo()
+    retval = foo()
+}
+
+# Recursive Ruby-to-Ruby calls
+assert_equal '21', %q{
+
+    def fib(n)
+        if n < 2
+            return n
+        end
+
+        return fib(n-1) + fib(n-2)
+    end
+
+    r = fib(8)
+}
+
 # Ruby-to-Ruby call and C call
 assert_normal_exit %q{
   def bar
