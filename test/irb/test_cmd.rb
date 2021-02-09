@@ -48,7 +48,8 @@ module TestIRB
         Ruby\sversion: .+\n
         IRB\sversion:\sirb .+\n
         InputMethod:\sReidlineInputMethod\swith\sReline .+ and .+\n
-        \.irbrc\spath: .+
+        \.irbrc\spath: .+\n
+        RUBY_PLATFORM: .+
       }x
       assert_match expected, irb.context.main.irb_info.to_s
     end
@@ -67,7 +68,8 @@ module TestIRB
         Ruby\sversion: .+\n
         IRB\sversion:\sirb .+\n
         InputMethod:\sReadlineInputMethod\swith .+ and .+\n
-        \.irbrc\spath: .+
+        \.irbrc\spath: .+\n
+        RUBY_PLATFORM: .+
       }x
       assert_match expected, irb.context.main.irb_info.to_s
     end
@@ -89,6 +91,7 @@ module TestIRB
         Ruby\sversion: .+\n
         IRB\sversion:\sirb .+\n
         InputMethod:\sReidlineInputMethod\swith\sReline\s[^ ]+(?!\sand\s.+)\n
+        RUBY_PLATFORM: .+\n
         \z
       }x
       assert_match expected, irb.context.main.irb_info.to_s
@@ -115,6 +118,7 @@ module TestIRB
         Ruby\sversion: .+\n
         IRB\sversion:\sirb .+\n
         InputMethod:\sReadlineInputMethod\swith\s(?~.*\sand\s.+)\n
+        RUBY_PLATFORM: .+\n
         \z
       }x
       assert_match expected, irb.context.main.irb_info.to_s
