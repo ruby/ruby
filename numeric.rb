@@ -204,4 +204,26 @@ class Float
     Primitive.attr! 'inline'
     Primitive.cexpr! 'FLOAT_ZERO_P(self) ? Qtrue : Qfalse'
   end
+
+  #
+  #  call-seq:
+  #     float.positive?  ->  true or false
+  #
+  #  Returns +true+ if +float+ is greater than 0.
+  #
+  def positive?
+    Primitive.attr! 'inline'
+    Primitive.cexpr! 'RFLOAT_VALUE(self) > 0.0 ? Qtrue : Qfalse'
+  end
+
+  #
+  #  call-seq:
+  #     float.negative?  ->  true or false
+  #
+  #  Returns +true+ if +float+ is less than 0.
+  #
+  def negative?
+    Primitive.attr! 'inline'
+    Primitive.cexpr! 'RFLOAT_VALUE(self) < 0.0 ? Qtrue : Qfalse'
+  end
 end
