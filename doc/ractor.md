@@ -691,7 +691,7 @@ TABLE = {a: 'ko1', b: 'ko2', c: 'ko3'}
 
 Except the `none` mode (default), it is guaranteed that the assigned constants refer to only shareable objects.
 
-See [doc/syntax/comment.rdoc](syntax/comment.rdoc) for more details.
+See [doc/syntax/comments.rdoc](syntax/comments.rdoc) for more details.
 
 ## Implementation note
 
