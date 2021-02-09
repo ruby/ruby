@@ -2386,34 +2386,6 @@ flo_truncate(int argc, VALUE *argv, VALUE num)
 
 /*
  *  call-seq:
- *     float.positive?  ->  true or false
- *
- *  Returns +true+ if +float+ is greater than 0.
- */
-
-static VALUE
-flo_positive_p(VALUE num)
-{
-    double f = RFLOAT_VALUE(num);
-    return f > 0.0 ? Qtrue : Qfalse;
-}
-
-/*
- *  call-seq:
- *     float.negative?  ->  true or false
- *
- *  Returns +true+ if +float+ is less than 0.
- */
-
-static VALUE
-flo_negative_p(VALUE num)
-{
-    double f = RFLOAT_VALUE(num);
-    return f < 0.0 ? Qtrue : Qfalse;
-}
-
-/*
- *  call-seq:
  *     num.floor([ndigits])  ->  integer or float
  *
  *  Returns the largest number less than or equal to +num+ with
@@ -5654,8 +5626,6 @@ Init_Numeric(void)
     rb_define_method(rb_cFloat, "finite?",   rb_flo_is_finite_p, 0);
     rb_define_method(rb_cFloat, "next_float", flo_next_float, 0);
     rb_define_method(rb_cFloat, "prev_float", flo_prev_float, 0);
-    rb_define_method(rb_cFloat, "positive?", flo_positive_p, 0);
-    rb_define_method(rb_cFloat, "negative?", flo_negative_p, 0);
 }
 
 #undef rb_float_value
