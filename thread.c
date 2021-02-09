@@ -3213,8 +3213,7 @@ rb_thread_report_exc_set(VALUE thread, VALUE val)
  *  call-seq:
  *     thr.group   -> thgrp or nil
  *
- *  Returns the ThreadGroup which contains the given thread, or returns +nil+
- *  if +thr+ is not a member of any group.
+ *  Returns the ThreadGroup which contains the given thread.
  *
  *     Thread.main.group   #=> #<ThreadGroup:0x4029d914>
  */
@@ -3222,8 +3221,7 @@ rb_thread_report_exc_set(VALUE thread, VALUE val)
 VALUE
 rb_thread_group(VALUE thread)
 {
-    VALUE group = rb_thread_ptr(thread)->thgroup;
-    return group == 0 ? Qnil : group;
+    return rb_thread_ptr(thread)->thgroup;
 }
 
 static const char *
@@ -4972,10 +4970,6 @@ thgroup_add(VALUE group, VALUE thread)
     TypedData_Get_Struct(group, struct thgroup, &thgroup_data_type, data);
     if (data->enclosed) {
 	rb_raise(rb_eThreadError, "can't move to the enclosed thread group");
-    }
-
-    if (!target_th->thgroup) {
-	return Qnil;
     }
 
     if (OBJ_FROZEN(target_th->thgroup)) {
