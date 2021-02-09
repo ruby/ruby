@@ -44,7 +44,7 @@ class TestGemDependencyInstaller < Gem::TestCase
       s.add_development_dependency 'c'
     end
 
-    util_reset_gems
+    util_setup_spec_fetcher(@a1, @a1_pre, @b1, @d1)
   end
 
   def test_install
@@ -287,8 +287,6 @@ class TestGemDependencyInstaller < Gem::TestCase
 
     @aa1, @aa1_gem = util_gem 'aa', '1'
 
-    util_reset_gems
-
     FileUtils.mv @a1_gem, @tempdir
     FileUtils.mv @aa1_gem, @tempdir
     FileUtils.mv @b1_gem, @tempdir
@@ -306,8 +304,6 @@ class TestGemDependencyInstaller < Gem::TestCase
     util_setup_gems
 
     @aa1, @aa1_gem = util_gem 'aa', '1'
-
-    util_reset_gems
 
     FileUtils.mv @a1_gem, @tempdir
     FileUtils.mv @aa1_gem, @tempdir
@@ -328,8 +324,6 @@ class TestGemDependencyInstaller < Gem::TestCase
     util_setup_gems
 
     @aa1, @aa1_gem = util_gem 'aa', '1'
-
-    util_reset_gems
 
     FileUtils.mv @a1_gem, @tempdir
     FileUtils.mv @aa1_gem, @tempdir
@@ -1156,16 +1150,6 @@ class TestGemDependencyInstaller < Gem::TestCase
     @d1, @d1_gem = util_gem 'd', '1'
     @d2, @d2_gem = util_gem 'd', '2'
 
-    util_reset_gems
-  end
-
-  def util_reset_gems
-    @a1     ||= nil
-    @b1     ||= nil
-    @a1_pre ||= nil
-    @d1     ||= nil
-    @d2     ||= nil
-
-    util_setup_spec_fetcher(*[@a1, @a1_pre, @b1, @d1, @d2].compact)
+    util_setup_spec_fetcher(@d1, @d2)
   end
 end
