@@ -95,9 +95,9 @@ r.name #=> 'test-name'
 ### Given block isolation
 
 The Ractor executes given `expr` in a given block.
-Given block will be isolated from outer scope by `Proc#isolate`. To prevent sharing unshareable objects between ractors, block outer-variables, `self` and other information are isolated.
+Given block will be isolated from outer scope by the `Proc#isolate` method (not exposed yet for Ruby users). To prevent sharing unshareable objects between ractors, block outer-variables, `self` and other information are isolated.
 
-Given block will be isolated by `Proc#isolate` method (not exposed yet for Ruby users). `Proc#isolate` is called at Ractor creation timing (`Ractor.new` is called). If given Proc object is not able to isolate because of outer variables and so on, an error will be raised.
+`Proc#isolate` is called at Ractor creation time (when `Ractor.new` is called). If given Proc object is not able to isolate because of outer variables and so on, an error will be raised.
 
 ```ruby
 begin
