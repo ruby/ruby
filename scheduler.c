@@ -126,7 +126,7 @@ rb_fiber_scheduler_process_wait(VALUE scheduler, rb_pid_t pid, int flags)
     VALUE arguments[] = {
         PIDT2NUM(pid), RB_INT2NUM(flags)
     };
-  
+
     return rb_check_funcall(scheduler, id_process_wait, 2, arguments);
 }
 
@@ -166,7 +166,7 @@ rb_fiber_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t offse
     VALUE arguments[] = {
         io, buffer, SIZET2NUM(offset), SIZET2NUM(length)
     };
-  
+
     return rb_check_funcall(scheduler, id_io_read, 4, arguments);
 }
 
