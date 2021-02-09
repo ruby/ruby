@@ -3008,7 +3008,8 @@ timegm_noleapsecond(struct tm *tm)
 #define DEBUG_FIND_TIME_NUMGUESS_INC find_time_numguess++,
 static unsigned long long find_time_numguess;
 
-static VALUE find_time_numguess_getter(void)
+static VALUE
+find_time_numguess_getter(ID name, VALUE *data)
 {
     return ULL2NUM(find_time_numguess);
 }
