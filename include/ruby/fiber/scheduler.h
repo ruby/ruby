@@ -12,10 +12,10 @@
 #include "ruby/ruby.h"
 #include "ruby/intern.h"
 
-VALUE rb_fiber_scheduler_get();
+VALUE rb_fiber_scheduler_get(void);
 VALUE rb_fiber_scheduler_set(VALUE scheduler);
 
-VALUE rb_fiber_scheduler_current();
+VALUE rb_fiber_scheduler_current(void);
 VALUE rb_fiber_scheduler_current_for_thread(VALUE thread);
 
 VALUE rb_fiber_scheduler_make_timeout(struct timeval *timeout);
