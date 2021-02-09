@@ -220,6 +220,30 @@ RSpec.describe "bundle lock" do
     expect(lockfile.platforms).to match_array(local_platforms.unshift(java, mingw).uniq)
   end
 
+  it "supports adding new platforms with force_ruby_platform = true" do
+    lockfile <<-L
+      GEM
+        remote: #{file_uri_for(gem_repo1)}/
+        specs:
+          platform_specific (1.0)
+          platform_specific (1.0-x86-linux)
+
+      PLATFORMS
+        ruby
+        x86-linux
+
+      DEPENDENCIES
+        platform_specific
+    L
+
+    bundle "config set force_ruby_platform true"
+    bundle "lock --add-platform java x86-mingw32"
+
+    allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
+    lockfile = Bundler::LockfileParser.new(read_lockfile)
+    expect(lockfile.platforms).to contain_exactly(rb, linux, java, mingw)
+  end
+
   it "supports adding the `ruby` platform" do
     bundle "lock --add-platform ruby"
 

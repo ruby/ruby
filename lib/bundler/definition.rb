@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require_relative "lockfile_parser"
-require "set"
 
 module Bundler
   class Definition
@@ -83,11 +82,7 @@ module Bundler
         @lockfile_contents = Bundler.read_file(lockfile)
         @locked_gems = LockfileParser.new(@lockfile_contents)
         @locked_platforms = @locked_gems.platforms
-        if Bundler.settings[:force_ruby_platform]
-          @platforms = [Gem::Platform::RUBY]
-        else
-          @platforms = @locked_platforms.dup
-        end
+        @platforms = @locked_platforms.dup
         @locked_bundler_version = @locked_gems.bundler_version
         @locked_ruby_version = @locked_gems.ruby_version
 
@@ -259,23 +254,18 @@ module Bundler
     def resolve
       @resolve ||= begin
         last_resolve = converge_locked_specs
-        resolve =
-          if Bundler.frozen_bundle?
-            Bundler.ui.debug "Frozen, using resolution from the lockfile"
-            last_resolve
-          elsif !unlocking? && nothing_changed?
-            Bundler.ui.debug("Found no changes, using resolution from the lockfile")
-            last_resolve
-          else
-            # Run a resolve against the locally available gems
-            Bundler.ui.debug("Found changes from the lockfile, re-resolving dependencies because #{change_reason}")
-            expanded_dependencies = expand_dependencies(dependencies + metadata_dependencies, @remote)
-            last_resolve.merge Resolver.resolve(expanded_dependencies, index, source_requirements, last_resolve, gem_version_promoter, additional_base_requirements_for_resolve, platforms)
-          end
-
-        # filter out gems that _can_ be installed on multiple platforms, but don't need
-        # to be
-        resolve.for(expand_dependencies(dependencies, true), [], false, false, false)
+        if Bundler.frozen_bundle?
+          Bundler.ui.debug "Frozen, using resolution from the lockfile"
+          last_resolve
+        elsif !unlocking? && nothing_changed?
+          Bundler.ui.debug("Found no changes, using resolution from the lockfile")
+          last_resolve
+        else
+          # Run a resolve against the locally available gems
+          Bundler.ui.debug("Found changes from the lockfile, re-resolving dependencies because #{change_reason}")
+          expanded_dependencies = expand_dependencies(dependencies + metadata_dependencies, @remote)
+          Resolver.resolve(expanded_dependencies, index, source_requirements, last_resolve, gem_version_promoter, additional_base_requirements_for_resolve, platforms)
+        end
       end
     end
 
@@ -604,7 +594,7 @@ module Bundler
       deps_for_source = @dependencies.select {|s| s.source == source }
       locked_deps_for_source = @locked_deps.values.select {|dep| dep.source == locked_source }
 
-      Set.new(deps_for_source) != Set.new(locked_deps_for_source)
+      deps_for_source.sort != locked_deps_for_source.sort
     end
 
     def specs_for_source_changed?(source)
@@ -884,7 +874,7 @@ module Bundler
       dependencies.each do |dep|
         dep = Dependency.new(dep, ">= 0") unless dep.respond_to?(:name)
         next unless remote || dep.current_platform?
-        target_platforms = dep.gem_platforms(remote ? Resolver.sort_platforms(@platforms) : [generic_local_platform])
+        target_platforms = dep.gem_platforms(remote ? @platforms : [generic_local_platform])
         deps += expand_dependency_with_platforms(dep, target_platforms)
       end
       deps

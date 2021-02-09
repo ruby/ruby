@@ -9,7 +9,8 @@ RSpec.describe Bundler::GemHelper do
   let(:app_gemspec_path) { app_path.join("#{app_name}.gemspec") }
 
   before(:each) do
-    global_config "BUNDLE_GEM__MIT" => "false", "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__COC" => "false", "BUNDLE_GEM__RUBOCOP" => "false", "BUNDLE_GEM__CI" => "false"
+    global_config "BUNDLE_GEM__MIT" => "false", "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__COC" => "false", "BUNDLE_GEM__RUBOCOP" => "false",
+                  "BUNDLE_GEM__CI" => "false", "BUNDLE_GEM__CHANGELOG" => "false"
     bundle "gem #{app_name}"
     prepare_gemspec(app_gemspec_path)
   end
@@ -97,6 +98,7 @@ RSpec.describe Bundler::GemHelper do
         context "before installation" do
           it "raises an error with appropriate message" do
             task_names.each do |name|
+              skip "Rake::FileTask '#{name}' exists" if File.exist?(name)
               expect { Rake.application[name] }.
                 to raise_error(/^Don't know how to build task '#{name}'/)
             end

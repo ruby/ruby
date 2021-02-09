@@ -158,6 +158,26 @@ RSpec.describe "bundle gem" do
     end
   end
 
+  shared_examples_for "--changelog flag" do
+    before do
+      bundle "gem #{gem_name} --changelog"
+    end
+    it "generates a gem skeleton with a CHANGELOG", :readline do
+      gem_skeleton_assertions
+      expect(bundled_app("#{gem_name}/CHANGELOG.md")).to exist
+    end
+  end
+
+  shared_examples_for "--no-changelog flag" do
+    before do
+      bundle "gem #{gem_name} --no-changelog"
+    end
+    it "generates a gem skeleton without a CHANGELOG", :readline do
+      gem_skeleton_assertions
+      expect(bundled_app("#{gem_name}/CHANGELOG.md")).to_not exist
+    end
+  end
+
   shared_examples_for "--rubocop flag" do
     before do
       bundle "gem #{gem_name} --rubocop"
@@ -902,6 +922,22 @@ RSpec.describe "bundle gem" do
       it_behaves_like "--rubocop flag"
       it_behaves_like "--no-rubocop flag"
     end
+
+    context "with changelog option in bundle config settings set to true" do
+      before do
+        global_config "BUNDLE_GEM__CHANGELOG" => "true"
+      end
+      it_behaves_like "--changelog flag"
+      it_behaves_like "--no-changelog flag"
+    end
+
+    context "with changelog option in bundle config settings set to false" do
+      before do
+        global_config "BUNDLE_GEM__CHANGELOG" => "false"
+      end
+      it_behaves_like "--changelog flag"
+      it_behaves_like "--no-changelog flag"
+    end
   end
 
   context "gem naming with underscore", :readline do
@@ -1086,6 +1122,17 @@ Usage: "bundle gem NAME [OPTIONS]"
       end
 
       expect(bundled_app("foobar/CODE_OF_CONDUCT.md")).to exist
+    end
+
+    it "asks about CHANGELOG" do
+      global_config "BUNDLE_GEM__MIT" => "false", "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__CI" => "false", "BUNDLE_GEM__RUBOCOP" => "false",
+                    "BUNDLE_GEM__COC" => "false"
+
+      bundle "gem foobar" do |input, _, _|
+        input.puts "yes"
+      end
+
+      expect(bundled_app("foobar/CHANGELOG.md")).to exist
     end
   end
 

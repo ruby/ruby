@@ -1208,6 +1208,16 @@ dependencies: []
     Gem.platforms = orig_platform
   end
 
+  def test_self_stubs_returns_only_specified_named_specs
+    dir_standard_specs = File.join Gem.dir, 'specifications'
+
+    save_gemspec('a-1', '1', dir_standard_specs){|s| s.name = 'a' }
+    save_gemspec('a-2', '2', dir_standard_specs){|s| s.name = 'a' }
+    save_gemspec('a-a', '3', dir_standard_specs){|s| s.name = 'a-a' }
+
+    assert_equal ['a-1', 'a-2'], Gem::Specification.stubs_for('a').map(&:full_name).sort
+  end
+
   def test_handles_private_null_type
     path = File.expand_path "../data/null-type.gemspec.rz", __FILE__
 
@@ -3530,19 +3540,6 @@ Did you mean 'Ruby'?
     specfile.delete
   end
 
-  ##
-  # KEEP p-1-x86-darwin-8
-  # KEEP p-1
-  # KEEP c-1.2
-  # KEEP a_evil-9
-  #      a-1
-  #      a-1-x86-my_platform-1
-  # KEEP a-2
-  #      a-2-x86-other_platform-1
-  # KEEP a-2-x86-my_platform-1
-  #      a-3.a
-  # KEEP a-3-x86-other_platform-1
-
   def test_latest_specs
     spec_fetcher do |fetcher|
       fetcher.spec 'a', 1 do |s|
@@ -3565,8 +3562,6 @@ Did you mean 'Ruby'?
     end
 
     expected = %W[
-      a-2
-      a-2-x86-my_platform-1
       a-3-x86-other_platform-1
     ]
 

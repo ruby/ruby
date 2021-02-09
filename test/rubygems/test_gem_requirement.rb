@@ -83,7 +83,7 @@ class TestGemRequirement < Gem::TestCase
       Gem::Requirement.parse(Gem::Version.new('2'))
   end
 
-  if RUBY_VERSION >= '2.5'
+  if RUBY_VERSION >= '2.5' && !(Gem.java_platform? && ENV["JRUBY_OPTS"] =~ /--debug/)
     def test_parse_deduplication
       assert_same '~>', Gem::Requirement.parse('~> 1').first
     end
