@@ -82,11 +82,7 @@ module Bundler
         @lockfile_contents = Bundler.read_file(lockfile)
         @locked_gems = LockfileParser.new(@lockfile_contents)
         @locked_platforms = @locked_gems.platforms
-        if Bundler.settings[:force_ruby_platform]
-          @platforms = [Gem::Platform::RUBY]
-        else
-          @platforms = @locked_platforms.dup
-        end
+        @platforms = @locked_platforms.dup
         @locked_bundler_version = @locked_gems.bundler_version
         @locked_ruby_version = @locked_gems.ruby_version
 

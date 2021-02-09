@@ -112,6 +112,15 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
     expect(the_bundle).to include_gems "nokogiri 1.4.2", "platform_specific 1.0 RUBY"
   end
 
+  it "doesn't pull platform specific gems on truffleruby", :truffleruby do
+    install_gemfile <<-G
+     source "#{file_uri_for(gem_repo1)}"
+     gem "platform_specific"
+    G
+
+    expect(the_bundle).to include_gems "platform_specific 1.0 RUBY"
+  end
+
   it "allows specifying only-ruby-platform on windows with dependency platforms" do
     simulate_windows do
       install_gemfile <<-G
