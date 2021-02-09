@@ -1034,6 +1034,7 @@ rb_vrescue2(VALUE (* b_proc) (VALUE), VALUE data1,
 	    int handle = FALSE;
 	    VALUE eclass;
 
+	    result = Qnil;
 	    while ((eclass = va_arg(args, VALUE)) != 0) {
 		if (rb_obj_is_kind_of(ec->errinfo, eclass)) {
 		    handle = TRUE;
@@ -1042,7 +1043,6 @@ rb_vrescue2(VALUE (* b_proc) (VALUE), VALUE data1,
 	    }
 
 	    if (handle) {
-		result = Qnil;
 		state = TAG_NONE;
 		if (r_proc) {
 		    result = (*r_proc) (data2, ec->errinfo);
