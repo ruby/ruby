@@ -1024,6 +1024,18 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
     struct rb_id_table *const klass_m_tbl = RCLASS_M_TBL(klass_origin);
     VALUE original_klass = klass;
 
+    if (klass_m_tbl) {
+        VALUE original_module = module;
+
+        while (module) {
+            if (klass_m_tbl == RCLASS_M_TBL(module))
+                return -1;
+            module = RCLASS_SUPER(module);
+        }
+
+        module = original_module;
+    }
+
     while (module) {
         int c_seen = FALSE;
 	int superclass_seen = FALSE;
@@ -1032,8 +1044,6 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
         if (klass == c) {
             c_seen = TRUE;
         }
-	if (klass_m_tbl && klass_m_tbl == RCLASS_M_TBL(module))
-	    return -1;
         if (klass_origin != c || search_super) {
             /* ignore if the module included already in superclasses for include,
              * ignore if the module included before origin class for prepend
