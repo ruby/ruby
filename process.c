@@ -13,7 +13,7 @@
 
 #include "ruby/internal/config.h"
 
-#include "internal/scheduler.h"
+#include "ruby/fiber/scheduler.h"
 #include "coroutine/Stack.h"
 
 #include <ctype.h>
@@ -1345,10 +1345,9 @@ rb_process_status_wait(rb_pid_t pid, int flags)
 {
     // We only enter the scheduler if we are "blocking":
     if (!(flags & WNOHANG)) {
-        VALUE scheduler = rb_scheduler_current();
-        if (rb_scheduler_supports_process_wait(scheduler)) {
-            return rb_scheduler_process_wait(scheduler, pid, flags);
-        }
+        VALUE scheduler = rb_fiber_scheduler_current();
+        VALUE result = rb_fiber_scheduler_process_wait(scheduler, pid, flags);
+        if (result != Qundef) return result;
     }
 
     COROUTINE_STACK_LOCAL(struct waitpid_state, w);
@@ -5104,10 +5103,10 @@ static VALUE
 rb_f_sleep(int argc, VALUE *argv, VALUE _)
 {
     time_t beg = time(0);
-    VALUE scheduler = rb_scheduler_current();
+    VALUE scheduler = rb_fiber_scheduler_current();
 
     if (scheduler != Qnil) {
-        rb_scheduler_kernel_sleepv(scheduler, argc, argv);
+        rb_fiber_scheduler_kernel_sleepv(scheduler, argc, argv);
     }
     else {
         if (argc == 0) {

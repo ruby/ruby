@@ -24,7 +24,7 @@
 #include "internal/cont.h"
 #include "internal/proc.h"
 #include "internal/warnings.h"
-#include "internal/scheduler.h"
+#include "ruby/fiber/scheduler.h"
 #include "mjit.h"
 #include "vm_core.h"
 #include "id_table.h"
@@ -1156,6 +1156,11 @@ VALUE rb_fiberptr_self(struct rb_fiber_struct *fiber)
     return fiber->cont.self;
 }
 
+unsigned int rb_fiberptr_blocking(struct rb_fiber_struct *fiber)
+{
+    return fiber->blocking;
+}
+
 // This is used for root_fiber because other fibers call cont_init_mjit_cont through cont_new.
 void
 rb_fiber_init_mjit_cont(struct rb_fiber_struct *fiber)
@@ -1975,7 +1980,7 @@ rb_f_fiber(int argc, VALUE *argv, VALUE obj)
 static VALUE
 rb_fiber_scheduler(VALUE klass)
 {
-    return rb_scheduler_get();
+    return rb_fiber_scheduler_get();
 }
 
 /*
@@ -1997,11 +2002,7 @@ rb_fiber_scheduler(VALUE klass)
 static VALUE
 rb_fiber_set_scheduler(VALUE klass, VALUE scheduler)
 {
-    // if (rb_scheduler_get() != Qnil) {
-    //     rb_raise(rb_eFiberError, "Scheduler is already defined!");
-    // }
-
-    return rb_scheduler_set(scheduler);
+    return rb_fiber_scheduler_set(scheduler);
 }
 
 static void rb_fiber_terminate(rb_fiber_t *fiber, int need_interrupt);

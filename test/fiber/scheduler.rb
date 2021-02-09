@@ -47,6 +47,8 @@ class Scheduler
   end
 
   def run
+    # $stderr.puts [__method__, Fiber.current].inspect
+
     while @readable.any? or @writable.any? or @waiting.any? or @blocking.positive?
       # Can only handle file descriptors up to 1024...
       readable, writable = IO.select(@readable.keys + [@urgent.first], @writable.keys, [], next_timeout)
@@ -54,9 +56,11 @@ class Scheduler
       # puts "readable: #{readable}" if readable&.any?
       # puts "writable: #{writable}" if writable&.any?
 
+      selected = {}
+
       readable&.each do |io|
         if fiber = @readable.delete(io)
-          fiber.resume
+          selected[fiber] = IO::READABLE
         elsif io == @urgent.first
           @urgent.first.read_nonblock(1024)
         end
@@ -64,8 +68,12 @@ class Scheduler
 
       writable&.each do |io|
         if fiber = @writable.delete(io)
-          fiber.resume
+          selected[fiber] |= IO::WRITABLE
         end
+      end
+
+      selected.each do |fiber, events|
+        fiber.resume(events)
       end
 
       if @waiting.any?
@@ -96,6 +104,8 @@ class Scheduler
   end
 
   def close
+    # $stderr.puts [__method__, Fiber.current].inspect
+
     raise "Scheduler already closed!" if @closed
 
     self.run
@@ -118,6 +128,8 @@ class Scheduler
   end
 
   def process_wait(pid, flags)
+    # $stderr.puts [__method__, pid, flags, Fiber.current].inspect
+
     # This is a very simple way to implement a non-blocking wait:
     Thread.new do
       Process::Status.wait(pid, flags)
@@ -125,6 +137,8 @@ class Scheduler
   end
 
   def io_wait(io, events, duration)
+    # $stderr.puts [__method__, io, events, duration, Fiber.current].inspect
+
     unless (events & IO::READABLE).zero?
       @readable[io] = Fiber.current
     end
@@ -134,12 +148,12 @@ class Scheduler
     end
 
     Fiber.yield
-
-    return true
   end
 
   # Used for Kernel#sleep and Mutex#sleep
   def kernel_sleep(duration = nil)
+    # $stderr.puts [__method__, duration, Fiber.current].inspect
+
     self.block(:sleep, duration)
 
     return true
@@ -171,6 +185,8 @@ class Scheduler
   # This might be called from another thread.
   def unblock(blocker, fiber)
     # $stderr.puts [__method__, blocker, fiber].inspect
+    # $stderr.puts blocker.backtrace.inspect
+    # $stderr.puts fiber.backtrace.inspect
 
     @lock.synchronize do
       @ready << fiber
