@@ -31,8 +31,11 @@ typedef struct CtxStruct
     // T_NONE==0 is the unknown type
     uint8_t temp_types[MAX_TEMP_TYPES];
 
-    // Number of values pushed on the temporary stack
+    // Number of values currently on the temporary stack
     uint16_t stack_size;
+
+    // Offset of the JIT SP relative to the interpreter SP
+    int16_t sp_offset;
 
     // Whether we know self is a heap object
     bool self_is_object : 1;

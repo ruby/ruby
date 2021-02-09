@@ -390,6 +390,7 @@ vm_push_frame(rb_execution_context_t *ec,
 #if VM_DEBUG_BP_CHECK
         .bp_check   = sp,
 #endif
+        .jit_return = NULL
     };
 
     ec->cfp = cfp;
