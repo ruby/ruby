@@ -2129,7 +2129,7 @@ rb_mod_private(int argc, VALUE *argv, VALUE module)
 
 /*
  *  call-seq:
- *     ruby2_keywords(method_name, ...)    -> self
+ *     ruby2_keywords(method_name, ...)    -> nil
  *
  *  For the given method names, marks the method as passing keywords through
  *  a normal argument splat.  This should only be called on methods that
