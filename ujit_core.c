@@ -32,7 +32,7 @@ Get an operand for the adjusted stack pointer address
 x86opnd_t
 ctx_sp_opnd(ctx_t* ctx, int32_t offset_bytes)
 {
-    int32_t offset = (ctx->stack_size) * sizeof(VALUE) + offset_bytes;
+    int32_t offset = (ctx->sp_offset * sizeof(VALUE)) + offset_bytes;
     return mem_opnd(64, REG_SP, offset);
 }
 
@@ -49,9 +49,10 @@ ctx_stack_push(ctx_t* ctx, int type)
         ctx->temp_types[ctx->stack_size] = type;
 
     ctx->stack_size += 1;
+    ctx->sp_offset += 1;
 
     // SP points just above the topmost value
-    int32_t offset = (ctx->stack_size - 1) * sizeof(VALUE);
+    int32_t offset = (ctx->sp_offset - 1) * sizeof(VALUE);
     return mem_opnd(64, REG_SP, offset);
 }
 
@@ -65,7 +66,7 @@ ctx_stack_pop(ctx_t* ctx, size_t n)
     RUBY_ASSERT(n <= ctx->stack_size);
 
     // SP points just above the topmost value
-    int32_t offset = (ctx->stack_size - 1) * sizeof(VALUE);
+    int32_t offset = (ctx->sp_offset - 1) * sizeof(VALUE);
     x86opnd_t top = mem_opnd(64, REG_SP, offset);
 
     // Clear the types of the popped values
@@ -77,6 +78,7 @@ ctx_stack_pop(ctx_t* ctx, size_t n)
     }
 
     ctx->stack_size -= n;
+    ctx->sp_offset -= n;
 
     return top;
 }
@@ -88,7 +90,7 @@ x86opnd_t
 ctx_stack_opnd(ctx_t* ctx, int32_t idx)
 {
     // SP points just above the topmost value
-    int32_t offset = (ctx->stack_size - 1 - idx) * sizeof(VALUE);
+    int32_t offset = (ctx->sp_offset - 1 - idx) * sizeof(VALUE);
     x86opnd_t opnd = mem_opnd(64, REG_SP, offset);
 
     return opnd;
@@ -118,6 +120,9 @@ Returns INT_MAX if incompatible
 int ctx_diff(const ctx_t* src, const ctx_t* dst)
 {
     if (dst->stack_size != src->stack_size)
+        return INT_MAX;
+
+    if (dst->sp_offset != src->sp_offset)
         return INT_MAX;
 
     if (dst->self_is_object != src->self_is_object)
@@ -345,6 +350,7 @@ uint8_t* branch_stub_hit(uint32_t branch_idx, uint32_t target_idx)
     // Limit the number of block versions
     ctx_t generic_ctx = DEFAULT_CTX;
     generic_ctx.stack_size = target_ctx->stack_size;
+    generic_ctx.sp_offset = target_ctx->sp_offset;
     if (count_block_versions(target) >= MAX_VERSIONS - 1)
     {
         fprintf(stderr, "version limit hit in branch_stub_hit\n");
@@ -383,7 +389,6 @@ uint8_t* branch_stub_hit(uint32_t branch_idx, uint32_t target_idx)
 }
 
 // Get a version or stub corresponding to a branch target
-// TODO: need incoming and target contexts
 uint8_t* get_branch_target(
     blockid_t target,
     const ctx_t* ctx,
@@ -440,13 +445,13 @@ void gen_branch(
 )
 {
     RUBY_ASSERT(target0.iseq != NULL);
-    RUBY_ASSERT(target1.iseq != NULL);
+    //RUBY_ASSERT(target1.iseq != NULL);
     RUBY_ASSERT(num_branches < MAX_BRANCHES);
     uint32_t branch_idx = num_branches++;
 
     // Get the branch targets or stubs
     uint8_t* dst_addr0 = get_branch_target(target0, ctx0, branch_idx, 0);
-    uint8_t* dst_addr1 = get_branch_target(target1, ctx1, branch_idx, 1);
+    uint8_t* dst_addr1 = ctx1? get_branch_target(target1, ctx1, branch_idx, 1):NULL;
 
     // Call the branch generation function
     uint32_t start_pos = cb->write_pos;
@@ -459,7 +464,7 @@ void gen_branch(
         end_pos,
         *src_ctx,
         { target0, target1 },
-        { *ctx0, *ctx1 },
+        { *ctx0, ctx1? *ctx1:DEFAULT_CTX },
         { dst_addr0, dst_addr1 },
         gen_fn,
         SHAPE_DEFAULT
@@ -508,6 +513,7 @@ void gen_direct_jump(
     // Limit the number of block versions
     ctx_t generic_ctx = DEFAULT_CTX;
     generic_ctx.stack_size = ctx->stack_size;
+    generic_ctx.sp_offset = ctx->sp_offset;
     if (count_block_versions(target0) >= MAX_VERSIONS - 1)
     {
         fprintf(stderr, "version limit hit in branch_stub_hit\n");

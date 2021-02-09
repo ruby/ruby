@@ -114,7 +114,7 @@ Compile an interpreter entry block to be inserted into an iseq
 Returns `NULL` if compilation fails.
 */
 uint8_t*
-ujit_entry_prologue()
+ujit_entry_prologue(void)
 {
     RUBY_ASSERT(cb != NULL);
 
@@ -248,9 +248,9 @@ gen_dup(jitstate_t* jit, ctx_t* ctx)
     x86opnd_t dup_val = ctx_stack_pop(ctx, 1);
     x86opnd_t loc0 = ctx_stack_push(ctx, T_NONE);
     x86opnd_t loc1 = ctx_stack_push(ctx, T_NONE);
-    mov(cb, RAX, dup_val);
-    mov(cb, loc0, RAX);
-    mov(cb, loc1, RAX);
+    mov(cb, REG0, dup_val);
+    mov(cb, loc0, REG0);
+    mov(cb, loc1, REG0);
     return true;
 }
 
@@ -1191,6 +1191,23 @@ gen_opt_swb_cfunc(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const r
 
 bool rb_simple_iseq_p(const rb_iseq_t *iseq);
 
+void
+gen_return_branch(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uint8_t shape)
+{
+    switch (shape)
+    {
+        case SHAPE_NEXT0:
+        case SHAPE_NEXT1:
+        RUBY_ASSERT(false);
+        break;
+
+        case SHAPE_DEFAULT:
+        mov(cb, REG0, const_ptr_opnd(target0));
+        mov(cb, member_opnd(REG_CFP, rb_control_frame_t, jit_return), REG0);
+        break;
+    }
+}
+
 static bool
 gen_opt_swb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb_callable_method_entry_t *cme, int32_t argc)
 {
@@ -1251,13 +1268,32 @@ gen_opt_swb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb
     cmp(cb, klass_opnd, REG1);
     jne_ptr(cb, side_exit);
 
-    // Store incremented PC into current control frame in case callee raises.
+    // Store the updated SP on the current frame (pop arguments and receiver)
+    lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * -(argc + 1)));
+    mov(cb, member_opnd(REG_CFP, rb_control_frame_t, sp), REG0);
+
+    // Store the next PC i the current frame
     mov(cb, REG0, const_ptr_opnd(jit->pc + insn_len(BIN(opt_send_without_block))));
     mov(cb, mem_opnd(64, REG_CFP, offsetof(rb_control_frame_t, pc)), REG0);
 
-    // Store the updated SP on the CFP (pop arguments and receiver)
-    lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * -(argc + 1)));
-    mov(cb, member_opnd(REG_CFP, rb_control_frame_t, sp), REG0);
+    // Stub so we can return to JITted code
+    blockid_t return_block = { jit->iseq, jit_next_insn_idx(jit) };
+
+    // Pop arguments and receiver in return context, push the return value
+    // After the return, the JIT and interpreter SP will match up
+    ctx_t return_ctx = *ctx;
+    ctx_stack_pop(&return_ctx, argc);
+    return_ctx.sp_offset = 0;
+
+    // Write the JIT return address on the current frame
+    gen_branch(
+        ctx,
+        return_block,
+        &return_ctx,
+        return_block,
+        &return_ctx,
+        gen_return_branch
+    );
 
     // Stack overflow check
     // #define CHECK_VM_STACK_OVERFLOW0(cfp, sp, margin)
@@ -1327,7 +1363,6 @@ gen_opt_swb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb
         &DEFAULT_CTX,
         (blockid_t){ iseq, 0 }
     );
-    
 
 
     // TODO: create stub for call continuation
@@ -1432,7 +1467,31 @@ gen_leave(jitstate_t* jit, ctx_t* ctx)
     mov(cb, REG_SP, member_opnd(REG_CFP, rb_control_frame_t, sp));
     mov(cb, mem_opnd(64, REG_SP, -SIZEOF_VALUE), REG0);
 
-    // Write the post call bytes
+
+
+
+
+
+    
+    // Load the JIT return address
+    mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, jit_return));
+
+    // If the return address is NULL, fall back to the interpreter
+    int FALLBACK_LABEL = cb_new_label(cb, "FALLBACK");
+    cmp(cb, REG0, imm_opnd(0));
+    jz(cb, FALLBACK_LABEL);
+
+    // Jump to the JIT return address
+    jmp_rm(cb, REG0);
+
+    // Fall back to the interpreter
+    cb_write_label(cb, FALLBACK_LABEL);
+    cb_link_labels(cb);
+
+
+
+
+
     cb_write_post_call_bytes(cb);
 
     return true;
