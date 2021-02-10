@@ -1278,26 +1278,6 @@ gen_opt_swb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb
     mov(cb, REG0, const_ptr_opnd(jit->pc + insn_len(BIN(opt_send_without_block))));
     mov(cb, mem_opnd(64, REG_CFP, offsetof(rb_control_frame_t, pc)), REG0);
 
-    // Stub so we can return to JITted code
-    blockid_t return_block = { jit->iseq, jit_next_insn_idx(jit) };
-
-    // Pop arguments and receiver in return context, push the return value
-    // After the return, the JIT and interpreter SP will match up
-    ctx_t return_ctx = *ctx;
-    ctx_stack_pop(&return_ctx, argc + 1);
-    ctx_stack_push(&return_ctx, T_NONE);
-    return_ctx.sp_offset = 0;
-
-    // Write the JIT return address on the current frame
-    gen_branch(
-        ctx,
-        return_block,
-        &return_ctx,
-        return_block,
-        &return_ctx,
-        gen_return_branch
-    );
-
     // Stack overflow check
     // #define CHECK_VM_STACK_OVERFLOW0(cfp, sp, margin)
     lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * (num_locals + iseq->body->stack_max) + sizeof(rb_control_frame_t)));
@@ -1332,6 +1312,15 @@ gen_opt_swb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb
     sub(cb, REG_CFP, imm_opnd(sizeof(rb_control_frame_t)));
     mov(cb, member_opnd(REG_EC, rb_execution_context_t, cfp), REG_CFP);
 
+
+
+
+
+    // FIXME
+    // FIXME: we could use REG_CFP here instead of REG1???
+    // FIXME: no need to reload from CFP
+
+
     // Setup the new frame
     // *cfp = (const struct rb_control_frame_struct) {
     //    .pc         = pc,
@@ -1354,6 +1343,33 @@ gen_opt_swb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb
     mov(cb, member_opnd(REG1, rb_control_frame_t, iseq), REG0);
     mov(cb, REG0, const_ptr_opnd(start_pc));
     mov(cb, member_opnd(REG1, rb_control_frame_t, pc), REG0);
+
+
+
+
+
+
+    // Stub so we can return to JITted code
+    blockid_t return_block = { jit->iseq, jit_next_insn_idx(jit) };
+
+    // Pop arguments and receiver in return context, push the return value
+    // After the return, the JIT and interpreter SP will match up
+    ctx_t return_ctx = *ctx;
+    ctx_stack_pop(&return_ctx, argc + 1);
+    ctx_stack_push(&return_ctx, T_NONE);
+    return_ctx.sp_offset = 0;
+
+    // Write the JIT return address on the callee frame
+    gen_branch(
+        ctx,
+        return_block,
+        &return_ctx,
+        return_block,
+        &return_ctx,
+        gen_return_branch
+    );
+
+
 
     //print_str(cb, "calling Ruby func:");
     //print_str(cb, rb_id2name(vm_ci_mid(cd->ci)));
@@ -1456,8 +1472,18 @@ gen_leave(jitstate_t* jit, ctx_t* ctx)
     // TODO:
     // RUBY_VM_CHECK_INTS(ec);
 
+
+
+    // FIXME: not needed for interpreter
     // Load the return value
     mov(cb, REG0, ctx_stack_pop(ctx, 1));
+
+
+
+    // Load the JIT return address
+    mov(cb, REG1, member_opnd(REG_CFP, rb_control_frame_t, jit_return));
+
+
 
     // Pop the current frame (ec->cfp++)
     // Note: the return PC is already in the previous CFP
@@ -1476,16 +1502,14 @@ gen_leave(jitstate_t* jit, ctx_t* ctx)
 
 
     
-    // Load the JIT return address
-    mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, jit_return));
 
     // If the return address is NULL, fall back to the interpreter
     int FALLBACK_LABEL = cb_new_label(cb, "FALLBACK");
-    cmp(cb, REG0, imm_opnd(0));
+    cmp(cb, REG1, imm_opnd(0));
     jz(cb, FALLBACK_LABEL);
 
     // Jump to the JIT return address
-    jmp_rm(cb, REG0);
+    jmp_rm(cb, REG1);
 
     // Fall back to the interpreter
     cb_write_label(cb, FALLBACK_LABEL);
