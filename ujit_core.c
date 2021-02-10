@@ -175,7 +175,7 @@ static void add_block_version(blockid_t blockid, block_t* block)
 static void add_incoming(block_t* p_block, uint32_t branch_idx)
 {
     // Add this branch to the list of incoming branches for the target
-    uint32_t* new_list = malloc(sizeof(uint32_t) * p_block->num_incoming + 1);
+    uint32_t* new_list = malloc(sizeof(uint32_t) * (p_block->num_incoming + 1));
     memcpy(new_list, p_block->incoming, p_block->num_incoming);
     new_list[p_block->num_incoming] = branch_idx;
     p_block->incoming = new_list;
