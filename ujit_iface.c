@@ -569,6 +569,12 @@ print_ujit_stats(void)
     fprintf(stderr, "ratio_in_ujit:         %9.1f%%\n", ratio * 100);
     print_insn_count_buffer(sorted_exit_ops, 10, 4);
 }
+#else
+const VALUE *
+rb_ujit_count_side_exit_op(const VALUE *exit_pc)
+{
+    return exit_pc; // This function must return exit_pc!
+}
 #endif // if RUBY_DEBUG
 
 void
