@@ -9711,7 +9711,7 @@ rb_str_oct(VALUE str)
  *  * Even in the "modular" mode, some hash functions are considered
  *    archaic and no longer recommended at all; for instance module
  *    <code>$1$</code> is officially abandoned by its author: see
- *    http://phk.freebsd.dk/sagas/md5crypt_eol.html .  For another
+ *    http://phk.freebsd.dk/sagas/md5crypt_eol/ .  For another
  *    instance module <code>$3$</code> is considered completely
  *    broken: see the manpage of FreeBSD.
  *
