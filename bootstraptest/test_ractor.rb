@@ -158,6 +158,17 @@ assert_equal '[[:e1, 1], [:e2, 2]]', %q{
   a #
 }
 
+# dtoa race condition
+assert_equal '[:ok, :ok, :ok]', %q{
+  n = 3
+  n.times.map{
+    Ractor.new{
+      10_000.times{ rand.to_s }
+      :ok
+    }
+  }.map(&:take)
+}
+
 ###
 ###
 # Ractor still has several memory corruption so skip huge number of tests
