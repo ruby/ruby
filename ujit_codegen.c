@@ -1284,7 +1284,8 @@ gen_opt_swb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb
     // Pop arguments and receiver in return context, push the return value
     // After the return, the JIT and interpreter SP will match up
     ctx_t return_ctx = *ctx;
-    ctx_stack_pop(&return_ctx, argc);
+    ctx_stack_pop(&return_ctx, argc + 1);
+    ctx_stack_push(&return_ctx, T_NONE);
     return_ctx.sp_offset = 0;
 
     // Write the JIT return address on the current frame
