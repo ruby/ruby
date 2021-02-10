@@ -79,8 +79,7 @@ in the mail body (not subject) to the address
 1.  If you want to use Microsoft Visual C++ to compile Ruby, read
     [win32/README.win32](win32/README.win32) instead of this document.
 
-2.  If `./configure` does not exist or is older than `configure.ac`, run
-    `autoconf` to (re)generate configure.
+2.  Run `autoreconf -i` to (re)generate configure.
 
 3.  Run `./configure`, which will generate `config.h` and `Makefile`.
 
