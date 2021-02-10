@@ -55,7 +55,7 @@ static void
 ujit_gen_exit(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb, VALUE* exit_pc)
 {
     // Write the adjusted SP back into the CFP
-    if (ctx->stack_size != 0)
+    if (ctx->sp_offset != 0)
     {
         x86opnd_t stack_pointer = ctx_sp_opnd(ctx, 0);
         lea(cb, REG_SP, stack_pointer);
