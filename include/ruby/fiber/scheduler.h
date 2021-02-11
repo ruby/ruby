@@ -22,6 +22,8 @@ VALUE rb_fiber_scheduler_make_timeout(struct timeval *timeout);
 
 VALUE rb_fiber_scheduler_close(VALUE scheduler);
 
+VALUE rb_fiber_scheduler_timeout_raise(VALUE scheduler, VALUE duration);
+
 VALUE rb_fiber_scheduler_kernel_sleep(VALUE scheduler, VALUE duration);
 VALUE rb_fiber_scheduler_kernel_sleepv(VALUE scheduler, int argc, VALUE * argv);
 
