@@ -73,9 +73,10 @@ end
 ractors = []
 <% results.each do |result| %>
 ractors << Ractor.new(__bmdv_empty_after - __bmdv_empty_before) { |loop_time|
-  __bmdv_script_before = Time.new
+  __bmdv_time = Time
+  __bmdv_script_before = __bmdv_time.new
   #{while_loop(script, loop_count, id: 1)}
-  __bmdv_script_after = Time.new
+  __bmdv_script_after = __bmdv_time.new
 
   File.write(
     <%= result.dump %>,
