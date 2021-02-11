@@ -3556,7 +3556,7 @@ str_casecmp(VALUE str1, VALUE str2)
  *  Unicode case folding, otherwise +false+:
  *    'foo'.casecmp?('foo') # => true
  *    'foo'.casecmp?('food') # => false
- *    'food'.casecmp?('foo') # => true
+ *    'food'.casecmp?('foo') # => false
  *    'FOO'.casecmp?('foo') # => true
  *    'foo'.casecmp?('FOO') # => true
  *
