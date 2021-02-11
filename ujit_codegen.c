@@ -247,12 +247,15 @@ ujit_gen_block(ctx_t* ctx, block_t* block)
 static bool
 gen_dup(jitstate_t* jit, ctx_t* ctx)
 {
-    x86opnd_t dup_val = ctx_stack_pop(ctx, 1);
-    x86opnd_t loc0 = ctx_stack_push(ctx, T_NONE);
-    x86opnd_t loc1 = ctx_stack_push(ctx, T_NONE);
+    // Get the top value and its type
+    x86opnd_t dup_val = ctx_stack_pop(ctx, 0);
+    int dup_type = ctx_get_top_type(ctx);
+
+    // Push the same value on top
+    x86opnd_t loc0 = ctx_stack_push(ctx, dup_type);
     mov(cb, REG0, dup_val);
     mov(cb, loc0, REG0);
-    mov(cb, loc1, REG0);
+
     return true;
 }
 
