@@ -9,6 +9,10 @@
 
 **********************************************************************/
 
+#if defined __APPLE__
+# include <AvailabilityMacros.h>
+#endif
+
 #include "internal.h"
 
 #include <limits.h>
