@@ -292,7 +292,19 @@ gen_putobject(jitstate_t* jit, ctx_t* ctx)
     {
         // Keep track of the fixnum type tag
         x86opnd_t stack_top = ctx_stack_push(ctx, T_FIXNUM);
-        mov(cb, stack_top, imm_opnd((int64_t)arg));
+
+        x86opnd_t imm = imm_opnd((int64_t)arg);
+
+        // 64-bit immediates can't be directly written to memory
+        if (imm.num_bits <= 32)
+        {
+            mov(cb, stack_top, imm);
+        }
+        else
+        {
+            mov(cb, REG0, imm);
+            mov(cb, stack_top, REG0);
+        }
     }
     else if (arg == Qtrue || arg == Qfalse)
     {
