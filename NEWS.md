@@ -34,6 +34,11 @@ Outstanding ones only.
       You need to use a Hash literal to set a Hash to a first member.
       [[Feature #16806]]
 
+* Queue
+
+    * Queue#initialize now accepts an Enumerable of initial values.
+      [[Feature #17327]]
+
 ## Stdlib updates
 
 Outstanding ones only.
@@ -67,4 +72,5 @@ Excluding feature bug fixes.
 [Feature #14256]: https://bugs.ruby-lang.org/issues/14256
 [Feature #16806]: https://bugs.ruby-lang.org/issues/16806
 [Feature #17312]: https://bugs.ruby-lang.org/issues/17312
+[Feature #17327]: https://bugs.ruby-lang.org/issues/17327
 [Bug #17423]: https://bugs.ruby-lang.org/issues/17423
