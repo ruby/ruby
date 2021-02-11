@@ -81,7 +81,7 @@ module Timeout
 
     message ||= "execution expired".freeze
 
-    if scheduler = Fiber.scheduler and scheduler.respond_to?(:timeout_raise)
+    if (scheduler = Fiber.scheduler)&.respond_to?(:timeout_raise)
       return scheduler.timeout_raise(sec, klass || Error, message, &block)
     end
 
