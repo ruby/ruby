@@ -647,15 +647,15 @@ invalidate_block_version(block_t* block)
     void* handler_addr = (void*)handler_table[entry_opcode];
     iseq->body->iseq_encoded[idx] = (VALUE)handler_addr;    
 
-    //
-    // Optional: may want to recompile a new deoptimized entry point
-    //
-
     // TODO:
+    // May want to recompile a new entry point (for interpreter entry blocks)
+    // This isn't necessary for correctness
+
+    // FIXME:
     // Call continuation addresses on the stack can also be atomically replaced by jumps going to the stub.
-    // For now this isn't an issue
 
     // Free the old block version object
+    free(block->incoming);
     free(block);
 
     fprintf(stderr, "invalidation done\n");
