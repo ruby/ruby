@@ -26,6 +26,17 @@ codeblock_t* cb = NULL;
 static codeblock_t outline_block;
 codeblock_t* ocb = NULL;
 
+// Print the current source location for debugging purposes
+static void __attribute__((unused))
+jit_print_loc(jitstate_t* jit, const char* msg)
+{
+    char *ptr;
+    long len;
+    VALUE path = rb_iseq_path(jit->iseq);
+    RSTRING_GETMEM(path, ptr, len);
+    fprintf(stderr, "%s %s:%u\n", msg, ptr, rb_iseq_line_no(jit->iseq, jit->insn_idx));
+}
+
 // Get the current instruction's opcode
 static int
 jit_get_opcode(jitstate_t* jit)
