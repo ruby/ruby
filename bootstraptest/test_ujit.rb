@@ -1,3 +1,15 @@
+# Putobject, less-than operator, fixnums
+assert_equal '2', %q{
+    def check_index(index)
+        if 0x40000000 < index
+            raise "wat? #{index}"
+        end
+        index
+    end
+    check_index 2
+    check_index 2
+}
+
 # Method redefinition (code invalidation) test
 assert_equal '1', %q{
     def ret1
