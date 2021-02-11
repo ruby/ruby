@@ -9749,13 +9749,12 @@ rb_str_crypt(VALUE str, VALUE salt)
     StringValue(salt);
     mustnot_wchar(str);
     mustnot_wchar(salt);
-    if (RSTRING_LEN(salt) < 2) {
-        goto short_salt;
-    }
-
     s = StringValueCStr(str);
     saltp = RSTRING_PTR(salt);
-    if (!saltp[0] || !saltp[1]) goto short_salt;
+    if (RSTRING_LEN(salt) < 2 || !saltp[0] || !saltp[1]) {
+	rb_raise(rb_eArgError, "salt too short (need >=2 bytes)");
+    }
+
 #ifdef BROKEN_CRYPT
     if (!ISASCII((unsigned char)saltp[0]) || !ISASCII((unsigned char)saltp[1])) {
 	salt_8bit_clean[0] = saltp[0] & 0x7f;
@@ -9781,10 +9780,6 @@ rb_str_crypt(VALUE str, VALUE salt)
     result = rb_str_new_cstr(res);
     CRYPT_END();
     return result;
-
-  short_salt:
-    rb_raise(rb_eArgError, "salt too short (need >=2 bytes)");
-    UNREACHABLE_RETURN(Qundef);
 }
 
 
