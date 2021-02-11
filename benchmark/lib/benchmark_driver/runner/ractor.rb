@@ -65,17 +65,17 @@ if #{loop_count} == 1
   __bmdv_empty_before = 0
   __bmdv_empty_after = 0
 else
-  __bmdv_empty_before = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+  __bmdv_empty_before = Time.new
   #{while_loop('', loop_count, id: 0)}
-  __bmdv_empty_after = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+  __bmdv_empty_after = Time.new
 end
 
 ractors = []
 <% results.each do |result| %>
 ractors << Ractor.new(__bmdv_empty_after - __bmdv_empty_before) { |loop_time|
-  __bmdv_script_before = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+  __bmdv_script_before = Time.new
   #{while_loop(script, loop_count, id: 1)}
-  __bmdv_script_after = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+  __bmdv_script_after = Time.new
 
   File.write(
     <%= result.dump %>,
