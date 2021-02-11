@@ -339,7 +339,7 @@ module Psych
         list
       end
 
-      def revive_hash hash, o
+      def revive_hash hash, o, tagged= false
         o.children.each_slice(2) { |k,v|
           key = accept(k)
           val = accept(v)
@@ -366,7 +366,7 @@ module Psych
               hash[key] = val
             end
           else
-            if @symbolize_names
+            if !tagged && @symbolize_names
               key = key.to_sym
             elsif !@freeze
               key = deduplicate(key)
@@ -404,7 +404,7 @@ module Psych
 
       def revive klass, node
         s = register(node, klass.allocate)
-        init_with(s, revive_hash({}, node), node)
+        init_with(s, revive_hash({}, node, true), node)
       end
 
       def init_with o, h, node

@@ -51,5 +51,13 @@ module Psych
       assert(PsychCustomMarshalable === loaded)
       assert_equal(2, loaded.foo)
     end
+
+    def test_init_symbolize_names
+      obj = PsychCustomMarshalable.new(1)
+      loaded = Psych.load(Psych.dump(obj), symbolize_names: true)
+
+      assert(PsychCustomMarshalable === loaded)
+      assert_equal(2, loaded.foo)
+    end
   end
 end
