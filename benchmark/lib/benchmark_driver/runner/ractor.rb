@@ -1,6 +1,6 @@
 require 'erb'
 
-# A runner to measure after-JIT performance easily
+# A runner to measure performance *inside* Ractor
 class BenchmarkDriver::Runner::Ractor < BenchmarkDriver::Runner::Ips
   # JobParser returns this, `BenchmarkDriver::Runner.runner_for` searches "*::Job"
   Job = Class.new(BenchmarkDriver::DefaultJob) do
