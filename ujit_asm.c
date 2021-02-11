@@ -137,9 +137,19 @@ uint8_t* alloc_exec_mem(uint32_t mem_size)
         0
     );
 
+    if (mem_block == MAP_FAILED) {
+        mem_block = (uint8_t*)mmap(
+            NULL, // try again without the address hint (e.g., valgrind)
+            mem_size,
+            PROT_READ | PROT_WRITE | PROT_EXEC,
+            MAP_PRIVATE | MAP_ANONYMOUS,
+            -1,
+            0
+            );
+    }
+
     // Check that the memory mapping was successful
-    if (mem_block == MAP_FAILED)
-    {
+    if (mem_block == MAP_FAILED) {
         fprintf(stderr, "mmap call failed\n");
         exit(-1);
     }
