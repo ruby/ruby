@@ -3005,10 +3005,17 @@ static const bool debug_guessrange =
     false;
 #endif
 
-#define DEBUG_REPORT_GUESSRANGE (void)\
-    (debug_guessrange ? \
-     fprintf(stderr, "find time guess range: %ld - %ld : %"PRI_TIMET_PREFIX"u\n", \
-             guess_lo, guess_hi, (unsigned_time_t)(guess_hi-guess_lo)) : 0)
+#define DEBUG_REPORT_GUESSRANGE \
+    (debug_guessrange ? debug_report_guessrange(guess_lo, guess_hi) : (void)0)
+
+static inline void
+debug_report_guessrange(time_t guess_lo, time_t guess_hi)
+{
+    unsigned_time_t guess_diff = (unsigned_time_t)(guess_hi-guess_lo);
+    fprintf(stderr, "find time guess range: %"PRI_TIMET_PREFIX"d - "
+            "%"PRI_TIMET_PREFIX"d : %"PRI_TIMET_PREFIX"u\n",
+            guess_lo, guess_hi, guess_diff);
+}
 
 static const bool debug_find_time_numguess =
 #ifdef DEBUG_FIND_TIME_NUMGUESS
@@ -3175,8 +3182,14 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
             if (guess <= guess_lo || guess_hi <= guess) {
                 /* Previous guess is invalid. try binary search. */
                 if (debug_guessrange) {
-                    if (guess <= guess_lo) fprintf(stderr, "too small guess: %ld <= %ld\n", guess, guess_lo);
-                    if (guess_hi <= guess) fprintf(stderr, "too big guess: %ld <= %ld\n", guess_hi, guess);
+                    if (guess <= guess_lo) {
+                        fprintf(stderr, "too small guess: %"PRI_TIMET_PREFIX"d"\
+                                " <= %"PRI_TIMET_PREFIX"d\n", guess, guess_lo);
+                    }
+                    if (guess_hi <= guess) {
+                        fprintf(stderr, "too big guess: %"PRI_TIMET_PREFIX"d"\
+                                " <= %"PRI_TIMET_PREFIX"d\n", guess_hi, guess);
+                    }
                 }
                 status = 0;
                 goto binsearch;
