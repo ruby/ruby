@@ -471,7 +471,7 @@ PROLOG_SCRIPT["cmd"] = <<EOS
 :""||{ ""=> %q<-*- ruby -*-
 @"%~dp0#{ruby_install_name}" -x "%~f0" %*
 @exit /b %ERRORLEVEL%
-};{#\n#{prolog_script.gsub(/(?=\n)/, ' #')}>,\n}
+};{ #\n#{prolog_script.gsub(/(?=\n)/, ' #')}>,\n}
 EOS
 PROLOG_SCRIPT.default = (load_relative || /\s/ =~ bindir) ?
                           <<EOS : PROLOG_SCRIPT["exe"]
