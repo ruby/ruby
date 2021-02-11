@@ -113,7 +113,7 @@ rb_fiber_scheduler_make_timeout(struct timeval *timeout)
 VALUE
 rb_fiber_scheduler_timeout_raise(VALUE scheduler, VALUE timeout)
 {
-    return rb_check_funcall(scheduler, id_timeout_raise, 1, timeout);
+    return rb_check_funcall(scheduler, id_timeout_raise, 1, &timeout);
 }
 
 VALUE
