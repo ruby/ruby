@@ -150,6 +150,20 @@ ujit_entry_prologue(void)
 }
 
 /*
+Generate code to check for interrupts and take a side-exit
+*/
+static void
+ujit_check_ints(codeblock_t* cb, uint8_t* side_exit)
+{
+    // Check for interrupts
+    // see RUBY_VM_CHECK_INTS(ec) macro
+    mov(cb, REG0_32, member_opnd(REG_EC, rb_execution_context_t, interrupt_mask));
+    not(cb, REG0_32);
+    test(cb, member_opnd(REG_EC, rb_execution_context_t, interrupt_flag), REG0_32);
+    jnz_ptr(cb, side_exit);
+}
+
+/*
 Compile a sequence of bytecode instructions for a given basic block version
 */
 void
@@ -894,14 +908,10 @@ gen_branchif_branch(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uint8_t
 static bool
 gen_branchif(jitstate_t* jit, ctx_t* ctx)
 {
-    // TODO: we need to eventually do an interrupt check
-    // The check is supposed to happen only when we jump to the jump target block
-    //
-    // How can we do this while keeping the check logic out of line?
-    // Can we push the VM_CHECK_INTS() into the next block or the stub?
-    // Maybe into a transition edge block
-    //
-	// RUBY_VM_CHECK_INTS(ec);
+    // FIXME: eventually, put VM_CHECK_INTS() only on backward branch targets
+    // Check for interrupts
+    uint8_t* side_exit = ujit_side_exit(jit, ctx);
+    ujit_check_ints(cb, side_exit);
 
     // Test if any bit (outside of the Qnil bit) is on
     // RUBY_Qfalse  /* ...0000 0000 */
@@ -951,14 +961,10 @@ gen_branchunless_branch(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uin
 static bool
 gen_branchunless(jitstate_t* jit, ctx_t* ctx)
 {
-    // TODO: we need to eventually do an interrupt check
-    // The check is supposed to happen only when we jump to the jump target block
-    //
-    // How can we do this while keeping the check logic out of line?
-    // Can we push the VM_CHECK_INTS() into the next block or the stub?
-    // Maybe into a transition edge block
-    //
-	// RUBY_VM_CHECK_INTS(ec);
+    // FIXME: eventually, put VM_CHECK_INTS() only on backward branch targets
+    // Check for interrupts
+    uint8_t* side_exit = ujit_side_exit(jit, ctx);
+    ujit_check_ints(cb, side_exit);
 
     // Test if any bit (outside of the Qnil bit) is on
     // RUBY_Qfalse  /* ...0000 0000 */
@@ -988,14 +994,14 @@ gen_branchunless(jitstate_t* jit, ctx_t* ctx)
 static bool
 gen_jump(jitstate_t* jit, ctx_t* ctx)
 {
+    // FIXME: eventually, put VM_CHECK_INTS() only on backward branch targets
+    // Check for interrupts
+    uint8_t* side_exit = ujit_side_exit(jit, ctx);
+    ujit_check_ints(cb, side_exit);
+
     // Get the branch target instruction offsets
     uint32_t jump_idx = jit_next_idx(jit) + (int32_t)jit_get_arg(jit, 0);
     blockid_t jump_block = { jit->iseq, jump_idx };
-
-    //
-    // TODO:
-	// RUBY_VM_CHECK_INTS(ec);
-    //
 
     // Generate the jump instruction
     gen_direct_jump(
@@ -1027,11 +1033,7 @@ gen_opt_swb_cfunc(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const r
     uint8_t* side_exit = ujit_side_exit(jit, ctx);
 
     // Check for interrupts
-    // RUBY_VM_CHECK_INTS(ec)
-    mov(cb, REG0_32, member_opnd(REG_EC, rb_execution_context_t, interrupt_mask));
-    not(cb, REG0_32);
-    test(cb, member_opnd(REG_EC, rb_execution_context_t, interrupt_flag), REG0_32);
-    jnz_ptr(cb, side_exit);
+    ujit_check_ints(cb, side_exit);
 
     // Points to the receiver operand on the stack
     x86opnd_t recv = ctx_stack_opnd(ctx, argc);
@@ -1261,11 +1263,7 @@ gen_opt_swb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb
     uint8_t* side_exit = ujit_side_exit(jit, ctx);
 
     // Check for interrupts
-    // RUBY_VM_CHECK_INTS(ec)
-    mov(cb, REG0_32, member_opnd(REG_EC, rb_execution_context_t, interrupt_mask));
-    not(cb, REG0_32);
-    test(cb, member_opnd(REG_EC, rb_execution_context_t, interrupt_flag), REG0_32);
-    jnz_ptr(cb, side_exit);
+    ujit_check_ints(cb, side_exit);
 
     // Points to the receiver operand on the stack
     x86opnd_t recv = ctx_stack_opnd(ctx, argc);
@@ -1478,8 +1476,8 @@ gen_leave(jitstate_t* jit, ctx_t* ctx)
     test(cb, flags_opnd, imm_opnd(VM_FRAME_FLAG_FINISH));
     jnz_ptr(cb, side_exit);
 
-    // TODO:
-    // RUBY_VM_CHECK_INTS(ec);
+    // Check for interrupts
+    ujit_check_ints(cb, side_exit);
 
     // Load the return value
     mov(cb, REG0, ctx_stack_pop(ctx, 1));
