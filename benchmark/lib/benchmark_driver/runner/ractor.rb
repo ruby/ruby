@@ -18,6 +18,10 @@ class BenchmarkDriver::Runner::Ractor < BenchmarkDriver::Runner::Ips
 
   private
 
+  unless private_instance_methods.include?(:run_benchmark)
+    raise "#run_benchmark is no longer defined in BenchmarkDriver::Runner::Ips"
+  end
+
   # @param [BenchmarkDriver::Runner::Ips::Job] job - loop_count is not nil
   # @param [BenchmarkDriver::Context] context
   # @return [BenchmarkDriver::Metrics]
