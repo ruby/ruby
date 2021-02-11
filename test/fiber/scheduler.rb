@@ -81,10 +81,12 @@ class Scheduler
         waiting, @waiting = @waiting, {}
 
         waiting.each do |fiber, timeout|
-          if timeout <= time
-            fiber.resume
-          else
-            @waiting[fiber] = timeout
+          if fiber.alive?
+            if timeout <= time
+              fiber.resume
+            else
+              @waiting[fiber] = timeout
+            end
           end
         end
       end
@@ -125,6 +127,24 @@ class Scheduler
 
   def current_time
     Process.clock_gettime(Process::CLOCK_MONOTONIC)
+  end
+
+  def timeout_raise(duration, klass, message, &block)
+    fiber = Fiber.current
+
+    self.fiber do
+      sleep(duration)
+
+      if fiber&.alive?
+        fiber.raise(klass, message)
+      end
+    end
+
+    begin
+      yield(duration)
+    ensure
+      fiber = nil
+    end
   end
 
   def process_wait(pid, flags)
