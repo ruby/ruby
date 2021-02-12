@@ -897,7 +897,8 @@ void call_ptr(codeblock_t* cb, x86opnd_t scratch_reg, uint8_t* dst_ptr)
     // If the offset fits in 32-bit
     if (rel64 >= -2147483648 && rel64 <= 2147483647)
     {
-        return call_rel32(cb, (int32_t)rel64);
+        call_rel32(cb, (int32_t)rel64)
+        return;
     }
 
     // Move the pointer into the scratch register and call
