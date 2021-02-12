@@ -10,6 +10,77 @@ assert_equal '2', %q{
     check_index 2
 }
 
+# foo leaves a temp on the stack before the call
+assert_equal '6', %q{
+    def bar
+        return 5
+    end
+
+    def foo
+        return 1 + bar
+    end
+
+    foo()
+    retval = foo()
+}
+
+# Method with one arguments
+# foo leaves a temp on the stack before the call
+assert_equal '7', %q{
+    def bar(a)
+        return a + 1
+    end
+
+    def foo
+        return 1 + bar(5)
+    end
+
+    foo()
+    retval = foo()
+}
+
+# Method with two arguments
+# foo leaves a temp on the stack before the call
+assert_equal '0', %q{
+    def bar(a, b)
+        return a - b
+    end
+
+    def foo
+        return 1 + bar(1, 2)
+    end
+
+    foo()
+    retval = foo()
+}
+
+# Recursive Ruby-to-Ruby calls
+assert_equal '21', %q{
+    def fib(n)
+        if n < 2
+            return n
+        end
+
+        return fib(n-1) + fib(n-2)
+    end
+
+    r = fib(8)
+}
+
+# Ruby-to-Ruby call and C call
+assert_normal_exit %q{
+  def bar
+    puts('hi!')
+  end
+
+  def foo
+    bar
+  end
+
+  foo()
+  foo()
+}
+
 # Method redefinition (code invalidation) test
 assert_equal '1', %q{
     def ret1
@@ -41,60 +112,52 @@ assert_equal '1', %q{
     retval
 }
 
-# foo leaves a temp on the stack before the call
-assert_equal '6', %q{
-    def bar
+# Method redefinition (code invalidation) and GC 
+assert_equal '7', %q{
+    def bar()
         return 5
     end
 
-    def foo
-        return 1 + bar
+    def foo()
+        bar()
     end
 
     foo()
-    retval = foo()
-}
+    foo()
 
-# foo leaves a temp on the stack before the call
-assert_equal '0', %q{
-    def bar(a, b)
-        return a - b
+    def bar()
+        return 7
     end
 
-    def foo
-        return 1 + bar(1, 2)
-    end
+    4.times { GC.start }
 
     foo()
-    retval = foo()
+    foo()
 }
 
-# Recursive Ruby-to-Ruby calls
-assert_equal '21', %q{
-
-    def fib(n)
-        if n < 2
-            return n
-        end
-
-        return fib(n-1) + fib(n-2)
+# Method redefinition with two block versions
+assert_equal '7', %q{
+    def bar()
+        return 5
     end
 
-    r = fib(8)
-}
+    def foo(n)
+        return ((n < 5)? 5:false), bar()
+    end
 
-# Ruby-to-Ruby call and C call
-assert_normal_exit %q{
-  def bar
-    puts('hi!')
-  end
+    foo(4)
+    foo(4)
+    foo(10)
+    foo(10)
 
-  def foo
-    bar
-  end
+    def bar()
+        return 7
+    end
 
-  foo()
-  foo()
+    4.times { GC.start }
+
+    foo(4)
+    foo(4)[1]
 }
 
 # Test for GC safety. Don't invalidate dead iseqs.
