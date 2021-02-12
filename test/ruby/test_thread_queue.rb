@@ -54,6 +54,28 @@ class TestThreadQueue < Test::Unit::TestCase
     assert_equal 0, to_workers.size
   end
 
+  def test_queue_initialize
+    e = Class.new do
+      include Enumerable
+      def initialize(list) @list = list end
+      def each(&block) @list.each(&block) end
+    end
+
+    all_assertions_foreach(nil,
+                           [Array, "Array"],
+                           [e, "Enumerable"],
+                           [Struct.new(:to_a), "Array-like"],
+                           ) do |a, type|
+      q = Queue.new(a.new([1,2,3]))
+      assert_equal(3, q.size, type)
+      assert_not_predicate(q, :empty?, type)
+      assert_equal(1, q.pop, type)
+      assert_equal(2, q.pop, type)
+      assert_equal(3, q.pop, type)
+      assert_predicate(q, :empty?, type)
+    end
+  end
+
   def test_sized_queue_initialize
     q = SizedQueue.new(1)
     assert_equal 1, q.max
