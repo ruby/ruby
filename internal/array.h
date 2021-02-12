@@ -29,6 +29,7 @@ VALUE rb_ary_tmp_new_fill(long capa);
 VALUE rb_ary_at(VALUE, VALUE);
 size_t rb_ary_memsize(VALUE);
 VALUE rb_to_array_type(VALUE obj);
+VALUE rb_to_array(VALUE obj);
 void rb_ary_cancel_sharing(VALUE ary);
 
 static inline VALUE rb_ary_entry_internal(VALUE ary, long offset);
