@@ -110,10 +110,19 @@ rb_fiber_scheduler_make_timeout(struct timeval *timeout)
     return Qnil;
 }
 
-VALUE
-rb_fiber_scheduler_timeout_raise(VALUE scheduler, VALUE timeout)
+VALUE rb_fiber_scheduler_timeout_raise(VALUE scheduler, VALUE timeout, VALUE exception, VALUE message)
 {
-    return rb_check_funcall(scheduler, id_timeout_raise, 1, &timeout);
+    VALUE arguments[] = {
+        timeout, exception, message
+    };
+
+    return rb_check_funcall(scheduler, id_timeout_raise, 3, arguments);
+}
+
+VALUE
+rb_fiber_scheduler_timeout_raisev(VALUE scheduler, int argc, VALUE * argv)
+{
+    return rb_check_funcall(scheduler, id_timeout_raise, argc, argv);
 }
 
 VALUE
