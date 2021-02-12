@@ -37,6 +37,8 @@ class TestFiberTimeout < Test::Unit::TestCase
       scheduler = Scheduler.new
       Fiber.set_scheduler scheduler
 
+      assert_nil Fiber.current_scheduler
+
       Timeout.timeout(1) do
         message = MESSAGE
       end

@@ -1997,6 +1997,20 @@ rb_fiber_s_scheduler(VALUE klass)
 
 /*
  *  call-seq:
+ *     Fiber.current_scheduler -> obj or nil
+ *
+ *  Returns the Fiber scheduler, that was last set for the current thread with Fiber.set_scheduler
+ *  iff the current fiber is non-blocking.
+ *
+ */
+static VALUE
+rb_fiber_current_scheduler(VALUE klass)
+{
+    return rb_fiber_scheduler_current();
+}
+
+/*
+ *  call-seq:
  *     Fiber.set_scheduler(scheduler) -> scheduler
  *
  *  Sets the Fiber scheduler for the current thread. If the scheduler is set, non-blocking
@@ -3084,6 +3098,7 @@ Init_Cont(void)
     rb_define_singleton_method(rb_cFiber, "blocking?", rb_fiber_s_blocking_p, 0);
     rb_define_singleton_method(rb_cFiber, "scheduler", rb_fiber_s_scheduler, 0);
     rb_define_singleton_method(rb_cFiber, "set_scheduler", rb_fiber_set_scheduler, 1);
+    rb_define_singleton_method(rb_cFiber, "current_scheduler", rb_fiber_current_scheduler, 0);
 
     rb_define_singleton_method(rb_cFiber, "schedule", rb_fiber_s_schedule, -1);
 

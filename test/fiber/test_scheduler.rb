@@ -73,4 +73,20 @@ class TestFiberScheduler < Test::Unit::TestCase
 
     thread.join
   end
+
+  def test_current_scheduler
+    thread = Thread.new do
+      scheduler = Scheduler.new
+      Fiber.set_scheduler scheduler
+
+      assert Fiber.scheduler
+      refute Fiber.current_scheduler
+
+      Fiber.schedule do
+        assert Fiber.current_scheduler
+      end
+    end
+
+    thread.join
+  end
 end
