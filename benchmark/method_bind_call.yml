@@ -1,0 +1,16 @@
+prelude: |
+  named_module = Kernel
+
+  module FakeName
+    def self.name
+      "NotMyame".freeze
+    end
+  end
+
+  MOD_NAME = Module.instance_method(:name)
+
+benchmark:
+  fastpath: MOD_NAME.bind_call(Kernel)
+  slowpath: MOD_NAME.bind_call(FakeName)
+
+loop_count: 100_000
