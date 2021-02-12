@@ -1854,6 +1854,7 @@ check_cfunc(const rb_callable_method_entry_t *me, VALUE (*func)())
 static inline int
 vm_method_cfunc_is(const rb_iseq_t *iseq, CALL_DATA cd, VALUE recv, VALUE (*func)())
 {
+    VM_ASSERT(iseq != NULL);
     const struct rb_callcache *cc = vm_search_method((VALUE)iseq, cd, recv);
     return check_cfunc(vm_cc_cme(cc), func);
 }
@@ -1890,7 +1891,7 @@ FLONUM_2_P(VALUE a, VALUE b)
 }
 
 static VALUE
-opt_equality(const rb_iseq_t *cd_owner, VALUE recv, VALUE obj, CALL_DATA cd)
+opt_equality_specialized(VALUE recv, VALUE obj)
 {
     if (FIXNUM_2_P(recv, obj) && EQ_UNREDEFINED_P(INTEGER)) {
         goto compare_by_identity;
@@ -1902,7 +1903,7 @@ opt_equality(const rb_iseq_t *cd_owner, VALUE recv, VALUE obj, CALL_DATA cd)
         goto compare_by_identity;
     }
     else if (SPECIAL_CONST_P(recv)) {
-        goto compare_by_funcall;
+        //
     }
     else if (RBASIC_CLASS(recv) == rb_cFloat && RB_FLOAT_TYPE_P(obj) && EQ_UNREDEFINED_P(FLOAT)) {
         double a = RFLOAT_VALUE(recv);
@@ -1932,11 +1933,7 @@ opt_equality(const rb_iseq_t *cd_owner, VALUE recv, VALUE obj, CALL_DATA cd)
             return rb_str_eql_internal(obj, recv);
         }
     }
-
-  compare_by_funcall:
-    if (! vm_method_cfunc_is(cd_owner, cd, recv, rb_obj_equal)) {
-        return Qundef;
-    }
+    return Qundef;
 
   compare_by_identity:
     if (recv == obj) {
@@ -1947,47 +1944,77 @@ opt_equality(const rb_iseq_t *cd_owner, VALUE recv, VALUE obj, CALL_DATA cd)
     }
 }
 
+static VALUE
+opt_equality(const rb_iseq_t *cd_owner, VALUE recv, VALUE obj, CALL_DATA cd)
+{
+    VM_ASSERT(cd_owner != NULL);
+
+    VALUE val = opt_equality_specialized(recv, obj);
+    if (val != Qundef) return val;
+
+    if (!vm_method_cfunc_is(cd_owner, cd, recv, rb_obj_equal)) {
+        return Qundef;
+    }
+    else {
+        if (recv == obj) {
+            return Qtrue;
+        }
+        else {
+            return Qfalse;
+        }
+    }
+}
+
 #undef EQ_UNREDEFINED_P
 
 #ifndef MJIT_HEADER
+
+static inline const struct rb_callcache *gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, int argc); // vm_eval.c
+NOINLINE(static VALUE opt_equality_by_mid_slowpath(VALUE recv, VALUE obj, ID mid));
+
+static VALUE
+opt_equality_by_mid_slowpath(VALUE recv, VALUE obj, ID mid)
+{
+    const struct rb_callcache *cc = gccct_method_search(GET_EC(), recv, mid, 1);
+
+    if (cc && check_cfunc(vm_cc_cme(cc), rb_obj_equal)) {
+        if (recv == obj) {
+            return Qtrue;
+        }
+        else {
+            return Qfalse;
+        }
+    }
+    else {
+        return Qundef;
+    }
+}
+
+static VALUE
+opt_equality_by_mid(VALUE recv, VALUE obj, ID mid)
+{
+    VALUE val = opt_equality_specialized(recv, obj);
+    if (val != Qundef) {
+        return val;
+    }
+    else {
+        return opt_equality_by_mid_slowpath(recv, obj, mid);
+    }
+}
+
 VALUE
 rb_equal_opt(VALUE obj1, VALUE obj2)
 {
-    STATIC_ASSERT(idEq_is_embeddable, VM_CI_EMBEDDABLE_P(idEq, 0, 1, 0));
-
-#if USE_EMBED_CI
-    static struct rb_call_data cd = {
-        .ci = vm_ci_new_id(idEq, 0, 1, 0),
-    };
-#else
-    struct rb_call_data cd = {
-        .ci = &VM_CI_ON_STACK(idEq, 0, 1, 0),
-    };
-#endif
-
-    cd.cc = &vm_empty_cc;
-    return opt_equality(NULL, obj1, obj2, &cd);
+    return opt_equality_by_mid(obj1, obj2, idEq);
 }
 
 VALUE
 rb_eql_opt(VALUE obj1, VALUE obj2)
 {
-    STATIC_ASSERT(idEqlP_is_embeddable, VM_CI_EMBEDDABLE_P(idEqlP, 0, 1, 0));
-
-#if USE_EMBED_CI
-    static struct rb_call_data cd = {
-        .ci = vm_ci_new_id(idEqlP, 0, 1, 0),
-    };
-#else
-    struct rb_call_data cd = {
-        .ci = &VM_CI_ON_STACK(idEqlP, 0, 1, 0),
-    };
-#endif
-
-    cd.cc = &vm_empty_cc;
-    return opt_equality(NULL, obj1, obj2, &cd);
+    return opt_equality_by_mid(obj1, obj2, idEqlP);
 }
-#endif
+
+#endif // MJIT_HEADER
 
 extern VALUE rb_vm_call0(rb_execution_context_t *ec, VALUE, ID, int, const VALUE*, const rb_callable_method_entry_t *, int kw_splat);
 
