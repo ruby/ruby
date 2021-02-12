@@ -34,5 +34,6 @@ bool cfunc_needs_frame(const rb_method_cfunc_t *cfunc);
 void assume_method_lookup_stable(const struct rb_callcache *cc, const rb_callable_method_entry_t *cme, block_t* block);
 // this function *must* return passed exit_pc
 const VALUE *rb_ujit_count_side_exit_op(const VALUE *exit_pc);
+void ujit_unlink_method_lookup_dependency(block_t *block);
 
 #endif // #ifndef UJIT_IFACE_H

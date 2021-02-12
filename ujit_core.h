@@ -100,7 +100,7 @@ Basic block version
 Represents a portion of an iseq compiled with a given context
 Note: care must be taken to minimize the size of block_t objects
 */
-typedef struct BlockVersion
+typedef struct ujit_block_version
 {
     // Bytecode sequence (iseq, idx) this is a version of
     blockid_t blockid;
@@ -116,12 +116,21 @@ typedef struct BlockVersion
     uint32_t end_pos;
 
     // List of incoming branches indices
-    uint32_t* incoming;
+    uint32_t *incoming;
     uint32_t num_incoming;
 
     // Next block version for this blockid (singly-linked list)
-    struct BlockVersion* next;
+    struct ujit_block_version *next;
 
+    // List node for all block versions in an iseq
+    struct list_node iseq_block_node;
+
+    // GC managed objects that this block depend on
+    struct {
+        VALUE cc;
+        VALUE cme;
+        VALUE iseq;
+    } dependencies;
 } block_t;
 
 // Context object methods
@@ -135,6 +144,7 @@ int ctx_diff(const ctx_t* src, const ctx_t* dst);
 block_t* find_block_version(blockid_t blockid, const ctx_t* ctx);
 block_t* gen_block_version(blockid_t blockid, const ctx_t* ctx);
 uint8_t*  gen_entry_point(const rb_iseq_t *iseq, uint32_t insn_idx);
+void ujit_free_block(block_t *block);
 
 void gen_branch(
     const ctx_t* src_ctx,
