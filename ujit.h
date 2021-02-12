@@ -54,5 +54,8 @@ void rb_ujit_compile_iseq(const rb_iseq_t *iseq);
 void rb_ujit_init(struct rb_ujit_options *options);
 void rb_ujit_bop_redefined(VALUE klass, const rb_method_entry_t *me, enum ruby_basic_operators bop);
 void rb_ujit_constant_state_changed(void);
+void rb_ujit_iseq_mark(const struct rb_iseq_constant_body *body);
+void rb_ujit_iseq_update_references(const struct rb_iseq_constant_body *body);
+void rb_ujit_iseq_free(const struct rb_iseq_constant_body *body);
 
 #endif // #ifndef UJIT_H

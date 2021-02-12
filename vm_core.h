@@ -77,6 +77,7 @@
 #include "ruby/st.h"
 #include "ruby_atomic.h"
 #include "vm_opts.h"
+#include "darray.h"
 
 #include "ruby/thread_native.h"
 #if   defined(_WIN32)
@@ -311,6 +312,8 @@ pathobj_realpath(VALUE pathobj)
 /* Forward declarations */
 struct rb_mjit_unit;
 
+typedef rb_darray(struct ujit_block_version *) rb_ujit_block_array_t;
+
 struct rb_iseq_constant_body {
     enum iseq_type {
 	ISEQ_TYPE_TOP,
@@ -449,6 +452,8 @@ struct rb_iseq_constant_body {
     long unsigned total_calls; /* number of total calls with `mjit_exec()` */
     struct rb_mjit_unit *jit_unit;
 #endif
+
+    rb_ujit_block_array_t ujit_blocks; // empty, or has a size equal to iseq_size
 };
 
 /* T_IMEMO/iseq */

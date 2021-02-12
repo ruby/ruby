@@ -16,12 +16,6 @@
 // Maximum number of branch instructions we can track
 #define MAX_BRANCHES 32768
 
-// Default versioning context (no type information)
-const ctx_t DEFAULT_CTX = { { 0 }, 0 };
-
-// Table of block versions indexed by (iseq, index) tuples
-st_table *version_tbl;
-
 // Registered branch entries
 branch_t branch_entries[MAX_BRANCHES];
 uint32_t num_branches = 0;
@@ -150,25 +144,55 @@ int ctx_diff(const ctx_t* src, const ctx_t* dst)
     return diff;
 }
 
-// Add a block version to the map
-static void add_block_version(blockid_t blockid, block_t* block)
+static block_t *
+get_first_version(const rb_iseq_t *iseq, unsigned idx)
+{
+    struct rb_iseq_constant_body *body = iseq->body;
+    if (rb_darray_size(body->ujit_blocks) == 0) {
+        return NULL;
+    }
+    RUBY_ASSERT((unsigned)rb_darray_size(body->ujit_blocks) == body->iseq_size);
+    return rb_darray_get(body->ujit_blocks, idx);
+}
+
+// Add a block version to the map. Block should be fully constructed
+static void
+add_block_version(blockid_t blockid, block_t* block)
 {
     // Function entry blocks must have stack size 0
     RUBY_ASSERT(!(block->blockid.idx == 0 && block->ctx.stack_size > 0));
+    const rb_iseq_t *iseq = block->blockid.iseq;
+    struct rb_iseq_constant_body *body = iseq->body;
+
+    // Ensure ujit_blocks is initialized
+    if (rb_darray_size(body->ujit_blocks) == 0) {
+        // Initialize ujit_blocks to be as wide as body->iseq_encoded
+        // TODO: add resize API for dary
+        while ((unsigned)rb_darray_size(body->ujit_blocks) < body->iseq_size) {
+            (void)rb_darray_append(&body->ujit_blocks, NULL);
+        }
+    }
+
+    block_t *first_version = get_first_version(iseq, blockid.idx);
 
     // If there exists a version for this block id
-    block_t* first_version = NULL;
-    st_lookup(version_tbl, (st_data_t)&blockid, (st_data_t*)&first_version);
-
-    // Link to the next version in a linked list
     if (first_version != NULL) {
+        // Link to the next version in a linked list
         RUBY_ASSERT(block->next == NULL);
         block->next = first_version;
     }
 
-    // Add the block version to the map
-    st_insert(version_tbl, (st_data_t)&block->blockid, (st_data_t)block);
+    // Make new block the first version
+    rb_darray_set(body->ujit_blocks, blockid.idx, block);
     RUBY_ASSERT(find_block_version(blockid, &block->ctx) != NULL);
+
+    {
+        // By writing the new block to the iseq, the iseq now
+        // contains new references to Ruby objects. Run write barriers.
+        RB_OBJ_WRITTEN(iseq, Qundef, block->dependencies.iseq);
+        RB_OBJ_WRITTEN(iseq, Qundef, block->dependencies.cc);
+        RB_OBJ_WRITTEN(iseq, Qundef, block->dependencies.cme);
+    }
 }
 
 // Add an incoming branch for a given block version
@@ -185,15 +209,11 @@ static void add_incoming(block_t* p_block, uint32_t branch_idx)
 // Count the number of block versions matching a given blockid
 static size_t count_block_versions(blockid_t blockid)
 {
-    // If there exists a version for this block id
-    block_t* first_version;
-    if (!rb_st_lookup(version_tbl, (st_data_t)&blockid, (st_data_t*)&first_version))
-        return 0;
-
     size_t count = 0;
+    block_t *first_version = get_first_version(blockid.iseq, blockid.idx);
 
     // For each version matching the blockid
-    for (block_t* version = first_version; version != NULL; version = version->next)
+    for (block_t *version = first_version; version != NULL; version = version->next)
     {
         count += 1;
     }
@@ -204,10 +224,10 @@ static size_t count_block_versions(blockid_t blockid)
 // Retrieve a basic block version for an (iseq, idx) tuple
 block_t* find_block_version(blockid_t blockid, const ctx_t* ctx)
 {
+    block_t *first_version = get_first_version(blockid.iseq, blockid.idx);
+
     // If there exists a version for this block id
-    block_t* first_version;
-    if (!rb_st_lookup(version_tbl, (st_data_t)&blockid, (st_data_t*)&first_version))
-        return NULL;
+    if (!first_version) return NULL;
 
     // Best match found
     block_t* best_version = NULL;
@@ -559,32 +579,37 @@ void gen_direct_jump(
     branch_entries[branch_idx] = branch_entry;
 }
 
+// Remove all references to a block then free it.
+void
+ujit_free_block(block_t *block)
+{
+    ujit_unlink_method_lookup_dependency(block);
+
+    free(block->incoming);
+    free(block);
+}
+
 // Invalidate one specific block version
 void
 invalidate_block_version(block_t* block)
 {
+    const rb_iseq_t *iseq = block->blockid.iseq;
+
     fprintf(stderr, "invalidating block (%p, %d)\n", block->blockid.iseq, block->blockid.idx);
     fprintf(stderr, "block=%p\n", block);
 
-    // Find the first version for this blockid
-    block_t* first_block = NULL;
-    rb_st_lookup(version_tbl, (st_data_t)&block->blockid, (st_data_t*)&first_block);
+    block_t *first_block = get_first_version(iseq, block->blockid.idx);
     RUBY_ASSERT(first_block != NULL);
 
-    // Remove the version object from the map so we can re-generate stubs
-    if (first_block == block)
-    {
-        st_data_t key = (st_data_t)&block->blockid;
-        int success = st_delete(version_tbl, &key, NULL);
-        RUBY_ASSERT(success);
+    // Remove references to this block
+    if (first_block == block) {
+        // Make the next block the new first version
+        rb_darray_set(iseq->body->ujit_blocks, block->blockid.idx, block->next);
     }
-    else
-    {
+    else {
         bool deleted = false;
-        for (block_t* cur = first_block; cur != NULL; cur = cur->next)
-        {
-            if (cur->next == block)
-            {
+        for (block_t* cur = first_block; cur != NULL; cur = cur->next) {
+            if (cur->next == block) {
                 cur->next = cur->next->next;
                 break;
             }
@@ -635,9 +660,9 @@ invalidate_block_version(block_t* block)
         }
     }
 
-    // If the block is an entry point, it needs to be unmapped from its iseq
-    const rb_iseq_t* iseq = block->blockid.iseq;
     uint32_t idx = block->blockid.idx;
+    // FIXME: the following says "if", but it's unconditional.
+    // If the block is an entry point, it needs to be unmapped from its iseq
     VALUE* entry_pc = &iseq->body->iseq_encoded[idx];
     int entry_opcode = opcode_at_pc(iseq, entry_pc);
 
@@ -654,9 +679,7 @@ invalidate_block_version(block_t* block)
     // FIXME:
     // Call continuation addresses on the stack can also be atomically replaced by jumps going to the stub.
 
-    // Free the old block version object
-    free(block->incoming);
-    free(block);
+    ujit_free_block(block);
 
     fprintf(stderr, "invalidation done\n");
 }
@@ -678,14 +701,8 @@ st_index_t blockid_hash(st_data_t arg)
     return hash0 ^ hash1;
 }
 
-static const struct st_hash_type hashtype_blockid = {
-    blockid_cmp,
-    blockid_hash,
-};
-
 void
 ujit_init_core(void)
 {
-    // Initialize the version hash table
-    version_tbl = st_init_table(&hashtype_blockid);
+    // Nothing yet
 }
