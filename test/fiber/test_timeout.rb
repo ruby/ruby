@@ -14,7 +14,7 @@ class TestFiberTimeout < Test::Unit::TestCase
 
       Fiber.schedule do
         begin
-          Timeout.timeout(0.01) do
+          Timeout.timeout(0.001) do
             sleep(1)
           end
         rescue
@@ -26,5 +26,24 @@ class TestFiberTimeout < Test::Unit::TestCase
     thread.join
 
     assert_kind_of(Timeout::Error, error)
+  end
+
+  MESSAGE = "Hello World"
+
+  def test_timeout_on_main_fiber
+    message = nil
+
+    thread = Thread.new do
+      scheduler = Scheduler.new
+      Fiber.set_scheduler scheduler
+
+      Timeout.timeout(1) do
+        message = MESSAGE
+      end
+    end
+
+    thread.join
+
+    assert_equal MESSAGE, message
   end
 end
