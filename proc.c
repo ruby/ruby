@@ -18,6 +18,7 @@
 #include "internal/object.h"
 #include "internal/proc.h"
 #include "internal/symbol.h"
+#include "method.h"
 #include "iseq.h"
 #include "vm_core.h"
 
@@ -2512,12 +2513,8 @@ rb_method_call_with_block(int argc, const VALUE *argv, VALUE method, VALUE passe
  */
 
 static void
-convert_umethod_to_method_components(VALUE method, VALUE recv, VALUE *methclass_out, VALUE *klass_out, VALUE *iclass_out, const rb_method_entry_t **me_out)
+convert_umethod_to_method_components(const struct METHOD *data, VALUE recv, VALUE *methclass_out, VALUE *klass_out, VALUE *iclass_out, const rb_method_entry_t **me_out)
 {
-    struct METHOD *data;
-
-    TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
-
     VALUE methclass = data->me->owner;
     VALUE iclass = data->me->defined_class;
     VALUE klass = CLASS_OF(recv);
@@ -2598,7 +2595,9 @@ umethod_bind(VALUE method, VALUE recv)
 {
     VALUE methclass, klass, iclass;
     const rb_method_entry_t *me;
-    convert_umethod_to_method_components(method, recv, &methclass, &klass, &iclass, &me);
+    const struct METHOD *data;
+    TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
+    convert_umethod_to_method_components(data, recv, &methclass, &klass, &iclass, &me);
 
     struct METHOD *bound;
     method = TypedData_Make_Struct(rb_cMethod, struct METHOD, &method_data_type, bound);
@@ -2626,15 +2625,24 @@ umethod_bind_call(int argc, VALUE *argv, VALUE method)
     argc--;
     argv++;
 
-    VALUE methclass, klass, iclass;
-    const rb_method_entry_t *me;
-    convert_umethod_to_method_components(method, recv, &methclass, &klass, &iclass, &me);
-    struct METHOD bound = { recv, klass, 0, me };
-
     VALUE passed_procval = rb_block_given_p() ? rb_block_proc() : Qnil;
-
     rb_execution_context_t *ec = GET_EC();
-    return call_method_data(ec, &bound, argc, argv, passed_procval, RB_PASS_CALLED_KEYWORDS);
+
+    const struct METHOD *data;
+    TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
+
+    const rb_callable_method_entry_t *cme = rb_callable_method_entry(CLASS_OF(recv), data->me->called_id);
+    if (data->me == (const rb_method_entry_t *)cme) {
+        vm_passed_block_handler_set(ec, proc_to_block_handler(passed_procval));
+        return rb_vm_call_kw(ec, recv, cme->called_id, argc, argv, cme, RB_PASS_CALLED_KEYWORDS);
+    } else {
+        VALUE methclass, klass, iclass;
+        const rb_method_entry_t *me;
+        convert_umethod_to_method_components(data, recv, &methclass, &klass, &iclass, &me);
+        struct METHOD bound = { recv, klass, 0, me };
+
+        return call_method_data(ec, &bound, argc, argv, passed_procval, RB_PASS_CALLED_KEYWORDS);
+    }
 }
 
 /*
