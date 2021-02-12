@@ -594,10 +594,11 @@ class Socket < BasicSocket
     __accept_nonblock(exception)
   end
 
-  def self.start_getaddrinfo_v6(host, port, queue, resolv_timeout)
+  def self.start_getaddrinfo_v6(host, port, mutex, pipe_write, ai_queue_v6, error_queue)
     return Thread.new do
-      ai_list = Addrinfo.getaddrinfo(host, port, :PF_INET6, :STREAM, timeout: resolv_timeout)
-      ai_list.each {|ai| queue.push(ai) }
+      Thread.current.report_on_exception = false
+      ai_list = Addrinfo.getaddrinfo(host, port, :PF_INET6, :STREAM)
+      ai_list.each {|ai| ai_queue_v6.push(ai) }
     rescue SocketError => ex
       case ex.message
       when "getaddrinfo: Address family for hostname not supported" # when IPv6 is not supported
@@ -605,16 +606,12 @@ class Socket < BasicSocket
       when "getaddrinfo: Temporary failure in name resolution" # when timed out (EAI_AGAIN)
         # ignore
       else
-        raise ex
+        error_queue.push(ex) # report the exception to main thread
       end
-    rescue ClosedQueueError
-      # timed out. ignore exception
+    rescue => ex
+      error_queue.push(ex)
     ensure
-      begin
-        queue.push(:getaddrinfo_v6_done)
-      rescue ClosedQueueError
-        # timed out. ignore exception
-      end
+      mutex.synchronize { pipe_write.puts("getaddrinfo_v6_done") unless pipe_write.closed? }
     end
   end
   private_class_method :start_getaddrinfo_v6
@@ -623,63 +620,200 @@ class Socket < BasicSocket
   RESOLUTION_DELAY = 0.05
   private_constant :RESOLUTION_DELAY
 
-  def self.start_getaddrinfo_v4(host, port, queue, resolv_timeout)
+  def self.start_getaddrinfo_v4(host, port, mutex, pipe_write, ai_queue_v4, error_queue)
     return Thread.new do
-      ai_list = Addrinfo.getaddrinfo(host, port, :PF_INET, :STREAM, timeout: resolv_timeout)
-      sleep(RESOLUTION_DELAY) # 50ms is the recommended value for the resolution delay for IPv4 in RFC8305
-      ai_list.each {|ai| queue.push(ai) }
-    rescue SocketError => ex
-      case ex.message
-      when "getaddrinfo: Address family for hostname not supported" # when IPv4 is not supported
-        # ignore
-      when "getaddrinfo: Temporary failure in name resolution" # when timed out (EAI_AGAIN)
-        # ignore
-      else
-        raise ex
-      end
-    rescue ClosedQueueError
-      # timed out. ignore exception
-    ensure
+      Thread.current.report_on_exception = false
       begin
-        queue.push(:getaddrinfo_v4_done)
-      rescue ClosedQueueError
-        # timed out. ignore exception
+        ai_list = Addrinfo.getaddrinfo(host, port, :PF_INET, :STREAM)
+      rescue SocketError => ex
+        case ex.message
+        when "getaddrinfo: Address family for hostname not supported" # when IPv4 is not supported
+          # ignore
+        when "getaddrinfo: Temporary failure in name resolution" # when timed out (EAI_AGAIN)
+          # ignore
+        else
+          error_queue.push(ex) # report the exception to main thread
+        end
+      rescue => ex
+        error_queue.push(ex)
+      ensure
+        mutex.synchronize { pipe_write.puts("getaddrinfo_v4_done") unless pipe_write.closed? }
+      end
+      if ai_list # if getaddrinfo finished successfully
+        ai_list.each {|ai| ai_queue_v4.push(ai) }
+        sleep(RESOLUTION_DELAY) # 50ms is the recommended value for the resolution delay for IPv4 in RFC8305
+        mutex.synchronize { pipe_write.puts("resolution_delay_done") unless pipe_write.closed? }
       end
     end
   end
   private_class_method :start_getaddrinfo_v4
 
-  def self.find_connected_socket(sockets)
+  def self.find_connected_socket(sockets, addrinfos)
     error = nil
-    connected_socket = sockets&.find do |socket|
+    failed_sockets = []
+    connected_socket = sockets.find do |socket|
       # check connection failure
       begin
-        socket.connect_nonblock(socket.remote_address)
+        socket.connect_nonblock(addrinfos.fetch(socket))
+        true
       rescue Errno::EISCONN # already connected
         error = nil
         true
       rescue => ex
         error = ex
+        failed_sockets.push(socket)
+        socket.close unless socket.closed?
         false
       end
     end
-    return [connected_socket, error]
+    return connected_socket, error, failed_sockets
   end
   private_class_method :find_connected_socket
+
+  # returns an Addrinfo for the next connection attempt
+  def self.pick_addrinfo(getaddrinfo_v6_done, getaddrinfo_v4_done, resolution_delay_done, ai_queue_v6, ai_queue_v4, last_family)
+    if getaddrinfo_v6_done && getaddrinfo_v4_done # pick a v6 or v4 address in interleaved manner
+      if last_family != Socket::AF_INET6 && !ai_queue_v6.empty? # pick v6 address
+        return ai_queue_v6.pop
+      elsif !ai_queue_v4.empty? # pick v4 address
+        return ai_queue_v4.pop
+      end
+    elsif getaddrinfo_v6_done && !ai_queue_v6.empty? # pick v6 address immediately
+      return ai_queue_v6.pop
+    elsif getaddrinfo_v4_done && resolution_delay_done && !ai_queue_v4.empty? # pick v4 addres after the resolution delay
+      return ai_queue_v4.pop
+    end
+    return nil # no available addrinfo for now
+  end
+
+  def self.make_connection_attempts(pipe_read, attempt_v6, attempt_v4, ai_queue_v6, ai_queue_v4, local_addr_list)
+    pipe_reads = [pipe_read]
+    socket_list = []
+    addrinfos = {}
+    getaddrinfo_v6_done = attempt_v6 ? false : true
+    getaddrinfo_v4_done = attempt_v4 ? false : true
+    resolution_delay_done = false
+    last_family = nil
+    next_connection_start_time = nil
+    while !getaddrinfo_v6_done || !getaddrinfo_v4_done || !ai_queue_v6.empty? || !ai_queue_v4.empty?
+      if next_connection_start_time
+        now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        select_timeout = next_connection_start_time - now # wait until CONNECTION_ATTEMPT_DELAY is elapsed since last connection attempt
+        select_timeout = 0 if select_timeout.negative?
+      elsif socket_list.empty?
+        select_timeout = nil # wait for events
+      else
+        select_timeout = CONNECTION_ATTEMPT_DELAY
+      end
+
+      readable_pipes, writable_sockets, = IO.select(pipe_reads, socket_list, nil, select_timeout)
+
+      if writable_sockets && !writable_sockets.empty?
+        ret, error, failed_sockets = find_connected_socket(writable_sockets, addrinfos)
+        socket_list -= failed_sockets
+        last_error = error if error
+        break if ret
+      end
+
+      if readable_pipes && !readable_pipes.empty? # handle an event
+        event = pipe_read.gets
+        if event
+          event.chomp!
+          case event
+          when "getaddrinfo_v6_done"
+            getaddrinfo_v6_done = true
+          when "getaddrinfo_v4_done"
+            getaddrinfo_v4_done = true
+          when "resolution_delay_done"
+            resolution_delay_done = true
+          end
+        else # name resolution has timed out
+          getaddrinfo_v6_done = true
+          getaddrinfo_v4_done = true
+        end
+      end
+
+      # IO.select may return within CONNECTION_ATTEMPT_DELAY
+      # make sure CONNECTION_ATTEMPT_DELAY is elapsed from the last connection attempt
+      if next_connection_start_time
+        now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        next if now < next_connection_start_time
+      end
+
+      ai = pick_addrinfo(getaddrinfo_v6_done, getaddrinfo_v4_done, resolution_delay_done, ai_queue_v6, ai_queue_v4, last_family)
+      next unless ai # no addrinfo available for now
+      last_family = ai.afamily
+
+      local_addr = nil
+      if local_addr_list
+        local_addr = local_addr_list.find {|local_ai| local_ai.afamily == ai.afamily }
+        next unless local_addr
+      end
+
+      next_connection_start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC) + CONNECTION_ATTEMPT_DELAY
+
+      begin
+        sock = Socket.new(ai.pfamily, ai.socktype, ai.protocol)
+        sock.ipv6only! if ai.ipv6?
+        sock.bind(local_addr) if local_addr
+
+        addrinfos[sock] = ai
+        case sock.connect_nonblock(ai, exception: false)
+        when 0
+          ret = sock
+          break
+        when :wait_writable
+          socket_list.push(sock)
+        end
+      rescue SystemCallError => ex
+        last_error = ex
+        sock.close()
+      end
+    end
+
+    return ret, socket_list, addrinfos, last_error
+  end
+
+  def self.wait_connection(socket_list, addrinfos, connect_timeout, start_time)
+    ret = nil
+    timeout = nil # wait forever
+    last_error = nil
+    while !ret && !socket_list.empty? && timeout != 0
+      if connect_timeout
+        # set timeout for IO.select
+        elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
+        timeout = connect_timeout - elapsed
+        timeout = 0 if timeout.negative? # returns immediately
+      end
+      begin
+        _, writable_sockets, = IO.select(nil, socket_list, nil, timeout)
+      rescue SystemCallError => ex
+        last_error = ex
+      end
+      if writable_sockets && !writable_sockets.empty?
+        ret, error, failed_sockets = find_connected_socket(writable_sockets, addrinfos)
+        socket_list -= failed_sockets
+        last_error = error if error
+      end
+    end
+    return ret, last_error
+  end
+
+  def self.cleanup_socket_tcp(threads, ios)
+    threads.each {|th| th&.exit }
+    ios.each do |io|
+      begin
+        io.close if io && !io.closed?
+      rescue
+        # ignore error
+      end
+    end
+  end
+  private_class_method :cleanup_socket_tcp
 
   # 250ms is the recommended value for the connection attempt delay in RFC8305
   CONNECTION_ATTEMPT_DELAY = 0.25
   private_constant :CONNECTION_ATTEMPT_DELAY
-
-  def self.cleanup_socket_tcp(getaddrinfo_v6_th, getaddrinfo_v4_th, timeout_th, socket_list)
-    getaddrinfo_v6_th&.exit
-    getaddrinfo_v4_th&.exit
-    timeout_th&.exit
-    socket_list&.each do |socket|
-      socket.close if socket != ret # close other sockets
-    end
-  end
-  private_class_method :cleanup_socket_tcp
 
   # :call-seq:
   #   Socket.tcp(host, port, local_host=nil, local_port=nil, [opts]) {|socket| ... }
@@ -711,8 +845,6 @@ class Socket < BasicSocket
   def self.tcp(host, port, local_host = nil, local_port = nil, connect_timeout: nil, resolv_timeout: nil) # :yield: socket
     last_error = nil
     ret = nil
-    attempt_v6 = true
-    attempt_v4 = true
     start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
     if connect_timeout
@@ -720,6 +852,13 @@ class Socket < BasicSocket
       raise ArgumentError, "connect_timeout must not be negative" if connect_timeout.negative?
     end
 
+    if resolv_timeout
+      raise ArgumentError, "resolv_timeout must be Numeric" unless resolv_timeout.is_a?(Numeric)
+      raise ArgumentError, "resolv_timeout must not be negative" if resolv_timeout.negative?
+    end
+
+    attempt_v6 = true
+    attempt_v4 = true
     local_addr_list = nil
     if local_host != nil || local_port != nil
       local_addr_list = Addrinfo.getaddrinfo(local_host, local_port, nil, :STREAM, nil)
@@ -727,100 +866,47 @@ class Socket < BasicSocket
       attempt_v4 = local_addr_list.any? {|local_ai| local_ai.afamily == Socket::AF_INET }
     end
 
-    queue = Queue.new
+    # queue = Queue.new
+    pipe_read, pipe_write = IO.pipe
+    mutex = Mutex.new
+    ai_queue_v6 = Queue.new
+    ai_queue_v4 = Queue.new
+    error_queue = Queue.new
 
-    if attempt_v6
-      getaddrinfo_v6_th = start_getaddrinfo_v6(host, port, queue, resolv_timeout)
-    end
+    getaddrinfo_v6_th = start_getaddrinfo_v6(host, port, mutex, pipe_write, ai_queue_v6, error_queue) if attempt_v6
+    getaddrinfo_v4_th = start_getaddrinfo_v4(host, port, mutex, pipe_write, ai_queue_v4, error_queue) if attempt_v4
 
-    if attempt_v4
-      getaddrinfo_v4_th = start_getaddrinfo_v4(host, port, queue, resolv_timeout)
-    end
-
-    if connect_timeout
+    if resolv_timeout
       timeout_th = Thread.new do
-        sleep(connect_timeout)
-        queue.close()
+        Thread.current.report_on_exception = false
+        sleep(resolv_timeout)
+        mutex.synchronize { pipe_write.close() }
       end
     end
 
-    socket_list = []
-    getaddrinfo_v6_done = attempt_v6 ? false : true
-    getaddrinfo_v4_done = attempt_v4 ? false : true
-    while ai = queue.pop do
-      break if queue.closed? # timed out
-      case ai
-      when :getaddrinfo_v6_done
-        getaddrinfo_v6_done = true
-      when :getaddrinfo_v4_done
-        getaddrinfo_v4_done = true
-      else
-        local_addr = nil
-        if local_addr_list
-          local_addr = local_addr_list.find {|local_ai| local_ai.afamily == ai.afamily }
-          next unless local_addr
-        end
-        begin
-          sock = Socket.new(ai.pfamily, ai.socktype, ai.protocol)
-          sock.ipv6only! if ai.ipv6?
-          sock.bind(local_addr) if local_addr
-          case sock.connect_nonblock(ai, exception: false)
-          when 0
-            ret = sock
-            break
-          when :wait_writable
-            socket_list.push(sock)
-            _, writable_sockets, = IO.select(nil, socket_list, nil, CONNECTION_ATTEMPT_DELAY)
-            ret, error = find_connected_socket(writable_sockets)
-            last_error = error if error
-            break if ret
-            socket_list -= writable_sockets # remove sockets resulted in error from socket_list
-          end
-        rescue SystemCallError => ex
-          last_error = ex
-        end
-      end
-      if getaddrinfo_v6_done && getaddrinfo_v4_done && queue.empty?
-        break # all connection attempts has been made
-      end
-    end
-
-    timeout = nil # wait forever
-    while !ret && !socket_list.empty? && timeout != 0
-      if connect_timeout
-        if queue.closed? # timed out
-          timeout = 0 # returns immediately
-        else
-          # wait until connect_timeout
-          elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
-          timeout = connect_timeout - elapsed
-          timeout = 0 if timeout.negative?
-        end
-      end
-      begin
-        _, writable_sockets, = IO.select(nil, socket_list, nil, timeout)
-      rescue SystemCallError => ex
-        last_error = ex
-      end
-      ret, error = find_connected_socket(writable_sockets)
-      last_error = error if error
-      socket_list -= writable_sockets # remove sockets resulted in error from socket_list
-    end
+    ret, socket_list, addrinfos, last_error = make_connection_attempts(pipe_read, attempt_v6, attempt_v4, ai_queue_v6, ai_queue_v4, local_addr_list)
+    ret, last_error = wait_connection(socket_list, addrinfos, connect_timeout, start_time) if !ret && !socket_list.empty?
+    addrinfos.clear()
 
     unless ret
       if last_error
         raise last_error
-      elsif connect_timeout
+      elsif connect_timeout || resolv_timeout
         raise Errno::ETIMEDOUT, "user specified timeout"
-      elsif local_addr_list
+      elsif !error_queue.empty?
+        # raise a unhandled exception in getaddrinfo threads
+        error = error_queue.pop until error_queue.empty?
+        raise error
+      else
         raise SocketError, "no appropriate local address"
       end
     end
 
     ret.nonblock = false
+    socket_list.delete(ret)
 
     if block_given?
-      cleanup_socket_tcp(getaddrinfo_v6_th, getaddrinfo_v4_th, timeout_th, socket_list)
+      cleanup_socket_tcp([getaddrinfo_v6_th, getaddrinfo_v4_th, timeout_th], socket_list + [pipe_read, pipe_write])
       begin
         yield ret
       ensure
@@ -830,7 +916,11 @@ class Socket < BasicSocket
       return ret
     end
   ensure
-    cleanup_socket_tcp(getaddrinfo_v6_th, getaddrinfo_v4_th, timeout_th, socket_list) unless block_given?
+    unless block_given?
+      threads = [getaddrinfo_v6_th, getaddrinfo_v4_th, timeout_th]
+      ios = socket_list ? socket_list + [pipe_read, pipe_write] : [pipe_read, pipe_write]
+      cleanup_socket_tcp(threads, ios)
+    end
   end
 
   # :stopdoc:

@@ -605,6 +605,116 @@ class TestSocket < Test::Unit::TestCase
     sock.close if sock && ! sock.closed?
   end
 
+  def test_getaddrinfo_v4_slow
+    original = Addrinfo.singleton_method(:getaddrinfo)
+    begin
+      server = TCPServer.new("::1", 0)
+    rescue Errno::EADDRNOTAVAIL # IPv6 is not supported
+      return
+    end
+    port = server.addr[1]
+    Addrinfo.define_singleton_method(:getaddrinfo) do |_, _, family, _|
+      if family == :PF_INET
+        sleep(10)
+        [Addrinfo.tcp("127.0.0.1", port)]
+      else
+        [Addrinfo.tcp("::1", port)]
+      end
+    end
+    serv_thread = Thread.new { server.accept }
+    sock = Socket.tcp("localhost", port)
+    accepted = serv_thread.value
+  ensure
+    Addrinfo.define_singleton_method(:getaddrinfo, original)
+    server&.close
+    accepted&.close
+    sock.close if sock && ! sock.closed?
+  end
+
+  def test_getaddrinfo_v6_slow
+    original = Addrinfo.singleton_method(:getaddrinfo)
+    server = TCPServer.new("127.0.0.1", 0)
+    port = server.addr[1]
+    Addrinfo.define_singleton_method(:getaddrinfo) do |_, _, family, _|
+      if family == :PF_INET6
+        sleep(10)
+        [Addrinfo.tcp("::1", port)]
+      else
+        [Addrinfo.tcp("127.0.0.1", port)]
+      end
+    end
+    serv_thread = Thread.new { server.accept }
+    sock = Socket.tcp("localhost", port)
+    accepted = serv_thread.value
+  ensure
+    Addrinfo.define_singleton_method(:getaddrinfo, original)
+    server.close
+    accepted&.close
+    sock.close if sock && ! sock.closed?
+  end
+
+  def test_getaddrinfo_v6_finished_in_resolution_delay
+    original = Addrinfo.singleton_method(:getaddrinfo)
+    begin
+      server = TCPServer.new("::1", 0)
+    rescue Errno::EADDRNOTAVAIL # IPv6 is not supported
+      return
+    end
+    port = server.addr[1]
+    Addrinfo.define_singleton_method(:getaddrinfo) do |_, _, family, _|
+      if family == :PF_INET6
+        sleep(0.025) #  Socket::RESOLUTION_DELAY (private) is 0.05
+        [Addrinfo.tcp("::1", port)]
+      else
+        [Addrinfo.tcp("127.0.0.1", port)]
+      end
+    end
+    serv_thread = Thread.new { server.accept }
+    sock = Socket.tcp("localhost", port)
+    accepted = serv_thread.value
+  ensure
+    Addrinfo.define_singleton_method(:getaddrinfo, original)
+    server&.close
+    accepted&.close
+    sock.close if sock && ! sock.closed?
+  end
+
+  def test_resolv_timeout
+    original = Addrinfo.singleton_method(:getaddrinfo)
+    Addrinfo.define_singleton_method(:getaddrinfo) {|*arg| sleep }
+    sock = nil
+    assert_raise(Errno::ETIMEDOUT) do
+      sock = Socket.tcp("localhost", 9, resolv_timeout: 0.1)
+    end
+  ensure
+    Addrinfo.define_singleton_method(:getaddrinfo, original)
+    sock.close if sock && ! sock.closed?
+  end
+
+  def test_unhandled_exception_in_getaddrinfo_th
+    original = Addrinfo.singleton_method(:getaddrinfo)
+    Addrinfo.define_singleton_method(:getaddrinfo) {|*arg| raise }
+    sock = nil
+    assert_raise(Errno::ETIMEDOUT) do
+      sock = Socket.tcp("localhost", 9, resolv_timeout: 0.1)
+    end
+  ensure
+    Addrinfo.define_singleton_method(:getaddrinfo, original)
+    sock.close if sock && ! sock.closed?
+  end
+
+  def test_unhandled_socketerror_in_getaddrinfo_th
+    original = Addrinfo.singleton_method(:getaddrinfo)
+    Addrinfo.define_singleton_method(:getaddrinfo) {|*arg| raise SocketError }
+    sock = nil
+    assert_raise(Errno::ETIMEDOUT) do
+      sock = Socket.tcp("localhost", 9, resolv_timeout: 0.1)
+    end
+  ensure
+    Addrinfo.define_singleton_method(:getaddrinfo, original)
+    sock.close if sock && ! sock.closed?
+  end
+
   def test_getifaddrs
     begin
       list = Socket.getifaddrs
