@@ -485,6 +485,19 @@ class TestModule < Test::Unit::TestCase
     assert_equal([m], m.ancestors)
   end
 
+  def test_bug17590
+    m = Module.new
+    c = Class.new
+    c.prepend(m)
+    c.include(m)
+    m.prepend(m) rescue nil
+    m2 = Module.new
+    m2.prepend(m)
+    c.include(m2)
+
+    assert_equal([m, c, m2] + Object.ancestors, c.ancestors)
+  end
+
   def test_prepend_works_with_duped_classes
     m = Module.new
     a = Class.new do
