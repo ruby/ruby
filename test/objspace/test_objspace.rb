@@ -243,6 +243,20 @@ class TestObjSpace < Test::Unit::TestCase
     GC.enable
   end
 
+  def test_trace_object_allocations_in_stress
+    assert_in_out_err(%w[-robjspace], "#{<<-"begin;"}\n#{<<-'end;'}") do |(output), (error)|
+      begin;
+        ObjectSpace.trace_object_allocations_start
+        GC.stress = true
+        10.times { Object.new }
+        puts :ok
+      end;
+      assert_nil error
+      assert_equal 'ok', output, '[ruby-core:102334] [Bug #17599]'
+    end
+  end
+
+
   def test_dump_flags
     info = ObjectSpace.dump("foo".freeze)
     assert_match(/"wb_protected":true, "old":true/, info)

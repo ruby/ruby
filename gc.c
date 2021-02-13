@@ -2254,7 +2254,6 @@ newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *
         }
         GC_ASSERT(obj != 0);
         newobj_init(klass, flags, wb_protected, objspace, obj);
-        gc_event_hook(objspace, RUBY_INTERNAL_EVENT_NEWOBJ, obj);
     }
     RB_VM_LOCK_LEAVE_CR_LEV(cr, &lev);
 
@@ -2313,6 +2312,7 @@ newobj_of_cr(rb_ractor_t *cr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALU
          (obj = ractor_cached_freeobj(objspace, cr)) != Qfalse)) {
 
         newobj_init(klass, flags, wb_protected, objspace, obj);
+        newobj_fill(obj, v1, v2, v3);
     }
     else {
         RB_DEBUG_COUNTER_INC(obj_newobj_slowpath);
@@ -2320,9 +2320,10 @@ newobj_of_cr(rb_ractor_t *cr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALU
         obj = wb_protected ?
           newobj_slowpath_wb_protected(klass, flags, objspace, cr) :
           newobj_slowpath_wb_unprotected(klass, flags, objspace, cr);
+        newobj_fill(obj, v1, v2, v3);
+        gc_event_hook(objspace, RUBY_INTERNAL_EVENT_NEWOBJ, obj);
     }
 
-    return newobj_fill(obj, v1, v2, v3);
     return obj;
 }
 
