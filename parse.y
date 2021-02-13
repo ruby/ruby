@@ -1765,7 +1765,7 @@ expr_value_do	: {COND_PUSH(1);} expr_value do {COND_POP();}
 		    {
 			$$ = $2;
 		    }
-
+		;
 
 command_call	: command
 		| block_command
