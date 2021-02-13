@@ -770,6 +770,11 @@ module RbInstall
   end
 
   class UnpackedInstaller < GemInstaller
+    def initialize(*args, exedir: nil, **options)
+      super(*args, **options)
+      @exedir = exedir
+    end
+
     def write_cache_file
     end
 
@@ -777,7 +782,7 @@ module RbInstall
     end
 
     def shebang(bin_file_name)
-      path = File.join(gem_dir, spec.bindir, bin_file_name)
+      path = File.join((@exedir || File.join(gem_dir, spec.bindir)), bin_file_name)
       first_line = File.open(path, "rb") {|file| file.gets}
       $script_installer.prolog(first_line).chomp
     end
@@ -865,10 +870,10 @@ end
 # :startdoc:
 
 install?(:ext, :comm, :gem, :'default-gems', :'default-gems-comm') do
-  install_default_gem('lib', srcdir)
+  install_default_gem('lib', srcdir, with_destdir(bindir))
 end
 install?(:ext, :arch, :gem, :'default-gems', :'default-gems-arch') do
-  install_default_gem('ext', srcdir)
+  install_default_gem('ext', srcdir, with_destdir(bindir))
 end
 
 def load_gemspec(file, expanded = false)
@@ -896,7 +901,7 @@ def load_gemspec(file, expanded = false)
   spec
 end
 
-def install_default_gem(dir, srcdir)
+def install_default_gem(dir, srcdir, bindir)
   gem_dir = Gem.default_dir
   install_dir = with_destdir(gem_dir)
   prepare "default gems from #{dir}", gem_dir
@@ -935,8 +940,11 @@ def install_default_gem(dir, srcdir)
       makedirs(bin_dir)
 
       gemspec.executables.map {|exec|
-        install File.join(srcdir, 'libexec', exec),
-                File.join(bin_dir, exec)
+        exedir = File.join(srcdir, 'libexec')
+        install File.join(exedir, exec), File.join(bin_dir, exec)
+        pkg = RbInstall::DirPackage.new(gemspec)
+        ins = RbInstall::UnpackedInstaller.new(pkg, exedir: exedir)
+        ins.generate_bin_script(exec, bindir)
       }
     end
   end
@@ -958,6 +966,7 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
     :prog_mode => $script_mode,
     :wrappers => true,
     :format_executable => true,
+    :srcdir => srcdir,
   }
   gem_ext_dir = "#$extout/gems/#{CONFIG['arch']}"
   extensions_dir = Gem::StubSpecification.gemspec_stub("", gem_dir, gem_dir).extensions_dir
