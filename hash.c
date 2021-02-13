@@ -6737,7 +6737,7 @@ env_update(VALUE env, VALUE hash)
  *      end
  *
  *      def ==(other)
- *        self.class === other &&
+ *        self.class === other.class &&
  *          other.author == @author &&
  *          other.title == @title
  *      end
