@@ -1245,8 +1245,7 @@ rb_enc_precise_mbclen(const char *p, const char *e, rb_encoding *enc)
 int
 rb_enc_ascget(const char *p, const char *e, int *len, rb_encoding *enc)
 {
-    unsigned int c;
-    int l;
+    int c;
     if (e <= p)
         return -1;
     if (rb_enc_asciicompat(enc)) {
@@ -1256,12 +1255,20 @@ rb_enc_ascget(const char *p, const char *e, int *len, rb_encoding *enc)
         if (len) *len = 1;
         return c;
     }
+    c = rb_enc_mbcget(p, e, len, enc);
+    if (!rb_enc_isascii(c, enc))
+        return -1;
+    return c;
+}
+
+int
+rb_enc_mbcget(const char *p, const char *e, int *len, rb_encoding *enc)
+{
+    int c, l;
     l = rb_enc_precise_mbclen(p, e, enc);
     if (!MBCLEN_CHARFOUND_P(l))
         return -1;
     c = rb_enc_mbc_to_codepoint(p, e, enc);
-    if (!rb_enc_isascii(c, enc))
-        return -1;
     if (len) *len = l;
     return c;
 }

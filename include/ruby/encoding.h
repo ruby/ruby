@@ -188,6 +188,8 @@ int rb_enc_precise_mbclen(const char *p, const char *e, rb_encoding *enc);
 /* -> 0x00..0x7f, -1 */
 int rb_enc_ascget(const char *p, const char *e, int *len, rb_encoding *enc);
 
+/* -> 0x00.., -1 */
+int rb_enc_mbcget(const char *p, const char *e, int *len, rb_encoding *enc);
 
 /* -> code (and len) or raise exception */
 unsigned int rb_enc_codepoint_len(const char *p, const char *e, int *len, rb_encoding *enc);
