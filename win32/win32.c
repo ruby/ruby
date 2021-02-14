@@ -7400,7 +7400,7 @@ wutimensat(int dirfd, const WCHAR *path, const struct timespec *times, int flags
 static int
 w32_utimensat(int dirfd, const char *path, const struct timespec *times, int flags, UINT cp)
 {
-    WCHAR *wpath = mbstr_to_wstr(filecp(), path, -1, NULL);
+    WCHAR *wpath = mbstr_to_wstr(cp, path, -1, NULL);
     int ret = -1;
 
     if (wpath) {
