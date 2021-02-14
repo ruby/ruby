@@ -27,6 +27,10 @@ case "$0" in /*) r=-r"$0";; *) r=-r"./$0";; esac
 exec $ruby "$r" "$@"
 =end
 =baseruby
+<% if RUBY_VERSION < "2.7" %>
+def ruby2_keywords(*)
+end
+<% end %>
 class Object
   remove_const :CROSS_COMPILING if defined?(CROSS_COMPILING)
   CROSS_COMPILING = RUBY_PLATFORM
