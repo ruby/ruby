@@ -6142,6 +6142,12 @@ flatten(VALUE ary, int level)
     st_table *memo = 0;
     st_data_t id;
 
+    if (UNLIKELY(RARRAY_LEN(ary) == 0)) {
+        result = ary_new(0, 0);
+        RBASIC_SET_CLASS(result, rb_obj_class(ary));
+        return result;
+    }
+
     for (i = 0; i < RARRAY_LEN(ary); i++) {
         elt = RARRAY_AREF(ary, i);
         tmp = rb_check_array_type(elt);
