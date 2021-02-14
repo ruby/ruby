@@ -701,20 +701,14 @@ module RbInstall
         when "lib"
           base = @base_dir
           prefix = base.sub(/lib\/.*?\z/, "")
-        else
-          # other/something.gemspec ->
-          #   [other/something.rb, other/something/foo.rb, ...]
-          base = @gemspec.chomp('.gemspec')
-          prefix = @base_dir
         end
 
-        libs = Dir.glob("#{base}{.rb,/**/*.rb}").collect do |ruby_source|
-          remove_prefix(prefix, ruby_source)
-        end
-        if libs.empty?
-          [File.basename(@gemspec, '.gemspec') + '.rb']
+        if base
+          Dir.glob("#{base}{.rb,/**/*.rb}").collect do |ruby_source|
+            remove_prefix(prefix, ruby_source)
+          end
         else
-          libs
+          [File.basename(@gemspec, '.gemspec') + '.rb']
         end
       end
 
