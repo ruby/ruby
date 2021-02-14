@@ -746,9 +746,10 @@ module RbInstall
     attr_accessor :prog_mode
     attr_accessor :data_mode
 
-    def initialize(spec)
+    def initialize(spec, dir_map = nil)
       @spec = spec
       @src_dir = File.dirname(@spec.loaded_from)
+      @dir_map = dir_map
     end
 
     def extract_files(destination_dir, pattern = "*")
@@ -756,14 +757,13 @@ module RbInstall
       File.chmod(0700, destination_dir) unless $dryrun
       mode = pattern == File.join(spec.bindir, '*') ? prog_mode : data_mode
       destdir = without_destdir(destination_dir)
+      if @dir_map
+        (dir_map = @dir_map.map {|k, v| Regexp.quote(k) unless k == v}).compact!
+        dir_map = %r{\A(?:#{dir_map.join('|')})(?=/)}
+      end
       spec.files.each do |f|
         next unless File.fnmatch(pattern, f)
-        src = File.join(@src_dir, f)
-        # The `src` is fine for bundled gems. However, default gems have their
-        # binaries in `libexec`.
-        unless File.exist?(src)
-          src = File.join(@src_dir, 'libexec', File.basename(f))
-        end
+        src = File.join(@src_dir, dir_map =~ f ? "#{@dir_map[$&]}#{$'}" : f)
         dest = File.join(destdir, f)
         makedirs(dest[/.*(?=\/)/m])
         install src, dest, :mode => mode
@@ -939,7 +939,7 @@ def install_default_gem(dir, srcdir, bindir)
 
     gemspec.loaded_from = File.join srcdir, gemspec.spec_name
 
-    package = RbInstall::DirPackage.new gemspec
+    package = RbInstall::DirPackage.new gemspec, {gemspec.bindir => 'libexec'}
     ins = RbInstall::UnpackedInstaller.new(package, options)
     puts "#{INDENT}#{gemspec.name} #{gemspec.version}"
     ins.install
