@@ -584,6 +584,7 @@ module Test
             del_status_line or puts
             unless suites.empty?
               puts "\n""Retrying..."
+              @verbose = options[:verbose]
               _run_suites(suites, type)
             end
             @options[:parallel] = parallel
