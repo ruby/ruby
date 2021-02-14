@@ -2610,6 +2610,14 @@ obj_respond_to_missing(VALUE obj, VALUE mid, VALUE priv)
     return Qfalse;
 }
 
+#if OPT_GLOBAL_METHOD_CACHE
+void
+rb_global_method_cache_free(void)
+{
+  free(global_method_cache.entries);
+}
+#endif
+
 void
 Init_Method(void)
 {
