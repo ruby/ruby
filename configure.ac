@@ -684,7 +684,7 @@ AS_IF([test "$GCC" = yes], [
 
     # -fstack-protector
     AS_CASE(["$target_os"],
-    [mingw*|haiku*|emscripten*], [
+    [mingw*|emscripten*], [
 	stack_protector=no
     ])
     AS_IF([test -z "${stack_protector+set}"], [
@@ -1050,7 +1050,7 @@ main()
 		])
 		],
 [haiku*], [
-		LIBS="$LIBS" # m lib is include in root
+		LIBS="$LIBS -lssp" # m lib is include in root
 		],
 [cygwin*|msys*], [
 		ac_cv_header_langinfo_h=yes
