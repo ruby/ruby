@@ -870,10 +870,10 @@ end
 # :startdoc:
 
 install?(:ext, :comm, :gem, :'default-gems', :'default-gems-comm') do
-  install_default_gem('lib', srcdir, with_destdir(bindir))
+  install_default_gem('lib', srcdir, bindir)
 end
 install?(:ext, :arch, :gem, :'default-gems', :'default-gems-arch') do
-  install_default_gem('ext', srcdir, with_destdir(bindir))
+  install_default_gem('ext', srcdir, bindir)
 end
 
 def load_gemspec(file, expanded = false)
@@ -904,6 +904,7 @@ end
 def install_default_gem(dir, srcdir, bindir)
   gem_dir = Gem.default_dir
   install_dir = with_destdir(gem_dir)
+  bindir = with_destdir(bindir)
   prepare "default gems from #{dir}", gem_dir
   makedirs(Gem.ensure_default_gem_subdirectories(install_dir, $dir_mode).map {|d| File.join(gem_dir, d)})
 
@@ -940,6 +941,7 @@ def install_default_gem(dir, srcdir, bindir)
       makedirs(bin_dir)
 
       gemspec.executables.map {|exec|
+        # executables scripts are gathered in libexec regardless upstreams
         exedir = File.join(srcdir, 'libexec')
         install File.join(exedir, exec), File.join(bin_dir, exec)
         pkg = RbInstall::DirPackage.new(gemspec)
@@ -966,7 +968,6 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
     :prog_mode => $script_mode,
     :wrappers => true,
     :format_executable => true,
-    :srcdir => srcdir,
   }
   gem_ext_dir = "#$extout/gems/#{CONFIG['arch']}"
   extensions_dir = Gem::StubSpecification.gemspec_stub("", gem_dir, gem_dir).extensions_dir
