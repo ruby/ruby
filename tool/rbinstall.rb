@@ -708,8 +708,13 @@ module RbInstall
           prefix = @base_dir
         end
 
-        Dir.glob("#{base}{.rb,/**/*.rb}").collect do |ruby_source|
+        libs = Dir.glob("#{base}{.rb,/**/*.rb}").collect do |ruby_source|
           remove_prefix(prefix, ruby_source)
+        end
+        if libs.empty?
+          [File.basename(@gemspec, '.gemspec') + '.rb']
+        else
+          libs
         end
       end
 
