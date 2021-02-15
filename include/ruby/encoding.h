@@ -237,6 +237,7 @@ rb_enc_asciicompat_inline(rb_encoding *enc)
 }
 #define rb_enc_asciicompat(enc) rb_enc_asciicompat_inline(enc)
 
+int rb_enc_asciisafe_p(rb_encoding *enc);
 int rb_enc_casefold(char *to, const char *p, const char *e, rb_encoding *enc);
 CONSTFUNC(int rb_enc_toupper(int c, rb_encoding *enc));
 CONSTFUNC(int rb_enc_tolower(int c, rb_encoding *enc));
