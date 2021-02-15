@@ -32,6 +32,14 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#ifdef _WIN32
+static inline int getpagesize(void) {
+    SYSTEM_INFO si;
+    GetSystemInfo(&si);
+    return si.dwPageSize;
+}
+#endif
+
 #ifndef HAVE_MALLOC_USABLE_SIZE
 # ifdef _WIN32
 #  define HAVE_MALLOC_USABLE_SIZE
@@ -1813,13 +1821,21 @@ heap_page_allocate(rb_objspace_t *objspace)
     int limit = HEAP_PAGE_OBJ_LIMIT;
 
     /* assign heap_page body (contains heap_page_header and RVALUEs) */
-    page_body = (struct heap_page_body *)rb_aligned_malloc(HEAP_PAGE_ALIGN, HEAP_PAGE_SIZE);
+    page_body = (struct heap_page_body *)rb_aligned_malloc(HEAP_PAGE_ALIGN, HEAP_PAGE_ALIGN);
     if (page_body == 0) {
 	rb_memerror();
     }
 
     /* assign heap_page entry */
     page = calloc1(sizeof(struct heap_page));
+
+    assert((getpagesize() * 4) == HEAP_PAGE_ALIGN);
+    intptr_t page_body_end = (intptr_t)page_body + (getpagesize() * 4);
+
+    if ((intptr_t)page > (intptr_t)page_body && (intptr_t)page < page_body_end) {
+        rb_bug("heap page shares OS pages with body!");
+    }
+
     if (page == 0) {
         rb_aligned_free(page_body);
 	rb_memerror();
