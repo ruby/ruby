@@ -1218,66 +1218,30 @@ exc_s_to_tty_p(VALUE self)
     return rb_stderr_tty_p() ? Qtrue : Qfalse;
 }
 
-/*
- * call-seq:
- *   exception.full_message(highlight: bool, order: [:top or :bottom]) ->  string
- *
- * Returns formatted string of _exception_.
- * The returned string is formatted using the same format that Ruby uses
- * when printing an uncaught exceptions to stderr.
- *
- * If _highlight_ is +true+ the default error handler will send the
- * messages to a tty.
- *
- * _order_ must be either of +:top+ or +:bottom+, and places the error
- * message and the innermost backtrace come at the top or the bottom.
- *
- * The default values of these options depend on <code>$stderr</code>
- * and its +tty?+ at the timing of a call.
- */
-
 static VALUE
-exc_full_message(int argc, VALUE *argv, VALUE exc)
+exc_full_message(rb_execution_context_t *ec, VALUE exc, VALUE highlight, VALUE order)
 {
-    VALUE opt, str, emesg, errat;
-    enum {kw_highlight, kw_order, kw_max_};
-    static ID kw[kw_max_];
-    VALUE args[kw_max_] = {Qnil, Qnil};
-
-    rb_scan_args(argc, argv, "0:", &opt);
-    if (!NIL_P(opt)) {
-	if (!kw[0]) {
-#define INIT_KW(n) kw[kw_##n] = rb_intern_const(#n)
-	    INIT_KW(highlight);
-	    INIT_KW(order);
-#undef INIT_KW
-	}
-	rb_get_kwargs(opt, kw, 0, kw_max_, args);
-	switch (args[kw_highlight]) {
-	  default:
-	    rb_raise(rb_eArgError, "expected true or false as "
-		     "highlight: %+"PRIsVALUE, args[kw_highlight]);
-	  case Qundef: args[kw_highlight] = Qnil; break;
-	  case Qtrue: case Qfalse: case Qnil: break;
-	}
-	if (args[kw_order] == Qundef) {
-	    args[kw_order] = Qnil;
-	}
-	else {
-	    ID id = rb_check_id(&args[kw_order]);
-	    if (id == id_bottom) args[kw_order] = Qtrue;
-	    else if (id == id_top) args[kw_order] = Qfalse;
-	    else {
-		rb_raise(rb_eArgError, "expected :top or :bottom as "
-			 "order: %+"PRIsVALUE, args[kw_order]);
-	    }
-	}
+    VALUE str, emesg, errat;
+    switch (highlight) {
+      default:
+        rb_raise(rb_eArgError, "expected true or false as "
+                 "highlight: %+"PRIsVALUE, highlight);
+      case Qtrue: case Qfalse: case Qnil: break;
+    }
+    if (!NIL_P(order)) {
+        ID id = rb_check_id(&order);
+        if (id == id_bottom) order = Qtrue;
+        else if (id == id_top) order = Qfalse;
+        else {
+            rb_raise(rb_eArgError, "expected :top or :bottom as "
+                     "order: %+"PRIsVALUE, order);
+        }
     }
     str = rb_str_new2("");
     errat = rb_get_backtrace(exc);
     emesg = rb_get_message(exc);
 
-    rb_error_write(exc, emesg, errat, str, args[kw_highlight], args[kw_order]);
+    rb_error_write(exc, emesg, errat, str, highlight, order);
     return str;
 }
 
@@ -1617,36 +1581,10 @@ exit_success_p(VALUE exc)
 }
 
 static VALUE
-err_init_recv(VALUE exc, VALUE recv)
+err_init_recv(rb_execution_context_t *ec, VALUE exc, VALUE recv)
 {
     if (recv != Qundef) rb_ivar_set(exc, id_recv, recv);
     return exc;
-}
-
-/*
- * call-seq:
- *   FrozenError.new(msg=nil, receiver: nil)  -> frozen_error
- *
- * Construct a new FrozenError exception. If given the <i>receiver</i>
- * parameter may subsequently be examined using the FrozenError#receiver
- * method.
- *
- *    a = [].freeze
- *    raise FrozenError.new("can't modify frozen array", receiver: a)
- */
-
-static VALUE
-frozen_err_initialize(int argc, VALUE *argv, VALUE self)
-{
-    ID keywords[1];
-    VALUE values[numberof(keywords)], options;
-
-    argc = rb_scan_args(argc, argv, "*:", NULL, &options);
-    keywords[0] = id_receiver;
-    rb_get_kwargs(options, keywords, 0, numberof(values), values);
-    rb_call_super(argc, argv);
-    err_init_recv(self, values[0]);
-    return self;
 }
 
 /*
@@ -1690,43 +1628,13 @@ rb_name_error_str(VALUE str, const char *fmt, ...)
 }
 
 static VALUE
-name_err_init_attr(VALUE exc, VALUE recv, VALUE method)
+name_err_init_attr(rb_execution_context_t *ec, VALUE exc, VALUE method)
 {
-    const rb_execution_context_t *ec = GET_EC();
     rb_control_frame_t *cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(ec->cfp);
     cfp = rb_vm_get_ruby_level_next_cfp(ec, cfp);
     rb_ivar_set(exc, id_name, method);
-    err_init_recv(exc, recv);
     if (cfp) rb_ivar_set(exc, id_iseq, rb_iseqw_new(cfp->iseq));
     return exc;
-}
-
-/*
- * call-seq:
- *   NameError.new(msg=nil, name=nil, receiver: nil)  -> name_error
- *
- * Construct a new NameError exception. If given the <i>name</i>
- * parameter may subsequently be examined using the NameError#name
- * method. <i>receiver</i> parameter allows to pass object in
- * context of which the error happened. Example:
- *
- *    [1, 2, 3].method(:rject) # NameError with name "rject" and receiver: Array
- *    [1, 2, 3].singleton_method(:rject) # NameError with name "rject" and receiver: [1, 2, 3]
- */
-
-static VALUE
-name_err_initialize(int argc, VALUE *argv, VALUE self)
-{
-    ID keywords[1];
-    VALUE values[numberof(keywords)], name, options;
-
-    argc = rb_scan_args(argc, argv, "*:", NULL, &options);
-    keywords[0] = id_receiver;
-    rb_get_kwargs(options, keywords, 0, numberof(values), values);
-    name = (argc > 1) ? argv[--argc] : Qnil;
-    rb_call_super(argc, argv);
-    name_err_init_attr(self, values[0], name);
-    return self;
 }
 
 static VALUE rb_name_err_mesg_new(VALUE mesg, VALUE recv, VALUE method);
@@ -1735,7 +1643,8 @@ static VALUE
 name_err_init(VALUE exc, VALUE mesg, VALUE recv, VALUE method)
 {
     exc_init(exc, rb_name_err_mesg_new(mesg, recv, method));
-    return name_err_init_attr(exc, recv, method);
+    err_init_recv(NULL, exc, recv);
+    return name_err_init_attr(GET_EC(), exc, method);
 }
 
 VALUE
@@ -1790,33 +1699,10 @@ nometh_err_init_attr(VALUE exc, VALUE args, int priv)
     return exc;
 }
 
-/*
- * call-seq:
- *   NoMethodError.new(msg=nil, name=nil, args=nil, private=false, receiver: nil)  -> no_method_error
- *
- * Construct a NoMethodError exception for a method of the given name
- * called with the given arguments. The name may be accessed using
- * the <code>#name</code> method on the resulting object, and the
- * arguments using the <code>#args</code> method.
- *
- * If <i>private</i> argument were passed, it designates method was
- * attempted to call in private context, and can be accessed with
- * <code>#private_call?</code> method.
- *
- * <i>receiver</i> argument stores an object whose method was called.
- */
-
 static VALUE
-nometh_err_initialize(int argc, VALUE *argv, VALUE self)
+nometh_err_initialize(rb_execution_context_t *ec, VALUE exc, VALUE args, VALUE priv)
 {
-    int priv;
-    VALUE args, options;
-    argc = rb_scan_args(argc, argv, "*:", NULL, &options);
-    priv = (argc > 3) && (--argc, RTEST(argv[argc]));
-    args = (argc > 2) ? argv[--argc] : Qnil;
-    if (!NIL_P(options)) argv[argc++] = options;
-    rb_call_super_kw(argc, argv, RB_PASS_CALLED_KEYWORDS);
-    return nometh_err_init_attr(self, args, priv);
+    return nometh_err_init_attr(exc, args, RTEST(priv));
 }
 
 VALUE
@@ -2095,6 +1981,20 @@ key_err_key(VALUE self)
     rb_raise(rb_eArgError, "no key is available");
 }
 
+static VALUE
+err_init_receiver(rb_execution_context_t *ec, VALUE exc, VALUE recv)
+{
+    if (recv != Qundef) rb_ivar_set(exc, id_receiver, recv);
+    return exc;
+}
+
+static VALUE
+err_init_key(rb_execution_context_t *ec, VALUE exc, VALUE key)
+{
+    if (key != Qundef) rb_ivar_set(exc, id_key, key);
+    return exc;
+}
+
 VALUE
 rb_key_err_new(VALUE mesg, VALUE recv, VALUE key)
 {
@@ -2104,38 +2004,6 @@ rb_key_err_new(VALUE mesg, VALUE recv, VALUE key)
     rb_ivar_set(exc, id_key, key);
     rb_ivar_set(exc, id_receiver, recv);
     return exc;
-}
-
-/*
- * call-seq:
- *   KeyError.new(message=nil, receiver: nil, key: nil) -> key_error
- *
- * Construct a new +KeyError+ exception with the given message,
- * receiver and key.
- */
-
-static VALUE
-key_err_initialize(int argc, VALUE *argv, VALUE self)
-{
-    VALUE options;
-
-    rb_call_super(rb_scan_args(argc, argv, "01:", NULL, &options), argv);
-
-    if (!NIL_P(options)) {
-	ID keywords[2];
-	VALUE values[numberof(keywords)];
-	int i;
-	keywords[0] = id_receiver;
-	keywords[1] = id_key;
-	rb_get_kwargs(options, keywords, 0, numberof(values), values);
-	for (i = 0; i < numberof(values); ++i) {
-	    if (values[i] != Qundef) {
-		rb_ivar_set(self, keywords[i], values[i]);
-	    }
-	}
-    }
-
-    return self;
 }
 
 /*
@@ -2789,7 +2657,6 @@ Init_Exception(void)
     rb_define_method(rb_eException, "==", exc_equal, 1);
     rb_define_method(rb_eException, "to_s", exc_to_s, 0);
     rb_define_method(rb_eException, "message", exc_message, 0);
-    rb_define_method(rb_eException, "full_message", exc_full_message, -1);
     rb_define_method(rb_eException, "inspect", exc_inspect, 0);
     rb_define_method(rb_eException, "backtrace", exc_backtrace, 0);
     rb_define_method(rb_eException, "backtrace_locations", exc_backtrace_locations, 0);
@@ -2810,7 +2677,6 @@ Init_Exception(void)
     rb_eArgError      = rb_define_class("ArgumentError", rb_eStandardError);
     rb_eIndexError    = rb_define_class("IndexError", rb_eStandardError);
     rb_eKeyError      = rb_define_class("KeyError", rb_eIndexError);
-    rb_define_method(rb_eKeyError, "initialize", key_err_initialize, -1);
     rb_define_method(rb_eKeyError, "receiver", key_err_receiver, 0);
     rb_define_method(rb_eKeyError, "key", key_err_key, 0);
     rb_eRangeError    = rb_define_class("RangeError", rb_eStandardError);
@@ -2826,7 +2692,6 @@ Init_Exception(void)
     rb_eNotImpError = rb_define_class("NotImplementedError", rb_eScriptError);
 
     rb_eNameError     = rb_define_class("NameError", rb_eStandardError);
-    rb_define_method(rb_eNameError, "initialize", name_err_initialize, -1);
     rb_define_method(rb_eNameError, "name", name_err_name, 0);
     rb_define_method(rb_eNameError, "receiver", name_err_receiver, 0);
     rb_define_method(rb_eNameError, "local_variables", name_err_local_variables, 0);
@@ -2838,13 +2703,11 @@ Init_Exception(void)
     rb_define_method(rb_cNameErrorMesg, "_dump", name_err_mesg_dump, 1);
     rb_define_singleton_method(rb_cNameErrorMesg, "_load", name_err_mesg_load, 1);
     rb_eNoMethodError = rb_define_class("NoMethodError", rb_eNameError);
-    rb_define_method(rb_eNoMethodError, "initialize", nometh_err_initialize, -1);
     rb_define_method(rb_eNoMethodError, "args", nometh_err_args, 0);
     rb_define_method(rb_eNoMethodError, "private_call?", nometh_err_private_call_p, 0);
 
     rb_eRuntimeError = rb_define_class("RuntimeError", rb_eStandardError);
     rb_eFrozenError = rb_define_class("FrozenError", rb_eRuntimeError);
-    rb_define_method(rb_eFrozenError, "initialize", frozen_err_initialize, -1);
     rb_define_method(rb_eFrozenError, "receiver", frozen_err_receiver, 0);
     rb_eSecurityError = rb_define_class("SecurityError", rb_eException);
     rb_eNoMemError = rb_define_class("NoMemoryError", rb_eException);
@@ -3324,6 +3187,7 @@ Init_syserr(void)
 #undef undefined_error
 }
 
+#include "errors.rbinc"
 #include "warning.rbinc"
 
 /*!
