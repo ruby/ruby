@@ -15613,10 +15613,12 @@ vm_backtrace.$(OBJEXT): $(hdrdir)/ruby.h
 vm_backtrace.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/array.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/error.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/gc.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/serial.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/string.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/vm.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}assert.h
