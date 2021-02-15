@@ -66,6 +66,18 @@ class TestRubyOptions < Test::Unit::TestCase
     end
   end
 
+  def test_backtrace_limit
+    assert_in_out_err(%w(--backtrace-limit), "", [], /missing argument for --backtrace-limit/)
+    assert_in_out_err(%w(--backtrace-limit= 1), "", [], /missing argument for --backtrace-limit/)
+    assert_in_out_err(%w(--backtrace-limit=-1), "", [], /wrong limit for backtrace length/)
+    code = 'def f(n);n > 0 ? f(n-1) : raise;end;f(5)'
+    assert_in_out_err(%w(--backtrace-limit=1), code, [],
+                      [/.*unhandled exception\n/, /^\tfrom .*\n/,
+                       /^\t \.{3} \d+ levels\.{3}\n/])
+    assert_in_out_err(%w(--backtrace-limit=3), code, [],
+                      [/.*unhandled exception\n/, *[/^\tfrom .*\n/]*3,
+                       /^\t \.{3} \d+ levels\.{3}\n/])
+  end
 
   def test_warning
     save_rubyopt = ENV['RUBYOPT']
