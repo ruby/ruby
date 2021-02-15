@@ -24,6 +24,9 @@ opt.on('--broken-dynamic-prompt') {
     }
   }
 }
+opt.on('--dynamic-prompt-returns-empty') {
+  Reline.prompt_proc = proc { |l| [] }
+}
 opt.on('--auto-indent') {
   AutoIndent.new
 }
