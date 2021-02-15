@@ -86,11 +86,28 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
+  def port_in_use?(host, port)
+    TCPServer.open(host, port).close
+    false
+  rescue Errno::EADDRINUSE, Errno::EACCES
+    true
+  end
+
+  def get_random_port(host = '127.0.0.1')
+    # IANA suggests dynamic port for 49152 to 65535
+    # http://www.iana.org/assignments/port-numbers
+    begin
+      port = rand(49152..65535)
+    end while port_in_use? host, port
+    port
+  end
+  private :port_in_use?, :get_random_port
+
   def test_socket_open_with_local_address_port_context
     start_server { |port|
       begin
         # Guess a free port number
-        random_port = rand(49152..65535)
+        random_port = get_random_port
         ctx = OpenSSL::SSL::SSLContext.new
         ssl = OpenSSL::SSL::SSLSocket.open("127.0.0.1", port, "127.0.0.1", random_port, context: ctx)
         ssl.sync_close = true
