@@ -330,14 +330,19 @@ module Net
     # SOCKS_SERVER, then a SOCKSSocket is returned, else a Socket is
     # returned.
     def open_socket(host, port) # :nodoc:
-      return Timeout.timeout(@open_timeout, OpenTimeout) {
-        if defined? SOCKSSocket and ENV["SOCKS_SERVER"]
-          @passive = true
+      if defined? SOCKSSocket and ENV["SOCKS_SERVER"]
+        @passive = true
+        Timeout.timeout(@open_timeout, OpenTimeout) do
           SOCKSSocket.open(host, port)
-        else
-          Socket.tcp(host, port)
         end
-      }
+      else
+        begin
+          Socket.tcp host, port, nil, nil, connect_timeout: @open_timeout
+        rescue Errno::ETIMEDOUT #raise Net:OpenTimeout instead for compatibility with previous versions
+          raise Net::OpenTimeout, "Timeout to open TCP connection to "\
+          "#{host}:#{port} (exceeds #{@open_timeout} seconds)"
+        end
+      end
     end
     private :open_socket
 
