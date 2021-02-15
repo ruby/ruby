@@ -11,6 +11,7 @@
 
 #include "eval_intern.h"
 #include "internal.h"
+#include "internal/error.h"
 #include "internal/vm.h"
 #include "iseq.h"
 #include "ruby/debug.h"
@@ -839,6 +840,12 @@ backtrace_load_data(VALUE self, VALUE str)
     return self;
 }
 
+static VALUE
+backtrace_limit(VALUE self)
+{
+    return LONG2NUM(rb_backtrace_length_limit);
+}
+
 VALUE
 rb_ec_backtrace_str_ary(const rb_execution_context_t *ec, long lev, long n)
 {
@@ -1201,6 +1208,7 @@ Init_vm_backtrace(void)
     rb_define_alloc_func(rb_cBacktrace, backtrace_alloc);
     rb_undef_method(CLASS_OF(rb_cBacktrace), "new");
     rb_marshal_define_compat(rb_cBacktrace, rb_cArray, backtrace_dump_data, backtrace_load_data);
+    rb_define_singleton_method(rb_cBacktrace, "limit", backtrace_limit, 0);
 
     /*
      *	An object representation of a stack frame, initialized by

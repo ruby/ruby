@@ -77,6 +77,8 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(%w(--backtrace-limit=3), code, [],
                       [/.*unhandled exception\n/, *[/^\tfrom .*\n/]*3,
                        /^\t \.{3} \d+ levels\.{3}\n/])
+    assert_kind_of(Integer, Thread::Backtrace.limit)
+    assert_in_out_err(%w(--backtrace-limit=1), "p Thread::Backtrace.limit", ['1'], [])
   end
 
   def test_warning
