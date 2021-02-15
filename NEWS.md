@@ -39,6 +39,12 @@ Outstanding ones only.
     * Queue#initialize now accepts an Enumerable of initial values.
       [[Feature #17327]]
 
+* Thread::Backtrace
+
+    * Thread::Backtrace.limit, which returns the value to limit backtrace
+      length set by `--backtracse-limit` command line option, is added.
+      [[Feature #17479]]
+
 ## Stdlib updates
 
 Outstanding ones only.
@@ -74,3 +80,4 @@ Excluding feature bug fixes.
 [Feature #17312]: https://bugs.ruby-lang.org/issues/17312
 [Feature #17327]: https://bugs.ruby-lang.org/issues/17327
 [Bug #17423]: https://bugs.ruby-lang.org/issues/17423
+[Feature #17479]: https://bugs.ruby-lang.org/issues/17479
