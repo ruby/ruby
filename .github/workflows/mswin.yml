@@ -1,0 +1,188 @@
+name: mswin
+on:
+  push:
+    branches:
+      - '*'
+  pull_request:
+    branches:
+      - '*'
+jobs:
+  nmake:
+    strategy:
+      matrix:
+        test_task: [ "check" ] # to make job names consistent
+        vs: [2019]
+      fail-fast: false
+    runs-on: windows-2019
+    env:
+      zlib_version: '1.2.11'
+      vc_setup: >
+        "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+      APPVEYOR: 'True'
+
+    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+
+    steps:
+      - name: Cache - .downloaded-cache
+        uses: actions/cache@v1
+        with:
+          path: .downloaded-cache
+          key: dl-cache-win-${{ matrix.vs }}-${{ github.sha }}
+          restore-keys: |
+            dl-cache-win-${{ matrix.vs }}-
+
+      - name: Cache - chocolatey
+        uses: actions/cache@v1
+        with:
+          path: C:\Users\runneradmin\AppData\Local\Temp\chocolatey
+          key: chocolatey-${{ matrix.vs }}-${{ github.sha }}
+          restore-keys: |
+            chocolatey-${{ matrix.vs }}-
+
+      - name: Cache - vcpkg-download
+        uses: actions/cache@v1
+        with:
+          path: C:\vcpkg\downloads
+          key: vcpkg-download-${{ matrix.vs }}-${{ github.sha }}
+          restore-keys: |
+            vcpkg-download-${{ matrix.vs }}-
+
+      - name: Install libraries with vcpkg
+        run: |
+          vcpkg --triplet x64-windows install readline
+
+      - name: Install libraries with chocolatey
+        run: |
+          choco install --no-progress openssl winflexbison3
+
+      - name: git config
+        run: |
+          git config --system core.autocrlf false
+          git config --system core.eol lf
+
+      # Not using official actions/checkout@v2 because it's unstable.
+      - name: Checkout ruby
+        run: |
+          git clone --single-branch --shallow-since=yesterday --branch=${GITHUB_REF#refs/heads/} https://github.com/${{ github.repository }} src
+          git -C src reset --hard "$GITHUB_SHA"
+        if: github.event_name == 'push'
+        shell: bash
+
+      - name: Checkout a pull request
+        run: |
+          git clone --single-branch --shallow-since=yesterday --branch=${{ github.event.pull_request.head.ref }} https://github.com/${{ github.event.pull_request.head.repo.full_name }} src
+          git -C src reset --hard ${{ github.event.pull_request.head.sha }}
+        if: github.event_name == 'pull_request'
+
+      - run: ./src/tool/actions-commit-info.sh
+        shell: bash
+        id: commit_info
+      - name: Configure
+        shell: cmd
+        run: |
+          mkdir .downloaded-cache
+          mklink /j %cd%\src\.downloaded-cache %cd%\.downloaded-cache
+          mkdir temp
+          mkdir install
+          set PRE=%cd%\install
+          mkdir build
+          cd build
+          call %vc_setup%
+          ../src/win32/configure.bat --disable-install-doc --prefix=%PRE% --without-ext=+,dbm,gdbm --enable-bundled-libffi --with-opt-dir=C:/vcpkg/installed/x64-windows --with-openssl-dir="C:/Program Files/OpenSSL-Win64"
+
+      - name: download unicode, gems, etc
+        shell: cmd
+        run: |
+          curl -fsSL -o zlib%zlib_version:.=%.zip --retry 10 https://zlib.net/zlib%zlib_version:.=%.zip
+          "C:\Program Files\7-Zip\7z.exe" x -o%cd%\src\ext\zlib zlib%zlib_version:.=%.zip
+          call %vc_setup%
+          cd build
+          nmake update-unicode
+          nmake update-gems
+          nmake up incs
+
+      - name: nmake
+        shell: cmd
+        run: |
+          call %vc_setup%
+          set YACC=win_bison
+          echo on
+          cd build
+          nmake
+
+      - name: nmake install
+        shell: cmd
+        run: |
+          set RD=%cd%
+          call %vc_setup%
+          cd build
+          nmake "DESTDIR=" install-nodoc
+
+      - name: nmake test
+        timeout-minutes: 4
+        shell: cmd
+        run: |
+          set TMPDIR=%cd%\temp
+          cd build
+          call %vc_setup%
+          nmake test
+
+      # copy dll files to bin folder, add bin to path
+      # ruby/test_time_tz.rb requires additional gems
+      - name: nmake test-all -j
+        timeout-minutes: 35
+        shell: cmd
+        run: |
+          del install\lib\x64-vcruntime140-ruby280-static.lib
+          copy C:\vcpkg\installed\x64-windows\bin\readline.dll            %cd%\install\bin\
+          copy "C:\Program Files\OpenSSL-Win64\bin\libcrypto-1_1-x64.dll" %cd%\install\bin\
+          copy "C:\Program Files\OpenSSL-Win64\bin\libssl-1_1-x64.dll"    %cd%\install\bin\
+          set GIT=git.exe
+          set /a JOBS=%NUMBER_OF_PROCESSORS%
+          set EXCL_N=--exclude test_syntax --exclude test_time_tz --exclude test_undef
+          set TMPDIR=%cd%\temp
+          call %vc_setup%
+          chcp 437
+          set PATH=%cd%\install\bin;%PATH%
+          cd build
+          nmake test-all "TESTOPTS=-j%JOBS% %EXCL_N% -v --timeout-scale=3.0 --retry --job-status=normal --show-skip"
+
+      - name: nmake test-all singles
+        timeout-minutes: 5
+        shell: cmd
+        run: |
+          set GIT=git.exe
+          set tr=../src/test/ruby
+          set TESTS=%tr%/test_syntax.rb %tr%/test_undef.rb
+          set TMPDIR=%cd%\temp
+          call %vc_setup%
+          chcp 437
+          set PATH=%cd%\install\bin;%PATH%
+          cd build
+          nmake test-all "TESTOPTS=-v --timeout-scale=3.0"
+
+      - name: test-spec from install
+        timeout-minutes: 5
+        shell: cmd
+        run: |
+          set TMPDIR=%cd%\temp
+          call %vc_setup%
+          chcp 437
+          set PATH=%cd%\install\bin;%PATH%
+          cd src/spec/ruby
+          ruby ../mspec/bin/mspec -j
+
+      - uses: k0kubun/action-slack@v2.0.0
+        with:
+          payload: |
+            {
+              "attachments": [{
+                "text": "${{ github.workflow }} / ${{ matrix.test_task }} <https://github.com/${{ github.repository }}/commit/${{ github.sha }}/checks|${{ steps.commit_info.outputs.COMMIT_DATE }} #${{ steps.commit_info.outputs.COMMIT_NUMBER_OF_DAY }}> " +
+                        "(<https://github.com/${{ github.repository }}/commit/${{ github.sha }}|" + "${{ github.sha }}".substring(0, 10) + ">) " +
+                        "of ${{ github.repository }}@" + "${{ github.ref }}".split('/').reverse()[0] + " by ${{ github.event.head_commit.committer.name }} failed",
+                "color": "danger"
+              }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        if: failure() && github.event_name == 'push'
