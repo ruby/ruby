@@ -177,3 +177,23 @@ assert_normal_exit %q{
     self
   end
 }
+
+# Test that getinstancevariable codegen checks for extended table size
+assert_equal "nil\n", %q{
+  class A
+    def read
+      @ins1000
+    end
+  end
+
+  ins = A.new
+  other = A.new
+  10.times { other.instance_variable_set(:"@otr#{_1}", 'value') }
+  1001.times { ins.instance_variable_set(:"@ins#{_1}", 'value') }
+
+  ins.read
+  ins.read
+  ins.read
+
+  p other.read
+}
