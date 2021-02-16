@@ -127,7 +127,9 @@ cfunc_needs_frame(const rb_method_cfunc_t *cfunc)
 }
 
 // GC root for interacting with the GC
-struct ujit_root_struct {};
+struct ujit_root_struct {
+    int unused; // empty structs are not legal in C99
+};
 
 // Map cme_or_cc => [[iseq, offset]]. An entry in the map means compiled code at iseq[offset]
 // is only valid when cme_or_cc is valid
