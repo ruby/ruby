@@ -1335,6 +1335,8 @@ update-bundled_gems: PHONY
 	     $(tooldir)/update-bundled_gems.rb \
 	     "$(srcdir)/gems/bundled_gems" | \
 	"$(IFCHANGE)" "$(srcdir)/gems/bundled_gems" -
+	git -C "$(srcdir)" diff --no-ext-diff --ignore-submodules --exit-code || \
+	git -C "$(srcdir)" commit -m "Update bundled_gems" gems/bundled_gems
 
 test-bundled-gems-precheck: $(TEST_RUNNABLE)-test-bundled-gems-precheck
 yes-test-bundled-gems-precheck: main
