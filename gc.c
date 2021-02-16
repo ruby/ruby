@@ -4958,13 +4958,6 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
                             MARK_IN_BITMAP(GET_HEAP_PINNED_BITS(vp), vp);
                         }
                         else {
-                            /* When we started sweeping this page, we were in
-                             * compacting mode and nulled the free list for
-                             * the page. But compaction finished, so we need to
-                             * put any T_NONE slots back on the freelist. */
-                            if (was_compacting) {
-                                heap_page_add_freeobj(objspace, sweep_page, vp);
-                            }
                             empty_slots++; /* already freed */
                         }
 			break;
