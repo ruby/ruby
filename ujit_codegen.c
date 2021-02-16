@@ -525,6 +525,15 @@ gen_getinstancevariable(jitstate_t* jit, ctx_t* ctx)
     test(cb, flags_opnd, imm_opnd(ROBJECT_EMBED));
     jnz_ptr(cb, side_exit);
 
+    // check that the extended table is big enough
+    if (ivar_index >= ROBJECT_EMBED_LEN_MAX + 1)
+    {
+        // Check that the slot is inside the extended table (num_slots > index)
+        x86opnd_t num_slots = mem_opnd(32, REG0, offsetof(struct RObject, as.heap.numiv));
+        cmp(cb, num_slots, imm_opnd(ivar_index));
+        jle_ptr(cb, side_exit);
+    }
+
     // Get a pointer to the extended table
     x86opnd_t tbl_opnd = mem_opnd(64, REG0, offsetof(struct RObject, as.heap.ivptr));
     mov(cb, REG0, tbl_opnd);
