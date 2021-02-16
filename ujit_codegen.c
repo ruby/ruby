@@ -27,7 +27,8 @@ static codeblock_t outline_block;
 codeblock_t* ocb = NULL;
 
 // Print the current source location for debugging purposes
-static void __attribute__((unused))
+RBIMPL_ATTR_MAYBE_UNUSED()
+static void
 jit_print_loc(jitstate_t* jit, const char* msg)
 {
     char *ptr;
