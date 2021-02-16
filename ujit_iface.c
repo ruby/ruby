@@ -29,10 +29,12 @@ bool rb_ujit_enabled;
 static int64_t vm_insns_count = 0;
 int64_t rb_ujit_exec_insns_count = 0;
 static int64_t exit_op_count[VM_INSTRUCTION_SIZE] = { 0 };
-static int64_t compiled_iseq_count = 0;
+int64_t rb_compiled_iseq_count = 0;
 
+// Machine code blocks (executable memory)
 extern codeblock_t *cb;
 extern codeblock_t *ocb;
+
 // Hash table of encoded instructions
 extern st_table *rb_encoded_insn_data;
 
@@ -312,7 +314,6 @@ rb_ujit_compile_iseq(const rb_iseq_t *iseq)
         int first_opcode = opcode_at_pc(iseq, &encoded[0]);
         map_addr2insn(code_ptr, first_opcode);
         encoded[0] = (VALUE)code_ptr;
-        compiled_iseq_count++;
     }
 
     RB_VM_LOCK_LEAVE();
@@ -540,7 +541,7 @@ print_ujit_stats(void)
     double total_insns_count = vm_insns_count + rb_ujit_exec_insns_count;
     double ratio = rb_ujit_exec_insns_count / total_insns_count;
 
-    fprintf(stderr, "compiled_iseq_count:   %10" PRId64 "\n", compiled_iseq_count);
+    fprintf(stderr, "compiled_iseq_count:   %10" PRId64 "\n", rb_compiled_iseq_count);
     fprintf(stderr, "main_block_code_size:  %6.1f MiB\n", ((double)cb->write_pos) / 1048576.0);
     fprintf(stderr, "side_block_code_size:  %6.1f MiB\n", ((double)ocb->write_pos) / 1048576.0);
     fprintf(stderr, "vm_insns_count:        %10" PRId64 "\n", vm_insns_count);
