@@ -706,6 +706,16 @@ gen_opt_aref(jitstate_t* jit, ctx_t* ctx)
     // Create a size-exit to fall back to the interpreter
     uint8_t* side_exit = ujit_side_exit(jit, ctx);
 
+    // TODO: make a helper function for guarding on op-not-redefined
+    // Make sure that minus isn't redefined for integers
+    mov(cb, RAX, const_ptr_opnd(ruby_current_vm_ptr));
+    test(
+        cb,
+        member_opnd_idx(RAX, rb_vm_t, redefined_flag, BOP_AREF),
+        imm_opnd(ARRAY_REDEFINED_OP_FLAG)
+    );
+    jnz_ptr(cb, side_exit);
+
     x86opnd_t recv = ctx_stack_pop(ctx, 1);
     mov(cb, REG0, recv);
 
