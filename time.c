@@ -2150,8 +2150,10 @@ utc_offset_arg(VALUE arg)
         if (s[0] != '+' && s[0] != '-') goto invalid_utc_offset;
         if (!ISDIGIT(s[1]) || !ISDIGIT(s[2])) goto invalid_utc_offset;
         n += (s[1] * 10 + s[2] - '0' * 11) * 3600;
-        if (s[0] == '-')
+        if (s[0] == '-') {
+            if (n == 0) return UTC_ZONE;
             n = -n;
+        }
         return INT2FIX(n);
     }
     else {
