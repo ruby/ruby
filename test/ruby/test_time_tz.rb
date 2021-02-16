@@ -261,6 +261,8 @@ class TestTimeTZ < Test::Unit::TestCase
     assert_predicate(Time.new(2019, 1, 1, 0, 0, 0, "UTC"), :utc?)
     assert_predicate(Time.new(2019, 1, 1, 0, 0, 0, "utc"), :utc?)
     assert_predicate(Time.new(2019, 1, 1, 0, 0, 0, "Z"), :utc?)
+    assert_predicate(Time.new(2019, 1, 1, 0, 0, 0, "-00:00"), :utc?)
+    assert_not_predicate(Time.new(2019, 1, 1, 0, 0, 0, "+00:00"), :utc?)
   end
 
   def test_military_names
