@@ -45,6 +45,10 @@ Outstanding ones only.
       length set by `--backtracse-limit` command line option, is added.
       [[Feature #17479]]
 
+* $LOAD_PATH
+
+    * $LOAD_PATH.resolve_feature_path does not raise. [[Feature #16043]]
+
 ## Stdlib updates
 
 Outstanding ones only.
@@ -76,6 +80,7 @@ Excluding feature bug fixes.
 
 
 [Feature #14256]: https://bugs.ruby-lang.org/issues/14256
+[Feature #16043]: https://bugs.ruby-lang.org/issues/16043
 [Feature #16806]: https://bugs.ruby-lang.org/issues/16806
 [Feature #17312]: https://bugs.ruby-lang.org/issues/17312
 [Feature #17327]: https://bugs.ruby-lang.org/issues/17327
