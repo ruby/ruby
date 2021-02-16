@@ -547,7 +547,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 			else {
 				off = NUM2LONG(rb_funcall(vtm->utc_offset, rb_intern("round"), 0));
 			}
-			if (off < 0 || (off == 0 && (flags & BIT_OF(LEFT)))) {
+			if (off < 0 || (gmt && (flags & BIT_OF(LEFT)))) {
 				off = -off;
 				sign = -1;
 			}
