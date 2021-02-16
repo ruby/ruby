@@ -164,13 +164,16 @@ add_block_version(blockid_t blockid, block_t* block)
     const rb_iseq_t *iseq = block->blockid.iseq;
     struct rb_iseq_constant_body *body = iseq->body;
 
-    // Ensure ujit_blocks is initialized
+    // Ensure ujit_blocks is initialized for this iseq
     if (rb_darray_size(body->ujit_blocks) == 0) {
         // Initialize ujit_blocks to be as wide as body->iseq_encoded
         // TODO: add resize API for dary
         while ((unsigned)rb_darray_size(body->ujit_blocks) < body->iseq_size) {
             (void)rb_darray_append(&body->ujit_blocks, NULL);
         }
+
+        // First block compiled for this iseq
+        rb_compiled_iseq_count++;
     }
 
     block_t *first_version = get_first_version(iseq, blockid.idx);

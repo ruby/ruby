@@ -22,6 +22,7 @@ struct rb_callcache;
 
 RUBY_EXTERN struct rb_ujit_options rb_ujit_opts;
 RUBY_EXTERN int64_t rb_ujit_exec_insns_count;
+RUBY_EXTERN int64_t rb_compiled_iseq_count;
 
 void cb_write_pre_call_bytes(codeblock_t* cb);
 void cb_write_post_call_bytes(codeblock_t* cb);
