@@ -925,6 +925,12 @@ class TestTime < Test::Unit::TestCase
     assert_equal("-0000", t2000.strftime("%-z"))
     assert_equal("-00:00", t2000.strftime("%-:z"))
     assert_equal("-00:00:00", t2000.strftime("%-::z"))
+
+    t = t2000.getlocal("+00:00")
+    assert_equal("+0000", t.strftime("%z"))
+    assert_equal("+0000", t.strftime("%-z"))
+    assert_equal("+00:00", t.strftime("%-:z"))
+    assert_equal("+00:00:00", t.strftime("%-::z"))
   end
 
   def test_strftime_padding
