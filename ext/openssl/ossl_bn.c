@@ -1191,6 +1191,42 @@ ossl_bn_is_prime_fasttest(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ * call-seq:
+ *    bn.get_flags(flags) => flags
+ *
+ * Returns the flags on the BN object.
+ * The argument is used as a bit mask.
+ *
+ * === Parameters
+ * * _flags_ - integer
+ */
+static VALUE
+ossl_bn_get_flags(VALUE self, VALUE arg)
+{
+    BIGNUM *bn;
+    GetBN(self, bn);
+
+    return INT2NUM(BN_get_flags(bn, NUM2INT(arg)));
+}
+
+/*
+ * call-seq:
+ *    bn.set_flags(flags) => nil
+ *
+ * Enables the flags on the BN object.
+ * Currently, the flags argument can contain zero of OpenSSL::BN::CONSTTIME.
+ */
+static VALUE
+ossl_bn_set_flags(VALUE self, VALUE arg)
+{
+    BIGNUM *bn;
+    GetBN(self, bn);
+
+    BN_set_flags(bn, NUM2INT(arg));
+    return Qnil;
+}
+
+/*
  * INIT
  * (NOTE: ordering of methods is the same as in 'man bn')
  */
@@ -1288,6 +1324,23 @@ Init_ossl_bn(void)
     rb_define_method(cBN, "rshift!", ossl_bn_self_rshift, 1);
     /* lshift1 - DON'T IMPL. */
     /* rshift1 - DON'T IMPL. */
+
+    rb_define_method(cBN, "get_flags", ossl_bn_get_flags, 1);
+    rb_define_method(cBN, "set_flags", ossl_bn_set_flags, 1);
+
+#ifdef BN_FLG_CONSTTIME
+    rb_define_const(cBN, "CONSTTIME", INT2NUM(BN_FLG_CONSTTIME));
+#endif
+    /* BN_FLG_MALLOCED and BN_FLG_STATIC_DATA seems for C programming.
+     * Allowing them leads to memory leak.
+     * So, for now, they are not exported
+#ifdef BN_FLG_MALLOCED
+    rb_define_const(cBN, "MALLOCED", INT2NUM(BN_FLG_MALLOCED));
+#endif
+#ifdef BN_FLG_STATIC_DATA
+    rb_define_const(cBN, "STATIC_DATA", INT2NUM(BN_FLG_STATIC_DATA));
+#endif
+    */
 
     /*
      * bn2bin

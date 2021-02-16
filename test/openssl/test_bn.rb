@@ -307,6 +307,29 @@ class OpenSSL::TestBN < OpenSSL::TestCase
     bug15760 = '[ruby-core:92231] [Bug #15760]'
     assert_raise(ArgumentError, bug15760) { OpenSSL::BN.new(nil, 2) }
   end
+
+  def test_get_flags_and_set_flags
+    e = OpenSSL::BN.new(999)
+
+    assert_equal(0, e.get_flags(OpenSSL::BN::CONSTTIME))
+
+    e.set_flags(OpenSSL::BN::CONSTTIME)
+    assert_equal(OpenSSL::BN::CONSTTIME, e.get_flags(OpenSSL::BN::CONSTTIME))
+
+    b = OpenSSL::BN.new(2)
+    m = OpenSSL::BN.new(99)
+    assert_equal("17", b.mod_exp(e, m).to_s)
+
+    # mod_exp fails when m is even and any argument has CONSTTIME flag
+    m = OpenSSL::BN.new(98)
+    assert_raise(OpenSSL::BNError) do
+      b.mod_exp(e, m)
+    end
+
+    # It looks like flags cannot be removed once enabled
+    e.set_flags(0)
+    assert_equal(4, e.get_flags(OpenSSL::BN::CONSTTIME))
+  end
 end
 
 end
