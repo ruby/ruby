@@ -4860,7 +4860,6 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 {
     int i;
     int empty_slots = 0, freed_slots = 0, final_slots = 0;
-    int was_compacting = 0;
     RVALUE *p, *offset;
     bits_t *bits, bitset;
 
@@ -4877,7 +4876,6 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
             asan_unpoison_memory_region(&sweep_page->freelist, sizeof(RVALUE*), false);
             sweep_page->freelist = NULL;
             asan_poison_memory_region(&sweep_page->freelist, sizeof(RVALUE*));
-            was_compacting = 1;
         }
     }
 
