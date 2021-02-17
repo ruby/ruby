@@ -167,9 +167,12 @@ add_block_version(blockid_t blockid, block_t* block)
     // Ensure ujit_blocks is initialized for this iseq
     if (rb_darray_size(body->ujit_blocks) == 0) {
         // Initialize ujit_blocks to be as wide as body->iseq_encoded
-        // TODO: add resize API for dary
-        while ((unsigned)rb_darray_size(body->ujit_blocks) < body->iseq_size) {
-            (void)rb_darray_append(&body->ujit_blocks, NULL);
+        int32_t casted = (int32_t)body->iseq_size;
+        if ((unsigned)casted != body->iseq_size) {
+            rb_bug("iseq too large");
+        }
+        if (!rb_darray_make(&body->ujit_blocks, casted)) {
+            rb_bug("allocation failed");
         }
 
         // First block compiled for this iseq
