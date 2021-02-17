@@ -10,6 +10,7 @@
  */
 
 #include "debug_counter.h"
+#include "internal/rvalue_compat.h"
 
 enum vm_call_flag_bits {
     VM_CALL_ARGS_SPLAT_bit,     /* m(*args) */
@@ -58,13 +59,13 @@ rb_callinfo_kwarg_bytes(int keyword_len)
 }
 
 // imemo_callinfo
-struct rb_callinfo {
+RVALUE_COMPATIBLE_STRUCT(rb_callinfo, {
     VALUE flags;
     const struct rb_callinfo_kwarg *kwarg;
     VALUE mid;
     VALUE flag;
     VALUE argc;
-};
+});
 
 #ifndef USE_EMBED_CI
 #define USE_EMBED_CI 1
@@ -270,8 +271,7 @@ typedef VALUE (*vm_call_handler)(
     struct rb_calling_info *calling);
 
 // imemo_callcache
-
-struct rb_callcache {
+RVALUE_COMPATIBLE_STRUCT(rb_callcache, {
     const VALUE flags;
 
     /* inline cache: key */
@@ -288,7 +288,7 @@ struct rb_callcache {
         const enum method_missing_reason method_missing_reason; /* used by method_missing */
         VALUE v;
     } aux_;
-};
+});
 
 #define VM_CALLCACHE_UNMARKABLE IMEMO_FL_USER0
 

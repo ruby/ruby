@@ -12,6 +12,7 @@
 #include "internal/bignum.h"    /* for BIGNUM_POSITIVE_P */
 #include "internal/bits.h"      /* for RUBY_BIT_ROTL */
 #include "internal/fixnum.h"    /* for FIXNUM_POSITIVE_P */
+#include "internal/rvalue_compat.h"
 #include "internal/vm.h"        /* for rb_method_basic_definition_p */
 #include "ruby/intern.h"        /* for rb_cmperr */
 #include "ruby/ruby.h"          /* for USE_FLONUM */
@@ -36,10 +37,10 @@ enum ruby_num_rounding_mode {
     RUBY_NUM_ROUND_DEFAULT = ROUND_DEFAULT,
 };
 
-struct RFloat {
+RVALUE_COMPATIBLE_STRUCT(RFloat, {
     struct RBasic basic;
     double float_value;
-};
+});
 
 #define RFLOAT(obj)  ((struct RFloat *)(obj))
 

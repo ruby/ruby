@@ -1690,6 +1690,7 @@ array.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 array.$(OBJEXT): $(top_srcdir)/internal/object.h
 array.$(OBJEXT): $(top_srcdir)/internal/proc.h
 array.$(OBJEXT): $(top_srcdir)/internal/rational.h
+array.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 array.$(OBJEXT): $(top_srcdir)/internal/serial.h
 array.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 array.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -1876,6 +1877,7 @@ ast.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 ast.$(OBJEXT): $(top_srcdir)/internal/gc.h
 ast.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 ast.$(OBJEXT): $(top_srcdir)/internal/parse.h
+ast.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 ast.$(OBJEXT): $(top_srcdir)/internal/serial.h
 ast.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 ast.$(OBJEXT): $(top_srcdir)/internal/symbol.h
@@ -2067,6 +2069,7 @@ bignum.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/gc.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/object.h
+bignum.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/serial.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
@@ -2248,6 +2251,7 @@ builtin.$(OBJEXT): $(top_srcdir)/internal/array.h
 builtin.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 builtin.$(OBJEXT): $(top_srcdir)/internal/gc.h
 builtin.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+builtin.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 builtin.$(OBJEXT): $(top_srcdir)/internal/serial.h
 builtin.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 builtin.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -2438,6 +2442,7 @@ class.$(OBJEXT): $(top_srcdir)/internal/gc.h
 class.$(OBJEXT): $(top_srcdir)/internal/hash.h
 class.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 class.$(OBJEXT): $(top_srcdir)/internal/object.h
+class.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 class.$(OBJEXT): $(top_srcdir)/internal/serial.h
 class.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 class.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -2810,6 +2815,7 @@ compile.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 compile.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 compile.$(OBJEXT): $(top_srcdir)/internal/object.h
 compile.$(OBJEXT): $(top_srcdir)/internal/re.h
+compile.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 compile.$(OBJEXT): $(top_srcdir)/internal/serial.h
 compile.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 compile.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -3023,6 +3029,7 @@ complex.$(OBJEXT): $(top_srcdir)/internal/math.h
 complex.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 complex.$(OBJEXT): $(top_srcdir)/internal/object.h
 complex.$(OBJEXT): $(top_srcdir)/internal/rational.h
+complex.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 complex.$(OBJEXT): $(top_srcdir)/internal/serial.h
 complex.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 complex.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -3205,6 +3212,7 @@ cont.$(OBJEXT): $(top_srcdir)/internal/cont.h
 cont.$(OBJEXT): $(top_srcdir)/internal/gc.h
 cont.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 cont.$(OBJEXT): $(top_srcdir)/internal/proc.h
+cont.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 cont.$(OBJEXT): $(top_srcdir)/internal/serial.h
 cont.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 cont.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -3397,6 +3405,7 @@ debug.$(OBJEXT): $(top_srcdir)/internal/array.h
 debug.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 debug.$(OBJEXT): $(top_srcdir)/internal/gc.h
 debug.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+debug.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 debug.$(OBJEXT): $(top_srcdir)/internal/serial.h
 debug.$(OBJEXT): $(top_srcdir)/internal/signal.h
 debug.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
@@ -4655,6 +4664,7 @@ enum.$(OBJEXT): $(top_srcdir)/internal/object.h
 enum.$(OBJEXT): $(top_srcdir)/internal/proc.h
 enum.$(OBJEXT): $(top_srcdir)/internal/rational.h
 enum.$(OBJEXT): $(top_srcdir)/internal/re.h
+enum.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 enum.$(OBJEXT): $(top_srcdir)/internal/serial.h
 enum.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 enum.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -4840,6 +4850,7 @@ enumerator.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/range.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/rational.h
+enumerator.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/serial.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -5026,6 +5037,7 @@ error.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 error.$(OBJEXT): $(top_srcdir)/internal/io.h
 error.$(OBJEXT): $(top_srcdir)/internal/load.h
 error.$(OBJEXT): $(top_srcdir)/internal/object.h
+error.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 error.$(OBJEXT): $(top_srcdir)/internal/serial.h
 error.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 error.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -5230,6 +5242,7 @@ eval.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 eval.$(OBJEXT): $(top_srcdir)/internal/inits.h
 eval.$(OBJEXT): $(top_srcdir)/internal/io.h
 eval.$(OBJEXT): $(top_srcdir)/internal/object.h
+eval.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 eval.$(OBJEXT): $(top_srcdir)/internal/serial.h
 eval.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 eval.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -5453,6 +5466,7 @@ file.$(OBJEXT): $(top_srcdir)/internal/io.h
 file.$(OBJEXT): $(top_srcdir)/internal/load.h
 file.$(OBJEXT): $(top_srcdir)/internal/object.h
 file.$(OBJEXT): $(top_srcdir)/internal/process.h
+file.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 file.$(OBJEXT): $(top_srcdir)/internal/serial.h
 file.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 file.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -5651,6 +5665,7 @@ gc.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 gc.$(OBJEXT): $(top_srcdir)/internal/object.h
 gc.$(OBJEXT): $(top_srcdir)/internal/proc.h
 gc.$(OBJEXT): $(top_srcdir)/internal/rational.h
+gc.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 gc.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 gc.$(OBJEXT): $(top_srcdir)/internal/serial.h
 gc.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
@@ -5868,6 +5883,7 @@ golf_prelude.$(OBJEXT): $(top_srcdir)/internal/array.h
 golf_prelude.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 golf_prelude.$(OBJEXT): $(top_srcdir)/internal/gc.h
 golf_prelude.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+golf_prelude.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 golf_prelude.$(OBJEXT): $(top_srcdir)/internal/serial.h
 golf_prelude.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 golf_prelude.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -6582,6 +6598,7 @@ io.$(OBJEXT): $(top_srcdir)/internal/io.h
 io.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 io.$(OBJEXT): $(top_srcdir)/internal/object.h
 io.$(OBJEXT): $(top_srcdir)/internal/process.h
+io.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 io.$(OBJEXT): $(top_srcdir)/internal/serial.h
 io.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 io.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -6789,6 +6806,7 @@ iseq.$(OBJEXT): $(top_srcdir)/internal/gc.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/hash.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/parse.h
+iseq.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/serial.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
@@ -6998,6 +7016,7 @@ load.$(OBJEXT): $(top_srcdir)/internal/gc.h
 load.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 load.$(OBJEXT): $(top_srcdir)/internal/load.h
 load.$(OBJEXT): $(top_srcdir)/internal/parse.h
+load.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 load.$(OBJEXT): $(top_srcdir)/internal/serial.h
 load.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 load.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -8205,6 +8224,7 @@ miniinit.$(OBJEXT): $(top_srcdir)/internal/array.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/gc.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+miniinit.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/serial.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -8445,6 +8465,7 @@ mjit.$(OBJEXT): $(top_srcdir)/internal/file.h
 mjit.$(OBJEXT): $(top_srcdir)/internal/gc.h
 mjit.$(OBJEXT): $(top_srcdir)/internal/hash.h
 mjit.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+mjit.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 mjit.$(OBJEXT): $(top_srcdir)/internal/serial.h
 mjit.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 mjit.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -8658,6 +8679,7 @@ mjit_compile.$(OBJEXT): $(top_srcdir)/internal/gc.h
 mjit_compile.$(OBJEXT): $(top_srcdir)/internal/hash.h
 mjit_compile.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 mjit_compile.$(OBJEXT): $(top_srcdir)/internal/object.h
+mjit_compile.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 mjit_compile.$(OBJEXT): $(top_srcdir)/internal/serial.h
 mjit_compile.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 mjit_compile.$(OBJEXT): $(top_srcdir)/internal/variable.h
@@ -8855,6 +8877,7 @@ node.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 node.$(OBJEXT): $(top_srcdir)/internal/gc.h
 node.$(OBJEXT): $(top_srcdir)/internal/hash.h
 node.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+node.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 node.$(OBJEXT): $(top_srcdir)/internal/serial.h
 node.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 node.$(OBJEXT): $(top_srcdir)/internal/variable.h
@@ -9045,6 +9068,7 @@ numeric.$(OBJEXT): $(top_srcdir)/internal/hash.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/object.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/rational.h
+numeric.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/serial.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/util.h
@@ -9234,6 +9258,7 @@ object.$(OBJEXT): $(top_srcdir)/internal/gc.h
 object.$(OBJEXT): $(top_srcdir)/internal/inits.h
 object.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 object.$(OBJEXT): $(top_srcdir)/internal/object.h
+object.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 object.$(OBJEXT): $(top_srcdir)/internal/serial.h
 object.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 object.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -9606,6 +9631,7 @@ parse.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 parse.$(OBJEXT): $(top_srcdir)/internal/parse.h
 parse.$(OBJEXT): $(top_srcdir)/internal/rational.h
 parse.$(OBJEXT): $(top_srcdir)/internal/re.h
+parse.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 parse.$(OBJEXT): $(top_srcdir)/internal/serial.h
 parse.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 parse.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -9835,6 +9861,7 @@ proc.$(OBJEXT): $(top_srcdir)/internal/gc.h
 proc.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 proc.$(OBJEXT): $(top_srcdir)/internal/object.h
 proc.$(OBJEXT): $(top_srcdir)/internal/proc.h
+proc.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 proc.$(OBJEXT): $(top_srcdir)/internal/serial.h
 proc.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 proc.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -10035,6 +10062,7 @@ process.$(OBJEXT): $(top_srcdir)/internal/hash.h
 process.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 process.$(OBJEXT): $(top_srcdir)/internal/object.h
 process.$(OBJEXT): $(top_srcdir)/internal/process.h
+process.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 process.$(OBJEXT): $(top_srcdir)/internal/serial.h
 process.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 process.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -10242,6 +10270,7 @@ ractor.$(OBJEXT): $(top_srcdir)/internal/hash.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/rational.h
+ractor.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/serial.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -10445,6 +10474,7 @@ random.$(OBJEXT): $(top_srcdir)/internal/error.h
 random.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 random.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 random.$(OBJEXT): $(top_srcdir)/internal/random.h
+random.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 random.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 random.$(OBJEXT): $(top_srcdir)/internal/serial.h
 random.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
@@ -10636,6 +10666,7 @@ range.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 range.$(OBJEXT): $(top_srcdir)/internal/gc.h
 range.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 range.$(OBJEXT): $(top_srcdir)/internal/range.h
+range.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 range.$(OBJEXT): $(top_srcdir)/internal/serial.h
 range.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 range.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -10818,6 +10849,7 @@ rational.$(OBJEXT): $(top_srcdir)/internal/gc.h
 rational.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 rational.$(OBJEXT): $(top_srcdir)/internal/object.h
 rational.$(OBJEXT): $(top_srcdir)/internal/rational.h
+rational.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 rational.$(OBJEXT): $(top_srcdir)/internal/serial.h
 rational.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 rational.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -10996,6 +11028,7 @@ re.$(OBJEXT): $(top_srcdir)/internal/gc.h
 re.$(OBJEXT): $(top_srcdir)/internal/hash.h
 re.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 re.$(OBJEXT): $(top_srcdir)/internal/re.h
+re.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 re.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 re.$(OBJEXT): $(top_srcdir)/internal/string.h
 re.$(OBJEXT): $(top_srcdir)/internal/variable.h
@@ -12172,6 +12205,7 @@ ruby.$(OBJEXT): $(top_srcdir)/internal/missing.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/object.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/parse.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/process.h
+ruby.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/serial.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -12368,6 +12402,7 @@ scheduler.$(OBJEXT): $(top_srcdir)/internal/array.h
 scheduler.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 scheduler.$(OBJEXT): $(top_srcdir)/internal/gc.h
 scheduler.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+scheduler.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 scheduler.$(OBJEXT): $(top_srcdir)/internal/serial.h
 scheduler.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 scheduler.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -12717,6 +12752,7 @@ signal.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 signal.$(OBJEXT): $(top_srcdir)/internal/eval.h
 signal.$(OBJEXT): $(top_srcdir)/internal/gc.h
 signal.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+signal.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 signal.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 signal.$(OBJEXT): $(top_srcdir)/internal/serial.h
 signal.$(OBJEXT): $(top_srcdir)/internal/signal.h
@@ -12914,6 +12950,7 @@ sprintf.$(OBJEXT): $(top_srcdir)/internal/gc.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/hash.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/object.h
+sprintf.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/serial.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
@@ -13441,6 +13478,7 @@ string.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 string.$(OBJEXT): $(top_srcdir)/internal/object.h
 string.$(OBJEXT): $(top_srcdir)/internal/proc.h
 string.$(OBJEXT): $(top_srcdir)/internal/re.h
+string.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 string.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 string.$(OBJEXT): $(top_srcdir)/internal/serial.h
 string.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
@@ -13666,6 +13704,7 @@ struct.$(OBJEXT): $(top_srcdir)/internal/hash.h
 struct.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 struct.$(OBJEXT): $(top_srcdir)/internal/object.h
 struct.$(OBJEXT): $(top_srcdir)/internal/proc.h
+struct.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 struct.$(OBJEXT): $(top_srcdir)/internal/serial.h
 struct.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 struct.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -14054,6 +14093,7 @@ thread.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 thread.$(OBJEXT): $(top_srcdir)/internal/io.h
 thread.$(OBJEXT): $(top_srcdir)/internal/object.h
 thread.$(OBJEXT): $(top_srcdir)/internal/proc.h
+thread.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 thread.$(OBJEXT): $(top_srcdir)/internal/serial.h
 thread.$(OBJEXT): $(top_srcdir)/internal/signal.h
 thread.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
@@ -14263,6 +14303,7 @@ time.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 time.$(OBJEXT): $(top_srcdir)/internal/gc.h
 time.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 time.$(OBJEXT): $(top_srcdir)/internal/rational.h
+time.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 time.$(OBJEXT): $(top_srcdir)/internal/serial.h
 time.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 time.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -14993,6 +15034,7 @@ variable.$(OBJEXT): $(top_srcdir)/internal/hash.h
 variable.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 variable.$(OBJEXT): $(top_srcdir)/internal/object.h
 variable.$(OBJEXT): $(top_srcdir)/internal/re.h
+variable.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 variable.$(OBJEXT): $(top_srcdir)/internal/serial.h
 variable.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 variable.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -15193,6 +15235,7 @@ version.$(OBJEXT): $(top_srcdir)/internal/array.h
 version.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 version.$(OBJEXT): $(top_srcdir)/internal/gc.h
 version.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+version.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 version.$(OBJEXT): $(top_srcdir)/internal/serial.h
 version.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 version.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -15396,6 +15439,7 @@ vm.$(OBJEXT): $(top_srcdir)/internal/parse.h
 vm.$(OBJEXT): $(top_srcdir)/internal/proc.h
 vm.$(OBJEXT): $(top_srcdir)/internal/random.h
 vm.$(OBJEXT): $(top_srcdir)/internal/re.h
+vm.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 vm.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 vm.$(OBJEXT): $(top_srcdir)/internal/serial.h
 vm.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
@@ -15618,6 +15662,7 @@ vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/error.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/gc.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/serial.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -15807,6 +15852,7 @@ vm_dump.$(OBJEXT): $(top_srcdir)/internal/array.h
 vm_dump.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 vm_dump.$(OBJEXT): $(top_srcdir)/internal/gc.h
 vm_dump.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+vm_dump.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 vm_dump.$(OBJEXT): $(top_srcdir)/internal/serial.h
 vm_dump.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 vm_dump.$(OBJEXT): $(top_srcdir)/internal/variable.h
@@ -15999,6 +16045,7 @@ vm_sync.$(OBJEXT): $(top_srcdir)/internal/array.h
 vm_sync.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 vm_sync.$(OBJEXT): $(top_srcdir)/internal/gc.h
 vm_sync.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+vm_sync.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 vm_sync.$(OBJEXT): $(top_srcdir)/internal/serial.h
 vm_sync.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 vm_sync.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -16199,6 +16246,7 @@ vm_trace.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/gc.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/hash.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+vm_trace.$(OBJEXT): $(top_srcdir)/internal/rvalue_compat.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/serial.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/symbol.h

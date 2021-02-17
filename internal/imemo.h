@@ -13,6 +13,7 @@
 #include <stddef.h>             /* for size_t */
 #include "internal/array.h"     /* for rb_ary_tmp_new_fill */
 #include "internal/gc.h"        /* for RB_OBJ_WRITE */
+#include "internal/rvalue_compat.h"
 #include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for rb_block_call_func_t */
 
@@ -51,27 +52,26 @@ enum imemo_type {
 /* CREF (Class REFerence) is defined in method.h */
 
 /*! SVAR (Special VARiable) */
-struct vm_svar {
+RVALUE_COMPATIBLE_STRUCT(vm_svar, {
     VALUE flags;
     const VALUE cref_or_me; /*!< class reference or rb_method_entry_t */
     const VALUE lastline;
     const VALUE backref;
     const VALUE others;
-};
+});
 
 /*! THROW_DATA */
-struct vm_throw_data {
+RVALUE_COMPATIBLE_STRUCT(vm_throw_data, {
     VALUE flags;
     VALUE reserved;
     const VALUE throw_obj;
     const struct rb_control_frame_struct *catch_frame;
     int throw_state;
-};
+});
 
 #define THROW_DATA_CONSUMED IMEMO_FL_USER0
 
 /* IFUNC (Internal FUNCtion) */
-
 struct vm_ifunc_argc {
 #if SIZEOF_INT * 2 > SIZEOF_VALUE
     signed int min: (SIZEOF_VALUE * CHAR_BIT) / 2;
@@ -82,27 +82,27 @@ struct vm_ifunc_argc {
 };
 
 /*! IFUNC (Internal FUNCtion) */
-struct vm_ifunc {
+RVALUE_COMPATIBLE_STRUCT(vm_ifunc, {
     VALUE flags;
     VALUE reserved;
     rb_block_call_func_t func;
     const void *data;
     struct vm_ifunc_argc argc;
-};
+});
 
-struct rb_imemo_tmpbuf_struct {
+RVALUE_COMPATIBLE_STRUCT(rb_imemo_tmpbuf_struct, {
     VALUE flags;
     VALUE reserved;
     VALUE *ptr; /* malloc'ed buffer */
     struct rb_imemo_tmpbuf_struct *next; /* next imemo */
     size_t cnt; /* buffer size in VALUE */
-};
+});
 
 /*! MEMO
  *
  * @see imemo_type
  * */
-struct MEMO {
+RVALUE_COMPATIBLE_STRUCT(MEMO, {
     VALUE flags;
     VALUE reserved;
     const VALUE v1;
@@ -113,7 +113,7 @@ struct MEMO {
         const VALUE value;
         void (*func)(void);
     } u3;
-};
+});
 
 /* ment is in method.h */
 

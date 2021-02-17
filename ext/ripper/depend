@@ -235,6 +235,7 @@ ripper.o: $(top_srcdir)/internal/numeric.h
 ripper.o: $(top_srcdir)/internal/parse.h
 ripper.o: $(top_srcdir)/internal/rational.h
 ripper.o: $(top_srcdir)/internal/re.h
+ripper.o: $(top_srcdir)/internal/rvalue_compat.h
 ripper.o: $(top_srcdir)/internal/serial.h
 ripper.o: $(top_srcdir)/internal/static_assert.h
 ripper.o: $(top_srcdir)/internal/string.h
