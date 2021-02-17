@@ -12,53 +12,77 @@ module Fiddle
 
     def test_char_ctype
       assert_equal(TYPE_CHAR, parse_ctype('char'))
+      assert_equal(TYPE_CHAR, parse_ctype('const char'))
       assert_equal(TYPE_CHAR, parse_ctype('signed char'))
+      assert_equal(TYPE_CHAR, parse_ctype('const signed char'))
       assert_equal(-TYPE_CHAR, parse_ctype('unsigned char'))
+      assert_equal(-TYPE_CHAR, parse_ctype('const unsigned char'))
     end
 
     def test_short_ctype
       assert_equal(TYPE_SHORT, parse_ctype('short'))
+      assert_equal(TYPE_SHORT, parse_ctype('const short'))
       assert_equal(TYPE_SHORT, parse_ctype('short int'))
+      assert_equal(TYPE_SHORT, parse_ctype('const short int'))
       assert_equal(TYPE_SHORT, parse_ctype('signed short'))
+      assert_equal(TYPE_SHORT, parse_ctype('const signed short'))
       assert_equal(TYPE_SHORT, parse_ctype('signed short int'))
+      assert_equal(TYPE_SHORT, parse_ctype('const signed short int'))
       assert_equal(-TYPE_SHORT, parse_ctype('unsigned short'))
+      assert_equal(-TYPE_SHORT, parse_ctype('const unsigned short'))
       assert_equal(-TYPE_SHORT, parse_ctype('unsigned short int'))
+      assert_equal(-TYPE_SHORT, parse_ctype('const unsigned short int'))
     end
 
     def test_int_ctype
       assert_equal(TYPE_INT, parse_ctype('int'))
+      assert_equal(TYPE_INT, parse_ctype('const int'))
       assert_equal(TYPE_INT, parse_ctype('signed int'))
+      assert_equal(TYPE_INT, parse_ctype('const signed int'))
       assert_equal(-TYPE_INT, parse_ctype('uint'))
+      assert_equal(-TYPE_INT, parse_ctype('const uint'))
       assert_equal(-TYPE_INT, parse_ctype('unsigned int'))
+      assert_equal(-TYPE_INT, parse_ctype('const unsigned int'))
     end
 
     def test_long_ctype
       assert_equal(TYPE_LONG, parse_ctype('long'))
+      assert_equal(TYPE_LONG, parse_ctype('const long'))
       assert_equal(TYPE_LONG, parse_ctype('long int'))
+      assert_equal(TYPE_LONG, parse_ctype('const long int'))
       assert_equal(TYPE_LONG, parse_ctype('signed long'))
+      assert_equal(TYPE_LONG, parse_ctype('const signed long'))
       assert_equal(TYPE_LONG, parse_ctype('signed long int'))
+      assert_equal(TYPE_LONG, parse_ctype('const signed long int'))
       assert_equal(-TYPE_LONG, parse_ctype('unsigned long'))
+      assert_equal(-TYPE_LONG, parse_ctype('const unsigned long'))
       assert_equal(-TYPE_LONG, parse_ctype('unsigned long int'))
+      assert_equal(-TYPE_LONG, parse_ctype('const unsigned long int'))
     end
 
     def test_size_t_ctype
       assert_equal(TYPE_SIZE_T, parse_ctype("size_t"))
+      assert_equal(TYPE_SIZE_T, parse_ctype("const size_t"))
     end
 
     def test_ssize_t_ctype
       assert_equal(TYPE_SSIZE_T, parse_ctype("ssize_t"))
+      assert_equal(TYPE_SSIZE_T, parse_ctype("const ssize_t"))
     end
 
     def test_ptrdiff_t_ctype
       assert_equal(TYPE_PTRDIFF_T, parse_ctype("ptrdiff_t"))
+      assert_equal(TYPE_PTRDIFF_T, parse_ctype("const ptrdiff_t"))
     end
 
     def test_intptr_t_ctype
       assert_equal(TYPE_INTPTR_T, parse_ctype("intptr_t"))
+      assert_equal(TYPE_INTPTR_T, parse_ctype("const intptr_t"))
     end
 
     def test_uintptr_t_ctype
       assert_equal(TYPE_UINTPTR_T, parse_ctype("uintptr_t"))
+      assert_equal(TYPE_UINTPTR_T, parse_ctype("const uintptr_t"))
     end
 
     def test_undefined_ctype
@@ -66,7 +90,10 @@ module Fiddle
     end
 
     def test_undefined_ctype_with_type_alias
-      assert_equal(-TYPE_LONG, parse_ctype('DWORD', {"DWORD" => "unsigned long"}))
+      assert_equal(-TYPE_LONG,
+                   parse_ctype('DWORD', {"DWORD" => "unsigned long"}))
+      assert_equal(-TYPE_LONG,
+                   parse_ctype('const DWORD', {"DWORD" => "unsigned long"}))
     end
 
     def expand_struct_types(types)
@@ -83,11 +110,21 @@ module Fiddle
     end
 
     def test_struct_basic
-      assert_equal [[TYPE_INT, TYPE_CHAR], ['i', 'c']], parse_struct_signature(['int i', 'char c'])
+      assert_equal([[TYPE_INT, TYPE_CHAR], ['i', 'c']],
+                   parse_struct_signature(['int i', 'char c']))
+      assert_equal([[TYPE_INT, TYPE_CHAR], ['i', 'c']],
+                   parse_struct_signature(['const int i', 'const char c']))
     end
 
     def test_struct_array
-      assert_equal [[[TYPE_CHAR,80],[TYPE_INT,5]], ['buffer','x']], parse_struct_signature(['char buffer[80]', 'int[5] x'])
+      assert_equal([[[TYPE_CHAR, 80], [TYPE_INT, 5]],
+                    ['buffer', 'x']],
+                   parse_struct_signature(['char buffer[80]',
+                                           'int[5] x']))
+      assert_equal([[[TYPE_CHAR, 80], [TYPE_INT, 5]],
+                    ['buffer', 'x']],
+                   parse_struct_signature(['const char buffer[80]',
+                                           'const int[5] x']))
     end
 
     def test_struct_nested_struct
@@ -178,15 +215,22 @@ module Fiddle
     end
 
     def test_struct_array_str
-      assert_equal [[[TYPE_CHAR,80],[TYPE_INT,5]], ['buffer','x']], parse_struct_signature('char buffer[80], int[5] x')
+      assert_equal([[[TYPE_CHAR, 80], [TYPE_INT, 5]],
+                    ['buffer', 'x']],
+                   parse_struct_signature('char buffer[80], int[5] x'))
+      assert_equal([[[TYPE_CHAR, 80], [TYPE_INT, 5]],
+                    ['buffer', 'x']],
+                   parse_struct_signature('const char buffer[80], const int[5] x'))
     end
 
     def test_struct_function_pointer
-      assert_equal [[TYPE_VOIDP], ['cb']], parse_struct_signature(['void (*cb)(const char*)'])
+      assert_equal([[TYPE_VOIDP], ['cb']],
+                   parse_struct_signature(['void (*cb)(const char*)']))
     end
 
     def test_struct_function_pointer_str
-      assert_equal [[TYPE_VOIDP,TYPE_VOIDP], ['cb', 'data']], parse_struct_signature('void (*cb)(const char*), const char* data')
+      assert_equal([[TYPE_VOIDP, TYPE_VOIDP], ['cb', 'data']],
+                   parse_struct_signature('void (*cb)(const char*), const char* data'))
     end
 
     def test_struct_string
