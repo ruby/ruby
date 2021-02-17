@@ -38,6 +38,7 @@
 #include "ruby/util.h"
 #include "vm_core.h"
 #include "vm_callinfo.h"
+#include "ujit.h"
 
 #include "builtin.h"
 #include "insns.inc"
