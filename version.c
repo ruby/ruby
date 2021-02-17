@@ -13,7 +13,7 @@
 #include "version.h"
 #include "vm_core.h"
 #include "mjit.h"
-#include "ujit_iface.h"
+#include "ujit.h"
 #include <stdio.h>
 
 #ifndef EXIT_SUCCESS
