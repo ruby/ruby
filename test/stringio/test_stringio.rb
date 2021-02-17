@@ -798,7 +798,7 @@ class TestStringIO < Test::Unit::TestCase
   end
 
   def test_overflow
-    skip if RbConfig::SIZEOF["void*"] > RbConfig::SIZEOF["long"]
+    omit if RbConfig::SIZEOF["void*"] > RbConfig::SIZEOF["long"]
     limit = RbConfig::LIMITS["INTPTR_MAX"] - 0x10
     assert_separately(%w[-rstringio], "#{<<-"begin;"}\n#{<<-"end;"}")
     begin;
@@ -808,7 +808,7 @@ class TestStringIO < Test::Unit::TestCase
         x = "a"*0x100000
         break if [x].pack("p").unpack("i!")[0] < 0
         ary << x
-        skip if ary.size > 100
+        omit if ary.size > 100
       end
       s = StringIO.new(x)
       s.gets("xxx", limit)
