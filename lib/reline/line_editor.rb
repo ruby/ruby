@@ -344,8 +344,9 @@ class Reline::LineEditor
     else
     end_of_line_cursor = new_cursor_max
     end
-    line_to_calc.encode(Encoding::UTF_8).grapheme_clusters.each do |gc|
-      mbchar_width = Reline::Unicode.get_mbchar_width(gc)
+    line_to_calc.grapheme_clusters.each do |gc|
+      mbchar = gc.encode(Encoding::UTF_8)
+      mbchar_width = Reline::Unicode.get_mbchar_width(mbchar)
       now = new_cursor + mbchar_width
       if now > end_of_line_cursor or now > cursor
         break
