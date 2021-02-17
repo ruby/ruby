@@ -42,13 +42,13 @@
 //
 // bool rb_darray_append(rb_darray(T) *ptr_to_ary, T element);
 //
-#define rb_darray_append(ptr_to_ary, element) ( \
-    rb_darray_ensure_space((ptr_to_ary)) ? (    \
-        rb_darray_set(*(ptr_to_ary),         \
-                    (*(ptr_to_ary))->meta.size, \
-                    (element)),            \
-        ++((*(ptr_to_ary))->meta.size),       \
-        1                                     \
+#define rb_darray_append(ptr_to_ary, element) (   \
+    rb_darray_ensure_space((ptr_to_ary), sizeof(**(ptr_to_ary)), sizeof((*(ptr_to_ary))->data[0])) ? ( \
+        rb_darray_set(*(ptr_to_ary),              \
+                      (*(ptr_to_ary))->meta.size, \
+                      (element)),                 \
+        ++((*(ptr_to_ary))->meta.size),           \
+        1                                         \
     ) : 0)
 
 // Iterate over items of the array in a for loop
@@ -91,21 +91,25 @@ rb_darray_free(void *ary)
 //
 #define rb_darray_pop_back(ary) ((ary)->meta.size--)
 
-// Internal macro
-// Ensure there is space for one more element. Return 1 on success and 0 on failure.
-// `ptr_to_ary` is evaluated multiple times.
-#define rb_darray_ensure_space(ptr_to_ary) ( \
-    (rb_darray_capa(*(ptr_to_ary)) > rb_darray_size(*(ptr_to_ary))) ? \
-        1 : \
-        rb_darray_double(ptr_to_ary, sizeof((*(ptr_to_ary))->data[0])))
+// Internal function. Calculate buffer size on malloc heap.
+static inline size_t
+rb_darray_buffer_size(int32_t capacity, size_t header_size, size_t element_size)
+{
+    if (capacity == 0) return 0;
+    return header_size + (size_t)capacity * element_size;
+}
 
 // Internal function
+// Ensure there is space for one more element. Return 1 on success and 0 on failure.
+// Note: header_size can be bigger than sizeof(rb_darray_meta_t) for example when T is __int128_t.
+// for example.
 static inline int 
-rb_darray_double(void *ptr_to_ary, size_t element_size)
+rb_darray_ensure_space(void *ptr_to_ary, size_t header_size, size_t element_size)
 {
     rb_darray_meta_t **ptr_to_ptr_to_meta = ptr_to_ary;
-    const rb_darray_meta_t *meta = *ptr_to_ptr_to_meta;
+    rb_darray_meta_t *meta = *ptr_to_ptr_to_meta;
     int32_t current_capa = rb_darray_capa(meta);
+    if (rb_darray_size(meta) < current_capa) return 1;
 
     int32_t new_capa;
     // Calculate new capacity
@@ -119,11 +123,11 @@ rb_darray_double(void *ptr_to_ary, size_t element_size)
     }
 
     // Calculate new buffer size
-    size_t current_buffer_size = element_size * (size_t)current_capa + (meta ? sizeof(*meta) : 0);
-    size_t new_buffer_size = element_size * (size_t)new_capa + sizeof(*meta);
+    size_t current_buffer_size = rb_darray_buffer_size(current_capa, header_size, element_size);
+    size_t new_buffer_size = rb_darray_buffer_size(new_capa, header_size, element_size);
     if (new_buffer_size <= current_buffer_size) return 0;
 
-    rb_darray_meta_t *doubled_ary = realloc(*ptr_to_ptr_to_meta, new_buffer_size);
+    rb_darray_meta_t *doubled_ary = realloc(meta, new_buffer_size);
     if (!doubled_ary) return 0;
 
     if (meta == NULL) {
