@@ -726,7 +726,7 @@ class Reline::LineEditor
       if line.nil?
         if calculate_width(visual_lines[index - 1], true) == Reline::IOGate.get_screen_size.last
           # reaches the end of line
-          if Reline::IOGate.win?
+          if Reline::IOGate.win? and Reline::IOGate.win_legacy_console?
             # A newline is automatically inserted if a character is rendered at
             # eol on command prompt.
           else
@@ -744,7 +744,7 @@ class Reline::LineEditor
         next
       end
       @output.write line
-      if Reline::IOGate.win? and calculate_width(line, true) == Reline::IOGate.get_screen_size.last
+      if Reline::IOGate.win? and Reline::IOGate.win_legacy_console? and calculate_width(line, true) == Reline::IOGate.get_screen_size.last
         # A newline is automatically inserted if a character is rendered at eol on command prompt.
         @rest_height -= 1 if @rest_height > 0
       end
