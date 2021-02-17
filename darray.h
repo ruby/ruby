@@ -51,10 +51,23 @@
         1                                         \
     ) : 0)
 
+// Remove the last element of the array.
+//
+#define rb_darray_pop_back(ary) ((ary)->meta.size--)
+
 // Iterate over items of the array in a for loop
 //
 #define rb_darray_foreach(ary, idx_name, elem_ptr_var) \
     for (int idx_name = 0; idx_name < rb_darray_size(ary) && ((elem_ptr_var) = rb_darray_ref(ary, idx_name)); ++idx_name)
+
+// Make a dynamic array of a certain size. All bytes backing the elements are set to zero.
+// Return 1 on success and 0 on failure.
+//
+// Note that NULL is a valid empty dynamic array.
+//
+// bool rb_darray_make(rb_darray(T) *ptr_to_ary, int32_t size);
+//
+#define rb_darray_make(ptr_to_ary, size) rb_darray_make_impl((ptr_to_ary), size, sizeof(**(ptr_to_ary)), sizeof((*(ptr_to_ary))->data[0]))
 
 typedef struct rb_darray_meta {
     int32_t size;
@@ -87,10 +100,6 @@ rb_darray_free(void *ary)
     free(ary);
 }
 
-// Remove the last element of the array.
-//
-#define rb_darray_pop_back(ary) ((ary)->meta.size--)
-
 // Internal function. Calculate buffer size on malloc heap.
 static inline size_t
 rb_darray_buffer_size(int32_t capacity, size_t header_size, size_t element_size)
@@ -101,8 +110,7 @@ rb_darray_buffer_size(int32_t capacity, size_t header_size, size_t element_size)
 
 // Internal function
 // Ensure there is space for one more element. Return 1 on success and 0 on failure.
-// Note: header_size can be bigger than sizeof(rb_darray_meta_t) for example when T is __int128_t.
-// for example.
+// Note: header_size can be bigger than sizeof(rb_darray_meta_t) when T is __int128_t, for example.
 static inline int 
 rb_darray_ensure_space(void *ptr_to_ary, size_t header_size, size_t element_size)
 {
@@ -139,6 +147,27 @@ rb_darray_ensure_space(void *ptr_to_ary, size_t header_size, size_t element_size
     doubled_ary->capa = new_capa;
 
     *ptr_to_ptr_to_meta = doubled_ary;
+    return 1;
+}
+
+static inline int
+rb_darray_make_impl(void *ptr_to_ary, int32_t array_size, size_t header_size, size_t element_size)
+{
+    rb_darray_meta_t **ptr_to_ptr_to_meta = ptr_to_ary;
+    if (array_size < 0) return 0;
+    if (array_size == 0) {
+        *ptr_to_ptr_to_meta = NULL;
+        return 1;
+    }
+
+    size_t buffer_size = rb_darray_buffer_size(array_size, header_size, element_size);
+    rb_darray_meta_t *meta = calloc(buffer_size, 1);
+    if (!meta) return 0;
+
+    meta->size = array_size;
+    meta->capa = array_size;
+
+    *ptr_to_ptr_to_meta = meta;
     return 1;
 }
 
