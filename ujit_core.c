@@ -598,8 +598,8 @@ invalidate_block_version(block_t* block)
 {
     const rb_iseq_t *iseq = block->blockid.iseq;
 
-    fprintf(stderr, "invalidating block (%p, %d)\n", block->blockid.iseq, block->blockid.idx);
-    fprintf(stderr, "block=%p\n", block);
+    // fprintf(stderr, "invalidating block (%p, %d)\n", block->blockid.iseq, block->blockid.idx);
+    // fprintf(stderr, "block=%p\n", block);
 
     block_t *first_block = get_first_version(iseq, block->blockid.idx);
     RUBY_ASSERT(first_block != NULL);
@@ -684,7 +684,7 @@ invalidate_block_version(block_t* block)
 
     ujit_free_block(block);
 
-    fprintf(stderr, "invalidation done\n");
+    // fprintf(stderr, "invalidation done\n");
 }
 
 int blockid_cmp(st_data_t arg0, st_data_t arg1)
