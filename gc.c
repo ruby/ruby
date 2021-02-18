@@ -8477,6 +8477,9 @@ gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_
     RB_VM_LOCK_ENTER_LEV(lock_lev);
 
     switch (event) {
+      case gc_enter_event_rest:
+        if (!is_marking(objspace)) break;
+        // fall through
       case gc_enter_event_start:
       case gc_enter_event_mark_continue:
         // stop other ractors
