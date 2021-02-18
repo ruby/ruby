@@ -726,8 +726,10 @@ gen_opt_aref(jitstate_t* jit, ctx_t* ctx)
     );
     jnz_ptr(cb, side_exit);
 
-    x86opnd_t recv = ctx_stack_pop(ctx, 1);
-    mov(cb, REG0, recv);
+    // Pop the stack operands
+    x86opnd_t idx_opnd = ctx_stack_pop(ctx, 1);
+    x86opnd_t recv_opnd = ctx_stack_pop(ctx, 1);
+    mov(cb, REG0, recv_opnd);
 
     // if (SPECIAL_CONST_P(recv)) {
     // Bail if it's not a heap object
@@ -738,27 +740,25 @@ gen_opt_aref(jitstate_t* jit, ctx_t* ctx)
     cmp(cb, REG0, imm_opnd(Qnil));
     je_ptr(cb, side_exit);
 
-    // Bail if recv is *not* an array
-    x86opnd_t klass_opnd = mem_opnd(64, REG0, offsetof(struct RBasic, klass));
-    mov(cb, REG0, klass_opnd);
-    mov(cb, REG1, const_ptr_opnd((void *)rb_cArray));
-    cmp(cb, REG0, REG1);
+    // Bail if recv is not an array
+    mov(cb, REG1, mem_opnd(64, REG0, offsetof(struct RBasic, flags)));
+    and(cb, REG1, imm_opnd(T_MASK));
+    cmp(cb, REG1, imm_opnd(T_ARRAY));
     jne_ptr(cb, side_exit);
 
-    // Bail if arg0 is *not* an FIXNUM
-    x86opnd_t operand = ctx_stack_pop(ctx, 1);
-    mov(cb, REG1, operand);
+    // Bail if idx is not a FIXNUM
+    mov(cb, REG1, idx_opnd);
     test(cb, REG1, imm_opnd(RUBY_FIXNUM_FLAG));
     jz_ptr(cb, side_exit);
 
-    // Save MicroJIT registers
+    // Save uJIT registers
     push(cb, REG_CFP);
     push(cb, REG_EC);
     push(cb, REG_SP);
     // Maintain 16-byte RSP alignment
     sub(cb, RSP, imm_opnd(8));
 
-    mov(cb, RDI, recv);
+    mov(cb, RDI, REG0);
     sar(cb, REG1, imm_opnd(1)); // Convert fixnum to int
     mov(cb, RSI, REG1);
     call_ptr(cb, REG0, (void *)rb_ary_entry_internal);
