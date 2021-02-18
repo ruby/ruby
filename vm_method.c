@@ -968,7 +968,7 @@ rb_method_entry_at(VALUE klass, ID id)
 }
 
 static inline rb_method_entry_t*
-search_method(VALUE klass, ID id, VALUE *defined_class_ptr)
+search_method0(VALUE klass, ID id, VALUE *defined_class_ptr, bool skip_refined)
 {
     rb_method_entry_t *me = NULL;
 
@@ -977,7 +977,9 @@ search_method(VALUE klass, ID id, VALUE *defined_class_ptr)
     for (; klass; klass = RCLASS_SUPER(klass)) {
 	RB_DEBUG_COUNTER_INC(mc_search_super);
         if ((me = lookup_method_table(klass, id)) != 0) {
-            break;
+            if (!skip_refined || me->def->type != VM_METHOD_TYPE_REFINED) {
+                break;
+            }
         }
     }
 
@@ -987,6 +989,12 @@ search_method(VALUE klass, ID id, VALUE *defined_class_ptr)
 
     VM_ASSERT(me == NULL || !METHOD_ENTRY_INVALIDATED(me));
     return me;
+}
+
+static inline rb_method_entry_t*
+search_method(VALUE klass, ID id, VALUE *defined_class_ptr)
+{
+    return search_method0(klass, id, defined_class_ptr, false);
 }
 
 static rb_method_entry_t *
@@ -1376,7 +1384,7 @@ rb_export_method(VALUE klass, ID name, rb_method_visibility_t visi)
     VALUE defined_class;
     VALUE origin_class = RCLASS_ORIGIN(klass);
 
-    me = search_method(origin_class, name, &defined_class);
+    me = search_method0(origin_class, name, &defined_class, true);
 
     if (!me && RB_TYPE_P(klass, T_MODULE)) {
 	me = search_method(rb_cObject, name, &defined_class);
