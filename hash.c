@@ -2726,8 +2726,8 @@ rb_hash_delete_at(int argc, VALUE *argv, VALUE hash)
     long i;
 
     for (i=0; i<argc; i++) {
-	rb_ary_push(result, rb_hash_aref(hash, argv[i]));
-	rb_hash_delete(hash, argv[i]);
+	VALUE deleted_value = rb_hash_delete_entry(hash, argv[i]);
+	if (deleted_value != Qundef) rb_ary_push(result, deleted_value);
     }
     return result;
 }
