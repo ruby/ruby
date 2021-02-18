@@ -2707,6 +2707,33 @@ rb_hash_values_at(int argc, VALUE *argv, VALUE hash)
 
 /*
  *  call-seq:
+ *    hash.delete_at(*keys) -> new_array
+ *
+ *  Deletes entries at the specified keys, and returns a new \Array
+ *  containing values for the given +keys+:
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.delete_at(:baz, :foo) # => [2, 0]
+ *    h # => {bar: 1}
+ *
+ *  The {default values}[#class-Hash-label-Default+Values] are returned
+ *  for any keys that are not found:
+ *    h.delete_at(:hello, :bar) # => [nil, 1]
+*/
+VALUE
+rb_hash_delete_at(int argc, VALUE *argv, VALUE hash)
+{
+    VALUE result = rb_ary_new2(argc);
+    long i;
+
+    for (i=0; i<argc; i++) {
+	rb_ary_push(result, rb_hash_aref(hash, argv[i]));
+	rb_hash_delete(hash, argv[i]);
+    }
+    return result;
+}
+
+/*
+ *  call-seq:
  *    hash.fetch_values(*keys) -> new_array
  *    hash.fetch_values(*keys) {|key| ... } -> new_array
  *
@@ -7162,6 +7189,7 @@ Init_Hash(void)
 
     rb_define_method(rb_cHash, "shift", rb_hash_shift, 0);
     rb_define_method(rb_cHash, "delete", rb_hash_delete_m, 1);
+    rb_define_method(rb_cHash, "delete_at", rb_hash_delete_at, -1);
     rb_define_method(rb_cHash, "delete_if", rb_hash_delete_if, 0);
     rb_define_method(rb_cHash, "keep_if", rb_hash_keep_if, 0);
     rb_define_method(rb_cHash, "select", rb_hash_select, 0);
