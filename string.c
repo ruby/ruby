@@ -804,7 +804,11 @@ str_new0(VALUE klass, const char *ptr, long len, int termlen)
     str = str_alloc(klass);
     if (!STR_EMBEDDABLE_P(len, termlen)) {
 	RSTRING(str)->as.heap.aux.capa = len;
-	RSTRING(str)->as.heap.ptr = ALLOC_N(char, (size_t)len + termlen);
+        /* :FIXME: @shyouhei guesses `len + termlen` is guaranteed to never
+         * integer overflow.  If we can STATIC_ASSERT that, the following
+         * mul_add_mul can be reverted to a simple ALLOC_N. */
+        RSTRING(str)->as.heap.ptr =
+            rb_xmalloc_mul_add_mul(sizeof(char), len, sizeof(char), termlen);
 	STR_SET_NOEMBED(str);
     }
     else if (len == 0) {
@@ -10487,20 +10491,6 @@ rb_str_is_ascii_only_p(VALUE str)
     return RBOOL(cr == ENC_CODERANGE_7BIT);
 }
 
-/**
- * Shortens _str_ and adds three dots, an ellipsis, if it is longer
- * than _len_ characters.
- *
- * \param str	the string to ellipsize.
- * \param len	the maximum string length.
- * \return	the ellipsized string.
- * \pre 	_len_ must not be negative.
- * \post	the length of the returned string in characters is less than or equal to _len_.
- * \post	If the length of _str_ is less than or equal _len_, returns _str_ itself.
- * \post	the encoding of returned string is equal to the encoding of _str_.
- * \post	the class of returned string is equal to the class of _str_.
- * \note	the length is counted in characters.
- */
 VALUE
 rb_str_ellipsize(VALUE str, long len)
 {
@@ -10559,11 +10549,6 @@ str_compat_and_valid(VALUE str, rb_encoding *enc)
 
 static VALUE enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr);
 
-/**
- * @param str the string to be scrubbed
- * @param repl the replacement character
- * @return If given string is invalid, returns a new string. Otherwise, returns Qnil.
- */
 VALUE
 rb_str_scrub(VALUE str, VALUE repl)
 {
