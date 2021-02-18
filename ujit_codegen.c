@@ -1277,6 +1277,11 @@ gen_opt_swb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb
         return false;
     }
 
+    if (vm_ci_flag(cd->ci) & VM_CALL_TAILCALL) {
+        // We can't handle tailcalls
+        return false;
+    }
+
     rb_gc_register_mark_object((VALUE)iseq); // FIXME: intentional LEAK!
 
     // Create a size-exit to fall back to the interpreter
@@ -1461,6 +1466,11 @@ gen_opt_send_without_block(jitstate_t* jit, ctx_t* ctx)
 
     // Don't JIT if the method entry is out of date
     if (METHOD_ENTRY_INVALIDATED(cme)) {
+        return false;
+    }
+
+    // We don't generate code to check protected method calls
+    if (METHOD_ENTRY_VISI(cme) == METHOD_VISI_PROTECTED) {
         return false;
     }
 

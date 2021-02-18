@@ -145,6 +145,7 @@ block_t* find_block_version(blockid_t blockid, const ctx_t* ctx);
 block_t* gen_block_version(blockid_t blockid, const ctx_t* ctx);
 uint8_t*  gen_entry_point(const rb_iseq_t *iseq, uint32_t insn_idx);
 void ujit_free_block(block_t *block);
+void ujit_branches_update_references(void);
 
 void gen_branch(
     const ctx_t* src_ctx,

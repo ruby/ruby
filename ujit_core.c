@@ -256,6 +256,15 @@ block_t* find_block_version(blockid_t blockid, const ctx_t* ctx)
     return best_version;
 }
 
+void
+ujit_branches_update_references(void)
+{
+    for (uint32_t i = 0; i < num_branches; i++) {
+        branch_entries[i].targets[0].iseq = (const void *)rb_gc_location((VALUE)branch_entries[i].targets[0].iseq);
+        branch_entries[i].targets[1].iseq = (const void *)rb_gc_location((VALUE)branch_entries[i].targets[1].iseq);
+    }
+}
+
 // Compile a new block version immediately
 block_t* gen_block_version(blockid_t blockid, const ctx_t* start_ctx)
 {
@@ -539,7 +548,7 @@ void gen_direct_jump(
     generic_ctx.sp_offset = ctx->sp_offset;
     if (count_block_versions(target0) >= MAX_VERSIONS - 1)
     {
-        fprintf(stderr, "version limit hit in branch_stub_hit\n");
+        fprintf(stderr, "version limit hit in gen_direct_jump\n");
         ctx = &generic_ctx;
     }
 

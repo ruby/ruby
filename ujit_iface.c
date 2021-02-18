@@ -206,6 +206,8 @@ ujit_root_update_references(void *ptr)
             RUBY_ASSERT(false);
         }
     }
+
+    ujit_branches_update_references();
 }
 
 // GC callback during mark phase
