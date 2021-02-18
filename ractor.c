@@ -2088,6 +2088,8 @@ void
 Init_Ractor(void)
 {
     rb_cRactor = rb_define_class("Ractor", rb_cObject);
+    rb_undef_alloc_func(rb_cRactor);
+
     rb_eRactorError          = rb_define_class_under(rb_cRactor, "Error", rb_eRuntimeError);
     rb_eRactorIsolationError = rb_define_class_under(rb_cRactor, "IsolationError", rb_eRactorError);
     rb_eRactorRemoteError    = rb_define_class_under(rb_cRactor, "RemoteError", rb_eRactorError);
