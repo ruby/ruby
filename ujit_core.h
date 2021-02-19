@@ -95,6 +95,9 @@ typedef struct BranchEntry
 
 } branch_t;
 
+
+typedef rb_darray(uint32_t) offset_array_t;
+
 /**
 Basic block version
 Represents a portion of an iseq compiled with a given context
@@ -122,8 +125,8 @@ typedef struct ujit_block_version
     // Next block version for this blockid (singly-linked list)
     struct ujit_block_version *next;
 
-    // List node for all block versions in an iseq
-    struct list_node iseq_block_node;
+    // Offsets for GC managed objects in the mainline code block
+    offset_array_t gc_object_offsets;
 
     // GC managed objects that this block depend on
     struct {

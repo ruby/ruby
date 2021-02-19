@@ -60,6 +60,22 @@ jit_get_arg(jitstate_t* jit, size_t arg_idx)
     return *(jit->pc + arg_idx + 1);
 }
 
+// Load a pointer to a GC'd object into a register and keep track of the reference
+static void
+jit_mov_gc_ptr(jitstate_t* jit, codeblock_t* cb, x86opnd_t reg, VALUE ptr)
+{
+    RUBY_ASSERT(reg.type == OPND_REG && reg.num_bits == 64);
+    RUBY_ASSERT(!SPECIAL_CONST_P(ptr));
+
+    mov(cb, reg, const_ptr_opnd((void*)ptr));
+    // The pointer immediate is encoded as the last part of the mov written out.
+    uint32_t ptr_offset = cb->write_pos - sizeof(VALUE);
+
+    if (!rb_darray_append(&jit->block->gc_object_offsets, ptr_offset)) {
+        rb_bug("allocation failed");
+    }
+}
+
 /**
 Generate an inline exit to return to the interpreter
 */
@@ -1083,7 +1099,7 @@ gen_opt_swb_cfunc(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const r
     assume_method_lookup_stable(cd->cc, cme, jit->block);
 
     // Bail if receiver class is different from compile-time call cache class
-    mov(cb, REG1, imm_opnd(cd->cc->klass));
+    jit_mov_gc_ptr(jit, cb, REG1, (VALUE)cd->cc->klass);
     cmp(cb, klass_opnd, REG1);
     jne_ptr(cb, side_exit);
 
@@ -1107,7 +1123,7 @@ gen_opt_swb_cfunc(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const r
 
         // Put compile time cme into REG1. It's assumed to be valid because we are notified when
         // any cme we depend on become outdated. See rb_ujit_method_lookup_change().
-        mov(cb, REG1, const_ptr_opnd(cme));
+        jit_mov_gc_ptr(jit, cb, REG1, (VALUE)cme);
         // Write method entry at sp[-3]
         // sp[-3] = me;
         mov(cb, mem_opnd(64, REG0, 8 * -3), REG1);
@@ -1161,9 +1177,9 @@ gen_opt_swb_cfunc(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const r
 
         // Call check_cfunc_dispatch
         mov(cb, RDI, recv);
-        mov(cb, RSI, const_ptr_opnd(cd));
+        jit_mov_gc_ptr(jit, cb, RSI, (VALUE)cd);
         mov(cb, RDX, const_ptr_opnd((void *)cfunc->func));
-        mov(cb, RCX, const_ptr_opnd(cme));
+        jit_mov_gc_ptr(jit, cb, RCX, (VALUE)cme);
         call_ptr(cb, REG0, (void *)&check_cfunc_dispatch);
 
         // Restore registers
@@ -1242,7 +1258,7 @@ gen_opt_swb_cfunc(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const r
 
 bool rb_simple_iseq_p(const rb_iseq_t *iseq);
 
-void
+static void
 gen_return_branch(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uint8_t shape)
 {
     switch (shape)
@@ -1316,7 +1332,7 @@ gen_opt_swb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb
     assume_method_lookup_stable(cd->cc, cme, jit->block);
 
     // Bail if receiver class is different from compile-time call cache class
-    mov(cb, REG1, imm_opnd(cd->cc->klass));
+    jit_mov_gc_ptr(jit, cb, REG1, (VALUE)cd->cc->klass);
     cmp(cb, klass_opnd, REG1);
     jne_ptr(cb, side_exit);
 
@@ -1344,7 +1360,7 @@ gen_opt_swb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb
 
     // Put compile time cme into REG1. It's assumed to be valid because we are notified when
     // any cme we depend on become outdated. See rb_ujit_method_lookup_change().
-    mov(cb, REG1, const_ptr_opnd(cme));
+    jit_mov_gc_ptr(jit, cb, REG1, (VALUE)cme);
     // Write method entry at sp[-3]
     // sp[-3] = me;
     mov(cb, mem_opnd(64, REG0, 8 * -3), REG1);
@@ -1379,7 +1395,7 @@ gen_opt_swb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb
     mov(cb, member_opnd(REG_CFP, rb_control_frame_t, ep), REG0);
     mov(cb, REG0, recv);
     mov(cb, member_opnd(REG_CFP, rb_control_frame_t, self), REG0);
-    mov(cb, REG0, const_ptr_opnd(iseq));
+    jit_mov_gc_ptr(jit, cb, REG0, (VALUE)iseq);
     mov(cb, member_opnd(REG_CFP, rb_control_frame_t, iseq), REG0);
     mov(cb, REG0, const_ptr_opnd(start_pc));
     mov(cb, member_opnd(REG_CFP, rb_control_frame_t, pc), REG0);

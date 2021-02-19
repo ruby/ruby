@@ -566,6 +566,17 @@ rb_ujit_iseq_mark(const struct rb_iseq_constant_body *body)
             rb_gc_mark_movable(block->dependencies.cc);
             rb_gc_mark_movable(block->dependencies.cme);
             rb_gc_mark_movable(block->dependencies.iseq);
+
+            // Walk over references to objects in generated code.
+            uint32_t *offset_element;
+            rb_darray_foreach(block->gc_object_offsets, offset_idx, offset_element) {
+                uint32_t offset_to_value = *offset_element;
+                uint8_t *value_address = cb_get_ptr(cb, offset_to_value);
+
+                VALUE object;
+                memcpy(&object, value_address, SIZEOF_VALUE);
+                rb_gc_mark_movable(object);
+            }
         }
     }
 }
@@ -581,6 +592,21 @@ rb_ujit_iseq_update_references(const struct rb_iseq_constant_body *body)
             block->dependencies.cc = rb_gc_location(block->dependencies.cc);
             block->dependencies.cme = rb_gc_location(block->dependencies.cme);
             block->dependencies.iseq = rb_gc_location(block->dependencies.iseq);
+
+            // Walk over references to objects in generated code.
+            uint32_t *offset_element;
+            rb_darray_foreach(block->gc_object_offsets, offset_idx, offset_element) {
+                uint32_t offset_to_value = *offset_element;
+                uint8_t *value_address = cb_get_ptr(cb, offset_to_value);
+
+                VALUE object;
+                memcpy(&object, value_address, SIZEOF_VALUE);
+                VALUE possibly_moved = rb_gc_location(object);
+                // Only write when the VALUE moves, to be CoW friendly.
+                if (possibly_moved != object) {
+                    memcpy(value_address, &possibly_moved, SIZEOF_VALUE);
+                }
+            }
         }
     }
 }

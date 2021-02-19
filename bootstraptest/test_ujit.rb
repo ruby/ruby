@@ -214,3 +214,21 @@ assert_equal ":special\n", %q{
   p foo(special)
   nil
 }
+
+# Test that object references in generated code get marked and moved
+assert_equal "good", %q{
+  def bar
+    "good"
+  end
+
+  def foo
+    bar
+  end
+
+  foo
+  foo
+
+  GC.verify_compaction_references(double_heap: true, toward: :empty)
+
+  foo
+}

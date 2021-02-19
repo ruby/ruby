@@ -155,7 +155,7 @@ get_first_version(const rb_iseq_t *iseq, unsigned idx)
     return rb_darray_get(body->ujit_blocks, idx);
 }
 
-// Add a block version to the map. Block should be fully constructed
+// Keep track of a block version. Block should be fully constructed.
 static void
 add_block_version(blockid_t blockid, block_t* block)
 {
@@ -195,6 +195,17 @@ add_block_version(blockid_t blockid, block_t* block)
         RB_OBJ_WRITTEN(iseq, Qundef, block->dependencies.iseq);
         RB_OBJ_WRITTEN(iseq, Qundef, block->dependencies.cc);
         RB_OBJ_WRITTEN(iseq, Qundef, block->dependencies.cme);
+
+        // Run write barrier for all objects in generated code.
+        uint32_t *offset_element;
+        rb_darray_foreach(block->gc_object_offsets, offset_idx, offset_element) {
+            uint32_t offset_to_value = *offset_element;
+            uint8_t *value_address = cb_get_ptr(cb, offset_to_value);
+
+            VALUE object;
+            memcpy(&object, value_address, SIZEOF_VALUE);
+            RB_OBJ_WRITTEN(iseq, Qundef, object);
+        }
     }
 }
 
