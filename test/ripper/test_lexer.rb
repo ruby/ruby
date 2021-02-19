@@ -217,7 +217,7 @@ class TestRipper::Lexer < Test::Unit::TestCase
     end
   end
 
-  def test_lex_with_syntax_error_and_heredo
+  def test_lex_with_syntax_error_and_heredoc
     bug = '[Bug #17644]'
     s = <<~EOF
         foo
