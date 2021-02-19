@@ -197,3 +197,20 @@ assert_equal "nil\n", %q{
 
   p other.read
 }
+
+# Test that opt_aref checks the class of the receiver
+assert_equal ":special\n", %q{
+  def foo(array)
+    array[30]
+  end
+
+  UJIT.install_entry(RubyVM::InstructionSequence.of(method(:foo)))
+
+  special = []
+  def special.[](idx)
+    :special
+  end
+
+  p foo(special)
+  nil
+}
