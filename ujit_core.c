@@ -610,6 +610,7 @@ ujit_free_block(block_t *block)
 
     free(block->incoming);
     free(block);
+    rb_darray_free(block->gc_object_offsets);
 }
 
 // Invalidate one specific block version
