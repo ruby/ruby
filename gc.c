@@ -12402,31 +12402,34 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
             APPENDF((BUFF_ARGS, "<%s> ", rb_imemo_name(imemo_type(obj))));
 
 	    switch (imemo_type(obj)) {
-	      case imemo_ment: {
-		const rb_method_entry_t *me = &RANY(obj)->as.imemo.ment;
-		if (me->def) {
+	      case imemo_ment:
+                {
+                    const rb_method_entry_t *me = &RANY(obj)->as.imemo.ment;
+
                     APPENDF((BUFF_ARGS, ":%s (%s%s%s%s) type:%s alias:%d owner:%p defined_class:%p",
-			     rb_id2name(me->called_id),
+                             rb_id2name(me->called_id),
                              METHOD_ENTRY_VISI(me) == METHOD_VISI_PUBLIC ?  "pub" :
                              METHOD_ENTRY_VISI(me) == METHOD_VISI_PRIVATE ? "pri" : "pro",
                              METHOD_ENTRY_COMPLEMENTED(me) ? ",cmp" : "",
                              METHOD_ENTRY_CACHED(me) ? ",cc" : "",
                              METHOD_ENTRY_INVALIDATED(me) ? ",inv" : "",
-                             rb_method_type_name(me->def->type),
-                             me->def->alias_count,
+                             me->def ? rb_method_type_name(me->def->type) : "NULL",
+                             me->def ? me->def->alias_count : -1,
                              (void *)me->owner, // obj_info(me->owner),
                              (void *)me->defined_class)); //obj_info(me->defined_class)));
 
-                    if (me->def->type == VM_METHOD_TYPE_ISEQ) {
-                        // APPENDF((BUFF_ARGS, " (iseq:%p)", (void *)me->def->body.iseq.iseqptr));
-                        APPENDF((BUFF_ARGS, " (iseq:%s)", obj_info((VALUE)me->def->body.iseq.iseqptr)));
+                    if (me->def) {
+                        switch (me->def->type) {
+                          case VM_METHOD_TYPE_ISEQ:
+                            APPENDF((BUFF_ARGS, " (iseq:%s)", obj_info((VALUE)me->def->body.iseq.iseqptr)));
+                            break;
+                          default:
+                            break;
+                        }
                     }
-		}
-		else {
-                    APPENDF((BUFF_ARGS, "%s", rb_id2name(me->called_id)));
-		}
-		break;
-	      }
+
+                    break;
+                }
 	      case imemo_iseq: {
 		const rb_iseq_t *iseq = (const rb_iseq_t *)obj;
                 rb_raw_iseq_info(BUFF_ARGS, iseq);
