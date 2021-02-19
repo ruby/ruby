@@ -1,0 +1,13 @@
+prelude: |
+  int = 42
+  flo = 4.2
+benchmark:
+  real?: |
+    int.real?
+  integer?: |
+    flo.integer?
+  finite?: |
+    int.finite?
+  infinite?: |
+    int.infinite?
+loop_count: 20000000
