@@ -717,7 +717,7 @@ gen_opt_aref(jitstate_t* jit, ctx_t* ctx)
     uint8_t* side_exit = ujit_side_exit(jit, ctx);
 
     // TODO: make a helper function for guarding on op-not-redefined
-    // Make sure that minus isn't redefined for integers
+    // Make sure that aref isn't redefined for arrays.
     mov(cb, RAX, const_ptr_opnd(ruby_current_vm_ptr));
     test(
         cb,
@@ -740,10 +740,11 @@ gen_opt_aref(jitstate_t* jit, ctx_t* ctx)
     cmp(cb, REG0, imm_opnd(Qnil));
     je_ptr(cb, side_exit);
 
-    // Bail if recv is not an array
-    mov(cb, REG1, mem_opnd(64, REG0, offsetof(struct RBasic, flags)));
-    and(cb, REG1, imm_opnd(T_MASK));
-    cmp(cb, REG1, imm_opnd(T_ARRAY));
+    // Bail if recv has a class other than ::Array.
+    // BOP_AREF check above is only good for ::Array.
+    mov(cb, REG1, mem_opnd(64, REG0, offsetof(struct RBasic, klass)));
+    mov(cb, REG0, const_ptr_opnd((void *)rb_cArray));
+    cmp(cb, REG0, REG1);
     jne_ptr(cb, side_exit);
 
     // Bail if idx is not a FIXNUM
@@ -758,7 +759,7 @@ gen_opt_aref(jitstate_t* jit, ctx_t* ctx)
     // Maintain 16-byte RSP alignment
     sub(cb, RSP, imm_opnd(8));
 
-    mov(cb, RDI, REG0);
+    mov(cb, RDI, recv_opnd);
     sar(cb, REG1, imm_opnd(1)); // Convert fixnum to int
     mov(cb, RSI, REG1);
     call_ptr(cb, REG0, (void *)rb_ary_entry_internal);
