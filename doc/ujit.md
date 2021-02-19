@@ -8,6 +8,10 @@ To simplify development, we currently support only MacOS and Linux on x86-64, bu
 is part of future plans.
 This project is open source and falls under the same license as CRuby.
 
+If you would like to learn more about BBV, there are two published papers, and associated conference talks:
+- [Simple and Effective Type Check Removal through Lazy Basic Block Versioning](https://arxiv.org/pdf/1411.0352.pdf) ([ECOOP 2015 talk](https://www.youtube.com/watch?v=S-aHBuoiYE0))
+- [Interprocedural Type Specialization of JavaScript Programs Without Type Analysis](https://drops.dagstuhl.de/opus/volltexte/2016/6101/pdf/LIPIcs-ECOOP-2016-7.pdf) ([ECOOP 2016 talk](https://www.youtube.com/watch?v=sRNBY7Ss97A))
+
 ## Installation
 
 The uJIT `ruby` binary can be built with either GCC or Clang.  We recommend enabling debug symbols so that assertions are enabled
