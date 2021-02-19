@@ -159,7 +159,7 @@ replace_to_long_name(wchar_t **wfullpath, size_t size, size_t buffer_size)
       This check can be skipped for directory components that have file
       extensions longer than 3 characters, or total lengths longer than
       12 characters.
-      http://msdn.microsoft.com/en-us/library/windows/desktop/aa364980(v=vs.85).aspx
+      https://msdn.microsoft.com/en-us/library/windows/desktop/aa364980(v=vs.85).aspx
     */
     size_t const max_short_name_size = 8 + 1 + 3;
     size_t const max_extension_size = 3;
