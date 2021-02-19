@@ -146,7 +146,9 @@ rb_darray_ensure_space(void *ptr_to_ary, size_t header_size, size_t element_size
 
     doubled_ary->capa = new_capa;
 
-    *ptr_to_ptr_to_meta = doubled_ary;
+    // We don't have access to the type of the dynamic array in function context.
+    // Write out result with memcpy to avoid strict aliasing issue.
+    memcpy(ptr_to_ary, &doubled_ary, sizeof(doubled_ary));
     return 1;
 }
 
@@ -167,7 +169,9 @@ rb_darray_make_impl(void *ptr_to_ary, int32_t array_size, size_t header_size, si
     meta->size = array_size;
     meta->capa = array_size;
 
-    *ptr_to_ptr_to_meta = meta;
+    // We don't have access to the type of the dynamic array in function context.
+    // Write out result with memcpy to avoid strict aliasing issue.
+    memcpy(ptr_to_ary, &meta, sizeof(meta));
     return 1;
 }
 
