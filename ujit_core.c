@@ -209,17 +209,6 @@ add_block_version(blockid_t blockid, block_t* block)
     }
 }
 
-// Add an incoming branch for a given block version
-static void add_incoming(block_t* p_block, uint32_t branch_idx)
-{
-    // Add this branch to the list of incoming branches for the target
-    uint32_t* new_list = malloc(sizeof(uint32_t) * (p_block->num_incoming + 1));
-    memcpy(new_list, p_block->incoming, sizeof(uint32_t) * p_block->num_incoming);
-    new_list[p_block->num_incoming] = branch_idx;
-    p_block->incoming = new_list;
-    p_block->num_incoming += 1;
-}
-
 // Count the number of block versions matching a given blockid
 static size_t count_block_versions(blockid_t blockid)
 {
@@ -333,7 +322,8 @@ block_t* gen_block_version(blockid_t blockid, const ctx_t* start_ctx)
 
         // Patch the last branch address
         last_branch->dst_addrs[0] = cb_get_ptr(cb, block->start_pos);
-        add_incoming(block, branch_idx);
+        rb_darray_append(&block->incoming, branch_idx);
+
         RUBY_ASSERT(block->start_pos == last_branch->end_pos);
     }
 
@@ -410,7 +400,7 @@ uint8_t* branch_stub_hit(uint32_t branch_idx, uint32_t target_idx)
     }
 
     // Add this branch to the list of incoming branches for the target
-    add_incoming(p_block, branch_idx);
+    rb_darray_append(&p_block->incoming, branch_idx);
 
     // Update the branch target address
     dst_addr = cb_get_ptr(cb, p_block->start_pos);
@@ -446,8 +436,9 @@ uint8_t* get_branch_target(
     if (p_block)
     {
         // Add an incoming branch for this version
-        add_incoming(p_block, branch_idx);
+        rb_darray_append(&p_block->incoming, branch_idx);
 
+        // Return a pointer to the compiled code
         return cb_get_ptr(cb, p_block->start_pos);
     }
 
@@ -568,7 +559,7 @@ void gen_direct_jump(
     // If the version already exists
     if (p_block)
     {
-        add_incoming(p_block, branch_idx);
+        rb_darray_append(&p_block->incoming, branch_idx);
         dst_addr0 = cb_get_ptr(cb, p_block->start_pos);
         branch_shape = SHAPE_DEFAULT;
 
@@ -607,8 +598,7 @@ void
 ujit_free_block(block_t *block)
 {
     ujit_unlink_method_lookup_dependency(block);
-
-    free(block->incoming);
+    rb_darray_free(block->incoming);
     free(block);
     rb_darray_free(block->gc_object_offsets);
 }
@@ -645,10 +635,11 @@ invalidate_block_version(block_t* block)
     uint8_t* code_ptr = cb_get_ptr(cb, block->start_pos);
 
     // For each incoming branch
-    for (uint32_t i = 0; i < block->num_incoming; ++i)
+    uint32_t* branch_idx;
+    rb_darray_foreach(block->incoming, i, branch_idx)
     {
-        uint32_t branch_idx = block->incoming[i];
-        branch_t* branch = &branch_entries[branch_idx];
+        //uint32_t branch_idx = block->incoming[i];
+        branch_t* branch = &branch_entries[*branch_idx];
         uint32_t target_idx = (branch->dst_addrs[0] == code_ptr)? 0:1;
         //fprintf(stderr, "branch_idx=%d, target_idx=%d\n", branch_idx, target_idx);
         //fprintf(stderr, "blockid.iseq=%p, blockid.idx=%d\n", block->blockid.iseq, block->blockid.idx);
@@ -657,7 +648,7 @@ invalidate_block_version(block_t* block)
         branch->dst_addrs[target_idx] = get_branch_target(
             block->blockid,
             &block->ctx,
-            branch_idx,
+            *branch_idx,
             target_idx
         );
 
