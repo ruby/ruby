@@ -1050,7 +1050,7 @@ gen_jump(jitstate_t* jit, ctx_t* ctx)
 }
 
 static bool
-gen_opt_swb_cfunc(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb_callable_method_entry_t *cme, int32_t argc)
+gen_oswb_cfunc(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb_callable_method_entry_t *cme, int32_t argc)
 {
     const rb_method_cfunc_t *cfunc = UNALIGNED_MEMBER_PTR(cme->def, body.cfunc);
 
@@ -1276,7 +1276,7 @@ gen_return_branch(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uint8_t s
 }
 
 static bool
-gen_opt_swb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb_callable_method_entry_t *cme, int32_t argc)
+gen_oswb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb_callable_method_entry_t *cme, int32_t argc)
 {
     const rb_iseq_t *iseq = def_iseq_ptr(cme->def);
     const VALUE* start_pc = iseq->body->iseq_encoded;
@@ -1494,13 +1494,13 @@ gen_opt_send_without_block(jitstate_t* jit, ctx_t* ctx)
     // If this is a C call
     if (cme->def->type == VM_METHOD_TYPE_CFUNC)
     {
-        return gen_opt_swb_cfunc(jit, ctx, cd, cme, argc);
+        return gen_oswb_cfunc(jit, ctx, cd, cme, argc);
     }
 
     // If this is a Ruby call
     if (cme->def->type == VM_METHOD_TYPE_ISEQ)
     {
-        return gen_opt_swb_iseq(jit, ctx, cd, cme, argc);
+        return gen_oswb_iseq(jit, ctx, cd, cme, argc);
     }
 
     return false;
