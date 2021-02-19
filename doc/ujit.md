@@ -22,6 +22,16 @@ autoconf
 make -j16 install
 ```
 
+You can test that uJIT works correctly by running:
+
+```
+# Quick tests found in /bootstraptest
+make btest
+
+# Complete set of tests
+make -j16 test-all
+```
+
 Once uJIT is built, you can either use `./miniruby` from within your build directory, or switch to the uJIT version of `ruby`
 by using the `chruby` tool:
 
@@ -31,6 +41,18 @@ chruby ruby-microjit
 
 ## Source Code Organization
 
+The uJIT source code is divided between:
+- `ujit_asm.c`: x86 in-memory assembler we use to generate machine code
+- `ujit_codegen.c`: logic for translating Ruby bytecode to machine code
+- `ujit_core.c`: basic block versioning logic, core structure of uJIT
+- `ujit_iface.c`: code uJIT uses to interface with the rest of CRuby
+- `ujit.rb`: `UJIT` module that is exposed to Ruby code
+
+The core of CRuby's interpreter logic is found in:
+- `insns.def`: defines Ruby's bytecode instructions
+- `vm_insnshelper.c`: logic used by Ruby's bytecode instructions
+- `vm_exec.c`: Ruby interpreter loop
+
 ## Contributing
 
-If you are interested in contributing to this project, please contact Maxime Chevalier [(@Love2Code) via twitter](https://twitter.com/Love2Code).
+We welcome open source contributors. If you are interested in contributing to this project, please contact Maxime Chevalier [(@Love2Code) via twitter](https://twitter.com/Love2Code).
