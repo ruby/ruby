@@ -168,7 +168,8 @@ assert_normal_exit %q{
     end
 
     new.foo
-    UJIT.install_entry(RubyVM::InstructionSequence.of(instance_method(:foo)))
+    new.foo
+    new.foo
     new.foo
   end
 
@@ -199,20 +200,20 @@ assert_equal "nil\n", %q{
 }
 
 # Test that opt_aref checks the class of the receiver
-assert_equal ":special\n", %q{
+assert_equal 'special', %q{
   def foo(array)
     array[30]
   end
 
-  UJIT.install_entry(RubyVM::InstructionSequence.of(method(:foo)))
+  foo([])
+  foo([])
 
   special = []
   def special.[](idx)
-    :special
+    'special'
   end
 
-  p foo(special)
-  nil
+  foo(special)
 }
 
 # Test that object references in generated code get marked and moved
