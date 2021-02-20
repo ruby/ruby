@@ -1,0 +1,339 @@
+#!/usr/local/bin/ruby
+#
+# $Id$
+#
+# Copyright (c) 1999-2006 Minero Aoki
+#
+# This program is free software.
+# You can distribute/modify this program under the terms of
+# the GNU LGPL, Lesser General Public License version 2.1.
+# For details of the GNU LGPL, see the file "COPYING".
+#
+
+require 'racc/info'
+require 'strscan'
+require 'forwardable'
+require 'optparse'
+
+def main
+  @with_action = true
+  @with_header = false
+  @with_usercode = false
+  cname = 'MyParser'
+  input = nil
+  output = nil
+  parser = OptionParser.new
+  parser.banner = "Usage: #{File.basename($0)} [-Ahu] [-c <classname>] [-o <filename>] <input>"
+  parser.on('-o', '--output=FILENAME', 'output file name [<input>.racc]') {|name|
+    output = name
+  }
+  parser.on('-c', '--classname=NAME', "Name of the parser class. [#{cname}]") {|name|
+    cname = name
+  }
+  parser.on('-A', '--without-action', 'Does not include actions.') {
+    @with_action = false
+  }
+  parser.on('-h', '--with-header', 'Includes header (%{...%}).') {
+    @with_header = true
+  }
+  parser.on('-u', '--with-user-code', 'Includes user code.') {
+    @with_usercode = true
+  }
+  parser.on('--version', 'Prints version and quit.') {
+    puts "y2racc version #{Racc::Version}"
+    exit 0
+  }
+  parser.on('--copyright', 'Prints copyright and quit.') {
+    puts Racc::Copyright
+    exit 0
+  }
+  parser.on('--help', 'Prints this message and quit.') {
+    puts parser.help
+    exit 1
+  }
+  begin
+    parser.parse!
+  rescue OptionParser::ParseError => err
+    $stderr.puts err.message
+    $stderr.puts parser.help
+    exit 1
+  end
+  if ARGV.empty?
+    $stderr.puts 'no input'
+    exit 1
+  end
+  if ARGV.size > 1
+    $stderr.puts 'too many input'
+    exit 1
+  end
+  input = ARGV[0]
+
+  begin
+    result = YaccFileParser.parse_file(input)
+    File.open(output || "#{input}.racc", 'w') {|f|
+      convert cname, result, f
+    }
+  rescue SystemCallError => err
+    $stderr.puts err.message
+    exit 1
+  end
+end
+
+def convert(classname, result, f)
+  init_indent = 'token'.size
+  f.puts %<# Converted from "#{result.filename}" by y2racc version #{Racc::Version}>
+  f.puts
+  f.puts "class #{classname}"
+  unless result.terminals.empty?
+    f.puts
+    f.print 'token'
+    columns = init_indent
+    result.terminals.each do |t|
+      if columns > 60
+        f.puts
+        f.print ' ' * init_indent
+        columns = init_indent
+      end
+      columns += f.write(" #{t}")
+    end
+    f.puts
+  end
+  unless result.precedence_table.empty?
+    f.puts
+    f.puts 'preclow'
+    result.precedence_table.each do |assoc, toks|
+      f.printf "  %-8s %s\n", assoc, toks.join(' ')  unless toks.empty?
+    end
+    f.puts 'prechigh'
+  end
+  if result.start
+    f.puts
+    f.puts "start #{@start}"
+  end
+
+  f.puts
+  f.puts 'rule'
+  texts = @with_action ? result.grammar : result.grammar_without_actions
+  texts.each do |text|
+    f.print text
+  end
+
+  if @with_header and result.header
+    f.puts
+    f.puts '---- header'
+    f.puts result.header
+  end
+  if @with_usercode and result.usercode
+    f.puts
+    f.puts '---- footer'
+    f.puts result.usercode
+  end
+end
+
+class ParseError < StandardError; end
+
+class StringScanner_withlineno
+  def initialize(src)
+    @s = StringScanner.new(src)
+    @lineno = 1
+  end
+
+  extend Forwardable
+  def_delegator "@s", :eos?
+  def_delegator "@s", :rest
+
+  attr_reader :lineno
+
+  def scan(re)
+    advance_lineno(@s.scan(re))
+  end
+
+  def scan_until(re)
+    advance_lineno(@s.scan_until(re))
+  end
+
+  def skip(re)
+    str = advance_lineno(@s.scan(re))
+    str ? str.size : nil
+  end
+
+  def getch
+    advance_lineno(@s.getch)
+  end
+
+  private
+
+  def advance_lineno(str)
+    @lineno += str.count("\n") if str
+    str
+  end
+end
+
+class YaccFileParser
+
+  Result = Struct.new(:terminals, :precedence_table, :start,
+                      :header, :grammar, :usercode, :filename)
+  class Result   # reopen
+    def initialize
+      super
+      self.terminals = []
+      self.precedence_table = []
+      self.start = nil
+      self.grammar = []
+      self.header = nil
+      self.usercode = nil
+      self.filename = nil
+    end
+
+    def grammar_without_actions
+      grammar().map {|text| text[0,1] == '{' ? '{}' : text }
+    end
+  end
+
+  def YaccFileParser.parse_file(filename)
+    new().parse(File.read(filename), filename)
+  end
+
+  def parse(src, filename = '-')
+    @result = Result.new
+    @filename = filename
+    @result.filename = filename
+    s = StringScanner_withlineno.new(src)
+    parse_header s
+    parse_grammar s
+    @result
+  end
+
+  private
+
+  COMMENT = %r</\*[^*]*\*+(?:[^/*][^*]*\*+)*/>
+  CHAR = /'((?:[^'\\]+|\\.)*)'/
+  STRING = /"((?:[^"\\]+|\\.)*)"/
+
+  def parse_header(s)
+    skip_until_percent s
+    until s.eos?
+      case
+      when t = s.scan(/left/)
+        @result.precedence_table.push ['left', scan_symbols(s)]
+      when t = s.scan(/right/)
+        @result.precedence_table.push ['right', scan_symbols(s)]
+      when t = s.scan(/nonassoc/)
+        @result.precedence_table.push ['nonassoc', scan_symbols(s)]
+      when t = s.scan(/token/)
+        list = scan_symbols(s)
+        list.shift if /\A<(.*)>\z/ =~ list[0]
+        @result.terminals.concat list
+      when t = s.scan(/start/)
+        @result.start = scan_symbols(s)[0]
+      when s.skip(%r<(?:
+            type | union | expect | thong | binary |
+            semantic_parser | pure_parser | no_lines |
+            raw | token_table
+            )\b>x)
+        skip_until_percent s
+      when s.skip(/\{/)   # header (%{...%})
+        str = s.scan_until(/\%\}/)
+        str.chop!
+        str.chop!
+        @result.header = str
+        skip_until_percent s
+      when s.skip(/\%/)   # grammar (%%...)
+        return
+      else
+        raise ParseError, "#{@filename}:#{s.lineno}: scan error"
+      end
+    end
+  end
+
+  def skip_until_percent(s)
+    until s.eos?
+      s.skip /[^\%\/]+/
+      next if s.skip(COMMENT)
+      return if s.getch == '%'
+    end
+  end
+
+  def scan_symbols(s)
+    list = []
+    until s.eos?
+      s.skip /\s+/
+      if s.skip(COMMENT)
+        ;
+      elsif t = s.scan(CHAR)
+        list.push t
+      elsif t = s.scan(STRING)
+        list.push t
+      elsif s.skip(/\%/)
+        break
+      elsif t = s.scan(/\S+/)
+        list.push t
+      else
+        raise ParseError, "#{@filename}:#{@lineno}: scan error"
+      end
+    end
+    list
+  end
+
+  def parse_grammar(s)
+    buf = []
+    until s.eos?
+      if t = s.scan(/[^%'"{\/]+/)
+        buf.push t
+        break if s.eos?
+      end
+      if s.skip(/\{/)
+        buf.push scan_action(s)
+      elsif t = s.scan(/'(?:[^'\\]+|\\.)*'/) then buf.push t
+      elsif t = s.scan(/"(?:[^"\\]+|\\.)*"/) then buf.push t
+      elsif t = s.scan(COMMENT) then buf.push t
+      elsif s.skip(/%prec\b/)   then buf.push '='
+      elsif s.skip(/%%/)
+        @result.usercode = s.rest
+        break
+      else
+        buf.push s.getch
+      end
+    end
+    @result.grammar = buf
+  end
+
+  def scan_action(s)
+    buf = '{'
+    nest = 1
+    until s.eos?
+      if t = s.scan(%r<[^/{}'"]+>)
+        buf << t
+        break if s.eos?
+      elsif t = s.scan(COMMENT)
+        buf << t
+      elsif t = s.scan(CHAR)
+        buf << t
+      elsif t = s.scan(STRING)
+        buf << t
+      else
+        c = s.getch
+        buf << c
+        case c
+        when '{'
+          nest += 1
+        when '}'
+          nest -= 1
+          return buf if nest == 0
+        end
+      end
+    end
+    $stderr.puts "warning: unterminated action in #{@filename}"
+    buf
+  end
+
+end
+
+unless Object.method_defined?(:funcall)
+  class Object
+    alias funcall __send__
+  end
+end
+
+
+main
