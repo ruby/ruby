@@ -360,10 +360,10 @@ path_each_line(int argc, VALUE *argv, VALUE self)
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
     if (rb_block_given_p()) {
-        return rb_block_call(rb_cFile, id_foreach, 1+n, args, 0, 0);
+        return rb_block_call_kw(rb_cFile, id_foreach, 1+n, args, 0, 0, RB_PASS_CALLED_KEYWORDS);
     }
     else {
-        return rb_funcallv(rb_cFile, id_foreach, 1+n, args);
+        return rb_funcallv_kw(rb_cFile, id_foreach, 1+n, args, RB_PASS_CALLED_KEYWORDS);
     }
 }
 

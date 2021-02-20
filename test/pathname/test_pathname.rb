@@ -690,6 +690,32 @@ class TestPathname < Test::Unit::TestCase
     }
   end
 
+  def test_each_line_opts
+    with_tmpchdir('rubytest-pathname') {|dir|
+      open("a", "w") {|f| f.puts 1, 2 }
+      a = []
+      Pathname("a").each_line(chomp: true) {|line| a << line }
+      assert_equal(["1", "2"], a)
+
+      a = []
+      Pathname("a").each_line("2", chomp: true) {|line| a << line }
+      assert_equal(["1\n", "\n"], a)
+
+      a = []
+      Pathname("a").each_line(1, chomp: true) {|line| a << line }
+      assert_equal(["1", "", "2", ""], a)
+
+      a = []
+      Pathname("a").each_line("2", 1, chomp: true) {|line| a << line }
+      assert_equal(["1", "\n", "", "\n"], a)
+
+      a = []
+      enum = Pathname("a").each_line(chomp: true)
+      enum.each {|line| a << line }
+      assert_equal(["1", "2"], a)
+    }
+  end
+
   def test_readlines
     with_tmpchdir('rubytest-pathname') {|dir|
       open("a", "w") {|f| f.puts 1, 2 }
