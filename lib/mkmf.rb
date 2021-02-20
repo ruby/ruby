@@ -1908,7 +1908,7 @@ SRC
         path.sub!(/\A([A-Za-z]):(?=\/)/, '/\1')
         path
       end
-    when 'cygwin'
+    when 'cygwin', 'msys'
       if CONFIG['target_os'] != 'cygwin'
         def mkintpath(path)
           IO.popen(["cygpath", "-u", path], &:read).chomp

@@ -167,6 +167,9 @@ class Exports::Cygwin < Exports
   end
 end
 
+class Exports::Msys < Exports::Cygwin
+end
+
 class Exports::Mingw < Exports::Cygwin
   def each_export(objs)
     super
