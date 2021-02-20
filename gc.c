@@ -2076,17 +2076,14 @@ gc_event_hook_body(rb_execution_context_t *ec, rb_objspace_t *objspace, const rb
 #define gc_event_hook_available_p(objspace) ((objspace)->flags.has_hook)
 #define gc_event_hook_needed_p(objspace, event) ((objspace)->hook_events & (event))
 
-#define gc_event_hook_prep(objspace, event, data, prep) do { \
+#define gc_event_hook(objspace, event, data) do { \
     if (UNLIKELY(gc_event_hook_needed_p(objspace, event))) { \
-        prep; \
 	gc_event_hook_body(GET_EC(), (objspace), (event), (data)); \
     } \
 } while (0)
 
-#define gc_event_hook(objspace, event, data) gc_event_hook_prep(objspace, event, data, (void)0)
-
 static inline VALUE
-newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace, VALUE obj)
+newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace, VALUE obj, VALUE v1, VALUE v2, VALUE v3)
 {
 #if !__has_feature(memory_sanitizer)
     GC_ASSERT(BUILTIN_TYPE(obj) == T_NONE);
@@ -2100,9 +2097,11 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
     rb_ractor_setup_belonging(obj);
 #endif
 
-#if RGENGC_CHECK_MODE
-    p->as.values.v1 = p->as.values.v2 = p->as.values.v3 = 0;
+    p->as.values.v1 = v1;
+    p->as.values.v2 = v2;
+    p->as.values.v3 = v3;
 
+#if RGENGC_CHECK_MODE
     RB_VM_LOCK_ENTER_NO_BARRIER();
     {
         check_rvalue_consistency(obj);
@@ -2230,20 +2229,10 @@ ractor_cache_slots(rb_objspace_t *objspace, rb_ractor_t *cr)
     asan_poison_object((VALUE)cr->newobj_cache.freelist);
 }
 
-static inline VALUE
-newobj_fill(VALUE obj, VALUE v1, VALUE v2, VALUE v3)
-{
-    RVALUE *p = (RVALUE *)obj;
-    p->as.values.v1 = v1;
-    p->as.values.v2 = v2;
-    p->as.values.v3 = v3;
-    return obj;
-}
-
-ALWAYS_INLINE(static VALUE newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *cr, int wb_protected));
+ALWAYS_INLINE(static VALUE newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *cr, int wb_protected, VALUE v1, VALUE v2, VALUE v3));
 
 static inline VALUE
-newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *cr, int wb_protected)
+newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *cr, int wb_protected, VALUE v1, VALUE v2, VALUE v3)
 {
     VALUE obj;
     unsigned int lev;
@@ -2269,8 +2258,8 @@ newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *
             ractor_cache_slots(objspace, cr);
         }
         GC_ASSERT(obj != 0);
-        newobj_init(klass, flags, wb_protected, objspace, obj);
-        gc_event_hook_prep(objspace, RUBY_INTERNAL_EVENT_NEWOBJ, obj, newobj_fill(obj, 0, 0, 0));
+        newobj_init(klass, flags, wb_protected, objspace, obj, v1, v2, v3);
+        gc_event_hook(objspace, RUBY_INTERNAL_EVENT_NEWOBJ, obj);
     }
     RB_VM_LOCK_LEAVE_CR_LEV(cr, &lev);
 
@@ -2278,24 +2267,24 @@ newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *
 }
 
 NOINLINE(static VALUE newobj_slowpath_wb_protected(VALUE klass, VALUE flags,
-                                                   rb_objspace_t *objspace, rb_ractor_t *cr));
+                                                   rb_objspace_t *objspace, rb_ractor_t *cr, VALUE v1, VALUE v2, VALUE v3));
 NOINLINE(static VALUE newobj_slowpath_wb_unprotected(VALUE klass, VALUE flags,
-                                                     rb_objspace_t *objspace, rb_ractor_t *cr));
+                                                     rb_objspace_t *objspace, rb_ractor_t *cr, VALUE v1, VALUE v2, VALUE v3));
 
 static VALUE
-newobj_slowpath_wb_protected(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *cr)
+newobj_slowpath_wb_protected(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *cr, VALUE v1, VALUE v2, VALUE v3)
 {
-    return newobj_slowpath(klass, flags, objspace, cr, TRUE);
+    return newobj_slowpath(klass, flags, objspace, cr, TRUE, v1, v2, v3);
 }
 
 static VALUE
-newobj_slowpath_wb_unprotected(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *cr)
+newobj_slowpath_wb_unprotected(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *cr, VALUE v1, VALUE v2, VALUE v3)
 {
-    return newobj_slowpath(klass, flags, objspace, cr, FALSE);
+    return newobj_slowpath(klass, flags, objspace, cr, FALSE, v1, v2, v3);
 }
 
 static inline VALUE
-newobj_of0(VALUE klass, VALUE flags, int wb_protected, rb_ractor_t *cr)
+newobj_of0(VALUE klass, VALUE flags, int wb_protected, rb_ractor_t *cr, VALUE v1, VALUE v2, VALUE v3)
 {
     VALUE obj;
     rb_objspace_t *objspace = &rb_objspace;
@@ -2318,14 +2307,14 @@ newobj_of0(VALUE klass, VALUE flags, int wb_protected, rb_ractor_t *cr)
          wb_protected &&
          (obj = ractor_cached_freeobj(objspace, cr)) != Qfalse)) {
 
-        newobj_init(klass, flags, wb_protected, objspace, obj);
+        newobj_init(klass, flags, wb_protected, objspace, obj, v1, v2, v3);
     }
     else {
         RB_DEBUG_COUNTER_INC(obj_newobj_slowpath);
 
         obj = wb_protected ?
-          newobj_slowpath_wb_protected(klass, flags, objspace, cr) :
-          newobj_slowpath_wb_unprotected(klass, flags, objspace, cr);
+          newobj_slowpath_wb_protected(klass, flags, objspace, cr, v1, v2, v3) :
+          newobj_slowpath_wb_unprotected(klass, flags, objspace, cr, v1, v2, v3);
     }
 
     return obj;
@@ -2334,15 +2323,13 @@ newobj_of0(VALUE klass, VALUE flags, int wb_protected, rb_ractor_t *cr)
 static inline VALUE
 newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_protected)
 {
-    VALUE obj = newobj_of0(klass, flags, wb_protected, GET_RACTOR());
-    return newobj_fill(obj, v1, v2, v3);
+    return newobj_of0(klass, flags, wb_protected, GET_RACTOR(), v1, v2, v3);
 }
 
 static inline VALUE
 newobj_of_cr(rb_ractor_t *cr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_protected)
 {
-    VALUE obj = newobj_of0(klass, flags, wb_protected, cr);
-    return newobj_fill(obj, v1, v2, v3);
+    return newobj_of0(klass, flags, wb_protected, cr, v1, v2, v3);
 }
 
 VALUE
