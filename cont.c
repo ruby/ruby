@@ -2005,7 +2005,7 @@ rb_fiber_set_scheduler(VALUE klass, VALUE scheduler)
     return rb_fiber_scheduler_set(scheduler);
 }
 
-static void rb_fiber_terminate(rb_fiber_t *fiber, int need_interrupt);
+static void rb_fiber_terminate(rb_fiber_t *fiber, int need_interrupt, VALUE err);
 
 void
 rb_fiber_start(void)
@@ -2015,6 +2015,7 @@ rb_fiber_start(void)
     rb_proc_t *proc;
     enum ruby_tag_type state;
     int need_interrupt = TRUE;
+    VALUE err = Qfalse;
 
     VM_ASSERT(th->ec == GET_EC());
     VM_ASSERT(FIBER_RESUMED_P(fiber));
@@ -2041,22 +2042,21 @@ rb_fiber_start(void)
     EC_POP_TAG();
 
     if (state) {
-        VALUE err = th->ec->errinfo;
+        err = th->ec->errinfo;
         VM_ASSERT(FIBER_RESUMED_P(fiber));
 
-        if (state == TAG_RAISE || state == TAG_FATAL) {
+        if (state == TAG_RAISE) {
+            // noop...
+        } else if (state == TAG_FATAL) {
             rb_threadptr_pending_interrupt_enque(th, err);
         }
         else {
             err = rb_vm_make_jump_tag_but_local_jump(state, err);
-            if (!NIL_P(err)) {
-                rb_threadptr_pending_interrupt_enque(th, err);
-            }
         }
         need_interrupt = TRUE;
     }
 
-    rb_fiber_terminate(fiber, need_interrupt);
+    rb_fiber_terminate(fiber, need_interrupt, err);
     VM_UNREACHABLE(rb_fiber_start);
 }
 
@@ -2182,7 +2182,7 @@ rb_fiber_current(void)
 }
 
 // Prepare to execute next_fiber on the given thread.
-static inline VALUE
+static inline void
 fiber_store(rb_fiber_t *next_fiber, rb_thread_t *th)
 {
     rb_fiber_t *fiber;
@@ -2206,13 +2206,6 @@ fiber_store(rb_fiber_t *next_fiber, rb_thread_t *th)
 
     fiber_status_set(next_fiber, FIBER_RESUMED);
     fiber_setcontext(next_fiber, fiber);
-
-    fiber = th->ec->fiber_ptr;
-
-    /* Raise an exception if that was the result of executing the fiber */
-    if (fiber->cont.argc == -1) rb_exc_raise(fiber->cont.value);
-
-    return fiber->cont.value;
 }
 
 static inline VALUE
@@ -2285,7 +2278,7 @@ fiber_switch(rb_fiber_t *fiber, int argc, const VALUE *argv, int kw_splat, VALUE
     cont->kw_splat = kw_splat;
     cont->value = make_passing_arg(argc, argv);
 
-    value = fiber_store(fiber, th);
+    fiber_store(fiber, th);
 
     if (RTEST(resuming_fiber) && FIBER_TERMINATED_P(fiber)) {
         fiber_stack_release(fiber);
@@ -2299,6 +2292,9 @@ fiber_switch(rb_fiber_t *fiber, int argc, const VALUE *argv, int kw_splat, VALUE
 
     EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_FIBER_SWITCH, th->self, 0, 0, 0, Qnil);
 
+    current_fiber = th->ec->fiber_ptr;
+    value = current_fiber->cont.value;
+    if (current_fiber->cont.argc == -1) rb_exc_raise(value);
     return value;
 }
 
@@ -2365,7 +2361,7 @@ rb_fiber_close(rb_fiber_t *fiber)
 }
 
 static void
-rb_fiber_terminate(rb_fiber_t *fiber, int need_interrupt)
+rb_fiber_terminate(rb_fiber_t *fiber, int need_interrupt, VALUE err)
 {
     VALUE value = fiber->cont.value;
     rb_fiber_t *next_fiber;
@@ -2380,7 +2376,11 @@ rb_fiber_terminate(rb_fiber_t *fiber, int need_interrupt)
 
     next_fiber = return_fiber(true);
     if (need_interrupt) RUBY_VM_SET_INTERRUPT(&next_fiber->cont.saved_ec);
-    fiber_switch(next_fiber, 1, &value, RB_NO_KEYWORDS, Qfalse, false);
+    if (RTEST(err))
+        fiber_switch(next_fiber, -1, &err, RB_NO_KEYWORDS, Qfalse, false);
+    else
+        fiber_switch(next_fiber, 1, &value, RB_NO_KEYWORDS, Qfalse, false);
+    VM_UNREACHABLE(rb_fiber_terminate);
 }
 
 VALUE
