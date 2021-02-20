@@ -5149,7 +5149,7 @@ flatten(VALUE ary, int level)
 {
     long i;
     VALUE stack, result, tmp, elt, vmemo;
-    st_table *memo;
+    st_table *memo = 0;
     st_data_t id;
 
     for (i = 0; i < RARRAY_LEN(ary); i++) {
@@ -5161,8 +5161,6 @@ flatten(VALUE ary, int level)
     }
     if (i == RARRAY_LEN(ary)) {
         return ary;
-    } else if (tmp == ary) {
-        rb_raise(rb_eArgError, "tried to flatten recursive array");
     }
 
     result = ary_new(0, RARRAY_LEN(ary));
@@ -5173,12 +5171,14 @@ flatten(VALUE ary, int level)
     rb_ary_push(stack, ary);
     rb_ary_push(stack, LONG2NUM(i + 1));
 
-    vmemo = rb_hash_new();
-    RBASIC_CLEAR_CLASS(vmemo);
-    memo = st_init_numtable();
-    rb_hash_st_table_set(vmemo, memo);
-    st_insert(memo, (st_data_t)ary, (st_data_t)Qtrue);
-    st_insert(memo, (st_data_t)tmp, (st_data_t)Qtrue);
+    if (level < 0) {
+	vmemo = rb_hash_new();
+	RBASIC_CLEAR_CLASS(vmemo);
+	memo = st_init_numtable();
+	rb_hash_st_table_set(vmemo, memo);
+	st_insert(memo, (st_data_t)ary, (st_data_t)Qtrue);
+	st_insert(memo, (st_data_t)tmp, (st_data_t)Qtrue);
+    }
 
     ary = tmp;
     i = 0;
@@ -5192,20 +5192,24 @@ flatten(VALUE ary, int level)
 	    }
 	    tmp = rb_check_array_type(elt);
 	    if (RBASIC(result)->klass) {
-                RB_GC_GUARD(vmemo);
-                st_clear(memo);
+		if (memo) {
+		    RB_GC_GUARD(vmemo);
+		    st_clear(memo);
+		}
 		rb_raise(rb_eRuntimeError, "flatten reentered");
 	    }
 	    if (NIL_P(tmp)) {
 		rb_ary_push(result, elt);
 	    }
 	    else {
-		id = (st_data_t)tmp;
-		if (st_is_member(memo, id)) {
-                    st_clear(memo);
-		    rb_raise(rb_eArgError, "tried to flatten recursive array");
+		if (memo) {
+		    id = (st_data_t)tmp;
+		    if (st_is_member(memo, id)) {
+			st_clear(memo);
+			rb_raise(rb_eArgError, "tried to flatten recursive array");
+		    }
+		    st_insert(memo, id, (st_data_t)Qtrue);
 		}
-		st_insert(memo, id, (st_data_t)Qtrue);
 		rb_ary_push(stack, ary);
 		rb_ary_push(stack, LONG2NUM(i));
 		ary = tmp;
@@ -5215,14 +5219,18 @@ flatten(VALUE ary, int level)
 	if (RARRAY_LEN(stack) == 0) {
 	    break;
 	}
-	id = (st_data_t)ary;
-	st_delete(memo, &id, 0);
+	if (memo) {
+	    id = (st_data_t)ary;
+	    st_delete(memo, &id, 0);
+	}
 	tmp = rb_ary_pop(stack);
 	i = NUM2LONG(tmp);
 	ary = rb_ary_pop(stack);
     }
 
-    st_clear(memo);
+    if (memo) {
+	st_clear(memo);
+    }
 
     RBASIC_SET_CLASS(result, rb_obj_class(ary));
     return result;

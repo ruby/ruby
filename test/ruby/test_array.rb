@@ -886,6 +886,17 @@ class TestArray < Test::Unit::TestCase
     assert_raise(NoMethodError, bug12738) { a.flatten.m }
   end
 
+  def test_flatten_recursive
+    a = []
+    a << a
+    assert_raise(ArgumentError) { a.flatten }
+    b = [1]; c = [2, b]; b << c
+    assert_raise(ArgumentError) { b.flatten }
+
+    assert_equal([1, 2, b], b.flatten(1))
+    assert_equal([1, 2, 1, 2, 1, c], b.flatten(4))
+  end
+
   def test_flatten!
     a1 = @cls[ 1, 2, 3]
     a2 = @cls[ 5, 6 ]
@@ -2624,9 +2635,6 @@ class TestArray < Test::Unit::TestCase
 
   def test_flatten_error
     a = []
-    a << a
-    assert_raise(ArgumentError) { a.flatten }
-
     f = [].freeze
     assert_raise(ArgumentError) { a.flatten!(1, 2) }
     assert_raise(TypeError) { a.flatten!(:foo) }
