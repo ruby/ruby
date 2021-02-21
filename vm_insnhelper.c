@@ -3998,9 +3998,6 @@ vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_
 	    expr_type = DEFINED_IVAR;
 	}
 	break;
-      case DEFINED_IVAR2:
-	klass = vm_get_cbase(GET_EP());
-	break;
       case DEFINED_GVAR:
 	if (rb_gvar_defined(SYM2ID(obj))) {
 	    expr_type = DEFINED_GVAR;

@@ -20,7 +20,6 @@ leafness_of_defined(rb_num_t op_type)
     /* see also: vm_insnhelper.c:vm_defined() */
     switch (op_type) {
       case DEFINED_IVAR:
-      case DEFINED_IVAR2:
       case DEFINED_GVAR:
       case DEFINED_CVAR:
       case DEFINED_YIELD:
