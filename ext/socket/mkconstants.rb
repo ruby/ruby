@@ -626,6 +626,7 @@ SO_SNDTIMEO	nil	Send timeout
 SO_ACCEPTCONN	nil	Socket has had listen() called on it
 SO_USELOOPBACK	nil	Bypass hardware when possible
 SO_ACCEPTFILTER	nil	There is an accept filter
+SO_USER_COOKIE	nil	Setting an identifier for ipfw purpose mainly
 SO_DONTTRUNC	nil	Retain unread data
 SO_WANTMORE	nil	Give a hint when more data is ready
 SO_WANTOOBFLAG	nil	OOB data is wanted in MSG_FLAG on receive
