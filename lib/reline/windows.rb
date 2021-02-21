@@ -103,7 +103,7 @@ class Reline::Windows
   ENABLE_VIRTUAL_TERMINAL_PROCESSING = 4
 
   private_class_method def self.getconsolemode
-    mode = '\000\000\000\000'
+    mode = "\000\000\000\000"
     @@GetConsoleMode.call(@@hConsoleHandle, mode)
     mode.unpack1('L')
   end
