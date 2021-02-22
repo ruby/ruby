@@ -850,7 +850,9 @@ TypedData_Make_Struct.
       RUBY_TYPED_FREE_IMMEDIATELY,
   };
 
-  static VALUE fdbm_alloc(VALUE klass){
+  static VALUE
+  fdbm_alloc(VALUE klass)
+  {
       struct dbmdata *dbmp;
       /* Allocate T_DATA object and C struct and fill struct with zero bytes */
       return TypedData_Make_Struct(klass, struct dbmdata, &dbm_type, dbmp);
