@@ -4883,9 +4883,13 @@ static void
 defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	     const NODE *const node, LABEL **lfinish, VALUE needstr);
 
+static int
+compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, const enum node_type type, int line, int popped, bool assume_receiver);
+
 static void
 defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
-	      const NODE *const node, LABEL **lfinish, VALUE needstr)
+              const NODE *const node, LABEL **lfinish, VALUE needstr,
+              bool keep_result)
 {
     enum defined_type expr_type = DEFINED_NOT_DEFINED;
     enum node_type type;
@@ -4911,7 +4915,7 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	const NODE *vals = node;
 
 	do {
-	    defined_expr0(iseq, ret, vals->nd_head, lfinish, Qfalse);
+            defined_expr0(iseq, ret, vals->nd_head, lfinish, Qfalse, false);
 
 	    if (!lfinish[1]) {
                 lfinish[1] = NEW_LABEL(line);
@@ -4963,7 +4967,7 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	if (!lfinish[1]) {
             lfinish[1] = NEW_LABEL(line);
 	}
-	defined_expr0(iseq, ret, node->nd_head, lfinish, Qfalse);
+        defined_expr0(iseq, ret, node->nd_head, lfinish, Qfalse, false);
         ADD_INSNL(ret, line, branchunless, lfinish[1]);
         NO_CHECK(COMPILE(ret, "defined/colon2#nd_head", node->nd_head));
 
@@ -4992,22 +4996,45 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	    (type == NODE_CALL || type == NODE_OPCALL ||
 	     (type == NODE_ATTRASGN && !private_recv_p(node)));
 
-	if (!lfinish[1] && (node->nd_args || explicit_receiver)) {
-            lfinish[1] = NEW_LABEL(line);
-	}
+        if (node->nd_args || explicit_receiver) {
+            if (!lfinish[1]) {
+                lfinish[1] = NEW_LABEL(line);
+            }
+            if (!lfinish[2]) {
+                lfinish[2] = NEW_LABEL(line);
+            }
+        }
 	if (node->nd_args) {
-	    defined_expr0(iseq, ret, node->nd_args, lfinish, Qfalse);
+            defined_expr0(iseq, ret, node->nd_args, lfinish, Qfalse, false);
             ADD_INSNL(ret, line, branchunless, lfinish[1]);
 	}
 	if (explicit_receiver) {
-	    defined_expr0(iseq, ret, node->nd_recv, lfinish, Qfalse);
-            ADD_INSNL(ret, line, branchunless, lfinish[1]);
-            NO_CHECK(COMPILE(ret, "defined/recv", node->nd_recv));
+            defined_expr0(iseq, ret, node->nd_recv, lfinish, Qfalse, true);
+            switch(nd_type(node->nd_recv)) {
+              case NODE_CALL:
+              case NODE_OPCALL:
+              case NODE_VCALL:
+              case NODE_FCALL:
+              case NODE_ATTRASGN:
+                ADD_INSNL(ret, line, branchunless, lfinish[2]);
+                compile_call(iseq, ret, node->nd_recv, nd_type(node->nd_recv), line, 0, true);
+                break;
+              default:
+                ADD_INSNL(ret, line, branchunless, lfinish[1]);
+                NO_CHECK(COMPILE(ret, "defined/recv", node->nd_recv));
+                break;
+            }
+            if (keep_result) {
+                ADD_INSN(ret, line, dup);
+            }
             ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_METHOD),
 		      ID2SYM(node->nd_mid), PUSH_VAL(DEFINED_METHOD));
 	}
 	else {
             ADD_INSN(ret, line, putself);
+            if (keep_result) {
+                ADD_INSN(ret, line, dup);
+            }
             ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_FUNC),
 		      ID2SYM(node->nd_mid), PUSH_VAL(DEFINED_METHOD));
 	}
@@ -5075,7 +5102,7 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	     const NODE *const node, LABEL **lfinish, VALUE needstr)
 {
     LINK_ELEMENT *lcur = ret->last;
-    defined_expr0(iseq, ret, node, lfinish, needstr);
+    defined_expr0(iseq, ret, node, lfinish, needstr, false);
     if (lfinish[1]) {
 	int line = nd_line(node);
 	LABEL *lstart = NEW_LABEL(line);
@@ -5104,14 +5131,18 @@ compile_defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const 
 	ADD_INSN1(ret, line, putobject, str);
     }
     else {
-	LABEL *lfinish[2];
+        LABEL *lfinish[3];
 	LINK_ELEMENT *last = ret->last;
 	lfinish[0] = NEW_LABEL(line);
 	lfinish[1] = 0;
+        lfinish[2] = 0;
 	defined_expr(iseq, ret, node->nd_head, lfinish, needstr);
 	if (lfinish[1]) {
 	    ELEM_INSERT_NEXT(last, &new_insn_body(iseq, line, BIN(putnil), 0)->link);
 	    ADD_INSN(ret, line, swap);
+            if (lfinish[2]) {
+                ADD_LABEL(ret, lfinish[2]);
+            }
 	    ADD_INSN(ret, line, pop);
 	    ADD_LABEL(ret, lfinish[1]);
 	}
@@ -7416,7 +7447,7 @@ compile_builtin_function_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NOD
 }
 
 static int
-compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, const enum node_type type, int line, int popped)
+compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, const enum node_type type, int line, int popped, bool assume_receiver)
 {
     /* call:  obj.method(...)
      * fcall: func(...)
@@ -7508,28 +7539,30 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
     }
 
     /* receiver */
-    if (type == NODE_CALL || type == NODE_OPCALL || type == NODE_QCALL) {
-        int idx, level;
+    if (!assume_receiver) {
+        if (type == NODE_CALL || type == NODE_OPCALL || type == NODE_QCALL) {
+            int idx, level;
 
-        if (mid == idCall &&
-            nd_type(node->nd_recv) == NODE_LVAR &&
-            iseq_block_param_id_p(iseq, node->nd_recv->nd_vid, &idx, &level)) {
-            ADD_INSN2(recv, nd_line(node->nd_recv), getblockparamproxy, INT2FIX(idx + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
-        }
-        else if (private_recv_p(node)) {
-            ADD_INSN(recv, nd_line(node), putself);
-            flag |= VM_CALL_FCALL;
-        }
-        else {
-            CHECK(COMPILE(recv, "recv", node->nd_recv));
-        }
+            if (mid == idCall &&
+                nd_type(node->nd_recv) == NODE_LVAR &&
+                iseq_block_param_id_p(iseq, node->nd_recv->nd_vid, &idx, &level)) {
+                ADD_INSN2(recv, nd_line(node->nd_recv), getblockparamproxy, INT2FIX(idx + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
+            }
+            else if (private_recv_p(node)) {
+                ADD_INSN(recv, nd_line(node), putself);
+                flag |= VM_CALL_FCALL;
+            }
+            else {
+                CHECK(COMPILE(recv, "recv", node->nd_recv));
+            }
 
-        if (type == NODE_QCALL) {
-            else_label = qcall_branch_start(iseq, recv, &branches, node, line);
+            if (type == NODE_QCALL) {
+                else_label = qcall_branch_start(iseq, recv, &branches, node, line);
+            }
         }
-    }
-    else if (type == NODE_FCALL || type == NODE_VCALL) {
-        ADD_CALL_RECEIVER(recv, line);
+        else if (type == NODE_FCALL || type == NODE_VCALL) {
+            ADD_CALL_RECEIVER(recv, line);
+        }
     }
 
     /* args */
@@ -8150,7 +8183,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
       case NODE_QCALL: /* obj&.foo */
       case NODE_FCALL: /* foo() */
       case NODE_VCALL: /* foo (variable or call) */
-        if (compile_call(iseq, ret, node, type, line, popped) == COMPILE_NG) {
+        if (compile_call(iseq, ret, node, type, line, popped, false) == COMPILE_NG) {
             goto ng;
         }
         break;
