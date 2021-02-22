@@ -817,7 +817,7 @@ Here's the example of an initializing function.
       /* define DBM class */
       VALUE cDBM = rb_define_class("DBM", rb_cObject);
       /* Redefine DBM.allocate
-      rb_define_alloc_func(rb_cDBM, fdbm_alloc);
+      rb_define_alloc_func(cDBM, fdbm_alloc);
       /* DBM includes Enumerable module */
       rb_include_module(cDBM, rb_mEnumerable);
 
