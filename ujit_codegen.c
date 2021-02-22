@@ -76,6 +76,26 @@ jit_mov_gc_ptr(jitstate_t* jit, codeblock_t* cb, x86opnd_t reg, VALUE ptr)
     }
 }
 
+// Save uJIT registers prior to a C call
+static void
+ujit_save_regs(codeblock_t* cb)
+{
+    push(cb, REG_CFP);
+    push(cb, REG_EC);
+    push(cb, REG_SP);
+    push(cb, REG_SP); // Maintain 16-byte RSP alignment
+}
+
+// Restore uJIT registers after a C call
+static void
+ujit_load_regs(codeblock_t* cb)
+{
+    pop(cb, REG_SP); // Maintain 16-byte RSP alignment
+    pop(cb, REG_SP);
+    pop(cb, REG_EC);
+    pop(cb, REG_CFP);
+}
+
 /**
 Generate an inline exit to return to the interpreter
 */
@@ -769,22 +789,15 @@ gen_opt_aref(jitstate_t* jit, ctx_t* ctx)
     jz_ptr(cb, side_exit);
 
     // Save uJIT registers
-    push(cb, REG_CFP);
-    push(cb, REG_EC);
-    push(cb, REG_SP);
-    // Maintain 16-byte RSP alignment
-    sub(cb, RSP, imm_opnd(8));
+    ujit_save_regs(cb);
 
     mov(cb, RDI, recv_opnd);
     sar(cb, REG1, imm_opnd(1)); // Convert fixnum to int
     mov(cb, RSI, REG1);
     call_ptr(cb, REG0, (void *)rb_ary_entry_internal);
 
-    // Restore registers
-    add(cb, RSP, imm_opnd(8));
-    pop(cb, REG_SP);
-    pop(cb, REG_EC);
-    pop(cb, REG_CFP);
+    // Restore uJIT registers
+    ujit_load_regs(cb);
 
     x86opnd_t stack_ret = ctx_stack_push(ctx, T_NONE);
     mov(cb, stack_ret, RAX);
@@ -1166,14 +1179,10 @@ gen_oswb_cfunc(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb_c
         mov(cb, member_opnd(REG1, rb_control_frame_t, self), REG0);
     }
 
+    // Verify that we are calling the right function
     if (UJIT_CHECK_MODE > 0) {
-        // Verify that we are calling the right function
-        // Save MicroJIT registers
-        push(cb, REG_CFP);
-        push(cb, REG_EC);
-        push(cb, REG_SP);
-        // Maintain 16-byte RSP alignment
-        sub(cb, RSP, imm_opnd(8));
+        // Save uJIT registers
+        ujit_save_regs(cb);
 
         // Call check_cfunc_dispatch
         mov(cb, RDI, recv);
@@ -1182,20 +1191,12 @@ gen_oswb_cfunc(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb_c
         jit_mov_gc_ptr(jit, cb, RCX, (VALUE)cme);
         call_ptr(cb, REG0, (void *)&check_cfunc_dispatch);
 
-        // Restore registers
-        add(cb, RSP, imm_opnd(8));
-        pop(cb, REG_SP);
-        pop(cb, REG_EC);
-        pop(cb, REG_CFP);
+        // Load uJIT registers
+        ujit_load_regs(cb);
     }
 
-    // Save the MicroJIT registers
-    push(cb, REG_CFP);
-    push(cb, REG_EC);
-    push(cb, REG_SP);
-
-    // Maintain 16-byte RSP alignment
-    sub(cb, RSP, imm_opnd(8));
+    // Save uJIT registers
+    ujit_save_regs(cb);
 
     // Copy SP into RAX because REG_SP will get overwritten
     lea(cb, RAX, ctx_sp_opnd(ctx, 0));
@@ -1212,23 +1213,14 @@ gen_oswb_cfunc(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb_c
     // Pop the C function arguments from the stack (in the caller)
     ctx_stack_pop(ctx, argc + 1);
 
-    //print_str(cb, "before C call");
-
     // Call the C function
     // VALUE ret = (cfunc->func)(recv, argv[0], argv[1]);
     // cfunc comes from compile-time cme->def, which we assume to be stable.
     // Invalidation logic is in rb_ujit_method_lookup_change()
     call_ptr(cb, REG0, (void*)cfunc->func);
 
-    //print_str(cb, "after C call");
-
-    // Maintain 16-byte RSP alignment
-    add(cb, RSP, imm_opnd(8));
-
-    // Restore MicroJIT registers
-    pop(cb, REG_SP);
-    pop(cb, REG_EC);
-    pop(cb, REG_CFP);
+    // Load uJIT registers
+    ujit_load_regs(cb);
 
     // Push the return value on the Ruby stack
     x86opnd_t stack_ret = ctx_stack_push(ctx, T_NONE);
