@@ -712,35 +712,6 @@ num_divmod(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     num.real?  ->  true or false
- *
- *  Returns +true+ if +num+ is a real number (i.e. not Complex).
- */
-
-static VALUE
-num_real_p(VALUE num)
-{
-    return Qtrue;
-}
-
-/*
- *  call-seq:
- *     num.integer?  ->  true or false
- *
- *  Returns +true+ if +num+ is an Integer.
- *
- *      1.0.integer?   #=> false
- *      1.integer?     #=> true
- */
-
-static VALUE
-num_int_p(VALUE num)
-{
-    return Qfalse;
-}
-
-/*
- *  call-seq:
  *     num.abs        ->  numeric
  *     num.magnitude  ->  numeric
  *
@@ -822,31 +793,6 @@ num_nonzero_p(VALUE num)
 	return Qnil;
     }
     return num;
-}
-
-/*
- *  call-seq:
- *     num.finite?  ->  true or false
- *
- *  Returns +true+ if +num+ is a finite number, otherwise returns +false+.
- */
-static VALUE
-num_finite_p(VALUE num)
-{
-    return Qtrue;
-}
-
-/*
- *  call-seq:
- *     num.infinite?  ->  -1, 1, or nil
- *
- *  Returns +nil+, -1, or 1 depending on whether the value is
- *  finite, <code>-Infinity</code>, or <code>+Infinity</code>.
- */
-static VALUE
-num_infinite_p(VALUE num)
-{
-    return Qnil;
 }
 
 /*
@@ -5430,12 +5376,8 @@ Init_Numeric(void)
     rb_define_method(rb_cNumeric, "magnitude", num_abs, 0);
     rb_define_method(rb_cNumeric, "to_int", num_to_int, 0);
 
-    rb_define_method(rb_cNumeric, "real?", num_real_p, 0);
-    rb_define_method(rb_cNumeric, "integer?", num_int_p, 0);
     rb_define_method(rb_cNumeric, "zero?", num_zero_p, 0);
     rb_define_method(rb_cNumeric, "nonzero?", num_nonzero_p, 0);
-    rb_define_method(rb_cNumeric, "finite?", num_finite_p, 0);
-    rb_define_method(rb_cNumeric, "infinite?", num_infinite_p, 0);
 
     rb_define_method(rb_cNumeric, "floor", num_floor, -1);
     rb_define_method(rb_cNumeric, "ceil", num_ceil, -1);

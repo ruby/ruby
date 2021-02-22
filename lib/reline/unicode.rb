@@ -108,6 +108,7 @@ class Reline::Unicode
     end
     m = mbchar.encode(Encoding::UTF_8).match(MBCharWidthRE)
     case
+    when m.nil? then 1 # TODO should be U+FFFD � REPLACEMENT CHARACTER
     when m[:width_2_1], m[:width_2_2] then 2
     when m[:width_3] then 3
     when m[:width_0] then 0

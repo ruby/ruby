@@ -1989,12 +1989,16 @@ open_special(const WCHAR *path, DWORD access, DWORD flags)
 #define BitOfIsRep(n) ((n) * 2 + 1)
 #define DIRENT_PER_CHAR (CHAR_BIT / 2)
 
+static const WCHAR namespace_prefix[] = {L'\\', L'\\', L'?', L'\\'};
+
+enum {FINAL_PATH_MAX = PATH_MAX + numberof(namespace_prefix)};
+
 /* License: Artistic or GPL */
 static HANDLE
 open_dir_handle(const WCHAR *filename, WIN32_FIND_DATAW *fd)
 {
     HANDLE fh;
-    WCHAR fullname[PATH_MAX + rb_strlen_lit("\\*")];
+    WCHAR fullname[FINAL_PATH_MAX + rb_strlen_lit("\\*")];
     WCHAR *p;
     int len = 0;
 
@@ -2004,8 +2008,12 @@ open_dir_handle(const WCHAR *filename, WIN32_FIND_DATAW *fd)
 
     fh = open_special(filename, 0, 0);
     if (fh != INVALID_HANDLE_VALUE) {
-	len = get_final_path(fh, fullname, PATH_MAX, 0);
+	len = get_final_path(fh, fullname, FINAL_PATH_MAX, 0);
 	CloseHandle(fh);
+	if (len >= FINAL_PATH_MAX) {
+	    errno = ENAMETOOLONG;
+	    return INVALID_HANDLE_VALUE;
+	}
     }
     if (!len) {
 	len = lstrlenW(filename);
@@ -5665,8 +5673,6 @@ path_drive(const WCHAR *path)
     return (iswalpha(path[0]) && path[1] == L':') ?
 	towupper(path[0]) - L'A' : _getdrive() - 1;
 }
-
-static const WCHAR namespace_prefix[] = {L'\\', L'\\', L'?', L'\\'};
 
 /* License: Ruby's */
 static int

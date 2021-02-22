@@ -657,13 +657,10 @@ with the next macro.
 
 TypedData_Wrap_Struct() returns a created Ruby object as a VALUE.
 
-The klass argument is the class for the object.
+The klass argument is the class for the object. It is recommended
+that klass derives from rb_cObject.
 data_type is a pointer to a const rb_data_type_t which describes
 how Ruby should manage the struct.
-
-It is recommended that klass derives from a special class called
-Data (rb_cData) but not from Object or other ordinal classes.
-If it doesn't, you have to call rb_undef_alloc_func(klass).
 
 rb_data_type_t is defined like this.  Let's take a look at each
 member of the struct.
@@ -819,6 +816,8 @@ Here's the example of an initializing function.
   {
       /* define DBM class */
       VALUE cDBM = rb_define_class("DBM", rb_cObject);
+      /* Redefine DBM.allocate
+      rb_define_alloc_func(rb_cDBM, fdbm_alloc);
       /* DBM includes Enumerable module */
       rb_include_module(cDBM, rb_mEnumerable);
 
@@ -828,7 +827,7 @@ Here's the example of an initializing function.
       /* DBM instance method close(): no args */
       rb_define_method(cDBM, "close", fdbm_close, 0);
       /* DBM instance method []: 1 argument */
-      rb_define_method(cDBM, "[]", fdbm_fetch, 1);
+      rb_define_method(cDBM, "[]", fdbm_aref, 1);
 
       /* ... */
 
@@ -851,10 +850,19 @@ TypedData_Make_Struct.
       RUBY_TYPED_FREE_IMMEDIATELY,
   };
 
-  obj = TypedData_Make_Struct(klass, struct dbmdata, &dbm_type, dbmp);
+  static VALUE
+  fdbm_alloc(VALUE klass)
+  {
+      struct dbmdata *dbmp;
+      /* Allocate T_DATA object and C struct and fill struct with zero bytes */
+      return TypedData_Make_Struct(klass, struct dbmdata, &dbm_type, dbmp);
+  }
 
 This code wraps the dbmdata structure into a Ruby object.  We avoid
 wrapping DBM* directly, because we want to cache size information.
+Since Object.allocate allocates an ordinary T_OBJECT type (instead
+of T_DATA), it's important to either use rb_define_alloc_func() to
+overwrite it or rb_undef_alloc_func() to delete it.
 
 To retrieve the dbmdata structure from a Ruby object, we define the
 following macro:
@@ -872,9 +880,13 @@ There are three kinds of way to receive method arguments.  First,
 methods with a fixed number of arguments receive arguments like this:
 
   static VALUE
-  fdbm_delete(VALUE obj, VALUE keystr)
+  fdbm_aref(VALUE obj, VALUE keystr)
   {
-        /* ... */
+      struct dbmdata *dbmp;
+      GetDBM(obj, dbmp);
+      /* Use dbmp to access the key */
+      dbm_fetch(dbmp->di_dbm, StringValueCStr(keystr));
+      /* ... */
   }
 
 The first argument of the C function is the self, the rest are the

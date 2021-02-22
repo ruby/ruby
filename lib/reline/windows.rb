@@ -9,6 +9,10 @@ class Reline::Windows
     true
   end
 
+  def self.win_legacy_console?
+    @@legacy_console
+  end
+
   RAW_KEYSTROKE_CONFIG = {
     [224, 72] => :ed_prev_history, # ↑
     [224, 80] => :ed_next_history, # ↓
@@ -93,6 +97,26 @@ class Reline::Windows
   @@GetFileType = Win32API.new('kernel32', 'GetFileType', ['L'], 'L')
   @@GetFileInformationByHandleEx = Win32API.new('kernel32', 'GetFileInformationByHandleEx', ['L', 'I', 'P', 'L'], 'I')
   @@FillConsoleOutputAttribute = Win32API.new('kernel32', 'FillConsoleOutputAttribute', ['L', 'L', 'L', 'L', 'P'], 'L')
+
+  @@GetConsoleMode = Win32API.new('kernel32', 'GetConsoleMode', ['L', 'P'], 'L')
+  @@SetConsoleMode = Win32API.new('kernel32', 'SetConsoleMode', ['L', 'L'], 'L')
+  ENABLE_VIRTUAL_TERMINAL_PROCESSING = 4
+
+  private_class_method def self.getconsolemode
+    mode = "\000\000\000\000"
+    @@GetConsoleMode.call(@@hConsoleHandle, mode)
+    mode.unpack1('L')
+  end
+
+  private_class_method def self.setconsolemode(mode)
+    @@SetConsoleMode.call(@@hConsoleHandle, mode)
+  end
+
+  @@legacy_console = (getconsolemode() & ENABLE_VIRTUAL_TERMINAL_PROCESSING == 0)
+  #if @@legacy_console
+  #  setconsolemode(getconsolemode() | ENABLE_VIRTUAL_TERMINAL_PROCESSING)
+  #  @@legacy_console = (getconsolemode() & ENABLE_VIRTUAL_TERMINAL_PROCESSING == 0)
+  #end
 
   @@input_buf = []
   @@output_buf = []
