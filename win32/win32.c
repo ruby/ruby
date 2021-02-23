@@ -137,7 +137,7 @@ static FARPROC get_proc_address(const char *module, const char *func, HANDLE *mh
 #define RUBY_CRITICAL if (0) {} else /* just remark */
 
 /* errno mapping */
-static struct {
+static const struct {
     DWORD winerr;
     int err;
 } errmap[] = {
@@ -3318,12 +3318,12 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 
 /* License: Ruby's */
 static FARPROC
-get_wsa_extension_function(SOCKET s, GUID *guid)
+get_wsa_extension_function(SOCKET s, GUID guid)
 {
     DWORD dmy;
     FARPROC ptr = NULL;
 
-    WSAIoctl(s, SIO_GET_EXTENSION_FUNCTION_POINTER, guid, sizeof(*guid),
+    WSAIoctl(s, SIO_GET_EXTENSION_FUNCTION_POINTER, &guid, sizeof(guid),
 	     &ptr, sizeof(ptr), &dmy, NULL, NULL);
     if (!ptr)
 	errno = ENOSYS;
@@ -3694,8 +3694,8 @@ recvmsg(int fd, struct msghdr *msg, int flags)
     s = TO_SOCKET(fd);
 
     if (!pWSARecvMsg) {
-	static GUID guid = WSAID_WSARECVMSG;
-	pWSARecvMsg = (WSARecvMsg_t)get_wsa_extension_function(s, &guid);
+	static const GUID guid = WSAID_WSARECVMSG;
+	pWSARecvMsg = (WSARecvMsg_t)get_wsa_extension_function(s, guid);
 	if (!pWSARecvMsg)
 	    return -1;
     }
@@ -3749,8 +3749,8 @@ sendmsg(int fd, const struct msghdr *msg, int flags)
     s = TO_SOCKET(fd);
 
     if (!pWSASendMsg) {
-	static GUID guid = WSAID_WSASENDMSG;
-	pWSASendMsg = (WSASendMsg_t)get_wsa_extension_function(s, &guid);
+	static const GUID guid = WSAID_WSASENDMSG;
+	pWSASendMsg = (WSASendMsg_t)get_wsa_extension_function(s, guid);
 	if (!pWSASendMsg)
 	    return -1;
     }
@@ -5088,7 +5088,7 @@ rb_w32_read_reparse_point(const WCHAR *path, rb_w32_reparse_buffer_t *rp,
 	    *len = ret / sizeof(WCHAR);
 	}
 	else if (rp->ReparseTag == IO_REPARSE_TAG_MOUNT_POINT) {
-	    static const WCHAR *volume = L"Volume{";
+	    static const WCHAR volume[] = L"Volume{";
 	    enum {volume_prefix_len = rb_strlen_lit("\\??\\")};
 	    name = ((char *)rp->MountPointReparseBuffer.PathBuffer +
 		    rp->MountPointReparseBuffer.SubstituteNameOffset +
