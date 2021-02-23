@@ -781,15 +781,23 @@ vm_exit_handler(ruby_vm_t *vm)
     LeaveCriticalSection(&conlist_mutex);
 }
 
+#define ATOMIC_LONG_CAS(var, oldval, newval) InterlockedCompareExchange(&(var), (newval), (oldval))
+
 /* License: Ruby's */
 static void
 install_vm_exit_handler(void)
 {
-    static bool installed = 0;
+    static LONG installed = 0;
+    LONG i;
 
-    if (!installed) {
+    while ((i = ATOMIC_LONG_CAS(installed, 0, -1)) != 1) {
+	if (i != 0) {
+	    Sleep(1);
+	    continue;
+	}
 	ruby_vm_at_exit(vm_exit_handler);
-	installed = 1;
+	ATOMIC_LONG_CAS(installed, -1, 1);
+	break;
     }
 }
 
