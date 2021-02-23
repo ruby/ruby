@@ -324,24 +324,33 @@ rb_obj_singleton_class(VALUE obj)
 MJIT_FUNC_EXPORTED void
 rb_obj_copy_ivar(VALUE dest, VALUE obj)
 {
-    RUBY_ASSERT(RBASIC(dest)->flags & ROBJECT_EMBED);
+    VALUE *dst_buf = 0;
+    VALUE *src_buf = 0;
+    uint32_t len = ROBJECT_EMBED_LEN_MAX;
 
     if (RBASIC(obj)->flags & ROBJECT_EMBED) {
-	MEMCPY(ROBJECT(dest)->as.ary, ROBJECT(obj)->as.ary, VALUE, ROBJECT_EMBED_LEN_MAX);
-	RBASIC(dest)->flags |= ROBJECT_EMBED;
+        src_buf = ROBJECT(obj)->as.ary;
+
+        // embedded -> embedded
+        if (RBASIC(dest)->flags & ROBJECT_EMBED) {
+            dst_buf = ROBJECT(dest)->as.ary;
+        }
+        // embedded -> extended
+        else {
+            dst_buf = ROBJECT(dest)->as.heap.ivptr;
+        }
     }
+    // extended -> extended
     else {
-	uint32_t len = ROBJECT(obj)->as.heap.numiv;
-	VALUE *ptr = 0;
-	if (len > 0) {
-	    ptr = ALLOC_N(VALUE, len);
-	    MEMCPY(ptr, ROBJECT(obj)->as.heap.ivptr, VALUE, len);
-	}
-	ROBJECT(dest)->as.heap.ivptr = ptr;
-	ROBJECT(dest)->as.heap.numiv = len;
-	ROBJECT(dest)->as.heap.iv_index_tbl = ROBJECT(obj)->as.heap.iv_index_tbl;
-	RBASIC(dest)->flags &= ~ROBJECT_EMBED;
+        uint32_t src_len = ROBJECT(obj)->as.heap.numiv;
+        uint32_t dst_len = ROBJECT(dest)->as.heap.numiv;
+
+        len = src_len < dst_len ? src_len : dst_len;
+        dst_buf = ROBJECT(dest)->as.heap.ivptr;
+        src_buf = ROBJECT(obj)->as.heap.ivptr;
     }
+
+    MEMCPY(dst_buf, src_buf, VALUE, len);
 }
 
 static void
