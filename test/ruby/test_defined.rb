@@ -134,6 +134,55 @@ class TestDefined < Test::Unit::TestCase
     assert_equal("expression", defined?(1))
   end
 
+  def test_defined_method
+    self_ = self
+    assert_equal("method", defined?(test_defined_method))
+    assert_equal("method", defined?(self.test_defined_method))
+    assert_equal("method", defined?(self_.test_defined_method))
+
+    assert_equal(nil, defined?(1.test_defined_method))
+    assert_equal("method", defined?(1.to_i))
+    assert_equal(nil, defined?(1.to_i.test_defined_method))
+    assert_equal(nil, defined?(1.test_defined_method.to_i))
+
+    assert_equal("method", defined?("x".reverse))
+    assert_equal("method", defined?("x".reverse(1)))
+    assert_equal("method", defined?("x".reverse.reverse))
+    assert_equal(nil, defined?("x".reverse(1).reverse))
+
+    assert_equal("method", defined?(1.to_i(10)))
+    assert_equal("method", defined?(1.to_i("x")))
+    assert_equal(nil, defined?(1.to_i("x").undefined))
+    assert_equal(nil, defined?(1.to_i(undefined).to_i))
+    assert_equal(nil, defined?(1.to_i("x").undefined.to_i))
+    assert_equal(nil, defined?(1.to_i(undefined).to_i.to_i))
+  end
+
+  def test_defined_method_single_call
+    times_called = 0
+    define_singleton_method(:t) do
+      times_called += 1
+      self
+    end
+    assert_equal("method", defined?(t))
+    assert_equal(0, times_called)
+
+    assert_equal("method", defined?(t.t))
+    assert_equal(1, times_called)
+
+    times_called = 0
+    assert_equal("method", defined?(t.t.t))
+    assert_equal(2, times_called)
+
+    times_called = 0
+    assert_equal("method", defined?(t.t.t.t))
+    assert_equal(3, times_called)
+
+    times_called = 0
+    assert_equal("method", defined?(t.t.t.t.t))
+    assert_equal(4, times_called)
+  end
+
   def test_defined_empty_paren_expr
     bug8224 = '[ruby-core:54024] [Bug #8224]'
     (1..3).each do |level|
