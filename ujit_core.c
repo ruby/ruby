@@ -702,23 +702,6 @@ invalidate_block_version(block_t* block)
     // fprintf(stderr, "invalidation done\n");
 }
 
-int blockid_cmp(st_data_t arg0, st_data_t arg1)
-{
-    const blockid_t *block0 = (const blockid_t*)arg0;
-    const blockid_t *block1 = (const blockid_t*)arg1;
-    return (block0->iseq != block1->iseq) || (block0->idx != block1->idx);
-}
-
-st_index_t blockid_hash(st_data_t arg)
-{
-    const blockid_t *blockid = (const blockid_t*)arg;
-    st_index_t hash0 = st_numhash((st_data_t)blockid->iseq);
-    st_index_t hash1 = st_numhash((st_data_t)(uint64_t)blockid->idx);
-
-    // Use XOR to combine the hashes
-    return hash0 ^ hash1;
-}
-
 void
 ujit_init_core(void)
 {
