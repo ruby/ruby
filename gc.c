@@ -1765,14 +1765,14 @@ heap_unlink_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *pag
     heap->total_slots -= page->total_slots;
 }
 
-static void rb_aligned_free(void *ptr);
+static void rb_aligned_free(void *ptr, size_t size);
 
 static void
 heap_page_free(rb_objspace_t *objspace, struct heap_page *page)
 {
     heap_allocated_pages--;
     objspace->profile.total_freed_pages++;
-    rb_aligned_free(GET_PAGE_BODY(page->start));
+    rb_aligned_free(GET_PAGE_BODY(page->start), HEAP_PAGE_SIZE);
     free(page);
 }
 
@@ -1824,7 +1824,7 @@ heap_page_allocate(rb_objspace_t *objspace)
     /* assign heap_page entry */
     page = calloc1(sizeof(struct heap_page));
     if (page == 0) {
-        rb_aligned_free(page_body);
+        rb_aligned_free(page_body, HEAP_PAGE_SIZE);
 	rb_memerror();
     }
 
@@ -10382,15 +10382,36 @@ rb_aligned_malloc(size_t alignment, size_t size)
 #elif defined _WIN32
     void *_aligned_malloc(size_t, size_t);
     res = _aligned_malloc(size, alignment);
-#elif defined(HAVE_POSIX_MEMALIGN)
-    if (posix_memalign(&res, alignment, size) == 0) {
-        return res;
-    }
-    else {
+#elif defined(HAVE_MMAP)
+    GC_ASSERT(alignment % sysconf(_SC_PAGE_SIZE) == 0);
+
+    char *ptr = mmap(NULL, alignment + size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
+    if (ptr == MAP_FAILED) {
         return NULL;
     }
-#elif defined(HAVE_MEMALIGN)
-    res = memalign(alignment, size);
+
+    char *aligned = ptr + alignment;
+    aligned -= ((VALUE)aligned & (alignment - 1));
+    GC_ASSERT(aligned > ptr);
+    GC_ASSERT(aligned <= ptr + alignment);
+
+    size_t start_out_of_range_size = aligned - ptr;
+    GC_ASSERT(start_out_of_range_size % sysconf(_SC_PAGE_SIZE) == 0);
+    if (start_out_of_range_size > 0) {
+        if (munmap(ptr, start_out_of_range_size)) {
+            rb_bug("rb_aligned_malloc: munmap faile for start");
+        }
+    }
+
+    size_t end_out_of_range_size = alignment - start_out_of_range_size;
+    GC_ASSERT(end_out_of_range_size % sysconf(_SC_PAGE_SIZE) == 0);
+    if (end_out_of_range_size > 0) {
+        if (munmap(aligned + size, end_out_of_range_size)) {
+            rb_bug("rb_aligned_malloc: munmap failed for end");
+        }
+    }
+
+    res = (void *)aligned;
 #else
     char* aligned;
     res = malloc(alignment + size + sizeof(void*));
@@ -10407,14 +10428,17 @@ rb_aligned_malloc(size_t alignment, size_t size)
 }
 
 static void
-rb_aligned_free(void *ptr)
+rb_aligned_free(void *ptr, size_t size)
 {
 #if defined __MINGW32__
     __mingw_aligned_free(ptr);
 #elif defined _WIN32
     _aligned_free(ptr);
-#elif defined(HAVE_MEMALIGN) || defined(HAVE_POSIX_MEMALIGN)
-    free(ptr);
+#elif defined HAVE_MMAP
+    GC_ASSERT(size % sysconf(_SC_PAGE_SIZE) == 0);
+    if (munmap(ptr, size)) {
+        rb_bug("rb_aligned_free: munmap failed");
+    }
 #else
     free(((void**)ptr)[-1]);
 #endif
