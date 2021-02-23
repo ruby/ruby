@@ -2346,7 +2346,7 @@ ruby_direct_conv(const WCHAR *file, const WCHAR *alt, struct direct *entry, cons
 static struct direct *
 readdir_internal(DIR *dirp, BOOL (*conv)(const WCHAR *, const WCHAR *, struct direct *, const void *), const void *enc)
 {
-    static int dummy = 0;
+    static long dummy_ino = 0;
 
     if (dirp->curr) {
 
@@ -2364,7 +2364,7 @@ readdir_internal(DIR *dirp, BOOL (*conv)(const WCHAR *, const WCHAR *, struct di
 	//
 	// Fake inode
 	//
-	dirp->dirstr.d_ino = dummy++;
+	dirp->dirstr.d_ino = (ino_t)(InterlockedIncrement(&dummy_ino) - 1);
 
 	//
 	// Attributes
@@ -6497,7 +6497,7 @@ rb_w32_fclose(FILE *fp)
 int
 rb_w32_pipe(int fds[2])
 {
-    static DWORD serial = 0;
+    static long serial = 0;
     static const char prefix[] = "\\\\.\\pipe\\ruby";
     enum {
 	width_of_prefix = (int)sizeof(prefix) - 1,
@@ -6513,7 +6513,7 @@ rb_w32_pipe(int fds[2])
 
     memcpy(name, prefix, width_of_prefix);
     snprintf(name + width_of_prefix, width_of_ids, "%.*"PRI_PIDT_PREFIX"x-%.*lx",
-	     width_of_pid, rb_w32_getpid(), width_of_serial, serial++);
+	     width_of_pid, rb_w32_getpid(), width_of_serial, InterlockedIncrement(&serial)-1);
 
     sec.nLength = sizeof(sec);
     sec.lpSecurityDescriptor = NULL;
