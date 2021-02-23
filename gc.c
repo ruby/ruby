@@ -9986,6 +9986,13 @@ gc_set_auto_compact(rb_execution_context_t *ec, VALUE _, VALUE v)
         rb_raise(rb_eNotImpError, "Automatic compaction isn't available on this platform");
     }
 #endif
+
+    /* If not MinGW, Windows, or does not have mmap, we cannot use mprotect for
+     * the read barrier, so we must disable automatic compaction. */
+#if !defined(__MINGW32__) && !defined(_WIN32) && !defined(HAVE_MMAP)
+    rb_raise(rb_eNotImpError, "Automatic compaction isn't available on this platform");
+#endif
+
     ruby_enable_autocompact = RTEST(v);
     return v;
 }
