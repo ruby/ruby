@@ -705,8 +705,9 @@ static st_table *conlist = NULL;
 #define conlist_disabled ((st_table *)-1)
 
 #define thread_exclusive(obj) \
-    for (bool first = (EnterCriticalSection(&obj##_mutex), true); \
-	 first; first = (LeaveCriticalSection(&obj##_mutex), false))
+    for (bool exclusive_for_##obj = (EnterCriticalSection(&obj##_mutex), true); \
+	 exclusive_for_##obj; \
+	 exclusive_for_##obj = (LeaveCriticalSection(&obj##_mutex), false))
 
 static char *uenvarea;
 
