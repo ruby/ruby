@@ -750,10 +750,13 @@ exit_handler(void)
     DeleteCriticalSection(&select_mutex);
     DeleteCriticalSection(&socklist_mutex);
     DeleteCriticalSection(&conlist_mutex);
-    if (uenvarea) {
-	free(uenvarea);
-	uenvarea = NULL;
+    thread_exclusive(uenvarea) {
+	if (uenvarea) {
+	    free(uenvarea);
+	    uenvarea = NULL;
+	}
     }
+    DeleteCriticalSection(&uenvarea_mutex);
 }
 
 /* License: Ruby's */
@@ -808,6 +811,7 @@ StartSockets(void)
     InitializeCriticalSection(&select_mutex);
     InitializeCriticalSection(&socklist_mutex);
     InitializeCriticalSection(&conlist_mutex);
+    InitializeCriticalSection(&uenvarea_mutex);
 
     atexit(exit_handler);
 }
@@ -5261,32 +5265,37 @@ w32_getenv(const char *name, UINT cp)
 {
     WCHAR *wenvarea, *wenv;
     int len = strlen(name);
-    char *env;
+    char *env = NULL;
     int wlen;
 
     if (len == 0) return NULL;
 
-    if (uenvarea) {
-	free(uenvarea);
-	uenvarea = NULL;
-    }
-    wenvarea = GetEnvironmentStringsW();
-    if (!wenvarea) {
-	map_errno(GetLastError());
-	return NULL;
-    }
-    for (wenv = wenvarea, wlen = 1; *wenv; wenv += lstrlenW(wenv) + 1)
-	wlen += lstrlenW(wenv) + 1;
-    uenvarea = wstr_to_mbstr(cp, wenvarea, wlen, NULL);
-    FreeEnvironmentStringsW(wenvarea);
-    if (!uenvarea)
-	return NULL;
+    thread_exclusive(uenvarea) {
+	if (uenvarea) {
+	    free(uenvarea);
+	    uenvarea = NULL;
+	}
+	wenvarea = GetEnvironmentStringsW();
+	if (!wenvarea) {
+	    map_errno(GetLastError());
+	    continue;
+	}
+	for (wenv = wenvarea, wlen = 1; *wenv; wenv += lstrlenW(wenv) + 1)
+	    wlen += lstrlenW(wenv) + 1;
+	uenvarea = wstr_to_mbstr(cp, wenvarea, wlen, NULL);
+	FreeEnvironmentStringsW(wenvarea);
+	if (!uenvarea)
+	    continue;
 
-    for (env = uenvarea; *env; env += strlen(env) + 1)
-	if (strncasecmp(env, name, len) == 0 && *(env + len) == '=')
-	    return env + len + 1;
+	for (env = uenvarea; *env; env += strlen(env) + 1) {
+	    if (strncasecmp(env, name, len) == 0 && *(env + len) == '=') {
+		env += len + 1;
+		break;
+	    }
+	}
+    }
 
-    return NULL;
+    return env;
 }
 
 /* License: Ruby's */
