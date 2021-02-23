@@ -6599,32 +6599,34 @@ static struct constat *
 constat_handle(HANDLE h)
 {
     st_data_t data;
-    struct constat *p;
-    if (!conlist) {
-	if (console_emulator_p()) {
-	    conlist = conlist_disabled;
-	    return NULL;
+    struct constat *p = NULL;
+    thread_exclusive(conlist) {
+	if (!conlist) {
+	    if (console_emulator_p()) {
+		conlist = conlist_disabled;
+		continue;
+	    }
+	    conlist = st_init_numtable();
+	    install_vm_exit_handler();
 	}
-	conlist = st_init_numtable();
-	install_vm_exit_handler();
-    }
-    else if (conlist == conlist_disabled) {
-	return NULL;
-    }
-    if (st_lookup(conlist, (st_data_t)h, &data)) {
-	p = (struct constat *)data;
-    }
-    else {
-	CONSOLE_SCREEN_BUFFER_INFO csbi;
-	p = ALLOC(struct constat);
-	p->vt100.state = constat_init;
-	p->vt100.attr = FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED;
-	p->vt100.reverse = 0;
-	p->vt100.saved.X = p->vt100.saved.Y = 0;
-	if (GetConsoleScreenBufferInfo(h, &csbi)) {
-	    p->vt100.attr = csbi.wAttributes;
+	else if (conlist == conlist_disabled) {
+	    continue;
 	}
-	st_insert(conlist, (st_data_t)h, (st_data_t)p);
+	if (st_lookup(conlist, (st_data_t)h, &data)) {
+	    p = (struct constat *)data;
+	}
+	else {
+	    CONSOLE_SCREEN_BUFFER_INFO csbi;
+	    p = ALLOC(struct constat);
+	    p->vt100.state = constat_init;
+	    p->vt100.attr = FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED;
+	    p->vt100.reverse = 0;
+	    p->vt100.saved.X = p->vt100.saved.Y = 0;
+	    if (GetConsoleScreenBufferInfo(h, &csbi)) {
+		p->vt100.attr = csbi.wAttributes;
+	    }
+	    st_insert(conlist, (st_data_t)h, (st_data_t)p);
+	}
     }
     return p;
 }
