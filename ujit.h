@@ -32,21 +32,20 @@ typedef struct rb_iseq_struct rb_iseq_t;
 #endif
 
 struct rb_ujit_options {
+    bool ujit_enabled;
+
+    // Number of method calls after which to start generating code
+    // Threshold==1 means compile on first execution
+    unsigned call_threshold;
+
+    // Capture and print out stats
     bool gen_stats;
 };
 
 RUBY_SYMBOL_EXPORT_BEGIN
-RUBY_EXTERN bool rb_ujit_enabled;
+bool rb_ujit_enabled_p(void);
+unsigned rb_ujit_call_threshold(void);
 RUBY_SYMBOL_EXPORT_END
-
-static inline
-bool rb_ujit_enabled_p(void)
-{
-    return rb_ujit_enabled;
-}
-
-// Threshold==1 means compile on first execution
-#define UJIT_CALL_THRESHOLD (2u)
 
 void rb_ujit_collect_vm_usage_insn(int insn);
 void rb_ujit_method_lookup_change(VALUE cme_or_cc);

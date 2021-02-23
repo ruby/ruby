@@ -1033,12 +1033,13 @@ set_option_encoding_once(const char *type, VALUE *name, const char *e, long elen
 static void
 setup_ujit_options(const char *s, struct rb_ujit_options *ujit_opt)
 {
-    *ujit_opt = (struct rb_ujit_options) { 0 };
-
     if (*s != '-') return;
     const size_t l = strlen(++s);
 
-    if (opt_match_noarg(s, l, "stats")) {
+    if (opt_match_arg(s, l, "call-threshold")) {
+        ujit_opt->call_threshold = atoi(s + 1);
+    }
+    else if (opt_match_noarg(s, l, "stats")) {
         ujit_opt->gen_stats = true;
     }
     else {
