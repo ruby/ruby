@@ -811,7 +811,6 @@ StartSockets(void)
     InitializeCriticalSection(&select_mutex);
     InitializeCriticalSection(&socklist_mutex);
     InitializeCriticalSection(&conlist_mutex);
-    InitializeCriticalSection(&uenvarea_mutex);
 
     atexit(exit_handler);
 }
@@ -896,6 +895,7 @@ rb_w32_sysinit(int *argc, char ***argv)
 #endif
     SetErrorMode(SEM_FAILCRITICALERRORS|SEM_NOGPFAULTERRORBOX);
 
+    InitializeCriticalSection(&uenvarea_mutex);
     get_version();
 
     //

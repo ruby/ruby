@@ -263,6 +263,7 @@ ruby_set_debug_option(const char *str)
 }
 
 #if RUBY_DEVEL
+#undef getenv
 
 // RUBY_DEBUG_LOG features
 // See vm_debug.h comments for details.
