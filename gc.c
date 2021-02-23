@@ -2390,7 +2390,14 @@ VALUE
 rb_newobj_of(VALUE klass, VALUE flags)
 {
     if ((flags & RUBY_T_MASK) == T_OBJECT) {
-        return newobj_of(klass, (flags | ROBJECT_EMBED) & ~FL_WB_PROTECTED , Qundef, Qundef, Qundef, flags & FL_WB_PROTECTED);
+        st_table *index_tbl = RCLASS_IV_INDEX_TBL(klass);
+
+        VALUE obj = newobj_of(klass, (flags | ROBJECT_EMBED) & ~FL_WB_PROTECTED , Qundef, Qundef, Qundef, flags & FL_WB_PROTECTED);
+
+        if (index_tbl && index_tbl->num_entries > ROBJECT_EMBED_LEN_MAX) {
+            rb_init_iv_list(obj);
+        }
+        return obj;
     }
     else {
         return newobj_of(klass, flags & ~FL_WB_PROTECTED, 0, 0, 0, flags & FL_WB_PROTECTED);
@@ -2501,8 +2508,17 @@ rb_imemo_new_debug(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0,
 VALUE
 rb_class_allocate_instance(VALUE klass)
 {
+    st_table *index_tbl = RCLASS_IV_INDEX_TBL(klass);
+
     VALUE flags = T_OBJECT | ROBJECT_EMBED;
-    return newobj_of(klass, flags, Qundef, Qundef, Qundef, RGENGC_WB_PROTECTED_OBJECT);
+
+    VALUE obj = newobj_of(klass, flags, Qundef, Qundef, Qundef, RGENGC_WB_PROTECTED_OBJECT);
+
+    if (index_tbl && index_tbl->num_entries > ROBJECT_EMBED_LEN_MAX) {
+        rb_init_iv_list(obj);
+    }
+
+    return obj;
 }
 
 VALUE
