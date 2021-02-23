@@ -2005,7 +2005,7 @@ rb_fiber_set_scheduler(VALUE klass, VALUE scheduler)
     return rb_fiber_scheduler_set(scheduler);
 }
 
-static void rb_fiber_terminate(rb_fiber_t *fiber, int need_interrupt, VALUE err);
+NORETURN(static void rb_fiber_terminate(rb_fiber_t *fiber, int need_interrupt, VALUE err));
 
 void
 rb_fiber_start(void)
@@ -2047,7 +2047,8 @@ rb_fiber_start(void)
 
         if (state == TAG_RAISE) {
             // noop...
-        } else if (state == TAG_FATAL) {
+        }
+        else if (state == TAG_FATAL) {
             rb_threadptr_pending_interrupt_enque(th, err);
         }
         else {
