@@ -6,7 +6,6 @@ jobs:
   rubyspec:
     name: Rubyspec
     runs-on: ubuntu-20.04
-    if: "!contains(github.event.head_commit.message, '[ci skip]')"
     strategy:
       matrix:
         # Specs from ruby/spec should still run on all supported Ruby versions.

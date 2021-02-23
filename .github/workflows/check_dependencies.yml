@@ -7,7 +7,6 @@ jobs:
         os: [ubuntu-20.04, macos-latest]
       fail-fast: true
     runs-on: ${{ matrix.os }}
-    if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
       - name: Install libraries
         run: |
