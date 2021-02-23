@@ -648,7 +648,7 @@ rb_ujit_init(struct rb_ujit_options *options)
 
     // Normalize options
     if (rb_ujit_opts.call_threshold < 1) {
-        rb_ujit_opts.call_threshold = 10;
+        rb_ujit_opts.call_threshold = 2;
     }
 
     ujit_init_core();
