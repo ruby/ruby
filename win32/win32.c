@@ -704,6 +704,10 @@ static CRITICAL_SECTION conlist_mutex;
 static st_table *conlist = NULL;
 #define conlist_disabled ((st_table *)-1)
 
+#define thread_exclusive(obj) \
+    for (bool first = (EnterCriticalSection(&obj##_mutex), true); \
+	 first; first = (LeaveCriticalSection(&obj##_mutex), false))
+
 static char *uenvarea;
 
 /* License: Ruby's */
@@ -728,13 +732,13 @@ free_conlist(st_data_t key, st_data_t val, st_data_t arg)
 static void
 constat_delete(HANDLE h)
 {
-    EnterCriticalSection(&conlist_mutex);
-    if (conlist && conlist != conlist_disabled) {
-	st_data_t key = (st_data_t)h, val;
-	st_delete(conlist, &key, &val);
-	xfree((struct constat *)val);
+    thread_exclusive(conlist) {
+	if (conlist && conlist != conlist_disabled) {
+	    st_data_t key = (st_data_t)h, val;
+	    st_delete(conlist, &key, &val);
+	    xfree((struct constat *)val);
+	}
     }
-    LeaveCriticalSection(&conlist_mutex);
 }
 
 /* License: Ruby's */
@@ -817,13 +821,13 @@ socklist_insert(SOCKET sock, int flag)
 {
     int ret;
 
-    EnterCriticalSection(&socklist_mutex);
-    if (!socklist) {
-	socklist = st_init_numtable();
-	install_vm_exit_handler();
+    thread_exclusive(socklist) {
+	if (!socklist) {
+	    socklist = st_init_numtable();
+	    install_vm_exit_handler();
+	}
+	ret = st_insert(socklist, (st_data_t)sock, (st_data_t)flag);
     }
-    ret = st_insert(socklist, (st_data_t)sock, (st_data_t)flag);
-    LeaveCriticalSection(&socklist_mutex);
 
     return ret;
 }
@@ -833,18 +837,14 @@ static inline int
 socklist_lookup(SOCKET sock, int *flagp)
 {
     st_data_t data;
-    int ret;
+    int ret = 0;
 
-    EnterCriticalSection(&socklist_mutex);
-    if (socklist) {
+    thread_exclusive(socklist) {
+	if (!socklist) continue;
 	ret = st_lookup(socklist, (st_data_t)sock, (st_data_t *)&data);
 	if (ret && flagp)
 	    *flagp = (int)data;
     }
-    else {
-	ret = 0;
-    }
-    LeaveCriticalSection(&socklist_mutex);
 
     return ret;
 }
@@ -855,10 +855,10 @@ socklist_delete(SOCKET *sockp, int *flagp)
 {
     st_data_t key;
     st_data_t data;
-    int ret;
+    int ret = 0;
 
-    EnterCriticalSection(&socklist_mutex);
-    if (socklist) {
+    thread_exclusive(socklist) {
+	if (!socklist) continue;
 	key = (st_data_t)*sockp;
 	if (flagp)
 	    data = (st_data_t)*flagp;
@@ -869,10 +869,6 @@ socklist_delete(SOCKET *sockp, int *flagp)
 		*flagp = (int)data;
 	}
     }
-    else {
-	ret = 0;
-    }
-    LeaveCriticalSection(&socklist_mutex);
 
     return ret;
 }
@@ -2914,7 +2910,7 @@ rb_w32_fdisset(int fd, fd_set *set)
     SOCKET s = TO_SOCKET(fd);
     if (s == (SOCKET)INVALID_HANDLE_VALUE)
         return 0;
-    RUBY_CRITICAL(ret = __WSAFDIsSet(s, set));
+    RUBY_CRITICAL {ret = __WSAFDIsSet(s, set);}
     return ret;
 }
 
@@ -3118,9 +3114,9 @@ do_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     }
     else {
 	RUBY_CRITICAL {
-	    EnterCriticalSection(&select_mutex);
-	    r = select(nfds, rd, wr, ex, timeout);
-	    LeaveCriticalSection(&select_mutex);
+	    thread_exclusive(select) {
+		r = select(nfds, rd, wr, ex, timeout);
+	    }
 	    if (r == SOCKET_ERROR) {
 		errno = map_errno(WSAGetLastError());
 		r = -1;
@@ -6593,19 +6589,19 @@ static struct constat *
 constat_handle(HANDLE h)
 {
     st_data_t data;
-    struct constat *p;
-
-    EnterCriticalSection(&conlist_mutex);
-    if (!conlist) {
-	if (console_emulator_p()) {
-	    conlist = conlist_disabled;
-	}
-	else {
+    struct constat *p = NULL;
+    thread_exclusive(conlist) {
+	if (!conlist) {
+	    if (console_emulator_p()) {
+		conlist = conlist_disabled;
+		continue;
+	    }
 	    conlist = st_init_numtable();
 	    install_vm_exit_handler();
 	}
-    }
-    if (conlist != conlist_disabled) {
+	else if (conlist == conlist_disabled) {
+	    continue;
+	}
 	if (st_lookup(conlist, (st_data_t)h, &data)) {
 	    p = (struct constat *)data;
 	}
@@ -6622,11 +6618,6 @@ constat_handle(HANDLE h)
 	    st_insert(conlist, (st_data_t)h, (st_data_t)p);
 	}
     }
-    else {
-	p = NULL;
-    }
-    LeaveCriticalSection(&conlist_mutex);
-
     return p;
 }
 
@@ -6636,16 +6627,12 @@ constat_reset(HANDLE h)
 {
     st_data_t data;
     struct constat *p;
-
-    EnterCriticalSection(&conlist_mutex);
-    if (
-	conlist && conlist != conlist_disabled &&
-	st_lookup(conlist, (st_data_t)h, &data)
-    ) {
+    thread_exclusive(conlist) {
+	if (!conlist || conlist == conlist_disabled) continue;
+	if (!st_lookup(conlist, (st_data_t)h, &data)) continue;
 	p = (struct constat *)data;
 	p->vt100.state = constat_init;
     }
-    LeaveCriticalSection(&conlist_mutex);
 }
 
 #define FOREGROUND_MASK (FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED | FOREGROUND_INTENSITY)
