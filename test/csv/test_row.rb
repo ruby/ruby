@@ -432,4 +432,19 @@ class TestCSVRow < Test::Unit::TestCase
     assert_equal(["foo", nil],
                  [row["A"], dupped_row["A"]])
   end
+
+  def test_pattern_matching_hash
+    case CSV::Row.new(%i{A B C}, [1, 2, 3])
+    in B: b, C: c
+      assert_equal(2, b)
+      assert_equal(3, c)
+    end
+  end
+
+  def test_pattern_matching_array
+    case CSV::Row.new(%i{A B C}, [1, 2, 3])
+    in *, matched
+      assert_equal(3, matched)
+    end
+  end
 end
