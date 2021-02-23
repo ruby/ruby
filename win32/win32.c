@@ -91,6 +91,7 @@ static char *w32_getenv(const char *name, UINT cp);
 #define dln_find_exe_r(fname, path, buf, size) rb_w32_udln_find_exe_r(fname, path, buf, size, cp)
 #define dln_find_file_r(fname, path, buf, size) rb_w32_udln_find_file_r(fname, path, buf, size, cp)
 #undef CharNext			/* no default cp version */
+#undef getenv
 
 #ifndef PATH_MAX
 # if defined MAX_PATH
@@ -709,6 +710,7 @@ static st_table *conlist = NULL;
 	 exclusive_for_##obj; \
 	 exclusive_for_##obj = (LeaveCriticalSection(&obj##_mutex), false))
 
+static CRITICAL_SECTION uenvarea_mutex;
 static char *uenvarea;
 
 /* License: Ruby's */
@@ -750,10 +752,13 @@ exit_handler(void)
     DeleteCriticalSection(&select_mutex);
     DeleteCriticalSection(&socklist_mutex);
     DeleteCriticalSection(&conlist_mutex);
-    if (uenvarea) {
-	free(uenvarea);
-	uenvarea = NULL;
+    thread_exclusive(uenvarea) {
+	if (uenvarea) {
+	    free(uenvarea);
+	    uenvarea = NULL;
+	}
     }
+    DeleteCriticalSection(&uenvarea_mutex);
 }
 
 /* License: Ruby's */
@@ -905,6 +910,7 @@ rb_w32_sysinit(int *argc, char ***argv)
 
     tzset();
 
+    InitializeCriticalSection(&uenvarea_mutex);
     init_env();
 
     init_stdhandle();
@@ -5261,32 +5267,43 @@ w32_getenv(const char *name, UINT cp)
 {
     WCHAR *wenvarea, *wenv;
     int len = strlen(name);
-    char *env;
+    char *env, *found = NULL;
     int wlen;
 
     if (len == 0) return NULL;
 
-    if (uenvarea) {
-	free(uenvarea);
-	uenvarea = NULL;
+    if (!NTLoginName) {
+	/* initialized in init_env, uenvarea_mutex should have been
+	 * initialized before it */
+	return getenv(name);
     }
-    wenvarea = GetEnvironmentStringsW();
-    if (!wenvarea) {
-	map_errno(GetLastError());
-	return NULL;
+
+    thread_exclusive(uenvarea) {
+	if (uenvarea) {
+	    free(uenvarea);
+	    uenvarea = NULL;
+	}
+	wenvarea = GetEnvironmentStringsW();
+	if (!wenvarea) {
+	    map_errno(GetLastError());
+	    continue;
+	}
+	for (wenv = wenvarea, wlen = 1; *wenv; wenv += lstrlenW(wenv) + 1)
+	    wlen += lstrlenW(wenv) + 1;
+	uenvarea = wstr_to_mbstr(cp, wenvarea, wlen, NULL);
+	FreeEnvironmentStringsW(wenvarea);
+	if (!uenvarea)
+	    continue;
+
+	for (env = uenvarea; *env; env += strlen(env) + 1) {
+	    if (strncasecmp(env, name, len) == 0 && *(env + len) == '=') {
+		found = env + len + 1;
+		break;
+	    }
+	}
     }
-    for (wenv = wenvarea, wlen = 1; *wenv; wenv += lstrlenW(wenv) + 1)
-	wlen += lstrlenW(wenv) + 1;
-    uenvarea = wstr_to_mbstr(cp, wenvarea, wlen, NULL);
-    FreeEnvironmentStringsW(wenvarea);
-    if (!uenvarea)
-	return NULL;
 
-    for (env = uenvarea; *env; env += strlen(env) + 1)
-	if (strncasecmp(env, name, len) == 0 && *(env + len) == '=')
-	    return env + len + 1;
-
-    return NULL;
+    return found;
 }
 
 /* License: Ruby's */
