@@ -14,7 +14,15 @@ If you would like to learn more about BBV, there are two published papers, and a
 
 ## Installation
 
-The uJIT `ruby` binary can be built with either GCC or Clang.  We recommend enabling debug symbols so that assertions are enabled
+Start by cloning the `microjit` branch of the `Shopify/ruby` repository:
+
+```
+git clone https://github.com/Shopify/ruby.git microjit
+cd microjit
+git checkout microjit
+```
+
+The uJIT `ruby` binary can be built with either GCC or Clang. We recommend enabling debug symbols so that assertions are enabled:
 
 ```
 autoconf
