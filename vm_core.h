@@ -354,6 +354,7 @@ struct rb_iseq_constant_body {
 	    unsigned int ambiguous_param0 : 1; /* {|a|} */
 	    unsigned int accepts_no_kwarg : 1;
             unsigned int ruby2_keywords: 1;
+            unsigned int lambda_proc: 1;
 	} flags;
 
 	unsigned int size;

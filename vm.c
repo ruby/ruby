@@ -913,6 +913,10 @@ vm_proc_create_from_captured(VALUE klass,
     proc->is_from_method = is_from_method;
     proc->is_lambda = is_lambda;
 
+    if (is_lambda && rb_obj_is_iseq(captured->code.val)) {
+        ((rb_iseq_t *)captured->code.val)->body->param.flags.lambda_proc = 1;
+    }
+
     return procval;
 }
 

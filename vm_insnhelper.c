@@ -1392,8 +1392,24 @@ vm_throw_start(const rb_execution_context_t *ec, rb_control_frame_t *const reg_c
 	const VALUE *current_ep = GET_EP();
 	const VALUE *target_lep = VM_EP_LEP(current_ep);
 	int in_class_frame = 0;
+        const rb_iseq_t* lambda_containing_proc_iseq = NULL;
 	int toplevel = 1;
 	escape_cfp = reg_cfp;
+
+        /* Check for whether return occurs inside of a non-lambda proc that
+         * is inside of a lambda proc.
+         */
+        if (!VM_FRAME_LAMBDA_P(escape_cfp) && VM_FRAME_RUBYFRAME_P(escape_cfp)) {
+            const rb_iseq_t *base_iseq = GET_ISEQ();
+
+            while (base_iseq->body->type == ISEQ_TYPE_BLOCK) {
+                if (base_iseq->body->param.flags.lambda_proc) {
+                    lambda_containing_proc_iseq = base_iseq;
+                    break;
+                }
+                base_iseq = base_iseq->body->parent_iseq;
+            }
+        }
 
 	while (escape_cfp < eocfp) {
 	    const VALUE *lep = VM_CF_LEP(escape_cfp);
@@ -1411,6 +1427,16 @@ vm_throw_start(const rb_execution_context_t *ec, rb_control_frame_t *const reg_c
 
 	    if (lep == target_lep) {
 		if (VM_FRAME_LAMBDA_P(escape_cfp)) {
+                    if (lambda_containing_proc_iseq &&
+                            VM_FRAME_RUBYFRAME_P(escape_cfp)) {
+                        if (escape_cfp->iseq == lambda_containing_proc_iseq) {
+                            lambda_containing_proc_iseq = 0;
+                        }
+                        else {
+                            goto unexpected_return;
+                        }
+                    }
+
 		    toplevel = 0;
 		    if (in_class_frame) {
 			/* lambda {class A; ... return ...; end} */
@@ -1458,6 +1484,9 @@ vm_throw_start(const rb_execution_context_t *ec, rb_control_frame_t *const reg_c
 
       valid_return:;
 	/* do nothing */
+        if (lambda_containing_proc_iseq) {
+            goto unexpected_return;
+        }
     }
     else {
 	rb_bug("isns(throw): unsupported throw type");
