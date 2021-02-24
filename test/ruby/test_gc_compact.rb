@@ -60,22 +60,6 @@ class TestGCCompact < Test::Unit::TestCase
       GC.auto_compact = before
     end
 
-    def test_bug_17652
-      assert_in_out_err([], "#{<<~"{#"}#{<<~'};'}", timeout: 60)
-      {#
-        GC.auto_compact = true
-  
-        times = 20_000_000
-        arr = Array.new(times)
-        times.times do |i|
-          arr[i] = "#{i}"
-        end
-        
-        arr = Array.new(1_000_000, 42)
-        GC.start
-      };
-    end
-
     private
 
     def supports_auto_compact?
