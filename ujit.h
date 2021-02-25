@@ -56,5 +56,6 @@ void rb_ujit_constant_state_changed(void);
 void rb_ujit_iseq_mark(const struct rb_iseq_constant_body *body);
 void rb_ujit_iseq_update_references(const struct rb_iseq_constant_body *body);
 void rb_ujit_iseq_free(const struct rb_iseq_constant_body *body);
+void rb_ujit_before_ractor_spawn(void);
 
 #endif // #ifndef UJIT_H

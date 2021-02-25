@@ -175,8 +175,10 @@ add_block_version(blockid_t blockid, block_t* block)
             rb_bug("allocation failed");
         }
 
+#if RUBY_DEBUG
         // First block compiled for this iseq
         rb_compiled_iseq_count++;
+#endif
     }
 
     block_t *first_version = get_first_version(iseq, blockid.idx);
@@ -199,7 +201,7 @@ add_block_version(blockid_t blockid, block_t* block)
         RB_OBJ_WRITTEN(iseq, Qundef, block->dependencies.cc);
         RB_OBJ_WRITTEN(iseq, Qundef, block->dependencies.cme);
 
-        // Run write barrier for all objects in generated code.
+        // Run write barriers for all objects in generated code.
         uint32_t *offset_element;
         rb_darray_foreach(block->gc_object_offsets, offset_idx, offset_element) {
             uint32_t offset_to_value = *offset_element;
@@ -601,9 +603,12 @@ void
 ujit_free_block(block_t *block)
 {
     ujit_unlink_method_lookup_dependency(block);
+    ujit_block_assumptions_free(block);
+
     rb_darray_free(block->incoming);
-    free(block);
     rb_darray_free(block->gc_object_offsets);
+
+    free(block);
 }
 
 // Invalidate one specific block version

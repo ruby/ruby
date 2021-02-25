@@ -107,9 +107,6 @@ typedef struct ujit_block_version
     // Bytecode sequence (iseq, idx) this is a version of
     blockid_t blockid;
 
-    // Index one past the last instruction in the iseq
-    uint32_t end_idx;
-
     // Context at the start of the block
     ctx_t ctx;
 
@@ -119,6 +116,9 @@ typedef struct ujit_block_version
 
     // List of incoming branches indices
     int32_array_t incoming;
+
+    // Offsets for GC managed objects in the mainline code block
+    int32_array_t gc_object_offsets;
 
     // Next block version for this blockid (singly-linked list)
     struct ujit_block_version *next;
@@ -132,6 +132,9 @@ typedef struct ujit_block_version
         VALUE cme;
         VALUE iseq;
     } dependencies;
+
+    // Index one past the last instruction in the iseq
+    uint32_t end_idx;
 } block_t;
 
 // Context object methods
