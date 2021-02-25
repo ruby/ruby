@@ -293,8 +293,6 @@ class Gem::Installer
   def install
     pre_install_checks
 
-    FileUtils.rm_f File.join gem_home, 'specifications', spec.spec_name
-
     run_pre_install_hooks
 
     # Set loaded_from to ensure extension_dir is correct
