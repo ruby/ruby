@@ -882,6 +882,41 @@ class FTPTest < Test::Unit::TestCase
     end
   end
 
+  def test_getbinaryfile_error
+    commands = []
+    binary_data = ""
+    server = create_ftp_server { |sock|
+      sock.print("220 (test_ftp).\r\n")
+      commands.push(sock.gets)
+      sock.print("331 Please specify the password.\r\n")
+      commands.push(sock.gets)
+      sock.print("230 Login successful.\r\n")
+      commands.push(sock.gets)
+      sock.print("200 Switching to Binary mode.\r\n")
+      line = sock.gets
+      commands.push(line)
+      sock.print("450 No Dice\r\n")
+    }
+    begin
+      begin
+        ftp = Net::FTP.new
+        ftp.passive = true
+        ftp.read_timeout *= 5 if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # for --jit-wait
+        ftp.connect(SERVER_ADDR, server.port)
+        ftp.login
+        assert_match(/\AUSER /, commands.shift)
+        assert_match(/\APASS /, commands.shift)
+        assert_equal("TYPE I\r\n", commands.shift)
+        assert_raise(Net::FTPTempError) {ftp.getbinaryfile("foo", nil)}
+        assert_match(/\A(PASV|EPSV)\r\n/, commands.shift)
+      ensure
+        ftp.close if ftp
+      end
+    ensure
+      server.close
+    end
+  end
+
   def test_storbinary
     commands = []
     binary_data = (0..0xff).map {|i| i.chr}.join * 4 * 3
@@ -1935,7 +1970,7 @@ EOF
         assert_equal(nil, commands.shift)
         # FIXME: The new_session_cb is known broken for clients in OpenSSL 1.1.0h.
         # See https://github.com/openssl/openssl/pull/5967 for details.
-        if OpenSSL::OPENSSL_LIBRARY_VERSION !~ /OpenSSL 1.1.0h/
+        if OpenSSL::OPENSSL_LIBRARY_VERSION !~ /OpenSSL 1.1.0h|LibreSSL/
           assert_equal(true, session_reused_for_data_connection)
         end
       ensure
@@ -2019,7 +2054,7 @@ EOF
         assert_equal("RETR foo\r\n", commands.shift)
         assert_equal(nil, commands.shift)
         # FIXME: The new_session_cb is known broken for clients in OpenSSL 1.1.0h.
-        if OpenSSL::OPENSSL_LIBRARY_VERSION !~ /OpenSSL 1.1.0h/
+        if OpenSSL::OPENSSL_LIBRARY_VERSION !~ /OpenSSL 1.1.0h|LibreSSL/
           assert_equal(true, session_reused_for_data_connection)
         end
       ensure
