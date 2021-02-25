@@ -3,8 +3,6 @@
 require 'optparse'
 require 'openssl'
 
-include OpenSSL
-
 def usage
   myname = File::basename($0)
   $stderr.puts <<EOS
@@ -21,13 +19,13 @@ keyout = options["keyout"] || "keypair.pem"
 
 $stdout.sync = true
 name_str = ARGV.shift or usage()
-name = X509::Name.parse(name_str)
+name = OpenSSL::X509::Name.parse(name_str)
 
 keypair = nil
 if keypair_file
-  keypair = PKey.read(File.read(keypair_file))
+  keypair = OpenSSL::PKey.read(File.read(keypair_file))
 else
-  keypair = PKey::RSA.new(1024) { putc "." }
+  keypair = OpenSSL::PKey::RSA.new(1024) { putc "." }
   puts
   puts "Writing #{keyout}..."
   File.open(keyout, "w", 0400) do |f|
@@ -37,7 +35,7 @@ end
 
 puts "Generating CSR for #{name_str}"
 
-req = X509::Request.new
+req = OpenSSL::X509::Request.new
 req.version = 0
 req.subject = name
 req.public_key = keypair.public_key
