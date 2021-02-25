@@ -32,17 +32,15 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
     assert_equal true, store.verify(cert1)
     assert_equal true, store.verify(cert2)
 
-    unless libressl?(3, 2, 2)
-      # X509::Store#add_path
-      Dir.mktmpdir do |dir|
-        hash1 = "%08x.%d" % [cert1_subj.hash, 0]
-        File.write(File.join(dir, hash1), cert1.to_pem)
-        store = OpenSSL::X509::Store.new
-        store.add_path(dir)
+    # X509::Store#add_path
+    Dir.mktmpdir do |dir|
+      hash1 = "%08x.%d" % [cert1_subj.hash, 0]
+      File.write(File.join(dir, hash1), cert1.to_pem)
+      store = OpenSSL::X509::Store.new
+      store.add_path(dir)
 
-        assert_equal true, store.verify(cert1)
-        assert_equal false, store.verify(cert2)
-      end
+      assert_equal true, store.verify(cert1)
+      assert_equal false, store.verify(cert2)
     end
 
     # OpenSSL < 1.1.1 leaks an error on a duplicate certificate
@@ -77,8 +75,8 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
     # Nothing trusted
     store = OpenSSL::X509::Store.new
     assert_equal(false, store.verify(ee1_cert, [ca2_cert, ca1_cert]))
-    assert_include([OpenSSL::X509::V_ERR_SELF_SIGNED_CERT_IN_CHAIN, OpenSSL::X509::V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY], store.error)
-    assert_match(/self.signed|unable to get local issuer certificate/i, store.error_string)
+    assert_equal(OpenSSL::X509::V_ERR_SELF_SIGNED_CERT_IN_CHAIN, store.error)
+    assert_match(/self.signed/i, store.error_string)
 
     # CA1 trusted, CA2 missing
     store = OpenSSL::X509::Store.new
@@ -188,7 +186,7 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
     store.purpose = OpenSSL::X509::PURPOSE_CRL_SIGN
     store.add_cert(ca1_cert)
     assert_equal(true, store.verify(ca1_cert))
-    assert_equal(libressl?(3, 2, 2), store.verify(ee1_cert))
+    assert_equal(false, store.verify(ee1_cert))
   end
 
   def test_verify_validity_period
@@ -284,7 +282,7 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
     store.flags = OpenSSL::X509::V_FLAG_CRL_CHECK
     store.add_cert(ca1_cert)
     assert_equal(false, store.verify(ca2_cert))
-    assert_include([OpenSSL::X509::V_ERR_UNABLE_TO_GET_CRL, OpenSSL::X509::V_ERR_UNSPECIFIED], store.error)
+    assert_equal(OpenSSL::X509::V_ERR_UNABLE_TO_GET_CRL, store.error)
 
     # Intermediate CA revoked EE2
     store = OpenSSL::X509::Store.new
@@ -324,14 +322,9 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
     store.add_cert(ca2_cert)
     store.add_crl(ca1_crl1)
     store.add_crl(ca2_crl2) # issued by ca2 but expired
-    if libressl?(3, 2, 2)
-      assert_equal(false, store.verify(ca2_cert))
-      assert_include([OpenSSL::X509::V_ERR_CRL_SIGNATURE_FAILURE, OpenSSL::X509::V_ERR_UNSPECIFIED], store.error)
-    else
-      assert_equal(true, store.verify(ca2_cert))
-    end
+    assert_equal(true, store.verify(ca2_cert))
     assert_equal(false, store.verify(ee1_cert))
-    assert_include([OpenSSL::X509::V_ERR_CRL_HAS_EXPIRED, OpenSSL::X509::V_ERR_UNSPECIFIED], store.error)
+    assert_equal(OpenSSL::X509::V_ERR_CRL_HAS_EXPIRED, store.error)
     assert_equal(false, store.verify(ee2_cert))
   end
 

@@ -458,11 +458,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       ssl.sync_close = true
       begin
         assert_raise(OpenSSL::SSL::SSLError){ ssl.connect }
-        assert_include(
-          [
-            OpenSSL::X509::V_ERR_SELF_SIGNED_CERT_IN_CHAIN,
-            OpenSSL::X509::V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY
-          ], ssl.verify_result)
+        assert_equal(OpenSSL::X509::V_ERR_SELF_SIGNED_CERT_IN_CHAIN, ssl.verify_result)
       ensure
         ssl.close
       end
@@ -930,7 +926,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         ["keyUsage", "keyEncipherment,digitalSignature", true],
         ["subjectAltName", san],
       ]
- 
+
       ctx.cert = issue_cert(@svr, @svr_key, 4, exts, @ca_cert, @ca_key)
       ctx.key = @svr_key
     }
@@ -1015,7 +1011,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     start_server(ignore_listener_error: true) { |port|
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.set_params
-      assert_raise_with_message(OpenSSL::SSL::SSLError, /self signed|unable to get local issuer certificate/) {
+      assert_raise_with_message(OpenSSL::SSL::SSLError, /self signed/) {
         server_connect(port, ctx)
       }
     }
@@ -1617,13 +1613,13 @@ end
     end
   end
 
-  def test_ecdh_curves
+  def test_ecdh_curves_tls12
     pend "EC is disabled" unless defined?(OpenSSL::PKey::EC)
 
     ctx_proc = -> ctx {
       # Enable both ECDHE (~ TLS 1.2) cipher suites and TLS 1.3
-      ctx.ciphers = "DEFAULT:!kRSA:!kEDH"
-      ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION if libressl?(3, 2, 0)
+      ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
+      ctx.ciphers = "kEECDH"
       ctx.ecdh_curves = "P-384:P-521"
     }
     start_server(ctx_proc: ctx_proc, ignore_listener_error: true) do |port|
@@ -1632,13 +1628,9 @@ end
 
       server_connect(port, ctx) { |ssl|
         cs = ssl.cipher[0]
-        if /\ATLS/ =~ cs # Is TLS 1.3 is used?
+        assert_match (/\AECDH/), cs
+        if ssl.respond_to?(:tmp_key)
           assert_equal "secp384r1", ssl.tmp_key.group.curve_name
-        else
-          assert_match (/\AECDH/), cs
-          if ssl.respond_to?(:tmp_key)
-            assert_equal "secp384r1", ssl.tmp_key.group.curve_name
-          end
         end
         ssl.puts "abc"; assert_equal "abc\n", ssl.gets
       }
@@ -1659,6 +1651,26 @@ end
           ssl.puts "abc"; assert_equal "abc\n", ssl.gets
         }
       end
+    end
+  end
+
+  def test_ecdh_curves_tls13
+    pend "EC is disabled" unless defined?(OpenSSL::PKey::EC)
+    pend "TLS 1.3 not supported" unless tls13_supported?
+
+    ctx_proc = -> ctx {
+      # Assume TLS 1.3 is enabled and chosen by default
+      ctx.ecdh_curves = "P-384:P-521"
+    }
+    start_server(ctx_proc: ctx_proc, ignore_listener_error: true) do |port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.ecdh_curves = "P-256:P-384" # disable P-521
+
+      server_connect(port, ctx) { |ssl|
+        assert_equal "TLSv1.3", ssl.ssl_version
+        assert_equal "secp384r1", ssl.tmp_key.group.curve_name
+        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
+      }
     end
   end
 
