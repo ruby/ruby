@@ -128,20 +128,29 @@ void run_tests()
     );
     */
 
-    // jcc
+    // jcc to label
     {
         cb_set_pos(cb, 0);
         uint32_t loop_label = cb_new_label(cb, "loop");
-        jge(cb, loop_label);
+        jge_label(cb, loop_label);
         cb_link_labels(cb);
         check_bytes(cb, "0F8DFAFFFFFF");
     }
     {
         cb_set_pos(cb, 0);
         uint32_t loop_label = cb_new_label(cb, "loop");
-        jo(cb, loop_label);
+        jo_label(cb, loop_label);
         cb_link_labels(cb);
         check_bytes(cb, "0F80FAFFFFFF");
+    }
+
+    // jmp to label
+    {
+        cb_set_pos(cb, 0);
+        uint32_t loop_label = cb_new_label(cb, "loop");
+        jmp_label(cb, loop_label);
+        cb_link_labels(cb);
+        check_bytes(cb, "E9FBFFFFFF");
     }
 
     // jmp with RM operand
