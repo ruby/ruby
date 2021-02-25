@@ -25,7 +25,7 @@ keypair = nil
 if keypair_file
   keypair = OpenSSL::PKey.read(File.read(keypair_file))
 else
-  keypair = OpenSSL::PKey::RSA.new(1024) { putc "." }
+  keypair = OpenSSL::PKey::RSA.new(2048) { putc "." }
   puts
   puts "Writing #{keyout}..."
   File.open(keyout, "w", 0400) do |f|
@@ -38,8 +38,8 @@ puts "Generating CSR for #{name_str}"
 req = OpenSSL::X509::Request.new
 req.version = 0
 req.subject = name
-req.public_key = keypair.public_key
-req.sign(keypair, Digest.new('MD5'))
+req.public_key = keypair
+req.sign(keypair, "MD5")
 
 puts "Writing #{csrout}..."
 File.open(csrout, "w") do |f|
