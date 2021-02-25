@@ -1406,6 +1406,29 @@ ossl_ssl_s_alloc(VALUE klass)
     return TypedData_Wrap_Struct(klass, &ossl_ssl_type, NULL);
 }
 
+static VALUE
+peer_ip_address(VALUE self)
+{
+    VALUE remote_address = rb_funcall(rb_attr_get(self, id_i_io), rb_intern("remote_address"), 0);
+    
+    return rb_funcall(remote_address, rb_intern("inspect_sockaddr"), 0);
+}
+
+static VALUE
+fallback_peer_ip_address(VALUE self, VALUE args)
+{
+    return rb_str_new_cstr("(null)");
+}
+
+static VALUE
+peeraddr_ip_str(VALUE self)
+{
+    VALUE rb_mErrno = rb_const_get(rb_cObject, rb_intern("Errno"));
+    VALUE rb_eSystemCallError = rb_const_get(rb_mErrno, rb_intern("SystemCallError"));
+
+    return rb_rescue2(peer_ip_address, self, fallback_peer_ip_address, (VALUE)0, rb_eSystemCallError, NULL);
+}
+
 /*
  * call-seq:
  *    SSLSocket.new(io) => aSSLSocket
@@ -1557,7 +1580,9 @@ ossl_start_ssl(VALUE self, int (*func)(), const char *funcname, VALUE opts)
                 continue;
 #endif
 	    if (errno) rb_sys_fail(funcname);
-	    ossl_raise(eSSLError, "%s SYSCALL returned=%d errno=%d state=%s", funcname, ret2, errno, SSL_state_string_long(ssl));
+	    ossl_raise(eSSLError, "%s SYSCALL returned=%d errno=%d peeraddr=%"PRIsVALUE" state=%s",
+                funcname, ret2, errno, peeraddr_ip_str(self), SSL_state_string_long(ssl));
+
 #if defined(SSL_R_CERTIFICATE_VERIFY_FAILED)
 	case SSL_ERROR_SSL:
 	    err = ERR_peek_last_error();
@@ -1570,13 +1595,14 @@ ossl_start_ssl(VALUE self, int (*func)(), const char *funcname, VALUE opts)
 		if (!verify_msg)
 		    verify_msg = "(null)";
 		ossl_clear_error(); /* let ossl_raise() not append message */
-		ossl_raise(eSSLError, "%s returned=%d errno=%d state=%s: %s (%s)",
-			   funcname, ret2, errno, SSL_state_string_long(ssl),
+		ossl_raise(eSSLError, "%s returned=%d errno=%d peeraddr=%"PRIsVALUE" state=%s: %s (%s)",
+			   funcname, ret2, errno, peeraddr_ip_str(self), SSL_state_string_long(ssl),
 			   err_msg, verify_msg);
 	    }
 #endif
 	default:
-	    ossl_raise(eSSLError, "%s returned=%d errno=%d state=%s", funcname, ret2, errno, SSL_state_string_long(ssl));
+	    ossl_raise(eSSLError, "%s returned=%d errno=%d peeraddr=%"PRIsVALUE" state=%s",
+                funcname, ret2, errno, peeraddr_ip_str(self), SSL_state_string_long(ssl));
 	}
     }
 

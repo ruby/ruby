@@ -911,6 +911,33 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     sock2.close if sock2
   end
 
+  def test_accept_errors_include_peeraddr
+    context = OpenSSL::SSL::SSLContext.new
+    context.cert = @svr_cert
+    context.key = @svr_key
+
+    server = TCPServer.new("127.0.0.1", 0)
+    port = server.connect_address.ip_port
+
+    ssl_server = OpenSSL::SSL::SSLServer.new(server, context)
+
+    t = Thread.new do
+      assert_raise_with_message(OpenSSL::SSL::SSLError, /peeraddr=127\.0\.0\.1/) do
+        ssl_server.accept
+      end
+    end
+
+    begin
+      sock = TCPSocket.new("127.0.0.1", port)
+      sock.puts "abc"
+    ensure
+      sock&.close
+    end
+
+    assert t.join
+    server.close
+  end
+
   def test_verify_hostname_on_connect
     ctx_proc = proc { |ctx|
       san = "DNS:a.example.com,DNS:*.b.example.com"
