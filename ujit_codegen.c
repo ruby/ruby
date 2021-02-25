@@ -1561,7 +1561,7 @@ gen_leave(jitstate_t* jit, ctx_t* ctx)
     // If the return address is NULL, fall back to the interpreter
     int FALLBACK_LABEL = cb_new_label(cb, "FALLBACK");
     cmp(cb, REG1, imm_opnd(0));
-    jz(cb, FALLBACK_LABEL);
+    jz_label(cb, FALLBACK_LABEL);
 
     // Jump to the JIT return address
     jmp_rm(cb, REG1);
