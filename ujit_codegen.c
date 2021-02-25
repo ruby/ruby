@@ -1067,8 +1067,14 @@ gen_oswb_cfunc(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb_c
 {
     const rb_method_cfunc_t *cfunc = UNALIGNED_MEMBER_PTR(cme->def, body.cfunc);
 
-    // Don't JIT if the argument count doesn't match
-    if (cfunc->argc < 0 || cfunc->argc != argc)
+    // If the function expects a Ruby array of arguments
+    if (cfunc->argc < 0 && cfunc->argc != -1)
+    {
+        return false;
+    }
+
+    // If the argument count doesn't match
+    if (cfunc->argc >= 0 && cfunc->argc != argc)
     {
         return false;
     }
@@ -1201,13 +1207,26 @@ gen_oswb_cfunc(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb_c
     // Copy SP into RAX because REG_SP will get overwritten
     lea(cb, RAX, ctx_sp_opnd(ctx, 0));
 
-    // Copy the arguments from the stack to the C argument registers
-    // self is the 0th argument and is at index argc from the stack top
-    for (int32_t i = 0; i < argc + 1; ++i)
+    // Non-variadic method
+    if (cfunc->argc >= 0)
     {
-        x86opnd_t stack_opnd = mem_opnd(64, RAX, -(argc + 1 - i) * 8);
-        x86opnd_t c_arg_reg = C_ARG_REGS[i];
-        mov(cb, c_arg_reg, stack_opnd);
+        // Copy the arguments from the stack to the C argument registers
+        // self is the 0th argument and is at index argc from the stack top
+        for (int32_t i = 0; i < argc + 1; ++i)
+        {
+            x86opnd_t stack_opnd = mem_opnd(64, RAX, -(argc + 1 - i) * SIZEOF_VALUE);
+            x86opnd_t c_arg_reg = C_ARG_REGS[i];
+            mov(cb, c_arg_reg, stack_opnd);
+        }
+    }
+    // Variadic method
+    if (cfunc->argc == -1)
+    {
+        // The method gets a pointer to the first argument
+        // rb_f_puts(int argc, VALUE *argv, VALUE recv)
+        mov(cb, C_ARG_REGS[0], imm_opnd(argc));
+        lea(cb, C_ARG_REGS[1], mem_opnd(64, RAX, -(argc) * SIZEOF_VALUE));
+        mov(cb, C_ARG_REGS[2], mem_opnd(64, RAX, -(argc + 1) * SIZEOF_VALUE));
     }
 
     // Pop the C function arguments from the stack (in the caller)

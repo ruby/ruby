@@ -81,6 +81,17 @@ assert_normal_exit %q{
   foo()
 }
 
+# The hash method is a C function and uses the self argument
+assert_equal 'true', %q{
+    def lehashself
+        hash
+    end
+
+    a = lehashself
+    b = lehashself
+    a == b
+}
+
 # Method redefinition (code invalidation) test
 assert_equal '1', %q{
     def ret1
