@@ -24,10 +24,12 @@ VALUE cUjitBlock;
 VALUE cUjitDisasm;
 VALUE cUjitDisasmInsn;
 
+#if RUBY_DEBUG
 static int64_t vm_insns_count = 0;
 int64_t rb_ujit_exec_insns_count = 0;
 static int64_t exit_op_count[VM_INSTRUCTION_SIZE] = { 0 };
 int64_t rb_compiled_iseq_count = 0;
+#endif
 
 // Machine code blocks (executable memory)
 extern codeblock_t *cb;
@@ -45,7 +47,7 @@ static const rb_data_type_t ujit_block_type = {
 };
 
 // Write the uJIT entry point pre-call bytes
-void 
+void
 cb_write_pre_call_bytes(codeblock_t* cb)
 {
     for (size_t i = 0; i < sizeof(ujit_with_ec_pre_call_bytes); ++i)
@@ -53,7 +55,7 @@ cb_write_pre_call_bytes(codeblock_t* cb)
 }
 
 // Write the uJIT exit post-call bytes
-void 
+void
 cb_write_post_call_bytes(codeblock_t* cb)
 {
     for (size_t i = 0; i < sizeof(ujit_with_ec_post_call_bytes); ++i)
@@ -129,44 +131,72 @@ struct ujit_root_struct {
     int unused; // empty structs are not legal in C99
 };
 
-// Map cme_or_cc => [[iseq, offset]]. An entry in the map means compiled code at iseq[offset]
-// is only valid when cme_or_cc is valid
+static void
+block_array_shuffle_remove(rb_ujit_block_array_t blocks, block_t *to_remove) {
+    block_t **elem;
+    rb_darray_foreach(blocks, i, elem) {
+        if (*elem == to_remove) {
+            // Remove the current element by moving the last element here then popping.
+            *elem = rb_darray_get(blocks, rb_darray_size(blocks) - 1);
+            rb_darray_pop_back(blocks);
+            break;
+        }
+    }
+}
+
+// Map cme_or_cc => [block]
 static st_table *method_lookup_dependency;
-
-struct compiled_region {
-    block_t *block;
-};
-
-typedef rb_darray(struct compiled_region) block_array_t;
 
 static int
 add_lookup_dependency_i(st_data_t *key, st_data_t *value, st_data_t data, int existing)
 {
-    struct compiled_region *region = (struct compiled_region *)data;
+    block_t *new_block = (block_t *)data;
 
-    block_array_t regions = NULL;
+    rb_ujit_block_array_t blocks = NULL;
     if (existing) {
-        regions = (block_array_t )*value;
+        blocks = (rb_ujit_block_array_t)*value;
     }
-    if (!rb_darray_append(&regions, *region)) {
+    if (!rb_darray_append(&blocks, new_block)) {
         rb_bug("ujit: failed to add method lookup dependency"); // TODO: we could bail out of compiling instead
     }
 
-    *value = (st_data_t)regions;
+    *value = (st_data_t)blocks;
     return ST_CONTINUE;
 }
 
-// Remember that the currently compiling region is only valid while cme and cc are valid
+// Remember that the currently compiling block is only valid while cme and cc are valid
 void
 assume_method_lookup_stable(const struct rb_callcache *cc, const rb_callable_method_entry_t *cme, block_t *block)
 {
     RUBY_ASSERT(block != NULL);
     RUBY_ASSERT(block->dependencies.cc == 0 && block->dependencies.cme == 0);
-    struct compiled_region region = { .block = block };
-    st_update(method_lookup_dependency, (st_data_t)cme, add_lookup_dependency_i, (st_data_t)&region);
+    st_update(method_lookup_dependency, (st_data_t)cme, add_lookup_dependency_i, (st_data_t)block);
     block->dependencies.cme = (VALUE)cme;
-    st_update(method_lookup_dependency, (st_data_t)cc, add_lookup_dependency_i, (st_data_t)&region);
+    st_update(method_lookup_dependency, (st_data_t)cc, add_lookup_dependency_i, (st_data_t)block);
     block->dependencies.cc = (VALUE)cc;
+}
+
+static st_table *blocks_assuming_single_ractor_mode;
+
+// Can raise NoMemoryError.
+RBIMPL_ATTR_NODISCARD()
+bool
+assume_single_ractor_mode(block_t *block) {
+    if (rb_multi_ractor_p()) return false;
+
+    st_insert(blocks_assuming_single_ractor_mode, (st_data_t)block, 1);
+    return true;
+}
+
+static st_table *blocks_assuming_stable_global_constant_state;
+
+// Assume that the global constant state has not changed since call to this function.
+// Can raise NoMemoryError.
+RBIMPL_ATTR_NODISCARD()
+bool
+assume_stable_global_constant_state(block_t *block) {
+    st_insert(blocks_assuming_stable_global_constant_state, (st_data_t)block, 1);
+    return true;
 }
 
 static int
@@ -253,11 +283,11 @@ rb_ujit_method_lookup_change(VALUE cme_or_cc)
     // Invalidate all regions that depend on the cme or cc
     st_data_t key = (st_data_t)cme_or_cc, image;
     if (st_delete(method_lookup_dependency, &key, &image)) {
-        block_array_t array = (void *)image;
-        struct compiled_region *elem;
+        rb_ujit_block_array_t array = (void *)image;
+        block_t **elem;
 
         rb_darray_foreach(array, i, elem) {
-            invalidate_block_version(elem->block);
+            invalidate_block_version(*elem);
         }
 
         rb_darray_free(array);
@@ -272,19 +302,9 @@ remove_method_lookup_dependency(VALUE cc_or_cme, block_t *block)
 {
     st_data_t key = (st_data_t)cc_or_cme, image;
     if (st_lookup(method_lookup_dependency, key, &image)) {
-        block_array_t array = (void *)image;
-        struct compiled_region *elem;
+        rb_ujit_block_array_t array = (void *)image;
 
-        // Find the block we are removing
-        rb_darray_foreach(array, i, elem) {
-            if (elem->block == block) {
-                // Remove the current element by moving the last element here.
-                // Order in the region array doesn't matter.
-                *elem = rb_darray_get(array, rb_darray_size(array) - 1);
-                rb_darray_pop_back(array);
-                break;
-            }
-        }
+        block_array_shuffle_remove(array, block);
 
         if (rb_darray_size(array) == 0) {
             st_delete(method_lookup_dependency, &key, NULL);
@@ -298,6 +318,19 @@ ujit_unlink_method_lookup_dependency(block_t *block)
 {
     if (block->dependencies.cc) remove_method_lookup_dependency(block->dependencies.cc, block);
     if (block->dependencies.cme) remove_method_lookup_dependency(block->dependencies.cme, block);
+}
+
+void
+ujit_block_assumptions_free(block_t *block)
+{
+    st_data_t as_st_data = (st_data_t)block;
+    if (blocks_assuming_stable_global_constant_state) {
+        st_delete(blocks_assuming_stable_global_constant_state, &as_st_data, NULL);
+    }
+
+    if (blocks_assuming_single_ractor_mode) {
+        st_delete(blocks_assuming_single_ractor_mode, &as_st_data, NULL);
+    }
 }
 
 void
@@ -411,11 +444,28 @@ rb_ujit_bop_redefined(VALUE klass, const rb_method_entry_t *me, enum ruby_basic_
     //fprintf(stderr, "bop redefined\n");
 }
 
+static int
+block_invalidation_iterator(st_data_t key, st_data_t value, st_data_t data) {
+    block_t *block = (block_t *)key;
+    invalidate_block_version(block); // Thankfully, st_table supports deleteing while iterating
+    return ST_CONTINUE;
+}
+
 /* Called when the constant state changes */
 void
 rb_ujit_constant_state_changed(void)
 {
-    //fprintf(stderr, "bop redefined\n");
+    if (blocks_assuming_stable_global_constant_state) {
+        st_foreach(blocks_assuming_stable_global_constant_state, block_invalidation_iterator, 0);
+    }
+}
+
+void
+rb_ujit_before_ractor_spawn(void)
+{
+    if (blocks_assuming_single_ractor_mode) {
+        st_foreach(blocks_assuming_single_ractor_mode, block_invalidation_iterator, 0);
+    }
 }
 
 #if HAVE_LIBCAPSTONE
@@ -650,6 +700,9 @@ rb_ujit_init(struct rb_ujit_options *options)
     if (rb_ujit_opts.call_threshold < 1) {
         rb_ujit_opts.call_threshold = 2;
     }
+
+    blocks_assuming_stable_global_constant_state = st_init_numtable();
+    blocks_assuming_single_ractor_mode = st_init_numtable();
 
     ujit_init_core();
     ujit_init_codegen();

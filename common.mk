@@ -10590,6 +10590,7 @@ ractor.$(OBJEXT): {$(VPATH)}thread.h
 ractor.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 ractor.$(OBJEXT): {$(VPATH)}thread_native.h
 ractor.$(OBJEXT): {$(VPATH)}transient_heap.h
+ractor.$(OBJEXT): {$(VPATH)}ujit.h
 ractor.$(OBJEXT): {$(VPATH)}variable.h
 ractor.$(OBJEXT): {$(VPATH)}vm_core.h
 ractor.$(OBJEXT): {$(VPATH)}vm_debug.h

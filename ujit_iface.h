@@ -10,6 +10,7 @@
 #include "stdint.h"
 #include "stdbool.h"
 #include "internal.h"
+#include "ruby/internal/attr/nodiscard.h"
 #include "vm_core.h"
 #include "vm_callinfo.h"
 #include "builtin.h"
@@ -32,9 +33,15 @@ int opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc);
 
 void check_cfunc_dispatch(VALUE receiver, struct rb_call_data *cd, void *callee, rb_callable_method_entry_t *compile_time_cme);
 bool cfunc_needs_frame(const rb_method_cfunc_t *cfunc);
+
 void assume_method_lookup_stable(const struct rb_callcache *cc, const rb_callable_method_entry_t *cme, block_t* block);
+RBIMPL_ATTR_NODISCARD() bool assume_single_ractor_mode(block_t *block);
+RBIMPL_ATTR_NODISCARD() bool assume_stable_global_constant_state(block_t *block);
+
 // this function *must* return passed exit_pc
 const VALUE *rb_ujit_count_side_exit_op(const VALUE *exit_pc);
+
 void ujit_unlink_method_lookup_dependency(block_t *block);
+void ujit_block_assumptions_free(block_t *block);
 
 #endif // #ifndef UJIT_IFACE_H
