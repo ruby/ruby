@@ -260,14 +260,7 @@ const rb_data_type_t rb_random_data_type = {
 };
 
 #define random_mt_mark rb_random_mark
-
-static void
-random_mt_free(void *ptr)
-{
-    rb_random_mt_t *rnd = rb_ractor_local_storage_ptr(default_rand_key);
-    if (ptr != rnd)
-	xfree(ptr);
-}
+#define random_mt_free RUBY_TYPED_DEFAULT_FREE
 
 static size_t
 random_mt_memsize(const void *ptr)
