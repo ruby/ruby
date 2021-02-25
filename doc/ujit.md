@@ -1,6 +1,8 @@
 MicroJIT (uJIT)
 ===============
 
+**DISCLAIMER: Please note that this project is in early stages of development. It may cause your software to crash or perform poorly on certain workloads.**
+
 MicroJIT is a lightweight, minimalistic Ruby JIT built inside the CRuby/MRI binary.
 It lazily compiles code using a Basic Block Versioning (BBV) architecture. The target use case is that of servers running
 Ruby on Rails, an area where CRuby's MJIT has not yet managed to deliver speedups. 
