@@ -371,17 +371,18 @@ class TestPsych < Psych::TestCase
     yaml = <<-eoyml
 foo:
   bar: baz
+  1: 2
 hoge:
   - fuga: piyo
     eoyml
 
     result = Psych.load(yaml)
-    assert_equal result, { "foo" => { "bar" => "baz"}, "hoge" => [{ "fuga" => "piyo" }] }
+    assert_equal result, { "foo" => { "bar" => "baz", 1 => 2 }, "hoge" => [{ "fuga" => "piyo" }] }
 
     result = Psych.load(yaml, symbolize_names: true)
-    assert_equal result, { foo: { bar: "baz" }, hoge: [{ fuga: "piyo" }] }
+    assert_equal result, { foo: { bar: "baz", 1 => 2 }, hoge: [{ fuga: "piyo" }] }
 
     result = Psych.safe_load(yaml, symbolize_names: true)
-    assert_equal result, { foo: { bar: "baz" }, hoge: [{ fuga: "piyo" }] }
+    assert_equal result, { foo: { bar: "baz", 1 => 2 }, hoge: [{ fuga: "piyo" }] }
   end
 end

@@ -366,7 +366,7 @@ module Psych
               hash[key] = val
             end
           else
-            if !tagged && @symbolize_names
+            if !tagged && @symbolize_names && key.is_a?(String)
               key = key.to_sym
             elsif !@freeze
               key = deduplicate(key)
