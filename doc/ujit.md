@@ -24,7 +24,7 @@ cd microjit
 git checkout microjit
 ```
 
-The uJIT `ruby` binary can be built with either GCC or Clang. We recommend enabling debug symbols so that assertions are enabled:
+The uJIT `ruby` binary can be built with either GCC or Clang. We recommend enabling debug symbols so that assertions are enabled during development as this makes debugging easier. More detailed build instructions are provided in the [Ruby README](https://github.com/ruby/ruby#how-to-compile-and-install).
 
 ```
 autoconf
@@ -42,21 +42,32 @@ make btest
 make -j16 test-all
 ```
 
+## Usage
+
 Once uJIT is built, you can either use `./miniruby` from within your build directory, or switch to the uJIT version of `ruby`
 by using the `chruby` tool:
 
 ```
 chruby ruby-microjit
+ruby <options>
+```
+
+You can dump statistics about compilation and execution by running uJIT with the `--ujit-stats` command-line option:
+
+```
+./miniruby --ujit-stats <options>
 ```
 
 ## Source Code Organization
 
 The uJIT source code is divided between:
 - `ujit_asm.c`: x86 in-memory assembler we use to generate machine code
+- `ujit_asm_tests.c`: tests for the in-memory assembler
 - `ujit_codegen.c`: logic for translating Ruby bytecode to machine code
 - `ujit_core.c`: basic block versioning logic, core structure of uJIT
 - `ujit_iface.c`: code uJIT uses to interface with the rest of CRuby
 - `ujit.rb`: `UJIT` module that is exposed to Ruby code
+- `test_asm.sh`: script to compile and run the in-memory assembler tests
 
 The core of CRuby's interpreter logic is found in:
 - `insns.def`: defines Ruby's bytecode instructions
