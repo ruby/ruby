@@ -6777,7 +6777,15 @@ rb_str_inspect(VALUE str)
             prev = p;
             continue;
         }
-        if ((enc == resenc && rb_enc_isprint(c, enc)) ||
+        /* The special casing of 0x85 (NEXT_LINE) here is because
+         * Oniguruma historically treats it as printable, but it
+         * doesn't match the print POSIX bracket class or character
+         * property in regexps.
+         *
+         * See Ruby Bug #16842 for details:
+         * https://bugs.ruby-lang.org/issues/16842
+         */
+        if ((enc == resenc && rb_enc_isprint(c, enc) && c != 0x85) ||
             (asciicompat && rb_enc_isascii(c, enc) && ISPRINT(c))) {
             continue;
         }
