@@ -1,7 +1,7 @@
 MicroJIT (uJIT)
 ===============
 
-**DISCLAIMER: Please note that this project is in early stages of development. It is very much a work in progress, it may cause your software to crash, and current performance results are likely to leave you feeling unimpressed.**
+**DISCLAIMER: Please note that this project is in early stages of development. It is very much a work in progress, it may cause your software to crash, and current performance results are likely to leave you feeling underwhelmed.**
 
 MicroJIT is a lightweight, minimalistic Ruby JIT built inside the CRuby/MRI binary.
 It lazily compiles code using a Basic Block Versioning (BBV) architecture. The target use case is that of servers running
@@ -49,14 +49,16 @@ by using the `chruby` tool:
 
 ```
 chruby ruby-microjit
-ruby <options>
+ruby myscript.rb
 ```
 
 You can dump statistics about compilation and execution by running uJIT with the `--ujit-stats` command-line option:
 
 ```
-./miniruby --ujit-stats <options>
+./miniruby --ujit-stats myscript.rb
 ```
+
+The machine code generated for a given method can be printed by adding `puts UJIT.disasm(method(:method_name))` to a Ruby script. Note that no code will be generated if the method is not compiled.
 
 ## Source Code Organization
 
