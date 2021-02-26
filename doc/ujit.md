@@ -78,4 +78,4 @@ The core of CRuby's interpreter logic is found in:
 
 ## Contributing
 
-We welcome open source contributors. If you are interested in contributing to this project, please contact Maxime Chevalier [(@Love2Code) via twitter](https://twitter.com/Love2Code).
+We welcome open source contributors. If you are interested in contributing to this project, please contact Maxime Chevalier [(@Love2Code) via twitter](https://twitter.com/Love2Code). Suggestions on how to make this readme file more helpful for new contributors are most welcome.
