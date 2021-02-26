@@ -102,6 +102,19 @@ module Fiddle
       assert_equal("123", str.to_s)
     end
 
+    def call_proc(string_to_copy)
+      buff = +"000"
+      str = yield(buff, string_to_copy)
+      [buff, str]
+    end
+
+    def test_function_as_proc
+      f = Function.new(@libc['strcpy'], [TYPE_VOIDP, TYPE_VOIDP], TYPE_VOIDP)
+      buff, str = call_proc("123", &f)
+      assert_equal("123", buff)
+      assert_equal("123", str.to_s)
+    end
+
     def test_nogvl_poll
       # XXX hack to quiet down CI errors on EINTR from r64353
       # [ruby-core:88360] [Misc #14937]
