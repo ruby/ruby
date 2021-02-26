@@ -22,7 +22,8 @@ module Fiddle
 
     # Turn this function in to a proc
     def to_proc
-      lambda { |*args| self.call(*args) }
+      this = self
+      lambda { |*args| this.call(*args) }
     end
   end
 end

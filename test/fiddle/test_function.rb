@@ -115,6 +115,17 @@ module Fiddle
       assert_equal("123", str.to_s)
     end
 
+    def test_function_as_method
+      f = Function.new(@libc['strcpy'], [TYPE_VOIDP, TYPE_VOIDP], TYPE_VOIDP)
+      klass = Class.new do
+        define_singleton_method(:strcpy, &f)
+      end
+      buff = +"000"
+      str = klass.strcpy(buff, "123")
+      assert_equal("123", buff)
+      assert_equal("123", str.to_s)
+    end
+
     def test_nogvl_poll
       # XXX hack to quiet down CI errors on EINTR from r64353
       # [ruby-core:88360] [Misc #14937]
