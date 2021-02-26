@@ -367,7 +367,7 @@ void not(codeblock_t* cb, x86opnd_t opnd);
 void or(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
 void pop(codeblock_t* cb, x86opnd_t reg);
 void popfq(codeblock_t* cb);
-void push(codeblock_t* cb, x86opnd_t reg);
+void push(codeblock_t* cb, x86opnd_t opnd);
 void pushfq(codeblock_t* cb);
 void ret(codeblock_t* cb);
 void sal(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
