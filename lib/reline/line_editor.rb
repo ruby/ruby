@@ -124,6 +124,7 @@ class Reline::LineEditor
         @prompt_cache_time = Time.now.to_f
       end
       prompt_list.map!{ prompt } if @vi_arg or @searching_prompt
+      prompt_list = [prompt] if prompt_list.empty?
       mode_string = check_mode_string
       prompt_list = prompt_list.map{ |pr| mode_string + pr } if mode_string
       prompt = prompt_list[@line_index]
@@ -343,8 +344,9 @@ class Reline::LineEditor
     else
     end_of_line_cursor = new_cursor_max
     end
-    line_to_calc.encode(Encoding::UTF_8).grapheme_clusters.each do |gc|
-      mbchar_width = Reline::Unicode.get_mbchar_width(gc)
+    line_to_calc.grapheme_clusters.each do |gc|
+      mbchar = gc.encode(Encoding::UTF_8)
+      mbchar_width = Reline::Unicode.get_mbchar_width(mbchar)
       now = new_cursor + mbchar_width
       if now > end_of_line_cursor or now > cursor
         break
@@ -724,13 +726,17 @@ class Reline::LineEditor
       Reline::IOGate.move_cursor_column(0)
       if line.nil?
         if calculate_width(visual_lines[index - 1], true) == Reline::IOGate.get_screen_size.last
-          # Reaches the end of line.
-          #
-          # When the cursor is at the end of the line and erases characters
-          # after the cursor, some terminals delete the character at the
-          # cursor position.
-          move_cursor_down(1)
-          Reline::IOGate.move_cursor_column(0)
+          # reaches the end of line
+          if Reline::IOGate.win? and Reline::IOGate.win_legacy_console?
+            # A newline is automatically inserted if a character is rendered at
+            # eol on command prompt.
+          else
+            # When the cursor is at the end of the line and erases characters
+            # after the cursor, some terminals delete the character at the
+            # cursor position.
+            move_cursor_down(1)
+            Reline::IOGate.move_cursor_column(0)
+          end
         else
           Reline::IOGate.erase_after_cursor
           move_cursor_down(1)
@@ -739,6 +745,10 @@ class Reline::LineEditor
         next
       end
       @output.write line
+      if Reline::IOGate.win? and Reline::IOGate.win_legacy_console? and calculate_width(line, true) == Reline::IOGate.get_screen_size.last
+        # A newline is automatically inserted if a character is rendered at eol on command prompt.
+        @rest_height -= 1 if @rest_height > 0
+      end
       @output.flush
       if @first_prompt
         @first_prompt = false
