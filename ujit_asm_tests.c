@@ -284,6 +284,11 @@ void run_tests()
     cb_set_pos(cb, 0); push(cb, RAX); check_bytes(cb, "50");
     cb_set_pos(cb, 0); push(cb, RBX); check_bytes(cb, "53");
     cb_set_pos(cb, 0); push(cb, R12); check_bytes(cb, "4154");
+    cb_set_pos(cb, 0); push(cb, mem_opnd(64, RAX, 0)); check_bytes(cb, "FF30");
+    cb_set_pos(cb, 0); push(cb, mem_opnd(64, R8, 0)); check_bytes(cb, "41FF30");
+    cb_set_pos(cb, 0); push(cb, mem_opnd(64, R8, 3)); check_bytes(cb, "41FF7003");
+    cb_set_pos(cb, 0); push(cb, mem_opnd_sib(64, RAX, RCX, 8, 3)); check_bytes(cb, "FF74C803");
+    cb_set_pos(cb, 0); push(cb, mem_opnd_sib(64, R8, RCX, 8, 3)); check_bytes(cb, "41FF74C803");
 
     // ret
     cb_set_pos(cb, 0); ret(cb); check_bytes(cb, "C3");
