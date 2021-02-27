@@ -3333,6 +3333,80 @@ vm_mtbl2(VALUE self, VALUE obj, VALUE sym)
     return Qnil;
 }
 
+static void
+check_and_record_bop(ID mid, VALUE klass, VALUE redefines, short bv, short mask)
+{
+    if (bv & mask) {
+        VALUE redefined_method_ids;
+
+        if (RTEST(rb_hash_has_key(redefines, klass))) {
+            redefined_method_ids = rb_hash_aref(redefines, klass);
+        } else {
+            redefined_method_ids = rb_ary_new();
+            rb_hash_aset(redefines, klass, redefined_method_ids);
+        }
+
+        rb_ary_push(redefined_method_ids, rb_id2sym(mid));
+    }
+}
+
+static void
+check_bop(ID mid, enum ruby_basic_operators bop, VALUE redefines)
+{
+    if (ruby_vm_redefined_flag[bop]) {
+        short bv = ruby_vm_redefined_flag[bop];
+        check_and_record_bop(mid, rb_cInteger, redefines, bv, INTEGER_REDEFINED_OP_FLAG);
+        check_and_record_bop(mid, rb_cFloat, redefines, bv, FLOAT_REDEFINED_OP_FLAG);
+        check_and_record_bop(mid, rb_cString, redefines, bv, STRING_REDEFINED_OP_FLAG);
+        check_and_record_bop(mid, rb_cArray, redefines, bv, ARRAY_REDEFINED_OP_FLAG);
+        check_and_record_bop(mid, rb_cHash, redefines, bv, HASH_REDEFINED_OP_FLAG);
+        check_and_record_bop(mid, rb_cSymbol, redefines, bv, SYMBOL_REDEFINED_OP_FLAG);
+        check_and_record_bop(mid, rb_cRegexp, redefines, bv, REGEXP_REDEFINED_OP_FLAG);
+        check_and_record_bop(mid, rb_cNilClass, redefines, bv, NIL_REDEFINED_OP_FLAG);
+        check_and_record_bop(mid, rb_cTrueClass, redefines, bv, TRUE_REDEFINED_OP_FLAG);
+        check_and_record_bop(mid, rb_cFalseClass, redefines, bv, FALSE_REDEFINED_OP_FLAG);
+        check_and_record_bop(mid, rb_cProc, redefines, bv, PROC_REDEFINED_OP_FLAG);
+    }
+}
+
+static VALUE
+vm_deoptimized_methods(VALUE mod)
+{
+    VALUE redefines = rb_hash_new();
+
+#define OP(mid_, bop_) (check_bop(id##mid_, BOP_##bop_, redefines))
+    OP(PLUS, PLUS);
+    OP(MINUS, MINUS);
+    OP(MULT, MULT);
+    OP(DIV, DIV);
+    OP(MOD, MOD);
+    OP(Eq, EQ);
+    OP(Eqq, EQQ);
+    OP(LT, LT);
+    OP(LE, LE);
+    OP(GT, GT);
+    OP(GE, GE);
+    OP(LTLT, LTLT);
+    OP(AREF, AREF);
+    OP(ASET, ASET);
+    OP(Length, LENGTH);
+    OP(Size, SIZE);
+    OP(EmptyP, EMPTY_P);
+    OP(Succ, SUCC);
+    OP(EqTilde, MATCH);
+    OP(Freeze, FREEZE);
+    OP(UMinus, UMINUS);
+    OP(Max, MAX);
+    OP(Min, MIN);
+    OP(Call, CALL);
+    OP(And, AND);
+    OP(Or, OR);
+    OP(NilP, NIL_P);
+#undef OP
+
+    return redefines;
+}
+
 void
 Init_VM(void)
 {
@@ -3356,6 +3430,7 @@ Init_VM(void)
     rb_undef_alloc_func(rb_cRubyVM);
     rb_undef_method(CLASS_OF(rb_cRubyVM), "new");
     rb_define_singleton_method(rb_cRubyVM, "stat", vm_stat, -1);
+    rb_define_singleton_method(rb_cRubyVM, "deoptimized_methods", vm_deoptimized_methods, 0);
 #if USE_DEBUG_COUNTER
     rb_define_singleton_method(rb_cRubyVM, "reset_debug_counters", rb_debug_counter_reset, 0);
     rb_define_singleton_method(rb_cRubyVM, "show_debug_counters", rb_debug_counter_show, 0);
