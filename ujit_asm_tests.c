@@ -279,6 +279,11 @@ void run_tests()
     cb_set_pos(cb, 0); pop(cb, RSP); check_bytes(cb, "5C");
     cb_set_pos(cb, 0); pop(cb, RBP); check_bytes(cb, "5D");
     cb_set_pos(cb, 0); pop(cb, R12); check_bytes(cb, "415C");
+    cb_set_pos(cb, 0); pop(cb, mem_opnd(64, RAX, 0)); check_bytes(cb, "8F00");
+    cb_set_pos(cb, 0); pop(cb, mem_opnd(64, R8, 0)); check_bytes(cb, "418F00");
+    cb_set_pos(cb, 0); pop(cb, mem_opnd(64, R8, 3)); check_bytes(cb, "418F4003");
+    cb_set_pos(cb, 0); pop(cb, mem_opnd_sib(64, RAX, RCX, 8, 3)); check_bytes(cb, "8F44C803");
+    cb_set_pos(cb, 0); pop(cb, mem_opnd_sib(64, R8, RCX, 8, 3)); check_bytes(cb, "418F44C803");
 
     // push
     cb_set_pos(cb, 0); push(cb, RAX); check_bytes(cb, "50");

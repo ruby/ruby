@@ -1431,16 +1431,21 @@ void or(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1)
 }
 
 /// pop - Pop a register off the stack
-void pop(codeblock_t* cb, x86opnd_t reg)
+void pop(codeblock_t* cb, x86opnd_t opnd)
 {
-    assert (reg.num_bits == 64);
+    assert (opnd.num_bits == 64);
 
-    //cb.writeASM("pop", reg);
+    //cb.writeASM("pop", opnd);
 
-    if (rex_needed(reg))
-        cb_write_rex(cb, false, 0, 0, reg.as.reg.reg_no);
-
-    cb_write_opcode(cb, 0x58, reg);
+    if (opnd.type == OPND_REG) {
+        if (rex_needed(opnd))
+            cb_write_rex(cb, false, 0, 0, opnd.as.reg.reg_no);
+        cb_write_opcode(cb, 0x58, opnd);
+    } else if (opnd.type == OPND_MEM) {
+        cb_write_rm(cb, false, false, NO_OPND, opnd, 0, 1, 0x8F);
+    } else {
+        assert(false && "unexpected operand type");
+    }
 }
 
 /// popfq - Pop the flags register (64-bit)
