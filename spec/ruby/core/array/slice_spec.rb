@@ -185,6 +185,64 @@ describe "Array#slice!" do
       a.should == [3, 4]
     end
   end
+
+  describe "with a subclass of Array" do
+    before :each do
+      @array = ArraySpecs::MyArray[1, 2, 3, 4, 5]
+    end
+
+    ruby_version_is ''...'3.0' do
+      it "returns a subclass instance with [n, m]" do
+        @array.slice!(0, 2).should be_an_instance_of(ArraySpecs::MyArray)
+      end
+
+      it "returns a subclass instance with [-n, m]" do
+        @array.slice!(-3, 2).should be_an_instance_of(ArraySpecs::MyArray)
+      end
+
+      it "returns a subclass instance with [n..m]" do
+        @array.slice!(1..3).should be_an_instance_of(ArraySpecs::MyArray)
+      end
+
+      it "returns a subclass instance with [n...m]" do
+        @array.slice!(1...3).should be_an_instance_of(ArraySpecs::MyArray)
+      end
+
+      it "returns a subclass instance with [-n..-m]" do
+        @array.slice!(-3..-1).should be_an_instance_of(ArraySpecs::MyArray)
+      end
+
+      it "returns a subclass instance with [-n...-m]" do
+        @array.slice!(-3...-1).should be_an_instance_of(ArraySpecs::MyArray)
+      end
+    end
+
+    ruby_version_is '3.0' do
+      it "returns a Array instance with [n, m]" do
+        @array.slice!(0, 2).should be_an_instance_of(Array)
+      end
+
+      it "returns a Array instance with [-n, m]" do
+        @array.slice!(-3, 2).should be_an_instance_of(Array)
+      end
+
+      it "returns a Array instance with [n..m]" do
+        @array.slice!(1..3).should be_an_instance_of(Array)
+      end
+
+      it "returns a Array instance with [n...m]" do
+        @array.slice!(1...3).should be_an_instance_of(Array)
+      end
+
+      it "returns a Array instance with [-n..-m]" do
+        @array.slice!(-3..-1).should be_an_instance_of(Array)
+      end
+
+      it "returns a Array instance with [-n...-m]" do
+        @array.slice!(-3...-1).should be_an_instance_of(Array)
+      end
+    end
+  end
 end
 
 describe "Array#slice" do

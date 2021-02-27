@@ -29,7 +29,17 @@ describe "Module#attr_writer" do
       attr_writer :spec_attr_writer
     end
 
-    -> { true.spec_attr_writer = "a" }.should raise_error(RuntimeError)
+    -> { true.spec_attr_writer = "a" }.should raise_error(FrozenError)
+  end
+
+  it "raises FrozenError if the receiver if frozen" do
+    c = Class.new do
+      attr_writer :foo
+    end
+    obj = c.new
+    obj.freeze
+
+    -> { obj.foo = 42 }.should raise_error(FrozenError)
   end
 
   it "converts non string/symbol names to strings using to_str" do

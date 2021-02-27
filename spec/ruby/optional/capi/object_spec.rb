@@ -161,6 +161,20 @@ describe "CApiObject" do
     end
   end
 
+  describe "rb_obj_method" do
+    it "returns the method object for a symbol" do
+      method = @o.rb_obj_method("test", :size)
+      method.owner.should == String
+      method.name.to_sym.should == :size
+    end
+
+    it "returns the method object for a string" do
+      method = @o.rb_obj_method("test", "size")
+      method.owner.should == String
+      method.name.to_sym.should == :size
+    end
+  end
+
   describe "rb_method_boundp" do
     it "returns true when the given method is bound" do
       @o.rb_method_boundp(Object, :class, true).should == true
