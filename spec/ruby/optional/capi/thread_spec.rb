@@ -155,7 +155,7 @@ describe "C-API Thread function" do
       end
     end
 
-    guard_not -> { platform_is :mingw and ruby_version_is ""..."2.7" } do
+    platform_is_not :mingw do
       it "runs a C function with the global lock unlocked and unlocks IO with the generic RUBY_UBF_IO" do
         thr = Thread.new do
           @t.rb_thread_call_without_gvl_with_ubf_io
