@@ -2635,7 +2635,8 @@ method_inspect(VALUE method)
     str = rb_sprintf("#<% "PRIsVALUE": ", rb_obj_class(method));
     OBJ_INFECT_RAW(str, method);
 
-    mklass = data->klass;
+    mklass = data->iclass;
+    if (!mklass) mklass = data->klass;
 
     if (data->me->def->type == VM_METHOD_TYPE_ALIAS) {
 	defined_class = data->me->def->body.alias.original_me->owner;
@@ -2667,6 +2668,12 @@ method_inspect(VALUE method)
 	}
     }
     else {
+        mklass = data->klass;
+        if (FL_TEST(mklass, FL_SINGLETON)) {
+            do {
+               mklass = RCLASS_SUPER(mklass);
+            } while (RB_TYPE_P(mklass, T_ICLASS));
+        }
 	rb_str_buf_append(str, rb_inspect(mklass));
 	if (defined_class != mklass) {
 	    rb_str_catf(str, "(% "PRIsVALUE")", defined_class);
