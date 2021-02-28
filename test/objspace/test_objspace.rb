@@ -98,6 +98,8 @@ class TestObjSpace < Test::Unit::TestCase
     res = ObjectSpace.count_imemo_objects
     assert_not_empty(res)
     assert_not_nil(res[:imemo_cref])
+    assert_not_empty res.inspect
+
     arg = {}
     res = ObjectSpace.count_imemo_objects(arg)
     assert_not_empty(res)
