@@ -595,6 +595,9 @@ class TestInteger < Test::Unit::TestCase
       failures << n  unless root*root <= n && (root+1)*(root+1) > n
     end
     assert_empty(failures, bug13440)
+
+    x = 0xffff_ffff_ffff_ffff
+    assert_equal(x, Integer.sqrt(x ** 2), "[ruby-core:95453]")
   end
 
   def test_fdiv
