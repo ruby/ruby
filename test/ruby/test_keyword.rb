@@ -520,12 +520,6 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(:ok, m.f(*a, **o), '[ruby-core:83638] [Bug #10856]')
 
     o = {a: 42}
-    assert_warning(/splat keyword/, 'splat to mandatory') do
-      assert_equal({a: 42}, m.f1(**o))
-    end
-    assert_warning(/splat keyword/) do
-      assert_equal({a: 42}, m.f2(**o), '[ruby-core:82280] [Bug #13791]')
-    end
     assert_warning('', 'splat to kwrest') do
       assert_equal({a: 42}, m.f3(**o))
     end
