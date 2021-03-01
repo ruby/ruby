@@ -699,6 +699,7 @@ module Net   #:nodoc:
       @max_retries = 1
       @debug_output = nil
       @response_body_encoding = false
+      @ignore_eof = true
 
       @proxy_from_env = false
       @proxy_uri      = nil
@@ -838,6 +839,10 @@ module Net   #:nodoc:
     # Net::HTTP reuses the TCP/IP socket used by the previous communication.
     # The default value is 2 seconds.
     attr_accessor :keep_alive_timeout
+
+    # Whether to ignore EOF when reading response bodies with defined
+    # Content-Length headers. For backwards compatibility, the default is true.
+    attr_accessor :ignore_eof
 
     # Returns true if the HTTP session has been started.
     def started?
@@ -1606,6 +1611,7 @@ module Net   #:nodoc:
             res = HTTPResponse.read_new(@socket)
             res.decode_content = req.decode_content
             res.body_encoding = @response_body_encoding
+            res.ignore_eof = @ignore_eof
           end while res.kind_of?(HTTPInformation)
 
           res.uri = req.uri

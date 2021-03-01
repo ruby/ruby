@@ -1348,3 +1348,33 @@ class TestNetHTTPForceEncoding < Test::Unit::TestCase
     assert_equal(Encoding::UTF_8, res.body.encoding)
   end
 end
+
+class TestNetHTTPPartialResponse < Test::Unit::TestCase
+  CONFIG = {
+    'host' => '127.0.0.1',
+    'proxy_host' => nil,
+    'proxy_port' => nil,
+  }
+
+  include TestNetHTTPUtils
+
+  def test_partial_response
+    str = "0123456789"
+    @server.mount_proc('/') do |req, res|
+      res.status = 200
+      res['Content-Type'] = 'text/plain'
+
+      res.body = str
+      res['Content-Length'] = str.length + 1
+    end
+    @server.mount_proc('/show_ip') { |req, res| res.body = req.remote_ip }
+
+    http = Net::HTTP.new(config('host'), config('port'))
+    res = http.get('/')
+    assert_equal(str, res.body)
+
+    http = Net::HTTP.new(config('host'), config('port'))
+    http.ignore_eof = false
+    assert_raise(EOFError) {http.get('/')}
+  end
+end

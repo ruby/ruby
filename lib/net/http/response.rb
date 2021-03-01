@@ -85,6 +85,7 @@ class Net::HTTPResponse
     @uri  = nil
     @decode_content = false
     @body_encoding = false
+    @ignore_eof = true
   end
 
   # The HTTP version supported by the server.
@@ -118,6 +119,10 @@ class Net::HTTPResponse
     value = Encoding.find(value) if value.is_a?(String)
     @body_encoding = value
   end
+
+  # Whether to ignore EOF when reading bodies with a specified Content-Length
+  # header.
+  attr_accessor :ignore_eof
 
   def inspect
     "#<#{self.class} #{@code} #{@message} readbody=#{@read}>"
@@ -459,7 +464,7 @@ class Net::HTTPResponse
 
       clen = content_length()
       if clen
-        @socket.read clen, dest, true   # ignore EOF
+        @socket.read clen, dest, @ignore_eof
         return
       end
       clen = range_length()
