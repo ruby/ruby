@@ -10406,7 +10406,7 @@ rb_aligned_malloc(size_t alignment, size_t size)
     GC_ASSERT(start_out_of_range_size % sysconf(_SC_PAGE_SIZE) == 0);
     if (start_out_of_range_size > 0) {
         if (munmap(ptr, start_out_of_range_size)) {
-            rb_bug("rb_aligned_malloc: munmap faile for start");
+            rb_bug("rb_aligned_malloc: munmap failed for start");
         }
     }
 
