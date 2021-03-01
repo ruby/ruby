@@ -431,6 +431,9 @@ class Net::HTTPResponse
       ensure
         begin
           inflate_body_io.finish
+          if self['content-length']
+            self['content-length'] = inflate_body_io.bytes_inflated.to_s
+          end
         rescue => err
           # Ignore #finish's error if there is an exception from yield
           raise err if success
@@ -530,6 +533,14 @@ class Net::HTTPResponse
     def finish
       return if @inflate.total_in == 0
       @inflate.finish
+    end
+
+    ##
+    # The number of bytes inflated, used to update the Content-Length of
+    # the response.
+
+    def bytes_inflated
+      @inflate.total_out
     end
 
     ##
