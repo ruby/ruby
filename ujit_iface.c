@@ -334,14 +334,14 @@ ujit_block_assumptions_free(block_t *block)
 }
 
 void
-rb_ujit_compile_iseq(const rb_iseq_t *iseq)
+rb_ujit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec)
 {
 #if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
     RB_VM_LOCK_ENTER();
     VALUE *encoded = (VALUE *)iseq->body->iseq_encoded;
 
     // Compile a block version starting at the first instruction
-    uint8_t* code_ptr = gen_entry_point(iseq, 0);
+    uint8_t* code_ptr = gen_entry_point(iseq, 0, ec);
 
     if (code_ptr)
     {
@@ -380,16 +380,6 @@ ujit_blocks_for(VALUE mod, VALUE rb_iseq)
     }
 
     return all_versions;
-}
-
-static VALUE
-ujit_install_entry(VALUE mod, VALUE iseq)
-{
-    if (CLASS_OF(iseq) != rb_cISeq) {
-	rb_raise(rb_eTypeError, "not an InstructionSequence");
-    }
-    rb_ujit_compile_iseq(rb_iseqw_to_iseq(iseq));
-    return iseq;
 }
 
 /* Get the address of the the code associated with a UJIT::Block */
@@ -709,7 +699,6 @@ rb_ujit_init(struct rb_ujit_options *options)
 
     // UJIT Ruby module
     VALUE mUjit = rb_define_module("UJIT");
-    rb_define_module_function(mUjit, "install_entry", ujit_install_entry, 1);
     rb_define_module_function(mUjit, "blocks_for", ujit_blocks_for, 1);
 
     // UJIT::Block (block version, code block)

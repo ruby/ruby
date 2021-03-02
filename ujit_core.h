@@ -146,8 +146,8 @@ int ctx_get_top_type(ctx_t* ctx);
 int ctx_diff(const ctx_t* src, const ctx_t* dst);
 
 block_t* find_block_version(blockid_t blockid, const ctx_t* ctx);
-block_t* gen_block_version(blockid_t blockid, const ctx_t* ctx);
-uint8_t*  gen_entry_point(const rb_iseq_t *iseq, uint32_t insn_idx);
+block_t* gen_block_version(blockid_t blockid, const ctx_t* ctx, rb_execution_context_t *ec);
+uint8_t*  gen_entry_point(const rb_iseq_t *iseq, uint32_t insn_idx, rb_execution_context_t *ec);
 void ujit_free_block(block_t *block);
 void ujit_branches_update_references(void);
 

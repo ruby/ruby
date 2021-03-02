@@ -151,7 +151,7 @@ mjit_exec(rb_execution_context_t *ec)
 
 #ifndef MJIT_HEADER
     if (rb_ujit_enabled_p() && !mjit_call_p && body->total_calls == rb_ujit_call_threshold())  {
-        rb_ujit_compile_iseq(iseq);
+        rb_ujit_compile_iseq(iseq, ec);
         return Qundef;
     }
 #endif
