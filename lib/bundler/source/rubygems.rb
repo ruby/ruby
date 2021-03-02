@@ -21,6 +21,7 @@ module Bundler
         @allow_remote = false
         @allow_cached = false
         @caches = [cache_path, *Bundler.rubygems.gem_cache]
+        @disable_multisource = true
 
         Array(options["remotes"] || []).reverse_each {|r| add_remote(r) }
       end
@@ -49,8 +50,16 @@ module Bundler
         o.is_a?(Rubygems) && (o.credless_remotes - credless_remotes).empty?
       end
 
+      def disable_multisource?
+        @disable_multisource
+      end
+
+      def allow_multisource!
+        @disable_multisource = false
+      end
+
       def can_lock?(spec)
-        return super if Bundler.feature_flag.disable_multisource?
+        return super if disable_multisource?
         spec.source.is_a?(Rubygems)
       end
 

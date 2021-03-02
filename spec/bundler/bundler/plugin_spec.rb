@@ -112,6 +112,7 @@ RSpec.describe Bundler::Plugin do
     before do
       allow(Plugin::DSL).to receive(:new) { builder }
       allow(builder).to receive(:eval_gemfile).with(gemfile)
+      allow(builder).to receive(:check_primary_source_safety)
       allow(builder).to receive(:to_definition) { definition }
       allow(builder).to receive(:inferred_plugins) { [] }
     end

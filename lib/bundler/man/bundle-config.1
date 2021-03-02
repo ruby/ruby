@@ -56,9 +56,6 @@ Executing \fBbundle config unset \-\-local <name> <value>\fR will delete the con
 .P
 Executing bundle with the \fBBUNDLE_IGNORE_CONFIG\fR environment variable set will cause it to ignore all configuration\.
 .
-.P
-Executing \fBbundle config set \-\-local disable_multisource true\fR upgrades the warning about the Gemfile containing multiple primary sources to an error\. Executing \fBbundle config unset disable_multisource\fR downgrades this error to a warning\.
-.
 .SH "REMEMBERING OPTIONS"
 Flags passed to \fBbundle install\fR or the Bundler runtime, such as \fB\-\-path foo\fR or \fB\-\-without production\fR, are remembered between commands and saved to your local application\'s configuration (normally, \fB\./\.bundle/config\fR)\.
 .
@@ -184,9 +181,6 @@ The following is a list of all configuration keys and their purpose\. You can le
 \fBdisable_local_revision_check\fR (\fBBUNDLE_DISABLE_LOCAL_REVISION_CHECK\fR): Allow Bundler to use a local git override without checking if the revision present in the lockfile is present in the repository\.
 .
 .IP "\(bu" 4
-\fBdisable_multisource\fR (\fBBUNDLE_DISABLE_MULTISOURCE\fR): When set, Gemfiles containing multiple sources will produce errors instead of warnings\. Use \fBbundle config unset disable_multisource\fR to unset\.
-.
-.IP "\(bu" 4
 \fBdisable_shared_gems\fR (\fBBUNDLE_DISABLE_SHARED_GEMS\fR): Stop Bundler from accessing gems installed to RubyGems\' normal location\.
 .
 .IP "\(bu" 4
@@ -211,10 +205,10 @@ The following is a list of all configuration keys and their purpose\. You can le
 \fBignore_messages\fR (\fBBUNDLE_IGNORE_MESSAGES\fR): When set, no post install messages will be printed\. To silence a single gem, use dot notation like \fBignore_messages\.httparty true\fR\.
 .
 .IP "\(bu" 4
-\fBinit_gems_rb\fR (\fBBUNDLE_INIT_GEMS_RB\fR) Generate a \fBgems\.rb\fR instead of a \fBGemfile\fR when running \fBbundle init\fR\.
+\fBinit_gems_rb\fR (\fBBUNDLE_INIT_GEMS_RB\fR): Generate a \fBgems\.rb\fR instead of a \fBGemfile\fR when running \fBbundle init\fR\.
 .
 .IP "\(bu" 4
-\fBjobs\fR (\fBBUNDLE_JOBS\fR): The number of gems Bundler can install in parallel\. Defaults to 1\.
+\fBjobs\fR (\fBBUNDLE_JOBS\fR): The number of gems Bundler can install in parallel\. Defaults to 1 on Windows, and to the the number of processors on other platforms\.
 .
 .IP "\(bu" 4
 \fBno_install\fR (\fBBUNDLE_NO_INSTALL\fR): Whether \fBbundle package\fR should skip installing gems\.
@@ -241,7 +235,7 @@ The following is a list of all configuration keys and their purpose\. You can le
 \fBprefer_patch\fR (BUNDLE_PREFER_PATCH): Prefer updating only to next patch version during updates\. Makes \fBbundle update\fR calls equivalent to \fBbundler update \-\-patch\fR\.
 .
 .IP "\(bu" 4
-\fBprint_only_version_number\fR (\fBBUNDLE_PRINT_ONLY_VERSION_NUMBER\fR) Print only version number from \fBbundler \-\-version\fR\.
+\fBprint_only_version_number\fR (\fBBUNDLE_PRINT_ONLY_VERSION_NUMBER\fR): Print only version number from \fBbundler \-\-version\fR\.
 .
 .IP "\(bu" 4
 \fBredirect\fR (\fBBUNDLE_REDIRECT\fR): The number of redirects allowed for network requests\. Defaults to \fB5\fR\.
@@ -283,7 +277,7 @@ The following is a list of all configuration keys and their purpose\. You can le
 \fBunlock_source_unlocks_spec\fR (\fBBUNDLE_UNLOCK_SOURCE_UNLOCKS_SPEC\fR): Whether running \fBbundle update \-\-source NAME\fR unlocks a gem with the given name\. Defaults to \fBtrue\fR\.
 .
 .IP "\(bu" 4
-\fBupdate_requires_all_flag\fR (\fBBUNDLE_UPDATE_REQUIRES_ALL_FLAG\fR) Require passing \fB\-\-all\fR to \fBbundle update\fR when everything should be updated, and disallow passing no options to \fBbundle update\fR\.
+\fBupdate_requires_all_flag\fR (\fBBUNDLE_UPDATE_REQUIRES_ALL_FLAG\fR): Require passing \fB\-\-all\fR to \fBbundle update\fR when everything should be updated, and disallow passing no options to \fBbundle update\fR\.
 .
 .IP "\(bu" 4
 \fBuser_agent\fR (\fBBUNDLE_USER_AGENT\fR): The custom user agent fragment Bundler includes in API requests\.

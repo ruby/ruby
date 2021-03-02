@@ -1958,15 +1958,9 @@ class TestGem < Gem::TestCase
       io.write 'gem "a"'
     end
 
-    platform = Bundler::GemHelpers.generic_local_platform
-    if platform == Gem::Platform::RUBY
-      platform = ''
-    else
-      platform = " #{platform}"
-    end
-
     expected = <<-EXPECTED
-Could not find gem 'a#{platform}' in any of the gem sources listed in your Gemfile.
+Could not find gem 'a' in locally installed gems.
+The source does not contain any versions of 'a'
 You may need to `gem install -g` to install missing gems
 
     EXPECTED
