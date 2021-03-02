@@ -85,6 +85,18 @@ RSpec.describe "install in deployment or frozen mode" do
     bundle :install
   end
 
+  it "works when path gems are specified twice" do
+    build_lib "foo", :path => lib_path("nested/foo")
+    gemfile <<-G
+      gem "foo", :path => "#{lib_path("nested/foo")}"
+      gem "foo", :path => "#{lib_path("nested/foo")}"
+    G
+
+    bundle :install
+    bundle "config set --local deployment true"
+    bundle :install
+  end
+
   it "works when there are credentials in the source URL" do
     install_gemfile(<<-G, :artifice => "endpoint_strict_basic_authentication", :quiet => true)
       source "http://user:pass@localgemserver.test/"
@@ -401,7 +413,7 @@ RSpec.describe "install in deployment or frozen mode" do
         gem "rack-obama"
       G
 
-      expect(the_bundle).not_to include_gems "rack 1.0.0"
+      run "require 'rack'", :raise_on_error => false
       expect(err).to include strip_whitespace(<<-E).strip
 The dependencies in your gemfile changed
 

@@ -647,8 +647,6 @@ RSpec.describe "bundle install with git sources" do
     end
 
     it "installs dependencies from git even if a newer gem is available elsewhere" do
-      skip "override is not winning" if Gem.win_platform?
-
       system_gems "rack-1.0.0"
 
       build_lib "rack", "1.0", :path => lib_path("nested/bar") do |s|

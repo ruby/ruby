@@ -594,7 +594,7 @@ module Bundler
       deps_for_source = @dependencies.select {|s| s.source == source }
       locked_deps_for_source = @locked_deps.values.select {|dep| dep.source == locked_source }
 
-      deps_for_source.sort != locked_deps_for_source.sort
+      deps_for_source.uniq.sort != locked_deps_for_source.sort
     end
 
     def specs_for_source_changed?(source)

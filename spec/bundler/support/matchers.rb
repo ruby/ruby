@@ -145,23 +145,34 @@ module Spec
 
       match_when_negated do
         opts = names.last.is_a?(Hash) ? names.pop : {}
-        groups = Array(opts[:groups]) || []
+        groups = Array(opts.delete(:groups)).map(&:inspect).join(", ")
         opts[:raise_on_error] = false
         @errors = names.map do |name|
           name, version = name.split(/\s+/, 2)
-          run <<-R, *(groups + [opts])
+          ruby <<-R, opts
+            begin
+              require '#{lib_dir}/bundler'
+              Bundler.setup(#{groups})
+            rescue Bundler::GemNotFound, Bundler::GitError
+              exit 0
+            end
+
             begin
               require '#{name}'
-              puts #{Spec::Builders.constantize(name)}
+              name_constant = '#{Spec::Builders.constantize(name)}'
+              if #{version.nil?} || name_constant == '#{version}'
+                exit 64
+              else
+                exit 0
+              end
             rescue LoadError, NameError
-              puts "WIN"
+              exit 0
             end
           R
-          next if out == "WIN"
+          next if exitstatus == 0
+          next "command to check version of #{name} installed failed" unless exitstatus == 64
           next "expected #{name} to not be installed, but it was" if version.nil?
-          if Gem::Version.new(out) == Gem::Version.new(version)
-            next "expected #{name} (#{version}) not to be installed, but it was"
-          end
+          next "expected #{name} (#{version}) not to be installed, but it was"
         end.compact
 
         @errors.empty?
