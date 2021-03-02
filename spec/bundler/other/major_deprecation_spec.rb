@@ -17,7 +17,7 @@ RSpec.describe "major deprecations" do
         bundle "exec ruby -e #{source.dump}"
       end
 
-      it "is deprecated in favor of .unbundled_env", :bundler => "2" do
+      it "is deprecated in favor of .unbundled_env", :bundler => "< 3" do
         expect(deprecations).to include \
           "`Bundler.clean_env` has been deprecated in favor of `Bundler.unbundled_env`. " \
           "If you instead want the environment before bundler was originally loaded, use `Bundler.original_env` " \
@@ -33,7 +33,7 @@ RSpec.describe "major deprecations" do
         bundle "exec ruby -e #{source.dump}"
       end
 
-      it "is deprecated in favor of .unbundled_env", :bundler => "2" do
+      it "is deprecated in favor of .unbundled_env", :bundler => "< 3" do
         expect(deprecations).to include(
           "`Bundler.with_clean_env` has been deprecated in favor of `Bundler.with_unbundled_env`. " \
           "If you instead want the environment before bundler was originally loaded, use `Bundler.with_original_env` " \
@@ -50,7 +50,7 @@ RSpec.describe "major deprecations" do
         bundle "exec ruby -e #{source.dump}"
       end
 
-      it "is deprecated in favor of .unbundled_system", :bundler => "2" do
+      it "is deprecated in favor of .unbundled_system", :bundler => "< 3" do
         expect(deprecations).to include(
           "`Bundler.clean_system` has been deprecated in favor of `Bundler.unbundled_system`. " \
           "If you instead want to run the command in the environment before bundler was originally loaded, use `Bundler.original_system` " \
@@ -67,7 +67,7 @@ RSpec.describe "major deprecations" do
         bundle "exec ruby -e #{source.dump}"
       end
 
-      it "is deprecated in favor of .unbundled_exec", :bundler => "2" do
+      it "is deprecated in favor of .unbundled_exec", :bundler => "< 3" do
         expect(deprecations).to include(
           "`Bundler.clean_exec` has been deprecated in favor of `Bundler.unbundled_exec`. " \
           "If you instead want to exec to a command in the environment before bundler was originally loaded, use `Bundler.original_exec` " \
@@ -84,7 +84,7 @@ RSpec.describe "major deprecations" do
         bundle "exec ruby -e #{source.dump}"
       end
 
-      it "is deprecated in favor of .load", :bundler => "2" do
+      it "is deprecated in favor of .load", :bundler => "< 3" do
         expect(deprecations).to include "Bundler.environment has been removed in favor of Bundler.load (called at -e:1)"
       end
 
@@ -109,7 +109,7 @@ RSpec.describe "major deprecations" do
       bundle "check --path vendor/bundle", :raise_on_error => false
     end
 
-    it "should print a deprecation warning", :bundler => "2" do
+    it "should print a deprecation warning", :bundler => "< 3" do
       expect(deprecations).to include(
         "The `--path` flag is deprecated because it relies on being " \
         "remembered across bundler invocations, which bundler will no " \
@@ -118,7 +118,7 @@ RSpec.describe "major deprecations" do
       )
     end
 
-    pending "should fail with a helpful error", :bundler => "3"
+    pending "fails with a helpful error", :bundler => "3"
   end
 
   context "bundle check --path=" do
@@ -131,7 +131,7 @@ RSpec.describe "major deprecations" do
       bundle "check --path=vendor/bundle", :raise_on_error => false
     end
 
-    it "should print a deprecation warning", :bundler => "2" do
+    it "should print a deprecation warning", :bundler => "< 3" do
       expect(deprecations).to include(
         "The `--path` flag is deprecated because it relies on being " \
         "remembered across bundler invocations, which bundler will no " \
@@ -140,7 +140,7 @@ RSpec.describe "major deprecations" do
       )
     end
 
-    pending "should fail with a helpful error", :bundler => "3"
+    pending "fails with a helpful error", :bundler => "3"
   end
 
   context "bundle cache --all" do
@@ -153,7 +153,7 @@ RSpec.describe "major deprecations" do
       bundle "cache --all", :raise_on_error => false
     end
 
-    it "should print a deprecation warning", :bundler => "2" do
+    it "should print a deprecation warning", :bundler => "< 3" do
       expect(deprecations).to include(
         "The `--all` flag is deprecated because it relies on being " \
         "remembered across bundler invocations, which bundler will no " \
@@ -162,7 +162,7 @@ RSpec.describe "major deprecations" do
       )
     end
 
-    pending "should fail with a helpful error", :bundler => "3"
+    pending "fails with a helpful error", :bundler => "3"
   end
 
   describe "bundle config" do
@@ -292,7 +292,7 @@ RSpec.describe "major deprecations" do
       G
     end
 
-    it "should output a deprecation warning", :bundler => "2" do
+    it "should output a deprecation warning", :bundler => "< 3" do
       expect(deprecations).to include("The --binstubs option will be removed in favor of `bundle binstubs --all`")
     end
 
@@ -356,7 +356,7 @@ RSpec.describe "major deprecations" do
           bundle "install #{flag_name} #{value}"
         end
 
-        it "should print a deprecation warning", :bundler => "2" do
+        it "should print a deprecation warning", :bundler => "< 3" do
           expect(deprecations).to include(
             "The `#{flag_name}` flag is deprecated because it relies on " \
             "being remembered across bundler invocations, which bundler " \
@@ -365,7 +365,7 @@ RSpec.describe "major deprecations" do
           )
         end
 
-        pending "should fail with a helpful error", :bundler => "3"
+        pending "fails with a helpful error", :bundler => "3"
       end
     end
   end
@@ -378,18 +378,58 @@ RSpec.describe "major deprecations" do
       G
     end
 
-    it "shows a deprecation", :bundler => "2" do
+    it "shows a deprecation", :bundler => "< 3" do
       expect(deprecations).to include(
         "Your Gemfile contains multiple primary sources. " \
         "Using `source` more than once without a block is a security risk, and " \
         "may result in installing unexpected gems. To resolve this warning, use " \
-        "a block to indicate which gems should come from the secondary source. " \
-        "To upgrade this warning to an error, run `bundle config set --local " \
-        "disable_multisource true`."
+        "a block to indicate which gems should come from the secondary source."
       )
     end
 
-    pending "should fail with a helpful error", :bundler => "3"
+    pending "fails with a helpful error", :bundler => "3"
+  end
+
+  context "bundle install with a lockfile with a single rubygems section with multiple remotes in frozen mode" do
+    before do
+      build_repo gem_repo3 do
+        build_gem "rack", "0.9.1"
+      end
+
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        source "#{file_uri_for(gem_repo3)}" do
+          gem 'rack'
+        end
+      G
+
+      lockfile <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo1)}/
+          remote: #{file_uri_for(gem_repo3)}/
+          specs:
+            rack (0.9.1)
+
+        PLATFORMS
+          ruby
+
+        DEPENDENCIES
+          rack!
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "config set --local deployment true"
+    end
+
+    it "shows a deprecation", :bundler => "< 3" do
+      bundle "install"
+
+      expect(deprecations).to include("Your lockfile contains a single rubygems source section with multiple remotes, which is insecure. You should regenerate your lockfile in a non frozen environment.")
+    end
+
+    pending "fails with a helpful error", :bundler => "3"
   end
 
   context "when Bundler.setup is run in a ruby script" do
@@ -422,14 +462,14 @@ RSpec.describe "major deprecations" do
       RUBY
     end
 
-    it "should print a capistrano deprecation warning", :bundler => "2" do
+    it "should print a capistrano deprecation warning", :bundler => "< 3" do
       expect(deprecations).to include("Bundler no longer integrates " \
                              "with Capistrano, but Capistrano provides " \
                              "its own integration with Bundler via the " \
                              "capistrano-bundler gem. Use it instead.")
     end
 
-    pending "should fail with a helpful error", :bundler => "3"
+    pending "fails with a helpful error", :bundler => "3"
   end
 
   describe Bundler::Dsl do
@@ -439,7 +479,7 @@ RSpec.describe "major deprecations" do
     end
 
     context "with github gems" do
-      it "does not warn about removal", :bundler => "2" do
+      it "does not warn about removal", :bundler => "< 3" do
         expect(Bundler.ui).not_to receive(:warn)
         subject.gem("sparks", :github => "indirect/sparks")
         github_uri = "https://github.com/indirect/sparks.git"
@@ -461,7 +501,7 @@ The :github git source is deprecated, and will be removed in the future. Change 
     end
 
     context "with bitbucket gems" do
-      it "does not warn about removal", :bundler => "2" do
+      it "does not warn about removal", :bundler => "< 3" do
         expect(Bundler.ui).not_to receive(:warn)
         subject.gem("not-really-a-gem", :bitbucket => "mcorp/flatlab-rails")
       end
@@ -483,7 +523,7 @@ The :bitbucket git source is deprecated, and will be removed in the future. Add 
     end
 
     context "with gist gems" do
-      it "does not warn about removal", :bundler => "2" do
+      it "does not warn about removal", :bundler => "< 3" do
         expect(Bundler.ui).not_to receive(:warn)
         subject.gem("not-really-a-gem", :gist => "1234")
       end
@@ -514,7 +554,7 @@ The :gist git source is deprecated, and will be removed in the future. Add this 
         bundle :show
       end
 
-      it "prints a deprecation warning recommending `bundle list`", :bundler => "2" do
+      it "prints a deprecation warning recommending `bundle list`", :bundler => "< 3" do
         expect(deprecations).to include("use `bundle list` instead of `bundle show`")
       end
 
@@ -526,7 +566,7 @@ The :gist git source is deprecated, and will be removed in the future. Add this 
         bundle "show --outdated"
       end
 
-      it "prints a deprecation warning informing about its removal", :bundler => "2" do
+      it "prints a deprecation warning informing about its removal", :bundler => "< 3" do
         expect(deprecations).to include("the `--outdated` flag to `bundle show` was undocumented and will be removed without replacement")
       end
 
@@ -538,7 +578,7 @@ The :gist git source is deprecated, and will be removed in the future. Add this 
         bundle "show --verbose"
       end
 
-      it "prints a deprecation warning informing about its removal", :bundler => "2" do
+      it "prints a deprecation warning informing about its removal", :bundler => "< 3" do
         expect(deprecations).to include("the `--verbose` flag to `bundle show` was undocumented and will be removed without replacement")
       end
 
@@ -550,7 +590,7 @@ The :gist git source is deprecated, and will be removed in the future. Add this 
         bundle "show rack"
       end
 
-      it "prints a deprecation warning recommending `bundle info`", :bundler => "2" do
+      it "prints a deprecation warning recommending `bundle info`", :bundler => "< 3" do
         expect(deprecations).to include("use `bundle info rack` instead of `bundle show rack`")
       end
 
@@ -562,7 +602,7 @@ The :gist git source is deprecated, and will be removed in the future. Add this 
         bundle "show --paths"
       end
 
-      it "prints a deprecation warning recommending `bundle list`", :bundler => "2" do
+      it "prints a deprecation warning recommending `bundle list`", :bundler => "< 3" do
         expect(deprecations).to include("use `bundle list` instead of `bundle show --paths`")
       end
 
@@ -574,7 +614,7 @@ The :gist git source is deprecated, and will be removed in the future. Add this 
         bundle "show rack --paths"
       end
 
-      it "prints deprecation warning recommending `bundle info`", :bundler => "2" do
+      it "prints deprecation warning recommending `bundle info`", :bundler => "< 3" do
         expect(deprecations).to include("use `bundle info rack --path` instead of `bundle show rack --paths`")
       end
 
@@ -587,7 +627,7 @@ The :gist git source is deprecated, and will be removed in the future. Add this 
       bundle "console", :raise_on_error => false
     end
 
-    it "prints a deprecation warning", :bundler => "2" do
+    it "prints a deprecation warning", :bundler => "< 3" do
       expect(deprecations).to include \
         "bundle console will be replaced by `bin/console` generated by `bundle gem <name>`"
     end
@@ -603,7 +643,7 @@ The :gist git source is deprecated, and will be removed in the future. Add this 
       bundle "viz"
     end
 
-    it "prints a deprecation warning", :bundler => "2" do
+    it "prints a deprecation warning", :bundler => "< 3" do
       expect(deprecations).to include "The `viz` command has been moved to the `bundle-viz` gem, see https://github.com/bundler/bundler-viz"
     end
 

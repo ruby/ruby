@@ -105,6 +105,7 @@ module Bundler
         else
           builder.eval_gemfile(gemfile)
         end
+        builder.check_primary_source_safety
         definition = builder.to_definition(nil, true)
 
         return if definition.dependencies.empty?

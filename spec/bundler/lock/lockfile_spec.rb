@@ -318,40 +318,7 @@ RSpec.describe "the lockfile format" do
     G
   end
 
-  it "generates a lockfile without credentials for a configured source", :bundler => "< 3" do
-    bundle "config set http://localgemserver.test/ user:pass"
-
-    install_gemfile(<<-G, :artifice => "endpoint_strict_basic_authentication", :quiet => true)
-      source "http://localgemserver.test/" do
-
-      end
-
-      source "http://user:pass@othergemserver.test/" do
-        gem "rack-obama", ">= 1.0"
-      end
-    G
-
-    lockfile_should_be <<-G
-      GEM
-        remote: http://localgemserver.test/
-        remote: http://user:pass@othergemserver.test/
-        specs:
-          rack (1.0.0)
-          rack-obama (1.0)
-            rack
-
-      PLATFORMS
-        #{lockfile_platforms}
-
-      DEPENDENCIES
-        rack-obama (>= 1.0)!
-
-      BUNDLED WITH
-         #{Bundler::VERSION}
-    G
-  end
-
-  it "generates a lockfile without credentials for a configured source", :bundler => "3" do
+  it "generates a lockfile without credentials for a configured source" do
     bundle "config set http://localgemserver.test/ user:pass"
 
     install_gemfile(<<-G, :artifice => "endpoint_strict_basic_authentication", :quiet => true)
