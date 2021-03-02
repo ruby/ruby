@@ -548,6 +548,8 @@ module TestTimeTZ::WithTZ
     m, s = (4000-utc_offset).divmod(60)
     h, m = m.divmod(60)
     assert_equal(time_class.utc(2018, 9, 1, 12+h, m, s), t)
+    assert_equal(6, t.wday)
+    assert_equal(244, t.yday)
   end
 
   def subtest_at(time_class, tz, tzarg, tzname, abbr, utc_offset)
