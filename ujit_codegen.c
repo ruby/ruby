@@ -162,6 +162,37 @@ ujit_side_exit(jitstate_t* jit, ctx_t* ctx)
     return code_ptr;
 }
 
+#if RUBY_DEBUG
+
+// Increment a profiling counter with counter_name
+#define GEN_COUNTER_INC(cb, counter_name) _gen_counter_inc(cb, &(ujit_runtime_counters . counter_name))
+static void
+_gen_counter_inc(codeblock_t *cb, int64_t *counter)
+{
+    if (!rb_ujit_opts.gen_stats) return;
+     mov(cb, REG0, const_ptr_opnd(counter));
+     cb_write_lock_prefix(cb); // for ractors.
+     add(cb, mem_opnd(64, REG0, 0), imm_opnd(1));
+}
+
+// Increment a counter then take an existing side exit.
+#define COUNTED_EXIT(side_exit, counter_name) _counted_side_exit(side_exit, &(ujit_runtime_counters . counter_name))
+static uint8_t *
+_counted_side_exit(uint8_t *existing_side_exit, int64_t *counter)
+{
+    if (!rb_ujit_opts.gen_stats) return existing_side_exit;
+
+    uint8_t *start = cb_get_ptr(ocb, ocb->write_pos);
+    _gen_counter_inc(ocb, counter);
+    jmp_ptr(ocb, existing_side_exit);
+    return start;
+}
+
+#else
+#define GEN_COUNTER_INC(cb, counter_name) ((void)0)
+#define COUNTED_EXIT(side_exit, counter_name) side_exit
+#endif // if RUBY_DEBUG
+
 /*
 Compile an interpreter entry block to be inserted into an iseq
 Returns `NULL` if compilation fails.
@@ -255,29 +286,23 @@ ujit_gen_block(ctx_t* ctx, block_t* block, rb_execution_context_t* ec)
             break;
         }
 
-#if RUBY_DEBUG
-        // Accumulate stats about instructions executed
-        if (rb_ujit_opts.gen_stats) {
-            // Count instructions executed by the JIT
-            mov(cb, REG0, const_ptr_opnd((void *)&rb_ujit_exec_insns_count));
-            add(cb, mem_opnd(64, REG0, 0), imm_opnd(1));
-        }
-#endif
-
         //fprintf(stderr, "compiling %d: %s\n", insn_idx, insn_name(opcode));
         //print_str(cb, insn_name(opcode));
 
-        // Call the code generation function
-        codegen_status_t status = gen_fn(&jit, ctx);
+        // Count bytecode instructions that execute in generated code
+        // FIXME: when generation function returns false, we shouldn't increment
+        //        this counter.
+        GEN_COUNTER_INC(cb, exec_instruction);
 
-        // If we can't compile this instruction
-        // exit to the interpreter and stop compiling
-        if (status == UJIT_CANT_COMPILE) {
-            ujit_gen_exit(&jit, ctx, cb, jit.pc);
+        // Call the code generation function
+        bool continue_generating = p_desc->gen_fn(&jit, ctx);
+
+        if (!continue_generating) {
             break;
         }
 
-        // Move to the next instruction to compile
+        // Move to the next instruction
+        p_last_op = p_desc;
         insn_idx += insn_len(opcode);
 
         // If the instruction terminates this block
@@ -1060,22 +1085,27 @@ gen_oswb_cfunc(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb_c
     const rb_method_cfunc_t *cfunc = UNALIGNED_MEMBER_PTR(cme->def, body.cfunc);
 
     // If the function expects a Ruby array of arguments
-    if (cfunc->argc < 0 && cfunc->argc != -1) {
-        return UJIT_CANT_COMPILE;
+    if (cfunc->argc < 0 && cfunc->argc != -1)
+    {
+        GEN_COUNTER_INC(cb, oswb_cfunc_ruby_array_varg);
+        return false;
     }
 
     // If the argument count doesn't match
-    if (cfunc->argc >= 0 && cfunc->argc != argc) {
-        return UJIT_CANT_COMPILE;
+    if (cfunc->argc >= 0 && cfunc->argc != argc)
+    {
+        GEN_COUNTER_INC(cb, oswb_cfunc_argc_mismatch);
+        return false;
     }
 
     // Don't JIT functions that need C stack arguments for now
     if (argc + 1 > NUM_C_ARG_REGS) {
-        return UJIT_CANT_COMPILE;
+        GEN_COUNTER_INC(cb, oswb_cfunc_toomany_args);
+        return false;
     }
 
     // Create a size-exit to fall back to the interpreter
-    uint8_t* side_exit = ujit_side_exit(jit, ctx);
+    uint8_t *side_exit = ujit_side_exit(jit, ctx);
 
     // Check for interrupts
     ujit_check_ints(cb, side_exit);
@@ -1094,12 +1124,15 @@ gen_oswb_cfunc(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb_c
     //print_ptr(cb, recv);
 
     // Check that the receiver is a heap object
-    test(cb, REG0, imm_opnd(RUBY_IMMEDIATE_MASK));
-    jnz_ptr(cb, side_exit);
-    cmp(cb, REG0, imm_opnd(Qfalse));
-    je_ptr(cb, side_exit);
-    cmp(cb, REG0, imm_opnd(Qnil));
-    je_ptr(cb, side_exit);
+    {
+        uint8_t *receiver_not_heap = COUNTED_EXIT(side_exit, oswb_se_receiver_not_heap);
+        test(cb, REG0, imm_opnd(RUBY_IMMEDIATE_MASK));
+        jnz_ptr(cb, receiver_not_heap);
+        cmp(cb, REG0, imm_opnd(Qfalse));
+        je_ptr(cb, receiver_not_heap);
+        cmp(cb, REG0, imm_opnd(Qnil));
+        je_ptr(cb, receiver_not_heap);
+    }
 
     // Pointer to the klass field of the receiver &(recv->klass)
     x86opnd_t klass_opnd = mem_opnd(64, REG0, offsetof(struct RBasic, klass));
@@ -1110,7 +1143,7 @@ gen_oswb_cfunc(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb_c
     // Bail if receiver class is different from compile-time call cache class
     jit_mov_gc_ptr(jit, cb, REG1, (VALUE)cd->cc->klass);
     cmp(cb, klass_opnd, REG1);
-    jne_ptr(cb, side_exit);
+    jne_ptr(cb, COUNTED_EXIT(side_exit, oswb_se_cc_klass_differ));
 
     // Store incremented PC into current control frame in case callee raises.
     mov(cb, REG0, const_ptr_opnd(jit->pc + insn_len(BIN(opt_send_without_block))));
@@ -1124,7 +1157,7 @@ gen_oswb_cfunc(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb_c
         // REG_CFP <= REG_SP + 4 * sizeof(VALUE) + sizeof(rb_control_frame_t)
         lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * 4 + sizeof(rb_control_frame_t)));
         cmp(cb, REG_CFP, REG0);
-        jle_ptr(cb, side_exit);
+        jle_ptr(cb, COUNTED_EXIT(side_exit, oswb_se_cf_overflow));
 
         // Increment the stack pointer by 3 (in the callee)
         // sp += 3
@@ -1285,19 +1318,21 @@ gen_oswb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb_ca
     int num_locals = iseq->body->local_table_size - num_params;
 
     if (num_params != argc) {
-        //fprintf(stderr, "param argc mismatch\n");
-        return UJIT_CANT_COMPILE;
+        GEN_COUNTER_INC(cb, oswb_iseq_argc_mismatch);
+        return false;
     }
 
     if (!rb_simple_iseq_p(iseq)) {
         // Only handle iseqs that have simple parameters.
         // See vm_callee_setup_arg().
-        return UJIT_CANT_COMPILE;
+        GEN_COUNTER_INC(cb, oswb_iseq_not_simple);
+        return false;
     }
 
     if (vm_ci_flag(cd->ci) & VM_CALL_TAILCALL) {
         // We can't handle tailcalls
-        return UJIT_CANT_COMPILE;
+        GEN_COUNTER_INC(cb, oswb_iseq_tailcall);
+        return false;
     }
 
     rb_gc_register_mark_object((VALUE)iseq); // FIXME: intentional LEAK!
@@ -1320,12 +1355,15 @@ gen_oswb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb_ca
     //print_ptr(cb, recv);
 
     // Check that the receiver is a heap object
-    test(cb, REG0, imm_opnd(RUBY_IMMEDIATE_MASK));
-    jnz_ptr(cb, side_exit);
-    cmp(cb, REG0, imm_opnd(Qfalse));
-    je_ptr(cb, side_exit);
-    cmp(cb, REG0, imm_opnd(Qnil));
-    je_ptr(cb, side_exit);
+    {
+        uint8_t *receiver_not_heap = COUNTED_EXIT(side_exit, oswb_se_receiver_not_heap);
+        test(cb, REG0, imm_opnd(RUBY_IMMEDIATE_MASK));
+        jnz_ptr(cb, receiver_not_heap);
+        cmp(cb, REG0, imm_opnd(Qfalse));
+        je_ptr(cb, receiver_not_heap);
+        cmp(cb, REG0, imm_opnd(Qnil));
+        je_ptr(cb, receiver_not_heap);
+    }
 
     // Pointer to the klass field of the receiver &(recv->klass)
     x86opnd_t klass_opnd = mem_opnd(64, REG0, offsetof(struct RBasic, klass));
@@ -1335,7 +1373,7 @@ gen_oswb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb_ca
     // Bail if receiver class is different from compile-time call cache class
     jit_mov_gc_ptr(jit, cb, REG1, (VALUE)cd->cc->klass);
     cmp(cb, klass_opnd, REG1);
-    jne_ptr(cb, side_exit);
+    jne_ptr(cb, COUNTED_EXIT(side_exit, oswb_se_cc_klass_differ));
 
     // Store the updated SP on the current frame (pop arguments and receiver)
     lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * -(argc + 1)));
@@ -1349,7 +1387,7 @@ gen_oswb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb_ca
     // #define CHECK_VM_STACK_OVERFLOW0(cfp, sp, margin)
     lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * (num_locals + iseq->body->stack_max) + sizeof(rb_control_frame_t)));
     cmp(cb, REG_CFP, REG0);
-    jle_ptr(cb, side_exit);
+    jle_ptr(cb, COUNTED_EXIT(side_exit, oswb_se_cf_overflow));
 
     // Adjust the callee's stack pointer
     lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * (3 + num_locals)));
@@ -1426,7 +1464,7 @@ gen_oswb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb_ca
 
     // Load the updated SP
     mov(cb, REG_SP, member_opnd(REG_CFP, rb_control_frame_t, sp));
-   
+
     // Directly jump to the entry point of the callee
     gen_direct_jump(
         &DEFAULT_CTX,
@@ -1460,42 +1498,73 @@ gen_opt_send_without_block(jitstate_t* jit, ctx_t* ctx)
 
     // Don't JIT calls with keyword splat
     if (vm_ci_flag(cd->ci) & VM_CALL_KW_SPLAT) {
-        return UJIT_CANT_COMPILE;
+        GEN_COUNTER_INC(cb, oswb_kw_splat);
+        return false;
     }
 
     // Don't JIT calls that aren't simple
     if (!(vm_ci_flag(cd->ci) & VM_CALL_ARGS_SIMPLE)) {
-        return UJIT_CANT_COMPILE;
+        GEN_COUNTER_INC(cb, oswb_callsite_not_simple);
+        return false;
     }
 
     // Don't JIT if the inline cache is not set
     if (!cd->cc || !cd->cc->klass) {
-        return UJIT_CANT_COMPILE;
+        GEN_COUNTER_INC(cb, oswb_ic_empty);
+        return false;
     }
 
     const rb_callable_method_entry_t *cme = vm_cc_cme(cd->cc);
 
     // Don't JIT if the method entry is out of date
     if (METHOD_ENTRY_INVALIDATED(cme)) {
-        return UJIT_CANT_COMPILE;
+        GEN_COUNTER_INC(cb, oswb_invalid_cme);
+        return false;
     }
 
     // We don't generate code to check protected method calls
     if (METHOD_ENTRY_VISI(cme) == METHOD_VISI_PROTECTED) {
-        return UJIT_CANT_COMPILE;
+        GEN_COUNTER_INC(cb, oswb_protected);
+        return false;
     }
 
-    // If this is a C call
-    if (cme->def->type == VM_METHOD_TYPE_CFUNC) {
-        return gen_oswb_cfunc(jit, ctx, cd, cme, argc);
-    }
-
-    // If this is a Ruby call
-    if (cme->def->type == VM_METHOD_TYPE_ISEQ) {
+    switch (cme->def->type) {
+    case VM_METHOD_TYPE_ISEQ:
         return gen_oswb_iseq(jit, ctx, cd, cme, argc);
+    case VM_METHOD_TYPE_CFUNC:
+        return gen_oswb_cfunc(jit, ctx, cd, cme, argc);
+    case VM_METHOD_TYPE_ATTRSET:
+        GEN_COUNTER_INC(cb, oswb_ivar_set_method);
+        return false;
+    case VM_METHOD_TYPE_BMETHOD:
+        GEN_COUNTER_INC(cb, oswb_bmethod);
+        return false;
+    case VM_METHOD_TYPE_IVAR:
+        GEN_COUNTER_INC(cb, oswb_ivar_get_method);
+        return false;
+    case VM_METHOD_TYPE_ZSUPER:
+        GEN_COUNTER_INC(cb, oswb_zsuper_method);
+        return false;
+    case VM_METHOD_TYPE_ALIAS:
+        GEN_COUNTER_INC(cb, oswb_alias_method);
+        return false;
+    case VM_METHOD_TYPE_UNDEF:
+        GEN_COUNTER_INC(cb, oswb_undef_method);
+        return false;
+    case VM_METHOD_TYPE_NOTIMPLEMENTED:
+        GEN_COUNTER_INC(cb, oswb_not_implemented_method);
+        return false;
+    case VM_METHOD_TYPE_OPTIMIZED:
+        GEN_COUNTER_INC(cb, oswb_optimized_method);
+        return false;
+    case VM_METHOD_TYPE_MISSING:
+        GEN_COUNTER_INC(cb, oswb_missing_method);
+        return false;
+    case VM_METHOD_TYPE_REFINED:
+        GEN_COUNTER_INC(cb, oswb_refined_method);
+        return false;
+    // no default case so compiler issues a warning if this is not exhaustive
     }
-
-    return UJIT_CANT_COMPILE;
 }
 
 static codegen_status_t

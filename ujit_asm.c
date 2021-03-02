@@ -1640,3 +1640,9 @@ void xor(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1)
         opnd1
     );
 }
+
+// LOCK - lock prefix for atomic shared memory operations
+void cb_write_lock_prefix(codeblock_t* cb)
+{
+    cb_write_byte(cb, 0xF0);
+}
