@@ -66,8 +66,10 @@ jit_mov_gc_ptr(jitstate_t* jit, codeblock_t* cb, x86opnd_t reg, VALUE ptr)
 {
     RUBY_ASSERT(reg.type == OPND_REG && reg.num_bits == 64);
 
+    // Load the pointer constant into the specified register
     mov(cb, reg, const_ptr_opnd((void*)ptr));
-    // The pointer immediate is encoded as the last part of the mov written out.
+
+    // The pointer immediate is encoded as the last part of the mov written out
     uint32_t ptr_offset = cb->write_pos - sizeof(VALUE);
 
     if (!SPECIAL_CONST_P(ptr)) {
@@ -147,7 +149,7 @@ ujit_side_exit(jitstate_t* jit, ctx_t* ctx)
     // Write back the old instruction at the exit PC
     // Otherwise the interpreter may jump right back to the
     // JITted code we're trying to exit
-    VALUE* exit_pc = &jit->iseq->body->iseq_encoded[jit->insn_idx];
+    VALUE* exit_pc = iseq_pc_at_idx(jit->iseq, jit->insn_idx);
     int exit_opcode = opcode_at_pc(jit->iseq, exit_pc);
     void* handler_addr = (void*)handler_table[exit_opcode];
     mov(ocb, RAX, const_ptr_opnd(exit_pc));
@@ -212,7 +214,6 @@ ujit_gen_block(ctx_t* ctx, block_t* block, rb_execution_context_t* ec)
 
     const rb_iseq_t *iseq = block->blockid.iseq;
     uint32_t insn_idx = block->blockid.idx;
-    VALUE *encoded = iseq->body->iseq_encoded;
 
     // NOTE: if we are ever deployed in production, we
     // should probably just log an error and return NULL here,
@@ -227,7 +228,7 @@ ujit_gen_block(ctx_t* ctx, block_t* block, rb_execution_context_t* ec)
     // Initialize a JIT state object
     jitstate_t jit = {
         block,
-        block->blockid.iseq,
+        iseq,
         0,
         0,
         ec
@@ -239,9 +240,8 @@ ujit_gen_block(ctx_t* ctx, block_t* block, rb_execution_context_t* ec)
     // For each instruction to compile
     for (;;) {
         // Set the current instruction
-        RUBY_ASSERT(insn_idx < iseq->body->iseq_size);
         jit.insn_idx = insn_idx;
-        jit.pc = &encoded[insn_idx];
+        jit.pc = iseq_pc_at_idx(iseq, insn_idx);
 
         // Get the current opcode
         int opcode = jit_get_opcode(&jit);
@@ -251,7 +251,7 @@ ujit_gen_block(ctx_t* ctx, block_t* block, rb_execution_context_t* ec)
         if (!rb_st_lookup(gen_fns, opcode, (st_data_t*)&gen_fn)) {
             // If we reach an unknown instruction,
             // exit to the interpreter and stop compiling
-            ujit_gen_exit(&jit, ctx, cb, &encoded[insn_idx]);
+            ujit_gen_exit(&jit, ctx, cb, jit.pc);
             break;
         }
 
@@ -273,7 +273,7 @@ ujit_gen_block(ctx_t* ctx, block_t* block, rb_execution_context_t* ec)
         // If we can't compile this instruction
         // exit to the interpreter and stop compiling
         if (status == UJIT_CANT_COMPILE) {
-            ujit_gen_exit(&jit, ctx, cb, &encoded[insn_idx]);
+            ujit_gen_exit(&jit, ctx, cb, jit.pc);
             break;
         }
 
@@ -295,12 +295,11 @@ ujit_gen_block(ctx_t* ctx, block_t* block, rb_execution_context_t* ec)
     if (UJIT_DUMP_MODE >= 2) {
         // Dump list of compiled instrutions
         fprintf(stderr, "Compiled the following for iseq=%p:\n", (void *)iseq);
-        VALUE *pc = &encoded[block->blockid.idx];
-        VALUE *end_pc = &encoded[insn_idx];
-        while (pc < end_pc) {
-            int opcode = opcode_at_pc(iseq, pc);
-            fprintf(stderr, "  %04td %s\n", pc - encoded, insn_name(opcode));
-            pc += insn_len(opcode);
+        for (uint32_t idx = block->blockid.idx; idx < insn_idx;)
+        {
+            int opcode = opcode_at_pc(iseq, iseq_pc_at_idx(iseq, idx));
+            fprintf(stderr, "  %04d %s\n", idx, insn_name(opcode));
+            idx += insn_len(opcode);
         }
     }
 }
