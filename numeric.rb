@@ -208,6 +208,33 @@ class Float
 
   #
   #  call-seq:
+  #     float.to_i    ->  integer
+  #     float.to_int  ->  integer
+  #
+  #  Returns the +float+ truncated to an Integer.
+  #
+  #     1.2.to_i      #=> 1
+  #     (-1.2).to_i   #=> -1
+  #
+  #  Note that the limited precision of floating point arithmetic
+  #  might lead to surprising results:
+  #
+  #    (0.3 / 0.1).to_i  #=> 2 (!)
+  #
+  #  #to_int is an alias for #to_i.
+  # 
+  def to_i
+    Primitive.attr! 'inline'
+    Primitive.cexpr! 'flo_to_i(self)'
+  end
+
+  def to_int
+    Primitive.attr! 'inline'
+    Primitive.cexpr! 'flo_to_i(self)'
+  end
+
+  #
+  #  call-seq:
   #     float.abs        ->  float
   #     float.magnitude  ->  float
   #

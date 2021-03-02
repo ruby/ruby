@@ -2269,24 +2269,6 @@ float_round_underflow(int ndigits, int binexp)
     return FALSE;
 }
 
-/*
- *  call-seq:
- *     float.to_i    ->  integer
- *     float.to_int  ->  integer
- *
- *  Returns the +float+ truncated to an Integer.
- *
- *     1.2.to_i      #=> 1
- *     (-1.2).to_i   #=> -1
- *
- *  Note that the limited precision of floating point arithmetic
- *  might lead to surprising results:
- *
- *    (0.3 / 0.1).to_i  #=> 2 (!)
- *
- *  #to_int is an alias for #to_i.
- */
-
 static VALUE
 flo_to_i(VALUE num)
 {
@@ -5556,8 +5538,6 @@ Init_Numeric(void)
     rb_define_method(rb_cFloat, "eql?", flo_eql, 1);
     rb_define_method(rb_cFloat, "hash", flo_hash, 0);
 
-    rb_define_method(rb_cFloat, "to_i", flo_to_i, 0);
-    rb_define_method(rb_cFloat, "to_int", flo_to_i, 0);
     rb_define_method(rb_cFloat, "floor", flo_floor, -1);
     rb_define_method(rb_cFloat, "ceil", flo_ceil, -1);
     rb_define_method(rb_cFloat, "round", flo_round, -1);

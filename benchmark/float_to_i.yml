@@ -1,0 +1,8 @@
+prelude: |
+  flo = 4.2
+benchmark:
+  to_i: |
+    flo.to_i
+  to_int: |
+    flo.to_int
+loop_count: 20000000
