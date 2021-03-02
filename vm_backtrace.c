@@ -515,7 +515,7 @@ backtrace_each(const rb_execution_context_t *ec,
     const rb_control_frame_t *last_cfp = ec->cfp;
     const rb_control_frame_t *start_cfp = RUBY_VM_END_CONTROL_FRAME(ec);
     const rb_control_frame_t *cfp;
-    ptrdiff_t size, i, last, start = 0;
+    ptrdiff_t size, real_size, i, j, last, start = 0;
     int ret = 0;
 
     // In the case the thread vm_stack or cfp is not initialized, there is no backtrace.
@@ -539,10 +539,10 @@ backtrace_each(const rb_execution_context_t *ec,
 	  RUBY_VM_NEXT_CONTROL_FRAME(start_cfp)); /* skip top frames */
 
     if (start_cfp < last_cfp) {
-        size = last = 0;
+        real_size = size = last = 0;
     }
     else {
-	size = start_cfp - last_cfp + 1;
+        real_size = size = start_cfp - last_cfp + 1;
 
         if (from_last > size) {
             size = last = 0;
@@ -568,7 +568,7 @@ backtrace_each(const rb_execution_context_t *ec,
     init(arg, size);
 
     /* SDR(); */
-    for (i=0, cfp = start_cfp; i<last; i++, cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
+    for (i=0, j=0, cfp = start_cfp; i<last && j<real_size; i++, j++, cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
         if (i < start) {
             if (iter_skip) {
                 iter_skip(arg, cfp);
@@ -578,9 +578,11 @@ backtrace_each(const rb_execution_context_t *ec,
 
 	/* fprintf(stderr, "cfp: %d\n", (rb_control_frame_t *)(ec->vm_stack + ec->vm_stack_size) - cfp); */
 	if (cfp->iseq) {
-	    if (cfp->pc) {
-		iter_iseq(arg, cfp);
-	    }
+            if (cfp->pc) {
+                iter_iseq(arg, cfp);
+            } else {
+                i--;
+            }
 	}
 	else if (RUBYVM_CFUNC_FRAME_P(cfp)) {
 	    const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
