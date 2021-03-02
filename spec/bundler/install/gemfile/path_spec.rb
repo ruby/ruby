@@ -136,8 +136,6 @@ RSpec.describe "bundle install with explicit source paths" do
   end
 
   it "installs dependencies from the path even if a newer gem is available elsewhere" do
-    skip "override is not winning" if Gem.win_platform?
-
     system_gems "rack-1.0.0"
 
     build_lib "rack", "1.0", :path => lib_path("nested/bar") do |s|
@@ -701,8 +699,6 @@ RSpec.describe "bundle install with explicit source paths" do
 
   describe "when there are both a gemspec and remote gems" do
     it "doesn't query rubygems for local gemspec name" do
-      skip "platform issues" if Gem.win_platform?
-
       build_lib "private_lib", "2.2", :path => lib_path("private_lib")
       gemfile = <<-G
         source "http://localgemserver.test"

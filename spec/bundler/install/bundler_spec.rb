@@ -21,12 +21,12 @@ RSpec.describe "bundle install" do
       expect(the_bundle).to include_gems "bundler #{Bundler::VERSION}"
     end
 
-    it "are not added if not already present" do
+    it "are forced to the current bundler version even if not already present" do
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
-      expect(the_bundle).not_to include_gems "bundler #{Bundler::VERSION}"
+      expect(the_bundle).to include_gems "bundler #{Bundler::VERSION}"
     end
 
     it "causes a conflict if explicitly requesting a different version of bundler" do

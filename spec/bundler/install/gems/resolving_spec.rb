@@ -160,10 +160,6 @@ RSpec.describe "bundle install with install-time dependencies" do
 
   describe "when a required ruby version" do
     context "allows only an older version" do
-      before do
-        skip "gem not found" if Gem.win_platform?
-      end
-
       it "installs the older version" do
         build_repo2 do
           build_gem "rack", "1.2" do |s|
