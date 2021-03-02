@@ -373,6 +373,10 @@ uint8_t* branch_stub_hit(uint32_t branch_idx, uint32_t target_idx, rb_execution_
     //fprintf(stderr, "\nstub hit, branch idx: %d, target idx: %d\n", branch_idx, target_idx);
     //fprintf(stderr, "blockid.iseq=%p, blockid.idx=%d\n", target.iseq, target.idx);
 
+    // Update the PC in the current CFP, because it
+    // may be out of sync in JITted code
+    ec->cfp->pc = iseq_pc_at_idx(target.iseq, target.idx);
+
     // If either of the target blocks will be placed next
     if (cb->write_pos == branch->end_pos)
     {
@@ -688,7 +692,7 @@ invalidate_block_version(block_t* block)
     uint32_t idx = block->blockid.idx;
     // FIXME: the following says "if", but it's unconditional.
     // If the block is an entry point, it needs to be unmapped from its iseq
-    VALUE* entry_pc = &iseq->body->iseq_encoded[idx];
+    VALUE* entry_pc = iseq_pc_at_idx(iseq, idx);
     int entry_opcode = opcode_at_pc(iseq, entry_pc);
 
     // TODO: unmap_addr2insn in ujit_iface.c? Maybe we can write a function to encompass this logic?

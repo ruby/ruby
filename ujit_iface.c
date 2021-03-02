@@ -62,6 +62,16 @@ cb_write_post_call_bytes(codeblock_t* cb)
         cb_write_byte(cb, ujit_with_ec_post_call_bytes[i]);
 }
 
+// Get the PC for a given index in an iseq
+VALUE *iseq_pc_at_idx(const rb_iseq_t *iseq, uint32_t insn_idx)
+{
+    RUBY_ASSERT(iseq != NULL);
+    RUBY_ASSERT(insn_idx < iseq->body->iseq_size);
+    VALUE *encoded = iseq->body->iseq_encoded;
+    VALUE *pc = &encoded[insn_idx];
+    return pc;
+}
+
 // Keep track of mapping from instructions to generated code
 // See comment for rb_encoded_insn_data in iseq.c
 void
