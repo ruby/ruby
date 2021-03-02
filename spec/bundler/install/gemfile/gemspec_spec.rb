@@ -422,13 +422,14 @@ RSpec.describe "bundle install from an existing gemspec" do
           end
         end
 
-        gemfile <<-G
-          source "#{file_uri_for(gem_repo2)}"
-          gemspec
-        G
-
-        simulate_platform("ruby") { bundle "install" }
-        simulate_platform("jruby") { bundle "install" }
+        %w[ruby jruby].each do |platform|
+          simulate_platform(platform) do
+            install_gemfile <<-G
+              source "#{file_uri_for(gem_repo2)}"
+              gemspec
+            G
+          end
+        end
       end
 
       context "on ruby" do
