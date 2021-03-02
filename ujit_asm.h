@@ -379,4 +379,6 @@ void test(codeblock_t* cb, x86opnd_t rm_opnd, x86opnd_t test_opnd);
 void ud2(codeblock_t* cb);
 void xor(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
 
+void cb_write_lock_prefix(codeblock_t* cb);
+
 #endif
