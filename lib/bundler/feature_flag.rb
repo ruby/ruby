@@ -32,6 +32,7 @@ module Bundler
     settings_flag(:cache_all) { bundler_3_mode? }
     settings_flag(:default_install_uses_path) { bundler_3_mode? }
     settings_flag(:deployment_means_frozen) { bundler_3_mode? }
+    settings_flag(:disable_multisource) { bundler_3_mode? }
     settings_flag(:forget_cli_options) { bundler_3_mode? }
     settings_flag(:global_gem_cache) { bundler_3_mode? }
     settings_flag(:only_update_to_newer_versions) { bundler_3_mode? }

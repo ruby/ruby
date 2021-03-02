@@ -16,13 +16,15 @@ module Bundler
 
         version = options[:version] || [">= 0"]
 
-        if options[:git]
-          install_git(names, version, options)
-        elsif options[:local_git]
-          install_local_git(names, version, options)
-        else
-          sources = options[:source] || Bundler.rubygems.sources
-          install_rubygems(names, version, sources)
+        Bundler.settings.temporary(:disable_multisource => false) do
+          if options[:git]
+            install_git(names, version, options)
+          elsif options[:local_git]
+            install_local_git(names, version, options)
+          else
+            sources = options[:source] || Bundler.rubygems.sources
+            install_rubygems(names, version, sources)
+          end
         end
       end
 
@@ -82,7 +84,6 @@ module Bundler
         deps = names.map {|name| Dependency.new name, version }
 
         definition = Definition.new(nil, deps, source_list, true)
-        definition.allow_multisource!
         install_definition(definition)
       end
 

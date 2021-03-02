@@ -962,6 +962,12 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     end
   end
 
+  def test_tcpsocketext_require
+    with_configured_fetcher(":ipv4_fallback_enabled: true") do |fetcher|
+      refute require('rubygems/core_ext/tcpsocket_init')
+    end
+  end
+
   def with_configured_fetcher(config_str = nil, &block)
     if config_str
       temp_conf = File.join @tempdir, '.gemrc'

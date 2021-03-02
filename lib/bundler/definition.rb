@@ -106,19 +106,6 @@ module Bundler
         @locked_platforms = []
       end
 
-      @locked_gem_sources = @locked_sources.select {|s| s.is_a?(Source::Rubygems) }
-      @disable_multisource = !Bundler.frozen_bundle? || @locked_gem_sources.none? {|s| s.remotes.size > 1 }
-
-      unless @disable_multisource
-        msg = "Your lockfile contains a single rubygems source section with multiple remotes, which is insecure. " \
-          "You should regenerate your lockfile in a non frozen environment."
-
-        Bundler::SharedHelpers.major_deprecation 2, msg
-
-        @sources.allow_multisource!
-        @locked_gem_sources.each(&:allow_multisource!)
-      end
-
       @unlock[:gems] ||= []
       @unlock[:sources] ||= []
       @unlock[:ruby] ||= if @ruby_version && locked_ruby_version_object
@@ -156,14 +143,6 @@ module Bundler
           end
         GemVersionPromoter.new(locked_specs, @unlock[:gems])
       end
-    end
-
-    def disable_multisource?
-      @disable_multisource
-    end
-
-    def allow_multisource!
-      @disable_multisource = false
     end
 
     def resolve_with_cache!
@@ -285,7 +264,7 @@ module Bundler
           # Run a resolve against the locally available gems
           Bundler.ui.debug("Found changes from the lockfile, re-resolving dependencies because #{change_reason}")
           expanded_dependencies = expand_dependencies(dependencies + metadata_dependencies, @remote)
-          Resolver.resolve(expanded_dependencies, source_requirements, last_resolve, gem_version_promoter, additional_base_requirements_for_resolve, platforms)
+          Resolver.resolve(expanded_dependencies, index, source_requirements, last_resolve, gem_version_promoter, additional_base_requirements_for_resolve, platforms)
         end
       end
     end
@@ -551,9 +530,6 @@ module Bundler
     attr_reader :sources
     private :sources
 
-    attr_reader :locked_gem_sources
-    private :locked_gem_sources
-
     def nothing_changed?
       !@source_changes && !@dependency_changes && !@new_platform && !@path_changes && !@local_changes && !@locked_specs_incomplete_for_platform
     end
@@ -678,20 +654,21 @@ module Bundler
     end
 
     def converge_rubygems_sources
-      return false if disable_multisource?
-
-      return false if locked_gem_sources.empty?
-
-      # Get the RubyGems remotes from the Gemfile
-      actual_remotes = sources.rubygems_remotes
-      return false if actual_remotes.empty?
+      return false if Bundler.feature_flag.disable_multisource?
 
       changes = false
 
+      # Get the RubyGems sources from the Gemfile.lock
+      locked_gem_sources = @locked_sources.select {|s| s.is_a?(Source::Rubygems) }
+      # Get the RubyGems remotes from the Gemfile
+      actual_remotes = sources.rubygems_remotes
+
       # If there is a RubyGems source in both
-      locked_gem_sources.each do |locked_gem|
-        # Merge the remotes from the Gemfile into the Gemfile.lock
-        changes |= locked_gem.replace_remotes(actual_remotes, Bundler.settings[:allow_deployment_source_credential_changes])
+      if !locked_gem_sources.empty? && !actual_remotes.empty?
+        locked_gem_sources.each do |locked_gem|
+          # Merge the remotes from the Gemfile into the Gemfile.lock
+          changes |= locked_gem.replace_remotes(actual_remotes, Bundler.settings[:allow_deployment_source_credential_changes])
+        end
       end
 
       changes
@@ -916,18 +893,30 @@ module Bundler
       # Record the specs available in each gem's source, so that those
       # specs will be available later when the resolver knows where to
       # look for that gemspec (or its dependencies)
-      source_requirements = { :default => sources.default_source }.merge(dependency_source_requirements)
+      default = sources.default_source
+      source_requirements = { :default => default }
+      default = nil unless Bundler.feature_flag.disable_multisource?
+      dependencies.each do |dep|
+        next unless source = dep.source || default
+        source_requirements[dep.name] = source
+      end
       metadata_dependencies.each do |dep|
         source_requirements[dep.name] = sources.metadata_source
       end
-      source_requirements[:global] = index unless disable_multisource?
       source_requirements[:default_bundler] = source_requirements["bundler"] || source_requirements[:default]
       source_requirements["bundler"] = sources.metadata_source # needs to come last to override
       source_requirements
     end
 
     def pinned_spec_names(skip = nil)
-      dependency_source_requirements.reject {|_, source| source == skip }.keys
+      pinned_names = []
+      default = Bundler.feature_flag.disable_multisource? && sources.default_source
+      @dependencies.each do |dep|
+        next unless dep_source = dep.source || default
+        next if dep_source == skip
+        pinned_names << dep.name
+      end
+      pinned_names
     end
 
     def requested_groups
@@ -983,19 +972,6 @@ module Bundler
       return false unless source.is_a?(Source::Rubygems)
 
       Bundler.settings[:allow_deployment_source_credential_changes] && source.equivalent_remotes?(sources.rubygems_remotes)
-    end
-
-    def dependency_source_requirements
-      @dependency_source_requirements ||= begin
-        source_requirements = {}
-        default = disable_multisource? && sources.default_source
-        dependencies.each do |dep|
-          dep_source = dep.source || default
-          next unless dep_source
-          source_requirements[dep.name] = dep_source
-        end
-        source_requirements
-      end
     end
   end
 end

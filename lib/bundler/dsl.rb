@@ -24,9 +24,6 @@ module Bundler
     def initialize
       @source               = nil
       @sources              = SourceList.new
-
-      @global_rubygems_sources = []
-
       @git_sources          = {}
       @dependencies         = []
       @groups               = []
@@ -48,7 +45,6 @@ module Bundler
       @gemfiles << expanded_gemfile_path
       contents ||= Bundler.read_file(@gemfile.to_s)
       instance_eval(contents.dup.tap{|x| x.untaint if RUBY_VERSION < "2.7" }, gemfile.to_s, 1)
-      check_primary_source_safety
     rescue Exception => e # rubocop:disable Lint/RescueException
       message = "There was an error " \
         "#{e.is_a?(GemfileEvalError) ? "evaluating" : "parsing"} " \
@@ -168,7 +164,8 @@ module Bundler
       elsif block_given?
         with_source(@sources.add_rubygems_source("remotes" => source), &blk)
       else
-        @global_rubygems_sources << source
+        check_primary_source_safety(@sources)
+        @sources.global_rubygems_source = source
       end
     end
 
@@ -186,14 +183,24 @@ module Bundler
     end
 
     def path(path, options = {}, &blk)
+      unless block_given?
+        msg = "You can no longer specify a path source by itself. Instead, \n" \
+              "either use the :path option on a gem, or specify the gems that \n" \
+              "bundler should find in the path source by passing a block to \n" \
+              "the path method, like: \n\n" \
+              "    path 'dir/containing/rails' do\n" \
+              "      gem 'rails'\n" \
+              "    end\n\n"
+
+        raise DeprecatedError, msg if Bundler.feature_flag.disable_multisource?
+        SharedHelpers.major_deprecation(2, msg.strip)
+      end
+
       source_options = normalize_hash(options).merge(
         "path" => Pathname.new(path),
         "root_path" => gemfile_root,
         "gemspec" => gemspecs.find {|g| g.name == options["name"] }
       )
-
-      source_options["global"] = true unless block_given?
-
       source = @sources.add_path_source(source_options)
       with_source(source, &blk)
     end
@@ -270,11 +277,6 @@ module Bundler
 
     def method_missing(name, *args)
       raise GemfileError, "Undefined local variable or method `#{name}' for Gemfile"
-    end
-
-    def check_primary_source_safety
-      check_path_source_safety
-      check_rubygems_source_safety
     end
 
     private
@@ -438,40 +440,25 @@ repo_name ||= user_name
       end
     end
 
-    def check_path_source_safety
-      return if @sources.global_path_source.nil?
+    def check_primary_source_safety(source_list)
+      return if source_list.rubygems_primary_remotes.empty? && source_list.global_rubygems_source.nil?
 
-      msg = "You can no longer specify a path source by itself. Instead, \n" \
-              "either use the :path option on a gem, or specify the gems that \n" \
-              "bundler should find in the path source by passing a block to \n" \
-              "the path method, like: \n\n" \
-              "    path 'dir/containing/rails' do\n" \
-              "      gem 'rails'\n" \
-              "    end\n\n"
-
-      SharedHelpers.major_deprecation(2, msg.strip)
-    end
-
-    def check_rubygems_source_safety
-      if @global_rubygems_sources.size <= 1
-        @sources.global_rubygems_source = @global_rubygems_sources.first
-        return
-      end
-
-      @global_rubygems_sources.each do |source|
-        @sources.add_rubygems_remote(source)
-      end
-
-      if Bundler.feature_flag.bundler_3_mode?
+      if Bundler.feature_flag.disable_multisource?
         msg = "This Gemfile contains multiple primary sources. " \
           "Each source after the first must include a block to indicate which gems " \
           "should come from that source"
+        unless Bundler.feature_flag.bundler_2_mode?
+          msg += ". To downgrade this error to a warning, run " \
+            "`bundle config unset disable_multisource`"
+        end
         raise GemfileEvalError, msg
       else
         Bundler::SharedHelpers.major_deprecation 2, "Your Gemfile contains multiple primary sources. " \
           "Using `source` more than once without a block is a security risk, and " \
           "may result in installing unexpected gems. To resolve this warning, use " \
-          "a block to indicate which gems should come from the secondary source."
+          "a block to indicate which gems should come from the secondary source. " \
+          "To upgrade this warning to an error, run `bundle config set --local " \
+          "disable_multisource true`."
       end
     end
 
