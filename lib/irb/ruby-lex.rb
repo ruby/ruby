@@ -277,8 +277,9 @@ class RubyLex
       return true
     elsif tokens.size >= 1 and tokens[-1][1] == :on_heredoc_end # "EOH\n"
       return false
-    elsif tokens.size >= 2 and defined?(Ripper::EXPR_BEG) and tokens[-2][3].anybits?(Ripper::EXPR_BEG | Ripper::EXPR_FNAME)
+    elsif tokens.size >= 2 and defined?(Ripper::EXPR_BEG) and tokens[-2][3].anybits?(Ripper::EXPR_BEG | Ripper::EXPR_FNAME) and tokens[-2][2] !~ /\A\.\.\.?\z/
       # end of literal except for regexp
+      # endless range at end of line is not a continue
       return true
     end
     false
