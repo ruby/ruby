@@ -1609,10 +1609,8 @@ void test(codeblock_t* cb, x86opnd_t rm_opnd, x86opnd_t test_opnd)
     }
     else
     {
-        // For now, 32-bit operands only
         assert (test_opnd.num_bits == rm_opnd.num_bits);
-        assert (test_opnd.num_bits == 32);
-        cb_write_rm(cb, false, false, test_opnd, rm_opnd, 0xFF, 1, 0x85);
+        cb_write_rm(cb, false, rm_opnd.num_bits == 64, test_opnd, rm_opnd, 0xFF, 1, 0x85);
     }
 }
 

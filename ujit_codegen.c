@@ -1132,7 +1132,7 @@ jit_protected_guard(jitstate_t *jit, codeblock_t *cb, const rb_callable_method_e
     // VALUE rb_obj_is_kind_of(VALUE obj, VALUE klass);
     call_ptr(cb, REG0, (void *)&rb_obj_is_kind_of);
     ujit_load_regs(cb);
-    cmp(cb, RAX, imm_opnd(0));
+    test(cb, RAX, RAX);
     jz_ptr(cb, COUNTED_EXIT(side_exit, oswb_se_protected_check_failed));
 }
 
@@ -1668,7 +1668,7 @@ gen_leave(jitstate_t* jit, ctx_t* ctx)
 
     // If the return address is NULL, fall back to the interpreter
     int FALLBACK_LABEL = cb_new_label(cb, "FALLBACK");
-    cmp(cb, REG1, imm_opnd(0));
+    test(cb, REG1, REG1);
     jz_label(cb, FALLBACK_LABEL);
 
     // Jump to the JIT return address
