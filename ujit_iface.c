@@ -561,6 +561,19 @@ get_stat_counters(rb_execution_context_t *ec, VALUE self)
 #endif // if RUBY_DEBUG
 }
 
+// Primitive called in ujit.rb. Zero out all the counters.
+static VALUE
+reset_stats_bang(rb_execution_context_t *ec, VALUE self)
+{
+#if RUBY_DEBUG
+    vm_insns_count = 0;
+    rb_compiled_iseq_count = 0;
+    memset(&exit_op_count, 0, sizeof(exit_op_count));
+    memset(&ujit_runtime_counters, 0, sizeof(ujit_runtime_counters));
+#endif // if RUBY_DEBUG
+    return Qnil;
+}
+
 #include "ujit.rbinc"
 
 #if RUBY_DEBUG

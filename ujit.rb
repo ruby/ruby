@@ -43,6 +43,12 @@ module UJIT
     Primitive.get_stat_counters
   end
 
+  # Discard statistics collected for --ujit-stats.
+  def self.reset_stats!
+    # defined in ujit_iface.c
+    Primitive.reset_stats_bang
+  end
+
   class << self
     private
 
