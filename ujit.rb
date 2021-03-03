@@ -53,10 +53,16 @@ module UJIT
       return unless counters
 
       $stderr.puts("***uJIT: Printing runtime counters from ujit.rb***")
-      $stderr.puts("opt_send_without_block exit reasons: ")
 
-      counters.filter! { |key, _| key.start_with?('oswb_') }
-      counters.transform_keys! { |key| key.to_s.delete_prefix('oswb_') }
+      print_counters(counters, prefix: 'oswb_', prompt: 'opt_send_without_block exit reasons: ')
+      print_counters(counters, prefix: 'leave_', prompt: 'leave exit reasons: ')
+    end
+
+    def print_counters(counters, prefix:, prompt:)
+      $stderr.puts(prompt)
+      counters = counters.filter { |key, _| key.start_with?(prefix) }
+      counters.filter! { |_, value| value > 0 }
+      counters.transform_keys! { |key| key.to_s.delete_prefix(prefix) }
 
       counters = counters.to_a
       counters.sort_by! { |(_, counter_value)| counter_value }
