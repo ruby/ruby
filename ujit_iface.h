@@ -33,7 +33,6 @@ UJIT_DECLARE_COUNTERS(
     oswb_kw_splat,
     oswb_ic_empty,
     oswb_invalid_cme,
-    oswb_protected,
     oswb_ivar_set_method,
     oswb_ivar_get_method,
     oswb_zsuper_method,
@@ -54,6 +53,7 @@ UJIT_DECLARE_COUNTERS(
     oswb_se_receiver_not_heap,
     oswb_se_cf_overflow,
     oswb_se_cc_klass_differ,
+    oswb_se_protected_check_failed,
 
     // Member with known name for iterating over counters
     last_member
