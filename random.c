@@ -495,7 +495,7 @@ fill_random_bytes_urandom(void *seed, size_t size)
 
 #if 0
 #elif defined MAC_OS_X_VERSION_10_7 && MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_7
-#include <Security/Security.h>
+#include <Security/SecRandom.h>
 
 static int
 fill_random_bytes_syscall(void *seed, size_t size, int unused)
