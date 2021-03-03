@@ -826,8 +826,11 @@ strio_each_byte(VALUE self)
     RETURN_ENUMERATOR(self, 0, 0);
 
     while (ptr->pos < RSTRING_LEN(ptr->string)) {
-	char c = RSTRING_PTR(ptr->string)[ptr->pos++];
-	rb_yield(CHR2FIX(c));
+        if (!READABLE(self)) {
+            rb_raise(rb_eIOError, "not opened for reading");
+        }
+        char c = RSTRING_PTR(ptr->string)[ptr->pos++];
+        rb_yield(CHR2FIX(c));
     }
     return self;
 }
