@@ -1021,7 +1021,7 @@ rb_vrescue2(VALUE (* b_proc) (VALUE), VALUE data1,
     else if (result) {
 	/* escape from r_proc */
 	if (state == TAG_RETRY) {
-	    state = 0;
+	    state = TAG_NONE;
 	    ec->errinfo = Qnil;
 	    result = Qfalse;
 	    goto retry_entry;
@@ -1033,17 +1033,21 @@ rb_vrescue2(VALUE (* b_proc) (VALUE), VALUE data1,
 	if (state == TAG_RAISE) {
 	    int handle = FALSE;
 	    VALUE eclass;
+	    va_list ap;
 
-	    while ((eclass = va_arg(args, VALUE)) != 0) {
+	    result = Qnil;
+	    /* reuses args when raised again after retrying in r_proc */
+	    va_copy(ap, args);
+	    while ((eclass = va_arg(ap, VALUE)) != 0) {
 		if (rb_obj_is_kind_of(ec->errinfo, eclass)) {
 		    handle = TRUE;
 		    break;
 		}
 	    }
+	    va_end(ap);
 
 	    if (handle) {
-		result = Qnil;
-		state = 0;
+		state = TAG_NONE;
 		if (r_proc) {
 		    result = (*r_proc) (data2, ec->errinfo);
 		}
