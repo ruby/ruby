@@ -35,6 +35,7 @@ typedef struct CtxStruct
     uint16_t stack_size;
 
     // Offset of the JIT SP relative to the interpreter SP
+    // This represents how far the JIT's SP is from the "real" SP
     int16_t sp_offset;
 
     // Whether we know self is a heap object
