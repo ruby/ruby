@@ -1644,10 +1644,10 @@ gen_leave(jitstate_t* jit, ctx_t* ctx)
     // if (flags & VM_FRAME_FLAG_FINISH) != 0
     x86opnd_t flags_opnd = mem_opnd(64, REG0, sizeof(VALUE) * VM_ENV_DATA_INDEX_FLAGS);
     test(cb, flags_opnd, imm_opnd(VM_FRAME_FLAG_FINISH));
-    jnz_ptr(cb, side_exit);
+    jnz_ptr(cb, COUNTED_EXIT(side_exit, leave_se_finish_frame));
 
     // Check for interrupts
-    ujit_check_ints(cb, side_exit);
+    ujit_check_ints(cb, COUNTED_EXIT(side_exit, leave_se_interrupt));
 
     // Load the return value
     mov(cb, REG0, ctx_stack_pop(ctx, 1));
@@ -1664,7 +1664,7 @@ gen_leave(jitstate_t* jit, ctx_t* ctx)
     // The SP points one above the topmost value
     add(cb, member_opnd(REG_CFP, rb_control_frame_t, sp), imm_opnd(SIZEOF_VALUE));
     mov(cb, REG_SP, member_opnd(REG_CFP, rb_control_frame_t, sp));
-    mov(cb, mem_opnd(64, REG_SP, -SIZEOF_VALUE), REG0);  
+    mov(cb, mem_opnd(64, REG_SP, -SIZEOF_VALUE), REG0);
 
     // If the return address is NULL, fall back to the interpreter
     int FALLBACK_LABEL = cb_new_label(cb, "FALLBACK");

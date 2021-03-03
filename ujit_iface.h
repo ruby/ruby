@@ -55,6 +55,9 @@ UJIT_DECLARE_COUNTERS(
     oswb_se_cc_klass_differ,
     oswb_se_protected_check_failed,
 
+    leave_se_finish_frame,
+    leave_se_interrupt,
+
     // Member with known name for iterating over counters
     last_member
 )
