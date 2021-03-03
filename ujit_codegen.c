@@ -1120,7 +1120,23 @@ gen_jump(jitstate_t* jit, ctx_t* ctx)
     return UJIT_END_BLOCK;
 }
 
-static codegen_status_t
+static void
+jit_protected_guard(jitstate_t *jit, codeblock_t *cb, const rb_callable_method_entry_t *cme, uint8_t *side_exit)
+{
+    // Callee is protected. Generate ancestry guard.
+    // See vm_call_method().
+    ujit_save_regs(cb);
+    mov(cb, C_ARG_REGS[0], member_opnd(REG_CFP, rb_control_frame_t, self));
+    jit_mov_gc_ptr(jit, cb, C_ARG_REGS[1], cme->defined_class);
+    // Note: PC isn't written to current control frame as rb_is_kind_of() shouldn't raise.
+    // VALUE rb_obj_is_kind_of(VALUE obj, VALUE klass);
+    call_ptr(cb, REG0, (void *)&rb_obj_is_kind_of);
+    ujit_load_regs(cb);
+    cmp(cb, RAX, imm_opnd(0));
+    jz_ptr(cb, COUNTED_EXIT(side_exit, oswb_se_protected_check_failed));
+}
+
+static bool
 gen_oswb_cfunc(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb_callable_method_entry_t *cme, int32_t argc)
 {
     const rb_method_cfunc_t *cfunc = UNALIGNED_MEMBER_PTR(cme->def, body.cfunc);
@@ -1189,6 +1205,11 @@ gen_oswb_cfunc(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb_c
     // Store incremented PC into current control frame in case callee raises.
     mov(cb, REG0, const_ptr_opnd(jit->pc + insn_len(BIN(opt_send_without_block))));
     mov(cb, mem_opnd(64, REG_CFP, offsetof(rb_control_frame_t, pc)), REG0);
+
+    if (METHOD_ENTRY_VISI(cme) == METHOD_VISI_PROTECTED) {
+        // Generate ancestry guard for protected callee.
+        jit_protected_guard(jit, cb, cme, side_exit);
+    }
 
     // If this function needs a Ruby stack frame
     if (cfunc_needs_frame(cfunc))
@@ -1416,6 +1437,12 @@ gen_oswb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb_ca
     cmp(cb, klass_opnd, REG1);
     jne_ptr(cb, COUNTED_EXIT(side_exit, oswb_se_cc_klass_differ));
 
+
+    if (METHOD_ENTRY_VISI(cme) == METHOD_VISI_PROTECTED) {
+        // Generate ancestry guard for protected callee.
+        jit_protected_guard(jit, cb, cme, side_exit);
+    }
+
     // Store the updated SP on the current frame (pop arguments and receiver)
     lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * -(argc + 1)));
     mov(cb, member_opnd(REG_CFP, rb_control_frame_t, sp), REG0);
@@ -1560,12 +1587,6 @@ gen_opt_send_without_block(jitstate_t* jit, ctx_t* ctx)
     // Don't JIT if the method entry is out of date
     if (METHOD_ENTRY_INVALIDATED(cme)) {
         GEN_COUNTER_INC(cb, oswb_invalid_cme);
-        return false;
-    }
-
-    // We don't generate code to check protected method calls
-    if (METHOD_ENTRY_VISI(cme) == METHOD_VISI_PROTECTED) {
-        GEN_COUNTER_INC(cb, oswb_protected);
         return false;
     }
 
