@@ -79,6 +79,26 @@ jit_mov_gc_ptr(jitstate_t* jit, codeblock_t* cb, x86opnd_t reg, VALUE ptr)
     }
 }
 
+// Check if we are compiling the instruction at the stub PC
+// Meaning we are compiling the instruction that is next to execute
+static bool
+jit_at_current_insn(jitstate_t* jit, ctx_t* ctx)
+{
+    const VALUE* stub_pc = jit->ec->cfp->pc;
+    return (stub_pc == jit->pc);
+}
+
+// Peek at the topmost value on the Ruby stack
+static VALUE
+jit_peek_at_stack(jitstate_t* jit, ctx_t* ctx)
+{
+    RUBY_ASSERT(jit_at_current_insn(jit, ctx));
+
+    VALUE* sp = jit->ec->cfp->sp + ctx->sp_offset;
+
+    return *(sp - 1);
+}
+
 // Save uJIT registers prior to a C call
 static void
 ujit_save_regs(codeblock_t* cb)
@@ -551,6 +571,27 @@ gen_getinstancevariable(jitstate_t* jit, ctx_t* ctx)
     if (!ic->entry) {
         return UJIT_CANT_COMPILE;
     }
+
+
+
+
+
+
+
+    /*
+    if (defer_compilation(this_instruction, ctx))
+        return JIT_END_BLOCK;
+
+    VALUE top_val = jit_peek_at_stack();
+    */
+
+
+
+
+
+
+
+
 
     // If the class uses the default allocator, instances should all be T_OBJECT
     // NOTE: This assumes nobody changes the allocator of the class after allocation.

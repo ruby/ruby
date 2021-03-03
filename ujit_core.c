@@ -604,6 +604,47 @@ void gen_direct_jump(
     branch_entries[branch_idx] = branch_entry;
 }
 
+// Create a stub to force the code up to this point to be executed
+void defer_compilation(
+    block_t* block,
+    ctx_t* cur_ctx,
+    uint32_t insn_idx
+)
+{
+
+
+
+
+
+
+
+
+
+
+
+
+    /*
+    RUBY_ASSERT(num_branches < MAX_BRANCHES);
+    uint32_t branch_idx = num_branches++;
+
+    // Register this branch entry
+    branch_t branch_entry = {
+        start_pos,
+        end_pos,
+        *ctx,
+        { target0, BLOCKID_NULL },
+        { *ctx, *ctx },
+        { dst_addr0, NULL },
+        gen_jump_branch,
+        branch_shape
+    };
+
+    branch_entries[branch_idx] = branch_entry;
+    */
+
+
+}
+
 // Remove all references to a block then free it.
 void
 ujit_free_block(block_t *block)
