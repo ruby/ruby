@@ -71,7 +71,7 @@ third  --time--   --time--   --time-- (  --time--)
 BENCH
   end
 
-  def test_benchmark_makes_extra_calcultations_with_an_Array_at_the_end_of_the_benchmark_and_show_the_result
+  def test_benchmark_makes_extra_calculations_with_an_Array_at_the_end_of_the_benchmark_and_show_the_result
     assert_equal(BENCHMARK_OUTPUT_WITH_TOTAL_AVG,
       capture_bench_output(:benchmark,
         Benchmark::CAPTION, 7,

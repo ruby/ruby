@@ -128,6 +128,9 @@ module Benchmark
   # benchmark tests. Reserves +label_width+ leading spaces for
   # labels on each line. Prints +caption+ at the top of the
   # report, and uses +format+ to format each line.
+  # (Note: +caption+ must contain a terminating newline character,
+  # see the default Benchmark::Tms::CAPTION for an example.)
+  #
   # Returns an array of Benchmark::Tms objects.
   #
   # If the block returns an array of
