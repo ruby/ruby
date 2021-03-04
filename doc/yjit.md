@@ -44,7 +44,7 @@ make -j16 test-all
 
 ## Usage
 
-Once uJIT is built, you can either use `./miniruby` from within your build directory, or switch to the uJIT version of `ruby`
+Once YJIT is built, you can either use `./miniruby` from within your build directory, or switch to the YJIT version of `ruby`
 by using the `chruby` tool:
 
 ```
@@ -52,17 +52,17 @@ chruby ruby-yjit
 ruby myscript.rb
 ```
 
-You can dump statistics about compilation and execution by running uJIT with the `--yjit-stats` command-line option:
+You can dump statistics about compilation and execution by running YJIT with the `--yjit-stats` command-line option:
 
 ```
-./miniruby --ujit-stats myscript.rb
+./miniruby --yjit-stats myscript.rb
 ```
 
 The machine code generated for a given method can be printed by adding `puts YJIT.disasm(method(:method_name))` to a Ruby script. Note that no code will be generated if the method is not compiled.
 
 ## Source Code Organization
 
-The uJIT source code is divided between:
+The YJIT source code is divided between:
 - `yjit_asm.c`: x86 in-memory assembler we use to generate machine code
 - `yjit_asm_tests.c`: tests for the in-memory assembler
 - `yjit_codegen.c`: logic for translating Ruby bytecode to machine code
