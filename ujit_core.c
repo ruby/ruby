@@ -144,15 +144,23 @@ int ctx_diff(const ctx_t* src, const ctx_t* dst)
     return diff;
 }
 
-static block_t *
-get_first_version(const rb_iseq_t *iseq, unsigned idx)
+static rb_ujit_block_array_t
+get_version_array(const rb_iseq_t *iseq, unsigned idx)
 {
     struct rb_iseq_constant_body *body = iseq->body;
+
     if (rb_darray_size(body->ujit_blocks) == 0) {
         return NULL;
     }
+
     RUBY_ASSERT((unsigned)rb_darray_size(body->ujit_blocks) == body->iseq_size);
     return rb_darray_get(body->ujit_blocks, idx);
+}
+
+// Count the number of block versions matching a given blockid
+static size_t get_num_versions(blockid_t blockid)
+{
+    return rb_darray_size(get_version_array(blockid.iseq, blockid.idx));
 }
 
 // Keep track of a block version. Block should be fully constructed.
@@ -214,48 +222,27 @@ add_block_version(blockid_t blockid, block_t* block)
     }
 }
 
-// Count the number of block versions matching a given blockid
-static size_t count_block_versions(blockid_t blockid)
-{
-    size_t count = 0;
-    block_t *first_version = get_first_version(blockid.iseq, blockid.idx);
-
-    // For each version matching the blockid
-    for (block_t *version = first_version; version != NULL; version = version->next)
-    {
-        count += 1;
-    }
-
-    return count;
-}
-
 // Retrieve a basic block version for an (iseq, idx) tuple
 block_t* find_block_version(blockid_t blockid, const ctx_t* ctx)
 {
-    block_t *first_version = get_first_version(blockid.iseq, blockid.idx);
-
-    // If there exists a version for this block id
-    if (!first_version) return NULL;
+    rb_ujit_block_array_t versions = get_version_array(iseq, block->blockid.idx);
 
     // Best match found
     block_t* best_version = NULL;
     int best_diff = INT_MAX;
 
     // For each version matching the blockid
-    for (block_t* version = first_version; version != NULL; version = version->next)
-    {
-        int diff = ctx_diff(ctx, &version->ctx);
+    block_t **element;
+    rb_darray_foreach(versions, idx, element) {
+        block_t *version = *element;
+        int diff = ctx_diff(ctx, version->ctx);
 
-        if (diff < best_diff)
-        {
+        // Note that we always prefer the first matching
+        // version because of inline-cache chains
+        if (diff < best_diff) {
             best_version = version;
             best_diff = diff;
         }
-    }
-
-    if (best_version == NULL)
-    {
-        return NULL;
     }
 
     return best_version;
@@ -393,7 +380,7 @@ uint8_t* branch_stub_hit(uint32_t branch_idx, uint32_t target_idx, rb_execution_
     ctx_t generic_ctx = DEFAULT_CTX;
     generic_ctx.stack_size = target_ctx->stack_size;
     generic_ctx.sp_offset = target_ctx->sp_offset;
-    if (count_block_versions(target) >= MAX_VERSIONS - 1)
+    if (get_num_versions(target) >= MAX_VERSIONS - 1)
     {
         fprintf(stderr, "version limit hit in branch_stub_hit\n");
         target_ctx = &generic_ctx;
@@ -559,7 +546,7 @@ void gen_direct_jump(
     ctx_t generic_ctx = DEFAULT_CTX;
     generic_ctx.stack_size = ctx->stack_size;
     generic_ctx.sp_offset = ctx->sp_offset;
-    if (count_block_versions(target0) >= MAX_VERSIONS - 1)
+    if (get_num_versions(target0) >= MAX_VERSIONS - 1)
     {
         fprintf(stderr, "version limit hit in gen_direct_jump\n");
         ctx = &generic_ctx;
@@ -658,6 +645,27 @@ ujit_free_block(block_t *block)
     free(block);
 }
 
+// Remove a block version without reordering the version array
+static bool
+block_array_remove(rb_ujit_block_array_t block_array, block_t *block)
+{
+    block_t **element;
+    bool shifting = false;
+    rb_darray_foreach(block_array, idx, element) {
+        if (*element == block) {
+            shifting = true;
+        }
+        else if (shifting) {
+            rb_darray_set(block_array, idx - 1, *element);
+        }
+    }
+
+    if (shifting) {
+        rb_darray_pop(block_array);
+    }
+    return shifting;
+}
+
 // Invalidate one specific block version
 void
 invalidate_block_version(block_t* block)
@@ -667,24 +675,12 @@ invalidate_block_version(block_t* block)
     // fprintf(stderr, "invalidating block (%p, %d)\n", block->blockid.iseq, block->blockid.idx);
     // fprintf(stderr, "block=%p\n", block);
 
-    block_t *first_block = get_first_version(iseq, block->blockid.idx);
-    RUBY_ASSERT(first_block != NULL);
-
-    // Remove references to this block
-    if (first_block == block) {
-        // Make the next block the new first version
-        rb_darray_set(iseq->body->ujit_blocks, block->blockid.idx, block->next);
-    }
-    else {
-        bool deleted = false;
-        for (block_t* cur = first_block; cur != NULL; cur = cur->next) {
-            if (cur->next == block) {
-                cur->next = cur->next->next;
-                break;
-            }
-        }
-        RUBY_ASSERT(deleted);
-    }
+    // Remove this block from the version array
+    rb_ujit_block_array_t versions = get_version_array(iseq, block->blockid.idx);
+    RUBY_ASSERT(rb_darray_size(versions) > 0);
+    RB_UNUSED_VAR(bool removed);
+    removed = block_array_remove(versions, block);
+    RUBY_ASSERT(removed);
 
     // Get a pointer to the generated code for this block
     uint8_t* code_ptr = cb_get_ptr(cb, block->start_pos);
