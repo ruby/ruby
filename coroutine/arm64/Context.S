@@ -60,3 +60,7 @@ PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
 
 	# Jump to return address (in x4)
 	ret x4
+
+#if defined(__linux__) && defined(__ELF__)
+.section .note.GNU-stack,"",%progbits
+#endif
