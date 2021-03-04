@@ -4,7 +4,7 @@ class Numeric
   #     num.real?  ->  true or false
   #
   #  Returns +true+ if +num+ is a real number (i.e. not Complex).
-  # 
+  #
   def real?
     return true
   end
@@ -17,7 +17,7 @@ class Numeric
   #
   #      1.0.integer?   #=> false
   #      1.integer?     #=> true
-  # 
+  #
   def integer?
     return false
   end
