@@ -16,23 +16,23 @@ If you would like to learn more about BBV, there are two published papers, and a
 
 ## Installation
 
-Start by cloning the `microjit` branch of the `Shopify/ruby` repository:
+Start by cloning the `yjit` branch of the `Shopify/ruby` repository:
 
 ```
-git clone https://github.com/Shopify/ruby.git microjit
-cd microjit
-git checkout microjit
+git clone https://github.com/Shopify/ruby.git yjit
+cd yjit
+git checkout yjit
 ```
 
 The uJIT `ruby` binary can be built with either GCC or Clang. We recommend enabling debug symbols so that assertions are enabled during development as this makes debugging easier. More detailed build instructions are provided in the [Ruby README](https://github.com/ruby/ruby#how-to-compile-and-install).
 
 ```
 autoconf
-./configure cppflags=-DRUBY_DEBUG --prefix=$HOME/.rubies/ruby-microjit
+./configure cppflags=-DRUBY_DEBUG --prefix=$HOME/.rubies/ruby-yjit
 make -j16 install
 ```
 
-You can test that uJIT works correctly by running:
+You can test that YJIT works correctly by running:
 
 ```
 # Quick tests found in /bootstraptest
@@ -48,27 +48,27 @@ Once uJIT is built, you can either use `./miniruby` from within your build direc
 by using the `chruby` tool:
 
 ```
-chruby ruby-microjit
+chruby ruby-yjit
 ruby myscript.rb
 ```
 
-You can dump statistics about compilation and execution by running uJIT with the `--ujit-stats` command-line option:
+You can dump statistics about compilation and execution by running uJIT with the `--yjit-stats` command-line option:
 
 ```
 ./miniruby --ujit-stats myscript.rb
 ```
 
-The machine code generated for a given method can be printed by adding `puts UJIT.disasm(method(:method_name))` to a Ruby script. Note that no code will be generated if the method is not compiled.
+The machine code generated for a given method can be printed by adding `puts YJIT.disasm(method(:method_name))` to a Ruby script. Note that no code will be generated if the method is not compiled.
 
 ## Source Code Organization
 
 The uJIT source code is divided between:
-- `ujit_asm.c`: x86 in-memory assembler we use to generate machine code
-- `ujit_asm_tests.c`: tests for the in-memory assembler
-- `ujit_codegen.c`: logic for translating Ruby bytecode to machine code
-- `ujit_core.c`: basic block versioning logic, core structure of uJIT
-- `ujit_iface.c`: code uJIT uses to interface with the rest of CRuby
-- `ujit.rb`: `UJIT` module that is exposed to Ruby code
+- `yjit_asm.c`: x86 in-memory assembler we use to generate machine code
+- `yjit_asm_tests.c`: tests for the in-memory assembler
+- `yjit_codegen.c`: logic for translating Ruby bytecode to machine code
+- `yjit_core.c`: basic block versioning logic, core structure of YJIT
+- `yjit_iface.c`: code YJIT uses to interface with the rest of CRuby
+- `yjit.rb`: `YJIT` module that is exposed to Ruby code
 - `test_asm.sh`: script to compile and run the in-memory assembler tests
 - `vm.inc.erb`: template instruction handler used to hook into the interpreter
 
