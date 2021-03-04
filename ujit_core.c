@@ -201,7 +201,6 @@ add_block_version(blockid_t blockid, block_t* block)
     {
         // By writing the new block to the iseq, the iseq now
         // contains new references to Ruby objects. Run write barriers.
-        RB_OBJ_WRITTEN(iseq, Qundef, block->dependencies.iseq);
         RB_OBJ_WRITTEN(iseq, Qundef, block->dependencies.cc);
         RB_OBJ_WRITTEN(iseq, Qundef, block->dependencies.cme);
 

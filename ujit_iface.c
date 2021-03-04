@@ -689,7 +689,6 @@ rb_ujit_iseq_mark(const struct rb_iseq_constant_body *body)
             rb_gc_mark_movable((VALUE)block->blockid.iseq);
             rb_gc_mark_movable(block->dependencies.cc);
             rb_gc_mark_movable(block->dependencies.cme);
-            rb_gc_mark_movable(block->dependencies.iseq);
 
             // Walk over references to objects in generated code.
             uint32_t *offset_element;
@@ -718,7 +717,6 @@ rb_ujit_iseq_update_references(const struct rb_iseq_constant_body *body)
 
             block->dependencies.cc = rb_gc_location(block->dependencies.cc);
             block->dependencies.cme = rb_gc_location(block->dependencies.cme);
-            block->dependencies.iseq = rb_gc_location(block->dependencies.iseq);
 
             // Walk over references to objects in generated code.
             uint32_t *offset_element;
