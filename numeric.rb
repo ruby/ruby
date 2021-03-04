@@ -222,7 +222,7 @@ class Float
   #    (0.3 / 0.1).to_i  #=> 2 (!)
   #
   #  #to_int is an alias for #to_i.
-  # 
+  #
   def to_i
     Primitive.cexpr! 'flo_to_i(self)'
   end
