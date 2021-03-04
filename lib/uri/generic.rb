@@ -1514,9 +1514,19 @@ module URI
           proxy_uri = env["CGI_#{name.upcase}"]
         end
       elsif name == 'http_proxy'
-        unless proxy_uri = env[name]
-          if proxy_uri = env[name.upcase]
-            warn 'The environment variable HTTP_PROXY is discouraged.  Use http_proxy.', uplevel: 1
+        if RUBY_ENGINE == 'jruby' && p_addr = ENV_JAVA['http.proxyHost']
+          p_port = ENV_JAVA['http.proxyPort']
+          if p_user = ENV_JAVA['http.proxyUser']
+            p_pass = ENV_JAVA['http.proxyPass']
+            proxy_uri = "http://#{p_user}:#{p_pass}@#{p_addr}:#{p_port}"
+          else
+            proxy_uri = "http://#{p_addr}:#{p_port}"
+          end
+        else
+          unless proxy_uri = env[name]
+            if proxy_uri = env[name.upcase]
+              warn 'The environment variable HTTP_PROXY is discouraged.  Use http_proxy.', uplevel: 1
+            end
           end
         end
       else
