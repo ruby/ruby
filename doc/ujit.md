@@ -70,6 +70,7 @@ The uJIT source code is divided between:
 - `ujit_iface.c`: code uJIT uses to interface with the rest of CRuby
 - `ujit.rb`: `UJIT` module that is exposed to Ruby code
 - `test_asm.sh`: script to compile and run the in-memory assembler tests
+- `vm.inc.erb`: template instruction handler used to hook into the interpreter
 
 The core of CRuby's interpreter logic is found in:
 - `insns.def`: defines Ruby's bytecode instructions
