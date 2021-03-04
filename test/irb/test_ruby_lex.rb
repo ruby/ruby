@@ -136,6 +136,20 @@ module TestIRB
       end
     end
 
+    def test_endless_range_at_end_of_line
+      if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.6.0')
+        skip 'Endless range is available in 2.6.0 or later'
+      end
+      input_with_prompt = [
+        PromptRow.new('001:0: :> ', %q(a = 3..)),
+        PromptRow.new('002:0: :* ', %q()),
+      ]
+
+      lines = input_with_prompt.map(&:content)
+      expected_prompt_list = input_with_prompt.map(&:prompt)
+      assert_dynamic_prompt(lines, expected_prompt_list)
+    end
+
     def test_incomplete_coding_magic_comment
       input_with_correct_indents = [
         Row.new(%q(#coding:u), nil, 0),
