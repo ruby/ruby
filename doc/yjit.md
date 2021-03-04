@@ -3,7 +3,7 @@ YJIT - Yet Another Ruby JIT
 
 **DISCLAIMER: Please note that this project is in early stages of development. It is very much a work in progress, it may cause your software to crash, and current performance results are likely to leave you feeling underwhelmed.**
 
-MicroJIT is a lightweight, minimalistic Ruby JIT built inside the CRuby/MRI binary.
+YJIT is a lightweight, minimalistic Ruby JIT built inside the CRuby/MRI binary.
 It lazily compiles code using a Basic Block Versioning (BBV) architecture. The target use case is that of servers running
 Ruby on Rails, an area where CRuby's MJIT has not yet managed to deliver speedups. 
 To simplify development, we currently support only MacOS and Linux on x86-64, but an ARM64 backend
@@ -24,7 +24,7 @@ cd yjit
 git checkout yjit
 ```
 
-The uJIT `ruby` binary can be built with either GCC or Clang. We recommend enabling debug symbols so that assertions are enabled during development as this makes debugging easier. More detailed build instructions are provided in the [Ruby README](https://github.com/ruby/ruby#how-to-compile-and-install).
+The YJIT `ruby` binary can be built with either GCC or Clang. We recommend enabling debug symbols so that assertions are enabled during development as this makes debugging easier. More detailed build instructions are provided in the [Ruby README](https://github.com/ruby/ruby#how-to-compile-and-install).
 
 ```
 autoconf
