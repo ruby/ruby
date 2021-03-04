@@ -144,6 +144,7 @@ int ctx_diff(const ctx_t* src, const ctx_t* dst)
     return diff;
 }
 
+// Get all blocks for a particular place in an iseq.
 static rb_ujit_block_array_t
 get_version_array(const rb_iseq_t *iseq, unsigned idx)
 {
@@ -189,18 +190,13 @@ add_block_version(blockid_t blockid, block_t* block)
 #endif
     }
 
-    block_t *first_version = get_first_version(iseq, blockid.idx);
+    RUBY_ASSERT((int32_t)blockid.idx < rb_darray_size(body->ujit_blocks));
+    rb_ujit_block_array_t *block_array_ref = rb_darray_ref(body->ujit_blocks, blockid.idx);
 
-    // If there exists a version for this block id
-    if (first_version != NULL) {
-        // Link to the next version in a linked list
-        RUBY_ASSERT(block->next == NULL);
-        block->next = first_version;
+    // Add the new block
+    if (!rb_darray_append(block_array_ref, block)) {
+        rb_bug("allocation failed");
     }
-
-    // Make new block the first version
-    rb_darray_set(body->ujit_blocks, blockid.idx, block);
-    RUBY_ASSERT(find_block_version(blockid, &block->ctx) != NULL);
 
     {
         // By writing the new block to the iseq, the iseq now
@@ -225,17 +221,16 @@ add_block_version(blockid_t blockid, block_t* block)
 // Retrieve a basic block version for an (iseq, idx) tuple
 block_t* find_block_version(blockid_t blockid, const ctx_t* ctx)
 {
-    rb_ujit_block_array_t versions = get_version_array(iseq, block->blockid.idx);
+    rb_ujit_block_array_t versions = get_version_array(blockid.iseq, blockid.idx);
 
     // Best match found
     block_t* best_version = NULL;
     int best_diff = INT_MAX;
 
     // For each version matching the blockid
-    block_t **element;
-    rb_darray_foreach(versions, idx, element) {
-        block_t *version = *element;
-        int diff = ctx_diff(ctx, version->ctx);
+    rb_darray_for(versions, idx) {
+        block_t *version = rb_darray_get(versions, idx);
+        int diff = ctx_diff(ctx, &version->ctx);
 
         // Note that we always prefer the first matching
         // version because of inline-cache chains
@@ -649,21 +644,20 @@ ujit_free_block(block_t *block)
 static bool
 block_array_remove(rb_ujit_block_array_t block_array, block_t *block)
 {
+    bool after_target = false;
     block_t **element;
-    bool shifting = false;
     rb_darray_foreach(block_array, idx, element) {
-        if (*element == block) {
-            shifting = true;
-        }
-        else if (shifting) {
+        if (after_target) {
             rb_darray_set(block_array, idx - 1, *element);
+        }
+        else if (*element == block) {
+            after_target = true;
         }
     }
 
-    if (shifting) {
-        rb_darray_pop(block_array);
-    }
-    return shifting;
+    if (after_target) rb_darray_pop_back(block_array);
+
+    return after_target;
 }
 
 // Invalidate one specific block version
@@ -677,7 +671,6 @@ invalidate_block_version(block_t* block)
 
     // Remove this block from the version array
     rb_ujit_block_array_t versions = get_version_array(iseq, block->blockid.idx);
-    RUBY_ASSERT(rb_darray_size(versions) > 0);
     RB_UNUSED_VAR(bool removed);
     removed = block_array_remove(versions, block);
     RUBY_ASSERT(removed);
@@ -736,7 +729,7 @@ invalidate_block_version(block_t* block)
     // Should check how it's used in exit and side-exit
     const void * const *handler_table = rb_vm_get_insns_address_table();
     void* handler_addr = (void*)handler_table[entry_opcode];
-    iseq->body->iseq_encoded[idx] = (VALUE)handler_addr;    
+    iseq->body->iseq_encoded[idx] = (VALUE)handler_addr;
 
     // TODO:
     // May want to recompile a new entry point (for interpreter entry blocks)
