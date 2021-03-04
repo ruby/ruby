@@ -224,12 +224,10 @@ class Float
   #  #to_int is an alias for #to_i.
   # 
   def to_i
-    Primitive.attr! 'inline'
     Primitive.cexpr! 'flo_to_i(self)'
   end
 
   def to_int
-    Primitive.attr! 'inline'
     Primitive.cexpr! 'flo_to_i(self)'
   end
 
