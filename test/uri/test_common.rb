@@ -130,6 +130,58 @@ class TestCommon < Test::Unit::TestCase
     assert_nothing_raised(ArgumentError){URI.decode_www_form_component("x"*(1024*1024))}
   end
 
+  def test_encode_uri_component
+    assert_equal("%00%20%21%22%23%24%25%26%27%28%29*%2B%2C-.%2F09%3A%3B%3C%3D%3E%3F%40" \
+                 "AZ%5B%5C%5D%5E_%60az%7B%7C%7D%7E",
+                 URI.encode_uri_component("\x00 !\"\#$%&'()*+,-./09:;<=>?@AZ[\\]^_`az{|}~"))
+    assert_equal("%95A", URI.encode_uri_component(
+                   "\x95\x41".force_encoding(Encoding::Shift_JIS)))
+    assert_equal("0B", URI.encode_uri_component(
+                   "\x30\x42".force_encoding(Encoding::UTF_16BE)))
+    assert_equal("%1B%24B%24%22%1B%28B", URI.encode_uri_component(
+                   "\e$B$\"\e(B".force_encoding(Encoding::ISO_2022_JP)))
+
+    assert_equal("%E3%81%82", URI.encode_uri_component(
+                   "\u3042", Encoding::ASCII_8BIT))
+    assert_equal("%82%A0", URI.encode_uri_component(
+                   "\u3042", Encoding::Windows_31J))
+    assert_equal("%E3%81%82", URI.encode_uri_component(
+                   "\u3042", Encoding::UTF_8))
+
+    assert_equal("%82%A0", URI.encode_uri_component(
+                   "\u3042".encode("sjis"), Encoding::ASCII_8BIT))
+    assert_equal("%A4%A2", URI.encode_uri_component(
+                   "\u3042".encode("sjis"), Encoding::EUC_JP))
+    assert_equal("%E3%81%82", URI.encode_uri_component(
+                   "\u3042".encode("sjis"), Encoding::UTF_8))
+    assert_equal("B0", URI.encode_uri_component(
+                   "\u3042".encode("sjis"), Encoding::UTF_16LE))
+    assert_equal("%26%23730%3B", URI.encode_uri_component(
+                   "\u02DA", Encoding::WINDOWS_1252))
+
+    # invalid
+    assert_equal("%EF%BF%BD%EF%BF%BD", URI.encode_uri_component(
+                   "\xE3\x81\xFF", "utf-8"))
+    assert_equal("%E6%9F%8A%EF%BF%BD%EF%BF%BD", URI.encode_uri_component(
+                   "\x95\x41\xff\xff".force_encoding(Encoding::Shift_JIS), "utf-8"))
+  end
+
+  def test_decode_uri_component
+    assert_equal(" +!\"\#$%&'()*+,-./09:;<=>?@AZ[\\]^_`az{|}~",
+                 URI.decode_uri_component(
+                   "%20+%21%22%23%24%25%26%27%28%29*%2B%2C-.%2F09%3A%3B%3C%3D%3E%3F%40" \
+                   "AZ%5B%5C%5D%5E_%60az%7B%7C%7D%7E"))
+    assert_equal("\xA1\xA2".force_encoding(Encoding::EUC_JP),
+                 URI.decode_uri_component("%A1%A2", "EUC-JP"))
+    assert_equal("\xE3\x81\x82\xE3\x81\x82".force_encoding("UTF-8"),
+                 URI.decode_uri_component("\xE3\x81\x82%E3%81%82".force_encoding("UTF-8")))
+
+    assert_raise(ArgumentError){URI.decode_uri_component("%")}
+    assert_raise(ArgumentError){URI.decode_uri_component("%a")}
+    assert_raise(ArgumentError){URI.decode_uri_component("x%a_")}
+    assert_nothing_raised(ArgumentError){URI.decode_uri_component("x"*(1024*1024))}
+  end
+
   def test_encode_www_form
     assert_equal("a=1", URI.encode_www_form("a" => "1"))
     assert_equal("a=1", URI.encode_www_form(a: 1))
