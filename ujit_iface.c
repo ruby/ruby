@@ -381,11 +381,13 @@ ujit_blocks_for(VALUE mod, VALUE rb_iseq)
     const rb_iseq_t *iseq = rb_iseqw_to_iseq(rb_iseq);
 
     VALUE all_versions = rb_ary_new();
-    rb_ujit_block_array_t *versions;
-    rb_darray_foreach(iseq->body->ujit_blocks, idx, versions) {
-        block_t **block;
-        rb_darray_foreach(*versions, idx, block) {
-            VALUE rb_block = TypedData_Wrap_Struct(cUjitBlock, &ujit_block_type, *block);
+    rb_darray_for(iseq->body->ujit_blocks, version_array_idx) {
+        rb_ujit_block_array_t versions = rb_darray_get(iseq->body->ujit_blocks, version_array_idx);
+
+        rb_darray_for(versions, block_idx) {
+            block_t *block = rb_darray_get(versions, block_idx);
+
+            VALUE rb_block = TypedData_Wrap_Struct(cUjitBlock, &ujit_block_type, block);
             rb_ary_push(all_versions, rb_block);
         }
     }
@@ -678,12 +680,12 @@ print_ujit_stats(void)
 void
 rb_ujit_iseq_mark(const struct rb_iseq_constant_body *body)
 {
-    block_t **element;
-    rb_darray_foreach(body->ujit_blocks, idx, element) {
+    rb_darray_for(body->ujit_blocks, version_array_idx) {
+        rb_ujit_block_array_t version_array = rb_darray_get(body->ujit_blocks, version_array_idx);
 
+        rb_darray_for(version_array, block_idx) {
+            block_t *block = rb_darray_get(version_array, block_idx);
 
-
-        for (block_t *block = *element; block; block = block->next) {
             rb_gc_mark_movable((VALUE)block->blockid.iseq);
             rb_gc_mark_movable(block->dependencies.cc);
             rb_gc_mark_movable(block->dependencies.cme);
@@ -706,9 +708,12 @@ rb_ujit_iseq_mark(const struct rb_iseq_constant_body *body)
 void
 rb_ujit_iseq_update_references(const struct rb_iseq_constant_body *body)
 {
-    block_t **element;
-    rb_darray_foreach(body->ujit_blocks, idx, element) {
-        for (block_t *block = *element; block; block = block->next) {
+    rb_darray_for(body->ujit_blocks, version_array_idx) {
+        rb_ujit_block_array_t version_array = rb_darray_get(body->ujit_blocks, version_array_idx);
+
+        rb_darray_for(version_array, block_idx) {
+            block_t *block = rb_darray_get(version_array, block_idx);
+
             block->blockid.iseq = (const rb_iseq_t *)rb_gc_location((VALUE)block->blockid.iseq);
 
             block->dependencies.cc = rb_gc_location(block->dependencies.cc);
@@ -736,14 +741,15 @@ rb_ujit_iseq_update_references(const struct rb_iseq_constant_body *body)
 void
 rb_ujit_iseq_free(const struct rb_iseq_constant_body *body)
 {
-    block_t **element;
-    rb_darray_foreach(body->ujit_blocks, idx, element) {
-        block_t *block = *element;
-        while (block) {
-            block_t *next = block->next;
+    rb_darray_for(body->ujit_blocks, version_array_idx) {
+        rb_ujit_block_array_t version_array = rb_darray_get(body->ujit_blocks, version_array_idx);
+
+        rb_darray_for(version_array, block_idx) {
+            block_t *block = rb_darray_get(version_array, block_idx);
             ujit_free_block(block);
-            block = next;
         }
+
+        rb_darray_free(version_array);
     }
 
     rb_darray_free(body->ujit_blocks);

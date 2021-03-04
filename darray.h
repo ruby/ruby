@@ -60,6 +60,11 @@
 #define rb_darray_foreach(ary, idx_name, elem_ptr_var) \
     for (int idx_name = 0; idx_name < rb_darray_size(ary) && ((elem_ptr_var) = rb_darray_ref(ary, idx_name)); ++idx_name)
 
+// Iterate over valid indicies in the array in a for loop
+//
+#define rb_darray_for(ary, idx_name) \
+    for (int idx_name = 0; idx_name < rb_darray_size(ary); ++idx_name)
+
 // Make a dynamic array of a certain size. All bytes backing the elements are set to zero.
 // Return 1 on success and 0 on failure.
 //
