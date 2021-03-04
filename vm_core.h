@@ -312,7 +312,9 @@ pathobj_realpath(VALUE pathobj)
 /* Forward declarations */
 struct rb_mjit_unit;
 
+// List of YJIT block versions
 typedef rb_darray(struct ujit_block_version *) rb_ujit_block_array_t;
+typedef rb_darray(rb_ujit_block_array_t) rb_ujit_block_array_array_t;
 
 struct rb_iseq_constant_body {
     enum iseq_type {
@@ -453,7 +455,7 @@ struct rb_iseq_constant_body {
     struct rb_mjit_unit *jit_unit;
 #endif
 
-    rb_ujit_block_array_t ujit_blocks; // empty, or has a size equal to iseq_size
+    rb_ujit_block_array_array_t ujit_blocks; // empty, or has a size equal to iseq_size
 };
 
 /* T_IMEMO/iseq */

@@ -121,12 +121,6 @@ typedef struct ujit_block_version
     // Offsets for GC managed objects in the mainline code block
     int32_array_t gc_object_offsets;
 
-    // Next block version for this blockid (singly-linked list)
-    struct ujit_block_version *next;
-
-    // Offsets for GC managed objects in the mainline code block
-    offset_array_t gc_object_offsets;
-
     // GC managed objects that this block depend on
     struct {
         VALUE cc;

@@ -576,14 +576,31 @@ gen_getinstancevariable(jitstate_t* jit, ctx_t* ctx)
 
 
 
-
-
     /*
+    num_versions = count_block_versions(this_instruction);
+
+    if (num_versions > N)
+        return JIT_CANT_COMPILE;
+
+    
     if (defer_compilation(this_instruction, ctx))
         return JIT_END_BLOCK;
 
+
     VALUE top_val = jit_peek_at_stack();
+    
+
+
+
+    class = get_ruby_class(top_val);
+
+
+
+    guard_object_class(class, current_instr);
     */
+
+
+
 
 
 
