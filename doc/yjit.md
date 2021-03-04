@@ -1,5 +1,5 @@
-MicroJIT (uJIT)
-===============
+YJIT - Yet Another Ruby JIT
+===========================
 
 **DISCLAIMER: Please note that this project is in early stages of development. It is very much a work in progress, it may cause your software to crash, and current performance results are likely to leave you feeling underwhelmed.**
 
