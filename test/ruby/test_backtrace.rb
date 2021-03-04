@@ -154,6 +154,22 @@ class TestBacktrace < Test::Unit::TestCase
     assert_equal caller(0), caller(0, nil)
   end
 
+  def test_caller_locations_first_label
+    def self.label
+      caller_locations.first.label
+    end
+
+    def self.label_caller
+      label
+    end
+
+    assert_equal 'label_caller', label_caller
+
+    [1].group_by do
+      assert_equal 'label_caller', label_caller
+    end
+  end
+
   def test_caller_locations
     cs = caller(0); locs = caller_locations(0).map{|loc|
       loc.to_s

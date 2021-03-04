@@ -543,6 +543,11 @@ backtrace_each(const rb_execution_context_t *ec,
         real_size = size = last = 0;
     }
     else {
+        /* Ensure we don't look at frames beyond the ones requested */
+        for(; from_last > 0 && start_cfp >= last_cfp; from_last--) {
+            last_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(last_cfp);
+        }
+
         real_size = size = start_cfp - last_cfp + 1;
 
         if (from_last > size) {
@@ -568,9 +573,52 @@ backtrace_each(const rb_execution_context_t *ec,
 
     init(arg, size);
 
-    /* SDR(); */
+    /* If a limited number of frames is requested, scan the VM stack for
+     * ignored frames (iseq without pc).  Then adjust the start for the
+     * backtrace to account for skipped frames.
+     */
+    if (start > 0 && num_frames >= 0 && num_frames < real_size) {
+        ptrdiff_t ignored_frames;
+        bool ignored_frames_before_start = false;
+        for (i=0, j=0, cfp = start_cfp; i<last && j<real_size; i++, j++, cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
+            if (cfp->iseq && !cfp->pc) {
+                if (j < start)
+                    ignored_frames_before_start = true;
+                else
+                    i--;
+            }
+        }
+        ignored_frames = j - i;
+
+        if (ignored_frames) {
+            if (ignored_frames_before_start) {
+                /* There were ignored frames before start.  So just decrementing
+                 * start for ignored frames could still result in not all desired
+                 * frames being captured.
+                 *
+                 * First, scan to the CFP of the desired start frame.
+                 *
+                 * Then scan backwards to previous frames, skipping the number of
+                 * frames ignored after start and any additional ones before start,
+                 * so the number of desired frames will be correctly captured.
+                 */
+                for (i=0, j=0, cfp = start_cfp; i<last && j<real_size && j < start; i++, j++, cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
+                    /* nothing */
+                }
+                for (; start > 0 && ignored_frames > 0 && j > 0; j--, ignored_frames--, start--, cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp)) {
+                    if (cfp->iseq && !cfp->pc) {
+                        ignored_frames++;
+                    }
+                }
+            } else {
+                /* No ignored frames before start frame, just decrement start */
+                start -= ignored_frames;
+            }
+        }
+    }
+
     for (i=0, j=0, cfp = start_cfp; i<last && j<real_size; i++, j++, cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
-        if (i < start) {
+        if (j < start) {
             if (iter_skip) {
                 iter_skip(arg, cfp);
             }
