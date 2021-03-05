@@ -3137,6 +3137,20 @@ enum_chain_initialize(VALUE obj, VALUE enums)
     return obj;
 }
 
+static VALUE
+new_enum_chain(VALUE enums) {
+    long i;
+    VALUE obj = enum_chain_initialize(enum_chain_allocate(rb_cEnumChain), enums);
+
+    for (i = 0; i < RARRAY_LEN(enums); i++) {
+        if (RTEST(rb_obj_is_kind_of(RARRAY_AREF(enums, i), rb_cLazy))) {
+            return enumerable_lazy(obj);
+        }
+    }
+
+    return obj;
+}
+
 /* :nodoc: */
 static VALUE
 enum_chain_init_copy(VALUE obj, VALUE orig)
@@ -3306,8 +3320,7 @@ enum_chain(int argc, VALUE *argv, VALUE obj)
 {
     VALUE enums = rb_ary_new_from_values(1, &obj);
     rb_ary_cat(enums, argv, argc);
-
-    return enum_chain_initialize(enum_chain_allocate(rb_cEnumChain), enums);
+    return new_enum_chain(enums);
 }
 
 /*
@@ -3323,9 +3336,7 @@ enum_chain(int argc, VALUE *argv, VALUE obj)
 static VALUE
 enumerator_plus(VALUE obj, VALUE eobj)
 {
-    VALUE enums = rb_ary_new_from_args(2, obj, eobj);
-
-    return enum_chain_initialize(enum_chain_allocate(rb_cEnumChain), enums);
+    return new_enum_chain(rb_ary_new_from_args(2, obj, eobj));
 }
 
 /*
