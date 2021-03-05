@@ -4200,6 +4200,11 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cEnumChain, "size", enum_chain_size, 0);
     rb_define_method(rb_cEnumChain, "rewind", enum_chain_rewind, 0);
     rb_define_method(rb_cEnumChain, "inspect", enum_chain_inspect, 0);
+    rb_undef_method(rb_cEnumChain, "feed");
+    rb_undef_method(rb_cEnumChain, "next");
+    rb_undef_method(rb_cEnumChain, "next_values");
+    rb_undef_method(rb_cEnumChain, "peek");
+    rb_undef_method(rb_cEnumChain, "peek_values");
 
     /* ArithmeticSequence */
     rb_cArithSeq = rb_define_class_under(rb_cEnumerator, "ArithmeticSequence", rb_cEnumerator);

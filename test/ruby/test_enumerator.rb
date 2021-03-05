@@ -832,6 +832,12 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal(33, chain.next)
   end
 
+  def test_chain_undef_methods
+    chain = [1].to_enum + [2].to_enum
+    meths = (chain.methods & [:feed, :next, :next_values, :peek, :peek_values])
+    assert_equal(0, meths.size)
+  end
+
   def test_produce
     assert_raise(ArgumentError) { Enumerator.produce }
 
