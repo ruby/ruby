@@ -1,6 +1,8 @@
+_VERSION = "0.1.1"
+
 Gem::Specification.new do |spec|
   spec.name          = "io-wait"
-  spec.version       = "0.1.0"
+  spec.version       = _VERSION
   spec.authors       = ["Nobu Nakada"]
   spec.email         = ["nobu@ruby-lang.org"]
 
