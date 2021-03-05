@@ -8,6 +8,11 @@
 #define TOKEN_PASTE(x,y) x##y
 #define PREFIXED_SYMBOL(prefix,name) TOKEN_PASTE(prefix,name)
 
+#if defined(__APPLE__)
+#define x29 fp
+#define x30 lr
+#endif
+
 .text
 .align 2
 
