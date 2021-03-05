@@ -772,7 +772,7 @@ class Socket < BasicSocket
         end
       rescue SystemCallError => ex
         last_error = ex
-        sock.close()
+        sock&.close()
       end
     end
 
