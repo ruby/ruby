@@ -594,6 +594,11 @@ class Socket < BasicSocket
     __accept_nonblock(exception)
   end
 
+  GETADDRINFO_V6_DONE = 1
+  GETADDRINFO_V4_DONE = 2
+  RESOLUTION_DELAY_DONE = 3
+  private_constant :GETADDRINFO_V6_DONE, :GETADDRINFO_V4_DONE, :RESOLUTION_DELAY_DONE
+
   def self.start_getaddrinfo_v6(host, port, mutex, pipe_write, ai_queue_v6, error_queue)
     return Thread.new do
       Thread.current.report_on_exception = false
@@ -611,7 +616,7 @@ class Socket < BasicSocket
     rescue => ex
       error_queue.push(ex)
     ensure
-      mutex.synchronize { pipe_write.puts("getaddrinfo_v6_done") unless pipe_write.closed? }
+      mutex.synchronize { pipe_write.putc(GETADDRINFO_V6_DONE) unless pipe_write.closed? }
     end
   end
   private_class_method :start_getaddrinfo_v6
@@ -637,12 +642,12 @@ class Socket < BasicSocket
       rescue => ex
         error_queue.push(ex)
       ensure
-        mutex.synchronize { pipe_write.puts("getaddrinfo_v4_done") unless pipe_write.closed? }
+        mutex.synchronize { pipe_write.putc(GETADDRINFO_V4_DONE) unless pipe_write.closed? }
       end
       if ai_list # if getaddrinfo finished successfully
         ai_list.each {|ai| ai_queue_v4.push(ai) }
         sleep(RESOLUTION_DELAY) # 50ms is the recommended value for the resolution delay for IPv4 in RFC8305
-        mutex.synchronize { pipe_write.puts("resolution_delay_done") unless pipe_write.closed? }
+        mutex.synchronize { pipe_write.putc(RESOLUTION_DELAY_DONE) unless pipe_write.closed? }
       end
     end
   end
@@ -716,15 +721,15 @@ class Socket < BasicSocket
       end
 
       if readable_pipes && !readable_pipes.empty? # handle an event
-        event = pipe_read.gets
+        event = pipe_read.getc
         if event
           event.chomp!
           case event
-          when "getaddrinfo_v6_done"
+          when GETADDRINFO_V6_DONE
             getaddrinfo_v6_done = true
-          when "getaddrinfo_v4_done"
+          when GETADDRINFO_V4_DONE
             getaddrinfo_v4_done = true
-          when "resolution_delay_done"
+          when RESOLUTION_DELAY_DONE
             resolution_delay_done = true
           end
         else # name resolution has timed out
