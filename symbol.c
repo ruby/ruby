@@ -372,9 +372,8 @@ rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int a
 
     switch (f.kind) {
       case invalid:  return -1;
-      case stophere: goto stophere;
-      case needmore: break;
-    }
+      case stophere: break;
+      case needmore:
 
     if (m >= e || (*m != '_' && !ISALPHA(*m) && ISASCII(*m))) {
         if (len > 1 && *(e-1) == '=') {
@@ -384,7 +383,7 @@ rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int a
         return -1;
     }
     while (m < e && is_identchar(m, e, enc)) m += rb_enc_mbclen(m, e, enc);
-    if (m >= e) goto stophere;
+    if (m >= e) break;
     switch (*m) {
       case '!': case '?':
         if (type == ID_GLOBAL || type == ID_CLASS || type == ID_INSTANCE) return -1;
@@ -398,8 +397,8 @@ rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int a
         ++m;
         break;
     }
+    }
 
-  stophere:
     return m == e ? type : -1;
 }
 
