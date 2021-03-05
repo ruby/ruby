@@ -721,9 +721,8 @@ class Socket < BasicSocket
       end
 
       if readable_pipes && !readable_pipes.empty? # handle an event
-        event = pipe_read.getc
+        event = pipe_read.getbyte
         if event
-          event.chomp!
           case event
           when GETADDRINFO_V6_DONE
             getaddrinfo_v6_done = true
