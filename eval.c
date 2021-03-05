@@ -983,23 +983,6 @@ rb_rescue(VALUE (* b_proc)(VALUE), VALUE data1,
 		      (VALUE)0);
 }
 
-/*! Protects a function call from potential global escapes from the function.
- *
- * Such global escapes include exceptions, \c Kernel\#throw, \c break in
- * an iterator, for example.
- * It first calls the function func with arg as the argument.
- * If no exception occurred during func, it returns the result of func and
- * *state is zero.
- * Otherwise, it returns Qnil and sets *state to nonzero.
- * If state is NULL, it is not set in both cases.
- *
- * You have to clear the error info with rb_set_errinfo(Qnil) when
- * ignoring the caught exception.
- * \ingroup exception
- * \sa rb_rescue
- * \sa rb_rescue2
- * \sa rb_ensure
- */
 VALUE
 rb_protect(VALUE (* proc) (VALUE), VALUE data, int *pstate)
 {
