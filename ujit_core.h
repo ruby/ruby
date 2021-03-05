@@ -20,12 +20,18 @@
 // Maximum number of temp value types we keep track of
 #define MAX_TEMP_TYPES 8
 
+// Default versioning context (no type information)
+#define DEFAULT_CTX ( (ctx_t){ 0 } )
+
 /**
 Code generation context
 Contains information we can use to optimize code
 */
 typedef struct CtxStruct
 {
+    // Depth of this block in the sidechain (eg: inline-cache chain)
+    int8_t chain_depth;
+
     // Temporary variable types we keep track of
     // Values are `ruby_value_type`
     // T_NONE==0 is the unknown type
@@ -58,12 +64,12 @@ typedef struct BlockId
 static const blockid_t BLOCKID_NULL = { 0, 0 };
 
 /// Branch code shape enumeration
-enum uint8_t
+typedef enum : int8_t
 {
     SHAPE_NEXT0,  // Target 0 is next
     SHAPE_NEXT1,  // Target 1 is next
     SHAPE_DEFAULT // Neither target is next
-};
+} branch_shape_t;
 
 // Branch code generation function signature
 typedef void (*branchgen_fn)(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uint8_t shape);
@@ -92,7 +98,7 @@ typedef struct BranchEntry
     branchgen_fn gen_fn;
 
     // Shape of the branch
-    uint8_t shape;
+    branch_shape_t shape;
 
 } branch_t;
 
@@ -157,6 +163,12 @@ void gen_branch(
 void gen_direct_jump(
     const ctx_t* ctx,
     blockid_t target0
+);
+
+void defer_compilation(
+    block_t* block,
+    uint32_t insn_idx,
+    ctx_t* cur_ctx
 );
 
 void invalidate_block_version(block_t* block);

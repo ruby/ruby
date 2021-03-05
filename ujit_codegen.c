@@ -82,17 +82,17 @@ jit_mov_gc_ptr(jitstate_t* jit, codeblock_t* cb, x86opnd_t reg, VALUE ptr)
 // Check if we are compiling the instruction at the stub PC
 // Meaning we are compiling the instruction that is next to execute
 static bool
-jit_at_current_insn(jitstate_t* jit, ctx_t* ctx)
+jit_at_current_insn(jitstate_t* jit)
 {
-    const VALUE* stub_pc = jit->ec->cfp->pc;
-    return (stub_pc == jit->pc);
+    const VALUE* ec_pc = jit->ec->cfp->pc;
+    return (ec_pc == jit->pc);
 }
 
 // Peek at the topmost value on the Ruby stack
 static VALUE
 jit_peek_at_stack(jitstate_t* jit, ctx_t* ctx)
 {
-    RUBY_ASSERT(jit_at_current_insn(jit, ctx));
+    RUBY_ASSERT(jit_at_current_insn(jit));
 
     VALUE* sp = jit->ec->cfp->sp + ctx->sp_offset;
 
@@ -317,7 +317,13 @@ ujit_gen_block(ctx_t* ctx, block_t* block, rb_execution_context_t* ec)
         // Call the code generation function
         bool continue_generating = p_desc->gen_fn(&jit, ctx);
 
-        if (!continue_generating) {
+        // For now, reset the chain depth after each instruction
+        ctx->chain_depth = 0;
+
+        // If we can't compile this instruction
+        // exit to the interpreter and stop compiling
+        if (status == UJIT_CANT_COMPILE) {
+            ujit_gen_exit(&jit, ctx, cb, jit.pc);
             break;
         }
 
@@ -572,32 +578,20 @@ gen_getinstancevariable(jitstate_t* jit, ctx_t* ctx)
         return UJIT_CANT_COMPILE;
     }
 
+    // Defer compilation so we can peek at the topmost object
+    if (!jit_at_current_insn(jit))
+    {
+        defer_compilation(jit->block, jit->insn_idx, ctx);
+        return UJIT_END_BLOCK;
+    }
+
+    // Peek at the topmost value on the stack at compilation time
+    VALUE top_val = jit_peek_at_stack(jit, ctx);
+
+    // TODO: play with deferred compilation and sidechains! :)
 
 
 
-
-    /*
-    num_versions = count_block_versions(this_instruction);
-
-    if (num_versions > N)
-        return JIT_CANT_COMPILE;
-
-    
-    if (defer_compilation(this_instruction, ctx))
-        return JIT_END_BLOCK;
-
-
-    VALUE top_val = jit_peek_at_stack();
-    
-
-
-
-    class = get_ruby_class(top_val);
-
-
-
-    guard_object_class(class, current_instr);
-    */
 
 
 
@@ -1451,7 +1445,6 @@ gen_oswb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb_ca
     jit_mov_gc_ptr(jit, cb, REG1, (VALUE)cd->cc->klass);
     cmp(cb, klass_opnd, REG1);
     jne_ptr(cb, COUNTED_EXIT(side_exit, oswb_se_cc_klass_differ));
-
 
     if (METHOD_ENTRY_VISI(cme) == METHOD_VISI_PROTECTED) {
         // Generate ancestry guard for protected callee.

@@ -113,6 +113,15 @@ Returns INT_MAX if incompatible
 */
 int ctx_diff(const ctx_t* src, const ctx_t* dst)
 {
+    // Can only lookup the first version in the chain
+    if (dst->chain_depth != 0)
+        return INT_MAX;
+
+    // Blocks with depth > 0 always produce new versions
+    // Sidechains cannot overlap
+    if (src->chain_depth != 0)
+        return INT_MAX;
+
     if (dst->stack_size != src->stack_size)
         return INT_MAX;
 
@@ -353,6 +362,7 @@ uint8_t* branch_stub_hit(uint32_t branch_idx, uint32_t target_idx, rb_execution_
 
     //fprintf(stderr, "\nstub hit, branch idx: %d, target idx: %d\n", branch_idx, target_idx);
     //fprintf(stderr, "blockid.iseq=%p, blockid.idx=%d\n", target.iseq, target.idx);
+    //fprintf(stderr, "chain_depth=%d\n", target_ctx->chain_depth);
 
     // Update the PC in the current CFP, because it
     // may be out of sync in JITted code
@@ -376,7 +386,7 @@ uint8_t* branch_stub_hit(uint32_t branch_idx, uint32_t target_idx, rb_execution_
     generic_ctx.sp_offset = target_ctx->sp_offset;
     if (get_num_versions(target) >= MAX_VERSIONS - 1)
     {
-        fprintf(stderr, "version limit hit in branch_stub_hit\n");
+        //fprintf(stderr, "version limit hit in branch_stub_hit\n");
         target_ctx = &generic_ctx;
     }
 
@@ -542,7 +552,7 @@ void gen_direct_jump(
     generic_ctx.sp_offset = ctx->sp_offset;
     if (get_num_versions(target0) >= MAX_VERSIONS - 1)
     {
-        fprintf(stderr, "version limit hit in gen_direct_jump\n");
+        //fprintf(stderr, "version limit hit in gen_direct_jump\n");
         ctx = &generic_ctx;
     }
 
@@ -588,42 +598,50 @@ void gen_direct_jump(
 // Create a stub to force the code up to this point to be executed
 void defer_compilation(
     block_t* block,
-    ctx_t* cur_ctx,
-    uint32_t insn_idx
+    uint32_t insn_idx,
+    ctx_t* cur_ctx
 )
 {
+    //fprintf(stderr, "defer compilation at (%p, %d) depth=%d\n", block->blockid.iseq, insn_idx, cur_ctx->chain_depth);
 
+    if (cur_ctx->chain_depth != 0) {
+        rb_backtrace();
+        exit(1);
+    }
 
+    ctx_t next_ctx = *cur_ctx;
 
+    if (next_ctx.chain_depth >= UINT8_MAX) {
+        rb_bug("max block version chain depth reached");
+    }
 
+    next_ctx.chain_depth += 1;
 
-
-
-
-
-
-
-
-    /*
     RUBY_ASSERT(num_branches < MAX_BRANCHES);
     uint32_t branch_idx = num_branches++;
+
+    // Get the branch targets or stubs
+    blockid_t target0 = (blockid_t){ block->blockid.iseq, insn_idx };
+    uint8_t* dst_addr0 = get_branch_target(target0, &next_ctx, branch_idx, 0);
+
+    // Call the branch generation function
+    uint32_t start_pos = cb->write_pos;
+    gen_jump_branch(cb, dst_addr0, NULL, SHAPE_DEFAULT);
+    uint32_t end_pos = cb->write_pos;
 
     // Register this branch entry
     branch_t branch_entry = {
         start_pos,
         end_pos,
-        *ctx,
+        *cur_ctx,
         { target0, BLOCKID_NULL },
-        { *ctx, *ctx },
+        { next_ctx, next_ctx },
         { dst_addr0, NULL },
         gen_jump_branch,
-        branch_shape
+        SHAPE_DEFAULT
     };
 
     branch_entries[branch_idx] = branch_entry;
-    */
-
-
 }
 
 // Remove all references to a block then free it.

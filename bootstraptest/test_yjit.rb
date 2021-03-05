@@ -190,6 +190,28 @@ assert_normal_exit %q{
   end
 }
 
+# Test getinstancevariable and inline caches
+assert_equal '6', %q{
+  class Foo
+    def initialize
+      @x1 = 1
+      @x2 = 1
+      @x2 = 1
+      @x3 = 1
+      @x4 = 3
+    end
+
+    def bar
+      x = 1
+      @x4 + @x4
+    end
+  end
+
+  f = Foo.new
+  f.bar
+  f.bar
+}
+
 # Test that getinstancevariable codegen checks for extended table size
 assert_equal "nil\n", %q{
   class A
