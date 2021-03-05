@@ -30,7 +30,7 @@ Contains information we can use to optimize code
 typedef struct CtxStruct
 {
     // Depth of this block in the sidechain (eg: inline-cache chain)
-    int8_t chain_depth;
+    uint8_t chain_depth;
 
     // Temporary variable types we keep track of
     // Values are `ruby_value_type`
