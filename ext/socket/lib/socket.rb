@@ -642,10 +642,10 @@ class Socket < BasicSocket
       rescue => ex
         error_queue.push(ex)
       ensure
+        ai_list.each {|ai| ai_queue_v4.push(ai) }
         mutex.synchronize { pipe_write.putc(GETADDRINFO_V4_DONE) unless pipe_write.closed? }
       end
       if ai_list # if getaddrinfo finished successfully
-        ai_list.each {|ai| ai_queue_v4.push(ai) }
         sleep(RESOLUTION_DELAY) # 50ms is the recommended value for the resolution delay for IPv4 in RFC8305
         mutex.synchronize { pipe_write.putc(RESOLUTION_DELAY_DONE) unless pipe_write.closed? }
       end
