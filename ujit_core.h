@@ -64,7 +64,7 @@ typedef struct BlockId
 static const blockid_t BLOCKID_NULL = { 0, 0 };
 
 /// Branch code shape enumeration
-typedef enum : int8_t
+typedef enum branch_shape
 {
     SHAPE_NEXT0,  // Target 0 is next
     SHAPE_NEXT1,  // Target 1 is next
