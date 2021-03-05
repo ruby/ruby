@@ -991,6 +991,7 @@ rb_dump_machine_register(const ucontext_t *ctx)
 	dump_machine_register(x[26]);
 	dump_machine_register(x[27]);
 	dump_machine_register(x[28]);
+	dump_machine_register(lr);
 	dump_machine_register(fp);
 	dump_machine_register(sp);
 #   endif
