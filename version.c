@@ -126,7 +126,7 @@ ruby_show_version(void)
     }
 
     if (rb_ujit_enabled_p()) {
-        fputs("uJIT is enabled\n", stdout);
+        fputs("YJIT is enabled\n", stdout);
     }
 #ifdef RUBY_LAST_COMMIT_TITLE
     fputs("last_commit=" RUBY_LAST_COMMIT_TITLE, stdout);
