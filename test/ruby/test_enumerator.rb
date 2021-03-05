@@ -820,6 +820,18 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal([[3, 0], [4, 1]], [3].chain([4]).with_index.to_a)
   end
 
+  def test_lazy_chain
+    ea = (10..).lazy.select(&:even?).take(10)
+    ed = (20..).lazy.select(&:odd?)
+    chain = (ea + ed).select{|x| x % 3 == 0}
+    assert_equal(12, chain.next)
+    assert_equal(18, chain.next)
+    assert_equal(24, chain.next)
+    assert_equal(21, chain.next)
+    assert_equal(27, chain.next)
+    assert_equal(33, chain.next)
+  end
+
   def test_produce
     assert_raise(ArgumentError) { Enumerator.produce }
 
