@@ -4,11 +4,11 @@
 #include "insns.inc"
 #include "insns_info.inc"
 #include "vm_sync.h"
-#include "ujit_asm.h"
-#include "ujit_utils.h"
-#include "ujit_iface.h"
-#include "ujit_core.h"
-#include "ujit_codegen.h"
+#include "yjit_asm.h"
+#include "yjit_utils.h"
+#include "yjit_iface.h"
+#include "yjit_core.h"
+#include "yjit_codegen.h"
 
 // Maximum number of versions per block
 #define MAX_VERSIONS 4
@@ -154,17 +154,17 @@ int ctx_diff(const ctx_t* src, const ctx_t* dst)
 }
 
 // Get all blocks for a particular place in an iseq.
-static rb_ujit_block_array_t
+static rb_yjit_block_array_t
 get_version_array(const rb_iseq_t *iseq, unsigned idx)
 {
     struct rb_iseq_constant_body *body = iseq->body;
 
-    if (rb_darray_size(body->ujit_blocks) == 0) {
+    if (rb_darray_size(body->yjit_blocks) == 0) {
         return NULL;
     }
 
-    RUBY_ASSERT((unsigned)rb_darray_size(body->ujit_blocks) == body->iseq_size);
-    return rb_darray_get(body->ujit_blocks, idx);
+    RUBY_ASSERT((unsigned)rb_darray_size(body->yjit_blocks) == body->iseq_size);
+    return rb_darray_get(body->yjit_blocks, idx);
 }
 
 // Count the number of block versions matching a given blockid
@@ -182,14 +182,14 @@ add_block_version(blockid_t blockid, block_t* block)
     const rb_iseq_t *iseq = block->blockid.iseq;
     struct rb_iseq_constant_body *body = iseq->body;
 
-    // Ensure ujit_blocks is initialized for this iseq
-    if (rb_darray_size(body->ujit_blocks) == 0) {
-        // Initialize ujit_blocks to be as wide as body->iseq_encoded
+    // Ensure yjit_blocks is initialized for this iseq
+    if (rb_darray_size(body->yjit_blocks) == 0) {
+        // Initialize yjit_blocks to be as wide as body->iseq_encoded
         int32_t casted = (int32_t)body->iseq_size;
         if ((unsigned)casted != body->iseq_size) {
             rb_bug("iseq too large");
         }
-        if (!rb_darray_make(&body->ujit_blocks, casted)) {
+        if (!rb_darray_make(&body->yjit_blocks, casted)) {
             rb_bug("allocation failed");
         }
 
@@ -199,8 +199,8 @@ add_block_version(blockid_t blockid, block_t* block)
 #endif
     }
 
-    RUBY_ASSERT((int32_t)blockid.idx < rb_darray_size(body->ujit_blocks));
-    rb_ujit_block_array_t *block_array_ref = rb_darray_ref(body->ujit_blocks, blockid.idx);
+    RUBY_ASSERT((int32_t)blockid.idx < rb_darray_size(body->yjit_blocks));
+    rb_yjit_block_array_t *block_array_ref = rb_darray_ref(body->yjit_blocks, blockid.idx);
 
     // Add the new block
     if (!rb_darray_append(block_array_ref, block)) {
@@ -229,7 +229,7 @@ add_block_version(blockid_t blockid, block_t* block)
 // Retrieve a basic block version for an (iseq, idx) tuple
 block_t* find_block_version(blockid_t blockid, const ctx_t* ctx)
 {
-    rb_ujit_block_array_t versions = get_version_array(blockid.iseq, blockid.idx);
+    rb_yjit_block_array_t versions = get_version_array(blockid.iseq, blockid.idx);
 
     // Best match found
     block_t* best_version = NULL;
@@ -252,7 +252,7 @@ block_t* find_block_version(blockid_t blockid, const ctx_t* ctx)
 }
 
 void
-ujit_branches_update_references(void)
+yjit_branches_update_references(void)
 {
     for (uint32_t i = 0; i < num_branches; i++) {
         branch_entries[i].targets[0].iseq = (const void *)rb_gc_location((VALUE)branch_entries[i].targets[0].iseq);
@@ -276,7 +276,7 @@ block_t* gen_block_version(blockid_t blockid, const ctx_t* start_ctx, rb_executi
     block_t* block = first_block;
 
     // Generate code for the first block
-    ujit_gen_block(ctx, block, ec);
+    yjit_gen_block(ctx, block, ec);
 
     // Keep track of the new block version
     add_block_version(block->blockid, block);
@@ -310,7 +310,7 @@ block_t* gen_block_version(blockid_t blockid, const ctx_t* start_ctx, rb_executi
         memcpy(&block->ctx, ctx, sizeof(ctx_t));
 
         // Generate code for the current block
-        ujit_gen_block(ctx, block, ec);
+        yjit_gen_block(ctx, block, ec);
 
         // Keep track of the new block version
         add_block_version(block->blockid, block);
@@ -332,7 +332,7 @@ uint8_t* gen_entry_point(const rb_iseq_t *iseq, uint32_t insn_idx, rb_execution_
     blockid_t blockid = { iseq, insn_idx };
 
     // Write the interpreter entry prologue
-    uint8_t* code_ptr = ujit_entry_prologue();
+    uint8_t* code_ptr = yjit_entry_prologue();
 
     // Try to generate code for the entry block
     block_t* block = gen_block_version(blockid, &DEFAULT_CTX, ec);
@@ -446,7 +446,7 @@ uint8_t* get_branch_target(
     // branch_stub_hit(uint32_t branch_idx, uint32_t target_idx)
     uint8_t* stub_addr = cb_get_ptr(ocb, ocb->write_pos);
 
-    // Save the ujit registers
+    // Save the yjit registers
     push(ocb, REG_CFP);
     push(ocb, REG_EC);
     push(ocb, REG_SP);
@@ -458,7 +458,7 @@ uint8_t* get_branch_target(
     mov(ocb, C_ARG_REGS[0], imm_opnd(branch_idx));
     call_ptr(ocb, REG0, (void *)&branch_stub_hit);
 
-    // Restore the ujit registers
+    // Restore the yjit registers
     pop(ocb, REG_SP);
     pop(ocb, REG_SP);
     pop(ocb, REG_EC);
@@ -646,10 +646,10 @@ void defer_compilation(
 
 // Remove all references to a block then free it.
 void
-ujit_free_block(block_t *block)
+yjit_free_block(block_t *block)
 {
-    ujit_unlink_method_lookup_dependency(block);
-    ujit_block_assumptions_free(block);
+    yjit_unlink_method_lookup_dependency(block);
+    yjit_block_assumptions_free(block);
 
     rb_darray_free(block->incoming);
     rb_darray_free(block->gc_object_offsets);
@@ -659,7 +659,7 @@ ujit_free_block(block_t *block)
 
 // Remove a block version without reordering the version array
 static bool
-block_array_remove(rb_ujit_block_array_t block_array, block_t *block)
+block_array_remove(rb_yjit_block_array_t block_array, block_t *block)
 {
     bool after_target = false;
     block_t **element;
@@ -687,7 +687,7 @@ invalidate_block_version(block_t* block)
     // fprintf(stderr, "block=%p\n", block);
 
     // Remove this block from the version array
-    rb_ujit_block_array_t versions = get_version_array(iseq, block->blockid.idx);
+    rb_yjit_block_array_t versions = get_version_array(iseq, block->blockid.idx);
     RB_UNUSED_VAR(bool removed);
     removed = block_array_remove(versions, block);
     RUBY_ASSERT(removed);
@@ -732,7 +732,7 @@ invalidate_block_version(block_t* block)
 
         if (target_next && branch->end_pos > block->end_pos)
         {
-            rb_bug("ujit invalidate rewrote branch past block end");
+            rb_bug("yjit invalidate rewrote branch past block end");
         }
     }
 
@@ -742,7 +742,7 @@ invalidate_block_version(block_t* block)
     VALUE* entry_pc = iseq_pc_at_idx(iseq, idx);
     int entry_opcode = opcode_at_pc(iseq, entry_pc);
 
-    // TODO: unmap_addr2insn in ujit_iface.c? Maybe we can write a function to encompass this logic?
+    // TODO: unmap_addr2insn in yjit_iface.c? Maybe we can write a function to encompass this logic?
     // Should check how it's used in exit and side-exit
     const void * const *handler_table = rb_vm_get_insns_address_table();
     void* handler_addr = (void*)handler_table[entry_opcode];
@@ -755,13 +755,13 @@ invalidate_block_version(block_t* block)
     // FIXME:
     // Call continuation addresses on the stack can also be atomically replaced by jumps going to the stub.
 
-    ujit_free_block(block);
+    yjit_free_block(block);
 
     // fprintf(stderr, "invalidation done\n");
 }
 
 void
-ujit_init_core(void)
+yjit_init_core(void)
 {
     // Nothing yet
 }

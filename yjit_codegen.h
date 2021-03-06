@@ -1,8 +1,8 @@
-#ifndef UJIT_CODEGEN_H
-#define UJIT_CODEGEN_H 1
+#ifndef YJIT_CODEGEN_H
+#define YJIT_CODEGEN_H 1
 
 #include "stddef.h"
-#include "ujit_core.h"
+#include "yjit_core.h"
 
 // Code blocks we generate code into
 extern codeblock_t *cb;
@@ -30,18 +30,18 @@ typedef struct JITState
 } jitstate_t;
 
 typedef enum codegen_status {
-    UJIT_END_BLOCK,
-    UJIT_KEEP_COMPILING,
-    UJIT_CANT_COMPILE
+    YJIT_END_BLOCK,
+    YJIT_KEEP_COMPILING,
+    YJIT_CANT_COMPILE
 } codegen_status_t;
 
 // Code generation function signature
 typedef codegen_status_t (*codegen_fn)(jitstate_t* jit, ctx_t* ctx);
 
-uint8_t* ujit_entry_prologue();
+uint8_t* yjit_entry_prologue();
 
-void ujit_gen_block(ctx_t* ctx, block_t* block, rb_execution_context_t* ec);
+void yjit_gen_block(ctx_t* ctx, block_t* block, rb_execution_context_t* ec);
 
-void ujit_init_codegen(void);
+void yjit_init_codegen(void);
 
-#endif // #ifndef UJIT_CODEGEN_H
+#endif // #ifndef YJIT_CODEGEN_H

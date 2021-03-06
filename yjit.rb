@@ -1,13 +1,13 @@
-module UJIT
+module YJIT
   def self.disasm(iseq)
     iseq = RubyVM::InstructionSequence.of(iseq)
 
-    blocks = UJIT.blocks_for(iseq)
+    blocks = YJIT.blocks_for(iseq)
     return if blocks.empty?
 
     str = ""
 
-    cs = UJIT::Disasm.new
+    cs = YJIT::Disasm.new
 
     str << iseq.disasm
     str << "\n"
@@ -36,16 +36,16 @@ module UJIT
     str
   end if defined?(Disasm)
 
-  # Return a hash for statistics generated for the --ujit-stats command line option.
+  # Return a hash for statistics generated for the --yjit-stats command line option.
   # Return nil when option is not passed or unavailable.
   def self.runtime_stats
-    # defined in ujit_iface.c
+    # defined in yjit_iface.c
     Primitive.get_stat_counters
   end
 
-  # Discard statistics collected for --ujit-stats.
+  # Discard statistics collected for --yjit-stats.
   def self.reset_stats!
-    # defined in ujit_iface.c
+    # defined in yjit_iface.c
     Primitive.reset_stats_bang
   end
 
@@ -58,7 +58,7 @@ module UJIT
 
       return unless counters
 
-      $stderr.puts("***uJIT: Printing runtime counters from ujit.rb***")
+      $stderr.puts("***YJIT: Printing runtime counters from yjit.rb***")
 
       print_counters(counters, prefix: 'oswb_', prompt: 'opt_send_without_block exit reasons: ')
       print_counters(counters, prefix: 'leave_', prompt: 'leave exit reasons: ')

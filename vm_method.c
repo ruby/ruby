@@ -3,7 +3,7 @@
  */
 
 #include "id_table.h"
-#include "ujit.h"
+#include "yjit.h"
 
 #define METHOD_DEBUG 0
 
@@ -123,7 +123,7 @@ rb_vm_cc_invalidate(const struct rb_callcache *cc)
     VM_ASSERT(cc->klass != 0); // should be enable
 
     *(VALUE *)&cc->klass = 0;
-    rb_ujit_method_lookup_change((VALUE)cc);
+    rb_yjit_method_lookup_change((VALUE)cc);
     RB_DEBUG_COUNTER_INC(cc_ent_invalidate);
 }
 
@@ -135,13 +135,13 @@ vm_cme_invalidate(rb_callable_method_entry_t *cme)
     VM_ASSERT(callable_method_entry_p(cme));
     METHOD_ENTRY_INVALIDATED_SET(cme);
     RB_DEBUG_COUNTER_INC(cc_cme_invalidate);
-    rb_ujit_method_lookup_change((VALUE)cme);
+    rb_yjit_method_lookup_change((VALUE)cme);
 }
 
 void
 rb_clear_constant_cache(void)
 {
-    rb_ujit_constant_state_changed();
+    rb_yjit_constant_state_changed();
     INC_GLOBAL_CONSTANT_STATE();
 }
 

@@ -179,7 +179,7 @@ module RubyVM::MicroJIT
     def make_result(success, with_pc)
       [success ? 1 : 0,
        [
-         ['ujit_with_ec', with_pc],
+         ['yjit_with_ec', with_pc],
        ]
       ]
     end
@@ -197,7 +197,7 @@ module RubyVM::MicroJIT
     end
 
     def scrape
-      with_ec = scrape_instruction(RubyVM::Instructions.find_index { |insn| insn.name == 'ujit_call_example_with_ec' })
+      with_ec = scrape_instruction(RubyVM::Instructions.find_index { |insn| insn.name == 'yjit_call_example_with_ec' })
       make_result(true, with_ec)
     rescue => e
       print_warning("scrape failed: #{e.message}")
@@ -207,7 +207,7 @@ module RubyVM::MicroJIT
     end
 
     def print_warning(text)
-      text = "ujit warning: #{text}"
+      text = "yjit warning: #{text}"
       text = "\x1b[1m#{text}\x1b[0m" if STDOUT.tty?
       STDOUT.puts(text)
     end

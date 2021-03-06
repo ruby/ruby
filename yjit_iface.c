@@ -8,27 +8,27 @@
 #include "internal/compile.h"
 #include "internal/class.h"
 #include "insns_info.inc"
-#include "ujit.h"
-#include "ujit_iface.h"
-#include "ujit_codegen.h"
-#include "ujit_core.h"
-#include "ujit_hooks.inc"
+#include "yjit.h"
+#include "yjit_iface.h"
+#include "yjit_codegen.h"
+#include "yjit_core.h"
+#include "yjit_hooks.inc"
 #include "darray.h"
 
 #if HAVE_LIBCAPSTONE
 #include <capstone/capstone.h>
 #endif
 
-static VALUE mUjit;
-static VALUE cUjitBlock;
-static VALUE cUjitDisasm;
-static VALUE cUjitDisasmInsn;
+static VALUE mYjit;
+static VALUE cYjitBlock;
+static VALUE cYjitDisasm;
+static VALUE cYjitDisasmInsn;
 
 #if RUBY_DEBUG
 static int64_t vm_insns_count = 0;
 static int64_t exit_op_count[VM_INSTRUCTION_SIZE] = { 0 };
 int64_t rb_compiled_iseq_count = 0;
-struct rb_ujit_runtime_counters ujit_runtime_counters = { 0 };
+struct rb_yjit_runtime_counters yjit_runtime_counters = { 0 };
 #endif
 
 // Machine code blocks (executable memory)
@@ -38,28 +38,28 @@ extern codeblock_t *ocb;
 // Hash table of encoded instructions
 extern st_table *rb_encoded_insn_data;
 
-struct rb_ujit_options rb_ujit_opts;
+struct rb_yjit_options rb_yjit_opts;
 
-static const rb_data_type_t ujit_block_type = {
-    "UJIT/Block",
+static const rb_data_type_t yjit_block_type = {
+    "YJIT/Block",
     {0, 0, 0, },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
-// Write the uJIT entry point pre-call bytes
+// Write the YJIT entry point pre-call bytes
 void
 cb_write_pre_call_bytes(codeblock_t* cb)
 {
-    for (size_t i = 0; i < sizeof(ujit_with_ec_pre_call_bytes); ++i)
-        cb_write_byte(cb, ujit_with_ec_pre_call_bytes[i]);
+    for (size_t i = 0; i < sizeof(yjit_with_ec_pre_call_bytes); ++i)
+        cb_write_byte(cb, yjit_with_ec_pre_call_bytes[i]);
 }
 
-// Write the uJIT exit post-call bytes
+// Write the YJIT exit post-call bytes
 void
 cb_write_post_call_bytes(codeblock_t* cb)
 {
-    for (size_t i = 0; i < sizeof(ujit_with_ec_post_call_bytes); ++i)
-        cb_write_byte(cb, ujit_with_ec_post_call_bytes[i]);
+    for (size_t i = 0; i < sizeof(yjit_with_ec_post_call_bytes); ++i)
+        cb_write_byte(cb, yjit_with_ec_post_call_bytes[i]);
 }
 
 // Get the PC for a given index in an iseq
@@ -84,7 +84,7 @@ map_addr2insn(void *code_ptr, int insn)
         st_insert(rb_encoded_insn_data, (st_data_t)code_ptr, encoded_insn_data);
     }
     else {
-        rb_bug("ujit: failed to find info for original instruction while dealing with addr2insn");
+        rb_bug("yjit: failed to find info for original instruction while dealing with addr2insn");
     }
 }
 
@@ -105,7 +105,7 @@ void
 check_cfunc_dispatch(VALUE receiver, struct rb_call_data *cd, void *callee, rb_callable_method_entry_t *compile_time_cme)
 {
     if (METHOD_ENTRY_INVALIDATED(compile_time_cme)) {
-        rb_bug("ujit: output code uses invalidated cme %p", (void *)compile_time_cme);
+        rb_bug("yjit: output code uses invalidated cme %p", (void *)compile_time_cme);
     }
 
     bool callee_correct = false;
@@ -117,7 +117,7 @@ check_cfunc_dispatch(VALUE receiver, struct rb_call_data *cd, void *callee, rb_c
         }
     }
     if (!callee_correct) {
-        rb_bug("ujit: output code calls wrong method cd->cc->klass: %p", (void *)cd->cc->klass);
+        rb_bug("yjit: output code calls wrong method cd->cc->klass: %p", (void *)cd->cc->klass);
     }
 }
 
@@ -137,12 +137,12 @@ cfunc_needs_frame(const rb_method_cfunc_t *cfunc)
 }
 
 // GC root for interacting with the GC
-struct ujit_root_struct {
+struct yjit_root_struct {
     int unused; // empty structs are not legal in C99
 };
 
 static void
-block_array_shuffle_remove(rb_ujit_block_array_t blocks, block_t *to_remove) {
+block_array_shuffle_remove(rb_yjit_block_array_t blocks, block_t *to_remove) {
     block_t **elem;
     rb_darray_foreach(blocks, i, elem) {
         if (*elem == to_remove) {
@@ -162,12 +162,12 @@ add_lookup_dependency_i(st_data_t *key, st_data_t *value, st_data_t data, int ex
 {
     block_t *new_block = (block_t *)data;
 
-    rb_ujit_block_array_t blocks = NULL;
+    rb_yjit_block_array_t blocks = NULL;
     if (existing) {
-        blocks = (rb_ujit_block_array_t)*value;
+        blocks = (rb_yjit_block_array_t)*value;
     }
     if (!rb_darray_append(&blocks, new_block)) {
-        rb_bug("ujit: failed to add method lookup dependency"); // TODO: we could bail out of compiling instead
+        rb_bug("yjit: failed to add method lookup dependency"); // TODO: we could bail out of compiling instead
     }
 
     *value = (st_data_t)blocks;
@@ -210,7 +210,7 @@ assume_stable_global_constant_state(block_t *block) {
 }
 
 static int
-ujit_root_mark_i(st_data_t k, st_data_t v, st_data_t ignore)
+yjit_root_mark_i(st_data_t k, st_data_t v, st_data_t ignore)
 {
     // Lifetime notes: cc and cme get added in pairs into the table. One of
     // them should become invalid before dying. When one of them invalidate we
@@ -237,7 +237,7 @@ replace_all(st_data_t key, st_data_t value, st_data_t argp, int error)
 
 // GC callback during compaction
 static void
-ujit_root_update_references(void *ptr)
+yjit_root_update_references(void *ptr)
 {
     if (method_lookup_dependency) {
         if (st_foreach_with_replace(method_lookup_dependency, replace_all, method_lookup_dep_table_update_keys, 0)) {
@@ -245,26 +245,26 @@ ujit_root_update_references(void *ptr)
         }
     }
 
-    ujit_branches_update_references();
+    yjit_branches_update_references();
 }
 
 // GC callback during mark phase
 static void
-ujit_root_mark(void *ptr)
+yjit_root_mark(void *ptr)
 {
     if (method_lookup_dependency) {
-        st_foreach(method_lookup_dependency, ujit_root_mark_i, 0);
+        st_foreach(method_lookup_dependency, yjit_root_mark_i, 0);
     }
 }
 
 static void
-ujit_root_free(void *ptr)
+yjit_root_free(void *ptr)
 {
     // Do nothing. The root lives as long as the process.
 }
 
 static size_t
-ujit_root_memsize(const void *ptr)
+yjit_root_memsize(const void *ptr)
 {
     // Count off-gc-heap allocation size of the dependency table
     return st_memsize(method_lookup_dependency); // TODO: more accurate accounting
@@ -273,15 +273,15 @@ ujit_root_memsize(const void *ptr)
 // Custom type for interacting with the GC
 // TODO: compaction support
 // TODO: make this write barrier protected
-static const rb_data_type_t ujit_root_type = {
-    "ujit_root",
-    {ujit_root_mark, ujit_root_free, ujit_root_memsize, ujit_root_update_references},
+static const rb_data_type_t yjit_root_type = {
+    "yjit_root",
+    {yjit_root_mark, yjit_root_free, yjit_root_memsize, yjit_root_update_references},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 // Callback when cme or cc become invalid
 void
-rb_ujit_method_lookup_change(VALUE cme_or_cc)
+rb_yjit_method_lookup_change(VALUE cme_or_cc)
 {
     if (!method_lookup_dependency)
         return;
@@ -293,7 +293,7 @@ rb_ujit_method_lookup_change(VALUE cme_or_cc)
     // Invalidate all regions that depend on the cme or cc
     st_data_t key = (st_data_t)cme_or_cc, image;
     if (st_delete(method_lookup_dependency, &key, &image)) {
-        rb_ujit_block_array_t array = (void *)image;
+        rb_yjit_block_array_t array = (void *)image;
         block_t **elem;
 
         rb_darray_foreach(array, i, elem) {
@@ -312,7 +312,7 @@ remove_method_lookup_dependency(VALUE cc_or_cme, block_t *block)
 {
     st_data_t key = (st_data_t)cc_or_cme, image;
     if (st_lookup(method_lookup_dependency, key, &image)) {
-        rb_ujit_block_array_t array = (void *)image;
+        rb_yjit_block_array_t array = (void *)image;
 
         block_array_shuffle_remove(array, block);
 
@@ -324,14 +324,14 @@ remove_method_lookup_dependency(VALUE cc_or_cme, block_t *block)
 }
 
 void
-ujit_unlink_method_lookup_dependency(block_t *block)
+yjit_unlink_method_lookup_dependency(block_t *block)
 {
     if (block->dependencies.cc) remove_method_lookup_dependency(block->dependencies.cc, block);
     if (block->dependencies.cme) remove_method_lookup_dependency(block->dependencies.cme, block);
 }
 
 void
-ujit_block_assumptions_free(block_t *block)
+yjit_block_assumptions_free(block_t *block)
 {
     st_data_t as_st_data = (st_data_t)block;
     if (blocks_assuming_stable_global_constant_state) {
@@ -344,7 +344,7 @@ ujit_block_assumptions_free(block_t *block)
 }
 
 void
-rb_ujit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec)
+rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec)
 {
 #if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
     RB_VM_LOCK_ENTER();
@@ -365,14 +365,14 @@ rb_ujit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec)
 #endif
 }
 
-struct ujit_block_itr {
+struct yjit_block_itr {
     const rb_iseq_t *iseq;
     VALUE list;
 };
 
-/* Get a list of the UJIT blocks associated with `rb_iseq` */
+/* Get a list of the YJIT blocks associated with `rb_iseq` */
 static VALUE
-ujit_blocks_for(VALUE mod, VALUE rb_iseq)
+yjit_blocks_for(VALUE mod, VALUE rb_iseq)
 {
     if (CLASS_OF(rb_iseq) != rb_cISeq) {
         return rb_ary_new();
@@ -381,13 +381,13 @@ ujit_blocks_for(VALUE mod, VALUE rb_iseq)
     const rb_iseq_t *iseq = rb_iseqw_to_iseq(rb_iseq);
 
     VALUE all_versions = rb_ary_new();
-    rb_darray_for(iseq->body->ujit_blocks, version_array_idx) {
-        rb_ujit_block_array_t versions = rb_darray_get(iseq->body->ujit_blocks, version_array_idx);
+    rb_darray_for(iseq->body->yjit_blocks, version_array_idx) {
+        rb_yjit_block_array_t versions = rb_darray_get(iseq->body->yjit_blocks, version_array_idx);
 
         rb_darray_for(versions, block_idx) {
             block_t *block = rb_darray_get(versions, block_idx);
 
-            VALUE rb_block = TypedData_Wrap_Struct(cUjitBlock, &ujit_block_type, block);
+            VALUE rb_block = TypedData_Wrap_Struct(cYjitBlock, &yjit_block_type, block);
             rb_ary_push(all_versions, rb_block);
         }
     }
@@ -395,22 +395,22 @@ ujit_blocks_for(VALUE mod, VALUE rb_iseq)
     return all_versions;
 }
 
-/* Get the address of the the code associated with a UJIT::Block */
+/* Get the address of the the code associated with a YJIT::Block */
 static VALUE
 block_address(VALUE self)
 {
     block_t * block;
-    TypedData_Get_Struct(self, block_t, &ujit_block_type, block);
+    TypedData_Get_Struct(self, block_t, &yjit_block_type, block);
     uint8_t* code_addr = cb_get_ptr(cb, block->start_pos);
     return LONG2NUM((intptr_t)code_addr);
 }
 
-/* Get the machine code for UJIT::Block as a binary string */
+/* Get the machine code for YJIT::Block as a binary string */
 static VALUE
 block_code(VALUE self)
 {
     block_t * block;
-    TypedData_Get_Struct(self, block_t, &ujit_block_type, block);
+    TypedData_Get_Struct(self, block_t, &yjit_block_type, block);
 
     return (VALUE)rb_str_new(
         (const char*)cb->mem_block + block->start_pos,
@@ -419,30 +419,30 @@ block_code(VALUE self)
 }
 
 /* Get the start index in the Instruction Sequence that corresponds to this
- * UJIT::Block */
+ * YJIT::Block */
 static VALUE
 iseq_start_index(VALUE self)
 {
     block_t * block;
-    TypedData_Get_Struct(self, block_t, &ujit_block_type, block);
+    TypedData_Get_Struct(self, block_t, &yjit_block_type, block);
 
     return INT2NUM(block->blockid.idx);
 }
 
 /* Get the end index in the Instruction Sequence that corresponds to this
- * UJIT::Block */
+ * YJIT::Block */
 static VALUE
 iseq_end_index(VALUE self)
 {
     block_t * block;
-    TypedData_Get_Struct(self, block_t, &ujit_block_type, block);
+    TypedData_Get_Struct(self, block_t, &yjit_block_type, block);
 
     return INT2NUM(block->end_idx);
 }
 
 /* Called when a basic operation is redefined */
 void
-rb_ujit_bop_redefined(VALUE klass, const rb_method_entry_t *me, enum ruby_basic_operators bop)
+rb_yjit_bop_redefined(VALUE klass, const rb_method_entry_t *me, enum ruby_basic_operators bop)
 {
     //fprintf(stderr, "bop redefined\n");
 }
@@ -456,7 +456,7 @@ block_invalidation_iterator(st_data_t key, st_data_t value, st_data_t data) {
 
 /* Called when the constant state changes */
 void
-rb_ujit_constant_state_changed(void)
+rb_yjit_constant_state_changed(void)
 {
     if (blocks_assuming_stable_global_constant_state) {
         st_foreach(blocks_assuming_stable_global_constant_state, block_invalidation_iterator, 0);
@@ -464,7 +464,7 @@ rb_ujit_constant_state_changed(void)
 }
 
 void
-rb_ujit_before_ractor_spawn(void)
+rb_yjit_before_ractor_spawn(void)
 {
     if (blocks_assuming_single_ractor_mode) {
         st_foreach(blocks_assuming_single_ractor_mode, block_invalidation_iterator, 0);
@@ -472,29 +472,29 @@ rb_ujit_before_ractor_spawn(void)
 }
 
 #if HAVE_LIBCAPSTONE
-static const rb_data_type_t ujit_disasm_type = {
-    "UJIT/Disasm",
+static const rb_data_type_t yjit_disasm_type = {
+    "YJIT/Disasm",
     {0, (void(*)(void *))cs_close, 0, },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static VALUE
-ujit_disasm_init(VALUE klass)
+yjit_disasm_init(VALUE klass)
 {
     csh * handle;
-    VALUE disasm = TypedData_Make_Struct(klass, csh, &ujit_disasm_type, handle);
+    VALUE disasm = TypedData_Make_Struct(klass, csh, &yjit_disasm_type, handle);
     cs_open(CS_ARCH_X86, CS_MODE_64, handle);
     return disasm;
 }
 
 static VALUE
-ujit_disasm(VALUE self, VALUE code, VALUE from)
+yjit_disasm(VALUE self, VALUE code, VALUE from)
 {
     size_t count;
     csh * handle;
     cs_insn *insns;
 
-    TypedData_Get_Struct(self, csh, &ujit_disasm_type, handle);
+    TypedData_Get_Struct(self, csh, &yjit_disasm_type, handle);
     count = cs_disasm(*handle, (uint8_t*)StringValuePtr(code), RSTRING_LEN(code), NUM2INT(from), 0, &insns);
     VALUE insn_list = rb_ary_new_capa(count);
 
@@ -502,7 +502,7 @@ ujit_disasm(VALUE self, VALUE code, VALUE from)
         VALUE vals = rb_ary_new_from_args(3, LONG2NUM(insns[i].address),
                 rb_str_new2(insns[i].mnemonic),
                 rb_str_new2(insns[i].op_str));
-        rb_ary_push(insn_list, rb_struct_alloc(cUjitDisasmInsn, vals));
+        rb_ary_push(insn_list, rb_struct_alloc(cYjitDisasmInsn, vals));
     }
     cs_free(insns, count);
     return insn_list;
@@ -512,27 +512,27 @@ ujit_disasm(VALUE self, VALUE code, VALUE from)
 static VALUE
 at_exit_print_stats(RB_BLOCK_CALL_FUNC_ARGLIST(yieldarg, data))
 {
-    // Defined in ujit.rb
-    rb_funcall(mUjit, rb_intern("_print_stats"), 0);
+    // Defined in yjit.rb
+    rb_funcall(mYjit, rb_intern("_print_stats"), 0);
     return Qnil;
 }
 
-// Primitive called in ujit.rb. Export all runtime counters as a Ruby hash.
+// Primitive called in yjit.rb. Export all runtime counters as a Ruby hash.
 static VALUE
 get_stat_counters(rb_execution_context_t *ec, VALUE self)
 {
 #if RUBY_DEBUG
-    if (!rb_ujit_opts.gen_stats) return Qnil;
+    if (!rb_yjit_opts.gen_stats) return Qnil;
 
     VALUE hash = rb_hash_new();
     RB_VM_LOCK_ENTER();
     {
-        int64_t *counter_reader = (int64_t *)&ujit_runtime_counters;
-        int64_t *counter_reader_end = &ujit_runtime_counters.last_member;
+        int64_t *counter_reader = (int64_t *)&yjit_runtime_counters;
+        int64_t *counter_reader_end = &yjit_runtime_counters.last_member;
 
         // Iterate through comma separated counter name list
-        char *name_reader = ujit_counter_names;
-        char *counter_name_end = ujit_counter_names + sizeof(ujit_counter_names);
+        char *name_reader = yjit_counter_names;
+        char *counter_name_end = yjit_counter_names + sizeof(yjit_counter_names);
         while (name_reader < counter_name_end && counter_reader < counter_reader_end) {
             if (*name_reader == ',' || *name_reader == ' ') {
                 name_reader++;
@@ -564,7 +564,7 @@ get_stat_counters(rb_execution_context_t *ec, VALUE self)
 #endif // if RUBY_DEBUG
 }
 
-// Primitive called in ujit.rb. Zero out all the counters.
+// Primitive called in yjit.rb. Zero out all the counters.
 static VALUE
 reset_stats_bang(rb_execution_context_t *ec, VALUE self)
 {
@@ -572,24 +572,24 @@ reset_stats_bang(rb_execution_context_t *ec, VALUE self)
     vm_insns_count = 0;
     rb_compiled_iseq_count = 0;
     memset(&exit_op_count, 0, sizeof(exit_op_count));
-    memset(&ujit_runtime_counters, 0, sizeof(ujit_runtime_counters));
+    memset(&yjit_runtime_counters, 0, sizeof(yjit_runtime_counters));
 #endif // if RUBY_DEBUG
     return Qnil;
 }
 
-#include "ujit.rbinc"
+#include "yjit.rbinc"
 
 #if RUBY_DEBUG
-// implementation for --ujit-stats
+// implementation for --yjit-stats
 
 void
-rb_ujit_collect_vm_usage_insn(int insn)
+rb_yjit_collect_vm_usage_insn(int insn)
 {
     vm_insns_count++;
 }
 
 const VALUE *
-rb_ujit_count_side_exit_op(const VALUE *exit_pc)
+rb_yjit_count_side_exit_op(const VALUE *exit_pc)
 {
     int insn = rb_vm_insn_addr2opcode((const void *)*exit_pc);
     exit_op_count[insn]++;
@@ -657,31 +657,31 @@ print_insn_count_buffer(const struct insn_count *buffer, int how_many, int left_
 
 __attribute__((destructor))
 static void
-print_ujit_stats(void)
+print_yjit_stats(void)
 {
-    if (!rb_ujit_opts.gen_stats) return;
+    if (!rb_yjit_opts.gen_stats) return;
 
     const struct insn_count *sorted_exit_ops = sort_insn_count_array(exit_op_count);
 
-    double total_insns_count = vm_insns_count + ujit_runtime_counters.exec_instruction;
-    double ratio = ujit_runtime_counters.exec_instruction / total_insns_count;
+    double total_insns_count = vm_insns_count + yjit_runtime_counters.exec_instruction;
+    double ratio = yjit_runtime_counters.exec_instruction / total_insns_count;
 
     fprintf(stderr, "compiled_iseq_count:   %10" PRId64 "\n", rb_compiled_iseq_count);
     fprintf(stderr, "main_block_code_size:  %6.1f MiB\n", ((double)cb->write_pos) / 1048576.0);
     fprintf(stderr, "side_block_code_size:  %6.1f MiB\n", ((double)ocb->write_pos) / 1048576.0);
     fprintf(stderr, "vm_insns_count:        %10" PRId64 "\n", vm_insns_count);
-    fprintf(stderr, "ujit_exec_insns_count: %10" PRId64 "\n", ujit_runtime_counters.exec_instruction);
-    fprintf(stderr, "ratio_in_ujit:         %9.1f%%\n", ratio * 100);
+    fprintf(stderr, "yjit_exec_insns_count: %10" PRId64 "\n", yjit_runtime_counters.exec_instruction);
+    fprintf(stderr, "ratio_in_yjit:         %9.1f%%\n", ratio * 100);
     print_insn_count_buffer(sorted_exit_ops, 10, 4);
     //print_runtime_counters();
 }
 #endif // if RUBY_DEBUG
 
 void
-rb_ujit_iseq_mark(const struct rb_iseq_constant_body *body)
+rb_yjit_iseq_mark(const struct rb_iseq_constant_body *body)
 {
-    rb_darray_for(body->ujit_blocks, version_array_idx) {
-        rb_ujit_block_array_t version_array = rb_darray_get(body->ujit_blocks, version_array_idx);
+    rb_darray_for(body->yjit_blocks, version_array_idx) {
+        rb_yjit_block_array_t version_array = rb_darray_get(body->yjit_blocks, version_array_idx);
 
         rb_darray_for(version_array, block_idx) {
             block_t *block = rb_darray_get(version_array, block_idx);
@@ -705,10 +705,10 @@ rb_ujit_iseq_mark(const struct rb_iseq_constant_body *body)
 }
 
 void
-rb_ujit_iseq_update_references(const struct rb_iseq_constant_body *body)
+rb_yjit_iseq_update_references(const struct rb_iseq_constant_body *body)
 {
-    rb_darray_for(body->ujit_blocks, version_array_idx) {
-        rb_ujit_block_array_t version_array = rb_darray_get(body->ujit_blocks, version_array_idx);
+    rb_darray_for(body->yjit_blocks, version_array_idx) {
+        rb_yjit_block_array_t version_array = rb_darray_get(body->yjit_blocks, version_array_idx);
 
         rb_darray_for(version_array, block_idx) {
             block_t *block = rb_darray_get(version_array, block_idx);
@@ -736,83 +736,83 @@ rb_ujit_iseq_update_references(const struct rb_iseq_constant_body *body)
     }
 }
 
+// Free the yjit resources associated with an iseq
 void
-rb_ujit_iseq_free(const struct rb_iseq_constant_body *body)
+rb_yjit_iseq_free(const struct rb_iseq_constant_body *body)
 {
-    rb_darray_for(body->ujit_blocks, version_array_idx) {
-        rb_ujit_block_array_t version_array = rb_darray_get(body->ujit_blocks, version_array_idx);
+    rb_darray_for(body->yjit_blocks, version_array_idx) {
+        rb_yjit_block_array_t version_array = rb_darray_get(body->yjit_blocks, version_array_idx);
 
         rb_darray_for(version_array, block_idx) {
             block_t *block = rb_darray_get(version_array, block_idx);
-            ujit_free_block(block);
+            yjit_free_block(block);
         }
 
         rb_darray_free(version_array);
     }
 
-    rb_darray_free(body->ujit_blocks);
+    rb_darray_free(body->yjit_blocks);
 }
 
-bool rb_ujit_enabled_p(void)
+bool rb_yjit_enabled_p(void)
 {
-    return rb_ujit_opts.ujit_enabled;
+    return rb_yjit_opts.yjit_enabled;
 }
 
-unsigned rb_ujit_call_threshold(void)
+unsigned rb_yjit_call_threshold(void)
 {
-    return rb_ujit_opts.call_threshold;
+    return rb_yjit_opts.call_threshold;
 }
 
 void
-rb_ujit_init(struct rb_ujit_options *options)
+rb_yjit_init(struct rb_yjit_options *options)
 {
-    if (!ujit_scrape_successful || !PLATFORM_SUPPORTED_P)
+    if (!yjit_scrape_successful || !PLATFORM_SUPPORTED_P)
     {
         return;
     }
 
-    rb_ujit_opts = *options;
-    rb_ujit_opts.ujit_enabled = true;
+    rb_yjit_opts = *options;
+    rb_yjit_opts.yjit_enabled = true;
 
     // Normalize options
-    if (rb_ujit_opts.call_threshold < 1) {
-        rb_ujit_opts.call_threshold = 2;
+    if (rb_yjit_opts.call_threshold < 1) {
+        rb_yjit_opts.call_threshold = 2;
     }
 
     blocks_assuming_stable_global_constant_state = st_init_numtable();
     blocks_assuming_single_ractor_mode = st_init_numtable();
 
-    ujit_init_core();
-    ujit_init_codegen();
+    yjit_init_core();
+    yjit_init_codegen();
 
-    // UJIT Ruby module
-    mUjit = rb_define_module("UJIT");
-    rb_define_module_function(mUjit, "install_entry", ujit_install_entry, 1);
-    rb_define_module_function(mUjit, "blocks_for", ujit_blocks_for, 1);
+    // YJIT Ruby module
+    mYjit = rb_define_module("YJIT");
+    rb_define_module_function(mYjit, "blocks_for", yjit_blocks_for, 1);
 
-    // UJIT::Block (block version, code block)
-    cUjitBlock = rb_define_class_under(mUjit, "Block", rb_cObject);
-    rb_define_method(cUjitBlock, "address", block_address, 0);
-    rb_define_method(cUjitBlock, "code", block_code, 0);
-    rb_define_method(cUjitBlock, "iseq_start_index", iseq_start_index, 0);
-    rb_define_method(cUjitBlock, "iseq_end_index", iseq_end_index, 0);
+    // YJIT::Block (block version, code block)
+    cYjitBlock = rb_define_class_under(mYjit, "Block", rb_cObject);
+    rb_define_method(cYjitBlock, "address", block_address, 0);
+    rb_define_method(cYjitBlock, "code", block_code, 0);
+    rb_define_method(cYjitBlock, "iseq_start_index", iseq_start_index, 0);
+    rb_define_method(cYjitBlock, "iseq_end_index", iseq_end_index, 0);
 
-    // UJIT disassembler interface
+    // YJIT disassembler interface
 #if HAVE_LIBCAPSTONE
-    cUjitDisasm = rb_define_class_under(mUjit, "Disasm", rb_cObject);
-    rb_define_alloc_func(cUjitDisasm, ujit_disasm_init);
-    rb_define_method(cUjitDisasm, "disasm", ujit_disasm, 2);
-    cUjitDisasmInsn = rb_struct_define_under(cUjitDisasm, "Insn", "address", "mnemonic", "op_str", NULL);
+    cYjitDisasm = rb_define_class_under(mYjit, "Disasm", rb_cObject);
+    rb_define_alloc_func(cYjitDisasm, yjit_disasm_init);
+    rb_define_method(cYjitDisasm, "disasm", yjit_disasm, 2);
+    cYjitDisasmInsn = rb_struct_define_under(cYjitDisasm, "Insn", "address", "mnemonic", "op_str", NULL);
 #endif
 
-    if (RUBY_DEBUG && rb_ujit_opts.gen_stats) {
+    if (RUBY_DEBUG && rb_yjit_opts.gen_stats) {
         // Setup at_exit callback for printing out counters
         rb_block_call(rb_mKernel, rb_intern("at_exit"), 0, NULL, at_exit_print_stats, Qfalse);
     }
 
     // Initialize the GC hooks
     method_lookup_dependency = st_init_numtable();
-    struct ujit_root_struct *root;
-    VALUE ujit_root = TypedData_Make_Struct(0, struct ujit_root_struct, &ujit_root_type, root);
-    rb_gc_register_mark_object(ujit_root);
+    struct yjit_root_struct *root;
+    VALUE yjit_root = TypedData_Make_Struct(0, struct yjit_root_struct, &yjit_root_type, root);
+    rb_gc_register_mark_object(yjit_root);
 }

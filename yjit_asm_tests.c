@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include "ujit_asm.h"
+#include "yjit_asm.h"
 
 // Print the bytes in a code block
 void print_bytes(codeblock_t* cb)

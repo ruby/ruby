@@ -13,7 +13,7 @@
 } -%>
 
 % success, byte_arrays = RubyVM::MicroJIT.scrape
-static const uint8_t ujit_scrape_successful = <%= success %>;
+static const uint8_t yjit_scrape_successful = <%= success %>;
 % byte_arrays.each do |(prefix, scrape_result)|
 // Disassembly:
 %   scrape_result.disassembly_lines.each do |line|

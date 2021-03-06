@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-#include "ujit_utils.h"
-#include "ujit_asm.h"
+#include "yjit_utils.h"
+#include "yjit_asm.h"
 
 // Save caller-save registers on the stack before a C call
 void push_regs(codeblock_t* cb)

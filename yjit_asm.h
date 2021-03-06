@@ -1,5 +1,5 @@
-#ifndef UJIT_ASM_H
-#define UJIT_ASM_H 1
+#ifndef YJIT_ASM_H
+#define YJIT_ASM_H 1
 
 #include <stdint.h>
 #include <stddef.h>

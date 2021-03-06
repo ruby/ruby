@@ -26,16 +26,16 @@
 % end
 %
 % RubyVM::MicroJIT::ExampleInstructions.to_a.each do |insn|
-INSN_ENTRY(ujit_call_example_with_ec)
+INSN_ENTRY(yjit_call_example_with_ec)
 {
-    START_OF_ORIGINAL_INSN(ujit_call_example_with_ec);
+    START_OF_ORIGINAL_INSN(yjit_call_example_with_ec);
 #if USE_MACHINE_REGS
     // assumes USE_MACHINE_REGS, aka reg_pc setup,
     // aka #define SET_PC(x) (reg_cfp->pc = reg_pc = (x))
-    rb_ujit_empty_func_with_ec(GET_CFP(), ec);
+    rb_yjit_empty_func_with_ec(GET_CFP(), ec);
     RESTORE_REGS();
 #endif
-    END_INSN(ujit_call_example_with_ec);
+    END_INSN(yjit_call_example_with_ec);
 }
 % end
 %

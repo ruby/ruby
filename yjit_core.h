@@ -1,17 +1,17 @@
-#ifndef UJIT_CORE_H
-#define UJIT_CORE_H 1
+#ifndef YJIT_CORE_H
+#define YJIT_CORE_H 1
 
 #include "stddef.h"
-#include "ujit_asm.h"
+#include "yjit_asm.h"
 
-// Register uJIT receives the CFP and EC into
+// Register YJIT receives the CFP and EC into
 #define REG_CFP RDI
 #define REG_EC RSI
 
-// Register uJIT loads the SP into
+// Register YJIT loads the SP into
 #define REG_SP RDX
 
-// Scratch registers used by uJIT
+// Scratch registers used by YJIT
 #define REG0 RAX
 #define REG1 RCX
 #define REG0_32 EAX
@@ -109,7 +109,7 @@ Basic block version
 Represents a portion of an iseq compiled with a given context
 Note: care must be taken to minimize the size of block_t objects
 */
-typedef struct ujit_block_version
+typedef struct yjit_block_version
 {
     // Bytecode sequence (iseq, idx) this is a version of
     blockid_t blockid;
@@ -148,8 +148,8 @@ int ctx_diff(const ctx_t* src, const ctx_t* dst);
 block_t* find_block_version(blockid_t blockid, const ctx_t* ctx);
 block_t* gen_block_version(blockid_t blockid, const ctx_t* ctx, rb_execution_context_t *ec);
 uint8_t*  gen_entry_point(const rb_iseq_t *iseq, uint32_t insn_idx, rb_execution_context_t *ec);
-void ujit_free_block(block_t *block);
-void ujit_branches_update_references(void);
+void yjit_free_block(block_t *block);
+void yjit_branches_update_references(void);
 
 void gen_branch(
     const ctx_t* src_ctx,
@@ -173,6 +173,6 @@ void defer_compilation(
 
 void invalidate_block_version(block_t* block);
 
-void ujit_init_core(void);
+void yjit_init_core(void);
 
-#endif // #ifndef UJIT_CORE_H
+#endif // #ifndef YJIT_CORE_H

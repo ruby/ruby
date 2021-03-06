@@ -16,7 +16,7 @@
 #include "variable.h"
 #include "gc.h"
 #include "transient_heap.h"
-#include "ujit.h"
+#include "yjit.h"
 
 VALUE rb_cRactor;
 
@@ -1605,7 +1605,7 @@ ractor_create(rb_execution_context_t *ec, VALUE self, VALUE loc, VALUE name, VAL
     r->verbose = cr->verbose;
     r->debug = cr->debug;
 
-    rb_ujit_before_ractor_spawn();
+    rb_yjit_before_ractor_spawn();
     rb_thread_create_ractor(r, args, block);
 
     RB_GC_GUARD(rv);
