@@ -67,8 +67,13 @@ module UJIT
     def print_counters(counters, prefix:, prompt:)
       $stderr.puts(prompt)
       counters = counters.filter { |key, _| key.start_with?(prefix) }
-      counters.filter! { |_, value| value > 0 }
+      counters.filter! { |_, value| value != 0 }
       counters.transform_keys! { |key| key.to_s.delete_prefix(prefix) }
+
+      if counters.empty?
+        $stderr.puts("    (all relevant counters are zero)")
+        return
+      end
 
       counters = counters.to_a
       counters.sort_by! { |(_, counter_value)| counter_value }
