@@ -805,6 +805,18 @@ assert_equal 'ok', %q{
   'ok'
 }
 
+# $stdin,out,err belong to Ractor
+assert_equal 'ok', %q{
+  r = Ractor.new do
+    $stdin.itself
+    $stdout.itself
+    $stderr.itself
+    'ok'
+  end
+
+  r.take
+}
+
 # $DEBUG, $VERBOSE are Ractor local
 assert_equal 'true', %q{
   $DEBUG = true
