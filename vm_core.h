@@ -313,8 +313,8 @@ pathobj_realpath(VALUE pathobj)
 struct rb_mjit_unit;
 
 // List of YJIT block versions
-typedef rb_darray(struct ujit_block_version *) rb_ujit_block_array_t;
-typedef rb_darray(rb_ujit_block_array_t) rb_ujit_block_array_array_t;
+typedef rb_darray(struct yjit_block_version *) rb_yjit_block_array_t;
+typedef rb_darray(rb_yjit_block_array_t) rb_yjit_block_array_array_t;
 
 struct rb_iseq_constant_body {
     enum iseq_type {
@@ -455,7 +455,7 @@ struct rb_iseq_constant_body {
     struct rb_mjit_unit *jit_unit;
 #endif
 
-    rb_ujit_block_array_array_t ujit_blocks; // empty, or has a size equal to iseq_size
+    rb_yjit_block_array_array_t yjit_blocks; // empty, or has a size equal to iseq_size
 };
 
 /* T_IMEMO/iseq */
@@ -797,7 +797,7 @@ typedef struct rb_control_frame_struct {
 #if VM_DEBUG_BP_CHECK
     VALUE *bp_check;		/* cfp[7] */
 #endif
-    // Return address for uJIT code
+    // Return address for YJIT code
     void *jit_return;
 } rb_control_frame_t;
 

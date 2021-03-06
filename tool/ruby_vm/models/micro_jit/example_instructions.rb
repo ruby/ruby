@@ -64,6 +64,6 @@ class RubyVM::MicroJIT::ExampleInstructions
   end
 
   def self.to_a
-    [new('ujit_call_example_with_ec')]
+    [new('yjit_call_example_with_ec')]
   end
 end

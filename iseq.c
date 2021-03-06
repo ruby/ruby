@@ -38,7 +38,7 @@
 #include "ruby/util.h"
 #include "vm_core.h"
 #include "vm_callinfo.h"
-#include "ujit.h"
+#include "yjit.h"
 
 #include "builtin.h"
 #include "insns.inc"
@@ -110,7 +110,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
     if (iseq && iseq->body) {
 	struct rb_iseq_constant_body *const body = iseq->body;
 	mjit_free_iseq(iseq); /* Notify MJIT */
-        rb_ujit_iseq_free(body);
+        rb_yjit_iseq_free(body);
 	ruby_xfree((void *)body->iseq_encoded);
 	ruby_xfree((void *)body->insns_info.body);
 	if (body->insns_info.positions) ruby_xfree((void *)body->insns_info.positions);
@@ -323,7 +323,7 @@ rb_iseq_update_references(rb_iseq_t *iseq)
 #if USE_MJIT
         mjit_update_references(iseq);
 #endif
-        rb_ujit_iseq_update_references(body);
+        rb_yjit_iseq_update_references(body);
     }
 }
 
@@ -404,7 +404,7 @@ rb_iseq_mark(const rb_iseq_t *iseq)
 #if USE_MJIT
         mjit_mark_cc_entries(body);
 #endif
-        rb_ujit_iseq_mark(body);
+        rb_yjit_iseq_mark(body);
     }
 
     if (FL_TEST_RAW((VALUE)iseq, ISEQ_NOT_LOADED_YET)) {
@@ -3184,7 +3184,7 @@ static insn_data_t insn_data[VM_INSTRUCTION_SIZE/2];
 
 
 
-#include "ujit_asm.h"
+#include "yjit_asm.h"
 
 
 
@@ -3490,7 +3490,7 @@ trace_set_i(void *vstart, void *vend, size_t stride, void *data)
 }
 
 void
-rb_ujit_empty_func_with_ec(rb_control_frame_t *cfp, rb_execution_context_t *ec)
+rb_yjit_empty_func_with_ec(rb_control_frame_t *cfp, rb_execution_context_t *ec)
 {
     // it's put in this file instead of say, compile.c to dodge long C compile time.
     // it just needs to be in a different unit from vm.o so the compiler can't see the definition

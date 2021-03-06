@@ -37,7 +37,7 @@
 #include "vm_insnhelper.h"
 #include "ractor_core.h"
 #include "vm_sync.h"
-#include "ujit.h"
+#include "yjit.h"
 
 #include "builtin.h"
 
@@ -346,7 +346,7 @@ static void vm_collect_usage_register(int reg, int isset);
 #endif
 
 #if RUBY_DEBUG
-static void vm_ujit_collect_usage_insn(int insn);
+static void vm_yjit_collect_usage_insn(int insn);
 #endif
 
 static VALUE vm_make_env_object(const rb_execution_context_t *ec, rb_control_frame_t *cfp);
@@ -1854,9 +1854,9 @@ rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass)
        klass = RBASIC_CLASS(klass);
     }
     if (vm_redefinition_check_method_type(me->def)) {
-        if (st_lookup(vm_opt_method_def_table, (st_data_t)me->def, &bop)) {
+	if (st_lookup(vm_opt_method_table, (st_data_t)me, &bop)) {
             int flag = vm_redefinition_check_flag(klass);
-            rb_ujit_bop_redefined(klass, me, (enum ruby_basic_operators)bop);
+            rb_yjit_bop_redefined(klass, me, (enum ruby_basic_operators)bop);
 
 	    ruby_vm_redefined_flag[bop] |= flag;
 	}
@@ -4063,9 +4063,9 @@ MAYBE_UNUSED(static void (*ruby_vm_collect_usage_func_register)(int reg, int iss
 
 #if RUBY_DEBUG
 static void
-vm_ujit_collect_usage_insn(int insn)
+vm_yjit_collect_usage_insn(int insn)
 {
-    rb_ujit_collect_vm_usage_insn(insn);
+    rb_yjit_collect_vm_usage_insn(insn);
 }
 #endif
 

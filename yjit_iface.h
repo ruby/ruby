@@ -1,10 +1,10 @@
 //
-// These are definitions uJIT uses to interface with the CRuby codebase,
-// but which are only used internally by uJIT.
+// These are definitions YJIT uses to interface with the CRuby codebase,
+// but which are only used internally by YJIT.
 //
 
-#ifndef UJIT_IFACE_H
-#define UJIT_IFACE_H 1
+#ifndef YJIT_IFACE_H
+#define YJIT_IFACE_H 1
 
 #include "stddef.h"
 #include "stdint.h"
@@ -14,19 +14,19 @@
 #include "vm_core.h"
 #include "vm_callinfo.h"
 #include "builtin.h"
-#include "ujit_core.h"
+#include "yjit_core.h"
 
 #ifndef rb_callcache
 struct rb_callcache;
 #define rb_callcache rb_callcache
 #endif
 
-#define UJIT_DECLARE_COUNTERS(...) struct rb_ujit_runtime_counters { \
+#define YJIT_DECLARE_COUNTERS(...) struct rb_yjit_runtime_counters { \
     int64_t __VA_ARGS__; \
 }; \
-static char ujit_counter_names[] = #__VA_ARGS__;
+static char yjit_counter_names[] = #__VA_ARGS__;
 
-UJIT_DECLARE_COUNTERS(
+YJIT_DECLARE_COUNTERS(
     exec_instruction,
 
     oswb_callsite_not_simple,
@@ -62,11 +62,11 @@ UJIT_DECLARE_COUNTERS(
     last_member
 )
 
-#undef UJIT_DECLARE_COUNTERS
+#undef YJIT_DECLARE_COUNTERS
 
-RUBY_EXTERN struct rb_ujit_options rb_ujit_opts;
+RUBY_EXTERN struct rb_yjit_options rb_yjit_opts;
 RUBY_EXTERN int64_t rb_compiled_iseq_count;
-RUBY_EXTERN struct rb_ujit_runtime_counters ujit_runtime_counters;
+RUBY_EXTERN struct rb_yjit_runtime_counters yjit_runtime_counters;
 
 void cb_write_pre_call_bytes(codeblock_t* cb);
 void cb_write_post_call_bytes(codeblock_t* cb);
@@ -83,9 +83,9 @@ RBIMPL_ATTR_NODISCARD() bool assume_single_ractor_mode(block_t *block);
 RBIMPL_ATTR_NODISCARD() bool assume_stable_global_constant_state(block_t *block);
 
 // this function *must* return passed exit_pc
-const VALUE *rb_ujit_count_side_exit_op(const VALUE *exit_pc);
+const VALUE *rb_yjit_count_side_exit_op(const VALUE *exit_pc);
 
-void ujit_unlink_method_lookup_dependency(block_t *block);
-void ujit_block_assumptions_free(block_t *block);
+void yjit_unlink_method_lookup_dependency(block_t *block);
+void yjit_block_assumptions_free(block_t *block);
 
-#endif // #ifndef UJIT_IFACE_H
+#endif // #ifndef YJIT_IFACE_
