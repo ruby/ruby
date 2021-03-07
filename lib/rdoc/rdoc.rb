@@ -167,7 +167,12 @@ class RDoc::RDoc
     end
 
     raise RDoc::Error, "#{options_file} is not a valid rdoc options file" unless
-      RDoc::Options === options
+      RDoc::Options === options or Hash === options
+
+    if Hash === options
+      # Override the default values with the contents of YAML file.
+      options = RDoc::Options.new options
+    end
 
     options
   end

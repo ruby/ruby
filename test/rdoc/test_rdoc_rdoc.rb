@@ -133,6 +133,18 @@ class TestRDocRDoc < RDoc::TestCase
     end
   end
 
+  def test_load_options_partial_override
+    temp_dir do
+      File.open '.rdoc_options', 'w' do |io|
+        io.write "markup: Markdown"
+      end
+
+      options = @rdoc.load_options
+
+      assert_equal 'Markdown', options.markup
+    end
+  end
+
   def load_options_no_file
     temp_dir do
       options = @rdoc.load_options
