@@ -46,7 +46,7 @@ describe :stringio_each_byte_not_readable, shared: true do
     -> { io.send(@method) { |b| b } }.should raise_error(IOError)
   end
 
-  ruby_version_is '3.0.1' do
+  ruby_bug '#17675', ''...'3.0.1' do
     it "raises IOError when stream is closed mid-read" do
       io = StringIO.new("xyz")
       -> do
