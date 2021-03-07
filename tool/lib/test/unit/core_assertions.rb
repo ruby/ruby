@@ -260,6 +260,7 @@ module Test
       ABORT_SIGNALS = Signal.list.values_at(*%w"ILL ABRT BUS SEGV TERM")
 
       def separated_runner(out = nil)
+        include(*Test::Unit::TestCase.ancestors.select {|c| !c.is_a?(Class) })
         out = out ? IO.new(out, 'w') : STDOUT
         at_exit {
           out.puts [Marshal.dump($!)].pack('m'), "assertions=\#{self._assertions}"
