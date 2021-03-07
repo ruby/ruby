@@ -3,7 +3,7 @@
 
 /*
  * - RUBY_ATOMIC_CAS, RUBY_ATOMIC_EXCHANGE, RUBY_ATOMIC_FETCH_*:
- *   return the old * value.
+ *   return the old value.
  * - RUBY_ATOMIC_ADD, RUBY_ATOMIC_SUB, RUBY_ATOMIC_INC, RUBY_ATOMIC_DEC, RUBY_ATOMIC_OR, RUBY_ATOMIC_SET:
  *   may be void.
  */
