@@ -770,4 +770,29 @@ class TestSocket < Test::Unit::TestCase
     s2.close
   end
 
+  def test_socket_error
+    assert_nothing_raised { SocketError.new() }
+
+    message = "message"
+    err1 = SocketError.new(message)
+    assert_equal message, err1.message
+    assert_equal nil, err1.error_code
+
+    err2 = SocketError.new(message, Errno::EAGAIN)
+    assert_equal message, err2.message
+    assert_equal Errno::EAGAIN, err2.error_code
+    assert_not_equal err1, err2
+
+    err3 = SocketError.new(message, Errno::EAGAIN)
+    assert_equal err2, err3
+
+    err4 = SocketError.new(message, Errno::EACCES)
+    assert_not_equal err3, err4
+
+    begin
+      Socket.getaddrinfo("www.kame.net", 80, "AF_UNIX")
+    rescue SocketError => ex
+      assert_equal Socket::EAI_FAMILY, ex.error_code
+    end
+  end
 end if defined?(Socket)

@@ -38,6 +38,8 @@ static VALUE sym_wait_readable;
 void
 rsock_raise_socket_error(const char *reason, int error)
 {
+    VALUE socket_error, msg;
+    VALUE argv[2];
 #ifdef EAI_SYSTEM
     int e;
     if (error == EAI_SYSTEM && (e = errno) != 0)
@@ -45,13 +47,16 @@ rsock_raise_socket_error(const char *reason, int error)
 #endif
 #ifdef _WIN32
     rb_encoding *enc = rb_default_internal_encoding();
-    VALUE msg = rb_sprintf("%s: ", reason);
+    msg = rb_sprintf("%s: ", reason);
     if (!enc) enc = rb_default_internal_encoding();
     rb_str_concat(msg, rb_w32_conv_from_wchar(gai_strerrorW(error), enc));
-    rb_exc_raise(rb_exc_new_str(rb_eSocket, msg));
 #else
-    rb_raise(rb_eSocket, "%s: %s", reason, gai_strerror(error));
+    msg = rb_sprintf("%s: %s", reason, gai_strerror(error));
 #endif
+    argv[0] = msg;
+    argv[1] = INT2NUM(error);
+    socket_error = rb_class_new_instance(2, argv, rb_eSocket);
+    rb_exc_raise(socket_error);
 }
 
 #if defined __APPLE__
@@ -772,6 +777,64 @@ rsock_getfamily(rb_io_t *fptr)
     return ss.addr.sa_family;
 }
 
+static ID id_error_code;
+
+/*
+ * call-seq:
+ *   SocketError.new(msg, error_code = nil)  -> SocketError
+ *
+ * The error code is subsequently available via the #error_code method.
+ */
+
+static VALUE
+sockerr_initialize(int argc, VALUE *argv, VALUE self)
+{
+    VALUE mesg, error;
+    rb_scan_args(argc, argv, "02", &mesg, &error);
+    rb_call_super(1, &mesg);
+    if (!NIL_P(error)) { rb_ivar_set(self, id_error_code, error); }
+    return self;
+}
+
+/*
+ * call-seq:
+ *   socket_error.error_code -> integer
+ *
+ * Return this SocketError's error code.
+ */
+
+static VALUE
+sockerr_error_code(VALUE self) {
+    return rb_attr_get(self, id_error_code);
+}
+
+/*
+ * call-seq:
+ *   socket_error === other  -> true or false
+ *
+ * Return +true+ if no errno is set, or
+ * if the error numbers +self+ and _other_ are the same.
+ */
+
+static VALUE
+sockerr_equal(VALUE self, VALUE exc)
+{
+    if (!rb_obj_is_kind_of(exc, rb_eSocket)) {
+	if (!rb_respond_to(exc, id_error_code)) return Qfalse;
+    }
+
+    if (RTEST(rb_call_super(1, &exc))) {
+        VALUE self_num, exc_num;
+        self_num = rb_attr_get(self, id_error_code);
+        if (NIL_P(self_num)) { self_num = rb_funcallv(self, id_error_code, 0, 0); }
+        exc_num = rb_attr_get(exc, id_error_code);
+        if (NIL_P(exc_num)) { exc_num = rb_funcallv(exc, id_error_code, 0, 0); }
+        if (self_num == exc_num) { return Qtrue; }
+    }
+
+    return Qfalse;
+}
+
 void
 rsock_init_socket_init(void)
 {
@@ -779,6 +842,9 @@ rsock_init_socket_init(void)
      * SocketError is the error class for socket.
      */
     rb_eSocket = rb_define_class("SocketError", rb_eStandardError);
+    rb_define_method(rb_eSocket, "initialize", sockerr_initialize, -1);
+    rb_define_method(rb_eSocket, "error_code", sockerr_error_code, 0);
+    rb_define_method(rb_eSocket, "==", sockerr_equal, 1);
     rsock_init_ipsocket();
     rsock_init_tcpsocket();
     rsock_init_tcpserver();
@@ -791,6 +857,8 @@ rsock_init_socket_init(void)
     rsock_init_addrinfo();
     rsock_init_sockifaddr();
     rsock_init_socket_constants();
+
+    id_error_code = rb_intern_const("error_code");
 
 #undef rb_intern
     sym_wait_readable = ID2SYM(rb_intern("wait_readable"));
