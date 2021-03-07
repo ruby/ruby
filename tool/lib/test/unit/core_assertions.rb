@@ -278,7 +278,7 @@ module Test
           capture_stdout = false
           opt[:out] = MiniTest::Unit.output if defined?(MiniTest::Unit)
           res_p, res_c = IO.pipe
-          opt[res_c.fileno] = res_c.fileno
+          opt[:ios] = [res_c]
         end
         src = <<eom
 # -*- coding: #{line += __LINE__; src.encoding}; -*-
