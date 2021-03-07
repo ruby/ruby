@@ -133,6 +133,17 @@ class TestRDocRDoc < RDoc::TestCase
     end
   end
 
+  def test_load_options_empty_file
+    temp_dir do
+      File.open '.rdoc_options', 'w' do |io|
+      end
+
+      options = @rdoc.load_options
+
+      assert_equal 'rdoc', options.markup
+    end
+  end
+
   def test_load_options_partial_override
     temp_dir do
       File.open '.rdoc_options', 'w' do |io|

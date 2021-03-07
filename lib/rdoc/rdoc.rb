@@ -166,6 +166,8 @@ class RDoc::RDoc
     rescue Psych::SyntaxError
     end
 
+    return RDoc::Options.new if options == false # Allow empty file.
+
     raise RDoc::Error, "#{options_file} is not a valid rdoc options file" unless
       RDoc::Options === options or Hash === options
 
