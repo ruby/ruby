@@ -290,7 +290,7 @@ RACTOR_PTR(VALUE self)
     return r;
 }
 
-static uint32_t ractor_last_id;
+static rb_atomic_t ractor_last_id;
 
 #if RACTOR_CHECK_MODE > 0
 MJIT_FUNC_EXPORTED uint32_t
@@ -1399,11 +1399,7 @@ ractor_next_id(void)
 {
     uint32_t id;
 
-    RB_VM_LOCK();
-    {
-        id = ++ractor_last_id;
-    }
-    RB_VM_UNLOCK();
+    id = (uint32_t)(RUBY_ATOMIC_FETCH_ADD(ractor_last_id, 1) + 1);
 
     return id;
 }
