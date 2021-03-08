@@ -173,7 +173,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           it "installs from the same source without any warning" do
             bundle :install
             expect(err).not_to include("Warning")
-            expect(the_bundle).to include_gems("depends_on_rack 1.0.1", "rack 1.0.0")
+            expect(the_bundle).to include_gems("depends_on_rack 1.0.1", "rack 1.0.0", :source => "remote3")
           end
         end
 
@@ -187,25 +187,19 @@ RSpec.describe "bundle install with gems on multiple sources" do
             end
           end
 
-          context "when disable_multisource is set" do
-            before do
-              bundle "config set disable_multisource true"
-            end
+          it "installs from the same source without any warning" do
+            bundle :install
 
-            it "installs from the same source without any warning" do
-              bundle :install
+            expect(err).not_to include("Warning: the gem 'rack' was found in multiple sources.")
+            expect(the_bundle).to include_gems("depends_on_rack 1.0.1", "rack 1.0.0", :source => "remote3")
 
-              expect(err).not_to include("Warning: the gem 'rack' was found in multiple sources.")
-              expect(the_bundle).to include_gems("depends_on_rack 1.0.1", "rack 1.0.0")
+            # In https://github.com/bundler/bundler/issues/3585 this failed
+            # when there is already a lock file, and the gems are missing, so try again
+            system_gems []
+            bundle :install
 
-              # In https://github.com/bundler/bundler/issues/3585 this failed
-              # when there is already a lock file, and the gems are missing, so try again
-              system_gems []
-              bundle :install
-
-              expect(err).not_to include("Warning: the gem 'rack' was found in multiple sources.")
-              expect(the_bundle).to include_gems("depends_on_rack 1.0.1", "rack 1.0.0")
-            end
+            expect(err).not_to include("Warning: the gem 'rack' was found in multiple sources.")
+            expect(the_bundle).to include_gems("depends_on_rack 1.0.1", "rack 1.0.0", :source => "remote3")
           end
         end
       end
@@ -298,6 +292,33 @@ RSpec.describe "bundle install with gems on multiple sources" do
             expect(exitstatus).to eq(4)
           end
         end
+      end
+    end
+
+    context "when a top-level gem can only be found in an scoped source" do
+      before do
+        build_repo2
+
+        build_repo gem_repo3 do
+          build_gem "private_gem_1", "1.0.0"
+          build_gem "private_gem_2", "1.0.0"
+        end
+
+        gemfile <<-G
+          source "#{file_uri_for(gem_repo2)}"
+
+          gem "private_gem_1"
+
+          source "#{file_uri_for(gem_repo3)}" do
+            gem "private_gem_2"
+          end
+        G
+      end
+
+      it "fails" do
+        bundle :install, :raise_on_error => false
+        expect(err).to include("Could not find gem 'private_gem_1' in rubygems repository #{file_uri_for(gem_repo2)}/ or installed locally.")
+        expect(err).to include("The source does not contain any versions of 'private_gem_1'")
       end
     end
 
@@ -494,6 +515,83 @@ RSpec.describe "bundle install with gems on multiple sources" do
           bundle "update --all"
           expect(err).to be_empty
         end
+      end
+    end
+
+    context "when a top-level gem has an indirect dependency present in the default source, but with a different version from the one resolved", :bundler => "< 3" do
+      before do
+        build_lib "activesupport", "7.0.0.alpha", :path => lib_path("rails/activesupport")
+        build_lib "rails", "7.0.0.alpha", :path => lib_path("rails") do |s|
+          s.add_dependency "activesupport", "= 7.0.0.alpha"
+        end
+
+        build_repo gem_repo2 do
+          build_gem "activesupport", "6.1.2"
+
+          build_gem "webpacker", "5.2.1" do |s|
+            s.add_dependency "activesupport", ">= 5.2"
+          end
+        end
+
+        gemfile <<-G
+          source "#{file_uri_for(gem_repo2)}"
+
+          gemspec :path => "#{lib_path("rails")}"
+
+          gem "webpacker", "~> 5.0"
+        G
+      end
+
+      it "installs all gems without warning" do
+        bundle :install
+        expect(err).not_to include("Warning")
+        expect(the_bundle).to include_gems("activesupport 7.0.0.alpha", "rails 7.0.0.alpha")
+        expect(the_bundle).to include_gems("activesupport 7.0.0.alpha", :source => "path@#{lib_path("rails/activesupport")}")
+        expect(the_bundle).to include_gems("rails 7.0.0.alpha", :source => "path@#{lib_path("rails")}")
+      end
+    end
+
+    context "when a pinned gem has an indirect dependency with more than one level of indirection in the default source ", :bundler => "< 3" do
+      before do
+        build_repo gem_repo3 do
+          build_gem "handsoap", "0.2.5.5" do |s|
+            s.add_dependency "nokogiri", ">= 1.2.3"
+          end
+        end
+
+        update_repo gem_repo2 do
+          build_gem "nokogiri", "1.11.1" do |s|
+            s.add_dependency "racca", "~> 1.4"
+          end
+
+          build_gem "racca", "1.5.2"
+        end
+
+        gemfile <<-G
+          source "#{file_uri_for(gem_repo2)}"
+
+          source "#{file_uri_for(gem_repo3)}" do
+            gem "handsoap"
+          end
+
+          gem "nokogiri"
+        G
+      end
+
+      it "installs from the proper sources without any warnings or errors" do
+        bundle "install --verbose"
+        expect(err).not_to include("Warning")
+        expect(the_bundle).to include_gems("handsoap 0.2.5.5", "nokogiri 1.11.1", "racca 1.5.2")
+        expect(the_bundle).to include_gems("handsoap 0.2.5.5", :source => "remote3")
+        expect(the_bundle).to include_gems("nokogiri 1.11.1", "racca 1.5.2", :source => "remote2")
+
+        # Even if the gems are already installed
+        FileUtils.rm bundled_app_lock
+        bundle "install --verbose"
+        expect(err).not_to include("Warning")
+        expect(the_bundle).to include_gems("handsoap 0.2.5.5", "nokogiri 1.11.1", "racca 1.5.2")
+        expect(the_bundle).to include_gems("handsoap 0.2.5.5", :source => "remote3")
+        expect(the_bundle).to include_gems("nokogiri 1.11.1", "racca 1.5.2", :source => "remote2")
       end
     end
 

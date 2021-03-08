@@ -30,7 +30,7 @@ module Spec
       args[1] ||= Bundler::GemVersionPromoter.new # gem_version_promoter
       args[2] ||= [] # additional_base_requirements
       args[3] ||= @platforms # platforms
-      Bundler::Resolver.resolve(deps, @index, source_requirements, *args)
+      Bundler::Resolver.resolve(deps, source_requirements, *args)
     end
 
     def should_resolve_as(specs)
