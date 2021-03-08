@@ -191,12 +191,9 @@ module Net
       alias default_ssl_port default_tls_port
     end
 
-    def SMTP.default_ssl_context(verify_peer=true)
+    def SMTP.default_ssl_context(ssl_context_params = nil)
       context = OpenSSL::SSL::SSLContext.new
-      context.verify_mode = verify_peer ? OpenSSL::SSL::VERIFY_PEER : OpenSSL::SSL::VERIFY_NONE
-      store = OpenSSL::X509::Store.new
-      store.set_default_paths
-      context.cert_store = store
+      context.set_params(ssl_context_params ? ssl_context_params : {})
       context
     end
 
@@ -409,14 +406,14 @@ module Net
 
     #
     # :call-seq:
-    #  start(address, port = nil, helo: 'localhost', user: nil, secret: nil, authtype: nil, tls_verify: true, tls_hostname: nil) { |smtp| ... }
+    #  start(address, port = nil, helo: 'localhost', user: nil, secret: nil, authtype: nil, tls_verify: true, tls_hostname: nil, ssl_context_params: nil) { |smtp| ... }
     #  start(address, port = nil, helo = 'localhost', user = nil, secret = nil, authtype = nil) { |smtp| ... }
     #
     # Creates a new Net::SMTP object and connects to the server.
     #
     # This method is equivalent to:
     #
-    #   Net::SMTP.new(address, port).start(helo: helo_domain, user: account, secret: password, authtype: authtype, tls_verify: flag, tls_hostname: hostname)
+    #   Net::SMTP.new(address, port).start(helo: helo_domain, user: account, secret: password, authtype: authtype, tls_verify: flag, tls_hostname: hostname, ssl_context_params: nil)
     #
     # === Example
     #
@@ -450,6 +447,11 @@ module Net
     # If the hostname in the server certificate is different from +address+,
     # it can be specified with +tls_hostname+.
     #
+    # Additional SSLContext params can be added to +ssl_context_params+ hash argument and are passed to
+    # +OpenSSL::SSL::SSLContext#set_params+
+    #
+    # +tls_verify: true+ is equivalent to +ssl_context_params: { verify_mode: OpenSSL::SSL::VERIFY_PEER }+.
+    #
     # === Errors
     #
     # This method may raise:
@@ -465,14 +467,14 @@ module Net
     #
     def SMTP.start(address, port = nil, *args, helo: nil,
                    user: nil, secret: nil, password: nil, authtype: nil,
-                   tls_verify: true, tls_hostname: nil,
+                   tls_verify: true, tls_hostname: nil, ssl_context_params: nil,
                    &block)
       raise ArgumentError, "wrong number of arguments (given #{args.size + 2}, expected 1..6)" if args.size > 4
       helo ||= args[0] || 'localhost'
       user ||= args[1]
       secret ||= password || args[2]
       authtype ||= args[3]
-      new(address, port).start(helo: helo, user: user, secret: secret, authtype: authtype, tls_verify: tls_verify, tls_hostname: tls_hostname, &block)
+      new(address, port).start(helo: helo, user: user, secret: secret, authtype: authtype, tls_verify: tls_verify, tls_hostname: tls_hostname, ssl_context_params: ssl_context_params, &block)
     end
 
     # +true+ if the SMTP session has been started.
@@ -482,7 +484,7 @@ module Net
 
     #
     # :call-seq:
-    #  start(helo: 'localhost', user: nil, secret: nil, authtype: nil, tls_verify: true, tls_hostname: nil) { |smtp| ... }
+    #  start(helo: 'localhost', user: nil, secret: nil, authtype: nil, tls_verify: true, tls_hostname: nil, ssl_context_params: nil) { |smtp| ... }
     #  start(helo = 'localhost', user = nil, secret = nil, authtype = nil) { |smtp| ... }
     #
     # Opens a TCP connection and starts the SMTP session.
@@ -500,6 +502,11 @@ module Net
     # If +tls_verify+ is true, verify the server's certificate. The default is true.
     # If the hostname in the server certificate is different from +address+,
     # it can be specified with +tls_hostname+.
+    #
+    # Additional SSLContext params can be added to +ssl_context_params+ hash argument and are passed to
+    # +OpenSSL::SSL::SSLContext#set_params+
+    #
+    # +tls_verify: true+ is equivalent to +ssl_context_params: { verify_mode: OpenSSL::SSL::VERIFY_PEER }+.
     #
     # === Block Usage
     #
@@ -539,17 +546,23 @@ module Net
     # * IOError
     #
     def start(*args, helo: nil,
-              user: nil, secret: nil, password: nil, authtype: nil, tls_verify: true, tls_hostname: nil)
+              user: nil, secret: nil, password: nil, authtype: nil, tls_verify: true, tls_hostname: nil, ssl_context_params: nil)
       raise ArgumentError, "wrong number of arguments (given #{args.size}, expected 0..4)" if args.size > 4
       helo ||= args[0] || 'localhost'
       user ||= args[1]
       secret ||= password || args[2]
       authtype ||= args[3]
+      ssl_context_params = ssl_context_params ? ssl_context_params : {}
+      if ssl_context_params.has_key?(:verify_mode)
+        tls_verify = ssl_context_params[:verify_mode] != OpenSSL::SSL::VERIFY_NONE
+      else
+        ssl_context_params[:verify_mode] = tls_verify ? OpenSSL::SSL::VERIFY_PEER : OpenSSL::SSL::VERIFY_NONE
+      end
       if @tls && @ssl_context_tls.nil?
-        @ssl_context_tls = SMTP.default_ssl_context(tls_verify)
+        @ssl_context_tls = SMTP.default_ssl_context(ssl_context_params)
       end
       if @starttls && @ssl_context_starttls.nil?
-        @ssl_context_starttls = SMTP.default_ssl_context(tls_verify)
+        @ssl_context_starttls = SMTP.default_ssl_context(ssl_context_params)
       end
       @tls_hostname = tls_hostname
       if block_given?
