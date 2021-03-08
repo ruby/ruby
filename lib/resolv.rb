@@ -1520,13 +1520,15 @@ class Resolv
           id, flag, qdcount, ancount, nscount, arcount =
             msg.get_unpack('nnnnnn')
           o.id = id
+          o.tc = (flag >> 9) & 1
+          o.rcode = flag & 15
+          return o unless o.tc.zero?
+
           o.qr = (flag >> 15) & 1
           o.opcode = (flag >> 11) & 15
           o.aa = (flag >> 10) & 1
-          o.tc = (flag >> 9) & 1
           o.rd = (flag >> 8) & 1
           o.ra = (flag >> 7) & 1
-          o.rcode = flag & 15
           (1..qdcount).each {
             name, typeclass = msg.get_question
             o.add_question(name, typeclass)
