@@ -668,29 +668,40 @@ RSpec.describe "bundle exec" do
 
     subject { bundle "exec #{path} arg1 arg2", :raise_on_error => false }
 
-    shared_examples_for "it runs" do
-      it "like a normally executed executable" do
-        skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
+    it "runs" do
+      skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
 
-        subject
-        expect(exitstatus).to eq(exit_code)
-        expect(err).to eq(expected_err)
-        expect(out).to eq(expected)
-      end
+      subject
+      expect(exitstatus).to eq(exit_code)
+      expect(err).to eq(expected_err)
+      expect(out).to eq(expected)
     end
-
-    it_behaves_like "it runs"
 
     context "the executable exits explicitly" do
       let(:executable) { super() << "\nexit #{exit_code}\nputs 'POST_EXIT'\n" }
 
       context "with exit 0" do
-        it_behaves_like "it runs"
+        it "runs" do
+          skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
+
+          subject
+          expect(exitstatus).to eq(exit_code)
+          expect(err).to eq(expected_err)
+          expect(out).to eq(expected)
+        end
       end
 
       context "with exit 99" do
         let(:exit_code) { 99 }
-        it_behaves_like "it runs"
+
+        it "runs" do
+          skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
+
+          subject
+          expect(exitstatus).to eq(exit_code)
+          expect(err).to eq(expected_err)
+          expect(out).to eq(expected)
+        end
       end
     end
 
@@ -707,7 +718,15 @@ RSpec.describe "bundle exec" do
         # this is specified by C99
         128 + 15
       end
-      it_behaves_like "it runs"
+
+      it "runs" do
+        skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
+
+        subject
+        expect(exitstatus).to eq(exit_code)
+        expect(err).to eq(expected_err)
+        expect(out).to eq(expected)
+      end
     end
 
     context "the executable is empty" do
@@ -716,7 +735,15 @@ RSpec.describe "bundle exec" do
       let(:exit_code) { 0 }
       let(:expected_err) { "#{path} is empty" }
       let(:expected) { "" }
-      it_behaves_like "it runs"
+
+      it "runs" do
+        skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
+
+        subject
+        expect(exitstatus).to eq(exit_code)
+        expect(err).to eq(expected_err)
+        expect(out).to eq(expected)
+      end
     end
 
     context "the executable raises" do
@@ -743,12 +770,27 @@ RSpec.describe "bundle exec" do
       let(:expected_err) { "bundler: failed to load command: #{path} (#{path})\n#{system_gem_path("bin/bundle")}: Err (Err)" }
       let(:expected) { super() }
 
-      it_behaves_like "it runs"
+      it "runs" do
+        skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
+
+        subject
+        expect(exitstatus).to eq(exit_code)
+        expect(err).to eq(expected_err)
+        expect(out).to eq(expected)
+      end
     end
 
     context "when the file uses the current ruby shebang" do
       let(:shebang) { "#!#{Gem.ruby}" }
-      it_behaves_like "it runs"
+
+      it "runs" do
+        skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
+
+        subject
+        expect(exitstatus).to eq(exit_code)
+        expect(err).to eq(expected_err)
+        expect(out).to eq(expected)
+      end
     end
 
     context "when Bundler.setup fails", :bundler => "< 3" do
@@ -762,11 +804,19 @@ RSpec.describe "bundle exec" do
       let(:exit_code) { Bundler::GemNotFound.new.status_code }
       let(:expected) { "" }
       let(:expected_err) { <<-EOS.strip }
-\e[31mCould not find gem 'rack (= 2)' in any of the gem sources listed in your Gemfile.\e[0m
+\e[31mCould not find gem 'rack (= 2)' in locally installed gems.
+The source contains the following versions of 'rack': 0.9.1, 1.0.0\e[0m
 \e[33mRun `bundle install` to install missing gems.\e[0m
       EOS
 
-      it_behaves_like "it runs"
+      it "runs" do
+        skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
+
+        subject
+        expect(exitstatus).to eq(exit_code)
+        expect(err).to eq(expected_err)
+        expect(out).to eq(expected)
+      end
     end
 
     context "when Bundler.setup fails", :bundler => "3" do
@@ -785,14 +835,28 @@ The source contains the following versions of 'rack': 1.0.0\e[0m
 \e[33mRun `bundle install` to install missing gems.\e[0m
       EOS
 
-      it_behaves_like "it runs"
+      it "runs" do
+        skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
+
+        subject
+        expect(exitstatus).to eq(exit_code)
+        expect(err).to eq(expected_err)
+        expect(out).to eq(expected)
+      end
     end
 
     context "when the executable exits non-zero via at_exit" do
       let(:executable) { super() + "\n\nat_exit { $! ? raise($!) : exit(1) }" }
       let(:exit_code) { 1 }
 
-      it_behaves_like "it runs"
+      it "runs" do
+        skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
+
+        subject
+        expect(exitstatus).to eq(exit_code)
+        expect(err).to eq(expected_err)
+        expect(out).to eq(expected)
+      end
     end
 
     context "when disable_exec_load is set" do
@@ -803,7 +867,14 @@ The source contains the following versions of 'rack': 1.0.0\e[0m
         bundle "config set disable_exec_load true"
       end
 
-      it_behaves_like "it runs"
+      it "runs" do
+        skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
+
+        subject
+        expect(exitstatus).to eq(exit_code)
+        expect(err).to eq(expected_err)
+        expect(out).to eq(expected)
+      end
     end
 
     context "regarding $0 and __FILE__" do
@@ -819,12 +890,26 @@ $0: #{path.to_s.inspect}
 __FILE__: #{path.to_s.inspect}
       EOS
 
-      it_behaves_like "it runs"
+      it "runs" do
+        skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
+
+        subject
+        expect(exitstatus).to eq(exit_code)
+        expect(err).to eq(expected_err)
+        expect(out).to eq(expected)
+      end
 
       context "when the path is relative" do
         let(:path) { super().relative_path_from(bundled_app) }
 
-        it_behaves_like "it runs"
+        it "runs" do
+          skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
+
+          subject
+          expect(exitstatus).to eq(exit_code)
+          expect(err).to eq(expected_err)
+          expect(out).to eq(expected)
+        end
       end
 
       context "when the path is relative with a leading ./" do

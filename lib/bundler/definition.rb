@@ -264,7 +264,7 @@ module Bundler
           # Run a resolve against the locally available gems
           Bundler.ui.debug("Found changes from the lockfile, re-resolving dependencies because #{change_reason}")
           expanded_dependencies = expand_dependencies(dependencies + metadata_dependencies, @remote)
-          Resolver.resolve(expanded_dependencies, index, source_requirements, last_resolve, gem_version_promoter, additional_base_requirements_for_resolve, platforms)
+          Resolver.resolve(expanded_dependencies, source_requirements, last_resolve, gem_version_promoter, additional_base_requirements_for_resolve, platforms)
         end
       end
     end
@@ -656,19 +656,20 @@ module Bundler
     def converge_rubygems_sources
       return false if Bundler.feature_flag.disable_multisource?
 
-      changes = false
-
       # Get the RubyGems sources from the Gemfile.lock
       locked_gem_sources = @locked_sources.select {|s| s.is_a?(Source::Rubygems) }
+      return false if locked_gem_sources.empty?
+
       # Get the RubyGems remotes from the Gemfile
       actual_remotes = sources.rubygems_remotes
+      return false if actual_remotes.empty?
+
+      changes = false
 
       # If there is a RubyGems source in both
-      if !locked_gem_sources.empty? && !actual_remotes.empty?
-        locked_gem_sources.each do |locked_gem|
-          # Merge the remotes from the Gemfile into the Gemfile.lock
-          changes |= locked_gem.replace_remotes(actual_remotes, Bundler.settings[:allow_deployment_source_credential_changes])
-        end
+      locked_gem_sources.each do |locked_gem|
+        # Merge the remotes from the Gemfile into the Gemfile.lock
+        changes |= locked_gem.replace_remotes(actual_remotes, Bundler.settings[:allow_deployment_source_credential_changes])
       end
 
       changes
@@ -893,30 +894,18 @@ module Bundler
       # Record the specs available in each gem's source, so that those
       # specs will be available later when the resolver knows where to
       # look for that gemspec (or its dependencies)
-      default = sources.default_source
-      source_requirements = { :default => default }
-      default = nil unless Bundler.feature_flag.disable_multisource?
-      dependencies.each do |dep|
-        next unless source = dep.source || default
-        source_requirements[dep.name] = source
-      end
+      source_requirements = { :default => sources.default_source }.merge(dependency_source_requirements)
       metadata_dependencies.each do |dep|
         source_requirements[dep.name] = sources.metadata_source
       end
+      source_requirements[:global] = index unless Bundler.feature_flag.disable_multisource?
       source_requirements[:default_bundler] = source_requirements["bundler"] || source_requirements[:default]
       source_requirements["bundler"] = sources.metadata_source # needs to come last to override
       source_requirements
     end
 
     def pinned_spec_names(skip = nil)
-      pinned_names = []
-      default = Bundler.feature_flag.disable_multisource? && sources.default_source
-      @dependencies.each do |dep|
-        next unless dep_source = dep.source || default
-        next if dep_source == skip
-        pinned_names << dep.name
-      end
-      pinned_names
+      dependency_source_requirements.reject {|_, source| source == skip }.keys
     end
 
     def requested_groups
@@ -972,6 +961,18 @@ module Bundler
       return false unless source.is_a?(Source::Rubygems)
 
       Bundler.settings[:allow_deployment_source_credential_changes] && source.equivalent_remotes?(sources.rubygems_remotes)
+    end
+
+    def dependency_source_requirements
+      @dependency_source_requirements ||= begin
+        source_requirements = {}
+        default = sources.default_source
+        dependencies.each do |dep|
+          dep_source = dep.source || default
+          source_requirements[dep.name] = dep_source
+        end
+        source_requirements
+      end
     end
   end
 end
