@@ -174,6 +174,23 @@ add_lookup_dependency_i(st_data_t *key, st_data_t *value, st_data_t data, int ex
     return ST_CONTINUE;
 }
 
+// Hash table of BOP blocks
+static st_table *blocks_assuming_bops;
+
+bool
+assume_bop_not_redefined(block_t *block, int redefined_flag, enum ruby_basic_operators bop)
+{
+    if (BASIC_OP_UNREDEFINED_P(bop, redefined_flag)) {
+        if (blocks_assuming_bops) {
+            st_insert(blocks_assuming_bops, (st_data_t)block, 0);
+        }
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
 // Remember that the currently compiling block is only valid while cme and cc are valid
 void
 assume_method_lookup_stable(const struct rb_callcache *cc, const rb_callable_method_entry_t *cme, block_t *block)
@@ -341,6 +358,10 @@ yjit_block_assumptions_free(block_t *block)
     if (blocks_assuming_single_ractor_mode) {
         st_delete(blocks_assuming_single_ractor_mode, &as_st_data, NULL);
     }
+
+    if (blocks_assuming_bops) {
+        st_delete(blocks_assuming_bops, &as_st_data, NULL);
+    }
 }
 
 void
@@ -440,18 +461,18 @@ iseq_end_index(VALUE self)
     return INT2NUM(block->end_idx);
 }
 
-/* Called when a basic operation is redefined */
-void
-rb_yjit_bop_redefined(VALUE klass, const rb_method_entry_t *me, enum ruby_basic_operators bop)
-{
-    //fprintf(stderr, "bop redefined\n");
-}
-
 static int
 block_invalidation_iterator(st_data_t key, st_data_t value, st_data_t data) {
     block_t *block = (block_t *)key;
     invalidate_block_version(block); // Thankfully, st_table supports deleteing while iterating
     return ST_CONTINUE;
+}
+
+/* Called when a basic operation is redefined */
+void
+rb_yjit_bop_redefined(VALUE klass, const rb_method_entry_t *me, enum ruby_basic_operators bop)
+{
+    st_foreach(blocks_assuming_bops, block_invalidation_iterator, 0);
 }
 
 /* Called when the constant state changes */
@@ -782,6 +803,7 @@ rb_yjit_init(struct rb_yjit_options *options)
 
     blocks_assuming_stable_global_constant_state = st_init_numtable();
     blocks_assuming_single_ractor_mode = st_init_numtable();
+    blocks_assuming_bops = st_init_numtable();
 
     yjit_init_core();
     yjit_init_codegen();

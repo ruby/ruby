@@ -740,15 +740,9 @@ gen_fixnum_cmp(jitstate_t* jit, ctx_t* ctx, cmov_fn cmov_op)
     // Note: we generate the side-exit before popping operands from the stack
     uint8_t* side_exit = yjit_side_exit(jit, ctx);
 
-    // TODO: make a helper function for guarding on op-not-redefined
-    // Make sure that minus isn't redefined for integers
-    mov(cb, RAX, const_ptr_opnd(ruby_current_vm_ptr));
-    test(
-        cb,
-        member_opnd_idx(RAX, rb_vm_t, redefined_flag, BOP_LT),
-        imm_opnd(INTEGER_REDEFINED_OP_FLAG)
-    );
-    jnz_ptr(cb, side_exit);
+    if (!assume_bop_not_redefined(jit->block, INTEGER_REDEFINED_OP_FLAG, BOP_LT)) {
+        return YJIT_CANT_COMPILE;
+    }
 
     // Get the operands and destination from the stack
     int arg1_type = ctx_get_top_type(ctx);
@@ -821,15 +815,9 @@ gen_opt_aref(jitstate_t* jit, ctx_t* ctx)
     // Create a size-exit to fall back to the interpreter
     uint8_t* side_exit = yjit_side_exit(jit, ctx);
 
-    // TODO: make a helper function for guarding on op-not-redefined
-    // Make sure that aref isn't redefined for arrays.
-    mov(cb, RAX, const_ptr_opnd(ruby_current_vm_ptr));
-    test(
-        cb,
-        member_opnd_idx(RAX, rb_vm_t, redefined_flag, BOP_AREF),
-        imm_opnd(ARRAY_REDEFINED_OP_FLAG)
-    );
-    jnz_ptr(cb, side_exit);
+    if (!assume_bop_not_redefined(jit->block, ARRAY_REDEFINED_OP_FLAG, BOP_AREF)) {
+        return YJIT_CANT_COMPILE;
+    }
 
     // Pop the stack operands
     x86opnd_t idx_opnd = ctx_stack_pop(ctx, 1);
@@ -881,15 +869,9 @@ gen_opt_and(jitstate_t* jit, ctx_t* ctx)
     // Note: we generate the side-exit before popping operands from the stack
     uint8_t* side_exit = yjit_side_exit(jit, ctx);
 
-    // TODO: make a helper function for guarding on op-not-redefined
-    // Make sure that plus isn't redefined for integers
-    mov(cb, RAX, const_ptr_opnd(ruby_current_vm_ptr));
-    test(
-        cb,
-        member_opnd_idx(RAX, rb_vm_t, redefined_flag, BOP_AND),
-        imm_opnd(INTEGER_REDEFINED_OP_FLAG)
-    );
-    jnz_ptr(cb, side_exit);
+    if (!assume_bop_not_redefined(jit->block, INTEGER_REDEFINED_OP_FLAG, BOP_AND)) {
+        return YJIT_CANT_COMPILE;
+    }
 
     // Get the operands and destination from the stack
     int arg1_type = ctx_get_top_type(ctx);
@@ -925,15 +907,9 @@ gen_opt_minus(jitstate_t* jit, ctx_t* ctx)
     // Note: we generate the side-exit before popping operands from the stack
     uint8_t* side_exit = yjit_side_exit(jit, ctx);
 
-    // TODO: make a helper function for guarding on op-not-redefined
-    // Make sure that minus isn't redefined for integers
-    mov(cb, RAX, const_ptr_opnd(ruby_current_vm_ptr));
-    test(
-        cb,
-        member_opnd_idx(RAX, rb_vm_t, redefined_flag, BOP_MINUS),
-        imm_opnd(INTEGER_REDEFINED_OP_FLAG)
-    );
-    jnz_ptr(cb, side_exit);
+    if (!assume_bop_not_redefined(jit->block, INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)) {
+        return YJIT_CANT_COMPILE;
+    }
 
     // Get the operands and destination from the stack
     x86opnd_t arg1 = ctx_stack_pop(ctx, 1);
@@ -965,15 +941,9 @@ gen_opt_plus(jitstate_t* jit, ctx_t* ctx)
     // Note: we generate the side-exit before popping operands from the stack
     uint8_t* side_exit = yjit_side_exit(jit, ctx);
 
-    // TODO: make a helper function for guarding on op-not-redefined
-    // Make sure that plus isn't redefined for integers
-    mov(cb, RAX, const_ptr_opnd(ruby_current_vm_ptr));
-    test(
-        cb,
-        member_opnd_idx(RAX, rb_vm_t, redefined_flag, BOP_PLUS),
-        imm_opnd(INTEGER_REDEFINED_OP_FLAG)
-    );
-    jnz_ptr(cb, side_exit);
+    if (!assume_bop_not_redefined(jit->block, INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)) {
+        return YJIT_CANT_COMPILE;
+    }
 
     // Get the operands and destination from the stack
     int arg1_type = ctx_get_top_type(ctx);
