@@ -72,13 +72,12 @@ class CSV
     end
 
     private
-    def need_static_convert?
-      not (@nil_value.nil? and @empty_value_is_empty_string)
+    def need_convert?
+      values_exist? or not empty?
     end
 
-    def need_convert?
-      @need_static_convert or
-        (not @converters.empty?)
+    def values_exist?
+      not (@nil_value.nil? and @empty_value_is_empty_string)
     end
   end
 end
