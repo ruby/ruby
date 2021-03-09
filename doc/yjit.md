@@ -10,9 +10,22 @@ To simplify development, we currently support only MacOS and Linux on x86-64, bu
 is part of future plans.
 This project is open source and falls under the same license as CRuby.
 
-If you would like to learn more about BBV, there are two published papers, and associated conference talks:
+If you wish to learn more about BBV, there are two published papers, and associated conference talks:
 - [Simple and Effective Type Check Removal through Lazy Basic Block Versioning](https://arxiv.org/pdf/1411.0352.pdf) ([ECOOP 2015 talk](https://www.youtube.com/watch?v=S-aHBuoiYE0))
 - [Interprocedural Type Specialization of JavaScript Programs Without Type Analysis](https://drops.dagstuhl.de/opus/volltexte/2016/6101/pdf/LIPIcs-ECOOP-2016-7.pdf) ([ECOOP 2016 talk](https://www.youtube.com/watch?v=sRNBY7Ss97A))
+
+To cite this repository in your publications, please use this bibtex snippet:
+
+```
+@misc{yjit_ruby_jit,
+  author = {Chevalier-Boisvert, Maxime and Wu, Alan and Patterson, Aaron},
+  title = {Minimalistic Gridworld Environment for OpenAI Gym},
+  year = {2021},
+  publisher = {GitHub},
+  journal = {GitHub repository},
+  howpublished = {\url{https://github.com/Shopify/ruby/tree/yjit}},
+}
+```
 
 ## Installation
 
