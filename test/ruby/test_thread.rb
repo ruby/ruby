@@ -1146,7 +1146,9 @@ q.pop
     env = {}
     env['RUBY_THREAD_VM_STACK_SIZE'] = vm_stack_size.to_s if vm_stack_size
     env['RUBY_THREAD_MACHINE_STACK_SIZE'] = machine_stack_size.to_s if machine_stack_size
-    out, = EnvUtil.invoke_ruby([env, '-e', script], '', true, true)
+    out, err, status = EnvUtil.invoke_ruby([env, '-e', script], '', true, true)
+    assert_not_predicate(status, :signaled?, err)
+
     use_length ? out.length : out
   end
 
