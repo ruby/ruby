@@ -2419,7 +2419,7 @@ AS_IF([test "${universal_binary-no}" = yes ], [
 AC_ARG_WITH(coroutine,
     AS_HELP_STRING([--with-coroutine=IMPLEMENTATION], [specify the coroutine implementation to use]),
     [rb_cv_coroutine=$withval])
-AS_CASE([$rb_cv_coroutine], [yes|''], [
+AS_CASE([$rb_cv_coroutine], [yes|ucontext|copy|''], [
     AC_MSG_CHECKING(native coroutine implementation for ${target_cpu}-${target_os})
     rb_cv_coroutine=
     AS_CASE(["$target_cpu-$target_os"],
