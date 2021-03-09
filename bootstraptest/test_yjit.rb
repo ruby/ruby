@@ -1,3 +1,38 @@
+# BOP redefined methods work when JIT compiled
+assert_equal 'false', %q{
+  def less_than x
+    x < 10
+  end
+
+  class Integer
+    def < x
+      false
+    end
+  end
+
+  less_than 2
+  less_than 2
+  less_than 2
+}
+
+# BOP redefinition works on Integer#<
+assert_equal 'false', %q{
+  def less_than x
+    x < 10
+  end
+
+  less_than 2
+  less_than 2
+
+  class Integer
+    def < x
+      false
+    end
+  end
+
+  less_than 2
+}
+
 # Putobject, less-than operator, fixnums
 assert_equal '2', %q{
     def check_index(index)
