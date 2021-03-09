@@ -2418,78 +2418,78 @@ AS_IF([test "${universal_binary-no}" = yes ], [
 
 AC_ARG_WITH(coroutine,
     AS_HELP_STRING([--with-coroutine=IMPLEMENTATION], [specify the coroutine implementation to use]),
-    [rb_cv_coroutine=$withval])
-AS_CASE([$rb_cv_coroutine], [yes|ucontext|copy|''], [
+    [coroutine_type=$withval], [coroutine_type=])
+AS_CASE([$coroutine_type], [yes|''], [
     AC_MSG_CHECKING(native coroutine implementation for ${target_cpu}-${target_os})
-    rb_cv_coroutine=
+    coroutine_type=
     AS_CASE(["$target_cpu-$target_os"],
         [universal-darwin*], [
-            rb_cv_coroutine=universal
+            coroutine_type=universal
         ],
         [x*64-darwin*], [
-            rb_cv_coroutine=amd64
+            coroutine_type=amd64
         ],
         [arm64-darwin*], [
-            rb_cv_coroutine=arm64
+            coroutine_type=arm64
         ],
         [x*64-linux*], [
             AS_CASE(["$ac_cv_sizeof_voidp"],
-                [8], [ rb_cv_coroutine=amd64 ],
-                [4], [ rb_cv_coroutine=x86 ],
+                [8], [ coroutine_type=amd64 ],
+                [4], [ coroutine_type=x86 ],
                 dnl unknown pointer size, bail out as no Context.h soon.
             )
         ],
         [*86-linux*], [
-            rb_cv_coroutine=x86
+            coroutine_type=x86
         ],
         [x64-mingw32], [
-            rb_cv_coroutine=win64
+            coroutine_type=win64
         ],
         [*86-mingw32], [
-            rb_cv_coroutine=win32
+            coroutine_type=win32
         ],
         [arm*-linux*], [
-            rb_cv_coroutine=arm32
+            coroutine_type=arm32
         ],
         [aarch64-linux*], [
-            rb_cv_coroutine=arm64
+            coroutine_type=arm64
         ],
         [powerpc64le-linux*], [
-            rb_cv_coroutine=ppc64le
+            coroutine_type=ppc64le
         ],
         [x86_64-openbsd*], [
-            rb_cv_coroutine=amd64
+            coroutine_type=amd64
         ],
         [i386-openbsd*], [
-            rb_cv_coroutine=x86
+            coroutine_type=x86
         ],
         [*-openbsd*], [
-            rb_cv_coroutine=copy
+            coroutine_type=copy
         ],
         [*-haiku*], [
-            rb_cv_coroutine=copy
+            coroutine_type=copy
         ],
         [*-emscripten*], [
-            rb_cv_coroutine=emscripten
+            coroutine_type=emscripten
         ],
         [
             AC_CHECK_FUNCS([getcontext swapcontext makecontext],
-                [rb_cv_coroutine=ucontext],
-                [rb_cv_coroutine=copy; break]
+                [coroutine_type=ucontext],
+                [coroutine_type=copy; break]
             )
         ]
     )
-    AC_MSG_RESULT(${rb_cv_coroutine})
+    AC_MSG_RESULT(${coroutine_type})
 ])
-COROUTINE_H=coroutine/$rb_cv_coroutine/Context.h
+COROUTINE_H=coroutine/$coroutine_type/Context.h
 AS_IF([test ! -f "$srcdir/$COROUTINE_H"],
-      [AC_MSG_ERROR('$rb_cv_coroutine' is not supported as coroutine)])
-AS_CASE([$rb_cv_coroutine],
+      [AC_MSG_ERROR('$coroutine_type' is not supported as coroutine)])
+AS_CASE([$coroutine_type],
     [copy|ucontext], [
-        COROUTINE_SRC=coroutine/$rb_cv_coroutine/Context.c
+        COROUTINE_SRC=coroutine/$coroutine_type/Context.c
     ],
     [
-        COROUTINE_SRC=coroutine/$rb_cv_coroutine/Context.'$(ASMEXT)'
+        COROUTINE_SRC=coroutine/$coroutine_type/Context.'$(ASMEXT)'
     ]
 )
 AC_DEFINE_UNQUOTED(COROUTINE_H, ["$COROUTINE_H"])
