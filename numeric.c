@@ -656,6 +656,11 @@ num_remainder(VALUE x, VALUE y)
 	  rb_num_positive_int_p(y)) ||
 	 (rb_num_positive_int_p(x) &&
 	  rb_num_negative_int_p(y)))) {
+        if (RB_TYPE_P(y, T_FLOAT)) {
+            if (isinf(RFLOAT_VALUE(y))) {
+                return x;
+            }
+        }
 	return rb_funcall(z, '-', 1, y);
     }
     return z;
@@ -1151,11 +1156,11 @@ flodivmod(double x, double y, double *divp, double *modp)
 	div = x;
     else {
 	div = (x - mod) / y;
-	if (modp && divp) div = round(div);
+        if (modp && divp) div = round(div);
     }
     if (y*mod < 0) {
-	mod += y;
-	div -= 1.0;
+        mod += y;
+        div -= 1.0;
     }
     if (modp) *modp = mod;
     if (divp) *divp = div;
