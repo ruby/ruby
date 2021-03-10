@@ -89,6 +89,8 @@ RSpec.configure do |config|
   end
 
   config.before :all do
+    check_test_gems!
+
     build_repo1
 
     reset_paths!

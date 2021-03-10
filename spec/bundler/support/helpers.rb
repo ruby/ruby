@@ -130,7 +130,7 @@ module Spec
 
     def ruby(ruby, options = {})
       ruby_cmd = build_ruby_cmd
-      escaped_ruby = RUBY_PLATFORM == "java" ? ruby.shellescape.dump : ruby.shellescape
+      escaped_ruby = ruby.shellescape
       sys_exec(%(#{ruby_cmd} -w -e #{escaped_ruby}), options)
     end
 

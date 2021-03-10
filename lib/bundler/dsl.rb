@@ -460,19 +460,16 @@ repo_name ||= user_name
         @sources.add_rubygems_remote(source)
       end
 
-      if Bundler.feature_flag.disable_multisource?
+      if Bundler.feature_flag.bundler_3_mode?
         msg = "This Gemfile contains multiple primary sources. " \
           "Each source after the first must include a block to indicate which gems " \
-          "should come from that source. To downgrade this error to a warning, run " \
-          "`bundle config unset disable_multisource`"
+          "should come from that source"
         raise GemfileEvalError, msg
       else
         Bundler::SharedHelpers.major_deprecation 2, "Your Gemfile contains multiple primary sources. " \
           "Using `source` more than once without a block is a security risk, and " \
           "may result in installing unexpected gems. To resolve this warning, use " \
-          "a block to indicate which gems should come from the secondary source. " \
-          "To upgrade this warning to an error, run `bundle config set --local " \
-          "disable_multisource true`."
+          "a block to indicate which gems should come from the secondary source."
       end
     end
 

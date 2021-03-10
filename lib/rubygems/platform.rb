@@ -66,7 +66,7 @@ class Gem::Platform
     when String then
       arch = arch.split '-'
 
-      if arch.length > 2 and arch.last !~ /\d+(\.\d+)?$/ # reassemble x86-linux-{libc}
+      if arch.length > 2 and arch.last !~ /\d/ # reassemble x86-linux-gnu
         extra = arch.pop
         arch.last << "-#{extra}"
       end
@@ -146,8 +146,7 @@ class Gem::Platform
   ##
   # Does +other+ match this platform?  Two platforms match if they have the
   # same CPU, or either has a CPU of 'universal', they have the same OS, and
-  # they have the same version, or either has no version (except for 'linux'
-  # where the version is the libc name, with no version standing for 'gnu')
+  # they have the same version, or either has no version.
   #
   # Additionally, the platform will match if the local CPU is 'arm' and the
   # other CPU starts with "arm" (for generic ARM family support).
@@ -163,10 +162,7 @@ class Gem::Platform
     @os == other.os and
 
     # version
-    (
-      (@os != 'linux' and (@version.nil? or other.version.nil?)) or
-      @version == other.version
-    )
+    (@version.nil? or other.version.nil? or @version == other.version)
   end
 
   ##

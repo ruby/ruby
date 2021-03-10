@@ -46,4 +46,25 @@ RSpec.describe Bundler::CompactIndexClient::Updater do
       end.to raise_error(Bundler::PermissionError)
     end
   end
+
+  context "when receiving non UTF-8 data and default internal encoding set to ASCII" do
+    let(:response) { double(:response, :body => "\x8B".b) }
+
+    it "works just fine" do
+      old_verbose = $VERBOSE
+      previous_internal_encoding = Encoding.default_internal
+
+      begin
+        $VERBOSE = false
+        Encoding.default_internal = "ASCII"
+        expect(response).to receive(:[]).with("ETag") { nil }
+        expect(fetcher).to receive(:call) { response }
+
+        updater.update(local_path, remote_path)
+      ensure
+        Encoding.default_internal = previous_internal_encoding
+        $VERBOSE = old_verbose
+      end
+    end
+  end
 end

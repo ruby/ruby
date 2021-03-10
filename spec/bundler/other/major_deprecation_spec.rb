@@ -383,10 +383,48 @@ RSpec.describe "major deprecations" do
         "Your Gemfile contains multiple primary sources. " \
         "Using `source` more than once without a block is a security risk, and " \
         "may result in installing unexpected gems. To resolve this warning, use " \
-        "a block to indicate which gems should come from the secondary source. " \
-        "To upgrade this warning to an error, run `bundle config set --local " \
-        "disable_multisource true`."
+        "a block to indicate which gems should come from the secondary source."
       )
+    end
+
+    pending "fails with a helpful error", :bundler => "3"
+  end
+
+  context "bundle install with a lockfile with a single rubygems section with multiple remotes" do
+    before do
+      build_repo gem_repo3 do
+        build_gem "rack", "0.9.1"
+      end
+
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        source "#{file_uri_for(gem_repo3)}" do
+          gem 'rack'
+        end
+      G
+
+      lockfile <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo1)}/
+          remote: #{file_uri_for(gem_repo3)}/
+          specs:
+            rack (0.9.1)
+
+        PLATFORMS
+          ruby
+
+        DEPENDENCIES
+          rack!
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+
+    it "shows a deprecation", :bundler => "< 3" do
+      bundle "install"
+
+      expect(deprecations).to include("Your lockfile contains a single rubygems source section with multiple remotes, which is insecure. You should run `bundle update` or generate your lockfile from scratch.")
     end
 
     pending "fails with a helpful error", :bundler => "3"
