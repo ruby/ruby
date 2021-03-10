@@ -96,6 +96,9 @@ class TestVariable < Test::Unit::TestCase
     EORB
 
     assert_equal "class variable @@cvar of TestVariable::Child is overtaken by TestVariable::Parent", error.message
+  ensure
+    TestVariable.send(:remove_const, :Child) rescue nil
+    TestVariable.send(:remove_const, :Parent) rescue nil
   end
 
   def test_cvar_overtaken_by_module
@@ -124,6 +127,9 @@ class TestVariable < Test::Unit::TestCase
     EORB
 
     assert_equal "class variable @@cvar of TestVariable::ParentForModule is overtaken by TestVariable::Mixin", error.message
+  ensure
+    TestVariable.send(:remove_const, :Mixin) rescue nil
+    TestVariable.send(:remove_const, :ParentForModule) rescue nil
   end
 
   class IncludeRefinedModuleClassVariableNoWarning
