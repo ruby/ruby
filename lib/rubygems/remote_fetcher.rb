@@ -51,6 +51,7 @@ class Gem::RemoteFetcher
 
   class UnknownHostError < FetchError
   end
+  deprecate_constant(:UnknownHostError)
 
   @fetcher = nil
 
@@ -262,15 +263,9 @@ class Gem::RemoteFetcher
     end
 
     data
-  rescue Timeout::Error
-    raise UnknownHostError.new('timed out', uri)
-  rescue IOError, SocketError, SystemCallError,
+  rescue Timeout::Error, IOError, SocketError, SystemCallError,
          *(OpenSSL::SSL::SSLError if Gem::HAVE_OPENSSL) => e
-    if e.message =~ /getaddrinfo/
-      raise UnknownHostError.new('no such name', uri)
-    else
-      raise FetchError.new("#{e.class}: #{e}", uri)
-    end
+    raise FetchError.new("#{e.class}: #{e}", uri)
   end
 
   def fetch_s3(uri, mtime = nil, head = false)

@@ -131,18 +131,8 @@ module Bundler
             @sources << @current_source
           end
         when GEM
-          source_remotes = Array(@opts["remote"])
-
-          if source_remotes.size == 1
-            @opts["remotes"] = @opts.delete("remote")
-            @current_source = TYPES[@type].from_lock(@opts)
-          else
-            source_remotes.each do |url|
-              rubygems_aggregate.add_remote(url)
-            end
-            @current_source = rubygems_aggregate
-          end
-
+          @opts["remotes"] = Array(@opts.delete("remote")).reverse
+          @current_source = TYPES[@type].from_lock(@opts)
           @sources << @current_source
         when PLUGIN
           @current_source = Plugin.source_from_lock(@opts)
@@ -244,10 +234,6 @@ module Bundler
 
     def parse_ruby(line)
       @ruby_version = line.strip
-    end
-
-    def rubygems_aggregate
-      @rubygems_aggregate ||= Source::Rubygems.new
     end
   end
 end

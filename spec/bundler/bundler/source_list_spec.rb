@@ -372,26 +372,7 @@ RSpec.describe Bundler::SourceList do
       source_list.add_git_source("uri" => "git://first-git.org/path.git")
     end
 
-    it "combines the rubygems sources into a single instance, removing duplicate remotes from the end", :bundler => "< 3" do
-      expect(source_list.lock_sources).to eq [
-        Bundler::Source::Git.new("uri" => "git://first-git.org/path.git"),
-        Bundler::Source::Git.new("uri" => "git://second-git.org/path.git"),
-        Bundler::Source::Git.new("uri" => "git://third-git.org/path.git"),
-        ASourcePlugin.new("uri" => "https://second-plugin.org/random"),
-        ASourcePlugin.new("uri" => "https://third-bar.org/foo"),
-        Bundler::Source::Path.new("path" => "/first/path/to/gem"),
-        Bundler::Source::Path.new("path" => "/second/path/to/gem"),
-        Bundler::Source::Path.new("path" => "/third/path/to/gem"),
-        Bundler::Source::Rubygems.new("remotes" => [
-          "https://duplicate-rubygems.org",
-          "https://first-rubygems.org",
-          "https://second-rubygems.org",
-          "https://third-rubygems.org",
-        ]),
-      ]
-    end
-
-    it "returns all sources, without combining rubygems sources", :bundler => "3" do
+    it "returns all sources, without combining rubygems sources" do
       expect(source_list.lock_sources).to eq [
         Bundler::Source::Git.new("uri" => "git://first-git.org/path.git"),
         Bundler::Source::Git.new("uri" => "git://second-git.org/path.git"),
