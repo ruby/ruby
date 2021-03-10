@@ -473,9 +473,9 @@ uint8_t* get_branch_target(
 
 void gen_branch(
     const ctx_t* src_ctx,
-    blockid_t target0, 
+    blockid_t target0,
     const ctx_t* ctx0,
-    blockid_t target1, 
+    blockid_t target1,
     const ctx_t* ctx1,
     branchgen_fn gen_fn
 )
