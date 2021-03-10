@@ -1027,7 +1027,7 @@ gen_branchif(jitstate_t* jit, ctx_t* ctx)
     return YJIT_END_BLOCK;
 }
 
-void 
+void
 gen_branchunless_branch(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uint8_t shape)
 {
     switch (shape)
