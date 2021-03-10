@@ -684,6 +684,7 @@ class TestFileExhaustive < Test::Unit::TestCase
         path = "foo\u{30b3 30d4 30fc}"
         File.write(path, "") rescue next
         assert_equal(1, File.utime(nil, nil, path))
+        File.unlink(path)
       end
     end
   end
