@@ -47,8 +47,8 @@ when /linux/
     libm_so = libc_so
   else
     # glibc
-    libc_so = File.join(libdir, "libc.so.6")
-    libm_so = File.join(libdir, "libm.so.6")
+    libc_so = "libc.so.6"
+    libm_so = "libm.so.6"
   end
 when /mingw/, /mswin/
   require "rbconfig"
