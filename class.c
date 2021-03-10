@@ -529,9 +529,6 @@ void
 rb_singleton_class_attached(VALUE klass, VALUE obj)
 {
     if (FL_TEST(klass, FL_SINGLETON)) {
-	if (!RCLASS_IV_TBL(klass)) {
-	    RCLASS_IV_TBL(klass) = st_init_numtable();
-	}
 	rb_class_ivar_set(klass, id_attached, obj);
     }
 }
