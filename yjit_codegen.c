@@ -924,6 +924,7 @@ gen_opt_aref(jitstate_t* jit, ctx_t* ctx)
 
     // Only JIT one arg calls like `ary[6]`
     if (argc != 1) {
+        GEN_COUNTER_INC(cb, oaref_argc_not_one);
         return YJIT_CANT_COMPILE;
     }
 
@@ -933,6 +934,7 @@ gen_opt_aref(jitstate_t* jit, ctx_t* ctx)
     // (including arrays) don't use the inline cache, so if the inline cache
     // has an entry, then this must be used by some other type.
     if (cme) {
+        GEN_COUNTER_INC(cb, oaref_filled_cc);
         return YJIT_CANT_COMPILE;
     }
 
@@ -962,12 +964,12 @@ gen_opt_aref(jitstate_t* jit, ctx_t* ctx)
     mov(cb, REG1, mem_opnd(64, REG0, offsetof(struct RBasic, klass)));
     mov(cb, REG0, const_ptr_opnd((void *)rb_cArray));
     cmp(cb, REG0, REG1);
-    jne_ptr(cb, side_exit);
+    jne_ptr(cb, COUNTED_EXIT(side_exit, oaref_not_array));
 
     // Bail if idx is not a FIXNUM
     mov(cb, REG1, idx_opnd);
     test(cb, REG1, imm_opnd(RUBY_FIXNUM_FLAG));
-    jz_ptr(cb, side_exit);
+    jz_ptr(cb, COUNTED_EXIT(side_exit, oaref_arg_not_fixnum));
 
     // Save YJIT registers
     yjit_save_regs(cb);
