@@ -64,4 +64,12 @@
 # define RBIMPL_ATTR_DEPRECATED(msg) /* void */
 #endif
 
+/** This is when a function is used internally (for backwards compatibility
+ * etc.), but extension libraries must consider it deprecated. */
+#if defined(RUBY_EXPORT)
+# define RBIMPL_ATTR_DEPRECATED_EXT(msg) /* void */
+#else
+# define RBIMPL_ATTR_DEPRECATED_EXT(msg) RBIMPL_ATTR_DEPRECATED(msg)
+#endif
+
 #endif /* RBIMPL_ATTR_DEPRECATED_H */
