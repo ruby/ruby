@@ -674,39 +674,40 @@ class TestSocket < Test::Unit::TestCase
   end
 
   def test_resolv_timeout
-    original = Addrinfo.singleton_method(:getaddrinfo)
-    Addrinfo.define_singleton_method(:getaddrinfo) {|*arg| sleep }
-    sock = nil
-    assert_raise(Errno::ETIMEDOUT) do
-      sock = Socket.tcp("localhost", 9, resolv_timeout: 0.1)
-    end
-  ensure
-    Addrinfo.define_singleton_method(:getaddrinfo, original)
-    sock.close if sock && ! sock.closed?
+    assert_separately(%w[-W1], <<-'EOS')
+      require "socket"
+
+      original = Addrinfo.singleton_method(:getaddrinfo)
+      Addrinfo.define_singleton_method(:getaddrinfo) {|*arg| sleep }
+      sock = nil
+      assert_raise(Errno::ETIMEDOUT) do
+        sock = Socket.tcp("localhost", 9, resolv_timeout: 0.1)
+      end
+    EOS
   end
 
   def test_unhandled_exception_in_getaddrinfo_th
-    original = Addrinfo.singleton_method(:getaddrinfo)
-    Addrinfo.define_singleton_method(:getaddrinfo) {|*arg| raise }
-    sock = nil
-    assert_raise(Errno::ETIMEDOUT) do
-      sock = Socket.tcp("localhost", 9, resolv_timeout: 0.1)
-    end
-  ensure
-    Addrinfo.define_singleton_method(:getaddrinfo, original)
-    sock.close if sock && ! sock.closed?
+    assert_separately(%w[-W1], <<-'EOS')
+      require "socket"
+
+      Addrinfo.define_singleton_method(:getaddrinfo) {|*arg| raise }
+      sock = nil
+      assert_raise(Errno::ETIMEDOUT) do
+        sock = Socket.tcp("localhost", 9, resolv_timeout: 0.1)
+      end
+    EOS
   end
 
   def test_unhandled_socketerror_in_getaddrinfo_th
-    original = Addrinfo.singleton_method(:getaddrinfo)
-    Addrinfo.define_singleton_method(:getaddrinfo) {|*arg| raise SocketError }
-    sock = nil
-    assert_raise(Errno::ETIMEDOUT) do
-      sock = Socket.tcp("localhost", 9, resolv_timeout: 0.1)
-    end
-  ensure
-    Addrinfo.define_singleton_method(:getaddrinfo, original)
-    sock.close if sock && ! sock.closed?
+    assert_separately(%w[-W1], <<-'EOS')
+      require "socket"
+
+      Addrinfo.define_singleton_method(:getaddrinfo) {|*arg| raise SocketError }
+      sock = nil
+      assert_raise(Errno::ETIMEDOUT) do
+        sock = Socket.tcp("localhost", 9, resolv_timeout: 0.1)
+      end
+    EOS
   end
 
   def test_getifaddrs
