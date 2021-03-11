@@ -51,6 +51,11 @@ YJIT_DECLARE_COUNTERS(
     getivar_idx_out_of_range,
     getivar_undef,
 
+    oaref_filled_cc,
+    oaref_argc_not_one,
+    oaref_not_array,
+    oaref_arg_not_fixnum,
+
     // Member with known name for iterating over counters
     last_member
 )
