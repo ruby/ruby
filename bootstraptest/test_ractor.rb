@@ -8,6 +8,24 @@ assert_equal 'Ractor', %q{
   Ractor.new{}.class
 }
 
+# Ractor.allocate is not supported
+assert_equal "[:ok, :ok]", %q{
+  rs = []
+  begin
+    Ractor.allocate
+  rescue => e
+    rs << :ok if e.message == 'allocator undefined for Ractor'
+  end
+
+  begin
+    Ractor.new{}.dup
+  rescue
+    rs << :ok if e.message == 'allocator undefined for Ractor'
+  end
+
+  rs
+}
+
 # A Ractor can have a name
 assert_equal 'test-name', %q{
   r = Ractor.new name: 'test-name' do
