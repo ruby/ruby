@@ -361,3 +361,90 @@ assert_equal 'ok', %q{
   subclasses.each { _1.new.get }
   parent.new.get
 }
+
+# Test polymorphic opt_aref. array -> hash
+assert_equal '[42, :key]', %q{
+  def index(obj, idx)
+    obj[idx]
+  end
+
+  index([], 0) # get over compilation threshold
+
+  [
+    index([42], 0),
+    index({0=>:key}, 0),
+  ]
+}
+
+# Test polymorphic opt_aref. hash -> array -> custom class
+assert_equal '[nil, nil, :custom]', %q{
+  def index(obj, idx)
+    obj[idx]
+  end
+
+  custom = Object.new
+  def custom.[](_idx)
+    :custom
+  end
+
+  index({}, 0) # get over compilation threshold
+
+  [
+    index({}, 0),
+    index([], 0),
+    index(custom, 0)
+  ]
+}
+
+# Test polymorphic opt_aref. array -> custom class
+assert_equal '[42, :custom]', %q{
+  def index(obj, idx)
+    obj[idx]
+  end
+
+  custom = Object.new
+  def custom.[](_idx)
+    :custom
+  end
+
+  index([], 0) # get over compilation threshold
+
+  [
+    index([42], 0),
+    index(custom, 0)
+  ]
+}
+
+# Test custom hash method with opt_aref
+assert_equal '[nil, :ok]', %q{
+  def index(obj, idx)
+    obj[idx]
+  end
+
+  custom = Object.new
+  def custom.hash
+    42
+  end
+
+  h = {custom => :ok}
+
+  [
+    index(h, 0),
+    index(h, custom)
+  ]
+}
+
+# Test default value block for Hash with opt_aref
+assert_equal '[42, :default]', %q{
+  def index(obj, idx)
+    obj[idx]
+  end
+
+  h = Hash.new { :default }
+  h[0] = 42
+
+  [
+    index(h, 0),
+    index(h, 1)
+  ]
+}

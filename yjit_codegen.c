@@ -89,15 +89,16 @@ jit_at_current_insn(jitstate_t* jit)
     return (ec_pc == jit->pc);
 }
 
-// Peek at the topmost value on the Ruby stack
+// Peek at the nth topmost value on the Ruby stack.
+// Returns the topmost value when n == 0.
 static VALUE
-jit_peek_at_stack(jitstate_t* jit, ctx_t* ctx)
+jit_peek_at_stack(jitstate_t* jit, ctx_t* ctx, int n)
 {
     RUBY_ASSERT(jit_at_current_insn(jit));
 
-    VALUE* sp = jit->ec->cfp->sp + ctx->sp_offset;
+    VALUE *sp = jit->ec->cfp->sp + ctx->sp_offset;
 
-    return *(sp - 1);
+    return *(sp - 1 - n);
 }
 
 static VALUE
@@ -621,7 +622,7 @@ enum jcc_kinds {
 // Generate a jump to a stub that recompiles the current YARV instruction on failure.
 // When depth_limitk is exceeded, generate a jump to a side exit.
 static void
-jit_chain_guard(enum jcc_kinds jcc, jitstate_t *jit, ctx_t *ctx, uint8_t depth_limit, uint8_t *side_exit)
+jit_chain_guard(enum jcc_kinds jcc, jitstate_t *jit, const ctx_t *ctx, uint8_t depth_limit, uint8_t *side_exit)
 {
     branchgen_fn target0_gen_fn;
 
@@ -661,7 +662,8 @@ jit_chain_guard(enum jcc_kinds jcc, jitstate_t *jit, ctx_t *ctx, uint8_t depth_l
 bool rb_iv_index_tbl_lookup(struct st_table *iv_index_tbl, ID id, struct rb_iv_index_tbl_entry **ent); // vm_insnhelper.c
 
 enum {
-    GETIVAR_MAX_DEPTH = 10 // up to 5 different classes, and embedded or not for each
+    GETIVAR_MAX_DEPTH = 10,       // up to 5 different classes, and embedded or not for each
+    OPT_AREF_MAX_CHAIN_DEPTH = 2, // hashes and arrays
 };
 
 static codegen_status_t
@@ -917,7 +919,7 @@ gen_opt_ge(jitstate_t* jit, ctx_t* ctx)
 }
 
 static codegen_status_t
-gen_opt_aref(jitstate_t* jit, ctx_t* ctx)
+gen_opt_aref(jitstate_t *jit, ctx_t *ctx)
 {
     struct rb_call_data * cd = (struct rb_call_data *)jit_get_arg(jit, 0);
     int32_t argc = (int32_t)vm_ci_argc(cd->ci);
@@ -928,64 +930,159 @@ gen_opt_aref(jitstate_t* jit, ctx_t* ctx)
         return YJIT_CANT_COMPILE;
     }
 
-    const rb_callable_method_entry_t *cme = vm_cc_cme(cd->cc);
-
-    // Bail if the inline cache has been filled.  Currently, certain types
-    // (including arrays) don't use the inline cache, so if the inline cache
-    // has an entry, then this must be used by some other type.
-    if (cme) {
-        GEN_COUNTER_INC(cb, oaref_filled_cc);
-        return YJIT_CANT_COMPILE;
+    // Defer compilation so we can specialize base on a runtime receiver
+    if (!jit_at_current_insn(jit)) {
+        defer_compilation(jit->block, jit->insn_idx, ctx);
+        return YJIT_END_BLOCK;
     }
+
+    // Remember the context on entry for adding guard chains
+    const ctx_t starting_context = *ctx;
+
+    // Specialize base on compile time values
+    VALUE comptime_idx = jit_peek_at_stack(jit, ctx, 0);
+    VALUE comptime_recv = jit_peek_at_stack(jit, ctx, 1);
 
     // Create a size-exit to fall back to the interpreter
-    uint8_t* side_exit = yjit_side_exit(jit, ctx);
+    uint8_t *side_exit = yjit_side_exit(jit, ctx);
 
-    if (!assume_bop_not_redefined(jit->block, ARRAY_REDEFINED_OP_FLAG, BOP_AREF)) {
-        return YJIT_CANT_COMPILE;
+    if (CLASS_OF(comptime_recv) == rb_cArray && RB_FIXNUM_P(comptime_idx)) {
+        if (!assume_bop_not_redefined(jit->block, ARRAY_REDEFINED_OP_FLAG, BOP_AREF)) {
+            return YJIT_CANT_COMPILE;
+        }
+
+        // Pop the stack operands
+        x86opnd_t idx_opnd = ctx_stack_pop(ctx, 1);
+        x86opnd_t recv_opnd = ctx_stack_pop(ctx, 1);
+        mov(cb, REG0, recv_opnd);
+
+        // if (SPECIAL_CONST_P(recv)) {
+        // Bail if receiver is not a heap object
+        test(cb, REG0, imm_opnd(RUBY_IMMEDIATE_MASK));
+        jnz_ptr(cb, side_exit);
+        cmp(cb, REG0, imm_opnd(Qfalse));
+        je_ptr(cb, side_exit);
+        cmp(cb, REG0, imm_opnd(Qnil));
+        je_ptr(cb, side_exit);
+
+        // Bail if recv has a class other than ::Array.
+        // BOP_AREF check above is only good for ::Array.
+        mov(cb, REG1, mem_opnd(64, REG0, offsetof(struct RBasic, klass)));
+        mov(cb, REG0, const_ptr_opnd((void *)rb_cArray));
+        cmp(cb, REG0, REG1);
+        jit_chain_guard(JCC_JNE, jit, &starting_context, OPT_AREF_MAX_CHAIN_DEPTH, side_exit);
+
+        // Bail if idx is not a FIXNUM
+        mov(cb, REG1, idx_opnd);
+        test(cb, REG1, imm_opnd(RUBY_FIXNUM_FLAG));
+        jz_ptr(cb, COUNTED_EXIT(side_exit, oaref_arg_not_fixnum));
+
+        // Call VALUE rb_ary_entry_internal(VALUE ary, long offset).
+        // It never raises or allocates, so we don't need to write to cfp->pc.
+        {
+            yjit_save_regs(cb);
+
+            mov(cb, RDI, recv_opnd);
+            sar(cb, REG1, imm_opnd(1)); // Convert fixnum to int
+            mov(cb, RSI, REG1);
+            call_ptr(cb, REG0, (void *)rb_ary_entry_internal);
+
+            yjit_load_regs(cb);
+
+            // Push the return value onto the stack
+            x86opnd_t stack_ret = ctx_stack_push(ctx, T_NONE);
+            mov(cb, stack_ret, RAX);
+        }
+
+        // Jump to next instruction. This allows guard chains to share the same successor.
+        {
+            ctx_t reset_depth = *ctx;
+            reset_depth.chain_depth = 0;
+
+            blockid_t jump_block = { jit->iseq, jit_next_insn_idx(jit) };
+
+            // Generate the jump instruction
+            gen_direct_jump(
+                &reset_depth,
+                jump_block
+            );
+        }
+        return YJIT_END_BLOCK;
+    }
+    else if (CLASS_OF(comptime_recv) == rb_cHash) {
+        if (!assume_bop_not_redefined(jit->block, HASH_REDEFINED_OP_FLAG, BOP_AREF)) {
+            return YJIT_CANT_COMPILE;
+        }
+
+        // Pop the stack operands
+        x86opnd_t idx_opnd = ctx_stack_pop(ctx, 1);
+        x86opnd_t recv_opnd = ctx_stack_pop(ctx, 1);
+        mov(cb, REG0, recv_opnd);
+
+        // if (SPECIAL_CONST_P(recv)) {
+        // Bail if receiver is not a heap object
+        test(cb, REG0, imm_opnd(RUBY_IMMEDIATE_MASK));
+        jnz_ptr(cb, side_exit);
+        cmp(cb, REG0, imm_opnd(Qfalse));
+        je_ptr(cb, side_exit);
+        cmp(cb, REG0, imm_opnd(Qnil));
+        je_ptr(cb, side_exit);
+
+        // Bail if recv has a class other than ::Hash.
+        // BOP_AREF check above is only good for ::Hash.
+        mov(cb, REG1, mem_opnd(64, REG0, offsetof(struct RBasic, klass)));
+        mov(cb, REG0, const_ptr_opnd((void *)rb_cHash));
+        cmp(cb, REG0, REG1);
+        jit_chain_guard(JCC_JNE, jit, &starting_context, OPT_AREF_MAX_CHAIN_DEPTH, side_exit);
+
+        // Call VALUE rb_hash_aref(VALUE hash, VALUE key).
+        {
+            // Write incremented pc to cfp->pc as the routine can raise and allocate
+            mov(cb, REG0, const_ptr_opnd(jit->pc + insn_len(BIN(opt_aref))));
+            mov(cb, member_opnd(REG_CFP, rb_control_frame_t, pc), REG0);
+
+            // About to change REG_SP which these operands depend on. Yikes.
+            mov(cb, R8, recv_opnd);
+            mov(cb, R9, idx_opnd);
+
+            // Write sp to cfp->sp since rb_hash_aref might need to call #hash on the key
+            if (ctx->sp_offset != 0) {
+                x86opnd_t stack_pointer = ctx_sp_opnd(ctx, 0);
+                lea(cb, REG_SP, stack_pointer);
+                mov(cb, member_opnd(REG_CFP, rb_control_frame_t, sp), REG_SP);
+                ctx->sp_offset = 0; // REG_SP now equals cfp->sp
+            }
+
+            yjit_save_regs(cb);
+
+            mov(cb, C_ARG_REGS[0], R8);
+            mov(cb, C_ARG_REGS[1], R9);
+            call_ptr(cb, REG0, (void *)rb_hash_aref);
+
+            yjit_load_regs(cb);
+
+            // Push the return value onto the stack
+            x86opnd_t stack_ret = ctx_stack_push(ctx, T_NONE);
+            mov(cb, stack_ret, RAX);
+        }
+
+        // Jump to next instruction. This allows guard chains to share the same successor.
+        {
+            ctx_t reset_depth = *ctx;
+            reset_depth.chain_depth = 0;
+
+            blockid_t jump_block = { jit->iseq, jit_next_insn_idx(jit) };
+
+            // Generate the jump instruction
+            gen_direct_jump(
+                &reset_depth,
+                jump_block
+            );
+        }
+        return YJIT_END_BLOCK;
     }
 
-    // Pop the stack operands
-    x86opnd_t idx_opnd = ctx_stack_pop(ctx, 1);
-    x86opnd_t recv_opnd = ctx_stack_pop(ctx, 1);
-    mov(cb, REG0, recv_opnd);
-
-    // if (SPECIAL_CONST_P(recv)) {
-    // Bail if it's not a heap object
-    test(cb, REG0, imm_opnd(RUBY_IMMEDIATE_MASK));
-    jnz_ptr(cb, side_exit);
-    cmp(cb, REG0, imm_opnd(Qfalse));
-    je_ptr(cb, side_exit);
-    cmp(cb, REG0, imm_opnd(Qnil));
-    je_ptr(cb, side_exit);
-
-    // Bail if recv has a class other than ::Array.
-    // BOP_AREF check above is only good for ::Array.
-    mov(cb, REG1, mem_opnd(64, REG0, offsetof(struct RBasic, klass)));
-    mov(cb, REG0, const_ptr_opnd((void *)rb_cArray));
-    cmp(cb, REG0, REG1);
-    jne_ptr(cb, COUNTED_EXIT(side_exit, oaref_not_array));
-
-    // Bail if idx is not a FIXNUM
-    mov(cb, REG1, idx_opnd);
-    test(cb, REG1, imm_opnd(RUBY_FIXNUM_FLAG));
-    jz_ptr(cb, COUNTED_EXIT(side_exit, oaref_arg_not_fixnum));
-
-    // Save YJIT registers
-    yjit_save_regs(cb);
-
-    mov(cb, RDI, recv_opnd);
-    sar(cb, REG1, imm_opnd(1)); // Convert fixnum to int
-    mov(cb, RSI, REG1);
-    call_ptr(cb, REG0, (void *)rb_ary_entry_internal);
-
-    // Restore YJIT registers
-    yjit_load_regs(cb);
-
-    x86opnd_t stack_ret = ctx_stack_push(ctx, T_NONE);
-    mov(cb, stack_ret, RAX);
-
-    return YJIT_KEEP_COMPILING;
+    return YJIT_CANT_COMPILE;
 }
 
 static codegen_status_t
