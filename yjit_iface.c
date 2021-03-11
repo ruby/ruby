@@ -472,7 +472,9 @@ block_invalidation_iterator(st_data_t key, st_data_t value, st_data_t data) {
 void
 rb_yjit_bop_redefined(VALUE klass, const rb_method_entry_t *me, enum ruby_basic_operators bop)
 {
-    st_foreach(blocks_assuming_bops, block_invalidation_iterator, 0);
+    if (blocks_assuming_bops) {
+        st_foreach(blocks_assuming_bops, block_invalidation_iterator, 0);
+    }
 }
 
 /* Called when the constant state changes */
