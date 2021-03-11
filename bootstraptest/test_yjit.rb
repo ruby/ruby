@@ -158,7 +158,7 @@ assert_equal '1', %q{
     retval
 }
 
-# Method redefinition (code invalidation) and GC 
+# Method redefinition (code invalidation) and GC
 assert_equal '7', %q{
     def bar()
         return 5

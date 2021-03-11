@@ -116,7 +116,7 @@ rb_darray_buffer_size(int32_t capacity, size_t header_size, size_t element_size)
 // Internal function
 // Ensure there is space for one more element. Return 1 on success and 0 on failure.
 // Note: header_size can be bigger than sizeof(rb_darray_meta_t) when T is __int128_t, for example.
-static inline int 
+static inline int
 rb_darray_ensure_space(void *ptr_to_ary, size_t header_size, size_t element_size)
 {
     rb_darray_meta_t **ptr_to_ptr_to_meta = ptr_to_ary;
