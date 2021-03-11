@@ -474,6 +474,21 @@ class TestRubyLiteral < Test::Unit::TestCase
     assert_nil(h['c'])
     assert_equal(nil, h.key('300'))
 
+    a = []
+    h = EnvUtil.suppress_warning do
+      eval <<~end
+        # This is a syntax that renders warning at very early stage.
+        # eval used to delay warning, to be suppressible by EnvUtil.
+        {"a" => a.push(100).last, "b" => a.push(200).last, "a" => a.push(300).last, "a" => a.push(400).last}
+      end
+    end
+    assert_equal(2, h.size)
+    assert_equal(400, h['a'])
+    assert_equal(200, h['b'])
+    assert_nil(h['c'])
+    assert_equal(nil, h.key('300'))
+    assert_equal([100, 200, 300, 400], a)
+
     assert_all_assertions_foreach(
       "duplicated literal key",
       ':foo',
