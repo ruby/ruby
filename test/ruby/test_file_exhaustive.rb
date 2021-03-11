@@ -680,7 +680,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_equal(t + 1, File.atime(zerofile))
     assert_equal(t + 2, File.mtime(zerofile))
     Dir.mktmpdir do |dir|
-      Dir.chdir do
+      Dir.chdir(dir) do
         path = "foo\u{30b3 30d4 30fc}"
         File.write(path, "") rescue next
         assert_equal(1, File.utime(nil, nil, path))
