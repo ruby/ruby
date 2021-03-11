@@ -599,11 +599,10 @@ class Socket < BasicSocket
   RESOLUTION_DELAY_DONE = 3
   private_constant :GETADDRINFO_V6_DONE, :GETADDRINFO_V4_DONE, :RESOLUTION_DELAY_DONE
 
-  def self.start_getaddrinfo_v6(host, port, mutex, pipe_write, ai_queue_v6, error_queue)
+  def self.start_getaddrinfo_v6(host, port, mutex, pipe_write, ai_list_v6, error_queue)
     return Thread.new do
       Thread.current.report_on_exception = false
-      ai_list = Addrinfo.getaddrinfo(host, port, :PF_INET6, :STREAM)
-      ai_list.each {|ai| ai_queue_v6.push(ai) }
+      ai_list_v6.replace(Addrinfo.getaddrinfo(host, port, :PF_INET6, :STREAM))
     rescue SocketError => ex
       case ex.message
       when "getaddrinfo: Address family for hostname not supported" # when IPv6 is not supported
@@ -625,11 +624,11 @@ class Socket < BasicSocket
   RESOLUTION_DELAY = 0.05
   private_constant :RESOLUTION_DELAY
 
-  def self.start_getaddrinfo_v4(host, port, mutex, pipe_write, ai_queue_v4, error_queue)
+  def self.start_getaddrinfo_v4(host, port, mutex, pipe_write, ai_list_v4, error_queue)
     return Thread.new do
       Thread.current.report_on_exception = false
       begin
-        ai_list = Addrinfo.getaddrinfo(host, port, :PF_INET, :STREAM)
+        ai_list_v4.replace(Addrinfo.getaddrinfo(host, port, :PF_INET, :STREAM))
       rescue SocketError => ex
         case ex.message
         when "getaddrinfo: Address family for hostname not supported" # when IPv4 is not supported
@@ -642,10 +641,9 @@ class Socket < BasicSocket
       rescue => ex
         error_queue.push(ex)
       ensure
-        ai_list.each {|ai| ai_queue_v4.push(ai) }
         mutex.synchronize { pipe_write.putc(GETADDRINFO_V4_DONE) unless pipe_write.closed? }
       end
-      if ai_list # if getaddrinfo finished successfully
+      unless ai_list_v4.empty? # if getaddrinfo finished successfully
         sleep(RESOLUTION_DELAY) # 50ms is the recommended value for the resolution delay for IPv4 in RFC8305
         mutex.synchronize { pipe_write.putc(RESOLUTION_DELAY_DONE) unless pipe_write.closed? }
       end
@@ -676,22 +674,22 @@ class Socket < BasicSocket
   private_class_method :find_connected_socket
 
   # returns an Addrinfo for the next connection attempt
-  def self.pick_addrinfo(getaddrinfo_v6_done, getaddrinfo_v4_done, resolution_delay_done, ai_queue_v6, ai_queue_v4, last_family)
+  def self.pick_addrinfo(getaddrinfo_v6_done, getaddrinfo_v4_done, resolution_delay_done, ai_list_v6, ai_list_v4, last_family)
     if getaddrinfo_v6_done && getaddrinfo_v4_done # pick a v6 or v4 address in interleaved manner
-      if last_family != Socket::AF_INET6 && !ai_queue_v6.empty? # pick v6 address
-        return ai_queue_v6.pop
-      elsif !ai_queue_v4.empty? # pick v4 address
-        return ai_queue_v4.pop
+      if last_family != Socket::AF_INET6 && !ai_list_v6.empty? # pick v6 address
+        return ai_list_v6.shift
+      elsif !ai_list_v4.empty? # pick v4 address
+        return ai_list_v4.shift
       end
-    elsif getaddrinfo_v6_done && !ai_queue_v6.empty? # pick v6 address immediately
-      return ai_queue_v6.pop
-    elsif getaddrinfo_v4_done && resolution_delay_done && !ai_queue_v4.empty? # pick v4 addres after the resolution delay
-      return ai_queue_v4.pop
+    elsif getaddrinfo_v6_done && !ai_list_v6.empty? # pick v6 address immediately
+      return ai_list_v6.shift
+    elsif getaddrinfo_v4_done && resolution_delay_done && !ai_list_v4.empty? # pick v4 addres after the resolution delay
+      return ai_list_v4.shift
     end
     return nil # no available addrinfo for now
   end
 
-  def self.make_connection_attempts(pipe_read, attempt_v6, attempt_v4, ai_queue_v6, ai_queue_v4, local_addr_list)
+  def self.make_connection_attempts(pipe_read, attempt_v6, attempt_v4, ai_list_v6, ai_list_v4, local_addr_list)
     pipe_reads = [pipe_read]
     socket_list = []
     addrinfos = {}
@@ -700,7 +698,7 @@ class Socket < BasicSocket
     resolution_delay_done = false
     last_family = nil
     next_connection_start_time = nil
-    while !getaddrinfo_v6_done || !getaddrinfo_v4_done || !ai_queue_v6.empty? || !ai_queue_v4.empty?
+    while !getaddrinfo_v6_done || !getaddrinfo_v4_done || !ai_list_v6.empty? || !ai_list_v4.empty?
       if next_connection_start_time
         now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
         select_timeout = next_connection_start_time - now # wait until CONNECTION_ATTEMPT_DELAY is elapsed since last connection attempt
@@ -744,7 +742,7 @@ class Socket < BasicSocket
         next if now < next_connection_start_time
       end
 
-      ai = pick_addrinfo(getaddrinfo_v6_done, getaddrinfo_v4_done, resolution_delay_done, ai_queue_v6, ai_queue_v4, last_family)
+      ai = pick_addrinfo(getaddrinfo_v6_done, getaddrinfo_v4_done, resolution_delay_done, ai_list_v6, ai_list_v4, last_family)
       next unless ai # no addrinfo available for now
       last_family = ai.afamily
 
@@ -870,15 +868,14 @@ class Socket < BasicSocket
       attempt_v4 = local_addr_list.any? {|local_ai| local_ai.afamily == Socket::AF_INET }
     end
 
-    # queue = Queue.new
     pipe_read, pipe_write = IO.pipe
     mutex = Mutex.new
-    ai_queue_v6 = Queue.new
-    ai_queue_v4 = Queue.new
+    ai_list_v6 = []
+    ai_list_v4 = []
     error_queue = Queue.new
 
-    getaddrinfo_v6_th = start_getaddrinfo_v6(host, port, mutex, pipe_write, ai_queue_v6, error_queue) if attempt_v6
-    getaddrinfo_v4_th = start_getaddrinfo_v4(host, port, mutex, pipe_write, ai_queue_v4, error_queue) if attempt_v4
+    getaddrinfo_v6_th = start_getaddrinfo_v6(host, port, mutex, pipe_write, ai_list_v6, error_queue) if attempt_v6
+    getaddrinfo_v4_th = start_getaddrinfo_v4(host, port, mutex, pipe_write, ai_list_v4, error_queue) if attempt_v4
 
     if resolv_timeout
       timeout_th = Thread.new do
@@ -888,7 +885,7 @@ class Socket < BasicSocket
       end
     end
 
-    ret, socket_list, addrinfos, last_error = make_connection_attempts(pipe_read, attempt_v6, attempt_v4, ai_queue_v6, ai_queue_v4, local_addr_list)
+    ret, socket_list, addrinfos, last_error = make_connection_attempts(pipe_read, attempt_v6, attempt_v4, ai_list_v6, ai_list_v4, local_addr_list)
     ret, last_error = wait_connection(socket_list, addrinfos, connect_timeout, start_time) if !ret && !socket_list.empty?
     addrinfos.clear()
 
