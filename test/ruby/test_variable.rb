@@ -95,6 +95,7 @@ class TestVariable < Test::Unit::TestCase
       end
     EORB
 
+    assert_kind_of RuntimeError, error
     assert_equal "class variable @@cvar of TestVariable::Child is overtaken by TestVariable::Parent", error.message
   ensure
     TestVariable.send(:remove_const, :Child) rescue nil
@@ -126,6 +127,7 @@ class TestVariable < Test::Unit::TestCase
       end
     EORB
 
+    assert_kind_of RuntimeError, error
     assert_equal "class variable @@cvar of TestVariable::ParentForModule is overtaken by TestVariable::Mixin", error.message
   ensure
     TestVariable.send(:remove_const, :Mixin) rescue nil
