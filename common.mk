@@ -14800,6 +14800,7 @@ util.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 util.$(OBJEXT): $(top_srcdir)/internal/util.h
 util.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 util.$(OBJEXT): {$(VPATH)}assert.h
+util.$(OBJEXT): {$(VPATH)}atomic.h
 util.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 util.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 util.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -14955,6 +14956,7 @@ util.$(OBJEXT): {$(VPATH)}internal/variable.h
 util.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 util.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 util.$(OBJEXT): {$(VPATH)}missing.h
+util.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 util.$(OBJEXT): {$(VPATH)}st.h
 util.$(OBJEXT): {$(VPATH)}subst.h
 util.$(OBJEXT): {$(VPATH)}util.c
