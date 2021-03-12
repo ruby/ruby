@@ -14,13 +14,13 @@ module YJIT
 
     # Sort the blocks by increasing addresses
     blocks.sort_by(&:address).each_with_index do |block, i|
-      str << "== BLOCK #{i+1}/#{blocks.length}: #{block.code.length} BYTES, ISEQ RANGE [#{block.iseq_start_index},#{block.iseq_end_index}[ ".ljust(80, "=")
+      str << "== BLOCK #{i+1}/#{blocks.length}: #{block.code.length} BYTES, ISEQ RANGE [#{block.iseq_start_index},#{block.iseq_end_index}] ".ljust(80, "=")
       str << "\n"
 
-      cs.disasm(block.code, 0).each do |i|
+      cs.disasm(block.code, block.address).each do |i|
         str << sprintf(
-          "  %<address>08X:  %<instruction>s\t%<details>s\n",
-          address: block.address + i.address,
+          "  %<address>08x:  %<instruction>s\t%<details>s\n",
+          address: i.address,
           instruction: i.mnemonic,
           details: i.op_str
         )
@@ -62,6 +62,7 @@ module YJIT
 
       print_counters(counters, prefix: 'oswb_', prompt: 'opt_send_without_block exit reasons: ')
       print_counters(counters, prefix: 'leave_', prompt: 'leave exit reasons: ')
+      print_counters(counters, prefix: 'getivar_', prompt: 'getinstancevariable exit reasons:')
     end
 
     def print_counters(counters, prefix:, prompt:)

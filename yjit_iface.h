@@ -47,6 +47,10 @@ YJIT_DECLARE_COUNTERS(
     leave_se_finish_frame,
     leave_se_interrupt,
 
+    getivar_se_self_not_heap,
+    getivar_idx_out_of_range,
+    getivar_undef,
+
     // Member with known name for iterating over counters
     last_member
 )

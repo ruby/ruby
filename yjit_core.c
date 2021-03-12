@@ -10,7 +10,7 @@
 #define MAX_VERSIONS 4
 
 // Maximum number of branch instructions we can track
-#define MAX_BRANCHES 32768
+#define MAX_BRANCHES 100000
 
 // Registered branch entries
 branch_t branch_entries[MAX_BRANCHES];
@@ -344,7 +344,8 @@ uint8_t* gen_entry_point(const rb_iseq_t *iseq, uint32_t insn_idx, rb_execution_
 
 // Called by the generated code when a branch stub is executed
 // Triggers compilation of branches and code patching
-uint8_t* branch_stub_hit(uint32_t branch_idx, uint32_t target_idx, rb_execution_context_t* ec)
+static uint8_t *
+branch_stub_hit(uint32_t branch_idx, uint32_t target_idx, rb_execution_context_t* ec)
 {
     uint8_t* dst_addr;
 
@@ -380,18 +381,18 @@ uint8_t* branch_stub_hit(uint32_t branch_idx, uint32_t target_idx, rb_execution_
     ctx_t generic_ctx = DEFAULT_CTX;
     generic_ctx.stack_size = target_ctx->stack_size;
     generic_ctx.sp_offset = target_ctx->sp_offset;
-    if (get_num_versions(target) >= MAX_VERSIONS - 1)
-    {
-        //fprintf(stderr, "version limit hit in branch_stub_hit\n");
-        target_ctx = &generic_ctx;
+    if (target_ctx->chain_depth == 0) { // guard chains implement limits individually
+        if (get_num_versions(target) >= MAX_VERSIONS - 1) {
+            //fprintf(stderr, "version limit hit in branch_stub_hit\n");
+            target_ctx = &generic_ctx;
+        }
     }
 
     // Try to find a compiled version of this block
     block_t* p_block = find_block_version(target, target_ctx);
 
     // If this block hasn't yet been compiled
-    if (!p_block)
-    {
+    if (!p_block) {
         p_block = gen_block_version(target, target_ctx, ec);
     }
 
