@@ -897,7 +897,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # Block = @BlankLine* (BlockQuote | Verbatim | CodeFence | Note | Reference | HorizontalRule | Heading | OrderedList | BulletList | DefinitionList | HtmlBlock | StyleBlock | Para | Plain)
+  # Block = @BlankLine* (BlockQuote | Verbatim | CodeFence | Table | Note | Reference | HorizontalRule | Heading | OrderedList | BulletList | DefinitionList | HtmlBlock | StyleBlock | Para | Plain)
   def _Block
 
     _save = self.pos
@@ -921,6 +921,9 @@ class RDoc::Markdown
         break if _tmp
         self.pos = _save2
         _tmp = apply(:_CodeFence)
+        break if _tmp
+        self.pos = _save2
+        _tmp = apply(:_Table)
         break if _tmp
         self.pos = _save2
         _tmp = apply(:_Note)
@@ -15905,6 +15908,339 @@ class RDoc::Markdown
     return _tmp
   end
 
+  # Table = &{ github? } TableRow:header TableLine:line TableRow+:body { table = RDoc::Markup::Table.new(header, line, body) }
+  def _Table
+
+    _save = self.pos
+    while true # sequence
+      _save1 = self.pos
+      _tmp = begin;  github? ; end
+      self.pos = _save1
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = apply(:_TableRow)
+      header = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = apply(:_TableLine)
+      line = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _save2 = self.pos
+      _ary = []
+      _tmp = apply(:_TableRow)
+      if _tmp
+        _ary << @result
+        while true
+          _tmp = apply(:_TableRow)
+          _ary << @result if _tmp
+          break unless _tmp
+        end
+        _tmp = true
+        @result = _ary
+      else
+        self.pos = _save2
+      end
+      body = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin;  table = RDoc::Markup::Table.new(header, line, body) ; end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
+    set_failed_rule :_Table unless _tmp
+    return _tmp
+  end
+
+  # TableRow = TableItem+:row "|" @Newline { row }
+  def _TableRow
+
+    _save = self.pos
+    while true # sequence
+      _save1 = self.pos
+      _ary = []
+      _tmp = apply(:_TableItem)
+      if _tmp
+        _ary << @result
+        while true
+          _tmp = apply(:_TableItem)
+          _ary << @result if _tmp
+          break unless _tmp
+        end
+        _tmp = true
+        @result = _ary
+      else
+        self.pos = _save1
+      end
+      row = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = match_string("|")
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = _Newline()
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin;  row ; end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
+    set_failed_rule :_TableRow unless _tmp
+    return _tmp
+  end
+
+  # TableItem = "|" < (!"|" !@Newline .)+ > { text.strip }
+  def _TableItem
+
+    _save = self.pos
+    while true # sequence
+      _tmp = match_string("|")
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _text_start = self.pos
+      _save1 = self.pos
+
+      _save2 = self.pos
+      while true # sequence
+        _save3 = self.pos
+        _tmp = match_string("|")
+        _tmp = _tmp ? nil : true
+        self.pos = _save3
+        unless _tmp
+          self.pos = _save2
+          break
+        end
+        _save4 = self.pos
+        _tmp = _Newline()
+        _tmp = _tmp ? nil : true
+        self.pos = _save4
+        unless _tmp
+          self.pos = _save2
+          break
+        end
+        _tmp = get_byte
+        unless _tmp
+          self.pos = _save2
+        end
+        break
+      end # end sequence
+
+      if _tmp
+        while true
+
+          _save5 = self.pos
+          while true # sequence
+            _save6 = self.pos
+            _tmp = match_string("|")
+            _tmp = _tmp ? nil : true
+            self.pos = _save6
+            unless _tmp
+              self.pos = _save5
+              break
+            end
+            _save7 = self.pos
+            _tmp = _Newline()
+            _tmp = _tmp ? nil : true
+            self.pos = _save7
+            unless _tmp
+              self.pos = _save5
+              break
+            end
+            _tmp = get_byte
+            unless _tmp
+              self.pos = _save5
+            end
+            break
+          end # end sequence
+
+          break unless _tmp
+        end
+        _tmp = true
+      else
+        self.pos = _save1
+      end
+      if _tmp
+        text = get_text(_text_start)
+      end
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin;  text.strip ; end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
+    set_failed_rule :_TableItem unless _tmp
+    return _tmp
+  end
+
+  # TableLine = TableColumn+:line "|" @Newline { line }
+  def _TableLine
+
+    _save = self.pos
+    while true # sequence
+      _save1 = self.pos
+      _ary = []
+      _tmp = apply(:_TableColumn)
+      if _tmp
+        _ary << @result
+        while true
+          _tmp = apply(:_TableColumn)
+          _ary << @result if _tmp
+          break unless _tmp
+        end
+        _tmp = true
+        @result = _ary
+      else
+        self.pos = _save1
+      end
+      line = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = match_string("|")
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = _Newline()
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin;  line ; end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
+    set_failed_rule :_TableLine unless _tmp
+    return _tmp
+  end
+
+  # TableColumn = "|" < ("-"+ ":"? | ":" "-"*) > {                 text.start_with?(":") ? :left :                 text.end_with?(":") ? :right : nil               }
+  def _TableColumn
+
+    _save = self.pos
+    while true # sequence
+      _tmp = match_string("|")
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _text_start = self.pos
+
+      _save1 = self.pos
+      while true # choice
+
+        _save2 = self.pos
+        while true # sequence
+          _save3 = self.pos
+          _tmp = match_string("-")
+          if _tmp
+            while true
+              _tmp = match_string("-")
+              break unless _tmp
+            end
+            _tmp = true
+          else
+            self.pos = _save3
+          end
+          unless _tmp
+            self.pos = _save2
+            break
+          end
+          _save4 = self.pos
+          _tmp = match_string(":")
+          unless _tmp
+            _tmp = true
+            self.pos = _save4
+          end
+          unless _tmp
+            self.pos = _save2
+          end
+          break
+        end # end sequence
+
+        break if _tmp
+        self.pos = _save1
+
+        _save5 = self.pos
+        while true # sequence
+          _tmp = match_string(":")
+          unless _tmp
+            self.pos = _save5
+            break
+          end
+          while true
+            _tmp = match_string("-")
+            break unless _tmp
+          end
+          _tmp = true
+          unless _tmp
+            self.pos = _save5
+          end
+          break
+        end # end sequence
+
+        break if _tmp
+        self.pos = _save1
+        break
+      end # end choice
+
+      if _tmp
+        text = get_text(_text_start)
+      end
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin; 
+                text.start_with?(":") ? :left :
+                text.end_with?(":") ? :right : nil
+              ; end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
+    set_failed_rule :_TableColumn unless _tmp
+    return _tmp
+  end
+
   # DefinitionList = &{ definition_lists? } DefinitionListItem+:list { RDoc::Markup::List.new :NOTE, *list.flatten }
   def _DefinitionList
 
@@ -16104,7 +16440,7 @@ class RDoc::Markdown
   Rules = {}
   Rules[:_root] = rule_info("root", "Doc")
   Rules[:_Doc] = rule_info("Doc", "BOM? Block*:a { RDoc::Markup::Document.new(*a.compact) }")
-  Rules[:_Block] = rule_info("Block", "@BlankLine* (BlockQuote | Verbatim | CodeFence | Note | Reference | HorizontalRule | Heading | OrderedList | BulletList | DefinitionList | HtmlBlock | StyleBlock | Para | Plain)")
+  Rules[:_Block] = rule_info("Block", "@BlankLine* (BlockQuote | Verbatim | CodeFence | Table | Note | Reference | HorizontalRule | Heading | OrderedList | BulletList | DefinitionList | HtmlBlock | StyleBlock | Para | Plain)")
   Rules[:_Para] = rule_info("Para", "@NonindentSpace Inlines:a @BlankLine+ { paragraph a }")
   Rules[:_Plain] = rule_info("Plain", "Inlines:a { paragraph a }")
   Rules[:_AtxInline] = rule_info("AtxInline", "!@Newline !(@Sp /\#*/ @Sp @Newline) Inline")
@@ -16337,6 +16673,11 @@ class RDoc::Markdown
   Rules[:_Notes] = rule_info("Notes", "(Note | SkipBlock)*")
   Rules[:_RawNoteBlock] = rule_info("RawNoteBlock", "@StartList:a (!@BlankLine OptionallyIndentedLine:l { a << l })+ < @BlankLine* > { a << text } { a }")
   Rules[:_CodeFence] = rule_info("CodeFence", "&{ github? } Ticks3 (@Sp StrChunk:format)? Spnl < ((!\"`\" Nonspacechar)+ | !Ticks3 /`+/ | Spacechar | @Newline)+ > Ticks3 @Sp @Newline* { verbatim = RDoc::Markup::Verbatim.new text               verbatim.format = format.intern if format.instance_of?(String)               verbatim             }")
+  Rules[:_Table] = rule_info("Table", "&{ github? } TableRow:header TableLine:line TableRow+:body { table = RDoc::Markup::Table.new(header, line, body) }")
+  Rules[:_TableRow] = rule_info("TableRow", "TableItem+:row \"|\" @Newline { row }")
+  Rules[:_TableItem] = rule_info("TableItem", "\"|\" < (!\"|\" !@Newline .)+ > { text.strip }")
+  Rules[:_TableLine] = rule_info("TableLine", "TableColumn+:line \"|\" @Newline { line }")
+  Rules[:_TableColumn] = rule_info("TableColumn", "\"|\" < (\"-\"+ \":\"? | \":\" \"-\"*) > {                 text.start_with?(\":\") ? :left :                 text.end_with?(\":\") ? :right : nil               }")
   Rules[:_DefinitionList] = rule_info("DefinitionList", "&{ definition_lists? } DefinitionListItem+:list { RDoc::Markup::List.new :NOTE, *list.flatten }")
   Rules[:_DefinitionListItem] = rule_info("DefinitionListItem", "DefinitionListLabel+:label DefinitionListDefinition+:defns { list_items = []                        list_items <<                          RDoc::Markup::ListItem.new(label, defns.shift)                         list_items.concat defns.map { |defn|                          RDoc::Markup::ListItem.new nil, defn                        } unless list_items.empty?                         list_items                      }")
   Rules[:_DefinitionListLabel] = rule_info("DefinitionListLabel", "StrChunk:label @Sp @Newline { label }")
