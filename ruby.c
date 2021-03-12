@@ -2554,12 +2554,6 @@ ruby_set_argv(int argc, char **argv)
     int i;
     VALUE av = rb_argv;
 
-#if defined(USE_DLN_A_OUT)
-    if (origarg.argc > 0 && origarg.argv)
-	dln_argv0 = origarg.argv[0];
-    else if (argc > 0 && argv)
-	dln_argv0 = argv[0];
-#endif
     rb_ary_clear(av);
     for (i = 0; i < argc; i++) {
 	VALUE arg = external_str_new_cstr(argv[i]);
@@ -2638,9 +2632,6 @@ ruby_sysinit(int *argc, char ***argv)
     if (*argc >= 0 && *argv) {
 	origarg.argc = *argc;
 	origarg.argv = *argv;
-#if defined(USE_DLN_A_OUT)
-	dln_argv0 = origarg.argv[0];
-#endif
     }
     fill_standard_fds();
 }

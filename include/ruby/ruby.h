@@ -100,11 +100,6 @@ VALUE rb_require(const char*);
 
 #include "ruby/intern.h"
 
-#if defined(EXTLIB) && defined(USE_DLN_A_OUT)
-/* hook for external modules */
-static char *dln_libs_to_be_linked[] = { EXTLIB, 0 };
-#endif
-
 #define RUBY_VM 1 /* YARV */
 #define HAVE_NATIVETHREAD
 int ruby_native_thread_p(void);
