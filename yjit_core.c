@@ -1,10 +1,13 @@
+#include "ruby/ruby.h"
+#include "internal.h"
+#include "vm_sync.h"
+#include "builtin.h"
+
 #include "yjit_asm.h"
 #include "yjit_utils.h"
 #include "yjit_iface.h"
 #include "yjit_core.h"
 #include "yjit_codegen.h"
-#include "vm_sync.h"
-#include "builtin.h"
 
 // Maximum number of versions per block
 #define MAX_VERSIONS 4
