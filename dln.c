@@ -157,6 +157,9 @@ static const char funcname_prefix[sizeof(FUNCNAME_PREFIX) - 1] = FUNCNAME_PREFIX
 #  define DLN_DEFAULT_LIB_PATH "/lib:/usr/lib:/usr/local/lib:."
 #endif
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <errno.h>
 
 static int dln_errno;
@@ -188,7 +191,7 @@ static int dln_init_p = 0;
 static st_table *sym_tbl;
 static st_table *undef_tbl;
 
-static int load_lib();
+static int load_lib(const char *);
 
 static int
 load_header(int fd, struct exec *hdrp, long disp)
@@ -304,7 +307,7 @@ load_sym(int fd, struct exec *hdrp, long disp)
     }
 
     lseek(fd, disp + N_SYMOFF(*hdrp), 0);
-    if (read(fd, buffer, hdrp->a_syms + size) != hdrp->a_syms + size) {
+    if (read(fd, buffer, hdrp->a_syms + size) != (ssize_t)(hdrp->a_syms + size)) {
 	free(buffer);
 	goto err_noexec;
     }
@@ -338,7 +341,7 @@ sym_hash(struct exec *hdrp, struct nlist *syms)
     }
 
     while (sym < end) {
-	st_insert(tbl, sym->n_un.n_name, sym);
+	st_insert(tbl, (st_data_t)sym->n_un.n_name, (st_data_t)sym);
 	sym++;
     }
     return tbl;
@@ -453,8 +456,9 @@ load_text_data(int fd, struct exec *hdrp, int bss, long disp)
 }
 
 static int
-undef_print(char *key, char *value)
+undef_print(st_data_t k, st_data_t v, st_data_t a)
 {
+    char *key = (char *)k;
     fprintf(stderr, "  %s\n", key);
     return ST_CONTINUE;
 }
@@ -463,7 +467,7 @@ static void
 dln_print_undef(void)
 {
     fprintf(stderr, " Undefined symbols:\n");
-    st_foreach(undef_tbl, undef_print, NULL);
+    st_foreach(undef_tbl, undef_print, 0);
 }
 
 static void
@@ -514,7 +518,7 @@ link_undef(const char *name, long base, struct relocation_info *reloc)
     if (reloc_tbl == NULL) {
 	reloc_tbl = st_init_numtable();
     }
-    st_insert(reloc_tbl, u_no++, obj);
+    st_insert(reloc_tbl, u_no++, (st_data_t)obj);
 }
 
 struct reloc_arg {
@@ -523,8 +527,10 @@ struct reloc_arg {
 };
 
 static int
-reloc_undef(int no, struct undef *undef, struct reloc_arg *arg)
+reloc_undef(st_data_t no, st_data_t v, st_data_t a)
 {
+    struct undef *undef = (void *)v;
+    struct reloc_arg *arg = (void *)a;
     int datum;
     char *address;
 #if defined(__sun) && defined(__sparc)
@@ -590,7 +596,7 @@ unlink_undef(const char *name, long value)
 
     arg.name = name;
     arg.value = value;
-    st_foreach(reloc_tbl, reloc_undef, &arg);
+    st_foreach(reloc_tbl, reloc_undef, (st_data_t)&arg);
 }
 
 #ifdef N_INDR
@@ -599,8 +605,10 @@ struct indr_data {
 };
 
 static int
-reloc_repl(int no, struct undef *undef, struct indr_data *data)
+reloc_repl(st_data_t no, st_data_t v, st_data_t a)
 {
+    struct undef *undef = (void *)v;
+    struct indr_data *data = (void *)a;
     if (strcmp(data->name0, undef->name) == 0) {
 	free(undef->name);
 	undef->name = strdup(data->name1);
@@ -640,13 +648,15 @@ load_1(int fd, long disp, const char *need_init)
     end = syms + (hdr.a_syms / sizeof(struct nlist));
     while (sym < end) {
 	struct nlist *old_sym;
+	st_data_t old_data;
 	int value = sym->n_value;
 
 #ifdef N_INDR
 	if (sym->n_type == (N_INDR | N_EXT)) {
 	    char *key = sym->n_un.n_name;
 
-	    if (st_lookup(sym_tbl, sym[1].n_un.n_name, &old_sym)) {
+	    if (st_lookup(sym_tbl, (st_data_t)sym[1].n_un.n_name, &old_data)) {
+		old_sym = (struct nlist *)old_data;
 		if (st_delete(undef_tbl, (st_data_t*)&key, NULL)) {
 		    unlink_undef(key, old_sym->n_value);
 		    free(key);
@@ -657,9 +667,9 @@ load_1(int fd, long disp, const char *need_init)
 
 		data.name0 = sym->n_un.n_name;
 		data.name1 = sym[1].n_un.n_name;
-		st_foreach(reloc_tbl, reloc_repl, &data);
+		st_foreach(reloc_tbl, reloc_repl, (st_data_t)&data);
 
-		st_insert(undef_tbl, strdup(sym[1].n_un.n_name), NULL);
+		st_insert(undef_tbl, (st_data_t)strdup(sym[1].n_un.n_name), 0);
 		if (st_delete(undef_tbl, (st_data_t*)&key, NULL)) {
 		    free(key);
 		}
@@ -669,8 +679,11 @@ load_1(int fd, long disp, const char *need_init)
 	}
 #endif
 	if (sym->n_type == (N_UNDF | N_EXT)) {
-	    if (st_lookup(sym_tbl, sym->n_un.n_name, &old_sym) == 0) {
+	    if (st_lookup(sym_tbl, (st_data_t)sym->n_un.n_name, &old_data) == 0) {
 		old_sym = NULL;
+	    }
+	    else {
+		old_sym = (struct nlist *)old_data;
 	    }
 
 	    if (value) {
@@ -680,8 +693,8 @@ load_1(int fd, long disp, const char *need_init)
 		}
 		else {
 		    int rnd =
-			value >= sizeof(double) ? sizeof(double) - 1
-			    : value >= sizeof(long) ? sizeof(long) - 1
+			value >= (int)sizeof(double) ? sizeof(double) - 1
+			    : value >= (int)sizeof(long) ? sizeof(long) - 1
 				: sizeof(short) - 1;
 
 		    sym->n_type = N_COMM;
@@ -697,8 +710,8 @@ load_1(int fd, long disp, const char *need_init)
 		    sym->n_value = old_sym->n_value;
 		}
 		else {
-		    sym->n_value = (long)dln_undefined;
-		    st_insert(undef_tbl, strdup(sym->n_un.n_name), NULL);
+		    sym->n_value = (unsigned long)dln_undefined;
+		    st_insert(undef_tbl, (st_data_t)strdup(sym->n_un.n_name), 0);
 		}
 	    }
 	}
@@ -711,6 +724,7 @@ load_1(int fd, long disp, const char *need_init)
     sym = syms;
     while (sym < end) {
 	struct nlist *new_sym;
+	st_data_t new_data;
 	char *key;
 
 	switch (sym->n_type) {
@@ -721,8 +735,8 @@ load_1(int fd, long disp, const char *need_init)
 
 	    sym->n_value += block;
 
-	    if (st_lookup(sym_tbl, sym->n_un.n_name, &new_sym) != 0
-		&& new_sym->n_value != (long)dln_undefined) {
+	    if (st_lookup(sym_tbl, (st_data_t)sym->n_un.n_name, &new_data) != 0
+		&& (new_sym = (struct nlist *)new_data)->n_value != (unsigned long)dln_undefined) {
 		dln_errno = DLN_ECONFL;
 		goto err_exit;
 	    }
@@ -736,7 +750,7 @@ load_1(int fd, long disp, const char *need_init)
 	    new_sym = (struct nlist*)xmalloc(sizeof(struct nlist));
 	    *new_sym = *sym;
 	    new_sym->n_un.n_name = strdup(sym->n_un.n_name);
-	    st_insert(sym_tbl, new_sym->n_un.n_name, new_sym);
+	    st_insert(sym_tbl, (st_data_t)new_sym->n_un.n_name, (st_data_t)new_sym);
 	    break;
 
 	  case N_TEXT:
@@ -848,7 +862,7 @@ load_1(int fd, long disp, const char *need_init)
 
 	for (sym = syms; sym<end; sym++) {
 	    char *name = sym->n_un.n_name;
-	    if (name[0] == '_' && sym->n_value >= block) {
+	    if (name[0] == '_' && sym->n_value >= (unsigned long)block) {
 		if (strcmp(name+1, "dln_libs_to_be_linked") == 0) {
 		    libs_to_be_linked = (char**)sym->n_value;
 		}
@@ -889,15 +903,31 @@ load_1(int fd, long disp, const char *need_init)
     return -1;
 }
 
-static int target_offset;
+struct search_undef_args {
+    st_table *lib_tbl;
+    int target_offset;
+};
+
 static int
-search_undef(const char *key, int value, st_table *lib_tbl)
+search_undef(st_data_t key, st_data_t value, st_data_t a)
 {
-    long offset;
+    struct search_undef_args *args = (void *)a;
+    st_table *lib_tbl = args->lib_tbl;
+    st_data_t offset;
 
     if (st_lookup(lib_tbl, key, &offset) == 0) return ST_CONTINUE;
-    target_offset = offset;
+    args->target_offset = (int)offset;
     return ST_STOP;
+}
+
+static int
+search_undef_target(struct st_table *undef_tbl, struct st_table *lib_tbl)
+{
+    struct search_undef_args args;
+    args.lib_tbl = lib_tbl;
+    args.target_offset = -1;
+    st_foreach(undef_tbl, search_undef, (st_data_t)&args);
+    return args.target_offset;
 }
 
 struct symdef {
@@ -905,12 +935,13 @@ struct symdef {
     int lib_offset;
 };
 
-const char *dln_librrb_ary_path = DLN_DEFAULT_LIB_PATH;
+const char dln_librrb_ary_path[] = DLN_DEFAULT_LIB_PATH;
 
 static int
 load_lib(const char *lib)
 {
-    char *path, *file, fbuf[MAXPATHLEN];
+    const char *path;
+    char *file, fbuf[MAXPATHLEN];
     char *envpath = 0;
     char armagic[SARMAG];
     int fd, size;
@@ -962,6 +993,7 @@ load_lib(const char *lib)
 
     if (strncmp(ahdr.ar_name, "__.SYMDEF", 9) == 0) {
 	/* make hash table from __.SYMDEF */
+	int target_offset;
 
 	lib_tbl = st_init_strtable();
 	data = (int*)xmalloc(size);
@@ -973,14 +1005,11 @@ load_lib(const char *lib)
 	while (nsym > 0) {
 	    char *name = name_base + base->rb_str_index;
 
-	    st_insert(lib_tbl, name, base->lib_offset + sizeof(ahdr));
+	    st_insert(lib_tbl, (st_data_t)name, base->lib_offset + sizeof(ahdr));
 	    nsym--;
 	    base++;
 	}
-	for (;;) {
-	    target_offset = -1;
-	    st_foreach(undef_tbl, search_undef, lib_tbl);
-	    if (target_offset == -1) break;
+	while ((target_offset = search_undef_target(undef_tbl, lib_tbl)) != -1) {
 	    if (load_1(fd, target_offset, 0) == -1) {
 		st_free_table(lib_tbl);
 		free(data);
@@ -1018,8 +1047,8 @@ load_lib(const char *lib)
 		sym = syms;
 		end = syms + (hdr.a_syms / sizeof(struct nlist));
 		while (sym < end) {
-		    if (sym->n_type == N_EXT|N_TEXT
-			&& st_lookup(undef_tbl, sym->n_un.n_name, NULL)) {
+		    if (sym->n_type == (N_EXT|N_TEXT)
+			&& st_lookup(undef_tbl, (st_data_t)sym->n_un.n_name, NULL)) {
 			break;
 		    }
 		    sym++;
@@ -1075,10 +1104,10 @@ load(const char *file)
 void*
 dln_sym(const char *name)
 {
-    struct nlist *sym;
+    st_data_t sym;
 
-    if (st_lookup(sym_tbl, name, &sym))
-	return (void*)sym->n_value;
+    if (st_lookup(sym_tbl, (st_data_t)name, &sym))
+	return (void*)((struct nlist *)sym)->n_value;
     return NULL;
 }
 
