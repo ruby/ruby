@@ -1084,7 +1084,7 @@ main()
 		ac_cv_func_memcmp_working=yes
 		ac_cv_lib_dl_dlopen=no
 		rb_cv_binary_elf=no
-		rb_cv_negative_time_t=no
+		rb_cv_negative_time_t=yes
 		ac_cv_func_fcntl=yes
 		ac_cv_func_flock=yes
 		ac_cv_func_gmtime_r=yes
@@ -1101,7 +1101,6 @@ main()
 		    coroutine_type=yes
 		])
 		ac_cv_func_tgamma=no
-		rb_cv_negative_time_t=yes
 		AC_CHECK_TYPE([NET_LUID], [], [],
 			      [@%:@include <winsock2.h>
 			      @%:@include <iphlpapi.h>])
