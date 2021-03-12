@@ -23,10 +23,6 @@
 # include <stdlib.h>
 #endif
 
-#ifdef USE_DLN_A_OUT
-char *dln_argv0;
-#endif
-
 #if defined(HAVE_ALLOCA_H)
 #include <alloca.h>
 #endif
