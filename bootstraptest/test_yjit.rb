@@ -301,3 +301,63 @@ assert_equal "good", %q{
 
   foo
 }
+
+# Test polymorphic getinstancevariable. T_OBJECT -> T_STRING
+assert_equal 'ok', %q{
+  @hello = @h1 = @h2 = @h3 = @h4 = 'ok'
+  str = ""
+  str.instance_variable_set(:@hello, 'ok')
+
+  public def get
+    @hello
+  end
+
+  get
+  get
+  str.get
+  str.get
+}
+
+# Test polymorphic getinstancevariable, two different classes
+assert_equal 'ok', %q{
+  class Embedded
+    def initialize
+      @ivar = 0
+    end
+
+    def get
+      @ivar
+    end
+  end
+
+  class Extended < Embedded
+    def initialize
+      @v1 = @v2 = @v3 = @v4 = @ivar = 'ok'
+    end
+  end
+
+  embed = Embedded.new
+  extend = Extended.new
+
+  embed.get
+  embed.get
+  extend.get
+  extend.get
+}
+
+# Test megamorphic getinstancevariable
+assert_equal 'ok', %q{
+  parent = Class.new do
+    def initialize
+      @hello = @h1 = @h2 = @h3 = @h4 = 'ok'
+    end
+
+    def get
+      @hello
+    end
+  end
+
+  subclasses = 300.times.map { Class.new(parent) }
+  subclasses.each { _1.new.get }
+  parent.new.get
+}

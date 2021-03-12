@@ -1099,6 +1099,12 @@ iv_index_tbl_lookup(struct st_table *iv_index_tbl, ID id, struct rb_iv_index_tbl
     return found ? true : false;
 }
 
+bool
+rb_iv_index_tbl_lookup(struct st_table *iv_index_tbl, ID id, struct rb_iv_index_tbl_entry **ent)
+{
+    return iv_index_tbl_lookup(iv_index_tbl, id, ent);
+}
+
 ALWAYS_INLINE(static void fill_ivar_cache(const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, int is_attr, struct rb_iv_index_tbl_entry *ent));
 
 static inline void

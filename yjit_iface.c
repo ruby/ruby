@@ -506,7 +506,9 @@ yjit_disasm_init(VALUE klass)
 {
     csh * handle;
     VALUE disasm = TypedData_Make_Struct(klass, csh, &yjit_disasm_type, handle);
-    cs_open(CS_ARCH_X86, CS_MODE_64, handle);
+    if (cs_open(CS_ARCH_X86, CS_MODE_64, handle) != CS_ERR_OK) {
+        rb_raise(rb_eRuntimeError, "failed to make Capstone handle");
+    }
     return disasm;
 }
 
@@ -518,7 +520,7 @@ yjit_disasm(VALUE self, VALUE code, VALUE from)
     cs_insn *insns;
 
     TypedData_Get_Struct(self, csh, &yjit_disasm_type, handle);
-    count = cs_disasm(*handle, (uint8_t*)StringValuePtr(code), RSTRING_LEN(code), NUM2INT(from), 0, &insns);
+    count = cs_disasm(*handle, (uint8_t*)StringValuePtr(code), RSTRING_LEN(code), NUM2ULL(from), 0, &insns);
     VALUE insn_list = rb_ary_new_capa(count);
 
     for (size_t i = 0; i < count; i++) {
