@@ -664,6 +664,10 @@ print_insn_count_buffer(const struct insn_count *buffer, int how_many, int left_
         total_exit_count += buffer[i].count;
     }
 
+    // Average length of instruction sequences executed by YJIT
+    double avg_len_in_yjit = (double)yjit_runtime_counters.exec_instruction / total_exit_count;
+
+    fprintf(stderr, "avg_len_in_yjit:       %10.1f\n", avg_len_in_yjit);
     fprintf(stderr, "total_exit_count:      %10ld\n", total_exit_count);
     fprintf(stderr, "most frequent exit op:\n");
 
@@ -696,7 +700,6 @@ print_yjit_stats(void)
     fprintf(stderr, "yjit_exec_insns_count: %10" PRId64 "\n", yjit_runtime_counters.exec_instruction);
     fprintf(stderr, "ratio_in_yjit:         %9.1f%%\n", ratio * 100);
     print_insn_count_buffer(sorted_exit_ops, 10, 4);
-    //print_runtime_counters();
 }
 #endif // if RUBY_DEBUG
 
@@ -798,7 +801,7 @@ rb_yjit_init(struct rb_yjit_options *options)
     rb_yjit_opts = *options;
     rb_yjit_opts.yjit_enabled = true;
 
-    // Normalize options
+    // Normalize command-line options
     if (rb_yjit_opts.call_threshold < 1) {
         rb_yjit_opts.call_threshold = 2;
     }
