@@ -5050,6 +5050,21 @@ int_round(int argc, VALUE* argv, VALUE num)
     return rb_int_round(num, ndigits, mode);
 }
 
+
+static VALUE
+rb_int_floor_or_ceil(int argc, VALUE* argv, VALUE num, VALUE (func(VALUE, int)))
+{
+    int ndigits;
+
+    if (!rb_check_arity(argc, 0, 1)) return num;
+    ndigits = NUM2INT(argv[0]);
+    if (ndigits >= 0) {
+	return num;
+    }
+
+    return func(num, ndigits);
+}
+
 /*
  *  Document-method: Integer#floor
  *  call-seq:
@@ -5072,14 +5087,7 @@ int_round(int argc, VALUE* argv, VALUE num)
 static VALUE
 int_floor(int argc, VALUE* argv, VALUE num)
 {
-    int ndigits;
-
-    if (!rb_check_arity(argc, 0, 1)) return num;
-    ndigits = NUM2INT(argv[0]);
-    if (ndigits >= 0) {
-	return num;
-    }
-    return rb_int_floor(num, ndigits);
+    return rb_int_floor_or_ceil(argc, argv, num, rb_int_floor);
 }
 
 /*
@@ -5104,14 +5112,7 @@ int_floor(int argc, VALUE* argv, VALUE num)
 static VALUE
 int_ceil(int argc, VALUE* argv, VALUE num)
 {
-    int ndigits;
-
-    if (!rb_check_arity(argc, 0, 1)) return num;
-    ndigits = NUM2INT(argv[0]);
-    if (ndigits >= 0) {
-	return num;
-    }
-    return rb_int_ceil(num, ndigits);
+    return rb_int_floor_or_ceil(argc, argv, num, rb_int_ceil);
 }
 
 /*
