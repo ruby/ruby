@@ -1,7 +1,7 @@
-#include <assert.h>
+#include "ruby/ruby.h"
+#include "vm_core.h"
 #include "insns.inc"
 #include "internal.h"
-#include "vm_core.h"
 #include "vm_sync.h"
 #include "vm_callinfo.h"
 #include "builtin.h"

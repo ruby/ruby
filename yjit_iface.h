@@ -6,20 +6,9 @@
 #ifndef YJIT_IFACE_H
 #define YJIT_IFACE_H 1
 
-#include "stddef.h"
-#include "stdint.h"
-#include "stdbool.h"
-#include "internal.h"
-#include "ruby/internal/attr/nodiscard.h"
+#include "ruby/ruby.h"
 #include "vm_core.h"
-#include "vm_callinfo.h"
-#include "builtin.h"
 #include "yjit_core.h"
-
-#ifndef rb_callcache
-struct rb_callcache;
-#define rb_callcache rb_callcache
-#endif
 
 #define YJIT_DECLARE_COUNTERS(...) struct rb_yjit_runtime_counters { \
     int64_t __VA_ARGS__; \
