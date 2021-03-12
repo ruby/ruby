@@ -143,6 +143,8 @@ env:
       - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
       - >-
         tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install
+        lib32ubsan1
+        libx32ubsan1 
         lib32stdc++-8-dev
         libx32stdc++-8-dev
         lib32gcc-8-dev
