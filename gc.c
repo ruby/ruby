@@ -10013,7 +10013,7 @@ gc_get_auto_compact(rb_execution_context_t *ec, VALUE _)
 static int
 get_envparam_size(const char *name, size_t *default_value, size_t lower_bound)
 {
-    char *ptr = getenv(name);
+    const char *ptr = getenv(name);
     ssize_t val;
 
     if (ptr != NULL && *ptr) {
@@ -10071,7 +10071,7 @@ get_envparam_size(const char *name, size_t *default_value, size_t lower_bound)
 static int
 get_envparam_double(const char *name, double *default_value, double lower_bound, double upper_bound, int accept_zero)
 {
-    char *ptr = getenv(name);
+    const char *ptr = getenv(name);
     double val;
 
     if (ptr != NULL && *ptr) {

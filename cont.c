@@ -3053,7 +3053,7 @@ Init_Cont(void)
     fiber_initialize_keywords[0] = rb_intern_const("blocking");
     fiber_initialize_keywords[1] = rb_intern_const("pool");
 
-    char * fiber_shared_fiber_pool_free_stacks = getenv("RUBY_SHARED_FIBER_POOL_FREE_STACKS");
+    const char *fiber_shared_fiber_pool_free_stacks = getenv("RUBY_SHARED_FIBER_POOL_FREE_STACKS");
     if (fiber_shared_fiber_pool_free_stacks) {
         shared_fiber_pool.free_stacks = atoi(fiber_shared_fiber_pool_free_stacks);
     }

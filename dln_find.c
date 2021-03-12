@@ -218,7 +218,7 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
 			       dp[1] == '\\' ||
 #endif
 			       dp[1] == '/')) {
-		char *home;
+		const char *home;
 
 		home = getenv("HOME");
 		if (home != NULL) {

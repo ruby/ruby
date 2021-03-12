@@ -1803,7 +1803,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 		opt->script = "-";
 	    }
 	    else if (opt->do_search) {
-		char *path = getenv("RUBYPATH");
+		const char *path = getenv("RUBYPATH");
 
 		opt->script = 0;
 		if (path) {
