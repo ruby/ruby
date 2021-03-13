@@ -109,7 +109,21 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/rdoc.gemspec", "lib/rdoc")
     cp_r("#{upstream}/exe/rdoc", "libexec")
     cp_r("#{upstream}/exe/ri", "libexec")
-    rm_rf(%w[lib/rdoc/markdown.kpeg lib/rdoc/markdown/literals.kpeg lib/rdoc/rd/block_parser.ry lib/rdoc/rd/inline_parser.ry])
+    parser_files = {
+      'lib/rdoc/markdown.kpeg' => 'lib/rdoc/markdown.rb',
+      'lib/rdoc/markdown/literals.kpeg' => 'lib/rdoc/markdown/literals.rb',
+      'lib/rdoc/rd/block_parser.ry' => 'lib/rdoc/rd/block_parser.rb',
+      'lib/rdoc/rd/inline_parser.ry' => 'lib/rdoc/rd/inline_parser.rb'
+    }
+    Dir.chdir(upstream) do
+      parser_files.each_value do |dst|
+        `bundle exec rake #{dst}`
+      end
+    end
+    parser_files.each_pair do |src, dst|
+      rm_rf(src)
+      cp_r("#{upstream}/#{dst}", dst)
+    end
     `git checkout lib/rdoc/.document`
   when "reline"
     rm_rf(%w[lib/reline lib/reline.rb test/reline])
