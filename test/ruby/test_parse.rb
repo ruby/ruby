@@ -677,12 +677,36 @@ x = __ENCODING__
     end
     assert_equal(Encoding.find("UTF-8"), x)
 
+    assert_nothing_raised do
+      eval <<-END, nil, __FILE__, __LINE__+1
+# coding: big5
+x = __ENCODING__
+      END
+    end
+    assert_equal(Encoding.find("Big5"), x)
+
     assert_raise(ArgumentError) do
       eval <<-END, nil, __FILE__, __LINE__+1
 # coding = foobarbazquxquux_dummy_enconding
 x = __ENCODING__
       END
     end
+
+    assert_nothing_raised do
+      eval <<-END, nil, __FILE__, __LINE__+1
+# frozen_string_literal: true
+x = ''
+      END
+    end
+    assert_equal(true, x.frozen?)
+
+    assert_nothing_raised do
+      eval <<-END, nil, __FILE__, __LINE__+1
+# frozen_string_literal = true
+x = ''
+      END
+    end
+    assert_equal(false, x.frozen?)
   end
 
   def test_utf8_bom
