@@ -6,22 +6,30 @@
 require 'erb'
 require 'optparse'
 require_relative 'lib/vpath'
-require_relative 'lib/atomic_write'
+require_relative 'lib/colorize'
 
 vpath = VPath.new
-aw = AtomicWrite.new
-aw.vpath = vpath
+timestamp = nil
+output = nil
+ifchange = nil
 source = false
+color = nil
 templates = []
 
 ARGV.options do |o|
+  o.on('-t', '--timestamp[=PATH]') {|v| timestamp = v || true}
   o.on('-i', '--input=PATH') {|v| template << v}
+  o.on('-o', '--output=PATH') {|v| output = v}
+  o.on('-c', '--[no-]if-change') {|v| ifchange = v}
   o.on('-x', '--source') {source = true}
-  aw.def_options(o)
+  o.on('--color') {color = true}
   vpath.def_options(o)
   o.order!(ARGV)
   templates << (ARGV.shift or abort o.to_s) if templates.empty?
 end
+color = Colorize.new(color)
+unchanged = color.pass("unchanged")
+updated = color.fail("updated")
 
 result = templates.map do |template|
   if ERB.instance_method(:initialize).parameters.assoc(:key) # Ruby 2.6+
@@ -33,4 +41,21 @@ result = templates.map do |template|
   source ? erb.src : proc{erb.result(binding)}.call
 end
 result = result.size == 1 ? result[0] : result.join("")
-aw.emit(result)
+if output
+  if ifchange and (vpath.open(output, "rb") {|f| f.read} rescue nil) == result
+    puts "#{output} #{unchanged}"
+  else
+    open(output, "wb") {|f| f.print result}
+    puts "#{output} #{updated}"
+  end
+  if timestamp
+    if timestamp == true
+      dir, base = File.split(output)
+      timestamp = File.join(dir, ".time." + base)
+    end
+    File.open(timestamp, 'a') {}
+    File.utime(nil, nil, timestamp)
+  end
+else
+  print result
+end
