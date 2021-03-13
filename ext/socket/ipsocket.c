@@ -191,6 +191,23 @@ rb_hrtime_now(void)
     return rb_timespec2hrtime(&ts);
 }
 
+#if defined(F_SETFL) && defined(F_GETFL)
+static void
+socket_nonblock_set(int fd, int nonblock)
+{
+    int flags = fcntl(fd, F_GETFL);
+    if (flags == -1) { rb_sys_fail(0); }
+    if (nonblock) {
+	if ((flags & O_NONBLOCK) != 0) { return; }
+	flags |= O_NONBLOCK;
+    } else {
+	if ((flags & O_NONBLOCK) == 0) { return; }
+	flags &= ~O_NONBLOCK;
+    }
+    if (fcntl(fd, F_SETFL, flags) == -1) { rb_sys_fail(0); }
+    return;
+}
+
 /*
  * @end is the absolute time when @ts is set to expire
  * Returns true if @end has past
@@ -209,12 +226,12 @@ static int
 check_socket_error(const int fd) {
     int value;
     socklen_t len = (socklen_t)sizeof(value);
-    getsockopt(fd, SOL_SOCKET, SO_ERROR, &value, &len);
+    getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *)&value, &len);
     return value;
 }
 
 static int
-find_connected_socket(const VALUE fds, rb_fdset_t *writefds) {
+find_connected_socket(VALUE fds, rb_fdset_t *writefds) {
     for (int i=0; i<RARRAY_LEN(fds); i++) {
         int fd = FIX2INT(RARRAY_AREF(fds, i));
         if (rb_fd_isset(fd, writefds)) {
@@ -225,9 +242,10 @@ find_connected_socket(const VALUE fds, rb_fdset_t *writefds) {
               case EINPROGRESS:
                 break;
               default: // fail
-                rb_fd_clr(fd, writefds);
-	        close(fd);
+                close(fd);
                 errno = error;
+                rb_ary_delete_at(fds, i);
+                i--;
                 break;
             }
         }
@@ -236,13 +254,16 @@ find_connected_socket(const VALUE fds, rb_fdset_t *writefds) {
 }
 
 static int
-count_fds_isset(const VALUE fds, const rb_fdset_t *set) {
-    int num = 0;
+set_fds(const VALUE fds, rb_fdset_t *set) {
+    int nfds = 0;
+    rb_fd_init(set);
     for (int i=0; i<RARRAY_LEN(fds); i++) {
         int fd = FIX2INT(RARRAY_AREF(fds, i));
-        if (rb_fd_isset(fd, set)) { num++; }
+        if (fd > nfds) { nfds = fd; }
+        rb_fd_set(fd, set);
     }
-    return num;
+    nfds++;
+    return nfds;
 }
 
 #define CONNECTION_ATTEMPT_DELAY_USEC 250000 /* 250ms is a recommended value in RFC8305 */
@@ -251,12 +272,9 @@ static VALUE
 init_inetsock_internal_happy(VALUE v)
 {
     struct inetsock_arg *arg = (void *)v;
-    int error = 0;
     struct addrinfo *res, *lres;
-    int fd, status = 0, local = 0;
-    int family = AF_UNSPEC;
+    int fd, nfds, error = 0, status = 0, local = 0, family = AF_UNSPEC;
     const char *syscall = 0;
-    int maxfd = 0, oflags;
     rb_fdset_t writefds;
     VALUE fds_ary = rb_ary_tmp_new(1);
     struct timeval connection_attempt_delay;
@@ -282,8 +300,6 @@ init_inetsock_internal_happy(VALUE v)
 
     arg->fd = fd = -1;
 
-    rb_fd_init(&writefds);
-
     for (res = arg->remote.res->ai; res; res = res->ai_next) {
 #if !defined(INET6) && defined(AF_INET6)
 	if (res->ai_family == AF_INET6)
@@ -301,7 +317,6 @@ init_inetsock_internal_happy(VALUE v)
                 lres = arg->local.res->ai;
             }
         }
-        res->ai_socktype |= SOCK_NONBLOCK;
         status = rsock_socket(res->ai_family,res->ai_socktype,res->ai_protocol);
         syscall = "socket(2)";
         fd = status;
@@ -310,6 +325,7 @@ init_inetsock_internal_happy(VALUE v)
             continue;
         }
         arg->fd = fd;
+        socket_nonblock_set(fd, true);
         if (lres) {
 #if !defined(_WIN32) && !defined(__CYGWIN__)
             status = 1;
@@ -331,25 +347,24 @@ init_inetsock_internal_happy(VALUE v)
             arg->fd = fd = -1;
             continue;
         } else {
-            rb_fd_set(fd, &writefds);
             rb_ary_push(fds_ary, INT2FIX(fd));
-            if (fd > maxfd) { maxfd = fd; }
+            nfds = set_fds(fds_ary, &writefds);
             /* connection_attempt_delay may be modified by select(2) in linux */
             connection_attempt_delay.tv_sec = 0;
             connection_attempt_delay.tv_usec = CONNECTION_ATTEMPT_DELAY_USEC;
-            status = rb_thread_fd_select(maxfd+1, NULL, &writefds, NULL, &connection_attempt_delay);
+            status = rb_thread_fd_select(nfds, NULL, &writefds, NULL, &connection_attempt_delay);
             syscall = "select(2)";
             if (status >= 0) {
                 arg->fd = fd = find_connected_socket(fds_ary, &writefds);
                 if (fd >= 0) { break; }
-            } else {
-                error = errno;
+                status = -1; // no connected socket found
             }
+            error = errno;
         }
     }
 
     /* wait connection */
-    while (fd < 0) {
+    while (fd < 0 && RARRAY_LEN(fds_ary) > 0) {
         struct timeval tv_storage, *tv = NULL;
         if (limit) { // if timeout is specified
             if (hrtime_update_expire(limit, end)) { // check if timeout has expired and update timeout
@@ -360,14 +375,15 @@ init_inetsock_internal_happy(VALUE v)
             rb_hrtime2timeval(&tv_storage, limit); // set new timeout
             tv = &tv_storage;
         }
-        if (count_fds_isset(fds_ary, &writefds) == 0) { break; } // no fds to wait
-        status = rb_thread_fd_select(maxfd+1, NULL, &writefds, NULL, tv);
+        nfds = set_fds(fds_ary, &writefds);
+        status = rb_thread_fd_select(nfds, NULL, &writefds, NULL, tv);
         syscall = "select(2)";
         if (status > 0) {
-            fd = find_connected_socket(fds_ary, &writefds);
-        } else {
-            error = errno;
+            arg->fd = fd = find_connected_socket(fds_ary, &writefds);
+            if (fd >= 0) { break; }
+            status = -1; // no connected socket found
         }
+        error = errno;
     }
 
     /* close unused fds */
@@ -375,6 +391,7 @@ init_inetsock_internal_happy(VALUE v)
         int _fd = FIX2INT(RARRAY_AREF(fds_ary, i));
         if (_fd != fd) { close(_fd); }
     }
+    rb_ary_clear(fds_ary);
 
     if (status < 0) {
 	VALUE host, port;
@@ -391,18 +408,12 @@ init_inetsock_internal_happy(VALUE v)
     }
 
     arg->fd = -1;
-
-    /* unset nonblock flag */
-    oflags = fcntl(fd, F_GETFL);
-    if (oflags == -1) { rb_sys_fail(0); }
-    oflags &= ~O_NONBLOCK;
-    if (fcntl(fd, F_SETFL, oflags) == -1) {
-	rb_sys_fail(0);
-    }
+    socket_nonblock_set(fd, false);
 
     /* create new instance */
     return rsock_init_sock(arg->sock, fd);
 }
+#endif // defined(F_SETFL) && defined(F_GETFL)
 
 VALUE
 rsock_init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv,
@@ -422,13 +433,15 @@ rsock_init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv,
     arg.resolv_timeout = resolv_timeout;
     arg.connect_timeout = connect_timeout;
 
+#if defined(F_SETFL) && defined(F_GETFL) // if nonblocking mode is available
     if (type == INET_CLIENT) {
         return rb_ensure(init_inetsock_internal_happy, (VALUE)&arg,
                          inetsock_cleanup, (VALUE)&arg);
-    } else {
-        return rb_ensure(init_inetsock_internal, (VALUE)&arg,
-                         inetsock_cleanup, (VALUE)&arg);
     }
+#endif
+
+    return rb_ensure(init_inetsock_internal, (VALUE)&arg,
+                     inetsock_cleanup, (VALUE)&arg);
 }
 
 static ID id_numeric, id_hostname;
