@@ -77,7 +77,7 @@ getattr(int fd, conmode *t)
 
 static ID id_getc, id_console, id_close, id_min, id_time, id_intr;
 #if ENABLE_IO_GETPASS
-static ID id_gets;
+static ID id_gets, id_chomp_bang;
 #endif
 
 #ifdef HAVE_RB_SCHEDULER_TIMEOUT
@@ -1223,8 +1223,8 @@ console_key_pressed_p(VALUE io, VALUE k)
 }
 #else
 struct query_args {
-    const char *qstr;
-    int opt;
+    char qstr[6];
+    unsigned char opt;
 };
 
 static int
@@ -1562,7 +1562,7 @@ static VALUE
 str_chomp(VALUE str)
 {
     if (!NIL_P(str)) {
-	str = rb_funcallv(str, rb_intern("chomp!"), 0, 0);
+	rb_funcallv(str, id_chomp_bang, 0, 0);
     }
     return str;
 }
@@ -1573,6 +1573,10 @@ str_chomp(VALUE str)
  *
  * Reads and returns a line without echo back.
  * Prints +prompt+ unless it is +nil+.
+ *
+ * The newline character that terminates the
+ * read line is removed from the returned string,
+ * see String#chomp!.
  *
  * You must require 'io/console' to use this method.
  */
@@ -1618,6 +1622,7 @@ Init_console(void)
     id_getc = rb_intern("getc");
 #if ENABLE_IO_GETPASS
     id_gets = rb_intern("gets");
+    id_chomp_bang = rb_intern("chomp!");
 #endif
     id_console = rb_intern("console");
     id_close = rb_intern("close");
