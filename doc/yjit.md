@@ -19,7 +19,7 @@ To cite this repository in your publications, please use this bibtex snippet:
 ```
 @misc{yjit_ruby_jit,
   author = {Chevalier-Boisvert, Maxime and Wu, Alan and Patterson, Aaron},
-  title = {Minimalistic Gridworld Environment for OpenAI Gym},
+  title = {YJIT - Yet Another Ruby JIT},
   year = {2021},
   publisher = {GitHub},
   journal = {GitHub repository},
