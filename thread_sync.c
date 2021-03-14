@@ -560,7 +560,7 @@ rb_mutex_sleep(VALUE self, VALUE timeout)
 
     RUBY_VM_CHECK_INTS_BLOCKING(GET_EC());
     time_t end = time(0) - beg;
-    return INT2FIX(end);
+    return TIMET2NUM(end);
 }
 
 /*
