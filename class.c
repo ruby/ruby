@@ -1365,7 +1365,7 @@ ins_methods_type_i(st_data_t name, st_data_t type, st_data_t ary, rb_method_visi
     if ((rb_method_visibility_t)type == visi) {
 	ins_methods_push(name, ary);
     }
-    return ST_CONTINUE;   
+    return ST_CONTINUE;
 }
 
 static int
