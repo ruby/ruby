@@ -704,6 +704,12 @@ EXPECTED
     assert_equal "\n<p><a href=\"irc://irc.freenode.net/#ruby-lang\">ruby-lang</a></p>\n", result
   end
 
+  def test_convert_with_exclude_tag
+    assert_equal "\n<p><code>aaa</code>[:symbol]</p>\n", @to.convert('+aaa+[:symbol]')
+    assert_equal "\n<p><code>aaa[:symbol]</code></p>\n", @to.convert('+aaa[:symbol]+')
+    assert_equal "\n<p><a href=\":symbol\">aaa</a></p>\n", @to.convert('aaa[:symbol]')
+  end
+
   def test_gen_url
     assert_equal '<a href="example">example</a>',
                  @to.gen_url('link:example', 'example')
