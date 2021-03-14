@@ -2251,6 +2251,12 @@ class TestArray < Test::Unit::TestCase
     assert_equal("abcde".each_char.to_a.permutation(5).sort,
                  "edcba".each_char.to_a.permutation(5).sort)
     assert_equal(@cls[].permutation(0).to_a, @cls[[]])
+    assert_raise_with_message(ArgumentError, /wrong number of arguments/) do
+      a.permutation(0, 0)
+    end
+    assert_raise_with_message(ArgumentError, /wrong number of arguments/) do
+      a.permutation(0, 0) {}
+    end
 
     a = @cls[1, 2, 3, 4]
     b = @cls[]

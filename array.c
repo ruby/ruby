@@ -6744,10 +6744,12 @@ rb_ary_permutation(int argc, VALUE *argv, VALUE ary)
 {
     long r, n, i;
 
+    rb_check_arity(argc, 0, 1);
+
     n = RARRAY_LEN(ary);                  /* Array length */
     RETURN_SIZED_ENUMERATOR(ary, argc, argv, rb_ary_permutation_size);   /* Return enumerator if no block */
     r = n;
-    if (rb_check_arity(argc, 0, 1) && !NIL_P(argv[0]))
+    if (argc > 0 && !NIL_P(argv[0]))
         r = NUM2LONG(argv[0]);            /* Permutation size from argument */
 
     if (r < 0 || n < r) {
