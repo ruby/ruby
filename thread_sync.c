@@ -34,7 +34,8 @@ sync_wakeup(struct list_head *head, long max)
 
             if (cur->th->scheduler != Qnil && rb_fiberptr_blocking(cur->fiber) == 0) {
                 rb_fiber_scheduler_unblock(cur->th->scheduler, cur->self, rb_fiberptr_self(cur->fiber));
-            } else {
+            }
+            else {
                 rb_threadptr_interrupt(cur->th);
                 cur->th->status = THREAD_RUNNABLE;
             }
@@ -316,7 +317,8 @@ do_mutex_lock(VALUE self, int interruptible_p)
                 if (!mutex->fiber) {
                     mutex->fiber = fiber;
                 }
-            } else {
+            }
+            else {
                 enum rb_thread_status prev_status = th->status;
                 rb_hrtime_t *timeout = 0;
                 rb_hrtime_t rel = rb_msec2hrtime(100);
@@ -440,7 +442,8 @@ rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_fiber_t *fiber)
             if (cur->th->scheduler != Qnil && rb_fiberptr_blocking(cur->fiber) == 0) {
                 rb_fiber_scheduler_unblock(cur->th->scheduler, cur->self, rb_fiberptr_self(cur->fiber));
                 goto found;
-            } else {
+            }
+            else {
                 switch (cur->th->status) {
                   case THREAD_RUNNABLE: /* from someone else calling Thread#run */
                   case THREAD_STOPPED_FOREVER: /* likely (rb_mutex_lock) */
@@ -549,10 +552,12 @@ rb_mutex_sleep(VALUE self, VALUE timeout)
     if (scheduler != Qnil) {
         rb_fiber_scheduler_kernel_sleep(scheduler, timeout);
         mutex_lock_uninterruptible(self);
-    } else {
+    }
+    else {
         if (NIL_P(timeout)) {
             rb_ensure(rb_mutex_sleep_forever, self, mutex_lock_uninterruptible, self);
-        } else {
+        }
+        else {
             rb_hrtime_t rel = rb_timeval2hrtime(&t);
             rb_ensure(rb_mutex_wait_for, (VALUE)&rel, mutex_lock_uninterruptible, self);
         }
