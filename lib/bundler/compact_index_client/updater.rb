@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 require_relative "../vendored_fileutils"
-require "stringio"
-require "zlib"
 
 module Bundler
   class CompactIndexClient
@@ -45,24 +43,18 @@ module Bundler
               else
                 "bytes=#{local_temp_path.size}-"
               end
-          else
-            # Fastly ignores Range when Accept-Encoding: gzip is set
-            headers["Accept-Encoding"] = "gzip"
           end
 
           response = @fetcher.call(remote_path, headers)
           return nil if response.is_a?(Net::HTTPNotModified)
 
           content = response.body
-          if response["Content-Encoding"] == "gzip"
-            content = Zlib::GzipReader.new(StringIO.new(content)).read
-          end
 
           SharedHelpers.filesystem_access(local_temp_path) do
             if response.is_a?(Net::HTTPPartialContent) && local_temp_path.size.nonzero?
               local_temp_path.open("a") {|f| f << slice_body(content, 1..-1) }
             else
-              local_temp_path.open("w") {|f| f << content }
+              local_temp_path.open("wb") {|f| f << content }
             end
           end
 

@@ -91,6 +91,7 @@ static char *w32_getenv(const char *name, UINT cp);
 #define dln_find_exe_r(fname, path, buf, size) rb_w32_udln_find_exe_r(fname, path, buf, size, cp)
 #define dln_find_file_r(fname, path, buf, size) rb_w32_udln_find_file_r(fname, path, buf, size, cp)
 #undef CharNext			/* no default cp version */
+#undef getenv
 
 #ifndef PATH_MAX
 # if defined MAX_PATH
@@ -704,6 +705,12 @@ static CRITICAL_SECTION conlist_mutex;
 static st_table *conlist = NULL;
 #define conlist_disabled ((st_table *)-1)
 
+#define thread_exclusive(obj) \
+    for (bool exclusive_for_##obj = (EnterCriticalSection(&obj##_mutex), true); \
+	 exclusive_for_##obj; \
+	 exclusive_for_##obj = (LeaveCriticalSection(&obj##_mutex), false))
+
+static CRITICAL_SECTION uenvarea_mutex;
 static char *uenvarea;
 
 /* License: Ruby's */
@@ -728,13 +735,13 @@ free_conlist(st_data_t key, st_data_t val, st_data_t arg)
 static void
 constat_delete(HANDLE h)
 {
-    EnterCriticalSection(&conlist_mutex);
-    if (conlist && conlist != conlist_disabled) {
-	st_data_t key = (st_data_t)h, val;
-	st_delete(conlist, &key, &val);
-	xfree((struct constat *)val);
+    thread_exclusive(conlist) {
+	if (conlist && conlist != conlist_disabled) {
+	    st_data_t key = (st_data_t)h, val;
+	    st_delete(conlist, &key, &val);
+	    xfree((struct constat *)val);
+	}
     }
-    LeaveCriticalSection(&conlist_mutex);
 }
 
 /* License: Ruby's */
@@ -745,10 +752,13 @@ exit_handler(void)
     DeleteCriticalSection(&select_mutex);
     DeleteCriticalSection(&socklist_mutex);
     DeleteCriticalSection(&conlist_mutex);
-    if (uenvarea) {
-	free(uenvarea);
-	uenvarea = NULL;
+    thread_exclusive(uenvarea) {
+	if (uenvarea) {
+	    free(uenvarea);
+	    uenvarea = NULL;
+	}
     }
+    DeleteCriticalSection(&uenvarea_mutex);
 }
 
 /* License: Ruby's */
@@ -771,15 +781,23 @@ vm_exit_handler(ruby_vm_t *vm)
     LeaveCriticalSection(&conlist_mutex);
 }
 
+#define ATOMIC_LONG_CAS(var, oldval, newval) InterlockedCompareExchange(&(var), (newval), (oldval))
+
 /* License: Ruby's */
 static void
 install_vm_exit_handler(void)
 {
-    static bool installed = 0;
+    static LONG installed = 0;
+    LONG i;
 
-    if (!installed) {
+    while ((i = ATOMIC_LONG_CAS(installed, 0, -1)) != 1) {
+	if (i != 0) {
+	    Sleep(1);
+	    continue;
+	}
 	ruby_vm_at_exit(vm_exit_handler);
-	installed = 1;
+	ATOMIC_LONG_CAS(installed, -1, 1);
+	break;
     }
 }
 
@@ -817,13 +835,13 @@ socklist_insert(SOCKET sock, int flag)
 {
     int ret;
 
-    EnterCriticalSection(&socklist_mutex);
-    if (!socklist) {
-	socklist = st_init_numtable();
-	install_vm_exit_handler();
+    thread_exclusive(socklist) {
+	if (!socklist) {
+	    socklist = st_init_numtable();
+	    install_vm_exit_handler();
+	}
+	ret = st_insert(socklist, (st_data_t)sock, (st_data_t)flag);
     }
-    ret = st_insert(socklist, (st_data_t)sock, (st_data_t)flag);
-    LeaveCriticalSection(&socklist_mutex);
 
     return ret;
 }
@@ -833,18 +851,14 @@ static inline int
 socklist_lookup(SOCKET sock, int *flagp)
 {
     st_data_t data;
-    int ret;
+    int ret = 0;
 
-    EnterCriticalSection(&socklist_mutex);
-    if (socklist) {
+    thread_exclusive(socklist) {
+	if (!socklist) continue;
 	ret = st_lookup(socklist, (st_data_t)sock, (st_data_t *)&data);
 	if (ret && flagp)
 	    *flagp = (int)data;
     }
-    else {
-	ret = 0;
-    }
-    LeaveCriticalSection(&socklist_mutex);
 
     return ret;
 }
@@ -855,10 +869,10 @@ socklist_delete(SOCKET *sockp, int *flagp)
 {
     st_data_t key;
     st_data_t data;
-    int ret;
+    int ret = 0;
 
-    EnterCriticalSection(&socklist_mutex);
-    if (socklist) {
+    thread_exclusive(socklist) {
+	if (!socklist) continue;
 	key = (st_data_t)*sockp;
 	if (flagp)
 	    data = (st_data_t)*flagp;
@@ -869,10 +883,6 @@ socklist_delete(SOCKET *sockp, int *flagp)
 		*flagp = (int)data;
 	}
     }
-    else {
-	ret = 0;
-    }
-    LeaveCriticalSection(&socklist_mutex);
 
     return ret;
 }
@@ -908,6 +918,7 @@ rb_w32_sysinit(int *argc, char ***argv)
 
     tzset();
 
+    InitializeCriticalSection(&uenvarea_mutex);
     init_env();
 
     init_stdhandle();
@@ -2335,7 +2346,7 @@ ruby_direct_conv(const WCHAR *file, const WCHAR *alt, struct direct *entry, cons
 static struct direct *
 readdir_internal(DIR *dirp, BOOL (*conv)(const WCHAR *, const WCHAR *, struct direct *, const void *), const void *enc)
 {
-    static int dummy = 0;
+    static long dummy_ino = 0;
 
     if (dirp->curr) {
 
@@ -2353,7 +2364,7 @@ readdir_internal(DIR *dirp, BOOL (*conv)(const WCHAR *, const WCHAR *, struct di
 	//
 	// Fake inode
 	//
-	dirp->dirstr.d_ino = dummy++;
+	dirp->dirstr.d_ino = (ino_t)(InterlockedIncrement(&dummy_ino) - 1);
 
 	//
 	// Attributes
@@ -2914,7 +2925,7 @@ rb_w32_fdisset(int fd, fd_set *set)
     SOCKET s = TO_SOCKET(fd);
     if (s == (SOCKET)INVALID_HANDLE_VALUE)
         return 0;
-    RUBY_CRITICAL(ret = __WSAFDIsSet(s, set));
+    RUBY_CRITICAL {ret = __WSAFDIsSet(s, set);}
     return ret;
 }
 
@@ -3118,9 +3129,9 @@ do_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     }
     else {
 	RUBY_CRITICAL {
-	    EnterCriticalSection(&select_mutex);
-	    r = select(nfds, rd, wr, ex, timeout);
-	    LeaveCriticalSection(&select_mutex);
+	    thread_exclusive(select) {
+		r = select(nfds, rd, wr, ex, timeout);
+	    }
 	    if (r == SOCKET_ERROR) {
 		errno = map_errno(WSAGetLastError());
 		r = -1;
@@ -5264,32 +5275,43 @@ w32_getenv(const char *name, UINT cp)
 {
     WCHAR *wenvarea, *wenv;
     int len = strlen(name);
-    char *env;
+    char *env, *found = NULL;
     int wlen;
 
     if (len == 0) return NULL;
 
-    if (uenvarea) {
-	free(uenvarea);
-	uenvarea = NULL;
+    if (!NTLoginName) {
+	/* initialized in init_env, uenvarea_mutex should have been
+	 * initialized before it */
+	return getenv(name);
     }
-    wenvarea = GetEnvironmentStringsW();
-    if (!wenvarea) {
-	map_errno(GetLastError());
-	return NULL;
+
+    thread_exclusive(uenvarea) {
+	if (uenvarea) {
+	    free(uenvarea);
+	    uenvarea = NULL;
+	}
+	wenvarea = GetEnvironmentStringsW();
+	if (!wenvarea) {
+	    map_errno(GetLastError());
+	    continue;
+	}
+	for (wenv = wenvarea, wlen = 1; *wenv; wenv += lstrlenW(wenv) + 1)
+	    wlen += lstrlenW(wenv) + 1;
+	uenvarea = wstr_to_mbstr(cp, wenvarea, wlen, NULL);
+	FreeEnvironmentStringsW(wenvarea);
+	if (!uenvarea)
+	    continue;
+
+	for (env = uenvarea; *env; env += strlen(env) + 1) {
+	    if (strncasecmp(env, name, len) == 0 && *(env + len) == '=') {
+		found = env + len + 1;
+		break;
+	    }
+	}
     }
-    for (wenv = wenvarea, wlen = 1; *wenv; wenv += lstrlenW(wenv) + 1)
-	wlen += lstrlenW(wenv) + 1;
-    uenvarea = wstr_to_mbstr(cp, wenvarea, wlen, NULL);
-    FreeEnvironmentStringsW(wenvarea);
-    if (!uenvarea)
-	return NULL;
 
-    for (env = uenvarea; *env; env += strlen(env) + 1)
-	if (strncasecmp(env, name, len) == 0 && *(env + len) == '=')
-	    return env + len + 1;
-
-    return NULL;
+    return found;
 }
 
 /* License: Ruby's */
@@ -6475,7 +6497,7 @@ rb_w32_fclose(FILE *fp)
 int
 rb_w32_pipe(int fds[2])
 {
-    static DWORD serial = 0;
+    static long serial = 0;
     static const char prefix[] = "\\\\.\\pipe\\ruby";
     enum {
 	width_of_prefix = (int)sizeof(prefix) - 1,
@@ -6491,7 +6513,7 @@ rb_w32_pipe(int fds[2])
 
     memcpy(name, prefix, width_of_prefix);
     snprintf(name + width_of_prefix, width_of_ids, "%.*"PRI_PIDT_PREFIX"x-%.*lx",
-	     width_of_pid, rb_w32_getpid(), width_of_serial, serial++);
+	     width_of_pid, rb_w32_getpid(), width_of_serial, InterlockedIncrement(&serial)-1);
 
     sec.nLength = sizeof(sec);
     sec.lpSecurityDescriptor = NULL;
@@ -6593,19 +6615,19 @@ static struct constat *
 constat_handle(HANDLE h)
 {
     st_data_t data;
-    struct constat *p;
-
-    EnterCriticalSection(&conlist_mutex);
-    if (!conlist) {
-	if (console_emulator_p()) {
-	    conlist = conlist_disabled;
-	}
-	else {
+    struct constat *p = NULL;
+    thread_exclusive(conlist) {
+	if (!conlist) {
+	    if (console_emulator_p()) {
+		conlist = conlist_disabled;
+		continue;
+	    }
 	    conlist = st_init_numtable();
 	    install_vm_exit_handler();
 	}
-    }
-    if (conlist != conlist_disabled) {
+	else if (conlist == conlist_disabled) {
+	    continue;
+	}
 	if (st_lookup(conlist, (st_data_t)h, &data)) {
 	    p = (struct constat *)data;
 	}
@@ -6622,11 +6644,6 @@ constat_handle(HANDLE h)
 	    st_insert(conlist, (st_data_t)h, (st_data_t)p);
 	}
     }
-    else {
-	p = NULL;
-    }
-    LeaveCriticalSection(&conlist_mutex);
-
     return p;
 }
 
@@ -6636,16 +6653,12 @@ constat_reset(HANDLE h)
 {
     st_data_t data;
     struct constat *p;
-
-    EnterCriticalSection(&conlist_mutex);
-    if (
-	conlist && conlist != conlist_disabled &&
-	st_lookup(conlist, (st_data_t)h, &data)
-    ) {
+    thread_exclusive(conlist) {
+	if (!conlist || conlist == conlist_disabled) continue;
+	if (!st_lookup(conlist, (st_data_t)h, &data)) continue;
 	p = (struct constat *)data;
 	p->vt100.state = constat_init;
     }
-    LeaveCriticalSection(&conlist_mutex);
 }
 
 #define FOREGROUND_MASK (FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED | FOREGROUND_INTENSITY)

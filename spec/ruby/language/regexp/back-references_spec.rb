@@ -63,6 +63,11 @@ describe "Regexps with back-references" do
     (/\10()()()()()()()()()()/ =~ "\x08").should == 0
   end
 
+  it "fails when trying to match a backreference to an unmatched capture group" do
+    /\1()/.match("").should == nil
+    /(?:(a)|b)\1/.match("b").should == nil
+  end
+
   it "ignores backreferences > 1000" do
     /\99999/.match("99999")[0].should == "99999"
   end

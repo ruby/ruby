@@ -329,11 +329,11 @@ module Bundler::Molinillo
 
         # Look for past conflicts that could be unwound to affect the
         # requirement tree for the current conflict
+        all_reqs = last_detail_for_current_unwind.all_requirements
+        all_reqs_size = all_reqs.size
         relevant_unused_unwinds = unused_unwind_options.select do |alternative|
-          intersecting_requirements =
-            last_detail_for_current_unwind.all_requirements &
-            alternative.requirements_unwound_to_instead
-          next if intersecting_requirements.empty?
+          diff_reqs = all_reqs - alternative.requirements_unwound_to_instead
+          next if diff_reqs.size == all_reqs_size
           # Find the highest index unwind whilst looping through
           current_detail = alternative if alternative > current_detail
           alternative
@@ -344,8 +344,12 @@ module Bundler::Molinillo
         state.unused_unwind_options += unwind_details.reject { |detail| detail.state_index == -1 }
 
         # Update the requirements_unwound_to_instead on any relevant unused unwinds
-        relevant_unused_unwinds.each { |d| d.requirements_unwound_to_instead << current_detail.state_requirement }
-        unwind_details.each { |d| d.requirements_unwound_to_instead << current_detail.state_requirement }
+        relevant_unused_unwinds.each do |d|
+          (d.requirements_unwound_to_instead << current_detail.state_requirement).uniq!
+        end
+        unwind_details.each do |d|
+          (d.requirements_unwound_to_instead << current_detail.state_requirement).uniq!
+        end
 
         current_detail
       end
@@ -803,7 +807,7 @@ module Bundler::Molinillo
 
         possibilities.reverse_each do |possibility|
           dependencies = dependencies_for(possibility)
-          if current_possibility_set && current_possibility_set.dependencies == dependencies
+          if current_possibility_set && dependencies_equal?(current_possibility_set.dependencies, dependencies)
             current_possibility_set.possibilities.unshift(possibility)
           else
             possibility_sets.unshift(PossibilitySet.new(dependencies, [possibility]))

@@ -821,6 +821,8 @@ gem 'other', version
 
     assert !File.exist?(system_path), 'plugin written incorrect written to system plugins_dir'
     assert File.exist?(build_root_path), 'plugin not written to build_root'
+
+    refute_includes File.read(build_root_path), build_root
   end
 
   def test_keeps_plugins_up_to_date

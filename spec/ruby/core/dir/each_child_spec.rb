@@ -10,6 +10,18 @@ describe "Dir.each_child" do
     DirSpecs.delete_mock_dirs
   end
 
+  it "accepts an encoding keyword for the encoding of the entries" do
+    dirs = Dir.each_child("#{DirSpecs.mock_dir}/deeply/nested", encoding: "utf-8").to_a.sort
+    dirs.each {|dir| dir.encoding.should == Encoding::UTF_8}
+  end
+
+  ruby_version_is ""..."2.7" do
+    it "accepts nil options" do
+      dirs = Dir.each_child("#{DirSpecs.mock_dir}/deeply/nested", nil).to_a.sort
+      dirs.each {|dir| dir.encoding.should == Encoding.find("filesystem")}
+    end
+  end
+
   it "yields all names in an existing directory to the provided block" do
     a, b = [], []
 

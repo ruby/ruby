@@ -128,4 +128,15 @@ describe "Regexps with repetition" do
       RUBY
     end
   end
+
+  it "treats ? after {n} quantifier as another quantifier, not as non-greedy marker" do
+    /a{2}?/.match("").to_a.should == [""]
+  end
+
+  it "matches zero-width capture groups in optional iterations of loops" do
+    /()?/.match("").to_a.should == ["", ""]
+    /(a*)?/.match("").to_a.should == ["", ""]
+    /(a*)*/.match("").to_a.should == ["", ""]
+    /(?:a|()){500,1000}/.match("a" * 500).to_a.should == ["a" * 500, ""]
+  end
 end

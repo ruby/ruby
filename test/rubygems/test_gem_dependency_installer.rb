@@ -44,7 +44,7 @@ class TestGemDependencyInstaller < Gem::TestCase
       s.add_development_dependency 'c'
     end
 
-    util_reset_gems
+    util_setup_spec_fetcher(@a1, @a1_pre, @b1, @d1)
   end
 
   def test_install
@@ -287,8 +287,6 @@ class TestGemDependencyInstaller < Gem::TestCase
 
     @aa1, @aa1_gem = util_gem 'aa', '1'
 
-    util_reset_gems
-
     FileUtils.mv @a1_gem, @tempdir
     FileUtils.mv @aa1_gem, @tempdir
     FileUtils.mv @b1_gem, @tempdir
@@ -306,8 +304,6 @@ class TestGemDependencyInstaller < Gem::TestCase
     util_setup_gems
 
     @aa1, @aa1_gem = util_gem 'aa', '1'
-
-    util_reset_gems
 
     FileUtils.mv @a1_gem, @tempdir
     FileUtils.mv @aa1_gem, @tempdir
@@ -328,8 +324,6 @@ class TestGemDependencyInstaller < Gem::TestCase
     util_setup_gems
 
     @aa1, @aa1_gem = util_gem 'aa', '1'
-
-    util_reset_gems
 
     FileUtils.mv @a1_gem, @tempdir
     FileUtils.mv @aa1_gem, @tempdir
@@ -946,6 +940,31 @@ class TestGemDependencyInstaller < Gem::TestCase
     assert_equal %w[d-2], inst.installed_gems.map {|s| s.full_name }
   end
 
+  def test_install_legacy_spec_with_nil_required_ruby_version
+    path = File.expand_path "../data/null-required-ruby-version.gemspec.rz", __FILE__
+    spec = Marshal.load Gem.read_binary(path)
+    def spec.validate(*args); end
+
+    util_build_gem spec
+
+    cache_file = File.join @tempdir, 'gems', "#{spec.original_name}.gem"
+    FileUtils.mkdir_p File.dirname cache_file
+    FileUtils.mv spec.cache_file, cache_file
+
+    util_setup_spec_fetcher spec
+
+    data = Gem.read_binary(cache_file)
+
+    @fetcher.data['http://gems.example.com/gems/activesupport-1.0.0.gem'] = data
+
+    dep = Gem::Dependency.new 'activesupport'
+
+    inst = Gem::DependencyInstaller.new
+    inst.install dep
+
+    assert_equal %w[activesupport-1.0.0], Gem::Specification.map(&:full_name)
+  end
+
   def test_install_legacy_spec_with_nil_required_rubygems_version
     path = File.expand_path "../data/null-required-rubygems-version.gemspec.rz", __FILE__
     spec = Marshal.load Gem.read_binary(path)
@@ -1131,16 +1150,6 @@ class TestGemDependencyInstaller < Gem::TestCase
     @d1, @d1_gem = util_gem 'd', '1'
     @d2, @d2_gem = util_gem 'd', '2'
 
-    util_reset_gems
-  end
-
-  def util_reset_gems
-    @a1     ||= nil
-    @b1     ||= nil
-    @a1_pre ||= nil
-    @d1     ||= nil
-    @d2     ||= nil
-
-    util_setup_spec_fetcher(*[@a1, @a1_pre, @b1, @d1, @d2].compact)
+    util_setup_spec_fetcher(@d1, @d2)
   end
 end

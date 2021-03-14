@@ -823,6 +823,13 @@ enum {
     HEAP_PAGE_BITMAP_SIZE = (BITS_SIZE * HEAP_PAGE_BITMAP_LIMIT),
     HEAP_PAGE_BITMAP_PLANES = 4 /* RGENGC: mark, unprotected, uncollectible, marking */
 };
+#define HEAP_PAGE_ALIGN (1 << HEAP_PAGE_ALIGN_LOG)
+#define HEAP_PAGE_SIZE HEAP_PAGE_ALIGN
+#if defined(HAVE_MMAP) && (PAGE_SIZE <= HEAP_PAGE_SIZE)
+# define USE_MMAP_ALIGNED_ALLOC 1
+#else
+# define USE_MMAP_ALIGNED_ALLOC 0
+#endif
 
 struct heap_page {
     short total_slots;
@@ -9989,7 +9996,7 @@ gc_set_auto_compact(rb_execution_context_t *ec, VALUE _, VALUE v)
 
     /* If not MinGW, Windows, or does not have mmap, we cannot use mprotect for
      * the read barrier, so we must disable automatic compaction. */
-#if !defined(__MINGW32__) && !defined(_WIN32) && !defined(HAVE_MMAP)
+#if !defined(__MINGW32__) && !defined(_WIN32) && !USE_MMAP_ALIGNED_ALLOC
     rb_raise(rb_eNotImpError, "Automatic compaction isn't available on this platform");
 #endif
 
@@ -10006,7 +10013,7 @@ gc_get_auto_compact(rb_execution_context_t *ec, VALUE _)
 static int
 get_envparam_size(const char *name, size_t *default_value, size_t lower_bound)
 {
-    char *ptr = getenv(name);
+    const char *ptr = getenv(name);
     ssize_t val;
 
     if (ptr != NULL && *ptr) {
@@ -10064,7 +10071,7 @@ get_envparam_size(const char *name, size_t *default_value, size_t lower_bound)
 static int
 get_envparam_double(const char *name, double *default_value, double lower_bound, double upper_bound, int accept_zero)
 {
-    char *ptr = getenv(name);
+    const char *ptr = getenv(name);
     double val;
 
     if (ptr != NULL && *ptr) {
@@ -10389,7 +10396,7 @@ rb_aligned_malloc(size_t alignment, size_t size)
 #elif defined _WIN32
     void *_aligned_malloc(size_t, size_t);
     res = _aligned_malloc(size, alignment);
-#elif defined(HAVE_MMAP)
+#elif USE_MMAP_ALIGNED_ALLOC
     GC_ASSERT(alignment % sysconf(_SC_PAGE_SIZE) == 0);
 
     char *ptr = mmap(NULL, alignment + size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
@@ -10406,7 +10413,7 @@ rb_aligned_malloc(size_t alignment, size_t size)
     GC_ASSERT(start_out_of_range_size % sysconf(_SC_PAGE_SIZE) == 0);
     if (start_out_of_range_size > 0) {
         if (munmap(ptr, start_out_of_range_size)) {
-            rb_bug("rb_aligned_malloc: munmap faile for start");
+            rb_bug("rb_aligned_malloc: munmap failed for start");
         }
     }
 
@@ -10419,6 +10426,12 @@ rb_aligned_malloc(size_t alignment, size_t size)
     }
 
     res = (void *)aligned;
+#elif defined(HAVE_POSIX_MEMALIGN)
+    if (posix_memalign(&res, alignment, size) != 0) {
+        return NULL;
+    }
+#elif defined(HAVE_MEMALIGN)
+    res = memalign(alignment, size);
 #else
     char* aligned;
     res = malloc(alignment + size + sizeof(void*));
@@ -10441,11 +10454,13 @@ rb_aligned_free(void *ptr, size_t size)
     __mingw_aligned_free(ptr);
 #elif defined _WIN32
     _aligned_free(ptr);
-#elif defined HAVE_MMAP
+#elif USE_MMAP_ALIGNED_ALLOC
     GC_ASSERT(size % sysconf(_SC_PAGE_SIZE) == 0);
     if (munmap(ptr, size)) {
         rb_bug("rb_aligned_free: munmap failed");
     }
+#elif defined(HAVE_POSIX_MEMALIGN) || defined(HAVE_MEMALIGN)
+    free(ptr);
 #else
     free(((void**)ptr)[-1]);
 #endif

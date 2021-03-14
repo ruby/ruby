@@ -105,4 +105,18 @@ describe "String#scrub!" do
     input.scrub! { |b| "<?>" }
     input.should == "a<?>"
   end
+
+  it "maintains the state of frozen strings that are already valid" do
+    input = "a"
+    input.freeze
+    input.scrub!
+    input.frozen?.should be_true
+  end
+
+  it "preserves the instance variables of already valid strings" do
+    input = "a"
+    input.instance_variable_set(:@a, 'b')
+    input.scrub!
+    input.instance_variable_get(:@a).should == 'b'
+  end
 end

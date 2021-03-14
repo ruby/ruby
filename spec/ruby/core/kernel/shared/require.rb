@@ -546,8 +546,12 @@ describe :kernel_require, shared: true do
       ScratchPad.recorded.should == []
     end
 
-    it "complex, enumerator, rational and thread are already required" do
-      provided = %w[complex enumerator rational thread]
+    provided = %w[complex enumerator rational thread]
+    ruby_version_is "2.7" do
+      provided << 'ruby2_keywords'
+    end
+
+    it "#{provided.join(', ')} are already required" do
       features = ruby_exe("puts $LOADED_FEATURES", options: '--disable-gems')
       provided.each { |feature|
         features.should =~ /\b#{feature}\.(rb|so|jar)$/

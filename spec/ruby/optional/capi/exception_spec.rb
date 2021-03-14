@@ -36,6 +36,50 @@ describe "C-API Exception function" do
       runtime_error.set_backtrace []
       -> { @s.rb_exc_raise(runtime_error) }.should raise_error(RuntimeError, '42')
     end
+
+    it "sets $! to the raised exception when not rescuing from an another exception" do
+      runtime_error = RuntimeError.new '42'
+      runtime_error.set_backtrace []
+      begin
+        @s.rb_exc_raise(runtime_error)
+      rescue
+        $!.should == runtime_error
+      end
+    end
+
+    it "sets $! to the raised exception when $! when rescuing from an another exception" do
+      runtime_error = RuntimeError.new '42'
+      runtime_error.set_backtrace []
+      begin
+        begin
+          raise StandardError
+        rescue
+          @s.rb_exc_raise(runtime_error)
+        end
+      rescue
+        $!.should == runtime_error
+      end
+    end
+  end
+
+  describe "rb_errinfo" do
+    it "is cleared when entering a C method" do
+      begin
+        raise StandardError
+      rescue
+        $!.class.should == StandardError
+        @s.rb_errinfo().should == nil
+      end
+    end
+
+    it "does not clear $! in the calling method" do
+      begin
+        raise StandardError
+      rescue
+        @s.rb_errinfo()
+        $!.class.should == StandardError
+      end
+    end
   end
 
   describe "rb_set_errinfo" do

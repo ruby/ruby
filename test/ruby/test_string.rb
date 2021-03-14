@@ -695,6 +695,7 @@ CODE
 
     @cls == String and
       assert_no_memory_leak([], "s = ''; salt_proc = proc{#{(crypt_supports_des_crypt? ? '..' : good_salt).inspect}}", "#{<<~"begin;"}\n#{<<~'end;'}")
+
     begin;
       1000.times { s.crypt(-salt_proc.call).clear  }
     end;

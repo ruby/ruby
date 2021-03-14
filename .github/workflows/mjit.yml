@@ -23,6 +23,7 @@ jobs:
       - name: git config
         run: |
           git config --global advice.detachedHead 0
+          git config --global init.defaultBranch garbage
       - uses: actions/checkout@v2
         with:
           path: src

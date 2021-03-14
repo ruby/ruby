@@ -113,16 +113,7 @@ RSpec.describe "post bundle message" do
         bundle "config set force_ruby_platform true"
       end
 
-      it "should report a helpful error message", :bundler => "< 3" do
-        install_gemfile <<-G, :raise_on_error => false
-          source "#{file_uri_for(gem_repo1)}"
-          gem "rack"
-          gem "not-a-gem", :group => :development
-        G
-        expect(err).to include("Could not find gem 'not-a-gem' in any of the gem sources listed in your Gemfile.")
-      end
-
-      it "should report a helpful error message", :bundler => "3" do
+      it "should report a helpful error message" do
         install_gemfile <<-G, :raise_on_error => false
           source "#{file_uri_for(gem_repo1)}"
           gem "rack"

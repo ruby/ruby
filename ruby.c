@@ -671,8 +671,11 @@ ruby_init_loadpath(void)
 	    p = p2;
 	}
 #endif
+        baselen = p - libpath;
     }
-    baselen = p - libpath;
+    else {
+        baselen = 0;
+    }
     rb_str_resize(sopath, baselen);
     libpath = RSTRING_PTR(sopath);
 #define PREFIX_PATH() sopath
@@ -1800,7 +1803,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 		opt->script = "-";
 	    }
 	    else if (opt->do_search) {
-		char *path = getenv("RUBYPATH");
+		const char *path = getenv("RUBYPATH");
 
 		opt->script = 0;
 		if (path) {

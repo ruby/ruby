@@ -246,10 +246,22 @@ describe "CApiModule" do
       cls.new.test_method.should == :test_method
     end
 
+    it "returns the correct arity of the method in class" do
+      cls = Class.new
+      @m.rb_define_method(cls, "test_method")
+      cls.new.method(:test_method).arity.should == 0
+    end
+
     it "defines a method on a module" do
       mod = Module.new
       @m.rb_define_method(mod, "test_method")
       mod.should have_instance_method(:test_method)
+    end
+
+    it "returns the correct arity of the method in module" do
+      mod = Module.new
+      @m.rb_define_method(mod, "test_method")
+      mod.instance_method(:test_method).arity.should == 0
     end
   end
 
@@ -263,11 +275,22 @@ describe "CApiModule" do
       @mod.test_module_function.should == :test_method
     end
 
+    it "returns the correct arity of the module function" do
+      @mod.method(:test_module_function).arity.should == 0
+    end
+
     it "defines a private instance method" do
       cls = Class.new
       cls.include(@mod)
 
       cls.should have_private_instance_method(:test_module_function)
+    end
+
+    it "returns the correct arity for private instance method" do
+      cls = Class.new
+      cls.include(@mod)
+
+      @mod.instance_method(:test_module_function).arity.should == 0
     end
   end
 

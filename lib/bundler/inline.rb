@@ -50,6 +50,7 @@ def gemfile(install = false, options = {}, &gemfile)
     Bundler::Plugin.gemfile_install(&gemfile) if Bundler.feature_flag.plugins?
     builder = Bundler::Dsl.new
     builder.instance_eval(&gemfile)
+    builder.check_primary_source_safety
 
     Bundler.settings.temporary(:frozen => false) do
       definition = builder.to_definition(nil, true)

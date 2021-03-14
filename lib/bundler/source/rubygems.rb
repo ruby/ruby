@@ -145,6 +145,8 @@ module Bundler
 
           Bundler.mkdir_p bin_path, :no_sudo => true unless spec.executables.empty? || Bundler.rubygems.provides?(">= 2.7.5")
 
+          require_relative "../rubygems_gem_installer"
+
           installed_spec = Bundler::RubyGemsGemInstaller.at(
             path,
             :install_dir         => install_path.to_s,
@@ -351,7 +353,6 @@ module Bundler
       def installed_specs
         @installed_specs ||= Index.build do |idx|
           Bundler.rubygems.all_specs.reverse_each do |spec|
-            next if spec.name == "bundler"
             spec.source = self
             if Bundler.rubygems.spec_missing_extensions?(spec, false)
               Bundler.ui.debug "Source #{self} is ignoring #{spec} because it is missing extensions"

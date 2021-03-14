@@ -129,7 +129,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
               Thread.new { server.accept.close }
             end
             client_threads = Array.new(client_threads_count) do
-              Thread.new { TCPSocket.open(server.addr[3], server.addr[1]) }
+              Thread.new { TCPSocket.open(server.addr[3], server.addr[1]) {} }
             end
             client_threads.each(&:join)
             accept_threads.each(&:join)

@@ -260,6 +260,7 @@ module Test
       ABORT_SIGNALS = Signal.list.values_at(*%w"ILL ABRT BUS SEGV TERM")
 
       def separated_runner(out = nil)
+        include(*Test::Unit::TestCase.ancestors.select {|c| !c.is_a?(Class) })
         out = out ? IO.new(out, 'w') : STDOUT
         at_exit {
           out.puts [Marshal.dump($!)].pack('m'), "assertions=\#{self._assertions}"
@@ -278,7 +279,7 @@ module Test
           capture_stdout = false
           opt[:out] = MiniTest::Unit.output if defined?(MiniTest::Unit)
           res_p, res_c = IO.pipe
-          opt[res_c.fileno] = res_c.fileno
+          opt[:ios] = [res_c]
         end
         src = <<eom
 # -*- coding: #{line += __LINE__; src.encoding}; -*-

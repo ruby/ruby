@@ -30,6 +30,7 @@ module Bundler
       require_relative "install"
       options = self.options.dup
       options["local"] = false if Bundler.settings[:cache_all_platforms]
+      options["no-cache"] = true
       Bundler::CLI::Install.new(options).run
     end
 

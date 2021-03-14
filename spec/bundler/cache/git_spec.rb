@@ -200,7 +200,7 @@ RSpec.describe "bundle cache with git" do
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
     bundle "config set cache_all true"
-    bundle :cache, "all-platforms" => true, :install => false, :path => "./vendor/cache"
+    bundle :cache, "all-platforms" => true, :install => false
 
     simulate_new_machine
     with_path_as "" do

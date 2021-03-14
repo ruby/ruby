@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "set"
-
 module Bundler
   class Index
     include Enumerable
@@ -65,11 +63,14 @@ module Bundler
     def unsorted_search(query, base)
       results = local_search(query, base)
 
-      seen = results.map(&:full_name).to_set unless @sources.empty?
+      seen = results.map(&:full_name).uniq unless @sources.empty?
 
       @sources.each do |source|
         source.unsorted_search(query, base).each do |spec|
-          results << spec if seen.add?(spec.full_name)
+          next if seen.include?(spec.full_name)
+
+          seen << spec.full_name
+          results << spec
         end
       end
 
@@ -170,7 +171,7 @@ module Bundler
     def dependencies_eql?(spec, other_spec)
       deps       = spec.dependencies.select {|d| d.type != :development }
       other_deps = other_spec.dependencies.select {|d| d.type != :development }
-      Set.new(deps) == Set.new(other_deps)
+      deps.sort == other_deps.sort
     end
 
     def add_source(index)

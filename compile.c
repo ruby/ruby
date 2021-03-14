@@ -8662,7 +8662,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
       }
       case NODE_CLASS:{
 	const rb_iseq_t *class_iseq = NEW_CHILD_ISEQ(node->nd_body,
-						     rb_sprintf("<class:%"PRIsVALUE">", rb_id2str(node->nd_cpath->nd_mid)),
+						     rb_str_freeze(rb_sprintf("<class:%"PRIsVALUE">", rb_id2str(node->nd_cpath->nd_mid))),
 						     ISEQ_TYPE_CLASS, line);
 	const int flags = VM_DEFINECLASS_TYPE_CLASS |
 	    (node->nd_super ? VM_DEFINECLASS_FLAG_HAS_SUPERCLASS : 0) |
@@ -8679,7 +8679,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
       }
       case NODE_MODULE:{
         const rb_iseq_t *module_iseq = NEW_CHILD_ISEQ(node->nd_body,
-						      rb_sprintf("<module:%"PRIsVALUE">", rb_id2str(node->nd_cpath->nd_mid)),
+						      rb_str_freeze(rb_sprintf("<module:%"PRIsVALUE">", rb_id2str(node->nd_cpath->nd_mid))),
 						      ISEQ_TYPE_CLASS, line);
 	const int flags = VM_DEFINECLASS_TYPE_MODULE |
 	    compile_cpath(ret, iseq, node->nd_cpath);
@@ -11389,17 +11389,20 @@ ibf_load_object_string(const struct ibf_load *load, const struct ibf_object_head
     const long len = (long)ibf_load_small_value(load, &reading_pos);
     const char *ptr = load->current_buffer->buff + reading_pos;
 
-    VALUE str = rb_str_new(ptr, len);
-
     if (encindex > RUBY_ENCINDEX_BUILTIN_MAX) {
         VALUE enc_name_str = ibf_load_object(load, encindex - RUBY_ENCINDEX_BUILTIN_MAX);
         encindex = rb_enc_find_index(RSTRING_PTR(enc_name_str));
     }
-    rb_enc_associate_index(str, encindex);
 
-    if (header->internal) rb_obj_hide(str);
-    if (header->frozen)   str = rb_fstring(str);
+    VALUE str;
+    if (header->frozen && !header->internal) {
+        str = rb_enc_interned_str(ptr, len, rb_enc_from_index(encindex));
+    } else {
+        str = rb_enc_str_new(ptr, len, rb_enc_from_index(encindex));
 
+        if (header->internal) rb_obj_hide(str);
+        if (header->frozen)   str = rb_fstring(str);
+    }
     return str;
 }
 
@@ -11631,18 +11634,24 @@ ibf_load_object_complex_rational(const struct ibf_load *load, const struct ibf_o
 static void
 ibf_dump_object_symbol(struct ibf_dump *dump, VALUE obj)
 {
-    VALUE str = rb_sym2str(obj);
-    VALUE str_index = ibf_dump_object(dump, str);
-
-    ibf_dump_write_small_value(dump, str_index);
+    ibf_dump_object_string(dump, rb_sym2str(obj));
 }
 
 static VALUE
 ibf_load_object_symbol(const struct ibf_load *load, const struct ibf_object_header *header, ibf_offset_t offset)
 {
-    VALUE str_index = ibf_load_small_value(load, &offset);
-    VALUE str = ibf_load_object(load, str_index);
-    ID id = rb_intern_str(str);
+    ibf_offset_t reading_pos = offset;
+
+    int encindex = (int)ibf_load_small_value(load, &reading_pos);
+    const long len = (long)ibf_load_small_value(load, &reading_pos);
+    const char *ptr = load->current_buffer->buff + reading_pos;
+
+    if (encindex > RUBY_ENCINDEX_BUILTIN_MAX) {
+        VALUE enc_name_str = ibf_load_object(load, encindex - RUBY_ENCINDEX_BUILTIN_MAX);
+        encindex = rb_enc_find_index(RSTRING_PTR(enc_name_str));
+    }
+
+    ID id = rb_intern3(ptr, len, rb_enc_from_index(encindex));
     return ID2SYM(id);
 }
 

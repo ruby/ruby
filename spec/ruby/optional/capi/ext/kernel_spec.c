@@ -310,10 +310,6 @@ static VALUE kernel_spec_rb_make_backtrace(VALUE self) {
   return rb_make_backtrace();
 }
 
-static VALUE kernel_spec_rb_obj_method(VALUE self, VALUE obj, VALUE method) {
-  return rb_obj_method(obj, method);
-}
-
 static VALUE kernel_spec_rb_funcall3(VALUE self, VALUE obj, VALUE method) {
   return rb_funcall3(obj, SYM2ID(method), 0, NULL);
 }
@@ -366,7 +362,6 @@ void Init_kernel_spec(void) {
   rb_define_method(cls, "rb_set_end_proc", kernel_spec_rb_set_end_proc, 1);
   rb_define_method(cls, "rb_f_sprintf", kernel_spec_rb_f_sprintf, 1);
   rb_define_method(cls, "rb_make_backtrace", kernel_spec_rb_make_backtrace, 0);
-  rb_define_method(cls, "rb_obj_method", kernel_spec_rb_obj_method, 2);
   rb_define_method(cls, "rb_funcall3", kernel_spec_rb_funcall3, 2);
   rb_define_method(cls, "rb_funcall_many_args", kernel_spec_rb_funcall_many_args, 2);
   rb_define_method(cls, "rb_funcall_with_block", kernel_spec_rb_funcall_with_block, 3);
