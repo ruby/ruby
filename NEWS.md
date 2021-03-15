@@ -21,6 +21,11 @@ Outstanding ones only.
 
     * Enumerator::Lazy#compact is added. [[Feature #17312]]
 
+* File
+
+    * File.dirname now accepts an optional argument for the level to
+      strip path components. [[Feature #12194]]
+
 * Module
 
     * Module#prepend now modifies the ancestor chain if the receiver
