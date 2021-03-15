@@ -16149,7 +16149,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # TableColumn = "|" < ("-"+ ":"? | ":" "-"*) > {                 text.start_with?(":") ? :left :                 text.end_with?(":") ? :right : nil               }
+  # TableColumn = "|" < ("-"+ ":"? | ":" "-"*) > { text.start_with?(":") ? :left :                 text.end_with?(":") ? :right : nil               }
   def _TableColumn
 
     _save = self.pos
@@ -16226,8 +16226,7 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      @result = begin; 
-                text.start_with?(":") ? :left :
+      @result = begin;  text.start_with?(":") ? :left :
                 text.end_with?(":") ? :right : nil
               ; end
       _tmp = true
@@ -16677,7 +16676,7 @@ class RDoc::Markdown
   Rules[:_TableRow] = rule_info("TableRow", "TableItem+:row \"|\" @Newline { row }")
   Rules[:_TableItem] = rule_info("TableItem", "\"|\" < (!\"|\" !@Newline .)+ > { text.strip }")
   Rules[:_TableLine] = rule_info("TableLine", "TableColumn+:line \"|\" @Newline { line }")
-  Rules[:_TableColumn] = rule_info("TableColumn", "\"|\" < (\"-\"+ \":\"? | \":\" \"-\"*) > {                 text.start_with?(\":\") ? :left :                 text.end_with?(\":\") ? :right : nil               }")
+  Rules[:_TableColumn] = rule_info("TableColumn", "\"|\" < (\"-\"+ \":\"? | \":\" \"-\"*) > { text.start_with?(\":\") ? :left :                 text.end_with?(\":\") ? :right : nil               }")
   Rules[:_DefinitionList] = rule_info("DefinitionList", "&{ definition_lists? } DefinitionListItem+:list { RDoc::Markup::List.new :NOTE, *list.flatten }")
   Rules[:_DefinitionListItem] = rule_info("DefinitionListItem", "DefinitionListLabel+:label DefinitionListDefinition+:defns { list_items = []                        list_items <<                          RDoc::Markup::ListItem.new(label, defns.shift)                         list_items.concat defns.map { |defn|                          RDoc::Markup::ListItem.new nil, defn                        } unless list_items.empty?                         list_items                      }")
   Rules[:_DefinitionListLabel] = rule_info("DefinitionListLabel", "StrChunk:label @Sp @Newline { label }")
