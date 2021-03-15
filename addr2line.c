@@ -159,11 +159,12 @@ typedef struct obj_info {
     struct dwarf_section debug_info;
     struct dwarf_section debug_line;
     struct dwarf_section debug_ranges;
+    struct dwarf_section debug_rnglists;
     struct dwarf_section debug_str;
     struct obj_info *next;
 } obj_info_t;
 
-#define DWARF_SECTION_COUNT 5
+#define DWARF_SECTION_COUNT 6
 
 static struct dwarf_section *
 obj_dwarf_section_at(obj_info_t *obj, int n)
@@ -173,6 +174,7 @@ obj_dwarf_section_at(obj_info_t *obj, int n)
         &obj->debug_info,
         &obj->debug_line,
         &obj->debug_ranges,
+        &obj->debug_rnglists,
         &obj->debug_str
     };
     if (n < 0 || DWARF_SECTION_COUNT <= n) {
@@ -411,7 +413,7 @@ parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
 	    FILL_LINE();
 	    break;
 	case DW_LNS_advance_pc:
-	    a = uleb128((char **)&p);
+	    a = uleb128((char **)&p) * header.minimum_instruction_length;
 	    addr += a;
 	    break;
 	case DW_LNS_advance_line: {
@@ -451,7 +453,7 @@ parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
 	    /* isa = (unsigned int)*/(void)uleb128((char **)&p);
 	    break;
 	case 0:
-	    a = *(unsigned char *)p++;
+	    a = uleb128((char **)&p);
 	    op = *p++;
 	    switch (op) {
 	    case DW_LNE_end_sequence:
@@ -808,6 +810,18 @@ enum
     DW_FORM_addrx4 = 0x2c
 };
 
+/* Range list entry encodings */
+enum {
+    DW_RLE_end_of_list = 0x00,
+    DW_RLE_base_addressx = 0x01,
+    DW_RLE_startx_endx = 0x02,
+    DW_RLE_startx_length = 0x03,
+    DW_RLE_offset_pair = 0x04,
+    DW_RLE_base_address = 0x05,
+    DW_RLE_start_end = 0x06,
+    DW_RLE_start_length = 0x07
+};
+
 enum {
     VAL_none = 0,
     VAL_cstr = 1,
@@ -962,6 +976,23 @@ debug_info_reader_init(DebugInfoReader *reader, obj_info_t *obj)
 }
 
 static void
+di_skip_die_attributes(char **p)
+{
+    for (;;) {
+        uint64_t at = uleb128(p);
+        uint64_t form = uleb128(p);
+        if (!at && !form) break;
+        switch (form) {
+          default:
+            break;
+          case DW_FORM_implicit_const:
+            sleb128(p);
+            break;
+        }
+    }
+}
+
+static void
 di_read_debug_abbrev_cu(DebugInfoReader *reader)
 {
     uint64_t prev = 0;
@@ -975,12 +1006,7 @@ di_read_debug_abbrev_cu(DebugInfoReader *reader)
         prev = abbrev_number;
         uleb128(&p); /* tag */
         p++; /* has_children */
-        /* skip content */
-        for (;;) {
-            uint64_t at = uleb128(&p);
-            uint64_t form = uleb128(&p);
-            if (!at && !form) break;
-        }
+        di_skip_die_attributes(&p);
     }
 }
 
@@ -1244,12 +1270,7 @@ di_find_abbrev(DebugInfoReader *reader, uint64_t abbrev_number)
     /* skip 255th record */
     uleb128(&p); /* tag */
     p++; /* has_children */
-    /* skip content */
-    for (;;) {
-        uint64_t at = uleb128(&p);
-        uint64_t form = uleb128(&p);
-        if (!at && !form) break;
-    }
+    di_skip_die_attributes(&p);
     for (uint64_t n = uleb128(&p); abbrev_number != n; n = uleb128(&p)) {
         if (n == 0) {
             fprintf(stderr,"%d: Abbrev Number %"PRId64" not found\n",__LINE__, abbrev_number);
@@ -1257,12 +1278,7 @@ di_find_abbrev(DebugInfoReader *reader, uint64_t abbrev_number)
         }
         uleb128(&p); /* tag */
         p++; /* has_children */
-        /* skip content */
-        for (;;) {
-            uint64_t at = uleb128(&p);
-            uint64_t form = uleb128(&p);
-            if (!at && !form) break;
-        }
+        di_skip_die_attributes(&p);
     }
     return p;
 }
@@ -1390,6 +1406,21 @@ ranges_set(ranges_t *ptr, DebugInfoValue *v)
     }
 }
 
+static uint64_t
+read_dw_form_addr(DebugInfoReader *reader, char **ptr)
+{
+    char *p = *ptr;
+    *ptr = p + reader->format;
+    if (reader->format == 4) {
+        return read_uint32(&p);
+    } else if (reader->format == 8) {
+        return read_uint64(&p);
+    } else {
+        fprintf(stderr,"unknown address_size:%d", reader->address_size);
+        abort();
+    }
+}
+
 static uintptr_t
 ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr)
 {
@@ -1403,8 +1434,50 @@ ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr)
     }
     else if (ptr->ranges_set) {
         /* TODO: support base address selection entry */
-        char *p = reader->obj->debug_ranges.ptr + ptr->ranges;
+        char *p;
         uint64_t base = ptr->low_pc_set ? ptr->low_pc : reader->current_low_pc;
+        if (reader->obj->debug_rnglists.ptr) {
+            p = reader->obj->debug_rnglists.ptr + ptr->ranges;
+            for (;;) {
+                uint8_t rle = read_uint8(&p);
+                uintptr_t base_address = 0;
+                uintptr_t from, to;
+                if (rle == DW_RLE_end_of_list) break;
+                switch (rle) {
+                  case DW_RLE_base_addressx:
+                    uleb128(&p);
+                    break;
+                  case DW_RLE_startx_endx:
+                    uleb128(&p);
+                    uleb128(&p);
+                    break;
+                  case DW_RLE_startx_length:
+                    uleb128(&p);
+                    uleb128(&p);
+                    break;
+                  case DW_RLE_offset_pair:
+                    from = base_address + uleb128(&p);
+                    to = base_address + uleb128(&p);
+                    if (base + from <= addr && addr < base + to) {
+                        return from;
+                    }
+                    break;
+                  case DW_RLE_base_address:
+                    base_address = read_dw_form_addr(reader, &p);
+                    break;
+                  case DW_RLE_start_end:
+                    read_dw_form_addr(reader, &p);
+                    read_dw_form_addr(reader, &p);
+                    break;
+                  case DW_RLE_start_length:
+                    read_dw_form_addr(reader, &p);
+                    uleb128(&p);
+                    break;
+                }
+            }
+            return false;
+        }
+        p = reader->obj->debug_ranges.ptr + ptr->ranges;
         for (;;) {
             uintptr_t from = read_uintptr(&p);
             uintptr_t to = read_uintptr(&p);
@@ -1748,6 +1821,7 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
                     ".debug_info",
                     ".debug_line",
                     ".debug_ranges",
+                    ".debug_rnglists",
                     ".debug_str"
                 };
 
@@ -2004,6 +2078,7 @@ found_mach_header:
                     "__debug_info",
                     "__debug_line",
                     "__debug_ranges",
+                    "__debug_rnglists",
                     "__debug_str"
                 };
                 struct LP(segment_command) *scmd = (struct LP(segment_command) *)lcmd;
