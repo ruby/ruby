@@ -178,7 +178,7 @@ void cb_align_pos(codeblock_t* cb, uint32_t multiple)
     uint32_t rem = ((uint32_t)ptr) % multiple;
 
     // If the pointer is already aligned, stop
-    if (rem != 0)
+    if (rem == 0)
         return;
 
     // Pad the pointer by the necessary amount to align it
