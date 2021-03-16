@@ -121,6 +121,11 @@ __EOC__
   end
 
   def test_s_parse_include
+    if !openssl?(1, 1, 1, 2)
+      # OpenSSL < 1.1.1 parses .include directive as a normal assignment
+      pend ".include directive is not supported"
+    end
+
     in_tmpdir("ossl-config-include-test") do |dir|
       Dir.mkdir("child")
       File.write("child/a.conf", <<~__EOC__)
@@ -150,10 +155,6 @@ __EOC__
 
       # Include a file by relative path
       c1 = OpenSSL::Config.parse(include_file)
-      if c1["sec-main"][".include"]
-        # OpenSSL < 1.1.1 parses '.include =' as a normal assignment
-        pend ".include directive is not supported"
-      end
       assert_equal(["default", "sec-a", "sec-b", "sec-main"], c1.sections.sort)
       assert_equal(["file-a", "file-b", "file-main"], c1["default"].keys.sort)
       assert_equal({"a" => "123"}, c1["sec-a"])
