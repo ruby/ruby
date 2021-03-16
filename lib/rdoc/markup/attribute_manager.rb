@@ -75,13 +75,13 @@ class RDoc::Markup::AttributeManager
     @exclusive_bitmap = 0
     @attributes = RDoc::Markup::Attributes.new
 
-    add_word_pair "*", "*", :BOLD
-    add_word_pair "_", "_", :EM
+    add_word_pair "*", "*", :BOLD, true
+    add_word_pair "_", "_", :EM, true
     add_word_pair "+", "+", :TT, true
 
-    add_html "em", :EM
-    add_html "i",  :EM
-    add_html "b",  :BOLD
+    add_html "em", :EM, true
+    add_html "i",  :EM, true
+    add_html "b",  :BOLD, true
     add_html "tt",   :TT, true
     add_html "code", :TT, true
   end

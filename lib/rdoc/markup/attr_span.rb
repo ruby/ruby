@@ -17,7 +17,7 @@ class RDoc::Markup::AttrSpan
   def set_attrs(start, length, bits)
     updated = false
     for i in start ... (start+length)
-      if (@exclusive & @attrs[i]) == 0
+      if (@exclusive & @attrs[i]) == 0 || (@exclusive & bits) != 0
         @attrs[i] |= bits
         updated = true
       end

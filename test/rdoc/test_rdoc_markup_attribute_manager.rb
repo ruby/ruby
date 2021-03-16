@@ -250,6 +250,7 @@ class TestRDocMarkupAttributeManager < RDoc::TestCase
     assert_equal '<CODE>aaa</CODE>[:symbol]', output('+aaa+[:symbol]')
     assert_equal '<CODE>aaa[:symbol]</CODE>', output('+aaa[:symbol]+')
     assert_equal 'aaa[:symbol]', output('aaa[:symbol]')
+    assert_equal '<B><CODE>index</CODE></B>', output('<b><tt>index</tt></b>')
   end
 
   def test_exclude_tag_flow
