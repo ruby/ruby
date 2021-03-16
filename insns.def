@@ -667,7 +667,7 @@ defined
 (VALUE val)
 // attr bool leaf = leafness_of_defined(op_type);
 {
-    if (vm_defined(ec, GET_CFP(), op_type, obj, Qfalse, v)) {
+    if (vm_defined(ec, GET_CFP(), op_type, obj, v)) {
       val = needstr;
     }
     else {

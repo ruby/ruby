@@ -3986,7 +3986,7 @@ check_respond_to_missing(VALUE obj, VALUE v)
 }
 
 static VALUE
-vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE obj, VALUE needstr, VALUE v)
+vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE obj, VALUE v)
 {
     VALUE klass;
     enum defined_type expr_type = DEFINED_NOT_DEFINED;
@@ -4081,15 +4081,10 @@ vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_
     }
 
     if (expr_type != 0) {
-	if (needstr != Qfalse) {
-	    return rb_iseq_defined_string(expr_type);
-	}
-	else {
-	    return Qtrue;
-	}
+        return Qtrue;
     }
     else {
-	return Qnil;
+	return Qfalse;
     }
 }
 
