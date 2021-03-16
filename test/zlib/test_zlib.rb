@@ -735,11 +735,13 @@ if defined? Zlib
           io.write sio.string
           io.rewind
 
-          gz = Zlib::GzipWriter.new(io)
-          assert_raise(NoMethodError) { gz.path }
+          gz0 = Zlib::GzipWriter.new(io)
+          assert_raise(NoMethodError) { gz0.path }
 
-          gz = Zlib::GzipReader.new(io)
-          assert_raise(NoMethodError) { gz.path }
+          gz1 = Zlib::GzipReader.new(io)
+          assert_raise(NoMethodError) { gz1.path }
+          gz0.close
+          gz1.close
         end
       end
     end
