@@ -710,6 +710,11 @@ EXPECTED
     assert_equal "\n<p><a href=\":symbol\">aaa</a></p>\n", @to.convert('aaa[:symbol]')
   end
 
+  def test_convert_underscore_adjacent_to_code
+    assert_equal "\n<p><code>aaa</code>_</p>\n", @to.convert(%q{+aaa+_})
+    assert_equal "\n<p>`<code>i386-mswin32_</code><em>MSRTVERSION</em>&#39;</p>\n", @to.convert(%q{`+i386-mswin32_+_MSRTVERSION_'})
+  end
+
   def test_gen_url
     assert_equal '<a href="example">example</a>',
                  @to.gen_url('link:example', 'example')

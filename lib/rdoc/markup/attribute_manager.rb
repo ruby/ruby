@@ -140,6 +140,11 @@ class RDoc::Markup::AttributeManager
   # character
 
   def convert_attrs(str, attrs, exclusive = false)
+    convert_attrs_matching_word_pairs(str, attrs, exclusive)
+    convert_attrs_word_pair_map(str, attrs, exclusive)
+  end
+
+  def convert_attrs_matching_word_pairs(str, attrs, exclusive)
     # first do matching ones
     tags = @matching_word_pairs.select { |start, bitmap|
       if exclusive && exclusive?(bitmap)
@@ -149,21 +154,25 @@ class RDoc::Markup::AttributeManager
       else
         false
       end
-    }.keys.join("")
+    }.keys
+    return if tags.empty?
+    all_tags = @matching_word_pairs.keys
 
-    re = /(^|\W)([#{tags}])([#\\]?[\w:.\/\[\]-]+?\S?)\2(\W|$)/
+    re = /(^|\W|[#{all_tags.join("")}])([#{tags.join("")}])(\2*[#\\]?[\w:.\/\[\]-]+?\S?)\2(?!\2)([#{all_tags.join("")}]|\W|$)/
 
     1 while str.gsub!(re) { |orig|
       attr = @matching_word_pairs[$2]
-      updated = attrs.set_attrs($`.length + $1.length + $2.length, $3.length, attr)
-      if updated
+      attr_updated = attrs.set_attrs($`.length + $1.length + $2.length, $3.length, attr)
+      if attr_updated
         $1 + NULL * $2.length + $3 + NULL * $2.length + $4
       else
         $1 + NON_PRINTING_START + $2 + NON_PRINTING_END + $3 + NON_PRINTING_START + $2 + NON_PRINTING_END + $4
       end
     }
     str.delete!(NON_PRINTING_START + NON_PRINTING_END)
+  end
 
+  def convert_attrs_word_pair_map(str, attrs, exclusive)
     # then non-matching
     unless @word_pair_map.empty? then
       @word_pair_map.each do |regexp, attr|
