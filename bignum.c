@@ -6728,33 +6728,6 @@ rb_big_hash(VALUE x)
     return ST2FIX(hash);
 }
 
-/*
- * call-seq:
- *   big.coerce(numeric)  ->  array
- *
- * Returns an array with both a +numeric+ and a +big+ represented as Bignum
- * objects.
- *
- * This is achieved by converting +numeric+ to a Bignum.
- *
- * A TypeError is raised if the +numeric+ is not a Fixnum or Bignum type.
- *
- *     (0x3FFFFFFFFFFFFFFF+1).coerce(42)   #=> [42, 4611686018427387904]
- */
-
-static VALUE
-rb_int_coerce(VALUE x, VALUE y)
-{
-    if (RB_INTEGER_TYPE_P(y)) {
-        return rb_assoc_new(y, x);
-    }
-    else {
-        x = rb_Float(x);
-        y = rb_Float(y);
-        return rb_assoc_new(y, x);
-    }
-}
-
 VALUE
 rb_big_abs(VALUE x)
 {
@@ -7177,8 +7150,6 @@ Init_Bignum(void)
     /* An obsolete class, use Integer */
     rb_define_const(rb_cObject, "Bignum", rb_cInteger);
     rb_deprecate_constant(rb_cObject, "Bignum");
-
-    rb_define_method(rb_cInteger, "coerce", rb_int_coerce, 1);
 
 #ifdef USE_GMP
     /* The version of loaded GMP. */
