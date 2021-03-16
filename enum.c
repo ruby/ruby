@@ -1008,11 +1008,11 @@ enum_group_by(VALUE obj)
     return enum_hashify(obj, 0, 0, group_by_i);
 }
 
-static void
-tally_up(VALUE hash, VALUE group)
+static int
+tally_up(st_data_t *group, st_data_t *value, st_data_t arg, int existing)
 {
-    VALUE tally = rb_hash_aref(hash, group);
-    if (NIL_P(tally)) {
+    VALUE tally = (VALUE)*value;
+    if (!existing) {
         tally = INT2FIX(1);
     }
     else if (FIXNUM_P(tally) && tally < INT2FIX(FIXNUM_MAX)) {
@@ -1021,14 +1021,22 @@ tally_up(VALUE hash, VALUE group)
     else {
         tally = rb_big_plus(tally, INT2FIX(1));
     }
-    rb_hash_aset(hash, group, tally);
+    *value = (st_data_t)tally;
+    return ST_CONTINUE;
+}
+
+static VALUE
+rb_enum_tally_up(VALUE hash, VALUE group)
+{
+    rb_hash_stlike_update(hash, group, tally_up, 0);
+    return hash;
 }
 
 static VALUE
 tally_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 {
     ENUM_WANT_SVALUE();
-    tally_up(hash, i);
+    rb_enum_tally_up(hash, i);
     return Qnil;
 }
 
