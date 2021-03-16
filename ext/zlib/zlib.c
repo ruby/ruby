@@ -3520,6 +3520,16 @@ rb_gzfile_path(VALUE obj)
     return gz->path;
 }
 
+static VALUE
+gzfile_initialize_path_partial(VALUE obj)
+{
+	struct gzfile* gz;
+	TypedData_Get_Struct(obj, struct gzfile, &gzfile_data_type, gz);
+	gz->path = rb_funcall(gz->io, id_path, 0);
+	rb_define_singleton_method(obj, "path", rb_gzfile_path, 0);
+	return Qnil;
+}
+
 static void
 rb_gzfile_ecopts(struct gzfile *gz, VALUE opts)
 {
@@ -3628,8 +3638,8 @@ rb_gzwriter_initialize(int argc, VALUE *argv, VALUE obj)
     rb_gzfile_ecopts(gz, opt);
 
     if (rb_respond_to(io, id_path)) {
-	gz->path = rb_funcall(gz->io, id_path, 0);
-	rb_define_singleton_method(obj, "path", rb_gzfile_path, 0);
+	/* File#path may raise IOError in case when a path is unavailable */
+	rb_rescue2(gzfile_initialize_path_partial, obj, NULL, Qnil, rb_eIOError, (VALUE)0);
     }
 
     return obj;
@@ -3890,8 +3900,8 @@ rb_gzreader_initialize(int argc, VALUE *argv, VALUE obj)
     rb_gzfile_ecopts(gz, opt);
 
     if (rb_respond_to(io, id_path)) {
-	gz->path = rb_funcall(gz->io, id_path, 0);
-	rb_define_singleton_method(obj, "path", rb_gzfile_path, 0);
+	/* File#path may raise IOError in case when a path is unavailable */
+	rb_rescue2(gzfile_initialize_path_partial, obj, NULL, Qnil, rb_eIOError, (VALUE)0);
     }
 
     return obj;

@@ -3,6 +3,7 @@
 require 'test/unit'
 require 'stringio'
 require 'tempfile'
+require 'tmpdir'
 
 begin
   require 'zlib'
@@ -721,6 +722,26 @@ if defined? Zlib
         assert_raise(NoMethodError) { gz.path }
         gz.close
       }
+    end
+
+    if defined? File::TMPFILE
+      def test_path_tmpfile
+        sio = StringIO.new("".dup, 'w')
+        gz = Zlib::GzipWriter.new(sio)
+        gz.write "hi"
+        gz.close
+
+        File.open(Dir.mktmpdir, File::RDWR | File::TMPFILE) do |io|
+          io.write sio.string
+          io.rewind
+
+          gz = Zlib::GzipWriter.new(io)
+          assert_raise(NoMethodError) { gz.path }
+
+          gz = Zlib::GzipReader.new(io)
+          assert_raise(NoMethodError) { gz.path }
+        end
+      end
     end
   end
 
