@@ -2547,15 +2547,6 @@ rb_hash_reject_bang(VALUE hash)
     return hash;
 }
 
-static int
-reject_i(VALUE key, VALUE value, VALUE result)
-{
-    if (!RTEST(rb_yield_values(2, key, value))) {
-	rb_hash_aset(result, key, value);
-    }
-    return ST_CONTINUE;
-}
-
 /*
  *  call-seq:
  *    hash.reject {|key, value| ... } -> new_hash
@@ -2586,9 +2577,9 @@ rb_hash_reject(VALUE hash)
 	    rb_warn("extra states are no longer copied: %+"PRIsVALUE, hash);
 	}
     }
-    result = rb_hash_new();
+    result = hash_copy(hash_alloc(rb_cHash), hash);
     if (!RHASH_EMPTY_P(hash)) {
-	rb_hash_foreach(hash, reject_i, result);
+	rb_hash_foreach(result, delete_if_i, result);
     }
     return result;
 }
@@ -2711,10 +2702,10 @@ rb_hash_fetch_values(int argc, VALUE *argv, VALUE hash)
 }
 
 static int
-select_i(VALUE key, VALUE value, VALUE result)
+keep_if_i(VALUE key, VALUE value, VALUE hash)
 {
-    if (RTEST(rb_yield_values(2, key, value))) {
-	rb_hash_aset(result, key, value);
+    if (!RTEST(rb_yield_values(2, key, value))) {
+	return ST_DELETE;
     }
     return ST_CONTINUE;
 }
@@ -2742,20 +2733,11 @@ rb_hash_select(VALUE hash)
     VALUE result;
 
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
-    result = rb_hash_new();
+    result = hash_copy(hash_alloc(rb_cHash), hash);
     if (!RHASH_EMPTY_P(hash)) {
-	rb_hash_foreach(hash, select_i, result);
+	rb_hash_foreach(result, keep_if_i, result);
     }
     return result;
-}
-
-static int
-keep_if_i(VALUE key, VALUE value, VALUE hash)
-{
-    if (!RTEST(rb_yield_values(2, key, value))) {
-	return ST_DELETE;
-    }
-    return ST_CONTINUE;
 }
 
 /*

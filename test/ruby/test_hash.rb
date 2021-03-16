@@ -122,6 +122,31 @@ class TestHash < Test::Unit::TestCase
     assert_equal set2, set2.dup
   end
 
+  def assert_hash_does_not_rehash
+    obj = Object.new
+    class << obj
+      attr_accessor :hash_calls
+      def hash
+        @hash_calls += 1
+        super
+      end
+    end
+    obj.hash_calls = 0
+    hash = {obj => 42}
+    assert_equal(1, obj.hash_calls)
+    yield hash
+    assert_equal(1, obj.hash_calls)
+  end
+
+  def test_select_reject_will_not_rehash
+    assert_hash_does_not_rehash do |hash|
+      hash.select { true }
+    end
+    assert_hash_does_not_rehash do |hash|
+      hash.reject { false }
+    end
+  end
+
   def test_s_AREF
     h = @cls["a" => 100, "b" => 200]
     assert_equal(100, h['a'])
