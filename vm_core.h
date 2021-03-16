@@ -650,7 +650,6 @@ typedef struct rb_vm_struct {
 
     rb_at_exit_list *at_exit;
 
-    VALUE *defined_strings;
     st_table *frozen_strings;
 
     const struct rb_builtin_function *builtin_function_table;
