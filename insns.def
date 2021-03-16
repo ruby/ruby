@@ -667,7 +667,12 @@ defined
 (VALUE val)
 // attr bool leaf = leafness_of_defined(op_type);
 {
-    val = vm_defined(ec, GET_CFP(), op_type, obj, needstr, v);
+    if (vm_defined(ec, GET_CFP(), op_type, obj, Qfalse, v)) {
+      val = needstr;
+    }
+    else {
+      val = Qnil;
+    }
 }
 
 /* check `target' matches `pattern'.
