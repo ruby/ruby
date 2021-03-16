@@ -394,6 +394,17 @@ class TestEnumerable < Test::Unit::TestCase
   def test_tally
     h = {1 => 2, 2 => 2, 3 => 1}
     assert_equal(h, @obj.tally)
+
+    h = {1 => 5, 2 => 2, 3 => 1, 4 => "x"}
+    assert_equal(h, @obj.tally({1 => 3, 4 => "x"}))
+
+    assert_raise(TypeError) do
+      @obj.tally({1 => ""})
+    end
+
+    h = {1 => 2, 2 => 2, 3 => 1}
+    assert_equal(h, @obj.tally(Hash.new(100)))
+    assert_equal(h, @obj.tally(Hash.new {100}))
   end
 
   def test_first
