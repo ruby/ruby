@@ -229,6 +229,9 @@ module Net
     # it raises a Net::OpenTimeout exception. The default value is 30 seconds.
     attr_reader :open_timeout
 
+    # Seconds to wait until an IDLE response is received.
+    attr_reader :idle_response_timeout
+
     # The thread to receive exceptions.
     attr_accessor :client_thread
 
@@ -1056,7 +1059,7 @@ module Net
           unless @receiver_thread_terminating
             remove_response_handler(response_handler)
             put_string("DONE#{CRLF}")
-            response = get_tagged_response(tag, "IDLE")
+            response = get_tagged_response(tag, "IDLE", @idle_response_timeout)
           end
         end
       end
@@ -1142,6 +1145,7 @@ module Net
     #         If +options[:ssl]+ is a hash, it's passed to
     #         OpenSSL::SSL::SSLContext#set_params as parameters.
     # open_timeout:: Seconds to wait until a connection is opened
+    # idle_response_timeout:: Seconds to wait until an IDLE response is received
     #
     # The most common errors are:
     #
@@ -1171,6 +1175,7 @@ module Net
       @tag_prefix = "RUBY"
       @tagno = 0
       @open_timeout = options[:open_timeout] || 30
+      @idle_response_timeout = options[:idle_response_timeout] || 5
       @parser = ResponseParser.new
       @sock = tcp_socket(@host, @port)
       begin
@@ -1294,10 +1299,19 @@ module Net
       end
     end
 
-    def get_tagged_response(tag, cmd)
+    def get_tagged_response(tag, cmd, timeout = nil)
+      if timeout
+        deadline = Time.now + timeout
+      end
       until @tagged_responses.key?(tag)
         raise @exception if @exception
-        @tagged_response_arrival.wait
+        if timeout
+          timeout = deadline - Time.now
+          if timeout <= 0
+            return nil
+          end
+        end
+        @tagged_response_arrival.wait(timeout)
       end
       resp = @tagged_responses.delete(tag)
       case resp.name
