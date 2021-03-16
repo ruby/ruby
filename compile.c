@@ -4935,28 +4935,29 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	expr_type = DEFINED_LVAR;
 	break;
 
+#define PUSH_VAL(type) (needstr == Qfalse ? Qtrue : rb_iseq_defined_string(type))
       case NODE_IVAR:
         ADD_INSN(ret, line, putnil);
         ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_IVAR),
-		  ID2SYM(node->nd_vid), needstr);
+		  ID2SYM(node->nd_vid), PUSH_VAL(DEFINED_IVAR));
         return;
 
       case NODE_GVAR:
         ADD_INSN(ret, line, putnil);
         ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_GVAR),
-		  ID2SYM(node->nd_entry), needstr);
+		  ID2SYM(node->nd_entry), PUSH_VAL(DEFINED_GVAR));
         return;
 
       case NODE_CVAR:
         ADD_INSN(ret, line, putnil);
         ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_CVAR),
-		  ID2SYM(node->nd_vid), needstr);
+		  ID2SYM(node->nd_vid), PUSH_VAL(DEFINED_CVAR));
         return;
 
       case NODE_CONST:
         ADD_INSN(ret, line, putnil);
         ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_CONST),
-		  ID2SYM(node->nd_vid), needstr);
+		  ID2SYM(node->nd_vid), PUSH_VAL(DEFINED_CONST));
         return;
       case NODE_COLON2:
 	if (!lfinish[1]) {
@@ -4966,15 +4967,19 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
         ADD_INSNL(ret, line, branchunless, lfinish[1]);
         NO_CHECK(COMPILE(ret, "defined/colon2#nd_head", node->nd_head));
 
-        ADD_INSN3(ret, line, defined,
-		  (rb_is_const_id(node->nd_mid) ?
-		   INT2FIX(DEFINED_CONST_FROM) : INT2FIX(DEFINED_METHOD)),
-		  ID2SYM(node->nd_mid), needstr);
+        if (rb_is_const_id(node->nd_mid)) {
+            ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_CONST_FROM),
+                    ID2SYM(node->nd_mid), PUSH_VAL(DEFINED_CONST));
+        }
+        else {
+            ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_METHOD),
+                    ID2SYM(node->nd_mid), PUSH_VAL(DEFINED_METHOD));
+        }
         return;
       case NODE_COLON3:
         ADD_INSN1(ret, line, putobject, rb_cObject);
         ADD_INSN3(ret, line, defined,
-		  INT2FIX(DEFINED_CONST_FROM), ID2SYM(node->nd_mid), needstr);
+		  INT2FIX(DEFINED_CONST_FROM), ID2SYM(node->nd_mid), PUSH_VAL(DEFINED_CONST));
         return;
 
 	/* method dispatch */
@@ -4999,12 +5004,12 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
             ADD_INSNL(ret, line, branchunless, lfinish[1]);
             NO_CHECK(COMPILE(ret, "defined/recv", node->nd_recv));
             ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_METHOD),
-		      ID2SYM(node->nd_mid), needstr);
+		      ID2SYM(node->nd_mid), PUSH_VAL(DEFINED_METHOD));
 	}
 	else {
             ADD_INSN(ret, line, putself);
             ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_FUNC),
-		      ID2SYM(node->nd_mid), needstr);
+		      ID2SYM(node->nd_mid), PUSH_VAL(DEFINED_METHOD));
 	}
         return;
       }
@@ -5012,7 +5017,7 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
       case NODE_YIELD:
         ADD_INSN(ret, line, putnil);
         ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_YIELD), 0,
-		  needstr);
+		  PUSH_VAL(DEFINED_YIELD));
         return;
 
       case NODE_BACK_REF:
@@ -5020,16 +5025,17 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
         ADD_INSN(ret, line, putnil);
         ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_REF),
 		  INT2FIX((node->nd_nth << 1) | (type == NODE_BACK_REF)),
-		  needstr);
+		  PUSH_VAL(DEFINED_GVAR));
         return;
 
       case NODE_SUPER:
       case NODE_ZSUPER:
         ADD_INSN(ret, line, putnil);
         ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_ZSUPER), 0,
-		  needstr);
+		  PUSH_VAL(DEFINED_ZSUPER));
         return;
 
+#undef PUSH_VAL
       case NODE_OP_ASGN1:
       case NODE_OP_ASGN2:
       case NODE_OP_ASGN_OR:
@@ -8050,7 +8056,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    lassign = NEW_LABEL(line);
 	    ADD_INSN(ret, line, dup); /* cref cref */
 	    ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_CONST_FROM),
-		      ID2SYM(mid), Qfalse); /* cref bool */
+		      ID2SYM(mid), Qtrue); /* cref bool */
 	    ADD_INSNL(ret, line, branchunless, lassign); /* cref */
 	}
 	ADD_INSN(ret, line, dup); /* cref cref */

@@ -3105,7 +3105,7 @@ rb_iseq_defined_string(enum defined_type type)
     const char *estr;
     VALUE *defs, str;
 
-    if ((unsigned)(type - 1) >= (unsigned)numberof(expr_names)) return 0;
+    if ((unsigned)(type - 1) >= (unsigned)numberof(expr_names)) rb_bug("unknown defined type %d", type);
     estr = expr_names[type - 1];
     if (!estr[0]) return 0;
     defs = GET_VM()->defined_strings;
