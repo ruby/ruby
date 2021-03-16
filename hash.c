@@ -2958,7 +2958,7 @@ rb_hash_replace(VALUE hash, VALUE hash2)
             RHASH_TBL_RAW(hash)->type = RHASH_ST_TABLE(hash2)->type;
         }
     }
-    rb_hash_foreach(hash2, rb_hash_rehash_i, (VALUE)hash);
+    hash_copy(hash, hash2);
 
     rb_gc_writebarrier_remember(hash);
 
