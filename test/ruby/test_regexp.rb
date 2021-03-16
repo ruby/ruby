@@ -1314,7 +1314,7 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_backref_overrun
     assert_raise_with_message(SyntaxError, /invalid backref number/) do
-      eval(%["".match /(())(?<X>)((?(90000)))/])
+      eval(%["".match(/(())(?<X>)((?(90000)))/)])
     end
   end
 
