@@ -27,7 +27,7 @@
 Code generation context
 Contains information we can use to optimize code
 */
-typedef struct CtxStruct
+typedef struct yjit_context
 {
     // Depth of this block in the sidechain (eg: inline-cache chain)
     uint8_t chain_depth;
