@@ -25,6 +25,7 @@ RSpec.describe "bundle cache with git" do
     bundle "config set cache_all true"
     bundle :cache
     expect(bundled_app("vendor/cache/foo-1.0-#{ref}")).to exist
+    expect(bundled_app("vendor/cache/foo-1.0-#{ref}/.git")).not_to exist
     expect(bundled_app("vendor/cache/foo-1.0-#{ref}/.bundlecache")).to be_file
 
     FileUtils.rm_rf lib_path("foo-1.0")
@@ -46,6 +47,7 @@ RSpec.describe "bundle cache with git" do
     bundle :cache
 
     expect(bundled_app("vendor/cache/foo-1.0-#{ref}")).to exist
+    expect(bundled_app("vendor/cache/foo-1.0-#{ref}/.git")).not_to exist
 
     FileUtils.rm_rf lib_path("foo-1.0")
     expect(the_bundle).to include_gems "foo 1.0"
@@ -209,7 +211,7 @@ RSpec.describe "bundle cache with git" do
     expect(the_bundle).to include_gem "foo 1.0"
   end
 
-  it "copies repository to vendor cache, including submodules" do
+  it "copies repository to vendor cache" do
     # CVE-2022-39253: https://lore.kernel.org/lkml/xmqq4jw1uku5.fsf@gitster.g/
     system(*%W[git config --global protocol.file.allow always])
 
@@ -234,7 +236,6 @@ RSpec.describe "bundle cache with git" do
     bundle :cache
 
     expect(bundled_app("vendor/cache/has_submodule-1.0-#{ref}")).to exist
-    expect(bundled_app("vendor/cache/has_submodule-1.0-#{ref}/submodule-1.0")).to exist
     expect(the_bundle).to include_gems "has_submodule 1.0"
   end
 

@@ -222,7 +222,8 @@ module Bundler
         cached!
         FileUtils.rm_rf(app_cache_path)
         git_proxy.checkout if requires_checkout?
-        git_proxy.copy_to(app_cache_path, @submodules)
+        FileUtils.cp_r("#{cache_path}/.", app_cache_path)
+        FileUtils.touch(app_cache_path.join(".bundlecache"))
       end
 
       def load_spec_files
