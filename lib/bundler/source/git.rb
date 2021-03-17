@@ -302,8 +302,18 @@ module Bundler
       end
 
       def set_paths!(path)
-        @local_specs = @git_proxy = nil
-        @cache_path  = @install_path = path
+        set_cache_path!(path)
+        set_install_path!(path)
+      end
+
+      def set_cache_path!(path)
+        @git_proxy = nil
+        @cache_path = path
+      end
+
+      def set_install_path!(path)
+        @local_specs = nil
+        @install_path = path
       end
 
       def has_app_cache?
