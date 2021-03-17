@@ -127,11 +127,10 @@ typedef struct yjit_block_version
     // Offsets for GC managed objects in the mainline code block
     int32_array_t gc_object_offsets;
 
-    // GC managed objects that this block depend on
-    struct {
-        VALUE cc;
-        VALUE cme;
-    } dependencies;
+    // In case this block is invalidated, these two pieces of info
+    // help to remove all pointers to this block in the system.
+    VALUE receiver_klass;
+    VALUE callee_cme;
 
     // Index one past the last instruction in the iseq
     uint32_t end_idx;

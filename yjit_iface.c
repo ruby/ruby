@@ -5,6 +5,7 @@
 #include "vm_sync.h"
 #include "vm_callinfo.h"
 #include "builtin.h"
+#include "gc.h"
 #include "internal/compile.h"
 #include "internal/class.h"
 #include "insns_info.inc"
@@ -141,39 +142,6 @@ struct yjit_root_struct {
     int unused; // empty structs are not legal in C99
 };
 
-static void
-block_array_shuffle_remove(rb_yjit_block_array_t blocks, block_t *to_remove) {
-    block_t **elem;
-    rb_darray_foreach(blocks, i, elem) {
-        if (*elem == to_remove) {
-            // Remove the current element by moving the last element here then popping.
-            *elem = rb_darray_get(blocks, rb_darray_size(blocks) - 1);
-            rb_darray_pop_back(blocks);
-            break;
-        }
-    }
-}
-
-// Map cme_or_cc => [block]
-static st_table *method_lookup_dependency;
-
-static int
-add_lookup_dependency_i(st_data_t *key, st_data_t *value, st_data_t data, int existing)
-{
-    block_t *new_block = (block_t *)data;
-
-    rb_yjit_block_array_t blocks = NULL;
-    if (existing) {
-        blocks = (rb_yjit_block_array_t)*value;
-    }
-    if (!rb_darray_append(&blocks, new_block)) {
-        rb_bug("yjit: failed to add method lookup dependency"); // TODO: we could bail out of compiling instead
-    }
-
-    *value = (st_data_t)blocks;
-    return ST_CONTINUE;
-}
-
 // Hash table of BOP blocks
 static st_table *blocks_assuming_bops;
 
@@ -191,16 +159,95 @@ assume_bop_not_redefined(block_t *block, int redefined_flag, enum ruby_basic_ope
     }
 }
 
-// Remember that the currently compiling block is only valid while cme and cc are valid
-void
-assume_method_lookup_stable(const struct rb_callcache *cc, const rb_callable_method_entry_t *cme, block_t *block)
+// Map klass => id_table[mid, set of blocks]
+// While a block `b` is in the table, b->callee_cme == rb_callable_method_entry(klass, mid).
+// See assume_method_lookup_stable()
+static st_table *method_lookup_dependency;
+
+// For adding to method_lookup_dependency data with st_update
+struct lookup_dependency_insertion {
+    block_t *block;
+    ID mid;
+};
+
+// Map cme => set of blocks
+// See assume_method_lookup_stable()
+static st_table *cme_validity_dependency;
+
+static int
+add_cme_validity_dependency_i(st_data_t *key, st_data_t *value, st_data_t new_block, int existing)
 {
-    RUBY_ASSERT(block != NULL);
-    RUBY_ASSERT(block->dependencies.cc == 0 && block->dependencies.cme == 0);
-    st_update(method_lookup_dependency, (st_data_t)cme, add_lookup_dependency_i, (st_data_t)block);
-    block->dependencies.cme = (VALUE)cme;
-    st_update(method_lookup_dependency, (st_data_t)cc, add_lookup_dependency_i, (st_data_t)block);
-    block->dependencies.cc = (VALUE)cc;
+    st_table *block_set;
+    if (existing) {
+        block_set = (st_table *)*value;
+    }
+    else {
+        // Make the set and put it into cme_validity_dependency
+        block_set = st_init_numtable();
+        *value = (st_data_t)block_set;
+    }
+
+    // Put block into set
+    st_insert(block_set, new_block, 1);
+
+    return ST_CONTINUE;
+}
+
+static int
+add_lookup_dependency_i(st_data_t *key, st_data_t *value, st_data_t data, int existing)
+{
+    struct lookup_dependency_insertion *info = (void *)data;
+
+    // Find or make an id table
+    struct rb_id_table *id2blocks;
+    if (existing) {
+        id2blocks = (void *)*value;
+    }
+    else {
+        // Make an id table and put it into the st_table
+        id2blocks = rb_id_table_create(1);
+        *value = (st_data_t)id2blocks;
+    }
+
+    // Find or make a block set
+    st_table *block_set;
+    {
+        VALUE blocks;
+        if (rb_id_table_lookup(id2blocks, info->mid, &blocks)) {
+            // Take existing set
+            block_set = (st_table *)blocks;
+        }
+        else {
+            // Make new block set and put it into the id table
+            block_set = st_init_numtable();
+            rb_id_table_insert(id2blocks, info->mid, (VALUE)block_set);
+        }
+    }
+
+    st_insert(block_set, (st_data_t)info->block, 1);
+
+    return ST_CONTINUE;
+}
+
+// Remember that a block assumes that rb_callable_method_entry(receiver_klass, mid) == cme and that
+// cme is vald.
+// When either of these assumptions becomes invalid, rb_yjit_method_lookup_change() or
+// rb_yjit_cme_invalidate() invalidates the block.
+void
+assume_method_lookup_stable(VALUE receiver_klass, const rb_callable_method_entry_t *cme, block_t *block)
+{
+    RUBY_ASSERT(!block->receiver_klass && !block->callee_cme);
+    RUBY_ASSERT(cme_validity_dependency);
+    RUBY_ASSERT(method_lookup_dependency);
+    RUBY_ASSERT_ALWAYS(RB_TYPE_P(receiver_klass, T_CLASS));
+    RUBY_ASSERT_ALWAYS(!rb_objspace_garbage_object_p(receiver_klass));
+
+    block->callee_cme = (VALUE)cme;
+    st_update(cme_validity_dependency, (st_data_t)cme, add_cme_validity_dependency_i, (st_data_t)block);
+
+    block->receiver_klass = receiver_klass;
+    struct lookup_dependency_insertion info = { block, cme->called_id };
+    st_update(method_lookup_dependency, (st_data_t)receiver_klass, add_lookup_dependency_i, (st_data_t)&info);
 }
 
 static st_table *blocks_assuming_single_ractor_mode;
@@ -227,19 +274,15 @@ assume_stable_global_constant_state(block_t *block) {
 }
 
 static int
-yjit_root_mark_i(st_data_t k, st_data_t v, st_data_t ignore)
+mark_keys_movable_i(st_data_t k, st_data_t v, st_data_t ignore)
 {
-    // Lifetime notes: cc and cme get added in pairs into the table. One of
-    // them should become invalid before dying. When one of them invalidate we
-    // remove the pair from the table. Blocks remove themself from the table
-    // when they die.
     rb_gc_mark_movable((VALUE)k);
 
     return ST_CONTINUE;
 }
 
 static int
-method_lookup_dep_table_update_keys(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
+table_update_keys_i(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
 {
     *key = rb_gc_location(rb_gc_location((VALUE)*key));
 
@@ -257,7 +300,13 @@ static void
 yjit_root_update_references(void *ptr)
 {
     if (method_lookup_dependency) {
-        if (st_foreach_with_replace(method_lookup_dependency, replace_all, method_lookup_dep_table_update_keys, 0)) {
+        if (st_foreach_with_replace(method_lookup_dependency, replace_all, table_update_keys_i, 0)) {
+            RUBY_ASSERT(false);
+        }
+    }
+
+    if (cme_validity_dependency) {
+        if (st_foreach_with_replace(cme_validity_dependency, replace_all, table_update_keys_i, 0)) {
             RUBY_ASSERT(false);
         }
     }
@@ -270,7 +319,15 @@ static void
 yjit_root_mark(void *ptr)
 {
     if (method_lookup_dependency) {
-        st_foreach(method_lookup_dependency, yjit_root_mark_i, 0);
+        // TODO: This is a leak. Unused blocks linger in the table forever, preventing the
+        // callee class they speculate on from being collected.
+        // We could do a bespoke weak reference scheme on classes similar to
+        // the interpreter's call cache. See finalizer for T_CLASS and cc_table_free().
+        st_foreach(method_lookup_dependency, mark_keys_movable_i, 0);
+    }
+
+    if (cme_validity_dependency) {
+        st_foreach(cme_validity_dependency, mark_keys_movable_i, 0);
     }
 }
 
@@ -288,7 +345,6 @@ yjit_root_memsize(const void *ptr)
 }
 
 // Custom type for interacting with the GC
-// TODO: compaction support
 // TODO: make this write barrier protected
 static const rb_data_type_t yjit_root_type = {
     "yjit_root",
@@ -296,55 +352,130 @@ static const rb_data_type_t yjit_root_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
-// Callback when cme or cc become invalid
-void
-rb_yjit_method_lookup_change(VALUE cme_or_cc)
+static int
+block_set_invalidate_i(st_data_t key, st_data_t v, st_data_t ignore)
 {
-    if (!method_lookup_dependency)
-        return;
+    block_t *version = (block_t *)key;
+
+    invalidate_block_version(version);
+
+    return ST_CONTINUE;
+}
+
+// Callback for when rb_callable_method_entry(klass, mid) is going to change.
+// Invalidate blocks that assume stable method lookup of `mid` in `klass` when this happens.
+void
+rb_yjit_method_lookup_change(VALUE klass, ID mid)
+{
+    if (!method_lookup_dependency) return;
 
     RB_VM_LOCK_ENTER();
 
-    RUBY_ASSERT(IMEMO_TYPE_P(cme_or_cc, imemo_ment) || IMEMO_TYPE_P(cme_or_cc, imemo_callcache));
+    st_data_t image;
+    st_data_t key = (st_data_t)klass;
+    if (st_lookup(method_lookup_dependency, key, &image)) {
+        struct rb_id_table *id2blocks = (void *)image;
+        VALUE blocks;
 
-    // Invalidate all regions that depend on the cme or cc
-    st_data_t key = (st_data_t)cme_or_cc, image;
-    if (st_delete(method_lookup_dependency, &key, &image)) {
-        rb_yjit_block_array_t array = (void *)image;
-        block_t **elem;
+        // Invalidate all blocks in method_lookup_dependency[klass][mid]
+        if (rb_id_table_lookup(id2blocks, mid, &blocks)) {
+            rb_id_table_delete(id2blocks, mid);
 
-        rb_darray_foreach(array, i, elem) {
-            invalidate_block_version(*elem);
+            st_table *block_set = (st_table *)blocks;
+            st_foreach(block_set, block_set_invalidate_i, 0);
+
+            st_free_table(block_set);
         }
-
-        rb_darray_free(array);
     }
 
     RB_VM_LOCK_LEAVE();
 }
 
+// Callback for when a cme becomes invalid.
+// Invalidate all blocks that depend on cme being valid.
+void
+rb_yjit_cme_invalidate(VALUE cme)
+{
+    if (!cme_validity_dependency) return;
+
+    RUBY_ASSERT(IMEMO_TYPE_P(cme, imemo_ment));
+
+    RB_VM_LOCK_ENTER();
+
+    // Delete the block set from the table
+    st_data_t cme_as_st_data = (st_data_t)cme;
+    st_data_t blocks;
+    if (st_delete(cme_validity_dependency, &cme_as_st_data, &blocks)) {
+        st_table *block_set = (st_table *)blocks;
+
+        // Invalidate each block
+        st_foreach(block_set, block_set_invalidate_i, 0);
+
+        st_free_table(block_set);
+    }
+
+    RB_VM_LOCK_LEAVE();
+}
+
+// For dealing with refinements
+void
+rb_yjit_invalidate_all_method_lookup_assumptions(void)
+{
+    // TODO: implement
+}
+
 // Remove a block from the method lookup dependency table
 static void
-remove_method_lookup_dependency(VALUE cc_or_cme, block_t *block)
+remove_method_lookup_dependency(block_t *block)
 {
-    st_data_t key = (st_data_t)cc_or_cme, image;
+    if (!block->receiver_klass) return;
+    RUBY_ASSERT(block->callee_cme); // callee_cme should be set when receiver_klass is set
+
+    st_data_t image;
+    st_data_t key = (st_data_t)block->receiver_klass;
     if (st_lookup(method_lookup_dependency, key, &image)) {
-        rb_yjit_block_array_t array = (void *)image;
+        struct rb_id_table *id2blocks = (void *)image;
+        const rb_callable_method_entry_t *cme = (void *)block->callee_cme;
+        ID mid = cme->called_id;
 
-        block_array_shuffle_remove(array, block);
+        // Find block set
+        VALUE blocks;
+        if (rb_id_table_lookup(id2blocks, mid, &blocks)) {
+            st_table *block_set = (st_table *)blocks;
 
-        if (rb_darray_size(array) == 0) {
-            st_delete(method_lookup_dependency, &key, NULL);
-            rb_darray_free(array);
+            // Remove block from block set
+            st_data_t block_as_st_data = (st_data_t)block;
+            (void)st_delete(block_set, &block_as_st_data, NULL);
+
+            if (block_set->num_entries == 0) {
+                // Block set now empty. Remove from id table.
+                rb_id_table_delete(id2blocks, mid);
+                st_free_table(block_set);
+            }
         }
+    }
+}
+
+// Remove a block from cme_validity_dependency
+static void
+remove_cme_validity_dependency(block_t *block)
+{
+    if (!block->callee_cme) return;
+
+    st_data_t blocks;
+    if (st_lookup(cme_validity_dependency, block->callee_cme, &blocks)) {
+        st_table *block_set = (st_table *)blocks;
+
+        st_data_t block_as_st_data = (st_data_t)block;
+        (void)st_delete(block_set, &block_as_st_data, NULL);
     }
 }
 
 void
 yjit_unlink_method_lookup_dependency(block_t *block)
 {
-    if (block->dependencies.cc) remove_method_lookup_dependency(block->dependencies.cc, block);
-    if (block->dependencies.cme) remove_method_lookup_dependency(block->dependencies.cme, block);
+    remove_method_lookup_dependency(block);
+    remove_cme_validity_dependency(block);
 }
 
 void
@@ -715,8 +846,8 @@ rb_yjit_iseq_mark(const struct rb_iseq_constant_body *body)
             block_t *block = rb_darray_get(version_array, block_idx);
 
             rb_gc_mark_movable((VALUE)block->blockid.iseq);
-            rb_gc_mark_movable(block->dependencies.cc);
-            rb_gc_mark_movable(block->dependencies.cme);
+            rb_gc_mark_movable(block->receiver_klass);
+            rb_gc_mark_movable(block->callee_cme);
 
             // Walk over references to objects in generated code.
             uint32_t *offset_element;
@@ -743,8 +874,8 @@ rb_yjit_iseq_update_references(const struct rb_iseq_constant_body *body)
 
             block->blockid.iseq = (const rb_iseq_t *)rb_gc_location((VALUE)block->blockid.iseq);
 
-            block->dependencies.cc = rb_gc_location(block->dependencies.cc);
-            block->dependencies.cme = rb_gc_location(block->dependencies.cme);
+            block->receiver_klass = rb_gc_location(block->receiver_klass);
+            block->callee_cme = rb_gc_location(block->callee_cme);
 
             // Walk over references to objects in generated code.
             uint32_t *offset_element;
@@ -782,12 +913,14 @@ rb_yjit_iseq_free(const struct rb_iseq_constant_body *body)
     rb_darray_free(body->yjit_blocks);
 }
 
-bool rb_yjit_enabled_p(void)
+bool
+rb_yjit_enabled_p(void)
 {
     return rb_yjit_opts.yjit_enabled;
 }
 
-unsigned rb_yjit_call_threshold(void)
+unsigned
+rb_yjit_call_threshold(void)
 {
     return rb_yjit_opts.call_threshold;
 }
@@ -795,8 +928,7 @@ unsigned rb_yjit_call_threshold(void)
 void
 rb_yjit_init(struct rb_yjit_options *options)
 {
-    if (!yjit_scrape_successful || !PLATFORM_SUPPORTED_P)
-    {
+    if (!yjit_scrape_successful || !PLATFORM_SUPPORTED_P) {
         return;
     }
 
@@ -839,8 +971,11 @@ rb_yjit_init(struct rb_yjit_options *options)
         rb_block_call(rb_mKernel, rb_intern("at_exit"), 0, NULL, at_exit_print_stats, Qfalse);
     }
 
-    // Initialize the GC hooks
+    // Make dependency tables
     method_lookup_dependency = st_init_numtable();
+    cme_validity_dependency = st_init_numtable();
+
+    // Initialize the GC hooks
     struct yjit_root_struct *root;
     VALUE yjit_root = TypedData_Make_Struct(0, struct yjit_root_struct, &yjit_root_type, root);
     rb_gc_register_mark_object(yjit_root);

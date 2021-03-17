@@ -1399,7 +1399,7 @@ gen_oswb_cfunc(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb_c
     x86opnd_t klass_opnd = mem_opnd(64, REG0, offsetof(struct RBasic, klass));
 
     // FIXME: This leaks when st_insert raises NoMemoryError
-    assume_method_lookup_stable(cd->cc, cme, jit->block);
+    assume_method_lookup_stable(cd->cc->klass, cme, jit->block);
 
     // Bail if receiver class is different from compile-time call cache class
     jit_mov_gc_ptr(jit, cb, REG1, (VALUE)cd->cc->klass);
@@ -1632,7 +1632,7 @@ gen_oswb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb_ca
     // Pointer to the klass field of the receiver &(recv->klass)
     x86opnd_t klass_opnd = mem_opnd(64, REG0, offsetof(struct RBasic, klass));
 
-    assume_method_lookup_stable(cd->cc, cme, jit->block);
+    assume_method_lookup_stable(cd->cc->klass, cme, jit->block);
 
     // Bail if receiver class is different from compile-time call cache class
     jit_mov_gc_ptr(jit, cb, REG1, (VALUE)cd->cc->klass);

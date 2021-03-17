@@ -17319,6 +17319,7 @@ yjit_iface.$(OBJEXT): {$(VPATH)}config.h
 yjit_iface.$(OBJEXT): {$(VPATH)}darray.h
 yjit_iface.$(OBJEXT): {$(VPATH)}debug_counter.h
 yjit_iface.$(OBJEXT): {$(VPATH)}defines.h
+yjit_iface.$(OBJEXT): {$(VPATH)}gc.h
 yjit_iface.$(OBJEXT): {$(VPATH)}id.h
 yjit_iface.$(OBJEXT): {$(VPATH)}id_table.h
 yjit_iface.$(OBJEXT): {$(VPATH)}insns.def
