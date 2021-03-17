@@ -164,7 +164,8 @@ module Bundler
             "does not exist. Run `bundle config unset local.#{override_for(original_path)}` to remove the local override"
         end
 
-        set_local!(path)
+        @local = true
+        set_paths!(path)
 
         # Create a new git proxy without the cached revision
         # so the Gemfile.lock always picks up the new revision.
@@ -187,7 +188,7 @@ module Bundler
       end
 
       def specs(*)
-        set_local!(app_cache_path) if has_app_cache? && !local?
+        set_paths!(app_cache_path) if has_app_cache? && !local?
 
         if requires_checkout? && !@copied
           fetch
@@ -300,8 +301,7 @@ module Bundler
         end
       end
 
-      def set_local!(path)
-        @local       = true
+      def set_paths!(path)
         @local_specs = @git_proxy = nil
         @cache_path  = @install_path = path
       end
