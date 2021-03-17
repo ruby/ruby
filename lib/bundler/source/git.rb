@@ -191,6 +191,7 @@ module Bundler
 
         if requires_checkout? && !@copied
           fetch
+          Bundler.ui.debug "  * Checking out revision: #{ref}"
           git_proxy.copy_to(install_path, submodules)
           serialize_gemspecs_in(install_path)
           @copied = true
