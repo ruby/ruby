@@ -3969,7 +3969,7 @@ vm_once_clear(VALUE data)
 
 /* defined insn */
 
-static VALUE
+static bool
 check_respond_to_missing(VALUE obj, VALUE v)
 {
     VALUE args[2];
@@ -3978,14 +3978,14 @@ check_respond_to_missing(VALUE obj, VALUE v)
     args[0] = obj; args[1] = Qfalse;
     r = rb_check_funcall(v, idRespond_to_missing, 2, args);
     if (r != Qundef && RTEST(r)) {
-	return Qtrue;
+	return true;
     }
     else {
-	return Qfalse;
+	return false;
     }
 }
 
-static VALUE
+static bool
 vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE obj, VALUE v)
 {
     VALUE klass;
@@ -4028,7 +4028,7 @@ vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_
 		    break;
 		}
 	      case METHOD_VISI_PUBLIC:
-                return Qtrue;
+                return true;
 		break;
 	      default:
 		rb_bug("vm_defined: unreachable: %u", (unsigned int)METHOD_ENTRY_VISI(me));
@@ -4041,7 +4041,7 @@ vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_
       }
       case DEFINED_YIELD:
 	if (GET_BLOCK_HANDLER() != VM_BLOCK_HANDLER_NONE) {
-            return Qtrue;
+            return true;
 	}
 	break;
       case DEFINED_ZSUPER:
@@ -4065,7 +4065,7 @@ vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_
 	break;
     }
 
-    return Qfalse;
+    return false;
 }
 
 static const VALUE *
