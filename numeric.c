@@ -4281,14 +4281,13 @@ rb_num_coerce_bit(VALUE x, VALUE y, ID func)
 
 /*
  * call-seq:
- *   big.coerce(numeric)  ->  array
+ *   int.coerce(numeric)  ->  array
  *
- * Returns an array with both a +numeric+ and a +big+ represented as Bignum
+ * Returns an array with both a +numeric+ and a +int+ represented as Integer or Float
  * objects.
  *
- * This is achieved by converting +numeric+ to a Bignum.
  *
- * A TypeError is raised if the +numeric+ is not a Fixnum or Bignum type.
+ * A TypeError is raised if the +numeric+ is not a Integer type.
  *
  *     (0x3FFFFFFFFFFFFFFF+1).coerce(42)   #=> [42, 4611686018427387904]
  */
