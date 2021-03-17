@@ -1,3 +1,3 @@
 #!/bin/sh
 
-autoreconf --install $*
+${AUTORECONF:-autoreconf} --install $*
