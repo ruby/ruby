@@ -3523,11 +3523,11 @@ rb_gzfile_path(VALUE obj)
 static VALUE
 gzfile_initialize_path_partial(VALUE obj)
 {
-	struct gzfile* gz;
-	TypedData_Get_Struct(obj, struct gzfile, &gzfile_data_type, gz);
-	gz->path = rb_funcall(gz->io, id_path, 0);
-	rb_define_singleton_method(obj, "path", rb_gzfile_path, 0);
-	return Qnil;
+    struct gzfile* gz;
+    TypedData_Get_Struct(obj, struct gzfile, &gzfile_data_type, gz);
+    gz->path = rb_funcall(gz->io, id_path, 0);
+    rb_define_singleton_method(obj, "path", rb_gzfile_path, 0);
+    return Qnil;
 }
 
 static void
