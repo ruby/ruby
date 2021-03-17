@@ -223,7 +223,6 @@ module Bundler
         FileUtils.rm_rf(app_cache_path)
         git_proxy.checkout if requires_checkout?
         git_proxy.copy_to(app_cache_path, @submodules)
-        serialize_gemspecs_in(app_cache_path)
       end
 
       def load_spec_files

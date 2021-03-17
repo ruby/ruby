@@ -238,26 +238,6 @@ RSpec.describe "bundle cache with git" do
     expect(the_bundle).to include_gems "has_submodule 1.0"
   end
 
-  it "caches pre-evaluated gemspecs" do
-    git = build_git "foo"
-
-    # Insert a gemspec method that shells out
-    spec_lines = lib_path("foo-1.0/foo.gemspec").read.split("\n")
-    spec_lines.insert(-2, "s.description = `echo bob`")
-    update_git("foo") {|s| s.write "foo.gemspec", spec_lines.join("\n") }
-
-    install_gemfile <<-G
-      source "https://gem.repo1"
-      gem "foo", :git => '#{lib_path("foo-1.0")}'
-    G
-    bundle "config set cache_all true"
-    bundle :cache
-
-    ref = git.ref_for("main", 11)
-    gemspec = bundled_app("vendor/cache/foo-1.0-#{ref}/foo.gemspec").read
-    expect(gemspec).to_not match("`echo bob`")
-  end
-
   it "can install after bundle cache with git not installed" do
     build_git "foo"
 
