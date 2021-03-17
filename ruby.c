@@ -383,7 +383,7 @@ push_include(const char *path, VALUE (*filter)(VALUE))
 	while (*p == sep)
 	    p++;
 	if (!*p) break;
-	for (s = p; *s && *s != sep; s = CharNext(s));
+	for (s = p; *s && *s != sep; ++s);
 	rb_ary_push(load_path, (*filter)(rubylib_path_new(p, s - p)));
 	p = s;
     }
@@ -403,7 +403,7 @@ push_include_cygwin(const char *path, VALUE (*filter)(VALUE))
 	while (*p == ';')
 	    p++;
 	if (!*p) break;
-	for (s = p; *s && *s != ';'; s = CharNext(s));
+	for (s = p; *s && *s != ';'; ++s);
 	len = s - p;
 	if (*s) {
 	    if (!buf) {
