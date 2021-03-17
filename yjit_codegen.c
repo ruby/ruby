@@ -126,15 +126,32 @@ yjit_load_regs(codeblock_t* cb)
     pop(cb, REG_CFP);
 }
 
-/**
-Generate an inline exit to return to the interpreter
-*/
-static void
-yjit_gen_exit(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb, VALUE* exit_pc)
+// Generate an inline exit to return to the interpreter
+static uint8_t *
+yjit_gen_exit(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 {
+    uint8_t *code_ptr = cb_get_ptr(ocb, ocb->write_pos);
+
+    VALUE *exit_pc = jit->pc;
+
+    // YJIT only ever patches the first instruction in an iseq
+    if (jit->insn_idx == 0) {
+        // Table mapping opcodes to interpreter handlers
+        const void *const *handler_table = rb_vm_get_insns_address_table();
+
+        // Write back the old instruction at the exit PC
+        // Otherwise the interpreter may jump right back to the
+        // JITted code we're trying to exit
+        int exit_opcode = opcode_at_pc(jit->iseq, exit_pc);
+        void* handler_addr = (void*)handler_table[exit_opcode];
+        mov(cb, REG0, const_ptr_opnd(exit_pc));
+        mov(cb, REG1, const_ptr_opnd(handler_addr));
+        mov(cb, mem_opnd(64, REG0, 0), REG1);
+    }
+
+    // Generate the code to exit to the interpreters
     // Write the adjusted SP back into the CFP
-    if (ctx->sp_offset != 0)
-    {
+    if (ctx->sp_offset != 0) {
         x86opnd_t stack_pointer = ctx_sp_opnd(ctx, 0);
         lea(cb, REG_SP, stack_pointer);
         mov(cb, member_opnd(REG_CFP, rb_control_frame_t, sp), REG_SP);
@@ -143,7 +160,7 @@ yjit_gen_exit(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb, VALUE* exit_pc)
     // Update the CFP on the EC
     mov(cb, member_opnd(REG_EC, rb_execution_context_t, cfp), REG_CFP);
 
-    // Directly return the next PC, which is a constant
+    // Put PC into the return register, which the post call bytes dispatches to
     mov(cb, RAX, const_ptr_opnd(exit_pc));
     mov(cb, member_opnd(REG_CFP, rb_control_frame_t, pc), RAX);
 
@@ -155,38 +172,17 @@ yjit_gen_exit(jitstate_t* jit, ctx_t* ctx, codeblock_t* cb, VALUE* exit_pc)
     }
 #endif
 
-    // Write the post call bytes
     cb_write_post_call_bytes(cb);
-}
-
-/**
-Generate an out-of-line exit to return to the interpreter
-*/
-static uint8_t *
-yjit_side_exit(jitstate_t* jit, ctx_t* ctx)
-{
-    uint8_t* code_ptr = cb_get_ptr(ocb, ocb->write_pos);
-
-    // Table mapping opcodes to interpreter handlers
-    const void * const *handler_table = rb_vm_get_insns_address_table();
-
-    // FIXME: rewriting the old instruction is only necessary if we're
-    // exiting right at an interpreter entry point
-
-    // Write back the old instruction at the exit PC
-    // Otherwise the interpreter may jump right back to the
-    // JITted code we're trying to exit
-    VALUE* exit_pc = iseq_pc_at_idx(jit->iseq, jit->insn_idx);
-    int exit_opcode = opcode_at_pc(jit->iseq, exit_pc);
-    void* handler_addr = (void*)handler_table[exit_opcode];
-    mov(ocb, RAX, const_ptr_opnd(exit_pc));
-    mov(ocb, RCX, const_ptr_opnd(handler_addr));
-    mov(ocb, mem_opnd(64, RAX, 0), RCX);
-
-    // Generate the code to exit to the interpreters
-    yjit_gen_exit(jit, ctx, ocb, exit_pc);
 
     return code_ptr;
+}
+
+
+// A shorthand for generating an exit in the outline block
+static uint8_t *
+yjit_side_exit(jitstate_t *jit, ctx_t *ctx)
+{
+    return yjit_gen_exit(jit, ctx, ocb);
 }
 
 #if RUBY_DEBUG
@@ -309,7 +305,7 @@ yjit_gen_block(ctx_t* ctx, block_t* block, rb_execution_context_t* ec)
         if (!rb_st_lookup(gen_fns, opcode, (st_data_t*)&gen_fn)) {
             // If we reach an unknown instruction,
             // exit to the interpreter and stop compiling
-            yjit_gen_exit(&jit, ctx, cb, jit.pc);
+            yjit_gen_exit(&jit, ctx, cb);
             break;
         }
 
@@ -330,7 +326,7 @@ yjit_gen_block(ctx_t* ctx, block_t* block, rb_execution_context_t* ec)
         // If we can't compile this instruction
         // exit to the interpreter and stop compiling
         if (status == YJIT_CANT_COMPILE) {
-            yjit_gen_exit(&jit, ctx, cb, jit.pc);
+            yjit_gen_exit(&jit, ctx, cb);
             break;
         }
 
@@ -542,7 +538,7 @@ gen_setlocal_wc0(jitstate_t* jit, ctx_t* ctx)
     test(cb, flags_opnd, imm_opnd(VM_ENV_FLAG_WB_REQUIRED));
 
     // Create a size-exit to fall back to the interpreter
-    uint8_t* side_exit = yjit_side_exit(jit, ctx);
+    uint8_t *side_exit = yjit_side_exit(jit, ctx);
 
     // if (flags & VM_ENV_FLAG_WB_REQUIRED) != 0
     jnz_ptr(cb, side_exit);
@@ -688,8 +684,7 @@ gen_getinstancevariable(jitstate_t* jit, ctx_t* ctx)
     //       Eventually, we can encode whether an object is T_OBJECT or not
     //       inside object shapes.
     if (rb_get_alloc_func(self_klass) != rb_class_allocate_instance) {
-        jmp_ptr(cb, side_exit);
-        return YJIT_END_BLOCK;
+        return YJIT_CANT_COMPILE;
     }
     RUBY_ASSERT(BUILTIN_TYPE(self_val) == T_OBJECT); // because we checked the allocator
 
@@ -787,10 +782,7 @@ gen_getinstancevariable(jitstate_t* jit, ctx_t* ctx)
         return YJIT_END_BLOCK;
     }
 
-    // Take side exit because YJIT_CANT_COMPILE can exit to a JIT entry point and
-    // form an infinite loop when chain_depth > 0.
-    jmp_ptr(cb, side_exit);
-    return YJIT_END_BLOCK;
+    return YJIT_CANT_COMPILE;
 }
 
 static codegen_status_t
