@@ -123,7 +123,6 @@ rb_vm_cc_invalidate(const struct rb_callcache *cc)
     VM_ASSERT(cc->klass != 0); // should be enable
 
     *(VALUE *)&cc->klass = 0;
-    rb_yjit_method_lookup_change((VALUE)cc);
     RB_DEBUG_COUNTER_INC(cc_ent_invalidate);
 }
 
@@ -135,7 +134,8 @@ vm_cme_invalidate(rb_callable_method_entry_t *cme)
     VM_ASSERT(callable_method_entry_p(cme));
     METHOD_ENTRY_INVALIDATED_SET(cme);
     RB_DEBUG_COUNTER_INC(cc_cme_invalidate);
-    rb_yjit_method_lookup_change((VALUE)cme);
+
+    rb_yjit_cme_invalidate((VALUE)cme);
 }
 
 void
@@ -238,6 +238,8 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
             invalidate_negative_cache(mid);
         }
     }
+
+    rb_yjit_method_lookup_change(klass, mid);
 }
 
 static void
@@ -305,6 +307,8 @@ void
 rb_clear_method_cache_all(void)
 {
     rb_objspace_each_objects(invalidate_all_cc, NULL);
+
+    rb_yjit_invalidate_all_method_lookup_assumptions();
 }
 
 void
