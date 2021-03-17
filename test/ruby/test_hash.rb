@@ -764,6 +764,25 @@ class TestHash < Test::Unit::TestCase
     assert_equal(0, h.length)
   end
 
+  def test_shift_empty
+    h = {}
+    assert_deprecated_warning('') do
+      assert_equal(nil, {}.shift)
+      assert_equal(nil, Hash.new(nil).shift)
+      assert_equal(nil, Hash.new{nil}.shift)
+    end
+
+    h = Hash.new(1)
+    assert_deprecated_warning(/Hash#shift returning default value for empty hash is deprecated/) do
+      assert_equal(1, h.shift)
+    end
+
+    h = Hash.new{|_,k| [k, 1]}
+    assert_deprecated_warning(/Hash#shift returning default value for empty hash is deprecated/) do
+      assert_equal([nil, 1], h.shift)
+    end
+  end
+
   def test_size
     assert_equal(0, @cls[].length)
     assert_equal(7, @h.length)

@@ -2469,7 +2469,12 @@ rb_hash_shift(VALUE hash)
 	    }
 	}
     }
-    return rb_hash_default_value(hash, Qnil);
+
+    VALUE ret = rb_hash_default_value(hash, Qnil);
+    if (ret != Qnil) {
+        rb_warn_deprecated("Hash#shift returning default value for empty hash", NULL);
+    }
+    return ret;
 }
 
 static int
