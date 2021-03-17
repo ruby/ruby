@@ -2,7 +2,7 @@
 
 PWD=
 case "$0" in
-*/*) srcdir="${0%/*}/";;
+*/*) srcdir=`dirname $0`;;
 *) srcdir="";;
 esac
 
