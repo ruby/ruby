@@ -17,5 +17,5 @@ _rb_optparse() {
 }
 
 rb_optparse () {
-    [ $# = 0 ] || complete -o default -F _rb_optparse "$@"
+  [ $# = 0 ] || complete -o default -F _rb_optparse "$@"
 }

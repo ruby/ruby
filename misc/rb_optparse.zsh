@@ -25,8 +25,8 @@ generate-complete-function/ruby/optparse ()
     mkdir -p "${ZSH_COMPLETION_DIR-$HOME/.zsh.d/Completion}"
     $1 "--*-completion-zsh=${1:t}" >! "${ZSH_COMPLETION_DIR-$HOME/.zsh.d/Completion}/$cmpl"
     if [[ $(type -w "$cmpl") == "${cmpl}: function" ]]; then
-	unfunction "$cmpl"
-	autoload -U "$cmpl"
+        unfunction "$cmpl"
+        autoload -U "$cmpl"
     else
         compinit "$cmpl"
     fi
