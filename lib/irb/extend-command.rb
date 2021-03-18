@@ -126,7 +126,8 @@ module IRB # :nodoc:
       ],
 
       [
-        :measure, :Measure, "irb/cmd/measure"
+        :irb_measure, :Measure, "irb/cmd/measure",
+        [:measure, NO_OVERRIDE],
       ],
 
     ]
