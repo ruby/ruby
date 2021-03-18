@@ -432,10 +432,6 @@ YoaOffgTf5qxiwkjnlVZQc3whgnEt9FpVMvQ9eknyeGB5KHfayAc3+hUAvI3/Cr3
         @context.tmp_dh_callback || OpenSSL::SSL::SSLContext::DEFAULT_TMP_DH_CALLBACK
       end
 
-      def tmp_ecdh_callback
-        @context.tmp_ecdh_callback
-      end
-
       def session_new_cb
         @context.session_new_cb
       end
