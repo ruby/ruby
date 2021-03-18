@@ -143,7 +143,7 @@ class Net::HTTPGenericRequest
     end
 
     if host = self['host']
-      host.sub!(/:.*/s, ''.freeze)
+      host.sub!(/:.*/m, ''.freeze)
     elsif host = @uri.host
     else
      host = addr
