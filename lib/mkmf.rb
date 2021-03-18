@@ -2038,7 +2038,7 @@ RUBY = $(ruby#{sep})
 ruby_headers = #{headers.join(' ')}
 
 RM = #{config_string('RM', &possible_command) || '$(RUBY) -run -e rm -- -f'}
-RM_RF = #{'$(RUBY) -run -e rm -- -rf'}
+RM_RF = #{config_string('RMALL', &possible_command) || '$(RUBY) -run -e rm -- -rf'}
 RMDIRS = #{config_string('RMDIRS', &possible_command) || '$(RUBY) -run -e rmdir -- -p'}
 MAKEDIRS = #{config_string('MAKEDIRS', &possible_command) || '@$(RUBY) -run -e mkdir -- -p'}
 INSTALL = #{config_string('INSTALL', &possible_command) || '@$(RUBY) -run -e install -- -vp'}
@@ -2046,6 +2046,7 @@ INSTALL_PROG = #{config_string('INSTALL_PROG') || '$(INSTALL) -m 0755'}
 INSTALL_DATA = #{config_string('INSTALL_DATA') || '$(INSTALL) -m 0644'}
 COPY = #{config_string('CP', &possible_command) || '@$(RUBY) -run -e cp -- -v'}
 TOUCH = exit >
+POSTLINK = #{config_string('POSTLINK')}
 
 #### End of system configuration section. ####
 
@@ -2381,6 +2382,9 @@ static: #{$extmk && !$static ? "all" : "$(STATIC_LIB)#{$extout ? " install-rb" :
         mfile.print "\t$(INSTALL_PROG) #{fseprepl[f]} #{dir}\n"
         if defined?($installed_list)
           mfile.print "\t@echo #{dir}/#{File.basename(f)}>>$(INSTALLED_LIST)\n"
+        end
+        unless CONFIG['dsymutil'].to_s.empty?
+          mfile.print "\tcp -r #{f}.dSYM/ #{dir}/$(DLLIB).dSYM/\n"
         end
       end
       mfile.print "clean-static::\n"
@@ -2764,6 +2768,7 @@ clean-rb::
 clean-so::
 clean: clean-so clean-static clean-rb-default clean-rb
 \t\t-$(Q)$(RM) $(CLEANLIBS#{sep}) $(CLEANOBJS#{sep}) $(CLEANFILES#{sep}) .*.time
+\t\t-$(Q)$(RM_RF) *.dSYM
 
 distclean-rb-default::
 distclean-rb::
