@@ -80,6 +80,16 @@ module TestIRB
       assert_equal(nil, workspace.code_around_binding)
     end
 
+
+    def test_toplevel_binding_local_variables
+      bug17623 = '[ruby-core:102468]'
+      bundle_exec = ENV.key?('BUNDLE_GEMFILE') ? ['-rbundler/setup'] : []
+      status = assert_in_out_err(bundle_exec + ['-W0', '-e', <<~RUBY , '--', '-f', '--'], 'binding.local_variables', /\[:_\]/, [], bug17623)
+        version = 'xyz' # typical rubygems loading file
+        load('./exe/irb')
+      RUBY
+    end
+
     private
 
     def with_script_lines

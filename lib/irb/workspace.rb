@@ -57,6 +57,8 @@ EOF
                           __FILE__,
                           __LINE__ - 3)
         when 4  # binding is a copy of TOPLEVEL_BINDING (default)
+          # Note that this will typically be IRB::TOPLEVEL_BINDING (see exe/irb)
+          # This is to avoid RubyGems' local variables (see issue #17623)
           @binding = TOPLEVEL_BINDING.dup
         end
       end
