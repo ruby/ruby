@@ -17,7 +17,7 @@
 #include "yjit_utils.h"
 
 // Map from YARV opcodes to code generation functions
-static st_table *gen_fns;
+static codegen_fn gen_fns[VM_INSTRUCTION_SIZE] = { NULL };
 
 // Code block into which we write machine code
 static codeblock_t block;
@@ -299,10 +299,11 @@ yjit_gen_block(ctx_t* ctx, block_t* block, rb_execution_context_t* ec)
 
         // Get the current opcode
         int opcode = jit_get_opcode(&jit);
+        RUBY_ASSERT(opcode >= 0 && opcode < VM_INSTRUCTION_SIZE);
 
         // Lookup the codegen function for this instruction
-        codegen_fn gen_fn;
-        if (!rb_st_lookup(gen_fns, opcode, (st_data_t*)&gen_fn)) {
+        codegen_fn gen_fn = gen_fns[opcode];
+        if (!gen_fn) {
             // If we reach an unknown instruction,
             // exit to the interpreter and stop compiling
             yjit_gen_exit(&jit, ctx, cb);
@@ -1819,15 +1820,14 @@ gen_opt_getinlinecache(jitstate_t *jit, ctx_t *ctx)
     return YJIT_END_BLOCK;
 }
 
-void yjit_reg_op(int opcode, codegen_fn gen_fn)
+static void
+yjit_reg_op(int opcode, codegen_fn gen_fn)
 {
+    RUBY_ASSERT(opcode >= 0 && opcode < VM_INSTRUCTION_SIZE);
     // Check that the op wasn't previously registered
-    st_data_t st_gen;
-    if (rb_st_lookup(gen_fns, opcode, &st_gen)) {
-        rb_bug("op already registered");
-    }
+    RUBY_ASSERT(gen_fns[opcode] == NULL);
 
-    st_insert(gen_fns, (st_data_t)opcode, (st_data_t)gen_fn);
+    gen_fns[opcode] = gen_fn;
 }
 
 void
@@ -1840,9 +1840,6 @@ yjit_init_codegen(void)
     cb_init(cb, mem_block, mem_size/2);
     ocb = &outline_block;
     cb_init(ocb, mem_block + mem_size/2, mem_size/2);
-
-    // Initialize the codegen function table
-    gen_fns = rb_st_init_numtable();
 
     // Map YARV opcodes to the corresponding codegen functions
     yjit_reg_op(BIN(dup), gen_dup);
@@ -1865,8 +1862,6 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(opt_and), gen_opt_and);
     yjit_reg_op(BIN(opt_minus), gen_opt_minus);
     yjit_reg_op(BIN(opt_plus), gen_opt_plus);
-
-    // Map branch instruction opcodes to codegen functions
     yjit_reg_op(BIN(opt_getinlinecache), gen_opt_getinlinecache);
     yjit_reg_op(BIN(branchif), gen_branchif);
     yjit_reg_op(BIN(branchunless), gen_branchunless);
