@@ -140,7 +140,6 @@ module Bundler
       end
 
       Dir[cache_path.join("*/.git")].each do |git_dir|
-        FileUtils.rm_rf(git_dir)
         FileUtils.touch(File.expand_path("../.bundlecache", git_dir))
       end
 

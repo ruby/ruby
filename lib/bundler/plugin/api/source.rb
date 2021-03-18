@@ -196,6 +196,7 @@ module Bundler
 
           FileUtils.rm_rf(new_cache_path)
           FileUtils.cp_r(install_path, new_cache_path)
+          FileUtils.rm_rf(app_cache_path.join(".git"))
           FileUtils.touch(app_cache_path.join(".bundlecache"))
         end
 

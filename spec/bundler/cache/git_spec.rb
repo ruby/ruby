@@ -25,7 +25,6 @@ RSpec.describe "bundle cache with git" do
     bundle "config set cache_all true"
     bundle :cache
     expect(bundled_app("vendor/cache/foo-1.0-#{ref}")).to exist
-    expect(bundled_app("vendor/cache/foo-1.0-#{ref}/.git")).not_to exist
     expect(bundled_app("vendor/cache/foo-1.0-#{ref}/.bundlecache")).to be_file
 
     FileUtils.rm_rf lib_path("foo-1.0")
@@ -47,7 +46,6 @@ RSpec.describe "bundle cache with git" do
     bundle :cache
 
     expect(bundled_app("vendor/cache/foo-1.0-#{ref}")).to exist
-    expect(bundled_app("vendor/cache/foo-1.0-#{ref}/.git")).not_to exist
 
     FileUtils.rm_rf lib_path("foo-1.0")
     expect(the_bundle).to include_gems "foo 1.0"
