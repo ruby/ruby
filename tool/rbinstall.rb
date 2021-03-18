@@ -320,6 +320,15 @@ def prepare(mesg, basedir, subdirs=nil)
   makedirs(dirs)
 end
 
+def install_executable(src_file, dest_dir)
+  install(src_file, dest_dir, mode: $prog_mode, strip: $strip)
+  if DSYM && !$strip
+    dest_dsym = File.join(dest_dir, File.basename(src_file) + ".dSYM")
+    install_recursive("#{src_file}.dSYM", dest_dsym)
+  end
+end
+singleton_class.alias_method(:install_shared_library, :install_executable)
+
 def CONFIG.[](name, mandatory = false)
   value = super(name)
   if mandatory
@@ -355,28 +364,29 @@ dll = CONFIG["LIBRUBY_SO", enable_shared]
 lib = CONFIG["LIBRUBY", true]
 arc = CONFIG["LIBRUBY_A", true]
 load_relative = CONFIG["LIBRUBY_RELATIVE"] == 'yes'
+DSYM = !CONFIG["dsymutil"].to_s.empty?
 
 rdoc_noinst = %w[created.rid]
 
 install?(:local, :arch, :bin, :'bin-arch') do
   prepare "binary commands", bindir
 
-  install ruby_install_name+exeext, bindir, :mode => $prog_mode, :strip => $strip
+  install_executable ruby_install_name+exeext, bindir
   if rubyw_install_name and !rubyw_install_name.empty?
-    install rubyw_install_name+exeext, bindir, :mode => $prog_mode, :strip => $strip
+    install_executable rubyw_install_name+exeext, bindir
   end
   if File.exist? goruby_install_name+exeext
-    install goruby_install_name+exeext, bindir, :mode => $prog_mode, :strip => $strip
+    install_executable goruby_install_name+exeext, bindir
   end
   if enable_shared and dll != lib
-    install dll, bindir, :mode => $prog_mode, :strip => $strip
+    install_shared_library dll, bindir
   end
 end
 
 install?(:local, :arch, :lib, :'lib-arch') do
   prepare "base libraries", libdir
 
-  install lib, libdir, :mode => $prog_mode, :strip => $strip unless lib == arc
+  install_shared_library lib, libdir unless lib == arc
   install arc, libdir, :mode => $data_mode unless CONFIG["INSTALL_STATIC_LIBRARY"] == "no"
   if dll == lib and dll != arc
     for link in CONFIG["LIBRUBY_ALIASES"].split - [File.basename(dll)]
