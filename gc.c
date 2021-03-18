@@ -1722,25 +1722,19 @@ heap_page_add_freeobj(rb_objspace_t *objspace, struct heap_page *page, VALUE obj
     gc_report(3, objspace, "heap_page_add_freeobj: add %p to freelist\n", (void *)obj);
 }
 
-static inline bool
+static inline void
 heap_add_freepage(rb_heap_t *heap, struct heap_page *page)
 {
     asan_unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
     GC_ASSERT(page->free_slots != 0);
+    GC_ASSERT(page->freelist);
 
-    if (page->freelist) {
-        page->free_next = heap->free_pages;
-        heap->free_pages = page;
+    page->free_next = heap->free_pages;
+    heap->free_pages = page;
 
-        RUBY_DEBUG_LOG("page:%p freelist:%p", page, page->freelist);
+    RUBY_DEBUG_LOG("page:%p freelist:%p", page, page->freelist);
 
-        asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
-        return true;
-    }
-    else {
-        asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
-        return false;
-    }
+    asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
 }
 
 #if GC_ENABLE_INCREMENTAL_MARK
@@ -5170,17 +5164,15 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
 		}
 	    }
 	    else {
-                if (heap_add_freepage(heap, sweep_page)) {
-                    swept_slots += free_slots;
-                    if (swept_slots > 2048) {
-                        break;
-                    }
+                heap_add_freepage(heap, sweep_page);
+                swept_slots += free_slots;
+                if (swept_slots > 2048) {
+                    break;
                 }
 	    }
 #else
-            if (heap_add_freepage(heap, sweep_page)) {
-                break;
-            }
+            heap_add_freepage(heap, sweep_page);
+            break;
 #endif
 	}
 	else {
