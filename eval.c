@@ -38,7 +38,7 @@
 #include "vm_core.h"
 #include "ractor_core.h"
 
-NORETURN(void rb_raise_jump(VALUE, VALUE));
+NORETURN(static void rb_raise_jump(VALUE, VALUE));
 void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);
 void rb_ec_clear_all_trace_func(const rb_execution_context_t *ec);
 
@@ -891,9 +891,8 @@ rb_make_exception(int argc, const VALUE *argv)
 }
 
 /*! \private
- * \todo can be static?
  */
-void
+static void
 rb_raise_jump(VALUE mesg, VALUE cause)
 {
     rb_execution_context_t *ec = GET_EC();
@@ -1412,9 +1411,8 @@ refinement_superclass(VALUE superclass)
 
 /*!
  * \private
- * \todo can be static?
  */
-void
+static void
 rb_using_refinement(rb_cref_t *cref, VALUE klass, VALUE module)
 {
     VALUE iclass, c, superclass = klass;
@@ -1498,9 +1496,8 @@ using_module_recursive(const rb_cref_t *cref, VALUE klass)
 
 /*!
  * \private
- * \todo can be static?
  */
-void
+static void
 rb_using_module(const rb_cref_t *cref, VALUE module)
 {
     Check_Type(module, T_MODULE);
