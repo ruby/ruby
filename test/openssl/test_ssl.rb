@@ -1583,13 +1583,11 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     end
   end
 
-  def test_dh_callback
-    pend "TLS 1.2 is not supported" unless tls12_supported?
-
+  def test_tmp_dh_callback
     dh = Fixtures.pkey("dh-1")
     called = false
     ctx_proc = -> ctx {
-      ctx.ssl_version = :TLSv1_2
+      ctx.max_version = :TLS1_2
       ctx.ciphers = "DH:!NULL"
       ctx.tmp_dh_callback = ->(*args) {
         called = true
@@ -1605,10 +1603,8 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_connect_works_when_setting_dh_callback_to_nil
-    pend "TLS 1.2 is not supported" unless tls12_supported?
-
     ctx_proc = -> ctx {
-      ctx.ssl_version = :TLSv1_2
+      ctx.max_version = :TLS1_2
       ctx.ciphers = "DH:!NULL" # use DH
       ctx.tmp_dh_callback = nil
     }
@@ -1617,6 +1613,20 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         assert_nothing_raised {
           server_connect(port) { }
         }
+      }
+    end
+  end
+
+  def test_tmp_dh
+    dh = Fixtures.pkey("dh-1")
+    ctx_proc = -> ctx {
+      ctx.max_version = :TLS1_2
+      ctx.ciphers = "DH:!NULL" # use DH
+      ctx.tmp_dh = dh
+    }
+    start_server(ctx_proc: ctx_proc) do |port|
+      server_connect(port) { |ssl|
+        assert_equal dh.to_der, ssl.tmp_key.to_der
       }
     end
   end

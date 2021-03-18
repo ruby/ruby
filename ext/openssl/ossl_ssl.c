@@ -987,6 +987,52 @@ ossl_sslctx_set_ciphers(VALUE self, VALUE v)
     return v;
 }
 
+#ifndef OPENSSL_NO_DH
+/*
+ * call-seq:
+ *    ctx.tmp_dh = pkey
+ *
+ * Sets DH parameters used for ephemeral DH key exchange. This is relevant for
+ * servers only.
+ *
+ * +pkey+ is an instance of OpenSSL::PKey::DH. Note that key components
+ * contained in the key object, if any, are ignored. The server will always
+ * generate a new key pair for each handshake.
+ *
+ * Added in version 3.0. See also the man page SSL_set0_tmp_dh_pkey(3).
+ *
+ * Example:
+ *   ctx = OpenSSL::SSL::SSLContext.new
+ *   ctx.tmp_dh = OpenSSL::DH.generate(2048)
+ *   svr = OpenSSL::SSL::SSLServer.new(tcp_svr, ctx)
+ *   Thread.new { svr.accept }
+ */
+static VALUE
+ossl_sslctx_set_tmp_dh(VALUE self, VALUE arg)
+{
+    SSL_CTX *ctx;
+    EVP_PKEY *pkey;
+
+    rb_check_frozen(self);
+    GetSSLCTX(self, ctx);
+    pkey = GetPKeyPtr(arg);
+
+    if (EVP_PKEY_base_id(pkey) != EVP_PKEY_DH)
+        rb_raise(eSSLError, "invalid pkey type %s (expected DH)",
+                 OBJ_nid2sn(EVP_PKEY_base_id(pkey)));
+#ifdef HAVE_SSL_SET0_TMP_DH_PKEY
+    if (!SSL_CTX_set0_tmp_dh_pkey(ctx, pkey))
+        ossl_raise(eSSLError, "SSL_CTX_set0_tmp_dh_pkey");
+    EVP_PKEY_up_ref(pkey);
+#else
+    if (!SSL_CTX_set_tmp_dh(ctx, EVP_PKEY_get0_DH(pkey)))
+        ossl_raise(eSSLError, "SSL_CTX_set_tmp_dh");
+#endif
+
+    return arg;
+}
+#endif
+
 #if !defined(OPENSSL_NO_EC)
 /*
  * call-seq:
@@ -2670,6 +2716,9 @@ Init_ossl_ssl(void)
 			     ossl_sslctx_set_minmax_proto_version, 2);
     rb_define_method(cSSLContext, "ciphers",     ossl_sslctx_get_ciphers, 0);
     rb_define_method(cSSLContext, "ciphers=",    ossl_sslctx_set_ciphers, 1);
+#ifndef OPENSSL_NO_DH
+    rb_define_method(cSSLContext, "tmp_dh=", ossl_sslctx_set_tmp_dh, 1);
+#endif
     rb_define_method(cSSLContext, "ecdh_curves=", ossl_sslctx_set_ecdh_curves, 1);
     rb_define_method(cSSLContext, "security_level", ossl_sslctx_get_security_level, 0);
     rb_define_method(cSSLContext, "security_level=", ossl_sslctx_set_security_level, 1);
