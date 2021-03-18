@@ -135,6 +135,11 @@ module IRB # :nodoc:
         [:measure, NO_OVERRIDE],
       ],
 
+      [
+        :irb_whereami, :Whereami, "irb/cmd/whereami",
+        [:whereami, NO_OVERRIDE],
+      ],
+
     ]
 
     # Installs the default irb commands:
