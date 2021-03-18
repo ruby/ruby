@@ -188,7 +188,7 @@ module Bundler
       end
 
       def specs(*)
-        set_paths!(app_cache_path) if has_app_cache? && !local?
+        set_cache_path!(app_cache_path) if has_app_cache? && !local?
 
         if requires_checkout? && !@copied
           fetch
@@ -218,6 +218,7 @@ module Bundler
         app_cache_path = app_cache_path(custom_path)
         return unless Bundler.feature_flag.cache_all?
         return if install_path == app_cache_path
+        return if cache_path == app_cache_path
         cached!
         FileUtils.rm_rf(app_cache_path)
         git_proxy.checkout if requires_checkout?
