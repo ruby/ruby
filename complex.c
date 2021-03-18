@@ -2214,8 +2214,6 @@ numeric_rect(VALUE self)
     return rb_assoc_new(self, INT2FIX(0));
 }
 
-static VALUE float_arg(VALUE self);
-
 /*
  * call-seq:
  *    num.polar  ->  array
