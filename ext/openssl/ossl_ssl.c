@@ -1443,8 +1443,8 @@ ossl_sslctx_flush_sessions(int argc, VALUE *argv, VALUE self)
 static inline int
 ssl_started(SSL *ssl)
 {
-    /* the FD is set in ossl_ssl_setup(), called by #connect or #accept */
-    return SSL_get_fd(ssl) >= 0;
+    /* BIO is created through ossl_ssl_setup(), called by #connect or #accept */
+    return SSL_get_rbio(ssl) != NULL;
 }
 
 static void
