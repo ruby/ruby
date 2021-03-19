@@ -495,20 +495,35 @@ fill_random_bytes_urandom(void *seed, size_t size)
 
 #if 0
 #elif defined MAC_OS_X_VERSION_10_7 && MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_7
-#include <Security/SecRandom.h>
+
+# if defined MAC_OS_X_VERSION_10_10 && MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_10
+#   include <CommonCrypto/CommonRandom.h>
+#   define USE_COMMON_RANDOM 1
+# else
+#   include <Security/SecRandom.h>
+#   define USE_COMMON_RANDOM 0
+# endif
 
 static int
 fill_random_bytes_syscall(void *seed, size_t size, int unused)
 {
-    int status = SecRandomCopyBytes(kSecRandomDefault, size, seed);
+#if USE_COMMON_RANDOM
+    int failed = CCRandomGenerateBytes(seed, size) != kCCSuccess;
+#else
+    int failed = SecRandomCopyBytes(kSecRandomDefault, size, seed) != errSecSuccess;
+#endif
 
-    if (status != errSecSuccess) {
+    if (failed) {
 # if 0
+# if USE_COMMON_RANDOM
+        /* How to get the error message? */
+# else
         CFStringRef s = SecCopyErrorMessageString(status, NULL);
         const char *m = s ? CFStringGetCStringPtr(s, kCFStringEncodingUTF8) : NULL;
         fprintf(stderr, "SecRandomCopyBytes failed: %d: %s\n", status,
                 m ? m : "unknown");
         if (s) CFRelease(s);
+# endif
 # endif
         return -1;
     }
