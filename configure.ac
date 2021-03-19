@@ -3641,8 +3641,8 @@ AS_CASE(["$target_os"],
 		RUBY_APPEND_OPTION(LIBRUBYARG_STATIC, [-framework Security])
 	    ]dnl
 	)
-	RUBY_APPEND_OPTION(XLDFLAGS, [-framework Foundation])
-	RUBY_APPEND_OPTION(LIBRUBYARG_STATIC, [-framework Foundation])
+	RUBY_APPEND_OPTION(XLDFLAGS, [-framework CoreFoundation])
+	RUBY_APPEND_OPTION(LIBRUBYARG_STATIC, [-framework CoreFoundation])
 	],
     [osf*], [
 	AS_IF([test "$GCC" != "yes" ], [
