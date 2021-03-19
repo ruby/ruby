@@ -2522,6 +2522,8 @@ iseq_set_exception_table(rb_iseq_t *iseq)
     if (tlen > 0) {
 	struct iseq_catch_table *table = xmalloc(iseq_catch_table_bytes(tlen));
 	table->size = tlen;
+        struct iseq_catch_table_entry *rescue_entry = NULL;
+        bool multiple_rescue = false;
 
 	for (i = 0; i < table->size; i++) {
             ptr = RARRAY_CONST_PTR_TRANSIENT(tptr[i]);
@@ -2531,6 +2533,30 @@ iseq_set_exception_table(rb_iseq_t *iseq)
 	    entry->end = label_get_position((LABEL *)(ptr[2] & ~1));
 	    entry->iseq = (rb_iseq_t *)ptr[3];
 	    RB_OBJ_WRITTEN(iseq, Qundef, entry->iseq);
+
+            /* TODO: Dirty Hack!  Fix me */
+            /* This checks when a rescue catch entry and ensure catch
+             * entry have the same start, the rescue catch end is not
+             * after the end of the ensure end. This fixes an issue
+             * where a control flow keyword such as next inside a
+             * begin block results in the rescue catch entry covering
+             * the ensure block.
+             */
+            if (entry->type == CATCH_TYPE_RESCUE) {
+                if (rescue_entry) {
+                    multiple_rescue = true;
+                }
+                else {
+                    rescue_entry = entry;
+                }
+            }
+            else if (entry->type == CATCH_TYPE_ENSURE &&
+                     rescue_entry &&
+                     !multiple_rescue &&
+                     entry->start == rescue_entry->start &&
+                     rescue_entry->end > entry->end) {
+                rescue_entry->end = entry->end;
+            }
 
 	    /* stack depth */
 	    if (ptr[4]) {
