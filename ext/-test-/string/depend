@@ -1000,6 +1000,7 @@ fstring.o: $(hdrdir)/ruby/backward/2/long_long.h
 fstring.o: $(hdrdir)/ruby/backward/2/stdalign.h
 fstring.o: $(hdrdir)/ruby/backward/2/stdarg.h
 fstring.o: $(hdrdir)/ruby/defines.h
+fstring.o: $(hdrdir)/ruby/encoding.h
 fstring.o: $(hdrdir)/ruby/intern.h
 fstring.o: $(hdrdir)/ruby/internal/anyargs.h
 fstring.o: $(hdrdir)/ruby/internal/arithmetic.h
@@ -1142,6 +1143,8 @@ fstring.o: $(hdrdir)/ruby/internal/variable.h
 fstring.o: $(hdrdir)/ruby/internal/warning_push.h
 fstring.o: $(hdrdir)/ruby/internal/xmalloc.h
 fstring.o: $(hdrdir)/ruby/missing.h
+fstring.o: $(hdrdir)/ruby/onigmo.h
+fstring.o: $(hdrdir)/ruby/oniguruma.h
 fstring.o: $(hdrdir)/ruby/ruby.h
 fstring.o: $(hdrdir)/ruby/st.h
 fstring.o: $(hdrdir)/ruby/subst.h
