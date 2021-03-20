@@ -79,6 +79,45 @@ ossl_pkey_new(EVP_PKEY *pkey)
     return obj;
 }
 
+#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+# include <openssl/decoder.h>
+
+EVP_PKEY *
+ossl_pkey_read_generic(BIO *bio, VALUE pass)
+{
+    void *ppass = (void *)pass;
+    OSSL_DECODER_CTX *dctx;
+    EVP_PKEY *pkey = NULL;
+    int pos = 0, pos2;
+
+    dctx = OSSL_DECODER_CTX_new_for_pkey(&pkey, "DER", NULL, NULL, 0, NULL, NULL);
+    if (!dctx)
+        goto out;
+    if (OSSL_DECODER_CTX_set_pem_password_cb(dctx, ossl_pem_passwd_cb, ppass) != 1)
+        goto out;
+
+    /* First check DER */
+    if (OSSL_DECODER_from_bio(dctx, bio) == 1)
+        goto out;
+
+    /* Then check PEM; multiple OSSL_DECODER_from_bio() calls may be needed */
+    OSSL_BIO_reset(bio);
+    if (OSSL_DECODER_CTX_set_input_type(dctx, "PEM") != 1)
+        goto out;
+    while (OSSL_DECODER_from_bio(dctx, bio) != 1) {
+        if (BIO_eof(bio))
+            goto out;
+        pos2 = BIO_tell(bio);
+        if (pos2 < 0 || pos2 <= pos)
+            goto out;
+        pos = pos2;
+    }
+
+  out:
+    OSSL_DECODER_CTX_free(dctx);
+    return pkey;
+}
+#else
 EVP_PKEY *
 ossl_pkey_read_generic(BIO *bio, VALUE pass)
 {
@@ -107,6 +146,7 @@ ossl_pkey_read_generic(BIO *bio, VALUE pass)
   out:
     return pkey;
 }
+#endif
 
 /*
  *  call-seq:
