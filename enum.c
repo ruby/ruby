@@ -1012,6 +1012,7 @@ static int
 tally_up(st_data_t *group, st_data_t *value, st_data_t arg, int existing)
 {
     VALUE tally = (VALUE)*value;
+    VALUE hash = (VALUE)arg;
     if (!existing) {
         tally = INT2FIX(1);
     }
@@ -1020,15 +1021,17 @@ tally_up(st_data_t *group, st_data_t *value, st_data_t arg, int existing)
     }
     else {
         tally = rb_big_plus(tally, INT2FIX(1));
+        RB_OBJ_WRITTEN(hash, Qundef, tally);
     }
     *value = (st_data_t)tally;
+    if (!SPECIAL_CONST_P(*group)) RB_OBJ_WRITTEN(hash, Qundef, *group);
     return ST_CONTINUE;
 }
 
 static VALUE
 rb_enum_tally_up(VALUE hash, VALUE group)
 {
-    rb_hash_stlike_update(hash, group, tally_up, 0);
+    rb_hash_stlike_update(hash, group, tally_up, (st_data_t)hash);
     return hash;
 }
 
