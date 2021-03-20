@@ -593,8 +593,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
     exts = [
       ["keyUsage","keyEncipherment,digitalSignature",true],
-      ["subjectAltName","DNS:localhost.localdomain",false],
-      ["subjectAltName","IP:127.0.0.1",false],
+      ["subjectAltName","DNS:localhost.localdomain,IP:127.0.0.1",false],
     ]
     @svr_cert = issue_cert(@svr, @svr_key, 4, exts, @ca_cert, @ca_key)
     start_server { |port|
