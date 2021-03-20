@@ -30,7 +30,6 @@ LD = @LD@
 YACC = bison
 PURIFY =
 AUTOCONF = autoconf
-ACLOCAL = aclocal
 CONFIGURE = @CONFIGURE@
 @SET_MAKE@
 MKFILES = @MAKEFILES@
@@ -369,13 +368,8 @@ reconfig config.status:	$(srcdir)/$(CONFIGURE) $(srcdir)/enc/Makefile.in \
 	@PWD= MINIRUBY="$(MINIRUBY)"; export MINIRUBY; \
 	set $(SHELL) $($@-args); $(reconfig-exec-$(V))
 
-$(srcdir)/$(CONFIGURE): $(srcdir)/configure.ac $(srcdir)/aclocal.m4
+$(srcdir)/$(CONFIGURE): $(srcdir)/configure.ac
 	$(CHDIR) $(srcdir) && exec $(AUTOCONF) -o $(@F)
-
-$(srcdir)/aclocal.m4:
-	$(CHDIR) $(srcdir) && \
-	type $(ACLOCAL) >/dev/null 2>&1 && exec $(ACLOCAL); \
-	touch $(@F)
 
 prereq: $(srcdir)/$(CONFIGURE)
 
