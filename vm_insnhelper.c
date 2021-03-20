@@ -2794,8 +2794,8 @@ current_method_entry(const rb_execution_context_t *ec, rb_control_frame_t *cfp)
     return cfp;
 }
 
-static VALUE
-find_defined_class_by_owner(VALUE current_class, VALUE target_owner)
+MJIT_FUNC_EXPORTED VALUE
+rb_find_defined_class_by_owner(VALUE current_class, VALUE target_owner)
 {
     VALUE klass = current_class;
 
@@ -2820,7 +2820,7 @@ aliased_callable_method_entry(const rb_callable_method_entry_t *me)
     const rb_callable_method_entry_t *cme;
 
     if (orig_me->defined_class == 0) {
-	VALUE defined_class = find_defined_class_by_owner(me->defined_class, orig_me->owner);
+        VALUE defined_class = rb_find_defined_class_by_owner(me->defined_class, orig_me->owner);
 	VM_ASSERT(RB_TYPE_P(orig_me->owner, T_MODULE));
 	cme = rb_method_entry_complement_defined_class(orig_me, me->called_id, defined_class);
 
