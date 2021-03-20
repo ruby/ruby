@@ -762,6 +762,7 @@ class TestArray < Test::Unit::TestCase
         true
       end
     end
+    assert_equal(@cls[1, 2, 3, 42], a)
   end
 
   def test_dup
@@ -1338,6 +1339,7 @@ class TestArray < Test::Unit::TestCase
         true
       end
     end
+    assert_equal(@cls[1, 2, 3, 42], a)
   end
 
   def test_shared_array_reject!
@@ -2623,6 +2625,7 @@ class TestArray < Test::Unit::TestCase
         false
       end
     end
+    assert_equal(@cls[1, 2, 3, 42], a)
   end
 
   # also select!
@@ -2646,6 +2649,7 @@ class TestArray < Test::Unit::TestCase
         false
       end
     end
+    assert_equal(@cls[1, 2, 3, 42], a)
   end
 
   def test_filter
