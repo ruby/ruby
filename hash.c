@@ -3651,6 +3651,9 @@ rb_hash_search_value(VALUE key, VALUE value, VALUE arg)
 /*
  *  call-seq:
  *    hash.has_value?(value) -> true or false
+ *    hash.value?(value) -> true or false
+ *
+ *  Method #value? is an alias for \#has_value?.
  *
  *  Returns +true+ if +value+ is a value in +self+, otherwise +false+.
  */
