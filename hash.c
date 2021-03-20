@@ -3870,18 +3870,23 @@ rb_hash_invert(VALUE hash)
 }
 
 static int
-rb_hash_update_callback(st_data_t *key, st_data_t *value, struct update_arg *arg, int existing)
+hash_update_replace(st_data_t *key, st_data_t *value, struct update_arg *arg, int existing, st_data_t newvalue)
 {
     if (existing) {
 	arg->old_value = *value;
-	arg->new_value = arg->arg;
     }
     else {
 	arg->new_key = *key;
-	arg->new_value = arg->arg;
     }
-    *value = arg->arg;
+    arg->new_value = newvalue;
+    *value = newvalue;
     return ST_CONTINUE;
+}
+
+static int
+rb_hash_update_callback(st_data_t *key, st_data_t *value, struct update_arg *arg, int existing)
+{
+    return hash_update_replace(key, value, arg, existing, arg->arg);
 }
 
 NOINSERT_UPDATE_CALLBACK(rb_hash_update_callback)
@@ -3896,18 +3901,12 @@ rb_hash_update_i(VALUE key, VALUE value, VALUE hash)
 static int
 rb_hash_update_block_callback(st_data_t *key, st_data_t *value, struct update_arg *arg, int existing)
 {
-    VALUE newvalue = (VALUE)arg->arg;
+    st_data_t newvalue = arg->arg;
 
     if (existing) {
-	newvalue = rb_yield_values(3, (VALUE)*key, (VALUE)*value, newvalue);
-	arg->old_value = *value;
+        newvalue = (st_data_t)rb_yield_values(3, (VALUE)*key, (VALUE)*value, (VALUE)newvalue);
     }
-    else {
-	arg->new_key = *key;
-    }
-    arg->new_value = newvalue;
-    *value = newvalue;
-    return ST_CONTINUE;
+    return hash_update_replace(key, value, arg, existing, newvalue);
 }
 
 NOINSERT_UPDATE_CALLBACK(rb_hash_update_block_callback)
@@ -4002,14 +4001,8 @@ rb_hash_update_func_callback(st_data_t *key, st_data_t *value, struct update_arg
 
     if (existing) {
 	newvalue = (*uf_arg->func)((VALUE)*key, (VALUE)*value, newvalue);
-	arg->old_value = *value;
     }
-    else {
-	arg->new_key = *key;
-    }
-    arg->new_value = newvalue;
-    *value = newvalue;
-    return ST_CONTINUE;
+    return hash_update_replace(key, value, arg, existing, (st_data_t)newvalue);
 }
 
 NOINSERT_UPDATE_CALLBACK(rb_hash_update_func_callback)
