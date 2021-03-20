@@ -40,6 +40,8 @@ typedef struct native_thread_data_struct {
     } cond;
 } native_thread_data_t;
 
+void rb_native_mutex_destroy(rb_nativethread_lock_t *lock);
+
 #undef except
 #undef try
 #undef leave

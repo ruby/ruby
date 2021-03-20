@@ -32,5 +32,7 @@ typedef struct rb_global_vm_lock_struct {
     HANDLE lock;
 } rb_global_vm_lock_t;
 
+void rb_native_mutex_destroy(rb_nativethread_lock_t *lock);
+
 #endif /* RUBY_THREAD_WIN32_H */
 
