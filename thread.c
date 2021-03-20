@@ -422,11 +422,6 @@ rb_vm_gvl_destroy(rb_vm_t *vm)
 {
     gvl_release(vm);
     gvl_destroy(vm);
-    if (0) {
-        /* may be held by running threads */
-        rb_native_mutex_destroy(&vm->waitpid_lock);
-        rb_native_mutex_destroy(&vm->workqueue_lock);
-    }
 }
 
 void
