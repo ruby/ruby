@@ -429,9 +429,19 @@ ossl_pkey_s_generate_key(int argc, VALUE *argv, VALUE self)
     return pkey_generate(argc, argv, self, 0);
 }
 
+/*
+ * TODO: There is no convenient way to check the presence of public key
+ * components on OpenSSL 3.0. But since keys are immutable on 3.0, pkeys without
+ * these should only be created by OpenSSL::PKey.generate_parameters or by
+ * parsing DER-/PEM-encoded string. We would need another flag for that.
+ */
 void
 ossl_pkey_check_public_key(const EVP_PKEY *pkey)
 {
+#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+    if (EVP_PKEY_missing_parameters(pkey))
+        ossl_raise(ePKeyError, "parameters missing");
+#else
     void *ptr;
     const BIGNUM *n, *e, *pubkey;
 
@@ -467,6 +477,7 @@ ossl_pkey_check_public_key(const EVP_PKEY *pkey)
 	return;
     }
     ossl_raise(ePKeyError, "public key missing");
+#endif
 }
 
 EVP_PKEY *
