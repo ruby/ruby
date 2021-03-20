@@ -1360,30 +1360,30 @@ ins_methods_i(st_data_t name, st_data_t type, st_data_t ary)
 }
 
 static int
-ins_methods_prot_i(st_data_t name, st_data_t type, st_data_t ary)
+ins_methods_type_i(st_data_t name, st_data_t type, st_data_t ary, rb_method_visibility_t visi)
 {
-    if ((rb_method_visibility_t)type == METHOD_VISI_PROTECTED) {
+    if ((rb_method_visibility_t)type == visi) {
 	ins_methods_push(name, ary);
     }
     return ST_CONTINUE;
+}
+
+static int
+ins_methods_prot_i(st_data_t name, st_data_t type, st_data_t ary)
+{
+    return ins_methods_type_i(name, type, ary, METHOD_VISI_PROTECTED);
 }
 
 static int
 ins_methods_priv_i(st_data_t name, st_data_t type, st_data_t ary)
 {
-    if ((rb_method_visibility_t)type == METHOD_VISI_PRIVATE) {
-	ins_methods_push(name, ary);
-    }
-    return ST_CONTINUE;
+    return ins_methods_type_i(name, type, ary, METHOD_VISI_PRIVATE);
 }
 
 static int
 ins_methods_pub_i(st_data_t name, st_data_t type, st_data_t ary)
 {
-    if ((rb_method_visibility_t)type == METHOD_VISI_PUBLIC) {
-	ins_methods_push(name, ary);
-    }
-    return ST_CONTINUE;
+    return ins_methods_type_i(name, type, ary, METHOD_VISI_PUBLIC);
 }
 
 struct method_entry_arg {
