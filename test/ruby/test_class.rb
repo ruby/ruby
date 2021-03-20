@@ -483,6 +483,53 @@ class TestClass < Test::Unit::TestCase
     assert_equal(:foo, d.foo)
   end
 
+  def test_clone_singleton_class_exists
+    klass = Class.new do
+      def self.bar; :bar; end
+    end
+
+    o = klass.new
+    o.singleton_class
+    clone = o.clone
+
+    assert_empty(o.singleton_class.instance_methods(false))
+    assert_empty(clone.singleton_class.instance_methods(false))
+    assert_empty(o.singleton_class.singleton_class.instance_methods(false))
+    assert_empty(clone.singleton_class.singleton_class.instance_methods(false))
+  end
+
+  def test_clone_when_singleton_class_of_singleton_class_exists
+    klass = Class.new do
+      def self.bar; :bar; end
+    end
+
+    o = klass.new
+    o.singleton_class.singleton_class
+    clone = o.clone
+
+    assert_empty(o.singleton_class.instance_methods(false))
+    assert_empty(clone.singleton_class.instance_methods(false))
+    assert_empty(o.singleton_class.singleton_class.instance_methods(false))
+    assert_empty(clone.singleton_class.singleton_class.instance_methods(false))
+  end
+
+  def test_clone_when_method_exists_on_singleton_class_of_singleton_class
+    klass = Class.new do
+      def self.bar; :bar; end
+    end
+
+    o = klass.new
+    o.singleton_class.singleton_class.define_method(:s2_method) { :s2 }
+    clone = o.clone
+
+    assert_empty(o.singleton_class.instance_methods(false))
+    assert_empty(clone.singleton_class.instance_methods(false))
+    assert_equal(:s2, o.singleton_class.s2_method)
+    assert_equal(:s2, clone.singleton_class.s2_method)
+    assert_equal([:s2_method], o.singleton_class.singleton_class.instance_methods(false))
+    assert_equal([:s2_method], clone.singleton_class.singleton_class.instance_methods(false))
+  end
+
   def test_singleton_class_p
     feature7609 = '[ruby-core:51087] [Feature #7609]'
     assert_predicate(self.singleton_class, :singleton_class?, feature7609)
