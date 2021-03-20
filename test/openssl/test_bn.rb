@@ -248,6 +248,10 @@ class OpenSSL::TestBN < OpenSSL::TestCase
       r5 = OpenSSL::BN.rand_range(256)
       assert_include(0..255, r5)
     }
+
+    # Aliases
+    assert_include(128..255, OpenSSL::BN.pseudo_rand(8))
+    assert_include(0..255, OpenSSL::BN.pseudo_rand_range(256))
   end
 
   begin

@@ -826,12 +826,6 @@ BIGNUM_SELF_SHIFT(rshift)
  */
 BIGNUM_RAND(rand)
 
-/*
- * Document-method: OpenSSL::BN.pseudo_rand
- *   BN.pseudo_rand(bits [, fill [, odd]]) -> aBN
- */
-BIGNUM_RAND(pseudo_rand)
-
 #define BIGNUM_RAND_RANGE(func)					\
     static VALUE						\
     ossl_bn_s_##func##_range(VALUE klass, VALUE range)		\
@@ -856,14 +850,6 @@ BIGNUM_RAND(pseudo_rand)
  *
  */
 BIGNUM_RAND_RANGE(rand)
-
-/*
- * Document-method: OpenSSL::BN.pseudo_rand_range
- * call-seq:
- *   BN.pseudo_rand_range(range) -> aBN
- *
- */
-BIGNUM_RAND_RANGE(pseudo_rand)
 
 /*
  * call-seq:
@@ -1278,9 +1264,9 @@ Init_ossl_bn(void)
      * get_word */
 
     rb_define_singleton_method(cBN, "rand", ossl_bn_s_rand, -1);
-    rb_define_singleton_method(cBN, "pseudo_rand", ossl_bn_s_pseudo_rand, -1);
     rb_define_singleton_method(cBN, "rand_range", ossl_bn_s_rand_range, 1);
-    rb_define_singleton_method(cBN, "pseudo_rand_range", ossl_bn_s_pseudo_rand_range, 1);
+    rb_define_alias(rb_singleton_class(cBN), "pseudo_rand", "rand");
+    rb_define_alias(rb_singleton_class(cBN), "pseudo_rand_range", "rand_range");
 
     rb_define_singleton_method(cBN, "generate_prime", ossl_bn_s_generate_prime, -1);
     rb_define_method(cBN, "prime?", ossl_bn_is_prime, -1);
