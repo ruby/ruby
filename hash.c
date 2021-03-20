@@ -1672,6 +1672,8 @@ struct update_arg {
     VALUE old_value;
 };
 
+static int hash_update_replace(st_data_t *key, st_data_t *value, struct update_arg *arg, int existing, st_data_t newvalue);
+
 typedef int (*tbl_update_func)(st_data_t *, st_data_t *, st_data_t, int);
 
 int
@@ -2837,16 +2839,7 @@ rb_hash_clear(VALUE hash)
 static int
 hash_aset(st_data_t *key, st_data_t *val, struct update_arg *arg, int existing)
 {
-    if (existing) {
-	arg->new_value = arg->arg;
-	arg->old_value = *val;
-    }
-    else {
-	arg->new_key = *key;
-	arg->new_value = arg->arg;
-    }
-    *val = arg->arg;
-    return ST_CONTINUE;
+    return hash_update_replace(key, val, arg, existing, arg->arg);
 }
 
 VALUE
