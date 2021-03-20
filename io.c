@@ -215,7 +215,6 @@ static VALUE sym_DATA;
 static VALUE sym_HOLE;
 #endif
 
-static VALUE rb_io_initialize(int argc, VALUE *argv, VALUE io);
 static VALUE prep_io(int fd, int fmode, VALUE klass, const char *path);
 
 struct argf {

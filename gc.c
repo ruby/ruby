@@ -9436,8 +9436,6 @@ gc_update_references(rb_objspace_t * objspace, rb_heap_t *heap)
     gc_update_table_refs(objspace, finalizer_table);
 }
 
-static VALUE type_sym(size_t type);
-
 static VALUE
 gc_compact_stats(rb_execution_context_t *ec, VALUE self)
 {
