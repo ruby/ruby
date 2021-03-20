@@ -35,6 +35,7 @@ VALUE rb_hash(VALUE);
 VALUE rb_hash_new(void);
 VALUE rb_hash_dup(VALUE);
 VALUE rb_hash_freeze(VALUE);
+void rb_hash_modify(VALUE);
 VALUE rb_hash_aref(VALUE, VALUE);
 VALUE rb_hash_lookup(VALUE, VALUE);
 VALUE rb_hash_lookup2(VALUE, VALUE, VALUE);

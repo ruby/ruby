@@ -1039,6 +1039,7 @@ ar_update(VALUE hash, st_data_t key,
     }
     old_key = key;
     retval = (*func)(&key, &value, arg, existing);
+    rb_hash_modify(hash);
     /* pair can be invalid here because of theap */
 
     switch (retval) {
@@ -1631,7 +1632,7 @@ rb_hash_tbl(VALUE hash, const char *file, int line)
     return rb_hash_tbl_raw(hash, file, line);
 }
 
-static void
+void
 rb_hash_modify(VALUE hash)
 {
     rb_hash_modify_check(hash);
