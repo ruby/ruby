@@ -284,6 +284,11 @@ class TestArithmeticSequence < Test::Unit::TestCase
                           '[ruby-core:90648] [Bug #15444]')
   end
 
+  def test_last_bug17218
+    seq = (1.0997r .. 1.1r).step(0.0001r)
+    assert_equal([1.0997r, 1.0998r, 1.0999r, 1.1r], seq.to_a, '[ruby-core:100312] [Bug #17218]')
+  end
+
   def test_slice
     seq = 1.step(10, 2)
     assert_equal([[1, 3, 5], [7, 9]], seq.each_slice(3).to_a)

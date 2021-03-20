@@ -774,8 +774,8 @@ rb_rational_plus(VALUE self, VALUE other)
  *    Rational(9, 8)  - 4                #=> (-23/8)
  *    Rational(20, 9) - 9.8              #=> -7.577777777777778
  */
-static VALUE
-nurat_sub(VALUE self, VALUE other)
+VALUE
+rb_rational_minus(VALUE self, VALUE other)
 {
     if (RB_INTEGER_TYPE_P(other)) {
 	{
@@ -912,8 +912,8 @@ rb_rational_mul(VALUE self, VALUE other)
  *    Rational(9, 8)  / 4                #=> (9/32)
  *    Rational(20, 9) / 9.8              #=> 0.22675736961451246
  */
-static VALUE
-nurat_div(VALUE self, VALUE other)
+VALUE
+rb_rational_div(VALUE self, VALUE other)
 {
     if (RB_INTEGER_TYPE_P(other)) {
 	if (f_zero_p(other))
@@ -965,10 +965,10 @@ nurat_fdiv(VALUE self, VALUE other)
 {
     VALUE div;
     if (f_zero_p(other))
-        return nurat_div(self, rb_float_new(0.0));
+        return rb_rational_div(self, rb_float_new(0.0));
     if (FIXNUM_P(other) && other == LONG2FIX(1))
 	return nurat_to_f(self);
-    div = nurat_div(self, other);
+    div = rb_rational_div(self, other);
     if (RB_TYPE_P(div, T_RATIONAL))
 	return nurat_to_f(div);
     if (RB_FLOAT_TYPE_P(div))
@@ -1403,12 +1403,24 @@ f_round_common(int argc, VALUE *argv, VALUE self, VALUE (*func)(VALUE))
 
     s = (*func)(s);
 
-    s = nurat_div(f_rational_new_bang1(CLASS_OF(self), s), b);
+    s = rb_rational_div(f_rational_new_bang1(CLASS_OF(self), s), b);
 
     if (RB_TYPE_P(s, T_RATIONAL) && FIX2INT(rb_int_cmp(n, ONE)) < 0)
 	s = nurat_truncate(s);
 
     return s;
+}
+
+VALUE
+rb_rational_floor(VALUE self, int ndigits)
+{
+    if (ndigits == 0) {
+        return nurat_floor(self);
+    }
+    else {
+        VALUE n = INT2NUM(ndigits);
+        return f_round_common(1, &n, self, nurat_floor);
+    }
 }
 
 /*
@@ -2027,7 +2039,7 @@ rb_numeric_quo(VALUE x, VALUE y)
     else {
         x = rb_convert_type(x, T_RATIONAL, "Rational", "to_r");
     }
-    return nurat_div(x, y);
+    return rb_rational_div(x, y);
 }
 
 VALUE
@@ -2734,10 +2746,10 @@ Init_Rational(void)
 
     rb_define_method(rb_cRational, "-@", rb_rational_uminus, 0);
     rb_define_method(rb_cRational, "+", rb_rational_plus, 1);
-    rb_define_method(rb_cRational, "-", nurat_sub, 1);
+    rb_define_method(rb_cRational, "-", rb_rational_minus, 1);
     rb_define_method(rb_cRational, "*", rb_rational_mul, 1);
-    rb_define_method(rb_cRational, "/", nurat_div, 1);
-    rb_define_method(rb_cRational, "quo", nurat_div, 1);
+    rb_define_method(rb_cRational, "/", rb_rational_div, 1);
+    rb_define_method(rb_cRational, "quo", rb_rational_div, 1);
     rb_define_method(rb_cRational, "fdiv", nurat_fdiv, 1);
     rb_define_method(rb_cRational, "**", nurat_expt, 1);
 
