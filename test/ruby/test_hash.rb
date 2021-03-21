@@ -1803,6 +1803,15 @@ class TestHash < Test::Unit::TestCase
     x = @cls[a: 1, b: 2, c: 3]
     y = x.transform_values!.with_index {|v, i| "#{v}.#{i}" }
     assert_equal(%w(1.0  2.1  3.2), y.values_at(:a, :b, :c))
+
+    x = @cls[a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9, j: 10]
+    assert_raise(FrozenError) do
+      x.transform_values!() do |v|
+        x.freeze if v == 2
+        v.succ
+      end
+    end
+    assert_equal(@cls[a: 2, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9, j: 10], x)
   end
 
   def test_broken_hash_value
