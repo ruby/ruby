@@ -646,6 +646,8 @@ fiber_pool_stack_free(struct fiber_pool_stack * stack)
 #if VM_CHECK_MODE > 0 && defined(MADV_DONTNEED)
     // This immediately discards the pages and the memory is reset to zero.
     madvise(base, size, MADV_DONTNEED);
+#elif defined(POSIX_MADV_DONTNEED)
+    posix_madvise(base, size, POSIX_MADV_DONTNEED);
 #elif defined(MADV_FREE_REUSABLE)
     madvise(base, size, MADV_FREE_REUSABLE);
 #elif defined(MADV_FREE)

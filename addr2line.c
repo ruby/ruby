@@ -1463,7 +1463,7 @@ ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr)
                     }
                     break;
                   case DW_RLE_base_address:
-                    base_address = read_dw_form_addr(reader, &p);
+                    base_address = (uintptr_t)read_dw_form_addr(reader, &p);
                     break;
                   case DW_RLE_start_end:
                     read_dw_form_addr(reader, &p);
