@@ -1238,6 +1238,12 @@ class TestHash < Test::Unit::TestCase
       h.update({a: 10, b: 20}){ |key, v1, v2| key == :b && h.freeze; v2 }
     end
     assert_equal(@cls[a: 10, b: 2, c: 3], h)
+
+    h = @cls[a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9, j: 10]
+    assert_raise(FrozenError) do
+      h.update({a: 10, b: 20}){ |key, v1, v2| key == :b && h.freeze; v2 }
+    end
+    assert_equal(@cls[a: 10, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9, j: 10], h)
   end
 
   def test_merge
@@ -1257,6 +1263,12 @@ class TestHash < Test::Unit::TestCase
       h.merge!({a: 10, b: 20}){ |key, v1, v2| key == :b && h.freeze; v2 }
     end
     assert_equal(@cls[a: 10, b: 2, c: 3], h)
+
+    h = @cls[a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9, j: 10]
+    assert_raise(FrozenError) do
+      h.merge!({a: 10, b: 20}){ |key, v1, v2| key == :b && h.freeze; v2 }
+    end
+    assert_equal(@cls[a: 10, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9, j: 10], h)
   end
 
   def test_assoc
