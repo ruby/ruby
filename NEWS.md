@@ -6,6 +6,12 @@ since the **3.0.0** release, except for bug fixes.
 Note that each entry is kept to a minimum, see links for details.
 
 ## Language changes
+* Pin operator now takes an expression. [[Feature #17411]]
+
+    ```ruby
+    Prime.each_cons(2).lazy.find_all{_1 in [n, ^(n + 2)]}.take(3).to_a
+    #=> [[3, 5], [5, 7], [11, 13]]
+    ```
 
 ## Command line options
 
@@ -90,5 +96,6 @@ Excluding feature bug fixes.
 [Feature #16806]: https://bugs.ruby-lang.org/issues/16806
 [Feature #17312]: https://bugs.ruby-lang.org/issues/17312
 [Feature #17327]: https://bugs.ruby-lang.org/issues/17327
+[Feature #17411]: https://bugs.ruby-lang.org/issues/17411
 [Bug #17423]: https://bugs.ruby-lang.org/issues/17423
 [Feature #17479]: https://bugs.ruby-lang.org/issues/17479

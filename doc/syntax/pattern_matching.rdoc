@@ -450,6 +450,7 @@ Approximate syntax is:
   value_pattern: literal
                | Constant
                | ^variable
+               | ^(expression)
 
   variable_pattern: variable
 

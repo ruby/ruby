@@ -6211,6 +6211,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
       case NODE_NIL:
       case NODE_COLON2:
       case NODE_COLON3:
+      case NODE_BEGIN:
         CHECK(COMPILE(ret, "case in literal", node));
         ADD_INSN1(ret, line, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_CASE));
         ADD_INSNL(ret, line, branchif, matched);
