@@ -389,7 +389,7 @@ module TestIRB
         irb.eval_input
       end
       assert_empty err
-      assert_match(/^instance variables: @a\n/, out)
+      assert_match(/^instance variables:\s+@a\n/m, out)
     end
 
     def test_whereami
