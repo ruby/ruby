@@ -28,7 +28,7 @@ module IRB
 
         def initialize(grep: nil)
           @grep = grep
-          @line_width = screen_width
+          @line_width = screen_width - MARGIN.length # right padding
         end
 
         def dump(name, strs)
@@ -73,7 +73,7 @@ module IRB
         def screen_width
           Reline.get_screen_size.last
         rescue Errno::EINVAL # in `winsize': Invalid argument - <STDIN>
-          79
+          80
         end
       end
       private_constant :Output
