@@ -6690,8 +6690,8 @@ env_update(VALUE env, VALUE hash)
  *  ==== User-Defined \Hash Keys
  *
  *  To be useable as a \Hash key, objects must implement the methods <code>hash</code> and <code>eql?</code>.
- *  Note: this requirement does not apply if the \Hash uses #compare_by_id since comparison will then rely on
- *  the keys' object id instead of <code>hash</code> and <code>eql?</code>.
+ *  Note: this requirement does not apply if the \Hash uses #compare_by_identity since comparison will then
+ *  rely on the keys' object id instead of <code>hash</code> and <code>eql?</code>.
  *
  *  \Object defines basic implementation for <code>hash</code> and <code>eq?</code> that makes each object
  *  a distinct key. Typically, user-defined classes will want to override these methods to provide meaningful
