@@ -29,6 +29,7 @@ continued_name = nil
 continued_line = nil
 install_name = nil
 so_name = nil
+platform = nil
 File.foreach "config.status" do |line|
   next if /^#/ =~ line
   name = nil
@@ -121,7 +122,7 @@ File.foreach "config.status" do |line|
       universal, val = val, 'universal' if universal
     when /^arch$/
       if universal
-        val.sub!(/universal/, %q[#{arch && universal[/(?:\A|\s)#{Regexp.quote(arch)}=(\S+)/, 1] || RUBY_PLATFORM[/\A[^-]*/]}])
+        platform = val.sub(/universal/, %q[#{arch && universal[/(?:\A|\s)#{Regexp.quote(arch)}=(\S+)/, 1] || RUBY_PLATFORM[/\A[^-]*/]}])
       end
     when /^oldincludedir$/
       val = '"$(SDKROOT)"'+val if /darwin/ =~ arch
@@ -271,6 +272,7 @@ print <<EOS if /darwin/ =~ arch
   CONFIG["SDKROOT"] = "\#{ENV['SDKROOT']}" # don't run xcrun every time, usually useless.
 EOS
 print <<EOS
+  CONFIG["platform"] = #{platform || '"$(arch)"'}
   CONFIG["archdir"] = "$(rubyarchdir)"
   CONFIG["topdir"] = File.dirname(__FILE__)
   # Almost same with CONFIG. MAKEFILE_CONFIG has other variable
