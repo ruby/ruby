@@ -357,6 +357,10 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
        url =~ /\.(gif|png|jpg|jpeg|bmp)$/ then
       "<img src=\"#{url}\" />"
     else
+      if scheme != 'link' and /\.(?:rb|rdoc|md)\z/i =~ url
+        url = url.sub(%r%\A([./]*)(.*)\z%) { "#$1#{$2.tr('.', '_')}.html" }
+      end
+
       text = text.sub %r%^#{scheme}:/*%i, ''
       text = text.sub %r%^[*\^](\d+)$%,   '\1'
 

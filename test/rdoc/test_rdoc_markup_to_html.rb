@@ -738,6 +738,27 @@ EXPECTED
     assert_equal '<img src="https://example.com/image.png" />', @to.gen_url('https://example.com/image.png', 'ignored')
   end
 
+  def test_gen_url_rdoc_file
+    assert_equal '<a href="doc/example_rdoc.html">example</a>',
+                 @to.gen_url('doc/example.rdoc', 'example')
+    assert_equal '<a href="../ex_doc/example_rdoc.html">example</a>',
+                 @to.gen_url('../ex.doc/example.rdoc', 'example')
+  end
+
+  def test_gen_url_md_file
+    assert_equal '<a href="doc/example_md.html">example</a>',
+                 @to.gen_url('doc/example.md', 'example')
+    assert_equal '<a href="../ex_doc/example_md.html">example</a>',
+                 @to.gen_url('../ex.doc/example.md', 'example')
+  end
+
+  def test_gen_url_rb_file
+    assert_equal '<a href="doc/example_rb.html">example</a>',
+                 @to.gen_url('doc/example.rb', 'example')
+    assert_equal '<a href="../ex_doc/example_rb.html">example</a>',
+                 @to.gen_url('../ex.doc/example.rb', 'example')
+  end
+
   def test_handle_regexp_HYPERLINK_link
     target = RDoc::Markup::RegexpHandling.new 0, 'link:README.txt'
 
