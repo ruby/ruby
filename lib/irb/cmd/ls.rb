@@ -64,7 +64,7 @@ module IRB
 
         def col_widths(strs, cols:)
           cols.times.map do |col|
-            (col...strs.size).step(cols.size - 1).map do |i|
+            (col...strs.size).step(cols).map do |i|
               strs[i].length
             end.max
           end
