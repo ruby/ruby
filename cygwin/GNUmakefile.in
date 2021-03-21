@@ -33,9 +33,7 @@ endif
 
 WPROGRAM = $(RUBYW_INSTALL_NAME)$(EXEEXT)
 
--include uncommon.mk
-
-include $(srcdir)/defs/gmake.mk
+include $(srcdir)/template/GNUmakefile.in
 
 SOLIBS := $(DLL_BASE_NAME).res.@OBJEXT@ $(SOLIBS)
 override EXTOBJS += $(if $(filter-out $(RUBYW_INSTALL_NAME),$(@:$(EXEEXT)=)),$(RUBY_INSTALL_NAME),$(@:$(EXEEXT)=)).res.$(OBJEXT)
