@@ -1999,6 +1999,7 @@ rb_hash_rehash(VALUE hash)
 	rb_raise(rb_eRuntimeError, "rehash during iteration");
     }
     rb_hash_modify_check(hash);
+    if (rb_hash_compare_by_id_p(hash)) return hash;
     if (RHASH_AR_TABLE_P(hash)) {
         tmp = hash_alloc(0);
         ar_alloc_table(tmp);
