@@ -2187,7 +2187,7 @@ fail:
 #endif
 
 #define HAVE_MAIN_EXE_PATH
-#if defined(__FreeBSD__)
+#if defined(__FreeBSD__) || defined(__DragonFly__)
 # include <sys/sysctl.h>
 #endif
 /* ssize_t main_exe_path(void)
@@ -2210,7 +2210,7 @@ main_exe_path(void)
     binary_filename[len] = 0;
     return len;
 }
-#elif defined(__FreeBSD__)
+#elif defined(__FreeBSD__) || defined(__DragonFly__)
 static ssize_t
 main_exe_path(void)
 {
