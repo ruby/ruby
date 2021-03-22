@@ -3303,6 +3303,7 @@ transform_values_foreach_replace(st_data_t *key, st_data_t *value, st_data_t arg
 {
     VALUE new_value = rb_yield((VALUE)*value);
     VALUE hash = (VALUE)argp;
+    rb_hash_modify(hash);
     RB_OBJ_WRITE(hash, value, new_value);
     return ST_CONTINUE;
 }
