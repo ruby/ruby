@@ -1076,9 +1076,8 @@ lex.c         :: automatically generated from keywords
     -> opt*.inc            : automatically generated
     -> vm.inc              : automatically generated
 
-=== Regular Expression Engine (Oniguruma)
+=== Regular Expression Engine (Onigumo)
 
-  regex.c
   regcomp.c
   regenc.c
   regerror.c
