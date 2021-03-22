@@ -1291,10 +1291,32 @@ class Reline::LineEditor
 
   def delete_text(start = nil, length = nil)
     if start.nil? and length.nil?
-      @line&.clear
-      @byte_pointer = 0
-      @cursor = 0
-      @cursor_max = 0
+      if @is_multiline
+        if @buffer_of_lines.size == 1
+          @line&.clear
+          @byte_pointer = 0
+          @cursor = 0
+          @cursor_max = 0
+        elsif @line_index == (@buffer_of_lines.size - 1) and @line_index > 0
+          @buffer_of_lines.pop
+          @line_index -= 1
+          @line = @buffer_of_lines[@line_index]
+          @byte_pointer = 0
+          @cursor = 0
+          @cursor_max = calculate_width(@line)
+        elsif @line_index < (@buffer_of_lines.size - 1)
+          @buffer_of_lines.delete_at(@line_index)
+          @line = @buffer_of_lines[@line_index]
+          @byte_pointer = 0
+          @cursor = 0
+          @cursor_max = calculate_width(@line)
+        end
+      else
+        @line&.clear
+        @byte_pointer = 0
+        @cursor = 0
+        @cursor_max = 0
+      end
     elsif not start.nil? and not length.nil?
       if @line
         before = @line.byteslice(0, start)
