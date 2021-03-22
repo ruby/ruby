@@ -1011,8 +1011,6 @@ NORETURN(static void negative_size_allocation_error(const char *));
 
 static void init_mark_stack(mark_stack_t *stack);
 
-static int ready_to_gc(rb_objspace_t *objspace);
-
 static int garbage_collect(rb_objspace_t *, int reason);
 
 static int  gc_start(rb_objspace_t *objspace, int reason);
@@ -1030,18 +1028,8 @@ enum gc_enter_event {
 static inline void gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_lev);
 static inline void gc_exit(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_lev);
 
-static void gc_marks(rb_objspace_t *objspace, int full_mark);
-static void gc_marks_start(rb_objspace_t *objspace, int full);
-static int  gc_marks_finish(rb_objspace_t *objspace);
-static void gc_marks_rest(rb_objspace_t *objspace);
-static void gc_marks_step(rb_objspace_t *objspace, size_t slots);
 static void gc_marks_continue(rb_objspace_t *objspace, rb_heap_t *heap);
 
-static void gc_sweep(rb_objspace_t *objspace);
-static void gc_sweep_start(rb_objspace_t *objspace);
-static void gc_sweep_finish(rb_objspace_t *objspace);
-static int  gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap);
-static void gc_sweep_rest(rb_objspace_t *objspace);
 static void gc_sweep_continue(rb_objspace_t *objspace, rb_heap_t *heap);
 
 static inline void gc_mark(rb_objspace_t *objspace, VALUE ptr);
@@ -1049,24 +1037,14 @@ static inline void gc_pin(rb_objspace_t *objspace, VALUE ptr);
 static inline void gc_mark_and_pin(rb_objspace_t *objspace, VALUE ptr);
 static void gc_mark_ptr(rb_objspace_t *objspace, VALUE ptr);
 NO_SANITIZE("memory", static void gc_mark_maybe(rb_objspace_t *objspace, VALUE ptr));
-static void gc_mark_children(rb_objspace_t *objspace, VALUE ptr);
 
-static int gc_mark_stacked_objects_incremental(rb_objspace_t *, size_t count);
-static int gc_mark_stacked_objects_all(rb_objspace_t *);
 static void gc_grey(rb_objspace_t *objspace, VALUE ptr);
 
 static inline int gc_mark_set(rb_objspace_t *objspace, VALUE obj);
 NO_SANITIZE("memory", static inline int is_pointer_to_heap(rb_objspace_t *objspace, void *ptr));
 
-static void   push_mark_stack(mark_stack_t *, VALUE);
-static int    pop_mark_stack(mark_stack_t *, VALUE *);
-static size_t mark_stack_size(mark_stack_t *stack);
-static void   shrink_stack_chunk_cache(mark_stack_t *stack);
-
 static size_t obj_memsize_of(VALUE obj, int use_all_types);
 static void gc_verify_internal_consistency(rb_objspace_t *objspace);
-static int gc_verify_heap_page(rb_objspace_t *objspace, struct heap_page *page, VALUE obj);
-static int gc_verify_heap_pages(rb_objspace_t *objspace);
 
 static void gc_stress_set(rb_objspace_t *objspace, VALUE flag);
 static VALUE gc_disable_no_rest(rb_objspace_t *);

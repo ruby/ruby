@@ -10263,8 +10263,6 @@ ibf_load_id(const struct ibf_load *load, const ID id_index)
 
 /* dump/load: code */
 
-static ibf_offset_t ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq);
-
 static int
 ibf_dump_iseq(struct ibf_dump *dump, const rb_iseq_t *iseq)
 {
