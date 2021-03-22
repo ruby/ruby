@@ -108,7 +108,7 @@
 enum
 RBIMPL_ATTR_ENUM_EXTENSIBILITY(closed)
 ruby_value_type {
-    RUBY_T_NONE     = 0x00, /**< Non-object (sweeped etc.) */
+    RUBY_T_NONE     = 0x00, /**< Non-object (swept etc.) */
 
     RUBY_T_OBJECT   = 0x01, /**< @see struct ::RObject */
     RUBY_T_CLASS    = 0x02, /**< @see struct ::RClass and ::rb_cClass */
