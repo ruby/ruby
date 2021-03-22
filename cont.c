@@ -2445,8 +2445,7 @@ rb_fiber_reset_root_local_storage(rb_thread_t *th)
  *
  *  Returns true if the fiber can still be resumed (or transferred
  *  to). After finishing execution of the fiber block this method will
- *  always return +false+. You need to <code>require 'fiber'</code>
- *  before using this method.
+ *  always return +false+.
  */
 VALUE
 rb_fiber_alive_p(VALUE fiber_value)
@@ -2598,8 +2597,7 @@ rb_fiber_backtrace_locations(int argc, VALUE *argv, VALUE fiber)
  *  Transfer control to another fiber, resuming it from where it last
  *  stopped or starting it if it was not resumed before. The calling
  *  fiber will be suspended much like in a call to
- *  Fiber.yield. You need to <code>require 'fiber'</code>
- *  before using this method.
+ *  Fiber.yield.
  *
  *  The fiber which receives the transfer call treats it much like
  *  a resume call. Arguments passed to transfer are treated like those
@@ -2630,8 +2628,6 @@ rb_fiber_backtrace_locations(int argc, VALUE *argv, VALUE fiber)
  *
  *
  *  Example:
- *
- *     require 'fiber'
  *
  *     manager = nil # For local var to be visible inside worker block
  *
@@ -2715,8 +2711,7 @@ rb_fiber_s_yield(int argc, VALUE *argv, VALUE klass)
  *  call-seq:
  *     Fiber.current -> fiber
  *
- *  Returns the current fiber. You need to <code>require 'fiber'</code>
- *  before using this method. If you are not running in the context of
+ *  Returns the current fiber. If you are not running in the context of
  *  a fiber this method will return the root fiber.
  */
 static VALUE
