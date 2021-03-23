@@ -78,6 +78,12 @@ It must appear in the first comment section of a file.
 
 The word "coding" may be used instead of "encoding".
 
+NOTE: "coding" and "encoding" is the only case to be useable <code> = </code> in directives.
+
+  # coding = big5
+
+  ''.encoding # => #<Encoding:Big5>
+
 === +frozen_string_literal+ Directive
 
 Indicates that string literals should be allocated once at parse time and frozen.
