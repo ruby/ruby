@@ -233,6 +233,8 @@ add_lookup_dependency_i(st_data_t *key, st_data_t *value, st_data_t data, int ex
 // cme is vald.
 // When either of these assumptions becomes invalid, rb_yjit_method_lookup_change() or
 // rb_yjit_cme_invalidate() invalidates the block.
+//
+// @raise NoMemoryError
 void
 assume_method_lookup_stable(VALUE receiver_klass, const rb_callable_method_entry_t *cme, block_t *block)
 {

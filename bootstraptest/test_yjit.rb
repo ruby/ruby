@@ -448,3 +448,60 @@ assert_equal '[42, :default]', %q{
     index(h, 1)
   ]
 }
+
+# A regression test for making sure cfp->sp is proper when
+# hitting stubs. See :stub-sp-flush:
+assert_equal 'ok', %q{
+  class D
+    def foo
+      Object.new
+    end
+  end
+
+  GC.stress = true
+  10.times do
+    D.new.foo
+    #    ^
+    #  This hits a stub with sp_offset > 0
+  end
+
+  :ok
+}
+
+# Test polymorphic callsite, cfunc -> iseq
+assert_equal '[Cfunc, Iseq]', %q{
+  public def call_itself
+    itself # the polymorphic callsite
+  end
+
+  class Cfunc; end
+
+  class Iseq
+    def itself
+      self
+    end
+  end
+
+  call_itself # cross threshold
+
+  [Cfunc.call_itself, Iseq.call_itself]
+}
+
+# Test polymorphic callsite, iseq -> cfunc
+assert_equal '[Iseq, Cfunc]', %q{
+  public def call_itself
+    itself # the polymorphic callsite
+  end
+
+  class Cfunc; end
+
+  class Iseq
+    def itself
+      self
+    end
+  end
+
+  call_itself # cross threshold
+
+  [Iseq.call_itself, Cfunc.call_itself]
+}
