@@ -103,14 +103,14 @@ opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc)
 
 // Verify that calling with cd on receiver goes to callee
 void
-check_cfunc_dispatch(VALUE receiver, struct rb_call_data *cd, void *callee, rb_callable_method_entry_t *compile_time_cme)
+check_cfunc_dispatch(VALUE receiver, struct rb_callinfo *ci, void *callee, rb_callable_method_entry_t *compile_time_cme)
 {
     if (METHOD_ENTRY_INVALIDATED(compile_time_cme)) {
         rb_bug("yjit: output code uses invalidated cme %p", (void *)compile_time_cme);
     }
 
     bool callee_correct = false;
-    const rb_callable_method_entry_t *cme = rb_callable_method_entry(CLASS_OF(receiver), vm_ci_mid(cd->ci));
+    const rb_callable_method_entry_t *cme = rb_callable_method_entry(CLASS_OF(receiver), vm_ci_mid(ci));
     if (cme->def->type == VM_METHOD_TYPE_CFUNC) {
         const rb_method_cfunc_t *cfunc = UNALIGNED_MEMBER_PTR(cme->def, body.cfunc);
         if ((void *)cfunc->func == callee) {
@@ -118,7 +118,7 @@ check_cfunc_dispatch(VALUE receiver, struct rb_call_data *cd, void *callee, rb_c
         }
     }
     if (!callee_correct) {
-        rb_bug("yjit: output code calls wrong method cd->cc->klass: %p", (void *)cd->cc->klass);
+        rb_bug("yjit: output code calls wrong method");
     }
 }
 
