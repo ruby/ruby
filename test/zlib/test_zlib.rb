@@ -743,6 +743,12 @@ if defined? Zlib
           gz0.close
           gz1.close
         end
+      rescue Errno::EINVAL
+        skip 'O_TMPFILE not supported (EINVAL)'
+      rescue Errno::EISDIR
+        skip 'O_TMPFILE not supported (EISDIR)'
+      rescue Errno::EOPNOTSUPP
+        skip 'O_TMPFILE not supported (EOPNOTSUPP)'
       end
     end
   end
