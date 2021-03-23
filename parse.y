@@ -8274,6 +8274,7 @@ set_file_encoding(struct parser_params *p, const char *str, const char *send)
 	    continue;
 	}
 	if (STRNCASECMP(str-6, "coding", 6) == 0) break;
+	sep = 0;
     }
     for (;;) {
 	do {

@@ -692,6 +692,14 @@ x = __ENCODING__
 x = __ENCODING__
       END
     end
+
+    assert_nothing_raised do
+      eval <<-END, nil, __FILE__, __LINE__+1
+# xxxx : coding sjis
+x = __ENCODING__
+      END
+    end
+    assert_equal(__ENCODING__, x)
   end
 
   def test_utf8_bom
