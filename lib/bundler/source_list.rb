@@ -88,7 +88,7 @@ module Bundler
     def lock_sources
       lock_sources = (path_sources + git_sources + plugin_sources).sort_by(&:to_s)
       if disable_multisource?
-        lock_sources + rubygems_sources.sort_by(&:to_s)
+        lock_sources + rubygems_sources.sort_by(&:to_s).uniq
       else
         lock_sources << combine_rubygems_sources
       end

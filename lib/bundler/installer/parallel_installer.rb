@@ -6,10 +6,11 @@ require_relative "gem_installer"
 module Bundler
   class ParallelInstaller
     class SpecInstallation
-      attr_accessor :spec, :name, :post_install_message, :state, :error
+      attr_accessor :spec, :name, :full_name, :post_install_message, :state, :error
       def initialize(spec)
         @spec = spec
         @name = spec.name
+        @full_name = spec.full_name
         @state = :none
         @post_install_message = ""
         @error = nil
@@ -49,14 +50,11 @@ module Bundler
       # Represents only the non-development dependencies, the ones that are
       # itself and are in the total list.
       def dependencies
-        @dependencies ||= begin
-          all_dependencies.reject {|dep| ignorable_dependency? dep }
-        end
+        @dependencies ||= all_dependencies.reject {|dep| ignorable_dependency? dep }
       end
 
       def missing_lockfile_dependencies(all_spec_names)
-        deps = all_dependencies.reject {|dep| ignorable_dependency? dep }
-        deps.reject {|dep| all_spec_names.include? dep.name }
+        dependencies.reject {|dep| all_spec_names.include? dep.name }
       end
 
       # Represents all dependencies
@@ -65,7 +63,7 @@ module Bundler
       end
 
       def to_s
-        "#<#{self.class} #{@spec.full_name} (#{state})>"
+        "#<#{self.class} #{full_name} (#{state})>"
       end
     end
 
@@ -99,10 +97,35 @@ module Bundler
         install_serially
       end
 
+      check_for_unmet_dependencies
+
       handle_error if failed_specs.any?
       @specs
     ensure
       worker_pool && worker_pool.stop
+    end
+
+    def check_for_unmet_dependencies
+      unmet_dependencies = @specs.map do |s|
+        [
+          s,
+          s.dependencies.reject {|dep| @specs.any? {|spec| dep.matches_spec?(spec.spec) } },
+        ]
+      end.reject {|a| a.last.empty? }
+      return if unmet_dependencies.empty?
+
+      warning = []
+      warning << "Your lockfile doesn't include a valid resolution."
+      warning << "You can fix this by regenerating your lockfile or trying to manually editing the bad locked gems to a version that satisfies all dependencies."
+      warning << "The unmet dependencies are:"
+
+      unmet_dependencies.each do |spec, unmet_spec_dependencies|
+        unmet_spec_dependencies.each do |unmet_spec_dependency|
+          warning << "* #{unmet_spec_dependency}, depended upon #{spec.full_name}, unsatisfied by #{@specs.find {|s| s.name == unmet_spec_dependency.name && !unmet_spec_dependency.matches_spec?(s.spec) }.full_name}"
+        end
+      end
+
+      Bundler.ui.warn(warning.join("\n"))
     end
 
     def check_for_corrupt_lockfile

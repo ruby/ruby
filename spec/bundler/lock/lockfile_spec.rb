@@ -641,6 +641,30 @@ RSpec.describe "the lockfile format" do
     G
   end
 
+  it "removes redundant sources" do
+    install_gemfile <<-G
+      source "#{file_uri_for(gem_repo2)}/"
+
+      gem "rack", :source => "#{file_uri_for(gem_repo2)}/"
+    G
+
+    lockfile_should_be <<-G
+      GEM
+        remote: #{file_uri_for(gem_repo2)}/
+        specs:
+          rack (1.0.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        rack!
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    G
+  end
+
   it "lists gems alphabetically" do
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo2)}/"
