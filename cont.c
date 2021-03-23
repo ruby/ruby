@@ -433,6 +433,12 @@ fiber_pool_allocate_memory(size_t * count, size_t stride)
             *count = (*count) >> 1;
         }
         else {
+#if defined(MADV_FREE_REUSE)
+            // On Mac MADV_FREE_REUSE is necessary for the task_info api
+            // to keep the accounting accurate as possible when a page is marked as reusable
+            // it can possibly not occuring at first call thus re-iterating if necessary.
+            while (madvise(base, (*count)*stride, MADV_FREE_REUSE) == -1 && errno == EAGAIN);
+#endif
             return base;
         }
 #endif
@@ -649,7 +655,11 @@ fiber_pool_stack_free(struct fiber_pool_stack * stack)
 #elif defined(POSIX_MADV_DONTNEED)
     posix_madvise(base, size, POSIX_MADV_DONTNEED);
 #elif defined(MADV_FREE_REUSABLE)
-    madvise(base, size, MADV_FREE_REUSABLE);
+    // Acknowledge the kernel down to the task info api we make this
+    // page reusable for future use.
+    // As for MADV_FREE_REUSE below we ensure in the rare occassions the task was not
+    // completed at the time of the call to re-iterate.
+    while (madvise(base, size, MADV_FREE_REUSABLE) == -1 && errno == EAGAIN);
 #elif defined(MADV_FREE)
     madvise(base, size, MADV_FREE);
 #elif defined(MADV_DONTNEED)
