@@ -328,11 +328,12 @@ RSpec.describe "bundle install with explicit source paths" do
       s.executables = "foobar"
     end
 
-    install_gemfile <<-G
+    install_gemfile <<-G, :verbose => true
       path "#{lib_path("foo-1.0")}" do
         gem 'foo'
       end
     G
+    expect(out).to include("Using foo 1.0 from source at `#{lib_path("foo-1.0")}` and installing its executables")
     expect(the_bundle).to include_gems "foo 1.0"
 
     bundle "exec foobar"

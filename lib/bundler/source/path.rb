@@ -82,7 +82,9 @@ module Bundler
       end
 
       def install(spec, options = {})
-        print_using_message "Using #{version_message(spec)} from #{self}"
+        using_message = "Using #{version_message(spec)} from #{self}"
+        using_message += " and installing its executables" unless spec.executables.empty?
+        print_using_message using_message
         generate_bin(spec, :disable_extensions => true)
         nil # no post-install message
       end
