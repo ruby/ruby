@@ -1329,6 +1329,41 @@ gen_jump(jitstate_t* jit, ctx_t* ctx)
     return YJIT_END_BLOCK;
 }
 
+// Guard that recv_opnd has the same class as known_klass. Recompile as contingency if possible, or take side exit a last resort.
+static bool
+jit_guard_known_klass(jitstate_t *jit, const ctx_t *recompile_context, VALUE known_klass, x86opnd_t recv_opnd, const int max_chain_depth, uint8_t *side_exit)
+{
+    // Can't guard for for these classes because some of they are sometimes immediate (special const).
+    // Can remove this by adding appropriate dynamic checks.
+    if (known_klass == rb_cInteger ||
+        known_klass == rb_cSymbol ||
+        known_klass == rb_cFloat ||
+        known_klass == rb_cNilClass ||
+        known_klass == rb_cTrueClass ||
+        known_klass == rb_cFalseClass) {
+        return false;
+    }
+
+    // Check that the receiver is a heap object
+    {
+        test(cb, REG0, imm_opnd(RUBY_IMMEDIATE_MASK));
+        jnz_ptr(cb, side_exit);
+        cmp(cb, REG0, imm_opnd(Qfalse));
+        je_ptr(cb, side_exit);
+        cmp(cb, REG0, imm_opnd(Qnil));
+        je_ptr(cb, side_exit);
+    }
+
+    // Pointer to the klass field of the receiver &(recv->klass)
+    x86opnd_t klass_opnd = mem_opnd(64, REG0, offsetof(struct RBasic, klass));
+
+    // Bail if receiver class is different from compile-time call cache class
+    jit_mov_gc_ptr(jit, cb, REG1, known_klass);
+    cmp(cb, klass_opnd, REG1);
+    jit_chain_guard(JCC_JNE, jit, recompile_context, max_chain_depth, side_exit);
+    return true;
+}
+
 static void
 jit_protected_guard(jitstate_t *jit, codeblock_t *cb, const rb_callable_method_entry_t *cme, uint8_t *side_exit)
 {
@@ -1345,8 +1380,8 @@ jit_protected_guard(jitstate_t *jit, codeblock_t *cb, const rb_callable_method_e
     jz_ptr(cb, COUNTED_EXIT(side_exit, oswb_se_protected_check_failed));
 }
 
-static bool
-gen_oswb_cfunc(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb_callable_method_entry_t *cme, int32_t argc)
+static codegen_status_t
+gen_oswb_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_callable_method_entry_t *cme, int32_t argc)
 {
     const rb_method_cfunc_t *cfunc = UNALIGNED_MEMBER_PTR(cme->def, body.cfunc);
 
@@ -1367,6 +1402,15 @@ gen_oswb_cfunc(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb_c
         GEN_COUNTER_INC(cb, oswb_cfunc_toomany_args);
         return YJIT_CANT_COMPILE;
     }
+
+    // Callee method ID
+    //ID mid = vm_ci_mid(ci);
+    //printf("JITting call to C function \"%s\", argc: %lu\n", rb_id2name(mid), argc);
+    //print_str(cb, "");
+    //print_str(cb, "calling CFUNC:");
+    //print_str(cb, rb_id2name(mid));
+    //print_str(cb, "recv");
+    //print_ptr(cb, recv);
 
     // Create a size-exit to fall back to the interpreter
     uint8_t *side_exit = yjit_side_exit(jit, ctx);
@@ -1452,7 +1496,7 @@ gen_oswb_cfunc(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb_c
 
         // Call check_cfunc_dispatch
         mov(cb, RDI, recv);
-        jit_mov_gc_ptr(jit, cb, RSI, (VALUE)cd);
+        jit_mov_gc_ptr(jit, cb, RSI, (VALUE)ci);
         mov(cb, RDX, const_ptr_opnd((void *)cfunc->func));
         jit_mov_gc_ptr(jit, cb, RCX, (VALUE)cme);
         call_ptr(cb, REG0, (void *)&check_cfunc_dispatch);
@@ -1552,7 +1596,7 @@ gen_return_branch(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uint8_t s
 }
 
 static codegen_status_t
-gen_oswb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb_callable_method_entry_t *cme, int32_t argc)
+gen_oswb_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_callable_method_entry_t *cme, int32_t argc)
 {
     const rb_iseq_t *iseq = def_iseq_ptr(cme->def);
     const VALUE* start_pc = iseq->body->iseq_encoded;
@@ -1571,7 +1615,7 @@ gen_oswb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb_ca
         return YJIT_CANT_COMPILE;
     }
 
-    if (vm_ci_flag(cd->ci) & VM_CALL_TAILCALL) {
+    if (vm_ci_flag(ci) & VM_CALL_TAILCALL) {
         // We can't handle tailcalls
         GEN_COUNTER_INC(cb, oswb_iseq_tailcall);
         return YJIT_CANT_COMPILE;
@@ -1677,7 +1721,7 @@ gen_oswb_iseq(jitstate_t* jit, ctx_t* ctx, struct rb_call_data * cd, const rb_ca
     );
 
     //print_str(cb, "calling Ruby func:");
-    //print_str(cb, rb_id2name(vm_ci_mid(cd->ci)));
+    //print_str(cb, rb_id2name(vm_ci_mid(ci)));
 
     // Load the updated SP
     mov(cb, REG_SP, member_opnd(REG_CFP, rb_control_frame_t, sp));
@@ -1704,8 +1748,8 @@ gen_opt_send_without_block(jitstate_t* jit, ctx_t* ctx)
     struct rb_call_data *cd = (struct rb_call_data *)jit_get_arg(jit, 0);
     const struct rb_callinfo *ci = cd->ci; // info about the call site
 
-    int32_t argc = (int32_t)vm_ci_argc(cd->ci);
-    ID mid = vm_ci_mid(cd->ci);
+    int32_t argc = (int32_t)vm_ci_argc(ci);
+    ID mid = vm_ci_mid(ci);
 
     // Don't JIT calls with keyword splat
     if (vm_ci_flag(ci) & VM_CALL_KW_SPLAT) {
@@ -1726,13 +1770,15 @@ gen_opt_send_without_block(jitstate_t* jit, ctx_t* ctx)
     }
 
     VALUE comptime_recv = jit_peek_at_stack(jit, ctx, argc);
-    //rp(comptime_recv);
-    //fprintf(stderr, "offset=%d\n", (int)ctx->sp_offset);
     VALUE comptime_recv_klass = CLASS_OF(comptime_recv);
 
-    // Can't guard for for these classes because some of they are sometimes
-    // immediate (special const). Can remove this once jit_guard_known_class is able to hanlde them.
-    if (comptime_recv_klass == rb_cInteger || comptime_recv_klass == rb_cSymbol || comptime_recv_klass  == rb_cFloat) {
+    // Guard that the receiver has the same class as the one from compile time
+    uint8_t *side_exit = yjit_side_exit(jit, ctx);
+
+    // Points to the receiver operand on the stack
+    x86opnd_t recv = ctx_stack_opnd(ctx, argc);
+    mov(cb, REG0, recv);
+    if (!jit_guard_known_klass(jit, ctx, comptime_recv_klass, REG0, OSWB_MAX_DEPTH, side_exit)) {
         return YJIT_CANT_COMPILE;
     }
 
@@ -1743,51 +1789,15 @@ gen_opt_send_without_block(jitstate_t* jit, ctx_t* ctx)
         return YJIT_CANT_COMPILE;
     }
 
+    // Register block for invalidation
     RUBY_ASSERT(cme->called_id == mid);
     assume_method_lookup_stable(comptime_recv_klass, cme, jit->block);
 
-    // Known class guard. jit_konwn_klass
-    {
-        uint8_t *side_exit = yjit_side_exit(jit, ctx);
-
-        // Points to the receiver operand on the stack
-        x86opnd_t recv = ctx_stack_opnd(ctx, argc);
-        mov(cb, REG0, recv);
-
-        // Callee method ID
-        //ID mid = vm_ci_mid(cd->ci);
-        //printf("JITting call to C function \"%s\", argc: %lu\n", rb_id2name(mid), argc);
-        //print_str(cb, "");
-        //print_str(cb, "calling CFUNC:");
-        //print_str(cb, rb_id2name(mid));
-        //print_str(cb, "recv");
-        //print_ptr(cb, recv);
-
-        // Check that the receiver is a heap object
-        {
-            // uint8_t *receiver_not_heap = COUNTED_EXIT(side_exit, oswb_se_receiver_not_heap);
-            test(cb, REG0, imm_opnd(RUBY_IMMEDIATE_MASK));
-            jnz_ptr(cb, side_exit);
-            cmp(cb, REG0, imm_opnd(Qfalse));
-            je_ptr(cb, side_exit);
-            cmp(cb, REG0, imm_opnd(Qnil));
-            je_ptr(cb, side_exit);
-        }
-
-        // Pointer to the klass field of the receiver &(recv->klass)
-        x86opnd_t klass_opnd = mem_opnd(64, REG0, offsetof(struct RBasic, klass));
-
-        // Bail if receiver class is different from compile-time call cache class
-        jit_mov_gc_ptr(jit, cb, REG1, comptime_recv_klass);
-        cmp(cb, klass_opnd, REG1);
-        jit_chain_guard(JCC_JNE, jit, ctx, OSWB_MAX_DEPTH, COUNTED_EXIT(side_exit, oswb_se_cc_klass_differ));
-    }
-
     switch (cme->def->type) {
     case VM_METHOD_TYPE_ISEQ:
-        return gen_oswb_iseq(jit, ctx, cd, cme, argc);
+        return gen_oswb_iseq(jit, ctx, ci, cme, argc);
     case VM_METHOD_TYPE_CFUNC:
-        return gen_oswb_cfunc(jit, ctx, cd, cme, argc);
+        return gen_oswb_cfunc(jit, ctx, ci, cme, argc);
     case VM_METHOD_TYPE_ATTRSET:
         GEN_COUNTER_INC(cb, oswb_ivar_set_method);
         return YJIT_CANT_COMPILE;
