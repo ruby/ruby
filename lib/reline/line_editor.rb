@@ -1158,8 +1158,25 @@ class Reline::LineEditor
 
   def call_completion_proc
     result = retrieve_completion_block(true)
-    slice = result[1]
-    result = @completion_proc.(slice) if @completion_proc and slice
+    preposing, target, postposing = result
+    if @completion_proc and target
+      argnum = @completion_proc.parameters.inject(0) { |result, item|
+        case item.first
+        when :req, :opt
+          result + 1
+        when :rest
+          break 3
+        end
+      }
+      case argnum
+      when 1
+        result = @completion_proc.(target)
+      when 2
+        result = @completion_proc.(target, preposing)
+      when 3..Float::INFINITY
+        result = @completion_proc.(target, preposing, postposing)
+      end
+    end
     Reline.core.instance_variable_set(:@completion_quote_character, nil)
     result
   end
@@ -1263,6 +1280,19 @@ class Reline::LineEditor
         preposing = ''
       end
       target = before
+    end
+    if @is_multiline
+      if @previous_line_index
+        lines = whole_lines(index: @previous_line_index, line: @line)
+      else
+        lines = whole_lines
+      end
+      if @line_index > 0
+        preposing = lines[0..(@line_index - 1)].join("\n") + "\n" + preposing
+      end
+      if (lines.size - 1) > @line_index
+        postposing = postposing + "\n" + lines[(@line_index + 1)..-1].join("\n")
+      end
     end
     [preposing.encode(@encoding), target.encode(@encoding), postposing.encode(@encoding)]
   end
