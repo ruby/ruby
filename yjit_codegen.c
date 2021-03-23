@@ -326,7 +326,8 @@ yjit_gen_block(ctx_t* ctx, block_t* block, rb_execution_context_t* ec)
         // Call the code generation function
         bool continue_generating = p_desc->gen_fn(&jit, ctx);
 
-        // For now, reset the chain depth after each instruction
+        // For now, reset the chain depth after each instruction as only the
+        // first instruction in the block can concern itself with the depth.
         ctx->chain_depth = 0;
 
         // If we can't compile this instruction
@@ -584,6 +585,26 @@ guard_self_is_object(codeblock_t *cb, x86opnd_t self_opnd, uint8_t *side_exit, c
     }
 }
 
+
+// Generate a stubbed unconditional jump to the next bytecode instruction.
+// Blocks that are part of a guard chain can use this to share the same successor.
+static void
+jit_jump_to_next_insn(jitstate_t *jit, const ctx_t *current_context)
+{
+    // Reset the depth since in current usages we only ever jump to to
+    // chain_depth > 0 from the same instruction.
+    ctx_t reset_depth = *current_context;
+    reset_depth.chain_depth = 0;
+
+    blockid_t jump_block = { jit->iseq, jit_next_insn_idx(jit) };
+
+    // Generate the jump instruction
+    gen_direct_jump(
+        &reset_depth,
+        jump_block
+    );
+}
+
 static void
 gen_jnz_to_target0(codeblock_t *cb, uint8_t *target0, uint8_t *target1, uint8_t shape)
 {
@@ -772,21 +793,8 @@ gen_getinstancevariable(jitstate_t* jit, ctx_t* ctx)
             mov(cb, out_opnd, REG0);
         }
 
-
         // Jump to next instruction. This allows guard chains to share the same successor.
-        {
-            ctx_t reset_depth = *ctx;
-            reset_depth.chain_depth = 0;
-
-            blockid_t jump_block = { jit->iseq, jit_next_insn_idx(jit) };
-
-            // Generate the jump instruction
-            gen_direct_jump(
-                &reset_depth,
-                jump_block
-            );
-        }
-
+        jit_jump_to_next_insn(jit, ctx);
         return YJIT_END_BLOCK;
     }
 
@@ -1000,18 +1008,7 @@ gen_opt_aref(jitstate_t *jit, ctx_t *ctx)
         }
 
         // Jump to next instruction. This allows guard chains to share the same successor.
-        {
-            ctx_t reset_depth = *ctx;
-            reset_depth.chain_depth = 0;
-
-            blockid_t jump_block = { jit->iseq, jit_next_insn_idx(jit) };
-
-            // Generate the jump instruction
-            gen_direct_jump(
-                &reset_depth,
-                jump_block
-            );
-        }
+        jit_jump_to_next_insn(jit, ctx);
         return YJIT_END_BLOCK;
     }
     else if (CLASS_OF(comptime_recv) == rb_cHash) {
@@ -1072,18 +1069,7 @@ gen_opt_aref(jitstate_t *jit, ctx_t *ctx)
         }
 
         // Jump to next instruction. This allows guard chains to share the same successor.
-        {
-            ctx_t reset_depth = *ctx;
-            reset_depth.chain_depth = 0;
-
-            blockid_t jump_block = { jit->iseq, jit_next_insn_idx(jit) };
-
-            // Generate the jump instruction
-            gen_direct_jump(
-                &reset_depth,
-                jump_block
-            );
-        }
+        jit_jump_to_next_insn(jit, ctx);
         return YJIT_END_BLOCK;
     }
 
@@ -1431,8 +1417,7 @@ gen_oswb_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const 
     }
 
     // If this function needs a Ruby stack frame
-    if (cfunc_needs_frame(cfunc))
-    {
+    if (cfunc_needs_frame(cfunc)) {
         // Stack overflow check
         // #define CHECK_VM_STACK_OVERFLOW0(cfp, sp, margin)
         // REG_CFP <= REG_SP + 4 * sizeof(VALUE) + sizeof(rb_control_frame_t)
@@ -1512,8 +1497,7 @@ gen_oswb_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const 
     lea(cb, RAX, ctx_sp_opnd(ctx, 0));
 
     // Non-variadic method
-    if (cfunc->argc >= 0)
-    {
+    if (cfunc->argc >= 0) {
         // Copy the arguments from the stack to the C argument registers
         // self is the 0th argument and is at index argc from the stack top
         for (int32_t i = 0; i < argc + 1; ++i)
@@ -1524,8 +1508,7 @@ gen_oswb_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const 
         }
     }
     // Variadic method
-    if (cfunc->argc == -1)
-    {
+    if (cfunc->argc == -1) {
         // The method gets a pointer to the first argument
         // rb_f_puts(int argc, VALUE *argv, VALUE recv)
         mov(cb, C_ARG_REGS[0], imm_opnd(argc));
@@ -1550,8 +1533,7 @@ gen_oswb_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const 
     mov(cb, stack_ret, RAX);
 
     // If this function needs a Ruby stack frame
-    if (cfunc_needs_frame(cfunc))
-    {
+    if (cfunc_needs_frame(cfunc)) {
         // Pop the stack frame (ec->cfp++)
         add(
             cb,
@@ -1566,13 +1548,7 @@ gen_oswb_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const 
 
     // Jump (fall through) to the call continuation block
     // We do this to end the current block after the call
-    blockid_t cont_block = { jit->iseq, jit_next_insn_idx(jit) };
-    ctx->chain_depth = 0;
-    gen_direct_jump(
-        ctx,
-        cont_block
-    );
-
+    jit_jump_to_next_insn(jit, ctx);
     return YJIT_END_BLOCK;
 }
 
