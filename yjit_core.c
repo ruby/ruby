@@ -354,11 +354,21 @@ branch_stub_hit(uint32_t branch_idx, uint32_t target_idx, rb_execution_context_t
 
     RB_VM_LOCK_ENTER();
 
+
     RUBY_ASSERT(branch_idx < num_branches);
     RUBY_ASSERT(target_idx < 2);
     branch_t *branch = &branch_entries[branch_idx];
     blockid_t target = branch->targets[target_idx];
     const ctx_t* target_ctx = &branch->target_ctxs[target_idx];
+
+    // :stub-sp-flush:
+    // Generated code do stack operations without modifying cfp->sp, while the
+    // cfp->sp tells the GC what values on the stack to root. Generated code
+    // generally takes care of updating cfp->sp when it calls runtime routines that
+    // could trigger GC, but for the case of branch stubs, it's inconvenient. So
+    // we do it here.
+    VALUE *const original_interp_sp = ec->cfp->sp;
+    ec->cfp->sp += target_ctx->sp_offset;
 
     //fprintf(stderr, "\nstub hit, branch idx: %d, target idx: %d\n", branch_idx, target_idx);
     //fprintf(stderr, "blockid.iseq=%p, blockid.idx=%d\n", target.iseq, target.idx);
@@ -415,6 +425,8 @@ branch_stub_hit(uint32_t branch_idx, uint32_t target_idx, rb_execution_context_t
     branch->end_pos = cb->write_pos;
     cb_set_pos(cb, cur_pos);
 
+    // Restore interpreter sp, since the code hitting the stub expects the original.
+    ec->cfp->sp = original_interp_sp;
     RB_VM_LOCK_LEAVE();
 
     // Return a pointer to the compiled block version
