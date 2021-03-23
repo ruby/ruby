@@ -2628,6 +2628,7 @@ static void
 iv_index_tbl_free(struct st_table *tbl)
 {
     st_foreach(tbl, free_iv_index_tbl_free_i, 0);
+    st_free_table(tbl);
 }
 
 // alive: if false, target pointers can be freed already.
