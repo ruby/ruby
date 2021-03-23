@@ -1350,10 +1350,10 @@ jit_guard_known_klass(jitstate_t *jit, const ctx_t *recompile_context, VALUE kno
     return true;
 }
 
+// Generate ancestry guard for protected callee.
 static void
-jit_protected_guard(jitstate_t *jit, codeblock_t *cb, const rb_callable_method_entry_t *cme, uint8_t *side_exit)
+jit_protected_callee_ancestry_guard(jitstate_t *jit, codeblock_t *cb, const rb_callable_method_entry_t *cme, uint8_t *side_exit)
 {
-    // Callee is protected. Generate ancestry guard.
     // See vm_call_method().
     yjit_save_regs(cb);
     mov(cb, C_ARG_REGS[0], member_opnd(REG_CFP, rb_control_frame_t, self));
@@ -1410,11 +1410,6 @@ gen_oswb_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const 
     // Store incremented PC into current control frame in case callee raises.
     mov(cb, REG0, const_ptr_opnd(jit->pc + insn_len(BIN(opt_send_without_block))));
     mov(cb, mem_opnd(64, REG_CFP, offsetof(rb_control_frame_t, pc)), REG0);
-
-    if (METHOD_ENTRY_VISI(cme) == METHOD_VISI_PROTECTED) {
-        // Generate ancestry guard for protected callee.
-        jit_protected_guard(jit, cb, cme, side_exit);
-    }
 
     // If this function needs a Ruby stack frame
     if (cfunc_needs_frame(cfunc)) {
@@ -1606,11 +1601,6 @@ gen_oswb_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
     // Points to the receiver operand on the stack
     x86opnd_t recv = ctx_stack_opnd(ctx, argc);
 
-    if (METHOD_ENTRY_VISI(cme) == METHOD_VISI_PROTECTED) {
-        // Generate ancestry guard for protected callee.
-        jit_protected_guard(jit, cb, cme, side_exit);
-    }
-
     // Store the updated SP on the current frame (pop arguments and receiver)
     lea(cb, REG0, ctx_sp_opnd(ctx, sizeof(VALUE) * -(argc + 1)));
     mov(cb, member_opnd(REG_CFP, rb_control_frame_t, sp), REG0);
@@ -1720,6 +1710,9 @@ gen_opt_send_without_block(jitstate_t* jit, ctx_t* ctx)
     // rb_callinfo                  : vm_callinfo.h
     // rb_callable_method_entry_t   : method.h
     // vm_call_cfunc_with_frame     : vm_insnhelper.c
+    //
+    // For a general overview for how the interpreter calls methods,
+    // see vm_call_method().
 
     struct rb_call_data *cd = (struct rb_call_data *)jit_get_arg(jit, 0);
     const struct rb_callinfo *ci = cd->ci; // info about the call site
@@ -1763,6 +1756,25 @@ gen_opt_send_without_block(jitstate_t* jit, ctx_t* ctx)
     if (!cme) {
         // TODO: counter
         return YJIT_CANT_COMPILE;
+    }
+
+    switch (METHOD_ENTRY_VISI(cme)) {
+    case METHOD_VISI_PUBLIC:
+        // Can always call public methods
+        break;
+    case METHOD_VISI_PRIVATE:
+        if (!(vm_ci_flag(ci) & VM_CALL_FCALL)) {
+            // Can only call private methods with FCALL callsites.
+            // (at the moment they are callsites without a receiver or an explicit `self` receiver)
+            return YJIT_CANT_COMPILE;
+        }
+        break;
+    case METHOD_VISI_PROTECTED:
+        jit_protected_callee_ancestry_guard(jit, cb, cme, side_exit);
+        break;
+    case METHOD_VISI_UNDEF:
+        RUBY_ASSERT(false && "cmes should always have a visibility");
+        break;
     }
 
     // Register block for invalidation
