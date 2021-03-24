@@ -64,6 +64,7 @@ class Prelude
       end
       lines << [line, comment]
     end
+    lines[-1][0] += "\x0"
     result
   end
 end
