@@ -701,10 +701,10 @@ rb_longjmp(rb_execution_context_t *ec, int tag, volatile VALUE mesg, VALUE cause
 
 static VALUE make_exception(int argc, const VALUE *argv, int isstr);
 
-NORETURN(static void rb_exec_exception(VALUE mesg, int tag, VALUE cause));
+NORETURN(static void rb_exc_exception(VALUE mesg, int tag, VALUE cause));
 
 static void
-rb_exec_exception(VALUE mesg, int tag, VALUE cause)
+rb_exc_exception(VALUE mesg, int tag, VALUE cause)
 {
     if (!NIL_P(mesg)) {
 	mesg = make_exception(1, &mesg, FALSE);
