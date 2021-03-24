@@ -60,7 +60,7 @@ class RubyLex
       @io.dynamic_prompt do |lines|
         lines << '' if lines.empty?
         result = []
-        tokens = ripper_lex_without_warning(lines.map{ |l| l + "\n" }.join)
+        tokens = self.class.ripper_lex_without_warning(lines.map{ |l| l + "\n" }.join)
         code = String.new
         partial_tokens = []
         unprocessed_tokens = []
@@ -115,10 +115,10 @@ class RubyLex
     :on_param_error
   ]
 
-  def ripper_lex_without_warning(code)
+  def self.ripper_lex_without_warning(code)
     verbose, $VERBOSE = $VERBOSE, nil
     tokens = nil
-    self.class.compile_with_errors_suppressed(code) do |inner_code, line_no|
+    compile_with_errors_suppressed(code) do |inner_code, line_no|
       lexer = Ripper::Lexer.new(inner_code, '-', line_no)
       if lexer.respond_to?(:scan) # Ruby 2.7+
         tokens = []
@@ -168,7 +168,7 @@ class RubyLex
     if @io.respond_to?(:auto_indent) and context.auto_indent_mode
       @io.auto_indent do |lines, line_index, byte_pointer, is_newline|
         if is_newline
-          @tokens = ripper_lex_without_warning(lines[0..line_index].join("\n"))
+          @tokens = self.class.ripper_lex_without_warning(lines[0..line_index].join("\n"))
           prev_spaces = find_prev_spaces(line_index)
           depth_difference = check_newline_depth_difference
           depth_difference = 0 if depth_difference < 0
@@ -177,7 +177,7 @@ class RubyLex
           code = line_index.zero? ? '' : lines[0..(line_index - 1)].map{ |l| l + "\n" }.join
           last_line = lines[line_index]&.byteslice(0, byte_pointer)
           code += last_line if last_line
-          @tokens = ripper_lex_without_warning(code)
+          @tokens = self.class.ripper_lex_without_warning(code)
           corresponding_token_depth = check_corresponding_token_depth
           if corresponding_token_depth
             corresponding_token_depth
@@ -190,7 +190,7 @@ class RubyLex
   end
 
   def check_state(code, tokens = nil)
-    tokens = ripper_lex_without_warning(code) unless tokens
+    tokens = self.class.ripper_lex_without_warning(code) unless tokens
     ltype = process_literal_type(tokens)
     indent = process_nesting_level(tokens)
     continue = process_continue(tokens)
@@ -256,7 +256,7 @@ class RubyLex
     end
     code = @line + (line.nil? ? '' : line)
     code.gsub!(/\s*\z/, '').concat("\n")
-    @tokens = ripper_lex_without_warning(code)
+    @tokens = self.class.ripper_lex_without_warning(code)
     @continue = process_continue
     @code_block_open = check_code_block(code)
     @indent = process_nesting_level
