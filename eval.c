@@ -701,6 +701,8 @@ rb_longjmp(rb_execution_context_t *ec, int tag, volatile VALUE mesg, VALUE cause
 
 static VALUE make_exception(int argc, const VALUE *argv, int isstr);
 
+NORETURN(static void rb_exec_exception(VALUE mesg, int tag, VALUE cause));
+
 static void
 rb_exec_exception(VALUE mesg, int tag, VALUE cause)
 {
@@ -709,8 +711,6 @@ rb_exec_exception(VALUE mesg, int tag, VALUE cause)
     }
     rb_longjmp(GET_EC(), tag, mesg, cause);
 }
-
-NORETURN(static void rb_exec_exception(VALUE mesg, int tag, VALUE cause));
 
 /*!
  * Raises an exception in the current thread.
