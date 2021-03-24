@@ -1903,6 +1903,9 @@ class TestIO < Test::Unit::TestCase
       assert_equal(true, f.close_on_exec?)
       f.close_on_exec = false
       assert_equal(false, f.close_on_exec?)
+      truthy = Object.new
+      assert_same(truthy, f.public_send(:close_on_exec=, truthy))
+      assert_equal(true, f.close_on_exec?)
     end
 
     with_pipe do |r, w|
