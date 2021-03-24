@@ -463,8 +463,17 @@ VALUE rb_mutex_unlock(VALUE mutex);
  *
  * This  function is  called from  `ConditionVariable#wait`.   So it  is not  a
  * deprecated feature.   However @shyouhei  have never  seen any  similar mutex
- * primitive  available in  any  other language  than Ruby.   Is  this a  right
- * design?  Maybe isn't it too complex a primitive?
+ * primitive available in any other languages than Ruby.
+ *
+ * EDIT: In 2021,  @shyouhei asked @ko1 in person about  this API.  He answered
+ * that it is his invention.  The  motivation behind its design is to eliminate
+ * needs of condition variables as  primitives.  Unlike other languages, Ruby's
+ * `ConditionVariable` class was written in pure-Ruby initially.  We don't have
+ * to implement  machine-native condition  variables in  assembly each  time we
+ * port Ruby to a new architecture.  This function made it possible.  "I felt I
+ * was a genius when this idea came to me", said @ko1.
+ *
+ * `rb_cConditionVariable` is now written in C for speed, though.
  */
 VALUE rb_mutex_sleep(VALUE self, VALUE timeout);
 
