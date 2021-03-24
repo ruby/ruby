@@ -235,6 +235,7 @@ block_t* gen_block_version(blockid_t blockid, const ctx_t* ctx, rb_execution_con
 uint8_t*  gen_entry_point(const rb_iseq_t *iseq, uint32_t insn_idx, rb_execution_context_t *ec);
 void yjit_free_block(block_t *block);
 void yjit_branches_update_references(void);
+rb_yjit_block_array_t yjit_get_version_array(const rb_iseq_t *iseq, unsigned idx);
 
 void gen_branch(
     const ctx_t* src_ctx,

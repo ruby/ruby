@@ -236,6 +236,9 @@ STATIC_ASSERT(sizeof_iseq_inline_constant_cache_entry,
 
 struct iseq_inline_constant_cache {
     struct iseq_inline_constant_cache_entry *entry;
+     // For YJIT: the index to the opt_getinlinecache instruction in the same iseq.
+     // It's set during compile time and constant once set.
+    unsigned get_insn_idx;
 };
 
 struct iseq_inline_iv_cache_entry {
