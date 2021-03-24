@@ -40,6 +40,24 @@ module IRB
 
     BASIC_WORD_BREAK_CHARACTERS = " \t\n`><=;|&{("
 
+    def self.retrieve_files_to_require_from_load_path
+      @@files_from_load_path ||= $LOAD_PATH.flat_map { |path|
+        begin
+          Dir.glob("**/*.{rb,#{RbConfig::CONFIG['DLEXT']}}", base: path)
+        rescue Errno::ENOENT
+          []
+        end
+      }.uniq.map { |path|
+        path.sub(/\.(rb|#{RbConfig::CONFIG['DLEXT']})\z/, '')
+      }
+    end
+
+    def self.retrieve_files_to_require_relative_from_current_dir
+      @@files_from_current_dir ||= Dir.glob("**/*.{rb,#{RbConfig::CONFIG['DLEXT']}}", base: '.').map { |path|
+        path.sub(/\.(rb|#{RbConfig::CONFIG['DLEXT']})\z/, '')
+      }
+    end
+
     CompletionRequireProc = lambda { |target, preposing = nil, postposing = nil|
       if target =~ /\A(['"])([^'"]+)\Z/
         quote = $1
@@ -55,26 +73,17 @@ module IRB
           break
         end
       end
+      result = []
       if tok && tok.event == :on_ident && tok.state == Ripper::EXPR_CMDARG
         case tok.tok
         when 'require'
-          result = $LOAD_PATH.flat_map { |path|
-            begin
-              Dir.glob("**/*.{rb,#{RbConfig::CONFIG['DLEXT']}}", base: path)
-            rescue Errno::ENOENT
-              []
-            end
-          }.uniq.map { |path|
-            path.sub(/\.(rb|#{RbConfig::CONFIG['DLEXT']})\z/, '')
-          }.select { |path|
+          result = retrieve_files_to_require_from_load_path.select { |path|
             path.start_with?(actual_target)
           }.map { |path|
             quote + path
           }
         when 'require_relative'
-          result = Dir.glob("**/*.{rb,#{RbConfig::CONFIG['DLEXT']}}", base: '.').map { |path|
-            path.sub(/\.(rb|#{RbConfig::CONFIG['DLEXT']})\z/, '')
-          }.select { |path|
+          result = retrieve_files_to_require_relative_from_current_dir.select { |path|
             path.start_with?(actual_target)
           }.map { |path|
             quote + path

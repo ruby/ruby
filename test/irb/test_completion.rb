@@ -61,9 +61,21 @@ module TestIRB
       %w['irb/init 'irb/ruby-lex].each do |word|
         assert_include candidates, word
       end
+      # Test cache
+      candidates = IRB::InputCompletor::CompletionProc.("'irb", "require ", "")
+      %w['irb/init 'irb/ruby-lex].each do |word|
+        assert_include candidates, word
+      end
     end
 
     def test_complete_require_relative
+      candidates = Dir.chdir(__dir__ + "/../..") do
+        IRB::InputCompletor::CompletionProc.("'lib/irb", "require_relative ", "")
+      end
+      %w['lib/irb/init 'lib/irb/ruby-lex].each do |word|
+        assert_include candidates, word
+      end
+      # Test cache
       candidates = Dir.chdir(__dir__ + "/../..") do
         IRB::InputCompletor::CompletionProc.("'lib/irb", "require_relative ", "")
       end
