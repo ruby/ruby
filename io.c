@@ -4580,7 +4580,7 @@ rb_io_set_close_on_exec(VALUE io, VALUE arg)
             if (ret != 0) rb_sys_fail_path(fptr->pathv);
         }
     }
-    return Qnil;
+    return arg;
 }
 #else
 #define rb_io_set_close_on_exec rb_f_notimplement
