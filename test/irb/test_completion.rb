@@ -55,5 +55,19 @@ module TestIRB
       namespace = IRB::InputCompletor.retrieve_completion_data("1.positive?", bind: binding, doc_namespace: true)
       assert_equal "Integer.positive?", namespace
     end
+
+    def test_complete_require
+      candidates = IRB::InputCompletor::CompletionProc.("'irb", "require ", "")
+      %w['irb/init 'irb/ruby-lex].each do |word|
+        assert_include candidates, word
+      end
+    end
+
+    def test_complete_require_relative
+      candidates = IRB::InputCompletor::CompletionProc.("'lib/irb", "require_relative ", "")
+      %w['lib/irb/init 'lib/irb/ruby-lex].each do |word|
+        assert_include candidates, word
+      end
+    end
   end
 end

@@ -280,6 +280,7 @@ module IRB
         Reline.basic_word_break_characters = IRB::InputCompletor::BASIC_WORD_BREAK_CHARACTERS
       end
       Reline.completion_append_character = nil
+      Reline.completer_quote_characters = ''
       Reline.completion_proc = IRB::InputCompletor::CompletionProc
       Reline.output_modifier_proc =
         if IRB.conf[:USE_COLORIZE]
