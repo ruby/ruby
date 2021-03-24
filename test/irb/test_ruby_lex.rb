@@ -558,8 +558,7 @@ module TestIRB
         skip 'This test needs Ripper::Lexer#scan to take broken tokens'
       end
 
-      ruby_lex = RubyLex.new
-      tokens = ruby_lex.ripper_lex_without_warning('%wwww')
+      tokens = RubyLex.ripper_lex_without_warning('%wwww')
       pos_to_index = {}
       tokens.each_with_index { |t, i|
         assert_nil(pos_to_index[t[0]], "There is already another token in the position of #{t.inspect}.")
@@ -572,8 +571,7 @@ module TestIRB
         skip 'This test needs Ripper::Lexer#scan to take broken tokens'
       end
 
-      ruby_lex = RubyLex.new
-      tokens = ruby_lex.ripper_lex_without_warning(<<~EOC.chomp)
+      tokens = RubyLex.ripper_lex_without_warning(<<~EOC.chomp)
         def foo
           %wwww
         end
