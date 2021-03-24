@@ -9,6 +9,8 @@
 
 autoload :RDoc, "rdoc"
 
+require_relative 'ruby-lex'
+
 module IRB
   module InputCompletor # :nodoc:
 
@@ -38,8 +40,60 @@ module IRB
 
     BASIC_WORD_BREAK_CHARACTERS = " \t\n`><=;|&{("
 
-    CompletionProc = proc { |input|
-      retrieve_completion_data(input).compact.map{ |i| i.encode(Encoding.default_external) }
+    CompletionRequireProc = lambda { |target, preposing = nil, postposing = nil|
+      if target =~ /\A(['"])([^'"]+)\Z/
+        quote = $1
+        actual_target = $2
+      else
+        return nil # It's not String literal
+      end
+      tokens = RubyLex.ripper_lex_without_warning(preposing.gsub(/\s*\z/, ''))
+      tok = nil
+      tokens.reverse_each do |t|
+        unless [:on_lparen, :on_sp, :on_ignored_sp, :on_nl, :on_ignored_nl, :on_comment].include?(t.event)
+          tok = t
+          break
+        end
+      end
+      if tok && tok.event == :on_ident && tok.state == Ripper::EXPR_CMDARG
+        case tok.tok
+        when 'require'
+          result = $LOAD_PATH.flat_map { |path|
+            begin
+              Dir.glob("**/*.{rb,#{RbConfig::CONFIG['DLEXT']}}", base: path)
+            rescue Errno::ENOENT
+              []
+            end
+          }.uniq.map { |path|
+            path.sub(/\.(rb|#{RbConfig::CONFIG['DLEXT']})\z/, '')
+          }.select { |path|
+            path.start_with?(actual_target)
+          }.map { |path|
+            quote + path
+          }
+        when 'require_relative'
+          result = Dir.glob("**/*.{rb,#{RbConfig::CONFIG['DLEXT']}}", base: '.').map { |path|
+            path.sub(/\.(rb|#{RbConfig::CONFIG['DLEXT']})\z/, '')
+          }.select { |path|
+            path.start_with?(actual_target)
+          }.map { |path|
+            quote + path
+          }
+        end
+      end
+      result
+    }
+
+    CompletionProc = lambda { |target, preposing = nil, postposing = nil|
+      if preposing && postposing
+        result = CompletionRequireProc.(target, preposing, postposing)
+        unless result
+          result = retrieve_completion_data(target).compact.map{ |i| i.encode(Encoding.default_external) }
+        end
+        result
+      else
+        retrieve_completion_data(target).compact.map{ |i| i.encode(Encoding.default_external) }
+      end
     }
 
     def self.retrieve_completion_data(input, bind: IRB.conf[:MAIN_CONTEXT].workspace.binding, doc_namespace: false)
