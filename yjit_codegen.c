@@ -43,7 +43,7 @@ jit_print_loc(jitstate_t* jit, const char* msg)
 static int
 jit_get_opcode(jitstate_t* jit)
 {
-    return opcode_at_pc(jit->iseq, jit->pc);
+    return yjit_opcode_at_pc(jit->iseq, jit->pc);
 }
 
 // Get the index of the next instruction
@@ -147,7 +147,7 @@ yjit_gen_exit(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
         // Write back the old instruction at the exit PC
         // Otherwise the interpreter may jump right back to the
         // JITted code we're trying to exit
-        int exit_opcode = opcode_at_pc(jit->iseq, exit_pc);
+        int exit_opcode = yjit_opcode_at_pc(jit->iseq, exit_pc);
         void* handler_addr = (void*)handler_table[exit_opcode];
         mov(cb, REG0, const_ptr_opnd(exit_pc));
         mov(cb, REG1, const_ptr_opnd(handler_addr));
@@ -255,9 +255,8 @@ yjit_entry_prologue(void)
     return code_ptr;
 }
 
-/*
-Generate code to check for interrupts and take a side-exit
-*/
+
+// Generate code to check for interrupts and take a side-exit
 static void
 yjit_check_ints(codeblock_t* cb, uint8_t* side_exit)
 {
@@ -269,17 +268,36 @@ yjit_check_ints(codeblock_t* cb, uint8_t* side_exit)
     jnz_ptr(cb, side_exit);
 }
 
-/*
-Compile a sequence of bytecode instructions for a given basic block version
-*/
+// Generate a stubbed unconditional jump to the next bytecode instruction.
+// Blocks that are part of a guard chain can use this to share the same successor.
+static void
+jit_jump_to_next_insn(jitstate_t *jit, const ctx_t *current_context)
+{
+    // Reset the depth since in current usages we only ever jump to to
+    // chain_depth > 0 from the same instruction.
+    ctx_t reset_depth = *current_context;
+    reset_depth.chain_depth = 0;
+
+    blockid_t jump_block = { jit->iseq, jit_next_insn_idx(jit) };
+
+    // Generate the jump instruction
+    gen_direct_jump(
+        &reset_depth,
+        jump_block
+    );
+}
+
+
+// Compile a sequence of bytecode instructions for a given basic block version
 void
-yjit_gen_block(ctx_t* ctx, block_t* block, rb_execution_context_t* ec)
+yjit_gen_block(ctx_t *ctx, block_t *block, rb_execution_context_t *ec)
 {
     RUBY_ASSERT(cb != NULL);
     RUBY_ASSERT(block != NULL);
 
     const rb_iseq_t *iseq = block->blockid.iseq;
     uint32_t insn_idx = block->blockid.idx;
+    const uint32_t starting_insn_idx = insn_idx;
 
     // NOTE: if we are ever deployed in production, we
     // should probably just log an error and return NULL here,
@@ -305,13 +323,21 @@ yjit_gen_block(ctx_t* ctx, block_t* block, rb_execution_context_t* ec)
 
     // For each instruction to compile
     for (;;) {
+        // Get the current pc and opcode
+        VALUE *pc = yjit_iseq_pc_at_idx(iseq, insn_idx);
+        int opcode = yjit_opcode_at_pc(iseq, pc);
+        RUBY_ASSERT(opcode >= 0 && opcode < VM_INSTRUCTION_SIZE);
+
+        // opt_getinlinecache wants to be in a block all on its own. Cut the block short
+        // if we run into it. See gen_opt_getinlinecache for details.
+        if (opcode == BIN(opt_getinlinecache) && insn_idx > starting_insn_idx) {
+            jit_jump_to_next_insn(&jit, ctx);
+            break;
+        }
+
         // Set the current instruction
         jit.insn_idx = insn_idx;
-        jit.pc = iseq_pc_at_idx(iseq, insn_idx);
-
-        // Get the current opcode
-        int opcode = jit_get_opcode(&jit);
-        RUBY_ASSERT(opcode >= 0 && opcode < VM_INSTRUCTION_SIZE);
+        jit.pc = pc;
 
         // Lookup the codegen function for this instruction
         codegen_fn gen_fn = gen_fns[opcode];
@@ -322,8 +348,10 @@ yjit_gen_block(ctx_t* ctx, block_t* block, rb_execution_context_t* ec)
             break;
         }
 
-        //fprintf(stderr, "compiling %d: %s\n", insn_idx, insn_name(opcode));
-        //print_str(cb, insn_name(opcode));
+        if (0) {
+            fprintf(stderr, "compiling %d: %s\n", insn_idx, insn_name(opcode));
+            print_str(cb, insn_name(opcode));
+        }
 
         // :count-placement:
         // Count bytecode instructions that execute in generated code.
@@ -366,9 +394,8 @@ yjit_gen_block(ctx_t* ctx, block_t* block, rb_execution_context_t* ec)
     if (YJIT_DUMP_MODE >= 2) {
         // Dump list of compiled instrutions
         fprintf(stderr, "Compiled the following for iseq=%p:\n", (void *)iseq);
-        for (uint32_t idx = block->blockid.idx; idx < insn_idx;)
-        {
-            int opcode = opcode_at_pc(iseq, iseq_pc_at_idx(iseq, idx));
+        for (uint32_t idx = block->blockid.idx; idx < insn_idx; ) {
+            int opcode = yjit_opcode_at_pc(iseq, yjit_iseq_pc_at_idx(iseq, idx));
             fprintf(stderr, "  %04d %s\n", idx, insn_name(opcode));
             idx += insn_len(opcode);
         }
@@ -603,25 +630,6 @@ guard_self_is_heap(codeblock_t *cb, x86opnd_t self_opnd, uint8_t *side_exit, ctx
 
         ctx->self_type.is_heap = 1;
     }
-}
-
-// Generate a stubbed unconditional jump to the next bytecode instruction.
-// Blocks that are part of a guard chain can use this to share the same successor.
-static void
-jit_jump_to_next_insn(jitstate_t *jit, const ctx_t *current_context)
-{
-    // Reset the depth since in current usages we only ever jump to to
-    // chain_depth > 0 from the same instruction.
-    ctx_t reset_depth = *current_context;
-    reset_depth.chain_depth = 0;
-
-    blockid_t jump_block = { jit->iseq, jit_next_insn_idx(jit) };
-
-    // Generate the jump instruction
-    gen_direct_jump(
-        &reset_depth,
-        jump_block
-    );
 }
 
 static void
@@ -1918,6 +1926,7 @@ gen_leave(jitstate_t* jit, ctx_t* ctx)
 }
 
 RUBY_EXTERN rb_serial_t ruby_vm_global_constant_state;
+
 static codegen_status_t
 gen_opt_getinlinecache(jitstate_t *jit, ctx_t *ctx)
 {
@@ -1927,16 +1936,11 @@ gen_opt_getinlinecache(jitstate_t *jit, ctx_t *ctx)
 
     // See vm_ic_hit_p().
     struct iseq_inline_constant_cache_entry *ice = ic->entry;
-    if (!ice) {
-        // Cache not filled
-        return YJIT_CANT_COMPILE;
-    }
-    if (ice->ic_serial != ruby_vm_global_constant_state) {
-        // Cache miss at compile time.
-        return YJIT_CANT_COMPILE;
-    }
-    if (ice->ic_cref) {
-        // Only compile for caches that don't care about lexical scope.
+    if (!ice || // cache not filled
+        ice->ic_serial != ruby_vm_global_constant_state || // cache out of date
+        ice->ic_cref /* cache only valid for certain lexical scopes */) {
+        // In these cases, leave a block that unconditionally side exits
+        // for the interpreter to invalidate.
         return YJIT_CANT_COMPILE;
     }
 
@@ -1946,7 +1950,7 @@ gen_opt_getinlinecache(jitstate_t *jit, ctx_t *ctx)
 
     // Invalidate output code on any and all constant writes
     // FIXME: This leaks when st_insert raises NoMemoryError
-    if (!assume_stable_global_constant_state(jit->block)) return YJIT_CANT_COMPILE;
+    assume_stable_global_constant_state(jit->block);
 
     x86opnd_t stack_top = ctx_stack_push(ctx, TYPE_UNKNOWN);
     jit_mov_gc_ptr(jit, cb, REG0, ice->value);

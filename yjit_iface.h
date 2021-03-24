@@ -85,9 +85,9 @@ RUBY_EXTERN struct rb_yjit_runtime_counters yjit_runtime_counters;
 void cb_write_pre_call_bytes(codeblock_t* cb);
 void cb_write_post_call_bytes(codeblock_t* cb);
 
-VALUE *iseq_pc_at_idx(const rb_iseq_t *iseq, uint32_t insn_idx);
-void map_addr2insn(void *code_ptr, int insn);
-int opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc);
+void yjit_map_addr2insn(void *code_ptr, int insn);
+VALUE *yjit_iseq_pc_at_idx(const rb_iseq_t *iseq, uint32_t insn_idx);
+int yjit_opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc);
 
 void check_cfunc_dispatch(VALUE receiver, struct rb_callinfo *ci, void *callee, rb_callable_method_entry_t *compile_time_cme);
 bool cfunc_needs_frame(const rb_method_cfunc_t *cfunc);
@@ -95,7 +95,7 @@ bool cfunc_needs_frame(const rb_method_cfunc_t *cfunc);
 RBIMPL_ATTR_NODISCARD() bool assume_bop_not_redefined(block_t *block, int redefined_flag, enum ruby_basic_operators bop);
 void assume_method_lookup_stable(VALUE receiver_klass, const rb_callable_method_entry_t *cme, block_t *block);
 RBIMPL_ATTR_NODISCARD() bool assume_single_ractor_mode(block_t *block);
-RBIMPL_ATTR_NODISCARD() bool assume_stable_global_constant_state(block_t *block);
+void assume_stable_global_constant_state(block_t *block);
 
 // this function *must* return passed exit_pc
 const VALUE *rb_yjit_count_side_exit_op(const VALUE *exit_pc);

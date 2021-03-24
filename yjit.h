@@ -5,9 +5,7 @@
 #ifndef YJIT_H
 #define YJIT_H 1
 
-#include "stddef.h"
-#include "stdint.h"
-#include "stdbool.h"
+#include "vm_core.h"
 #include "method.h"
 
 #ifdef _WIN32
@@ -61,5 +59,6 @@ void rb_yjit_iseq_mark(const struct rb_iseq_constant_body *body);
 void rb_yjit_iseq_update_references(const struct rb_iseq_constant_body *body);
 void rb_yjit_iseq_free(const struct rb_iseq_constant_body *body);
 void rb_yjit_before_ractor_spawn(void);
+void yjit_constant_ic_update(const rb_iseq_t *iseq, IC ic);
 
 #endif // #ifndef YJIT_H

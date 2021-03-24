@@ -65,7 +65,8 @@ cb_write_post_call_bytes(codeblock_t* cb)
 }
 
 // Get the PC for a given index in an iseq
-VALUE *iseq_pc_at_idx(const rb_iseq_t *iseq, uint32_t insn_idx)
+VALUE *
+yjit_iseq_pc_at_idx(const rb_iseq_t *iseq, uint32_t insn_idx)
 {
     RUBY_ASSERT(iseq != NULL);
     RUBY_ASSERT(insn_idx < iseq->body->iseq_size);
@@ -91,7 +92,7 @@ map_addr2insn(void *code_ptr, int insn)
 }
 
 int
-opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc)
+yjit_opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc)
 {
     const VALUE at_pc = *pc;
     if (FL_TEST_RAW((VALUE)iseq, ISEQ_TRANSLATED)) {
@@ -269,11 +270,9 @@ static st_table *blocks_assuming_stable_global_constant_state;
 
 // Assume that the global constant state has not changed since call to this function.
 // Can raise NoMemoryError.
-RBIMPL_ATTR_NODISCARD()
-bool
+void
 assume_stable_global_constant_state(block_t *block) {
     st_insert(blocks_assuming_stable_global_constant_state, (st_data_t)block, 1);
-    return true;
 }
 
 static int
@@ -491,7 +490,7 @@ rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec)
     if (code_ptr)
     {
         // Map the code address to the corresponding opcode
-        int first_opcode = opcode_at_pc(iseq, &encoded[0]);
+        int first_opcode = yjit_opcode_at_pc(iseq, &encoded[0]);
         map_addr2insn(code_ptr, first_opcode);
         encoded[0] = (VALUE)code_ptr;
     }
@@ -599,6 +598,39 @@ rb_yjit_constant_state_changed(void)
     if (blocks_assuming_stable_global_constant_state) {
         st_foreach(blocks_assuming_stable_global_constant_state, block_invalidation_iterator, 0);
     }
+}
+
+// Callback from the opt_setinlinecache instruction in the interpreter
+void
+yjit_constant_ic_update(const rb_iseq_t *iseq, IC ic)
+{
+    RB_VM_LOCK_ENTER();
+    rb_vm_barrier(); // Stop other ractors since we are going to patch machine code.
+    {
+
+        const struct rb_iseq_constant_body *const body = iseq->body;
+        VALUE *code = body->iseq_encoded;
+
+        // This should come from a running iseq, so direct threading translation
+        // should have been done
+        RUBY_ASSERT(FL_TEST((VALUE)iseq, ISEQ_TRANSLATED));
+        RUBY_ASSERT(ic->get_insn_idx < body->iseq_size);
+        RUBY_ASSERT(rb_vm_insn_addr2insn((const void *)code[ic->get_insn_idx]) == BIN(opt_getinlinecache));
+
+        // Find the matching opt_getinlinecache and invalidate all the blocks there
+        RUBY_ASSERT(insn_op_type(BIN(opt_getinlinecache), 1) == TS_IC);
+        if (ic == (IC)code[ic->get_insn_idx + 1 + 1]) {
+            rb_yjit_block_array_t getinlinecache_blocks = yjit_get_version_array(iseq, ic->get_insn_idx);
+            rb_darray_for(getinlinecache_blocks, i) {
+                block_t *block = rb_darray_get(getinlinecache_blocks, i);
+                invalidate_block_version(block);
+            }
+        }
+        else {
+            RUBY_ASSERT(false && "ic->get_insn_diex not set properly");
+        }
+    }
+    RB_VM_LOCK_LEAVE();
 }
 
 void
