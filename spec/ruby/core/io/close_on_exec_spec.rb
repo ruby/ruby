@@ -50,14 +50,8 @@ describe "IO#close_on_exec=" do
       (@io.close_on_exec = truthy).should equal(truthy)
     end
 
-    ruby_version_is ''...'3.1' do
-      it "returns nil when called with send" do
-        @io.send(:close_on_exec=, true).should be_nil
-      end
-    end
-
     ruby_version_is '3.1' do
-      it "returns given argument when called with send" do
+      it "returns given argument even if called with send" do
         truthy = Object.new
         @io.send(:close_on_exec=, truthy).should equal(truthy)
       end
