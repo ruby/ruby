@@ -722,7 +722,7 @@ rb_exc_exception(VALUE mesg, int tag, VALUE cause)
 void
 rb_exc_raise(VALUE mesg)
 {
-    rb_exec_exception(mesg, TAG_RAISE, Qundef);
+    rb_exc_exception(mesg, TAG_RAISE, Qundef);
 }
 
 /*!
@@ -735,7 +735,7 @@ rb_exc_raise(VALUE mesg)
 void
 rb_exc_fatal(VALUE mesg)
 {
-    rb_exec_exception(mesg, TAG_FATAL, Qnil);
+    rb_exc_exception(mesg, TAG_FATAL, Qnil);
 }
 
 /*!
