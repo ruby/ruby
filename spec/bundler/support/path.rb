@@ -193,6 +193,10 @@ module Spec
       root.join("lib")
     end
 
+    def xdg_config_home
+      home(".config")
+    end
+
     def global_plugin_gem(*args)
       home ".bundle", "plugin", "gems", *args
     end

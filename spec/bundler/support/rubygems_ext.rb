@@ -33,6 +33,7 @@ module Spec
 
       ENV["HOME"] = Path.home.to_s
       ENV["TMPDIR"] = Path.tmpdir.to_s
+      ENV["XDG_CONFIG_HOME"] = Path.xdg_config_home.to_s
 
       require "rubygems/user_interaction"
       Gem::DefaultUserInteraction.ui = Gem::SilentUI.new
