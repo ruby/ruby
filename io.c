@@ -4147,9 +4147,7 @@ rb_io_each_char(VALUE io)
 /*
  *  call-seq:
  *     ios.each_codepoint {|c| block }  -> ios
- *     ios.codepoints     {|c| block }  -> ios
  *     ios.each_codepoint               -> an_enumerator
- *     ios.codepoints                   -> an_enumerator
  *
  *  Passes the Integer ordinal of each character in <i>ios</i>,
  *  passing the codepoint as an argument. The stream must be opened for
