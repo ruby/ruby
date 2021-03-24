@@ -1224,8 +1224,16 @@ class Reline::LineEditor
   end
 
   def retrieve_completion_block(set_completion_quote_character = false)
-    word_break_regexp = /\A[#{Regexp.escape(Reline.completer_word_break_characters)}]/
-    quote_characters_regexp = /\A[#{Regexp.escape(Reline.completer_quote_characters)}]/
+    if Reline.completer_word_break_characters.empty?
+      word_break_regexp = nil
+    else
+      word_break_regexp = /\A[#{Regexp.escape(Reline.completer_word_break_characters)}]/
+    end
+    if Reline.completer_quote_characters.empty?
+      quote_characters_regexp = nil
+    else
+      quote_characters_regexp = /\A[#{Regexp.escape(Reline.completer_quote_characters)}]/
+    end
     before = @line.byteslice(0, @byte_pointer)
     rest = nil
     break_pointer = nil
@@ -1246,14 +1254,14 @@ class Reline::LineEditor
       elsif quote and slice.start_with?(escaped_quote)
         # skip
         i += 2
-      elsif slice =~ quote_characters_regexp # find new "
+      elsif quote_characters_regexp and slice =~ quote_characters_regexp # find new "
         rest = $'
         quote = $&
         closing_quote = /(?!\\)#{Regexp.escape(quote)}/
         escaped_quote = /\\#{Regexp.escape(quote)}/
         i += 1
         break_pointer = i - 1
-      elsif not quote and slice =~ word_break_regexp
+      elsif word_break_regexp and not quote and slice =~ word_break_regexp
         rest = $'
         i += 1
         before = @line.byteslice(i, @byte_pointer - i)
