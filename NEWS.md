@@ -23,6 +23,8 @@ Outstanding ones only.
 
     * Enumerable#compact is added. [[Feature #17312]]
 
+    * Enumerable#tally now accepts an optional hash to count. [[Feature #17744]]
+
 * Enumerator::Lazy
 
     * Enumerator::Lazy#compact is added. [[Feature #17312]]
@@ -99,3 +101,4 @@ Excluding feature bug fixes.
 [Feature #17411]: https://bugs.ruby-lang.org/issues/17411
 [Bug #17423]: https://bugs.ruby-lang.org/issues/17423
 [Feature #17479]: https://bugs.ruby-lang.org/issues/17479
+[Feature #17744]: https://bugs.ruby-lang.org/issues/17744
