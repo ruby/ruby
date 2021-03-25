@@ -4969,6 +4969,7 @@ Init_zlib(void)
     cDeflate = rb_define_class_under(mZlib, "Deflate", cZStream);
     rb_define_singleton_method(cDeflate, "deflate", rb_deflate_s_deflate, -1);
     rb_define_singleton_method(mZlib, "deflate", rb_deflate_s_deflate, -1);
+    rb_define_alias(rb_singleton_class(mZlib), "dump", "deflate");
     rb_define_alloc_func(cDeflate, rb_deflate_s_allocate);
     rb_define_method(cDeflate, "initialize", rb_deflate_initialize, -1);
     rb_define_method(cDeflate, "initialize_copy", rb_deflate_init_copy, 1);
@@ -4981,6 +4982,7 @@ Init_zlib(void)
     cInflate = rb_define_class_under(mZlib, "Inflate", cZStream);
     rb_define_singleton_method(cInflate, "inflate", rb_inflate_s_inflate, 1);
     rb_define_singleton_method(mZlib, "inflate", rb_inflate_s_inflate, 1);
+    rb_define_alias(rb_singleton_class(mZlib), "load", "inflate");
     rb_define_alloc_func(cInflate, rb_inflate_s_allocate);
     rb_define_method(cInflate, "initialize", rb_inflate_initialize, -1);
     rb_define_method(cInflate, "add_dictionary", rb_inflate_add_dictionary, 1);
