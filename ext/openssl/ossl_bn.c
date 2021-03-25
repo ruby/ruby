@@ -10,7 +10,7 @@
 /* modified by Michal Rokos <m.rokos@sh.cvut.cz> */
 #include "ossl.h"
 
-#if HAVE_RB_EXT_RACTOR_SAFE
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
 #include <ruby/ractor.h>
 #endif
 
@@ -155,7 +155,7 @@ ossl_bn_value_ptr(volatile VALUE *ptr)
  * Private
  */
 
-#if HAVE_RB_EXT_RACTOR_SAFE
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
 void
 ossl_bn_ctx_free(void *ptr)
 {

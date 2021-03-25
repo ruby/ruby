@@ -1129,7 +1129,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
 void
 Init_openssl(void)
 {
-#if HAVE_RB_EXT_RACTOR_SAFE
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
     rb_ext_ractor_safe(true);
 #endif
 
