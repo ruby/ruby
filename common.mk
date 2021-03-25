@@ -1384,13 +1384,14 @@ no-test-bundler:
 PARALLELRSPECOPTS = --runtime-log $(srcdir)/tmp/parallel_runtime_rspec.log
 test-bundler-parallel: $(TEST_RUNNABLE)-test-bundler-parallel
 yes-test-bundler-parallel: yes-test-bundler-prepare
+	d=`cd "$(srcdir)" && pwd` && \
 	$(XRUBY) -I$(srcdir)/spec/bundler \
 		-e "ENV['PARALLEL_TESTS_EXECUTABLE'] = ARGV.shift" \
 		-e "load ARGV.shift" \
 		"$(XRUBY) -C $(srcdir) -Ispec/bundler .bundle/bin/rspec" \
 		$(srcdir)/.bundle/bin/parallel_rspec \
 		-o "--require spec_helper" \
-		$(PARALLELRSPECOPTS) $(srcdir)/spec/bundler/$(BUNDLER_SPECS)
+		$(PARALLELRSPECOPTS) "$$d"/spec/bundler/$(BUNDLER_SPECS)
 no-test-bundler-parallel:
 
 GEM = up
