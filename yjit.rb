@@ -60,7 +60,7 @@ module YJIT
 
       $stderr.puts("***YJIT: Printing runtime counters from yjit.rb***")
 
-      $stderr.puts "Number of Bindings Allocated: %d\n" % counters[:binding_allocation_count]
+      $stderr.puts "Number of bindings allocated: %d\n" % counters[:binding_allocation_count]
       $stderr.puts "Number of locals modified through binding: %d\n" % counters[:local_variable_set_count]
 
       print_counters(counters, prefix: 'oswb_', prompt: 'opt_send_without_block exit reasons: ')
