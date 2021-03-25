@@ -42,6 +42,7 @@ VALUE rb_mod_public_constant(int argc, const VALUE *argv, VALUE obj);
 VALUE rb_mod_deprecate_constant(int argc, const VALUE *argv, VALUE obj);
 void rb_free_const_table(struct rb_id_table *tbl);
 VALUE rb_const_source_location(VALUE, ID);
+VALUE rb_const_source_location_of(VALUE);
 
 MJIT_SYMBOL_EXPORT_BEGIN
 int rb_autoloading_value(VALUE mod, ID id, VALUE *value, rb_const_flag_t *flag);

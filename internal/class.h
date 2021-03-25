@@ -14,6 +14,7 @@
 #include "internal/serial.h"    /* for rb_serial_t */
 #include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/intern.h"        /* for rb_alloc_func_t */
+#include "constant.h"      /* for rb_const_entry_t */
 #include "ruby/ruby.h"          /* for struct RBasic */
 
 #ifdef RCLASS_SUPER
@@ -42,6 +43,9 @@ struct rb_classext_struct {
     struct rb_id_table *cc_tbl; /* ID -> [[ci, cc1], cc2, ...] */
     struct rb_subclass_entry *subclasses;
     struct rb_subclass_entry **parent_subclasses;
+
+    rb_const_entry_t *location;
+
     /**
      * In the case that this is an `ICLASS`, `module_subclasses` points to the link
      * in the module's `subclasses` list that indicates that the klass has been

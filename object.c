@@ -2789,6 +2789,7 @@ rb_mod_const_source_location(int argc, VALUE *argv, VALUE mod)
     ID id;
 
     rb_check_arity(argc, 1, 2);
+
     name = argv[0];
     recur = (argc == 1) ? Qtrue : argv[1];
 
@@ -2880,6 +2881,18 @@ rb_mod_const_source_location(int argc, VALUE *argv, VALUE mod)
   wrong_name:
     rb_name_err_raise(wrong_constant_name, mod, name);
     UNREACHABLE_RETURN(Qundef);
+}
+
+static VALUE
+rb_mod_source_location(VALUE mod)
+{
+    rb_const_entry_t *ce = RCLASS_EXT(mod)->location;
+    if (ce) {
+        return rb_assoc_new(ce->file, INT2NUM(ce->line));
+    }
+    else {
+        return Qnil;
+    }
 }
 
 /*
@@ -4673,6 +4686,7 @@ InitVM_Object(void)
     rb_define_method(rb_cModule, "const_set", rb_mod_const_set, 2);
     rb_define_method(rb_cModule, "const_defined?", rb_mod_const_defined, -1);
     rb_define_method(rb_cModule, "const_source_location", rb_mod_const_source_location, -1);
+    rb_define_method(rb_cModule, "source_location", rb_mod_source_location, 0);
     rb_define_private_method(rb_cModule, "remove_const",
 			     rb_mod_remove_const, 1); /* in variable.c */
     rb_define_method(rb_cModule, "const_missing",
