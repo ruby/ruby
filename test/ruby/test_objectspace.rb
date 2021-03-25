@@ -233,11 +233,4 @@ End
     assert_kind_of(meta, sclass)
     assert_include(ObjectSpace.each_object(meta).to_a, sclass)
   end
-
-  def test_each_object_with_allocation
-    assert_normal_exit(<<-End)
-      list = []
-      ObjectSpace.each_object { |o| list << Object.new }
-    End
-  end
 end
