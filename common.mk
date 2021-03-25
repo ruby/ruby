@@ -1281,7 +1281,7 @@ dist:
 up:: update-remote
 
 up::
-	-$(Q)$(MAKE) $(mflags) Q=$(Q) REVISION_FORCE=PHONY after-update
+	-$(Q)$(MAKE) $(mflags) Q=$(Q) REVISION_FORCE=PHONY ALWAYS_UPDATE_UNICODE= after-update
 
 yes::
 no::
