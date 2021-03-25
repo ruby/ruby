@@ -69,6 +69,7 @@
 #include "id.h"
 #include "internal.h"
 #include "internal/array.h"
+#include "internal/rvalue_compat.h"
 #include "internal/serial.h"
 #include "internal/vm.h"
 #include "method.h"
@@ -219,14 +220,14 @@ struct rb_control_frame_struct;
 typedef struct rb_compile_option_struct rb_compile_option_t;
 
 // imemo_constcache
-struct iseq_inline_constant_cache_entry {
+RVALUE_COMPATIBLE_STRUCT(iseq_inline_constant_cache_entry, {
     VALUE flags;
 
     VALUE value;              // v0
     const rb_cref_t *ic_cref; // v1
     rb_serial_t ic_serial;    // v2
                               // v3
-};
+});
 
 struct iseq_inline_constant_cache {
     struct iseq_inline_constant_cache_entry *entry;
@@ -441,7 +442,7 @@ struct rb_iseq_constant_body {
 
 /* T_IMEMO/iseq */
 /* typedef rb_iseq_t is in method.h */
-struct rb_iseq_struct {
+RVALUE_COMPATIBLE_STRUCT(rb_iseq_struct, {
     VALUE flags; /* 1 */
     VALUE wrapper; /* 2 */
 
@@ -460,7 +461,7 @@ struct rb_iseq_struct {
             rb_event_flag_t global_trace_events;
         } exec;
     } aux;
-};
+});
 
 #ifndef USE_LAZY_LOAD
 #define USE_LAZY_LOAD 0
@@ -1051,12 +1052,13 @@ rb_iseq_t *rb_iseq_new_with_opt(const rb_ast_body_t *ast, VALUE name, VALUE path
                                 enum iseq_type, const rb_compile_option_t*);
 
 struct iseq_link_anchor;
-struct rb_iseq_new_with_callback_callback_func {
+RVALUE_COMPATIBLE_STRUCT(rb_iseq_new_with_callback_callback_func, {
     VALUE flags;
     VALUE reserved;
     void (*func)(rb_iseq_t *, struct iseq_link_anchor *, const void *);
     const void *data;
-};
+});
+
 static inline struct rb_iseq_new_with_callback_callback_func *
 rb_iseq_new_with_callback_new_callback(
     void (*func)(rb_iseq_t *, struct iseq_link_anchor *, const void *), const void *ptr)
@@ -1095,13 +1097,14 @@ VALUE rb_proc_isolate_bang(VALUE self);
 VALUE rb_proc_ractor_make_shareable(VALUE self);
 RUBY_SYMBOL_EXPORT_END
 
-typedef struct {
+RVALUE_COMPATIBLE_STRUCT(rb_env_struct, {
     VALUE flags; /* imemo header */
     rb_iseq_t *iseq;
     const VALUE *ep;
     const VALUE *env;
     unsigned int env_size;
-} rb_env_t;
+});
+typedef struct rb_env_struct rb_env_t;
 
 extern const rb_data_type_t ruby_binding_data_type;
 

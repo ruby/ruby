@@ -556,12 +556,7 @@ struct RMoved {
 
 #define RMOVED(obj) ((struct RMoved *)(obj))
 
-#if (SIZEOF_DOUBLE > SIZEOF_VALUE) && (defined(_MSC_VER) || defined(__CYGWIN__))
-#pragma pack(push, 4) /* == SIZEOF_VALUE: magic for reducing sizeof(RVALUE): 24 -> 20 */
-#endif
-
-typedef struct RVALUE {
-    union {
+RVALUE_COMPATIBLE_UNION(RAny, {
 	struct {
 	    VALUE flags;		/* always 0 for freed obj */
 	    struct RVALUE *next;
@@ -601,16 +596,15 @@ typedef struct RVALUE {
 	    VALUE v2;
 	    VALUE v3;
 	} values;
-    } as;
+    });
+
+typedef struct RVALUE {
+    union RAny as;
 #if GC_DEBUG
     const char *file;
     int line;
 #endif
 } RVALUE;
-
-#if (SIZEOF_DOUBLE > SIZEOF_VALUE) && (defined(_MSC_VER) || defined(__CYGWIN__))
-#pragma pack(pop)
-#endif
 
 typedef uintptr_t bits_t;
 enum {
