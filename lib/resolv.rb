@@ -1228,23 +1228,18 @@ class Resolv
       end
 
       def generate_candidates(name)
-        candidates = nil
         name = Name.create(name)
         if name.absolute?
-          candidates = [name]
+          [name]
         else
+          abs = Name.new(name.to_a)
+          search = @search.map {|domain| Name.new(name.to_a + domain)}
           if @ndots <= name.length - 1
-            candidates = [Name.new(name.to_a)]
+            [abs, *search]
           else
-            candidates = []
-          end
-          candidates.concat(@search.map {|domain| Name.new(name.to_a + domain)})
-          fname = Name.create("#{name}.")
-          if !candidates.include?(fname)
-            candidates << fname
+            [*search, abs]
           end
         end
-        return candidates
       end
 
       InitialTimeout = 5
