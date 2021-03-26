@@ -1181,7 +1181,7 @@ class Resolv
               if /\./ =~ hostname
                 @search = [Label.split($')]
               else
-                @search = [[]]
+                @search = []
               end
             end
 

@@ -122,6 +122,21 @@ class TestResolvDNS < Test::Unit::TestCase
     assert_equal 'example.com', candidates[1].to_s
   end
 
+  def test_conf_search
+    conf = Resolv::DNS::Config.new(nameserver: '127.0.0.1')
+    conf.lazy_initialize
+    candidates = conf.generate_candidates('example.com')
+    assert_equal candidates.size, candidates.uniq.size
+    assert_equal 'example.com', candidates[0].to_s
+
+    conf = Resolv::DNS::Config.new(nameserver: '127.0.0.1', search: ['local'])
+    conf.lazy_initialize
+    candidates = conf.generate_candidates('example.com')
+    assert_equal 2, candidates.size
+    assert_equal 'example.com', candidates[0].to_s
+    assert_equal 'example.com.local', candidates[1].to_s
+  end
+
   def test_query_ipv4_address
     begin
       OpenSSL
