@@ -104,18 +104,22 @@ class TestResolvDNS < Test::Unit::TestCase
     end
   end
 
-  # [ruby-core:65836]
-  def test_resolve_with_2_ndots
-    conf = Resolv::DNS::Config.new :nameserver => ['127.0.0.1'], :ndots => 2
-    assert conf.single?
+  def test_conf_ndots
+    # ndots defaults to 1
+    conf = Resolv::DNS::Config.new(nameserver: '127.0.0.1', search: ['local'])
+    conf.lazy_initialize
+    candidates = conf.generate_candidates('example.com')
+    assert_equal 2, candidates.size
+    assert_equal 'example.com', candidates[0].to_s
+    assert_equal 'example.com.local', candidates[1].to_s
 
-    candidates = []
-    conf.resolv('example.com') { |candidate, *args|
-      candidates << candidate
-      raise Resolv::DNS::Config::NXDomain
-    }
-    n = Resolv::DNS::Name.create 'example.com.'
-    assert_equal n, candidates.last
+    # ndots is 2: search path is used first
+    conf = Resolv::DNS::Config.new(nameserver: '127.0.0.1', search: ['local'], ndots: 2)
+    conf.lazy_initialize
+    candidates = conf.generate_candidates('example.com')
+    assert_equal 2, candidates.size
+    assert_equal 'example.com.local', candidates[0].to_s
+    assert_equal 'example.com', candidates[1].to_s
   end
 
   def test_query_ipv4_address
