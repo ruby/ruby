@@ -14,7 +14,7 @@
 #include "internal/serial.h"    /* for rb_serial_t */
 #include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/intern.h"        /* for rb_alloc_func_t */
-#include "constant.h"      /* for rb_const_entry_t */
+#include "constant.h"           /* for rb_const_entry_t */
 #include "ruby/ruby.h"          /* for struct RBasic */
 
 #ifdef RCLASS_SUPER
