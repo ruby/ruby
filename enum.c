@@ -1069,10 +1069,13 @@ static VALUE
 enum_tally(int argc, VALUE *argv, VALUE obj)
 {
     VALUE hash;
-    if (rb_check_arity(argc, 0, 1))
+    if (rb_check_arity(argc, 0, 1)) {
+        rb_check_frozen(argv[0]);
         hash = rb_check_hash_type(argv[0]);
-    else
+    } else {
         hash = rb_hash_new();
+    }
+
     return enum_hashify_into(obj, 0, 0, tally_i, hash);
 }
 
