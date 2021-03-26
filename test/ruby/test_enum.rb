@@ -403,6 +403,15 @@ class TestEnumerable < Test::Unit::TestCase
     end
 
     h = {1 => 2, 2 => 2, 3 => 1}
+    assert_same(h, @obj.tally(h))
+
+    h = {1 => 2, 2 => 2, 3 => 1}.freeze
+    assert_raise(FrozenError) do
+      @obj.tally(h)
+    end
+    assert_equal({1 => 2, 2 => 2, 3 => 1}, h)
+
+    h = {1 => 2, 2 => 2, 3 => 1}
     assert_equal(h, @obj.tally(Hash.new(100)))
     assert_equal(h, @obj.tally(Hash.new {100}))
   end
