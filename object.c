@@ -2789,7 +2789,6 @@ rb_mod_const_source_location(int argc, VALUE *argv, VALUE mod)
     ID id;
 
     rb_check_arity(argc, 1, 2);
-
     name = argv[0];
     recur = (argc == 1) ? Qtrue : argv[1];
 
