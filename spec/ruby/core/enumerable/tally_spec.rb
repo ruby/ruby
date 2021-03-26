@@ -33,3 +33,31 @@ ruby_version_is "2.7" do
     end
   end
 end
+
+ruby_version_is "3.1" do
+  describe "Enumerable#tally with a hash" do
+    before :each do
+      ScratchPad.record []
+    end
+
+    it "returns a hash with counts according to the value" do
+      enum = EnumerableSpecs::Numerous.new('foo', 'bar', 'foo', 'baz')
+      enum.tally({ 'foo' => 1 }).should == { 'foo' => 3, 'bar' => 1, 'baz' => 1}
+    end
+
+    it "ignores the default value" do
+      enum = EnumerableSpecs::Numerous.new('foo', 'bar', 'foo', 'baz')
+      enum.tally(Hash.new(100)).should == { 'foo' => 2, 'bar' => 1, 'baz' => 1}
+    end
+
+    it "ignores the default proc" do
+      enum = EnumerableSpecs::Numerous.new('foo', 'bar', 'foo', 'baz')
+      enum.tally(Hash.new {100}).should == { 'foo' => 2, 'bar' => 1, 'baz' => 1}
+    end
+
+    it "needs the values counting each elements to be an integer" do
+      enum = EnumerableSpecs::Numerous.new('foo')
+      -> { enum.tally({ 'foo' => 'bar' }) }.should raise_error(TypeError)
+    end
+  end
+end

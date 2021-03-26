@@ -688,11 +688,16 @@ enum_to_a(int argc, VALUE *argv, VALUE obj)
 }
 
 static VALUE
-enum_hashify(VALUE obj, int argc, const VALUE *argv, rb_block_call_func *iter)
+enum_hashify_into(VALUE obj, int argc, const VALUE *argv, rb_block_call_func *iter, VALUE hash)
 {
-    VALUE hash = rb_hash_new();
     rb_block_call(obj, id_each, argc, argv, iter, hash);
     return hash;
+}
+
+static VALUE
+enum_hashify(VALUE obj, int argc, const VALUE *argv, rb_block_call_func *iter)
+{
+    return enum_hashify_into(obj, argc, argv, iter, rb_hash_new());
 }
 
 static VALUE
@@ -1020,6 +1025,7 @@ tally_up(st_data_t *group, st_data_t *value, st_data_t arg, int existing)
         tally += INT2FIX(1) & ~FIXNUM_FLAG;
     }
     else {
+        Check_Type(tally, T_BIGNUM);
         tally = rb_big_plus(tally, INT2FIX(1));
         RB_OBJ_WRITTEN(hash, Qundef, tally);
     }
@@ -1045,19 +1051,29 @@ tally_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 
 /*
  *  call-seq:
- *     enum.tally -> a_hash
+ *     enum.tally         -> a_hash
+ *     enum.tally(a_hash) -> a_hash
  *
  *  Tallies the collection, i.e., counts the occurrences of each element.
  *  Returns a hash with the elements of the collection as keys and the
  *  corresponding counts as values.
  *
  *     ["a", "b", "c", "b"].tally  #=> {"a"=>1, "b"=>2, "c"=>1}
+ *
+ *  If a hash is given, the number of occurrences is added to each value
+ *  in the hash, and the hash is returned. The value corresponding to
+ *  each element must be an integer.
  */
 
 static VALUE
-enum_tally(VALUE obj)
+enum_tally(int argc, VALUE *argv, VALUE obj)
 {
-    return enum_hashify(obj, 0, 0, tally_i);
+    VALUE hash;
+    if (rb_check_arity(argc, 0, 1))
+        hash = rb_check_hash_type(argv[0]);
+    else
+        hash = rb_hash_new();
+    return enum_hashify_into(obj, 0, 0, tally_i, hash);
 }
 
 NORETURN(static VALUE first_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, params)));
@@ -4393,7 +4409,7 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "reduce", enum_inject, -1);
     rb_define_method(rb_mEnumerable, "partition", enum_partition, 0);
     rb_define_method(rb_mEnumerable, "group_by", enum_group_by, 0);
-    rb_define_method(rb_mEnumerable, "tally", enum_tally, 0);
+    rb_define_method(rb_mEnumerable, "tally", enum_tally, -1);
     rb_define_method(rb_mEnumerable, "first", enum_first, -1);
     rb_define_method(rb_mEnumerable, "all?", enum_all, -1);
     rb_define_method(rb_mEnumerable, "any?", enum_any, -1);
