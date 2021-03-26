@@ -3121,9 +3121,6 @@ const_tbl_update(struct autoload_const *ac)
 
 	ce = ZALLOC(rb_const_entry_t);
 	rb_id_table_insert(tbl, id, (VALUE)ce);
-	if (RB_TYPE_P(val, T_MODULE) || RB_TYPE_P(val, T_CLASS)) {
-            RCLASS_EXT(val)->location = ce;
-        }
 	setup_const_entry(ce, klass, val, visibility);
     }
 }

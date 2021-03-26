@@ -2886,9 +2886,11 @@ rb_mod_const_source_location(int argc, VALUE *argv, VALUE mod)
 static VALUE
 rb_mod_source_location(VALUE mod)
 {
-    rb_const_entry_t *ce = RCLASS_EXT(mod)->location;
-    if (ce) {
-        return rb_assoc_new(ce->file, INT2NUM(ce->line));
+    VALUE file = RCLASS_EXT(mod)->file;
+    int line = RCLASS_EXT(mod)->line;
+
+    if (file) {
+        return rb_assoc_new(file, INT2NUM(line));
     }
     else {
         return Qnil;

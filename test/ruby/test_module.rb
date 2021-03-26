@@ -2871,6 +2871,7 @@ class TestModule < Test::Unit::TestCase
   ConstLocation = [__FILE__, __LINE__]
   class ConstLocationClass; end
   module ConstLocationModule; end
+  ConstLocationCopy = ConstLocationClass
 
   def test_const_source_location
     assert_equal(ConstLocation, self.class.const_source_location(:ConstLocation))
@@ -2890,6 +2891,11 @@ class TestModule < Test::Unit::TestCase
   def test_source_location
     assert_equal(self.class.const_source_location(:ConstLocationClass), ConstLocationClass.source_location)
     assert_equal(self.class.const_source_location(:ConstLocationModule), ConstLocationModule.source_location)
+  end
+
+  def test_source_location_copy
+    assert_equal(ConstLocationClass.source_location, ConstLocationCopy.source_location)
+    assert_not_equal(self.class.const_source_location(:ConstLocationCopy), ConstLocationCopy.source_location)
   end
 
   module CloneTestM_simple

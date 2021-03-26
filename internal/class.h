@@ -44,7 +44,8 @@ struct rb_classext_struct {
     struct rb_subclass_entry *subclasses;
     struct rb_subclass_entry **parent_subclasses;
 
-    rb_const_entry_t *location;
+    VALUE file;
+    int line;
 
     /**
      * In the case that this is an `ICLASS`, `module_subclasses` points to the link
