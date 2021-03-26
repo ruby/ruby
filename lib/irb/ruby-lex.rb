@@ -47,12 +47,26 @@ class RubyLex
     @io = io
     if @io.respond_to?(:check_termination)
       @io.check_termination do |code|
-        code.gsub!(/\s*\z/, '').concat("\n")
-        ltype, indent, continue, code_block_open = check_state(code)
-        if ltype or indent > 0 or continue or code_block_open
-          false
+        if Reline::IOGate.in_pasting?
+          lex = RubyLex.new
+          rest = lex.check_termination_in_prev_line(code)
+          if rest
+            Reline.delete_text
+            rest.bytes.reverse_each do |c|
+              Reline.ungetc(c)
+            end
+            true
+          else
+            false
+          end
         else
-          true
+          code.gsub!(/\s*\z/, '').concat("\n")
+          ltype, indent, continue, code_block_open = check_state(code)
+          if ltype or indent > 0 or continue or code_block_open
+            false
+          else
+            true
+          end
         end
       end
     end
@@ -738,6 +752,51 @@ class RubyLex
     else
       nil
     end
+  end
+
+  def check_termination_in_prev_line(code)
+    tokens = self.class.ripper_lex_without_warning(code)
+    past_first_newline = false
+    index = tokens.rindex do |t|
+      # traverse first token before last line
+      if past_first_newline
+        if t.tok.include?("\n")
+          true
+        end
+      elsif t.tok.include?("\n")
+        past_first_newline = true
+        false
+      else
+        false
+      end
+    end
+    if index
+      first_token = nil
+      last_line_tokens = tokens[(index + 1)..(tokens.size - 1)]
+      last_line_tokens.each do |t|
+        unless [:on_sp, :on_ignored_sp, :on_comment].include?(t.event)
+          first_token = t
+          break
+        end
+      end
+      if first_token.nil?
+        return false
+      elsif first_token && first_token.state == Ripper::EXPR_DOT
+        return false
+      else
+        tokens_without_last_line = tokens[0..index]
+        ltype = process_literal_type(tokens_without_last_line)
+        indent = process_nesting_level(tokens_without_last_line)
+        continue = process_continue(tokens_without_last_line)
+        code_block_open = check_code_block(tokens_without_last_line.map(&:tok).join(''), tokens_without_last_line)
+        if ltype or indent > 0 or continue or code_block_open
+          return false
+        else
+          return last_line_tokens.map(&:tok).join('')
+        end
+      end
+    end
+    false
   end
 end
 # :startdoc:
