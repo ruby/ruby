@@ -11,9 +11,10 @@ class Logger
     attr_reader :filename
     include MonitorMixin
 
-    def initialize(log = nil, shift_age: nil, shift_size: nil, shift_period_suffix: nil, binmode: false)
+    def initialize(log = nil, shift_age: nil, shift_size: nil, shift_period_suffix: nil, binmode: false, skip_header: false)
       @dev = @filename = @shift_age = @shift_size = @shift_period_suffix = nil
       @binmode = binmode
+      @skip_header = skip_header
       mon_initialize
       set_dev(log)
       if @filename
@@ -117,7 +118,7 @@ class Logger
     def add_log_header(file)
       file.write(
         "# Logfile created on %s by %s\n" % [Time.now.to_s, Logger::ProgName]
-      ) if file.size == 0
+      ) if file.size == 0 && !@skip_header
     end
 
     def check_shift_log
