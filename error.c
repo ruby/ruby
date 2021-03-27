@@ -1965,8 +1965,10 @@ name_err_mesg_to_str(VALUE obj)
 	    d = rb_protect(name_err_mesg_receiver_name, obj, &state);
 	    if (state || d == Qundef || d == Qnil)
 		d = rb_protect(rb_inspect, obj, &state);
-	    if (state)
+	    if (state) {
 		rb_set_errinfo(Qnil);
+	    }
+	    d = rb_check_string_type(d);
 	    if (NIL_P(d)) {
 		d = rb_any_to_s(obj);
 	    }
