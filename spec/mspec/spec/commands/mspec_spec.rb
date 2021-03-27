@@ -2,55 +2,55 @@ require 'spec_helper'
 require 'yaml'
 require 'mspec/commands/mspec'
 
-describe MSpecMain, "#options" do
+RSpec.describe MSpecMain, "#options" do
   before :each do
     @options, @config = new_option
-    MSpecOptions.stub(:new).and_return(@options)
+    allow(MSpecOptions).to receive(:new).and_return(@options)
 
     @script = MSpecMain.new
-    @script.stub(:config).and_return(@config)
-    @script.stub(:load)
+    allow(@script).to receive(:config).and_return(@config)
+    allow(@script).to receive(:load)
   end
 
   it "enables the configure option" do
-    @options.should_receive(:configure)
+    expect(@options).to receive(:configure)
     @script.options
   end
 
   it "provides a custom action (block) to the config option" do
     @script.options ["-B", "config"]
-    @config[:options].should include("-B", "config")
+    expect(@config[:options]).to include("-B", "config")
   end
 
   it "loads the file specified by the config option" do
-    @script.should_receive(:load).with("config")
+    expect(@script).to receive(:load).with("config")
     @script.options ["-B", "config"]
   end
 
   it "enables the target options" do
-    @options.should_receive(:targets)
+    expect(@options).to receive(:targets)
     @script.options
   end
 
   it "sets config[:options] to all argv entries that are not registered options" do
     @options.on "-X", "--exclude", "ARG", "description"
     @script.options [".", "-G", "fail", "-X", "ARG", "--list", "unstable", "some/file.rb"]
-    @config[:options].should == [".", "-G", "fail", "--list", "unstable", "some/file.rb"]
+    expect(@config[:options]).to eq([".", "-G", "fail", "--list", "unstable", "some/file.rb"])
   end
 
   it "calls #custom_options" do
-    @script.should_receive(:custom_options).with(@options)
+    expect(@script).to receive(:custom_options).with(@options)
     @script.options
   end
 end
 
-describe MSpecMain, "#run" do
+RSpec.describe MSpecMain, "#run" do
   before :each do
     @options, @config = new_option
-    MSpecOptions.stub(:new).and_return(@options)
+    allow(MSpecOptions).to receive(:new).and_return(@options)
     @script = MSpecMain.new
-    @script.stub(:config).and_return(@config)
-    @script.stub(:exec)
+    allow(@script).to receive(:config).and_return(@config)
+    allow(@script).to receive(:exec)
     @err = $stderr
     $stderr = IOStub.new
   end
@@ -60,76 +60,76 @@ describe MSpecMain, "#run" do
   end
 
   it "uses exec to invoke the runner script" do
-    @script.should_receive(:exec).with("ruby", "#{MSPEC_HOME}/bin/mspec-run", close_others: false)
+    expect(@script).to receive(:exec).with("ruby", "#{MSPEC_HOME}/bin/mspec-run", close_others: false)
     @script.options []
     @script.run
   end
 
   it "shows the command line on stderr" do
-    @script.should_receive(:exec).with("ruby", "#{MSPEC_HOME}/bin/mspec-run", close_others: false)
+    expect(@script).to receive(:exec).with("ruby", "#{MSPEC_HOME}/bin/mspec-run", close_others: false)
     @script.options []
     @script.run
-    $stderr.to_s.should == "$ ruby #{Dir.pwd}/bin/mspec-run\n"
+    expect($stderr.to_s).to eq("$ ruby #{Dir.pwd}/bin/mspec-run\n")
   end
 
   it "adds config[:launch] to the exec options" do
-    @script.should_receive(:exec).with("ruby",
+    expect(@script).to receive(:exec).with("ruby",
         "-Xlaunch.option", "#{MSPEC_HOME}/bin/mspec-run", close_others: false)
     @config[:launch] << "-Xlaunch.option"
     @script.options []
     @script.run
-    $stderr.to_s.should == "$ ruby -Xlaunch.option #{Dir.pwd}/bin/mspec-run\n"
+    expect($stderr.to_s).to eq("$ ruby -Xlaunch.option #{Dir.pwd}/bin/mspec-run\n")
   end
 
   it "calls #multi_exec if the command is 'ci' and the multi option is passed" do
-    @script.should_receive(:multi_exec).and_return do |argv|
-      argv.should == ["ruby", "#{MSPEC_HOME}/bin/mspec-ci"]
+    expect(@script).to receive(:multi_exec) do |argv|
+      expect(argv).to eq(["ruby", "#{MSPEC_HOME}/bin/mspec-ci"])
     end
     @script.options ["ci", "-j"]
-    lambda do
+    expect do
       @script.run
-    end.should raise_error(SystemExit)
+    end.to raise_error(SystemExit)
   end
 end
 
-describe "The --warnings option" do
+RSpec.describe "The --warnings option" do
   before :each do
     @options, @config = new_option
-    MSpecOptions.stub(:new).and_return(@options)
+    allow(MSpecOptions).to receive(:new).and_return(@options)
     @script = MSpecMain.new
-    @script.stub(:config).and_return(@config)
+    allow(@script).to receive(:config).and_return(@config)
   end
 
   it "is enabled by #options" do
-    @options.stub(:on)
-    @options.should_receive(:on).with("--warnings", an_instance_of(String))
+    allow(@options).to receive(:on)
+    expect(@options).to receive(:on).with("--warnings", an_instance_of(String))
     @script.options
   end
 
   it "sets flags to -w" do
     @config[:flags] = []
     @script.options ["--warnings"]
-    @config[:flags].should include("-w")
+    expect(@config[:flags]).to include("-w")
   end
 
   it "set OUTPUT_WARNINGS = '1' in the environment" do
     ENV['OUTPUT_WARNINGS'] = '0'
     @script.options ["--warnings"]
-    ENV['OUTPUT_WARNINGS'].should == '1'
+    expect(ENV['OUTPUT_WARNINGS']).to eq('1')
   end
 end
 
-describe "The -j, --multi option" do
+RSpec.describe "The -j, --multi option" do
   before :each do
     @options, @config = new_option
-    MSpecOptions.stub(:new).and_return(@options)
+    allow(MSpecOptions).to receive(:new).and_return(@options)
     @script = MSpecMain.new
-    @script.stub(:config).and_return(@config)
+    allow(@script).to receive(:config).and_return(@config)
   end
 
   it "is enabled by #options" do
-    @options.stub(:on)
-    @options.should_receive(:on).with("-j", "--multi", an_instance_of(String))
+    allow(@options).to receive(:on)
+    expect(@options).to receive(:on).with("-j", "--multi", an_instance_of(String))
     @script.options
   end
 
@@ -137,22 +137,22 @@ describe "The -j, --multi option" do
     ["-j", "--multi"].each do |opt|
       @config[:multi] = nil
       @script.options [opt]
-      @config[:multi].should == true
+      expect(@config[:multi]).to eq(true)
     end
   end
 end
 
-describe "The -h, --help option" do
+RSpec.describe "The -h, --help option" do
   before :each do
     @options, @config = new_option
-    MSpecOptions.stub(:new).and_return(@options)
+    allow(MSpecOptions).to receive(:new).and_return(@options)
     @script = MSpecMain.new
-    @script.stub(:config).and_return(@config)
+    allow(@script).to receive(:config).and_return(@config)
   end
 
   it "is enabled by #options" do
-    @options.stub(:on)
-    @options.should_receive(:on).with("-h", "--help", an_instance_of(String))
+    allow(@options).to receive(:on)
+    expect(@options).to receive(:on).with("-h", "--help", an_instance_of(String))
     @script.options
   end
 
@@ -160,30 +160,30 @@ describe "The -h, --help option" do
     ["-h", "--help"].each do |opt|
       @config[:options] = []
       @script.options ["ci", opt]
-      @config[:options].sort.should == ["-h"]
+      expect(@config[:options].sort).to eq(["-h"])
     end
   end
 
   it "prints help and exits" do
-    @script.should_receive(:puts).twice
-    @script.should_receive(:exit).twice
+    expect(@script).to receive(:puts).twice
+    expect(@script).to receive(:exit).twice
     ["-h", "--help"].each do |opt|
       @script.options [opt]
     end
   end
 end
 
-describe "The -v, --version option" do
+RSpec.describe "The -v, --version option" do
   before :each do
     @options, @config = new_option
-    MSpecOptions.stub(:new).and_return(@options)
+    allow(MSpecOptions).to receive(:new).and_return(@options)
     @script = MSpecMain.new
-    @script.stub(:config).and_return(@config)
+    allow(@script).to receive(:config).and_return(@config)
   end
 
   it "is enabled by #options" do
-    @options.stub(:on)
-    @options.should_receive(:on).with("-v", "--version", an_instance_of(String))
+    allow(@options).to receive(:on)
+    expect(@options).to receive(:on).with("-v", "--version", an_instance_of(String))
     @script.options
   end
 
@@ -191,15 +191,15 @@ describe "The -v, --version option" do
     ["-v", "--version"].each do |opt|
       @config[:options] = []
       @script.options ["ci", opt]
-      @config[:options].sort.should == ["-v"]
+      expect(@config[:options].sort).to eq(["-v"])
     end
   end
 
   it "prints the version and exits if no subscript is invoked" do
     @config[:command] = nil
-    File.stub(:basename).and_return("mspec")
-    @script.should_receive(:puts).twice.with("mspec #{MSpec::VERSION}")
-    @script.should_receive(:exit).twice
+    allow(File).to receive(:basename).and_return("mspec")
+    expect(@script).to receive(:puts).twice.with("mspec #{MSpec::VERSION}")
+    expect(@script).to receive(:exit).twice
     ["-v", "--version"].each do |opt|
       @script.options [opt]
     end

@@ -1,17 +1,17 @@
 require 'spec_helper'
 require 'mspec/utils/deprecate'
 
-describe MSpec, "#deprecate" do
+RSpec.describe MSpec, "#deprecate" do
   it "warns when using a deprecated method" do
     warning = nil
-    $stderr.stub(:puts) { |str| warning = str }
+    allow($stderr).to receive(:puts) { |str| warning = str }
     MSpec.deprecate(:some_method, :other_method)
-    warning.should start_with(<<-EOS.chomp)
+    expect(warning).to start_with(<<-EOS.chomp)
 
 some_method is deprecated, use other_method instead.
 from
 EOS
-    warning.should include(__FILE__)
-    warning.should include('8')
+    expect(warning).to include(__FILE__)
+    expect(warning).to include('8')
   end
 end

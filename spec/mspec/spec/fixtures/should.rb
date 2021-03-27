@@ -8,6 +8,8 @@ require 'mspec/utils/script'
 # specs but is run by MSpec. This avoids conflicting with
 # RSpec's #should and #should_not methods.
 
+raise "RSpec should not be loaded" if defined?(RSpec)
+
 class ShouldSpecsMonitor
   def initialize
     @called = 0
