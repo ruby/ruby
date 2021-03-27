@@ -1108,9 +1108,8 @@ lex.c         :: 自動生成
     -> opt*.inc            : 自動生成
     -> vm.inc              : 自動生成
 
-=== 正規表現エンジン (鬼車)
+=== 正規表現エンジン (鬼雲)
 
-  regex.c
   regcomp.c
   regenc.c
   regerror.c
