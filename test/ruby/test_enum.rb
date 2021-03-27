@@ -403,6 +403,34 @@ class TestEnumerable < Test::Unit::TestCase
     end
 
     h = {1 => 2, 2 => 2, 3 => 1}
+    assert_same(h, @obj.tally(h))
+
+    h = {1 => 2, 2 => 2, 3 => 1}.freeze
+    assert_raise(FrozenError) do
+      @obj.tally(h)
+    end
+    assert_equal({1 => 2, 2 => 2, 3 => 1}, h)
+
+    hash_convertible = Object.new
+    def hash_convertible.to_hash
+      {1 => 3, 4 => "x"}
+    end
+    assert_equal({1 => 5, 2 => 2, 3 => 1, 4 => "x"}, @obj.tally(hash_convertible))
+
+    hash_convertible = Object.new
+    def hash_convertible.to_hash
+      {1 => 3, 4 => "x"}.freeze
+    end
+    assert_raise(FrozenError) do
+      @obj.tally(hash_convertible)
+    end
+    assert_equal({1 => 3, 4 => "x"}, hash_convertible.to_hash)
+
+    assert_raise(TypeError) do
+      @obj.tally(BasicObject.new)
+    end
+
+    h = {1 => 2, 2 => 2, 3 => 1}
     assert_equal(h, @obj.tally(Hash.new(100)))
     assert_equal(h, @obj.tally(Hash.new {100}))
   end
