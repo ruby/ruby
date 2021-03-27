@@ -327,7 +327,7 @@ def install_executable(src_file, dest_dir)
     install_recursive("#{src_file}.dSYM", dest_dsym)
   end
 end
-singleton_class.alias_method(:install_shared_library, :install_executable)
+alias install_shared_library install_executable
 
 def CONFIG.[](name, mandatory = false)
   value = super(name)
