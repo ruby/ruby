@@ -834,7 +834,7 @@ path_split(VALUE self)
     VALUE str = get_strpath(self);
     VALUE ary, dirname, basename;
     ary = rb_funcall(rb_cFile, id_split, 1, str);
-    ary = rb_check_array_type(ary);
+    Check_Type(ary, T_ARRAY);
     dirname = rb_ary_entry(ary, 0);
     basename = rb_ary_entry(ary, 1);
     dirname = rb_class_new_instance(1, &dirname, rb_obj_class(self));

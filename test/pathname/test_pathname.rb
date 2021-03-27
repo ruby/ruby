@@ -1067,6 +1067,21 @@ class TestPathname < Test::Unit::TestCase
 
   def test_split
     assert_equal([Pathname("dirname"), Pathname("basename")], Pathname("dirname/basename").split)
+
+    assert_separately([], <<-'end;')
+      require 'pathname'
+
+      mod = Module.new do
+        def split(_arg)
+        end
+      end
+
+      File.singleton_class.prepend(mod)
+
+      assert_raise(TypeError) do
+        Pathname('/').split
+      end
+    end;
   end
 
   def test_blockdev?
