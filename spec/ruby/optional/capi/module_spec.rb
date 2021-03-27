@@ -246,10 +246,28 @@ describe "CApiModule" do
       cls.new.test_method.should == :test_method
     end
 
-    it "returns the correct arity of the method in class" do
+    it "returns the correct arity when argc of the method in class is 0" do
       cls = Class.new
       @m.rb_define_method(cls, "test_method")
       cls.new.method(:test_method).arity.should == 0
+    end
+
+    it "returns the correct arity when argc of the method in class is -1" do
+      cls = Class.new
+      @m.rb_define_method_c_array(cls, "test_method_c_array")
+      cls.new.method(:test_method_c_array).arity.should == -1
+    end
+
+    it "returns the correct arity when argc of the method in class is -2" do
+      cls = Class.new
+      @m.rb_define_method_ruby_array(cls, "test_method_ruby_array")
+      cls.new.method(:test_method_ruby_array).arity.should == -1
+    end
+
+    it "returns the correct arity when argc of the method in class is 2" do
+      cls = Class.new
+      @m.rb_define_method_2required(cls, "test_method_2required")
+      cls.new.method(:test_method_2required).arity.should == 2
     end
 
     it "defines a method on a module" do

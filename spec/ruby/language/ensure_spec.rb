@@ -74,9 +74,9 @@ describe "An ensure block inside a begin block" do
       ensure
         raise "from ensure"
       end
-    }.should raise_error(RuntimeError, "from ensure") do |e|
+    }.should raise_error(RuntimeError, "from ensure") { |e|
       e.cause.message.should == "from block"
-    end
+    }
   end
 end
 

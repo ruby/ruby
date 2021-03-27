@@ -381,52 +381,6 @@ describe "Constant resolution within methods" do
     ConstantSpecs::ClassA.constx.should == :CS_CONSTX
     ConstantSpecs::ClassA.new.constx.should == :CS_CONSTX
   end
-
-  describe "with ||=" do
-    it "assigns a scoped constant if previously undefined" do
-      ConstantSpecs.should_not have_constant(:OpAssignUndefined)
-      module ConstantSpecs
-        OpAssignUndefined ||= 42
-      end
-      ConstantSpecs::OpAssignUndefined.should == 42
-      ConstantSpecs::OpAssignUndefinedOutside ||= 42
-      ConstantSpecs::OpAssignUndefinedOutside.should == 42
-      ConstantSpecs.send(:remove_const, :OpAssignUndefined)
-      ConstantSpecs.send(:remove_const, :OpAssignUndefinedOutside)
-    end
-
-    it "assigns a global constant if previously undefined" do
-      OpAssignGlobalUndefined ||= 42
-      ::OpAssignGlobalUndefinedExplicitScope ||= 42
-      OpAssignGlobalUndefined.should == 42
-      ::OpAssignGlobalUndefinedExplicitScope.should == 42
-      Object.send :remove_const, :OpAssignGlobalUndefined
-      Object.send :remove_const, :OpAssignGlobalUndefinedExplicitScope
-    end
-
-  end
-
-  describe "with &&=" do
-    it "re-assigns a scoped constant if already true" do
-      module ConstantSpecs
-        OpAssignTrue = true
-      end
-      suppress_warning do
-        ConstantSpecs::OpAssignTrue &&= 1
-      end
-      ConstantSpecs::OpAssignTrue.should == 1
-      ConstantSpecs.send :remove_const, :OpAssignTrue
-    end
-
-    it "leaves scoped constant if not true" do
-      module ConstantSpecs
-        OpAssignFalse = false
-      end
-      ConstantSpecs::OpAssignFalse &&= 1
-      ConstantSpecs::OpAssignFalse.should == false
-      ConstantSpecs.send :remove_const, :OpAssignFalse
-    end
-  end
 end
 
 describe "Constant resolution within a singleton class (class << obj)" do

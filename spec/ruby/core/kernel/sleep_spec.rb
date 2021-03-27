@@ -22,6 +22,12 @@ describe "Kernel#sleep" do
     sleep(Rational(1, 999)).should >= 0
   end
 
+  it "accepts any Object that reponds to divmod" do
+    o = Object.new
+    def o.divmod(*); [0, 0.001]; end
+    sleep(o).should >= 0
+  end
+
   it "raises an ArgumentError when passed a negative duration" do
     -> { sleep(-0.1) }.should raise_error(ArgumentError)
     -> { sleep(-1) }.should raise_error(ArgumentError)

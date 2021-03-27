@@ -25,4 +25,11 @@ describe "Regexps with grouping" do
     -> { Regexp.new("(?<1a>a)") }.should raise_error(RegexpError)
     -> { Regexp.new("(?<-a>a)") }.should raise_error(RegexpError)
   end
+
+  it "ignore capture groups in line comments" do
+    /^
+     (a) # there is a capture group on this line
+     b   # there is no capture group on this line (not even here)
+     $/x.match("ab").to_a.should == [ "ab", "a" ]
+  end
 end

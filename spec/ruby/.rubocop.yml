@@ -95,6 +95,7 @@ Lint/UnreachableCode:
     - 'core/kernel/raise_spec.rb'
     - 'core/kernel/throw_spec.rb'
     - 'language/break_spec.rb'
+    - 'language/optional_assignments_spec.rb'
     - 'language/fixtures/break.rb'
     - 'language/fixtures/break_lambda_toplevel.rb'
     - 'language/fixtures/break_lambda_toplevel_block.rb'

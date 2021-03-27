@@ -1758,6 +1758,17 @@ describe "A method" do
       end
     end
   end
+
+  it "assigns the last Hash to the last optional argument if the Hash contains non-Symbol keys and is not passed as keywords" do
+    def m(a = nil, b = {}, v: false)
+      [a, b, v]
+    end
+
+    h = { "key" => "value" }
+    m(:a, h).should == [:a, h, false]
+    m(:a, h, v: true).should == [:a, h, true]
+    m(v: true).should == [nil, {}, true]
+  end
 end
 
 describe "A method call with a space between method name and parentheses" do
