@@ -1072,7 +1072,8 @@ enum_tally(int argc, VALUE *argv, VALUE obj)
     if (rb_check_arity(argc, 0, 1)) {
         hash = rb_convert_type(argv[0], T_HASH, "Hash", "to_hash");
         rb_check_frozen(hash);
-    } else {
+    }
+    else {
         hash = rb_hash_new();
     }
 
