@@ -72,10 +72,10 @@
 #   require 'optparse'
 #
 #   options = {}
-#   OptionParser.new do |opts|
-#     opts.banner = "Usage: example.rb [options]"
+#   OptionParser.new do |parser|
+#     parser.banner = "Usage: example.rb [options]"
 #
-#     opts.on("-v", "--[no-]verbose", "Run verbosely") do |v|
+#     parser.on("-v", "--[no-]verbose", "Run verbosely") do |v|
 #       options[:verbose] = v
 #     end
 #   end.parse!
@@ -96,15 +96,15 @@
 #     def self.parse(options)
 #       args = Options.new("world")
 #
-#       opt_parser = OptionParser.new do |opts|
-#         opts.banner = "Usage: example.rb [options]"
+#       opt_parser = OptionParser.new do |parser|
+#         parser.banner = "Usage: example.rb [options]"
 #
-#         opts.on("-nNAME", "--name=NAME", "Name to say hello to") do |n|
+#         parser.on("-nNAME", "--name=NAME", "Name to say hello to") do |n|
 #           args.name = n
 #         end
 #
-#         opts.on("-h", "--help", "Prints this help") do
-#           puts opts
+#         parser.on("-h", "--help", "Prints this help") do
+#           puts parser
 #           exit
 #         end
 #       end
@@ -241,10 +241,10 @@
 #   require 'optparse'
 #
 #   params = {}
-#   OptionParser.new do |opts|
-#     opts.on('-a')
-#     opts.on('-b NUM', Integer)
-#     opts.on('-v', '--verbose')
+#   OptionParser.new do |parser|
+#     parser.on('-a')
+#     parser.on('-b NUM', Integer)
+#     parser.on('-v', '--verbose')
 #   end.parse!(into: params)
 #
 #   p params
@@ -1310,13 +1310,16 @@ XXX
   private :notwice
 
   SPLAT_PROC = proc {|*a| a.length <= 1 ? a.first : a} # :nodoc:
+
+  # :call-seq:
+  #   make_switch(params, block = nil)
   #
   # Creates an OptionParser::Switch from the parameters. The parsed argument
   # value is passed to the given block, where it can be processed.
   #
   # See at the beginning of OptionParser for some full examples.
   #
-  # +opts+ can include the following elements:
+  # +params+ can include the following elements:
   #
   # [Argument style:]
   #   One of the following:
@@ -1503,11 +1506,16 @@ XXX
       nolong
   end
 
+  # :call-seq:
+  #   define(*params, &block)
+  #
   def define(*opts, &block)
     top.append(*(sw = make_switch(opts, block)))
     sw[0]
   end
 
+  # :call-seq:
+  #   on(*params, &block)
   #
   # Add option switch and handler. See #make_switch for an explanation of
   # parameters.
@@ -1518,11 +1526,16 @@ XXX
   end
   alias def_option define
 
+  # :call-seq:
+  #   define_head(*params, &block)
+  #
   def define_head(*opts, &block)
     top.prepend(*(sw = make_switch(opts, block)))
     sw[0]
   end
 
+  # :call-seq:
+  #   on_head(*params, &block)
   #
   # Add option switch like with #on, but at head of summary.
   #
@@ -1532,11 +1545,17 @@ XXX
   end
   alias def_head_option define_head
 
+  # :call-seq:
+  #   define_tail(*params, &block)
+  #
   def define_tail(*opts, &block)
     base.append(*(sw = make_switch(opts, block)))
     sw[0]
   end
 
+  #
+  # :call-seq:
+  #   on_tail(*params, &block)
   #
   # Add option switch like with #on, but at tail of summary.
   #
