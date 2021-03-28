@@ -356,6 +356,13 @@ IGNORE_FILE_PATTERN =
   |[A-Z]\w+file
   )\z/x
 
+def message_filter(repo, sha)
+  log = STDIN.read
+  print "[#{repo}] ", log.sub(/\s*(?=(?i:\nCo-authored-by:.*)*\Z)/) {
+    "\n\n" "https://github.com/#{repo}/commit/#{sha[0,10]}\n"
+  }
+end
+
 def sync_default_gems_with_commits(gem, ranges, edit: nil)
   repo = REPOSITORIES[gem.to_sym]
   puts "Sync #{repo} with commit history."
@@ -369,7 +376,7 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
 
   if ranges == true
     log = IO.popen(%W"git log --fixed-strings --grep=[#{repo}] -n1 --format=%B", &:read)
-    ranges = ["#{log[%r[https://github\.com/#{Regexp.quote(repo)}/commit/(\h+)\s*\Z], 1]}..#{gem}/master"]
+    ranges = ["#{log[%r[https://github\.com/#{Regexp.quote(repo)}/commit/(\h+)\n\s*(?i:co-authored-by:.*)*\s*\Z], 1]}..#{gem}/master"]
   end
 
   commits = ranges.flat_map do |range|
@@ -396,6 +403,7 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
 
   ENV["FILTER_BRANCH_SQUELCH_WARNING"] = "1"
 
+  filter = [ENV.fetch('RUBY', 'ruby'), File.realpath(__FILE__), "--message-filter"]
   commits.each do |sha, subject|
     puts "Pick #{sha} from #{repo}."
 
@@ -442,8 +450,7 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
 
     puts "Update commit message: #{sha}"
 
-    suffix = "https://github.com/#{repo}/commit/#{sha[0,10]}"
-    `git filter-branch -f --msg-filter 'grep "" - | sed "1s|^|[#{repo}] |" && echo && echo #{suffix}' -- HEAD~1..HEAD`
+    IO.popen(%W[git filter-branch -f --msg-filter #{[filter, repo, sha].join(' ')} -- HEAD~1..HEAD], &:read)
     unless $?.success?
       puts "Failed to modify commit message of #{sha}"
       break
@@ -520,6 +527,11 @@ when "list"
     next unless pattern =~ name or pattern =~ gem
     printf "%-15s https://github.com/%s\n", name, gem
   end
+when "--message-filter"
+  ARGV.shift
+  abort unless ARGV.size == 2
+  message_filter(*ARGV)
+  exit
 when nil, "-h", "--help"
     puts <<-HELP
 \e[1mSync with upstream code of default libraries\e[0m
