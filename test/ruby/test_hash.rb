@@ -816,6 +816,18 @@ class TestHash < Test::Unit::TestCase
     assert_equal(7, @h.length)
   end
 
+  def test_count
+    assert_equal(0, @cls[].count)
+    hash = @cls[a: 1, b: 2, c: 3, d: 4, e: 5]
+    assert_equal(5, hash.count)
+    assert_equal(1, hash.count([:d, 4]))
+    assert_equal(0, hash.count([:d, 42]))
+    assert_equal(3, hash.count() { |pair| pair.last > 2 })
+    assert_warning(/warning: given block not used/) do
+      assert_equal(1, hash.count([:d, 4]) { raise Exception })
+    end
+  end
+
   def test_sort
     h = @cls[].sort
     assert_equal([], h)
