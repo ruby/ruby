@@ -436,6 +436,8 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
       ignore, conflict = result.partition {|name| IGNORE_FILE_PATTERN =~ name}
       unless ignore.empty?
         system(*%W"git reset HEAD --", *ignore)
+        File.unlink(*ignore)
+        ignore = IO.popen(%W"git status --porcelain" + ignore, &:readlines).map! {|line| line[/^.. (.*)/, 1]}
         system(*%W"git checkout HEAD --", *ignore)
       end
       unless conflict.empty?
