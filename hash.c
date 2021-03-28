@@ -2617,9 +2617,15 @@ rb_hash_slice(int argc, VALUE *argv, VALUE hash)
     VALUE key, value, result;
 
     if (argc == 0 || RHASH_EMPTY_P(hash)) {
-	return rb_hash_new();
+	result = rb_hash_new();
     }
-    result = rb_hash_new_with_size(argc);
+    else {
+	result = rb_hash_new_with_size(argc);
+    }
+
+    if (rb_hash_compare_by_id_p(hash)) {
+	RHASH_ST_TABLE_SET(result, st_init_table(&identhash));
+    }
 
     for (i = 0; i < argc; i++) {
 	key = argv[i];
