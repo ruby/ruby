@@ -3239,7 +3239,7 @@ rb_hash_transform_keys(int argc, VALUE *argv, VALUE hash)
     return result;
 }
 
-static VALUE rb_hash_flatten(int argc, VALUE *argv, VALUE hash);
+static int flatten_i(VALUE key, VALUE val, VALUE ary);
 
 /*
  *  call-seq:
@@ -3269,7 +3269,8 @@ rb_hash_transform_keys_bang(int argc, VALUE *argv, VALUE hash)
     if (!RHASH_TABLE_EMPTY_P(hash)) {
         long i;
         VALUE new_keys = hash_alloc(0);
-        VALUE pairs = rb_hash_flatten(0, NULL, hash);
+        VALUE pairs = rb_ary_tmp_new(RHASH_SIZE(hash) * 2);
+        rb_hash_foreach(hash, flatten_i, pairs);
         for (i = 0; i < RARRAY_LEN(pairs); i += 2) {
             VALUE key = RARRAY_AREF(pairs, i), new_key, val;
 
@@ -3292,6 +3293,7 @@ rb_hash_transform_keys_bang(int argc, VALUE *argv, VALUE hash)
             rb_hash_aset(hash, new_key, val);
             rb_hash_aset(new_keys, new_key, Qnil);
         }
+        rb_ary_clear(pairs);
         rb_hash_clear(new_keys);
     }
     return hash;
