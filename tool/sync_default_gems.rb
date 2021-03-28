@@ -408,7 +408,12 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
 
   ENV["FILTER_BRANCH_SQUELCH_WARNING"] = "1"
 
-  filter = [ENV.fetch('RUBY', 'ruby'), File.realpath(__FILE__), "--message-filter"]
+  require 'shellwords'
+  filter = [
+    ENV.fetch('RUBY', 'ruby').shellescape,
+    File.realpath(__FILE__).shellescape,
+    "--message-filter",
+  ]
   commits.each do |sha, subject|
     puts "Pick #{sha} from #{repo}."
 
