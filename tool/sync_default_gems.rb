@@ -375,8 +375,9 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
   system(*%W"git fetch --no-tags #{gem}")
 
   if ranges == true
-    log = IO.popen(%W"git log --fixed-strings --grep=[#{repo}] -n1 --format=%B", &:read)
-    ranges = ["#{log[%r[https://github\.com/#{Regexp.quote(repo)}/commit/(\h+)\n\s*(?i:co-authored-by:.*)*\s*\Z], 1]}..#{gem}/master"]
+    pattern = "https://github\.com/#{Regexp.quote(repo)}/commit/([0-9a-f]+)$"
+    log = IO.popen(%W"git log -E --grep=#{pattern} -n1 --format=%B", &:read)
+    ranges = ["#{log[%r[#{pattern}\n\s*(?i:co-authored-by:.*)*\s*\Z], 1]}..#{gem}/master"]
   end
 
   commits = ranges.flat_map do |range|
