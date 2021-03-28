@@ -1090,12 +1090,39 @@ class TestHash < Test::Unit::TestCase
     assert_equal({}, {}.slice)
   end
 
+  def test_slice_on_identhash
+    h = @cls[1=>2,3=>4,5=>6]
+    h.compare_by_identity
+    str1 = +'str'
+    str2 = +'str'
+    h[str1] = 1
+    h[str2] = 2
+    sliced = h.slice(str1, str2)
+    expected = {}.compare_by_identity
+    expected[str1] = 1
+    expected[str2] = 2
+    assert_equal(expected, sliced)
+    assert_equal(true, sliced.compare_by_identity?)
+  end
+
   def test_except
     h = @cls[1=>2,3=>4,5=>6]
     assert_equal({5=>6}, h.except(1, 3))
     assert_equal({1=>2,3=>4,5=>6}, h.except(7))
     assert_equal({1=>2,3=>4,5=>6}, h.except)
     assert_equal({}, {}.except)
+  end
+
+  def test_except_on_identhash
+    h = @cls[1=>2,3=>4,5=>6]
+    h.compare_by_identity
+    str1 = +'str'
+    str2 = +'str'
+    h[str1] = 1
+    h[str2] = 2
+    excepted = h.except(str1, str2)
+    assert_equal({1=>2,3=>4,5=>6}.compare_by_identity, excepted)
+    assert_equal(true, excepted.compare_by_identity?)
   end
 
   def test_filter
