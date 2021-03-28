@@ -2998,6 +2998,26 @@ rb_hash_size_num(VALUE hash)
 
 /*
  *  call-seq:
+ *    hash.count                  -> integer
+ *    hash.count(item)            -> integer
+ *    hash.count { |pair| block } -> integer
+ *
+ *  Identical to Enumerable#count, except optimized for no arguments.
+ */
+
+static VALUE
+rb_hash_count(int argc, VALUE *argv, VALUE hash)
+{
+    if (argc == 0 && !rb_block_given_p()) {
+        return rb_hash_size(hash);
+    }
+    else {
+        return rb_call_super(argc, argv);
+    }
+}
+
+/*
+ *  call-seq:
  *    hash.empty? -> true or false
  *
  *  Returns +true+ if there are no hash entries, +false+ otherwise:
@@ -6992,6 +7012,7 @@ Init_Hash(void)
     rb_define_method(rb_cHash, "key", rb_hash_key, 1);
     rb_define_method(rb_cHash, "size", rb_hash_size, 0);
     rb_define_method(rb_cHash, "length", rb_hash_size, 0);
+    rb_define_method(rb_cHash, "count", rb_hash_count, -1);
     rb_define_method(rb_cHash, "empty?", rb_hash_empty_p, 0);
 
     rb_define_method(rb_cHash, "each_value", rb_hash_each_value, 0);
