@@ -395,6 +395,11 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
     subject =~ /^Merge/ || subject =~ /^Auto Merge/ || files.all?{|file| file =~ IGNORE_FILE_PATTERN}
   end
 
+  if commits.empty?
+    puts "No commits to pick"
+    return
+  end
+
   puts "Try to pick these commits:"
   puts commits.map{|commit| commit.join(": ")}.join("\n")
   puts "----"
