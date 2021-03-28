@@ -3292,6 +3292,7 @@ rb_hash_transform_keys_bang(int argc, VALUE *argv, VALUE hash)
             rb_hash_aset(hash, new_key, val);
             rb_hash_aset(new_keys, new_key, Qnil);
         }
+        rb_hash_clear(new_keys);
     }
     return hash;
 }
