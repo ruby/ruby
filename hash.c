@@ -3268,8 +3268,8 @@ rb_hash_transform_keys_bang(int argc, VALUE *argv, VALUE hash)
     rb_hash_modify_check(hash);
     if (!RHASH_TABLE_EMPTY_P(hash)) {
         long i;
+        VALUE new_keys = hash_alloc(0);
         VALUE pairs = rb_hash_flatten(0, NULL, hash);
-        rb_hash_clear(hash);
         for (i = 0; i < RARRAY_LEN(pairs); i += 2) {
             VALUE key = RARRAY_AREF(pairs, i), new_key, val;
 
@@ -3286,7 +3286,11 @@ rb_hash_transform_keys_bang(int argc, VALUE *argv, VALUE hash)
                 new_key = key;
             }
             val = RARRAY_AREF(pairs, i+1);
+            if (!hash_stlike_lookup(new_keys, key, NULL)) {
+                rb_hash_stlike_delete(hash, &key, NULL);
+            }
             rb_hash_aset(hash, new_key, val);
+            rb_hash_aset(new_keys, new_key, Qnil);
         }
     }
     return hash;

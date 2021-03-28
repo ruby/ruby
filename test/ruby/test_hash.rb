@@ -1765,6 +1765,10 @@ class TestHash < Test::Unit::TestCase
     x.transform_keys! {|k| -k }
     assert_equal([-1, :a, 1, :b], x.flatten)
 
+    x = @cls[a: 1, b: 2, c: 3]
+    x.transform_keys! { |k| k == :b && break }
+    assert_equal({false => 1, b: 2, c: 3}, x)
+
     x = @cls[true => :a, false => :b]
     x.transform_keys! {|k| !k }
     assert_equal([false, :a, true, :b], x.flatten)
@@ -1799,6 +1803,10 @@ class TestHash < Test::Unit::TestCase
     y = x.transform_values! {|v| v ** 2 }
     assert_equal([1, 4, 9], y.values_at(:a, :b, :c))
     assert_same(x, y)
+
+    x = @cls[a: 1, b: 2, c: 3]
+    x.transform_values! { |v| v == 2 && break }
+    assert_equal({a: false, b: 2, c: 3}, x)
 
     x = @cls[a: 1, b: 2, c: 3]
     y = x.transform_values!.with_index {|v, i| "#{v}.#{i}" }
