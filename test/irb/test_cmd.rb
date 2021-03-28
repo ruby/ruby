@@ -5,6 +5,32 @@ require "irb/extend-command"
 
 module TestIRB
   class ExtendCommand < Test::Unit::TestCase
+    class TestInputMethod < ::IRB::InputMethod
+      attr_reader :list, :line_no
+
+      def initialize(list = [])
+        super("test")
+        @line_no = 0
+        @list = list
+      end
+
+      def gets
+        @list[@line_no]&.tap {@line_no += 1}
+      end
+
+      def eof?
+        @line_no >= @list.size
+      end
+
+      def encoding
+        Encoding.default_external
+      end
+
+      def reset
+        @line_no = 0
+      end
+    end
+
     def setup
       @pwd = Dir.pwd
       @tmpdir = File.join(Dir.tmpdir, "test_reline_config_#{$$}")
@@ -44,12 +70,12 @@ module TestIRB
       IRB.conf[:USE_SINGLELINE] = false
       IRB.conf[:VERBOSE] = false
       workspace = IRB::WorkSpace.new(self)
-      irb = IRB::Irb.new(workspace)
+      irb = IRB::Irb.new(workspace, TestInputMethod.new([]))
       IRB.conf[:MAIN_CONTEXT] = irb.context
       expected = %r{
         Ruby\sversion: .+\n
         IRB\sversion:\sirb .+\n
-        InputMethod:\sReidlineInputMethod\swith\sReline .+ and .+\n
+        InputMethod:\sAbstract\sInputMethod\n
         \.irbrc\spath: .+\n
         RUBY_PLATFORM: .+
       }x
@@ -64,12 +90,12 @@ module TestIRB
       IRB.conf[:USE_SINGLELINE] = true
       IRB.conf[:VERBOSE] = false
       workspace = IRB::WorkSpace.new(self)
-      irb = IRB::Irb.new(workspace)
+      irb = IRB::Irb.new(workspace, TestInputMethod.new([]))
       IRB.conf[:MAIN_CONTEXT] = irb.context
       expected = %r{
         Ruby\sversion: .+\n
         IRB\sversion:\sirb .+\n
-        InputMethod:\sReadlineInputMethod\swith .+ and .+\n
+        InputMethod:\sAbstract\sInputMethod\n
         \.irbrc\spath: .+\n
         RUBY_PLATFORM: .+
       }x
@@ -87,12 +113,12 @@ module TestIRB
       IRB.conf[:USE_SINGLELINE] = false
       IRB.conf[:VERBOSE] = false
       workspace = IRB::WorkSpace.new(self)
-      irb = IRB::Irb.new(workspace)
+      irb = IRB::Irb.new(workspace, TestInputMethod.new([]))
       IRB.conf[:MAIN_CONTEXT] = irb.context
       expected = %r{
         Ruby\sversion: .+\n
         IRB\sversion:\sirb .+\n
-        InputMethod:\sReidlineInputMethod\swith\sReline\s[^ ]+(?!\sand\s.+)\n
+        InputMethod:\sAbstract\sInputMethod\n
         RUBY_PLATFORM: .+\n
         \z
       }x
@@ -114,12 +140,12 @@ module TestIRB
       IRB.conf[:USE_SINGLELINE] = true
       IRB.conf[:VERBOSE] = false
       workspace = IRB::WorkSpace.new(self)
-      irb = IRB::Irb.new(workspace)
+      irb = IRB::Irb.new(workspace, TestInputMethod.new([]))
       IRB.conf[:MAIN_CONTEXT] = irb.context
       expected = %r{
         Ruby\sversion: .+\n
         IRB\sversion:\sirb .+\n
-        InputMethod:\sReadlineInputMethod\swith\s(?~.*\sand\s.+)\n
+        InputMethod:\sAbstract\sInputMethod\n
         RUBY_PLATFORM: .+\n
         \z
       }x
@@ -128,32 +154,6 @@ module TestIRB
       ENV["INPUTRC"] = inputrc_backup
       IRB.__send__(:remove_const, :IRBRC_EXT)
       IRB.const_set(:IRBRC_EXT, ext_backup)
-    end
-
-    class TestInputMethod < ::IRB::InputMethod
-      attr_reader :list, :line_no
-
-      def initialize(list = [])
-        super("test")
-        @line_no = 0
-        @list = list
-      end
-
-      def gets
-        @list[@line_no]&.tap {@line_no += 1}
-      end
-
-      def eof?
-        @line_no >= @list.size
-      end
-
-      def encoding
-        Encoding.default_external
-      end
-
-      def reset
-        @line_no = 0
-      end
     end
 
     def test_measure
@@ -376,15 +376,14 @@ module TestIRB
     end
 
     def test_ls
-      IRB.init_config(nil)
-      workspace = IRB::WorkSpace.new(self)
-      IRB.conf[:VERBOSE] = false
-      irb = IRB::Irb.new(workspace)
-      IRB.conf[:MAIN_CONTEXT] = irb.context
       input = TestInputMethod.new([
         "ls Object.new.tap { |o| o.instance_variable_set(:@a, 1) }\n",
       ])
-      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
+      IRB.init_config(nil)
+      workspace = IRB::WorkSpace.new(self)
+      irb = IRB::Irb.new(workspace, input)
+      IRB.conf[:VERBOSE] = false
+      IRB.conf[:MAIN_CONTEXT] = irb.context
       irb.context.return_format = "=> %s\n"
       out, err = capture_output do
         irb.eval_input
@@ -394,15 +393,14 @@ module TestIRB
     end
 
     def test_whereami
-      IRB.init_config(nil)
-      workspace = IRB::WorkSpace.new(self)
-      IRB.conf[:VERBOSE] = false
-      irb = IRB::Irb.new(workspace)
-      IRB.conf[:MAIN_CONTEXT] = irb.context
       input = TestInputMethod.new([
         "whereami\n",
       ])
-      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
+      IRB.init_config(nil)
+      workspace = IRB::WorkSpace.new(self)
+      irb = IRB::Irb.new(workspace, input)
+      IRB.conf[:VERBOSE] = false
+      IRB.conf[:MAIN_CONTEXT] = irb.context
       irb.context.return_format = "=> %s\n"
       out, err = capture_output do
         irb.eval_input
