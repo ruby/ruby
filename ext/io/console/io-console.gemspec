@@ -1,5 +1,5 @@
 # -*- ruby -*-
-_VERSION = "0.5.7"
+_VERSION = "0.5.9"
 
 Gem::Specification.new do |s|
   s.name = "io-console"
