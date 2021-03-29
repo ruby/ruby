@@ -1,0 +1,125 @@
+== Tutorial
+
+=== Why OptionParser?
+
+When a Ruby program executes, it captures its command-line arguments
+and options into variable ARGV.
+This simple program just prints its \ARGV:
+
+  :include: ruby/argv.rb
+
+Execution, with arguments and options:
+
+  $ ruby doc/ruby/argv.rb foo --bar --baz bat bam
+  ["foo", "--bar", "--baz", "bat", "bam"]
+
+The executing program is responsible for parsing and handling
+the command-line options.
+
+OptionParser offers methods for parsing and handling those options.
+
+With \OptionParser, you can define options so that for each option:
+
+- The code that defines the option and code that handles that option
+  are in the same place.
+- The option may take no argument, a required argument, or an optional argument.
+- The argument may be automatically converted to a specified class.
+- The argument may be restricted to specified _forms_.
+- The argument may be restricted to specified _values_.
+
+The class also has a method #summarize that returns a string summary
+of all defined options.
+
+=== Defining Options
+
+A common way to define an option in \OptionParser
+is with instance method OptionParser#on.
+
+The method may be called with any number of arguments
+(whose order does not matter),
+and may also have a trailing optional keyword argument +into+.
+
+The given arguments determine the characteristics of the new option.
+These may include:
+
+- One or more short option names.
+- One or more long option names.
+- Whether the option takes no argument, an optional argument, or a required argument.
+- Acceptable _forms_ for the argument.
+- Acceptable _values_ for the argument.
+- A proc or method to be called when the parser encounters the option.
+- String descriptions for the option.
+
+=== Option Names
+
+You can give an option one or more names of two types:
+
+- Short (1-character) name, beginning with one hyphen (<tt>-</tt>).
+- Long (multi-character) name, beginning with two hyphens (<tt>--</tt>).
+
+==== Short Option Names
+
+A short option name consists of a hyphen and a single character.
+
+File +short_names.rb+
+defines an option with a short name, <tt>-x</tt>,
+and an option with two short names (aliases, in effect) <tt>-y</tt> and <tt>-z</tt>.
+
+  :include: ruby/short_names.rb
+
+Executions:
+
+  $ ruby doc/ruby/short_names.rb -x
+  "-x true"
+  $ ruby doc/ruby/short_names.rb -1
+  "-1 or -% true"
+  $ ruby doc/ruby/short_names.rb -%
+  "-1 or -% true"
+
+Multiple short names can "share" a hyphen:
+
+  $ ruby short_names.rb -x1%
+  "-x true"
+  "-1 or -% true"
+  "-1 or -% true"
+
+==== Long Option Names
+
+A long option name consists of two hyphens and a one or more characters
+(usually two or more characters).
+
+File +long_names.rb+
+defines an option with a long name, <tt>--xxx</tt>,
+and an option with two long names (aliases, in effect) <tt>--y1%</tt> and <tt>--z2#</tt>.
+
+  :include: ruby/long_names.rb
+
+Executions:
+
+  $ ruby long_names.rb --xxx
+  "--xxx true"
+  $ ruby long_names.rb --y1%
+  "--y1% or -z2# true"
+  $ ruby long_names.rb --z2#
+  "--y1% or -z2# true"
+
+==== Mixing Option Names
+
+Many developers like to mix short and long option names,
+so that a short name is in effect an abbreviation of a long name.
+
+File +mixed_names.rb+
+defines options that each have both a short and a long name.
+
+  :include: ruby/mixed_names.rb
+
+Executions:
+
+  $ ruby doc/ruby/mixed_names.rb -x
+  "--xxx true"
+  $ ruby doc/ruby/mixed_names.rb --xxx
+  "--xxx true"
+  $ ruby doc/ruby/mixed_names.rb -y
+  "--y1% true"
+  $ ruby doc/ruby/mixed_names.rb --y1%
+  "--y1% true"
