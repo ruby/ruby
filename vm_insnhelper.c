@@ -5154,6 +5154,19 @@ vm_opt_nil_p(const rb_iseq_t *iseq, CALL_DATA cd, VALUE recv)
 }
 
 static VALUE
+vm_opt_class(const rb_iseq_t *iseq, CALL_DATA cd, VALUE recv)
+{
+    if (!BASIC_OP_UNREDEFINED_P(BOP_CLASS, CLASS_REDEFINED_OP_FLAG)) {
+        return Qundef;
+    }
+    if (vm_method_cfunc_is(iseq, cd, recv, rb_obj_class)) {
+        return rb_class_real(cd->cc->klass);
+    }
+
+    return Qundef;
+}
+
+static VALUE
 fix_succ(VALUE x)
 {
     switch (x) {

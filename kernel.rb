@@ -1,27 +1,6 @@
 module Kernel
   #
   #  call-seq:
-  #     obj.class    -> class
-  #
-  #  Returns the class of <i>obj</i>. This method must always be called
-  #  with an explicit receiver, as #class is also a reserved word in
-  #  Ruby.
-  #
-  #     1.class      #=> Integer
-  #     self.class   #=> Object
-  #--
-  # Equivalent to \c Object\#class in Ruby.
-  #
-  # Returns the class of \c obj, skipping singleton classes or module inclusions.
-  #++
-  #
-  def class
-    Primitive.attr! 'inline'
-    Primitive.cexpr! 'rb_obj_class(self)'
-  end
-
-  #
-  #  call-seq:
   #     obj.clone(freeze: nil) -> an_object
   #
   #  Produces a shallow copy of <i>obj</i>---the instance variables of

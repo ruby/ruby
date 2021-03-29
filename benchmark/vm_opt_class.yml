@@ -1,0 +1,8 @@
+prelude: |
+  class C
+  end
+  obj = C.new
+benchmark:
+  vm_opt_class: |
+    obj.class
+loop_count: 8000000
