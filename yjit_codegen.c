@@ -1874,6 +1874,7 @@ gen_leave(jitstate_t* jit, ctx_t* ctx)
     // Fall back to the interpreter
     cb_write_label(cb, FALLBACK_LABEL);
     cb_link_labels(cb);
+    GEN_COUNTER_INC(cb, leave_interp_return);
     cb_write_post_call_bytes(cb);
 
     return YJIT_END_BLOCK;
