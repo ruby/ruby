@@ -1,4 +1,5 @@
-#! /bin/bash
+# -*- bash -*-
+#
 # Completion for bash:
 #
 # (1) install this file,

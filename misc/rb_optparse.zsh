@@ -1,4 +1,5 @@
-#!/bin/zsh
+# -*- zsh -*-
+#
 # Completion for zsh:
 # (based on <http://d.hatena.ne.jp/rubikitch/20071002/zshcomplete>)
 #
