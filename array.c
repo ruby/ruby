@@ -3213,6 +3213,7 @@ rb_ary_rotate_m(int argc, VALUE *argv, VALUE ary)
 
 struct ary_sort_data {
     VALUE ary;
+    VALUE receiver;
     struct cmp_opt_data cmp_opt;
 };
 
@@ -3238,6 +3239,9 @@ sort_1(const void *ap, const void *bp, void *dummy)
     args[1] = b;
     retval = rb_yield_values2(2, args);
     n = rb_cmpint(retval, a, b);
+    if (rb_obj_frozen_p(data->receiver)) {
+        rb_raise(rb_eFrozenError, "array frozen during sort");
+    }
     sort_reentered(data->ary);
     return n;
 }
@@ -3264,6 +3268,9 @@ sort_2(const void *ap, const void *bp, void *dummy)
 
     retval = rb_funcallv(a, id_cmp, 1, &b);
     n = rb_cmpint(retval, a, b);
+    if (rb_obj_frozen_p(data->receiver)) {
+        rb_raise(rb_eFrozenError, "array frozen during sort");
+    }
     sort_reentered(data->ary);
 
     return n;
@@ -3316,6 +3323,7 @@ rb_ary_sort_bang(VALUE ary)
 	long len = RARRAY_LEN(ary);
 	RBASIC_CLEAR_CLASS(tmp);
 	data.ary = tmp;
+        data.receiver = ary;
 	data.cmp_opt.opt_methods = 0;
 	data.cmp_opt.opt_inited = 0;
 	RARRAY_PTR_USE(tmp, ptr, {
