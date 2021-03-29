@@ -97,4 +97,12 @@ class TestOptionParser < Test::Unit::TestCase
     assert_raise(OptionParser::InvalidOption) {@opt.parse(%w(-zr foo))}
     assert_raise(OptionParser::InvalidOption) {@opt.parse(%w(-z foo))}
   end
+
+  def test_nonopt_pattern
+    @opt.def_option(/^[^-]/) do |arg|
+      assert(false, "Never gets called")
+    end
+    e = assert_raise(OptionParser::InvalidOption) {@opt.parse(%w(-t))}
+    assert_equal(["-t"], e.args)
+  end
 end

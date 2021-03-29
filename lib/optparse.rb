@@ -1646,7 +1646,12 @@ XXX
           end
           begin
             opt, cb, val = sw.parse(val, argv) {|*exc| raise(*exc) if eq}
+          rescue ParseError
+            raise $!.set_option(arg, arg.length > 2)
+          else
             raise InvalidOption, arg if has_arg and !eq and arg == "-#{opt}"
+          end
+          begin
             argv.unshift(opt) if opt and (!rest or (opt = opt.sub(/\A-*/, '-')) != '-')
             val = cb.call(val) if cb
             setter.call(sw.switch_name, val) if setter
