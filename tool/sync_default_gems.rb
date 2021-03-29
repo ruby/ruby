@@ -402,7 +402,7 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
   end
 
   puts "Try to pick these commits:"
-  puts commits.map{|commit| commit.join(": ")}.join("\n")
+  puts commits.map{|commit| commit.join(": ")}
   puts "----"
 
   failed_commits = []
