@@ -1931,8 +1931,6 @@ vm_init_redefined_flag(void)
     OP(NilP, NIL_P), (C(NilClass));
 #undef C
 #undef OP
-    ruby_vm_redefined_flag[BOP_CLASS] = 0;
-    add_opt_method(rb_mKernel, idClass, BOP_CLASS);
 }
 
 /* for vm development */

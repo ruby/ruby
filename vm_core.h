@@ -530,7 +530,6 @@ enum ruby_basic_operators {
     BOP_CALL,
     BOP_AND,
     BOP_OR,
-    BOP_CLASS,
 
     BOP_LAST_
 };
@@ -722,7 +721,6 @@ typedef struct rb_vm_struct {
 #define TRUE_REDEFINED_OP_FLAG   (1 << 10)
 #define FALSE_REDEFINED_OP_FLAG  (1 << 11)
 #define PROC_REDEFINED_OP_FLAG   (1 << 12)
-#define CLASS_REDEFINED_OP_FLAG   (1 << 13)
 
 #define BASIC_OP_UNREDEFINED_P(op, klass) (LIKELY((GET_VM()->redefined_flag[(op)]&(klass)) == 0))
 
