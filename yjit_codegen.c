@@ -932,6 +932,12 @@ gen_opt_ge(jitstate_t* jit, ctx_t* ctx)
 }
 
 static codegen_status_t
+gen_opt_gt(jitstate_t* jit, ctx_t* ctx)
+{
+    return gen_fixnum_cmp(jit, ctx, cmovg);
+}
+
+static codegen_status_t
 gen_opt_aref(jitstate_t *jit, ctx_t *ctx)
 {
     struct rb_call_data * cd = (struct rb_call_data *)jit_get_arg(jit, 0);
@@ -1956,6 +1962,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(opt_lt), gen_opt_lt);
     yjit_reg_op(BIN(opt_le), gen_opt_le);
     yjit_reg_op(BIN(opt_ge), gen_opt_ge);
+    yjit_reg_op(BIN(opt_gt), gen_opt_gt);
     yjit_reg_op(BIN(opt_aref), gen_opt_aref);
     yjit_reg_op(BIN(opt_and), gen_opt_and);
     yjit_reg_op(BIN(opt_minus), gen_opt_minus);
