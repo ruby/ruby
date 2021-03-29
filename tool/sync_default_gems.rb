@@ -354,6 +354,7 @@ IGNORE_FILE_PATTERN =
   |[^\/]+\.yml
   |\.git.*
   |[A-Z]\w+file
+  |COPYING
   )\z/x
 
 def message_filter(repo, sha)
