@@ -6094,7 +6094,7 @@ rb_ary_compact(VALUE ary)
  *    [].count # => 0
  *
  *  With argument +obj+, returns the count of elements <tt>==</tt> to +obj+:
- *    [0, 1, 2, 0].count(0) # => 2
+ *    [0, 1, 2, 0.0].count(0) # => 2
  *    [0, 1, 2].count(3) # => 0
  *
  *  With no argument and a block given, calls the block with each element;
