@@ -7,8 +7,6 @@
 #       From Original Idea of shugo@ruby-lang.org
 #
 
-autoload :RDoc, "rdoc"
-
 require_relative 'ruby-lex'
 
 module IRB
@@ -329,13 +327,22 @@ module IRB
     end
 
     PerfectMatchedProc = ->(matched, bind: IRB.conf[:MAIN_CONTEXT].workspace.binding) {
+      begin
+        require 'rdoc'
+      rescue LoadError
+        return
+      end
+
       RDocRIDriver ||= RDoc::RI::Driver.new
+
       if matched =~ /\A(?:::)?RubyVM/ and not ENV['RUBY_YES_I_AM_NOT_A_NORMAL_USER']
         IRB.__send__(:easter_egg)
         return
       end
+
       namespace = retrieve_completion_data(matched, bind: bind, doc_namespace: true)
       return unless namespace
+
       if namespace.is_a?(Array)
         out = RDoc::Markup::Document.new
         namespace.each do |m|
