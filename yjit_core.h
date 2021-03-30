@@ -37,7 +37,11 @@ typedef struct yjit_val_type
     // Value is definitely an immediate
     uint8_t is_imm : 1;
 
-    // NOTE: we could switch this to an enum,
+    // Not Qfalse or Qnil
+    // Is this useful?
+    //uint8_t is_truthy: 1;
+
+    // NOTE: we could switch to using an enum to track multiple types
     // but then we also need a value for "unknown type"
     uint8_t is_fixnum : 1;
     //uint8_t is_array : 1;       // for opt_aref
