@@ -580,7 +580,6 @@ guard_self_is_object(codeblock_t *cb, x86opnd_t self_opnd, uint8_t *side_exit, c
         // cmp(cb, self_opnd, imm_opnd(Qnil));
         // jbe(cb, side_exit);
 
-
         ctx->self_is_object = true;
     }
 }
@@ -682,7 +681,6 @@ jit_chain_guard(enum jcc_kinds jcc, jitstate_t *jit, const ctx_t *ctx, uint8_t d
         target0_gen_fn(cb, side_exit, NULL, SHAPE_DEFAULT);
     }
 }
-
 
 bool rb_iv_index_tbl_lookup(struct st_table *iv_index_tbl, ID id, struct rb_iv_index_tbl_entry **ent); // vm_insnhelper.c
 
