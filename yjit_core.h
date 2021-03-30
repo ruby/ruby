@@ -23,6 +23,75 @@
 // Default versioning context (no type information)
 #define DEFAULT_CTX ( (ctx_t){ 0 } )
 
+
+/**
+Represent the type of a value (local/stack/self) in YJIT
+*/
+typedef struct yjit_val_type
+{
+    // Value is definitely a heap object
+    uint8_t is_heap : 1;
+
+    // Value is definitely an immediate
+    uint8_t is_imm : 1;
+
+    // NOTE: we could switch this to an enum,
+    // but then we also need a value for "unknown type"
+    uint8_t is_fixnum : 1;
+    uint8_t is_bool : 1;        // is this useful?
+    uint8_t is_array : 1;       // for opt_aref
+    uint8_t is_hash : 1;        // for opt_aref
+    uint8_t is_symbol : 1;
+    uint8_t is_string : 1;
+
+} val_type_t;
+STATIC_ASSERT(val_type_size, sizeof(val_type_t) == 1);
+
+// Unknown type, could be anything, all zeroes
+#define TYPE_UNKNOWN ( (val_type_t){ 0 } )
+
+// Could be any heap object
+#define TYPE_HEAP ( (val_type_t){ .is_heap = 1 } )
+
+// Could be any immediate
+#define TYPE_IMM ( (val_type_t){ .is_imm = 1 } )
+
+// Immediate integer
+#define TYPE_FIXNUM ( (val_type_t){ .is_imm = 1, .is_fixnum = 1 } )
+
+typedef enum yjit_temp_loc
+{
+    TEMP_STACK = 0,
+    TEMP_SELF,
+    TEMP_LOCAL, // Local with index
+    //TEMP_CONST, // Small constant
+
+} temp_loc_t;
+
+typedef struct yjit_temp_mapping
+{
+    // Where/how is the local stored?
+    uint8_t kind: 2;
+
+    // Index of the local variale,
+    // or small non-negative constant
+    uint8_t idx : 6;
+
+} temp_mapping_t;
+STATIC_ASSERT(temp_mapping_size, sizeof(temp_mapping_t) == 1);
+
+// By default, temps are just temps on the stack
+#define MAP_STACK ( (temp_mapping_t) { 0 } )
+
+// Temp value is actually self
+#define MAP_SELF ( (temp_mapping_t) { .kind = TEMP_SELF } )
+
+
+
+
+
+
+
 /**
 Code generation context
 Contains information we can use to optimize code
