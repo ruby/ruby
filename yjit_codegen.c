@@ -1357,6 +1357,7 @@ jit_guard_known_klass(jitstate_t *jit, const ctx_t *recompile_context, VALUE kno
 }
 
 // Generate ancestry guard for protected callee.
+// Calls to protected callees only go through when self.is_a?(klass_that_defines_the_callee).
 static void
 jit_protected_callee_ancestry_guard(jitstate_t *jit, codeblock_t *cb, const rb_callable_method_entry_t *cme, uint8_t *side_exit)
 {
