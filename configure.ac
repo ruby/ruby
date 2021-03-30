@@ -2489,7 +2489,7 @@ AS_CASE([$coroutine_type], [yes|''], [
             coroutine_type=ppc64le
         ],
         [riscv64-linux*], [
-            rb_cv_coroutine=riscv64
+            coroutine_type=riscv64
         ],
         [x86_64-openbsd*], [
             coroutine_type=amd64
