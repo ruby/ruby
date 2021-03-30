@@ -19,6 +19,10 @@
 struct rb_execution_context_struct; /* in vm_core.h */
 struct rb_objspace; /* in vm_core.h */
 
+#ifndef USE_RVARGC
+#define USE_RVARGC 0
+#endif
+
 #ifdef NEWOBJ_OF
 # undef NEWOBJ_OF
 # undef RB_NEWOBJ_OF
@@ -28,15 +32,21 @@ struct rb_objspace; /* in vm_core.h */
 /* optimized version of NEWOBJ() */
 #define RB_NEWOBJ_OF(var, T, c, f) \
   T *(var) = (T *)(((f) & FL_WB_PROTECTED) ? \
-                   rb_wb_protected_newobj_of((c), (f) & ~FL_WB_PROTECTED) : \
-                   rb_wb_unprotected_newobj_of((c), (f)))
+                   rb_wb_protected_newobj_of((c), (f) & ~FL_WB_PROTECTED, 0) : \
+                   rb_wb_unprotected_newobj_of((c), (f), 0))
 
 #define RB_EC_NEWOBJ_OF(ec, var, T, c, f) \
   T *(var) = (T *)(((f) & FL_WB_PROTECTED) ? \
-                   rb_ec_wb_protected_newobj_of((ec), (c), (f) & ~FL_WB_PROTECTED) : \
-                   rb_wb_unprotected_newobj_of((c), (f)))
+                   rb_ec_wb_protected_newobj_of((ec), (c), (f) & ~FL_WB_PROTECTED, 0) : \
+                   rb_wb_unprotected_newobj_of((c), (f), 0))
+
+#define RB_RVARGC_NEWOBJ_OF(var, T, c, f, s) \
+  T *(var) = (T *)(((f) & FL_WB_PROTECTED) ? \
+                   rb_wb_protected_newobj_of((c), (f) & ~FL_WB_PROTECTED, s) : \
+                   rb_wb_unprotected_newobj_of((c), (f), s))
 
 #define NEWOBJ_OF(var, T, c, f) RB_NEWOBJ_OF((var), T, (c), (f))
+#define RVARGC_NEWOBJ_OF(var, T, c, f, s) RB_RVARGC_NEWOBJ_OF((var), T, (c), (f), (s))
 #define RB_OBJ_GC_FLAGS_MAX 6   /* used in ext/objspace */
 
 #ifndef USE_UNALIGNED_MEMBER_ACCESS
@@ -60,6 +70,8 @@ struct rb_objspace; /* in vm_core.h */
 #define RB_OBJ_WRITE(a, slot, b) \
     rb_obj_write((VALUE)(a), UNALIGNED_MEMBER_ACCESS((VALUE *)(slot)), \
                  (VALUE)(b), __FILE__, __LINE__)
+
+#define RVARGC_PAYLOAD_INIT(obj, size) (void *)rb_rvargc_payload_init((VALUE)obj, (size_t)size)
 
 /* gc.c */
 extern VALUE *ruby_initial_gc_stress_ptr;
@@ -89,9 +101,11 @@ VALUE rb_class_allocate_instance(VALUE klass);
 RUBY_SYMBOL_EXPORT_BEGIN
 /* gc.c (export) */
 const char *rb_objspace_data_type_name(VALUE obj);
-VALUE rb_wb_protected_newobj_of(VALUE, VALUE);
-VALUE rb_wb_unprotected_newobj_of(VALUE, VALUE);
-VALUE rb_ec_wb_protected_newobj_of(struct rb_execution_context_struct *ec, VALUE klass, VALUE flags);
+VALUE rb_wb_protected_newobj_of(VALUE, VALUE, size_t);
+VALUE rb_wb_unprotected_newobj_of(VALUE, VALUE, size_t);
+VALUE rb_ec_wb_protected_newobj_of(struct rb_execution_context_struct *ec, VALUE klass, VALUE flags, size_t);
+VALUE rb_rvargc_payload_init(VALUE obj, size_t size);
+void * rb_rvargc_payload_data_ptr(VALUE obj);
 size_t rb_obj_memsize_of(VALUE);
 void rb_gc_verify_internal_consistency(void);
 size_t rb_obj_gc_flags(VALUE, ID[], size_t);
@@ -100,6 +114,7 @@ void rb_gc_mark_vm_stack_values(long n, const VALUE *values);
 void *ruby_sized_xrealloc(void *ptr, size_t new_size, size_t old_size) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2));
 void *ruby_sized_xrealloc2(void *ptr, size_t new_count, size_t element_size, size_t old_count) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2, 3));
 void ruby_sized_xfree(void *x, size_t size);
+int rb_slot_size();
 RUBY_SYMBOL_EXPORT_END
 
 MJIT_SYMBOL_EXPORT_BEGIN
