@@ -20,9 +20,11 @@
 // Maximum number of temp value types we keep track of
 #define MAX_TEMP_TYPES 8
 
+// Maximum number of local variable types we keep track of
+#define MAX_LOCAL_TYPES 8
+
 // Default versioning context (no type information)
 #define DEFAULT_CTX ( (ctx_t){ 0 } )
-
 
 /**
 Represent the type of a value (local/stack/self) in YJIT
@@ -38,11 +40,10 @@ typedef struct yjit_val_type
     // NOTE: we could switch this to an enum,
     // but then we also need a value for "unknown type"
     uint8_t is_fixnum : 1;
-    uint8_t is_bool : 1;        // is this useful?
-    uint8_t is_array : 1;       // for opt_aref
-    uint8_t is_hash : 1;        // for opt_aref
-    uint8_t is_symbol : 1;
-    uint8_t is_string : 1;
+    //uint8_t is_array : 1;       // for opt_aref
+    //uint8_t is_hash : 1;        // for opt_aref
+    //uint8_t is_symbol : 1;
+    //uint8_t is_string : 1;
 
 } val_type_t;
 STATIC_ASSERT(val_type_size, sizeof(val_type_t) == 1);
@@ -63,7 +64,7 @@ typedef enum yjit_temp_loc
 {
     TEMP_STACK = 0,
     TEMP_SELF,
-    TEMP_LOCAL, // Local with index
+    //TEMP_LOCAL, // Local with index
     //TEMP_CONST, // Small constant
 
 } temp_loc_t;
@@ -74,7 +75,7 @@ typedef struct yjit_temp_mapping
     uint8_t kind: 2;
 
     // Index of the local variale,
-    // or small non-negative constant
+    // or small non-negative constant in [0, 63]
     uint8_t idx : 6;
 
 } temp_mapping_t;
@@ -113,8 +114,20 @@ typedef struct yjit_context
     // This represents how far the JIT's SP is from the "real" SP
     int16_t sp_offset;
 
+
+
+
+
+
+    // FIXME: no longer need this bit after type mapping refactoring
     // Whether we know self is a heap object
     bool self_is_object : 1;
+
+
+
+
+
+
 
 } ctx_t;
 
