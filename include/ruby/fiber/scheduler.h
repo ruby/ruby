@@ -22,11 +22,13 @@ VALUE rb_fiber_scheduler_make_timeout(struct timeval *timeout);
 
 VALUE rb_fiber_scheduler_close(VALUE scheduler);
 
-VALUE rb_fiber_scheduler_timeout_raise(VALUE scheduler, VALUE timeout, VALUE exception, VALUE message);
-VALUE rb_fiber_scheduler_timeout_raisev(VALUE scheduler, int argc, VALUE * argv);
-
 VALUE rb_fiber_scheduler_kernel_sleep(VALUE scheduler, VALUE duration);
 VALUE rb_fiber_scheduler_kernel_sleepv(VALUE scheduler, int argc, VALUE * argv);
+
+#if 0
+VALUE rb_fiber_scheduler_timeout_after(VALUE scheduler, VALUE timeout, VALUE exception, VALUE message);
+VALUE rb_fiber_scheduler_timeout_afterv(VALUE scheduler, int argc, VALUE * argv);
+#endif
 
 int rb_fiber_scheduler_supports_process_wait(VALUE scheduler);
 VALUE rb_fiber_scheduler_process_wait(VALUE scheduler, rb_pid_t pid, int flags);

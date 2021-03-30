@@ -111,6 +111,19 @@ rb_fiber_scheduler_make_timeout(struct timeval *timeout)
 }
 
 VALUE
+rb_fiber_scheduler_kernel_sleep(VALUE scheduler, VALUE timeout)
+{
+    return rb_funcall(scheduler, id_kernel_sleep, 1, timeout);
+}
+
+VALUE
+rb_fiber_scheduler_kernel_sleepv(VALUE scheduler, int argc, VALUE * argv)
+{
+    return rb_funcallv(scheduler, id_kernel_sleep, argc, argv);
+}
+
+#if 0
+VALUE
 rb_fiber_scheduler_timeout_after(VALUE scheduler, VALUE timeout, VALUE exception, VALUE message)
 {
     VALUE arguments[] = {
@@ -125,18 +138,7 @@ rb_fiber_scheduler_timeout_afterv(VALUE scheduler, int argc, VALUE * argv)
 {
     return rb_check_funcall(scheduler, id_timeout_after, argc, argv);
 }
-
-VALUE
-rb_fiber_scheduler_kernel_sleep(VALUE scheduler, VALUE timeout)
-{
-    return rb_funcall(scheduler, id_kernel_sleep, 1, timeout);
-}
-
-VALUE
-rb_fiber_scheduler_kernel_sleepv(VALUE scheduler, int argc, VALUE * argv)
-{
-    return rb_funcallv(scheduler, id_kernel_sleep, argc, argv);
-}
+#endif
 
 VALUE
 rb_fiber_scheduler_process_wait(VALUE scheduler, rb_pid_t pid, int flags)
