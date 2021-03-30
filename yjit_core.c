@@ -390,22 +390,22 @@ branch_stub_hit(uint32_t branch_idx, uint32_t target_idx, rb_execution_context_t
         RUBY_ASSERT(cb->write_pos <= branch->end_pos);
     }
 
-    // Limit the number of block versions
-    ctx_t generic_ctx = DEFAULT_CTX;
-    generic_ctx.stack_size = target_ctx->stack_size;
-    generic_ctx.sp_offset = target_ctx->sp_offset;
-    if (target_ctx->chain_depth == 0) { // guard chains implement limits individually
-        if (get_num_versions(target) >= MAX_VERSIONS - 1) {
-            //fprintf(stderr, "version limit hit in branch_stub_hit\n");
-            target_ctx = &generic_ctx;
-        }
-    }
-
-    // Try to find a compiled version of this block
+    // Try to find an existing compiled version of this block
     block_t* p_block = find_block_version(target, target_ctx);
 
     // If this block hasn't yet been compiled
     if (!p_block) {
+        // Limit the number of block versions
+        ctx_t generic_ctx = DEFAULT_CTX;
+        generic_ctx.stack_size = target_ctx->stack_size;
+        generic_ctx.sp_offset = target_ctx->sp_offset;
+        if (target_ctx->chain_depth == 0) { // guard chains implement limits individually
+            if (get_num_versions(target) >= MAX_VERSIONS - 1) {
+                //fprintf(stderr, "version limit hit in branch_stub_hit\n");
+                target_ctx = &generic_ctx;
+            }
+        }
+
         p_block = gen_block_version(target, target_ctx, ec);
     }
 
@@ -558,16 +558,6 @@ void gen_direct_jump(
     uint32_t start_pos;
     uint32_t end_pos;
 
-    // Limit the number of block versions
-    ctx_t generic_ctx = DEFAULT_CTX;
-    generic_ctx.stack_size = ctx->stack_size;
-    generic_ctx.sp_offset = ctx->sp_offset;
-    if (get_num_versions(target0) >= MAX_VERSIONS - 1)
-    {
-        //fprintf(stderr, "version limit hit in gen_direct_jump\n");
-        ctx = &generic_ctx;
-    }
-
     block_t* p_block = find_block_version(target0, ctx);
 
     // If the version already exists
@@ -584,6 +574,16 @@ void gen_direct_jump(
     }
     else
     {
+        // Limit the number of block versions
+        ctx_t generic_ctx = DEFAULT_CTX;
+        generic_ctx.stack_size = ctx->stack_size;
+        generic_ctx.sp_offset = ctx->sp_offset;
+        if (get_num_versions(target0) >= MAX_VERSIONS - 1)
+        {
+            //fprintf(stderr, "version limit hit in gen_direct_jump\n");
+            ctx = &generic_ctx;
+        }
+
         // The target block will follow next
         // It will be compiled in gen_block_version()
         dst_addr0 = NULL;
