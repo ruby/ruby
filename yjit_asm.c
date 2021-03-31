@@ -175,7 +175,7 @@ void cb_align_pos(codeblock_t* cb, uint32_t multiple)
 {
     // Compute the pointer modulo the given alignment boundary
     uint8_t* ptr = &cb->mem_block[cb->write_pos];
-    uint32_t rem = ((uint32_t)ptr) % multiple;
+    uint32_t rem = ((uint32_t)(uintptr_t)ptr) % multiple;
 
     // If the pointer is already aligned, stop
     if (rem == 0)

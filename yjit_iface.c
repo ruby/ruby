@@ -18,12 +18,12 @@
 
 #if HAVE_LIBCAPSTONE
 #include <capstone/capstone.h>
+static VALUE cYjitDisasm;
+static VALUE cYjitDisasmInsn;
 #endif
 
 static VALUE mYjit;
 static VALUE cYjitBlock;
-static VALUE cYjitDisasm;
-static VALUE cYjitDisasmInsn;
 
 #if RUBY_DEBUG
 static int64_t vm_insns_count = 0;

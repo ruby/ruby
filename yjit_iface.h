@@ -7,8 +7,11 @@
 #define YJIT_IFACE_H 1
 
 #include "ruby/ruby.h"
+#include "ruby/assert.h" // for RUBY_DEBUG
 #include "vm_core.h"
 #include "yjit_core.h"
+
+#if RUBY_DEBUG
 
 #define YJIT_DECLARE_COUNTERS(...) struct rb_yjit_runtime_counters { \
     int64_t __VA_ARGS__; \
@@ -60,6 +63,8 @@ YJIT_DECLARE_COUNTERS(
 )
 
 #undef YJIT_DECLARE_COUNTERS
+
+#endif // if RUBY_DEBUG
 
 RUBY_EXTERN struct rb_yjit_options rb_yjit_opts;
 RUBY_EXTERN int64_t rb_compiled_iseq_count;
