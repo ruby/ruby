@@ -447,8 +447,8 @@ module Net
     # in the +mailbox+ can be accessed.
     #
     # After you have selected a mailbox, you may retrieve the
-    # number of items in that mailbox from @responses["EXISTS"][-1],
-    # and the number of recent messages from @responses["RECENT"][-1].
+    # number of items in that mailbox from +@responses["EXISTS"][-1]+,
+    # and the number of recent messages from +@responses["RECENT"][-1]+.
     # Note that these values can change if new messages arrive
     # during a session; see #add_response_handler() for a way of
     # detecting this event.
@@ -1052,11 +1052,11 @@ module Net
     # The available options are:
     #
     # port::  Port number (default value is 143 for imap, or 993 for imaps)
-    # ssl::   If options[:ssl] is true, then an attempt will be made
+    # ssl::   If +options[:ssl]+ is true, then an attempt will be made
     #         to use SSL (now TLS) to connect to the server.  For this to work
     #         OpenSSL [OSSL] and the Ruby OpenSSL [RSSL] extensions need to
     #         be installed.
-    #         If options[:ssl] is a hash, it's passed to
+    #         If +options[:ssl]+ is a hash, it's passed to
     #         OpenSSL::SSL::SSLContext#set_params as parameters.
     # open_timeout:: Seconds to wait until a connection is opened
     #
@@ -1912,13 +1912,13 @@ module Net
     #        [INTERNALDATE]
     #           A string representing the internal date of the message.
     #        [RFC822]
-    #           Equivalent to BODY[].
+    #           Equivalent to +BODY[]+.
     #        [RFC822.HEADER]
-    #           Equivalent to BODY.PEEK[HEADER].
+    #           Equivalent to +BODY.PEEK[HEADER]+.
     #        [RFC822.SIZE]
     #           A number expressing the [RFC-822] size of the message.
     #        [RFC822.TEXT]
-    #           Equivalent to BODY[TEXT].
+    #           Equivalent to +BODY[TEXT]+.
     #        [UID]
     #           A number expressing the unique identifier of the message.
     #
