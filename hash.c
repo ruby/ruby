@@ -3290,7 +3290,6 @@ rb_hash_transform_keys_bang(int argc, VALUE *argv, VALUE hash)
         }
         rb_ary_clear(pairs);
         rb_hash_clear(new_keys);
-        rb_gc_force_recycle(new_keys);
     }
     return hash;
 }
