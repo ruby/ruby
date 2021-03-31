@@ -353,7 +353,8 @@ branch_stub_hit(uint32_t branch_idx, uint32_t target_idx, rb_execution_context_t
     uint8_t* dst_addr;
 
     RB_VM_LOCK_ENTER();
-
+    rb_vm_barrier(); // Stop other ractors since we are going to patch machine code.
+                     // It's how the GC does it.
 
     RUBY_ASSERT(branch_idx < num_branches);
     RUBY_ASSERT(target_idx < 2);
@@ -693,6 +694,9 @@ block_array_remove(rb_yjit_block_array_t block_array, block_t *block)
 void
 invalidate_block_version(block_t* block)
 {
+    ASSERT_vm_locking();
+    rb_vm_barrier(); // Stop other ractors since we are going to patch machine code.
+
     const rb_iseq_t *iseq = block->blockid.iseq;
 
     // fprintf(stderr, "invalidating block (%p, %d)\n", block->blockid.iseq, block->blockid.idx);
