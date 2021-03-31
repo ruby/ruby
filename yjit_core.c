@@ -34,12 +34,33 @@ Push one new value on the temp stack
 Return a pointer to the new stack top
 */
 x86opnd_t
-ctx_stack_push(ctx_t* ctx, int type)
+ctx_stack_push(ctx_t* ctx, val_type_t type)
 {
     // Keep track of the type of the value
-    RUBY_ASSERT(type <= RUBY_T_MASK);
-    if (ctx->stack_size < MAX_TEMP_TYPES)
+    if (ctx->stack_size < MAX_TEMP_TYPES) {
+        ctx->temp_mapping[ctx->stack_size] = MAP_STACK;
         ctx->temp_types[ctx->stack_size] = type;
+    }
+
+    ctx->stack_size += 1;
+    ctx->sp_offset += 1;
+
+    // SP points just above the topmost value
+    int32_t offset = (ctx->sp_offset - 1) * sizeof(VALUE);
+    return mem_opnd(64, REG_SP, offset);
+}
+
+/*
+Push the self value on the stack
+*/
+x86opnd_t
+ctx_stack_push_self(ctx_t* ctx)
+{
+    // Keep track of the type of the value
+    if (ctx->stack_size < MAX_TEMP_TYPES) {
+        ctx->temp_mapping[ctx->stack_size] = MAP_SELF;
+        ctx->temp_types[ctx->stack_size] = ctx->self_type;
+    }
 
     ctx->stack_size += 1;
     ctx->sp_offset += 1;
@@ -66,8 +87,10 @@ ctx_stack_pop(ctx_t* ctx, size_t n)
     for (size_t i = 0; i < n; ++i)
     {
         size_t idx = ctx->stack_size - i - 1;
-        if (idx < MAX_TEMP_TYPES)
-            ctx->temp_types[idx] = T_NONE;
+        if (idx < MAX_TEMP_TYPES) {
+            ctx->temp_types[idx] = TYPE_UNKNOWN;
+            ctx->temp_mapping[idx] = MAP_STACK;
+        }
     }
 
     ctx->stack_size -= n;
@@ -90,18 +113,58 @@ ctx_stack_opnd(ctx_t* ctx, int32_t idx)
 }
 
 /**
-Get the type of the topmost value on the temp stack
+Get the type of a value on the temp stack
 Returns T_NONE if unknown
 */
-int
-ctx_get_top_type(ctx_t* ctx)
+val_type_t
+ctx_get_temp_type(const ctx_t* ctx, size_t idx)
 {
-    RUBY_ASSERT(ctx->stack_size > 0);
+    RUBY_ASSERT(idx < ctx->stack_size);
 
     if (ctx->stack_size > MAX_TEMP_TYPES)
-        return T_NONE;
+        return TYPE_UNKNOWN;
 
-    return ctx->temp_types[ctx->stack_size - 1];
+    temp_mapping_t mapping = ctx->temp_mapping[ctx->stack_size - 1 - idx];
+
+    if (mapping.kind == TEMP_SELF)
+        return ctx->self_type;
+    else if (mapping.kind == TEMP_STACK)
+        return ctx->temp_types[ctx->stack_size - 1 - idx];
+
+    RUBY_ASSERT(false);
+    return TYPE_UNKNOWN;
+}
+
+/*
+Compute a difference between two value types
+Returns 0 if the two are the same
+Returns > 0 if different but compatible
+Returns INT_MAX if incompatible
+*/
+int type_diff(val_type_t src, val_type_t dst)
+{
+    RUBY_ASSERT(!src.is_heap || !src.is_imm);
+    RUBY_ASSERT(!dst.is_heap || !dst.is_imm);
+
+    if (src.type != dst.type && dst.type != ETYPE_UNKNOWN)
+        return INT_MAX;
+
+    if (src.is_heap && !dst.is_heap)
+        return INT_MAX;
+
+    if (src.is_imm && !dst.is_imm)
+        return INT_MAX;
+
+    if (src.is_heap != dst.is_heap)
+        return 1;
+
+    if (src.is_imm != dst.is_imm)
+        return 1;
+
+    if (src.type != dst.type)
+        return 1;
+
+    return 0;
 }
 
 /**
@@ -127,26 +190,30 @@ int ctx_diff(const ctx_t* src, const ctx_t* dst)
     if (dst->sp_offset != src->sp_offset)
         return INT_MAX;
 
-    if (dst->self_is_object != src->self_is_object)
-        return INT_MAX;
-
     // Difference sum
     int diff = 0;
 
-    // For each temporary variable
-    for (size_t i = 0; i < MAX_TEMP_TYPES; ++i)
-    {
-        int t_src = src->temp_types[i];
-        int t_dst = dst->temp_types[i];
+    // Check the type of self
+    int self_diff = type_diff(src->self_type, dst->self_type);
 
-        if (t_dst != t_src)
-        {
-            // It's OK to lose some type information
-            if (t_dst == T_NONE)
-                diff += 1;
-            else
-                return INT_MAX;
-        }
+    if (self_diff == INT_MAX)
+        return INT_MAX;
+
+    diff += self_diff;
+
+    // TODO: when we track local types, need to check them too
+
+    // For each value on the temp stack
+    for (size_t i = 0; i < src->stack_size; ++i)
+    {
+        val_type_t t_src = ctx_get_temp_type(src, i);
+        val_type_t t_dst = ctx_get_temp_type(dst, i);
+        int temp_diff = type_diff(t_src, t_dst);
+
+        if (temp_diff == INT_MAX)
+            return INT_MAX;
+
+        diff += temp_diff;
     }
 
     return diff;

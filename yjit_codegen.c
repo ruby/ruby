@@ -369,8 +369,8 @@ static codegen_status_t
 gen_dup(jitstate_t* jit, ctx_t* ctx)
 {
     // Get the top value and its type
+    val_type_t dup_type = ctx_get_temp_type(ctx, 0);
     x86opnd_t dup_val = ctx_stack_pop(ctx, 0);
-    int dup_type = ctx_get_top_type(ctx);
 
     // Push the same value on top
     x86opnd_t loc0 = ctx_stack_push(ctx, dup_type);
@@ -399,7 +399,7 @@ static codegen_status_t
 gen_putnil(jitstate_t* jit, ctx_t* ctx)
 {
     // Write constant at SP
-    x86opnd_t stack_top = ctx_stack_push(ctx, T_NIL);
+    x86opnd_t stack_top = ctx_stack_push(ctx, TYPE_NIL);
     mov(cb, stack_top, imm_opnd(Qnil));
     return YJIT_KEEP_COMPILING;
 }
@@ -412,7 +412,7 @@ gen_putobject(jitstate_t* jit, ctx_t* ctx)
     if (FIXNUM_P(arg))
     {
         // Keep track of the fixnum type tag
-        x86opnd_t stack_top = ctx_stack_push(ctx, T_FIXNUM);
+        x86opnd_t stack_top = ctx_stack_push(ctx, TYPE_FIXNUM);
 
         x86opnd_t imm = imm_opnd((int64_t)arg);
 
@@ -429,7 +429,7 @@ gen_putobject(jitstate_t* jit, ctx_t* ctx)
     }
     else if (arg == Qtrue || arg == Qfalse)
     {
-        x86opnd_t stack_top = ctx_stack_push(ctx, T_NONE);
+        x86opnd_t stack_top = ctx_stack_push(ctx, TYPE_UNKNOWN);
         mov(cb, stack_top, imm_opnd((int64_t)arg));
     }
     else
@@ -441,7 +441,7 @@ gen_putobject(jitstate_t* jit, ctx_t* ctx)
         mov(cb, RAX, mem_opnd(64, RAX, 0));
 
         // Write argument at SP
-        x86opnd_t stack_top = ctx_stack_push(ctx, T_NONE);
+        x86opnd_t stack_top = ctx_stack_push(ctx, TYPE_UNKNOWN);
         mov(cb, stack_top, RAX);
     }
 
@@ -455,7 +455,7 @@ gen_putobject_int2fix(jitstate_t* jit, ctx_t* ctx)
     int cst_val = (opcode == BIN(putobject_INT2FIX_0_))? 0:1;
 
     // Write constant at SP
-    x86opnd_t stack_top = ctx_stack_push(ctx, T_FIXNUM);
+    x86opnd_t stack_top = ctx_stack_push(ctx, TYPE_FIXNUM);
     mov(cb, stack_top, imm_opnd(INT2FIX(cst_val)));
 
     return YJIT_KEEP_COMPILING;
@@ -468,7 +468,7 @@ gen_putself(jitstate_t* jit, ctx_t* ctx)
     mov(cb, RAX, member_opnd(REG_CFP, rb_control_frame_t, self));
 
     // Write it on the stack
-    x86opnd_t stack_top = ctx_stack_push(ctx, T_NONE);
+    x86opnd_t stack_top = ctx_stack_push(ctx, TYPE_UNKNOWN);
     mov(cb, stack_top, RAX);
 
     return YJIT_KEEP_COMPILING;
@@ -488,7 +488,7 @@ gen_getlocal_wc0(jitstate_t* jit, ctx_t* ctx)
     mov(cb, REG0, mem_opnd(64, REG0, offs));
 
     // Write the local at SP
-    x86opnd_t stack_top = ctx_stack_push(ctx, T_NONE);
+    x86opnd_t stack_top = ctx_stack_push(ctx, TYPE_UNKNOWN);
     mov(cb, stack_top, REG0);
 
     return YJIT_KEEP_COMPILING;
@@ -515,7 +515,7 @@ gen_getlocal_wc1(jitstate_t* jit, ctx_t* ctx)
     mov(cb, REG0, mem_opnd(64, REG0, offs));
 
     // Write the local at SP
-    x86opnd_t stack_top = ctx_stack_push(ctx, T_NONE);
+    x86opnd_t stack_top = ctx_stack_push(ctx, TYPE_UNKNOWN);
     mov(cb, stack_top, REG0);
 
     return YJIT_KEEP_COMPILING;
@@ -564,10 +564,10 @@ gen_setlocal_wc0(jitstate_t* jit, ctx_t* ctx)
 
 // Check that `self` is a pointer to an object on the GC heap
 static void
-guard_self_is_object(codeblock_t *cb, x86opnd_t self_opnd, uint8_t *side_exit, ctx_t *ctx)
+guard_self_is_heap(codeblock_t *cb, x86opnd_t self_opnd, uint8_t *side_exit, ctx_t *ctx)
 {
     // `self` is constant throughout the entire region, so we only need to do this check once.
-    if (!ctx->self_is_object) {
+    if (!ctx->self_type.is_heap) {
         test(cb, self_opnd, imm_opnd(RUBY_IMMEDIATE_MASK));
         jnz_ptr(cb, side_exit);
         cmp(cb, self_opnd, imm_opnd(Qfalse));
@@ -580,10 +580,9 @@ guard_self_is_object(codeblock_t *cb, x86opnd_t self_opnd, uint8_t *side_exit, c
         // cmp(cb, self_opnd, imm_opnd(Qnil));
         // jbe(cb, side_exit);
 
-        ctx->self_is_object = true;
+        ctx->self_type.is_heap = 1;
     }
 }
-
 
 // Generate a stubbed unconditional jump to the next bytecode instruction.
 // Blocks that are part of a guard chain can use this to share the same successor.
@@ -726,7 +725,7 @@ gen_getinstancevariable(jitstate_t* jit, ctx_t* ctx)
         // Load self from CFP
         mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, self));
 
-        guard_self_is_object(cb, REG0, COUNTED_EXIT(side_exit, getivar_se_self_not_heap), ctx);
+        guard_self_is_heap(cb, REG0, COUNTED_EXIT(side_exit, getivar_se_self_not_heap), ctx);
 
         // Guard that self has a known class
         x86opnd_t klass_opnd = mem_opnd(64, REG0, offsetof(struct RBasic, klass));
@@ -754,7 +753,7 @@ gen_getinstancevariable(jitstate_t* jit, ctx_t* ctx)
             je_ptr(cb, COUNTED_EXIT(side_exit, getivar_undef));
 
             // Push the ivar on the stack
-            x86opnd_t out_opnd = ctx_stack_push(ctx, T_NONE);
+            x86opnd_t out_opnd = ctx_stack_push(ctx, TYPE_UNKNOWN);
             mov(cb, out_opnd, REG1);
         }
         else {
@@ -787,7 +786,7 @@ gen_getinstancevariable(jitstate_t* jit, ctx_t* ctx)
             je_ptr(cb, COUNTED_EXIT(side_exit, getivar_undef));
 
             // Push the ivar on the stack
-            x86opnd_t out_opnd = ctx_stack_push(ctx, T_NONE);
+            x86opnd_t out_opnd = ctx_stack_push(ctx, TYPE_UNKNOWN);
             mov(cb, out_opnd, REG0);
         }
 
@@ -825,7 +824,7 @@ gen_setinstancevariable(jitstate_t* jit, ctx_t* ctx)
     // Load self from CFP
     mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, self));
 
-    guard_self_is_object(cb, REG0, side_exit, ctx);
+    guard_self_is_heap(cb, REG0, side_exit, ctx);
 
     // Bail if receiver class is different from compiled time call cache class
     x86opnd_t klass_opnd = mem_opnd(64, REG0, offsetof(struct RBasic, klass));
@@ -882,17 +881,17 @@ gen_fixnum_cmp(jitstate_t* jit, ctx_t* ctx, cmov_fn cmov_op)
     }
 
     // Get the operands and destination from the stack
-    int arg1_type = ctx_get_top_type(ctx);
+    val_type_t arg1_type = ctx_get_temp_type(ctx, 0);
     x86opnd_t arg1 = ctx_stack_pop(ctx, 1);
-    int arg0_type = ctx_get_top_type(ctx);
+    val_type_t arg0_type = ctx_get_temp_type(ctx, 0);
     x86opnd_t arg0 = ctx_stack_pop(ctx, 1);
 
     // If not fixnums, fall back
-    if (arg0_type != T_FIXNUM) {
+    if (arg0_type.type != ETYPE_FIXNUM) {
         test(cb, arg0, imm_opnd(RUBY_FIXNUM_FLAG));
         jz_ptr(cb, side_exit);
     }
-    if (arg1_type != T_FIXNUM) {
+    if (arg1_type.type != ETYPE_FIXNUM) {
         test(cb, arg1, imm_opnd(RUBY_FIXNUM_FLAG));
         jz_ptr(cb, side_exit);
     }
@@ -905,7 +904,7 @@ gen_fixnum_cmp(jitstate_t* jit, ctx_t* ctx, cmov_fn cmov_op)
     cmov_op(cb, REG0, REG1);
 
     // Push the output on the stack
-    x86opnd_t dst = ctx_stack_push(ctx, T_NONE);
+    x86opnd_t dst = ctx_stack_push(ctx, TYPE_UNKNOWN);
     mov(cb, dst, REG0);
 
     return YJIT_KEEP_COMPILING;
@@ -1007,7 +1006,7 @@ gen_opt_aref(jitstate_t *jit, ctx_t *ctx)
             yjit_load_regs(cb);
 
             // Push the return value onto the stack
-            x86opnd_t stack_ret = ctx_stack_push(ctx, T_NONE);
+            x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_UNKNOWN);
             mov(cb, stack_ret, RAX);
         }
 
@@ -1068,7 +1067,7 @@ gen_opt_aref(jitstate_t *jit, ctx_t *ctx)
             yjit_load_regs(cb);
 
             // Push the return value onto the stack
-            x86opnd_t stack_ret = ctx_stack_push(ctx, T_NONE);
+            x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_UNKNOWN);
             mov(cb, stack_ret, RAX);
         }
 
@@ -1092,17 +1091,17 @@ gen_opt_and(jitstate_t* jit, ctx_t* ctx)
     }
 
     // Get the operands and destination from the stack
-    int arg1_type = ctx_get_top_type(ctx);
+    val_type_t arg1_type = ctx_get_temp_type(ctx, 0);
     x86opnd_t arg1 = ctx_stack_pop(ctx, 1);
-    int arg0_type = ctx_get_top_type(ctx);
+    val_type_t arg0_type = ctx_get_temp_type(ctx, 0);
     x86opnd_t arg0 = ctx_stack_pop(ctx, 1);
 
     // If not fixnums, fall back
-    if (arg0_type != T_FIXNUM) {
+    if (arg0_type.type != ETYPE_FIXNUM) {
         test(cb, arg0, imm_opnd(RUBY_FIXNUM_FLAG));
         jz_ptr(cb, side_exit);
     }
-    if (arg1_type != T_FIXNUM) {
+    if (arg1_type.type != ETYPE_FIXNUM) {
         test(cb, arg1, imm_opnd(RUBY_FIXNUM_FLAG));
         jz_ptr(cb, side_exit);
     }
@@ -1112,7 +1111,7 @@ gen_opt_and(jitstate_t* jit, ctx_t* ctx)
     and(cb, REG0, arg1);
 
     // Push the output on the stack
-    x86opnd_t dst = ctx_stack_push(ctx, T_FIXNUM);
+    x86opnd_t dst = ctx_stack_push(ctx, TYPE_FIXNUM);
     mov(cb, dst, REG0);
 
     return YJIT_KEEP_COMPILING;
@@ -1130,14 +1129,20 @@ gen_opt_minus(jitstate_t* jit, ctx_t* ctx)
     }
 
     // Get the operands and destination from the stack
+    val_type_t arg1_type = ctx_get_temp_type(ctx, 0);
     x86opnd_t arg1 = ctx_stack_pop(ctx, 1);
+    val_type_t arg0_type = ctx_get_temp_type(ctx, 0);
     x86opnd_t arg0 = ctx_stack_pop(ctx, 1);
 
     // If not fixnums, fall back
-    test(cb, arg0, imm_opnd(RUBY_FIXNUM_FLAG));
-    jz_ptr(cb, side_exit);
-    test(cb, arg1, imm_opnd(RUBY_FIXNUM_FLAG));
-    jz_ptr(cb, side_exit);
+    if (arg0_type.type != ETYPE_FIXNUM) {
+        test(cb, arg0, imm_opnd(RUBY_FIXNUM_FLAG));
+        jz_ptr(cb, side_exit);
+    }
+    if (arg1_type.type != ETYPE_FIXNUM) {
+        test(cb, arg1, imm_opnd(RUBY_FIXNUM_FLAG));
+        jz_ptr(cb, side_exit);
+    }
 
     // Subtract arg0 - arg1 and test for overflow
     mov(cb, REG0, arg0);
@@ -1146,7 +1151,7 @@ gen_opt_minus(jitstate_t* jit, ctx_t* ctx)
     add(cb, REG0, imm_opnd(1));
 
     // Push the output on the stack
-    x86opnd_t dst = ctx_stack_push(ctx, T_FIXNUM);
+    x86opnd_t dst = ctx_stack_push(ctx, TYPE_FIXNUM);
     mov(cb, dst, REG0);
 
     return YJIT_KEEP_COMPILING;
@@ -1164,17 +1169,17 @@ gen_opt_plus(jitstate_t* jit, ctx_t* ctx)
     }
 
     // Get the operands and destination from the stack
-    int arg1_type = ctx_get_top_type(ctx);
+    val_type_t arg1_type = ctx_get_temp_type(ctx, 0);
     x86opnd_t arg1 = ctx_stack_pop(ctx, 1);
-    int arg0_type = ctx_get_top_type(ctx);
+    val_type_t arg0_type = ctx_get_temp_type(ctx, 0);
     x86opnd_t arg0 = ctx_stack_pop(ctx, 1);
 
     // If not fixnums, fall back
-    if (arg0_type != T_FIXNUM) {
+    if (arg0_type.type != ETYPE_FIXNUM) {
         test(cb, arg0, imm_opnd(RUBY_FIXNUM_FLAG));
         jz_ptr(cb, side_exit);
     }
-    if (arg1_type != T_FIXNUM) {
+    if (arg1_type.type != ETYPE_FIXNUM) {
         test(cb, arg1, imm_opnd(RUBY_FIXNUM_FLAG));
         jz_ptr(cb, side_exit);
     }
@@ -1186,7 +1191,7 @@ gen_opt_plus(jitstate_t* jit, ctx_t* ctx)
     jo_ptr(cb, side_exit);
 
     // Push the output on the stack
-    x86opnd_t dst = ctx_stack_push(ctx, T_FIXNUM);
+    x86opnd_t dst = ctx_stack_push(ctx, TYPE_FIXNUM);
     mov(cb, dst, REG0);
 
     return YJIT_KEEP_COMPILING;
@@ -1529,7 +1534,7 @@ gen_oswb_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const 
     yjit_load_regs(cb);
 
     // Push the return value on the Ruby stack
-    x86opnd_t stack_ret = ctx_stack_push(ctx, T_NONE);
+    x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_UNKNOWN);
     mov(cb, stack_ret, RAX);
 
     // If this function needs a Ruby stack frame
@@ -1677,7 +1682,7 @@ gen_oswb_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
     // After the return, the JIT and interpreter SP will match up
     ctx_t return_ctx = *ctx;
     ctx_stack_pop(&return_ctx, argc + 1);
-    ctx_stack_push(&return_ctx, T_NONE);
+    ctx_stack_push(&return_ctx, TYPE_UNKNOWN);
     return_ctx.sp_offset = 0;
     return_ctx.chain_depth = 0;
 
@@ -1912,7 +1917,7 @@ gen_opt_getinlinecache(jitstate_t *jit, ctx_t *ctx)
     // FIXME: This leaks when st_insert raises NoMemoryError
     if (!assume_stable_global_constant_state(jit->block)) return YJIT_CANT_COMPILE;
 
-    x86opnd_t stack_top = ctx_stack_push(ctx, T_NONE);
+    x86opnd_t stack_top = ctx_stack_push(ctx, TYPE_UNKNOWN);
     jit_mov_gc_ptr(jit, cb, REG0, ice->value);
     mov(cb, stack_top, REG0);
 

@@ -26,10 +26,21 @@
 // Default versioning context (no type information)
 #define DEFAULT_CTX ( (ctx_t){ 0 } )
 
+typedef enum yjit_type_enum
+{
+    ETYPE_UNKNOWN = 0,
+    ETYPE_NIL,
+    ETYPE_FIXNUM,
+    //ETYPE_ARRAY
+    //ETYPE_SYMBOL
+    //ETYPE_STRING
+
+} type_enum_t;
+
 /**
 Represent the type of a value (local/stack/self) in YJIT
 */
-typedef struct yjit_val_type
+typedef struct yjit_type_struct
 {
     // Value is definitely a heap object
     uint8_t is_heap : 1;
@@ -37,17 +48,8 @@ typedef struct yjit_val_type
     // Value is definitely an immediate
     uint8_t is_imm : 1;
 
-    // Not Qfalse or Qnil
-    // Is this useful?
-    //uint8_t is_truthy: 1;
-
-    // NOTE: we could switch to using an enum to track multiple types
-    // but then we also need a value for "unknown type"
-    uint8_t is_fixnum : 1;
-    //uint8_t is_array : 1;       // for opt_aref
-    //uint8_t is_hash : 1;        // for opt_aref
-    //uint8_t is_symbol : 1;
-    //uint8_t is_string : 1;
+    // Specific value type, if known
+    uint8_t type : 3;
 
 } val_type_t;
 STATIC_ASSERT(val_type_size, sizeof(val_type_t) == 1);
@@ -61,15 +63,16 @@ STATIC_ASSERT(val_type_size, sizeof(val_type_t) == 1);
 // Could be any immediate
 #define TYPE_IMM ( (val_type_t){ .is_imm = 1 } )
 
-// Immediate integer
-#define TYPE_FIXNUM ( (val_type_t){ .is_imm = 1, .is_fixnum = 1 } )
+// Immediate types
+#define TYPE_NIL ( (val_type_t){ .is_imm = 1, .type = ETYPE_NIL } )
+#define TYPE_FIXNUM ( (val_type_t){ .is_imm = 1, .type = ETYPE_FIXNUM } )
 
 typedef enum yjit_temp_loc
 {
     TEMP_STACK = 0,
     TEMP_SELF,
     //TEMP_LOCAL, // Local with index
-    //TEMP_CONST, // Small constant
+    //TEMP_CONST, // Small constant (0, 1, 2, Qnil, Qfalse, Qtrue)
 
 } temp_loc_t;
 
@@ -91,26 +94,12 @@ STATIC_ASSERT(temp_mapping_size, sizeof(temp_mapping_t) == 1);
 // Temp value is actually self
 #define MAP_SELF ( (temp_mapping_t) { .kind = TEMP_SELF } )
 
-
-
-
-
-
-
 /**
 Code generation context
 Contains information we can use to optimize code
 */
 typedef struct yjit_context
 {
-    // Depth of this block in the sidechain (eg: inline-cache chain)
-    uint8_t chain_depth;
-
-    // Temporary variable types we keep track of
-    // Values are `ruby_value_type`
-    // T_NONE==0 is the unknown type
-    uint8_t temp_types[MAX_TEMP_TYPES];
-
     // Number of values currently on the temporary stack
     uint16_t stack_size;
 
@@ -118,22 +107,23 @@ typedef struct yjit_context
     // This represents how far the JIT's SP is from the "real" SP
     int16_t sp_offset;
 
+    // Depth of this block in the sidechain (eg: inline-cache chain)
+    uint8_t chain_depth;
 
+    // Local variable types we keepp track of
+    val_type_t local_types[MAX_LOCAL_TYPES];
 
+    // Temporary variable types we keep track of
+    val_type_t temp_types[MAX_TEMP_TYPES];
 
+    // Type we track for self
+    val_type_t self_type;
 
-
-    // FIXME: no longer need this bit after type mapping refactoring
-    // Whether we know self is a heap object
-    bool self_is_object : 1;
-
-
-
-
-
-
+    // Mapping of temp stack entries to types we track
+    temp_mapping_t temp_mapping[MAX_TEMP_TYPES];
 
 } ctx_t;
+STATIC_ASSERT(yjit_ctx_size, sizeof(ctx_t) <= 32);
 
 // Tuple of (iseq, idx) used to idenfity basic blocks
 typedef struct BlockId
@@ -224,10 +214,10 @@ typedef struct yjit_block_version
 
 // Context object methods
 x86opnd_t ctx_sp_opnd(ctx_t* ctx, int32_t offset_bytes);
-x86opnd_t ctx_stack_push(ctx_t* ctx, int type);
+x86opnd_t ctx_stack_push(ctx_t* ctx, val_type_t type);
 x86opnd_t ctx_stack_pop(ctx_t* ctx, size_t n);
 x86opnd_t ctx_stack_opnd(ctx_t* ctx, int32_t idx);
-int ctx_get_top_type(ctx_t* ctx);
+val_type_t ctx_get_temp_type(const ctx_t* ctx, size_t idx);
 int ctx_diff(const ctx_t* src, const ctx_t* dst);
 
 block_t* find_block_version(blockid_t blockid, const ctx_t* ctx);
