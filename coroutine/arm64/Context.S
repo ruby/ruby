@@ -11,10 +11,12 @@
 #if defined(__APPLE__)
 #define x29 fp
 #define x30 lr
-#endif
-
+.text
+.p2align 2
+#else
 .text
 .align 2
+#endif
 
 .global PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer)
 PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
