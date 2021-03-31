@@ -14,7 +14,7 @@ Gem::Specification.new do |spec|
 
   spec.files         = ["ext/gdbm/extconf.rb", "ext/gdbm/gdbm.c"]
   spec.bindir        = "exe"
-  spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
+  spec.executables   = []
   spec.require_paths = ["lib"]
   spec.extensions    = ["ext/gdbm/extconf.rb"]
   spec.required_ruby_version = ">= 2.3.0"
