@@ -445,13 +445,10 @@ static VALUE
 strscan_get_charpos(VALUE self)
 {
     struct strscanner *p;
-    VALUE substr;
 
     GET_SCANNER(self, p);
 
-    substr = rb_funcall(p->str, id_byteslice, 2, INT2FIX(0), LONG2NUM(p->curr));
-
-    return rb_str_length(substr);
+    return LONG2NUM(rb_enc_strlen(S_PBEG(p), CURPTR(p), rb_enc_get(p->str)));
 }
 
 /*
