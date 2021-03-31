@@ -244,16 +244,12 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_trace_object_allocations_gc_stress
-    prev = GC.stress
-    GC.stress = true
-
-    ObjectSpace.trace_object_allocations{
-      proc{}
-    }
-
+    EnvUtil.under_gc_stress do
+      ObjectSpace.trace_object_allocations{
+        proc{}
+      }
+    end
     assert true # success
-  ensure
-    GC.stress = prev
   end
 
   def test_dump_flags
