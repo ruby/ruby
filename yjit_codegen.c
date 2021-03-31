@@ -36,7 +36,7 @@ jit_print_loc(jitstate_t* jit, const char* msg)
     long len;
     VALUE path = rb_iseq_path(jit->iseq);
     RSTRING_GETMEM(path, ptr, len);
-    fprintf(stderr, "%s %s:%u\n", msg, ptr, rb_iseq_line_no(jit->iseq, jit->insn_idx));
+    fprintf(stderr, "%s %.*s:%u\n", msg, (int)len, ptr, rb_iseq_line_no(jit->iseq, jit->insn_idx));
 }
 
 // Get the current instruction's opcode
@@ -1825,6 +1825,8 @@ gen_opt_send_without_block(jitstate_t* jit, ctx_t* ctx)
         return YJIT_CANT_COMPILE;
     // no default case so compiler issues a warning if this is not exhaustive
     }
+
+    return YJIT_CANT_COMPILE;
 }
 
 static codegen_status_t

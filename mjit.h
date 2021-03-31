@@ -141,12 +141,10 @@ mjit_exec_slowpath(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_
 static inline VALUE
 mjit_exec(rb_execution_context_t *ec)
 {
-    const rb_iseq_t *iseq;
-    struct rb_iseq_constant_body *body;
+    const rb_iseq_t *iseq = ec->cfp->iseq;
+    struct rb_iseq_constant_body *body = iseq->body;
 
     if (mjit_call_p || rb_yjit_enabled_p()) {
-        iseq = ec->cfp->iseq;
-        body = iseq->body;
         body->total_calls++;
     }
 
