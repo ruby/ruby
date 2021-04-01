@@ -276,43 +276,17 @@ assume_stable_global_constant_state(block_t *block) {
 }
 
 static int
-mark_keys_movable_i(st_data_t k, st_data_t v, st_data_t ignore)
+mark_and_pin_keys_i(st_data_t k, st_data_t v, st_data_t ignore)
 {
-    rb_gc_mark_movable((VALUE)k);
+    rb_gc_mark((VALUE)k);
 
     return ST_CONTINUE;
-}
-
-static int
-table_update_keys_i(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
-{
-    *key = rb_gc_location(rb_gc_location((VALUE)*key));
-
-    return ST_CONTINUE;
-}
-
-static int
-replace_all(st_data_t key, st_data_t value, st_data_t argp, int error)
-{
-    return ST_REPLACE;
 }
 
 // GC callback during compaction
 static void
 yjit_root_update_references(void *ptr)
 {
-    if (method_lookup_dependency) {
-        if (st_foreach_with_replace(method_lookup_dependency, replace_all, table_update_keys_i, 0)) {
-            RUBY_ASSERT(false);
-        }
-    }
-
-    if (cme_validity_dependency) {
-        if (st_foreach_with_replace(cme_validity_dependency, replace_all, table_update_keys_i, 0)) {
-            RUBY_ASSERT(false);
-        }
-    }
-
     yjit_branches_update_references();
 }
 
@@ -325,11 +299,17 @@ yjit_root_mark(void *ptr)
         // callee class they speculate on from being collected.
         // We could do a bespoke weak reference scheme on classes similar to
         // the interpreter's call cache. See finalizer for T_CLASS and cc_table_free().
-        st_foreach(method_lookup_dependency, mark_keys_movable_i, 0);
+        st_foreach(method_lookup_dependency, mark_and_pin_keys_i, 0);
     }
 
     if (cme_validity_dependency) {
-        st_foreach(cme_validity_dependency, mark_keys_movable_i, 0);
+        // Why not let the GC move the cme keys in this table?
+        // Because this is basically a compare_by_identity Hash.
+        // If a key moves, we would need to reinsert it into the table so it is rehashed.
+        // That is tricky to do, espcially as it could trigger allocation which could
+        // trigger GC. Not sure if it is okay to trigger GC while the GC is updating
+        // references.
+        st_foreach(cme_validity_dependency, mark_and_pin_keys_i, 0);
     }
 }
 
