@@ -1287,7 +1287,7 @@ rb_obj_infect(VALUE victim, VALUE carrier)
  *     obj.freeze    -> obj
  *
  *  Prevents further modifications to <i>obj</i>. A
- *  RuntimeError will be raised if modification is attempted.
+ *  FrozenError will be raised if modification is attempted.
  *  There is no way to unfreeze a frozen object. See also
  *  Object#frozen?.
  *
