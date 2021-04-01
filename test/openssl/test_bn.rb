@@ -130,6 +130,27 @@ class OpenSSL::TestBN < OpenSSL::TestCase
     assert_equal(-999, +@e2)
     assert_equal(-999, -@e1)
     assert_equal(+999, -@e2)
+
+    # These methods create new BN instances due to BN mutability
+    # Ensure that the instance isn't the same
+    e1_plus = +@e1
+    e1_minus = -@e1
+    assert_equal(false, @e1.equal?(e1_plus))
+    assert_equal(true, @e1 == e1_plus)
+    assert_equal(false, @e1.equal?(e1_minus))
+  end
+
+  def test_abs
+    assert_equal(@e1, @e2.abs)
+    assert_equal(@e3, @e4.abs)
+    assert_not_equal(@e2, @e2.abs)
+    assert_not_equal(@e4, @e4.abs)
+    assert_equal(false, @e2.abs.negative?)
+    assert_equal(false, @e4.abs.negative?)
+    assert_equal(true, (-@e1.abs).negative?)
+    assert_equal(true, (-@e2.abs).negative?)
+    assert_equal(true, (-@e3.abs).negative?)
+    assert_equal(true, (-@e4.abs).negative?)
   end
 
   def test_mod
