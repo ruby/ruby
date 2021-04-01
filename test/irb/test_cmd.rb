@@ -392,6 +392,23 @@ module TestIRB
       assert_match(/^instance variables:\s+@a\n/m, out)
     end
 
+    def test_show_source
+      input = TestInputMethod.new([
+        "show_source 'IRB.conf'\n",
+      ])
+      IRB.init_config(nil)
+      workspace = IRB::WorkSpace.new(self)
+      irb = IRB::Irb.new(workspace, input)
+      IRB.conf[:VERBOSE] = false
+      IRB.conf[:MAIN_CONTEXT] = irb.context
+      irb.context.return_format = "=> %s\n"
+      out, err = capture_output do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_match(%r[/irb\.rb], out)
+    end
+
     def test_whereami
       input = TestInputMethod.new([
         "whereami\n",
