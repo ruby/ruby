@@ -505,3 +505,76 @@ assert_equal '[Iseq, Cfunc]', %q{
 
   [Iseq.call_itself, Cfunc.call_itself]
 }
+
+# attr_reader method
+assert_equal '[100, 299]', %q{
+  class A
+    attr_reader :foo
+
+    def initialize
+      @foo = 100
+    end
+
+    # Make it extended
+    def fill!
+      @bar = @jojo = @as = @sdfsdf = @foo = 299
+    end
+  end
+
+  def bar(ins)
+    ins.foo
+  end
+
+  ins = A.new
+  oth = A.new
+  oth.fill!
+
+  bar(ins)
+  bar(oth)
+
+  [bar(ins), bar(oth)]
+}
+
+# get ivar on String
+assert_equal '[nil, nil, 42, 42]', %q{
+  # @foo to exercise the getinstancevariable instruction
+  public def get_foo
+    @foo
+  end
+
+  get_foo
+  get_foo # compile it for the top level object
+
+  class String
+    attr_reader :foo
+  end
+
+  def run
+    str = String.new
+
+    getter = str.foo
+    insn = str.get_foo
+
+    str.instance_variable_set(:@foo, 42)
+
+    [getter, insn, str.foo, str.get_foo]
+  end
+
+  run
+  run
+}
+
+# splatting an empty array on a getter
+assert_equal '42', %q{
+  @foo = 42
+  module Kernel
+    attr_reader :foo
+  end
+
+  def run
+    foo(*[])
+  end
+
+  run
+  run
+}
