@@ -809,8 +809,8 @@ print_yjit_stats(void)
     double ratio = yjit_runtime_counters.exec_instruction / total_insns_count;
 
     fprintf(stderr, "compiled_iseq_count:   %10" PRId64 "\n", rb_compiled_iseq_count);
-    fprintf(stderr, "main_block_code_size:  %6.1f MiB\n", ((double)cb->write_pos) / 1048576.0);
-    fprintf(stderr, "side_block_code_size:  %6.1f MiB\n", ((double)ocb->write_pos) / 1048576.0);
+    fprintf(stderr, "inline_code_size:      %10d\n", cb->write_pos);
+    fprintf(stderr, "outlined_code_size:    %10d\n", ocb->write_pos);
     fprintf(stderr, "vm_insns_count:        %10" PRId64 "\n", vm_insns_count);
     fprintf(stderr, "yjit_exec_insns_count: %10" PRId64 "\n", yjit_runtime_counters.exec_instruction);
     fprintf(stderr, "ratio_in_yjit:         %9.1f%%\n", ratio * 100);
