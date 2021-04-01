@@ -136,6 +136,11 @@ module IRB # :nodoc:
       ],
 
       [
+        :irb_show_source, :ShowSource, "irb/cmd/show_source",
+        [:show_source, NO_OVERRIDE],
+      ],
+
+      [
         :irb_whereami, :Whereami, "irb/cmd/whereami",
         [:whereami, NO_OVERRIDE],
       ],
