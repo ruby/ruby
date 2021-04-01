@@ -13,7 +13,7 @@ Gem::Specification.new do |spec|
   spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   spec.files         = [
-    "Gemfile", "LICENSE.txt", "README.md", "Rakefile", "bin/console", "bin/setup", "digest.gemspec",
+    "LICENSE.txt", "README.md",
     "ext/digest/bubblebabble/bubblebabble.c", "ext/digest/bubblebabble/extconf.rb", "ext/digest/defs.h",
     "ext/digest/digest.c", "ext/digest/digest.h", "ext/digest/digest_conf.rb", "ext/digest/extconf.rb",
     "ext/digest/md5/extconf.rb", "ext/digest/md5/md5.c", "ext/digest/md5/md5.h", "ext/digest/md5/md5cc.h",
