@@ -31,7 +31,8 @@ typedef enum yjit_type_enum
     ETYPE_UNKNOWN = 0,
     ETYPE_NIL,
     ETYPE_FIXNUM,
-    //ETYPE_ARRAY
+    ETYPE_ARRAY,
+    ETYPE_HASH
     //ETYPE_SYMBOL
     //ETYPE_STRING
 
@@ -63,9 +64,10 @@ STATIC_ASSERT(val_type_size, sizeof(val_type_t) == 1);
 // Could be any immediate
 #define TYPE_IMM ( (val_type_t){ .is_imm = 1 } )
 
-// Immediate types
 #define TYPE_NIL ( (val_type_t){ .is_imm = 1, .type = ETYPE_NIL } )
 #define TYPE_FIXNUM ( (val_type_t){ .is_imm = 1, .type = ETYPE_FIXNUM } )
+#define TYPE_ARRAY ( (val_type_t){ .is_heap = 1, .type = ETYPE_ARRAY } )
+#define TYPE_HASH ( (val_type_t){ .is_heap = 1, .type = ETYPE_HASH } )
 
 typedef enum yjit_temp_loc
 {
@@ -215,6 +217,7 @@ typedef struct yjit_block_version
 // Context object methods
 x86opnd_t ctx_sp_opnd(ctx_t* ctx, int32_t offset_bytes);
 x86opnd_t ctx_stack_push(ctx_t* ctx, val_type_t type);
+x86opnd_t ctx_stack_push_self(ctx_t* ctx);
 x86opnd_t ctx_stack_pop(ctx_t* ctx, size_t n);
 x86opnd_t ctx_stack_opnd(ctx_t* ctx, int32_t idx);
 val_type_t ctx_get_temp_type(const ctx_t* ctx, size_t idx);

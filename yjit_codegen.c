@@ -429,7 +429,7 @@ gen_putobject(jitstate_t* jit, ctx_t* ctx)
     }
     else if (arg == Qtrue || arg == Qfalse)
     {
-        x86opnd_t stack_top = ctx_stack_push(ctx, TYPE_UNKNOWN);
+        x86opnd_t stack_top = ctx_stack_push(ctx, TYPE_IMM);
         mov(cb, stack_top, imm_opnd((int64_t)arg));
     }
     else
@@ -439,6 +439,8 @@ gen_putobject(jitstate_t* jit, ctx_t* ctx)
         x86opnd_t pc_plus_one = const_ptr_opnd((void*)(jit->pc + 1));
         mov(cb, RAX, pc_plus_one);
         mov(cb, RAX, mem_opnd(64, RAX, 0));
+
+        // TODO: check if argument is a heap object
 
         // Write argument at SP
         x86opnd_t stack_top = ctx_stack_push(ctx, TYPE_UNKNOWN);
@@ -468,7 +470,7 @@ gen_putself(jitstate_t* jit, ctx_t* ctx)
     mov(cb, RAX, member_opnd(REG_CFP, rb_control_frame_t, self));
 
     // Write it on the stack
-    x86opnd_t stack_top = ctx_stack_push(ctx, TYPE_UNKNOWN);
+    x86opnd_t stack_top = ctx_stack_push_self(ctx);
     mov(cb, stack_top, RAX);
 
     return YJIT_KEEP_COMPILING;
