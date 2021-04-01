@@ -146,22 +146,25 @@ int type_diff(val_type_t src, val_type_t dst)
     RUBY_ASSERT(!src.is_heap || !src.is_imm);
     RUBY_ASSERT(!dst.is_heap || !dst.is_imm);
 
-    if (src.type != dst.type && dst.type != ETYPE_UNKNOWN)
+    // If dst assumes heap but src doesn't
+    if (dst.is_heap && !src.is_heap)
         return INT_MAX;
 
-    if (src.is_heap && !dst.is_heap)
+    // If dst assumes imm but src doesn't
+    if (dst.is_imm && !src.is_imm)
         return INT_MAX;
 
-    if (src.is_imm && !dst.is_imm)
+    // If dst assumes known type different from src
+    if (dst.type != ETYPE_UNKNOWN && dst.type != src.type)
         return INT_MAX;
 
-    if (src.is_heap != dst.is_heap)
+    if (dst.is_heap != src.is_heap)
         return 1;
 
-    if (src.is_imm != dst.is_imm)
+    if (dst.is_imm != src.is_imm)
         return 1;
 
-    if (src.type != dst.type)
+    if (dst.type != src.type)
         return 1;
 
     return 0;
