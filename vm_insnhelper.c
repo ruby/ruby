@@ -1390,13 +1390,22 @@ vm_throw_start(const rb_execution_context_t *ec, rb_control_frame_t *const reg_c
     }
     else if (state == TAG_RETURN) {
 	const VALUE *current_ep = GET_EP();
-	const VALUE *target_lep = VM_EP_LEP(current_ep);
+        const VALUE *target_ep = NULL, *target_lep, *ep = current_ep;
 	int in_class_frame = 0;
 	int toplevel = 1;
 	escape_cfp = reg_cfp;
 
-	while (escape_cfp < eocfp) {
-	    const VALUE *lep = VM_CF_LEP(escape_cfp);
+        // find target_lep, target_ep
+        while (!VM_ENV_LOCAL_P(ep)) {
+            if (VM_ENV_FLAGS(ep, VM_FRAME_FLAG_LAMBDA) && target_ep == NULL) {
+                target_ep = ep;
+            }
+            ep = VM_ENV_PREV_EP(ep);
+        }
+        target_lep = ep;
+
+        while (escape_cfp < eocfp) {
+            const VALUE *lep = VM_CF_LEP(escape_cfp);
 
 	    if (!target_lep) {
 		target_lep = lep;
@@ -1414,7 +1423,7 @@ vm_throw_start(const rb_execution_context_t *ec, rb_control_frame_t *const reg_c
 		    toplevel = 0;
 		    if (in_class_frame) {
 			/* lambda {class A; ... return ...; end} */
-			goto valid_return;
+                        goto valid_return;
 		    }
 		    else {
 			const VALUE *tep = current_ep;
@@ -1422,7 +1431,12 @@ vm_throw_start(const rb_execution_context_t *ec, rb_control_frame_t *const reg_c
 			while (target_lep != tep) {
 			    if (escape_cfp->ep == tep) {
 				/* in lambda */
-				goto valid_return;
+                                if (tep == target_ep) {
+                                    goto valid_return;
+                                }
+                                else {
+                                    goto unexpected_return;
+                                }
 			    }
 			    tep = VM_ENV_PREV_EP(tep);
 			}
@@ -1434,7 +1448,12 @@ vm_throw_start(const rb_execution_context_t *ec, rb_control_frame_t *const reg_c
 		      case ISEQ_TYPE_MAIN:
                         if (toplevel) {
                             if (in_class_frame) goto unexpected_return;
-                            goto valid_return;
+                            if (target_ep == NULL) {
+                                goto valid_return;
+                            }
+                            else {
+                                goto unexpected_return;
+                            }
                         }
 			break;
 		      case ISEQ_TYPE_EVAL:
@@ -1448,7 +1467,12 @@ vm_throw_start(const rb_execution_context_t *ec, rb_control_frame_t *const reg_c
 	    }
 
 	    if (escape_cfp->ep == target_lep && escape_cfp->iseq->body->type == ISEQ_TYPE_METHOD) {
-		goto valid_return;
+                if (target_ep == NULL) {
+                    goto valid_return;
+                }
+                else {
+                    goto unexpected_return;
+                }
 	    }
 
 	    escape_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(escape_cfp);
