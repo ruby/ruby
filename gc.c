@@ -3344,7 +3344,7 @@ objspace_each_objects(rb_objspace_t *objspace, each_obj_callback *callback, void
      * call the callback over each page that exists in this buffer. Thus it
      * is safe for the callback to allocate objects without possibly entering
      * an infinte loop. */
-    struct heap_page *page;
+    struct heap_page *page = 0;
     size_t pages_count = 0;
     list_for_each(&heap_eden->pages, page, page_node) {
         pages[pages_count] = page;
