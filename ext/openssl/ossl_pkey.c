@@ -198,7 +198,7 @@ ossl_pkey_new_from_data(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
-pkey_gen_apply_options_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ctx_v))
+pkey_ctx_apply_options_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ctx_v))
 {
     VALUE key = rb_ary_entry(i, 0), value = rb_ary_entry(i, 1);
     EVP_PKEY_CTX *ctx = (EVP_PKEY_CTX *)ctx_v;
@@ -214,13 +214,23 @@ pkey_gen_apply_options_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ctx_v))
 }
 
 static VALUE
-pkey_gen_apply_options0(VALUE args_v)
+pkey_ctx_apply_options0(VALUE args_v)
 {
     VALUE *args = (VALUE *)args_v;
 
     rb_block_call(args[1], rb_intern("each"), 0, NULL,
-                  pkey_gen_apply_options_i, args[0]);
+                  pkey_ctx_apply_options_i, args[0]);
     return Qnil;
+}
+
+static void
+pkey_ctx_apply_options(EVP_PKEY_CTX *ctx, VALUE options, int *state)
+{
+    VALUE args[2];
+    args[0] = (VALUE)ctx;
+    args[1] = options;
+
+    rb_protect(pkey_ctx_apply_options0, (VALUE)args, state);
 }
 
 struct pkey_blocking_generate_arg {
@@ -330,11 +340,7 @@ pkey_generate(int argc, VALUE *argv, VALUE self, int genparam)
     }
 
     if (!NIL_P(options)) {
-        VALUE args[2];
-
-        args[0] = (VALUE)ctx;
-        args[1] = options;
-        rb_protect(pkey_gen_apply_options0, (VALUE)args, &state);
+        pkey_ctx_apply_options(ctx, options, &state);
         if (state) {
             EVP_PKEY_CTX_free(ctx);
             rb_jump_tag(state);
