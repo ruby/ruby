@@ -6486,6 +6486,55 @@ env_update(VALUE env, VALUE hash)
 }
 
 /*
+ * call-seq:
+ *   ENV.clone(freeze: nil) -> ENV
+ *
+ * Returns self, since the environment table is a singleton resource.
+ * If +freeze+ keyword is given and not +nil+ or +false+, raises ArgumentError.
+ */
+static VALUE
+env_clone(int argc, VALUE *argv, VALUE obj)
+{
+    if (argc) {
+        static ID keyword_ids[1];
+        VALUE opt, kwfreeze;
+
+        if (!keyword_ids[0]) {
+            CONST_ID(keyword_ids[0], "freeze");
+        }
+        rb_scan_args(argc, argv, "0:", &opt);
+        if (!NIL_P(opt)) {
+            rb_get_kwargs(opt, keyword_ids, 0, 1, &kwfreeze);
+            switch(kwfreeze) {
+              case Qtrue:
+                rb_raise(rb_eTypeError, "cannot freeze ENV");
+                break;
+              default:
+                rb_raise(rb_eArgError, "invalid value for freeze keyword");
+                break;
+              case Qnil:
+              case Qfalse:
+                break;
+            }
+        }
+    }
+
+    return envtbl;
+}
+
+/*
+ * call-seq:
+ *   ENV.dup -> ENV
+ *
+ * Returns self, since the environment table is a singleton resource.
+ */
+static VALUE
+env_dup(VALUE obj)
+{
+    return envtbl;
+}
+
+/*
  *  A \Hash maps each of its unique keys to a specific value.
  *
  *  A \Hash has certain similarities to an \Array, but:
@@ -7191,6 +7240,14 @@ Init_Hash(void)
     rb_define_singleton_method(envtbl, "to_h", env_to_h, 0);
     rb_define_singleton_method(envtbl, "assoc", env_assoc, 1);
     rb_define_singleton_method(envtbl, "rassoc", env_rassoc, 1);
+    rb_define_singleton_method(envtbl, "clone", env_clone, -1);
+    rb_define_singleton_method(envtbl, "dup", env_dup, 0);
+
+    VALUE envtbl_class = rb_singleton_class(envtbl);
+    rb_undef_method(envtbl_class, "initialize");
+    rb_undef_method(envtbl_class, "initialize_clone");
+    rb_undef_method(envtbl_class, "initialize_copy");
+    rb_undef_method(envtbl_class, "initialize_dup");
 
     /*
      * ENV is a Hash-like accessor for environment variables.

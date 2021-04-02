@@ -62,6 +62,31 @@ class TestEnv < Test::Unit::TestCase
     }
   end
 
+  def test_dup
+    assert_same(ENV, ENV.dup)
+  end
+
+  def test_clone
+    assert_same(ENV, ENV.clone)
+    assert_same(ENV, ENV.clone(freeze: nil))
+    assert_same(ENV, ENV.clone(freeze: false))
+    assert_raise(TypeError) {
+      ENV.clone(freeze: true)
+    }
+    assert_raise(ArgumentError) {
+      ENV.clone(freeze: 1)
+    }
+    assert_raise(ArgumentError) {
+      ENV.clone(foo: false)
+    }
+    assert_raise(ArgumentError) {
+      ENV.clone(1)
+    }
+    assert_raise(ArgumentError) {
+      ENV.clone(1, foo: false)
+    }
+  end
+
   def test_has_value
     val = 'a'
     val.succ! while ENV.has_value?(val) || ENV.has_value?(val.upcase)
