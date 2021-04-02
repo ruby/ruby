@@ -4756,7 +4756,7 @@ rb_file_dirname_n(VALUE fname, int n)
 	    break;
 	  default:
 	    seps = ALLOCV_N(const char *, sepsv, n);
-	    MEMZERO(seps, const char *, n);
+	    for (i = 0; i < n; ++i) seps[i] = root;
 	    i = 0;
 	    for (p = root; p < end; ) {
 		if (isdirsep(*p)) {
@@ -4772,7 +4772,6 @@ rb_file_dirname_n(VALUE fname, int n)
 	    }
 	    p = seps[i];
 	    ALLOCV_END(sepsv);
-	    if (!p) p = root;
 	    break;
 	}
     }
