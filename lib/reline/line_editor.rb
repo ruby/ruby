@@ -813,6 +813,7 @@ class Reline::LineEditor
     end
     move_cursor_up(back)
     move_cursor_down(@first_line_started_from + @started_from)
+    @rest_height = (Reline::IOGate.get_screen_size.first - 1) - Reline::IOGate.cursor_pos.y
     Reline::IOGate.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
   end
 

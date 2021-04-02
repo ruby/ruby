@@ -719,6 +719,17 @@ begin
       EOC
     end
 
+    def test_reset_rest_height_when_clear_screen
+      start_terminal(5, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
+      write("\n\n\n\C-l3\n")
+      close
+      assert_screen(<<~EOC)
+        prompt> 3
+        => 3
+        prompt>
+      EOC
+    end
+
     private def write_inputrc(content)
       File.open(@inputrc_file, 'w') do |f|
         f.write content
