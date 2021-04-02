@@ -42,6 +42,41 @@ begin
       EOC
     end
 
+    def test_multiline_paste
+      write_irbrc <<~'LINES'
+        puts 'start IRB'
+      LINES
+      start_terminal(25, 80, %W{ruby -I#{@pwd}/lib -I#{@pwd}/../reline/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
+      write(<<~EOC)
+        class A
+          def a; self; end
+          def b; true; end
+        end
+
+        a = A.new
+
+        a
+         .a
+         .b
+      EOC
+      close
+      assert_screen(<<~EOC)
+        start IRB
+        irb(main):001:1* class A
+        irb(main):002:1*   def a; self; end
+        irb(main):003:1*   def b; true; end
+        irb(main):004:0> end
+        irb(main):005:0*
+        irb(main):006:0> a = A.new
+        irb(main):007:0*
+        irb(main):008:0> a
+        irb(main):009:0>  .a
+        irb(main):010:0>  .b
+        => true
+        irb(main):011:0>
+      EOC
+    end
+
     private def write_irbrc(content)
       File.open(@irbrc_file, 'w') do |f|
         f.write content
