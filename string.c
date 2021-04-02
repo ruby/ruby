@@ -11505,6 +11505,10 @@ rb_interned_str_cstr(const char *ptr)
 VALUE
 rb_enc_interned_str(const char *ptr, long len, rb_encoding *enc)
 {
+    if (UNLIKELY(rb_enc_autoload_p(enc))) {
+        rb_enc_autoload(enc);
+    }
+
     struct RString fake_str;
     return register_fstring(rb_setup_fake_str(&fake_str, ptr, len, enc), TRUE);
 }
