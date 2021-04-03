@@ -1702,7 +1702,7 @@ static void
 rb_obj_init(VALUE obj, int argc, const VALUE *argv, int kw_splat)
 {
     PASS_PASSED_BLOCK_HANDLER();
-    rb_funcallv_kw(obj, idInitialize, argc, argv, kw_splat);    
+    rb_funcallv_kw(obj, idInitialize, argc, argv, kw_splat);
 }
 
 /*!
