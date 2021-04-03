@@ -39,7 +39,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "reline", ">= 0.1.5"
   spec.add_development_dependency "bundler"
   is_unix = RUBY_PLATFORM =~ /(aix|darwin|linux|(net|free|open)bsd|cygwin|solaris|irix|hpux)/i
-  spec.add_development_dependency 'vterm', '>= 0.0.5' if is_unix
+  spec.add_development_dependency 'vterm', '>= 0.0.5' if is_unix && ENV['WITH_VTERM']
   spec.add_development_dependency 'yamatanooroti', '>= 0.0.6'
   spec.add_development_dependency "rake"
 end
