@@ -1698,8 +1698,6 @@ rb_mod_s_used_modules(VALUE _)
     return rb_funcall(ary, rb_intern("uniq"), 0);
 }
 
-void rb_obj_call_init_kw(VALUE obj, int argc, const VALUE *argv, int kw_splat);
-
 /*!
  * Calls \c #initialize method of \a obj with the given arguments.
  *
