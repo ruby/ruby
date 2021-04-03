@@ -1698,12 +1698,7 @@ rb_mod_s_used_modules(VALUE _)
     return rb_funcall(ary, rb_intern("uniq"), 0);
 }
 
-static void
-rb_obj_init(VALUE obj, int argc, const VALUE *argv, int kw_splat)
-{
-    PASS_PASSED_BLOCK_HANDLER();
-    rb_funcallv_kw(obj, idInitialize, argc, argv, kw_splat);
-}
+void rb_obj_call_init_kw(VALUE obj, int argc, const VALUE *argv, int kw_splat);
 
 /*!
  * Calls \c #initialize method of \a obj with the given arguments.
@@ -1718,13 +1713,14 @@ rb_obj_init(VALUE obj, int argc, const VALUE *argv, int kw_splat)
 void
 rb_obj_call_init(VALUE obj, int argc, const VALUE *argv)
 {
-    rb_obj_init(obj, argc, argv, RB_NO_KEYWORDS);
+    rb_obj_call_init_kw(obj, argc, argv, RB_NO_KEYWORDS);
 }
 
 void
 rb_obj_call_init_kw(VALUE obj, int argc, const VALUE *argv, int kw_splat)
 {
-    rb_obj_init(obj, argc, argv, kw_splat);
+    PASS_PASSED_BLOCK_HANDLER();
+    rb_funcallv_kw(obj, idInitialize, argc, argv, kw_splat);
 }
 
 /*!
