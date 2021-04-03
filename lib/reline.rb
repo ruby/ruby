@@ -446,6 +446,10 @@ module Reline
     }
   end
 
+  def self.ungetc(c)
+    Reline::IOGate.ungetc(c)
+  end
+
   def self.line_editor
     core.line_editor
   end

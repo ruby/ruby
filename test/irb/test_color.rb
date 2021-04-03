@@ -66,6 +66,7 @@ module TestIRB
         "\t" => "\t", # not ^I
         "foo(*%W(bar))" => "foo(*#{RED}#{BOLD}%W(#{CLEAR}#{RED}bar#{CLEAR}#{RED}#{BOLD})#{CLEAR})",
         "$stdout" => "#{GREEN}#{BOLD}$stdout#{CLEAR}",
+        "__END__" => "#{GREEN}__END__#{CLEAR}",
       }
 
       # specific to Ruby 2.7+

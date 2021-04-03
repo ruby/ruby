@@ -60,7 +60,11 @@ require_relative "irb/easter-egg"
 #     -E enc            Same as `ruby -E`
 #     -w                Same as `ruby -w`
 #     -W[level=2]       Same as `ruby -W`
-#     --inspect         Use `inspect' for output (default except for bc mode)
+#     --context-mode n  Set n[0-4] to method to create Binding Object,
+#                       when new workspace was created
+#     --echo            Show result(default)
+#     --noecho          Don't show result
+#     --inspect         Use `inspect' for output
 #     --noinspect       Don't use inspect for output
 #     --multiline       Use multiline editor module
 #     --nomultiline     Don't use multiline editor module
@@ -68,19 +72,24 @@ require_relative "irb/easter-egg"
 #     --nosingleline    Don't use singleline editor module
 #     --colorize        Use colorization
 #     --nocolorize      Don't use colorization
-#     --prompt prompt-mode
-#     --prompt-mode prompt-mode
+#     --prompt prompt-mode/--prompt-mode prompt-mode
 #                       Switch prompt mode. Pre-defined prompt modes are
 #                       `default', `simple', `xmp' and `inf-ruby'
 #     --inf-ruby-mode   Use prompt appropriate for inf-ruby-mode on emacs.
 #                       Suppresses --multiline and --singleline.
-#     --simple-prompt   Simple prompt mode
+#     --sample-book-mode/--simple-prompt
+#                       Simple prompt mode
 #     --noprompt        No prompt mode
+#     --single-irb      Share self with sub-irb.
 #     --tracer          Display trace for each execution of commands.
 #     --back-trace-limit n
 #                       Display backtrace top n and tail n. The default
 #                       value is 16.
-#     -v, --version     Print the version of irb
+#     --verbose         Show details
+#     --noverbose       Don't show details
+#     -v, --version	    Print the version of irb
+#     -h, --help        Print help
+#     --                Separate options of irb from the list of command-line args
 #
 # == Configuration
 #
@@ -463,7 +472,7 @@ module IRB
       conf[:IRB_RC].call(context) if conf[:IRB_RC]
       conf[:MAIN_CONTEXT] = context
 
-      trap("SIGINT") do
+      prev_trap = trap("SIGINT") do
         signal_handle
       end
 
@@ -472,6 +481,7 @@ module IRB
           eval_input
         end
       ensure
+        trap("SIGINT", prev_trap)
         conf[:AT_EXIT].each{|hook| hook.call}
       end
     end
