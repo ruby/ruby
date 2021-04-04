@@ -4783,6 +4783,7 @@ rb_ary_fill(int argc, VALUE *argv, VALUE ary)
 	for (i=beg; i<end; i++) {
 	    v = rb_yield(LONG2NUM(i));
 	    if (i>=RARRAY_LEN(ary)) break;
+	    rb_ary_modify(ary);
 	    ARY_SET(ary, i, v);
 	}
     }
