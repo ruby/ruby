@@ -269,4 +269,15 @@ class TestAst < Test::Unit::TestCase
     assert_equal(:LIT, body.type)
     assert_equal([1], body.children)
   end
+
+  def test_op_asgn2
+    node = RubyVM::AbstractSyntaxTree.parse("struct.field += foo")
+    _, _, body = *node.children
+    assert_equal(:OP_ASGN2, body.type)
+    recv, _, mid, op, value = body.children
+    assert_equal(:VCALL, recv.type)
+    assert_equal(:field, mid)
+    assert_equal(:+, op)
+    assert_equal(:VCALL, value.type)
+  end
 end
