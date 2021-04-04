@@ -896,6 +896,66 @@ rb_need_block(void)
     }
 }
 
+/*!
+ * \copydoc rb_rescue2
+ * \param[in] args exception classes, terminated by 0.
+ */
+static VALUE
+rb_vrescue2(VALUE (* b_proc) (VALUE), VALUE data1,
+            VALUE (* r_proc) (VALUE, VALUE), VALUE data2,
+            va_list args)
+{
+    enum ruby_tag_type state;
+    rb_execution_context_t * volatile ec = GET_EC();
+    rb_control_frame_t *volatile cfp = ec->cfp;
+    volatile VALUE result = Qfalse;
+    volatile VALUE e_info = ec->errinfo;
+
+    EC_PUSH_TAG(ec);
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+      retry_entry:
+	result = (*b_proc) (data1);
+    }
+    else if (result) {
+	/* escape from r_proc */
+	if (state == TAG_RETRY) {
+	    state = 0;
+	    ec->errinfo = Qnil;
+	    result = Qfalse;
+	    goto retry_entry;
+	}
+    }
+    else {
+	rb_vm_rewind_cfp(ec, cfp);
+
+	if (state == TAG_RAISE) {
+	    int handle = FALSE;
+	    VALUE eclass;
+
+	    while ((eclass = va_arg(args, VALUE)) != 0) {
+		if (rb_obj_is_kind_of(ec->errinfo, eclass)) {
+		    handle = TRUE;
+		    break;
+		}
+	    }
+
+	    if (handle) {
+		result = Qnil;
+		state = 0;
+		if (r_proc) {
+		    result = (*r_proc) (data2, ec->errinfo);
+		}
+		ec->errinfo = e_info;
+	    }
+	}
+    }
+    EC_POP_TAG();
+    if (state)
+	EC_JUMP_TAG(ec, state);
+
+    return result;
+}
+
 /*! An equivalent of \c rescue clause.
  *
  * Equivalent to <code>begin .. rescue err_type .. end</code>
@@ -922,58 +982,10 @@ VALUE
 rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
 	   VALUE (* r_proc) (ANYARGS), VALUE data2, ...)
 {
-    enum ruby_tag_type state;
-    rb_execution_context_t * volatile ec = GET_EC();
-    rb_control_frame_t *volatile cfp = ec->cfp;
-    volatile VALUE result = Qfalse;
-    volatile VALUE e_info = ec->errinfo;
-    va_list args;
-
-    EC_PUSH_TAG(ec);
-    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-      retry_entry:
-	result = (*b_proc) (data1);
-    }
-    else if (result) {
-	/* escape from r_proc */
-	if (state == TAG_RETRY) {
-	    state = 0;
-	    ec->errinfo = Qnil;
-	    result = Qfalse;
-	    goto retry_entry;
-	}
-    }
-    else {
-	rb_vm_rewind_cfp(ec, cfp);
-
-	if (state == TAG_RAISE) {
-	    int handle = FALSE;
-	    VALUE eclass;
-
-	    va_init_list(args, data2);
-	    while ((eclass = va_arg(args, VALUE)) != 0) {
-		if (rb_obj_is_kind_of(ec->errinfo, eclass)) {
-		    handle = TRUE;
-		    break;
-		}
-	    }
-	    va_end(args);
-
-	    if (handle) {
-		result = Qnil;
-		state = 0;
-		if (r_proc) {
-		    result = (*r_proc) (data2, ec->errinfo);
-		}
-		ec->errinfo = e_info;
-	    }
-	}
-    }
-    EC_POP_TAG();
-    if (state)
-	EC_JUMP_TAG(ec, state);
-
-    return result;
+    va_list ap;
+    va_start(ap, data2);
+    return rb_vrescue2((VALUE (*)(VALUE))b_proc, data1, (VALUE (*)(VALUE, VALUE))r_proc, data2, ap);
+    va_end(ap);
 }
 
 /*! An equivalent of \c rescue clause.
