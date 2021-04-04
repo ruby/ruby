@@ -308,6 +308,7 @@ rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE errinfo)
     volatile uint8_t raised_flag = ec->raised_flag;
     volatile VALUE errat = Qundef;
     volatile VALUE emesg = Qundef;
+    volatile bool written = false;
 
     if (NIL_P(errinfo))
 	return;
@@ -322,7 +323,10 @@ rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE errinfo)
 	emesg = rb_get_message(errinfo);
     }
 
-    rb_error_write(errinfo, emesg, errat, Qnil, Qnil, Qnil);
+    if (!written) {
+        written = true;
+        rb_error_write(errinfo, emesg, errat, Qnil, Qnil, Qfalse);
+    }
 
     EC_POP_TAG();
     ec->errinfo = errinfo;
