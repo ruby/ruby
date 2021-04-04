@@ -1,7 +1,7 @@
 #ifndef WIN32OLE_TYPELIB_H
 #define WIN32OLE_TYPELIB_H 1
 
-VALUE cWIN32OLE_TYPELIB;
+extern VALUE cWIN32OLE_TYPELIB;
 
 void Init_win32ole_typelib(void);
 ITypeLib * itypelib(VALUE self);

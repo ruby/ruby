@@ -60,6 +60,9 @@ ole_raise(HRESULT hr, VALUE ecs, const char *fmt, ...)
     rb_exc_raise(rb_exc_new_str(ecs, msg));
 }
 
+VALUE eWIN32OLERuntimeError;
+VALUE eWIN32OLEQueryInterfaceError;
+
 void
 Init_win32ole_error(void)
 {

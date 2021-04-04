@@ -689,6 +689,8 @@ ole_variant2variant(VALUE val, VARIANT *var)
     VariantCopy(var, &(pvar->var));
 }
 
+VALUE cWIN32OLE_VARIANT;
+
 void
 Init_win32ole_variant(void)
 {

@@ -2663,7 +2663,7 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
         /*------------------------------------------
           hash object ==> named dispatch parameters
         --------------------------------------------*/
-        cNamedArgs = rb_long2int(RHASH_SIZE(param));
+        cNamedArgs = rb_long2int((long)RHASH_SIZE(param));
         op.dp.cArgs = cNamedArgs + argc - 2;
         op.pNamedArgs = ALLOCA_N(OLECHAR*, cNamedArgs + 1);
         op.dp.rgvarg = ALLOCA_N(VARIANTARG, op.dp.cArgs);
@@ -3974,6 +3974,7 @@ check_nano_server(void)
     }
 }
 
+LCID cWIN32OLE_lcid;
 
 void
 Init_win32ole(void)
