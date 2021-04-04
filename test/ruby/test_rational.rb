@@ -598,6 +598,13 @@ class Rational_Test < Test::Unit::TestCase
     assert_nothing_raised(TypeError, '[Bug #5020] [ruby-dev:44088]') do
       Rational(1,2).coerce(Complex(1,1))
     end
+
+    assert_raise(ZeroDivisionError) do
+      1 / 0r.coerce(0+0i)[0]
+    end
+    assert_raise(ZeroDivisionError) do
+      1 / 0r.coerce(0.0+0i)[0]
+    end
   end
 
   class ObjectX
