@@ -35,14 +35,6 @@ extern const rb_data_type_t ossl_evp_pkey_type;
     } \
 } while (0)
 
-struct ossl_generate_cb_arg {
-    int yield;
-    int interrupted;
-    int state;
-};
-int ossl_generate_cb_2(int p, int n, BN_GENCB *cb);
-void ossl_generate_cb_stop(void *ptr);
-
 VALUE ossl_pkey_new(EVP_PKEY *);
 void ossl_pkey_check_public_key(const EVP_PKEY *);
 EVP_PKEY *ossl_pkey_read_generic(BIO *, VALUE);

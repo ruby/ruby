@@ -13,18 +13,6 @@
 #include "ruby/config.h"
 
 /* added in 1.1.0 */
-#if !defined(HAVE_BN_GENCB_NEW)
-#  define BN_GENCB_new() ((BN_GENCB *)OPENSSL_malloc(sizeof(BN_GENCB)))
-#endif
-
-#if !defined(HAVE_BN_GENCB_FREE)
-#  define BN_GENCB_free(cb) OPENSSL_free(cb)
-#endif
-
-#if !defined(HAVE_BN_GENCB_GET_ARG)
-#  define BN_GENCB_get_arg(cb) (cb)->arg
-#endif
-
 #if !defined(HAVE_EVP_MD_CTX_NEW)
 #  define EVP_MD_CTX_new EVP_MD_CTX_create
 #endif

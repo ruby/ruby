@@ -17,64 +17,6 @@ VALUE cPKey;
 VALUE ePKeyError;
 static ID id_private_q;
 
-/*
- * callback for generating keys
- */
-static VALUE
-call_check_ints0(VALUE arg)
-{
-    rb_thread_check_ints();
-    return Qnil;
-}
-
-static void *
-call_check_ints(void *arg)
-{
-    int state;
-    rb_protect(call_check_ints0, Qnil, &state);
-    return (void *)(VALUE)state;
-}
-
-int
-ossl_generate_cb_2(int p, int n, BN_GENCB *cb)
-{
-    VALUE ary;
-    struct ossl_generate_cb_arg *arg;
-    int state;
-
-    arg = (struct ossl_generate_cb_arg *)BN_GENCB_get_arg(cb);
-    if (arg->yield) {
-	ary = rb_ary_new2(2);
-	rb_ary_store(ary, 0, INT2NUM(p));
-	rb_ary_store(ary, 1, INT2NUM(n));
-
-	/*
-	* can be break by raising exception or 'break'
-	*/
-	rb_protect(rb_yield, ary, &state);
-	if (state) {
-	    arg->state = state;
-	    return 0;
-	}
-    }
-    if (arg->interrupted) {
-	arg->interrupted = 0;
-	state = (int)(VALUE)rb_thread_call_with_gvl(call_check_ints, NULL);
-	if (state) {
-	    arg->state = state;
-	    return 0;
-	}
-    }
-    return 1;
-}
-
-void
-ossl_generate_cb_stop(void *ptr)
-{
-    struct ossl_generate_cb_arg *arg = (struct ossl_generate_cb_arg *)ptr;
-    arg->interrupted = 1;
-}
-
 static void
 ossl_evp_pkey_free(void *ptr)
 {
@@ -255,6 +197,21 @@ pkey_gen_cb_yield(VALUE ctx_v)
         argv[i] = INT2NUM(EVP_PKEY_CTX_get_keygen_info(ctx, i));
 
     return rb_yield_values2(info_num, argv);
+}
+
+static VALUE
+call_check_ints0(VALUE arg)
+{
+    rb_thread_check_ints();
+    return Qnil;
+}
+
+static void *
+call_check_ints(void *arg)
+{
+    int state;
+    rb_protect(call_check_ints0, Qnil, &state);
+    return (void *)(VALUE)state;
 }
 
 static int
