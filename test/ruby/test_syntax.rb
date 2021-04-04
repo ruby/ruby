@@ -1265,6 +1265,15 @@ eom
     assert_nil obj.test
   end
 
+  def test_assignment_return_in_loop
+    obj = Object.new
+    def obj.test
+      x = nil
+      _y = (return until x unless x)
+    end
+    assert_nil obj.test, "[Bug #16695]"
+  end
+
   def test_method_call_location
     line = __LINE__+5
     e = assert_raise(NoMethodError) do
