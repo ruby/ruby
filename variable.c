@@ -1984,9 +1984,11 @@ struct autoload_const {
     VALUE mod;
     VALUE ad; /* autoload_data_i */
     VALUE value;
+    VALUE file;
     ID id;
     int safe_level;
     rb_const_flag_t flag;
+    int line;
 };
 
 /* always on stack, no need to mark */
@@ -2048,6 +2050,7 @@ autoload_c_mark(void *ptr)
     rb_gc_mark(ac->mod);
     rb_gc_mark(ac->ad);
     rb_gc_mark(ac->value);
+    rb_gc_mark(ac->file);
 }
 
 static void
@@ -2838,6 +2841,7 @@ rb_const_set(VALUE klass, ID id, VALUE val)
     }
     else {
 	struct autoload_const ac;
+	memset(&ac, 0, sizeof(ac));
 	ac.mod = klass;
 	ac.id = id;
 	ac.value = val;
@@ -2908,10 +2912,17 @@ const_tbl_update(struct autoload_const *ac)
 		rb_clear_constant_cache();
 
 		ac->value = val; /* autoload_i is non-WB-protected */
-		return;
+                ac->file = rb_source_location(&ac->line);
 	    }
-	    /* otherwise, allow to override */
-	    autoload_delete(klass, id);
+            else {
+                /* otherwise autoloaded constant, allow to override */
+                autoload_delete(klass, id);
+                ce->flag = visibility;
+                RB_OBJ_WRITE(klass, &ce->value, val);
+                RB_OBJ_WRITE(klass, &ce->file, ac->file);
+                ce->line = ac->line;
+            }
+            return;
 	}
 	else {
 	    VALUE name = QUOTE_ID(id);
