@@ -796,12 +796,9 @@ print_machine_register(size_t reg, const char *reg_name, int col_count, int max_
 {
     int ret;
     char buf[64];
+    static const int size_width = sizeof(size_t) * CHAR_BIT / 4;
 
-#ifdef __LP64__
-    ret = snprintf(buf, sizeof(buf), " %3.3s: 0x%016" PRIxSIZE, reg_name, reg);
-#else
-    ret = snprintf(buf, sizeof(buf), " %3.3s: 0x%08" PRIxSIZE, reg_name, reg);
-#endif
+    ret = snprintf(buf, sizeof(buf), " %3.3s: 0x%.*" PRIxSIZE, reg_name, size_width, reg);
     if (col_count + ret > max_col) {
 	fputs("\n", stderr);
 	col_count = 0;
