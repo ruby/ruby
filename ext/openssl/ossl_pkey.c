@@ -239,7 +239,7 @@ struct pkey_blocking_generate_arg {
     int state;
     int yield: 1;
     int genparam: 1;
-    int stop: 1;
+    int interrupted: 1;
 };
 
 static VALUE
@@ -261,23 +261,31 @@ static int
 pkey_gen_cb(EVP_PKEY_CTX *ctx)
 {
     struct pkey_blocking_generate_arg *arg = EVP_PKEY_CTX_get_app_data(ctx);
+    int state;
 
     if (arg->yield) {
-        int state;
         rb_protect(pkey_gen_cb_yield, (VALUE)ctx, &state);
         if (state) {
-            arg->stop = 1;
             arg->state = state;
+            return 0;
         }
     }
-    return !arg->stop;
+    if (arg->interrupted) {
+        arg->interrupted = 0;
+        state = (int)(VALUE)rb_thread_call_with_gvl(call_check_ints, NULL);
+        if (state) {
+            arg->state = state;
+            return 0;
+        }
+    }
+    return 1;
 }
 
 static void
 pkey_blocking_gen_stop(void *ptr)
 {
     struct pkey_blocking_generate_arg *arg = ptr;
-    arg->stop = 1;
+    arg->interrupted = 1;
 }
 
 static void *
