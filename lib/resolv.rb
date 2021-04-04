@@ -701,7 +701,7 @@ class Resolv
       end
 
       def sender_for(addr, msg)
-        @senders[[addr,msg.id]]
+        @senders.delete([addr,msg.id])
       end
 
       def close
