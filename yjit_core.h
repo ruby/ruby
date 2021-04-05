@@ -156,7 +156,7 @@ typedef void (*branchgen_fn)(codeblock_t* cb, uint8_t* target0, uint8_t* target1
 Store info about an outgoing branch in a code segment
 Note: care must be taken to minimize the size of branch_t objects
 */
-typedef struct BranchEntry
+typedef struct yjit_branch_entry
 {
     // Positions where the generated code starts and ends
     uint32_t start_pos;
