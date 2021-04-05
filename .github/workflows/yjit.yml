@@ -1,4 +1,4 @@
-name: YJIT first call
+name: YJIT threshold one
 on: [push, pull_request]
 jobs:
   make:
