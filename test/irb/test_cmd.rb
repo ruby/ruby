@@ -398,8 +398,8 @@ module TestIRB
       ])
       IRB.init_config(nil)
       workspace = IRB::WorkSpace.new(self)
-      irb = IRB::Irb.new(workspace, input)
       IRB.conf[:VERBOSE] = false
+      irb = IRB::Irb.new(workspace, input)
       IRB.conf[:MAIN_CONTEXT] = irb.context
       irb.context.return_format = "=> %s\n"
       out, err = capture_output do
