@@ -84,10 +84,6 @@ struct lex_context {
 
 #define yydebug (p->debug)	/* disable the global variable definition */
 
-#define YYMALLOC(size)		rb_parser_malloc(p, (size))
-#define YYREALLOC(ptr, size)	rb_parser_realloc(p, (ptr), (size))
-#define YYCALLOC(nelem, size)	rb_parser_calloc(p, (nelem), (size))
-#define YYFREE(ptr)		rb_parser_free(p, (ptr))
 #define YYFPRINTF		rb_parser_printf
 #define YYPRINT(out, tok, val)	parser_token_value_print(p, (tok), &(val))
 #define YY_LOCATION_PRINT(File, loc) \
@@ -257,8 +253,6 @@ typedef struct rb_strterm_struct rb_strterm_t;
                      token
 */
 struct parser_params {
-    rb_imemo_tmpbuf_t *heap;
-
     YYSTYPE *lval;
 
     struct {
@@ -13017,9 +13011,6 @@ parser_mark(void *ptr)
 #endif
     rb_gc_mark(p->debug_buffer);
     rb_gc_mark(p->debug_output);
-#ifdef YYMALLOC
-    rb_gc_mark((VALUE)p->heap);
-#endif
 }
 
 static void
@@ -13230,71 +13221,6 @@ rb_parser_set_debug_output(VALUE self, VALUE output)
 }
 
 #ifndef RIPPER
-#ifdef YYMALLOC
-#define HEAPCNT(n, size) ((n) * (size) / sizeof(YYSTYPE))
-/* Keep the order; NEWHEAP then xmalloc and ADD2HEAP to get rid of
- * potential memory leak */
-#define NEWHEAP() rb_imemo_tmpbuf_parser_heap(0, p->heap, 0)
-#define ADD2HEAP(new, cnt, ptr) ((p->heap = (new))->ptr = (ptr), \
-			   (new)->cnt = (cnt), (ptr))
-
-void *
-rb_parser_malloc(struct parser_params *p, size_t size)
-{
-    size_t cnt = HEAPCNT(1, size);
-    rb_imemo_tmpbuf_t *n = NEWHEAP();
-    void *ptr = xmalloc(size);
-
-    return ADD2HEAP(n, cnt, ptr);
-}
-
-void *
-rb_parser_calloc(struct parser_params *p, size_t nelem, size_t size)
-{
-    size_t cnt = HEAPCNT(nelem, size);
-    rb_imemo_tmpbuf_t *n = NEWHEAP();
-    void *ptr = xcalloc(nelem, size);
-
-    return ADD2HEAP(n, cnt, ptr);
-}
-
-void *
-rb_parser_realloc(struct parser_params *p, void *ptr, size_t size)
-{
-    rb_imemo_tmpbuf_t *n;
-    size_t cnt = HEAPCNT(1, size);
-
-    if (ptr && (n = p->heap) != NULL) {
-	do {
-	    if (n->ptr == ptr) {
-		n->ptr = ptr = xrealloc(ptr, size);
-		if (n->cnt) n->cnt = cnt;
-		return ptr;
-	    }
-	} while ((n = n->next) != NULL);
-    }
-    n = NEWHEAP();
-    ptr = xrealloc(ptr, size);
-    return ADD2HEAP(n, cnt, ptr);
-}
-
-void
-rb_parser_free(struct parser_params *p, void *ptr)
-{
-    rb_imemo_tmpbuf_t **prev = &p->heap, *n;
-
-    while ((n = *prev) != NULL) {
-	if (n->ptr == ptr) {
-	    *prev = n->next;
-	    rb_gc_force_recycle((VALUE)n);
-	    break;
-	}
-	prev = &n->next;
-    }
-    xfree(ptr);
-}
-#endif
-
 void
 rb_parser_printf(struct parser_params *p, const char *fmt, ...)
 {
