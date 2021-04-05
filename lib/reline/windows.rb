@@ -13,23 +13,35 @@ class Reline::Windows
     @@legacy_console
   end
 
-  RAW_KEYSTROKE_CONFIG = {
-    [224, 72] => :ed_prev_history, # ↑
-    [224, 80] => :ed_next_history, # ↓
-    [224, 77] => :ed_next_char,    # →
-    [224, 75] => :ed_prev_char,    # ←
-    [224, 83] => :key_delete,      # Del
-    [224, 71] => :ed_move_to_beg,  # Home
-    [224, 79] => :ed_move_to_end,  # End
-    [  0, 41] => :ed_unassigned,   # input method on/off
-    [  0, 72] => :ed_prev_history, # ↑
-    [  0, 80] => :ed_next_history, # ↓
-    [  0, 77] => :ed_next_char,    # →
-    [  0, 75] => :ed_prev_char,    # ←
-    [  0, 83] => :key_delete,      # Del
-    [  0, 71] => :ed_move_to_beg,  # Home
-    [  0, 79] => :ed_move_to_end   # End
-  }
+  def self.set_default_key_bindings(config)
+    {
+      [224, 72] => :ed_prev_history, # ↑
+      [224, 80] => :ed_next_history, # ↓
+      [224, 77] => :ed_next_char,    # →
+      [224, 75] => :ed_prev_char,    # ←
+      [224, 83] => :key_delete,      # Del
+      [224, 71] => :ed_move_to_beg,  # Home
+      [224, 79] => :ed_move_to_end,  # End
+      [  0, 41] => :ed_unassigned,   # input method on/off
+      [  0, 72] => :ed_prev_history, # ↑
+      [  0, 80] => :ed_next_history, # ↓
+      [  0, 77] => :ed_next_char,    # →
+      [  0, 75] => :ed_prev_char,    # ←
+      [  0, 83] => :key_delete,      # Del
+      [  0, 71] => :ed_move_to_beg,  # Home
+      [  0, 79] => :ed_move_to_end   # End
+    }.each_pair do |key, func|
+      config.add_default_key_binding_by_keymap(:emacs, key, func)
+      config.add_default_key_binding_by_keymap(:vi_insert, key, func)
+      config.add_default_key_binding_by_keymap(:vi_command, key, func)
+    end
+
+    {
+      [27, 32] => :em_set_mark,             # M-<space>
+    }.each_pair do |key, func|
+      config.add_default_key_binding_by_keymap(:emacs, key, func)
+    end
+  end
 
   if defined? JRUBY_VERSION
     require 'win32api'
