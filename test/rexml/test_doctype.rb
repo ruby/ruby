@@ -18,12 +18,6 @@ module REXMLTests
       @doc_type_system = REXML::Document.new(xml_system).doctype
 
       @pubid = "TEST_ID"
-      xml_public = <<-XML
-      <!DOCTYPE root PUBLIC "#{@pubid}">
-      <root/>
-      XML
-      @doc_type_public = REXML::Document.new(xml_public).doctype
-
       xml_public_system = <<-XML
       <!DOCTYPE root PUBLIC "#{@pubid}" "#{@sysid}">
       <root/>
@@ -35,11 +29,9 @@ module REXMLTests
       assert_equal([
                      nil,
                      @pubid,
-                     @pubid,
                    ],
                    [
                      @doc_type_system.public,
-                     @doc_type_public.public,
                      @doc_type_public_system.public,
                    ])
     end
@@ -58,12 +50,10 @@ module REXMLTests
     def test_system
       assert_equal([
                      @sysid,
-                     nil,
                      @sysid,
                    ],
                    [
                      @doc_type_system.system,
-                     @doc_type_public.system,
                      @doc_type_public_system.system,
                    ])
     end

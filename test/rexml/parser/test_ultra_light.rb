@@ -16,7 +16,6 @@ class TestUltraLightParser < Test::Unit::TestCase
                        nil,
                        [:entitydecl, "name", "value"]
                      ],
-                     [:text, "\n"],
                      [:start_element, :parent, "root", {}],
                      [:text, "\n"],
                    ],

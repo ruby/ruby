@@ -1,4 +1,4 @@
-# coding: binary
+# coding: utf-8
 # frozen_string_literal: false
 
 require_relative "rexml_test_utils"
@@ -995,7 +995,7 @@ EOL
       document.write(s)
 
       ## XML Doctype
-      str = '<!DOCTYPE foo "bar">'
+      str = '<!DOCTYPE foo SYSTEM "bar">'
       source  = REXML::Source.new(str)
       doctype = REXML::DocType.new(source)
       document.add(doctype)
