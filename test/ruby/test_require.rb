@@ -371,15 +371,15 @@ class TestRequire < Test::Unit::TestCase
     bug = '[ruby-list:49994] path in ospath'
     base = "test_load\u{3042 3044 3046 3048 304a}".encode(Encoding::Windows_31J)
     path = nil
-    Tempfile.create([base, ".rb"]) do |t|
-      path = t.path
-
+    Dir.mktmpdir do |dir|
+      path = File.join(dir, base+".rb")
       assert_raise_with_message(LoadError, /#{base}/) {
-        load(File.join(File.dirname(path), base))
+        load(File.join(dir, base))
       }
 
-      t.puts "warn 'ok'"
-      t.close
+      File.open(path, "w+b") do |t|
+        t.puts "warn 'ok'"
+      end
       assert_include(path, base)
       assert_warn("ok\n", bug) {
         assert_nothing_raised(LoadError, bug) {
