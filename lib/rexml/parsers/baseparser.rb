@@ -1,4 +1,7 @@
 # frozen_string_literal: false
+
+require "strscan"
+
 require 'rexml/parseexception'
 require 'rexml/undefinednamespaceexception'
 require 'rexml/source'
@@ -32,8 +35,12 @@ module REXML
       COMBININGCHAR = '' # TODO
       EXTENDER = ''      # TODO
 
-      NCNAME_STR= "[#{LETTER}_:][-[:alnum:]._:#{COMBININGCHAR}#{EXTENDER}]*"
-      NAME_STR= "(?:(#{NCNAME_STR}):)?(#{NCNAME_STR})"
+      NCNAME_STR= "[#{LETTER}_][-[:alnum:]._#{COMBININGCHAR}#{EXTENDER}]*"
+      QNAME_STR= "(?:(#{NCNAME_STR}):)?(#{NCNAME_STR})"
+      QNAME = /(#{QNAME_STR})/
+
+      # Just for backward compatibility. For example, kramdown uses this.
+      # It's not used in REXML.
       UNAME_STR= "(?:#{NCNAME_STR}:)?#{NCNAME_STR}"
 
       NAMECHAR = '[\-\w\.:]'
@@ -45,8 +52,7 @@ module REXML
 
       DOCTYPE_START = /\A\s*<!DOCTYPE\s/um
       DOCTYPE_END = /\A\s*\]\s*>/um
-      DOCTYPE_PATTERN = /\s*<!DOCTYPE\s+(.*?)(\[|>)/um
-      ATTRIBUTE_PATTERN = /\s*(#{NAME_STR})\s*=\s*(["'])(.*?)\4/um
+      ATTRIBUTE_PATTERN = /\s*(#{QNAME_STR})\s*=\s*(["'])(.*?)\4/um
       COMMENT_START = /\A<!--/u
       COMMENT_PATTERN = /<!--(.*?)-->/um
       CDATA_START = /\A<!\[CDATA\[/u
@@ -56,15 +62,14 @@ module REXML
       XMLDECL_PATTERN = /<\?xml\s+(.*?)\?>/um
       INSTRUCTION_START = /\A<\?/u
       INSTRUCTION_PATTERN = /<\?(.*?)(\s+.*?)?\?>/um
-      TAG_MATCH = /^<((?>#{NAME_STR}))\s*((?>\s+#{UNAME_STR}\s*=\s*(["']).*?\5)*)\s*(\/)?>/um
-      CLOSE_MATCH = /^\s*<\/(#{NAME_STR})\s*>/um
+      TAG_MATCH = /\A<((?>#{QNAME_STR}))/um
+      CLOSE_MATCH = /\A\s*<\/(#{QNAME_STR})\s*>/um
 
       VERSION = /\bversion\s*=\s*["'](.*?)['"]/um
       ENCODING = /\bencoding\s*=\s*["'](.*?)['"]/um
       STANDALONE = /\bstandalone\s*=\s*["'](.*?)['"]/um
 
       ENTITY_START = /\A\s*<!ENTITY/
-      IDENTITY = /^([!\*\w\-]+)(\s+#{NCNAME_STR})?(\s+["'](.*?)['"])?(\s+['"](.*?)["'])?/u
       ELEMENTDECL_START = /\A\s*<!ELEMENT/um
       ELEMENTDECL_PATTERN = /\A\s*(<!ELEMENT.*?)>/um
       SYSTEMENTITY = /\A\s*(%.*?;)\s*$/um
@@ -78,9 +83,6 @@ module REXML
       ATTDEF_RE = /#{ATTDEF}/
       ATTLISTDECL_START = /\A\s*<!ATTLIST/um
       ATTLISTDECL_PATTERN = /\A\s*<!ATTLIST\s+#{NAME}(?:#{ATTDEF})*\s*>/um
-      NOTATIONDECL_START = /\A\s*<!NOTATION/um
-      PUBLIC = /\A\s*<!NOTATION\s+(\w[\-\w]*)\s+(PUBLIC)\s+(["'])(.*?)\3(?:\s+(["'])(.*?)\5)?\s*>/um
-      SYSTEM = /\A\s*<!NOTATION\s+(\w[\-\w]*)\s+(SYSTEM)\s+(["'])(.*?)\3\s*>/um
 
       TEXT_PATTERN = /\A([^<]*)/um
 
@@ -98,6 +100,11 @@ module REXML
       GEDECL = "<!ENTITY\\s+#{NAME}\\s+#{ENTITYDEF}\\s*>"
       ENTITYDECL = /\s*(?:#{GEDECL})|(?:#{PEDECL})/um
 
+      NOTATIONDECL_START = /\A\s*<!NOTATION/um
+      EXTERNAL_ID_PUBLIC = /\A\s*PUBLIC\s+#{PUBIDLITERAL}\s+#{SYSTEMLITERAL}\s*/um
+      EXTERNAL_ID_SYSTEM = /\A\s*SYSTEM\s+#{SYSTEMLITERAL}\s*/um
+      PUBLIC_ID = /\A\s*PUBLIC\s+#{PUBIDLITERAL}\s*/um
+
       EREFERENCE = /&(?!#{NAME};)/
 
       DEFAULT_ENTITIES = {
@@ -112,7 +119,7 @@ module REXML
       # These are patterns to identify common markup errors, to make the
       # error messages more informative.
       ######################################################################
-      MISSING_ATTRIBUTE_QUOTES = /^<#{NAME_STR}\s+#{NAME_STR}\s*=\s*[^"']/um
+      MISSING_ATTRIBUTE_QUOTES = /^<#{QNAME_STR}\s+#{QNAME_STR}\s*=\s*[^"']/um
 
       def initialize( source )
         self.stream = source
@@ -197,11 +204,9 @@ module REXML
         return [ :end_document ] if empty?
         return @stack.shift if @stack.size > 0
         #STDERR.puts @source.encoding
-        @source.read if @source.buffer.size<2
         #STDERR.puts "BUFFER = #{@source.buffer.inspect}"
         if @document_status == nil
-          #@source.consume( /^\s*/um )
-          word = @source.match( /^((?:\s+)|(?:<[^>]*>))/um )
+          word = @source.match( /\A((?:\s+)|(?:<[^>]*>))/um )
           word = word[1] unless word.nil?
           #STDERR.puts "WORD = #{word.inspect}"
           case word
@@ -226,38 +231,49 @@ module REXML
           when INSTRUCTION_START
             return [ :processing_instruction, *@source.match(INSTRUCTION_PATTERN, true)[1,2] ]
           when DOCTYPE_START
-            md = @source.match( DOCTYPE_PATTERN, true )
+            base_error_message = "Malformed DOCTYPE"
+            @source.match(DOCTYPE_START, true)
             @nsstack.unshift(curr_ns=Set.new)
-            identity = md[1]
-            close = md[2]
-            identity =~ IDENTITY
-            name = $1
-            raise REXML::ParseException.new("DOCTYPE is missing a name") if name.nil?
-            pub_sys = $2.nil? ? nil : $2.strip
-            long_name = $4.nil? ? nil : $4.strip
-            uri = $6.nil? ? nil : $6.strip
-            args = [ :start_doctype, name, pub_sys, long_name, uri ]
-            if close == ">"
-              @document_status = :after_doctype
-              @source.read if @source.buffer.size<2
-              md = @source.match(/^\s*/um, true)
-              @stack << [ :end_doctype ]
-            else
+            name = parse_name(base_error_message)
+            if @source.match(/\A\s*\[/um, true)
+              id = [nil, nil, nil]
               @document_status = :in_doctype
+            elsif @source.match(/\A\s*>/um, true)
+              id = [nil, nil, nil]
+              @document_status = :after_doctype
+            else
+              id = parse_id(base_error_message,
+                            accept_external_id: true,
+                            accept_public_id: false)
+              if id[0] == "SYSTEM"
+                # For backward compatibility
+                id[1], id[2] = id[2], nil
+              end
+              if @source.match(/\A\s*\[/um, true)
+               @document_status = :in_doctype
+              elsif @source.match(/\A\s*>/um, true)
+                @document_status = :after_doctype
+              else
+                message = "#{base_error_message}: garbage after external ID"
+                raise REXML::ParseException.new(message, @source)
+              end
+            end
+            args = [:start_doctype, name, *id]
+            if @document_status == :after_doctype
+              @source.match(/\A\s*/um, true)
+              @stack << [ :end_doctype ]
             end
             return args
-          when /^\s+/
+          when /\A\s+/
           else
             @document_status = :after_doctype
-            @source.read if @source.buffer.size<2
-            md = @source.match(/\s*/um, true)
             if @source.encoding == "UTF-8"
               @source.buffer.force_encoding(::Encoding::UTF_8)
             end
           end
         end
         if @document_status == :in_doctype
-          md = @source.match(/\s*(.*?>)/um)
+          md = @source.match(/\A\s*(.*?>)/um)
           case md[1]
           when SYSTEMENTITY
             match = @source.match( SYSTEMENTITY, true )[1]
@@ -314,33 +330,50 @@ module REXML
             end
             return [ :attlistdecl, element, pairs, contents ]
           when NOTATIONDECL_START
-            md = nil
-            if @source.match( PUBLIC )
-              md = @source.match( PUBLIC, true )
-              vals = [md[1],md[2],md[4],md[6]]
-            elsif @source.match( SYSTEM )
-              md = @source.match( SYSTEM, true )
-              vals = [md[1],md[2],nil,md[4]]
-            else
-              raise REXML::ParseException.new( "error parsing notation: no matching pattern", @source )
+            base_error_message = "Malformed notation declaration"
+            unless @source.match(/\A\s*<!NOTATION\s+/um, true)
+              if @source.match(/\A\s*<!NOTATION\s*>/um)
+                message = "#{base_error_message}: name is missing"
+              else
+                message = "#{base_error_message}: invalid declaration name"
+              end
+              raise REXML::ParseException.new(message, @source)
             end
-            return [ :notationdecl, *vals ]
+            name = parse_name(base_error_message)
+            id = parse_id(base_error_message,
+                          accept_external_id: true,
+                          accept_public_id: true)
+            unless @source.match(/\A\s*>/um, true)
+              message = "#{base_error_message}: garbage before end >"
+              raise REXML::ParseException.new(message, @source)
+            end
+            return [:notationdecl, name, *id]
           when DOCTYPE_END
             @document_status = :after_doctype
             @source.match( DOCTYPE_END, true )
             return [ :end_doctype ]
           end
         end
+        if @document_status == :after_doctype
+          @source.match(/\A\s*/um, true)
+        end
         begin
+          @source.read if @source.buffer.size<2
           if @source.buffer[0] == ?<
             if @source.buffer[1] == ?/
               @nsstack.shift
               last_tag = @tags.pop
               #md = @source.match_to_consume( '>', CLOSE_MATCH)
               md = @source.match( CLOSE_MATCH, true )
-              raise REXML::ParseException.new( "Missing end tag for "+
-                "'#{last_tag}' (got \"#{md[1]}\")",
-                @source) unless last_tag == md[1]
+              if md and !last_tag
+                message = "Unexpected top-level end tag (got '#{md[1]}')"
+                raise REXML::ParseException.new(message, @source)
+              end
+              if md.nil? or last_tag != md[1]
+                message = "Missing end tag for '#{last_tag}'"
+                message << " (got '#{md[1]}')" if md
+                raise REXML::ParseException.new(message, @source)
+              end
               return [ :end_element, last_tag ]
             elsif @source.buffer[1] == ?!
               md = @source.match(/\A(\s*[^>]*>)/um)
@@ -374,40 +407,11 @@ module REXML
                 raise REXML::ParseException.new("missing attribute quote", @source) if @source.match(MISSING_ATTRIBUTE_QUOTES )
                 raise REXML::ParseException.new("malformed XML: missing tag start", @source)
               end
-              attributes = {}
+              @document_status = :in_element
               prefixes = Set.new
               prefixes << md[2] if md[2]
               @nsstack.unshift(curr_ns=Set.new)
-              if md[4].size > 0
-                attrs = md[4].scan( ATTRIBUTE_PATTERN )
-                raise REXML::ParseException.new( "error parsing attributes: [#{attrs.join ', '}], excess = \"#$'\"", @source) if $' and $'.strip.size > 0
-                attrs.each do |attr_name, prefix, local_part, quote, value|
-                  if prefix == "xmlns"
-                    if local_part == "xml"
-                      if value != "http://www.w3.org/XML/1998/namespace"
-                        msg = "The 'xml' prefix must not be bound to any other namespace "+
-                        "(http://www.w3.org/TR/REC-xml-names/#ns-decl)"
-                        raise REXML::ParseException.new( msg, @source, self )
-                      end
-                    elsif local_part == "xmlns"
-                      msg = "The 'xmlns' prefix must not be declared "+
-                      "(http://www.w3.org/TR/REC-xml-names/#ns-decl)"
-                      raise REXML::ParseException.new( msg, @source, self)
-                    end
-                    curr_ns << local_part
-                  elsif prefix
-                    prefixes << prefix unless prefix == "xml"
-                  end
-
-                  if attributes.has_key?(attr_name)
-                    msg = "Duplicate attribute #{attr_name.inspect}"
-                    raise REXML::ParseException.new(msg, @source, self)
-                  end
-
-                  attributes[attr_name] = value
-                end
-              end
-
+              attributes, closed = parse_attributes(prefixes, curr_ns)
               # Verify that all of the prefixes have been defined
               for prefix in prefixes
                 unless @nsstack.find{|k| k.member?(prefix)}
@@ -415,7 +419,7 @@ module REXML
                 end
               end
 
-              if md[6]
+              if closed
                 @closed = md[1]
                 @nsstack.shift
               else
@@ -507,6 +511,169 @@ module REXML
         return false if xml_declaration_encoding.nil?
         return false if /\AUTF-16\z/i =~ xml_declaration_encoding
         true
+      end
+
+      def parse_name(base_error_message)
+        md = @source.match(/\A\s*#{NAME}/um, true)
+        unless md
+          if @source.match(/\A\s*\S/um)
+            message = "#{base_error_message}: invalid name"
+          else
+            message = "#{base_error_message}: name is missing"
+          end
+          raise REXML::ParseException.new(message, @source)
+        end
+        md[1]
+      end
+
+      def parse_id(base_error_message,
+                   accept_external_id:,
+                   accept_public_id:)
+        if accept_external_id and (md = @source.match(EXTERNAL_ID_PUBLIC, true))
+          pubid = system = nil
+          pubid_literal = md[1]
+          pubid = pubid_literal[1..-2] if pubid_literal # Remove quote
+          system_literal = md[2]
+          system = system_literal[1..-2] if system_literal # Remove quote
+          ["PUBLIC", pubid, system]
+        elsif accept_public_id and (md = @source.match(PUBLIC_ID, true))
+          pubid = system = nil
+          pubid_literal = md[1]
+          pubid = pubid_literal[1..-2] if pubid_literal # Remove quote
+          ["PUBLIC", pubid, nil]
+        elsif accept_external_id and (md = @source.match(EXTERNAL_ID_SYSTEM, true))
+          system = nil
+          system_literal = md[1]
+          system = system_literal[1..-2] if system_literal # Remove quote
+          ["SYSTEM", nil, system]
+        else
+          details = parse_id_invalid_details(accept_external_id: accept_external_id,
+                                             accept_public_id: accept_public_id)
+          message = "#{base_error_message}: #{details}"
+          raise REXML::ParseException.new(message, @source)
+        end
+      end
+
+      def parse_id_invalid_details(accept_external_id:,
+                                   accept_public_id:)
+        public = /\A\s*PUBLIC/um
+        system = /\A\s*SYSTEM/um
+        if (accept_external_id or accept_public_id) and @source.match(/#{public}/um)
+          if @source.match(/#{public}(?:\s+[^'"]|\s*[\[>])/um)
+            return "public ID literal is missing"
+          end
+          unless @source.match(/#{public}\s+#{PUBIDLITERAL}/um)
+            return "invalid public ID literal"
+          end
+          if accept_public_id
+            if @source.match(/#{public}\s+#{PUBIDLITERAL}\s+[^'"]/um)
+              return "system ID literal is missing"
+            end
+            unless @source.match(/#{public}\s+#{PUBIDLITERAL}\s+#{SYSTEMLITERAL}/um)
+              return "invalid system literal"
+            end
+            "garbage after system literal"
+          else
+            "garbage after public ID literal"
+          end
+        elsif accept_external_id and @source.match(/#{system}/um)
+          if @source.match(/#{system}(?:\s+[^'"]|\s*[\[>])/um)
+            return "system literal is missing"
+          end
+          unless @source.match(/#{system}\s+#{SYSTEMLITERAL}/um)
+            return "invalid system literal"
+          end
+          "garbage after system literal"
+        else
+          unless @source.match(/\A\s*(?:PUBLIC|SYSTEM)\s/um)
+            return "invalid ID type"
+          end
+          "ID type is missing"
+        end
+      end
+
+      def parse_attributes(prefixes, curr_ns)
+        attributes = {}
+        closed = false
+        match_data = @source.match(/^(.*?)(\/)?>/um, true)
+        if match_data.nil?
+          message = "Start tag isn't ended"
+          raise REXML::ParseException.new(message, @source)
+        end
+
+        raw_attributes = match_data[1]
+        closed = !match_data[2].nil?
+        return attributes, closed if raw_attributes.nil?
+        return attributes, closed if raw_attributes.empty?
+
+        scanner = StringScanner.new(raw_attributes)
+        until scanner.eos?
+          if scanner.scan(/\s+/)
+            break if scanner.eos?
+          end
+
+          pos = scanner.pos
+          loop do
+            break if scanner.scan(ATTRIBUTE_PATTERN)
+            unless scanner.scan(QNAME)
+              message = "Invalid attribute name: <#{scanner.rest}>"
+              raise REXML::ParseException.new(message, @source)
+            end
+            name = scanner[0]
+            unless scanner.scan(/\s*=\s*/um)
+              message = "Missing attribute equal: <#{name}>"
+              raise REXML::ParseException.new(message, @source)
+            end
+            quote = scanner.scan(/['"]/)
+            unless quote
+              message = "Missing attribute value start quote: <#{name}>"
+              raise REXML::ParseException.new(message, @source)
+            end
+            unless scanner.scan(/.*#{Regexp.escape(quote)}/um)
+              match_data = @source.match(/^(.*?)(\/)?>/um, true)
+              if match_data
+                scanner << "/" if closed
+                scanner << ">"
+                scanner << match_data[1]
+                scanner.pos = pos
+                closed = !match_data[2].nil?
+                next
+              end
+              message =
+                "Missing attribute value end quote: <#{name}>: <#{quote}>"
+              raise REXML::ParseException.new(message, @source)
+            end
+          end
+          name = scanner[1]
+          prefix = scanner[2]
+          local_part = scanner[3]
+          # quote = scanner[4]
+          value = scanner[5]
+          if prefix == "xmlns"
+            if local_part == "xml"
+              if value != "http://www.w3.org/XML/1998/namespace"
+                msg = "The 'xml' prefix must not be bound to any other namespace "+
+                  "(http://www.w3.org/TR/REC-xml-names/#ns-decl)"
+                raise REXML::ParseException.new( msg, @source, self )
+              end
+            elsif local_part == "xmlns"
+              msg = "The 'xmlns' prefix must not be declared "+
+                "(http://www.w3.org/TR/REC-xml-names/#ns-decl)"
+              raise REXML::ParseException.new( msg, @source, self)
+            end
+            curr_ns << local_part
+          elsif prefix
+            prefixes << prefix unless prefix == "xml"
+          end
+
+          if attributes.has_key?(name)
+            msg = "Duplicate attribute #{name.inspect}"
+            raise REXML::ParseException.new(msg, @source, self)
+          end
+
+          attributes[name] = value
+        end
+        return attributes, closed
       end
     end
   end

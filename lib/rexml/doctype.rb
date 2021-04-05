@@ -7,6 +7,39 @@ require 'rexml/attlistdecl'
 require 'rexml/xmltokens'
 
 module REXML
+  class ReferenceWriter
+    def initialize(id_type,
+                   public_id_literal,
+                   system_literal)
+      @id_type = id_type
+      @public_id_literal = public_id_literal
+      @system_literal = system_literal
+      @default_quote = "\""
+    end
+
+    def write(output)
+      output << " #{@id_type}"
+      if @public_id_literal
+        if @public_id_literal.include?("'")
+          quote = "\""
+        else
+          quote = @default_quote
+        end
+        output << " #{quote}#{@public_id_literal}#{quote}"
+      end
+      if @system_literal
+        if @system_literal.include?("'")
+          quote = "\""
+        elsif @system_literal.include?("\"")
+          quote = "'"
+        else
+          quote = @default_quote
+        end
+        output << " #{quote}#{@system_literal}#{quote}"
+      end
+    end
+  end
+
   # Represents an XML DOCTYPE declaration; that is, the contents of <!DOCTYPE
   # ... >.  DOCTYPES can be used to declare the DTD of a document, as well as
   # being used to declare entities used in the document.
@@ -50,6 +83,8 @@ module REXML
         super( parent )
         @name = first.name
         @external_id = first.external_id
+        @long_name = first.instance_variable_get(:@long_name)
+        @uri = first.instance_variable_get(:@uri)
       elsif first.kind_of? Array
         super( parent )
         @name = first[0]
@@ -112,9 +147,12 @@ module REXML
       output << START
       output << ' '
       output << @name
-      output << " #@external_id" if @external_id
-      output << " #{@long_name.inspect}" if @long_name
-      output << " #{@uri.inspect}" if @uri
+      if @external_id
+        reference_writer = ReferenceWriter.new(@external_id,
+                                               @long_name,
+                                               @uri)
+        reference_writer.write(output)
+      end
       unless @children.empty?
         output << ' ['
         @children.each { |child|
@@ -249,9 +287,9 @@ module REXML
     end
 
     def to_s
-      notation = "<!NOTATION #{@name} #{@middle}"
-      notation << " #{@public.inspect}" if @public
-      notation << " #{@system.inspect}" if @system
+      notation = "<!NOTATION #{@name}"
+      reference_writer = ReferenceWriter.new(@middle, @public, @system)
+      reference_writer.write(notation)
       notation << ">"
       notation
     end

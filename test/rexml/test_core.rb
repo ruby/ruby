@@ -1,4 +1,4 @@
-# coding: binary
+# coding: utf-8
 # frozen_string_literal: false
 
 require_relative "rexml_test_utils"
@@ -995,7 +995,7 @@ EOL
       document.write(s)
 
       ## XML Doctype
-      str = '<!DOCTYPE foo "bar">'
+      str = '<!DOCTYPE foo SYSTEM "bar">'
       source  = REXML::Source.new(str)
       doctype = REXML::DocType.new(source)
       document.add(doctype)
@@ -1274,14 +1274,15 @@ EOL
 
     def test_ticket_21
       src = "<foo bar=value/>"
-      assert_raise( ParseException, "invalid XML should be caught" ) {
+      exception = assert_raise(ParseException) do
         Document.new(src)
-      }
-      begin
-        Document.new(src)
-      rescue
-        assert_match( /missing attribute quote/, $!.message )
       end
+      assert_equal(<<-DETAIL, exception.to_s)
+Missing attribute value start quote: <bar>
+Line: 1
+Position: 16
+Last 80 unconsumed characters:
+      DETAIL
     end
 
     def test_ticket_63
