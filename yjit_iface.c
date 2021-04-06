@@ -791,9 +791,17 @@ print_insn_count_buffer(const struct insn_count *buffer, int how_many, int left_
         total_exit_count += buffer[i].count;
     }
 
+    // Number of instructions that finish executing in YJIT. See :count-placement:.
+    int64_t retired_in_yjit = yjit_runtime_counters.exec_instruction - total_exit_count;
+
     // Average length of instruction sequences executed by YJIT
     double avg_len_in_yjit = (double)yjit_runtime_counters.exec_instruction / total_exit_count;
 
+    // Proportion of instructions that retire in YJIT
+    double total_insns_count = retired_in_yjit + vm_insns_count;
+    double ratio = retired_in_yjit / total_insns_count;
+
+    fprintf(stderr, "ratio_in_yjit:         %9.1f%%\n", ratio * 100);
     fprintf(stderr, "avg_len_in_yjit:       %10.1f\n", avg_len_in_yjit);
     fprintf(stderr, "total_exit_count:      %10ld\n", total_exit_count);
     fprintf(stderr, "most frequent exit op:\n");
@@ -817,15 +825,11 @@ print_yjit_stats(void)
 
     const struct insn_count *sorted_exit_ops = sort_insn_count_array(exit_op_count);
 
-    double total_insns_count = vm_insns_count + yjit_runtime_counters.exec_instruction;
-    double ratio = yjit_runtime_counters.exec_instruction / total_insns_count;
-
     fprintf(stderr, "compiled_iseq_count:   %10" PRId64 "\n", rb_compiled_iseq_count);
     fprintf(stderr, "inline_code_size:      %10d\n", cb->write_pos);
     fprintf(stderr, "outlined_code_size:    %10d\n", ocb->write_pos);
     fprintf(stderr, "vm_insns_count:        %10" PRId64 "\n", vm_insns_count);
     fprintf(stderr, "yjit_exec_insns_count: %10" PRId64 "\n", yjit_runtime_counters.exec_instruction);
-    fprintf(stderr, "ratio_in_yjit:         %9.1f%%\n", ratio * 100);
     print_insn_count_buffer(sorted_exit_ops, 10, 4);
 }
 #endif // if RUBY_DEBUG

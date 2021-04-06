@@ -318,9 +318,9 @@ yjit_gen_block(ctx_t* ctx, block_t* block, rb_execution_context_t* ec)
         //fprintf(stderr, "compiling %d: %s\n", insn_idx, insn_name(opcode));
         //print_str(cb, insn_name(opcode));
 
-        // Count bytecode instructions that execute in generated code
-        // FIXME: when generation function returns false, we shouldn't increment
-        //        this counter.
+        // :count-placement:
+        // Count bytecode instructions that execute in generated code.
+        // Note that the increment happens even when the output takes side exit.
         GEN_COUNTER_INC(cb, exec_instruction);
 
         // Call the code generation function
