@@ -342,7 +342,9 @@ class TestDRbTCP < Test::Unit::TestCase
     socket.close
     client = DRb::DRbTCPSocket.new(server.uri, socket)
     assert client
-    client.close
+  ensure
+    client&.close
+    socket&.close
     server.stop_service
     server.thread.join
     DRb::DRbConn.stop_pool
