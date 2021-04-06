@@ -475,7 +475,7 @@ branch_stub_hit(const uint32_t branch_idx, const uint32_t target_idx, rb_executi
     dst_addr = cb_get_ptr(cb, p_block->start_pos);
     branch->dst_addrs[target_idx] = dst_addr;
 
-    // Adjust brach shape base on block placement relative to the branch
+    // Adjust brach shape based on block placement relative to the branch
     if (branch->end_pos == p_block->start_pos) {
         branch->shape = (branch_shape_t)target_idx;
     }
