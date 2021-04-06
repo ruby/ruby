@@ -486,11 +486,12 @@ gen_getlocal_wc0(jitstate_t* jit, ctx_t* ctx)
     int32_t local_idx = (int32_t)jit_get_arg(jit, 0);
     const int32_t offs = -(SIZEOF_VALUE * local_idx);
 
-    // Load the local from the block
+    // Load the local from the EP
     mov(cb, REG0, mem_opnd(64, REG0, offs));
 
     // Write the local at SP
-    x86opnd_t stack_top = ctx_stack_push(ctx, TYPE_UNKNOWN);
+    x86opnd_t stack_top = ctx_stack_push_local(ctx, local_idx);
+    //x86opnd_t stack_top = ctx_stack_push(ctx, TYPE_UNKNOWN);
     mov(cb, stack_top, REG0);
 
     return YJIT_KEEP_COMPILING;
@@ -539,6 +540,8 @@ gen_setlocal_wc0(jitstate_t* jit, ctx_t* ctx)
     }
     */
 
+    int32_t local_idx = (int32_t)jit_get_arg(jit, 0);
+
     // Load environment pointer EP from CFP
     mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, ep));
 
@@ -552,12 +555,15 @@ gen_setlocal_wc0(jitstate_t* jit, ctx_t* ctx)
     // if (flags & VM_ENV_FLAG_WB_REQUIRED) != 0
     jnz_ptr(cb, side_exit);
 
+    // Set the type of the local variable in the context
+    val_type_t temp_type = ctx_get_temp_type(ctx, 0);
+    ctx_set_local_type(ctx, local_idx, temp_type);
+
     // Pop the value to write from the stack
     x86opnd_t stack_top = ctx_stack_pop(ctx, 1);
     mov(cb, REG1, stack_top);
 
     // Write the value at the environment pointer
-    int32_t local_idx = (int32_t)jit_get_arg(jit, 0);
     const int32_t offs = -8 * local_idx;
     mov(cb, mem_opnd(64, REG0, offs), REG1);
 
@@ -1326,9 +1332,12 @@ gen_jump(jitstate_t* jit, ctx_t* ctx)
     return YJIT_END_BLOCK;
 }
 
-// Guard that recv_opnd has the same class as known_klass. Recompile as contingency if possible, or take side exit a last resort.
+/*
+Guard that a stack operand has the same class as known_klass.
+Recompile as contingency if possible, or take side exit a last resort.
+*/
 static bool
-jit_guard_known_klass(jitstate_t *jit, const ctx_t *recompile_context, VALUE known_klass, x86opnd_t recv_opnd, const int max_chain_depth, uint8_t *side_exit)
+jit_guard_known_klass(jitstate_t *jit, ctx_t* ctx, VALUE known_klass, uint32_t stack_idx, const int max_chain_depth, uint8_t *side_exit)
 {
     // Can't guard for for these classes because some of they are sometimes immediate (special const).
     // Can remove this by adding appropriate dynamic checks.
@@ -1341,7 +1350,10 @@ jit_guard_known_klass(jitstate_t *jit, const ctx_t *recompile_context, VALUE kno
         return false;
     }
 
+    val_type_t temp_type = ctx_get_temp_type(ctx, stack_idx);
+
     // Check that the receiver is a heap object
+    if (!temp_type.is_heap)
     {
         test(cb, REG0, imm_opnd(RUBY_IMMEDIATE_MASK));
         jnz_ptr(cb, side_exit);
@@ -1349,6 +1361,8 @@ jit_guard_known_klass(jitstate_t *jit, const ctx_t *recompile_context, VALUE kno
         je_ptr(cb, side_exit);
         cmp(cb, REG0, imm_opnd(Qnil));
         je_ptr(cb, side_exit);
+
+        ctx_set_temp_type(ctx, stack_idx, TYPE_HEAP);
     }
 
     // Pointer to the klass field of the receiver &(recv->klass)
@@ -1357,7 +1371,7 @@ jit_guard_known_klass(jitstate_t *jit, const ctx_t *recompile_context, VALUE kno
     // Bail if receiver class is different from compile-time call cache class
     jit_mov_gc_ptr(jit, cb, REG1, known_klass);
     cmp(cb, klass_opnd, REG1);
-    jit_chain_guard(JCC_JNE, jit, recompile_context, max_chain_depth, side_exit);
+    jit_chain_guard(JCC_JNE, jit, ctx, max_chain_depth, side_exit);
     return true;
 }
 
@@ -1759,7 +1773,7 @@ gen_opt_send_without_block(jitstate_t* jit, ctx_t* ctx)
     // Points to the receiver operand on the stack
     x86opnd_t recv = ctx_stack_opnd(ctx, argc);
     mov(cb, REG0, recv);
-    if (!jit_guard_known_klass(jit, ctx, comptime_recv_klass, REG0, OSWB_MAX_DEPTH, side_exit)) {
+    if (!jit_guard_known_klass(jit, ctx, comptime_recv_klass, argc, OSWB_MAX_DEPTH, side_exit)) {
         return YJIT_CANT_COMPILE;
     }
 
