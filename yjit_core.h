@@ -73,8 +73,8 @@ typedef enum yjit_temp_loc
 {
     TEMP_STACK = 0,
     TEMP_SELF,
-    //TEMP_LOCAL, // Local with index
-    //TEMP_CONST, // Small constant (0, 1, 2, Qnil, Qfalse, Qtrue)
+    TEMP_LOCAL,     // Local with index
+    //TEMP_CONST,   // Small constant (0, 1, 2, Qnil, Qfalse, Qtrue)
 
 } temp_loc_t;
 
@@ -218,6 +218,7 @@ typedef struct yjit_block_version
 x86opnd_t ctx_sp_opnd(ctx_t* ctx, int32_t offset_bytes);
 x86opnd_t ctx_stack_push(ctx_t* ctx, val_type_t type);
 x86opnd_t ctx_stack_push_self(ctx_t* ctx);
+x86opnd_t ctx_stack_push_local(ctx_t* ctx, size_t local_idx);
 x86opnd_t ctx_stack_pop(ctx_t* ctx, size_t n);
 x86opnd_t ctx_stack_opnd(ctx_t* ctx, int32_t idx);
 val_type_t ctx_get_temp_type(const ctx_t* ctx, size_t idx);
