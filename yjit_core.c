@@ -455,18 +455,6 @@ branch_stub_hit(const uint32_t branch_idx, const uint32_t target_idx, rb_executi
 
     // If this block hasn't yet been compiled
     if (!p_block) {
-        // If the new block will be placed next right after the branch
-        if (cb->write_pos == branch->end_pos) {
-            //fprintf(stderr, "target idx %d will be placed next\n", target_idx);
-            branch->shape = (uint8_t)target_idx;
-
-            // Rewrite the branch with the new, potentially more compact shape
-            cb_set_pos(cb, branch->start_pos);
-            branch->gen_fn(cb, branch->dst_addrs[0], branch->dst_addrs[1], branch->shape);
-            RUBY_ASSERT(cb->write_pos <= branch->end_pos && "can't enlarge branches");
-            branch->end_pos = cb->write_pos;
-        }
-
         // Limit the number of block versions
         ctx_t generic_ctx = DEFAULT_CTX;
         generic_ctx.stack_size = target_ctx->stack_size;
@@ -478,7 +466,21 @@ branch_stub_hit(const uint32_t branch_idx, const uint32_t target_idx, rb_executi
             }
         }
 
+        // If the new block can be generated right after the branch (at cb->write_pos)
+        if (cb->write_pos == branch->end_pos) {
+            // Change the branch shape to indicate the target block will be placed next
+            branch->shape = (uint8_t)target_idx;
+
+            // Rewrite the branch with the new, potentially more compact shape
+            cb_set_pos(cb, branch->start_pos);
+            branch->gen_fn(cb, branch->dst_addrs[0], branch->dst_addrs[1], branch->shape);
+            RUBY_ASSERT(cb->write_pos <= branch->end_pos && "can't enlarge branches");
+            branch->end_pos = cb->write_pos;
+        }
+
         p_block = gen_block_version(target, target_ctx, ec);
+        RUBY_ASSERT(p_block);
+        RUBY_ASSERT(branch->shape != (uint8_t)target_idx || p_block->start_pos == branch->end_pos);
     }
 
     // Add this branch to the list of incoming branches for the target
