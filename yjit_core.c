@@ -145,13 +145,60 @@ ctx_get_temp_type(const ctx_t* ctx, size_t idx)
 
     temp_mapping_t mapping = ctx->temp_mapping[ctx->stack_size - 1 - idx];
 
-    if (mapping.kind == TEMP_SELF)
+    switch (mapping.kind)
+    {
+        case TEMP_SELF:
         return ctx->self_type;
-    else if (mapping.kind == TEMP_STACK)
+
+        case TEMP_STACK:
         return ctx->temp_types[ctx->stack_size - 1 - idx];
 
-    RUBY_ASSERT(false);
-    return TYPE_UNKNOWN;
+        case TEMP_LOCAL:
+        RUBY_ASSERT(mapping.idx < MAX_LOCAL_TYPES);
+        return ctx->local_types[mapping.idx];
+    }
+
+    rb_bug("unreachable");
+}
+
+/**
+Set the type of a value in the temporary stack
+*/
+void ctx_set_temp_type(ctx_t* ctx, size_t idx, val_type_t type)
+{
+    RUBY_ASSERT(idx < ctx->stack_size);
+
+    if (ctx->stack_size > MAX_TEMP_TYPES)
+        return;
+
+    temp_mapping_t mapping = ctx->temp_mapping[ctx->stack_size - 1 - idx];
+
+    switch (mapping.kind)
+    {
+        case TEMP_SELF:
+        ctx->self_type = type;
+        break;
+
+        case TEMP_STACK:
+        ctx->temp_types[ctx->stack_size - 1 - idx] = type;
+        break;
+
+        case TEMP_LOCAL:
+        RUBY_ASSERT(mapping.idx < MAX_LOCAL_TYPES);
+        ctx->local_types[mapping.idx] = type;
+        break;
+    }
+}
+
+/**
+Set the type of a local variable
+*/
+void ctx_set_local_type(ctx_t* ctx, size_t idx, val_type_t type)
+{
+    if (ctx->stack_size > MAX_LOCAL_TYPES)
+        return;
+
+    ctx->local_types[idx] = type;
 }
 
 /*
