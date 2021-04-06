@@ -418,13 +418,14 @@ uint8_t* gen_entry_point(const rb_iseq_t *iseq, uint32_t insn_idx, rb_execution_
 // Called by the generated code when a branch stub is executed
 // Triggers compilation of branches and code patching
 static uint8_t *
-branch_stub_hit(const uint32_t branch_idx, const uint32_t target_idx, rb_execution_context_t* ec)
+branch_stub_hit(uint32_t branch_idx, uint32_t target_idx, rb_execution_context_t* ec)
 {
     uint8_t* dst_addr;
 
+    // Stop other ractors since we are going to patch machine code.
+    // This is how the GC does it.
     RB_VM_LOCK_ENTER();
-    rb_vm_barrier(); // Stop other ractors since we are going to patch machine code.
-                     // It's how the GC does it.
+    rb_vm_barrier();
 
     RUBY_ASSERT(branch_idx < num_branches);
     RUBY_ASSERT(target_idx < 2);
@@ -454,6 +455,18 @@ branch_stub_hit(const uint32_t branch_idx, const uint32_t target_idx, rb_executi
 
     // If this block hasn't yet been compiled
     if (!p_block) {
+        // If the new block will be placed next right after the branch
+        if (cb->write_pos == branch->end_pos) {
+            //fprintf(stderr, "target idx %d will be placed next\n", target_idx);
+            branch->shape = (uint8_t)target_idx;
+
+            // Rewrite the branch with the new, potentially more compact shape
+            cb_set_pos(cb, branch->start_pos);
+            branch->gen_fn(cb, branch->dst_addrs[0], branch->dst_addrs[1], branch->shape);
+            RUBY_ASSERT(cb->write_pos <= branch->end_pos && "can't enlarge branches");
+            branch->end_pos = cb->write_pos;
+        }
+
         // Limit the number of block versions
         ctx_t generic_ctx = DEFAULT_CTX;
         generic_ctx.stack_size = target_ctx->stack_size;
@@ -475,26 +488,12 @@ branch_stub_hit(const uint32_t branch_idx, const uint32_t target_idx, rb_executi
     dst_addr = cb_get_ptr(cb, p_block->start_pos);
     branch->dst_addrs[target_idx] = dst_addr;
 
-    // Adjust brach shape based on block placement relative to the branch
-    if (branch->end_pos == p_block->start_pos) {
-        branch->shape = (branch_shape_t)target_idx;
-    }
-
     // Rewrite the branch with the new jump target address
     RUBY_ASSERT(branch->dst_addrs[0] != NULL);
     uint32_t cur_pos = cb->write_pos;
     cb_set_pos(cb, branch->start_pos);
     branch->gen_fn(cb, branch->dst_addrs[0], branch->dst_addrs[1], branch->shape);
-    RUBY_ASSERT(cb->write_pos <= branch->end_pos && "can't enlarge a branch");
-
-    // If the branch got smaller
-    if (cb->write_pos < branch->end_pos) {
-        // fill the difference with nops
-        uint32_t shrinkage = branch->end_pos - cb->write_pos;
-        nop(cb, shrinkage);
-    }
-
-    // Done patching the branch. Restore write position.
+    RUBY_ASSERT(cb->write_pos == branch->end_pos);
     cb_set_pos(cb, cur_pos);
 
     // Restore interpreter sp, since the code hitting the stub expects the original.
