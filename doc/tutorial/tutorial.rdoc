@@ -6,11 +6,11 @@ When a Ruby program executes, it captures its command-line arguments
 and options into variable ARGV.
 This simple program just prints its \ARGV:
 
-  :include: ruby/argv.rb
+  :include: argv.rb
 
 Execution, with arguments and options:
 
-  $ ruby doc/ruby/argv.rb foo --bar --baz bat bam
+  $ ruby argv.rb foo --bar --baz bat bam
   ["foo", "--bar", "--baz", "bat", "bam"]
 
 The executing program is responsible for parsing and handling
@@ -27,8 +27,10 @@ With \OptionParser, you can define options so that for each option:
 - The argument may be restricted to specified _forms_.
 - The argument may be restricted to specified _values_.
 
-The class also has a method #summarize that returns a string summary
-of all defined options.
+The class also has:
+
+- Method #summarize: returns a text summary of the options.
+- Method #help: displays automatically-generated help text.
 
 === Defining Options
 
@@ -65,23 +67,28 @@ File +short_names.rb+
 defines an option with a short name, <tt>-x</tt>,
 and an option with two short names (aliases, in effect) <tt>-y</tt> and <tt>-z</tt>.
 
-  :include: ruby/short_names.rb
+  :include: short_names.rb
 
 Executions:
 
-  $ ruby doc/ruby/short_names.rb -x
-  "-x true"
-  $ ruby doc/ruby/short_names.rb -1
-  "-1 or -% true"
-  $ ruby doc/ruby/short_names.rb -%
-  "-1 or -% true"
+  $ ruby short_names.rb -x
+  ["x", true]
+  $ ruby short_names.rb -1
+  ["-1 or -%", true]
+  $ ruby short_names.rb -%
+  ["-1 or -%", true]
 
 Multiple short names can "share" a hyphen:
 
   $ ruby short_names.rb -x1%
-  "-x true"
-  "-1 or -% true"
-  "-1 or -% true"
+  ["x", true]
+  ["-1 or -%", true]
+  ["-1 or -%", true]
+
+This is a good time to note that giving an undefined option raises an exception:
+
+  $ ruby short_names.rb -z
+  short_names.rb:9:in `<main>': invalid option: -z (OptionParser::InvalidOption)
 
 ==== Long Option Names
 
@@ -92,16 +99,16 @@ File +long_names.rb+
 defines an option with a long name, <tt>--xxx</tt>,
 and an option with two long names (aliases, in effect) <tt>--y1%</tt> and <tt>--z2#</tt>.
 
-  :include: ruby/long_names.rb
+  :include: long_names.rb
 
 Executions:
 
   $ ruby long_names.rb --xxx
-  "--xxx true"
+  ["-xxx", true]
   $ ruby long_names.rb --y1%
-  "--y1% or -z2# true"
+  ["--y1% or --z2#", true]
   $ ruby long_names.rb --z2#
-  "--y1% or -z2# true"
+  ["--y1% or --z2#", true]
 
 ==== Mixing Option Names
 
@@ -111,15 +118,69 @@ so that a short name is in effect an abbreviation of a long name.
 File +mixed_names.rb+
 defines options that each have both a short and a long name.
 
-  :include: ruby/mixed_names.rb
+  :include: mixed_names.rb
 
 Executions:
 
-  $ ruby doc/ruby/mixed_names.rb -x
-  "--xxx true"
-  $ ruby doc/ruby/mixed_names.rb --xxx
-  "--xxx true"
-  $ ruby doc/ruby/mixed_names.rb -y
-  "--y1% true"
-  $ ruby doc/ruby/mixed_names.rb --y1%
-  "--y1% true"
+  $ ruby mixed_names.rb -x
+  ["--xxx", true]
+  $ ruby mixed_names.rb --xxx
+  ["--xxx", true]
+  $ ruby mixed_names.rb -y
+  ["--y1%", true]
+  $ ruby mixed_names.rb --y1%
+  ["--y1%", true]
+
+=== Option Arguments
+
+An option may take no argument, a required argument, or an optional argument.
+
+==== Option with No Argument
+
+All the examples above define options with no argument.
+
+==== Option with Required Argument
+
+Specify a required argument for an option by adding a dummy word
+to its name definition.
+
+File +required_argument.rb+ defines two options;
+each has a required argument because the name definition has a following dummy word.
+
+  :include: required_argument.rb
+
+When an option is found, the given argument is yielded.
+
+Executions:
+
+  $ ruby required_argument.rb -x AAA
+  ["--xxx", "AAA"]
+  $ ruby required_argument.rb -y BBB
+  ["--yyy", "BBB"]
+
+Omitting a required argument raises an error:
+
+  $ ruby required_argument.rb -x
+  required_argument.rb:9:in `<main>': missing argument: -x (OptionParser::MissingArgument)
+
+==== Option with Optional Argument
+
+Specify an optional argument for an option by adding a dummy word
+enclosed in square brackets to its name definition.
+
+File +optional_argument.rb+ defines two options;
+each has an optional argument because the name definition has a following dummy word
+in square brackets.
+
+  :include: optional_argument.rb
+
+When an option with an argument is found, the given argument yielded.
+
+Executions:
+
+  $ ruby optional_argument.rb -x AAA
+  ["--xxx", "AAA"]
+  $ ruby optional_argument.rb -y BBB
+  ["--yyy", "BBB"]
+
+Omitting an optional argument does not raise an error.
