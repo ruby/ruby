@@ -155,7 +155,7 @@ uint8_t* alloc_exec_mem(uint32_t mem_size)
         exit(-1);
     }
 
-    // Fill the executable memory with 0x13 so that
+    // Fill the executable memory with INT3 (0xCC) so that
     // executing uninitialized memory will fault
     memset(mem_block, 0xCC, mem_size);
 
