@@ -418,7 +418,7 @@ uint8_t* gen_entry_point(const rb_iseq_t *iseq, uint32_t insn_idx, rb_execution_
 // Called by the generated code when a branch stub is executed
 // Triggers compilation of branches and code patching
 static uint8_t *
-branch_stub_hit(uint32_t branch_idx, uint32_t target_idx, rb_execution_context_t* ec)
+branch_stub_hit(const uint32_t branch_idx, const uint32_t target_idx, rb_execution_context_t* ec)
 {
     uint8_t* dst_addr;
 
@@ -493,7 +493,7 @@ branch_stub_hit(uint32_t branch_idx, uint32_t target_idx, rb_execution_context_t
     uint32_t cur_pos = cb->write_pos;
     cb_set_pos(cb, branch->start_pos);
     branch->gen_fn(cb, branch->dst_addrs[0], branch->dst_addrs[1], branch->shape);
-    RUBY_ASSERT(cb->write_pos == branch->end_pos);
+    RUBY_ASSERT(cb->write_pos == branch->end_pos && "branch can't change size");
     cb_set_pos(cb, cur_pos);
 
     // Restore interpreter sp, since the code hitting the stub expects the original.
