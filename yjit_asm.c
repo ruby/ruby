@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <stdarg.h>
 #include <assert.h>
 
@@ -153,6 +154,10 @@ uint8_t* alloc_exec_mem(uint32_t mem_size)
         fprintf(stderr, "mmap call failed\n");
         exit(-1);
     }
+
+    // Fill the executable memory with 0x13 so that
+    // executing uninitialized memory will fault
+    memset(mem_block, 0xCC, mem_size);
 
     return mem_block;
 #else
