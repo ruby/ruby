@@ -116,7 +116,7 @@ class << Merger
     v, pl = version
     if relname
       abort "patchlevel is not -1 but '#{pl}' for preview or rc" if pl != '-1' && /-(?:preview|rc)/ =~ relname
-      abort "patchlevel is not 0 but '#{pl}' for the first release" if pl != '0' && /-(?:preview|rc)/ !~ relname
+      abort "patchlevel is not 0 but '#{pl}' for the first release" if pl != '0' && relname.end_with?(".0")
       pl = relname[/-(.*)\z/, 1]
       curver = "#{v.join('.')}#{("-#{pl}" if pl)}"
       if relname != curver
