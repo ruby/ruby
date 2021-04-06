@@ -23,6 +23,7 @@
 #   ruby -run -e wait_writable -- [OPTION] FILE
 #   ruby -run -e mkmf -- [OPTION] EXTNAME [OPTION]
 #   ruby -run -e httpd -- [OPTION] [DocumentRoot]
+#   ruby -run -e colorize -- FILE
 #   ruby -run -e help [COMMAND]
 
 require "fileutils"
@@ -370,6 +371,25 @@ def httpd
       Signal.trap(sig, shut)
     end
     s.start
+  end
+end
+
+##
+# Colorize ruby code.
+#
+#   ruby -run -e colorize -- FILE
+#
+
+def colorize
+  begin
+    require "irb/color"
+  rescue LoadError
+    raise "colorize requires irb 1.1.0 or later"
+  end
+  setup do |argv, |
+    argv.each do |file|
+      puts IRB::Color.colorize_code File.read(file)
+    end
   end
 end
 
