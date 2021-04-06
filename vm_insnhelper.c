@@ -4564,6 +4564,64 @@ vm_sendish(
 #endif
 }
 
+struct vm_opt_send_args {
+    struct rb_call_data cd;
+    struct rb_callinfo ci;
+};
+
+static CALL_DATA
+vm_opt_send_method_id(struct rb_control_frame_struct *reg_cfp,
+                      struct rb_call_data *cd,
+                      struct vm_opt_send_args *send)
+{
+    int argc = vm_ci_argc(cd->ci);
+    if (argc < 1) return cd;
+    if (vm_ci_mid(cd->ci) != id__send__) return cd;
+
+    int i = argc - 1;
+    VALUE sym = TOPN(i);
+    if (!SYMBOL_P(sym)) return cd;
+    ID mid = rb_check_id(&sym);
+    if (UNLIKELY(! mid)) return cd;
+
+    // E.g. when i == 2
+    //
+    //   |      |        |      |  TOPN
+    //   +------+        |      |
+    //   | arg1 | ---+   |      |    0
+    //   +------+    |   +------+
+    //   | arg0 | -+ +-> | arg1 |    1
+    //   +------+  |     +------+
+    //   | sym  |  +---> | arg0 |    2
+    //   +------+        +------+
+    //   | recv |        | recv |    3
+    // --+------+--------+------+------
+    //
+    // shift arguments
+    if (i > 0) {
+        MEMMOVE(&TOPN(i), &TOPN(i-1), VALUE, i);
+    }
+    POP();
+    VALUE flag = VM_CALL_FCALL|VM_CALL_OPT_SEND|vm_ci_flag(cd->ci);
+    const struct rb_callinfo_kwarg *kwarg = vm_ci_kwarg(cd->ci);
+#if USE_EMBED_CI
+    if (VM_CI_EMBEDDABLE_P(mid, flag, i, kwarg)) {
+        send->cd.ci = vm_ci_new_id(mid, flag, i, kwarg);
+    }
+    else
+#endif
+    {
+        send->ci = VM_CI_ON_STACK(mid, flag, i, kwarg);
+        send->cd.ci = &send->ci;
+    }
+#ifdef MJIT_HEADER
+    send->cd.cc = rb_vm_empty_cc();
+#else
+    send->cd.cc = &vm_empty_cc;
+#endif
+    return &send->cd;
+}
+
 static VALUE
 vm_opt_str_freeze(VALUE str, int bop, ID id)
 {

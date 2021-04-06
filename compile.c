@@ -277,6 +277,9 @@ const ID rb_iseq_shared_exc_local_tbl[] = {idERROR_INFO};
 #define ADD_SEND_R(seq, line, id, argc, block, flag, keywords) \
   ADD_ELEM((seq), (LINK_ELEMENT *) new_insn_send(iseq, (line), (id), (VALUE)(argc), (block), (VALUE)(flag), (keywords)))
 
+#define ADD_SENDSYM_R(seq, line, id, argc, block, flag, keywords) \
+  ADD_ELEM((seq), (LINK_ELEMENT *) new_insn_sendsym(iseq, (line), (id), (VALUE)(argc), (block), (VALUE)(flag), (keywords)))
+
 #define ADD_TRACE(seq, event) \
   ADD_ELEM((seq), (LINK_ELEMENT *)new_trace_body(iseq, (event), 0))
 #define ADD_TRACE_WITH_DATA(seq, event, data) \
@@ -1312,6 +1315,15 @@ new_insn_send(rb_iseq_t *iseq, int line_no, ID id, VALUE argc, const rb_iseq_t *
     RB_OBJ_WRITTEN(iseq, Qundef, ci);
     RB_GC_GUARD(ci);
     return insn;
+}
+
+static INSN *
+new_insn_sendsym(rb_iseq_t *iseq, int line_no, ID id, VALUE argc, const rb_iseq_t *blockiseq, VALUE flag, struct rb_callinfo_kwarg *keywords)
+{
+    VALUE *operands = compile_data_calloc2(iseq, sizeof(VALUE), 2);
+    operands[0] = (VALUE)new_callinfo(iseq, id, FIX2INT(argc), FIX2INT(flag), keywords, blockiseq != NULL);
+    operands[1] = (VALUE)blockiseq;
+    return new_insn_core(iseq, line_no, BIN(sendsym), 2, operands);
 }
 
 static rb_iseq_t *
@@ -3445,7 +3457,7 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 	}
     }
 
-    if (IS_INSN_ID(iobj, send)) {
+    if (IS_INSN_ID(iobj, send) || IS_INSN_ID(iobj, sendsym)) {
         const struct rb_callinfo *ci = (struct rb_callinfo *)OPERAND_AT(iobj, 0);
         const rb_iseq_t *blockiseq = (rb_iseq_t *)OPERAND_AT(iobj, 1);
 
@@ -3491,7 +3503,7 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 	}
 
 	if ((vm_ci_flag(ci) & VM_CALL_ARGS_BLOCKARG) == 0 && blockiseq == NULL) {
-	    iobj->insn_id = BIN(opt_send_without_block);
+            iobj->insn_id = IS_INSN_ID(iobj, send) ? BIN(opt_send_without_block) : BIN(opt_sendsym_without_block);
 	    iobj->operand_size = insn_len(iobj->insn_id) - 1;
 	}
     }
@@ -7565,9 +7577,32 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
         }
     }
 
+    const NODE *argn = node->nd_args;
+
+    // optimize __send__
+    bool sendsym = false;
+    if (mid == id__send__ && argn) {
+        if (nd_type(argn) == NODE_LIST && nd_type(argn->nd_head) == NODE_LIT && SYMBOL_P(argn->nd_head->nd_lit)) {
+            VALUE name = argn->nd_head->nd_lit;
+            mid = SYM2ID(name);
+            argn = argn->nd_next;
+
+            // type is not NODE_VCALL because of arguments
+
+            // always mark as FCALL for private methods
+            flag |= VM_CALL_FCALL;
+
+            // mark OPT_SEND for protected methods
+            flag |= VM_CALL_OPT_SEND;
+        }
+        else {
+            sendsym = true;
+        }
+    }
+
     /* args */
     if (type != NODE_VCALL) {
-        argc = setup_args(iseq, args, node->nd_args, &flag, &keywords);
+        argc = setup_args(iseq, args, argn, &flag, &keywords);
         CHECK(!NIL_P(argc));
     }
     else {
@@ -7588,7 +7623,12 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
         flag |= VM_CALL_FCALL;
     }
 
-    ADD_SEND_R(ret, line, mid, argc, parent_block, INT2FIX(flag), keywords);
+    if (sendsym) {
+        ADD_SENDSYM_R(ret, line, mid, argc, parent_block, INT2FIX(flag), keywords);
+    }
+    else {
+        ADD_SEND_R(ret, line, mid, argc, parent_block, INT2FIX(flag), keywords);
+    }
 
     qcall_branch_end(iseq, ret, else_label, branches, node, line);
     if (popped) {
