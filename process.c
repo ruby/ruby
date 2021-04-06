@@ -4356,8 +4356,23 @@ rb_f_fork(VALUE obj)
 	return PIDT2NUM(pid);
     }
 }
+
+/*
+ *  call-seq:
+ *     Kernel.fork  [{ block }]   -> integer or nil
+ *
+ *  Creates a subprocess.
+ *
+ *  See Process.fork
+ */
+
+static VALUE
+rb_f_call_fork(int argc, VALUE *argv, VALUE self) {
+    return rb_funcall_passing_block_kw(rb_mProcess, rb_intern("fork"), argc, argv, RB_PASS_CALLED_KEYWORDS);
+}
 #else
 #define rb_f_fork rb_f_notimplement
+#define rb_f_call_fork rb_f_notimplement
 #endif
 
 static int
@@ -8625,7 +8640,7 @@ InitVM_process(void)
     rb_gvar_ractor_local("$?");
 
     rb_define_global_function("exec", f_exec, -1);
-    rb_define_global_function("fork", rb_f_fork, 0);
+    rb_define_global_function("fork", rb_f_call_fork, -1);
     rb_define_global_function("exit!", rb_f_exit_bang, -1);
     rb_define_global_function("system", rb_f_system, -1);
     rb_define_global_function("spawn", rb_f_spawn, -1);
