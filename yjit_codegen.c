@@ -490,8 +490,8 @@ gen_getlocal_wc0(jitstate_t* jit, ctx_t* ctx)
     mov(cb, REG0, mem_opnd(64, REG0, offs));
 
     // Write the local at SP
-    x86opnd_t stack_top = ctx_stack_push_local(ctx, local_idx);
-    //x86opnd_t stack_top = ctx_stack_push(ctx, TYPE_UNKNOWN);
+    //x86opnd_t stack_top = ctx_stack_push_local(ctx, local_idx);
+    x86opnd_t stack_top = ctx_stack_push(ctx, TYPE_UNKNOWN);
     mov(cb, stack_top, REG0);
 
     return YJIT_KEEP_COMPILING;
@@ -555,9 +555,12 @@ gen_setlocal_wc0(jitstate_t* jit, ctx_t* ctx)
     // if (flags & VM_ENV_FLAG_WB_REQUIRED) != 0
     jnz_ptr(cb, side_exit);
 
+    // NOTE: disabled for now since we don't have a good strategy
+    // for dealing with how blocks/closures can affect local types
+    //
     // Set the type of the local variable in the context
-    val_type_t temp_type = ctx_get_temp_type(ctx, 0);
-    ctx_set_local_type(ctx, local_idx, temp_type);
+    //val_type_t temp_type = ctx_get_temp_type(ctx, 0);
+    //ctx_set_local_type(ctx, local_idx, temp_type);
 
     // Pop the value to write from the stack
     x86opnd_t stack_top = ctx_stack_pop(ctx, 1);
