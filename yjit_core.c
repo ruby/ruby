@@ -71,6 +71,25 @@ ctx_stack_push_self(ctx_t* ctx)
 }
 
 /*
+Push a local variable on the stack
+*/
+x86opnd_t
+ctx_stack_push_local(ctx_t* ctx, size_t local_idx)
+{
+    // Keep track of the type of the value
+    if (ctx->stack_size < MAX_TEMP_TYPES && local_idx < MAX_LOCAL_TYPES) {
+        ctx->temp_mapping[ctx->stack_size] = (temp_mapping_t){ .kind = TEMP_LOCAL, .idx = local_idx };
+    }
+
+    ctx->stack_size += 1;
+    ctx->sp_offset += 1;
+
+    // SP points just above the topmost value
+    int32_t offset = (ctx->sp_offset - 1) * sizeof(VALUE);
+    return mem_opnd(64, REG_SP, offset);
+}
+
+/*
 Pop N values off the stack
 Return a pointer to the stack top before the pop operation
 */
