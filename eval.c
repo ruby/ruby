@@ -1192,7 +1192,7 @@ frame_func_id(const rb_control_frame_t *cfp)
 }
 
 static ID
-frame_called_id(rb_control_frame_t *cfp)
+frame_called_id(const rb_control_frame_t *cfp)
 {
     const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
 
@@ -1251,19 +1251,23 @@ previous_frame(const rb_execution_context_t *ec)
 }
 
 static ID
+prev_frame(ID (func(const rb_control_frame_t *)) )
+{
+    const rb_control_frame_t *prev_cfp = previous_frame(GET_EC());
+    if (!prev_cfp) return 0;
+    return func(prev_cfp);
+}
+
+static ID
 prev_frame_callee(void)
 {
-    rb_control_frame_t *prev_cfp = previous_frame(GET_EC());
-    if (!prev_cfp) return 0;
-    return frame_called_id(prev_cfp);
+    return prev_frame(frame_called_id);
 }
 
 static ID
 prev_frame_func(void)
 {
-    rb_control_frame_t *prev_cfp = previous_frame(GET_EC());
-    if (!prev_cfp) return 0;
-    return frame_func_id(prev_cfp);
+    return prev_frame(frame_func_id);
 }
 
 /*!
