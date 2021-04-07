@@ -216,9 +216,16 @@ _counted_side_exit(uint8_t *existing_side_exit, int64_t *counter)
     return start;
 }
 
+// Comments for generated machine code
+#define ADD_COMMENT(cb, comment) rb_darray_append(&yjit_code_comments, ((struct yjit_comment){(cb)->write_pos, (comment)}))
+yjit_comment_array_t yjit_code_comments;
+
 #else
+
 #define GEN_COUNTER_INC(cb, counter_name) ((void)0)
 #define COUNTED_EXIT(side_exit, counter_name) side_exit
+#define ADD_COMMENT(cb, comment) ((void)0)
+
 #endif // if RUBY_DEBUG
 
 /*
@@ -322,6 +329,9 @@ yjit_gen_block(ctx_t* ctx, block_t* block, rb_execution_context_t* ec)
         // Count bytecode instructions that execute in generated code.
         // Note that the increment happens even when the output takes side exit.
         GEN_COUNTER_INC(cb, exec_instruction);
+
+        // Add a comment for the name of the YARV instruction
+        ADD_COMMENT(cb, insn_name(opcode));
 
         // Call the code generation function
         bool continue_generating = p_desc->gen_fn(&jit, ctx);
@@ -751,6 +761,7 @@ gen_getinstancevariable(jitstate_t* jit, ctx_t* ctx)
 
             // Guard that self is embedded
             // TODO: BT and JC is shorter
+            ADD_COMMENT(cb, "guard embedded getivar");
             x86opnd_t flags_opnd = member_opnd(REG0, struct RBasic, flags);
             test(cb, flags_opnd, imm_opnd(ROBJECT_EMBED));
             jit_chain_guard(JCC_JZ, jit, ctx, GETIVAR_MAX_DEPTH, side_exit);
@@ -772,6 +783,7 @@ gen_getinstancevariable(jitstate_t* jit, ctx_t* ctx)
 
             // Guard that self is *not* embedded
             // See ROBJECT_IVPTR() from include/ruby/internal/core/robject.h
+            ADD_COMMENT(cb, "guard extended getivar");
             x86opnd_t flags_opnd = member_opnd(REG0, struct RBasic, flags);
             test(cb, flags_opnd, imm_opnd(ROBJECT_EMBED));
             jit_chain_guard(JCC_JNZ, jit, ctx, GETIVAR_MAX_DEPTH, side_exit);

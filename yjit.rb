@@ -1,40 +1,61 @@
 module YJIT
-  def self.disasm(iseq)
-    iseq = RubyVM::InstructionSequence.of(iseq)
+  if defined?(Disasm)
+    def self.disasm(iseq, tty: $stdout && $stdout.tty?)
+      iseq = RubyVM::InstructionSequence.of(iseq)
 
-    blocks = YJIT.blocks_for(iseq)
-    return if blocks.empty?
+      blocks = YJIT.blocks_for(iseq)
+      return if blocks.empty?
 
-    str = ""
-
-    cs = YJIT::Disasm.new
-
-    str << iseq.disasm
-    str << "\n"
-
-    # Sort the blocks by increasing addresses
-    blocks.sort_by(&:address).each_with_index do |block, i|
-      str << "== BLOCK #{i+1}/#{blocks.length}: #{block.code.length} BYTES, ISEQ RANGE [#{block.iseq_start_index},#{block.iseq_end_index}) ".ljust(80, "=")
+      str = ""
+      str << iseq.disasm
       str << "\n"
 
-      cs.disasm(block.code, block.address).each do |i|
-        str << sprintf(
-          "  %<address>08x:  %<instruction>s\t%<details>s\n",
-          address: i.address,
-          instruction: i.mnemonic,
-          details: i.op_str
-        )
+      # Sort the blocks by increasing addresses
+      sorted_blocks = blocks.sort_by(&:address)
+
+      highlight = ->(str) {
+        if tty
+          "\x1b[1m#{str}\x1b[0m"
+        else
+          str
+        end
+      }
+
+      cs = YJIT::Disasm.new
+      sorted_blocks.each_with_index do |block, i|
+        str << "== BLOCK #{i+1}/#{blocks.length}: #{block.code.length} BYTES, ISEQ RANGE [#{block.iseq_start_index},#{block.iseq_end_index}) ".ljust(80, "=")
+        str << "\n"
+
+        comments = comments_for(block.address, block.address + block.code.length)
+        comment_idx = 0
+        cs.disasm(block.code, block.address).each do |i|
+          while (comment = comments[comment_idx]) && comment.address <= i.address
+            str << "  ;#{highlight.call(comment.comment)}\n"
+            comment_idx += 1
+          end
+
+          str << sprintf(
+            "  %<address>08x:  %<instruction>s\t%<details>s\n",
+            address: i.address,
+            instruction: i.mnemonic,
+            details: i.op_str
+          )
+        end
       end
+
+      block_sizes = blocks.map { |block| block.code.length }
+      total_bytes = block_sizes.sum
+      str << "\n"
+      str << "Total code size: #{total_bytes} bytes"
+      str << "\n"
+
+      str
     end
 
-    block_sizes = blocks.map { |block| block.code.length }
-    total_bytes = block_sizes.reduce(0, :+)
-    str << "\n"
-    str << "Total code size: #{total_bytes} bytes"
-    str << "\n"
-
-    str
-  end if defined?(Disasm)
+    def self.comments_for(start_address, end_address)
+      Primitive.comments_for(start_address, end_address)
+    end
+  end
 
   # Return a hash for statistics generated for the --yjit-stats command line option.
   # Return nil when option is not passed or unavailable.
