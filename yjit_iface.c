@@ -726,6 +726,18 @@ rb_yjit_collect_vm_usage_insn(int insn)
     vm_insns_count++;
 }
 
+void
+rb_yjit_collect_binding_alloc(void)
+{
+    yjit_runtime_counters.binding_allocations++;
+}
+
+void
+rb_yjit_collect_binding_set(void)
+{
+    yjit_runtime_counters.binding_set++;
+}
+
 const VALUE *
 rb_yjit_count_side_exit_op(const VALUE *exit_pc)
 {
