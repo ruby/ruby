@@ -31,6 +31,8 @@ module TestIRB
         [:CYAN]      => "#{CYAN}#{text}#{CLEAR}",
       }.each do |seq, result|
         assert_equal_with_term(result, text, seq: seq)
+
+        assert_equal_with_term(text, text, seq: seq, tty: false)
       end
     end
 
@@ -124,6 +126,9 @@ module TestIRB
         if colorize_code_supported?
           assert_equal_with_term(result, code, complete: true)
           assert_equal_with_term(result, code, complete: false)
+
+          assert_equal_with_term(code, code, complete: true, tty: false)
+          assert_equal_with_term(code, code, complete: false, tty: false)
         else
           assert_equal_with_term(code, code)
         end
@@ -141,6 +146,8 @@ module TestIRB
         "('foo" => "(#{RED}#{BOLD}'#{CLEAR}#{RED}#{REVERSE}foo#{CLEAR}",
       }.each do |code, result|
         assert_equal_with_term(result, code, complete: true)
+
+        assert_equal_with_term(code, code, complete: true, tty: false)
       end
     end
 
@@ -153,8 +160,12 @@ module TestIRB
         if colorize_code_supported?
           assert_equal_with_term(result, code, complete: false)
 
+          assert_equal_with_term(code, code, complete: false, tty: false)
+
           unless complete_option_supported?
             assert_equal_with_term(result, code, complete: true)
+
+            assert_equal_with_term(code, code, complete: true, tty: false)
           end
         else
           assert_equal_with_term(code, code)
@@ -194,10 +205,10 @@ module TestIRB
       Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('2.7.0')
     end
 
-    def with_term
+    def with_term(tty: true)
       stdout = $stdout
       io = StringIO.new
-      def io.tty?; true; end
+      def io.tty?; true; end if tty
       $stdout = io
 
       env = ENV.to_h.dup
@@ -209,8 +220,8 @@ module TestIRB
       ENV.replace(env) if env
     end
 
-    def assert_equal_with_term(result, code, seq: nil, **opts)
-      actual = with_term do
+    def assert_equal_with_term(result, code, seq: nil, tty: true, **opts)
+      actual = with_term(tty: tty) do
         if seq
           IRB::Color.colorize(code, seq, **opts)
         else
