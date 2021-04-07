@@ -176,7 +176,11 @@ typedef struct yjit_branch_entry
     branchgen_fn gen_fn;
 
     // Shape of the branch
-    branch_shape_t shape;
+    branch_shape_t shape : 2;
+
+    // Two flag bits to indicate target addresses
+    // have been patched (are not stubs)
+    uint8_t dst_patched : 2;
 
 } branch_t;
 
