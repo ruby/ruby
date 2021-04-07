@@ -77,7 +77,7 @@ module IRB # :nodoc:
 
     class << self
       def colorable?
-        $stdout.tty? && supported? && (/mswin|mingw/ =~ RUBY_PLATFORM || (ENV.key?('TERM') && ENV['TERM'] != 'dumb'))
+        $stdout.tty? && (/mswin|mingw/ =~ RUBY_PLATFORM || (ENV.key?('TERM') && ENV['TERM'] != 'dumb'))
       end
 
       def inspect_colorable?(obj, seen: {}.compare_by_identity)
@@ -159,11 +159,6 @@ module IRB # :nodoc:
         block.call
       ensure
         seen.delete(obj)
-      end
-
-      def supported?
-        return @supported if defined?(@supported)
-        @supported = Ripper::Lexer::Elem.method_defined?(:state)
       end
 
       def scan(code, allow_last_error:)
