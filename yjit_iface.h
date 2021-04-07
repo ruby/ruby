@@ -67,6 +67,15 @@ YJIT_DECLARE_COUNTERS(
 
 #undef YJIT_DECLARE_COUNTERS
 
+struct yjit_comment {
+    int32_t offset;
+    const char *comment;
+};
+
+typedef rb_darray(struct yjit_comment) yjit_comment_array_t;
+
+extern yjit_comment_array_t yjit_code_comments;
+
 #endif // if RUBY_DEBUG
 
 RUBY_EXTERN struct rb_yjit_options rb_yjit_opts;

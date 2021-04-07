@@ -30,6 +30,7 @@ static int64_t vm_insns_count = 0;
 static int64_t exit_op_count[VM_INSTRUCTION_SIZE] = { 0 };
 int64_t rb_compiled_iseq_count = 0;
 struct rb_yjit_runtime_counters yjit_runtime_counters = { 0 };
+static VALUE cYjitCodeComment;
 #endif
 
 // Machine code blocks (executable memory)
@@ -521,6 +522,7 @@ yjit_blocks_for(VALUE mod, VALUE rb_iseq)
         rb_darray_for(versions, block_idx) {
             block_t *block = rb_darray_get(versions, block_idx);
 
+            // FIXME: The object craeted here can outlive the block itself
             VALUE rb_block = TypedData_Wrap_Struct(cYjitBlock, &yjit_block_type, block);
             rb_ary_push(all_versions, rb_block);
         }
@@ -653,6 +655,37 @@ at_exit_print_stats(RB_BLOCK_CALL_FUNC_ARGLIST(yieldarg, data))
     // Defined in yjit.rb
     rb_funcall(mYjit, rb_intern("_print_stats"), 0);
     return Qnil;
+}
+
+// Primitive called in yjit.rb. Export all machine code comments as a Ruby array.
+static VALUE
+comments_for(rb_execution_context_t *ec, VALUE self, VALUE start_address, VALUE end_address)
+{
+    VALUE comment_array = rb_ary_new();
+#if RUBY_DEBUG
+    uint8_t *start = (void *)NUM2ULL(start_address);
+    uint8_t *end = (void *)NUM2ULL(end_address);
+
+    rb_darray_for(yjit_code_comments, i) {
+        struct yjit_comment comment = rb_darray_get(yjit_code_comments, i);
+        uint8_t *comment_pos = cb_get_ptr(cb, comment.offset);
+
+        if (comment_pos >= end) {
+            break;
+        }
+        if (comment_pos >= start) {
+            VALUE vals = rb_ary_new_from_args(
+                2,
+                LL2NUM((long long) comment_pos),
+                rb_str_new_cstr(comment.comment)
+            );
+            rb_ary_push(comment_array, rb_struct_alloc(cYjitCodeComment, vals));
+        }
+    }
+
+#endif // if RUBY_DEBUG
+
+    return comment_array;
 }
 
 // Primitive called in yjit.rb. Export all runtime counters as a Ruby hash.
@@ -962,6 +995,7 @@ rb_yjit_init(struct rb_yjit_options *options)
     rb_define_alloc_func(cYjitDisasm, yjit_disasm_init);
     rb_define_method(cYjitDisasm, "disasm", yjit_disasm, 2);
     cYjitDisasmInsn = rb_struct_define_under(cYjitDisasm, "Insn", "address", "mnemonic", "op_str", NULL);
+    cYjitCodeComment = rb_struct_define_under(cYjitDisasm, "Comment", "address", "comment");
 #endif
 
     if (RUBY_DEBUG && rb_yjit_opts.gen_stats) {
