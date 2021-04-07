@@ -17,6 +17,23 @@ module TestIRB
     MAGENTA   = "\e[35m"
     CYAN      = "\e[36m"
 
+    def test_colorize
+      text = "text"
+      {
+        [:BOLD]      => "#{BOLD}#{text}#{CLEAR}",
+        [:UNDERLINE] => "#{UNDERLINE}#{text}#{CLEAR}",
+        [:REVERSE]   => "#{REVERSE}#{text}#{CLEAR}",
+        [:RED]       => "#{RED}#{text}#{CLEAR}",
+        [:GREEN]     => "#{GREEN}#{text}#{CLEAR}",
+        [:YELLOW]    => "#{YELLOW}#{text}#{CLEAR}",
+        [:BLUE]      => "#{BLUE}#{text}#{CLEAR}",
+        [:MAGENTA]   => "#{MAGENTA}#{text}#{CLEAR}",
+        [:CYAN]      => "#{CYAN}#{text}#{CLEAR}",
+      }.each do |seq, result|
+        assert_equal_with_term(result, text, seq: seq)
+      end
+    end
+
     def test_colorize_code
       # Common behaviors. Warn parser error, but do not warn compile error.
       tests = {
@@ -192,12 +209,19 @@ module TestIRB
       ENV.replace(env) if env
     end
 
-    def assert_equal_with_term(result, code, **opts)
-      actual = with_term { IRB::Color.colorize_code(code, **opts) }
+    def assert_equal_with_term(result, code, seq: nil, **opts)
+      actual = with_term do
+        if seq
+          IRB::Color.colorize(code, seq, **opts)
+        else
+          IRB::Color.colorize_code(code, **opts)
+        end
+      end
       message = -> {
         args = [code.dump]
+        args << seq.inspect if seq
         opts.each {|kwd, val| args << "#{kwd}: #{val}"}
-        "Case: colorize_code(#{args.join(', ')})\nResult: #{humanized_literal(actual)}"
+        "Case: colorize#{seq ? "" : "_code"}(#{args.join(', ')})\nResult: #{humanized_literal(actual)}"
       }
       assert_equal(result, actual, message)
     end
