@@ -33,6 +33,8 @@ module TestIRB
         assert_equal_with_term(result, text, seq: seq)
 
         assert_equal_with_term(text, text, seq: seq, tty: false)
+        assert_equal_with_term(text, text, seq: seq, colorable: false)
+        assert_equal_with_term(result, text, seq: seq, tty: false, colorable: true)
       end
     end
 
@@ -129,6 +131,14 @@ module TestIRB
 
           assert_equal_with_term(code, code, complete: true, tty: false)
           assert_equal_with_term(code, code, complete: false, tty: false)
+
+          assert_equal_with_term(code, code, complete: true, colorable: false)
+
+          assert_equal_with_term(code, code, complete: false, colorable: false)
+
+          assert_equal_with_term(result, code, complete: true, tty: false, colorable: true)
+
+          assert_equal_with_term(result, code, complete: false, tty: false, colorable: true)
         else
           assert_equal_with_term(code, code)
         end
@@ -148,6 +158,10 @@ module TestIRB
         assert_equal_with_term(result, code, complete: true)
 
         assert_equal_with_term(code, code, complete: true, tty: false)
+
+        assert_equal_with_term(code, code, complete: true, colorable: false)
+
+        assert_equal_with_term(result, code, complete: true, tty: false, colorable: true)
       end
     end
 
@@ -162,10 +176,18 @@ module TestIRB
 
           assert_equal_with_term(code, code, complete: false, tty: false)
 
+          assert_equal_with_term(code, code, complete: false, colorable: false)
+
+          assert_equal_with_term(result, code, complete: false, tty: false, colorable: true)
+
           unless complete_option_supported?
             assert_equal_with_term(result, code, complete: true)
 
             assert_equal_with_term(code, code, complete: true, tty: false)
+
+            assert_equal_with_term(code, code, complete: true, colorable: false)
+
+            assert_equal_with_term(result, code, complete: true, tty: false, colorable: true)
           end
         else
           assert_equal_with_term(code, code)

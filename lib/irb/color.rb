@@ -101,22 +101,22 @@ module IRB # :nodoc:
         end
       end
 
-      def clear
-        return '' unless colorable?
+      def clear(colorable: colorable?)
+        return '' unless colorable
         "\e[#{CLEAR}m"
       end
 
-      def colorize(text, seq)
-        return text unless colorable?
+      def colorize(text, seq, colorable: colorable?)
+        return text unless colorable
         seq = seq.map { |s| "\e[#{const_get(s)}m" }.join('')
-        "#{seq}#{text}#{clear}"
+        "#{seq}#{text}#{clear(colorable: colorable)}"
       end
 
       # If `complete` is false (code is incomplete), this does not warn compile_error.
       # This option is needed to avoid warning a user when the compile_error is happening
       # because the input is not wrong but just incomplete.
-      def colorize_code(code, complete: true, ignore_error: false)
-        return code unless colorable?
+      def colorize_code(code, complete: true, ignore_error: false, colorable: colorable?)
+        return code unless colorable
 
         symbol_state = SymbolState.new
         colored = +''
@@ -134,7 +134,7 @@ module IRB # :nodoc:
             line = Reline::Unicode.escape_for_print(line)
             if seq = dispatch_seq(token, expr, line, in_symbol: in_symbol)
               colored << seq.map { |s| "\e[#{s}m" }.join('')
-              colored << line.sub(/\Z/, clear)
+              colored << line.sub(/\Z/, clear(colorable: colorable))
             else
               colored << line
             end
