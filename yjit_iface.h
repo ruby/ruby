@@ -58,6 +58,9 @@ YJIT_DECLARE_COUNTERS(
     oaref_argc_not_one,
     oaref_arg_not_fixnum,
 
+    binding_allocations,
+    binding_set,
+
     // Member with known name for iterating over counters
     last_member
 )
