@@ -3228,8 +3228,10 @@ method_super_method(VALUE method)
     iclass = data->iclass;
     if (!iclass) return Qnil;
     if (data->me->def->type == VM_METHOD_TYPE_ALIAS) {
-        super_class = RCLASS_SUPER(rb_find_defined_class_by_owner(data->me->defined_class,
-            data->me->def->body.alias.original_me->owner));
+        VALUE klass = rb_find_defined_class_by_owner(data->me->defined_class,
+            data->me->def->body.alias.original_me->owner);
+        if (!klass) return Qnil;
+        super_class = RCLASS_SUPER(klass);
         mid = data->me->def->body.alias.original_me->def->original_id;
     }
     else {

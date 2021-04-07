@@ -1125,6 +1125,18 @@ class TestMethod < Test::Unit::TestCase
     assert_nil(m.super_method)
   end
 
+  module Bug17780
+    def foo
+      puts "hello"
+    end
+    alias :f :foo
+  end
+
+  def test_super_method_alias_without_super
+    method = Bug17780.instance_method(:f)
+    assert_nil(method.super_method)
+  end
+
   def test_super_method_alias_to_prepended_module
     m = Module.new do
       def m1
