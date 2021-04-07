@@ -4088,10 +4088,14 @@ static void
 finalize_deferred(rb_objspace_t *objspace)
 {
     VALUE zombie;
+    rb_execution_context_t *ec = GET_EC();
+    ec->interrupt_mask |= PENDING_INTERRUPT_MASK;
 
     while ((zombie = ATOMIC_VALUE_EXCHANGE(heap_pages_deferred_final, 0)) != 0) {
 	finalize_list(objspace, zombie);
     }
+
+    ec->interrupt_mask &= ~PENDING_INTERRUPT_MASK;
 }
 
 static void
