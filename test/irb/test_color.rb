@@ -105,14 +105,10 @@ module TestIRB
 
       tests.each do |code, result|
         if colorize_code_supported?
-          actual = with_term { IRB::Color.colorize_code(code, complete: true) }
-          assert_equal(result, actual, "Case: IRB::Color.colorize_code(#{code.dump}, complete: true)\nResult: #{humanized_literal(actual)}")
-
-          actual = with_term { IRB::Color.colorize_code(code, complete: false) }
-          assert_equal(result, actual, "Case: IRB::Color.colorize_code(#{code.dump}, complete: false)\nResult: #{humanized_literal(actual)}")
+          assert_equal_with_term(result, code, complete: true)
+          assert_equal_with_term(result, code, complete: false)
         else
-          actual = with_term { IRB::Color.colorize_code(code) }
-          assert_equal(code, actual)
+          assert_equal_with_term(code, code)
         end
       end
     end
@@ -127,8 +123,7 @@ module TestIRB
         "'foo' + 'bar" => "#{RED}#{BOLD}'#{CLEAR}#{RED}foo#{CLEAR}#{RED}#{BOLD}'#{CLEAR} + #{RED}#{BOLD}'#{CLEAR}#{RED}#{REVERSE}bar#{CLEAR}",
         "('foo" => "(#{RED}#{BOLD}'#{CLEAR}#{RED}#{REVERSE}foo#{CLEAR}",
       }.each do |code, result|
-        actual = with_term { IRB::Color.colorize_code(code, complete: true) }
-        assert_equal(result, actual, "Case: colorize_code(#{code.dump}, complete: true)\nResult: #{humanized_literal(actual)}")
+        assert_equal_with_term(result, code, complete: true)
       end
     end
 
@@ -139,16 +134,13 @@ module TestIRB
         "('foo" => "(#{RED}#{BOLD}'#{CLEAR}#{RED}foo#{CLEAR}",
       }.each do |code, result|
         if colorize_code_supported?
-          actual = with_term { IRB::Color.colorize_code(code, complete: false) }
-          assert_equal(result, actual, "Case: colorize_code(#{code.dump}, complete: false)\nResult: #{humanized_literal(actual)}")
+          assert_equal_with_term(result, code, complete: false)
 
           unless complete_option_supported?
-            actual = with_term { IRB::Color.colorize_code(code, complete: true) }
-            assert_equal(result, actual, "Case: colorize_code(#{code.dump}, complete: false)\nResult: #{humanized_literal(actual)}")
+            assert_equal_with_term(result, code, complete: true)
           end
         else
-          actual = with_term { IRB::Color.colorize_code(code) }
-          assert_equal(code, actual)
+          assert_equal_with_term(code, code)
         end
       end
     end
@@ -198,6 +190,16 @@ module TestIRB
     ensure
       $stdout = stdout
       ENV.replace(env) if env
+    end
+
+    def assert_equal_with_term(result, code, **opts)
+      actual = with_term { IRB::Color.colorize_code(code, **opts) }
+      message = -> {
+        args = [code.dump]
+        opts.each {|kwd, val| args << "#{kwd}: #{val}"}
+        "Case: colorize_code(#{args.join(', ')})\nResult: #{humanized_literal(actual)}"
+      }
+      assert_equal(result, actual, message)
     end
 
     def humanized_literal(str)
