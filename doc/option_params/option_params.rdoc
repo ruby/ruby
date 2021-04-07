@@ -55,7 +55,7 @@ Contents:
   - {Array}[#label-Array]
   - {Regexp}[#label-Regexp]
 - {Descriptions}[#label-Descriptions]
-- {Handlers}[#label-Handlers]
+- {Option Handlers}[#label-Option+Handlers]
   - {Handler Blocks}[#label-Handler+Blocks]
   - {Handler Procs}[#label-Handler+Procs]
   - {Handler Methods}[#label-Handler+Methods]
@@ -759,7 +759,7 @@ Executions:
   $ ruby descriptions.rb --xxx
   ["--xxx", true]
 
-=== Handlers
+=== Option Handlers
 
 The handler for an option is an executable that will be called
 when the option is encountered.  The handler may be:

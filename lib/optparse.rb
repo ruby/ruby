@@ -240,14 +240,14 @@
 #
 #   require 'optparse'
 #
-#   params = {}
+#   options = {}
 #   OptionParser.new do |parser|
 #     parser.on('-a')
 #     parser.on('-b NUM', Integer)
 #     parser.on('-v', '--verbose')
-#   end.parse!(into: params)
+#   end.parse!(into: options)
 #
-#   p params
+#   p options
 #
 # Used:
 #
@@ -1314,64 +1314,7 @@ XXX
   # :call-seq:
   #   make_switch(params, block = nil)
   #
-  # Creates an OptionParser::Switch from the parameters. The parsed argument
-  # value is passed to the given block, where it can be processed.
-  #
-  # See at the beginning of OptionParser for some full examples.
-  #
-  # +params+ can include the following elements:
-  #
-  # [Argument style:]
-  #   One of the following:
-  #     :NONE, :REQUIRED, :OPTIONAL
-  #
-  # [Argument pattern:]
-  #   Acceptable option argument format, must be pre-defined with
-  #   OptionParser.accept or OptionParser#accept, or Regexp. This can appear
-  #   once or assigned as String if not present, otherwise causes an
-  #   ArgumentError. Examples:
-  #     Float, Time, Array
-  #
-  # [Possible argument values:]
-  #   Hash or Array.
-  #     [:text, :binary, :auto]
-  #     %w[iso-2022-jp shift_jis euc-jp utf8 binary]
-  #     { "jis" => "iso-2022-jp", "sjis" => "shift_jis" }
-  #
-  # [Long style switch:]
-  #   Specifies a long style switch which takes a mandatory, optional or no
-  #   argument. It's a string of the following form:
-  #     "--switch=MANDATORY" or "--switch MANDATORY"
-  #     "--switch[=OPTIONAL]"
-  #     "--switch"
-  #
-  # [Short style switch:]
-  #   Specifies short style switch which takes a mandatory, optional or no
-  #   argument. It's a string of the following form:
-  #     "-xMANDATORY"
-  #     "-x[OPTIONAL]"
-  #     "-x"
-  #   There is also a special form which matches character range (not full
-  #   set of regular expression):
-  #     "-[a-z]MANDATORY"
-  #     "-[a-z][OPTIONAL]"
-  #     "-[a-z]"
-  #
-  # [Argument style and description:]
-  #   Instead of specifying mandatory or optional arguments directly in the
-  #   switch parameter, this separate parameter can be used.
-  #     "=MANDATORY"
-  #     "=[OPTIONAL]"
-  #
-  # [Description:]
-  #   Description string for the option.
-  #     "Run verbosely"
-  #   If you give multiple description strings, each string will be printed
-  #   line by line.
-  #
-  # [Handler:]
-  #   Handler for the parsed argument value. Either give a block or pass a
-  #   Proc or Method as an argument.
+  # :include: ../doc/creates_option.rdoc
   #
   def make_switch(opts, block = nil)
     short, long, nolong, style, pattern, conv, not_pattern, not_conv, not_style = [], [], []
@@ -1509,6 +1452,8 @@ XXX
   # :call-seq:
   #   define(*params, &block)
   #
+  # :include: ../doc/creates_option.rdoc
+  #
   def define(*opts, &block)
     top.append(*(sw = make_switch(opts, block)))
     sw[0]
@@ -1517,8 +1462,7 @@ XXX
   # :call-seq:
   #   on(*params, &block)
   #
-  # Add option switch and handler. See #make_switch for an explanation of
-  # parameters.
+  # :include: ../doc/creates_option.rdoc
   #
   def on(*opts, &block)
     define(*opts, &block)
@@ -1529,6 +1473,8 @@ XXX
   # :call-seq:
   #   define_head(*params, &block)
   #
+  # :include: ../doc/creates_option.rdoc
+  #
   def define_head(*opts, &block)
     top.prepend(*(sw = make_switch(opts, block)))
     sw[0]
@@ -1537,7 +1483,9 @@ XXX
   # :call-seq:
   #   on_head(*params, &block)
   #
-  # Add option switch like with #on, but at head of summary.
+  # :include: ../doc/creates_option.rdoc
+  #
+  # The new option is added at the head of the summary.
   #
   def on_head(*opts, &block)
     define_head(*opts, &block)
@@ -1548,6 +1496,8 @@ XXX
   # :call-seq:
   #   define_tail(*params, &block)
   #
+  # :include: ../doc/creates_option.rdoc
+  #
   def define_tail(*opts, &block)
     base.append(*(sw = make_switch(opts, block)))
     sw[0]
@@ -1557,7 +1507,9 @@ XXX
   # :call-seq:
   #   on_tail(*params, &block)
   #
-  # Add option switch like with #on, but at tail of summary.
+  # :include: ../doc/creates_option.rdoc
+  #
+  # The new option is added at the tail of the summary.
   #
   def on_tail(*opts, &block)
     define_tail(*opts, &block)
