@@ -23,7 +23,7 @@
 #   ruby -run -e wait_writable -- [OPTION] FILE
 #   ruby -run -e mkmf -- [OPTION] EXTNAME [OPTION]
 #   ruby -run -e httpd -- [OPTION] [DocumentRoot]
-#   ruby -run -e colorize -- FILE
+#   ruby -run -e colorize -- [FILE]
 #   ruby -run -e help [COMMAND]
 
 require "fileutils"
@@ -377,7 +377,7 @@ end
 ##
 # Colorize ruby code.
 #
-#   ruby -run -e colorize -- FILE
+#   ruby -run -e colorize -- [FILE]
 #
 
 def colorize
@@ -387,6 +387,10 @@ def colorize
     raise "colorize requires irb 1.1.0 or later"
   end
   setup do |argv, |
+    if argv.empty?
+      puts IRB::Color.colorize_code STDIN.read
+      return
+    end
     argv.each do |file|
       puts IRB::Color.colorize_code File.read(file)
     end
