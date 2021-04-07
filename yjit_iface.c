@@ -795,7 +795,7 @@ print_insn_count_buffer(const struct insn_count *buffer, int how_many, int left_
     int64_t retired_in_yjit = yjit_runtime_counters.exec_instruction - total_exit_count;
 
     // Average length of instruction sequences executed by YJIT
-    double avg_len_in_yjit = (double)yjit_runtime_counters.exec_instruction / total_exit_count;
+    double avg_len_in_yjit = (double)retired_in_yjit / total_exit_count;
 
     // Proportion of instructions that retire in YJIT
     double total_insns_count = retired_in_yjit + vm_insns_count;
