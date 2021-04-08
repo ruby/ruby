@@ -829,17 +829,21 @@ print_insn_count_buffer(int how_many, int left_pad)
     // Sort the exit ops by decreasing frequency
     const struct insn_count *sorted_exit_ops = sort_insn_count_array(exit_op_count);
 
-    // Compute the longest instruction name
+    // Compute the longest instruction name and top10_exit_count
     size_t longest_insn_len = 0;
+    size_t top10_exit_count = 0;
     for (int i = 0; i < how_many; i++) {
         const char *instruction_name = insn_name(sorted_exit_ops[i].insn);
         size_t len = strlen(instruction_name);
         if (len > longest_insn_len) {
             longest_insn_len = len;
         }
+        top10_exit_count += sorted_exit_ops[i].count;
     }
 
-    fprintf(stderr, "most frequent exit op:\n");
+    double top10_exit_percent = 100.0 * top10_exit_count / total_exit_count;
+
+    fprintf(stderr, "top-%d most frequent exit ops (%.1f%% of exits):\n", how_many, top10_exit_percent);
 
     // Print the top-N most frequent exit counts
     for (int i = 0; i < how_many; i++) {
