@@ -34,7 +34,7 @@ jobs:
       - name: Set ENV
         run: |
           echo "JOBS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
-      - run: autoconf
+      - run: ./autogen.sh
         working-directory: src
       - name: Run configure
         run: ../src/configure -C --disable-install-doc
