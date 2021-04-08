@@ -809,20 +809,60 @@ sort_insn_count_array(int64_t *array)
     return insn_sorting_buffer;
 }
 
-static void
-print_insn_count_buffer(const struct insn_count *buffer, int how_many, int left_pad)
+// Compute the total interpreter exit count
+static int64_t
+calc_total_exit_count()
 {
-    size_t longest_insn_len = 0;
     size_t total_exit_count = 0;
+    for (int i = 0; i < VM_INSTRUCTION_SIZE; i++) {
+        total_exit_count += exit_op_count[i];
+    }
 
+    return total_exit_count;
+}
+
+static void
+print_insn_count_buffer(int how_many, int left_pad)
+{
+    size_t total_exit_count = calc_total_exit_count();
+
+    // Sort the exit ops by decreasing frequency
+    const struct insn_count *sorted_exit_ops = sort_insn_count_array(exit_op_count);
+
+    // Compute the longest instruction name
+    size_t longest_insn_len = 0;
     for (int i = 0; i < how_many; i++) {
-        const char *instruction_name = insn_name(buffer[i].insn);
+        const char *instruction_name = insn_name(sorted_exit_ops[i].insn);
         size_t len = strlen(instruction_name);
         if (len > longest_insn_len) {
             longest_insn_len = len;
         }
-        total_exit_count += buffer[i].count;
     }
+
+    fprintf(stderr, "most frequent exit op:\n");
+
+    // Print the top-N most frequent exit counts
+    for (int i = 0; i < how_many; i++) {
+        const char *instruction_name = insn_name(sorted_exit_ops[i].insn);
+        size_t padding = left_pad + longest_insn_len - strlen(instruction_name);
+        for (size_t j = 0; j < padding; j++) {
+            fputc(' ', stderr);
+        }
+        double percent = 100 * sorted_exit_ops[i].count / (double)total_exit_count;
+        fprintf(stderr, "%s: %10" PRId64 " (%.1f%%)\n", instruction_name, sorted_exit_ops[i].count, percent);
+    }
+}
+
+__attribute__((destructor))
+static void
+print_yjit_stats(void)
+{
+    if (!rb_yjit_opts.gen_stats) {
+        return;
+    }
+
+    // Compute the total exit count
+    int64_t total_exit_count = calc_total_exit_count();
 
     // Number of instructions that finish executing in YJIT. See :count-placement:.
     int64_t retired_in_yjit = yjit_runtime_counters.exec_instruction - total_exit_count;
@@ -831,39 +871,22 @@ print_insn_count_buffer(const struct insn_count *buffer, int how_many, int left_
     double avg_len_in_yjit = (double)retired_in_yjit / total_exit_count;
 
     // Proportion of instructions that retire in YJIT
-    double total_insns_count = retired_in_yjit + vm_insns_count;
-    double ratio = retired_in_yjit / total_insns_count;
-
-    fprintf(stderr, "ratio_in_yjit:         %9.1f%%\n", ratio * 100);
-    fprintf(stderr, "avg_len_in_yjit:       %10.1f\n", avg_len_in_yjit);
-    fprintf(stderr, "total_exit_count:      %10ld\n", total_exit_count);
-    fprintf(stderr, "most frequent exit op:\n");
-
-    for (int i = 0; i < how_many; i++) {
-        const char *instruction_name = insn_name(buffer[i].insn);
-        size_t padding = left_pad + longest_insn_len - strlen(instruction_name);
-        for (size_t j = 0; j < padding; j++) {
-            fputc(' ', stderr);
-        }
-        double percent = 100 * buffer[i].count / (double)total_exit_count;
-        fprintf(stderr, "%s: %10" PRId64 " (%.1f%%)\n", instruction_name, buffer[i].count, percent);
-    }
-}
-
-__attribute__((destructor))
-static void
-print_yjit_stats(void)
-{
-    if (!rb_yjit_opts.gen_stats) return;
-
-    const struct insn_count *sorted_exit_ops = sort_insn_count_array(exit_op_count);
+    int64_t total_insns_count = retired_in_yjit + vm_insns_count;
+    double ratio = retired_in_yjit / (double)total_insns_count;
 
     fprintf(stderr, "compiled_iseq_count:   %10" PRId64 "\n", rb_compiled_iseq_count);
     fprintf(stderr, "inline_code_size:      %10d\n", cb->write_pos);
     fprintf(stderr, "outlined_code_size:    %10d\n", ocb->write_pos);
+
+    fprintf(stderr, "total_exit_count:      %10" PRId64 "\n", total_exit_count);
+    fprintf(stderr, "total_insns_count:     %10" PRId64 "\n", total_insns_count);
     fprintf(stderr, "vm_insns_count:        %10" PRId64 "\n", vm_insns_count);
-    fprintf(stderr, "yjit_exec_insns_count: %10" PRId64 "\n", yjit_runtime_counters.exec_instruction);
-    print_insn_count_buffer(sorted_exit_ops, 10, 4);
+    fprintf(stderr, "yjit_insns_count:      %10" PRId64 "\n", yjit_runtime_counters.exec_instruction);
+    fprintf(stderr, "ratio_in_yjit:         %9.1f%%\n", ratio * 100);
+    fprintf(stderr, "avg_len_in_yjit:       %10.1f\n", avg_len_in_yjit);
+
+    // Print the top-10 most frequent exit ops
+    print_insn_count_buffer(10, 4);
 }
 #endif // if RUBY_DEBUG
 

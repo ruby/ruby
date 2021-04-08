@@ -30,7 +30,7 @@ module YJIT
         comment_idx = 0
         cs.disasm(block.code, block.address).each do |i|
           while (comment = comments[comment_idx]) && comment.address <= i.address
-            str << "  ;#{highlight.call(comment.comment)}\n"
+            str << "  ; #{highlight.call(comment.comment)}\n"
             comment_idx += 1
           end
 
@@ -81,8 +81,8 @@ module YJIT
 
       $stderr.puts("***YJIT: Printing runtime counters from yjit.rb***")
 
-      $stderr.puts "Number of bindings allocated: %d\n" % counters[:binding_allocation_count]
-      $stderr.puts "Number of locals modified through binding: %d\n" % counters[:local_variable_set_count]
+      $stderr.puts "Number of bindings allocated: %d\n" % counters[:binding_allocations]
+      $stderr.puts "Number of locals modified through binding: %d\n" % counters[:binding_set]
 
       print_counters(counters, prefix: 'oswb_', prompt: 'opt_send_without_block exit reasons: ')
       print_counters(counters, prefix: 'leave_', prompt: 'leave exit reasons: ')
