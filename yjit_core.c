@@ -132,18 +132,20 @@ ctx_stack_opnd(ctx_t* ctx, int32_t idx)
 }
 
 /**
-Get the type of a value on the temp stack
-Returns T_NONE if unknown
+Get the type of an instruction operand
 */
 val_type_t
-ctx_get_temp_type(const ctx_t* ctx, size_t idx)
+ctx_get_opnd_type(const ctx_t* ctx, insn_opnd_t opnd)
 {
-    RUBY_ASSERT(idx < ctx->stack_size);
+    RUBY_ASSERT(opnd.idx < ctx->stack_size);
+
+    if (opnd.is_self)
+        return ctx->self_type;
 
     if (ctx->stack_size > MAX_TEMP_TYPES)
         return TYPE_UNKNOWN;
 
-    temp_mapping_t mapping = ctx->temp_mapping[ctx->stack_size - 1 - idx];
+    temp_mapping_t mapping = ctx->temp_mapping[ctx->stack_size - 1 - opnd.idx];
 
     switch (mapping.kind)
     {
@@ -151,7 +153,7 @@ ctx_get_temp_type(const ctx_t* ctx, size_t idx)
         return ctx->self_type;
 
         case TEMP_STACK:
-        return ctx->temp_types[ctx->stack_size - 1 - idx];
+        return ctx->temp_types[ctx->stack_size - 1 - opnd.idx];
 
         case TEMP_LOCAL:
         RUBY_ASSERT(mapping.idx < MAX_LOCAL_TYPES);
@@ -162,16 +164,21 @@ ctx_get_temp_type(const ctx_t* ctx, size_t idx)
 }
 
 /**
-Set the type of a value in the temporary stack
+Set the type of an instruction operand
 */
-void ctx_set_temp_type(ctx_t* ctx, size_t idx, val_type_t type)
+void ctx_set_opnd_type(ctx_t* ctx, insn_opnd_t opnd, val_type_t type)
 {
-    RUBY_ASSERT(idx < ctx->stack_size);
+    RUBY_ASSERT(opnd.idx < ctx->stack_size);
+
+    if (opnd.is_self) {
+        ctx->self_type = type;
+        return;
+    }
 
     if (ctx->stack_size > MAX_TEMP_TYPES)
         return;
 
-    temp_mapping_t mapping = ctx->temp_mapping[ctx->stack_size - 1 - idx];
+    temp_mapping_t mapping = ctx->temp_mapping[ctx->stack_size - 1 - opnd.idx];
 
     switch (mapping.kind)
     {
@@ -180,7 +187,7 @@ void ctx_set_temp_type(ctx_t* ctx, size_t idx, val_type_t type)
         break;
 
         case TEMP_STACK:
-        ctx->temp_types[ctx->stack_size - 1 - idx] = type;
+        ctx->temp_types[ctx->stack_size - 1 - opnd.idx] = type;
         break;
 
         case TEMP_LOCAL:
@@ -275,8 +282,8 @@ int ctx_diff(const ctx_t* src, const ctx_t* dst)
     // For each value on the temp stack
     for (size_t i = 0; i < src->stack_size; ++i)
     {
-        val_type_t t_src = ctx_get_temp_type(src, i);
-        val_type_t t_dst = ctx_get_temp_type(dst, i);
+        val_type_t t_src = ctx_get_opnd_type(src, OPND_STACK(i));
+        val_type_t t_dst = ctx_get_opnd_type(dst, OPND_STACK(i));
         int temp_diff = type_diff(t_src, t_dst);
 
         if (temp_diff == INT_MAX)
