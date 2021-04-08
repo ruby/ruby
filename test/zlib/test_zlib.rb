@@ -508,6 +508,7 @@ if defined? Zlib
   class TestZlibGzipFile < Test::Unit::TestCase
     def test_gzip_reader_zcat
       Tempfile.create("test_zlib_gzip_file_to_io") {|t|
+        t.binmode
         gz = Zlib::GzipWriter.new(t)
         gz.print("foo")
         gz.close
