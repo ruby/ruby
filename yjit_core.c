@@ -487,6 +487,7 @@ static uint8_t *
 branch_stub_hit(const uint32_t branch_idx, const uint32_t target_idx, rb_execution_context_t* ec)
 {
     uint8_t* dst_addr;
+    ctx_t generic_ctx;
 
     // Stop other ractors since we are going to patch machine code.
     // This is how the GC does it.
@@ -529,12 +530,12 @@ branch_stub_hit(const uint32_t branch_idx, const uint32_t target_idx, rb_executi
         // If this block hasn't yet been compiled
         if (!p_block) {
             // Limit the number of block versions
-            ctx_t generic_ctx = DEFAULT_CTX;
-            generic_ctx.stack_size = target_ctx->stack_size;
-            generic_ctx.sp_offset = target_ctx->sp_offset;
             if (target_ctx->chain_depth == 0) { // guard chains implement limits individually
                 if (get_num_versions(target) >= MAX_VERSIONS - 1) {
                     //fprintf(stderr, "version limit hit in branch_stub_hit\n");
+                    generic_ctx = DEFAULT_CTX;
+                    generic_ctx.stack_size = target_ctx->stack_size;
+                    generic_ctx.sp_offset = target_ctx->sp_offset;
                     target_ctx = &generic_ctx;
                 }
             }
@@ -697,6 +698,7 @@ void gen_direct_jump(
 {
     RUBY_ASSERT(target0.iseq != NULL);
     RUBY_ASSERT(num_branches < MAX_BRANCHES);
+    ctx_t generic_ctx;
     uint32_t branch_idx = num_branches++;
 
     // Branch targets or stub adddress
@@ -726,12 +728,12 @@ void gen_direct_jump(
     else
     {
         // Limit the number of block versions
-        ctx_t generic_ctx = DEFAULT_CTX;
-        generic_ctx.stack_size = ctx->stack_size;
-        generic_ctx.sp_offset = ctx->sp_offset;
         if (get_num_versions(target0) >= MAX_VERSIONS - 1)
         {
             //fprintf(stderr, "version limit hit in gen_direct_jump\n");
+            generic_ctx = DEFAULT_CTX;
+            generic_ctx.stack_size = ctx->stack_size;
+            generic_ctx.sp_offset = ctx->sp_offset;
             ctx = &generic_ctx;
         }
 
@@ -768,8 +770,7 @@ void defer_compilation(
     //fprintf(stderr, "defer compilation at (%p, %d) depth=%d\n", block->blockid.iseq, insn_idx, cur_ctx->chain_depth);
 
     if (cur_ctx->chain_depth != 0) {
-        rb_backtrace();
-        exit(1);
+        rb_bug("double defer");
     }
 
     ctx_t next_ctx = *cur_ctx;
