@@ -24,7 +24,7 @@ jobs:
           bundler: none
       - run: echo "make=make -sj$((1 + $(nproc --all)))" >> $GITHUB_ENV
       - run: sudo apt-get install build-essential autoconf bison
-      - run: autoconf
+      - run: ./autogen.sh
       - run: ./configure --disable-install-doc
       - run: $make update-unicode
       - run: $make common-srcs

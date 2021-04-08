@@ -24,7 +24,7 @@ jobs:
           git config --global advice.detachedHead 0
           git config --global init.defaultBranch garbage
       - uses: actions/checkout@v2
-      - run: autoconf
+      - run: ./autogen.sh
       - name: Run configure
         run: ./configure -C --disable-install-doc --disable-rubygems --with-gcc 'optflags=-O0' 'debugflags=-save-temps=obj -g'
       - run: make all golf
