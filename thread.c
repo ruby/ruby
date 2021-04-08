@@ -2223,6 +2223,8 @@ handle_interrupt_arg_check_i(VALUE key, VALUE val, VALUE args)
  *     # all exceptions inherited from Exception are prohibited.
  *   }
  *
+ * For handling all interrupts, use +Object+ and not +Exception+
+ * as the ExceptionClass, as kill/terminate interrupts are not handled by +Exception+.
  */
 static VALUE
 rb_thread_s_handle_interrupt(VALUE self, VALUE mask_arg)
