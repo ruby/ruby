@@ -406,7 +406,7 @@ static codegen_status_t
 gen_dup(jitstate_t* jit, ctx_t* ctx)
 {
     // Get the top value and its type
-    val_type_t dup_type = ctx_get_temp_type(ctx, 0);
+    val_type_t dup_type = ctx_get_opnd_type(ctx, OPND_STACK(0));
     x86opnd_t dup_val = ctx_stack_pop(ctx, 0);
 
     // Push the same value on top
@@ -596,7 +596,7 @@ gen_setlocal_wc0(jitstate_t* jit, ctx_t* ctx)
     // for dealing with how blocks/closures can affect local types
     //
     // Set the type of the local variable in the context
-    //val_type_t temp_type = ctx_get_temp_type(ctx, 0);
+    //val_type_t temp_type = ctx_get_opnd_type(ctx, OPND_STACK(0));
     //ctx_set_local_type(ctx, local_idx, temp_type);
 
     // Pop the value to write from the stack
@@ -912,9 +912,9 @@ gen_fixnum_cmp(jitstate_t* jit, ctx_t* ctx, cmov_fn cmov_op)
     }
 
     // Get the operands and destination from the stack
-    val_type_t arg1_type = ctx_get_temp_type(ctx, 0);
+    val_type_t arg1_type = ctx_get_opnd_type(ctx, OPND_STACK(0));
     x86opnd_t arg1 = ctx_stack_pop(ctx, 1);
-    val_type_t arg0_type = ctx_get_temp_type(ctx, 0);
+    val_type_t arg0_type = ctx_get_opnd_type(ctx, OPND_STACK(0));
     x86opnd_t arg0 = ctx_stack_pop(ctx, 1);
 
     // If not fixnums, fall back
@@ -1122,9 +1122,9 @@ gen_opt_and(jitstate_t* jit, ctx_t* ctx)
     }
 
     // Get the operands and destination from the stack
-    val_type_t arg1_type = ctx_get_temp_type(ctx, 0);
+    val_type_t arg1_type = ctx_get_opnd_type(ctx, OPND_STACK(0));
     x86opnd_t arg1 = ctx_stack_pop(ctx, 1);
-    val_type_t arg0_type = ctx_get_temp_type(ctx, 0);
+    val_type_t arg0_type = ctx_get_opnd_type(ctx, OPND_STACK(0));
     x86opnd_t arg0 = ctx_stack_pop(ctx, 1);
 
     // If not fixnums, fall back
@@ -1160,9 +1160,9 @@ gen_opt_minus(jitstate_t* jit, ctx_t* ctx)
     }
 
     // Get the operands and destination from the stack
-    val_type_t arg1_type = ctx_get_temp_type(ctx, 0);
+    val_type_t arg1_type = ctx_get_opnd_type(ctx, OPND_STACK(0));
     x86opnd_t arg1 = ctx_stack_pop(ctx, 1);
-    val_type_t arg0_type = ctx_get_temp_type(ctx, 0);
+    val_type_t arg0_type = ctx_get_opnd_type(ctx, OPND_STACK(0));
     x86opnd_t arg0 = ctx_stack_pop(ctx, 1);
 
     // If not fixnums, fall back
@@ -1200,9 +1200,9 @@ gen_opt_plus(jitstate_t* jit, ctx_t* ctx)
     }
 
     // Get the operands and destination from the stack
-    val_type_t arg1_type = ctx_get_temp_type(ctx, 0);
+    val_type_t arg1_type = ctx_get_opnd_type(ctx, OPND_STACK(0));
     x86opnd_t arg1 = ctx_stack_pop(ctx, 1);
-    val_type_t arg0_type = ctx_get_temp_type(ctx, 0);
+    val_type_t arg0_type = ctx_get_opnd_type(ctx, OPND_STACK(0));
     x86opnd_t arg0 = ctx_stack_pop(ctx, 1);
 
     // If not fixnums, fall back
@@ -1360,7 +1360,7 @@ Guard that a stack operand has the same class as known_klass.
 Recompile as contingency if possible, or take side exit a last resort.
 */
 static bool
-jit_guard_known_klass(jitstate_t *jit, ctx_t* ctx, VALUE known_klass, uint32_t stack_idx, const int max_chain_depth, uint8_t *side_exit)
+jit_guard_known_klass(jitstate_t *jit, ctx_t* ctx, VALUE known_klass, insn_opnd_t insn_opnd, const int max_chain_depth, uint8_t *side_exit)
 {
     // Can't guard for for these classes because some of they are sometimes immediate (special const).
     // Can remove this by adding appropriate dynamic checks.
@@ -1373,10 +1373,10 @@ jit_guard_known_klass(jitstate_t *jit, ctx_t* ctx, VALUE known_klass, uint32_t s
         return false;
     }
 
-    val_type_t temp_type = ctx_get_temp_type(ctx, stack_idx);
+    val_type_t val_type = ctx_get_opnd_type(ctx, insn_opnd);
 
     // Check that the receiver is a heap object
-    if (!temp_type.is_heap)
+    if (!val_type.is_heap)
     {
         test(cb, REG0, imm_opnd(RUBY_IMMEDIATE_MASK));
         jnz_ptr(cb, side_exit);
@@ -1385,7 +1385,7 @@ jit_guard_known_klass(jitstate_t *jit, ctx_t* ctx, VALUE known_klass, uint32_t s
         cmp(cb, REG0, imm_opnd(Qnil));
         je_ptr(cb, side_exit);
 
-        ctx_set_temp_type(ctx, stack_idx, TYPE_HEAP);
+        ctx_set_opnd_type(ctx, insn_opnd, TYPE_HEAP);
     }
 
     // Pointer to the klass field of the receiver &(recv->klass)
@@ -1796,7 +1796,7 @@ gen_opt_send_without_block(jitstate_t* jit, ctx_t* ctx)
     // Points to the receiver operand on the stack
     x86opnd_t recv = ctx_stack_opnd(ctx, argc);
     mov(cb, REG0, recv);
-    if (!jit_guard_known_klass(jit, ctx, comptime_recv_klass, argc, OSWB_MAX_DEPTH, side_exit)) {
+    if (!jit_guard_known_klass(jit, ctx, comptime_recv_klass, OPND_STACK(argc), OSWB_MAX_DEPTH, side_exit)) {
         return YJIT_CANT_COMPILE;
     }
 
