@@ -136,7 +136,6 @@ strscan.o: $(hdrdir)/ruby/internal/static_assert.h
 strscan.o: $(hdrdir)/ruby/internal/stdalign.h
 strscan.o: $(hdrdir)/ruby/internal/stdbool.h
 strscan.o: $(hdrdir)/ruby/internal/symbol.h
-strscan.o: $(hdrdir)/ruby/internal/token_paste.h
 strscan.o: $(hdrdir)/ruby/internal/value.h
 strscan.o: $(hdrdir)/ruby/internal/value_type.h
 strscan.o: $(hdrdir)/ruby/internal/variable.h

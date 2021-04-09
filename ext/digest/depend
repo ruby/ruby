@@ -136,7 +136,6 @@ digest.o: $(hdrdir)/ruby/internal/static_assert.h
 digest.o: $(hdrdir)/ruby/internal/stdalign.h
 digest.o: $(hdrdir)/ruby/internal/stdbool.h
 digest.o: $(hdrdir)/ruby/internal/symbol.h
-digest.o: $(hdrdir)/ruby/internal/token_paste.h
 digest.o: $(hdrdir)/ruby/internal/value.h
 digest.o: $(hdrdir)/ruby/internal/value_type.h
 digest.o: $(hdrdir)/ruby/internal/variable.h

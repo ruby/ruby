@@ -150,7 +150,6 @@ coverage.o: $(hdrdir)/ruby/internal/static_assert.h
 coverage.o: $(hdrdir)/ruby/internal/stdalign.h
 coverage.o: $(hdrdir)/ruby/internal/stdbool.h
 coverage.o: $(hdrdir)/ruby/internal/symbol.h
-coverage.o: $(hdrdir)/ruby/internal/token_paste.h
 coverage.o: $(hdrdir)/ruby/internal/value.h
 coverage.o: $(hdrdir)/ruby/internal/value_type.h
 coverage.o: $(hdrdir)/ruby/internal/variable.h

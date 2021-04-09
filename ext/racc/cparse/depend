@@ -136,7 +136,6 @@ cparse.o: $(hdrdir)/ruby/internal/static_assert.h
 cparse.o: $(hdrdir)/ruby/internal/stdalign.h
 cparse.o: $(hdrdir)/ruby/internal/stdbool.h
 cparse.o: $(hdrdir)/ruby/internal/symbol.h
-cparse.o: $(hdrdir)/ruby/internal/token_paste.h
 cparse.o: $(hdrdir)/ruby/internal/value.h
 cparse.o: $(hdrdir)/ruby/internal/value_type.h
 cparse.o: $(hdrdir)/ruby/internal/variable.h

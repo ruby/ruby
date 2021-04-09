@@ -152,7 +152,6 @@ object_tracing.o: $(hdrdir)/ruby/internal/static_assert.h
 object_tracing.o: $(hdrdir)/ruby/internal/stdalign.h
 object_tracing.o: $(hdrdir)/ruby/internal/stdbool.h
 object_tracing.o: $(hdrdir)/ruby/internal/symbol.h
-object_tracing.o: $(hdrdir)/ruby/internal/token_paste.h
 object_tracing.o: $(hdrdir)/ruby/internal/value.h
 object_tracing.o: $(hdrdir)/ruby/internal/value_type.h
 object_tracing.o: $(hdrdir)/ruby/internal/variable.h
@@ -319,7 +318,6 @@ objspace.o: $(hdrdir)/ruby/internal/static_assert.h
 objspace.o: $(hdrdir)/ruby/internal/stdalign.h
 objspace.o: $(hdrdir)/ruby/internal/stdbool.h
 objspace.o: $(hdrdir)/ruby/internal/symbol.h
-objspace.o: $(hdrdir)/ruby/internal/token_paste.h
 objspace.o: $(hdrdir)/ruby/internal/value.h
 objspace.o: $(hdrdir)/ruby/internal/value_type.h
 objspace.o: $(hdrdir)/ruby/internal/variable.h
@@ -506,7 +504,6 @@ objspace_dump.o: $(hdrdir)/ruby/internal/static_assert.h
 objspace_dump.o: $(hdrdir)/ruby/internal/stdalign.h
 objspace_dump.o: $(hdrdir)/ruby/internal/stdbool.h
 objspace_dump.o: $(hdrdir)/ruby/internal/symbol.h
-objspace_dump.o: $(hdrdir)/ruby/internal/token_paste.h
 objspace_dump.o: $(hdrdir)/ruby/internal/value.h
 objspace_dump.o: $(hdrdir)/ruby/internal/value_type.h
 objspace_dump.o: $(hdrdir)/ruby/internal/variable.h

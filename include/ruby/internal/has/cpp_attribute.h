@@ -22,7 +22,6 @@
  */
 #include "ruby/internal/compiler_is.h"
 #include "ruby/internal/compiler_since.h"
-#include "ruby/internal/token_paste.h"
 
 /** @cond INTERNAL_MACRO */
 #if RBIMPL_COMPILER_IS(SunPro)

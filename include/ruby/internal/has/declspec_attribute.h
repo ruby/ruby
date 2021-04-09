@@ -21,7 +21,6 @@
  * @brief      Defines #RBIMPL_HAS_DECLSPEC_ATTRIBUTE.
  */
 #include "ruby/internal/compiler_since.h"
-#include "ruby/internal/token_paste.h"
 
 /** Wraps (or simulates) `__has_declspec_attribute`. */
 #if defined(__has_declspec_attribute)

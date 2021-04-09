@@ -136,7 +136,6 @@ wait.o: $(hdrdir)/ruby/internal/static_assert.h
 wait.o: $(hdrdir)/ruby/internal/stdalign.h
 wait.o: $(hdrdir)/ruby/internal/stdbool.h
 wait.o: $(hdrdir)/ruby/internal/symbol.h
-wait.o: $(hdrdir)/ruby/internal/token_paste.h
 wait.o: $(hdrdir)/ruby/internal/value.h
 wait.o: $(hdrdir)/ruby/internal/value_type.h
 wait.o: $(hdrdir)/ruby/internal/variable.h
