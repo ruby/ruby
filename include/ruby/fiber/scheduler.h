@@ -12,6 +12,8 @@
 #include "ruby/ruby.h"
 #include "ruby/intern.h"
 
+RBIMPL_SYMBOL_EXPORT_BEGIN()
+
 VALUE rb_fiber_scheduler_get(void);
 VALUE rb_fiber_scheduler_set(VALUE scheduler);
 
@@ -41,5 +43,7 @@ VALUE rb_fiber_scheduler_io_wait_readable(VALUE scheduler, VALUE io);
 VALUE rb_fiber_scheduler_io_wait_writable(VALUE scheduler, VALUE io);
 VALUE rb_fiber_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t offset, size_t length);
 VALUE rb_fiber_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, size_t offset, size_t length);
+
+RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RUBY_FIBER_SCHEDULER_H */
