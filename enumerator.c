@@ -2709,7 +2709,8 @@ static const lazyenum_funcs lazy_with_index_funcs = {
  *   lazy.with_index(offset = 0) {|(*args), idx| block }
  *   lazy.with_index(offset = 0)
  *
- * If a block is given, iterates the given block for each element
+ * If a block is given, returns a lazy enumerator that will
+ * iterate over the given block for each element
  * with an index, which starts from +offset+, and returns a
  * lazy enumerator that yields the same values (without the index).
  *
