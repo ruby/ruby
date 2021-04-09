@@ -578,3 +578,40 @@ assert_equal '42', %q{
   run
   run
 }
+
+# getinstancevariable on Symbol
+assert_equal '[nil, nil]', %q{
+  # @foo to exercise the getinstancevariable instruction
+  public def get_foo
+    @foo
+  end
+
+  dyn_sym = ("a" + "b").to_sym
+  sym = :static
+
+  # compile get_foo
+  dyn_sym.get_foo
+  dyn_sym.get_foo
+
+  [dyn_sym.get_foo, sym.get_foo]
+}
+
+# attr_reader on Symbol
+assert_equal '[nil, nil]', %q{
+  class Symbol
+    attr_reader :foo
+  end
+
+  public def get_foo
+    foo
+  end
+
+  dyn_sym = ("a" + "b").to_sym
+  sym = :static
+
+  # compile get_foo
+  dyn_sym.get_foo
+  dyn_sym.get_foo
+
+  [dyn_sym.get_foo, sym.get_foo]
+}
