@@ -208,6 +208,13 @@ void ctx_set_local_type(ctx_t* ctx, size_t idx, val_type_t type)
     ctx->local_types[idx] = type;
 }
 
+// Erase local variable type information
+// eg: because of a call we can't track
+void ctx_clear_local_types(ctx_t* ctx)
+{
+    memset(&ctx->local_types, 0, sizeof(ctx->local_types));
+}
+
 /*
 Compute a difference between two value types
 Returns 0 if the two are the same

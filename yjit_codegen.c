@@ -527,8 +527,8 @@ gen_getlocal_wc0(jitstate_t* jit, ctx_t* ctx)
     mov(cb, REG0, mem_opnd(64, REG0, offs));
 
     // Write the local at SP
-    //x86opnd_t stack_top = ctx_stack_push_local(ctx, local_idx);
-    x86opnd_t stack_top = ctx_stack_push(ctx, TYPE_UNKNOWN);
+    x86opnd_t stack_top = ctx_stack_push_local(ctx, local_idx);
+    //x86opnd_t stack_top = ctx_stack_push(ctx, TYPE_UNKNOWN);
     mov(cb, stack_top, REG0);
 
     return YJIT_KEEP_COMPILING;
@@ -592,12 +592,9 @@ gen_setlocal_wc0(jitstate_t* jit, ctx_t* ctx)
     // if (flags & VM_ENV_FLAG_WB_REQUIRED) != 0
     jnz_ptr(cb, side_exit);
 
-    // NOTE: disabled for now since we don't have a good strategy
-    // for dealing with how blocks/closures can affect local types
-    //
     // Set the type of the local variable in the context
-    //val_type_t temp_type = ctx_get_opnd_type(ctx, OPND_STACK(0));
-    //ctx_set_local_type(ctx, local_idx, temp_type);
+    val_type_t temp_type = ctx_get_opnd_type(ctx, OPND_STACK(0));
+    ctx_set_local_type(ctx, local_idx, temp_type);
 
     // Pop the value to write from the stack
     x86opnd_t stack_top = ctx_stack_pop(ctx, 1);
@@ -616,6 +613,8 @@ guard_self_is_heap(codeblock_t *cb, x86opnd_t self_opnd, uint8_t *side_exit, ctx
 {
     // `self` is constant throughout the entire region, so we only need to do this check once.
     if (!ctx->self_type.is_heap) {
+        // FIXME: use two-comparison test
+        ADD_COMMENT(cb, "guard self is heap");
         test(cb, self_opnd, imm_opnd(RUBY_IMMEDIATE_MASK));
         jnz_ptr(cb, side_exit);
         cmp(cb, self_opnd, imm_opnd(Qfalse));
@@ -1399,6 +1398,8 @@ jit_guard_known_klass(jitstate_t *jit, ctx_t* ctx, VALUE known_klass, insn_opnd_
     // Check that the receiver is a heap object
     if (!val_type.is_heap)
     {
+        // FIXME: use two comparisons instead of 3 here
+        ADD_COMMENT(cb, "guard not immediate");
         test(cb, REG0, imm_opnd(RUBY_IMMEDIATE_MASK));
         jnz_ptr(cb, side_exit);
         cmp(cb, REG0, imm_opnd(Qfalse));
@@ -1413,6 +1414,7 @@ jit_guard_known_klass(jitstate_t *jit, ctx_t* ctx, VALUE known_klass, insn_opnd_
     x86opnd_t klass_opnd = mem_opnd(64, REG0, offsetof(struct RBasic, klass));
 
     // Bail if receiver class is different from compile-time call cache class
+    ADD_COMMENT(cb, "guard known class");
     jit_mov_gc_ptr(jit, cb, REG1, known_klass);
     cmp(cb, klass_opnd, REG1);
     jit_chain_guard(JCC_JNE, jit, ctx, max_chain_depth, side_exit);
@@ -1850,6 +1852,9 @@ gen_opt_send_without_block(jitstate_t* jit, ctx_t* ctx)
     // Register block for invalidation
     RUBY_ASSERT(cme->called_id == mid);
     assume_method_lookup_stable(comptime_recv_klass, cme, jit->block);
+
+    // Method calls may corrupt types
+    ctx_clear_local_types(ctx);
 
     switch (cme->def->type) {
     case VM_METHOD_TYPE_ISEQ:
