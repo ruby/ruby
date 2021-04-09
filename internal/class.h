@@ -53,6 +53,7 @@ struct rb_classext_struct {
 #endif
     const VALUE origin_;
     const VALUE refined_class;
+    const VALUE definition_locations;
     rb_alloc_func_t allocator;
     const VALUE includer;
 };

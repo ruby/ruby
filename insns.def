@@ -724,6 +724,9 @@ defineclass
 (VALUE val)
 {
     VALUE klass = vm_find_or_create_class_by_id(id, flags, cbase, super);
+    int line;
+    VALUE file = rb_source_location(&line);
+    rb_ary_push(RCLASS_EXT(klass)->definition_locations, rb_assoc_new(file, INT2NUM(line)));
 
     rb_iseq_check(class_iseq);
 

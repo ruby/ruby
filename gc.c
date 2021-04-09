@@ -6391,6 +6391,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
         cc_table_mark(objspace, obj);
         mark_tbl_no_pin(objspace, RCLASS_IV_TBL(obj));
 	mark_const_tbl(objspace, RCLASS_CONST_TBL(obj));
+        gc_mark(objspace, RCLASS_EXT(obj)->definition_locations);
 	break;
 
       case T_ICLASS:
@@ -9265,6 +9266,7 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
         if (!RCLASS_EXT(obj)) break;
         update_m_tbl(objspace, RCLASS_M_TBL(obj));
         update_cc_tbl(objspace, obj);
+        UPDATE_IF_MOVED(objspace, RCLASS_EXT(obj)->definition_locations);
 
         gc_update_tbl_refs(objspace, RCLASS_IV_TBL(obj));
 
