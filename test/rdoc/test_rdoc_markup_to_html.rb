@@ -743,6 +743,10 @@ EXPECTED
                  @to.gen_url('doc/example.rdoc', 'example')
     assert_equal '<a href="../ex_doc/example_rdoc.html">example</a>',
                  @to.gen_url('../ex.doc/example.rdoc', 'example')
+    assert_equal '<a href="doc/example_rdoc.html#label-one">example</a>',
+                 @to.gen_url('doc/example.rdoc#label-one', 'example')
+    assert_equal '<a href="../ex_doc/example_rdoc.html#label-two">example</a>',
+                 @to.gen_url('../ex.doc/example.rdoc#label-two', 'example')
   end
 
   def test_gen_url_md_file
@@ -750,6 +754,10 @@ EXPECTED
                  @to.gen_url('doc/example.md', 'example')
     assert_equal '<a href="../ex_doc/example_md.html">example</a>',
                  @to.gen_url('../ex.doc/example.md', 'example')
+    assert_equal '<a href="doc/example_md.html#label-one">example</a>',
+                 @to.gen_url('doc/example.md#label-one', 'example')
+    assert_equal '<a href="../ex_doc/example_md.html#label-two">example</a>',
+                 @to.gen_url('../ex.doc/example.md#label-two', 'example')
   end
 
   def test_gen_url_rb_file
@@ -757,6 +765,10 @@ EXPECTED
                  @to.gen_url('doc/example.rb', 'example')
     assert_equal '<a href="../ex_doc/example_rb.html">example</a>',
                  @to.gen_url('../ex.doc/example.rb', 'example')
+    assert_equal '<a href="doc/example_rb.html#label-one">example</a>',
+                 @to.gen_url('doc/example.rb#label-one', 'example')
+    assert_equal '<a href="../ex_doc/example_rb.html#label-two">example</a>',
+                 @to.gen_url('../ex.doc/example.rb#label-two', 'example')
   end
 
   def test_handle_regexp_HYPERLINK_link
