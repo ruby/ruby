@@ -728,7 +728,7 @@ enum {
 //   - receiver has the same class as CLASS_OF(comptime_receiver)
 //   - no stack push or pops to ctx since the entry to the codegen of the instruction being compiled
 static codegen_status_t
-gen_get_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE comptime_receiver, ID ivar_name, bool pop_receiver, uint8_t *side_exit)
+gen_get_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE comptime_receiver, ID ivar_name, insn_opnd_t reg0_opnd, uint8_t *side_exit)
 {
     VALUE comptime_val_klass = CLASS_OF(comptime_receiver);
     const ctx_t starting_context = *ctx; // make a copy for use with jit_chain_guard
@@ -752,7 +752,8 @@ gen_get_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
     if (iv_index_tbl && rb_iv_index_tbl_lookup(iv_index_tbl, id, &ent)) {
         uint32_t ivar_index = ent->index;
 
-        if (pop_receiver) {
+        // Pop receiver if it's on the temp stack
+        if (!reg0_opnd.is_self) {
             (void)ctx_stack_pop(ctx, 1);
         }
 
@@ -847,7 +848,7 @@ gen_getinstancevariable(jitstate_t *jit, ctx_t *ctx)
 
     jit_guard_known_klass(jit, ctx, comptime_val_klass, OPND_SELF, GETIVAR_MAX_DEPTH, side_exit);
 
-    return gen_get_ivar(jit, ctx, GETIVAR_MAX_DEPTH, comptime_val, ivar_name, false, side_exit);
+    return gen_get_ivar(jit, ctx, GETIVAR_MAX_DEPTH, comptime_val, ivar_name, OPND_SELF, side_exit);
 }
 
 static codegen_status_t
@@ -1840,8 +1841,9 @@ gen_opt_send_without_block(jitstate_t* jit, ctx_t* ctx)
 
     // Points to the receiver operand on the stack
     x86opnd_t recv = ctx_stack_opnd(ctx, argc);
+    insn_opnd_t recv_opnd = OPND_STACK(argc);
     mov(cb, REG0, recv);
-    if (!jit_guard_known_klass(jit, ctx, comptime_recv_klass, OPND_STACK(argc), OSWB_MAX_DEPTH, side_exit)) {
+    if (!jit_guard_known_klass(jit, ctx, comptime_recv_klass, recv_opnd, OSWB_MAX_DEPTH, side_exit)) {
         return YJIT_CANT_COMPILE;
     }
 
@@ -1893,7 +1895,7 @@ gen_opt_send_without_block(jitstate_t* jit, ctx_t* ctx)
             mov(cb, REG0, recv);
 
             ID ivar_name = cme->def->body.attr.id;
-            return gen_get_ivar(jit, ctx, OSWB_MAX_DEPTH, comptime_recv, ivar_name, true, side_exit);
+            return gen_get_ivar(jit, ctx, OSWB_MAX_DEPTH, comptime_recv, ivar_name, recv_opnd, side_exit);
         }
     case VM_METHOD_TYPE_ATTRSET:
         GEN_COUNTER_INC(cb, oswb_ivar_set_method);
