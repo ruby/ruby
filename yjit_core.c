@@ -137,14 +137,13 @@ Get the type of an instruction operand
 val_type_t
 ctx_get_opnd_type(const ctx_t* ctx, insn_opnd_t opnd)
 {
-    RUBY_ASSERT(opnd.idx < ctx->stack_size);
-
     if (opnd.is_self)
         return ctx->self_type;
 
     if (ctx->stack_size > MAX_TEMP_TYPES)
         return TYPE_UNKNOWN;
 
+    RUBY_ASSERT(opnd.idx < ctx->stack_size);
     temp_mapping_t mapping = ctx->temp_mapping[ctx->stack_size - 1 - opnd.idx];
 
     switch (mapping.kind)
