@@ -240,6 +240,7 @@ x86opnd_t ctx_stack_opnd(ctx_t* ctx, int32_t idx);
 val_type_t ctx_get_opnd_type(const ctx_t* ctx, insn_opnd_t opnd);
 void ctx_set_opnd_type(ctx_t* ctx, insn_opnd_t opnd, val_type_t type);
 void ctx_set_local_type(ctx_t* ctx, size_t idx, val_type_t type);
+void ctx_clear_local_types(ctx_t* ctx);
 int ctx_diff(const ctx_t* src, const ctx_t* dst);
 
 block_t* find_block_version(blockid_t blockid, const ctx_t* ctx);
