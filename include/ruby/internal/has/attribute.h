@@ -40,7 +40,7 @@
 #elif RBIMPL_COMPILER_IS(GCC)
 # /* GCC  <= 4  lack __has_attribute  predefined macro,  while have  attributes
 #  * themselves.  We can simulate the macro like the following: */
-# define RBIMPL_HAS_ATTRIBUTE(_) RBIMPL_TOKEN_PASTE(RBIMPL_HAS_ATTRIBUTE_, _)
+# define RBIMPL_HAS_ATTRIBUTE(_) (RBIMPL_HAS_ATTRIBUTE_ ## _)
 # define RBIMPL_HAS_ATTRIBUTE_aligned                    RBIMPL_COMPILER_SINCE(GCC, 0, 0, 0)
 # define RBIMPL_HAS_ATTRIBUTE_alloc_size                 RBIMPL_COMPILER_SINCE(GCC, 4, 3, 0)
 # define RBIMPL_HAS_ATTRIBUTE_artificial                 RBIMPL_COMPILER_SINCE(GCC, 4, 3, 0)
@@ -78,7 +78,7 @@
 # /* Oracle Solaris Studio 12.4 (cc version 5.11) introduced __has_attribute.
 #  * Before that, following attributes were available. */
 # /* See https://docs.oracle.com/cd/F24633_01/index.html */
-# define RBIMPL_HAS_ATTRIBUTE(_) RBIMPL_TOKEN_PASTE(RBIMPL_HAS_ATTRIBUTE_, _)
+# define RBIMPL_HAS_ATTRIBUTE(_) (RBIMPL_HAS_ATTRIBUTE_ ## _)
 # define RBIMPL_HAS_ATTRIBUTE_alias                      RBIMPL_COMPILER_SINCE(SunPro, 5,  9, 0)
 # define RBIMPL_HAS_ATTRIBUTE_aligned                    RBIMPL_COMPILER_SINCE(SunPro, 5,  9, 0)
 # define RBIMPL_HAS_ATTRIBUTE_always_inline              RBIMPL_COMPILER_SINCE(SunPro, 5, 10, 0)
@@ -101,7 +101,7 @@
 
 #else
 # /* Take config.h definition when available. */
-# define RBIMPL_HAS_ATTRIBUTE(_) (RBIMPL_TOKEN_PASTE(RBIMPL_HAS_ATTRIBUTE_, _)+0)
+# define RBIMPL_HAS_ATTRIBUTE(_) ((RBIMPL_HAS_ATTRIBUTE_ ## _)+0)
 # ifdef ALWAYS_INLINE
 #  define RBIMPL_HAS_ATTRIBUTE_always_inline 1
 # endif
