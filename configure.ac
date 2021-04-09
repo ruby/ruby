@@ -583,7 +583,7 @@ AS_IF([test x"${RPATHFLAG}" = x], [
     rpathflag=`echo "$RPATHFLAG" | sed 's/%.*//'`
 ])
 
-RUBY_TRY_CFLAGS(-fdeclspec, [fdeclspec=yes], [fdeclspec=no])
+RUBY_TRY_LDFLAGS(-fdeclspec, [fdeclspec=yes], [fdeclspec=no])
 AS_IF([test "$fdeclspec" = yes], [
     RUBY_APPEND_OPTIONS(CFLAGS, -fdeclspec)
     RUBY_APPEND_OPTIONS(cflags, -fdeclspec)
