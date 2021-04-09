@@ -26,20 +26,20 @@
 // Default versioning context (no type information)
 #define DEFAULT_CTX ( (ctx_t){ 0 } )
 
+enum yjit_type_enum
+{
+    ETYPE_UNKNOWN = 0,
+    ETYPE_NIL,
+    ETYPE_FIXNUM,
+    ETYPE_ARRAY,
+    ETYPE_HASH,
+    ETYPE_SYMBOL,
+    ETYPE_STRING
+};
+
 // Represent the type of a value (local/stack/self) in YJIT
 typedef struct yjit_type_struct
 {
-    enum
-    {
-        ETYPE_UNKNOWN = 0,
-        ETYPE_NIL,
-        ETYPE_FIXNUM,
-        ETYPE_ARRAY,
-        ETYPE_HASH
-        //ETYPE_SYMBOL
-        //ETYPE_STRING
-    };
-
     // Value is definitely a heap object
     uint8_t is_heap : 1;
 
@@ -66,18 +66,18 @@ STATIC_ASSERT(val_type_size, sizeof(val_type_t) == 1);
 #define TYPE_ARRAY ( (val_type_t){ .is_heap = 1, .type = ETYPE_ARRAY } )
 #define TYPE_HASH ( (val_type_t){ .is_heap = 1, .type = ETYPE_HASH } )
 
+enum yjit_temp_loc
+{
+    TEMP_STACK = 0,
+    TEMP_SELF,
+    TEMP_LOCAL,     // Local with index
+    //TEMP_CONST,   // Small constant (0, 1, 2, Qnil, Qfalse, Qtrue)
+};
+
 // Potential mapping of a value on the temporary stack to
 // self, a local variable or constant so that we can track its type
 typedef struct yjit_temp_mapping
 {
-    enum
-    {
-        TEMP_STACK = 0,
-        TEMP_SELF,
-        TEMP_LOCAL,     // Local with index
-        //TEMP_CONST,   // Small constant (0, 1, 2, Qnil, Qfalse, Qtrue)
-    };
-
     // Where/how is the value stored?
     uint8_t kind: 2;
 
