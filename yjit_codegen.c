@@ -897,6 +897,34 @@ gen_setinstancevariable(jitstate_t* jit, ctx_t* ctx)
     return YJIT_KEEP_COMPILING;
 }
 
+static void
+guard_two_fixnums(ctx_t* ctx, uint8_t* side_exit)
+{
+    // Get the stack operand types
+    val_type_t arg1_type = ctx_get_opnd_type(ctx, OPND_STACK(0));
+    val_type_t arg0_type = ctx_get_opnd_type(ctx, OPND_STACK(1));
+
+    // Get stack operands without popping them
+    x86opnd_t arg1 = ctx_stack_opnd(ctx, 0);
+    x86opnd_t arg0 = ctx_stack_opnd(ctx, 1);
+
+    // If not fixnums, fall back
+    if (arg0_type.type != ETYPE_FIXNUM) {
+        ADD_COMMENT(cb, "guard arg0 fixnum");
+        test(cb, arg0, imm_opnd(RUBY_FIXNUM_FLAG));
+        jz_ptr(cb, side_exit);
+    }
+    if (arg1_type.type != ETYPE_FIXNUM) {
+        ADD_COMMENT(cb, "guard arg1 fixnum");
+        test(cb, arg1, imm_opnd(RUBY_FIXNUM_FLAG));
+        jz_ptr(cb, side_exit);
+    }
+
+    // TODO: set stack types in context
+    ctx_set_opnd_type(ctx, OPND_STACK(0), TYPE_FIXNUM);
+    ctx_set_opnd_type(ctx, OPND_STACK(1), TYPE_FIXNUM);
+}
+
 // Conditional move operation used by comparison operators
 typedef void (*cmov_fn)(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1);
 
@@ -911,21 +939,12 @@ gen_fixnum_cmp(jitstate_t* jit, ctx_t* ctx, cmov_fn cmov_op)
         return YJIT_CANT_COMPILE;
     }
 
-    // Get the operands and destination from the stack
-    val_type_t arg1_type = ctx_get_opnd_type(ctx, OPND_STACK(0));
-    x86opnd_t arg1 = ctx_stack_pop(ctx, 1);
-    val_type_t arg0_type = ctx_get_opnd_type(ctx, OPND_STACK(0));
-    x86opnd_t arg0 = ctx_stack_pop(ctx, 1);
+    // Check that both operands are fixnums
+    guard_two_fixnums(ctx, side_exit);
 
-    // If not fixnums, fall back
-    if (arg0_type.type != ETYPE_FIXNUM) {
-        test(cb, arg0, imm_opnd(RUBY_FIXNUM_FLAG));
-        jz_ptr(cb, side_exit);
-    }
-    if (arg1_type.type != ETYPE_FIXNUM) {
-        test(cb, arg1, imm_opnd(RUBY_FIXNUM_FLAG));
-        jz_ptr(cb, side_exit);
-    }
+    // Get the operands and destination from the stack
+    x86opnd_t arg1 = ctx_stack_pop(ctx, 1);
+    x86opnd_t arg0 = ctx_stack_pop(ctx, 1);
 
     // Compare the arguments
     xor(cb, REG0_32, REG0_32); // REG0 = Qfalse
@@ -1121,25 +1140,45 @@ gen_opt_and(jitstate_t* jit, ctx_t* ctx)
         return YJIT_CANT_COMPILE;
     }
 
-    // Get the operands and destination from the stack
-    val_type_t arg1_type = ctx_get_opnd_type(ctx, OPND_STACK(0));
-    x86opnd_t arg1 = ctx_stack_pop(ctx, 1);
-    val_type_t arg0_type = ctx_get_opnd_type(ctx, OPND_STACK(0));
-    x86opnd_t arg0 = ctx_stack_pop(ctx, 1);
+    // Check that both operands are fixnums
+    guard_two_fixnums(ctx, side_exit);
 
-    // If not fixnums, fall back
-    if (arg0_type.type != ETYPE_FIXNUM) {
-        test(cb, arg0, imm_opnd(RUBY_FIXNUM_FLAG));
-        jz_ptr(cb, side_exit);
-    }
-    if (arg1_type.type != ETYPE_FIXNUM) {
-        test(cb, arg1, imm_opnd(RUBY_FIXNUM_FLAG));
-        jz_ptr(cb, side_exit);
-    }
+    // Get the operands and destination from the stack
+    x86opnd_t arg1 = ctx_stack_pop(ctx, 1);
+    x86opnd_t arg0 = ctx_stack_pop(ctx, 1);
 
     // Do the bitwise and arg0 & arg1
     mov(cb, REG0, arg0);
     and(cb, REG0, arg1);
+
+    // Push the output on the stack
+    x86opnd_t dst = ctx_stack_push(ctx, TYPE_FIXNUM);
+    mov(cb, dst, REG0);
+
+    return YJIT_KEEP_COMPILING;
+}
+
+static codegen_status_t
+gen_opt_or(jitstate_t* jit, ctx_t* ctx)
+{
+    // Create a size-exit to fall back to the interpreter
+    // Note: we generate the side-exit before popping operands from the stack
+    uint8_t* side_exit = yjit_side_exit(jit, ctx);
+
+    if (!assume_bop_not_redefined(jit->block, INTEGER_REDEFINED_OP_FLAG, BOP_OR)) {
+        return YJIT_CANT_COMPILE;
+    }
+
+    // Check that both operands are fixnums
+    guard_two_fixnums(ctx, side_exit);
+
+    // Get the operands and destination from the stack
+    x86opnd_t arg1 = ctx_stack_pop(ctx, 1);
+    x86opnd_t arg0 = ctx_stack_pop(ctx, 1);
+
+    // Do the bitwise or arg0 | arg1
+    mov(cb, REG0, arg0);
+    or(cb, REG0, arg1);
 
     // Push the output on the stack
     x86opnd_t dst = ctx_stack_push(ctx, TYPE_FIXNUM);
@@ -1159,21 +1198,12 @@ gen_opt_minus(jitstate_t* jit, ctx_t* ctx)
         return YJIT_CANT_COMPILE;
     }
 
-    // Get the operands and destination from the stack
-    val_type_t arg1_type = ctx_get_opnd_type(ctx, OPND_STACK(0));
-    x86opnd_t arg1 = ctx_stack_pop(ctx, 1);
-    val_type_t arg0_type = ctx_get_opnd_type(ctx, OPND_STACK(0));
-    x86opnd_t arg0 = ctx_stack_pop(ctx, 1);
+    // Check that both operands are fixnums
+    guard_two_fixnums(ctx, side_exit);
 
-    // If not fixnums, fall back
-    if (arg0_type.type != ETYPE_FIXNUM) {
-        test(cb, arg0, imm_opnd(RUBY_FIXNUM_FLAG));
-        jz_ptr(cb, side_exit);
-    }
-    if (arg1_type.type != ETYPE_FIXNUM) {
-        test(cb, arg1, imm_opnd(RUBY_FIXNUM_FLAG));
-        jz_ptr(cb, side_exit);
-    }
+    // Get the operands and destination from the stack
+    x86opnd_t arg1 = ctx_stack_pop(ctx, 1);
+    x86opnd_t arg0 = ctx_stack_pop(ctx, 1);
 
     // Subtract arg0 - arg1 and test for overflow
     mov(cb, REG0, arg0);
@@ -1199,21 +1229,12 @@ gen_opt_plus(jitstate_t* jit, ctx_t* ctx)
         return YJIT_CANT_COMPILE;
     }
 
-    // Get the operands and destination from the stack
-    val_type_t arg1_type = ctx_get_opnd_type(ctx, OPND_STACK(0));
-    x86opnd_t arg1 = ctx_stack_pop(ctx, 1);
-    val_type_t arg0_type = ctx_get_opnd_type(ctx, OPND_STACK(0));
-    x86opnd_t arg0 = ctx_stack_pop(ctx, 1);
+    // Check that both operands are fixnums
+    guard_two_fixnums(ctx, side_exit);
 
-    // If not fixnums, fall back
-    if (arg0_type.type != ETYPE_FIXNUM) {
-        test(cb, arg0, imm_opnd(RUBY_FIXNUM_FLAG));
-        jz_ptr(cb, side_exit);
-    }
-    if (arg1_type.type != ETYPE_FIXNUM) {
-        test(cb, arg1, imm_opnd(RUBY_FIXNUM_FLAG));
-        jz_ptr(cb, side_exit);
-    }
+    // Get the operands and destination from the stack
+    x86opnd_t arg1 = ctx_stack_pop(ctx, 1);
+    x86opnd_t arg0 = ctx_stack_pop(ctx, 1);
 
     // Add arg0 + arg1 and test for overflow
     mov(cb, REG0, arg0);
@@ -2007,6 +2028,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(opt_gt), gen_opt_gt);
     yjit_reg_op(BIN(opt_aref), gen_opt_aref);
     yjit_reg_op(BIN(opt_and), gen_opt_and);
+    yjit_reg_op(BIN(opt_or), gen_opt_or);
     yjit_reg_op(BIN(opt_minus), gen_opt_minus);
     yjit_reg_op(BIN(opt_plus), gen_opt_plus);
     yjit_reg_op(BIN(opt_getinlinecache), gen_opt_getinlinecache);
