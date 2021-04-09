@@ -653,7 +653,7 @@ void gen_branch(
 {
     RUBY_ASSERT(target0.iseq != NULL);
     //RUBY_ASSERT(target1.iseq != NULL);
-    RUBY_ASSERT(num_branches < MAX_BRANCHES);
+    RUBY_ASSERT_ALWAYS(num_branches < MAX_BRANCHES);
     uint32_t branch_idx = num_branches++;
 
     // Get the branch targets or stubs
@@ -704,7 +704,7 @@ void gen_direct_jump(
 )
 {
     RUBY_ASSERT(target0.iseq != NULL);
-    RUBY_ASSERT(num_branches < MAX_BRANCHES);
+    RUBY_ASSERT_ALWAYS(num_branches < MAX_BRANCHES);
     ctx_t generic_ctx;
     uint32_t branch_idx = num_branches++;
 
@@ -788,7 +788,7 @@ void defer_compilation(
 
     next_ctx.chain_depth += 1;
 
-    RUBY_ASSERT(num_branches < MAX_BRANCHES);
+    RUBY_ASSERT_ALWAYS(num_branches < MAX_BRANCHES);
     uint32_t branch_idx = num_branches++;
 
     // Get the branch targets or stubs
