@@ -202,7 +202,7 @@ Set the type of a local variable
 */
 void ctx_set_local_type(ctx_t* ctx, size_t idx, val_type_t type)
 {
-    if (ctx->stack_size > MAX_LOCAL_TYPES)
+    if (idx >= MAX_LOCAL_TYPES)
         return;
 
     ctx->local_types[idx] = type;
