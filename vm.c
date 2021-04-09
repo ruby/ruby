@@ -1795,8 +1795,8 @@ rb_iter_break_value(VALUE val)
 
 /* optimization: redefine management */
 
-static st_table *vm_opt_method_table = 0;
 static st_table *vm_opt_mid_table = 0;
+static st_table *vm_opt_mid_class_table = 0;
 
 static int
 vm_redefinition_check_flag(VALUE klass)
@@ -1849,11 +1849,16 @@ rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass)
        klass = RBASIC_CLASS(klass);
     }
     if (vm_redefinition_check_method_type(me->def)) {
-	if (st_lookup(vm_opt_method_table, (st_data_t)me, &bop)) {
-	    int flag = vm_redefinition_check_flag(klass);
+        VALUE class_array;
 
-	    ruby_vm_redefined_flag[bop] |= flag;
-	}
+        if (st_lookup(vm_opt_mid_class_table, (st_data_t)me->called_id, &class_array)) {
+            if (rb_ary_includes(class_array, klass)) {
+                int flag = vm_redefinition_check_flag(klass);
+                bop = (st_data_t)FIX2INT(RARRAY_AREF(class_array, 0));
+
+                ruby_vm_redefined_flag[bop] |= flag;
+            }
+        }
     }
 }
 
@@ -1882,8 +1887,19 @@ add_opt_method(VALUE klass, ID mid, VALUE bop)
     const rb_method_entry_t *me = rb_method_entry_at(klass, mid);
 
     if (me && vm_redefinition_check_method_type(me->def)) {
-	st_insert(vm_opt_method_table, (st_data_t)me, (st_data_t)bop);
+        VALUE class_array;
+
 	st_insert(vm_opt_mid_table, (st_data_t)mid, (st_data_t)Qtrue);
+
+        if (!st_lookup(vm_opt_mid_class_table, (st_data_t)mid, &class_array)) {
+            class_array = rb_ary_new();
+            rb_gc_register_mark_object(class_array);
+            rb_obj_hide(class_array);
+            rb_ary_push(class_array, INT2FIX(bop));
+            st_insert(vm_opt_mid_class_table, (st_data_t)mid, (st_data_t)class_array);
+        }
+
+        rb_ary_push(class_array, me->defined_class);
     }
     else {
 	rb_bug("undefined optimized method: %s", rb_id2name(mid));
@@ -1896,8 +1912,8 @@ vm_init_redefined_flag(void)
     ID mid;
     VALUE bop;
 
-    vm_opt_method_table = st_init_numtable();
     vm_opt_mid_table = st_init_numtable();
+    vm_opt_mid_class_table = st_init_numtable();
 
 #define OP(mid_, bop_) (mid = id##mid_, bop = BOP_##bop_, ruby_vm_redefined_flag[bop] = 0)
 #define C(k) add_opt_method(rb_c##k, mid, bop)
