@@ -151,7 +151,6 @@ console.o: $(hdrdir)/ruby/internal/static_assert.h
 console.o: $(hdrdir)/ruby/internal/stdalign.h
 console.o: $(hdrdir)/ruby/internal/stdbool.h
 console.o: $(hdrdir)/ruby/internal/symbol.h
-console.o: $(hdrdir)/ruby/internal/token_paste.h
 console.o: $(hdrdir)/ruby/internal/value.h
 console.o: $(hdrdir)/ruby/internal/value_type.h
 console.o: $(hdrdir)/ruby/internal/variable.h

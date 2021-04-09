@@ -136,7 +136,6 @@ dbm.o: $(hdrdir)/ruby/internal/static_assert.h
 dbm.o: $(hdrdir)/ruby/internal/stdalign.h
 dbm.o: $(hdrdir)/ruby/internal/stdbool.h
 dbm.o: $(hdrdir)/ruby/internal/symbol.h
-dbm.o: $(hdrdir)/ruby/internal/token_paste.h
 dbm.o: $(hdrdir)/ruby/internal/value.h
 dbm.o: $(hdrdir)/ruby/internal/value_type.h
 dbm.o: $(hdrdir)/ruby/internal/variable.h

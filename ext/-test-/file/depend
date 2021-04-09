@@ -135,7 +135,6 @@ fs.o: $(hdrdir)/ruby/internal/static_assert.h
 fs.o: $(hdrdir)/ruby/internal/stdalign.h
 fs.o: $(hdrdir)/ruby/internal/stdbool.h
 fs.o: $(hdrdir)/ruby/internal/symbol.h
-fs.o: $(hdrdir)/ruby/internal/token_paste.h
 fs.o: $(hdrdir)/ruby/internal/value.h
 fs.o: $(hdrdir)/ruby/internal/value_type.h
 fs.o: $(hdrdir)/ruby/internal/variable.h
@@ -300,7 +299,6 @@ init.o: $(hdrdir)/ruby/internal/static_assert.h
 init.o: $(hdrdir)/ruby/internal/stdalign.h
 init.o: $(hdrdir)/ruby/internal/stdbool.h
 init.o: $(hdrdir)/ruby/internal/symbol.h
-init.o: $(hdrdir)/ruby/internal/token_paste.h
 init.o: $(hdrdir)/ruby/internal/value.h
 init.o: $(hdrdir)/ruby/internal/value_type.h
 init.o: $(hdrdir)/ruby/internal/variable.h
@@ -460,7 +458,6 @@ stat.o: $(hdrdir)/ruby/internal/static_assert.h
 stat.o: $(hdrdir)/ruby/internal/stdalign.h
 stat.o: $(hdrdir)/ruby/internal/stdbool.h
 stat.o: $(hdrdir)/ruby/internal/symbol.h
-stat.o: $(hdrdir)/ruby/internal/token_paste.h
 stat.o: $(hdrdir)/ruby/internal/value.h
 stat.o: $(hdrdir)/ruby/internal/value_type.h
 stat.o: $(hdrdir)/ruby/internal/variable.h

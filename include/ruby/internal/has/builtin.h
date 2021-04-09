@@ -22,7 +22,6 @@
  */
 #include "ruby/internal/config.h"
 #include "ruby/internal/compiler_since.h"
-#include "ruby/internal/token_paste.h"
 
 #if defined(__has_builtin)
 # if RBIMPL_COMPILER_IS(Intel)
