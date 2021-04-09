@@ -280,27 +280,27 @@ rb_num_to_uint(VALUE val, unsigned int *ret)
 #define method_basic_p(klass) rb_method_basic_definition_p(klass, mid)
 
 static inline int
-int_pos_p(VALUE num)
+int_posneg_p(VALUE num, bool (fixnum_check(VALUE)), bool (bignum_check(VALUE)))
 {
     if (FIXNUM_P(num)) {
-	return FIXNUM_POSITIVE_P(num);
+	return fixnum_check(num);
     }
     else if (RB_TYPE_P(num, T_BIGNUM)) {
-	return BIGNUM_POSITIVE_P(num);
+	return bignum_check(num);
     }
     rb_raise(rb_eTypeError, "not an Integer");
 }
 
 static inline int
+int_pos_p(VALUE num)
+{
+    return int_posneg_p(num, FIXNUM_POSITIVE_P, BIGNUM_POSITIVE_P);
+}
+
+static inline int
 int_neg_p(VALUE num)
 {
-    if (FIXNUM_P(num)) {
-	return FIXNUM_NEGATIVE_P(num);
-    }
-    else if (RB_TYPE_P(num, T_BIGNUM)) {
-	return BIGNUM_NEGATIVE_P(num);
-    }
-    rb_raise(rb_eTypeError, "not an Integer");
+    return int_posneg_p(num, FIXNUM_NEGATIVE_P, BIGNUM_NEGATIVE_P);
 }
 
 int
