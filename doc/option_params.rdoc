@@ -77,7 +77,7 @@ File +short_simple.rb+ defines two options:
 - One with short name <tt>-x</tt>.
 - The other with two short names, in effect, aliases, <tt>-1</tt> and <tt>-%</tt>.
 
- :include: short_simple.rb
+ :include: ruby/short_simple.rb
 
 Executions:
 
@@ -100,7 +100,7 @@ defines an option that requires an argument.
 File +short_required.rb+ defines an option <tt>-x</tt>
 that requires an argument.
 
-  :include: short_required.rb
+  :include: ruby/short_required.rb
 
 Executions:
 
@@ -120,7 +120,7 @@ defines an option that allows an optional argument.
 File +short_optional.rb+ defines an option <tt>-x</tt>
 that allows an optional argument.
 
-  :include: short_optional.rb
+  :include: ruby/short_optional.rb
 
 Executions:
 
@@ -141,7 +141,7 @@ The parser yields both the actual character cited and the value.
 File +short_range.rb+ defines an option with short names
 for all printable characters from <tt>!</tt> to <tt>~</tt>:
 
-  :include: short_range.rb
+  :include: ruby/short_range.rb
 
 Executions:
 
@@ -167,7 +167,7 @@ File +long_simple.rb+ defines two options:
 - The other with two long names, in effect, aliases,
   <tt>--y1%</tt> and <tt>--z2#</tt>.
 
-  :include: long_simple.rb
+  :include: ruby/long_simple.rb
 
 Executions:
 
@@ -190,7 +190,7 @@ defines an option that requires an argument.
 File +long_required.rb+ defines an option <tt>--xxx</tt>
 that requires an argument.
 
-  :include: long_required.rb
+  :include: ruby/long_required.rb
 
 Executions:
 
@@ -210,7 +210,7 @@ defines an option that allows an optional argument.
 File +long_optional.rb+ defines an option <tt>--xxx</tt>
 that allows an optional argument.
 
-  :include: long_optional.rb
+  :include: ruby/long_optional.rb
 
 Executions:
 
@@ -228,7 +228,7 @@ An option may have both short and long names.
 
 File +mixed_names.rb+ defines a mixture of short and long names.
 
-  :include: mixed_names.rb
+  :include: ruby/mixed_names.rb
 
 Executions:
 
@@ -272,7 +272,7 @@ which is one of <tt>:NONE</tt> (the default),
 
 File +argument_keywords.rb+ defines an option with a required argument.
 
-  :include: argument_keywords.rb
+  :include: ruby/argument_keywords.rb
 
 Executions:
 
@@ -291,7 +291,7 @@ is to define it in a string separate from the name string.
 
 File +argument_strings.rb+ defines an option with a required argument.
 
-  :include: argument_strings.rb
+  :include: ruby/argument_strings.rb
 
 Executions:
 
@@ -323,7 +323,7 @@ The argument value must be one of those strings.
 
 File +explicit_array_values.rb+ defines options with explicit argument values.
 
-  :include: explicit_array_values.rb
+  :include: ruby/explicit_array_values.rb
 
 Executions:
 
@@ -349,7 +349,7 @@ and the value yielded will be the value for that key.
 
 File +explicit_hash_values.rb+ defines options with explicit argument values.
 
-  :include: explicit_hash_values.rb
+  :include: ruby/explicit_hash_values.rb
 
 Executions:
 
@@ -381,7 +381,7 @@ by specifying a Regexp that the given argument must match.
 
 File +matched_values.rb+ defines options with matched argument values.
 
-  :include: matched_values.rb
+  :include: ruby/matched_values.rb
 
 Executions:
 
@@ -410,7 +410,7 @@ defines an option whose argument is to be converted to a \Date object.
 The argument is converted by method
 {Date.parse}[https://ruby-doc.org/stdlib/libdoc/date/rdoc/Date.html#method-c-parse].
 
-  :include: date.rb
+  :include: ruby/date.rb
 
 Executions:
 
@@ -428,7 +428,7 @@ defines an option whose argument is to be converted to a \DateTime object.
 The argument is converted by method
 {DateTime.parse}[https://ruby-doc.org/stdlib-2.6.1/libdoc/date/rdoc/DateTime.html#method-c-parse].
 
-  :include: datetime.rb
+  :include: ruby/datetime.rb
 
 Executions:
 
@@ -447,7 +447,7 @@ The argument is converted by method
 {Time.httpdate}[https://ruby-doc.org/stdlib-2.7.0/libdoc/time/rdoc/Time.html#method-c-httpdate] or
 {Time.parse}[https://ruby-doc.org/stdlib-2.7.0/libdoc/time/rdoc/Time.html#method-c-parse].
 
-  :include: time.rb
+  :include: ruby/time.rb
 
 Executions:
 
@@ -463,7 +463,7 @@ defines an option whose argument is to be converted to a \URI object.
 The argument is converted by method
 {URI.parse}[https://ruby-doc.org/stdlib-2.7.2/libdoc/uri/rdoc/URI.html#method-c-parse].
 
-  :include: uri.rb
+  :include: ruby/uri.rb
 
 Executions:
 
@@ -480,7 +480,7 @@ File +shellwords.rb+
 defines an option whose argument is to be converted to an \Array object by method
 {Shellwords.shellwords}[https://ruby-doc.org/stdlib-2.7.0/libdoc/shellwords/rdoc/Shellwords.html#method-c-shellwords].
 
-  :include: shellwords.rb
+  :include: ruby/shellwords.rb
 
 Executions:
 
@@ -496,7 +496,7 @@ defines an option whose argument is to be converted to an \Integer object.
 The argument is converted by method
 {Kernel.Integer}[https://ruby-doc.org/core/Kernel.html#method-i-Integer].
 
-  :include: integer.rb
+  :include: ruby/integer.rb
 
 Executions:
 
@@ -518,7 +518,7 @@ defines an option whose argument is to be converted to a \Float object.
 The argument is converted by method
 {Kernel.Float}[https://ruby-doc.org/core/Kernel.html#method-i-Float].
 
-  :include: float.rb
+  :include: ruby/float.rb
 
 Executions:
 
@@ -541,7 +541,7 @@ The argument is converted by method
 {Kernel.Float}[https://ruby-doc.org/core/Kernel.html#method-i-Float], or
 {Kernel.Integer}[https://ruby-doc.org/core/Kernel.html#method-i-Integer].
 
-  :include: numeric.rb
+  :include: ruby/numeric.rb
 
 Executions:
 
@@ -559,7 +559,7 @@ defines an option whose argument is to be converted to an \Integer object.
 The argument is converted by method
 {Kernel.Integer}[https://ruby-doc.org/core/Kernel.html#method-i-Integer].
 
-  :include: decimal_integer.rb
+  :include: ruby/decimal_integer.rb
 
 The argument may not be in a binary or hexadecimal format;
 a leading zero is ignored (not parsed as octal).
@@ -582,7 +582,7 @@ defines an option whose argument is to be converted to an \Integer object.
 The argument is converted by method
 {Kernel.Integer}[https://ruby-doc.org/core/Kernel.html#method-i-Integer].
 
-  :include: octal_integer.rb
+  :include: ruby/octal_integer.rb
 
 The argument may not be in a binary or hexadecimal format;
 it is parsed as octal, regardless of whether it has a leading zero.
@@ -603,7 +603,7 @@ defines an option whose argument is to be converted to an \Integer object.
 The argument is converted by method
 {Kernel.Integer}[https://ruby-doc.org/core/Kernel.html#method-i-Integer].
 
-  :include: decimal_numeric.rb
+  :include: ruby/decimal_numeric.rb
 
 The argument may not be in a binary or hexadecimal format;
 a leading zero causes the argument to be parsed as octal.
@@ -624,7 +624,7 @@ defines an option whose argument is to be converted to +true+ or +false+.
 The argument is evaluated by method
 {Object#nil?}[https://ruby-doc.org/core-3.0.0/Object.html#method-i-nil-3F].
 
-  :include: true_class.rb
+  :include: ruby/true_class.rb
 
 The argument may be any of those shown in the examples below.
 
@@ -652,7 +652,7 @@ defines an option whose argument is to be converted to +true+ or +false+.
 The argument is evaluated by method
 {Object#nil?}[https://ruby-doc.org/core-3.0.0/Object.html#method-i-nil-3F].
 
-  :include: false_class.rb
+  :include: ruby/false_class.rb
 
 The argument may be any of those shown in the examples below.
 
@@ -678,7 +678,7 @@ Executions:
 File +object.rb+
 defines an option whose argument is not to be converted from \String.
 
-  :include: object.rb
+  :include: ruby/object.rb
 
 Executions:
 
@@ -692,7 +692,7 @@ Executions:
 File +string.rb+
 defines an option whose argument is not to be converted from \String.
 
-  :include: string.rb
+  :include: ruby/string.rb
 
 Executions:
 
@@ -707,7 +707,7 @@ File +array.rb+
 defines an option whose argument is to be converted from \String
 to an array of strings, based on comma-separated substrings.
 
-  :include: array.rb
+  :include: ruby/array.rb
 
 Executions:
 
@@ -723,7 +723,7 @@ Executions:
 File +regexp.rb+
 defines an option whose argument is to be converted to a \Regexp object.
 
-  :include: regexp.rb
+  :include: ruby/regexp.rb
 
 Executions:
 
@@ -744,7 +744,7 @@ File +descriptions.rb+ has six strings in its array +descriptions+.
 These are all passed as parameters to OptionParser#on, so that they
 all, line for line, become the option's description.
 
-  :include: descriptions.rb
+  :include: ruby/descriptions.rb
 
 Executions:
 
@@ -774,7 +774,7 @@ An option hadler may be a block.
 
 File +block.rb+ defines an option that has a handler block.
 
-  :include: block.rb
+  :include: ruby/block.rb
 
 Executions:
 
@@ -793,7 +793,7 @@ An option handler may be a Proc.
 
 File +proc.rb+ defines an option that has a handler proc.
 
-  :include: proc.rb
+  :include: ruby/proc.rb
 
 Executions:
 
@@ -812,7 +812,7 @@ An option handler may be a Method.
 
 File +proc.rb+ defines an option that has a handler method.
 
-  :include: method.rb
+  :include: ruby/method.rb
 
 Executions:
 
@@ -833,7 +833,7 @@ This can be useful if there are options not meant for the current program.
 
 File +terminator.rb+ defines one option <tt>--my_option</tt>.
 
-  :include: terminator.rb
+  :include: ruby/terminator.rb
 
 The first execution fails because <tt>--nosuch</tt> is not a defined option;
 the second succeeds because <tt>--</tt> causes that option to be ignored:

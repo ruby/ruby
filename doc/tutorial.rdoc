@@ -6,7 +6,7 @@ When a Ruby program executes, it captures its command-line arguments
 and options into variable ARGV.
 This simple program just prints its \ARGV:
 
-  :include: argv.rb
+  :include: ruby/argv.rb
 
 Execution, with arguments and options:
 
@@ -67,7 +67,7 @@ File +short_names.rb+
 defines an option with a short name, <tt>-x</tt>,
 and an option with two short names (aliases, in effect) <tt>-y</tt> and <tt>-z</tt>.
 
-  :include: short_names.rb
+  :include: ruby/short_names.rb
 
 Executions:
 
@@ -99,7 +99,7 @@ File +long_names.rb+
 defines an option with a long name, <tt>--xxx</tt>,
 and an option with two long names (aliases, in effect) <tt>--y1%</tt> and <tt>--z2#</tt>.
 
-  :include: long_names.rb
+  :include: ruby/long_names.rb
 
 Executions:
 
@@ -118,7 +118,7 @@ so that a short name is in effect an abbreviation of a long name.
 File +mixed_names.rb+
 defines options that each have both a short and a long name.
 
-  :include: mixed_names.rb
+  :include: ruby/mixed_names.rb
 
 Executions:
 
@@ -147,7 +147,7 @@ to its name definition.
 File +required_argument.rb+ defines two options;
 each has a required argument because the name definition has a following dummy word.
 
-  :include: required_argument.rb
+  :include: ruby/required_argument.rb
 
 When an option is found, the given argument is yielded.
 
@@ -172,7 +172,7 @@ File +optional_argument.rb+ defines two options;
 each has an optional argument because the name definition has a following dummy word
 in square brackets.
 
-  :include: optional_argument.rb
+  :include: ruby/optional_argument.rb
 
 When an option with an argument is found, the given argument yielded.
 
