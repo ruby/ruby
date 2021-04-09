@@ -920,7 +920,7 @@ guard_two_fixnums(ctx_t* ctx, uint8_t* side_exit)
         jz_ptr(cb, side_exit);
     }
 
-    // TODO: set stack types in context
+    // Set stack types in context
     ctx_set_opnd_type(ctx, OPND_STACK(0), TYPE_FIXNUM);
     ctx_set_opnd_type(ctx, OPND_STACK(1), TYPE_FIXNUM);
 }
