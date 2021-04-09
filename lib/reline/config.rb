@@ -74,6 +74,7 @@ class Reline::Config
     @additional_key_bindings.keys.each do |key|
       @additional_key_bindings[key].clear
     end
+    reset_default_key_bindings
   end
 
   def editing_mode
