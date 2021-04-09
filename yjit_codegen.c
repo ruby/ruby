@@ -726,7 +726,7 @@ enum {
 // Preconditions:
 //   - receiver is in REG0
 //   - receiver has the same class as CLASS_OF(comptime_receiver)
-//   - ctx has not been modified since entry to the codegen of the instruction being compiled
+//   - no stack push or pops to ctx since the entry to the codegen of the instruction being compiled
 static codegen_status_t
 gen_get_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE comptime_receiver, ID ivar_name, bool pop_receiver, uint8_t *side_exit)
 {
@@ -781,7 +781,7 @@ gen_get_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
             mov(cb, out_opnd, REG1);
         }
         else {
-            // Compile value is *not* embeded.
+            // Compile time value is *not* embeded.
 
             // Guard that value is *not* embedded
             // See ROBJECT_IVPTR() from include/ruby/internal/core/robject.h
