@@ -1549,7 +1549,9 @@ AS_IF([test "$GCC" = yes], [
 	AC_DEFINE_UNQUOTED([RUBY_ALIAS_FUNCTION_VOID(prot, name, args)],
 			   [RUBY_ALIAS_FUNCTION_TYPE(void, prot, name, args)])
     ])
+])
 
+{
     AC_CACHE_CHECK([for __atomic builtins], [rb_cv_gcc_atomic_builtins], [
 	AC_LINK_IFELSE([AC_LANG_PROGRAM([[unsigned int atomic_var;]],
 		    [[
@@ -1580,7 +1582,6 @@ AS_IF([test "$GCC" = yes], [
     AS_IF([test "$rb_cv_gcc_sync_builtins" = yes], [
 	AC_DEFINE(HAVE_GCC_SYNC_BUILTINS)
     ])
-])
 
     AC_CACHE_CHECK(for __builtin_unreachable, rb_cv_func___builtin_unreachable,
     [RUBY_WERROR_FLAG(
@@ -1593,6 +1594,7 @@ AS_IF([test "$GCC" = yes], [
     AS_IF([test "$rb_cv_func___builtin_unreachable" = yes], [
 	AC_DEFINE_UNQUOTED(UNREACHABLE, [__builtin_unreachable()])
     ])
+}
 
 AC_CACHE_CHECK(for exported function attribute, rb_cv_func_exported, [
 rb_cv_func_exported=no
