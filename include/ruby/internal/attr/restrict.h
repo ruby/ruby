@@ -30,7 +30,7 @@
 
 /** Wraps (or simulates) `__declspec(restrict)` */
 #if RBIMPL_COMPILER_SINCE(MSVC, 14, 0, 0)
-# define RBIMPL_ATTR_RESTRICT() __declspec(RBIMPL_TOKEN_PASTE(re, strict))
+# define RBIMPL_ATTR_RESTRICT() __declspec(re ## strict)
 
 #elif RBIMPL_HAS_ATTRIBUTE(malloc)
 # define RBIMPL_ATTR_RESTRICT() __attribute__((__malloc__))
