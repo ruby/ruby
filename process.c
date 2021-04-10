@@ -8975,6 +8975,14 @@ InitVM_process(void)
      */
     rb_define_const(rb_mProcess, "RLIMIT_NPROC", INT2FIX(RLIMIT_NPROC));
 #endif
+#ifdef RLIMIT_NPTS
+    /* The maximum number of pseudo-terminals that can be created for the
+     * real user ID of the calling process.
+     *
+     * see the system getrlimit(2) manual for details.
+     */
+    rb_define_const(rb_mProcess, "RLIMIT_NPTS", INT2FIX(RLIMIT_NPTS));
+#endif
 #ifdef RLIMIT_RSS
     /* Specifies the limit (in pages) of the process's resident set.
      *
