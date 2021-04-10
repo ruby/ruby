@@ -39,10 +39,15 @@ The class also has:
   - {Short Option Names}[#label-Short+Option+Names]
   - {Long Option Names}[#label-Long+Option+Names]
   - {Mixing Option Names}[#label-Mixing+Option+Names]
+  - {Command-Line Abbreviations}[#label-Command-Line+Abbreviations]
 - {Option Arguments}[#label-Option+Arguments]
   - {Option with No Argument}[#label-Option+with+No+Argument]
   - {Option with Required Argument}[#label-Option+with+Required+Argument]
   - {Option with Optional Argument}[#label-Option+with+Optional+Argument]
+- {Keyword Argument <tt>into<tt>}[#label-Keyword+Argument+into]
+  - {Collecting Options}[#label-Collecting+Options]
+  - {Checking for Missing Options}[#label-Checking+for+Missing+Options]
+  - {Default Values for Options}[#label-Default+Values+for+Options]
 - {Argument Converters}[#label-Argument+Converters]
 
 === Defining Options
@@ -185,6 +190,47 @@ Executions:
   $ ruby mixed_names.rb --zzz BAT
   ["--zzz", "BAT"]
 
+==== Command-Line Abbreviations
+
+By default, abbreviations for command-line option names are allowed.
+An abbreviated option is valid if it is unique among abbreviated option names.
+
+  :include: ruby/abbreviation.rb
+
+Executions:
+
+  $ ruby abbreviation.rb --help
+  Usage: abbreviation [options]
+      -n, --dry-run
+      -d, --draft
+  $ ruby abbreviation.rb -n
+  ["--dry-run", true]
+  $ ruby abbreviation.rb --dry-run
+  ["--dry-run", true]
+  $ ruby abbreviation.rb -d
+  ["--draft", true]
+  $ ruby abbreviation.rb --draft
+  ["--draft", true]
+  $ ruby abbreviation.rb --d
+  abbreviation.rb:9:in `<main>': ambiguous option: --d (OptionParser::AmbiguousOption)
+  $ ruby abbreviation.rb --dr
+  abbreviation.rb:9:in `<main>': ambiguous option: --dr (OptionParser::AmbiguousOption)
+  $ ruby abbreviation.rb --dry
+  ["--dry-run", true]
+  $ ruby abbreviation.rb --dra
+  ["--draft", true]
+
+You can disable abbreviation using method +require_exact+.
+
+  :include: ruby/no_abbreviation.rb
+
+Executions:
+
+  $ ruby no_abbreviation.rb --dry-ru
+  no_abbreviation.rb:10:in `<main>': invalid option: --dry-ru (OptionParser::InvalidOption)
+  $ ruby no_abbreviation.rb --dry-run
+  ["--dry-run", true]
+
 === Option Arguments
 
 An option may take no argument, a required argument, or an optional argument.
@@ -247,12 +293,96 @@ Executions:
 
 Omitting an optional argument does not raise an error.
 
+=== Keyword Argument +into+
+
+In parsing options, you can add keyword option +into+ with a hash-like argument;
+each parsed option will be added as a name/value pair.
+
+This is useful for:
+
+- Collecting options.
+- Checking for missing options.
+- Providing default values for options.
+
+==== Collecting Options
+
+Use keyword argument +into+ to collect options.
+
+  :include: ruby/collected_options.rb
+
+Executions:
+
+  $ ruby collected_options.rb --help
+  Usage: into [options]
+      -x, --xxx                        Short and long, no argument
+      -y, --yyyYYY                     Short and long, required argument
+      -z, --zzz [ZZZ]                  Short and long, optional argument
+  $ ruby collected_options.rb --xxx
+  {:xxx=>true}
+  $ ruby collected_options.rb --xxx --yyy FOO
+  {:xxx=>true, :yyy=>"FOO"}
+  $ ruby collected_options.rb --xxx --yyy FOO --zzz Bar
+  {:xxx=>true, :yyy=>"FOO", :zzz=>"Bar"}
+  $ ruby collected_options.rb --xxx --yyy FOO --yyy BAR
+  {:xxx=>true, :yyy=>"BAR"}
+
+Note in the last execution that the argument value for option <tt>--yyy</tt>
+was overwritten.
+
+==== Checking for Missing Options
+
+Use the collected options to check for missing options.
+
+  :include: ruby/missing_options.rb
+
+Executions:
+
+  $ ruby missing_options.rb --help
+  Usage: missing_options [options]
+      -x, --xxx                        Short and long, no argument
+      -y, --yyyYYY                     Short and long, required argument
+      -z, --zzz [ZZZ]                  Short and long, optional argument
+  $ ruby missing_options.rb --yyy FOO
+  missing_options.rb:11:in `<main>': Missing required options: [:xxx, :zzz] (RuntimeError)
+
+==== Default Values for Options
+
+Initialize the +into+ argument to define default values for options.
+
+  :include: ruby/default_values.rb
+
+Executions:
+
+  $ ruby default_values.rb --help
+  Usage: default_values [options]
+      -x, --xxx                        Short and long, no argument
+      -y, --yyyYYY                     Short and long, required argument
+      -z, --zzz [ZZZ]                  Short and long, optional argument
+  $ ruby default_values.rb --yyy FOO
+  {:yyy=>"FOO", :zzz=>"BBB"}
+
+
 === Argument Converters
 
 An option can specify that its argument is to be converted
 from the default \String to an instance of another class.
-
 There are a number of built-in converters.
-You can also define custom converters.
 
-See {Argument Converters}[./argument_converters_rdoc.html].
+Example: File +date.rb+
+defines an option whose argument is to be converted to a \Date object.
+The argument is converted by method Date#parse.
+
+  :include: ruby/date.rb
+
+Executions:
+
+  $ ruby date.rb --date 2001-02-03
+  [#<Date: 2001-02-03 ((2451944j,0s,0n),+0s,2299161j)>, Date]
+  $ ruby date.rb --date 20010203
+  [#<Date: 2001-02-03 ((2451944j,0s,0n),+0s,2299161j)>, Date]
+  $ ruby date.rb --date "3rd Feb 2001"
+  [#<Date: 2001-02-03 ((2451944j,0s,0n),+0s,2299161j)>, Date]
+
+You can also define custom converters.
+See {Argument Converters}[./argument_converters_rdoc.html]
+for both built-in and custom converters.
