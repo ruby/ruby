@@ -92,12 +92,13 @@ in the mail body (not subject) to the address [ruby-talk-request@ruby-lang.org].
 
 4.  Edit `include/ruby/defines.h` if you need. Usually this step will not be needed.
 
-5.  Remove comment mark(`#`) before the module names from `ext/Setup` (or add
-    module names if not present), if you want to link modules statically.
+5.  Optional: Remove comment mark(`#`) before the module names from `ext/Setup`.
 
-    If you don't want to compile non static extension modules (probably on
-    architectures which do not allow dynamic loading), remove comment mark
-    from the line "`#option nodynamic`" in `ext/Setup`.
+    This step is only necessary if you want to link modules statically.
+
+    If you don't want to compile dynamic extensions (probably on architectures
+    which do not allow dynamic loading), remove comment mark from the line
+    "`#option nodynamic`" in `ext/Setup`.
 
     Usually this step will not be needed.
 
