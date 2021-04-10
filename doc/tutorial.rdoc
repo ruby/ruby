@@ -32,6 +32,19 @@ The class also has:
 - Method #summarize: returns a text summary of the options.
 - Method #help: displays automatically-generated help text.
 
+=== Contents
+
+- {Defining Options}[#label-Defining+Options]
+- {Option Names}[#label-Option+Names]
+  - {Short Option Names}[#label-Short+Option+Names]
+  - {Long Option Names}[#label-Long+Option+Names]
+  - {Mixing Option Names}[#label-Mixing+Option+Names]
+- {Option Arguments}[#label-Option+Arguments]
+  - {Option with No Argument}[#label-Option+with+No+Argument]
+  - {Option with Required Argument}[#label-Option+with+Required+Argument]
+  - {Option with Optional Argument}[#label-Option+with+Optional+Argument]
+- {Argument Converters}[#label-Argument+Converters]
+
 === Defining Options
 
 A common way to define an option in \OptionParser
@@ -71,6 +84,10 @@ and an option with two short names (aliases, in effect) <tt>-y</tt> and <tt>-z</
 
 Executions:
 
+  $ ruby short_names.rb --help
+  Usage: short_names [options]
+      -x                               Short name
+      -1, -%                           Two short names
   $ ruby short_names.rb -x
   ["x", true]
   $ ruby short_names.rb -1
@@ -103,12 +120,32 @@ and an option with two long names (aliases, in effect) <tt>--y1%</tt> and <tt>--
 
 Executions:
 
+  $ ruby long_names.rb --help
+  Usage: long_names [options]
+          --xxx                        Long name
+          --y1%, --z2#                 Two long names
   $ ruby long_names.rb --xxx
   ["-xxx", true]
   $ ruby long_names.rb --y1%
   ["--y1% or --z2#", true]
   $ ruby long_names.rb --z2#
   ["--y1% or --z2#", true]
+
+A long name may be defined with both positive and negative senses.
+
+File +long_with_negation.rb+ defines an option that has both senses.
+
+  :include: ruby/long_with_negation.rb
+
+Executions:
+
+  $ ruby long_with_negation.rb --help
+  Usage: long_with_negation [options]
+          --[no-]binary                Long name with negation
+  $ ruby long_with_negation.rb --binary
+  [true, TrueClass]
+  $ ruby long_with_negation.rb --no-binary
+  [false, FalseClass]
 
 ==== Mixing Option Names
 
@@ -122,14 +159,31 @@ defines options that each have both a short and a long name.
 
 Executions:
 
+  $ ruby mixed_names.rb --help
+  Usage: mixed_names [options]
+      -x, --xxx                        Short and long, no argument
+      -y, --yyyYYY                     Short and long, required argument
+      -z, --zzz [ZZZ]                  Short and long, optional argument
   $ ruby mixed_names.rb -x
   ["--xxx", true]
   $ ruby mixed_names.rb --xxx
   ["--xxx", true]
   $ ruby mixed_names.rb -y
-  ["--y1%", true]
-  $ ruby mixed_names.rb --y1%
-  ["--y1%", true]
+  mixed_names.rb:12:in `<main>': missing argument: -y (OptionParser::MissingArgument)
+  $ ruby mixed_names.rb -y FOO
+  ["--yyy", "FOO"]
+  $ ruby mixed_names.rb --yyy
+  mixed_names.rb:12:in `<main>': missing argument: --yyy (OptionParser::MissingArgument)
+  $ ruby mixed_names.rb --yyy BAR
+  ["--yyy", "BAR"]
+  $ ruby mixed_names.rb -z
+  ["--zzz", nil]
+  $ ruby mixed_names.rb -z BAZ
+  ["--zzz", "BAZ"]
+  $ ruby mixed_names.rb --zzz
+  ["--zzz", nil]
+  $ ruby mixed_names.rb --zzz BAT
+  ["--zzz", "BAT"]
 
 === Option Arguments
 
@@ -153,6 +207,10 @@ When an option is found, the given argument is yielded.
 
 Executions:
 
+  $ ruby required_argument.rb --help
+  Usage: required_argument [options]
+      -x, --xxx XXX                    Required argument via short name
+      -y, --y YYY                      Required argument via long name
   $ ruby required_argument.rb -x AAA
   ["--xxx", "AAA"]
   $ ruby required_argument.rb -y BBB
@@ -178,9 +236,23 @@ When an option with an argument is found, the given argument yielded.
 
 Executions:
 
+  $ ruby optional_argument.rb --help
+  Usage: optional_argument [options]
+      -x, --xxx [XXX]                  Optional argument via short  name
+      -y, --yyy [YYY]                  Optional argument via long name
   $ ruby optional_argument.rb -x AAA
   ["--xxx", "AAA"]
   $ ruby optional_argument.rb -y BBB
   ["--yyy", "BBB"]
 
 Omitting an optional argument does not raise an error.
+
+=== Argument Converters
+
+An option can specify that its argument is to be converted
+from the default \String to an instance of another class.
+
+There are a number of built-in converters.
+You can also define custom converters.
+
+See {Argument Converters}[./argument_converters_rdoc.html].
