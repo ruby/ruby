@@ -862,7 +862,7 @@ module RbInstall
       $made_dirs.fetch(d = without_destdir(dir)) do
         $made_dirs[d] = true
         super unless $dryrun
-        $installed_list.puts(d) if $installed_list
+        $installed_list.puts(d+"/") if $installed_list
       end
     end
   end
