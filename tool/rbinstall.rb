@@ -820,6 +820,11 @@ module RbInstall
       super unless $dryrun
       $installed_list.puts(without_destdir(spec_file)) if $installed_list
     end
+
+    def write_default_spec
+      super unless $dryrun
+      $installed_list.puts(without_destdir(default_spec_file)) if $installed_list
+    end
   end
 
   class GemInstaller
