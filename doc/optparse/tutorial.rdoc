@@ -44,7 +44,7 @@ The class also has:
   - {Option with No Argument}[#label-Option+with+No+Argument]
   - {Option with Required Argument}[#label-Option+with+Required+Argument]
   - {Option with Optional Argument}[#label-Option+with+Optional+Argument]
-- {Keyword Argument <tt>into<tt>}[#label-Keyword+Argument+into]
+- {Keyword Argument <tt>into</tt>}[#label-Keyword+Argument+into]
   - {Collecting Options}[#label-Collecting+Options]
   - {Checking for Missing Options}[#label-Checking+for+Missing+Options]
   - {Default Values for Options}[#label-Default+Values+for+Options]
