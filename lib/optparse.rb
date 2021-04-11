@@ -547,7 +547,7 @@ class OptionParser
     # Parses +arg+ and returns rest of +arg+ and matched portion to the
     # argument pattern. Yields when the pattern doesn't match substring.
     #
-    def parse_arg(arg)
+    def parse_arg(arg) # :nodoc:
       pattern or return nil, [arg]
       unless m = pattern.match(arg)
         yield(InvalidArgument, arg)
@@ -572,7 +572,7 @@ class OptionParser
     # conversion. Yields at semi-error condition instead of raising an
     # exception.
     #
-    def conv_arg(arg, val = [])
+    def conv_arg(arg, val = []) # :nodoc:
       if conv
         val = conv.call(*val)
       else
@@ -806,7 +806,7 @@ class OptionParser
     # +lopts+::  Long style option list.
     # +nlopts+:: Negated long style options list.
     #
-    def update(sw, sopts, lopts, nsw = nil, nlopts = nil)
+    def update(sw, sopts, lopts, nsw = nil, nlopts = nil) # :nodoc:
       sopts.each {|o| @short[o] = sw} if sopts
       lopts.each {|o| @long[o] = sw} if lopts
       nlopts.each {|o| @long[o] = nsw} if nsw and nlopts
@@ -1300,7 +1300,7 @@ XXX
   # +prv+:: Previously specified argument.
   # +msg+:: Exception message.
   #
-  def notwice(obj, prv, msg)
+  def notwice(obj, prv, msg) # :nodoc:
     unless !prv or prv == obj
       raise(ArgumentError, "argument #{msg} given twice: #{obj}",
             ParseError.filter_backtrace(caller(2)))
@@ -1732,7 +1732,7 @@ XXX
   # Traverses @stack, sending each element method +id+ with +args+ and
   # +block+.
   #
-  def visit(id, *args, &block)
+  def visit(id, *args, &block) # :nodoc:
     @stack.reverse_each do |el|
       el.__send__(id, *args, &block)
     end
@@ -1743,7 +1743,7 @@ XXX
   #
   # Searches +key+ in @stack for +id+ hash and returns or yields the result.
   #
-  def search(id, key)
+  def search(id, key) # :nodoc:
     block_given = block_given?
     visit(:search, id, key) do |k|
       return block_given ? yield(k) : k
@@ -1760,7 +1760,7 @@ XXX
   # +icase+:: Search case insensitive if true.
   # +pat+::   Optional pattern for completion.
   #
-  def complete(typ, opt, icase = false, *pat)
+  def complete(typ, opt, icase = false, *pat) # :nodoc:
     if pat.empty?
       search(typ, opt) {|sw| return [sw, opt]} # exact match or...
     end
