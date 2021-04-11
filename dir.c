@@ -3261,7 +3261,7 @@ fnmatch_brace(const char *pattern, VALUE val, void *enc)
  *     File.fnmatch('**.rb', 'main.rb')                    #=> true
  *     File.fnmatch('**.rb', './main.rb')                  #=> false
  *     File.fnmatch('**.rb', 'lib/song.rb')                #=> true
- *     File.fnmatch('*',           'dave/.profile')                      #=> true
+ *     File.fnmatch('*',     'dave/.profile')              #=> true
  *
  *     pattern = '*' '/' '*'
  *     File.fnmatch(pattern, 'dave/.profile', File::FNM_PATHNAME)  #=> false
