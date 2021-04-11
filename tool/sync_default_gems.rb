@@ -355,7 +355,9 @@ IGNORE_FILE_PATTERN =
   |\.git.*
   |[A-Z]\w+file
   |COPYING
-  )\z/x
+  )\z|
+  |rakelib\/
+  /x
 
 def message_filter(repo, sha)
   log = STDIN.read
