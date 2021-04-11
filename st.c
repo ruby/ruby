@@ -1244,8 +1244,13 @@ update_range_for_deleted(st_table *tab, st_index_t n)
 {
     /* Do not update entries_bound here.  Otherwise, we can fill all
        bins by deleted entry value before rebuilding the table.  */
-    if (tab->entries_start == n)
-        tab->entries_start = n + 1;
+    if (tab->entries_start == n) {
+        st_index_t start = n + 1;
+        st_index_t bound = tab->entries_bound;
+        st_table_entry *entries = tab->entries;
+        while (start < bound && DELETED_ENTRY_P(&entries[start])) start++;
+        tab->entries_start = start;
+    }
 }
 
 /* Delete entry with KEY from table TAB, set up *VALUE (unless
