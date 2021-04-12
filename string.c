@@ -9667,6 +9667,42 @@ rb_str_oct(VALUE str)
     return rb_str_to_inum(str, -8, FALSE);
 }
 
+#ifndef HAVE_CRYPT_R
+# include "ruby/thread_native.h"
+# include "ruby/atomic.h"
+
+static struct {
+    rb_atomic_t initialized;
+    rb_nativethread_lock_t lock;
+} crypt_mutex;
+
+static void
+crypt_mutex_destroy(void)
+{
+    RUBY_ASSERT_ALWAYS(crypt_mutex.initialized == 1);
+    rb_nativethread_lock_destroy(&crypt_mutex.lock);
+    crypt_mutex.initialized = 0;
+}
+
+static void
+crypt_mutex_initialize(void)
+{
+    rb_atomic_t i;
+    while ((i = RUBY_ATOMIC_CAS(crypt_mutex.initialized, 0, 2)) == 2);
+    switch (i) {
+      case 0:
+	rb_nativethread_lock_initialize(&crypt_mutex.lock);
+	atexit(crypt_mutex_destroy);
+	RUBY_ASSERT(crypt_mutex.initialized == 2);
+	RUBY_ATOMIC_CAS(crypt_mutex.initialized, 2, 1);
+	break;
+      case 1:
+	break;
+      default:
+	rb_bug("crypt_mutex.initialized: %d->%d", i, crypt_mutex.initialized);
+    }
+}
+#endif
 
 /*
  *  call-seq:
@@ -9737,7 +9773,7 @@ rb_str_crypt(VALUE str, VALUE salt)
 #   define CRYPT_END() ALLOCV_END(databuf)
 #else
     extern char *crypt(const char *, const char *);
-#   define CRYPT_END() (void)0
+#   define CRYPT_END() rb_nativethread_lock_unlock(&crypt_mutex.lock)
 #endif
     VALUE result;
     const char *s, *saltp;
@@ -9770,6 +9806,8 @@ rb_str_crypt(VALUE str, VALUE salt)
 # endif
     res = crypt_r(s, saltp, data);
 #else
+    crypt_mutex_initialize();
+    rb_nativethread_lock_lock(&crypt_mutex.lock);
     res = crypt(s, saltp);
 #endif
     if (!res) {
