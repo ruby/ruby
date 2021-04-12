@@ -21,15 +21,6 @@
 # include <unistd.h>
 #endif
 
-#if defined HAVE_CRYPT_R
-# if defined HAVE_CRYPT_H
-#  include <crypt.h>
-# endif
-#elif !defined HAVE_CRYPT
-# include "missing/crypt.h"
-# define HAVE_CRYPT_R 1
-#endif
-
 #include "debug_counter.h"
 #include "encindex.h"
 #include "gc.h"
@@ -54,6 +45,15 @@
 #include "ruby/util.h"
 #include "ruby_assert.h"
 #include "vm_sync.h"
+
+#if defined HAVE_CRYPT_R
+# if defined HAVE_CRYPT_H
+#  include <crypt.h>
+# endif
+#elif !defined HAVE_CRYPT
+# include "missing/crypt.h"
+# define HAVE_CRYPT_R 1
+#endif
 
 #define BEG(no) (regs->beg[(no)])
 #define END(no) (regs->end[(no)])
