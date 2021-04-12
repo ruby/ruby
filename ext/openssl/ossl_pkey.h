@@ -35,6 +35,7 @@ extern const rb_data_type_t ossl_evp_pkey_type;
     } \
 } while (0)
 
+/* Takes ownership of the EVP_PKEY */
 VALUE ossl_pkey_new(EVP_PKEY *);
 void ossl_pkey_check_public_key(const EVP_PKEY *);
 EVP_PKEY *ossl_pkey_read_generic(BIO *, VALUE);
