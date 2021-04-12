@@ -583,6 +583,7 @@ typedef struct RVALUE {
 	struct RMatch  match;
 	struct RRational rational;
 	struct RComplex complex;
+        struct RSymbol symbol;
 	union {
 	    rb_cref_t cref;
 	    struct vm_svar svar;
