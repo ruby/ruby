@@ -577,7 +577,13 @@ rb_stat_cmp(VALUE self, VALUE other)
 static VALUE
 rb_stat_dev(VALUE self)
 {
+#if SIZEOF_STRUCT_STAT_ST_DEV <= SIZEOF_DEV_T
     return DEVT2NUM(get_stat(self)->st_dev);
+#elif SIZEOF_STRUCT_STAT_ST_DEV <= SIZEOF_LONG
+    return ULONG2NUM(get_stat(self)->st_dev);
+#else
+    return ULL2NUM(get_stat(self)->st_dev);
+#endif
 }
 
 /*
@@ -747,7 +753,13 @@ static VALUE
 rb_stat_rdev(VALUE self)
 {
 #ifdef HAVE_STRUCT_STAT_ST_RDEV
+# if SIZEOF_STRUCT_STAT_ST_RDEV <= SIZEOF_DEV_T
     return DEVT2NUM(get_stat(self)->st_rdev);
+# elif SIZEOF_STRUCT_STAT_ST_RDEV <= SIZEOF_LONG
+    return ULONG2NUM(get_stat(self)->st_rdev);
+# else
+    return ULL2NUM(get_stat(self)->st_rdev);
+# endif
 #else
     return Qnil;
 #endif
@@ -6254,7 +6266,11 @@ path_check_0(VALUE path)
 #endif
 	    && !access(p0, W_OK)) {
 	    rb_enc_warn(enc, "Insecure world writable dir %s in PATH, mode 0%"
+#if SIZEOF_DEV_T > SIZEOF_INT
 			PRI_MODET_PREFIX"o",
+#else
+			"o",
+#endif
 			p0, st.st_mode);
 	    if (p) *p = '/';
 	    RB_GC_GUARD(path);

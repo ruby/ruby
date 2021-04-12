@@ -1693,6 +1693,7 @@ RUBY_CHECK_SIGNEDNESS(size_t, [AC_MSG_ERROR(size_t is signed)], [],
 		      [@%:@include <sys/types.h>])
 RUBY_CHECK_SIZEOF(size_t, [int long void*], [], [@%:@include <sys/types.h>])
 RUBY_CHECK_SIZEOF(ptrdiff_t, size_t, [], [@%:@include <stddef.h>])
+RUBY_CHECK_SIZEOF(dev_t)
 RUBY_CHECK_PRINTF_PREFIX(size_t, z)
 RUBY_CHECK_PRINTF_PREFIX(ptrdiff_t, t)
 AC_CHECK_MEMBERS([struct stat.st_blksize])
@@ -1703,6 +1704,10 @@ AS_IF([test "$ac_cv_member_struct_stat_st_blocks" = yes], [
     RUBY_CHECK_SIZEOF([struct stat.st_blocks], [off_t int long "long long"], [], [@%:@include <sys/stat.h>])
 ])
 RUBY_CHECK_SIZEOF([struct stat.st_ino], [long "long long"], [], [@%:@include <sys/stat.h>])
+RUBY_CHECK_SIZEOF([struct stat.st_dev], [dev_t int long "long long"], [], [@%:@include <sys/stat.h>])
+AS_IF([test "$ac_cv_member_struct_stat_st_rdev" = yes], [
+    RUBY_CHECK_SIZEOF([struct stat.st_rdev], [dev_t int long "long long"], [], [@%:@include <sys/stat.h>])
+])
 AC_CHECK_MEMBERS([struct stat.st_atim])
 AC_CHECK_MEMBERS([struct stat.st_atimespec])
 AC_CHECK_MEMBERS([struct stat.st_atimensec])
