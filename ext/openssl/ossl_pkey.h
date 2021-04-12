@@ -15,19 +15,10 @@ extern VALUE cPKey;
 extern VALUE ePKeyError;
 extern const rb_data_type_t ossl_evp_pkey_type;
 
-#define OSSL_PKEY_SET_PRIVATE(obj) rb_iv_set((obj), "private", Qtrue)
-#define OSSL_PKEY_SET_PUBLIC(obj)  rb_iv_set((obj), "private", Qfalse)
-#define OSSL_PKEY_IS_PRIVATE(obj)  (rb_iv_get((obj), "private") == Qtrue)
+/* For ENGINE */
+#define OSSL_PKEY_SET_PRIVATE(obj) rb_ivar_set((obj), rb_intern("private"), Qtrue)
+#define OSSL_PKEY_IS_PRIVATE(obj)  (rb_attr_get((obj), rb_intern("private")) == Qtrue)
 
-#define NewPKey(klass) \
-    TypedData_Wrap_Struct((klass), &ossl_evp_pkey_type, 0)
-#define SetPKey(obj, pkey) do { \
-    if (!(pkey)) { \
-	rb_raise(rb_eRuntimeError, "PKEY wasn't initialized!"); \
-    } \
-    RTYPEDDATA_DATA(obj) = (pkey); \
-    OSSL_PKEY_SET_PUBLIC(obj); \
-} while (0)
 #define GetPKey(obj, pkey) do {\
     TypedData_Get_Struct((obj), EVP_PKEY, &ossl_evp_pkey_type, (pkey)); \
     if (!(pkey)) { \
