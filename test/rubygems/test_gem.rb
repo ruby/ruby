@@ -1975,7 +1975,7 @@ class TestGem < Gem::TestCase
 
       expected = <<-EXPECTED
 Could not find gem 'a' in locally installed gems.
-You may need to `gem install -g` to install missing gems
+You may need to `bundle install` to install missing gems
 
       EXPECTED
 
