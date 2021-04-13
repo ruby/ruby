@@ -1109,21 +1109,22 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
     ENV["BUNDLE_GEMFILE"] ||= File.expand_path(path)
     require 'rubygems/user_interaction'
-    Gem::DefaultUserInteraction.use_ui(ui) do
-      require "bundler"
-      begin
-        Bundler.ui.silence do
-          @gemdeps = Bundler.setup
+    require "bundler"
+    begin
+      Gem::DefaultUserInteraction.use_ui(ui) do
+        begin
+          Bundler.ui.silence do
+            @gemdeps = Bundler.setup
+          end
+        ensure
+          Gem::DefaultUserInteraction.ui.close
         end
-      ensure
-        Gem::DefaultUserInteraction.ui.close
       end
+    rescue Bundler::BundlerError => e
+      warn e.message
+      warn "You may need to `gem install -g` to install missing gems"
+      warn ""
     end
-
-  rescue Gem::LoadError, Gem::UnsatisfiableDependencyError, (defined?(Bundler::GemNotFound) ? Bundler::GemNotFound : Gem::LoadError) => e
-    warn e.message
-    warn "You may need to `gem install -g` to install missing gems"
-    warn ""
   end
 
   ##
