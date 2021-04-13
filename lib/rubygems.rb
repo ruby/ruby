@@ -1122,7 +1122,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
       end
     rescue Bundler::BundlerError => e
       warn e.message
-      warn "You may need to `gem install -g` to install missing gems"
+      warn "You may need to `bundle install` to install missing gems"
       warn ""
     end
   end
