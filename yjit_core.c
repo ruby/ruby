@@ -283,7 +283,18 @@ int ctx_diff(const ctx_t* src, const ctx_t* dst)
 
     diff += self_diff;
 
-    // TODO: when we track local types, need to check them too
+    // For each local type we track
+    for (size_t i = 0; i < MAX_LOCAL_TYPES; ++i)
+    {
+        val_type_t t_src = src->local_types[i];
+        val_type_t t_dst = dst->local_types[i];
+        int temp_diff = type_diff(t_src, t_dst);
+
+        if (temp_diff == INT_MAX)
+            return INT_MAX;
+
+        diff += temp_diff;
+    }
 
     // For each value on the temp stack
     for (size_t i = 0; i < src->stack_size; ++i)
@@ -658,7 +669,6 @@ void gen_branch(
 )
 {
     RUBY_ASSERT(target0.iseq != NULL);
-    //RUBY_ASSERT(target1.iseq != NULL);
     RUBY_ASSERT_ALWAYS(num_branches < MAX_BRANCHES);
     uint32_t branch_idx = num_branches++;
 
@@ -878,7 +888,7 @@ invalidate_block_version(block_t* block)
 
     // For each incoming branch
     uint32_t* branch_idx;
-    rb_darray_foreach(block->incoming, i, branch_idx)
+    rb_darray_foreach(block->incoming, incoming_idx, branch_idx)
     {
         //uint32_t branch_idx = block->incoming[i];
         branch_t* branch = &branch_entries[*branch_idx];
