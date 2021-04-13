@@ -50,6 +50,43 @@ The class also has:
   - {Checking for Missing Options}[#label-Checking+for+Missing+Options]
   - {Default Values for Options}[#label-Default+Values+for+Options]
 - {Argument Converters}[#label-Argument+Converters]
+- {Help}[#label-Help]
+
+=== To Begin With
+
+To use \OptionParser:
+
+1. Require the \OptionParser code.
+2. Create an \OptionParser object.
+3. Define one or more options.
+4. Parse the command line.
+
+File +basic.rb+ defines three options, <tt>-x</tt>,
+<tt>-y</tt>, and <tt>-z</tt>, each with a descriptive string,
+and each with a block.
+
+  :include: ruby/basic.rb
+
+From these defined options, the parser automatically builds help text:
+
+  $ ruby basic.rb --help
+  Usage: basic [options]
+      -x                               Whether to X
+      -y                               Whether to Y
+      -z                               Whether to Z
+
+When an option is found during parsing,
+the block defined for the option is called with the argument value.
+
+Executions:
+
+  $ ruby basic.rb -x -z
+  ["x", true]
+  ["z", true]
+  $ ruby basic.rb -z -y -x
+  ["z", true]
+  ["y", true]
+  ["x", true]
 
 === To Begin With
 
@@ -422,3 +459,71 @@ Executions:
 You can also define custom converters.
 See {Argument Converters}[./argument_converters_rdoc.html]
 for both built-in and custom converters.
+
+=== Help
+
+\OptionParser makes automatically generated help text available.
+
+The help text consists of:
+
+- A banner, showing the usage.
+- Option short and long names.
+- Option dummy argument names.
+- Option descriptions.
+
+Example code:
+
+  :include: ruby/help.rb
+
+The option names and dummy argument names are defined as described above.
+
+The option description consists of the strings that are not themselves option names;
+An option can have more than one description string.
+Execution:
+
+  Usage: help [options]
+      -x, --xxx                        Adipiscing elit. Aenean commodo ligula eget.
+                                       Aenean massa. Cum sociis natoque penatibus
+      -y, --yyy YYY                    Lorem ipsum dolor sit amet, consectetuer.
+      -z, --zzz [ZZZ]                  Et magnis dis parturient montes, nascetur
+                                       ridiculus mus. Donec quam felis, ultricies
+                                       nec, pellentesque eu, pretium quis, sem.
+
+The program name is included in the default banner:
+<tt>Usage: #{program_name} [options]</tt>;
+you can change the program name.
+
+  :include: ruby/help_program_name.rb
+
+Execution:
+
+  $ ruby help_program_name.rb --help
+  Usage: help_program_name.rb [options]
+
+You can also change the entire banner.
+
+  :include: ruby/help_banner.rb
+
+Execution:
+
+  $ ruby help_banner.rb --help
+  Usage: ruby help_banner.rb
+
+By default, the option names are indented 4 spaces
+and the width of the option-names field is 32 spaces.
+
+You can change these values, along with the banner,
+by passing parameters to OptionParser.new.
+
+  :include: ruby/help_format.rb
+
+Execution:
+
+  $ ruby help_format.rb --help
+  ruby help_format.rb [options]
+    -x, --xxx            Adipiscing elit. Aenean commodo ligula eget.
+                         Aenean massa. Cum sociis natoque penatibus
+    -y, --yyy YYY        Lorem ipsum dolor sit amet, consectetuer.
+    -z, --zzz [ZZZ]      Et magnis dis parturient montes, nascetur
+                         ridiculus mus. Donec quam felis, ultricies
+                         nec, pellentesque eu, pretium quis, sem.
