@@ -13,7 +13,7 @@
 #define MAX_VERSIONS 4
 
 // Maximum number of branch instructions we can track
-#define MAX_BRANCHES 100000
+#define MAX_BRANCHES 250000
 
 // Registered branch entries
 branch_t branch_entries[MAX_BRANCHES];
