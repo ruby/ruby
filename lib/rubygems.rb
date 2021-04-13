@@ -1120,15 +1120,10 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
       end
     end
 
-  rescue => e
-    case e
-    when Gem::LoadError, Gem::UnsatisfiableDependencyError, (defined?(Bundler::GemNotFound) ? Bundler::GemNotFound : Gem::LoadError)
-      warn e.message
-      warn "You may need to `gem install -g` to install missing gems"
-      warn ""
-    else
-      raise
-    end
+  rescue Gem::LoadError, Gem::UnsatisfiableDependencyError, (defined?(Bundler::GemNotFound) ? Bundler::GemNotFound : Gem::LoadError) => e
+    warn e.message
+    warn "You may need to `gem install -g` to install missing gems"
+    warn ""
   end
 
   ##
