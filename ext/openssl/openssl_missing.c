@@ -10,9 +10,6 @@
 #include RUBY_EXTCONF_H
 
 #include <string.h> /* memcpy() */
-#if !defined(OPENSSL_NO_ENGINE)
-# include <openssl/engine.h>
-#endif
 #include <openssl/x509_vfy.h>
 
 #include "openssl_missing.h"

@@ -9,6 +9,10 @@
  */
 #include "ossl.h"
 
+#ifdef OSSL_USE_ENGINE
+# include <openssl/engine.h>
+#endif
+
 /*
  * Classes
  */
