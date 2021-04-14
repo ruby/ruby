@@ -292,11 +292,8 @@ class Reline::Config
   end
 
   def retrieve_string(str)
-    if str =~ /\A"(.*)"\z/
-      parse_keyseq($1).map(&:chr).join
-    else
-      parse_keyseq(str).map(&:chr).join
-    end
+    str = $1 if str =~ /\A"(.*)"\z/
+    parse_keyseq(str).map { |c| c.chr(Reline::IOGate.encoding) }.join
   end
 
   def bind_key(key, func_name)

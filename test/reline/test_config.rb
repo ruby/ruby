@@ -286,6 +286,16 @@ class Reline::Config::Test < Reline::TestCase
     ENV['INPUTRC'] = inputrc_backup
   end
 
+  def test_inputrc_with_utf
+    @config.read_lines(<<~'LINES'.lines)
+      set editing-mode vi
+      set vi-cmd-mode-string 🍸
+      set vi-ins-mode-string 🍶
+    LINES
+    assert_equal @config.vi_cmd_mode_string, "🍸"
+    assert_equal @config.vi_ins_mode_string, "🍶"
+  end
+
   def test_xdg_config_home
     home_backup = ENV['HOME']
     xdg_config_home_backup = ENV['XDG_CONFIG_HOME']
