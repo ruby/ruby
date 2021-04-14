@@ -25,8 +25,4 @@ Gem::Specification.new do |s|
   s.email = [nil, "kou@cozmixng.org"]
   s.homepage = "https://github.com/ruby/strscan"
   s.licenses = ["Ruby", "BSD-2-Clause"]
-
-  s.add_development_dependency "rake-compiler"
-  s.add_development_dependency "benchmark-driver"
-  s.add_development_dependency "test-unit"
 end
