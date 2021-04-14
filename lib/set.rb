@@ -62,6 +62,160 @@
 #
 # - Akinori MUSHA <<knu@iDaemons.org>> (current maintainer)
 #
+# ## What's Here
+#
+# First, what's elsewhere. \Set includes the module Enumerable,
+# which provides dozens of additional methods.
+#
+# In particular, class \Set does not have many methods of its own
+# for fetching or for iterating.
+# Instead, it relies on those in \Enumerable.
+#
+# Here, class \Set provides methods that are useful for:
+#
+# - [Creating a Set](#class-Set-label-Methods+for+Creating+a+Set)
+# - [Set Operations](#class-Set-label-Methods+for+Set+Operations)
+# - [Comparing](#class-Set-label-Methods+for+Comparing)
+# - [Querying](#class-Set-label-Methods+for+Querying)
+# - [Assigning](#class-Set-label-Methods+for+Assigning)
+# - [Deleting](#class-Set-label-Methods+for+Deleting)
+# - [Converting](#class-Set-label-Methods+for+Converting)
+# - [Iterating](#class-Set-label-Methods+for+Iterating)
+# - [And more....](#class-Set-label-Other+Methods)
+#
+# ### Methods for Creating a \Set
+#
+# - ::[] -
+#   Returns a new set containing the given objects.
+# - ::new -
+#   Returns a new set containing either the given objects
+#   (if no block given) or the return values from the called block
+#   (if a block given).
+#
+# ### Methods for \Set Operations
+#
+# - [|](Set.html#method-i-7C) (aliased as #union and #+) -
+#   Returns a new set containing all elements from +self+
+#   and all elements from a given enumerable (no duplicates).
+# - [&](Set.html#method-i-26) (aliased as #intersection) -
+#   Returns a new set containing all elements common to +self+
+#   and a given enumerable.
+# - [-](Set.html#method-i-2D) (aliased as #difference) -
+#   Returns a copy of +self+ with all elements
+#   in a given enumerable removed.
+# - [\^](Set.html#method-i-5E) -
+#   Returns a new set containing all elements from +self+
+#   and a given enumerable except those common to both.
+#
+# ### Methods for Comparing
+#
+# - [<=>](Set.html#method-i-3C-3D-3E) -
+#   Returns -1, 0, or 1 as +self+ is less than, equal to,
+#   or greater than a given object.
+# - [==](Set.html#method-i-3D-3D) -
+#   Returns whether +self+ and a given enumerable are equal,
+#   as determined by Object#eql?.
+# - \#compare_by_identity? -
+#   Returns whether the set considers only identity
+#   when comparing elements.
+#
+# ### Methods for Querying
+#
+# - \#length (aliased as #size) -
+#   Returns the count of elements.
+# - \#empty? -
+#   Returns whether the set has no elements.
+# - \#include? (aliased as #member? and #===) -
+#   Returns whether a given object is an element in the set.
+# - \#subset? (aliased as [<=](Set.html#method-i-3C-3D)) -
+#   Returns whether a given object is a subset of the set.
+# - \#proper_subset? (aliased as [<](Set.html#method-i-3C)) -
+#   Returns whether a given enumerable is a proper subset of the set.
+# - \#superset? (aliased as [<=](Set.html#method-i-3E-3D])) -
+#   Returns whether a given enumerable is a superset of the set.
+# - \#proper_superset? (aliased as [>](Set.html#method-i-3E)) -
+#   Returns whether a given enumerable is a proper superset of the set.
+# - \#disjoint? -
+#   Returns +true+ if the set and a given enumerable
+#   have no common elements, +false+ otherwise.
+# - \#intersect? -
+#   Returns +true+ if the set and a given enumerable -
+#   have any common elements, +false+ otherwise.
+# - \#compare_by_identity? -
+#   Returns whether the set considers only identity
+#   when comparing elements.
+#
+# ### Methods for Assigning
+#
+# - \#add (aliased as #<<) -
+#   Adds a given object to the set; returns +self+.
+# - \#add? -
+#   If the given object is not an element in the set,
+#   adds it and returns +self+; otherwise, returns +nil+.
+# - \#merge -
+#   Adds each given object to the set; returns +self+.
+# - \#replace -
+#   Replaces the contents of the set with the contents
+#   of a given enumerable.
+#
+# ### Methods for Deleting
+#
+# - \#clear -
+#   Removes all elements in the set; returns +self+.
+# - \#delete -
+#   Removes a given object from the set; returns +self+.
+# - \#delete? -
+#   If the given object is an element in the set,
+#   removes it and returns +self+; otherwise, returns +nil+.
+# - \#subtract -
+#   Removes each given object from the set; returns +self+.
+# - \#delete_if - Removes elements specified by a given block.
+# - \#select! (aliased as #filter!) -
+#   Removes elements not specified by a given block.
+# - \#keep_if -
+#   Removes elements not specified by a given block.
+# - \#reject!
+#   Removes elements specified by a given block.
+#
+# ### Methods for Converting
+#
+# - \#classify -
+#   Returns a hash that classifies the elements,
+#   as determined by the given block.
+# - \#collect! (aliased as #map!) -
+#   Replaces each element with a block return-value.
+# - \#divide -
+#   Returns a hash that classifies the elements,
+#   as determined by the given block;
+#   differs from #classify in that the block may accept
+#   either one or two arguments.
+# - \#flatten -
+#   Returns a new set that is a recursive flattening of +self+.
+#  \#flatten! -
+#   Replaces each nested set in +self+ with the elements from that set.
+# - \#inspect (aliased as #to_s) -
+#   Returns a string displaying the elements.
+# - \#join -
+#   Returns a string containing all elements, converted to strings
+#   as needed, and joined by the given record separator.
+# - \#to_a -
+#   Returns an array containing all set elements.
+# - \#to_set -
+#   Returns +self+ if given no arguments and no block;
+#   with a block given, returns a new set consisting of block
+#   return values.
+#
+# ### Methods for Iterating
+#
+# - \#each -
+#   Calls the block with each successive element; returns +self+.
+#
+# ### Other Methods
+#
+# - \#reset -
+#   Resets the internal state; useful if an object
+#   has been modified while an element in the set.
+#
 class Set
   include Enumerable
 
