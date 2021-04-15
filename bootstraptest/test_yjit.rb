@@ -89,6 +89,20 @@ assert_equal '0', %q{
     retval = foo()
 }
 
+# Passing argument types to callees
+assert_equal '8.5', %q{
+    def foo(x, y)
+        x + y
+    end
+
+    def bar
+        foo(7, 1.5)
+    end
+
+    bar
+    bar
+}
+
 # Recursive Ruby-to-Ruby calls
 assert_equal '21', %q{
     def fib(n)
