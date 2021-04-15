@@ -1774,42 +1774,14 @@ gen_oswb_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
     // Stub so we can return to JITted code
     blockid_t return_block = { jit->iseq, jit_next_insn_idx(jit) };
 
-
     // Create a context for the callee
     ctx_t callee_ctx = DEFAULT_CTX;
 
     // Set the argument type in the callee's context
     for (int32_t arg_idx = 0; arg_idx < argc; ++arg_idx) {
-        fprintf(stderr, "set arg type, arg_idx=%d\n", arg_idx);
-
-        // x is arg0, but pushed last
-
         val_type_t arg_type = ctx_get_opnd_type(ctx, OPND_STACK(argc - arg_idx - 1));
-
-        if (arg_type.type == ETYPE_FIXNUM)
-            fprintf(stderr, "is fixnum\n");
-        else
-            fprintf(stderr, "not fixnum\n");
-
         ctx_set_local_type(&callee_ctx, arg_idx, arg_type);
     }
-
-
-
-    fprintf(stderr, "local types\n");
-    for (int32_t local_idx = 0; local_idx < argc; ++local_idx) {
-        fprintf(stderr, "local_idx=%d\n", local_idx);
-
-        val_type_t type = callee_ctx.local_types[local_idx];
-
-        if (type.type == ETYPE_FIXNUM)
-            fprintf(stderr, "is fixnum\n");
-        else
-            fprintf(stderr, "not fixnum\n");
-    }
-
-
-
 
     // Pop arguments and receiver in return context, push the return value
     // After the return, the JIT and interpreter SP will match up
