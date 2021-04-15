@@ -124,7 +124,7 @@ File.foreach "config.status" do |line|
       if universal
         platform = val.sub(/universal/, %q[#{arch && universal[/(?:\A|\s)#{Regexp.quote(arch)}=(\S+)/, 1] || RUBY_PLATFORM[/\A[^-]*/]}])
       end
-    when /^oldincludedir$/
+    when /^includedir$/
       val = '"$(SDKROOT)"'+val if /darwin/ =~ arch
     end
     v = "  CONFIG[\"#{name}\"] #{eq} #{val}\n"
@@ -269,7 +269,15 @@ print <<EOS if $unicode_emoji_version
   CONFIG["UNICODE_EMOJI_VERSION"] = #{$unicode_emoji_version.dump}
 EOS
 print <<EOS if /darwin/ =~ arch
-  CONFIG["SDKROOT"] = "\#{ENV['SDKROOT']}" # don't run xcrun every time, usually useless.
+  if sdkroot = ENV["SDKROOT"]
+    sdkroot = sdkroot.dup
+  elsif File.exist?(File.join(CONFIG["prefix"], "include")) ||
+        !(sdkroot = (IO.popen(%w[/usr/bin/xcrun --sdk macosx --show-sdk-path], in: IO::NULL, err: IO::NULL, &:read) rescue nil))
+    sdkroot = +""
+  else
+    sdkroot.chomp!
+  end
+  CONFIG["SDKROOT"] = sdkroot
 EOS
 print <<EOS
   CONFIG["platform"] = #{platform || '"$(arch)"'}
