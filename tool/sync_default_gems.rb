@@ -101,6 +101,7 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/bundler/bundler.gemspec", "lib/bundler")
     cp_r("#{upstream}/bundler/spec", "spec/bundler")
     cp_r(Dir.glob("#{upstream}/bundler/man/*.{1,5,1\.txt,5\.txt,ronn}"), "man")
+    `git checkout lib/bundler/bundler.gemspec`
     rm_rf(%w[spec/bundler/support/artifice/vcr_cassettes])
   when "rdoc"
     rm_rf(%w[lib/rdoc lib/rdoc.rb test/rdoc libexec/rdoc libexec/ri])
