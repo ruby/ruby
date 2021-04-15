@@ -168,6 +168,15 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     @cmd.options[:args]          = []
     @cmd.options[:system]        = "2.5.1"
 
+    oldest_version_mod = Module.new do
+      def oldest_supported_version
+        Gem::Version.new("2.5.2")
+      end
+      private :oldest_supported_version
+    end
+
+    @cmd.extend(oldest_version_mod)
+
     assert_raises Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
@@ -175,7 +184,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     end
 
     assert_empty @ui.output
-    assert_equal "ERROR:  rubygems 2.5.1 is not supported. The oldest supported version is 2.5.2\n", @ui.error
+    assert_equal "ERROR:  rubygems 2.5.1 is not supported on #{RUBY_VERSION}. The oldest version supported by this ruby is 2.5.2\n", @ui.error
   end
 
   def test_execute_system_specific_older_than_3_2_removes_plugins_dir
@@ -184,6 +193,15 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
         s.files = %w[setup.rb]
       end
     end
+
+    oldest_version_mod = Module.new do
+      def oldest_supported_version
+        Gem::Version.new("2.5.2")
+      end
+      private :oldest_supported_version
+    end
+
+    @cmd.extend(oldest_version_mod)
 
     @cmd.options[:args]          = []
     @cmd.options[:system]        = "3.1"
@@ -202,6 +220,15 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
         s.files = %w[setup.rb]
       end
     end
+
+    oldest_version_mod = Module.new do
+      def oldest_supported_version
+        Gem::Version.new("2.5.2")
+      end
+      private :oldest_supported_version
+    end
+
+    @cmd.extend(oldest_version_mod)
 
     @cmd.options[:args]          = []
     @cmd.options[:system]        = "3.2.a"
