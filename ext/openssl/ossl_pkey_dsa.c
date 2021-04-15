@@ -266,47 +266,6 @@ ossl_dsa_get_params(VALUE self)
 
 /*
  *  call-seq:
- *    dsa.public_key -> aDSA
- *
- * Returns a new DSA instance that carries just the public key information.
- * If the current instance has also private key information, this will no
- * longer be present in the new instance. This feature is helpful for
- * publishing the public key information without leaking any of the private
- * information.
- *
- * === Example
- *  dsa = OpenSSL::PKey::DSA.new(2048) # has public and private information
- *  pub_key = dsa.public_key # has only the public part available
- *  pub_key_der = pub_key.to_der # it's safe to publish this
- *
- *
- */
-static VALUE
-ossl_dsa_to_public_key(VALUE self)
-{
-    EVP_PKEY *pkey, *pkey_new;
-    DSA *dsa;
-    VALUE obj;
-
-    GetPKeyDSA(self, pkey);
-    obj = rb_obj_alloc(rb_obj_class(self));
-    GetPKey(obj, pkey_new);
-
-#define DSAPublicKey_dup(dsa) (DSA *)ASN1_dup( \
-	(i2d_of_void *)i2d_DSAPublicKey, (d2i_of_void *)d2i_DSAPublicKey, (char *)(dsa))
-    dsa = DSAPublicKey_dup(EVP_PKEY_get0_DSA(pkey));
-#undef DSAPublicKey_dup
-    if (!dsa)
-        ossl_raise(eDSAError, "DSAPublicKey_dup");
-    if (!EVP_PKEY_assign_DSA(pkey_new, dsa)) {
-        DSA_free(dsa);
-        ossl_raise(eDSAError, "EVP_PKEY_assign_DSA");
-    }
-    return obj;
-}
-
-/*
- *  call-seq:
  *    dsa.syssign(string) -> aString
  *
  * Computes and returns the DSA signature of _string_, where _string_ is
@@ -445,7 +404,6 @@ Init_ossl_dsa(void)
     rb_define_alias(cDSA, "to_pem", "export");
     rb_define_alias(cDSA, "to_s", "export");
     rb_define_method(cDSA, "to_der", ossl_dsa_to_der, 0);
-    rb_define_method(cDSA, "public_key", ossl_dsa_to_public_key, 0);
     rb_define_method(cDSA, "syssign", ossl_dsa_sign, 1);
     rb_define_method(cDSA, "sysverify", ossl_dsa_verify, 2);
 

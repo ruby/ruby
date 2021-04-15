@@ -69,29 +69,28 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
   end
 
   def test_new
-    key = OpenSSL::PKey::RSA.new 512
-    pem  = key.public_key.to_pem
-    OpenSSL::PKey::RSA.new pem
-    assert_equal([], OpenSSL.errors)
-  end
-
-  def test_new_exponent_default
-    assert_equal(65537, OpenSSL::PKey::RSA.new(512).e)
-  end
-
-  def test_new_with_exponent
-    1.upto(30) do |idx|
-      e = (2 ** idx) + 1
-      key = OpenSSL::PKey::RSA.new(512, e)
-      assert_equal(e, key.e)
-    end
-  end
-
-  def test_generate
-    key = OpenSSL::PKey::RSA.generate(512, 17)
+    key = OpenSSL::PKey::RSA.new(512)
     assert_equal 512, key.n.num_bits
-    assert_equal 17, key.e
+    assert_equal 65537, key.e
     assert_not_nil key.d
+
+    # Specify public exponent
+    key2 = OpenSSL::PKey::RSA.new(512, 3)
+    assert_equal 512, key2.n.num_bits
+    assert_equal 3, key2.e
+    assert_not_nil key2.d
+  end
+
+  def test_s_generate
+    key1 = OpenSSL::PKey::RSA.generate(512)
+    assert_equal 512, key1.n.num_bits
+    assert_equal 65537, key1.e
+
+    # Specify public exponent
+    key2 = OpenSSL::PKey::RSA.generate(512, 3)
+    assert_equal 512, key2.n.num_bits
+    assert_equal 3, key2.e
+    assert_not_nil key2.d
   end
 
   def test_new_break

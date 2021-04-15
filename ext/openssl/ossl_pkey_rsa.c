@@ -390,7 +390,7 @@ ossl_rsa_private_decrypt(int argc, VALUE *argv, VALUE self)
  *   data = "Sign me!"
  *   pkey = OpenSSL::PKey::RSA.new(2048)
  *   signature = pkey.sign_pss("SHA256", data, salt_length: :max, mgf1_hash: "SHA256")
- *   pub_key = pkey.public_key
+ *   pub_key = OpenSSL::PKey.read(pkey.public_to_der)
  *   puts pub_key.verify_pss("SHA256", signature, data,
  *                           salt_length: :auto, mgf1_hash: "SHA256") # => true
  */
@@ -588,61 +588,6 @@ ossl_rsa_get_params(VALUE self)
 }
 
 /*
- * call-seq:
- *    rsa.public_key -> RSA
- *
- * Makes new RSA instance containing the public key from the private key.
- */
-static VALUE
-ossl_rsa_to_public_key(VALUE self)
-{
-    EVP_PKEY *pkey, *pkey_new;
-    RSA *rsa;
-    VALUE obj;
-
-    GetPKeyRSA(self, pkey);
-    obj = rb_obj_alloc(rb_obj_class(self));
-    GetPKey(obj, pkey_new);
-
-    rsa = RSAPublicKey_dup(EVP_PKEY_get0_RSA(pkey));
-    if (!rsa)
-        ossl_raise(eRSAError, "RSAPublicKey_dup");
-    if (!EVP_PKEY_assign_RSA(pkey_new, rsa)) {
-        RSA_free(rsa);
-        ossl_raise(eRSAError, "EVP_PKEY_assign_RSA");
-    }
-    return obj;
-}
-
-/*
- * TODO: Test me
-
-static VALUE
-ossl_rsa_blinding_on(VALUE self)
-{
-    RSA *rsa;
-
-    GetRSA(self, rsa);
-
-    if (RSA_blinding_on(rsa, ossl_bn_ctx) != 1) {
-	ossl_raise(eRSAError, NULL);
-    }
-    return self;
-}
-
-static VALUE
-ossl_rsa_blinding_off(VALUE self)
-{
-    RSA *rsa;
-
-    GetRSA(self, rsa);
-    RSA_blinding_off(rsa);
-
-    return self;
-}
- */
-
-/*
  * Document-method: OpenSSL::PKey::RSA#set_key
  * call-seq:
  *   rsa.set_key(n, e, d) -> self
@@ -712,7 +657,6 @@ Init_ossl_rsa(void)
     rb_define_alias(cRSA, "to_pem", "export");
     rb_define_alias(cRSA, "to_s", "export");
     rb_define_method(cRSA, "to_der", ossl_rsa_to_der, 0);
-    rb_define_method(cRSA, "public_key", ossl_rsa_to_public_key, 0);
     rb_define_method(cRSA, "public_encrypt", ossl_rsa_public_encrypt, -1);
     rb_define_method(cRSA, "public_decrypt", ossl_rsa_public_decrypt, -1);
     rb_define_method(cRSA, "private_encrypt", ossl_rsa_private_encrypt, -1);

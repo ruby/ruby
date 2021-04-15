@@ -11,6 +11,30 @@ module OpenSSL::PKey
     include OpenSSL::Marshal
 
     # :call-seq:
+    #    dh.public_key -> dhnew
+    #
+    # Returns a new DH instance that carries just the \DH parameters.
+    #
+    # Contrary to the method name, the returned DH object contains only
+    # parameters and not the public key.
+    #
+    # This method is provided for backwards compatibility. In most cases, there
+    # is no need to call this method.
+    #
+    # For the purpose of re-generating the key pair while keeping the
+    # parameters, check OpenSSL::PKey.generate_key.
+    #
+    # Example:
+    #   # OpenSSL::PKey::DH.generate by default generates a random key pair
+    #   dh1 = OpenSSL::PKey::DH.generate(2048)
+    #   p dh1.priv_key #=> #<OpenSSL::BN 1288347...>
+    #   dhcopy = dh1.public_key
+    #   p dhcopy.priv_key #=> nil
+    def public_key
+      DH.new(to_der)
+    end
+
+    # :call-seq:
     #    dh.compute_key(pub_bn) -> string
     #
     # Returns a String containing a shared secret computed from the other
@@ -89,6 +113,22 @@ module OpenSSL::PKey
   class DSA
     include OpenSSL::Marshal
 
+    # :call-seq:
+    #    dsa.public_key -> dsanew
+    #
+    # Returns a new DSA instance that carries just the \DSA parameters and the
+    # public key.
+    #
+    # This method is provided for backwards compatibility. In most cases, there
+    # is no need to call this method.
+    #
+    # For the purpose of serializing the public key, to PEM or DER encoding of
+    # X.509 SubjectPublicKeyInfo format, check PKey#public_to_pem and
+    # PKey#public_to_der.
+    def public_key
+      OpenSSL::PKey.read(public_to_der)
+    end
+
     class << self
       # :call-seq:
       #    DSA.generate(size) -> dsa
@@ -158,6 +198,21 @@ module OpenSSL::PKey
 
   class RSA
     include OpenSSL::Marshal
+
+    # :call-seq:
+    #    rsa.public_key -> rsanew
+    #
+    # Returns a new RSA instance that carries just the public key components.
+    #
+    # This method is provided for backwards compatibility. In most cases, there
+    # is no need to call this method.
+    #
+    # For the purpose of serializing the public key, to PEM or DER encoding of
+    # X.509 SubjectPublicKeyInfo format, check PKey#public_to_pem and
+    # PKey#public_to_der.
+    def public_key
+      OpenSSL::PKey.read(public_to_der)
+    end
 
     class << self
       # :call-seq:
