@@ -104,6 +104,7 @@ class Gem::Security::TrustDir
   # permissions.
 
   def verify
+    require 'fileutils'
     if File.exist? @dir
       raise Gem::Security::Exception,
         "trust directory #{@dir} is not a directory" unless

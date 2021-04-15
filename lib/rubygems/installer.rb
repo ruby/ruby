@@ -484,8 +484,11 @@ class Gem::Installer
       bin_path = File.join gem_dir, spec.bindir, filename
 
       unless File.exist? bin_path
-        # TODO change this to a more useful warning
-        warn "`#{bin_path}` does not exist, maybe `gem pristine #{spec.name}` will fix it?"
+        if File.symlink? bin_path
+          alert_warning "`#{bin_path}` is dangling symlink pointing to `#{File.readlink bin_path}`"
+        else
+          alert_warning "`#{bin_path}` does not exist, maybe `gem pristine #{spec.name}` will fix it?"
+        end
         next
       end
 
