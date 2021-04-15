@@ -14,10 +14,7 @@ typedef struct {
 } fiddle_closure;
 
 #if defined(USE_FFI_CLOSURE_ALLOC)
-#elif defined(__OpenBSD__) || defined(__APPLE__) || defined(__linux__)
-# define USE_FFI_CLOSURE_ALLOC 0
-#elif defined(RUBY_LIBFFI_MODVERSION) && RUBY_LIBFFI_MODVERSION < 3000005 && \
-	(defined(__i386__) || defined(__x86_64__) || defined(_M_IX86) || defined(_M_AMD64))
+#elif !defined(HAVE_FFI_CLOSURE_ALLOC)
 # define USE_FFI_CLOSURE_ALLOC 0
 #else
 # define USE_FFI_CLOSURE_ALLOC 1
