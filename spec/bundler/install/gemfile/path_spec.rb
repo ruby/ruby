@@ -173,7 +173,7 @@ RSpec.describe "bundle install with explicit source paths" do
     expect(the_bundle).to include_gems "foo 1.0"
   end
 
-  it "works with only_update_to_newer_versions" do
+  it "handles downgrades" do
     build_lib "omg", "2.0", :path => lib_path("omg")
 
     install_gemfile <<-G
@@ -182,7 +182,7 @@ RSpec.describe "bundle install with explicit source paths" do
 
     build_lib "omg", "1.0", :path => lib_path("omg")
 
-    bundle :install, :env => { "BUNDLE_BUNDLE_ONLY_UPDATE_TO_NEWER_VERSIONS" => "true" }
+    bundle :install
 
     expect(the_bundle).to include_gems "omg 1.0"
   end
@@ -328,11 +328,12 @@ RSpec.describe "bundle install with explicit source paths" do
       s.executables = "foobar"
     end
 
-    install_gemfile <<-G
+    install_gemfile <<-G, :verbose => true
       path "#{lib_path("foo-1.0")}" do
         gem 'foo'
       end
     G
+    expect(out).to include("Using foo 1.0 from source at `#{lib_path("foo-1.0")}` and installing its executables")
     expect(the_bundle).to include_gems "foo 1.0"
 
     bundle "exec foobar"

@@ -245,37 +245,7 @@ RSpec.describe "bundle flex_install" do
   end
 
   describe "when adding a new source" do
-    it "updates the lockfile", :bundler => "< 3" do
-      build_repo2
-      install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
-      G
-      install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        source "#{file_uri_for(gem_repo2)}"
-        gem "rack"
-      G
-
-      lockfile_should_be <<-L
-      GEM
-        remote: #{file_uri_for(gem_repo1)}/
-        remote: #{file_uri_for(gem_repo2)}/
-        specs:
-          rack (1.0.0)
-
-      PLATFORMS
-        #{lockfile_platforms}
-
-      DEPENDENCIES
-        rack
-
-      BUNDLED WITH
-         #{Bundler::VERSION}
-      L
-    end
-
-    it "updates the lockfile", :bundler => "3" do
+    it "updates the lockfile" do
       build_repo2
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"

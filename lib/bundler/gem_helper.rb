@@ -47,6 +47,11 @@ module Bundler
         built_gem_path = build_gem
       end
 
+      desc "Generate SHA512 checksum if #{name}-#{version}.gem into the checksums directory."
+      task "build:checksum" => "build" do
+        build_checksum(built_gem_path)
+      end
+
       desc "Build and install #{name}-#{version}.gem into system gems."
       task "install" => "build" do
         install_gem(built_gem_path)
@@ -98,6 +103,17 @@ module Bundler
         raise "Couldn't install gem, run `gem install #{built_gem_path}' for more detailed output"
       end
       Bundler.ui.confirm "#{name} (#{version}) installed."
+    end
+
+    def build_checksum(built_gem_path = nil)
+      built_gem_path ||= build_gem
+      SharedHelpers.filesystem_access(File.join(base, "checksums")) {|p| FileUtils.mkdir_p(p) }
+      file_name = "#{File.basename(built_gem_path)}.sha512"
+      require "digest/sha2"
+      checksum = Digest::SHA512.new.hexdigest(built_gem_path.to_s)
+      target = File.join(base, "checksums", file_name)
+      File.write(target, checksum)
+      Bundler.ui.confirm "#{name} #{version} checksum written to checksums/#{file_name}."
     end
 
     protected

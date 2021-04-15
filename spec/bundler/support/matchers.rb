@@ -114,30 +114,49 @@ module Spec
       match do
         opts = names.last.is_a?(Hash) ? names.pop : {}
         source = opts.delete(:source)
-        groups = Array(opts[:groups])
+        groups = Array(opts.delete(:groups)).map(&:inspect).join(", ")
         opts[:raise_on_error] = false
-        groups << opts
-        @errors = names.map do |name|
-          name, version, platform = name.split(/\s+/)
+        @errors = names.map do |full_name|
+          name, version, platform = full_name.split(/\s+/)
           require_path = name == "bundler" ? "#{lib_dir}/bundler" : name.tr("-", "/")
           version_const = name == "bundler" ? "Bundler::VERSION" : Spec::Builders.constantize(name)
-          code = []
-          code << "require '#{require_path}.rb'"
-          code << "puts #{version_const}"
-          run code.join("; "), *groups
-          actual_version, actual_platform = out.strip.split(/\s+/, 2)
-          unless Gem::Version.new(actual_version) == Gem::Version.new(version)
+          source_const = "#{Spec::Builders.constantize(name)}_SOURCE"
+          ruby <<~R, opts
+            require '#{lib_dir}/bundler'
+            Bundler.setup(#{groups})
+
+            require '#{require_path}.rb'
+            actual_version, actual_platform = #{version_const}.split(/\s+/, 2)
+            unless Gem::Version.new(actual_version) == Gem::Version.new('#{version}')
+              puts actual_version
+              exit 64
+            end
+            unless actual_platform.to_s == '#{platform}'
+              puts actual_platform
+              exit 65
+            end
+            require '#{require_path}/source'
+            exit 0 if #{source.nil?}
+            actual_source = #{source_const}
+            unless actual_source == '#{source}'
+              puts actual_source
+              exit 66
+            end
+          R
+          next if exitstatus == 0
+          if exitstatus == 64
+            actual_version = out.split("\n").last
             next "#{name} was expected to be at version #{version} but was #{actual_version}"
           end
-          unless actual_platform == platform
+          if exitstatus == 65
+            actual_platform = out.split("\n").last
             next "#{name} was expected to be of platform #{platform} but was #{actual_platform}"
           end
-          next unless source
-          source_const = "#{Spec::Builders.constantize(name)}_SOURCE"
-          run "require '#{require_path}/source'; puts #{source_const}", *groups
-          unless out.strip == source
-            next "Expected #{name} (#{version}) to be installed from `#{source}`, was actually from `#{out}`"
+          if exitstatus == 66
+            actual_source = out.split("\n").last
+            next "Expected #{name} (#{version}) to be installed from `#{source}`, was actually from `#{actual_source}`"
           end
+          next "Command to check forgem inclusion of gem #{full_name} failed"
         end.compact
 
         @errors.empty?

@@ -35,7 +35,7 @@ module Bundler
             run_hooks(:post_build)
           end
 
-          generate_bin unless spec.executables.nil? || spec.executables.empty?
+          generate_bin unless spec.executables.empty?
 
           run_hooks(:post_install)
         ensure

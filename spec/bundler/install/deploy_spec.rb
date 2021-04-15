@@ -126,21 +126,21 @@ RSpec.describe "install in deployment or frozen mode" do
       bundle "config set --local path vendor/bundle"
       bundle "install"
       gemfile <<-G
-      source "http://user_name:password@localgemserver.test/"
-      gem "rack"
+        source "http://user_name:password@localgemserver.test/"
+        gem "rack"
       G
 
       lockfile <<-G
-      GEM
-        remote: http://localgemserver.test/
-        specs:
-          rack (1.0.0)
+        GEM
+          remote: http://localgemserver.test/
+          specs:
+            rack (1.0.0)
 
-      PLATFORMS
-        #{local}
+        PLATFORMS
+          #{local}
 
-      DEPENDENCIES
-        rack
+        DEPENDENCIES
+          rack
       G
 
       bundle "config set --local deployment true"
