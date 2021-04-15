@@ -3,6 +3,8 @@
 # Used by the "make install" target to install Ruby.
 # See common.mk for more details.
 
+ENV["SDKROOT"] ||= "" if /darwin/ =~ RUBY_PLATFORM
+
 begin
   load "./rbconfig.rb"
 rescue LoadError
