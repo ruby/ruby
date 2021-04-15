@@ -5574,7 +5574,6 @@ init_mark_stack(mark_stack_t *stack)
 
     MEMZERO(stack, mark_stack_t, 1);
     stack->index = stack->limit = STACK_CHUNK_SIZE;
-    stack->cache_size = 0;
 
     for (i=0; i < 4; i++) {
         add_stack_chunk_cache(stack, stack_chunk_alloc());
