@@ -454,7 +454,6 @@ gen_putobject(jitstate_t* jit, ctx_t* ctx)
     {
         // Keep track of the fixnum type tag
         x86opnd_t stack_top = ctx_stack_push(ctx, TYPE_FIXNUM);
-
         x86opnd_t imm = imm_opnd((int64_t)arg);
 
         // 64-bit immediates can't be directly written to memory
@@ -475,17 +474,17 @@ gen_putobject(jitstate_t* jit, ctx_t* ctx)
     }
     else
     {
-        // Load the argument from the bytecode sequence.
-        // We need to do this as the argument can change due to GC compaction.
-        x86opnd_t pc_plus_one = const_ptr_opnd((void*)(jit->pc + 1));
-        mov(cb, RAX, pc_plus_one);
-        mov(cb, RAX, mem_opnd(64, RAX, 0));
+        // Load the value to push into REG0
+        // Note that this value may get moved by the GC
+        VALUE put_val = jit_get_arg(jit, 0);
+        jit_mov_gc_ptr(jit, cb, REG0, put_val);
 
-        // TODO: check if argument is a heap object
+        // TODO: check for more specific types like array, string, symbol, etc.
+        val_type_t val_type = SPECIAL_CONST_P(put_val)? TYPE_IMM:TYPE_HEAP;
 
         // Write argument at SP
-        x86opnd_t stack_top = ctx_stack_push(ctx, TYPE_UNKNOWN);
-        mov(cb, stack_top, RAX);
+        x86opnd_t stack_top = ctx_stack_push(ctx, val_type);
+        mov(cb, stack_top, REG0);
     }
 
     return YJIT_KEEP_COMPILING;
