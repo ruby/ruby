@@ -34,7 +34,7 @@ describe "Matrix#**" do
       end
     end
 
-    ruby_version_is '3.0.2' do # https://bugs.ruby-lang.org/issues/17521
+    ruby_version_is '3.1.0' do # https://bugs.ruby-lang.org/issues/17521
       describe "that is 0" do
         it "returns the identity for square matrices" do
           m = Matrix[ [1, 1], [1, 1] ]
