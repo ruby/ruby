@@ -40,12 +40,18 @@ The class also has:
   - {Short Option Names}[#label-Short+Option+Names]
   - {Long Option Names}[#label-Long+Option+Names]
   - {Mixing Option Names}[#label-Mixing+Option+Names]
-  - {Command-Line Abbreviations}[#label-Command-Line+Abbreviations]
+  - {Option Name Abbreviations}[#label-Option+Name+Abbreviations]
 - {Option Arguments}[#label-Option+Arguments]
   - {Option with No Argument}[#label-Option+with+No+Argument]
   - {Option with Required Argument}[#label-Option+with+Required+Argument]
   - {Option with Optional Argument}[#label-Option+with+Optional+Argument]
-- {Keyword Argument <tt>into</tt>}[#label-Keyword+Argument+into]
+  - {Argument Abbreviations}[#label-Argument+Abbreviations]
+- {Argument Values}[#label-Argument+Values]
+  - {Explicit Argument Values}[#label-Explicit+Argument+Values]
+    - {Explicit Values in Array}[#label-Explicit+Values+in+Array]
+    - {Explicit Values in Hash}[#label-Explicit+Values+in+Hash]
+  - {Argument Value Patterns}[#label-Argument+Value+Patterns]
+- {Keyword Argument into}[#label-Keyword+Argument+into]
   - {Collecting Options}[#label-Collecting+Options]
   - {Checking for Missing Options}[#label-Checking+for+Missing+Options]
   - {Default Values for Options}[#label-Default+Values+for+Options]
@@ -264,34 +270,34 @@ Executions:
   $ ruby mixed_names.rb --zzz BAT
   ["--zzz", "BAT"]
 
-==== Command-Line Abbreviations
+==== Option Name Abbreviations
 
-By default, abbreviations for command-line option names are allowed.
-An abbreviated option is valid if it is unique among abbreviated option names.
+By default, abbreviated option names on the command-line are allowed.
+An abbreviated name is valid if it is unique among abbreviated option names.
 
-  :include: ruby/abbreviation.rb
+  :include: ruby/name_abbrev.rb
 
 Executions:
 
-  $ ruby abbreviation.rb --help
-  Usage: abbreviation [options]
+  $ ruby name_abbrev.rb --help
+  Usage: name_abbrev [options]
       -n, --dry-run
       -d, --draft
-  $ ruby abbreviation.rb -n
+  $ ruby name_abbrev.rb -n
   ["--dry-run", true]
-  $ ruby abbreviation.rb --dry-run
+  $ ruby name_abbrev.rb --dry-run
   ["--dry-run", true]
-  $ ruby abbreviation.rb -d
+  $ ruby name_abbrev.rb -d
   ["--draft", true]
-  $ ruby abbreviation.rb --draft
+  $ ruby name_abbrev.rb --draft
   ["--draft", true]
-  $ ruby abbreviation.rb --d
-  abbreviation.rb:9:in `<main>': ambiguous option: --d (OptionParser::AmbiguousOption)
-  $ ruby abbreviation.rb --dr
-  abbreviation.rb:9:in `<main>': ambiguous option: --dr (OptionParser::AmbiguousOption)
-  $ ruby abbreviation.rb --dry
+  $ ruby name_abbrev.rb --d
+  name_abbrev.rb:9:in `<main>': ambiguous option: --d (OptionParser::AmbiguousOption)
+  $ ruby name_abbrev.rb --dr
+  name_abbrev.rb:9:in `<main>': ambiguous option: --dr (OptionParser::AmbiguousOption)
+  $ ruby name_abbrev.rb --dry
   ["--dry-run", true]
-  $ ruby abbreviation.rb --dra
+  $ ruby name_abbrev.rb --dra
   ["--draft", true]
 
 You can disable abbreviation using method +require_exact+.
@@ -366,6 +372,106 @@ Executions:
   ["--yyy", "BBB"]
 
 Omitting an optional argument does not raise an error.
+
+=== Argument Values
+
+Permissible argument values may be restricted
+either by specifying explicit values
+or by providing a pattern that the given value must match.
+
+==== Explicit Argument Values
+
+You can specify argument values in either of two ways:
+
+- Specify values an array of strings.
+- Specify values a hash.
+
+===== Explicit Values in Array
+
+You can specify explicit argument values in an array of strings.
+The argument value must be one of those strings, or an unambiguous abbreviation.
+
+File +explicit_array_values.rb+ defines options with explicit argument values.
+
+  :include: ruby/explicit_array_values.rb
+
+Executions:
+
+  $ ruby explicit_array_values.rb --help
+  Usage: explicit_array_values [options]
+      -xXXX                            Values for required argument
+      -y [YYY]                         Values for optional argument
+  $ ruby explicit_array_values.rb -x
+  explicit_array_values.rb:9:in `<main>': missing argument: -x (OptionParser::MissingArgument)
+  $ ruby explicit_array_values.rb -x foo
+  ["-x", "foo"]
+  $ ruby explicit_array_values.rb -x f
+  ["-x", "foo"]
+  $ ruby explicit_array_values.rb -x bar
+  ["-x", "bar"]
+  $ ruby explicit_array_values.rb -y ba
+  explicit_array_values.rb:9:in `<main>': ambiguous argument: -y ba (OptionParser::AmbiguousArgument)
+  $ ruby explicit_array_values.rb -x baz
+  explicit_array_values.rb:9:in `<main>': invalid argument: -x baz (OptionParser::InvalidArgument)
+
+
+===== Explicit Values in Hash
+
+You can specify explicit argument values in a hash with string keys.
+The value passed must be one of those keys, or an unambiguous abbreviation;
+the value yielded will be the value for that key.
+
+File +explicit_hash_values.rb+ defines options with explicit argument values.
+
+  :include: ruby/explicit_hash_values.rb
+
+Executions:
+
+  $ ruby explicit_hash_values.rb --help
+  Usage: explicit_hash_values [options]
+      -xXXX                            Values for required argument
+      -y [YYY]                         Values for optional argument
+  $ ruby explicit_hash_values.rb -x
+  explicit_hash_values.rb:9:in `<main>': missing argument: -x (OptionParser::MissingArgument)
+  $ ruby explicit_hash_values.rb -x foo
+  ["-x", 0]
+  $ ruby explicit_hash_values.rb -x f
+  ["-x", 0]
+  $ ruby explicit_hash_values.rb -x bar
+  ["-x", 1]
+  $ ruby explicit_hash_values.rb -x baz
+  explicit_hash_values.rb:9:in `<main>': invalid argument: -x baz (OptionParser::InvalidArgument)
+  $ ruby explicit_hash_values.rb -y
+  ["-y", nil]
+  $ ruby explicit_hash_values.rb -y baz
+  ["-y", 2]
+  $ ruby explicit_hash_values.rb -y bat
+  ["-y", 3]
+  $ ruby explicit_hash_values.rb -y ba
+  explicit_hash_values.rb:9:in `<main>': ambiguous argument: -y ba (OptionParser::AmbiguousArgument)
+  $ ruby explicit_hash_values.rb -y bam
+  ["-y", nil]
+
+==== Argument Value Patterns
+
+You can restrict permissible argument values
+by specifying a Regexp that the given argument must match.
+
+File +matched_values.rb+ defines options with matched argument values.
+
+  :include: ruby/matched_values.rb
+
+Executions:
+
+  $ ruby matched_values.rb --help
+  Usage: matched_values [options]
+          --xxx XXX                    Matched values
+  $ ruby matched_values.rb --xxx foo
+  ["--xxx", "foo"]
+  $ ruby matched_values.rb --xxx FOO
+  ["--xxx", "FOO"]
+  $ ruby matched_values.rb --xxx bar
+  matched_values.rb:6:in `<main>': invalid argument: --xxx bar (OptionParser::InvalidArgument)
 
 === Keyword Argument +into+
 
