@@ -92,11 +92,11 @@ module Bundler
 
       def checksum_for_file(path)
         return nil unless path.file?
-        # This must use IO.read instead of Digest.file().hexdigest
+        # This must use File.read instead of Digest.file().hexdigest
         # because we need to preserve \n line endings on windows when calculating
         # the checksum
         SharedHelpers.filesystem_access(path, :read) do
-          SharedHelpers.digest(:MD5).hexdigest(IO.read(path))
+          SharedHelpers.digest(:MD5).hexdigest(File.read(path))
         end
       end
     end

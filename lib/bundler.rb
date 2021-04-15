@@ -197,7 +197,7 @@ module Bundler
 
     def frozen_bundle?
       frozen = settings[:deployment]
-      frozen ||= settings[:frozen] unless feature_flag.deployment_means_frozen?
+      frozen ||= settings[:frozen]
       frozen
     end
 

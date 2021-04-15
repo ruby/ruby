@@ -140,6 +140,13 @@ module Bundler
           end
         end
 
+        # Set internal representation to fetch the gems/specs locally.
+        #
+        # When this is called, the source should try to fetch the specs and
+        # install from the local system.
+        def local!
+        end
+
         # Set internal representation to fetch the gems/specs from remote.
         #
         # When this is called, the source should try to fetch the specs and

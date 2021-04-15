@@ -15,7 +15,6 @@ module Bundler
       cache_all_platforms
       default_install_uses_path
       deployment
-      deployment_means_frozen
       disable_checksum_validation
       disable_exec_load
       disable_local_branch_check
@@ -33,7 +32,6 @@ module Bundler
       init_gems_rb
       no_install
       no_prune
-      only_update_to_newer_versions
       path_relative_to_cwd
       path.system
       plugins

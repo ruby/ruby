@@ -475,6 +475,12 @@ module Bundler
         "do in future versions. Instead please use `bundle config set cache_all true`, " \
         "and stop using this flag" if ARGV.include?("--all")
 
+      SharedHelpers.major_deprecation 2,
+        "The `--path` flag is deprecated because its semantics are unclear. " \
+        "Use `bundle config cache_path` to configure the path of your cache of gems, " \
+        "and `bundle config path` to configure the path where your gems are installed, " \
+        "and stop using this flag" if ARGV.include?("--path")
+
       require_relative "cli/cache"
       Cache.new(options).run
     end
@@ -591,6 +597,9 @@ module Bundler
                          :desc => "Generate a test directory for your library, either rspec, minitest or test-unit. Set a default with `bundle config set --global gem.test (rspec|minitest|test-unit)`."
     method_option :ci, :type => :string, :lazy_default => Bundler.settings["gem.ci"] || "",
                        :desc => "Generate CI configuration, either GitHub Actions, Travis CI, GitLab CI or CircleCI. Set a default with `bundle config set --global gem.ci (github|travis|gitlab|circle)`"
+    method_option :linter, :type => :string, :lazy_default => Bundler.settings["gem.linter"] || "",
+                           :desc => "Add a linter and code formatter, either RuboCop or Standard. Set a default with `bundle config set --global gem.linter (rubocop|standard)`"
+    method_option :github_username, :type => :string, :default => Bundler.settings["gem.github_username"], :banner => "Set your username on GitHub", :desc => "Fill in GitHub username on README so that you don't have to do it manually. Set a default with `bundle config set --global gem.github_username <your_username>`."
 
     def gem(name)
     end

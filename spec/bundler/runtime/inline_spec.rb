@@ -246,6 +246,19 @@ RSpec.describe "bundler/inline#gemfile" do
     expect(last_command.stderr).to be_empty
   end
 
+  it "installs inline gems when deployment is set" do
+    script <<-RUBY, :env => { "BUNDLE_DEPLOYMENT" => "true" }
+      gemfile do
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack"
+      end
+
+      puts RACK
+    RUBY
+
+    expect(last_command.stderr).to be_empty
+  end
+
   it "installs inline gems when BUNDLE_GEMFILE is set to an empty string" do
     ENV["BUNDLE_GEMFILE"] = ""
 

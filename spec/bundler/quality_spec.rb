@@ -169,7 +169,6 @@ RSpec.describe "The library itself" do
 
   it "documents all used settings" do
     exemptions = %w[
-      deployment_means_frozen
       forget_cli_options
       gem.coc
       gem.mit

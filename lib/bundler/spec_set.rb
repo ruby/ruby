@@ -82,6 +82,7 @@ module Bundler
       materialized.map! do |s|
         next s unless s.is_a?(LazySpecification)
         s.source.dependency_names = deps if s.source.respond_to?(:dependency_names=)
+        s.source.local!
         spec = s.__materialize__
         unless spec
           unless missing_specs
@@ -102,6 +103,7 @@ module Bundler
       @specs.map do |s|
         next s unless s.is_a?(LazySpecification)
         s.source.dependency_names = names if s.source.respond_to?(:dependency_names=)
+        s.source.local!
         s.source.remote!
         spec = s.__materialize__
         raise GemNotFound, "Could not find #{s.full_name} in any of the sources" unless spec

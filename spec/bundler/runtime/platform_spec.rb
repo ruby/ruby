@@ -108,6 +108,44 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
     expect(lockfile).to eq(good_lockfile)
   end
 
+  it "will not try to install platform specific gems when they don't match the current ruby if locked only to ruby" do
+    build_repo4 do
+      build_gem "nokogiri", "1.11.1"
+
+      build_gem "nokogiri", "1.11.1" do |s|
+        s.platform = Bundler.local_platform
+        s.required_ruby_version = "< #{Gem.ruby_version}"
+      end
+    end
+
+    gemfile <<-G
+      source "https://gems.repo4"
+      gem "nokogiri"
+    G
+
+    lockfile <<~L
+      GEM
+        remote: https://gems.repo4/
+        specs:
+          nokogiri (1.11.1)
+
+      PLATFORMS
+        ruby
+
+      DEPENDENCIES
+        nokogiri
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "install", :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+
+    expect(out).to include("Fetching nokogiri 1.11.1")
+    expect(the_bundle).to include_gems "nokogiri 1.11.1"
+    expect(the_bundle).not_to include_gems "nokogiri 1.11.1 #{Bundler.local_platform}"
+  end
+
   it "will use the java platform if both generic java and generic ruby platforms are locked", :jruby do
     gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"

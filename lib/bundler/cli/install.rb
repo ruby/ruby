@@ -33,12 +33,8 @@ module Bundler
 
         options[:local] = true if Bundler.app_cache.exist?
 
-        if Bundler.feature_flag.deployment_means_frozen?
-          Bundler.settings.set_command_option :deployment, true
-        else
-          Bundler.settings.set_command_option :deployment, true if options[:deployment]
-          Bundler.settings.set_command_option :frozen, true if options[:frozen]
-        end
+        Bundler.settings.set_command_option :deployment, true if options[:deployment]
+        Bundler.settings.set_command_option :frozen, true if options[:frozen]
       end
 
       # When install is called with --no-deployment, disable deployment mode

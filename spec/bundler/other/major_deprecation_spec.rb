@@ -165,6 +165,28 @@ RSpec.describe "major deprecations" do
     pending "fails with a helpful error", :bundler => "3"
   end
 
+  context "bundle cache --path" do
+    before do
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack"
+      G
+
+      bundle "cache --path foo", :raise_on_error => false
+    end
+
+    it "should print a deprecation warning", :bundler => "< 3" do
+      expect(deprecations).to include(
+        "The `--path` flag is deprecated because its semantics are unclear. " \
+        "Use `bundle config cache_path` to configure the path of your cache of gems, " \
+        "and `bundle config path` to configure the path where your gems are installed, " \
+        "and stop using this flag"
+      )
+    end
+
+    pending "fails with a helpful error", :bundler => "3"
+  end
+
   describe "bundle config" do
     describe "old list interface" do
       before do
@@ -383,10 +405,48 @@ RSpec.describe "major deprecations" do
         "Your Gemfile contains multiple primary sources. " \
         "Using `source` more than once without a block is a security risk, and " \
         "may result in installing unexpected gems. To resolve this warning, use " \
-        "a block to indicate which gems should come from the secondary source. " \
-        "To upgrade this warning to an error, run `bundle config set --local " \
-        "disable_multisource true`."
+        "a block to indicate which gems should come from the secondary source."
       )
+    end
+
+    pending "fails with a helpful error", :bundler => "3"
+  end
+
+  context "bundle install with a lockfile with a single rubygems section with multiple remotes" do
+    before do
+      build_repo gem_repo3 do
+        build_gem "rack", "0.9.1"
+      end
+
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        source "#{file_uri_for(gem_repo3)}" do
+          gem 'rack'
+        end
+      G
+
+      lockfile <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo1)}/
+          remote: #{file_uri_for(gem_repo3)}/
+          specs:
+            rack (0.9.1)
+
+        PLATFORMS
+          ruby
+
+        DEPENDENCIES
+          rack!
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+
+    it "shows a deprecation", :bundler => "< 3" do
+      bundle "install"
+
+      expect(deprecations).to include("Your lockfile contains a single rubygems source section with multiple remotes, which is insecure. You should run `bundle update` or generate your lockfile from scratch.")
     end
 
     pending "fails with a helpful error", :bundler => "3"
@@ -608,5 +668,51 @@ The :gist git source is deprecated, and will be removed in the future. Add this 
     end
 
     pending "fails with a helpful message", :bundler => "3"
+  end
+
+  describe "deprecating rubocop", :readline do
+    context "bundle gem --rubocop" do
+      before do
+        bundle "gem my_new_gem --rubocop", :raise_on_error => false
+      end
+
+      it "prints a deprecation warning", :bundler => "< 3" do
+        expect(deprecations).to include \
+          "--rubocop is deprecated, use --linter=rubocop"
+      end
+    end
+
+    context "bundle gem --no-rubocop" do
+      before do
+        bundle "gem my_new_gem --no-rubocop", :raise_on_error => false
+      end
+
+      it "prints a deprecation warning", :bundler => "< 3" do
+        expect(deprecations).to include \
+          "--no-rubocop is deprecated, use --linter"
+      end
+    end
+
+    context "bundle gem with gem.rubocop set to true" do
+      before do
+        bundle "gem my_new_gem", :env => { "BUNDLE_GEM__RUBOCOP" => "true" }, :raise_on_error => false
+      end
+
+      it "prints a deprecation warning", :bundler => "< 3" do
+        expect(deprecations).to include \
+          "config gem.rubocop is deprecated; we've updated your config to use gem.linter instead"
+      end
+    end
+
+    context "bundle gem with gem.rubocop set to false" do
+      before do
+        bundle "gem my_new_gem", :env => { "BUNDLE_GEM__RUBOCOP" => "false" }, :raise_on_error => false
+      end
+
+      it "prints a deprecation warning", :bundler => "< 3" do
+        expect(deprecations).to include \
+          "config gem.rubocop is deprecated; we've updated your config to use gem.linter instead"
+      end
+    end
   end
 end
