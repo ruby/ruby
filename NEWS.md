@@ -19,6 +19,10 @@ Note that each entry is kept to a minimum, see links for details.
 
 Outstanding ones only.
 
+* Array
+
+    * Array#intersect? is added. [[Feature #15198]]
+
 * Enumerable
 
     * Enumerable#compact is added. [[Feature #17312]]
@@ -94,6 +98,7 @@ Excluding feature bug fixes.
 
 [Feature #12194]: https://bugs.ruby-lang.org/issues/12194
 [Feature #14256]: https://bugs.ruby-lang.org/issues/14256
+[Feature #15198]: https://bugs.ruby-lang.org/issues/15198
 [Feature #16043]: https://bugs.ruby-lang.org/issues/16043
 [Feature #16806]: https://bugs.ruby-lang.org/issues/16806
 [Feature #17312]: https://bugs.ruby-lang.org/issues/17312
