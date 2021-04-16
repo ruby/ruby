@@ -8,6 +8,7 @@
 
 static int vm_redefinition_check_flag(VALUE klass);
 static void rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass);
+static inline rb_method_entry_t *lookup_method_table(VALUE klass, ID id);
 
 #define object_id           idObject_id
 #define added               idMethod_added
@@ -187,9 +188,17 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
                     // invalidate cc by invalidating cc->cme
                     VALUE owner = cme->owner;
                     VM_ASSERT(BUILTIN_TYPE(owner) == T_CLASS);
+                    VALUE klass_housing_cme;
+                    if (cme->def->type == VM_METHOD_TYPE_REFINED && !cme->def->body.refined.orig_me) {
+                        klass_housing_cme = owner;
+                    }
+                    else {
+                        klass_housing_cme = RCLASS_ORIGIN(owner);
+                    }
+                    // replace the cme that will be invalid
+                    VM_ASSERT(lookup_method_table(klass_housing_cme, mid) == (const rb_method_entry_t *)cme);
                     const rb_method_entry_t *new_cme = rb_method_entry_clone((const rb_method_entry_t *)cme);
-                    VALUE origin = RCLASS_ORIGIN(owner);
-                    rb_method_table_insert(origin, RCLASS_M_TBL(origin), mid, new_cme);
+                    rb_method_table_insert(klass_housing_cme, RCLASS_M_TBL(klass_housing_cme), mid, new_cme);
                 }
 
                 vm_cme_invalidate((rb_callable_method_entry_t *)cme);
