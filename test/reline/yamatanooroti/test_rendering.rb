@@ -730,6 +730,29 @@ begin
       EOC
     end
 
+    def test_meta_key
+      start_terminal(50, 200, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
+      write("def ge\M-bho")
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> def hoge
+      EOC
+    end
+
+    def test_force_enter
+      start_terminal(50, 200, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
+      write("def hoge\nend\C-p\C-e")
+      write("\M-\x0D")
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> def hoge
+        prompt>
+        prompt> end
+      EOC
+    end
+
     private def write_inputrc(content)
       File.open(@inputrc_file, 'w') do |f|
         f.write content
