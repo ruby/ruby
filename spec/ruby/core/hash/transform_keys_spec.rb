@@ -84,7 +84,7 @@ describe "Hash#transform_keys!" do
     end
   end
 
-  ruby_version_is "2.5.1"..."3.1" do
+  ruby_version_is "2.5.1"..."3.0.2" do # https://bugs.ruby-lang.org/issues/17735
     it "returns the processed keys if we broke from the block" do
       @hash.transform_keys! do |v|
         break if v == :c
@@ -94,7 +94,7 @@ describe "Hash#transform_keys!" do
     end
   end
 
-  ruby_version_is "3.1" do
+  ruby_version_is "3.0.2" do
     it "returns the processed keys and non evaluated keys if we broke from the block" do
       @hash.transform_keys! do |v|
         break if v == :c
