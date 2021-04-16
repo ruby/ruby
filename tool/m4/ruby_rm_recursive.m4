@@ -1,6 +1,6 @@
 # -*- Autoconf -*-
-AC_DEFUN([RUBY_RM_RECURSIVE], [
-m4_version_prereq([2.70], [-1], [
+AC_DEFUN([RUBY_RM_RECURSIVE], [dnl
+m4_version_prereq([2.70], [], [dnl
 # suppress error messages, rm: cannot remove 'conftest.dSYM', from
 # AC_EGREP_CPP with CFLAGS=-g on Darwin.
 AS_CASE([$build_os], [darwin*], [

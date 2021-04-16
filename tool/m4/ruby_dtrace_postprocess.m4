@@ -12,7 +12,7 @@ _PROBES
     $DTRACE ${DTRACE_OPT} -h -o conftest_provider.h -s conftest_provider.d >/dev/null 2>/dev/null &&
     :
   }], [
-    AC_TRY_COMPILE([@%:@include "conftest_provider.h"], [CONFTEST_FIRE();], [
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[@%:@include "conftest_provider.h"]], [[CONFTEST_FIRE();]])],[
 	AS_IF([{
 	    cp -p conftest.${ac_objext} conftest.${ac_objext}.save &&
 	    $DTRACE ${DTRACE_OPT} -G -s conftest_provider.d conftest.${ac_objext} 2>/dev/null &&

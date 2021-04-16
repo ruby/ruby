@@ -18,8 +18,6 @@
 #define RB_NATIVETHREAD_LOCK_INIT PTHREAD_MUTEX_INITIALIZER
 #define RB_NATIVETHREAD_COND_INIT PTHREAD_COND_INITIALIZER
 
-typedef pthread_cond_t rb_nativethread_cond_t;
-
 typedef struct native_thread_data_struct {
     union {
         struct list_node ubf;

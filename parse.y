@@ -760,6 +760,7 @@ static void token_info_warn(struct parser_params *p, const char *token, token_in
 
 %expect 0
 %define api.pure
+%define parse.error verbose
 %lex-param {struct parser_params *p}
 %parse-param {struct parser_params *p}
 %initial-action
