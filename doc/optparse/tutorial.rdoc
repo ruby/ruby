@@ -94,42 +94,6 @@ Executions:
   ["y", true]
   ["x", true]
 
-=== To Begin With
-
-To use \OptionParser:
-
-1. Require the \OptionParser code.
-2. Create an \OptionParser object.
-3. Define one or more options.
-4. Parse the command line.
-
-File +basic.rb+ defines three options, <tt>-x</tt>,
-<tt>-y</tt>, and <tt>-z</tt>, each with a descriptive string,
-and each with a block.
-
-  :include: ruby/basic.rb
-
-From these defined options, the parser automatically builds help text:
-
-  $ ruby basic.rb --help
-  Usage: basic [options]
-      -x                               Whether to X
-      -y                               Whether to Y
-      -z                               Whether to Z
-
-When an option is found during parsing,
-the block defined for the option is called with the argument value.
-
-Executions:
-
-  $ ruby basic.rb -x -z
-  ["x", true]
-  ["z", true]
-  $ ruby basic.rb -z -y -x
-  ["z", true]
-  ["y", true]
-  ["x", true]
-
 === Defining Options
 
 A common way to define an option in \OptionParser
