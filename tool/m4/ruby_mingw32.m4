@@ -1,4 +1,4 @@
-# -*- Autoconf -*-
+dnl -*- Autoconf -*-
 AC_DEFUN([RUBY_MINGW32],
 [AS_CASE(["$host_os"],
 [cygwin*], [
