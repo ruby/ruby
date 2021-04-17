@@ -486,11 +486,10 @@ done
 
 AC_MSG_CHECKING([whether it is Android])
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
-	@%:@ifdef __ANDROID__
-	@%:@error android
+	@%:@ifndef __ANDROID__
+	@%:@error Not android
 	@%:@endif
 ]], [[]])],
-[AC_MSG_RESULT(no)],
 [
 	AC_MSG_RESULT(yes)
 	target_os=${target_os}-android
@@ -501,7 +500,8 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
                 AC_MSG_RESULT($rb_android_api)
                 RUBY_APPEND_OPTIONS(CPPFLAGS, -D__ANDROID_API__=$rb_android_api -Wno-macro-redefined)
 	])
-])
+],
+[AC_MSG_RESULT(no)])
 
 AC_SUBST(RM, ['rm -f'])
 AC_SUBST(CP, ['cp'])
