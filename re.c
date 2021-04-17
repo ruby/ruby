@@ -1221,6 +1221,32 @@ match_offset(VALUE match, VALUE n)
 			INT2FIX(RMATCH(match)->rmatch->char_offset[i].end));
 }
 
+enum match_take_pos_flags
+{
+    MATCH_TAKE_BEGIN = 0,
+    MATCH_TAKE_END = 1
+};
+
+static VALUE
+match_take_begin_or_end(VALUE match, VALUE n, int flag)
+{
+    int i = match_backref_number(match, n);
+    struct re_registers *regs = RMATCH_REGS(match);
+
+    match_check(match);
+    if (i < 0 || regs->num_regs <= i)
+	rb_raise(rb_eIndexError, "index %d out of matches", i);
+
+    if (BEG(i) < 0)
+	return Qnil;
+
+    update_char_offset(match);
+    if (flag) {
+    return INT2FIX(RMATCH(match)->rmatch->char_offset[i].end);
+    }
+    return INT2FIX(RMATCH(match)->rmatch->char_offset[i].beg);
+}
+
 
 /*
  *  call-seq:
@@ -1242,18 +1268,7 @@ match_offset(VALUE match, VALUE n)
 static VALUE
 match_begin(VALUE match, VALUE n)
 {
-    int i = match_backref_number(match, n);
-    struct re_registers *regs = RMATCH_REGS(match);
-
-    match_check(match);
-    if (i < 0 || regs->num_regs <= i)
-	rb_raise(rb_eIndexError, "index %d out of matches", i);
-
-    if (BEG(i) < 0)
-	return Qnil;
-
-    update_char_offset(match);
-    return INT2FIX(RMATCH(match)->rmatch->char_offset[i].beg);
+    return match_take_begin_or_end(match, n, MATCH_TAKE_BEGIN);
 }
 
 
@@ -1277,18 +1292,7 @@ match_begin(VALUE match, VALUE n)
 static VALUE
 match_end(VALUE match, VALUE n)
 {
-    int i = match_backref_number(match, n);
-    struct re_registers *regs = RMATCH_REGS(match);
-
-    match_check(match);
-    if (i < 0 || regs->num_regs <= i)
-	rb_raise(rb_eIndexError, "index %d out of matches", i);
-
-    if (BEG(i) < 0)
-	return Qnil;
-
-    update_char_offset(match);
-    return INT2FIX(RMATCH(match)->rmatch->char_offset[i].end);
+    return match_take_begin_or_end(match, n, MATCH_TAKE_END);
 }
 
 #define MATCH_BUSY FL_USER2
