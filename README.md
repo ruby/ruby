@@ -51,7 +51,8 @@ if you are a committer.
 
 ### Subversion
 
-Stable branches for older Ruby versions can be checked out with the following command:
+Stable branches for older Ruby versions can be checked out with also the
+following command:
 
     $ svn co https://svn.ruby-lang.org/repos/ruby/branches/ruby_2_6/ ruby
 
@@ -71,16 +72,17 @@ send the following phrase:
 
     subscribe
 
-in the mail body (not subject) to the address
-[ruby-talk-request@ruby-lang.org](mailto:ruby-talk-request@ruby-lang.org?subject=Join%20Ruby%20Mailing%20List&body=subscribe).
+in the mail body (not subject) to the address [ruby-talk-request@ruby-lang.org].
+
+[ruby-talk-request@ruby-lang.org]: mailto:ruby-talk-request@ruby-lang.org?subject=Join%20Ruby%20Mailing%20List&body=subscribe
 
 ## How to compile and install
 
 1.  If you want to use Microsoft Visual C++ to compile Ruby, read
     [win32/README.win32](win32/README.win32) instead of this document.
 
-2.  If `./configure` does not exist or is older than `configure.ac`, run
-    `autoconf` to (re)generate configure.
+2.  Run `./autogen.sh` to generate configure, when you build the source checked
+    out from the Git repository.
 
 3.  Run `./configure`, which will generate `config.h` and `Makefile`.
 

@@ -41,10 +41,8 @@ jobs:
       - name: Set ENV
         run: |
           echo "JOBS=-j$((1 + $(sysctl -n hw.activecpu)))" >> $GITHUB_ENV
-      - name: Autoconf
-        run: |
-          cd src
-          autoconf
+      - run: ./autogen.sh
+        working-directory: src
       - name: Configure
         run: |
           mkdir build

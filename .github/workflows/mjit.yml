@@ -41,8 +41,8 @@ jobs:
       - name: Set ENV
         run: |
           echo "JOBS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
-      - name: Autoconf
-        run: cd src && exec autoconf
+      - run: ./autogen.sh
+        working-directory: src
       - name: configure
         run: |
           mkdir build

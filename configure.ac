@@ -2,7 +2,6 @@ dnl Process this file with autoconf to produce a configure script.
 AC_INIT
 {
 AC_CONFIG_AUX_DIR(tool)
-AC_CONFIG_MACRO_DIRS(tool/m4)
 
 AC_PREREQ(2.67)
 
@@ -14,6 +13,40 @@ AC_REQUIRE([_COLORIZE_RESULT_PREPARE])dnl
 AS_MESSAGE([checking ${msg_checking}$1${msg_reset}...])])dnl
 
 AC_DISABLE_OPTION_CHECKING
+
+m4_include([tool/m4/_colorize_result_prepare.m4])
+m4_include([tool/m4/ac_msg_result.m4])
+m4_include([tool/m4/colorize_result.m4])
+m4_include([tool/m4/ruby_append_option.m4])
+m4_include([tool/m4/ruby_append_options.m4])
+m4_include([tool/m4/ruby_check_builtin_func.m4])
+m4_include([tool/m4/ruby_check_builtin_setjmp.m4])
+m4_include([tool/m4/ruby_check_printf_prefix.m4])
+m4_include([tool/m4/ruby_check_setjmp.m4])
+m4_include([tool/m4/ruby_check_signedness.m4])
+m4_include([tool/m4/ruby_check_sizeof.m4])
+m4_include([tool/m4/ruby_check_sysconf.m4])
+m4_include([tool/m4/ruby_cppoutfile.m4])
+m4_include([tool/m4/ruby_decl_attribute.m4])
+m4_include([tool/m4/ruby_default_arch.m4])
+m4_include([tool/m4/ruby_define_if.m4])
+m4_include([tool/m4/ruby_defint.m4])
+m4_include([tool/m4/ruby_dtrace_available.m4])
+m4_include([tool/m4/ruby_dtrace_postprocess.m4])
+m4_include([tool/m4/ruby_func_attribute.m4])
+m4_include([tool/m4/ruby_mingw32.m4])
+m4_include([tool/m4/ruby_prepend_option.m4])
+m4_include([tool/m4/ruby_prog_gnu_ld.m4])
+m4_include([tool/m4/ruby_replace_funcs.m4])
+m4_include([tool/m4/ruby_replace_type.m4])
+m4_include([tool/m4/ruby_rm_recursive.m4])
+m4_include([tool/m4/ruby_setjmp_type.m4])
+m4_include([tool/m4/ruby_stack_grow_direction.m4])
+m4_include([tool/m4/ruby_try_cflags.m4])
+m4_include([tool/m4/ruby_try_cxxflags.m4])
+m4_include([tool/m4/ruby_try_ldflags.m4])
+m4_include([tool/m4/ruby_universal_arch.m4])
+m4_include([tool/m4/ruby_werror_flag.m4])
 
 AC_ARG_VAR([cflags], [additional CFLAGS (ignored when CFLAGS is given)])
 AC_ARG_VAR([cppflags], [additional CPPFLAGS (ignored when CPPFLAGS is given)])

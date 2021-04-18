@@ -52,11 +52,11 @@ Rubyリポジトリの本来のmasterは https://git.ruby-lang.org/ruby.git に�
 
 ### Subversion
 
-古いRubyのバージョンのソースコードは次のコマンドで取得できます．
+古いRubyのバージョンのソースコードは次のコマンドでも取得できます．
 
     $ svn co https://svn.ruby-lang.org/repos/ruby/branches/ruby_2_6/ ruby
 
-他に開発中のブランチの一覧は次のコマンドで見られます．
+他のブランチの一覧は次のコマンドで見られます．
 
     $ svn ls https://svn.ruby-lang.org/repos/ruby/branches/
 
@@ -71,31 +71,26 @@ https://www.ruby-lang.org/
 
 ## メーリングリスト
 
-Rubyのメーリングリストがあります．参加希望の方は
-
-mailto:ruby-list-request@ruby-lang.org
-
-まで本文に
+Rubyのメーリングリストがあります．参加希望の方は [ruby-list-request@ruby-lang.org] まで本文に
 
     subscribe
 
 と書いて送って下さい．
 
-Ruby開発者向けメーリングリストもあります．こちらではrubyのバグ，将来の仕様拡張など実装上の問題について議論されています． 参加希望の方は
-
-mailto:ruby-dev-request@ruby-lang.org
-
-までruby-listと同様の方法でメールしてください．
+Ruby開発者向けメーリングリストもあります．こちらではrubyのバグ，将来の仕様拡張など実装上の問題について議論されています．
+参加希望の方は [ruby-dev-request@ruby-lang.org] までruby-listと同様の方法でメールしてください．
 
 Ruby拡張モジュールについて話し合うruby-extメーリングリストと数学関係の話題について話し合うruby-mathメーリングリストと
 英語でrubyについて話し合うruby-talkメーリングリストもあります．参加方法はどれも同じです．
+
+[ruby-list-request@ruby-lang.org]: mailto:ruby-list-request@ruby-lang.org?subject=Join%20Ruby%20Mailing%20List&body=subscribe
+[ruby-dev-request@ruby-lang.org]: mailto:ruby-dev-request@ruby-lang.org?subject=Join%20Ruby%20Mailing%20List&body=subscribe
 
 ## コンパイル・インストール
 
 以下の手順で行ってください．
 
-1.  もし `configure` ファイルが見つからない，もしくは `configure.ac` より古いようなら， `autoconf` を実行して
-    新しく `configure` を生成する
+1.  (Gitリポジトリから取得したソースをビルドする場合) `./autogen.sh` を実行して新しく `configure` を生成する
 
 2.  `configure` を実行して `Makefile` などを生成する
 
