@@ -710,13 +710,22 @@ module RbInstall
           end
         end
 
-        if base
-          Dir.glob("#{base}{.rb,/**/*.rb}").collect do |ruby_source|
-            remove_prefix(prefix, ruby_source)
-          end
-        else
-          [File.basename(@gemspec, '.gemspec') + '.rb']
+        files = if base
+                  Dir.glob("#{base}{.rb,/**/*.rb}").collect do |ruby_source|
+                    remove_prefix(prefix, ruby_source)
+                  end
+                else
+                  [File.basename(@gemspec, '.gemspec') + '.rb']
+                end
+
+        case Pathname.new(@gemspec).basename(".gemspec").to_s
+        when "net-http"
+          files << "lib/net/https.rb"
+        when "optparse"
+          files << "lib/optionparser.rb"
         end
+
+        files
       end
 
       def built_libraries
