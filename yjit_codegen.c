@@ -626,21 +626,15 @@ gen_setlocal_wc0(jitstate_t* jit, ctx_t* ctx)
 static void
 guard_self_is_heap(codeblock_t *cb, x86opnd_t self_opnd, uint8_t *side_exit, ctx_t *ctx)
 {
+
     // `self` is constant throughout the entire region, so we only need to do this check once.
     if (!ctx->self_type.is_heap) {
-        // FIXME: use two-comparison test
         ADD_COMMENT(cb, "guard self is heap");
+        RUBY_ASSERT(Qfalse < Qnil);
         test(cb, self_opnd, imm_opnd(RUBY_IMMEDIATE_MASK));
         jnz_ptr(cb, side_exit);
-        cmp(cb, self_opnd, imm_opnd(Qfalse));
-        je_ptr(cb, side_exit);
         cmp(cb, self_opnd, imm_opnd(Qnil));
-        je_ptr(cb, side_exit);
-
-        // maybe we can do
-        // RUBY_ASSERT(Qfalse < Qnil);
-        // cmp(cb, self_opnd, imm_opnd(Qnil));
-        // jbe(cb, side_exit);
+        jbe_ptr(cb, side_exit);
 
         ctx->self_type.is_heap = 1;
     }
@@ -1433,12 +1427,11 @@ jit_guard_known_klass(jitstate_t *jit, ctx_t* ctx, VALUE known_klass, insn_opnd_
     {
         // FIXME: use two comparisons instead of 3 here
         ADD_COMMENT(cb, "guard not immediate");
+        RUBY_ASSERT(Qfalse < Qnil);
         test(cb, REG0, imm_opnd(RUBY_IMMEDIATE_MASK));
         jnz_ptr(cb, side_exit);
-        cmp(cb, REG0, imm_opnd(Qfalse));
-        je_ptr(cb, side_exit);
         cmp(cb, REG0, imm_opnd(Qnil));
-        je_ptr(cb, side_exit);
+        jbe_ptr(cb, side_exit);
 
         ctx_set_opnd_type(ctx, insn_opnd, TYPE_HEAP);
     }
