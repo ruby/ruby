@@ -65,7 +65,7 @@
 # ## What's Here
 #
 # First, what's elsewhere. \Set includes the module
-# {Enumerable}[https://docs.ruby-lang.org/en/master/Enumerable.html],
+# {Enumerable}[rdoc-ref:Enumerable],
 # which provides dozens of additional methods.
 #
 # In particular, class \Set does not have many methods of its own
