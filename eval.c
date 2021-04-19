@@ -1953,6 +1953,17 @@ errat_setter(VALUE val, ID id, VALUE *var)
     set_backtrace(err, val);
 }
 
+static VALUE
+rb_fname(ID fname)
+{
+    if (fname) {
+	return ID2SYM(fname);
+    }
+    else {
+	return Qnil;
+    }
+}
+
 /*
  *  call-seq:
  *     __method__         -> symbol
@@ -1967,13 +1978,7 @@ static VALUE
 rb_f_method_name(VALUE _)
 {
     ID fname = prev_frame_func(); /* need *method* ID */
-
-    if (fname) {
-	return ID2SYM(fname);
-    }
-    else {
-	return Qnil;
-    }
+    return rb_fname(fname);
 }
 
 /*
@@ -1989,13 +1994,7 @@ static VALUE
 rb_f_callee_name(VALUE _)
 {
     ID fname = prev_frame_callee(); /* need *callee* ID */
-
-    if (fname) {
-	return ID2SYM(fname);
-    }
-    else {
-	return Qnil;
-    }
+    return rb_fname(fname);
 }
 
 /*
