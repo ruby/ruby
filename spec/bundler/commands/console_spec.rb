@@ -45,17 +45,6 @@ RSpec.describe "bundle console", :bundler => "< 3", :readline => true do
     G
   end
 
-  around :each do |example|
-    require 'tmpdir'
-    Dir.mktmpdir("bundler_commands_console") do |dir|
-      xdg_config_home_backup = ENV.delete("XDG_CONFIG_HOME")
-      ENV["XDG_CONFIG_HOME"] = dir
-      example.run
-    ensure
-      ENV["XDG_CONFIG_HOME"] = xdg_config_home_backup
-    end
-  end
-
   it "starts IRB with the default group loaded" do
     bundle "console" do |input, _, _|
       input.puts("puts RACK")
