@@ -2090,9 +2090,6 @@ gen_leave(jitstate_t* jit, ctx_t* ctx)
     // Load the return value
     mov(cb, REG0, ctx_stack_pop(ctx, 1));
 
-    // Load the JIT return address
-    mov(cb, REG1, member_opnd(REG_CFP, rb_control_frame_t, jit_return));
-
     // Pop the current frame (ec->cfp++)
     // Note: the return PC is already in the previous CFP
     add(cb, REG_CFP, imm_opnd(sizeof(rb_control_frame_t)));
@@ -2104,8 +2101,9 @@ gen_leave(jitstate_t* jit, ctx_t* ctx)
     mov(cb, REG_SP, member_opnd(REG_CFP, rb_control_frame_t, sp));
     mov(cb, mem_opnd(64, REG_SP, -SIZEOF_VALUE), REG0);
 
-    // Jump to the JIT return address
-    jmp_rm(cb, REG1);
+    // Jump to the JIT return address in the frame that was popped
+    const int32_t offset_to_jit_return = -((int32_t)sizeof(rb_control_frame_t)) + (int32_t)offsetof(rb_control_frame_t, jit_return);
+    jmp_rm(cb, mem_opnd(64, REG_CFP, offset_to_jit_return));
 
     return YJIT_END_BLOCK;
 }
