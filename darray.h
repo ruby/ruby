@@ -51,9 +51,19 @@
         1                                         \
     ) : 0)
 
+// Last element of the array
+//
+#define rb_darray_back(ary) ((ary)->data[(ary)->meta.size - 1])
+
 // Remove the last element of the array.
 //
 #define rb_darray_pop_back(ary) ((ary)->meta.size--)
+
+// Remove element at idx and replace it by the last element
+#define rb_darray_remove_unordered(ary, idx) do {   \
+    rb_darray_set(ary, idx, rb_darray_back(ary));   \
+    rb_darray_pop_back(ary);                        \
+} while (0);
 
 // Iterate over items of the array in a for loop
 //

@@ -12,13 +12,6 @@
 // Maximum number of versions per block
 #define MAX_VERSIONS 4
 
-// Maximum number of branch instructions we can track
-#define MAX_BRANCHES 250000
-
-// Registered branch entries
-branch_t branch_entries[MAX_BRANCHES];
-uint32_t num_branches = 0;
-
 /*
 Get an operand for the adjusted stack pointer address
 */
@@ -385,6 +378,26 @@ add_block_version(blockid_t blockid, block_t* block)
     }
 }
 
+// Create a new outgoing branch entry for a block
+static branch_t*
+make_branch_entry(block_t* block, const ctx_t* src_ctx, branchgen_fn gen_fn)
+{
+    RUBY_ASSERT(block != NULL);
+
+    // Allocate and zero-initialize
+    branch_t* branch = calloc(1, sizeof(branch_t));
+
+    branch->block = block;
+    branch->src_ctx = *src_ctx;
+    branch->gen_fn = gen_fn;
+    branch->shape = SHAPE_DEFAULT;
+
+    // Add to the list of outgoing branches for the block
+    rb_darray_append(&block->outgoing, branch);
+
+    return branch;
+}
+
 // Retrieve a basic block version for an (iseq, idx) tuple
 block_t* find_block_version(blockid_t blockid, const ctx_t* ctx)
 {
@@ -410,15 +423,6 @@ block_t* find_block_version(blockid_t blockid, const ctx_t* ctx)
     return best_version;
 }
 
-void
-yjit_branches_update_references(void)
-{
-    for (uint32_t i = 0; i < num_branches; i++) {
-        branch_entries[i].targets[0].iseq = (const void *)rb_gc_location((VALUE)branch_entries[i].targets[0].iseq);
-        branch_entries[i].targets[1].iseq = (const void *)rb_gc_location((VALUE)branch_entries[i].targets[1].iseq);
-    }
-}
-
 // Compile a new block version immediately
 block_t* gen_block_version(blockid_t blockid, const ctx_t* start_ctx, rb_execution_context_t* ec)
 {
@@ -442,14 +446,13 @@ block_t* gen_block_version(blockid_t blockid, const ctx_t* start_ctx, rb_executi
 
     // For each successor block to compile
     for (;;) {
-        // If no branches were generated, stop
-        if (num_branches == 0) {
+        // If the previous block compiled doesn't have outgoing branches, stop
+        if (rb_darray_size(block->outgoing) == 0) {
             break;
         }
 
-        // Get the last branch entry
-        uint32_t branch_idx = num_branches - 1;
-        branch_t* last_branch = &branch_entries[num_branches - 1];
+        // Get the last outgoing branch from the previous block
+        branch_t* last_branch = rb_darray_back(block->outgoing);
 
         // If there is no next block to compile, stop
         if (last_branch->dst_addrs[0] || last_branch->dst_addrs[1]) {
@@ -476,7 +479,8 @@ block_t* gen_block_version(blockid_t blockid, const ctx_t* start_ctx, rb_executi
 
         // Patch the last branch address
         last_branch->dst_addrs[0] = cb_get_ptr(cb, block->start_pos);
-        rb_darray_append(&block->incoming, branch_idx);
+        rb_darray_append(&block->incoming, last_branch);
+        last_branch->blocks[0] = block;
 
         RUBY_ASSERT(block->start_pos == last_branch->end_pos);
     }
@@ -508,7 +512,7 @@ uint8_t* gen_entry_point(const rb_iseq_t *iseq, uint32_t insn_idx, rb_execution_
 // Called by the generated code when a branch stub is executed
 // Triggers compilation of branches and code patching
 static uint8_t *
-branch_stub_hit(const uint32_t branch_idx, const uint32_t target_idx, rb_execution_context_t* ec)
+branch_stub_hit(branch_t* branch, const uint32_t target_idx, rb_execution_context_t* ec)
 {
     uint8_t* dst_addr;
     ctx_t generic_ctx;
@@ -518,20 +522,19 @@ branch_stub_hit(const uint32_t branch_idx, const uint32_t target_idx, rb_executi
     RB_VM_LOCK_ENTER();
     rb_vm_barrier();
 
-    RUBY_ASSERT(branch_idx < num_branches);
+    RUBY_ASSERT(branch != NULL);
     RUBY_ASSERT(target_idx < 2);
-    branch_t *branch = &branch_entries[branch_idx];
     blockid_t target = branch->targets[target_idx];
     const ctx_t* target_ctx = &branch->target_ctxs[target_idx];
 
     // If this branch has already been patched, return the dst address
     // Note: ractors can cause the same stub to be hit multiple times
-    if (branch->dst_patched & (1 << target_idx)) {
-        dst_addr =  branch->dst_addrs[target_idx];
+    if (branch->blocks[target_idx]) {
+        dst_addr = branch->dst_addrs[target_idx];
     }
     else
     {
-        //fprintf(stderr, "\nstub hit, branch idx: %d, target idx: %d\n", branch_idx, target_idx);
+        //fprintf(stderr, "\nstub hit, branch: %p, target idx: %d\n", branch, target_idx);
         //fprintf(stderr, "blockid.iseq=%p, blockid.idx=%d\n", target.iseq, target.idx);
         //fprintf(stderr, "chain_depth=%d\n", target_ctx->chain_depth);
 
@@ -566,6 +569,9 @@ branch_stub_hit(const uint32_t branch_idx, const uint32_t target_idx, rb_executi
 
             // If the new block can be generated right after the branch (at cb->write_pos)
             if (cb->write_pos == branch->end_pos) {
+                // This branch should be terminating its block
+                RUBY_ASSERT(branch->end_pos == branch->block->end_pos);
+
                 // Change the branch shape to indicate the target block will be placed next
                 branch->shape = (uint8_t)target_idx;
 
@@ -574,15 +580,17 @@ branch_stub_hit(const uint32_t branch_idx, const uint32_t target_idx, rb_executi
                 branch->gen_fn(cb, branch->dst_addrs[0], branch->dst_addrs[1], branch->shape);
                 RUBY_ASSERT(cb->write_pos <= branch->end_pos && "can't enlarge branches");
                 branch->end_pos = cb->write_pos;
+                branch->block->end_pos = cb->write_pos;
             }
 
+            // Compile the new block version
             p_block = gen_block_version(target, target_ctx, ec);
             RUBY_ASSERT(p_block);
             RUBY_ASSERT(!(branch->shape == (uint8_t)target_idx && p_block->start_pos != branch->end_pos));
         }
 
         // Add this branch to the list of incoming branches for the target
-        rb_darray_append(&p_block->incoming, branch_idx);
+        rb_darray_append(&p_block->incoming, branch);
 
         // Update the branch target address
         dst_addr = cb_get_ptr(cb, p_block->start_pos);
@@ -597,7 +605,7 @@ branch_stub_hit(const uint32_t branch_idx, const uint32_t target_idx, rb_executi
         cb_set_pos(cb, cur_pos);
 
         // Mark this branch target as patched (no longer a stub)
-        branch->dst_patched |= (1 << target_idx);
+        branch->blocks[target_idx] = p_block;
 
         // Restore interpreter sp, since the code hitting the stub expects the original.
         ec->cfp->sp = original_interp_sp;
@@ -613,7 +621,7 @@ branch_stub_hit(const uint32_t branch_idx, const uint32_t target_idx, rb_executi
 uint8_t* get_branch_target(
     blockid_t target,
     const ctx_t* ctx,
-    uint32_t branch_idx,
+    branch_t* branch,
     uint32_t target_idx
 )
 {
@@ -621,17 +629,18 @@ uint8_t* get_branch_target(
 
     block_t* p_block = find_block_version(target, ctx);
 
+    // If the block already exists
     if (p_block)
     {
         // Add an incoming branch for this version
-        rb_darray_append(&p_block->incoming, branch_idx);
+        rb_darray_append(&p_block->incoming, branch);
+        branch->blocks[target_idx] = p_block;
 
         // Return a pointer to the compiled code
         return cb_get_ptr(cb, p_block->start_pos);
     }
 
-    // Generate an outlined stub that will call
-    // branch_stub_hit(uint32_t branch_idx, uint32_t target_idx)
+    // Generate an outlined stub that will call branch_stub_hit()
     uint8_t* stub_addr = cb_get_ptr(ocb, ocb->write_pos);
 
     // Save the yjit registers
@@ -642,8 +651,8 @@ uint8_t* get_branch_target(
 
     // Call branch_stub_hit(branch_idx, target_idx, ec)
     mov(ocb, C_ARG_REGS[2], REG_EC);
-    mov(ocb, C_ARG_REGS[1], imm_opnd(target_idx));
-    mov(ocb, C_ARG_REGS[0], imm_opnd(branch_idx));
+    mov(ocb, C_ARG_REGS[1],  imm_opnd(target_idx));
+    mov(ocb, C_ARG_REGS[0], const_ptr_opnd(branch));
     call_ptr(ocb, REG0, (void *)&branch_stub_hit);
 
     // Restore the yjit registers
@@ -660,6 +669,7 @@ uint8_t* get_branch_target(
 }
 
 void gen_branch(
+    block_t* block,
     const ctx_t* src_ctx,
     blockid_t target0,
     const ctx_t* ctx0,
@@ -669,31 +679,21 @@ void gen_branch(
 )
 {
     RUBY_ASSERT(target0.iseq != NULL);
-    RUBY_ASSERT_ALWAYS(num_branches < MAX_BRANCHES);
-    uint32_t branch_idx = num_branches++;
+
+    branch_t* branch = make_branch_entry(block, src_ctx, gen_fn);
+    branch->targets[0] = target0;
+    branch->targets[1] = target1;
+    branch->target_ctxs[0] = *ctx0;
+    branch->target_ctxs[1] = ctx1? *ctx1:DEFAULT_CTX;
 
     // Get the branch targets or stubs
-    uint8_t* dst_addr0 = get_branch_target(target0, ctx0, branch_idx, 0);
-    uint8_t* dst_addr1 = ctx1? get_branch_target(target1, ctx1, branch_idx, 1):NULL;
+    branch->dst_addrs[0] = get_branch_target(target0, ctx0, branch, 0);
+    branch->dst_addrs[1] = ctx1? get_branch_target(target1, ctx1, branch, 1):NULL;
 
     // Call the branch generation function
-    uint32_t start_pos = cb->write_pos;
-    gen_fn(cb, dst_addr0, dst_addr1, SHAPE_DEFAULT);
-    uint32_t end_pos = cb->write_pos;
-
-    // Register this branch entry
-    branch_t branch_entry = {
-        start_pos,
-        end_pos,
-        *src_ctx,
-        { target0, target1 },
-        { *ctx0, ctx1? *ctx1:DEFAULT_CTX },
-        { dst_addr0, dst_addr1 },
-        gen_fn,
-        SHAPE_DEFAULT
-    };
-
-    branch_entries[branch_idx] = branch_entry;
+    branch->start_pos = cb->write_pos;
+    gen_fn(cb, branch->dst_addrs[0], branch->dst_addrs[1], SHAPE_DEFAULT);
+    branch->end_pos = cb->write_pos;
 }
 
 void
@@ -715,38 +715,33 @@ gen_jump_branch(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uint8_t sha
 }
 
 void gen_direct_jump(
+    block_t* block,
     const ctx_t* ctx,
     blockid_t target0
 )
 {
     RUBY_ASSERT(target0.iseq != NULL);
-    RUBY_ASSERT_ALWAYS(num_branches < MAX_BRANCHES);
     ctx_t generic_ctx;
-    uint32_t branch_idx = num_branches++;
 
-    // Branch targets or stub adddress
-    uint8_t* dst_addr0;
-
-    // Shape of the branch
-    uint8_t branch_shape;
-
-    // Branch start and end positions
-    uint32_t start_pos;
-    uint32_t end_pos;
+    branch_t* branch = make_branch_entry(block, ctx, gen_jump_branch);
+    branch->targets[0] = target0;
+    branch->target_ctxs[0] = *ctx;
 
     block_t* p_block = find_block_version(target0, ctx);
 
     // If the version already exists
     if (p_block)
     {
-        rb_darray_append(&p_block->incoming, branch_idx);
-        dst_addr0 = cb_get_ptr(cb, p_block->start_pos);
-        branch_shape = SHAPE_DEFAULT;
+        rb_darray_append(&p_block->incoming, branch);
+
+        branch->dst_addrs[0] = cb_get_ptr(cb, p_block->start_pos);
+        branch->blocks[0] = p_block;
+        branch->shape = SHAPE_DEFAULT;
 
         // Call the branch generation function
-        start_pos = cb->write_pos;
-        gen_jump_branch(cb, dst_addr0, NULL, branch_shape);
-        end_pos = cb->write_pos;
+        branch->start_pos = cb->write_pos;
+        gen_jump_branch(cb, branch->dst_addrs[0], NULL, SHAPE_DEFAULT);
+        branch->end_pos = cb->write_pos;
     }
     else
     {
@@ -760,27 +755,13 @@ void gen_direct_jump(
             ctx = &generic_ctx;
         }
 
-        // The target block will follow next
+        // The target block will be compiled next
         // It will be compiled in gen_block_version()
-        dst_addr0 = NULL;
-        branch_shape = SHAPE_NEXT0;
-        start_pos = cb->write_pos;
-        end_pos = cb->write_pos;
+        branch->dst_addrs[0] = NULL;
+        branch->shape = SHAPE_NEXT0;
+        branch->start_pos = cb->write_pos;
+        branch->end_pos = cb->write_pos;
     }
-
-    // Register this branch entry
-    branch_t branch_entry = {
-        start_pos,
-        end_pos,
-        *ctx,
-        { target0, BLOCKID_NULL },
-        { *ctx, *ctx },
-        { dst_addr0, NULL },
-        gen_jump_branch,
-        branch_shape
-    };
-
-    branch_entries[branch_idx] = branch_entry;
 }
 
 // Create a stub to force the code up to this point to be executed
@@ -804,31 +785,17 @@ void defer_compilation(
 
     next_ctx.chain_depth += 1;
 
-    RUBY_ASSERT_ALWAYS(num_branches < MAX_BRANCHES);
-    uint32_t branch_idx = num_branches++;
+    branch_t* branch = make_branch_entry(block, cur_ctx, gen_jump_branch);
 
     // Get the branch targets or stubs
-    blockid_t target0 = (blockid_t){ block->blockid.iseq, insn_idx };
-    uint8_t* dst_addr0 = get_branch_target(target0, &next_ctx, branch_idx, 0);
+    branch->target_ctxs[0] = next_ctx;
+    branch->targets[0] = (blockid_t){ block->blockid.iseq, insn_idx };
+    branch->dst_addrs[0] = get_branch_target(branch->targets[0], &next_ctx, branch, 0);
 
     // Call the branch generation function
-    uint32_t start_pos = cb->write_pos;
-    gen_jump_branch(cb, dst_addr0, NULL, SHAPE_DEFAULT);
-    uint32_t end_pos = cb->write_pos;
-
-    // Register this branch entry
-    branch_t branch_entry = {
-        start_pos,
-        end_pos,
-        *cur_ctx,
-        { target0, BLOCKID_NULL },
-        { next_ctx, next_ctx },
-        { dst_addr0, NULL },
-        gen_jump_branch,
-        SHAPE_DEFAULT
-    };
-
-    branch_entries[branch_idx] = branch_entry;
+    branch->start_pos = cb->write_pos;
+    gen_jump_branch(cb, branch->dst_addrs[0], NULL, SHAPE_DEFAULT);
+    branch->end_pos = cb->write_pos;
 }
 
 // Remove all references to a block then free it.
@@ -838,30 +805,51 @@ yjit_free_block(block_t *block)
     yjit_unlink_method_lookup_dependency(block);
     yjit_block_assumptions_free(block);
 
+    // For each outgoing branch
+    rb_darray_for(block->outgoing, branch_idx) {
+        branch_t* out_branch = rb_darray_get(block->outgoing, branch_idx);
+
+        // For each successor block
+        for (size_t succ_idx = 0; succ_idx < 2; succ_idx++) {
+            block_t* succ = out_branch->blocks[succ_idx];
+
+            if (succ == NULL)
+                continue;
+
+            // Remove this block from the successor's incoming list
+            rb_darray_for(succ->incoming, incoming_idx) {
+                branch_t* pred_branch = rb_darray_get(succ->incoming, incoming_idx);
+                if (pred_branch == out_branch) {
+                    rb_darray_remove_unordered(succ->incoming, incoming_idx);
+                    break;
+                }
+            }
+        }
+
+        // Free the outgoing branch entry
+        free(out_branch);
+    }
+
     rb_darray_free(block->incoming);
+    rb_darray_free(block->outgoing);
     rb_darray_free(block->gc_object_offsets);
 
     free(block);
 }
 
-// Remove a block version without reordering the version array
-static bool
+// Remove a block version
+static void
 block_array_remove(rb_yjit_block_array_t block_array, block_t *block)
 {
-    bool after_target = false;
     block_t **element;
     rb_darray_foreach(block_array, idx, element) {
-        if (after_target) {
-            rb_darray_set(block_array, idx - 1, *element);
-        }
-        else if (*element == block) {
-            after_target = true;
+        if (*element == block) {
+            rb_darray_remove_unordered(block_array, idx);
+            return;
         }
     }
 
-    if (after_target) rb_darray_pop_back(block_array);
-
-    return after_target;
+    RUBY_ASSERT(false);
 }
 
 // Invalidate one specific block version
@@ -874,38 +862,33 @@ invalidate_block_version(block_t* block)
 
     const rb_iseq_t *iseq = block->blockid.iseq;
 
-    // fprintf(stderr, "invalidating block (%p, %d)\n", block->blockid.iseq, block->blockid.idx);
-    // fprintf(stderr, "block=%p\n", block);
+    //fprintf(stderr, "invalidating block (%p, %d)\n", block->blockid.iseq, block->blockid.idx);
+    //fprintf(stderr, "block=%p\n", block);
 
     // Remove this block from the version array
     rb_yjit_block_array_t versions = yjit_get_version_array(iseq, block->blockid.idx);
-    RB_UNUSED_VAR(bool removed);
-    removed = block_array_remove(versions, block);
-    RUBY_ASSERT(removed);
+    block_array_remove(versions, block);
 
     // Get a pointer to the generated code for this block
     uint8_t* code_ptr = cb_get_ptr(cb, block->start_pos);
 
     // For each incoming branch
-    uint32_t* branch_idx;
-    rb_darray_foreach(block->incoming, incoming_idx, branch_idx)
+    rb_darray_for(block->incoming, incoming_idx)
     {
-        //uint32_t branch_idx = block->incoming[i];
-        branch_t* branch = &branch_entries[*branch_idx];
+        branch_t* branch = rb_darray_get(block->incoming, incoming_idx);
         uint32_t target_idx = (branch->dst_addrs[0] == code_ptr)? 0:1;
-        //fprintf(stderr, "branch_idx=%d, target_idx=%d\n", branch_idx, target_idx);
-        //fprintf(stderr, "blockid.iseq=%p, blockid.idx=%d\n", block->blockid.iseq, block->blockid.idx);
+        RUBY_ASSERT(!branch->blocks[target_idx] || branch->blocks[target_idx] == block);
 
         // Create a stub for this branch target
         branch->dst_addrs[target_idx] = get_branch_target(
             block->blockid,
             &block->ctx,
-            *branch_idx,
+            branch,
             target_idx
         );
 
         // Mark this target as being a stub
-        branch->dst_patched &= ~(1 << target_idx);
+        branch->blocks[target_idx] = NULL;
 
         // Check if the invalidated block immediately follows
         bool target_next = block->start_pos == branch->end_pos;

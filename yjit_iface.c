@@ -283,13 +283,6 @@ mark_and_pin_keys_i(st_data_t k, st_data_t v, st_data_t ignore)
     return ST_CONTINUE;
 }
 
-// GC callback during compaction
-static void
-yjit_root_update_references(void *ptr)
-{
-    yjit_branches_update_references();
-}
-
 // GC callback during mark phase
 static void
 yjit_root_mark(void *ptr)
@@ -324,6 +317,12 @@ yjit_root_memsize(const void *ptr)
 {
     // Count off-gc-heap allocation size of the dependency table
     return st_memsize(method_lookup_dependency); // TODO: more accurate accounting
+}
+
+// GC callback during compaction
+static void
+yjit_root_update_references(void *ptr)
+{
 }
 
 // Custom type for interacting with the GC
@@ -939,6 +938,14 @@ rb_yjit_iseq_mark(const struct rb_iseq_constant_body *body)
             rb_gc_mark_movable(block->receiver_klass);
             rb_gc_mark_movable(block->callee_cme);
 
+            // Mark outgoing branch entries
+            rb_darray_for(block->outgoing, branch_idx) {
+                branch_t* branch = rb_darray_get(block->outgoing, branch_idx);
+                for (int i = 0; i < 2; ++i) {
+                    rb_gc_mark_movable((VALUE)branch->targets[i].iseq);
+                }
+            }
+
             // Walk over references to objects in generated code.
             uint32_t *offset_element;
             rb_darray_foreach(block->gc_object_offsets, offset_idx, offset_element) {
@@ -966,6 +973,14 @@ rb_yjit_iseq_update_references(const struct rb_iseq_constant_body *body)
 
             block->receiver_klass = rb_gc_location(block->receiver_klass);
             block->callee_cme = rb_gc_location(block->callee_cme);
+
+            // Update outgoing branch entries
+            rb_darray_for(block->outgoing, branch_idx) {
+                branch_t* branch = rb_darray_get(block->outgoing, branch_idx);
+                for (int i = 0; i < 2; ++i) {
+                    branch->targets[i].iseq = (const void *)rb_gc_location((VALUE)branch->targets[i].iseq);
+                }
+            }
 
             // Walk over references to objects in generated code.
             uint32_t *offset_element;

@@ -170,6 +170,9 @@ Note: care must be taken to minimize the size of branch_t objects
 */
 typedef struct yjit_branch_entry
 {
+    // Block this is attached to
+    struct yjit_block_version *block;
+
     // Positions where the generated code starts and ends
     uint32_t start_pos;
     uint32_t end_pos;
@@ -180,6 +183,7 @@ typedef struct yjit_branch_entry
     // Branch target blocks and their contexts
     blockid_t targets[2];
     ctx_t target_ctxs[2];
+    struct yjit_block_version *blocks[2];
 
     // Jump target addresses
     uint8_t* dst_addrs[2];
@@ -190,11 +194,9 @@ typedef struct yjit_branch_entry
     // Shape of the branch
     branch_shape_t shape : 2;
 
-    // Two flag bits to indicate target addresses
-    // have been patched (are not stubs)
-    uint8_t dst_patched : 2;
-
 } branch_t;
+
+typedef rb_darray(branch_t*) branch_array_t;
 
 typedef rb_darray(uint32_t) int32_array_t;
 
@@ -215,8 +217,12 @@ typedef struct yjit_block_version
     uint32_t start_pos;
     uint32_t end_pos;
 
-    // List of incoming branches indices
-    int32_array_t incoming;
+    // List of incoming branches (from predecessors)
+    branch_array_t incoming;
+
+    // List of outgoing branches (to successors)
+    // Note: these are owned by this block version
+    branch_array_t outgoing;
 
     // Offsets for GC managed objects in the mainline code block
     int32_array_t gc_object_offsets;
@@ -247,10 +253,10 @@ block_t* find_block_version(blockid_t blockid, const ctx_t* ctx);
 block_t* gen_block_version(blockid_t blockid, const ctx_t* ctx, rb_execution_context_t *ec);
 uint8_t*  gen_entry_point(const rb_iseq_t *iseq, uint32_t insn_idx, rb_execution_context_t *ec);
 void yjit_free_block(block_t *block);
-void yjit_branches_update_references(void);
 rb_yjit_block_array_t yjit_get_version_array(const rb_iseq_t *iseq, unsigned idx);
 
 void gen_branch(
+    block_t* block,
     const ctx_t* src_ctx,
     blockid_t target0,
     const ctx_t* ctx0,
@@ -260,6 +266,7 @@ void gen_branch(
 );
 
 void gen_direct_jump(
+    block_t* block,
     const ctx_t* ctx,
     blockid_t target0
 );
