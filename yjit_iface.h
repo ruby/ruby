@@ -70,7 +70,7 @@ YJIT_DECLARE_COUNTERS(
 #undef YJIT_DECLARE_COUNTERS
 
 struct yjit_comment {
-    int32_t offset;
+    uint32_t offset;
     const char *comment;
 };
 

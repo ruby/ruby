@@ -218,8 +218,25 @@ _counted_side_exit(uint8_t *existing_side_exit, int64_t *counter)
     return start;
 }
 
+// Add a comment at the current position in the code block
+static void
+_add_comment(codeblock_t* cb, const char* comment_str)
+{
+    // Avoid adding duplicate comment strings (can happen due to deferred codegen)
+    size_t num_comments = rb_darray_size(yjit_code_comments);
+    if (num_comments > 0) {
+        struct yjit_comment last_comment = rb_darray_get(yjit_code_comments, num_comments - 1);
+        if (last_comment.offset == cb->write_pos && strcmp(last_comment.comment, comment_str) == 0) {
+            return;
+        }
+    }
+
+    struct yjit_comment new_comment = (struct yjit_comment){ cb->write_pos, comment_str };
+    rb_darray_append(&yjit_code_comments, new_comment);
+}
+
 // Comments for generated machine code
-#define ADD_COMMENT(cb, comment) rb_darray_append(&yjit_code_comments, ((struct yjit_comment){(cb)->write_pos, (comment)}))
+#define ADD_COMMENT(cb, comment) _add_comment((cb), (comment))
 yjit_comment_array_t yjit_code_comments;
 
 #else
