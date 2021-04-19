@@ -295,7 +295,7 @@ yjit_entry_prologue(void)
     mov(cb, REG_SP, member_opnd(REG_CFP, rb_control_frame_t, sp));
 
     // Setup cfp->jit_return
-    // TODO: this could use a IP relative LEA instead of an 8 byte immediate
+    // TODO: this could use an IP relative LEA instead of an 8 byte immediate
     mov(cb, REG0, const_ptr_opnd(interp_exit));
     mov(cb, member_opnd(REG_CFP, rb_control_frame_t, jit_return), REG0);
 
