@@ -200,6 +200,8 @@ elsif have_header "windows.h"
   %w{ LoadLibrary FreeLibrary GetProcAddress }.each do |func|
     abort "missing function #{func}" unless have_func(func)
   end
+
+  have_library "ws2_32"
 end
 
 have_const('FFI_STDCALL', ffi_header)
