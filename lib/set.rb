@@ -94,25 +94,25 @@
 #
 # ### Methods for \Set Operations
 #
-# - [|](Set.html#method-i-7C) (aliased as #union and #+) -
+# - [|](#method-i-7C) (aliased as #union and #+) -
 #   Returns a new set containing all elements from +self+
 #   and all elements from a given enumerable (no duplicates).
-# - [&](Set.html#method-i-26) (aliased as #intersection) -
+# - [&](#method-i-26) (aliased as #intersection) -
 #   Returns a new set containing all elements common to +self+
 #   and a given enumerable.
-# - [-](Set.html#method-i-2D) (aliased as #difference) -
+# - [-](#method-i-2D) (aliased as #difference) -
 #   Returns a copy of +self+ with all elements
 #   in a given enumerable removed.
-# - [\^](Set.html#method-i-5E) -
+# - [\^](#method-i-5E) -
 #   Returns a new set containing all elements from +self+
 #   and a given enumerable except those common to both.
 #
 # ### Methods for Comparing
 #
-# - [<=>](Set.html#method-i-3C-3D-3E) -
+# - [<=>](#method-i-3C-3D-3E) -
 #   Returns -1, 0, or 1 as +self+ is less than, equal to,
 #   or greater than a given object.
-# - [==](Set.html#method-i-3D-3D) -
+# - [==](#method-i-3D-3D) -
 #   Returns whether +self+ and a given enumerable are equal,
 #   as determined by Object#eql?.
 # - \#compare_by_identity? -
@@ -127,13 +127,13 @@
 #   Returns whether the set has no elements.
 # - \#include? (aliased as #member? and #===) -
 #   Returns whether a given object is an element in the set.
-# - \#subset? (aliased as [<=](Set.html#method-i-3C-3D)) -
+# - \#subset? (aliased as [<=](#method-i-3C-3D)) -
 #   Returns whether a given object is a subset of the set.
-# - \#proper_subset? (aliased as [<](Set.html#method-i-3C)) -
+# - \#proper_subset? (aliased as [<](#method-i-3C)) -
 #   Returns whether a given enumerable is a proper subset of the set.
-# - \#superset? (aliased as [<=](Set.html#method-i-3E-3D])) -
+# - \#superset? (aliased as [<=](#method-i-3E-3D])) -
 #   Returns whether a given enumerable is a superset of the set.
-# - \#proper_superset? (aliased as [>](Set.html#method-i-3E)) -
+# - \#proper_superset? (aliased as [>](#method-i-3E)) -
 #   Returns whether a given enumerable is a proper superset of the set.
 # - \#disjoint? -
 #   Returns +true+ if the set and a given enumerable
