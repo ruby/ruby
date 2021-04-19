@@ -375,10 +375,17 @@ function_call(int argc, VALUE argv[], VALUE self)
         (void)rb_thread_call_without_gvl(nogvl_ffi_call, &args, 0, 0);
     }
 
-    rb_funcall(mFiddle, rb_intern("last_error="), 1, INT2NUM(errno));
+    {
+        int errno_keep = errno;
 #if defined(_WIN32)
-    rb_funcall(mFiddle, rb_intern("win32_last_error="), 1, INT2NUM(errno));
+        int socket_error = WSAGetLastError();
+        rb_funcall(mFiddle, rb_intern("win32_last_error="), 1,
+                   INT2NUM(errno_keep));
+        rb_funcall(mFiddle, rb_intern("win32_last_socket_error="), 1,
+                   INT2NUM(socket_error));
 #endif
+        rb_funcall(mFiddle, rb_intern("last_error="), 1, INT2NUM(errno_keep));
+    }
 
     ALLOCV_END(alloc_buffer);
 
