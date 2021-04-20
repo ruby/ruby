@@ -9028,9 +9028,12 @@ gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
       case imemo_env:
         {
             rb_env_t *env = (rb_env_t *)obj;
-            TYPED_UPDATE_IF_MOVED(objspace, rb_iseq_t *, env->iseq);
-            UPDATE_IF_MOVED(objspace, env->ep[VM_ENV_DATA_INDEX_ENV]);
-            gc_update_values(objspace, (long)env->env_size, (VALUE *)env->env);
+            if (LIKELY(env->ep)) {
+                // just after newobj() can be NULL here.
+                TYPED_UPDATE_IF_MOVED(objspace, rb_iseq_t *, env->iseq);
+                UPDATE_IF_MOVED(objspace, env->ep[VM_ENV_DATA_INDEX_ENV]);
+                gc_update_values(objspace, (long)env->env_size, (VALUE *)env->env);
+            }
         }
         break;
       case imemo_cref:
