@@ -694,7 +694,7 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 # Header converters operate only on headers (and not on other rows).
 #
 # There are three ways to use header \converters;
-# these examples use built-in header converter +:dowhcase+,
+# these examples use built-in header converter +:downcase+,
 # which downcases each parsed header.
 #
 # - Option +header_converters+ with a singleton parsing method:
