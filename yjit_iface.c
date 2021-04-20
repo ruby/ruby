@@ -1069,7 +1069,9 @@ rb_yjit_init(struct rb_yjit_options *options)
     rb_define_alloc_func(cYjitDisasm, yjit_disasm_init);
     rb_define_method(cYjitDisasm, "disasm", yjit_disasm, 2);
     cYjitDisasmInsn = rb_struct_define_under(cYjitDisasm, "Insn", "address", "mnemonic", "op_str", NULL);
+#if RUBY_DEBUG
     cYjitCodeComment = rb_struct_define_under(cYjitDisasm, "Comment", "address", "comment");
+#endif
 #endif
 
     if (RUBY_DEBUG && rb_yjit_opts.gen_stats) {
