@@ -9,6 +9,7 @@ module Fiddle
     def setup
       super
       Fiddle.last_error = nil
+      Fiddle.win32_last_error = nil if WINDOWS
     end
 
     def test_default_abi
@@ -92,6 +93,19 @@ module Fiddle
       assert_nil Fiddle.last_error
       func.call(+"000", "123")
       refute_nil Fiddle.last_error
+    end
+
+    if WINDOWS
+      def test_win32_last_error
+        kernel32 = dlopen('kernel32')
+        args = [kernel32['SetLastError'], [TYPE_LONG], TYPE_VOID]
+        args << Function::STDCALL if Function.const_defined?(:STDCALL)
+        set_last_error = Function.new(*args)
+        assert_nil(Fiddle.win32_last_error)
+        n = 1 << 29 | 1
+        set_last_error.call(n)
+        assert_equal(n, Fiddle.win32_last_error)
+      end
     end
 
     def test_strcpy
