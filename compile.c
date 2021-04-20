@@ -4962,7 +4962,7 @@ compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node,
         ADD_SEQ(ret, pre);
         ADD_SEQ(ret, rhs);
         ADD_SEQ(ret, lhs);
-        if (!popped) {
+        if (!popped && state.num_args >= 1) {
             /* make sure rhs array is returned before popping */
             ADD_INSN1(ret, nd_line(node), setn, INT2FIX(state.num_args));
         }
