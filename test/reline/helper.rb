@@ -7,7 +7,8 @@ module Reline
     def test_mode
         remove_const('IOGate') if const_defined?('IOGate')
         const_set('IOGate', Reline::GeneralIO)
-        Reline::GeneralIO.reset
+        encoding = (RELINE_TEST_ENCODING rescue nil)
+        Reline::GeneralIO.reset(encoding: encoding)
         send(:core).config.instance_variable_set(:@test_mode, true)
         send(:core).config.reset
     end

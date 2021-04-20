@@ -158,6 +158,9 @@ class Reline::Config
   end
 
   def read_lines(lines, file = nil)
+    if lines.first.encoding != Reline.encoding_system_needs
+      lines = lines.map { |l| l.encode(Reline.encoding_system_needs) }
+    end
     conditions = [@skip_section, @if_stack]
     @skip_section = nil
     @if_stack = []
@@ -293,7 +296,7 @@ class Reline::Config
 
   def retrieve_string(str)
     str = $1 if str =~ /\A"(.*)"\z/
-    parse_keyseq(str).map { |c| c.chr(Reline::IOGate.encoding) }.join
+    parse_keyseq(str).map { |c| c.chr(Reline.encoding_system_needs) }.join
   end
 
   def bind_key(key, func_name)
