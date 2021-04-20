@@ -5,7 +5,7 @@ YJIT - Yet Another Ruby JIT
 
 YJIT is a lightweight, minimalistic Ruby JIT built inside the CRuby/MRI binary.
 It lazily compiles code using a Basic Block Versioning (BBV) architecture. The target use case is that of servers running
-Ruby on Rails, an area where CRuby's MJIT has not yet managed to deliver speedups. 
+Ruby on Rails, an area where CRuby's MJIT has not yet managed to deliver speedups.
 To simplify development, we currently support only MacOS and Linux on x86-64, but an ARM64 backend
 is part of future plans.
 This project is open source and falls under the same license as CRuby.
@@ -35,13 +35,12 @@ Start by cloning the `yjit` branch of the `Shopify/ruby` repository:
 ```
 git clone https://github.com/Shopify/ruby.git yjit
 cd yjit
-git checkout yjit
 ```
 
 The YJIT `ruby` binary can be built with either GCC or Clang. We recommend enabling debug symbols so that assertions are enabled during development as this makes debugging easier. More detailed build instructions are provided in the [Ruby README](https://github.com/ruby/ruby#how-to-compile-and-install).
 
 ```
-autoconf
+./autogen.sh
 ./configure cppflags=-DRUBY_DEBUG --prefix=$HOME/.rubies/ruby-yjit
 make -j16 install
 ```

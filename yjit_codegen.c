@@ -525,11 +525,11 @@ static codegen_status_t
 gen_putself(jitstate_t* jit, ctx_t* ctx)
 {
     // Load self from CFP
-    mov(cb, RAX, member_opnd(REG_CFP, rb_control_frame_t, self));
+    mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, self));
 
     // Write it on the stack
     x86opnd_t stack_top = ctx_stack_push_self(ctx);
-    mov(cb, stack_top, RAX);
+    mov(cb, stack_top, REG0);
 
     return YJIT_KEEP_COMPILING;
 }
@@ -1792,11 +1792,13 @@ gen_oswb_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
     // Create a context for the callee
     ctx_t callee_ctx = DEFAULT_CTX;
 
-    // Set the argument type in the callee's context
+    // Set the argument types in the callee's context
     for (int32_t arg_idx = 0; arg_idx < argc; ++arg_idx) {
         val_type_t arg_type = ctx_get_opnd_type(ctx, OPND_STACK(argc - arg_idx - 1));
         ctx_set_local_type(&callee_ctx, arg_idx, arg_type);
     }
+    val_type_t recv_type = ctx_get_opnd_type(ctx, OPND_STACK(argc));
+    ctx_set_opnd_type(&callee_ctx, OPND_SELF, recv_type);
 
     // Pop arguments and receiver in return context, push the return value
     // After the return, the JIT and interpreter SP will match up

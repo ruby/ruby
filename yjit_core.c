@@ -160,8 +160,6 @@ Set the type of an instruction operand
 */
 void ctx_set_opnd_type(ctx_t* ctx, insn_opnd_t opnd, val_type_t type)
 {
-    RUBY_ASSERT(opnd.idx < ctx->stack_size);
-
     if (opnd.is_self) {
         ctx->self_type = type;
         return;
@@ -170,6 +168,7 @@ void ctx_set_opnd_type(ctx_t* ctx, insn_opnd_t opnd, val_type_t type)
     if (ctx->stack_size > MAX_TEMP_TYPES)
         return;
 
+    RUBY_ASSERT(opnd.idx < ctx->stack_size);
     temp_mapping_t mapping = ctx->temp_mapping[ctx->stack_size - 1 - opnd.idx];
 
     switch (mapping.kind)
