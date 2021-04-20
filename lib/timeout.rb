@@ -32,7 +32,9 @@ module Timeout
     def self.catch(*args)
       exc = new(*args)
       exc.instance_variable_set(:@thread, Thread.current)
-      ::Kernel.catch(exc) {yield exc}
+      catch_value = Object.new
+      exc.instance_variable_set(:@catch_value, catch_value)
+      ::Kernel.catch(catch_value) {yield exc}
     end
 
     def exception(*)
@@ -40,11 +42,11 @@ module Timeout
       if self.thread == Thread.current
         bt = caller
         begin
-          throw(self, bt)
+          throw(@catch_value, bt)
         rescue UncaughtThrowError
         end
       end
-      self
+      super
     end
   end
 
@@ -115,6 +117,7 @@ module Timeout
       begin
         bl.call(klass)
       rescue klass => e
+        message = e.message
         bt = e.backtrace
       end
     else
