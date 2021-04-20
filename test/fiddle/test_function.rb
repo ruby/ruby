@@ -9,7 +9,10 @@ module Fiddle
     def setup
       super
       Fiddle.last_error = nil
-      Fiddle.win32_last_error = nil if WINDOWS
+      if WINDOWS
+        Fiddle.win32_last_error = nil
+        Fiddle.win32_last_socket_error = nil
+      end
     end
 
     def test_default_abi
@@ -105,6 +108,17 @@ module Fiddle
         n = 1 << 29 | 1
         set_last_error.call(n)
         assert_equal(n, Fiddle.win32_last_error)
+      end
+
+      def test_win32_last_socket_error
+        ws2_32 = Fiddle.dlopen("ws2_32")
+        args = [ws2_32["WSASetLastError"], [TYPE_INT], TYPE_VOID]
+        args << Function::STDCALL if Function.const_defined?(:STDCALL)
+        wsa_set_last_error = Function.new(*args)
+        assert_nil(Fiddle.win32_last_socket_error)
+        n = 1 << 29 | 1
+        wsa_set_last_error.call(n)
+        assert_equal(n, Fiddle.win32_last_socket_error)
       end
     end
 
