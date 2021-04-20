@@ -100,8 +100,8 @@ module Fiddle
 
     if WINDOWS
       def test_win32_last_error
-        kernel32 = Fiddle.dlopen('kernel32')
-        args = [kernel32['SetLastError'], [TYPE_LONG], TYPE_VOID]
+        kernel32 = Fiddle.dlopen("kernel32")
+        args = [kernel32["SetLastError"], [TYPE_LONG], TYPE_VOID]
         args << Function::STDCALL if Function.const_defined?(:STDCALL)
         set_last_error = Function.new(*args)
         assert_nil(Fiddle.win32_last_error)
