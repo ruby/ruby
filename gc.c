@@ -6107,7 +6107,7 @@ rgengc_check_relation(rb_objspace_t *objspace, VALUE obj)
 		    /* An object pointed from an OLD object should be OLD. */
 		    gc_report(2, objspace, "relation: (O->unmarked Y) %s -> %s\n", obj_info(old_parent), obj_info(obj));
 		    RVALUE_AGE_SET_OLD(objspace, obj);
-		    if (is_incremental_marking(objspace)) {
+                    if (is_marking(objspace) && is_full_marking(objspace)) {
 			if (!RVALUE_MARKING(obj)) {
 			    gc_grey(objspace, obj);
 			}
@@ -7420,6 +7420,21 @@ gc_marks_finish(rb_objspace_t *objspace)
     gc_marks_check(objspace, gc_check_after_marks_i, "after_marks");
 #endif
 
+#if RGENGC_CHECK_MODE
+    if (is_full_marking(objspace)) {
+        struct heap_page *page = NULL;
+        list_for_each(&heap_eden->pages, page, page_node) {
+            for (int i = 0; i < page->total_slots; i++) {
+                RVALUE *p = page->start + i;
+                /* If it is a full mark then none of the objects should be in the marking state. */
+                if (RVALUE_MARKING_BITMAP((VALUE)p)) {
+                    rb_bug("marking bit set after full mark: %s", obj_info((VALUE)p));
+                }
+            }
+        }
+    }
+#endif
+
     {
 	/* decide full GC is needed or not */
 	rb_heap_t *heap = heap_eden;
@@ -7961,6 +7976,9 @@ rb_gc_writebarrier_remember(VALUE obj)
 	}
     }
     else {
+        /* Should not be called during non-incremental marking. */
+        GC_ASSERT(!is_marking(objspace));
+
 	if (RVALUE_OLD_P(obj)) {
 	    rgengc_remember(objspace, obj);
 	}
