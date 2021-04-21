@@ -239,6 +239,91 @@ assert_normal_exit %q{
   end
 }
 
+# test setinstancevariable on extended objects
+assert_equal '1', %q{
+  class Extended
+    attr_reader :one
+
+    def write_many
+      @a = 1
+      @b = 2
+      @c = 3
+      @d = 4
+      @one = 1
+    end
+  end
+
+  foo = Extended.new
+  foo.write_many
+  foo.write_many
+  foo.write_many
+}
+
+# test setinstancevariable on embedded objects
+assert_equal '1', %q{
+  class Embedded
+    attr_reader :one
+
+    def write_one
+      @one = 1
+    end
+  end
+
+  foo = Embedded.new
+  foo.write_one
+  foo.write_one
+  foo.write_one
+}
+
+# test setinstancevariable after extension
+assert_equal '[10, 11, 12, 13, 1]', %q{
+  class WillExtend
+    attr_reader :one
+
+    def make_extended
+      @foo1 = 10
+      @foo2 = 11
+      @foo3 = 12
+      @foo4 = 13
+    end
+
+    def write_one
+      @one = 1
+    end
+
+    def read_all
+      [@foo1, @foo2, @foo3, @foo4, @one]
+    end
+  end
+
+  foo = WillExtend.new
+  foo.write_one
+  foo.write_one
+  foo.make_extended
+  foo.write_one
+  foo.read_all
+}
+
+# test setinstancevariable on frozen object
+assert_equal 'object was not modified', %q{
+  class WillFreeze
+    def write
+      @ivar = 1
+    end
+  end
+
+  wf = WillFreeze.new
+  wf.write
+  wf.write
+  wf.freeze
+
+  begin
+    wf.write
+  rescue FrozenError
+    "object was not modified"
+  end
+}
+
 # Test getinstancevariable and inline caches
 assert_equal '6', %q{
   class Foo

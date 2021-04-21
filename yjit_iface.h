@@ -57,6 +57,13 @@ YJIT_DECLARE_COUNTERS(
     getivar_name_not_mapped,
     getivar_not_object,
 
+    setivar_se_self_not_heap,
+    setivar_idx_out_of_range,
+    setivar_val_heapobject,
+    setivar_name_not_mapped,
+    setivar_not_object,
+    setivar_frozen,
+
     oaref_argc_not_one,
     oaref_arg_not_fixnum,
 
