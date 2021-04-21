@@ -4311,10 +4311,9 @@ static VALUE
 take_i(RB_BLOCK_CALL_FUNC_ARGLIST(val, cbarg))
 {
     VALUE *args = (VALUE *)cbarg;
-    if (args[1] == 0) rb_iter_break();
-    else args[1]--;
     if (argc > 1) val = rb_ary_new4(argc, argv);
     rb_ary_push(args[0], val);
+    if (--args[1] == 0) rb_iter_break();
     return Qnil;
 }
 
@@ -4324,6 +4323,7 @@ take_items(VALUE obj, long n)
     VALUE result = rb_check_array_type(obj);
     VALUE args[2];
 
+    if (n == 0) return result;
     if (!NIL_P(result)) return rb_ary_subseq(result, 0, n);
     result = rb_ary_new2(n);
     args[0] = result; args[1] = (VALUE)n;

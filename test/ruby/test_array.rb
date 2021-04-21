@@ -2735,6 +2735,17 @@ class TestArray < Test::Unit::TestCase
     assert_equal [[42, 1]], [42].zip(r), bug8153
   end
 
+  def test_zip_with_enumerator
+    bug17814 = "ruby-core:103513"
+
+    step = 0.step
+    e = Enumerator.produce { step.next }
+    a = %w(a b c)
+    assert_equal([["a", 0], ["b", 1], ["c", 2]], a.zip(e))
+    assert_equal([["a", 3], ["b", 4], ["c", 5]], a.zip(e))
+    assert_equal([["a", 6], ["b", 7], ["c", 8]], a.zip(e))
+  end
+
   def test_transpose
     assert_equal([[1, :a], [2, :b], [3, :c]],
       [[1, 2, 3], [:a, :b, :c]].transpose)
