@@ -1054,10 +1054,11 @@ module Net
     TIME_PARSER = ->(value, local = false) {
       unless /\A(?<year>\d{4})(?<month>\d{2})(?<day>\d{2})
             (?<hour>\d{2})(?<min>\d{2})(?<sec>\d{2})
-            (?:\.(?<fractions>\d+))?/x =~ value
+            (?:\.(?<fractions>\d{1,17}))?/x =~ value
+        value = value[0, 97] + "..." if value.size > 100
         raise FTPProtoError, "invalid time-val: #{value}"
       end
-      usec = fractions.to_i * 10 ** (6 - fractions.to_s.size)
+      usec = ".#{fractions}".to_r * 1_000_000 if fractions
       Time.public_send(local ? :local : :utc, year, month, day, hour, min, sec, usec)
     }
     FACT_PARSERS = Hash.new(CASE_DEPENDENT_PARSER)
