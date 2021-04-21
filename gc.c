@@ -8717,7 +8717,6 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
 static VALUE
 gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free)
 {
-    int marked;
     int wb_unprotected;
     int uncollectible;
     int marking;
@@ -8727,10 +8726,10 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free)
     gc_report(4, objspace, "Moving object: %p -> %p\n", (void*)scan, (void *)free);
 
     GC_ASSERT(BUILTIN_TYPE(scan) != T_NONE);
-    GC_ASSERT(!MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(free), free));
+    GC_ASSERT(RVALUE_MARK_BITMAP(scan));
+    GC_ASSERT(!RVALUE_MARK_BITMAP(free));
 
     /* Save off bits for current object. */
-    marked = rb_objspace_marked_object_p((VALUE)src);
     wb_unprotected = RVALUE_WB_UNPROTECTED((VALUE)src);
     uncollectible = RVALUE_UNCOLLECTIBLE((VALUE)src);
     marking = RVALUE_MARKING((VALUE)src);
@@ -8776,12 +8775,8 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free)
         CLEAR_IN_BITMAP(GET_HEAP_MARKING_BITS((VALUE)dest), (VALUE)dest);
     }
 
-    if (marked) {
-        MARK_IN_BITMAP(GET_HEAP_MARK_BITS((VALUE)dest), (VALUE)dest);
-    }
-    else {
-        CLEAR_IN_BITMAP(GET_HEAP_MARK_BITS((VALUE)dest), (VALUE)dest);
-    }
+    /* Only marked objects should be moved. */
+    MARK_IN_BITMAP(GET_HEAP_MARK_BITS((VALUE)dest), (VALUE)dest);
 
     if (wb_unprotected) {
         MARK_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS((VALUE)dest), (VALUE)dest);
