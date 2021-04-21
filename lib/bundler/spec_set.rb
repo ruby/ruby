@@ -78,11 +78,17 @@ module Bundler
 
     def materialize(deps, missing_specs = nil)
       materialized = self.for(deps, [], false, true, !missing_specs).to_a
-      deps = materialized.map(&:name).uniq
+
+      materialized.group_by(&:source).each do |source, specs|
+        next unless specs.any?{|s| s.is_a?(LazySpecification) }
+
+        source.local!
+        names = -> { specs.map(&:name).uniq }
+        source.double_check_for(names)
+      end
+
       materialized.map! do |s|
         next s unless s.is_a?(LazySpecification)
-        s.source.dependency_names = deps if s.source.respond_to?(:dependency_names=)
-        s.source.local!
         spec = s.__materialize__
         unless spec
           unless missing_specs
@@ -99,12 +105,17 @@ module Bundler
     # This is in contrast to how for does platform filtering (and specifically different from how `materialize` calls `for` only for the current platform)
     # @return [Array<Gem::Specification>]
     def materialized_for_all_platforms
-      names = @specs.map(&:name).uniq
+      @specs.group_by(&:source).each do |source, specs|
+        next unless specs.any?{|s| s.is_a?(LazySpecification) }
+
+        source.local!
+        source.remote!
+        names = -> { specs.map(&:name).uniq }
+        source.double_check_for(names)
+      end
+
       @specs.map do |s|
         next s unless s.is_a?(LazySpecification)
-        s.source.dependency_names = names if s.source.respond_to?(:dependency_names=)
-        s.source.local!
-        s.source.remote!
         spec = s.__materialize__
         raise GemNotFound, "Could not find #{s.full_name} in any of the sources" unless spec
         spec

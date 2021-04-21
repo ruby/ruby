@@ -252,7 +252,7 @@ class Bundler::Thor
     # flag<Regexp|String>:: the regexp or string to be replaced
     # replacement<String>:: the replacement, can be also given as a block
     # config<Hash>:: give :verbose => false to not log the status, and
-    #                :force => true, to force the replacement regardles of runner behavior.
+    #                :force => true, to force the replacement regardless of runner behavior.
     #
     # ==== Example
     #

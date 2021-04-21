@@ -349,14 +349,14 @@ RSpec.describe "real world edgecases", :realworld => true do
   end
 
   it "doesn't hang on big gemfile" do
-    skip "Only for ruby 2.7.2" if RUBY_VERSION != "2.7.2"
+    skip "Only for ruby 2.7.3" if RUBY_VERSION != "2.7.3"
 
     gemfile <<~G
       # frozen_string_literal: true
 
       source "https://rubygems.org"
 
-      ruby "2.7.2"
+      ruby "2.7.3"
 
       gem "rails"
       gem "pg", ">= 0.18", "< 2.0"
@@ -461,7 +461,7 @@ RSpec.describe "real world edgecases", :realworld => true do
   end
 
   it "doesn't hang on tricky gemfile" do
-    skip "Only for ruby 2.7.2" if RUBY_VERSION != "2.7.2"
+    skip "Only for ruby 2.7.3" if RUBY_VERSION != "2.7.3"
 
     gemfile <<~G
       source 'https://rubygems.org'
@@ -487,7 +487,7 @@ RSpec.describe "real world edgecases", :realworld => true do
   end
 
   it "doesn't hang on nix gemfile" do
-    skip "Only for ruby 3.0.0" if RUBY_VERSION != "3.0.0"
+    skip "Only for ruby 3.0.1" if RUBY_VERSION != "3.0.1"
 
     gemfile <<~G
       source "https://rubygems.org" do

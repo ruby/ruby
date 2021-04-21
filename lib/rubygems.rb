@@ -626,7 +626,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
       # Try requiring the gem version *or* stdlib version of psych.
       require 'psych'
     rescue ::LoadError
-      # If we can't load psych, thats fine, go on.
+      # If we can't load psych, that's fine, go on.
     else
       # If 'yaml' has already been required, then we have to
       # be sure to switch it over to the newly loaded psych.

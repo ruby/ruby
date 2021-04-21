@@ -24,7 +24,7 @@ data you will need to change them immediately and yank your gem.
   end
 
   def usage # :nodoc:
-    "#{program_name} GEM -v VERSION [-p PLATFORM] [--key KEY_NAME] [--host HOST]"
+    "#{program_name} -v VERSION [-p PLATFORM] [--key KEY_NAME] [--host HOST] GEM"
   end
 
   def initialize
