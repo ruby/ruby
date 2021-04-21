@@ -614,6 +614,17 @@ The checksum of /versions does not match the checksum provided by the server! So
       expect(the_bundle).to include_gems "rack 1.0.0"
     end
 
+    it "passes basic authentication details and strips out creds also in verbose mode" do
+      gemfile <<-G
+        source "#{basic_auth_source_uri}"
+        gem "rack"
+      G
+
+      bundle :install, :verbose => true, :artifice => "compact_index_basic_authentication"
+      expect(out).not_to include("#{user}:#{password}")
+      expect(the_bundle).to include_gems "rack 1.0.0"
+    end
+
     it "strips http basic auth creds when warning about ambiguous sources", :bundler => "< 3" do
       gemfile <<-G
         source "#{basic_auth_source_uri}"
@@ -812,6 +823,28 @@ The checksum of /versions does not match the checksum provided by the server! So
     bundle :install, :artifice => "compact_index_concurrent_download"
 
     expect(File.read(versions)).to start_with("created_at")
+    expect(the_bundle).to include_gems "rack 1.0.0"
+  end
+
+  it "performs full update if server endpoints serve partial content responses but don't have incremental content and provide no Etag" do
+    build_repo4 do
+      build_gem "rack", "0.9.1"
+    end
+
+    install_gemfile <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      source "#{source_uri}"
+      gem 'rack', '0.9.1'
+    G
+
+    update_repo4 do
+      build_gem "rack", "1.0.0"
+    end
+
+    install_gemfile <<-G, :artifice => "compact_index_partial_update_no_etag_not_incremental", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      source "#{source_uri}"
+      gem 'rack', '1.0.0'
+    G
+
     expect(the_bundle).to include_gems "rack 1.0.0"
   end
 

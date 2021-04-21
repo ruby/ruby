@@ -293,7 +293,7 @@ RSpec.describe "bundler/inline#gemfile" do
     it "installs inline gems to the system path regardless" do
       script <<-RUBY, :env => { "BUNDLE_PATH" => "./vendor/inline" }
         gemfile(true) do
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "rack"
         end
       RUBY

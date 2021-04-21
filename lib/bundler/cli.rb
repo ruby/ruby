@@ -510,8 +510,8 @@ module Bundler
       By default, setting a configuration value sets it for all projects
       on the machine.
 
-      If a global setting is superceded by local configuration, this command
-      will show the current value, as well as any superceded values and
+      If a global setting is superseded by local configuration, this command
+      will show the current value, as well as any superseded values and
       where they were specified.
     D
     require_relative "cli/config"
