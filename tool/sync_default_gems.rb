@@ -353,6 +353,16 @@ def sync_default_gems(gem)
   end
 end
 
+IGNORE_FILE_PATTERN =
+  /\A(?:[A-Z]\w*\.(?:md|txt)
+  |[^\/]+\.yml
+  |\.git.*
+  |[A-Z]\w+file
+  |COPYING
+  )\z|
+  |rakelib\/
+  /x
+
 def message_filter(repo, sha)
   log = STDIN.read
   print "[#{repo}] ", log.sub(/\s*(?=(?i:\nCo-authored-by:.*)*\Z)/) {
@@ -363,11 +373,6 @@ end
 def sync_default_gems_with_commits(gem, ranges, edit: nil)
   repo = REPOSITORIES[gem.to_sym]
   puts "Sync #{repo} with commit history."
-
-  file_pattern = gem == repo ? gem : "{#{gem},#{repo}}"
-  file_pattern = "*/#{file_pattern}{,.*,/**/*}"
-  fnm_option = File::FNM_PATHNAME | File::FNM_DOTMATCH
-  file_match = proc {|file| File.fnmatch?(file_pattern, file, fnm_option)}
 
   IO.popen(%W"git remote") do |f|
     unless f.read.split.include?(gem)
@@ -394,9 +399,8 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
 
   # Ignore Merge commit and insufficiency commit for ruby core repository.
   commits.delete_if do |sha, subject|
-    next true if /^(?:Auto )?Merge/ =~ subject
-    IO.popen(%W"git diff-tree --no-commit-id --name-only -r #{sha}", &:read)
-      .split("\n").none?(&file_match)
+    files = IO.popen(%W"git diff-tree --no-commit-id --name-only -r #{sha}", &:readlines)
+    subject =~ /^Merge/ || subject =~ /^Auto Merge/ || files.all?{|file| file =~ IGNORE_FILE_PATTERN}
   end
 
   if commits.empty?
@@ -433,9 +437,10 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
     if result.empty?
       skipped = true
     elsif /^CONFLICT/ =~ result
-      result = IO.popen(%W"git status --porcelain", &:readlines).map! {|line| line[/^.U (.*)/, 1]}
+      result = IO.popen(%W"git status --porcelain", &:readlines).each(&:chomp!)
+      result.map! {|line| line[/^.U (.*)/, 1]}
       result.compact!
-      conflict, ignore = result.partition(&file_match)
+      ignore, conflict = result.partition {|name| IGNORE_FILE_PATTERN =~ name}
       unless ignore.empty?
         system(*%W"git reset HEAD --", *ignore)
         File.unlink(*ignore)
