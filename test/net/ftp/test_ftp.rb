@@ -2510,6 +2510,12 @@ EOF
   end
 
   def test_time_parser
+    s = "20371231000000"
+    assert_equal(Time.utc(2037, 12, 31, 0, 0, 0),
+                 Net::FTP::TIME_PARSER[s])
+    s = "20371231000000.123456"
+    assert_equal(Time.utc(2037, 12, 31, 0, 0, 0, 123456),
+                 Net::FTP::TIME_PARSER[s])
     s = "20371231000000." + "9" * 999999999
     assert_equal(Time.utc(2037, 12, 31, 0, 0, 0,
                           99999999999999999r / 100000000000),
