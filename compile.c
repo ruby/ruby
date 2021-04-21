@@ -1099,19 +1099,6 @@ LAST_ELEMENT(LINK_ANCHOR *const anchor)
 }
 
 static LINK_ELEMENT *
-POP_ELEMENT(ISEQ_ARG_DECLARE LINK_ANCHOR *const anchor)
-{
-    LINK_ELEMENT *elem = anchor->last;
-    anchor->last = anchor->last->prev;
-    anchor->last->next = 0;
-    verify_list("pop", anchor);
-    return elem;
-}
-#if CPDEBUG < 0
-#define POP_ELEMENT(anchor) POP_ELEMENT(iseq, (anchor))
-#endif
-
-static LINK_ELEMENT *
 ELEM_FIRST_INSN(LINK_ELEMENT *elem)
 {
     while (elem) {
@@ -4596,27 +4583,163 @@ when_splat_vals(rb_iseq_t *iseq, LINK_ANCHOR *const cond_seq, const NODE *vals,
     return COMPILE_OK;
 }
 
+/* Multiple Assignment Handling
+ *
+ * In order to handle evaluation of multiple assignment such that the left hand side
+ * is evaluated before the right hand side, we need to process the left hand side
+ * and see if there are any attributes that need to be assigned.  If so, we add
+ * instructions to evaluate the receiver of any assigned attributes before we
+ * process the right hand side.
+ *
+ * For a multiple assignment such as:
+ *
+ *   l1.m1, l2[0] = r3, r4
+ *
+ * We start off evaluating l1 and l2, then we evaluate r3 and r4, then we
+ * assign the result of r3 to l1.m1, and then the result of r4 to l2.m2.
+ * On the VM stack, this looks like:
+ *
+ *     self                               # putself
+ *     l1                                 # send
+ *     l1, self                           # putself
+ *     l1, l2                             # send
+ *     l1, l2, 0                          # putobject 0
+ *     l1, l2, 0, [r3, r4]                # after evaluation of RHS
+ *     l1, l2, 0, [r3, r4], r4, r3        # expandarray
+ *     l1, l2, 0, [r3, r4], r4, r3, l1    # topn 5
+ *     l1, l2, 0, [r3, r4], r4, l1, r3    # swap
+ *     l1, l2, 0, [r3, r4], r4, m1=       # send
+ *     l1, l2, 0, [r3, r4], r4            # pop
+ *     l1, l2, 0, [r3, r4], r4, l2        # topn 3
+ *     l1, l2, 0, [r3, r4], r4, l2, 0     # topn 3
+ *     l1, l2, 0, [r3, r4], r4, l2, 0, r4 # topn 2
+ *     l1, l2, 0, [r3, r4], r4, []=       # send
+ *     l1, l2, 0, [r3, r4], r4            # pop
+ *     l1, l2, 0, [r3, r4]                # pop
+ *     [r3, r4], l2, 0, [r3, r4]          # setn 3
+ *     [r3, r4], l2, 0                    # pop
+ *     [r3, r4], l2                       # pop
+ *     [r3, r4]                           # pop
+ *
+ * This is made more complex when you have to handle splats, post args,
+ * and arbitrary levels of nesting.  You need to keep track of the total
+ * number of attributes to set, and for each attribute, how many entries
+ * are on the stack before the final attribute, in order to correctly
+ * calculate the topn value to use to get the receiver of the attribute
+ * setter method.
+ *
+ * A brief description of the VM stack for simple multiple assignment
+ * with no splat (rhs_array will not be present if the return value of
+ * the multiple assignment is not needed):
+ *
+ *     lhs_attr1, lhs_attr2, ..., rhs_array, ..., rhs_arg2, rhs_arg1
+ *
+ * For multiple assignment with splats, while processing the part before
+ * the splat (splat+post here is an array of the splat and the post arguments):
+ *
+ *     lhs_attr1, lhs_attr2, ..., rhs_array, splat+post, ..., rhs_arg2, rhs_arg1
+ *
+ * When processing the splat and post arguments:
+ *
+ *     lhs_attr1, lhs_attr2, ..., rhs_array, ..., post_arg2, post_arg1, splat
+ *
+ * When processing nested multiple assignment, existing values on the stack
+ * are kept.  So for:
+ *
+ *     (l1.m1, l2.m2), l3.m3, l4* = [r1, r2], r3, r4
+ *
+ * The stack layout would be the following before processing the nested
+ * multiple assignment:
+ *
+ *     l1, l2, [[r1, r2], r3, r4], [r4], r3, [r1, r2]
+ *
+ * In order to handle this correctly, we need to keep track of the nesting
+ * level for each attribute assignment, as well as the attribute number
+ * (left hand side attributes are processed left to right) and number of
+ * arguments to pass to the setter method. struct masgn_attrasgn tracks
+ * this information.
+ *
+ * We also need to track information for the entire multiple assignment, such
+ * as the total number of arguments, and the current nesting level, to
+ * handle both nested multiple assignment as well as cases where the
+ * rhs is not needed.  We also need to keep track of all attribute
+ * assignments in this, which we do using a linked listed. struct masgn_state
+ * tracks this information.
+ */
+
+struct masgn_attrasgn {
+  INSN *before_insn;
+  struct masgn_attrasgn *next;
+  int line;
+  int argn;
+  int num_args;
+  int lhs_pos;
+};
+
+struct masgn_state {
+    struct masgn_attrasgn *first_memo;
+    struct masgn_attrasgn *last_memo;
+    int lhs_level;
+    int num_args;
+    bool nested;
+};
+
+static int compile_massign0(rb_iseq_t *iseq, LINK_ANCHOR *const pre, LINK_ANCHOR *const rhs, LINK_ANCHOR *const lhs, LINK_ANCHOR *const post, const NODE *const node, struct masgn_state *state, int popped);
 
 static int
-compile_massign_lhs(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node)
+compile_massign_lhs(rb_iseq_t *iseq, LINK_ANCHOR *const pre, LINK_ANCHOR *const rhs, LINK_ANCHOR *const lhs, LINK_ANCHOR *const post, const NODE *const node, struct masgn_state *state, int lhs_pos)
 {
     switch (nd_type(node)) {
       case NODE_ATTRASGN: {
+        if (!state) {
+            rb_bug("no masgn_state");
+        }
+
 	INSN *iobj;
-	VALUE dupidx;
 	int line = nd_line(node);
 
-	CHECK(COMPILE_POPPED(ret, "masgn lhs (NODE_ATTRASGN)", node));
+        CHECK(COMPILE_POPPED(pre, "masgn lhs (NODE_ATTRASGN)", node));
 
-	iobj = (INSN *)get_prev_insn((INSN *)LAST_ELEMENT(ret)); /* send insn */
+        LINK_ELEMENT *insn_element = LAST_ELEMENT(pre);
+        iobj = (INSN *)get_prev_insn((INSN *)insn_element); /* send insn */
+        ELEM_REMOVE(LAST_ELEMENT(pre));
+        ELEM_REMOVE((LINK_ELEMENT *)iobj);
+        pre->last = iobj->link.prev;
+
         const struct rb_callinfo *ci = (struct rb_callinfo *)OPERAND_AT(iobj, 0);
         int argc = vm_ci_argc(ci) + 1;
         ci = ci_argc_set(iseq, ci, argc);
         OPERAND_AT(iobj, 0) = (VALUE)ci;
         RB_OBJ_WRITTEN(iseq, Qundef, ci);
-        dupidx = INT2FIX(argc);
 
-	INSERT_BEFORE_INSN1(iobj, line, topn, dupidx);
+        if (argc == 1) {
+            ADD_INSN(lhs, line, swap);
+        }
+        else {
+            ADD_INSN1(lhs, line, topn, INT2FIX(argc));
+        }
+
+        struct masgn_attrasgn *memo;
+        memo = malloc(sizeof(struct masgn_attrasgn));
+        if (!memo) {
+            return 0;
+        }
+        memo->before_insn = (INSN *)LAST_ELEMENT(lhs);
+        memo->line = line;
+        memo->argn = state->num_args + 1;
+        memo->num_args = argc;
+        state->num_args += argc;
+        memo->lhs_pos = lhs_pos;
+        memo->next = NULL;
+        if (!state->first_memo) {
+            state->first_memo = memo;
+        }
+        else {
+            state->last_memo->next = memo;
+        }
+        state->last_memo = memo;
+
+        ADD_ELEM(lhs, (LINK_ELEMENT *)iobj);
 	if (vm_ci_flag(ci) & VM_CALL_ARGS_SPLAT) {
             int argc = vm_ci_argc(ci);
             ci = ci_argc_set(iseq, ci, argc - 1);
@@ -4625,15 +4748,31 @@ compile_massign_lhs(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const n
             INSERT_BEFORE_INSN1(iobj, line, newarray, INT2FIX(1));
 	    INSERT_BEFORE_INSN(iobj, line, concatarray);
 	}
-	ADD_INSN(ret, line, pop);	/* result */
+        ADD_INSN(lhs, line, pop);
+        if (argc != 1) {
+            ADD_INSN(lhs, line, pop);
+        }
+        for (int i=0; i < argc; i++) {
+            ADD_INSN(post, line, pop);
+        }
 	break;
       }
       case NODE_MASGN: {
-	DECL_ANCHOR(anchor);
-	INIT_ANCHOR(anchor);
-	CHECK(COMPILE_POPPED(anchor, "nest masgn lhs", node));
-	ELEM_REMOVE(FIRST_ELEMENT(anchor));
-	ADD_SEQ(ret, anchor);
+        DECL_ANCHOR(nest_rhs);
+        INIT_ANCHOR(nest_rhs);
+        DECL_ANCHOR(nest_lhs);
+        INIT_ANCHOR(nest_lhs);
+
+        int prev_level = state->lhs_level;
+        bool prev_nested = state->nested;
+        state->nested = 1;
+        state->lhs_level = lhs_pos - 1;
+        CHECK(compile_massign0(iseq, pre, nest_rhs, nest_lhs, post, node, state, 1));
+        state->lhs_level = prev_level;
+        state->nested = prev_nested;
+
+        ADD_SEQ(lhs, nest_rhs);
+        ADD_SEQ(lhs, nest_lhs);
 	break;
       }
       default: {
@@ -4641,7 +4780,7 @@ compile_massign_lhs(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const n
 	INIT_ANCHOR(anchor);
 	CHECK(COMPILE_POPPED(anchor, "masgn lhs", node));
 	ELEM_REMOVE(FIRST_ELEMENT(anchor));
-	ADD_SEQ(ret, anchor);
+        ADD_SEQ(lhs, anchor);
       }
     }
 
@@ -4653,7 +4792,7 @@ compile_massign_opt_lhs(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *lhs
 {
     if (lhsn) {
 	CHECK(compile_massign_opt_lhs(iseq, ret, lhsn->nd_next));
-	CHECK(compile_massign_lhs(iseq, ret, lhsn->nd_head));
+        CHECK(compile_massign_lhs(iseq, ret, ret, ret, ret, lhsn->nd_head, NULL, 0));
     }
     return COMPILE_OK;
 }
@@ -4722,98 +4861,112 @@ compile_massign_opt(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
     return 1;
 }
 
-static void
-adjust_stack(rb_iseq_t *iseq, LINK_ANCHOR *const ret, int line, int rlen, int llen)
+static int
+compile_massign0(rb_iseq_t *iseq, LINK_ANCHOR *const pre, LINK_ANCHOR *const rhs, LINK_ANCHOR *const lhs, LINK_ANCHOR *const post, const NODE *const node, struct masgn_state *state, int popped)
 {
-    if (rlen < llen) {
-	do {ADD_INSN(ret, line, putnil);} while (++rlen < llen);
+    const NODE *rhsn = node->nd_value;
+    const NODE *splatn = node->nd_args;
+    const NODE *lhsn = node->nd_head;
+    const NODE *lhsn_count = lhsn;
+    int lhs_splat = (splatn && NODE_NAMED_REST_P(splatn)) ? 1 : 0;
+
+    int llen = 0;
+    int lpos = 0;
+    int expand = 1;
+
+    while (lhsn_count) {
+        llen++;
+        lhsn_count = lhsn_count->nd_next;
     }
-    else if (rlen > llen) {
-	do {ADD_INSN(ret, line, pop);} while (--rlen > llen);
+    while (lhsn) {
+        CHECK(compile_massign_lhs(iseq, pre, rhs, lhs, post, lhsn->nd_head, state, (llen - lpos) + lhs_splat + state->lhs_level));
+        lpos++;
+        lhsn = lhsn->nd_next;
     }
+
+    if (lhs_splat) {
+        if (nd_type(splatn) == NODE_POSTARG) {
+            /*a, b, *r, p1, p2 */
+            const NODE *postn = splatn->nd_2nd;
+            const NODE *restn = splatn->nd_1st;
+            int plen = (int)postn->nd_alen;
+            int ppos = 0;
+            int flag = 0x02 | (NODE_NAMED_REST_P(restn) ? 0x01 : 0x00);
+
+            ADD_INSN2(lhs, nd_line(splatn), expandarray,
+                      INT2FIX(plen), INT2FIX(flag));
+
+            if (NODE_NAMED_REST_P(restn)) {
+                CHECK(compile_massign_lhs(iseq, pre, rhs, lhs, post, restn, state, 1 + plen + state->lhs_level));
+            }
+            while (postn) {
+                CHECK(compile_massign_lhs(iseq, pre, rhs, lhs, post, postn->nd_head, state, (plen - ppos) + state->lhs_level));
+                ppos++;
+                postn = postn->nd_next;
+            }
+        }
+        else {
+            /* a, b, *r */
+            CHECK(compile_massign_lhs(iseq, pre, rhs, lhs, post, splatn, state, 1 + state->lhs_level));
+        }
+    }
+
+
+    if (!state->nested) {
+        NO_CHECK(COMPILE(rhs, "normal masgn rhs", rhsn));
+    }
+
+    if (!popped) {
+        ADD_INSN(rhs, nd_line(node), dup);
+    }
+    if (expand) {
+        ADD_INSN2(rhs, nd_line(node), expandarray,
+                  INT2FIX(llen), INT2FIX(lhs_splat));
+    }
+    return COMPILE_OK;
 }
 
 static int
 compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
 {
-    const NODE *rhsn = node->nd_value;
-    const NODE *splatn = node->nd_args;
-    const NODE *lhsn = node->nd_head;
-    int lhs_splat = (splatn && NODE_NAMED_REST_P(splatn)) ? 1 : 0;
+    if (!popped || node->nd_args || !compile_massign_opt(iseq, ret, node->nd_value, node->nd_head)) {
+        struct masgn_state state;
+        state.lhs_level = popped ? 0 : 1;
+        state.nested = 0;
+        state.num_args = 0;
+        state.first_memo = NULL;
+        state.last_memo = NULL;
 
-    if (!popped || splatn || !compile_massign_opt(iseq, ret, rhsn, lhsn)) {
-	int llen = 0;
-	int expand = 1;
-	DECL_ANCHOR(lhsseq);
+        DECL_ANCHOR(pre);
+        INIT_ANCHOR(pre);
+        DECL_ANCHOR(rhs);
+        INIT_ANCHOR(rhs);
+        DECL_ANCHOR(lhs);
+        INIT_ANCHOR(lhs);
+        DECL_ANCHOR(post);
+        INIT_ANCHOR(post);
+        int ok = compile_massign0(iseq, pre, rhs, lhs, post, node, &state, popped);
 
-	INIT_ANCHOR(lhsseq);
+        struct masgn_attrasgn *memo = state.first_memo, *tmp_memo;
+        while (memo) {
+            VALUE topn_arg = INT2FIX((state.num_args - memo->argn) + memo->lhs_pos);
+            for(int i = 0; i < memo->num_args; i++) {
+                INSERT_BEFORE_INSN1(memo->before_insn, memo->line, topn, topn_arg);
+            }
+            tmp_memo = memo->next;
+            free(memo);
+            memo = tmp_memo;
+        }
+        CHECK(ok);
 
-	while (lhsn) {
-	    CHECK(compile_massign_lhs(iseq, lhsseq, lhsn->nd_head));
-	    llen += 1;
-	    lhsn = lhsn->nd_next;
-	}
-
-        NO_CHECK(COMPILE(ret, "normal masgn rhs", rhsn));
-
-	if (!popped) {
-	    ADD_INSN(ret, nd_line(node), dup);
-	}
-	else if (!lhs_splat) {
-	    INSN *last = (INSN*)ret->last;
-	    if (IS_INSN(&last->link) &&
-		IS_INSN_ID(last, newarray) &&
-		last->operand_size == 1) {
-		int rlen = FIX2INT(OPERAND_AT(last, 0));
-		/* special case: assign to aset or attrset */
-		if (llen == 2) {
-		    POP_ELEMENT(ret);
-		    adjust_stack(iseq, ret, nd_line(node), rlen, llen);
-		    ADD_INSN(ret, nd_line(node), swap);
-		    expand = 0;
-		}
-		else if (llen > 2 && llen != rlen) {
-		    POP_ELEMENT(ret);
-		    adjust_stack(iseq, ret, nd_line(node), rlen, llen);
-		    ADD_INSN1(ret, nd_line(node), reverse, INT2FIX(llen));
-		    expand = 0;
-		}
-		else if (llen > 2) {
-		    last->insn_id = BIN(reverse);
-		    expand = 0;
-		}
-	    }
-	}
-	if (expand) {
-	    ADD_INSN2(ret, nd_line(node), expandarray,
-		      INT2FIX(llen), INT2FIX(lhs_splat));
-	}
-	ADD_SEQ(ret, lhsseq);
-
-	if (lhs_splat) {
-	    if (nd_type(splatn) == NODE_POSTARG) {
-		/*a, b, *r, p1, p2 */
-		const NODE *postn = splatn->nd_2nd;
-		const NODE *restn = splatn->nd_1st;
-		int num = (int)postn->nd_alen;
-		int flag = 0x02 | (NODE_NAMED_REST_P(restn) ? 0x01 : 0x00);
-
-		ADD_INSN2(ret, nd_line(splatn), expandarray,
-			  INT2FIX(num), INT2FIX(flag));
-
-		if (NODE_NAMED_REST_P(restn)) {
-		    CHECK(compile_massign_lhs(iseq, ret, restn));
-		}
-		while (postn) {
-		    CHECK(compile_massign_lhs(iseq, ret, postn->nd_head));
-		    postn = postn->nd_next;
-		}
-	    }
-	    else {
-		/* a, b, *r */
-		CHECK(compile_massign_lhs(iseq, ret, splatn));
-	    }
-	}
+        ADD_SEQ(ret, pre);
+        ADD_SEQ(ret, rhs);
+        ADD_SEQ(ret, lhs);
+        if (!popped && state.num_args >= 1) {
+            /* make sure rhs array is returned before popping */
+            ADD_INSN1(ret, nd_line(node), setn, INT2FIX(state.num_args));
+        }
+        ADD_SEQ(ret, post);
     }
     return COMPILE_OK;
 }
