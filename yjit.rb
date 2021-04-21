@@ -76,17 +76,16 @@ module YJIT
     # Format and print out counters
     def _print_stats
       counters = runtime_stats
-
       return unless counters
 
       $stderr.puts("***YJIT: Printing runtime counters from yjit.rb***")
-
-      $stderr.puts "Number of bindings allocated: %d\n" % counters[:binding_allocations]
-      $stderr.puts "Number of locals modified through binding: %d\n" % counters[:binding_set]
+      $stderr.puts("Number of bindings allocated: %d\n" % counters[:binding_allocations])
+      $stderr.puts("Number of locals modified through binding: %d\n" % counters[:binding_set])
 
       print_counters(counters, prefix: 'oswb_', prompt: 'opt_send_without_block exit reasons: ')
       print_counters(counters, prefix: 'leave_', prompt: 'leave exit reasons: ')
       print_counters(counters, prefix: 'getivar_', prompt: 'getinstancevariable exit reasons:')
+      print_counters(counters, prefix: 'setivar_', prompt: 'setinstancevariable exit reasons:')
       print_counters(counters, prefix: 'oaref_', prompt: 'opt_aref exit reasons: ')
     end
 
