@@ -771,11 +771,6 @@ gen_set_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
     struct rb_iv_index_tbl_entry *ent;
     struct st_table *iv_index_tbl = ROBJECT_IV_INDEX_TBL(comptime_receiver);
 
-    // Bail if this is a heap object, because this needs a write barrier
-    ADD_COMMENT(cb, "guard value is immediate");
-    test(cb, REG1, imm_opnd(RUBY_IMMEDIATE_MASK));
-    jz_ptr(cb, COUNTED_EXIT(side_exit, setivar_val_heapobject));
-
     // Lookup index for the ivar the instruction loads
     if (iv_index_tbl && rb_iv_index_tbl_lookup(iv_index_tbl, id, &ent)) {
         uint32_t ivar_index = ent->index;
@@ -783,12 +778,16 @@ gen_set_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
         x86opnd_t val_to_write = ctx_stack_pop(ctx, 1);
         mov(cb, REG1, val_to_write);
 
-        x86opnd_t flags_opnd = member_opnd(REG0, struct RBasic, flags);
+        // Bail if the value to write is a heap object, because this needs a write barrier
+        ADD_COMMENT(cb, "guard value is immediate");
+        test(cb, REG1, imm_opnd(RUBY_IMMEDIATE_MASK));
+        jz_ptr(cb, COUNTED_EXIT(side_exit, setivar_val_heapobject));
 
         // Bail if this object is frozen
         ADD_COMMENT(cb, "guard self is not frozen");
+        x86opnd_t flags_opnd = member_opnd(REG0, struct RBasic, flags);
         test(cb, flags_opnd, imm_opnd(RUBY_FL_FREEZE));
-        jz_ptr(cb, COUNTED_EXIT(side_exit, setivar_frozen));
+        jnz_ptr(cb, COUNTED_EXIT(side_exit, setivar_frozen));
 
         // Pop receiver if it's on the temp stack
         if (!reg0_opnd.is_self) {
