@@ -16871,7 +16871,6 @@ yjit_codegen.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 yjit_codegen.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 yjit_codegen.$(OBJEXT): {$(VPATH)}internal/stdbool.h
 yjit_codegen.$(OBJEXT): {$(VPATH)}internal/symbol.h
-yjit_codegen.$(OBJEXT): {$(VPATH)}internal/token_paste.h
 yjit_codegen.$(OBJEXT): {$(VPATH)}internal/value.h
 yjit_codegen.$(OBJEXT): {$(VPATH)}internal/value_type.h
 yjit_codegen.$(OBJEXT): {$(VPATH)}internal/variable.h
@@ -17067,7 +17066,6 @@ yjit_compile.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 yjit_compile.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 yjit_compile.$(OBJEXT): {$(VPATH)}internal/stdbool.h
 yjit_compile.$(OBJEXT): {$(VPATH)}internal/symbol.h
-yjit_compile.$(OBJEXT): {$(VPATH)}internal/token_paste.h
 yjit_compile.$(OBJEXT): {$(VPATH)}internal/value.h
 yjit_compile.$(OBJEXT): {$(VPATH)}internal/value_type.h
 yjit_compile.$(OBJEXT): {$(VPATH)}internal/variable.h
@@ -17262,7 +17260,6 @@ yjit_core.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 yjit_core.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 yjit_core.$(OBJEXT): {$(VPATH)}internal/stdbool.h
 yjit_core.$(OBJEXT): {$(VPATH)}internal/symbol.h
-yjit_core.$(OBJEXT): {$(VPATH)}internal/token_paste.h
 yjit_core.$(OBJEXT): {$(VPATH)}internal/value.h
 yjit_core.$(OBJEXT): {$(VPATH)}internal/value_type.h
 yjit_core.$(OBJEXT): {$(VPATH)}internal/variable.h
@@ -17462,7 +17459,6 @@ yjit_iface.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 yjit_iface.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 yjit_iface.$(OBJEXT): {$(VPATH)}internal/stdbool.h
 yjit_iface.$(OBJEXT): {$(VPATH)}internal/symbol.h
-yjit_iface.$(OBJEXT): {$(VPATH)}internal/token_paste.h
 yjit_iface.$(OBJEXT): {$(VPATH)}internal/value.h
 yjit_iface.$(OBJEXT): {$(VPATH)}internal/value_type.h
 yjit_iface.$(OBJEXT): {$(VPATH)}internal/variable.h
