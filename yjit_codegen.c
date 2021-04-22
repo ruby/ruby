@@ -804,9 +804,8 @@ gen_set_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
             test(cb, flags_opnd, imm_opnd(ROBJECT_EMBED));
             jit_chain_guard(JCC_JZ, jit, &starting_context, max_chain_depth, side_exit);
 
-            // Load the variable
+            // Store the ivar on the object
             x86opnd_t ivar_opnd = mem_opnd(64, REG0, offsetof(struct RObject, as.ary) + ivar_index * SIZEOF_VALUE);
-
             mov(cb, ivar_opnd, REG1);
 
             // Push the ivar on the stack
@@ -826,6 +825,7 @@ gen_set_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
             // check that the extended table is big enough
             if (ivar_index >= ROBJECT_EMBED_LEN_MAX + 1) {
                 // Check that the slot is inside the extended table (num_slots > index)
+                ADD_COMMENT(cb, "check index in extended table");
                 x86opnd_t num_slots = mem_opnd(32, REG0, offsetof(struct RObject, as.heap.numiv));
                 cmp(cb, num_slots, imm_opnd(ivar_index));
                 jle_ptr(cb, COUNTED_EXIT(side_exit, setivar_idx_out_of_range));
@@ -837,7 +837,6 @@ gen_set_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
 
             // Write the ivar to the extended table
             x86opnd_t ivar_opnd = mem_opnd(64, REG0, sizeof(VALUE) * ivar_index);
-            mov(cb, REG1, val_to_write);
             mov(cb, ivar_opnd, REG1);
         }
 
