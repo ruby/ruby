@@ -48,6 +48,10 @@
 #
 # == OptionParser
 #
+# === New to \OptionParser?
+#
+# See the {Tutorial}[./doc/optparse/tutorial_rdoc.html].
+#
 # === Introduction
 #
 # OptionParser is a class for command-line option analysis.  It is much more
@@ -415,8 +419,10 @@
 #
 # === Further documentation
 #
-# The above examples should be enough to learn how to use this class.  If you
-# have any questions, file a ticket at http://bugs.ruby-lang.org.
+# The above examples, along with the accompanying
+# {Tutorial}[./doc/optparse/tutorial_rdoc.html],
+# should be enough to learn how to use this class.
+# If you have any questions, file a ticket at http://bugs.ruby-lang.org.
 #
 class OptionParser
   OptionParser::Version = "0.1.1"
