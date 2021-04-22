@@ -139,6 +139,7 @@ ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+#ifndef HAVE_EVP_PKEY_DUP
 static VALUE
 ossl_dsa_initialize_copy(VALUE self, VALUE other)
 {
@@ -166,6 +167,7 @@ ossl_dsa_initialize_copy(VALUE self, VALUE other)
 
     return self;
 }
+#endif
 
 /*
  *  call-seq:
@@ -327,7 +329,9 @@ Init_ossl_dsa(void)
     cDSA = rb_define_class_under(mPKey, "DSA", cPKey);
 
     rb_define_method(cDSA, "initialize", ossl_dsa_initialize, -1);
+#ifndef HAVE_EVP_PKEY_DUP
     rb_define_method(cDSA, "initialize_copy", ossl_dsa_initialize_copy, 1);
+#endif
 
     rb_define_method(cDSA, "public?", ossl_dsa_is_public, 0);
     rb_define_method(cDSA, "private?", ossl_dsa_is_private, 0);

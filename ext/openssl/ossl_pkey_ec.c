@@ -190,6 +190,7 @@ static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+#ifndef HAVE_EVP_PKEY_DUP
 static VALUE
 ossl_ec_key_initialize_copy(VALUE self, VALUE other)
 {
@@ -214,6 +215,7 @@ ossl_ec_key_initialize_copy(VALUE self, VALUE other)
 
     return self;
 }
+#endif
 
 /*
  * call-seq:
@@ -1523,8 +1525,9 @@ void Init_ossl_ec(void)
 
     rb_define_singleton_method(cEC, "generate", ossl_ec_key_s_generate, 1);
     rb_define_method(cEC, "initialize", ossl_ec_key_initialize, -1);
+#ifndef HAVE_EVP_PKEY_DUP
     rb_define_method(cEC, "initialize_copy", ossl_ec_key_initialize_copy, 1);
-/* copy/dup/cmp */
+#endif
 
     rb_define_method(cEC, "group", ossl_ec_key_get_group, 0);
     rb_define_method(cEC, "group=", ossl_ec_key_set_group, 1);

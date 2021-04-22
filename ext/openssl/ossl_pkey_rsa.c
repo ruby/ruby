@@ -135,6 +135,7 @@ ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+#ifndef HAVE_EVP_PKEY_DUP
 static VALUE
 ossl_rsa_initialize_copy(VALUE self, VALUE other)
 {
@@ -161,6 +162,7 @@ ossl_rsa_initialize_copy(VALUE self, VALUE other)
 
     return self;
 }
+#endif
 
 /*
  * call-seq:
@@ -535,7 +537,9 @@ Init_ossl_rsa(void)
     cRSA = rb_define_class_under(mPKey, "RSA", cPKey);
 
     rb_define_method(cRSA, "initialize", ossl_rsa_initialize, -1);
+#ifndef HAVE_EVP_PKEY_DUP
     rb_define_method(cRSA, "initialize_copy", ossl_rsa_initialize_copy, 1);
+#endif
 
     rb_define_method(cRSA, "public?", ossl_rsa_is_public, 0);
     rb_define_method(cRSA, "private?", ossl_rsa_is_private, 0);

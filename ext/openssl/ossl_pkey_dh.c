@@ -126,6 +126,7 @@ ossl_dh_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+#ifndef HAVE_EVP_PKEY_DUP
 static VALUE
 ossl_dh_initialize_copy(VALUE self, VALUE other)
 {
@@ -164,6 +165,7 @@ ossl_dh_initialize_copy(VALUE self, VALUE other)
     RTYPEDDATA_DATA(self) = pkey;
     return self;
 }
+#endif
 
 /*
  *  call-seq:
@@ -407,7 +409,9 @@ Init_ossl_dh(void)
      */
     cDH = rb_define_class_under(mPKey, "DH", cPKey);
     rb_define_method(cDH, "initialize", ossl_dh_initialize, -1);
+#ifndef HAVE_EVP_PKEY_DUP
     rb_define_method(cDH, "initialize_copy", ossl_dh_initialize_copy, 1);
+#endif
     rb_define_method(cDH, "public?", ossl_dh_is_public, 0);
     rb_define_method(cDH, "private?", ossl_dh_is_private, 0);
     rb_define_method(cDH, "export", ossl_dh_export, 0);
