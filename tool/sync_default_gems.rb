@@ -174,6 +174,7 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/test/io/console", "test/io")
     mkdir_p("ext/io/console/lib")
     cp_r("#{upstream}/lib/io/console", "ext/io/console/lib")
+    rm_rf("ext/io/console/lib/console/ffi")
     cp_r("#{upstream}/io-console.gemspec", "ext/io/console")
     `git checkout ext/io/console/depend`
   when "io-nonblock"
