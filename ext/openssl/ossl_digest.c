@@ -63,7 +63,7 @@ ossl_evp_get_digestbyname(VALUE obj)
 
         GetDigest(obj, ctx);
 
-        md = EVP_MD_CTX_md(ctx);
+        md = EVP_MD_CTX_get0_md(ctx);
     }
 
     return md;
@@ -176,7 +176,7 @@ ossl_digest_reset(VALUE self)
     EVP_MD_CTX *ctx;
 
     GetDigest(self, ctx);
-    if (EVP_DigestInit_ex(ctx, EVP_MD_CTX_md(ctx), NULL) != 1) {
+    if (EVP_DigestInit_ex(ctx, EVP_MD_CTX_get0_md(ctx), NULL) != 1) {
 	ossl_raise(eDigestError, "Digest initialization failed.");
     }
 
@@ -259,7 +259,7 @@ ossl_digest_name(VALUE self)
 
     GetDigest(self, ctx);
 
-    return rb_str_new2(EVP_MD_name(EVP_MD_CTX_md(ctx)));
+    return rb_str_new_cstr(EVP_MD_name(EVP_MD_CTX_get0_md(ctx)));
 }
 
 /*

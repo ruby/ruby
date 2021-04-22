@@ -219,4 +219,8 @@ IMPL_PKEY_GETTER(EC_KEY, ec)
 #  define TS_VERIFY_CTX_set_certs(ctx, crts) TS_VERIFY_CTS_set_certs(ctx, crts)
 #endif
 
+#ifndef HAVE_EVP_MD_CTX_GET0_MD
+#  define EVP_MD_CTX_get0_md(ctx) EVP_MD_CTX_md(ctx)
+#endif
+
 #endif /* _OSSL_OPENSSL_MISSING_H_ */
