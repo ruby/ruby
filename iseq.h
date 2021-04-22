@@ -101,6 +101,7 @@ struct iseq_compile_data {
       struct iseq_compile_data_storage *storage_head;
       struct iseq_compile_data_storage *storage_current;
     } insn;
+    bool in_rescue;
     int loopval_popped;	/* used by NODE_BREAK */
     int last_line;
     int label_no;
