@@ -775,13 +775,20 @@ gen_set_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
     if (iv_index_tbl && rb_iv_index_tbl_lookup(iv_index_tbl, id, &ent)) {
         uint32_t ivar_index = ent->index;
 
-        x86opnd_t val_to_write = ctx_stack_pop(ctx, 1);
+        val_type_t val_type = ctx_get_opnd_type(ctx, OPND_STACK(0));
+        x86opnd_t val_to_write = ctx_stack_opnd(ctx, 0);
         mov(cb, REG1, val_to_write);
 
         // Bail if the value to write is a heap object, because this needs a write barrier
-        ADD_COMMENT(cb, "guard value is immediate");
-        test(cb, REG1, imm_opnd(RUBY_IMMEDIATE_MASK));
-        jz_ptr(cb, COUNTED_EXIT(side_exit, setivar_val_heapobject));
+        if (!val_type.is_imm) {
+            ADD_COMMENT(cb, "guard value is immediate");
+            test(cb, REG1, imm_opnd(RUBY_IMMEDIATE_MASK));
+            jz_ptr(cb, COUNTED_EXIT(side_exit, setivar_val_heapobject));
+            ctx_set_opnd_type(ctx, OPND_STACK(0), TYPE_IMM);
+        }
+
+        // Pop the value to write
+        ctx_stack_pop(ctx, 1);
 
         // Bail if this object is frozen
         ADD_COMMENT(cb, "guard self is not frozen");
