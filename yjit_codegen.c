@@ -27,8 +27,8 @@ codeblock_t* cb = NULL;
 static codeblock_t outline_block;
 codeblock_t* ocb = NULL;
 
-// Code for exiting back to the interpreter
-static void *interp_exit;
+// Code for exiting back to the interpreter from the leave insn
+static void *leave_exit_code;
 
 // Print the current source location for debugging purposes
 RBIMPL_ATTR_MAYBE_UNUSED()
@@ -116,6 +116,61 @@ jit_peek_at_self(jitstate_t *jit, ctx_t *ctx)
 
 static bool jit_guard_known_klass(jitstate_t *jit, ctx_t* ctx, VALUE known_klass, insn_opnd_t insn_opnd, const int max_chain_depth, uint8_t *side_exit);
 
+#if RUBY_DEBUG
+
+// Increment a profiling counter with counter_name
+#define GEN_COUNTER_INC(cb, counter_name) _gen_counter_inc(cb, &(yjit_runtime_counters . counter_name))
+static void
+_gen_counter_inc(codeblock_t *cb, int64_t *counter)
+{
+    if (!rb_yjit_opts.gen_stats) return;
+     mov(cb, REG0, const_ptr_opnd(counter));
+     cb_write_lock_prefix(cb); // for ractors.
+     add(cb, mem_opnd(64, REG0, 0), imm_opnd(1));
+}
+
+// Increment a counter then take an existing side exit.
+#define COUNTED_EXIT(side_exit, counter_name) _counted_side_exit(side_exit, &(yjit_runtime_counters . counter_name))
+static uint8_t *
+_counted_side_exit(uint8_t *existing_side_exit, int64_t *counter)
+{
+    if (!rb_yjit_opts.gen_stats) return existing_side_exit;
+
+    uint8_t *start = cb_get_ptr(ocb, ocb->write_pos);
+    _gen_counter_inc(ocb, counter);
+    jmp_ptr(ocb, existing_side_exit);
+    return start;
+}
+
+// Add a comment at the current position in the code block
+static void
+_add_comment(codeblock_t* cb, const char* comment_str)
+{
+    // Avoid adding duplicate comment strings (can happen due to deferred codegen)
+    size_t num_comments = rb_darray_size(yjit_code_comments);
+    if (num_comments > 0) {
+        struct yjit_comment last_comment = rb_darray_get(yjit_code_comments, num_comments - 1);
+        if (last_comment.offset == cb->write_pos && strcmp(last_comment.comment, comment_str) == 0) {
+            return;
+        }
+    }
+
+    struct yjit_comment new_comment = (struct yjit_comment){ cb->write_pos, comment_str };
+    rb_darray_append(&yjit_code_comments, new_comment);
+}
+
+// Comments for generated machine code
+#define ADD_COMMENT(cb, comment) _add_comment((cb), (comment))
+yjit_comment_array_t yjit_code_comments;
+
+#else
+
+#define GEN_COUNTER_INC(cb, counter_name) ((void)0)
+#define COUNTED_EXIT(side_exit, counter_name) side_exit
+#define ADD_COMMENT(cb, comment) ((void)0)
+
+#endif // if RUBY_DEBUG
+
 // Save YJIT registers prior to a C call
 static void
 yjit_save_regs(codeblock_t* cb)
@@ -189,24 +244,23 @@ yjit_gen_exit(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 
 // Generate an interpreter to REG_CFP->pc.
 static uint8_t *
-yjit_gen_context_free_exit(codeblock_t *cb)
+yjit_gen_leave_exit(codeblock_t *cb)
 {
     uint8_t *code_ptr = cb_get_ptr(cb, cb->write_pos);
 
     // Update the CFP on the EC
-    mov(cb, member_opnd(REG_EC, rb_execution_context_t, cfp), REG_CFP);
+    //mov(cb, member_opnd(REG_EC, rb_execution_context_t, cfp), REG_CFP);
+
+    // Every exit to the interpreter should be counted
+    GEN_COUNTER_INC(cb, leave_interp_return);
 
     // Put PC into the return register, which the post call bytes dispatches to
     mov(cb, RAX, member_opnd(REG_CFP, rb_control_frame_t, pc));
 
     cb_write_post_call_bytes(cb);
 
-    // Note, not incrementing stats here since this exit is the natural end to
-    // executing output code.
-
     return code_ptr;
 }
-
 
 // A shorthand for generating an exit in the outline block
 static uint8_t *
@@ -214,61 +268,6 @@ yjit_side_exit(jitstate_t *jit, ctx_t *ctx)
 {
     return yjit_gen_exit(jit, ctx, ocb);
 }
-
-#if RUBY_DEBUG
-
-// Increment a profiling counter with counter_name
-#define GEN_COUNTER_INC(cb, counter_name) _gen_counter_inc(cb, &(yjit_runtime_counters . counter_name))
-static void
-_gen_counter_inc(codeblock_t *cb, int64_t *counter)
-{
-    if (!rb_yjit_opts.gen_stats) return;
-     mov(cb, REG0, const_ptr_opnd(counter));
-     cb_write_lock_prefix(cb); // for ractors.
-     add(cb, mem_opnd(64, REG0, 0), imm_opnd(1));
-}
-
-// Increment a counter then take an existing side exit.
-#define COUNTED_EXIT(side_exit, counter_name) _counted_side_exit(side_exit, &(yjit_runtime_counters . counter_name))
-static uint8_t *
-_counted_side_exit(uint8_t *existing_side_exit, int64_t *counter)
-{
-    if (!rb_yjit_opts.gen_stats) return existing_side_exit;
-
-    uint8_t *start = cb_get_ptr(ocb, ocb->write_pos);
-    _gen_counter_inc(ocb, counter);
-    jmp_ptr(ocb, existing_side_exit);
-    return start;
-}
-
-// Add a comment at the current position in the code block
-static void
-_add_comment(codeblock_t* cb, const char* comment_str)
-{
-    // Avoid adding duplicate comment strings (can happen due to deferred codegen)
-    size_t num_comments = rb_darray_size(yjit_code_comments);
-    if (num_comments > 0) {
-        struct yjit_comment last_comment = rb_darray_get(yjit_code_comments, num_comments - 1);
-        if (last_comment.offset == cb->write_pos && strcmp(last_comment.comment, comment_str) == 0) {
-            return;
-        }
-    }
-
-    struct yjit_comment new_comment = (struct yjit_comment){ cb->write_pos, comment_str };
-    rb_darray_append(&yjit_code_comments, new_comment);
-}
-
-// Comments for generated machine code
-#define ADD_COMMENT(cb, comment) _add_comment((cb), (comment))
-yjit_comment_array_t yjit_code_comments;
-
-#else
-
-#define GEN_COUNTER_INC(cb, counter_name) ((void)0)
-#define COUNTED_EXIT(side_exit, counter_name) side_exit
-#define ADD_COMMENT(cb, comment) ((void)0)
-
-#endif // if RUBY_DEBUG
 
 /*
 Compile an interpreter entry block to be inserted into an iseq
@@ -296,7 +295,7 @@ yjit_entry_prologue(void)
 
     // Setup cfp->jit_return
     // TODO: this could use an IP relative LEA instead of an 8 byte immediate
-    mov(cb, REG0, const_ptr_opnd(interp_exit));
+    mov(cb, REG0, const_ptr_opnd(leave_exit_code));
     mov(cb, member_opnd(REG_CFP, rb_control_frame_t, jit_return), REG0);
 
     return code_ptr;
@@ -2101,7 +2100,7 @@ gen_leave(jitstate_t* jit, ctx_t* ctx)
     mov(cb, REG_SP, member_opnd(REG_CFP, rb_control_frame_t, sp));
     mov(cb, mem_opnd(64, REG_SP, -SIZEOF_VALUE), REG0);
 
-    // Jump to the JIT return address in the frame that was popped
+    // Jump to the JIT return address on the frame that was just popped
     const int32_t offset_to_jit_return = -((int32_t)sizeof(rb_control_frame_t)) + (int32_t)offsetof(rb_control_frame_t, jit_return);
     jmp_rm(cb, mem_opnd(64, REG_CFP, offset_to_jit_return));
 
@@ -2173,8 +2172,8 @@ yjit_init_codegen(void)
     ocb = &outline_block;
     cb_init(ocb, mem_block + mem_size/2, mem_size/2);
 
-    // Generate interp_exit
-    interp_exit = yjit_gen_context_free_exit(cb);
+    // Generate the interpreter exit code for leave
+    leave_exit_code = yjit_gen_leave_exit(cb);
 
     // Map YARV opcodes to the corresponding codegen functions
     yjit_reg_op(BIN(dup), gen_dup);
