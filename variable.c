@@ -3412,8 +3412,7 @@ rb_cv_get(VALUE klass, const char *name)
 void
 rb_define_class_variable(VALUE klass, const char *name, VALUE val)
 {
-    ID id = cv_intern(klass, name);
-    rb_cvar_set(klass, id, val);
+    rb_cv_set(klass, name, val);
 }
 
 static int
