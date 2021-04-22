@@ -753,6 +753,28 @@ begin
       EOC
     end
 
+    def test_cyrillic_chars
+      omit unless Reline::IOGate.win?
+      start_terminal(50, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
+      write("`chcp 850`\n")
+      write("`chcp`\n")
+      write("def гопота; 3; end\n")
+      write("гопота\n")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> `chcp 850`
+        => "Active code page: 850\n"
+        prompt> `chcp`
+        => "Active code page: 850\n"
+        prompt> def гопота; 3; end
+        => :гопота
+        prompt> гопота
+        => 3
+        prompt>
+      EOC
+    end
+
     private def write_inputrc(content)
       File.open(@inputrc_file, 'w') do |f|
         f.write content
