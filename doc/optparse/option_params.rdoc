@@ -43,7 +43,6 @@ Contents:
   - {Handler Blocks}[#label-Handler+Blocks]
   - {Handler Procs}[#label-Handler+Procs]
   - {Handler Methods}[#label-Handler+Methods]
-- {Terminators}[#label-Terminators]
 
 === Option Names
 
@@ -508,22 +507,3 @@ Executions:
   ["Handler method for -xxx called with value:", true]
   $ ruby method.rb --yyy FOO
   ["Handler method for -yyy called with value:", "FOO"]
-
-=== Terminators
-
-And finally, the terminator parameter <tt>--</tt> tells the options parser
-to ignore any options farther to the right.
-This can be useful if there are options not meant for the current program.
-
-File +terminator.rb+ defines one option <tt>--my_option</tt>.
-
-  :include: ruby/terminator.rb
-
-The first execution fails because <tt>--nosuch</tt> is not a defined option;
-the second succeeds because <tt>--</tt> causes that option to be ignored:
-
-  $ ruby terminator.rb --my_option FOO --other_option BAR
-  ["FOO", String]
-  terminator.rb:6:in `<main>': invalid option: --other_option (OptionParser::InvalidOption)
-  $ ruby terminator.rb --my_option FOO -- --other_option BAR
-  ["FOO", String]

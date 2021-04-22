@@ -55,7 +55,14 @@ The class also has method #help, which displays automatically-generated help tex
 - {Argument Converters}[#label-Argument+Converters]
 - {Help}[#label-Help]
 - {Top List and Base List}[#label-Top+List+and+Base+List]
-- {Methods for Defining Options}[#label-Methods+for+Defining+Options]
+- {Defining Options}[#label-Defining+Options]
+- {Parsing}[#label-Parsing]
+  - {Method parse!}[#label-Method+parse-21]
+  - {Method parse}[#label-Method+parse]
+  - {Method order!}[#label-Method+order-21]
+  - {Method order}[#label-Method+order]
+  - {Method permute!}[#label-Method+permute-21]
+  - {Method permute}[#label-Method+permute]
 
 === To Begin With
 
@@ -619,7 +626,7 @@ The stack includes:
 When \OptionParser builds its help text, the options in the top list
 precede those in the base list.
 
-=== Methods for Defining Options
+=== Defining Options
 
 Option-defining methods allow you to create an option, and also append/prepend it
 to the top list or append it to the base list.
@@ -658,3 +665,171 @@ here's the core method for defining an option:
     option names, and other values;
     others return either the created option object
     or the parser object +self+.
+
+=== Parsing
+
+\OptionParser has six instance methods for parsing.
+
+Three have names ending with a "bang" (<tt>!</tt>):
+
+- parse!
+- order!
+- permute!
+
+Each of these methods:
+
+- Accepts an optional array of string arguments +argv+;
+  if not given, +argv+ defaults to the value of OptionParser#default_argv,
+  whose initial value is ARGV.
+- Accepts an optional keyword argument +into+
+  (see {Keyword Argument into}[#label-Keyword+Argument+into]).
+- Returns +argv+, possibly with some elements removed.
+
+The three other methods have names _not_ ending with a "bang":
+
+- parse
+- order
+- permute
+
+Each of these methods:
+
+- Accepts an array of string arguments
+  _or_ zero or more string arguments.
+- Accepts an optional keyword argument +into+ and its value _into_.
+  (see {Keyword Argument into}[#label-Keyword+Argument+into]).
+- Returns +argv+, possibly with some elements removed.
+
+==== \Method parse!
+
+\Method parse!:
+
+- Accepts an optional array of string arguments +argv+;
+  if not given, +argv+ defaults to the value of OptionParser#default_argv,
+  whose initial value is ARGV.
+- Accepts an optional keyword argument +into+
+  (see {Keyword Argument into}[#label-Keyword+Argument+into]).
+- Returns +argv+, possibly with some elements removed.
+
+The method processes the elements in +argv+ beginning at <tt>argv[0]</tt>,
+and ending, by default, at the end.
+
+Otherwise processing ends and the method returns when:
+
+- The terminator argument <tt>--</tt> is found;
+  the terminator argument is removed before the return.
+- Environment variable +POSIXLY_CORRECT+ is defined
+  and a non-option argument is found;
+  the non-option argument is not removed.
+  Note that the _value_ of that variable does not matter,
+  as only its existence is checked.
+
+File +parse_bang.rb+:
+
+  :include: ruby/parse_bang.rb
+
+Help:
+
+  $ ruby parse_bang.rb --help
+  Usage: parse_bang [options]
+          --xxx
+          --yyy YYY
+          --zzz [ZZZ]
+
+Default behavior:
+
+  $ ruby parse_bang.rb input_file.txt output_file.txt --xxx --yyy FOO --zzz BAR
+  ["--xxx", true]
+  ["--yyy", "FOO"]
+  ["--zzz", "BAR"]
+  Returned: ["input_file.txt", "output_file.txt"] (Array)
+
+Processing ended by terminator argument:
+
+  $ ruby parse_bang.rb input_file.txt output_file.txt --xxx --yyy FOO -- --zzz BAR
+  ["--xxx", true]
+  ["--yyy", "FOO"]
+  Returned: ["input_file.txt", "output_file.txt", "--zzz", "BAR"] (Array)
+
+Processing ended by non-option found when +POSIXLY_CORRECT+ is defined:
+
+  $ POSIXLY_CORRECT=true ruby parse_bang.rb --xxx input_file.txt output_file.txt -yyy FOO
+  ["--xxx", true]
+  Returned: ["input_file.txt", "output_file.txt", "-yyy", "FOO"] (Array)
+
+==== \Method parse
+
+\Method parse:
+
+- Accepts an array of string arguments
+  _or_ zero or more string arguments.
+- Accepts an optional keyword argument +into+ and its value _into_.
+  (see {Keyword Argument into}[#label-Keyword+Argument+into]).
+- Returns +argv+, possibly with some elements removed.
+
+If given an array +ary+, the method forms array +argv+ as <tt>ary.dup</tt>.
+If given zero or more string arguments, those arguments are formed
+into array +argv+.
+
+The method calls
+
+  parse!(argv, into: into)
+
+Note that environment variable +POSIXLY_CORRECT+
+and the terminator argument <tt>--</tt> are honored.
+
+File +parse.rb+:
+
+  :include: ruby/parse.rb
+
+Help:
+
+  $ ruby parse.rb --help
+  Usage: parse [options]
+          --xxx
+          --yyy YYY
+          --zzz [ZZZ]
+
+Default behavior:
+
+  $ ruby parse.rb input_file.txt output_file.txt --xxx --yyy FOO --zzz BAR
+  ["--xxx", true]
+  ["--yyy", "FOO"]
+  ["--zzz", "BAR"]
+  Returned: ["input_file.txt", "output_file.txt"] (Array)
+
+Processing ended by terminator argument:
+
+  $ ruby parse.rb input_file.txt output_file.txt --xxx --yyy FOO -- --zzz BAR
+  ["--xxx", true]
+  ["--yyy", "FOO"]
+  Returned: ["input_file.txt", "output_file.txt", "--zzz", "BAR"] (Array)
+
+Processing ended by non-option found when +POSIXLY_CORRECT+ is defined:
+
+  $ POSIXLY_CORRECT=true ruby parse.rb --xxx input_file.txt output_file.txt -yyy FOO
+  ["--xxx", true]
+  Returned: ["input_file.txt", "output_file.txt", "-yyy", "FOO"] (Array)
+
+==== \Method order!
+
+Calling method OptionParser#order! gives exactly the same result as
+calling method OptionParser#parse! with environment variable
++POSIXLY_CORRECT+ defined.
+
+==== \Method order
+
+Calling method OptionParser#order gives exactly the same result as
+calling method OptionParser#parse with environment variable
++POSIXLY_CORRECT+ defined.
+
+==== \Method permute!
+
+Calling method OptionParser#permute! gives exactly the same result as
+calling method OptionParser#parse! with environment variable
++POSIXLY_CORRECT+ _not_ defined.
+
+==== \Method permute
+
+Calling method OptionParser#permute gives exactly the same result as
+calling method OptionParser#parse with environment variable
++POSIXLY_CORRECT+ _not_ defined.
