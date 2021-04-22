@@ -242,14 +242,14 @@ yjit_gen_exit(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     return code_ptr;
 }
 
-// Generate an interpreter to REG_CFP->pc.
+// Generate a continuation for gen_leave() that exits to the interpreter at REG_CFP->pc.
 static uint8_t *
 yjit_gen_leave_exit(codeblock_t *cb)
 {
     uint8_t *code_ptr = cb_get_ptr(cb, cb->write_pos);
 
-    // Update the CFP on the EC
-    //mov(cb, member_opnd(REG_EC, rb_execution_context_t, cfp), REG_CFP);
+    // Note, gen_leave() fully reconstructs interpreter state before
+    // coming here.
 
     // Every exit to the interpreter should be counted
     GEN_COUNTER_INC(cb, leave_interp_return);
