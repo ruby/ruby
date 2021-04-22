@@ -578,23 +578,23 @@ class IMAPTest < Test::Unit::TestCase
     begin
       imap = Net::IMAP.new(server_addr, :port => port)
       assert_raise(Net::IMAP::DataFormatError) do
-        imap.send(:send_command, "TEST", -1)
+        imap.__send__(:send_command, "TEST", -1)
       end
-      imap.send(:send_command, "TEST", 0)
-      imap.send(:send_command, "TEST", 4294967295)
+      imap.__send__(:send_command, "TEST", 0)
+      imap.__send__(:send_command, "TEST", 4294967295)
       assert_raise(Net::IMAP::DataFormatError) do
-        imap.send(:send_command, "TEST", 4294967296)
-      end
-      assert_raise(Net::IMAP::DataFormatError) do
-        imap.send(:send_command, "TEST", Net::IMAP::MessageSet.new(-1))
+        imap.__send__(:send_command, "TEST", 4294967296)
       end
       assert_raise(Net::IMAP::DataFormatError) do
-        imap.send(:send_command, "TEST", Net::IMAP::MessageSet.new(0))
+        imap.__send__(:send_command, "TEST", Net::IMAP::MessageSet.new(-1))
       end
-      imap.send(:send_command, "TEST", Net::IMAP::MessageSet.new(1))
-      imap.send(:send_command, "TEST", Net::IMAP::MessageSet.new(4294967295))
       assert_raise(Net::IMAP::DataFormatError) do
-        imap.send(:send_command, "TEST", Net::IMAP::MessageSet.new(4294967296))
+        imap.__send__(:send_command, "TEST", Net::IMAP::MessageSet.new(0))
+      end
+      imap.__send__(:send_command, "TEST", Net::IMAP::MessageSet.new(1))
+      imap.__send__(:send_command, "TEST", Net::IMAP::MessageSet.new(4294967295))
+      assert_raise(Net::IMAP::DataFormatError) do
+        imap.__send__(:send_command, "TEST", Net::IMAP::MessageSet.new(4294967296))
       end
       imap.logout
     ensure
@@ -628,7 +628,7 @@ class IMAPTest < Test::Unit::TestCase
     end
     begin
       imap = Net::IMAP.new(server_addr, :port => port)
-      imap.send(:send_command, "TEST", ["\xDE\xAD\xBE\xEF".b])
+      imap.__send__(:send_command, "TEST", ["\xDE\xAD\xBE\xEF".b])
       assert_equal(2, requests.length)
       assert_equal("RUBY0001 TEST ({4}\r\n", requests[0])
       assert_equal("\xDE\xAD\xBE\xEF".b, literal)
@@ -748,6 +748,55 @@ EOF
       imap.logout
       assert_equal(2, requests.length)
       assert_equal("RUBY0002 LOGOUT\r\n", requests[1])
+    ensure
+      imap.disconnect if imap
+    end
+  end
+
+  def test_id
+    server = create_tcp_server
+    port = server.addr[1]
+    requests = Queue.new
+    server_id = {"name" => "test server", "version" => "v0.1.0"}
+    server_id_str = '("name" "test server" "version" "v0.1.0")'
+    @threads << Thread.start do
+      sock = server.accept
+      begin
+        sock.print("* OK test server\r\n")
+        requests.push(sock.gets)
+        # RFC 2971 very clearly states (in section 3.2):
+        # "a server MUST send a tagged ID response to an ID command."
+        # And yet... some servers report ID capability but won't the response.
+        sock.print("RUBY0001 OK ID completed\r\n")
+        requests.push(sock.gets)
+        sock.print("* ID #{server_id_str}\r\n")
+        sock.print("RUBY0002 OK ID completed\r\n")
+        requests.push(sock.gets)
+        sock.print("* ID #{server_id_str}\r\n")
+        sock.print("RUBY0003 OK ID completed\r\n")
+        requests.push(sock.gets)
+        sock.print("* BYE terminating connection\r\n")
+        sock.print("RUBY0004 OK LOGOUT completed\r\n")
+      ensure
+        sock.close
+        server.close
+      end
+    end
+
+    begin
+      imap = Net::IMAP.new(server_addr, :port => port)
+      resp = imap.id
+      assert_equal(nil, resp)
+      assert_equal("RUBY0001 ID NIL\r\n", requests.pop)
+      resp = imap.id({})
+      assert_equal(server_id, resp)
+      assert_equal("RUBY0002 ID ()\r\n", requests.pop)
+      resp = imap.id("name" => "test client", "version" => "latest")
+      assert_equal(server_id, resp)
+      assert_equal("RUBY0003 ID (\"name\" \"test client\" \"version\" \"latest\")\r\n",
+                   requests.pop)
+      imap.logout
+      assert_equal("RUBY0004 LOGOUT\r\n", requests.pop)
     ensure
       imap.disconnect if imap
     end
