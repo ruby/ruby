@@ -64,8 +64,10 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
 
   if defined?(Ractor)
     def test_rfc2822_ractor
-      actual = Ractor.new { Time.rfc2822("Fri, 21 Nov 1997 09:55:06 -0600") }.take
-      assert_equal(Time.utc(1997, 11, 21, 9, 55, 6) + 6 * 3600, actual)
+      assert_ractor(<<~RUBY, require: 'time')
+        actual = Ractor.new { Time.rfc2822("Fri, 21 Nov 1997 09:55:06 -0600") }.take
+        assert_equal(Time.utc(1997, 11, 21, 9, 55, 6) + 6 * 3600, actual)
+      RUBY
     end
   end
 
