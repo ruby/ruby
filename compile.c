@@ -5203,9 +5203,22 @@ add_ensure_range(rb_iseq_t *iseq, struct ensure_range *erange,
     erange->next = ne;
 }
 
+static bool
+can_add_ensure_iseq(const rb_iseq_t *iseq)
+{
+    if (ISEQ_COMPILE_DATA(iseq)->in_rescue && ISEQ_COMPILE_DATA(iseq)->ensure_node_stack) {
+        return false;
+    }
+    else {
+        return true;
+    }
+}
+
 static void
 add_ensure_iseq(LINK_ANCHOR *const ret, rb_iseq_t *iseq, int is_return)
 {
+    assert(can_add_ensure_iseq(iseq));
+
     struct iseq_compile_data_ensure_node_stack *enlp =
 	ISEQ_COMPILE_DATA(iseq)->ensure_node_stack;
     struct iseq_compile_data_ensure_node_stack *prev_enlp = enlp;
@@ -6697,7 +6710,7 @@ compile_break(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
     const int line = nd_line(node);
     unsigned long throw_flag = 0;
 
-    if (ISEQ_COMPILE_DATA(iseq)->redo_label != 0) {
+    if (ISEQ_COMPILE_DATA(iseq)->redo_label != 0 && can_add_ensure_iseq(iseq)) {
 	/* while/until */
 	LABEL *splabel = NEW_LABEL(0);
 	ADD_LABEL(ret, splabel);
@@ -6756,7 +6769,7 @@ compile_next(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
     const int line = nd_line(node);
     unsigned long throw_flag = 0;
 
-    if (ISEQ_COMPILE_DATA(iseq)->redo_label != 0) {
+    if (ISEQ_COMPILE_DATA(iseq)->redo_label != 0 && can_add_ensure_iseq(iseq)) {
 	LABEL *splabel = NEW_LABEL(0);
 	debugs("next in while loop\n");
 	ADD_LABEL(ret, splabel);
@@ -6769,7 +6782,7 @@ compile_next(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
 	    ADD_INSN(ret, line, putnil);
 	}
     }
-    else if (ISEQ_COMPILE_DATA(iseq)->end_label) {
+    else if (ISEQ_COMPILE_DATA(iseq)->end_label && can_add_ensure_iseq(iseq)) {
 	LABEL *splabel = NEW_LABEL(0);
 	debugs("next in block\n");
 	ADD_LABEL(ret, splabel);
@@ -6829,7 +6842,7 @@ compile_redo(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
 {
     const int line = nd_line(node);
 
-    if (ISEQ_COMPILE_DATA(iseq)->redo_label) {
+    if (ISEQ_COMPILE_DATA(iseq)->redo_label && can_add_ensure_iseq(iseq)) {
 	LABEL *splabel = NEW_LABEL(0);
 	debugs("redo in while");
 	ADD_LABEL(ret, splabel);
@@ -6841,7 +6854,7 @@ compile_redo(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
 	    ADD_INSN(ret, line, putnil);
 	}
     }
-    else if (iseq->body->type != ISEQ_TYPE_EVAL && ISEQ_COMPILE_DATA(iseq)->start_label) {
+    else if (iseq->body->type != ISEQ_TYPE_EVAL && ISEQ_COMPILE_DATA(iseq)->start_label && can_add_ensure_iseq(iseq)) {
 	LABEL *splabel = NEW_LABEL(0);
 
 	debugs("redo in block");
@@ -6927,7 +6940,14 @@ compile_rescue(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
     lstart->rescued = LABEL_RESCUE_BEG;
     lend->rescued = LABEL_RESCUE_END;
     ADD_LABEL(ret, lstart);
-    CHECK(COMPILE(ret, "rescue head", node->nd_head));
+
+    bool prev_in_rescue = ISEQ_COMPILE_DATA(iseq)->in_rescue;
+    ISEQ_COMPILE_DATA(iseq)->in_rescue = true;
+    {
+        CHECK(COMPILE(ret, "rescue head", node->nd_head));
+    }
+    ISEQ_COMPILE_DATA(iseq)->in_rescue = prev_in_rescue;
+
     ADD_LABEL(ret, lend);
     if (node->nd_else) {
 	ADD_INSN(ret, line, pop);
@@ -7088,7 +7108,7 @@ compile_return(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
 
 	CHECK(COMPILE(ret, "return nd_stts (return val)", retval));
 
-	if (type == ISEQ_TYPE_METHOD) {
+	if (type == ISEQ_TYPE_METHOD && can_add_ensure_iseq(iseq)) {
 	    add_ensure_iseq(ret, iseq, 1);
 	    ADD_TRACE(ret, RUBY_EVENT_RETURN);
 	    ADD_INSN(ret, line, leave);
