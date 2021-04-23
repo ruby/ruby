@@ -2262,11 +2262,6 @@ CALLER_REMOVE_EMPTY_KW_SPLAT(struct rb_control_frame_struct *restrict cfp,
     if (UNLIKELY(calling->kw_splat)) {
         /* This removes the last Hash object if it is empty.
          * So, vm_ci_flag(ci) & VM_CALL_KW_SPLAT is now inconsistent.
-         * However, you can use vm_ci_flag(ci) & VM_CALL_KW_SPLAT to
-         * determine whether a hash should be added back with
-         * warning (for backwards compatibility in cases where
-         * the method does not have the number of required
-         * arguments.
          */
         if (RHASH_EMPTY_P(cfp->sp[-1])) {
             cfp->sp--;
