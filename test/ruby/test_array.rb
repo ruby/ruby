@@ -2741,9 +2741,9 @@ class TestArray < Test::Unit::TestCase
     step = 0.step
     e = Enumerator.produce { step.next }
     a = %w(a b c)
-    assert_equal([["a", 0], ["b", 1], ["c", 2]], a.zip(e))
-    assert_equal([["a", 3], ["b", 4], ["c", 5]], a.zip(e))
-    assert_equal([["a", 6], ["b", 7], ["c", 8]], a.zip(e))
+    assert_equal([["a", 0], ["b", 1], ["c", 2]], a.zip(e), bug17814)
+    assert_equal([["a", 3], ["b", 4], ["c", 5]], a.zip(e), bug17814)
+    assert_equal([["a", 6], ["b", 7], ["c", 8]], a.zip(e), bug17814)
   end
 
   def test_transpose
