@@ -244,14 +244,14 @@ getclassvariable
 /* Set value of class variable id of klass as val. */
 DEFINE_INSN
 setclassvariable
-(ID id)
+(ID id, IVC ic)
 (VALUE val)
 ()
 /* "class variable access from toplevel" warning can be hooked. */
 // attr bool leaf = false; /* has rb_warning() */
 {
     vm_ensure_not_refinement_module(GET_SELF());
-    vm_setclassvariable(vm_get_cref(GET_EP()), GET_CFP(), id,  val);
+    vm_setclassvariable(GET_ISEQ(), vm_get_cref(GET_EP()), GET_CFP(), id,  val, (ICVARC)ic);
 }
 
 /* Get constant variable id. If klass is Qnil and allow_nil is Qtrue, constants
