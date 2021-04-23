@@ -85,6 +85,7 @@ class Reline::Windows
     end
   end
 
+  VK_RETURN = 0x0D
   VK_MENU = 0x12
   VK_LMENU = 0xA4
   VK_CONTROL = 0x11
@@ -207,7 +208,12 @@ class Reline::Windows
     elsif char_code == 0 and control_key_state != 0
       # unknown
     else
-      @@output_buf.concat(char.bytes)
+      case virtual_key_code
+      when VK_RETURN
+        @@output_buf.push("\n".ord)
+      else
+        @@output_buf.concat(char.bytes)
+      end
     end
   end
 
