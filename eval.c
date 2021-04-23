@@ -683,10 +683,6 @@ rb_exc_fatal(VALUE mesg)
     rb_exc_exception(mesg, TAG_FATAL, Qnil);
 }
 
-/*!
- * Raises an \c Interrupt exception.
- * \ingroup exception
- */
 void
 rb_interrupt(void)
 {
@@ -814,26 +810,6 @@ make_exception(int argc, const VALUE *argv, int isstr)
     return mesg;
 }
 
-/*!
- * Make an \c Exception object from the list of arguments in a manner
- * similar to \c Kernel\#raise.
- *
- * \param[in] argc the number of arguments
- * \param[in] argv a pointer to the array of arguments.
- *
- * The first form of this function takes a \c String argument. Then
- * it returns a \c RuntimeError whose error message is the given value.
- *
- * The second from of this function takes an \c Exception object. Then
- * it just returns the given value.
- *
- * The last form takes an exception class, an optional error message and
- * an optional array of backtrace. Then it passes the optional arguments
- * to \c #exception method of the exception class.
- *
- * \return the exception object, or \c Qnil if \c argc is 0.
- * \ingroup exception
- */
 VALUE
 rb_make_exception(int argc, const VALUE *argv)
 {
@@ -858,14 +834,6 @@ rb_raise_jump(VALUE mesg, VALUE cause)
     rb_longjmp(ec, TAG_RAISE, mesg, cause);
 }
 
-/*!
- * Continues the exception caught by rb_protect() and rb_eval_string_protect().
- *
- * This function never return to the caller.
- * \param[in] the value of \c *state which the protect function has set to the
- *   their last parameter.
- * \ingroup exception
- */
 void
 rb_jump_tag(int tag)
 {
@@ -1060,35 +1028,12 @@ frame_called_id(rb_control_frame_t *cfp)
     }
 }
 
-/*!
- * The original name of the current method.
- *
- * The function returns the original name of the method even if
- * an alias of the method is called.
- * The function can also return 0 if it is not in a method. This
- * case can happen in a toplevel of a source file, for example.
- *
- * \returns the ID of the name or 0
- * \sa rb_frame_callee
- * \ingroup defmethod
- */
 ID
 rb_frame_this_func(void)
 {
     return frame_func_id(GET_EC()->cfp);
 }
 
-/*!
- * The name of the current method.
- *
- * The function returns the alias if an alias of the method is called.
- * The function can also return 0 if it is not in a method. This
- * case can happen in a toplevel of a source file, for example.
- *
- * \returns the ID of the name or 0.
- * \sa rb_frame_this_func
- * \ingroup defmethod
- */
 ID
 rb_frame_callee(void)
 {
@@ -1554,16 +1499,6 @@ rb_mod_s_used_modules(VALUE _)
     return rb_funcall(ary, rb_intern("uniq"), 0);
 }
 
-/*!
- * Calls \c #initialize method of \a obj with the given arguments.
- *
- * It also forwards the given block to \c #initialize if given.
- *
- * \param[in] obj the receiver object
- * \param[in] argc the number of arguments
- * \param[in] argv a pointer to the array of arguments
- * \ingroup object
- */
 void
 rb_obj_call_init(VALUE obj, int argc, const VALUE *argv)
 {
