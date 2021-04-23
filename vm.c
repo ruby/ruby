@@ -418,8 +418,6 @@ static const struct rb_callcache vm_empty_cc = {
 
 static void thread_free(void *ptr);
 
-//
-
 void
 rb_vm_inc_const_missing_count(void)
 {
