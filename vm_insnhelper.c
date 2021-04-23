@@ -2417,7 +2417,6 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
         if (LIKELY(rb_simple_iseq_p(iseq))) {
             rb_control_frame_t *cfp = ec->cfp;
             CALLER_SETUP_ARG(cfp, calling, ci);
-            CALLER_REMOVE_EMPTY_KW_SPLAT(cfp, calling, ci);
 
             if (calling->argc != iseq->body->param.lead_num) {
                 argument_arity_error(ec, iseq, calling->argc, iseq->body->param.lead_num, iseq->body->param.lead_num);
@@ -2431,7 +2430,6 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
         else if (rb_iseq_only_optparam_p(iseq)) {
             rb_control_frame_t *cfp = ec->cfp;
             CALLER_SETUP_ARG(cfp, calling, ci);
-            CALLER_REMOVE_EMPTY_KW_SPLAT(cfp, calling, ci);
 
             const int lead_num = iseq->body->param.lead_num;
             const int opt_num = iseq->body->param.opt_num;
