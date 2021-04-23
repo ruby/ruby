@@ -2120,7 +2120,6 @@ rb_hash_lookup(VALUE hash, VALUE key)
  *  If +key+ is not found and no block was given,
  *  returns +default_value+:
  *    {}.fetch(:nosuch, :default) # => :default
- *    {}.fetch(:nosuch) # => nil
  *
  *  If +key+ is not found and a block was given,
  *  yields +key+ to the block and returns the block's return value:
