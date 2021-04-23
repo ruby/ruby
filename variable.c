@@ -40,6 +40,7 @@
 #include "vm_sync.h"
 
 RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
+#define GET_GLOBAL_CVAR_STATE() (ruby_vm_global_cvar_state)
 
 typedef void rb_gvar_compact_t(void *var);
 
@@ -3398,6 +3399,24 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
     check_before_mod_set(target, id, val, "class variable");
 
     int result = rb_class_ivar_set(target, id, val);
+
+    struct rb_id_table *rb_cvc_tbl = RCLASS_CVC_TBL(target);
+
+    if (!rb_cvc_tbl) {
+        rb_cvc_tbl = RCLASS_CVC_TBL(target) = rb_id_table_create(2);
+    }
+
+    struct rb_cvar_class_tbl_entry *ent;
+
+    if (!rb_id_table_lookup(rb_cvc_tbl, id, (VALUE*)&ent)) {
+        ent = ALLOC(struct rb_cvar_class_tbl_entry);
+        ent->class_value = target;
+        ent->global_cvar_state = GET_GLOBAL_CVAR_STATE();
+        rb_id_table_insert(rb_cvc_tbl, id, (VALUE)ent);
+        RB_DEBUG_COUNTER_INC(cvar_inline_miss);
+    } else {
+        ent->global_cvar_state = GET_GLOBAL_CVAR_STATE();
+    }
 
     // Break the cvar cache if this is a new class variable
     // and target is a module or a subclass with the same

@@ -960,6 +960,7 @@ rb_include_class_new(VALUE module, VALUE super)
 	RCLASS_CONST_TBL(module) = rb_id_table_create(0);
     }
     RCLASS_IV_TBL(klass) = RCLASS_IV_TBL(module);
+    RCLASS_CVC_TBL(klass) = RCLASS_CVC_TBL(module);
     RCLASS_CONST_TBL(klass) = RCLASS_CONST_TBL(module);
 
     RCLASS_SET_SUPER(klass, super);
