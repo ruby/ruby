@@ -216,7 +216,7 @@ Executions:
 
 File +decimal_numeric.rb+
 defines an option whose argument is to be converted to an \Integer object.
-The argument is converted by method {Kernel#Integer
+The argument is converted by method Kernel#Integer
 
   :include: ruby/decimal_numeric.rb
 
