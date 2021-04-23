@@ -110,7 +110,7 @@ class TestAssignment < Test::Unit::TestCase
     assert_equal([:x1, :y1, :x2, :x3, :x4, :r1, :r2, [:z=, :r1], [:[]=, 1, 2, 3, [6, 7]], [:[]=, 4, :r2], [:x5=, 8]], order)
     order.clear
 
-    (x1.y1.z, x2.x5), a = [r1, r2], 7
+    (x1.y1.z, x2.x5), _a = [r1, r2], 7
     assert_equal([:x1, :y1, :x2, :r1, :r2, [:z=, :r1], [:x5=, :r2]], order)
     order.clear
 
@@ -130,11 +130,11 @@ class TestAssignment < Test::Unit::TestCase
     assert_equal([:x1, :y1, :x1, :x2, :x3, :x4, :r1, :r2, [:z=, :r1], [:x5=, 5], [:[]=, 1, 2, 3, [6, 7]], [:[]=, 4, :r2], [:x5=, 8]], order)
     order.clear
 
-    ((x1.y1.z, x1.x5), a), *x2[1, 2, 3], ((x3[4], x4.x5), b) = [[r1, 5], 10], 6, 7, [[r2, 8], 11]
+    ((x1.y1.z, x1.x5), _a), *x2[1, 2, 3], ((x3[4], x4.x5), _b) = [[r1, 5], 10], 6, 7, [[r2, 8], 11]
     assert_equal([:x1, :y1, :x1, :x2, :x3, :x4, :r1, :r2, [:z=, :r1], [:x5=, 5], [:[]=, 1, 2, 3, [6, 7]], [:[]=, 4, :r2], [:x5=, 8]], order)
     order.clear
 
-    ((x1.y1.z, *x1.x5), a), *x2[1, 2, 3], ((*x3[4], x4.x5), b) = [[r1, 5], 10], 6, 7, [[r2, 8], 11]
+    ((x1.y1.z, *x1.x5), _a), *x2[1, 2, 3], ((*x3[4], x4.x5), _b) = [[r1, 5], 10], 6, 7, [[r2, 8], 11]
     assert_equal([:x1, :y1, :x1, :x2, :x3, :x4, :r1, :r2, [:z=, :r1], [:x5=, [5]], [:[]=, 1, 2, 3, [6, 7]], [:[]=, 4, [:r2]], [:x5=, 8]], order)
     order.clear
   end
