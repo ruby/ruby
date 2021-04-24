@@ -336,10 +336,15 @@ jit_jump_to_next_insn(jitstate_t *jit, const ctx_t *current_context)
 
 // Compile a sequence of bytecode instructions for a given basic block version
 void
-yjit_gen_block(ctx_t *ctx, block_t *block, rb_execution_context_t *ec)
+yjit_gen_block(block_t *block, rb_execution_context_t *ec)
 {
     RUBY_ASSERT(cb != NULL);
     RUBY_ASSERT(block != NULL);
+    RUBY_ASSERT(!(block->blockid.idx == 0 && block->ctx.stack_size > 0));
+
+    // Copy the block's context to avoid mutating it
+    ctx_t ctx_copy = block->ctx;
+    ctx_t* ctx = &ctx_copy;
 
     const rb_iseq_t *iseq = block->blockid.iseq;
     uint32_t insn_idx = block->blockid.idx;
