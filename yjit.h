@@ -30,11 +30,19 @@ typedef struct rb_iseq_struct rb_iseq_t;
 #endif
 
 struct rb_yjit_options {
+    // Enable compilation with YJIT
     bool yjit_enabled;
 
     // Number of method calls after which to start generating code
     // Threshold==1 means compile on first execution
     unsigned call_threshold;
+
+    // Generate versions greedily until the limit is hit
+    bool greedy_versioning;
+
+    // Maximum number of versions per block
+    // 1 means always create generic versions
+    unsigned version_limit;
 
     // Capture and print out stats
     bool gen_stats;

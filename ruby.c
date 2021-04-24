@@ -1039,6 +1039,12 @@ setup_yjit_options(const char *s, struct rb_yjit_options *yjit_opt)
     if (opt_match_arg(s, l, "call-threshold")) {
         yjit_opt->call_threshold = atoi(s + 1);
     }
+    else if (opt_match_arg(s, l, "version-limit")) {
+        yjit_opt->version_limit = atoi(s + 1);
+    }
+    else if (opt_match_noarg(s, l, "greedy-versioning")) {
+        yjit_opt->greedy_versioning = true;
+    }
     else if (opt_match_noarg(s, l, "stats")) {
         yjit_opt->gen_stats = true;
     }

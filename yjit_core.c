@@ -3,14 +3,16 @@
 #include "vm_sync.h"
 #include "builtin.h"
 
+#include "yjit.h"
 #include "yjit_asm.h"
 #include "yjit_utils.h"
 #include "yjit_iface.h"
 #include "yjit_core.h"
 #include "yjit_codegen.h"
 
-// Maximum number of versions per block
-#define MAX_VERSIONS 4
+// Maximum number of specialized block versions per block
+// Zero means generic versions only
+#define MAX_VERSIONS 3
 
 /*
 Get an operand for the adjusted stack pointer address
@@ -419,26 +421,57 @@ block_t* find_block_version(blockid_t blockid, const ctx_t* ctx)
         }
     }
 
+    // If greedy versioning is enabled
+    if (rb_yjit_opts.greedy_versioning)
+    {
+        // If we're below the version limit, don't settle for an imperfect match
+        if ((uint32_t)rb_darray_size(versions) + 1 < rb_yjit_opts.version_limit && best_diff > 0) {
+            return NULL;
+        }
+    }
+
     return best_version;
+}
+
+// Produce a generic context when the block version limit is hit for a blockid
+// Note that this will mutate the ctx argument
+void limit_block_versions(blockid_t blockid, ctx_t* ctx)
+{
+    // Guard chains implement limits separately, do nothing
+    if (ctx->chain_depth > 0)
+        return;
+
+    // If this block version we're about to add will hit the version limit
+    if (get_num_versions(blockid) + 1 >= rb_yjit_opts.version_limit)
+    {
+        // Produce a generic context that stores no type information,
+        // but still respects the stack_size and sp_offset constraints
+        // This new context will then match all future requests.
+        ctx_t generic_ctx = DEFAULT_CTX;
+        generic_ctx.stack_size = ctx->stack_size;
+        generic_ctx.sp_offset = ctx->sp_offset;
+
+        // Mutate the incoming context
+        *ctx = generic_ctx;
+    }
 }
 
 // Compile a new block version immediately
 block_t* gen_block_version(blockid_t blockid, const ctx_t* start_ctx, rb_execution_context_t* ec)
 {
-    // Copy the context to avoid mutating it
-    ctx_t ctx_copy = *start_ctx;
-    ctx_t* ctx = &ctx_copy;
-
     // Allocate a new block version object
-    block_t* first_block = calloc(1, sizeof(block_t));
-    first_block->blockid = blockid;
-    memcpy(&first_block->ctx, ctx, sizeof(ctx_t));
+    block_t* block = calloc(1, sizeof(block_t));
+    block->blockid = blockid;
+    memcpy(&block->ctx, start_ctx, sizeof(ctx_t));
 
-    // Block that is currently being compiled
-    block_t* block = first_block;
+    // Store a pointer to the first block (returned by this function)
+    block_t* first_block = block;
+
+    // Limit the number of specialized versions for this block
+    limit_block_versions(block->blockid, &block->ctx);
 
     // Generate code for the first block
-    yjit_gen_block(ctx, block, ec);
+    yjit_gen_block(block, ec);
 
     // Keep track of the new block version
     add_block_version(block->blockid, block);
@@ -462,16 +495,18 @@ block_t* gen_block_version(blockid_t blockid, const ctx_t* start_ctx, rb_executi
             rb_bug("invalid target for last branch");
         }
 
-        // Use the context from the branch
-        *ctx = last_branch->target_ctxs[0];
-
         // Allocate a new block version object
+        // Use the context from the branch
         block = calloc(1, sizeof(block_t));
         block->blockid = last_branch->targets[0];
-        memcpy(&block->ctx, ctx, sizeof(ctx_t));
+        block->ctx = last_branch->target_ctxs[0];
+        //memcpy(&block->ctx, ctx, sizeof(ctx_t));
+
+        // Limit the number of specialized versions for this block
+        limit_block_versions(block->blockid, &block->ctx);
 
         // Generate code for the current block
-        yjit_gen_block(ctx, block, ec);
+        yjit_gen_block(block, ec);
 
         // Keep track of the new block version
         add_block_version(block->blockid, block);
@@ -514,7 +549,6 @@ static uint8_t *
 branch_stub_hit(branch_t* branch, const uint32_t target_idx, rb_execution_context_t* ec)
 {
     uint8_t* dst_addr;
-    ctx_t generic_ctx;
 
     // Stop other ractors since we are going to patch machine code.
     // This is how the GC does it.
@@ -555,17 +589,6 @@ branch_stub_hit(branch_t* branch, const uint32_t target_idx, rb_execution_contex
 
         // If this block hasn't yet been compiled
         if (!p_block) {
-            // Limit the number of block versions
-            if (target_ctx->chain_depth == 0) { // guard chains implement limits individually
-                if (get_num_versions(target) >= MAX_VERSIONS - 1) {
-                    //fprintf(stderr, "version limit hit in branch_stub_hit\n");
-                    generic_ctx = DEFAULT_CTX;
-                    generic_ctx.stack_size = target_ctx->stack_size;
-                    generic_ctx.sp_offset = target_ctx->sp_offset;
-                    target_ctx = &generic_ctx;
-                }
-            }
-
             // If the new block can be generated right after the branch (at cb->write_pos)
             if (cb->write_pos == branch->end_pos) {
                 // This branch should be terminating its block
@@ -720,7 +743,6 @@ void gen_direct_jump(
 )
 {
     RUBY_ASSERT(target0.iseq != NULL);
-    ctx_t generic_ctx;
 
     branch_t* branch = make_branch_entry(block, ctx, gen_jump_branch);
     branch->targets[0] = target0;
@@ -744,18 +766,8 @@ void gen_direct_jump(
     }
     else
     {
-        // Limit the number of block versions
-        if (get_num_versions(target0) >= MAX_VERSIONS - 1)
-        {
-            //fprintf(stderr, "version limit hit in gen_direct_jump\n");
-            generic_ctx = DEFAULT_CTX;
-            generic_ctx.stack_size = ctx->stack_size;
-            generic_ctx.sp_offset = ctx->sp_offset;
-            ctx = &generic_ctx;
-        }
-
-        // The target block will be compiled next
-        // It will be compiled in gen_block_version()
+        // The target block will be compiled right after this one (fallthrough)
+        // See the loop in gen_block_version()
         branch->dst_addrs[0] = NULL;
         branch->shape = SHAPE_NEXT0;
         branch->start_pos = cb->write_pos;
