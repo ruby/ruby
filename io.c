@@ -1306,71 +1306,77 @@ rb_io_from_fd(int fd)
 int
 rb_io_wait_readable(int f)
 {
-    VALUE scheduler = rb_scheduler_current();
-    if (scheduler != Qnil) {
-        return RTEST(
-            rb_scheduler_io_wait_readable(scheduler, rb_io_from_fd(f))
-        );
-    }
+    VALUE scheduler;
 
     io_fd_check_closed(f);
+
+    scheduler = rb_scheduler_current();
     switch (errno) {
       case EINTR:
 #if defined(ERESTART)
       case ERESTART:
 #endif
-	rb_thread_check_ints();
-	return TRUE;
+        rb_thread_check_ints();
+        return TRUE;
 
       case EAGAIN:
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
       case EWOULDBLOCK:
 #endif
-	rb_thread_wait_fd(f);
-	return TRUE;
+        if (scheduler != Qnil) {
+            return RTEST(
+                rb_scheduler_io_wait_readable(scheduler, rb_io_from_fd(f))
+            );
+        } else {
+            rb_thread_wait_fd(f);
+        }
+        return TRUE;
 
       default:
-	return FALSE;
+        return FALSE;
     }
 }
 
 int
 rb_io_wait_writable(int f)
 {
-    VALUE scheduler = rb_scheduler_current();
-    if (scheduler != Qnil) {
-        return RTEST(
-            rb_scheduler_io_wait_writable(scheduler, rb_io_from_fd(f))
-        );
-    }
+    VALUE scheduler;
 
     io_fd_check_closed(f);
+
+    scheduler = rb_scheduler_current();
     switch (errno) {
       case EINTR:
 #if defined(ERESTART)
       case ERESTART:
 #endif
-	/*
-	 * In old Linux, several special files under /proc and /sys don't handle
-	 * select properly. Thus we need avoid to call if don't use O_NONBLOCK.
-	 * Otherwise, we face nasty hang up. Sigh.
-	 * e.g. http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=31b07093c44a7a442394d44423e21d783f5523b8
-	 * http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=31b07093c44a7a442394d44423e21d783f5523b8
-	 * In EINTR case, we only need to call RUBY_VM_CHECK_INTS_BLOCKING().
-	 * Then rb_thread_check_ints() is enough.
-	 */
-	rb_thread_check_ints();
-	return TRUE;
+        /*
+         * In old Linux, several special files under /proc and /sys don't handle
+         * select properly. Thus we need avoid to call if don't use O_NONBLOCK.
+         * Otherwise, we face nasty hang up. Sigh.
+         * e.g. http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=31b07093c44a7a442394d44423e21d783f5523b8
+         * http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=31b07093c44a7a442394d44423e21d783f5523b8
+         * In EINTR case, we only need to call RUBY_VM_CHECK_INTS_BLOCKING().
+         * Then rb_thread_check_ints() is enough.
+         */
+        rb_thread_check_ints();
+        return TRUE;
 
       case EAGAIN:
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
       case EWOULDBLOCK:
 #endif
-	rb_thread_fd_writable(f);
-	return TRUE;
+        if (scheduler != Qnil) {
+            return RTEST(
+                rb_scheduler_io_wait_writable(scheduler, rb_io_from_fd(f))
+            );
+        } else {
+            rb_thread_fd_writable(f);
+        }
+        return TRUE;
 
       default:
-	return FALSE;
+        return FALSE;
     }
 }
 

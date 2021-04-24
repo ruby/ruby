@@ -62,4 +62,39 @@ class TestFiberIO < Test::Unit::TestCase
       end
     end.each(&:join)
   end
+
+  def test_epipe_on_read
+    skip "UNIXSocket is not defined!" unless defined?(UNIXSocket)
+
+    i, o = UNIXSocket.pair
+
+    unless i.nonblock? && o.nonblock?
+      i.close
+      o.close
+      skip "I/O is not non-blocking!"
+    end
+
+    error = nil
+
+    thread = Thread.new do
+      scheduler = Scheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        begin
+          i.close
+          o.write(MESSAGE)
+        rescue => error
+          # Saved into error.
+        end
+      end
+    end
+
+    thread.join
+
+    i.close
+    o.close
+
+    assert_kind_of Errno::EPIPE, error
+  end
 end
