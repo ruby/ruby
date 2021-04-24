@@ -2411,12 +2411,29 @@ class TestKeywordArguments < Test::Unit::TestCase
         args
       end
 
+      def empty_method
+      end
+
+      def opt(arg = :opt)
+        arg
+      end
+
       ruby2_keywords def foo_dbar(*args)
         dbar(*args)
       end
 
       ruby2_keywords def foo_dbaz(*args)
         dbaz(*args)
+      end
+
+      ruby2_keywords def clear_last_empty_method(*args)
+        args.last.clear
+        empty_method(*args)
+      end
+
+      ruby2_keywords def clear_last_opt(*args)
+        args.last.clear
+        opt(*args)
       end
 
       define_method(:dbar) do |*args, **kw|
@@ -2652,6 +2669,9 @@ class TestKeywordArguments < Test::Unit::TestCase
 
     assert_equal([[1, h1], {}], o.foo(:pass_bar, 1, :a=>1))
     assert_equal([[1, h1], {}], o.foo(:pass_cfunc, 1, :a=>1))
+
+    assert_equal(:opt, o.clear_last_opt(a: 1))
+    assert_nothing_raised(ArgumentError) { o.clear_last_empty_method(a: 1) }
 
     assert_warn(/Skipping set of ruby2_keywords flag for bar \(method accepts keywords or method does not accept argument splat\)/) do
       assert_nil(c.send(:ruby2_keywords, :bar))
