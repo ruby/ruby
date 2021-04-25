@@ -396,7 +396,7 @@ rb_memory_view_parse_item_format(const char *format,
     ssize_t max_alignment_size = 0;
 
     const char *p = format;
-    if (*p == '|') {  // alginment specifier
+    if (*p == '|') {  // alignment specifier
         alignment = true;
         ++format;
         ++p;

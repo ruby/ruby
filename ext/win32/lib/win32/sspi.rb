@@ -223,7 +223,7 @@ module Win32
       B64_TOKEN_PREFIX = ["NTLMSSP"].pack("m").delete("=\n")
 
       # Given a connection and a request path, performs authentication as the current user and returns
-      # the response from a GET request. The connnection should be a Net::HTTP object, and it should
+      # the response from a GET request. The connection should be a Net::HTTP object, and it should
       # have been constructed using the Net::HTTP.Proxy method, but anything that responds to "get" will work.
       # If a user and domain are given, will authenticate as the given user.
       # Returns the response received from the get method (usually Net::HTTPResponse)

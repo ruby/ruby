@@ -6787,7 +6787,7 @@ options(unsigned char *cp)
 	case 'S':   /* Shift_JIS input */
 	    input_encoding = nkf_enc_from_index(SHIFT_JIS);
 	    continue;
-	case 'Z':   /* Convert X0208 alphabet to asii */
+	case 'Z':   /* Convert X0208 alphabet to ascii */
 	    /* alpha_f
 	       bit:0   Convert JIS X 0208 Alphabet to ASCII
 	       bit:1   Convert Kankaku to one space

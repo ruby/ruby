@@ -25,7 +25,7 @@
 
 /** Wraps (or simulates) `__attribute__((cold))` */
 #if RBIMPL_COMPILER_IS(SunPro)
-# /* Recent SunPro has __has_attribute, and is borken. */
+# /* Recent SunPro has __has_attribute, and is broken. */
 # /* It reports it has attribute cold, reality isn't (warnings issued). */
 # define RBIMPL_ATTR_COLD() /* void */
 #elif RBIMPL_HAS_ATTRIBUTE(cold)

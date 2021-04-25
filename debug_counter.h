@@ -46,10 +46,10 @@ RB_DEBUG_COUNTER(cc_not_found_in_ccs)  // count for CC lookup success in CCS
 RB_DEBUG_COUNTER(cc_ent_invalidate) // count for invalidating cc (cc->klass = 0)
 RB_DEBUG_COUNTER(cc_cme_invalidate) // count for invalidating CME
 
-RB_DEBUG_COUNTER(cc_invalidate_leaf)          // count for invalidating klass if klass has no-sublcasses
+RB_DEBUG_COUNTER(cc_invalidate_leaf)          // count for invalidating klass if klass has no-subclasses
 RB_DEBUG_COUNTER(cc_invalidate_leaf_ccs)      //                        corresponding CCS
 RB_DEBUG_COUNTER(cc_invalidate_leaf_callable) //                        complimented cache (no-subclasses)
-RB_DEBUG_COUNTER(cc_invalidate_tree)          // count for invalidating klass if klass has sublcasses
+RB_DEBUG_COUNTER(cc_invalidate_tree)          // count for invalidating klass if klass has subclasses
 RB_DEBUG_COUNTER(cc_invalidate_tree_cme)      //                        cme if cme is found in this class or superclasses
 RB_DEBUG_COUNTER(cc_invalidate_tree_callable) //                        complimented cache (subclasses)
 RB_DEBUG_COUNTER(cc_invalidate_negative)      // count for invalidating negative cache

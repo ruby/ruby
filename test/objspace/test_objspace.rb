@@ -168,7 +168,7 @@ class TestObjSpace < Test::Unit::TestCase
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       require "objspace"
-      # Make sure stoping before the tracepoints are initialized doesn't raise. See [Bug #17020]
+      # Make sure stopping before the tracepoints are initialized doesn't raise. See [Bug #17020]
       ObjectSpace.trace_object_allocations_stop
     end;
   end
