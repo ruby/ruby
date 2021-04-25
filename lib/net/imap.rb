@@ -1912,7 +1912,7 @@ module Net
     # raw_data:: Returns the raw data string.
     UntaggedResponse = Struct.new(:name, :data, :raw_data)
 
-    # Net::IMAP::IgnoredResponse represents intentionaly ignored responses.
+    # Net::IMAP::IgnoredResponse represents intentionally ignored responses.
     #
     # This includes untagged response "NOOP" sent by eg. Zimbra to avoid some
     # clients to close the connection.
