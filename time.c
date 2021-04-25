@@ -3331,36 +3331,38 @@ tmcmp(struct tm *a, struct tm *b)
 }
 
 /*
- *  call-seq:
- *    Time.utc(year) -> time
- *    Time.utc(year, month) -> time
- *    Time.utc(year, month, day) -> time
- *    Time.utc(year, month, day, hour) -> time
- *    Time.utc(year, month, day, hour, min) -> time
- *    Time.utc(year, month, day, hour, min, sec_with_frac) -> time
- *    Time.utc(year, month, day, hour, min, sec, usec_with_frac) -> time
- *    Time.utc(sec, min, hour, day, month, year, dummy, dummy, dummy, dummy) -> time
- *    Time.gm(year) -> time
- *    Time.gm(year, month) -> time
- *    Time.gm(year, month, day) -> time
- *    Time.gm(year, month, day, hour) -> time
- *    Time.gm(year, month, day, hour, min) -> time
- *    Time.gm(year, month, day, hour, min, sec_with_frac) -> time
- *    Time.gm(year, month, day, hour, min, sec, usec_with_frac) -> time
- *    Time.gm(sec, min, hour, day, month, year, dummy, dummy, dummy, dummy) -> time
+ * call-seq:
+ *   Time.utc(year, month=1, day=1, hour=0, min=0, sec_i=0, usec=0) -> new_time
+ *   Time.utc(sec_i, min, hour, day, month, year, dummy, dummy, dummy, dummy) -> new_time
  *
- *  Creates a Time object based on given values, interpreted as UTC (GMT). The
- *  year must be specified. Other values default to the minimum value
- *  for that field (and may be +nil+ or omitted). Months may
- *  be specified by numbers from 1 to 12, or by the three-letter English
- *  month names. Hours are specified on a 24-hour clock (0..23). Raises
- *  an ArgumentError if any values are out of range. Will
- *  also accept ten arguments in the order output by Time#to_a.
+ * Returns a new \Time object based the on given arguments;
+ * its timezone is UTC.
  *
- *  +sec_with_frac+ and +usec_with_frac+ can have a fractional part.
+ * In the first form (up to seven arguments), argument +year+ is required.
  *
- *     Time.utc(2000,"jan",1,20,15,1)  #=> 2000-01-01 20:15:01 UTC
- *     Time.gm(2000,"jan",1,20,15,1)   #=> 2000-01-01 20:15:01 UTC
+ *   Time.utc(2000)                  # => 2000-01-01 00:00:00 UTC
+ *   Time.utc(0, 1, 2, 3, 4, 5, 6.5) # => 0000-01-02 03:04:05.0000065 UTC
+ *
+ * In the second form, all ten arguments are required,
+ * though the last four are ignored.
+ * This form is useful for creating a time from a 10-element array
+ * such as is returned by #to_a.
+ *
+ *   array = Time.now.to_a
+ *   p array # => [57, 26, 13, 24, 4, 2021, 6, 114, true, "Central Daylight Time"]
+ *   array[5] = 2000
+ *   Time.utc(*array) # => 2000-04-24 13:26:57 UTC
+ *
+ * Parameters:
+ * :include: doc/time/year.rdoc
+ * :include: doc/time/mon-min.rdoc
+ * :include: doc/time/sec_i.rdoc
+ * :include: doc/time/usec.rdoc
+ *
+ * Alias: Time.gm.
+
+ * Related: Time.local.
+ *
  */
 static VALUE
 time_s_mkutc(int argc, VALUE *argv, VALUE klass)
@@ -3372,28 +3374,37 @@ time_s_mkutc(int argc, VALUE *argv, VALUE klass)
 }
 
 /*
- *  call-seq:
- *   Time.local(year) -> time
- *   Time.local(year, month) -> time
- *   Time.local(year, month, day) -> time
- *   Time.local(year, month, day, hour) -> time
- *   Time.local(year, month, day, hour, min) -> time
- *   Time.local(year, month, day, hour, min, sec_with_frac) -> time
- *   Time.local(year, month, day, hour, min, sec, usec_with_frac) -> time
- *   Time.local(sec, min, hour, day, month, year, dummy, dummy, isdst, dummy) -> time
- *   Time.mktime(year) -> time
- *   Time.mktime(year, month) -> time
- *   Time.mktime(year, month, day) -> time
- *   Time.mktime(year, month, day, hour) -> time
- *   Time.mktime(year, month, day, hour, min) -> time
- *   Time.mktime(year, month, day, hour, min, sec_with_frac) -> time
- *   Time.mktime(year, month, day, hour, min, sec, usec_with_frac) -> time
- *   Time.mktime(sec, min, hour, day, month, year, dummy, dummy, isdst, dummy) -> time
+ * call-seq:
+ *   Time.local(year, month=1, day=1, hour=0, min=0, sec_i=0, usec=0) -> new_time
+ *   Time.local(sec, min, hour, day, month, year, dummy, dummy, dummy, dummy) -> new_time
  *
- *  Same as Time.utc, but interprets the values in the
- *  local time zone.
+ * Returns a new \Time object based the on given arguments;
+ * its timezone is the local timezone.
  *
- *     Time.local(2000,"jan",1,20,15,1)   #=> 2000-01-01 20:15:01 -0600
+ * In the first form (up to seven arguments), argument +year+ is required.
+ *
+ *   Time.local(2000)                   # => 2000-01-01 00:00:00 -0600
+ *   Time.local(0, 1, 2, 3, 4, 5, 6.5)  # => 0000-01-02 03:04:05.0000065 -0600
+ *
+ * In the second form, all ten arguments are required,
+ * though the last four are ignored.
+ * This form is useful for creating a time from a 10-element array
+ * such as those returned by #to_a.
+ *
+ *   array = Time.now.to_a
+ *   p array # => [57, 26, 13, 24, 4, 2021, 6, 114, true, "Central Daylight Time"]
+ *   array[5] = 2000
+ *   Time.local(*array)  # => 2000-04-24 13:26:57 -0500
+ *
+ * Parameters:
+ * :include: doc/time/year.rdoc
+ * :include: doc/time/mon-min.rdoc
+ * :include: doc/time/sec_i.rdoc
+ * :include: doc/time/usec.rdoc
+ *
+ * Alias: Time.mktime.
+ *
+ * Related: Time.utc.
  */
 
 static VALUE
@@ -5378,7 +5389,7 @@ tm_from_time(VALUE klass, VALUE time)
 /*
  * call-seq:
  *
- *   Time::tm.new(year, month=nil, day=nil, hour=nil, min=nil, sec=nil, tz=nil) -> tm
+ *   Time::tm.new(year, month=nil, day=nil, hour=nil, min=nil, sec=nil, zone=nil) -> tm
  *
  * Creates new Time::tm object.
  */
@@ -5590,17 +5601,19 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
  *  GMT is the older way of referring to these baseline times but persists in
  *  the names of calls on POSIX systems.
  *
+ *  Note: A \Time object uses the resolution available on your system clock.
+ *
  *  All times may have subsecond. Be aware of this fact when comparing times
  *  with each other -- times that are apparently equal when displayed may be
  *  different when compared.
  *  (Since Ruby 2.7.0, Time#inspect shows subsecond but
  *  Time#to_s still doesn't show subsecond.)
  *
- *  = Examples
+ *  == Examples
  *
  *  All of these examples were done using the EST timezone which is GMT-5.
  *
- *  == Creating a new Time instance
+ *  === Creating a New \Time Instance
  *
  *  You can create a new instance of Time with Time.new. This will use the
  *  current system time. Time.now is an alias for this. You can also
@@ -5619,8 +5632,8 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
  *
  *  Or a timezone object:
  *
- *    tz = timezone("Europe/Athens") # Eastern European Time, UTC+2
- *    Time.new(2002, 10, 31, 2, 2, 2, tz) #=> 2002-10-31 02:02:02 +0200
+ *    zone = timezone("Europe/Athens")      # Eastern European Time, UTC+2
+ *    Time.new(2002, 10, 31, 2, 2, 2, zone) #=> 2002-10-31 02:02:02 +0200
  *
  *  You can also use Time.local and Time.utc to infer
  *  local and UTC timezones instead of using the current system
@@ -5632,7 +5645,7 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
  *
  *    Time.at(628232400) #=> 1989-11-28 00:00:00 -0500
  *
- *  == Working with an instance of Time
+ *  === Working with an Instance of \Time
  *
  *  Once you have an instance of Time there is a multitude of things you can
  *  do with it. Below are some examples. For all of the following examples, we
@@ -5672,7 +5685,90 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
  *
  *    Time.new(2010,10,31).between?(t1, t2) #=> true
  *
- *  == Timezone argument
+ *  == What's Here
+ *
+ *  \Class \Time provides methods that are useful for:
+ *
+ *  - {Creating \Time objects}[#class-Time-label-Methods+for+Creating].
+ *  - {Fetching \Time values}[#class-Time-label-Methods+for+Fetching].
+ *  - {Querying a \Time object}[#class-Time-label-Methods+for+Querying].
+ *  - {Comparing \Time objects}[#class-Time-label-Methods+for+Comparing].
+ *  - {Converting a \Time object}[#class-Time-label-Methods+for+Converting].
+ *  - {Rounding a \Time}[#class-Time-label-Methods+for+Rounding].
+ *
+ *  === Methods for Creating
+ *
+ *  - ::new: Returns a new time from specified arguments (year, month, etc.),
+ *    including an optional timezone value.
+ *  - ::local (aliased as ::mktime): Same as ::new, except the
+ *    timezone is the local timezone.
+ *  - ::utc (aliased as ::gm): Same as ::new, except the timezone is UTC.
+ *  - ::at: Returns a new time based on seconds since epoch.
+ *  - ::now: Returns a new time based on the current system time.
+ *  - #+ (plus): Returns a new time increased by the given number of seconds.
+ *  - {-}[#method-i-2D] (minus): Returns a new time
+ *                               decreased by the given number of seconds.
+ *
+ *  === Methods for Fetching
+ *
+ *  - #year: Returns the year of the time.
+ *  - #month (aliased as #mon): Returns the month of the time.
+ *  - #mday (aliased as #day): Returns the day of the month.
+ *  - #hour: Returns the hours value for the time.
+ *  - #min: Returns the minutes value for the time.
+ *  - #sec: Returns the seconds value for the time.
+ *  - #usec (aliased as #tv_usec): Returns the number of microseconds
+ *    in the subseconds value of the time.
+ *  - #nsec (aliased as #tv_nsec: Returns the number of nanoseconds
+ *    in the subsecond part of the time.
+ *  - #subsec: Returns the subseconds value for the time.
+ *  - #wday: Returns the integer weekday value of the time (0 == Sunday).
+ *  - #yday: Returns the integer yearday value of the time (1 == January 1).
+ *  - #hash: Returns the integer hash value for the time.
+ *  - #utc_offset (aliased as #gmt_offset and #gmtoff): Returns the offset
+ *    in seconds between time and UTC.
+ *  - #to_f: Returns the float number of seconds since epoch for the time.
+ *  - #to_i (aliased as #tv_sec): Returns the integer number of seconds since epoch
+ *    for the time.
+ *  - #to_r: Returns the Rational number of seconds since epoch for the time.
+ *  - #zone: Returns a string representation of the timezone of the time.
+ *
+ *  === Methods for Querying
+ *
+ *  - #utc? (aliased as #gmt?): Returns whether the time is UTC.
+ *  - #dst? (aliased as #isdst): Returns whether the time is DST (daylight saving time).
+ *  - #sunday?: Returns whether the time is a Sunday.
+ *  - #monday?: Returns whether the time is a Monday.
+ *  - #tuesday?: Returns whether the time is a Tuesday.
+ *  - #wednesday?: Returns whether the time is a Wednesday.
+ *  - #thursday?: Returns whether the time is a Thursday.
+ *  - #friday?: Returns whether time is a Friday.
+ *  - #saturday?: Returns whether the time is a Saturday.
+ *
+ *  === Methods for Comparing
+ *
+ *  - {#<=>}[#method-i-3C-3D-3E]: Compares +self+ to another time.
+ *  - #eql?: Returns whether the time is equal to another time.
+ *
+ *  === Methods for Converting
+ *
+ *  - #asctime (aliased as #ctime): Returns the time as a string.
+ *  - #inspect: Returns the time in detail as a string.
+ *  - #strftime: Returns the time as a string, according to a given format.
+ *  - #to_a: Returns a 10-element array of values from the time.
+ *  - #to_s: Returns a string representation of the time.
+ *  - #getutc (aliased as #getgm): Returns a new time converted to UTC.
+ *  - #getlocal: Returns a new time converted to local time.
+ *  - #utc (aliased as #gmtime): Converts time to UTC in place.
+ *  - #localtime: Converts time to local time in place.
+ *
+ *  === Methods for Rounding
+ *
+ *  - #round:Returns a new time with subseconds rounded.
+ *  - #ceil: Returns a new time with subseconds raised to a ceiling.
+ *  - #floor: Returns a new time with subseconds lowered to a floor.
+ *
+ *  == Timezone Argument
  *
  *  A timezone argument must have +local_to_utc+ and +utc_to_local+
  *  methods, and may have +name+, +abbr+, and +dst?+ methods.
@@ -5697,7 +5793,7 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
  *  The +dst?+ method is called with a +Time+ value and should return whether
  *  the +Time+ value is in daylight savings time in the zone.
  *
- *  === Auto conversion to Timezone
+ *  === Auto Conversion to Timezone
  *
  *  At loading marshaled data, a timezone name will be converted to a timezone
  *  object by +find_timezone+ class method, if the method is defined.
@@ -5740,9 +5836,9 @@ Init_Time(void)
 
     rb_define_alloc_func(rb_cTime, time_s_alloc);
     rb_define_singleton_method(rb_cTime, "utc", time_s_mkutc, -1);
-    rb_define_singleton_method(rb_cTime, "gm", time_s_mkutc, -1);
     rb_define_singleton_method(rb_cTime, "local", time_s_mktime, -1);
-    rb_define_singleton_method(rb_cTime, "mktime", time_s_mktime, -1);
+    rb_define_alias(rb_singleton_class(rb_cTime), "gm", "utc");
+    rb_define_alias(rb_singleton_class(rb_cTime), "mktime", "local");
 
     rb_define_method(rb_cTime, "to_i", time_to_i, 0);
     rb_define_method(rb_cTime, "to_f", time_to_f, 0);

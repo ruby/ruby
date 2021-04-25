@@ -1,112 +1,82 @@
-#
-# call-seq:
-#    Time.now -> time
-#
-# Creates a new Time object for the current time.
+# Creates a new \Time object from the current system time.
 # This is the same as Time.new without arguments.
 #
-#    Time.now            #=> 2009-06-24 12:39:54 +0900
+#    Time.now               # => 2009-06-24 12:39:54 +0900
+#    Time.now(in: '+04:00') # => 2021-04-30 01:56:44 +0400
+#
+# Parameter:
+# :include: doc/time/in.rdoc
 def Time.now(in: nil)
   new(in: __builtin.arg!(:in))
 end
 
+# _Time_
 #
-# call-seq:
-#    Time.at(time) -> time
-#    Time.at(seconds_with_frac) -> time
-#    Time.at(seconds, microseconds_with_frac) -> time
-#    Time.at(seconds, milliseconds, :millisecond) -> time
-#    Time.at(seconds, microseconds, :usec) -> time
-#    Time.at(seconds, microseconds, :microsecond) -> time
-#    Time.at(seconds, nanoseconds, :nsec) -> time
-#    Time.at(seconds, nanoseconds, :nanosecond) -> time
-#    Time.at(time, in: tz) -> time
-#    Time.at(seconds_with_frac, in: tz) -> time
-#    Time.at(seconds, microseconds_with_frac, in: tz) -> time
-#    Time.at(seconds, milliseconds, :millisecond, in: tz) -> time
-#    Time.at(seconds, microseconds, :usec, in: tz) -> time
-#    Time.at(seconds, microseconds, :microsecond, in: tz) -> time
-#    Time.at(seconds, nanoseconds, :nsec, in: tz) -> time
-#    Time.at(seconds, nanoseconds, :nanosecond, in: tz) -> time
+# This form accepts a \Time object +time+
+# and optional keyword argument +in+:
 #
-# Creates a new Time object with the value given by +time+,
-# the given number of +seconds_with_frac+, or
-# +seconds+ and +microseconds_with_frac+ since the Epoch.
-# +seconds_with_frac+ and +microseconds_with_frac+
-# can be an Integer, Float, Rational, or other Numeric.
+#   Time.at(Time.new)               # => 2021-04-26 08:52:31.6023486 -0500
+#   Time.at(Time.new, in: '+09:00') # => 2021-04-26 22:52:32.1480341 +0900
 #
-# If +in+ argument is given, the result is in that timezone or UTC offset, or
-# if a numeric argument is given, the result is in local time.
-# The +in+ argument accepts the same types of arguments as +tz+ argument of
-# Time.new: string, number of seconds, or a timezone object.
+# _Seconds_
 #
+# This form accepts a numeric number of seconds +sec+
+# and optional keyword argument +in+:
 #
-#    Time.at(0)                                #=> 1969-12-31 18:00:00 -0600
-#    Time.at(Time.at(0))                       #=> 1969-12-31 18:00:00 -0600
-#    Time.at(946702800)                        #=> 1999-12-31 23:00:00 -0600
-#    Time.at(-284061600)                       #=> 1960-12-31 00:00:00 -0600
-#    Time.at(946684800.2).usec                 #=> 200000
-#    Time.at(946684800, 123456.789).nsec       #=> 123456789
-#    Time.at(946684800, 123456789, :nsec).nsec #=> 123456789
+#   Time.at(946702800)               # => 1999-12-31 23:00:00 -0600
+#   Time.at(946702800, in: '+09:00') # => 2000-01-01 14:00:00 +0900
 #
-#    Time.at(1582721899, in: "+09:00")         #=> 2020-02-26 21:58:19 +0900
-#    Time.at(1582721899, in: "UTC")            #=> 2020-02-26 12:58:19 UTC
-#    Time.at(1582721899, in: "C")              #=> 2020-02-26 13:58:19 +0300
-#    Time.at(1582721899, in: 32400)            #=> 2020-02-26 21:58:19 +0900
+# <em>Seconds with Subseconds and Units</em>
 #
-#    require 'tzinfo'
-#    Time.at(1582721899, in: TZInfo::Timezone.get('Europe/Kiev'))
-#                                              #=> 2020-02-26 14:58:19 +0200
+# This form accepts an integer number of seconds +sec_i+,
+# a numeric number of milliseconds +msec+,
+# a symbol argument for the subsecond unit type (defaulting to :usec),
+# and an optional keyword argument +in+:
+#
+#   Time.at(946702800, 500, :millisecond)               # => 1999-12-31 23:00:00.5 -0600
+#   Time.at(946702800, 500, :millisecond, in: '+09:00') # => 2000-01-01 14:00:00.5 +0900
+#   Time.at(946702800, 500000)                             # => 1999-12-31 23:00:00.5 -0600
+#   Time.at(946702800, 500000, :usec)                      # => 1999-12-31 23:00:00.5 -0600
+#   Time.at(946702800, 500000, :microsecond)               # => 1999-12-31 23:00:00.5 -0600
+#   Time.at(946702800, 500000, in: '+09:00')               # => 2000-01-01 14:00:00.5 +0900
+#   Time.at(946702800, 500000, :usec, in: '+09:00')        # => 2000-01-01 14:00:00.5 +0900
+#   Time.at(946702800, 500000, :microsecond, in: '+09:00') # => 2000-01-01 14:00:00.5 +0900
+#   Time.at(946702800, 500000000, :nsec)                     # => 1999-12-31 23:00:00.5 -0600
+#   Time.at(946702800, 500000000, :nanosecond)               # => 1999-12-31 23:00:00.5 -0600
+#   Time.at(946702800, 500000000, :nsec, in: '+09:00')       # => 2000-01-01 14:00:00.5 +0900
+#   Time.at(946702800, 500000000, :nanosecond, in: '+09:00') # => 2000-01-01 14:00:00.5 +0900
+#
+# Parameters:
+# :include: doc/time/sec_i.rdoc
+# :include: doc/time/msec.rdoc
+# :include: doc/time/usec.rdoc
+# :include: doc/time/nsec.rdoc
+# :include: doc/time/in.rdoc
+#
 def Time.at(time, subsec = (nosubsec = true), unit = (nounit = true), in: nil)
   __builtin.time_s_at(time, subsec, unit, __builtin.arg!(:in), nosubsec, nounit)
 end
 
 class Time
-  # call-seq:
-  #    Time.new -> time
-  #    Time.new(year, month=nil, day=nil, hour=nil, min=nil, sec=nil, tz=nil) -> time
-  #    Time.new(year, month=nil, day=nil, hour=nil, min=nil, sec=nil, in: tz) -> time
+  # Returns a new \Time object based the on given arguments.
   #
-  # Returns a Time object.
+  # With no positional arguments, returns the value of Time.now:
   #
-  # It is initialized to the current system time if no argument is given.
+  #   Time.new                                       # => 2021-04-24 17:27:46.0512465 -0500
   #
-  # *Note:* The new object will use the resolution available on your
-  # system clock, and may include subsecond.
+  # Otherwise, returns a new \Time object based on the given parameters:
   #
-  # If one or more arguments are specified, the time is initialized to the
-  # specified time.
+  #   Time.new(2000)                                 # => 2000-01-01 00:00:00 -0600
+  #   Time.new(2000, 12, 31, 23, 59, 59.5)           # => 2000-12-31 23:59:59.5 -0600
+  #   Time.new(2000, 12, 31, 23, 59, 59.5, '+09:00') # => 2000-12-31 23:59:59.5 +0900
   #
-  # +sec+ may have subsecond if it is a rational.
+  # Parameters:
   #
-  # +tz+ specifies the timezone.
-  # It can be an offset from UTC, given either as a string such as "+09:00"
-  # or a single letter "A".."Z" excluding "J" (so-called military time zone),
-  # or as a number of seconds such as 32400.
-  # Or it can be a timezone object,
-  # see {Timezone argument}[#class-Time-label-Timezone+argument] for details.
+  # :include: doc/time/year.rdoc
+  # :include: doc/time/mon-min.rdoc
+  # :include: doc/time/sec.rdoc
+  # :include: doc/time/in.rdoc
   #
-  #    a = Time.new      #=> 2020-07-21 01:27:44.917547285 +0900
-  #    b = Time.new      #=> 2020-07-21 01:27:44.917617713 +0900
-  #    a == b            #=> false
-  #    "%.6f" % a.to_f   #=> "1595262464.917547"
-  #    "%.6f" % b.to_f   #=> "1595262464.917618"
-  #
-  #    Time.new(2008,6,21, 13,30,0, "+09:00") #=> 2008-06-21 13:30:00 +0900
-  #
-  #    # A trip for RubyConf 2007
-  #    t1 = Time.new(2007,11,1,15,25,0, "+09:00") # JST (Narita)
-  #    t2 = Time.new(2007,11,1,12, 5,0, "-05:00") # CDT (Minneapolis)
-  #    t3 = Time.new(2007,11,1,13,25,0, "-05:00") # CDT (Minneapolis)
-  #    t4 = Time.new(2007,11,1,16,53,0, "-04:00") # EDT (Charlotte)
-  #    t5 = Time.new(2007,11,5, 9,24,0, "-05:00") # EST (Charlotte)
-  #    t6 = Time.new(2007,11,5,11,21,0, "-05:00") # EST (Detroit)
-  #    t7 = Time.new(2007,11,5,13,45,0, "-05:00") # EST (Detroit)
-  #    t8 = Time.new(2007,11,6,17,10,0, "+09:00") # JST (Narita)
-  #    (t2-t1)/3600.0                             #=> 10.666666666666666
-  #    (t4-t3)/3600.0                             #=> 2.466666666666667
-  #    (t6-t5)/3600.0                             #=> 1.95
-  #    (t8-t7)/3600.0                             #=> 13.416666666666666
   def initialize(year = (now = true), mon = nil, mday = nil, hour = nil, min = nil, sec = nil, zone = nil, in: nil)
     if zone
       if __builtin.arg!(:in)
