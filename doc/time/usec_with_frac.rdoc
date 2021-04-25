@@ -1,0 +1,19 @@
+- +usec_with_frac+: a numeric millisecond value in the range <tt>0..999</tt>:
+  - When the value is an Integer:
+      t = Time.utc(2000, 12, 31, 23, 59, 59, 500)
+      t        # => 2000-12-31 23:59:59.0005 UTC
+      t.sec    # => 59
+      t.usec   # => 500
+      t.subsec # => (1/2000) # Rational
+  - When the value is a Float:
+      t = Time.utc(2000, 12, 31, 23, 59, 59, 500.0)
+      t        # => 2000-12-31 23:59:59.0005 UTC
+      t.sec    # => 59
+      t.usec   # => 500
+      t.subsec # => (1/2000) # Rational
+  - When the value is a Rational:
+      t = Time.utc(2000, 12, 31, 23, 59, 59, Rational(1, 2))
+      t        # => 2000-12-31 23:59:59.0000005 UTC
+      t.sec    # => 59
+      t.usec   # => 0
+      t.subsec # => (1/2000000) # Rational

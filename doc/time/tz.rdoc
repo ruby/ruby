@@ -1,0 +1,8 @@
+- +tz+: a timezone, which may be:
+ *
+  - A string offset from UTC, such as <tt>'+09:00'</tt>.
+  - A single letter offset from UTC, in the range <tt>'A'..'Z'</tt>,
+    <tt>'J'</tt> (the so-called military timezone) excluded.
+  - An integer number of seconds, such as 32400.
+  - A timezone object;
+    see {Timezone Argument}[#class-Time-label-Timezone+Argument] for details.

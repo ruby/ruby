@@ -1,0 +1,40 @@
+- +month+: a month value, which may be:
+  - An integer month in the range <tt>1..12</tt>:
+      Time.new(2000, 12) # => 2000-12-01 00:00:00 -0600
+  - A 3-character string that matches regular expression
+    <tt>/jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec/i</tt>:
+      Time.new(2000, 'dec') # => 2000-12-01 00:00:00 -0600
+      Time.new(2000, 'DEC') # => 2000-12-01 00:00:00 -0600
+
+- +day+: an integer day in the range <tt>1..31</tt>
+  (less than 31 for some months):
+    Time.new(2000, 12, 31) # => 2000-12-31 00:00:00 -0600
+
+- +hour+: an integer hour in the range <tt>0..23</tt>:
+    Time.new(2000, 12, 31, 23) # => 2000-12-31 23:00:00 -0600
+
+- +min+: an integer minute in the range <tt>0..59</tt>:
+    Time.new(2000, 12, 31, 23, 59) # => 2000-12-31 23:59:00 -0600
+
+- +sec+: an integer second in the range <tt>0..59</tt>:
+    Time.new(2000, 12, 31, 23, 59, 59) # => 2000-12-31 23:59:59 -0600
+
+- +sec_with_frac+: a numeric second value in the range <tt>0..60</tt>:
+  - When the value is an Integer:
+      t = Time.new(2000, 12, 31, 23, 59, 59)
+      t        # => 2000-12-31 23:59:59.5 UTC
+      t.sec    # => 59
+      t.usec   # => 0
+      t.subsec # => 0
+  - When the value is a Float:
+      t = Time.new(2000, 12, 31, 23, 59, 59.5)
+      t        # => 2000-12-31 23:59:59.5 UTC
+      t.sec    # => 59
+      t.usec   # => 500000
+      t.subsec # => (1/2) # Rational
+  - When the value is a Rational:
+      t = Time.new(2000, 12, 31, 23, 59, Rational(119, 2))
+      t # => 2000-12-31 23:59:59.5 UTC
+      t.sec    # => 59
+      t.usec   # => 500000
+      t.subsec # => (1/2) # Rational
