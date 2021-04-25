@@ -581,7 +581,7 @@ static const unsigned char cv[]= {
     0x00,0x00};
 
 
-/* X0201 kana conversion table for daguten */
+/* X0201 kana conversion table for dakuten */
 /* 90-9F A0-DF */
 static const unsigned char dv[]= {
     0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
@@ -602,7 +602,7 @@ static const unsigned char dv[]= {
     0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
     0x00,0x00};
 
-/* X0201 kana conversion table for han-daguten */
+/* X0201 kana conversion table for han-dakuten */
 /* 90-9F A0-DF */
 static const unsigned char ev[]= {
     0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
@@ -623,7 +623,7 @@ static const unsigned char ev[]= {
     0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
     0x00,0x00};
 
-/* X0201 kana to X0213 conversion table for han-daguten */
+/* X0201 kana to X0213 conversion table for han-dakuten */
 /* 90-9F A0-DF */
 static const unsigned char ev_x0213[]= {
     0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
