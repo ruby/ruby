@@ -615,7 +615,7 @@ defined with <code>...</code>.
   end
 
 Since Ruby 3.0, there can be leading arguments before <code>...</code>
-both in definitions and in invokations (but in definitions they can be
+both in definitions and in invocations (but in definitions they can be
 only positional arguments without default values).
 
   def request(method, path, **headers)
