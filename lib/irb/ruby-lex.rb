@@ -339,7 +339,7 @@ class RubyLex
         # "syntax error, unexpected end-of-input, expecting keyword_end"
         #
         #   example:
-        #     if ture
+        #     if true
         #       hoge
         #       if false
         #         fuga
