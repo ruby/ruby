@@ -3817,7 +3817,7 @@ oconv_newline(void (*func)(nkf_char, nkf_char))
    LF    new line
    SP    space
 
-   This fold algorthm does not preserve heading space in a line.
+   This fold algorithm does not preserve heading space in a line.
    This is the main difference from fmt.
  */
 
