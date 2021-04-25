@@ -3344,7 +3344,7 @@ objspace_each_objects(rb_objspace_t *objspace, each_obj_callback *callback, void
      * heap. This will be a snapshot of the state of the heap before we
      * call the callback over each page that exists in this buffer. Thus it
      * is safe for the callback to allocate objects without possibly entering
-     * an infinte loop. */
+     * an infinite loop. */
     struct heap_page *page = 0;
     size_t pages_count = 0;
     list_for_each(&heap_eden->pages, page, page_node) {
@@ -4033,7 +4033,7 @@ id2ref_obj_tbl(rb_objspace_t *objspace, VALUE objid)
  *     r = ObjectSpace._id2ref(s.object_id)   #=> "I am a string"
  *     r == s                                 #=> true
  *
- *  On multi-ractor mode, if the object is not sharable, it raises
+ *  On multi-ractor mode, if the object is not shareable, it raises
  *  RangeError.
  */
 

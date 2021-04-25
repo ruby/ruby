@@ -2127,7 +2127,7 @@ To make "Ractor-safe" C extension, we need to check the following points:
 (1) Do not share unshareable objects between ractors
 
 For example, C's global variable can lead sharing an unshareable objects
-betwee ractors.
+between ractors.
 
   VALUE g_var;
   VALUE set(VALUE self, VALUE v){ return g_var = v; }

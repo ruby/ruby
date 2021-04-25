@@ -558,7 +558,7 @@ wait_status_str(enum ractor_wait_status wait_status)
       case wait_taking|wait_yielding: return "taking|yielding";
       case wait_receiving|wait_taking|wait_yielding: return "receiving|taking|yielding";
     }
-    rb_bug("unrechable");
+    rb_bug("unreachable");
 }
 
 static const char *
@@ -573,7 +573,7 @@ wakeup_status_str(enum ractor_wakeup_status wakeup_status)
       case wakeup_by_interrupt: return "by_interrupt";
       case wakeup_by_retry: return "by_retry";
     }
-    rb_bug("unrechable");
+    rb_bug("unreachable");
 }
 #endif // USE_RUBY_DEBUG_LOG
 
