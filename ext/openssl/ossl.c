@@ -392,7 +392,7 @@ ossl_debug_get(VALUE self)
  * call-seq:
  *   OpenSSL.debug = boolean -> boolean
  *
- * Turns on or off debug mode. With debug mode, all erros added to the OpenSSL
+ * Turns on or off debug mode. With debug mode, all errors added to the OpenSSL
  * error queue will be printed to stderr.
  */
 static VALUE

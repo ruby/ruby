@@ -157,7 +157,7 @@ ossl_ocspcertid_new(OCSP_CERTID *cid)
 }
 
 /*
- * OCSP::Resquest
+ * OCSP::Request
  */
 static VALUE
 ossl_ocspreq_alloc(VALUE klass)

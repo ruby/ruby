@@ -1112,7 +1112,7 @@ ossl_sslctx_enable_fallback_scsv(VALUE self)
 
 /*
  * call-seq:
- *    ctx.add_certificate(certiticate, pkey [, extra_certs]) -> self
+ *    ctx.add_certificate(certificate, pkey [, extra_certs]) -> self
  *
  * Adds a certificate to the context. _pkey_ must be a corresponding private
  * key with _certificate_.
