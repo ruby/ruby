@@ -89,7 +89,7 @@ static void buffer_append(struct dump_config *dc, const char *cstr, unsigned lon
 static void
 dump_append_ld(struct dump_config *dc, const long number)
 {
-    const int width = DECIMAL_SIZE_OF_BITS(sizeof(number) * CHAR_BIT - 1) + 2;
+    const unsigned int width = DECIMAL_SIZE_OF_BITS(sizeof(number) * CHAR_BIT - 1) + 2;
     buffer_ensure_capa(dc, width);
     unsigned long required = snprintf(dc->buffer + dc->buffer_len, width, "%ld", number);
     RUBY_ASSERT(required <= width);
@@ -99,7 +99,7 @@ dump_append_ld(struct dump_config *dc, const long number)
 static void
 dump_append_lu(struct dump_config *dc, const unsigned long number)
 {
-    const int width = DECIMAL_SIZE_OF_BITS(sizeof(number) * CHAR_BIT) + 1;
+    const unsigned int width = DECIMAL_SIZE_OF_BITS(sizeof(number) * CHAR_BIT) + 1;
     buffer_ensure_capa(dc, width);
     unsigned long required = snprintf(dc->buffer + dc->buffer_len, width, "%lu", number);
     RUBY_ASSERT(required <= width);
@@ -123,7 +123,7 @@ dump_append_g(struct dump_config *dc, const double number)
 static void
 dump_append_d(struct dump_config *dc, const int number)
 {
-    const int width = DECIMAL_SIZE_OF_BITS(sizeof(number) * CHAR_BIT - 1) + 2;
+    const unsigned int width = DECIMAL_SIZE_OF_BITS(sizeof(number) * CHAR_BIT - 1) + 2;
     buffer_ensure_capa(dc, width);
     unsigned long required = snprintf(dc->buffer + dc->buffer_len, width, "%d", number);
     RUBY_ASSERT(required <= width);
@@ -133,7 +133,7 @@ dump_append_d(struct dump_config *dc, const int number)
 static void
 dump_append_sizet(struct dump_config *dc, const size_t number)
 {
-    const int width = DECIMAL_SIZE_OF_BITS(sizeof(number) * CHAR_BIT) + 1;
+    const unsigned int width = DECIMAL_SIZE_OF_BITS(sizeof(number) * CHAR_BIT) + 1;
     buffer_ensure_capa(dc, width);
     unsigned long required = snprintf(dc->buffer + dc->buffer_len, width, "%"PRIuSIZE, number);
     RUBY_ASSERT(required <= width);
@@ -144,7 +144,7 @@ static void
 dump_append_c(struct dump_config *dc, char c)
 {
     if (c <= 0x1f) {
-        const int width = (sizeof(c) * CHAR_BIT / 4) + 5;
+        const unsigned int width = (sizeof(c) * CHAR_BIT / 4) + 5;
         buffer_ensure_capa(dc, width);
         unsigned long required = snprintf(dc->buffer + dc->buffer_len, width, "\\u00%02x", c);
         RUBY_ASSERT(required <= width);
