@@ -338,7 +338,7 @@ RBIMPL_ANYARGS_DECL(rb_define_method, VALUE, const char *)
 
 /**
  * @brief  Defines ::rb_mKerbel \#mid.
- * @see    ::rb_define_gobal_function
+ * @see    ::rb_define_global_function
  * @param  mid    Name of the defining method.
  * @param  func   Implementation of ::rb_mKernel \#mid.
  * @param  arity  Arity of ::rb_mKernel \#mid.
@@ -349,7 +349,7 @@ RBIMPL_ANYARGS_DECL(rb_define_method, VALUE, const char *)
 
 /**
  * This  macro is  to properly  cast  a function  parameter of  *_define_method
- * family.  It  has been  around since  1.x era so  you can  maximize backwards
+ * family.  It  has been  around since  1.x era so  you can  maximise backwards
  * compatibility by using it.
  *
  * ```CXX
