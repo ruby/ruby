@@ -63,33 +63,32 @@ end
 
 class Time
   # call-seq:
-  #    Time.new -> time
-  #    Time.new(year, month = nil, day = nil, hour = nil, min = nil, sec_with_frac = nil, tz = nil) -> time
-  #    Time.new(year, month = nil, day = nil, hour = nil, min = nil, sec_with_frac = nil, in: tz) -> time
+  #    Time.new -> new_time
+  #    Time.new(year, month=nil, day=nil, hour=nil, min=nil, sec_with_frac=nil, tz=nil) -> new_time
+  #    Time.new(year, month=nil, day=nil, hour=nil, min=nil, sec_with_frac=nil, in: tz) -> new_time
   #
   # Returns a new \Time object based the on given arguments.
   #
-  # For parameters (other than <tt>in: tz</tt>),
-  # see {Creating a Time Object}[#class-Time-label-Creating+a+Time+Object].
-  #
   # In the first form (no arguments), returns the value of Time.local:
-  #   Time.new # => 2021-04-24 17:27:46.0512465 -0500
   #
-  # In the second form, argument +year+ is required and argument +tz+ is optional;
-  # if given, the value of argument +tz+ may be:
-  # - A string offset from UTC, such as <tt>'+09:00'</tt>.
-  # - A single letter offset from UTC, in the range <tt>'A'..'Z'</tt>,
-  #   <tt>'J'</tt> (the so-called military timezone) excluded.
-  # - An integer number of seconds, such as 32400.
-  # - A timezone object;
-  #   see {Timezone Argument}[#class-Time-label-Timezone+Argument] for details.
-  # Time.new(2000)
-  # Time.new(2000, 12, 31, 23, 59, 59)
+  #   Time.new                                       # => 2021-04-24 17:27:46.0512465 -0500
   #
-  # In the third form:
-  # - Argument +year+ is required.
-  # - Argument +tz+ is forbidden.
-  # - Keyword argument +in: tz+ is required, and must be as described above.
+  # In the second form, argument +year+ is required and argument +tz+ is optional:
+  #
+  #   Time.new(2000)                                 # => 2000-01-01 00:00:00 -0600
+  #   Time.new(2000, 12, 31, 23, 59, 59.5)           # => 2000-12-31 23:59:59.5 -0600
+  #   Time.new(2000, 12, 31, 23, 59, 59.5, '+09:00') # => 2000-12-31 23:59:59.5 +0900
+  #
+  # In the third form, argument +year+ is required, argument +tz+ is forbidden,
+  # and keyword argument <tt>in: tz</tt> is required:
+  #   Time.new(2000, in: '+09:00')                   # => 2000-01-01 00:00:00 +0900
+  #   Time.new(2000, 12, 31, 23, 59, 59.5, in: 'A')  # => 2000-12-31 23:59:59.5 +0100
+  #
+  # Parameters:
+  #
+  # :include: doc/time/year.rdoc
+  # :include: doc/time/mon-sec_with_frac.rdoc
+  # :include: doc/time/tz.rdoc
   #
   def initialize(year = (now = true), mon = nil, mday = nil, hour = nil, min = nil, sec = nil, zone = nil, in: nil)
     if zone

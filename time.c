@@ -5589,60 +5589,72 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
  *
  *  === Methods for Creating
  *
- *  - ::now: Returns a new time based on the current system time.
- *  - ::new: Returns a new time from specified arguments (year, month, etc.),
- *    including an optional timezone value.
- *  - ::local (aliased as ::mktime): Same as ::new, except the
- *    timezone is the local timezone.
+ *  - ::new: Returns a new time from specified arguments (year, month, etc.), *    including an optional timezone value.
+ *  - ::local (aliased as ::mktime): Same as ::new, except the *    timezone is the local timezone.
  *  - ::utc (aliased as ::gm): Same as ::new, except the timezone is UTC.
  *  - ::at: Returns a new time based on seconds since epoch.
+ *  - ::now: Returns a new time based on the current system time.
  *  - #+ (plus): Returns a new time from an existing time and a positive offset.
- *  - {.}[#method-i-2D] (minus): Returns a new time from an existing time
-      and a negative offset.
+ *  - {.}[#method-i-2D] (minus): Returns a new time from an existing time      and a negative offset.
  *
- *  - {#<=>}[#method-i-3C-3D-3E]: Compares +self+ to another time.
- *  - #asctime (aliased as #ctime): Returns the time as a string.
- *  - #ceil: Returns a new time with subseconds raised to a ceiling.
- *  - #dst? (aliased as #isdst): Returns whether the time is DST (daylight saving time).
- *  - #eql?: Returns whether time is equal to another time.
- *  - #floor: Returns a new time with subseconds lowered to a floor.
- *  - #friday?: Returns whether time is a Friday.
- *  - #getutc (aliased as #getgm: Returns a new time converted to UTC.
- *  - #getlocal: Returns a new time converted to local time.
- *  - #utc_offset (aliased as #gmt_offset and #gmtoff): Returns the offset
- *    in seconds between time and UTC.
- *  - #utc (aliased as #gmtime): Converts time to UTC in place.
- *  - #hash: Returns the integer hash value for the time.
- *  - #hour: Returns the hours value for the time.
- *  - #inspect: Returns the time in detail as a string.
- *  - #localtime: Converts time to local time in place.
- *  - #mday (aliased as #day): Returns the day of the month.
- *  - #min: Returns the minutes value for the time.
+ *  === Methods for Fetching
+ *
+ *  - #year: Returns the year of the time.
  *  - #month (aliased as #mon): Returns the month of the time.
- *  - #monday?: Returns whether the time is a Monday.
- *  - #nsec (aliased as #tv_nsec: Returns the number of nanoseconds
- *    in the subsecond part of the time.
- *  - #round:Returns a new time with subseconds rounded.
- *  - #saturday?: Returns whether the time is a Saturday.
+ *  - #mday (aliased as #day): Returns the day of the month.
+ *  - #hour: Returns the hours value for the time.
+ *  - #min: Returns the minutes value for the time.
  *  - #sec: Returns the seconds value for the time.
- *  - #strftime: Returns the time as a string, according to a given format.
- *  - #subsec: Returns the subseconds value for the time.
- *  - #sunday?: Returns whether the time is a Sunday.
- *  - #thursday?: Returns whether the time is a Thursday.
- *  - #to_a: Returns a 10-element array of values from the time.
- *  - #to_f: Returns the float number of seconds since epoch for the time.
- *  - #to_i (aliased as #tv_sec): Returns the integer number of seconds since epoch for the time.
- *  - #to_r: Returns the Rational number of seconds since epoch for the time.
- *  - #to_s: Returns a string representation of the time.
- *  - #tuesday?: Returns whether the time is a Tuesday.
  *  - #usec (aliased as #tv_usec): Returns the number of microseconds
  *    in the subseconds value of the time.
- *  - #utc? (aliased as #gmt?): Returns whether the time is UTC.
+ *  - #nsec (aliased as #tv_nsec: Returns the number of nanoseconds
+ *    in the subsecond part of the time.
+ *  - #subsec: Returns the subseconds value for the time.
  *  - #wday: Returns the integer weekday value of the time (0 == Sunday).
- *  - #wednesday?: Returns whether the time is a Wednesday.
  *  - #yday: Returns the integer yearday value of the time (1 == January 1).
- *  - #year: Returns the year of the time.
+ *  - #hash: Returns the integer hash value for the time.
+ *  - #utc_offset (aliased as #gmt_offset and #gmtoff): Returns the offset
+ *    in seconds between time and UTC.
+ *  - #to_f: Returns the float number of seconds since epoch for the time.
+ *  - #to_i (aliased as #tv_sec): Returns the integer number of seconds since epoch
+ *    for the time.
+ *  - #to_r: Returns the Rational number of seconds since epoch for the time.
  *  - #zone: Returns a string representation of the timezone of the time.
+ *
+ *  === Methods for Querying
+ *
+ *  - #utc? (aliased as #gmt?): Returns whether the time is UTC.
+ *  - #dst? (aliased as #isdst): Returns whether the time is DST (daylight saving time).
+ *  - #monday?: Returns whether the time is a Monday.
+ *  - #sunday?: Returns whether the time is a Sunday.
+ *  - #tuesday?: Returns whether the time is a Tuesday.
+ *  - #wednesday?: Returns whether the time is a Wednesday.
+ *  - #thursday?: Returns whether the time is a Thursday.
+ *  - #friday?: Returns whether time is a Friday.
+ *  - #saturday?: Returns whether the time is a Saturday.
+ *
+ *  === Methods for Comparing
+ *
+ *  - {#<=>}[#method-i-3C-3D-3E]: Compares +self+ to another time.
+ *  - #eql?: Returns whether the time is equal to another time.
+ *
+ *  === Methods for Converting
+ *
+ *  - #asctime (aliased as #ctime): Returns the time as a string.
+ *  - #inspect: Returns the time in detail as a string.
+ *  - #strftime: Returns the time as a string, according to a given format.
+ *  - #to_a: Returns a 10-element array of values from the time.
+ *  - #to_s: Returns a string representation of the time.
+ *  - #getutc (aliased as #getgm: Returns a new time converted to UTC.
+ *  - #getlocal: Returns a new time converted to local time.
+ *  - #utc (aliased as #gmtime): Converts time to UTC in place.
+ *  - #localtime: Converts time to local time in place.
+ *
+ *  === Methods for Rounding
+ *
+ *  - #round:Returns a new time with subseconds rounded.
+ *  - #ceil: Returns a new time with subseconds raised to a ceiling.
+ *  - #floor: Returns a new time with subseconds lowered to a floor.
  *
  *  == Timezone Argument
  *
