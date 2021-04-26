@@ -696,7 +696,7 @@ checktype
 /**********************************************************/
 
 /* enter class definition scope. if super is Qfalse, and class
-   "klass" is defined, it's redefine. otherwise, define "klass" class.
+   "klass" is defined, it's redefined. Otherwise, define "klass" class.
  */
 DEFINE_INSN
 defineclass
