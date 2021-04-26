@@ -480,17 +480,10 @@ class Time
       t
     end
 
-# TODO: CI failure on FreeBSD
-#       http://rubyci.s3.amazonaws.com/freebsd12/ruby-master/log/20210425T203001Z.fail.html.gz
-# shareable_constant_value: none
-
-    MonthValue = Ractor.make_shareable({ # :nodoc:
+    MonthValue = { # :nodoc:
       'JAN' => 1, 'FEB' => 2, 'MAR' => 3, 'APR' => 4, 'MAY' => 5, 'JUN' => 6,
       'JUL' => 7, 'AUG' => 8, 'SEP' => 9, 'OCT' =>10, 'NOV' =>11, 'DEC' =>12
-    })
-
-# shareable_constant_value: literal
-
+    }
 
     #
     # Parses +date+ as date-time defined by RFC 2822 and converts it to a Time
