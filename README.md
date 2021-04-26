@@ -90,7 +90,7 @@ The YJIT source code is divided between:
 - `vm.inc.erb`: template instruction handler used to hook into the interpreter
 
 The core of CRuby's interpreter logic is found in:
-- `insns.def`: defines Ruby's bytecode instructions
+- `insns.def`: defines Ruby's bytecode instructions (gets compiled into `vm.inc`)
 - `vm_insnshelper.c`: logic used by Ruby's bytecode instructions
 - `vm_exec.c`: Ruby interpreter loop
 
