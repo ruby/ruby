@@ -828,7 +828,7 @@ class TestMatrix < Test::Unit::TestCase
       end.take
       assert_same obj1, obj2
     RUBY
-  end
+  end if defined?(Ractor)
 
   def test_rotate_with_symbol
     assert_equal(Matrix[[4, 1], [5, 2], [6, 3]], @m1.rotate_entries)
