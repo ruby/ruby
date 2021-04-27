@@ -172,6 +172,28 @@ assert_equal '1', %q{
     retval
 }
 
+# Code invalidation and opt_getinlinecache
+assert_normal_exit %q{
+  class Foo; end
+
+  # Uses the class constant Foo
+  def use_constant(arg)
+    [Foo.new, arg]
+  end
+
+  def propagate_type
+    i = Array.new
+    i.itself # make it remember that i is on-heap
+    use_constant(i)
+  end
+
+  propagate_type
+  propagate_type
+  use_constant(Foo.new)
+  class Jo; end # bump global constant state
+  use_constant(3)
+}
+
 # Method redefinition (code invalidation) and GC
 assert_equal '7', %q{
     def bar()
