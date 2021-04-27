@@ -2393,7 +2393,7 @@ EOF
         File.binwrite("./|echo hello", binary_data)
         begin
           ftp = Net::FTP.new
-          ftp.read_timeout = RubyVM::JIT.enabled? ? 300 : 0.2 # use large timeout for --jit-wait
+          ftp.read_timeout = defined?(RubyVM::JIT) && RubyVM::JIT.enabled? ? 300 : 0.2 # use large timeout for --jit-wait
           ftp.connect(SERVER_ADDR, server.port)
           ftp.login
           assert_match(/\AUSER /, commands.shift)
