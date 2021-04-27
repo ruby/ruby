@@ -2435,13 +2435,6 @@ rb_imemo_new(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0)
     return newobj_of(v0, flags, v1, v2, v3, TRUE);
 }
 
-rb_ast_t *
-rb_imemo_ast_new(VALUE node_buffer)
-{
-    VALUE flags = T_IMEMO | (imemo_ast << FL_USHIFT);
-    return (rb_ast_t *)newobj_of(node_buffer, flags, 0, 0, 0, FALSE);
-}
-
 static VALUE
 rb_imemo_tmpbuf_new(VALUE v1, VALUE v2, VALUE v3, VALUE v0)
 {
