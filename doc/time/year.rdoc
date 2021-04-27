@@ -1,2 +1,1 @@
-- +year+: an integer year:
-    Time.new(2000) # => 2000-01-01 00:00:00 -0600
+- +year+: an integer year.

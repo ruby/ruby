@@ -1,62 +1,90 @@
 #
 # call-seq:
-#    Time.now -> time
+#    Time.now -> new_time
 #
-# Creates a new Time object for the current time.
+# Creates a new \Time object from the current system time.
 # This is the same as Time.new without arguments.
 #
-#    Time.now            #=> 2009-06-24 12:39:54 +0900
+#    Time.now # => 2009-06-24 12:39:54 +0900
 def Time.now(in: nil)
   new(in: __builtin.arg!(:in))
 end
 
 #
 # call-seq:
-#    Time.at(time) -> time
-#    Time.at(seconds_with_frac) -> time
-#    Time.at(seconds, microseconds_with_frac) -> time
-#    Time.at(seconds, milliseconds, :millisecond) -> time
-#    Time.at(seconds, microseconds, :usec) -> time
-#    Time.at(seconds, microseconds, :microsecond) -> time
-#    Time.at(seconds, nanoseconds, :nsec) -> time
-#    Time.at(seconds, nanoseconds, :nanosecond) -> time
-#    Time.at(time, in: tz) -> time
-#    Time.at(seconds_with_frac, in: tz) -> time
-#    Time.at(seconds, microseconds_with_frac, in: tz) -> time
-#    Time.at(seconds, milliseconds, :millisecond, in: tz) -> time
-#    Time.at(seconds, microseconds, :usec, in: tz) -> time
-#    Time.at(seconds, microseconds, :microsecond, in: tz) -> time
-#    Time.at(seconds, nanoseconds, :nsec, in: tz) -> time
-#    Time.at(seconds, nanoseconds, :nanosecond, in: tz) -> time
+#   # Time.
+#   Time.at(time, in: tz) -> new_time
+#   # Seconds.
+#   Time.at(sec, in: tz) -> new_time
+#   # Milliseconds.
+#   Time.at(sec_i, msec, :millisecond, in: tz) -> new_time
+#   # Microseconds.
+#   Time.at(sec_i, usec,               in: tz) -> new_time
+#   Time.at(sec_i, usec, :usec,        in: tz) -> new_time
+#   Time.at(sec_i, usec, :microsecond, in: tz) -> new_time
+#   # Nanoseconds.
+#   Time.at(sec_i, nanoseconds, :nsec,       in: tz) -> new_time
+#   Time.at(sec_i, nanoseconds, :nanosecond, in: tz) -> new_time
 #
-# Creates a new Time object with the value given by +time+,
-# the given number of +seconds_with_frac+, or
-# +seconds+ and +microseconds_with_frac+ since the Epoch.
-# +seconds_with_frac+ and +microseconds_with_frac+
-# can be an Integer, Float, Rational, or other Numeric.
+# _Time_
 #
-# If +in+ argument is given, the result is in that timezone or UTC offset, or
-# if a numeric argument is given, the result is in local time.
-# The +in+ argument accepts the same types of arguments as +tz+ argument of
-# Time.new: string, number of seconds, or a timezone object.
+# This form accepts a \Time object +time+
+# and optional keyword argument <tt>in: tz</tt>:
 #
+#   Time.at(Time.new)               # => 2021-04-26 08:52:31.6023486 -0500
+#   Time.at(Time.new, in: '+09:00') # => 2021-04-26 22:52:32.1480341 +0900
 #
-#    Time.at(0)                                #=> 1969-12-31 18:00:00 -0600
-#    Time.at(Time.at(0))                       #=> 1969-12-31 18:00:00 -0600
-#    Time.at(946702800)                        #=> 1999-12-31 23:00:00 -0600
-#    Time.at(-284061600)                       #=> 1960-12-31 00:00:00 -0600
-#    Time.at(946684800.2).usec                 #=> 200000
-#    Time.at(946684800, 123456.789).nsec       #=> 123456789
-#    Time.at(946684800, 123456789, :nsec).nsec #=> 123456789
+# _Seconds_
 #
-#    Time.at(1582721899, in: "+09:00")         #=> 2020-02-26 21:58:19 +0900
-#    Time.at(1582721899, in: "UTC")            #=> 2020-02-26 12:58:19 UTC
-#    Time.at(1582721899, in: "C")              #=> 2020-02-26 13:58:19 +0300
-#    Time.at(1582721899, in: 32400)            #=> 2020-02-26 21:58:19 +0900
+# This form accepts a numeric number of seconds +sec+
+# and optional keyword argument <tt>in: tz</tt>:
 #
-#    require 'tzinfo'
-#    Time.at(1582721899, in: TZInfo::Timezone.get('Europe/Kiev'))
-#                                              #=> 2020-02-26 14:58:19 +0200
+#   Time.at(946702800)               # => 1999-12-31 23:00:00 -0600
+#   Time.at(946702800, in: '+09:00') # => 2000-01-01 14:00:00 +0900
+#
+# _Milliseconds_
+#
+# This form accepts an integer number of seconds +sec_i+,
+# a numeric number of milliseconds +msec+,
+# a symbol argument +:millisecond+,
+# and an optional keyword argument <tt>in: tz</tt>:
+#
+#   Time.at(946702800, 500, :millisecond)               # => 1999-12-31 23:00:00.5 -0600
+#   Time.at(946702800, 500, :millisecond, in: '+09:00') # => 2000-01-01 14:00:00.5 +0900
+#
+# _Microseconds_
+#
+# These forms accept an integer number of seconds +sec_i+,
+# a numeric number of microseconds +msec+,
+# an optional symbol +:usec+ or +:microsecond+,
+# and an optional keyword argument <tt>in: tz</tt>:
+#
+#   Time.at(946702800, 500000)                             # => 1999-12-31 23:00:00.5 -0600
+#   Time.at(946702800, 500000, :usec)                      # => 1999-12-31 23:00:00.5 -0600
+#   Time.at(946702800, 500000, :microsecond)               # => 1999-12-31 23:00:00.5 -0600
+#   Time.at(946702800, 500000, in: '+09:00')               # => 2000-01-01 14:00:00.5 +0900
+#   Time.at(946702800, 500000, :usec, in: '+09:00')        # => 2000-01-01 14:00:00.5 +0900
+#   Time.at(946702800, 500000, :microsecond, in: '+09:00') # => 2000-01-01 14:00:00.5 +0900
+#
+# _Nanoseconds_
+#
+# These forms accept an integer number of seconds +sec_i+,
+# a numeric number of nanoseconds +nsec+,
+# a symbol +:nsec+ or +:nanosecond+,
+# and an optional keyword argument <tt>in: tz</tt>:
+#
+#   Time.at(946702800, 500000000, :nsec)                     # => 1999-12-31 23:00:00.5 -0600
+#   Time.at(946702800, 500000000, :nanosecond)               # => 1999-12-31 23:00:00.5 -0600
+#   Time.at(946702800, 500000000, :nsec, in: '+09:00')       # => 2000-01-01 14:00:00.5 +0900
+#   Time.at(946702800, 500000000, :nanosecond, in: '+09:00') # => 2000-01-01 14:00:00.5 +0900
+#
+# Parameters:
+# :include: doc/time/sec_i.rdoc
+# :include: doc/time/msec.rdoc
+# :include: doc/time/usec.rdoc
+# :include: doc/time/nsec.rdoc
+# :include: doc/time/tz.rdoc
+#
 def Time.at(time, subsec = (nosubsec = true), unit = (nounit = true), in: nil)
   __builtin.time_s_at(time, subsec, unit, __builtin.arg!(:in), nosubsec, nounit)
 end
@@ -64,12 +92,12 @@ end
 class Time
   # call-seq:
   #    Time.new -> new_time
-  #    Time.new(year, month=nil, day=nil, hour=nil, min=nil, sec_with_frac=nil, tz=nil) -> new_time
-  #    Time.new(year, month=nil, day=nil, hour=nil, min=nil, sec_with_frac=nil, in: tz) -> new_time
+  #    Time.new(year, month=nil, day=nil, hour=nil, min=nil, sec=nil, tz=nil) -> new_time
+  #    Time.new(year, month=nil, day=nil, hour=nil, min=nil, sec=nil, in: tz) -> new_time
   #
   # Returns a new \Time object based the on given arguments.
   #
-  # In the first form (no arguments), returns the value of Time.local:
+  # In the first form (no arguments), returns the value of Time.now:
   #
   #   Time.new                                       # => 2021-04-24 17:27:46.0512465 -0500
   #
@@ -87,7 +115,8 @@ class Time
   # Parameters:
   #
   # :include: doc/time/year.rdoc
-  # :include: doc/time/mon-sec_with_frac.rdoc
+  # :include: doc/time/mon-min.rdoc
+  # :include: doc/time/sec.rdoc
   # :include: doc/time/tz.rdoc
   #
   def initialize(year = (now = true), mon = nil, mday = nil, hour = nil, min = nil, sec = nil, zone = nil, in: nil)

@@ -1,10 +1,7 @@
 - +tz+: a timezone, which may be:
-  - A string offset from UTC:
-      Time.new(2000, 12, 31, 23, 59, 59, '+09:00') # => 2000-12-31 23:59:59 +0900
+  - A string offset from UTC.
   - A single letter offset from UTC, in the range <tt>'A'..'Z'</tt>,
-    <tt>'J'</tt> (the so-called military timezone) excluded:
-      Time.new(2000, 12, 31, 23, 59, 59, 'A')      # => 2000-12-31 23:59:59 +0100
+    <tt>'J'</tt> (the so-called military timezone) excluded.
   - An integer number of seconds.
-      Time.new(2000, 12, 31, 23, 59, 59, 32400)    # => 2000-12-31 23:59:59 +0900
   - A timezone object;
     see {Timezone Argument}[#class-Time-label-Timezone+Argument] for details.

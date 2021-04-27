@@ -3324,30 +3324,42 @@ tmcmp(struct tm *a, struct tm *b)
 
 /*
  * call-seq:
- *   Time.utc(year, month = 1, day = 1, hour = 0, min = 0, sec = 0, usec_with_frac = 0) -> new_time
- *   Time.utc(sec, min, hour, day, month, year, dummy, dummy, dummy, dummy) -> new_time
+ *   Time.utc(year, month=1, day=1, hour=0, min=0, sec_i=0, usec=0) -> new_time
+ *   Time.utc(sec_i, min, hour, day, month, year, dummy, dummy, dummy, dummy) -> new_time
+ *   Time.gm(year, month=1, day=1, hour=0, min=0, sec_i=0, usec=0) -> new_time
+ *   Time.gm(sec_i, min, hour, day, month, year, dummy, dummy, dummy, dummy) -> new_time
  *
  * Returns a new \Time object based the on given arguments;
  * its timezone is UTC.
  *
- * For parameters, see {Creating a Time Object}[#class-Time-label-Creating+a+Time+Object].
- *
  * In the first form (up to seven arguments), argument +year+ is required.
  *
- *   Time.utc(2000) # => 2000-01-01 00:00:00 UTC
+ *   Time.utc(2000)                  # => 2000-01-01 00:00:00 UTC
  *   Time.utc(0, 1, 2, 3, 4, 5, 6.5) # => 0000-01-02 03:04:05.0000065 UTC
+ *   Time.gm(2000)                   # => 2000-01-01 00:00:00 UTC
+ *   Time.gm(0, 1, 2, 3, 4, 5, 6.5)  # => 0000-01-02 03:04:05.0000065 UTC
  *
  * In the second form, all ten arguments are required,
  * though the last four are ignored.
  * This form is useful for creating a time from a 10-element array
- * such as those returned by #to_a.
+ * such as is returned by #to_a.
  *
  *   array = Time.now.to_a
  *   p array # => [57, 26, 13, 24, 4, 2021, 6, 114, true, "Central Daylight Time"]
  *   array[5] = 2000
  *   Time.utc(*array) # => 2000-04-24 13:26:57 UTC
+ *   Time.gm(*array)  # => 2000-04-24 13:26:57 UTC
  *
+ * Parameters:
+ * :include: doc/time/year.rdoc
+ * :include: doc/time/mon-min.rdoc
+ * :include: doc/time/sec_i.rdoc
+ * :include: doc/time/usec.rdoc
+ *
+ * Alias: Time.gm.
+
  * Related: Time.local.
+ *
  */
 static VALUE
 time_s_mkutc(int argc, VALUE *argv, VALUE klass)
@@ -3360,18 +3372,20 @@ time_s_mkutc(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *   Time.local(year, month = 1, day = 1, hour = 0, min = 0, sec = 0, usec_with_frac = 0) -> new_time
+ *   Time.local(year, month=1, day=1, hour=0, min=0, sec_i=0, usec=0) -> new_time
  *   Time.local(sec, min, hour, day, month, year, dummy, dummy, dummy, dummy) -> new_time
+ *   Time.mktime(year, month=1, day=1, hour=0, min=0, sec_i=0, usec=0) -> new_time
+ *   Time.mktime(sec, min, hour, day, month, year, dummy, dummy, dummy, dummy) -> new_time
  *
  * Returns a new \Time object based the on given arguments;
  * its timezone is the local timezone.
  *
- * For parameters, see {Creating a Time Object}[#class-Time-label-Creating+a+Time+Object].
- *
  * In the first form (up to seven arguments), argument +year+ is required.
  *
- *   Time.local(2000) # => 2000-01-01 00:00:00 -0600
- *   Time.local(0, 1, 2, 3, 4, 5, 6.5) Time.local(0, 1, 2, 3, 4, 5, 6.5)
+ *   Time.local(2000)                   # => 2000-01-01 00:00:00 -0600
+ *   Time.local(0, 1, 2, 3, 4, 5, 6.5)  # => 0000-01-02 03:04:05.0000065 -0600
+ *   Time.mktime(2000)                  # => 2000-01-01 00:00:00 -0600
+ *   Time.mktime(0, 1, 2, 3, 4, 5, 6.5) # => 0000-01-02 03:04:05.0000065 -0600
  *
  * In the second form, all ten arguments are required,
  * though the last four are ignored.
@@ -3381,7 +3395,16 @@ time_s_mkutc(int argc, VALUE *argv, VALUE klass)
  *   array = Time.now.to_a
  *   p array # => [57, 26, 13, 24, 4, 2021, 6, 114, true, "Central Daylight Time"]
  *   array[5] = 2000
- *   Time.local(*array) # => 2000-04-24 13:26:57 -0500
+ *   Time.local(*array)  # => 2000-04-24 13:26:57 -0500
+ *   Time.mktime(*array) # => 2000-04-24 13:26:57 -0500
+ *
+ * Parameters:
+ * :include: doc/time/year.rdoc
+ * :include: doc/time/mon-min.rdoc
+ * :include: doc/time/sec_i.rdoc
+ * :include: doc/time/usec.rdoc
+ *
+ * Alias: Time.mktime.
  *
  * Related: Time.utc.
  */
@@ -5587,15 +5610,27 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
  *
  *  == What's Here
  *
+ *  \Class \Time provides methods that are useful for:
+ *
+ *  - {Creating \Time objects}[#class-Time-label-Methods+for+Creating].
+ *  - {Fetching \Time values}[#class-Time-label-Methods+for+Fetching].
+ *  - {Querying a \Time object}[#class-Time-label-Methods+for+Querying].
+ *  - {Comparing \Time objects}[#class-Time-label-Methods+for+Comparing].
+ *  - {Converting a \Time object}[#class-Time-label-Methods+for+Converting].
+ *  - {Rounding a \Time}[#class-Time-label-Methods+for+Rounding].
+ *
  *  === Methods for Creating
  *
- *  - ::new: Returns a new time from specified arguments (year, month, etc.), *    including an optional timezone value.
- *  - ::local (aliased as ::mktime): Same as ::new, except the *    timezone is the local timezone.
+ *  - ::new: Returns a new time from specified arguments (year, month, etc.),
+ *    including an optional timezone value.
+ *  - ::local (aliased as ::mktime): Same as ::new, except the
+ *    timezone is the local timezone.
  *  - ::utc (aliased as ::gm): Same as ::new, except the timezone is UTC.
  *  - ::at: Returns a new time based on seconds since epoch.
  *  - ::now: Returns a new time based on the current system time.
  *  - #+ (plus): Returns a new time from an existing time and a positive offset.
- *  - {.}[#method-i-2D] (minus): Returns a new time from an existing time      and a negative offset.
+ *  - {.}[#method-i-2D] (minus): Returns a new time from an existing time
+ *    and a negative offset.
  *
  *  === Methods for Fetching
  *
