@@ -248,11 +248,13 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(15, [3, 5, 7].inject(:+))
     assert_float_equal(15.0, [3, 5, 7.0].inject(:+))
     assert_equal(2*FIXNUM_MAX, Array.new(2, FIXNUM_MAX).inject(:+))
+    assert_equal(3*FIXNUM_MAX, Array.new(3, FIXNUM_MAX).inject(:+))
     assert_equal(2*(FIXNUM_MAX+1), Array.new(2, FIXNUM_MAX+1).inject(:+))
     assert_equal(10*FIXNUM_MAX, Array.new(10, FIXNUM_MAX).inject(:+))
     assert_equal(0, ([FIXNUM_MAX, 1, -FIXNUM_MAX, -1]*10).inject(:+))
     assert_equal(FIXNUM_MAX*10, ([FIXNUM_MAX+1, -1]*10).inject(:+))
     assert_equal(2*FIXNUM_MIN, Array.new(2, FIXNUM_MIN).inject(:+))
+    assert_equal(3*FIXNUM_MIN, Array.new(3, FIXNUM_MIN).inject(:+))
     assert_equal((FIXNUM_MAX+1).to_f, [FIXNUM_MAX, 1, 0.0].inject(:+))
     assert_float_equal(10.0, [3.0, 5].inject(2.0, :+))
     assert_float_equal((FIXNUM_MAX+1).to_f, [0.0, FIXNUM_MAX+1].inject(:+))
@@ -392,6 +394,45 @@ class TestEnumerable < Test::Unit::TestCase
   def test_tally
     h = {1 => 2, 2 => 2, 3 => 1}
     assert_equal(h, @obj.tally)
+
+    h = {1 => 5, 2 => 2, 3 => 1, 4 => "x"}
+    assert_equal(h, @obj.tally({1 => 3, 4 => "x"}))
+
+    assert_raise(TypeError) do
+      @obj.tally({1 => ""})
+    end
+
+    h = {1 => 2, 2 => 2, 3 => 1}
+    assert_same(h, @obj.tally(h))
+
+    h = {1 => 2, 2 => 2, 3 => 1}.freeze
+    assert_raise(FrozenError) do
+      @obj.tally(h)
+    end
+    assert_equal({1 => 2, 2 => 2, 3 => 1}, h)
+
+    hash_convertible = Object.new
+    def hash_convertible.to_hash
+      {1 => 3, 4 => "x"}
+    end
+    assert_equal({1 => 5, 2 => 2, 3 => 1, 4 => "x"}, @obj.tally(hash_convertible))
+
+    hash_convertible = Object.new
+    def hash_convertible.to_hash
+      {1 => 3, 4 => "x"}.freeze
+    end
+    assert_raise(FrozenError) do
+      @obj.tally(hash_convertible)
+    end
+    assert_equal({1 => 3, 4 => "x"}, hash_convertible.to_hash)
+
+    assert_raise(TypeError) do
+      @obj.tally(BasicObject.new)
+    end
+
+    h = {1 => 2, 2 => 2, 3 => 1}
+    assert_equal(h, @obj.tally(Hash.new(100)))
+    assert_equal(h, @obj.tally(Hash.new {100}))
   end
 
   def test_first

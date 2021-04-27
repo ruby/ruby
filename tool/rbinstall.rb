@@ -3,6 +3,8 @@
 # Used by the "make install" target to install Ruby.
 # See common.mk for more details.
 
+ENV["SDKROOT"] ||= "" if /darwin/ =~ RUBY_PLATFORM
+
 begin
   load "./rbconfig.rb"
 rescue LoadError
@@ -20,6 +22,7 @@ require 'fileutils'
 require 'shellwords'
 require 'optparse'
 require 'optparse/shellwords'
+require 'pathname'
 require 'rubygems'
 begin
   require "zlib"
@@ -471,7 +474,7 @@ PROLOG_SCRIPT["cmd"] = <<EOS
 :""||{ ""=> %q<-*- ruby -*-
 @"%~dp0#{ruby_install_name}" -x "%~f0" %*
 @exit /b %ERRORLEVEL%
-};{#\n#{prolog_script.gsub(/(?=\n)/, ' #')}>,\n}
+};{ #\n#{prolog_script.gsub(/(?=\n)/, ' #')}>,\n}
 EOS
 PROLOG_SCRIPT.default = (load_relative || /\s/ =~ bindir) ?
                           <<EOS : PROLOG_SCRIPT["exe"]
@@ -700,16 +703,29 @@ module RbInstall
           base = "#{prefix}#{relative_base}"
         when "lib"
           base = @base_dir
-          prefix = base.sub(/lib\/.*?\z/, "") + "lib/"
+          prefix = base.sub(/lib\/.*?\z/, "")
+          # for lib/net/net-smtp.gemspec
+          if m = Pathname.new(@gemspec).basename(".gemspec").to_s.match(/.*\-(.*)\z/)
+            base = "#{@base_dir}/#{m[1]}" unless remove_prefix(prefix, @base_dir).include?(m[1])
+          end
         end
 
-        if base
-          Dir.glob("#{base}{.rb,/**/*.rb}").collect do |ruby_source|
-            remove_prefix(prefix, ruby_source)
-          end
-        else
-          [File.basename(@gemspec, '.gemspec') + '.rb']
+        files = if base
+                  Dir.glob("#{base}{.rb,/**/*.rb}").collect do |ruby_source|
+                    remove_prefix(prefix, ruby_source)
+                  end
+                else
+                  [File.basename(@gemspec, '.gemspec') + '.rb']
+                end
+
+        case Pathname.new(@gemspec).basename(".gemspec").to_s
+        when "net-http"
+          files << "lib/net/https.rb"
+        when "optparse"
+          files << "lib/optionparser.rb"
         end
+
+        files
       end
 
       def built_libraries
@@ -746,9 +762,10 @@ module RbInstall
     attr_accessor :prog_mode
     attr_accessor :data_mode
 
-    def initialize(spec)
+    def initialize(spec, dir_map = nil)
       @spec = spec
       @src_dir = File.dirname(@spec.loaded_from)
+      @dir_map = dir_map
     end
 
     def extract_files(destination_dir, pattern = "*")
@@ -756,8 +773,13 @@ module RbInstall
       File.chmod(0700, destination_dir) unless $dryrun
       mode = pattern == File.join(spec.bindir, '*') ? prog_mode : data_mode
       destdir = without_destdir(destination_dir)
+      if @dir_map
+        (dir_map = @dir_map.map {|k, v| Regexp.quote(k) unless k == v}).compact!
+        dir_map = %r{\A(?:#{dir_map.join('|')})(?=/)}
+      end
       spec.files.each do |f|
-        src = File.join(@src_dir, f)
+        next unless File.fnmatch(pattern, f)
+        src = File.join(@src_dir, dir_map =~ f ? "#{@dir_map[$&]}#{$'}" : f)
         dest = File.join(destdir, f)
         makedirs(dest[/.*(?=\/)/m])
         install src, dest, :mode => mode
@@ -814,6 +836,11 @@ module RbInstall
       super unless $dryrun
       $installed_list.puts(without_destdir(spec_file)) if $installed_list
     end
+
+    def write_default_spec
+      super unless $dryrun
+      $installed_list.puts(without_destdir(default_spec_file)) if $installed_list
+    end
   end
 
   class GemInstaller
@@ -856,7 +883,7 @@ module RbInstall
       $made_dirs.fetch(d = without_destdir(dir)) do
         $made_dirs[d] = true
         super unless $dryrun
-        $installed_list.puts(d) if $installed_list
+        $installed_list.puts(d+"/") if $installed_list
       end
     end
   end
@@ -865,10 +892,10 @@ end
 # :startdoc:
 
 install?(:ext, :comm, :gem, :'default-gems', :'default-gems-comm') do
-  install_default_gem('lib', srcdir)
+  install_default_gem('lib', srcdir, bindir)
 end
 install?(:ext, :arch, :gem, :'default-gems', :'default-gems-arch') do
-  install_default_gem('ext', srcdir)
+  install_default_gem('ext', srcdir, bindir)
 end
 
 def load_gemspec(file, expanded = false)
@@ -896,12 +923,23 @@ def load_gemspec(file, expanded = false)
   spec
 end
 
-def install_default_gem(dir, srcdir)
+def install_default_gem(dir, srcdir, bindir)
   gem_dir = Gem.default_dir
   install_dir = with_destdir(gem_dir)
   prepare "default gems from #{dir}", gem_dir
   makedirs(Gem.ensure_default_gem_subdirectories(install_dir, $dir_mode).map {|d| File.join(gem_dir, d)})
 
+  options = {
+    :install_dir => with_destdir(gem_dir),
+    :bin_dir => with_destdir(bindir),
+    :ignore_dependencies => true,
+    :dir_mode => $dir_mode,
+    :data_mode => $data_mode,
+    :prog_mode => $script_mode,
+    :wrappers => true,
+    :format_executable => true,
+    :install_as_default => true,
+  }
   default_spec_dir = Gem.default_specifications_dir
 
   gems = Dir.glob("#{srcdir}/#{dir}/**/*.gemspec").map {|src|
@@ -920,25 +958,12 @@ def install_default_gem(dir, srcdir)
 
     full_name = "#{gemspec.name}-#{gemspec.version}"
 
+    gemspec.loaded_from = File.join srcdir, gemspec.spec_name
+
+    package = RbInstall::DirPackage.new gemspec, {gemspec.bindir => 'libexec'}
+    ins = RbInstall::UnpackedInstaller.new(package, options)
     puts "#{INDENT}#{gemspec.name} #{gemspec.version}"
-    gemspec_path = File.join(default_spec_dir, "#{full_name}.gemspec")
-    open_for_install(gemspec_path, $data_mode) do
-      gemspec.to_ruby.gsub(/.*\0.*\n/, '')
-    end
-
-    specific_gem_dir = File.join(gem_dir, 'gems', full_name)
-
-    makedirs(specific_gem_dir)
-
-    unless gemspec.executables.empty? then
-      bin_dir = File.join(specific_gem_dir, gemspec.bindir)
-      makedirs(bin_dir)
-
-      gemspec.executables.map {|exec|
-        install File.join(srcdir, 'libexec', exec),
-                File.join(bin_dir, exec)
-      }
-    end
+    ins.install
   end
 end
 

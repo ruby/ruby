@@ -1,7 +1,7 @@
 # encoding: utf-8
 require 'spec_helper'
 
-describe "Running mspec tag" do
+RSpec.describe "Running mspec tag" do
   before :all do
     FileUtils.rm_rf 'spec/fixtures/tags'
   end
@@ -13,7 +13,7 @@ describe "Running mspec tag" do
   it "tags the failing specs" do
     fixtures = "spec/fixtures"
     out, ret = run_mspec("tag", "--add fails --fail #{fixtures}/tagging_spec.rb")
-    out.should == <<EOS
+    expect(out).to eq <<EOS
 RUBY_DESCRIPTION
 .FF
 TagAction: specs tagged with 'fails':
@@ -40,13 +40,13 @@ Finished in D.DDDDDD seconds
 
 1 file, 3 examples, 3 expectations, 2 failures, 0 errors, 0 tagged
 EOS
-    ret.success?.should == false
+    expect(ret.success?).to eq(false)
   end
 
   it "does not run already tagged specs" do
     fixtures = "spec/fixtures"
     out, ret = run_mspec("run", "--excl-tag fails #{fixtures}/tagging_spec.rb")
-    out.should == <<EOS
+    expect(out).to eq <<EOS
 RUBY_DESCRIPTION
 .
 
@@ -54,6 +54,6 @@ Finished in D.DDDDDD seconds
 
 1 file, 3 examples, 1 expectation, 0 failures, 0 errors, 2 tagged
 EOS
-    ret.success?.should == true
+    expect(ret.success?).to eq(true)
   end
 end

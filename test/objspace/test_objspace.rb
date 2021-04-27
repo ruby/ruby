@@ -168,7 +168,7 @@ class TestObjSpace < Test::Unit::TestCase
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       require "objspace"
-      # Make sure stoping before the tracepoints are initialized doesn't raise. See [Bug #17020]
+      # Make sure stopping before the tracepoints are initialized doesn't raise. See [Bug #17020]
       ObjectSpace.trace_object_allocations_stop
     end;
   end
@@ -243,6 +243,15 @@ class TestObjSpace < Test::Unit::TestCase
     GC.enable
   end
 
+  def test_trace_object_allocations_gc_stress
+    EnvUtil.under_gc_stress do
+      ObjectSpace.trace_object_allocations{
+        proc{}
+      }
+    end
+    assert true # success
+  end
+
   def test_dump_flags
     info = ObjectSpace.dump("foo".freeze)
     assert_match(/"wb_protected":true, "old":true/, info)
@@ -297,6 +306,21 @@ class TestObjSpace < Test::Unit::TestCase
     assert_equal('false', ObjectSpace.dump(false))
     assert_equal('0', ObjectSpace.dump(0))
     assert_equal('{"type":"SYMBOL", "value":"foo"}', ObjectSpace.dump(:foo))
+  end
+
+  def test_dump_singleton_class
+    assert_include(ObjectSpace.dump(Object), '"name":"Object"')
+    assert_include(ObjectSpace.dump(Kernel), '"name":"Kernel"')
+    assert_include(ObjectSpace.dump(Object.new.singleton_class), '"real_class_name":"Object"')
+
+    singleton = Object.new.singleton_class
+    singleton_dump = ObjectSpace.dump(singleton)
+    assert_include(singleton_dump, '"singleton":true')
+    if defined?(JSON)
+      assert_equal(Object, singleton.superclass)
+      superclass_address = JSON.parse(ObjectSpace.dump(Object)).fetch('address')
+      assert_equal(superclass_address, JSON.parse(singleton_dump).fetch('superclass'))
+    end
   end
 
   def test_dump_special_floats
@@ -526,6 +550,15 @@ class TestObjSpace < Test::Unit::TestCase
   def test_internal_class_of_on_ast
     children = ObjectSpace.reachable_objects_from(RubyVM::AbstractSyntaxTree.parse("kadomatsu"))
     children.each {|child| ObjectSpace.internal_class_of(child).itself} # this used to crash
+  end
+
+  def test_name_error_message
+    begin
+      bar
+    rescue => err
+      _, m = ObjectSpace.reachable_objects_from(err)
+    end
+    assert_equal(m, m.clone)
   end
 
   def traverse_super_classes klass

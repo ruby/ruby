@@ -669,6 +669,15 @@ FOO
 
   def test_magic_comment
     x = nil
+
+    assert_nothing_raised do
+      eval <<-END, nil, __FILE__, __LINE__+1
+# coding: utf-8
+x = __ENCODING__
+      END
+    end
+    assert_equal(Encoding.find("UTF-8"), x)
+
     assert_nothing_raised do
       eval <<-END, nil, __FILE__, __LINE__+1
 # coding = utf-8
@@ -683,6 +692,14 @@ x = __ENCODING__
 x = __ENCODING__
       END
     end
+
+    assert_nothing_raised do
+      eval <<-END, nil, __FILE__, __LINE__+1
+# xxxx : coding sjis
+x = __ENCODING__
+      END
+    end
+    assert_equal(__ENCODING__, x)
   end
 
   def test_utf8_bom

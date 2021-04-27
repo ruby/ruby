@@ -9,23 +9,39 @@ class Reline::Windows
     true
   end
 
-  RAW_KEYSTROKE_CONFIG = {
-    [224, 72] => :ed_prev_history, # ↑
-    [224, 80] => :ed_next_history, # ↓
-    [224, 77] => :ed_next_char,    # →
-    [224, 75] => :ed_prev_char,    # ←
-    [224, 83] => :key_delete,      # Del
-    [224, 71] => :ed_move_to_beg,  # Home
-    [224, 79] => :ed_move_to_end,  # End
-    [  0, 41] => :ed_unassigned,   # input method on/off
-    [  0, 72] => :ed_prev_history, # ↑
-    [  0, 80] => :ed_next_history, # ↓
-    [  0, 77] => :ed_next_char,    # →
-    [  0, 75] => :ed_prev_char,    # ←
-    [  0, 83] => :key_delete,      # Del
-    [  0, 71] => :ed_move_to_beg,  # Home
-    [  0, 79] => :ed_move_to_end   # End
-  }
+  def self.win_legacy_console?
+    @@legacy_console
+  end
+
+  def self.set_default_key_bindings(config)
+    {
+      [224, 72] => :ed_prev_history, # ↑
+      [224, 80] => :ed_next_history, # ↓
+      [224, 77] => :ed_next_char,    # →
+      [224, 75] => :ed_prev_char,    # ←
+      [224, 83] => :key_delete,      # Del
+      [224, 71] => :ed_move_to_beg,  # Home
+      [224, 79] => :ed_move_to_end,  # End
+      [  0, 41] => :ed_unassigned,   # input method on/off
+      [  0, 72] => :ed_prev_history, # ↑
+      [  0, 80] => :ed_next_history, # ↓
+      [  0, 77] => :ed_next_char,    # →
+      [  0, 75] => :ed_prev_char,    # ←
+      [  0, 83] => :key_delete,      # Del
+      [  0, 71] => :ed_move_to_beg,  # Home
+      [  0, 79] => :ed_move_to_end   # End
+    }.each_pair do |key, func|
+      config.add_default_key_binding_by_keymap(:emacs, key, func)
+      config.add_default_key_binding_by_keymap(:vi_insert, key, func)
+      config.add_default_key_binding_by_keymap(:vi_command, key, func)
+    end
+
+    {
+      [27, 32] => :em_set_mark,             # M-<space>
+    }.each_pair do |key, func|
+      config.add_default_key_binding_by_keymap(:emacs, key, func)
+    end
+  end
 
   if defined? JRUBY_VERSION
     require 'win32api'
@@ -93,6 +109,26 @@ class Reline::Windows
   @@GetFileType = Win32API.new('kernel32', 'GetFileType', ['L'], 'L')
   @@GetFileInformationByHandleEx = Win32API.new('kernel32', 'GetFileInformationByHandleEx', ['L', 'I', 'P', 'L'], 'I')
   @@FillConsoleOutputAttribute = Win32API.new('kernel32', 'FillConsoleOutputAttribute', ['L', 'L', 'L', 'L', 'P'], 'L')
+
+  @@GetConsoleMode = Win32API.new('kernel32', 'GetConsoleMode', ['L', 'P'], 'L')
+  @@SetConsoleMode = Win32API.new('kernel32', 'SetConsoleMode', ['L', 'L'], 'L')
+  ENABLE_VIRTUAL_TERMINAL_PROCESSING = 4
+
+  private_class_method def self.getconsolemode
+    mode = "\000\000\000\000"
+    @@GetConsoleMode.call(@@hConsoleHandle, mode)
+    mode.unpack1('L')
+  end
+
+  private_class_method def self.setconsolemode(mode)
+    @@SetConsoleMode.call(@@hConsoleHandle, mode)
+  end
+
+  @@legacy_console = (getconsolemode() & ENABLE_VIRTUAL_TERMINAL_PROCESSING == 0)
+  #if @@legacy_console
+  #  setconsolemode(getconsolemode() | ENABLE_VIRTUAL_TERMINAL_PROCESSING)
+  #  @@legacy_console = (getconsolemode() & ENABLE_VIRTUAL_TERMINAL_PROCESSING == 0)
+  #end
 
   @@input_buf = []
   @@output_buf = []

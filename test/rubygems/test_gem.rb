@@ -297,6 +297,58 @@ class TestGem < Gem::TestCase
     assert_equal %w[a-1 b-2 c-1], loaded_spec_names
   end
 
+  def test_activate_bin_path_does_not_error_if_a_gem_thats_not_finally_activated_has_orphaned_dependencies
+    a1 = util_spec 'a', '1' do |s|
+      s.executables = ['exec']
+      s.add_dependency 'b'
+    end
+
+    b1 = util_spec 'b', '1' do |s|
+      s.add_dependency 'c', '1'
+    end
+
+    b2 = util_spec 'b', '2' do |s|
+      s.add_dependency 'c', '2'
+    end
+
+    c2 = util_spec 'c', '2'
+
+    install_specs c2, b1, b2, a1
+
+    # c1 is missing, but not needed for activation, so we should not get any errors here
+
+    Gem.activate_bin_path("a", "exec", ">= 0")
+
+    assert_equal %w[a-1 b-2 c-2], loaded_spec_names
+  end
+
+  def test_activate_bin_path_raises_a_meaningful_error_if_a_gem_thats_finally_activated_has_orphaned_dependencies
+    a1 = util_spec 'a', '1' do |s|
+      s.executables = ['exec']
+      s.add_dependency 'b'
+    end
+
+    b1 = util_spec 'b', '1' do |s|
+      s.add_dependency 'c', '1'
+    end
+
+    b2 = util_spec 'b', '2' do |s|
+      s.add_dependency 'c', '2'
+    end
+
+    c1 = util_spec 'c', '1'
+
+    install_specs c1, b1, b2, a1
+
+    # c2 is missing, and b2 which has it as a dependency will be activated, so we should get an error about the orphaned dependency
+
+    e = assert_raises Gem::UnsatisfiableDependencyError do
+      load Gem.activate_bin_path("a", "exec", ">= 0")
+    end
+
+    assert_equal "Unable to resolve dependency: 'b (>= 0)' requires 'c (= 2)'", e.message
+  end
+
   def test_activate_bin_path_in_debug_mode
     a1 = util_spec 'a', '1' do |s|
       s.executables = ['exec']
@@ -414,6 +466,32 @@ class TestGem < Gem::TestCase
     load Gem.activate_bin_path("bundler", "bundle", "= 1.17.3")
 
     assert_equal %w[bundler-1.17.3], loaded_spec_names
+  end
+
+  def test_activate_bin_path_gives_proper_error_for_bundler_when_underscore_selection_given
+    File.open("Gemfile.lock", "w") do |f|
+      f.write <<-L.gsub(/ {8}/, "")
+        GEM
+          remote: https://rubygems.org/
+          specs:
+
+        PLATFORMS
+          ruby
+
+        DEPENDENCIES
+
+        BUNDLED WITH
+          2.1.4
+      L
+    end
+
+    File.open("Gemfile", "w") {|f| f.puts('source "https://rubygems.org"') }
+
+    e = assert_raises Gem::GemNotFoundException do
+      load Gem.activate_bin_path("bundler", "bundle", "= 2.2.8")
+    end
+
+    assert_equal "can't find gem bundler (= 2.2.8) with executable bundle", e.message
   end
 
   def test_self_bin_path_no_exec_name
@@ -691,6 +769,11 @@ class TestGem < Gem::TestCase
       refute File.exist? File.join(gemdir, "gems")
     ensure
       FileUtils.chmod 0600, parent
+    end
+
+    def test_self_ensure_gem_directories_non_existent_paths
+      Gem.ensure_gem_subdirectories '/proc/0123456789/bogus' # should not raise
+      Gem.ensure_gem_subdirectories 'classpath:/bogus/x' # JRuby embed scenario
     end
   end
 
@@ -1875,15 +1958,9 @@ class TestGem < Gem::TestCase
       io.write 'gem "a"'
     end
 
-    platform = Bundler::GemHelpers.generic_local_platform
-    if platform == Gem::Platform::RUBY
-      platform = ''
-    else
-      platform = " #{platform}"
-    end
-
     expected = <<-EXPECTED
-Could not find gem 'a#{platform}' in any of the gem sources listed in your Gemfile.
+Could not find gem 'a' in locally installed gems.
+The source does not contain any versions of 'a'
 You may need to `gem install -g` to install missing gems
 
     EXPECTED

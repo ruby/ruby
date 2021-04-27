@@ -201,7 +201,7 @@ module Net
   #    Unicode", RFC 2152, May 1997.
   #
   class IMAP < Protocol
-    VERSION = "0.1.1"
+    VERSION = "0.2.1"
 
     include MonitorMixin
     if defined?(OpenSSL::SSL)
@@ -228,6 +228,9 @@ module Net
     # If the IMAP object cannot open a connection within this time,
     # it raises a Net::OpenTimeout exception. The default value is 30 seconds.
     attr_reader :open_timeout
+
+    # Seconds to wait until an IDLE response is received.
+    attr_reader :idle_response_timeout
 
     # The thread to receive exceptions.
     attr_accessor :client_thread
@@ -304,6 +307,16 @@ module Net
       @@authenticators[auth_type] = authenticator
     end
 
+    # Builds an authenticator for Net::IMAP#authenticate.
+    def self.authenticator(auth_type, *args)
+      auth_type = auth_type.upcase
+      unless @@authenticators.has_key?(auth_type)
+        raise ArgumentError,
+          format('unknown auth type - "%s"', auth_type)
+      end
+      @@authenticators[auth_type].new(*args)
+    end
+
     # The default port for IMAP connections, port 143
     def self.default_port
       return PORT
@@ -365,6 +378,30 @@ module Net
       end
     end
 
+    # Sends an ID command, and returns a hash of the server's
+    # response, or nil if the server does not identify itself.
+    #
+    # Note that the user should first check if the server supports the ID
+    # capability. For example:
+    #
+    #    capabilities = imap.capability
+    #    if capabilities.include?("ID")
+    #      id = imap.id(
+    #        name: "my IMAP client (ruby)",
+    #        version: MyIMAP::VERSION,
+    #        "support-url": "mailto:bugs@example.com",
+    #        os: RbConfig::CONFIG["host_os"],
+    #      )
+    #    end
+    #
+    # See RFC 2971, Section 3.3, for defined fields.
+    def id(client_id=nil)
+      synchronize do
+        send_command("ID", ClientID.new(client_id))
+        @responses.delete("ID")&.last
+      end
+    end
+
     # Sends a NOOP command to the server. It does nothing.
     def noop
       send_command("NOOP")
@@ -408,7 +445,7 @@ module Net
     # the form "AUTH=LOGIN" or "AUTH=CRAM-MD5".
     #
     # Authentication is done using the appropriate authenticator object:
-    # see @@authenticators for more information on plugging in your own
+    # see +add_authenticator+ for more information on plugging in your own
     # authenticator.
     #
     # For example:
@@ -417,12 +454,7 @@ module Net
     #
     # A Net::IMAP::NoResponseError is raised if authentication fails.
     def authenticate(auth_type, *args)
-      auth_type = auth_type.upcase
-      unless @@authenticators.has_key?(auth_type)
-        raise ArgumentError,
-          format('unknown auth type - "%s"', auth_type)
-      end
-      authenticator = @@authenticators[auth_type].new(*args)
+      authenticator = self.class.authenticator(auth_type, *args)
       send_command("AUTHENTICATE", auth_type) do |resp|
         if resp.instance_of?(ContinuationRequest)
           data = authenticator.process(resp.data.text.unpack("m")[0])
@@ -447,8 +479,8 @@ module Net
     # in the +mailbox+ can be accessed.
     #
     # After you have selected a mailbox, you may retrieve the
-    # number of items in that mailbox from @responses["EXISTS"][-1],
-    # and the number of recent messages from @responses["RECENT"][-1].
+    # number of items in that mailbox from +@responses["EXISTS"][-1]+,
+    # and the number of recent messages from +@responses["RECENT"][-1]+.
     # Note that these values can change if new messages arrive
     # during a session; see #add_response_handler() for a way of
     # detecting this event.
@@ -549,6 +581,60 @@ module Net
       synchronize do
         send_command("LIST", refname, mailbox)
         return @responses.delete("LIST")
+      end
+    end
+
+    # Sends a NAMESPACE command [RFC2342] and returns the namespaces that are
+    # available. The NAMESPACE command allows a client to discover the prefixes
+    # of namespaces used by a server for personal mailboxes, other users'
+    # mailboxes, and shared mailboxes.
+    #
+    # This extension predates IMAP4rev1 (RFC3501), so most IMAP servers support
+    # it. Many popular IMAP servers are configured with the default personal
+    # namespaces as `("" "/")`: no prefix and "/" hierarchy delimiter. In that
+    # common case, the naive client may not have any trouble naming mailboxes.
+    #
+    # But many servers are configured with the default personal namespace as
+    # e.g. `("INBOX." ".")`, placing all personal folders under INBOX, with "."
+    # as the hierarchy delimiter. If the client does not check for this, but
+    # naively assumes it can use the same folder names for all servers, then
+    # folder creation (and listing, moving, etc) can lead to errors.
+    #
+    # From RFC2342:
+    #
+    #    Although typically a server will support only a single Personal
+    #    Namespace, and a single Other User's Namespace, circumstances exist
+    #    where there MAY be multiples of these, and a client MUST be prepared
+    #    for them. If a client is configured such that it is required to create
+    #    a certain mailbox, there can be circumstances where it is unclear which
+    #    Personal Namespaces it should create the mailbox in. In these
+    #    situations a client SHOULD let the user select which namespaces to
+    #    create the mailbox in.
+    #
+    # The user of this method should first check if the server supports the
+    # NAMESPACE capability.  The return value is a +Net::IMAP::Namespaces+
+    # object which has +personal+, +other+, and +shared+ fields, each an array
+    # of +Net::IMAP::Namespace+ objects. These arrays will be empty when the
+    # server responds with nil.
+    #
+    # For example:
+    #
+    #    capabilities = imap.capability
+    #    if capabilities.include?("NAMESPACE")
+    #      namespaces = imap.namespace
+    #      if namespace = namespaces.personal.first
+    #        prefix = namespace.prefix  # e.g. "" or "INBOX."
+    #        delim  = namespace.delim   # e.g. "/" or "."
+    #        # personal folders should use the prefix and delimiter
+    #        imap.create(prefix + "foo")
+    #        imap.create(prefix + "bar")
+    #        imap.create(prefix + %w[path to my folder].join(delim))
+    #      end
+    #    end
+    def namespace
+      synchronize do
+        send_command("NAMESPACE")
+        return @responses.delete("NAMESPACE")[-1]
       end
     end
 
@@ -973,7 +1059,7 @@ module Net
           unless @receiver_thread_terminating
             remove_response_handler(response_handler)
             put_string("DONE#{CRLF}")
-            response = get_tagged_response(tag, "IDLE")
+            response = get_tagged_response(tag, "IDLE", @idle_response_timeout)
           end
         end
       end
@@ -1052,13 +1138,14 @@ module Net
     # The available options are:
     #
     # port::  Port number (default value is 143 for imap, or 993 for imaps)
-    # ssl::   If options[:ssl] is true, then an attempt will be made
+    # ssl::   If +options[:ssl]+ is true, then an attempt will be made
     #         to use SSL (now TLS) to connect to the server.  For this to work
     #         OpenSSL [OSSL] and the Ruby OpenSSL [RSSL] extensions need to
     #         be installed.
-    #         If options[:ssl] is a hash, it's passed to
+    #         If +options[:ssl]+ is a hash, it's passed to
     #         OpenSSL::SSL::SSLContext#set_params as parameters.
     # open_timeout:: Seconds to wait until a connection is opened
+    # idle_response_timeout:: Seconds to wait until an IDLE response is received
     #
     # The most common errors are:
     #
@@ -1088,6 +1175,7 @@ module Net
       @tag_prefix = "RUBY"
       @tagno = 0
       @open_timeout = options[:open_timeout] || 30
+      @idle_response_timeout = options[:idle_response_timeout] || 5
       @parser = ResponseParser.new
       @sock = tcp_socket(@host, @port)
       begin
@@ -1211,10 +1299,19 @@ module Net
       end
     end
 
-    def get_tagged_response(tag, cmd)
+    def get_tagged_response(tag, cmd, timeout = nil)
+      if timeout
+        deadline = Time.now + timeout
+      end
       until @tagged_responses.key?(tag)
         raise @exception if @exception
-        @tagged_response_arrival.wait
+        if timeout
+          timeout = deadline - Time.now
+          if timeout <= 0
+            return nil
+          end
+        end
+        @tagged_response_arrival.wait(timeout)
       end
       resp = @tagged_responses.delete(tag)
       case resp.name
@@ -1656,6 +1753,74 @@ module Net
       end
     end
 
+    class ClientID # :nodoc:
+
+      def send_data(imap, tag)
+        imap.__send__(:send_data, format_internal(@data), tag)
+      end
+
+      def validate
+        validate_internal(@data)
+      end
+
+      private
+
+      def initialize(data)
+        @data = data
+      end
+
+      def validate_internal(client_id)
+        client_id.to_h.each do |k,v|
+          unless StringFormatter.valid_string?(k)
+            raise DataFormatError, client_id.inspect
+          end
+        end
+      rescue NoMethodError, TypeError # to_h failed
+        raise DataFormatError, client_id.inspect
+      end
+
+      def format_internal(client_id)
+        return nil if client_id.nil?
+        client_id.to_h.flat_map {|k,v|
+          [StringFormatter.string(k), StringFormatter.nstring(v)]
+        }
+      end
+
+    end
+
+    module StringFormatter
+
+      LITERAL_REGEX = /[\x80-\xff\r\n]/n
+
+      module_function
+
+      # Allows symbols in addition to strings
+      def valid_string?(str)
+        str.is_a?(Symbol) || str.respond_to?(:to_str)
+      end
+
+      # Allows nil, symbols, and strings
+      def valid_nstring?(str)
+        str.nil? || valid_string?(str)
+      end
+
+      # coerces using +to_s+
+      def string(str)
+        str = str.to_s
+        if str =~ LITERAL_REGEX
+          Literal.new(str)
+        else
+          QuotedString.new(str)
+        end
+      end
+
+      # coerces non-nil using +to_s+
+      def nstring(str)
+        str.nil? ? nil : string(str)
+      end
+
+    end
+
     # Common validators of number and nz_number types
     module NumValidator # :nodoc
       class << self
@@ -1747,6 +1912,18 @@ module Net
     # raw_data:: Returns the raw data string.
     UntaggedResponse = Struct.new(:name, :data, :raw_data)
 
+    # Net::IMAP::IgnoredResponse represents intentionaly ignored responses.
+    #
+    # This includes untagged response "NOOP" sent by eg. Zimbra to avoid some
+    # clients to close the connection.
+    #
+    # It matches no IMAP standard.
+    #
+    # ==== Fields:
+    #
+    # raw_data:: Returns the raw data string.
+    IgnoredResponse = Struct.new(:raw_data)
+
     # Net::IMAP::TaggedResponse represents tagged responses.
     #
     # The server completion result response indicates the success or
@@ -1774,8 +1951,7 @@ module Net
     # Net::IMAP::ResponseText represents texts of responses.
     # The text may be prefixed by the response code.
     #
-    #   resp_text       ::= ["[" resp_text_code "]" SPACE] (text_mime2 / text)
-    #                       ;; text SHOULD NOT begin with "[" or "="
+    #   resp_text       ::= ["[" resp-text-code "]" SP] text
     #
     # ==== Fields:
     #
@@ -1787,12 +1963,15 @@ module Net
 
     # Net::IMAP::ResponseCode represents response codes.
     #
-    #   resp_text_code  ::= "ALERT" / "PARSE" /
-    #                       "PERMANENTFLAGS" SPACE "(" #(flag / "\*") ")" /
+    #   resp_text_code  ::= "ALERT" /
+    #                       "BADCHARSET" [SP "(" astring *(SP astring) ")" ] /
+    #                       capability_data / "PARSE" /
+    #                       "PERMANENTFLAGS" SP "("
+    #                       [flag_perm *(SP flag_perm)] ")" /
     #                       "READ-ONLY" / "READ-WRITE" / "TRYCREATE" /
-    #                       "UIDVALIDITY" SPACE nz_number /
-    #                       "UNSEEN" SPACE nz_number /
-    #                       atom [SPACE 1*<any TEXT_CHAR except "]">]
+    #                       "UIDNEXT" SP nz_number / "UIDVALIDITY" SP nz_number /
+    #                       "UNSEEN" SP nz_number /
+    #                       atom [SP 1*<any TEXT-CHAR except "]">]
     #
     # ==== Fields:
     #
@@ -1872,6 +2051,39 @@ module Net
     #
     MailboxACLItem = Struct.new(:user, :rights, :mailbox)
 
+    # Net::IMAP::Namespace represents a single [RFC-2342] namespace.
+    #
+    #    Namespace = nil / "(" 1*( "(" string SP  (<"> QUOTED_CHAR <"> /
+    #       nil) *(Namespace_Response_Extension) ")" ) ")"
+    #
+    #    Namespace_Response_Extension = SP string SP "(" string *(SP string)
+    #       ")"
+    #
+    # ==== Fields:
+    #
+    # prefix:: Returns the namespace prefix string.
+    # delim:: Returns nil or the hierarchy delimiter character.
+    # extensions:: Returns a hash of extension names to extension flag arrays.
+    #
+    Namespace = Struct.new(:prefix, :delim, :extensions)
+
+    # Net::IMAP::Namespaces represents the response from [RFC-2342] NAMESPACE.
+    #
+    #    Namespace_Response = "*" SP "NAMESPACE" SP Namespace SP Namespace SP
+    #       Namespace
+    #
+    #       ; The first Namespace is the Personal Namespace(s)
+    #       ; The second Namespace is the Other Users' Namespace(s)
+    #       ; The third Namespace is the Shared Namespace(s)
+    #
+    # ==== Fields:
+    #
+    # personal:: Returns an array of Personal Net::IMAP::Namespace objects.
+    # other:: Returns an array of Other Users' Net::IMAP::Namespace objects.
+    # shared:: Returns an array of Shared Net::IMAP::Namespace objects.
+    #
+    Namespaces = Struct.new(:personal, :other, :shared)
+
     # Net::IMAP::StatusData represents the contents of the STATUS response.
     #
     # ==== Fields:
@@ -1912,13 +2124,13 @@ module Net
     #        [INTERNALDATE]
     #           A string representing the internal date of the message.
     #        [RFC822]
-    #           Equivalent to BODY[].
+    #           Equivalent to +BODY[]+.
     #        [RFC822.HEADER]
-    #           Equivalent to BODY.PEEK[HEADER].
+    #           Equivalent to +BODY.PEEK[HEADER]+.
     #        [RFC822.SIZE]
     #           A number expressing the [RFC-822] size of the message.
     #        [RFC822.TEXT]
-    #           Equivalent to BODY[TEXT].
+    #           Equivalent to +BODY[TEXT]+.
     #        [UID]
     #           A number expressing the unique identifier of the message.
     #
@@ -2291,8 +2503,12 @@ module Net
             return response_cond
           when /\A(?:FLAGS)\z/ni
             return flags_response
+          when /\A(?:ID)\z/ni
+            return id_response
           when /\A(?:LIST|LSUB|XLIST)\z/ni
             return list_response
+          when /\A(?:NAMESPACE)\z/ni
+            return namespace_response
           when /\A(?:QUOTA)\z/ni
             return getquota_response
           when /\A(?:QUOTAROOT)\z/ni
@@ -2307,6 +2523,8 @@ module Net
             return status_response
           when /\A(?:CAPABILITY)\z/ni
             return capability_response
+          when /\A(?:NOOP)\z/ni
+            return ignored_response
           else
             return text_response
           end
@@ -2316,7 +2534,7 @@ module Net
       end
 
       def response_tagged
-        tag = atom
+        tag = astring_chars
         match(T_SPACE)
         token = match(T_ATOM)
         name = token.value.upcase
@@ -2876,14 +3094,18 @@ module Net
         return name, modseq
       end
 
+      def ignored_response
+        while lookahead.symbol != T_CRLF
+          shift_token
+        end
+        return IgnoredResponse.new(@str)
+      end
+
       def text_response
         token = match(T_ATOM)
         name = token.value.upcase
         match(T_SPACE)
-        @lex_state = EXPR_TEXT
-        token = match(T_TEXT)
-        @lex_state = EXPR_BEG
-        return UntaggedResponse.new(name, token.value)
+        return UntaggedResponse.new(name, text)
       end
 
       def flags_response
@@ -3114,11 +3336,15 @@ module Net
         token = match(T_ATOM)
         name = token.value.upcase
         match(T_SPACE)
+        UntaggedResponse.new(name, capability_data, @str)
+      end
+
+      def capability_data
         data = []
         while true
           token = lookahead
           case token.symbol
-          when T_CRLF
+          when T_CRLF, T_RBRA
             break
           when T_SPACE
             shift_token
@@ -3126,30 +3352,142 @@ module Net
           end
           data.push(atom.upcase)
         end
+        data
+      end
+
+      def id_response
+        token = match(T_ATOM)
+        name = token.value.upcase
+        match(T_SPACE)
+        token = match(T_LPAR, T_NIL)
+        if token.symbol == T_NIL
+          return UntaggedResponse.new(name, nil, @str)
+        else
+          data = {}
+          while true
+            token = lookahead
+            case token.symbol
+            when T_RPAR
+              shift_token
+              break
+            when T_SPACE
+              shift_token
+              next
+            else
+              key = string
+              match(T_SPACE)
+              val = nstring
+              data[key] = val
+            end
+          end
+          return UntaggedResponse.new(name, data, @str)
+        end
+      end
+
+      def namespace_response
+        @lex_state = EXPR_DATA
+        token = lookahead
+        token = match(T_ATOM)
+        name = token.value.upcase
+        match(T_SPACE)
+        personal = namespaces
+        match(T_SPACE)
+        other = namespaces
+        match(T_SPACE)
+        shared = namespaces
+        @lex_state = EXPR_BEG
+        data = Namespaces.new(personal, other, shared)
         return UntaggedResponse.new(name, data, @str)
       end
 
-      def resp_text
-        @lex_state = EXPR_RTEXT
+      def namespaces
         token = lookahead
-        if token.symbol == T_LBRA
-          code = resp_text_code
+        # empty () is not allowed, so nil is functionally identical to empty.
+        data = []
+        if token.symbol == T_NIL
+          shift_token
         else
-          code = nil
+          match(T_LPAR)
+          loop do
+            data << namespace
+            break unless lookahead.symbol == T_SPACE
+            shift_token
+          end
+          match(T_RPAR)
         end
-        token = match(T_TEXT)
-        @lex_state = EXPR_BEG
-        return ResponseText.new(code, token.value)
+        data
       end
 
+      def namespace
+        match(T_LPAR)
+        prefix = match(T_QUOTED, T_LITERAL).value
+        match(T_SPACE)
+        delimiter = string
+        extensions = namespace_response_extensions
+        match(T_RPAR)
+        Namespace.new(prefix, delimiter, extensions)
+      end
+
+      def namespace_response_extensions
+        data = {}
+        token = lookahead
+        if token.symbol == T_SPACE
+          shift_token
+          name = match(T_QUOTED, T_LITERAL).value
+          data[name] ||= []
+          match(T_SPACE)
+          match(T_LPAR)
+          loop do
+            data[name].push match(T_QUOTED, T_LITERAL).value
+            break unless lookahead.symbol == T_SPACE
+            shift_token
+          end
+          match(T_RPAR)
+        end
+        data
+      end
+
+      # text            = 1*TEXT-CHAR
+      # TEXT-CHAR       = <any CHAR except CR and LF>
+      def text
+        match(T_TEXT, lex_state: EXPR_TEXT).value
+      end
+
+      # resp-text       = ["[" resp-text-code "]" SP] text
+      def resp_text
+        token = match(T_LBRA, T_TEXT, lex_state: EXPR_RTEXT)
+        case token.symbol
+        when T_LBRA
+          code = resp_text_code
+          match(T_RBRA)
+          accept_space # violating RFC
+          ResponseText.new(code, text)
+        when T_TEXT
+          ResponseText.new(nil, token.value)
+        end
+      end
+
+      # See https://www.rfc-editor.org/errata/rfc3501
+      #
+      # resp-text-code  = "ALERT" /
+      #                   "BADCHARSET" [SP "(" charset *(SP charset) ")" ] /
+      #                   capability-data / "PARSE" /
+      #                   "PERMANENTFLAGS" SP "("
+      #                   [flag-perm *(SP flag-perm)] ")" /
+      #                   "READ-ONLY" / "READ-WRITE" / "TRYCREATE" /
+      #                   "UIDNEXT" SP nz-number / "UIDVALIDITY" SP nz-number /
+      #                   "UNSEEN" SP nz-number /
+      #                   atom [SP 1*<any TEXT-CHAR except "]">]
       def resp_text_code
-        @lex_state = EXPR_BEG
-        match(T_LBRA)
         token = match(T_ATOM)
         name = token.value.upcase
         case name
         when /\A(?:ALERT|PARSE|READ-ONLY|READ-WRITE|TRYCREATE|NOMODSEQ)\z/n
           result = ResponseCode.new(name, nil)
+        when /\A(?:BADCHARSET)\z/n
+          result = ResponseCode.new(name, charset_list)
+        when /\A(?:CAPABILITY)\z/ni
+          result = ResponseCode.new(name, capability_data)
         when /\A(?:PERMANENTFLAGS)\z/n
           match(T_SPACE)
           result = ResponseCode.new(name, flag_list)
@@ -3160,17 +3498,26 @@ module Net
           token = lookahead
           if token.symbol == T_SPACE
             shift_token
-            @lex_state = EXPR_CTEXT
-            token = match(T_TEXT)
-            @lex_state = EXPR_BEG
+            token = match(T_TEXT, lex_state: EXPR_CTEXT)
             result = ResponseCode.new(name, token.value)
           else
             result = ResponseCode.new(name, nil)
           end
         end
-        match(T_RBRA)
-        @lex_state = EXPR_RTEXT
         return result
+      end
+
+      def charset_list
+        result = []
+        if accept(T_SPACE)
+          match(T_LPAR)
+          result << charset
+          while accept(T_SPACE)
+            result << charset
+          end
+          match(T_RPAR)
+        end
+        result
       end
 
       def address_list
@@ -3269,7 +3616,7 @@ module Net
         if string_token?(token)
           return string
         else
-          return atom
+          return astring_chars
         end
       end
 
@@ -3299,34 +3646,49 @@ module Net
         return token.value.upcase
       end
 
-      def atom
-        result = String.new
-        while true
-          token = lookahead
-          if atom_token?(token)
-            result.concat(token.value)
-            shift_token
-          else
-            if result.empty?
-              parse_error("unexpected token %s", token.symbol)
-            else
-              return result
-            end
-          end
-        end
-      end
-
+      # atom            = 1*ATOM-CHAR
+      # ATOM-CHAR       = <any CHAR except atom-specials>
       ATOM_TOKENS = [
         T_ATOM,
         T_NUMBER,
         T_NIL,
         T_LBRA,
-        T_RBRA,
         T_PLUS
       ]
 
-      def atom_token?(token)
-        return ATOM_TOKENS.include?(token.symbol)
+      def atom
+        -combine_adjacent(*ATOM_TOKENS)
+      end
+
+      # ASTRING-CHAR    = ATOM-CHAR / resp-specials
+      # resp-specials   = "]"
+      ASTRING_CHARS_TOKENS = [*ATOM_TOKENS, T_RBRA]
+
+      def astring_chars
+        combine_adjacent(*ASTRING_CHARS_TOKENS)
+      end
+
+      def combine_adjacent(*tokens)
+        result = "".b
+        while token = accept(*tokens)
+          result << token.value
+        end
+        if result.empty?
+          parse_error('unexpected token %s (expected %s)',
+                      lookahead.symbol, args.join(" or "))
+        end
+        result
+      end
+
+      # See https://www.rfc-editor.org/errata/rfc3501
+      #
+      # charset = atom / quoted
+      def charset
+        if token = accept(T_QUOTED)
+          token.value
+        else
+          atom
+        end
       end
 
       def number
@@ -3344,22 +3706,62 @@ module Net
         return nil
       end
 
-      def match(*args)
-        token = lookahead
-        unless args.include?(token.symbol)
-          parse_error('unexpected token %s (expected %s)',
-                      token.symbol.id2name,
-                      args.collect {|i| i.id2name}.join(" or "))
+      SPACES_REGEXP = /\G */n
+
+      # This advances @pos directly so it's safe before changing @lex_state.
+      def accept_space
+        if @token
+          shift_token if @token.symbol == T_SPACE
+        elsif @str[@pos] == " "
+          @pos += 1
         end
-        shift_token
-        return token
+      end
+
+      # The RFC is very strict about this and usually we should be too.
+      # But skipping spaces is usually a safe workaround for buggy servers.
+      #
+      # This advances @pos directly so it's safe before changing @lex_state.
+      def accept_spaces
+        shift_token if @token&.symbol == T_SPACE
+        if @str.index(SPACES_REGEXP, @pos)
+          @pos = $~.end(0)
+        end
+      end
+
+      def match(*args, lex_state: @lex_state)
+        if @token && lex_state != @lex_state
+          parse_error("invalid lex_state change to %s with unconsumed token",
+                      lex_state)
+        end
+        begin
+          @lex_state, original_lex_state = lex_state, @lex_state
+          token = lookahead
+          unless args.include?(token.symbol)
+            parse_error('unexpected token %s (expected %s)',
+                        token.symbol.id2name,
+                        args.collect {|i| i.id2name}.join(" or "))
+          end
+          shift_token
+          return token
+        ensure
+          @lex_state = original_lex_state
+        end
+      end
+
+      # like match, but does not raise error on failure.
+      #
+      # returns and shifts token on successful match
+      # returns nil and leaves @token unshifted on no match
+      def accept(*args)
+        token = lookahead
+        if args.include?(token.symbol)
+          shift_token
+          token
+        end
       end
 
       def lookahead
-        unless @token
-          @token = next_token
-        end
-        return @token
+        @token ||= next_token
       end
 
       def shift_token

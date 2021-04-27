@@ -136,6 +136,20 @@ module TestIRB
       end
     end
 
+    def test_endless_range_at_end_of_line
+      if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.6.0')
+        skip 'Endless range is available in 2.6.0 or later'
+      end
+      input_with_prompt = [
+        PromptRow.new('001:0: :> ', %q(a = 3..)),
+        PromptRow.new('002:0: :* ', %q()),
+      ]
+
+      lines = input_with_prompt.map(&:content)
+      expected_prompt_list = input_with_prompt.map(&:prompt)
+      assert_dynamic_prompt(lines, expected_prompt_list)
+    end
+
     def test_incomplete_coding_magic_comment
       input_with_correct_indents = [
         Row.new(%q(#coding:u), nil, 0),
@@ -333,6 +347,102 @@ module TestIRB
       end
     end
 
+    def test_corresponding_syntax_to_keyword_for
+      input_with_correct_indents = [
+        Row.new(%q(for i in [1]), nil, 2, 1),
+        Row.new(%q(  puts i), nil, 2, 1),
+        Row.new(%q(end), 0, 0, 0),
+      ]
+
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_indenting(lines, row.current_line_spaces, false)
+        assert_indenting(lines, row.new_line_spaces, true)
+        assert_nesting_level(lines, row.nesting_level)
+      end
+    end
+
+    def test_corresponding_syntax_to_keyword_for_with_do
+      input_with_correct_indents = [
+        Row.new(%q(for i in [1] do), nil, 2, 1),
+        Row.new(%q(  puts i), nil, 2, 1),
+        Row.new(%q(end), 0, 0, 0),
+      ]
+
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_indenting(lines, row.current_line_spaces, false)
+        assert_indenting(lines, row.new_line_spaces, true)
+        assert_nesting_level(lines, row.nesting_level)
+      end
+    end
+
+    def test_bracket_corresponding_to_times
+      input_with_correct_indents = [
+        Row.new(%q(3.times { |i|), nil, 2, 1),
+        Row.new(%q(  puts i), nil, 2, 1),
+        Row.new(%q(}), 0, 0, 0),
+      ]
+
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_indenting(lines, row.current_line_spaces, false)
+        assert_indenting(lines, row.new_line_spaces, true)
+        assert_nesting_level(lines, row.nesting_level)
+      end
+    end
+
+    def test_do_corresponding_to_times
+      input_with_correct_indents = [
+        Row.new(%q(3.times do |i|), nil, 2, 1),
+        #Row.new(%q(  puts i), nil, 2, 1),
+        #Row.new(%q(end), 0, 0, 0),
+      ]
+
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_indenting(lines, row.current_line_spaces, false)
+        assert_indenting(lines, row.new_line_spaces, true)
+        assert_nesting_level(lines, row.nesting_level)
+      end
+    end
+
+    def test_bracket_corresponding_to_loop
+      input_with_correct_indents = [
+        Row.new(%q(loop {), nil, 2, 1),
+        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(}), 0, 0, 0),
+      ]
+
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_indenting(lines, row.current_line_spaces, false)
+        assert_indenting(lines, row.new_line_spaces, true)
+        assert_nesting_level(lines, row.nesting_level)
+      end
+    end
+
+    def test_do_corresponding_to_loop
+      input_with_correct_indents = [
+        Row.new(%q(loop do), nil, 2, 1),
+        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(end), 0, 0, 0),
+      ]
+
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_indenting(lines, row.current_line_spaces, false)
+        assert_indenting(lines, row.new_line_spaces, true)
+        assert_nesting_level(lines, row.nesting_level)
+      end
+    end
+
     def test_heredoc_with_indent
       input_with_correct_indents = [
         Row.new(%q(<<~Q), nil, 0, 0),
@@ -448,8 +558,7 @@ module TestIRB
         skip 'This test needs Ripper::Lexer#scan to take broken tokens'
       end
 
-      ruby_lex = RubyLex.new
-      tokens = ruby_lex.ripper_lex_without_warning('%wwww')
+      tokens = RubyLex.ripper_lex_without_warning('%wwww')
       pos_to_index = {}
       tokens.each_with_index { |t, i|
         assert_nil(pos_to_index[t[0]], "There is already another token in the position of #{t.inspect}.")
@@ -462,8 +571,7 @@ module TestIRB
         skip 'This test needs Ripper::Lexer#scan to take broken tokens'
       end
 
-      ruby_lex = RubyLex.new
-      tokens = ruby_lex.ripper_lex_without_warning(<<~EOC.chomp)
+      tokens = RubyLex.ripper_lex_without_warning(<<~EOC.chomp)
         def foo
           %wwww
         end

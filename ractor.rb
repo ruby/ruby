@@ -147,7 +147,7 @@
 # on a moved object.
 #
 # Besides frozen objects, there are shareable objects. Class and Module objects are shareable so
-# the Class/Module definitons are shared between ractors. Ractor objects are also shareable objects.
+# the Class/Module definitions are shared between ractors. Ractor objects are also shareable objects.
 # All operations for the shareable mutable objects are thread-safe, so the thread-safety property
 # will be kept. We can not define mutable shareable objects in Ruby, but C extensions can introduce them.
 #
@@ -223,7 +223,7 @@
 #
 # == Reference
 #
-# See {Ractor desgin doc}[rdoc-ref:doc/ractor.md] for more details.
+# See {Ractor design doc}[rdoc-ref:doc/ractor.md] for more details.
 #
 class Ractor
   #
@@ -457,7 +457,7 @@ class Ractor
   #
   # If the block returns a truthy value, the message will be removed from the incoming queue
   # and returned.
-  # Otherwise, the messsage remains in the incoming queue and the following received
+  # Otherwise, the message remains in the incoming queue and the following received
   # messages are checked by the given block.
   #
   # If there are no messages left in the incoming queue, the method will

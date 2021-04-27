@@ -6,11 +6,12 @@ describe "String#strip" do
     "   hello   ".strip.should == "hello"
     "   hello world   ".strip.should == "hello world"
     "\tgoodbye\r\v\n".strip.should == "goodbye"
-    "\x00 goodbye \x00".strip.should == "\x00 goodbye"
   end
 
-  it "returns a copy of self with trailing NULL bytes and whitespace" do
-    " \x00 goodbye \x00 ".strip.should == "\x00 goodbye"
+  ruby_version_is '3.1' do
+    it "returns a copy of self without leading and trailing NULL bytes and whitespace" do
+      " \x00 goodbye \x00 ".strip.should == "goodbye"
+    end
   end
 
   ruby_version_is ''...'2.7' do
@@ -31,11 +32,6 @@ describe "String#strip!" do
     a = "\tgoodbye\r\v\n"
     a.strip!
     a.should == "goodbye"
-
-    a = "\000 goodbye \000"
-    a.strip!
-    a.should == "\000 goodbye"
-
   end
 
   it "returns nil if no modifications where made" do
@@ -44,10 +40,12 @@ describe "String#strip!" do
     a.should == "hello"
   end
 
-  it "modifies self removing trailing NULL bytes and whitespace" do
-    a = " \x00 goodbye \x00 "
-    a.strip!
-    a.should == "\x00 goodbye"
+  ruby_version_is '3.1' do
+    it "removes leading and trailing NULL bytes and whitespace" do
+      a = "\000 goodbye \000"
+      a.strip!
+      a.should == "goodbye"
+    end
   end
 
   it "raises a FrozenError on a frozen instance that is modified" do

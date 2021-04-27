@@ -335,6 +335,16 @@ describe :string_slice_range, shared: true do
       "hello there".send(@method, eval("(-4...)")).should == "here"
     end
   end
+
+  ruby_version_is "2.7" do
+    it "works with beginless ranges" do
+      "hello there".send(@method, eval("(..5)")).should == "hello "
+      "hello there".send(@method, eval("(...5)")).should == "hello"
+      "hello there".send(@method, eval("(..-4)")).should == "hello th"
+      "hello there".send(@method, eval("(...-4)")).should == "hello t"
+      "hello there".send(@method, eval("(...nil)")).should == "hello there"
+    end
+  end
 end
 
 describe :string_slice_regexp, shared: true do

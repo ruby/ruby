@@ -81,6 +81,8 @@ module IRB
             end
           }
         end
+        @loaded_history_lines = history.size
+        @loaded_history_mtime = File.mtime(history_file)
       end
     end
 
@@ -105,12 +107,20 @@ module IRB
           raise
         end
 
-        open(history_file, "w:#{IRB.conf[:LC_MESSAGES].encoding}", 0600) do |f|
+        if File.exist?(history_file) && @loaded_history_mtime &&
+           File.mtime(history_file) != @loaded_history_mtime
+          history = history[@loaded_history_lines..-1]
+          append_history = true
+        end
+
+        open(history_file, "#{append_history ? 'a' : 'w'}:#{IRB.conf[:LC_MESSAGES].encoding}", 0600) do |f|
           hist = history.map{ |l| l.split("\n").join("\\\n") }
-          begin
-            hist = hist.last(num) if hist.size > num and num > 0
-          rescue RangeError # bignum too big to convert into `long'
-            # Do nothing because the bignum should be treated as inifinity
+          unless append_history
+            begin
+              hist = hist.last(num) if hist.size > num and num > 0
+            rescue RangeError # bignum too big to convert into `long'
+              # Do nothing because the bignum should be treated as inifinity
+            end
           end
           f.puts(hist)
         end

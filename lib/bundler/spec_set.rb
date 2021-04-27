@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "tsort"
-require "set"
 
 module Bundler
   class SpecSet
@@ -13,14 +12,16 @@ module Bundler
     end
 
     def for(dependencies, skip = [], check = false, match_current_platform = false, raise_on_missing = true)
-      handled = Set.new
+      handled = []
       deps = dependencies.dup
       specs = []
       skip += ["bundler"]
 
       loop do
         break unless dep = deps.shift
-        next if !handled.add?(dep) || skip.include?(dep.name)
+        next if handled.include?(dep) || skip.include?(dep.name)
+
+        handled << dep
 
         specs_for_dep = spec_for_dependency(dep, match_current_platform)
         if specs_for_dep.any?
@@ -28,7 +29,7 @@ module Bundler
 
           specs_for_dep.first.dependencies.each do |d|
             next if d.type == :development
-            d = DepProxy.new(d, dep.__platform) unless match_current_platform
+            d = DepProxy.get_proxy(d, dep.__platform) unless match_current_platform
             deps << d
           end
         elsif check
@@ -81,6 +82,7 @@ module Bundler
       materialized.map! do |s|
         next s unless s.is_a?(LazySpecification)
         s.source.dependency_names = deps if s.source.respond_to?(:dependency_names=)
+        s.source.local!
         spec = s.__materialize__
         unless spec
           unless missing_specs
@@ -101,6 +103,7 @@ module Bundler
       @specs.map do |s|
         next s unless s.is_a?(LazySpecification)
         s.source.dependency_names = names if s.source.respond_to?(:dependency_names=)
+        s.source.local!
         s.source.remote!
         spec = s.__materialize__
         raise GemNotFound, "Could not find #{s.full_name} in any of the sources" unless spec

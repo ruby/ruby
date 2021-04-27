@@ -7,7 +7,6 @@ jobs:
         os: [ubuntu-20.04, macos-latest]
       fail-fast: true
     runs-on: ${{ matrix.os }}
-    if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
       - name: Install libraries
         run: |
@@ -23,8 +22,9 @@ jobs:
       - name: git config
         run: |
           git config --global advice.detachedHead 0
+          git config --global init.defaultBranch garbage
       - uses: actions/checkout@v2
-      - run: autoconf
+      - run: ./autogen.sh
       - name: Run configure
         run: ./configure -C --disable-install-doc --disable-rubygems --with-gcc 'optflags=-O0' 'debugflags=-save-temps=obj -g'
       - run: make all golf

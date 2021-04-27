@@ -494,4 +494,11 @@ class TestGc < Test::Unit::TestCase
     b = 1000.times.map { Object.new.object_id }
     assert_empty(a & b)
   end
+
+  def test_ast_node_buffer
+    # https://github.com/ruby/ruby/pull/4416
+    Module.new.class_eval do
+      eval((["# shareable_constant_value: literal"] + (0..100000).map {|i| "M#{ i } = {}" }).join("\n"))
+    end
+  end
 end

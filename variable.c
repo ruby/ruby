@@ -1480,7 +1480,6 @@ ivar_set(VALUE obj, ID id, VALUE val)
       case T_CLASS:
       case T_MODULE:
         IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
-        if (!RCLASS_IV_TBL(obj)) RCLASS_IV_TBL(obj) = st_init_numtable();
         rb_class_ivar_set(obj, id, val);
         break;
       default:
@@ -2988,9 +2987,6 @@ set_namespace_path(VALUE named_namespace, VALUE namespace_path)
 
     RB_VM_LOCK_ENTER();
     {
-        if (!RCLASS_IV_TBL(named_namespace)) {
-            RCLASS_IV_TBL(named_namespace) = st_init_numtable();
-        }
         rb_class_ivar_set(named_namespace, classpath, namespace_path);
         if (const_table) {
             rb_id_table_foreach(const_table, set_namespace_path_i, &namespace_path);
@@ -3360,9 +3356,6 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
         target = RBASIC(target)->klass;
     }
     check_before_mod_set(target, id, val, "class variable");
-    if (!RCLASS_IV_TBL(target)) {
-	RCLASS_IV_TBL(target) = st_init_numtable();
-    }
 
     rb_class_ivar_set(target, id, val);
 }
@@ -3588,6 +3581,10 @@ rb_iv_set(VALUE obj, const char *name, VALUE val)
 int
 rb_class_ivar_set(VALUE obj, ID key, VALUE value)
 {
+    if (!RCLASS_IV_TBL(obj)) {
+        RCLASS_IV_TBL(obj) = st_init_numtable();
+    }
+
     st_table *tbl = RCLASS_IV_TBL(obj);
     int result = st_insert(tbl, (st_data_t)key, (st_data_t)value);
     RB_OBJ_WRITTEN(obj, Qundef, value);

@@ -372,34 +372,33 @@ rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int a
 
     switch (f.kind) {
       case invalid:  return -1;
-      case stophere: goto stophere;
-      case needmore: break;
-    }
+      case stophere: break;
+      case needmore:
 
-    if (m >= e || (*m != '_' && !ISALPHA(*m) && ISASCII(*m))) {
-        if (len > 1 && *(e-1) == '=') {
-            type = rb_enc_symname_type(name, len-1, enc, allowed_attrset);
-            if (type != ID_ATTRSET) return ID_ATTRSET;
+        if (m >= e || (*m != '_' && !ISALPHA(*m) && ISASCII(*m))) {
+            if (len > 1 && *(e-1) == '=') {
+                type = rb_enc_symname_type(name, len-1, enc, allowed_attrset);
+                if (type != ID_ATTRSET) return ID_ATTRSET;
+            }
+            return -1;
         }
-        return -1;
-    }
-    while (m < e && is_identchar(m, e, enc)) m += rb_enc_mbclen(m, e, enc);
-    if (m >= e) goto stophere;
-    switch (*m) {
-      case '!': case '?':
-        if (type == ID_GLOBAL || type == ID_CLASS || type == ID_INSTANCE) return -1;
-        type = ID_JUNK;
-        ++m;
-        if (m + 1 < e || *m != '=') break;
-        /* fall through */
-      case '=':
-        if (!(allowed_attrset & (1U << type))) return -1;
-        type = ID_ATTRSET;
-        ++m;
-        break;
+        while (m < e && is_identchar(m, e, enc)) m += rb_enc_mbclen(m, e, enc);
+        if (m >= e) break;
+        switch (*m) {
+          case '!': case '?':
+            if (type == ID_GLOBAL || type == ID_CLASS || type == ID_INSTANCE) return -1;
+            type = ID_JUNK;
+            ++m;
+            if (m + 1 < e || *m != '=') break;
+            /* fall through */
+          case '=':
+            if (!(allowed_attrset & (1U << type))) return -1;
+            type = ID_ATTRSET;
+            ++m;
+            break;
+        }
     }
 
-  stophere:
     return m == e ? type : -1;
 }
 

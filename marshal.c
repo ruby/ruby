@@ -1186,10 +1186,8 @@ static const rb_data_type_t load_arg_data = {
 };
 
 #define r_entry(v, arg) r_entry0((v), (arg)->data->num_entries, (arg))
-static VALUE r_entry0(VALUE v, st_index_t num, struct load_arg *arg);
 static VALUE r_object(struct load_arg *arg);
 static VALUE r_symbol(struct load_arg *arg);
-static VALUE path2class(VALUE path);
 
 NORETURN(static void too_short(void));
 static void

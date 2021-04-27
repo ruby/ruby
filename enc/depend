@@ -315,7 +315,6 @@ enc/ascii.$(OBJEXT): internal/static_assert.h
 enc/ascii.$(OBJEXT): internal/stdalign.h
 enc/ascii.$(OBJEXT): internal/stdbool.h
 enc/ascii.$(OBJEXT): internal/symbol.h
-enc/ascii.$(OBJEXT): internal/token_paste.h
 enc/ascii.$(OBJEXT): internal/value.h
 enc/ascii.$(OBJEXT): internal/value_type.h
 enc/ascii.$(OBJEXT): internal/variable.h
@@ -382,7 +381,6 @@ enc/big5.$(OBJEXT): internal/has/feature.h
 enc/big5.$(OBJEXT): internal/has/warning.h
 enc/big5.$(OBJEXT): internal/stdalign.h
 enc/big5.$(OBJEXT): internal/stdbool.h
-enc/big5.$(OBJEXT): internal/token_paste.h
 enc/big5.$(OBJEXT): internal/warning_push.h
 enc/big5.$(OBJEXT): internal/xmalloc.h
 enc/big5.$(OBJEXT): assert.h
@@ -535,7 +533,6 @@ enc/cesu_8.$(OBJEXT): internal/static_assert.h
 enc/cesu_8.$(OBJEXT): internal/stdalign.h
 enc/cesu_8.$(OBJEXT): internal/stdbool.h
 enc/cesu_8.$(OBJEXT): internal/symbol.h
-enc/cesu_8.$(OBJEXT): internal/token_paste.h
 enc/cesu_8.$(OBJEXT): internal/value.h
 enc/cesu_8.$(OBJEXT): internal/value_type.h
 enc/cesu_8.$(OBJEXT): internal/variable.h
@@ -603,7 +600,6 @@ enc/cp949.$(OBJEXT): internal/has/feature.h
 enc/cp949.$(OBJEXT): internal/has/warning.h
 enc/cp949.$(OBJEXT): internal/stdalign.h
 enc/cp949.$(OBJEXT): internal/stdbool.h
-enc/cp949.$(OBJEXT): internal/token_paste.h
 enc/cp949.$(OBJEXT): internal/warning_push.h
 enc/cp949.$(OBJEXT): internal/xmalloc.h
 enc/cp949.$(OBJEXT): assert.h
@@ -660,7 +656,6 @@ enc/emacs_mule.$(OBJEXT): internal/has/feature.h
 enc/emacs_mule.$(OBJEXT): internal/has/warning.h
 enc/emacs_mule.$(OBJEXT): internal/stdalign.h
 enc/emacs_mule.$(OBJEXT): internal/stdbool.h
-enc/emacs_mule.$(OBJEXT): internal/token_paste.h
 enc/emacs_mule.$(OBJEXT): internal/warning_push.h
 enc/emacs_mule.$(OBJEXT): internal/xmalloc.h
 enc/emacs_mule.$(OBJEXT): assert.h
@@ -814,7 +809,6 @@ enc/encdb.$(OBJEXT): internal/static_assert.h
 enc/encdb.$(OBJEXT): internal/stdalign.h
 enc/encdb.$(OBJEXT): internal/stdbool.h
 enc/encdb.$(OBJEXT): internal/symbol.h
-enc/encdb.$(OBJEXT): internal/token_paste.h
 enc/encdb.$(OBJEXT): internal/value.h
 enc/encdb.$(OBJEXT): internal/value_type.h
 enc/encdb.$(OBJEXT): internal/variable.h
@@ -883,7 +877,6 @@ enc/euc_jp.$(OBJEXT): internal/has/feature.h
 enc/euc_jp.$(OBJEXT): internal/has/warning.h
 enc/euc_jp.$(OBJEXT): internal/stdalign.h
 enc/euc_jp.$(OBJEXT): internal/stdbool.h
-enc/euc_jp.$(OBJEXT): internal/token_paste.h
 enc/euc_jp.$(OBJEXT): internal/warning_push.h
 enc/euc_jp.$(OBJEXT): internal/xmalloc.h
 enc/euc_jp.$(OBJEXT): assert.h
@@ -942,7 +935,6 @@ enc/euc_kr.$(OBJEXT): internal/has/feature.h
 enc/euc_kr.$(OBJEXT): internal/has/warning.h
 enc/euc_kr.$(OBJEXT): internal/stdalign.h
 enc/euc_kr.$(OBJEXT): internal/stdbool.h
-enc/euc_kr.$(OBJEXT): internal/token_paste.h
 enc/euc_kr.$(OBJEXT): internal/warning_push.h
 enc/euc_kr.$(OBJEXT): internal/xmalloc.h
 enc/euc_kr.$(OBJEXT): assert.h
@@ -999,7 +991,6 @@ enc/euc_tw.$(OBJEXT): internal/has/feature.h
 enc/euc_tw.$(OBJEXT): internal/has/warning.h
 enc/euc_tw.$(OBJEXT): internal/stdalign.h
 enc/euc_tw.$(OBJEXT): internal/stdbool.h
-enc/euc_tw.$(OBJEXT): internal/token_paste.h
 enc/euc_tw.$(OBJEXT): internal/warning_push.h
 enc/euc_tw.$(OBJEXT): internal/xmalloc.h
 enc/euc_tw.$(OBJEXT): assert.h
@@ -1056,7 +1047,6 @@ enc/gb18030.$(OBJEXT): internal/has/feature.h
 enc/gb18030.$(OBJEXT): internal/has/warning.h
 enc/gb18030.$(OBJEXT): internal/stdalign.h
 enc/gb18030.$(OBJEXT): internal/stdbool.h
-enc/gb18030.$(OBJEXT): internal/token_paste.h
 enc/gb18030.$(OBJEXT): internal/warning_push.h
 enc/gb18030.$(OBJEXT): internal/xmalloc.h
 enc/gb18030.$(OBJEXT): assert.h
@@ -1113,7 +1103,6 @@ enc/gb2312.$(OBJEXT): internal/has/feature.h
 enc/gb2312.$(OBJEXT): internal/has/warning.h
 enc/gb2312.$(OBJEXT): internal/stdalign.h
 enc/gb2312.$(OBJEXT): internal/stdbool.h
-enc/gb2312.$(OBJEXT): internal/token_paste.h
 enc/gb2312.$(OBJEXT): internal/warning_push.h
 enc/gb2312.$(OBJEXT): internal/xmalloc.h
 enc/gb2312.$(OBJEXT): assert.h
@@ -1170,7 +1159,6 @@ enc/gbk.$(OBJEXT): internal/has/feature.h
 enc/gbk.$(OBJEXT): internal/has/warning.h
 enc/gbk.$(OBJEXT): internal/stdalign.h
 enc/gbk.$(OBJEXT): internal/stdbool.h
-enc/gbk.$(OBJEXT): internal/token_paste.h
 enc/gbk.$(OBJEXT): internal/warning_push.h
 enc/gbk.$(OBJEXT): internal/xmalloc.h
 enc/gbk.$(OBJEXT): assert.h
@@ -1227,7 +1215,6 @@ enc/iso_8859_1.$(OBJEXT): internal/has/feature.h
 enc/iso_8859_1.$(OBJEXT): internal/has/warning.h
 enc/iso_8859_1.$(OBJEXT): internal/stdalign.h
 enc/iso_8859_1.$(OBJEXT): internal/stdbool.h
-enc/iso_8859_1.$(OBJEXT): internal/token_paste.h
 enc/iso_8859_1.$(OBJEXT): internal/warning_push.h
 enc/iso_8859_1.$(OBJEXT): internal/xmalloc.h
 enc/iso_8859_1.$(OBJEXT): assert.h
@@ -1285,7 +1272,6 @@ enc/iso_8859_10.$(OBJEXT): internal/has/feature.h
 enc/iso_8859_10.$(OBJEXT): internal/has/warning.h
 enc/iso_8859_10.$(OBJEXT): internal/stdalign.h
 enc/iso_8859_10.$(OBJEXT): internal/stdbool.h
-enc/iso_8859_10.$(OBJEXT): internal/token_paste.h
 enc/iso_8859_10.$(OBJEXT): internal/warning_push.h
 enc/iso_8859_10.$(OBJEXT): internal/xmalloc.h
 enc/iso_8859_10.$(OBJEXT): assert.h
@@ -1343,7 +1329,6 @@ enc/iso_8859_11.$(OBJEXT): internal/has/feature.h
 enc/iso_8859_11.$(OBJEXT): internal/has/warning.h
 enc/iso_8859_11.$(OBJEXT): internal/stdalign.h
 enc/iso_8859_11.$(OBJEXT): internal/stdbool.h
-enc/iso_8859_11.$(OBJEXT): internal/token_paste.h
 enc/iso_8859_11.$(OBJEXT): internal/warning_push.h
 enc/iso_8859_11.$(OBJEXT): internal/xmalloc.h
 enc/iso_8859_11.$(OBJEXT): assert.h
@@ -1400,7 +1385,6 @@ enc/iso_8859_13.$(OBJEXT): internal/has/feature.h
 enc/iso_8859_13.$(OBJEXT): internal/has/warning.h
 enc/iso_8859_13.$(OBJEXT): internal/stdalign.h
 enc/iso_8859_13.$(OBJEXT): internal/stdbool.h
-enc/iso_8859_13.$(OBJEXT): internal/token_paste.h
 enc/iso_8859_13.$(OBJEXT): internal/warning_push.h
 enc/iso_8859_13.$(OBJEXT): internal/xmalloc.h
 enc/iso_8859_13.$(OBJEXT): assert.h
@@ -1458,7 +1442,6 @@ enc/iso_8859_14.$(OBJEXT): internal/has/feature.h
 enc/iso_8859_14.$(OBJEXT): internal/has/warning.h
 enc/iso_8859_14.$(OBJEXT): internal/stdalign.h
 enc/iso_8859_14.$(OBJEXT): internal/stdbool.h
-enc/iso_8859_14.$(OBJEXT): internal/token_paste.h
 enc/iso_8859_14.$(OBJEXT): internal/warning_push.h
 enc/iso_8859_14.$(OBJEXT): internal/xmalloc.h
 enc/iso_8859_14.$(OBJEXT): assert.h
@@ -1516,7 +1499,6 @@ enc/iso_8859_15.$(OBJEXT): internal/has/feature.h
 enc/iso_8859_15.$(OBJEXT): internal/has/warning.h
 enc/iso_8859_15.$(OBJEXT): internal/stdalign.h
 enc/iso_8859_15.$(OBJEXT): internal/stdbool.h
-enc/iso_8859_15.$(OBJEXT): internal/token_paste.h
 enc/iso_8859_15.$(OBJEXT): internal/warning_push.h
 enc/iso_8859_15.$(OBJEXT): internal/xmalloc.h
 enc/iso_8859_15.$(OBJEXT): assert.h
@@ -1574,7 +1556,6 @@ enc/iso_8859_16.$(OBJEXT): internal/has/feature.h
 enc/iso_8859_16.$(OBJEXT): internal/has/warning.h
 enc/iso_8859_16.$(OBJEXT): internal/stdalign.h
 enc/iso_8859_16.$(OBJEXT): internal/stdbool.h
-enc/iso_8859_16.$(OBJEXT): internal/token_paste.h
 enc/iso_8859_16.$(OBJEXT): internal/warning_push.h
 enc/iso_8859_16.$(OBJEXT): internal/xmalloc.h
 enc/iso_8859_16.$(OBJEXT): assert.h
@@ -1632,7 +1613,6 @@ enc/iso_8859_2.$(OBJEXT): internal/has/feature.h
 enc/iso_8859_2.$(OBJEXT): internal/has/warning.h
 enc/iso_8859_2.$(OBJEXT): internal/stdalign.h
 enc/iso_8859_2.$(OBJEXT): internal/stdbool.h
-enc/iso_8859_2.$(OBJEXT): internal/token_paste.h
 enc/iso_8859_2.$(OBJEXT): internal/warning_push.h
 enc/iso_8859_2.$(OBJEXT): internal/xmalloc.h
 enc/iso_8859_2.$(OBJEXT): assert.h
@@ -1690,7 +1670,6 @@ enc/iso_8859_3.$(OBJEXT): internal/has/feature.h
 enc/iso_8859_3.$(OBJEXT): internal/has/warning.h
 enc/iso_8859_3.$(OBJEXT): internal/stdalign.h
 enc/iso_8859_3.$(OBJEXT): internal/stdbool.h
-enc/iso_8859_3.$(OBJEXT): internal/token_paste.h
 enc/iso_8859_3.$(OBJEXT): internal/warning_push.h
 enc/iso_8859_3.$(OBJEXT): internal/xmalloc.h
 enc/iso_8859_3.$(OBJEXT): assert.h
@@ -1748,7 +1727,6 @@ enc/iso_8859_4.$(OBJEXT): internal/has/feature.h
 enc/iso_8859_4.$(OBJEXT): internal/has/warning.h
 enc/iso_8859_4.$(OBJEXT): internal/stdalign.h
 enc/iso_8859_4.$(OBJEXT): internal/stdbool.h
-enc/iso_8859_4.$(OBJEXT): internal/token_paste.h
 enc/iso_8859_4.$(OBJEXT): internal/warning_push.h
 enc/iso_8859_4.$(OBJEXT): internal/xmalloc.h
 enc/iso_8859_4.$(OBJEXT): assert.h
@@ -1806,7 +1784,6 @@ enc/iso_8859_5.$(OBJEXT): internal/has/feature.h
 enc/iso_8859_5.$(OBJEXT): internal/has/warning.h
 enc/iso_8859_5.$(OBJEXT): internal/stdalign.h
 enc/iso_8859_5.$(OBJEXT): internal/stdbool.h
-enc/iso_8859_5.$(OBJEXT): internal/token_paste.h
 enc/iso_8859_5.$(OBJEXT): internal/warning_push.h
 enc/iso_8859_5.$(OBJEXT): internal/xmalloc.h
 enc/iso_8859_5.$(OBJEXT): assert.h
@@ -1863,7 +1840,6 @@ enc/iso_8859_6.$(OBJEXT): internal/has/feature.h
 enc/iso_8859_6.$(OBJEXT): internal/has/warning.h
 enc/iso_8859_6.$(OBJEXT): internal/stdalign.h
 enc/iso_8859_6.$(OBJEXT): internal/stdbool.h
-enc/iso_8859_6.$(OBJEXT): internal/token_paste.h
 enc/iso_8859_6.$(OBJEXT): internal/warning_push.h
 enc/iso_8859_6.$(OBJEXT): internal/xmalloc.h
 enc/iso_8859_6.$(OBJEXT): assert.h
@@ -1920,7 +1896,6 @@ enc/iso_8859_7.$(OBJEXT): internal/has/feature.h
 enc/iso_8859_7.$(OBJEXT): internal/has/warning.h
 enc/iso_8859_7.$(OBJEXT): internal/stdalign.h
 enc/iso_8859_7.$(OBJEXT): internal/stdbool.h
-enc/iso_8859_7.$(OBJEXT): internal/token_paste.h
 enc/iso_8859_7.$(OBJEXT): internal/warning_push.h
 enc/iso_8859_7.$(OBJEXT): internal/xmalloc.h
 enc/iso_8859_7.$(OBJEXT): assert.h
@@ -1977,7 +1952,6 @@ enc/iso_8859_8.$(OBJEXT): internal/has/feature.h
 enc/iso_8859_8.$(OBJEXT): internal/has/warning.h
 enc/iso_8859_8.$(OBJEXT): internal/stdalign.h
 enc/iso_8859_8.$(OBJEXT): internal/stdbool.h
-enc/iso_8859_8.$(OBJEXT): internal/token_paste.h
 enc/iso_8859_8.$(OBJEXT): internal/warning_push.h
 enc/iso_8859_8.$(OBJEXT): internal/xmalloc.h
 enc/iso_8859_8.$(OBJEXT): assert.h
@@ -2034,7 +2008,6 @@ enc/iso_8859_9.$(OBJEXT): internal/has/feature.h
 enc/iso_8859_9.$(OBJEXT): internal/has/warning.h
 enc/iso_8859_9.$(OBJEXT): internal/stdalign.h
 enc/iso_8859_9.$(OBJEXT): internal/stdbool.h
-enc/iso_8859_9.$(OBJEXT): internal/token_paste.h
 enc/iso_8859_9.$(OBJEXT): internal/warning_push.h
 enc/iso_8859_9.$(OBJEXT): internal/xmalloc.h
 enc/iso_8859_9.$(OBJEXT): assert.h
@@ -2092,7 +2065,6 @@ enc/koi8_r.$(OBJEXT): internal/has/feature.h
 enc/koi8_r.$(OBJEXT): internal/has/warning.h
 enc/koi8_r.$(OBJEXT): internal/stdalign.h
 enc/koi8_r.$(OBJEXT): internal/stdbool.h
-enc/koi8_r.$(OBJEXT): internal/token_paste.h
 enc/koi8_r.$(OBJEXT): internal/warning_push.h
 enc/koi8_r.$(OBJEXT): internal/xmalloc.h
 enc/koi8_r.$(OBJEXT): assert.h
@@ -2149,7 +2121,6 @@ enc/koi8_u.$(OBJEXT): internal/has/feature.h
 enc/koi8_u.$(OBJEXT): internal/has/warning.h
 enc/koi8_u.$(OBJEXT): internal/stdalign.h
 enc/koi8_u.$(OBJEXT): internal/stdbool.h
-enc/koi8_u.$(OBJEXT): internal/token_paste.h
 enc/koi8_u.$(OBJEXT): internal/warning_push.h
 enc/koi8_u.$(OBJEXT): internal/xmalloc.h
 enc/koi8_u.$(OBJEXT): assert.h
@@ -2206,7 +2177,6 @@ enc/shift_jis.$(OBJEXT): internal/has/feature.h
 enc/shift_jis.$(OBJEXT): internal/has/warning.h
 enc/shift_jis.$(OBJEXT): internal/stdalign.h
 enc/shift_jis.$(OBJEXT): internal/stdbool.h
-enc/shift_jis.$(OBJEXT): internal/token_paste.h
 enc/shift_jis.$(OBJEXT): internal/warning_push.h
 enc/shift_jis.$(OBJEXT): internal/xmalloc.h
 enc/shift_jis.$(OBJEXT): assert.h
@@ -2361,7 +2331,6 @@ enc/trans/big5.$(OBJEXT): internal/static_assert.h
 enc/trans/big5.$(OBJEXT): internal/stdalign.h
 enc/trans/big5.$(OBJEXT): internal/stdbool.h
 enc/trans/big5.$(OBJEXT): internal/symbol.h
-enc/trans/big5.$(OBJEXT): internal/token_paste.h
 enc/trans/big5.$(OBJEXT): internal/value.h
 enc/trans/big5.$(OBJEXT): internal/value_type.h
 enc/trans/big5.$(OBJEXT): internal/variable.h
@@ -2521,7 +2490,6 @@ enc/trans/cesu_8.$(OBJEXT): internal/static_assert.h
 enc/trans/cesu_8.$(OBJEXT): internal/stdalign.h
 enc/trans/cesu_8.$(OBJEXT): internal/stdbool.h
 enc/trans/cesu_8.$(OBJEXT): internal/symbol.h
-enc/trans/cesu_8.$(OBJEXT): internal/token_paste.h
 enc/trans/cesu_8.$(OBJEXT): internal/value.h
 enc/trans/cesu_8.$(OBJEXT): internal/value_type.h
 enc/trans/cesu_8.$(OBJEXT): internal/variable.h
@@ -2681,7 +2649,6 @@ enc/trans/chinese.$(OBJEXT): internal/static_assert.h
 enc/trans/chinese.$(OBJEXT): internal/stdalign.h
 enc/trans/chinese.$(OBJEXT): internal/stdbool.h
 enc/trans/chinese.$(OBJEXT): internal/symbol.h
-enc/trans/chinese.$(OBJEXT): internal/token_paste.h
 enc/trans/chinese.$(OBJEXT): internal/value.h
 enc/trans/chinese.$(OBJEXT): internal/value_type.h
 enc/trans/chinese.$(OBJEXT): internal/variable.h
@@ -2841,7 +2808,6 @@ enc/trans/ebcdic.$(OBJEXT): internal/static_assert.h
 enc/trans/ebcdic.$(OBJEXT): internal/stdalign.h
 enc/trans/ebcdic.$(OBJEXT): internal/stdbool.h
 enc/trans/ebcdic.$(OBJEXT): internal/symbol.h
-enc/trans/ebcdic.$(OBJEXT): internal/token_paste.h
 enc/trans/ebcdic.$(OBJEXT): internal/value.h
 enc/trans/ebcdic.$(OBJEXT): internal/value_type.h
 enc/trans/ebcdic.$(OBJEXT): internal/variable.h
@@ -3001,7 +2967,6 @@ enc/trans/emoji.$(OBJEXT): internal/static_assert.h
 enc/trans/emoji.$(OBJEXT): internal/stdalign.h
 enc/trans/emoji.$(OBJEXT): internal/stdbool.h
 enc/trans/emoji.$(OBJEXT): internal/symbol.h
-enc/trans/emoji.$(OBJEXT): internal/token_paste.h
 enc/trans/emoji.$(OBJEXT): internal/value.h
 enc/trans/emoji.$(OBJEXT): internal/value_type.h
 enc/trans/emoji.$(OBJEXT): internal/variable.h
@@ -3161,7 +3126,6 @@ enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/static_assert.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/stdalign.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/stdbool.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/symbol.h
-enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/token_paste.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/value.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/value_type.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/variable.h
@@ -3321,7 +3285,6 @@ enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/static_assert.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/stdalign.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/stdbool.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/symbol.h
-enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/token_paste.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/value.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/value_type.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/variable.h
@@ -3481,7 +3444,6 @@ enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/static_assert.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/stdalign.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/stdbool.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/symbol.h
-enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/token_paste.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/value.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/value_type.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/variable.h
@@ -3641,7 +3603,6 @@ enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/static_assert.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/stdalign.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/stdbool.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/symbol.h
-enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/token_paste.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/value.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/value_type.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/variable.h
@@ -3801,7 +3762,6 @@ enc/trans/escape.$(OBJEXT): internal/static_assert.h
 enc/trans/escape.$(OBJEXT): internal/stdalign.h
 enc/trans/escape.$(OBJEXT): internal/stdbool.h
 enc/trans/escape.$(OBJEXT): internal/symbol.h
-enc/trans/escape.$(OBJEXT): internal/token_paste.h
 enc/trans/escape.$(OBJEXT): internal/value.h
 enc/trans/escape.$(OBJEXT): internal/value_type.h
 enc/trans/escape.$(OBJEXT): internal/variable.h
@@ -3961,7 +3921,6 @@ enc/trans/gb18030.$(OBJEXT): internal/static_assert.h
 enc/trans/gb18030.$(OBJEXT): internal/stdalign.h
 enc/trans/gb18030.$(OBJEXT): internal/stdbool.h
 enc/trans/gb18030.$(OBJEXT): internal/symbol.h
-enc/trans/gb18030.$(OBJEXT): internal/token_paste.h
 enc/trans/gb18030.$(OBJEXT): internal/value.h
 enc/trans/gb18030.$(OBJEXT): internal/value_type.h
 enc/trans/gb18030.$(OBJEXT): internal/variable.h
@@ -4121,7 +4080,6 @@ enc/trans/gbk.$(OBJEXT): internal/static_assert.h
 enc/trans/gbk.$(OBJEXT): internal/stdalign.h
 enc/trans/gbk.$(OBJEXT): internal/stdbool.h
 enc/trans/gbk.$(OBJEXT): internal/symbol.h
-enc/trans/gbk.$(OBJEXT): internal/token_paste.h
 enc/trans/gbk.$(OBJEXT): internal/value.h
 enc/trans/gbk.$(OBJEXT): internal/value_type.h
 enc/trans/gbk.$(OBJEXT): internal/variable.h
@@ -4281,7 +4239,6 @@ enc/trans/iso2022.$(OBJEXT): internal/static_assert.h
 enc/trans/iso2022.$(OBJEXT): internal/stdalign.h
 enc/trans/iso2022.$(OBJEXT): internal/stdbool.h
 enc/trans/iso2022.$(OBJEXT): internal/symbol.h
-enc/trans/iso2022.$(OBJEXT): internal/token_paste.h
 enc/trans/iso2022.$(OBJEXT): internal/value.h
 enc/trans/iso2022.$(OBJEXT): internal/value_type.h
 enc/trans/iso2022.$(OBJEXT): internal/variable.h
@@ -4441,7 +4398,6 @@ enc/trans/japanese.$(OBJEXT): internal/static_assert.h
 enc/trans/japanese.$(OBJEXT): internal/stdalign.h
 enc/trans/japanese.$(OBJEXT): internal/stdbool.h
 enc/trans/japanese.$(OBJEXT): internal/symbol.h
-enc/trans/japanese.$(OBJEXT): internal/token_paste.h
 enc/trans/japanese.$(OBJEXT): internal/value.h
 enc/trans/japanese.$(OBJEXT): internal/value_type.h
 enc/trans/japanese.$(OBJEXT): internal/variable.h
@@ -4601,7 +4557,6 @@ enc/trans/japanese_euc.$(OBJEXT): internal/static_assert.h
 enc/trans/japanese_euc.$(OBJEXT): internal/stdalign.h
 enc/trans/japanese_euc.$(OBJEXT): internal/stdbool.h
 enc/trans/japanese_euc.$(OBJEXT): internal/symbol.h
-enc/trans/japanese_euc.$(OBJEXT): internal/token_paste.h
 enc/trans/japanese_euc.$(OBJEXT): internal/value.h
 enc/trans/japanese_euc.$(OBJEXT): internal/value_type.h
 enc/trans/japanese_euc.$(OBJEXT): internal/variable.h
@@ -4761,7 +4716,6 @@ enc/trans/japanese_sjis.$(OBJEXT): internal/static_assert.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/stdalign.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/stdbool.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/symbol.h
-enc/trans/japanese_sjis.$(OBJEXT): internal/token_paste.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/value.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/value_type.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/variable.h
@@ -4921,7 +4875,6 @@ enc/trans/korean.$(OBJEXT): internal/static_assert.h
 enc/trans/korean.$(OBJEXT): internal/stdalign.h
 enc/trans/korean.$(OBJEXT): internal/stdbool.h
 enc/trans/korean.$(OBJEXT): internal/symbol.h
-enc/trans/korean.$(OBJEXT): internal/token_paste.h
 enc/trans/korean.$(OBJEXT): internal/value.h
 enc/trans/korean.$(OBJEXT): internal/value_type.h
 enc/trans/korean.$(OBJEXT): internal/variable.h
@@ -5081,7 +5034,6 @@ enc/trans/newline.$(OBJEXT): internal/static_assert.h
 enc/trans/newline.$(OBJEXT): internal/stdalign.h
 enc/trans/newline.$(OBJEXT): internal/stdbool.h
 enc/trans/newline.$(OBJEXT): internal/symbol.h
-enc/trans/newline.$(OBJEXT): internal/token_paste.h
 enc/trans/newline.$(OBJEXT): internal/value.h
 enc/trans/newline.$(OBJEXT): internal/value_type.h
 enc/trans/newline.$(OBJEXT): internal/variable.h
@@ -5240,7 +5192,6 @@ enc/trans/single_byte.$(OBJEXT): internal/static_assert.h
 enc/trans/single_byte.$(OBJEXT): internal/stdalign.h
 enc/trans/single_byte.$(OBJEXT): internal/stdbool.h
 enc/trans/single_byte.$(OBJEXT): internal/symbol.h
-enc/trans/single_byte.$(OBJEXT): internal/token_paste.h
 enc/trans/single_byte.$(OBJEXT): internal/value.h
 enc/trans/single_byte.$(OBJEXT): internal/value_type.h
 enc/trans/single_byte.$(OBJEXT): internal/variable.h
@@ -5402,7 +5353,6 @@ enc/trans/utf8_mac.$(OBJEXT): internal/static_assert.h
 enc/trans/utf8_mac.$(OBJEXT): internal/stdalign.h
 enc/trans/utf8_mac.$(OBJEXT): internal/stdbool.h
 enc/trans/utf8_mac.$(OBJEXT): internal/symbol.h
-enc/trans/utf8_mac.$(OBJEXT): internal/token_paste.h
 enc/trans/utf8_mac.$(OBJEXT): internal/value.h
 enc/trans/utf8_mac.$(OBJEXT): internal/value_type.h
 enc/trans/utf8_mac.$(OBJEXT): internal/variable.h
@@ -5562,7 +5512,6 @@ enc/trans/utf_16_32.$(OBJEXT): internal/static_assert.h
 enc/trans/utf_16_32.$(OBJEXT): internal/stdalign.h
 enc/trans/utf_16_32.$(OBJEXT): internal/stdbool.h
 enc/trans/utf_16_32.$(OBJEXT): internal/symbol.h
-enc/trans/utf_16_32.$(OBJEXT): internal/token_paste.h
 enc/trans/utf_16_32.$(OBJEXT): internal/value.h
 enc/trans/utf_16_32.$(OBJEXT): internal/value_type.h
 enc/trans/utf_16_32.$(OBJEXT): internal/variable.h
@@ -5725,7 +5674,6 @@ enc/unicode.$(OBJEXT): internal/static_assert.h
 enc/unicode.$(OBJEXT): internal/stdalign.h
 enc/unicode.$(OBJEXT): internal/stdbool.h
 enc/unicode.$(OBJEXT): internal/symbol.h
-enc/unicode.$(OBJEXT): internal/token_paste.h
 enc/unicode.$(OBJEXT): internal/value.h
 enc/unicode.$(OBJEXT): internal/value_type.h
 enc/unicode.$(OBJEXT): internal/variable.h
@@ -5886,7 +5834,6 @@ enc/us_ascii.$(OBJEXT): internal/static_assert.h
 enc/us_ascii.$(OBJEXT): internal/stdalign.h
 enc/us_ascii.$(OBJEXT): internal/stdbool.h
 enc/us_ascii.$(OBJEXT): internal/symbol.h
-enc/us_ascii.$(OBJEXT): internal/token_paste.h
 enc/us_ascii.$(OBJEXT): internal/value.h
 enc/us_ascii.$(OBJEXT): internal/value_type.h
 enc/us_ascii.$(OBJEXT): internal/variable.h
@@ -5953,7 +5900,6 @@ enc/utf_16be.$(OBJEXT): internal/has/feature.h
 enc/utf_16be.$(OBJEXT): internal/has/warning.h
 enc/utf_16be.$(OBJEXT): internal/stdalign.h
 enc/utf_16be.$(OBJEXT): internal/stdbool.h
-enc/utf_16be.$(OBJEXT): internal/token_paste.h
 enc/utf_16be.$(OBJEXT): internal/warning_push.h
 enc/utf_16be.$(OBJEXT): internal/xmalloc.h
 enc/utf_16be.$(OBJEXT): assert.h
@@ -6011,7 +5957,6 @@ enc/utf_16le.$(OBJEXT): internal/has/feature.h
 enc/utf_16le.$(OBJEXT): internal/has/warning.h
 enc/utf_16le.$(OBJEXT): internal/stdalign.h
 enc/utf_16le.$(OBJEXT): internal/stdbool.h
-enc/utf_16le.$(OBJEXT): internal/token_paste.h
 enc/utf_16le.$(OBJEXT): internal/warning_push.h
 enc/utf_16le.$(OBJEXT): internal/xmalloc.h
 enc/utf_16le.$(OBJEXT): assert.h
@@ -6069,7 +6014,6 @@ enc/utf_32be.$(OBJEXT): internal/has/feature.h
 enc/utf_32be.$(OBJEXT): internal/has/warning.h
 enc/utf_32be.$(OBJEXT): internal/stdalign.h
 enc/utf_32be.$(OBJEXT): internal/stdbool.h
-enc/utf_32be.$(OBJEXT): internal/token_paste.h
 enc/utf_32be.$(OBJEXT): internal/warning_push.h
 enc/utf_32be.$(OBJEXT): internal/xmalloc.h
 enc/utf_32be.$(OBJEXT): assert.h
@@ -6127,7 +6071,6 @@ enc/utf_32le.$(OBJEXT): internal/has/feature.h
 enc/utf_32le.$(OBJEXT): internal/has/warning.h
 enc/utf_32le.$(OBJEXT): internal/stdalign.h
 enc/utf_32le.$(OBJEXT): internal/stdbool.h
-enc/utf_32le.$(OBJEXT): internal/token_paste.h
 enc/utf_32le.$(OBJEXT): internal/warning_push.h
 enc/utf_32le.$(OBJEXT): internal/xmalloc.h
 enc/utf_32le.$(OBJEXT): assert.h
@@ -6281,7 +6224,6 @@ enc/utf_8.$(OBJEXT): internal/static_assert.h
 enc/utf_8.$(OBJEXT): internal/stdalign.h
 enc/utf_8.$(OBJEXT): internal/stdbool.h
 enc/utf_8.$(OBJEXT): internal/symbol.h
-enc/utf_8.$(OBJEXT): internal/token_paste.h
 enc/utf_8.$(OBJEXT): internal/value.h
 enc/utf_8.$(OBJEXT): internal/value_type.h
 enc/utf_8.$(OBJEXT): internal/variable.h
@@ -6348,7 +6290,6 @@ enc/windows_1250.$(OBJEXT): internal/has/feature.h
 enc/windows_1250.$(OBJEXT): internal/has/warning.h
 enc/windows_1250.$(OBJEXT): internal/stdalign.h
 enc/windows_1250.$(OBJEXT): internal/stdbool.h
-enc/windows_1250.$(OBJEXT): internal/token_paste.h
 enc/windows_1250.$(OBJEXT): internal/warning_push.h
 enc/windows_1250.$(OBJEXT): internal/xmalloc.h
 enc/windows_1250.$(OBJEXT): assert.h
@@ -6406,7 +6347,6 @@ enc/windows_1251.$(OBJEXT): internal/has/feature.h
 enc/windows_1251.$(OBJEXT): internal/has/warning.h
 enc/windows_1251.$(OBJEXT): internal/stdalign.h
 enc/windows_1251.$(OBJEXT): internal/stdbool.h
-enc/windows_1251.$(OBJEXT): internal/token_paste.h
 enc/windows_1251.$(OBJEXT): internal/warning_push.h
 enc/windows_1251.$(OBJEXT): internal/xmalloc.h
 enc/windows_1251.$(OBJEXT): assert.h
@@ -6463,7 +6403,6 @@ enc/windows_1252.$(OBJEXT): internal/has/feature.h
 enc/windows_1252.$(OBJEXT): internal/has/warning.h
 enc/windows_1252.$(OBJEXT): internal/stdalign.h
 enc/windows_1252.$(OBJEXT): internal/stdbool.h
-enc/windows_1252.$(OBJEXT): internal/token_paste.h
 enc/windows_1252.$(OBJEXT): internal/warning_push.h
 enc/windows_1252.$(OBJEXT): internal/xmalloc.h
 enc/windows_1252.$(OBJEXT): assert.h
@@ -6521,7 +6460,6 @@ enc/windows_1253.$(OBJEXT): internal/has/feature.h
 enc/windows_1253.$(OBJEXT): internal/has/warning.h
 enc/windows_1253.$(OBJEXT): internal/stdalign.h
 enc/windows_1253.$(OBJEXT): internal/stdbool.h
-enc/windows_1253.$(OBJEXT): internal/token_paste.h
 enc/windows_1253.$(OBJEXT): internal/warning_push.h
 enc/windows_1253.$(OBJEXT): internal/xmalloc.h
 enc/windows_1253.$(OBJEXT): assert.h
@@ -6578,7 +6516,6 @@ enc/windows_1254.$(OBJEXT): internal/has/feature.h
 enc/windows_1254.$(OBJEXT): internal/has/warning.h
 enc/windows_1254.$(OBJEXT): internal/stdalign.h
 enc/windows_1254.$(OBJEXT): internal/stdbool.h
-enc/windows_1254.$(OBJEXT): internal/token_paste.h
 enc/windows_1254.$(OBJEXT): internal/warning_push.h
 enc/windows_1254.$(OBJEXT): internal/xmalloc.h
 enc/windows_1254.$(OBJEXT): assert.h
@@ -6636,7 +6573,6 @@ enc/windows_1257.$(OBJEXT): internal/has/feature.h
 enc/windows_1257.$(OBJEXT): internal/has/warning.h
 enc/windows_1257.$(OBJEXT): internal/stdalign.h
 enc/windows_1257.$(OBJEXT): internal/stdbool.h
-enc/windows_1257.$(OBJEXT): internal/token_paste.h
 enc/windows_1257.$(OBJEXT): internal/warning_push.h
 enc/windows_1257.$(OBJEXT): internal/xmalloc.h
 enc/windows_1257.$(OBJEXT): assert.h
@@ -6694,7 +6630,6 @@ enc/windows_31j.$(OBJEXT): internal/has/feature.h
 enc/windows_31j.$(OBJEXT): internal/has/warning.h
 enc/windows_31j.$(OBJEXT): internal/stdalign.h
 enc/windows_31j.$(OBJEXT): internal/stdbool.h
-enc/windows_31j.$(OBJEXT): internal/token_paste.h
 enc/windows_31j.$(OBJEXT): internal/warning_push.h
 enc/windows_31j.$(OBJEXT): internal/xmalloc.h
 enc/windows_31j.$(OBJEXT): assert.h

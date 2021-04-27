@@ -496,6 +496,44 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     assert_equal url, e.uri
   end
 
+  def test_fetch_path_timeout_error
+    fetcher = Gem::RemoteFetcher.new nil
+    @fetcher = fetcher
+
+    def fetcher.fetch_http(uri, mtime = nil, head = nil)
+      raise Timeout::Error, 'timed out'
+    end
+
+    url = 'http://example.com/uri'
+
+    e = assert_raises Gem::RemoteFetcher::FetchError do
+      fetcher.fetch_path url
+    end
+
+    assert_match %r{Timeout::Error: timed out \(#{Regexp.escape url}\)\z},
+                 e.message
+    assert_equal url, e.uri
+  end
+
+  def test_fetch_path_getaddrinfo_error
+    fetcher = Gem::RemoteFetcher.new nil
+    @fetcher = fetcher
+
+    def fetcher.fetch_http(uri, mtime = nil, head = nil)
+      raise SocketError, 'getaddrinfo: nodename nor servname provided'
+    end
+
+    url = 'http://example.com/uri'
+
+    e = assert_raises Gem::RemoteFetcher::FetchError do
+      fetcher.fetch_path url
+    end
+
+    assert_match %r{SocketError: getaddrinfo: nodename nor servname provided \(#{Regexp.escape url}\)\z},
+                 e.message
+    assert_equal url, e.uri
+  end
+
   def test_fetch_path_openssl_ssl_sslerror
     fetcher = Gem::RemoteFetcher.new nil
     @fetcher = fetcher

@@ -72,10 +72,10 @@
 #   require 'optparse'
 #
 #   options = {}
-#   OptionParser.new do |opts|
-#     opts.banner = "Usage: example.rb [options]"
+#   OptionParser.new do |parser|
+#     parser.banner = "Usage: example.rb [options]"
 #
-#     opts.on("-v", "--[no-]verbose", "Run verbosely") do |v|
+#     parser.on("-v", "--[no-]verbose", "Run verbosely") do |v|
 #       options[:verbose] = v
 #     end
 #   end.parse!
@@ -96,15 +96,15 @@
 #     def self.parse(options)
 #       args = Options.new("world")
 #
-#       opt_parser = OptionParser.new do |opts|
-#         opts.banner = "Usage: example.rb [options]"
+#       opt_parser = OptionParser.new do |parser|
+#         parser.banner = "Usage: example.rb [options]"
 #
-#         opts.on("-nNAME", "--name=NAME", "Name to say hello to") do |n|
+#         parser.on("-nNAME", "--name=NAME", "Name to say hello to") do |n|
 #           args.name = n
 #         end
 #
-#         opts.on("-h", "--help", "Prints this help") do
-#           puts opts
+#         parser.on("-h", "--help", "Prints this help") do
+#           puts parser
 #           exit
 #         end
 #       end
@@ -240,14 +240,14 @@
 #
 #   require 'optparse'
 #
-#   params = {}
-#   OptionParser.new do |opts|
-#     opts.on('-a')
-#     opts.on('-b NUM', Integer)
-#     opts.on('-v', '--verbose')
-#   end.parse!(into: params)
+#   options = {}
+#   OptionParser.new do |parser|
+#     parser.on('-a')
+#     parser.on('-b NUM', Integer)
+#     parser.on('-v', '--verbose')
+#   end.parse!(into: options)
 #
-#   p params
+#   p options
 #
 # Used:
 #
@@ -419,7 +419,7 @@
 # have any questions, file a ticket at http://bugs.ruby-lang.org.
 #
 class OptionParser
-  OptionParser::Version = "0.1.0"
+  OptionParser::Version = "0.1.1"
 
   # :stopdoc:
   NoArgument = [NO_ARGUMENT = :NONE, nil].freeze
@@ -1091,6 +1091,7 @@ XXX
     @summary_width = width
     @summary_indent = indent
     @default_argv = ARGV
+    @require_exact = false
     add_officious
     yield self if block_given?
   end
@@ -1163,6 +1164,10 @@ XXX
 
   # Strings to be parsed in default.
   attr_accessor :default_argv
+
+  # Whether to require that options match exactly (disallows providing
+  # abbreviated long option as short option).
+  attr_accessor :require_exact
 
   #
   # Heading banner preceding summary.
@@ -1305,65 +1310,11 @@ XXX
   private :notwice
 
   SPLAT_PROC = proc {|*a| a.length <= 1 ? a.first : a} # :nodoc:
+
+  # :call-seq:
+  #   make_switch(params, block = nil)
   #
-  # Creates an OptionParser::Switch from the parameters. The parsed argument
-  # value is passed to the given block, where it can be processed.
-  #
-  # See at the beginning of OptionParser for some full examples.
-  #
-  # +opts+ can include the following elements:
-  #
-  # [Argument style:]
-  #   One of the following:
-  #     :NONE, :REQUIRED, :OPTIONAL
-  #
-  # [Argument pattern:]
-  #   Acceptable option argument format, must be pre-defined with
-  #   OptionParser.accept or OptionParser#accept, or Regexp. This can appear
-  #   once or assigned as String if not present, otherwise causes an
-  #   ArgumentError. Examples:
-  #     Float, Time, Array
-  #
-  # [Possible argument values:]
-  #   Hash or Array.
-  #     [:text, :binary, :auto]
-  #     %w[iso-2022-jp shift_jis euc-jp utf8 binary]
-  #     { "jis" => "iso-2022-jp", "sjis" => "shift_jis" }
-  #
-  # [Long style switch:]
-  #   Specifies a long style switch which takes a mandatory, optional or no
-  #   argument. It's a string of the following form:
-  #     "--switch=MANDATORY" or "--switch MANDATORY"
-  #     "--switch[=OPTIONAL]"
-  #     "--switch"
-  #
-  # [Short style switch:]
-  #   Specifies short style switch which takes a mandatory, optional or no
-  #   argument. It's a string of the following form:
-  #     "-xMANDATORY"
-  #     "-x[OPTIONAL]"
-  #     "-x"
-  #   There is also a special form which matches character range (not full
-  #   set of regular expression):
-  #     "-[a-z]MANDATORY"
-  #     "-[a-z][OPTIONAL]"
-  #     "-[a-z]"
-  #
-  # [Argument style and description:]
-  #   Instead of specifying mandatory or optional arguments directly in the
-  #   switch parameter, this separate parameter can be used.
-  #     "=MANDATORY"
-  #     "=[OPTIONAL]"
-  #
-  # [Description:]
-  #   Description string for the option.
-  #     "Run verbosely"
-  #   If you give multiple description strings, each string will be printed
-  #   line by line.
-  #
-  # [Handler:]
-  #   Handler for the parsed argument value. Either give a block or pass a
-  #   Proc or Method as an argument.
+  # :include: ../doc/optparse/creates_option.rdoc
   #
   def make_switch(opts, block = nil)
     short, long, nolong, style, pattern, conv, not_pattern, not_conv, not_style = [], [], []
@@ -1498,14 +1449,20 @@ XXX
       nolong
   end
 
+  # :call-seq:
+  #   define(*params, &block)
+  #
+  # :include: ../doc/optparse/creates_option.rdoc
+  #
   def define(*opts, &block)
     top.append(*(sw = make_switch(opts, block)))
     sw[0]
   end
 
+  # :call-seq:
+  #   on(*params, &block)
   #
-  # Add option switch and handler. See #make_switch for an explanation of
-  # parameters.
+  # :include: ../doc/optparse/creates_option.rdoc
   #
   def on(*opts, &block)
     define(*opts, &block)
@@ -1513,13 +1470,22 @@ XXX
   end
   alias def_option define
 
+  # :call-seq:
+  #   define_head(*params, &block)
+  #
+  # :include: ../doc/optparse/creates_option.rdoc
+  #
   def define_head(*opts, &block)
     top.prepend(*(sw = make_switch(opts, block)))
     sw[0]
   end
 
+  # :call-seq:
+  #   on_head(*params, &block)
   #
-  # Add option switch like with #on, but at head of summary.
+  # :include: ../doc/optparse/creates_option.rdoc
+  #
+  # The new option is added at the head of the summary.
   #
   def on_head(*opts, &block)
     define_head(*opts, &block)
@@ -1527,13 +1493,23 @@ XXX
   end
   alias def_head_option define_head
 
+  # :call-seq:
+  #   define_tail(*params, &block)
+  #
+  # :include: ../doc/optparse/creates_option.rdoc
+  #
   def define_tail(*opts, &block)
     base.append(*(sw = make_switch(opts, block)))
     sw[0]
   end
 
   #
-  # Add option switch like with #on, but at tail of summary.
+  # :call-seq:
+  #   on_tail(*params, &block)
+  #
+  # :include: ../doc/optparse/creates_option.rdoc
+  #
+  # The new option is added at the tail of the summary.
   #
   def on_tail(*opts, &block)
     define_tail(*opts, &block)
@@ -1583,6 +1559,9 @@ XXX
           opt.tr!('_', '-')
           begin
             sw, = complete(:long, opt, true)
+            if require_exact && !sw.long.include?(arg)
+              raise InvalidOption, arg
+            end
           rescue ParseError
             raise $!.set_option(arg, true)
           end
@@ -1607,6 +1586,7 @@ XXX
                 val = arg.delete_prefix('-')
                 has_arg = true
               rescue InvalidOption
+                raise if require_exact
                 # if no short options match, try completion with long
                 # options.
                 sw, = complete(:long, opt)
@@ -1618,7 +1598,12 @@ XXX
           end
           begin
             opt, cb, val = sw.parse(val, argv) {|*exc| raise(*exc) if eq}
+          rescue ParseError
+            raise $!.set_option(arg, arg.length > 2)
+          else
             raise InvalidOption, arg if has_arg and !eq and arg == "-#{opt}"
+          end
+          begin
             argv.unshift(opt) if opt and (!rest or (opt = opt.sub(/\A-*/, '-')) != '-')
             val = cb.call(val) if cb
             setter.call(sw.switch_name, val) if setter

@@ -650,13 +650,17 @@ typedef struct rb_vm_struct {
 
     rb_at_exit_list *at_exit;
 
-    VALUE *defined_strings;
     st_table *frozen_strings;
 
     const struct rb_builtin_function *builtin_function_table;
     int builtin_inline_index;
 
     struct rb_id_table *negative_cme_table;
+
+#ifndef VM_GLOBAL_CC_CACHE_TABLE_SIZE
+#define VM_GLOBAL_CC_CACHE_TABLE_SIZE 1023
+#endif
+    const struct rb_callcache *global_cc_cache_table[VM_GLOBAL_CC_CACHE_TABLE_SIZE]; // vm_eval.c
 
 #if USE_VM_CLOCK
     uint32_t clock;

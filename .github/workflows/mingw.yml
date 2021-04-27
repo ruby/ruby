@@ -22,15 +22,15 @@ jobs:
       matrix:
         test_task: [ "check" ] # to make job names consistent
       fail-fast: false
-    if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
       - run: mkdir build
         working-directory:
       - name: git config
         run: |
-          git config --system core.autocrlf false
-          git config --system core.eol lf
-          git config --system advice.detachedHead 0
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+          git config --global advice.detachedHead 0
+          git config --global init.defaultBranch garbage
       - uses: actions/checkout@v2
         with:
           path: src
@@ -122,7 +122,7 @@ jobs:
           [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding("IBM437")
           [Console]::InputEncoding  = [System.Text.Encoding]::GetEncoding("IBM437")
           ruby -v
-          ruby ../mspec/bin/mspec -I../../tool/lib -j
+          ruby ../mspec/bin/mspec -I../../tool/lib -j --timeout 60
 
       - uses: k0kubun/action-slack@v2.0.0
         with:

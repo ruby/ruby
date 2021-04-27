@@ -592,25 +592,6 @@ swap
     /* none */
 }
 
-/* reverse stack top N order. */
-DEFINE_INSN
-reverse
-(rb_num_t n)
-(...)
-(...)
-// attr rb_snum_t sp_inc = 0;
-{
-    rb_num_t i;
-    VALUE *sp = STACK_ADDR_FROM_TOP(n);
-
-    for (i=0; i<n/2; i++) {
-	VALUE v0 = sp[i];
-	VALUE v1 = TOPN(i);
-	sp[i] = v1;
-	TOPN(i) = v0;
-    }
-}
-
 /* for stack caching. */
 DEFINE_INSN_IF(STACK_CACHING)
 reput
@@ -662,12 +643,15 @@ adjuststack
 /* defined? */
 DEFINE_INSN
 defined
-(rb_num_t op_type, VALUE obj, VALUE needstr)
+(rb_num_t op_type, VALUE obj, VALUE pushval)
 (VALUE v)
 (VALUE val)
 // attr bool leaf = leafness_of_defined(op_type);
 {
-    val = vm_defined(ec, GET_CFP(), op_type, obj, needstr, v);
+    val = Qnil;
+    if (vm_defined(ec, GET_CFP(), op_type, obj, v)) {
+      val = pushval;
+    }
 }
 
 /* check `target' matches `pattern'.
@@ -712,7 +696,7 @@ checktype
 /**********************************************************/
 
 /* enter class definition scope. if super is Qfalse, and class
-   "klass" is defined, it's redefine. otherwise, define "klass" class.
+   "klass" is defined, it's redefined. Otherwise, define "klass" class.
  */
 DEFINE_INSN
 defineclass

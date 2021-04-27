@@ -3,6 +3,9 @@ version: '{build}'
 init:
   - git config --global user.name git
   - git config --global user.email svn-admin@ruby-lang.org
+  - git config --global core.autocrlf false
+  - git config --global core.eol lf
+  - git config --global advice.detachedHead 0
 clone_depth: 10
 platform:
   - x64

@@ -658,7 +658,7 @@ static inline void list_prepend_list_(struct list_head *to,
  * @off: offset(relative to @i) at which list node data resides.
  *
  * This is a low-level wrapper to iterate @i over the entire list, used to
- * implement all oher, more high-level, for-each constructs. It's a for loop,
+ * implement all other, more high-level, for-each constructs. It's a for loop,
  * so you can break and continue as normal.
  *
  * WARNING! Being the low-level macro that it is, this wrapper doesn't know

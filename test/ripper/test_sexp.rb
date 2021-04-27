@@ -478,6 +478,14 @@ eot
 
     [__LINE__, %q{ case 0; in "a\x0":a1, "a\0":a2; end }] =>
     nil,                        # duplicated key name
+
+    [__LINE__, %q{ case 0; in ^(0+0); end } ] =>
+    [:case,
+      [:@int, "0", [1, 5]],
+      [:in,
+        [:begin, [:binary, [:@int, "0", [1, 13]], :+, [:@int, "0", [1, 15]]]],
+        [[:void_stmt]],
+        nil]],
   }
   pattern_matching_data.each do |(i, src), expected|
     define_method(:"test_pattern_matching_#{i}") do

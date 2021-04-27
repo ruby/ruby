@@ -2088,6 +2088,7 @@ Init_readline(void)
 #if defined HAVE_CLEAR_HISTORY || defined HAVE_REMOVE_HISTORY
     if (strncmp(rl_library_version, EDIT_LINE_LIBRARY_VERSION,
                 strlen(EDIT_LINE_LIBRARY_VERSION)) == 0) {
+        prepare_readline();
         add_history("1");
         if (history_get(history_get_offset_func(0)) == NULL) {
             history_get_offset_func = history_get_offset_0;

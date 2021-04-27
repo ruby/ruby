@@ -24,7 +24,7 @@
 #include "internal/cont.h"
 #include "internal/proc.h"
 #include "internal/warnings.h"
-#include "internal/scheduler.h"
+#include "ruby/fiber/scheduler.h"
 #include "mjit.h"
 #include "vm_core.h"
 #include "id_table.h"
@@ -433,6 +433,12 @@ fiber_pool_allocate_memory(size_t * count, size_t stride)
             *count = (*count) >> 1;
         }
         else {
+#if defined(MADV_FREE_REUSE)
+            // On Mac MADV_FREE_REUSE is necessary for the task_info api
+            // to keep the accounting accurate as possible when a page is marked as reusable
+            // it can possibly not occurring at first call thus re-iterating if necessary.
+            while (madvise(base, (*count)*stride, MADV_FREE_REUSE) == -1 && errno == EAGAIN);
+#endif
             return base;
         }
 #endif
@@ -646,8 +652,14 @@ fiber_pool_stack_free(struct fiber_pool_stack * stack)
 #if VM_CHECK_MODE > 0 && defined(MADV_DONTNEED)
     // This immediately discards the pages and the memory is reset to zero.
     madvise(base, size, MADV_DONTNEED);
+#elif defined(POSIX_MADV_DONTNEED)
+    posix_madvise(base, size, POSIX_MADV_DONTNEED);
 #elif defined(MADV_FREE_REUSABLE)
-    madvise(base, size, MADV_FREE_REUSABLE);
+    // Acknowledge the kernel down to the task info api we make this
+    // page reusable for future use.
+    // As for MADV_FREE_REUSE below we ensure in the rare occasions the task was not
+    // completed at the time of the call to re-iterate.
+    while (madvise(base, size, MADV_FREE_REUSABLE) == -1 && errno == EAGAIN);
 #elif defined(MADV_FREE)
     madvise(base, size, MADV_FREE);
 #elif defined(MADV_DONTNEED)
@@ -1154,6 +1166,11 @@ cont_new(VALUE klass)
 VALUE rb_fiberptr_self(struct rb_fiber_struct *fiber)
 {
     return fiber->cont.self;
+}
+
+unsigned int rb_fiberptr_blocking(struct rb_fiber_struct *fiber)
+{
+    return fiber->blocking;
 }
 
 // This is used for root_fiber because other fibers call cont_init_mjit_cont through cont_new.
@@ -1899,7 +1916,7 @@ rb_fiber_new(rb_block_call_func_t func, VALUE obj)
 }
 
 static VALUE
-rb_f_fiber_kw(int argc, VALUE* argv, int kw_splat)
+rb_fiber_s_schedule_kw(int argc, VALUE* argv, int kw_splat)
 {
     rb_thread_t * th = GET_THREAD();
     VALUE scheduler = th->scheduler;
@@ -1957,9 +1974,9 @@ rb_f_fiber_kw(int argc, VALUE* argv, int kw_splat)
  *
  */
 static VALUE
-rb_f_fiber(int argc, VALUE *argv, VALUE obj)
+rb_fiber_s_schedule(int argc, VALUE *argv, VALUE obj)
 {
-    return rb_f_fiber_kw(argc, argv, rb_keyword_given_p());
+    return rb_fiber_s_schedule_kw(argc, argv, rb_keyword_given_p());
 }
 
 /*
@@ -1973,9 +1990,23 @@ rb_f_fiber(int argc, VALUE *argv, VALUE obj)
  *
  */
 static VALUE
-rb_fiber_scheduler(VALUE klass)
+rb_fiber_s_scheduler(VALUE klass)
 {
-    return rb_scheduler_get();
+    return rb_fiber_scheduler_get();
+}
+
+/*
+ *  call-seq:
+ *     Fiber.current_scheduler -> obj or nil
+ *
+ *  Returns the Fiber scheduler, that was last set for the current thread with Fiber.set_scheduler
+ *  iff the current fiber is non-blocking.
+ *
+ */
+static VALUE
+rb_fiber_current_scheduler(VALUE klass)
+{
+    return rb_fiber_scheduler_current();
 }
 
 /*
@@ -1997,14 +2028,10 @@ rb_fiber_scheduler(VALUE klass)
 static VALUE
 rb_fiber_set_scheduler(VALUE klass, VALUE scheduler)
 {
-    // if (rb_scheduler_get() != Qnil) {
-    //     rb_raise(rb_eFiberError, "Scheduler is already defined!");
-    // }
-
-    return rb_scheduler_set(scheduler);
+    return rb_fiber_scheduler_set(scheduler);
 }
 
-static void rb_fiber_terminate(rb_fiber_t *fiber, int need_interrupt);
+NORETURN(static void rb_fiber_terminate(rb_fiber_t *fiber, int need_interrupt, VALUE err));
 
 void
 rb_fiber_start(void)
@@ -2014,6 +2041,7 @@ rb_fiber_start(void)
     rb_proc_t *proc;
     enum ruby_tag_type state;
     int need_interrupt = TRUE;
+    VALUE err = Qfalse;
 
     VM_ASSERT(th->ec == GET_EC());
     VM_ASSERT(FIBER_RESUMED_P(fiber));
@@ -2040,22 +2068,22 @@ rb_fiber_start(void)
     EC_POP_TAG();
 
     if (state) {
-        VALUE err = th->ec->errinfo;
+        err = th->ec->errinfo;
         VM_ASSERT(FIBER_RESUMED_P(fiber));
 
-        if (state == TAG_RAISE || state == TAG_FATAL) {
+        if (state == TAG_RAISE) {
+            // noop...
+        }
+        else if (state == TAG_FATAL) {
             rb_threadptr_pending_interrupt_enque(th, err);
         }
         else {
             err = rb_vm_make_jump_tag_but_local_jump(state, err);
-            if (!NIL_P(err)) {
-                rb_threadptr_pending_interrupt_enque(th, err);
-            }
         }
         need_interrupt = TRUE;
     }
 
-    rb_fiber_terminate(fiber, need_interrupt);
+    rb_fiber_terminate(fiber, need_interrupt, err);
     VM_UNREACHABLE(rb_fiber_start);
 }
 
@@ -2181,7 +2209,7 @@ rb_fiber_current(void)
 }
 
 // Prepare to execute next_fiber on the given thread.
-static inline VALUE
+static inline void
 fiber_store(rb_fiber_t *next_fiber, rb_thread_t *th)
 {
     rb_fiber_t *fiber;
@@ -2205,13 +2233,6 @@ fiber_store(rb_fiber_t *next_fiber, rb_thread_t *th)
 
     fiber_status_set(next_fiber, FIBER_RESUMED);
     fiber_setcontext(next_fiber, fiber);
-
-    fiber = th->ec->fiber_ptr;
-
-    /* Raise an exception if that was the result of executing the fiber */
-    if (fiber->cont.argc == -1) rb_exc_raise(fiber->cont.value);
-
-    return fiber->cont.value;
 }
 
 static inline VALUE
@@ -2284,7 +2305,7 @@ fiber_switch(rb_fiber_t *fiber, int argc, const VALUE *argv, int kw_splat, VALUE
     cont->kw_splat = kw_splat;
     cont->value = make_passing_arg(argc, argv);
 
-    value = fiber_store(fiber, th);
+    fiber_store(fiber, th);
 
     if (RTEST(resuming_fiber) && FIBER_TERMINATED_P(fiber)) {
         fiber_stack_release(fiber);
@@ -2298,6 +2319,9 @@ fiber_switch(rb_fiber_t *fiber, int argc, const VALUE *argv, int kw_splat, VALUE
 
     EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_FIBER_SWITCH, th->self, 0, 0, 0, Qnil);
 
+    current_fiber = th->ec->fiber_ptr;
+    value = current_fiber->cont.value;
+    if (current_fiber->cont.argc == -1) rb_exc_raise(value);
     return value;
 }
 
@@ -2346,7 +2370,7 @@ rb_fiber_blocking_p(VALUE fiber)
  *
  */
 static VALUE
-rb_f_fiber_blocking_p(VALUE klass)
+rb_fiber_s_blocking_p(VALUE klass)
 {
     rb_thread_t *thread = GET_THREAD();
     unsigned blocking = thread->blocking;
@@ -2364,7 +2388,7 @@ rb_fiber_close(rb_fiber_t *fiber)
 }
 
 static void
-rb_fiber_terminate(rb_fiber_t *fiber, int need_interrupt)
+rb_fiber_terminate(rb_fiber_t *fiber, int need_interrupt, VALUE err)
 {
     VALUE value = fiber->cont.value;
     rb_fiber_t *next_fiber;
@@ -2379,7 +2403,11 @@ rb_fiber_terminate(rb_fiber_t *fiber, int need_interrupt)
 
     next_fiber = return_fiber(true);
     if (need_interrupt) RUBY_VM_SET_INTERRUPT(&next_fiber->cont.saved_ec);
-    fiber_switch(next_fiber, 1, &value, RB_NO_KEYWORDS, Qfalse, false);
+    if (RTEST(err))
+        fiber_switch(next_fiber, -1, &err, RB_NO_KEYWORDS, Qfalse, false);
+    else
+        fiber_switch(next_fiber, 1, &value, RB_NO_KEYWORDS, Qfalse, false);
+    VM_UNREACHABLE(rb_fiber_terminate);
 }
 
 VALUE
@@ -2443,8 +2471,7 @@ rb_fiber_reset_root_local_storage(rb_thread_t *th)
  *
  *  Returns true if the fiber can still be resumed (or transferred
  *  to). After finishing execution of the fiber block this method will
- *  always return +false+. You need to <code>require 'fiber'</code>
- *  before using this method.
+ *  always return +false+.
  */
 VALUE
 rb_fiber_alive_p(VALUE fiber_value)
@@ -2596,8 +2623,7 @@ rb_fiber_backtrace_locations(int argc, VALUE *argv, VALUE fiber)
  *  Transfer control to another fiber, resuming it from where it last
  *  stopped or starting it if it was not resumed before. The calling
  *  fiber will be suspended much like in a call to
- *  Fiber.yield. You need to <code>require 'fiber'</code>
- *  before using this method.
+ *  Fiber.yield.
  *
  *  The fiber which receives the transfer call treats it much like
  *  a resume call. Arguments passed to transfer are treated like those
@@ -2628,8 +2654,6 @@ rb_fiber_backtrace_locations(int argc, VALUE *argv, VALUE fiber)
  *
  *
  *  Example:
- *
- *     require 'fiber'
  *
  *     manager = nil # For local var to be visible inside worker block
  *
@@ -2713,8 +2737,7 @@ rb_fiber_s_yield(int argc, VALUE *argv, VALUE klass)
  *  call-seq:
  *     Fiber.current -> fiber
  *
- *  Returns the current fiber. You need to <code>require 'fiber'</code>
- *  before using this method. If you are not running in the context of
+ *  Returns the current fiber. If you are not running in the context of
  *  a fiber this method will return the root fiber.
  */
 static VALUE
@@ -3051,7 +3074,7 @@ Init_Cont(void)
     fiber_initialize_keywords[0] = rb_intern_const("blocking");
     fiber_initialize_keywords[1] = rb_intern_const("pool");
 
-    char * fiber_shared_fiber_pool_free_stacks = getenv("RUBY_SHARED_FIBER_POOL_FREE_STACKS");
+    const char *fiber_shared_fiber_pool_free_stacks = getenv("RUBY_SHARED_FIBER_POOL_FREE_STACKS");
     if (fiber_shared_fiber_pool_free_stacks) {
         shared_fiber_pool.free_stacks = atoi(fiber_shared_fiber_pool_free_stacks);
     }
@@ -3072,12 +3095,12 @@ Init_Cont(void)
     rb_define_method(rb_cFiber, "transfer", rb_fiber_m_transfer, -1);
     rb_define_method(rb_cFiber, "alive?", rb_fiber_alive_p, 0);
 
-    rb_define_singleton_method(rb_cFiber, "blocking?", rb_f_fiber_blocking_p, 0);
-    rb_define_singleton_method(rb_cFiber, "scheduler", rb_fiber_scheduler, 0);
+    rb_define_singleton_method(rb_cFiber, "blocking?", rb_fiber_s_blocking_p, 0);
+    rb_define_singleton_method(rb_cFiber, "scheduler", rb_fiber_s_scheduler, 0);
     rb_define_singleton_method(rb_cFiber, "set_scheduler", rb_fiber_set_scheduler, 1);
+    rb_define_singleton_method(rb_cFiber, "current_scheduler", rb_fiber_current_scheduler, 0);
 
-    rb_define_singleton_method(rb_cFiber, "schedule", rb_f_fiber, -1);
-    //rb_define_global_function("Fiber", rb_f_fiber, -1);
+    rb_define_singleton_method(rb_cFiber, "schedule", rb_fiber_s_schedule, -1);
 
 #if 0 /* for RDoc */
     rb_cFiberScheduler = rb_define_class_under(rb_cFiber, "SchedulerInterface", rb_cObject);

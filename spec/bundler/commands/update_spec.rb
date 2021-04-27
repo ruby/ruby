@@ -148,72 +148,66 @@ RSpec.describe "bundle update" do
   end
 
   describe "when a possible resolve requires an older version of a locked gem" do
-    context "and only_update_to_newer_versions is set" do
-      before do
-        bundle "config set only_update_to_newer_versions true"
+    it "does not go to an older version" do
+      build_repo4 do
+        build_gem "tilt", "2.0.8"
+        build_gem "slim", "3.0.9" do |s|
+          s.add_dependency "tilt", [">= 1.3.3", "< 2.1"]
+        end
+        build_gem "slim_lint", "0.16.1" do |s|
+          s.add_dependency "slim", [">= 3.0", "< 5.0"]
+        end
+        build_gem "slim-rails", "0.2.1" do |s|
+          s.add_dependency "slim", ">= 0.9.2"
+        end
+        build_gem "slim-rails", "3.1.3" do |s|
+          s.add_dependency "slim", "~> 3.0"
+        end
       end
 
-      it "does not go to an older version" do
-        build_repo4 do
-          build_gem "tilt", "2.0.8"
-          build_gem "slim", "3.0.9" do |s|
-            s.add_dependency "tilt", [">= 1.3.3", "< 2.1"]
-          end
-          build_gem "slim_lint", "0.16.1" do |s|
-            s.add_dependency "slim", [">= 3.0", "< 5.0"]
-          end
-          build_gem "slim-rails", "0.2.1" do |s|
-            s.add_dependency "slim", ">= 0.9.2"
-          end
-          build_gem "slim-rails", "3.1.3" do |s|
-            s.add_dependency "slim", "~> 3.0"
-          end
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem "slim-rails"
+        gem "slim_lint"
+      G
+
+      expect(the_bundle).to include_gems("slim 3.0.9", "slim-rails 3.1.3", "slim_lint 0.16.1")
+
+      update_repo4 do
+        build_gem "slim", "4.0.0" do |s|
+          s.add_dependency "tilt", [">= 2.0.6", "< 2.1"]
         end
-
-        install_gemfile <<-G
-          source "#{file_uri_for(gem_repo4)}"
-          gem "slim-rails"
-          gem "slim_lint"
-        G
-
-        expect(the_bundle).to include_gems("slim 3.0.9", "slim-rails 3.1.3", "slim_lint 0.16.1")
-
-        update_repo4 do
-          build_gem "slim", "4.0.0" do |s|
-            s.add_dependency "tilt", [">= 2.0.6", "< 2.1"]
-          end
-        end
-
-        bundle "update", :all => true
-
-        expect(the_bundle).to include_gems("slim 3.0.9", "slim-rails 3.1.3", "slim_lint 0.16.1")
       end
 
-      it "should still downgrade if forced by the Gemfile" do
-        build_repo4 do
-          build_gem "a"
-          build_gem "b", "1.0"
-          build_gem "b", "2.0"
-        end
+      bundle "update", :all => true
 
-        install_gemfile <<-G
-          source "#{file_uri_for(gem_repo4)}"
-          gem "a"
-          gem "b"
-        G
+      expect(the_bundle).to include_gems("slim 3.0.9", "slim-rails 3.1.3", "slim_lint 0.16.1")
+    end
 
-        expect(the_bundle).to include_gems("a 1.0", "b 2.0")
-
-        gemfile <<-G
-          source "#{file_uri_for(gem_repo4)}"
-          gem "a"
-          gem "b", "1.0"
-        G
-
-        bundle "update b"
-
-        expect(the_bundle).to include_gems("a 1.0", "b 1.0")
+    it "should still downgrade if forced by the Gemfile" do
+      build_repo4 do
+        build_gem "a"
+        build_gem "b", "1.0"
+        build_gem "b", "2.0"
       end
+
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem "a"
+        gem "b"
+      G
+
+      expect(the_bundle).to include_gems("a 1.0", "b 2.0")
+
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem "a"
+        gem "b", "1.0"
+      G
+
+      bundle "update b"
+
+      expect(the_bundle).to include_gems("a 1.0", "b 1.0")
     end
   end
 
@@ -651,6 +645,8 @@ RSpec.describe "bundle update when a gem depends on a newer version of bundler" 
       build_gem "rails", "3.0.1" do |s|
         s.add_dependency "bundler", Bundler::VERSION.succ
       end
+
+      build_gem "bundler", Bundler::VERSION.succ
     end
 
     gemfile <<-G
@@ -659,18 +655,11 @@ RSpec.describe "bundle update when a gem depends on a newer version of bundler" 
     G
   end
 
-  it "should explain that bundler conflicted", :bundler => "< 3" do
+  it "should explain that bundler conflicted and how to resolve the conflict" do
     bundle "update", :all => true, :raise_on_error => false
     expect(last_command.stdboth).not_to match(/in snapshot/i)
     expect(err).to match(/current Bundler version/i).
-      and match(/perhaps you need to update bundler/i)
-  end
-
-  it "should warn that the newer version of Bundler would conflict", :bundler => "3" do
-    bundle "update", :all => true
-    expect(err).to include("rails (3.0.1) has dependency bundler").
-      and include("so the dependency is being ignored")
-    expect(the_bundle).to include_gem "rails 3.0.1"
+      and match(/Install the necessary version with `gem install bundler:#{Bundler::VERSION.succ}`/i)
   end
 end
 

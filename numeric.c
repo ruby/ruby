@@ -656,6 +656,11 @@ num_remainder(VALUE x, VALUE y)
 	  rb_num_positive_int_p(y)) ||
 	 (rb_num_positive_int_p(x) &&
 	  rb_num_negative_int_p(y)))) {
+        if (RB_TYPE_P(y, T_FLOAT)) {
+            if (isinf(RFLOAT_VALUE(y))) {
+                return x;
+            }
+        }
 	return rb_funcall(z, '-', 1, y);
     }
     return z;
@@ -708,35 +713,6 @@ static VALUE
 num_divmod(VALUE x, VALUE y)
 {
     return rb_assoc_new(num_div(x, y), num_modulo(x, y));
-}
-
-/*
- *  call-seq:
- *     num.real?  ->  true or false
- *
- *  Returns +true+ if +num+ is a real number (i.e. not Complex).
- */
-
-static VALUE
-num_real_p(VALUE num)
-{
-    return Qtrue;
-}
-
-/*
- *  call-seq:
- *     num.integer?  ->  true or false
- *
- *  Returns +true+ if +num+ is an Integer.
- *
- *      1.0.integer?   #=> false
- *      1.integer?     #=> true
- */
-
-static VALUE
-num_int_p(VALUE num)
-{
-    return Qfalse;
 }
 
 /*
@@ -822,31 +798,6 @@ num_nonzero_p(VALUE num)
 	return Qnil;
     }
     return num;
-}
-
-/*
- *  call-seq:
- *     num.finite?  ->  true or false
- *
- *  Returns +true+ if +num+ is a finite number, otherwise returns +false+.
- */
-static VALUE
-num_finite_p(VALUE num)
-{
-    return Qtrue;
-}
-
-/*
- *  call-seq:
- *     num.infinite?  ->  -1, 1, or nil
- *
- *  Returns +nil+, -1, or 1 depending on whether the value is
- *  finite, <code>-Infinity</code>, or <code>+Infinity</code>.
- */
-static VALUE
-num_infinite_p(VALUE num)
-{
-    return Qnil;
 }
 
 /*
@@ -1205,11 +1156,11 @@ flodivmod(double x, double y, double *divp, double *modp)
 	div = x;
     else {
 	div = (x - mod) / y;
-	if (modp && divp) div = round(div);
+        if (modp && divp) div = round(div);
     }
     if (y*mod < 0) {
-	mod += y;
-	div -= 1.0;
+        mod += y;
+        div -= 1.0;
     }
     if (modp) *modp = mod;
     if (divp) *divp = div;
@@ -2382,34 +2333,6 @@ flo_truncate(int argc, VALUE *argv, VALUE num)
 	return flo_ceil(argc, argv, num);
     else
 	return flo_floor(argc, argv, num);
-}
-
-/*
- *  call-seq:
- *     float.positive?  ->  true or false
- *
- *  Returns +true+ if +float+ is greater than 0.
- */
-
-static VALUE
-flo_positive_p(VALUE num)
-{
-    double f = RFLOAT_VALUE(num);
-    return f > 0.0 ? Qtrue : Qfalse;
-}
-
-/*
- *  call-seq:
- *     float.negative?  ->  true or false
- *
- *  Returns +true+ if +float+ is less than 0.
- */
-
-static VALUE
-flo_negative_p(VALUE num)
-{
-    double f = RFLOAT_VALUE(num);
-    return f < 0.0 ? Qtrue : Qfalse;
 }
 
 /*
@@ -5269,8 +5192,6 @@ DEFINE_INT_SQRT(BDIGIT, rb_bdigit_dbl, BDIGIT_DBL)
 #define domain_error(msg) \
     rb_raise(rb_eMathDomainError, "Numerical argument is out of domain - " #msg)
 
-VALUE rb_big_isqrt(VALUE);
-
 /*
  *  Document-method: Integer::sqrt
  *  call-seq:
@@ -5460,12 +5381,8 @@ Init_Numeric(void)
     rb_define_method(rb_cNumeric, "magnitude", num_abs, 0);
     rb_define_method(rb_cNumeric, "to_int", num_to_int, 0);
 
-    rb_define_method(rb_cNumeric, "real?", num_real_p, 0);
-    rb_define_method(rb_cNumeric, "integer?", num_int_p, 0);
     rb_define_method(rb_cNumeric, "zero?", num_zero_p, 0);
     rb_define_method(rb_cNumeric, "nonzero?", num_nonzero_p, 0);
-    rb_define_method(rb_cNumeric, "finite?", num_finite_p, 0);
-    rb_define_method(rb_cNumeric, "infinite?", num_infinite_p, 0);
 
     rb_define_method(rb_cNumeric, "floor", num_floor, -1);
     rb_define_method(rb_cNumeric, "ceil", num_ceil, -1);
@@ -5656,8 +5573,6 @@ Init_Numeric(void)
     rb_define_method(rb_cFloat, "finite?",   rb_flo_is_finite_p, 0);
     rb_define_method(rb_cFloat, "next_float", flo_next_float, 0);
     rb_define_method(rb_cFloat, "prev_float", flo_prev_float, 0);
-    rb_define_method(rb_cFloat, "positive?", flo_positive_p, 0);
-    rb_define_method(rb_cFloat, "negative?", flo_negative_p, 0);
 }
 
 #undef rb_float_value

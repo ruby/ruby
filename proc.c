@@ -18,6 +18,7 @@
 #include "internal/object.h"
 #include "internal/proc.h"
 #include "internal/symbol.h"
+#include "method.h"
 #include "iseq.h"
 #include "vm_core.h"
 
@@ -55,6 +56,23 @@ static VALUE proc_binding(VALUE self);
 /* Proc */
 
 #define IS_METHOD_PROC_IFUNC(ifunc) ((ifunc)->func == bmcall)
+
+/* :FIXME: The way procs are cloned has been historically different from the
+ * way everything else are.  @shyouhei is not sure for the intention though.
+ */
+#undef CLONESETUP
+static inline void
+CLONESETUP(VALUE clone, VALUE obj)
+{
+    RBIMPL_ASSERT_OR_ASSUME(! RB_SPECIAL_CONST_P(obj));
+    RBIMPL_ASSERT_OR_ASSUME(! RB_SPECIAL_CONST_P(clone));
+
+    const VALUE flags = RUBY_FL_PROMOTED0 | RUBY_FL_PROMOTED1 | RUBY_FL_FINALIZE;
+    rb_obj_setup(clone, rb_singleton_class_clone(obj),
+                 RB_FL_TEST_RAW(obj, ~flags));
+    rb_singleton_class_attached(RBASIC_CLASS(clone), clone);
+    if (RB_FL_TEST(obj, RUBY_FL_EXIVAR)) rb_copy_generic_ivar(clone, obj);
+}
 
 static void
 block_mark(const struct rb_block *block)
@@ -1692,18 +1710,24 @@ mnew_from_me(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
 }
 
 static VALUE
-mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
+mnew_callable(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
 {
     const rb_method_entry_t *me;
     VALUE iclass = Qnil;
 
-    if (obj == Qundef) { /* UnboundMethod */
-        me = rb_method_entry_with_refinements(klass, id, &iclass);
-    }
-    else {
-        me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(klass, id, &iclass);
-    }
+    ASSUME(obj != Qundef);
+    me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(klass, id, &iclass);
     return mnew_from_me(me, klass, iclass, obj, id, mclass, scope);
+}
+
+static VALUE
+mnew_unbound(VALUE klass, ID id, VALUE mclass, int scope)
+{
+    const rb_method_entry_t *me;
+    VALUE iclass = Qnil;
+
+    me = rb_method_entry_with_refinements(klass, id, &iclass);
+    return mnew_from_me(me, klass, iclass, Qundef, id, mclass, scope);
 }
 
 static inline VALUE
@@ -1943,7 +1967,7 @@ obj_method(VALUE obj, VALUE vid, int scope)
         if (m) return m;
 	rb_method_name_error(klass, vid);
     }
-    return mnew(klass, obj, id, mclass, scope);
+    return mnew_callable(klass, obj, id, mclass, scope);
 }
 
 /*
@@ -2104,7 +2128,7 @@ rb_mod_instance_method(VALUE mod, VALUE vid)
     if (!id) {
 	rb_method_name_error(mod, vid);
     }
-    return mnew(mod, Qundef, id, rb_cUnboundMethod, FALSE);
+    return mnew_unbound(mod, id, rb_cUnboundMethod, FALSE);
 }
 
 /*
@@ -2121,7 +2145,7 @@ rb_mod_public_instance_method(VALUE mod, VALUE vid)
     if (!id) {
 	rb_method_name_error(mod, vid);
     }
-    return mnew(mod, Qundef, id, rb_cUnboundMethod, TRUE);
+    return mnew_unbound(mod, id, rb_cUnboundMethod, TRUE);
 }
 
 /*
@@ -2489,12 +2513,8 @@ rb_method_call_with_block(int argc, const VALUE *argv, VALUE method, VALUE passe
  */
 
 static void
-convert_umethod_to_method_components(VALUE method, VALUE recv, VALUE *methclass_out, VALUE *klass_out, VALUE *iclass_out, const rb_method_entry_t **me_out)
+convert_umethod_to_method_components(const struct METHOD *data, VALUE recv, VALUE *methclass_out, VALUE *klass_out, VALUE *iclass_out, const rb_method_entry_t **me_out)
 {
-    struct METHOD *data;
-
-    TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
-
     VALUE methclass = data->me->owner;
     VALUE iclass = data->me->defined_class;
     VALUE klass = CLASS_OF(recv);
@@ -2575,7 +2595,9 @@ umethod_bind(VALUE method, VALUE recv)
 {
     VALUE methclass, klass, iclass;
     const rb_method_entry_t *me;
-    convert_umethod_to_method_components(method, recv, &methclass, &klass, &iclass, &me);
+    const struct METHOD *data;
+    TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
+    convert_umethod_to_method_components(data, recv, &methclass, &klass, &iclass, &me);
 
     struct METHOD *bound;
     method = TypedData_Make_Struct(rb_cMethod, struct METHOD, &method_data_type, bound);
@@ -2603,15 +2625,24 @@ umethod_bind_call(int argc, VALUE *argv, VALUE method)
     argc--;
     argv++;
 
-    VALUE methclass, klass, iclass;
-    const rb_method_entry_t *me;
-    convert_umethod_to_method_components(method, recv, &methclass, &klass, &iclass, &me);
-    struct METHOD bound = { recv, klass, 0, me };
-
     VALUE passed_procval = rb_block_given_p() ? rb_block_proc() : Qnil;
-
     rb_execution_context_t *ec = GET_EC();
-    return call_method_data(ec, &bound, argc, argv, passed_procval, RB_PASS_CALLED_KEYWORDS);
+
+    const struct METHOD *data;
+    TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
+
+    const rb_callable_method_entry_t *cme = rb_callable_method_entry(CLASS_OF(recv), data->me->called_id);
+    if (data->me == (const rb_method_entry_t *)cme) {
+        vm_passed_block_handler_set(ec, proc_to_block_handler(passed_procval));
+        return rb_vm_call_kw(ec, recv, cme->called_id, argc, argv, cme, RB_PASS_CALLED_KEYWORDS);
+    } else {
+        VALUE methclass, klass, iclass;
+        const rb_method_entry_t *me;
+        convert_umethod_to_method_components(data, recv, &methclass, &klass, &iclass, &me);
+        struct METHOD bound = { recv, klass, 0, me };
+
+        return call_method_data(ec, &bound, argc, argv, passed_procval, RB_PASS_CALLED_KEYWORDS);
+    }
 }
 
 /*
@@ -3196,7 +3227,7 @@ method_super_method(VALUE method)
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
     iclass = data->iclass;
     if (!iclass) return Qnil;
-    if (data->me->def->type == VM_METHOD_TYPE_ALIAS) {
+    if (data->me->def->type == VM_METHOD_TYPE_ALIAS && data->me->defined_class) {
         super_class = RCLASS_SUPER(rb_find_defined_class_by_owner(data->me->defined_class,
             data->me->def->body.alias.original_me->owner));
         mid = data->me->def->body.alias.original_me->def->original_id;

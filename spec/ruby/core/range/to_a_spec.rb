@@ -16,6 +16,11 @@ describe "Range#to_a" do
     (0xffff...0xfffd).to_a.should == []
   end
 
+  it "works with Ranges of 64-bit integers" do
+    large = 1 << 40
+    (large..large+1).to_a.should == [1099511627776, 1099511627777]
+  end
+
   it "works with Ranges of Symbols" do
     (:A..:z).to_a.size.should == 58
   end

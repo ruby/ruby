@@ -101,6 +101,7 @@ struct iseq_compile_data {
       struct iseq_compile_data_storage *storage_head;
       struct iseq_compile_data_storage *storage_current;
     } insn;
+    bool in_rescue;
     int loopval_popped;	/* used by NODE_BREAK */
     int last_line;
     int label_no;
@@ -289,7 +290,6 @@ enum defined_type {
     DEFINED_FALSE,
     DEFINED_ASGN,
     DEFINED_EXPR,
-    DEFINED_IVAR2,
     DEFINED_REF,
     DEFINED_FUNC,
     DEFINED_CONST_FROM

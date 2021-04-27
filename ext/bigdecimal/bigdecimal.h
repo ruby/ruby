@@ -24,9 +24,9 @@
 # define SIZEOF_DECDIG 4
 # define PRI_DECDIG_PREFIX ""
 # ifdef PRI_LL_PREFIX
-# define PRI_DECDIG_DBL_PREFIX PRI_LL_PREFIX
+#  define PRI_DECDIG_DBL_PREFIX PRI_LL_PREFIX
 # else
-# define PRI_DECDIG_DBL_PREFIX "l"
+#  define PRI_DECDIG_DBL_PREFIX "l"
 # endif
 #else
 # define DECDIG uint16_t
@@ -51,6 +51,34 @@
 #define PRIxDECDIG_DBL PRI_DECDIG_DBL_PREFIX"x"
 #define PRIXDECDIG_DBL PRI_DECDIG_DBL_PREFIX"X"
 
+#if SIZEOF_DECDIG == 4
+# define BIGDECIMAL_BASE ((DECDIG)1000000000U)
+# define BIGDECIMAL_COMPONENT_FIGURES 9
+/*
+ * The number of components required for a 64-bit integer.
+ *
+ *   INT64_MAX:   9_223372036_854775807
+ *   UINT64_MAX: 18_446744073_709551615
+ */
+# define BIGDECIMAL_INT64_MAX_LENGTH 3
+
+#elif SIZEOF_DECDIG == 2
+# define BIGDECIMAL_BASE ((DECDIG)10000U)
+# define BIGDECIMAL_COMPONENT_FIGURES 4
+/*
+ * The number of components required for a 64-bit integer.
+ *
+ *   INT64_MAX:   922_3372_0368_5477_5807
+ *   UINT64_MAX: 1844_6744_0737_0955_1615
+ */
+# define BIGDECIMAL_INT64_MAX_LENGTH 5
+
+#else
+# error Unknown size of DECDIG
+#endif
+
+#define BIGDECIMAL_DOUBLE_FIGURES (1+DBL_DIG)
+
 #if defined(__cplusplus)
 extern "C" {
 #if 0
@@ -59,25 +87,6 @@ extern "C" {
 #endif
 
 extern VALUE rb_cBigDecimal;
-
-#if 0 || SIZEOF_DECDIG >= 16
-# define RMPD_COMPONENT_FIGURES 38
-# define RMPD_BASE ((DECDIG)100000000000000000000000000000000000000U)
-#elif SIZEOF_DECDIG >= 8
-# define RMPD_COMPONENT_FIGURES 19
-# define RMPD_BASE ((DECDIG)10000000000000000000U)
-#elif SIZEOF_DECDIG >= 4
-# define RMPD_COMPONENT_FIGURES 9
-# define RMPD_BASE ((DECDIG)1000000000U)
-#elif SIZEOF_DECDIG >= 2
-# define RMPD_COMPONENT_FIGURES 4
-# define RMPD_BASE ((DECDIG)10000U)
-#else
-# define RMPD_COMPONENT_FIGURES 2
-# define RMPD_BASE ((DECDIG)100U)
-#endif
-
-#define RMPD_DOUBLE_FIGURES (1+DBL_DIG)
 
 /*
  *  NaN & Infinity
@@ -104,7 +113,7 @@ extern VALUE rb_cBigDecimal;
 /* Following 2 exceptions can't controlled by user */
 #define VP_EXCEPTION_OP         ((unsigned short)0x0020)
 
-#define RMPD_EXCEPTION_MODE_DEFAULT 0U
+#define BIGDECIMAL_EXCEPTION_MODE_DEFAULT 0U
 
 /* Computation mode */
 #define VP_ROUND_MODE            ((unsigned short)0x0100)
@@ -116,7 +125,7 @@ extern VALUE rb_cBigDecimal;
 #define VP_ROUND_FLOOR      6
 #define VP_ROUND_HALF_EVEN  7
 
-#define RMPD_ROUNDING_MODE_DEFAULT  VP_ROUND_HALF_UP
+#define BIGDECIMAL_ROUNDING_MODE_DEFAULT  VP_ROUND_HALF_UP
 
 #define VP_SIGN_NaN                0 /* NaN                      */
 #define VP_SIGN_POSITIVE_ZERO      1 /* Positive zero            */
@@ -171,16 +180,9 @@ VP_EXPORT Real *VpNewRbClass(size_t mx, char const *str, VALUE klass, bool stric
 
 VP_EXPORT Real *VpCreateRbObject(size_t mx, const char *str, bool raise_exception);
 
-static inline DECDIG
-rmpd_base_value(void) { return RMPD_BASE; }
-static inline size_t
-rmpd_component_figures(void) { return RMPD_COMPONENT_FIGURES; }
-static inline size_t
-rmpd_double_figures(void) { return RMPD_DOUBLE_FIGURES; }
-
-#define VpBaseFig() rmpd_component_figures()
-#define VpDblFig() rmpd_double_figures()
-#define VpBaseVal() rmpd_base_value()
+#define VpBaseFig() BIGDECIMAL_COMPONENT_FIGURES
+#define VpDblFig() BIGDECIMAL_DOUBLE_FIGURES
+#define VpBaseVal() BIGDECIMAL_BASE
 
 /* Zero,Inf,NaN (isinf(),isnan() used to check) */
 VP_EXPORT double VpGetDoubleNaN(void);
@@ -228,7 +230,8 @@ VP_EXPORT int VpActiveRound(Real *y, Real *x, unsigned short f, ssize_t il);
 VP_EXPORT int VpMidRound(Real *y, unsigned short f, ssize_t nf);
 VP_EXPORT int VpLeftRound(Real *y, unsigned short f, ssize_t nf);
 VP_EXPORT void VpFrac(Real *y, Real *x);
-VP_EXPORT int VpPower(Real *y, Real *x, SIGNED_VALUE n);
+VP_EXPORT int VpPowerByInt(Real *y, Real *x, SIGNED_VALUE n);
+#define VpPower VpPowerByInt
 
 /* VP constants */
 VP_EXPORT Real *VpOne(void);

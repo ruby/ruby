@@ -21,15 +21,6 @@
 # include <unistd.h>
 #endif
 
-#if defined HAVE_CRYPT_R
-# if defined HAVE_CRYPT_H
-#  include <crypt.h>
-# endif
-#elif !defined HAVE_CRYPT
-# include "missing/crypt.h"
-# define HAVE_CRYPT_R 1
-#endif
-
 #include "debug_counter.h"
 #include "encindex.h"
 #include "gc.h"
@@ -54,6 +45,15 @@
 #include "ruby/util.h"
 #include "ruby_assert.h"
 #include "vm_sync.h"
+
+#if defined HAVE_CRYPT_R
+# if defined HAVE_CRYPT_H
+#  include <crypt.h>
+# endif
+#elif !defined HAVE_CRYPT
+# include "missing/crypt.h"
+# define HAVE_CRYPT_R 1
+#endif
 
 #define BEG(no) (regs->beg[(no)])
 #define END(no) (regs->end[(no)])
@@ -197,7 +197,6 @@ VALUE rb_cSymbol;
     ((len) <= RSTRING_EMBED_LEN_MAX + 1 - (termlen))
 
 static VALUE str_replace_shared_without_enc(VALUE str2, VALUE str);
-static VALUE str_new_shared(VALUE klass, VALUE str);
 static VALUE str_new_frozen(VALUE klass, VALUE orig);
 static VALUE str_new_frozen_buffer(VALUE klass, VALUE orig, int copy_encoding);
 static VALUE str_new_static(VALUE klass, const char *ptr, long len, int encindex);
@@ -3497,7 +3496,7 @@ str_casecmp(VALUE str1, VALUE str2)
 {
     long len;
     rb_encoding *enc;
-    char *p1, *p1end, *p2, *p2end;
+    const char *p1, *p1end, *p2, *p2end;
 
     enc = rb_enc_compatible(str1, str2);
     if (!enc) {
@@ -3557,7 +3556,7 @@ str_casecmp(VALUE str1, VALUE str2)
  *  Unicode case folding, otherwise +false+:
  *    'foo'.casecmp?('foo') # => true
  *    'foo'.casecmp?('food') # => false
- *    'food'.casecmp?('foo') # => true
+ *    'food'.casecmp?('foo') # => false
  *    'FOO'.casecmp?('foo') # => true
  *    'foo'.casecmp?('FOO') # => true
  *
@@ -9264,14 +9263,14 @@ lstrip_offset(VALUE str, const char *s, const char *e, rb_encoding *enc)
 
     /* remove spaces at head */
     if (single_byte_optimizable(str)) {
-	while (s < e && ascii_isspace(*s)) s++;
+        while (s < e && (*s == '\0' || ascii_isspace(*s))) s++;
     }
     else {
 	while (s < e) {
 	    int n;
 	    unsigned int cc = rb_enc_codepoint_len(s, e, &n, enc);
 
-	    if (!rb_isspace(cc)) break;
+            if (cc && !rb_isspace(cc)) break;
 	    s += n;
 	}
     }
@@ -9668,6 +9667,42 @@ rb_str_oct(VALUE str)
     return rb_str_to_inum(str, -8, FALSE);
 }
 
+#ifndef HAVE_CRYPT_R
+# include "ruby/thread_native.h"
+# include "ruby/atomic.h"
+
+static struct {
+    rb_atomic_t initialized;
+    rb_nativethread_lock_t lock;
+} crypt_mutex;
+
+static void
+crypt_mutex_destroy(void)
+{
+    RUBY_ASSERT_ALWAYS(crypt_mutex.initialized == 1);
+    rb_nativethread_lock_destroy(&crypt_mutex.lock);
+    crypt_mutex.initialized = 0;
+}
+
+static void
+crypt_mutex_initialize(void)
+{
+    rb_atomic_t i;
+    while ((i = RUBY_ATOMIC_CAS(crypt_mutex.initialized, 0, 2)) == 2);
+    switch (i) {
+      case 0:
+	rb_nativethread_lock_initialize(&crypt_mutex.lock);
+	atexit(crypt_mutex_destroy);
+	RUBY_ASSERT(crypt_mutex.initialized == 2);
+	RUBY_ATOMIC_CAS(crypt_mutex.initialized, 2, 1);
+	break;
+      case 1:
+	break;
+      default:
+	rb_bug("crypt_mutex.initialized: %d->%d", i, crypt_mutex.initialized);
+    }
+}
+#endif
 
 /*
  *  call-seq:
@@ -9712,7 +9747,7 @@ rb_str_oct(VALUE str)
  *  * Even in the "modular" mode, some hash functions are considered
  *    archaic and no longer recommended at all; for instance module
  *    <code>$1$</code> is officially abandoned by its author: see
- *    http://phk.freebsd.dk/sagas/md5crypt_eol.html .  For another
+ *    http://phk.freebsd.dk/sagas/md5crypt_eol/ .  For another
  *    instance module <code>$3$</code> is considered completely
  *    broken: see the manpage of FreeBSD.
  *
@@ -9738,7 +9773,7 @@ rb_str_crypt(VALUE str, VALUE salt)
 #   define CRYPT_END() ALLOCV_END(databuf)
 #else
     extern char *crypt(const char *, const char *);
-#   define CRYPT_END() (void)0
+#   define CRYPT_END() rb_nativethread_lock_unlock(&crypt_mutex.lock)
 #endif
     VALUE result;
     const char *s, *saltp;
@@ -9750,13 +9785,12 @@ rb_str_crypt(VALUE str, VALUE salt)
     StringValue(salt);
     mustnot_wchar(str);
     mustnot_wchar(salt);
-    if (RSTRING_LEN(salt) < 2) {
-        goto short_salt;
-    }
-
     s = StringValueCStr(str);
     saltp = RSTRING_PTR(salt);
-    if (!saltp[0] || !saltp[1]) goto short_salt;
+    if (RSTRING_LEN(salt) < 2 || !saltp[0] || !saltp[1]) {
+	rb_raise(rb_eArgError, "salt too short (need >=2 bytes)");
+    }
+
 #ifdef BROKEN_CRYPT
     if (!ISASCII((unsigned char)saltp[0]) || !ISASCII((unsigned char)saltp[1])) {
 	salt_8bit_clean[0] = saltp[0] & 0x7f;
@@ -9772,6 +9806,8 @@ rb_str_crypt(VALUE str, VALUE salt)
 # endif
     res = crypt_r(s, saltp, data);
 #else
+    crypt_mutex_initialize();
+    rb_nativethread_lock_lock(&crypt_mutex.lock);
     res = crypt(s, saltp);
 #endif
     if (!res) {
@@ -9782,10 +9818,6 @@ rb_str_crypt(VALUE str, VALUE salt)
     result = rb_str_new_cstr(res);
     CRYPT_END();
     return result;
-
-  short_salt:
-    rb_raise(rb_eArgError, "salt too short (need >=2 bytes)");
-    UNREACHABLE_RETURN(Qundef);
 }
 
 
@@ -11504,6 +11536,10 @@ rb_interned_str_cstr(const char *ptr)
 VALUE
 rb_enc_interned_str(const char *ptr, long len, rb_encoding *enc)
 {
+    if (UNLIKELY(rb_enc_autoload_p(enc))) {
+        rb_enc_autoload(enc);
+    }
+
     struct RString fake_str;
     return register_fstring(rb_setup_fake_str(&fake_str, ptr, len, enc), TRUE);
 }
@@ -11600,7 +11636,7 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
  *  - #casecmp?:: Returns +true+ if the string is equal to a given string after Unicode case folding;
  *                +false+ otherwise.
  *
- *  === Methods for Modifying +self+
+ *  === Methods for Modifying a \String
  *
  *  Each of these methods modifies +self+.
  *

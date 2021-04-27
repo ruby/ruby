@@ -637,11 +637,10 @@ class TC_Set < Test::Unit::TestCase
     assert_not_equal(Set[1], [1])
 
     set1 = Class.new(Set)["a", "b"]
-    set2 = Set["a", "b", set1]
-    set1 = set1.add(set1.clone)
+    set1.add(set1).reset # Make recursive
+    set2 = Set["a", "b", Set["a", "b", set1]]
 
-    assert_equal(set2, set2.clone)
-    assert_equal(set1.clone, set1)
+    assert_equal(set1, set2)
 
     assert_not_equal(Set[Exception.new,nil], Set[Exception.new,Exception.new], "[ruby-dev:26127]")
   end

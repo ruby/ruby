@@ -115,6 +115,11 @@ describe "CApiObject" do
       @o.rb_respond_to(true, :object_id).should == true
       @o.rb_respond_to(14, :succ).should == true
     end
+
+    it "returns 0 if the method has been defined as rb_f_notimplement" do
+      @o.respond_to?(:not_implemented_method).should == false
+      @o.rb_respond_to(@o, :not_implemented_method).should == false
+    end
   end
 
   describe "rb_obj_respond_to" do
@@ -153,6 +158,20 @@ describe "CApiObject" do
 
     it "returns -N-1 when the method takes N required, variable additional, and a block argument" do
       @o.rb_obj_method_arity(@obj, :six).should == -3
+    end
+  end
+
+  describe "rb_obj_method" do
+    it "returns the method object for a symbol" do
+      method = @o.rb_obj_method("test", :size)
+      method.owner.should == String
+      method.name.to_sym.should == :size
+    end
+
+    it "returns the method object for a string" do
+      method = @o.rb_obj_method("test", "size")
+      method.owner.should == String
+      method.name.to_sym.should == :size
     end
   end
 

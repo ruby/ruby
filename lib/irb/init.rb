@@ -146,7 +146,7 @@ module IRB # :nodoc:
     @CONF[:AT_EXIT] = []
   end
 
-  def IRB.set_measure_callback(type = nil, arg = nil)
+  def IRB.set_measure_callback(type = nil, arg = nil, &block)
     added = nil
     if type
       type_sym = type.upcase.to_sym
@@ -155,6 +155,16 @@ module IRB # :nodoc:
       end
     elsif IRB.conf[:MEASURE_PROC][:CUSTOM]
       added = [:CUSTOM, IRB.conf[:MEASURE_PROC][:CUSTOM], arg]
+    elsif block_given?
+      added = [:BLOCK, block, arg]
+      found = IRB.conf[:MEASURE_CALLBACKS].find{ |m| m[0] == added[0] && m[2] == added[2] }
+      if found
+        found[1] = block
+        return added
+      else
+        IRB.conf[:MEASURE_CALLBACKS] << added
+        return added
+      end
     else
       added = [:TIME, IRB.conf[:MEASURE_PROC][:TIME], arg]
     end

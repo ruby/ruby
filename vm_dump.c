@@ -756,7 +756,7 @@ rb_print_backtrace(void)
 #define MAX_NATIVE_TRACE 1024
     static void *trace[MAX_NATIVE_TRACE];
     int n = (int)backtrace(trace, MAX_NATIVE_TRACE);
-#if (defined(USE_ELF) || defined(HAVE_MACH_O_LOADER_H)) && defined(HAVE_DLADDR) && !defined(__sparc) && !defined(__riscv)
+#if (defined(USE_ELF) || defined(HAVE_MACH_O_LOADER_H)) && defined(HAVE_DLADDR) && !defined(__sparc)
     rb_dump_backtrace_with_lines(n, trace);
 #else
     char **syms = backtrace_symbols(trace, n);
@@ -781,11 +781,11 @@ rb_print_backtrace(void)
 #endif
 
 #if defined __linux__
-# if defined __x86_64__ || defined __i386__ || defined __aarch64__ || defined __arm__
+# if defined __x86_64__ || defined __i386__ || defined __aarch64__ || defined __arm__ || defined __riscv
 #  define HAVE_PRINT_MACHINE_REGISTERS 1
 # endif
 #elif defined __APPLE__
-# if defined __x86_64__ || defined __i386__
+# if defined __x86_64__ || defined __i386__ || defined __aarch64__
 #  define HAVE_PRINT_MACHINE_REGISTERS 1
 # endif
 #endif
@@ -796,12 +796,9 @@ print_machine_register(size_t reg, const char *reg_name, int col_count, int max_
 {
     int ret;
     char buf[64];
+    static const int size_width = sizeof(size_t) * CHAR_BIT / 4;
 
-#ifdef __LP64__
-    ret = snprintf(buf, sizeof(buf), " %3.3s: 0x%016" PRIxSIZE, reg_name, reg);
-#else
-    ret = snprintf(buf, sizeof(buf), " %3.3s: 0x%08" PRIxSIZE, reg_name, reg);
-#endif
+    ret = snprintf(buf, sizeof(buf), " %3.3s: 0x%.*" PRIxSIZE, reg_name, size_width, reg);
     if (col_count + ret > max_col) {
 	fputs("\n", stderr);
 	col_count = 0;
@@ -813,7 +810,7 @@ print_machine_register(size_t reg, const char *reg_name, int col_count, int max_
 # ifdef __linux__
 #   if defined(__x86_64__) || defined(__i386__)
 #       define dump_machine_register(reg) (col_count = print_machine_register(mctx->gregs[REG_##reg], #reg, col_count, 80))
-#   elif defined(__aarch64__) || defined(__arm__)
+#   elif defined(__aarch64__) || defined(__arm__) || defined(__riscv)
 #       define dump_machine_register(reg, regstr) (col_count = print_machine_register(reg, regstr, col_count, 80))
 #   endif
 # elif defined __APPLE__
@@ -908,6 +905,28 @@ rb_dump_machine_register(const ucontext_t *ctx)
 	dump_machine_register(mctx->arm_r10, "r10");
 	dump_machine_register(mctx->arm_sp, "sp");
 	dump_machine_register(mctx->fault_address, "fault_address");
+#   elif defined __riscv
+	dump_machine_register(mctx->__gregs[REG_SP], "sp");
+	dump_machine_register(mctx->__gregs[REG_S0], "s0");
+	dump_machine_register(mctx->__gregs[REG_S1], "s1");
+	dump_machine_register(mctx->__gregs[REG_A0], "a0");
+	dump_machine_register(mctx->__gregs[REG_A0+1], "a1");
+	dump_machine_register(mctx->__gregs[REG_A0+2], "a2");
+	dump_machine_register(mctx->__gregs[REG_A0+3], "a3");
+	dump_machine_register(mctx->__gregs[REG_A0+4], "a4");
+	dump_machine_register(mctx->__gregs[REG_A0+5], "a5");
+	dump_machine_register(mctx->__gregs[REG_A0+6], "a6");
+	dump_machine_register(mctx->__gregs[REG_A0+7], "a7");
+	dump_machine_register(mctx->__gregs[REG_S2], "s2");
+	dump_machine_register(mctx->__gregs[REG_S2+1], "s3");
+	dump_machine_register(mctx->__gregs[REG_S2+2], "s4");
+	dump_machine_register(mctx->__gregs[REG_S2+3], "s5");
+	dump_machine_register(mctx->__gregs[REG_S2+4], "s6");
+	dump_machine_register(mctx->__gregs[REG_S2+5], "s7");
+	dump_machine_register(mctx->__gregs[REG_S2+6], "s8");
+	dump_machine_register(mctx->__gregs[REG_S2+7], "s9");
+	dump_machine_register(mctx->__gregs[REG_S2+8], "s10");
+	dump_machine_register(mctx->__gregs[REG_S2+9], "s11");
 #   endif
     }
 # elif defined __APPLE__
@@ -949,6 +968,29 @@ rb_dump_machine_register(const ucontext_t *ctx)
 	dump_machine_register(es);
 	dump_machine_register(fs);
 	dump_machine_register(gs);
+#   elif defined __aarch64__
+	dump_machine_register(x[0]);
+	dump_machine_register(x[1]);
+	dump_machine_register(x[2]);
+	dump_machine_register(x[3]);
+	dump_machine_register(x[4]);
+	dump_machine_register(x[5]);
+	dump_machine_register(x[6]);
+	dump_machine_register(x[7]);
+	dump_machine_register(x[18]);
+	dump_machine_register(x[19]);
+	dump_machine_register(x[20]);
+	dump_machine_register(x[21]);
+	dump_machine_register(x[22]);
+	dump_machine_register(x[23]);
+	dump_machine_register(x[24]);
+	dump_machine_register(x[25]);
+	dump_machine_register(x[26]);
+	dump_machine_register(x[27]);
+	dump_machine_register(x[28]);
+	dump_machine_register(lr);
+	dump_machine_register(fp);
+	dump_machine_register(sp);
 #   endif
     }
 # endif

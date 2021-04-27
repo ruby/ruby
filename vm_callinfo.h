@@ -387,18 +387,6 @@ extern const struct rb_callcache *rb_vm_empty_cc(void);
 /* callcache: mutate */
 
 static inline void
-vm_cc_cme_set(const struct rb_callcache *cc, const struct rb_callable_method_entry_struct *cme)
-{
-    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
-    VM_ASSERT(cc != vm_cc_empty());
-    VM_ASSERT(vm_cc_cme(cc) != NULL);
-    VM_ASSERT(vm_cc_cme(cc)->called_id == cme->called_id);
-    VM_ASSERT(!vm_cc_markable(cc)); // only used for vm_eval.c
-
-    *((const struct rb_callable_method_entry_struct **)&cc->cme_) = cme;
-}
-
-static inline void
 vm_cc_call_set(const struct rb_callcache *cc, vm_call_handler call)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));

@@ -1390,13 +1390,22 @@ vm_throw_start(const rb_execution_context_t *ec, rb_control_frame_t *const reg_c
     }
     else if (state == TAG_RETURN) {
 	const VALUE *current_ep = GET_EP();
-	const VALUE *target_lep = VM_EP_LEP(current_ep);
+        const VALUE *target_ep = NULL, *target_lep, *ep = current_ep;
 	int in_class_frame = 0;
 	int toplevel = 1;
 	escape_cfp = reg_cfp;
 
-	while (escape_cfp < eocfp) {
-	    const VALUE *lep = VM_CF_LEP(escape_cfp);
+        // find target_lep, target_ep
+        while (!VM_ENV_LOCAL_P(ep)) {
+            if (VM_ENV_FLAGS(ep, VM_FRAME_FLAG_LAMBDA) && target_ep == NULL) {
+                target_ep = ep;
+            }
+            ep = VM_ENV_PREV_EP(ep);
+        }
+        target_lep = ep;
+
+        while (escape_cfp < eocfp) {
+            const VALUE *lep = VM_CF_LEP(escape_cfp);
 
 	    if (!target_lep) {
 		target_lep = lep;
@@ -1414,7 +1423,7 @@ vm_throw_start(const rb_execution_context_t *ec, rb_control_frame_t *const reg_c
 		    toplevel = 0;
 		    if (in_class_frame) {
 			/* lambda {class A; ... return ...; end} */
-			goto valid_return;
+                        goto valid_return;
 		    }
 		    else {
 			const VALUE *tep = current_ep;
@@ -1422,7 +1431,12 @@ vm_throw_start(const rb_execution_context_t *ec, rb_control_frame_t *const reg_c
 			while (target_lep != tep) {
 			    if (escape_cfp->ep == tep) {
 				/* in lambda */
-				goto valid_return;
+                                if (tep == target_ep) {
+                                    goto valid_return;
+                                }
+                                else {
+                                    goto unexpected_return;
+                                }
 			    }
 			    tep = VM_ENV_PREV_EP(tep);
 			}
@@ -1434,7 +1448,12 @@ vm_throw_start(const rb_execution_context_t *ec, rb_control_frame_t *const reg_c
 		      case ISEQ_TYPE_MAIN:
                         if (toplevel) {
                             if (in_class_frame) goto unexpected_return;
-                            goto valid_return;
+                            if (target_ep == NULL) {
+                                goto valid_return;
+                            }
+                            else {
+                                goto unexpected_return;
+                            }
                         }
 			break;
 		      case ISEQ_TYPE_EVAL:
@@ -1448,7 +1467,12 @@ vm_throw_start(const rb_execution_context_t *ec, rb_control_frame_t *const reg_c
 	    }
 
 	    if (escape_cfp->ep == target_lep && escape_cfp->iseq->body->type == ISEQ_TYPE_METHOD) {
-		goto valid_return;
+                if (target_ep == NULL) {
+                    goto valid_return;
+                }
+                else {
+                    goto unexpected_return;
+                }
 	    }
 
 	    escape_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(escape_cfp);
@@ -1854,6 +1878,7 @@ check_cfunc(const rb_callable_method_entry_t *me, VALUE (*func)())
 static inline int
 vm_method_cfunc_is(const rb_iseq_t *iseq, CALL_DATA cd, VALUE recv, VALUE (*func)())
 {
+    VM_ASSERT(iseq != NULL);
     const struct rb_callcache *cc = vm_search_method((VALUE)iseq, cd, recv);
     return check_cfunc(vm_cc_cme(cc), func);
 }
@@ -1890,7 +1915,7 @@ FLONUM_2_P(VALUE a, VALUE b)
 }
 
 static VALUE
-opt_equality(const rb_iseq_t *cd_owner, VALUE recv, VALUE obj, CALL_DATA cd)
+opt_equality_specialized(VALUE recv, VALUE obj)
 {
     if (FIXNUM_2_P(recv, obj) && EQ_UNREDEFINED_P(INTEGER)) {
         goto compare_by_identity;
@@ -1902,7 +1927,7 @@ opt_equality(const rb_iseq_t *cd_owner, VALUE recv, VALUE obj, CALL_DATA cd)
         goto compare_by_identity;
     }
     else if (SPECIAL_CONST_P(recv)) {
-        goto compare_by_funcall;
+        //
     }
     else if (RBASIC_CLASS(recv) == rb_cFloat && RB_FLOAT_TYPE_P(obj) && EQ_UNREDEFINED_P(FLOAT)) {
         double a = RFLOAT_VALUE(recv);
@@ -1932,11 +1957,7 @@ opt_equality(const rb_iseq_t *cd_owner, VALUE recv, VALUE obj, CALL_DATA cd)
             return rb_str_eql_internal(obj, recv);
         }
     }
-
-  compare_by_funcall:
-    if (! vm_method_cfunc_is(cd_owner, cd, recv, rb_obj_equal)) {
-        return Qundef;
-    }
+    return Qundef;
 
   compare_by_identity:
     if (recv == obj) {
@@ -1947,47 +1968,77 @@ opt_equality(const rb_iseq_t *cd_owner, VALUE recv, VALUE obj, CALL_DATA cd)
     }
 }
 
+static VALUE
+opt_equality(const rb_iseq_t *cd_owner, VALUE recv, VALUE obj, CALL_DATA cd)
+{
+    VM_ASSERT(cd_owner != NULL);
+
+    VALUE val = opt_equality_specialized(recv, obj);
+    if (val != Qundef) return val;
+
+    if (!vm_method_cfunc_is(cd_owner, cd, recv, rb_obj_equal)) {
+        return Qundef;
+    }
+    else {
+        if (recv == obj) {
+            return Qtrue;
+        }
+        else {
+            return Qfalse;
+        }
+    }
+}
+
 #undef EQ_UNREDEFINED_P
 
 #ifndef MJIT_HEADER
+
+static inline const struct rb_callcache *gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, int argc); // vm_eval.c
+NOINLINE(static VALUE opt_equality_by_mid_slowpath(VALUE recv, VALUE obj, ID mid));
+
+static VALUE
+opt_equality_by_mid_slowpath(VALUE recv, VALUE obj, ID mid)
+{
+    const struct rb_callcache *cc = gccct_method_search(GET_EC(), recv, mid, 1);
+
+    if (cc && check_cfunc(vm_cc_cme(cc), rb_obj_equal)) {
+        if (recv == obj) {
+            return Qtrue;
+        }
+        else {
+            return Qfalse;
+        }
+    }
+    else {
+        return Qundef;
+    }
+}
+
+static VALUE
+opt_equality_by_mid(VALUE recv, VALUE obj, ID mid)
+{
+    VALUE val = opt_equality_specialized(recv, obj);
+    if (val != Qundef) {
+        return val;
+    }
+    else {
+        return opt_equality_by_mid_slowpath(recv, obj, mid);
+    }
+}
+
 VALUE
 rb_equal_opt(VALUE obj1, VALUE obj2)
 {
-    STATIC_ASSERT(idEq_is_embeddable, VM_CI_EMBEDDABLE_P(idEq, 0, 1, 0));
-
-#if USE_EMBED_CI
-    static struct rb_call_data cd = {
-        .ci = vm_ci_new_id(idEq, 0, 1, 0),
-    };
-#else
-    struct rb_call_data cd = {
-        .ci = &VM_CI_ON_STACK(idEq, 0, 1, 0),
-    };
-#endif
-
-    cd.cc = &vm_empty_cc;
-    return opt_equality(NULL, obj1, obj2, &cd);
+    return opt_equality_by_mid(obj1, obj2, idEq);
 }
 
 VALUE
 rb_eql_opt(VALUE obj1, VALUE obj2)
 {
-    STATIC_ASSERT(idEqlP_is_embeddable, VM_CI_EMBEDDABLE_P(idEqlP, 0, 1, 0));
-
-#if USE_EMBED_CI
-    static struct rb_call_data cd = {
-        .ci = vm_ci_new_id(idEqlP, 0, 1, 0),
-    };
-#else
-    struct rb_call_data cd = {
-        .ci = &VM_CI_ON_STACK(idEqlP, 0, 1, 0),
-    };
-#endif
-
-    cd.cc = &vm_empty_cc;
-    return opt_equality(NULL, obj1, obj2, &cd);
+    return opt_equality_by_mid(obj1, obj2, idEqlP);
 }
-#endif
+
+#endif // MJIT_HEADER
 
 extern VALUE rb_vm_call0(rb_execution_context_t *ec, VALUE, ID, int, const VALUE*, const rb_callable_method_entry_t *, int kw_splat);
 
@@ -2211,11 +2262,6 @@ CALLER_REMOVE_EMPTY_KW_SPLAT(struct rb_control_frame_struct *restrict cfp,
     if (UNLIKELY(calling->kw_splat)) {
         /* This removes the last Hash object if it is empty.
          * So, vm_ci_flag(ci) & VM_CALL_KW_SPLAT is now inconsistent.
-         * However, you can use vm_ci_flag(ci) & VM_CALL_KW_SPLAT to
-         * determine whether a hash should be added back with
-         * warning (for backwards compatibility in cases where
-         * the method does not have the number of required
-         * arguments.
          */
         if (RHASH_EMPTY_P(cfp->sp[-1])) {
             cfp->sp--;
@@ -2360,6 +2406,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
 {
     const struct rb_callinfo *ci = calling->ci;
     const struct rb_callcache *cc = calling->cc;
+    bool cacheable_ci = vm_ci_markable(ci);
 
     if (LIKELY(!(vm_ci_flag(ci) & VM_CALL_KW_SPLAT))) {
         if (LIKELY(rb_simple_iseq_p(iseq))) {
@@ -2373,7 +2420,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
 
             VM_ASSERT(ci == calling->ci);
             VM_ASSERT(cc == calling->cc);
-            CC_SET_FASTPATH(cc, vm_call_iseq_setup_func(ci, param_size, local_size), vm_call_iseq_optimizable_p(ci, cc));
+            CC_SET_FASTPATH(cc, vm_call_iseq_setup_func(ci, param_size, local_size), cacheable_ci && vm_call_iseq_optimizable_p(ci, cc));
             return 0;
         }
         else if (rb_iseq_only_optparam_p(iseq)) {
@@ -2393,12 +2440,12 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
             if (LIKELY(!(vm_ci_flag(ci) & VM_CALL_TAILCALL))) {
                 CC_SET_FASTPATH(cc, vm_call_iseq_setup_normal_opt_start,
                                 !IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) &&
-                                METHOD_ENTRY_CACHEABLE(vm_cc_cme(cc)));
+                                cacheable_ci && METHOD_ENTRY_CACHEABLE(vm_cc_cme(cc)));
             }
             else {
                 CC_SET_FASTPATH(cc, vm_call_iseq_setup_tailcall_opt_start,
                                 !IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) &&
-                                METHOD_ENTRY_CACHEABLE(vm_cc_cme(cc)));
+                                cacheable_ci && METHOD_ENTRY_CACHEABLE(vm_cc_cme(cc)));
             }
 
             /* initialize opt vars for self-references */
@@ -2426,7 +2473,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
                     args_setup_kw_parameters(ec, iseq, ci_kws, ci_kw_len, ci_keywords, klocals);
 
                     CC_SET_FASTPATH(cc, vm_call_iseq_setup_kwparm_kwarg,
-                                    METHOD_ENTRY_CACHEABLE(vm_cc_cme(cc)));
+                                    cacheable_ci && METHOD_ENTRY_CACHEABLE(vm_cc_cme(cc)));
 
                     return 0;
                 }
@@ -2439,7 +2486,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
                 if (klocals[kw_param->num] == INT2FIX(0)) {
                     /* copy from default_values */
                     CC_SET_FASTPATH(cc, vm_call_iseq_setup_kwparm_nokwarg,
-                                    METHOD_ENTRY_CACHEABLE(vm_cc_cme(cc)));
+                                    cacheable_ci && METHOD_ENTRY_CACHEABLE(vm_cc_cme(cc)));
                 }
 
                 return 0;
@@ -3941,7 +3988,7 @@ vm_once_clear(VALUE data)
 
 /* defined insn */
 
-static enum defined_type
+static bool
 check_respond_to_missing(VALUE obj, VALUE v)
 {
     VALUE args[2];
@@ -3950,56 +3997,42 @@ check_respond_to_missing(VALUE obj, VALUE v)
     args[0] = obj; args[1] = Qfalse;
     r = rb_check_funcall(v, idRespond_to_missing, 2, args);
     if (r != Qundef && RTEST(r)) {
-	return DEFINED_METHOD;
+	return true;
     }
     else {
-	return DEFINED_NOT_DEFINED;
+	return false;
     }
 }
 
-static VALUE
-vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE obj, VALUE needstr, VALUE v)
+static bool
+vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE obj, VALUE v)
 {
     VALUE klass;
-    enum defined_type expr_type = DEFINED_NOT_DEFINED;
     enum defined_type type = (enum defined_type)op_type;
 
     switch (type) {
       case DEFINED_IVAR:
-	if (rb_ivar_defined(GET_SELF(), SYM2ID(obj))) {
-	    expr_type = DEFINED_IVAR;
-	}
-	break;
-      case DEFINED_IVAR2:
-	klass = vm_get_cbase(GET_EP());
+        return rb_ivar_defined(GET_SELF(), SYM2ID(obj));
 	break;
       case DEFINED_GVAR:
-	if (rb_gvar_defined(SYM2ID(obj))) {
-	    expr_type = DEFINED_GVAR;
-	}
+        return rb_gvar_defined(SYM2ID(obj));
 	break;
       case DEFINED_CVAR: {
         const rb_cref_t *cref = vm_get_cref(GET_EP());
         klass = vm_get_cvar_base(cref, GET_CFP(), 0);
-	if (rb_cvar_defined(klass, SYM2ID(obj))) {
-	    expr_type = DEFINED_CVAR;
-	}
+        return rb_cvar_defined(klass, SYM2ID(obj));
 	break;
       }
       case DEFINED_CONST:
       case DEFINED_CONST_FROM: {
 	bool allow_nil = type == DEFINED_CONST;
 	klass = v;
-        if (vm_get_ev_const(ec, klass, SYM2ID(obj), allow_nil, true)) {
-	    expr_type = DEFINED_CONST;
-	}
+        return vm_get_ev_const(ec, klass, SYM2ID(obj), allow_nil, true);
 	break;
       }
       case DEFINED_FUNC:
 	klass = CLASS_OF(v);
-	if (rb_ec_obj_respond_to(ec, v, SYM2ID(obj), TRUE)) {
-	    expr_type = DEFINED_METHOD;
-	}
+        return rb_ec_obj_respond_to(ec, v, SYM2ID(obj), TRUE);
 	break;
       case DEFINED_METHOD:{
 	VALUE klass = CLASS_OF(v);
@@ -4014,20 +4047,20 @@ vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_
 		    break;
 		}
 	      case METHOD_VISI_PUBLIC:
-		expr_type = DEFINED_METHOD;
+                return true;
 		break;
 	      default:
 		rb_bug("vm_defined: unreachable: %u", (unsigned int)METHOD_ENTRY_VISI(me));
 	    }
 	}
 	else {
-	    expr_type = check_respond_to_missing(obj, v);
+	    return check_respond_to_missing(obj, v);
 	}
 	break;
       }
       case DEFINED_YIELD:
 	if (GET_BLOCK_HANDLER() != VM_BLOCK_HANDLER_NONE) {
-	    expr_type = DEFINED_YIELD;
+            return true;
 	}
 	break;
       case DEFINED_ZSUPER:
@@ -4038,16 +4071,12 @@ vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_
 		VALUE klass = vm_search_normal_superclass(me->defined_class);
 		ID id = me->def->original_id;
 
-		if (rb_method_boundp(klass, id, 0)) {
-		    expr_type = DEFINED_ZSUPER;
-		}
+		return rb_method_boundp(klass, id, 0);
 	    }
 	}
 	break;
       case DEFINED_REF:{
-	if (vm_getspecial(ec, GET_LEP(), Qfalse, FIX2INT(obj)) != Qnil) {
-	    expr_type = DEFINED_GVAR;
-	}
+	return vm_getspecial(ec, GET_LEP(), Qfalse, FIX2INT(obj)) != Qnil;
 	break;
       }
       default:
@@ -4055,17 +4084,7 @@ vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_
 	break;
     }
 
-    if (expr_type != 0) {
-	if (needstr != Qfalse) {
-	    return rb_iseq_defined_string(expr_type);
-	}
-	else {
-	    return Qtrue;
-	}
-    }
-    else {
-	return Qnil;
-    }
+    return false;
 }
 
 static const VALUE *

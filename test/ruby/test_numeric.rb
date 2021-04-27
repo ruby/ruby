@@ -384,6 +384,18 @@ class TestNumeric < Test::Unit::TestCase
     end;
   end
 
+  def test_remainder_infinity
+    assert_equal(4, 4.remainder(Float::INFINITY))
+    assert_equal(4, 4.remainder(-Float::INFINITY))
+    assert_equal(-4, -4.remainder(Float::INFINITY))
+    assert_equal(-4, -4.remainder(-Float::INFINITY))
+
+    assert_equal(4.2, 4.2.remainder(Float::INFINITY))
+    assert_equal(4.2, 4.2.remainder(-Float::INFINITY))
+    assert_equal(-4.2, -4.2.remainder(Float::INFINITY))
+    assert_equal(-4.2, -4.2.remainder(-Float::INFINITY))
+  end
+
   def test_comparison_comparable
     bug12864 = '[ruby-core:77713] [Bug #12864]'
 

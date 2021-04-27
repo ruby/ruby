@@ -13,7 +13,8 @@ class Reline::GeneralIO
     false
   end
 
-  RAW_KEYSTROKE_CONFIG = {}
+  def self.set_default_key_bindings(_)
+  end
 
   @@buf = []
 

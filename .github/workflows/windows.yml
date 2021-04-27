@@ -12,7 +12,7 @@ jobs:
     env:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
       VCVARS: C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat
-    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+      PATCH: C:\msys64\usr\bin\patch.exe
     steps:
       - run: md build
         working-directory:
@@ -35,11 +35,13 @@ jobs:
             ${{ runner.os }}-chocolatey-
       - name: Install libraries with chocolatey
         run: |
-          choco install --no-progress openssl
-          choco install --no-progress winflexbison3 --version=2.5.18.20190508
+          choco install --no-progress openssl winflexbison3
       - name: git config
         run: |
-          git config --system advice.detachedHead 0
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+          git config --global advice.detachedHead 0
+          git config --global init.defaultBranch garbage
       - uses: actions/checkout@v2
         with:
           path: src

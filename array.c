@@ -996,6 +996,12 @@ rb_check_to_array(VALUE ary)
     return rb_check_convert_type_with_id(ary, T_ARRAY, "Array", idTo_a);
 }
 
+VALUE
+rb_to_array(VALUE ary)
+{
+    return rb_convert_type_with_id(ary, T_ARRAY, "Array", idTo_a);
+}
+
 /*
  *  call-seq:
  *    Array.try_convert(object) -> object, new_array, or nil
@@ -3728,15 +3734,17 @@ append_values_at_single(VALUE result, VALUE ary, long olen, VALUE idx)
  *    array.values_at(*indexes) -> new_array
  *
  *  Returns a new \Array whose elements are the elements
- *  of +self+ at the given \Integer +indexes+.
+ *  of +self+ at the given \Integer or \Range +indexes+.
  *
  *  For each positive +index+, returns the element at offset +index+:
  *    a = [:foo, 'bar', 2]
  *    a.values_at(0, 2) # => [:foo, 2]
+ *    a.values_at(0..1) # => [:foo, "bar"]
  *
  *  The given +indexes+ may be in any order, and may repeat:
  *    a = [:foo, 'bar', 2]
  *    a.values_at(2, 0, 1, 0, 2) # => [2, :foo, "bar", :foo, 2]
+ *    a.values_at(1, 0..2) # => ["bar", :foo, "bar", 2]
  *
  *  Assigns +nil+ for an +index+ that is too large:
  *    a = [:foo, 'bar', 2]
@@ -3838,6 +3846,7 @@ select_bang_ensure(VALUE a)
 
     if (i2 < len && i2 < i1) {
 	long tail = 0;
+        rb_ary_modify(ary);
 	if (i1 < len) {
 	    tail = len - i1;
             RARRAY_PTR_USE_TRANSIENT(ary, ptr, {
@@ -4302,10 +4311,9 @@ static VALUE
 take_i(RB_BLOCK_CALL_FUNC_ARGLIST(val, cbarg))
 {
     VALUE *args = (VALUE *)cbarg;
-    if (args[1] == 0) rb_iter_break();
-    else args[1]--;
     if (argc > 1) val = rb_ary_new4(argc, argv);
     rb_ary_push(args[0], val);
+    if (--args[1] == 0) rb_iter_break();
     return Qnil;
 }
 
@@ -4315,6 +4323,7 @@ take_items(VALUE obj, long n)
     VALUE result = rb_check_array_type(obj);
     VALUE args[2];
 
+    if (n == 0) return result;
     if (!NIL_P(result)) return rb_ary_subseq(result, 0, n);
     result = rb_ary_new2(n);
     args[0] = result; args[1] = (VALUE)n;
@@ -5291,6 +5300,7 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
     long i;
 
     ary2 = to_ary(ary2);
+    if (RARRAY_LEN(ary2) == 0) { return ary_make_shared_copy(ary1); }
     ary3 = rb_ary_new();
 
     if (RARRAY_LEN(ary1) <= SMALL_ARRAY_LEN || RARRAY_LEN(ary2) <= SMALL_ARRAY_LEN) {
@@ -5555,6 +5565,61 @@ rb_ary_union_multi(int argc, VALUE *argv, VALUE ary)
     ary_union = rb_hash_values(hash);
     ary_recycle_hash(hash);
     return ary_union;
+}
+
+/*
+ *  call-seq:
+ *     ary.intersect?(other_ary)   -> true or false
+ *
+ *  Returns +true+ if the array and +other_ary+ have at least one element in
+ *  common, otherwise returns +false+.
+ *
+ *     a = [ 1, 2, 3 ]
+ *     b = [ 3, 4, 5 ]
+ *     c = [ 5, 6, 7 ]
+ *     a.intersect?(b)   #=> true
+ *     a.intersect?(c)   #=> false
+ */
+
+static VALUE
+rb_ary_intersect_p(VALUE ary1, VALUE ary2)
+{
+    VALUE hash, v, result, shorter, longer;
+    st_data_t vv;
+    long i;
+
+    ary2 = to_ary(ary2);
+    if (RARRAY_LEN(ary1) == 0 || RARRAY_LEN(ary2) == 0) return Qfalse;
+
+    if (RARRAY_LEN(ary1) <= SMALL_ARRAY_LEN && RARRAY_LEN(ary2) <= SMALL_ARRAY_LEN) {
+        for (i=0; i<RARRAY_LEN(ary1); i++) {
+            v = RARRAY_AREF(ary1, i);
+            if (rb_ary_includes_by_eql(ary2, v)) return Qtrue;
+        }
+        return Qfalse;
+    }
+
+    shorter = ary1;
+    longer = ary2;
+    if (RARRAY_LEN(ary1) > RARRAY_LEN(ary2)) {
+        longer = ary1;
+        shorter = ary2;
+    }
+
+    hash = ary_make_hash(shorter);
+    result = Qfalse;
+
+    for (i=0; i<RARRAY_LEN(longer); i++) {
+        v = RARRAY_AREF(longer, i);
+        vv = (st_data_t)v;
+        if (rb_hash_stlike_lookup(hash, vv, 0)) {
+            result = Qtrue;
+            break;
+        }
+    }
+    ary_recycle_hash(hash);
+
+    return result;
 }
 
 static VALUE
@@ -6083,8 +6148,8 @@ rb_ary_compact(VALUE ary)
  *    [0, 1, 2].count # => 3
  *    [].count # => 0
  *
- *  With argument +obj+, returns the count of elements <tt>eql?</tt> to +obj+:
- *    [0, 1, 2, 0].count(0) # => 2
+ *  With argument +obj+, returns the count of elements <tt>==</tt> to +obj+:
+ *    [0, 1, 2, 0.0].count(0) # => 2
  *    [0, 1, 2].count(3) # => 0
  *
  *  With no argument and a block given, calls the block with each element;
@@ -6092,7 +6157,7 @@ rb_ary_compact(VALUE ary)
  *    [0, 1, 2, 3].count {|element| element > 1} # => 2
  *
  *  With argument +obj+ and a block given, issues a warning, ignores the block,
- *  and returns the count of elements <tt>eql?</tt> to +obj+:
+ *  and returns the count of elements <tt>==</tt> to +obj+:
  */
 
 static VALUE
@@ -7679,7 +7744,7 @@ finish_exact_sum(long n, VALUE r, VALUE v, int z)
  *    sum = init
  *    array.each {|element| sum += element }
  *    sum
- *  For example, <tt>[e1, e2, e3].sum</tt> returns </tt>init + e1 + e2 + e3</tt>.
+ *  For example, <tt>[e1, e2, e3].sum</tt> returns <tt>init + e1 + e2 + e3</tt>.
  *
  *  Examples:
  *    a = [0, 1, 2, 3]
@@ -8285,6 +8350,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "union", rb_ary_union_multi, -1);
     rb_define_method(rb_cArray, "difference", rb_ary_difference_multi, -1);
     rb_define_method(rb_cArray, "intersection", rb_ary_intersection_multi, -1);
+    rb_define_method(rb_cArray, "intersect?", rb_ary_intersect_p, 1);
     rb_define_method(rb_cArray, "<<", rb_ary_push, 1);
     rb_define_method(rb_cArray, "push", rb_ary_push_m, -1);
     rb_define_alias(rb_cArray,  "append", "push");

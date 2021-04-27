@@ -66,7 +66,6 @@ ast_new_internal(rb_ast_t *ast, const NODE *node)
 
 static VALUE rb_ast_parse_str(VALUE str);
 static VALUE rb_ast_parse_file(VALUE path);
-static VALUE rb_ast_parse_array(VALUE array);
 
 static VALUE
 ast_parse_new(void)

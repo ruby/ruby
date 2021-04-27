@@ -51,6 +51,7 @@ class Gem::RemoteFetcher
 
   class UnknownHostError < FetchError
   end
+  deprecate_constant(:UnknownHostError)
 
   @fetcher = nil
 
@@ -78,6 +79,7 @@ class Gem::RemoteFetcher
   #            fetching the gem.
 
   def initialize(proxy=nil, dns=nil, headers={})
+    require 'rubygems/core_ext/tcpsocket_init' if Gem.configuration.ipv4_fallback_enabled
     require 'net/http'
     require 'stringio'
     require 'uri'
@@ -261,15 +263,9 @@ class Gem::RemoteFetcher
     end
 
     data
-  rescue Timeout::Error
-    raise UnknownHostError.new('timed out', uri)
-  rescue IOError, SocketError, SystemCallError,
+  rescue Timeout::Error, IOError, SocketError, SystemCallError,
          *(OpenSSL::SSL::SSLError if Gem::HAVE_OPENSSL) => e
-    if e.message =~ /getaddrinfo/
-      raise UnknownHostError.new('no such name', uri)
-    else
-      raise FetchError.new("#{e.class}: #{e}", uri)
-    end
+    raise FetchError.new("#{e.class}: #{e}", uri)
   end
 
   def fetch_s3(uri, mtime = nil, head = false)
@@ -295,7 +291,7 @@ class Gem::RemoteFetcher
 
     data = fetch_path(uri, mtime)
 
-    if data == nil # indicates the server returned 304 Not Modified
+    if data.nil? # indicates the server returned 304 Not Modified
       return Gem.read_binary(path)
     end
 

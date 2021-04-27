@@ -167,3 +167,42 @@ describe "Hash literal" do
     usascii_hash.keys.first.encoding.should == Encoding::US_ASCII
   end
 end
+
+describe "The ** operator" do
+  it "makes a copy when calling a method taking a keyword rest argument" do
+    def m(**h)
+      h.delete(:one); h
+    end
+
+    h = { one: 1, two: 2 }
+    m(**h).should == { two: 2 }
+    m(**h).should_not.equal?(h)
+    h.should == { one: 1, two: 2 }
+  end
+
+  ruby_version_is ""..."3.0" do
+    it "makes a caller-side copy when calling a method taking a positional Hash" do
+      def m(h)
+        h.delete(:one); h
+      end
+
+      h = { one: 1, two: 2 }
+      m(**h).should == { two: 2 }
+      m(**h).should_not.equal?(h)
+      h.should == { one: 1, two: 2 }
+    end
+  end
+
+  ruby_version_is "3.0" do
+    it "does not copy when calling a method taking a positional Hash" do
+      def m(h)
+        h.delete(:one); h
+      end
+
+      h = { one: 1, two: 2 }
+      m(**h).should == { two: 2 }
+      m(**h).should.equal?(h)
+      h.should == { two: 2 }
+    end
+  end
+end

@@ -104,6 +104,50 @@ RSpec.describe "bundle install with specific platforms" do
       L
     end
 
+    it "doesn't discard previously installed platform specific gem and fall back to ruby on subsequent bundles" do
+      build_repo2 do
+        build_gem("libv8", "8.4.255.0")
+        build_gem("libv8", "8.4.255.0") {|s| s.platform = "universal-darwin" }
+
+        build_gem("mini_racer", "1.0.0") do |s|
+          s.add_runtime_dependency "libv8"
+        end
+      end
+
+      system_gems "bundler-2.1.4"
+
+      # Consistent location to install and look for gems
+      bundle "config set --local path vendor/bundle", :env => { "BUNDLER_VERSION" => "2.1.4" }
+
+      gemfile <<-G
+        source "https://localgemserver.test"
+        gem "libv8"
+      G
+
+      # simulate lockfile created with old bundler, which only locks for ruby platform
+      lockfile <<-L
+        GEM
+          remote: https://localgemserver.test/
+          specs:
+            libv8 (8.4.255.0)
+
+        PLATFORMS
+          ruby
+
+        DEPENDENCIES
+          libv8
+
+        BUNDLED WITH
+           2.1.4
+      L
+
+      bundle "install --verbose", :artifice => :compact_index, :env => { "BUNDLER_VERSION" => "2.1.4", "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
+      expect(out).to include("Installing libv8 8.4.255.0 (universal-darwin)")
+
+      bundle "add mini_racer --verbose", :artifice => :compact_index, :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
+      expect(out).to include("Using libv8 8.4.255.0 (universal-darwin)")
+    end
+
     it "caches the universal-darwin gem when --all-platforms is passed and properly picks it up on further bundler invocations" do
       setup_multiplatform_gem
       gemfile(google_protobuf)
@@ -211,37 +255,17 @@ RSpec.describe "bundle install with specific platforms" do
     build_repo2 do
       build_gem("google-protobuf", "3.0.0.alpha.5.0.5.1")
       build_gem("google-protobuf", "3.0.0.alpha.5.0.5.1") {|s| s.platform = "x86_64-linux" }
-      build_gem("google-protobuf", "3.0.0.alpha.5.0.5.1") {|s| s.platform = "x86-mingw32" }
-      build_gem("google-protobuf", "3.0.0.alpha.5.0.5.1") {|s| s.platform = "x86-linux" }
       build_gem("google-protobuf", "3.0.0.alpha.5.0.5.1") {|s| s.platform = "x64-mingw32" }
       build_gem("google-protobuf", "3.0.0.alpha.5.0.5.1") {|s| s.platform = "universal-darwin" }
 
       build_gem("google-protobuf", "3.0.0.alpha.5.0.5") {|s| s.platform = "x86_64-linux" }
-      build_gem("google-protobuf", "3.0.0.alpha.5.0.5") {|s| s.platform = "x86-linux" }
       build_gem("google-protobuf", "3.0.0.alpha.5.0.5") {|s| s.platform = "x64-mingw32" }
-      build_gem("google-protobuf", "3.0.0.alpha.5.0.5") {|s| s.platform = "x86-mingw32" }
       build_gem("google-protobuf", "3.0.0.alpha.5.0.5")
 
       build_gem("google-protobuf", "3.0.0.alpha.5.0.4") {|s| s.platform = "universal-darwin" }
-      build_gem("google-protobuf", "3.0.0.alpha.5.0.4") {|s| s.platform = "x86_64-linux" }
-      build_gem("google-protobuf", "3.0.0.alpha.5.0.4") {|s| s.platform = "x86-mingw32" }
-      build_gem("google-protobuf", "3.0.0.alpha.5.0.4") {|s| s.platform = "x86-linux" }
-      build_gem("google-protobuf", "3.0.0.alpha.5.0.4") {|s| s.platform = "x64-mingw32" }
-      build_gem("google-protobuf", "3.0.0.alpha.5.0.4")
-
-      build_gem("google-protobuf", "3.0.0.alpha.5.0.3")
-      build_gem("google-protobuf", "3.0.0.alpha.5.0.3") {|s| s.platform = "x86_64-linux" }
-      build_gem("google-protobuf", "3.0.0.alpha.5.0.3") {|s| s.platform = "x86-mingw32" }
-      build_gem("google-protobuf", "3.0.0.alpha.5.0.3") {|s| s.platform = "x86-linux" }
-      build_gem("google-protobuf", "3.0.0.alpha.5.0.3") {|s| s.platform = "x64-mingw32" }
-      build_gem("google-protobuf", "3.0.0.alpha.5.0.3") {|s| s.platform = "universal-darwin" }
 
       build_gem("google-protobuf", "3.0.0.alpha.4.0")
       build_gem("google-protobuf", "3.0.0.alpha.3.1.pre")
-      build_gem("google-protobuf", "3.0.0.alpha.3")
-      build_gem("google-protobuf", "3.0.0.alpha.2.0")
-      build_gem("google-protobuf", "3.0.0.alpha.1.1")
-      build_gem("google-protobuf", "3.0.0.alpha.1.0")
     end
   end
 

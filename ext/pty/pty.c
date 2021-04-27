@@ -497,7 +497,7 @@ pty_close_pty(VALUE assoc)
  *   require 'io/console'
  *   PTY.open {|m, s|
  *     s.raw!
- *     ...
+ *     # ...
  *   }
  *
  */
@@ -737,16 +737,16 @@ static VALUE cPTY;
  *
  * == License
  *
- *  C) Copyright 1998 by Akinori Ito.
+ * (c) Copyright 1998 by Akinori Ito.
  *
- *  This software may be redistributed freely for this purpose, in full
- *  or in part, provided that this entire copyright notice is included
- *  on any copies of this software and applications and derivations thereof.
+ * This software may be redistributed freely for this purpose, in full
+ * or in part, provided that this entire copyright notice is included
+ * on any copies of this software and applications and derivations thereof.
  *
- *  This software is provided on an "as is" basis, without warranty of any
- *  kind, either expressed or implied, as to any matter including, but not
- *  limited to warranty of fitness of purpose, or merchantability, or
- *  results obtained from use of this software.
+ * This software is provided on an "as is" basis, without warranty of any
+ * kind, either expressed or implied, as to any matter including, but not
+ * limited to warranty of fitness of purpose, or merchantability, or
+ * results obtained from use of this software.
  */
 
 void

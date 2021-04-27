@@ -19,5 +19,11 @@ module Fiddle
     def to_i
       ptr.to_i
     end
+
+    # Turn this function in to a proc
+    def to_proc
+      this = self
+      lambda { |*args| this.call(*args) }
+    end
   end
 end

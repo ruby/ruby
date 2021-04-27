@@ -135,7 +135,6 @@ syslog.o: $(hdrdir)/ruby/internal/static_assert.h
 syslog.o: $(hdrdir)/ruby/internal/stdalign.h
 syslog.o: $(hdrdir)/ruby/internal/stdbool.h
 syslog.o: $(hdrdir)/ruby/internal/symbol.h
-syslog.o: $(hdrdir)/ruby/internal/token_paste.h
 syslog.o: $(hdrdir)/ruby/internal/value.h
 syslog.o: $(hdrdir)/ruby/internal/value_type.h
 syslog.o: $(hdrdir)/ruby/internal/variable.h

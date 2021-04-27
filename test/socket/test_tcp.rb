@@ -115,4 +115,29 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
       assert_raise(IO::WaitReadable) { svr.accept_nonblock(exception: true) }
     }
   end
+
+  def test_accept_multithread
+    attempts_count       = 5
+    server_threads_count = 3
+    client_threads_count = 3
+
+    attempts_count.times do
+      server_threads = Array.new(server_threads_count) do
+        Thread.new do
+          TCPServer.open("localhost", 0) do |server|
+            accept_threads = Array.new(client_threads_count) do
+              Thread.new { server.accept.close }
+            end
+            client_threads = Array.new(client_threads_count) do
+              Thread.new { TCPSocket.open(server.addr[3], server.addr[1]) {} }
+            end
+            client_threads.each(&:join)
+            accept_threads.each(&:join)
+          end
+        end
+      end
+
+      server_threads.each(&:join)
+    end
+  end
 end if defined?(TCPSocket)

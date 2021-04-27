@@ -707,6 +707,32 @@ class TestPathname < Test::Unit::TestCase
     }
   end
 
+  def test_each_line_opts
+    with_tmpchdir('rubytest-pathname') {|dir|
+      open("a", "w") {|f| f.puts 1, 2 }
+      a = []
+      Pathname("a").each_line(chomp: true) {|line| a << line }
+      assert_equal(["1", "2"], a)
+
+      a = []
+      Pathname("a").each_line("2", chomp: true) {|line| a << line }
+      assert_equal(["1\n", "\n"], a)
+
+      a = []
+      Pathname("a").each_line(1, chomp: true) {|line| a << line }
+      assert_equal(["1", "", "2", ""], a)
+
+      a = []
+      Pathname("a").each_line("2", 1, chomp: true) {|line| a << line }
+      assert_equal(["1", "\n", "", "\n"], a)
+
+      a = []
+      enum = Pathname("a").each_line(chomp: true)
+      enum.each {|line| a << line }
+      assert_equal(["1", "2"], a)
+    }
+  end
+
   def test_readlines
     with_tmpchdir('rubytest-pathname') {|dir|
       open("a", "w") {|f| f.puts 1, 2 }
@@ -1041,6 +1067,21 @@ class TestPathname < Test::Unit::TestCase
 
   def test_split
     assert_equal([Pathname("dirname"), Pathname("basename")], Pathname("dirname/basename").split)
+
+    assert_separately([], <<-'end;')
+      require 'pathname'
+
+      mod = Module.new do
+        def split(_arg)
+        end
+      end
+
+      File.singleton_class.prepend(mod)
+
+      assert_raise(TypeError) do
+        Pathname('/').split
+      end
+    end;
   end
 
   def test_blockdev?
@@ -1262,11 +1303,12 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_s_glob_3args
+    expect = RUBY_VERSION >= "3.1" ? [Pathname("."), Pathname("f")] : [Pathname("."), Pathname(".."), Pathname("f")]
     with_tmpchdir('rubytest-pathname') {|dir|
       open("f", "w") {|f| f.write "abc" }
       Dir.chdir("/") {
         assert_equal(
-          [Pathname("."), Pathname("f")],
+          expect,
           Pathname.glob("*", File::FNM_DOTMATCH, base: dir).sort)
       }
     }

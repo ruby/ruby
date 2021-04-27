@@ -14,6 +14,7 @@
 #define HAVE_RUBY_DEBUG_H       1
 #define HAVE_RUBY_DEFINES_H     1
 #define HAVE_RUBY_ENCODING_H    1
+#define HAVE_RUBY_FIBER_SCHEDULER_H 1
 #define HAVE_RUBY_INTERN_H      1
 #define HAVE_RUBY_IO_H          1
 #define HAVE_RUBY_MEMORY_VIEW_H 1

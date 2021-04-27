@@ -124,10 +124,22 @@ module IRB
 
   # Use a File for IO with irb, see InputMethod
   class FileInputMethod < InputMethod
+    class << self
+      def open(file, &block)
+        begin
+          io = new(file)
+          block.call(io)
+        ensure
+          io&.close
+        end
+      end
+    end
+
     # Creates a new input method object
     def initialize(file)
       super
       @io = IRB::MagicFile.open(file)
+      @external_encoding = @io.external_encoding
     end
     # The file name of this input method, usually given during initialization.
     attr_reader :file_name
@@ -137,7 +149,7 @@ module IRB
     #
     # See IO#eof? for more information.
     def eof?
-      @io.eof?
+      @io.closed? || @io.eof?
     end
 
     # Reads the next line from this input method.
@@ -150,12 +162,16 @@ module IRB
 
     # The external encoding for standard input.
     def encoding
-      @io.external_encoding
+      @external_encoding
     end
 
     # For debug message
     def inspect
       'FileInputMethod'
+    end
+
+    def close
+      @io.close
     end
   end
 
@@ -264,6 +280,7 @@ module IRB
         Reline.basic_word_break_characters = IRB::InputCompletor::BASIC_WORD_BREAK_CHARACTERS
       end
       Reline.completion_append_character = nil
+      Reline.completer_quote_characters = ''
       Reline.completion_proc = IRB::InputCompletor::CompletionProc
       Reline.output_modifier_proc =
         if IRB.conf[:USE_COLORIZE]

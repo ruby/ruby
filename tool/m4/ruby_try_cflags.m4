@@ -1,4 +1,4 @@
-# -*- Autoconf -*-
+dnl -*- Autoconf -*-
 AC_DEFUN([RUBY_TRY_CFLAGS], [
     AC_MSG_CHECKING([whether ]$1[ is accepted as CFLAGS])
     RUBY_WERROR_FLAG([

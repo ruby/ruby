@@ -73,12 +73,21 @@ module Timeout
   # ensure to prevent the handling of the exception.  For that reason, this
   # method cannot be relied on to enforce timeouts for untrusted blocks.
   #
+  # If a scheduler is defined, it will be used to handle the timeout by invoking
+  # Scheduler#timeout_after.
+  #
   # Note that this is both a method of module Timeout, so you can <tt>include
   # Timeout</tt> into your classes so they have a #timeout method, as well as
   # a module method, so you can call it directly as Timeout.timeout().
-  def timeout(sec, klass = nil, message = nil)   #:yield: +sec+
+  def timeout(sec, klass = nil, message = nil, &block)   #:yield: +sec+
     return yield(sec) if sec == nil or sec.zero?
+
     message ||= "execution expired".freeze
+
+    if (scheduler = Fiber.current_scheduler)&.respond_to?(:timeout_after)
+      return scheduler.timeout_after(sec, klass || Error, message, &block)
+    end
+
     from = "from #{caller_locations(1, 1)[0]}" if $DEBUG
     e = Error
     bl = proc do |exception|

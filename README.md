@@ -1,4 +1,3 @@
-[![Build Status](https://travis-ci.org/ruby/ruby.svg?branch=master)](https://travis-ci.org/ruby/ruby)
 [![Build status](https://ci.appveyor.com/api/projects/status/0sy8rrxut4o0k960/branch/master?svg=true)](https://ci.appveyor.com/project/ruby/ruby/branch/master)
 [![Actions Status: macOS](https://github.com/ruby/ruby/workflows/macOS/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"macOS")
 [![Actions Status: MinGW](https://github.com/ruby/ruby/workflows/MinGW/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"MinGW")
@@ -51,7 +50,8 @@ if you are a committer.
 
 ### Subversion
 
-Stable branches for older Ruby versions can be checked out with the following command:
+Stable branches for older Ruby versions can be checked out with also the
+following command:
 
     $ svn co https://svn.ruby-lang.org/repos/ruby/branches/ruby_2_6/ ruby
 
@@ -71,16 +71,17 @@ send the following phrase:
 
     subscribe
 
-in the mail body (not subject) to the address
-[ruby-talk-request@ruby-lang.org](mailto:ruby-talk-request@ruby-lang.org?subject=Join%20Ruby%20Mailing%20List&body=subscribe).
+in the mail body (not subject) to the address [ruby-talk-request@ruby-lang.org].
+
+[ruby-talk-request@ruby-lang.org]: mailto:ruby-talk-request@ruby-lang.org?subject=Join%20Ruby%20Mailing%20List&body=subscribe
 
 ## How to compile and install
 
 1.  If you want to use Microsoft Visual C++ to compile Ruby, read
     [win32/README.win32](win32/README.win32) instead of this document.
 
-2.  If `./configure` does not exist or is older than `configure.ac`, run
-    `autoconf` to (re)generate configure.
+2.  Run `./autogen.sh` to generate configure, when you build the source checked
+    out from the Git repository.
 
 3.  Run `./configure`, which will generate `config.h` and `Makefile`.
 
@@ -90,12 +91,13 @@ in the mail body (not subject) to the address
 
 4.  Edit `include/ruby/defines.h` if you need. Usually this step will not be needed.
 
-5.  Remove comment mark(`#`) before the module names from `ext/Setup` (or add
-    module names if not present), if you want to link modules statically.
+5.  Optional: Remove comment mark(`#`) before the module names from `ext/Setup`.
 
-    If you don't want to compile non static extension modules (probably on
-    architectures which do not allow dynamic loading), remove comment mark
-    from the line "`#option nodynamic`" in `ext/Setup`.
+    This step is only necessary if you want to link modules statically.
+
+    If you don't want to compile dynamic extensions (probably on architectures
+    which do not allow dynamic loading), remove comment mark from the line
+    "`#option nodynamic`" in `ext/Setup`.
 
     Usually this step will not be needed.
 

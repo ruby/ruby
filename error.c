@@ -64,7 +64,6 @@
 VALUE rb_iseqw_local_variables(VALUE iseqval);
 VALUE rb_iseqw_new(const rb_iseq_t *);
 int rb_str_end_with_asciichar(VALUE str, int c);
-VALUE rb_ident_hash_new(void);
 
 long rb_backtrace_length_limit = -1;
 VALUE rb_eEAGAIN;
@@ -662,7 +661,7 @@ preface_dump(FILE *out)
     static const char msg[] = ""
 	"-- Crash Report log information "
 	"--------------------------------------------\n"
-	"   See Crash Report log file under the one of following:\n"
+	"   See Crash Report log file in one of the following locations:\n"
 # if MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_6
 	"     * ~/Library/Logs/CrashReporter\n"
 	"     * /Library/Logs/CrashReporter\n"
@@ -766,7 +765,7 @@ die(void)
 }
 
 void
-rb_bug_without_die(const char *fmt, ...)
+rb_bug_without_die(const char *fmt, va_list args)
 {
     const char *file = NULL;
     int line = 0;
@@ -775,7 +774,7 @@ rb_bug_without_die(const char *fmt, ...)
         file = rb_source_location_cstr(&line);
     }
 
-    report_bug(file, line, fmt, NULL);
+    report_bug_valist(file, line, fmt, NULL, args);
 }
 
 void
@@ -1862,9 +1861,9 @@ static const rb_data_type_t name_err_mesg_data_type = {
 
 /* :nodoc: */
 static VALUE
-rb_name_err_mesg_new(VALUE mesg, VALUE recv, VALUE method)
+rb_name_err_mesg_init(VALUE klass, VALUE mesg, VALUE recv, VALUE method)
 {
-    VALUE result = TypedData_Wrap_Struct(rb_cNameErrorMesg, &name_err_mesg_data_type, 0);
+    VALUE result = TypedData_Wrap_Struct(klass, &name_err_mesg_data_type, 0);
     VALUE *ptr = ALLOC_N(VALUE, NAME_ERR_MESG_COUNT);
 
     ptr[NAME_ERR_MESG__MESG] = mesg;
@@ -1872,6 +1871,35 @@ rb_name_err_mesg_new(VALUE mesg, VALUE recv, VALUE method)
     ptr[NAME_ERR_MESG__NAME] = method;
     RTYPEDDATA_DATA(result) = ptr;
     return result;
+}
+
+/* :nodoc: */
+static VALUE
+rb_name_err_mesg_new(VALUE mesg, VALUE recv, VALUE method)
+{
+    return rb_name_err_mesg_init(rb_cNameErrorMesg, mesg, recv, method);
+}
+
+/* :nodoc: */
+static VALUE
+name_err_mesg_alloc(VALUE klass)
+{
+    return rb_name_err_mesg_init(klass, Qnil, Qnil, Qnil);
+}
+
+/* :nodoc: */
+static VALUE
+name_err_mesg_init_copy(VALUE obj1, VALUE obj2)
+{
+    VALUE *ptr1, *ptr2;
+
+    if (obj1 == obj2) return obj1;
+    rb_obj_init_copy(obj1, obj2);
+
+    TypedData_Get_Struct(obj1, VALUE, &name_err_mesg_data_type, ptr1);
+    TypedData_Get_Struct(obj2, VALUE, &name_err_mesg_data_type, ptr2);
+    MEMCPY(ptr1, ptr2, VALUE, NAME_ERR_MESG_COUNT);
+    return obj1;
 }
 
 /* :nodoc: */
@@ -1936,8 +1964,10 @@ name_err_mesg_to_str(VALUE obj)
 	    d = rb_protect(name_err_mesg_receiver_name, obj, &state);
 	    if (state || d == Qundef || d == Qnil)
 		d = rb_protect(rb_inspect, obj, &state);
-	    if (state)
+	    if (state) {
 		rb_set_errinfo(Qnil);
+	    }
+	    d = rb_check_string_type(d);
 	    if (NIL_P(d)) {
 		d = rb_any_to_s(obj);
 	    }
@@ -2802,6 +2832,8 @@ Init_Exception(void)
     rb_define_method(rb_eNameError, "receiver", name_err_receiver, 0);
     rb_define_method(rb_eNameError, "local_variables", name_err_local_variables, 0);
     rb_cNameErrorMesg = rb_define_class_under(rb_eNameError, "message", rb_cObject);
+    rb_define_alloc_func(rb_cNameErrorMesg, name_err_mesg_alloc);
+    rb_define_method(rb_cNameErrorMesg, "initialize_copy", name_err_mesg_init_copy, 1);
     rb_define_method(rb_cNameErrorMesg, "==", name_err_mesg_equal, 1);
     rb_define_method(rb_cNameErrorMesg, "to_str", name_err_mesg_to_str, 0);
     rb_define_method(rb_cNameErrorMesg, "_dump", name_err_mesg_dump, 1);

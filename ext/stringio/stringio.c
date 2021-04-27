@@ -1,3 +1,4 @@
+/* -*- mode: c; indent-tabs-mode: t -*- */
 /**********************************************************************
 
   stringio.c -
@@ -599,6 +600,14 @@ strio_closed_write(VALUE self)
     return Qtrue;
 }
 
+static struct StringIO *
+strio_to_read(VALUE self)
+{
+    struct StringIO *ptr = readable(self);
+    if (ptr->pos < RSTRING_LEN(ptr->string)) return ptr;
+    return NULL;
+}
+
 /*
  * call-seq:
  *   strio.eof     -> true or false
@@ -610,8 +619,7 @@ strio_closed_write(VALUE self)
 static VALUE
 strio_eof(VALUE self)
 {
-    struct StringIO *ptr = readable(self);
-    if (ptr->pos < RSTRING_LEN(ptr->string)) return Qfalse;
+    if (strio_to_read(self)) return Qfalse;
     return Qtrue;
 }
 
@@ -821,11 +829,11 @@ strio_get_sync(VALUE self)
 static VALUE
 strio_each_byte(VALUE self)
 {
-    struct StringIO *ptr = readable(self);
+    struct StringIO *ptr;
 
     RETURN_ENUMERATOR(self, 0, 0);
 
-    while (ptr->pos < RSTRING_LEN(ptr->string)) {
+    while ((ptr = strio_to_read(self)) != NULL) {
 	char c = RSTRING_PTR(ptr->string)[ptr->pos++];
 	rb_yield(CHR2FIX(c));
     }
@@ -1064,11 +1072,7 @@ strio_each_codepoint(VALUE self)
 
     ptr = readable(self);
     enc = get_enc(ptr);
-    for (;;) {
-	if (ptr->pos >= RSTRING_LEN(ptr->string)) {
-	    return self;
-	}
-
+    while ((ptr = strio_to_read(self)) != NULL) {
 	c = rb_enc_codepoint_len(RSTRING_PTR(ptr->string)+ptr->pos,
 				 RSTRING_END(ptr->string), &n, enc);
 	ptr->pos += n;

@@ -318,10 +318,6 @@ class TestJIT < Test::Unit::TestCase
     assert_compile_once('{}["true"] = true', result_inspect: 'true', insns: %i[swap topn])
   end
 
-  def test_compile_insn_reverse
-    assert_compile_once('q, (w, e), r = 1, [2, 3], 4; [q, w, e, r]', result_inspect: '[1, 2, 3, 4]', insns: %i[reverse])
-  end
-
   def test_compile_insn_reput
     skip "write test"
   end

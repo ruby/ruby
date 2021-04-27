@@ -572,5 +572,26 @@ module TestIRB
     ensure
       $VERBOSE = verbose
     end
+
+    def test_lineno
+      input = TestInputMethod.new([
+        "\n",
+        "__LINE__\n",
+        "__LINE__\n",
+        "\n",
+        "\n",
+        "__LINE__\n",
+      ])
+      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
+      out, err = capture_output do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_pattern_list([
+          :*, /\b2\n/,
+          :*, /\b3\n/,
+          :*, /\b6\n/,
+        ], out)
+    end
   end
 end

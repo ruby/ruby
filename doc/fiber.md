@@ -76,8 +76,18 @@ class Scheduler
 
   # Sleep the current task for the specified duration, or forever if not
   # specified.
-  # @param duration [Numeric] The amount of time to sleep in seconds.
+  # @parameter duration [Numeric] The amount of time to sleep in seconds.
   def kernel_sleep(duration = nil)
+  end
+
+  # Execute the given block. If the block execution exceeds the given timeout,
+  # the specified exception `klass` will be raised. Typically, only non-blocking
+  # methods which enter the scheduler will raise such exceptions.
+  # @parameter duration [Integer] The amount of time to wait, after which an exception will be raised.
+  # @parameter klass [Class] The exception class to raise.
+  # @parameter *arguments [Array] The arguments to send to the constructor of the exception.
+  # @yields {...} The user code to execute.
+  def timeout_after(duration, klass, *arguments, &block)
   end
 
   # Block the calling fiber.

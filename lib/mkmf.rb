@@ -207,8 +207,8 @@ module MakeMakefile
         ['RUBYCOMMONDIR', '$(vendordir)$(target_prefix)'],
         ['RUBYLIBDIR',    '$(vendorlibdir)$(target_prefix)'],
         ['RUBYARCHDIR',   '$(vendorarchdir)$(target_prefix)'],
-        ['HDRDIR',        '$(rubyhdrdir)/ruby$(target_prefix)'],
-        ['ARCHHDRDIR',    '$(rubyhdrdir)/$(arch)/ruby$(target_prefix)'],
+        ['HDRDIR',        '$(vendorhdrdir)$(target_prefix)'],
+        ['ARCHHDRDIR',    '$(vendorarchhdrdir)$(target_prefix)'],
       ]
     else
       dirs = [
@@ -216,8 +216,8 @@ module MakeMakefile
         ['RUBYCOMMONDIR', '$(sitedir)$(target_prefix)'],
         ['RUBYLIBDIR',    '$(sitelibdir)$(target_prefix)'],
         ['RUBYARCHDIR',   '$(sitearchdir)$(target_prefix)'],
-        ['HDRDIR',        '$(rubyhdrdir)/ruby$(target_prefix)'],
-        ['ARCHHDRDIR',    '$(rubyhdrdir)/$(arch)/ruby$(target_prefix)'],
+        ['HDRDIR',        '$(sitehdrdir)$(target_prefix)'],
+        ['ARCHHDRDIR',    '$(sitearchhdrdir)$(target_prefix)'],
       ]
     end
     dirs << ['target_prefix', (target_prefix ? "/#{target_prefix}" : "")]
@@ -1908,7 +1908,7 @@ SRC
         path.sub!(/\A([A-Za-z]):(?=\/)/, '/\1')
         path
       end
-    when 'cygwin'
+    when 'cygwin', 'msys'
       if CONFIG['target_os'] != 'cygwin'
         def mkintpath(path)
           IO.popen(["cygpath", "-u", path], &:read).chomp
@@ -1943,7 +1943,7 @@ NULLCMD = #{CONFIG['NULLCMD']}
 srcdir = #{srcdir.gsub(/\$\((srcdir)\)|\$\{(srcdir)\}/) {mkintpath(CONFIG[$1||$2]).unspace}}
 topdir = #{mkintpath(topdir = $extmk ? CONFIG["topdir"] : $topdir).unspace}
 hdrdir = #{(hdrdir = CONFIG["hdrdir"]) == topdir ? "$(topdir)" : mkintpath(hdrdir).unspace}
-arch_hdrdir = #{$arch_hdrdir.quote}
+arch_hdrdir = #{mkintpath($arch_hdrdir).unspace}
 PATH_SEPARATOR = #{CONFIG['PATH_SEPARATOR']}
 VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
 }

@@ -263,7 +263,8 @@ const rb_data_type_t rb_random_data_type = {
 static void
 random_mt_free(void *ptr)
 {
-    if (ptr != default_rand())
+    rb_random_mt_t *rnd = rb_ractor_local_storage_ptr(default_rand_key);
+    if (ptr != rnd)
 	xfree(ptr);
 }
 
@@ -494,20 +495,36 @@ fill_random_bytes_urandom(void *seed, size_t size)
 
 #if 0
 #elif defined MAC_OS_X_VERSION_10_7 && MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_7
-#include <Security/Security.h>
+
+# if defined MAC_OS_X_VERSION_10_10 && MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_10
+#   include <CommonCrypto/CommonCryptoError.h> /* for old Xcode */
+#   include <CommonCrypto/CommonRandom.h>
+#   define USE_COMMON_RANDOM 1
+# else
+#   include <Security/SecRandom.h>
+#   define USE_COMMON_RANDOM 0
+# endif
 
 static int
 fill_random_bytes_syscall(void *seed, size_t size, int unused)
 {
-    int status = SecRandomCopyBytes(kSecRandomDefault, size, seed);
+#if USE_COMMON_RANDOM
+    int failed = CCRandomGenerateBytes(seed, size) != kCCSuccess;
+#else
+    int failed = SecRandomCopyBytes(kSecRandomDefault, size, seed) != errSecSuccess;
+#endif
 
-    if (status != errSecSuccess) {
+    if (failed) {
 # if 0
+# if USE_COMMON_RANDOM
+        /* How to get the error message? */
+# else
         CFStringRef s = SecCopyErrorMessageString(status, NULL);
         const char *m = s ? CFStringGetCStringPtr(s, kCFStringEncodingUTF8) : NULL;
         fprintf(stderr, "SecRandomCopyBytes failed: %d: %s\n", status,
                 m ? m : "unknown");
         if (s) CFRelease(s);
+# endif
 # endif
         return -1;
     }

@@ -22,7 +22,6 @@
  */
 #include "ruby/internal/has/feature.h"
 #include "ruby/internal/compiler_is.h"
-#include "ruby/internal/token_paste.h"
 
 /** @cond INTERNAL_MACRO */
 #if ! defined(__cplusplus)
@@ -67,7 +66,7 @@
 # define RBIMPL_ATTR_CONSTEXPR(_) constexpr
 
 #elif RBIMPL_HAS_ATTR_CONSTEXPR_CXX11
-# define RBIMPL_ATTR_CONSTEXPR(_) RBIMPL_TOKEN_PASTE(RBIMPL_ATTR_CONSTEXPR_, _)
+# define RBIMPL_ATTR_CONSTEXPR(_) RBIMPL_ATTR_CONSTEXPR_ ## _
 # define RBIMPL_ATTR_CONSTEXPR_CXX11 constexpr
 # define RBIMPL_ATTR_CONSTEXPR_CXX14 /* void */
 

@@ -6,6 +6,10 @@ override mflags := $(filter-out -j%,$(MFLAGS))
 MSPECOPT += $(if $(filter -j%,$(MFLAGS)),-j)
 nproc = $(subst -j,,$(filter -j%,$(MFLAGS)))
 
+ifneq ($(filter %darwin%,$(arch)),)
+INSTRUBY_ENV += SDKROOT=/
+endif
+
 CHECK_TARGETS := great exam love check test check% test% btest%
 # expand test targets, and those dependents
 TEST_TARGETS := $(filter $(CHECK_TARGETS),$(MAKECMDGOALS))

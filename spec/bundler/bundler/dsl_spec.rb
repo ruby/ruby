@@ -25,7 +25,7 @@ RSpec.describe Bundler::Dsl do
       expect { subject.git_source(:example) }.to raise_error(Bundler::InvalidOption)
     end
 
-    context "default hosts", :bundler => "2" do
+    context "default hosts", :bundler => "< 3" do
       it "converts :github to URI using https" do
         subject.gem("sparks", :github => "indirect/sparks")
         github_uri = "https://github.com/indirect/sparks.git"
@@ -195,19 +195,6 @@ RSpec.describe Bundler::Dsl do
     #   gem 'spree_api'
     #   gem 'spree_backend'
     # end
-    describe "#github", :bundler => "< 3" do
-      it "from github" do
-        spree_gems = %w[spree_core spree_api spree_backend]
-        subject.github "spree" do
-          spree_gems.each {|spree_gem| subject.send :gem, spree_gem }
-        end
-
-        subject.dependencies.each do |d|
-          expect(d.source.uri).to eq("https://github.com/spree/spree.git")
-        end
-      end
-    end
-
     describe "#github" do
       it "from github" do
         spree_gems = %w[spree_core spree_api spree_backend]

@@ -2514,7 +2514,7 @@ econv_opts(VALUE opt, int ecflags)
             break;
 
           case 3:
-            rb_warning(":newline option preceds other newline options");
+            rb_warning(":newline option precedes other newline options");
             break;
 	}
     }

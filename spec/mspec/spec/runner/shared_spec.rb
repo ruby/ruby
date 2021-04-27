@@ -3,7 +3,7 @@ require 'mspec/runner/shared'
 require 'mspec/runner/context'
 require 'mspec/runner/example'
 
-describe Object, "#it_behaves_like" do
+RSpec.describe Object, "#it_behaves_like" do
   before :each do
     ScratchPad.clear
 
@@ -14,14 +14,14 @@ describe Object, "#it_behaves_like" do
     @state.singleton_class.send(:public, :it_behaves_like)
 
     @shared = ContextState.new :shared_spec, :shared => true
-    MSpec.stub(:retrieve_shared).and_return(@shared)
+    allow(MSpec).to receive(:retrieve_shared).and_return(@shared)
   end
 
   it "creates @method set to the name of the aliased method" do
     @shared.it("an example") { ScratchPad.record @method }
     @state.it_behaves_like :shared_spec, :some_method
     @state.process
-    ScratchPad.recorded.should == :some_method
+    expect(ScratchPad.recorded).to eq(:some_method)
   end
 
   it "creates @object if the passed object" do
@@ -29,7 +29,7 @@ describe Object, "#it_behaves_like" do
     @shared.it("an example") { ScratchPad.record @object }
     @state.it_behaves_like :shared_spec, :some_method, object
     @state.process
-    ScratchPad.recorded.should == object
+    expect(ScratchPad.recorded).to eq(object)
   end
 
   it "creates @object if the passed false" do
@@ -37,11 +37,11 @@ describe Object, "#it_behaves_like" do
     @shared.it("an example") { ScratchPad.record @object }
     @state.it_behaves_like :shared_spec, :some_method, object
     @state.process
-    ScratchPad.recorded.should == object
+    expect(ScratchPad.recorded).to eq(object)
   end
 
   it "sends :it_should_behave_like" do
-    @state.should_receive(:it_should_behave_like)
+    expect(@state).to receive(:it_should_behave_like)
     @state.it_behaves_like :shared_spec, :some_method
   end
 
@@ -61,12 +61,12 @@ describe Object, "#it_behaves_like" do
       @state.it_behaves_like :shared_spec, :some_method, @obj
 
       @state.process
-      ScratchPad.recorded.should == [:some_method, @obj]
+      expect(ScratchPad.recorded).to eq([:some_method, @obj])
 
       @state2.it_behaves_like :shared_spec, :another_method, @obj2
 
       @state2.process
-      ScratchPad.recorded.should == [:another_method, @obj2]
+      expect(ScratchPad.recorded).to eq([:another_method, @obj2])
     end
 
     it "ensures the shared spec state is distinct for nested shared specs" do
@@ -79,12 +79,12 @@ describe Object, "#it_behaves_like" do
       @state.it_behaves_like :shared_spec, :some_method, @obj
 
       @state.process
-      ScratchPad.recorded.should == [:shared, :some_method, @obj]
+      expect(ScratchPad.recorded).to eq([:shared, :some_method, @obj])
 
       @state2.it_behaves_like :shared_spec, :another_method, @obj2
 
       @state2.process
-      ScratchPad.recorded.should == [:shared, :another_method, @obj2]
+      expect(ScratchPad.recorded).to eq([:shared, :another_method, @obj2])
     end
   end
 end

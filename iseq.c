@@ -3103,24 +3103,10 @@ rb_iseq_defined_string(enum defined_type type)
 	"expression",
     };
     const char *estr;
-    VALUE *defs, str;
 
-    if ((unsigned)(type - 1) >= (unsigned)numberof(expr_names)) return 0;
+    if ((unsigned)(type - 1) >= (unsigned)numberof(expr_names)) rb_bug("unknown defined type %d", type);
     estr = expr_names[type - 1];
-    if (!estr[0]) return 0;
-    defs = GET_VM()->defined_strings;
-    if (!defs) {
-	defs = ruby_xcalloc(numberof(expr_names), sizeof(VALUE));
-	GET_VM()->defined_strings = defs;
-    }
-    str = defs[type-1];
-    if (!str) {
-	str = rb_str_new_cstr(estr);
-	OBJ_FREEZE(str);
-	defs[type-1] = str;
-	rb_gc_register_mark_object(str);
-    }
-    return str;
+    return rb_fstring_cstr(estr);
 }
 
 /* A map from encoded_insn to insn_data: decoded insn number, its len,

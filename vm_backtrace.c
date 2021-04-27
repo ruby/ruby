@@ -11,6 +11,7 @@
 
 #include "eval_intern.h"
 #include "internal.h"
+#include "internal/error.h"
 #include "internal/vm.h"
 #include "iseq.h"
 #include "ruby/debug.h"
@@ -515,7 +516,7 @@ backtrace_each(const rb_execution_context_t *ec,
     const rb_control_frame_t *last_cfp = ec->cfp;
     const rb_control_frame_t *start_cfp = RUBY_VM_END_CONTROL_FRAME(ec);
     const rb_control_frame_t *cfp;
-    ptrdiff_t size, i, last, start = 0;
+    ptrdiff_t size, real_size, i, j, last, start = 0;
     int ret = 0;
 
     // In the case the thread vm_stack or cfp is not initialized, there is no backtrace.
@@ -539,10 +540,15 @@ backtrace_each(const rb_execution_context_t *ec,
 	  RUBY_VM_NEXT_CONTROL_FRAME(start_cfp)); /* skip top frames */
 
     if (start_cfp < last_cfp) {
-        size = last = 0;
+        real_size = size = last = 0;
     }
     else {
-	size = start_cfp - last_cfp + 1;
+        /* Ensure we don't look at frames beyond the ones requested */
+        for(; from_last > 0 && start_cfp >= last_cfp; from_last--) {
+            last_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(last_cfp);
+        }
+
+        real_size = size = start_cfp - last_cfp + 1;
 
         if (from_last > size) {
             size = last = 0;
@@ -567,9 +573,52 @@ backtrace_each(const rb_execution_context_t *ec,
 
     init(arg, size);
 
-    /* SDR(); */
-    for (i=0, cfp = start_cfp; i<last; i++, cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
-        if (i < start) {
+    /* If a limited number of frames is requested, scan the VM stack for
+     * ignored frames (iseq without pc).  Then adjust the start for the
+     * backtrace to account for skipped frames.
+     */
+    if (start > 0 && num_frames >= 0 && num_frames < real_size) {
+        ptrdiff_t ignored_frames;
+        bool ignored_frames_before_start = false;
+        for (i=0, j=0, cfp = start_cfp; i<last && j<real_size; i++, j++, cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
+            if (cfp->iseq && !cfp->pc) {
+                if (j < start)
+                    ignored_frames_before_start = true;
+                else
+                    i--;
+            }
+        }
+        ignored_frames = j - i;
+
+        if (ignored_frames) {
+            if (ignored_frames_before_start) {
+                /* There were ignored frames before start.  So just decrementing
+                 * start for ignored frames could still result in not all desired
+                 * frames being captured.
+                 *
+                 * First, scan to the CFP of the desired start frame.
+                 *
+                 * Then scan backwards to previous frames, skipping the number of
+                 * frames ignored after start and any additional ones before start,
+                 * so the number of desired frames will be correctly captured.
+                 */
+                for (i=0, j=0, cfp = start_cfp; i<last && j<real_size && j < start; i++, j++, cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
+                    /* nothing */
+                }
+                for (; start > 0 && ignored_frames > 0 && j > 0; j--, ignored_frames--, start--, cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp)) {
+                    if (cfp->iseq && !cfp->pc) {
+                        ignored_frames++;
+                    }
+                }
+            } else {
+                /* No ignored frames before start frame, just decrement start */
+                start -= ignored_frames;
+            }
+        }
+    }
+
+    for (i=0, j=0, cfp = start_cfp; i<last && j<real_size; i++, j++, cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
+        if (j < start) {
             if (iter_skip) {
                 iter_skip(arg, cfp);
             }
@@ -578,9 +627,11 @@ backtrace_each(const rb_execution_context_t *ec,
 
 	/* fprintf(stderr, "cfp: %d\n", (rb_control_frame_t *)(ec->vm_stack + ec->vm_stack_size) - cfp); */
 	if (cfp->iseq) {
-	    if (cfp->pc) {
-		iter_iseq(arg, cfp);
-	    }
+            if (cfp->pc) {
+                iter_iseq(arg, cfp);
+            } else {
+                i--;
+            }
 	}
 	else if (RUBYVM_CFUNC_FRAME_P(cfp)) {
 	    const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
@@ -837,6 +888,12 @@ backtrace_load_data(VALUE self, VALUE str)
     GetCoreDataFromValue(self, rb_backtrace_t, bt);
     bt->strary = str;
     return self;
+}
+
+static VALUE
+backtrace_limit(VALUE self)
+{
+    return LONG2NUM(rb_backtrace_length_limit);
 }
 
 VALUE
@@ -1201,6 +1258,7 @@ Init_vm_backtrace(void)
     rb_define_alloc_func(rb_cBacktrace, backtrace_alloc);
     rb_undef_method(CLASS_OF(rb_cBacktrace), "new");
     rb_marshal_define_compat(rb_cBacktrace, rb_cArray, backtrace_dump_data, backtrace_load_data);
+    rb_define_singleton_method(rb_cBacktrace, "limit", backtrace_limit, 0);
 
     /*
      *	An object representation of a stack frame, initialized by

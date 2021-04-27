@@ -745,6 +745,18 @@ class TestArgf < Test::Unit::TestCase
                       ["\"a\\n\"", "\"b\\n\""], [])
     assert_in_out_err(['-e', 'ARGF.each_line(chomp: true) {|para| p para}'], "a\nb\n",
                       ["\"a\"", "\"b\""], [])
+
+    t = make_tempfile
+    argf = ARGF.class.new(t.path)
+    lines = []
+    begin
+      argf.each_line(chomp: true) do |line|
+        lines << line
+      end
+    ensure
+      argf.close
+    end
+    assert_equal(%w[foo bar baz], lines)
   end
 
   def test_each_byte
@@ -991,6 +1003,45 @@ class TestArgf < Test::Unit::TestCase
       assert_raise_with_message(Errno::ENOENT, /- #{Regexp.quote(path)}\z/) {argf.gets}
     end
     assert_nil(argf.gets, bug4274)
+  end
+
+  def test_readlines_chomp
+    t = make_tempfile
+    argf = ARGF.class.new(t.path)
+    begin
+      assert_equal(%w[foo bar baz], argf.readlines(chomp: true))
+    ensure
+      argf.close
+    end
+
+    assert_in_out_err(['-e', 'p readlines(chomp: true)'], "a\nb\n",
+                      ["[\"a\", \"b\"]"], [])
+  end
+
+  def test_readline_chomp
+    t = make_tempfile
+    argf = ARGF.class.new(t.path)
+    begin
+      assert_equal("foo", argf.readline(chomp: true))
+    ensure
+      argf.close
+    end
+
+    assert_in_out_err(['-e', 'p readline(chomp: true)'], "a\nb\n",
+                      ["\"a\""], [])
+  end
+
+  def test_gets_chomp
+    t = make_tempfile
+    argf = ARGF.class.new(t.path)
+    begin
+      assert_equal("foo", argf.gets(chomp: true))
+    ensure
+      argf.close
+    end
+
+    assert_in_out_err(['-e', 'p gets(chomp: true)'], "a\nb\n",
+                      ["\"a\""], [])
   end
 
   def test_readlines_twice

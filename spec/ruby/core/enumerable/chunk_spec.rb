@@ -35,6 +35,11 @@ describe "Enumerable#chunk" do
     result.should == [[:_alone, [1]], [false, [2, 3, 2]], [:_alone, [1]]]
   end
 
+  it "yields Arrays as a single argument to a rest argument" do
+    e = EnumerableSpecs::Numerous.new([1, 2])
+    result = e.chunk { |*x| x.should == [[1,2]] }.to_a
+  end
+
   it "does not return elements for which the block returns :_separator" do
     e = EnumerableSpecs::Numerous.new(1, 2, 3, 3, 2, 1)
     result = e.chunk { |x| x == 2 ? :_separator : 1 }.to_a

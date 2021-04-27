@@ -290,7 +290,7 @@ RACTOR_PTR(VALUE self)
     return r;
 }
 
-static uint32_t ractor_last_id;
+static rb_atomic_t ractor_last_id;
 
 #if RACTOR_CHECK_MODE > 0
 MJIT_FUNC_EXPORTED uint32_t
@@ -558,7 +558,7 @@ wait_status_str(enum ractor_wait_status wait_status)
       case wait_taking|wait_yielding: return "taking|yielding";
       case wait_receiving|wait_taking|wait_yielding: return "receiving|taking|yielding";
     }
-    rb_bug("unrechable");
+    rb_bug("unreachable");
 }
 
 static const char *
@@ -573,7 +573,7 @@ wakeup_status_str(enum ractor_wakeup_status wakeup_status)
       case wakeup_by_interrupt: return "by_interrupt";
       case wakeup_by_retry: return "by_retry";
     }
-    rb_bug("unrechable");
+    rb_bug("unreachable");
 }
 #endif // USE_RUBY_DEBUG_LOG
 
@@ -1399,11 +1399,7 @@ ractor_next_id(void)
 {
     uint32_t id;
 
-    RB_VM_LOCK();
-    {
-        id = ++ractor_last_id;
-    }
-    RB_VM_UNLOCK();
+    id = (uint32_t)(RUBY_ATOMIC_FETCH_ADD(ractor_last_id, 1) + 1);
 
     return id;
 }
@@ -1583,11 +1579,6 @@ rb_ractor_main_setup(rb_vm_t *vm, rb_ractor_t *r, rb_thread_t *th)
     rb_ractor_living_threads_insert(r, th);
 }
 
-// io.c
-VALUE rb_io_prep_stdin(void);
-VALUE rb_io_prep_stdout(void);
-VALUE rb_io_prep_stderr(void);
-
 static VALUE
 ractor_create(rb_execution_context_t *ec, VALUE self, VALUE loc, VALUE name, VALUE args, VALUE block)
 {
@@ -1598,10 +1589,6 @@ ractor_create(rb_execution_context_t *ec, VALUE self, VALUE loc, VALUE name, VAL
     // can block here
     r->pub.id = ractor_next_id();
     RUBY_DEBUG_LOG("r:%u", r->pub.id);
-
-    r->r_stdin = rb_io_prep_stdin();
-    r->r_stdout = rb_io_prep_stdout();
-    r->r_stderr = rb_io_prep_stderr();
 
     rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
     r->verbose = cr->verbose;
@@ -2088,6 +2075,8 @@ void
 Init_Ractor(void)
 {
     rb_cRactor = rb_define_class("Ractor", rb_cObject);
+    rb_undef_alloc_func(rb_cRactor);
+
     rb_eRactorError          = rb_define_class_under(rb_cRactor, "Error", rb_eRuntimeError);
     rb_eRactorIsolationError = rb_define_class_under(rb_cRactor, "IsolationError", rb_eRactorError);
     rb_eRactorRemoteError    = rb_define_class_under(rb_cRactor, "RemoteError", rb_eRactorError);

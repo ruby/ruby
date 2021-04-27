@@ -147,7 +147,6 @@ ancdata.o: $(hdrdir)/ruby/internal/static_assert.h
 ancdata.o: $(hdrdir)/ruby/internal/stdalign.h
 ancdata.o: $(hdrdir)/ruby/internal/stdbool.h
 ancdata.o: $(hdrdir)/ruby/internal/symbol.h
-ancdata.o: $(hdrdir)/ruby/internal/token_paste.h
 ancdata.o: $(hdrdir)/ruby/internal/value.h
 ancdata.o: $(hdrdir)/ruby/internal/value_type.h
 ancdata.o: $(hdrdir)/ruby/internal/variable.h
@@ -329,7 +328,6 @@ basicsocket.o: $(hdrdir)/ruby/internal/static_assert.h
 basicsocket.o: $(hdrdir)/ruby/internal/stdalign.h
 basicsocket.o: $(hdrdir)/ruby/internal/stdbool.h
 basicsocket.o: $(hdrdir)/ruby/internal/symbol.h
-basicsocket.o: $(hdrdir)/ruby/internal/token_paste.h
 basicsocket.o: $(hdrdir)/ruby/internal/value.h
 basicsocket.o: $(hdrdir)/ruby/internal/value_type.h
 basicsocket.o: $(hdrdir)/ruby/internal/variable.h
@@ -511,7 +509,6 @@ constants.o: $(hdrdir)/ruby/internal/static_assert.h
 constants.o: $(hdrdir)/ruby/internal/stdalign.h
 constants.o: $(hdrdir)/ruby/internal/stdbool.h
 constants.o: $(hdrdir)/ruby/internal/symbol.h
-constants.o: $(hdrdir)/ruby/internal/token_paste.h
 constants.o: $(hdrdir)/ruby/internal/value.h
 constants.o: $(hdrdir)/ruby/internal/value_type.h
 constants.o: $(hdrdir)/ruby/internal/variable.h
@@ -694,7 +691,6 @@ ifaddr.o: $(hdrdir)/ruby/internal/static_assert.h
 ifaddr.o: $(hdrdir)/ruby/internal/stdalign.h
 ifaddr.o: $(hdrdir)/ruby/internal/stdbool.h
 ifaddr.o: $(hdrdir)/ruby/internal/symbol.h
-ifaddr.o: $(hdrdir)/ruby/internal/token_paste.h
 ifaddr.o: $(hdrdir)/ruby/internal/value.h
 ifaddr.o: $(hdrdir)/ruby/internal/value_type.h
 ifaddr.o: $(hdrdir)/ruby/internal/variable.h
@@ -876,7 +872,6 @@ init.o: $(hdrdir)/ruby/internal/static_assert.h
 init.o: $(hdrdir)/ruby/internal/stdalign.h
 init.o: $(hdrdir)/ruby/internal/stdbool.h
 init.o: $(hdrdir)/ruby/internal/symbol.h
-init.o: $(hdrdir)/ruby/internal/token_paste.h
 init.o: $(hdrdir)/ruby/internal/value.h
 init.o: $(hdrdir)/ruby/internal/value_type.h
 init.o: $(hdrdir)/ruby/internal/variable.h
@@ -1058,7 +1053,6 @@ ipsocket.o: $(hdrdir)/ruby/internal/static_assert.h
 ipsocket.o: $(hdrdir)/ruby/internal/stdalign.h
 ipsocket.o: $(hdrdir)/ruby/internal/stdbool.h
 ipsocket.o: $(hdrdir)/ruby/internal/symbol.h
-ipsocket.o: $(hdrdir)/ruby/internal/token_paste.h
 ipsocket.o: $(hdrdir)/ruby/internal/value.h
 ipsocket.o: $(hdrdir)/ruby/internal/value_type.h
 ipsocket.o: $(hdrdir)/ruby/internal/variable.h
@@ -1240,7 +1234,6 @@ option.o: $(hdrdir)/ruby/internal/static_assert.h
 option.o: $(hdrdir)/ruby/internal/stdalign.h
 option.o: $(hdrdir)/ruby/internal/stdbool.h
 option.o: $(hdrdir)/ruby/internal/symbol.h
-option.o: $(hdrdir)/ruby/internal/token_paste.h
 option.o: $(hdrdir)/ruby/internal/value.h
 option.o: $(hdrdir)/ruby/internal/value_type.h
 option.o: $(hdrdir)/ruby/internal/variable.h
@@ -1422,7 +1415,6 @@ raddrinfo.o: $(hdrdir)/ruby/internal/static_assert.h
 raddrinfo.o: $(hdrdir)/ruby/internal/stdalign.h
 raddrinfo.o: $(hdrdir)/ruby/internal/stdbool.h
 raddrinfo.o: $(hdrdir)/ruby/internal/symbol.h
-raddrinfo.o: $(hdrdir)/ruby/internal/token_paste.h
 raddrinfo.o: $(hdrdir)/ruby/internal/value.h
 raddrinfo.o: $(hdrdir)/ruby/internal/value_type.h
 raddrinfo.o: $(hdrdir)/ruby/internal/variable.h
@@ -1604,7 +1596,6 @@ socket.o: $(hdrdir)/ruby/internal/static_assert.h
 socket.o: $(hdrdir)/ruby/internal/stdalign.h
 socket.o: $(hdrdir)/ruby/internal/stdbool.h
 socket.o: $(hdrdir)/ruby/internal/symbol.h
-socket.o: $(hdrdir)/ruby/internal/token_paste.h
 socket.o: $(hdrdir)/ruby/internal/value.h
 socket.o: $(hdrdir)/ruby/internal/value_type.h
 socket.o: $(hdrdir)/ruby/internal/variable.h
@@ -1786,7 +1777,6 @@ sockssocket.o: $(hdrdir)/ruby/internal/static_assert.h
 sockssocket.o: $(hdrdir)/ruby/internal/stdalign.h
 sockssocket.o: $(hdrdir)/ruby/internal/stdbool.h
 sockssocket.o: $(hdrdir)/ruby/internal/symbol.h
-sockssocket.o: $(hdrdir)/ruby/internal/token_paste.h
 sockssocket.o: $(hdrdir)/ruby/internal/value.h
 sockssocket.o: $(hdrdir)/ruby/internal/value_type.h
 sockssocket.o: $(hdrdir)/ruby/internal/variable.h
@@ -1968,7 +1958,6 @@ tcpserver.o: $(hdrdir)/ruby/internal/static_assert.h
 tcpserver.o: $(hdrdir)/ruby/internal/stdalign.h
 tcpserver.o: $(hdrdir)/ruby/internal/stdbool.h
 tcpserver.o: $(hdrdir)/ruby/internal/symbol.h
-tcpserver.o: $(hdrdir)/ruby/internal/token_paste.h
 tcpserver.o: $(hdrdir)/ruby/internal/value.h
 tcpserver.o: $(hdrdir)/ruby/internal/value_type.h
 tcpserver.o: $(hdrdir)/ruby/internal/variable.h
@@ -2150,7 +2139,6 @@ tcpsocket.o: $(hdrdir)/ruby/internal/static_assert.h
 tcpsocket.o: $(hdrdir)/ruby/internal/stdalign.h
 tcpsocket.o: $(hdrdir)/ruby/internal/stdbool.h
 tcpsocket.o: $(hdrdir)/ruby/internal/symbol.h
-tcpsocket.o: $(hdrdir)/ruby/internal/token_paste.h
 tcpsocket.o: $(hdrdir)/ruby/internal/value.h
 tcpsocket.o: $(hdrdir)/ruby/internal/value_type.h
 tcpsocket.o: $(hdrdir)/ruby/internal/variable.h
@@ -2332,7 +2320,6 @@ udpsocket.o: $(hdrdir)/ruby/internal/static_assert.h
 udpsocket.o: $(hdrdir)/ruby/internal/stdalign.h
 udpsocket.o: $(hdrdir)/ruby/internal/stdbool.h
 udpsocket.o: $(hdrdir)/ruby/internal/symbol.h
-udpsocket.o: $(hdrdir)/ruby/internal/token_paste.h
 udpsocket.o: $(hdrdir)/ruby/internal/value.h
 udpsocket.o: $(hdrdir)/ruby/internal/value_type.h
 udpsocket.o: $(hdrdir)/ruby/internal/variable.h
@@ -2514,7 +2501,6 @@ unixserver.o: $(hdrdir)/ruby/internal/static_assert.h
 unixserver.o: $(hdrdir)/ruby/internal/stdalign.h
 unixserver.o: $(hdrdir)/ruby/internal/stdbool.h
 unixserver.o: $(hdrdir)/ruby/internal/symbol.h
-unixserver.o: $(hdrdir)/ruby/internal/token_paste.h
 unixserver.o: $(hdrdir)/ruby/internal/value.h
 unixserver.o: $(hdrdir)/ruby/internal/value_type.h
 unixserver.o: $(hdrdir)/ruby/internal/variable.h
@@ -2696,7 +2682,6 @@ unixsocket.o: $(hdrdir)/ruby/internal/static_assert.h
 unixsocket.o: $(hdrdir)/ruby/internal/stdalign.h
 unixsocket.o: $(hdrdir)/ruby/internal/stdbool.h
 unixsocket.o: $(hdrdir)/ruby/internal/symbol.h
-unixsocket.o: $(hdrdir)/ruby/internal/token_paste.h
 unixsocket.o: $(hdrdir)/ruby/internal/value.h
 unixsocket.o: $(hdrdir)/ruby/internal/value_type.h
 unixsocket.o: $(hdrdir)/ruby/internal/variable.h

@@ -1,4 +1,5 @@
-#!/bin/zsh
+# -*- zsh -*-
+#
 # Completion for zsh:
 # (based on <http://d.hatena.ne.jp/rubikitch/20071002/zshcomplete>)
 #
@@ -7,9 +8,9 @@
 #      cp rb_optparse.zsh ~/.zsh.d/rb_optparse.zsh
 #
 # (2) load the script, and add a directory to fpath before compinit.
-#      echo '. ~/.zsh.d/rb_optparse.zsh' >> ~/.zshrc
-#      echo 'fpath=(~/.zsh.d/Completion $fpath)' >> ~/.zshrc
-#      echo 'autoload -U compinit; compinit' >> ~/.zshrc
+#      echo '. ~/.zsh.d/rb_optparse.zsh' >> "${ZDOTDIR:-~}/.zshrc"
+#      echo 'fpath=(~/.zsh.d/Completion $fpath)' >> "${ZDOTDIR:-~}/.zshrc"
+#      echo 'autoload -U compinit; compinit' >> "${ZDOTDIR:-~}/.zshrc"
 #
 # (3) restart zsh.
 #

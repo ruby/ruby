@@ -150,7 +150,6 @@ limits.o: $(hdrdir)/ruby/internal/static_assert.h
 limits.o: $(hdrdir)/ruby/internal/stdalign.h
 limits.o: $(hdrdir)/ruby/internal/stdbool.h
 limits.o: $(hdrdir)/ruby/internal/symbol.h
-limits.o: $(hdrdir)/ruby/internal/token_paste.h
 limits.o: $(hdrdir)/ruby/internal/value.h
 limits.o: $(hdrdir)/ruby/internal/value_type.h
 limits.o: $(hdrdir)/ruby/internal/variable.h
@@ -310,7 +309,6 @@ sizes.o: $(hdrdir)/ruby/internal/static_assert.h
 sizes.o: $(hdrdir)/ruby/internal/stdalign.h
 sizes.o: $(hdrdir)/ruby/internal/stdbool.h
 sizes.o: $(hdrdir)/ruby/internal/symbol.h
-sizes.o: $(hdrdir)/ruby/internal/token_paste.h
 sizes.o: $(hdrdir)/ruby/internal/value.h
 sizes.o: $(hdrdir)/ruby/internal/value_type.h
 sizes.o: $(hdrdir)/ruby/internal/variable.h

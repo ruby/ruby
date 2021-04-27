@@ -259,7 +259,7 @@ RSpec.describe "bundle install from an existing gemspec" do
     expect(out).to eq("WIN")
   end
 
-  it "works with only_update_to_newer_versions" do
+  it "handles downgrades" do
     build_lib "omg", "2.0", :path => lib_path("omg")
 
     install_gemfile <<-G
@@ -268,7 +268,7 @@ RSpec.describe "bundle install from an existing gemspec" do
 
     build_lib "omg", "1.0", :path => lib_path("omg")
 
-    bundle :install, :env => { "BUNDLE_BUNDLE_ONLY_UPDATE_TO_NEWER_VERSIONS" => "true" }
+    bundle :install
 
     expect(the_bundle).to include_gems "omg 1.0"
   end
@@ -422,14 +422,13 @@ RSpec.describe "bundle install from an existing gemspec" do
           end
         end
 
-        %w[ruby jruby].each do |platform|
-          simulate_platform(platform) do
-            install_gemfile <<-G
-              source "#{file_uri_for(gem_repo2)}"
-              gemspec
-            G
-          end
-        end
+        gemfile <<-G
+          source "#{file_uri_for(gem_repo2)}"
+          gemspec
+        G
+
+        simulate_platform("ruby") { bundle "install" }
+        simulate_platform("jruby") { bundle "install" }
       end
 
       context "on ruby" do

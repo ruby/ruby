@@ -478,6 +478,26 @@ class TestModule < Test::Unit::TestCase
     assert_raise(ArgumentError) { Module.new { include } }
   end
 
+  def test_prepend_self
+    m = Module.new
+    assert_equal([m], m.ancestors)
+    m.prepend(m) rescue nil
+    assert_equal([m], m.ancestors)
+  end
+
+  def test_bug17590
+    m = Module.new
+    c = Class.new
+    c.prepend(m)
+    c.include(m)
+    m.prepend(m) rescue nil
+    m2 = Module.new
+    m2.prepend(m)
+    c.include(m2)
+
+    assert_equal([m, c, m2] + Object.ancestors, c.ancestors)
+  end
+
   def test_prepend_works_with_duped_classes
     m = Module.new
     a = Class.new do
@@ -2272,6 +2292,137 @@ class TestModule < Test::Unit::TestCase
       assert_equal(1 / 2r, 1 / 2, "#{bug11836}")
     }, ignore_stderr: true
     assert_equal(0, 1 / 2)
+  end
+
+  def test_visibility_after_refine_and_visibility_change_with_origin_class
+    m = Module.new
+    c = Class.new do
+      def x; :x end
+    end
+    c.prepend(m)
+    Module.new do
+      refine c do
+        def x; :y end
+      end
+    end
+
+    o1 = c.new
+    o2 = c.new
+    assert_equal(:x, o1.public_send(:x))
+    assert_equal(:x, o2.public_send(:x))
+    o1.singleton_class.send(:private, :x)
+    o2.singleton_class.send(:public, :x)
+
+    assert_raise(NoMethodError) { o1.public_send(:x) }
+    assert_equal(:x, o2.public_send(:x))
+  end
+
+  def test_visibility_after_multiple_refine_and_visibility_change_with_origin_class
+    m = Module.new
+    c = Class.new do
+      def x; :x end
+    end
+    c.prepend(m)
+    Module.new do
+      refine c do
+        def x; :y end
+      end
+    end
+    Module.new do
+      refine c do
+        def x; :z end
+      end
+    end
+
+    o1 = c.new
+    o2 = c.new
+    assert_equal(:x, o1.public_send(:x))
+    assert_equal(:x, o2.public_send(:x))
+    o1.singleton_class.send(:private, :x)
+    o2.singleton_class.send(:public, :x)
+
+    assert_raise(NoMethodError) { o1.public_send(:x) }
+    assert_equal(:x, o2.public_send(:x))
+  end
+
+  def test_visibility_after_refine_and_visibility_change_without_origin_class
+    c = Class.new do
+      def x; :x end
+    end
+    Module.new do
+      refine c do
+        def x; :y end
+      end
+    end
+    o1 = c.new
+    o2 = c.new
+    o1.singleton_class.send(:private, :x)
+    o2.singleton_class.send(:public, :x)
+    assert_raise(NoMethodError) { o1.public_send(:x) }
+    assert_equal(:x, o2.public_send(:x))
+  end
+
+  def test_visibility_after_multiple_refine_and_visibility_change_without_origin_class
+    c = Class.new do
+      def x; :x end
+    end
+    Module.new do
+      refine c do
+        def x; :y end
+      end
+    end
+    Module.new do
+      refine c do
+        def x; :z end
+      end
+    end
+    o1 = c.new
+    o2 = c.new
+    o1.singleton_class.send(:private, :x)
+    o2.singleton_class.send(:public, :x)
+    assert_raise(NoMethodError) { o1.public_send(:x) }
+    assert_equal(:x, o2.public_send(:x))
+  end
+
+  def test_visibility_after_refine_and_visibility_change_with_superclass
+    c = Class.new do
+      def x; :x end
+    end
+    sc = Class.new(c)
+    Module.new do
+      refine sc do
+        def x; :y end
+      end
+    end
+    o1 = sc.new
+    o2 = sc.new
+    o1.singleton_class.send(:private, :x)
+    o2.singleton_class.send(:public, :x)
+    assert_raise(NoMethodError) { o1.public_send(:x) }
+    assert_equal(:x, o2.public_send(:x))
+  end
+
+  def test_visibility_after_multiple_refine_and_visibility_change_with_superclass
+    c = Class.new do
+      def x; :x end
+    end
+    sc = Class.new(c)
+    Module.new do
+      refine sc do
+        def x; :y end
+      end
+    end
+    Module.new do
+      refine sc do
+        def x; :z end
+      end
+    end
+    o1 = sc.new
+    o2 = sc.new
+    o1.singleton_class.send(:private, :x)
+    o2.singleton_class.send(:public, :x)
+    assert_raise(NoMethodError) { o1.public_send(:x) }
+    assert_equal(:x, o2.public_send(:x))
   end
 
   def test_prepend_visibility

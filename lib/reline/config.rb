@@ -47,7 +47,9 @@ class Reline::Config
 
   def initialize
     @additional_key_bindings = {} # from inputrc
-    @default_key_bindings = {} # environment-dependent
+    @additional_key_bindings[:emacs] = {}
+    @additional_key_bindings[:vi_insert] = {}
+    @additional_key_bindings[:vi_command] = {}
     @skip_section = nil
     @if_stack = nil
     @editing_mode_label = :emacs
@@ -69,8 +71,10 @@ class Reline::Config
     if editing_mode_is?(:vi_command)
       @editing_mode_label = :vi_insert
     end
-    @additional_key_bindings = {}
-    @default_key_bindings = {}
+    @additional_key_bindings.keys.each do |key|
+      @additional_key_bindings[key].clear
+    end
+    reset_default_key_bindings
   end
 
   def editing_mode
@@ -135,16 +139,22 @@ class Reline::Config
   end
 
   def key_bindings
-    # override @default_key_bindings with @additional_key_bindings
-    @default_key_bindings.merge(@additional_key_bindings)
+    # override @key_actors[@editing_mode_label].default_key_bindings with @additional_key_bindings[@editing_mode_label]
+    @key_actors[@editing_mode_label].default_key_bindings.merge(@additional_key_bindings[@editing_mode_label])
+  end
+
+  def add_default_key_binding_by_keymap(keymap, keystroke, target)
+    @key_actors[keymap].default_key_bindings[keystroke] = target
   end
 
   def add_default_key_binding(keystroke, target)
-    @default_key_bindings[keystroke] = target
+    @key_actors[@keymap_label].default_key_bindings[keystroke] = target
   end
 
   def reset_default_key_bindings
-    @default_key_bindings = {}
+    @key_actors.values.each do |ka|
+      ka.reset_default_key_bindings
+    end
   end
 
   def read_lines(lines, file = nil)
@@ -174,7 +184,7 @@ class Reline::Config
         key, func_name = $1, $2
         keystroke, func = bind_key(key, func_name)
         next unless keystroke
-        @additional_key_bindings[keystroke] = func
+        @additional_key_bindings[@keymap_label][keystroke] = func
       end
     end
     unless @if_stack.empty?

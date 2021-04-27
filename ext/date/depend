@@ -136,7 +136,6 @@ date_core.o: $(hdrdir)/ruby/internal/static_assert.h
 date_core.o: $(hdrdir)/ruby/internal/stdalign.h
 date_core.o: $(hdrdir)/ruby/internal/stdbool.h
 date_core.o: $(hdrdir)/ruby/internal/symbol.h
-date_core.o: $(hdrdir)/ruby/internal/token_paste.h
 date_core.o: $(hdrdir)/ruby/internal/value.h
 date_core.o: $(hdrdir)/ruby/internal/value_type.h
 date_core.o: $(hdrdir)/ruby/internal/variable.h
@@ -303,7 +302,6 @@ date_parse.o: $(hdrdir)/ruby/internal/static_assert.h
 date_parse.o: $(hdrdir)/ruby/internal/stdalign.h
 date_parse.o: $(hdrdir)/ruby/internal/stdbool.h
 date_parse.o: $(hdrdir)/ruby/internal/symbol.h
-date_parse.o: $(hdrdir)/ruby/internal/token_paste.h
 date_parse.o: $(hdrdir)/ruby/internal/value.h
 date_parse.o: $(hdrdir)/ruby/internal/value_type.h
 date_parse.o: $(hdrdir)/ruby/internal/variable.h
@@ -470,7 +468,6 @@ date_strftime.o: $(hdrdir)/ruby/internal/static_assert.h
 date_strftime.o: $(hdrdir)/ruby/internal/stdalign.h
 date_strftime.o: $(hdrdir)/ruby/internal/stdbool.h
 date_strftime.o: $(hdrdir)/ruby/internal/symbol.h
-date_strftime.o: $(hdrdir)/ruby/internal/token_paste.h
 date_strftime.o: $(hdrdir)/ruby/internal/value.h
 date_strftime.o: $(hdrdir)/ruby/internal/value_type.h
 date_strftime.o: $(hdrdir)/ruby/internal/variable.h
@@ -633,7 +630,6 @@ date_strptime.o: $(hdrdir)/ruby/internal/static_assert.h
 date_strptime.o: $(hdrdir)/ruby/internal/stdalign.h
 date_strptime.o: $(hdrdir)/ruby/internal/stdbool.h
 date_strptime.o: $(hdrdir)/ruby/internal/symbol.h
-date_strptime.o: $(hdrdir)/ruby/internal/token_paste.h
 date_strptime.o: $(hdrdir)/ruby/internal/value.h
 date_strptime.o: $(hdrdir)/ruby/internal/value_type.h
 date_strptime.o: $(hdrdir)/ruby/internal/variable.h

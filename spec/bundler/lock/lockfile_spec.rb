@@ -318,40 +318,7 @@ RSpec.describe "the lockfile format" do
     G
   end
 
-  it "generates a lockfile without credentials for a configured source", :bundler => "< 3" do
-    bundle "config set http://localgemserver.test/ user:pass"
-
-    install_gemfile(<<-G, :artifice => "endpoint_strict_basic_authentication", :quiet => true)
-      source "http://localgemserver.test/" do
-
-      end
-
-      source "http://user:pass@othergemserver.test/" do
-        gem "rack-obama", ">= 1.0"
-      end
-    G
-
-    lockfile_should_be <<-G
-      GEM
-        remote: http://localgemserver.test/
-        remote: http://user:pass@othergemserver.test/
-        specs:
-          rack (1.0.0)
-          rack-obama (1.0)
-            rack
-
-      PLATFORMS
-        #{lockfile_platforms}
-
-      DEPENDENCIES
-        rack-obama (>= 1.0)!
-
-      BUNDLED WITH
-         #{Bundler::VERSION}
-    G
-  end
-
-  it "generates a lockfile without credentials for a configured source", :bundler => "3" do
+  it "generates a lockfile without credentials for a configured source" do
     bundle "config set http://localgemserver.test/ user:pass"
 
     install_gemfile(<<-G, :artifice => "endpoint_strict_basic_authentication", :quiet => true)
@@ -668,6 +635,30 @@ RSpec.describe "the lockfile format" do
         bar!
         foo!
         rack
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    G
+  end
+
+  it "removes redundant sources" do
+    install_gemfile <<-G
+      source "#{file_uri_for(gem_repo2)}/"
+
+      gem "rack", :source => "#{file_uri_for(gem_repo2)}/"
+    G
+
+    lockfile_should_be <<-G
+      GEM
+        remote: #{file_uri_for(gem_repo2)}/
+        specs:
+          rack (1.0.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        rack!
 
       BUNDLED WITH
          #{Bundler::VERSION}
@@ -1134,7 +1125,7 @@ RSpec.describe "the lockfile format" do
     G
 
     expect(bundled_app_lock).not_to exist
-    expect(err).to include "rack (>= 0) should come from an unspecified source and git://hubz.com (at master)"
+    expect(err).to include "rack (>= 0) should come from an unspecified source and git://hubz.com"
   end
 
   it "works correctly with multiple version dependencies" do

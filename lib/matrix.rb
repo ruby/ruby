@@ -379,7 +379,7 @@ class Matrix
   end
 
   private def set_value(row, col, value)
-    raise ErrDimensionMismatch, "Expected a a value, got a #{value.class}" if value.respond_to?(:to_matrix)
+    raise ErrDimensionMismatch, "Expected a value, got a #{value.class}" if value.respond_to?(:to_matrix)
 
     @rows[row][col] = value
   end

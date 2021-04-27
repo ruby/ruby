@@ -10,52 +10,64 @@ class Reline::ANSI
     false
   end
 
-  RAW_KEYSTROKE_CONFIG = {
-    # Console (80x25)
-    [27, 91, 49, 126] => :ed_move_to_beg, # Home
-    [27, 91, 52, 126] => :ed_move_to_end, # End
-    [27, 91, 51, 126] => :key_delete,     # Del
-    [27, 91, 65] => :ed_prev_history,     # ↑
-    [27, 91, 66] => :ed_next_history,     # ↓
-    [27, 91, 67] => :ed_next_char,        # →
-    [27, 91, 68] => :ed_prev_char,        # ←
+  def self.set_default_key_bindings(config)
+    {
+      # Console (80x25)
+      [27, 91, 49, 126] => :ed_move_to_beg, # Home
+      [27, 91, 52, 126] => :ed_move_to_end, # End
+      [27, 91, 51, 126] => :key_delete,     # Del
+      [27, 91, 65] => :ed_prev_history,     # ↑
+      [27, 91, 66] => :ed_next_history,     # ↓
+      [27, 91, 67] => :ed_next_char,        # →
+      [27, 91, 68] => :ed_prev_char,        # ←
 
-    # KDE
-    [27, 91, 72] => :ed_move_to_beg,      # Home
-    [27, 91, 70] => :ed_move_to_end,      # End
-    # Del is 0x08
-    [27, 71, 65] => :ed_prev_history,     # ↑
-    [27, 71, 66] => :ed_next_history,     # ↓
-    [27, 71, 67] => :ed_next_char,        # →
-    [27, 71, 68] => :ed_prev_char,        # ←
+      # KDE
+      [27, 91, 72] => :ed_move_to_beg,      # Home
+      [27, 91, 70] => :ed_move_to_end,      # End
+      # Del is 0x08
+      [27, 71, 65] => :ed_prev_history,     # ↑
+      [27, 71, 66] => :ed_next_history,     # ↓
+      [27, 71, 67] => :ed_next_char,        # →
+      [27, 71, 68] => :ed_prev_char,        # ←
 
-    # urxvt / exoterm
-    [27, 91, 55, 126] => :ed_move_to_beg, # Home
-    [27, 91, 56, 126] => :ed_move_to_end, # End
+      # urxvt / exoterm
+      [27, 91, 55, 126] => :ed_move_to_beg, # Home
+      [27, 91, 56, 126] => :ed_move_to_end, # End
 
-    # GNOME
-    [27, 79, 72] => :ed_move_to_beg,      # Home
-    [27, 79, 70] => :ed_move_to_end,      # End
-    # Del is 0x08
-    # Arrow keys are the same of KDE
+      # GNOME
+      [27, 79, 72] => :ed_move_to_beg,      # Home
+      [27, 79, 70] => :ed_move_to_end,      # End
+      # Del is 0x08
+      # Arrow keys are the same of KDE
 
-    # iTerm2
-    [27, 27, 91, 67] => :em_next_word,    # Option+→
-    [27, 27, 91, 68] => :ed_prev_word,    # Option+←
-    [195, 166] => :em_next_word,          # Option+f
-    [195, 162] => :ed_prev_word,          # Option+b
+      # iTerm2
+      [27, 27, 91, 67] => :em_next_word,    # Option+→
+      [27, 27, 91, 68] => :ed_prev_word,    # Option+←
+      [195, 166] => :em_next_word,          # Option+f
+      [195, 162] => :ed_prev_word,          # Option+b
 
-    # others
-    [27, 32] => :em_set_mark,             # M-<space>
-    [24, 24] => :em_exchange_mark,        # C-x C-x TODO also add Windows
-    [27, 91, 49, 59, 53, 67] => :em_next_word, # Ctrl+→
-    [27, 91, 49, 59, 53, 68] => :ed_prev_word, # Ctrl+←
+      # others
+      [27, 91, 49, 59, 53, 67] => :em_next_word, # Ctrl+→
+      [27, 91, 49, 59, 53, 68] => :ed_prev_word, # Ctrl+←
 
-    [27, 79, 65] => :ed_prev_history,     # ↑
-    [27, 79, 66] => :ed_next_history,     # ↓
-    [27, 79, 67] => :ed_next_char,        # →
-    [27, 79, 68] => :ed_prev_char,        # ←
-  }
+      [27, 79, 65] => :ed_prev_history,     # ↑
+      [27, 79, 66] => :ed_next_history,     # ↓
+      [27, 79, 67] => :ed_next_char,        # →
+      [27, 79, 68] => :ed_prev_char,        # ←
+    }.each_pair do |key, func|
+      config.add_default_key_binding_by_keymap(:emacs, key, func)
+      config.add_default_key_binding_by_keymap(:vi_insert, key, func)
+      config.add_default_key_binding_by_keymap(:vi_command, key, func)
+    end
+
+    {
+      # others
+      [27, 32] => :em_set_mark,             # M-<space>
+      [24, 24] => :em_exchange_mark,        # C-x C-x TODO also add Windows
+    }.each_pair do |key, func|
+      config.add_default_key_binding_by_keymap(:emacs, key, func)
+    end
+  end
 
   @@input = STDIN
   def self.input=(val)

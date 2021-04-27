@@ -18,6 +18,13 @@ describe "Range#to_s" do
     end
   end
 
+  ruby_version_is "2.7" do
+    it "can show beginless ranges" do
+      eval("(..1)").to_s.should == "..1"
+      eval("(...1.0)").to_s.should == "...1.0"
+    end
+  end
+
   ruby_version_is ''...'2.7' do
     it "returns a tainted string if either end is tainted" do
       (("a".taint)..."c").to_s.tainted?.should be_true

@@ -139,7 +139,6 @@ nkf.o: $(hdrdir)/ruby/internal/static_assert.h
 nkf.o: $(hdrdir)/ruby/internal/stdalign.h
 nkf.o: $(hdrdir)/ruby/internal/stdbool.h
 nkf.o: $(hdrdir)/ruby/internal/symbol.h
-nkf.o: $(hdrdir)/ruby/internal/token_paste.h
 nkf.o: $(hdrdir)/ruby/internal/value.h
 nkf.o: $(hdrdir)/ruby/internal/value_type.h
 nkf.o: $(hdrdir)/ruby/internal/variable.h

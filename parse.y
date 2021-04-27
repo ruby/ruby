@@ -1196,7 +1196,7 @@ static int looking_at_eol_p(struct parser_params *p);
 %type <node> p_case_body p_cases p_top_expr p_top_expr_body
 %type <node> p_expr p_as p_alt p_expr_basic p_find
 %type <node> p_args p_args_head p_args_tail p_args_post p_arg
-%type <node> p_value p_primitive p_variable p_var_ref p_const
+%type <node> p_value p_primitive p_variable p_var_ref p_expr_ref p_const
 %type <node> p_kwargs p_kwarg p_kw
 %type <id>   keyword_variable user_variable sym operation operation2 operation3
 %type <id>   cname fname op f_rest_arg f_block_arg opt_f_block_arg f_norm_arg f_bad_arg
@@ -1765,7 +1765,7 @@ expr_value_do	: {COND_PUSH(1);} expr_value do {COND_POP();}
 		    {
 			$$ = $2;
 		    }
-
+		;
 
 command_call	: command
 		| block_command
@@ -3994,7 +3994,7 @@ p_top_expr	: p_top_expr_body
 		| p_top_expr_body modifier_if expr_value
 		    {
 		    /*%%%*/
-			$$ = new_if(p, $3, remove_begin($1), 0, &@$);
+			$$ = new_if(p, $3, $1, 0, &@$);
 			fixpos($$, $3);
 		    /*% %*/
 		    /*% ripper: if_mod!($3, $1) %*/
@@ -4002,7 +4002,7 @@ p_top_expr	: p_top_expr_body
 		| p_top_expr_body modifier_unless expr_value
 		    {
 		    /*%%%*/
-			$$ = new_unless(p, $3, remove_begin($1), 0, &@$);
+			$$ = new_unless(p, $3, $1, 0, &@$);
 			fixpos($$, $3);
 		    /*% %*/
 		    /*% ripper: unless_mod!($3, $1) %*/
@@ -4066,6 +4066,7 @@ p_lparen	: '(' {$<tbl>$ = push_pktbl(p);};
 p_lbracket	: '[' {$<tbl>$ = push_pktbl(p);};
 
 p_expr_basic	: p_value
+		| p_variable
 		| p_const p_lparen p_args rparen
 		    {
 			pop_pktbl(p, $<tbl>2);
@@ -4400,8 +4401,8 @@ p_value 	: p_primitive
 		    /*% %*/
 		    /*% ripper: dot3!($1, Qnil) %*/
 		    }
-		| p_variable
 		| p_var_ref
+		| p_expr_ref
 		| p_const
 		| tBDOT2 p_primitive
 		    {
@@ -4459,6 +4460,15 @@ p_var_ref	: '^' tIDENTIFIER
 			$$ = n;
 		    /*% %*/
 		    /*% ripper: var_ref!($2) %*/
+		    }
+		;
+
+p_expr_ref	: '^' tLPAREN expr_value ')'
+		    {
+		    /*%%%*/
+			$$ = NEW_BEGIN($3, &@$);
+		    /*% %*/
+		    /*% ripper: begin!($3) %*/
 		    }
 		;
 
@@ -8264,6 +8274,7 @@ set_file_encoding(struct parser_params *p, const char *str, const char *send)
 	    continue;
 	}
 	if (STRNCASECMP(str-6, "coding", 6) == 0) break;
+	sep = 0;
     }
     for (;;) {
 	do {
@@ -11061,6 +11072,7 @@ const_decl_path(struct parser_params *p, NODE **dest)
 	    path = rb_fstring(path);
 	}
 	*dest = n = NEW_LIT(path, loc);
+        RB_OBJ_WRITTEN(p->ast, Qnil, n->nd_lit);
     }
     return n;
 }
@@ -11148,7 +11160,9 @@ shareable_literal_constant(struct parser_params *p, enum shareability shareable,
       case NODE_ZLIST:
 	lit = rb_ary_new();
 	OBJ_FREEZE_RAW(lit);
-	return NEW_LIT(lit, loc);
+        NODE *n = NEW_LIT(lit, loc);
+        RB_OBJ_WRITTEN(p->ast, Qnil, n->nd_lit);
+        return n;
 
       case NODE_LIST:
 	lit = rb_ary_new();
@@ -11234,6 +11248,7 @@ shareable_literal_constant(struct parser_params *p, enum shareability shareable,
     }
     else {
 	value = NEW_LIT(rb_ractor_make_shareable(lit), loc);
+        RB_OBJ_WRITTEN(p->ast, Qnil, value->nd_lit);
     }
 
     return value;
@@ -13334,7 +13349,6 @@ count_char(const char *str, int c)
 RUBY_FUNC_EXPORTED size_t
 rb_yytnamerr(struct parser_params *p, char *yyres, const char *yystr)
 {
-    YYUSE(p);
     if (*yystr == '"') {
 	size_t yyn = 0, bquote = 0;
 	const char *yyp = yystr;

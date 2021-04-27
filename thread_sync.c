@@ -32,9 +32,10 @@ sync_wakeup(struct list_head *head, long max)
 
         if (cur->th->status != THREAD_KILLED) {
 
-            if (cur->th->scheduler != Qnil) {
-                rb_scheduler_unblock(cur->th->scheduler, cur->self, rb_fiberptr_self(cur->fiber));
-            } else {
+            if (cur->th->scheduler != Qnil && rb_fiberptr_blocking(cur->fiber) == 0) {
+                rb_fiber_scheduler_unblock(cur->th->scheduler, cur->self, rb_fiberptr_self(cur->fiber));
+            }
+            else {
                 rb_threadptr_interrupt(cur->th);
                 cur->th->status = THREAD_RUNNABLE;
             }
@@ -267,8 +268,8 @@ mutex_owned_p(rb_fiber_t *fiber, rb_mutex_t *mutex)
     }
 }
 
-static VALUE call_rb_scheduler_block(VALUE mutex) {
-    return rb_scheduler_block(rb_scheduler_current(), mutex, Qnil);
+static VALUE call_rb_fiber_scheduler_block(VALUE mutex) {
+    return rb_fiber_scheduler_block(rb_fiber_scheduler_current(), mutex, Qnil);
 }
 
 static VALUE
@@ -302,7 +303,7 @@ do_mutex_lock(VALUE self, int interruptible_p)
         }
 
         while (mutex->fiber != fiber) {
-            VALUE scheduler = rb_scheduler_current();
+            VALUE scheduler = rb_fiber_scheduler_current();
             if (scheduler != Qnil) {
                 COROUTINE_STACK_LOCAL(struct sync_waiter, w);
                 w->self = self;
@@ -311,12 +312,13 @@ do_mutex_lock(VALUE self, int interruptible_p)
 
                 list_add_tail(&mutex->waitq, &w->node);
 
-                rb_ensure(call_rb_scheduler_block, self, delete_from_waitq, (VALUE)w);
+                rb_ensure(call_rb_fiber_scheduler_block, self, delete_from_waitq, (VALUE)w);
 
                 if (!mutex->fiber) {
                     mutex->fiber = fiber;
                 }
-            } else {
+            }
+            else {
                 enum rb_thread_status prev_status = th->status;
                 rb_hrtime_t *timeout = 0;
                 rb_hrtime_t rel = rb_msec2hrtime(100);
@@ -437,10 +439,11 @@ rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_fiber_t *fiber)
         list_for_each_safe(&mutex->waitq, cur, next, node) {
             list_del_init(&cur->node);
 
-            if (cur->th->scheduler != Qnil) {
-                rb_scheduler_unblock(cur->th->scheduler, cur->self, rb_fiberptr_self(cur->fiber));
+            if (cur->th->scheduler != Qnil && rb_fiberptr_blocking(cur->fiber) == 0) {
+                rb_fiber_scheduler_unblock(cur->th->scheduler, cur->self, rb_fiberptr_self(cur->fiber));
                 goto found;
-            } else {
+            }
+            else {
                 switch (cur->th->status) {
                   case THREAD_RUNNABLE: /* from someone else calling Thread#run */
                   case THREAD_STOPPED_FOREVER: /* likely (rb_mutex_lock) */
@@ -545,14 +548,16 @@ rb_mutex_sleep(VALUE self, VALUE timeout)
     rb_mutex_unlock(self);
     time_t beg = time(0);
 
-    VALUE scheduler = rb_scheduler_current();
+    VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
-        rb_scheduler_kernel_sleep(scheduler, timeout);
+        rb_fiber_scheduler_kernel_sleep(scheduler, timeout);
         mutex_lock_uninterruptible(self);
-    } else {
+    }
+    else {
         if (NIL_P(timeout)) {
             rb_ensure(rb_mutex_sleep_forever, self, mutex_lock_uninterruptible, self);
-        } else {
+        }
+        else {
             rb_hrtime_t rel = rb_timeval2hrtime(&t);
             rb_ensure(rb_mutex_wait_for, (VALUE)&rel, mutex_lock_uninterruptible, self);
         }
@@ -560,7 +565,7 @@ rb_mutex_sleep(VALUE self, VALUE timeout)
 
     RUBY_VM_CHECK_INTS_BLOCKING(GET_EC());
     time_t end = time(0) - beg;
-    return INT2FIX(end);
+    return TIMET2NUM(end);
 }
 
 /*
@@ -839,15 +844,27 @@ queue_closed_result(VALUE self, struct rb_queue *q)
 /*
  * Document-method: Queue::new
  *
- * Creates a new queue instance.
+ * Creates a new queue instance, optionally using the contents of an Enumerable
+ * for its initial state.
+ *
+ *  Example:
+ *
+ *    	q = Queue.new
+ *    	q = Queue.new([a, b, c])
+ *    	q = Queue.new(items)
  */
 
 static VALUE
-rb_queue_initialize(VALUE self)
+rb_queue_initialize(int argc, VALUE *argv, VALUE self)
 {
+    VALUE initial;
     struct rb_queue *q = queue_ptr(self);
     RB_OBJ_WRITE(self, &q->que, ary_buf_new());
     list_head_init(queue_waitq(q));
+    rb_scan_args(argc, argv, "01", &initial);
+    if (argc == 1) {
+        rb_ary_concat(q->que, rb_to_array(initial));
+    }
     return self;
 }
 
@@ -1570,7 +1587,7 @@ Init_thread_sync(void)
 
     rb_eClosedQueueError = rb_define_class("ClosedQueueError", rb_eStopIteration);
 
-    rb_define_method(rb_cQueue, "initialize", rb_queue_initialize, 0);
+    rb_define_method(rb_cQueue, "initialize", rb_queue_initialize, -1);
     rb_undef_method(rb_cQueue, "initialize_copy");
     rb_define_method(rb_cQueue, "marshal_dump", undumpable, 0);
     rb_define_method(rb_cQueue, "close", rb_queue_close, 0);

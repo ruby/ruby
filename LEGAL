@@ -314,17 +314,6 @@ mentioned below.
     This configure script is free software; the Free Software Foundation
     gives unlimited permission to copy, distribute and modify it.
 
-[aclocal.m4]
-
-  This file is free software.
-
-  >>>
-    Copyright (C) 1996-2020:: Free Software Foundation, Inc.
-
-    This file is free software; the Free Software Foundation
-    gives unlimited permission to copy and/or distribute it,
-    with or without modifications, as long as this notice is preserved.
-
 [tool/config.guess]
 [tool/config.sub]
 

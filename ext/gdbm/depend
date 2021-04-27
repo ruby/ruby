@@ -136,7 +136,6 @@ gdbm.o: $(hdrdir)/ruby/internal/static_assert.h
 gdbm.o: $(hdrdir)/ruby/internal/stdalign.h
 gdbm.o: $(hdrdir)/ruby/internal/stdbool.h
 gdbm.o: $(hdrdir)/ruby/internal/symbol.h
-gdbm.o: $(hdrdir)/ruby/internal/token_paste.h
 gdbm.o: $(hdrdir)/ruby/internal/value.h
 gdbm.o: $(hdrdir)/ruby/internal/value_type.h
 gdbm.o: $(hdrdir)/ruby/internal/variable.h

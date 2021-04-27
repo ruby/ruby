@@ -45,6 +45,7 @@ class Gem::ConfigFile
   DEFAULT_UPDATE_SOURCES = true
   DEFAULT_CONCURRENT_DOWNLOADS = 8
   DEFAULT_CERT_EXPIRATION_LENGTH_DAYS = 365
+  DEFAULT_IPV4_FALLBACK_ENABLED = false
 
   ##
   # For Ruby packagers to set configuration defaults.  Set in
@@ -141,6 +142,12 @@ class Gem::ConfigFile
   attr_accessor :cert_expiration_length_days
 
   ##
+  # == Experimental ==
+  # Fallback to IPv4 when IPv6 is not reachable or slow (default: false)
+
+  attr_accessor :ipv4_fallback_enabled
+
+  ##
   # Path name of directory or file of openssl client certificate, used for remote https connection with client authentication
 
   attr_reader :ssl_client_cert
@@ -175,6 +182,7 @@ class Gem::ConfigFile
     @update_sources = DEFAULT_UPDATE_SOURCES
     @concurrent_downloads = DEFAULT_CONCURRENT_DOWNLOADS
     @cert_expiration_length_days = DEFAULT_CERT_EXPIRATION_LENGTH_DAYS
+    @ipv4_fallback_enabled = ENV['IPV4_FALLBACK_ENABLED'] == 'true' || DEFAULT_IPV4_FALLBACK_ENABLED
 
     operating_system_config = Marshal.load Marshal.dump(OPERATING_SYSTEM_DEFAULTS)
     platform_config = Marshal.load Marshal.dump(PLATFORM_DEFAULTS)
@@ -203,6 +211,7 @@ class Gem::ConfigFile
     @disable_default_gem_server  = @hash[:disable_default_gem_server]  if @hash.key? :disable_default_gem_server
     @sources                     = @hash[:sources]                     if @hash.key? :sources
     @cert_expiration_length_days = @hash[:cert_expiration_length_days] if @hash.key? :cert_expiration_length_days
+    @ipv4_fallback_enabled       = @hash[:ipv4_fallback_enabled]       if @hash.key? :ipv4_fallback_enabled
 
     @ssl_verify_mode  = @hash[:ssl_verify_mode]  if @hash.key? :ssl_verify_mode
     @ssl_ca_cert      = @hash[:ssl_ca_cert]      if @hash.key? :ssl_ca_cert

@@ -26,7 +26,6 @@ jobs:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
       RUBY_DEBUG: ci
     runs-on: ${{ matrix.os }}
-    if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
       - run: mkdir build
         working-directory:
@@ -38,6 +37,7 @@ jobs:
       - name: git config
         run: |
           git config --global advice.detachedHead 0
+          git config --global init.defaultBranch garbage
       - uses: actions/checkout@v2
         with:
           path: src
@@ -49,7 +49,7 @@ jobs:
       - name: Set ENV
         run: |
           echo "JOBS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
-      - run: autoconf
+      - run: ./autogen.sh
         working-directory: src
       - name: Run configure
         run: ../src/configure -C --disable-install-doc cppflags=${{ matrix.debug }}

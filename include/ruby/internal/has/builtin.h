@@ -22,7 +22,6 @@
  */
 #include "ruby/internal/config.h"
 #include "ruby/internal/compiler_since.h"
-#include "ruby/internal/token_paste.h"
 
 #if defined(__has_builtin)
 # if RBIMPL_COMPILER_IS(Intel)
@@ -47,7 +46,7 @@
 #  * __has_builtin  only  since  GCC  10.   This section  can  be  made  more
 #  * granular. */
 # /* https://gcc.gnu.org/bugzilla/show_bug.cgi?id=66970 */
-# define RBIMPL_HAS_BUILTIN(_) RBIMPL_TOKEN_PASTE(RBIMPL_HAS_BUILTIN_, _)
+# define RBIMPL_HAS_BUILTIN(_) (RBIMPL_HAS_BUILTIN_ ## _)
 # define RBIMPL_HAS_BUILTIN___builtin_add_overflow      RBIMPL_COMPILER_SINCE(GCC, 5, 1, 0)
 # define RBIMPL_HAS_BUILTIN___builtin_alloca            RBIMPL_COMPILER_SINCE(GCC, 0, 0, 0)
 # define RBIMPL_HAS_BUILTIN___builtin_alloca_with_align RBIMPL_COMPILER_SINCE(GCC, 6, 1, 0)
@@ -78,7 +77,7 @@
 
 #else
 # /* Take config.h definition when available */
-# define RBIMPL_HAS_BUILTIN(_) (RBIMPL_TOKEN_PASTE(RBIMPL_HAS_BUILTIN_, _)+0)
+# define RBIMPL_HAS_BUILTIN(_) ((RBIMPL_HAS_BUILTIN_ ## _)+0)
 # define RBIMPL_HAS_BUILTIN___builtin_add_overflow      HAVE_BUILTIN___BUILTIN_ADD_OVERFLOW
 # define RBIMPL_HAS_BUILTIN___builtin_alloca_with_align HAVE_BUILTIN___BUILTIN_ALLOCA_WITH_ALIGN
 # define RBIMPL_HAS_BUILTIN___builtin_assume_aligned    HAVE_BUILTIN___BUILTIN_ASSUME_ALIGNED

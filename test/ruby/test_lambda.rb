@@ -74,6 +74,109 @@ class TestLambdaParameters < Test::Unit::TestCase
     assert_raise(ArgumentError, bug9605) {proc(&plus).call [1,2]}
   end
 
+  def test_proc_inside_lambda_inside_method_return_inside_lambda_inside_method
+    def self.a
+      -> do
+        p = Proc.new{return :a}
+        p.call
+      end.call
+    end
+    assert_equal(:a, a)
+
+    def self.b
+      lambda do
+        p = Proc.new{return :b}
+        p.call
+      end.call
+    end
+    assert_equal(:b, b)
+  end
+
+  def test_proc_inside_lambda_inside_method_return_inside_lambda_outside_method
+    def self.a
+      -> do
+        p = Proc.new{return :a}
+        p.call
+      end
+    end
+    assert_equal(:a, a.call)
+
+    def self.b
+      lambda do
+        p = Proc.new{return :b}
+        p.call
+      end
+    end
+    assert_equal(:b, b.call)
+  end
+
+  def test_proc_inside_lambda_inside_method_return_outside_lambda_inside_method
+    def self.a
+      -> do
+        Proc.new{return :a}
+      end.call.call
+    end
+    assert_raise(LocalJumpError) {a}
+
+    def self.b
+      lambda do
+        Proc.new{return :b}
+      end.call.call
+    end
+    assert_raise(LocalJumpError) {b}
+  end
+
+  def test_proc_inside_lambda_inside_method_return_outside_lambda_outside_method
+    def self.a
+      -> do
+        Proc.new{return :a}
+      end
+    end
+    assert_raise(LocalJumpError) {a.call.call}
+
+    def self.b
+      lambda do
+        Proc.new{return :b}
+      end
+    end
+    assert_raise(LocalJumpError) {b.call.call}
+  end
+
+  def test_proc_inside_lambda2_inside_method_return_outside_lambda1_inside_method
+    def self.a
+      -> do
+        -> do
+          Proc.new{return :a}
+        end.call.call
+      end.call
+    end
+    assert_raise(LocalJumpError) {a}
+
+    def self.b
+      lambda do
+        lambda do
+          Proc.new{return :a}
+        end.call.call
+      end.call
+    end
+    assert_raise(LocalJumpError) {b}
+  end
+
+  def test_proc_inside_lambda_toplevel
+    assert_separately [], <<~RUBY
+      lambda{
+        $g = proc{ return :pr }
+      }.call
+      begin
+        $g.call
+      rescue LocalJumpError
+        # OK!
+      else
+        raise
+      end
+    RUBY
+  end
+
   def pass_along(&block)
     lambda(&block)
   end

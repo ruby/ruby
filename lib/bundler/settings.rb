@@ -7,7 +7,6 @@ module Bundler
     autoload :Validator, File.expand_path("settings/validator", __dir__)
 
     BOOL_KEYS = %w[
-      allow_bundler_dependency_conflicts
       allow_deployment_source_credential_changes
       allow_offline_install
       auto_clean_without_path
@@ -16,10 +15,10 @@ module Bundler
       cache_all_platforms
       default_install_uses_path
       deployment
-      deployment_means_frozen
       disable_checksum_validation
       disable_exec_load
       disable_local_branch_check
+      disable_local_revision_check
       disable_multisource
       disable_shared_gems
       disable_version_check
@@ -33,7 +32,6 @@ module Bundler
       init_gems_rb
       no_install
       no_prune
-      only_update_to_newer_versions
       path_relative_to_cwd
       path.system
       plugins

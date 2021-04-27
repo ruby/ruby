@@ -428,9 +428,9 @@ describe "The rescue keyword" do
         raise "from block"
       rescue (raise "from rescue expression")
       end
-    }.should raise_error(RuntimeError, "from rescue expression") do |e|
+    }.should raise_error(RuntimeError, "from rescue expression") { |e|
       e.cause.message.should == "from block"
-    end
+    }
   end
 
   it "should splat the handling Error classes" do

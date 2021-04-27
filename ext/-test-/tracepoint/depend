@@ -135,7 +135,6 @@ gc_hook.o: $(hdrdir)/ruby/internal/static_assert.h
 gc_hook.o: $(hdrdir)/ruby/internal/stdalign.h
 gc_hook.o: $(hdrdir)/ruby/internal/stdbool.h
 gc_hook.o: $(hdrdir)/ruby/internal/symbol.h
-gc_hook.o: $(hdrdir)/ruby/internal/token_paste.h
 gc_hook.o: $(hdrdir)/ruby/internal/value.h
 gc_hook.o: $(hdrdir)/ruby/internal/value_type.h
 gc_hook.o: $(hdrdir)/ruby/internal/variable.h
@@ -296,7 +295,6 @@ tracepoint.o: $(hdrdir)/ruby/internal/static_assert.h
 tracepoint.o: $(hdrdir)/ruby/internal/stdalign.h
 tracepoint.o: $(hdrdir)/ruby/internal/stdbool.h
 tracepoint.o: $(hdrdir)/ruby/internal/symbol.h
-tracepoint.o: $(hdrdir)/ruby/internal/token_paste.h
 tracepoint.o: $(hdrdir)/ruby/internal/value.h
 tracepoint.o: $(hdrdir)/ruby/internal/value_type.h
 tracepoint.o: $(hdrdir)/ruby/internal/variable.h

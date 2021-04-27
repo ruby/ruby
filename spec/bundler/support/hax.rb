@@ -29,7 +29,7 @@ module Gem
   end
 
   # We only need this hack for rubygems versions without the BundlerVersionFinder
-  if Gem::Version.new(Gem::VERSION) < Gem::Version.new("2.7.0")
+  if Gem.rubygems_version < Gem::Version.new("2.7.0")
     @path_to_default_spec_map.delete_if do |_path, spec|
       spec.name == "bundler"
     end

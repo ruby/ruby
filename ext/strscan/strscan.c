@@ -1537,7 +1537,7 @@ strscan_fixed_anchor_p(VALUE self)
  *
  * === Finding Where we Are
  *
- * - #beginning_of_line? (#bol?)
+ * - #beginning_of_line? (<tt>#bol?</tt>)
  * - #eos?
  * - #rest?
  * - #rest_size
@@ -1554,13 +1554,13 @@ strscan_fixed_anchor_p(VALUE self)
  * - #matched
  * - #matched?
  * - #matched_size
- * - []
+ * - <tt>#[]</tt>
  * - #pre_match
  * - #post_match
  *
  * === Miscellaneous
  *
- * - <<
+ * - <tt><<</tt>
  * - #concat
  * - #string
  * - #string=

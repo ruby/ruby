@@ -1844,13 +1844,13 @@ time_modify(VALUE time)
 }
 
 static wideval_t
-timespec2timew(struct timespec *ts)
+timenano2timew(time_t sec, long nsec)
 {
     wideval_t timew;
 
-    timew = rb_time_magnify(TIMET2WV(ts->tv_sec));
-    if (ts->tv_nsec)
-        timew = wadd(timew, wmulquoll(WINT2WV(ts->tv_nsec), TIME_SCALE, 1000000000));
+    timew = rb_time_magnify(TIMET2WV(sec));
+    if (nsec)
+        timew = wadd(timew, wmulquoll(WINT2WV(nsec), TIME_SCALE, 1000000000));
     return timew;
 }
 
@@ -1918,7 +1918,7 @@ time_init_now(rb_execution_context_t *ec, VALUE time, VALUE zone)
     tobj->tm_got=0;
     tobj->timew = WINT2FIXWV(0);
     rb_timespec_now(&ts);
-    tobj->timew = timespec2timew(&ts);
+    tobj->timew = timenano2timew(ts.tv_sec, ts.tv_nsec);
 
     if (!NIL_P(zone)) {
         time_zonelocal(time, zone);
@@ -2150,8 +2150,10 @@ utc_offset_arg(VALUE arg)
         if (s[0] != '+' && s[0] != '-') goto invalid_utc_offset;
         if (!ISDIGIT(s[1]) || !ISDIGIT(s[2])) goto invalid_utc_offset;
         n += (s[1] * 10 + s[2] - '0' * 11) * 3600;
-        if (s[0] == '-')
+        if (s[0] == '-') {
+            if (n == 0) return UTC_ZONE;
             n = -n;
+        }
         return INT2FIX(n);
     }
     else {
@@ -2407,26 +2409,26 @@ time_init_args(rb_execution_context_t *ec, VALUE time, VALUE year, VALUE mon, VA
 }
 
 static void
-time_overflow_p(time_t *secp, long *nsecp)
+subsec_normalize(time_t *secp, long *subsecp, const long maxsubsec)
 {
     time_t sec = *secp;
-    long nsec = *nsecp;
+    long subsec = *subsecp;
     long sec2;
 
-    if (nsec >= 1000000000) {	/* nsec positive overflow */
-        sec2 = nsec / 1000000000;
+    if (UNLIKELY(subsec >= maxsubsec)) { /* subsec positive overflow */
+        sec2 = subsec / maxsubsec;
 	if (TIMET_MAX - sec2 < sec) {
 	    rb_raise(rb_eRangeError, "out of Time range");
 	}
-	nsec -= sec2 * 1000000000;
+	subsec -= sec2 * maxsubsec;
 	sec += sec2;
     }
-    else if (nsec < 0) {		/* nsec negative overflow */
-	sec2 = NDIV(nsec,1000000000); /* negative div */
+    else if (UNLIKELY(subsec < 0)) {    /* subsec negative overflow */
+	sec2 = NDIV(subsec, maxsubsec); /* negative div */
 	if (sec < TIMET_MIN - sec2) {
 	    rb_raise(rb_eRangeError, "out of Time range");
 	}
-	nsec -= sec2 * 1000000000;
+	subsec -= sec2 * maxsubsec;
 	sec += sec2;
     }
 #ifndef NEGATIVE_TIME_T
@@ -2434,17 +2436,17 @@ time_overflow_p(time_t *secp, long *nsecp)
 	rb_raise(rb_eArgError, "time must be positive");
 #endif
     *secp = sec;
-    *nsecp = nsec;
+    *subsecp = subsec;
 }
+
+#define time_usec_normalize(secp, usecp) subsec_normalize(secp, usecp, 1000000)
+#define time_nsec_normalize(secp, nsecp) subsec_normalize(secp, nsecp, 1000000000)
 
 static wideval_t
 nsec2timew(time_t sec, long nsec)
 {
-    struct timespec ts;
-    time_overflow_p(&sec, &nsec);
-    ts.tv_sec = sec;
-    ts.tv_nsec = nsec;
-    return timespec2timew(&ts);
+    time_nsec_normalize(&sec, &nsec);
+    return timenano2timew(sec, nsec);
 }
 
 static VALUE
@@ -2463,27 +2465,8 @@ time_new_timew(VALUE klass, wideval_t timew)
 VALUE
 rb_time_new(time_t sec, long usec)
 {
-    wideval_t timew;
-
-    if (usec >= 1000000) {
-	long sec2 = usec / 1000000;
-	if (sec > TIMET_MAX - sec2) {
-	    rb_raise(rb_eRangeError, "out of Time range");
-	}
-	usec -= sec2 * 1000000;
-	sec += sec2;
-    }
-    else if (usec < 0) {
-	long sec2 = NDIV(usec,1000000); /* negative div */
-	if (sec < TIMET_MIN - sec2) {
-	    rb_raise(rb_eRangeError, "out of Time range");
-	}
-	usec -= sec2 * 1000000;
-	sec += sec2;
-    }
-
-    timew = nsec2timew(sec, usec * 1000);
-    return time_new_timew(rb_cTime, timew);
+    time_usec_normalize(&sec, &usec);
+    return time_new_timew(rb_cTime, timenano2timew(sec, usec * 1000));
 }
 
 /* returns localtime time object */
@@ -2998,23 +2981,42 @@ timegm_noleapsecond(struct tm *tm)
 #define DEBUG_GUESSRANGE
 #endif
 
+static const bool debug_guessrange =
 #ifdef DEBUG_GUESSRANGE
-#define DEBUG_REPORT_GUESSRANGE fprintf(stderr, "find time guess range: %ld - %ld : %"PRI_TIMET_PREFIX"u\n", guess_lo, guess_hi, (unsigned_time_t)(guess_hi-guess_lo))
+    true;
 #else
-#define DEBUG_REPORT_GUESSRANGE
+    false;
 #endif
 
+#define DEBUG_REPORT_GUESSRANGE \
+    (debug_guessrange ? debug_report_guessrange(guess_lo, guess_hi) : (void)0)
+
+static inline void
+debug_report_guessrange(time_t guess_lo, time_t guess_hi)
+{
+    unsigned_time_t guess_diff = (unsigned_time_t)(guess_hi-guess_lo);
+    fprintf(stderr, "find time guess range: %"PRI_TIMET_PREFIX"d - "
+            "%"PRI_TIMET_PREFIX"d : %"PRI_TIMET_PREFIX"u\n",
+            guess_lo, guess_hi, guess_diff);
+}
+
+static const bool debug_find_time_numguess =
 #ifdef DEBUG_FIND_TIME_NUMGUESS
-#define DEBUG_FIND_TIME_NUMGUESS_INC find_time_numguess++,
+    true;
+#else
+    false;
+#endif
+
+#define DEBUG_FIND_TIME_NUMGUESS_INC \
+    (void)(debug_find_time_numguess && find_time_numguess++),
 static unsigned long long find_time_numguess;
 
-static VALUE find_time_numguess_getter(void)
+static VALUE
+find_time_numguess_getter(ID name, VALUE *data)
 {
-    return ULL2NUM(find_time_numguess);
+    unsigned long long *numguess = (void *)data;
+    return ULL2NUM(*numguess);
 }
-#else
-#define DEBUG_FIND_TIME_NUMGUESS_INC
-#endif
 
 static const char *
 find_time_t(struct tm *tptr, int utc_p, time_t *tp)
@@ -3162,10 +3164,16 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
             }
             if (guess <= guess_lo || guess_hi <= guess) {
                 /* Previous guess is invalid. try binary search. */
-#ifdef DEBUG_GUESSRANGE
-                if (guess <= guess_lo) fprintf(stderr, "too small guess: %ld <= %ld\n", guess, guess_lo);
-                if (guess_hi <= guess) fprintf(stderr, "too big guess: %ld <= %ld\n", guess_hi, guess);
-#endif
+                if (debug_guessrange) {
+                    if (guess <= guess_lo) {
+                        fprintf(stderr, "too small guess: %"PRI_TIMET_PREFIX"d"\
+                                " <= %"PRI_TIMET_PREFIX"d\n", guess, guess_lo);
+                    }
+                    if (guess_hi <= guess) {
+                        fprintf(stderr, "too big guess: %"PRI_TIMET_PREFIX"d"\
+                                " <= %"PRI_TIMET_PREFIX"d\n", guess_hi, guess);
+                    }
+                }
                 status = 0;
                 goto binsearch;
             }
@@ -5074,7 +5082,7 @@ time_mdump(VALUE time)
          * Append extended year distance from 1900..(1900+0xffff).  In
          * each cases, there is no sign as the value is positive.  The
          * format is length (marshaled long) + little endian packed
-         * binary (like as Fixnum and Bignum).
+         * binary (like as Integer).
          */
         size_t ysize = rb_absint_size(year_extend, NULL);
         char *p, *const buf_year_extend = buf + base_dump_size;
@@ -5583,6 +5591,16 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
     return rb_obj_as_string(abbr);
 }
 
+/*  Internal Details:
+ *
+ *  Since Ruby 1.9.2, Time implementation uses a signed 63 bit integer or
+ *  Integer(T_BIGNUM), Rational.
+ *  The integer is a number of nanoseconds since the _Epoch_ which can
+ *  represent 1823-11-12 to 2116-02-20.
+ *  When Integer(T_BIGNUM) or Rational is used (before 1823, after 2116, under
+ *  nanosecond), Time works slower than when integer is used.
+ */
+
 /*
  *  Time is an abstraction of dates and times. Time is stored internally as
  *  the number of seconds with subsecond since the _Epoch_,
@@ -5837,9 +5855,10 @@ Init_Time(void)
     rb_define_private_method(rb_cTime, "marshal_load", time_mload, 1);
 #endif
 
-#ifdef DEBUG_FIND_TIME_NUMGUESS
-    rb_define_virtual_variable("$find_time_numguess", find_time_numguess_getter, NULL);
-#endif
+    if (debug_find_time_numguess) {
+        rb_define_hooked_variable("$find_time_numguess", (VALUE *)&find_time_numguess,
+                                  find_time_numguess_getter, NULL);
+    }
 
     rb_cTimeTM = Init_tm(rb_cTime, "tm");
 }

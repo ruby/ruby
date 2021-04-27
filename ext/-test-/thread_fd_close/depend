@@ -135,7 +135,6 @@ thread_fd_close.o: $(hdrdir)/ruby/internal/static_assert.h
 thread_fd_close.o: $(hdrdir)/ruby/internal/stdalign.h
 thread_fd_close.o: $(hdrdir)/ruby/internal/stdbool.h
 thread_fd_close.o: $(hdrdir)/ruby/internal/symbol.h
-thread_fd_close.o: $(hdrdir)/ruby/internal/token_paste.h
 thread_fd_close.o: $(hdrdir)/ruby/internal/value.h
 thread_fd_close.o: $(hdrdir)/ruby/internal/value_type.h
 thread_fd_close.o: $(hdrdir)/ruby/internal/variable.h

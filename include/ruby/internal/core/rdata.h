@@ -32,7 +32,6 @@
 #include "ruby/internal/core/rbasic.h"
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/fl_type.h"
-#include "ruby/internal/token_paste.h"
 #include "ruby/internal/value.h"
 #include "ruby/internal/value_type.h"
 #include "ruby/defines.h"
@@ -54,7 +53,8 @@
 
 #define RDATA(obj)                RBIMPL_CAST((struct RData *)(obj))
 #define DATA_PTR(obj)             RDATA(obj)->data
-#define RUBY_MACRO_SELECT         RBIMPL_TOKEN_PASTE
+#define RBIMPL_MACRO_SELECT(x, y) x ## y
+#define RUBY_MACRO_SELECT(x, y)   RBIMPL_MACRO_SELECT(x, y)
 #define RUBY_DEFAULT_FREE         RBIMPL_DATA_FUNC(-1)
 #define RUBY_NEVER_FREE           RBIMPL_DATA_FUNC(0)
 #define RUBY_UNTYPED_DATA_FUNC(f) f RBIMPL_ATTRSET_UNTYPED_DATA_FUNC()
@@ -174,11 +174,14 @@ rb_cData(void)
 
 #define rb_data_object_wrap_0 rb_data_object_wrap
 #define rb_data_object_wrap_1 rb_data_object_wrap_warning
-#define rb_data_object_wrap   RUBY_MACRO_SELECT(rb_data_object_wrap_, RUBY_UNTYPED_DATA_WARNING)
+#define rb_data_object_wrap_2 rb_data_object_wrap_ /* Used here vvvv */
+#define rb_data_object_wrap   RUBY_MACRO_SELECT(rb_data_object_wrap_2, RUBY_UNTYPED_DATA_WARNING)
 #define rb_data_object_get_0  rb_data_object_get
 #define rb_data_object_get_1  rb_data_object_get_warning
-#define rb_data_object_get    RUBY_MACRO_SELECT(rb_data_object_get_, RUBY_UNTYPED_DATA_WARNING)
+#define rb_data_object_get_2  rb_data_object_get_ /* Used here vvvv */
+#define rb_data_object_get    RUBY_MACRO_SELECT(rb_data_object_get_2, RUBY_UNTYPED_DATA_WARNING)
 #define rb_data_object_make_0 rb_data_object_make
 #define rb_data_object_make_1 rb_data_object_make_warning
-#define rb_data_object_make   RUBY_MACRO_SELECT(rb_data_object_make_, RUBY_UNTYPED_DATA_WARNING)
+#define rb_data_object_make_2 rb_data_object_make_ /* Used here vvvv */
+#define rb_data_object_make   RUBY_MACRO_SELECT(rb_data_object_make_2, RUBY_UNTYPED_DATA_WARNING)
 #endif /* RBIMPL_RDATA_H */

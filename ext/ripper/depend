@@ -200,7 +200,6 @@ ripper.o: $(hdrdir)/ruby/internal/static_assert.h
 ripper.o: $(hdrdir)/ruby/internal/stdalign.h
 ripper.o: $(hdrdir)/ruby/internal/stdbool.h
 ripper.o: $(hdrdir)/ruby/internal/symbol.h
-ripper.o: $(hdrdir)/ruby/internal/token_paste.h
 ripper.o: $(hdrdir)/ruby/internal/value.h
 ripper.o: $(hdrdir)/ruby/internal/value_type.h
 ripper.o: $(hdrdir)/ruby/internal/variable.h

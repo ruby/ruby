@@ -1,3 +1,49 @@
+class Numeric
+  #
+  #  call-seq:
+  #     num.real?  ->  true or false
+  #
+  #  Returns +true+ if +num+ is a real number (i.e. not Complex).
+  #
+  def real?
+    return true
+  end
+
+  #
+  #  call-seq:
+  #     num.integer?  ->  true or false
+  #
+  #  Returns +true+ if +num+ is an Integer.
+  #
+  #      1.0.integer?   #=> false
+  #      1.integer?     #=> true
+  #
+  def integer?
+    return false
+  end
+
+  #
+  #  call-seq:
+  #     num.finite?  ->  true or false
+  #
+  #  Returns +true+ if +num+ is a finite number, otherwise returns +false+.
+  #
+  def finite?
+    return true
+  end
+
+  #
+  #  call-seq:
+  #     num.infinite?  ->  -1, 1, or nil
+  #
+  #  Returns +nil+, -1, or 1 depending on whether the value is
+  #  finite, <code>-Infinity</code>, or <code>+Infinity</code>.
+  #
+  def infinite?
+    return nil
+  end
+end
+
 class Integer
   # call-seq:
   #    -int  ->  integer
@@ -203,5 +249,27 @@ class Float
   def zero?
     Primitive.attr! 'inline'
     Primitive.cexpr! 'FLOAT_ZERO_P(self) ? Qtrue : Qfalse'
+  end
+
+  #
+  #  call-seq:
+  #     float.positive?  ->  true or false
+  #
+  #  Returns +true+ if +float+ is greater than 0.
+  #
+  def positive?
+    Primitive.attr! 'inline'
+    Primitive.cexpr! 'RFLOAT_VALUE(self) > 0.0 ? Qtrue : Qfalse'
+  end
+
+  #
+  #  call-seq:
+  #     float.negative?  ->  true or false
+  #
+  #  Returns +true+ if +float+ is less than 0.
+  #
+  def negative?
+    Primitive.attr! 'inline'
+    Primitive.cexpr! 'RFLOAT_VALUE(self) < 0.0 ? Qtrue : Qfalse'
   end
 end
