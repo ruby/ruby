@@ -126,7 +126,7 @@ class TestException < Test::Unit::TestCase
   def test_exception_in_ensure_with_return
     @string = "[ruby-core:97104] [Bug #16618]"
     def self.meow
-      return
+      return if true # This if modifier suppresses "warning: statement not reached"
       assert(false)
     rescue
       assert(false)
