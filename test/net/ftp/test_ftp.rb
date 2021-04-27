@@ -2515,12 +2515,12 @@ EOF
     s = "20371231000000.123456"
     assert_equal(Time.utc(2037, 12, 31, 0, 0, 0, 123456),
                  Net::FTP::TIME_PARSER[s])
-    s = "20371231000000." + "9" * 999999999
+    s = "20371231000000." + "9" * 999999
     assert_equal(Time.utc(2037, 12, 31, 0, 0, 0,
                           99999999999999999r / 100000000000),
                  Net::FTP::TIME_PARSER[s])
     e = assert_raise(Net::FTPProtoError) {
-      Net::FTP::TIME_PARSER["x" * 999999999]
+      Net::FTP::TIME_PARSER["x" * 999999]
     }
     assert_equal("invalid time-val: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx...", e.message)
   end
