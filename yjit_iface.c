@@ -896,6 +896,13 @@ print_yjit_stats(void)
         return;
     }
 
+    // Warn if the executable code block is out of the relative
+    // 32-bit jump range away from compiled C code
+    ptrdiff_t start_diff = (cb->mem_block + cb->mem_size) - (uint8_t*)&print_yjit_stats;
+    if (start_diff < INT32_MIN || start_diff > INT32_MAX) {
+        fprintf(stderr, "WARNING: end of code block past rel32 offset range from C code\n");
+    }
+
     // Compute the total exit count
     int64_t total_exit_count = calc_total_exit_count();
 

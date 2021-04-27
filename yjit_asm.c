@@ -5,10 +5,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <stdint.h>
 #include <assert.h>
 
+// For mmapp(), sysconf()
 #ifndef _WIN32
-// For mmapp()
+#include <unistd.h>
 #include <sys/mman.h>
 #endif
 
@@ -18,11 +20,11 @@
 uint32_t sig_imm_size(int64_t imm)
 {
     // Compute the smallest size this immediate fits in
-    if (imm >= -128 && imm <= 127)
+    if (imm >= INT8_MIN && imm <= INT8_MAX)
         return 8;
-    if (imm >= -32768 && imm <= 32767)
+    if (imm >= INT16_MIN && imm <= INT16_MAX)
         return 16;
-    if (imm >= -2147483648 && imm <= 2147483647)
+    if (imm >= INT32_MIN && imm <= INT32_MAX)
         return 32;
 
     return 64;
@@ -32,11 +34,11 @@ uint32_t sig_imm_size(int64_t imm)
 uint32_t unsig_imm_size(uint64_t imm)
 {
     // Compute the smallest size this immediate fits in
-    if (imm <= 255)
+    if (imm <= UINT8_MAX)
         return 8;
-    else if (imm <= 65535)
+    else if (imm <= UINT16_MAX)
         return 16;
-    else if (imm <= 4294967295)
+    else if (imm <= UINT32_MAX)
         return 32;
 
     return 64;
@@ -124,23 +126,73 @@ x86opnd_t const_ptr_opnd(const void *ptr)
     return opnd;
 }
 
+// Align the current write position to a multiple of bytes
+static uint8_t* align_ptr(uint8_t* ptr, uint32_t multiple)
+{
+    // Compute the pointer modulo the given alignment boundary
+    uint32_t rem = ((uint32_t)(uintptr_t)ptr) % multiple;
+
+    // If the pointer is already aligned, stop
+    if (rem == 0)
+        return ptr;
+
+    // Pad the pointer by the necessary amount to align it
+    uint32_t pad = multiple - rem;
+
+    return ptr + pad;
+}
+
 // Allocate a block of executable memory
 uint8_t* alloc_exec_mem(uint32_t mem_size)
 {
 #ifndef _WIN32
-    // Map the memory as executable
-    uint8_t* mem_block = (uint8_t*)mmap(
-        (void*)&alloc_exec_mem,
-        mem_size,
-        PROT_READ | PROT_WRITE | PROT_EXEC,
-        MAP_PRIVATE | MAP_ANONYMOUS,
-        -1,
-        0
-    );
+    uint8_t* mem_block;
 
-    if (mem_block == MAP_FAILED) {
+    // On Linux
+    #if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
+        // Align the requested address to page size
+        uint32_t page_size = (uint32_t)sysconf(_SC_PAGESIZE);
+        uint8_t* req_addr = align_ptr((uint8_t*)&alloc_exec_mem, page_size);
+
+        while (req_addr < (uint8_t*)&alloc_exec_mem + INT32_MAX)
+        {
+            // Try to map a chunk of memory as executable
+            mem_block = (uint8_t*)mmap(
+                (void*)req_addr,
+                mem_size,
+                PROT_READ | PROT_WRITE | PROT_EXEC,
+                MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE,
+                -1,
+                0
+            );
+
+            // If we succeeded, stop
+            if (mem_block != MAP_FAILED) {
+                break;
+            }
+
+            // +4MB
+            req_addr += 4 * 1024 * 1024;
+        }
+
+    // On MacOS and other platforms
+    #else
+        // Try to map a chunk of memory as executable
         mem_block = (uint8_t*)mmap(
-            NULL, // try again without the address hint (e.g., valgrind)
+            (void*)alloc_exec_mem,
+            mem_size,
+            PROT_READ | PROT_WRITE | PROT_EXEC,
+            MAP_PRIVATE | MAP_ANONYMOUS,
+            -1,
+            0
+        );
+    #endif
+
+    // Fallback
+    if (mem_block == MAP_FAILED) {
+        // Try again without the address hint (e.g., valgrind)
+        mem_block = (uint8_t*)mmap(
+            NULL,
             mem_size,
             PROT_READ | PROT_WRITE | PROT_EXEC,
             MAP_PRIVATE | MAP_ANONYMOUS,
@@ -161,6 +213,7 @@ uint8_t* alloc_exec_mem(uint32_t mem_size)
 
     return mem_block;
 #else
+    // Windows not supported for now
     return NULL;
 #endif
 }
@@ -180,15 +233,11 @@ void cb_align_pos(codeblock_t* cb, uint32_t multiple)
 {
     // Compute the pointer modulo the given alignment boundary
     uint8_t* ptr = &cb->mem_block[cb->write_pos];
-    uint32_t rem = ((uint32_t)(uintptr_t)ptr) % multiple;
-
-    // If the pointer is already aligned, stop
-    if (rem == 0)
-        return;
+    uint8_t* aligned_ptr = align_ptr(ptr, multiple);
 
     // Pad the pointer by the necessary amount to align it
-    uint32_t pad = multiple - rem;
-    cb->write_pos += pad;
+    ptrdiff_t pad = aligned_ptr - ptr;
+    cb->write_pos += (int32_t)pad;
 }
 
 // Set the current write position
@@ -818,7 +867,7 @@ void cb_write_jcc_ptr(codeblock_t* cb, const char* mnem, uint8_t op0, uint8_t op
 
     // Compute the jump offset
     int64_t rel64 = (int64_t)(dst_ptr - end_ptr);
-    assert (rel64 >= -2147483648 && rel64 <= 2147483647);
+    assert (rel64 >= INT32_MIN && rel64 <= INT32_MAX);
 
     // Write the relative 32-bit jump offset
     cb_write_int(cb, (int32_t)rel64, 32);
@@ -901,7 +950,7 @@ void call_ptr(codeblock_t* cb, x86opnd_t scratch_reg, uint8_t* dst_ptr)
     int64_t rel64 = (int64_t)(dst_ptr - end_ptr);
 
     // If the offset fits in 32-bit
-    if (rel64 >= -2147483648 && rel64 <= 2147483647)
+    if (rel64 >= INT32_MIN && rel64 <= INT32_MAX)
     {
         call_rel32(cb, (int32_t)rel64);
         return;
