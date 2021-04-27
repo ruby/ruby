@@ -85,9 +85,10 @@ The YJIT source code is divided between:
 - `yjit_codegen.c`: logic for translating Ruby bytecode to machine code
 - `yjit_core.c`: basic block versioning logic, core structure of YJIT
 - `yjit_iface.c`: code YJIT uses to interface with the rest of CRuby
-- `yjit.rb`: `YJIT` module that is exposed to Ruby code
+- `yjit.h`: C definitions YJIT exposes to the rest of the CRuby
+- `yjit.rb`: `YJIT` Ruby module that is exposed to Ruby
 - `test_asm.sh`: script to compile and run the in-memory assembler tests
-- `vm.inc.erb`: template instruction handler used to hook into the interpreter
+- `tool/ruby_vm/views/vm.inc.erb`: template instruction handler used to hook into the interpreter
 
 The core of CRuby's interpreter logic is found in:
 - `insns.def`: defines Ruby's bytecode instructions (gets compiled into `vm.inc`)
