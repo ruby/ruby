@@ -11072,6 +11072,7 @@ const_decl_path(struct parser_params *p, NODE **dest)
 	    path = rb_fstring(path);
 	}
 	*dest = n = NEW_LIT(path, loc);
+        RB_OBJ_WRITTEN(p->ast, Qnil, n->nd_lit);
     }
     return n;
 }
@@ -11159,7 +11160,9 @@ shareable_literal_constant(struct parser_params *p, enum shareability shareable,
       case NODE_ZLIST:
 	lit = rb_ary_new();
 	OBJ_FREEZE_RAW(lit);
-	return NEW_LIT(lit, loc);
+        NODE *n = NEW_LIT(lit, loc);
+        RB_OBJ_WRITTEN(p->ast, Qnil, n->nd_lit);
+        return n;
 
       case NODE_LIST:
 	lit = rb_ary_new();
@@ -11245,6 +11248,7 @@ shareable_literal_constant(struct parser_params *p, enum shareability shareable,
     }
     else {
 	value = NEW_LIT(rb_ractor_make_shareable(lit), loc);
+        RB_OBJ_WRITTEN(p->ast, Qnil, value->nd_lit);
     }
 
     return value;
