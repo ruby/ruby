@@ -888,7 +888,11 @@ invalidate_block_version(block_t* block)
     {
         branch_t* branch = rb_darray_get(block->incoming, incoming_idx);
         uint32_t target_idx = (branch->dst_addrs[0] == code_ptr)? 0:1;
-        RUBY_ASSERT(!branch->blocks[target_idx] || branch->blocks[target_idx] == block);
+        RUBY_ASSERT(branch->dst_addrs[target_idx] == code_ptr);
+        RUBY_ASSERT(branch->blocks[target_idx] == block);
+
+        // Mark this target as being a stub
+        branch->blocks[target_idx] = NULL;
 
         // Create a stub for this branch target
         branch->dst_addrs[target_idx] = get_branch_target(
@@ -897,9 +901,6 @@ invalidate_block_version(block_t* block)
             branch,
             target_idx
         );
-
-        // Mark this target as being a stub
-        branch->blocks[target_idx] = NULL;
 
         // Check if the invalidated block immediately follows
         bool target_next = block->start_pos == branch->end_pos;
