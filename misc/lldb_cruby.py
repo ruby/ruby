@@ -552,7 +552,7 @@ class HeapPageIter:
             raise StopIteration
 
 
-def dump_page_internal(page, target, process, thread, frame, result, debugger):
+def dump_page_internal(page, target, process, thread, frame, result, debugger, highlight=None):
     if not ('RUBY_Qfalse' in globals()):
         lldb_init(debugger)
 
@@ -581,6 +581,10 @@ def dump_page_internal(page, target, process, thread, frame, result, debugger):
                 flidx = '   '
 
         result_str = "%s idx: [%3d] freelist_idx: {%s} Addr: %0#x (flags: %0#x)" % (rb_type(flags, ruby_type_map), page_index, flidx, obj_addr, flags)
+
+        if highlight == obj_addr:
+            result_str = ' '.join([result_str, "<<<<<"])
+
         print(result_str, file=result)
 
 
@@ -608,7 +612,7 @@ def dump_page_rvalue(debugger, command, result, internal_dict):
     page_type = target.FindFirstType("struct heap_page").GetPointerType()
     page.Cast(page_type)
 
-    dump_page_internal(page, target, process, thread, frame, result, debugger)
+    dump_page_internal(page, target, process, thread, frame, result, debugger, highlight=val.GetValueAsUnsigned())
 
 
 
