@@ -884,7 +884,6 @@ class FTPTest < Test::Unit::TestCase
 
   def test_getbinaryfile_error
     commands = []
-    binary_data = ""
     server = create_ftp_server { |sock|
       sock.print("220 (test_ftp).\r\n")
       commands.push(sock.gets)
