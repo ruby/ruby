@@ -16,8 +16,6 @@
 
 require "socket"
 require "monitor"
-require "digest/md5"
-require "strscan"
 require 'net/protocol'
 begin
   require "openssl"
@@ -290,31 +288,6 @@ module Net
     # Sets the max number of flags interned to symbols.
     def self.max_flag_count=(count)
       @@max_flag_count = count
-    end
-
-    # Adds an authenticator for Net::IMAP#authenticate.  +auth_type+
-    # is the type of authentication this authenticator supports
-    # (for instance, "LOGIN").  The +authenticator+ is an object
-    # which defines a process() method to handle authentication with
-    # the server.  See Net::IMAP::LoginAuthenticator,
-    # Net::IMAP::CramMD5Authenticator, and Net::IMAP::DigestMD5Authenticator
-    # for examples.
-    #
-    #
-    # If +auth_type+ refers to an existing authenticator, it will be
-    # replaced by the new one.
-    def self.add_authenticator(auth_type, authenticator)
-      @@authenticators[auth_type] = authenticator
-    end
-
-    # Builds an authenticator for Net::IMAP#authenticate.
-    def self.authenticator(auth_type, *args)
-      auth_type = auth_type.upcase
-      unless @@authenticators.has_key?(auth_type)
-        raise ArgumentError,
-          format('unknown auth type - "%s"', auth_type)
-      end
-      @@authenticators[auth_type].new(*args)
     end
 
     # The default port for IMAP connections, port 143
@@ -1124,7 +1097,6 @@ module Net
     SSL_PORT = 993   # :nodoc:
 
     @@debug = false
-    @@authenticators = {}
     @@max_flag_count = 10000
 
     # :call-seq:
@@ -3901,182 +3873,6 @@ module Net
       end
     end
 
-    # Authenticator for the "LOGIN" authentication type.  See
-    # #authenticate().
-    class LoginAuthenticator
-      def process(data)
-        case @state
-        when STATE_USER
-          @state = STATE_PASSWORD
-          return @user
-        when STATE_PASSWORD
-          return @password
-        end
-      end
-
-      private
-
-      STATE_USER = :USER
-      STATE_PASSWORD = :PASSWORD
-
-      def initialize(user, password)
-        @user = user
-        @password = password
-        @state = STATE_USER
-      end
-    end
-    add_authenticator "LOGIN", LoginAuthenticator
-
-    # Authenticator for the "PLAIN" authentication type.  See
-    # #authenticate().
-    class PlainAuthenticator
-      def process(data)
-        return "\0#{@user}\0#{@password}"
-      end
-
-      private
-
-      def initialize(user, password)
-        @user = user
-        @password = password
-      end
-    end
-    add_authenticator "PLAIN", PlainAuthenticator
-
-    # Authenticator for the "CRAM-MD5" authentication type.  See
-    # #authenticate().
-    class CramMD5Authenticator
-      def process(challenge)
-        digest = hmac_md5(challenge, @password)
-        return @user + " " + digest
-      end
-
-      private
-
-      def initialize(user, password)
-        @user = user
-        @password = password
-      end
-
-      def hmac_md5(text, key)
-        if key.length > 64
-          key = Digest::MD5.digest(key)
-        end
-
-        k_ipad = key + "\0" * (64 - key.length)
-        k_opad = key + "\0" * (64 - key.length)
-        for i in 0..63
-          k_ipad[i] = (k_ipad[i].ord ^ 0x36).chr
-          k_opad[i] = (k_opad[i].ord ^ 0x5c).chr
-        end
-
-        digest = Digest::MD5.digest(k_ipad + text)
-
-        return Digest::MD5.hexdigest(k_opad + digest)
-      end
-    end
-    add_authenticator "CRAM-MD5", CramMD5Authenticator
-
-    # Authenticator for the "DIGEST-MD5" authentication type.  See
-    # #authenticate().
-    class DigestMD5Authenticator
-      def process(challenge)
-        case @stage
-        when STAGE_ONE
-          @stage = STAGE_TWO
-          sparams = {}
-          c = StringScanner.new(challenge)
-          while c.scan(/(?:\s*,)?\s*(\w+)=("(?:[^\\"]+|\\.)*"|[^,]+)\s*/)
-            k, v = c[1], c[2]
-            if v =~ /^"(.*)"$/
-              v = $1
-              if v =~ /,/
-                v = v.split(',')
-              end
-            end
-            sparams[k] = v
-          end
-
-          raise DataFormatError, "Bad Challenge: '#{challenge}'" unless c.rest.size == 0
-          raise Error, "Server does not support auth (qop = #{sparams['qop'].join(',')})" unless sparams['qop'].include?("auth")
-
-          response = {
-            :nonce => sparams['nonce'],
-            :username => @user,
-            :realm => sparams['realm'],
-            :cnonce => Digest::MD5.hexdigest("%.15f:%.15f:%d" % [Time.now.to_f, rand, Process.pid.to_s]),
-            :'digest-uri' => 'imap/' + sparams['realm'],
-            :qop => 'auth',
-            :maxbuf => 65535,
-            :nc => "%08d" % nc(sparams['nonce']),
-            :charset => sparams['charset'],
-          }
-
-          response[:authzid] = @authname unless @authname.nil?
-
-          # now, the real thing
-          a0 = Digest::MD5.digest( [ response.values_at(:username, :realm), @password ].join(':') )
-
-          a1 = [ a0, response.values_at(:nonce,:cnonce) ].join(':')
-          a1 << ':' + response[:authzid] unless response[:authzid].nil?
-
-          a2 = "AUTHENTICATE:" + response[:'digest-uri']
-          a2 << ":00000000000000000000000000000000" if response[:qop] and response[:qop] =~ /^auth-(?:conf|int)$/
-
-          response[:response] = Digest::MD5.hexdigest(
-            [
-             Digest::MD5.hexdigest(a1),
-             response.values_at(:nonce, :nc, :cnonce, :qop),
-             Digest::MD5.hexdigest(a2)
-            ].join(':')
-          )
-
-          return response.keys.map {|key| qdval(key.to_s, response[key]) }.join(',')
-        when STAGE_TWO
-          @stage = nil
-          # if at the second stage, return an empty string
-          if challenge =~ /rspauth=/
-            return ''
-          else
-            raise ResponseParseError, challenge
-          end
-        else
-          raise ResponseParseError, challenge
-        end
-      end
-
-      def initialize(user, password, authname = nil)
-        @user, @password, @authname = user, password, authname
-        @nc, @stage = {}, STAGE_ONE
-      end
-
-      private
-
-      STAGE_ONE = :stage_one
-      STAGE_TWO = :stage_two
-
-      def nc(nonce)
-        if @nc.has_key? nonce
-          @nc[nonce] = @nc[nonce] + 1
-        else
-          @nc[nonce] = 1
-        end
-        return @nc[nonce]
-      end
-
-      # some responses need quoting
-      def qdval(k, v)
-        return if k.nil? or v.nil?
-        if %w"username authzid realm nonce cnonce digest-uri qop".include? k
-          v.gsub!(/([\\"])/, "\\\1")
-          return '%s="%s"' % [k, v]
-        else
-          return '%s=%s' % [k, v]
-        end
-      end
-    end
-    add_authenticator "DIGEST-MD5", DigestMD5Authenticator
-
     # Superclass of IMAP errors.
     class Error < StandardError
     end
@@ -4130,3 +3926,5 @@ module Net
     end
   end
 end
+
+require_relative "imap/authenticators"
