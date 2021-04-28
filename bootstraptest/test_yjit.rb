@@ -736,3 +736,39 @@ assert_equal '[nil, nil]', %q{
 
   [dyn_sym.get_foo, sym.get_foo]
 }
+
+# passing too few arguments to method with optional parameters
+assert_equal 'raised', %q{
+  def opt(a, b = 0)
+  end
+
+  def use
+    opt
+  end
+
+  use rescue nil
+  begin
+    use
+    :ng
+  rescue ArgumentError
+    :raised
+  end
+}
+
+# passing too many arguments to method with optional parameters
+assert_equal 'raised', %q{
+  def opt(a, b = 0)
+  end
+
+  def use
+    opt(1, 2, 3, 4)
+  end
+
+  use rescue nil
+  begin
+    use
+    :ng
+  rescue ArgumentError
+    :raised
+  end
+}
