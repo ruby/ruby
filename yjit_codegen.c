@@ -567,7 +567,8 @@ gen_putself(jitstate_t* jit, ctx_t* ctx)
 }
 
 // Compute the index of a local variable from its slot index
-uint32_t slot_to_local_idx(const rb_iseq_t *iseq, int32_t slot_idx)
+static uint32_t
+slot_to_local_idx(const rb_iseq_t *iseq, int32_t slot_idx)
 {
     // Convoluted rules from local_var_name() in iseq.c
     int32_t local_table_size = iseq->body->local_table_size;
@@ -633,10 +634,10 @@ gen_setlocal_wc0(jitstate_t* jit, ctx_t* ctx)
     {
         VALUE flags = ep[VM_ENV_DATA_INDEX_FLAGS];
         if (LIKELY((flags & VM_ENV_FLAG_WB_REQUIRED) == 0)) {
-    	VM_STACK_ENV_WRITE(ep, index, v);
+            VM_STACK_ENV_WRITE(ep, index, v);
         }
         else {
-    	vm_env_write_slowpath(ep, index, v);
+            vm_env_write_slowpath(ep, index, v);
         }
     }
     */
@@ -1772,8 +1773,6 @@ gen_oswb_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const 
     return YJIT_END_BLOCK;
 }
 
-bool rb_simple_iseq_p(const rb_iseq_t *iseq);
-
 static void
 gen_return_branch(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uint8_t shape)
 {
@@ -1791,31 +1790,67 @@ gen_return_branch(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uint8_t s
     }
 }
 
+bool rb_simple_iseq_p(const rb_iseq_t *iseq);
+bool rb_iseq_only_optparam_p(const rb_iseq_t *iseq);
+bool rb_iseq_only_kwparam_p(const rb_iseq_t *iseq);
+
 static codegen_status_t
-gen_oswb_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_callable_method_entry_t *cme, int32_t argc)
+gen_oswb_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_callable_method_entry_t *cme, const int32_t argc)
 {
     const rb_iseq_t *iseq = def_iseq_ptr(cme->def);
-    const VALUE* start_pc = iseq->body->iseq_encoded;
-    int num_params = iseq->body->param.size;
-    int num_locals = iseq->body->local_table_size - num_params;
-
-    if (num_params != argc) {
-        GEN_COUNTER_INC(cb, oswb_iseq_argc_mismatch);
-        return YJIT_CANT_COMPILE;
-    }
-
-    if (!rb_simple_iseq_p(iseq)) {
-        // Only handle iseqs that have simple parameters.
-        // See vm_callee_setup_arg().
-        GEN_COUNTER_INC(cb, oswb_iseq_not_simple);
-        return YJIT_CANT_COMPILE;
-    }
 
     if (vm_ci_flag(ci) & VM_CALL_TAILCALL) {
         // We can't handle tailcalls
         GEN_COUNTER_INC(cb, oswb_iseq_tailcall);
         return YJIT_CANT_COMPILE;
     }
+
+    // Arity handling and optional parameter setup
+    int num_params = iseq->body->param.size;
+    uint32_t start_pc_offset = 0;
+    if (rb_simple_iseq_p(iseq)) {
+        if (num_params != argc) {
+            GEN_COUNTER_INC(cb, oswb_iseq_arity_error);
+            return YJIT_CANT_COMPILE;
+        }
+    }
+    else if (rb_iseq_only_optparam_p(iseq)) {
+        // These are iseqs with 0 or more required parameters followed by 1
+        // or more optional parameters.
+        // We follow the logic of vm_call_iseq_setup_normal_opt_start()
+        // and these are the preconditions required for using that fast path.
+        RUBY_ASSERT(vm_ci_markable(ci) && ((vm_ci_flag(ci) &
+                        (VM_CALL_KW_SPLAT | VM_CALL_KWARG | VM_CALL_ARGS_SPLAT)) == 0));
+
+        const int required_num = iseq->body->param.lead_num;
+        const int opts_filled = argc - required_num;
+        const int opt_num = iseq->body->param.opt_num;
+
+        if (opts_filled < 0 || opts_filled > opt_num) {
+            GEN_COUNTER_INC(cb, oswb_iseq_arity_error);
+            return YJIT_CANT_COMPILE;
+        }
+
+        num_params -= opt_num - opts_filled;
+        start_pc_offset = (uint32_t)iseq->body->param.opt_table[opts_filled];
+    }
+    else if (rb_iseq_only_kwparam_p(iseq)) {
+        // vm_callee_setup_arg() has a fast path for this.
+        GEN_COUNTER_INC(cb, oswb_iseq_only_keywords);
+        return YJIT_CANT_COMPILE;
+    }
+    else {
+        // Only handle iseqs that have simple parameter setup.
+        // See vm_callee_setup_arg().
+        GEN_COUNTER_INC(cb, oswb_iseq_complex_callee);
+        return YJIT_CANT_COMPILE;
+    }
+
+    // The starting pc of the callee frame
+    const VALUE *start_pc = &iseq->body->iseq_encoded[start_pc_offset];
+
+    // Number of locals that are not parameters
+    const int num_locals = iseq->body->local_table_size - num_params;
 
     // Create a size-exit to fall back to the interpreter
     uint8_t* side_exit = yjit_side_exit(jit, ctx);
@@ -1934,7 +1969,7 @@ gen_oswb_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
     gen_direct_jump(
         jit->block,
         &callee_ctx,
-        (blockid_t){ iseq, 0 }
+        (blockid_t){ iseq, start_pc_offset }
     );
 
     return true;
