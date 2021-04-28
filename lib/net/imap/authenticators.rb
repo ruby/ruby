@@ -3,11 +3,11 @@
 # Registry for SASL authenticators used by Net::IMAP.
 module Net::IMAP::Authenticators
 
-  # Adds an authenticator for Net::IMAP#authenticate.  +auth_type+ is the
+  # Adds an authenticator for use with Net::IMAP#authenticate.  +auth_type+ is the
   # {SASL mechanism}[https://www.iana.org/assignments/sasl-mechanisms/sasl-mechanisms.xhtml]
-  # supported by +authenticator+ (for instance, "+LOGIN+").  The +authenticator+
+  # supported by +authenticator+ (for instance, "+PLAIN+").  The +authenticator+
   # is an object which defines a +#process+ method to handle authentication with
-  # the server.  See Net::IMAP::LoginAuthenticator,
+  # the server.  See Net::IMAP::PlainAuthenticator, Net::IMAP::LoginAuthenticator,
   # Net::IMAP::CramMD5Authenticator, and Net::IMAP::DigestMD5Authenticator for
   # examples.
   #

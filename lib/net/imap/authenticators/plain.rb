@@ -1,14 +1,21 @@
 # frozen_string_literal: true
 
-# Authenticator for the "+PLAIN+" SASL mechanism.  See Net::IMAP#authenticate.
+# Authenticator for the "+PLAIN+" SASL mechanism, specified in
+# RFC4616[https://tools.ietf.org/html/rfc4616].  See Net::IMAP#authenticate.
 #
-# See RFC4616[https://tools.ietf.org/html/rfc4616] for the specification.
+# +PLAIN+ authentication sends the password in cleartext.
+# RFC3501[https://tools.ietf.org/html/rfc3501] encourages servers to disable
+# cleartext authentication until after TLS has been negotiated.
+# RFC8314[https://tools.ietf.org/html/rfc8314] recommends TLS version 1.2 or
+# greater be used for all traffic, and deprecate cleartext access ASAP.  +PLAIN+
+# can be secured by TLS encryption.
 class Net::IMAP::PlainAuthenticator
 
   def process(data)
     return "#@authzid\0#@username\0#@password"
   end
 
+  # :nodoc:
   NULL = -"\0".b
 
   private

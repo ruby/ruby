@@ -3,14 +3,14 @@
 require "digest/md5"
 require "strscan"
 
-# Net::IMAP authenticator for the "`DIGEST-MD5`" SASL mechanism type.  See
-# Net::IMAP#authenticate.
+# Net::IMAP authenticator for the "`DIGEST-MD5`" SASL mechanism type, specified
+# in RFC2831(https://tools.ietf.org/html/rfc2831).  See Net::IMAP#authenticate.
 #
 # == Deprecated
 #
 # "+DIGEST-MD5+" has been deprecated by
-# {RFC6331}[https://tools.ietf.org/html/rfc6331] and should not be used.  It
-# is included for backward compatibility with historic servers.
+# {RFC6331}[https://tools.ietf.org/html/rfc6331] and should not be relied on for
+# security.  It is included for compatibility with existing servers.
 class Net::IMAP::DigestMD5Authenticator
   def process(challenge)
     case @stage

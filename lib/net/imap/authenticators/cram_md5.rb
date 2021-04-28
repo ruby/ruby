@@ -2,17 +2,19 @@
 
 require "digest/md5"
 
-# Authenticator for the "+CRAM-MD5+" SASL mechanism.  See
-# Net::IMAP#authenticate.
+# Authenticator for the "+CRAM-MD5+" SASL mechanism, specified in
+# RFC2195[https://tools.ietf.org/html/rfc2195].  See Net::IMAP#authenticate.
 #
 # == Deprecated
 #
-# +CRAM-MD5+ should be considered obsolete and insecure.  It is included for
-# backward compatibility with historic servers.
+# +CRAM-MD5+ is obsolete and insecure.  It is included for compatibility with
+# existing servers.
 # {draft-ietf-sasl-crammd5-to-historic}[https://tools.ietf.org/html/draft-ietf-sasl-crammd5-to-historic-00.html]
-# recommends using +SCRAM-*+ or +PLAIN+ protected by TLS instead.  Additionally,
-# RFC8314[https://tools.ietf.org/html/rfc8314] discourage the use of cleartext
-# and recommends TLS version 1.2 or greater be used for all traffic.
+# recommends using +SCRAM-*+ or +PLAIN+ protected by TLS instead.
+#
+# Additionally, RFC8314[https://tools.ietf.org/html/rfc8314] discourage the use
+# of cleartext and recommends TLS version 1.2 or greater be used for all
+# traffic.  With TLS +CRAM-MD5+ is okay, but so is +PLAIN+
 class Net::IMAP::CramMD5Authenticator
   def process(challenge)
     digest = hmac_md5(challenge, @password)
