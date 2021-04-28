@@ -9,7 +9,6 @@ require File.expand_path("../../digest_conf", __FILE__)
 if try_static_assert("RUBY_API_VERSION_MAJOR < 3", "ruby/version.h")
   $defs << "-DNDEBUG"
 end
-$defs << "-DHAVE_CONFIG_H"
 
 $objs = [ "rmd160init.#{$OBJEXT}" ]
 
