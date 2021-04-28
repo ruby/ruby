@@ -703,7 +703,7 @@ math_cbrt(VALUE unused_obj, VALUE x)
     double f = Get_Double(x);
     double r = cbrt(f);
 #if defined __GLIBC__
-    if (isfinite(r)) {
+    if (isfinite(r) && !(f == 0.0 && r == 0.0)) {
 	r = (2.0 * r + (f / r / r)) / 3.0;
     }
 #endif
