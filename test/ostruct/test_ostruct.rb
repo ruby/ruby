@@ -353,7 +353,7 @@ class TC_OpenStruct < Test::Unit::TestCase
       end.take
       assert obj1.object_id == obj2.object_id
     RUBY
-  end
+  end if defined?(Ractor)
 
   def test_legacy_yaml
     s = "--- !ruby/object:OpenStruct\ntable:\n  :foo: 42\n"
