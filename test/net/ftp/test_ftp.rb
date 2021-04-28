@@ -900,7 +900,7 @@ class FTPTest < Test::Unit::TestCase
       begin
         ftp = Net::FTP.new
         ftp.passive = true
-        ftp.read_timeout *= 5 if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # for --jit-wait
+        ftp.read_timeout *= 5 if defined?(RubyVM::JIT) && RubyVM::JIT.enabled? # for --jit-wait
         ftp.connect(SERVER_ADDR, server.port)
         ftp.login
         assert_match(/\AUSER /, commands.shift)
