@@ -457,6 +457,13 @@ yjit_gen_block(block_t *block, rb_execution_context_t *ec)
 }
 
 static codegen_status_t
+gen_nop(jitstate_t* jit, ctx_t* ctx)
+{
+    // Do nothing
+    return YJIT_KEEP_COMPILING;
+}
+
+static codegen_status_t
 gen_dup(jitstate_t* jit, ctx_t* ctx)
 {
     // Get the top value and its type
@@ -471,10 +478,22 @@ gen_dup(jitstate_t* jit, ctx_t* ctx)
     return YJIT_KEEP_COMPILING;
 }
 
+// set Nth stack entry to stack top
 static codegen_status_t
-gen_nop(jitstate_t* jit, ctx_t* ctx)
+gen_setn(jitstate_t* jit, ctx_t* ctx)
 {
-    // Do nothing
+    rb_num_t n = (rb_num_t)jit_get_arg(jit, 0);
+
+    // Get the top value and its type
+    val_type_t top_type = ctx_get_opnd_type(ctx, OPND_STACK(0));
+    x86opnd_t top_val = ctx_stack_pop(ctx, 0);
+
+    // Set the destination and its type
+    ctx_set_opnd_type(ctx, OPND_STACK(n), top_type);
+    x86opnd_t dst_opnd = ctx_stack_opnd(ctx, (int32_t)n);
+    mov(cb, REG0, top_val);
+    mov(cb, dst_opnd, REG0);
+
     return YJIT_KEEP_COMPILING;
 }
 
@@ -2220,8 +2239,9 @@ yjit_init_codegen(void)
     leave_exit_code = yjit_gen_leave_exit(cb);
 
     // Map YARV opcodes to the corresponding codegen functions
-    yjit_reg_op(BIN(dup), gen_dup);
     yjit_reg_op(BIN(nop), gen_nop);
+    yjit_reg_op(BIN(dup), gen_dup);
+    yjit_reg_op(BIN(setn), gen_setn);
     yjit_reg_op(BIN(pop), gen_pop);
     yjit_reg_op(BIN(putnil), gen_putnil);
     yjit_reg_op(BIN(putobject), gen_putobject);
