@@ -478,6 +478,34 @@ gen_dup(jitstate_t* jit, ctx_t* ctx)
     return YJIT_KEEP_COMPILING;
 }
 
+// duplicate stack top n elements
+static codegen_status_t
+gen_dupn(jitstate_t* jit, ctx_t* ctx)
+{
+    rb_num_t n = (rb_num_t)jit_get_arg(jit, 0);
+
+    // In practice, seems to be only used for n==2
+    if (n != 2) {
+        return YJIT_CANT_COMPILE;
+    }
+
+    val_type_t type1 = ctx_get_opnd_type(ctx, OPND_STACK(1));
+    x86opnd_t opnd1 = ctx_stack_opnd(ctx, 1);
+
+    val_type_t type0 = ctx_get_opnd_type(ctx, OPND_STACK(0));
+    x86opnd_t opnd0 = ctx_stack_opnd(ctx, 0);
+
+    x86opnd_t dst1 = ctx_stack_push(ctx, type1);
+    mov(cb, REG0, opnd1);
+    mov(cb, dst1, REG0);
+
+    x86opnd_t dst0 = ctx_stack_push(ctx, type0);
+    mov(cb, REG0, opnd0);
+    mov(cb, dst0, REG0);
+
+    return YJIT_KEEP_COMPILING;
+}
+
 // set Nth stack entry to stack top
 static codegen_status_t
 gen_setn(jitstate_t* jit, ctx_t* ctx)
@@ -502,6 +530,15 @@ gen_pop(jitstate_t* jit, ctx_t* ctx)
 {
     // Decrement SP
     ctx_stack_pop(ctx, 1);
+    return YJIT_KEEP_COMPILING;
+}
+
+// Pop n values off the stack
+static codegen_status_t
+gen_adjuststack(jitstate_t* jit, ctx_t* ctx)
+{
+    rb_num_t n = (rb_num_t)jit_get_arg(jit, 0);
+    ctx_stack_pop(ctx, n);
     return YJIT_KEEP_COMPILING;
 }
 
@@ -2260,8 +2297,10 @@ yjit_init_codegen(void)
     // Map YARV opcodes to the corresponding codegen functions
     yjit_reg_op(BIN(nop), gen_nop);
     yjit_reg_op(BIN(dup), gen_dup);
+    yjit_reg_op(BIN(dupn), gen_dupn);
     yjit_reg_op(BIN(setn), gen_setn);
     yjit_reg_op(BIN(pop), gen_pop);
+    yjit_reg_op(BIN(adjuststack), gen_adjuststack);
     yjit_reg_op(BIN(putnil), gen_putnil);
     yjit_reg_op(BIN(putobject), gen_putobject);
     yjit_reg_op(BIN(putobject_INT2FIX_0_), gen_putobject_int2fix);
