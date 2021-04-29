@@ -203,7 +203,7 @@ monitor_synchronize(VALUE monitor)
 void
 Init_monitor(void)
 {
-#if HAVE_RB_EXT_RACTOR_SAFE
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
     rb_ext_ractor_safe(true);
 #endif
 
