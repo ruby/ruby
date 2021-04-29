@@ -1,4 +1,4 @@
-- +tz+: a timezone, which may be:
+- +zone+: a timezone, which may be:
   - A string offset from UTC.
   - A single letter offset from UTC, in the range <tt>'A'..'Z'</tt>,
     <tt>'J'</tt> (the so-called military timezone) excluded.
