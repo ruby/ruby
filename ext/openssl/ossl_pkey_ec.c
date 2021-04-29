@@ -1469,7 +1469,7 @@ static VALUE ossl_ec_point_mul(int argc, VALUE *argv, VALUE self)
 	if (EC_POINT_mul(group, point_result, bn_g, point_self, bn, ossl_bn_ctx) != 1)
 	    ossl_raise(eEC_POINT, NULL);
     } else {
-#if OPENSSL_VERSION_MAJOR+0 >= 3 || defined(LIBRESSL_VERSION_NUMBER)
+#if (defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR >= 3) || defined(LIBRESSL_VERSION_NUMBER)
         rb_raise(rb_eNotImpError, "calling #mul with arrays is not" \
                  "supported by this OpenSSL version");
 #else
