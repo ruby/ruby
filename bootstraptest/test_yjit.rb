@@ -656,6 +656,33 @@ assert_equal '[100, 299]', %q{
   [bar(ins), bar(oth)]
 }
 
+# get ivar on object, then on hash
+assert_equal '[42, 100]', %q{
+  class Hash
+    attr_accessor :foo
+  end
+
+  class A
+    attr_reader :foo
+
+    def initialize
+      @foo = 42
+    end
+  end
+
+  def use(val)
+    val.foo
+  end
+
+
+  h = {}
+  h.foo = 100
+  obj = A.new
+
+  use(obj)
+  [use(obj), use(h)]
+}
+
 # get ivar on String
 assert_equal '[nil, nil, 42, 42]', %q{
   # @foo to exercise the getinstancevariable instruction
