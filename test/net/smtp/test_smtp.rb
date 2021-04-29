@@ -187,6 +187,7 @@ module Net
         sock = nil
         t = Thread.start do
           sock = accept(servers)
+          sleep 0.1
           sock.close
         end
         smtp = Net::SMTP.new("localhost", servers[0].local_address.ip_port)
