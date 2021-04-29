@@ -2409,11 +2409,11 @@ ruby_float_step_size(double beg, double end, double unit, int excl)
     if (unit == 0) {
         return HUGE_VAL;
     }
-    n= (end - beg)/unit;
-    err = (fabs(beg) + fabs(end) + fabs(end-beg)) / fabs(unit) * epsilon;
     if (isinf(unit)) {
 	return unit > 0 ? beg <= end : beg >= end;
     }
+    n= (end - beg)/unit;
+    err = (fabs(beg) + fabs(end) + fabs(end-beg)) / fabs(unit) * epsilon;
     if (err>0.5) err=0.5;
     if (excl) {
 	if (n<=0) return 0;
@@ -2421,10 +2421,26 @@ ruby_float_step_size(double beg, double end, double unit, int excl)
 	    n = 0;
 	else
 	    n = floor(n - err);
+        if (beg < end) {
+            if ((n+1)*unit+beg < end)
+                n++;
+        }
+        else if (beg > end) {
+            if ((n+1)*unit+beg > end)
+                n++;
+        }
     }
     else {
 	if (n<0) return 0;
 	n = floor(n + err);
+        if (beg < end) {
+            if ((n+1)*unit+beg <= end)
+                n++;
+        }
+        else if (beg > end) {
+            if ((n+1)*unit+beg >= end)
+               n++;
+        }
     }
     return n+1;
 }

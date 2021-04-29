@@ -207,10 +207,12 @@ describe "Range#step" do
         ScratchPad.recorded.should eql([-1.0, -0.5, 0.0, 0.5])
       end
 
-      it "returns Float values of 'step * n + begin < end'" do
-        (1.0...6.4).step(1.8) { |x| ScratchPad << x }
-        (1.0...55.6).step(18.2) { |x| ScratchPad << x }
-        ScratchPad.recorded.should eql([1.0, 2.8, 4.6, 1.0, 19.2, 37.4])
+      ruby_version_is '3.1' do
+        it "returns Float values of 'step * n + begin < end'" do
+          (1.0...6.4).step(1.8) { |x| ScratchPad << x }
+          (1.0...55.6).step(18.2) { |x| ScratchPad << x }
+          ScratchPad.recorded.should eql([1.0, 2.8, 4.6, 1.0, 19.2, 37.4, 55.599999999999994])
+        end
       end
 
       it "handles infinite values at either end" do
@@ -457,19 +459,21 @@ describe "Range#step" do
           (-1.0...1.0).step(0.5).size.should == 4
         end
 
-        it "returns the range size when there's no step_size" do
-          (-2..2).step.size.should == 5
-          (-2.0..2.0).step.size.should == 5
-          (-2..2.0).step.size.should == 5
-          (-2.0..2).step.size.should == 5
-          (1.0..6.4).step(1.8).size.should == 4
-          (1.0..12.7).step(1.3).size.should == 10
-          (-2...2).step.size.should == 4
-          (-2.0...2.0).step.size.should == 4
-          (-2...2.0).step.size.should == 4
-          (-2.0...2).step.size.should == 4
-          (1.0...6.4).step(1.8).size.should == 3
-          (1.0...55.6).step(18.2).size.should == 3
+        ruby_version_is '3.1' do
+          it "returns the range size when there's no step_size" do
+            (-2..2).step.size.should == 5
+            (-2.0..2.0).step.size.should == 5
+            (-2..2.0).step.size.should == 5
+            (-2.0..2).step.size.should == 5
+            (1.0..6.4).step(1.8).size.should == 4
+            (1.0..12.7).step(1.3).size.should == 10
+            (-2...2).step.size.should == 4
+            (-2.0...2.0).step.size.should == 4
+            (-2...2.0).step.size.should == 4
+            (-2.0...2).step.size.should == 4
+            (1.0...6.4).step(1.8).size.should == 3
+            (1.0...55.6).step(18.2).size.should == 4
+          end
         end
 
         it "returns nil with begin and end are String" do
