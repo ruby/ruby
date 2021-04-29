@@ -1,7 +1,3 @@
-#
-# call-seq:
-#    Time.now -> new_time
-#
 # Creates a new \Time object from the current system time.
 # This is the same as Time.new without arguments.
 #
@@ -10,20 +6,6 @@ def Time.now(in: nil)
   new(in: __builtin.arg!(:in))
 end
 
-#
-# call-seq:
-#   # Time.
-#   Time.at(time, in: nil) -> new_time
-#   # Seconds.
-#   Time.at(sec, in: nil) -> new_time
-#   # Seconds with Subseconds and Units.
-#   Time.at(sec_i, msec, :millisecond, in: nil) -> new_time
-#   Time.at(sec_i, usec,               in: nil) -> new_time
-#   Time.at(sec_i, usec, :usec,        in: nil) -> new_time
-#   Time.at(sec_i, usec, :microsecond, in: nil) -> new_time
-#   Time.at(sec_i, nanoseconds, :nsec,       in: nil) -> new_time
-#   Time.at(sec_i, nanoseconds, :nanosecond, in: nil) -> new_time
-#
 # _Time_
 #
 # This form accepts a \Time object +time+
@@ -84,17 +66,13 @@ def Time.at(time, subsec = (nosubsec = true), unit = (nounit = true), in: nil)
 end
 
 class Time
-  # call-seq:
-  #   Time.new(in: nil) -> new_time
-  #   Time.new(year, month=nil, day=nil, hour=nil, min=nil, sec=nil, zone=nil, in: nil) -> new_time
-  #
   # Returns a new \Time object based the on given arguments.
   #
-  # In the first form (no positional arguments), returns the value of Time.now:
+  # With no positional arguments, returns the value of Time.now:
   #
   #   Time.new                                       # => 2021-04-24 17:27:46.0512465 -0500
   #
-  # In the second form, argument +year+ is required:
+  # Otherwise, returns a new \Time object based on the given parameters:
   #
   #   Time.new(2000)                                 # => 2000-01-01 00:00:00 -0600
   #   Time.new(2000, 12, 31, 23, 59, 59.5)           # => 2000-12-31 23:59:59.5 -0600
