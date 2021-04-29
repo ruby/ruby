@@ -924,8 +924,27 @@ gen_get_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
     //       Eventually, we can encode whether an object is T_OBJECT or not
     //       inside object shapes.
     if (rb_get_alloc_func(comptime_val_klass) != rb_class_allocate_instance) {
-        GEN_COUNTER_INC(cb, getivar_not_object);
-        return YJIT_CANT_COMPILE;
+        // General case. Call rb_ivar_get(). No need to reconstruct interpreter
+        // state since the routine never raises exceptions or allocate objects
+        // visibile to Ruby.
+        // VALUE rb_ivar_get(VALUE obj, ID id)
+        ADD_COMMENT(cb, "call rb_ivar_get()");
+        yjit_save_regs(cb);
+        mov(cb, C_ARG_REGS[0], REG0);
+        mov(cb, C_ARG_REGS[1], imm_opnd((int64_t)ivar_name));
+        call_ptr(cb, REG1, (void *)rb_ivar_get);
+        yjit_load_regs(cb);
+
+        if (!reg0_opnd.is_self) {
+            (void)ctx_stack_pop(ctx, 1);
+        }
+        // Push the ivar on the stack
+        x86opnd_t out_opnd = ctx_stack_push(ctx, TYPE_UNKNOWN);
+        mov(cb, out_opnd, RAX);
+
+        // Jump to next instruction. This allows guard chains to share the same successor.
+        jit_jump_to_next_insn(jit, ctx);
+        return YJIT_END_BLOCK;
     }
     RUBY_ASSERT(BUILTIN_TYPE(comptime_receiver) == T_OBJECT); // because we checked the allocator
 
