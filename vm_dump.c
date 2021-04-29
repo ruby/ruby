@@ -470,6 +470,7 @@ rb_vmdebug_thread_dump_state(VALUE self)
 #endif
 
 #if defined(HAVE_BACKTRACE)
+# define USE_BACKTRACE 1
 # ifdef HAVE_LIBUNWIND
 #  undef backtrace
 #  define backtrace unw_backtrace
@@ -572,14 +573,14 @@ darwin_sigtramp:
     return n;
 }
 # elif defined(BROKEN_BACKTRACE)
-#  undef HAVE_BACKTRACE
-#  define HAVE_BACKTRACE 0
+#  undef USE_BACKTRACE
+#  define USE_BACKTRACE 0
 # endif
 #else
-# define HAVE_BACKTRACE 0
+# define USE_BACKTRACE 0
 #endif
 
-#if HAVE_BACKTRACE
+#if USE_BACKTRACE
 # include <execinfo.h>
 #elif defined(_WIN32)
 # include <imagehlp.h>
@@ -752,7 +753,7 @@ dump_thread(void *arg)
 void
 rb_print_backtrace(void)
 {
-#if HAVE_BACKTRACE
+#if USE_BACKTRACE
 #define MAX_NATIVE_TRACE 1024
     static void *trace[MAX_NATIVE_TRACE];
     int n = (int)backtrace(trace, MAX_NATIVE_TRACE);
@@ -1034,14 +1035,14 @@ rb_vm_bugreport(const void *ctx)
 
     rb_dump_machine_register(ctx);
 
-#if HAVE_BACKTRACE || defined(_WIN32)
+#if USE_BACKTRACE || defined(_WIN32)
     fprintf(stderr, "-- C level backtrace information "
 	    "-------------------------------------------\n");
     rb_print_backtrace();
 
 
     fprintf(stderr, "\n");
-#endif /* HAVE_BACKTRACE */
+#endif /* USE_BACKTRACE */
 
     if (other_runtime_info || vm) {
 	fprintf(stderr, "-- Other runtime information "
