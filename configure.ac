@@ -627,6 +627,7 @@ AS_CASE(["$GCC:${warnflags+set}:${extra_warnflags:+set}:"],
 		 -Werror=pointer-arith \
 		 -Werror=shorten-64-to-32 \
 		 -Werror=write-strings \
+		 -Werror=undef \
 		 -Wimplicit-fallthrough=0 \
 		 -Wmissing-noreturn \
 		 -Wno-cast-function-type \
