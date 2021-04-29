@@ -830,7 +830,7 @@ enum {
 };
 #define HEAP_PAGE_ALIGN (1 << HEAP_PAGE_ALIGN_LOG)
 #define HEAP_PAGE_SIZE HEAP_PAGE_ALIGN
-#if defined(HAVE_MMAP) && (PAGE_SIZE <= HEAP_PAGE_SIZE)
+#if defined(HAVE_MMAP) && (!defined(PAGE_SIZE) || PAGE_SIZE <= HEAP_PAGE_SIZE)
 # define USE_MMAP_ALIGNED_ALLOC 1
 #else
 # define USE_MMAP_ALIGNED_ALLOC 0

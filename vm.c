@@ -3262,7 +3262,7 @@ static VALUE
 nsdr(VALUE self)
 {
     VALUE ary = rb_ary_new();
-#if HAVE_BACKTRACE
+#ifdef HAVE_BACKTRACE
 #include <execinfo.h>
 #define MAX_NATIVE_TRACE 1024
     static void *trace[MAX_NATIVE_TRACE];

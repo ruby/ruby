@@ -216,7 +216,7 @@ typedef enum {
 #else
 #define FNM_SYSCASE	0
 #endif
-#if _WIN32
+#ifdef _WIN32
 #define FNM_SHORTNAME	0x20
 #else
 #define FNM_SHORTNAME	0

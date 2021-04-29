@@ -671,7 +671,7 @@ extract_item_member(const uint8_t *ptr, const rb_memory_view_item_component_t *m
             return LL2NUM(val.ll);
         }
         else {
-#if SIZEOF_INT64_t == SIZEOF_LONG
+#if SIZEOF_INT64_T == SIZEOF_LONG
             return LONG2NUM(val.i64);
 #else
             return LL2NUM(val.i64);
@@ -683,7 +683,7 @@ extract_item_member(const uint8_t *ptr, const rb_memory_view_item_component_t *m
             return ULL2NUM(val.ull);
         }
         else {
-#if SIZEOF_UINT64_t == SIZEOF_LONG
+#if SIZEOF_UINT64_T == SIZEOF_LONG
             return ULONG2NUM(val.u64);
 #else
             return ULL2NUM(val.u64);
