@@ -23,8 +23,11 @@
 
 #define COROUTINE __attribute__((noreturn)) void
 
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
 #if INTPTR_MAX <= INT32_MAX
 #define COROUTINE_LIMITED_ADDRESS_SPACE
+#endif
 #endif
 
 // This stack copying implementation which uses a private stack for each coroutine, including the main one.
