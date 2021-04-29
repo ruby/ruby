@@ -1,7 +1,11 @@
 # Creates a new \Time object from the current system time.
 # This is the same as Time.new without arguments.
 #
-#    Time.now # => 2009-06-24 12:39:54 +0900
+#    Time.now               # => 2009-06-24 12:39:54 +0900
+#    Time.now(in: '+04:00') # => 2021-04-30 01:56:44 +0400
+#
+# Parameter:
+# :include: doc/time/in.rdoc
 def Time.now(in: nil)
   new(in: __builtin.arg!(:in))
 end
@@ -26,29 +30,17 @@ end
 #
 # This form accepts an integer number of seconds +sec_i+,
 # a numeric number of milliseconds +msec+,
-# a symbol argument +:millisecond+,
+# a symbol argument for the subsecond unit type (defaulting to :usec),
 # and an optional keyword argument +in+:
 #
 #   Time.at(946702800, 500, :millisecond)               # => 1999-12-31 23:00:00.5 -0600
 #   Time.at(946702800, 500, :millisecond, in: '+09:00') # => 2000-01-01 14:00:00.5 +0900
-#
-# These forms accept an integer number of seconds +sec_i+,
-# a numeric number of microseconds +msec+,
-# an optional symbol +:usec+ or +:microsecond+,
-# and an optional keyword argument +in+:
-#
 #   Time.at(946702800, 500000)                             # => 1999-12-31 23:00:00.5 -0600
 #   Time.at(946702800, 500000, :usec)                      # => 1999-12-31 23:00:00.5 -0600
 #   Time.at(946702800, 500000, :microsecond)               # => 1999-12-31 23:00:00.5 -0600
 #   Time.at(946702800, 500000, in: '+09:00')               # => 2000-01-01 14:00:00.5 +0900
 #   Time.at(946702800, 500000, :usec, in: '+09:00')        # => 2000-01-01 14:00:00.5 +0900
 #   Time.at(946702800, 500000, :microsecond, in: '+09:00') # => 2000-01-01 14:00:00.5 +0900
-#
-# These forms accept an integer number of seconds +sec_i+,
-# a numeric number of nanoseconds +nsec+,
-# a symbol +:nsec+ or +:nanosecond+,
-# and an optional keyword argument +in+:
-#
 #   Time.at(946702800, 500000000, :nsec)                     # => 1999-12-31 23:00:00.5 -0600
 #   Time.at(946702800, 500000000, :nanosecond)               # => 1999-12-31 23:00:00.5 -0600
 #   Time.at(946702800, 500000000, :nsec, in: '+09:00')       # => 2000-01-01 14:00:00.5 +0900
@@ -59,7 +51,7 @@ end
 # :include: doc/time/msec.rdoc
 # :include: doc/time/usec.rdoc
 # :include: doc/time/nsec.rdoc
-# :include: doc/time/zone.rdoc
+# :include: doc/time/in.rdoc
 #
 def Time.at(time, subsec = (nosubsec = true), unit = (nounit = true), in: nil)
   __builtin.time_s_at(time, subsec, unit, __builtin.arg!(:in), nosubsec, nounit)
@@ -83,7 +75,7 @@ class Time
   # :include: doc/time/year.rdoc
   # :include: doc/time/mon-min.rdoc
   # :include: doc/time/sec.rdoc
-  # :include: doc/time/zone.rdoc
+  # :include: doc/time/in.rdoc
   #
   def initialize(year = (now = true), mon = nil, mday = nil, hour = nil, min = nil, sec = nil, zone = nil, in: nil)
     if zone

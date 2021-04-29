@@ -5838,7 +5838,7 @@ Init_Time(void)
     rb_define_singleton_method(rb_cTime, "utc", time_s_mkutc, -1);
     rb_define_singleton_method(rb_cTime, "local", time_s_mktime, -1);
     rb_define_alias(rb_singleton_class(rb_cTime), "gm", "utc");
-    rb_define_alias(rb_singleton_class(rb_cTime), "mktime", "localF= C");
+    rb_define_alias(rb_singleton_class(rb_cTime), "mktime", "local");
 
     rb_define_method(rb_cTime, "to_i", time_to_i, 0);
     rb_define_method(rb_cTime, "to_f", time_to_f, 0);
