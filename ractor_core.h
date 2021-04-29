@@ -261,7 +261,7 @@ static inline void
 rb_ractor_set_current_ec(rb_ractor_t *cr, rb_execution_context_t *ec)
 {
 #ifdef RB_THREAD_LOCAL_SPECIFIER
-  #if __APPLE__
+  #ifdef __APPLE__
     rb_current_ec_set(ec);
   #else
     ruby_current_ec = ec;

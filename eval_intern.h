@@ -144,7 +144,7 @@ LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
 
 #define EC_REPUSH_TAG() (void)(_ec->tag = &_tag)
 
-#if defined __GNUC__ && __GNUC__ == 4 && (__GNUC_MINOR__ >= 6 && __GNUC_MINOR__ <= 8) || __clang__
+#if defined __GNUC__ && __GNUC__ == 4 && (__GNUC_MINOR__ >= 6 && __GNUC_MINOR__ <= 8) || defined __clang__
 /* This macro prevents GCC 4.6--4.8 from emitting maybe-uninitialized warnings.
  * This macro also prevents Clang from dumping core in EC_EXEC_TAG().
  * (I confirmed Clang 4.0.1 and 5.0.0.)

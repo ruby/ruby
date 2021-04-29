@@ -37,7 +37,7 @@
 #endif
 
 /** Enables #RBIMPL_ATTR_CONST if and only if. ! #RUBY_DEBUG. */
-#if !RUBY_DEBUG
+#if !defined(RUBY_DEBUG) || !RUBY_DEBUG
 # define RBIMPL_ATTR_CONST_UNLESS_DEBUG() RBIMPL_ATTR_CONST()
 #else
 # define RBIMPL_ATTR_CONST_UNLESS_DEBUG() /* void */

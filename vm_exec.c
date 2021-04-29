@@ -104,6 +104,8 @@ vm_exec_core(rb_execution_context_t *ec, VALUE initial)
 #else
     register rb_control_frame_t *reg_cfp;
     const VALUE *reg_pc;
+#define USE_MACHINE_REGS 0
+
 #endif
 
 #if USE_MACHINE_REGS

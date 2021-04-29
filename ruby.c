@@ -1826,7 +1826,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     opt->script_name = rb_str_new_cstr(opt->script);
     opt->script = RSTRING_PTR(opt->script_name);
 
-#if _WIN32
+#ifdef _WIN32
     translit_char_bin(RSTRING_PTR(opt->script_name), '\\', '/');
 #elif defined DOSISH
     translit_char(RSTRING_PTR(opt->script_name), '\\', '/');
