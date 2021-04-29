@@ -1055,6 +1055,7 @@ module Net   #:nodoc:
                                write_timeout: @write_timeout,
                                continue_timeout: @continue_timeout,
                                debug_output: @debug_output)
+      @last_communicated = nil
       on_connect
     rescue => exception
       if s
