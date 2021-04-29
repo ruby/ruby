@@ -927,8 +927,8 @@ print_yjit_stats(void)
     fprintf(stderr, "ratio_in_yjit:         %9.1f%%\n", ratio * 100);
     fprintf(stderr, "avg_len_in_yjit:       %10.1f\n", avg_len_in_yjit);
 
-    // Print the top-10 most frequent exit ops
-    print_insn_count_buffer(10, 4);
+    // Print the top-N most frequent exit ops
+    print_insn_count_buffer(20, 4);
 }
 #endif // if RUBY_DEBUG
 
