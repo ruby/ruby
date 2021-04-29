@@ -393,7 +393,6 @@ module Net   #:nodoc:
     HTTPVersion = '1.1'
     begin
       require 'zlib'
-      require 'stringio'  #for our purposes (unpacking gzip) lump these together
       HAVE_ZLIB=true
     rescue LoadError
       HAVE_ZLIB=false
