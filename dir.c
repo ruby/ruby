@@ -50,13 +50,13 @@
 # define dirent direct
 # define NAMLEN(dirent) (dirent)->d_namlen
 # define HAVE_DIRENT_NAMLEN 1
-# if HAVE_SYS_NDIR_H
+# ifdef HAVE_SYS_NDIR_H
 #  include <sys/ndir.h>
 # endif
-# if HAVE_SYS_DIR_H
+# ifdef HAVE_SYS_DIR_H
 #  include <sys/dir.h>
 # endif
-# if HAVE_NDIR_H
+# ifdef HAVE_NDIR_H
 #  include <ndir.h>
 # endif
 # ifdef _WIN32

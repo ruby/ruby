@@ -20,9 +20,9 @@
 #ifdef HAVE_THR_STKSEGMENT
 #include <thread.h>
 #endif
-#if HAVE_FCNTL_H
+#if defined(HAVE_FCNTL_H)
 #include <fcntl.h>
-#elif HAVE_SYS_FCNTL_H
+#elif defined(HAVE_SYS_FCNTL_H)
 #include <sys/fcntl.h>
 #endif
 #ifdef HAVE_SYS_PRCTL_H

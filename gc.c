@@ -45,7 +45,7 @@
 #ifdef HAVE_MALLOC_USABLE_SIZE
 # ifdef RUBY_ALTERNATIVE_MALLOC_HEADER
 #  include RUBY_ALTERNATIVE_MALLOC_HEADER
-# elif HAVE_MALLOC_H
+# elif defined(HAVE_MALLOC_H)
 #  include <malloc.h>
 # elif defined(HAVE_MALLOC_NP_H)
 #  include <malloc_np.h>
@@ -381,7 +381,7 @@ static ruby_gc_params_t gc_params = {
 #endif
 #if RGENGC_DEBUG < 0 && !defined(_MSC_VER)
 # define RGENGC_DEBUG_ENABLED(level) (-(RGENGC_DEBUG) >= (level) && ruby_rgengc_debug >= (level))
-#elif HAVE_VA_ARGS_MACRO
+#elif defined(HAVE_VA_ARGS_MACRO)
 # define RGENGC_DEBUG_ENABLED(level) ((RGENGC_DEBUG) >= (level))
 #else
 # define RGENGC_DEBUG_ENABLED(level) 0

@@ -29,7 +29,7 @@
 # include <ucontext.h>
 #endif
 
-#if HAVE_PTHREAD_H
+#ifdef HAVE_PTHREAD_H
 # include <pthread.h>
 #endif
 

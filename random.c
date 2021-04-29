@@ -428,7 +428,7 @@ random_init(int argc, VALUE *argv, VALUE obj)
 # define USE_DEV_URANDOM 0
 #endif
 
-#if HAVE_GETENTROPY
+#ifdef HAVE_GETENTROPY
 # define MAX_SEED_LEN_PER_READ 256
 static int
 fill_random_bytes_urandom(void *seed, size_t size)
