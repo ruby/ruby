@@ -4640,19 +4640,26 @@ vm_opt_newarray_min(rb_num_t num, const VALUE *ptr)
 
 #define IMEMO_CONST_CACHE_SHAREABLE IMEMO_FL_USER0
 
-static int
+// For MJIT inlining
+static inline bool
+vm_inlined_ic_hit_p(VALUE flags, VALUE value, const rb_cref_t *ic_cref, rb_serial_t ic_serial, const VALUE *reg_ep)
+{
+    if (ic_serial == GET_GLOBAL_CONSTANT_STATE() &&
+        ((flags & IMEMO_CONST_CACHE_SHAREABLE) || rb_ractor_main_p())) {
+
+        VM_ASSERT((flags & IMEMO_CONST_CACHE_SHAREABLE) ? rb_ractor_shareable_p(value) : true);
+
+        return (ic_cref == NULL || // no need to check CREF
+                ic_cref == vm_get_cref(reg_ep));
+    }
+    return false;
+}
+
+static bool
 vm_ic_hit_p(const struct iseq_inline_constant_cache_entry *ice, const VALUE *reg_ep)
 {
     VM_ASSERT(IMEMO_TYPE_P(ice, imemo_constcache));
-    if (ice->ic_serial == GET_GLOBAL_CONSTANT_STATE() &&
-        (FL_TEST_RAW((VALUE)ice, IMEMO_CONST_CACHE_SHAREABLE) || rb_ractor_main_p())) {
-
-        VM_ASSERT(FL_TEST_RAW((VALUE)ice, IMEMO_CONST_CACHE_SHAREABLE) ? rb_ractor_shareable_p(ice->value) : true);
-
-        return (ice->ic_cref == NULL || // no need to check CREF
-                ice->ic_cref == vm_get_cref(reg_ep));
-    }
-    return FALSE;
+    return vm_inlined_ic_hit_p(ice->flags, ice->value, ice->ic_cref, ice->ic_serial, reg_ep);
 }
 
 static void

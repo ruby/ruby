@@ -13,17 +13,10 @@
 
 % # compiler: Capture IC values, locking getinlinecache
     struct iseq_inline_constant_cache_entry *ice = ic->entry;
-    if (ice == NULL) {
-        goto getinlinecache_cancel;
-    }
-    rb_serial_t ic_serial = ice->ic_serial;
-    const rb_cref_t *ic_cref = ice->ic_cref;
-    VALUE ic_value = ice->value;
-
-    if (ic_serial && !status->compile_info->disable_const_cache) {
+    if (ice != NULL && ice->ic_serial && !status->compile_info->disable_const_cache) {
 %       # JIT: Inline everything in IC, and cancel the slow path
-        fprintf(f, "    if (vm_ic_hit_p((rb_serial_t)%"PRI_SERIALT_PREFIX"u, (const rb_cref_t *)0x%"PRIxVALUE", reg_cfp->ep)) {", ic_serial, (VALUE)ic_cref);
-        fprintf(f, "        stack[%d] = 0x%"PRIxVALUE";\n", b->stack_size, ic_value);
+        fprintf(f, "    if (vm_inlined_ic_hit_p(0x%"PRIxVALUE", 0x%"PRIxVALUE", (const rb_cref_t *)0x%"PRIxVALUE", %"PRI_SERIALT_PREFIX"u, reg_cfp->ep)) {", ice->flags, ice->value, (VALUE)ice->ic_cref, ice->ic_serial);
+        fprintf(f, "        stack[%d] = 0x%"PRIxVALUE";\n", b->stack_size, ice->value);
         fprintf(f, "        goto label_%d;\n", pos + insn_len(insn) + (int)dst);
         fprintf(f, "    }");
         fprintf(f, "    else {");
@@ -36,4 +29,3 @@
         b->stack_size += <%= insn.call_attribute('sp_inc') %>;
         break;
     }
-    getinlinecache_cancel:;
