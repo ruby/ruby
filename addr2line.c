@@ -1436,16 +1436,17 @@ ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr)
         /* TODO: support base address selection entry */
         const char *p;
         uint64_t base = ptr->low_pc_set ? ptr->low_pc : reader->current_low_pc;
+        bool base_valid = true;
         if (reader->obj->debug_rnglists.ptr) {
             p = reader->obj->debug_rnglists.ptr + ptr->ranges;
             for (;;) {
                 uint8_t rle = read_uint8(&p);
-                uintptr_t base_address = 0;
-                uintptr_t from, to;
+                uintptr_t from = 0, to = 0;
                 if (rle == DW_RLE_end_of_list) break;
                 switch (rle) {
                   case DW_RLE_base_addressx:
                     uleb128(&p);
+                    base_valid = false; /* not supported yet */
                     break;
                   case DW_RLE_startx_endx:
                     uleb128(&p);
@@ -1456,23 +1457,25 @@ ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr)
                     uleb128(&p);
                     break;
                   case DW_RLE_offset_pair:
-                    from = base_address + uleb128(&p);
-                    to = base_address + uleb128(&p);
-                    if (base + from <= addr && addr < base + to) {
-                        return from;
-                    }
+                    if (!base_valid) break;
+                    from = (uintptr_t)base + uleb128(&p);
+                    to = (uintptr_t)base + uleb128(&p);
                     break;
                   case DW_RLE_base_address:
-                    base_address = (uintptr_t)read_dw_form_addr(reader, &p);
+                    base = read_dw_form_addr(reader, &p);
+                    base_valid = true;
                     break;
                   case DW_RLE_start_end:
-                    read_dw_form_addr(reader, &p);
-                    read_dw_form_addr(reader, &p);
+                    from = (uintptr_t)read_dw_form_addr(reader, &p);
+                    to = (uintptr_t)read_dw_form_addr(reader, &p);
                     break;
                   case DW_RLE_start_length:
-                    read_dw_form_addr(reader, &p);
-                    uleb128(&p);
+                    from = (uintptr_t)read_dw_form_addr(reader, &p);
+                    to = from + uleb128(&p);
                     break;
+                }
+                if (from <= addr && addr < to) {
+                    return from;
                 }
             }
             return false;
