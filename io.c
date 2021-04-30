@@ -13348,8 +13348,6 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  - {Converting}[#class-IO-label-Converting]
  *  - {Settings}[#class-IO-label-Settings]
  *  - {Querying}[#class-IO-label-Querying]
- *  - {Closing}[#class-IO-label-Closing]
- *  - {Encoding}[#class-IO-label-Encoding]
  *  - {Buffering}[#class-IO-label-Buffering]
  *  - {Low-Level Access}[#class-IO-label-Low-Level+Access]
  *
@@ -13357,19 +13355,18 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  *  - ::new (aliased as ::for_fd):: Creates and returns a new \IO object for the given
  *                                  integer file descriptor.
- *  - ::open:: Creates and new \IO object.
- *  - ::pipe:: Creates a reader \IO object and a writer \IO object, connected.
- *  - ::popen:: Creates a write \IO object to receive output from the given
- *              system command.
- *  - ::select:: Selects a ready \IO object from arrays of \IO objects
- *               for reading, writing, or error.
+ *  - ::open:: Creates a new \IO object.
+ *  - ::pipe:: Creates a connected pair of reader and writer \IO objects.
+ *  - ::popen:: Creates an \IO object to interact with a subprocess.
+ *  - ::select:: Selects which given \IO instances are ready for reading,
+ *    writing, or have pending exceptions.
  *
  *  === Reading
  *
  *  - ::binread:: Returns a specified sequence of file bytes for a given filepath,
  *                read in binary mode.
- *  - ::read (aliased as ::readlines):: Returns a specified sequence of file bytes
- *                                      for a given filepath.
+ *  - ::read:: Returns a string with all or a subset of bytes from the given file.
+ *  - ::readlines:: Returns an array of strings, which are the lines from the given file.
  *  - #advise:: Announces the intention to access data from +self+ in a specific way.
  *  - #getbyte:: Returns the next 8-bit byte read from +self+.
  *  - #getc:: Returns the next character read from +self+.
@@ -13437,7 +13434,13 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  *  - #autoclose=:: Sets whether +self+ auto-closes.
  *  - #binmode:: Sets +self+ to binary mode.
+ *  - #close:: Closes +self+.
  *  - #close_on_exec=:: Sets the close-on-exec flag.
+ *  - #close_read:: Closes +self+ for reading.
+ *  - #close_write:: Closes +self+ for writing.
+ *  - #set_encoding:: Sets the encoding for +self+.
+ *  - #set_encoding_by_bom:: Sets the encoding for +self+, based on its
+ *                           Unicode byte-order-mark.
  *  - #sync=:: Sets the sync-mode to the given value.
  *
  *  === Querying
@@ -13447,32 +13450,20 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  - #close_on_exec?:: Returns the close-on-exec flag for +self+.
  *  - #closed?:: Returns whether +self+ is closed.
  *  - #eof? (aliased as #eof):: Returns whether +self+ is at end-of-file.
+ *  - #external_encoding:: Returns the external encoding object for +self+.
  *  - #fileno (aliased as #to_i):: Returns the integer file descriptor for +self+
+ *  - #internal_encoding:: Returns the internal encoding object for +self+.
  *  - #sync:: Returns whether +self+ is in sync-mode.
  *  - #tty (aliased as #isatty):: Returns whether +self+ is a terminal.
- *
- *  === Closing
- *
- *  - #close:: Closes +self+.
- *  - #close_read:: Closes +self+ for reading.
- *  - #close_write:: Closes +self+ for writing.
- *
- *  === Encoding
- *
- *  - #external_encoding:: Returns the external encoding object for +self+.
- *  - #internal_encoding:: Returns the internal encoding object for +self+.
- *  - #set_encoding:: Sets the encoding for +self+.
- *  - #set_encoding_by_bom:: Sets the encoding for +self+, based on its
- *                           Unicode byte-order-mark.
  *
  *  === Buffering
  *
  *  - #fdatasync:: Immediately writes all buffered data in +self+ to disk.
  *  - #flush:: Flushes any buffered data within +self+ to the underlying
  *             operating system.
- *  - #fsync:: Immediately writes all buffered data in +self+ to disk.
+ *  - #fsync:: Immediately writes all buffered data and attributes in +self+ to disk.
  *  - #ungetbyte:: Pushes the given byte or string onto +self+.
- *  - #ungetc:: Pushes the given byte or string onto +self+.
+ *  - #ungetc:: Prepends buffer for +self+ with given string.
  *
  *  === Low-Level Access
  *
