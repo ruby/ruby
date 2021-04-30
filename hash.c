@@ -4555,7 +4555,7 @@ rb_hash_any_p(int argc, VALUE *argv, VALUE hash)
  *  Nested Hashes:
  *    h = {foo: {bar: {baz: 2}}}
  *    h.dig(:foo) # => {:bar=>{:baz=>2}}
- *    h.dig(:foo, :bar) # => {:bar=>{:baz=>2}}
+ *    h.dig(:foo, :bar) # => {:baz=>2}
  *    h.dig(:foo, :bar, :baz) # => 2
  *    h.dig(:foo, :bar, :BAZ) # => nil
  *
