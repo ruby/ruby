@@ -389,7 +389,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 				flags &= ~(BIT_OF(LOWER)|BIT_OF(CHCASE));
 				flags |= BIT_OF(UPPER);
 			}
-			if (vtm->wday < 0 || vtm->wday > 6)
+			if (vtm->wday > 6)
 				i = 1, tp = "?";
 			else
 				i = 3, tp = days_l[vtm->wday];
@@ -400,7 +400,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 				flags &= ~(BIT_OF(LOWER)|BIT_OF(CHCASE));
 				flags |= BIT_OF(UPPER);
 			}
-			if (vtm->wday < 0 || vtm->wday > 6)
+			if (vtm->wday > 6)
 				i = 1, tp = "?";
 			else
 				i = strlen(tp = days_l[vtm->wday]);
