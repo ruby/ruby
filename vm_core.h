@@ -218,6 +218,10 @@ struct rb_control_frame_struct;
 /* iseq data type */
 typedef struct rb_compile_option_struct rb_compile_option_t;
 
+#if (SIZEOF_SERIAL_T > SIZEOF_VOIDP) && defined(__CYGWIN__)
+#pragma pack(push, 4) /* == SIZEOF_VOIDP */
+#endif
+
 // imemo_constcache
 struct iseq_inline_constant_cache_entry {
     VALUE flags;
@@ -227,6 +231,10 @@ struct iseq_inline_constant_cache_entry {
     rb_serial_t ic_serial;    // v2
                               // v3
 };
+
+#if (SIZEOF_SERIAL_T > SIZEOF_VOIDP) && defined(__CYGWIN__)
+#pragma pack(pop)
+#endif
 
 struct iseq_inline_constant_cache {
     struct iseq_inline_constant_cache_entry *entry;
