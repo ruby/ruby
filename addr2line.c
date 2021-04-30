@@ -1487,7 +1487,7 @@ ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr)
                 base = to;
             }
             else if (base + from <= addr && addr < base + to) {
-                return from;
+                return (uintptr_t)base + from;
             }
         }
     }
