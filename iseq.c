@@ -1830,6 +1830,21 @@ rb_iseq_line_no(const rb_iseq_t *iseq, size_t pos)
     }
 }
 
+#ifdef EXPERIMENTAL_ISEQ_NODE_ID
+int
+rb_iseq_node_id(const rb_iseq_t *iseq, size_t pos)
+{
+    const struct iseq_insn_info_entry *entry = get_insn_info(iseq, pos);
+
+    if (entry) {
+	return entry->node_id;
+    }
+    else {
+	return 0;
+    }
+}
+#endif
+
 MJIT_FUNC_EXPORTED rb_event_flag_t
 rb_iseq_event_flags(const rb_iseq_t *iseq, size_t pos)
 {
@@ -2918,6 +2933,9 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     /* make body with labels and insert line number */
     body = rb_ary_new();
     prev_insn_info = NULL;
+#ifdef EXPERIMENTAL_ISEQ_NODE_ID
+    VALUE node_ids = rb_ary_new();
+#endif
 
     for (l=0, pos=0; l<RARRAY_LEN(nbody); l++) {
 	const struct iseq_insn_info_entry *info;
@@ -2929,6 +2947,9 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 	}
 
 	info = get_insn_info(iseq, pos);
+#ifdef EXPERIMENTAL_ISEQ_NODE_ID
+        rb_ary_push(node_ids, INT2FIX(info->node_id));
+#endif
 
 	if (prev_insn_info != info) {
 	    int line = info->line_no;
@@ -2966,6 +2987,9 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 		INT2FIX(iseq_body->location.code_location.beg_pos.column),
 		INT2FIX(iseq_body->location.code_location.end_pos.lineno),
 		INT2FIX(iseq_body->location.code_location.end_pos.column)));
+#ifdef EXPERIMENTAL_ISEQ_NODE_ID
+    rb_hash_aset(misc, ID2SYM(rb_intern("node_ids_for_each_insn")), node_ids);
+#endif
 
     /*
      * [:magic, :major_version, :minor_version, :format_type, :misc,
