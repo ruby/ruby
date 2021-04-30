@@ -20,6 +20,31 @@ Note that each entry is kept to a minimum, see links for details.
     end
     ```
 
+* Constant assignment evaluation order for constants set on explicit
+  objects has been made consistent with single attribute assignment
+  evaluation order.  With this code:
+
+    ```ruby
+    foo::BAR = baz
+    ```
+
+  `foo` is now called before `baz`. Similarly, for multiple assignment
+  to constants,  left-to-right evaluation order is used.  With this
+  code:
+
+    ```ruby
+      foo1::BAR1, foo2::BAR2 = baz1, baz2
+    ```
+
+  The following evaluation order is now used:
+
+  1. `foo1`
+  2. `foo2`
+  3. `baz1`
+  4. `baz2`
+
+  [[Bug #15928]]
+
 ## Command line options
 
 ## Core classes updates
@@ -110,6 +135,7 @@ The following deprecated APIs are removed.
 [Feature #12737]: https://bugs.ruby-lang.org/issues/12737
 [Feature #14332]: https://bugs.ruby-lang.org/issues/14332
 [Feature #15231]: https://bugs.ruby-lang.org/issues/15231
+[Bug #15928]:     https://bugs.ruby-lang.org/issues/15928
 [Feature #16131]: https://bugs.ruby-lang.org/issues/16131
 [Feature #17351]: https://bugs.ruby-lang.org/issues/17351
 [Feature #17391]: https://bugs.ruby-lang.org/issues/17391
