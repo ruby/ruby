@@ -1858,10 +1858,16 @@ AS_CASE(["$target_os"],[freebsd*],[
 	 AC_REPLACE_FUNCS(close)
 	 ])
 
+AC_DEFUN([RUBY_REQUIRE_FUNC], [
+    AC_CHECK_FUNCS([$1])
+    AS_IF([test "$ac_cv_func_[]AS_TR_SH($1)" = yes], [],
+          [AC_MSG_ERROR($1[() must be supported])])
+])
+m4_map_args_w([dup dup2], [RUBY_REQUIRE_FUNC(], [)])
+
 AC_REPLACE_FUNCS(acosh)
 AC_REPLACE_FUNCS(cbrt)
 AC_REPLACE_FUNCS(crypt)
-AC_REPLACE_FUNCS(dup2)
 AC_REPLACE_FUNCS(erf)
 AC_REPLACE_FUNCS(explicit_bzero)
 AC_REPLACE_FUNCS(ffs)
@@ -1922,7 +1928,6 @@ AC_CHECK_FUNCS(dirfd)
 AC_CHECK_FUNCS(dl_iterate_phdr)
 AC_CHECK_FUNCS(dlopen)
 AC_CHECK_FUNCS(dladdr)
-AC_CHECK_FUNCS(dup)
 AC_CHECK_FUNCS(dup3)
 AC_CHECK_FUNCS(eaccess)
 AC_CHECK_FUNCS(endgrent)
