@@ -42,7 +42,7 @@
 #include <shlobj.h>
 #include <mbstring.h>
 #include <shlwapi.h>
-#if _MSC_VER >= 1400
+#if (_MSC_VER >= 1400) || (RUBY_MSVCRT_VERSION >= 80)
 #include <crtdbg.h>
 #include <rtcapi.h>
 #endif
