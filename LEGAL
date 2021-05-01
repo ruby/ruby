@@ -531,7 +531,6 @@ mentioned below.
 [include/ruby/st.h]
 [missing/acosh.c]
 [missing/alloca.c]
-[missing/dup2.c]
 [missing/erf.c]
 [missing/finite.c]
 [missing/hypot.c]

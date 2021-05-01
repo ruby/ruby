@@ -462,7 +462,7 @@ rb_cloexec_fcntl_dupfd(int fd, int minfd)
     }
 #elif defined(HAVE_FCNTL) && defined(F_DUPFD)
     ret = fcntl(fd, F_DUPFD, minfd);
-#elif defined(HAVE_DUP)
+#else
     ret = dup(fd);
     if (ret >= 0 && ret < minfd) {
         const int prev_fd = ret;
@@ -470,8 +470,6 @@ rb_cloexec_fcntl_dupfd(int fd, int minfd)
         close(prev_fd);
     }
     return ret;
-#else
-# error "dup() or fcntl(F_DUPFD) must be supported."
 #endif
     if (ret < 0) return ret;
     rb_maygvl_fd_fix_cloexec(ret);
