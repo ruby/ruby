@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "reline"
+require 'set'
 require_relative "nop"
 require_relative "../color"
 
@@ -16,11 +17,34 @@ module IRB
         klass  = (obj.class == Class || obj.class == Module ? obj : obj.class)
 
         o.dump("constants", obj.constants) if obj.respond_to?(:constants)
-        o.dump("#{klass}.methods", obj.singleton_methods(false))
-        o.dump("#{klass}#methods", klass.public_instance_methods(false))
+        dump_singleton_methods(o, klass, obj)
+        dump_instance_methods(o, klass)
         o.dump("instance variables", obj.instance_variables)
         o.dump("class variables", klass.class_variables)
         o.dump("locals", locals)
+      end
+
+      def dump_singleton_methods(o, klass, obj)
+        maps = class_method_map(obj.singleton_class.ancestors.take_while { |c| c != klass })
+        maps.each do |mod, methods|
+          name = mod == obj.singleton_class ? "#{klass}.methods" : "#{mod}#methods"
+          o.dump(name, methods)
+        end
+      end
+
+      def dump_instance_methods(o, klass)
+        maps = class_method_map(klass.ancestors)
+        maps.each do |mod, methods|
+          o.dump("#{mod}#methods", methods)
+        end
+      end
+
+      def class_method_map(classes)
+        dumped = Set.new
+        classes.reject { |mod| mod >= Object }.map do |mod|
+          methods = mod.public_instance_methods(false).select { |m| dumped.add?(m) }
+          [mod, methods]
+        end.reverse
       end
 
       class Output

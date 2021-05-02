@@ -377,7 +377,24 @@ module TestIRB
 
     def test_ls
       input = TestInputMethod.new([
-        "ls Object.new.tap { |o| o.instance_variable_set(:@a, 1) }\n",
+        "class C\n",
+        "  def m1() end\n",
+        "end\n",
+
+        "module M\n",
+        "  def m2() end\n",
+        "end\n",
+
+        "module M2\n",
+        "  include M\n",
+        "  def m3() end\n",
+        "end\n",
+
+        "obj = C.new\n",
+        "obj.instance_variable_set(:@a, 1)\n",
+        "obj.extend M2\n",
+        "def obj.m4() end\n",
+        "ls obj\n",
       ])
       IRB.init_config(nil)
       workspace = IRB::WorkSpace.new(self)
@@ -390,6 +407,10 @@ module TestIRB
       end
       assert_empty err
       assert_match(/^instance variables:\s+@a\n/m, out)
+      assert_match(/C#methods: m1\n/m, out)
+      assert_match(/M#methods: m2\n/m, out)
+      assert_match(/M2#methods: m3\n/m, out)
+      assert_match(/C.methods: m4\n/m, out)
     end
 
     def test_show_source
