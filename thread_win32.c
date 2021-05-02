@@ -29,6 +29,7 @@ static volatile DWORD ruby_native_thread_key = TLS_OUT_OF_INDEXES;
 
 static int w32_wait_events(HANDLE *events, int count, DWORD timeout, rb_thread_t *th);
 
+RBIMPL_ATTR_NORETURN()
 static void
 w32_error(const char *func)
 {
@@ -49,6 +50,7 @@ w32_error(const char *func)
 		      MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
 		      (LPTSTR) & lpMsgBuf, 0, NULL);
     rb_bug("%s: %s", func, (char*)lpMsgBuf);
+    UNREACHABLE;
 }
 
 static int
