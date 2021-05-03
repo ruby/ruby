@@ -13342,14 +13342,13 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  - {Creating}[#class-IO-label-Creating]
  *  - {Reading}[#class-IO-label-Reading]
  *  - {Writing}[#class-IO-label-Writing]
- *  - {Copying}[#class-IO-label-Copying]
  *  - {Positioning}[#class-IO-label-Positioning]
  *  - {Iterating}[#class-IO-label-Iterating]
- *  - {Converting}[#class-IO-label-Converting]
  *  - {Settings}[#class-IO-label-Settings]
  *  - {Querying}[#class-IO-label-Querying]
  *  - {Buffering}[#class-IO-label-Buffering]
  *  - {Low-Level Access}[#class-IO-label-Low-Level+Access]
+ *  - {Other}[#class-IO-label-Other]
  *
  *  === Creating
  *
@@ -13363,72 +13362,63 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  *  === Reading
  *
- *  - ::binread:: Returns a specified sequence of file bytes for a given filepath,
- *                read in binary mode.
+ *  - ::binread:: Returns a binary string with all or a subset of bytes
+ *                from the given file.
  *  - ::read:: Returns a string with all or a subset of bytes from the given file.
  *  - ::readlines:: Returns an array of strings, which are the lines from the given file.
- *  - #advise:: Announces the intention to access data from +self+ in a specific way.
- *  - #getbyte:: Returns the next 8-bit byte read from +self+.
- *  - #getc:: Returns the next character read from +self+.
+ *  - #getbyte:: Returns the next 8-bit byte read from +self+ as an integer.
+ *  - #getc:: Returns the next character read from +self+ as a string.
  *  - #gets:: Returns the line read from +self+.
- *  - #pread:: Returns a specified sequence of bytes read from +self+,
- *             not disturbing the current offset.
+ *  - #pread:: Returns all or the next _n_ bytes read from +self+,
+ *             not updating the receiver's offset.
  *  - #read:: Returns the next _n_ bytes read from +self+ for a given _n_.
  *  - #read_nonblock:: the next _n_ bytes read from +self+ for a given _n_,
  *                     in non-block mode.
- *  - #readbyte:: Returns the next byte read from +self+.
- *  - #readchar:: Returns the next character read from +self+.
- *  - #readline:: Returns the next line read from +self+.
- *  - #readlines (aliased as #to_a):: Returns an array of all lines read read from +self+.
- *  - #readpartial:: Returns a specified number of bytes from +self.
+ *  - #readbyte:: Returns the next byte read from +self+;
+ *                same as #getbyte, but raises an exception on end-of-file.
+ *  - #readchar:: Returns the next character read from +self+;
+ *                same as #getc, but raises an exception on end-of-file.
+ *  - #readline:: Returns the next line read from +self+;
+ *                same as #getline, but raises an exceptin of end-of-file.
+ *  - #readlines:: Returns an array of all lines read read from +self+.
+ *  - #readpartial:: Returns up to the given number of bytes from +self+.
  *
  *  === Writing
  *
  *  - ::binwrite:: Writes the given string to the file at the given filepath,
                    in binary mode.
  *  - ::write:: Writes the given string to +self+.
- *  - ::<<:: Appends the given string to +self+.
- *  - #print:: Prints one or more objects to +self+.
- *  - #printf:: Formats and prints one or more objects to +self+.
+ *  - {::<<}[#method-i-3C-3C]:: Appends the given string to +self+.
+ *  - #print:: Prints last read line or given objects to +self+.
+ *  - #printf:: Writes to +self+ based on the given format string and objects.
  *  - #putc:: Writes a character to +self+.
- *  - #puts:: Writes lines to +self+.
+ *  - #puts:: Writes lines to +self+, making sure line ends with a newline.
  *  - #pwrite:: Writes the given string at the given offset,
- *              not updating the offset.
+ *              not updating the receiver's offset.
  *  - #write:: Writes one or more given strings to +self+.
  *  - #write_nonblock:: Writes one or more given strings to +self+ in non-blocking mode.
- *
- *  === Copying
- *
- *  - ::copy_stream:: Copies some or all data from src (filepath or \IO-like object)
- *                    to dst (filepath or \IO-like object).
  *
  *  === Positioning
  *
  *  - #lineno:: Returns the current line number in +self+.
  *  - #lineno=:: Sets the line number is +self+.
- *  - #pos:: Returns the current offset (bytes) in +self+.
- *  - #pos=:: Sets the offset (bytes) in +self+.
- *  - #reopen:: Reassociates +self+ with a new or existing I/O stream.
+ *  - #pos=:: Sets the byte offset in +self+.
+ *  - #reopen:: Reassociates +self+ with a new or existing \IO stream.
  *  - #rewind:: Positions +self+ to the beginning of input.
- *  - #seek:: Sets the offset for +self+.
- *  - #tell:: Returns the current offset (bytes).
+ *  - #seek:: Sets the offset for +self+ relative to given position.
+ *  - #pos (aliased as #tell):: Returns the current byte offset in +self+.
  *
  *  === Iterating
  *
- *  - ::foreach:: Calls the given block with each successive file line
- *                for the given filepath.
+ *  - ::foreach:: Yields each line of given file to the block.
  *  - #each (aliased as #each_line):: Calls the given block
  *                                    with each successive line in +self+.
- *  - #each_byte:: Calls the given block with each successive byte in +self+.
- *  - #each_char:: Calls the given block with each successive character in +self+.
- *  - #each_codepoint:: Calls the given block with each successive codepoint in +self+.
- *  - #each_line:: Calls the given block with each successive codepoint in +self+.
- *
- *  === Converting
- *
- *  - ::try_convert:: Returns the new \IO object resulting from converting
- *                    the given object.
- *  - #inspect:: Returns the string representation of +self+.
+ *  - #each_byte:: Calls the given block with each successive byte in +self+
+ *                 as an integer.
+ *  - #each_char:: Calls the given block with each successive character in +self+
+ *                 as a string.
+ *  - #each_codepoint:: Calls the given block with each successive codepoint in +self+
+ *                      as an integer.
  *
  *  === Settings
  *
@@ -13453,6 +13443,9 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  - #external_encoding:: Returns the external encoding object for +self+.
  *  - #fileno (aliased as #to_i):: Returns the integer file descriptor for +self+
  *  - #internal_encoding:: Returns the internal encoding object for +self+.
+ *  - #pid:: Returns the process ID of a child process associated with +self+,
+ *           if +self+ was created by ::popen.
+ *  - #stat:: Returns the File::Stat object containing status information for +self+.
  *  - #sync:: Returns whether +self+ is in sync-mode.
  *  - #tty (aliased as #isatty):: Returns whether +self+ is a terminal.
  *
@@ -13462,22 +13455,29 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  - #flush:: Flushes any buffered data within +self+ to the underlying
  *             operating system.
  *  - #fsync:: Immediately writes all buffered data and attributes in +self+ to disk.
- *  - #ungetbyte:: Pushes the given byte or string onto +self+.
+ *  - #ungetbyte:: Prepends buffer for +self+ with given integer byte or string.
  *  - #ungetc:: Prepends buffer for +self+ with given string.
  *
  *  === Low-Level Access
  *
  *  - ::sysopen:: Opens the file given by its path,
  *                returning the integer file descriptor.
+ *  - #advise:: Announces the intention to access data from +self+ in a specific way.
  *  - #fcntl:: Passes a low-level command to the file specified
  *             by the given file descriptor.
  *  - #ioctl:: Passes a low-level command to the device specified
  *             by the given file descriptor.
- *  - #pid:: Returns the process ID of a child process associated with +self+.
- *  - #stat:: Returns the File::Stat object containing status information for +self+.
- *  - #sysread:: Returns the next _n_ bytes read from +self+ for a given _n_.
+ *  - #sysread:: Returns up to the next _n_ bytes read from self using a low-level read.
  *  - #sysseek:: Sets the offset for +self+.
- *  - #syswrite:: Writes the given string to +self+ using a low-level write
+ *  - #syswrite:: Writes the given string to +self+ using a low-level write.
+ *
+ *  === Other
+ *
+ *  - ::copy_stream:: Copies data from a source to a destination,
+ *                    each of which is a filepath or an \IO-like object.
+ *  - ::try_convert:: Returns a new \IO object resulting from converting
+ *                    the given object.
+ *  - #inspect:: Returns the string representation of +self+.
  *
  */
 
