@@ -13364,7 +13364,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  *  - ::binread:: Returns a binary string with all or a subset of bytes
  *                from the given file.
- *  - ::read:: Returns a string with all or a subset of bytes from the given file.
+ *  - ::read:: Returns the next _n_ bytes read from +self+ for a given _n_. from the given file.
  *  - ::readlines:: Returns an array of strings, which are the lines from the given file.
  *  - #getbyte:: Returns the next 8-bit byte read from +self+ as an integer.
  *  - #getc:: Returns the next character read from +self+ as a string.
@@ -13402,11 +13402,11 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  *  - #lineno:: Returns the current line number in +self+.
  *  - #lineno=:: Sets the line number is +self+.
+ *  - #pos (aliased as #tell):: Returns the current byte offset in +self+.
  *  - #pos=:: Sets the byte offset in +self+.
  *  - #reopen:: Reassociates +self+ with a new or existing \IO stream.
  *  - #rewind:: Positions +self+ to the beginning of input.
  *  - #seek:: Sets the offset for +self+ relative to given position.
- *  - #pos (aliased as #tell):: Returns the current byte offset in +self+.
  *
  *  === Iterating
  *
