@@ -32,9 +32,8 @@ module Timeout
     def self.catch(*args)
       exc = new(*args)
       exc.instance_variable_set(:@thread, Thread.current)
-      catch_value = Object.new
-      exc.instance_variable_set(:@catch_value, catch_value)
-      ::Kernel.catch(catch_value) {yield exc}
+      exc.instance_variable_set(:@catch_value, exc)
+      ::Kernel.catch(exc) {yield exc}
     end
 
     def exception(*)
