@@ -13364,14 +13364,15 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  *  - ::binread:: Returns a binary string with all or a subset of bytes
  *                from the given file.
- *  - ::read:: Returns the next _n_ bytes read from +self+ for a given _n_. from the given file.
+ *  - ::read:: Returns a string with all or a subset of bytes from the given file.
  *  - ::readlines:: Returns an array of strings, which are the lines from the given file.
  *  - #getbyte:: Returns the next 8-bit byte read from +self+ as an integer.
  *  - #getc:: Returns the next character read from +self+ as a string.
  *  - #gets:: Returns the line read from +self+.
  *  - #pread:: Returns all or the next _n_ bytes read from +self+,
  *             not updating the receiver's offset.
- *  - #read:: Returns the next _n_ bytes read from +self+ for a given _n_.
+ *  - #read:: Returns all remaining or the next _n_ bytes read from +self+
+ *            for a given _n_.
  *  - #read_nonblock:: the next _n_ bytes read from +self+ for a given _n_,
  *                     in non-block mode.
  *  - #readbyte:: Returns the next byte read from +self+;
