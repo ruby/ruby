@@ -10,8 +10,14 @@
 #elif !defined BYTE_ORDER
   #include <endian.h>
 #endif
+#ifndef __LITTLE_ENDIAN
+#define __LITTLE_ENDIAN 1234
+#endif
 #ifndef LITTLE_ENDIAN
 #define LITTLE_ENDIAN __LITTLE_ENDIAN
+#endif
+#ifndef __BIG_ENDIAN
+#define __BIG_ENDIAN 4321
 #endif
 #ifndef BIG_ENDIAN
 #define BIG_ENDIAN __BIG_ENDIAN
