@@ -4371,15 +4371,34 @@ rb_io_readbyte(VALUE io)
  *     ios.ungetbyte(integer)  -> nil
  *
  *  Pushes back bytes (passed as a parameter) onto <em>ios</em>,
- *  such that a subsequent buffered read will return it. Only one byte
- *  may be pushed back before a subsequent read operation (that is,
- *  you will be able to read only the last of several bytes that have been pushed
- *  back). Has no effect with unbuffered reads (such as IO#sysread).
+ *  such that a subsequent buffered read will return it.
+ *  It is only guaranteed to support a single byte, and only if ungetbyte
+ *  or ungetc has not already been called on <em>ios</em> since the previous
+ *  read of at least a single byte from <em>ios</em>.
+ *  However, it can support additional bytes if there is space in the
+ *  internal buffer to allow for it.
  *
  *     f = File.new("testfile")   #=> #<File:testfile>
  *     b = f.getbyte              #=> 0x38
  *     f.ungetbyte(b)             #=> nil
  *     f.getbyte                  #=> 0x38
+ *
+ *  If given an integer, only uses the lower 8 bits of the integer as the byte
+ *  to push.
+ *
+ *     f = File.new("testfile")   #=> #<File:testfile>
+ *     f.ungetbyte(0x102)         #=> nil
+ *     f.getbyte                  #=> 0x2
+ *
+ *  Calling this method prepends to the existing buffer, even if the method
+ *  has already been called previously:
+ *
+ *     f = File.new("testfile")   #=> #<File:testfile>
+ *     f.ungetbyte("ab")          #=> nil
+ *     f.ungetbyte("cd")          #=> nil
+ *     f.read(5)                  #=> "cdab8"
+ *
+ *  Has no effect with unbuffered reads (such as IO#sysread).
  */
 
 VALUE
@@ -4407,18 +4426,34 @@ rb_io_ungetbyte(VALUE io, VALUE b)
 
 /*
  *  call-seq:
+ *     ios.ungetc(integer)  -> nil
  *     ios.ungetc(string)   -> nil
  *
- *  Pushes back one character (passed as a parameter) onto <em>ios</em>,
- *  such that a subsequent buffered character read will return it. Only one character
- *  may be pushed back before a subsequent read operation (that is,
- *  you will be able to read only the last of several characters that have been pushed
- *  back). Has no effect with unbuffered reads (such as IO#sysread).
+ *  Pushes back characters (passed as a parameter) onto <em>ios</em>,
+ *  such that a subsequent buffered read will return it.
+ *  It is only guaranteed to support a single byte, and only if ungetbyte
+ *  or ungetc has not already been called on <em>ios</em> since the previous
+ *  read of at least a single byte from <em>ios</em>.
+ *  However, it can support additional bytes if there is space in the
+ *  internal buffer to allow for it.
  *
  *     f = File.new("testfile")   #=> #<File:testfile>
  *     c = f.getc                 #=> "8"
  *     f.ungetc(c)                #=> nil
  *     f.getc                     #=> "8"
+ *
+ *  If given an integer, the integer must represent a valid codepoint in the
+ *  external encoding of <em>ios</em>.
+ *
+ *  Calling this method prepends to the existing buffer, even if the method
+ *  has already been called previously:
+ *
+ *     f = File.new("testfile")   #=> #<File:testfile>
+ *     f.ungetc("ab")             #=> nil
+ *     f.ungetc("cd")             #=> nil
+ *     f.read(5)                  #=> "cdab8"
+ *
+ *  Has no effect with unbuffered reads (such as IO#sysread).
  */
 
 VALUE
