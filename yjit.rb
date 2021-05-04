@@ -82,7 +82,7 @@ module YJIT
       $stderr.puts("Number of bindings allocated: %d\n" % counters[:binding_allocations])
       $stderr.puts("Number of locals modified through binding: %d\n" % counters[:binding_set])
 
-      print_counters(counters, prefix: 'oswb_', prompt: 'opt_send_without_block exit reasons: ')
+      print_counters(counters, prefix: 'send_', prompt: 'method call exit reasons: ')
       print_counters(counters, prefix: 'leave_', prompt: 'leave exit reasons: ')
       print_counters(counters, prefix: 'getivar_', prompt: 'getinstancevariable exit reasons:')
       print_counters(counters, prefix: 'setivar_', prompt: 'setinstancevariable exit reasons:')

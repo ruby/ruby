@@ -481,6 +481,7 @@ rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec)
 {
 #if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
     RB_VM_LOCK_ENTER();
+    // TODO: I think we need to stop all other ractors here
     VALUE *encoded = (VALUE *)iseq->body->iseq_encoded;
 
     // Compile a block version starting at the first instruction
