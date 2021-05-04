@@ -42,7 +42,7 @@
 #include <shlobj.h>
 #include <mbstring.h>
 #include <shlwapi.h>
-#if _MSC_VER >= 1400
+#if defined _MSC_VER && _MSC_VER >= 1400
 #include <crtdbg.h>
 #include <rtcapi.h>
 #endif
