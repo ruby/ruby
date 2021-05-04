@@ -5,11 +5,18 @@
   #define SIP_HASH_STREAMING 1
 #endif
 
-#ifdef _WIN32
+#if defined(__MINGW32__)
+  #include <sys/param.h>
+
+  /* MinGW only defines LITTLE_ENDIAN and BIG_ENDIAN macros */
+  #define __LITTLE_ENDIAN LITTLE_ENDIAN
+  #define __BIG_ENDIAN BIG_ENDIAN
+#elif defined(_WIN32)
   #define BYTE_ORDER __LITTLE_ENDIAN
-#elif !defined BYTE_ORDER
+#elif !defined(BYTE_ORDER)
   #include <endian.h>
 #endif
+
 #ifndef LITTLE_ENDIAN
 #define LITTLE_ENDIAN __LITTLE_ENDIAN
 #endif
