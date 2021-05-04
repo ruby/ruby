@@ -546,6 +546,17 @@ ruby_init_stack(volatile VALUE *addr)
 #define CHECK_ERR(expr) \
     {if (!(expr)) {rb_bug("err: %lu - %s", GetLastError(), #expr);}}
 
+COMPILER_WARNING_PUSH
+#if defined(__GNUC__)
+COMPILER_WARNING_IGNORED(-Wmaybe-uninitialized)
+#endif
+static inline SIZE_T
+query_memory_basic_info(PMEMORY_BASIC_INFORMATION mi)
+{
+    return VirtualQuery(mi, mi, sizeof(*mi));
+}
+COMPILER_WARNING_POP
+
 static void
 native_thread_init_stack(rb_thread_t *th)
 {
@@ -553,7 +564,7 @@ native_thread_init_stack(rb_thread_t *th)
     char *base, *end;
     DWORD size, space;
 
-    CHECK_ERR(VirtualQuery(&mi, &mi, sizeof(mi)));
+    CHECK_ERR(query_memory_basic_info(&mi));
     base = mi.AllocationBase;
     end = mi.BaseAddress;
     end += mi.RegionSize;
