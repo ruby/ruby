@@ -354,14 +354,16 @@ ary_heap_free(VALUE ary)
     }
 }
 
-static void
+static size_t
 ary_heap_realloc(VALUE ary, size_t new_capa)
 {
+    size_t alloc_capa = new_capa;
     size_t old_capa = ARY_HEAP_CAPA(ary);
 
     if (RARRAY_TRANSIENT_P(ary)) {
         if (new_capa <= old_capa) {
             /* do nothing */
+            alloc_capa = old_capa;
         }
         else {
             VALUE *new_ptr = rb_transient_heap_alloc(ary, sizeof(VALUE) * new_capa);
@@ -379,6 +381,8 @@ ary_heap_realloc(VALUE ary, size_t new_capa)
         SIZED_REALLOC_N(RARRAY(ary)->as.heap.ptr, VALUE, new_capa, old_capa);
     }
     ary_verify(ary);
+
+    return alloc_capa;
 }
 
 #if USE_TRANSIENT_HEAP
@@ -443,6 +447,7 @@ ary_resize_capa(VALUE ary, long capacity)
     assert(!ARY_SHARED_P(ary));
 
     if (capacity > RARRAY_EMBED_LEN_MAX) {
+        size_t new_capa = capacity;
         if (ARY_EMBED_P(ary)) {
             long len = ARY_EMBED_LEN(ary);
             VALUE *ptr = ary_heap_alloc(ary, capacity);
@@ -453,9 +458,9 @@ ary_resize_capa(VALUE ary, long capacity)
             ARY_SET_HEAP_LEN(ary, len);
         }
         else {
-            ary_heap_realloc(ary, capacity);
+            new_capa = ary_heap_realloc(ary, capacity);
         }
-        ARY_SET_CAPA(ary, capacity);
+        ARY_SET_CAPA(ary, new_capa);
     }
     else {
         if (!ARY_EMBED_P(ary)) {
@@ -2267,8 +2272,8 @@ rb_ary_resize(VALUE ary, long len)
     }
     else {
 	if (olen > len + ARY_DEFAULT_SIZE) {
-            ary_heap_realloc(ary, len);
-	    ARY_SET_CAPA(ary, len);
+            size_t new_capa = ary_heap_realloc(ary, len);
+            ARY_SET_CAPA(ary, new_capa);
 	}
 	ARY_SET_HEAP_LEN(ary, len);
     }
