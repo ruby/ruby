@@ -280,6 +280,7 @@ class IMAPTest < Test::Unit::TestCase
       sock = server.accept
       begin
         sock.print("* OK test server\r\n")
+        sleep 0.1
       ensure
         sock.close
         server.close
