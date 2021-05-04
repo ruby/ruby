@@ -1,0 +1,3 @@
+- +zone+: a timezone _zone_, which may be:
+  :include: doc/time/zone_list.rdoc
+- <tt>in: zone</tt>: a timezone _zone_, as above.

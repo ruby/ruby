@@ -3418,16 +3418,15 @@ time_s_mktime(int argc, VALUE *argv, VALUE klass)
 
 /*
  *  call-seq:
- *     time.to_i   -> int
- *     time.tv_sec -> int
+ *    to_i -> integer
  *
- *  Returns the value of _time_ as an integer number of seconds
+ *  Returns the value of +self+ as an integer number of seconds
  *  since the Epoch.
  *
- *  If _time_ contains subsecond, they are truncated.
+ *     t = Time.now # => 2021-04-30 01:56:44.0893628 +0400
+ *     t.to_i       # => 1619803734
  *
- *     t = Time.now        #=> 2020-07-21 01:41:29.746012609 +0900
- *     t.to_i              #=> 1595263289
+ *  Related: #usec (microseconds), #nsec (nanoseconds).
  */
 
 static VALUE
@@ -3441,26 +3440,22 @@ time_to_i(VALUE time)
 
 /*
  *  call-seq:
- *     time.to_f -> float
+ *    to_f -> float
  *
- *  Returns the value of _time_ as a floating point number of
- *  seconds since the Epoch.
- *  The return value approximate the exact value in the Time object
- *  because floating point numbers cannot represent all rational numbers
- *  exactly.
+ *  Returns the value of +self+ as a floating-point number of
+ *  seconds since the Epoch:
  *
- *     t = Time.now        #=> 2020-07-20 22:00:29.38740268 +0900
- *     t.to_f              #=> 1595250029.3874028
- *     t.to_i              #=> 1595250029
+ *    Time.now # => 2021-04-30 01:56:44.0893628 +0400
  *
- *  Note that IEEE 754 double is not accurate enough to represent
- *  the exact number of nanoseconds since the Epoch.
- *  (IEEE 754 double has 53bit mantissa.
- *  So it can represent exact number of nanoseconds only in
- *  `2 ** 53 / 1_000_000_000 / 60 / 60 / 24 = 104.2` days.)
- *  When Ruby uses a nanosecond-resolution clock function,
- *  such as +clock_gettime+ of POSIX, to obtain the current time,
- *  Time#to_f can lost information of a Time object created with +Time.now+.
+ *  The returned value may approximate the exact \Time value
+ *  because the stored rational value may not be representable
+ *  as an exact floating-point value.
+ *
+ *     t = Time.now # => 2021-04-30 01:56:44.0893628 +0400
+ *     t.to_f       # => 1619803734.6883106
+ *     t.to_i       # => 1619803734
+ *
+ *  Related: #to_r (exact representation).
  */
 
 static VALUE
@@ -3474,16 +3469,16 @@ time_to_f(VALUE time)
 
 /*
  *  call-seq:
- *     time.to_r -> a_rational
+ *    to_r -> rational
  *
- *  Returns the value of _time_ as a rational number of seconds
+ *  Returns the value of +self+ as a rational number of seconds
  *  since the Epoch.
  *
  *     t = Time.now      #=> 2020-07-20 22:03:45.212167333 +0900
  *     t.to_r            #=> (1595250225212167333/1000000000)
  *
- *  This method is intended to be used to get an accurate value
- *  representing the seconds (including subsecond) since the Epoch.
+ *  The returned value is exact, while the value returned by #to_f may not be exact.
+ *
  */
 
 static VALUE
@@ -3596,25 +3591,16 @@ time_subsec(VALUE time)
  *  call-seq:
  *     time <=> other_time -> -1, 0, +1, or nil
  *
- *  Compares +time+ with +other_time+.
+ *  Returns -1, 0, or +1 depending on whether +self+ is less than, equal to, or
+ *  greater than +other_time+; returns +nil+ if the two times are incomparable:
  *
- *  -1, 0, +1 or nil depending on whether +time+ is less than, equal to, or
- *  greater than +other_time+.
+ *    t0 = Time.now # => 2021-04-30 12:49:50.2160181 -0500
+ *    t1 = Time.now # => 2021-04-30 12:49:55.1221073 -0500
+ *    t0 <=> t1     # => -1
+ *    t0 <=> t0     # => 0
+ *    t1 <=> t0     # => 1
+ *    t0 <=> 'foo'  # => nil
  *
- *  +nil+ is returned if the two values are incomparable.
- *
- *     t = Time.now       #=> 2007-11-19 08:12:12 -0600
- *     t2 = t + 2592000   #=> 2007-12-19 08:12:12 -0600
- *     t <=> t2           #=> -1
- *     t2 <=> t           #=> 1
- *
- *     t = Time.now       #=> 2007-11-19 08:13:38 -0600
- *     t2 = t + 0.1       #=> 2007-11-19 08:13:38 -0600
- *     t.nsec             #=> 98222999
- *     t2.nsec            #=> 198222999
- *     t <=> t2           #=> -1
- *     t2 <=> t           #=> 1
- *     t <=> t            #=> 0
  */
 
 static VALUE
@@ -3638,10 +3624,16 @@ time_cmp(VALUE time1, VALUE time2)
 
 /*
  * call-seq:
- *  time.eql?(other_time)
+ *   time.eql?(other_time) -> true or false
  *
- * Returns +true+ if _time_ and +other_time+ are
- * both Time objects with the same seconds (including subsecond) from the Epoch.
+ * Returns +true+ if +self+ and +other_time+ are
+ * both \Time objects with the exact same value:
+ *
+ *   t0 = Time.now  # => 2021-04-30 12:57:20.9181302 -0500
+ *   t1 = Time.now  # => 2021-04-30 12:57:35.1823085 -0500
+ *   t0.eql?(t0)    # => true
+ *   t0.eql?(t1)    # => false
+ *   t0.eql?('foo') # => false
  */
 
 static VALUE
@@ -3687,11 +3679,13 @@ time_utc_p(VALUE time)
 
 /*
  * call-seq:
- *   time.hash   -> integer
+ *   hash -> integer
  *
- * Returns a hash code for this Time object.
+ * Returns the integer hash value for +self+:
  *
- * See also Object#hash.
+ *   Time.now.hash # => 243709390
+ *
+ * Related: Object#hash.
  */
 
 static VALUE
@@ -3777,25 +3771,32 @@ time_zonelocal(VALUE time, VALUE off)
 
 /*
  *  call-seq:
- *     time.localtime -> time
- *     time.localtime(utc_offset) -> time
+ *    localtime(zone = nil) -> self
  *
- *  Converts _time_ to local time (using the local time zone in
- *  effect at the creation time of _time_) modifying the receiver.
+ *  Modifies +self+ by changing it to local time in the given timezone,
+ *  if not already so.
  *
- *  If +utc_offset+ is given, it is used instead of the local time.
+ *  With no argument, changes +self+ to the local time zone in effect when created:
  *
- *     t = Time.utc(2000, "jan", 1, 20, 15, 1) #=> 2000-01-01 20:15:01 UTC
- *     t.utc?                                  #=> true
+ *    t = Time.utc(2021)    # => 2021-01-01 00:00:00 UTC
+ *    t.utc?                # => true
+ *    t.localtime           # => 2020-12-31 18:00:00 -0600
+ *    t.utc?                # => false
  *
- *     t.localtime                             #=> 2000-01-01 14:15:01 -0600
- *     t.utc?                                  #=> false
+ *  With argument +zone+, changes +self+ to the given +zone+:
  *
- *     t.localtime("+09:00")                   #=> 2000-01-02 05:15:01 +0900
- *     t.utc?                                  #=> false
+ *    t.localtime('+04:00') # => 2021-01-01 04:00:00 +0400
+ *    t.localtime('X')      # => 2020-12-31 13:00:00 -1100
  *
- *  If +utc_offset+ is not given and _time_ is local time, just returns
- *  the receiver.
+ *  Parameter +zone+ may be:
+ *  - A string offset from UTC.
+ *  - A single letter offset from UTC, in the range <tt>'A'..'Z'</tt>,
+ *    <tt>'J'</tt> (the so-called military timezone) excluded.
+ *  - An integer number of seconds.
+ *  - A timezone object;
+ *    see {Timezone Argument}[#class-Time-label-Timezone+Argument] for details.
+ *
+ *  Related: #utc.
  */
 
 static VALUE
@@ -3812,20 +3813,16 @@ time_localtime_m(int argc, VALUE *argv, VALUE time)
 
 /*
  *  call-seq:
- *     time.gmtime    -> time
- *     time.utc       -> time
+ *    utc -> time
  *
- *  Converts _time_ to UTC (GMT), modifying the receiver.
+ *  Modifies +self+ by changing it to UTC, if not already so.
  *
- *     t = Time.now   #=> 2007-11-19 08:18:31 -0600
- *     t.gmt?         #=> false
- *     t.gmtime       #=> 2007-11-19 14:18:31 UTC
- *     t.gmt?         #=> true
+ *    t = Time.now # => 2021-05-01 08:46:52.3564389 -0500
+ *    t.utc?       # => false
+ *    t.utc        # => 2021-05-01 13:46:52.3564389 UTC
+ *    t.utc?       # => true
  *
- *     t = Time.now   #=> 2007-11-19 08:18:51 -0600
- *     t.utc?         #=> false
- *     t.utc          #=> 2007-11-19 14:18:51 UTC
- *     t.utc?         #=> true
+ *  Related: #localtime.
  */
 
 static VALUE
@@ -3887,31 +3884,28 @@ time_fixoff(VALUE time)
 
 /*
  *  call-seq:
- *     time.getlocal -> new_time
- *     time.getlocal(utc_offset) -> new_time
- *     time.getlocal(timezone) -> new_time
+ *    getlocal(zone = nil) -> new_time
  *
- *  Returns a new Time object representing _time_ in
- *  local time (using the local time zone in effect for this process).
+ *  Returns a new \Time object representing +self+ in local time.
  *
- *  If +utc_offset+ is given, it is used instead of the local time.
- *  +utc_offset+ can be given as a human-readable string (eg. <code>"+09:00"</code>)
- *  or as a number of seconds (eg. <code>32400</code>).
+ *  With no argument, sets the returned time to the local time zone
+ *  in effect when +self+ was created:
  *
- *     t = Time.utc(2000,1,1,20,15,1)  #=> 2000-01-01 20:15:01 UTC
- *     t.utc?                          #=> true
+ *    t = Time.utc(2021)   # => 2021-01-01 00:00:00 UTC
+ *    t.getlocal           # => 2020-12-31 18:00:00 -0600
  *
- *     l = t.getlocal                  #=> 2000-01-01 14:15:01 -0600
- *     l.utc?                          #=> false
- *     t == l                          #=> true
+ *  With argument +zone+, sets the returned time to the given +zone+:
  *
- *     j = t.getlocal("+09:00")        #=> 2000-01-02 05:15:01 +0900
- *     j.utc?                          #=> false
- *     t == j                          #=> true
+ *    t.getlocal('+04:00') # => 2021-01-01 04:00:00 +0400
+ *    t.getlocal('X')      # => 2020-12-31 13:00:00 -1100
  *
- *     k = t.getlocal(9*60*60)         #=> 2000-01-02 05:15:01 +0900
- *     k.utc?                          #=> false
- *     t == k                          #=> true
+ *  Parameter +zone+ may be:
+ *  - A string offset from UTC.
+ *  - A single letter offset from UTC, in the range <tt>'A'..'Z'</tt>,
+ *    <tt>'J'</tt> (the so-called military timezone) excluded.
+ *  - An integer number of seconds.
+ *  - A timezone object;
+ *    see {Timezone Argument}[#class-Time-label-Timezone+Argument] for details.
  */
 
 static VALUE
@@ -3947,16 +3941,13 @@ time_getlocaltime(int argc, VALUE *argv, VALUE time)
 
 /*
  *  call-seq:
- *     time.getgm  -> new_time
- *     time.getutc -> new_time
+ *    getutc -> new_time
  *
- *  Returns a new Time object representing _time_ in UTC.
+ *  Returns a new \Time object representing +self+ in UTC:
  *
- *     t = Time.local(2000,1,1,20,15,1)   #=> 2000-01-01 20:15:01 -0600
- *     t.gmt?                             #=> false
- *     y = t.getgm                        #=> 2000-01-02 02:15:01 UTC
- *     y.gmt?                             #=> true
- *     t == y                             #=> true
+ *    t0 = Time.now  # => 2021-05-01 09:11:08.1867409 -0500
+ *    t1 = t0.getutc # => 2021-05-01 14:11:08.1867409 UTC
+ *    t1 == t0       # => true
  */
 
 static VALUE
@@ -5703,7 +5694,7 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
  *  - ::local (aliased as ::mktime): Same as ::new, except the
  *    timezone is the local timezone.
  *  - ::utc (aliased as ::gm): Same as ::new, except the timezone is UTC.
- *  - ::at: Returns a new time based on seconds since epoch.
+ *  - ::at: Returns a new time based on seconds since the Epoch.
  *  - ::now: Returns a new time based on the current system time.
  *  - #+ (plus): Returns a new time increased by the given number of seconds.
  *  - {-}[#method-i-2D] (minus): Returns a new time
@@ -5727,10 +5718,10 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
  *  - #hash: Returns the integer hash value for the time.
  *  - #utc_offset (aliased as #gmt_offset and #gmtoff): Returns the offset
  *    in seconds between time and UTC.
- *  - #to_f: Returns the float number of seconds since epoch for the time.
- *  - #to_i (aliased as #tv_sec): Returns the integer number of seconds since epoch
- *    for the time.
- *  - #to_r: Returns the Rational number of seconds since epoch for the time.
+ *  - #to_f: Returns the float number of seconds since the Epoch for the time.
+ *  - #to_i (aliased as #tv_sec): Returns the integer number of seconds
+ *    since the Epoch for the time.
+ *  - #to_r: Returns the Rational number of seconds since the Epoch for the time.
  *  - #zone: Returns a string representation of the timezone of the time.
  *
  *  === Methods for Querying
@@ -5841,6 +5832,7 @@ Init_Time(void)
     rb_define_alias(rb_singleton_class(rb_cTime), "mktime", "local");
 
     rb_define_method(rb_cTime, "to_i", time_to_i, 0);
+    rb_define_alias(rb_cTime, "tv_sec", "to_i");
     rb_define_method(rb_cTime, "to_f", time_to_f, 0);
     rb_define_method(rb_cTime, "to_r", time_to_r, 0);
     rb_define_method(rb_cTime, "<=>", time_cmp, 1);
@@ -5849,11 +5841,11 @@ Init_Time(void)
     rb_define_method(rb_cTime, "initialize_copy", time_init_copy, 1);
 
     rb_define_method(rb_cTime, "localtime", time_localtime_m, -1);
-    rb_define_method(rb_cTime, "gmtime", time_gmtime, 0);
     rb_define_method(rb_cTime, "utc", time_gmtime, 0);
+    rb_define_alias(rb_cTime, "gmtime", "utc");
     rb_define_method(rb_cTime, "getlocal", time_getlocaltime, -1);
-    rb_define_method(rb_cTime, "getgm", time_getgmtime, 0);
     rb_define_method(rb_cTime, "getutc", time_getgmtime, 0);
+    rb_define_alias(rb_cTime, "getgm", "getutc");
 
     rb_define_method(rb_cTime, "ctime", time_asctime, 0);
     rb_define_method(rb_cTime, "asctime", time_asctime, 0);
@@ -5896,7 +5888,6 @@ Init_Time(void)
     rb_define_method(rb_cTime, "friday?", time_friday, 0);
     rb_define_method(rb_cTime, "saturday?", time_saturday, 0);
 
-    rb_define_method(rb_cTime, "tv_sec", time_to_i, 0);
     rb_define_method(rb_cTime, "tv_usec", time_usec, 0);
     rb_define_method(rb_cTime, "usec", time_usec, 0);
     rb_define_method(rb_cTime, "tv_nsec", time_nsec, 0);
