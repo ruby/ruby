@@ -590,7 +590,7 @@ ruby_init_stack(volatile VALUE *addr)
     {if (!(expr)) {rb_bug("err: %lu - %s", GetLastError(), #expr);}}
 
 COMPILER_WARNING_PUSH
-#if defined(__GNUC__)
+#if __has_warning("-Wmaybe-uninitialized") || RBIMPL_COMPILER_IS(GCC)
 COMPILER_WARNING_IGNORED(-Wmaybe-uninitialized)
 #endif
 static inline SIZE_T
