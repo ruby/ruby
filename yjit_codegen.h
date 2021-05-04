@@ -20,6 +20,9 @@ typedef struct JITState
     // Index of the current instruction being compiled
     uint32_t insn_idx;
 
+    // Opcode for the instruction being compiled
+    int opcode;
+
     // PC of the instruction being compiled
     VALUE *pc;
 

@@ -799,3 +799,27 @@ assert_equal 'raised', %q{
     :raised
   end
 }
+
+# test calling Ruby method with a block
+assert_equal '[1, 2, 42]', %q{
+def thing(a, b)
+  [a, b, yield]
+end
+
+def use
+  thing(1,2) { 42 }
+end
+
+use
+use
+}
+
+# test calling C method with a block
+assert_equal '[42, 42]', %q{
+def use(array, initial)
+  array.reduce(initial) { |a, b| a + b }
+end
+
+use([], 0)
+[use([2, 2], 38), use([14, 14, 14], 0)]
+}
