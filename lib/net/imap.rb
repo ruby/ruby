@@ -24,6 +24,7 @@ end
 
 require_relative "imap/command_data"
 require_relative "imap/data_encoding"
+require_relative "imap/flags"
 require_relative "imap/response_data"
 require_relative "imap/response_parser"
 
@@ -238,43 +239,6 @@ module Net
     # The thread to receive exceptions.
     attr_accessor :client_thread
 
-    # Flag indicating a message has been seen.
-    SEEN = :Seen
-
-    # Flag indicating a message has been answered.
-    ANSWERED = :Answered
-
-    # Flag indicating a message has been flagged for special or urgent
-    # attention.
-    FLAGGED = :Flagged
-
-    # Flag indicating a message has been marked for deletion.  This
-    # will occur when the mailbox is closed or expunged.
-    DELETED = :Deleted
-
-    # Flag indicating a message is only a draft or work-in-progress version.
-    DRAFT = :Draft
-
-    # Flag indicating that the message is "recent," meaning that this
-    # session is the first session in which the client has been notified
-    # of this message.
-    RECENT = :Recent
-
-    # Flag indicating that a mailbox context name cannot contain
-    # children.
-    NOINFERIORS = :Noinferiors
-
-    # Flag indicating that a mailbox is not selected.
-    NOSELECT = :Noselect
-
-    # Flag indicating that a mailbox has been marked "interesting" by
-    # the server; this commonly indicates that the mailbox contains
-    # new messages.
-    MARKED = :Marked
-
-    # Flag indicating that the mailbox does not contains new messages.
-    UNMARKED = :Unmarked
-
     # Returns the debug mode.
     def self.debug
       return @@debug
@@ -283,16 +247,6 @@ module Net
     # Sets the debug mode.
     def self.debug=(val)
       return @@debug = val
-    end
-
-    # Returns the max number of flags interned to symbols.
-    def self.max_flag_count
-      return @@max_flag_count
-    end
-
-    # Sets the max number of flags interned to symbols.
-    def self.max_flag_count=(count)
-      @@max_flag_count = count
     end
 
     # The default port for IMAP connections, port 143
@@ -1062,7 +1016,6 @@ module Net
     SSL_PORT = 993   # :nodoc:
 
     @@debug = false
-    @@max_flag_count = 10000
 
     # :call-seq:
     #    Net::IMAP.new(host, options = {})
