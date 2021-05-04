@@ -322,7 +322,7 @@ native_sleep(rb_thread_t *th, rb_hrtime_t *rel)
 void
 rb_native_mutex_lock(rb_nativethread_lock_t *lock)
 {
-#if USE_WIN32_MUTEX
+#ifdef USE_WIN32_MUTEX
     w32_mutex_lock(lock->mutex, false);
 #else
     EnterCriticalSection(&lock->crit);
@@ -332,7 +332,7 @@ rb_native_mutex_lock(rb_nativethread_lock_t *lock)
 int
 rb_native_mutex_trylock(rb_nativethread_lock_t *lock)
 {
-#if USE_WIN32_MUTEX
+#ifdef USE_WIN32_MUTEX
     return w32_mutex_lock(lock->mutex, true);
 #else
     return TryEnterCriticalSection(&lock->crit) == 0 ? EBUSY : 0;
@@ -342,7 +342,7 @@ rb_native_mutex_trylock(rb_nativethread_lock_t *lock)
 void
 rb_native_mutex_unlock(rb_nativethread_lock_t *lock)
 {
-#if USE_WIN32_MUTEX
+#ifdef USE_WIN32_MUTEX
     thread_debug("release mutex: %p\n", lock->mutex);
     ReleaseMutex(lock->mutex);
 #else
@@ -353,7 +353,7 @@ rb_native_mutex_unlock(rb_nativethread_lock_t *lock)
 void
 rb_native_mutex_initialize(rb_nativethread_lock_t *lock)
 {
-#if USE_WIN32_MUTEX
+#ifdef USE_WIN32_MUTEX
     lock->mutex = w32_mutex_create();
     /* thread_debug("initialize mutex: %p\n", lock->mutex); */
 #else
@@ -364,7 +364,7 @@ rb_native_mutex_initialize(rb_nativethread_lock_t *lock)
 void
 rb_native_mutex_destroy(rb_nativethread_lock_t *lock)
 {
-#if USE_WIN32_MUTEX
+#ifdef USE_WIN32_MUTEX
     w32_close_handle(lock->mutex);
 #else
     DeleteCriticalSection(&lock->crit);
