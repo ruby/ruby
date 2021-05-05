@@ -534,9 +534,9 @@ fill_random_bytes_syscall(void *seed, size_t size, int unused)
 static int
 fill_random_bytes_syscall(void *buf, size_t size, int unused)
 {
-#if (defined(__OpenBSD__) && OpenBSD >= 201411) || \
-    (defined(__NetBSD__)  && __NetBSD_Version__ >= 700000000) || \
-    (defined(__FreeBSD__) && __FreeBSD_version >= 1200079)
+#if (defined(__OpenBSD__) && defined(OpenBSD) && OpenBSD >= 201411) || \
+    (defined(__NetBSD__)  && defined(__NetBSD_Version__) && __NetBSD_Version__ >= 700000000) || \
+    (defined(__FreeBSD__) && defined(__FreeBSD_version) && __FreeBSD_version >= 1200079)
     arc4random_buf(buf, size);
     return 0;
 #else
