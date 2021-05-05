@@ -2726,6 +2726,24 @@ main(int argc, char *argv[])
 	rb_cv_fork_with_pthread=yes)])
     test x$rb_cv_fork_with_pthread = xyes || AC_DEFINE(CANNOT_FORK_WITH_PTHREAD)
 ])
+
+AS_IF([test "x$ac_cv_func_mmap" = xyes], [
+    malloc_headers=`sed -n '/MALLOC_HEADERS_BEGIN/,/MALLOC_HEADERS_END/p' ${srcdir}/gc.c`
+    AC_CACHE_CHECK([PAGE_SIZE is defined], rb_cv_page_size,
+        [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[${malloc_headers}
+            typedef char conftest_page[PAGE_SIZE];
+        ]], [[]])],
+        [rb_cv_page_size=const],
+        [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[${malloc_headers}]], [[
+            int page_size = (int)PAGE_SIZE;
+            (void)page_size;
+        ]])],
+        [rb_cv_page_size=variable], [rb_cv_page_size=no])])])
+    AS_CASE([$rb_cv_page_size],
+    [const], [AC_DEFINE(USE_MMAP_ALIGNED_ALLOC, [(PAGE_SIZE <= HEAP_PAGE_SIZE)])],
+    [no], [AC_DEFINE(USE_MMAP_ALIGNED_ALLOC, 1)],
+    )
+], [AC_DEFINE(USE_MMAP_ALIGNED_ALLOC, 0)])
 }
 
 : "runtime section" && {
