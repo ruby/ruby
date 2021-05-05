@@ -3126,6 +3126,12 @@ aliased_callable_method_entry(const rb_callable_method_entry_t *me)
     return cme;
 }
 
+const rb_callable_method_entry_t *
+rb_aliased_callable_method_entry(const rb_callable_method_entry_t *me)
+{
+    return aliased_callable_method_entry(me);
+}
+
 static VALUE
 vm_call_alias(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
