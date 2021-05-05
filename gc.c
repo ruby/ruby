@@ -834,7 +834,11 @@ enum {
 #define HEAP_PAGE_SIZE HEAP_PAGE_ALIGN
 #ifdef USE_MMAP_ALIGNED_ALLOC
 # define Init_use_mmap_aligned_alloc() (void)0
+#elif !defined(HAVE_MMAP)
+# define USE_MMAP_ALIGNED_ALLOC 0
+# define Init_use_mmap_aligned_alloc() (void)0
 #elif defined(PAGE_MAX_SIZE) && (PAGE_MAX_SIZE <= HEAP_PAGE_SIZE)
+/* PAGE_SIZE <= HEAP_PAGE_SIZE */
 # define USE_MMAP_ALIGNED_ALLOC 1
 # define Init_use_mmap_aligned_alloc() (void)0
 #else
