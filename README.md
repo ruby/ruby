@@ -57,6 +57,8 @@ make -j16 test-all
 
 ## Usage
 
+### Examples
+
 Once YJIT is built, you can either use `./miniruby` from within your build directory, or switch to the YJIT version of `ruby`
 by using the `chruby` tool:
 
@@ -72,6 +74,17 @@ You can dump statistics about compilation and execution by running YJIT with the
 ```
 
 The machine code generated for a given method can be printed by adding `puts YJIT.disasm(method(:method_name))` to a Ruby script. Note that no code will be generated if the method is not compiled.
+
+
+### Options
+
+YJIT supports all command-line options supported by upstream CRuby, but also adds a few YJIT-specific options:
+
+ - `--disable-yjit`: turn off YJIT (enabled by default)
+ - `--yjit-stats`: produce statistics after the execution of a program (must compile with `cppflags=-DRUBY_DEBUG` to use this)
+ - `--yjit-call-threshold=N`: number of calls after which YJIT begins to compile a function (default 2)
+ - `--yjit-version-limit=N`: maximum number of versions to generate per basic block (default 4)
+ - `--yjit-greedy-versioning`: greedy versioning mode (disabled by default, may increase code size)
 
 ## Benchmarking
 
