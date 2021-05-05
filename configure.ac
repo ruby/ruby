@@ -627,7 +627,6 @@ AS_CASE(["$GCC:${warnflags+set}:${extra_warnflags:+set}:"],
 		 -Werror=pointer-arith \
 		 -Werror=shorten-64-to-32 \
 		 -Werror=write-strings \
-		 -Werror=undef \
 		 -Wimplicit-fallthrough=0 \
 		 -Wmissing-noreturn \
 		 -Wno-cast-function-type \
@@ -663,6 +662,18 @@ AS_CASE(["$GCC:${warnflags+set}:${extra_warnflags:+set}:"],
 	    ])
 	])
     done
+    AS_IF([test "$particular_werror_flags" = "yes"], [
+	wflag=-Werror=undef
+    ], [
+	wflag=-Wundef
+    ])
+    RUBY_TRY_CFLAGS($wflag, [
+	RUBY_APPEND_OPTIONS(warnflags, $wflag)
+    ], [], [
+	@%:@if !defined(RUBY_CONFIG_TEST_NEVER_DEFINED_SYMBOL)
+	@%:@elif RUBY_CONFIG_TEST_NEVER_DEFINED_SYMBOL
+	@%:@endif
+    ])
     AS_CASE([" $warnflags "],[*" -Wno-missing-field-initializers "*], [wflag="-Wall -Wextra"],
                              [wflag=-Wall])
     RUBY_TRY_CFLAGS($wflag, [warnflags="$wflag${warnflags+ $warnflags}"])
