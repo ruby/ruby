@@ -32,7 +32,6 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-/* MALLOC_HEADERS_BEGIN */
 #ifndef HAVE_MALLOC_USABLE_SIZE
 # ifdef _WIN32
 #  define HAVE_MALLOC_USABLE_SIZE
@@ -54,7 +53,6 @@
 #  include <malloc/malloc.h>
 # endif
 #endif
-/* MALLOC_HEADERS_END */
 
 #ifdef HAVE_SYS_TIME_H
 # include <sys/time.h>
@@ -72,6 +70,10 @@
 #endif
 
 #include <sys/types.h>
+
+#ifdef HAVE_SYS_USER_H
+# include <sys/user.h>
+#endif
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -832,23 +834,17 @@ enum {
 };
 #define HEAP_PAGE_ALIGN (1 << HEAP_PAGE_ALIGN_LOG)
 #define HEAP_PAGE_SIZE HEAP_PAGE_ALIGN
-#ifdef USE_MMAP_ALIGNED_ALLOC
-# define Init_use_mmap_aligned_alloc() (void)0
-#elif !defined(HAVE_MMAP)
-# define USE_MMAP_ALIGNED_ALLOC 0
-# define Init_use_mmap_aligned_alloc() (void)0
-#elif defined(PAGE_MAX_SIZE) && (PAGE_MAX_SIZE <= HEAP_PAGE_SIZE)
-/* PAGE_SIZE <= HEAP_PAGE_SIZE */
-# define USE_MMAP_ALIGNED_ALLOC 1
-# define Init_use_mmap_aligned_alloc() (void)0
-#else
-# define USE_MMAP_ALIGNED_ALLOC (use_mmap_aligned_alloc != false)
+
+#if defined(HAVE_MMAP) && defined(PAGE_SIZE)
+# if HAVE_CONST_PAGE_SIZE
+#  define USE_MMAP_ALIGNED_ALLOC (PAGE_SIZE <= HEAP_PAGE_SIZE)
+# else
+#  define USE_MMAP_ALIGNED_ALLOC (use_mmap_aligned_alloc != false)
+
 static bool use_mmap_aligned_alloc;
-static inline void
-Init_use_mmap_aligned_alloc(void)
-{
-    use_mmap_aligned_alloc = (PAGE_SIZE <= HEAP_PAGE_SIZE);
-}
+# endif
+#else
+# define USE_MMAP_ALIGNED_ALLOC 0
 #endif
 
 struct heap_page {
@@ -3212,7 +3208,10 @@ Init_heap(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
 
-    Init_use_mmap_aligned_alloc();
+#if defined(HAVE_MMAP) && defined(PAGE_SIZE) && !HAVE_CONST_PAGE_SIZE
+    use_mmap_aligned_alloc = PAGE_SIZE <= HEAP_PAGE_SIZE;
+#endif
+
 #if defined(HAVE_SYSCONF) && defined(_SC_PAGE_SIZE)
     /* If Ruby's heap pages are not a multiple of the system page size, we
      * cannot use mprotect for the read barrier, so we must disable automatic
