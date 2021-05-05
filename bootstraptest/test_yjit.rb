@@ -130,6 +130,52 @@ assert_normal_exit %q{
   foo()
 }
 
+# Method aliasing
+assert_equal '42', %q{
+  class Foo
+    def method_a
+      42
+    end
+
+    alias method_b method_a
+
+    def method_a
+        :somethingelse
+    end
+  end
+
+  @obj = Foo.new
+
+  def test
+    @obj.method_b
+  end
+
+  test
+  test
+}
+
+# Method aliasing with method from parent class
+assert_equal '777', %q{
+  class A
+    def method_a
+      777
+    end
+  end
+
+  class B < A
+    alias method_b method_a
+  end
+
+  @obj = B.new
+
+  def test
+    @obj.method_b
+  end
+
+  test
+  test
+}
+
 # The hash method is a C function and uses the self argument
 assert_equal 'true', %q{
     def lehashself

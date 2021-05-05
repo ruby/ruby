@@ -2093,6 +2093,9 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
     return true;
 }
 
+const rb_callable_method_entry_t *
+rb_aliased_callable_method_entry(const rb_callable_method_entry_t *me);
+
 static codegen_status_t
 gen_send_general(jitstate_t *jit, ctx_t *ctx, struct rb_call_data *cd, rb_iseq_t *block)
 {
@@ -2177,54 +2180,61 @@ gen_send_general(jitstate_t *jit, ctx_t *ctx, struct rb_call_data *cd, rb_iseq_t
     // Method calls may corrupt types
     ctx_clear_local_types(ctx);
 
-    switch (cme->def->type) {
-    case VM_METHOD_TYPE_ISEQ:
-        return gen_send_iseq(jit, ctx, ci, cme, block, argc);
-    case VM_METHOD_TYPE_CFUNC:
-        return gen_send_cfunc(jit, ctx, ci, cme, block, argc);
-    case VM_METHOD_TYPE_IVAR:
-        if (argc != 0) {
-            // Argument count mismatch. Getters take no arguments.
-            GEN_COUNTER_INC(cb, send_getter_arity);
+    // To handle the aliased method case (VM_METHOD_TYPE_ALIAS)
+    while (true) {
+        // switch on the method type
+        switch (cme->def->type) {
+        case VM_METHOD_TYPE_ISEQ:
+            return gen_send_iseq(jit, ctx, ci, cme, block, argc);
+        case VM_METHOD_TYPE_CFUNC:
+            return gen_send_cfunc(jit, ctx, ci, cme, block, argc);
+        case VM_METHOD_TYPE_IVAR:
+            if (argc != 0) {
+                // Argument count mismatch. Getters take no arguments.
+                GEN_COUNTER_INC(cb, send_getter_arity);
+                return YJIT_CANT_COMPILE;
+            }
+            else {
+                mov(cb, REG0, recv);
+
+                ID ivar_name = cme->def->body.attr.id;
+                return gen_get_ivar(jit, ctx, SEND_MAX_DEPTH, comptime_recv, ivar_name, recv_opnd, side_exit);
+            }
+        case VM_METHOD_TYPE_ATTRSET:
+            GEN_COUNTER_INC(cb, send_ivar_set_method);
             return YJIT_CANT_COMPILE;
+        case VM_METHOD_TYPE_BMETHOD:
+            GEN_COUNTER_INC(cb, send_bmethod);
+            return YJIT_CANT_COMPILE;
+        case VM_METHOD_TYPE_ZSUPER:
+            GEN_COUNTER_INC(cb, send_zsuper_method);
+            return YJIT_CANT_COMPILE;
+        case VM_METHOD_TYPE_ALIAS: {
+            // Retrieve the alised method and re-enter the switch
+            cme = rb_aliased_callable_method_entry(cme);
+            continue;
         }
-        else {
-            mov(cb, REG0, recv);
+        case VM_METHOD_TYPE_UNDEF:
+            GEN_COUNTER_INC(cb, send_undef_method);
+            return YJIT_CANT_COMPILE;
+        case VM_METHOD_TYPE_NOTIMPLEMENTED:
+            GEN_COUNTER_INC(cb, send_not_implemented_method);
+            return YJIT_CANT_COMPILE;
+        case VM_METHOD_TYPE_OPTIMIZED:
+            GEN_COUNTER_INC(cb, send_optimized_method);
+            return YJIT_CANT_COMPILE;
+        case VM_METHOD_TYPE_MISSING:
+            GEN_COUNTER_INC(cb, send_missing_method);
+            return YJIT_CANT_COMPILE;
+        case VM_METHOD_TYPE_REFINED:
+            GEN_COUNTER_INC(cb, send_refined_method);
+            return YJIT_CANT_COMPILE;
+        // no default case so compiler issues a warning if this is not exhaustive
+        }
 
-            ID ivar_name = cme->def->body.attr.id;
-            return gen_get_ivar(jit, ctx, SEND_MAX_DEPTH, comptime_recv, ivar_name, recv_opnd, side_exit);
-        }
-    case VM_METHOD_TYPE_ATTRSET:
-        GEN_COUNTER_INC(cb, send_ivar_set_method);
-        return YJIT_CANT_COMPILE;
-    case VM_METHOD_TYPE_BMETHOD:
-        GEN_COUNTER_INC(cb, send_bmethod);
-        return YJIT_CANT_COMPILE;
-    case VM_METHOD_TYPE_ZSUPER:
-        GEN_COUNTER_INC(cb, send_zsuper_method);
-        return YJIT_CANT_COMPILE;
-    case VM_METHOD_TYPE_ALIAS:
-        GEN_COUNTER_INC(cb, send_alias_method);
-        return YJIT_CANT_COMPILE;
-    case VM_METHOD_TYPE_UNDEF:
-        GEN_COUNTER_INC(cb, send_undef_method);
-        return YJIT_CANT_COMPILE;
-    case VM_METHOD_TYPE_NOTIMPLEMENTED:
-        GEN_COUNTER_INC(cb, send_not_implemented_method);
-        return YJIT_CANT_COMPILE;
-    case VM_METHOD_TYPE_OPTIMIZED:
-        GEN_COUNTER_INC(cb, send_optimized_method);
-        return YJIT_CANT_COMPILE;
-    case VM_METHOD_TYPE_MISSING:
-        GEN_COUNTER_INC(cb, send_missing_method);
-        return YJIT_CANT_COMPILE;
-    case VM_METHOD_TYPE_REFINED:
-        GEN_COUNTER_INC(cb, send_refined_method);
-        return YJIT_CANT_COMPILE;
-    // no default case so compiler issues a warning if this is not exhaustive
+        // Unreachable
+        RUBY_ASSERT(false);
     }
-
-    return YJIT_CANT_COMPILE;
 }
 
 static codegen_status_t
