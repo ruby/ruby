@@ -17,7 +17,8 @@ module Net
     # data:: Returns the data (Net::IMAP::ResponseText).
     #
     # raw_data:: Returns the raw data string.
-    ContinuationRequest = Struct.new(:data, :raw_data)
+    class ContinuationRequest < Struct.new(:data, :raw_data)
+    end
 
     # Net::IMAP::UntaggedResponse represents untagged responses.
     #
@@ -36,7 +37,8 @@ module Net
     #        a ((<Net::IMAP::MailboxList>)) object.
     #
     # raw_data:: Returns the raw data string.
-    UntaggedResponse = Struct.new(:name, :data, :raw_data)
+    class UntaggedResponse < Struct.new(:name, :data, :raw_data)
+    end
 
     # Net::IMAP::IgnoredResponse represents intentionally ignored responses.
     #
@@ -48,7 +50,8 @@ module Net
     # ==== Fields:
     #
     # raw_data:: Returns the raw data string.
-    IgnoredResponse = Struct.new(:raw_data)
+    class IgnoredResponse < Struct.new(:raw_data)
+    end
 
     # Net::IMAP::TaggedResponse represents tagged responses.
     #
@@ -72,7 +75,8 @@ module Net
     #
     # raw_data:: Returns the raw data string.
     #
-    TaggedResponse = Struct.new(:tag, :name, :data, :raw_data)
+    class TaggedResponse < Struct.new(:tag, :name, :data, :raw_data)
+    end
 
     # Net::IMAP::ResponseText represents texts of responses.
     # The text may be prefixed by the response code.
@@ -85,7 +89,8 @@ module Net
     #
     # text:: Returns the text.
     #
-    ResponseText = Struct.new(:code, :text)
+    class ResponseText < Struct.new(:code, :text)
+    end
 
     # Net::IMAP::ResponseCode represents response codes.
     #
@@ -105,7 +110,8 @@ module Net
     #
     # data:: Returns the data, if it exists.
     #
-    ResponseCode = Struct.new(:name, :data)
+    class ResponseCode < Struct.new(:name, :data)
+    end
 
     # Net::IMAP::MailboxList represents contents of the LIST response.
     #
@@ -122,7 +128,8 @@ module Net
     #
     # name:: Returns the mailbox name.
     #
-    MailboxList = Struct.new(:attr, :delim, :name)
+    class MailboxList < Struct.new(:attr, :delim, :name)
+    end
 
     # Net::IMAP::MailboxQuota represents contents of GETQUOTA response.
     # This object can also be a response to GETQUOTAROOT.  In the syntax
@@ -143,7 +150,8 @@ module Net
     #
     # quota:: Quota limit imposed on the mailbox.
     #
-    MailboxQuota = Struct.new(:mailbox, :usage, :quota)
+    class MailboxQuota < Struct.new(:mailbox, :usage, :quota)
+    end
 
     # Net::IMAP::MailboxQuotaRoot represents part of the GETQUOTAROOT
     # response. (GETQUOTAROOT can also return Net::IMAP::MailboxQuota.)
@@ -157,7 +165,8 @@ module Net
     # quotaroots:: Zero or more quotaroots that affect the quota on the
     #              specified mailbox.
     #
-    MailboxQuotaRoot = Struct.new(:mailbox, :quotaroots)
+    class MailboxQuotaRoot < Struct.new(:mailbox, :quotaroots)
+    end
 
     # Net::IMAP::MailboxACLItem represents the response from GETACL.
     #
@@ -175,7 +184,8 @@ module Net
     # rights:: The access rights the indicated user has to the
     #          mailbox.
     #
-    MailboxACLItem = Struct.new(:user, :rights, :mailbox)
+    class MailboxACLItem < Struct.new(:user, :rights, :mailbox)
+    end
 
     # Net::IMAP::Namespace represents a single [RFC-2342] namespace.
     #
@@ -191,7 +201,8 @@ module Net
     # delim:: Returns nil or the hierarchy delimiter character.
     # extensions:: Returns a hash of extension names to extension flag arrays.
     #
-    Namespace = Struct.new(:prefix, :delim, :extensions)
+    class Namespace < Struct.new(:prefix, :delim, :extensions)
+    end
 
     # Net::IMAP::Namespaces represents the response from [RFC-2342] NAMESPACE.
     #
@@ -208,7 +219,8 @@ module Net
     # other:: Returns an array of Other Users' Net::IMAP::Namespace objects.
     # shared:: Returns an array of Shared Net::IMAP::Namespace objects.
     #
-    Namespaces = Struct.new(:personal, :other, :shared)
+    class Namespaces < Struct.new(:personal, :other, :shared)
+    end
 
     # Net::IMAP::StatusData represents the contents of the STATUS response.
     #
@@ -219,7 +231,8 @@ module Net
     # attr:: Returns a hash. Each key is one of "MESSAGES", "RECENT", "UIDNEXT",
     #        "UIDVALIDITY", "UNSEEN". Each value is a number.
     #
-    StatusData = Struct.new(:mailbox, :attr)
+    class StatusData < Struct.new(:mailbox, :attr)
+    end
 
     # Net::IMAP::FetchData represents the contents of the FETCH response.
     #
@@ -260,7 +273,8 @@ module Net
     #        [UID]
     #           A number expressing the unique identifier of the message.
     #
-    FetchData = Struct.new(:seqno, :attr)
+    class FetchData < Struct.new(:seqno, :attr)
+    end
 
     # Net::IMAP::Envelope represents envelope structures of messages.
     #
@@ -286,8 +300,9 @@ module Net
     #
     # message_id:: Returns a string that represents the message-id.
     #
-    Envelope = Struct.new(:date, :subject, :from, :sender, :reply_to,
-                          :to, :cc, :bcc, :in_reply_to, :message_id)
+    class Envelope < Struct.new(:date, :subject, :from, :sender, :reply_to,
+                                :to, :cc, :bcc, :in_reply_to, :message_id)
+    end
 
     #
     # Net::IMAP::Address represents electronic mail addresses.
@@ -305,7 +320,8 @@ module Net
     # host:: nil indicates [RFC-822] group syntax.
     #        Otherwise, returns [RFC-822] domain name.
     #
-    Address = Struct.new(:name, :route, :mailbox, :host)
+    class Address < Struct.new(:name, :route, :mailbox, :host)
+    end
 
     #
     # Net::IMAP::ContentDisposition represents Content-Disposition fields.
@@ -317,7 +333,8 @@ module Net
     # param:: Returns a hash that represents parameters of the Content-Disposition
     #         field.
     #
-    ContentDisposition = Struct.new(:dsp_type, :param)
+    class ContentDisposition < Struct.new(:dsp_type, :param)
+    end
 
     # Net::IMAP::ThreadMember represents a thread-node returned
     # by Net::IMAP#thread.
@@ -329,7 +346,8 @@ module Net
     # children:: An array of Net::IMAP::ThreadMember objects for mail
     #            items that are children of this in the thread.
     #
-    ThreadMember = Struct.new(:seqno, :children)
+    class ThreadMember < Struct.new(:seqno, :children)
+    end
 
     # Net::IMAP::BodyTypeBasic represents basic body structures of messages.
     #

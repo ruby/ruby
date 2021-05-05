@@ -32,12 +32,13 @@ module Net
 
   #
   # Net::IMAP implements Internet Message Access Protocol (IMAP) client
-  # functionality.  The protocol is described in [IMAP].
+  # functionality.  The protocol is described in
+  # [IMAP[https://tools.ietf.org/html/rfc3501]].
   #
   # == IMAP Overview
   #
-  # An IMAP client connects to a server, and then authenticates
-  # itself using either #authenticate() or #login().  Having
+  # An \IMAP client connects to a server, and then authenticates
+  # itself using either #authenticate or #login.  Having
   # authenticated itself, there is a range of commands
   # available to it.  Most work with mailboxes, which may be
   # arranged in an hierarchical namespace, and each of which
@@ -47,8 +48,8 @@ module Net
   # within a hierarchy of directories.
   #
   # To work on the messages within a mailbox, the client must
-  # first select that mailbox, using either #select() or (for
-  # read-only access) #examine().  Once the client has successfully
+  # first select that mailbox, using either #select or (for
+  # read-only access) #examine.  Once the client has successfully
   # selected a mailbox, they enter _selected_ state, and that
   # mailbox becomes the _current_ mailbox, on which mail-item
   # related commands implicitly operate.
@@ -69,7 +70,7 @@ module Net
   # be assigned in ascending (but not necessarily sequential)
   # order within a mailbox; this means that if a non-IMAP client
   # rearranges the order of mailitems within a mailbox, the
-  # UIDs have to be reassigned.  An IMAP client thus cannot
+  # UIDs have to be reassigned.  An \IMAP client thus cannot
   # rearrange message orders.
   #
   # == Examples of Usage
@@ -159,40 +160,61 @@ module Net
   #
   # == References
   #
-  # [[IMAP]]
-  #    M. Crispin, "INTERNET MESSAGE ACCESS PROTOCOL - VERSION 4rev1",
-  #    RFC 2060, December 1996.  (Note: since obsoleted by RFC 3501)
+  # [[IMAP[https://tools.ietf.org/html/rfc3501]]]
+  #    Crispin, M. "INTERNET MESSAGE ACCESS PROTOCOL - \VERSION 4rev1",
+  #    RFC-3501[https://tools.ietf.org/html/rfc3501], March 2003.  (Note:
+  #    obsoletes RFC-2060[https://tools.ietf.org/html/rfc2060], December 1996.)
   #
-  # [[LANGUAGE-TAGS]]
-  #    Alvestrand, H., "Tags for the Identification of
-  #    Languages", RFC 1766, March 1995.
+  # [[LANGUAGE-TAGS[https://tools.ietf.org/html/rfc1766]]]
+  #    Phillips, A. and Davis, M. "Tags for Identifying Languages",
+  #    RFC-5646[https://tools.ietf.org/html/rfc5646], September 2009.
+  #    (Note: obsoletes
+  #    RFC-3066[https://tools.ietf.org/html/rfc3066], January 2001,
+  #    RFC-4646[https://tools.ietf.org/html/rfc4646], September 2006, and
+  #    RFC-1766[https://tools.ietf.org/html/rfc1766], March 1995.)
   #
-  # [[MD5]]
-  #    Myers, J., and M. Rose, "The Content-MD5 Header Field", RFC
-  #    1864, October 1995.
+  # [[MD5[https://tools.ietf.org/html/rfc1864]]]
+  #    Myers, J. and M. Rose, "The Content-MD5 Header Field",
+  #    RFC-1864[https://tools.ietf.org/html/rfc1864], October 1995.
   #
-  # [[MIME-IMB]]
-  #    Freed, N., and N. Borenstein, "MIME (Multipurpose Internet
-  #    Mail Extensions) Part One: Format of Internet Message Bodies", RFC
-  #    2045, November 1996.
+  # [[MIME-IMB[https://tools.ietf.org/html/rfc2045]]]
+  #    Freed, N. and N. Borenstein, "MIME (Multipurpose Internet
+  #    Mail Extensions) Part One: Format of Internet Message Bodies",
+  #    RFC-2045[https://tools.ietf.org/html/rfc2045], November 1996.
   #
-  # [[RFC-822]]
-  #    Crocker, D., "Standard for the Format of ARPA Internet Text
-  #    Messages", STD 11, RFC 822, University of Delaware, August 1982.
+  # [[RFC-5322[https://tools.ietf.org/html/rfc5322]]]
+  #    Resnick, P., "Internet Message Format",
+  #    RFC-5322[https://tools.ietf.org/html/rfc5322], October 2008.
+  #    (Note: obsoletes
+  #    RFC-2822[https://tools.ietf.org/html/rfc2822], April 2001, and
+  #    RFC-822[https://tools.ietf.org/html/rfc822], August 1982.)
   #
-  # [[RFC-2087]]
-  #    Myers, J., "IMAP4 QUOTA extension", RFC 2087, January 1997.
+  # [[EXT-QUOTA[https://tools.ietf.org/html/rfc2087]]]
+  #    Myers, J., "IMAP4 QUOTA extension",
+  #    RFC-2087[https://tools.ietf.org/html/rfc2087], January 1997.
   #
-  # [[RFC-2086]]
-  #    Myers, J., "IMAP4 ACL extension", RFC 2086, January 1997.
+  # [[EXT-NAMESPACE[https://tools.ietf.org/html/rfc2342]]]
+  #    Gahrns, M. and Newman, C., "IMAP4 Namespace",
+  #    RFC-2342[https://tools.ietf.org/html/rfc2342], May 1998.
   #
-  # [[RFC-2195]]
-  #    Klensin, J., Catoe, R., and Krumviede, P., "IMAP/POP AUTHorize Extension
-  #    for Simple Challenge/Response", RFC 2195, September 1997.
+  # [[EXT-ID[https://tools.ietf.org/html/rfc2971]]]
+  #    Showalter, T., "IMAP4 ID extension",
+  #    RFC-2971[https://tools.ietf.org/html/rfc2971], October 2000.
   #
-  # [[SORT-THREAD-EXT]]
-  #    Crispin, M., "INTERNET MESSAGE ACCESS PROTOCOL - SORT and THREAD
-  #    Extensions", draft-ietf-imapext-sort, May 2003.
+  # [[EXT-ACL[https://tools.ietf.org/html/rfc4314]]]
+  #    Melnikov, A., "IMAP4 ACL extension",
+  #    RFC-4314[https://tools.ietf.org/html/rfc4314], December 2005.  (Note:
+  #    obsoletes RFC-2086[https://tools.ietf.org/html/rfc2086], January 1997.)
+  #
+  # [[EXT-SORT-THREAD[https://tools.ietf.org/html/rfc5256]]]
+  #    Crispin, M. and Muchison, K., "INTERNET MESSAGE ACCESS PROTOCOL - SORT
+  #    and THREAD Extensions", RFC-5256[https://tools.ietf.org/html/rfc5256],
+  #    June 2008.
+  #
+  # [[EXT-MOVE[https://tools.ietf.org/html/rfc6851]]]
+  #    Gulbrandsen, A. and Freed, N., "Internet Message Access Protocol (\IMAP) -
+  #    MOVE Extension", RFC-6851[https://tools.ietf.org/html/rfc6851], January
+  #    2013.
   #
   # [[OSSL]]
   #    http://www.openssl.org
@@ -200,9 +222,9 @@ module Net
   # [[RSSL]]
   #    http://savannah.gnu.org/projects/rubypki
   #
-  # [[UTF7]]
+  # [[UTF7[https://tools.ietf.org/html/rfc2152]]]
   #    Goldsmith, D. and Davis, M., "UTF-7: A Mail-Safe Transformation Format of
-  #    Unicode", RFC 2152, May 1997.
+  #    Unicode", RFC-2152[https://tools.ietf.org/html/rfc2152], May 1997.
   #
   class IMAP < Protocol
     VERSION = "0.2.1"
@@ -326,7 +348,7 @@ module Net
     #      )
     #    end
     #
-    # See RFC 2971, Section 3.3, for defined fields.
+    # See [EXT-ID[https://tools.ietf.org/html/rfc2971]] for field definitions.
     def id(client_id=nil)
       synchronize do
         send_command("ID", ClientID.new(client_id))
@@ -373,7 +395,7 @@ module Net
     #
     # For both of these mechanisms, there should be two +args+: username
     # and (cleartext) password.  A server may not support one or the other
-    # of these mechanisms; check #capability() for a capability of
+    # of these mechanisms; check #capability for a capability of
     # the form "AUTH=LOGIN" or "AUTH=CRAM-MD5".
     #
     # Authentication is done using the appropriate authenticator object:
@@ -399,8 +421,8 @@ module Net
 
     # Sends a LOGIN command to identify the client and carries
     # the plaintext +password+ authenticating this +user+.  Note
-    # that, unlike calling #authenticate() with an +auth_type+
-    # of "LOGIN", #login() does *not* use the login authenticator.
+    # that, unlike calling #authenticate with an +auth_type+
+    # of "LOGIN", #login does *not* use the login authenticator.
     #
     # A Net::IMAP::NoResponseError is raised if authentication fails.
     def login(user, password)
@@ -414,7 +436,7 @@ module Net
     # number of items in that mailbox from +@responses["EXISTS"][-1]+,
     # and the number of recent messages from +@responses["RECENT"][-1]+.
     # Note that these values can change if new messages arrive
-    # during a session; see #add_response_handler() for a way of
+    # during a session; see #add_response_handler for a way of
     # detecting this event.
     #
     # A Net::IMAP::NoResponseError is raised if the mailbox does not
@@ -427,7 +449,7 @@ module Net
     end
 
     # Sends a EXAMINE command to select a +mailbox+ so that messages
-    # in the +mailbox+ can be accessed.  Behaves the same as #select(),
+    # in the +mailbox+ can be accessed.  Behaves the same as #select,
     # except that the selected +mailbox+ is identified as read-only.
     #
     # A Net::IMAP::NoResponseError is raised if the mailbox does not
@@ -469,7 +491,7 @@ module Net
 
     # Sends a SUBSCRIBE command to add the specified +mailbox+ name to
     # the server's set of "active" or "subscribed" mailboxes as returned
-    # by #lsub().
+    # by #lsub.
     #
     # A Net::IMAP::NoResponseError is raised if +mailbox+ cannot be
     # subscribed to; for instance, because it does not exist.
@@ -516,15 +538,16 @@ module Net
       end
     end
 
-    # Sends a NAMESPACE command [RFC2342] and returns the namespaces that are
-    # available. The NAMESPACE command allows a client to discover the prefixes
-    # of namespaces used by a server for personal mailboxes, other users'
+    # Sends a NAMESPACE command and returns the namespaces that are available.
+    # The NAMESPACE command allows a client to discover the prefixes of
+    # namespaces used by a server for personal mailboxes, other users'
     # mailboxes, and shared mailboxes.
     #
-    # This extension predates IMAP4rev1 (RFC3501), so most IMAP servers support
-    # it. Many popular IMAP servers are configured with the default personal
-    # namespaces as `("" "/")`: no prefix and "/" hierarchy delimiter. In that
-    # common case, the naive client may not have any trouble naming mailboxes.
+    # The NAMESPACE extension predates [IMAP4rev1[https://tools.ietf.org/html/rfc2501]],
+    # so most IMAP servers support it. Many popular IMAP servers are configured
+    # with the default personal namespaces as `("" "/")`: no prefix and "/"
+    # hierarchy delimiter. In that common case, the naive client may not have
+    # any trouble naming mailboxes.
     #
     # But many servers are configured with the default personal namespace as
     # e.g. `("INBOX." ".")`, placing all personal folders under INBOX, with "."
@@ -563,6 +586,8 @@ module Net
     #        imap.create(prefix + %w[path to my folder].join(delim))
     #      end
     #    end
+    #
+    # The NAMESPACE extension is described in [EXT-NAMESPACE[https://tools.ietf.org/html/rfc2342]]
     def namespace
       synchronize do
         send_command("NAMESPACE")
@@ -606,6 +631,8 @@ module Net
     # This command is generally available to both admin and user.
     # If this mailbox exists, it returns an array containing objects of type
     # Net::IMAP::MailboxQuotaRoot and Net::IMAP::MailboxQuota.
+    #
+    # The QUOTA extension is described in [EXT-QUOTA[https://tools.ietf.org/html/rfc2087]]
     def getquotaroot(mailbox)
       synchronize do
         send_command("GETQUOTAROOT", mailbox)
@@ -620,6 +647,8 @@ module Net
     # If this mailbox exists, then an array containing a
     # Net::IMAP::MailboxQuota object is returned.  This
     # command is generally only available to server admin.
+    #
+    # The QUOTA extension is described in [EXT-QUOTA[https://tools.ietf.org/html/rfc2087]]
     def getquota(mailbox)
       synchronize do
         send_command("GETQUOTA", mailbox)
@@ -630,8 +659,9 @@ module Net
     # Sends a SETQUOTA command along with the specified +mailbox+ and
     # +quota+.  If +quota+ is nil, then +quota+ will be unset for that
     # mailbox.  Typically one needs to be logged in as a server admin
-    # for this to work.  The IMAP quota commands are described in
-    # [RFC-2087].
+    # for this to work.
+    #
+    # The QUOTA extension is described in [EXT-QUOTA[https://tools.ietf.org/html/rfc2087]]
     def setquota(mailbox, quota)
       if quota.nil?
         data = '()'
@@ -644,7 +674,8 @@ module Net
     # Sends the SETACL command along with +mailbox+, +user+ and the
     # +rights+ that user is to have on that mailbox.  If +rights+ is nil,
     # then that user will be stripped of any rights to that mailbox.
-    # The IMAP ACL commands are described in [RFC-2086].
+    #
+    # The ACL extension is described in [EXT-ACL[https://tools.ietf.org/html/rfc4314]]
     def setacl(mailbox, user, rights)
       if rights.nil?
         send_command("SETACL", mailbox, user, "")
@@ -656,6 +687,8 @@ module Net
     # Send the GETACL command along with a specified +mailbox+.
     # If this mailbox exists, an array containing objects of
     # Net::IMAP::MailboxACLItem will be returned.
+    #
+    # The ACL extension is described in [EXT-ACL[https://tools.ietf.org/html/rfc4314]]
     def getacl(mailbox)
       synchronize do
         send_command("GETACL", mailbox)
@@ -666,7 +699,8 @@ module Net
     # Sends a LSUB command, and returns a subset of names from the set
     # of names that the user has declared as being "active" or
     # "subscribed."  +refname+ and +mailbox+ are interpreted as
-    # for #list().
+    # for #list.
+    #
     # The return value is an array of +Net::IMAP::MailboxList+.
     def lsub(refname, mailbox)
       synchronize do
@@ -794,7 +828,7 @@ module Net
       return search_internal("SEARCH", keys, charset)
     end
 
-    # Similar to #search(), but returns unique identifiers.
+    # Similar to #search, but returns unique identifiers.
     def uid_search(keys, charset = nil)
       return search_internal("UID SEARCH", keys, charset)
     end
@@ -838,7 +872,7 @@ module Net
       return fetch_internal("FETCH", set, attr, mod)
     end
 
-    # Similar to #fetch(), but +set+ contains unique identifiers.
+    # Similar to #fetch, but +set+ contains unique identifiers.
     def uid_fetch(set, attr, mod = nil)
       return fetch_internal("UID FETCH", set, attr, mod)
     end
@@ -861,7 +895,7 @@ module Net
       return store_internal("STORE", set, attr, flags)
     end
 
-    # Similar to #store(), but +set+ contains unique identifiers.
+    # Similar to #store, but +set+ contains unique identifiers.
     def uid_store(set, attr, flags)
       return store_internal("UID STORE", set, attr, flags)
     end
@@ -874,7 +908,7 @@ module Net
       copy_internal("COPY", set, mailbox)
     end
 
-    # Similar to #copy(), but +set+ contains unique identifiers.
+    # Similar to #copy, but +set+ contains unique identifiers.
     def uid_copy(set, mailbox)
       copy_internal("UID COPY", set, mailbox)
     end
@@ -883,12 +917,15 @@ module Net
     # of the specified destination +mailbox+. The +set+ parameter is
     # a number, an array of numbers, or a Range object. The number is
     # a message sequence number.
-    # The IMAP MOVE extension is described in [RFC-6851].
+    #
+    # The MOVE extension is described in [EXT-MOVE[https://tools.ietf.org/html/rfc6851]].
     def move(set, mailbox)
       copy_internal("MOVE", set, mailbox)
     end
 
-    # Similar to #move(), but +set+ contains unique identifiers.
+    # Similar to #move, but +set+ contains unique identifiers.
+    #
+    # The MOVE extension is described in [EXT-MOVE[https://tools.ietf.org/html/rfc6851]].
     def uid_move(set, mailbox)
       copy_internal("UID MOVE", set, mailbox)
     end
@@ -901,12 +938,14 @@ module Net
     #   p imap.sort(["DATE"], ["SUBJECT", "hello"], "US-ASCII")
     #   #=> [6, 7, 8, 1]
     #
-    # See [SORT-THREAD-EXT] for more details.
+    # The SORT extension is described in [EXT-SORT-THREAD[https://tools.ietf.org/html/rfc5256]].
     def sort(sort_keys, search_keys, charset)
       return sort_internal("SORT", sort_keys, search_keys, charset)
     end
 
-    # Similar to #sort(), but returns an array of unique identifiers.
+    # Similar to #sort, but returns an array of unique identifiers.
+    #
+    # The SORT extension is described in [EXT-SORT-THREAD[https://tools.ietf.org/html/rfc5256]].
     def uid_sort(sort_keys, search_keys, charset)
       return sort_internal("UID SORT", sort_keys, search_keys, charset)
     end
@@ -933,7 +972,7 @@ module Net
       @response_handlers.delete(handler)
     end
 
-    # Similar to #search(), but returns message sequence numbers in threaded
+    # Similar to #search, but returns message sequence numbers in threaded
     # format, as a Net::IMAP::ThreadMember tree.  The supported algorithms
     # are:
     #
@@ -942,16 +981,18 @@ module Net
     # REFERENCES:: split into threads by parent/child relationships determined
     #              by which message is a reply to which.
     #
-    # Unlike #search(), +charset+ is a required argument.  US-ASCII
+    # Unlike #search, +charset+ is a required argument.  US-ASCII
     # and UTF-8 are sample values.
     #
-    # See [SORT-THREAD-EXT] for more details.
+    # The THREAD extension is described in [EXT-SORT-THREAD[https://tools.ietf.org/html/rfc5256]].
     def thread(algorithm, search_keys, charset)
       return thread_internal("THREAD", algorithm, search_keys, charset)
     end
 
-    # Similar to #thread(), but returns unique identifiers instead of
+    # Similar to #thread, but returns unique identifiers instead of
     # message sequence numbers.
+    #
+    # The THREAD extension is described in [EXT-SORT-THREAD[https://tools.ietf.org/html/rfc5256]].
     def uid_thread(algorithm, search_keys, charset)
       return thread_internal("UID THREAD", algorithm, search_keys, charset)
     end
@@ -959,7 +1000,7 @@ module Net
     # Sends an IDLE command that waits for notifications of new or expunged
     # messages.  Yields responses from the server during the IDLE.
     #
-    # Use #idle_done() to leave IDLE.
+    # Use #idle_done to leave IDLE.
     #
     # If +timeout+ is given, this method returns after +timeout+ seconds passed.
     # +timeout+ can be used for keep-alive.  For example, the following code
