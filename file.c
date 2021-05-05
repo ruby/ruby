@@ -6546,21 +6546,21 @@ const char ruby_null_device[] =
  *    reading, and writing files.
  *  - Includes module FileTest.
  *
- *  \Class \File provides methods for:
+ *  Here, Class \File provides methods that are useful for:
+ *
+ *  - {Creating}[#class-File-label-Creating]
+ *  - {Querying}[#class-File-label-Querying]
+ *  - {Settings}[#class-File-label-Settings]
+ *  - {Other}[#class-File-label-Other]
  *
  *  === Creating
  *
- *  - ::new:: Creates a new file at the given file path; returns the file.
- *  - ::open:: Creates a new file at the given file path;
- *             calls the block with the file.
+ *  - ::new:: Opens the file at the given path; returns the file.
+ *  - ::open:: Same as ::new, but when given a block will yield the file to the block,
+ *             and close the file upon exiting the block.
+ *  - ::link:: Creates a new name for an existing file using a hard link.
  *  - ::mkfifo:: Returns the FIFO file created at the given path.
- *
- *  === Deleting
- *
- *  - ::delete:: Deletes the file for each given file path.
- *  - ::truncate:: Truncates the file at the given file path to the given size.
- *  - ::unlink:: Deletes the file for each given file path.
- *  - #truncate:: Truncates +self+ to the given size.
+ *  - ::symlink:: Creates a symbolic link for the given file path.
  *
  *  === Querying
  *
@@ -6570,32 +6570,34 @@ const char ruby_null_device[] =
  *  - ::absolute_path?:: Returns whether the given path is the absolute file path.
  *  - ::basename:: Returns the last component of the given file path.
  *  - ::dirname:: Returns all but the last component of the given file path.
- *  - ::expand_path:: Returns the absolute file path for the given path.
+ *  - ::expand_path:: Returns the absolute file path for the given path,
+ *                    expanding <tt>~</tt> for a home directory.
  *  - ::extname:: Returns the file extension for the given file path.
  *  - ::fnmatch? (aliased as ::fnmatch):: Returns whether the given file path
  *                                        matches the given pattern.
+ *  - ::join:: Joins path components into a single path string.
  *  - ::path:: Returns the string representation of the given path.
- *  - ::realdirpath:: Returns the real directory path for the given file path.
- *  - ::realpath:: Returns the real path for the given file path.
- *  - #path::  Returns the string representation of the given path.
- *  - #to_path:: Returns the file path that was used to create the file.
+ *  - ::readlink:: Returns the path to the file at the given symbolic link.
+ *  - ::realdirpath:: Returns the real path for the given file path,
+ *                    where the last component need not exist.
+ *  - ::realpath:: Returns the real path for the given file path,
+ *                 where all components must exist.
+ *  - ::split:: Returns an array of two strings: the directory name and basename
+ *              of the file at the given path.
+ *  - #path (aliased as #to_path)::  Returns the string representation of the given path.
  *
  *  _Times_
  *
- *  - ::atime:: Returns a Time object giving the time of the most recent access
- *              of the file at the given path.
- *  - ::birthtime:: Returns a \Time object giving the creation time
- *                  of the file at the given path.
- *  - ::ctime:: Returns a \Time object giving the creation time
- *              of the file at the given path.
- *  - ::mtime:: Returns a \Time object giving the time of the most recent modification
- *              of the file at the given path.
- *  - #atime:: Returns a \Time object giving the time of the most recent
- *             access to +self+.
- *  - #birthtime:: Returns a \Time object giving the creation time for +self+.
- *  - #ctime:: Returns a \Time object giving the creation time for +self+.
- *  - #mtime:: Returns a \Time object giving the time of the most recent modification
- *             of +self+.
+ *  - ::atime:: Returns a \Time for the most recent access to the given file.
+ *  - ::birthtime:: Returns a \Time  for the creation of the given file.
+ *  - ::ctime:: Returns a \Time  for the creation of the given file.
+ *  - ::mtime:: Returns a \Time for the most recent modification to
+ *              the content of the given file.
+ *  - #atime:: Returns a \Time for the most recent access to +self+.
+ *  - #birthtime:: Returns a \Time  the creation for +self+.
+ *  - #ctime:: Returns a \Time for the creating of +self+.
+ *  - #mtime:: Returns a \Time for the most recent modification
+ *             to the content of +self+.
  *
  *  _Types_
  *
@@ -6607,11 +6609,13 @@ const char ruby_null_device[] =
  *  - ::executable_real?:: Returns whether the file at the given path is executable
  *                         by the real user and group of the current process.
  *  - ::exist?:: Returns whether the file at the given path exists.
- *  - ::file?:: Returns whether the file at the given path is a file.
+ *  - ::file?:: Returns whether the file at the given path is a regular file.
  *  - ::ftype:: Returns a string giving the type of the file at the given path.
  *  - ::grpowned?:: Returns whether the effective group of the current process
  *                  owns the file at the given path.
  *  - ::identical?:: Returns whether the files at two given paths are identical.
+ *  - ::lstat:: Returns the File::Stat object for the last symbolic link
+ *              in the given path.
  *  - ::owned?:: Returns whether the effective user of the current process
  *               owns the file at the given path.
  *  - ::pipe?:: Returns whether the file at the given path is a pipe.
@@ -6624,54 +6628,45 @@ const char ruby_null_device[] =
  *  - ::socket?:: Returns whether the file at the given path is a socket.
  *  - ::stat:: Returns the File::Stat object for the file at the given path.
  *  - ::sticky?:: Returns whether the file at the given path has its sticky bit set.
+ *  - ::symlink?:: Returns whether the file at the given path is a symbolic link.
  *  - ::umask:: Returns the umask value for the current process.
  *  - ::world_readable?:: Returns whether the file at the given path is readable
  *                        by others.
  *  - ::world_writable?:: Returns whether the file at the given path is writable
  *                        by others.
- *  - ::writable?:: Returns whether the file at the given path is writable by the current process.
- *  - ::writable?:: Returns whether the file at the given path is writable
  *                  by the effective user and group of the current process.
  *  - ::writable_real?:: Returns whether the file at the given path is writable
  *                       by the real user and group of the current process.
+ *  - #lstat:: Returns the File::Stat object for the last symbolic link
+ *             in the path for +self+.
  *
  *  _Contents_
  *
- *  - ::empty? (aliasd as ::zero?):: Returns whether the file at the given path
+ *  - ::empty? (aliased as ::zero?):: Returns whether the file at the given path
  *                                   exists and is empty.
  *  - ::size:: Returns the size (bytes) of the file at the given path.
  *  - ::size?:: Returns +nil+ if there is no file at the given path,
  *              or if that file is empty; otherwise returns the file size (bytes).
  *  - #size:: Returns the size (bytes) of +self+.
  *
- *  === Converting
- *
- *  - ::join:: Returns the string formed by joining the given array of strings.
- *  - ::split:: Returns an array of two strings: the directory name and basename
- *              of the file at the given path.
- *
  *  === Settings
  *
  *  - ::chmod:: Changes permissions of the file at the given path.
  *  - ::chown:: Change ownership of the file at the given path.
+ *  - ::lchmod:: Changes permissions of the last symbolic link in the given path.
+ *  - ::lchown:: Change ownership of the last symbolic in the given path.
+ *  - ::lutime:: For each given file path, sets the access time and modification time
+ *               of the last symbolic link in the path.
  *  - ::rename:: Moves the file at one given path to another given path.
  *  - ::utime:: Sets the access time and modification time of each file
  *              at the given paths.
  *  - #flock:: Locks or unlocks +self+.
  *
- *  === Symbolic Links
+ *  === Other
  *
- *  - ::lchmod:: Changes permissions of the last symbolic link in the given path.
- *  - ::lchown:: Change ownership of the last symbolic in the given path.
- *  - ::link:: Creates a new name for an existing file using a hard link.
- *  - ::lstat:: Returns the File::Stat object for the last symbolic link in the given path.
- *  - ::lutime:: For each given file path, sets the access time and modification time
- *               of the last symbolic link in the path.
- *  - ::readlink:: Returns the path to the file at the given symbolic link.
- *  - ::symlink:: Creates a symbolic link for the given file path.
- *  - ::symlink?:: Returns whether the file at the given path is a symbolic link.
- *  - #lstat:: Returns the File::Stat object for the last symbolic link
- *             at the given file path.
+ *  - ::truncate:: Truncates the file at the given file path to the given size.
+ *  - ::unlink (aliased as ::delete):: Deletes the file for each given file path.
+ *  - #truncate:: Truncates +self+ to the given size.
  *
  */
 
