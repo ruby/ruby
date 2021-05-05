@@ -835,10 +835,12 @@ enum {
 #define HEAP_PAGE_ALIGN (1 << HEAP_PAGE_ALIGN_LOG)
 #define HEAP_PAGE_SIZE HEAP_PAGE_ALIGN
 
-#if defined(HAVE_MMAP) && defined(PAGE_SIZE)
+#ifdef HAVE_MMAP
 # if HAVE_CONST_PAGE_SIZE
+/* If we have the HEAP_PAGE and it is a constant, then we can directly use it. */
 #  define USE_MMAP_ALIGNED_ALLOC (PAGE_SIZE <= HEAP_PAGE_SIZE)
 # else
+/* Otherwise, fall back to determining if we can use mmap during runtime. */
 #  define USE_MMAP_ALIGNED_ALLOC (use_mmap_aligned_alloc != false)
 
 static bool use_mmap_aligned_alloc;
@@ -3208,8 +3210,18 @@ Init_heap(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
 
-#if defined(HAVE_MMAP) && defined(PAGE_SIZE) && !HAVE_CONST_PAGE_SIZE
+#if defined(HAVE_MMAP) && !HAVE_CONST_PAGE_SIZE
+    /* Need to determine if we can use mmap at runtime. */
+# ifdef PAGE_SIZE
+    /* If the PAGE_SIZE macro can be used. */
     use_mmap_aligned_alloc = PAGE_SIZE <= HEAP_PAGE_SIZE;
+# elif defined(HAVE_SYSCONF) && defined(_SC_PAGE_SIZE)
+    /* If we can use sysconf to determine the page size. */
+    use_mmap_aligned_alloc = sysconf(_SC_PAGE_SIZE) <= HEAP_PAGE_SIZE;
+# else
+    /* Otherwise we can't determine the system page size, so don't use mmap. */
+    use_mmap_aligned_alloc = FALSE;
+# endif
 #endif
 
 #if defined(HAVE_SYSCONF) && defined(_SC_PAGE_SIZE)
