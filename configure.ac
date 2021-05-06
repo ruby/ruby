@@ -2732,24 +2732,18 @@ AS_CASE([$target_os],
     [AC_CHECK_HEADERS([sys/user.h])]
 )
 AS_IF([test "x$ac_cv_func_mmap:$ac_cv_header_sys_user_h" = xyes:yes], [
-    AC_CACHE_CHECK([PAGE_SIZE is defined], rb_cv_page_size,
+    AC_CACHE_CHECK([whether PAGE_SIZE is compile-time const], rb_cv_const_page_size,
         [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
             @%:@include <sys/user.h>
             typedef char conftest_page[PAGE_SIZE];
         ]], [[]])],
-        [rb_cv_page_size=const],
-        [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
-            @%:@include <sys/user.h>
-        ]], [[
-            int page_size = (int)PAGE_SIZE;
-            (void)page_size;
-        ]])],
-        [rb_cv_page_size=variable], [rb_cv_page_size=no])])])
-    AS_IF([test "x$rb_cv_page_size" = xconst],
-        [AC_DEFINE(HAVE_CONST_PAGE_SIZE, 1)],
-        [AC_DEFINE(HAVE_CONST_PAGE_SIZE, 0)]
-    )
-], [AC_DEFINE(HAVE_CONST_PAGE_SIZE, 0)])
+        [rb_cv_const_page_size=yes],
+        [rb_cv_const_page_size=no])])
+])
+AS_IF([test "x$rb_cv_const_page_size" = xyes],
+    [AC_DEFINE(HAVE_CONST_PAGE_SIZE, 1)],
+    [AC_DEFINE(HAVE_CONST_PAGE_SIZE, 0)]
+)
 }
 
 : "runtime section" && {
