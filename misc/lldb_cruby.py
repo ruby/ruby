@@ -545,12 +545,9 @@ class HeapPageIter:
     def is_valid(self):
         heap_page_header_size = self.target.FindFirstType("struct heap_page_header").GetByteSize()
         rvalue_size = self.tRValue.GetByteSize()
-        heap_page_obj_limit = (HEAP_PAGE_SIZE - heap_page_header_size)/rvalue_size
+        heap_page_obj_limit = int((HEAP_PAGE_SIZE - heap_page_header_size) / rvalue_size)
 
-        if (self.num_slots > heap_page_obj_limit) or (self.num_slots < heap_page_obj_limit - 1):
-            return False
-        else:
-            return True
+        return (heap_page_obj_limit - 1) <= self.num_slots <= heap_page_obj_limit
 
     def __iter__(self):
         return self
