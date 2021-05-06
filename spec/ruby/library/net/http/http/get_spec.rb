@@ -30,6 +30,7 @@ describe "Net::HTTP.get" do
   describe "when reading gzipped contents" do
     def start_threads
       require 'zlib'
+      require 'stringio'
 
       server = nil
       server_thread = Thread.new do
