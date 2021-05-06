@@ -839,6 +839,9 @@ enum {
 # if HAVE_CONST_PAGE_SIZE
 /* If we have the HEAP_PAGE and it is a constant, then we can directly use it. */
 #  define USE_MMAP_ALIGNED_ALLOC (PAGE_SIZE <= HEAP_PAGE_SIZE)
+# elif defined(PAGE_MAX_SIZE) && (PAGE_MAX_SIZE <= HEAP_PAGE_SIZE)
+/* PAGE_SIZE <= HEAP_PAGE_SIZE */
+#  define USE_MMAP_ALIGNED_ALLOC 1
 # else
 /* Otherwise, fall back to determining if we can use mmap during runtime. */
 #  define USE_MMAP_ALIGNED_ALLOC (use_mmap_aligned_alloc != false)
@@ -3210,7 +3213,7 @@ Init_heap(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
 
-#if defined(HAVE_MMAP) && !HAVE_CONST_PAGE_SIZE
+#if defined(HAVE_MMAP) && !HAVE_CONST_PAGE_SIZE && !defined(PAGE_MAX_SIZE)
     /* Need to determine if we can use mmap at runtime. */
 # ifdef PAGE_SIZE
     /* If the PAGE_SIZE macro can be used. */
