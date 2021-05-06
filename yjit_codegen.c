@@ -1582,6 +1582,59 @@ gen_branchunless(jitstate_t* jit, ctx_t* ctx)
     return YJIT_END_BLOCK;
 }
 
+void
+gen_branchnil_branch(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uint8_t shape)
+{
+    switch (shape)
+    {
+        case SHAPE_NEXT0:
+        jne_ptr(cb, target1);
+        break;
+
+        case SHAPE_NEXT1:
+        je_ptr(cb, target0);
+        break;
+
+        case SHAPE_DEFAULT:
+        je_ptr(cb, target0);
+        jmp_ptr(cb, target1);
+        break;
+    }
+}
+
+static codegen_status_t
+gen_branchnil(jitstate_t* jit, ctx_t* ctx)
+{
+    // FIXME: eventually, put VM_CHECK_INTS() only on backward branch targets
+    // Check for interrupts
+    uint8_t* side_exit = yjit_side_exit(jit, ctx);
+    yjit_check_ints(cb, side_exit);
+
+    // Test if the value is Qnil
+    // RUBY_Qnil    /* ...0000 1000 */
+    x86opnd_t val_opnd = ctx_stack_pop(ctx, 1);
+    cmp(cb, val_opnd, imm_opnd(Qnil));
+
+    // Get the branch target instruction offsets
+    uint32_t next_idx = jit_next_insn_idx(jit);
+    uint32_t jump_idx = next_idx + (uint32_t)jit_get_arg(jit, 0);
+    blockid_t next_block = { jit->iseq, next_idx };
+    blockid_t jump_block = { jit->iseq, jump_idx };
+
+    // Generate the branch instructions
+    gen_branch(
+        jit->block,
+        ctx,
+        jump_block,
+        ctx,
+        next_block,
+        ctx,
+        gen_branchnil_branch
+    );
+
+    return YJIT_END_BLOCK;
+}
+
 static codegen_status_t
 gen_jump(jitstate_t* jit, ctx_t* ctx)
 {
@@ -2408,6 +2461,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(opt_getinlinecache), gen_opt_getinlinecache);
     yjit_reg_op(BIN(branchif), gen_branchif);
     yjit_reg_op(BIN(branchunless), gen_branchunless);
+    yjit_reg_op(BIN(branchnil), gen_branchnil);
     yjit_reg_op(BIN(jump), gen_jump);
     yjit_reg_op(BIN(opt_send_without_block), gen_opt_send_without_block);
     yjit_reg_op(BIN(send), gen_send);
