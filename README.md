@@ -92,16 +92,18 @@ We have collected a set of benchmarks and implemented a simple benchmarking harn
 
 ## Performance Tips
 
-This section contains tips on writing Ruby code that will run fast on YJIT. Some of this advice is based on current limitations of YJIT, while other advice is broadly applicable. It may not be practical to apply these tips everywhere in your codebase, but you can profile your code using a tool such as [stackprof](https://github.com/tmm1/stackprof) and the specific methods that make up the largest fractions of the execution time.
+This section contains tips on writing Ruby code that will run as fast as possible on YJIT. Some of this advice is based on current limitations of YJIT, while other advice is broadly applicable. It probably won't be practical to apply these tips everywhere in your codebase, but you can profile your code using a tool such as [stackprof](https://github.com/tmm1/stackprof) and refactor the specific methods that make up the largest fractions of the execution time.
 
 - Use exceptions for error recovery only, not as part of normal control-flow
 - Avoid redefining basic integer operations (i.e. +, -, <, >, etc.)
 - Avoid redefining the meaning of `nil`, equality, etc.
+- Avoid allocating objects in the hot parts of your code
 - Use while loops if you can, instead of `integer.times`
 - Minimize layers of indirection
   - Avoid classes that wrap objects if you can
   - Avoid methods that just call another method, trivial one liner methods
 - CRuby method calls are costly. Favor larger methods over smaller methods.
+- Try to write code so that the same variables always have the same type
 
 You can also compile YJIT in debug mode and use the `--yjit-stats` command-line option to see which bytecodes cause YJIT to exit, and refactor your code to avoid using these instructions in the hottest methods of your code.
 
