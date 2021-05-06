@@ -869,3 +869,27 @@ end
 use([], 0)
 [use([2, 2], 38), use([14, 14, 14], 0)]
 }
+
+# test calling method taking block param
+assert_equal '[Proc, 1, 2, 3, Proc]', %q{
+  def three(a, b, c, &block)
+    [a, b, c, block.class]
+  end
+
+  def zero(&block)
+    block.class
+  end
+
+  def use_three
+    three(1, 2, 3) {}
+  end
+
+  def use_zero
+    zero {}
+  end
+
+  use_three
+  use_zero
+
+  [use_zero] + use_three
+}
