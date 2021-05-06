@@ -1892,7 +1892,22 @@ gen_return_branch(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uint8_t s
     }
 }
 
-bool rb_simple_iseq_p(const rb_iseq_t *iseq);
+// Returns whether the iseq only needs positional (lead) argument setup.
+static bool
+iseq_lead_only_arg_setup_p(const rb_iseq_t *iseq)
+{
+    // When iseq->body->local_iseq == iseq, setup_parameters_complex()
+    // doesn't do anything to setup the block parameter.
+    bool takes_block = iseq->body->param.flags.has_block;
+    return (!takes_block || iseq->body->local_iseq == iseq) &&
+        iseq->body->param.flags.has_opt          == false &&
+        iseq->body->param.flags.has_rest         == false &&
+        iseq->body->param.flags.has_post         == false &&
+        iseq->body->param.flags.has_kw           == false &&
+        iseq->body->param.flags.has_kwrest       == false &&
+        iseq->body->param.flags.accepts_no_kwarg == false;
+}
+
 bool rb_iseq_only_optparam_p(const rb_iseq_t *iseq);
 bool rb_iseq_only_kwparam_p(const rb_iseq_t *iseq);
 
@@ -1910,7 +1925,9 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
     // Arity handling and optional parameter setup
     int num_params = iseq->body->param.size;
     uint32_t start_pc_offset = 0;
-    if (rb_simple_iseq_p(iseq)) {
+    if (iseq_lead_only_arg_setup_p(iseq)) {
+        num_params = iseq->body->param.lead_num;
+
         if (num_params != argc) {
             GEN_COUNTER_INC(cb, send_iseq_arity_error);
             return YJIT_CANT_COMPILE;
