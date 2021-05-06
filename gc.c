@@ -570,7 +570,8 @@ struct RPayload {
 };
 #define RPAYLOAD(obj) ((struct RPayload *)obj)
 static unsigned short
-RPAYLOAD_LEN(VALUE obj) {
+RPAYLOAD_LEN(VALUE obj)
+{
     unsigned short len = (unsigned short)(RPAYLOAD(obj)->flags >> FL_USHIFT);
     return len;
 }
@@ -1302,7 +1303,8 @@ payload_or_self(VALUE obj)
                 return cur;
             }
             cur += RPAYLOAD_LEN(cur) * sizeof(RVALUE);
-        } else {
+        }
+        else {
             cur += sizeof(RVALUE);
         }
         if (poisoned) {
@@ -2275,6 +2277,7 @@ rvargc_slot_count(size_t size)
     return roomof(size + sizeof(struct RPayload), sizeof(RVALUE));
 }
 
+#if USE_RVARGC
 static RVALUE *
 rvargc_find_contiguous_slots(int slots, RVALUE *freelist)
 {
@@ -2289,14 +2292,16 @@ rvargc_find_contiguous_slots(int slots, RVALUE *freelist)
             // Peek ahead to see if the region is contiguous
             if (search->as.free.next == (search - 1)) {
                 search = search->as.free.next;
-            } else {
+            }
+            else {
                 // Next slot is not contiguous
                 if (search->as.free.next) {
                     cursor = search->as.free.next;
                     previous_region = search;
 
                     break;
-                } else {
+                }
+                else {
                     // Hit the end of the free list
                     return NULL;
                 }
@@ -2313,11 +2318,13 @@ rvargc_find_contiguous_slots(int slots, RVALUE *freelist)
     }
     rb_bug("rvargc_find_contiguous_slots: unreachable");
 }
+#endif
 
 static inline bool heap_add_freepage(rb_heap_t *heap, struct heap_page *page);
 static struct heap_page * heap_next_freepage(rb_objspace_t *objspace, rb_heap_t *heap);
 static inline void ractor_set_cache(rb_ractor_t *cr, struct heap_page *page);
 
+#if USE_RVARGC
 static inline void *
 rvargc_find_region(size_t size, rb_ractor_t *cr, RVALUE *freelist)
 {
@@ -2372,6 +2379,7 @@ rvargc_find_region(size_t size, rb_ractor_t *cr, RVALUE *freelist)
     }
     return NULL;
 }
+#endif
 
 int
 rb_slot_size()
@@ -4779,7 +4787,8 @@ count_objects(int argc, VALUE *argv, VALUE os)
             if (RB_TYPE_P(vp, T_PAYLOAD)) {
                 stride = RPAYLOAD_LEN(vp);
                 counts[BUILTIN_TYPE(vp)] += RPAYLOAD_LEN(vp);
-            } else
+            }
+            else
 #endif
             if (p->as.basic.flags) {
                 counts[BUILTIN_TYPE(vp)]++;
@@ -5465,7 +5474,8 @@ gc_sweep_start_heap(rb_objspace_t *objspace, rb_heap_t *heap)
                 }
                 p->as.free.next = freelist;
                 asan_poison_object((VALUE)p);
-            } else {
+            }
+            else {
                 page->freelist = freelist;
             }
             asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
@@ -7454,7 +7464,8 @@ gc_verify_heap_page(rb_objspace_t *objspace, struct heap_page *page, VALUE obj)
 #if USE_RVARGC
         if (BUILTIN_TYPE(val) == T_PAYLOAD) {
             stride = RPAYLOAD_LEN(val);
-        } else {
+        }
+        else {
             stride = default_stride;
         }
 #endif
