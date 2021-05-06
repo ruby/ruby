@@ -416,7 +416,7 @@ static VALUE
 }
 
 static void
-setup_method_cfunc_struct(rb_method_cfunc_t *cfunc, VALUE (*func)(), int argc)
+setup_method_cfunc_struct(rb_method_cfunc_t *cfunc, VALUE (*func)(ANYARGS), int argc)
 {
     cfunc->func = func;
     cfunc->argc = argc;

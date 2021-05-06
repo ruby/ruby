@@ -166,6 +166,8 @@ struct __sbuf {
  *
  * NB: see WARNING above before changing the layout of this structure!
  */
+struct __suio;
+
 typedef	struct __sFILE {
 	unsigned char *_p;	/* current position in (some) buffer */
 #if 0
@@ -178,8 +180,8 @@ typedef	struct __sFILE {
 #if 0
 	size_t	_lbfsize;	/* 0 or -_bf._size, for inline putc */
 #endif
-	int	(*vwrite)(/* struct __sFILE*, struct __suio * */);
-	const char *(*vextra)(/* struct __sFILE*, size_t, void*, long*, int */);
+	int	(*vwrite)(struct __sFILE*, struct __suio *);
+	const char *(*vextra)(struct __sFILE*, size_t, void*, long*, int);
 } FILE;
 
 

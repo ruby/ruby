@@ -2382,7 +2382,7 @@ rvargc_find_region(size_t size, rb_ractor_t *cr, RVALUE *freelist)
 #endif
 
 int
-rb_slot_size()
+rb_slot_size(void)
 {
     return sizeof(RVALUE);
 }
@@ -4592,7 +4592,7 @@ obj_memsize_of(VALUE obj, int use_all_types)
       case T_HASH:
         if (RHASH_AR_TABLE_P(obj)) {
             if (RHASH_AR_TABLE(obj) != NULL) {
-                size_t rb_hash_ar_table_size();
+                size_t rb_hash_ar_table_size(void);
                 size += rb_hash_ar_table_size();
             }
 	}

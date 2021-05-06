@@ -4820,7 +4820,7 @@ extern char **environ;
 #endif
 
 static inline rb_encoding *
-env_encoding()
+env_encoding(void)
 {
 #ifdef _WIN32
     return rb_utf8_encoding();

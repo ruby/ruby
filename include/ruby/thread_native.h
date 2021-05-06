@@ -47,7 +47,7 @@ typedef pthread_cond_t rb_nativethread_cond_t;
 
 RUBY_SYMBOL_EXPORT_BEGIN
 
-rb_nativethread_id_t rb_nativethread_self();
+rb_nativethread_id_t rb_nativethread_self(void);
 
 void rb_nativethread_lock_initialize(rb_nativethread_lock_t *lock);
 void rb_nativethread_lock_destroy(rb_nativethread_lock_t *lock);

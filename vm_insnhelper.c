@@ -1857,7 +1857,7 @@ vm_search_method(VALUE cd_owner, struct rb_call_data *cd, VALUE recv)
 }
 
 static inline int
-check_cfunc(const rb_callable_method_entry_t *me, VALUE (*func)())
+check_cfunc(const rb_callable_method_entry_t *me, VALUE (*func)(ANYARGS))
 {
     if (! me) {
         return false;
@@ -1876,7 +1876,7 @@ check_cfunc(const rb_callable_method_entry_t *me, VALUE (*func)())
 }
 
 static inline int
-vm_method_cfunc_is(const rb_iseq_t *iseq, CALL_DATA cd, VALUE recv, VALUE (*func)())
+vm_method_cfunc_is(const rb_iseq_t *iseq, CALL_DATA cd, VALUE recv, VALUE (*func)(ANYARGS))
 {
     VM_ASSERT(iseq != NULL);
     const struct rb_callcache *cc = vm_search_method((VALUE)iseq, cd, recv);
