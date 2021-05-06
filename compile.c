@@ -3027,13 +3027,12 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
      *
      * putobject "beg".."end"
      */
-    if (IS_INSN_ID(iobj, checkmatch)) {
-        INSN *range = (INSN *)get_prev_insn(iobj);
+    if (IS_INSN_ID(iobj, newrange)) {
+        INSN *const range = iobj;
         INSN *beg, *end;
         VALUE str_beg, str_end;
 
-	if (range && IS_INSN_ID(range, newrange) &&
-                (end = (INSN *)get_prev_insn(range)) != 0 &&
+        if ((end = (INSN *)get_prev_insn(range)) != 0 &&
                 is_frozen_putstring(end, &str_end) &&
                 (beg = (INSN *)get_prev_insn(end)) != 0 &&
                 is_frozen_putstring(beg, &str_beg)) {
