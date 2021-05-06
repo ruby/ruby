@@ -275,10 +275,11 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/test/net/protocol", "test/net")
     cp_r("#{upstream}/net-protocol.gemspec", "lib/net")
   when "net-imap"
-    rm_rf(%w[lib/net/imap.rb lib/net/net-imap.gemspec test/net/imap])
+    rm_rf(%w[lib/net/imap.rb lib/net/imap test/net/imap])
     cp_r("#{upstream}/lib/net/imap.rb", "lib/net")
+    cp_r("#{upstream}/lib/net/imap", "lib/net")
     cp_r("#{upstream}/test/net/imap", "test/net")
-    cp_r("#{upstream}/net-imap.gemspec", "lib/net")
+    cp_r("#{upstream}/net-imap.gemspec", "lib/net/imap")
   when "net-ftp"
     rm_rf(%w[lib/net/ftp.rb lib/net/net-ftp.gemspec test/net/ftp])
     cp_r("#{upstream}/lib/net/ftp.rb", "lib/net")
