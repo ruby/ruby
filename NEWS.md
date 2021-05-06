@@ -14,9 +14,10 @@ Note that each entry is kept to a minimum, see links for details.
     #=> [[3, 5], [5, 7], [11, 13]]
     ```
 
-* Multiple assignment evaluation order has been made consistent with
-  single assignment evaluation order.  With single assignment, Ruby
-  uses a left-to-right evaluation order.  With this code:
+* Multiple assignment evaluation order for attributes has been made
+  consistent with single attribute assignment evaluation order.  With
+  single assignment, Ruby uses a left-to-right evaluation order.  With
+  this code:
 
     ```ruby
     foo[0] = bar
@@ -57,6 +58,31 @@ Note that each entry is kept to a minimum, see links for details.
   6. `baz=` called on the result of `bar`
 
   [[Bug #4443]]
+
+* Constant assignment evaluation order for constants set on explicit
+  objects has been made consistent with single attribute assignment
+  evaluation order.  With this code:
+
+    ```ruby
+    foo::BAR = baz
+    ```
+
+  `foo` is now called before `baz`. Similarly, for multiple assignment
+  to constants,  left-to-right evaluation order is used.  With this
+  code:
+
+    ```ruby
+      foo1::BAR1, foo2::BAR2 = baz1, baz2
+    ```
+
+  The following evaluation order is now used:
+
+  1. `foo1`
+  2. `foo2`
+  3. `baz1`
+  4. `baz2`
+
+  [[Bug #15928]]
 
 ## Command line options
 
@@ -145,6 +171,7 @@ Excluding feature bug fixes.
 [Feature #12194]: https://bugs.ruby-lang.org/issues/12194
 [Feature #14256]: https://bugs.ruby-lang.org/issues/14256
 [Feature #15198]: https://bugs.ruby-lang.org/issues/15198
+[Bug #15928]: https://bugs.ruby-lang.org/issues/15928
 [Feature #16043]: https://bugs.ruby-lang.org/issues/16043
 [Feature #16806]: https://bugs.ruby-lang.org/issues/16806
 [Feature #17312]: https://bugs.ruby-lang.org/issues/17312
