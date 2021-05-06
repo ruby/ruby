@@ -2727,7 +2727,10 @@ main(int argc, char *argv[])
     test x$rb_cv_fork_with_pthread = xyes || AC_DEFINE(CANNOT_FORK_WITH_PTHREAD)
 ])
 
-AC_CHECK_HEADERS([sys/user.h])
+AS_CASE([$target_os],
+    [darwin*], [ac_cv_header_sys_user_h=yes], dnl LIST_HEAD conflicts with sys/queue.h
+    [AC_CHECK_HEADERS([sys/user.h])]
+)
 AS_IF([test "x$ac_cv_func_mmap:$ac_cv_header_sys_user_h" = xyes:yes], [
     AC_CACHE_CHECK([PAGE_SIZE is defined], rb_cv_page_size,
         [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
