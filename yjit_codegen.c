@@ -114,6 +114,30 @@ jit_peek_at_self(jitstate_t *jit, ctx_t *ctx)
     return jit->ec->cfp->self;
 }
 
+// Save the incremented PC on the CFP
+// This is necessary when calleees can raise or allocate
+void
+jit_save_pc(jitstate_t* jit, x86opnd_t scratch_reg)
+{
+    mov(cb, scratch_reg, const_ptr_opnd(jit->pc + insn_len(jit->opcode)));
+    mov(cb, mem_opnd(64, REG_CFP, offsetof(rb_control_frame_t, pc)), scratch_reg);
+}
+
+// Save the current SP on the CFP
+// This realigns the interpreter SP with the JIT SP
+// Note: this will change the current value of REG_SP,
+//       which could invalidate memory operands
+void
+jit_save_sp(jitstate_t* jit, ctx_t* ctx)
+{
+    if (ctx->sp_offset != 0) {
+        x86opnd_t stack_pointer = ctx_sp_opnd(ctx, 0);
+        lea(cb, REG_SP, stack_pointer);
+        mov(cb, member_opnd(REG_CFP, rb_control_frame_t, sp), REG_SP);
+        ctx->sp_offset = 0;
+    }
+}
+
 static bool jit_guard_known_klass(jitstate_t *jit, ctx_t* ctx, VALUE known_klass, insn_opnd_t insn_opnd, const int max_chain_depth, uint8_t *side_exit);
 
 #if RUBY_DEBUG
@@ -1346,20 +1370,14 @@ gen_opt_aref(jitstate_t *jit, ctx_t *ctx)
         // Call VALUE rb_hash_aref(VALUE hash, VALUE key).
         {
             // Write incremented pc to cfp->pc as the routine can raise and allocate
-            mov(cb, REG0, const_ptr_opnd(jit->pc + insn_len(BIN(opt_aref))));
-            mov(cb, member_opnd(REG_CFP, rb_control_frame_t, pc), REG0);
+            jit_save_pc(jit, REG0);
 
             // About to change REG_SP which these operands depend on. Yikes.
             mov(cb, R8, recv_opnd);
             mov(cb, R9, idx_opnd);
 
             // Write sp to cfp->sp since rb_hash_aref might need to call #hash on the key
-            if (ctx->sp_offset != 0) {
-                x86opnd_t stack_pointer = ctx_sp_opnd(ctx, 0);
-                lea(cb, REG_SP, stack_pointer);
-                mov(cb, member_opnd(REG_CFP, rb_control_frame_t, sp), REG_SP);
-                ctx->sp_offset = 0; // REG_SP now equals cfp->sp
-            }
+            jit_save_sp(jit, ctx);
 
             yjit_save_regs(cb);
 
@@ -1500,6 +1518,40 @@ gen_opt_plus(jitstate_t* jit, ctx_t* ctx)
     // Push the output on the stack
     x86opnd_t dst = ctx_stack_push(ctx, TYPE_FIXNUM);
     mov(cb, dst, REG0);
+
+    return YJIT_KEEP_COMPILING;
+}
+
+VALUE rb_vm_opt_mod(VALUE recv, VALUE obj);
+
+static codegen_status_t
+gen_opt_mod(jitstate_t* jit, ctx_t* ctx)
+{
+    // Save the PC and SP because the callee may allocate bignums
+    // Note that this modifies REG_SP, which is why we do it first
+    jit_save_pc(jit, REG0);
+    jit_save_sp(jit, ctx);
+
+    uint8_t* side_exit = yjit_side_exit(jit, ctx);
+
+    // Get the operands from the stack
+    x86opnd_t arg1 = ctx_stack_pop(ctx, 1);
+    x86opnd_t arg0 = ctx_stack_pop(ctx, 1);
+
+    // Call rb_vm_opt_mod(VALUE recv, VALUE obj)
+    yjit_save_regs(cb);
+    mov(cb, C_ARG_REGS[0], arg0);
+    mov(cb, C_ARG_REGS[1], arg1);
+    call_ptr(cb, REG0, (void *)rb_vm_opt_mod);
+    yjit_load_regs(cb);
+
+    // If val == Qundef, bail to do a method call
+    cmp(cb, RAX, imm_opnd(Qundef));
+    je_ptr(cb, side_exit);
+
+    // Push the return value onto the stack
+    x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_UNKNOWN);
+    mov(cb, stack_ret, RAX);
 
     return YJIT_KEEP_COMPILING;
 }
@@ -1803,8 +1855,7 @@ gen_send_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const 
     x86opnd_t recv = ctx_stack_opnd(ctx, argc);
 
     // Store incremented PC into current control frame in case callee raises.
-    mov(cb, REG0, const_ptr_opnd(jit->pc + insn_len(jit->opcode)));
-    mov(cb, mem_opnd(64, REG_CFP, offsetof(rb_control_frame_t, pc)), REG0);
+    jit_save_pc(jit, REG0);
 
     if (push_frame) {
         if (block) {
@@ -1897,9 +1948,7 @@ gen_send_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const 
     if (block) {
         // Write interpreter SP into CFP.
         // Needed in case the callee yields to the block.
-        lea(cb, REG_SP, ctx_sp_opnd(ctx, 0));
-        mov(cb, member_opnd(REG_CFP, rb_control_frame_t, sp), REG_SP);
-        ctx->sp_offset = 0;
+        jit_save_sp(jit, ctx);
     }
 
     // Save YJIT registers
@@ -2075,8 +2124,7 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
     mov(cb, member_opnd(REG_CFP, rb_control_frame_t, sp), REG0);
 
     // Store the next PC in the current frame
-    mov(cb, REG0, const_ptr_opnd(jit->pc + insn_len(jit->opcode)));
-    mov(cb, mem_opnd(64, REG_CFP, offsetof(rb_control_frame_t, pc)), REG0);
+    jit_save_pc(jit, REG0);
 
     if (block) {
         // Change cfp->block_code in the current frame. See vm_caller_setup_arg_block().
@@ -2489,6 +2537,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(opt_or), gen_opt_or);
     yjit_reg_op(BIN(opt_minus), gen_opt_minus);
     yjit_reg_op(BIN(opt_plus), gen_opt_plus);
+    yjit_reg_op(BIN(opt_mod), gen_opt_mod);
     yjit_reg_op(BIN(opt_getinlinecache), gen_opt_getinlinecache);
     yjit_reg_op(BIN(branchif), gen_branchif);
     yjit_reg_op(BIN(branchunless), gen_branchunless);
