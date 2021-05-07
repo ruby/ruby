@@ -1,3 +1,13 @@
+# Test for opt_mod
+assert_equal '2', %q{
+  def mod(a, b)
+    a % b
+  end
+
+  mod(7, 5)
+  mod(7, 5)
+}
+
 # BOP redefined methods work when JIT compiled
 assert_equal 'false', %q{
   def less_than x
