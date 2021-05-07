@@ -830,6 +830,13 @@ class Rational_Test < Test::Unit::TestCase
     assert_raise(ZeroDivisionError) {Rational("1/0")}
   end
 
+  def test_cdhash
+    assert_separately([], <<-RUBY)
+      n = case 1 when 2r then false else true end
+      assert_equal(n, true, '[ruby-core:103759] [Bug #17854]')
+    RUBY
+  end
+
   def test_Rational_with_invalid_exception
     assert_raise(ArgumentError) {
       Rational("1/1", exception: 1)
