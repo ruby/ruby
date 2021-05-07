@@ -3453,31 +3453,20 @@ rb_dir_s_empty_p(VALUE obj, VALUE dirname)
  *
  *  \Class \Dir provides methods that are useful for:
  *
- *  - {Creating}[#class-Dir-label-Creating]
  *  - {Reading}[#class-Dir-label-Reading]
  *  - {Setting}[#class-Dir-label-Setting]
  *  - {Querying}[#class-Dir-label-Querying]
  *  - {Iterating}[#class-Dir-label-Iterating]
  *  - {Other}[#class-Dir-label-Other]
  *
- *  === Creating
- *
- *  - ::mkdir:: Creates and returns a new \Directory at the given path,
- *              with optional permissions.
- *  - ::new:: Creates and returns a new \Directory at the given path,
- *            with optional encoding.
- *
  *  === Reading
  *
- *  - ::open:: Opens and returns a \Directory at the given path, with optional encoding;
- *             the directory stream is positioned at the first entry.
  *  - #close:: Closes the directory stream for +self+.
  *  - #pos=:: Sets the position in the directory stream for +self+.
  *  - #read:: Reads and returns the next entry in the directory stream for +self+.
  *  - #rewind:: Sets the position in the directory stream for +self+ to the first entry.
  *  - #seek:: Sets the position in the directory stream for +self+
  *            the entry at the given offset.
- *  - #tell:: Returns the integer position in the directory stream for +self+.
  *
  *  === Setting
  *
@@ -3488,7 +3477,7 @@ rb_dir_s_empty_p(VALUE obj, VALUE dirname)
  *
  *  === Querying
  *
- *  - ::[]:: Returns an array of file paths that match the given pattern.
+ *  - ::[]:: Same as ::glob without the ability to pass flags.
  *  - ::children:: Returns an array of names of the children
  *                 (both files and directories) of the given directory,
  *                 but not including <tt>.</tt> or <tt>..</tt>.
@@ -3497,24 +3486,23 @@ rb_dir_s_empty_p(VALUE obj, VALUE dirname)
  *                (both files and directories) of the given directory,
  *                including <tt>.</tt> and <tt>..</tt>.
  *  - ::exist?:: Returns whether the given path is a directory.
- *  - ::getwd:: Returns the path to the current working directory.
- *  - ::glob:: Returns an array of file paths matching the given pattern.
- *  - ::home:: Returns the home directory path for a user, if given,
- *             else for the current user.
- *  - ::pwd:: Returns the path to the current working directory.
+ *  - ::getwd (aliased as #pwd):: Returns the path to the current working directory.
+ *  - ::glob:: Returns an array of file paths matching the given pattern and flags.
+ *  - ::home:: Returns the home directory path for a given user or the current user.
  *  - #children:: Returns an array of names of the children
  *                (both files and directories) of +self+,
  *                but not including <tt>.</tt> or <tt>..</tt>.
  *  - #fileno:: Returns the integer file descriptor for +self+.
  *  - #path (aliased as #to_path):: Returns the path used to create +self+.
- *  - #pos:: Returns the current position in the directory stream for +self+.
+ *  - #tell (aliased as #pos):: Returns the integer position
+ *                              in the directory stream for +self+.
  *
  *  === Iterating
  *
- *  - ::each_child:: Calls the given block with each entry
- *                   in the given directory.
- *  - ::foreach:: Calls the given block with each entry
- *                in the given directory, with an optional encoding for the entries.
+ *  - ::each_child:: Calls the given block with each entry in the given directory,
+ *                   but not including <tt>.</tt> or <tt>..</tt>.
+ *  - ::foreach:: Calls the given block with each entryin the given directory,
+ *                including <tt>.</tt> and <tt>..</tt>.
  *  - #each:: Calls the given block with each entry in +self+,
  *            including <tt>.</tt> and <tt>..</tt>.
  *  - #each_child:: Calls the given block with each entry in +self+,
@@ -3522,8 +3510,12 @@ rb_dir_s_empty_p(VALUE obj, VALUE dirname)
  *
  *  === Other
  *
- *  - #inspect:: Returns a string description of +self+.
+ *  - ::mkdir:: Creates a directory at the given path, with optional permissions.
+ *  - ::new:: Returns a new \Dir for the given path, with optional encoding.
+ *  - ::open:: Same as ::new, but if a block is given, yields the \Dir to the block,
+ *             closing it upon block exit.
  *  - ::unlink (aliased as ::delete and ::rmdir):: Removes the given directory.
+ *  - #inspect:: Returns a string description of +self+.
  *
  */
 void
