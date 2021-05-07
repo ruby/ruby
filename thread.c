@@ -874,6 +874,9 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
 	    /* treat with normal error object */
 	    rb_threadptr_raise(ractor_main_th, 1, &errinfo);
 	}
+
+	rb_threadptr_join_list_wakeup(th);
+
 	EC_POP_TAG();
 
 	rb_ec_clear_current_thread_trace_func(th->ec);
@@ -890,7 +893,6 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
             rb_threadptr_interrupt(ractor_main_th);
 	}
 
-        rb_threadptr_join_list_wakeup(th);
         rb_threadptr_unlock_all_locking_mutexes(th);
         rb_check_deadlock(th->ractor);
 
