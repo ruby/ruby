@@ -28,6 +28,7 @@
 #include "internal/hash.h"
 #include "internal/numeric.h"
 #include "internal/object.h"
+#include "internal/rational.h"
 #include "internal/re.h"
 #include "internal/symbol.h"
 #include "internal/thread.h"
@@ -2004,6 +2005,10 @@ cdhash_cmp(VALUE val, VALUE lit)
     else if (tlit == T_FLOAT) {
         return rb_float_cmp(lit, val);
     }
+    else if (tlit ==  T_RATIONAL) {
+        /* Rational literals don't have fractions. */
+        return cdhash_cmp(val, rb_rational_num(lit));
+    }
     else {
         UNREACHABLE_RETURN(-1);
     }
@@ -2022,6 +2027,8 @@ cdhash_hash(VALUE a)
         return FIX2LONG(rb_big_hash(a));
       case T_FLOAT:
         return rb_dbl_long_hash(RFLOAT_VALUE(a));
+      case T_RATIONAL:
+        return rb_rational_hash(a);
       default:
         UNREACHABLE_RETURN(0);
     }
