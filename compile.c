@@ -2005,10 +2005,15 @@ cdhash_cmp(VALUE val, VALUE lit)
     else if (tlit == T_FLOAT) {
         return rb_float_cmp(lit, val);
     }
-    else if (tlit ==  T_RATIONAL) {
-        const struct RRational *dat1 = RRATIONAL(val);
-        const struct RRational *dat2 = RRATIONAL(lit);
-        return (dat1->num == dat2->num) && (dat1->den == dat2->den);
+    else if (tlit == T_RATIONAL) {
+        const struct RRational *rat1 = RRATIONAL(val);
+        const struct RRational *rat2 = RRATIONAL(lit);
+        return (rat1->num == rat2->num) && (rat1->den == rat2->den);
+    }
+    else if (tlit == T_COMPLEX) {
+        const struct RComplex *comp1 = RCOMPLEX(val);
+        const struct RComplex *comp2 = RCOMPLEX(lit);
+        return (comp1->real == comp2->real) && (comp1->imag == comp2->imag);
     }
     else {
         UNREACHABLE_RETURN(-1);
@@ -2030,6 +2035,8 @@ cdhash_hash(VALUE a)
         return rb_dbl_long_hash(RFLOAT_VALUE(a));
       case T_RATIONAL:
         return rb_rational_hash(a);
+      case T_COMPLEX:
+        return rb_complex_hash(a);
       default:
         UNREACHABLE_RETURN(0);
     }

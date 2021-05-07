@@ -839,6 +839,10 @@ class Rational_Test < Test::Unit::TestCase
       n = case 3/2r when 1.5r then true else false end
       assert_equal(n, true, '[ruby-core:103759] [Bug #17854]')
     RUBY
+    assert_separately([], <<-RUBY)
+      n = case 1i when 1i then true else false end
+      assert_equal(n, true, '[ruby-core:103759] [Bug #17854]')
+    RUBY
   end
 
   def test_Rational_with_invalid_exception
