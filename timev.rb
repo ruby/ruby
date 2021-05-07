@@ -75,7 +75,7 @@ class Time
   # :include: doc/time/year.rdoc
   # :include: doc/time/mon-min.rdoc
   # :include: doc/time/sec.rdoc
-  # :include: doc/time/in.rdoc
+  # :include: doc/time/zone_and_in.rdoc
   #
   def initialize(year = (now = true), mon = nil, mday = nil, hour = nil, min = nil, sec = nil, zone = nil, in: nil)
     if zone
