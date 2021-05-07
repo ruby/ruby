@@ -1326,8 +1326,8 @@ nucomp_numerator(VALUE self)
 }
 
 /* :nodoc: */
-static VALUE
-nucomp_hash(VALUE self)
+st_index_t
+rb_complex_hash(VALUE self)
 {
     st_index_t v, h[2];
     VALUE n;
@@ -1338,7 +1338,13 @@ nucomp_hash(VALUE self)
     n = rb_hash(dat->imag);
     h[1] = NUM2LONG(n);
     v = rb_memhash(h, sizeof(h));
-    return ST2FIX(v);
+    return v;
+}
+
+static VALUE
+nucomp_hash(VALUE self)
+{
+    return ST2FIX(rb_complex_hash(self));
 }
 
 /* :nodoc: */
