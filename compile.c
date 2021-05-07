@@ -2008,12 +2008,12 @@ cdhash_cmp(VALUE val, VALUE lit)
     else if (tlit == T_RATIONAL) {
         const struct RRational *rat1 = RRATIONAL(val);
         const struct RRational *rat2 = RRATIONAL(lit);
-        return (rat1->num == rat2->num) && (rat1->den == rat2->den);
+        return cdhash_cmp(rat1->num, rat2->num) && cdhash_cmp(rat1->den, rat2->den);
     }
     else if (tlit == T_COMPLEX) {
         const struct RComplex *comp1 = RCOMPLEX(val);
         const struct RComplex *comp2 = RCOMPLEX(lit);
-        return (comp1->real == comp2->real) && (comp1->imag == comp2->imag);
+        return cdhash_cmp(comp1->real, comp2->real) && cdhash_cmp(comp1->imag, comp2->imag);
     }
     else {
         UNREACHABLE_RETURN(-1);
