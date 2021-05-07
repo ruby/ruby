@@ -141,7 +141,7 @@ enum_grep0(VALUE obj, VALUE pat, VALUE test)
  * With no block given, returns an array containing each element
  * for which <tt>pattern === element</tt> is +true+:
  *
- *   a = %w/foo bar car moo/
+ *   a = ['foo', 'bar', 'car', 'moo']
  *   a.grep(/ar/)                   # => ["bar", "car"]
  *   (1..10).grep(3..8)             # => [3, 4, 5, 6, 7, 8]
  *   ['a', 'b', 0, 1].grep(Integer) # => [0, 1]
@@ -150,7 +150,7 @@ enum_grep0(VALUE obj, VALUE pat, VALUE test)
  * calls the block with each matching element and returns an array containing each
  * object returned by the block:
  *
- *   a = %w/foo bar car moo/
+ *   a = ['foo', 'bar', 'car', 'moo']
  *   a.grep(/ar/) {|element| element.upcase } # => ["BAR", "CAR"]
  *
  * Related: #grep_v.
@@ -173,7 +173,7 @@ enum_grep(VALUE obj, VALUE pat)
  * With no block given, returns an array containing each element
  * for which <tt>pattern === element</tt> is +false+:
  *
- *   a = %w/foo bar car moo/
+ *   a = ['foo', 'bar', 'car', 'moo']
  *   a.grep_v(/ar/)                   # => ["foo", "moo"]
  *   (1..10).grep_v(3..8)             # => [1, 2, 9, 10]
  *   ['a', 'b', 0, 1].grep_v(Integer) # => ["a", "b"]
@@ -182,7 +182,7 @@ enum_grep(VALUE obj, VALUE pat)
  * calls the block with each non-matching element and returns an array containing each
  * object returned by the block:
  *
- *   a = %w/foo bar car moo/
+ *   a = ['foo', 'bar', 'car', 'moo']
  *   a.grep_v(/ar/) {|element| element.upcase } # => ["FOO", "MOO"]
  *
  * Related: #grep.
