@@ -3755,10 +3755,8 @@ setup_comb_exp_check(Node* node, int state, ScanEnv* env)
   switch (type) {
   case NT_LIST:
     {
-      Node* prev = NULL_NODE;
       do {
 	r = setup_comb_exp_check(NCAR(node), r, env);
-	prev = NCAR(node);
       } while (r >= 0 && IS_NOT_NULL(node = NCDR(node)));
     }
     break;
