@@ -1163,7 +1163,7 @@ gen_fixnum_cmp(jitstate_t* jit, ctx_t* ctx, cmov_fn cmov_op)
     // Check that both operands are fixnums
     guard_two_fixnums(ctx, side_exit);
 
-    // Get the operands and destination from the stack
+    // Get the operands from the stack
     x86opnd_t arg1 = ctx_stack_pop(ctx, 1);
     x86opnd_t arg0 = ctx_stack_pop(ctx, 1);
 
@@ -1203,6 +1203,36 @@ static codegen_status_t
 gen_opt_gt(jitstate_t* jit, ctx_t* ctx)
 {
     return gen_fixnum_cmp(jit, ctx, cmovg);
+}
+
+VALUE rb_opt_equality_specialized(VALUE recv, VALUE obj);
+
+static codegen_status_t
+gen_opt_eq(jitstate_t* jit, ctx_t* ctx)
+{
+    uint8_t* side_exit = yjit_side_exit(jit, ctx);
+
+    // Get the operands from the stack
+    x86opnd_t arg1 = ctx_stack_pop(ctx, 1);
+    x86opnd_t arg0 = ctx_stack_pop(ctx, 1);
+
+    // Call rb_opt_equality_specialized(VALUE recv, VALUE obj)
+    // We know this method won't allocate or perform calls
+    yjit_save_regs(cb);
+    mov(cb, C_ARG_REGS[0], arg0);
+    mov(cb, C_ARG_REGS[1], arg1);
+    call_ptr(cb, REG0, (void *)rb_opt_equality_specialized);
+    yjit_load_regs(cb);
+
+    // If val == Qundef, bail to do a method call
+    cmp(cb, RAX, imm_opnd(Qundef));
+    je_ptr(cb, side_exit);
+
+    // Push the return value onto the stack
+    x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_IMM);
+    mov(cb, stack_ret, RAX);
+
+    return YJIT_KEEP_COMPILING;
 }
 
 static codegen_status_t gen_opt_send_without_block(jitstate_t *jit, ctx_t *ctx);
@@ -2453,6 +2483,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(opt_le), gen_opt_le);
     yjit_reg_op(BIN(opt_ge), gen_opt_ge);
     yjit_reg_op(BIN(opt_gt), gen_opt_gt);
+    yjit_reg_op(BIN(opt_eq), gen_opt_eq);
     yjit_reg_op(BIN(opt_aref), gen_opt_aref);
     yjit_reg_op(BIN(opt_and), gen_opt_and);
     yjit_reg_op(BIN(opt_or), gen_opt_or);
