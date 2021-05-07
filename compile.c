@@ -2006,8 +2006,9 @@ cdhash_cmp(VALUE val, VALUE lit)
         return rb_float_cmp(lit, val);
     }
     else if (tlit ==  T_RATIONAL) {
-        /* Rational literals don't have fractions. */
-        return cdhash_cmp(val, rb_rational_num(lit));
+        const struct RRational *dat1 = RRATIONAL(val);
+        const struct RRational *dat2 = RRATIONAL(lit);
+        return (dat1->num == dat2->num) && (dat1->den == dat2->den);
     }
     else {
         UNREACHABLE_RETURN(-1);
