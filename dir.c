@@ -3448,6 +3448,83 @@ rb_dir_s_empty_p(VALUE obj, VALUE dirname)
  *  (<code>config.h</code> and <code>main.rb</code>), the parent
  *  directory (<code>..</code>), and the directory itself
  *  (<code>.</code>).
+ *
+ *  == What's Here
+ *
+ *  \Class \Dir provides methods that are useful for:
+ *
+ *  - {Creating}[#class-Dir-label-Creating]
+ *  - {Reading}[#class-Dir-label-Reading]
+ *  - {Setting}[#class-Dir-label-Setting]
+ *  - {Querying}[#class-Dir-label-Querying]
+ *  - {Iterating}[#class-Dir-label-Iterating]
+ *  - {Other}[#class-Dir-label-Other]
+ *
+ *  === Creating
+ *
+ *  - ::mkdir:: Creates and returns a new \Directory at the given path,
+ *              with optional permissions.
+ *  - ::new:: Creates and returns a new \Directory at the given path,
+ *            with optional encoding.
+ *
+ *  === Reading
+ *
+ *  - ::open:: Opens and returns a \Directory at the given path, with optional encoding;
+ *             the directory stream is positioned at the first entry.
+ *  - #close:: Closes the directory stream for +self+.
+ *  - #pos=:: Sets the position in the directory stream for +self+.
+ *  - #read:: Reads and returns the next entry in the directory stream for +self+.
+ *  - #rewind:: Sets the position in the directory stream for +self+ to the first entry.
+ *  - #seek:: Sets the position in the directory stream for +self+
+ *            the entry at the given offset.
+ *  - #tell:: Returns the integer position in the directory stream for +self+.
+ *
+ *  === Setting
+ *
+ *  - ::chdir:: Changes the working directory of the current process
+ *              to the given directory.
+ *  - ::chroot:: Changes the file-system root for the current process
+ *               to the given directory.
+ *
+ *  === Querying
+ *
+ *  - ::[]:: Returns an array of file paths that match the given pattern.
+ *  - ::children:: Returns an array of names of the children
+ *                 (both files and directories) of the given directory,
+ *                 but not including <tt>.</tt> or <tt>..</tt>.
+ *  - ::empty?:: Returns whether the given path is an empty directory.
+ *  - ::entries:: Returns an array of names of the children
+ *                (both files and directories) of the given directory,
+ *                including <tt>.</tt> and <tt>..</tt>.
+ *  - ::exist?:: Returns whether the given path is a directory.
+ *  - ::getwd:: Returns the path to the current working directory.
+ *  - ::glob:: Returns an array of file paths matching the given pattern.
+ *  - ::home:: Returns the home directory path for a user, if given,
+ *             else for the current user.
+ *  - ::pwd:: Returns the path to the current working directory.
+ *  - #children:: Returns an array of names of the children
+ *                (both files and directories) of +self+,
+ *                but not including <tt>.</tt> or <tt>..</tt>.
+ *  - #fileno:: Returns the integer file descriptor for +self+.
+ *  - #path (aliased as #to_path):: Returns the path used to create +self+.
+ *  - #pos:: Returns the current position in the directory stream for +self+.
+ *
+ *  === Iterating
+ *
+ *  - ::each_child:: Calls the given block with each entry
+ *                   in the given directory.
+ *  - ::foreach:: Calls the given block with each entry
+ *                in the given directory, with an optional encoding for the entries.
+ *  - #each:: Calls the given block with each entry in +self+,
+ *            including <tt>.</tt> and <tt>..</tt>.
+ *  - #each_child:: Calls the given block with each entry in +self+,
+ *                  but not including <tt>.</tt> or <tt>..</tt>.
+ *
+ *  === Other
+ *
+ *  - #inspect:: Returns a string description of +self+.
+ *  - ::unlink (aliased as ::delete and ::rmdir):: Removes the given directory.
+ *
  */
 void
 Init_Dir(void)
