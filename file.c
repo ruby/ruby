@@ -6590,13 +6590,13 @@ const char ruby_null_device[] =
  *
  *  - ::atime:: Returns a \Time for the most recent access to the given file.
  *  - ::birthtime:: Returns a \Time  for the creation of the given file.
- *  - ::ctime:: Returns a \Time  for the creation of the given file.
- *  - ::mtime:: Returns a \Time for the most recent modification to
+ *  - ::ctime:: Returns a \Time  for the metadata change of the given file.
+ *  - ::mtime:: Returns a \Time for the most recent data modification to
  *              the content of the given file.
  *  - #atime:: Returns a \Time for the most recent access to +self+.
  *  - #birthtime:: Returns a \Time  the creation for +self+.
- *  - #ctime:: Returns a \Time for the creating of +self+.
- *  - #mtime:: Returns a \Time for the most recent modification
+ *  - #ctime:: Returns a \Time for the metadata change of +self+.
+ *  - #mtime:: Returns a \Time for the most recent data modification
  *             to the content of +self+.
  *
  *  _Types_
@@ -6634,6 +6634,7 @@ const char ruby_null_device[] =
  *                        by others.
  *  - ::world_writable?:: Returns whether the file at the given path is writable
  *                        by others.
+ *  - ::writable?:: Returns whether the file at the given path is writable
  *                  by the effective user and group of the current process.
  *  - ::writable_real?:: Returns whether the file at the given path is writable
  *                       by the real user and group of the current process.
