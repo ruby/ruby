@@ -566,7 +566,7 @@ rsock_bsock_send(int argc, VALUE *argv, VALUE sock)
     arg.flags = NUM2INT(flags);
     while (rsock_maybe_fd_writable(arg.fd),
 	   (n = (ssize_t)BLOCKING_REGION_FD(func, &arg)) < 0) {
-	if (rb_io_wait_writable(arg.fd)) {
+	if (rb_io_maybe_wait_writable(errno, sock, Qnil)) {
 	    continue;
 	}
 	rb_sys_fail(funcname);
