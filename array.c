@@ -2829,7 +2829,7 @@ rb_ary_join(VALUE ary, VALUE sep)
 /*
  *  call-seq:
  *    array.join ->new_string
- *    array.join(separator = $,) -> new_string
+ *    array.join(separator = $) -> new_string
  *
  *  Returns the new \String formed by joining the array elements after conversion.
  *  For each element +element+
