@@ -1881,8 +1881,6 @@ nurat_marshal_load(VALUE self, VALUE a)
     return self;
 }
 
-/* --- */
-
 VALUE
 rb_rational_reciprocal(VALUE x)
 {
@@ -2813,8 +2811,6 @@ Init_Rational(void)
     compat = rb_define_class_under(rb_cRational, "compatible", rb_cObject);
     rb_define_private_method(compat, "marshal_load", nurat_marshal_load, 1);
     rb_marshal_define_compat(rb_cRational, compat, nurat_dumper, nurat_loader);
-
-    /* --- */
 
     rb_define_method(rb_cInteger, "gcd", rb_gcd, 1);
     rb_define_method(rb_cInteger, "lcm", rb_lcm, 1);
