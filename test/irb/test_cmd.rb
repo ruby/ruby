@@ -407,10 +407,10 @@ module TestIRB
       end
       assert_empty err
       assert_match(/^instance variables:\s+@a\n/m, out)
-      assert_match(/C#methods: m1\n/m, out)
-      assert_match(/M#methods: m2\n/m, out)
-      assert_match(/M2#methods: m3\n/m, out)
-      assert_match(/C.methods: m4\n/m, out)
+      assert_match(/C#methods:\s+m1\n/m, out)
+      assert_match(/M#methods:\s+m2\n/m, out)
+      assert_match(/M2#methods:\s+m3\n/m, out)
+      assert_match(/C.methods:\s+m4\n/m, out)
     end
 
     def test_show_source
