@@ -1392,6 +1392,42 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
     return rb_thread_wait_for_single_fd(fd, events, timeout);
 }
 
+VALUE rb_io_maybe_wait(int error, VALUE io, VALUE events, VALUE timeout)
+{
+    switch (error) {
+      case EINTR:
+#if defined(ERESTART)
+      case ERESTART:
+#endif
+        // We might have pending interrupts since the previous syscall was interrupted:
+        rb_thread_check_ints();
+
+        // The operation was interrupted, so retry it immediately:
+        return events;
+
+      case EAGAIN:
+#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
+      case EWOULDBLOCK:
+#endif
+        // The operation would block, so wait for the specified events:
+        return rb_io_wait(io, events, timeout);
+
+      default:
+        // Non-specific error, no event is ready:
+        return RB_INT2NUM(0);
+    }
+}
+
+int rb_io_maybe_wait_readable(int error, VALUE io, VALUE timeout)
+{
+    return RB_NUM2INT(rb_io_maybe_wait(error, io, RB_INT2NUM(RUBY_IO_READABLE), timeout));
+}
+
+int rb_io_maybe_wait_writable(int error, VALUE io, VALUE timeout)
+{
+    return RB_NUM2INT(rb_io_maybe_wait(error, io, RB_INT2NUM(RUBY_IO_WRITABLE), timeout));
+}
+
 static void
 make_writeconv(rb_io_t *fptr)
 {

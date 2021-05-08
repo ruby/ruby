@@ -750,17 +750,14 @@ sock_recvfrom_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str, VALUE ex)
  *
  */
 static VALUE
-sock_accept(VALUE sock)
+sock_accept(VALUE server)
 {
-    rb_io_t *fptr;
-    VALUE sock2;
-    union_sockaddr buf;
-    socklen_t len = (socklen_t)sizeof buf;
+    union_sockaddr buffer;
+    socklen_t length = (socklen_t)sizeof(buffer);
 
-    GetOpenFile(sock, fptr);
-    sock2 = rsock_s_accept(rb_cSocket,fptr->fd,&buf.addr,&len);
+    VALUE peer = rsock_s_accept(rb_cSocket, server, &buffer.addr, &length);
 
-    return rb_assoc_new(sock2, rsock_io_socket_addrinfo(sock2, &buf.addr, len));
+    return rb_assoc_new(peer, rsock_io_socket_addrinfo(peer, &buffer.addr, length));
 }
 
 /* :nodoc: */
@@ -820,17 +817,14 @@ sock_accept_nonblock(VALUE sock, VALUE ex)
  * * Socket#accept
  */
 static VALUE
-sock_sysaccept(VALUE sock)
+sock_sysaccept(VALUE server)
 {
-    rb_io_t *fptr;
-    VALUE sock2;
-    union_sockaddr buf;
-    socklen_t len = (socklen_t)sizeof buf;
+    union_sockaddr buffer;
+    socklen_t length = (socklen_t)sizeof(buffer);
 
-    GetOpenFile(sock, fptr);
-    sock2 = rsock_s_accept(0,fptr->fd,&buf.addr,&len);
+    VALUE peer = rsock_s_accept(0, server, &buffer.addr, &length);
 
-    return rb_assoc_new(sock2, rsock_io_socket_addrinfo(sock2, &buf.addr, len));
+    return rb_assoc_new(peer, rsock_io_socket_addrinfo(peer, &buffer.addr, length));
 }
 
 #ifdef HAVE_GETHOSTNAME

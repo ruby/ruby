@@ -159,6 +159,9 @@ int rb_io_wait_writable(int fd);
 int rb_wait_for_single_fd(int fd, int events, struct timeval *tv);
 
 VALUE rb_io_wait(VALUE io, VALUE events, VALUE timeout);
+VALUE rb_io_maybe_wait(int error, VALUE io, VALUE events, VALUE timeout);
+int rb_io_maybe_wait_readable(int error, VALUE io, VALUE timeout);
+int rb_io_maybe_wait_writable(int error, VALUE io, VALUE timeout);
 
 /* compatibility for ruby 1.8 and older */
 #define rb_io_mode_flags(modestr) [<"rb_io_mode_flags() is obsolete; use rb_io_modestr_fmode()">]
