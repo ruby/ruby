@@ -5737,7 +5737,7 @@ ary_max_opt_string(VALUE ary, long i, VALUE vmax)
  *  With an argument \Integer +n+ and no block, returns a new \Array with at most +n+ elements,
  *  in descending order per method <tt><=></tt>:
  *    [0, 1, 2, 3].max(3) # => [3, 2, 1]
- *    [0, 1, 2, 3].max(6) # => [3, 2, 1]
+ *    [0, 1, 2, 3].max(6) # => [3, 2, 1, 0]
  *
  *  When a block is given, the block must return an \Integer.
  *
