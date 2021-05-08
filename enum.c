@@ -132,21 +132,28 @@ enum_grep0(VALUE obj, VALUE pat, VALUE test)
 }
 
 /*
- *  call-seq:
- *     enum.grep(pattern)                  -> array
- *     enum.grep(pattern) { |obj| block }  -> array
+ * call-seq:
+ *   grep(pattern) -> array
+ *   grep(pattern) {|element| ... } -> array
  *
- *  Returns an array of every element in <i>enum</i> for which
- *  <code>Pattern === element</code>. If the optional <em>block</em> is
- *  supplied, each matching element is passed to it, and the block's
- *  result is stored in the output array.
+ * Returns an array of objects based elements of +self+ that match the given pattern.
  *
- *     (1..100).grep 38..44   #=> [38, 39, 40, 41, 42, 43, 44]
- *     c = IO.constants
- *     c.grep(/SEEK/)         #=> [:SEEK_SET, :SEEK_CUR, :SEEK_END]
- *     res = c.grep(/SEEK/) { |v| IO.const_get(v) }
- *     res                    #=> [0, 1, 2]
+ * With no block given, returns an array containing each element
+ * for which <tt>pattern === element</tt> is +true+:
  *
+ *   a = ['foo', 'bar', 'car', 'moo']
+ *   a.grep(/ar/)                   # => ["bar", "car"]
+ *   (1..10).grep(3..8)             # => [3, 4, 5, 6, 7, 8]
+ *   ['a', 'b', 0, 1].grep(Integer) # => [0, 1]
+ *
+ * With a block given,
+ * calls the block with each matching element and returns an array containing each
+ * object returned by the block:
+ *
+ *   a = ['foo', 'bar', 'car', 'moo']
+ *   a.grep(/ar/) {|element| element.upcase } # => ["BAR", "CAR"]
+ *
+ * Related: #grep_v.
  */
 
 static VALUE
@@ -156,18 +163,29 @@ enum_grep(VALUE obj, VALUE pat)
 }
 
 /*
- *  call-seq:
- *     enum.grep_v(pattern)                  -> array
- *     enum.grep_v(pattern) { |obj| block }  -> array
+ * call-seq:
+ *   grep_v(pattern) -> array
+ *   grep_v(pattern) {|element| ... } -> array
  *
- *  Inverted version of Enumerable#grep.
- *  Returns an array of every element in <i>enum</i> for which
- *  not <code>Pattern === element</code>.
+ * Returns an array of objects based on elements of +self+
+ * that <em>don't</em> match the given pattern.
  *
- *     (1..10).grep_v 2..5   #=> [1, 6, 7, 8, 9, 10]
- *     res =(1..10).grep_v(2..5) { |v| v * 2 }
- *     res                    #=> [2, 12, 14, 16, 18, 20]
+ * With no block given, returns an array containing each element
+ * for which <tt>pattern === element</tt> is +false+:
  *
+ *   a = ['foo', 'bar', 'car', 'moo']
+ *   a.grep_v(/ar/)                   # => ["foo", "moo"]
+ *   (1..10).grep_v(3..8)             # => [1, 2, 9, 10]
+ *   ['a', 'b', 0, 1].grep_v(Integer) # => ["a", "b"]
+ *
+ * With a block given,
+ * calls the block with each non-matching element and returns an array containing each
+ * object returned by the block:
+ *
+ *   a = ['foo', 'bar', 'car', 'moo']
+ *   a.grep_v(/ar/) {|element| element.upcase } # => ["FOO", "MOO"]
+ *
+ * Related: #grep.
  */
 
 static VALUE
