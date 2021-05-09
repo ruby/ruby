@@ -2263,6 +2263,8 @@ free_loading_table_entry(st_data_t key, st_data_t value, st_data_t arg)
     return ST_DELETE;
 }
 
+extern void rb_native_mutex_destroy(rb_nativethread_lock_t *lock);
+
 int
 ruby_vm_destruct(rb_vm_t *vm)
 {
@@ -2486,7 +2488,7 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
 	rb_gc_mark_machine_stack(ec);
 	rb_gc_mark_locations((VALUE *)&ec->machine.regs,
 			     (VALUE *)(&ec->machine.regs) +
-			     sizeof(ec->machine.regs) / sizeof(VALUE));
+			     sizeof(ec->machine.regs) / (sizeof(VALUE)));
     }
 
     RUBY_MARK_UNLESS_NULL(ec->errinfo);
