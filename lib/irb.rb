@@ -590,9 +590,15 @@ module IRB
       end
     end
 
-    def convert_invalid_byte_sequence(str)
-      str = str.force_encoding(Encoding::ASCII_8BIT)
-      conv = Encoding::Converter.new(Encoding::ASCII_8BIT, Encoding::UTF_8)
+    def convert_invalid_byte_sequence(str, enc)
+      str.force_encoding(enc)
+      str.scrub { |c|
+        c.bytes.map{ |b| "\\x#{b.to_s(16).upcase}" }.join
+      }
+    end
+
+    def encode_with_invalid_byte_sequence(str, enc)
+      conv = Encoding::Converter.new(str.encoding, enc)
       dst = String.new
       begin
         ret = conv.primitive_convert(str, dst)
@@ -640,7 +646,8 @@ module IRB
           message = exc.full_message(order: :top)
           order = :top
         end
-        message = convert_invalid_byte_sequence(message)
+        message = convert_invalid_byte_sequence(message, exc.message.encoding)
+        message = encode_with_invalid_byte_sequence(message, IRB.conf[:LC_MESSAGES].encoding) if message.encoding != IRB.conf[:LC_MESSAGES].encoding
         message = message.gsub(/((?:^\t.+$\n)+)/)  { |m|
           case order
           when :top
