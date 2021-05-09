@@ -547,7 +547,7 @@ fill_random_bytes_syscall(void *buf, size_t size, int unused)
 static void
 release_crypt(void *p)
 {
-    HCRYPTPROV prov = (HCRYPTPROV)ATOMIC_PTR_EXCHANGE(*(HCRYPTPROV *)p, INVALID_HANDLE_VALUE);
+    HCRYPTPROV prov = (HCRYPTPROV)ATOMIC_PTR_EXCHANGE(*(HCRYPTPROV *)p, (HCRYPTPROV)INVALID_HANDLE_VALUE);
     if (prov && prov != (HCRYPTPROV)INVALID_HANDLE_VALUE) {
 	CryptReleaseContext(prov, 0);
     }
