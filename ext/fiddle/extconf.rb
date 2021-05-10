@@ -114,7 +114,7 @@ end
 
 if ver
   ver = ver.gsub(/-rc\d+/, '') # If ver contains rc version, just ignored.
-  ver = (ver.split('.') + [0,0])[0,3]
+  ver = (ver.split('.').map(&:to_i) + [0,0])[0,3]
   $defs.push(%{-DRUBY_LIBFFI_MODVERSION=#{ '%d%03d%03d' % ver }})
   warn "libffi_version: #{ver.join('.')}"
 end
