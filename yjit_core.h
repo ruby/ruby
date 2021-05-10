@@ -17,6 +17,8 @@
 #define REG0_32 EAX
 #define REG1_32 ECX
 
+#define REG0_8 AL
+
 // Maximum number of temp value types we keep track of
 #define MAX_TEMP_TYPES 8
 

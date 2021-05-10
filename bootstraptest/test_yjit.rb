@@ -858,26 +858,50 @@ assert_equal 'raised', %q{
 
 # test calling Ruby method with a block
 assert_equal '[1, 2, 42]', %q{
-def thing(a, b)
-  [a, b, yield]
-end
+  def thing(a, b)
+    [a, b, yield]
+  end
 
-def use
-  thing(1,2) { 42 }
-end
+  def use
+    thing(1,2) { 42 }
+  end
 
-use
-use
+  use
+  use
 }
 
 # test calling C method with a block
 assert_equal '[42, 42]', %q{
-def use(array, initial)
-  array.reduce(initial) { |a, b| a + b }
-end
+  def use(array, initial)
+    array.reduce(initial) { |a, b| a + b }
+  end
 
-use([], 0)
-[use([2, 2], 38), use([14, 14, 14], 0)]
+  use([], 0)
+  [use([2, 2], 38), use([14, 14, 14], 0)]
+}
+
+# test calling block param
+assert_equal '[1, 2, 42]', %q{
+  def foo(&block)
+    block.call
+  end
+
+  [foo {1}, foo {2}, foo {42}]
+}
+
+# test calling block param failing
+assert_equal '42', %q{
+  def foo(&block)
+    block.call
+  end
+
+  foo {} # warmup
+
+  begin
+    foo
+  rescue NoMethodError => e
+    42 if nil == e.receiver
+  end
 }
 
 # test calling method taking block param
