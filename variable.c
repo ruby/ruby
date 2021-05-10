@@ -177,8 +177,7 @@ rb_class_path(VALUE klass)
 VALUE
 rb_class_path_cached(VALUE klass)
 {
-    int permanent;
-    return classname(klass, &permanent);
+    return rb_mod_name(klass);
 }
 
 static VALUE
