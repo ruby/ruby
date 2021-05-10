@@ -256,20 +256,28 @@ count_all_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
 }
 
 /*
- *  call-seq:
- *     enum.count                 -> int
- *     enum.count(item)           -> int
- *     enum.count { |obj| block } -> int
+ * call-seq:
+ *   count -> integer
+ *   count(object) -> integer
+ *   count {|element| ... } -> integer
  *
- *  Returns the number of items in +enum+ through enumeration.
- *  If an argument is given, the number of items in +enum+ that
- *  are equal to +item+ are counted.  If a block is given, it
- *  counts the number of elements yielding a true value.
+ * Returns the count of elements, based on an argument or block criterion, if given.
  *
- *     ary = [1, 2, 4, 2]
- *     ary.count               #=> 4
- *     ary.count(2)            #=> 2
- *     ary.count{ |x| x%2==0 } #=> 3
+ * With no argument and no block given, returns the number of elements:
+ *
+ *   [0, 1, 2].count                # => 3
+ *   {foo: 0, bar: 1, baz: 2}.count # => 3
+ *
+ * With argument +object+ given,
+ * returns the number of elements that are <tt>==</tt> to +object+:
+ *
+ *   [0, 1, 2, 1].count(1)           # => 2
+ *
+ * With a block given, calls the block with each element
+ * and returns the number of elements for which the block returns a truthy value:
+ *
+ *   [0, 1, 2, 3].count {|element| element < 2}              # => 2
+ *   {foo: 0, bar: 1, baz: 2}.count {|key, value| value < 2} # => 2
  *
  */
 
@@ -316,31 +324,26 @@ find_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
 }
 
 /*
- *  call-seq:
- *     enum.detect(ifnone = nil) { |obj| block } -> obj or nil
- *     enum.find(ifnone = nil)   { |obj| block } -> obj or nil
- *     enum.detect(ifnone = nil)                 -> an_enumerator
- *     enum.find(ifnone = nil)                   -> an_enumerator
+ * call-seq:
+ *   find(if_none_proc = nil) {|element| ... } -> object or nil
+ *   find(if_none_proc = nil) -> enumerator
  *
- *  Passes each entry in <i>enum</i> to <em>block</em>. Returns the
- *  first for which <em>block</em> is not false.  If no
- *  object matches, calls <i>ifnone</i> and returns its result when it
- *  is specified, or returns <code>nil</code> otherwise.
+ * Returns the first element for which the block returns a truthy value.
  *
- *  If no block is given, an enumerator is returned instead.
+ * With a block given, calls the block with successive elements of the collection;
+ * returns the first element for which the block returns a truthy value:
  *
- *     (1..100).detect  #=> #<Enumerator: 1..100:detect>
- *     (1..100).find    #=> #<Enumerator: 1..100:find>
+ *   (0..9).find {|element| element > 2}                # => 3
  *
- *     (1..10).detect         { |i| i % 5 == 0 && i % 7 == 0 }   #=> nil
- *     (1..10).find           { |i| i % 5 == 0 && i % 7 == 0 }   #=> nil
- *     (1..10).detect(-> {0}) { |i| i % 5 == 0 && i % 7 == 0 }   #=> 0
- *     (1..10).find(-> {0})   { |i| i % 5 == 0 && i % 7 == 0 }   #=> 0
- *     (1..100).detect        { |i| i % 5 == 0 && i % 7 == 0 }   #=> 35
- *     (1..100).find          { |i| i % 5 == 0 && i % 7 == 0 }   #=> 35
+ * If no such element is found, calls +if_none_proc+ and returns its return value.
+ *
+ *   (0..9).find(proc {false}) {|element| element > 12} # => false
+ *   {foo: 0, bar: 1, baz: 2}.find {|key, value| key.start_with?('b') }            # => [:bar, 1]
+ *   {foo: 0, bar: 1, baz: 2}.find(proc {[]}) {|key, value| key.start_with?('c') } # => []
+ *
+ * With no block given, returns an \Enumerator.
  *
  */
-
 static VALUE
 enum_find(int argc, VALUE *argv, VALUE obj)
 {
@@ -389,21 +392,26 @@ find_index_iter_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
 }
 
 /*
- *  call-seq:
- *     enum.find_index(value)          -> int or nil
- *     enum.find_index { |obj| block } -> int or nil
- *     enum.find_index                 -> an_enumerator
+ * call-seq:
+ *   find_index(object) -> integer or nil
+ *   find_index {|element| ... } -> integer or nil
+ *   find_index -> enumerator
  *
- *  Compares each entry in <i>enum</i> with <em>value</em> or passes
- *  to <em>block</em>.  Returns the index for the first for which the
- *  evaluated value is non-false.  If no object matches, returns
- *  <code>nil</code>
+ * Returns the index of the first element that meets a specified criterion,
+ * or +nil+ if no such element is found.
  *
- *  If neither block nor argument is given, an enumerator is returned instead.
+ * With argument +object+ given,
+ * returns the index of the first element that is <tt>==</tt> +object+:
  *
- *     (1..10).find_index  { |i| i % 5 == 0 && i % 7 == 0 }  #=> nil
- *     (1..100).find_index { |i| i % 5 == 0 && i % 7 == 0 }  #=> 34
- *     (1..100).find_index(50)                               #=> 49
+ *   ['a', 'b', 'c', 'b'].find_index('b') # => 1
+ *
+ * With a block given, calls the block with successive elements;
+ * returns the first element for which the block returns a truthy value:
+ *
+ *   ['a', 'b', 'c', 'b'].find_index {|element| element.start_with?('b') } # => 1
+ *   {foo: 0, bar: 1, baz: 2}.find_index {|key, value| value > 1 }         # => 2
+ *
+ * With no argument and no block given, returns an \Enumerator.
  *
  */
 
@@ -467,32 +475,23 @@ enum_size_over_p(VALUE obj, long n)
 }
 
 /*
- *  call-seq:
- *     enum.find_all { |obj| block } -> array
- *     enum.select   { |obj| block } -> array
- *     enum.filter   { |obj| block } -> array
- *     enum.find_all                 -> an_enumerator
- *     enum.select                   -> an_enumerator
- *     enum.filter                   -> an_enumerator
+ * call-seq:
+ *   select {|element| ... } -> array
+ *   select -> enumerator
  *
- *  Returns an array containing all elements of +enum+
- *  for which the given +block+ returns a true value.
+ * Returns an array containing elements selected by the block.
  *
- *  The <i>find_all</i> and <i>select</i> methods are aliases.
- *  There is no performance benefit to either.
+ * With a block given, calls the block with successive elements;
+ * returns an array of those elements for which the block returns a truthy value:
  *
- *  If no block is given, an Enumerator is returned instead.
+ *   (0..9).select {|element| element % 3 == 0 } # => [0, 3, 6, 9]
+ *   a = {foo: 0, bar: 1, baz: 2}.select {|key, value| key.start_with?('b') }
+ *   a # => {:bar=>1, :baz=>2}
  *
+ * With no block given, returns an \Enumerator.
  *
- *     (1..10).find_all { |i|  i % 3 == 0 }   #=> [3, 6, 9]
- *
- *     [1,2,3,4,5].select { |num|  num.even?  }   #=> [2, 4]
- *
- *     [:foo, :bar].filter { |x| x == :foo }   #=> [:foo]
- *
- *  See also Enumerable#reject, Enumerable#grep.
+ * Related: #reject.
  */
-
 static VALUE
 enum_find_all(VALUE obj)
 {
@@ -519,17 +518,19 @@ filter_map_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 }
 
 /*
- *  call-seq:
- *     enum.filter_map { |obj| block } -> array
- *     enum.filter_map                 -> an_enumerator
+ * call-seq:
+ *   filter_map {|element| ... } -> array
+ *   filter_map -> enumerator
  *
- *  Returns a new array containing the truthy results (everything except
- *  +false+ or +nil+) of running the +block+ for every element in +enum+.
+ * Returns an array containing truthy elements returned by the block.
  *
- *  If no block is given, an Enumerator is returned instead.
+ * With a block given, calls the block with successive elements;
+ * returns an array containing each truthy value returned by the block:
  *
+ *   (0..9).filter_map {|i| i * 2 if i.even? }                              # => [0, 4, 8, 12, 16]
+ *   {foo: 0, bar: 1, baz: 2}.filter_map {|key, value| key if value.even? } # => [:foo, :baz]
  *
- *     (1..10).filter_map { |i| i * 2 if i.even? } #=> [4, 8, 12, 16, 20]
+ * When no block given, returns an \Enumerator.
  *
  */
 static VALUE
@@ -558,20 +559,21 @@ reject_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 }
 
 /*
- *  call-seq:
- *     enum.reject { |obj| block } -> array
- *     enum.reject                 -> an_enumerator
+ * call-seq:
+ *   reject {|element| ... } -> array
+ *   reject -> enumerator
  *
- *  Returns an array for all elements of +enum+ for which the given
- *  +block+ returns <code>false</code>.
+ * Returns an array of objects rejected by the block.
  *
- *  If no block is given, an Enumerator is returned instead.
+ * With a block given, calls the block with successive elements;
+ * returns an array of those elements for which the block returns +nil+ or +false+:
  *
- *     (1..10).reject { |i|  i % 3 == 0 }   #=> [1, 2, 4, 5, 7, 8, 10]
+ *   (0..9).reject {|i| i * 2 if i.even? }                             # => [1, 3, 5, 7, 9]
+ *   {foo: 0, bar: 1, baz: 2}.reject {|key, value| key if value.odd? } # => {:foo=>0, :baz=>2}
  *
- *     [1, 2, 3, 4, 5].reject { |num| num.even? } #=> [1, 3, 5]
+ * When no block given, returns an \Enumerator.
  *
- *  See also Enumerable#find_all.
+ * Related: #select.
  */
 
 static VALUE
@@ -604,22 +606,21 @@ collect_all(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 }
 
 /*
- *  call-seq:
- *     enum.collect { |obj| block } -> array
- *     enum.map     { |obj| block } -> array
- *     enum.collect                 -> an_enumerator
- *     enum.map                     -> an_enumerator
+ * call-seq:
+ *   map {|element| ... } -> array
+ *   map -> enumerator
  *
- *  Returns a new array with the results of running <em>block</em> once
- *  for every element in <i>enum</i>.
+ * Returns an array of objects returned by the block.
  *
- *  If no block is given, an enumerator is returned instead.
+ * With a block given, calls the block with successive elements;
+ * returns an array of the objects returned by the block:
  *
- *     (1..4).map { |i| i*i }      #=> [1, 4, 9, 16]
- *     (1..4).collect { "cat"  }   #=> ["cat", "cat", "cat", "cat"]
+ *   (0..4).map {|i| i*i }                               # => [0, 1, 4, 9, 16]
+ *   {foo: 0, bar: 1, baz: 2}.map {|key, value| value*2} # => [0, 2, 4]
+ *
+ * With no block given, returns an \Enumerator.
  *
  */
-
 static VALUE
 enum_collect(VALUE obj)
 {
@@ -653,22 +654,24 @@ flat_map_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 }
 
 /*
- *  call-seq:
- *     enum.flat_map       { |obj| block } -> array
- *     enum.collect_concat { |obj| block } -> array
- *     enum.flat_map                       -> an_enumerator
- *     enum.collect_concat                 -> an_enumerator
+ * call-seq:
+ *   flat_map {|element| ... } -> array
+ *   flat_map -> enumerator
  *
- *  Returns a new array with the concatenated results of running
- *  <em>block</em> once for every element in <i>enum</i>.
+ * Returns an array of flattened objects returned by the block.
  *
- *  If no block is given, an enumerator is returned instead.
+ * With a block given, calls the block with successive elements;
+ * returns a flattened array of objects returned by the block:
  *
- *     [1, 2, 3, 4].flat_map { |e| [e, -e] } #=> [1, -1, 2, -2, 3, -3, 4, -4]
- *     [[1, 2], [3, 4]].flat_map { |e| e + [100] } #=> [1, 2, 100, 3, 4, 100]
+ *   [0, 1, 2, 3].flat_map {|element| -element }                    # => [0, -1, -2, -3]
+ *   [0, 1, 2, 3].flat_map {|element| [element, -element] }         # => [0, 0, 1, -1, 2, -2, 3, -3]
+ *   [[0, 1], [2, 3]].flat_map {|e| e + [100] }                     # => [0, 1, 100, 2, 3, 100]
+ *   {foo: 0, bar: 1, baz: 2}.flat_map {|key, value| [key, value] } # => [:foo, 0, :bar, 1, :baz, 2]
  *
+ * With no block given, returns an \Enumerator.
+ *
+ * Alias: #collect_concat.
  */
-
 static VALUE
 enum_flat_map(VALUE obj)
 {
