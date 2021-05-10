@@ -214,7 +214,7 @@ class TestPsych < Psych::TestCase
 
   def test_load_freeze_deduplication
     unless String.method_defined?(:-@) && (-("a" * 20)).equal?((-("a" * 20)))
-      skip "This Ruby implementation doesn't support string deduplication"
+      pend "This Ruby implementation doesn't support string deduplication"
     end
 
     data = Psych.load("--- ['a']", freeze: true)
