@@ -58,8 +58,8 @@ module Psych
 
     def test_NaN
       s = ".NaN"
-      assert Float::NAN, Psych.load(s).nan?
-      assert [Float::NAN], Psych.load_stream(s).first.nan?
+      assert Psych.load(s).nan?
+      assert Psych.load_stream(s).first.nan?
       assert Psych.parse(s).transform.nan?
       assert Psych.parse_stream(s).transform.first.nan?
       assert Psych.safe_load(s).nan?
