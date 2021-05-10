@@ -477,7 +477,7 @@ clean-local::
 	  enc/encinit.c enc/encinit.$(OBJEXT) $(pkgconfig_DATA) \
 	  ruby-runner.$(OBJEXT) ruby-runner.h \
 	|| $(NULLCMD)
-	-$(Q)$(RMALL) exe/ *.dSYM
+	-$(Q)$(RMALL) exe/ *.dSYM $(EXTOUT)/$(arch)/*.dSYM
 
 distclean-local::
 	$(Q)$(RM) \

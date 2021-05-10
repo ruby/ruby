@@ -1442,11 +1442,7 @@ gem 'other', version
     write_file File.join(@tempdir, "extconf.rb") do |io|
       io.write <<-RUBY
         require "mkmf"
-
-        CONFIG['CC'] = '$(TOUCH) $@ ||'
-        CONFIG['LDSHARED'] = '$(TOUCH) $@ ||'
-        $ruby = '#{Gem.ruby}'
-
+        $LIBPATH << #{@current_dir.dump} # to link with libruby without needing it installed
         create_makefile("#{@spec.name}")
       RUBY
     end
@@ -1455,7 +1451,6 @@ gem 'other', version
 
     write_file File.join(@tempdir, "a.c") do |io|
       io.write <<-C
-        #include <ruby.h>
         void Init_a() { }
       C
     end
@@ -1528,22 +1523,23 @@ gem 'other', version
     @spec.require_paths = ["."]
 
     @spec.extensions << "extconf.rb"
+    @spec.files += %W[depend #{@spec.name}.c]
 
     write_file File.join(@tempdir, "extconf.rb") do |io|
       io.write <<-RUBY
         require "mkmf"
-
-        CONFIG['CC'] = '$(TOUCH) $@ ||'
-        CONFIG['LDSHARED'] = '$(TOUCH) $@ ||'
-        $ruby = '#{Gem.ruby}'
-
+        $LIBPATH << #{@current_dir.dump} # to link with libruby without needing it installed
         create_makefile("#{@spec.name}")
       RUBY
     end
 
     # empty depend file for no auto dependencies
-    @spec.files += %W[depend #{@spec.name}.c].each do |file|
-      write_file File.join(@tempdir, file)
+    write_file File.join(@tempdir, "depend")
+
+    write_file File.join(@tempdir, "#{@spec.name}.c") do |io|
+      io.write <<-C
+        void Init_#{@spec.name}() { }
+      C
     end
 
     so = File.join(@spec.gem_dir, "#{@spec.name}.#{RbConfig::CONFIG["DLEXT"]}")
