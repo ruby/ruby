@@ -934,9 +934,7 @@ mentioned below.
 
 [lib/bundler]
 [lib/bundler.rb]
-[lib/bundler.gemspec]
 [spec/bundler]
-[man/bundle-*,gemfile.*]
 
   Bundler is under the following license.
 
