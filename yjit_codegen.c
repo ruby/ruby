@@ -859,6 +859,7 @@ enum {
     SEND_MAX_DEPTH = 5,           // up to 5 different classes
 };
 
+/*
 // Codegen for setting an instance variable.
 // Preconditions:
 //   - receiver is in REG0
@@ -969,6 +970,7 @@ gen_set_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
     GEN_COUNTER_INC(cb, setivar_name_not_mapped);
     return YJIT_CANT_COMPILE;
 }
+*/
 
 // Codegen for getting an instance variable.
 // Preconditions:
@@ -1118,9 +1120,36 @@ gen_getinstancevariable(jitstate_t *jit, ctx_t *ctx)
     return gen_get_ivar(jit, ctx, GETIVAR_MAX_DEPTH, comptime_val, ivar_name, OPND_SELF, side_exit);
 }
 
+void rb_vm_setinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, VALUE val, IVC ic);
+
 static codegen_status_t
 gen_setinstancevariable(jitstate_t* jit, ctx_t* ctx)
 {
+    ID id = (ID)jit_get_arg(jit, 0);
+    IVC ic = (IVC)jit_get_arg(jit, 1);
+
+    // Save the PC and SP because the callee may allocate
+    // Note that this modifies REG_SP, which is why we do it first
+    jit_save_pc(jit, REG0);
+    jit_save_sp(jit, ctx);
+
+    // Get the operands from the stack
+    x86opnd_t val_opnd = ctx_stack_pop(ctx, 1);
+
+    // Call rb_vm_setinstancevariable(iseq, obj, id, val, ic);
+    // Out of order because we're going to corrupt REG_SP and REG_CFP
+    yjit_save_regs(cb);
+    mov(cb, C_ARG_REGS[1], member_opnd(REG_CFP, rb_control_frame_t, self));
+    mov(cb, C_ARG_REGS[3], val_opnd);
+    mov(cb, C_ARG_REGS[2], imm_opnd(id));
+    mov(cb, C_ARG_REGS[4], const_ptr_opnd(ic));
+    jit_mov_gc_ptr(jit, cb, C_ARG_REGS[0], (VALUE)jit->iseq);
+    call_ptr(cb, REG0, (void *)rb_vm_setinstancevariable);
+    yjit_load_regs(cb);
+
+    return YJIT_KEEP_COMPILING;
+
+    /*
     // Defer compilation so we can specialize on a runtime `self`
     if (!jit_at_current_insn(jit)) {
         defer_compilation(jit->block, jit->insn_idx, ctx);
@@ -1142,6 +1171,7 @@ gen_setinstancevariable(jitstate_t* jit, ctx_t* ctx)
     jit_guard_known_klass(jit, ctx, comptime_val_klass, OPND_SELF, GETIVAR_MAX_DEPTH, side_exit);
 
     return gen_set_ivar(jit, ctx, GETIVAR_MAX_DEPTH, comptime_val, ivar_name, OPND_SELF, side_exit);
+    */
 }
 
 static void

@@ -1365,6 +1365,12 @@ vm_setinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, VALUE val, IVC i
     vm_setivar(obj, id, val, iseq, ic, 0, 0);
 }
 
+void
+rb_vm_setinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, VALUE val, IVC ic)
+{
+    vm_setinstancevariable(iseq, obj, id, val, ic);
+}
+
 static VALUE
 vm_throw_continue(const rb_execution_context_t *ec, VALUE err)
 {
