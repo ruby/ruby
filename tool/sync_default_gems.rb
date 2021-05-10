@@ -5,7 +5,6 @@ include FileUtils
 
 REPOSITORIES = {
   rubygems: 'rubygems/rubygems',
-  bundler: 'rubygems/rubygems',
   rdoc: 'ruby/rdoc',
   reline: 'ruby/reline',
   json: 'flori/json',
@@ -94,7 +93,6 @@ def sync_default_gems(gem)
     rm_rf(%w[lib/rubygems lib/rubygems.rb test/rubygems])
     cp_r(Dir.glob("#{upstream}/lib/rubygems*"), "lib")
     cp_r("#{upstream}/test/rubygems", "test")
-  when "bundler"
     rm_rf(%w[lib/bundler lib/bundler.rb libexec/bundler libexec/bundle spec/bundler tool/bundler/*])
     cp_r(Dir.glob("#{upstream}/bundler/lib/bundler*"), "lib")
     cp_r(Dir.glob("#{upstream}/bundler/exe/bundle*"), "libexec")
