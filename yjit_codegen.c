@@ -1592,6 +1592,13 @@ gen_opt_mod(jitstate_t* jit, ctx_t* ctx)
     return YJIT_KEEP_COMPILING;
 }
 
+static codegen_status_t
+gen_opt_ltlt(jitstate_t* jit, ctx_t* ctx)
+{
+    // Delegate to send, call the ltlt method
+    return gen_opt_send_without_block(jit, ctx);
+}
+
 void
 gen_branchif_branch(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uint8_t shape)
 {
@@ -2575,6 +2582,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(opt_minus), gen_opt_minus);
     yjit_reg_op(BIN(opt_plus), gen_opt_plus);
     yjit_reg_op(BIN(opt_mod), gen_opt_mod);
+    yjit_reg_op(BIN(opt_ltlt), gen_opt_ltlt);
     yjit_reg_op(BIN(opt_getinlinecache), gen_opt_getinlinecache);
     yjit_reg_op(BIN(branchif), gen_branchif);
     yjit_reg_op(BIN(branchunless), gen_branchunless);
