@@ -2788,6 +2788,56 @@ static VALUE lazy_slice_when(VALUE self)
 }
 # endif
 
+struct MEMO * rb_enum_inject_memo(int argc, VALUE *argv);
+VALUE rb_enum_inject_memo_call(struct MEMO *memo, VALUE proc, VALUE arg);
+
+static struct MEMO *
+lazy_inject_yield(struct proc_entry *entry, struct MEMO *result, struct MEMO *memo, VALUE value)
+{
+    value = rb_enum_inject_memo_call(memo, entry->proc, value);
+    LAZY_MEMO_SET_VALUE(result, value);
+    LAZY_MEMO_RESET_PACKED(result);
+    return result;
+}
+
+static struct MEMO *
+lazy_inject_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+{
+    struct proc_entry *entry = proc_entry_ptr(proc_entry);
+    struct MEMO *memo = MEMO_CAST(entry->memo);
+    return lazy_inject_yield(entry, result, memo, result->memo_value);
+}
+
+static const lazyenum_funcs lazy_inject_funcs = {
+    lazy_inject_proc, 0,
+};
+
+static struct MEMO *
+lazy_inject_init_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+{
+    struct proc_entry *entry = proc_entry_ptr(proc_entry);
+    struct MEMO *memo = MEMO_CAST(entry->memo);
+    VALUE value = result->memo_value;
+    entry->fn = &lazy_inject_funcs;
+    lazy_yielder_yield(result, memo_index+1, 1, &memo->v1);
+    return lazy_inject_yield(entry, result, memo, value);
+}
+
+static const lazyenum_funcs lazy_inject_init_funcs = {
+    lazy_inject_init_proc, 0,
+};
+
+static VALUE
+lazy_inject(int argc, VALUE *argv, VALUE obj)
+{
+    const lazyenum_funcs *funcs = &lazy_inject_funcs;
+    struct MEMO *memo = rb_enum_inject_memo(argc, argv);
+    if (memo->v1 != Qundef) {
+        funcs = &lazy_inject_init_funcs;
+    }
+    return lazy_add_method(obj, 0, 0, (VALUE)memo, Qnil, funcs);
+}
+
 static VALUE
 lazy_super(int argc, VALUE *argv, VALUE lazy)
 {
@@ -4134,6 +4184,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cLazy, "uniq", lazy_uniq, 0);
     rb_define_method(rb_cLazy, "compact", lazy_compact, 0);
     rb_define_method(rb_cLazy, "with_index", lazy_with_index, -1);
+    rb_define_method(rb_cLazy, "inject", lazy_inject, -1);
 
     lazy_use_super_method = rb_hash_new_with_size(18);
     rb_hash_aset(lazy_use_super_method, sym("map"), sym("_enumerable_map"));
