@@ -249,11 +249,11 @@ module Psych
   #
   # Example:
   #
-  #   Psych.load("--- a")             # => 'a'
-  #   Psych.load("---\n - a\n - b")   # => ['a', 'b']
+  #   Psych.unsafe_load("--- a")             # => 'a'
+  #   Psych.unsafe_load("---\n - a\n - b")   # => ['a', 'b']
   #
   #   begin
-  #     Psych.load("--- `", filename: "file.txt")
+  #     Psych.unsafe_load("--- `", filename: "file.txt")
   #   rescue Psych::SyntaxError => ex
   #     ex.file    # => 'file.txt'
   #     ex.message # => "(file.txt): found character that cannot start any token"
@@ -262,14 +262,14 @@ module Psych
   # When the optional +symbolize_names+ keyword argument is set to a
   # true value, returns symbols for keys in Hash objects (default: strings).
   #
-  #   Psych.load("---\n foo: bar")                         # => {"foo"=>"bar"}
-  #   Psych.load("---\n foo: bar", symbolize_names: true)  # => {:foo=>"bar"}
+  #   Psych.unsafe_load("---\n foo: bar")                         # => {"foo"=>"bar"}
+  #   Psych.unsafe_load("---\n foo: bar", symbolize_names: true)  # => {:foo=>"bar"}
   #
   # Raises a TypeError when `yaml` parameter is NilClass
   #
   # NOTE: This method *should not* be used to parse untrusted documents, such as
   # YAML documents that are supplied via user input.  Instead, please use the
-  # safe_load method.
+  # load method or the safe_load method.
   #
   def self.unsafe_load yaml, legacy_filename = NOT_GIVEN, filename: nil, fallback: false, symbolize_names: false, freeze: false
     if legacy_filename != NOT_GIVEN
@@ -361,6 +361,46 @@ module Psych
               end
     result = visitor.accept result
     result
+  end
+
+  ###
+  # Load +yaml+ in to a Ruby data structure.  If multiple documents are
+  # provided, the object contained in the first document will be returned.
+  # +filename+ will be used in the exception message if any exception
+  # is raised while parsing.  If +yaml+ is empty, it returns
+  # the specified +fallback+ return value, which defaults to +false+.
+  #
+  # Raises a Psych::SyntaxError when a YAML syntax error is detected.
+  #
+  # Example:
+  #
+  #   Psych.load("--- a")             # => 'a'
+  #   Psych.load("---\n - a\n - b")   # => ['a', 'b']
+  #
+  #   begin
+  #     Psych.load("--- `", filename: "file.txt")
+  #   rescue Psych::SyntaxError => ex
+  #     ex.file    # => 'file.txt'
+  #     ex.message # => "(file.txt): found character that cannot start any token"
+  #   end
+  #
+  # When the optional +symbolize_names+ keyword argument is set to a
+  # true value, returns symbols for keys in Hash objects (default: strings).
+  #
+  #   Psych.load("---\n foo: bar")                         # => {"foo"=>"bar"}
+  #   Psych.load("---\n foo: bar", symbolize_names: true)  # => {:foo=>"bar"}
+  #
+  # Raises a TypeError when `yaml` parameter is NilClass.  This method is
+  # similar to `safe_load` except that `Symbol` objects are allowed by default.
+  #
+  def self.load yaml, permitted_classes: [Symbol], permitted_symbols: [], aliases: false, filename: nil, fallback: nil, symbolize_names: false, freeze: false
+    safe_load yaml, permitted_classes: permitted_classes,
+                    permitted_symbols: permitted_symbols,
+                    aliases: aliases,
+                    filename: filename,
+                    fallback: fallback,
+                    symbolize_names: symbolize_names,
+                    freeze: freeze
   end
 
   ###
@@ -595,6 +635,7 @@ module Psych
       self.safe_load f, filename: filename, **kwargs
     }
   end
+  class << self; alias load_file safe_load_file end
 
   # :stopdoc:
   def self.add_domain_type domain, type_tag, &block
