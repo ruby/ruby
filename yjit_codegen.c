@@ -221,6 +221,8 @@ yjit_gen_exit(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 {
     uint8_t *code_ptr = cb_get_ptr(cb, cb->write_pos);
 
+    ADD_COMMENT(cb, "exit to interpreter");
+
     VALUE *exit_pc = jit->pc;
 
     // YJIT only ever patches the first instruction in an iseq
@@ -2527,6 +2529,52 @@ gen_opt_getinlinecache(jitstate_t *jit, ctx_t *ctx)
     return YJIT_END_BLOCK;
 }
 
+// Push the explict block parameter onto the temporary stack. Part of the
+// interpreter's scheme for avoiding Proc allocations when delegating
+// explict block parameters.
+static codegen_status_t
+gen_getblockparamproxy(jitstate_t *jit, ctx_t *ctx)
+{
+    // A mirror of the interpreter code. Checking for the case
+    // where it's pushing rb_block_param_proxy.
+    uint8_t *side_exit = yjit_side_exit(jit, ctx);
+
+    // EP level
+    VALUE level = jit_get_arg(jit, 1);
+
+    if (level != 0) {
+        // Bail on non zero level to make getting the ep simple
+        return YJIT_CANT_COMPILE;
+    }
+
+    // Load environment pointer EP from CFP
+    mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, ep));
+
+    // Bail when VM_ENV_FLAGS(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM) is non zero
+    test(cb, mem_opnd(64, REG0, SIZEOF_VALUE * VM_ENV_DATA_INDEX_FLAGS), imm_opnd(VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM));
+    jnz_ptr(cb, side_exit);
+
+    // Load the block handler for the current frame
+    // note, VM_ASSERT(VM_ENV_LOCAL_P(ep))
+    mov(cb, REG0, mem_opnd(64, REG0, SIZEOF_VALUE * VM_ENV_DATA_INDEX_SPECVAL));
+
+    // Block handler is a tagged pointer. Look at the tag. 0x03 is from VM_BH_ISEQ_BLOCK_P().
+    and(cb, REG0_8, imm_opnd(0x3));
+
+    // Bail unless VM_BH_ISEQ_BLOCK_P(bh). This also checks for null.
+    cmp(cb, REG0_8, imm_opnd(0x1));
+    jne_ptr(cb, side_exit);
+
+    // Push rb_block_param_proxy. It's a root, so no need to use jit_mov_gc_ptr.
+    mov(cb, REG0, const_ptr_opnd((void *)rb_block_param_proxy));
+    RUBY_ASSERT(!SPECIAL_CONST_P(rb_block_param_proxy));
+    x86opnd_t top = ctx_stack_push(ctx, TYPE_HEAP);
+    mov(cb, top, REG0);
+
+    return YJIT_KEEP_COMPILING;
+}
+
+
 static void
 yjit_reg_op(int opcode, codegen_fn gen_fn)
 {
@@ -2588,6 +2636,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(branchunless), gen_branchunless);
     yjit_reg_op(BIN(branchnil), gen_branchnil);
     yjit_reg_op(BIN(jump), gen_jump);
+    yjit_reg_op(BIN(getblockparamproxy), gen_getblockparamproxy);
     yjit_reg_op(BIN(opt_send_without_block), gen_opt_send_without_block);
     yjit_reg_op(BIN(send), gen_send);
     yjit_reg_op(BIN(leave), gen_leave);
