@@ -76,7 +76,7 @@ module Psych
     end
 
     def test_writing_inside_readonly_transaction_raises_error
-      assert_raises(PStore::Error) do
+      assert_raise(PStore::Error) do
         @yamlstore.transaction(true) do
           @yamlstore[:foo] = "bar"
         end

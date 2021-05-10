@@ -22,7 +22,7 @@ module Psych
     def test_no_recursion
       x = []
       x << x
-      assert_raises(Psych::BadAlias) do
+      assert_raise(Psych::BadAlias) do
         Psych.safe_load Psych.dump(x)
       end
     end
@@ -37,7 +37,7 @@ module Psych
 
     def test_permitted_symbol
       yml = Psych.dump :foo
-      assert_raises(Psych::DisallowedClass) do
+      assert_raise(Psych::DisallowedClass) do
         Psych.safe_load yml
       end
       assert_equal(
@@ -54,15 +54,15 @@ module Psych
     end
 
     def test_symbol
-      assert_raises(Psych::DisallowedClass) do
+      assert_raise(Psych::DisallowedClass) do
         assert_safe_cycle :foo
       end
-      assert_raises(Psych::DisallowedClass) do
+      assert_raise(Psych::DisallowedClass) do
         Psych.safe_load '--- !ruby/symbol foo', permitted_classes: []
       end
 
       # deprecated interface
-      assert_raises(Psych::DisallowedClass) do
+      assert_raise(Psych::DisallowedClass) do
         Psych.safe_load '--- !ruby/symbol foo', []
       end
 
@@ -75,16 +75,16 @@ module Psych
     end
 
     def test_foo
-      assert_raises(Psych::DisallowedClass) do
+      assert_raise(Psych::DisallowedClass) do
         Psych.safe_load '--- !ruby/object:Foo {}', permitted_classes: [Foo]
       end
 
       # deprecated interface
-      assert_raises(Psych::DisallowedClass) do
+      assert_raise(Psych::DisallowedClass) do
         Psych.safe_load '--- !ruby/object:Foo {}', [Foo]
       end
 
-      assert_raises(Psych::DisallowedClass) do
+      assert_raise(Psych::DisallowedClass) do
         assert_safe_cycle Foo.new
       end
       assert_kind_of(Foo, Psych.safe_load(Psych.dump(Foo.new), permitted_classes: [Foo]))
@@ -96,7 +96,7 @@ module Psych
     X = Struct.new(:x)
     def test_struct_depends_on_sym
       assert_safe_cycle(X.new, permitted_classes: [X, Symbol])
-      assert_raises(Psych::DisallowedClass) do
+      assert_raise(Psych::DisallowedClass) do
         cycle X.new, permitted_classes: [X]
       end
     end
@@ -107,14 +107,14 @@ module Psych
   foo: bar
                       eoyml
 
-      assert_raises(Psych::DisallowedClass) do
+      assert_raise(Psych::DisallowedClass) do
         Psych.safe_load(<<-eoyml, permitted_classes: [Struct])
 --- !ruby/struct
   foo: bar
                       eoyml
       end
 
-      assert_raises(Psych::DisallowedClass) do
+      assert_raise(Psych::DisallowedClass) do
         Psych.safe_load(<<-eoyml, permitted_classes: [Symbol])
 --- !ruby/struct
   foo: bar
@@ -128,14 +128,14 @@ module Psych
   foo: bar
                       eoyml
 
-      assert_raises(Psych::DisallowedClass) do
+      assert_raise(Psych::DisallowedClass) do
         Psych.safe_load(<<-eoyml, [Struct])
 --- !ruby/struct
   foo: bar
                       eoyml
       end
 
-      assert_raises(Psych::DisallowedClass) do
+      assert_raise(Psych::DisallowedClass) do
         Psych.safe_load(<<-eoyml, [Symbol])
 --- !ruby/struct
   foo: bar
@@ -152,7 +152,7 @@ module Psych
     end
 
     def test_safe_load_raises_on_bad_input
-      assert_raises(Psych::SyntaxError) { Psych.safe_load("--- `") }
+      assert_raise(Psych::SyntaxError) { Psych.safe_load("--- `") }
     end
 
     private

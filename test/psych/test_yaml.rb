@@ -17,7 +17,7 @@ class Psych_Unit_Tests < Psych::TestCase
     end
 
     def test_y_method
-      assert_raises(NoMethodError) do
+      assert_raise(NoMethodError) do
         OpenStruct.new.y 1
       end
     end
@@ -1077,7 +1077,7 @@ EOY
 
 		# Read Psych dumped by the ruby 1.8.3.
 		assert_to_yaml( Rational(1, 2), "!ruby/object:Rational 1/2\n" )
-		assert_raises( ArgumentError ) { Psych.load("!ruby/object:Rational INVALID/RATIONAL\n") }
+		assert_raise( ArgumentError ) { Psych.load("!ruby/object:Rational INVALID/RATIONAL\n") }
 	end
 
 	def test_ruby_complex
@@ -1089,7 +1089,7 @@ EOY
 
 		# Read Psych dumped by the ruby 1.8.3.
 		assert_to_yaml( Complex(3, 4), "!ruby/object:Complex 3+4i\n" )
-		assert_raises( ArgumentError ) { Psych.load("!ruby/object:Complex INVALID+COMPLEXi\n") }
+		assert_raise( ArgumentError ) { Psych.load("!ruby/object:Complex INVALID+COMPLEXi\n") }
 	end
 
 	def test_emitting_indicators

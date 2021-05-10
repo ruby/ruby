@@ -16,7 +16,7 @@ class TestPsych < Psych::TestCase
   end
 
   def test_line_width_invalid
-    assert_raises(ArgumentError) { Psych.dump('x', { :line_width => -2 }) }
+    assert_raise(ArgumentError) { Psych.dump('x', { :line_width => -2 }) }
   end
 
   def test_line_width_no_limit
@@ -61,7 +61,7 @@ class TestPsych < Psych::TestCase
   end
 
   def test_load_argument_error
-    assert_raises(TypeError) do
+    assert_raise(TypeError) do
       Psych.load nil
     end
   end
@@ -75,7 +75,7 @@ class TestPsych < Psych::TestCase
   end
 
   def test_parse_raises_on_bad_input
-    assert_raises(Psych::SyntaxError) { Psych.parse("--- `") }
+    assert_raise(Psych::SyntaxError) { Psych.parse("--- `") }
   end
 
   def test_parse_with_fallback
@@ -83,7 +83,7 @@ class TestPsych < Psych::TestCase
   end
 
   def test_non_existing_class_on_deserialize
-    e = assert_raises(ArgumentError) do
+    e = assert_raise(ArgumentError) do
       Psych.load("--- !ruby/object:NonExistent\nfoo: 1")
     end
     assert_equal 'undefined class/module NonExistent', e.message
@@ -143,7 +143,7 @@ class TestPsych < Psych::TestCase
   end
 
   def test_load_stream_raises_on_bad_input
-    assert_raises(Psych::SyntaxError) { Psych.load_stream("--- `") }
+    assert_raise(Psych::SyntaxError) { Psych.load_stream("--- `") }
   end
 
   def test_parse_stream
@@ -175,7 +175,7 @@ class TestPsych < Psych::TestCase
   end
 
   def test_parse_stream_raises_on_bad_input
-    assert_raises(Psych::SyntaxError) { Psych.parse_stream("--- `") }
+    assert_raise(Psych::SyntaxError) { Psych.parse_stream("--- `") }
   end
 
   def test_add_builtin_type
@@ -325,7 +325,7 @@ class TestPsych < Psych::TestCase
       t.write("--- !ruby/range\nbegin: 0\nend: 42\nexcl: false\n")
       t.close
       assert_equal 0..42, Psych.safe_load_file(t.path, permitted_classes: [Range])
-      assert_raises(Psych::DisallowedClass) {
+      assert_raise(Psych::DisallowedClass) {
         Psych.safe_load_file(t.path)
       }
     }

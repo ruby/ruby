@@ -117,7 +117,7 @@ development:
 bar:
   << : *foo
       eoyml
-      exp = assert_raises(Psych::BadAlias) { Psych.load yaml }
+      exp = assert_raise(Psych::BadAlias) { Psych.load yaml }
       assert_match 'foo', exp.message
     end
 

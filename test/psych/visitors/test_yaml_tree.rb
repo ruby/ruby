@@ -127,11 +127,11 @@ module Psych
       end
 
       def test_anon_class
-        assert_raises(TypeError) do
+        assert_raise(TypeError) do
           @v.accept Class.new
         end
 
-        assert_raises(TypeError) do
+        assert_raise(TypeError) do
           Psych.dump(Class.new)
         end
       end
