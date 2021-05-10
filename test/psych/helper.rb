@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'minitest/autorun'
+require 'test/unit'
 require 'stringio'
 require 'tempfile'
 require 'date'
@@ -7,13 +7,7 @@ require 'date'
 require 'psych'
 
 module Psych
-  superclass = if defined?(Minitest::Test)
-                 Minitest::Test
-               else
-                 MiniTest::Unit::TestCase
-               end
-
-  class TestCase < superclass
+  class TestCase < Test::Unit::TestCase
     def self.suppress_warning
       verbose, $VERBOSE = $VERBOSE, nil
       yield
