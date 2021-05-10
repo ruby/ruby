@@ -1402,6 +1402,42 @@ gen_opt_aref(jitstate_t *jit, ctx_t *ctx)
     }
 }
 
+VALUE rb_vm_opt_aset(VALUE recv, VALUE obj, VALUE set);
+
+static codegen_status_t
+gen_opt_aset(jitstate_t *jit, ctx_t *ctx)
+{
+    // Save the PC and SP because the callee may allocate
+    // Note that this modifies REG_SP, which is why we do it first
+    jit_save_pc(jit, REG0);
+    jit_save_sp(jit, ctx);
+
+    uint8_t* side_exit = yjit_side_exit(jit, ctx);
+
+    // Get the operands from the stack
+    x86opnd_t arg2 = ctx_stack_pop(ctx, 1);
+    x86opnd_t arg1 = ctx_stack_pop(ctx, 1);
+    x86opnd_t arg0 = ctx_stack_pop(ctx, 1);
+
+    // Call rb_vm_opt_mod(VALUE recv, VALUE obj)
+    yjit_save_regs(cb);
+    mov(cb, C_ARG_REGS[0], arg0);
+    mov(cb, C_ARG_REGS[1], arg1);
+    mov(cb, C_ARG_REGS[2], arg2);
+    call_ptr(cb, REG0, (void *)rb_vm_opt_aset);
+    yjit_load_regs(cb);
+
+    // If val == Qundef, bail to do a method call
+    cmp(cb, RAX, imm_opnd(Qundef));
+    je_ptr(cb, side_exit);
+
+    // Push the return value onto the stack
+    x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_UNKNOWN);
+    mov(cb, stack_ret, RAX);
+
+    return YJIT_KEEP_COMPILING;
+}
+
 static codegen_status_t
 gen_opt_and(jitstate_t* jit, ctx_t* ctx)
 {
@@ -2533,6 +2569,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(opt_gt), gen_opt_gt);
     yjit_reg_op(BIN(opt_eq), gen_opt_eq);
     yjit_reg_op(BIN(opt_aref), gen_opt_aref);
+    yjit_reg_op(BIN(opt_aset), gen_opt_aset);
     yjit_reg_op(BIN(opt_and), gen_opt_and);
     yjit_reg_op(BIN(opt_or), gen_opt_or);
     yjit_reg_op(BIN(opt_minus), gen_opt_minus);
