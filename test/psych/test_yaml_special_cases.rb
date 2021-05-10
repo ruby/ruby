@@ -13,7 +13,7 @@ module Psych
 
     def test_empty_string
       s = ""
-      assert_equal false, Psych.load(s)
+      assert_equal false, Psych.unsafe_load(s)
       assert_equal [], Psych.load_stream(s)
       assert_equal false, Psych.parse(s)
       assert_equal [], Psych.parse_stream(s).transform

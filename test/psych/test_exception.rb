@@ -33,13 +33,13 @@ module Psych
 
     def test_backtrace
       err     = make_ex
-      new_err = Psych.load(Psych.dump(err))
+      new_err = Psych.unsafe_load(Psych.dump(err))
       assert_equal err.backtrace, new_err.backtrace
     end
 
     def test_naming_exception
       err     = String.xxx rescue $!
-      new_err = Psych.load(Psych.dump(err))
+      new_err = Psych.unsafe_load(Psych.dump(err))
       assert_equal err.message, new_err.message
     end
 
@@ -56,7 +56,7 @@ module Psych
 
       # deprecated interface
       ex = assert_raise(Psych::SyntaxError) do
-        Psych.load '--- `', 'deprecated'
+        Psych.unsafe_load '--- `', 'deprecated'
       end
       assert_equal 'deprecated', ex.file
     end
@@ -165,7 +165,7 @@ module Psych
     end
 
     def test_convert
-      w = Psych.load(Psych.dump(@wups))
+      w = Psych.unsafe_load(Psych.dump(@wups))
       assert_equal @wups.message, w.message
       assert_equal @wups.backtrace, w.backtrace
       assert_equal 1, w.foo

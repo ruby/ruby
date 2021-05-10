@@ -84,7 +84,7 @@ class TestPsych < Psych::TestCase
 
   def test_non_existing_class_on_deserialize
     e = assert_raise(ArgumentError) do
-      Psych.load("--- !ruby/object:NonExistent\nfoo: 1")
+      Psych.unsafe_load("--- !ruby/object:NonExistent\nfoo: 1")
     end
     assert_equal 'undefined class/module NonExistent', e.message
   end
@@ -222,28 +222,28 @@ class TestPsych < Psych::TestCase
   end
 
   def test_load_default_fallback
-    assert_equal false, Psych.load("")
+    assert_equal false, Psych.unsafe_load("")
   end
 
   def test_load_with_fallback
-    assert_equal 42, Psych.load("", "file", fallback: 42)
+    assert_equal 42, Psych.load("", filename: "file", fallback: 42)
   end
 
   def test_load_with_fallback_nil_or_false
-    assert_nil Psych.load("", "file", fallback: nil)
-    assert_equal false, Psych.load("", "file", fallback: false)
+    assert_nil Psych.load("", filename: "file", fallback: nil)
+    assert_equal false, Psych.load("", filename: "file", fallback: false)
   end
 
   def test_load_with_fallback_hash
-    assert_equal Hash.new, Psych.load("", "file", fallback: Hash.new)
+    assert_equal Hash.new, Psych.load("", filename: "file", fallback: Hash.new)
   end
 
   def test_load_with_fallback_for_nil
-    assert_nil Psych.load("--- null", "file", fallback: 42)
+    assert_nil Psych.unsafe_load("--- null", "file", fallback: 42)
   end
 
   def test_load_with_fallback_for_false
-    assert_equal false, Psych.load("--- false", "file", fallback: 42)
+    assert_equal false, Psych.unsafe_load("--- false", "file", fallback: 42)
   end
 
   def test_load_file
@@ -278,7 +278,7 @@ class TestPsych < Psych::TestCase
 
   def test_load_file_default_fallback
     Tempfile.create(['empty', 'yml']) {|t|
-      assert_equal false, Psych.load_file(t.path)
+      assert_equal false, Psych.unsafe_load_file(t.path)
     }
   end
 
@@ -347,9 +347,9 @@ class TestPsych < Psych::TestCase
   end
 
   def test_degenerate_strings
-    assert_equal false, Psych.load('    ')
+    assert_equal false, Psych.unsafe_load('    ')
     assert_equal false, Psych.parse('   ')
-    assert_equal false, Psych.load('')
+    assert_equal false, Psych.unsafe_load('')
     assert_equal false, Psych.parse('')
   end
 

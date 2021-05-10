@@ -124,7 +124,7 @@ module Psych
 
     def test_self_referential
       x = Referential.new
-      copy = Psych.load Psych.dump x
+      copy = Psych.unsafe_load Psych.dump x
       assert_equal copy, copy.a
     end
 
@@ -163,23 +163,23 @@ module Psych
     end
 
     def test_represent_map
-      thing = Psych.load(Psych.dump(RepresentWithMap.new))
+      thing = Psych.unsafe_load(Psych.dump(RepresentWithMap.new))
       assert_equal({ "string" => 'a', :symbol => 'b' }, thing.map)
     end
 
     def test_represent_sequence
-      thing = Psych.load(Psych.dump(RepresentWithSeq.new))
+      thing = Psych.unsafe_load(Psych.dump(RepresentWithSeq.new))
       assert_equal %w{ foo bar }, thing.seq
     end
 
     def test_represent_with_init
-      thing = Psych.load(Psych.dump(RepresentWithInit.new))
+      thing = Psych.unsafe_load(Psych.dump(RepresentWithInit.new))
       assert_equal 'bar', thing.str
     end
 
     def test_represent!
       assert_match(/foo/, Psych.dump(Represent.new))
-      assert_instance_of(Represent, Psych.load(Psych.dump(Represent.new)))
+      assert_instance_of(Represent, Psych.unsafe_load(Psych.dump(Represent.new)))
     end
 
     def test_scalar_coder
@@ -189,7 +189,7 @@ module Psych
 
     def test_load_dumped_tagging
       foo = InitApi.new
-      bar = Psych.load(Psych.dump(foo))
+      bar = Psych.unsafe_load(Psych.dump(foo))
       assert_equal false, bar.implicit
       assert_equal "!ruby/object:Psych::TestCoder::InitApi", bar.tag
       assert_equal Psych::Nodes::Mapping::BLOCK, bar.style
@@ -208,7 +208,7 @@ module Psych
 
     def test_dump_init_with
       foo = InitApi.new
-      bar = Psych.load(Psych.dump(foo))
+      bar = Psych.unsafe_load(Psych.dump(foo))
       assert_equal foo.a, bar.a
       assert_equal foo.b, bar.b
       assert_nil bar.c
