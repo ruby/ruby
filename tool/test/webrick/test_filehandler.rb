@@ -247,7 +247,6 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
 
   def test_short_filename
     return if File.executable?(__FILE__) # skip on strange file system
-    return if /mswin/ =~ RUBY_PLATFORM && ENV.key?('GITHUB_ACTIONS') # not working from the beginning
 
     config = {
       :CGIInterpreter => TestWEBrick::RubyBin,
