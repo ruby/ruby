@@ -2,8 +2,6 @@
 require 'rubygems/test_case'
 require "rubygems/version"
 
-require "minitest/benchmark"
-
 class TestGemVersion < Gem::TestCase
   class V < ::Gem::Version
   end
@@ -108,15 +106,6 @@ class TestGemVersion < Gem::TestCase
 
       assert_equal "Malformed version number string #{invalid}", e.message, invalid
     end
-  end
-
-  def bench_anchored_version_pattern
-    assert_performance_linear 0.5 do |count|
-      version_string = count.times.map {|i| "0" * i.succ }.join(".") << "."
-      version_string =~ Gem::Version::ANCHORED_VERSION_PATTERN
-    end
-  rescue RegexpError
-    skip "It fails to allocate the memory for regex pattern of Gem::Version::ANCHORED_VERSION_PATTERN"
   end
 
   def test_empty_version
