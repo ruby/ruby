@@ -35,7 +35,8 @@ jobs:
             ${{ runner.os }}-chocolatey-
       - name: Install libraries with chocolatey
         run: |
-          choco install --no-progress openssl winflexbison3
+          Choco-Install -PackageName openssl winflexbison3
+        shell: pwsh
       - name: git config
         run: |
           git config --global core.autocrlf false
