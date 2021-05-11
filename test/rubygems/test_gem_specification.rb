@@ -3063,9 +3063,11 @@ Please report a bug if this causes problems.
 
   def test_duplicate_runtime_dependency
     expected = "WARNING: duplicated b dependency [\"~> 3.0\", \"~> 3.0\"]\n"
-    assert_output nil, expected do
+    out, err = capture_output do
       @a1.add_runtime_dependency "b", "~> 3.0", "~> 3.0"
     end
+    assert_nil out
+    assert_equal(expected, err)
   end
 
   def set_orig(cls)
