@@ -71,6 +71,15 @@ VALUE rb_mutex_unlock(VALUE mutex);
 VALUE rb_mutex_sleep(VALUE self, VALUE timeout);
 VALUE rb_mutex_synchronize(VALUE mutex, VALUE (*func)(VALUE arg), VALUE arg);
 
+VALUE rb_queue_new(void);
+VALUE rb_queue_push(VALUE self, VALUE obj);
+VALUE rb_queue_pop(int argc, VALUE *argv, VALUE self);
+
+VALUE rb_szqueue_new(long max);
+VALUE rb_szqueue_push(int argc, VALUE *argv, VALUE self);
+VALUE rb_szqueue_pop(int argc, VALUE *argv, VALUE self);
+VALUE rb_szqueue_num_waiting(VALUE self);
+
 RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RBIMPL_INTERN_THREAD_H */

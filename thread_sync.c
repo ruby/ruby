@@ -841,6 +841,16 @@ queue_closed_result(VALUE self, struct rb_queue *q)
  *
  */
 
+VALUE
+rb_queue_new(void)
+{
+    VALUE self = queue_alloc(rb_cQueue);
+    struct rb_queue *q = queue_ptr(self);
+    RB_OBJ_WRITE(self, &q->que, ary_buf_new());
+    list_head_init(queue_waitq(q));
+    return self;
+}
+
 /*
  * Document-method: Queue::new
  *
@@ -949,7 +959,7 @@ rb_queue_closed_p(VALUE self)
  * Pushes the given +object+ to the queue.
  */
 
-static VALUE
+VALUE
 rb_queue_push(VALUE self, VALUE obj)
 {
     return queue_do_push(self, queue_ptr(self), obj);
@@ -1056,7 +1066,7 @@ queue_pop_should_block(int argc, const VALUE *argv)
  * +ThreadError+ is raised.
  */
 
-static VALUE
+VALUE
 rb_queue_pop(int argc, VALUE *argv, VALUE self)
 {
     int should_block = queue_pop_should_block(argc, argv);
@@ -1128,6 +1138,24 @@ rb_queue_num_waiting(VALUE self)
  *
  * See Queue for an example of how a SizedQueue works.
  */
+
+VALUE
+rb_szqueue_new(long max)
+{
+    VALUE self = szqueue_alloc(rb_cSizedQueue);
+    struct rb_szqueue *sq = szqueue_ptr(self);
+
+    if (max <= 0) {
+	rb_raise(rb_eArgError, "queue size must be positive");
+    }
+
+    RB_OBJ_WRITE(self, &sq->q.que, ary_buf_new());
+    list_head_init(szqueue_waitq(sq));
+    list_head_init(szqueue_pushq(sq));
+    sq->max = max;
+
+    return self;
+}
 
 /*
  * Document-method: SizedQueue::new
@@ -1242,7 +1270,7 @@ szqueue_push_should_block(int argc, const VALUE *argv)
  * thread isn't suspended, and +ThreadError+ is raised.
  */
 
-static VALUE
+VALUE
 rb_szqueue_push(int argc, VALUE *argv, VALUE self)
 {
     struct rb_szqueue *sq = szqueue_ptr(self);
@@ -1306,7 +1334,7 @@ szqueue_do_pop(VALUE self, int should_block)
  * +ThreadError+ is raised.
  */
 
-static VALUE
+VALUE
 rb_szqueue_pop(int argc, VALUE *argv, VALUE self)
 {
     int should_block = queue_pop_should_block(argc, argv);
@@ -1352,7 +1380,7 @@ rb_szqueue_length(VALUE self)
  * Returns the number of threads waiting on the queue.
  */
 
-static VALUE
+VALUE
 rb_szqueue_num_waiting(VALUE self)
 {
     struct rb_szqueue *sq = szqueue_ptr(self);
