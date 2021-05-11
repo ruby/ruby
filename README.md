@@ -76,7 +76,7 @@ You can dump statistics about compilation and execution by running YJIT with the
 The machine code generated for a given method can be printed by adding `puts YJIT.disasm(method(:method_name))` to a Ruby script. Note that no code will be generated if the method is not compiled.
 
 
-### Options
+### Command-Line Options
 
 YJIT supports all command-line options supported by upstream CRuby, but also adds a few YJIT-specific options:
 
@@ -90,7 +90,7 @@ YJIT supports all command-line options supported by upstream CRuby, but also add
 
 We have collected a set of benchmarks and implemented a simple benchmarking harness in the [yjit-bench](https://github.com/Shopify/yjit-bench) repository. This benchmarking harness is designed to disable CPU frequency scaling, set process affinity and disable address space randomization so that the variance between benchmarking runs will be as small as possible. Please kindly note that we are at an early stage in this project.
 
-## Performance Tips
+### Performance Tips
 
 This section contains tips on writing Ruby code that will run as fast as possible on YJIT. Some of this advice is based on current limitations of YJIT, while other advice is broadly applicable. It probably won't be practical to apply these tips everywhere in your codebase, but you can profile your code using a tool such as [stackprof](https://github.com/tmm1/stackprof) and refactor the specific methods that make up the largest fractions of the execution time.
 
@@ -107,7 +107,22 @@ This section contains tips on writing Ruby code that will run as fast as possibl
 
 You can also compile YJIT in debug mode and use the `--yjit-stats` command-line option to see which bytecodes cause YJIT to exit, and refactor your code to avoid using these instructions in the hottest methods of your code.
 
-## Source Code Organization
+## Contributing
+
+We welcome open source contributors. You should feel free to open new issues to report bugs or just to ask questions.
+Suggestions on how to make this readme file more helpful for new contributors are most welcome.
+
+Bug fixes and bug reports are very valuable to us. If you find bugs in YJIT, it's very possible be that nobody has reported this bug before,
+or that we don't have a good reproduction for it, so please open an issue and provide some information about your configuration and a description of how you
+encountered the problem. If you are able to produce a small reproduction to help us track down the bug, that is very much appreciated as well.
+
+If you would like to contribute a large patch to YJIT, we suggest opening an issue or a discussion on this repository so that
+we can have an active discussion. A common problem is that sometimes people submit large pull requests to open source projects
+without prior communication, and we have to reject them because the work they implemented does not fit within the design of the
+project. We want to save you time and frustration, so please reach out and we can have a productive discussion as to how
+you can contribute things we will want to merge into YJIT.
+
+### Source Code Organization
 
 The YJIT source code is divided between:
 - `yjit_asm.c`: x86 in-memory assembler we use to generate machine code
@@ -125,17 +140,42 @@ The core of CRuby's interpreter logic is found in:
 - `vm_insnshelper.c`: logic used by Ruby's bytecode instructions
 - `vm_exec.c`: Ruby interpreter loop
 
-## Contributing
+### Coding & Debugging Protips 
 
-We welcome open source contributors. You should feel free to open new issues to report bugs or just to ask questions.
-Suggestions on how to make this readme file more helpful for new contributors are most welcome.
+There are 3 test suites:
+- `make btest` (see `/bootstraptest`)
+- `make test-all`
+- `make test-spec`
+- `make check` runs all of the above
 
-Bug fixes and bug reports are very valuable to us. If you find bugs in YJIT, it's very possible be that nobody has reported this bug before,
-or that we don't have a good reproduction for it, so please open an issue and provide some information about your configuration and a description of how you
-encountered the problem. If you are able to produce a small reproduction to help us track down the bug, that is very much appreciated as well.
+The tests can be run in parallel like this:
 
-If you would like to contribute a large patch to YJIT, we suggest opening an issue or a discussion on this repository so that
-we can have an active discussion. A common problem is that sometimes people submit large pull requests to open source projects
-without prior communication, and we have to reject them because the work they implemented does not fit within the design of the
-project. We want to save you time and frustration, so please reach out and we can have a productive discussion as to how
-you can contribute things we will want to merge into YJIT.
+```
+make -j16 test-all
+```
+
+You can run one specific test in `btest`:
+
+```
+make btest BTESTS=bootstraptest/test_ractor.rb
+```
+
+To debug a single test in `test-all`:
+
+```
+make test-all TESTOPTS=--verbose
+make test-all TESTS='test/-ext-/marshal/test_usrmarshal.rb' RUNRUBYOPT=--debugger=lldb
+```
+
+There are shortcuts to run/debug `test.rb`:
+
+```
+make run  # runs ./miniruby test.rb
+make lldb # launches ./miniruby test.rb in lldb
+```
+
+You can use the Intel syntax for disassembly in LLDB, keeping it consistent with YJIT's disassembly:
+
+```
+echo "settings set target.x86-disassembly-flavor intel" >> ~/.lldbinit
+```
