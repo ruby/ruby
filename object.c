@@ -4565,26 +4565,27 @@ InitVM_Object(void)
      *
      *   sprintf "%.1f", 1.234 #=> "1.2"
      *
-     *
      * == What's Here
      *
      * === Converting
      *
-     * - #Array:: Returns an Array based on the given argument.
-     * - #Complex:: Returns a Complex based on the given arguments.
-     * - #Float:: Returns a Complex based on the given arguments.
-     * - #Hash:: Returns a Complex based on the given argument.
-     * - #Integer:: Returns a Complex based on the given arguments.
-     * - #Rational:: Returns a Complex based on the given arguments.
-     * - #String:: Returns a Complex based on the given argument.
+     * - {#Array}[#method-i-Array]:: Returns an Array based on the given argument.
+     * - {#Complex}[#method-i-Complex]:: Returns a Complex based on the given arguments.
+     * - {#Float}[#method-i-Float]:: Returns a Float based on the given arguments.
+     * - {#Hash}[#method-i-Hash]:: Returns a Hash based on the given argument.
+     * - {#Integer}[#method-i-Integer]:: Returns an Integer based on the given arguments.
+     * - {#Rational}[#method-i-Rational]:: Returns a Rational
+     *                                     based on the given arguments.
+     * - {#String}[#method-i-String]:: Returns a String based on the given argument.
      *
      * === Querying
      *
-     * - #__callee__:: Returns the called name of the current method as a Symbol.
-     * - #__dir__:: Returns the path to the directory from which the current method
-     *              is called.
-     * - #__method__:: Returns the name at the definition of the current method
-     *                 as a Symbol.
+     * - {#__callee__}[#method-i-__callee__]:: Returns the called name
+     *                                         of the current method as a symbol.
+     * - {#__dir__}[#method-i-__dir__]:: Returns the path to the directory
+     *                                   from which the current method is called.
+     * - {#__method__}[#method-i-__method__]:: Returns the name at the definition
+     *                                          of the current method as a symbol.
      * - #autoload?:: Returns the file to be loaded when the given module is referenced.
      * - #binding:: Returns a Binding object that describes the variable and method
      *              bindings at the point of call.
@@ -4625,12 +4626,6 @@ InitVM_Object(void)
      * - #throw:: Transfers control to the end of the active catch block
      *            that is waiting for the given tag.
      *
-     * === $_ ($LAST_READ_LINE)
-     *
-     * - #chomp:: Removes the trailing record separator, if any, from <tt>$_</tt>.
-     * - #chop:: Removes the last character, if any, from <tt>$_</tt>.
-     * - #gets:: Returns and assigns to <tt>$_</tt> the next line from the current input.
-     *
      * === Strings
      *
      * - #format:: Returns the string resulting from applying the given format string
@@ -4644,6 +4639,9 @@ InitVM_Object(void)
      *
      * === \IO
      *
+     * - #chomp:: Removes the trailing record separator, if any, from <tt>$_</tt>.
+     * - #chop:: Removes the last character, if any, from <tt>$_</tt>.
+     * - #gets:: Returns and assigns to <tt>$_</tt> the next line from the current input.
      * - #open:: Creates an IO object connected to the given stream, file, or subprocess.
      * - #p::  Writes the given objects to standard output.
      * - #pp:: Prints the given objects in pretty form.
@@ -4688,7 +4686,7 @@ InitVM_Object(void)
      * - #then:: Yields +self+ to the block and returns the result of the block.
      * - #yield_self:: Yields +self+ to the block and returns the result of the block.
      *
-     * === Random Values
+     * === \Random Values
      *
      * - #rand:: Returns a pseudo-random floating point number
      *           strictly between 0.0 and 1.0.
