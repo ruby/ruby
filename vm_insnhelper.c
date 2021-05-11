@@ -4188,6 +4188,12 @@ vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_
     return false;
 }
 
+bool
+rb_vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE obj, VALUE v)
+{
+    return vm_defined(ec, reg_cfp, op_type, obj, v);
+}
+
 static const VALUE *
 vm_get_ep(const VALUE *const reg_ep, rb_num_t lv)
 {

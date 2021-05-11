@@ -1174,6 +1174,51 @@ gen_setinstancevariable(jitstate_t* jit, ctx_t* ctx)
     */
 }
 
+bool rb_vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE obj, VALUE v);
+
+static codegen_status_t
+gen_defined(jitstate_t* jit, ctx_t* ctx)
+{
+    rb_num_t op_type = (rb_num_t)jit_get_arg(jit, 0);
+    VALUE obj = (VALUE)jit_get_arg(jit, 1);
+    VALUE pushval = (VALUE)jit_get_arg(jit, 2);
+
+    // Save the PC and SP because the callee may allocate
+    // Note that this modifies REG_SP, which is why we do it first
+    jit_save_pc(jit, REG0);
+    jit_save_sp(jit, ctx);
+
+    // Get the operands from the stack
+    x86opnd_t v_opnd = ctx_stack_pop(ctx, 1);
+
+    // Call vm_defined(ec, reg_cfp, op_type, obj, v)
+    // Out of order because we're going to corrupt REG_SP and REG_CFP
+    yjit_save_regs(cb);
+    mov(cb, R9, REG_CFP);
+    mov(cb, C_ARG_REGS[0], REG_EC);
+    mov(cb, C_ARG_REGS[1], R9);
+    mov(cb, C_ARG_REGS[4], v_opnd); // depends on REG_SP
+    mov(cb, C_ARG_REGS[2], imm_opnd(op_type)); // clobers REG_SP
+    jit_mov_gc_ptr(jit, cb, C_ARG_REGS[3], (VALUE)obj);
+    call_ptr(cb, REG0, (void *)rb_vm_defined);
+    yjit_load_regs(cb);
+
+    // if (vm_defined(ec, GET_CFP(), op_type, obj, v)) {
+    //  val = pushval;
+    // }
+    jit_mov_gc_ptr(jit, cb, REG1, (VALUE)pushval);
+    cmp(cb, AL, imm_opnd(0));
+    mov(cb, RAX, imm_opnd(Qnil));
+    cmovnz(cb, RAX, REG1);
+
+    // Push the return value onto the stack
+    val_type_t out_type = SPECIAL_CONST_P(pushval)? TYPE_IMM:TYPE_UNKNOWN;
+    x86opnd_t stack_ret = ctx_stack_push(ctx, out_type);
+    mov(cb, stack_ret, RAX);
+
+    return YJIT_KEEP_COMPILING;
+}
+
 static void
 guard_two_fixnums(ctx_t* ctx, uint8_t* side_exit)
 {
@@ -2673,6 +2718,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(setlocal_WC_0), gen_setlocal_wc0);
     yjit_reg_op(BIN(getinstancevariable), gen_getinstancevariable);
     yjit_reg_op(BIN(setinstancevariable), gen_setinstancevariable);
+    yjit_reg_op(BIN(defined), gen_defined);
     yjit_reg_op(BIN(opt_lt), gen_opt_lt);
     yjit_reg_op(BIN(opt_le), gen_opt_le);
     yjit_reg_op(BIN(opt_ge), gen_opt_ge);
