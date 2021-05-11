@@ -16,11 +16,11 @@ class TestGemExtExtConfBuilder < Gem::TestCase
 
   def test_class_build
     if java_platform?
-      skip("failing on jruby")
+      pend("failing on jruby")
     end
 
     if vc_windows? && !nmake_found?
-      skip("test_class_build skipped - nmake not found")
+      pend("test_class_build skipped - nmake not found")
     end
 
     File.open File.join(@ext, 'extconf.rb'), 'w' do |extconf|
@@ -45,7 +45,7 @@ class TestGemExtExtConfBuilder < Gem::TestCase
 
   def test_class_build_rbconfig_make_prog
     if java_platform?
-      skip("failing on jruby")
+      pend("failing on jruby")
     end
 
     configure_args do
@@ -70,7 +70,7 @@ class TestGemExtExtConfBuilder < Gem::TestCase
     ENV['MAKE'] = 'anothermake'
 
     if java_platform?
-      skip("failing on jruby")
+      pend("failing on jruby")
     end
 
     configure_args '' do
@@ -93,7 +93,7 @@ class TestGemExtExtConfBuilder < Gem::TestCase
 
   def test_class_build_extconf_fail
     if vc_windows? && !nmake_found?
-      skip("test_class_build_extconf_fail skipped - nmake not found")
+      pend("test_class_build_extconf_fail skipped - nmake not found")
     end
 
     File.open File.join(@ext, 'extconf.rb'), 'w' do |extconf|
@@ -119,7 +119,7 @@ class TestGemExtExtConfBuilder < Gem::TestCase
 
   def test_class_build_extconf_success_without_warning
     if vc_windows? && !nmake_found?
-      skip("test_class_build_extconf_fail skipped - nmake not found")
+      pend("test_class_build_extconf_fail skipped - nmake not found")
     end
 
     File.open File.join(@ext, 'extconf.rb'), 'w' do |extconf|
@@ -139,7 +139,7 @@ class TestGemExtExtConfBuilder < Gem::TestCase
 
   def test_class_build_unconventional
     if vc_windows? && !nmake_found?
-      skip("test_class_build skipped - nmake not found")
+      pend("test_class_build skipped - nmake not found")
     end
 
     File.open File.join(@ext, 'extconf.rb'), 'w' do |extconf|
@@ -180,7 +180,7 @@ end
 
   def test_class_make
     if vc_windows? && !nmake_found?
-      skip("test_class_make skipped - nmake not found")
+      pend("test_class_make skipped - nmake not found")
     end
 
     output = []
