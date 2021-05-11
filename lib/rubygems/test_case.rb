@@ -1049,7 +1049,6 @@ Also, a list:
 
     spec_fetcher.specs[@uri] = []
     all.each do |spec|
-
       spec_fetcher.specs[@uri] << spec.name_tuple
     end
 
