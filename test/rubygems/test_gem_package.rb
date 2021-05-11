@@ -1068,7 +1068,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     _, err = use_ui @ui do
       e = nil
 
-      out_err = capture_io do
+      out_err = capture_output do
         e = assert_raise ArgumentError do
           package.verify_entry entry
         end
