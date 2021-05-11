@@ -2619,7 +2619,7 @@ end
   def test_to_yaml
     yaml_str = @a1.to_yaml
 
-    refute_match %r|!!null|, yaml_str
+    refute_match %r{!!null}, yaml_str
 
     same_spec = Gem::Specification.from_yaml(yaml_str)
 
