@@ -10,7 +10,6 @@ end
 
 require 'rubygems/remote_fetcher'
 require 'rubygems/package'
-require 'minitest/mock'
 
 # = Testing Proxy Settings
 #
