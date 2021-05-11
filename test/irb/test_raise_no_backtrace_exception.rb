@@ -23,7 +23,7 @@ IRB
     end
 
     def test_raise_exception_with_different_encoding_containing_invalid_byte_sequence
-      skip if RUBY_ENGINE == 'truffleruby'
+      skip if RUBY_ENGINE == 'truffleruby' || /mswin|mingw/ =~ RUBY_PLATFORM
       backup_home = ENV["HOME"]
       Dir.mktmpdir("test_irb_raise_no_backtrace_exception_#{$$}") do |tmpdir|
         ENV["HOME"] = tmpdir
