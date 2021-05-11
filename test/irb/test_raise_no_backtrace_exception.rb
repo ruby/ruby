@@ -38,7 +38,9 @@ IRB
             end
           EOF
         end
-        assert_in_out_err(bundle_exec + %w[-rirb -W0 -e ENV[%(LC_ALL)]=%(ja_JP.UTF-8) -e ENV[%(LANG)]=%(ja_JP.UTF-8) -e IRB.start(__FILE__) -- -f --], <<~IRB, /`raise_euc_with_invalid_byte_sequence': あ\\xFF \(RuntimeError\)/, [], encoding: "UTF-8")
+        env = {}
+        %w(LC_MESSAGES LC_ALL LC_CTYPE LANG).each {|n| env[n] = "ja_JP.UTF-8" }
+        assert_in_out_err([env] + bundle_exec + %w[-rirb -W0 -e IRB.start(__FILE__) -- -f --], <<~IRB, /`raise_euc_with_invalid_byte_sequence': あ\\xFF \(RuntimeError\)/, [], encoding: "UTF-8")
           require_relative 'euc'
           raise_euc_with_invalid_byte_sequence
         IRB
