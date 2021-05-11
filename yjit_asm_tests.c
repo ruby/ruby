@@ -323,6 +323,8 @@ void run_tests()
     cb_set_pos(cb, 0); sub(cb, RAX, imm_opnd(2)); check_bytes(cb, "4883E802");
 
     // test
+    cb_set_pos(cb, 0); test(cb, AL, AL); check_bytes(cb, "84C0");
+    cb_set_pos(cb, 0); test(cb, AX, AX); check_bytes(cb, "6685C0");
     cb_set_pos(cb, 0); test(cb, CL, imm_opnd(8)); check_bytes(cb, "F6C108");
     cb_set_pos(cb, 0); test(cb, DL, imm_opnd(7)); check_bytes(cb, "F6C207");
     cb_set_pos(cb, 0); test(cb, RCX, imm_opnd(8)); check_bytes(cb, "F6C108");
