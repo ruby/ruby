@@ -24,7 +24,7 @@ class TestGemRDoc < Gem::TestCase
     begin
       Gem::RDoc.load_rdoc
     rescue Gem::DocumentError => e
-      skip e.message
+      pend e.message
     end
 
     Gem.configuration[:rdoc] = nil
@@ -88,8 +88,8 @@ class TestGemRDoc < Gem::TestCase
   end
 
   def test_remove_unwritable
-    skip 'chmod not supported' if Gem.win_platform?
-    skip 'skipped in root privilege' if Process.uid.zero?
+    pend 'chmod not supported' if Gem.win_platform?
+    pend 'skipped in root privilege' if Process.uid.zero?
     FileUtils.mkdir_p @a.base_dir
     FileUtils.chmod 0, @a.base_dir
 
@@ -117,8 +117,8 @@ class TestGemRDoc < Gem::TestCase
   end
 
   def test_setup_unwritable
-    skip 'chmod not supported' if Gem.win_platform?
-    skip 'skipped in root privilege' if Process.uid.zero?
+    pend 'chmod not supported' if Gem.win_platform?
+    pend 'skipped in root privilege' if Process.uid.zero?
     FileUtils.mkdir_p @a.doc_dir
     FileUtils.chmod 0, @a.doc_dir
 

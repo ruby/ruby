@@ -4,7 +4,7 @@ require 'rubygems/util'
 
 class TestGemUtil < Gem::TestCase
   def test_class_popen
-    skip "popen with a block does not behave well on jruby" if Gem.java_platform?
+    pend "popen with a block does not behave well on jruby" if Gem.java_platform?
     assert_equal "0\n", Gem::Util.popen(*ruby_with_rubygems_in_load_path, '-e', 'p 0')
 
     assert_raise Errno::ECHILD do
@@ -13,7 +13,7 @@ class TestGemUtil < Gem::TestCase
   end
 
   def test_silent_system
-    skip if Gem.java_platform?
+    pend if Gem.java_platform?
     Gem::Deprecate.skip_during do
       out, err = capture_output do
         Gem::Util.silent_system(*ruby_with_rubygems_in_load_path, '-e', 'puts "hello"; warn "hello"')
@@ -35,14 +35,14 @@ class TestGemUtil < Gem::TestCase
   end
 
   def test_traverse_parents_does_not_crash_on_permissions_error
-    skip 'skipped on MS Windows (chmod has no effect)' if win_platform? || java_platform?
+    pend 'skipped on MS Windows (chmod has no effect)' if win_platform? || java_platform?
 
     FileUtils.mkdir_p 'd/e/f'
     # remove 'execute' permission from "e" directory and make it
     # impossible to cd into it and its children
     FileUtils.chmod(0666, 'd/e')
 
-    skip 'skipped in root privilege' if Process.uid.zero?
+    pend 'skipped in root privilege' if Process.uid.zero?
 
     paths = Gem::Util.traverse_parents('d/e/f').to_a
 

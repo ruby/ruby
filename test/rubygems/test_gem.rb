@@ -1058,7 +1058,7 @@ class TestGem < Gem::TestCase
 
     assert_equal ["\xCF", "\x80"], Gem.read_binary('test').chars.to_a
 
-    skip 'chmod not supported' if Gem.win_platform?
+    pend 'chmod not supported' if Gem.win_platform?
 
     begin
       File.chmod 0444, 'test'
@@ -1727,7 +1727,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_looks_for_gemdeps_files_automatically_on_start
-    skip "Requiring bundler messes things up" if Gem.java_platform?
+    pend "Requiring bundler messes things up" if Gem.java_platform?
 
     a = util_spec "a", "1", nil, "lib/a.rb"
     b = util_spec "b", "1", nil, "lib/b.rb"
@@ -1763,7 +1763,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_looks_for_gemdeps_files_automatically_on_start_in_parent_dir
-    skip "Requiring bundler messes things up" if Gem.java_platform?
+    pend "Requiring bundler messes things up" if Gem.java_platform?
 
     a = util_spec "a", "1", nil, "lib/a.rb"
     b = util_spec "b", "1", nil, "lib/b.rb"

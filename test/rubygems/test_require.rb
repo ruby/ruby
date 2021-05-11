@@ -147,8 +147,8 @@ class TestGemRequire < Gem::TestCase
   end
 
   def test_dash_i_respects_default_library_extension_priority
-    skip "extensions don't quite work on jruby" if Gem.java_platform?
-    skip "not installed yet" unless RbConfig::TOPDIR
+    pend "extensions don't quite work on jruby" if Gem.java_platform?
+    pend "not installed yet" unless RbConfig::TOPDIR
 
     dash_i_ext_arg = util_install_extension_file('a')
     dash_i_lib_arg = util_install_ruby_file('a')
@@ -245,12 +245,12 @@ class TestGemRequire < Gem::TestCase
   end
 
   def test_activate_via_require_respects_loaded_files
-    skip "Not sure what's going on. If another spec creates a 'a' gem before
+    pend "Not sure what's going on. If another spec creates a 'a' gem before
       this test, somehow require will load the benchmark in b, and ignore that the
       stdlib one is already in $LOADED_FEATURES?. Reproducible by running the
       spaceship_specific_file test before this one" if java_platform?
 
-    skip "not installed yet" unless RbConfig::TOPDIR
+    pend "not installed yet" unless RbConfig::TOPDIR
 
     lib_dir = File.expand_path("../../lib", File.dirname(__FILE__))
     rubylibdir = File.realdirpath(RbConfig::CONFIG["rubylibdir"])
@@ -467,7 +467,7 @@ class TestGemRequire < Gem::TestCase
 
   def test_realworld_default_gem
     testing_ruby_repo = !ENV["GEM_COMMAND"].nil?
-    skip "this test can't work under ruby-core setup" if testing_ruby_repo || java_platform?
+    pend "this test can't work under ruby-core setup" if testing_ruby_repo || java_platform?
 
     cmd = <<-RUBY
       $stderr = $stdout
@@ -481,7 +481,7 @@ class TestGemRequire < Gem::TestCase
 
   def test_realworld_upgraded_default_gem
     testing_ruby_repo = !ENV["GEM_COMMAND"].nil?
-    skip "this test can't work under ruby-core setup" if testing_ruby_repo
+    pend "this test can't work under ruby-core setup" if testing_ruby_repo
 
     newer_json = util_spec("json", "999.99.9", nil, ["lib/json.rb"])
     install_gem newer_json
@@ -679,7 +679,7 @@ class TestGemRequire < Gem::TestCase
     end
 
     def test_no_crash_when_overriding_warn_with_warning_module
-      skip "https://github.com/oracle/truffleruby/issues/2109" if RUBY_ENGINE == "truffleruby"
+      pend "https://github.com/oracle/truffleruby/issues/2109" if RUBY_ENGINE == "truffleruby"
 
       Dir.mktmpdir("warn_test") do |dir|
         File.write(dir + "/main.rb", "module Warning; def warn(str); super; end; end; warn 'Foo Bar'")
