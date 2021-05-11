@@ -145,6 +145,43 @@ class Gem::TestCase < Test::Unit::TestCase
     assert File.directory?(path), msg
   end
 
+  # https://github.com/seattlerb/minitest/blob/master/lib/minitest/assertions.rb#L188
+  def _synchronize
+    yield
+  end
+
+  # https://github.com/seattlerb/minitest/blob/master/lib/minitest/assertions.rb#L546
+  def capture_subprocess_io
+    _synchronize do
+      begin
+        require "tempfile"
+
+        captured_stdout, captured_stderr = Tempfile.new("out"), Tempfile.new("err")
+
+        orig_stdout, orig_stderr = $stdout.dup, $stderr.dup
+        $stdout.reopen captured_stdout
+        $stderr.reopen captured_stderr
+
+        yield
+
+        $stdout.rewind
+        $stderr.rewind
+
+        return captured_stdout.read, captured_stderr.read
+      ensure
+        captured_stdout.unlink
+        captured_stderr.unlink
+        $stdout.reopen orig_stdout
+        $stderr.reopen orig_stderr
+
+        orig_stdout.close
+        orig_stderr.close
+        captured_stdout.close
+        captured_stderr.close
+      end
+    end
+  end
+
   ##
   # Sets the ENABLE_SHARED entry in RbConfig::CONFIG to +value+ and restores
   # the original value when the block ends
