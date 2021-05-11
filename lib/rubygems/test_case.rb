@@ -1557,4 +1557,37 @@ Also, a list:
   end if Gem::HAVE_OPENSSL
 end
 
+class Object
+  def stub name, val_or_callable, *block_args
+    new_name = "__minitest_stub__#{name}"
+
+    metaclass = class << self; self; end
+
+    if respond_to? name and not methods.map(&:to_s).include? name.to_s then
+      metaclass.send :define_method, name do |*args|
+        super(*args)
+      end
+    end
+
+    metaclass.send :alias_method, new_name, name
+
+    metaclass.send :define_method, name do |*args, &blk|
+      if val_or_callable.respond_to? :call then
+        val_or_callable.call(*args, &blk)
+      else
+        blk.call(*block_args) if blk
+        val_or_callable
+      end
+    end
+
+    metaclass.send(:ruby2_keywords, name) if metaclass.respond_to?(:ruby2_keywords, true)
+
+    yield self
+  ensure
+    metaclass.send :undef_method, name
+    metaclass.send :alias_method, name, new_name
+    metaclass.send :undef_method, new_name
+  end
+end
+
 require 'rubygems/test_utilities'
