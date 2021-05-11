@@ -4,7 +4,7 @@ jobs:
   make:
     strategy:
       matrix:
-        test_task: [test]
+        test_task: [check]
         os: [windows-2019]
         vs: [2019]
       fail-fast: false
@@ -57,7 +57,7 @@ jobs:
           nmake incs
           nmake extract-extlibs
           nmake
-      - name: nmake test
+      - name: nmake ${{ matrix.test_task }}
         timeout-minutes: 30
         run: |
           call "%VCVARS%"
