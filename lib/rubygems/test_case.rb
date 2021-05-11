@@ -1557,6 +1557,7 @@ Also, a list:
   end if Gem::HAVE_OPENSSL
 end
 
+# https://github.com/seattlerb/minitest/blob/master/lib/minitest/mock.rb#L192
 class Object
   def stub(name, val_or_callable, *block_args)
     new_name = "__minitest_stub__#{name}"
