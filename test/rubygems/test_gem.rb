@@ -212,7 +212,7 @@ class TestGem < Gem::TestCase
 
   def test_require_missing
     save_loaded_features do
-      assert_raises ::LoadError do
+      assert_raise ::LoadError do
         require "test_require_missing"
       end
     end
@@ -224,7 +224,7 @@ class TestGem < Gem::TestCase
 
       install_specs a1
 
-      assert_raises ::LoadError do
+      assert_raise ::LoadError do
         require "a*"
       end
 
@@ -261,7 +261,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_activate_bin_path_no_exec_name
-    e = assert_raises ArgumentError do
+    e = assert_raise ArgumentError do
       Gem.activate_bin_path 'a'
     end
 
@@ -342,7 +342,7 @@ class TestGem < Gem::TestCase
 
     # c2 is missing, and b2 which has it as a dependency will be activated, so we should get an error about the orphaned dependency
 
-    e = assert_raises Gem::UnsatisfiableDependencyError do
+    e = assert_raise Gem::UnsatisfiableDependencyError do
       load Gem.activate_bin_path("a", "exec", ">= 0")
     end
 
@@ -390,7 +390,7 @@ class TestGem < Gem::TestCase
 
     File.open("Gemfile", "w") {|f| f.puts('source "https://rubygems.org"') }
 
-    e = assert_raises Gem::GemNotFoundException do
+    e = assert_raise Gem::GemNotFoundException do
       load Gem.activate_bin_path("bundler", "bundle", ">= 0.a")
     end
 
@@ -487,7 +487,7 @@ class TestGem < Gem::TestCase
 
     File.open("Gemfile", "w") {|f| f.puts('source "https://rubygems.org"') }
 
-    e = assert_raises Gem::GemNotFoundException do
+    e = assert_raise Gem::GemNotFoundException do
       load Gem.activate_bin_path("bundler", "bundle", "= 2.2.8")
     end
 
@@ -495,7 +495,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_bin_path_no_exec_name
-    e = assert_raises ArgumentError do
+    e = assert_raise ArgumentError do
       Gem.bin_path 'a'
     end
 
@@ -516,20 +516,20 @@ class TestGem < Gem::TestCase
     util_spec 'a', '2' do |s|
       s.executables = ['exec']
     end
-    assert_raises(Gem::GemNotFoundException) do
+    assert_raise(Gem::GemNotFoundException) do
       Gem.bin_path('a', 'other', '2')
     end
   end
 
   def test_self_bin_path_no_bin_file
     util_spec 'a', '1'
-    assert_raises(ArgumentError) do
+    assert_raise(ArgumentError) do
       Gem.bin_path('a', nil, '1')
     end
   end
 
   def test_self_bin_path_not_found
-    assert_raises(Gem::GemNotFoundException) do
+    assert_raise(Gem::GemNotFoundException) do
       Gem.bin_path('non-existent', 'blah')
     end
   end
@@ -596,7 +596,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_datadir_nonexistent_package
-    assert_raises(Gem::MissingSpecError) do
+    assert_raise(Gem::MissingSpecError) do
       Gem::Specification.find_by_name("xyzzy").datadir
     end
   end
@@ -1144,7 +1144,7 @@ class TestGem < Gem::TestCase
 
     assert_equal Gem::Requirement.create('>= 1.2.3'), Gem.env_requirement('foo')
     assert_equal Gem::Requirement.create('1.2.3'), Gem.env_requirement('bAr')
-    assert_raises(Gem::Requirement::BadRequirementError) { Gem.env_requirement('baz') }
+    assert_raise(Gem::Requirement::BadRequirementError) { Gem.env_requirement('baz') }
     assert_equal Gem::Requirement.default, Gem.env_requirement('qux')
   end
 
@@ -1349,7 +1349,7 @@ class TestGem < Gem::TestCase
       io.puts '# a_file.rb'
     end
 
-    e = assert_raises Gem::MissingSpecError do
+    e = assert_raise Gem::MissingSpecError do
       Gem.try_activate 'a_file'
     end
 
@@ -1370,7 +1370,7 @@ class TestGem < Gem::TestCase
       io.puts '# a_file.rb'
     end
 
-    e = assert_raises Gem::MissingSpecError do
+    e = assert_raise Gem::MissingSpecError do
       Gem.try_activate 'a_file'
     end
 
@@ -1881,7 +1881,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_use_gemdeps_argument_missing
-    e = assert_raises ArgumentError do
+    e = assert_raise ArgumentError do
       Gem.use_gemdeps 'gem.deps.rb'
     end
 
@@ -1893,7 +1893,7 @@ class TestGem < Gem::TestCase
     rubygems_gemdeps, ENV['RUBYGEMS_GEMDEPS'] =
       ENV['RUBYGEMS_GEMDEPS'], 'gem.deps.rb'
 
-    e = assert_raises ArgumentError do
+    e = assert_raise ArgumentError do
       Gem.use_gemdeps 'gem.deps.rb'
     end
 

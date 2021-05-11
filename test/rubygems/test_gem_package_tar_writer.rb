@@ -209,7 +209,7 @@ class TestGemPackageTarWriter < Gem::Package::TarTestCase
   end
 
   def test_add_file_simple_size
-    assert_raises Gem::Package::TarWriter::FileOverflow do
+    assert_raise Gem::Package::TarWriter::FileOverflow do
       @tar_writer.add_file_simple("lib/foo/bar", 0, 10) do |io|
         io.write "1" * 11
       end
@@ -221,27 +221,27 @@ class TestGemPackageTarWriter < Gem::Package::TarTestCase
 
     assert_equal "\0" * 1024, @io.string
 
-    e = assert_raises IOError do
+    e = assert_raise IOError do
       @tar_writer.close
     end
     assert_equal 'closed Gem::Package::TarWriter', e.message
 
-    e = assert_raises IOError do
+    e = assert_raise IOError do
       @tar_writer.flush
     end
     assert_equal 'closed Gem::Package::TarWriter', e.message
 
-    e = assert_raises IOError do
+    e = assert_raise IOError do
       @tar_writer.add_file 'x', 0
     end
     assert_equal 'closed Gem::Package::TarWriter', e.message
 
-    e = assert_raises IOError do
+    e = assert_raise IOError do
       @tar_writer.add_file_simple 'x', 0, 0
     end
     assert_equal 'closed Gem::Package::TarWriter', e.message
 
-    e = assert_raises IOError do
+    e = assert_raise IOError do
       @tar_writer.mkdir 'x', 0
     end
     assert_equal 'closed Gem::Package::TarWriter', e.message
@@ -297,7 +297,7 @@ class TestGemPackageTarWriter < Gem::Package::TarTestCase
     assert_equal ['b' * 100, 'a'], @tar_writer.split_name(name)
 
     name = File.join 'a', 'b' * 101
-    exception = assert_raises Gem::Package::TooLongFileName do
+    exception = assert_raise Gem::Package::TooLongFileName do
       @tar_writer.split_name name
     end
     assert_includes exception.message, name
@@ -305,7 +305,7 @@ class TestGemPackageTarWriter < Gem::Package::TarTestCase
     # note, GNU tar 1.28 is unable to handle this case too,
     # tested with "tar --format=ustar -cPf /tmp/foo.tartar -- /aaaaaa....a"
     name = '/' + 'a' * 100
-    exception = assert_raises Gem::Package::TooLongFileName do
+    exception = assert_raise Gem::Package::TooLongFileName do
       @tar_writer.split_name name
     end
     assert_includes exception.message, name
@@ -316,7 +316,7 @@ class TestGemPackageTarWriter < Gem::Package::TarTestCase
     assert_equal ['b', 'a' * 155], @tar_writer.split_name(name)
 
     name = File.join 'a' * 156, 'b'
-    exception = assert_raises Gem::Package::TooLongFileName do
+    exception = assert_raise Gem::Package::TooLongFileName do
       @tar_writer.split_name name
     end
     assert_includes exception.message, name
@@ -324,7 +324,7 @@ class TestGemPackageTarWriter < Gem::Package::TarTestCase
 
   def test_split_name_too_long_total
     name = 'a' * 257
-    exception = assert_raises Gem::Package::TooLongFileName do
+    exception = assert_raise Gem::Package::TooLongFileName do
       @tar_writer.split_name name
     end
     assert_includes exception.message, name

@@ -202,7 +202,7 @@ class TestGemConfigFile < Gem::TestCase
     File.chmod 0644, @cfg.credentials_path
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @cfg.load_api_keys
       end
     end
@@ -328,7 +328,7 @@ if you believe they were disclosed to a third party.
 
     File.chmod 0644, @cfg.credentials_path
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       @cfg.load_api_keys
     end
   end
@@ -370,7 +370,7 @@ if you believe they were disclosed to a third party.
 
     File.chmod 0644, @cfg.credentials_path
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       @cfg.rubygems_api_key = 'y'
     end
 

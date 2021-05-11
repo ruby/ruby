@@ -133,7 +133,7 @@ Gems to install:
       io.puts 'gem "a"'
       io.flush
 
-      assert_raises Gem::UnsatisfiableDependencyError do
+      assert_raise Gem::UnsatisfiableDependencyError do
         rs.install_from_gemdeps :gemdeps => io.path, :domain => :local
       end
     end
@@ -444,7 +444,7 @@ ruby "0"
 
     set = StaticSet.new [a1, a2]
 
-    assert_raises Gem::UnsatisfiableDependencyError do
+    assert_raise Gem::UnsatisfiableDependencyError do
       rs.resolve set
     end
   end

@@ -35,7 +35,7 @@ class TestGemCommandsYankCommand < Gem::TestCase
 
   def test_handle_options_missing_argument
     %w[-v --version -p --platform].each do |option|
-      assert_raises OptionParser::MissingArgument do
+      assert_raise OptionParser::MissingArgument do
         @cmd.handle_options %W[a #{option}]
       end
     end

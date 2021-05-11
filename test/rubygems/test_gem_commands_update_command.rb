@@ -95,7 +95,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     @cmd.options[:args]          = []
     @cmd.options[:system]        = true
 
-    assert_raises Gem::MockGemUi::SystemExitException do
+    assert_raise Gem::MockGemUi::SystemExitException do
       use_ui @ui do
         @cmd.execute
       end
@@ -177,7 +177,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
     @cmd.extend(oldest_version_mod)
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end
@@ -273,7 +273,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     @cmd.options[:args]          = %w[gem]
     @cmd.options[:system]        = true
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end
@@ -291,7 +291,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     @cmd.options[:args] = []
     @cmd.options[:system] = true
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end
@@ -530,7 +530,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
   def test_fetch_remote_gems_error
     Gem.sources.replace %w[http://nonexistent.example]
 
-    assert_raises Gem::RemoteFetcher::FetchError do
+    assert_raise Gem::RemoteFetcher::FetchError do
       @cmd.fetch_remote_gems @specs['a-1']
     end
   end
@@ -588,7 +588,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
   end
 
   def test_handle_options_system_non_version
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       @cmd.handle_options %w[--system non-version]
     end
   end

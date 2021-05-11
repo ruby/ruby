@@ -78,7 +78,7 @@ class TestGemSecurityTrustDir < Gem::TestCase
   def test_verify_file
     FileUtils.touch @dest_dir
 
-    e = assert_raises Gem::Security::Exception do
+    e = assert_raise Gem::Security::Exception do
       @trust_dir.verify
     end
 

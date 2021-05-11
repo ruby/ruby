@@ -22,7 +22,7 @@ class TestGemSource < Gem::TestCase
   end
 
   def test_initialize_invalid_uri
-    assert_raises URI::InvalidURIError do
+    assert_raise URI::InvalidURIError do
       Gem::Source.new 'git@example:a.git'
     end
   end
@@ -185,7 +185,7 @@ class TestGemSource < Gem::TestCase
   def test_load_specs_from_unavailable_uri
     src = Gem::Source.new("http://not-there.nothing")
 
-    assert_raises Gem::RemoteFetcher::FetchError do
+    assert_raise Gem::RemoteFetcher::FetchError do
       src.load_specs :latest
     end
   end

@@ -457,7 +457,7 @@ DEPENDENCIES
       io.write 'hello'
     end
 
-    assert_raises Gem::UnsatisfiableDependencyError do
+    assert_raise Gem::UnsatisfiableDependencyError do
       lockfile.write
     end
 

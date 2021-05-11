@@ -28,7 +28,7 @@ class TestGemRequire < Gem::TestCase
     super
 
     @old_loaded_features = $LOADED_FEATURES.dup
-    assert_raises LoadError do
+    assert_raise LoadError do
       require 'test_gem_require_a'
     end
     $LOADED_FEATURES.replace @old_loaded_features
@@ -359,7 +359,7 @@ class TestGemRequire < Gem::TestCase
     assert_equal %w[a-1 c-1], loaded_spec_names
     assert_equal ["b (> 0)", "x (> 0)"], unresolved_names
 
-    e = assert_raises(Gem::LoadError) do
+    e = assert_raise(Gem::LoadError) do
       require("ib")
     end
 
@@ -382,7 +382,7 @@ class TestGemRequire < Gem::TestCase
     assert_equal %w[a-1 c-1], loaded_spec_names
     assert_equal ["b (> 0)"], unresolved_names
 
-    e = assert_raises(Gem::LoadError) do
+    e = assert_raise(Gem::LoadError) do
       require("ib")
     end
 
@@ -626,7 +626,7 @@ class TestGemRequire < Gem::TestCase
       b2a = util_spec('bundler', '2.a', nil, "lib/bundler/setup.rb")
       install_specs b1, b2a
 
-      e = assert_raises Gem::MissingSpecVersionError do
+      e = assert_raise Gem::MissingSpecVersionError do
         gem('bundler')
       end
       assert_match "Could not find 'bundler' (55) required by reason.", e.message

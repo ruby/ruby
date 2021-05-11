@@ -343,7 +343,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     package = Gem::Package.new spec.file_name
     package.spec = spec
 
-    e = assert_raises Gem::InvalidSpecificationException do
+    e = assert_raise Gem::InvalidSpecificationException do
       package.build
     end
 
@@ -356,7 +356,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     package = Gem::Package.new spec.file_name
     package.spec = spec
 
-    e = assert_raises ArgumentError do
+    e = assert_raise ArgumentError do
       package.build true, true
     end
 
@@ -519,7 +519,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       end
     end
 
-    e = assert_raises Gem::Package::PathError do
+    e = assert_raise Gem::Package::PathError do
       package.extract_tar_gz tgz_io, @destination
     end
 
@@ -574,7 +574,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     destination_subdir = File.join @destination, 'subdir'
     FileUtils.mkdir_p destination_subdir
 
-    e = assert_raises(Gem::Package::PathError, Errno::EACCES) do
+    e = assert_raise(Gem::Package::PathError, Errno::EACCES) do
       package.extract_tar_gz tgz_io, destination_subdir
     end
 
@@ -608,7 +608,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       tar.add_symlink 'link/dir', '.', 16877
     end
 
-    e = assert_raises(Gem::Package::PathError, Errno::EACCES) do
+    e = assert_raise(Gem::Package::PathError, Errno::EACCES) do
       package.extract_tar_gz tgz_io, destination_subdir
     end
 
@@ -706,7 +706,7 @@ class TestGemPackage < Gem::Package::TarTestCase
   def test_install_location_absolute
     package = Gem::Package.new @gem
 
-    e = assert_raises Gem::Package::PathError do
+    e = assert_raise Gem::Package::PathError do
       package.install_location '/absolute.rb', @destination
     end
 
@@ -747,7 +747,7 @@ class TestGemPackage < Gem::Package::TarTestCase
   def test_install_location_relative
     package = Gem::Package.new @gem
 
-    e = assert_raises Gem::Package::PathError do
+    e = assert_raise Gem::Package::PathError do
       package.install_location '../relative.rb', @destination
     end
 
@@ -762,7 +762,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     filename = "../#{File.basename(@destination)}suffix.rb"
 
-    e = assert_raises Gem::Package::PathError do
+    e = assert_raise Gem::Package::PathError do
       package.install_location filename, @destination
     end
 
@@ -832,7 +832,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     package = Gem::Package.new 'mismatch.gem'
 
-    e = assert_raises Gem::Package::FormatError do
+    e = assert_raise Gem::Package::FormatError do
       package.verify
     end
 
@@ -896,7 +896,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
       package = Gem::Package.new io.path
 
-      e = assert_raises Gem::Package::FormatError do
+      e = assert_raise Gem::Package::FormatError do
         package.verify
       end
 
@@ -912,7 +912,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     package = Gem::Package.new 'empty.gem'
 
-    e = assert_raises Gem::Package::FormatError do
+    e = assert_raise Gem::Package::FormatError do
       package.verify
     end
 
@@ -922,7 +922,7 @@ class TestGemPackage < Gem::Package::TarTestCase
   def test_verify_nonexistent
     package = Gem::Package.new 'nonexistent.gem'
 
-    e = assert_raises Gem::Package::FormatError do
+    e = assert_raise Gem::Package::FormatError do
       package.verify
     end
 
@@ -949,7 +949,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     package = Gem::Package.new @gem
 
-    e = assert_raises Gem::Security::Exception do
+    e = assert_raise Gem::Security::Exception do
       package.verify
     end
 
@@ -962,7 +962,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     package = Gem::Package.new @gem
     package.security_policy = Gem::Security::HighSecurity
 
-    e = assert_raises Gem::Security::Exception do
+    e = assert_raise Gem::Security::Exception do
       package.verify
     end
 
@@ -1032,7 +1032,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     package = Gem::Package.new @gem
     package.security_policy = Gem::Security::HighSecurity
 
-    e = assert_raises Gem::Security::Exception do
+    e = assert_raise Gem::Security::Exception do
       package.verify
     end
 
@@ -1049,7 +1049,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     package = Gem::Package.new 'bad.gem'
 
-    e = assert_raises Gem::Package::FormatError do
+    e = assert_raise Gem::Package::FormatError do
       package.verify
     end
 
@@ -1069,7 +1069,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       e = nil
 
       out_err = capture_io do
-        e = assert_raises ArgumentError do
+        e = assert_raise ArgumentError do
           package.verify_entry entry
         end
       end
@@ -1140,7 +1140,7 @@ class TestGemPackage < Gem::Package::TarTestCase
   def test_spec_from_io_raises_gem_error_for_io_not_at_start
     io = StringIO.new Gem.read_binary @gem
     io.read(1)
-    assert_raises(Gem::Package::Error) do
+    assert_raise(Gem::Package::Error) do
       Gem::Package.new io
     end
   end

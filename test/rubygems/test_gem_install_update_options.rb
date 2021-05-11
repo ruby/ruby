@@ -104,7 +104,7 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
 
     @cmd.add_install_update_options
 
-    e = assert_raises OptionParser::InvalidArgument do
+    e = assert_raise OptionParser::InvalidArgument do
       @cmd.handle_options %w[-P UnknownSecurity]
     end
     assert_includes e.message, "UnknownSecurity"
@@ -150,7 +150,7 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
 
       Gem.use_paths @gemhome, @userhome
 
-      assert_raises(Gem::FilePermissionError) do
+      assert_raise(Gem::FilePermissionError) do
         Gem::Installer.at(@gem, @cmd.options).install
       end
     end
@@ -169,7 +169,7 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
 
   def test_vendor_missing
     vendordir(nil) do
-      e = assert_raises OptionParser::InvalidOption do
+      e = assert_raise OptionParser::InvalidOption do
         @cmd.handle_options %w[--vendor]
       end
 

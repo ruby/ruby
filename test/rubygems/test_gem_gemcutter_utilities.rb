@@ -183,7 +183,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
   end
 
   def test_sign_in_with_bad_credentials
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       util_sign_in ['Access Denied.', 403, 'Forbidden']
     end
 
@@ -209,7 +209,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
   def test_sign_in_with_incorrect_otp_code
     response = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       util_sign_in [response, 401, 'Unauthorized'], nil, [], "111111\n"
     end
 
@@ -257,7 +257,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
   end
 
   def test_verify_missing_api_key
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       @cmd.verify_api_key :missing
     end
   end

@@ -170,7 +170,7 @@ end
       base.activate
 
       tms = Benchmark.measure do
-        assert_raises(LoadError) { require 'no_such_file_foo' }
+        assert_raise(LoadError) { require 'no_such_file_foo' }
       end
       assert_operator tms.total, :<=, 10
     end
@@ -406,7 +406,7 @@ end
     c  = util_spec 'c', '1.0', 'b' => '= 2.0'
     install_specs b1, b2, c, a
 
-    e = assert_raises Gem::LoadError do
+    e = assert_raise Gem::LoadError do
       assert_activate nil, a, c, "b"
     end
 
@@ -428,7 +428,7 @@ end
 
     install_specs b1, b2, c, a
 
-    e = assert_raises Gem::ConflictError do
+    e = assert_raise Gem::ConflictError do
       assert_activate nil, a, c, "b"
     end
 
@@ -537,7 +537,7 @@ end
 
       require "b#{$$}"
 
-      e = assert_raises Gem::LoadError do
+      e = assert_raise Gem::LoadError do
         require "d#{$$}"
       end
 
@@ -673,7 +673,7 @@ end
 
     gem "b", "= 1.0"
 
-    assert_raises Gem::LoadError do
+    assert_raise Gem::LoadError do
       gem "b", "= 2.0"
     end
   end
@@ -1345,7 +1345,7 @@ dependencies: []
     spec.instance_variable_set :@licenses, (class << (Object.new);self;end)
     spec.loaded_from = '/path/to/file'
 
-    e = assert_raises Gem::FormatException do
+    e = assert_raise Gem::FormatException do
       spec.dup
     end
 
@@ -1550,7 +1550,7 @@ dependencies: []
 
     refute_empty @ext.extensions, 'sanity check'
 
-    assert_raises Gem::Ext::BuildError do
+    assert_raise Gem::Ext::BuildError do
       @ext.build_extensions
     end
   end
@@ -1704,7 +1704,7 @@ dependencies: []
   end
 
   def test_date_equals_string_bad
-    assert_raises Gem::InvalidSpecificationException do
+    assert_raise Gem::InvalidSpecificationException do
       @a1.date = '9/11/2003'
     end
   end
@@ -2690,7 +2690,7 @@ end
 
       assert_equal [], @a1.authors
 
-      e = assert_raises Gem::InvalidSpecificationException do
+      e = assert_raise Gem::InvalidSpecificationException do
         @a1.validate
       end
 
@@ -2698,7 +2698,7 @@ end
 
       @a1.authors = ["#{f} (who is writing this software)"]
 
-      e = assert_raises Gem::InvalidSpecificationException do
+      e = assert_raise Gem::InvalidSpecificationException do
         @a1.validate
       end
 
@@ -2706,7 +2706,7 @@ end
 
       @a1.authors = ["#{t} (who is writing this software)"]
 
-      e = assert_raises Gem::InvalidSpecificationException do
+      e = assert_raise Gem::InvalidSpecificationException do
         @a1.validate
       end
 
@@ -2785,7 +2785,7 @@ end
       @a1.add_development_dependency 'c', '>= 1.2.3'
 
       use_ui @ui do
-        e = assert_raises Gem::InvalidSpecificationException do
+        e = assert_raise Gem::InvalidSpecificationException do
           @a1.validate
         end
 
@@ -2889,7 +2889,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
 
       @a1.description = "#{f} (describe your package)"
 
-      e = assert_raises Gem::InvalidSpecificationException do
+      e = assert_raise Gem::InvalidSpecificationException do
         @a1.validate
       end
 
@@ -2897,7 +2897,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
 
       @a1.description = "#{t} (describe your package)"
 
-      e = assert_raises Gem::InvalidSpecificationException do
+      e = assert_raise Gem::InvalidSpecificationException do
         @a1.validate
       end
 
@@ -2911,7 +2911,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
     Dir.chdir @tempdir do
       @a1.email = "FIxxxXME (your e-mail)".sub(/xxx/, "")
 
-      e = assert_raises Gem::InvalidSpecificationException do
+      e = assert_raise Gem::InvalidSpecificationException do
         @a1.validate
       end
 
@@ -2919,7 +2919,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
 
       @a1.email = "#{t} (your e-mail)"
 
-      e = assert_raises Gem::InvalidSpecificationException do
+      e = assert_raise Gem::InvalidSpecificationException do
         @a1.validate
       end
 
@@ -2928,7 +2928,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
   end
 
   def test_validate_empty
-    e = assert_raises Gem::InvalidSpecificationException do
+    e = assert_raise Gem::InvalidSpecificationException do
       Gem::Specification.new.validate
     end
 
@@ -2936,7 +2936,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
   end
 
   def test_validate_error
-    assert_raises Gem::InvalidSpecificationException do
+    assert_raise Gem::InvalidSpecificationException do
       use_ui @ui do
         Gem::Specification.new.validate
       end
@@ -2971,7 +2971,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
       util_setup_validate
 
       @a1.require_paths = []
-      e = assert_raises Gem::InvalidSpecificationException do
+      e = assert_raise Gem::InvalidSpecificationException do
         @a1.validate
       end
 
@@ -3080,7 +3080,7 @@ Please report a bug if this causes problems.
 
     @a1.files = [@a1.file_name]
 
-    e = assert_raises Gem::InvalidSpecificationException do
+    e = assert_raise Gem::InvalidSpecificationException do
       @a1.validate
     end
 
@@ -3112,7 +3112,7 @@ Please report a bug if this causes problems.
 
       @a1.homepage = 'over at my cool site'
 
-      e = assert_raises Gem::InvalidSpecificationException do
+      e = assert_raise Gem::InvalidSpecificationException do
         @a1.validate
       end
 
@@ -3120,7 +3120,7 @@ Please report a bug if this causes problems.
 
       @a1.homepage = 'ftp://rubygems.org'
 
-      e = assert_raises Gem::InvalidSpecificationException do
+      e = assert_raise Gem::InvalidSpecificationException do
         @a1.validate
       end
 
@@ -3309,7 +3309,7 @@ Did you mean 'Ruby'?
   def test_validate_name
     util_setup_validate
 
-    e = assert_raises Gem::InvalidSpecificationException do
+    e = assert_raise Gem::InvalidSpecificationException do
       @a1.name = :json
       @a1.validate
     end
@@ -3317,31 +3317,31 @@ Did you mean 'Ruby'?
     assert_equal 'invalid value for attribute name: ":json" must be a string', e.message
 
     @a1.name = []
-    e = assert_raises Gem::InvalidSpecificationException do
+    e = assert_raise Gem::InvalidSpecificationException do
       @a1.validate
     end
     assert_equal "invalid value for attribute name: \"[]\" must be a string", e.message
 
     @a1.name = ""
-    e = assert_raises Gem::InvalidSpecificationException do
+    e = assert_raise Gem::InvalidSpecificationException do
       @a1.validate
     end
     assert_equal "invalid value for attribute name: \"\" must include at least one letter", e.message
 
     @a1.name = "12345"
-    e = assert_raises Gem::InvalidSpecificationException do
+    e = assert_raise Gem::InvalidSpecificationException do
       @a1.validate
     end
     assert_equal "invalid value for attribute name: \"12345\" must include at least one letter", e.message
 
     @a1.name = "../malicious"
-    e = assert_raises Gem::InvalidSpecificationException do
+    e = assert_raise Gem::InvalidSpecificationException do
       @a1.validate
     end
     assert_equal "invalid value for attribute name: \"../malicious\" can only include letters, numbers, dashes, and underscores", e.message
 
     @a1.name = "\ba\t"
-    e = assert_raises Gem::InvalidSpecificationException do
+    e = assert_raise Gem::InvalidSpecificationException do
       @a1.validate
     end
     assert_equal "invalid value for attribute name: \"\\ba\\t\" can only include letters, numbers, dashes, and underscores", e.message
@@ -3358,7 +3358,7 @@ Did you mean 'Ruby'?
         spec = @a1.dup
         spec.instance_variable_set "@#{name}", nil
 
-        e = assert_raises Gem::InvalidSpecificationException do
+        e = assert_raise Gem::InvalidSpecificationException do
           spec.validate
         end
 
@@ -3419,7 +3419,7 @@ Did you mean 'Ruby'?
     util_setup_validate
 
     @a1.rubygems_version = "3"
-    e = assert_raises Gem::InvalidSpecificationException do
+    e = assert_raise Gem::InvalidSpecificationException do
       @a1.validate
     end
 
@@ -3433,7 +3433,7 @@ Did you mean 'Ruby'?
     Dir.chdir @tempdir do
       @a1.specification_version = '1.0'
 
-      e = assert_raises Gem::InvalidSpecificationException do
+      e = assert_raise Gem::InvalidSpecificationException do
         use_ui @ui do
           @a1.validate
         end
@@ -3458,7 +3458,7 @@ Did you mean 'Ruby'?
 
       @a1.summary = "#{f} (describe your package)"
 
-      e = assert_raises Gem::InvalidSpecificationException do
+      e = assert_raise Gem::InvalidSpecificationException do
         @a1.validate
       end
 
@@ -3466,7 +3466,7 @@ Did you mean 'Ruby'?
 
       @a1.summary = "#{t} (describe your package)"
 
-      e = assert_raises Gem::InvalidSpecificationException do
+      e = assert_raise Gem::InvalidSpecificationException do
         @a1.validate
       end
 
@@ -3589,7 +3589,7 @@ Did you mean 'Ruby'?
         s.metadata = { 1 => "fail" }
       end
 
-      e = assert_raises Gem::InvalidSpecificationException do
+      e = assert_raise Gem::InvalidSpecificationException do
         @m2.validate
       end
 
@@ -3606,7 +3606,7 @@ Did you mean 'Ruby'?
         s.metadata = { ("x" * 129) => "fail" }
       end
 
-      e = assert_raises Gem::InvalidSpecificationException do
+      e = assert_raise Gem::InvalidSpecificationException do
         @m2.validate
       end
 
@@ -3623,7 +3623,7 @@ Did you mean 'Ruby'?
         s.metadata = { 'fail' => [] }
       end
 
-      e = assert_raises Gem::InvalidSpecificationException do
+      e = assert_raise Gem::InvalidSpecificationException do
         @m2.validate
       end
 
@@ -3640,7 +3640,7 @@ Did you mean 'Ruby'?
         s.metadata = { 'fail' => ("x" * 1025) }
       end
 
-      e = assert_raises Gem::InvalidSpecificationException do
+      e = assert_raise Gem::InvalidSpecificationException do
         @m2.validate
       end
 
@@ -3657,7 +3657,7 @@ Did you mean 'Ruby'?
         s.metadata = { 'homepage_uri' => 'http:/example.com' }
       end
 
-      e = assert_raises Gem::InvalidSpecificationException do
+      e = assert_raise Gem::InvalidSpecificationException do
         @m2.validate
       end
 
@@ -3764,7 +3764,7 @@ end
     assert Gem::Specification.find_by_name "a", "1"
     assert Gem::Specification.find_by_name "a", ">1"
 
-    assert_raises Gem::MissingSpecError do
+    assert_raise Gem::MissingSpecError do
       Gem::Specification.find_by_name "monkeys"
     end
   end
@@ -3785,7 +3785,7 @@ end
 
     assert Gem::Specification.find_by_name "b"
 
-    assert_raises Gem::MissingSpecVersionError do
+    assert_raise Gem::MissingSpecVersionError do
       Gem::Specification.find_by_name "b", "1"
     end
 

@@ -45,7 +45,7 @@ class TestGemExtConfigureBuilder < Gem::TestCase
     skip("test_self_build_fail skipped on MS Windows (VC++)") if vc_windows?
     output = []
 
-    error = assert_raises Gem::InstallError do
+    error = assert_raise Gem::InstallError do
       Gem::Ext::ConfigureBuilder.build nil, @dest_path, output, [], nil, @ext
     end
 
