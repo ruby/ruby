@@ -1627,8 +1627,33 @@ gen_opt_mod(jitstate_t* jit, ctx_t* ctx)
 static codegen_status_t
 gen_opt_ltlt(jitstate_t* jit, ctx_t* ctx)
 {
-    // Delegate to send, call the ltlt method
+    // Delegate to send, call the method on the recv
     return gen_opt_send_without_block(jit, ctx);
+}
+
+static codegen_status_t
+gen_opt_nil_p(jitstate_t* jit, ctx_t* ctx)
+{
+    // Delegate to send, call the method on the recv
+    return gen_opt_send_without_block(jit, ctx);
+}
+
+static codegen_status_t
+gen_opt_empty_p(jitstate_t* jit, ctx_t* ctx)
+{
+    // Delegate to send, call the method on the recv
+    return gen_opt_send_without_block(jit, ctx);
+}
+
+static codegen_status_t
+gen_opt_not(jitstate_t* jit, ctx_t* ctx)
+{
+    // TODO: can we implement a fast path?
+    // Most likely, almost every input to opt_not is true/false/nil?
+
+    // NOTE: we can't really delegate to OSWB because we currently
+    // don't support calls to methods on true/false/nil
+    return YJIT_CANT_COMPILE;
 }
 
 void
@@ -2661,6 +2686,9 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(opt_plus), gen_opt_plus);
     yjit_reg_op(BIN(opt_mod), gen_opt_mod);
     yjit_reg_op(BIN(opt_ltlt), gen_opt_ltlt);
+    yjit_reg_op(BIN(opt_nil_p), gen_opt_nil_p);
+    yjit_reg_op(BIN(opt_empty_p), gen_opt_empty_p);
+    yjit_reg_op(BIN(opt_not), gen_opt_not);
     yjit_reg_op(BIN(opt_getinlinecache), gen_opt_getinlinecache);
     yjit_reg_op(BIN(branchif), gen_branchif);
     yjit_reg_op(BIN(branchunless), gen_branchunless);
