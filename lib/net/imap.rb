@@ -1218,12 +1218,14 @@ module Net
       end
       resp = @tagged_responses.delete(tag)
       case resp.name
+      when /\A(?:OK)\z/ni
+        return resp
       when /\A(?:NO)\z/ni
         raise NoResponseError, resp
       when /\A(?:BAD)\z/ni
         raise BadResponseError, resp
       else
-        return resp
+        raise UnknownResponseError, resp
       end
     end
 
@@ -3717,6 +3719,10 @@ module Net
     # that the client is not being allowed to login, or has been timed
     # out due to inactivity.
     class ByeResponseError < ResponseError
+    end
+
+    # Error raised upon an unknown response from the server.
+    class UnknownResponseError < ResponseError
     end
 
     RESPONSE_ERRORS = Hash.new(ResponseError)
