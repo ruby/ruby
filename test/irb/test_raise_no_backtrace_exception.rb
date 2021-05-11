@@ -17,13 +17,13 @@ IRB
     def test_raise_exception_with_invalid_byte_sequence
       skip if RUBY_ENGINE == 'truffleruby'
       bundle_exec = ENV.key?('BUNDLE_GEMFILE') ? ['-rbundler/setup'] : []
-      assert_in_out_err(bundle_exec + %w[-rirb -W0 -e IRB.start(__FILE__) -- -f --], <<~IRB, /A\\xF3B \(StandardError\)/, [])
+      assert_in_out_err(bundle_exec + %w[-rirb -W0 -e IRB.start(__FILE__) -- -f --], <<~IRB, /A\\xF3B \(StandardError\)/, [], encoding: "UTF-8")
         raise StandardError, "A\\xf3B"
       IRB
     end
 
     def test_raise_exception_with_different_encoding_containing_invalid_byte_sequence
-      skip if RUBY_ENGINE == 'truffleruby' || /mswin|mingw/ =~ RUBY_PLATFORM
+      skip if RUBY_ENGINE == 'truffleruby'
       backup_home = ENV["HOME"]
       Dir.mktmpdir("test_irb_raise_no_backtrace_exception_#{$$}") do |tmpdir|
         ENV["HOME"] = tmpdir
