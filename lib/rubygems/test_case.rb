@@ -1558,12 +1558,12 @@ Also, a list:
 end
 
 class Object
-  def stub name, val_or_callable, *block_args
+  def stub(name, val_or_callable, *block_args)
     new_name = "__minitest_stub__#{name}"
 
     metaclass = class << self; self; end
 
-    if respond_to? name and not methods.map(&:to_s).include? name.to_s then
+    if respond_to? name and not methods.map(&:to_s).include? name.to_s
       metaclass.send :define_method, name do |*args|
         super(*args)
       end
@@ -1572,7 +1572,7 @@ class Object
     metaclass.send :alias_method, new_name, name
 
     metaclass.send :define_method, name do |*args, &blk|
-      if val_or_callable.respond_to? :call then
+      if val_or_callable.respond_to? :call
         val_or_callable.call(*args, &blk)
       else
         blk.call(*block_args) if blk

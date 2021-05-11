@@ -148,12 +148,12 @@ class TestGemPackageTarWriter < Gem::Package::TarTestCase
   end
 
   def test_add_file_simple
-      @tar_writer.add_file_simple 'x', 0644, 10 do |io|
-        io.write "a" * 10
-      end
+    @tar_writer.add_file_simple 'x', 0644, 10 do |io|
+      io.write "a" * 10
+    end
 
-      assert_headers_equal(tar_file_header('x', '', 0644, 10, Time.now),
-                         @io.string[0, 512])
+    assert_headers_equal(tar_file_header('x', '', 0644, 10, Time.now),
+                       @io.string[0, 512])
 
     assert_equal "aaaaaaaaaa#{"\0" * 502}", @io.string[512, 512]
     assert_equal 1024, @io.pos
@@ -170,10 +170,10 @@ class TestGemPackageTarWriter < Gem::Package::TarTestCase
   end
 
   def test_add_file_simple_padding
-      @tar_writer.add_file_simple 'x', 0, 100
+    @tar_writer.add_file_simple 'x', 0, 100
 
-      assert_headers_equal tar_file_header('x', '', 0, 100, Time.now),
-                         @io.string[0, 512]
+    assert_headers_equal tar_file_header('x', '', 0, 100, Time.now),
+                       @io.string[0, 512]
 
     assert_equal "\0" * 512, @io.string[512, 512]
   end
