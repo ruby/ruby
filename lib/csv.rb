@@ -2650,8 +2650,13 @@ end
 #     c.read.any? { |a| a.include?("zombies") }
 #   } #=> false
 #
-def CSV(*args, &block)
-  CSV.instance(*args, &block)
+# CSV options may also be given.
+#
+#   io = StringIO.new
+#   CSV(io, col_sep: ";") { |csv| csv << ["a", "b", "c"] }
+#
+def CSV(*args, **options, &block)
+  CSV.instance(*args, **options, &block)
 end
 
 require_relative "csv/version"
