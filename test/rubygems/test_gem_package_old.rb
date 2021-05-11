@@ -27,7 +27,7 @@ unless Gem.java_platform? # jruby can't require the simple_gem file
 
       @package.security_policy = Gem::Security::AlmostNoSecurity
 
-      assert_raises Gem::Security::Exception do
+      assert_raise Gem::Security::Exception do
         @package.contents
       end
     end
@@ -48,7 +48,7 @@ unless Gem.java_platform? # jruby can't require the simple_gem file
 
       @package.security_policy = Gem::Security::AlmostNoSecurity
 
-      assert_raises Gem::Security::Exception do
+      assert_raise Gem::Security::Exception do
         @package.extract_files @destination
       end
     end
@@ -62,7 +62,7 @@ unless Gem.java_platform? # jruby can't require the simple_gem file
 
       @package.security_policy = Gem::Security::AlmostNoSecurity
 
-      assert_raises Gem::Security::Exception do
+      assert_raise Gem::Security::Exception do
         @package.spec
       end
     end
@@ -78,7 +78,7 @@ unless Gem.java_platform? # jruby can't require the simple_gem file
 
       @package.security_policy = Gem::Security::AlmostNoSecurity
 
-      e = assert_raises Gem::Security::Exception do
+      e = assert_raise Gem::Security::Exception do
         @package.verify
       end
 

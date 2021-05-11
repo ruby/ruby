@@ -186,7 +186,7 @@ class TestGemSourceGit < Gem::TestCase
 
     source.cache
 
-    e = assert_raises Gem::Exception do
+    e = assert_raise Gem::Exception do
       capture_subprocess_io { source.rev_parse }
     end
 

@@ -138,7 +138,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
     Dir.mkdir "#{@gemhome}2"
     uninstaller = Gem::Uninstaller.new nil, :install_dir => "#{@gemhome}2"
 
-    e = assert_raises Gem::GemNotInHomeException do
+    e = assert_raise Gem::GemNotInHomeException do
       use_ui ui do
         uninstaller.remove @spec
       end
@@ -329,7 +329,7 @@ create_makefile '#{@spec.name}'
   def test_uninstall_nonexistent
     uninstaller = Gem::Uninstaller.new 'bogus', :executables => true
 
-    e = assert_raises Gem::InstallError do
+    e = assert_raise Gem::InstallError do
       uninstaller.uninstall
     end
 
@@ -351,7 +351,7 @@ create_makefile '#{@spec.name}'
 
     ui = Gem::MockGemUi.new "n\n"
 
-    assert_raises Gem::DependencyRemovalException do
+    assert_raise Gem::DependencyRemovalException do
       use_ui ui do
         uninstaller.uninstall
       end
@@ -392,7 +392,7 @@ create_makefile '#{@spec.name}'
 
     uninstaller = Gem::Uninstaller.new @spec.name, :executables => true
 
-    e = assert_raises Gem::InstallError do
+    e = assert_raise Gem::InstallError do
       uninstaller.uninstall
     end
 
@@ -546,7 +546,7 @@ create_makefile '#{@spec.name}'
     un = Gem::Uninstaller.new('q', :abort_on_dependent => true)
     ui = Gem::MockGemUi.new("y\n")
 
-    assert_raises Gem::DependencyRemovalException do
+    assert_raise Gem::DependencyRemovalException do
       use_ui ui do
         un.uninstall
       end
@@ -619,7 +619,7 @@ create_makefile '#{@spec.name}'
     end
 
     FileUtils.stub :rm_r, stub_rm_r do
-      assert_raises Gem::UninstallError do
+      assert_raise Gem::UninstallError do
         uninstaller.uninstall
       end
     end

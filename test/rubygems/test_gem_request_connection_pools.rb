@@ -140,7 +140,7 @@ class TestGemRequestConnectionPool < Gem::TestCase
     pool.checkout
 
     Thread.new do
-      assert_raises(Timeout::Error) do
+      assert_raise(Timeout::Error) do
         Timeout.timeout(1) do
           pool.checkout
         end

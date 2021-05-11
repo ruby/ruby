@@ -162,7 +162,7 @@ class TestGemCommandsSourcesCommand < Gem::TestCase
 
     use_ui ui do
 
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
     end
@@ -188,7 +188,7 @@ class TestGemCommandsSourcesCommand < Gem::TestCase
     @cmd.handle_options %w[--add http://beta-gems.example.com]
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
     end
@@ -299,7 +299,7 @@ source http://gems.example.com/ already present in the cache
     ui = Gem::MockGemUi.new "n"
 
     use_ui ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
     end
@@ -367,7 +367,7 @@ source http://gems.example.com/ already present in the cache
     ui = Gem::MockGemUi.new "n"
 
     use_ui ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
     end
@@ -385,7 +385,7 @@ source http://gems.example.com/ already present in the cache
     @cmd.handle_options %w[--add beta-gems.example.com]
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
     end

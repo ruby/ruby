@@ -90,7 +90,7 @@ end
 
       ui = Gem::MockGemUi.new "n\n"
       use_ui ui do
-        e = assert_raises Gem::InstallError do
+        e = assert_raise Gem::InstallError do
           installer.generate_bin
         end
 
@@ -150,7 +150,7 @@ gem 'other', version
     ui = Gem::MockGemUi.new "n\n"
 
     use_ui ui do
-      e = assert_raises Gem::InstallError do
+      e = assert_raise Gem::InstallError do
         installer.generate_bin
       end
 
@@ -264,7 +264,7 @@ gem 'other', version
     assert installer.ensure_dependency(@spec, dep)
 
     dep = Gem::Dependency.new 'b', '> 2'
-    e = assert_raises Gem::InstallError do
+    e = assert_raise Gem::InstallError do
       installer.ensure_dependency @spec, dep
     end
 
@@ -278,7 +278,7 @@ gem 'other', version
 
     installer = Gem::Installer.at a_gem
 
-    e = assert_raises Gem::InstallError do
+    e = assert_raise Gem::InstallError do
       installer.ensure_loadable_spec
     end
 
@@ -296,7 +296,7 @@ gem 'other', version
     policy = Gem::Security::HighSecurity
     installer = Gem::Installer.at a_gem, :security_policy => policy
 
-    assert_raises Gem::Security::Exception do
+    assert_raise Gem::Security::Exception do
       installer.ensure_loadable_spec
     end
   end
@@ -464,7 +464,7 @@ gem 'other', version
     else
       FileUtils.chmod 0000, util_inst_bindir
 
-      assert_raises Gem::FilePermissionError do
+      assert_raise Gem::FilePermissionError do
         installer.generate_bin
       end
     end
@@ -568,7 +568,7 @@ gem 'other', version
     else
       FileUtils.chmod 0000, util_inst_bindir
 
-      assert_raises Gem::FilePermissionError do
+      assert_raise Gem::FilePermissionError do
         installer.generate_bin
       end
     end
@@ -1009,7 +1009,7 @@ gem 'other', version
 
     exe = File.join gemdir, 'bin', 'executable'
 
-    e = assert_raises RuntimeError do
+    e = assert_raise RuntimeError do
       instance_eval File.read(exe)
     end
 
@@ -1055,7 +1055,7 @@ gem 'other', version
       end
     end
 
-    e = assert_raises RuntimeError do
+    e = assert_raise RuntimeError do
       instance_eval File.read(old_bin_file)
     end
 
@@ -1083,7 +1083,7 @@ gem 'other', version
     begin
       Gem::Specification.reset
 
-      e = assert_raises Gem::GemNotFoundException do
+      e = assert_raise Gem::GemNotFoundException do
         instance_eval File.read(exe)
       end
     ensure
@@ -1118,7 +1118,7 @@ gem 'other', version
       end
     end
 
-    e = assert_raises RuntimeError do
+    e = assert_raise RuntimeError do
       instance_eval File.read(exe)
     end
 
@@ -1145,7 +1145,7 @@ gem 'other', version
     begin
       Gem::Specification.reset
 
-      e = assert_raises RuntimeError do
+      e = assert_raise RuntimeError do
         instance_eval File.read(exe)
       end
     ensure
@@ -1243,7 +1243,7 @@ gem 'other', version
     end
 
     use_ui @ui do
-      e = assert_raises Gem::InstallError do
+      e = assert_raise Gem::InstallError do
         installer.install
       end
 
@@ -1285,7 +1285,7 @@ gem 'other', version
     end
 
     use_ui @ui do
-      e = assert_raises Gem::InstallError do
+      e = assert_raise Gem::InstallError do
         installer.install
       end
 
@@ -1601,7 +1601,7 @@ gem 'other', version
     installer.force = false
 
     use_ui @ui do
-      assert_raises Gem::InstallError do
+      assert_raise Gem::InstallError do
         installer.install
       end
     end
@@ -1660,7 +1660,7 @@ gem 'other', version
 
     use_ui @ui do
       installer = Gem::Installer.at gem
-      e = assert_raises Gem::InstallError do
+      e = assert_raise Gem::InstallError do
         installer.pre_install_checks
       end
       assert_equal '#<Gem::Specification name=../malicious version=1> has an invalid name', e.message
@@ -1680,7 +1680,7 @@ gem 'other', version
 
     use_ui @ui do
       installer = Gem::Installer.at gem
-      e = assert_raises Gem::InstallError do
+      e = assert_raise Gem::InstallError do
         installer.pre_install_checks
       end
       assert_equal "#<Gem::Specification name=malicious\n::Object.const_set(:FROM_EVAL, true)# version=1> has an invalid name", e.message
@@ -1702,7 +1702,7 @@ gem 'other', version
 
     use_ui @ui do
       installer = Gem::Installer.at gem
-      e = assert_raises Gem::InstallError do
+      e = assert_raise Gem::InstallError do
         installer.pre_install_checks
       end
       assert_equal "#<Gem::Specification name=malicious version=1> has an invalid require_paths", e.message
@@ -1725,7 +1725,7 @@ gem 'other', version
 
     use_ui @ui do
       installer = Gem::Installer.at gem
-      e = assert_raises Gem::InstallError do
+      e = assert_raise Gem::InstallError do
         installer.pre_install_checks
       end
       assert_equal "#<Gem::Specification name=malicious version=1> has an invalid extensions", e.message
@@ -1746,7 +1746,7 @@ gem 'other', version
 
     use_ui @ui do
       installer = Gem::Installer.at gem
-      e = assert_raises Gem::InstallError do
+      e = assert_raise Gem::InstallError do
         installer.pre_install_checks
       end
       assert_equal "#<Gem::Specification name=malicious version=1> has an invalid specification_version", e.message
@@ -1768,7 +1768,7 @@ gem 'other', version
     use_ui @ui do
       installer = Gem::Installer.at gem
       installer.ignore_dependencies = true
-      e = assert_raises Gem::InstallError do
+      e = assert_raise Gem::InstallError do
         installer.pre_install_checks
       end
       assert_equal "#<Gem::Specification name=malicious version=1> has an invalid dependencies", e.message

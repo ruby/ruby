@@ -102,7 +102,7 @@ class TestGemVersion < Gem::TestCase
     invalid_versions << "2.3422222.222.222222222.22222.ads0as.dasd0.ddd2222.2.qd3e."
 
     invalid_versions.each do |invalid|
-      e = assert_raises ArgumentError, invalid do
+      e = assert_raise ArgumentError, invalid do
         Gem::Version.new invalid
       end
 

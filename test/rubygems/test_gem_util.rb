@@ -7,7 +7,7 @@ class TestGemUtil < Gem::TestCase
     skip "popen with a block does not behave well on jruby" if Gem.java_platform?
     assert_equal "0\n", Gem::Util.popen(*ruby_with_rubygems_in_load_path, '-e', 'p 0')
 
-    assert_raises Errno::ECHILD do
+    assert_raise Errno::ECHILD do
       Process.wait(-1)
     end
   end

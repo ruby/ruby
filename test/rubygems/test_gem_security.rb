@@ -135,7 +135,7 @@ class TestGemSecurity < Gem::TestCase
   end
 
   def test_class_re_sign_not_self_signed
-    e = assert_raises Gem::Security::Exception do
+    e = assert_raise Gem::Security::Exception do
       Gem::Security.re_sign CHILD_CERT, CHILD_KEY
     end
 
@@ -149,7 +149,7 @@ class TestGemSecurity < Gem::TestCase
   end
 
   def test_class_re_sign_wrong_key
-    e = assert_raises Gem::Security::Exception do
+    e = assert_raise Gem::Security::Exception do
       Gem::Security.re_sign ALTERNATE_CERT, PRIVATE_KEY
     end
 

@@ -80,7 +80,7 @@ class TestGemExtExtConfBuilder < Gem::TestCase
 
       output = []
 
-      assert_raises Gem::InstallError do
+      assert_raise Gem::InstallError do
         Gem::Ext::ExtConfBuilder.build 'extconf.rb', @dest_path, output, [], nil, @ext
       end
 
@@ -104,7 +104,7 @@ class TestGemExtExtConfBuilder < Gem::TestCase
 
     output = []
 
-    error = assert_raises Gem::InstallError do
+    error = assert_raise Gem::InstallError do
       Gem::Ext::ExtConfBuilder.build 'extconf.rb', @dest_path, output, [], nil, @ext
     end
 
@@ -202,7 +202,7 @@ end
   end
 
   def test_class_make_no_Makefile
-    error = assert_raises Gem::InstallError do
+    error = assert_raise Gem::InstallError do
       Gem::Ext::ExtConfBuilder.make @ext, ['output'], @ext
     end
 

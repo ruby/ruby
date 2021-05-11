@@ -90,7 +90,7 @@ class TestGemExtRakeBuilder < Gem::TestCase
     output = []
 
     build_rake_in(false) do |rake|
-      error = assert_raises Gem::InstallError do
+      error = assert_raise Gem::InstallError do
         Gem::Ext::RakeBuilder.build "mkrf_conf.rb", @dest_path, output, [], nil, @ext
       end
 

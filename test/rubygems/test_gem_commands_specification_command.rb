@@ -51,7 +51,7 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
     @cmd.options[:all] = true
     @cmd.options[:version] = "1"
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end
@@ -64,7 +64,7 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
   def test_execute_bad_name
     @cmd.options[:args] = %w[foo]
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end
@@ -78,7 +78,7 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
     @cmd.options[:args] = %w[foo]
     @cmd.options[:version] = "1.3.2"
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end

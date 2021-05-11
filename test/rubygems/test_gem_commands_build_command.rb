@@ -126,7 +126,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
 
       use_ui @ui do
         Dir.chdir @tempdir do
-          assert_raises Gem::InvalidSpecificationException do
+          assert_raise Gem::InvalidSpecificationException do
             @cmd.execute
           end
         end
@@ -180,7 +180,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
 
     use_ui @ui do
       Dir.chdir @tempdir do
-        assert_raises Gem::InvalidSpecificationException do
+        assert_raise Gem::InvalidSpecificationException do
           @cmd.execute
         end
       end
@@ -209,7 +209,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
 
     out, err = use_ui @ui do
       capture_output do
-        assert_raises Gem::MockGemUi::TermError do
+        assert_raise Gem::MockGemUi::TermError do
           @cmd.execute
         end
       end
@@ -225,7 +225,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
   def test_execute_missing_file
     @cmd.options[:args] = %w[some_gem]
     use_ui @ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
     end
@@ -329,7 +329,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     @cmd.options[:args] = ["*.gemspec"]
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
     end
@@ -527,7 +527,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
 
     use_ui @ui do
       Dir.chdir(gemspec_dir) do
-        assert_raises Gem::MockGemUi::TermError do
+        assert_raise Gem::MockGemUi::TermError do
           @cmd.execute
         end
       end

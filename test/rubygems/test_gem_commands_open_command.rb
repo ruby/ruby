@@ -44,7 +44,7 @@ class TestGemCommandsOpenCommand < Gem::TestCase
 
     gem "foo", "5.0"
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end
@@ -57,7 +57,7 @@ class TestGemCommandsOpenCommand < Gem::TestCase
   def test_execute_bad_gem
     @cmd.options[:args] = %w[foo]
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end
@@ -86,7 +86,7 @@ class TestGemCommandsOpenCommand < Gem::TestCase
 
     gem("foo", "1.0")
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end

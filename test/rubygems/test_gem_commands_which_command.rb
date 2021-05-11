@@ -26,7 +26,7 @@ class TestGemCommandsWhichCommand < Gem::TestCase
     @cmd.handle_options %w[directory]
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
     end
@@ -44,7 +44,7 @@ class TestGemCommandsWhichCommand < Gem::TestCase
     @cmd.handle_options %w[foo_bar missinglib]
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
     end
@@ -58,7 +58,7 @@ class TestGemCommandsWhichCommand < Gem::TestCase
     @cmd.handle_options %w[missinglib]
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
     end

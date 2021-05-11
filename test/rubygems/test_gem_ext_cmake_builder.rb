@@ -50,7 +50,7 @@ install (FILES test.txt DESTINATION bin)
   def test_self_build_fail
     output = []
 
-    error = assert_raises Gem::InstallError do
+    error = assert_raise Gem::InstallError do
       Gem::Ext::CmakeBuilder.build nil, @dest_path, output, [], nil, @ext
     end
 

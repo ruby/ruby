@@ -448,7 +448,7 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   def test_execute_no_gem
     @cmd.options[:args] = %w[]
 
-    e = assert_raises Gem::CommandLineError do
+    e = assert_raise Gem::CommandLineError do
       use_ui @ui do
         @cmd.execute
       end

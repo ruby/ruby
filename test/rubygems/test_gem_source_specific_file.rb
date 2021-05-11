@@ -27,7 +27,7 @@ class TestGemSourceSpecificFile < Gem::TestCase
   end
 
   def test_fetch_spec_fails_on_unknown_name
-    assert_raises Gem::Exception do
+    assert_raise Gem::Exception do
       @sf.fetch_spec(nil)
     end
   end

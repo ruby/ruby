@@ -46,7 +46,7 @@ class TestGemSilentUI < Gem::TestCase
     value = nil
     out, err = capture_output do
       use_ui @sui do
-        assert_raises(Gem::OperationNotSupportedError) do
+        assert_raise(Gem::OperationNotSupportedError) do
           @sui.ask_yes_no 'Problem?'
         end
       end

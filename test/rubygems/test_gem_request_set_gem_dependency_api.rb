@@ -388,7 +388,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
   end
 
   def test_gem_platforms_unknown
-    e = assert_raises ArgumentError do
+    e = assert_raise ArgumentError do
       @gda.gem 'a', :platforms => :unknown
     end
 
@@ -455,7 +455,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
     gda = @GDA.new @set, nil
     gda.gem name
 
-    e = assert_raises ArgumentError do
+    e = assert_raise ArgumentError do
       gda.gem name, :path => directory
     end
 
@@ -466,7 +466,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
     gda.instance_variable_set :@vendor_set, @vendor_set
     gda.gem name, :path => directory
 
-    e = assert_raises ArgumentError do
+    e = assert_raise ArgumentError do
       gda.gem name
     end
 
@@ -517,7 +517,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
   def test_gemspec_bad
     FileUtils.touch 'a.gemspec'
 
-    e = assert_raises ArgumentError do
+    e = assert_raise ArgumentError do
       capture_output do
         @gda.gemspec
       end
@@ -550,7 +550,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
       s.add_dependency 'c', 3
     end
 
-    e = assert_raises ArgumentError do
+    e = assert_raise ArgumentError do
       @gda.gemspec
     end
 
@@ -582,7 +582,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
   end
 
   def test_gemspec_none
-    e = assert_raises ArgumentError do
+    e = assert_raise ArgumentError do
       @gda.gemspec
     end
 
@@ -658,14 +658,14 @@ end
     gda.send :pin_gem_source, 'a'
     gda.send :pin_gem_source, 'a'
 
-    e = assert_raises ArgumentError do
+    e = assert_raise ArgumentError do
       gda.send :pin_gem_source, 'a', :path, 'vendor/a'
     end
 
     assert_equal "duplicate source path: vendor/a for gem a",
                  e.message
 
-    e = assert_raises ArgumentError do
+    e = assert_raise ArgumentError do
       gda.send :pin_gem_source, 'a', :git, 'git://example/repo.git'
     end
 
@@ -770,7 +770,7 @@ end
 
   def test_ruby_engine_mismatch_engine
     with_engine_version 'ruby', '2.0.0' do
-      e = assert_raises Gem::RubyVersionMismatch do
+      e = assert_raise Gem::RubyVersionMismatch do
         @gda.ruby RUBY_VERSION, :engine => 'jruby', :engine_version => '1.7.4'
       end
 
@@ -781,7 +781,7 @@ end
 
   def test_ruby_engine_mismatch_version
     with_engine_version 'jruby', '1.7.6' do
-      e = assert_raises Gem::RubyVersionMismatch do
+      e = assert_raise Gem::RubyVersionMismatch do
         @gda.ruby RUBY_VERSION, :engine => 'jruby', :engine_version => '1.7.4'
       end
 
@@ -791,7 +791,7 @@ end
   end
 
   def test_ruby_engine_no_engine_version
-    e = assert_raises ArgumentError do
+    e = assert_raise ArgumentError do
       @gda.ruby RUBY_VERSION, :engine => 'jruby'
     end
 
@@ -800,7 +800,7 @@ end
   end
 
   def test_ruby_mismatch
-    e = assert_raises Gem::RubyVersionMismatch do
+    e = assert_raise Gem::RubyVersionMismatch do
       @gda.ruby '1.8.0'
     end
 
