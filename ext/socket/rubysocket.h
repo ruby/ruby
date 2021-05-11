@@ -139,6 +139,7 @@
 #include "ruby/thread.h"
 #include "ruby/util.h"
 #include "sockport.h"
+#include "hrtime.h"
 
 #ifndef HAVE_TYPE_SOCKLEN_T
 typedef int socklen_t;
