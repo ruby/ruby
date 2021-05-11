@@ -4,7 +4,7 @@ jobs:
   make:
     strategy:
       matrix:
-        test_task: [test]
+        test_task: [check] # to make job names consistent
         os: [windows-2019]
         vs: [2019]
       fail-fast: false
@@ -62,10 +62,24 @@ jobs:
           nmake extract-extlibs
           nmake
       - name: nmake test
-        timeout-minutes: 30
+        timeout-minutes: 5
         run: |
           call "%VCVARS%"
-          nmake ${{ matrix.test_task }}
+          nmake test
+      - name: nmake test-all
+        timeout-minutes: 60
+        run: |
+          call "%VCVARS%"
+          # %TEMP% is inconsistent with %TMP% and test-all expects they are consistent.
+          # https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
+          set TMP=%USERPROFILE%\AppData\Local\Temp
+          set TEMP=%USERPROFILE%\AppData\Local\Temp
+          nmake test-all
+      - name: nmake test-spec
+        timeout-minutes: 10
+        run: |
+          call "%VCVARS%"
+          nmake test-spec
       - uses: k0kubun/action-slack@v2.0.0
         with:
           payload: |

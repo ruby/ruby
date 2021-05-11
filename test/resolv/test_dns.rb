@@ -268,6 +268,7 @@ class TestResolvDNS < Test::Unit::TestCase
   end
 
   def test_no_server
+    skip if /mswin/ =~ RUBY_PLATFORM && ENV.key?('GITHUB_ACTIONS') # not working from the beginning
     u = UDPSocket.new
     u.bind("127.0.0.1", 0)
     _, port, _, host = u.addr
