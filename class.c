@@ -27,7 +27,6 @@
 #include <ctype.h>
 
 #include "constant.h"
-#include "debug_counter.h"
 #include "id_table.h"
 #include "internal.h"
 #include "internal/class.h"
@@ -43,8 +42,6 @@
 
 #define METACLASS_OF(k) RBASIC(k)->klass
 #define SET_METACLASS_OF(k, cls) RBASIC_SET_CLASS(k, cls)
-
-RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
 
 void
 rb_class_subclass_add(VALUE super, VALUE klass)
@@ -960,7 +957,6 @@ rb_include_class_new(VALUE module, VALUE super)
 	RCLASS_CONST_TBL(module) = rb_id_table_create(0);
     }
     RCLASS_IV_TBL(klass) = RCLASS_IV_TBL(module);
-    RCLASS_CVC_TBL(klass) = RCLASS_CVC_TBL(module);
     RCLASS_CONST_TBL(klass) = RCLASS_CONST_TBL(module);
 
     RCLASS_SET_SUPER(klass, super);
@@ -1089,8 +1085,6 @@ do_include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super
         VALUE super_class = RCLASS_SUPER(c);
 
         // invalidate inline method cache
-        RB_DEBUG_COUNTER_INC(cvar_include_invalidate);
-        ruby_vm_global_cvar_state++;
         tbl = RCLASS_M_TBL(module);
         if (tbl && rb_id_table_size(tbl)) {
             if (search_super) { // include

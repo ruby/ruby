@@ -405,7 +405,6 @@ unsigned int    ruby_vm_event_local_num;
 
 rb_serial_t ruby_vm_global_constant_state = 1;
 rb_serial_t ruby_vm_class_serial = 1;
-rb_serial_t ruby_vm_global_cvar_state = 1;
 
 static const struct rb_callcache vm_empty_cc = {
     .flags = T_IMEMO | (imemo_callcache << FL_USHIFT) | VM_CALLCACHE_UNMARKABLE,
@@ -485,7 +484,7 @@ rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
 static VALUE
 vm_stat(int argc, VALUE *argv, VALUE self)
 {
-    static VALUE sym_global_constant_state, sym_class_serial, sym_global_cvar_state;
+    static VALUE sym_global_constant_state, sym_class_serial;
     VALUE arg = Qnil;
     VALUE hash = Qnil, key = Qnil;
 
@@ -506,7 +505,6 @@ vm_stat(int argc, VALUE *argv, VALUE self)
 #define S(s) sym_##s = ID2SYM(rb_intern_const(#s))
 	S(global_constant_state);
 	S(class_serial);
-	S(global_cvar_state);
 #undef S
     }
 
@@ -518,7 +516,6 @@ vm_stat(int argc, VALUE *argv, VALUE self)
 
     SET(global_constant_state, ruby_vm_global_constant_state);
     SET(class_serial, ruby_vm_class_serial);
-    SET(global_cvar_state, ruby_vm_global_cvar_state);
 #undef SET
 
     if (!NIL_P(key)) { /* matched key should return above */

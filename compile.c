@@ -8044,9 +8044,8 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	if (!popped) {
 	    ADD_INSN(ret, line_node, dup);
 	}
-        ADD_INSN2(ret, line_node, setclassvariable,
-                  ID2SYM(node->nd_vid),
-                  get_ivar_ic_value(iseq,node->nd_vid));
+	ADD_INSN1(ret, line_node, setclassvariable,
+		  ID2SYM(node->nd_vid));
 	break;
       }
       case NODE_OP_ASGN1: {
@@ -8669,9 +8668,8 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
       }
       case NODE_CVAR:{
 	if (!popped) {
-	    ADD_INSN2(ret, line_node, getclassvariable,
-		      ID2SYM(node->nd_vid),
-		      get_ivar_ic_value(iseq,node->nd_vid));
+	    ADD_INSN1(ret, line_node, getclassvariable,
+		      ID2SYM(node->nd_vid));
 	}
 	break;
       }

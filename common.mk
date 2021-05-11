@@ -2458,7 +2458,6 @@ class.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 class.$(OBJEXT): {$(VPATH)}class.c
 class.$(OBJEXT): {$(VPATH)}config.h
 class.$(OBJEXT): {$(VPATH)}constant.h
-class.$(OBJEXT): {$(VPATH)}debug_counter.h
 class.$(OBJEXT): {$(VPATH)}defines.h
 class.$(OBJEXT): {$(VPATH)}encoding.h
 class.$(OBJEXT): {$(VPATH)}id.h
