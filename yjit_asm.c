@@ -1664,7 +1664,15 @@ void test(codeblock_t* cb, x86opnd_t rm_opnd, x86opnd_t test_opnd)
     else
     {
         assert (test_opnd.num_bits == rm_opnd.num_bits);
-        cb_write_rm(cb, false, rm_opnd.num_bits == 64, test_opnd, rm_opnd, 0xFF, 1, 0x85);
+
+        if (rm_opnd.num_bits == 8)
+        {
+            cb_write_rm(cb, false, false, test_opnd, rm_opnd, 0xFF, 1, 0x84);
+        }
+        else
+        {
+            cb_write_rm(cb, rm_opnd.num_bits == 16, rm_opnd.num_bits == 64, test_opnd, rm_opnd, 0xFF, 1, 0x85);
+        }
     }
 }
 
