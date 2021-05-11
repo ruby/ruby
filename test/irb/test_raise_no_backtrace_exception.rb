@@ -15,9 +15,9 @@ IRB
     end
 
     def test_raise_exception_with_invalid_byte_sequence
-      skip if RUBY_ENGINE == 'truffleruby'
+      skip if RUBY_ENGINE == 'truffleruby' || /mswin|mingw/ =~ RUBY_PLATFORM
       bundle_exec = ENV.key?('BUNDLE_GEMFILE') ? ['-rbundler/setup'] : []
-      assert_in_out_err(bundle_exec + %w[-rirb -W0 -e IRB.start(__FILE__) -- -f --], <<~IRB, /A\\xF3B \(StandardError\)/, [], encoding: "UTF-8")
+      assert_in_out_err(bundle_exec + %w[-rirb -W0 -e IRB.start(__FILE__) -- -f --], <<~IRB, /A\\xF3B \(StandardError\)/, [])
         raise StandardError, "A\\xf3B"
       IRB
     end
