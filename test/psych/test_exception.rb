@@ -53,12 +53,6 @@ module Psych
         Psych.load '--- `', filename: 'meow'
       end
       assert_equal 'meow', ex.file
-
-      # deprecated interface
-      ex = assert_raise(Psych::SyntaxError) do
-        Psych.unsafe_load '--- `', 'deprecated'
-      end
-      assert_equal 'deprecated', ex.file
     end
 
     def test_psych_parse_stream_takes_file
@@ -86,12 +80,6 @@ module Psych
         Psych.load_stream '--- `', filename: 'omg!'
       end
       assert_equal 'omg!', ex.file
-
-      # deprecated interface
-      ex = assert_raise(Psych::SyntaxError) do
-        Psych.load_stream '--- `', 'deprecated'
-      end
-      assert_equal 'deprecated', ex.file
     end
 
     def test_parse_file_exception
@@ -141,12 +129,6 @@ module Psych
         Psych.parse '--- `', filename: 'omg!'
       end
       assert_match 'omg!', ex.message
-
-      # deprecated interface
-      ex = assert_raise(Psych::SyntaxError) do
-        Psych.parse '--- `', 'deprecated'
-      end
-      assert_match 'deprecated', ex.message
     end
 
     def test_attributes

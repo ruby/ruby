@@ -234,9 +234,6 @@ require 'psych/class_loader'
 module Psych
   # The version of libyaml Psych is using
   LIBYAML_VERSION = Psych.libyaml_version.join('.').freeze
-  # Deprecation guard
-  NOT_GIVEN = Object.new.freeze
-  private_constant :NOT_GIVEN
 
   ###
   # Load +yaml+ in to a Ruby data structure.  If multiple documents are
@@ -271,12 +268,7 @@ module Psych
   # YAML documents that are supplied via user input.  Instead, please use the
   # load method or the safe_load method.
   #
-  def self.unsafe_load yaml, legacy_filename = NOT_GIVEN, filename: nil, fallback: false, symbolize_names: false, freeze: false
-    if legacy_filename != NOT_GIVEN
-      warn_with_uplevel 'Passing filename with the 2nd argument of Psych.load is deprecated. Use keyword argument like Psych.load(yaml, filename: ...) instead.', uplevel: 1 if $VERBOSE
-      filename = legacy_filename
-    end
-
+  def self.unsafe_load yaml, filename: nil, fallback: false, symbolize_names: false, freeze: false
     result = parse(yaml, filename: filename)
     return fallback unless result
     result.to_ruby(symbolize_names: symbolize_names, freeze: freeze)
@@ -327,27 +319,7 @@ module Psych
   #   Psych.safe_load("---\n foo: bar")                         # => {"foo"=>"bar"}
   #   Psych.safe_load("---\n foo: bar", symbolize_names: true)  # => {:foo=>"bar"}
   #
-  def self.safe_load yaml, legacy_permitted_classes = NOT_GIVEN, legacy_permitted_symbols = NOT_GIVEN, legacy_aliases = NOT_GIVEN, legacy_filename = NOT_GIVEN, permitted_classes: [], permitted_symbols: [], aliases: false, filename: nil, fallback: nil, symbolize_names: false, freeze: false
-    if legacy_permitted_classes != NOT_GIVEN
-      warn_with_uplevel 'Passing permitted_classes with the 2nd argument of Psych.safe_load is deprecated. Use keyword argument like Psych.safe_load(yaml, permitted_classes: ...) instead.', uplevel: 1 if $VERBOSE
-      permitted_classes = legacy_permitted_classes
-    end
-
-    if legacy_permitted_symbols != NOT_GIVEN
-      warn_with_uplevel 'Passing permitted_symbols with the 3rd argument of Psych.safe_load is deprecated. Use keyword argument like Psych.safe_load(yaml, permitted_symbols: ...) instead.', uplevel: 1 if $VERBOSE
-      permitted_symbols = legacy_permitted_symbols
-    end
-
-    if legacy_aliases != NOT_GIVEN
-      warn_with_uplevel 'Passing aliases with the 4th argument of Psych.safe_load is deprecated. Use keyword argument like Psych.safe_load(yaml, aliases: ...) instead.', uplevel: 1 if $VERBOSE
-      aliases = legacy_aliases
-    end
-
-    if legacy_filename != NOT_GIVEN
-      warn_with_uplevel 'Passing filename with the 5th argument of Psych.safe_load is deprecated. Use keyword argument like Psych.safe_load(yaml, filename: ...) instead.', uplevel: 1 if $VERBOSE
-      filename = legacy_filename
-    end
-
+  def self.safe_load yaml, permitted_classes: [], permitted_symbols: [], aliases: false, filename: nil, fallback: nil, symbolize_names: false, freeze: false
     result = parse(yaml, filename: filename)
     return fallback unless result
 
@@ -422,22 +394,12 @@ module Psych
   #   end
   #
   # See Psych::Nodes for more information about YAML AST.
-  def self.parse yaml, legacy_filename = NOT_GIVEN, filename: nil, fallback: NOT_GIVEN
-    if legacy_filename != NOT_GIVEN
-      warn_with_uplevel 'Passing filename with the 2nd argument of Psych.parse is deprecated. Use keyword argument like Psych.parse(yaml, filename: ...) instead.', uplevel: 1 if $VERBOSE
-      filename = legacy_filename
-    end
-
+  def self.parse yaml, filename: nil
     parse_stream(yaml, filename: filename) do |node|
       return node
     end
 
-    if fallback != NOT_GIVEN
-      warn_with_uplevel 'Passing the `fallback` keyword argument of Psych.parse is deprecated.', uplevel: 1 if $VERBOSE
-      fallback
-    else
-      false
-    end
+    false
   end
 
   ###
@@ -486,12 +448,7 @@ module Psych
   # Raises a TypeError when NilClass is passed.
   #
   # See Psych::Nodes for more information about YAML AST.
-  def self.parse_stream yaml, legacy_filename = NOT_GIVEN, filename: nil, &block
-    if legacy_filename != NOT_GIVEN
-      warn_with_uplevel 'Passing filename with the 2nd argument of Psych.parse_stream is deprecated. Use keyword argument like Psych.parse_stream(yaml, filename: ...) instead.', uplevel: 1 if $VERBOSE
-      filename = legacy_filename
-    end
-
+  def self.parse_stream yaml, filename: nil, &block
     if block_given?
       parser = Psych::Parser.new(Handlers::DocumentStream.new(&block))
       parser.parse yaml, filename
@@ -592,12 +549,7 @@ module Psych
   #   end
   #   list # => ['foo', 'bar']
   #
-  def self.load_stream yaml, legacy_filename = NOT_GIVEN, filename: nil, fallback: [], **kwargs
-    if legacy_filename != NOT_GIVEN
-      warn_with_uplevel 'Passing filename with the 2nd argument of Psych.load_stream is deprecated. Use keyword argument like Psych.load_stream(yaml, filename: ...) instead.', uplevel: 1 if $VERBOSE
-      filename = legacy_filename
-    end
-
+  def self.load_stream yaml, filename: nil, fallback: [], **kwargs
     result = if block_given?
                parse_stream(yaml, filename: filename) do |node|
                  yield node.to_ruby(**kwargs)

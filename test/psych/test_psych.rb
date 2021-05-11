@@ -78,10 +78,6 @@ class TestPsych < Psych::TestCase
     assert_raise(Psych::SyntaxError) { Psych.parse("--- `") }
   end
 
-  def test_parse_with_fallback
-    assert_equal 42, Psych.parse("", fallback: 42)
-  end
-
   def test_non_existing_class_on_deserialize
     e = assert_raise(ArgumentError) do
       Psych.unsafe_load("--- !ruby/object:NonExistent\nfoo: 1")
@@ -239,11 +235,11 @@ class TestPsych < Psych::TestCase
   end
 
   def test_load_with_fallback_for_nil
-    assert_nil Psych.unsafe_load("--- null", "file", fallback: 42)
+    assert_nil Psych.unsafe_load("--- null", filename: "file", fallback: 42)
   end
 
   def test_load_with_fallback_for_false
-    assert_equal false, Psych.unsafe_load("--- false", "file", fallback: 42)
+    assert_equal false, Psych.unsafe_load("--- false", filename: "file", fallback: 42)
   end
 
   def test_load_file
