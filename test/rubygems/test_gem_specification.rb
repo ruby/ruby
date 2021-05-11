@@ -3066,7 +3066,7 @@ Please report a bug if this causes problems.
     out, err = capture_output do
       @a1.add_runtime_dependency "b", "~> 3.0", "~> 3.0"
     end
-    assert_nil out
+    assert_empty out
     assert_equal(expected, err)
   end
 
