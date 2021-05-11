@@ -458,9 +458,9 @@ gem 'other', version
     Dir.mkdir util_inst_bindir
 
     if win_platform?
-      skip('test_generate_bin_script_no_perms skipped on MS Windows')
+      pend('test_generate_bin_script_no_perms skipped on MS Windows')
     elsif Process.uid.zero?
-      skip('test_generate_bin_script_no_perms skipped in root privilege')
+      pend('test_generate_bin_script_no_perms skipped in root privilege')
     else
       FileUtils.chmod 0000, util_inst_bindir
 
@@ -562,9 +562,9 @@ gem 'other', version
     Dir.mkdir util_inst_bindir
 
     if win_platform?
-      skip('test_generate_bin_symlink_no_perms skipped on MS Windows')
+      pend('test_generate_bin_symlink_no_perms skipped on MS Windows')
     elsif Process.uid.zero?
-      skip('test_user_install_disabled_read_only test skipped in root privilege')
+      pend('test_user_install_disabled_read_only test skipped in root privilege')
     else
       FileUtils.chmod 0000, util_inst_bindir
 
