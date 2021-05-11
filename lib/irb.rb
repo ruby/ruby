@@ -647,7 +647,7 @@ module IRB
           order = :top
         end
         message = convert_invalid_byte_sequence(message, exc.message.encoding)
-        message = encode_with_invalid_byte_sequence(message, IRB.conf[:LC_MESSAGES].encoding) if message.encoding != IRB.conf[:LC_MESSAGES].encoding
+        message = encode_with_invalid_byte_sequence(message, IRB.conf[:LC_MESSAGES].encoding) unless message.encoding.to_s.casecmp?(IRB.conf[:LC_MESSAGES].encoding.to_s)
         message = message.gsub(/((?:^\t.+$\n)+)/)  { |m|
           case order
           when :top
