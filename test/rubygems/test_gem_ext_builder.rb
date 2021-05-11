@@ -106,6 +106,7 @@ install:
   end
 
   def test_build_extensions
+    skip if /mswin/ =~ RUBY_PLATFORM && ENV.key?('GITHUB_ACTIONS') # not working from the beginning
     @spec.extensions << 'ext/extconf.rb'
 
     ext_dir = File.join @spec.gem_dir, 'ext'
@@ -141,6 +142,7 @@ install:
   end
 
   def test_build_extensions_with_gemhome_with_space
+    skip if /mswin/ =~ RUBY_PLATFORM && ENV.key?('GITHUB_ACTIONS') # not working from the beginning
     new_gemhome = File.join @tempdir, 'gem home'
     File.rename(@gemhome, new_gemhome)
     @gemhome = new_gemhome
@@ -152,6 +154,7 @@ install:
   end
 
   def test_build_extensions_install_ext_only
+    skip if /mswin/ =~ RUBY_PLATFORM && ENV.key?('GITHUB_ACTIONS') # not working from the beginning
     class << Gem
       alias orig_install_extension_in_lib install_extension_in_lib
 
