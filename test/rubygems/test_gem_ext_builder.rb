@@ -154,7 +154,6 @@ install:
   end
 
   def test_build_extensions_install_ext_only
-    skip if /mswin/ =~ RUBY_PLATFORM && ENV.key?('GITHUB_ACTIONS') # not working from the beginning
     class << Gem
       alias orig_install_extension_in_lib install_extension_in_lib
 
@@ -164,6 +163,7 @@ install:
         false
       end
     end
+    skip if /mswin/ =~ RUBY_PLATFORM && ENV.key?('GITHUB_ACTIONS') # not working from the beginning
 
     @spec.extensions << 'ext/extconf.rb'
 
@@ -198,7 +198,6 @@ install:
     refute_path_exists File.join @spec.gem_dir, 'lib', 'a.rb'
     refute_path_exists File.join @spec.gem_dir, 'lib', 'a', 'b.rb'
   ensure
-    return if /mswin/ =~ RUBY_PLATFORM && ENV.key?('GITHUB_ACTIONS') # not working from the beginning
     class << Gem
       remove_method :install_extension_in_lib
 
