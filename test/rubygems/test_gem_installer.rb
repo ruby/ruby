@@ -1525,50 +1525,52 @@ gem 'other', version
   def test_install_extension_flat
     skip "extensions don't quite work on jruby" if Gem.java_platform?
 
-    @spec = setup_base_spec
-    @spec.require_paths = ["."]
+    begin
+      @spec = setup_base_spec
+      @spec.require_paths = ["."]
 
-    @spec.extensions << "extconf.rb"
+      @spec.extensions << "extconf.rb"
 
-    write_file File.join(@tempdir, "extconf.rb") do |io|
-      io.write <<-RUBY
-        require "mkmf"
+      write_file File.join(@tempdir, "extconf.rb") do |io|
+        io.write <<-RUBY
+          require "mkmf"
 
-        CONFIG['CC'] = '$(TOUCH) $@ ||'
-        CONFIG['LDSHARED'] = '$(TOUCH) $@ ||'
-        $ruby = '#{Gem.ruby}'
+          CONFIG['CC'] = '$(TOUCH) $@ ||'
+          CONFIG['LDSHARED'] = '$(TOUCH) $@ ||'
+          $ruby = '#{Gem.ruby}'
 
-        create_makefile("#{@spec.name}")
-      RUBY
-    end
+          create_makefile("#{@spec.name}")
+        RUBY
+      end
 
-    # empty depend file for no auto dependencies
-    @spec.files += %W[depend #{@spec.name}.c].each do |file|
-      write_file File.join(@tempdir, file)
-    end
+      # empty depend file for no auto dependencies
+      @spec.files += %W[depend #{@spec.name}.c].each do |file|
+        write_file File.join(@tempdir, file)
+      end
 
-    so = File.join(@spec.gem_dir, "#{@spec.name}.#{RbConfig::CONFIG["DLEXT"]}")
-    assert_path_not_exist so
-    use_ui @ui do
-      path = Gem::Package.build @spec
+      so = File.join(@spec.gem_dir, "#{@spec.name}.#{RbConfig::CONFIG["DLEXT"]}")
+      assert_path_not_exist so
+      use_ui @ui do
+        path = Gem::Package.build @spec
 
-      installer = Gem::Installer.at path
-      installer.install
-    end
-    assert_path_exist so
-  rescue
-    puts '-' * 78
-    puts File.read File.join(@gemhome, 'gems', 'a-2', 'Makefile')
-    puts '-' * 78
-
-    path = File.join(@gemhome, 'gems', 'a-2', 'gem_make.out')
-
-    if File.exist?(path)
-      puts File.read(path)
+        installer = Gem::Installer.at path
+        installer.install
+      end
+      assert_path_exist so
+    rescue
       puts '-' * 78
-    end
+      puts File.read File.join(@gemhome, 'gems', 'a-2', 'Makefile')
+      puts '-' * 78
 
-    raise
+      path = File.join(@gemhome, 'gems', 'a-2', 'gem_make.out')
+
+      if File.exist?(path)
+        puts File.read(path)
+        puts '-' * 78
+      end
+
+      raise
+    end
   end
 
   def test_installation_satisfies_dependency_eh
