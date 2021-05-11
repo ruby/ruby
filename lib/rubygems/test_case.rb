@@ -136,12 +136,12 @@ class Gem::TestCase < Test::Unit::TestCase
     assert File.directory?(path), msg
   end
 
-  # https://github.com/seattlerb/minitest/blob/master/lib/minitest/assertions.rb#L188
+  # https://github.com/seattlerb/minitest/blob/21d9e804b63c619f602f3f4ece6c71b48974707a/lib/minitest/assertions.rb#L188
   def _synchronize
     yield
   end
 
-  # https://github.com/seattlerb/minitest/blob/master/lib/minitest/assertions.rb#L546
+  # https://github.com/seattlerb/minitest/blob/21d9e804b63c619f602f3f4ece6c71b48974707a/lib/minitest/assertions.rb#L546
   def capture_subprocess_io
     _synchronize do
       begin
@@ -1547,7 +1547,7 @@ Also, a list:
   end if Gem::HAVE_OPENSSL
 end
 
-# https://github.com/seattlerb/minitest/blob/master/lib/minitest/mock.rb#L192
+# https://github.com/seattlerb/minitest/blob/13c48a03d84a2a87855a4de0c959f96800100357/lib/minitest/mock.rb#L192
 class Object
   def stub(name, val_or_callable, *block_args)
     new_name = "__minitest_stub__#{name}"
