@@ -1724,10 +1724,13 @@ gen_branchif_branch(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uint8_t
 static codegen_status_t
 gen_branchif(jitstate_t* jit, ctx_t* ctx)
 {
-    // FIXME: eventually, put VM_CHECK_INTS() only on backward branch targets
-    // Check for interrupts
-    uint8_t* side_exit = yjit_side_exit(jit, ctx);
-    yjit_check_ints(cb, side_exit);
+    int32_t jump_offset = (int32_t)jit_get_arg(jit, 0);
+
+    // Check for interrupts, but only on backward branches that may create loops
+    if (jump_offset < 0) {
+        uint8_t* side_exit = yjit_side_exit(jit, ctx);
+        yjit_check_ints(cb, side_exit);
+    }
 
     // Test if any bit (outside of the Qnil bit) is on
     // RUBY_Qfalse  /* ...0000 0000 */
@@ -1736,8 +1739,8 @@ gen_branchif(jitstate_t* jit, ctx_t* ctx)
     test(cb, val_opnd, imm_opnd(~Qnil));
 
     // Get the branch target instruction offsets
-    uint32_t next_idx = jit_next_idx(jit);
-    uint32_t jump_idx = next_idx + (uint32_t)jit_get_arg(jit, 0);
+    uint32_t next_idx = jit_next_insn_idx(jit);
+    uint32_t jump_idx = next_idx + jump_offset;
     blockid_t next_block = { jit->iseq, next_idx };
     blockid_t jump_block = { jit->iseq, jump_idx };
 
@@ -1778,10 +1781,13 @@ gen_branchunless_branch(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uin
 static codegen_status_t
 gen_branchunless(jitstate_t* jit, ctx_t* ctx)
 {
-    // FIXME: eventually, put VM_CHECK_INTS() only on backward branch targets
-    // Check for interrupts
-    uint8_t* side_exit = yjit_side_exit(jit, ctx);
-    yjit_check_ints(cb, side_exit);
+    int32_t jump_offset = (int32_t)jit_get_arg(jit, 0);
+
+    // Check for interrupts, but only on backward branches that may create loops
+    if (jump_offset < 0) {
+        uint8_t* side_exit = yjit_side_exit(jit, ctx);
+        yjit_check_ints(cb, side_exit);
+    }
 
     // Test if any bit (outside of the Qnil bit) is on
     // RUBY_Qfalse  /* ...0000 0000 */
@@ -1790,8 +1796,13 @@ gen_branchunless(jitstate_t* jit, ctx_t* ctx)
     test(cb, val_opnd, imm_opnd(~Qnil));
 
     // Get the branch target instruction offsets
+<<<<<<< HEAD
     uint32_t next_idx = jit_next_idx(jit);
     uint32_t jump_idx = next_idx + (uint32_t)jit_get_arg(jit, 0);
+=======
+    uint32_t next_idx = jit_next_insn_idx(jit);
+    uint32_t jump_idx = next_idx + jump_offset;
+>>>>>>> ef0d1ca495 (Avoid interrupt checks for forward branches (#41))
     blockid_t next_block = { jit->iseq, next_idx };
     blockid_t jump_block = { jit->iseq, jump_idx };
 
@@ -1832,10 +1843,13 @@ gen_branchnil_branch(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uint8_
 static codegen_status_t
 gen_branchnil(jitstate_t* jit, ctx_t* ctx)
 {
-    // FIXME: eventually, put VM_CHECK_INTS() only on backward branch targets
-    // Check for interrupts
-    uint8_t* side_exit = yjit_side_exit(jit, ctx);
-    yjit_check_ints(cb, side_exit);
+    int32_t jump_offset = (int32_t)jit_get_arg(jit, 0);
+
+    // Check for interrupts, but only on backward branches that may create loops
+    if (jump_offset < 0) {
+        uint8_t* side_exit = yjit_side_exit(jit, ctx);
+        yjit_check_ints(cb, side_exit);
+    }
 
     // Test if the value is Qnil
     // RUBY_Qnil    /* ...0000 1000 */
@@ -1844,7 +1858,7 @@ gen_branchnil(jitstate_t* jit, ctx_t* ctx)
 
     // Get the branch target instruction offsets
     uint32_t next_idx = jit_next_insn_idx(jit);
-    uint32_t jump_idx = next_idx + (uint32_t)jit_get_arg(jit, 0);
+    uint32_t jump_idx = next_idx + jump_offset;
     blockid_t next_block = { jit->iseq, next_idx };
     blockid_t jump_block = { jit->iseq, jump_idx };
 
@@ -1865,13 +1879,20 @@ gen_branchnil(jitstate_t* jit, ctx_t* ctx)
 static codegen_status_t
 gen_jump(jitstate_t* jit, ctx_t* ctx)
 {
-    // FIXME: eventually, put VM_CHECK_INTS() only on backward branch targets
-    // Check for interrupts
-    uint8_t* side_exit = yjit_side_exit(jit, ctx);
-    yjit_check_ints(cb, side_exit);
+    int32_t jump_offset = (int32_t)jit_get_arg(jit, 0);
+
+    // Check for interrupts, but only on backward branches that may create loops
+    if (jump_offset < 0) {
+        uint8_t* side_exit = yjit_side_exit(jit, ctx);
+        yjit_check_ints(cb, side_exit);
+    }
 
     // Get the branch target instruction offsets
+<<<<<<< HEAD
     uint32_t jump_idx = jit_next_idx(jit) + (int32_t)jit_get_arg(jit, 0);
+=======
+    uint32_t jump_idx = jit_next_insn_idx(jit) + jump_offset;
+>>>>>>> ef0d1ca495 (Avoid interrupt checks for forward branches (#41))
     blockid_t jump_block = { jit->iseq, jump_idx };
 
     // Generate the jump instruction
