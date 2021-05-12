@@ -1629,6 +1629,52 @@ command_asgn	: lhs '=' lex_ctxt command_rhs
 		    /*% %*/
 		    /*% ripper: opassign!(field!($1, ID2VAL(idCOLON2), $3), $4, $6) %*/
 		    }
+		| defn_head f_opt_paren_args '=' command
+		    {
+			endless_method_name(p, $<node>1, &@1);
+			restore_defun(p, $<node>1->nd_defn);
+		    /*%%%*/
+			$$ = set_defun_body(p, $1, $2, $4, &@$);
+		    /*% %*/
+		    /*% ripper: def!(get_value($1), $2, $4) %*/
+			local_pop(p);
+		    }
+		| defn_head f_opt_paren_args '=' command modifier_rescue arg
+		    {
+			endless_method_name(p, $<node>1, &@1);
+			restore_defun(p, $<node>1->nd_defn);
+		    /*%%%*/
+			$4 = rescued_expr(p, $4, $6, &@4, &@5, &@6);
+			$$ = set_defun_body(p, $1, $2, $4, &@$);
+		    /*% %*/
+		    /*% ripper: def!(get_value($1), $2, rescue_mod!($4, $6)) %*/
+			local_pop(p);
+		    }
+		| defs_head f_opt_paren_args '=' command
+		    {
+			endless_method_name(p, $<node>1, &@1);
+			restore_defun(p, $<node>1->nd_defn);
+		    /*%%%*/
+			$$ = set_defun_body(p, $1, $2, $4, &@$);
+		    /*%
+			$1 = get_value($1);
+		    %*/
+		    /*% ripper: defs!(AREF($1, 0), AREF($1, 1), AREF($1, 2), $2, $4) %*/
+			local_pop(p);
+		    }
+		| defs_head f_opt_paren_args '=' command modifier_rescue arg
+		    {
+			endless_method_name(p, $<node>1, &@1);
+			restore_defun(p, $<node>1->nd_defn);
+		    /*%%%*/
+			$4 = rescued_expr(p, $4, $6, &@4, &@5, &@6);
+			$$ = set_defun_body(p, $1, $2, $4, &@$);
+		    /*%
+			$1 = get_value($1);
+		    %*/
+		    /*% ripper: defs!(AREF($1, 0), AREF($1, 1), AREF($1, 2), $2, rescue_mod!($4, $6)) %*/
+			local_pop(p);
+		    }
 		| backref tOP_ASGN lex_ctxt command_rhs
 		    {
 		    /*%%%*/

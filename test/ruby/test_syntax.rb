@@ -1462,6 +1462,31 @@ eom
     assert_syntax_error('def obj.foo=() = 42 rescue nil', error)
   end
 
+  def test_methoddef_endless_command
+    assert_valid_syntax('def foo = puts "Hello"')
+    assert_valid_syntax('def foo() = puts "Hello"')
+    assert_valid_syntax('def foo(x) = puts x')
+    assert_valid_syntax('def obj.foo = puts "Hello"')
+    assert_valid_syntax('def obj.foo() = puts "Hello"')
+    assert_valid_syntax('def obj.foo(x) = puts x')
+    k = Class.new do
+      class_eval('def rescued(x) = raise "to be caught" rescue "instance #{x}"')
+      class_eval('def self.rescued(x) = raise "to be caught" rescue "class #{x}"')
+    end
+    assert_equal("class ok", k.rescued("ok"))
+    assert_equal("instance ok", k.new.rescued("ok"))
+
+    # Current technical limitation: cannot prepend "private" or something for command endless def
+    error = /syntax error, unexpected string literal/
+    error2 = /syntax error, unexpected local variable or method/
+    assert_syntax_error('private def foo = puts "Hello"', error)
+    assert_syntax_error('private def foo() = puts "Hello"', error)
+    assert_syntax_error('private def foo(x) = puts x', error2)
+    assert_syntax_error('private def obj.foo = puts "Hello"', error)
+    assert_syntax_error('private def obj.foo() = puts "Hello"', error)
+    assert_syntax_error('private def obj.foo(x) = puts x', error2)
+  end
+
   def test_methoddef_in_cond
     assert_valid_syntax('while def foo; tap do end; end; break; end')
     assert_valid_syntax('while def foo a = tap do end; end; break; end')
