@@ -2733,7 +2733,7 @@ main(int argc, char *argv[])
 ])
 
 AS_CASE([$target_os],
-    [darwin*], [ac_cv_header_sys_user_h=yes], dnl LIST_HEAD conflicts with sys/queue.h
+    [darwin*], [ac_cv_header_sys_user_h=no], dnl LIST_HEAD conflicts with sys/queue.h
     [AC_CHECK_HEADERS([sys/user.h])]
 )
 AS_IF([test "x$ac_cv_func_mmap:$ac_cv_header_sys_user_h" = xyes:yes], [
