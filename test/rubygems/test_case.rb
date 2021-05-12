@@ -106,8 +106,6 @@ class Gem::TestCase < Test::Unit::TestCase
 
   attr_accessor :uri # :nodoc:
 
-  TEST_PATH = ENV.fetch('RUBYGEMS_TEST_PATH', File.expand_path('../../../test/rubygems', __FILE__))
-
   def assert_activate(expected, *specs)
     specs.each do |spec|
       case spec
@@ -1326,8 +1324,8 @@ Also, a list:
     end
   end
 
-  @@good_rake = "#{rubybin} #{escape_path(TEST_PATH, 'good_rake.rb')}"
-  @@bad_rake = "#{rubybin} #{escape_path(TEST_PATH, 'bad_rake.rb')}"
+  @@good_rake = "#{rubybin} #{escape_path(__dir__, 'good_rake.rb')}"
+  @@bad_rake = "#{rubybin} #{escape_path(__dir__, 'bad_rake.rb')}"
 
   ##
   # Construct a new Gem::Dependency.
@@ -1514,12 +1512,12 @@ Also, a list:
 
   def self.cert_path(cert_name)
     if 32 == (Time.at(2**32) rescue 32)
-      cert_file = "#{TEST_PATH}/#{cert_name}_cert_32.pem"
+      cert_file = "#{__dir__}/#{cert_name}_cert_32.pem"
 
       return cert_file if File.exist? cert_file
     end
 
-    "#{TEST_PATH}/#{cert_name}_cert.pem"
+    "#{__dir__}/#{cert_name}_cert.pem"
   end
 
   ##
@@ -1537,7 +1535,7 @@ Also, a list:
   # Returns the path to the key named +key_name+ from <tt>test/rubygems</tt>
 
   def self.key_path(key_name)
-    "#{TEST_PATH}/#{key_name}_key.pem"
+    "#{__dir__}/#{key_name}_key.pem"
   end
 
   # :stopdoc:
