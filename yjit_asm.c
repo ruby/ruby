@@ -1682,6 +1682,29 @@ void ud2(codeblock_t* cb)
     cb_write_bytes(cb, 2, 0x0F, 0x0B);
 }
 
+/// xchg - Exchange Register/Memory with Register
+void xchg(codeblock_t* cb, x86opnd_t rm_opnd, x86opnd_t r_opnd)
+{
+    assert (rm_opnd.num_bits == 64);
+    assert (r_opnd.num_bits == 64);
+    assert (rm_opnd.type == OPND_REG);
+    assert (r_opnd.type == OPND_REG);
+
+    // If we're exchanging with RAX
+    if (rm_opnd.type == OPND_REG && rm_opnd.as.reg.reg_no == RAX.as.reg.reg_no)
+    {
+        // Write the REX byte
+        cb_write_rex(cb, rm_opnd.num_bits == 64, 0, 0, r_opnd.as.reg.reg_no);
+
+        // Write the opcode and register number
+        cb_write_byte(cb, 0x90 + (r_opnd.as.reg.reg_no & 7));
+    }
+    else
+    {
+        cb_write_rm(cb, rm_opnd.num_bits == 16, rm_opnd.num_bits == 64, r_opnd, rm_opnd, 0xFF, 1, 0x87);
+    }
+}
+
 /// xor - Exclusive bitwise OR
 void xor(codeblock_t* cb, x86opnd_t opnd0, x86opnd_t opnd1)
 {
