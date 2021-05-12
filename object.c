@@ -4567,6 +4567,23 @@ InitVM_Object(void)
      *
      * == What's Here
      *
+     * \Module \Kernel provides methods that are useful for:
+     *
+     * - {Converting}[#module-Kernel-label-Converting]
+     * - {Querying}[#module-Kernel-label-Querying]
+     * - {Executing}[#module-Kernel-label-Executing]
+     * - {Exiting}[#module-Kernel-label-Exiting]
+     * - {Exceptions}[#module-Kernel-label-Exceptions]
+     * - {Strings}[#module-Kernel-label-Strings]
+     * - {IO}[#module-Kernel-label-IO]
+     * - {Procs}[#module-Kernel-label-Procs]
+     * - {Tracing}[#module-Kernel-label-Tracing]
+     * - {Subprocesses}[#module-Kernel-label-Subprocesses]
+     * - {Loading}[#module-Kernel-label-Loading]
+     * - {Yielding}[#module-Kernel-label-Yielding]
+     * - {Random Values}[#module-Kernel-label-Random+Values]
+     * - {Other}[#module-Kernel-label-Other]
+     *
      * === Converting
      *
      * - {#Array}[#method-i-Array]:: Returns an Array based on the given argument.
@@ -4584,15 +4601,14 @@ InitVM_Object(void)
      *                                         of the current method as a symbol.
      * - {#__dir__}[#method-i-__dir__]:: Returns the path to the directory
      *                                   from which the current method is called.
-     * - {#__method__}[#method-i-__method__]:: Returns the name at the definition
-     *                                          of the current method as a symbol.
+     * - {#__method__}[#method-i-__method__]:: Returns the name
+     *                                         of the current method as a symbol.
      * - #autoload?:: Returns the file to be loaded when the given module is referenced.
-     * - #binding:: Returns a Binding object that describes the variable and method
-     *              bindings at the point of call.
-     * - #block_given?:: Returns true if yield would execute a block
-     *                   in the current context.
+     * - #binding:: Returns a Binding for the context at the point of call.
+     * - #block_given?:: Returns +true+ if a block was passed to the calling method.
      * - #caller:: Returns the current execution stack as an array of strings.
-     * - #caller_locations:: Returns the current execution stack as an array of strings.
+     * - #caller_locations:: Returns the current execution stack as an array
+     *                       of Thread::Backtrace::Location objects.
      * - #class:: Returns the class of +self+.
      * - #frozen?:: Returns whether +self+ is frozen.
      * - #global_variables:: Returns an array of global variables as symbols.
@@ -4601,18 +4617,13 @@ InitVM_Object(void)
      *
      * === Executing
      *
-     * - #`cmd`:: Returns the standard output of running +cmd+ in a subshell.
-     * - #eval:: Evaluates the Ruby code in the given string.
-     * - #exec:: Executes the given command.
-     * - #syscall:: Calls the operating system function identified by the given number;
-     *              returns the result or raises an exception if the function failed.
-     * - #system:: Executes the given command in a subshell.
+     * - #eval:: Evaluates the given string as Ruby code.
+     * - #syscall:: Runs an operating system call.
      *
      * === Exiting
      *
-     * - #abort:: Aborts the current process after printing the given arguments.
-     * - #at_exit:: Registers the given block as a proc to be executed
-     *              when the program exits.
+     * - #abort:: Exits the current process after printing the given arguments.
+     * - #at_exit:: Executes the given block when the process exits.
      * - #exit:: Exits the current process after calling any registered
      *           +at_exit+ handlers.
      * - #exit!:: Exits the current process without calling any registered
@@ -4621,82 +4632,79 @@ InitVM_Object(void)
      * === Exceptions
      *
      * - #catch:: Executes the given block, possibly catching a thrown object.
-     * - #fail:: Raises an exception based on the given arguments.
-     * - #raise:: Raises an exception based on the given arguments.
-     * - #throw:: Transfers control to the end of the active catch block
-     *            that is waiting for the given tag.
+     * - #raise (aliased as #fail):: Raises an exception based on the given arguments.
+     * - #throw:: Returns from the active catch block waiting for the given tag.
      *
      * === Strings
      *
      * - #format:: Returns the string resulting from applying the given format string
      *             to any additional arguments.
-     * - #gsub:: Performs global substitution using the given pattern and either
-     *           a replacement string or a block.
-     * - #sprintf:: Returns the string resulting from applying the given format string
-     *              to any additional arguments.
-     * - #sub:: Performs single substitution using the given pattern and either
-     *          a replacement string or a block.
+     * - #gsub:: Performs global substitution using the given pattern and replacement'
+     * - #sprintf (aliased as #format):: Returns the string resulting from applying
+     *                                   the given format string
+     *                                   to any additional arguments.
+     * - #sub:: Performs single substitution using the given given pattern
+     *          and replacement.
      *
      * === \IO
      *
-     * - #chomp:: Removes the trailing record separator, if any, from <tt>$_</tt>.
-     * - #chop:: Removes the last character, if any, from <tt>$_</tt>.
      * - #gets:: Returns and assigns to <tt>$_</tt> the next line from the current input.
      * - #open:: Creates an IO object connected to the given stream, file, or subprocess.
-     * - #p::  Writes the given objects to standard output.
+     * - #p::  Prints the given objects inspect output to the standard output.
      * - #pp:: Prints the given objects in pretty form.
-     * - #print:: Prints the given objects to standard output.
+     * - #print:: Prints the given objects to standard output without a newline.
      * - #printf:: Prints the string resulting from applying the given format string
      *             to any additional arguments.
      * - #putc:: Equivalent to <tt.$stdout.putc(object)</tt> for the given object.
      * - #puts:: Equivalent to <tt>$stdout.puts(*objects)</tt> for the given objects.
-     * - #readline:: Equivalent to Kernel.gets, except that +readline+
-     *               raises an exception at end of file.
+     * - #readline:: Similar to #gets, but raises an exception at the end of file.
      * - #readlines:: Returns an array of the remaining lines from the current input.
-     * - #select:: From arrays of IO streams, returns the first one to become ready.
+     * - #select:: Same as IO.select.
      *
      * === Procs
      *
-     * - #lambda:: Returns a new Proc formed from the given block.
+     * - #lambda:: Returns a lambda proc for the given block.
      * - #proc:: Returns a new Proc; equivalent to Proc.new.
      *
      * === Tracing
      *
      * - #set_trace_func:: Sets the given proc as the handler for tracing,
      *                     or disables tracing if given +nil+.
-     * - #trace_var:: Specifies the tracing of assignments to the given global variable.
+     * - #trace_var:: Starts tracing assignments to the given global variable.
      * - #untrace_var:: Disables tracing of assignments to the given global variable.
      *
      * === Subprocesses
      *
-     * - #fork:: Creates a subprocess that executes the given block, if any.
-     * - #spawn:: Executes the given command and returns its pid without waiting.
+     * - #`cmd`:: Returns the standard output of running +cmd+ in a subshell.
+     * - #exec:: Replaces current process with a new process.
+     * - #fork:: Forks the current process into two processes.
+     * - #spawn:: Executes the given command and returns its pid without waiting
+     *            for completion.
+     * - #system:: Executes the given command in a subshell.
      *
      * === Loading
      *
-     * - #autoload:: Registers the given file to be loaded when the given module
+     * - #autoload:: Registers the given file to be loaded when the given constant
      *               is first referenced.
-     * - #load:: Loads and executes the Ruby program found in the given file.
-     * - #require:: Loads the given file.
-     * - #require_relative:: Loads the given relative file.
+     * - #load:: Loads the given Ruby file.
+     * - #require:: Loads the given Ruby file unless it has already been loaded.
+     * - #require_relative:: Loads the Ruby file path relative to the calling file,
+     *                       unless it has already been loaded.
      *
      * === Yielding
      *
      * - #tap:: Yields +self+ to the given block; returns +self+.
-     * - #then:: Yields +self+ to the block and returns the result of the block.
-     * - #yield_self:: Yields +self+ to the block and returns the result of the block.
+     * - #then (aliased as #yield_self):: Yields +self+ to the block
+     *                                    and returns the result of the block.
      *
      * === \Random Values
      *
      * - #rand:: Returns a pseudo-random floating point number
      *           strictly between 0.0 and 1.0.
-     * - #srand:: Seeds the system pseudo-random number generator with the given number.
+     * - #srand:: Seeds the pseudo-random number generator with the given number.
      *
      * === Other
      *
-     * - #callcc:: Generates a Continuation object, which it passes
-     *             to the associated block.
-     * - #clone:: Returns a shallow copy of +self+.
      * - #loop:: Repeatedly executes the given block.
      * - #sleep:: Suspends the current thread for the given number of seconds.
      * - #trap:: Specifies the handling of system signals.
