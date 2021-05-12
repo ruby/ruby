@@ -108,7 +108,7 @@ class TestObjSpace < Test::Unit::TestCase
   def test_memsize_of_iseq
     iseqw = RubyVM::InstructionSequence.compile('def a; a = :b; a; end')
     # Use anonymous class as a basic object size because size of Object.new can be increased
-    base_obj_size = ObjectSpace.memsize_of(Class.new.new) 
+    base_obj_size = ObjectSpace.memsize_of(Class.new.new)
     assert_operator(ObjectSpace.memsize_of(iseqw), :>, base_obj_size)
   end
 
