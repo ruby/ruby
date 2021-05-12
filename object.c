@@ -4615,11 +4615,6 @@ InitVM_Object(void)
      * - #local_variables:: Returns an array of local variables as symbols.
      * - #test:: Performs specified tests on the given single file or pair of files.
      *
-     * === Executing
-     *
-     * - #eval:: Evaluates the given string as Ruby code.
-     * - #syscall:: Runs an operating system call.
-     *
      * === Exiting
      *
      * - #abort:: Exits the current process after printing the given arguments.
@@ -4637,20 +4632,18 @@ InitVM_Object(void)
      *
      * === Strings
      *
-     * - #format:: Returns the string resulting from applying the given format string
-     *             to any additional arguments.
-     * - #gsub:: Performs global substitution using the given pattern and replacement'
+     * - #gsub:: Performs global substitution using the given pattern and replacement.
      * - #sprintf (aliased as #format):: Returns the string resulting from applying
      *                                   the given format string
      *                                   to any additional arguments.
-     * - #sub:: Performs single substitution using the given given pattern
+     * - #sub:: Performs single substitution using the given pattern
      *          and replacement.
      *
      * === \IO
      *
      * - #gets:: Returns and assigns to <tt>$_</tt> the next line from the current input.
      * - #open:: Creates an IO object connected to the given stream, file, or subprocess.
-     * - #p::  Prints the given objects inspect output to the standard output.
+     * - #p::  Prints the given objects' inspect output to the standard output.
      * - #pp:: Prints the given objects in pretty form.
      * - #print:: Prints the given objects to standard output without a newline.
      * - #printf:: Prints the string resulting from applying the given format string
@@ -4705,8 +4698,10 @@ InitVM_Object(void)
      *
      * === Other
      *
+     * - #eval:: Evaluates the given string as Ruby code.
      * - #loop:: Repeatedly executes the given block.
      * - #sleep:: Suspends the current thread for the given number of seconds.
+     * - #syscall:: Runs an operating system call.
      * - #trap:: Specifies the handling of system signals.
      * - #warn:: Issue a warning based on the given messages and options.
      *
