@@ -52,32 +52,28 @@ require 'rubygems/mock_gem_ui'
 module Gem
 
   ##
-  # Allows setting the gem path searcher.  This method is available when
-  # requiring 'rubygems/test_case'
+  # Allows setting the gem path searcher.
 
   def self.searcher=(searcher)
     @searcher = searcher
   end
 
   ##
-  # Allows toggling Windows behavior.  This method is available when requiring
-  # 'rubygems/test_case'
+  # Allows toggling Windows behavior.
 
   def self.win_platform=(val)
     @@win_platform = val
   end
 
   ##
-  # Allows setting path to Ruby.  This method is available when requiring
-  # 'rubygems/test_case'
+  # Allows setting path to Ruby.
 
   def self.ruby=(ruby)
     @ruby = ruby
   end
 
   ##
-  # When rubygems/test_case is required the default user interaction is a
-  # MockGemUi.
+  # Sets the default user interaction to a MockGemUi.
 
   module DefaultUserInteraction
     @ui = Gem::MockGemUi.new
@@ -88,8 +84,7 @@ require "rubygems/command"
 
 class Gem::Command
   ##
-  # Allows resetting the hash of specific args per command.  This method is
-  # available when requiring 'rubygems/test_case'
+  # Allows resetting the hash of specific args per command.
 
   def self.specific_extra_args_hash=(value)
     @specific_extra_args_hash = value
