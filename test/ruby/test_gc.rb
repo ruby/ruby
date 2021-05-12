@@ -497,8 +497,7 @@ class TestGc < Test::Unit::TestCase
 
   def test_ast_node_buffer
     # https://github.com/ruby/ruby/pull/4416
-    Module.new.class_eval do
-      eval((["# shareable_constant_value: literal"] + (0..100000).map {|i| "M#{ i } = {}" }).join("\n"))
-    end
+    Module.new.class_eval( (["# shareable_constant_value: literal"] +
+                            (0..100000).map {|i| "M#{ i } = {}" }).join("\n"))
   end
 end
