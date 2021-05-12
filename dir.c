@@ -3199,7 +3199,7 @@ fnmatch_brace(const char *pattern, VALUE val, void *enc)
  *    <code>\*c*</code>:: Matches all files that have <code>c</code> in them
  *                        (including at the beginning or end).
  *
- *    To match hidden files (that start with a <code>.</code> set the
+ *    To match hidden files (that start with a <code>.</code>) set the
  *    File::FNM_DOTMATCH flag.
  *
  *  <code>**</code>::
