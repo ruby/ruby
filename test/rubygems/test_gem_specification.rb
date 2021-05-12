@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 require 'benchmark'
-require 'rubygems/test_case'
+require_relative 'test_case'
 require 'date'
 require 'pathname'
 require 'stringio'

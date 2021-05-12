@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'test_case'
 
 class TestGemSourceLock < Gem::TestCase
   def test_fetch_spec

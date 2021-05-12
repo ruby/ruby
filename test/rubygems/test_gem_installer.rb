@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/installer_test_case'
+require_relative 'installer_test_case'
 
 class TestGemInstaller < Gem::InstallerTestCase
   def setup

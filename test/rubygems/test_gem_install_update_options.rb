@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/installer_test_case'
+require_relative 'installer_test_case'
 require 'rubygems/install_update_options'
 require 'rubygems/command'
 require 'rubygems/dependency_installer'
