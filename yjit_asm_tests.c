@@ -341,6 +341,12 @@ void run_tests()
     cb_set_pos(cb, 0); test(cb, RAX, RSI); check_bytes(cb, "4885F0");
     cb_set_pos(cb, 0); test(cb, mem_opnd(64, RSI, 64), imm_opnd(~0x08)); check_bytes(cb, "48F74640F7FFFFFF");
 
+    // xchg
+    cb_set_pos(cb, 0); xchg(cb, RAX, RCX); check_bytes(cb, "4891");
+    cb_set_pos(cb, 0); xchg(cb, RAX, R13); check_bytes(cb, "4995");
+    cb_set_pos(cb, 0); xchg(cb, RCX, RBX); check_bytes(cb, "4887D9");
+    cb_set_pos(cb, 0); xchg(cb, R9, R15); check_bytes(cb, "4D87F9");
+
     // xor
     cb_set_pos(cb, 0); xor(cb, EAX, EAX); check_bytes(cb, "31C0");
 
