@@ -6902,10 +6902,8 @@ static int
 tokadd_escape(struct parser_params *p, rb_encoding **encp)
 {
     int c;
-    int flags = 0;
     size_t numlen;
 
-  first:
     switch (c = nextc(p)) {
       case '\n':
 	return 0;		/* just ignore */
@@ -6926,37 +6924,6 @@ tokadd_escape(struct parser_params *p, rb_encoding **encp)
 	    if (numlen == 0) return -1;
 	    tokcopy(p, (int)numlen + 2);
 	}
-	return 0;
-
-      case 'M':
-	if (flags & ESCAPE_META) goto eof;
-	if ((c = nextc(p)) != '-') {
-	    pushback(p, c);
-	    goto eof;
-	}
-	tokcopy(p, 3);
-	flags |= ESCAPE_META;
-	goto escaped;
-
-      case 'C':
-	if (flags & ESCAPE_CONTROL) goto eof;
-	if ((c = nextc(p)) != '-') {
-	    pushback(p, c);
-	    goto eof;
-	}
-	tokcopy(p, 3);
-	goto escaped;
-
-      case 'c':
-	if (flags & ESCAPE_CONTROL) goto eof;
-	tokcopy(p, 2);
-	flags |= ESCAPE_CONTROL;
-      escaped:
-	if ((c = nextc(p)) == '\\') {
-	    goto first;
-	}
-	else if (c == -1) goto eof;
-	tokadd(p, c);
 	return 0;
 
       eof:
@@ -7151,6 +7118,23 @@ tokadd_string(struct parser_params *p,
 		    goto non_ascii;
 		}
 		if (func & STR_FUNC_REGEXP) {
+                    switch (c) {
+                      case 'c':
+                      case 'C':
+                      case 'M': {
+                        pushback(p, c);
+                        c = read_escape(p, 0, enc);
+
+                        int i;
+                        char escbuf[5];
+                        snprintf(escbuf, sizeof(escbuf), "\\x%02X", c);
+                        for(i = 0; i < 4; i++) {
+                            tokadd(p, escbuf[i]);
+                        }
+                        continue;
+                      }
+                    }
+
 		    if (c == term && !simple_re_meta(c)) {
 			tokadd(p, c);
 			continue;
