@@ -1203,7 +1203,7 @@ static int looking_at_eol_p(struct parser_params *p);
 %type <id>   cname fname op f_rest_arg f_block_arg opt_f_block_arg f_norm_arg f_bad_arg
 %type <id>   f_kwrest f_label f_arg_asgn call_op call_op2 reswords relop dot_or_colon
 %type <id>   p_rest p_kwrest p_kwnorest p_any_kwrest p_kw_label
-%type <id>   f_no_kwarg f_any_kwrest args_forward excessed_comma
+%type <id>   f_no_kwarg f_any_kwrest args_forward excessed_comma nonlocal_var
  %type <ctxt> lex_ctxt /* keep <ctxt> in ripper */
 %token END_OF_INPUT 0	"end-of-input"
 %token <id> '.'
@@ -4517,6 +4517,13 @@ p_var_ref	: '^' tIDENTIFIER
 		    /*% %*/
 		    /*% ripper: var_ref!($2) %*/
 		    }
+                | '^' nonlocal_var
+		    {
+		    /*%%%*/
+			if (!($$ = gettable(p, $2, &@$))) $$ = NEW_BEGIN(0, &@$);
+		    /*% %*/
+		    /*% ripper: var_ref!($2) %*/
+                    }
 		;
 
 p_expr_ref	: '^' tLPAREN expr_value ')'
@@ -4991,6 +4998,11 @@ simple_numeric	: tINTEGER
 		| tFLOAT
 		| tRATIONAL
 		| tIMAGINARY
+		;
+
+nonlocal_var    : tIVAR
+		| tGVAR
+		| tCVAR
 		;
 
 user_variable	: tIDENTIFIER
