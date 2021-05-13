@@ -4495,22 +4495,23 @@ f_sprintf(int c, const VALUE *v, VALUE _)
  *
  *  - ::new:: Returns a new \BasicObject instance.
  *  - {!}[#method-i-21]:: Returns the boolean negation of +self+: +true+ or +false+.
- *  - {!=}[#method-i-21-3D]:: Returns +self+ and the given object are _not_ equal.
+ *  - {!=}[#method-i-21-3D]:: Returns whether +self+ and the given object
+ *                            are _not_ equal.
  *  - {==}[#method-i-3D-3D]:: Returns whether +self+ and the given object
- *                            are the same object.
+ *                            are equivalent.
  *  - {__id__}[#method-i-__id__]:: Returns the integer object identifier for +self+.
- *  - {__send__}[#method-i-__send__]:: Invokes the method identied by the given symbol.
+ *  - {__send__}[#method-i-__send__]:: Calls the method identified by the given symbol.
  *  - #equal?:: Returns whether +self+ and the given object are the same object.
- *  - #instance_eval:: Evaluates the given string or block.
- *  - #instance_exec:: Executes the given block, passing it the given arguments.
- *  - #method_missing:: Specifies the method to be called when +self+ receives
- *                      a message it cannot handle.
- *  - #singleton_method_added:: Specifies the method to be called when a singleton
- *                              method is added to +self+.
- *  - #singleton_method_removed:: Specifies the method to be called when a singleton
- *                                method is removed from +self+.
- *  - #singleton_method_undefined:: Specifies the method to be called when a singleton
- *                                  method is undefined in +self+.
+ *  - #instance_eval:: Evaluates the given string or block in the context of +self+.
+ *  - #instance_exec:: Executes the given block in the context of +self+,
+ *                     passing the given arguments.
+ *  - #method_missing:: Method called when an undefined method is called on +self+.
+ *  - #singleton_method_added:: Method called when a singleton method
+ *                              is added to +self+.
+ *  - #singleton_method_removed:: Method called when a singleton method
+ *                                is added removed from +self+.
+ *  - #singleton_method_undefined:: Method called when a singleton method
+ *                                  is undefined in +self+.
  *
  */
 
