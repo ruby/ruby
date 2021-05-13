@@ -1905,13 +1905,14 @@ heap_pages_free_unused_pages(rb_objspace_t *objspace)
 }
 
 static struct heap_page *
-heap_page_allocate(rb_objspace_t *objspace)
+heap_page_allocate(rb_objspace_t *objspace, size_t stride)
 {
-    RVALUE *start, *end, *p;
+    intptr_t start, end, p;
+
     struct heap_page *page;
     struct heap_page_body *page_body = 0;
-    size_t hi, lo, mid;
-    int limit = HEAP_PAGE_OBJ_LIMIT;
+    intptr_t hi, lo, mid;
+    unsigned int limit = (unsigned int)((HEAP_PAGE_SIZE - sizeof(struct heap_page_header)))/(int)stride;
 
     /* assign heap_page body (contains heap_page_header and RVALUEs) */
     page_body = (struct heap_page_body *)rb_aligned_malloc(HEAP_PAGE_ALIGN, HEAP_PAGE_SIZE);
@@ -1927,26 +1928,27 @@ heap_page_allocate(rb_objspace_t *objspace)
     }
 
     /* adjust obj_limit (object number available in this page) */
-    start = (RVALUE*)((VALUE)page_body + sizeof(struct heap_page_header));
-    if ((VALUE)start % sizeof(RVALUE) != 0) {
-	int delta = (int)(sizeof(RVALUE) - ((VALUE)start % sizeof(RVALUE)));
-	start = (RVALUE*)((VALUE)start + delta);
-	limit = (HEAP_PAGE_SIZE - (int)((VALUE)start - (VALUE)page_body))/(int)sizeof(RVALUE);
+    start = (intptr_t)((VALUE)page_body + sizeof(struct heap_page_header));
+    if ((VALUE)start % stride != 0) {
+	int delta = (int)stride - (start % (int)stride);
+	start = start + delta;
+
+	limit = (HEAP_PAGE_SIZE - (int)(start - (intptr_t)page_body))/(int)stride;
     }
-    end = start + limit;
+    end = start + (limit * (int)stride);
 
     /* setup heap_pages_sorted */
     lo = 0;
-    hi = heap_allocated_pages;
+    hi = (intptr_t)heap_allocated_pages;
     while (lo < hi) {
 	struct heap_page *mid_page;
 
 	mid = (lo + hi) / 2;
 	mid_page = heap_pages_sorted[mid];
-	if (mid_page->start < start) {
+	if ((intptr_t)mid_page->start < start) {
 	    lo = mid + 1;
 	}
-	else if (mid_page->start > start) {
+	else if ((intptr_t)mid_page->start > start) {
 	    hi = mid;
 	}
 	else {
@@ -1954,7 +1956,7 @@ heap_page_allocate(rb_objspace_t *objspace)
 	}
     }
 
-    if (hi < heap_allocated_pages) {
+    if (hi < (intptr_t)heap_allocated_pages) {
 	MEMMOVE(&heap_pages_sorted[hi+1], &heap_pages_sorted[hi], struct heap_page_header*, heap_allocated_pages - hi);
     }
 
@@ -1973,14 +1975,14 @@ heap_page_allocate(rb_objspace_t *objspace)
 	       heap_allocated_pages, heap_pages_sorted_length);
     }
 
-    if (heap_pages_lomem == 0 || heap_pages_lomem > start) heap_pages_lomem = start;
-    if (heap_pages_himem < end) heap_pages_himem = end;
+    if (heap_pages_lomem == 0 || (intptr_t)heap_pages_lomem > start) heap_pages_lomem = (RVALUE *)start;
+    if ((intptr_t)heap_pages_himem < end) heap_pages_himem = (RVALUE *)end;
 
-    page->start = start;
+    page->start = (RVALUE *)start;
     page->total_slots = limit;
     page_body->header.page = page;
 
-    for (p = start; p != end; p++) {
+    for (p = start; p != end; p += stride) {
 	gc_report(3, objspace, "assign_heap_page: %p is added to freelist\n", (void *)p);
 	heap_page_add_freeobj(objspace, page, (VALUE)p);
     }
@@ -2018,7 +2020,7 @@ heap_page_create(rb_objspace_t *objspace)
     page = heap_page_resurrect(objspace);
 
     if (page == NULL) {
-	page = heap_page_allocate(objspace);
+	page = heap_page_allocate(objspace, sizeof(RVALUE));
 	method = "allocate";
     }
     if (0) fprintf(stderr, "heap_page_create: %s - %p, "
