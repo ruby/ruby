@@ -3311,6 +3311,8 @@ rb_str_hash_cmp(VALUE str1, VALUE str2)
  *
  * Returns the integer hash value for +self+.
  * The value is based on the length, content and encoding of +self+.
+ *
+ * Related: Object#hash
  */
 
 static VALUE
