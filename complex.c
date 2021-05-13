@@ -1557,13 +1557,6 @@ rb_Complex(VALUE x, VALUE y)
     return nucomp_s_convert(2, a, rb_cComplex);
 }
 
-/*!
- * Creates a Complex object.
- *
- * \param real    real part value
- * \param imag    imaginary part value
- * \return        a new Complex object
- */
 VALUE
 rb_dbl_complex_new(double real, double imag)
 {
