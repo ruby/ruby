@@ -453,17 +453,25 @@ module Reline
   end
 end
 
+require 'reline/general_io'
 if RbConfig::CONFIG['host_os'] =~ /mswin|msys|mingw|cygwin|bccwin|wince|emc/
   require 'reline/windows'
   if Reline::Windows.msys_tty?
-    require 'reline/ansi'
-    Reline::IOGate = Reline::ANSI
+    Reline::IOGate = if ENV['TERM'] == 'dumb'
+      Reline::GeneralIO
+    else
+      require 'reline/ansi'
+      Reline::ANSI
+    end
   else
     Reline::IOGate = Reline::Windows
   end
 else
-  require 'reline/ansi'
-  Reline::IOGate = Reline::ANSI
+  Reline::IOGate = if $stdout.isatty
+    require 'reline/ansi'
+    Reline::ANSI
+  else
+    Reline::GeneralIO
+  end
 end
 Reline::HISTORY = Reline::History.new(Reline.core.config)
-require 'reline/general_io'

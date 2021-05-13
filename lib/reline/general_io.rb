@@ -7,7 +7,7 @@ class Reline::GeneralIO
   end
 
   def self.encoding
-    if @@encoding
+    if defined?(@@encoding)
       @@encoding
     elsif RUBY_PLATFORM =~ /mswin|mingw/
       Encoding::UTF_8
