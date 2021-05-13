@@ -14,6 +14,13 @@ Note that each entry is kept to a minimum, see links for details.
     #=> [[3, 5], [5, 7], [11, 13]]
     ```
 
+* Pin operator now supports instance, class, and global variables.
+  [[Feature #17724]] 
+
+    @n = 5
+    Prime.each_cons(2).lazy.find{_1 in [n, ^@n]}
+    #=> [3, 5]
+
 * Multiple assignment evaluation order has been made consistent with
   single assignment evaluation order.  With single assignment, Ruby
   uses a left-to-right evaluation order.  With this code:
@@ -190,6 +197,7 @@ Excluding feature bug fixes.
 [Bug #17423]: https://bugs.ruby-lang.org/issues/17423
 [Feature #17479]: https://bugs.ruby-lang.org/issues/17479
 [Feature #17490]: https://bugs.ruby-lang.org/issues/17490
+[Feature #17724]: https://bugs.ruby-lang.org/issues/17724
 [Feature #17744]: https://bugs.ruby-lang.org/issues/17744
 [Feature #17762]: https://bugs.ruby-lang.org/issues/17762
 [Bug #18003]: https://bugs.ruby-lang.org/issues/18003
