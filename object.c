@@ -4488,6 +4488,30 @@ f_sprintf(int c, const VALUE *v, VALUE _)
  *        ::Object.const_get(name)
  *      end
  *    end
+ *
+ *  === What's Here
+ *
+ *  These are the methods defined for \BasicObject:
+ *
+ *  - ::new:: Returns a new \BasicObject instance.
+ *  - {!}[#method-i-21]:: Returns the boolean negation of +self+: +true+ or +false+.
+ *  - {!=}[#method-i-21-3D]:: Returns +self+ and the given object are _not_ equal.
+ *  - {==}[#method-i-3D-3D]:: Returns whether +self+ and the given object
+ *                            are the same object.
+ *  - {__id__}[#method-i-__id__]:: Returns the integer object identifier for +self+.
+ *  - {__send__}[#method-i-__send__]:: Invokes the method identied by the given symbol.
+ *  - #equal?:: Returns whether +self+ and the given object are the same object.
+ *  - #instance_eval:: Evaluates the given string or block.
+ *  - #instance_exec:: Executes the given block, passing it the given arguments.
+ *  - #method_missing:: Specifies the method to be called when +self+ receives
+ *                      a message it cannot handle.
+ *  - #singleton_method_added:: Specifies the method to be called when a singleton
+ *                              method is added to +self+.
+ *  - #singleton_method_removed:: Specifies the method to be called when a singleton
+ *                                method is removed from +self+.
+ *  - #singleton_method_undefined:: Specifies the method to be called when a singleton
+ *                                  method is undefined in +self+.
+ *
  */
 
 /*  Document-class: Object
