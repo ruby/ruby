@@ -4571,10 +4571,8 @@ InitVM_Object(void)
      *
      * - {Converting}[#module-Kernel-label-Converting]
      * - {Querying}[#module-Kernel-label-Querying]
-     * - {Executing}[#module-Kernel-label-Executing]
      * - {Exiting}[#module-Kernel-label-Exiting]
      * - {Exceptions}[#module-Kernel-label-Exceptions]
-     * - {Strings}[#module-Kernel-label-Strings]
      * - {IO}[#module-Kernel-label-IO]
      * - {Procs}[#module-Kernel-label-Procs]
      * - {Tracing}[#module-Kernel-label-Tracing]
@@ -4630,14 +4628,6 @@ InitVM_Object(void)
      * - #raise (aliased as #fail):: Raises an exception based on the given arguments.
      * - #throw:: Returns from the active catch block waiting for the given tag.
      *
-     * === Strings
-     *
-     * - #gsub:: Performs global substitution using the given pattern and replacement.
-     * - #sprintf (aliased as #format):: Returns the string resulting from applying
-     *                                   the given format string
-     *                                   to any additional arguments.
-     * - #sub:: Performs single substitution using the given pattern
-     *          and replacement.
      *
      * === \IO
      *
@@ -4701,6 +4691,9 @@ InitVM_Object(void)
      * - #eval:: Evaluates the given string as Ruby code.
      * - #loop:: Repeatedly executes the given block.
      * - #sleep:: Suspends the current thread for the given number of seconds.
+     * - #sprintf (aliased as #format):: Returns the string resulting from applying
+     *                                   the given format string
+     *                                   to any additional arguments.
      * - #syscall:: Runs an operating system call.
      * - #trap:: Specifies the handling of system signals.
      * - #warn:: Issue a warning based on the given messages and options.
