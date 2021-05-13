@@ -400,6 +400,30 @@ END
         a == 0
       end
     end
+
+    assert_block do
+      @a = /a/
+      case 'abc'
+      in ^@a
+        true
+      end
+    end
+
+    assert_block do
+      @@TestPatternMatching = /a/
+      case 'abc'
+      in ^@@TestPatternMatching
+        true
+      end
+    end
+
+    assert_block do
+      $TestPatternMatching = /a/
+      case 'abc'
+      in ^$TestPatternMatching
+        true
+      end
+    end
   end
 
   def test_pin_operator_expr_pattern
