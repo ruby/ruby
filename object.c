@@ -4565,6 +4565,139 @@ InitVM_Object(void)
      *
      *   sprintf "%.1f", 1.234 #=> "1.2"
      *
+     * == What's Here
+     *
+     * \Module \Kernel provides methods that are useful for:
+     *
+     * - {Converting}[#module-Kernel-label-Converting]
+     * - {Querying}[#module-Kernel-label-Querying]
+     * - {Exiting}[#module-Kernel-label-Exiting]
+     * - {Exceptions}[#module-Kernel-label-Exceptions]
+     * - {IO}[#module-Kernel-label-IO]
+     * - {Procs}[#module-Kernel-label-Procs]
+     * - {Tracing}[#module-Kernel-label-Tracing]
+     * - {Subprocesses}[#module-Kernel-label-Subprocesses]
+     * - {Loading}[#module-Kernel-label-Loading]
+     * - {Yielding}[#module-Kernel-label-Yielding]
+     * - {Random Values}[#module-Kernel-label-Random+Values]
+     * - {Other}[#module-Kernel-label-Other]
+     *
+     * === Converting
+     *
+     * - {#Array}[#method-i-Array]:: Returns an Array based on the given argument.
+     * - {#Complex}[#method-i-Complex]:: Returns a Complex based on the given arguments.
+     * - {#Float}[#method-i-Float]:: Returns a Float based on the given arguments.
+     * - {#Hash}[#method-i-Hash]:: Returns a Hash based on the given argument.
+     * - {#Integer}[#method-i-Integer]:: Returns an Integer based on the given arguments.
+     * - {#Rational}[#method-i-Rational]:: Returns a Rational
+     *                                     based on the given arguments.
+     * - {#String}[#method-i-String]:: Returns a String based on the given argument.
+     *
+     * === Querying
+     *
+     * - {#__callee__}[#method-i-__callee__]:: Returns the called name
+     *                                         of the current method as a symbol.
+     * - {#__dir__}[#method-i-__dir__]:: Returns the path to the directory
+     *                                   from which the current method is called.
+     * - {#__method__}[#method-i-__method__]:: Returns the name
+     *                                         of the current method as a symbol.
+     * - #autoload?:: Returns the file to be loaded when the given module is referenced.
+     * - #binding:: Returns a Binding for the context at the point of call.
+     * - #block_given?:: Returns +true+ if a block was passed to the calling method.
+     * - #caller:: Returns the current execution stack as an array of strings.
+     * - #caller_locations:: Returns the current execution stack as an array
+     *                       of Thread::Backtrace::Location objects.
+     * - #class:: Returns the class of +self+.
+     * - #frozen?:: Returns whether +self+ is frozen.
+     * - #global_variables:: Returns an array of global variables as symbols.
+     * - #local_variables:: Returns an array of local variables as symbols.
+     * - #test:: Performs specified tests on the given single file or pair of files.
+     *
+     * === Exiting
+     *
+     * - #abort:: Exits the current process after printing the given arguments.
+     * - #at_exit:: Executes the given block when the process exits.
+     * - #exit:: Exits the current process after calling any registered
+     *           +at_exit+ handlers.
+     * - #exit!:: Exits the current process without calling any registered
+     *            +at_exit+ handlers.
+     *
+     * === Exceptions
+     *
+     * - #catch:: Executes the given block, possibly catching a thrown object.
+     * - #raise (aliased as #fail):: Raises an exception based on the given arguments.
+     * - #throw:: Returns from the active catch block waiting for the given tag.
+     *
+     *
+     * === \IO
+     *
+     * - #gets:: Returns and assigns to <tt>$_</tt> the next line from the current input.
+     * - #open:: Creates an IO object connected to the given stream, file, or subprocess.
+     * - #p::  Prints the given objects' inspect output to the standard output.
+     * - #pp:: Prints the given objects in pretty form.
+     * - #print:: Prints the given objects to standard output without a newline.
+     * - #printf:: Prints the string resulting from applying the given format string
+     *             to any additional arguments.
+     * - #putc:: Equivalent to <tt.$stdout.putc(object)</tt> for the given object.
+     * - #puts:: Equivalent to <tt>$stdout.puts(*objects)</tt> for the given objects.
+     * - #readline:: Similar to #gets, but raises an exception at the end of file.
+     * - #readlines:: Returns an array of the remaining lines from the current input.
+     * - #select:: Same as IO.select.
+     *
+     * === Procs
+     *
+     * - #lambda:: Returns a lambda proc for the given block.
+     * - #proc:: Returns a new Proc; equivalent to Proc.new.
+     *
+     * === Tracing
+     *
+     * - #set_trace_func:: Sets the given proc as the handler for tracing,
+     *                     or disables tracing if given +nil+.
+     * - #trace_var:: Starts tracing assignments to the given global variable.
+     * - #untrace_var:: Disables tracing of assignments to the given global variable.
+     *
+     * === Subprocesses
+     *
+     * - #`cmd`:: Returns the standard output of running +cmd+ in a subshell.
+     * - #exec:: Replaces current process with a new process.
+     * - #fork:: Forks the current process into two processes.
+     * - #spawn:: Executes the given command and returns its pid without waiting
+     *            for completion.
+     * - #system:: Executes the given command in a subshell.
+     *
+     * === Loading
+     *
+     * - #autoload:: Registers the given file to be loaded when the given constant
+     *               is first referenced.
+     * - #load:: Loads the given Ruby file.
+     * - #require:: Loads the given Ruby file unless it has already been loaded.
+     * - #require_relative:: Loads the Ruby file path relative to the calling file,
+     *                       unless it has already been loaded.
+     *
+     * === Yielding
+     *
+     * - #tap:: Yields +self+ to the given block; returns +self+.
+     * - #then (aliased as #yield_self):: Yields +self+ to the block
+     *                                    and returns the result of the block.
+     *
+     * === \Random Values
+     *
+     * - #rand:: Returns a pseudo-random floating point number
+     *           strictly between 0.0 and 1.0.
+     * - #srand:: Seeds the pseudo-random number generator with the given number.
+     *
+     * === Other
+     *
+     * - #eval:: Evaluates the given string as Ruby code.
+     * - #loop:: Repeatedly executes the given block.
+     * - #sleep:: Suspends the current thread for the given number of seconds.
+     * - #sprintf (aliased as #format):: Returns the string resulting from applying
+     *                                   the given format string
+     *                                   to any additional arguments.
+     * - #syscall:: Runs an operating system call.
+     * - #trap:: Specifies the handling of system signals.
+     * - #warn:: Issue a warning based on the given messages and options.
+     *
      */
     rb_mKernel = rb_define_module("Kernel");
     rb_include_module(rb_cObject, rb_mKernel);
