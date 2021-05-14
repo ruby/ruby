@@ -858,10 +858,10 @@ enum {
 #ifdef HAVE_MMAP
 # if HAVE_CONST_PAGE_SIZE
 /* If we have the HEAP_PAGE and it is a constant, then we can directly use it. */
-#  define USE_MMAP_ALIGNED_ALLOC (PAGE_SIZE <= HEAP_PAGE_SIZE)
+static const bool USE_MMAP_ALIGNED_ALLOC = (PAGE_SIZE <= HEAP_PAGE_SIZE);
 # elif defined(PAGE_MAX_SIZE) && (PAGE_MAX_SIZE <= HEAP_PAGE_SIZE)
 /* PAGE_SIZE <= HEAP_PAGE_SIZE */
-#  define USE_MMAP_ALIGNED_ALLOC 1
+static const bool USE_MMAP_ALIGNED_ALLOC = true;
 # else
 /* Otherwise, fall back to determining if we can use mmap during runtime. */
 #  define USE_MMAP_ALIGNED_ALLOC (use_mmap_aligned_alloc != false)
@@ -869,7 +869,7 @@ enum {
 static bool use_mmap_aligned_alloc;
 # endif
 #else
-# define USE_MMAP_ALIGNED_ALLOC 0
+static const bool USE_MMAP_ALIGNED_ALLOC = false;
 #endif
 
 struct heap_page {
