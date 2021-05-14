@@ -625,11 +625,11 @@ class TestObjSpace < Test::Unit::TestCase
         c = 42
         p a, b, c
       end;
+      assert_equal ["objspace/trace is enabled"], err
       assert_equal 3, out.size
       assert_equal '"foo" @ -:2', out[0]
       assert_equal '"bar" @ -:3', out[1]
       assert_equal '42', out[2]
-      assert_equal ["objspace/trace is enabled"], err
     end
   end
 end
