@@ -192,5 +192,5 @@ class Object # :nodoc:
     metaclass.send :undef_method, name
     metaclass.send :alias_method, name, new_name
     metaclass.send :undef_method, new_name
-  end
+  end unless method_defined?(:stub) # lib/rubygems/test_case.rb also has the same method definition
 end
