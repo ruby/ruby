@@ -464,7 +464,7 @@ class TestRDocRDoc < RDoc::TestCase
       end
 
       assert_equal file_list, @rdoc.remove_unparseable(file_list)
-      assert_equal file_list, Dir.children('.')
+      assert_equal file_list, Dir.entries('.') - %w[. ..]
     end
   end
 
