@@ -4532,6 +4532,72 @@ f_sprintf(int c, const VALUE *v, VALUE _)
  *  In the descriptions of Object's methods, the parameter <i>symbol</i> refers
  *  to a symbol, which is either a quoted string or a Symbol (such as
  *  <code>:name</code>).
+ *
+ *  == What's Here
+ *
+ *  First, what's elsewhere. \Class \Object:
+ *
+ *  - Inherits from {class BasicObject}[BasicObject.html#class-BasicObject-label-What-27s+Here].
+ *  - Includes {module Kernel}[Kernel.html#module-Kernel-label-What-27s+Here].
+ *
+ *  Here, class \Object provides methods for:
+ *
+ *  - ::const_missing
+ *  - ::receive_if
+ *  - #!~
+ *  - #<=>
+ *  - #===
+ *  - #=~
+ *  - #callable_methods
+ *  - #define_singleton_method
+ *  - #display
+ *  - #do_until
+ *  - #do_while
+ *  - #dup
+ *  - #enum_for
+ *  - #eql?
+ *  - #extend
+ *  - #f
+ *  - #freeze
+ *  - #h
+ *  - #hash
+ *  - #inspect
+ *  - #instance_of?
+ *  - #instance_variable_defined?
+ *  - #instance_variable_get
+ *  - #instance_variable_set
+ *  - #instance_variables
+ *  - #is_a?
+ *  - #itself
+ *  - #kind_of?
+ *  - #matching_methods
+ *  - #method
+ *  - #method_missing
+ *  - #methods
+ *  - #nil?
+ *  - #object_id
+ *  - #private_methods
+ *  - #protected_methods
+ *  - #public_method
+ *  - #public_methods
+ *  - #public_send
+ *  - #remove_instance_variable
+ *  - #respond_to?
+ *  - #respond_to_missing?
+ *  - #send
+ *  - #shortest_abbreviation
+ *  - #singleton_class
+ *  - #singleton_method
+ *  - #singleton_methods
+ *  - #taint
+ *  - #tainted?
+ *  - #to_enum
+ *  - #to_s
+ *  - #trust
+ *  - #untaint
+ *  - #untrust
+ *  - #untrusted?
+ *
  */
 
 /*!
