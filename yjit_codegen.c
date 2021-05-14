@@ -1693,12 +1693,50 @@ gen_opt_empty_p(jitstate_t* jit, ctx_t* ctx)
 static codegen_status_t
 gen_opt_not(jitstate_t* jit, ctx_t* ctx)
 {
-    // TODO: can we implement a fast path?
-    // Most likely, almost every input to opt_not is true/false/nil?
+    // Defer compilation so we can specialize type of argument
+    if (!jit_at_current_insn(jit)) {
+        defer_compilation(jit->block, jit->insn_idx, ctx);
+        return YJIT_END_BLOCK;
+    }
 
-    // NOTE: we can't really delegate to OSWB because we currently
-    // don't support calls to methods on true/false/nil
-    return YJIT_CANT_COMPILE;
+    uint8_t* side_exit = yjit_side_exit(jit, ctx);
+
+    VALUE comptime_val = jit_peek_at_stack(jit, ctx, 0);
+
+    // For the true/false case
+    if (comptime_val == Qtrue || comptime_val == Qfalse) {
+
+        // Get the operand from the stack
+        x86opnd_t arg = ctx_stack_pop(ctx, 1);
+
+        uint32_t DONE = cb_new_label(cb, "DONE");
+
+        // Qtrue => Qfalse
+        mov(cb, REG0, imm_opnd(Qfalse));
+        cmp(cb, arg, imm_opnd(Qtrue));
+        je_label(cb, DONE);
+
+        // Qfalse => Qtrue
+        mov(cb, REG0, imm_opnd(Qtrue));
+        cmp(cb, arg, imm_opnd(Qfalse));
+        je_label(cb, DONE);
+
+        // For any other values, we side-exit
+        // This never happens in railsbench
+        jmp_ptr(cb, side_exit);
+
+        cb_write_label(cb, DONE);
+        cb_link_labels(cb);
+
+        // Push the return value onto the stack
+        x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_IMM);
+        mov(cb, stack_ret, REG0);
+
+        return YJIT_KEEP_COMPILING;
+    }
+
+    // Delegate to send, call the method on the recv
+    return gen_opt_send_without_block(jit, ctx);
 }
 
 void
