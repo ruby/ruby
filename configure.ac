@@ -2732,14 +2732,11 @@ main(int argc, char *argv[])
     test x$rb_cv_fork_with_pthread = xyes || AC_DEFINE(CANNOT_FORK_WITH_PTHREAD)
 ])
 
-AS_CASE([$target_os],
-    [darwin*], [ac_cv_header_sys_user_h=no], dnl LIST_HEAD conflicts with sys/queue.h
-    [AC_CHECK_HEADERS([sys/user.h])]
-)
-AS_IF([test "x$ac_cv_func_mmap:$ac_cv_header_sys_user_h" = xyes:yes], [
+AC_CHECK_HEADERS([sys/user.h])
+AS_IF([test "x$ac_cv_func_mmap" = xyes], [
     AC_CACHE_CHECK([whether PAGE_SIZE is compile-time const], rb_cv_const_page_size,
-        [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
-            @%:@include <sys/user.h>
+	[malloc_headers=`sed -n '/MALLOC_HEADERS_BEGIN/,/MALLOC_HEADERS_END/p' ${srcdir}/gc.c`
+	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[$malloc_headers
             typedef char conftest_page[PAGE_SIZE];
         ]], [[]])],
         [rb_cv_const_page_size=yes],

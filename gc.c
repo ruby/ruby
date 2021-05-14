@@ -32,6 +32,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+/* MALLOC_HEADERS_BEGIN */
 #ifndef HAVE_MALLOC_USABLE_SIZE
 # ifdef _WIN32
 #  define HAVE_MALLOC_USABLE_SIZE
@@ -54,6 +55,12 @@
 # endif
 #endif
 
+#if !defined(PAGE_SIZE) && defined(HAVE_SYS_USER_H)
+/* LIST_HEAD conflicts with sys/queue.h on macOS */
+# include <sys/user.h>
+#endif
+/* MALLOC_HEADERS_END */
+
 #ifdef HAVE_SYS_TIME_H
 # include <sys/time.h>
 #endif
@@ -70,10 +77,6 @@
 #endif
 
 #include <sys/types.h>
-
-#ifdef HAVE_SYS_USER_H
-# include <sys/user.h>
-#endif
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
