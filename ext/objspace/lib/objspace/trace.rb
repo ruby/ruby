@@ -26,6 +26,7 @@
 require 'objspace.so'
 
 module Kernel
+  remove_method :p
   define_method(:p) do |*objs|
     objs.each do |obj|
       file = ObjectSpace.allocation_sourcefile(obj)
