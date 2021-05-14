@@ -225,13 +225,6 @@ rb_class_boot(VALUE super)
     return (VALUE)klass;
 }
 
-
-/*!
- * Ensures a class can be derived from super.
- *
- * \param super a reference to an object.
- * \exception TypeError if \a super is not a Class or \a super is a singleton class.
- */
 void
 rb_check_inheritable(VALUE super)
 {
@@ -247,13 +240,6 @@ rb_check_inheritable(VALUE super)
     }
 }
 
-
-/*!
- * Creates a new class.
- * \param super     a class from which the new class derives.
- * \exception TypeError \a super is not inheritable.
- * \exception TypeError \a super is the Class class.
- */
 VALUE
 rb_class_new(VALUE super)
 {
@@ -684,17 +670,6 @@ rb_make_metaclass(VALUE obj, VALUE unused)
     }
 }
 
-
-/*!
- * Defines a new class.
- * \param id     ignored
- * \param super  A class from which the new class will derive. NULL means \c Object class.
- * \return       the created class
- * \throw TypeError if super is not a \c Class object.
- *
- * \note the returned class will not be associated with \a id.
- *       You must explicitly set a class name if necessary.
- */
 VALUE
 rb_define_class_id(ID id, VALUE super)
 {
@@ -763,24 +738,6 @@ rb_define_class_under(VALUE outer, const char *name, VALUE super)
     return rb_define_class_id_under(outer, rb_intern(name), super);
 }
 
-
-/*!
- * Defines a class under the namespace of \a outer.
- * \param outer  a class which contains the new class.
- * \param id     name of the new class
- * \param super  a class from which the new class will derive.
- *               NULL means \c Object class.
- * \return the created class
- * \throw TypeError if the constant name \a name is already taken but
- *                  the constant is not a \c Class.
- * \throw TypeError if the class is already defined but the class can not
- *                  be reopened because its superclass is not \a super.
- * \post top-level constant named \a name refers the returned class.
- *
- * \note if a class named \a name is already defined and its superclass is
- *       \a super, the function just returns the defined class.
- * \note the compaction GC does not move classes returned by this function.
- */
 VALUE
 rb_define_class_id_under(VALUE outer, ID id, VALUE super)
 {
@@ -1851,23 +1808,6 @@ rb_singleton_class_get(VALUE obj)
     return klass;
 }
 
-/*!
- * Returns the singleton class of \a obj. Creates it if necessary.
- *
- * \param obj an arbitrary object.
- * \throw TypeError if \a obj is an Integer or a Symbol.
- * \return the singleton class.
- *
- * \post \a obj has its own singleton class.
- * \post if \a obj is a class,
- *       the returned singleton class also has its own
- *       singleton class in order to keep consistency of the
- *       inheritance structure of metaclasses.
- * \note a new singleton class will be created
- *       if \a obj does not have it.
- * \note the singleton classes for nil, true and false are:
- *       NilClass, TrueClass and FalseClass.
- */
 VALUE
 rb_singleton_class(VALUE obj)
 {
@@ -1891,13 +1831,6 @@ rb_singleton_class(VALUE obj)
 #ifdef rb_define_singleton_method
 #undef rb_define_singleton_method
 #endif
-/*!
- * Defines a singleton method for \a obj.
- * \param obj    an arbitrary object
- * \param name   name of the singleton method
- * \param func   the method body
- * \param argc   the number of parameters, or -1 or -2. see \ref defmethod.
- */
 void
 rb_define_singleton_method(VALUE obj, const char *name, VALUE (*func)(ANYARGS), int argc)
 {
