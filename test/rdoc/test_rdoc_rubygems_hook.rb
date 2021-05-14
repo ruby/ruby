@@ -3,6 +3,12 @@ require 'rubygems/test_case'
 require 'rdoc/rubygems_hook'
 
 class TestRDocRubygemsHook < Gem::TestCase
+  unless method_defined?(:assert_path_exist)
+    alias assert_path_exist assert_path_exists
+  end
+  unless method_defined?(:assert_path_not_exist)
+    alias assert_path_not_exist refute_path_exists
+  end
 
   def setup
     super
@@ -165,8 +171,8 @@ class TestRDocRubygemsHook < Gem::TestCase
 
     @hook.generate
 
-    refute_path_exists File.join(@a.doc_dir('rdoc'), 'index.html')
-    assert_path_exists File.join(@a.doc_dir('ri'),   'cache.ri')
+    assert_path_not_exist File.join(@a.doc_dir('rdoc'), 'index.html')
+    assert_path_exist File.join(@a.doc_dir('ri'),   'cache.ri')
   end
 
   def test_generate_no_overwrite
@@ -176,8 +182,8 @@ class TestRDocRubygemsHook < Gem::TestCase
 
     @hook.generate
 
-    refute_path_exists File.join(@a.doc_dir('rdoc'), 'index.html')
-    refute_path_exists File.join(@a.doc_dir('ri'),   'cache.ri')
+    assert_path_not_exist File.join(@a.doc_dir('rdoc'), 'index.html')
+    assert_path_not_exist File.join(@a.doc_dir('ri'),   'cache.ri')
   end
 
   def test_new_rdoc
@@ -201,7 +207,7 @@ class TestRDocRubygemsHook < Gem::TestCase
     refute @hook.rdoc_installed?
     refute @hook.ri_installed?
 
-    assert_path_exists @a.doc_dir
+    assert_path_exist @a.doc_dir
   end
 
   def test_remove_unwritable
@@ -231,7 +237,7 @@ class TestRDocRubygemsHook < Gem::TestCase
   def test_setup
     @hook.setup
 
-    assert_path_exists @a.doc_dir
+    assert_path_exist @a.doc_dir
   end
 
   def test_setup_unwritable
