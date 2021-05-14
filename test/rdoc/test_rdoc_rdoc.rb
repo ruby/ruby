@@ -460,7 +460,7 @@ class TestRDocRDoc < RDoc::TestCase
     temp_dir do
       file_list = ['| touch evil.txt && echo tags']
       file_list.each do |f|
-        FileUtils.touch f
+        FileUtils.touch f rescue omit
       end
 
       assert_equal file_list, @rdoc.remove_unparseable(file_list)
