@@ -616,4 +616,20 @@ class TestObjSpace < Test::Unit::TestCase
     assert_not_include ObjectSpace.dump(Class.new), '"name"'
     assert_not_include ObjectSpace.dump(Module.new), '"name"'
   end
+
+  def test_objspace_trace
+    assert_in_out_err(%w[-robjspace/trace], "#{<<-"begin;"}\n#{<<-'end;'}") do |out, err|
+      begin;
+        a = "foo"
+        b = "b" + "a" + "r"
+        c = 42
+        p a, b, c
+      end;
+      assert_equal 3, out.size
+      assert_equal '"foo" @ -:2', out[0]
+      assert_equal '"bar" @ -:3', out[1]
+      assert_equal '42', out[2]
+      assert_equal ["objspace/trace is enabled"], err
+    end
+  end
 end
