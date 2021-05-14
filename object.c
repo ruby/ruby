@@ -4542,61 +4542,84 @@ f_sprintf(int c, const VALUE *v, VALUE _)
  *
  *  Here, class \Object provides methods for:
  *
- *  - ::const_missing
- *  - ::receive_if
- *  - #!~
- *  - #<=>
- *  - #===
- *  - #=~
- *  - #callable_methods
- *  - #define_singleton_method
- *  - #display
- *  - #do_until
- *  - #do_while
- *  - #dup
- *  - #enum_for
- *  - #eql?
- *  - #extend
- *  - #f
- *  - #freeze
- *  - #h
- *  - #hash
- *  - #inspect
- *  - #instance_of?
- *  - #instance_variable_defined?
- *  - #instance_variable_get
- *  - #instance_variable_set
- *  - #instance_variables
- *  - #is_a?
- *  - #itself
- *  - #kind_of?
- *  - #matching_methods
- *  - #method
- *  - #method_missing
- *  - #methods
- *  - #nil?
- *  - #object_id
- *  - #private_methods
- *  - #protected_methods
- *  - #public_method
- *  - #public_methods
- *  - #public_send
- *  - #remove_instance_variable
- *  - #respond_to?
- *  - #respond_to_missing?
- *  - #send
- *  - #shortest_abbreviation
- *  - #singleton_class
- *  - #singleton_method
- *  - #singleton_methods
- *  - #taint
- *  - #tainted?
- *  - #to_enum
- *  - #to_s
- *  - #trust
- *  - #untaint
- *  - #untrust
- *  - #untrusted?
+ *  - {Querying}[#class-Object-label-Querying]
+ *  - {Methods}[#class-Object-label-Methods]
+ *  - {Variables}[#class-Object-label-Variables]
+ *  - {Other}[#class-Object-label-Other]
+ *
+ *  === Querying
+ *
+ *  - {!~}[#method-i-21~]:: Returns +true+ if +self+ does not match the given object,
+ *                          otherwise +false+.
+ *  - {<=>}[#method-i-3C-3D-3E]:: Returns 0 if +self+ and the given object +object+
+ *                                are the same object, or if
+ *                                <tt>self == object</tt>; otherwise returns +nil+.
+ *  - #===:: For class \Object, effectively the same as calling #==.
+ *  - #callable_methods:: Returns an array of symbol method names in +self+.
+ *                        For class \Object, these are #methods plus #private_methods;
+ *                        otherwise, only #methods.
+ *  - #eql?:: For class \Object, effectively the same as calling #==.
+ *  - #instance_of?:: Returns whether +self+ is an instance of the given class.
+ *  - #instance_variable_defined?:: Returns whether the given instance variable
+ *                                  is defined in +self+.
+ *  - #method:: Returns the Method object for the given method in +self+.
+ *  - #methods:: Returns an array of symbol names of public and protected methods
+ *               in +self+.
+ *  - #nil?:: Returns +false+. (Only +nil+ responds +true+ to method <tt>nil?</tt>.)
+ *  - #object_id:: Returns the integer object identifier for +self+.
+ *  - #private_methods:: Returns an array of the symbol names
+ *                       of the private methods in +self+.
+ *  - #protected_methods:: Returns an array of the symbol names
+ *                         of the protected methods in +self+.
+ *  - #public_method:: Returns the Method object for the given public method in +self+.
+ *  - #public_methods:: Returns an array of the symbol names
+ *                      of the public methods in +self+.
+ *  - #respond_to?:: Returns whether +self+ responds to the given method.
+ *  - #singleton_class:: Returns the singleton class of +self+.
+ *  - #singleton_method:: Returns the Method object for the given singleton method
+ *                        in +self+.
+ *  - #singleton_methods:: Returns an array of the symbol names
+ *                         of the singleton methods in +self+.
+ *
+ *  === Methods
+ *
+ *  - #define_singleton_method:: Defines a singleton method in +self+
+ *                               for the given symbol method-name and block or proc.
+ *  - #extend:: Adds to +self+ the instance methods in each given module.
+ *  - #public_send:: Calls the given public method in +self+ with the given argument.
+ *  - #send:: Calls the given method in +self+ with the given argument.
+ *
+ *  === Variables
+ *
+ *  - #instance_variable_get:: Returns the value of the given instance variable
+ *                             in +self+, or +nil+ if the instance variable is not set.
+ *  - #instance_variable_set:: Sets the value of the given instance variable in +self+
+ *                             to the given object.
+ *  - #instance_variables:: Returns an array of the symbol names
+ *                          of the instance variables in +self+.
+ *  - #kind_of? (aliased as #is_a?):: Returns +true+ if, for the given +name+,
+ *                                    +self+ is an instance of class +name+,
+ *                                    +self+ is an instance of a superclass
+ *                                    of class +name+,
+ *                                    or +self+ includes module +name+.
+ *  - #remove_instance_variable:: Removes the named instance variable from +self+.
+ *
+ *  === Other
+ *
+ *  - ::const_missing:: Called when an uninitialized constant is referenced.
+ *  - ::receive_if:: Receive only a specific message.
+ *  - #clone::  Returns a shallow copy of +self+.
+ *  - #display:: Prints +self+ to the given \IO stream.
+ *  - #dup:: Returns a shallow copy of +self+.
+ *  - #enum_for:: Returns an Enumerator for +self+ using the given method,
+ *                optional arguments, and optional block.
+ *  - #freeze:: Prevents further modifications to +self+.
+ *  - #hash:: Returns the integer hash value for +self+.
+ *  - #inspect:: Returns a string representation of +self+.
+ *  - #itself:: Returns +self+.
+ *  - #to_enum:: Returns an Enumerator for +self+ using the given method,
+ *               optional arguments, and optional block.
+ *  - #to_s:: Returns a string representation of +self+.
  *
  */
 
