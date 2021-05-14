@@ -61,6 +61,7 @@ end
 #include <winver.h>
 
 #{icon || ''}
+1 24 "win32/ruby.manifest"
 VS_VERSION_INFO VERSIONINFO
  FILEVERSION    #{nversion}
  PRODUCTVERSION #{nversion}
