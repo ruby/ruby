@@ -2490,7 +2490,7 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_defining_after_cached
     klass = Class.new
-    refinement = Module.new { refine(klass) { def foo; end } }
+    _refinement = Module.new { refine(klass) { def foo; end } }
     klass.new.foo rescue nil # cache the refinement method entry
     klass.define_method(:foo) { 42 }
     assert_equal(42, klass.new.foo)
