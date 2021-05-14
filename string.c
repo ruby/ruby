@@ -3462,6 +3462,16 @@ rb_str_cmp_m(VALUE str1, VALUE str2)
 static VALUE str_casecmp(VALUE str1, VALUE str2);
 static VALUE str_casecmp_p(VALUE str1, VALUE str2);
 
+static VALUE
+rb_str_casecmp_tmp(VALUE str1, VALUE str2, VALUE func(VALUE, VALUE))
+{
+    VALUE s = rb_check_string_type(str2);
+    if (NIL_P(s)) {
+	return Qnil;
+    }
+    return func(str1, s);
+}
+
 /*
  *  call-seq:
  *    str.casecmp(other_str) -> -1, 0, 1, or nil
@@ -3484,11 +3494,7 @@ static VALUE str_casecmp_p(VALUE str1, VALUE str2);
 static VALUE
 rb_str_casecmp(VALUE str1, VALUE str2)
 {
-    VALUE s = rb_check_string_type(str2);
-    if (NIL_P(s)) {
-	return Qnil;
-    }
-    return str_casecmp(str1, s);
+    return rb_str_casecmp_tmp(str1, str2, str_casecmp);
 }
 
 static VALUE
@@ -3567,11 +3573,7 @@ str_casecmp(VALUE str1, VALUE str2)
 static VALUE
 rb_str_casecmp_p(VALUE str1, VALUE str2)
 {
-    VALUE s = rb_check_string_type(str2);
-    if (NIL_P(s)) {
-	return Qnil;
-    }
-    return str_casecmp_p(str1, s);
+    return rb_str_casecmp_tmp(str1, str2, str_casecmp_p);
 }
 
 static VALUE
