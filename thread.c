@@ -819,88 +819,86 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
     th->ec->machine.stack_start = STACK_DIR_UPPER(vm_stack + size, vm_stack);
     th->ec->machine.stack_maxsize -= size * sizeof(VALUE);
 
-    {
-	thread_debug("thread start (get lock): %p\n", (void *)th);
+    thread_debug("thread start (get lock): %p\n", (void *)th);
 
-	EC_PUSH_TAG(th->ec);
-	if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-            SAVE_ROOT_JMPBUF(th, thread_do_start(th));
-	}
-	else {
-	    errinfo = th->ec->errinfo;
+    EC_PUSH_TAG(th->ec);
 
-            if (state == TAG_FATAL) {
-                if (th->invoke_type == thread_invoke_type_ractor_proc) {
-                    rb_ractor_atexit(th->ec, Qnil);
-                }
-		/* fatal error within this thread, need to stop whole script */
-	    }
-	    else if (rb_obj_is_kind_of(errinfo, rb_eSystemExit)) {
-		/* exit on main_thread. */
-	    }
-	    else {
-                if (th->report_on_exception) {
-		    VALUE mesg = rb_thread_to_s(th->self);
-		    rb_str_cat_cstr(mesg, " terminated with exception (report_on_exception is true):\n");
-		    rb_write_error_str(mesg);
-		    rb_ec_error_print(th->ec, errinfo);
-		}
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+        SAVE_ROOT_JMPBUF(th, thread_do_start(th));
+    } else {
+        errinfo = th->ec->errinfo;
 
-                if (th->invoke_type == thread_invoke_type_ractor_proc) {
-                    rb_ractor_atexit_exception(th->ec);
-                }
-
-                if (th->vm->thread_abort_on_exception ||
-                    th->abort_on_exception || RTEST(ruby_debug)) {
-		    /* exit on main_thread */
-		}
-		else {
-		    errinfo = Qnil;
-		}
-	    }
-	    th->value = Qnil;
-	}
-
-        if (th->invoke_type == thread_invoke_type_ractor_proc) {
-            rb_thread_terminate_all(th);
-            rb_ractor_teardown(th->ec);
+        if (state == TAG_FATAL) {
+            if (th->invoke_type == thread_invoke_type_ractor_proc) {
+                rb_ractor_atexit(th->ec, Qnil);
+            }
+            /* fatal error within this thread, need to stop whole script */
         }
+        else if (rb_obj_is_kind_of(errinfo, rb_eSystemExit)) {
+            /* exit on main_thread. */
+        }
+        else {
+            if (th->report_on_exception) {
+                VALUE mesg = rb_thread_to_s(th->self);
+                rb_str_cat_cstr(mesg, " terminated with exception (report_on_exception is true):\n");
+                rb_write_error_str(mesg);
+                rb_ec_error_print(th->ec, errinfo);
+            }
 
-	th->status = THREAD_KILLED;
-	thread_debug("thread end: %p\n", (void *)th);
+            if (th->invoke_type == thread_invoke_type_ractor_proc) {
+                rb_ractor_atexit_exception(th->ec);
+            }
 
-        if (th->vm->ractor.main_thread == th) {
-	    ruby_stop(0);
-	}
-
-        if (RB_TYPE_P(errinfo, T_OBJECT)) {
-	    /* treat with normal error object */
-	    rb_threadptr_raise(ractor_main_th, 1, &errinfo);
-	}
-
-	rb_threadptr_join_list_wakeup(th);
-
-	EC_POP_TAG();
-
-	rb_ec_clear_current_thread_trace_func(th->ec);
-
-	/* locking_mutex must be Qfalse */
-	if (th->locking_mutex != Qfalse) {
-	    rb_bug("thread_start_func_2: locking_mutex must not be set (%p:%"PRIxVALUE")",
-		   (void *)th, th->locking_mutex);
-	}
-
-        if (ractor_main_th->status == THREAD_KILLED &&
-            th->ractor->threads.cnt <= 2 /* main thread and this thread */) {
-	    /* I'm last thread. wake up main thread from rb_thread_terminate_all */
-            rb_threadptr_interrupt(ractor_main_th);
-	}
-
-        rb_threadptr_unlock_all_locking_mutexes(th);
-        rb_check_deadlock(th->ractor);
-
-        rb_fiber_close(th->ec->fiber_ptr);
+            if (th->vm->thread_abort_on_exception ||
+                th->abort_on_exception || RTEST(ruby_debug)) {
+                /* exit on main_thread */
+            }
+            else {
+                errinfo = Qnil;
+            }
+        }
+        th->value = Qnil;
     }
+
+    if (th->invoke_type == thread_invoke_type_ractor_proc) {
+        rb_thread_terminate_all(th);
+        rb_ractor_teardown(th->ec);
+    }
+
+    th->status = THREAD_KILLED;
+    thread_debug("thread end: %p\n", (void *)th);
+
+    if (th->vm->ractor.main_thread == th) {
+        ruby_stop(0);
+    }
+
+    if (RB_TYPE_P(errinfo, T_OBJECT)) {
+        /* treat with normal error object */
+        rb_threadptr_raise(ractor_main_th, 1, &errinfo);
+    }
+
+    rb_threadptr_join_list_wakeup(th);
+
+    EC_POP_TAG();
+
+    rb_ec_clear_current_thread_trace_func(th->ec);
+
+    /* locking_mutex must be Qfalse */
+    if (th->locking_mutex != Qfalse) {
+        rb_bug("thread_start_func_2: locking_mutex must not be set (%p:%"PRIxVALUE")",
+               (void *)th, th->locking_mutex);
+    }
+
+    if (ractor_main_th->status == THREAD_KILLED &&
+        th->ractor->threads.cnt <= 2 /* main thread and this thread */) {
+        /* I'm last thread. wake up main thread from rb_thread_terminate_all */
+        rb_threadptr_interrupt(ractor_main_th);
+    }
+
+    rb_threadptr_unlock_all_locking_mutexes(th);
+    rb_check_deadlock(th->ractor);
+
+    rb_fiber_close(th->ec->fiber_ptr);
 
     thread_cleanup_func(th, FALSE);
     VM_ASSERT(th->ec->vm_stack == NULL);
