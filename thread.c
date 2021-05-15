@@ -542,6 +542,9 @@ rb_threadptr_join_list_wakeup(rb_thread_t *thread)
     struct rb_waiting_list *join_list = thread->join_list;
 
     while (join_list) {
+        // Consume the entry from the join list:
+        thread->join_list = join_list->next;
+
         rb_thread_t *target_thread = join_list->thread;
 
         if (target_thread->scheduler != Qnil && rb_fiberptr_blocking(join_list->fiber) == 0) {
