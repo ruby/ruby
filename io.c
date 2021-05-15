@@ -13413,7 +13413,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  - #readchar:: Returns the next character read from +self+;
  *                same as #getc, but raises an exception on end-of-file.
  *  - #readline:: Returns the next line read from +self+;
- *                same as #getline, but raises an exceptin of end-of-file.
+ *                same as #getline, but raises an exception of end-of-file.
  *  - #readlines:: Returns an array of all lines read read from +self+.
  *  - #readpartial:: Returns up to the given number of bytes from +self+.
  *
