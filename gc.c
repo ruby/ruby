@@ -871,7 +871,7 @@ static const bool USE_MMAP_ALIGNED_ALLOC = true;
 
 static bool use_mmap_aligned_alloc;
 # endif
-#else
+#elif !defined(__MINGW32__) && !defined(_WIN32)
 static const bool USE_MMAP_ALIGNED_ALLOC = false;
 #endif
 
