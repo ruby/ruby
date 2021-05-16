@@ -140,6 +140,12 @@ Excluding feature bug fixes.
 
 ## Miscellaneous changes
 
+* lib/objspace/trace.rb is added, which is a tool for tracing the object
+  allocation. Just by requiring this file, tracing is started *immediately*.
+  Just by `Kernel#p`, you can investigate where an object was created.
+  Note that just requiring this file brings a large performance overhead.
+  This is only for debugging purpose. Do not use this in production.
+  [Feature #17762]
 
 [Bug #4443]: https://bugs.ruby-lang.org/issues/4443
 [Feature #12194]: https://bugs.ruby-lang.org/issues/12194
@@ -153,3 +159,4 @@ Excluding feature bug fixes.
 [Bug #17423]: https://bugs.ruby-lang.org/issues/17423
 [Feature #17479]: https://bugs.ruby-lang.org/issues/17479
 [Feature #17744]: https://bugs.ruby-lang.org/issues/17744
+[Feature #17762]: https://bugs.ruby-lang.org/issues/17762
