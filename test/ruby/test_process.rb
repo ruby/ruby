@@ -1771,6 +1771,7 @@ class TestProcess < Test::Unit::TestCase
     min = 1_000 / (cmd.size + sep.size)
     cmds = Array.new(min, cmd)
     exs = [Errno::ENOENT]
+    exs << Errno::EINVAL if windows?
     exs << Errno::E2BIG if defined?(Errno::E2BIG)
     opts = {[STDOUT, STDERR]=>File::NULL}
     opts[:rlimit_nproc] = 128 if defined?(Process::RLIMIT_NPROC)
