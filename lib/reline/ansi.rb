@@ -91,6 +91,8 @@ class Reline::ANSI
   rescue Errno::EIO
     # Maybe the I/O has been closed.
     nil
+  rescue Errno::ENOTTY
+    nil
   end
 
   @@in_bracketed_paste_mode = false

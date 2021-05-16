@@ -775,6 +775,17 @@ begin
       EOC
     end
 
+    def test_with_newline
+      omit if Reline::IOGate.win?
+      cmd = %Q{ruby -e 'print(%Q{abc def \\e\\r})' | ruby -I#{@pwd}/lib -rreline -e 'p Reline.readline(%{> })'}
+      start_terminal(50, 50, ['bash', '-c', cmd])
+      close
+      assert_screen(<<~'EOC')
+        > abc def
+        "abc def "
+      EOC
+    end
+
     private def write_inputrc(content)
       File.open(@inputrc_file, 'w') do |f|
         f.write content
