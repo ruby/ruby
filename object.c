@@ -4502,9 +4502,6 @@ f_sprintf(int c, const VALUE *v, VALUE _)
  *  - {__id__}[#method-i-__id__]:: Returns the integer object identifier for +self+.
  *  - {__send__}[#method-i-__send__]:: Calls the method identified by the given symbol.
  *  - #equal?:: Returns whether +self+ and the given object are the same object.
- *  - #instance_eval:: Evaluates the given string or block in the context of +self+.
- *  - #instance_exec:: Executes the given block in the context of +self+,
- *                     passing the given arguments.
  *  - #method_missing:: Method called when an undefined method is called on +self+.
  *  - #singleton_method_added:: Method called when a singleton method
  *                              is added to +self+.
