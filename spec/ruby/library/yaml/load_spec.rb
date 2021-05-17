@@ -99,7 +99,7 @@ describe "YAML.load" do
                                                     Date.new( 2001, 8, 12 ),
                                                     Date.new( 2001, 8, 14 ) ]
     }
-    YAML.unsafe_load($complex_key_1).should == expected
+    YAML.load($complex_key_1).should == expected
   end
 
   it "loads a symbol key that contains spaces" do
@@ -110,26 +110,26 @@ describe "YAML.load" do
 
   describe "with iso8601 timestamp" do
     it "computes the microseconds" do
-      [ [YAML.unsafe_load("2011-03-22t23:32:11.2233+01:00"),   223300],
-        [YAML.unsafe_load("2011-03-22t23:32:11.0099+01:00"),   9900],
-        [YAML.unsafe_load("2011-03-22t23:32:11.000076+01:00"), 76]
+      [ [YAML.load("2011-03-22t23:32:11.2233+01:00"),   223300],
+        [YAML.load("2011-03-22t23:32:11.0099+01:00"),   9900],
+        [YAML.load("2011-03-22t23:32:11.000076+01:00"), 76]
       ].should be_computed_by(:usec)
     end
 
     it "rounds values smaller than 1 usec to 0 " do
-      YAML.unsafe_load("2011-03-22t23:32:11.000000342222+01:00").usec.should == 0
+      YAML.load("2011-03-22t23:32:11.000000342222+01:00").usec.should == 0
     end
   end
 
   it "loads an OpenStruct" do
     require "ostruct"
     os = OpenStruct.new("age" => 20, "name" => "John")
-    loaded = YAML.unsafe_load("--- !ruby/object:OpenStruct\ntable:\n  :age: 20\n  :name: John\n")
+    loaded = YAML.load("--- !ruby/object:OpenStruct\ntable:\n  :age: 20\n  :name: John\n")
     loaded.should == os
   end
 
   it "loads a File but raise an error when used as it is uninitialized" do
-    loaded = YAML.unsafe_load("--- !ruby/object:File {}\n")
+    loaded = YAML.load("--- !ruby/object:File {}\n")
     -> {
       loaded.read(1)
     }.should raise_error(IOError)
