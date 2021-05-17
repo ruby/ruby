@@ -98,7 +98,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       },
     }
 
-    assert_equal expected, YAML.load(checksums)
+    assert_equal expected, YAML.unsafe_load(checksums)
   end
 
   def test_build_time_uses_source_date_epoch

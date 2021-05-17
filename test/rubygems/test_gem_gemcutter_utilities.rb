@@ -101,7 +101,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
     assert @fetcher.last_request["authorization"]
     assert_match %r{Signed in.}, @sign_in_ui.output
 
-    credentials = YAML.load_file Gem.configuration.credentials_path
+    credentials = YAML.unsafe_load_file Gem.configuration.credentials_path
     assert_equal api_key, credentials[:rubygems_api_key]
   end
 
@@ -115,7 +115,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
     assert @fetcher.last_request["authorization"]
     assert_match %r{Signed in.}, @sign_in_ui.output
 
-    credentials = YAML.load_file Gem.configuration.credentials_path
+    credentials = YAML.unsafe_load_file Gem.configuration.credentials_path
     assert_equal api_key, credentials['http://example.com']
   end
 
@@ -129,7 +129,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
     assert @fetcher.last_request["authorization"]
     assert_match %r{Signed in.}, @sign_in_ui.output
 
-    credentials = YAML.load_file Gem.configuration.credentials_path
+    credentials = YAML.unsafe_load_file Gem.configuration.credentials_path
     assert_equal api_key, credentials[:rubygems_api_key]
   end
 
@@ -142,7 +142,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
     assert @fetcher.last_request["authorization"]
     assert_match %r{Signed in.}, @sign_in_ui.output
 
-    credentials = YAML.load_file Gem.configuration.credentials_path
+    credentials = YAML.unsafe_load_file Gem.configuration.credentials_path
     assert_equal api_key, credentials['http://example.com']
   end
 
@@ -177,7 +177,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
     assert_match %r{Enter your RubyGems.org credentials.}, @sign_in_ui.output
     assert_match %r{Signed in.}, @sign_in_ui.output
 
-    credentials = YAML.load_file Gem.configuration.credentials_path
+    credentials = YAML.unsafe_load_file Gem.configuration.credentials_path
     assert_equal api_key, credentials[:rubygems_api_key]
     assert_equal other_api_key, credentials[:other_api_key]
   end

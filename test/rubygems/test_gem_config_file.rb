@@ -354,7 +354,7 @@ if you believe they were disclosed to a third party.
       :rubygems_api_key => 'x',
     }
 
-    assert_equal expected, YAML.load_file(@cfg.credentials_path)
+    assert_equal expected, YAML.unsafe_load_file(@cfg.credentials_path)
 
     unless win_platform?
       stat = File.stat @cfg.credentials_path
@@ -378,7 +378,7 @@ if you believe they were disclosed to a third party.
       :rubygems_api_key => 'x',
     }
 
-    assert_equal expected, YAML.load_file(@cfg.credentials_path)
+    assert_equal expected, YAML.unsafe_load_file(@cfg.credentials_path)
 
     stat = File.stat @cfg.credentials_path
 

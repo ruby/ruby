@@ -2649,7 +2649,7 @@ end
 
     yaml_str = @a1.to_yaml
 
-    same_spec = YAML.load yaml_str
+    same_spec = YAML.unsafe_load yaml_str
 
     assert_equal Gem::Platform.new('powerpc-darwin7'), same_spec.platform
     assert_equal 'powerpc-darwin7.9.0', same_spec.original_platform
