@@ -692,6 +692,28 @@ class Gem::TestCase < Test::Unit::TestCase
     path
   end
 
+  ##
+  # Load a YAML string, the psych 3 way
+
+  def load_yaml(yaml)
+    if YAML.respond_to?(:unsafe_load)
+      YAML.unsafe_load(yaml)
+    else
+      YAML.load(yaml)
+    end
+  end
+
+  ##
+  # Load a YAML file, the psych 3 way
+
+  def load_yaml_file(file)
+    if YAML.respond_to?(:unsafe_load_file)
+      YAML.unsafe_load_file(file)
+    else
+      YAML.load_file(file)
+    end
+  end
+
   def all_spec_names
     Gem::Specification.map(&:full_name)
   end

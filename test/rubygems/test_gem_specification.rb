@@ -973,7 +973,7 @@ dependencies: []
         io.write @a2.to_ruby_for_cache
       end
     rescue Errno::EINVAL
-      skip "cannot create '#{full_path}' on this platform"
+      pend "cannot create '#{full_path}' on this platform"
     end
 
     spec = Gem::Specification.load full_path
@@ -992,7 +992,7 @@ dependencies: []
         io.write @a2.to_ruby_for_cache
       end
     rescue Errno::EINVAL
-      skip "cannot create '#{full_path}' on this platform"
+      pend "cannot create '#{full_path}' on this platform"
     end
 
     spec = Gem::Specification.load full_path
@@ -1011,7 +1011,7 @@ dependencies: []
         io.write @a2.to_ruby_for_cache
       end
     rescue Errno::EINVAL
-      skip "cannot create '#{full_path}' on this platform"
+      pend "cannot create '#{full_path}' on this platform"
     end
 
     spec = Gem::Specification.load full_path
@@ -1451,7 +1451,7 @@ dependencies: []
   end
 
   def test_build_args
-    skip "extensions don't quite work on jruby" if Gem.java_platform?
+    pend "extensions don't quite work on jruby" if Gem.java_platform?
     ext_spec
 
     assert_empty @ext.build_args
@@ -1470,7 +1470,7 @@ dependencies: []
   end
 
   def test_build_extensions
-    skip "extensions don't quite work on jruby" if Gem.java_platform?
+    pend "extensions don't quite work on jruby" if Gem.java_platform?
     ext_spec
 
     assert_path_not_exist @ext.extension_dir, 'sanity check'
@@ -1506,7 +1506,7 @@ dependencies: []
   end
 
   def test_build_extensions_built
-    skip "extensions don't quite work on jruby" if Gem.java_platform?
+    pend "extensions don't quite work on jruby" if Gem.java_platform?
     ext_spec
 
     refute_empty @ext.extensions, 'sanity check'
@@ -1545,7 +1545,7 @@ dependencies: []
   end
 
   def test_build_extensions_error
-    skip "extensions don't quite work on jruby" if Gem.java_platform?
+    pend "extensions don't quite work on jruby" if Gem.java_platform?
     ext_spec
 
     refute_empty @ext.extensions, 'sanity check'
@@ -1556,10 +1556,10 @@ dependencies: []
   end
 
   def test_build_extensions_extensions_dir_unwritable
-    skip 'chmod not supported' if Gem.win_platform?
-    skip 'skipped in root privilege' if Process.uid.zero?
+    pend 'chmod not supported' if Gem.win_platform?
+    pend 'skipped in root privilege' if Process.uid.zero?
 
-    skip "extensions don't quite work on jruby" if Gem.java_platform?
+    pend "extensions don't quite work on jruby" if Gem.java_platform?
     ext_spec
 
     refute_empty @ext.extensions, 'sanity check'
@@ -1591,8 +1591,8 @@ dependencies: []
   end
 
   def test_build_extensions_no_extensions_dir_unwritable
-    skip 'chmod not supported' if Gem.win_platform?
-    skip "extensions don't quite work on jruby" if Gem.java_platform?
+    pend 'chmod not supported' if Gem.win_platform?
+    pend "extensions don't quite work on jruby" if Gem.java_platform?
     ext_spec
 
     refute_empty @ext.extensions, 'sanity check'
@@ -1631,7 +1631,7 @@ dependencies: []
   end
 
   def test_build_extensions_preview
-    skip "extensions don't quite work on jruby" if Gem.java_platform?
+    pend "extensions don't quite work on jruby" if Gem.java_platform?
     ext_spec
 
     extconf_rb = File.join @ext.gem_dir, @ext.extensions.first
@@ -1666,7 +1666,7 @@ dependencies: []
   end
 
   def test_contains_requirable_file_eh_extension
-    skip "extensions don't quite work on jruby" if Gem.java_platform?
+    pend "extensions don't quite work on jruby" if Gem.java_platform?
     ext_spec
 
     _, err = capture_output do
@@ -2435,7 +2435,7 @@ end
 
   def test_to_ruby_with_rsa_key
     require 'rubygems/openssl'
-    skip 'openssl is missing' unless defined?(OpenSSL::PKey::RSA)
+    pend 'openssl is missing' unless defined?(OpenSSL::PKey::RSA)
 
     rsa_key = OpenSSL::PKey::RSA.new(2048)
     @a2.signing_key = rsa_key
@@ -2649,7 +2649,7 @@ end
 
     yaml_str = @a1.to_yaml
 
-    same_spec = YAML.unsafe_load yaml_str
+    same_spec = load_yaml yaml_str
 
     assert_equal Gem::Platform.new('powerpc-darwin7'), same_spec.platform
     assert_equal 'powerpc-darwin7.9.0', same_spec.original_platform
@@ -2966,7 +2966,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
 
   def test_validate_empty_require_paths
     if win_platform?
-      skip 'test_validate_empty_require_paths skipped on MS Windows (symlink)'
+      pend 'test_validate_empty_require_paths skipped on MS Windows (symlink)'
     else
       util_setup_validate
 
@@ -2981,7 +2981,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
   end
 
   def test_validate_files
-    skip 'test_validate_files skipped on MS Windows (symlink)' if win_platform?
+    pend 'test_validate_files skipped on MS Windows (symlink)' if win_platform?
     util_setup_validate
 
     @a1.files += ['lib', 'lib2']
@@ -3370,7 +3370,7 @@ Did you mean 'Ruby'?
   end
 
   def test_validate_permissions
-    skip 'chmod not supported' if Gem.win_platform?
+    pend 'chmod not supported' if Gem.win_platform?
 
     util_setup_validate
 
@@ -3389,7 +3389,7 @@ Did you mean 'Ruby'?
   end
 
   def test_validate_permissions_of_missing_file_non_packaging
-    skip 'chmod not supported' if Gem.win_platform?
+    pend 'chmod not supported' if Gem.win_platform?
 
     util_setup_validate
 
@@ -3699,7 +3699,7 @@ end
   end
 
   def test_missing_extensions_eh
-    skip "extensions don't quite work on jruby" if Gem.java_platform?
+    pend "extensions don't quite work on jruby" if Gem.java_platform?
     ext_spec
 
     assert @ext.missing_extensions?

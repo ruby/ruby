@@ -114,7 +114,7 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
       @cmd.execute
     end
 
-    assert_equal "foo", YAML.unsafe_load(@ui.output)
+    assert_equal "foo", load_yaml(@ui.output)
   end
 
   def test_execute_file
@@ -230,7 +230,7 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
     assert_match %r{\A--- !ruby/object:Gem::Specification}, @ui.output
     assert_match %r{name: foo}, @ui.output
 
-    spec = YAML.unsafe_load @ui.output
+    spec = load_yaml @ui.output
 
     assert_equal Gem::Version.new("2.0.0"), spec.version
   end
@@ -252,7 +252,7 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
     assert_match %r{\A--- !ruby/object:Gem::Specification}, @ui.output
     assert_match %r{name: foo}, @ui.output
 
-    spec = YAML.unsafe_load @ui.output
+    spec = load_yaml @ui.output
 
     assert_equal Gem::Version.new("2.0.1.pre"), spec.version
   end

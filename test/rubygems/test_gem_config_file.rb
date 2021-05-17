@@ -195,7 +195,7 @@ class TestGemConfigFile < Gem::TestCase
   end
 
   def test_check_credentials_permissions
-    skip 'chmod not supported' if win_platform?
+    pend 'chmod not supported' if win_platform?
 
     @cfg.rubygems_api_key = 'x'
 
@@ -322,7 +322,7 @@ if you believe they were disclosed to a third party.
   end
 
   def test_load_api_keys_bad_permission
-    skip 'chmod not supported' if win_platform?
+    pend 'chmod not supported' if win_platform?
 
     @cfg.rubygems_api_key = 'x'
 
@@ -354,7 +354,7 @@ if you believe they were disclosed to a third party.
       :rubygems_api_key => 'x',
     }
 
-    assert_equal expected, YAML.unsafe_load_file(@cfg.credentials_path)
+    assert_equal expected, load_yaml_file(@cfg.credentials_path)
 
     unless win_platform?
       stat = File.stat @cfg.credentials_path
@@ -364,7 +364,7 @@ if you believe they were disclosed to a third party.
   end
 
   def test_rubygems_api_key_equals_bad_permission
-    skip 'chmod not supported' if win_platform?
+    pend 'chmod not supported' if win_platform?
 
     @cfg.rubygems_api_key = 'x'
 
@@ -378,7 +378,7 @@ if you believe they were disclosed to a third party.
       :rubygems_api_key => 'x',
     }
 
-    assert_equal expected, YAML.unsafe_load_file(@cfg.credentials_path)
+    assert_equal expected, load_yaml_file(@cfg.credentials_path)
 
     stat = File.stat @cfg.credentials_path
 
