@@ -575,7 +575,6 @@ module Psych
       self.unsafe_load f, filename: filename, **kwargs
     }
   end
-  class << self; alias :load_file :unsafe_load_file; end
 
   ###
   # Safely loads the document contained in +filename+.  Returns the yaml contained in
@@ -587,7 +586,17 @@ module Psych
       self.safe_load f, filename: filename, **kwargs
     }
   end
-  class << self; alias load_file safe_load_file end
+
+  ###
+  # Loads the document contained in +filename+.  Returns the yaml contained in
+  # +filename+ as a Ruby object, or if the file is empty, it returns
+  # the specified +fallback+ return value, which defaults to +false+.
+  # See load for options.
+  def self.load_file filename, **kwargs
+    File.open(filename, 'r:bom|utf-8') { |f|
+      self.load f, filename: filename, **kwargs
+    }
+  end
 
   # :stopdoc:
   def self.add_domain_type domain, type_tag, &block
