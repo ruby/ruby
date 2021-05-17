@@ -4502,6 +4502,9 @@ f_sprintf(int c, const VALUE *v, VALUE _)
  *  - {__id__}[#method-i-__id__]:: Returns the integer object identifier for +self+.
  *  - {__send__}[#method-i-__send__]:: Calls the method identified by the given symbol.
  *  - #equal?:: Returns whether +self+ and the given object are the same object.
+ *  - #instance_eval:: Evaluates the given string or block in the context of +self+.
+ *  - #instance_exec:: Executes the given block in the context of +self+,
+ *                     passing the given arguments.
  *  - #method_missing:: Method called when an undefined method is called on +self+.
  *  - #singleton_method_added:: Method called when a singleton method
  *                              is added to +self+.
@@ -4540,7 +4543,6 @@ f_sprintf(int c, const VALUE *v, VALUE _)
  *  Here, class \Object provides methods for:
  *
  *  - {Querying}[#class-Object-label-Querying]
- *  - {Methods}[#class-Object-label-Methods]
  *  - {Instance Variables}[#class-Object-label-Instance+Variables]
  *  - {Other}[#class-Object-label-Other]
  *
@@ -4596,7 +4598,8 @@ f_sprintf(int c, const VALUE *v, VALUE _)
  *
  *  === Other
  *
- *  - #clone::  Returns a shallow copy of +self+.
+ *  - #clone::  Returns a shallow copy of +self+, including singleton class
+ *              and frozen state.
  *  - #define_singleton_method:: Defines a singleton method in +self+
  *                               for the given symbol method-name and block or proc.
  *  - #display:: Prints +self+ to the given \IO stream or <tt>$stdout</tt>.
