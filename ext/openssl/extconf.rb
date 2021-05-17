@@ -178,6 +178,7 @@ have_func("SSL_CTX_load_verify_file")
 have_func("BN_check_prime")
 have_func("EVP_MD_CTX_get0_md")
 have_func("EVP_MD_CTX_get_pkey_ctx")
+have_func("EVP_PKEY_eq")
 
 Logging::message "=== Checking done. ===\n"
 

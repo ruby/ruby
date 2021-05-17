@@ -1229,7 +1229,7 @@ ossl_sslctx_add_certificate(int argc, VALUE *argv, VALUE self)
     EVP_PKEY_free(pub_pkey);
     if (!pub_pkey)
 	rb_raise(rb_eArgError, "certificate does not contain public key");
-    if (EVP_PKEY_cmp(pub_pkey, pkey) != 1)
+    if (EVP_PKEY_eq(pub_pkey, pkey) != 1)
 	rb_raise(rb_eArgError, "public key mismatch");
 
     if (argc >= 3)

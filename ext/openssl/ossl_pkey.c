@@ -769,14 +769,14 @@ ossl_pkey_compare(VALUE self, VALUE other)
     if (EVP_PKEY_id(selfPKey) != EVP_PKEY_id(otherPKey))
         ossl_raise(rb_eTypeError, "cannot match different PKey types");
 
-    ret = EVP_PKEY_cmp(selfPKey, otherPKey);
+    ret = EVP_PKEY_eq(selfPKey, otherPKey);
 
     if (ret == 0)
         return Qfalse;
     else if (ret == 1)
         return Qtrue;
     else
-        ossl_raise(ePKeyError, "EVP_PKEY_cmp");
+        ossl_raise(ePKeyError, "EVP_PKEY_eq");
 }
 
 /*

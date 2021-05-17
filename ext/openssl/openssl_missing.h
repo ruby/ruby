@@ -231,4 +231,8 @@ IMPL_PKEY_GETTER(EC_KEY, ec)
 # endif
 #endif
 
+#ifndef HAVE_EVP_PKEY_EQ
+#  define EVP_PKEY_eq(a, b) EVP_PKEY_cmp(a, b)
+#endif
+
 #endif /* _OSSL_OPENSSL_MISSING_H_ */
