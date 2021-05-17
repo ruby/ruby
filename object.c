@@ -4599,8 +4599,6 @@ f_sprintf(int c, const VALUE *v, VALUE _)
  *
  *  === Other
  *
- *  - ::const_missing:: Called when an uninitialized constant is referenced.
- *  - ::receive_if:: Receive only a specific message.
  *  - #clone::  Returns a shallow copy of +self+.
  *  - #define_singleton_method:: Defines a singleton method in +self+
  *                               for the given symbol method-name and block or proc.
