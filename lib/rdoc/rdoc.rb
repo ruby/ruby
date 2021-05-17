@@ -162,7 +162,7 @@ class RDoc::RDoc
     RDoc.load_yaml
 
     begin
-      options = YAML.load_file '.rdoc_options'
+      options = YAML.unsafe_load_file '.rdoc_options'
     rescue Psych::SyntaxError
     end
 
