@@ -30,7 +30,7 @@ class MatchYAMLMatcher
   def valid_yaml?(obj)
     require 'yaml'
     begin
-      YAML.load(obj)
+      YAML.unsafe_load(obj)
     rescue
       false
     else
