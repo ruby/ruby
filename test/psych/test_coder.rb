@@ -274,7 +274,7 @@ module Psych
 
     def test_coder_style_scalar_default
       foo = Psych.dump 'some scalar'
-      assert_match /\A--- some scalar\n(?:\.\.\.\n)?\z/, foo
+      assert_match(/\A--- some scalar\n(?:\.\.\.\n)?\z/, foo)
     end
 
     def test_coder_style_scalar_any
@@ -282,7 +282,7 @@ module Psych
         scalar: 'some scalar',
         style: Psych::Nodes::Scalar::ANY,
         tag: nil
-      assert_match /\A--- some scalar\n(?:\.\.\.\n)?\z/, foo
+      assert_match(/\A--- some scalar\n(?:\.\.\.\n)?\z/, foo)
     end
 
     def test_coder_style_scalar_plain
@@ -290,7 +290,7 @@ module Psych
         scalar: 'some scalar',
         style: Psych::Nodes::Scalar::PLAIN,
         tag: nil
-      assert_match /\A--- some scalar\n(?:\.\.\.\n)?\z/, foo
+      assert_match(/\A--- some scalar\n(?:\.\.\.\n)?\z/, foo)
     end
 
     def test_coder_style_scalar_single_quoted
