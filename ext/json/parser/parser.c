@@ -109,22 +109,22 @@ enum {JSON_object_error = 0};
 
 enum {JSON_object_en_main = 1};
 
-static const char _JSON_object_nfa_targs[] = {
+static const char MAYBE_UNUSED(_JSON_object_nfa_targs)[] = {
 	0, 0
 };
 
-static const char _JSON_object_nfa_offsets[] = {
+static const char MAYBE_UNUSED(_JSON_object_nfa_offsets)[] = {
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0
 };
 
-static const char _JSON_object_nfa_push_actions[] = {
+static const char MAYBE_UNUSED(_JSON_object_nfa_push_actions)[] = {
 	0, 0
 };
 
-static const char _JSON_object_nfa_pop_trans[] = {
+static const char MAYBE_UNUSED(_JSON_object_nfa_pop_trans)[] = {
 	0, 0
 };
 
@@ -767,22 +767,22 @@ enum {JSON_value_error = 0};
 
 enum {JSON_value_en_main = 1};
 
-static const char _JSON_value_nfa_targs[] = {
+static const char MAYBE_UNUSED(_JSON_value_nfa_targs)[] = {
 	0, 0
 };
 
-static const char _JSON_value_nfa_offsets[] = {
+static const char MAYBE_UNUSED(_JSON_value_nfa_offsets)[] = {
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0
 };
 
-static const char _JSON_value_nfa_push_actions[] = {
+static const char MAYBE_UNUSED(_JSON_value_nfa_push_actions)[] = {
 	0, 0
 };
 
-static const char _JSON_value_nfa_pop_trans[] = {
+static const char MAYBE_UNUSED(_JSON_value_nfa_pop_trans)[] = {
 	0, 0
 };
 
@@ -1429,19 +1429,19 @@ enum {JSON_integer_error = 0};
 
 enum {JSON_integer_en_main = 1};
 
-static const char _JSON_integer_nfa_targs[] = {
+static const char MAYBE_UNUSED(_JSON_integer_nfa_targs)[] = {
 	0, 0
 };
 
-static const char _JSON_integer_nfa_offsets[] = {
+static const char MAYBE_UNUSED(_JSON_integer_nfa_offsets)[] = {
 	0, 0, 0, 0, 0, 0, 0
 };
 
-static const char _JSON_integer_nfa_push_actions[] = {
+static const char MAYBE_UNUSED(_JSON_integer_nfa_push_actions)[] = {
 	0, 0
 };
 
-static const char _JSON_integer_nfa_pop_trans[] = {
+static const char MAYBE_UNUSED(_JSON_integer_nfa_pop_trans)[] = {
 	0, 0
 };
 
@@ -1582,20 +1582,20 @@ enum {JSON_float_error = 0};
 
 enum {JSON_float_en_main = 1};
 
-static const char _JSON_float_nfa_targs[] = {
+static const char MAYBE_UNUSED(_JSON_float_nfa_targs)[] = {
 	0, 0
 };
 
-static const char _JSON_float_nfa_offsets[] = {
+static const char MAYBE_UNUSED(_JSON_float_nfa_offsets)[] = {
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0
 };
 
-static const char _JSON_float_nfa_push_actions[] = {
+static const char MAYBE_UNUSED(_JSON_float_nfa_push_actions)[] = {
 	0, 0
 };
 
-static const char _JSON_float_nfa_pop_trans[] = {
+static const char MAYBE_UNUSED(_JSON_float_nfa_pop_trans)[] = {
 	0, 0
 };
 
@@ -1893,21 +1893,21 @@ enum {JSON_array_error = 0};
 
 enum {JSON_array_en_main = 1};
 
-static const char _JSON_array_nfa_targs[] = {
+static const char MAYBE_UNUSED(_JSON_array_nfa_targs)[] = {
 	0, 0
 };
 
-static const char _JSON_array_nfa_offsets[] = {
+static const char MAYBE_UNUSED(_JSON_array_nfa_offsets)[] = {
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0
 };
 
-static const char _JSON_array_nfa_push_actions[] = {
+static const char MAYBE_UNUSED(_JSON_array_nfa_push_actions)[] = {
 	0, 0
 };
 
-static const char _JSON_array_nfa_pop_trans[] = {
+static const char MAYBE_UNUSED(_JSON_array_nfa_pop_trans)[] = {
 	0, 0
 };
 
@@ -2498,20 +2498,20 @@ enum {JSON_string_error = 0};
 
 enum {JSON_string_en_main = 1};
 
-static const char _JSON_string_nfa_targs[] = {
+static const char MAYBE_UNUSED(_JSON_string_nfa_targs)[] = {
 	0, 0
 };
 
-static const char _JSON_string_nfa_offsets[] = {
+static const char MAYBE_UNUSED(_JSON_string_nfa_offsets)[] = {
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0
 };
 
-static const char _JSON_string_nfa_push_actions[] = {
+static const char MAYBE_UNUSED(_JSON_string_nfa_push_actions)[] = {
 	0, 0
 };
 
-static const char _JSON_string_nfa_pop_trans[] = {
+static const char MAYBE_UNUSED(_JSON_string_nfa_pop_trans)[] = {
 	0, 0
 };
 
@@ -2594,7 +2594,7 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
 				goto st3;
 			}
 		}
-		if ( 0 <= ( (*( p))) && ( (*( p))) <= 31 ) {
+		if ( 0 <= (signed char)(*(p)) && (*(p)) <= 31 ) {
 			goto st0;
 		}
 		{
@@ -2634,7 +2634,7 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
 		if ( ( (*( p))) == 117 ) {
 			goto st4;
 		}
-		if ( 0 <= ( (*( p))) && ( (*( p))) <= 31 ) {
+		if ( 0 <= (signed char)(*(p)) && (*(p)) <= 31 ) {
 			goto st0;
 		}
 		{
@@ -2924,20 +2924,20 @@ enum {JSON_error = 0};
 
 enum {JSON_en_main = 1};
 
-static const char _JSON_nfa_targs[] = {
+static const char MAYBE_UNUSED(_JSON_nfa_targs)[] = {
 	0, 0
 };
 
-static const char _JSON_nfa_offsets[] = {
+static const char MAYBE_UNUSED(_JSON_nfa_offsets)[] = {
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0
 };
 
-static const char _JSON_nfa_push_actions[] = {
+static const char MAYBE_UNUSED(_JSON_nfa_push_actions)[] = {
 	0, 0
 };
 
-static const char _JSON_nfa_pop_trans[] = {
+static const char MAYBE_UNUSED(_JSON_nfa_pop_trans)[] = {
 	0, 0
 };
 
