@@ -13369,8 +13369,11 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  *  == What's Here
  *
- *  First, what's elsewhere. \Class \IO includes the module Enumerable,
- *  which provides dozens of additional methods.
+ *  First, what's elsewhere. \Class \IO:
+ *
+ *  - Inherits from {class Object}[Object.html#class-Object-label-What-27s+Here].
+ *  - Includes {module Enumerable}[Enumerable.html#module-Enumerable-label-What-27s+Here],
+ *    which provides dozens of additional methods.
  *
  *  Here, class \IO provides methods that are useful for:
  *

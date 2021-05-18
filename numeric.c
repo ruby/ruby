@@ -5341,6 +5341,86 @@ rb_int_s_isqrt(VALUE self, VALUE num)
  *   tally = Tally.new('||')
  *   puts tally * 2            #=> "||||"
  *   puts tally > 1            #=> true
+ *
+ * == What's Here
+ *
+ * First, what's elsewhere. \Class \Numeric:
+ *
+ * - Inherits from {class Object}[Object.html#class-Object-label-What-27s+Here].
+ * - Includes {module Comparable}[Comparable.html#module-Comparable-label-What-27s+Here].
+ *
+ * Here, class \Numeric provides methods for:
+ *
+ * - {Querying}[#class-Numeric-label-Querying]
+ * - {Comparing}[#class-Numeric-label-Comparing]
+ * - {Converting}[#class-Numeric-label-Converting]
+ * - {Other}[#class-Numeric-label-Other]
+ *
+ * === Querying
+ *
+ * - #finite?:: Returns true unless +self+ is infinite or not a number.
+ * - #infinite?:: Returns -1, +nil+ or +1, depending on whether +self+
+ *                is <tt>-Infinity<tt>, finite, or <tt>+Infinity</tt>.
+ * - #integer?:: Returns whether +self+ is an integer.
+ * - #negative?:: Returns whether +self+ is negative.
+ * - #nonzero?:: Returns whether +self+ is not zero.
+ * - #positive?:: Returns whether +self+ is positive.
+ * - #real?:: Returns whether +self+ is a real value.
+ * - #zero?:: Returns whether +self+ is zero.
+ *
+ * === Comparing
+ *
+ * - {<=>}[#method-i-3C-3D-3E]:: Returns:
+ *   - -1 if  +self+ is less than the given value.
+ *   - 0 if +self+ is equal to the given value.
+ *   - 1 if +self is greater than the given value.
+ *   - +nil+ if +self+ and the given value are not comparable.
+ * - #eql?:: Returns whether +self+ and the given value have the same value and type.
+ *
+ * === Converting
+ *
+ * - #% (aliased as #modulo):: Returns the remainder of +self+ divided by the given value.
+ * - #-@:: Returns the value of +self+, negated.
+ * - #abs (aliased as #magnitude):: Returns the absolute value of +self+.
+ * - #abs2:: Returns the square of +self+.
+ * - #angle (aliased as #arg and #phase):: Returns 0 if +self+ is positive,
+ *                                         Math::PI otherwise.
+ * - #ceil:: Returns the smallest number greater than or equal to +self+,
+ *           to a given precision.
+ * - #coerce:: Returns array <tt>[coerced_self, coerced_other]</tt>
+ *             for the given other value.
+ * - #conj (aliased as #conjugate):: Returns the complex conjugate of +self+.
+ * - #denominator:: Returns the denominator (always positive)
+ *                  of the Rational representation of +self+.
+ * - #div:: Returns the value of +self+ divided by the given value
+ *          and converted to an integer.
+ * - #divmod:: Returns array <tt>[quotient, modulus]</tt> resulting
+ *             from dividing +self+ the given divisor.
+ * - #fdiv:: Returns the Float result of dividing +self+ by the given divisor.
+ * - #floor:: Returns the largest number less than or equal to +self+,
+ *            to a given precision.
+ * - #i:: Returns the Complex object <tt>Complex(0, self)</tt>.
+ *        the given value.
+ * - #imaginary (aliased as #imag):: Returns the imaginary part of the +self+.
+ * - #numerator:: Returns the numerator of the Rational representation of +self+;
+ *                has the same sign as +self+.
+ * - #polar:: Returns the array <tt>[self.abs, self.arg]</tt>.
+ * - #quo:: Returns the value of +self+ divided by the given value.
+ * - #real:: Returns the real part of +self+.
+ * - #rect (aliased as #rectangular):: Returns the array <tt>[self, 0]</tt>.
+ * - #remainder:: Returns <tt>self-arg*(self/arg).truncate</tt> for the given +arg+.
+ * - #round:: Returns the value of +self+ rounded to the nearest value
+ *            for the given a precision.
+ * - #to_c:: Returns the Complex representation of +self+.
+ * - #to_int:: Returns the Integer representation of +self+, truncating if necessary.
+ * - #truncate:: Returns +self+ truncated (toward zero) to a given precision.
+ *
+ * === Other
+ *
+ * - #clone:: Returns +self+; does not allow freezing.
+ * - #dup (aliased as #+@):: Returns +self+.
+ * - #step:: Invokes the given block with the sequence of specified numbers.
+ *
  */
 void
 Init_Numeric(void)
