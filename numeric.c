@@ -5361,31 +5361,24 @@ rb_int_s_isqrt(VALUE self, VALUE num)
  *
  * === Querying
  *
- * - #angle (aliased as #arg):: Returns 0 if +self+ is positive, Math::PI otherwise.
- * - #denominator:: Returns the denominator (always positive)
- *                  of the Rational representation of +self+.
- * - #finite?:: Returns +true+ if +self+ is a valid floating-point value;
- *              that is, neither infinite nor not-a-number.
- * - #imag:: Returns integer zero.
- * - #imaginary:: Returns integer zero.
+ * - #finite?:: Returns true unless +self+ is infinite or not a number.
  * - #infinite?:: Returns -1, +nil+ or +1, depending on whether +self+
  *                is <tt>-Infinity<tt>, finite, or <tt>+Infinity</tt>.
  * - #integer?:: Returns whether +self+ is an integer.
  * - #negative?:: Returns whether +self+ is negative.
- * - #nonzero?:: Returns +false+ if +self+ is zero, +true+ otherwie.
- * - #numerator:: Returns the numerator of the Rational representation of +self+;
- *                has the same sign as +self+.
- * - #phase:: Returns 0 if +self+ is positive, Math::PI otherwise.
- * - #positive?:: Returns +true+ if +self+ is positive.
+ * - #nonzero?:: Returns whether +self+ is not zero.
+ * - #positive?:: Returns whether +self+ is positive.
  * - #real?:: Returns whether +self+ is a real value.
- * - #zero?:: Returns whether +self+ has a zero value.
+ * - #zero?:: Returns whether +self+ is zero.
  *
  * === Comparing
  *
- * - {<=>}[#method-i-3C-3D-3E]:: Returns 0 if +self+ equals the given value,
- *                               +nil+ otherwise.
- * - #eql?:: Returns +true+ if +self+ and the given value are of the same type
- *           and have the same value, +false+ otherwise.
+ * - {<=>}[#method-i-3C-3D-3E]:: Returns:
+ *   - -1 if  +self+ is less than the given value.
+ *   - 0 if +self+ is equal to the given value.
+ *   - 1 if +self is greater than the given value.
+ *   - +nil+ if +self+ and the given value are not comparable.
+ * - #eql?:: Returns whether +self+ and the given value have the same value and type.
  *
  * === Converting
  *
@@ -5393,10 +5386,14 @@ rb_int_s_isqrt(VALUE self, VALUE num)
  * - #-@:: Returns the value of +self+, negated.
  * - #abs (aliased as #magnitude):: Returns the absolute value of +self+.
  * - #abs2:: Returns the square of +self+.
+ * - #angle (aliased as #arg and #phase):: Returns 0 if +self+ is positive,
+ *                                         Math::PI otherwise.
  * - #ceil:: Returns the smallest number greater than or equal to +self+,
  *           to a given precision.
  * - #coerce:: Returns array <tt>[coerced_self, coerced_other]</tt>
  *             for the given other value.
+ * - #denominator:: Returns the denominator (always positive)
+ *                  of the Rational representation of +self+.
  * - #div:: Returns the value of +self+ divided by the given value
  *          and converted to an integer.
  * - #divmod:: Returns array <tt>[quotient, modulus]</tt> resulting
@@ -5406,26 +5403,25 @@ rb_int_s_isqrt(VALUE self, VALUE num)
  *            to a given precision.
  * - #i:: Returns the Complex object <tt>Complex(0, self)</tt>.
  *        the given value.
- * - #modulo:: Returns the remainder of dividing +self+ by the given value.
+ * - #imaginary (aliased as #imag):: Returns the imaginary part of the +self+.
+ * - #numerator:: Returns the numerator of the Rational representation of +self+;
+ *                has the same sign as +self+.
  * - #polar:: Returns the array <tt>[self.abs, self.arg]</tt>.
- * - #quo:: Returns the most exact quotient +self+ divided by the given divisor.
+ * - #quo:: Returns the value of +self+ divided by the given value.
+ * - #real:: Returns the real part of +self+.
  * - #rect (aliased as #rectangular):: Returns the array <tt>[self, 0]</tt>.
  * - #remainder:: Returns <tt>self-arg*(self/arg).truncate</tt> for the given +arg+.
  * - #round:: Returns the value of +self+ rounded to the nearest value
  *            for the given a precision.
- * - #to_c:: Returns the Complex object <tt>Complex(self, 0)</tt>.
- * - #to_int:: Returns the value <tt>self.to_i</tt>, where method :to_i
- *             is defined in the derived class of +self+
+ * - #to_c:: Returns the Complex representation of +self+.
+ * - #to_int:: Returns the Integer representation of +self+, truncating if necessary.
  * - #truncate:: Returns +self+ truncated (toward zero) to a given precision.
  *
  * === Other
  *
- * - #+@:: Returns +self+.
- * - #clone:: Returns +self+.
- * - #conj (aliased as #conjugate):: Returns +self+.
- * - #dup:: Returns +self+.
- * - #real:: Returns +self+.
- * - #singleton_method_added:: ???
+ * - #clone:: Returns +self+; does not allow freezing.
+ * - #conj (aliased as #conjugate):: Returns the complex conjugate of +self+.
+ * - #dup (aliased as #+:: Returns +self+.
  * - #step:: Invokes the given block with the sequence of specified numbers.
  *
  *
