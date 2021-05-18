@@ -5344,6 +5344,92 @@ rb_int_s_isqrt(VALUE self, VALUE num)
  *   tally = Tally.new('||')
  *   puts tally * 2            #=> "||||"
  *   puts tally > 1            #=> true
+ *
+ * == What's Here
+ *
+ * First, what's elsewhere. \Class \Numeric:
+ *
+ * - Inherits from {class Object}[Object.html#class-Object-label-What-27s+Here].
+ * - Includes {module Comparable}[Comparable.html#module-Comparable-label-What-27s+Here].
+ *
+ * Here, class \Numeric provides methods for:
+ *
+ * - {Querying}[#class-Numeric-label-Querying]
+ * - {Comparing}[#class-Numeric-label-Comparing]
+ * - {Converting}[#class-Numeric-label-Converting]
+ * - {Other}[#class-Numeric-label-Other]
+ *
+ * === Querying
+ *
+ * - #angle (aliased as #arg):: Returns 0 if +self+ is positive, Math::PI otherwise.
+ * - #denominator:: Returns the denominator (always positive)
+ *                  of the Rational representation of +self+.
+ * - #finite?:: Returns +true+ if +self+ is a valid floating-point value;
+ *              that is, neither infinite nor not-a-number.
+ * - #imag:: Returns integer zero.
+ * - #imaginary:: Returns integer zero.
+ * - #infinite?:: Returns -1, +nil+ or +1, depending on whether +self+
+ *                is <tt>-Infinity<tt>, finite, or <tt>+Infinity</tt>.
+ * - #integer?:: Returns whether +self+ is an integer.
+ * - #negative?:: Returns whether +self+ is negative.
+ * - #nonzero?:: Returns +false+ if +self+ is zero, +true+ otherwie.
+ * - #numerator:: Returns the numerator of the Rational representation of +self+;
+ *                has the same sign as +self+.
+ * - #phase:: Returns 0 if +self+ is positive, Math::PI otherwise.
+ * - #positive?:: Returns +true+ if +self+ is positive.
+ * - #real?:: Returns whether +self+ is a real value.
+ * - #zero?:: Returns whether +self+ has a zero value.
+ *
+ * === Comparing
+ *
+ * - {<=>}[#method-i-3C-3D-3E]:: Returns 0 if +self+ equals the given value,
+ *                               +nil+ otherwise.
+ * - #eql?:: Returns +true+ if +self+ and the given value are of the same type
+ *           and have the same value, +false+ otherwise.
+ *
+ * === Converting
+ *
+ * - #% (aliased as #modulo):: Returns the remainder of +self+ divided by the given value.
+ * - #-@:: Returns the value of +self+, negated.
+ * - #abs (aliased as #magnitude):: Returns the absolute value of +self+.
+ * - #abs2:: Returns the square of +self+.
+ * - #ceil:: Returns the smallest number greater than or equal to +self+,
+ *           to a given precision.
+ * - #coerce:: Returns array <tt>[coerced_self, coerced_other]</tt>
+ *             for the given other value.
+ * - #div:: Returns the value of +self+ divided by the given value
+ *          and converted to an integer.
+ * - #divmod:: Returns array <tt>[quotient, modulus]</tt> resulting
+ *             from dividing +self+ the given divisor.
+ * - #fdiv:: Returns the Float result of dividing +self+ by the given divisor.
+ * - #floor:: Returns the largest number less than or equal to +self+,
+ *            to a given precision.
+ * - #i:: Returns the Complex object <tt>Complex(0, self)</tt>.
+ *        the given value.
+ * - #modulo:: Returns the remainder of dividing +self+ by the given value.
+ * - #polar:: Returns the array <tt>[self.abs, self.arg]</tt>.
+ * - #quo:: Returns the most exact quotient +self+ divided by the given divisor.
+ * - #rect (aliased as #rectangular):: Returns the array <tt>[self, 0]</tt>.
+ * - #remainder:: Returns <tt>self-arg*(self/arg).truncate</tt> for the given +arg+.
+ * - #round:: Returns the value of +self+ rounded to the nearest value
+ *            for the given a precision.
+ * - #to_c:: Returns the Complex object <tt>Complex(self, 0)</tt>.
+ * - #to_int:: Returns the value <tt>self.to_i</tt>, where method :to_i
+ *             is defined in the derived class of +self+
+ * - #truncate:: Returns +self+ truncated (toward zero) to a given precision.
+ *
+ * === Other
+ *
+ * - #+@:: Returns +self+.
+ * - #clone:: Returns +self+.
+ * - #conj (aliased as #conjugate):: Returns +self+.
+ * - #dup:: Returns +self+.
+ * - #real:: Returns +self+.
+ * - #singleton_method_added:: ???
+ * - #step:: Invokes the given block with the sequence of specified numbers.
+ *
+ *
+ *
  */
 void
 Init_Numeric(void)
