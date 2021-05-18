@@ -1011,7 +1011,15 @@ gen_get_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
         return YJIT_END_BLOCK;
     }
 
-    // FIXME: we should be able to eliminate this check with object shapes
+    // FIXME:
+    // This check was added because of a failure in a test involving the
+    // Nokogiri Document class where we see a T_DATA that still has the default
+    // allocator.
+    // Aaron Patterson argues that this is a bug in the C extension, because
+    // people could call .allocate() on the class and still get a T_OBJECT
+    // For now I added an extra dynamic check that the receiver is T_OBJECT
+    // so we can safely pass all the tests in Shopify Core.
+    //
     // Guard that the receiver is T_OBJECT
     // #define RB_BUILTIN_TYPE(x) (int)(((struct RBasic*)(x))->flags & RUBY_T_MASK)
     ADD_COMMENT(cb, "guard receiver is T_OBJECT");
