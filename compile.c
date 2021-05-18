@@ -5409,12 +5409,14 @@ add_ensure_range(rb_iseq_t *iseq, struct ensure_range *erange,
 static bool
 can_add_ensure_iseq(const rb_iseq_t *iseq)
 {
-    if (ISEQ_COMPILE_DATA(iseq)->in_rescue && ISEQ_COMPILE_DATA(iseq)->ensure_node_stack) {
-        return false;
+    struct iseq_compile_data_ensure_node_stack *e;
+    if (ISEQ_COMPILE_DATA(iseq)->in_rescue && (e = ISEQ_COMPILE_DATA(iseq)->ensure_node_stack) != NULL) {
+        while (e) {
+            if (e->ensure_node) return false;
+            e = e->prev;
+        }
     }
-    else {
-        return true;
-    }
+    return true;
 }
 
 static void
