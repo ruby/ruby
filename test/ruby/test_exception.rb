@@ -104,6 +104,17 @@ class TestException < Test::Unit::TestCase
         end
       end
     end
+
+    iseq = RubyVM::InstructionSequence.compile(<<-RUBY)
+    begin
+      while true
+        break
+      end
+    rescue
+    end
+    RUBY
+
+    assert_equal false, iseq.to_a[13].any?{|(e,_)| e == :throw}
   end
 
   def test_exception_in_ensure_with_redo
