@@ -4532,6 +4532,90 @@ f_sprintf(int c, const VALUE *v, VALUE _)
  *  In the descriptions of Object's methods, the parameter <i>symbol</i> refers
  *  to a symbol, which is either a quoted string or a Symbol (such as
  *  <code>:name</code>).
+ *
+ *  == What's Here
+ *
+ *  First, what's elsewhere. \Class \Object:
+ *
+ *  - Inherits from {class BasicObject}[BasicObject.html#class-BasicObject-label-What-27s+Here].
+ *  - Includes {module Kernel}[Kernel.html#module-Kernel-label-What-27s+Here].
+ *
+ *  Here, class \Object provides methods for:
+ *
+ *  - {Querying}[#class-Object-label-Querying]
+ *  - {Instance Variables}[#class-Object-label-Instance+Variables]
+ *  - {Other}[#class-Object-label-Other]
+ *
+ *  === Querying
+ *
+ *  - {!~}[#method-i-21~]:: Returns +true+ if +self+ does not match the given object,
+ *                          otherwise +false+.
+ *  - {<=>}[#method-i-3C-3D-3E]:: Returns 0 if +self+ and the given object +object+
+ *                                are the same object, or if
+ *                                <tt>self == object</tt>; otherwise returns +nil+.
+ *  - #===:: Implements case equality, effectively the same as calling #==.
+ *  - #eql?:: Implements hash equality, effectively the same as calling #==.
+ *  - #kind_of? (aliased as #is_a?):: Returns whether given argument is an ancestor
+ *                                    of the singleton class of +self+.
+ *  - #instance_of?:: Returns whether +self+ is an instance of the given class.
+ *  - #instance_variable_defined?:: Returns whether the given instance variable
+ *                                  is defined in +self+.
+ *  - #method:: Returns the Method object for the given method in +self+.
+ *  - #methods:: Returns an array of symbol names of public and protected methods
+ *               in +self+.
+ *  - #nil?:: Returns +false+. (Only +nil+ responds +true+ to method <tt>nil?</tt>.)
+ *  - #object_id:: Returns an integer corresponding to +self+ that is unique
+ *                 for the current process
+ *  - #private_methods:: Returns an array of the symbol names
+ *                       of the private methods in +self+.
+ *  - #protected_methods:: Returns an array of the symbol names
+ *                         of the protected methods in +self+.
+ *  - #public_method:: Returns the Method object for the given public method in +self+.
+ *  - #public_methods:: Returns an array of the symbol names
+ *                      of the public methods in +self+.
+ *  - #respond_to?:: Returns whether +self+ responds to the given method.
+ *  - #singleton_class:: Returns the singleton class of +self+.
+ *  - #singleton_method:: Returns the Method object for the given singleton method
+ *                        in +self+.
+ *  - #singleton_methods:: Returns an array of the symbol names
+ *                         of the singleton methods in +self+.
+ *
+ *  - #define_singleton_method:: Defines a singleton method in +self+
+ *                               for the given symbol method-name and block or proc.
+ *  - #extend:: Includes the given modules in the singleton class of +self+.
+ *  - #public_send:: Calls the given public method in +self+ with the given argument.
+ *  - #send:: Calls the given method in +self+ with the given argument.
+ *
+ *  === Instance Variables
+ *
+ *  - #instance_variable_get:: Returns the value of the given instance variable
+ *                             in +self+, or +nil+ if the instance variable is not set.
+ *  - #instance_variable_set:: Sets the value of the given instance variable in +self+
+ *                             to the given object.
+ *  - #instance_variables:: Returns an array of the symbol names
+ *                          of the instance variables in +self+.
+ *  - #remove_instance_variable:: Removes the named instance variable from +self+.
+ *
+ *  === Other
+ *
+ *  - #clone::  Returns a shallow copy of +self+, including singleton class
+ *              and frozen state.
+ *  - #define_singleton_method:: Defines a singleton method in +self+
+ *                               for the given symbol method-name and block or proc.
+ *  - #display:: Prints +self+ to the given \IO stream or <tt>$stdout</tt>.
+ *  - #dup:: Returns a shallow unfrozen copy of +self+.
+ *  - #enum_for (aliased as #to_enum):: Returns an Enumerator for +self+
+ *                                      using the using the given method,
+ *                                      arguments, and block.
+ *  - #extend:: Includes the given modules in the singleton class of +self+.
+ *  - #freeze:: Prevents further modifications to +self+.
+ *  - #hash:: Returns the integer hash value for +self+.
+ *  - #inspect:: Returns a human-readable  string representation of +self+.
+ *  - #itself:: Returns +self+.
+ *  - #public_send:: Calls the given public method in +self+ with the given argument.
+ *  - #send:: Calls the given method in +self+ with the given argument.
+ *  - #to_s:: Returns a string representation of +self+.
+ *
  */
 
 /*!
