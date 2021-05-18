@@ -1,7 +1,7 @@
 # encoding: utf-8
 # frozen_string_literal: false
 
-require 'minitest/autorun'
+require 'minitest/mock'
 
 class TestMiniTestMock < MiniTest::Unit::TestCase
   def setup
