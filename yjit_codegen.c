@@ -1010,7 +1010,15 @@ gen_get_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
         jit_jump_to_next_insn(jit, ctx);
         return YJIT_END_BLOCK;
     }
-    RUBY_ASSERT(BUILTIN_TYPE(comptime_receiver) == T_OBJECT); // because we checked the allocator
+
+    // FIXME: we should be able to eliminate this check with object shapes
+    // Guard that the receiver is T_OBJECT
+    // #define RB_BUILTIN_TYPE(x) (int)(((struct RBasic*)(x))->flags & RUBY_T_MASK)
+    ADD_COMMENT(cb, "guard receiver is T_OBJECT");
+    mov(cb, REG1, member_opnd(REG0, struct RBasic, flags));
+    and(cb, REG1, imm_opnd(RUBY_T_MASK));
+    cmp(cb, REG1, imm_opnd(T_OBJECT));
+    jit_chain_guard(JCC_JNE, jit, &starting_context, max_chain_depth, side_exit);
 
     // ID for the name of the ivar
     ID id = ivar_name;
