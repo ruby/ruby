@@ -8,17 +8,8 @@ jobs:
         os:
           - ubuntu-20.04
 #         - ubuntu-18.04
-#         - ubuntu-16.04
         debug: ["", "-DRUBY_DEBUG"]
         exclude:
-          - test_task: test-bundler-parallel
-            os: ubuntu-16.04
-          - test_task: test-bundled-gems
-            os: ubuntu-16.04
-          - test_task: "test-all TESTS=--repeat-count=2"
-            os: ubuntu-16.04
-          - os: ubuntu-16.04
-            debug: -DRUBY_DEBUG
           - test_task: "test-all TESTS=--repeat-count=2"
             debug: -DRUBY_DEBUG
       fail-fast: false
