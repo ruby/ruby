@@ -57,7 +57,7 @@ module Reline::Terminfo
   end
 
   def self.tigetstr(capname)
-    @tigetstr.(capname)
+    @tigetstr.(capname).to_s
   end
 
   def self.tiparm(str, *args)
@@ -65,7 +65,7 @@ module Reline::Terminfo
     args.each do |a|
       new_args << Fiddle::TYPE_INT << a
     end
-    @tiparm.(str, *new_args)
+    @tiparm.(str, *new_args).to_s
   end
 
   def self.enabled?

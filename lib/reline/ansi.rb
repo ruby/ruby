@@ -41,18 +41,18 @@ class Reline::ANSI
 
   def self.set_default_key_bindings_terminfo(config)
     {
-      Reline::Terminfo.tigetstr('khome').to_s.bytes => :ed_move_to_beg,
-      Reline::Terminfo.tigetstr('kend').to_s.bytes => :ed_move_to_end,
-      Reline::Terminfo.tigetstr('kcuu1').to_s.bytes => :ed_prev_history,
-      Reline::Terminfo.tigetstr('kcud1').to_s.bytes => :ed_next_history,
-      Reline::Terminfo.tigetstr('kcuf1').to_s.bytes => :ed_next_char,
-      Reline::Terminfo.tigetstr('kcub1').to_s.bytes => :ed_prev_char,
+      Reline::Terminfo.tigetstr('khome').bytes => :ed_move_to_beg,
+      Reline::Terminfo.tigetstr('kend').bytes => :ed_move_to_end,
+      Reline::Terminfo.tigetstr('kcuu1').bytes => :ed_prev_history,
+      Reline::Terminfo.tigetstr('kcud1').bytes => :ed_next_history,
+      Reline::Terminfo.tigetstr('kcuf1').bytes => :ed_next_char,
+      Reline::Terminfo.tigetstr('kcub1').bytes => :ed_prev_char,
       # Escape sequences that omit the move distance and are set to defaults
       # value 1 may be sometimes sent by pressing the arrow-key.
-      Reline::Terminfo.tigetstr('cuu').to_s.sub(/%p1%d/, '').bytes => :ed_prev_history,
-      Reline::Terminfo.tigetstr('cud').to_s.sub(/%p1%d/, '').bytes => :ed_next_history,
-      Reline::Terminfo.tigetstr('cuf').to_s.sub(/%p1%d/, '').bytes => :ed_next_char,
-      Reline::Terminfo.tigetstr('cub').to_s.sub(/%p1%d/, '').bytes => :ed_prev_char,
+      Reline::Terminfo.tigetstr('cuu').sub(/%p1%d/, '').bytes => :ed_prev_history,
+      Reline::Terminfo.tigetstr('cud').sub(/%p1%d/, '').bytes => :ed_next_history,
+      Reline::Terminfo.tigetstr('cuf').sub(/%p1%d/, '').bytes => :ed_next_char,
+      Reline::Terminfo.tigetstr('cub').sub(/%p1%d/, '').bytes => :ed_prev_char,
     }.each_pair do |key, func|
       config.add_default_key_binding_by_keymap(:emacs, key, func)
       config.add_default_key_binding_by_keymap(:vi_insert, key, func)
