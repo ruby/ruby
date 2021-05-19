@@ -10812,6 +10812,13 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
     return buf;
 }
 
+static VALUE
+rb_str_scrub_new(int argc, VALUE *argv, VALUE str)
+{
+    VALUE repl = argc ? (rb_check_arity(argc, 0, 1), argv[0]) : Qnil;
+    return rb_str_scrub(str, repl);
+}
+
 /*
  *  call-seq:
  *    str.scrub -> new_str
@@ -10829,8 +10836,7 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
 static VALUE
 str_scrub(int argc, VALUE *argv, VALUE str)
 {
-    VALUE repl = argc ? (rb_check_arity(argc, 0, 1), argv[0]) : Qnil;
-    VALUE new = rb_str_scrub(str, repl);
+    VALUE new = rb_str_scrub_new(argc, argv, str);
     return NIL_P(new) ? str_duplicate(rb_cString, str): new;
 }
 
@@ -10851,8 +10857,7 @@ str_scrub(int argc, VALUE *argv, VALUE str)
 static VALUE
 str_scrub_bang(int argc, VALUE *argv, VALUE str)
 {
-    VALUE repl = argc ? (rb_check_arity(argc, 0, 1), argv[0]) : Qnil;
-    VALUE new = rb_str_scrub(str, repl);
+    VALUE new = rb_str_scrub_new(argc, argv, str);
     if (!NIL_P(new)) rb_str_replace(str, new);
     return str;
 }
