@@ -282,7 +282,8 @@ module Psych
   # * TrueClass
   # * FalseClass
   # * NilClass
-  # * Numeric
+  # * Integer
+  # * Float
   # * String
   # * Array
   # * Hash
@@ -508,6 +509,79 @@ module Psych
     end
 
     visitor = Psych::Visitors::YAMLTree.create options
+    visitor << o
+    visitor.tree.yaml io, options
+  end
+
+  ###
+  # call-seq:
+  #   Psych.safe_dump(o)               -> string of yaml
+  #   Psych.safe_dump(o, options)      -> string of yaml
+  #   Psych.safe_dump(o, io)           -> io object passed in
+  #   Psych.safe_dump(o, io, options)  -> io object passed in
+  #
+  # Safely dump Ruby object +o+ to a YAML string. Optional +options+ may be passed in
+  # to control the output format.  If an IO object is passed in, the YAML will
+  # be dumped to that IO object. By default, only the following
+  # classes are allowed to be serialized:
+  #
+  # * TrueClass
+  # * FalseClass
+  # * NilClass
+  # * Integer
+  # * Float
+  # * String
+  # * Array
+  # * Hash
+  #
+  # Arbitrary classes can be allowed by adding those classes to the +permitted_classes+
+  # keyword argument.  They are additive.  For example, to allow Date serialization:
+  #
+  #   Psych.safe_dump(yaml, permitted_classes: [Date])
+  #
+  # Now the Date class can be dumped in addition to the classes listed above.
+  #
+  # A Psych::DisallowedClass exception will be raised if the object contains a
+  # class that isn't in the +permitted_classes+ list.
+  #
+  # Currently supported options are:
+  #
+  # [<tt>:indentation</tt>]   Number of space characters used to indent.
+  #                           Acceptable value should be in <tt>0..9</tt> range,
+  #                           otherwise option is ignored.
+  #
+  #                           Default: <tt>2</tt>.
+  # [<tt>:line_width</tt>]    Max character to wrap line at.
+  #
+  #                           Default: <tt>0</tt> (meaning "wrap at 81").
+  # [<tt>:canonical</tt>]     Write "canonical" YAML form (very verbose, yet
+  #                           strictly formal).
+  #
+  #                           Default: <tt>false</tt>.
+  # [<tt>:header</tt>]        Write <tt>%YAML [version]</tt> at the beginning of document.
+  #
+  #                           Default: <tt>false</tt>.
+  #
+  # Example:
+  #
+  #   # Dump an array, get back a YAML string
+  #   Psych.safe_dump(['a', 'b'])  # => "---\n- a\n- b\n"
+  #
+  #   # Dump an array to an IO object
+  #   Psych.safe_dump(['a', 'b'], StringIO.new)  # => #<StringIO:0x000001009d0890>
+  #
+  #   # Dump an array with indentation set
+  #   Psych.safe_dump(['a', ['b']], indentation: 3) # => "---\n- a\n-  - b\n"
+  #
+  #   # Dump an array to an IO with indentation set
+  #   Psych.safe_dump(['a', ['b']], StringIO.new, indentation: 3)
+  def self.safe_dump o, io = nil, options = {}
+    if Hash === io
+      options = io
+      io      = nil
+    end
+
+    visitor = Psych::Visitors::RestrictedYAMLTree.create options
     visitor << o
     visitor.tree.yaml io, options
   end

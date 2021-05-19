@@ -86,7 +86,7 @@ module Psych
         if @symbols.include? sym
           super
         else
-          raise DisallowedClass, 'Symbol'
+          raise DisallowedClass.new('load', 'Symbol')
         end
       end
 
@@ -96,7 +96,7 @@ module Psych
         if @classes.include? klassname
           super
         else
-          raise DisallowedClass, klassname
+          raise DisallowedClass.new('load', klassname)
         end
       end
     end

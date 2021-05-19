@@ -535,5 +535,51 @@ module Psych
         end
       end
     end
+
+    class RestrictedYAMLTree < YAMLTree
+      DEFAULT_PERMITTED_CLASSES = {
+        TrueClass => true,
+        FalseClass => true,
+        NilClass => true,
+        Integer => true,
+        Float => true,
+        String => true,
+        Array => true,
+        Hash => true,
+      }.compare_by_identity.freeze
+
+      def initialize emitter, ss, options
+        super
+        @permitted_classes = DEFAULT_PERMITTED_CLASSES.dup
+        Array(options[:permitted_classes]).each do |klass|
+          @permitted_classes[klass] = true
+        end
+        @permitted_symbols = {}.compare_by_identity
+        Array(options[:permitted_symbols]).each do |symbol|
+          @permitted_symbols[symbol] = true
+        end
+        @aliases = options.fetch(:aliases, false)
+      end
+
+      def accept target
+        if !@aliases && @st.key?(target)
+          raise BadAlias, "Tried to dump an aliased object"
+        end
+
+        unless @permitted_classes[target.class]
+          raise DisallowedClass.new('dump', target.class.name || target.class.inspect)
+        end
+
+        super
+      end
+
+      def visit_Symbol sym
+        unless @permitted_symbols[sym]
+          raise DisallowedClass.new('dump', "Symbol(#{sym.inspect})")
+        end
+
+        super
+      end
+    end
   end
 end

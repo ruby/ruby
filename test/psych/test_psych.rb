@@ -381,4 +381,61 @@ hoge:
     result = Psych.safe_load(yaml, symbolize_names: true)
     assert_equal result, { foo: { bar: "baz", 1 => 2 }, hoge: [{ fuga: "piyo" }] }
   end
+
+  def test_safe_dump_defaults
+    yaml = <<-eoyml
+---
+array:
+- 1
+float: 13.12
+booleans:
+- true
+- false
+eoyml
+
+    payload = YAML.safe_dump({
+      "array" => [1],
+      "float" => 13.12,
+      "booleans" => [true, false],
+    })
+    assert_equal yaml, payload
+  end
+
+  def test_safe_dump_unpermitted_class
+    error = assert_raises Psych::DisallowedClass do
+      YAML.safe_dump(Object.new)
+    end
+    assert_equal "Tried to dump unspecified class: Object", error.message
+
+    hash_subclass = Class.new(Hash)
+    error = assert_raises Psych::DisallowedClass do
+      YAML.safe_dump(hash_subclass.new)
+    end
+    assert_equal "Tried to dump unspecified class: #{hash_subclass.inspect}", error.message
+  end
+
+  def test_safe_dump_extra_permitted_classes
+    assert_equal "--- !ruby/object {}\n", YAML.safe_dump(Object.new, permitted_classes: [Object])
+  end
+
+  def test_safe_dump_symbols
+    error = assert_raises Psych::DisallowedClass do
+      YAML.safe_dump(:foo, permitted_classes: [Symbol])
+    end
+    assert_equal "Tried to dump unspecified class: Symbol(:foo)", error.message
+
+    assert_equal "--- :foo\n", YAML.safe_dump(:foo, permitted_classes: [Symbol], permitted_symbols: [:foo])
+  end
+
+  def test_safe_dump_aliases
+    x = []
+    x << x
+    error = assert_raises Psych::BadAlias do
+      YAML.safe_dump(x)
+    end
+    assert_equal "Tried to dump an aliased object", error.message
+
+    assert_equal "--- &1\n" + "- *1\n", YAML.safe_dump(x, aliases: true)
+  end
+
 end
