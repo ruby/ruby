@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <ruby/ruby.h>
+#include <ruby/encoding.h>
 
 #ifdef HAVE_RUBY_MEMORY_VIEW_H
 # include <ruby/memory_view.h>
@@ -233,6 +234,36 @@ rb_fiddle_memview_aref(int argc, VALUE *argv, VALUE obj)
     return rb_memory_view_extract_item_members(ptr, data->members, data->n_members);
 }
 
+static VALUE
+rb_fiddle_memview_to_s(VALUE self)
+{
+    struct memview_data *data;
+    const char *raw_data;
+    long byte_size;
+    VALUE string;
+
+    TypedData_Get_Struct(self,
+                         struct memview_data,
+                         &fiddle_memview_data_type,
+                         data);
+
+    if (NIL_P(data->view.obj)) {
+        raw_data = NULL;
+        byte_size = 0;
+    } else {
+        raw_data = data->view.data;
+        byte_size = data->view.byte_size;
+    }
+
+    string = rb_enc_str_new_static(raw_data, byte_size, rb_ascii8bit_encoding());
+    {
+        ID id_memory_view;
+        CONST_ID(id_memory_view, "memory_view");
+        rb_ivar_set(string, id_memory_view, self);
+    }
+    return rb_obj_freeze(string);
+}
+
 void
 Init_fiddle_memory_view(void)
 {
@@ -249,6 +280,7 @@ Init_fiddle_memory_view(void)
     rb_define_method(rb_cMemoryView, "strides", rb_fiddle_memview_get_strides, 0);
     rb_define_method(rb_cMemoryView, "sub_offsets", rb_fiddle_memview_get_sub_offsets, 0);
     rb_define_method(rb_cMemoryView, "[]", rb_fiddle_memview_aref, -1);
+    rb_define_method(rb_cMemoryView, "to_s", rb_fiddle_memview_to_s, 0);
 }
 
 #endif /* FIDDLE_MEMORY_VIEW */

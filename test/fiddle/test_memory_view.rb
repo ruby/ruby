@@ -113,5 +113,15 @@ module Fiddle
       assert_equal([-1, -2], mview[1, 0])
       assert_equal([-7, -8], mview[1, 3])
     end
+
+    def test_to_s
+      # U+3042 HIRAGANA LETTER A
+      data = "\u{3042}"
+      ptr = Pointer[data]
+      mview = MemoryView.new(ptr)
+      string = mview.to_s
+      assert_equal([data.b, true],
+                   [string, string.frozen?])
+    end
   end
 end
