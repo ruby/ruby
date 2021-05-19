@@ -246,7 +246,7 @@
 # define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function(n, f)  RBIMPL_ANYARGS_DISPATCH(RBIMPL_CFUNC_IS_rb_f_notimplement(f), rb_define_global_function_m3,  RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_15(n))
 # define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id(n, f)        RBIMPL_ANYARGS_DISPATCH(RBIMPL_CFUNC_IS_rb_f_notimplement(f), rb_define_method_id_m3,        RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_15(n))
 # define RBIMPL_ANYARGS_DISPATCH_rb_define_method(n, f)           RBIMPL_ANYARGS_DISPATCH(RBIMPL_CFUNC_IS_rb_f_notimplement(f), rb_define_method_m3,           RBIMPL_ANYARGS_DISPATCH_rb_define_method_15(n))
-# define RBIMPL_ANYARGS_ATTRSET(sym) RBIMPL_ATTR_MAYBE_UNUSED() RBIMPL_ATTR_NONNULL() RBIMPL_ATTR_WEAKREF(sym)
+# define RBIMPL_ANYARGS_ATTRSET(sym) RBIMPL_ATTR_MAYBE_UNUSED() RBIMPL_ATTR_NONNULL(()) RBIMPL_ATTR_WEAKREF(sym)
 # define RBIMPL_ANYARGS_DECL(sym, ...) \
 RBIMPL_ANYARGS_ATTRSET(sym) static void sym ## _m3(__VA_ARGS__, VALUE(*)(ANYARGS), int); \
 RBIMPL_ANYARGS_ATTRSET(sym) static void sym ## _m2(__VA_ARGS__, VALUE(*)(VALUE, VALUE), int); \
