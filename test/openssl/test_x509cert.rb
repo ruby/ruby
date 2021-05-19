@@ -245,6 +245,18 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
     }
   end
 
+  def test_read_der_then_pem
+    cert1 = issue_cert(@ca, @rsa2048, 1, [], nil, nil)
+    exts = [
+      # A new line before PEM block
+      ["nsComment", "Another certificate:\n" + cert1.to_pem],
+    ]
+    cert2 = issue_cert(@ca, @rsa2048, 2, exts, nil, nil)
+
+    assert_equal cert2, OpenSSL::X509::Certificate.new(cert2.to_der)
+    assert_equal cert2, OpenSSL::X509::Certificate.new(cert2.to_pem)
+  end
+
   def test_eq
     now = Time.now
     cacert = issue_cert(@ca, @rsa1024, 1, [], nil, nil,
