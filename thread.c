@@ -539,9 +539,9 @@ terminate_all(rb_ractor_t *r, const rb_thread_t *main_thread)
 static void
 rb_threadptr_join_list_wakeup(rb_thread_t *thread)
 {
-    struct rb_waiting_list *join_list = thread->join_list;
+    while (thread->join_list) {
+        struct rb_waiting_list *join_list = thread->join_list;
 
-    while (join_list) {
         // Consume the entry from the join list:
         thread->join_list = join_list->next;
 
@@ -560,25 +560,20 @@ rb_threadptr_join_list_wakeup(rb_thread_t *thread)
                     break;
             }
         }
-
-        join_list = join_list->next;
     }
 }
 
 void
 rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th)
 {
-    const char *err;
-    rb_mutex_t *mutex;
-    rb_mutex_t *mutexes = th->keeping_mutexes;
+    while (th->keeping_mutexes) {
+        rb_mutex_t *mutex = th->keeping_mutexes;
+        th->keeping_mutexes = mutex->next_mutex;
 
-    while (mutexes) {
-	mutex = mutexes;
-	/* rb_warn("mutex #<%p> remains to be locked by terminated thread",
-		(void *)mutexes); */
-	mutexes = mutex->next_mutex;
-	err = rb_mutex_unlock_th(mutex, th, mutex->fiber);
-	if (err) rb_bug("invalid keeping_mutexes: %s", err);
+        /* rb_warn("mutex #<%p> remains to be locked by terminated thread", (void *)mutexes); */
+
+        const char *error_message = rb_mutex_unlock_th(mutex, th, mutex->fiber);
+        if (error_message) rb_bug("invalid keeping_mutexes: %s", error_message);
     }
 }
 
@@ -878,6 +873,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
     }
 
     rb_threadptr_join_list_wakeup(th);
+    rb_threadptr_unlock_all_locking_mutexes(th);
 
     EC_POP_TAG();
 
@@ -895,7 +891,6 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
         rb_threadptr_interrupt(ractor_main_th);
     }
 
-    rb_threadptr_unlock_all_locking_mutexes(th);
     rb_check_deadlock(th->ractor);
 
     rb_fiber_close(th->ec->fiber_ptr);
