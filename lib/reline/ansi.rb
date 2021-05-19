@@ -25,6 +25,8 @@ class Reline::ANSI
       # extended entries of terminfo
       [27, 91, 49, 59, 53, 67] => :em_next_word, # Ctrl+→, extended entry
       [27, 91, 49, 59, 53, 68] => :ed_prev_word, # Ctrl+←, extended entry
+      [27, 91, 49, 59, 51, 67] => :em_next_word, # Meta+→, extended entry
+      [27, 91, 49, 59, 51, 68] => :ed_prev_word, # Meta+←, extended entry
     }.each_pair do |key, func|
       config.add_default_key_binding_by_keymap(:emacs, key, func)
       config.add_default_key_binding_by_keymap(:vi_insert, key, func)
