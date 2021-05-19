@@ -57,7 +57,11 @@ module Reline::Terminfo
   end
 
   def self.tigetstr(capname)
-    @tigetstr.(capname).to_s
+    result = @tigetstr.(capname).to_s
+    def result.tiparm(*args) # for method chain
+      Reline::Terminfo.tiparm(self, *args)
+    end
+    result
   end
 
   def self.tiparm(str, *args)
