@@ -13,6 +13,10 @@
 #include "st.h"
 #endif
 
+#ifndef MAYBE_UNUSED
+# define MAYBE_UNUSED(x) x
+#endif
+
 #define option_given_p(opts, key) RTEST(rb_funcall(opts, i_key_p, 1, key))
 
 /* unicode */
