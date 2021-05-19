@@ -82,6 +82,19 @@ class TestISeq < Test::Unit::TestCase
     end;
   end if defined?(RubyVM::InstructionSequence.load)
 
+  def test_cdhash_after_roundtrip
+    # CDHASH was not built properly when loading from binary and
+    # was causing opt_case_dispatch to clobber its stack canary
+    # for its "leaf" instruction attribute.
+    iseq = compile(<<~EOF)
+      case Class.new(String).new("foo")
+      when "foo"
+        42
+      end
+    EOF
+    assert_equal(42, ISeq.load_from_binary(iseq.to_binary).eval)
+  end
+
   def test_disasm_encoding
     src = "\u{3042} = 1; \u{3042}; \u{3043}"
     asm = compile(src).disasm

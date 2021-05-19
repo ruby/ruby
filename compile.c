@@ -10501,6 +10501,7 @@ ibf_table_find_or_insert(struct st_table *table, st_data_t key)
 static void ibf_dump_object_list(struct ibf_dump *dump, ibf_offset_t *obj_list_offset, unsigned int *obj_list_size);
 
 static VALUE ibf_load_object(const struct ibf_load *load, VALUE object_index);
+static VALUE ibf_load_cdhash(const struct ibf_load *load, VALUE object_index);
 static rb_iseq_t *ibf_load_iseq(const struct ibf_load *load, const rb_iseq_t *index_iseq);
 
 static st_table *
@@ -10758,7 +10759,6 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
         /* operands */
         for (op_index=0; types[op_index]; op_index++, code_index++) {
             switch (types[op_index]) {
-              case TS_CDHASH:
               case TS_VALUE:
                 {
                     VALUE op = ibf_load_small_value(load, &reading_pos);
@@ -10768,6 +10768,15 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
                         RB_OBJ_WRITTEN(iseqv, Qundef, v);
                         FL_SET(iseqv, ISEQ_MARKABLE_ISEQ);
                     }
+                    break;
+                }
+              case TS_CDHASH:
+                {
+                    VALUE op = ibf_load_small_value(load, &reading_pos);
+                    VALUE v = ibf_load_cdhash(load, op);
+                    code[code_index] = v;
+                    RB_OBJ_WRITTEN(iseqv, Qundef, v);
+                    FL_SET(iseqv, ISEQ_MARKABLE_ISEQ);
                     break;
                 }
               case TS_ISEQ:
@@ -12107,6 +12116,60 @@ ibf_load_object(const struct ibf_load *load, VALUE object_index)
 #endif
         return obj;
     }
+}
+
+// Similar to ibf_load_object(), but specifically for CDHASH.
+static VALUE
+ibf_load_cdhash(const struct ibf_load *load, VALUE object_index)
+{
+    if (UNLIKELY(object_index == 0)) {
+        rb_raise(rb_eIndexError, "unexpected zero index for CDHASH operand");
+    }
+    VALUE cdhash = pinned_list_fetch(load->current_buffer->obj_list, (long)object_index);
+    if (!cdhash) {
+        ibf_offset_t *offsets = (ibf_offset_t *)(load->current_buffer->obj_list_offset + load->current_buffer->buff);
+        ibf_offset_t offset = offsets[object_index];
+        const struct ibf_object_header header = ibf_load_object_object_header(load, &offset);
+
+#if IBF_ISEQ_DEBUG
+        fprintf(stderr, "ibf_load_cdhash: list=%#x offsets=%p offset=%#x\n",
+                load->current_buffer->obj_list_offset, (void *)offsets, offset);
+#endif
+
+        if (offset >= load->current_buffer->size) {
+            rb_raise(rb_eIndexError, "object offset out of range: %u", offset);
+        }
+
+        if (! (header.type == T_HASH && !header.special_const && header.frozen && header.internal)) {
+            rb_raise(rb_eRuntimeError, "broken CDHASH object header");
+        }
+
+        // Load the CDHASH. Similar to ibf_load_object_hash().
+        {
+            long len = (long)ibf_load_small_value(load, &offset);
+            cdhash = rb_hash_new_with_size(len);
+            RHASH_TBL_RAW(cdhash)->type = &cdhash_type;
+
+            for (long i = 0; i < len; i++) {
+                VALUE key_index = ibf_load_small_value(load, &offset);
+                VALUE val_index = ibf_load_small_value(load, &offset);
+
+                VALUE key = ibf_load_object(load, key_index);
+                VALUE val = ibf_load_object(load, val_index);
+                rb_hash_aset(cdhash, key, val);
+            }
+
+            rb_hash_rehash(cdhash);
+            freeze_hide_obj(cdhash);
+        }
+
+        pinned_list_store(load->current_buffer->obj_list, (long)object_index, cdhash);
+    }
+#if IBF_ISEQ_DEBUG
+    fprintf(stderr, "ibf_load_cdhash: index=%#"PRIxVALUE" obj=%#"PRIxVALUE"\n",
+            object_index, cdhash);
+#endif
+    return cdhash;
 }
 
 struct ibf_dump_object_list_arg
