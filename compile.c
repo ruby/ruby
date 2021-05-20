@@ -2926,7 +2926,8 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	}
         else if (iobj != diobj && IS_INSN(&diobj->link) &&
                  IS_INSN_ID(diobj, jump) &&
-		 OPERAND_AT(iobj, 0) != OPERAND_AT(diobj, 0)) {
+		 OPERAND_AT(iobj, 0) != OPERAND_AT(diobj, 0) &&
+                 diobj->insn_info.events == 0) {
 	    /*
 	     *  useless jump elimination:
 	     *     jump LABEL1
