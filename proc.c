@@ -2090,6 +2090,16 @@ rb_obj_singleton_method(VALUE obj, VALUE vid)
     UNREACHABLE_RETURN(Qundef);
 }
 
+static VALUE
+mod_instance_method(VALUE mod, VALUE vid, int scope)
+{
+    ID id = rb_check_id(&vid);
+    if (!id) {
+	rb_method_name_error(mod, vid);
+    }
+    return mnew_unbound(mod, id, rb_cUnboundMethod, scope);
+}
+
 /*
  *  call-seq:
  *     mod.instance_method(symbol)   -> unbound_method
@@ -2124,11 +2134,7 @@ rb_obj_singleton_method(VALUE obj, VALUE vid)
 static VALUE
 rb_mod_instance_method(VALUE mod, VALUE vid)
 {
-    ID id = rb_check_id(&vid);
-    if (!id) {
-	rb_method_name_error(mod, vid);
-    }
-    return mnew_unbound(mod, id, rb_cUnboundMethod, FALSE);
+    return mod_instance_method(mod, vid, FALSE);
 }
 
 /*
@@ -2141,11 +2147,7 @@ rb_mod_instance_method(VALUE mod, VALUE vid)
 static VALUE
 rb_mod_public_instance_method(VALUE mod, VALUE vid)
 {
-    ID id = rb_check_id(&vid);
-    if (!id) {
-	rb_method_name_error(mod, vid);
-    }
-    return mnew_unbound(mod, id, rb_cUnboundMethod, TRUE);
+    return mod_instance_method(mod, vid, TRUE);
 }
 
 /*
