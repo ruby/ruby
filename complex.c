@@ -1272,7 +1272,7 @@ rb_complex_conjugate(VALUE self)
  * Returns false, even if the complex number has no imaginary part.
  */
 static VALUE
-nucomp_false(VALUE self)
+nucomp_real_p_m(VALUE self)
 {
     return Qfalse;
 }
@@ -2385,7 +2385,7 @@ Init_Complex(void)
     rb_define_method(rb_cComplex, "conjugate", rb_complex_conjugate, 0);
     rb_define_method(rb_cComplex, "conj", rb_complex_conjugate, 0);
 
-    rb_define_method(rb_cComplex, "real?", nucomp_false, 0);
+    rb_define_method(rb_cComplex, "real?", nucomp_real_p_m, 0);
 
     rb_define_method(rb_cComplex, "numerator", nucomp_numerator, 0);
     rb_define_method(rb_cComplex, "denominator", nucomp_denominator, 0);
