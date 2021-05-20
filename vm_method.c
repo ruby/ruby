@@ -1409,11 +1409,16 @@ rb_export_method(VALUE klass, ID name, rb_method_visibility_t visi)
 	rb_vm_check_redefinition_opt_method(me, klass);
 
 	if (klass == defined_class || origin_class == defined_class) {
-	    METHOD_ENTRY_VISI_SET(me, visi);
-
-	    if (me->def->type == VM_METHOD_TYPE_REFINED && me->def->body.refined.orig_me) {
-		METHOD_ENTRY_VISI_SET((rb_method_entry_t *)me->def->body.refined.orig_me, visi);
-	    }
+            if (me->def->type == VM_METHOD_TYPE_REFINED) {
+                // Refinement method entries should always be public because the refinement
+                // search is always performed.
+                if (me->def->body.refined.orig_me) {
+                    METHOD_ENTRY_VISI_SET((rb_method_entry_t *)me->def->body.refined.orig_me, visi);
+                }
+            }
+            else {
+                METHOD_ENTRY_VISI_SET(me, visi);
+            }
             rb_clear_method_cache(klass, name);
 	}
 	else {
