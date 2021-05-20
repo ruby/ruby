@@ -222,14 +222,14 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
         if (json->allow_nan) {
             *result = CNaN;
         } else {
-            rb_enc_raise(EXC_ENCODING eParserError, "%u: unexpected token at '%s'", __LINE__, p - 2);
+            rb_enc_raise(EXC_ENCODING eParserError, "unexpected token at '%s'", p - 2);
         }
     }
     action parse_infinity {
         if (json->allow_nan) {
             *result = CInfinity;
         } else {
-            rb_enc_raise(EXC_ENCODING eParserError, "%u: unexpected token at '%s'", __LINE__, p - 8);
+            rb_enc_raise(EXC_ENCODING eParserError, "unexpected token at '%s'", p - 8);
         }
     }
     action parse_string {
@@ -245,7 +245,7 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
                 fexec p + 10;
                 fhold; fbreak;
             } else {
-                rb_enc_raise(EXC_ENCODING eParserError, "%u: unexpected token at '%s'", __LINE__, p);
+                rb_enc_raise(EXC_ENCODING eParserError, "unexpected token at '%s'", p);
             }
         }
         np = JSON_parse_float(json, fpc, pe, result);
@@ -447,7 +447,7 @@ static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *resul
     if(cs >= JSON_array_first_final) {
         return p + 1;
     } else {
-        rb_enc_raise(EXC_ENCODING eParserError, "%u: unexpected token at '%s'", __LINE__, p);
+        rb_enc_raise(EXC_ENCODING eParserError, "unexpected token at '%s'", p);
         return NULL;
     }
 }
@@ -512,7 +512,7 @@ static VALUE json_string_unescape(char *string, char *stringEnd, int intern, int
                       }
                       rb_enc_raise(
                         EXC_ENCODING eParserError,
-                        "%u: incomplete unicode character escape sequence at '%s'", __LINE__, p
+                        "incomplete unicode character escape sequence at '%s'", p
                       );
                     } else {
                         UTF32 ch = unescape_unicode((unsigned char *) ++pe);
@@ -525,7 +525,7 @@ static VALUE json_string_unescape(char *string, char *stringEnd, int intern, int
                               }
                               rb_enc_raise(
                                 EXC_ENCODING eParserError,
-                                "%u: incomplete surrogate pair at '%s'", __LINE__, p
+                                "incomplete surrogate pair at '%s'", p
                                 );
                             }
                             if (pe[0] == '\\' && pe[1] == 'u') {
@@ -864,7 +864,7 @@ static VALUE cParser_parse(VALUE self)
   if (cs >= JSON_first_final && p == pe) {
     return result;
   } else {
-    rb_enc_raise(EXC_ENCODING eParserError, "%u: unexpected token at '%s'", __LINE__, p);
+    rb_enc_raise(EXC_ENCODING eParserError, "unexpected token at '%s'", p);
     return Qnil;
   }
 }
