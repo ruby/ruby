@@ -9,7 +9,7 @@ module Reline::Terminfo
   @curses_dl = nil
   def self.curses_dl
     return @curses_dl if @curses_dl
-    if Gem::Version.create(Fiddle::VERSION) >= Gem::Version.create('1.0.1')
+    if Fiddle.const_defined?(:VERSION) and Gem::Version.create(Fiddle::VERSION) >= Gem::Version.create('1.0.1')
       # Fiddle::TYPE_VARIADIC is supported from Fiddle 1.0.1.
       %w[libncursesw.so libcursesw.so libncurses.so libcurses.so].each do |curses_name|
         result = Fiddle::Handle.new(curses_name)
