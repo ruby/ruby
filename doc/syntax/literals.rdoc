@@ -220,7 +220,7 @@ You may indent the ending identifier if you place a "-" after <tt><<</tt>:
   That might span many lines
     INDENTED_HEREDOC
 
-Note that the while the closing identifier may be indented, the content is
+Note that while the closing identifier may be indented, the content is
 always treated as if it is flush left.  If you indent the content those spaces
 will appear in the output.
 
