@@ -1039,6 +1039,7 @@ rb_vm_bugreport(const void *ctx)
     fprintf(stderr, "-- C level backtrace information "
 	    "-------------------------------------------\n");
     rb_print_backtrace();
+    return;
 
 
     fprintf(stderr, "\n");
