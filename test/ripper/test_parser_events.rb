@@ -660,6 +660,8 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     }
     assert_equal true, thru_def
     assert_equal '[def(foo,[],bodystmt([void()]))]', parse('def foo ;end')
+    assert_equal '[def(foo,[],bodystmt([void()],rescue(,,[void()])))]', parse('def foo ;rescue; end')
+    assert_equal '[def(foo,[],bodystmt([void()],,,ensure([void()])))]', parse('def foo ;ensure; end')
   end
 
   def test_endless_def
