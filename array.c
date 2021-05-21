@@ -3226,6 +3226,15 @@ sort_reentered(VALUE ary)
     return Qnil;
 }
 
+static void
+sort_returned(struct ary_sort_data *data)
+{
+    if (rb_obj_frozen_p(data->receiver)) {
+        rb_raise(rb_eFrozenError, "array frozen during sort");
+    }
+    sort_reentered(data->ary);
+}
+
 static int
 sort_1(const void *ap, const void *bp, void *dummy)
 {
@@ -3239,10 +3248,7 @@ sort_1(const void *ap, const void *bp, void *dummy)
     args[1] = b;
     retval = rb_yield_values2(2, args);
     n = rb_cmpint(retval, a, b);
-    if (rb_obj_frozen_p(data->receiver)) {
-        rb_raise(rb_eFrozenError, "array frozen during sort");
-    }
-    sort_reentered(data->ary);
+    sort_returned(data);
     return n;
 }
 
@@ -3268,10 +3274,7 @@ sort_2(const void *ap, const void *bp, void *dummy)
 
     retval = rb_funcallv(a, id_cmp, 1, &b);
     n = rb_cmpint(retval, a, b);
-    if (rb_obj_frozen_p(data->receiver)) {
-        rb_raise(rb_eFrozenError, "array frozen during sort");
-    }
-    sort_reentered(data->ary);
+    sort_returned(data);
 
     return n;
 }
