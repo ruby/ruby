@@ -1636,6 +1636,7 @@ command_asgn	: lhs '=' lex_ctxt command_rhs
 		    /*%%%*/
 			$$ = set_defun_body(p, $1, $2, $4, &@$);
 		    /*% %*/
+		    /*% ripper[$4]: bodystmt!($4, Qnil, Qnil, Qnil) %*/
 		    /*% ripper: def!(get_value($1), $2, $4) %*/
 			local_pop(p);
 		    }
@@ -1647,7 +1648,8 @@ command_asgn	: lhs '=' lex_ctxt command_rhs
 			$4 = rescued_expr(p, $4, $6, &@4, &@5, &@6);
 			$$ = set_defun_body(p, $1, $2, $4, &@$);
 		    /*% %*/
-		    /*% ripper: def!(get_value($1), $2, rescue_mod!($4, $6)) %*/
+		    /*% ripper[$4]: bodystmt!(rescue_mod!($4, $6), Qnil, Qnil, Qnil) %*/
+		    /*% ripper: def!(get_value($1), $2, $4) %*/
 			local_pop(p);
 		    }
 		| defs_head f_opt_paren_args '=' command
@@ -1659,6 +1661,7 @@ command_asgn	: lhs '=' lex_ctxt command_rhs
 		    /*%
 			$1 = get_value($1);
 		    %*/
+		    /*% ripper[$4]: bodystmt!($4, Qnil, Qnil, Qnil) %*/
 		    /*% ripper: defs!(AREF($1, 0), AREF($1, 1), AREF($1, 2), $2, $4) %*/
 			local_pop(p);
 		    }
@@ -1672,7 +1675,8 @@ command_asgn	: lhs '=' lex_ctxt command_rhs
 		    /*%
 			$1 = get_value($1);
 		    %*/
-		    /*% ripper: defs!(AREF($1, 0), AREF($1, 1), AREF($1, 2), $2, rescue_mod!($4, $6)) %*/
+		    /*% ripper[$4]: bodystmt!(rescue_mod!($4, $6), Qnil, Qnil, Qnil) %*/
+		    /*% ripper: defs!(AREF($1, 0), AREF($1, 1), AREF($1, 2), $2, $4) %*/
 			local_pop(p);
 		    }
 		| backref tOP_ASGN lex_ctxt command_rhs
@@ -2557,6 +2561,7 @@ arg		: lhs '=' lex_ctxt arg_rhs
 		    /*%%%*/
 			$$ = set_defun_body(p, $1, $2, $4, &@$);
 		    /*% %*/
+		    /*% ripper[$4]: bodystmt!($4, Qnil, Qnil, Qnil) %*/
 		    /*% ripper: def!(get_value($1), $2, $4) %*/
 			local_pop(p);
 		    }
@@ -2568,7 +2573,8 @@ arg		: lhs '=' lex_ctxt arg_rhs
 			$4 = rescued_expr(p, $4, $6, &@4, &@5, &@6);
 			$$ = set_defun_body(p, $1, $2, $4, &@$);
 		    /*% %*/
-		    /*% ripper: def!(get_value($1), $2, rescue_mod!($4, $6)) %*/
+		    /*% ripper[$4]: bodystmt!(rescue_mod!($4, $6), Qnil, Qnil, Qnil) %*/
+		    /*% ripper: def!(get_value($1), $2, $4) %*/
 			local_pop(p);
 		    }
 		| defs_head f_opt_paren_args '=' arg
@@ -2580,6 +2586,7 @@ arg		: lhs '=' lex_ctxt arg_rhs
 		    /*%
 			$1 = get_value($1);
 		    %*/
+		    /*% ripper[$4]: bodystmt!($4, Qnil, Qnil, Qnil) %*/
 		    /*% ripper: defs!(AREF($1, 0), AREF($1, 1), AREF($1, 2), $2, $4) %*/
 			local_pop(p);
 		    }
@@ -2593,7 +2600,8 @@ arg		: lhs '=' lex_ctxt arg_rhs
 		    /*%
 			$1 = get_value($1);
 		    %*/
-		    /*% ripper: defs!(AREF($1, 0), AREF($1, 1), AREF($1, 2), $2, rescue_mod!($4, $6)) %*/
+		    /*% ripper[$4]: bodystmt!(rescue_mod!($4, $6), Qnil, Qnil, Qnil) %*/
+		    /*% ripper: defs!(AREF($1, 0), AREF($1, 1), AREF($1, 2), $2, $4) %*/
 			local_pop(p);
 		    }
 		| primary
