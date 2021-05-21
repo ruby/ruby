@@ -162,7 +162,7 @@ class RDoc::RDoc
     RDoc.load_yaml
 
     begin
-      options = YAML.load_file '.rdoc_options', permitted_classes: [RDoc::Options, Symbol]
+      options = YAML.safe_load File.read('.rdoc_options'), permitted_classes: [RDoc::Options, Symbol]
     rescue Psych::SyntaxError
       raise RDoc::Error, "#{options_file} is not a valid rdoc options file"
     end
