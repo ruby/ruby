@@ -9,6 +9,7 @@ nproc = $(subst -j,,$(filter -j%,$(MFLAGS)))
 ifneq ($(filter %darwin%,$(arch)),)
 INSTRUBY_ENV += SDKROOT=/
 endif
+INSTRUBY_ARGS += --gnumake
 
 CHECK_TARGETS := great exam love check test check% test% btest%
 # expand test targets, and those dependents

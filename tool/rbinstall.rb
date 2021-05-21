@@ -56,6 +56,7 @@ def parse_args(argv = ARGV)
                 File.exist?("rubystub.exe") ? 'exe' : 'cmd'
               end)
   mflags = []
+  gnumake = false
   opt = OptionParser.new
   opt.on('-n', '--dry-run') {$dryrun = true}
   opt.on('--dest-dir=DIR') {|dir| $destdir = dir}
@@ -91,6 +92,7 @@ def parse_args(argv = ARGV)
   opt.on('--html-output [DIR]') {|dir| $htmldir = dir}
   opt.on('--cmd-type=TYPE', %w[cmd plain]) {|cmd| $cmdtype = (cmd unless cmd == 'plain')}
   opt.on('--[no-]strip') {|strip| $strip = strip}
+  opt.on('--gnumake') {gnumake = true}
 
   opt.order!(argv) do |v|
     case v
@@ -113,6 +115,7 @@ def parse_args(argv = ARGV)
   $make, *rest = Shellwords.shellwords($make)
   $mflags.unshift(*rest) unless rest.empty?
   $mflags.unshift(*mflags)
+  $mflags.reject! {|v| /\A-[OW]/ =~ v} if gnumake
 
   def $mflags.set?(flag)
     grep(/\A-(?!-).*#{flag.chr}/i) { return true }
