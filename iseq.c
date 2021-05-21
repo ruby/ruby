@@ -1115,6 +1115,12 @@ rb_iseq_absolute_path(const rb_iseq_t *iseq)
     return rb_iseq_realpath(iseq);
 }
 
+int
+rb_iseq_from_eval_p(const rb_iseq_t *iseq)
+{
+    return NIL_P(rb_iseq_realpath(iseq));
+}
+
 VALUE
 rb_iseq_label(const rb_iseq_t *iseq)
 {

@@ -213,6 +213,9 @@ ast_s_of(rb_execution_context_t *ec, VALUE module, VALUE body, VALUE save_script
         else {
             iseq = rb_method_iseq(body);
         }
+        if (rb_iseq_from_eval_p(iseq)) {
+            rb_raise(rb_eArgError, "cannot get AST for method defined in eval");
+        }
         path = rb_iseq_path(iseq);
         node_id = iseq->body->location.node_id;
     }
