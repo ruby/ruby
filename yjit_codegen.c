@@ -1093,6 +1093,25 @@ gen_putobject(jitstate_t* jit, ctx_t* ctx)
 }
 
 static codegen_status_t
+gen_putstring(jitstate_t* jit, ctx_t* ctx)
+{
+    VALUE put_val = jit_get_arg(jit, 0);
+
+    // Save the PC and SP because the callee will allocate
+    jit_save_pc(jit, REG0);
+    jit_save_sp(jit, ctx);
+
+    mov(cb, C_ARG_REGS[0], REG_EC);
+    jit_mov_gc_ptr(jit, cb, C_ARG_REGS[1], put_val);
+    call_ptr(cb, REG0, (void *)rb_ec_str_resurrect);
+
+    x86opnd_t stack_top = ctx_stack_push(ctx, TYPE_STRING);
+    mov(cb, stack_top, RAX);
+
+    return YJIT_KEEP_COMPILING;
+}
+
+static codegen_status_t
 gen_putobject_int2fix(jitstate_t* jit, ctx_t* ctx)
 {
     int opcode = jit_get_opcode(jit);
@@ -4001,6 +4020,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(concatstrings), gen_concatstrings);
     yjit_reg_op(BIN(putnil), gen_putnil);
     yjit_reg_op(BIN(putobject), gen_putobject);
+    yjit_reg_op(BIN(putstring), gen_putstring);
     yjit_reg_op(BIN(putobject_INT2FIX_0_), gen_putobject_int2fix);
     yjit_reg_op(BIN(putobject_INT2FIX_1_), gen_putobject_int2fix);
     yjit_reg_op(BIN(putself), gen_putself);
