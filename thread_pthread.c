@@ -34,6 +34,9 @@
 #if defined(__HAIKU__)
 #include <kernel/OS.h>
 #endif
+#ifdef __linux__
+#include <sys/syscall.h> /* for SYS_gettid */
+#endif
 #include <time.h>
 #include <signal.h>
 
@@ -659,11 +662,26 @@ Init_native_thread(rb_thread_t *th)
     posix_signal(SIGVTALRM, null_func);
 }
 
+#ifdef RB_THREAD_T_HAS_NATIVE_ID
+static int
+get_native_thread_id(void)
+{
+#ifdef __linux__
+    return (int)syscall(SYS_gettid);
+#elif defined(__FreeBSD__)
+    return pthread_getthreadid_np();
+#endif
+}
+#endif
+
 static void
 native_thread_init(rb_thread_t *th)
 {
     native_thread_data_t *nd = &th->native_thread_data;
 
+#ifdef RB_THREAD_T_HAS_NATIVE_ID
+    th->tid = get_native_thread_id();
+#endif
 #ifdef USE_UBF_LIST
     list_node_init(&nd->node.ubf);
 #endif
@@ -1705,6 +1723,25 @@ native_set_another_thread_name(rb_nativethread_id_t thread_id, VALUE name)
 # elif defined SET_CURRENT_THREAD_NAME
     SET_CURRENT_THREAD_NAME(s);
 # endif
+#endif
+}
+
+static VALUE
+native_thread_native_thread_id(rb_thread_t *target_th)
+{
+#if !defined(RB_THREAD_T_HAS_NATIVE_ID) && !defined(__APPLE__)
+    rb_notimplement();
+#endif
+
+#ifdef RB_THREAD_T_HAS_NATIVE_ID
+    int tid = target_th->tid;
+    if (tid == 0) return Qnil;
+    return INT2FIX(tid);
+#elif defined(__APPLE__)
+    uint64_t tid;
+    int e = pthread_threadid_np(target_th->thread_id, &tid);
+    if (e != 0) rb_syserr_fail(e, "pthread_threadid_np");
+    return ULL2NUM((unsigned long long)tid);
 #endif
 }
 

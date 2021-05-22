@@ -1334,6 +1334,27 @@ q.pop
     assert_equal("foo", c.new {Thread.current.name}.value, bug12290)
   end
 
+  def test_thread_native_thread_id
+    skip "don't support native_thread_id" unless (Thread.main.native_thread_id rescue nil)
+    assert_instance_of Integer, Thread.main.native_thread_id
+
+    th1 = Thread.start{sleep}
+
+    # newly created thread which doesn't run yet returns nil or integer
+    assert_include [NilClass, Integer], th1.native_thread_id.class
+
+    Thread.pass until th1.stop?
+
+    # After a thread starts (and execute `sleep`), it returns native_thread_id
+    assert_instance_of Integer, th1.native_thread_id
+
+    th1.wakeup
+    Thread.pass while th1.alive?
+
+    # dead thread returns nil
+    assert_nil th1.native_thread_id
+  end
+
   def test_thread_interrupt_for_killed_thread
     opts = { timeout: 5, timeout_error: nil }
 

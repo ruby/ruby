@@ -835,6 +835,14 @@ native_set_thread_name(rb_thread_t *th)
 {
 }
 
+static VALUE
+native_thread_native_thread_id(rb_thread_t *th)
+{
+    DWORD tid = GetThreadId(th->thread_id);
+    if (tid == 0) rb_sys_fail("GetThreadId");
+    return ULONG2NUM(tid);
+}
+
 #if USE_MJIT
 static unsigned long __stdcall
 mjit_worker(void *arg)

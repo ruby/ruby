@@ -3404,6 +3404,36 @@ rb_thread_setname(VALUE thread, VALUE name)
 
 /*
  * call-seq:
+ *   thr.native_thread_id   -> integer
+ *
+ * Return the native thread ID which is used by the Ruby thread.
+ *
+ * The ID depends on the OS. (not POSIX thread ID returned by pthread_self(3))
+ * * On Linux it is TID returned by gettid(2).
+ * * On macOS it is the system-wide unique integral ID of thread returned
+ *   by pthread_threadid_np(3).
+ * * On FreeBSD it is the unique integral ID of the thread returned by
+ *   pthread_getthreadid_np(3).
+ * * On Windows it is the thread identifier returned by GetThreadId().
+ * * On other platforms, it raises NotImplementedError.
+ *
+ * NOTE:
+ * If the thread is not associated yet or already deassociated with a native
+ * thread, it returns _nil_.
+ * If the Ruby implementation uses M:N thread model, the ID may change
+ * depending on the timing.
+ */
+
+static VALUE
+rb_thread_native_thread_id(VALUE thread)
+{
+    rb_thread_t *target_th = rb_thread_ptr(thread);
+    if (rb_threadptr_dead(target_th)) return Qnil;
+    return native_thread_native_thread_id(target_th);
+}
+
+/*
+ * call-seq:
  *   thr.to_s -> string
  *
  * Dump the name, id, and status of _thr_ to a string.
@@ -5494,6 +5524,7 @@ Init_Thread(void)
 
     rb_define_method(rb_cThread, "name", rb_thread_getname, 0);
     rb_define_method(rb_cThread, "name=", rb_thread_setname, 1);
+    rb_define_method(rb_cThread, "native_thread_id", rb_thread_native_thread_id, 0);
     rb_define_method(rb_cThread, "to_s", rb_thread_to_s, 0);
     rb_define_alias(rb_cThread, "inspect", "to_s");
 

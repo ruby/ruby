@@ -942,6 +942,10 @@ struct rb_ext_config {
 
 typedef struct rb_ractor_struct rb_ractor_t;
 
+#if defined(__linux__) || defined(__FreeBSD__)
+# define RB_THREAD_T_HAS_NATIVE_ID
+#endif
+
 typedef struct rb_thread_struct {
     struct list_node lt_node; // managed by a ractor
     VALUE self;
@@ -963,6 +967,9 @@ typedef struct rb_thread_struct {
     rb_nativethread_id_t thread_id;
 #ifdef NON_SCALAR_THREAD_ID
     rb_thread_id_string_t thread_id_string;
+#endif
+#ifdef RB_THREAD_T_HAS_NATIVE_ID
+    int tid;
 #endif
     BITFIELD(enum rb_thread_status, status, 2);
     /* bit flags */
