@@ -1667,10 +1667,11 @@ class TestArray < Test::Unit::TestCase
     array = [1, 2, 3, 4, 5]
     frozen_array = nil
     assert_raise(FrozenError) do
+      count = 0
       array.sort! do |a, b|
-        array.freeze if a == 3
+        array.freeze if (count += 1) == 6
         frozen_array ||= array.map.to_a if array.frozen?
-        1
+        b <=> a
       end
     end
     assert_equal(frozen_array, array)
