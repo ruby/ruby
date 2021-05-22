@@ -435,7 +435,10 @@ struct rb_iseq_constant_body {
     unsigned int stack_max; /* for stack overflow check */
 
     char catch_except_p; /* If a frame of this ISeq may catch exception, set TRUE */
-    bool builtin_inline_p; // This ISeq's builtin func is safe to be inlined by MJIT
+    // If true, this ISeq is leaf *and* backtraces are not used, for example,
+    // by rb_profile_frames. We verify only leafness on VM_CHECK_MODE though.
+    // For more details, see: https://bugs.ruby-lang.org/issues/16956
+    bool builtin_inline_p;
     struct rb_id_table *outer_variables;
 
 #if USE_MJIT
