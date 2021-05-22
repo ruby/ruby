@@ -1005,6 +1005,28 @@ rb_class_search_ancestor(VALUE cl, VALUE c)
  */
 #define rb_obj_singleton_method_undefined rb_obj_dummy1
 
+/* Document-method: const_added
+ *
+ * call-seq:
+ *   const_added(const_name)
+ *
+ * Invoked as a callback whenever a constant is assigned on the receiver
+ *
+ *   module Chatty
+ *     def self.const_added(const_name)
+ *       super
+ *       puts "Added #{const_name.inspect}"
+ *     end
+ *     FOO = 1
+ *   end
+ *
+ * <em>produces:</em>
+ *
+ *   Added :FOO
+ *
+ */
+#define rb_obj_mod_const_added rb_obj_dummy1
+
 /*
  * Document-method: extended
  *
@@ -4419,6 +4441,7 @@ InitVM_Object(void)
     rb_define_private_method(rb_cModule, "extended", rb_obj_mod_extended, 1);
     rb_define_private_method(rb_cModule, "prepended", rb_obj_mod_prepended, 1);
     rb_define_private_method(rb_cModule, "method_added", rb_obj_mod_method_added, 1);
+    rb_define_private_method(rb_cModule, "const_added", rb_obj_mod_const_added, 1);
     rb_define_private_method(rb_cModule, "method_removed", rb_obj_mod_method_removed, 1);
     rb_define_private_method(rb_cModule, "method_undefined", rb_obj_mod_method_undefined, 1);
 
