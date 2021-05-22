@@ -108,6 +108,10 @@ class TestSetTraceFunc < Test::Unit::TestCase
                  events.shift)
     assert_equal(["line", 4, __method__, self.class],
                  events.shift)
+    assert_equal(["c-call", 4, :const_added, Module],
+                 events.shift)
+    assert_equal(["c-return", 4, :const_added, Module],
+                 events.shift)
     assert_equal(["c-call", 4, :inherited, Class],
                  events.shift)
     assert_equal(["c-return", 4, :inherited, Class],
@@ -345,6 +349,8 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
     [["c-return", 2, :add_trace_func, Thread],
      ["line", 3, __method__, self.class],
+     ["c-call", 3, :const_added, Module],
+     ["c-return", 3, :const_added, Module],
      ["c-call", 3, :inherited, Class],
      ["c-return", 3, :inherited, Class],
      ["class", 3, nil, nil],
@@ -487,6 +493,8 @@ class TestSetTraceFunc < Test::Unit::TestCase
      [:line,     5, 'xyzzy', self.class,  method,           self,        :inner, :nothing],
      [:c_return, 4, "xyzzy", Integer,     :times,           1,           :outer, 1],
      [:line,     7, 'xyzzy', self.class,  method,           self,        :outer, :nothing],
+     [:c_call,   7, "xyzzy", Module,      :const_added,     TestSetTraceFunc, :outer, :nothing],
+     [:c_return, 7, "xyzzy", Module,      :const_added,     TestSetTraceFunc, :outer, nil],
      [:c_call,   7, "xyzzy", Class,       :inherited,       Object,      :outer, :nothing],
      [:c_return, 7, "xyzzy", Class,       :inherited,       Object,      :outer, nil],
      [:class,    7, "xyzzy", nil,         nil,              xyzzy.class, nil,    :nothing],
@@ -620,6 +628,8 @@ CODE
      [:line,     7, 'xyzzy', self.class,  method,           self,        :outer, :nothing],
      [:c_call,   7, "xyzzy", Class,       :inherited,       Object,      :outer, :nothing],
      [:c_return, 7, "xyzzy", Class,       :inherited,       Object,      :outer, nil],
+     [:c_call,   7, "xyzzy", Class,       :const_added,     Object,      :outer, :nothing],
+     [:c_return, 7, "xyzzy", Class,       :const_added,     Object,      :outer, nil],
      [:class,    7, "xyzzy", nil,         nil,              xyzzy.class, nil,    :nothing],
      [:line,     8, "xyzzy", nil,         nil,              xyzzy.class, nil,    :nothing],
      [:line,     9, "xyzzy", nil,         nil,              xyzzy.class, :XYZZY_outer, :nothing],

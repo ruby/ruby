@@ -29,6 +29,7 @@ Note: We're only listing outstanding class updates.
 * Module
     * Module.used_refinements has been added. [[Feature #14332]]
     * Module#refinements has been added. [[Feature #12737]]
+    * Module#const_added has been added. [[Feature #17881]]
 
 * Proc
     * Proc#dup returns an instance of subclass. [[Bug #17545]]
