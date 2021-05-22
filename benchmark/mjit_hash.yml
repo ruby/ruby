@@ -1,0 +1,17 @@
+type: lib/benchmark_driver/runner/mjit
+prelude: |
+  def hash_include?(hash, key) hash.include?(key) end
+  def hash_member?(hash, key)  hash.member?(key)  end
+  def hash_has_key?(hash, key) hash.has_key?(key) end
+  def hash_key?(hash, key)     hash.key?(key)     end
+
+  hash = { key: 1 }
+  key = :key
+
+benchmark:
+  - hash_include?(hash, key)
+  - hash_member?(hash, key)
+  - hash_has_key?(hash, key)
+  - hash_key?(hash, key)
+
+loop_count: 40000000

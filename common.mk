@@ -1022,6 +1022,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/ast.rb \
 		$(srcdir)/dir.rb \
 		$(srcdir)/gc.rb \
+		$(srcdir)/hash.rb \
 		$(srcdir)/numeric.rb \
 		$(srcdir)/io.rb \
 		$(srcdir)/pack.rb \
@@ -6216,11 +6217,14 @@ hash.$(OBJEXT): {$(VPATH)}backward/2/limits.h
 hash.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
 hash.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 hash.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+hash.$(OBJEXT): {$(VPATH)}builtin.h
 hash.$(OBJEXT): {$(VPATH)}config.h
 hash.$(OBJEXT): {$(VPATH)}debug_counter.h
 hash.$(OBJEXT): {$(VPATH)}defines.h
 hash.$(OBJEXT): {$(VPATH)}encoding.h
 hash.$(OBJEXT): {$(VPATH)}hash.c
+hash.$(OBJEXT): {$(VPATH)}hash.rb
+hash.$(OBJEXT): {$(VPATH)}hash.rbinc
 hash.$(OBJEXT): {$(VPATH)}id.h
 hash.$(OBJEXT): {$(VPATH)}id_table.h
 hash.$(OBJEXT): {$(VPATH)}intern.h
@@ -8199,6 +8203,7 @@ miniinit.$(OBJEXT): {$(VPATH)}dir.rb
 miniinit.$(OBJEXT): {$(VPATH)}encoding.h
 miniinit.$(OBJEXT): {$(VPATH)}gc.rb
 miniinit.$(OBJEXT): {$(VPATH)}gem_prelude.rb
+miniinit.$(OBJEXT): {$(VPATH)}hash.rb
 miniinit.$(OBJEXT): {$(VPATH)}id.h
 miniinit.$(OBJEXT): {$(VPATH)}intern.h
 miniinit.$(OBJEXT): {$(VPATH)}internal.h

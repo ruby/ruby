@@ -43,6 +43,7 @@
 #include "ruby_assert.h"
 #include "symbol.h"
 #include "transient_heap.h"
+#include "builtin.h"
 
 #ifndef HASH_DEBUG
 #define HASH_DEBUG 0
@@ -3630,18 +3631,6 @@ rb_hash_values(VALUE hash)
     return values;
 }
 
-/*
- *  call-seq:
- *    hash.include?(key) -> true or false
- *    hash.has_key?(key) -> true or false
- *    hash.key?(key) -> true or false
- *    hash.member?(key) -> true or false
-
- *  Methods #has_key?, #key?, and #member? are aliases for \#include?.
- *
- *  Returns +true+ if +key+ is a key in +self+, otherwise +false+.
- */
-
 MJIT_FUNC_EXPORTED VALUE
 rb_hash_has_key(VALUE hash, VALUE key)
 {
@@ -7035,11 +7024,7 @@ Init_Hash(void)
     rb_define_method(rb_cHash, "compact", rb_hash_compact, 0);
     rb_define_method(rb_cHash, "compact!", rb_hash_compact_bang, 0);
 
-    rb_define_method(rb_cHash, "include?", rb_hash_has_key, 1);
-    rb_define_method(rb_cHash, "member?", rb_hash_has_key, 1);
-    rb_define_method(rb_cHash, "has_key?", rb_hash_has_key, 1);
     rb_define_method(rb_cHash, "has_value?", rb_hash_has_value, 1);
-    rb_define_method(rb_cHash, "key?", rb_hash_has_key, 1);
     rb_define_method(rb_cHash, "value?", rb_hash_has_value, 1);
 
     rb_define_method(rb_cHash, "compare_by_identity", rb_hash_compare_by_id, 0);
@@ -7206,3 +7191,5 @@ Init_Hash(void)
 
     HASH_ASSERT(sizeof(ar_hint_t) * RHASH_AR_TABLE_MAX_SIZE == sizeof(VALUE));
 }
+
+#include "hash.rbinc"
