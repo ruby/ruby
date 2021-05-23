@@ -748,10 +748,7 @@ num_abs(VALUE num)
 static VALUE
 num_zero_p(VALUE num)
 {
-    if (rb_equal(num, INT2FIX(0))) {
-        return Qtrue;
-    }
-    return Qfalse;
+    return rb_equal(num, INT2FIX(0));
 }
 
 static VALUE
