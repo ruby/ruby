@@ -754,6 +754,15 @@ class TestArray < Test::Unit::TestCase
     a = @cls[ 5, 6, 7, 8, 9, 10 ]
     assert_equal(9, a.delete_if {|i| break i if i > 8; i < 7})
     assert_equal(@cls[7, 8, 9, 10], a, bug2545)
+
+    assert_raise(FrozenError) do
+      a = @cls[1, 2, 3, 42]
+      a.delete_if do
+        a.freeze
+        true
+      end
+    end
+    assert_equal(@cls[1, 2, 3, 42], a)
   end
 
   def test_dup
@@ -1322,6 +1331,15 @@ class TestArray < Test::Unit::TestCase
     a = @cls[ 5, 6, 7, 8, 9, 10 ]
     assert_equal(9, a.reject! {|i| break i if i > 8; i < 7})
     assert_equal(@cls[7, 8, 9, 10], a, bug2545)
+
+    assert_raise(FrozenError) do
+      a = @cls[1, 2, 3, 42]
+      a.reject! do
+        a.freeze
+        true
+      end
+    end
+    assert_equal(@cls[1, 2, 3, 42], a)
   end
 
   def test_shared_array_reject!
@@ -2599,6 +2617,15 @@ class TestArray < Test::Unit::TestCase
     a = @cls[ 1, 2, 3, 4, 5 ]
     a.select! {|i| a.clear if i == 5; false }
     assert_equal(0, a.size, bug13053)
+
+    assert_raise(FrozenError) do
+      a = @cls[1, 2, 3, 42]
+      a.select! do
+        a.freeze
+        false
+      end
+    end
+    assert_equal(@cls[1, 2, 3, 42], a)
   end
 
   # also select!
@@ -2614,6 +2641,15 @@ class TestArray < Test::Unit::TestCase
     a = @cls[ 1, 2, 3, 4, 5 ]
     assert_equal(a, a.keep_if { |i| i > 3 })
     assert_equal(@cls[4, 5], a)
+
+    assert_raise(FrozenError) do
+      a = @cls[1, 2, 3, 42]
+      a.keep_if do
+        a.freeze
+        false
+      end
+    end
+    assert_equal(@cls[1, 2, 3, 42], a)
   end
 
   def test_filter

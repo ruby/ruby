@@ -2476,6 +2476,7 @@ static int
 delete_if_i(VALUE key, VALUE value, VALUE hash)
 {
     if (RTEST(rb_yield_values(2, key, value))) {
+	rb_hash_modify(hash);
 	return ST_DELETE;
     }
     return ST_CONTINUE;
@@ -2753,6 +2754,7 @@ static int
 keep_if_i(VALUE key, VALUE value, VALUE hash)
 {
     if (!RTEST(rb_yield_values(2, key, value))) {
+	rb_hash_modify(hash);
 	return ST_DELETE;
     }
     return ST_CONTINUE;
@@ -3322,6 +3324,7 @@ transform_values_foreach_replace(st_data_t *key, st_data_t *value, st_data_t arg
 {
     VALUE new_value = rb_yield((VALUE)*value);
     VALUE hash = (VALUE)argp;
+    rb_hash_modify(hash);
     RB_OBJ_WRITE(hash, value, new_value);
     return ST_CONTINUE;
 }
