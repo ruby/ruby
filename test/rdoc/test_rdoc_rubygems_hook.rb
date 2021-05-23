@@ -9,6 +9,9 @@ class TestRDocRubygemsHook < Gem::TestCase
   unless method_defined?(:assert_path_not_exist)
     alias assert_path_not_exist refute_path_exists
   end
+  unless method_defined?(:assert_raise)
+    alias assert_raise assert_raises
+  end
 
   def setup
     super
