@@ -834,13 +834,14 @@ class Set
   alias to_s inspect
 
   def pretty_print(pp)  # :nodoc:
-    pp.text sprintf('#<%s: {', self.class.name)
-    pp.nest(1) {
-      pp.seplist(self) { |o|
-        pp.pp o
+    pp.group(1, sprintf('#<%s:', self.class.name), '>') {
+      pp.breakable
+      pp.group(1, '{', '}') {
+        pp.seplist(self) { |o|
+          pp.pp o
+        }
       }
     }
-    pp.text "}>"
   end
 
   def pretty_print_cycle(pp)    # :nodoc:
