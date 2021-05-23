@@ -9265,14 +9265,14 @@ lstrip_offset(VALUE str, const char *s, const char *e, rb_encoding *enc)
 
     /* remove spaces at head */
     if (single_byte_optimizable(str)) {
-	while (s < e && ascii_isspace(*s)) s++;
+        while (s < e && (*s == '\0' || ascii_isspace(*s))) s++;
     }
     else {
 	while (s < e) {
 	    int n;
 	    unsigned int cc = rb_enc_codepoint_len(s, e, &n, enc);
 
-	    if (!rb_isspace(cc)) break;
+            if (cc && !rb_isspace(cc)) break;
 	    s += n;
 	}
     }
