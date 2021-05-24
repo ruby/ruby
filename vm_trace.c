@@ -840,8 +840,13 @@ unsigned int
 rb_tracearg_locindex(rb_trace_arg_t *trace_arg)
 {
     const rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(trace_arg->ec, trace_arg->cfp);
-    const rb_iseq_t *iseq = cfp->iseq;
-    return rb_iseq_recorded_locindex((rb_iseq_t *)iseq, cfp->pc);
+    if (LIKELY(cfp)) {
+        const rb_iseq_t *iseq = cfp->iseq;
+        return rb_iseq_recorded_locindex((rb_iseq_t *)iseq, cfp->pc);
+    }
+    else {
+        return 0;
+    }
 }
 
 static void
