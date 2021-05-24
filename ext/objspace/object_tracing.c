@@ -19,12 +19,16 @@
 
 struct traceobj_arg {
     int running;
-    int keep_remains;
+    bool keep_remains;
+    bool light_mode; // only keep file and line
+
     VALUE newobj_trace;
     VALUE freeobj_trace;
     st_table *object_table; /* obj (VALUE) -> allocation_info */
     st_table *str_table;    /* cstr -> refcount */
-    struct traceobj_arg *prev_traceobj_arg;
+
+    // light mode
+    st_table *light_table;
 };
 
 static const char *
@@ -68,6 +72,28 @@ delete_unique_str(st_table *tbl, const char *str)
 	    st_insert(tbl, (st_data_t)str, n-1);
 	}
     }
+}
+
+static void
+light_newobj_i(VALUE tpval, void *data)
+{
+    struct traceobj_arg *arg = (struct traceobj_arg *)data;
+    rb_trace_arg_t *tparg = rb_tracearg_from_tracepoint(tpval);
+    unsigned int locindex = rb_tracearg_locindex(tparg);
+    st_data_t obj = (st_data_t)rb_tracearg_object(tparg);
+
+    if (locindex) {
+        st_insert(arg->light_table, obj, (st_data_t)locindex);
+    }
+}
+
+static void
+light_freeobj_i(VALUE tpval, void *data)
+{
+    struct traceobj_arg *arg = (struct traceobj_arg *)data;
+    rb_trace_arg_t *tparg = rb_tracearg_from_tracepoint(tpval);
+    st_data_t obj = (st_data_t)rb_tracearg_object(tparg);
+    st_delete(arg->object_table, &obj, NULL);
 }
 
 static void
@@ -241,33 +267,41 @@ get_traceobj_arg(void)
 	tmp_trace_arg->freeobj_trace = 0;
 	tmp_trace_arg->object_table = st_init_numtable();
 	tmp_trace_arg->str_table = st_init_strtable();
+        tmp_trace_arg->light_table = st_init_numtable();
     }
     return tmp_trace_arg;
 }
 
-/*
- * call-seq: trace_object_allocations_start
- *
- * Starts tracing object allocations.
- *
- */
 static VALUE
-trace_object_allocations_start(VALUE self)
+trace_object_allocations_start_(VALUE self, VALUE lightv)
 {
     struct traceobj_arg *arg = get_traceobj_arg();
+    bool is_light = RTEST(lightv) ? true : false;
 
-    if (arg->running++ > 0) {
-	/* do nothing */
+    if (arg->running > 0) {
+        if (is_light && !arg->light_mode) {
+            rb_raise(rb_eRuntimeError, "Light mode is specified, but already running normal mode.");
+        }
+        if (!is_light && arg->light_mode) {
+            rb_raise(rb_eRuntimeError, "Normal mode is specified, but already running light mode.");
+        }
     }
     else {
-	if (arg->newobj_trace == 0) {
-	    arg->newobj_trace = rb_tracepoint_new(0, RUBY_INTERNAL_EVENT_NEWOBJ, newobj_i, arg);
-	    arg->freeobj_trace = rb_tracepoint_new(0, RUBY_INTERNAL_EVENT_FREEOBJ, freeobj_i, arg);
+	if (arg->newobj_trace == 0 || is_light != arg->light_mode) {
+            if (is_light) {
+                arg->newobj_trace = rb_tracepoint_new(0, RUBY_INTERNAL_EVENT_NEWOBJ, light_newobj_i, arg);
+                arg->freeobj_trace = rb_tracepoint_new(0, RUBY_INTERNAL_EVENT_FREEOBJ, light_freeobj_i, arg);
+            }
+            else {
+                arg->newobj_trace = rb_tracepoint_new(0, RUBY_INTERNAL_EVENT_NEWOBJ, newobj_i, arg);
+                arg->freeobj_trace = rb_tracepoint_new(0, RUBY_INTERNAL_EVENT_FREEOBJ, freeobj_i, arg);
+            }
+            arg->light_mode = is_light;
 	}
 	rb_tracepoint_enable(arg->newobj_trace);
 	rb_tracepoint_enable(arg->freeobj_trace);
     }
-
+    arg->running++;
     return Qnil;
 }
 
@@ -323,41 +357,6 @@ trace_object_allocations_clear(VALUE self)
     return Qnil;
 }
 
-/*
- * call-seq: trace_object_allocations { block }
- *
- * Starts tracing object allocations from the ObjectSpace extension module.
- *
- * For example:
- *
- *	require 'objspace'
- *
- *	class C
- *	  include ObjectSpace
- *
- *	  def foo
- *	    trace_object_allocations do
- *	      obj = Object.new
- *	      p "#{allocation_sourcefile(obj)}:#{allocation_sourceline(obj)}"
- *	    end
- *	  end
- *	end
- *
- *	C.new.foo #=> "objtrace.rb:8"
- *
- * This example has included the ObjectSpace module to make it easier to read,
- * but you can also use the ::trace_object_allocations notation (recommended).
- *
- * Note that this feature introduces a huge performance decrease and huge
- * memory consumption.
- */
-static VALUE
-trace_object_allocations(VALUE self)
-{
-    trace_object_allocations_start(self);
-    return rb_ensure(rb_yield, Qnil, trace_object_allocations_stop, self);
-}
-
 int rb_bug_reporter_add(void (*func)(FILE *, void *), void *data);
 static int object_allocations_reporter_registered = 0;
 
@@ -400,13 +399,13 @@ trace_object_allocations_debug_start(VALUE self)
 	rb_bug_reporter_add(object_allocations_reporter, 0);
     }
 
-    return trace_object_allocations_start(self);
+    return trace_object_allocations_start_(self, Qfalse);
 }
 
 static struct allocation_info *
 lookup_allocation_info(VALUE obj)
 {
-    if (tmp_trace_arg) {
+    if (tmp_trace_arg && !tmp_trace_arg->light_mode) {
 	st_data_t info;
 	if (st_lookup(tmp_trace_arg->object_table, obj, &info)) {
 	    return (struct allocation_info *)info;
@@ -414,6 +413,19 @@ lookup_allocation_info(VALUE obj)
     }
     return NULL;
 }
+
+static unsigned int
+lookup_allocation_locindex(VALUE obj)
+{
+    if (tmp_trace_arg && tmp_trace_arg->light_mode) {
+	st_data_t info;
+	if (st_lookup(tmp_trace_arg->light_table, obj, &info)) {
+	    return (unsigned int)info;
+	}
+    }
+    return 0;
+}
+
 
 struct allocation_info *
 objspace_lookup_allocation_info(VALUE obj)
@@ -437,7 +449,14 @@ allocation_sourcefile(VALUE self, VALUE obj)
 	return rb_str_new2(info->path);
     }
     else {
-	return Qnil;
+        unsigned int locindex = lookup_allocation_locindex(obj);
+        VALUE fname;
+        if (locindex && rb_locindex_resolve(locindex, &fname, NULL)) {
+            return fname;
+        }
+        else {
+            return Qnil;
+        }
     }
 }
 
@@ -457,7 +476,14 @@ allocation_sourceline(VALUE self, VALUE obj)
 	return INT2FIX(info->line);
     }
     else {
-	return Qnil;
+        unsigned int locindex = lookup_allocation_locindex(obj);
+        int line;
+        if (locindex && rb_locindex_resolve(locindex, NULL, &line)) {
+            return INT2FIX(line);
+        }
+        else {
+            return Qnil;
+        }
     }
 }
 
@@ -562,9 +588,7 @@ Init_object_tracing(VALUE rb_mObjSpace)
 #if 0
     rb_mObjSpace = rb_define_module("ObjectSpace"); /* let rdoc know */
 #endif
-
-    rb_define_module_function(rb_mObjSpace, "trace_object_allocations", trace_object_allocations, 0);
-    rb_define_module_function(rb_mObjSpace, "trace_object_allocations_start", trace_object_allocations_start, 0);
+    rb_define_module_function(rb_mObjSpace, "trace_object_allocations_start_", trace_object_allocations_start_, 1);
     rb_define_module_function(rb_mObjSpace, "trace_object_allocations_stop", trace_object_allocations_stop, 0);
     rb_define_module_function(rb_mObjSpace, "trace_object_allocations_clear", trace_object_allocations_clear, 0);
 

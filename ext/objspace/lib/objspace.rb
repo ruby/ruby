@@ -88,4 +88,44 @@ module ObjectSpace
     return nil if output == :stdout
     ret
   end
+
+  # call-seq: trace_object_allocations_start
+  #
+  # Starts tracing object allocations.
+  def trace_object_allocations_start light: false
+    trace_object_allocations_start_(light)
+  end
+
+  # call-seq: trace_object_allocations { block }
+  #
+  # Starts tracing object allocations from the ObjectSpace extension module.
+  #
+  # For example:
+  #
+  #	require 'objspace'
+  #
+  #	class C
+  #	  include ObjectSpace
+  #
+  #	  def foo
+  #	    trace_object_allocations do
+  #	      obj = Object.new
+  #	      p "#{allocation_sourcefile(obj)}:#{allocation_sourceline(obj)}"
+  #	    end
+  #	  end
+  #	end
+  #
+  #	C.new.foo #=> "objtrace.rb:8"
+  #
+  # This example has included the ObjectSpace module to make it easier to read,
+  # but you can also use the ::trace_object_allocations notation (recommended).
+  #
+  # Note that this feature introduces a huge performance decrease and huge
+  # memory consumption.
+  def trace_object_allocations light: false
+    trace_object_allocations_start_ light
+    yield
+  ensure
+    trace_object_allocations_stop
+  end
 end

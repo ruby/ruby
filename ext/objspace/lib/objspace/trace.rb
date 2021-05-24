@@ -23,7 +23,7 @@
 #   4:
 #   5: p obj  #=> "str" @ test.rb:3
 
-require 'objspace.so'
+require 'objspace'
 
 module Kernel
   remove_method :p
@@ -40,6 +40,6 @@ module Kernel
   end
 end
 
-ObjectSpace.trace_object_allocations_start
+ObjectSpace.trace_object_allocations_start(light: true)
 
 warn "objspace/trace is enabled"
