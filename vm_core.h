@@ -427,6 +427,8 @@ struct rb_iseq_constant_body {
 	VALUE coverage;
         VALUE pc2branchindex;
 	VALUE *original_iseq;
+        unsigned int recorded_index;
+        unsigned int recorded_locindex_start;
     } variable;
 
     unsigned int local_table_size;

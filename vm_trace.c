@@ -828,11 +828,20 @@ rb_tracearg_lineno(rb_trace_arg_t *trace_arg)
     fill_path_and_lineno(trace_arg);
     return INT2FIX(trace_arg->lineno);
 }
+
 VALUE
 rb_tracearg_path(rb_trace_arg_t *trace_arg)
 {
     fill_path_and_lineno(trace_arg);
     return trace_arg->path;
+}
+
+unsigned int
+rb_tracearg_locindex(rb_trace_arg_t *trace_arg)
+{
+    const rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(trace_arg->ec, trace_arg->cfp);
+    const rb_iseq_t *iseq = cfp->iseq;
+    return rb_iseq_recorded_locindex((rb_iseq_t *)iseq, cfp->pc);
 }
 
 static void

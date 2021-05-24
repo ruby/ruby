@@ -308,6 +308,10 @@ VALUE rb_iseq_defined_string(enum defined_type type);
 /* vm.c */
 VALUE rb_iseq_local_variables(const rb_iseq_t *iseq);
 
+// recorded information
+unsigned int rb_iseq_recorded_index(rb_iseq_t *iseq);
+unsigned int rb_iseq_recorded_locindex(rb_iseq_t *iseq, const VALUE *pc);
+
 RUBY_SYMBOL_EXPORT_END
 
 #endif /* RUBY_ISEQ_H */

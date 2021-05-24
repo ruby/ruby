@@ -36,6 +36,7 @@
 #include "iseq.h"
 #include "mjit.h"
 #include "ruby/util.h"
+#include "ruby/debug.h"
 #include "vm_core.h"
 #include "vm_callinfo.h"
 
@@ -3587,6 +3588,63 @@ succ_index_lookup(const struct succ_index_table *sd, int x)
 }
 #endif
 
+static VALUE recorded_iseq_ary; // init at Init_ISeq
+static unsigned int recorded_last_locindex = 1;
+
+static void
+iseq_record(rb_iseq_t *iseq)
+{
+    if (iseq->body->variable.recorded_index == 0) {
+        // TODO: ractor support
+        rb_ary_push(recorded_iseq_ary, (VALUE)iseq);
+        iseq->body->variable.recorded_index = RARRAY_LENINT(recorded_iseq_ary);
+        iseq->body->variable.recorded_locindex_start = recorded_last_locindex;
+        recorded_last_locindex += iseq->body->iseq_size;
+    }
+}
+
+unsigned int
+rb_iseq_recorded_index(rb_iseq_t *iseq)
+{
+    iseq_record(iseq);
+    return iseq->body->variable.recorded_index;
+}
+
+unsigned int
+rb_iseq_recorded_locindex(rb_iseq_t *iseq, const VALUE *pc)
+{
+    iseq_record(iseq);
+    VM_ASSERT(pc >= iseq->body->iseq_encoded);
+    unsigned int pc_index = (unsigned int)(pc - iseq->body->iseq_encoded);
+    return iseq->body->variable.recorded_locindex_start + pc_index;
+}
+
+bool
+rb_locindex_resolve(unsigned int locindex, VALUE *fname, int *line)
+{
+    VM_ASSERT(locindex > 0);
+    int len = RARRAY_LEN(recorded_iseq_ary);
+
+    // TODO: bsearch
+    for (int i=0; i<len; i++) {
+        const rb_iseq_t *iseq = (rb_iseq_t *)RARRAY_AREF(recorded_iseq_ary, i);
+        unsigned int locindex_start = iseq->body->variable.recorded_locindex_start;
+        if (locindex_start <= locindex && locindex_start + iseq->body->iseq_size > locindex) {
+            // found;
+            if (fname) {
+                *fname = rb_iseq_path(iseq);
+            }
+            if (line) {
+                unsigned int pc_index = locindex - iseq->body->variable.recorded_locindex_start;
+                const struct iseq_insn_info_entry *e = get_insn_info(iseq, pc_index);
+                *line = e->line_no;
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
 /*
  *  Document-class: RubyVM::InstructionSequence
  *
@@ -3656,4 +3714,9 @@ Init_ISeq(void)
 
     rb_undef_method(CLASS_OF(rb_cISeq), "translate");
     rb_undef_method(CLASS_OF(rb_cISeq), "load_iseq");
+
+    // recorded location API
+    recorded_iseq_ary = rb_ary_new();
+    rb_obj_hide(recorded_iseq_ary);
+    rb_gc_register_mark_object(recorded_iseq_ary);
 }
