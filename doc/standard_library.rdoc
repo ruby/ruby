@@ -83,7 +83,6 @@ WeakRef:: Allows a referenced object to be garbage-collected
 BigDecimal:: Provides arbitrary-precision floating point decimal arithmetic
 Date:: A subclass of Object includes Comparable module for handling dates
 DateTime:: Subclass of Date to handling dates, hours, minutes, seconds, offsets
-DBM:: Provides a wrapper for the UNIX-style Database Manager Library
 Digest:: Provides a framework for message digest libraries
 Etc:: Provides access to information typically stored in UNIX /etc directory
 Fcntl:: Loads constants defined in the OS fcntl.h C header file

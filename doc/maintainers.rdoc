@@ -312,10 +312,6 @@ Yukihiro Matsumoto (matz)
   _unmaintained_
   https://github.com/ruby/date
   https://rubygems.org/gems/date
-[ext/dbm]
-  _unmaintained_
-  https://github.com/ruby/dbm
-  https://rubygems.org/gems/dbm
 [ext/etc]
   Ruby core team
   https://github.com/ruby/etc

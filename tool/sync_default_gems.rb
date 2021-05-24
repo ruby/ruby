@@ -191,12 +191,6 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/test/io/wait", "test/io")
     cp_r("#{upstream}/io-wait.gemspec", "ext/io/wait")
     `git checkout ext/io/wait/depend`
-  when "dbm"
-    rm_rf(%w[ext/dbm test/dbm])
-    cp_r("#{upstream}/ext/dbm", "ext")
-    cp_r("#{upstream}/test/dbm", "test")
-    cp_r("#{upstream}/dbm.gemspec", "ext/dbm")
-    `git checkout ext/dbm/depend`
   when "gdbm"
     rm_rf(%w[ext/gdbm test/gdbm])
     cp_r("#{upstream}/ext/gdbm", "ext")
