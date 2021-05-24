@@ -277,10 +277,6 @@ Yukihiro Matsumoto (matz)
   _unmaintained_
   https://github.com/ruby/tmpdir
   https://rubygems.org/gems/tmpdir
-[lib/tracer.rb]
-  Keiju ISHITSUKA (keiju)
-  https://github.com/ruby/tracer
-  https://rubygems.org/gems/tracer
 [lib/tsort.rb]
   Tanaka Akira (akr)
   https://github.com/ruby/tsort
