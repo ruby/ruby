@@ -24,11 +24,10 @@ struct traceobj_arg {
 
     VALUE newobj_trace;
     VALUE freeobj_trace;
-    st_table *object_table; /* obj (VALUE) -> allocation_info */
+    // full-mode: obj (VALUE) -> allocation_info
+    // light-mode: obj (VALUE) -> locindex
+    st_table *object_table;
     st_table *str_table;    /* cstr -> refcount */
-
-    // light mode
-    st_table *light_table;
 };
 
 static const char *
@@ -82,8 +81,10 @@ light_newobj_i(VALUE tpval, void *data)
     unsigned int locindex = rb_tracearg_locindex(tparg);
     st_data_t obj = (st_data_t)rb_tracearg_object(tparg);
 
+    RUBY_ASSERT(st_lookup(arg->object_table, obj, NULL) == 0);
+
     if (locindex) {
-        st_insert(arg->light_table, obj, (st_data_t)locindex);
+        st_add_direct(arg->object_table, obj, (st_data_t)locindex);
     }
 }
 
@@ -93,6 +94,7 @@ light_freeobj_i(VALUE tpval, void *data)
     struct traceobj_arg *arg = (struct traceobj_arg *)data;
     rb_trace_arg_t *tparg = rb_tracearg_from_tracepoint(tpval);
     st_data_t obj = (st_data_t)rb_tracearg_object(tparg);
+
     st_delete(arg->object_table, &obj, NULL);
 }
 
@@ -185,7 +187,7 @@ allocation_info_tracer_free(void *ptr)
 {
     struct traceobj_arg *arg = (struct traceobj_arg *)ptr;
     /* clear tables */
-    st_foreach(arg->object_table, free_values_i, 0);
+    if (!arg->light_mode) st_foreach(arg->object_table, free_values_i, 0);
     st_free_table(arg->object_table);
     st_foreach(arg->str_table, free_keys_i, 0);
     st_free_table(arg->str_table);
@@ -262,7 +264,6 @@ get_traceobj_arg(void)
 	tmp_trace_arg->freeobj_trace = 0;
 	tmp_trace_arg->object_table = st_init_numtable();
 	tmp_trace_arg->str_table = st_init_strtable();
-        tmp_trace_arg->light_table = st_init_numtable();
     }
     return tmp_trace_arg;
 }
@@ -424,7 +425,7 @@ lookup_allocation_locindex(VALUE obj)
 {
     if (tmp_trace_arg && tmp_trace_arg->light_mode) {
 	st_data_t info;
-	if (st_lookup(tmp_trace_arg->light_table, obj, &info)) {
+	if (st_lookup(tmp_trace_arg->object_table, obj, &info)) {
 	    return (unsigned int)info;
 	}
     }
