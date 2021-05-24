@@ -197,6 +197,9 @@ class_alloc(VALUE flags, VALUE klass)
       RCLASS_PARENT_SUBCLASSES(obj) = NULL;
       RCLASS_MODULE_SUBCLASSES(obj) = NULL;
      */
+    if (RCLASS_M_TBL(obj)) {
+        rb_bug("wtf");
+    }
     RCLASS_SET_ORIGIN((VALUE)obj, (VALUE)obj);
     RCLASS_SERIAL(obj) = rb_next_class_serial();
     RB_OBJ_WRITE(obj, &RCLASS_REFINED_CLASS(obj), Qnil);
@@ -561,7 +564,9 @@ rb_singleton_class_has_metaclass_p(VALUE sklass)
 int
 rb_singleton_class_internal_p(VALUE sklass)
 {
-    return (RB_TYPE_P(rb_attr_get(sklass, id_attached), T_CLASS) &&
+    VALUE x = rb_attr_get(sklass, id_attached);
+
+    return (RB_TYPE_P(x, T_CLASS) &&
 	    !rb_singleton_class_has_metaclass_p(sklass));
 }
 
@@ -1161,12 +1166,12 @@ move_refined_method(ID key, VALUE value, void *data)
 	    const rb_method_entry_t *orig_me = me->def->body.refined.orig_me, *new_me;
 	    RB_OBJ_WRITE(me, &me->def->body.refined.orig_me, NULL);
 	    new_me = rb_method_entry_clone(me);
-            rb_method_table_insert(klass, tbl, key, new_me);
+            rb_method_table_insert(klass, tbl, key, new_me, __func__);
 	    rb_method_entry_copy(me, orig_me);
 	    return ID_TABLE_CONTINUE;
 	}
 	else {
-            rb_method_table_insert(klass, tbl, key, me);
+            rb_method_table_insert(klass, tbl, key, me, __func__);
 	    return ID_TABLE_DELETE;
 	}
     }

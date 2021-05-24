@@ -2562,7 +2562,10 @@ rb_vm_mark(void *ptr)
             jlen = RARRAY_LEN(*obj_ary);
             ptr = RARRAY_CONST_PTR(*obj_ary);
             for (j=0; j < jlen; j++) {
-                rb_gc_mark(*ptr++);
+                if (!SPECIAL_CONST_P(*ptr)) {
+                    rb_gc_mark(*ptr);
+                }
+                ptr++;
             }
             obj_ary++;
         }

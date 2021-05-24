@@ -198,7 +198,7 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
                     // replace the cme that will be invalid
                     VM_ASSERT(lookup_method_table(klass_housing_cme, mid) == (const rb_method_entry_t *)cme);
                     const rb_method_entry_t *new_cme = rb_method_entry_clone((const rb_method_entry_t *)cme);
-                    rb_method_table_insert(klass_housing_cme, RCLASS_M_TBL(klass_housing_cme), mid, new_cme);
+                    rb_method_table_insert(klass_housing_cme, RCLASS_M_TBL(klass_housing_cme), mid, new_cme, __func__);
                 }
 
                 vm_cme_invalidate((rb_callable_method_entry_t *)cme);
@@ -291,7 +291,7 @@ rb_clear_method_cache_all(void)
 }
 
 void
-rb_method_table_insert(VALUE klass, struct rb_id_table *table, ID method_id, const rb_method_entry_t *me)
+rb_method_table_insert(VALUE klass, struct rb_id_table *table, ID method_id, const rb_method_entry_t *me, const char * from)
 {
     VALUE table_owner = klass;
     if (RB_TYPE_P(klass, T_ICLASS) && !RICLASS_OWNS_M_TBL_P(klass)) {
@@ -299,6 +299,9 @@ rb_method_table_insert(VALUE klass, struct rb_id_table *table, ID method_id, con
     }
     VM_ASSERT(RB_TYPE_P(table_owner, T_CLASS) || RB_TYPE_P(table_owner, T_ICLASS) || RB_TYPE_P(table_owner, T_MODULE));
     VM_ASSERT(table == RCLASS_M_TBL(table_owner));
+    if (BUILTIN_TYPE(me) != T_IMEMO) {
+        rb_bug("wtf");
+    }
     rb_id_table_insert(table, method_id, (VALUE)me);
     RB_OBJ_WRITTEN(table_owner, Qundef, (VALUE)me);
 }
@@ -872,7 +875,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 	make_method_entry_refined(klass, me);
     }
 
-    rb_method_table_insert(klass, mtbl, mid, me);
+    rb_method_table_insert(klass, mtbl, mid, me, __func__);
 
     VM_ASSERT(me->def != NULL);
 

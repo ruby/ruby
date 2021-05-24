@@ -1322,28 +1322,17 @@ static VALUE
 payload_or_self(VALUE obj)
 {
     struct heap_page *p = GET_HEAP_PAGE(obj);
-    VALUE cur = (VALUE)p->start;
 
-    while (cur != obj && GET_HEAP_PAGE(cur) == p) {
-        VALUE p = cur;
-        void *poisoned = asan_poisoned_object_p((VALUE)p);
-        asan_unpoison_object((VALUE)p, false);
-
-        if (BUILTIN_TYPE(cur) == T_PAYLOAD) {
-            if (cur < obj && obj < cur + RPAYLOAD_LEN(cur) * sizeof(RVALUE)) {
-                return cur;
-            }
-            cur += RPAYLOAD_LEN(cur) * sizeof(RVALUE);
-        }
-        else {
-            cur += sizeof(RVALUE);
-        }
-        if (poisoned) {
-            asan_poison_object((VALUE)p);
-        }
+    if (p->slot_size == sizeof(RVALUE)) {
+        return obj;
     }
 
-    return obj;
+    int offset = ((intptr_t)obj - (intptr_t)p->start) % p->slot_size;
+
+    if (offset)
+        fprintf(stderr, "marking %p %p\n", (void *)obj, (intptr_t)obj - offset);
+
+    return (VALUE)((intptr_t)obj - offset);
 }
 #endif
 
@@ -1736,6 +1725,9 @@ rb_objspace_alloc(void)
         objspace->eden_heap.slabs[i].slot_size = sizeof(RVALUE) * (i + 1);
         objspace->tomb_heap.slabs[i].slot_size = sizeof(RVALUE) * (i + 1);
 
+        objspace->eden_heap.slabs[i].compact_cursor = 0;
+        objspace->tomb_heap.slabs[i].compact_cursor = 0;
+
         if (SLAB_COUNT > i + 1) {
             objspace->eden_heap.slabs[i].next = &objspace->eden_heap.slabs[i + 1];
             objspace->tomb_heap.slabs[i].next = &objspace->eden_heap.slabs[i + 1];
@@ -1854,6 +1846,8 @@ heap_page_add_freeobj(rb_objspace_t *objspace, struct heap_page *page, VALUE obj
     ASSERT_vm_locking();
 
     RVALUE *p = (RVALUE *)obj;
+
+    asan_unpoison_object(obj, false);
 
     asan_unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
 
@@ -2559,6 +2553,7 @@ newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *
             if (obj == Qfalse) {
                 obj = heap_get_freeobj(objspace, heap_eden, slab);
             }
+            memset(obj, 0, rounded_size);
         }
         GC_ASSERT(obj != 0);
         newobj_init(klass, flags, wb_protected, objspace, obj);
@@ -3548,6 +3543,7 @@ struct each_obj_data {
 
     struct heap_page **pages;
     size_t pages_count;
+    size_t iterator_index;
 };
 
 static VALUE
@@ -3577,7 +3573,7 @@ objspace_each_objects_try_by_sizeclass(VALUE arg, rb_sized_slabs_t *size_class)
     size_t pages_count = data->pages_count;
 
     struct heap_page *page = list_top(&size_class->pages, struct heap_page, page_node);
-    for (size_t i = 0; i < pages_count; i++) {
+    for (size_t i = data->iterator_index; i < pages_count; i++) {
         /* If we have reached the end of the linked list then there are no
          * more pages, so break. */
         if (page == NULL) break;
@@ -3588,35 +3584,13 @@ objspace_each_objects_try_by_sizeclass(VALUE arg, rb_sized_slabs_t *size_class)
 
         intptr_t pstart = (intptr_t)page->start;
         intptr_t pend = pstart + (page->total_slots * page->slot_size);
-        intptr_t cursor_end = pstart;
 
-        while (cursor_end < pend) {
-            int payload_len = 0;
-
-            while(cursor_end < pend && BUILTIN_TYPE((VALUE)cursor_end) != T_PAYLOAD) {
-                cursor_end += page->slot_size;
-            }
-
-#if USE_RVARGC
-            //Make sure the Payload header slot is yielded
-            if (cursor_end < pend && BUILTIN_TYPE((VALUE)cursor_end) == T_PAYLOAD) {
-                payload_len = RPAYLOAD_LEN((VALUE)cursor_end);
-                cursor_end += page->slot_size;
-            }
-#endif
-
-            if ((*data->callback)((void *)pstart, (void *)cursor_end, page->slot_size, data->data)) {
-                break;
-            }
-
-            // Move the cursor over the rest of the payload body
-            if (payload_len) {
-                cursor_end += (payload_len - 1);
-                pstart = cursor_end;
-            }
+        if ((*data->callback)((void *)pstart, (void *)pend, page->slot_size, data->data)) {
+            break;
         }
 
         page = list_next(&size_class->pages, page, page_node);
+        data->iterator_index++;
     }
 }
 
@@ -3716,7 +3690,8 @@ objspace_each_objects(rb_objspace_t *objspace, each_obj_callback *callback, void
         .data = data,
 
         .pages = pages,
-        .pages_count = pages_count
+        .pages_count = pages_count,
+        .iterator_index = 0
     };
     rb_ensure(objspace_each_objects_try, (VALUE)&each_obj_data,
               objspace_each_objects_ensure, (VALUE)&each_obj_data);
@@ -3780,10 +3755,11 @@ static int
 os_obj_of_i(void *vstart, void *vend, size_t stride, void *data)
 {
     struct os_each_struct *oes = (struct os_each_struct *)data;
-    RVALUE *p = (RVALUE *)vstart, *pend = (RVALUE *)vend;
+    intptr_t start = (intptr_t)vstart;
+    intptr_t end = (intptr_t)vend;
 
-    for (; p != pend; p += stride / sizeof(RVALUE)) {
-	volatile VALUE v = (VALUE)p;
+    for (; start != end; start += stride) {
+	volatile VALUE v = (VALUE)start;
 	if (!internal_object_p(v)) {
 	    if (!oes->of || rb_obj_is_kind_of(v, oes->of)) {
                 if (!rb_multi_ractor_p() || rb_ractor_shareable_p(v)) {
@@ -4914,7 +4890,7 @@ gc_setup_mark_bits(struct heap_page *page)
 }
 
 static int gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj);
-static VALUE gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free);
+static VALUE gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, size_t slot_size);
 
 static void
 lock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
@@ -4991,7 +4967,7 @@ try_move(rb_objspace_t *objspace, rb_sized_slabs_t *size_class, struct heap_page
                             /* We were able to move "p" */
                             objspace->rcompactor.moved_count_table[BUILTIN_TYPE((VALUE)p)]++;
                             objspace->rcompactor.total_moved++;
-                            gc_move(objspace, (VALUE)p, dest);
+                            gc_move(objspace, (VALUE)p, dest, size_class->slot_size);
                             gc_pin(objspace, (VALUE)p);
                             size_class->compact_cursor_index = i;
                             if (from_freelist) {
@@ -5742,7 +5718,7 @@ invalidate_moved_page(rb_objspace_t *objspace, struct heap_page *page)
                             freed_slots++;
                         }
 
-                        gc_move(objspace, object, forwarding_object);
+                        gc_move(objspace, object, forwarding_object, page->slot_size);
                         /* forwarding_object is now our actual object, and "object"
                          * is the free slot for the original page */
                         heap_page_add_freeobj(objspace, GET_HEAP_PAGE(object), object);
@@ -5935,9 +5911,12 @@ push_mark_stack(mark_stack_t *stack, VALUE data)
 {
     VALUE obj = data;
     switch (BUILTIN_TYPE(obj)) {
+      case T_NONE:
       case T_NIL:
       case T_FIXNUM:
       case T_MOVED:
+      case T_ZOMBIE:
+      case T_UNDEF:
 	rb_bug("push_mark_stack() called for broken object");
 	break;
 
@@ -5945,7 +5924,32 @@ push_mark_stack(mark_stack_t *stack, VALUE data)
 	UNEXPECTED_NODE(push_mark_stack);
         break;
 
+      case T_OBJECT:
+      case T_CLASS:
+      case T_MODULE:
+      case T_FLOAT:
+      case T_STRING:
+      case T_REGEXP:
+      case T_ARRAY:
+      case T_HASH:
+      case T_STRUCT:
+      case T_BIGNUM:
+      case T_FILE:
+      case T_DATA:
+      case T_MATCH:
+      case T_COMPLEX:
+      case T_RATIONAL:
+      case T_TRUE:
+      case T_FALSE:
+      case T_SYMBOL:
+      case T_PAYLOAD:
+      case T_IMEMO:
+      case T_ICLASS:
+        break;
       default:
+	rb_bug("rb_gc_mark(): unknown data type 0x%x(%p) %s",
+	       BUILTIN_TYPE(obj), (void *)data,
+	       is_pointer_to_heap(&rb_objspace, data) ? "corrupted object" : "non object");
         break;
     }
 
@@ -6855,7 +6859,6 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_PAYLOAD:
-          gc_mark_payload(objspace, obj);
           rb_bug("payload");
           break;
       case T_CLASS:
@@ -9247,7 +9250,7 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
 }
 
 static VALUE
-gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free)
+gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, size_t slot_size)
 {
     int marked;
     int wb_unprotected;
@@ -9297,8 +9300,8 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free)
     }
 
     /* Move the object */
-    memcpy(dest, src, sizeof(RVALUE));
-    memset(src, 0, sizeof(RVALUE));
+    memcpy(dest, src, slot_size);
+    memset(src, 0, slot_size);
 
     /* Set bits for object in new location */
     if (marking) {
