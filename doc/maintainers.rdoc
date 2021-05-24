@@ -85,7 +85,7 @@ Yukihiro Matsumoto (matz)
   https://github.com/rubygems/rubygems
   https://rubygems.org/gems/bundler
 [lib/cgi.rb, lib/cgi/*]
-  Takeyuki Fujioka (xibbar)
+  _unmaintained_
   https://github.com/ruby/cgi
   https://rubygems.org/gems/cgi
 [lib/csv.rb]
