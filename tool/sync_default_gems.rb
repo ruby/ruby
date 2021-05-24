@@ -29,7 +29,6 @@ REPOSITORIES = {
   matrix: 'ruby/matrix',
   ostruct: 'ruby/ostruct',
   irb: 'ruby/irb',
-  tracer: 'ruby/tracer',
   forwardable: "ruby/forwardable",
   mutex_m: "ruby/mutex_m",
   racc: "ruby/racc",
