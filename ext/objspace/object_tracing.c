@@ -102,12 +102,10 @@ newobj_i(VALUE tpval, void *data)
     struct traceobj_arg *arg = (struct traceobj_arg *)data;
     rb_trace_arg_t *tparg = rb_tracearg_from_tracepoint(tpval);
     VALUE obj = rb_tracearg_object(tparg);
-    VALUE path = rb_tracearg_path(tparg);
-    VALUE line = rb_tracearg_lineno(tparg);
+    unsigned int locindex = rb_tracearg_locindex(tparg);
     VALUE mid = rb_tracearg_method_id(tparg);
     VALUE klass = rb_tracearg_defined_class(tparg);
     struct allocation_info *info;
-    const char *path_cstr = RTEST(path) ? make_unique_str(arg->str_table, RSTRING_PTR(path), RSTRING_LEN(path)) : 0;
     VALUE class_path = (RTEST(klass) && !OBJ_FROZEN(klass)) ? rb_class_path_cached(klass) : Qnil;
     const char *class_path_cstr = RTEST(class_path) ? make_unique_str(arg->str_table, RSTRING_PTR(class_path), RSTRING_LEN(class_path)) : 0;
     st_data_t v;
@@ -120,7 +118,6 @@ newobj_i(VALUE tpval, void *data)
 	    }
 	}
 	/* reuse info */
-	delete_unique_str(arg->str_table, info->path);
 	delete_unique_str(arg->str_table, info->class_path);
     }
     else {
@@ -130,8 +127,7 @@ newobj_i(VALUE tpval, void *data)
     info->flags = RBASIC(obj)->flags;
     info->klass = RBASIC_CLASS(obj);
 
-    info->path = path_cstr;
-    info->line = NUM2INT(line);
+    info->locindex = locindex;
     info->mid = mid;
     info->class_path = class_path_cstr;
     info->generation = rb_gc_count();
@@ -156,8 +152,7 @@ freeobj_i(VALUE tpval, void *data)
     else {
 	if (st_delete(arg->object_table, &obj, &v)) {
 	    info = (struct allocation_info *)v;
-	    delete_unique_str(arg->str_table, info->path);
-	    delete_unique_str(arg->str_table, info->class_path);
+            delete_unique_str(arg->str_table, info->class_path);
 	    ruby_xfree(info);
 	}
     }
@@ -370,7 +365,11 @@ object_allocations_reporter_i(st_data_t key, st_data_t val, st_data_t ptr)
     fprintf(out, "-- %p (%s F: %p, ", (void *)obj, info->living ? "live" : "dead", (void *)info->flags);
     if (info->class_path) fprintf(out, "C: %s", info->class_path);
     else                  fprintf(out, "C: %p", (void *)info->klass);
-    fprintf(out, "@%s:%lu", info->path ? info->path : "", info->line);
+
+    VALUE fname; int line;
+    if (rb_locindex_resolve(info->locindex, &fname, &line)) {
+        fprintf(out, "@%s:%d", RTEST(fname) ? RSTRING_PTR(fname) : "", line);
+    }
     if (!NIL_P(info->mid)) {
 	VALUE m = rb_sym2str(info->mid);
 	fprintf(out, " (%s)", RSTRING_PTR(m));
@@ -414,6 +413,12 @@ lookup_allocation_info(VALUE obj)
     return NULL;
 }
 
+struct allocation_info *
+objspace_lookup_allocation_info(VALUE obj)
+{
+    return lookup_allocation_info(obj);
+}
+
 static unsigned int
 lookup_allocation_locindex(VALUE obj)
 {
@@ -426,11 +431,10 @@ lookup_allocation_locindex(VALUE obj)
     return 0;
 }
 
-
-struct allocation_info *
-objspace_lookup_allocation_info(VALUE obj)
+unsigned int
+objspace_lookup_locindex(VALUE obj)
 {
-    return lookup_allocation_info(obj);
+    return lookup_allocation_locindex(obj);
 }
 
 /*
@@ -444,15 +448,15 @@ static VALUE
 allocation_sourcefile(VALUE self, VALUE obj)
 {
     struct allocation_info *info = lookup_allocation_info(obj);
+    VALUE path;
 
-    if (info && info->path) {
-	return rb_str_new2(info->path);
+    if (info && rb_locindex_resolve(info->locindex, &path, NULL)) {
+        return path;
     }
     else {
         unsigned int locindex = lookup_allocation_locindex(obj);
-        VALUE fname;
-        if (locindex && rb_locindex_resolve(locindex, &fname, NULL)) {
-            return fname;
+        if (locindex && rb_locindex_resolve(locindex, &path, NULL)) {
+            return path;
         }
         else {
             return Qnil;
@@ -471,13 +475,13 @@ static VALUE
 allocation_sourceline(VALUE self, VALUE obj)
 {
     struct allocation_info *info = lookup_allocation_info(obj);
+    int line;
 
-    if (info) {
-	return INT2FIX(info->line);
+    if (info && rb_locindex_resolve(info->locindex, NULL, &line)) {
+	return INT2FIX(line);
     }
     else {
         unsigned int locindex = lookup_allocation_locindex(obj);
-        int line;
         if (locindex && rb_locindex_resolve(locindex, NULL, &line)) {
             return INT2FIX(line);
         }
