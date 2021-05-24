@@ -3623,7 +3623,7 @@ bool
 rb_locindex_resolve(unsigned int locindex, VALUE *fname, int *line)
 {
     VM_ASSERT(locindex > 0);
-    int len = RARRAY_LEN(recorded_iseq_ary);
+    int len = RARRAY_LENINT(recorded_iseq_ary);
 
     // TODO: bsearch
     for (int i=0; i<len; i++) {
