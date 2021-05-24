@@ -655,6 +655,51 @@ def ruby_types(debugger):
 
     return types
 
+def rb_ary_entry(target, ary, idx, result):
+    tRArray = target.FindFirstType("struct RArray").GetPointerType()
+    ary = ary.Cast(tRArray)
+    flags = ary.GetValueForExpressionPath("->flags").GetValueAsUnsigned()
+
+    if flags & RUBY_FL_USER1:
+        ptr = ary.GetValueForExpressionPath("->as.ary")
+    else:
+        ptr = ary.GetValueForExpressionPath("->as.heap.ptr")
+
+    ptr_addr = ptr.GetValueAsUnsigned() + (idx * ptr.GetType().GetByteSize())
+    return target.CreateValueFromAddress("ary_entry[%d]" % idx, lldb.SBAddress(ptr_addr, target), ptr.GetType().GetPointeeType())
+
+def rb_id_to_serial(id_val):
+    if id_val > tLAST_OP_ID:
+        return id_val >> RUBY_ID_SCOPE_SHIFT
+    else:
+        return id_val
+
+def rb_id2str(debugger, command, result, internal_dict):
+    if not ('RUBY_Qfalse' in globals()):
+        lldb_init(debugger)
+
+    target = debugger.GetSelectedTarget()
+    process = target.GetProcess()
+    thread = process.GetSelectedThread()
+    frame = thread.GetSelectedFrame()
+    global_symbols = target.FindFirstGlobalVariable("ruby_global_symbols")
+
+    id_val = frame.EvaluateExpression(command).GetValueAsUnsigned()
+    num = rb_id_to_serial(id_val)
+
+    last_id = global_symbols.GetChildMemberWithName("last_id").GetValueAsUnsigned()
+    ID_ENTRY_SIZE = 2
+    ID_ENTRY_UNIT = int(target.FindFirstGlobalVariable("ID_ENTRY_UNIT").GetValue())
+
+    ids = global_symbols.GetChildMemberWithName("ids")
+
+    if (num <= last_id):
+        idx = num // ID_ENTRY_UNIT
+        ary = rb_ary_entry(target, ids, idx, result)
+        pos = (num % ID_ENTRY_UNIT) * ID_ENTRY_SIZE
+        id_str = rb_ary_entry(target, ary, pos, result)
+        lldb_inspect(debugger, target, result, id_str)
+
 def __lldb_init_module(debugger, internal_dict):
     debugger.HandleCommand("command script add -f lldb_cruby.lldb_rp rp")
     debugger.HandleCommand("command script add -f lldb_cruby.count_objects rb_count_objects")
@@ -665,6 +710,7 @@ def __lldb_init_module(debugger, internal_dict):
     debugger.HandleCommand("command script add -f lldb_cruby.rb_backtrace rbbt")
     debugger.HandleCommand("command script add -f lldb_cruby.dump_page dump_page")
     debugger.HandleCommand("command script add -f lldb_cruby.dump_page_rvalue dump_page_rvalue")
+    debugger.HandleCommand("command script add -f lldb_cruby.rb_id2str rb_id2str")
 
     lldb_init(debugger)
     print("lldb scripts for ruby has been installed.")
