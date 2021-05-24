@@ -68,7 +68,9 @@ module TestIRB
     end
 
     def test_no_color_environment_variable
-      orig = ENV['NO_COLOR']
+      orig_no_color = ENV['NO_COLOR']
+      orig_use_colorize = IRB.conf[:USE_COLORIZE]
+      IRB.conf[:USE_COLORIZE] = true
 
       assert IRB.conf[:USE_COLORIZE]
 
@@ -80,7 +82,8 @@ module TestIRB
       IRB.setup(__FILE__)
       assert IRB.conf[:USE_COLORIZE]
     ensure
-      ENV['NO_COLOR'] = orig
+      ENV['NO_COLOR'] = orig_no_color
+      IRB.conf[:USE_COLORIZE] = orig_use_colorize
     end
 
     private
