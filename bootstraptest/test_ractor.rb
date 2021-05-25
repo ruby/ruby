@@ -248,7 +248,8 @@ assert_equal 30.times.map { 'ok' }.to_s, %q{
   30.times.map{|i|
     test i
   }
-} unless ENV['RUN_OPTS'] =~ /--jit-min-calls=5/ # This always fails with --jit-wait --jit-min-calls=5
+} unless ENV['RUN_OPTS'] =~ /--jit-min-calls=5/ || # This always fails with --jit-wait --jit-min-calls=5
+  (ENV.key?('TRAVIS') && ENV['TRAVIS_CPU_ARCH'] == 'arm64') # https://bugs.ruby-lang.org/issues/17878
 
 # Exception for empty select
 assert_match /specify at least one ractor/, %q{
