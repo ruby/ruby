@@ -9998,6 +9998,24 @@ heap_check_moved_i(void *vstart, void *vend, size_t stride, void *data)
 static VALUE
 gc_compact(rb_execution_context_t *ec, VALUE self)
 {
+#if defined(HAVE_SYSCONF) && defined(_SC_PAGE_SIZE)
+    /* If Ruby's heap pages are not a multiple of the system page size, we
+     * cannot use mprotect for the read barrier, so we must disable compaction. */
+    int pagesize;
+    pagesize = (int)sysconf(_SC_PAGE_SIZE);
+    if ((HEAP_PAGE_SIZE % pagesize) != 0) {
+        rb_raise(rb_eNotImpError, "Compaction isn't available on this platform");
+    }
+#endif
+
+    /* If not MinGW, Windows, or does not have mmap, we cannot use mprotect for
+     * the read barrier, so we must disable compaction. */
+#if !defined(__MINGW32__) && !defined(_WIN32)
+    if (!USE_MMAP_ALIGNED_ALLOC) {
+        rb_raise(rb_eNotImpError, "Compaction isn't available on this platform");
+    }
+#endif
+
     /* Run GC with compaction enabled */
     gc_start_internal(ec, self, Qtrue, Qtrue, Qtrue, Qtrue);
 
