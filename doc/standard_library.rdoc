@@ -87,7 +87,6 @@ Digest:: Provides a framework for message digest libraries
 Etc:: Provides access to information typically stored in UNIX /etc directory
 Fcntl:: Loads constants defined in the OS fcntl.h C header file
 Fiddle:: A libffi wrapper for Ruby
-GDBM:: Ruby extension for the GNU dbm (gdbm) library
 IO:: Extensions for Ruby IO class, including #wait, #nonblock and ::console
 JSON:: Implements Javascript Object Notation for Ruby
 NKF:: Ruby extension for Network Kanji Filter
