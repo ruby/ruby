@@ -114,6 +114,34 @@ jit_peek_at_self(jitstate_t *jit, ctx_t *ctx)
     return jit->ec->cfp->self;
 }
 
+// When we know a VALUE to be static, this returns an appropriate val_type_t
+static val_type_t
+jit_type_of_value(VALUE val)
+{
+    if (SPECIAL_CONST_P(val)) {
+        if (FIXNUM_P(val)) {
+            return TYPE_FIXNUM;
+        } else if (NIL_P(val)) {
+            return TYPE_NIL;
+        } else {
+            // generic immediate
+            return TYPE_IMM;
+        }
+    } else {
+        switch (BUILTIN_TYPE(val)) {
+            case T_ARRAY:
+               return TYPE_ARRAY;
+            case T_HASH:
+               return TYPE_HASH;
+            case T_STRING:
+               return TYPE_STRING;
+            default:
+                // generic heap object
+                return TYPE_HEAP;
+        }
+    }
+}
+
 // Save the incremented PC on the CFP
 // This is necessary when calleees can raise or allocate
 void
@@ -610,8 +638,7 @@ gen_putobject(jitstate_t* jit, ctx_t* ctx)
         VALUE put_val = jit_get_arg(jit, 0);
         jit_mov_gc_ptr(jit, cb, REG0, put_val);
 
-        // TODO: check for more specific types like array, string, symbol, etc.
-        val_type_t val_type = SPECIAL_CONST_P(put_val)? TYPE_IMM:TYPE_HEAP;
+        val_type_t val_type = jit_type_of_value(put_val);
 
         // Write argument at SP
         x86opnd_t stack_top = ctx_stack_push(ctx, val_type);
@@ -2689,7 +2716,8 @@ gen_opt_getinlinecache(jitstate_t *jit, ctx_t *ctx)
     // FIXME: This leaks when st_insert raises NoMemoryError
     assume_stable_global_constant_state(jit->block);
 
-    x86opnd_t stack_top = ctx_stack_push(ctx, TYPE_UNKNOWN);
+    val_type_t type = jit_type_of_value(ice->value);
+    x86opnd_t stack_top = ctx_stack_push(ctx, type);
     jit_mov_gc_ptr(jit, cb, REG0, ice->value);
     mov(cb, stack_top, REG0);
 
