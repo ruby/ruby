@@ -3613,10 +3613,16 @@ rb_iseq_recorded_index(rb_iseq_t *iseq)
 unsigned int
 rb_iseq_recorded_locindex(rb_iseq_t *iseq, const VALUE *pc)
 {
-    iseq_record(iseq);
-    VM_ASSERT(pc >= iseq->body->iseq_encoded);
-    unsigned int pc_index = (unsigned int)(pc - iseq->body->iseq_encoded);
-    return iseq->body->variable.recorded_locindex_start + pc_index;
+    if (LIKELY(pc != NULL)) {
+        iseq_record(iseq);
+        unsigned int pc_index = (unsigned int)(pc - iseq->body->iseq_encoded);
+        VM_ASSERT(pc >= iseq->body->iseq_encoded);
+        VM_ASSERT(pc_index <= iseq->body->iseq_size);
+        return iseq->body->variable.recorded_locindex_start + pc_index;
+    }
+    else { // rb_vm_call_cfunc()
+        return 0;
+    }
 }
 
 bool
@@ -3636,7 +3642,7 @@ rb_locindex_resolve(unsigned int locindex, VALUE *fname, int *line)
             }
             if (line) {
                 unsigned int pc_index = locindex - iseq->body->variable.recorded_locindex_start;
-                const struct iseq_insn_info_entry *e = get_insn_info(iseq, pc_index);
+                const struct iseq_insn_info_entry *e = get_insn_info(iseq, pc_index - 1);
                 *line = e->line_no;
             }
             return true;
