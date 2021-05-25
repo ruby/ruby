@@ -59,44 +59,90 @@ class Git
 end
 
 DEFAULT_GEM_LIBS = %w[
+  abbrev
+  base64
+  benchmark
   bundler
   cmath
   csv
-  e2mmap
+  debug
+  delegate
+  did_you_mean
+  drb
+  english
+  erb
   fileutils
+  find
   forwardable
+  getoptlong
   ipaddr
   irb
   logger
   matrix
   mutex_m
+  net-ftp
+  net-http
+  net-imap
+  net-pop
+  net-protocol
+  net-smtp
+  observer
+  open3
+  open-uri
+  optparse
   ostruct
+  pp
+  prettyprint
   prime
-  racc
+  pstore
   rdoc
+  readline
+  reline
+  resolv
+  resolv-replace
   rexml
+  rinda
   rss
+  rubygems
   scanf
-  shell
-  sync
+  securerandom
+  set
+  shellwords
+  singleton
+  tempfile
   thwait
-  tracer
+  time
+  timeout
+  tmpdir
+  un
+  tsort
+  uri
+  weakref
+  yaml
 ]
 
 DEFAULT_GEM_EXTS = %w[
   bigdecimal
+  cgi
   date
-  dbm
+  digest
   etc
   fcntl
   fiddle
-  gdbm
-  io/console
+  io-console
+  io-nonblock
+  io-wait
   json
+  nkf
   openssl
+  pathname
   psych
+  racc
+  readline-ext
   stringio
   strscan
+  syslog
+  win32ole
   zlib
 ]
 
