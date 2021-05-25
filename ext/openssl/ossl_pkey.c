@@ -799,7 +799,7 @@ ossl_pkey_compare(VALUE self, VALUE other)
  * +options+::
  *   A Hash that contains algorithm specific control operations to \OpenSSL.
  *   See OpenSSL's man page EVP_PKEY_CTX_ctrl_str(3) for details.
- *   +options+ parameter was added in version 2.3.
+ *   +options+ parameter was added in version 3.0.
  *
  * Example:
  *   data = "Sign me!"
@@ -913,7 +913,7 @@ ossl_pkey_sign(int argc, VALUE *argv, VALUE self)
  * +data+::
  *   See #sign.
  * +options+::
- *   See #sign. +options+ parameter was added in version 2.3.
+ *   See #sign. +options+ parameter was added in version 3.0.
  */
 static VALUE
 ossl_pkey_verify(int argc, VALUE *argv, VALUE self)
