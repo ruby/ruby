@@ -1770,7 +1770,7 @@ rb_objspace_free(rb_objspace_t *objspace)
 	size_t i;
 	for (i = 0; i < heap_allocated_pages; ++i) {
             struct heap_page *page = heap_pages_sorted[i];
-            rb_sized_slabs_t *slab = &heap_eden->slabs[page->slot_size / sizeof(RVALUE)];
+            rb_sized_slabs_t *slab = &heap_eden->slabs[(page->slot_size / sizeof(RVALUE)) - 1];
 	    heap_page_free(objspace, slab, heap_pages_sorted[i]);
 	}
 	free(heap_pages_sorted);
@@ -1924,11 +1924,6 @@ heap_page_free(rb_objspace_t *objspace, rb_sized_slabs_t * slab, struct heap_pag
 {
     heap_allocated_pages--;
     slab->page_count--;
-    size_t count = 0;
-    for (int i = 0; i < SLAB_COUNT; i++) {
-        count += objspace->eden_heap.slabs[i].page_count;
-    }
-    assert(count == heap_allocated_pages);
     objspace->profile.total_freed_pages++;
     rb_aligned_free(GET_PAGE_BODY(page->start), HEAP_PAGE_SIZE);
     free(page);
@@ -3572,14 +3567,16 @@ objspace_each_objects_ensure(VALUE arg)
     return Qnil;
 }
 
-static void
-objspace_each_objects_try_by_sizeclass(VALUE arg, rb_sized_slabs_t *size_class)
+static VALUE
+objspace_each_objects_try(VALUE arg)
 {
     struct each_obj_data *data = (struct each_obj_data *)arg;
-    struct heap_page **pages = data->pages;
+    rb_objspace_t *objspace = data->objspace;
+    rb_sized_slabs_t * slab = data->slab;
     size_t pages_count = data->pages_count;
+    struct heap_page **pages = data->pages;
 
-    struct heap_page *page = list_top(&size_class->pages, struct heap_page, page_node);
+    struct heap_page *page = list_top(&slab->pages, struct heap_page, page_node);
     for (size_t i = 0; i < pages_count; i++) {
         /* If we have reached the end of the linked list then there are no
          * more pages, so break. */
@@ -3596,18 +3593,8 @@ objspace_each_objects_try_by_sizeclass(VALUE arg, rb_sized_slabs_t *size_class)
             break;
         }
 
-        page = list_next(&size_class->pages, page, page_node);
+        page = list_next(&slab->pages, page, page_node);
     }
-}
-
-static VALUE
-objspace_each_objects_try(VALUE arg)
-{
-    struct each_obj_data *data = (struct each_obj_data *)arg;
-    rb_objspace_t *objspace = data->objspace;
-    rb_sized_slabs_t * slab = data->slab;
-
-    objspace_each_objects_try_by_sizeclass(arg, slab);
     return Qnil;
 }
 
@@ -3665,13 +3652,16 @@ objspace_each_objects(rb_objspace_t *objspace, each_obj_callback *callback, void
         objspace->flags.dont_incremental = TRUE;
     }
 
+    struct heap_page **pages[SLAB_COUNT];
+    size_t page_counts[SLAB_COUNT];
+
+    // Copy pages from all slabs to their respective buffers
     for (int i = 0; i < SLAB_COUNT; i++) {
         rb_sized_slabs_t *slab = &heap_eden->slabs[i];
-
-        /* Create pages buffer */
         size_t size = size_mul_or_raise(slab->page_count, sizeof(struct heap_page *), rb_eRuntimeError);
-        struct heap_page **pages = malloc(size);
-        if (!pages) rb_memerror();
+
+        pages[i] = malloc(size);
+        if (!pages[i]) rb_memerror();
 
         /* Set up pages buffer by iterating over all pages in the current eden
          * heap. This will be a snapshot of the state of the heap before we
@@ -3681,10 +3671,15 @@ objspace_each_objects(rb_objspace_t *objspace, each_obj_callback *callback, void
         struct heap_page *page = 0;
         size_t pages_count = 0;
         list_for_each(&slab->pages, page, page_node) {
-            pages[pages_count] = page;
+            pages[i][pages_count] = page;
             pages_count++;
         }
+        page_counts[i] = pages_count;
         GC_ASSERT(pages_count <= slab->page_count);
+    }
+
+    for (int i = 0; i < SLAB_COUNT; i++) {
+        rb_sized_slabs_t *slab = &heap_eden->slabs[i];
 
         /* Run the callback */
         struct each_obj_data each_obj_data = {
@@ -3694,8 +3689,8 @@ objspace_each_objects(rb_objspace_t *objspace, each_obj_callback *callback, void
             .callback = callback,
             .data = data,
 
-            .pages = pages,
-            .pages_count = pages_count,
+            .pages = pages[i],
+            .pages_count = page_counts[i],
             .slab = slab
         };
         rb_ensure(objspace_each_objects_try, (VALUE)&each_obj_data,
