@@ -17,7 +17,6 @@ REPOSITORIES = {
   "io-wait": 'ruby/io-wait',
   csv: 'ruby/csv',
   dbm: 'ruby/dbm',
-  gdbm: 'ruby/gdbm',
   etc: 'ruby/etc',
   date: 'ruby/date',
   zlib: 'ruby/zlib',
@@ -191,12 +190,6 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/test/io/wait", "test/io")
     cp_r("#{upstream}/io-wait.gemspec", "ext/io/wait")
     `git checkout ext/io/wait/depend`
-  when "gdbm"
-    rm_rf(%w[ext/gdbm test/gdbm])
-    cp_r("#{upstream}/ext/gdbm", "ext")
-    cp_r("#{upstream}/test/gdbm", "test")
-    cp_r("#{upstream}/gdbm.gemspec", "ext/gdbm")
-    `git checkout ext/gdbm/depend ext/gdbm/README`
   when "etc"
     rm_rf(%w[ext/etc test/etc])
     cp_r("#{upstream}/ext/etc", "ext")

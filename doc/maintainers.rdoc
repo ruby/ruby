@@ -324,10 +324,6 @@ Yukihiro Matsumoto (matz)
   Aaron Patterson (tenderlove)
   https://github.com/ruby/fiddle
   https://rubygems.org/gems/fiddle
-[ext/gdbm]
-  Yukihiro Matsumoto (matz)
-  https://github.com/ruby/gdbm
-  https://rubygems.org/gems/gdbm
 [ext/io/console]
   Nobuyuki Nakada (nobu)
   https://github.com/ruby/io-console
