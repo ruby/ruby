@@ -78,7 +78,6 @@ DEFAULT_GEM_LIBS = %w[
   ipaddr
   irb
   logger
-  matrix
   mutex_m
   net-ftp
   net-http
