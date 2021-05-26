@@ -497,7 +497,7 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_checkmatch_opt_case_dispatch
-    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '"world"', insns: %i[checkmatch opt_case_dispatch])
+    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '"world"', insns: %i[opt_case_dispatch])
     begin;
       case 'hello'
       when 'hello'
