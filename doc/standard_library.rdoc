@@ -46,7 +46,6 @@ IRB:: Interactive Ruby command-line tool for REPL (Read Eval Print Loop)
 OptionParser:: Ruby-oriented class for command-line option analysis
 Logger:: Provides a simple logging utility for outputting messages
 Mutex_m:: Mixin to extend objects to be handled like a Mutex
-Net::FTP:: Support for the File Transfer Protocol
 Net::HTTP:: HTTP client api for Ruby
 Net::IMAP:: Ruby client api for Internet Message Access Protocol
 Net::POP3:: Ruby client library for POP3
@@ -109,6 +108,7 @@ Rake:: Ruby build program with capabilities similar to make
 Test::Unit:: A compatibility layer for MiniTest
 REXML:: An XML toolkit for Ruby
 RSS:: Family of libraries that support various formats of XML "feeds"
+Net::FTP:: Support for the File Transfer Protocol
 Matrix:: Represents a mathematical matrix.
 Prime:: Prime numbers and factorization library
 RBS:: RBS is a language to describe the structure of Ruby programs

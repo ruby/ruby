@@ -154,10 +154,6 @@ Yukihiro Matsumoto (matz)
   Keiju ISHITSUKA (keiju)
   https://github.com/ruby/mutex_m
   https://rubygems.org/gems/mutex_m
-[lib/net/ftp.rb]
-  Shugo Maeda (shugo)
-  https://github.com/ruby/net-ftp
-  https://rubygems.org/gems/net-ftp
 [lib/net/http.rb, lib/net/https.rb]
   NARUSE, Yui (naruse)
   https://github.com/ruby/net-http
@@ -391,6 +387,8 @@ Yukihiro Matsumoto (matz)
   https://github.com/ruby/rexml
 [rss]
   https://github.com/ruby/rss
+[net-ftp]
+  https://github.com/ruby/net-ftp
 [matrix]
   https://github.com/ruby/matrix
 [prime]

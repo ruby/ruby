@@ -52,7 +52,6 @@ REPOSITORIES = {
   English: "ruby/English",
   "net-protocol": "ruby/net-protocol",
   "net-imap": "ruby/net-imap",
-  "net-ftp": "ruby/net-ftp",
   "net-http": "ruby/net-http",
   bigdecimal: "ruby/bigdecimal",
   optparse: "ruby/optparse",
@@ -267,11 +266,6 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/lib/net/imap", "lib/net")
     cp_r("#{upstream}/test/net/imap", "test/net")
     cp_r("#{upstream}/net-imap.gemspec", "lib/net/imap")
-  when "net-ftp"
-    rm_rf(%w[lib/net/ftp.rb lib/net/net-ftp.gemspec test/net/ftp])
-    cp_r("#{upstream}/lib/net/ftp.rb", "lib/net")
-    cp_r("#{upstream}/test/net/ftp", "test/net")
-    cp_r("#{upstream}/net-ftp.gemspec", "lib/net")
   when "net-http"
     rm_rf(%w[lib/net/http.rb lib/net/http test/net/http])
     cp_r("#{upstream}/lib/net/http.rb", "lib/net")
