@@ -79,7 +79,6 @@ DEFAULT_GEM_LIBS = %w[
   irb
   logger
   mutex_m
-  net-ftp
   net-http
   net-imap
   net-pop
