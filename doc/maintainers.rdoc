@@ -158,10 +158,6 @@ Yukihiro Matsumoto (matz)
   NARUSE, Yui (naruse)
   https://github.com/ruby/net-http
   https://rubygems.org/gems/net-http
-[lib/net/imap.rb]
-  Shugo Maeda (shugo)
-  https://github.com/ruby/net-imap
-  https://rubygems.org/gems/net-imap
 [lib/net/pop.rb]
   _unmaintained_
   https://github.com/ruby/net-pop
@@ -389,6 +385,8 @@ Yukihiro Matsumoto (matz)
   https://github.com/ruby/rss
 [net-ftp]
   https://github.com/ruby/net-ftp
+[net-imap]
+  https://github.com/ruby/net-imap
 [matrix]
   https://github.com/ruby/matrix
 [prime]
