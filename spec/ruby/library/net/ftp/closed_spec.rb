@@ -1,21 +1,24 @@
 require_relative '../../../spec_helper'
-require_relative 'spec_helper'
 
-describe "Net::FTP#closed?" do
-  before :each do
-    @socket = mock("Socket")
+ruby_version_is ""..."3.1" do
+  require_relative 'spec_helper'
 
-    @ftp = Net::FTP.new
-    @ftp.instance_variable_set(:@sock, @socket)
-  end
+  describe "Net::FTP#closed?" do
+    before :each do
+      @socket = mock("Socket")
 
-  it "returns true when the socket is closed" do
-    @socket.should_receive(:closed?).and_return(true)
-    @ftp.closed?.should be_true
-  end
+      @ftp = Net::FTP.new
+      @ftp.instance_variable_set(:@sock, @socket)
+    end
 
-  it "returns true when the socket is nil" do
-    @ftp.instance_variable_set(:@sock, nil)
-    @ftp.closed?.should be_true
+    it "returns true when the socket is closed" do
+      @socket.should_receive(:closed?).and_return(true)
+      @ftp.closed?.should be_true
+    end
+
+    it "returns true when the socket is nil" do
+      @ftp.instance_variable_set(:@sock, nil)
+      @ftp.closed?.should be_true
+    end
   end
 end
