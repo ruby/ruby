@@ -4572,8 +4572,6 @@ when_vals(rb_iseq_t *iseq, LINK_ANCHOR *const cond_seq, const NODE *vals,
             rb_hash_aset(literals, lit, (VALUE)(l1) | 1);
 	}
 
-	ADD_INSN(cond_seq, val, dup); /* dup target */
-
 	if (nd_type(val) == NODE_STR) {
 	    debugp_param("nd_lit", val->nd_lit);
 	    lit = rb_fstring(val->nd_lit);
@@ -4584,7 +4582,9 @@ when_vals(rb_iseq_t *iseq, LINK_ANCHOR *const cond_seq, const NODE *vals,
 	    if (!COMPILE(cond_seq, "when cond", val)) return -1;
 	}
 
-	ADD_INSN1(cond_seq, vals, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_CASE));
+        // Emit patern === target
+        ADD_INSN1(cond_seq, vals, topn, INT2FIX(1));
+        ADD_CALL(cond_seq, vals, idEqq, INT2FIX(1));
 	ADD_INSNL(cond_seq, val, branchif, l1);
 	vals = vals->nd_next;
     }
