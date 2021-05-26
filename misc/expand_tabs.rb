@@ -80,7 +80,6 @@ DEFAULT_GEM_LIBS = %w[
   logger
   mutex_m
   net-http
-  net-pop
   net-protocol
   net-smtp
   observer
