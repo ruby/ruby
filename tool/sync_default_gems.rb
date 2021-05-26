@@ -51,7 +51,6 @@ REPOSITORIES = {
   tmpdir: "ruby/tmpdir",
   English: "ruby/English",
   "net-protocol": "ruby/net-protocol",
-  "net-imap": "ruby/net-imap",
   "net-http": "ruby/net-http",
   bigdecimal: "ruby/bigdecimal",
   optparse: "ruby/optparse",
@@ -260,12 +259,6 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/lib/net/protocol.rb", "lib/net")
     cp_r("#{upstream}/test/net/protocol", "test/net")
     cp_r("#{upstream}/net-protocol.gemspec", "lib/net")
-  when "net-imap"
-    rm_rf(%w[lib/net/imap.rb lib/net/imap test/net/imap])
-    cp_r("#{upstream}/lib/net/imap.rb", "lib/net")
-    cp_r("#{upstream}/lib/net/imap", "lib/net")
-    cp_r("#{upstream}/test/net/imap", "test/net")
-    cp_r("#{upstream}/net-imap.gemspec", "lib/net/imap")
   when "net-http"
     rm_rf(%w[lib/net/http.rb lib/net/http test/net/http])
     cp_r("#{upstream}/lib/net/http.rb", "lib/net")
