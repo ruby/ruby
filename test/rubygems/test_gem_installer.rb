@@ -740,7 +740,6 @@ gem 'other', version
 
     installer = Gem::Installer.at(
       gem_with_dangling_symlink,
-      :install_dir => @gem_home,
       :user_install => false,
       :force => true
     )
