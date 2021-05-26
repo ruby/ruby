@@ -3451,7 +3451,13 @@ rb_dir_s_empty_p(VALUE obj, VALUE dirname)
  *
  *  == What's Here
  *
- *  \Class \Dir provides methods that are useful for:
+ *  First, what's elsewhere. \Class \Dir:
+ *
+ *  - Inherits from {class Object}[Object.html#class-Object-label-What-27s+Here].
+ *  - Includes {module Enumerable}[Enumerable.html#module-Enumerable-label-What-27s+Here],
+ *    which provides dozens of additional methods.
+ *
+ *  Here, class \Dir provides methods that are useful for:
  *
  *  - {Reading}[#class-Dir-label-Reading]
  *  - {Setting}[#class-Dir-label-Setting]
