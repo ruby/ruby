@@ -1734,6 +1734,40 @@ gen_opt_empty_p(jitstate_t* jit, ctx_t* ctx)
 }
 
 static codegen_status_t
+gen_opt_str_freeze(jitstate_t* jit, ctx_t* ctx)
+{
+    if (!assume_bop_not_redefined(jit->block, STRING_REDEFINED_OP_FLAG, BOP_FREEZE)) {
+        return YJIT_CANT_COMPILE;
+    }
+
+    VALUE str = jit_get_arg(jit, 0);
+    jit_mov_gc_ptr(jit, cb, REG0, str);
+
+    // Push the return value onto the stack
+    x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_STRING);
+    mov(cb, stack_ret, REG0);
+
+    return YJIT_KEEP_COMPILING;
+}
+
+static codegen_status_t
+gen_opt_str_uminus(jitstate_t* jit, ctx_t* ctx)
+{
+    if (!assume_bop_not_redefined(jit->block, STRING_REDEFINED_OP_FLAG, BOP_UMINUS)) {
+        return YJIT_CANT_COMPILE;
+    }
+
+    VALUE str = jit_get_arg(jit, 0);
+    jit_mov_gc_ptr(jit, cb, REG0, str);
+
+    // Push the return value onto the stack
+    x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_STRING);
+    mov(cb, stack_ret, REG0);
+
+    return YJIT_KEEP_COMPILING;
+}
+
+static codegen_status_t
 gen_opt_not(jitstate_t* jit, ctx_t* ctx)
 {
     // Defer compilation so we can specialize type of argument
@@ -2837,6 +2871,8 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(opt_ltlt), gen_opt_ltlt);
     yjit_reg_op(BIN(opt_nil_p), gen_opt_nil_p);
     yjit_reg_op(BIN(opt_empty_p), gen_opt_empty_p);
+    yjit_reg_op(BIN(opt_str_freeze), gen_opt_str_freeze);
+    yjit_reg_op(BIN(opt_str_uminus), gen_opt_str_uminus);
     yjit_reg_op(BIN(opt_not), gen_opt_not);
     yjit_reg_op(BIN(opt_getinlinecache), gen_opt_getinlinecache);
     yjit_reg_op(BIN(branchif), gen_branchif);
