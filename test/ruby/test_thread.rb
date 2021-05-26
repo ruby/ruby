@@ -1335,7 +1335,7 @@ q.pop
   end
 
   def test_thread_native_thread_id
-    skip "don't support native_thread_id" unless (Thread.main.native_thread_id rescue nil)
+    skip "don't support native_thread_id" unless (begin; Thread.main.native_thread_id; rescue NotImplementedError; nil; end)
     assert_instance_of Integer, Thread.main.native_thread_id
 
     th1 = Thread.start{sleep}
