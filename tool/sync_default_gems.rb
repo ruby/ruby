@@ -35,7 +35,6 @@ REPOSITORIES = {
   pstore: "ruby/pstore",
   delegate: "ruby/delegate",
   benchmark: "ruby/benchmark",
-  "net-smtp": "ruby/net-smtp",
   cgi: "ruby/cgi",
   readline: "ruby/readline",
   "readline-ext": "ruby/readline-ext",
@@ -243,11 +242,6 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/openssl.gemspec", "ext/openssl")
     cp_r("#{upstream}/History.md", "ext/openssl")
     `git checkout ext/openssl/depend`
-  when "net-smtp"
-    rm_rf(%w[lib/net/smtp.rb lib/net/net-smtp.gemspec test/net/smtp])
-    cp_r("#{upstream}/lib/net/smtp.rb", "lib/net")
-    cp_r("#{upstream}/test/net/smtp", "test/net")
-    cp_r("#{upstream}/net-smtp.gemspec", "lib/net")
   when "net-protocol"
     rm_rf(%w[lib/net/protocol.rb lib/net/net-protocol.gemspec test/net/protocol])
     cp_r("#{upstream}/lib/net/protocol.rb", "lib/net")
