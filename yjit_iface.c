@@ -1048,9 +1048,12 @@ rb_yjit_init(struct rb_yjit_options *options)
     rb_yjit_opts = *options;
     rb_yjit_opts.yjit_enabled = true;
 
-    // Normalize command-line options
+    // Normalize command-line options to default values
+    if (rb_yjit_opts.exec_mem_size < 1) {
+        rb_yjit_opts.exec_mem_size = 256;
+    }
     if (rb_yjit_opts.call_threshold < 1) {
-        rb_yjit_opts.call_threshold = 2;
+        rb_yjit_opts.call_threshold = 10;
     }
     if (rb_yjit_opts.version_limit < 1) {
         rb_yjit_opts.version_limit = 4;

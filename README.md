@@ -82,11 +82,12 @@ The machine code generated for a given method can be printed by adding `puts YJI
 
 YJIT supports all command-line options supported by upstream CRuby, but also adds a few YJIT-specific options:
 
- - `--disable-yjit`: turn off YJIT (enabled by default)
- - `--yjit-stats`: produce statistics after the execution of a program (must compile with `cppflags=-DRUBY_DEBUG` to use this)
- - `--yjit-call-threshold=N`: number of calls after which YJIT begins to compile a function (default 2)
- - `--yjit-version-limit=N`: maximum number of versions to generate per basic block (default 4)
- - `--yjit-greedy-versioning`: greedy versioning mode (disabled by default, may increase code size)
+- `--disable-yjit`: turn off YJIT (enabled by default)
+- `--yjit-stats`: produce statistics after the execution of a program (must compile with `cppflags=-DRUBY_DEBUG` to use this)
+- `--yjit-exec-mem-size=N`: size of the executable memory block to allocate (default 256 MiB)
+- `--yjit-call-threshold=N`: number of calls after which YJIT begins to compile a function (default 2)
+- `--yjit-version-limit=N`: maximum number of versions to generate per basic block (default 4)
+- `--yjit-greedy-versioning`: greedy versioning mode (disabled by default, may increase code size)
 
 ### Benchmarking
 
@@ -142,7 +143,7 @@ The core of CRuby's interpreter logic is found in:
 - `vm_insnshelper.c`: logic used by Ruby's bytecode instructions
 - `vm_exec.c`: Ruby interpreter loop
 
-### Coding & Debugging Protips 
+### Coding & Debugging Protips
 
 There are 3 test suites:
 - `make btest` (see `/bootstraptest`)
