@@ -24,7 +24,6 @@ REPOSITORIES = {
   strscan: 'ruby/strscan',
   ipaddr: 'ruby/ipaddr',
   logger: 'ruby/logger',
-  prime: 'ruby/prime',
   matrix: 'ruby/matrix',
   ostruct: 'ruby/ostruct',
   irb: 'ruby/irb',
