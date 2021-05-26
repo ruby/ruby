@@ -101,6 +101,10 @@ Outstanding ones only.
     * Queue#initialize now accepts an Enumerable of initial values.
       [[Feature #17327]]
 
+* Thread
+
+    * Thread#native_thread_id is added. [[Feature #17853]]
+
 * Thread::Backtrace
 
     * Thread::Backtrace.limit, which returns the value to limit backtrace
