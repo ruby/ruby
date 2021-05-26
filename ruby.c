@@ -1036,7 +1036,10 @@ setup_yjit_options(const char *s, struct rb_yjit_options *yjit_opt)
     if (*s != '-') return;
     const size_t l = strlen(++s);
 
-    if (opt_match_arg(s, l, "call-threshold")) {
+    if (opt_match_arg(s, l, "exec-mem-size")) {
+        yjit_opt->exec_mem_size = atoi(s + 1);
+    }
+    else if (opt_match_arg(s, l, "call-threshold")) {
         yjit_opt->call_threshold = atoi(s + 1);
     }
     else if (opt_match_arg(s, l, "version-limit")) {

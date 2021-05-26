@@ -33,6 +33,9 @@ struct rb_yjit_options {
     // Enable compilation with YJIT
     bool yjit_enabled;
 
+    // Size of the executable memory block to allocate in MiB
+    unsigned exec_mem_size;
+
     // Number of method calls after which to start generating code
     // Threshold==1 means compile on first execution
     unsigned call_threshold;
