@@ -9,8 +9,6 @@ class TestRequireLib < Test::Unit::TestCase
     next if %r!/lib/(?:bundler|rubygems)\b! =~ lib
     next if %r!/lib/(?:debug|mkmf)\.rb\z! =~ lib
     next if %r!/lib/irb/ext/tracer\.rb\z! =~ lib
-    # skip because "in `<module:Maker>': undefined method `add_maker' for RSS::Maker:Module (NoMethodError)"
-    next if %r!/lib/rss\b! =~ lib
     # skip many files that almost use no threads
     next if TEST_RATIO < rand(0.0..1.0)
     define_method "test_thread_size:#{lib}" do
