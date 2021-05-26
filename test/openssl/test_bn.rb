@@ -1,7 +1,6 @@
 # coding: us-ascii
 # frozen_string_literal: true
 require_relative 'utils'
-require "prime"
 
 if defined?(OpenSSL)
 
@@ -230,23 +229,29 @@ class OpenSSL::TestBN < OpenSSL::TestCase
     }
   end
 
-  def test_prime
-    p1 = OpenSSL::BN.generate_prime(32)
-    assert_include(0...2**32, p1)
-    assert_equal(true, Prime.prime?(p1.to_i))
-    p2 = OpenSSL::BN.generate_prime(32, true)
-    assert_equal(true, Prime.prime?((p2.to_i - 1) / 2))
-    p3 = OpenSSL::BN.generate_prime(32, false, 4)
-    assert_equal(1, p3 % 4)
-    p4 = OpenSSL::BN.generate_prime(32, false, 4, 3)
-    assert_equal(3, p4 % 4)
+  begin
+    require "prime"
 
-    assert_equal(true, p1.prime?)
-    assert_equal(true, p2.prime?)
-    assert_equal(true, p3.prime?)
-    assert_equal(true, p4.prime?)
-    assert_equal(true, @e3.prime?)
-    assert_equal(true, @e3.prime_fasttest?)
+    def test_prime
+      p1 = OpenSSL::BN.generate_prime(32)
+      assert_include(0...2**32, p1)
+      assert_equal(true, Prime.prime?(p1.to_i))
+      p2 = OpenSSL::BN.generate_prime(32, true)
+      assert_equal(true, Prime.prime?((p2.to_i - 1) / 2))
+      p3 = OpenSSL::BN.generate_prime(32, false, 4)
+      assert_equal(1, p3 % 4)
+      p4 = OpenSSL::BN.generate_prime(32, false, 4, 3)
+      assert_equal(3, p4 % 4)
+
+      assert_equal(true, p1.prime?)
+      assert_equal(true, p2.prime?)
+      assert_equal(true, p3.prime?)
+      assert_equal(true, p4.prime?)
+      assert_equal(true, @e3.prime?)
+      assert_equal(true, @e3.prime_fasttest?)
+    end
+  rescue LoadError
+    # prime is the bundled gems at Ruby 3.1
   end
 
   def test_num_bits_bytes
