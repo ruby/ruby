@@ -85,12 +85,6 @@ env:
     name: ppc64le-linux
     arch: ppc64le
     <<: *gcc-10
-    env:
-      # FIXME: Skip some failing TestGCCompact tests.
-      # https://bugs.ruby-lang.org/issues/17871
-      - TEST_ALL_SKIPPED_TESTS="test_gc_compact_stats test_complex_hash_keys test_ast_compacts test_compact_count"
-      # The tests crash the process.
-      - RUN_SEPARATED_TESTS=false
 
   - &s390x-linux
     name: s390x-linux
