@@ -58,7 +58,6 @@ OpenStruct:: Class to build custom data structures, similar to a Hash
 OpenURI:: An easy-to-use wrapper for Net::HTTP, Net::HTTPS and Net::FTP
 PP:: Provides a PrettyPrinter for Ruby objects
 PrettyPrinter:: Implements a pretty printing algorithm for readable structure
-Prime:: Prime numbers and factorization library
 PStore:: Implements a file based persistence mechanism based on a Hash
 Resolv::  Thread-aware DNS resolver library in Ruby
 resolv-replace.rb:: Replace Socket DNS with Resolv
@@ -111,5 +110,6 @@ Rake:: Ruby build program with capabilities similar to make
 Test::Unit:: A compatibility layer for MiniTest
 REXML:: An XML toolkit for Ruby
 RSS:: Family of libraries that support various formats of XML "feeds"
+Prime:: Prime numbers and factorization library
 RBS:: RBS is a language to describe the structure of Ruby programs
 TypeProf:: A type analysis tool for Ruby code based on abstract interpretation

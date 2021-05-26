@@ -205,10 +205,6 @@ Yukihiro Matsumoto (matz)
   Tanaka Akira (akr)
   https://github.com/ruby/prettyprint
   https://rubygems.org/gems/prettyprint
-[lib/prime.rb]
-  Marc-André Lafortune (marcandre)
-  https://github.com/ruby/prime
-  https://rubygems.org/gems/prime
 [lib/pstore.rb]
   _unmaintained_
   https://github.com/ruby/pstore
@@ -399,6 +395,8 @@ Yukihiro Matsumoto (matz)
   https://github.com/ruby/rexml
 [rss]
   https://github.com/ruby/rss
+[prime]
+  https://github.com/ruby/prime
 [rbs]
   https://github.com/ruby/rbs
 [typeprof]
