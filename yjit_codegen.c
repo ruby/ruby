@@ -1014,7 +1014,8 @@ gen_get_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
     // NOTE: This assumes nobody changes the allocator of the class after allocation.
     //       Eventually, we can encode whether an object is T_OBJECT or not
     //       inside object shapes.
-    if (rb_get_alloc_func(comptime_val_klass) != rb_class_allocate_instance) {
+    if (!RB_TYPE_P(comptime_receiver, T_OBJECT) ||
+            rb_get_alloc_func(comptime_val_klass) != rb_class_allocate_instance) {
         // General case. Call rb_ivar_get(). No need to reconstruct interpreter
         // state since the routine never raises exceptions or allocate objects
         // visibile to Ruby.
