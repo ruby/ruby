@@ -81,7 +81,6 @@ DEFAULT_GEM_LIBS = %w[
   mutex_m
   net-http
   net-protocol
-  net-smtp
   observer
   open3
   open-uri
