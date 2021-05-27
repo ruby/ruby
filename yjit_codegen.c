@@ -595,6 +595,58 @@ gen_adjuststack(jitstate_t* jit, ctx_t* ctx)
     return YJIT_KEEP_COMPILING;
 }
 
+// new array initialized from top N values
+static codegen_status_t
+gen_newarray(jitstate_t* jit, ctx_t* ctx)
+{
+    rb_num_t n = (rb_num_t)jit_get_arg(jit, 0);
+
+    // Save the PC and SP because we are allocating
+    jit_save_pc(jit, REG0);
+    jit_save_sp(jit, ctx);
+
+    x86opnd_t values_ptr = ctx_sp_opnd(ctx, -(sizeof(VALUE) * (uint32_t)n));
+
+    // call rb_ec_ary_new_from_values(struct rb_execution_context_struct *ec, long n, const VALUE *elts);
+    yjit_save_regs(cb);
+    mov(cb, C_ARG_REGS[0], REG_EC);
+    mov(cb, C_ARG_REGS[1], imm_opnd(n));
+    lea(cb, C_ARG_REGS[2], values_ptr);
+    call_ptr(cb, REG0, (void *)rb_ec_ary_new_from_values);
+    yjit_load_regs(cb);
+
+    ctx_stack_pop(ctx, n);
+    x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_ARRAY);
+    mov(cb, stack_ret, RAX);
+
+    return YJIT_KEEP_COMPILING;
+}
+
+// new hash initialized from top N values
+static codegen_status_t
+gen_newhash(jitstate_t* jit, ctx_t* ctx)
+{
+    rb_num_t n = (rb_num_t)jit_get_arg(jit, 0);
+
+    if (n == 0) {
+        // Save the PC and SP because we are allocating
+        jit_save_pc(jit, REG0);
+        jit_save_sp(jit, ctx);
+
+        // val = rb_hash_new();
+        yjit_save_regs(cb);
+        call_ptr(cb, REG0, (void *)rb_hash_new);
+        yjit_load_regs(cb);
+
+        x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_HASH);
+        mov(cb, stack_ret, RAX);
+
+        return YJIT_KEEP_COMPILING;
+    } else {
+        return YJIT_CANT_COMPILE;
+    }
+}
+
 static codegen_status_t
 gen_putnil(jitstate_t* jit, ctx_t* ctx)
 {
@@ -2848,6 +2900,8 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(setn), gen_setn);
     yjit_reg_op(BIN(pop), gen_pop);
     yjit_reg_op(BIN(adjuststack), gen_adjuststack);
+    yjit_reg_op(BIN(newarray), gen_newarray);
+    yjit_reg_op(BIN(newhash), gen_newhash);
     yjit_reg_op(BIN(putnil), gen_putnil);
     yjit_reg_op(BIN(putobject), gen_putobject);
     yjit_reg_op(BIN(putobject_INT2FIX_0_), gen_putobject_int2fix);
