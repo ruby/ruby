@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 require "rubygems"
-require "rubygems/test_case"
+require_relative "test_case"
 require "rubygems/commands/help_command"
 require "rubygems/package"
 require "rubygems/command_manager"
@@ -31,6 +31,13 @@ class TestGemCommandsHelpCommand < Gem::TestCase
   def test_gem_help_platforms
     util_gem 'platforms' do |out, err|
       assert_match(/x86-freebsd/, out)
+      assert_equal '', err
+    end
+  end
+
+  def test_gem_help_build
+    util_gem 'build' do |out, err|
+      assert_match(/-C PATH *Run as if gem build was started in <PATH>/, out)
       assert_equal '', err
     end
   end

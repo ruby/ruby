@@ -20,7 +20,6 @@ module Bundler
       disable_exec_load
       disable_local_branch_check
       disable_local_revision_check
-      disable_multisource
       disable_shared_gems
       disable_version_check
       force_ruby_platform

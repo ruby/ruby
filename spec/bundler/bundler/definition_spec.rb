@@ -278,33 +278,6 @@ RSpec.describe Bundler::Definition do
     end
   end
 
-  describe "find_resolved_spec" do
-    it "with no platform set in SpecSet" do
-      ss = Bundler::SpecSet.new([build_stub_spec("a", "1.0"), build_stub_spec("b", "1.0")])
-      dfn = Bundler::Definition.new(nil, [], mock_source_list, true)
-      dfn.instance_variable_set("@specs", ss)
-      found = dfn.find_resolved_spec(build_spec("a", "0.9", "ruby").first)
-      expect(found.name).to eq "a"
-      expect(found.version.to_s).to eq "1.0"
-    end
-  end
-
-  describe "find_indexed_specs" do
-    it "with no platform set in indexed specs" do
-      index = Bundler::Index.new
-      %w[1.0.0 1.0.1 1.1.0].each {|v| index << build_stub_spec("foo", v) }
-
-      dfn = Bundler::Definition.new(nil, [], mock_source_list, true)
-      dfn.instance_variable_set("@index", index)
-      found = dfn.find_indexed_specs(build_spec("foo", "0.9", "ruby").first)
-      expect(found.length).to eq 3
-    end
-  end
-
-  def build_stub_spec(name, version)
-    Bundler::StubSpecification.new(name, version, nil, nil)
-  end
-
   def mock_source_list
     Class.new do
       def all_sources

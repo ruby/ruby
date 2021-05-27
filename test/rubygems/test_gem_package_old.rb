@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'test_case'
 
 unless Gem.java_platform? # jruby can't require the simple_gem file
   require 'rubygems/simple_gem'
@@ -23,7 +23,7 @@ unless Gem.java_platform? # jruby can't require the simple_gem file
     end
 
     def test_contents_security_policy
-      skip 'openssl is missing' unless Gem::HAVE_OPENSSL
+      pend 'openssl is missing' unless Gem::HAVE_OPENSSL
 
       @package.security_policy = Gem::Security::AlmostNoSecurity
 
@@ -44,7 +44,7 @@ unless Gem.java_platform? # jruby can't require the simple_gem file
     end
 
     def test_extract_files_security_policy
-      skip 'openssl is missing' unless Gem::HAVE_OPENSSL
+      pend 'openssl is missing' unless Gem::HAVE_OPENSSL
 
       @package.security_policy = Gem::Security::AlmostNoSecurity
 
@@ -58,7 +58,7 @@ unless Gem.java_platform? # jruby can't require the simple_gem file
     end
 
     def test_spec_security_policy
-      skip 'openssl is missing' unless Gem::HAVE_OPENSSL
+      pend 'openssl is missing' unless Gem::HAVE_OPENSSL
 
       @package.security_policy = Gem::Security::AlmostNoSecurity
 
@@ -68,7 +68,7 @@ unless Gem.java_platform? # jruby can't require the simple_gem file
     end
 
     def test_verify
-      skip 'openssl is missing' unless Gem::HAVE_OPENSSL
+      pend 'openssl is missing' unless Gem::HAVE_OPENSSL
 
       assert @package.verify
 

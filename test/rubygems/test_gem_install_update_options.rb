@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/installer_test_case'
+require_relative 'installer_test_case'
 require 'rubygems/install_update_options'
 require 'rubygems/command'
 require 'rubygems/dependency_installer'
@@ -92,7 +92,7 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
   end
 
   def test_security_policy
-    skip 'openssl is missing' unless Gem::HAVE_OPENSSL
+    pend 'openssl is missing' unless Gem::HAVE_OPENSSL
 
     @cmd.handle_options %w[-P HighSecurity]
 
@@ -100,7 +100,7 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
   end
 
   def test_security_policy_unknown
-    skip 'openssl is missing' unless Gem::HAVE_OPENSSL
+    pend 'openssl is missing' unless Gem::HAVE_OPENSSL
 
     @cmd.add_install_update_options
 

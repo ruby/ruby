@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'test_case'
 require 'rubygems/commands/unpack_command'
 
 class TestGemCommandsUnpackCommand < Gem::TestCase
@@ -151,7 +151,7 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
   end
 
   def test_execute_sudo
-    skip 'Cannot perform this test on windows (chmod)' if win_platform?
+    pend 'Cannot perform this test on windows (chmod)' if win_platform?
 
     util_make_gems
 

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'rubygems/test_case'
+require_relative 'test_case'
 require 'rubygems/ext'
 
 class TestGemExtExtConfBuilder < Gem::TestCase
@@ -41,6 +41,7 @@ class TestGemExtExtConfBuilder < Gem::TestCase
     assert_contains_make_command '', output[7]
     assert_contains_make_command 'install', output[10]
     assert_empty Dir.glob(File.join(@ext, 'siteconf*.rb'))
+    assert_empty Dir.glob(File.join(@ext, '.gem.*'))
   end
 
   def test_class_build_rbconfig_make_prog

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'rubygems/package/tar_test_case'
+require_relative 'package/tar_test_case'
 require 'digest'
 
 class TestGemPackage < Gem::Package::TarTestCase
@@ -22,7 +22,7 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_class_new_old_format
-    skip "jruby can't require the simple_gem file" if Gem.java_platform?
+    pend "jruby can't require the simple_gem file" if Gem.java_platform?
     require_relative "simple_gem"
     File.open 'old_format.gem', 'wb' do |io|
       io.write SIMPLE_GEM
@@ -98,7 +98,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       },
     }
 
-    assert_equal expected, YAML.unsafe_load(checksums)
+    assert_equal expected, load_yaml(checksums)
   end
 
   def test_build_time_uses_source_date_epoch
@@ -190,7 +190,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       File.symlink('../lib/code.rb', 'lib/code_sym2.rb')
     rescue Errno::EACCES => e
       if win_platform?
-        skip "symlink - must be admin with no UAC on Windows"
+        pend "symlink - must be admin with no UAC on Windows"
       else
         raise e
       end
@@ -252,7 +252,7 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_build_auto_signed
-    skip 'openssl is missing' unless Gem::HAVE_OPENSSL
+    pend 'openssl is missing' unless Gem::HAVE_OPENSSL
 
     FileUtils.mkdir_p File.join(Gem.user_home, '.gem')
 
@@ -295,7 +295,7 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_build_auto_signed_encrypted_key
-    skip 'openssl is missing' unless Gem::HAVE_OPENSSL
+    pend 'openssl is missing' unless Gem::HAVE_OPENSSL
 
     FileUtils.mkdir_p File.join(Gem.user_home, '.gem')
 
@@ -364,7 +364,7 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_build_signed
-    skip 'openssl is missing' unless Gem::HAVE_OPENSSL
+    pend 'openssl is missing' unless Gem::HAVE_OPENSSL
 
     spec = Gem::Specification.new 'build', '1'
     spec.summary = 'build'
@@ -401,7 +401,7 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_build_signed_encrypted_key
-    skip 'openssl is missing' unless Gem::HAVE_OPENSSL
+    pend 'openssl is missing' unless Gem::HAVE_OPENSSL
 
     spec = Gem::Specification.new 'build', '1'
     spec.summary = 'build'
@@ -543,7 +543,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       package.extract_tar_gz tgz_io, @destination
     rescue Errno::EACCES => e
       if win_platform?
-        skip "symlink - must be admin with no UAC on Windows"
+        pend "symlink - must be admin with no UAC on Windows"
       else
         raise e
       end
@@ -582,7 +582,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       assert_equal("installing into parent path lib/link/outside.txt of " +
                   "#{destination_subdir} is not allowed", e.message)
     elsif win_platform?
-      skip "symlink - must be admin with no UAC on Windows"
+      pend "symlink - must be admin with no UAC on Windows"
     else
       raise e
     end
@@ -601,7 +601,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     destination_user_subdir = File.join destination_user_dir, 'dir'
     FileUtils.mkdir_p destination_user_subdir
 
-    skip "TMPDIR seems too long to add it as symlink into tar" if destination_user_dir.size > 90
+    pend "TMPDIR seems too long to add it as symlink into tar" if destination_user_dir.size > 90
 
     tgz_io = util_tar_gz do |tar|
       tar.add_symlink 'link', destination_user_dir, 16877
@@ -618,7 +618,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       assert_equal("installing into parent path #{destination_user_subdir} of " +
                   "#{destination_subdir} is not allowed", e.message)
     elsif win_platform?
-      skip "symlink - must be admin with no UAC on Windows"
+      pend "symlink - must be admin with no UAC on Windows"
     else
       raise e
     end
@@ -886,7 +886,7 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_verify_corrupt
-    skip "jruby strips the null byte and does not think it's corrupt" if Gem.java_platform?
+    pend "jruby strips the null byte and does not think it's corrupt" if Gem.java_platform?
     tf = Tempfile.open 'corrupt' do |io|
       data = Gem::Util.gzip 'a' * 10
       io.write \
@@ -957,7 +957,7 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_verify_security_policy
-    skip 'openssl is missing' unless Gem::HAVE_OPENSSL
+    pend 'openssl is missing' unless Gem::HAVE_OPENSSL
 
     package = Gem::Package.new @gem
     package.security_policy = Gem::Security::HighSecurity
@@ -974,7 +974,7 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_verify_security_policy_low_security
-    skip 'openssl is missing' unless Gem::HAVE_OPENSSL
+    pend 'openssl is missing' unless Gem::HAVE_OPENSSL
 
     @spec.cert_chain = [PUBLIC_CERT.to_pem]
     @spec.signing_key = PRIVATE_KEY
@@ -994,7 +994,7 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_verify_security_policy_checksum_missing
-    skip 'openssl is missing' unless Gem::HAVE_OPENSSL
+    pend 'openssl is missing' unless Gem::HAVE_OPENSSL
 
     @spec.cert_chain = [PUBLIC_CERT.to_pem]
     @spec.signing_key = PRIVATE_KEY

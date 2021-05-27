@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'rubygems/test_case'
+require_relative 'test_case'
 
 unless Gem::HAVE_OPENSSL
   warn 'Skipping Gem::Security::Policy tests.  openssl not found.'

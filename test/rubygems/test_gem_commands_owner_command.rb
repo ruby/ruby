@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'test_case'
 require 'rubygems/commands/owner_command'
 
 class TestGemCommandsOwnerCommand < Gem::TestCase
@@ -53,7 +53,7 @@ EOF
   end
 
   def test_show_owners_dont_load_objects
-    skip "testing a psych-only API" unless defined?(::Psych::DisallowedClass)
+    pend "testing a psych-only API" unless defined?(::Psych::DisallowedClass)
 
     response = <<EOF
 ---

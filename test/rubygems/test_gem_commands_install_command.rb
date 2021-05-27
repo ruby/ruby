@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'test_case'
 require 'rubygems/commands/install_command'
 require 'rubygems/request_set'
 require 'rubygems/rdoc'
@@ -187,8 +187,8 @@ ERROR:  Could not find a valid gem 'bar' (= 0.5) (required by 'foo' (>= 0)) in a
   end
 
   def test_execute_no_user_install
-    skip 'skipped on MS Windows (chmod has no effect)' if win_platform?
-    skip 'skipped in root privilege' if Process.uid.zero?
+    pend 'skipped on MS Windows (chmod has no effect)' if win_platform?
+    pend 'skipped in root privilege' if Process.uid.zero?
 
     specs = spec_fetcher do |fetcher|
       fetcher.gem 'a', 2

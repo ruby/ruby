@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'test_case'
 
 require 'webrick'
 require 'webrick/https' if Gem::HAVE_OPENSSL
@@ -1083,7 +1083,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def start_ssl_server(config = {})
-    skip "starting this test server fails randomly on jruby" if Gem.java_platform?
+    pend "starting this test server fails randomly on jruby" if Gem.java_platform?
 
     null_logger = NilLog.new
     server = WEBrick::HTTPServer.new({

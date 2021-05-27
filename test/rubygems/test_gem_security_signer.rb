@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'test_case'
 
 unless Gem::HAVE_OPENSSL
   warn 'Skipping Gem::Security::Signer tests.  openssl not found.'
@@ -142,7 +142,7 @@ toqvglr0kdbknSRRjBVLK6tsgr07aLT9gNP7mTW2PA==
   end
 
   def test_sign_expired_auto_update
-    skip if Gem.java_platform?
+    pend if Gem.java_platform?
     FileUtils.mkdir_p File.join(Gem.user_home, '.gem'), :mode => 0700
 
     private_key_path = File.join(Gem.user_home, '.gem', 'gem-private_key.pem')

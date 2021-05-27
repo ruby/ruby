@@ -1347,7 +1347,7 @@ RSpec.describe "the lockfile format" do
 
         expect do
           ruby <<-RUBY
-                   require '#{lib_dir}/bundler'
+                   require '#{entrypoint}'
                    Bundler.setup
                  RUBY
         end.not_to change { File.mtime(bundled_app_lock) }

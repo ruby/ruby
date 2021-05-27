@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'test_case'
 require 'rubygems/ext'
 require 'rubygems/installer'
 
@@ -106,7 +106,6 @@ install:
   end
 
   def test_build_extensions
-    skip if /mswin/ =~ RUBY_PLATFORM && ENV.key?('GITHUB_ACTIONS') # not working from the beginning
     @spec.extensions << 'ext/extconf.rb'
 
     ext_dir = File.join @spec.gem_dir, 'ext'
@@ -142,7 +141,6 @@ install:
   end
 
   def test_build_extensions_with_gemhome_with_space
-    skip if /mswin/ =~ RUBY_PLATFORM && ENV.key?('GITHUB_ACTIONS') # not working from the beginning
     new_gemhome = File.join @tempdir, 'gem home'
     File.rename(@gemhome, new_gemhome)
     @gemhome = new_gemhome
@@ -163,7 +161,6 @@ install:
         false
       end
     end
-    skip if /mswin/ =~ RUBY_PLATFORM && ENV.key?('GITHUB_ACTIONS') # not working from the beginning
 
     @spec.extensions << 'ext/extconf.rb'
 

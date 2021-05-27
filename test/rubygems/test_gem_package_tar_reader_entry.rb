@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/package/tar_test_case'
+require_relative 'package/tar_test_case'
 require 'rubygems/package'
 
 class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
@@ -75,7 +75,7 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
   end
 
   def test_full_name_null
-    skip "jruby strips the null byte and does not think it's corrupt" if Gem.java_platform?
+    pend "jruby strips the null byte and does not think it's corrupt" if Gem.java_platform?
     @entry.header.prefix << "\000"
 
     e = assert_raise Gem::Package::TarInvalidError do

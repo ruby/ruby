@@ -156,7 +156,7 @@ module Spec
             actual_source = out.split("\n").last
             next "Expected #{name} (#{version}) to be installed from `#{source}`, was actually from `#{actual_source}`"
           end
-          next "Command to check forgem inclusion of gem #{full_name} failed"
+          next "Command to check for inclusion of gem #{full_name} failed"
         end.compact
 
         @errors.empty?

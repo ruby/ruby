@@ -108,8 +108,8 @@ RSpec.describe "Bundler.setup" do
   context "load order" do
     def clean_load_path(lp)
       without_bundler_load_path = ruby("puts $LOAD_PATH").split("\n")
-      lp -= without_bundler_load_path
-      lp.map! {|p| p.sub(/^#{Regexp.union system_gem_path.to_s, default_bundle_path.to_s, lib_dir.to_s}/i, "") }
+      lp -= [*without_bundler_load_path, lib_dir.to_s]
+      lp.map! {|p| p.sub(system_gem_path.to_s, "") }
     end
 
     it "puts loaded gems after -I and RUBYLIB", :ruby_repo do
@@ -143,12 +143,8 @@ RSpec.describe "Bundler.setup" do
         gem "rails"
       G
 
-      # We require an absolute path because relying on the $LOAD_PATH behaves
-      # inconsistently depending on whether we're in a ruby-core setup (and
-      # bundler's lib is in RUBYLIB) or not.
-
       ruby <<-RUBY
-        require '#{lib_dir}/bundler'
+        require 'bundler'
         Bundler.setup
         puts $LOAD_PATH
       RUBY
@@ -157,7 +153,6 @@ RSpec.describe "Bundler.setup" do
 
       expect(load_path).to start_with(
         "/gems/rails-2.3.2/lib",
-        "/gems/bundler-#{Bundler::VERSION}/lib",
         "/gems/activeresource-2.3.2/lib",
         "/gems/activerecord-2.3.2/lib",
         "/gems/actionpack-2.3.2/lib",
@@ -168,6 +163,8 @@ RSpec.describe "Bundler.setup" do
     end
 
     it "falls back to order the load path alphabetically for backwards compatibility" do
+      bundle "config set path.system true"
+
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "weakling"
@@ -175,12 +172,8 @@ RSpec.describe "Bundler.setup" do
         gem "terranova"
       G
 
-      # We require an absolute path because relying on the $LOAD_PATH behaves
-      # inconsistently depending on whether we're in a ruby-core setup (and
-      # bundler's lib is in RUBYLIB) or not.
-
       ruby <<-RUBY
-        require '#{lib_dir}/bundler/setup'
+        require 'bundler/setup'
         puts $LOAD_PATH
       RUBY
 
@@ -199,8 +192,6 @@ RSpec.describe "Bundler.setup" do
       source "#{file_uri_for(gem_repo1)}"
       gem "rack"
     G
-
-    entrypoint = mis_activates_prerelease_default_bundler? ? "#{lib_dir}/bundler" : "bundler"
 
     ruby <<-R
       require '#{entrypoint}'
@@ -473,8 +464,6 @@ RSpec.describe "Bundler.setup" do
       FileUtils.rm(bundled_app_lock)
 
       break_git!
-
-      entrypoint = mis_activates_prerelease_default_bundler? ? "#{lib_dir}/bundler" : "bundler"
 
       ruby <<-R
         require "#{entrypoint}"
@@ -1126,9 +1115,8 @@ end
 
     context "is not present" do
       it "does not change the lock" do
-        entrypoint = mis_activates_prerelease_default_bundler? ? "#{lib_dir}/bundler/setup" : "bundler/setup"
         lockfile lock_with(nil)
-        ruby "require '#{entrypoint}'"
+        ruby "require '#{entrypoint}/setup'"
         lockfile_should_be lock_with(nil)
       end
     end
@@ -1145,10 +1133,9 @@ end
 
     context "is older" do
       it "does not change the lock" do
-        entrypoint = mis_activates_prerelease_default_bundler? ? "#{lib_dir}/bundler/setup" : "bundler/setup"
         system_gems "bundler-1.10.1"
         lockfile lock_with("1.10.1")
-        ruby "require '#{entrypoint}'"
+        ruby "require '#{entrypoint}/setup'"
         lockfile_should_be lock_with("1.10.1")
       end
     end
@@ -1219,9 +1206,8 @@ end
   describe "with gemified standard libraries" do
     it "does not load Psych" do
       gemfile ""
-      entrypoint = mis_activates_prerelease_default_bundler? ? "#{lib_dir}/bundler/setup" : "bundler/setup"
       ruby <<-RUBY
-        require '#{entrypoint}'
+        require '#{entrypoint}/setup'
         puts defined?(Psych::VERSION) ? Psych::VERSION : "undefined"
         require 'psych'
         puts Psych::VERSION
@@ -1421,10 +1407,5 @@ end
 
       expect(last_command.stdboth).to eq("true")
     end
-  end
-
-  # Tested rubygems does not include https://github.com/rubygems/rubygems/pull/2728 and will not always end up activating the current bundler
-  def mis_activates_prerelease_default_bundler?
-    Gem.rubygems_version < Gem::Version.new("3.1.a")
   end
 end

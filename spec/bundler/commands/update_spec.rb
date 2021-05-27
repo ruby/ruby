@@ -649,8 +649,8 @@ RSpec.describe "bundle update" do
     end
 
     it "works" do
-      bundle :install, :artifice => :compact_index
-      bundle "update oj", :artifice => :compact_index
+      bundle :install, :artifice => "compact_index"
+      bundle "update oj", :artifice => "compact_index"
 
       expect(out).to include("Bundle updated!")
       expect(the_bundle).to include_gems "oj 3.11.5"

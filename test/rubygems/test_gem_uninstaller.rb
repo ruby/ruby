@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/installer_test_case'
+require_relative 'installer_test_case'
 require 'rubygems/uninstaller'
 
 class TestGemUninstaller < Gem::InstallerTestCase
@@ -153,7 +153,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
   end
 
   def test_remove_symlinked_gem_home
-    skip "Symlinks not supported or not enabled" unless symlink_supported?
+    pend "Symlinks not supported or not enabled" unless symlink_supported?
 
     Dir.mktmpdir("gem_home") do |dir|
       symlinked_gem_home = "#{dir}/#{File.basename(@gemhome)}"

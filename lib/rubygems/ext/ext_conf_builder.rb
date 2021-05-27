@@ -23,11 +23,11 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
     # spaces do not work.
     #
     # Details: https://github.com/rubygems/rubygems/issues/977#issuecomment-171544940
-    tmp_dest = get_relative_path(tmp_dest, extension_dir)
+    tmp_dest_relative = get_relative_path(tmp_dest.clone, extension_dir)
 
     Tempfile.open %w[siteconf .rb], extension_dir do |siteconf|
       siteconf.puts "require 'rbconfig'"
-      siteconf.puts "dest_path = #{tmp_dest.dump}"
+      siteconf.puts "dest_path = #{tmp_dest_relative.dump}"
       %w[sitearchdir sitelibdir].each do |dir|
         siteconf.puts "RbConfig::MAKEFILE_CONFIG['#{dir}'] = dest_path"
         siteconf.puts "RbConfig::CONFIG['#{dir}'] = dest_path"
@@ -63,8 +63,8 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
 
         make dest_path, results, extension_dir
 
-        if tmp_dest
-          full_tmp_dest = File.join(extension_dir, tmp_dest)
+        if tmp_dest_relative
+          full_tmp_dest = File.join(extension_dir, tmp_dest_relative)
 
           # TODO remove in RubyGems 3
           if Gem.install_extension_in_lib and lib_dir

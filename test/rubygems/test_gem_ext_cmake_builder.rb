@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'test_case'
 require 'rubygems/ext'
 
 class TestGemExtCmakeBuilder < Gem::TestCase
@@ -7,13 +7,13 @@ class TestGemExtCmakeBuilder < Gem::TestCase
     super
 
     # Details: https://github.com/rubygems/rubygems/issues/1270#issuecomment-177368340
-    skip "CmakeBuilder doesn't work on Windows." if Gem.win_platform?
+    pend "CmakeBuilder doesn't work on Windows." if Gem.win_platform?
 
     begin
       _, status = Open3.capture2e('cmake')
-      skip 'cmake not present' unless status.success?
+      pend 'cmake not present' unless status.success?
     rescue Errno::ENOENT
-      skip 'cmake not present'
+      pend 'cmake not present'
     end
 
     @ext = File.join @tempdir, 'ext'
