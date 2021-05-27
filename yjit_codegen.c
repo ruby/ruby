@@ -1039,6 +1039,7 @@ gen_get_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
         return YJIT_END_BLOCK;
     }
 
+    /*
     // FIXME:
     // This check was added because of a failure in a test involving the
     // Nokogiri Document class where we see a T_DATA that still has the default
@@ -1055,6 +1056,7 @@ gen_get_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
     and(cb, REG1, imm_opnd(RUBY_T_MASK));
     cmp(cb, REG1, imm_opnd(T_OBJECT));
     jit_chain_guard(JCC_JNE, jit, &starting_context, max_chain_depth, side_exit);
+    */
 
     // ID for the name of the ivar
     ID id = ivar_name;
