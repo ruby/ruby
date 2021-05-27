@@ -927,3 +927,53 @@ assert_equal '[Proc, 1, 2, 3, Proc]', %q{
 
   [use_zero] + use_three
 }
+
+# test building empty array
+assert_equal '[]', %q{
+  def build_arr
+    []
+  end
+
+  build_arr
+  build_arr
+}
+
+# test building array of one element
+assert_equal '[5]', %q{
+  def build_arr(val)
+    [val]
+  end
+
+  build_arr(5)
+  build_arr(5)
+}
+
+# test building array of several element
+assert_equal '[5, 5, 5, 5, 5]', %q{
+  def build_arr(val)
+    [val, val, val, val, val]
+  end
+
+  build_arr(5)
+  build_arr(5)
+}
+
+# test building empty hash
+assert_equal '{}', %q{
+  def build_hash
+    {}
+  end
+
+  build_hash
+  build_hash
+}
+
+# test building hash with values
+assert_equal '{:foo=>:bar}', %q{
+  def build_hash(val)
+    { foo: val }
+  end
+
+  build_hash(:bar)
+  build_hash(:bar)
+}
