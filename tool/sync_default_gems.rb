@@ -89,7 +89,7 @@ def sync_default_gems(gem)
     cp_r(Dir.glob("#{upstream}/bundler/exe/bundle*"), "libexec")
 
     gemspec_content = File.readlines("#{upstream}/bundler/bundler.gemspec").map do |line|
-      next if line =~ /extra_rdoc_files/
+      next if line =~ /LICENSE\.md/
 
       line.gsub("bundler.gemspec", "lib/bundler/bundler.gemspec").gsub('"exe"', '"libexec"')
     end.compact.join
