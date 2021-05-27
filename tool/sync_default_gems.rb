@@ -16,7 +16,6 @@ REPOSITORIES = {
   "io-nonblock": 'ruby/io-nonblock',
   "io-wait": 'ruby/io-wait',
   csv: 'ruby/csv',
-  dbm: 'ruby/dbm',
   etc: 'ruby/etc',
   date: 'ruby/date',
   zlib: 'ruby/zlib',
