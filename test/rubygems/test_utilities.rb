@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 require 'tempfile'
 require 'rubygems'
+require_relative 'test_case'
 require 'rubygems/remote_fetcher'
 
 ##
