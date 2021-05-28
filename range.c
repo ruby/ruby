@@ -1576,6 +1576,37 @@ range_include_internal(VALUE range, VALUE val, int string_use_cover)
     return Qundef;
 }
 
+/*
+ *  call-seq:
+ *     rng.infinite?    -> true or false
+ *
+ *  Returns <code>true</code> if the range is infinite.
+ *
+ *     (1..5).infinite?     #=> false
+ *     (1..).infinite?      #=> true
+ */
+
+VALUE rb_flo_is_infinite_p(VALUE num);
+static VALUE
+range_infinite_p(VALUE range)
+{
+    VALUE b = RANGE_BEG(range), e = RANGE_END(range);
+
+    if (NIL_P(b) || NIL_P(e)) {
+        return Qtrue;
+    }
+
+    if (RB_FLOAT_TYPE_P(b) && rb_flo_is_infinite_p(b)) {
+        return Qtrue;
+    }
+
+    if (RB_FLOAT_TYPE_P(e) && rb_flo_is_infinite_p(e)) {
+        return Qtrue;
+    }
+
+    return Qfalse;
+}
+
 static int r_cover_range_p(VALUE range, VALUE beg, VALUE end, VALUE val);
 
 /*
@@ -1877,6 +1908,7 @@ Init_Range(void)
     rb_define_method(rb_cRange, "inspect", range_inspect, 0);
 
     rb_define_method(rb_cRange, "exclude_end?", range_exclude_end_p, 0);
+    rb_define_method(rb_cRange, "infinite?", range_infinite_p, 0);
 
     rb_define_method(rb_cRange, "member?", range_include, 1);
     rb_define_method(rb_cRange, "include?", range_include, 1);
