@@ -1,9 +1,6 @@
 # frozen_string_literal: true
-begin
-  gem 'minitest', '< 5.0.0' if defined? Gem
-rescue Gem::LoadError
-end
-require 'minitest/unit'
+
+require_relative '../minitest/unit'
 require 'test/unit/assertions'
 require_relative '../envutil'
 require_relative '../colorize'
