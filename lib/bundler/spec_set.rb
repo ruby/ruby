@@ -46,11 +46,7 @@ module Bundler
         specs << spec
       end
 
-      check ? true : SpecSet.new(specs)
-    end
-
-    def valid_for?(deps)
-      self.for(deps, [], true)
+      check ? true : specs
     end
 
     def [](key)
@@ -77,7 +73,7 @@ module Bundler
     end
 
     def materialize(deps, missing_specs = nil)
-      materialized = self.for(deps, [], false, true, !missing_specs).to_a
+      materialized = self.for(deps, [], false, true, !missing_specs)
 
       materialized.group_by(&:source).each do |source, specs|
         next unless specs.any?{|s| s.is_a?(LazySpecification) }

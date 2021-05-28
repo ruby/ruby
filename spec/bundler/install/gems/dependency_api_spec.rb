@@ -338,31 +338,6 @@ RSpec.describe "gemcutter's dependency API" do
     expect(the_bundle).to include_gems "activesupport 1.2.3"
   end
 
-  it "considers all possible versions of dependencies from all api gem sources using blocks" do
-    # In this scenario, the gem "somegem" only exists in repo4.  It depends on specific version of activesupport that
-    # exists only in repo1.  There happens also be a version of activesupport in repo4, but not the one that version 1.0.0
-    # of somegem wants. This test makes sure that bundler actually finds version 1.2.3 of active support in the other
-    # repo and installs it.
-    build_repo4 do
-      build_gem "activesupport", "1.2.0"
-      build_gem "somegem", "1.0.0" do |s|
-        s.add_dependency "activesupport", "1.2.3" # This version exists only in repo1
-      end
-    end
-
-    gemfile <<-G
-      source "#{source_uri}"
-      source "#{source_uri}/extra" do
-        gem 'somegem', '1.0.0'
-      end
-    G
-
-    bundle :install, :artifice => "endpoint_extra_api"
-
-    expect(the_bundle).to include_gems "somegem 1.0.0"
-    expect(the_bundle).to include_gems "activesupport 1.2.3"
-  end
-
   it "prints API output properly with back deps" do
     build_repo2 do
       build_gem "back_deps" do |s|
@@ -438,7 +413,7 @@ RSpec.describe "gemcutter's dependency API" do
     expect(the_bundle).to include_gems "foo 1.0"
   end
 
-  it "fetches again when more dependencies are found in subsequent sources using --deployment", :bundler => "< 3" do
+  it "fetches again when more dependencies are found in subsequent sources using deployment mode", :bundler => "< 3" do
     build_repo2 do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
@@ -453,8 +428,8 @@ RSpec.describe "gemcutter's dependency API" do
     G
 
     bundle :install, :artifice => "endpoint_extra"
-
-    bundle "install --deployment", :artifice => "endpoint_extra"
+    bundle "config set --local deployment true"
+    bundle :install, :artifice => "endpoint_extra"
     expect(the_bundle).to include_gems "back_deps 1.0"
   end
 
@@ -474,7 +449,6 @@ RSpec.describe "gemcutter's dependency API" do
     G
 
     bundle :install, :artifice => "endpoint_extra"
-
     bundle "config set --local deployment true"
     bundle "install", :artifice => "endpoint_extra"
     expect(the_bundle).to include_gems "back_deps 1.0"

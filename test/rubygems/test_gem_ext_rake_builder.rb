@@ -48,6 +48,8 @@ class TestGemExtRakeBuilder < Gem::TestCase
   end
 
   def test_class_no_openssl_override
+    pend 'openssl is missing' unless Gem::HAVE_OPENSSL
+
     create_temp_mkrf_file('task :default')
 
     rake = util_spec 'rake' do |s|

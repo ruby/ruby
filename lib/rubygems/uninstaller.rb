@@ -261,7 +261,10 @@ class Gem::Uninstaller
 
     safe_delete { FileUtils.rm_r gem }
 
-    Gem::RDoc.new(spec).remove
+    begin
+      Gem::RDoc.new(spec).remove
+    rescue NameError
+    end
 
     gemspec = spec.spec_file
 

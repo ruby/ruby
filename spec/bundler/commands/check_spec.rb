@@ -288,6 +288,66 @@ RSpec.describe "bundle check" do
     end
   end
 
+  describe "when using only scoped rubygems sources" do
+    before do
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo1)}" do
+          gem "rack"
+        end
+      G
+    end
+
+    it "returns success when the Gemfile is satisfied" do
+      system_gems "rack-1.0.0", :path => default_bundle_path
+      bundle :check
+      expect(out).to include("The Gemfile's dependencies are satisfied")
+    end
+  end
+
+  describe "when using only scoped rubygems sources with indirect dependencies" do
+    before do
+      build_repo4 do
+        build_gem "depends_on_rack" do |s|
+          s.add_dependency "rack"
+        end
+
+        build_gem "rack"
+      end
+
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}" do
+          gem "depends_on_rack"
+        end
+      G
+    end
+
+    it "returns success when the Gemfile is satisfied and generates a correct lockfile" do
+      system_gems "depends_on_rack-1.0", "rack-1.0", :gem_repo => gem_repo4, :path => default_bundle_path
+      bundle :check
+      expect(out).to include("The Gemfile's dependencies are satisfied")
+      expect(lockfile).to eq <<~L
+        GEM
+          specs:
+
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            depends_on_rack (1.0)
+              rack
+            rack (1.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          depends_on_rack!
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+  end
+
   describe "BUNDLED WITH" do
     def lock_with(bundler_version = nil)
       lock = <<-L

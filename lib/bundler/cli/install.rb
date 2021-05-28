@@ -58,7 +58,10 @@ module Bundler
       definition.validate_runtime!
 
       installer = Installer.install(Bundler.root, definition, options)
-      Bundler.load.cache if Bundler.app_cache.exist? && !options["no-cache"] && !Bundler.frozen_bundle?
+
+      Bundler.settings.temporary(:cache_all_platforms => options[:local] ? false : Bundler.settings[:cache_all_platforms]) do
+        Bundler.load.cache if Bundler.app_cache.exist? && !options["no-cache"] && !Bundler.frozen_bundle?
+      end
 
       Bundler.ui.confirm "Bundle complete! #{dependencies_count_for(definition)}, #{gems_installed_for(definition)}."
       Bundler::CLI::Common.output_without_groups_message(:install)

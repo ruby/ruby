@@ -189,6 +189,18 @@ class TestGemCommand < Gem::TestCase
     assert_match %r{Usage: gem doit}, @ui.output
   end
 
+  def test_add_option
+    assert_nothing_raised RuntimeError do
+      @cmd.add_option('--force', 'skip validation of the spec') {|v,o| }
+    end
+  end
+
+  def test_add_option_with_empty
+    assert_raise RuntimeError, "Do not pass an empty string in opts" do
+      @cmd.add_option('', 'skip validation of the spec') {|v,o| }
+    end
+  end
+
   def test_option_recognition
     @cmd.add_option('-h', '--help [COMMAND]', 'Get help on COMMAND') do |value, options|
       options[:help] = true

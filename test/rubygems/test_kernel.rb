@@ -8,6 +8,8 @@ class TestKernel < Gem::TestCase
     @old_path = $:.dup
 
     util_make_gems
+
+    without_any_upwards_gemfiles
   end
 
   def teardown

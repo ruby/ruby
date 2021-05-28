@@ -205,8 +205,8 @@ RSpec.describe "bundle outdated" do
     end
 
     it "works" do
-      bundle :install, :artifice => :compact_index
-      bundle :outdated, :artifice => :compact_index, :raise_on_error => false
+      bundle :install, :artifice => "compact_index"
+      bundle :outdated, :artifice => "compact_index", :raise_on_error => false
 
       expected_output = <<~TABLE
         Gem  Current  Latest  Requested  Groups
@@ -1287,6 +1287,55 @@ RSpec.describe "bundle outdated" do
       expected_output = <<~TABLE.strip
         Gem       Current  Latest  Requested  Groups
         nokogiri  1.11.1   1.11.2  >= 0       default
+      TABLE
+
+      expect(out).to end_with(expected_output)
+    end
+  end
+
+  context "when a gem is no longer a dependency after a full update" do
+    before do
+      build_repo4 do
+        build_gem "mini_portile2", "2.5.2" do |s|
+          s.add_dependency "net-ftp", "~> 0.1"
+        end
+
+        build_gem "mini_portile2", "2.5.3"
+
+        build_gem "net-ftp", "0.1.2"
+      end
+
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}"
+
+        gem "mini_portile2"
+      G
+
+      lockfile <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            mini_portile2 (2.5.2)
+              net-ftp (~> 0.1)
+            net-ftp (0.1.2)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          mini_portile2
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+
+    it "works" do
+      bundle "outdated", :raise_on_error => false
+
+      expected_output = <<~TABLE.strip
+        Gem            Current  Latest  Requested  Groups
+        mini_portile2  2.5.2    2.5.3   >= 0       default
       TABLE
 
       expect(out).to end_with(expected_output)

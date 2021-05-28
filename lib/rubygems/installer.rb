@@ -728,6 +728,10 @@ class Gem::Installer
       raise Gem::InstallError, "#{spec} has an invalid extensions"
     end
 
+    if spec.platform.to_s =~ /\R/
+      raise Gem::InstallError, "#{spec.platform} is an invalid platform"
+    end
+
     unless spec.specification_version.to_s =~ /\A\d+\z/
       raise Gem::InstallError, "#{spec} has an invalid specification_version"
     end
