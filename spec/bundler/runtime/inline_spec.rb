@@ -2,7 +2,7 @@
 
 RSpec.describe "bundler/inline#gemfile" do
   def script(code, options = {})
-    requires = ["#{lib_dir}/bundler/inline"]
+    requires = ["#{entrypoint}/inline"]
     requires.unshift "#{spec_dir}/support/artifice/" + options.delete(:artifice) if options.key?(:artifice)
     requires = requires.map {|r| "require '#{r}'" }.join("\n")
     ruby("#{requires}\n\n" + code, options)
@@ -93,7 +93,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
   it "lets me use my own ui object" do
     script <<-RUBY, :artifice => "endpoint"
-      require '#{lib_dir}/bundler'
+      require '#{entrypoint}'
       class MyBundlerUI < Bundler::UI::Silent
         def confirm(msg, newline = nil)
           puts "CONFIRMED!"
@@ -110,7 +110,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
   it "has an option for quiet installation" do
     script <<-RUBY, :artifice => "endpoint"
-      require '#{lib_dir}/bundler/inline'
+      require '#{entrypoint}/inline'
 
       gemfile(true, :quiet => true) do
         source "https://notaserver.com"
@@ -136,7 +136,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
   it "does not mutate the option argument" do
     script <<-RUBY
-      require '#{lib_dir}/bundler'
+      require '#{entrypoint}'
       options = { :ui => Bundler::UI::Shell.new }
       gemfile(false, options) do
         path "#{lib_path}" do
@@ -218,7 +218,7 @@ RSpec.describe "bundler/inline#gemfile" do
         rake
 
       BUNDLED WITH
-         1.13.6
+         #{Bundler::VERSION}
     G
 
     script <<-RUBY

@@ -298,6 +298,30 @@ RSpec.describe "bundle cache" do
       expect(out).to include("frozen").or include("deployment")
     end
   end
+
+  context "with gems with extensions" do
+    before do
+      build_repo2 do
+        build_gem "racc", "2.0" do |s|
+          s.add_dependency "rake"
+          s.extensions << "Rakefile"
+          s.write "Rakefile", "task(:default) { puts 'INSTALLING rack' }"
+        end
+      end
+
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo2)}"
+
+        gem "racc"
+      G
+    end
+
+    it "installs them properly from cache to a different path" do
+      bundle "cache"
+      bundle "config set --local path vendor/bundle"
+      bundle "install --local"
+    end
+  end
 end
 
 RSpec.describe "bundle install with gem sources" do
@@ -317,7 +341,7 @@ RSpec.describe "bundle install with gem sources" do
       expect(the_bundle).to include_gems "rack 1.0.0"
     end
 
-    it "does not hit the remote at all" do
+    it "does not hit the remote at all in frozen mode" do
       build_repo2
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
@@ -331,6 +355,24 @@ RSpec.describe "bundle install with gem sources" do
       bundle "config set --local deployment true"
       bundle "config set --local path vendor/bundle"
       bundle :install
+      expect(the_bundle).to include_gems "rack 1.0.0"
+    end
+
+    it "does not hit the remote at all when cache_all_platforms configured" do
+      build_repo2
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo2)}"
+        gem "rack"
+      G
+
+      bundle :cache
+      simulate_new_machine
+      FileUtils.rm_rf gem_repo2
+
+      bundle "config set --local cache_all_platforms true"
+      bundle "config set --local path vendor/bundle"
+      bundle "install --local"
+      expect(out).not_to include("Fetching gem metadata")
       expect(the_bundle).to include_gems "rack 1.0.0"
     end
 

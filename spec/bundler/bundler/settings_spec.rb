@@ -312,14 +312,24 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
   describe "BUNDLE_ keys format" do
     let(:settings) { described_class.new(bundled_app(".bundle")) }
 
-    it "converts older keys without double dashes" do
+    it "converts older keys without double underscore" do
       config("BUNDLE_MY__PERSONAL.RACK" => "~/Work/git/rack")
       expect(settings["my.personal.rack"]).to eq("~/Work/git/rack")
     end
 
-    it "converts older keys without trailing slashes and double dashes" do
+    it "converts older keys without trailing slashes and double underscore" do
       config("BUNDLE_MIRROR__HTTPS://RUBYGEMS.ORG" => "http://rubygems-mirror.org")
       expect(settings["mirror.https://rubygems.org/"]).to eq("http://rubygems-mirror.org")
+    end
+
+    it "converts older keys with dashes" do
+      config("BUNDLE_MY-PERSONAL-SERVER__ORG" => "my-personal-server.org")
+      expect(Bundler.ui).to receive(:warn).with(
+        "Your #{bundled_app(".bundle/config")} config includes `BUNDLE_MY-PERSONAL-SERVER__ORG`, which contains the dash character (`-`).\n" \
+        "This is deprecated, because configuration through `ENV` should be possible, but `ENV` keys cannot include dashes.\n" \
+        "Please edit #{bundled_app(".bundle/config")} and replace any dashes in configuration keys with a triple underscore (`___`)."
+      )
+      expect(settings["my-personal-server.org"]).to eq("my-personal-server.org")
     end
 
     it "reads newer keys format properly" do

@@ -409,10 +409,38 @@ RSpec.describe "major deprecations" do
       )
     end
 
+    it "doesn't show lockfile deprecations if there's a lockfile", :bundler => "< 3" do
+      bundle "install"
+
+      expect(deprecations).to include(
+        "Your Gemfile contains multiple primary sources. " \
+        "Using `source` more than once without a block is a security risk, and " \
+        "may result in installing unexpected gems. To resolve this warning, use " \
+        "a block to indicate which gems should come from the secondary source."
+      )
+      expect(deprecations).not_to include(
+        "Your lockfile contains a single rubygems source section with multiple remotes, which is insecure. " \
+        "Make sure you run `bundle install` in non frozen mode and commit the result to make your lockfile secure."
+      )
+      bundle "config set --local frozen true"
+      bundle "install"
+
+      expect(deprecations).to include(
+        "Your Gemfile contains multiple primary sources. " \
+        "Using `source` more than once without a block is a security risk, and " \
+        "may result in installing unexpected gems. To resolve this warning, use " \
+        "a block to indicate which gems should come from the secondary source."
+      )
+      expect(deprecations).not_to include(
+        "Your lockfile contains a single rubygems source section with multiple remotes, which is insecure. " \
+        "Make sure you run `bundle install` in non frozen mode and commit the result to make your lockfile secure."
+      )
+    end
+
     pending "fails with a helpful error", :bundler => "3"
   end
 
-  context "bundle install with a lockfile with a single rubygems section with multiple remotes" do
+  context "bundle install in frozen mode with a lockfile with a single rubygems section with multiple remotes" do
     before do
       build_repo gem_repo3 do
         build_gem "rack", "0.9.1"
@@ -441,12 +469,14 @@ RSpec.describe "major deprecations" do
         BUNDLED WITH
            #{Bundler::VERSION}
       L
+
+      bundle "config set --local frozen true"
     end
 
     it "shows a deprecation", :bundler => "< 3" do
       bundle "install"
 
-      expect(deprecations).to include("Your lockfile contains a single rubygems source section with multiple remotes, which is insecure. You should run `bundle update` or generate your lockfile from scratch.")
+      expect(deprecations).to include("Your lockfile contains a single rubygems source section with multiple remotes, which is insecure. Make sure you run `bundle install` in non frozen mode and commit the result to make your lockfile secure.")
     end
 
     pending "fails with a helpful error", :bundler => "3"
@@ -461,7 +491,7 @@ RSpec.describe "major deprecations" do
       G
 
       ruby <<-RUBY
-        require '#{lib_dir}/bundler'
+        require '#{entrypoint}'
 
         Bundler.setup
         Bundler.setup
@@ -569,18 +599,6 @@ The :gist git source is deprecated, and will be removed in the future. Add this 
       G
     end
 
-    context "without flags" do
-      before do
-        bundle :show
-      end
-
-      it "prints a deprecation warning recommending `bundle list`", :bundler => "< 3" do
-        expect(deprecations).to include("use `bundle list` instead of `bundle show`")
-      end
-
-      pending "fails with a helpful message", :bundler => "3"
-    end
-
     context "with --outdated flag" do
       before do
         bundle "show --outdated"
@@ -588,54 +606,6 @@ The :gist git source is deprecated, and will be removed in the future. Add this 
 
       it "prints a deprecation warning informing about its removal", :bundler => "< 3" do
         expect(deprecations).to include("the `--outdated` flag to `bundle show` was undocumented and will be removed without replacement")
-      end
-
-      pending "fails with a helpful message", :bundler => "3"
-    end
-
-    context "with --verbose flag" do
-      before do
-        bundle "show --verbose"
-      end
-
-      it "prints a deprecation warning informing about its removal", :bundler => "< 3" do
-        expect(deprecations).to include("the `--verbose` flag to `bundle show` was undocumented and will be removed without replacement")
-      end
-
-      pending "fails with a helpful message", :bundler => "3"
-    end
-
-    context "with a gem argument" do
-      before do
-        bundle "show rack"
-      end
-
-      it "prints a deprecation warning recommending `bundle info`", :bundler => "< 3" do
-        expect(deprecations).to include("use `bundle info rack` instead of `bundle show rack`")
-      end
-
-      pending "fails with a helpful message", :bundler => "3"
-    end
-
-    context "with the --paths option" do
-      before do
-        bundle "show --paths"
-      end
-
-      it "prints a deprecation warning recommending `bundle list`", :bundler => "< 3" do
-        expect(deprecations).to include("use `bundle list` instead of `bundle show --paths`")
-      end
-
-      pending "fails with a helpful message", :bundler => "3"
-    end
-
-    context "with a gem argument and the --paths option" do
-      before do
-        bundle "show rack --paths"
-      end
-
-      it "prints deprecation warning recommending `bundle info`", :bundler => "< 3" do
-        expect(deprecations).to include("use `bundle info rack --path` instead of `bundle show rack --paths`")
       end
 
       pending "fails with a helpful message", :bundler => "3"

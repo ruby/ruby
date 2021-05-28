@@ -679,8 +679,6 @@ class TestGemRequire < Gem::TestCase
     end
 
     def test_no_crash_when_overriding_warn_with_warning_module
-      pend "https://github.com/oracle/truffleruby/issues/2109" if RUBY_ENGINE == "truffleruby"
-
       Dir.mktmpdir("warn_test") do |dir|
         File.write(dir + "/main.rb", "module Warning; def warn(str); super; end; end; warn 'Foo Bar'")
         _, err = capture_subprocess_io do

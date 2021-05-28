@@ -49,8 +49,6 @@ module Bundler
           "Alternatively, you can increase the amount of memory the JVM is able to use by running Bundler with jruby -J-Xmx1024m -S bundle (JRuby defaults to 500MB)."
       else request_issue_report_for(error)
       end
-    rescue StandardError
-      raise error
     end
 
     def exit_status(error)
@@ -111,8 +109,8 @@ module Bundler
         First, try this link to see if there are any existing issue reports for this error:
         #{issues_url(e)}
 
-        If there aren't any reports for this error yet, please create copy and paste the report template above into a new issue. Don't forget to anonymize any private data! The new issue form is located at:
-        https://github.com/rubygems/rubygems/issues/new?labels=Bundler
+        If there aren't any reports for this error yet, please copy and paste the report template above into a new issue. Don't forget to anonymize any private data! The new issue form is located at:
+        https://github.com/rubygems/rubygems/issues/new?labels=Bundler&template=bundler-related-issue.md
       EOS
     end
 

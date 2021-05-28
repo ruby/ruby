@@ -7,37 +7,9 @@ class Gem::Commands::CertCommand < Gem::Command
     super 'cert', 'Manage RubyGems certificates and signing settings',
           :add => [], :remove => [], :list => [], :build => [], :sign => []
 
-    OptionParser.accept OpenSSL::X509::Certificate do |certificate_file|
-      begin
-        certificate = OpenSSL::X509::Certificate.new File.read certificate_file
-      rescue Errno::ENOENT
-        raise OptionParser::InvalidArgument, "#{certificate_file}: does not exist"
-      rescue OpenSSL::X509::CertificateError
-        raise OptionParser::InvalidArgument,
-          "#{certificate_file}: invalid X509 certificate"
-      end
-      [certificate, certificate_file]
-    end
-
-    OptionParser.accept OpenSSL::PKey::RSA do |key_file|
-      begin
-        passphrase = ENV['GEM_PRIVATE_KEY_PASSPHRASE']
-        key = OpenSSL::PKey::RSA.new File.read(key_file), passphrase
-      rescue Errno::ENOENT
-        raise OptionParser::InvalidArgument, "#{key_file}: does not exist"
-      rescue OpenSSL::PKey::RSAError
-        raise OptionParser::InvalidArgument, "#{key_file}: invalid RSA key"
-      end
-
-      raise OptionParser::InvalidArgument,
-            "#{key_file}: private key not found" unless key.private?
-
-      key
-    end
-
-    add_option('-a', '--add CERT', OpenSSL::X509::Certificate,
-               'Add a trusted certificate.') do |(cert, _), options|
-      options[:add] << cert
+    add_option('-a', '--add CERT',
+               'Add a trusted certificate.') do |cert_file, options|
+      options[:add] << open_cert(cert_file)
     end
 
     add_option('-l', '--list [FILTER]',
@@ -60,15 +32,15 @@ class Gem::Commands::CertCommand < Gem::Command
       options[:build] << email_address
     end
 
-    add_option('-C', '--certificate CERT', OpenSSL::X509::Certificate,
-               'Signing certificate for --sign') do |(cert, cert_file), options|
-      options[:issuer_cert] = cert
+    add_option('-C', '--certificate CERT',
+               'Signing certificate for --sign') do |cert_file, options|
+      options[:issuer_cert] = open_cert(cert_file)
       options[:issuer_cert_file] = cert_file
     end
 
-    add_option('-K', '--private-key KEY', OpenSSL::PKey::RSA,
-               'Key for --sign or --build') do |key, options|
-      options[:key] = key
+    add_option('-K', '--private-key KEY',
+               'Key for --sign or --build') do |key_file, options|
+      options[:key] = open_private_key(key_file)
     end
 
     add_option('-s', '--sign CERT',
@@ -97,7 +69,39 @@ class Gem::Commands::CertCommand < Gem::Command
     say "Added '#{certificate.subject}'"
   end
 
+  def check_openssl
+    return if Gem::HAVE_OPENSSL
+
+    alert_error "OpenSSL library is required for the cert command"
+    terminate_interaction 1
+  end
+
+  def open_cert(certificate_file)
+    check_openssl
+    OpenSSL::X509::Certificate.new File.read certificate_file
+  rescue Errno::ENOENT
+    raise OptionParser::InvalidArgument, "#{certificate_file}: does not exist"
+  rescue OpenSSL::X509::CertificateError
+    raise OptionParser::InvalidArgument,
+      "#{certificate_file}: invalid X509 certificate"
+  end
+
+  def open_private_key(key_file)
+    check_openssl
+    passphrase = ENV['GEM_PRIVATE_KEY_PASSPHRASE']
+    key = OpenSSL::PKey::RSA.new File.read(key_file), passphrase
+    raise OptionParser::InvalidArgument,
+      "#{key_file}: private key not found" unless key.private?
+    key
+  rescue Errno::ENOENT
+    raise OptionParser::InvalidArgument, "#{key_file}: does not exist"
+  rescue OpenSSL::PKey::RSAError
+    raise OptionParser::InvalidArgument, "#{key_file}: invalid RSA key"
+  end
+
   def execute
+    check_openssl
+
     options[:add].each do |certificate|
       add_certificate certificate
     end
@@ -311,4 +315,4 @@ For further reading on signing gems see `ri Gem::Security`.
     # It's simple, but is all we need
     email =~ /\A.+@.+\z/
   end
-end if Gem::HAVE_OPENSSL
+end
