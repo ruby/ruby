@@ -969,7 +969,8 @@ search_method0(VALUE klass, ID id, VALUE *defined_class_ptr, bool skip_refined)
     for (; klass; klass = RCLASS_SUPER(klass)) {
 	RB_DEBUG_COUNTER_INC(mc_search_super);
         if ((me = lookup_method_table(klass, id)) != 0) {
-            if (!skip_refined || me->def->type != VM_METHOD_TYPE_REFINED) {
+            if (!skip_refined || me->def->type != VM_METHOD_TYPE_REFINED ||
+                    me->def->body.refined.orig_me) {
                 break;
             }
         }
