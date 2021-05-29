@@ -1134,10 +1134,12 @@ cache_clear_refined_method(ID key, VALUE value, void *data)
 {
     rb_method_entry_t *me = (rb_method_entry_t *) value;
 
-    if (me->def->type == VM_METHOD_TYPE_REFINED) {
+    if (me->def->type == VM_METHOD_TYPE_REFINED && me->def->body.refined.orig_me) {
         VALUE klass = (VALUE)data;
         rb_clear_method_cache(klass, me->called_id);
     }
+    // Refined method entries without an orig_me is going to stay in the method
+    // table of klass, like before the move, so no need to clear the cache.
 
     return ID_TABLE_CONTINUE;
 }
