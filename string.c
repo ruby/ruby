@@ -2001,9 +2001,9 @@ rb_str_bytesize(VALUE str)
 static VALUE
 rb_str_empty(VALUE str)
 {
-    if (RSTRING_LEN(str) == 0)
-	return Qtrue;
-    return Qfalse;
+    if (RSTRING_LEN(str))
+	return Qfalse;
+    return Qtrue;
 }
 
 /*
