@@ -2678,8 +2678,13 @@ lazy_with_index_proc(VALUE proc_entry, struct MEMO* result, VALUE memos, long me
     return result;
 }
 
+static VALUE
+lazy_with_index_size(VALUE proc, VALUE receiver) {
+    return receiver;
+}
+
 static const lazyenum_funcs lazy_with_index_funcs = {
-    lazy_with_index_proc, 0,
+    lazy_with_index_proc, lazy_with_index_size,
 };
 
 /*
