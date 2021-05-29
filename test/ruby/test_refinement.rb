@@ -2537,6 +2537,28 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal(:second, klass.new.foo)
   end
 
+  class Bug17822
+    module Ext
+      refine(Bug17822) do
+        def foo = :refined
+      end
+    end
+
+    private(def foo = :not_refined)
+
+    module Client
+      using Ext
+      def self.call_foo
+        Bug17822.new.foo
+      end
+    end
+  end
+
+  # [Bug #17822]
+  def test_privatizing_refined_method
+    assert_equal(:refined, Bug17822::Client.call_foo)
+  end
+
   private
 
   def eval_using(mod, s)
