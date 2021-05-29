@@ -262,5 +262,4 @@ module URI
       return str
     end
   end
-  @@schemes['FTP'] = FTP
 end

@@ -78,7 +78,4 @@ module URI
       url.start_with?(?/.freeze) ? url : ?/ + url
     end
   end
-
-  @@schemes['WS'] = WS
-
 end

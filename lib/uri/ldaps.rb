@@ -17,5 +17,4 @@ module URI
     # A Default port of 636 for URI::LDAPS
     DEFAULT_PORT = 636
   end
-  @@schemes['LDAPS'] = LDAPS
 end

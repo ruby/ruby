@@ -89,6 +89,4 @@ module URI
     def set_password(v)
     end
   end
-
-  @@schemes['FILE'] = File
 end

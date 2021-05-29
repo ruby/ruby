@@ -29,8 +29,8 @@
 #   module URI
 #     class RSYNC < Generic
 #       DEFAULT_PORT = 873
+#       URI.refresh_scheme_list
 #     end
-#     @@schemes['RSYNC'] = RSYNC
 #   end
 #   #=> URI::RSYNC
 #
