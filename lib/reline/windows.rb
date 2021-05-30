@@ -38,6 +38,7 @@ class Reline::Windows
 
     {
       [27, 32] => :em_set_mark,             # M-<space>
+      [24, 24] => :em_exchange_mark,        # C-x C-x
     }.each_pair do |key, func|
       config.add_default_key_binding_by_keymap(:emacs, key, func)
     end
