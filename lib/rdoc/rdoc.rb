@@ -430,7 +430,7 @@ The internal error was:
     files.reject do |file|
       file =~ /\.(?:class|eps|erb|scpt\.txt|svg|ttf|yml)$/i or
         (file =~ /tags$/i and
-         open(file, 'rb') { |io|
+         File.open(file, 'rb') { |io|
            io.read(100) =~ /\A(\f\n[^,]+,\d+$|!_TAG_)/
          })
     end
