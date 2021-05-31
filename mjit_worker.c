@@ -1183,9 +1183,8 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     }
     // We need to check again here because we could've waited on GC above
     in_jit = (unit->iseq != NULL);
-    if (in_jit) {
+    if (in_jit)
         in_jit &= set_compiling_iseqs(unit->iseq);
-    }
     CRITICAL_SECTION_FINISH(3, "before mjit_compile to wait GC finish");
     if (!in_jit) {
         fclose(f);
