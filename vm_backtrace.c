@@ -33,8 +33,8 @@ id2str(ID id)
 #define BACKTRACE_START 0
 #define ALL_BACKTRACE_LINES -1
 
-inline static int
-calc_lineno(const rb_iseq_t *iseq, const VALUE *pc)
+inline static ssize_t
+calc_pos(const rb_iseq_t *iseq, const VALUE *pc)
 {
     VM_ASSERT(iseq);
     VM_ASSERT(iseq->body);
@@ -45,14 +45,14 @@ calc_lineno(const rb_iseq_t *iseq, const VALUE *pc)
         VM_ASSERT(iseq->body->type == ISEQ_TYPE_TOP);
         VM_ASSERT(! iseq->body->local_table);
         VM_ASSERT(! iseq->body->local_table_size);
-        return 0;
+        return -1;
     }
     else {
         ptrdiff_t n = pc - iseq->body->iseq_encoded;
         VM_ASSERT(n <= iseq->body->iseq_size);
         VM_ASSERT(n >= 0);
         ASSUME(n >= 0);
-        size_t pos = n; /* no overflow */
+        ssize_t pos = n; /* no overflow */
         if (LIKELY(pos)) {
             /* use pos-1 because PC points next instruction at the beginning of instruction */
             pos--;
@@ -64,9 +64,27 @@ calc_lineno(const rb_iseq_t *iseq, const VALUE *pc)
             __builtin_trap();
         }
 #endif
-        return rb_iseq_line_no(iseq, pos);
+        return pos;
     }
 }
+
+inline static int
+calc_lineno(const rb_iseq_t *iseq, const VALUE *pc)
+{
+    ssize_t pos = calc_pos(iseq, pc);
+    if (pos == -1) return 0;
+    return rb_iseq_line_no(iseq, pos);
+}
+
+#ifdef EXPERIMENTAL_ISEQ_NODE_ID
+inline static int
+calc_node_id(const rb_iseq_t *iseq, const VALUE *pc)
+{
+    ssize_t pos = calc_pos(iseq, pc);
+    if (pos == -1) return -1;
+    return rb_iseq_node_id(iseq, pos);
+}
+#endif
 
 int
 rb_vm_get_sourceline(const rb_control_frame_t *cfp)
@@ -98,8 +116,13 @@ typedef struct rb_backtrace_location_struct {
 	    const rb_iseq_t *iseq;
 	    union {
 		const VALUE *pc;
-		int lineno;
-	    } lineno;
+                struct {
+                    int lineno;
+#ifdef EXPERIMENTAL_ISEQ_NODE_ID
+                    int node_id;
+#endif
+                } calced;
+	    } location;
 	} iseq;
 	struct {
 	    ID mid;
@@ -155,15 +178,27 @@ location_ptr(VALUE locobj)
     return vloc->loc;
 }
 
+static void
+calculate_location(rb_backtrace_location_t *loc)
+{
+    const VALUE *pc = loc->body.iseq.location.pc;
+
+    loc->body.iseq.location.calced.lineno = calc_lineno(loc->body.iseq.iseq, pc);
+#ifdef EXPERIMENTAL_ISEQ_NODE_ID
+    loc->body.iseq.location.calced.node_id = calc_node_id(loc->body.iseq.iseq, pc);
+#endif
+    loc->type = LOCATION_TYPE_ISEQ_CALCED;
+}
+
 static int
 location_lineno(rb_backtrace_location_t *loc)
 {
     switch (loc->type) {
       case LOCATION_TYPE_ISEQ:
-	loc->type = LOCATION_TYPE_ISEQ_CALCED;
-	return (loc->body.iseq.lineno.lineno = calc_lineno(loc->body.iseq.iseq, loc->body.iseq.lineno.pc));
+        calculate_location(loc);
+        /* fall through */
       case LOCATION_TYPE_ISEQ_CALCED:
-	return loc->body.iseq.lineno.lineno;
+	return loc->body.iseq.location.calced.lineno;
       case LOCATION_TYPE_CFUNC:
 	if (loc->body.cfunc.prev_loc) {
 	    return location_lineno(loc->body.cfunc.prev_loc);
@@ -188,6 +223,36 @@ location_lineno_m(VALUE self)
 {
     return INT2FIX(location_lineno(location_ptr(self)));
 }
+
+#ifdef EXPERIMENTAL_ISEQ_NODE_ID
+static int
+location_node_id(rb_backtrace_location_t *loc)
+{
+    switch (loc->type) {
+      case LOCATION_TYPE_ISEQ:
+        calculate_location(loc);
+        /* fall through */
+      case LOCATION_TYPE_ISEQ_CALCED:
+        return loc->body.iseq.location.calced.node_id;
+      case LOCATION_TYPE_CFUNC:
+        if (loc->body.cfunc.prev_loc) {
+            return location_node_id(loc->body.cfunc.prev_loc);
+        }
+        return -1;
+      default:
+        rb_bug("location_node_id: unreachable");
+        UNREACHABLE;
+    }
+}
+
+static VALUE
+location_node_id_m(VALUE self)
+{
+    int node_id = location_node_id(location_ptr(self));
+    if (node_id < 0) return Qnil;
+    return INT2FIX(node_id);
+}
+#endif
 
 static VALUE
 location_label(rb_backtrace_location_t *loc)
@@ -355,12 +420,13 @@ location_to_str(rb_backtrace_location_t *loc)
 	file = rb_iseq_path(loc->body.iseq.iseq);
 	name = loc->body.iseq.iseq->body->location.label;
 
-	lineno = loc->body.iseq.lineno.lineno = calc_lineno(loc->body.iseq.iseq, loc->body.iseq.lineno.pc);
-	loc->type = LOCATION_TYPE_ISEQ_CALCED;
+        calculate_location(loc);
+        lineno = loc->body.iseq.location.calced.lineno;
+
 	break;
       case LOCATION_TYPE_ISEQ_CALCED:
 	file = rb_iseq_path(loc->body.iseq.iseq);
-	lineno = loc->body.iseq.lineno.lineno;
+	lineno = loc->body.iseq.location.calced.lineno;
 	name = loc->body.iseq.iseq->body->location.label;
 	break;
       case LOCATION_TYPE_CFUNC:
@@ -682,7 +748,7 @@ bt_iter_iseq(void *ptr, const rb_control_frame_t *cfp)
     rb_backtrace_location_t *loc = &arg->bt->backtrace[arg->bt->backtrace_size++-1];
     loc->type = LOCATION_TYPE_ISEQ;
     loc->body.iseq.iseq = iseq;
-    loc->body.iseq.lineno.pc = pc;
+    loc->body.iseq.location.pc = pc;
     arg->prev_loc = loc;
 }
 
@@ -695,12 +761,12 @@ bt_iter_iseq_skip_internal(void *ptr, const rb_control_frame_t *cfp)
     if (!is_internal_location(cfp)) {
         loc->type = LOCATION_TYPE_ISEQ;
         loc->body.iseq.iseq = cfp->iseq;
-        loc->body.iseq.lineno.pc = cfp->pc;
+        loc->body.iseq.location.pc = cfp->pc;
         arg->prev_loc = loc;
     } else if (arg->prev_cfp) {
         loc->type = LOCATION_TYPE_ISEQ;
         loc->body.iseq.iseq = arg->prev_cfp->iseq;
-        loc->body.iseq.lineno.pc = arg->prev_cfp->pc;
+        loc->body.iseq.location.pc = arg->prev_cfp->pc;
         arg->prev_loc = loc;
     } else {
         rb_bug("No non-internal backtrace entry before an <internal: backtrace entry");
@@ -722,7 +788,7 @@ bt_iter_cfunc(void *ptr, const rb_control_frame_t *cfp, ID mid)
         const VALUE *pc = arg->prev_cfp->pc;
         arg->init_loc->type = LOCATION_TYPE_ISEQ;
         arg->init_loc->body.iseq.iseq = iseq;
-        arg->init_loc->body.iseq.lineno.pc = pc;
+        arg->init_loc->body.iseq.location.pc = pc;
         loc->body.cfunc.prev_loc = arg->prev_loc = arg->init_loc;
     } else {
         loc->body.cfunc.prev_loc = NULL;
@@ -834,7 +900,10 @@ rb_backtrace_use_iseq_first_lineno_for_last_location(VALUE self)
 
     VM_ASSERT(loc->type == LOCATION_TYPE_ISEQ);
 
-    loc->body.iseq.lineno.lineno = FIX2INT(iseq->body->location.first_lineno);
+    loc->body.iseq.location.calced.lineno = FIX2INT(iseq->body->location.first_lineno);
+#ifdef EXPERIMENTAL_ISEQ_NODE_ID
+    loc->body.iseq.location.calced.node_id = -1;
+#endif
     loc->type = LOCATION_TYPE_ISEQ_CALCED;
 }
 
@@ -1311,6 +1380,9 @@ Init_vm_backtrace(void)
     rb_undef_alloc_func(rb_cBacktraceLocation);
     rb_undef_method(CLASS_OF(rb_cBacktraceLocation), "new");
     rb_define_method(rb_cBacktraceLocation, "lineno", location_lineno_m, 0);
+#ifdef EXPERIMENTAL_ISEQ_NODE_ID
+    rb_define_method(rb_cBacktraceLocation, "node_id", location_node_id_m, 0);
+#endif
     rb_define_method(rb_cBacktraceLocation, "label", location_label_m, 0);
     rb_define_method(rb_cBacktraceLocation, "base_label", location_base_label_m, 0);
     rb_define_method(rb_cBacktraceLocation, "path", location_path_m, 0);
