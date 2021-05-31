@@ -21,7 +21,7 @@ for mac in \
     "__declspec(attrib_code) x" \
     x; do
   m4_ifval([$4],mac="$mac"${rbcv_cond+" /* only if $rbcv_cond */"})
-  AC_TRY_COMPILE(
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
     m4_ifval([$4],${rbcv_cond+[@%:@if ]$rbcv_cond})
 [@%:@define ]attrib[](attrib_params)[ $mac]
 m4_ifval([$4],${rbcv_cond+[@%:@else]}
@@ -30,7 +30,7 @@ ${rbcv_cond+[@%:@endif]})
 $6
 @%:@define mesg ("")
 @%:@define san "address"
-    attrib[](attrib_params)[;], [],
+    attrib[](attrib_params)[;]], [[]])],
     [rbcv="$mac"; break])
 done
 ])])
