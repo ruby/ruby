@@ -950,6 +950,7 @@ mjit_mark(void)
         iseqs[i] = unit->iseq;
         i++;
     }
+    assert(i == length);
     CRITICAL_SECTION_FINISH(4, "mjit_mark");
 
     for (i = 0; i < length; i++) {
