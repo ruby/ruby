@@ -786,6 +786,16 @@ begin
       EOC
     end
 
+    def test_em_set_mark_and_em_exchange_mark
+      start_terminal(10, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
+      write("aaa bbb ccc ddd\M-b\M-b\M-\x20\M-b\C-x\C-xX\C-x\C-xY")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> aaa Ybbb Xccc ddd
+      EOC
+    end
+
     private def write_inputrc(content)
       File.open(@inputrc_file, 'w') do |f|
         f.write content
