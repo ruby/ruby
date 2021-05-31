@@ -925,24 +925,32 @@ mjit_mark(void)
         return;
     RUBY_MARK_ENTER("mjit");
 
-    if (compiling_iseq != NULL)
-        rb_gc_mark((VALUE)compiling_iseq);
-
     // We need to release a lock when calling rb_gc_mark to avoid doubly acquiring
     // a lock by by mjit_gc_start_hook inside rb_gc_mark.
     //
     // Because an MJIT worker may modify active_units anytime, we need to convert
     // the linked list to an array to safely loop its ISeqs without keeping a lock.
     CRITICAL_SECTION_START(4, "mjit_mark");
-    int length = active_units.length;
-    rb_iseq_t **iseqs = ALLOCA_N(rb_iseq_t *, length);
+    int length = 0;
+    if (compiling_iseqs != NULL) {
+        while (compiling_iseqs[length]) length++;
+    }
+    length += active_units.length;
+    const rb_iseq_t **iseqs = ALLOCA_N(const rb_iseq_t *, length);
 
     struct rb_mjit_unit *unit = NULL;
     int i = 0;
+    if (compiling_iseqs != NULL) {
+        while (compiling_iseqs[i]) {
+            iseqs[i] = compiling_iseqs[i];
+            i++;
+        }
+    }
     list_for_each(&active_units.head, unit, unode) {
         iseqs[i] = unit->iseq;
         i++;
     }
+    assert(i == length);
     CRITICAL_SECTION_FINISH(4, "mjit_mark");
 
     for (i = 0; i < length; i++) {
