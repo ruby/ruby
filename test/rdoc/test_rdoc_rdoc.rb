@@ -457,6 +457,7 @@ class TestRDocRDoc < RDoc::TestCase
   end
 
   def test_remove_unparseable_CVE_2021_31799
+    omit 'for Un*x platforms' if Gem.win_platform?
     temp_dir do
       file_list = ['| touch evil.txt && echo tags']
       file_list.each do |f|
