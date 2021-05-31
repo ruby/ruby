@@ -210,6 +210,8 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
 
   def test_PUBKEY
     p256 = Fixtures.pkey("p256")
+    p256pub = OpenSSL::PKey::EC.new(p256.public_to_der)
+
     asn1 = OpenSSL::ASN1::Sequence([
       OpenSSL::ASN1::Sequence([
         OpenSSL::ASN1::ObjectId("id-ecPublicKey"),
@@ -221,7 +223,7 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     ])
     key = OpenSSL::PKey::EC.new(asn1.to_der)
     assert_not_predicate key, :private?
-    assert_same_ec dup_public(p256), key
+    assert_same_ec p256pub, key
 
     pem = <<~EOF
     -----BEGIN PUBLIC KEY-----
@@ -230,10 +232,15 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     -----END PUBLIC KEY-----
     EOF
     key = OpenSSL::PKey::EC.new(pem)
-    assert_same_ec dup_public(p256), key
+    assert_same_ec p256pub, key
 
-    assert_equal asn1.to_der, dup_public(p256).to_der
-    assert_equal pem, dup_public(p256).export
+    assert_equal asn1.to_der, key.to_der
+    assert_equal pem, key.export
+
+    assert_equal asn1.to_der, p256.public_to_der
+    assert_equal asn1.to_der, key.public_to_der
+    assert_equal pem, p256.public_to_pem
+    assert_equal pem, key.public_to_pem
   end
 
   def test_ec_group

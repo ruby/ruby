@@ -40,12 +40,14 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
 
   def test_DHparams
     dh1024 = Fixtures.pkey("dh1024")
+    dh1024params = dh1024.public_key
+
     asn1 = OpenSSL::ASN1::Sequence([
       OpenSSL::ASN1::Integer(dh1024.p),
       OpenSSL::ASN1::Integer(dh1024.g)
     ])
     key = OpenSSL::PKey::DH.new(asn1.to_der)
-    assert_same_dh dup_public(dh1024), key
+    assert_same_dh dh1024params, key
 
     pem = <<~EOF
     -----BEGIN DH PARAMETERS-----
@@ -55,9 +57,9 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
     -----END DH PARAMETERS-----
     EOF
     key = OpenSSL::PKey::DH.new(pem)
-    assert_same_dh dup_public(dh1024), key
+    assert_same_dh dh1024params, key
     key = OpenSSL::PKey.read(pem)
-    assert_same_dh dup_public(dh1024), key
+    assert_same_dh dh1024params, key
 
     assert_equal asn1.to_der, dh1024.to_der
     assert_equal pem, dh1024.export

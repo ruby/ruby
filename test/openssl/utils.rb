@@ -306,32 +306,6 @@ class OpenSSL::PKeyTestCase < OpenSSL::TestCase
       assert_equal base.send(comp), test.send(comp)
     }
   end
-
-  def dup_public(key)
-    case key
-    when OpenSSL::PKey::RSA
-      rsa = OpenSSL::PKey::RSA.new
-      rsa.set_key(key.n, key.e, nil)
-      rsa
-    when OpenSSL::PKey::DSA
-      dsa = OpenSSL::PKey::DSA.new
-      dsa.set_pqg(key.p, key.q, key.g)
-      dsa.set_key(key.pub_key, nil)
-      dsa
-    when OpenSSL::PKey::DH
-      dh = OpenSSL::PKey::DH.new
-      dh.set_pqg(key.p, nil, key.g)
-      dh
-    else
-      if defined?(OpenSSL::PKey::EC) && OpenSSL::PKey::EC === key
-        ec = OpenSSL::PKey::EC.new(key.group)
-        ec.public_key = key.public_key
-        ec
-      else
-        raise "unknown key type"
-      end
-    end
-  end
 end
 
 module OpenSSL::Certs

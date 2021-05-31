@@ -201,7 +201,7 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
 
   def test_encrypt_decrypt
     rsapriv = Fixtures.pkey("rsa-1")
-    rsapub = dup_public(rsapriv)
+    rsapub = OpenSSL::PKey.read(rsapriv.public_to_der)
 
     # Defaults to PKCS #1 v1.5
     raw = "data"
@@ -216,7 +216,7 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
 
   def test_encrypt_decrypt_legacy
     rsapriv = Fixtures.pkey("rsa-1")
-    rsapub = dup_public(rsapriv)
+    rsapub = OpenSSL::PKey.read(rsapriv.public_to_der)
 
     # Defaults to PKCS #1 v1.5
     raw = "data"
@@ -346,13 +346,15 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
 
   def test_RSAPublicKey
     rsa1024 = Fixtures.pkey("rsa1024")
+    rsa1024pub = OpenSSL::PKey::RSA.new(rsa1024.public_to_der)
+
     asn1 = OpenSSL::ASN1::Sequence([
       OpenSSL::ASN1::Integer(rsa1024.n),
       OpenSSL::ASN1::Integer(rsa1024.e)
     ])
     key = OpenSSL::PKey::RSA.new(asn1.to_der)
     assert_not_predicate key, :private?
-    assert_same_rsa dup_public(rsa1024), key
+    assert_same_rsa rsa1024pub, key
 
     pem = <<~EOF
     -----BEGIN RSA PUBLIC KEY-----
@@ -362,11 +364,13 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
     -----END RSA PUBLIC KEY-----
     EOF
     key = OpenSSL::PKey::RSA.new(pem)
-    assert_same_rsa dup_public(rsa1024), key
+    assert_same_rsa rsa1024pub, key
   end
 
   def test_PUBKEY
     rsa1024 = Fixtures.pkey("rsa1024")
+    rsa1024pub = OpenSSL::PKey::RSA.new(rsa1024.public_to_der)
+
     asn1 = OpenSSL::ASN1::Sequence([
       OpenSSL::ASN1::Sequence([
         OpenSSL::ASN1::ObjectId("rsaEncryption"),
@@ -381,7 +385,7 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
     ])
     key = OpenSSL::PKey::RSA.new(asn1.to_der)
     assert_not_predicate key, :private?
-    assert_same_rsa dup_public(rsa1024), key
+    assert_same_rsa rsa1024pub, key
 
     pem = <<~EOF
     -----BEGIN PUBLIC KEY-----
@@ -392,10 +396,15 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
     -----END PUBLIC KEY-----
     EOF
     key = OpenSSL::PKey::RSA.new(pem)
-    assert_same_rsa dup_public(rsa1024), key
+    assert_same_rsa rsa1024pub, key
 
-    assert_equal asn1.to_der, dup_public(rsa1024).to_der
-    assert_equal pem, dup_public(rsa1024).export
+    assert_equal asn1.to_der, key.to_der
+    assert_equal pem, key.export
+
+    assert_equal asn1.to_der, rsa1024.public_to_der
+    assert_equal asn1.to_der, key.public_to_der
+    assert_equal pem, rsa1024.public_to_pem
+    assert_equal pem, key.public_to_pem
   end
 
   def test_pem_passwd
@@ -480,12 +489,6 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
     -----END ENCRYPTED PRIVATE KEY-----
     EOF
     assert_same_rsa rsa1024, OpenSSL::PKey.read(pem, "abcdef")
-  end
-
-  def test_public_encoding
-    rsa1024 = Fixtures.pkey("rsa1024")
-    assert_equal dup_public(rsa1024).to_der, rsa1024.public_to_der
-    assert_equal dup_public(rsa1024).to_pem, rsa1024.public_to_pem
   end
 
   def test_dup

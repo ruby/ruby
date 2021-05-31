@@ -138,6 +138,8 @@ class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
 
   def test_PUBKEY
     dsa512 = Fixtures.pkey("dsa512")
+    dsa512pub = OpenSSL::PKey::DSA.new(dsa512.public_to_der)
+
     asn1 = OpenSSL::ASN1::Sequence([
       OpenSSL::ASN1::Sequence([
         OpenSSL::ASN1::ObjectId("DSA"),
@@ -153,7 +155,7 @@ class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
     ])
     key = OpenSSL::PKey::DSA.new(asn1.to_der)
     assert_not_predicate key, :private?
-    assert_same_dsa dup_public(dsa512), key
+    assert_same_dsa dsa512pub, key
 
     pem = <<~EOF
     -----BEGIN PUBLIC KEY-----
@@ -166,10 +168,15 @@ class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
     -----END PUBLIC KEY-----
     EOF
     key = OpenSSL::PKey::DSA.new(pem)
-    assert_same_dsa dup_public(dsa512), key
+    assert_same_dsa dsa512pub, key
 
-    assert_equal asn1.to_der, dup_public(dsa512).to_der
-    assert_equal pem, dup_public(dsa512).export
+    assert_equal asn1.to_der, key.to_der
+    assert_equal pem, key.export
+
+    assert_equal asn1.to_der, dsa512.public_to_der
+    assert_equal asn1.to_der, key.public_to_der
+    assert_equal pem, dsa512.public_to_pem
+    assert_equal pem, key.public_to_pem
   end
 
   def test_read_DSAPublicKey_pem
