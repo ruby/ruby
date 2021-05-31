@@ -17,7 +17,7 @@ module TestIRB
         status = assert_in_out_err(cmds, "", //, [], bug5938)
         assert(status.success?, bug5938)
       rescue LoadError
-        skip "cannot load irb/completion"
+        pend "cannot load irb/completion"
       end
     end
 

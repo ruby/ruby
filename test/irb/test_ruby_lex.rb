@@ -138,7 +138,7 @@ module TestIRB
 
     def test_endless_range_at_end_of_line
       if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.6.0')
-        skip 'Endless range is available in 2.6.0 or later'
+        pend 'Endless range is available in 2.6.0 or later'
       end
       input_with_prompt = [
         PromptRow.new('001:0: :> ', %q(a = 3..)),
@@ -479,7 +479,7 @@ module TestIRB
 
     def test_broken_heredoc
       if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.7.0')
-        skip 'This test needs Ripper::Lexer#scan to take broken tokens'
+        pend 'This test needs Ripper::Lexer#scan to take broken tokens'
       end
       input_with_correct_indents = [
         Row.new(%q(def foo), nil, 2, 1),
@@ -511,7 +511,7 @@ module TestIRB
     end
 
     def assert_dynamic_prompt(lines, expected_prompt_list)
-      skip if RUBY_ENGINE == 'truffleruby'
+      pend if RUBY_ENGINE == 'truffleruby'
       ruby_lex = RubyLex.new()
       io = MockIO_DynamicPrompt.new(lines) do |prompt_list|
         error_message = <<~EOM
@@ -555,7 +555,7 @@ module TestIRB
 
     def test_broken_percent_literal
       if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.7.0')
-        skip 'This test needs Ripper::Lexer#scan to take broken tokens'
+        pend 'This test needs Ripper::Lexer#scan to take broken tokens'
       end
 
       tokens = RubyLex.ripper_lex_without_warning('%wwww')
@@ -568,7 +568,7 @@ module TestIRB
 
     def test_broken_percent_literal_in_method
       if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.7.0')
-        skip 'This test needs Ripper::Lexer#scan to take broken tokens'
+        pend 'This test needs Ripper::Lexer#scan to take broken tokens'
       end
 
       tokens = RubyLex.ripper_lex_without_warning(<<~EOC.chomp)
