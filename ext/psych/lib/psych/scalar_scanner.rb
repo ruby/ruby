@@ -15,7 +15,7 @@ module Psych
     # Taken from http://yaml.org/type/int.html
     INTEGER = /^(?:[-+]?0b[0-1_,]+                        (?# base 2)
                   |[-+]?0[0-7_,]+                         (?# base 8)
-                  |[-+]?(?:0|[1-9]([0-9]|,[0-9]|_[0-9])*) (?# base 10)
+                  |[-+]?(?:0|[1-9](?:[0-9]|,[0-9]|_[0-9])*) (?# base 10)
                   |[-+]?0x[0-9a-fA-F_,]+                  (?# base 16))$/x
 
     attr_reader :class_loader
