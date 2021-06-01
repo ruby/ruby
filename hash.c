@@ -2547,7 +2547,7 @@ rb_hash_delete_if(VALUE hash)
  *    e.each {|key, value| key.start_with?('b') } # => {:foo=>0}
  */
 
-VALUE
+static VALUE
 rb_hash_reject_bang(VALUE hash)
 {
     st_index_t n;
@@ -2579,7 +2579,7 @@ rb_hash_reject_bang(VALUE hash)
  *    h1 # => {:foo=>0}
  */
 
-VALUE
+static VALUE
 rb_hash_reject(VALUE hash)
 {
     VALUE result;
@@ -2671,7 +2671,7 @@ rb_hash_except(int argc, VALUE *argv, VALUE hash)
  *    h.values_at(:hello, :foo) # => [nil, 0]
  */
 
-VALUE
+static VALUE
 rb_hash_values_at(int argc, VALUE *argv, VALUE hash)
 {
     VALUE result = rb_ary_new2(argc);
@@ -4149,7 +4149,7 @@ assoc_i(VALUE key, VALUE val, VALUE arg)
  *  Returns +nil+ if key +key+ is not found.
  */
 
-VALUE
+static VALUE
 rb_hash_assoc(VALUE hash, VALUE key)
 {
     st_table *table;
@@ -4210,7 +4210,7 @@ rassoc_i(VALUE key, VALUE val, VALUE arg)
  *  Returns +nil+ if no such value found.
  */
 
-VALUE
+static VALUE
 rb_hash_rassoc(VALUE hash, VALUE obj)
 {
     VALUE args[2];
