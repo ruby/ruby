@@ -13,7 +13,9 @@
     MAYBE_UNUSED(<%= ope.fetch(:decl) %>) = (<%= ope.fetch(:type) %>)operands[<%= i %>];
 % end
 % # compiler: Use captured cc to avoid race condition
-    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    size_t cd_index = call_data_index(cd, body);
+    const struct rb_callcache **cc_entries = captured_cc_entries(status);
+    const struct rb_callcache *captured_cc = cc_entries[cd_index];
 %
 % # compiler: Inline send insn where some supported fastpath is used.
     const rb_iseq_t *iseq = NULL;
