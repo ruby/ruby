@@ -718,6 +718,16 @@ eom
         end
       end
 
+      def assert_all?(obj, m = nil, &blk)
+        failed = []
+        obj.each do |*a, &b|
+          unless blk.call(*a, &b)
+            failed << (a.size > 1 ? a : a[0])
+          end
+        end
+        assert(failed.empty?, message(m) {failed.pretty_inspect})
+      end
+
       def assert_all_assertions(msg = nil)
         all = AllFailures.new
         yield all
