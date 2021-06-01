@@ -24,6 +24,12 @@ RB_DEBUG_COUNTER(mc_inline_miss_same_cme)    // IMC miss, but same CME
 RB_DEBUG_COUNTER(mc_inline_miss_same_def)    // IMC miss, but same definition
 RB_DEBUG_COUNTER(mc_inline_miss_diff)        // IMC miss, different methods
 
+RB_DEBUG_COUNTER(cvar_write_inline_hit)      // cvar cache hit on write
+RB_DEBUG_COUNTER(cvar_read_inline_hit)       // cvar cache hit on read
+RB_DEBUG_COUNTER(cvar_inline_miss)           // miss inline cache
+RB_DEBUG_COUNTER(cvar_class_invalidate)      // invalidate cvar cache when define a cvar that's defined on a subclass
+RB_DEBUG_COUNTER(cvar_include_invalidate)    // invalidate cvar cache on module include or prepend
+
 RB_DEBUG_COUNTER(mc_cme_complement)          // number of acquiring complement CME
 RB_DEBUG_COUNTER(mc_cme_complement_hit)      // number of cache hit for complemented CME
 

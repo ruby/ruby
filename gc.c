@@ -2998,6 +2998,13 @@ cc_table_free(rb_objspace_t *objspace, VALUE klass, bool alive)
     }
 }
 
+static enum rb_id_table_iterator_result
+cvar_table_free_i(VALUE value, void * ctx)
+{
+    xfree((void *) value);
+    return ID_TABLE_CONTINUE;
+}
+
 void
 rb_cc_table_free(VALUE klass)
 {
@@ -3108,6 +3115,10 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	}
 	if (RCLASS_IV_INDEX_TBL(obj)) {
             iv_index_tbl_free(RCLASS_IV_INDEX_TBL(obj));
+	}
+	if (RCLASS_CVC_TBL(obj)) {
+            rb_id_table_foreach_values(RCLASS_CVC_TBL(obj), cvar_table_free_i, NULL);
+            rb_id_table_free(RCLASS_CVC_TBL(obj));
 	}
 	if (RCLASS_SUBCLASSES(obj)) {
 	    if (BUILTIN_TYPE(obj) == T_MODULE) {
@@ -4551,6 +4562,9 @@ obj_memsize_of(VALUE obj, int use_all_types)
             }
 	    if (RCLASS_IV_TBL(obj)) {
 		size += st_memsize(RCLASS_IV_TBL(obj));
+	    }
+	    if (RCLASS_CVC_TBL(obj)) {
+		size += rb_id_table_memsize(RCLASS_CVC_TBL(obj));
 	    }
 	    if (RCLASS_IV_INDEX_TBL(obj)) {
                 // TODO: more correct value
@@ -9750,6 +9764,27 @@ update_cc_tbl(rb_objspace_t *objspace, VALUE klass)
 }
 
 static enum rb_id_table_iterator_result
+update_cvc_tbl_i(ID id, VALUE cvc_entry, void *data)
+{
+    struct rb_cvar_class_tbl_entry *entry;
+
+    entry = (struct rb_cvar_class_tbl_entry *)cvc_entry;
+
+    entry->class_value = rb_gc_location(entry->class_value);
+
+    return ID_TABLE_CONTINUE;
+}
+
+static void
+update_cvc_tbl(rb_objspace_t *objspace, VALUE klass)
+{
+    struct rb_id_table *tbl = RCLASS_CVC_TBL(klass);
+    if (tbl) {
+        rb_id_table_foreach_with_replace(tbl, update_cvc_tbl_i, 0, objspace);
+    }
+}
+
+static enum rb_id_table_iterator_result
 update_const_table(VALUE value, void *data)
 {
     rb_const_entry_t *ce = (rb_const_entry_t *)value;
@@ -9820,6 +9855,7 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
         if (!RCLASS_EXT(obj)) break;
         update_m_tbl(objspace, RCLASS_M_TBL(obj));
         update_cc_tbl(objspace, obj);
+        update_cvc_tbl(objspace, obj);
 
         gc_update_tbl_refs(objspace, RCLASS_IV_TBL(obj));
 

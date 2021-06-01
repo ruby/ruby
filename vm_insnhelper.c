@@ -951,7 +951,7 @@ vm_ensure_not_refinement_module(VALUE self)
 }
 
 static inline VALUE
-vm_get_iclass(rb_control_frame_t *cfp, VALUE klass)
+vm_get_iclass(const rb_control_frame_t *cfp, VALUE klass)
 {
     return klass;
 }
@@ -1041,7 +1041,7 @@ vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, bool allow_
 }
 
 static inline VALUE
-vm_get_cvar_base(const rb_cref_t *cref, rb_control_frame_t *cfp, int top_level_raise)
+vm_get_cvar_base(const rb_cref_t *cref, const rb_control_frame_t *cfp, int top_level_raise)
 {
     VALUE klass;
 
@@ -1279,6 +1279,86 @@ vm_setivar(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, const str
     else {
         return vm_setivar_slowpath_ivar(obj, id, val, iseq, ic);
     }
+}
+
+static inline VALUE
+vm_getclassvariable(const rb_iseq_t *iseq, const rb_cref_t *cref, const rb_control_frame_t *cfp, ID id, ICVARC ic)
+{
+    if (ic->entry && ic->entry->global_cvar_state == GET_GLOBAL_CVAR_STATE()) {
+        VALUE v = Qundef;
+        RB_DEBUG_COUNTER_INC(cvar_read_inline_hit);
+
+        if (st_lookup(RCLASS_IV_TBL(ic->entry->class_value), (st_data_t)id, &v)) {
+            return v;
+        }
+    }
+
+    VALUE klass = vm_get_cvar_base(cref, cfp, 1);
+    VALUE defined_class = 0;
+
+    VALUE cvar_value = rb_cvar_find(klass, id, &defined_class);
+
+    if (RB_TYPE_P(defined_class, T_ICLASS)) {
+        defined_class = RBASIC(defined_class)->klass;
+    }
+
+    struct rb_id_table *rb_cvc_tbl = RCLASS_CVC_TBL(defined_class);
+
+    if (!rb_cvc_tbl) {
+        rb_cvc_tbl = RCLASS_CVC_TBL(defined_class) = rb_id_table_create(2);
+    }
+
+    struct rb_cvar_class_tbl_entry *ent;
+
+    if (!rb_id_table_lookup(rb_cvc_tbl, id, (VALUE*)&ent)) {
+        rb_bug("should have cvar cache entry");
+    } else {
+        ent->global_cvar_state = GET_GLOBAL_CVAR_STATE();
+    }
+
+    ic->entry = ent;
+    RB_OBJ_WRITTEN(iseq, Qundef, ent->class_value);
+
+    return cvar_value;
+}
+
+static inline void
+vm_setclassvariable(const rb_iseq_t *iseq, const rb_cref_t *cref, const rb_control_frame_t *cfp, ID id, VALUE val, ICVARC ic)
+{
+    if (ic->entry && ic->entry->global_cvar_state == GET_GLOBAL_CVAR_STATE()) {
+        RB_DEBUG_COUNTER_INC(cvar_write_inline_hit);
+
+        rb_class_ivar_set(ic->entry->class_value, id, val);
+        return;
+    }
+
+    VALUE klass = vm_get_cvar_base(cref, cfp, 1);
+
+    rb_cvar_set(klass, id, val);
+
+    VALUE defined_class = 0;
+    rb_cvar_find(klass, id, &defined_class);
+
+    if (RB_TYPE_P(defined_class, T_ICLASS)) {
+        defined_class = RBASIC(defined_class)->klass;
+    }
+
+    struct rb_id_table *rb_cvc_tbl = RCLASS_CVC_TBL(defined_class);
+
+    if (!rb_cvc_tbl) {
+        rb_bug("the cvc table should be set");
+    }
+
+    struct rb_cvar_class_tbl_entry *ent;
+
+    if (!rb_id_table_lookup(rb_cvc_tbl, id, (VALUE*)&ent)) {
+        rb_bug("should have cvar cache entry");
+    } else {
+        ent->global_cvar_state = GET_GLOBAL_CVAR_STATE();
+    }
+
+    ic->entry = ent;
+    RB_OBJ_WRITTEN(iseq, Qundef, ent->class_value);
 }
 
 static inline VALUE

@@ -241,6 +241,10 @@ struct iseq_inline_iv_cache_entry {
     struct rb_iv_index_tbl_entry *entry;
 };
 
+struct iseq_inline_cvar_cache_entry {
+    struct rb_cvar_class_tbl_entry *entry;
+};
+
 union iseq_inline_storage_entry {
     struct {
 	struct rb_thread_struct *running_thread;
@@ -1157,6 +1161,7 @@ enum vm_svar_index {
 /* inline cache */
 typedef struct iseq_inline_constant_cache *IC;
 typedef struct iseq_inline_iv_cache_entry *IVC;
+typedef struct iseq_inline_cvar_cache_entry *ICVARC;
 typedef union iseq_inline_storage_entry *ISE;
 typedef const struct rb_callinfo *CALL_INFO;
 typedef const struct rb_callcache *CALL_CACHE;
