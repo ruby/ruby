@@ -1726,13 +1726,10 @@ native_set_another_thread_name(rb_nativethread_id_t thread_id, VALUE name)
 #endif
 }
 
+#if defined(RB_THREAD_T_HAS_NATIVE_ID) || defined(__APPLE__)
 static VALUE
 native_thread_native_thread_id(rb_thread_t *target_th)
 {
-#if !defined(RB_THREAD_T_HAS_NATIVE_ID) && !defined(__APPLE__)
-    rb_notimplement();
-#endif
-
 #ifdef RB_THREAD_T_HAS_NATIVE_ID
     int tid = target_th->tid;
     if (tid == 0) return Qnil;
@@ -1744,6 +1741,10 @@ native_thread_native_thread_id(rb_thread_t *target_th)
     return ULL2NUM((unsigned long long)tid);
 #endif
 }
+# define USE_NATIVE_THREAD_NATIVE_THREAD_ID 1
+#else
+# define USE_NATIVE_THREAD_NATIVE_THREAD_ID 0
+#endif
 
 static void
 ubf_timer_invalidate(void)

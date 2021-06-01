@@ -3402,6 +3402,7 @@ rb_thread_setname(VALUE thread, VALUE name)
     return name;
 }
 
+#if USE_NATIVE_THREAD_NATIVE_THREAD_ID
 /*
  * call-seq:
  *   thr.native_thread_id   -> integer
@@ -3431,6 +3432,9 @@ rb_thread_native_thread_id(VALUE thread)
     if (rb_threadptr_dead(target_th)) return Qnil;
     return native_thread_native_thread_id(target_th);
 }
+#else
+# define rb_thread_native_thread_id rb_f_notimplement
+#endif
 
 /*
  * call-seq:

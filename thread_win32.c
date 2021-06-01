@@ -842,6 +842,7 @@ native_thread_native_thread_id(rb_thread_t *th)
     if (tid == 0) rb_sys_fail("GetThreadId");
     return ULONG2NUM(tid);
 }
+#define USE_NATIVE_THREAD_NATIVE_THREAD_ID 1
 
 #if USE_MJIT
 static unsigned long __stdcall
