@@ -26,7 +26,7 @@ Gem::Specification.new do |spec|
     "lib/digest.rb"
   ]
 
-  spec.required_ruby_version = ">= 2.3.0"
+  spec.required_ruby_version = ">= 2.4.0"
 
   spec.bindir        = "exe"
   spec.executables   = []
