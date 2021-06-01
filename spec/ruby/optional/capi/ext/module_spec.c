@@ -9,6 +9,18 @@ static VALUE module_specs_test_method(VALUE self) {
   return ID2SYM(rb_intern("test_method"));
 }
 
+static VALUE module_specs_test_method_2required(VALUE self, VALUE arg1, VALUE arg2) {
+    return ID2SYM(rb_intern("test_method_2required"));
+}
+
+static VALUE module_specs_test_method_c_array(int argc, VALUE *argv, VALUE self) {
+    return ID2SYM(rb_intern("test_method_c_array"));
+}
+
+static VALUE module_specs_test_method_ruby_array(VALUE self, VALUE args) {
+    return ID2SYM(rb_intern("test_method_ruby_array"));
+}
+
 static VALUE module_specs_const_defined(VALUE self, VALUE klass, VALUE id) {
   return rb_const_defined(klass, SYM2ID(id)) ? Qtrue : Qfalse;
 }
@@ -76,6 +88,21 @@ static VALUE module_specs_rb_define_method(VALUE self, VALUE cls, VALUE str_name
   return Qnil;
 }
 
+static VALUE module_specs_rb_define_method_2required(VALUE self, VALUE cls, VALUE str_name) {
+  rb_define_method(cls, RSTRING_PTR(str_name), module_specs_test_method_2required, 2);
+  return Qnil;
+}
+
+static VALUE module_specs_rb_define_method_c_array(VALUE self, VALUE cls, VALUE str_name) {
+  rb_define_method(cls, RSTRING_PTR(str_name), module_specs_test_method_c_array, -1);
+  return Qnil;
+}
+
+static VALUE module_specs_rb_define_method_ruby_array(VALUE self, VALUE cls, VALUE str_name) {
+  rb_define_method(cls, RSTRING_PTR(str_name), module_specs_test_method_ruby_array, -2);
+  return Qnil;
+}
+
 static VALUE module_specs_rb_define_module_function(VALUE self, VALUE cls, VALUE str_name) {
   rb_define_module_function(cls, RSTRING_PTR(str_name), module_specs_test_method, 0);
   return Qnil;
@@ -132,6 +159,10 @@ void Init_module_spec(void) {
       module_specs_rb_define_global_function, 1);
 
   rb_define_method(cls, "rb_define_method", module_specs_rb_define_method, 2);
+  rb_define_method(cls, "rb_define_method_2required", module_specs_rb_define_method_2required, 2);
+  rb_define_method(cls, "rb_define_method_c_array", module_specs_rb_define_method_c_array, 2);
+  rb_define_method(cls, "rb_define_method_ruby_array", module_specs_rb_define_method_ruby_array, 2);
+
   rb_define_method(cls, "rb_define_module_function",
       module_specs_rb_define_module_function, 2);
 

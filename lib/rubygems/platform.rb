@@ -7,14 +7,9 @@ require "rubygems/deprecate"
 # See `gem help platform` for information on platform matching.
 
 class Gem::Platform
-
   @local = nil
 
-  attr_accessor :cpu
-
-  attr_accessor :os
-
-  attr_accessor :version
+  attr_accessor :cpu, :os, :version
 
   def self.local
     arch = RbConfig::CONFIG['arch']
@@ -23,18 +18,33 @@ class Gem::Platform
   end
 
   def self.match(platform)
-    Gem.platforms.any? do |local_platform|
+    match_platforms?(platform, Gem.platforms)
+  end
+
+  def self.match_platforms?(platform, platforms)
+    platforms.any? do |local_platform|
       platform.nil? or
         local_platform == platform or
         (local_platform != Gem::Platform::RUBY and local_platform =~ platform)
     end
+  end
+  private_class_method :match_platforms?
+
+  def self.match_spec?(spec)
+    match_gem?(spec.platform, spec.name)
+  end
+
+  def self.match_gem?(platform, gem_name)
+    # Note: this method might be redefined by Ruby implementations to
+    # customize behavior per RUBY_ENGINE, gem_name or other criteria.
+    match_platforms?(platform, Gem.platforms)
   end
 
   def self.installable?(spec)
     if spec.respond_to? :installable_platform?
       spec.installable_platform?
     else
-      match spec.platform
+      match_spec? spec
     end
   end
 
@@ -109,10 +119,6 @@ class Gem::Platform
     else
       raise ArgumentError, "invalid argument #{arch.inspect}"
     end
-  end
-
-  def inspect
-    "%s @cpu=%p, @os=%p, @version=%p>" % [super[0..-2], *to_a]
   end
 
   def to_a
@@ -202,5 +208,4 @@ class Gem::Platform
   # This will be replaced with Gem::Platform::local.
 
   CURRENT = 'current'.freeze
-
 end

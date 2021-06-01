@@ -264,52 +264,45 @@ describe "CApiNumericSpecs" do
   describe "rb_Integer" do
     it "creates an Integer from a String" do
       i = @s.rb_Integer("8675309")
-      i.should be_kind_of(Integer)
-      i.should eql(8675309)
+      i.should == 8675309
     end
   end
 
   describe "rb_ll2inum" do
     it "creates a Fixnum from a small signed long long" do
       i = @s.rb_ll2inum_14()
-      i.should be_kind_of(Fixnum)
-      i.should eql(14)
+      i.should == 14
     end
   end
 
   describe "rb_ull2inum" do
     it "creates a Fixnum from a small unsigned long long" do
       i = @s.rb_ull2inum_14()
-      i.should be_kind_of(Fixnum)
-      i.should eql(14)
+      i.should == 14
     end
 
     it "creates a positive Bignum from a negative long long" do
       i = @s.rb_ull2inum_n14()
-      i.should be_kind_of(Bignum)
-      i.should eql(2 ** (@s.size_of_long_long * 8) - 14)
+      i.should == (2 ** (@s.size_of_long_long * 8) - 14)
     end
   end
 
   describe "rb_int2inum" do
     it "creates a Fixnum from a long" do
       i = @s.rb_int2inum_14()
-      i.should be_kind_of(Fixnum)
-      i.should eql(14)
+      i.should == 14
     end
   end
 
   describe "rb_uint2inum" do
     it "creates a Fixnum from a long" do
       i = @s.rb_uint2inum_14()
-      i.should be_kind_of(Fixnum)
-      i.should eql(14)
+      i.should == 14
     end
 
     it "creates a positive Bignum from a negative long" do
       i = @s.rb_uint2inum_n14()
-      i.should be_kind_of(Bignum)
-      i.should eql(2 ** (@s.size_of_VALUE * 8) - 14)
+      i.should == (2 ** (@s.size_of_VALUE * 8) - 14)
     end
   end
 

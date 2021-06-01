@@ -34,7 +34,7 @@ Difficult (and interesting) points of the theme are:
   Or, jump-out statements cannot occur at a position that requires a
   value; `if return then true end` is a "void value expression" syntax error.
 * Inserting newlines for each 6 word (to match with the spec html) is also
-  an interseting challenge, since Ruby is sensitive to newlines.
+  an interesting challenge, since Ruby is sensitive to newlines.
 
 Tricks used in the code are:
 

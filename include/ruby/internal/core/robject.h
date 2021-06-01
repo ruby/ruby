@@ -27,6 +27,7 @@
 #endif
 
 #include "ruby/internal/attr/artificial.h"
+#include "ruby/internal/attr/deprecated.h"
 #include "ruby/internal/attr/pure.h"
 #include "ruby/internal/cast.h"
 #include "ruby/internal/fl_type.h"
@@ -39,11 +40,14 @@
 /** @cond INTERNAL_MACRO */
 #define ROBJECT_NUMIV         ROBJECT_NUMIV
 #define ROBJECT_IVPTR         ROBJECT_IVPTR
+#define ROBJECT_IV_INDEX_TBL  ROBJECT_IV_INDEX_TBL
 /** @endcond */
 
 enum ruby_robject_flags { ROBJECT_EMBED = RUBY_FL_USER1 };
 
 enum ruby_robject_consts { ROBJECT_EMBED_LEN_MAX = RBIMPL_EMBED_LEN_MAX_OF(VALUE) };
+
+struct st_table;
 
 struct RObject {
     struct RBasic basic;
@@ -51,7 +55,7 @@ struct RObject {
         struct {
             uint32_t numiv;
             VALUE *ivptr;
-            void *iv_index_tbl; /* shortcut for RCLASS_IV_INDEX_TBL(rb_obj_class(obj)) */
+            struct st_table *iv_index_tbl; /* shortcut for RCLASS_IV_INDEX_TBL(rb_obj_class(obj)) */
         } heap;
         VALUE ary[ROBJECT_EMBED_LEN_MAX];
     } as;
@@ -88,10 +92,5 @@ ROBJECT_IVPTR(VALUE obj)
         return ptr->as.heap.ivptr;
     }
 }
-
-#define ROBJECT_IV_INDEX_TBL(o) \
-    ((RBASIC(o)->flags & ROBJECT_EMBED) ? \
-     RCLASS_IV_INDEX_TBL(rb_obj_class(o)) : \
-     ROBJECT(o)->as.heap.iv_index_tbl)
 
 #endif /* RBIMPL_ROBJECT_H */

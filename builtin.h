@@ -11,13 +11,17 @@ struct rb_builtin_function {
     // for load
     const int index;
     const char * const name;
+
+    // for jit
+    void (*compiler)(FILE *, long, unsigned, bool);
 };
 
-#define RB_BUILTIN_FUNCTION(_i, _name, _fname, _arity) { \
+#define RB_BUILTIN_FUNCTION(_i, _name, _fname, _arity, _compiler) {\
   .name = #_name, \
   .func_ptr = (void *)_fname, \
   .argc = _arity, \
-  .index = _i \
+  .index = _i, \
+  .compiler = _compiler, \
 }
 
 void rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin_function *table);
@@ -61,7 +65,7 @@ PUREFUNC(static inline VALUE rb_vm_lvar(rb_execution_context_t *ec, int index));
 static inline VALUE
 rb_vm_lvar(rb_execution_context_t *ec, int index)
 {
-#if VM_CORE_H_EC_DEFINED
+#if defined(VM_CORE_H_EC_DEFINED) && VM_CORE_H_EC_DEFINED
     return ec->cfp->ep[index];
 #else
     return rb_vm_lvar_exposed(ec, index);

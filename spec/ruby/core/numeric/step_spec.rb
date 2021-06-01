@@ -26,12 +26,14 @@ describe "Numeric#step" do
         step_enum_class = Enumerator::ArithmeticSequence
       end
 
-      it "returns an #{step_enum_class} when step is 0" do
-        1.step(5, 0).should be_an_instance_of(step_enum_class)
-      end
+      ruby_version_is ""..."3.0" do
+        it "returns an #{step_enum_class} when step is 0" do
+          1.step(5, 0).should be_an_instance_of(step_enum_class)
+        end
 
-      it "returns an #{step_enum_class} when step is 0.0" do
-        1.step(2, 0.0).should be_an_instance_of(step_enum_class)
+        it "returns an #{step_enum_class} when step is 0.0" do
+          1.step(2, 0.0).should be_an_instance_of(step_enum_class)
+        end
       end
 
       describe "returned #{step_enum_class}" do
@@ -48,7 +50,7 @@ describe "Numeric#step" do
             end
           end
 
-          ruby_version_is "2.6" do
+          ruby_version_is "2.6"..."3.0" do
             it "is infinity when step is 0" do
               enum = 1.step(5, 0)
               enum.size.should == Float::INFINITY
@@ -85,18 +87,20 @@ describe "Numeric#step" do
   end
 
   describe 'with keyword arguments' do
-    it "doesn't raise an error when step is 0" do
-      -> { 1.step(to: 5, by: 0) { break } }.should_not raise_error
-    end
+    ruby_version_is ""..."3.0" do
+      it "doesn't raise an error when step is 0" do
+        -> { 1.step(to: 5, by: 0) { break } }.should_not raise_error
+      end
 
-    it "doesn't raise an error when step is 0.0" do
-      -> { 1.step(to: 2, by: 0.0) { break } }.should_not raise_error
-    end
+      it "doesn't raise an error when step is 0.0" do
+        -> { 1.step(to: 2, by: 0.0) { break } }.should_not raise_error
+      end
 
-    it "should loop over self when step is 0 or 0.0" do
-      1.step(to: 2, by: 0.0).take(5).should eql [1.0, 1.0, 1.0, 1.0, 1.0]
-      1.step(to: 2, by: 0).take(5).should eql [1, 1, 1, 1, 1]
-      1.1.step(to: 2, by: 0).take(5).should eql [1.1, 1.1, 1.1, 1.1, 1.1]
+      it "should loop over self when step is 0 or 0.0" do
+        1.step(to: 2, by: 0.0).take(5).should eql [1.0, 1.0, 1.0, 1.0, 1.0]
+        1.step(to: 2, by: 0).take(5).should eql [1, 1, 1, 1, 1]
+        1.1.step(to: 2, by: 0).take(5).should eql [1.1, 1.1, 1.1, 1.1, 1.1]
+      end
     end
 
     describe "when no block is given" do
@@ -106,12 +110,14 @@ describe "Numeric#step" do
             1.step(by: 42).size.should == infinity_value
           end
 
-          it "should return infinity_value when step is 0" do
-            1.step(to: 5, by: 0).size.should == infinity_value
-          end
+          ruby_version_is ""..."3.0" do
+            it "should return infinity_value when step is 0" do
+              1.step(to: 5, by: 0).size.should == infinity_value
+            end
 
-          it "should return infinity_value when step is 0.0" do
-            1.step(to: 2, by: 0.0).size.should == infinity_value
+            it "should return infinity_value when step is 0.0" do
+              1.step(to: 2, by: 0.0).size.should == infinity_value
+            end
           end
 
           it "should return infinity_value when ascending towards a limit of Float::INFINITY" do
@@ -146,12 +152,24 @@ describe "Numeric#step" do
   end
 
   describe 'with mixed arguments' do
-    it "doesn't raise an error when step is 0" do
-      -> { 1.step(5, by: 0) { break } }.should_not raise_error
+    ruby_version_is ""..."3.0" do
+      it "doesn't raise an error when step is 0" do
+        -> { 1.step(5, by: 0) { break } }.should_not raise_error
+      end
+
+      it "doesn't raise an error when step is 0.0" do
+        -> { 1.step(2, by: 0.0) { break } }.should_not raise_error
+      end
     end
 
-    it "doesn't raise an error when step is 0.0" do
-      -> { 1.step(2, by: 0.0) { break } }.should_not raise_error
+    ruby_version_is "3.0" do
+      it " raises an ArgumentError when step is 0" do
+        -> { 1.step(5, by: 0) { break } }.should raise_error(ArgumentError)
+      end
+
+      it "raises an ArgumentError when step is 0.0" do
+        -> { 1.step(2, by: 0.0) { break } }.should raise_error(ArgumentError)
+      end
     end
 
     it "raises a ArgumentError when limit and to are defined" do
@@ -162,21 +180,25 @@ describe "Numeric#step" do
       -> { 1.step(5, 1, by: 5) { break } }.should raise_error(ArgumentError)
     end
 
-    it "should loop over self when step is 0 or 0.0" do
-      1.step(2, by: 0.0).take(5).should eql [1.0, 1.0, 1.0, 1.0, 1.0]
-      1.step(2, by: 0).take(5).should eql [1, 1, 1, 1, 1]
-      1.1.step(2, by: 0).take(5).should eql [1.1, 1.1, 1.1, 1.1, 1.1]
+    ruby_version_is ""..."3.0" do
+      it "should loop over self when step is 0 or 0.0" do
+        1.step(2, by: 0.0).take(5).should eql [1.0, 1.0, 1.0, 1.0, 1.0]
+        1.step(2, by: 0).take(5).should eql [1, 1, 1, 1, 1]
+        1.1.step(2, by: 0).take(5).should eql [1.1, 1.1, 1.1, 1.1, 1.1]
+      end
     end
 
     describe "when no block is given" do
       describe "returned Enumerator" do
         describe "size" do
-          it "should return infinity_value when step is 0" do
-            1.step(5, by: 0).size.should == infinity_value
-          end
+          ruby_version_is ""..."3.0" do
+            it "should return infinity_value when step is 0" do
+              1.step(5, by: 0).size.should == infinity_value
+            end
 
-          it "should return infinity_value when step is 0.0" do
-            1.step(2, by: 0.0).size.should == infinity_value
+            it "should return infinity_value when step is 0.0" do
+              1.step(2, by: 0.0).size.should == infinity_value
+            end
           end
         end
       end

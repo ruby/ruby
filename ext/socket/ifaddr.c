@@ -459,7 +459,7 @@ rsock_init_sockifaddr(void)
      *
      * Socket::Ifaddr represents a result of getifaddrs() function.
      */
-    rb_cSockIfaddr = rb_define_class_under(rb_cSocket, "Ifaddr", rb_cData);
+    rb_cSockIfaddr = rb_define_class_under(rb_cSocket, "Ifaddr", rb_cObject);
     rb_define_method(rb_cSockIfaddr, "inspect", ifaddr_inspect, 0);
     rb_define_method(rb_cSockIfaddr, "name", ifaddr_name, 0);
     rb_define_method(rb_cSockIfaddr, "ifindex", ifaddr_ifindex, 0);

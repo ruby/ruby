@@ -485,8 +485,6 @@ class TestSetTraceFunc < Test::Unit::TestCase
      [:c_call,   4, 'xyzzy', Integer,     :times,           1,           :outer, :nothing],
      [:line,     4, 'xyzzy', self.class,  method,           self,        nil,    :nothing],
      [:line,     5, 'xyzzy', self.class,  method,           self,        :inner, :nothing],
-     [:c_call,   5, 'xyzzy', Kernel,      :tap,             self,        :inner, :nothing],
-     [:c_return, 5, "xyzzy", Kernel,      :tap,             self,        :inner, self],
      [:c_return, 4, "xyzzy", Integer,     :times,           1,           :outer, 1],
      [:line,     7, 'xyzzy', self.class,  method,           self,        :outer, :nothing],
      [:c_call,   7, "xyzzy", Class,       :inherited,       Object,      :outer, :nothing],
@@ -512,8 +510,6 @@ class TestSetTraceFunc < Test::Unit::TestCase
      [:call,    13, "xyzzy", xyzzy.class, :bar,             xyzzy,       nil, :nothing],
      [:line,    14, "xyzzy", xyzzy.class, :bar,             xyzzy,       nil, :nothing],
      [:line,    15, "xyzzy", xyzzy.class, :bar,             xyzzy,       :XYZZY_bar, :nothing],
-     [:c_call,  15, "xyzzy", Kernel,      :tap,             xyzzy,       :XYZZY_bar, :nothing],
-     [:c_return,15, "xyzzy", Kernel,      :tap,             xyzzy,       :XYZZY_bar, xyzzy],
      [:return,  16, "xyzzy", xyzzy.class, :bar,             xyzzy,       :XYZZY_bar, xyzzy],
      [:return,  12, "xyzzy", xyzzy.class, :foo,             xyzzy,       :XYZZY_foo, xyzzy],
      [:line,    20, "xyzzy", TestSetTraceFunc, method,      self,        :outer, :nothing],
@@ -610,8 +606,6 @@ class TestSetTraceFunc < Test::Unit::TestCase
      [:c_call,   4, 'xyzzy', Integer,     :times,           1,           :outer, :nothing],
      [:line,     4, 'xyzzy', self.class,  method,           self,        nil,    :nothing],
      [:line,     5, 'xyzzy', self.class,  method,           self,        :inner, :nothing],
-     [:c_call,   5, 'xyzzy', Kernel,      :tap,             self,        :inner, :nothing],
-     [:c_return, 5, "xyzzy", Kernel,      :tap,             self,        :inner, self],
      [:c_return, 4, "xyzzy", Integer,     :times,           1,           :outer, 1],
      [:line,     7, 'xyzzy', self.class,  method,           self,        :outer, :nothing],
      [:c_call,   7, "xyzzy", Class,       :inherited,       Object,      :outer, :nothing],
@@ -637,8 +631,6 @@ class TestSetTraceFunc < Test::Unit::TestCase
      [:call,    13, "xyzzy", xyzzy.class, :bar,             xyzzy,       nil, :nothing],
      [:line,    14, "xyzzy", xyzzy.class, :bar,             xyzzy,       nil, :nothing],
      [:line,    15, "xyzzy", xyzzy.class, :bar,             xyzzy,       :XYZZY_bar, :nothing],
-     [:c_call,  15, "xyzzy", Kernel,      :tap,             xyzzy,       :XYZZY_bar, :nothing],
-     [:c_return,15, "xyzzy", Kernel,      :tap,             xyzzy,       :XYZZY_bar, xyzzy],
      [:return,  16, "xyzzy", xyzzy.class, :bar,             xyzzy,       :XYZZY_bar, xyzzy],
      [:return,  12, "xyzzy", xyzzy.class, :foo,             xyzzy,       :XYZZY_foo, xyzzy],
      [:line,    20, "xyzzy", TestSetTraceFunc, method,      self,        :outer, :nothing],
@@ -945,9 +937,9 @@ class TestSetTraceFunc < Test::Unit::TestCase
       when :line
         assert_match(/ in /, str)
       when :call, :c_call
-        assert_match(/call \`/, str) # #<TracePoint:c_call `inherited'@../trunk/test.rb:11>
+        assert_match(/call \`/, str) # #<TracePoint:c_call `inherited' ../trunk/test.rb:11>
       when :return, :c_return
-        assert_match(/return \`/, str) # #<TracePoint:return `m'@../trunk/test.rb:3>
+        assert_match(/return \`/, str) # #<TracePoint:return `m' ../trunk/test.rb:3>
       when /thread/
         assert_match(/\#<Thread:/, str) # #<TracePoint:thread_end of #<Thread:0x87076c0>>
       else
@@ -1601,6 +1593,33 @@ class TestSetTraceFunc < Test::Unit::TestCase
       assert_equal ev, :fiber_switch
     }
 
+    # test for raise into resumable fiber
+    evs = []
+    f = nil
+    TracePoint.new(:raise, :fiber_switch){|tp|
+      next unless target_thread?
+      evs << [tp.event, Fiber.current]
+    }.enable{
+      f = Fiber.new{
+        Fiber.yield # will raise
+        Fiber.yield # unreachable
+      }
+      begin
+        f.resume
+        f.raise StopIteration
+      rescue StopIteration
+        evs << :rescued
+      end
+    }
+    assert_equal [:fiber_switch, f],             evs[0], "initial resume"
+    assert_equal [:fiber_switch, Fiber.current], evs[1], "Fiber.yield"
+    assert_equal [:fiber_switch, f],             evs[2], "fiber.raise"
+    assert_equal [:raise, f],                    evs[3], "fiber.raise"
+    assert_equal [:fiber_switch, Fiber.current], evs[4], "terminated with raise"
+    assert_equal [:raise, Fiber.current],        evs[5], "terminated with raise"
+    assert_equal :rescued,                       evs[6]
+    assert_equal 7, evs.size
+
     # test for transfer
     evs = []
     TracePoint.new(:fiber_switch){|tp|
@@ -1623,6 +1642,41 @@ class TestSetTraceFunc < Test::Unit::TestCase
     evs.each{|ev|
       assert_equal ev, :fiber_switch
     }
+
+    # test for raise and from transferring fibers
+    evs = []
+    f1 = f2 = nil
+    TracePoint.new(:raise, :fiber_switch){|tp|
+      next unless target_thread?
+      evs << [tp.event, Fiber.current]
+    }.enable{
+      f1 = Fiber.new{
+        f2.transfer
+        f2.raise ScriptError
+        Fiber.yield :ok
+      }
+      f2 = Fiber.new{
+        f1.transfer
+        f1.transfer
+      }
+      begin
+        f1.resume
+      rescue ScriptError
+        evs << :rescued
+      end
+    }
+    assert_equal [:fiber_switch, f1],            evs[0], "initial resume"
+    assert_equal [:fiber_switch, f2],            evs[1], "f2.transfer"
+    assert_equal [:fiber_switch, f1],            evs[2], "f1.transfer"
+    assert_equal [:fiber_switch, f2],            evs[3], "f2.raise ScriptError"
+    assert_equal [:raise,        f2],            evs[4], "f2.raise ScriptError"
+    assert_equal [:fiber_switch, f1],            evs[5], "f2 unhandled exception"
+    assert_equal [:raise,        f1],            evs[6], "f2 unhandled exception"
+    assert_equal [:fiber_switch, Fiber.current], evs[7], "f1 unhandled exception"
+    assert_equal [:raise,        Fiber.current], evs[8], "f1 unhandled exception"
+    assert_equal :rescued,                       evs[9], "rescued everything"
+    assert_equal 10, evs.size
+
   end
 
   def test_tracepoint_callee_id
@@ -1685,7 +1739,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     TracePoint.new(:return, &capture_events).enable{
       o.alias_m
     }
-    assert_equal [[:return, :m, :alias_m]], events
+    assert_equal [[:return, :tap, :tap], [:return, :m, :alias_m]], events
     events.clear
 
     o = Class.new{
@@ -1709,13 +1763,13 @@ class TestSetTraceFunc < Test::Unit::TestCase
     events.clear
 
     o = Class.new{
-      alias alias_tap tap
-      define_method(:m){alias_tap{return}}
+      alias alias_singleton_class singleton_class
+      define_method(:m){alias_singleton_class}
     }.new
     TracePoint.new(:c_return, &capture_events).enable{
       o.m
     }
-    assert_equal [[:c_return, :tap, :alias_tap]], events
+    assert_equal [[:c_return, :singleton_class, :alias_singleton_class]], events
     events.clear
 
     c = Class.new{
@@ -1971,7 +2025,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     Thread.pass until t.status == 'sleep'
     # When MJIT thread exists, t.status becomes 'sleep' even if it does not reach m2t_q.pop.
     # This sleep forces it to reach m2t_q.pop for --jit-wait.
-    sleep 1 if RubyVM::MJIT.enabled?
+    sleep 1 if defined?(RubyVM::JIT) && RubyVM::JIT.enabled?
 
     t.add_trace_func proc{|ev, file, line, *args|
       if file == __FILE__
@@ -2183,6 +2237,31 @@ class TestSetTraceFunc < Test::Unit::TestCase
     assert_equal 'target_line is specified, but line event is not specified', e.message
   end
 
+  def test_tracepoint_enable_with_target_line_two_times
+    events = []
+    line_0 = __LINE__
+    code1 = proc{
+      events << 1 # tp1
+      events << 2
+      events << 3 # tp2
+    }
+
+    tp1 = TracePoint.new(:line) do |tp|
+      events << :tp1
+    end
+    tp2 = TracePoint.new(:line) do |tp|
+      events << :tp2
+    end
+
+    tp1.enable(target: code1, target_line: line_0 + 2) do
+      tp2.enable(target: code1, target_line: line_0 + 4) do
+        # two hooks
+        code1.call
+      end
+    end
+    assert_equal [:tp1, 1, 2, :tp2, 3], events
+  end
+
   def test_script_compiled
     events = []
     tp = TracePoint.new(:script_compiled){|tp|
@@ -2291,5 +2370,35 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   def test_stat_exists
     assert_instance_of Hash, TracePoint.stat
+  end
+
+  def test_tracepoint_opt_invokebuiltin_delegate_leave
+    code = 'puts RubyVM::InstructionSequence.of("\x00".method(:unpack)).disasm'
+    out = EnvUtil.invoke_ruby(['-e', code], '', true).first
+    assert_match(/^0000 opt_invokebuiltin_delegate_leave /, out)
+
+    event = eval(EnvUtil.invoke_ruby(['-e', <<~'EOS'], '', true).first)
+      TracePoint.new(:return) do |tp|
+        p [tp.event, tp.method_id]
+      end.enable do
+        "\x00".unpack("c")
+      end
+    EOS
+    assert_equal [:return, :unpack], event
+  end
+
+  def test_while_in_while
+    lines = []
+
+    TracePoint.new(:line){|tp|
+      next unless target_thread?
+      lines << tp.lineno
+    }.enable{
+      n = 3
+      while n > 0
+        n -= 1 while n > 0
+      end
+    }
+    assert_equal [__LINE__ - 5, __LINE__ - 4, __LINE__ - 3], lines, 'Bug #17868'
   end
 end

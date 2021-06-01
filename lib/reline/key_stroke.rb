@@ -42,6 +42,8 @@ class Reline::KeyStroke
       expand(expand(rhs_bytes) + expand(input.drop(lhs.size)))
     when Symbol
       [rhs] + expand(input.drop(lhs.size))
+    when Array
+      rhs
     end
   end
 

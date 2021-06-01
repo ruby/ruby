@@ -190,6 +190,8 @@ At least one uppercase character ('H'), at least one lowercase character
 
     "Hello".match(/[[:upper:]]+[[:lower:]]+l{2}o/) #=> #<MatchData "Hello">
 
+=== Greedy match
+
 Repetition is <i>greedy</i> by default: as many occurrences as possible
 are matched while still allowing the overall match to succeed. By
 contrast, <i>lazy</i> matching makes the minimal amount of matches
@@ -206,10 +208,16 @@ Both patterns below match the string. The first uses a greedy quantifier so
     /<.+>/.match("<a><b>")  #=> #<MatchData "<a><b>">
     /<.+?>/.match("<a><b>") #=> #<MatchData "<a>">
 
+=== Possessive match
+
 A quantifier followed by <tt>+</tt> matches <i>possessively</i>: once it
 has matched it does not backtrack. They behave like greedy quantifiers,
 but having matched they refuse to "give up" their match even if this
 jeopardises the overall match.
+
+    /<.*><.+>/.match("<a><b>") #=> #<MatchData "<a><b>">
+    /<.*+><.+>/.match("<a><b>") #=> nil
+    /<.*><.++>/.match("<a><b>") #=> nil
 
 == Capturing
 
@@ -229,6 +237,8 @@ Regexp#match returns a MatchData object which makes the captured text
 available with its #[] method:
 
     /[csh](..) [csh]\1 in/.match("The cat sat in the hat")[1] #=> 'at'
+
+=== Named captures
 
 Capture groups can be referred to by name when defined with the
 <tt>(?<</tt><i>name</i><tt>>)</tt> or <tt>(?'</tt><i>name</i><tt>')</tt>

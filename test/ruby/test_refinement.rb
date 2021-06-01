@@ -1652,7 +1652,6 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_reopen_refinement_module
     assert_separately([], <<-"end;")
-      $VERBOSE = nil
       class C
       end
 
@@ -1669,6 +1668,7 @@ class TestRefinement < Test::Unit::TestCase
 
       module R
         refine C do
+          alias m m
           def m
             :bar
           end
@@ -2403,6 +2403,160 @@ class TestRefinement < Test::Unit::TestCase
     assert_raise(TypeError) do
       bar.instance_method(:foo).bind(b.new)
     end
+  end
+
+  def test_refine_frozen_class
+    verbose_bak, $VERBOSE = $VERBOSE, nil
+    singleton_class.instance_variable_set(:@x, self)
+    class << self
+      c = Class.new do
+        def foo
+          :cfoo
+        end
+      end
+      foo = Module.new do
+        refine c do
+          def foo
+            :rfoo
+          end
+        end
+      end
+      using foo
+      @x.assert_equal(:rfoo, c.new.foo)
+      c.freeze
+      foo.module_eval do
+        refine c do
+          def foo
+            :rfoo2
+          end
+          def bar
+            :rbar
+          end
+        end
+      end
+      @x.assert_equal(:rfoo2, c.new.foo)
+      @x.assert_equal(:rbar, c.new.bar, '[ruby-core:71391] [Bug #11669]')
+    end
+  ensure
+    $VERBOSE = verbose_bak
+  end
+
+  # [Bug #17386]
+  def test_prepended_with_method_cache
+    foo = Class.new do
+      def foo
+        :Foo
+      end
+    end
+
+    code = Module.new do
+      def foo
+        :Code
+      end
+    end
+
+    _ext = Module.new do
+      refine foo do
+        def foo; end
+      end
+    end
+
+    obj = foo.new
+
+    assert_equal :Foo, obj.foo
+    foo.prepend code
+    assert_equal :Code, obj.foo
+  end
+
+  # [Bug #17417]
+  def test_prepended_with_method_cache_17417
+    assert_normal_exit %q{
+      module M
+        def hoge; end
+      end
+
+      module R
+        refine Hash do
+          def except *args; end
+        end
+      end
+
+      h = {}
+      h.method(:except) # put it on pCMC
+      Hash.prepend(M)
+      h.method(:except)
+    }
+  end
+
+  def test_defining_after_cached
+    klass = Class.new
+    _refinement = Module.new { refine(klass) { def foo; end } }
+    klass.new.foo rescue nil # cache the refinement method entry
+    klass.define_method(:foo) { 42 }
+    assert_equal(42, klass.new.foo)
+  end
+
+  # [Bug #17806]
+  def test_two_refinements_for_prepended_class
+    assert_normal_exit %q{
+      module R1
+        refine Hash do
+          def foo; :r1; end
+        end
+      end
+
+      class Hash
+        prepend(Module.new)
+      end
+
+      class Hash
+        def foo; end
+      end
+
+      {}.method(:foo) # put it on pCMC
+
+      module R2
+        refine Hash do
+          def foo; :r2; end
+        end
+      end
+
+      {}.foo
+    }
+  end
+
+  # [Bug #17806]
+  def test_redefining_refined_for_prepended_class
+    klass = Class.new { def foo; end }
+    _refinement = Module.new do
+      refine(klass) { def foo; :refined; end }
+    end
+    klass.prepend(Module.new)
+    klass.new.foo # cache foo
+    klass.define_method(:foo) { :second }
+    assert_equal(:second, klass.new.foo)
+  end
+
+  class Bug17822
+    module Ext
+      refine(Bug17822) do
+        def foo = :refined
+      end
+    end
+
+    private(def foo = :not_refined)
+
+    module Client
+      using Ext
+      def self.call_foo
+        Bug17822.new.foo
+      end
+    end
+  end
+
+  # [Bug #17822]
+  def test_privatizing_refined_method
+    assert_equal(:refined, Bug17822::Client.call_foo)
   end
 
   private

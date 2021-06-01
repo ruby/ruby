@@ -148,6 +148,18 @@ VALUE sws_typed_change_struct(VALUE self, VALUE obj, VALUE new_val) {
   return Qnil;
 }
 
+VALUE sws_typed_rb_check_typeddata_same_type(VALUE self, VALUE obj) {
+  return rb_check_typeddata(obj, &sample_typed_wrapped_struct_data_type) == DATA_PTR(obj) ? Qtrue : Qfalse;
+}
+
+VALUE sws_typed_rb_check_typeddata_same_type_parent(VALUE self, VALUE obj) {
+  return rb_check_typeddata(obj, &sample_typed_wrapped_struct_parent_data_type) == DATA_PTR(obj) ? Qtrue : Qfalse;
+}
+
+VALUE sws_typed_rb_check_typeddata_different_type(VALUE self, VALUE obj) {
+  return rb_check_typeddata(obj, &sample_typed_wrapped_struct_other_data_type) == DATA_PTR(obj) ? Qtrue : Qfalse;
+}
+
 void Init_typed_data_spec(void) {
   VALUE cls = rb_define_class("CApiAllocTypedSpecs", rb_cObject);
   rb_define_alloc_func(cls, sdaf_alloc_typed_func);
@@ -160,6 +172,9 @@ void Init_typed_data_spec(void) {
   rb_define_method(cls, "typed_get_struct_rdata", sws_typed_get_struct_rdata, 1);
   rb_define_method(cls, "typed_get_struct_data_ptr", sws_typed_get_struct_data_ptr, 1);
   rb_define_method(cls, "typed_change_struct", sws_typed_change_struct, 2);
+  rb_define_method(cls, "rb_check_typeddata_same_type", sws_typed_rb_check_typeddata_same_type, 1);
+  rb_define_method(cls, "rb_check_typeddata_same_type_parent", sws_typed_rb_check_typeddata_same_type_parent, 1);
+  rb_define_method(cls, "rb_check_typeddata_different_type", sws_typed_rb_check_typeddata_different_type, 1);
 }
 
 #ifdef __cplusplus

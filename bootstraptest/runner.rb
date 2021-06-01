@@ -261,6 +261,14 @@ rescue Exception => err
   $stderr.print 'E'
   $stderr.puts if @verbose
   error err.message, message
+ensure
+  begin
+    check_coredump
+  rescue CoreDumpError => err
+    $stderr.print 'E'
+    $stderr.puts if @verbose
+    error err.message, message
+  end
 end
 
 def show_limit(testsrc, opt = '', **argh)
@@ -275,7 +283,6 @@ end
 def assert_check(testsrc, message = '', opt = '', **argh)
   show_progress(message) {
     result = get_result_string(testsrc, opt, **argh)
-    check_coredump
     yield(result)
   }
 end
@@ -376,8 +383,8 @@ def assert_normal_exit(testsrc, *rest, timeout: nil, **opt)
 end
 
 def assert_finish(timeout_seconds, testsrc, message = '')
-  if RubyVM.const_defined? :MJIT
-    timeout_seconds *= 3 if RubyVM::MJIT.enabled? # for --jit-wait
+  if defined?(RubyVM::JIT) && RubyVM::JIT.enabled? # for --jit-wait
+    timeout_seconds *= 3
   end
   newtest
   show_progress(message) {
@@ -453,7 +460,6 @@ def get_result_string(src, opt = '', **argh)
       `#{@ruby} -W0 #{opt} #{filename}`
     ensure
       raise Interrupt if $? and $?.signaled? && $?.termsig == Signal.list["INT"]
-      raise CoreDumpError, "core dumped" if $? and $?.coredump?
     end
   else
     eval(src).to_s
@@ -513,7 +519,21 @@ def in_temporary_working_directory(dir)
 end
 
 def cleanup_coredump
-  FileUtils.rm_f 'core'
+  if File.file?('core')
+    require 'time'
+    Dir.glob('/tmp/bootstraptest-core.*').each do |f|
+      if Time.now - File.mtime(f) > 7 * 24 * 60 * 60 # 7 days
+        warn "Deleting an old core file: #{f}"
+        FileUtils.rm(f)
+      end
+    end
+    core_path = "/tmp/bootstraptest-core.#{Time.now.utc.iso8601}"
+    warn "A core file is found. Saving it at: #{core_path.dump}"
+    FileUtils.mv('core', core_path)
+    cmd = ['gdb', @ruby, '-c', core_path, '-ex', 'bt', '-batch']
+    p cmd # debugging why it's not working
+    system(*cmd)
+  end
   FileUtils.rm_f Dir.glob('core.*')
   FileUtils.rm_f @ruby+'.stackdump' if @ruby
 end

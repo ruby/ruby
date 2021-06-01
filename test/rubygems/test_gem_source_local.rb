@@ -1,11 +1,10 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'test_case'
 require 'rubygems/source'
 
 require 'fileutils'
 
 class TestGemSourceLocal < Gem::TestCase
-
   def setup
     super
 
@@ -73,7 +72,7 @@ class TestGemSourceLocal < Gem::TestCase
 
     @sl.load_specs :released
 
-    inner = [@a, @ap, @b].map { |t| t.name_tuple }.inspect
+    inner = [@a, @ap, @b].map {|t| t.name_tuple }.inspect
 
     assert_equal "#<Gem::Source::Local specs: #{inner}>", @sl.inspect
   end
@@ -104,5 +103,4 @@ class TestGemSourceLocal < Gem::TestCase
     assert_equal(-1, specific.<=>(local), 'specific <=> local')
     assert_equal(1, local.<=>(specific), 'local <=> specific')
   end
-
 end

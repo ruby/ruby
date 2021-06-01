@@ -176,7 +176,7 @@ module BasetestReadline
       assert_equal("", line2)
       begin
         assert_equal("", Readline.line_buffer)
-      rescue NotimplementedError
+      rescue NotImplementedError
       end
     end
   end
@@ -492,8 +492,8 @@ module BasetestReadline
     saved_completer_word_break_characters = Readline.completer_word_break_characters
 
     # skip if previous value is nil because Readline... = nil is not allowed.
-    skip unless saved_completer_quote_characters
-    skip unless saved_completer_word_break_characters
+    omit "No completer_quote_characters" unless saved_completer_quote_characters
+    omit "No completer_word_break_characters" unless saved_completer_word_break_characters
 
     return unless Readline.respond_to?(:quoting_detection_proc=)
 
@@ -535,8 +535,8 @@ module BasetestReadline
     saved_completer_word_break_characters = Readline.completer_word_break_characters
 
     # skip if previous value is nil because Readline... = nil is not allowed.
-    skip unless saved_completer_quote_characters
-    skip unless saved_completer_word_break_characters
+    omit "No completer_quote_characters" unless saved_completer_quote_characters
+    omit "No completer_word_break_characters" unless saved_completer_word_break_characters
 
     return unless Readline.respond_to?(:quoting_detection_proc=)
     unless get_default_internal_encoding == Encoding::UTF_8
@@ -596,7 +596,14 @@ module BasetestReadline
         end
         w.write("a\t\n")
         w.flush
-        line = Readline.readline('> ', false)
+        begin
+          stderr = $stderr.dup
+          $stderr.reopen(null)
+          line = Readline.readline('> ', false)
+        ensure
+          $stderr.reopen(stderr)
+          stderr.close
+        end
       end
     end
 

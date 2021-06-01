@@ -411,13 +411,15 @@ describe "Marshal.dump" do
       load.should == (1...2)
     end
 
-    it "dumps a Range with extra instance variables" do
-      range = (1...3)
-      range.instance_variable_set :@foo, 42
-      dump = Marshal.dump(range)
-      load = Marshal.load(dump)
-      load.should == range
-      load.instance_variable_get(:@foo).should == 42
+    ruby_version_is ""..."3.0" do
+      it "dumps a Range with extra instance variables" do
+        range = (1...3)
+        range.instance_variable_set :@foo, 42
+        dump = Marshal.dump(range)
+        load = Marshal.load(dump)
+        load.should == range
+        load.instance_variable_get(:@foo).should == 42
+      end
     end
   end
 

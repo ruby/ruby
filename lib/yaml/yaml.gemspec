@@ -1,13 +1,13 @@
 Gem::Specification.new do |spec|
   spec.name          = "yaml"
-  spec.version       = "0.1.0"
+  spec.version       = "0.1.1"
   spec.authors       = ["Aaron Patterson", "SHIBATA Hiroshi"]
   spec.email         = ["aaron@tenderlovemaking.com", "hsbt@ruby-lang.org"]
 
   spec.summary       = "YAML Ain't Markup Language"
   spec.description   = spec.summary
   spec.homepage      = "https://github.com/ruby/yaml"
-  spec.license       = "BSD-2-Clause"
+  spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage

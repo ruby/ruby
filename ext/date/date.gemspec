@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 Gem::Specification.new do |s|
   s.name = "date"
-  s.version = '3.0.0'
+  s.version = '3.1.1'
   s.summary = "A subclass of Object includes Comparable module for handling dates."
   s.description = "A subclass of Object includes Comparable module for handling dates."
 
@@ -17,5 +17,5 @@ Gem::Specification.new do |s|
   s.authors = ["Tadayoshi Funaba"]
   s.email = [nil]
   s.homepage = "https://github.com/ruby/date"
-  s.license = "BSD-2-Clause"
+  s.licenses = ["Ruby", "BSD-2-Clause"]
 end

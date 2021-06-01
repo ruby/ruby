@@ -994,10 +994,6 @@ fmt_setup(char *buf, size_t size, int c, int flags, int width, int prec)
 #endif
 #define lower_hexdigits (ruby_hexdigits+0)
 #define upper_hexdigits (ruby_hexdigits+16)
-#if defined RUBY_USE_SETJMPEX && RUBY_USE_SETJMPEX
-# undef MAYBE_UNUSED
-# define MAYBE_UNUSED(x) x = 0
-#endif
 #include "vsnprintf.c"
 
 static char *

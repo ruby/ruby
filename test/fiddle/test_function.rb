@@ -21,6 +21,17 @@ module Fiddle
       assert_equal 'sin', func.name
     end
 
+    def test_need_gvl?
+      libruby = Fiddle.dlopen(nil)
+      rb_str_dup = Function.new(libruby['rb_str_dup'],
+                                [:voidp],
+                                :voidp,
+                                need_gvl: true)
+      assert(rb_str_dup.need_gvl?)
+      assert_equal('Hello',
+                   Fiddle.dlunwrap(rb_str_dup.call(Fiddle.dlwrap('Hello'))))
+    end
+
     def test_argument_errors
       assert_raise(TypeError) do
         Function.new(@libm['sin'], TYPE_DOUBLE, TYPE_DOUBLE)
@@ -33,6 +44,25 @@ module Fiddle
       assert_raise(TypeError) do
         Function.new(@libm['sin'], [TYPE_DOUBLE], 'foo')
       end
+    end
+
+    def test_argument_type_conversion
+      type = Struct.new(:int, :call_count) do
+        def initialize(int)
+          super(int, 0)
+        end
+        def to_int
+          raise "exhausted" if (self.call_count += 1) > 1
+          self.int
+        end
+      end
+      type_arg = type.new(TYPE_DOUBLE)
+      type_result = type.new(TYPE_DOUBLE)
+      assert_nothing_raised(RuntimeError) do
+        Function.new(@libm['sin'], [type_arg], type_result)
+      end
+      assert_equal(1, type_arg.call_count)
+      assert_equal(1, type_result.call_count)
     end
 
     def test_call
@@ -68,6 +98,30 @@ module Fiddle
       f = Function.new(@libc['strcpy'], [TYPE_VOIDP, TYPE_VOIDP], TYPE_VOIDP)
       buff = +"000"
       str = f.call(buff, "123")
+      assert_equal("123", buff)
+      assert_equal("123", str.to_s)
+    end
+
+    def call_proc(string_to_copy)
+      buff = +"000"
+      str = yield(buff, string_to_copy)
+      [buff, str]
+    end
+
+    def test_function_as_proc
+      f = Function.new(@libc['strcpy'], [TYPE_VOIDP, TYPE_VOIDP], TYPE_VOIDP)
+      buff, str = call_proc("123", &f)
+      assert_equal("123", buff)
+      assert_equal("123", str.to_s)
+    end
+
+    def test_function_as_method
+      f = Function.new(@libc['strcpy'], [TYPE_VOIDP, TYPE_VOIDP], TYPE_VOIDP)
+      klass = Class.new do
+        define_singleton_method(:strcpy, &f)
+      end
+      buff = +"000"
+      str = klass.strcpy(buff, "123")
       assert_equal("123", buff)
       assert_equal("123", str.to_s)
     end

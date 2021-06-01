@@ -79,5 +79,60 @@ module Fiddle
       EnvUtil.under_gc_stress {qsort.call(buff, buff.size, 1, cb)}
       assert_equal("1349", buff, bug4929)
     end
+
+    def test_snprintf
+      unless Fiddle.const_defined?("TYPE_VARIADIC")
+        skip "libffi doesn't support variadic arguments"
+      end
+      if Fiddle::WINDOWS
+        snprintf_name = "_snprintf"
+      else
+        snprintf_name = "snprintf"
+      end
+      begin
+        snprintf_pointer = @libc[snprintf_name]
+      rescue Fiddle::DLError
+        skip "Can't find #{snprintf_name}: #{$!.message}"
+      end
+      snprintf = Function.new(snprintf_pointer,
+                              [
+                                :voidp,
+                                :size_t,
+                                :const_string,
+                                :variadic,
+                              ],
+                              :int)
+      output_buffer = " " * 1024
+      output = Pointer[output_buffer]
+
+      written = snprintf.call(output,
+                              output.size,
+                              "int: %d, string: %.*s, const string: %s\n",
+                              :int, -29,
+                              :int, 4,
+                              :voidp, "Hello",
+                              :const_string, "World")
+      assert_equal("int: -29, string: Hell, const string: World\n",
+                   output_buffer[0, written])
+
+      string_like_class = Class.new do
+        def initialize(string)
+          @string = string
+        end
+
+        def to_str
+          @string
+        end
+      end
+      written = snprintf.call(output,
+                              output.size,
+                              "string: %.*s, const string: %s, uint: %u\n",
+                              :int, 2,
+                              :voidp, "Hello",
+                              :const_string, string_like_class.new("World"),
+                              :int, 29)
+      assert_equal("string: He, const string: World, uint: 29\n",
+                   output_buffer[0, written])
+    end
   end
 end if defined?(Fiddle)

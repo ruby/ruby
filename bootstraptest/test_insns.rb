@@ -86,11 +86,8 @@ tests = [
   [ 'putobject',            %q{ /(?<x>x)/ =~ "x"; x == "x" }, ],
 
   [ 'putspecialobject',         %q{ {//=>true}[//] }, ],
-  [ 'putiseq',                  %q{ -> { true }.() }, ],
   [ 'putstring',                %q{ "true" }, ],
   [ 'tostring / concatstrings', %q{ "#{true}" }, ],
-  [ 'freezestring',             %q{ "#{true}" }, fsl, ],
-  [ 'freezestring',             %q{ "#{true}" }, '-d', fsl, ],
   [ 'toregexp',                 %q{ /#{true}/ =~ "true" && $~ }, ],
   [ 'intern',                   %q{ :"#{true}" }, ],
 
@@ -394,7 +391,6 @@ tests = [
     [ 'opt_succ',%Q{ #{ $FIXNUM_MAX }.succ == #{ $FIXNUM_MAX + 1 } }, ]
   end,
   [ 'opt_succ',  %q{ '1'.succ == '2' }, ],
-  [ 'opt_succ',  %q{ x = Time.at(0); x.succ == Time.at(1) }, ],
 
   [ 'opt_not',  %q{ ! false }, ],
   [ 'opt_neq', <<-'},', ],       # {
@@ -412,8 +408,6 @@ tests = [
     class String; def =~ other; true; end; end
     'true' =~ /true/
   },
-
-  [ 'opt_call_c_function', 'Struct.new(:x).new.x = true', ],
 ]
 
 # normal path

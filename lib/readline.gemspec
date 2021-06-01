@@ -12,7 +12,7 @@ Gem::Specification.new do |spec|
     library with "readline-ext" gem and is implemented by pure Ruby.
   EOD
   spec.homepage      = 'https://github.com/ruby/readline'
-  spec.license       = 'Ruby license'
+  spec.license       = 'Ruby'
 
   spec.files         = Dir['BSDL', 'COPYING', 'README.md', 'lib/readline.rb']
   spec.require_paths = ['lib']

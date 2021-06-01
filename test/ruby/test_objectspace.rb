@@ -55,6 +55,16 @@ End
     EOS
   end
 
+  def test_id2ref_invalid_argument
+    msg = /no implicit conversion/
+    assert_raise_with_message(TypeError, msg) {ObjectSpace._id2ref(nil)}
+    assert_raise_with_message(TypeError, msg) {ObjectSpace._id2ref(false)}
+    assert_raise_with_message(TypeError, msg) {ObjectSpace._id2ref(true)}
+    assert_raise_with_message(TypeError, msg) {ObjectSpace._id2ref(:a)}
+    assert_raise_with_message(TypeError, msg) {ObjectSpace._id2ref("0")}
+    assert_raise_with_message(TypeError, msg) {ObjectSpace._id2ref(Object.new)}
+  end
+
   def test_count_objects
     h = {}
     ObjectSpace.count_objects(h)
@@ -222,5 +232,12 @@ End
     meta = klass.singleton_class
     assert_kind_of(meta, sclass)
     assert_include(ObjectSpace.each_object(meta).to_a, sclass)
+  end
+
+  def test_each_object_with_allocation
+    assert_normal_exit(<<-End)
+      list = []
+      ObjectSpace.each_object { |o| list << Object.new }
+    End
   end
 end

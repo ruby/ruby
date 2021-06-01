@@ -25,9 +25,23 @@ describe "Range#size" do
   end
 
   ruby_version_is "2.6" do
-    it 'returns Float::INFINITY for endless ranges' do
+    it 'returns Float::INFINITY for endless ranges if the start is numeric' do
       eval("(1..)").size.should == Float::INFINITY
       eval("(0.5...)").size.should == Float::INFINITY
+    end
+
+    it 'returns nil for endless ranges if the start is not numeric' do
+      eval("('z'..)").size.should == nil
+      eval("([]...)").size.should == nil
+    end
+  end
+
+  ruby_version_is "2.7" do
+    it 'returns Float::INFINITY for all beginless ranges' do
+      eval("(..1)").size.should == Float::INFINITY
+      eval("(...0.5)").size.should == Float::INFINITY
+      eval("(..nil)").size.should == Float::INFINITY
+      eval("(...'o')").size.should == Float::INFINITY
     end
   end
 

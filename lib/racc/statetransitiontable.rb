@@ -5,9 +5,8 @@
 # Copyright (c) 1999-2006 Minero Aoki
 #
 # This program is free software.
-# You can distribute/modify this program under the terms of
-# the GNU LGPL, Lesser General Public License version 2.1.
-# For details of LGPL, see the file "COPYING".
+# You can distribute/modify this program under the same terms of ruby.
+# see the file "COPYING".
 #
 #++
 
@@ -231,7 +230,7 @@ module Racc
       map = '-' * 10240
 
       # sort long to short
-      entries.sort! {|a,b| b[0].size <=> a[0].size }
+      entries.sort_by!.with_index {|a,i| [-a[0].size, i] }
 
       entries.each do |arr, chkval, expr, min, ptri|
         if upper + arr.size > map.size

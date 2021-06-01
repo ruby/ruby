@@ -91,6 +91,12 @@ VALUE string_spec_rb_str_buf_cat(VALUE self, VALUE str) {
   return str;
 }
 
+VALUE string_spec_rb_enc_str_buf_cat(VALUE self, VALUE str, VALUE other, VALUE encoding) {
+  char *cstr = StringValueCStr(other);
+  rb_encoding* enc = rb_to_encoding(encoding);
+  return rb_enc_str_buf_cat(str, cstr, strlen(cstr), enc);
+}
+
 VALUE string_spec_rb_str_cat(VALUE self, VALUE str) {
   return rb_str_cat(str, "?", 1);
 }
@@ -432,6 +438,14 @@ static VALUE string_spec_rb_usascii_str_new(VALUE self, VALUE str, VALUE len) {
   return rb_usascii_str_new(RSTRING_PTR(str), NUM2INT(len));
 }
 
+static VALUE string_spec_rb_usascii_str_new_lit(VALUE self) {
+  return rb_usascii_str_new_lit("nokogiri");
+}
+
+static VALUE string_spec_rb_usascii_str_new_lit_non_ascii(VALUE self) {
+  return rb_usascii_str_new_lit("r\xc3\xa9sum\xc3\xa9");
+}
+
 static VALUE string_spec_rb_usascii_str_new_cstr(VALUE self, VALUE str) {
   return rb_usascii_str_new_cstr(RSTRING_PTR(str));
 }
@@ -475,6 +489,7 @@ void Init_string_spec(void) {
   rb_define_method(cls, "rb_str_tmp_new", string_spec_rb_str_tmp_new, 1);
   rb_define_method(cls, "rb_str_tmp_new_klass", string_spec_rb_str_tmp_new_klass, 1);
   rb_define_method(cls, "rb_str_buf_cat", string_spec_rb_str_buf_cat, 1);
+  rb_define_method(cls, "rb_enc_str_buf_cat", string_spec_rb_enc_str_buf_cat, 3);
   rb_define_method(cls, "rb_str_cat", string_spec_rb_str_cat, 1);
   rb_define_method(cls, "rb_str_cat2", string_spec_rb_str_cat2, 1);
   rb_define_method(cls, "rb_str_cat_cstr", string_spec_rb_str_cat_cstr, 2);
@@ -539,6 +554,8 @@ void Init_string_spec(void) {
   rb_define_method(cls, "rb_vsprintf", string_spec_rb_vsprintf, 4);
   rb_define_method(cls, "rb_str_equal", string_spec_rb_str_equal, 2);
   rb_define_method(cls, "rb_usascii_str_new", string_spec_rb_usascii_str_new, 2);
+  rb_define_method(cls, "rb_usascii_str_new_lit", string_spec_rb_usascii_str_new_lit, 0);
+  rb_define_method(cls, "rb_usascii_str_new_lit_non_ascii", string_spec_rb_usascii_str_new_lit_non_ascii, 0);
   rb_define_method(cls, "rb_usascii_str_new_cstr", string_spec_rb_usascii_str_new_cstr, 1);
   rb_define_method(cls, "rb_String", string_spec_rb_String, 1);
   rb_define_method(cls, "rb_string_value_cstr", string_spec_rb_string_value_cstr, 1);

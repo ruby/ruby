@@ -136,7 +136,6 @@ rb_call_super_kw.o: $(hdrdir)/ruby/internal/static_assert.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/stdalign.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/stdbool.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/symbol.h
-rb_call_super_kw.o: $(hdrdir)/ruby/internal/token_paste.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/value.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/value_type.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/variable.h
@@ -147,13 +146,10 @@ rb_call_super_kw.o: $(hdrdir)/ruby/backward.h
 rb_call_super_kw.o: $(hdrdir)/ruby/backward/2/assume.h
 rb_call_super_kw.o: $(hdrdir)/ruby/backward/2/attributes.h
 rb_call_super_kw.o: $(hdrdir)/ruby/backward/2/bool.h
-rb_call_super_kw.o: $(hdrdir)/ruby/backward/2/extern.h
 rb_call_super_kw.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 rb_call_super_kw.o: $(hdrdir)/ruby/backward/2/inttypes.h
 rb_call_super_kw.o: $(hdrdir)/ruby/backward/2/limits.h
 rb_call_super_kw.o: $(hdrdir)/ruby/backward/2/long_long.h
-rb_call_super_kw.o: $(hdrdir)/ruby/backward/2/r_cast.h
-rb_call_super_kw.o: $(hdrdir)/ruby/backward/2/rmodule.h
 rb_call_super_kw.o: $(hdrdir)/ruby/backward/2/stdalign.h
 rb_call_super_kw.o: $(hdrdir)/ruby/backward/2/stdarg.h
 rb_call_super_kw.o: $(hdrdir)/ruby/defines.h

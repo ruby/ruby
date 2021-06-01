@@ -10,7 +10,6 @@
 #
 #++
 
-require 'enumerator'
 require 'racc/compat'
 require 'racc/sourcetext'
 require 'racc/parser-text'

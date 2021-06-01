@@ -7,7 +7,7 @@ class TestUbfAsyncSafe < Test::Unit::TestCase
         require '-test-/gvl/call_without_gvl'
         r.close
         trap(:INT) { exit!(0) }
-        Thread.current.__ubf_async_safe__(w.fileno)
+        Bug::Thread.ubf_async_safe(w.fileno)
         exit!(1)
       end
       w.close

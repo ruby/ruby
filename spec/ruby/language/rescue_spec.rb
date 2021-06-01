@@ -23,11 +23,41 @@ describe "The rescue keyword" do
     end.should == :caught
   end
 
-  it "can capture the raised exception in a local variable" do
-    begin
-      raise SpecificExampleException, "some text"
-    rescue SpecificExampleException => e
-      e.message.should == "some text"
+  describe 'can capture the raised exception' do
+    before :all do
+      require_relative 'fixtures/rescue_captures'
+    end
+
+    it 'in a local variable' do
+      RescueSpecs::LocalVariableCaptor.should_capture_exception
+    end
+
+    it 'in a class variable' do
+      RescueSpecs::ClassVariableCaptor.should_capture_exception
+    end
+
+    it 'in a constant' do
+      RescueSpecs::ConstantCaptor.should_capture_exception
+    end
+
+    it 'in a global variable' do
+      RescueSpecs::GlobalVariableCaptor.should_capture_exception
+    end
+
+    it 'in an instance variable' do
+      RescueSpecs::InstanceVariableCaptor.should_capture_exception
+    end
+
+    it 'using a safely navigated setter method' do
+      RescueSpecs::SafeNavigationSetterCaptor.should_capture_exception
+    end
+
+    it 'using a setter method' do
+      RescueSpecs::SetterCaptor.should_capture_exception
+    end
+
+    it 'using a square brackets setter' do
+      RescueSpecs::SquareBracketsCaptor.should_capture_exception
     end
   end
 
@@ -398,9 +428,9 @@ describe "The rescue keyword" do
         raise "from block"
       rescue (raise "from rescue expression")
       end
-    }.should raise_error(RuntimeError, "from rescue expression") do |e|
+    }.should raise_error(RuntimeError, "from rescue expression") { |e|
       e.cause.message.should == "from block"
-    end
+    }
   end
 
   it "should splat the handling Error classes" do

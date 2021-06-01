@@ -3,7 +3,7 @@
 RSpec.describe "bundle install" do
   context "with duplicated gems" do
     it "will display a warning" do
-      install_gemfile <<-G
+      install_gemfile <<-G, :raise_on_error => false
         gem 'rails', '~> 4.0.0'
         gem 'rails', '~> 4.0.0'
       G
@@ -57,14 +57,14 @@ RSpec.describe "bundle install" do
         gem "rack", :lib => "rack"
       G
 
-      bundle :install
+      bundle :install, :raise_on_error => false
       expect(err).to match(/You passed :lib as an option for gem 'rack', but it is invalid/)
     end
   end
 
   context "with engine specified in symbol", :jruby do
     it "does not raise any error parsing Gemfile" do
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         ruby "#{RUBY_VERSION}", :engine => :jruby, :engine_version => "#{RUBY_ENGINE_VERSION}"
       G
@@ -73,7 +73,7 @@ RSpec.describe "bundle install" do
     end
 
     it "installation succeeds" do
-      install_gemfile! <<-G
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         ruby "#{RUBY_VERSION}", :engine => :jruby, :engine_version => "#{RUBY_ENGINE_VERSION}"
         gem "rack"

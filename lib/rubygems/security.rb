@@ -6,14 +6,7 @@
 #++
 
 require 'rubygems/exceptions'
-require 'fileutils'
-
-begin
-  require 'openssl'
-rescue LoadError => e
-  raise unless (e.respond_to?(:path) && e.path == 'openssl') ||
-               e.message =~ / -- openssl$/
-end
+require_relative 'openssl'
 
 ##
 # = Signing gems
@@ -339,27 +332,9 @@ module Gem::Security
   class Exception < Gem::Exception; end
 
   ##
-  # Digest algorithm used to sign gems
-
-  DIGEST_ALGORITHM =
-    if defined?(OpenSSL::Digest::SHA256)
-      OpenSSL::Digest::SHA256
-    elsif defined?(OpenSSL::Digest::SHA1)
-      OpenSSL::Digest::SHA1
-    else
-      require 'digest'
-      Digest::SHA512
-    end
-
-  ##
   # Used internally to select the signing digest from all computed digests
 
-  DIGEST_NAME = # :nodoc:
-    if DIGEST_ALGORITHM.method_defined? :name
-      DIGEST_ALGORITHM.new.name
-    else
-      DIGEST_ALGORITHM.name[/::([^:]+)\z/, 1]
-    end
+  DIGEST_NAME = 'SHA256' # :nodoc:
 
   ##
   # Algorithm for creating the key pair used to sign gems
@@ -468,6 +443,22 @@ module Gem::Security
   end
 
   ##
+  # Creates a new digest instance using the specified +algorithm+. The default
+  # is SHA256.
+
+  if defined?(OpenSSL::Digest)
+    def self.create_digest(algorithm = DIGEST_NAME)
+      OpenSSL::Digest.new(algorithm)
+    end
+  else
+    require 'digest'
+
+    def self.create_digest(algorithm = DIGEST_NAME)
+      Digest.const_get(algorithm).new
+    end
+  end
+
+  ##
   # Creates a new key pair of the specified +length+ and +algorithm+.  The
   # default is a 3072 bit RSA key.
 
@@ -485,7 +476,7 @@ module Gem::Security
 
     dcs = dcs.split '.'
 
-    name = "CN=#{cn}/#{dcs.map { |dc| "DC=#{dc}" }.join '/'}"
+    name = "CN=#{cn}/#{dcs.map {|dc| "DC=#{dc}" }.join '/'}"
 
     OpenSSL::X509::Name.parse name
   end
@@ -528,7 +519,7 @@ module Gem::Security
 
   ##
   # Sign the public key from +certificate+ with the +signing_key+ and
-  # +signing_cert+, using the Gem::Security::DIGEST_ALGORITHM.  Uses the
+  # +signing_cert+, using the Gem::Security::DIGEST_NAME.  Uses the
   # default certificate validity range and extensions.
   #
   # Returns the newly signed certificate.
@@ -555,7 +546,7 @@ module Gem::Security
     signed = create_cert signee_subject, signee_key, age, extensions, serial
     signed.issuer = signing_cert.subject
 
-    signed.sign signing_key, Gem::Security::DIGEST_ALGORITHM.new
+    signed.sign signing_key, Gem::Security::DIGEST_NAME
   end
 
   ##
@@ -600,7 +591,7 @@ module Gem::Security
 
 end
 
-if defined?(OpenSSL::SSL)
+if Gem::HAVE_OPENSSL
   require 'rubygems/security/policy'
   require 'rubygems/security/policies'
   require 'rubygems/security/trust_dir'

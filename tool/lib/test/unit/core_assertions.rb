@@ -115,7 +115,7 @@ module Test
 
       def assert_no_memory_leak(args, prepare, code, message=nil, limit: 2.0, rss: false, **opt)
         # TODO: consider choosing some appropriate limit for MJIT and stop skipping this once it does not randomly fail
-        pend 'assert_no_memory_leak may consider MJIT memory usage as leak' if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
+        pend 'assert_no_memory_leak may consider MJIT memory usage as leak' if defined?(RubyVM::JIT) && RubyVM::JIT.enabled?
 
         require_relative '../../memory_status'
         raise MiniTest::Skip, "unsupported platform" unless defined?(Memory::Status)
@@ -260,11 +260,12 @@ module Test
       ABORT_SIGNALS = Signal.list.values_at(*%w"ILL ABRT BUS SEGV TERM")
 
       def separated_runner(out = nil)
+        include(*Test::Unit::TestCase.ancestors.select {|c| !c.is_a?(Class) })
         out = out ? IO.new(out, 'w') : STDOUT
         at_exit {
           out.puts [Marshal.dump($!)].pack('m'), "assertions=\#{self._assertions}"
         }
-        Test::Unit::Runner.class_variable_set(:@@stop_auto_run, true)
+        Test::Unit::Runner.class_variable_set(:@@stop_auto_run, true) if defined?(Test::Unit::Runner)
       end
 
       def assert_separately(args, file = nil, line = nil, src, ignore_stderr: nil, **opt)
@@ -276,9 +277,9 @@ module Test
         capture_stdout = true
         unless /mswin|mingw/ =~ RUBY_PLATFORM
           capture_stdout = false
-          opt[:out] = MiniTest::Unit.output
+          opt[:out] = MiniTest::Unit.output if defined?(MiniTest::Unit)
           res_p, res_c = IO.pipe
-          opt[res_c.fileno] = res_c.fileno
+          opt[:ios] = [res_c]
         end
         src = <<eom
 # -*- coding: #{line += __LINE__; src.encoding}; -*-
@@ -328,6 +329,27 @@ eom
         end
         assert(status.success?, FailDesc[status, "assert_separately failed", stderr])
         raise marshal_error if marshal_error
+      end
+
+      # Run Ractor-related test without influencing the main test suite
+      def assert_ractor(src, args: [], require: nil, require_relative: nil, file: nil, line: nil, ignore_stderr: nil, **opt)
+        return unless defined?(Ractor)
+
+        require = "require #{require.inspect}" if require
+        if require_relative
+          dir = File.dirname(caller_locations[0,1][0].absolute_path)
+          full_path = File.expand_path(require_relative, dir)
+          require = "#{require}; require #{full_path.inspect}"
+        end
+
+        assert_separately(args, file, line, <<~RUBY, ignore_stderr: ignore_stderr, **opt)
+          #{require}
+          previous_verbose = $VERBOSE
+          $VERBOSE = nil
+          Ractor.new {} # trigger initial warning
+          $VERBOSE = previous_verbose
+          #{src}
+        RUBY
       end
 
       # :call-seq:
@@ -456,6 +478,121 @@ eom
         ex
       end
 
+      MINI_DIR = File.join(File.dirname(File.dirname(File.expand_path(__FILE__))), "minitest") #:nodoc:
+
+      # :call-seq:
+      #   assert(test, [failure_message])
+      #
+      #Tests if +test+ is true.
+      #
+      #+msg+ may be a String or a Proc. If +msg+ is a String, it will be used
+      #as the failure message. Otherwise, the result of calling +msg+ will be
+      #used as the message if the assertion fails.
+      #
+      #If no +msg+ is given, a default message will be used.
+      #
+      #    assert(false, "This was expected to be true")
+      def assert(test, *msgs)
+        case msg = msgs.first
+        when String, Proc
+        when nil
+          msgs.shift
+        else
+          bt = caller.reject { |s| s.start_with?(MINI_DIR) }
+          raise ArgumentError, "assertion message must be String or Proc, but #{msg.class} was given.", bt
+        end unless msgs.empty?
+        super
+      end
+
+      # :call-seq:
+      #   assert_respond_to( object, method, failure_message = nil )
+      #
+      #Tests if the given Object responds to +method+.
+      #
+      #An optional failure message may be provided as the final argument.
+      #
+      #    assert_respond_to("hello", :reverse)  #Succeeds
+      #    assert_respond_to("hello", :does_not_exist)  #Fails
+      def assert_respond_to(obj, (meth, *priv), msg = nil)
+        unless priv.empty?
+          msg = message(msg) {
+            "Expected #{mu_pp(obj)} (#{obj.class}) to respond to ##{meth}#{" privately" if priv[0]}"
+          }
+          return assert obj.respond_to?(meth, *priv), msg
+        end
+        #get rid of overcounting
+        if caller_locations(1, 1)[0].path.start_with?(MINI_DIR)
+          return if obj.respond_to?(meth)
+        end
+        super(obj, meth, msg)
+      end
+
+      # :call-seq:
+      #   assert_not_respond_to( object, method, failure_message = nil )
+      #
+      #Tests if the given Object does not respond to +method+.
+      #
+      #An optional failure message may be provided as the final argument.
+      #
+      #    assert_not_respond_to("hello", :reverse)  #Fails
+      #    assert_not_respond_to("hello", :does_not_exist)  #Succeeds
+      def assert_not_respond_to(obj, (meth, *priv), msg = nil)
+        unless priv.empty?
+          msg = message(msg) {
+            "Expected #{mu_pp(obj)} (#{obj.class}) to not respond to ##{meth}#{" privately" if priv[0]}"
+          }
+          return assert !obj.respond_to?(meth, *priv), msg
+        end
+        #get rid of overcounting
+        if caller_locations(1, 1)[0].path.start_with?(MINI_DIR)
+          return unless obj.respond_to?(meth)
+        end
+        refute_respond_to(obj, meth, msg)
+      end
+
+      # pattern_list is an array which contains regexp and :*.
+      # :* means any sequence.
+      #
+      # pattern_list is anchored.
+      # Use [:*, regexp, :*] for non-anchored match.
+      def assert_pattern_list(pattern_list, actual, message=nil)
+        rest = actual
+        anchored = true
+        pattern_list.each_with_index {|pattern, i|
+          if pattern == :*
+            anchored = false
+          else
+            if anchored
+              match = /\A#{pattern}/.match(rest)
+            else
+              match = pattern.match(rest)
+            end
+            unless match
+              msg = message(msg) {
+                expect_msg = "Expected #{mu_pp pattern}\n"
+                if /\n[^\n]/ =~ rest
+                  actual_mesg = +"to match\n"
+                  rest.scan(/.*\n+/) {
+                    actual_mesg << '  ' << $&.inspect << "+\n"
+                  }
+                  actual_mesg.sub!(/\+\n\z/, '')
+                else
+                  actual_mesg = "to match " + mu_pp(rest)
+                end
+                actual_mesg << "\nafter #{i} patterns with #{actual.length - rest.length} characters"
+                expect_msg + actual_mesg
+              }
+              assert false, msg
+            end
+            rest = match.post_match
+            anchored = true
+          end
+        }
+        if anchored
+          assert_equal("", rest)
+        end
+      end
+
       def assert_warning(pat, msg = nil)
         result = nil
         stderr = EnvUtil.with_default_internal(pat.encoding) {
@@ -470,6 +607,20 @@ eom
 
       def assert_warn(*args)
         assert_warning(*args) {$VERBOSE = false; yield}
+      end
+
+      def assert_deprecated_warning(mesg = /deprecated/)
+        assert_warning(mesg) do
+          Warning[:deprecated] = true
+          yield
+        end
+      end
+
+      def assert_deprecated_warn(mesg = /deprecated/)
+        assert_warn(mesg) do
+          Warning[:deprecated] = true
+          yield
+        end
       end
 
       class << (AssertFile = Struct.new(:failure_message).new)
@@ -567,6 +718,16 @@ eom
         end
       end
 
+      def assert_all?(obj, m = nil, &blk)
+        failed = []
+        obj.each do |*a, &b|
+          unless blk.call(*a, &b)
+            failed << (a.size > 1 ? a : a[0])
+          end
+        end
+        assert(failed.empty?, message(m) {failed.pretty_inspect})
+      end
+
       def assert_all_assertions(msg = nil)
         all = AllFailures.new
         yield all
@@ -591,6 +752,22 @@ eom
         else
           super
         end
+      end
+
+      def diff(exp, act)
+        require 'pp'
+        q = PP.new(+"")
+        q.guard_inspect_key do
+          q.group(2, "expected: ") do
+            q.pp exp
+          end
+          q.text q.newline
+          q.group(2, "actual: ") do
+            q.pp act
+          end
+          q.flush
+        end
+        q.output
       end
     end
   end

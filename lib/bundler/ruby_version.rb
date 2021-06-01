@@ -123,7 +123,7 @@ module Bundler
       @exact = versions.all? {|v| Gem::Requirement.create(v).exact? }
     end
 
-  private
+    private
 
     def matches?(requirements, version)
       # Handles RUBY_PATCHLEVEL of -1 for instances like ruby-head

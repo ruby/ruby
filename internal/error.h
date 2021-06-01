@@ -40,12 +40,6 @@
 #endif
 
 /* error.c */
-typedef enum {
-    RB_WARN_CATEGORY_NONE,
-    RB_WARN_CATEGORY_DEPRECATED,
-    RB_WARN_CATEGORY_EXPERIMENTAL,
-} rb_warning_category_t;
-
 extern long rb_backtrace_length_limit;
 extern VALUE rb_eEAGAIN;
 extern VALUE rb_eEWOULDBLOCK;

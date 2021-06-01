@@ -1,8 +1,7 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'test_case'
 
 class TestGemBundlerVersionFinder < Gem::TestCase
-
   def setup
     super
 
@@ -79,8 +78,8 @@ class TestGemBundlerVersionFinder < Gem::TestCase
   end
 
   def test_deleted_directory
-    skip "Cannot perform this test on windows" if win_platform?
-    skip "Cannot perform this test on Solaris" if /solaris/ =~ RUBY_PLATFORM
+    pend "Cannot perform this test on windows" if win_platform?
+    pend "Cannot perform this test on Solaris" if /solaris/ =~ RUBY_PLATFORM
     require "tmpdir"
 
     orig_dir = Dir.pwd
@@ -120,7 +119,7 @@ class TestGemBundlerVersionFinder < Gem::TestCase
 
   def test_filter
     versions = %w[1 1.0 1.0.1.1 2 2.a 2.0 2.1.1 3 3.a 3.0 3.1.1]
-    specs = versions.map { |v| util_spec("bundler", v) }
+    specs = versions.map {|v| util_spec("bundler", v) }
 
     assert_equal %w[1 1.0 1.0.1.1 2 2.a 2.0 2.1.1 3 3.a 3.0 3.1.1], util_filter_specs(specs).map(&:version).map(&:to_s)
 
@@ -146,5 +145,4 @@ class TestGemBundlerVersionFinder < Gem::TestCase
     bvf.filter!(specs)
     specs
   end
-
 end

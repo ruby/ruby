@@ -1787,7 +1787,7 @@ Init_ossl_ocsp(void)
      *   single_response = basic_response.find_response(certificate_id)
      *
      *   unless single_response
-     *     raise 'basic_response does not have the status for the certificiate'
+     *     raise 'basic_response does not have the status for the certificate'
      *   end
      *
      * Then check the validity. A status issued in the future must be rejected.

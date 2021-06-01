@@ -14,10 +14,10 @@ RSpec.describe "bundle viz", :bundler => "< 3", :if => Bundler.which("dot") do
       gem "rack-obama"
     G
 
-    bundle! "viz"
+    bundle "viz"
     expect(out).to include("gem_graph.png")
 
-    bundle! "viz", :format => "debug"
+    bundle "viz", :format => "debug"
     expect(out).to eq(strip_whitespace(<<-DOT).strip)
       digraph Gemfile {
       concentrate = "true";
@@ -48,10 +48,10 @@ RSpec.describe "bundle viz", :bundler => "< 3", :if => Bundler.which("dot") do
       gem "rack-obama"
     G
 
-    bundle! "viz"
+    bundle "viz"
     expect(out).to include("gem_graph.png")
 
-    bundle! "viz", :format => :debug, :version => true
+    bundle "viz", :format => :debug, :version => true
     expect(out).to eq(strip_whitespace(<<-EOS).strip)
       digraph Gemfile {
       concentrate = "true";
@@ -89,7 +89,7 @@ RSpec.describe "bundle viz", :bundler => "< 3", :if => Bundler.which("dot") do
         gem "rack-obama"
       G
 
-      bundle! "viz", :format => "debug"
+      bundle "viz", :format => "debug"
       expect(out).to eq(strip_whitespace(<<-DOT).strip)
         digraph Gemfile {
         concentrate = "true";
@@ -121,7 +121,7 @@ RSpec.describe "bundle viz", :bundler => "< 3", :if => Bundler.which("dot") do
         end
       G
 
-      bundle! "viz --without=rails"
+      bundle "viz --without=rails"
       expect(out).to include("gem_graph.png")
     end
 
@@ -139,7 +139,7 @@ RSpec.describe "bundle viz", :bundler => "< 3", :if => Bundler.which("dot") do
         end
       G
 
-      bundle! "viz --without=rails:rack"
+      bundle "viz --without=rails:rack"
       expect(out).to include("gem_graph.png")
     end
   end

@@ -4,7 +4,6 @@
 # files
 
 class Gem::Resolver::InstallerSet < Gem::Resolver::Set
-
   ##
   # List of Gem::Specification objects that must always be installed.
 
@@ -27,13 +26,18 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
   attr_reader :remote_set # :nodoc:
 
   ##
+  # Ignore ruby & rubygems specification constraints.
+  #
+
+  attr_accessor :force # :nodoc:
+
+  ##
   # Creates a new InstallerSet that will look for gems in +domain+.
 
   def initialize(domain)
     super()
 
     @domain = domain
-    @remote = consider_remote?
 
     @f = Gem::SpecFetcher.fetcher
 
@@ -43,6 +47,7 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
     @local               = {}
     @local_source        = Gem::Source::Local.new
     @remote_set          = Gem::Resolver::BestSet.new
+    @force               = false
     @specs               = {}
   end
 
@@ -65,15 +70,30 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
         Gem::Platform.local === s.platform
     end
 
-    if found.empty?
-      exc = Gem::UnsatisfiableDependencyError.new request
-      exc.errors = errors
-
-      raise exc
+    found = found.sort_by do |s|
+      [s.version, s.platform == Gem::Platform::RUBY ? -1 : 1]
     end
 
-    newest = found.max_by do |s|
-      [s.version, s.platform == Gem::Platform::RUBY ? -1 : 1]
+    newest = found.last
+
+    unless @force
+      found_matching_metadata = found.select do |spec|
+        metadata_satisfied?(spec)
+      end
+
+      if found_matching_metadata.empty?
+        if newest
+          ensure_required_ruby_version_met(newest.spec)
+          ensure_required_rubygems_version_met(newest.spec)
+        else
+          exc = Gem::UnsatisfiableDependencyError.new request
+          exc.errors = errors
+
+          raise exc
+        end
+      else
+        newest = found_matching_metadata.last
+      end
     end
 
     @always_install << newest.spec
@@ -118,12 +138,12 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
     dep = req.dependency
 
     return res if @ignore_dependencies and
-              @always_install.none? { |spec| dep.match? spec }
+              @always_install.none? {|spec| dep.match? spec }
 
     name = dep.name
 
     dep.matching_specs.each do |gemspec|
-      next if @always_install.any? { |spec| spec.name == gemspec.name }
+      next if @always_install.any? {|spec| spec.name == gemspec.name }
 
       res << Gem::Resolver::InstalledSpecification.new(self, gemspec)
     end unless @ignore_installed
@@ -168,10 +188,10 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
   end
 
   def inspect # :nodoc:
-    always_install = @always_install.map { |s| s.full_name }
+    always_install = @always_install.map {|s| s.full_name }
 
     '#<%s domain: %s specs: %p always install: %p>' % [
-      self.class, @domain, @specs.keys, always_install,
+      self.class, @domain, @specs.keys, always_install
     ]
   end
 
@@ -224,4 +244,31 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
     end
   end
 
+  private
+
+  def metadata_satisfied?(spec)
+    spec.required_ruby_version.satisfied_by?(Gem.ruby_version) &&
+      spec.required_rubygems_version.satisfied_by?(Gem.rubygems_version)
+  end
+
+  def ensure_required_ruby_version_met(spec) # :nodoc:
+    if rrv = spec.required_ruby_version
+      ruby_version = Gem.ruby_version
+      unless rrv.satisfied_by? ruby_version
+        raise Gem::RuntimeRequirementNotMetError,
+          "#{spec.full_name} requires Ruby version #{rrv}. The current ruby version is #{ruby_version}."
+      end
+    end
+  end
+
+  def ensure_required_rubygems_version_met(spec) # :nodoc:
+    if rrgv = spec.required_rubygems_version
+      unless rrgv.satisfied_by? Gem.rubygems_version
+        rg_version = Gem::VERSION
+        raise Gem::RuntimeRequirementNotMetError,
+          "#{spec.full_name} requires RubyGems version #{rrgv}. The current RubyGems version is #{rg_version}. " +
+          "Try 'gem update --system' to update RubyGems itself."
+      end
+    end
+  end
 end

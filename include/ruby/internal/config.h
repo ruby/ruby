@@ -28,17 +28,20 @@
 
 #include "ruby/internal/compiler_since.h"
 
+#undef  HAVE_PROTOTYPES
+#define HAVE_PROTOTYPES 1
+
+#undef  HAVE_STDARG_PROTOTYPES
+#define HAVE_STDARG_PROTOTYPES 1
+
+#undef  TOKEN_PASTE
+#define TOKEN_PASTE(x,y) x##y
+
 #if defined(__cplusplus)
 #/* __builtin_choose_expr and __builtin_types_compatible aren't available
 # * on C++.  See https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html */
 # undef HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P
 # undef HAVE_BUILTIN___BUILTIN_TYPES_COMPATIBLE_P
-
-# undef  HAVE_PROTOTYPES
-# define HAVE_PROTOTYPES 1
-
-# undef  HAVE_STDARG_PROTOTYPES
-# define HAVE_STDARG_PROTOTYPES 1
 
 /* HAVE_VA_ARGS_MACRO is for C.  C++ situations might be different. */
 # undef HAVE_VA_ARGS_MACRO
@@ -65,6 +68,14 @@
 #  * officially documented below.  Seems we should not use it.
 #  * https://gcc.gnu.org/onlinedocs/gcc-4.9.4/gcc/Other-Builtins.html */
 # undef HAVE_BUILTIN___BUILTIN_ALLOCA_WITH_ALIGN
+#endif
+
+#if defined(__SUNPRO_CC)
+# /* Oracle  Developer Studio  12.5: GCC compatibility guide  says it  supports
+#  * statement expressions.   But to our  knowledge they support  the extension
+#  * only for C and not for C++.  Prove  me wrong.  Am happy to support them if
+#  * there is a way. */
+# undef HAVE_STMT_AND_DECL_IN_EXPR
 #endif
 
 #ifndef STRINGIZE0
@@ -102,6 +113,8 @@
 #elif defined(_M_AMD64)
 # define UNALIGNED_WORD_ACCESS 1
 #elif defined(__powerpc64__)
+# define UNALIGNED_WORD_ACCESS 1
+#elif defined(__aarch64__)
 # define UNALIGNED_WORD_ACCESS 1
 #elif defined(__mc68020__)
 # define UNALIGNED_WORD_ACCESS 1

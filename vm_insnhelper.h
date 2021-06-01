@@ -14,7 +14,6 @@
 RUBY_SYMBOL_EXPORT_BEGIN
 
 RUBY_EXTERN VALUE ruby_vm_const_missing_count;
-RUBY_EXTERN rb_serial_t ruby_vm_global_method_state;
 RUBY_EXTERN rb_serial_t ruby_vm_global_constant_state;
 RUBY_EXTERN rb_serial_t ruby_vm_class_serial;
 
@@ -93,7 +92,7 @@ enum vm_regan_acttype {
 #define SET_SP(x)  (VM_REG_SP  = (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
 #define INC_SP(x)  (VM_REG_SP += (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
 #define DEC_SP(x)  (VM_REG_SP -= (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
-#define SET_SV(x)  (*GET_SP() = (x))
+#define SET_SV(x)  (*GET_SP() = rb_ractor_confirm_belonging(x))
   /* set current stack value as x */
 
 /* instruction sequence C struct */
@@ -139,27 +138,27 @@ CC_SET_FASTPATH(const struct rb_callcache *cc, vm_call_handler func, bool enable
 /**********************************************************/
 
 #if VM_CHECK_MODE > 0
-#define SETUP_CANARY() \
+#define SETUP_CANARY(cond) \
     VALUE *canary = 0; \
-    if (leaf) { \
+    if (cond) { \
         canary = GET_SP(); \
         SET_SV(vm_stack_canary); \
     } \
     else {\
         SET_SV(Qfalse); /* cleanup */ \
     }
-#define CHECK_CANARY() \
-    if (leaf) { \
+#define CHECK_CANARY(cond, insn) \
+    if (cond) { \
         if (*canary == vm_stack_canary) { \
             *canary = Qfalse; /* cleanup */ \
         } \
         else { \
-            vm_canary_is_found_dead(INSN_ATTR(bin), *canary); \
+            rb_vm_canary_is_found_dead(insn, *canary); \
         } \
     }
 #else
-#define SETUP_CANARY()          /* void */
-#define CHECK_CANARY()          /* void */
+#define SETUP_CANARY(cond)       if (cond) {} else {}
+#define CHECK_CANARY(cond, insn) if (cond) {(void)(insn);}
 #endif
 
 /**********************************************************/
@@ -178,8 +177,6 @@ CC_SET_FASTPATH(const struct rb_callcache *cc, vm_call_handler func, bool enable
 
 #define PREV_CLASS_SERIAL() (ruby_vm_class_serial)
 #define NEXT_CLASS_SERIAL() (++ruby_vm_class_serial)
-#define GET_GLOBAL_METHOD_STATE() (ruby_vm_global_method_state)
-#define INC_GLOBAL_METHOD_STATE() (++ruby_vm_global_method_state)
 #define GET_GLOBAL_CONSTANT_STATE() (ruby_vm_global_constant_state)
 #define INC_GLOBAL_CONSTANT_STATE() (++ruby_vm_global_constant_state)
 
@@ -250,11 +247,11 @@ THROW_DATA_CONSUMED_SET(struct vm_throw_data *obj)
 
 /* If this returns true, an optimized function returned by `vm_call_iseq_setup_func`
    can be used as a fastpath. */
-static bool
+static inline bool
 vm_call_iseq_optimizable_p(const struct rb_callinfo *ci, const struct rb_callcache *cc)
 {
     return !IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) &&
-        !(METHOD_ENTRY_VISI(vm_cc_cme(cc)) == METHOD_VISI_PROTECTED);
+        METHOD_ENTRY_CACHEABLE(vm_cc_cme(cc));
 }
 
 #endif /* RUBY_INSNHELPER_H */

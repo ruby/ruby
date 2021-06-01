@@ -160,6 +160,10 @@ class TestLazyEnumerator < Test::Unit::TestCase
     assert_equal([{?a=>97}, {?b=>98}, {?c=>99}], [?a, ?b, ?c].lazy.flat_map {|x| {x=>x.ord}}.force)
   end
 
+  def test_flat_map_take
+    assert_equal([1,2]*3, [[1,2]].cycle.lazy.take(3).flat_map {|x| x}.to_a)
+  end
+
   def test_reject
     a = Step.new(1..6)
     assert_equal(4, a.reject {|x| x < 4}.first)
@@ -677,5 +681,9 @@ EOS
 
     ary = (0..Float::INFINITY).lazy.with_index.take(2).to_a
     assert_equal([[0, 0], [1, 1]], ary)
+  end
+
+  def test_with_index_size
+    assert_equal(3, Enumerator::Lazy.new([1, 2, 3], 3){|y, v| y << v}.with_index.size)
   end
 end

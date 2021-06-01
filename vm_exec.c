@@ -57,21 +57,13 @@ static void vm_insns_counter_count_insn(int insn) {}
 #elif defined(__GNUC__) && defined(__powerpc64__)
 #define DECL_SC_REG(type, r, reg) register type reg_##r __asm__("r" reg)
 
+#elif defined(__GNUC__) && defined(__aarch64__)
+#define DECL_SC_REG(type, r, reg) register type reg_##r __asm__("x" reg)
+
 #else
 #define DECL_SC_REG(type, r, reg) register type reg_##r
 #endif
 /* #define DECL_SC_REG(r, reg) VALUE reg_##r */
-
-#if VM_DEBUG_STACKOVERFLOW
-NORETURN(static void vm_stack_overflow_for_insn(void));
-static void
-vm_stack_overflow_for_insn(void)
-{
-    rb_bug("CHECK_VM_STACK_OVERFLOW_FOR_INSN: should not overflow here. "
-	   "Please contact ruby-core/dev with your (a part of) script. "
-	   "This check will be removed soon.");
-}
-#endif
 
 #if !OPT_CALL_THREADED_CODE
 static VALUE
@@ -104,9 +96,16 @@ vm_exec_core(rb_execution_context_t *ec, VALUE initial)
     DECL_SC_REG(rb_control_frame_t *, cfp, "15");
 #define USE_MACHINE_REGS 1
 
+#elif defined(__GNUC__) && defined(__aarch64__)
+    DECL_SC_REG(const VALUE *, pc, "19");
+    DECL_SC_REG(rb_control_frame_t *, cfp, "20");
+#define USE_MACHINE_REGS 1
+
 #else
     register rb_control_frame_t *reg_cfp;
     const VALUE *reg_pc;
+#define USE_MACHINE_REGS 0
+
 #endif
 
 #if USE_MACHINE_REGS

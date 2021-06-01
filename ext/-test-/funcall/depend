@@ -136,7 +136,6 @@ funcall.o: $(hdrdir)/ruby/internal/static_assert.h
 funcall.o: $(hdrdir)/ruby/internal/stdalign.h
 funcall.o: $(hdrdir)/ruby/internal/stdbool.h
 funcall.o: $(hdrdir)/ruby/internal/symbol.h
-funcall.o: $(hdrdir)/ruby/internal/token_paste.h
 funcall.o: $(hdrdir)/ruby/internal/value.h
 funcall.o: $(hdrdir)/ruby/internal/value_type.h
 funcall.o: $(hdrdir)/ruby/internal/variable.h
@@ -147,13 +146,10 @@ funcall.o: $(hdrdir)/ruby/backward.h
 funcall.o: $(hdrdir)/ruby/backward/2/assume.h
 funcall.o: $(hdrdir)/ruby/backward/2/attributes.h
 funcall.o: $(hdrdir)/ruby/backward/2/bool.h
-funcall.o: $(hdrdir)/ruby/backward/2/extern.h
 funcall.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 funcall.o: $(hdrdir)/ruby/backward/2/inttypes.h
 funcall.o: $(hdrdir)/ruby/backward/2/limits.h
 funcall.o: $(hdrdir)/ruby/backward/2/long_long.h
-funcall.o: $(hdrdir)/ruby/backward/2/r_cast.h
-funcall.o: $(hdrdir)/ruby/backward/2/rmodule.h
 funcall.o: $(hdrdir)/ruby/backward/2/stdalign.h
 funcall.o: $(hdrdir)/ruby/backward/2/stdarg.h
 funcall.o: $(hdrdir)/ruby/defines.h

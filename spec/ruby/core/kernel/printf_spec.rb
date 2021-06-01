@@ -41,7 +41,7 @@ describe "Kernel.printf" do
 
     context "io is specified" do
       it_behaves_like :kernel_sprintf, -> format, *args {
-        io = StringIO.new
+        io = StringIO.new(+"")
         Kernel.printf(io, format, *args)
         io.string
       }
@@ -51,7 +51,7 @@ describe "Kernel.printf" do
       it_behaves_like :kernel_sprintf, -> format, *args {
         stdout = $stdout
         begin
-          $stdout = io = StringIO.new
+          $stdout = io = StringIO.new(+"")
           Kernel.printf(format, *args)
           io.string
         ensure

@@ -45,7 +45,7 @@ describe "Module#class_variable_set" do
     }.should raise_error(NameError)
   end
 
-  it "converts a non string/symbol/fixnum name to string using to_str" do
+  it "converts a non string/symbol name to string using to_str" do
     (o = mock('@@class_var')).should_receive(:to_str).and_return("@@class_var")
     c = Class.new
     c.send(:class_variable_set, o, "test")

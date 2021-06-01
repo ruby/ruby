@@ -45,6 +45,7 @@ enum imemo_type {
     imemo_parser_strterm = 10,
     imemo_callinfo       = 11,
     imemo_callcache      = 12,
+    imemo_constcache     = 13,
 };
 
 /* CREF (Class REFerence) is defined in method.h */
@@ -117,7 +118,7 @@ struct MEMO {
 /* ment is in method.h */
 
 #define THROW_DATA_P(err) imemo_throw_data_p((VALUE)err)
-#define MEMO_CAST(m) (R_CAST(MEMO)(m))
+#define MEMO_CAST(m) ((struct MEMO *)(m))
 #define MEMO_NEW(a, b, c) ((struct MEMO *)rb_imemo_new(imemo_memo, (VALUE)(a), (VALUE)(b), (VALUE)(c), 0))
 #define MEMO_FOR(type, value) ((type *)RARRAY_PTR(value))
 #define NEW_MEMO_FOR(type, value) \
@@ -150,6 +151,7 @@ VALUE rb_imemo_new_debug(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VAL
 #else
 VALUE rb_imemo_new(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0);
 #endif
+const char *rb_imemo_name(enum imemo_type type);
 RUBY_SYMBOL_EXPORT_END
 
 static inline enum imemo_type

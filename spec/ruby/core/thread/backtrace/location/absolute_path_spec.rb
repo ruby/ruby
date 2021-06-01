@@ -10,6 +10,13 @@ describe 'Thread::Backtrace::Location#absolute_path' do
     @frame.absolute_path.should == File.realpath(__FILE__)
   end
 
+  it 'returns an absolute path when using a relative main script path' do
+    script = fixture(__FILE__, 'absolute_path_main.rb')
+    Dir.chdir(File.dirname(script)) do
+      ruby_exe('absolute_path_main.rb').should == "absolute_path_main.rb\n#{script}\n"
+    end
+  end
+
   context "when used in eval with a given filename" do
     it "returns filename" do
       code = "caller_locations(0)[0].absolute_path"
@@ -26,6 +33,19 @@ describe 'Thread::Backtrace::Location#absolute_path' do
       locations[0].absolute_path.should == path
       # Make sure it's from the class body, not from the file top-level
       locations[0].label.should include 'MethodAddedAbsolutePath'
+    end
+  end
+
+  context "when used in a core method" do
+    it "returns nil" do
+      location = nil
+      tap { location = caller_locations(1, 1)[0] }
+      location.label.should == "tap"
+      if location.path.start_with?("<internal:")
+        location.absolute_path.should == nil
+      else
+        location.absolute_path.should == File.realpath(__FILE__)
+      end
     end
   end
 

@@ -203,6 +203,6 @@ describe "Thread#raise on same thread" do
         Thread.current.raise
       end
     end
-    -> { t.value }.should raise_error(RuntimeError)
+    -> { t.value }.should raise_error(RuntimeError, '')
   end
 end

@@ -57,15 +57,6 @@ module Gem::QueryUtils
     "--local --name-matches // --no-details --versions --no-installed"
   end
 
-  def description # :nodoc:
-    <<-EOF
-The query command is the basis for the list and search commands.
-
-You should really use the list and search commands instead.  This command
-is too hard to use.
-    EOF
-  end
-
   def execute
     gem_names = Array(options[:name])
 
@@ -75,7 +66,7 @@ is too hard to use.
 
     terminate_interaction(check_installed_gems(gem_names)) if check_installed_gems?
 
-    gem_names.each { |n| show_gems(n) }
+    gem_names.each {|n| show_gems(n) }
   end
 
   private
@@ -187,12 +178,12 @@ is too hard to use.
   # Check if gem +name+ version +version+ is installed.
 
   def installed?(name, req = Gem::Requirement.default)
-    Gem::Specification.any? { |s| s.name =~ name and req =~ s.version }
+    Gem::Specification.any? {|s| s.name =~ name and req =~ s.version }
   end
 
   def output_query_results(spec_tuples)
     output = []
-    versions = Hash.new { |h,name| h[name] = [] }
+    versions = Hash.new {|h,name| h[name] = [] }
 
     spec_tuples.each do |spec_tuple, source|
       versions[spec_tuple.name] << [spec_tuple, source]
@@ -209,9 +200,9 @@ is too hard to use.
 
   def output_versions(output, versions)
     versions.each do |gem_name, matching_tuples|
-      matching_tuples = matching_tuples.sort_by { |n,_| n.version }.reverse
+      matching_tuples = matching_tuples.sort_by {|n,_| n.version }.reverse
 
-      platforms = Hash.new { |h,version| h[version] = [] }
+      platforms = Hash.new {|h,version| h[version] = [] }
 
       matching_tuples.each do |n, _|
         platforms[n.version] << n.platform if n.platform
@@ -254,7 +245,7 @@ is too hard to use.
 
     list =
       if platforms.empty? or options[:details]
-        name_tuples.map { |n| n.version }.uniq
+        name_tuples.map {|n| n.version }.uniq
       else
         platforms.sort.reverse.map do |version, pls|
           out = version.to_s
@@ -332,7 +323,7 @@ is too hard to use.
 
   def spec_platforms(entry, platforms)
     non_ruby = platforms.any? do |_, pls|
-      pls.any? { |pl| pl != Gem::Platform::RUBY }
+      pls.any? {|pl| pl != Gem::Platform::RUBY }
     end
 
     return unless non_ruby
@@ -343,7 +334,7 @@ is too hard to use.
     else
       entry << "    Platforms:\n"
 
-      sorted_platforms = platforms.sort_by { |version,| version }
+      sorted_platforms = platforms.sort_by {|version,| version }
 
       sorted_platforms.each do |version, pls|
         label = "        #{version}: "

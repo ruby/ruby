@@ -405,19 +405,6 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
-  def test_codepoints
-    make_tempfile {|t|
-      bug2959 = '[ruby-core:28650]'
-      a = ""
-      File.open(t, 'rt') {|f|
-        assert_warn(/deprecated/) {
-          f.codepoints {|c| a << c}
-        }
-      }
-      assert_equal("foo\nbar\nbaz\n", a, bug2959)
-    }
-  end
-
   def test_rubydev33072
     t = make_tempfile
     path = t.path
@@ -620,7 +607,7 @@ class TestIO < Test::Unit::TestCase
 
   if have_nonblock?
     def test_copy_stream_no_busy_wait
-      skip "MJIT has busy wait on GC. This sometimes fails with --jit." if RubyVM::MJIT.enabled?
+      skip "MJIT has busy wait on GC. This sometimes fails with --jit." if defined?(RubyVM::JIT) && RubyVM::JIT.enabled?
       skip "multiple threads already active" if Thread.list.size > 1
 
       msg = 'r58534 [ruby-core:80969] [Backport #13533]'
@@ -1575,7 +1562,7 @@ class TestIO < Test::Unit::TestCase
   end if have_nonblock?
 
   def test_read_nonblock_no_exceptions
-    skip '[ruby-core:90895] MJIT worker may leave fd open in a forked child' if RubyVM::MJIT.enabled? # TODO: consider acquiring GVL from MJIT worker.
+    skip '[ruby-core:90895] MJIT worker may leave fd open in a forked child' if defined?(RubyVM::JIT) && RubyVM::JIT.enabled? # TODO: consider acquiring GVL from MJIT worker.
     with_pipe {|r, w|
       assert_equal :wait_readable, r.read_nonblock(4096, exception: false)
       w.puts "HI!"
@@ -1822,8 +1809,7 @@ class TestIO < Test::Unit::TestCase
     end)
   end
 
-  def test_lines
-    verbose, $VERBOSE = $VERBOSE, nil
+  def test_each_line
     pipe(proc do |w|
       w.puts "foo"
       w.puts "bar"
@@ -1831,20 +1817,17 @@ class TestIO < Test::Unit::TestCase
       w.close
     end, proc do |r|
       e = nil
-      assert_warn(/deprecated/) {
-        e = r.lines
+      assert_warn('') {
+        e = r.each_line
       }
       assert_equal("foo\n", e.next)
       assert_equal("bar\n", e.next)
       assert_equal("baz\n", e.next)
       assert_raise(StopIteration) { e.next }
     end)
-  ensure
-    $VERBOSE = verbose
   end
 
-  def test_bytes
-    verbose, $VERBOSE = $VERBOSE, nil
+  def test_each_byte2
     pipe(proc do |w|
       w.binmode
       w.puts "foo"
@@ -1853,20 +1836,17 @@ class TestIO < Test::Unit::TestCase
       w.close
     end, proc do |r|
       e = nil
-      assert_warn(/deprecated/) {
-        e = r.bytes
+      assert_warn('') {
+        e = r.each_byte
       }
       (%w(f o o) + ["\n"] + %w(b a r) + ["\n"] + %w(b a z) + ["\n"]).each do |c|
         assert_equal(c.ord, e.next)
       end
       assert_raise(StopIteration) { e.next }
     end)
-  ensure
-    $VERBOSE = verbose
   end
 
-  def test_chars
-    verbose, $VERBOSE = $VERBOSE, nil
+  def test_each_char2
     pipe(proc do |w|
       w.puts "foo"
       w.puts "bar"
@@ -1874,16 +1854,14 @@ class TestIO < Test::Unit::TestCase
       w.close
     end, proc do |r|
       e = nil
-      assert_warn(/deprecated/) {
-        e = r.chars
+      assert_warn('') {
+        e = r.each_char
       }
       (%w(f o o) + ["\n"] + %w(b a r) + ["\n"] + %w(b a z) + ["\n"]).each do |c|
         assert_equal(c, e.next)
       end
       assert_raise(StopIteration) { e.next }
     end)
-  ensure
-    $VERBOSE = verbose
   end
 
   def test_readbyte
@@ -2232,7 +2210,7 @@ class TestIO < Test::Unit::TestCase
   def test_autoclose_true_closed_by_finalizer
     # http://ci.rvm.jp/results/trunk-mjit@silicon-docker/1465760
     # http://ci.rvm.jp/results/trunk-mjit@silicon-docker/1469765
-    skip 'this randomly fails with MJIT' if RubyVM::MJIT.enabled?
+    skip 'this randomly fails with MJIT' if defined?(RubyVM::JIT) && RubyVM::JIT.enabled?
 
     feature2250 = '[ruby-core:26222]'
     pre = 'ft2250'
@@ -2489,6 +2467,17 @@ class TestIO < Test::Unit::TestCase
     end
   end
 
+  def test_reopen_ivar
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      f = File.open(IO::NULL)
+      f.instance_variable_set(:@foo, 42)
+      f.reopen(STDIN)
+      f.instance_variable_defined?(:@foo)
+      f.instance_variable_get(:@foo)
+    end;
+  end
+
   def test_foreach
     a = []
     IO.foreach("|" + EnvUtil.rubybin + " -e 'puts :foo; puts :bar; puts :baz'") {|x| a << x }
@@ -2632,7 +2621,7 @@ class TestIO < Test::Unit::TestCase
     end
 
     capture.clear
-    assert_warning(/[.#]write is outdated/) do
+    assert_deprecated_warning(/[.#]write is outdated/) do
       stdout, $stdout = $stdout, capture
       puts "hey"
     ensure
@@ -2815,7 +2804,7 @@ __END__
 
   def test_flush_in_finalizer2
     bug3910 = '[ruby-dev:42341]'
-    Tempfile.open("bug3910") {|t|
+    Tempfile.create("bug3910") {|t|
       path = t.path
       t.close
       begin
@@ -2834,7 +2823,6 @@ __END__
           end
         }
       end
-      t.close!
     }
   end
 
@@ -3453,10 +3441,17 @@ __END__
 
       tempfiles = []
       (0..fd_setsize+1).map {|i|
-        tempfiles << Tempfile.open("test_io_select_with_many_files")
+        tempfiles << Tempfile.create("test_io_select_with_many_files")
       }
 
-      IO.select(tempfiles)
+      begin
+        IO.select(tempfiles)
+      ensure
+        tempfiles.each { |t|
+          t.close
+          File.unlink(t.path)
+        }
+      end
     }, bug8080, timeout: 100
   end if defined?(Process::RLIMIT_NOFILE)
 

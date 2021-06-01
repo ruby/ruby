@@ -60,6 +60,11 @@ mentioned below.
 
   This file is licensed under the {MIT License}[rdoc-label:label-MIT+License].
 
+[coroutine]
+
+  Unless otherwise specified, these files are licensed under the
+  {MIT License}[rdoc-label:label-MIT+License].
+
 [include/ruby/onigmo.h]
 [include/ruby/oniguruma.h]
 [regcomp.c]
@@ -309,17 +314,6 @@ mentioned below.
     This configure script is free software; the Free Software Foundation
     gives unlimited permission to copy, distribute and modify it.
 
-[aclocal.m4]
-
-  This file is free software.
-
-  >>>
-    Copyright (C) 1996-2020:: Free Software Foundation, Inc.
-
-    This file is free software; the Free Software Foundation
-    gives unlimited permission to copy and/or distribute it,
-    with or without modifications, as long as this notice is preserved.
-
 [tool/config.guess]
 [tool/config.sub]
 
@@ -537,7 +531,6 @@ mentioned below.
 [include/ruby/st.h]
 [missing/acosh.c]
 [missing/alloca.c]
-[missing/dup2.c]
 [missing/erf.c]
 [missing/finite.c]
 [missing/hypot.c]
@@ -553,8 +546,6 @@ mentioned below.
 [ext/date/date_strftime.c]
 [ext/digest/sha1/sha1.c]
 [ext/digest/sha1/sha1.h]
-[ext/sdbm/_sdbm.c]
-[ext/sdbm/sdbm.h]
 
   These files are all under public domain.
 
@@ -942,15 +933,24 @@ mentioned below.
 
 [lib/bundler]
 [lib/bundler.rb]
-[lib/bundler.gemspec]
 [spec/bundler]
-[man/bundle-*,gemfile.*]
 
   Bundler is under the following license.
 
   >>>
     Portions copyright (c) 2010:: Andre Arko
     Portions copyright (c) 2009:: Engine Yard
+
+    {MIT License}[rdoc-label:label-MIT+License]
+
+[lib/did_you_mean]
+[lib/did_you_mean.rb]
+[test/did_you_mean]
+
+  did_you_mean is under the following license.
+
+  >>>
+    Copyright (c) 2014-2016 Yuki Nishijima
 
     {MIT License}[rdoc-label:label-MIT+License]
 

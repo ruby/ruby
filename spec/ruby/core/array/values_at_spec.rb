@@ -67,4 +67,11 @@ describe "Array#values_at" do
       [1, 2, 3, 4].values_at(eval("(3...)")).should == [4]
     end
   end
+
+  ruby_version_is "2.7" do
+    it "works when given beginless ranges" do
+      [1, 2, 3, 4].values_at(eval("(..2)")).should == [1, 2, 3]
+      [1, 2, 3, 4].values_at(eval("(...2)")).should == [1, 2]
+    end
+  end
 end

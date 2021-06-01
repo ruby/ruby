@@ -5,7 +5,6 @@ require 'test/unit'
 class TestMethod < Test::Unit::TestCase
   def setup
     @verbose = $VERBOSE
-    $VERBOSE = nil
   end
 
   def teardown
@@ -473,6 +472,15 @@ class TestMethod < Test::Unit::TestCase
     o.singleton_class
     m4 = o.method(:bar)
     assert_equal("#<Method: #{c4.inspect}(#{c.inspect})#bar(foo)() #{__FILE__}:#{line_no}>", m4.inspect, bug15608)
+
+    bug17428 = '[ruby-core:101635] [Bug #17428]'
+    assert_equal("#<Method: #<Class:String>(Module)#prepend(*)>", String.method(:prepend).inspect, bug17428)
+
+    c5 = Class.new(String)
+    m = Module.new{def prepend; end; alias prep prepend}; line_no = __LINE__
+    c5.extend(m)
+    c6 = Class.new(c5)
+    assert_equal("#<Method: #<Class:#{c6.inspect}>(#{m.inspect})#prep(prepend)() #{__FILE__}:#{line_no}>", c6.method(:prep).inspect, bug17428)
   end
 
   def test_callee_top_level
@@ -1080,6 +1088,99 @@ class TestMethod < Test::Unit::TestCase
       '[ruby-core:85231] [Bug #14421]'
   end
 
+  def test_super_method_alias
+    c0 = Class.new do
+      def m1
+        [:C0_m1]
+      end
+      def m2
+        [:C0_m2]
+      end
+    end
+
+    c1 = Class.new(c0) do
+      def m1
+        [:C1_m1] + super
+      end
+      alias m2 m1
+    end
+
+    c2 = Class.new(c1) do
+      def m2
+        [:C2_m2] + super
+      end
+    end
+    o1 = c2.new
+    assert_equal([:C2_m2, :C1_m1, :C0_m1], o1.m2)
+
+    m = o1.method(:m2)
+    assert_equal([:C2_m2, :C1_m1, :C0_m1], m.call)
+
+    m = m.super_method
+    assert_equal([:C1_m1, :C0_m1], m.call)
+
+    m = m.super_method
+    assert_equal([:C0_m1], m.call)
+
+    assert_nil(m.super_method)
+  end
+
+  def test_super_method_alias_to_prepended_module
+    m = Module.new do
+      def m1
+        [:P_m1] + super
+      end
+
+      def m2
+        [:P_m2] + super
+      end
+    end
+
+    c0 = Class.new do
+      def m1
+        [:C0_m1]
+      end
+    end
+
+    c1 = Class.new(c0) do
+      def m1
+        [:C1_m1] + super
+      end
+      prepend m
+      alias m2 m1
+    end
+
+    o1 = c1.new
+    assert_equal([:P_m2, :P_m1, :C1_m1, :C0_m1], o1.m2)
+
+    m = o1.method(:m2)
+    assert_equal([:P_m2, :P_m1, :C1_m1, :C0_m1], m.call)
+
+    m = m.super_method
+    assert_equal([:P_m1, :C1_m1, :C0_m1], m.call)
+
+    m = m.super_method
+    assert_equal([:C1_m1, :C0_m1], m.call)
+
+    m = m.super_method
+    assert_equal([:C0_m1], m.call)
+
+    assert_nil(m.super_method)
+  end
+
+  # Bug 17780
+  def test_super_method_module_alias
+    m = Module.new do
+      def foo
+      end
+      alias :f :foo
+    end
+
+    method = m.instance_method(:f)
+    super_method = method.super_method
+    assert_nil(super_method)
+  end
+
   def rest_parameter(*rest)
     rest
   end
@@ -1179,6 +1280,27 @@ class TestMethod < Test::Unit::TestCase
     assert_separately [], body
     # without trace insn
     assert_separately [], "RubyVM::InstructionSequence.compile_option = {trace_instruction: false}\n" + body
+  end
+
+  def test_zsuper_private_override_instance_method
+    assert_separately(%w(--disable-gems), <<-'end;', timeout: 30)
+      # Bug #16942 [ruby-core:98691]
+      module M
+        def x
+        end
+      end
+
+      module M2
+        prepend Module.new
+        include M
+        private :x
+      end
+
+      ::Object.prepend(M2)
+
+      m = Object.instance_method(:x)
+      assert_equal M, m.owner
+    end;
   end
 
   def test_eqq
@@ -1286,5 +1408,9 @@ class TestMethod < Test::Unit::TestCase
 
     assert_operator nummodule, :>, 0
     assert_operator nummethod, :>, 0
+  end
+
+  def test_invalidating_CC_ASAN
+    assert_ruby_status(['-e', 'using Module.new'])
   end
 end

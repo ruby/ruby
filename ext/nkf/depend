@@ -139,7 +139,6 @@ nkf.o: $(hdrdir)/ruby/internal/static_assert.h
 nkf.o: $(hdrdir)/ruby/internal/stdalign.h
 nkf.o: $(hdrdir)/ruby/internal/stdbool.h
 nkf.o: $(hdrdir)/ruby/internal/symbol.h
-nkf.o: $(hdrdir)/ruby/internal/token_paste.h
 nkf.o: $(hdrdir)/ruby/internal/value.h
 nkf.o: $(hdrdir)/ruby/internal/value_type.h
 nkf.o: $(hdrdir)/ruby/internal/variable.h
@@ -150,13 +149,10 @@ nkf.o: $(hdrdir)/ruby/backward.h
 nkf.o: $(hdrdir)/ruby/backward/2/assume.h
 nkf.o: $(hdrdir)/ruby/backward/2/attributes.h
 nkf.o: $(hdrdir)/ruby/backward/2/bool.h
-nkf.o: $(hdrdir)/ruby/backward/2/extern.h
 nkf.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 nkf.o: $(hdrdir)/ruby/backward/2/inttypes.h
 nkf.o: $(hdrdir)/ruby/backward/2/limits.h
 nkf.o: $(hdrdir)/ruby/backward/2/long_long.h
-nkf.o: $(hdrdir)/ruby/backward/2/r_cast.h
-nkf.o: $(hdrdir)/ruby/backward/2/rmodule.h
 nkf.o: $(hdrdir)/ruby/backward/2/stdalign.h
 nkf.o: $(hdrdir)/ruby/backward/2/stdarg.h
 nkf.o: $(hdrdir)/ruby/defines.h

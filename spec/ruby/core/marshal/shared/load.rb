@@ -667,7 +667,7 @@ describe :marshal_load, shared: true do
     end
   end
 
-  describe "for a Integer" do
+  describe "for an Integer" do
     it "loads 0" do
       Marshal.send(@method, "\004\bi\000").should == 0
       Marshal.send(@method, "\004\bi\005").should == 0
@@ -746,13 +746,13 @@ describe :marshal_load, shared: true do
         it "dumps a Fixnum" do
           val = Marshal.send(@method, "\004\bl+\ab:wU")
           val.should == 1433877090
-          val.class.should == Fixnum
+          val.class.should == Integer
         end
 
         it "dumps an array containing multiple references to the Bignum as an array of Fixnum" do
           arr = Marshal.send(@method, "\004\b[\al+\a\223BwU@\006")
           arr.should == [1433879187, 1433879187]
-          arr.each { |v| v.class.should == Fixnum }
+          arr.each { |v| v.class.should == Integer }
         end
       end
     end

@@ -22,7 +22,6 @@ RSpec.describe "ruby requirement" do
       gem "rack-obama"
     G
 
-    expect(exitstatus).to eq(0) if exitstatus
     expect(the_bundle).to include_gems "rack-obama 1.0"
   end
 
@@ -89,7 +88,7 @@ RSpec.describe "ruby requirement" do
   end
 
   it "allows requirements with trailing whitespace" do
-    install_gemfile! <<-G
+    install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       ruby "#{RUBY_VERSION}\\n \t\\n"
       gem "rack"
@@ -99,7 +98,7 @@ RSpec.describe "ruby requirement" do
   end
 
   it "fails gracefully with malformed requirements" do
-    install_gemfile <<-G
+    install_gemfile <<-G, :raise_on_error => false
       source "#{file_uri_for(gem_repo1)}"
       ruby ">= 0", "-.\\0"
       gem "rack"

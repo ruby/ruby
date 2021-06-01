@@ -1,4 +1,4 @@
-describe :net_ftp_request_get, shared: true do
+describe :net_http_request_get, shared: true do
   before :each do
     NetHTTPSpecs.start_server
     @http = Net::HTTP.start("localhost", NetHTTPSpecs.port)

@@ -59,7 +59,7 @@
 #endif
 #if defined(TM_IN_SYS_TIME) || !defined(GAWK)
 #include <sys/types.h>
-#if HAVE_SYS_TIME_H
+#ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
 #endif
@@ -266,8 +266,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 	static const char ampm[][3] = { "AM", "PM", };
 
 	if (format == NULL || format_len == 0 || vtm == NULL) {
-	err:
-		return 0;
+                goto err;
 	}
 
 	if (enc &&
@@ -390,7 +389,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 				flags &= ~(BIT_OF(LOWER)|BIT_OF(CHCASE));
 				flags |= BIT_OF(UPPER);
 			}
-			if (vtm->wday < 0 || vtm->wday > 6)
+			if (vtm->wday > 6)
 				i = 1, tp = "?";
 			else
 				i = 3, tp = days_l[vtm->wday];
@@ -401,7 +400,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 				flags &= ~(BIT_OF(LOWER)|BIT_OF(CHCASE));
 				flags |= BIT_OF(UPPER);
 			}
-			if (vtm->wday < 0 || vtm->wday > 6)
+			if (vtm->wday > 6)
 				i = 1, tp = "?";
 			else
 				i = strlen(tp = days_l[vtm->wday]);
@@ -548,7 +547,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 			else {
 				off = NUM2LONG(rb_funcall(vtm->utc_offset, rb_intern("round"), 0));
 			}
-			if (off < 0) {
+			if (off < 0 || (gmt && (flags & BIT_OF(LEFT)))) {
 				off = -off;
 				sign = -1;
 			}
@@ -911,6 +910,9 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 	rb_str_set_len(ftime, len);
 	rb_str_resize(ftime, len);
 	return ftime;
+
+err:
+        return 0;
 }
 
 static size_t

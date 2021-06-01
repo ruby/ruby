@@ -199,27 +199,6 @@ nogvl_getaddrinfo(void *arg)
 }
 #endif
 
-#ifdef HAVE_GETADDRINFO_A
-struct gai_suspend_arg
-{
-    struct gaicb *req;
-    struct timespec *timeout;
-};
-
-static void *
-nogvl_gai_suspend(void *arg)
-{
-    int ret;
-    struct gai_suspend_arg *ptr = arg;
-    struct gaicb const *wait_reqs[1];
-
-    wait_reqs[0] = ptr->req;
-    ret = gai_suspend(wait_reqs, 1, ptr->timeout);
-
-    return (void *)(VALUE)ret;
-}
-#endif
-
 static int
 numeric_getaddrinfo(const char *node, const char *service,
         const struct addrinfo *hints,
@@ -338,59 +317,6 @@ rb_getaddrinfo(const char *node, const char *service,
     }
     return ret;
 }
-
-#ifdef HAVE_GETADDRINFO_A
-int
-rb_getaddrinfo_a(const char *node, const char *service,
-               const struct addrinfo *hints,
-               struct rb_addrinfo **res, struct timespec *timeout)
-{
-    struct addrinfo *ai;
-    int ret;
-    int allocated_by_malloc = 0;
-
-    ret = numeric_getaddrinfo(node, service, hints, &ai);
-    if (ret == 0)
-        allocated_by_malloc = 1;
-    else {
-	struct gai_suspend_arg arg;
-	struct gaicb *reqs[1];
-	struct gaicb req;
-
-	req.ar_name = node;
-	req.ar_service = service;
-	req.ar_request = hints;
-
-	reqs[0] = &req;
-	ret = getaddrinfo_a(GAI_NOWAIT, reqs, 1, NULL);
-	if (ret) return ret;
-
-	arg.req = &req;
-	arg.timeout = timeout;
-
-	ret = (int)(VALUE)rb_thread_call_without_gvl(nogvl_gai_suspend, &arg, RUBY_UBF_IO, 0);
-
-	if (ret) {
-	    /* on Ubuntu 18.04 (or other systems), gai_suspend(3) returns EAI_SYSTEM/ENOENT on timeout */
-	    if (ret == EAI_SYSTEM && errno == ENOENT) {
-		return EAI_AGAIN;
-	    } else {
-		return ret;
-	    }
-	}
-
-	ret = gai_error(reqs[0]);
-	ai = reqs[0]->ar_result;
-    }
-
-    if (ret == 0) {
-        *res = (struct rb_addrinfo *)xmalloc(sizeof(struct rb_addrinfo));
-        (*res)->allocated_by_malloc = allocated_by_malloc;
-        (*res)->ai = ai;
-    }
-    return ret;
-}
-#endif
 
 void
 rb_freeaddrinfo(struct rb_addrinfo *ai)
@@ -599,42 +525,6 @@ rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_h
 
     return res;
 }
-
-#ifdef HAVE_GETADDRINFO_A
-static struct rb_addrinfo*
-rsock_getaddrinfo_a(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack, VALUE timeout)
-{
-    struct rb_addrinfo* res = NULL;
-    char *hostp, *portp;
-    int error;
-    char hbuf[NI_MAXHOST], pbuf[NI_MAXSERV];
-    int additional_flags = 0;
-
-    hostp = host_str(host, hbuf, sizeof(hbuf), &additional_flags);
-    portp = port_str(port, pbuf, sizeof(pbuf), &additional_flags);
-
-    if (socktype_hack && hints->ai_socktype == 0 && str_is_number(portp)) {
-       hints->ai_socktype = SOCK_DGRAM;
-    }
-    hints->ai_flags |= additional_flags;
-
-    if (NIL_P(timeout)) {
-	error = rb_getaddrinfo(hostp, portp, hints, &res);
-    } else {
-	struct timespec _timeout = rb_time_timespec_interval(timeout);
-	error = rb_getaddrinfo_a(hostp, portp, hints, &res, &_timeout);
-    }
-
-    if (error) {
-        if (hostp && hostp[strlen(hostp)-1] == '\n') {
-            rb_raise(rb_eSocket, "newline at the end of hostname");
-        }
-        rsock_raise_socket_error("getaddrinfo_a", error);
-    }
-
-    return res;
-}
-#endif
 
 int
 rsock_fd_family(int fd)
@@ -941,15 +831,7 @@ call_getaddrinfo(VALUE node, VALUE service,
 	hints.ai_flags = NUM2INT(flags);
     }
 
-#ifdef HAVE_GETADDRINFO_A
-    if (NIL_P(timeout)) {
-	res = rsock_getaddrinfo(node, service, &hints, socktype_hack);
-    } else {
-	res = rsock_getaddrinfo_a(node, service, &hints, socktype_hack, timeout);
-    }
-#else
     res = rsock_getaddrinfo(node, service, &hints, socktype_hack);
-#endif
 
     if (res == NULL)
 	rb_raise(rb_eSocket, "host not found");
@@ -2686,7 +2568,7 @@ rsock_init_addrinfo(void)
      */
     id_timeout = rb_intern("timeout");
 
-    rb_cAddrinfo = rb_define_class("Addrinfo", rb_cData);
+    rb_cAddrinfo = rb_define_class("Addrinfo", rb_cObject);
     rb_define_alloc_func(rb_cAddrinfo, addrinfo_s_allocate);
     rb_define_method(rb_cAddrinfo, "initialize", addrinfo_initialize, -1);
     rb_define_method(rb_cAddrinfo, "inspect", addrinfo_inspect, 0);

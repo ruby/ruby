@@ -128,7 +128,7 @@ describe "Module#prepend" do
     c.dup.new.should be_kind_of(m)
   end
 
-  ruby_version_is '0'...'2.8' do
+  ruby_version_is '0'...'3.0' do
     it "keeps the module in the chain when dupping an intermediate module" do
       m1 = Module.new { def calc(x) x end }
       m2 = Module.new { prepend(m1) }
@@ -143,7 +143,7 @@ describe "Module#prepend" do
     end
   end
 
-  ruby_version_is '2.8' do
+  ruby_version_is '3.0' do
     it "uses only new module when dupping the module" do
       m1 = Module.new { def calc(x) x end }
       m2 = Module.new { prepend(m1) }

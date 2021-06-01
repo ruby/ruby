@@ -1,4 +1,5 @@
 require_relative '../../spec_helper'
+require_relative 'fixtures/common'
 
 describe "ENV.values_at" do
   before :each do
@@ -28,7 +29,7 @@ describe "ENV.values_at" do
   end
 
   it "uses the locale encoding" do
-    ENV.values_at(ENV.keys.first).first.encoding.should == Encoding.find('locale')
+    ENV.values_at(ENV.keys.first).first.encoding.should == ENVSpecs.encoding
   end
 
   it "raises TypeError when a key is not coercible to String" do

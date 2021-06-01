@@ -12,7 +12,6 @@ require 'rubygems/deprecate'
 require 'rubygems/package'
 require 'rubygems/ext'
 require 'rubygems/user_interaction'
-require 'fileutils'
 
 ##
 # The installer installs the files contained in the .gem into the Gem.home.
@@ -28,7 +27,6 @@ require 'fileutils'
 # file.  See Gem.pre_install and Gem.post_install for details.
 
 class Gem::Installer
-
   extend Gem::Deprecate
 
   ##
@@ -73,7 +71,6 @@ class Gem::Installer
   @install_lock = Mutex.new
 
   class << self
-
     ##
     # True if we've warned about PATH not including Gem.bindir
 
@@ -98,7 +95,6 @@ class Gem::Installer
     def exec_format
       @exec_format ||= Gem.default_exec_format
     end
-
   end
 
   ##
@@ -111,7 +107,6 @@ class Gem::Installer
   end
 
   class FakePackage
-
     attr_accessor :spec
 
     attr_accessor :dir_mode
@@ -137,7 +132,6 @@ class Gem::Installer
 
     def copy_to(path)
     end
-
   end
 
   ##
@@ -189,6 +183,7 @@ class Gem::Installer
     if options[:user_install]
       @gem_home = Gem.user_dir
       @bin_dir = Gem.bindir gem_home unless options[:bin_dir]
+      @plugins_dir = Gem.plugindir(gem_home)
       check_that_user_bin_dir_is_in_path
     end
   end
@@ -410,7 +405,7 @@ class Gem::Installer
 
   def installation_satisfies_dependency?(dependency)
     return true if @options[:development] and dependency.type == :development
-    return true if installed_specs.detect { |s| dependency.matches_spec? s }
+    return true if installed_specs.detect {|s| dependency.matches_spec? s }
     return false if @only_install_dir
     not dependency.matching_specs.empty?
   end
@@ -437,7 +432,7 @@ class Gem::Installer
   #
 
   def default_spec_file
-    File.join Gem.default_specifications_dir, "#{spec.full_name}.gemspec"
+    File.join gem_home, "specifications", "default", "#{spec.full_name}.gemspec"
   end
 
   ##
@@ -489,14 +484,21 @@ class Gem::Installer
       bin_path = File.join gem_dir, spec.bindir, filename
 
       unless File.exist? bin_path
-        # TODO change this to a more useful warning
-        warn "`#{bin_path}` does not exist, maybe `gem pristine #{spec.name}` will fix it?"
+        if File.symlink? bin_path
+          alert_warning "`#{bin_path}` is dangling symlink pointing to `#{File.readlink bin_path}`"
+        else
+          alert_warning "`#{bin_path}` does not exist, maybe `gem pristine #{spec.name}` will fix it?"
+        end
         next
       end
 
       mode = File.stat(bin_path).mode
       dir_mode = options[:prog_mode] || (mode | 0111)
-      FileUtils.chmod dir_mode, bin_path unless dir_mode == mode
+
+      unless dir_mode == mode
+        require 'fileutils'
+        FileUtils.chmod dir_mode, bin_path
+      end
 
       check_executable_overwrite filename
 
@@ -531,6 +533,7 @@ class Gem::Installer
   def generate_bin_script(filename, bindir)
     bin_script_path = File.join bindir, formatted_program_filename(filename)
 
+    require 'fileutils'
     FileUtils.rm_f bin_script_path # prior install may have been --no-wrappers
 
     File.open bin_script_path, 'wb', 0755 do |file|
@@ -584,7 +587,7 @@ class Gem::Installer
   def shebang(bin_file_name)
     ruby_name = RbConfig::CONFIG['ruby_install_name'] if @env_shebang
     path = File.join gem_dir, spec.bindir, bin_file_name
-    first_line = File.open(path, "rb") {|file| file.gets} || ""
+    first_line = File.open(path, "rb") {|file| file.gets } || ""
 
     if first_line.start_with?("#!")
       # Preserve extra words on shebang line, like "-w".  Thanks RPA.
@@ -638,27 +641,6 @@ class Gem::Installer
     end
   end
 
-  def ensure_required_ruby_version_met # :nodoc:
-    if rrv = spec.required_ruby_version
-      ruby_version = Gem.ruby_version
-      unless rrv.satisfied_by? ruby_version
-        raise Gem::RuntimeRequirementNotMetError,
-          "#{spec.name} requires Ruby version #{rrv}. The current ruby version is #{ruby_version}."
-      end
-    end
-  end
-
-  def ensure_required_rubygems_version_met # :nodoc:
-    if rrgv = spec.required_rubygems_version
-      unless rrgv.satisfied_by? Gem.rubygems_version
-        rg_version = Gem::VERSION
-        raise Gem::RuntimeRequirementNotMetError,
-          "#{spec.name} requires RubyGems version #{rrgv}. The current RubyGems version is #{rg_version}. " +
-          "Try 'gem update --system' to update RubyGems itself."
-      end
-    end
-  end
-
   def ensure_dependencies_met # :nodoc:
     deps = spec.runtime_dependencies
     deps |= spec.development_dependencies if @development
@@ -674,7 +656,7 @@ class Gem::Installer
       :env_shebang  => false,
       :force        => false,
       :only_install_dir => false,
-      :post_install_message => true
+      :post_install_message => true,
     }.merge options
 
     @env_shebang         = options[:env_shebang]
@@ -697,11 +679,10 @@ class Gem::Installer
     @build_args = options[:build_args] || Gem::Command.build_args
 
     unless @build_root.nil?
-      require 'pathname'
-      @build_root = Pathname.new(@build_root).expand_path
-      @bin_dir = File.join(@build_root, options[:bin_dir] || Gem.bindir(@gem_home))
-      @gem_home = File.join(@build_root, @gem_home)
-      alert_warning "You build with buildroot.\n  Build root: #{@build_root}\n  Bin dir: #{@bin_dir}\n  Gem home: #{@gem_home}"
+      @bin_dir = File.join(@build_root, @bin_dir.gsub(/^[a-zA-Z]:/, ''))
+      @gem_home = File.join(@build_root, @gem_home.gsub(/^[a-zA-Z]:/, ''))
+      @plugins_dir = File.join(@build_root, @plugins_dir.gsub(/^[a-zA-Z]:/, ''))
+      alert_warning "You build with buildroot.\n  Build root: #{@build_root}\n  Bin dir: #{@bin_dir}\n  Gem home: #{@gem_home}\n  Plugins dir: #{@plugins_dir}"
     end
   end
 
@@ -709,10 +690,11 @@ class Gem::Installer
     return if self.class.path_warning
 
     user_bin_dir = @bin_dir || Gem.bindir(gem_home)
-    user_bin_dir = user_bin_dir.tr(File::SEPARATOR, File::ALT_SEPARATOR) if
-      File::ALT_SEPARATOR
+    user_bin_dir = user_bin_dir.tr(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
 
     path = ENV['PATH']
+    path = path.tr(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
+
     if Gem.win_platform?
       path = path.downcase
       user_bin_dir = user_bin_dir.downcase
@@ -914,8 +896,6 @@ TEXT
 
     return true if @force
 
-    ensure_required_ruby_version_met
-    ensure_required_rubygems_version_met
     ensure_dependencies_met unless @ignore_dependencies
 
     true
@@ -961,5 +941,4 @@ TEXT
 
     raise Gem::FilePermissionError.new(dir) unless File.writable? dir
   end
-
 end

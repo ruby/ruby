@@ -15,6 +15,23 @@ describe :file_path, shared: true do
     @file.send(@method).should be_an_instance_of(String)
   end
 
+  it "returns a different String on every call" do
+    @file = File.new @path
+    path1 = @file.send(@method)
+    path2 = @file.send(@method)
+    path1.should == path2
+    path1.should_not.equal?(path2)
+  end
+
+  it "returns a mutable String" do
+    @file = File.new @path.dup.freeze
+    path = @file.send(@method)
+    path.should == @path
+    path.should_not.frozen?
+    path << "test"
+    @file.send(@method).should == @path
+  end
+
   it "calls to_str on argument and returns exact value" do
     path = mock('path')
     path.should_receive(:to_str).and_return(@path)

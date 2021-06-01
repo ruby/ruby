@@ -12,7 +12,7 @@ describe "Symbol#to_proc" do
     :to_s.to_proc.call(obj).should == "Received #to_s"
   end
 
-  ruby_version_is ""..."2.8" do
+  ruby_version_is ""..."3.0" do
     it "returns a Proc with #lambda? false" do
       pr = :to_s.to_proc
       pr.should_not.lambda?
@@ -29,7 +29,7 @@ describe "Symbol#to_proc" do
     end
   end
 
-  ruby_version_is "2.8" do
+  ruby_version_is "3.0" do
     it "returns a Proc with #lambda? true" do
       pr = :to_s.to_proc
       pr.should.lambda?

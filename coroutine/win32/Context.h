@@ -1,3 +1,6 @@
+#ifndef COROUTINE_WIN32_CONTEXT_H
+#define COROUTINE_WIN32_CONTEXT_H 1
+
 /*
  *  This file is part of the "Coroutine" project and released under the MIT License.
  *
@@ -57,3 +60,5 @@ struct coroutine_context * __fastcall coroutine_transfer(struct coroutine_contex
 static inline void coroutine_destroy(struct coroutine_context * context)
 {
 }
+
+#endif /* COROUTINE_WIN32_CONTEXT_H */

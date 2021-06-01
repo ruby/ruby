@@ -3,6 +3,9 @@ version: '{build}'
 init:
   - git config --global user.name git
   - git config --global user.email svn-admin@ruby-lang.org
+  - git config --global core.autocrlf false
+  - git config --global core.eol lf
+  - git config --global advice.detachedHead 0
 clone_depth: 10
 platform:
   - x64
@@ -47,13 +50,15 @@ for:
     - echo>> Makefile BUILTIN_ENCOBJS=nul
     - type win32\Makefile.sub >> Makefile
     - nmake %mflags% touch-unicode-files
-    - nmake %mflags% %UPDATE_UNICODE% up incs
+    - nmake %mflags% %UPDATE_UNICODE% incs
+    - nmake %mflags% extract-extlibs
     - del Makefile
     - mkdir \usr\local\bin
     - mkdir \usr\local\include
     - mkdir \usr\local\lib
-    - curl -fsSL -o zlib%zlib_version:.=%.zip --retry 10 https://zlib.net/zlib%zlib_version:.=%.zip
-    - 7z x -o%APPVEYOR_BUILD_FOLDER%\ext\zlib zlib%zlib_version:.=%.zip
+    - SET ZLIB_ZIP=.downloaded-cache\zlib%zlib_version:.=%.zip
+    - if not exist %ZLIB_ZIP% curl -fsSL -o %ZLIB_ZIP% --retry 10 https://zlib.net/zlib%zlib_version:.=%.zip
+    - 7z x -aos -o%APPVEYOR_BUILD_FOLDER%\ext\zlib %ZLIB_ZIP%
     - for %%I in (%OPENSSL_DIR%\*.dll) do mklink /h \usr\local\bin\%%~nxI %%I
     - attrib +r /s /d
     - mkdir %Platform%-mswin_%vs%

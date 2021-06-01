@@ -29,6 +29,7 @@
 #include "internal/sanitizers.h"
 #include "internal/util.h"
 #include "ruby/util.h"
+#include "ruby_atomic.h"
 
 const char ruby_hexdigits[] = "0123456789abcdef0123456789ABCDEF";
 #define hexdigit ruby_hexdigits
@@ -399,7 +400,8 @@ ruby_qsort(void* base, const size_t nel, const size_t size, cmpfunc_t *cmp, void
   for (;;) {
     start:
     if (L + size == R) {       /* 2 elements */
-      if ((*cmp)(L,R,d) > 0) mmswap(L,R); goto nxt;
+      if ((*cmp)(L,R,d) > 0) mmswap(L,R);
+      goto nxt;
     }
 
     l = L; r = R;

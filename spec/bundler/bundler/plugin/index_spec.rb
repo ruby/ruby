@@ -22,7 +22,7 @@ RSpec.describe Bundler::Plugin::Index do
       expect(index.plugin_path(plugin_name)).to eq(lib_path(plugin_name))
     end
 
-    it "load_paths is available for retrival" do
+    it "load_paths is available for retrieval" do
       expect(index.load_paths(plugin_name)).to eq([lib_path(plugin_name).join("lib").to_s])
     end
 

@@ -22,7 +22,6 @@ class TestEnv < Test::Unit::TestCase
 
   def setup
     @verbose = $VERBOSE
-    $VERBOSE = nil
     @backup = ENV.to_hash
     ENV.delete('test')
     ENV.delete('TEST')
@@ -84,7 +83,6 @@ class TestEnv < Test::Unit::TestCase
     ENV['test'] = val[0...-1]
 
     assert_nil(ENV.key(val))
-    assert_nil(ENV.index(val))
     assert_nil(ENV.key(val.upcase))
     ENV['test'] = val
     if IGNORE_CASE
@@ -106,6 +104,7 @@ class TestEnv < Test::Unit::TestCase
     assert_invalid_env {|v| ENV.delete(v)}
     assert_nil(ENV.delete("TEST"))
     assert_nothing_raised { ENV.delete(PATH_ENV) }
+    assert_equal("NO TEST", ENV.delete("TEST") {|name| "NO "+name})
   end
 
   def test_getenv
@@ -286,6 +285,17 @@ class TestEnv < Test::Unit::TestCase
     assert_equal({"foo"=>"bar", "baz"=>"qux"}, ENV.slice("foo", "baz"))
   end
 
+  def test_except
+    ENV.clear
+    ENV["foo"] = "bar"
+    ENV["baz"] = "qux"
+    ENV["bar"] = "rab"
+    assert_equal({"bar"=>"rab", "baz"=>"qux", "foo"=>"bar"}, ENV.except())
+    assert_equal({"bar"=>"rab", "baz"=>"qux", "foo"=>"bar"}, ENV.except(""))
+    assert_equal({"bar"=>"rab", "baz"=>"qux", "foo"=>"bar"}, ENV.except("unknown"))
+    assert_equal({"bar"=>"rab"}, ENV.except("foo", "baz"))
+  end
+
   def test_clear
     ENV.clear
     assert_equal(0, ENV.size)
@@ -358,7 +368,8 @@ class TestEnv < Test::Unit::TestCase
       assert_equal("foo", v)
     end
     assert_invalid_env {|var| ENV.assoc(var)}
-    assert_equal(Encoding.find("locale"), v.encoding)
+    encoding = /mswin|mingw/ =~ RUBY_PLATFORM ? Encoding::UTF_8 : Encoding.find("locale")
+    assert_equal(encoding, v.encoding)
   end
 
   def test_has_value2
@@ -568,15 +579,13 @@ class TestEnv < Test::Unit::TestCase
       end;
     end
 
-    if Encoding.find("locale") == Encoding::UTF_8
-      def test_utf8
-        text = "testing \u{e5 e1 e2 e4 e3 101 3042}"
-        test = ENV["test"]
-        ENV["test"] = text
-        assert_equal text, ENV["test"]
-      ensure
-        ENV["test"] = test
-      end
+    def test_utf8
+      text = "testing \u{e5 e1 e2 e4 e3 101 3042}"
+      test = ENV["test"]
+      ENV["test"] = text
+      assert_equal text, ENV["test"]
+    ensure
+      ENV["test"] = test
     end
   end
 end

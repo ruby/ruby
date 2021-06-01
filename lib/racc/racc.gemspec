@@ -1,8 +1,14 @@
 # -*- encoding: utf-8 -*-
 
+begin
+  require_relative "lib/racc/info"
+rescue LoadError # Fallback to load version file in ruby core repository
+  require_relative "info"
+end
+
 Gem::Specification.new do |s|
   s.name = "racc"
-  s.version = "1.5.0"
+  s.version = Racc::VERSION
   s.summary = "Racc is a LALR(1) parser generator"
   s.description = <<DESC
 Racc is a LALR(1) parser generator.
@@ -15,7 +21,7 @@ DESC
   s.authors = ["Minero Aoki", "Aaron Patterson"]
   s.email = [nil, "aaron@tenderlovemaking.com"]
   s.homepage = "http://i.loveruby.net/en/projects/racc/"
-  s.licenses = ["MIT"]
+  s.licenses = ["Ruby", "BSD-2-Clause"]
   s.executables = ["racc"]
   s.files = [
     "COPYING", "ChangeLog",
@@ -82,7 +88,6 @@ DESC
     "test/testscanner.rb", "web/racc.en.rhtml", "web/racc.ja.rhtml"
   ]
   s.require_paths = ["lib"]
-  s.rubygems_version = "3.1.0.pre1"
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.rdoc_options = ["--main", "README.rdoc"]
   s.extra_rdoc_files = [

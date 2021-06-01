@@ -207,8 +207,9 @@ describe "Array#fill with (filler, index, length)" do
 
   not_supported_on :opal do
     it "raises an ArgumentError or RangeError for too-large sizes" do
+      error_types = [RangeError, ArgumentError]
       arr = [1, 2, 3]
-      -> { arr.fill(10, 1, fixnum_max) }.should raise_error(ArgumentError)
+      -> { arr.fill(10, 1, fixnum_max) }.should raise_error { |err| error_types.should include(err.class) }
       -> { arr.fill(10, 1, bignum_value) }.should raise_error(RangeError)
     end
   end
@@ -321,6 +322,13 @@ describe "Array#fill with (filler, range)" do
       [1, 2, 3, 4].fill('x', eval("(3...)")).should == [1, 2, 3, 'x']
       [1, 2, 3, 4].fill(eval("(1..)")) { |x| x + 2 }.should == [1, 3, 4, 5]
       [1, 2, 3, 4].fill(eval("(3...)")) { |x| x + 2 }.should == [1, 2, 3, 5]
+    end
+  end
+
+  ruby_version_is "2.7" do
+    it "works with beginless ranges" do
+      [1, 2, 3, 4].fill('x', eval("(..2)")).should == ["x", "x", "x", 4]
+      [1, 2, 3, 4].fill(eval("(...2)")) { |x| x + 2 }.should == [2, 3, 3, 4]
     end
   end
 end

@@ -9,7 +9,6 @@ require 'rubygems/name_tuple'
 # SpecFetcher handles metadata updates from remote gem repositories.
 
 class Gem::SpecFetcher
-
   include Gem::UserInteraction
   include Gem::Text
 
@@ -92,14 +91,14 @@ class Gem::SpecFetcher
 
     list.each do |source, specs|
       if dependency.name.is_a?(String) && specs.respond_to?(:bsearch)
-        start_index = (0 ... specs.length).bsearch{ |i| specs[i].name >= dependency.name }
-        end_index   = (0 ... specs.length).bsearch{ |i| specs[i].name > dependency.name }
+        start_index = (0 ... specs.length).bsearch{|i| specs[i].name >= dependency.name }
+        end_index   = (0 ... specs.length).bsearch{|i| specs[i].name > dependency.name }
         specs = specs[start_index ... end_index] if start_index && end_index
       end
 
       found[source] = specs.select do |tup|
         if dependency.match?(tup)
-          if matching_platform and !Gem::Platform.match(tup.platform)
+          if matching_platform and !Gem::Platform.match_gem?(tup.platform, tup.name)
             pm = (
               rejected_specs[dependency] ||= \
                 Gem::PlatformMismatch.new(tup.name, tup.version))
@@ -122,7 +121,7 @@ class Gem::SpecFetcher
       end
     end
 
-    tuples = tuples.sort_by { |x| x[0] }
+    tuples = tuples.sort_by {|x| x[0] }
 
     return [tuples, errors]
   end
@@ -194,10 +193,10 @@ class Gem::SpecFetcher
     matches = if matches.empty? && type != :prerelease
                 suggest_gems_from_name gem_name, :prerelease
               else
-                matches.uniq.sort_by { |name, dist| dist }
+                matches.uniq.sort_by {|name, dist| dist }
               end
 
-    matches.map { |name, dist| name }.uniq.first(num_results)
+    matches.map {|name, dist| name }.uniq.first(num_results)
   end
 
   ##
@@ -254,10 +253,9 @@ class Gem::SpecFetcher
 
   def tuples_for(source, type, gracefully_ignore=false) # :nodoc:
     @caches[type][source.uri] ||=
-      source.load_specs(type).sort_by { |tup| tup.name }
+      source.load_specs(type).sort_by {|tup| tup.name }
   rescue Gem::RemoteFetcher::FetchError
     raise unless gracefully_ignore
     []
   end
-
 end

@@ -30,17 +30,43 @@ class RubyLex
     @prompt = nil
   end
 
+  def self.compile_with_errors_suppressed(code)
+    line_no = 1
+    begin
+      result = yield code, line_no
+    rescue ArgumentError
+      code = ";\n#{code}"
+      line_no = 0
+      result = yield code, line_no
+    end
+    result
+  end
+
   # io functions
   def set_input(io, p = nil, &block)
     @io = io
     if @io.respond_to?(:check_termination)
       @io.check_termination do |code|
-        code.gsub!(/\s*\z/, '').concat("\n")
-        ltype, indent, continue, code_block_open = check_state(code)
-        if ltype or indent > 0 or continue or code_block_open
-          false
+        if Reline::IOGate.in_pasting?
+          lex = RubyLex.new
+          rest = lex.check_termination_in_prev_line(code)
+          if rest
+            Reline.delete_text
+            rest.bytes.reverse_each do |c|
+              Reline.ungetc(c)
+            end
+            true
+          else
+            false
+          end
         else
-          true
+          code.gsub!(/\s*\z/, '').concat("\n")
+          ltype, indent, continue, code_block_open = check_state(code)
+          if ltype or indent > 0 or continue or code_block_open
+            false
+          else
+            true
+          end
         end
       end
     end
@@ -48,11 +74,31 @@ class RubyLex
       @io.dynamic_prompt do |lines|
         lines << '' if lines.empty?
         result = []
-        lines.each_index { |i|
-          c = lines[0..i].map{ |l| l + "\n" }.join
-          ltype, indent, continue, code_block_open = check_state(c)
-          result << @prompt.call(ltype, indent, continue || code_block_open, @line_no + i)
-        }
+        tokens = self.class.ripper_lex_without_warning(lines.map{ |l| l + "\n" }.join)
+        code = String.new
+        partial_tokens = []
+        unprocessed_tokens = []
+        line_num_offset = 0
+        tokens.each do |t|
+          partial_tokens << t
+          unprocessed_tokens << t
+          if t[2].include?("\n")
+            t_str = t[2]
+            t_str.each_line("\n") do |s|
+              code << s << "\n"
+              ltype, indent, continue, code_block_open = check_state(code, partial_tokens)
+              result << @prompt.call(ltype, indent, continue || code_block_open, @line_no + line_num_offset)
+              line_num_offset += 1
+            end
+            unprocessed_tokens = []
+          else
+            code << t[2]
+          end
+        end
+        unless unprocessed_tokens.empty?
+          ltype, indent, continue, code_block_open = check_state(code, unprocessed_tokens)
+          result << @prompt.call(ltype, indent, continue || code_block_open, @line_no + line_num_offset)
+        end
         result
       end
     end
@@ -74,27 +120,78 @@ class RubyLex
     end
   end
 
-  def ripper_lex_without_warning(code)
+  ERROR_TOKENS = [
+    :on_parse_error,
+    :compile_error,
+    :on_assign_error,
+    :on_alias_error,
+    :on_class_name_error,
+    :on_param_error
+  ]
+
+  def self.ripper_lex_without_warning(code)
     verbose, $VERBOSE = $VERBOSE, nil
-    tokens = Ripper.lex(code)
-    $VERBOSE = verbose
+    tokens = nil
+    compile_with_errors_suppressed(code) do |inner_code, line_no|
+      lexer = Ripper::Lexer.new(inner_code, '-', line_no)
+      if lexer.respond_to?(:scan) # Ruby 2.7+
+        tokens = []
+        pos_to_index = {}
+        lexer.scan.each do |t|
+          if pos_to_index.has_key?(t[0])
+            index = pos_to_index[t[0]]
+            found_tk = tokens[index]
+            if ERROR_TOKENS.include?(found_tk[1]) && !ERROR_TOKENS.include?(t[1])
+              tokens[index] = t
+            end
+          else
+            pos_to_index[t[0]] = tokens.size
+            tokens << t
+          end
+        end
+      else
+        tokens = lexer.parse
+      end
+    end
     tokens
+  ensure
+    $VERBOSE = verbose
+  end
+
+  def find_prev_spaces(line_index)
+    return 0 if @tokens.size == 0
+    md = @tokens[0][2].match(/(\A +)/)
+    prev_spaces = md.nil? ? 0 : md[1].count(' ')
+    line_count = 0
+    @tokens.each_with_index do |t, i|
+      if t[2].include?("\n")
+        line_count += t[2].count("\n")
+        if line_count >= line_index
+          return prev_spaces
+        end
+        if (@tokens.size - 1) > i
+          md = @tokens[i + 1][2].match(/(\A +)/)
+          prev_spaces = md.nil? ? 0 : md[1].count(' ')
+        end
+      end
+    end
+    prev_spaces
   end
 
   def set_auto_indent(context)
     if @io.respond_to?(:auto_indent) and context.auto_indent_mode
       @io.auto_indent do |lines, line_index, byte_pointer, is_newline|
         if is_newline
-          md = lines[line_index - 1].match(/(\A +)/)
-          prev_spaces = md.nil? ? 0 : md[1].count(' ')
-          @tokens = ripper_lex_without_warning(lines[0..line_index].join("\n"))
+          @tokens = self.class.ripper_lex_without_warning(lines[0..line_index].join("\n"))
+          prev_spaces = find_prev_spaces(line_index)
           depth_difference = check_newline_depth_difference
+          depth_difference = 0 if depth_difference < 0
           prev_spaces + depth_difference * 2
         else
           code = line_index.zero? ? '' : lines[0..(line_index - 1)].map{ |l| l + "\n" }.join
           last_line = lines[line_index]&.byteslice(0, byte_pointer)
           code += last_line if last_line
-          @tokens = ripper_lex_without_warning(code)
+          @tokens = self.class.ripper_lex_without_warning(code)
           corresponding_token_depth = check_corresponding_token_depth
           if corresponding_token_depth
             corresponding_token_depth
@@ -106,12 +203,12 @@ class RubyLex
     end
   end
 
-  def check_state(code)
-    @tokens = ripper_lex_without_warning(code)
-    ltype = process_literal_type
-    indent = process_nesting_level
-    continue = process_continue
-    code_block_open = check_code_block(code)
+  def check_state(code, tokens = nil)
+    tokens = self.class.ripper_lex_without_warning(code) unless tokens
+    ltype = process_literal_type(tokens)
+    indent = process_nesting_level(tokens)
+    continue = process_continue(tokens)
+    code_block_open = check_code_block(code, tokens)
     [ltype, indent, continue, code_block_open]
   end
 
@@ -140,7 +237,10 @@ class RubyLex
             throw :TERM_INPUT if @line == ''
           else
             @line_no += l.count("\n")
-            next if l == "\n"
+            if l == "\n"
+              @exp_line_no += 1
+              next
+            end
             @line.concat l
             if @code_block_open or @ltype or @continue or @indent > 0
               next
@@ -150,7 +250,7 @@ class RubyLex
             @line.force_encoding(@io.encoding)
             yield @line, @exp_line_no
           end
-          break if @io.eof?
+          raise TerminateLineInput if @io.eof?
           @line = ''
           @exp_line_no = @line_no
 
@@ -170,7 +270,7 @@ class RubyLex
     end
     code = @line + (line.nil? ? '' : line)
     code.gsub!(/\s*\z/, '').concat("\n")
-    @tokens = ripper_lex_without_warning(code)
+    @tokens = self.class.ripper_lex_without_warning(code)
     @continue = process_continue
     @code_block_open = check_code_block(code)
     @indent = process_nesting_level
@@ -178,39 +278,47 @@ class RubyLex
     line
   end
 
-  def process_continue
+  def process_continue(tokens = @tokens)
     # last token is always newline
-    if @tokens.size >= 2 and @tokens[-2][1] == :on_regexp_end
+    if tokens.size >= 2 and tokens[-2][1] == :on_regexp_end
       # end of regexp literal
       return false
-    elsif @tokens.size >= 2 and @tokens[-2][1] == :on_semicolon
+    elsif tokens.size >= 2 and tokens[-2][1] == :on_semicolon
       return false
-    elsif @tokens.size >= 2 and @tokens[-2][1] == :on_kw and ['begin', 'else', 'ensure'].include?(@tokens[-2][2])
+    elsif tokens.size >= 2 and tokens[-2][1] == :on_kw and ['begin', 'else', 'ensure'].include?(tokens[-2][2])
       return false
-    elsif !@tokens.empty? and @tokens.last[2] == "\\\n"
+    elsif !tokens.empty? and tokens.last[2] == "\\\n"
       return true
-    elsif @tokens.size >= 1 and @tokens[-1][1] == :on_heredoc_end # "EOH\n"
+    elsif tokens.size >= 1 and tokens[-1][1] == :on_heredoc_end # "EOH\n"
       return false
-    elsif @tokens.size >= 2 and defined?(Ripper::EXPR_BEG) and @tokens[-2][3].anybits?(Ripper::EXPR_BEG | Ripper::EXPR_FNAME)
+    elsif tokens.size >= 2 and defined?(Ripper::EXPR_BEG) and tokens[-2][3].anybits?(Ripper::EXPR_BEG | Ripper::EXPR_FNAME) and tokens[-2][2] !~ /\A\.\.\.?\z/
       # end of literal except for regexp
+      # endless range at end of line is not a continue
       return true
     end
     false
   end
 
-  def check_code_block(code)
-    return true if @tokens.empty?
-    if @tokens.last[1] == :on_heredoc_beg
+  def check_code_block(code, tokens = @tokens)
+    return true if tokens.empty?
+    if tokens.last[1] == :on_heredoc_beg
       return true
     end
 
     begin # check if parser error are available
       verbose, $VERBOSE = $VERBOSE, nil
       case RUBY_ENGINE
+      when 'ruby'
+        self.class.compile_with_errors_suppressed(code) do |inner_code, line_no|
+          RubyVM::InstructionSequence.compile(inner_code, nil, nil, line_no)
+        end
       when 'jruby'
         JRuby.compile_ir(code)
       else
-        RubyVM::InstructionSequence.compile(code)
+        catch(:valid) do
+          eval("BEGIN { throw :valid, true }\n#{code}")
+          false
+        end
       end
     rescue EncodingError
       # This is for a hash with invalid encoding symbol, {"\xAE": 1}
@@ -231,7 +339,7 @@ class RubyLex
         # "syntax error, unexpected end-of-input, expecting keyword_end"
         #
         #   example:
-        #     if ture
+        #     if true
         #       hoge
         #       if false
         #         fuga
@@ -265,7 +373,7 @@ class RubyLex
     end
 
     if defined?(Ripper::EXPR_BEG)
-      last_lex_state = @tokens.last[3]
+      last_lex_state = tokens.last[3]
       if last_lex_state.allbits?(Ripper::EXPR_BEG)
         return false
       elsif last_lex_state.allbits?(Ripper::EXPR_DOT)
@@ -284,30 +392,46 @@ class RubyLex
     false
   end
 
-  def process_nesting_level
+  def process_nesting_level(tokens = @tokens)
     indent = 0
-    @tokens.each_with_index { |t, index|
+    in_oneliner_def = nil
+    tokens.each_with_index { |t, index|
+      # detecting one-liner method definition
+      if in_oneliner_def.nil?
+        if t[3].allbits?(Ripper::EXPR_ENDFN)
+          in_oneliner_def = :ENDFN
+        end
+      else
+        if t[3].allbits?(Ripper::EXPR_ENDFN)
+          # continuing
+        elsif t[3].allbits?(Ripper::EXPR_BEG)
+          if t[2] == '='
+            in_oneliner_def = :BODY
+          end
+        else
+          if in_oneliner_def == :BODY
+            # one-liner method definition
+            indent -= 1
+          end
+          in_oneliner_def = nil
+        end
+      end
+
       case t[1]
-      when :on_lbracket, :on_lbrace, :on_lparen
+      when :on_lbracket, :on_lbrace, :on_lparen, :on_tlambeg
         indent += 1
       when :on_rbracket, :on_rbrace, :on_rparen
         indent -= 1
       when :on_kw
-        next if index > 0 and @tokens[index - 1][3].allbits?(Ripper::EXPR_FNAME)
+        next if index > 0 and tokens[index - 1][3].allbits?(Ripper::EXPR_FNAME)
         case t[2]
         when 'do'
-          if index > 0 and @tokens[index - 1][3].anybits?(Ripper::EXPR_CMDARG | Ripper::EXPR_ENDFN | Ripper::EXPR_ARG)
-            # method_with_block do; end
-            indent += 1
-          else
-            # while cond do; end # also "until" or "for"
-            # This "do" doesn't increment indent because "while" already
-            # incremented.
-          end
+          syntax_of_do = take_corresponding_syntax_to_kw_do(tokens, index)
+          indent += 1 if syntax_of_do == :method_calling
         when 'def', 'case', 'for', 'begin', 'class', 'module'
           indent += 1
         when 'if', 'unless', 'while', 'until'
-          # postfix if/unless/while/until/rescue must be Ripper::EXPR_LABEL
+          # postfix if/unless/while/until must be Ripper::EXPR_LABEL
           indent += 1 unless t[3].allbits?(Ripper::EXPR_LABEL)
         when 'end'
           indent -= 1
@@ -318,13 +442,112 @@ class RubyLex
     indent
   end
 
+  def is_method_calling?(tokens, index)
+    tk = tokens[index]
+    if tk[3].anybits?(Ripper::EXPR_CMDARG) and tk[1] == :on_ident
+      # The target method call to pass the block with "do".
+      return true
+    elsif tk[3].anybits?(Ripper::EXPR_ARG) and tk[1] == :on_ident
+      non_sp_index = tokens[0..(index - 1)].rindex{ |t| t[1] != :on_sp }
+      if non_sp_index
+        prev_tk = tokens[non_sp_index]
+        if prev_tk[3].anybits?(Ripper::EXPR_DOT) and prev_tk[1] == :on_period
+          # The target method call with receiver to pass the block with "do".
+          return true
+        end
+      end
+    end
+    false
+  end
+
+  def take_corresponding_syntax_to_kw_do(tokens, index)
+    syntax_of_do = nil
+    # Finding a syntax correnponding to "do".
+    index.downto(0) do |i|
+      tk = tokens[i]
+      # In "continue", the token isn't the corresponding syntax to "do".
+      non_sp_index = tokens[0..(i - 1)].rindex{ |t| t[1] != :on_sp }
+      first_in_fomula = false
+      if non_sp_index.nil?
+        first_in_fomula = true
+      elsif [:on_ignored_nl, :on_nl, :on_comment].include?(tokens[non_sp_index][1])
+        first_in_fomula = true
+      end
+      if is_method_calling?(tokens, i)
+        syntax_of_do = :method_calling
+        break if first_in_fomula
+      elsif tk[1] == :on_kw && %w{while until for}.include?(tk[2])
+        # A loop syntax in front of "do" found.
+        #
+        #   while cond do # also "until" or "for"
+        #   end
+        #
+        # This "do" doesn't increment indent because the loop syntax already
+        # incremented.
+        syntax_of_do = :loop_syntax
+        break if first_in_fomula
+      end
+    end
+    syntax_of_do
+  end
+
+  def is_the_in_correspond_to_a_for(tokens, index)
+    syntax_of_in = nil
+    # Finding a syntax correnponding to "do".
+    index.downto(0) do |i|
+      tk = tokens[i]
+      # In "continue", the token isn't the corresponding syntax to "do".
+      non_sp_index = tokens[0..(i - 1)].rindex{ |t| t[1] != :on_sp }
+      first_in_fomula = false
+      if non_sp_index.nil?
+        first_in_fomula = true
+      elsif [:on_ignored_nl, :on_nl, :on_comment].include?(tokens[non_sp_index][1])
+        first_in_fomula = true
+      end
+      if tk[1] == :on_kw && tk[2] == 'for'
+        # A loop syntax in front of "do" found.
+        #
+        #   while cond do # also "until" or "for"
+        #   end
+        #
+        # This "do" doesn't increment indent because the loop syntax already
+        # incremented.
+        syntax_of_in = :for
+      end
+      break if first_in_fomula
+    end
+    syntax_of_in
+  end
+
   def check_newline_depth_difference
     depth_difference = 0
     open_brace_on_line = 0
+    in_oneliner_def = nil
     @tokens.each_with_index do |t, index|
+      # detecting one-liner method definition
+      if in_oneliner_def.nil?
+        if t[3].allbits?(Ripper::EXPR_ENDFN)
+          in_oneliner_def = :ENDFN
+        end
+      else
+        if t[3].allbits?(Ripper::EXPR_ENDFN)
+          # continuing
+        elsif t[3].allbits?(Ripper::EXPR_BEG)
+          if t[2] == '='
+            in_oneliner_def = :BODY
+          end
+        else
+          if in_oneliner_def == :BODY
+            # one-liner method definition
+            depth_difference -= 1
+          end
+          in_oneliner_def = nil
+        end
+      end
+
       case t[1]
       when :on_ignored_nl, :on_nl, :on_comment
-        if index != (@tokens.size - 1)
+        if index != (@tokens.size - 1) and in_oneliner_def != :BODY
           depth_difference = 0
           open_brace_on_line = 0
         end
@@ -333,7 +556,7 @@ class RubyLex
         next
       end
       case t[1]
-      when :on_lbracket, :on_lbrace, :on_lparen
+      when :on_lbracket, :on_lbrace, :on_lparen, :on_tlambeg
         depth_difference += 1
         open_brace_on_line += 1
       when :on_rbracket, :on_rbrace, :on_rparen
@@ -342,23 +565,23 @@ class RubyLex
         next if index > 0 and @tokens[index - 1][3].allbits?(Ripper::EXPR_FNAME)
         case t[2]
         when 'do'
-          if index > 0 and @tokens[index - 1][3].anybits?(Ripper::EXPR_CMDARG | Ripper::EXPR_ENDFN | Ripper::EXPR_ARG)
-            # method_with_block do; end
-            depth_difference += 1
-          else
-            # while cond do; end # also "until" or "for"
-            # This "do" doesn't increment indent because "while" already
-            # incremented.
-          end
+          syntax_of_do = take_corresponding_syntax_to_kw_do(@tokens, index)
+          depth_difference += 1 if syntax_of_do == :method_calling
         when 'def', 'case', 'for', 'begin', 'class', 'module'
           depth_difference += 1
-        when 'if', 'unless', 'while', 'until'
+        when 'if', 'unless', 'while', 'until', 'rescue'
           # postfix if/unless/while/until/rescue must be Ripper::EXPR_LABEL
           unless t[3].allbits?(Ripper::EXPR_LABEL)
             depth_difference += 1
           end
-        when 'else', 'elsif', 'rescue', 'ensure', 'when', 'in'
+        when 'else', 'elsif', 'ensure', 'when'
           depth_difference += 1
+        when 'in'
+          unless is_the_in_correspond_to_a_for(@tokens, index)
+            depth_difference += 1
+          end
+        when 'end'
+          depth_difference -= 1
         end
       end
     end
@@ -372,14 +595,43 @@ class RubyLex
     spaces_of_nest = []
     spaces_at_line_head = 0
     open_brace_on_line = 0
+    in_oneliner_def = nil
     @tokens.each_with_index do |t, index|
+      # detecting one-liner method definition
+      if in_oneliner_def.nil?
+        if t[3].allbits?(Ripper::EXPR_ENDFN)
+          in_oneliner_def = :ENDFN
+        end
+      else
+        if t[3].allbits?(Ripper::EXPR_ENDFN)
+          # continuing
+        elsif t[3].allbits?(Ripper::EXPR_BEG)
+          if t[2] == '='
+            in_oneliner_def = :BODY
+          end
+        else
+          if in_oneliner_def == :BODY
+            # one-liner method definition
+            if is_first_printable_of_line
+              corresponding_token_depth = spaces_of_nest.pop
+            else
+              spaces_of_nest.pop
+              corresponding_token_depth = nil
+            end
+          end
+          in_oneliner_def = nil
+        end
+      end
+
       case t[1]
       when :on_ignored_nl, :on_nl, :on_comment
-        corresponding_token_depth = nil
-        spaces_at_line_head = 0
-        is_first_spaces_of_line = true
-        is_first_printable_of_line = true
-        open_brace_on_line = 0
+        if in_oneliner_def != :BODY
+          corresponding_token_depth = nil
+          spaces_at_line_head = 0
+          is_first_spaces_of_line = true
+          is_first_printable_of_line = true
+          open_brace_on_line = 0
+        end
         next
       when :on_sp
         spaces_at_line_head = t[2].count(' ') if is_first_spaces_of_line
@@ -387,7 +639,7 @@ class RubyLex
         next
       end
       case t[1]
-      when :on_lbracket, :on_lbrace, :on_lparen
+      when :on_lbracket, :on_lbrace, :on_lparen, :on_tlambeg
         spaces_of_nest.push(spaces_at_line_head + open_brace_on_line * 2)
         open_brace_on_line += 1
       when :on_rbracket, :on_rbrace, :on_rparen
@@ -401,14 +653,23 @@ class RubyLex
       when :on_kw
         next if index > 0 and @tokens[index - 1][3].allbits?(Ripper::EXPR_FNAME)
         case t[2]
-        when 'def', 'do', 'case', 'for', 'begin', 'class', 'module'
+        when 'do'
+          syntax_of_do = take_corresponding_syntax_to_kw_do(@tokens, index)
+          if syntax_of_do == :method_calling
+            spaces_of_nest.push(spaces_at_line_head)
+          end
+        when 'def', 'case', 'for', 'begin', 'class', 'module'
           spaces_of_nest.push(spaces_at_line_head)
+        when 'rescue'
+          unless t[3].allbits?(Ripper::EXPR_LABEL)
+            corresponding_token_depth = spaces_of_nest.last
+          end
         when 'if', 'unless', 'while', 'until'
-          # postfix if/unless/while/until/rescue must be Ripper::EXPR_LABEL
+          # postfix if/unless/while/until must be Ripper::EXPR_LABEL
           unless t[3].allbits?(Ripper::EXPR_LABEL)
             spaces_of_nest.push(spaces_at_line_head)
           end
-        when 'else', 'elsif', 'rescue', 'ensure', 'when', 'in'
+        when 'else', 'elsif', 'ensure', 'when', 'in'
           corresponding_token_depth = spaces_of_nest.last
         when 'end'
           if is_first_printable_of_line
@@ -425,12 +686,12 @@ class RubyLex
     corresponding_token_depth
   end
 
-  def check_string_literal
+  def check_string_literal(tokens)
     i = 0
     start_token = []
     end_type = []
-    while i < @tokens.size
-      t = @tokens[i]
+    while i < tokens.size
+      t = tokens[i]
       case t[1]
       when :on_tstring_beg
         start_token << t
@@ -440,7 +701,7 @@ class RubyLex
         end_type << :on_regexp_end
       when :on_symbeg
         acceptable_single_tokens = %i{on_ident on_const on_op on_cvar on_ivar on_gvar on_kw}
-        if (i + 1) < @tokens.size and acceptable_single_tokens.all?{ |t| @tokens[i + 1][1] != t }
+        if (i + 1) < tokens.size and acceptable_single_tokens.all?{ |st| tokens[i + 1][1] != st }
           start_token << t
           end_type << :on_tstring_end
         end
@@ -462,8 +723,8 @@ class RubyLex
     start_token.last.nil? ? '' : start_token.last
   end
 
-  def process_literal_type
-    start_token = check_string_literal
+  def process_literal_type(tokens = @tokens)
+    start_token = check_string_literal(tokens)
     case start_token[1]
     when :on_tstring_beg
       case start_token[2]
@@ -491,6 +752,51 @@ class RubyLex
     else
       nil
     end
+  end
+
+  def check_termination_in_prev_line(code)
+    tokens = self.class.ripper_lex_without_warning(code)
+    past_first_newline = false
+    index = tokens.rindex do |t|
+      # traverse first token before last line
+      if past_first_newline
+        if t.tok.include?("\n")
+          true
+        end
+      elsif t.tok.include?("\n")
+        past_first_newline = true
+        false
+      else
+        false
+      end
+    end
+    if index
+      first_token = nil
+      last_line_tokens = tokens[(index + 1)..(tokens.size - 1)]
+      last_line_tokens.each do |t|
+        unless [:on_sp, :on_ignored_sp, :on_comment].include?(t.event)
+          first_token = t
+          break
+        end
+      end
+      if first_token.nil?
+        return false
+      elsif first_token && first_token.state == Ripper::EXPR_DOT
+        return false
+      else
+        tokens_without_last_line = tokens[0..index]
+        ltype = process_literal_type(tokens_without_last_line)
+        indent = process_nesting_level(tokens_without_last_line)
+        continue = process_continue(tokens_without_last_line)
+        code_block_open = check_code_block(tokens_without_last_line.map(&:tok).join(''), tokens_without_last_line)
+        if ltype or indent > 0 or continue or code_block_open
+          return false
+        else
+          return last_line_tokens.map(&:tok).join('')
+        end
+      end
+    end
+    false
   end
 end
 # :startdoc:

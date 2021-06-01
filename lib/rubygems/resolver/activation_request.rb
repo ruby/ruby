@@ -4,7 +4,6 @@
 # dependency that was used to introduce this activation.
 
 class Gem::Resolver::ActivationRequest
-
   ##
   # The parent request for this activation request.
 
@@ -29,10 +28,18 @@ class Gem::Resolver::ActivationRequest
     when Gem::Specification
       @spec == other
     when Gem::Resolver::ActivationRequest
-      @spec == other.spec && @request == other.request
+      @spec == other.spec
     else
       false
     end
+  end
+
+  def eql?(other)
+    self == other
+  end
+
+  def hash
+    @spec.hash
   end
 
   ##
@@ -152,5 +159,4 @@ class Gem::Resolver::ActivationRequest
   def name_tuple
     @name_tuple ||= Gem::NameTuple.new(name, version, platform)
   end
-
 end

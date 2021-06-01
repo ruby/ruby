@@ -1,0 +1,21 @@
+prelude: |
+  class Eight
+    8.times { include(Module.new) }
+  end
+  class ThirtyTwo
+    32.times { include(Module.new) }
+  end
+  class SixtyFour
+    64.times { include(Module.new) }
+  end
+  class OneTwentyEight
+    128.times { include(Module.new) }
+  end
+  # Disable GC to see raw throughput:
+  GC.disable
+benchmark:
+  allocate_8_deep: Eight.new
+  allocate_32_deep: ThirtyTwo.new
+  allocate_64_deep: SixtyFour.new
+  allocate_128_deep: OneTwentyEight.new
+loop_count: 100000

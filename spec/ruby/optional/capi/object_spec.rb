@@ -115,6 +115,11 @@ describe "CApiObject" do
       @o.rb_respond_to(true, :object_id).should == true
       @o.rb_respond_to(14, :succ).should == true
     end
+
+    it "returns 0 if the method has been defined as rb_f_notimplement" do
+      @o.respond_to?(:not_implemented_method).should == false
+      @o.rb_respond_to(@o, :not_implemented_method).should == false
+    end
   end
 
   describe "rb_obj_respond_to" do
@@ -153,6 +158,20 @@ describe "CApiObject" do
 
     it "returns -N-1 when the method takes N required, variable additional, and a block argument" do
       @o.rb_obj_method_arity(@obj, :six).should == -3
+    end
+  end
+
+  describe "rb_obj_method" do
+    it "returns the method object for a symbol" do
+      method = @o.rb_obj_method("test", :size)
+      method.owner.should == String
+      method.name.to_sym.should == :size
+    end
+
+    it "returns the method object for a string" do
+      method = @o.rb_obj_method("test", "size")
+      method.owner.should == String
+      method.name.to_sym.should == :size
     end
   end
 
@@ -448,7 +467,7 @@ describe "CApiObject" do
   describe "rb_class_of" do
     it "returns the class of an object" do
       @o.rb_class_of(nil).should == NilClass
-      @o.rb_class_of(0).should == Fixnum
+      @o.rb_class_of(0).should == Integer
       @o.rb_class_of(0.1).should == Float
       @o.rb_class_of(ObjectTest.new).should == ObjectTest
     end
@@ -464,7 +483,7 @@ describe "CApiObject" do
   describe "rb_obj_classname" do
     it "returns the class name of an object" do
       @o.rb_obj_classname(nil).should == 'NilClass'
-      @o.rb_obj_classname(0).should == Fixnum.to_s
+      @o.rb_obj_classname(0).should == 'Integer'
       @o.rb_obj_classname(0.1).should == 'Float'
       @o.rb_obj_classname(ObjectTest.new).should == 'ObjectTest'
     end
@@ -820,6 +839,15 @@ describe "CApiObject" do
       end
     end
 
+    describe "rb_ivar_count" do
+      it "returns the number of instance variables" do
+        obj = Object.new
+        @o.rb_ivar_count(obj).should == 0
+        obj.instance_variable_set(:@foo, 42)
+        @o.rb_ivar_count(obj).should == 1
+      end
+    end
+
     describe "rb_ivar_get" do
       it "returns the instance variable on an object" do
         @o.rb_ivar_get(@test, :@foo).should == @test.instance_eval { @foo }
@@ -831,6 +859,7 @@ describe "CApiObject" do
 
       it "returns nil if the instance variable has not been initialized and is not a valid Ruby name" do
         @o.rb_ivar_get(@test, :bar).should == nil
+        @o.rb_ivar_get(@test, :mesg).should == nil
       end
 
       it 'returns the instance variable when it is not a valid Ruby name' do
@@ -866,6 +895,7 @@ describe "CApiObject" do
 
       it "does not throw an error if the instance variable is not a valid Ruby name" do
         @o.rb_ivar_defined(@test, :bar).should == false
+        @o.rb_ivar_defined(@test, :mesg).should == false
       end
     end
 

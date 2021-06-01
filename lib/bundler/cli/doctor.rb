@@ -93,7 +93,7 @@ module Bundler
       end
     end
 
-  private
+    private
 
     def check_home_permissions
       require "find"

@@ -9,7 +9,7 @@ RSpec.describe "bundler plugin install" do
   end
 
   it "shows proper message when gem in not found in the source" do
-    bundle "plugin install no-foo --source #{file_uri_for(gem_repo1)}"
+    bundle "plugin install no-foo --source #{file_uri_for(gem_repo1)}", :raise_on_error => false
 
     expect(err).to include("Could not find")
     plugin_should_not_be_installed("no-foo")
@@ -98,7 +98,7 @@ RSpec.describe "bundler plugin install" do
 
       bundle "plugin install charlie --source #{file_uri_for(gem_repo2)}"
 
-      expect(err).to include("plugins.rb was not found")
+      expect(err).to include("Failed to install the following plugins: `charlie`. The underlying error was: plugins.rb was not found")
 
       expect(global_plugin_gem("charlie-1.0")).not_to be_directory
 
@@ -147,9 +147,9 @@ RSpec.describe "bundler plugin install" do
     end
 
     it "raises an error when both git and local git sources are specified" do
-      bundle "plugin install foo --local_git /phony/path/project --git git@gitphony.com:/repo/project"
+      bundle "plugin install foo --local_git /phony/path/project --git git@gitphony.com:/repo/project", :raise_on_error => false
 
-      expect(exitstatus).not_to eq(0) if exitstatus
+      expect(exitstatus).not_to eq(0)
       expect(err).to eq("Remote and local plugin git sources can't be both specified")
     end
   end
@@ -208,15 +208,28 @@ RSpec.describe "bundler plugin install" do
       plugin_should_be_installed("ga-plugin")
     end
 
+    it "accepts path sources" do
+      build_lib "ga-plugin" do |s|
+        s.write "plugins.rb"
+      end
+
+      install_gemfile <<-G
+        plugin 'ga-plugin', :path => "#{lib_path("ga-plugin-1.0")}"
+      G
+
+      expect(out).to include("Installed plugin ga-plugin")
+      plugin_should_be_installed("ga-plugin")
+    end
+
     context "in deployment mode" do
       it "installs plugins" do
-        install_gemfile! <<-G
+        install_gemfile <<-G
           source '#{file_uri_for(gem_repo2)}'
           gem 'rack', "1.0.0"
         G
 
-        bundle "config --local deployment true"
-        install_gemfile! <<-G
+        bundle "config set --local deployment true"
+        install_gemfile <<-G
           source '#{file_uri_for(gem_repo2)}'
           plugin 'foo'
           gem 'rack', "1.0.0"

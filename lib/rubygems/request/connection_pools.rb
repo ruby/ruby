@@ -1,13 +1,10 @@
 # frozen_string_literal: true
 
 class Gem::Request::ConnectionPools # :nodoc:
-
   @client = Net::HTTP
 
   class << self
-
     attr_accessor :client
-
   end
 
   def initialize(proxy_uri, cert_files)
@@ -31,7 +28,7 @@ class Gem::Request::ConnectionPools # :nodoc:
   end
 
   def close_all
-    @pools.each_value {|pool| pool.close_all}
+    @pools.each_value {|pool| pool.close_all }
   end
 
   private
@@ -95,5 +92,4 @@ class Gem::Request::ConnectionPools # :nodoc:
       net_http_args
     end
   end
-
 end

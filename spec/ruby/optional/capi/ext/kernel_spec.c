@@ -191,6 +191,14 @@ static VALUE kernel_spec_rb_protect_yield(VALUE self, VALUE obj, VALUE ary) {
   return res;
 }
 
+static VALUE kernel_spec_rb_protect_errinfo(VALUE self, VALUE obj, VALUE ary) {
+  int status = 0;
+  VALUE res = rb_protect(rb_yield, obj, &status);
+  rb_ary_store(ary, 0, INT2NUM(23));
+  rb_ary_store(ary, 1, res);
+  return rb_errinfo();
+}
+
 static VALUE kernel_spec_rb_protect_null_status(VALUE self, VALUE obj) {
   return rb_protect(rb_yield, obj, NULL);
 }
@@ -270,6 +278,15 @@ static VALUE kernel_spec_rb_yield_values(VALUE self, VALUE obj1, VALUE obj2) {
   return rb_yield_values(2, obj1, obj2);
 }
 
+static VALUE kernel_spec_rb_yield_values2(VALUE self, VALUE ary) {
+  long len = RARRAY_LEN(ary);
+  VALUE *args = (VALUE*)alloca(sizeof(VALUE) * len);
+  for (int i = 0; i < len; i++) {
+    args[i] = rb_ary_entry(ary, i);
+  }
+  return rb_yield_values2((int)len, args);
+}
+
 static VALUE do_rec(VALUE obj, VALUE arg, int is_rec) {
   if(is_rec) {
     return obj;
@@ -299,10 +316,6 @@ static VALUE kernel_spec_rb_f_sprintf(VALUE self, VALUE ary) {
 
 static VALUE kernel_spec_rb_make_backtrace(VALUE self) {
   return rb_make_backtrace();
-}
-
-static VALUE kernel_spec_rb_obj_method(VALUE self, VALUE obj, VALUE method) {
-  return rb_obj_method(obj, method);
 }
 
 static VALUE kernel_spec_rb_funcall3(VALUE self, VALUE obj, VALUE method) {
@@ -340,6 +353,7 @@ void Init_kernel_spec(void) {
   rb_define_method(cls, "rb_rescue", kernel_spec_rb_rescue, 4);
   rb_define_method(cls, "rb_rescue2", kernel_spec_rb_rescue2, -1);
   rb_define_method(cls, "rb_protect_yield", kernel_spec_rb_protect_yield, 2);
+  rb_define_method(cls, "rb_protect_errinfo", kernel_spec_rb_protect_errinfo, 2);
   rb_define_method(cls, "rb_protect_null_status", kernel_spec_rb_protect_null_status, 1);
   rb_define_method(cls, "rb_eval_string_protect", kernel_spec_rb_eval_string_protect, 2);
   rb_define_method(cls, "rb_catch", kernel_spec_rb_catch, 2);
@@ -351,12 +365,12 @@ void Init_kernel_spec(void) {
   rb_define_method(cls, "rb_yield_indirected", kernel_spec_rb_yield_indirected, 1);
   rb_define_method(cls, "rb_yield_define_each", kernel_spec_rb_yield_define_each, 1);
   rb_define_method(cls, "rb_yield_values", kernel_spec_rb_yield_values, 2);
+  rb_define_method(cls, "rb_yield_values2", kernel_spec_rb_yield_values2, 1);
   rb_define_method(cls, "rb_yield_splat", kernel_spec_rb_yield_splat, 1);
   rb_define_method(cls, "rb_exec_recursive", kernel_spec_rb_exec_recursive, 1);
   rb_define_method(cls, "rb_set_end_proc", kernel_spec_rb_set_end_proc, 1);
   rb_define_method(cls, "rb_f_sprintf", kernel_spec_rb_f_sprintf, 1);
   rb_define_method(cls, "rb_make_backtrace", kernel_spec_rb_make_backtrace, 0);
-  rb_define_method(cls, "rb_obj_method", kernel_spec_rb_obj_method, 2);
   rb_define_method(cls, "rb_funcall3", kernel_spec_rb_funcall3, 2);
   rb_define_method(cls, "rb_funcall_many_args", kernel_spec_rb_funcall_many_args, 2);
   rb_define_method(cls, "rb_funcall_with_block", kernel_spec_rb_funcall_with_block, 3);

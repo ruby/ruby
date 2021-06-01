@@ -10,6 +10,13 @@ class TestMonitor < Test::Unit::TestCase
     @monitor = Monitor.new
   end
 
+  def test_enter_in_different_fibers
+    @monitor.enter
+    Fiber.new {
+      assert_equal false, @monitor.try_enter
+    }.resume
+  end
+
   def test_enter
     ary = []
     queue = Queue.new
@@ -234,6 +241,22 @@ class TestMonitor < Test::Unit::TestCase
 
   def test_new_cond_before_initialize
     assert NewCondTest.new.cond.instance_variable_get(:@monitor) != nil
+  end
+
+  class KeywordInitializeParent
+    def initialize(x:)
+    end
+  end
+
+  class KeywordInitializeChild < KeywordInitializeParent
+    include MonitorMixin
+    def initialize
+      super(x: 1)
+    end
+  end
+
+  def test_initialize_with_keyword_arg
+    assert KeywordInitializeChild.new
   end
 
   def test_timedwait

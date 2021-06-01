@@ -12,6 +12,22 @@ class Test_String_Fstring < Test::Unit::TestCase
     yield fstr
   end
 
+  def test_rb_enc_interned_str_autoloaded_encoding
+    assert_separately([], <<~RUBY)
+      require '-test-/string'
+      assert_include(Encoding::Windows_31J.inspect, 'autoload')
+      Bug::String.rb_enc_interned_str(Encoding::Windows_31J)
+    RUBY
+  end
+
+  def test_rb_enc_str_new_autoloaded_encoding
+    assert_separately([], <<~RUBY)
+      require '-test-/string'
+      assert_include(Encoding::Windows_31J.inspect, 'autoload')
+      Bug::String.rb_enc_str_new(Encoding::Windows_31J)
+    RUBY
+  end
+
   def test_instance_variable
     str = __method__.to_s * 3
     str.instance_variable_set(:@test, 42)

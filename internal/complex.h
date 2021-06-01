@@ -17,7 +17,7 @@ struct RComplex {
     VALUE imag;
 };
 
-#define RCOMPLEX(obj) (R_CAST(RComplex)(obj))
+#define RCOMPLEX(obj) ((struct RComplex *)(obj))
 
 /* shortcut macro for internal only */
 #define RCOMPLEX_SET_REAL(cmp, r) RB_OBJ_WRITE((cmp), &RCOMPLEX(cmp)->real, (r))
@@ -25,5 +25,6 @@ struct RComplex {
 
 /* complex.c */
 VALUE rb_dbl_complex_new_polar_pi(double abs, double ang);
+st_index_t rb_complex_hash(VALUE comp);
 
 #endif /* INTERNAL_COMPLEX_H */

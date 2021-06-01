@@ -22,11 +22,6 @@
 
 require 'rubygems'
 require 'rubygems/package'
-begin
-  gem 'rake'
-rescue Gem::LoadError
-end
-
 require 'rake/packagetask'
 
 ##
@@ -62,7 +57,6 @@ require 'rake/packagetask'
 #   end
 
 class Gem::PackageTask < Rake::PackageTask
-
   ##
   # Ruby Gem::Specification containing the metadata for this package.  The
   # name, version and package_files are automatically determined from the
@@ -125,5 +119,4 @@ class Gem::PackageTask < Rake::PackageTask
       end
     end
   end
-
 end

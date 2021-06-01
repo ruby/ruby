@@ -36,6 +36,8 @@ module DirSpecs
         .dotfile
         .dotsubdir/.dotfile
         .dotsubdir/nondotfile
+        nested/.dotsubir/.dotfile
+        nested/.dotsubir/nondotfile
 
         deeply/.dotfile
         deeply/nested/.dotfile.ext
@@ -160,10 +162,21 @@ module DirSpecs
       dir_filename_ordering
       file_one.ext
       file_two.ext
+      nested
       nondotfile
       special
       subdir_one
       subdir_two
     ]
+  end
+
+  if RUBY_VERSION > '3.1'
+    def self.expected_glob_paths
+      expected_paths - ['..']
+    end
+  else
+    def self.expected_glob_paths
+      expected_paths
+    end
   end
 end

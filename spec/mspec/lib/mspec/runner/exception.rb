@@ -40,6 +40,15 @@ class ExceptionState
     @backtrace_filter ||= MSpecScript.config[:backtrace_filter] || %r{(?:/bin/mspec|/lib/mspec/)}
 
     bt = @exception.backtrace || []
-    bt.select { |line| $MSPEC_DEBUG or @backtrace_filter !~ line }.join("\n")
+    unless $MSPEC_DEBUG
+      # Exclude <internal: entries inside MSpec code, so only after the first ignored entry
+      first_excluded_line = bt.index { |line| @backtrace_filter =~ line }
+      if first_excluded_line
+        bt = bt[0...first_excluded_line] + bt[first_excluded_line..-1].reject { |line|
+          @backtrace_filter =~ line || /^<internal:/ =~ line
+        }
+      end
+    end
+    bt.join("\n")
   end
 end

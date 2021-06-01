@@ -7,7 +7,7 @@ describe "ObjectSpace._id2ref" do
     r.should == s
   end
 
-  it "retrieves a Fixnum by object_id" do
+  it "retrieves an Integer by object_id" do
     f = 1
     r = ObjectSpace._id2ref(f.object_id)
     r.should == f

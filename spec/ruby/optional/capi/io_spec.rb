@@ -375,3 +375,29 @@ describe "rb_cloexec_open" do
     @io.close_on_exec?.should be_true
   end
 end
+
+describe "rb_io_t modes flags" do
+  before :each do
+    @o = CApiIOSpecs.new
+    @name = tmp("c_api_rb_io_specs")
+    touch @name
+  end
+
+  after :each do
+    rm_r @name
+  end
+
+  it "has the sync flag set if the IO object is synced in Ruby" do
+    File.open(@name) { |io|
+      io.sync = true
+      @o.rb_io_mode_sync_flag(io).should == true
+    }
+  end
+
+  it "has the sync flag unset if the IO object is not synced in Ruby" do
+    File.open(@name) { |io|
+      io.sync = false
+      @o.rb_io_mode_sync_flag(io).should == false
+    }
+  end
+end

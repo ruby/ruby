@@ -1,6 +1,8 @@
 # Parse built-in script and make rbinc file
 
 require 'ripper'
+require 'stringio'
+require_relative 'ruby_vm/helpers/c_escape'
 
 def string_literal(lit, str = [])
   while lit
@@ -49,14 +51,28 @@ def make_cfunc_name inlines, name, lineno
   end
 end
 
-def collect_builtin base, tree, name, bs, inlines
+def collect_locals tree
+  _type, name, (line, _cols) = tree
+  if locals = LOCALS_DB[[name, line]]
+    locals
+  else
+    if false # for debugging
+      pp LOCALS_DB
+      raise "not found: [#{name}, #{line}]"
+    end
+  end
+end
+
+def collect_builtin base, tree, name, bs, inlines, locals = nil
   while tree
-    call = sep = mid = args = nil
+    recv = sep = mid = args = nil
     case tree.first
     when :def
+      locals = collect_locals(tree[1])
       tree = tree[3]
       next
     when :defs
+      locals = collect_locals(tree[3])
       tree = tree[5]
       next
     when :class
@@ -70,6 +86,8 @@ def collect_builtin base, tree, name, bs, inlines
     when :method_add_arg
       _, mid, (_, (_, args)) = tree
       case mid.first
+      when :call
+        _, recv, sep, mid = mid
       when :fcall
         _, mid = mid
       else
@@ -79,23 +97,49 @@ def collect_builtin base, tree, name, bs, inlines
       _, mid = tree
     when :command               # FCALL
       _, mid, (_, args) = tree
+    when :call, :command_call   # CALL
+      _, recv, sep, mid, (_, args) = tree
     end
     if mid
-      raise "unknown sexp: #{mid.inspect}" unless mid.first == :@ident
+      raise "unknown sexp: #{mid.inspect}" unless %i[@ident @const].include?(mid.first)
       _, mid, (lineno,) = mid
-      if /\A__builtin_(.+)/ =~ mid
-        cfunc_name = func_name = $1
+      if recv
+        func_name = nil
+        case recv.first
+        when :var_ref
+          _, recv = recv
+          if recv.first == :@const and recv[1] == "Primitive"
+            func_name = mid.to_s
+          end
+        when :vcall
+          _, recv = recv
+          if recv.first == :@ident and recv[1] == "__builtin"
+            func_name = mid.to_s
+          end
+        end
+        collect_builtin(base, recv, name, bs, inlines) unless func_name
+      else
+        func_name = mid[/\A__builtin_(.+)/, 1]
+      end
+      if func_name
+        cfunc_name = func_name
         args.pop unless (args ||= []).last
         argc = args.size
 
         if /(.+)\!\z/ =~ func_name
           case $1
+          when 'attr'
+            text = inline_text(argc, args.first)
+            if text != 'inline'
+              raise "Only 'inline' is allowed to be annotated (but got: '#{text}')"
+            end
+            break
           when 'cstmt'
             text = inline_text argc, args.first
 
             func_name = "_bi#{inlines.size}"
             cfunc_name = make_cfunc_name(inlines, name, lineno)
-            inlines[cfunc_name] = [lineno, text, params, func_name]
+            inlines[cfunc_name] = [lineno, text, locals, func_name]
             argc -= 1
           when 'cexpr', 'cconst'
             text = inline_text argc, args.first
@@ -104,14 +148,20 @@ def collect_builtin base, tree, name, bs, inlines
             func_name = "_bi#{inlines.size}"
             cfunc_name = make_cfunc_name(inlines, name, lineno)
 
-            params = [] if $1 == 'cconst'
-            inlines[cfunc_name] = [lineno, code, params, func_name]
+            locals = [] if $1 == 'cconst'
+            inlines[cfunc_name] = [lineno, code, locals, func_name]
             argc -= 1
           when 'cinit'
             text = inline_text argc, args.first
-            func_name = nil
-            inlines[inlines.size] = [nil, [lineno, text, nil, nil]]
+            func_name = nil # required
+            inlines[inlines.size] = [lineno, text, nil, nil]
             argc -= 1
+          when 'arg'
+            argc == 1 or raise "unexpected argument number #{argc}"
+            (arg = args.first)[0] == :symbol_literal or raise "symbol literal expected #{args}"
+            (arg = arg[1])[0] == :symbol or raise "symbol expected #{arg}"
+            (var = arg[1] and var = var[1]) or raise "argument name expected #{arg}"
+            func_name = nil
           end
         end
 
@@ -126,21 +176,76 @@ def collect_builtin base, tree, name, bs, inlines
     end
 
     tree.each do |t|
-      collect_builtin base, t, name, bs, inlines if Array === t
+      collect_builtin base, t, name, bs, inlines, locals if Array === t
     end
     break
   end
 end
+
 # ruby mk_builtin_loader.rb TARGET_FILE.rb
 # #=> generate TARGET_FILE.rbinc
 #
+
+LOCALS_DB = {} # [method_name, first_line] = locals
+
+def collect_iseq iseq_ary
+  # iseq_ary.each_with_index{|e, i| p [i, e]}
+  label = iseq_ary[5]
+  first_line = iseq_ary[8]
+  type = iseq_ary[9]
+  locals = iseq_ary[10]
+  insns = iseq_ary[13]
+
+  if type == :method
+    LOCALS_DB[[label, first_line].freeze] = locals
+  end
+
+  insns.each{|insn|
+    case insn
+    when Integer
+      # ignore
+    when Array
+      # p insn.shift # insn name
+      insn.each{|op|
+        if Array === op && op[0] == "YARVInstructionSequence/SimpleDataFormat"
+          collect_iseq op
+        end
+      }
+    end
+  }
+end
+
+def generate_cexpr(ofile, lineno, line_file, body_lineno, text, locals, func_name)
+  f = StringIO.new
+  f.puts '{'
+  lineno += 1
+  locals.reverse_each.with_index{|param, i|
+    next unless Symbol === param
+    f.puts "MAYBE_UNUSED(const VALUE) #{param} = rb_vm_lvar(ec, #{-3 - i});"
+    lineno += 1
+  }
+  f.puts "#line #{body_lineno} \"#{line_file}\""
+  lineno += 1
+
+  f.puts text
+  lineno += text.count("\n") + 1
+
+  f.puts "#line #{lineno + 2} \"#{ofile}\"" # TODO: restore line number.
+  f.puts "}"
+  f.puts
+  lineno += 3
+
+  return lineno, f.string
+end
 
 def mk_builtin_header file
   base = File.basename(file, '.rb')
   ofile = "#{file}inc"
 
   # bs = { func_name => argc }
-  collect_builtin(base, Ripper.sexp(File.read(file)), 'top', bs = {}, inlines = {})
+  code = File.read(file)
+  collect_iseq RubyVM::InstructionSequence.compile(code).to_a
+  collect_builtin(base, Ripper.sexp(code), 'top', bs = {}, inlines = {})
 
   begin
     f = open(ofile, 'w')
@@ -149,6 +254,11 @@ def mk_builtin_header file
     f = open(File.basename(ofile), 'w')
   end
   begin
+    if File::ALT_SEPARATOR
+      file = file.tr(File::ALT_SEPARATOR, File::SEPARATOR)
+      ofile = ofile.tr(File::ALT_SEPARATOR, File::SEPARATOR)
+    end
+    lineno = __LINE__
     f.puts "// -*- c -*-"
     f.puts "// DO NOT MODIFY THIS FILE DIRECTLY."
     f.puts "// auto-generated file"
@@ -160,28 +270,15 @@ def mk_builtin_header file
     f.puts '#include "builtin.h"                /* for RB_BUILTIN_FUNCTION */'
     f.puts 'struct rb_execution_context_struct; /* in vm_core.h */'
     f.puts
-    lineno = 11
-    line_file = file.gsub('\\', '/')
+    lineno = __LINE__ - lineno - 1
+    line_file = file
 
-    inlines.each{|cfunc_name, (body_lineno, text, params, func_name)|
+    inlines.each{|cfunc_name, (body_lineno, text, locals, func_name)|
       if String === cfunc_name
-        f.puts "static VALUE #{cfunc_name}(struct rb_execution_context_struct *ec, const VALUE self) {"
+        f.puts "static VALUE #{cfunc_name}(struct rb_execution_context_struct *ec, const VALUE self)"
         lineno += 1
-
-        params.reverse_each.with_index{|param, i|
-          next unless Symbol === param
-          f.puts "MAYBE_UNUSED(const VALUE) #{param} = rb_vm_lvar(ec, #{-3 - i});"
-          lineno += 1
-        }
-        f.puts "#line #{body_lineno} \"#{line_file}\""
-        lineno += 1
-
-        f.puts text
-        lineno += text.count("\n") + 1
-
-        f.puts "#line #{lineno + 2} \"#{ofile}\"" # TODO: restore line number.
-        f.puts "}"
-        lineno += 2
+        lineno, str = generate_cexpr(ofile, lineno, line_file, body_lineno, text, locals, func_name)
+        f.write str
       else
         # cinit!
         f.puts "#line #{body_lineno} \"#{line_file}\""
@@ -193,6 +290,44 @@ def mk_builtin_header file
       end
     }
 
+    bs.each_pair{|func, (argc, cfunc_name)|
+      decl = ', VALUE' * argc
+      argv = argc                    \
+           . times                   \
+           . map {|i|", argv[#{i}]"} \
+           . join('')
+      f.puts %'static void'
+      f.puts %'mjit_compile_invokebuiltin_for_#{func}(FILE *f, long index, unsigned stack_size, bool inlinable_p)'
+      f.puts %'{'
+      f.puts %'    fprintf(f, "    VALUE self = GET_SELF();\\n");'
+      f.puts %'    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE#{decl});\\n");'
+      if inlines.has_key? cfunc_name
+        body_lineno, text, locals, func_name = inlines[cfunc_name]
+        lineno, str = generate_cexpr(ofile, lineno, line_file, body_lineno, text, locals, func_name)
+        f.puts %'    if (inlinable_p) {'
+        str.gsub(/^(?!#)/, '    ').each_line {|i|
+          j = RubyVM::CEscape.rstring2cstr(i).dup
+          j.sub!(/^    return\b/ , '    val =')
+          f.printf(%'        fprintf(f, "%%s", %s);\n', j)
+        }
+        f.puts(%'        return;')
+        f.puts(%'    }')
+      end
+      if argc > 0
+        f.puts %'    if (index == -1) {'
+        f.puts %'        fprintf(f, "    const VALUE *argv = &stack[%d];\\n", stack_size - #{argc});'
+        f.puts %'    }'
+        f.puts %'    else {'
+        f.puts %'        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\\n");'
+        f.puts %'        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\\n", index);'
+        f.puts %'    }'
+      end
+      f.puts %'    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == #{cfunc_name} */\\n", (intptr_t)#{cfunc_name});'
+      f.puts %'    fprintf(f, "    val = f(ec, self#{argv});\\n");'
+      f.puts %'}'
+      f.puts
+    }
+
     f.puts "void Init_builtin_#{base}(void)"
     f.puts "{"
 
@@ -200,15 +335,15 @@ def mk_builtin_header file
     f.puts "  // table definition"
     f.puts "  static const struct rb_builtin_function #{table}[] = {"
     bs.each.with_index{|(func, (argc, cfunc_name)), i|
-      f.puts "    RB_BUILTIN_FUNCTION(#{i}, #{func}, #{cfunc_name}, #{argc}),"
+      f.puts "    RB_BUILTIN_FUNCTION(#{i}, #{func}, #{cfunc_name}, #{argc}, mjit_compile_invokebuiltin_for_#{func}),"
     }
-    f.puts "    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0),"
+    f.puts "    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0, 0),"
     f.puts "  };"
 
     f.puts
     f.puts "  // arity_check"
     f.puts "COMPILER_WARNING_PUSH"
-    f.puts "#if GCC_VERSION_SINCE(5, 1, 0) || __clang__"
+    f.puts "#if GCC_VERSION_SINCE(5, 1, 0) || defined __clang__"
     f.puts "COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)"
     f.puts "#endif"
     bs.each{|func, (argc, cfunc_name)|

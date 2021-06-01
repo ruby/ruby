@@ -17,6 +17,8 @@ module Kernel
     private :gem_original_require
   end
 
+  file = Gem::KERNEL_WARN_IGNORES_INTERNAL_ENTRIES ? "<internal:#{__FILE__}>" : __FILE__
+  module_eval <<'RUBY', file, __LINE__ + 1
   ##
   # When RubyGems is required, Kernel#require is replaced with our own which
   # is capable of loading gems on demand.
@@ -130,7 +132,7 @@ module Kernel
 
       # Ok, now find a gem that has no conflicts, starting
       # at the highest version.
-      valid = found_specs.find { |s| !s.has_conflicts? }
+      valid = found_specs.find {|s| !s.has_conflicts? }
 
       unless valid
         le = Gem::LoadError.new "unable to find a version of '#{names.first}' to activate"
@@ -166,6 +168,7 @@ module Kernel
       end
     end
   end
+RUBY
 
   private :require
 

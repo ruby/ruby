@@ -86,7 +86,6 @@ class TestHash < Test::Unit::TestCase
       'nil' => nil
     ]
     @verbose = $VERBOSE
-    $VERBOSE = nil
   end
 
   def teardown
@@ -114,13 +113,33 @@ class TestHash < Test::Unit::TestCase
     assert_equal(2, h[1])
   end
 
-  def test_dup_will_rehash
-    set1 = @cls[]
-    set2 = @cls[set1 => true]
+  def test_dup_will_not_rehash
+    assert_hash_does_not_rehash(&:dup)
+  end
 
-    set1[set1] = true
+  def assert_hash_does_not_rehash
+    obj = Object.new
+    class << obj
+      attr_accessor :hash_calls
+      def hash
+        @hash_calls += 1
+        super
+      end
+    end
+    obj.hash_calls = 0
+    hash = {obj => 42}
+    assert_equal(1, obj.hash_calls)
+    yield hash
+    assert_equal(1, obj.hash_calls)
+  end
 
-    assert_equal set2, set2.dup
+  def test_select_reject_will_not_rehash
+    assert_hash_does_not_rehash do |hash|
+      hash.select { true }
+    end
+    assert_hash_does_not_rehash do |hash|
+      hash.reject { false }
+    end
   end
 
   def test_s_AREF
@@ -420,6 +439,15 @@ class TestHash < Test::Unit::TestCase
       true
     }
     assert_equal(base.size, n)
+
+    h = base.dup
+    assert_raise(FrozenError) do
+      h.delete_if do
+        h.freeze
+        true
+      end
+    end
+    assert_equal(base.dup, h)
   end
 
   def test_keep_if
@@ -427,6 +455,14 @@ class TestHash < Test::Unit::TestCase
     assert_equal({3=>4,5=>6}, h.keep_if {|k, v| k + v >= 7 })
     h = @cls[1=>2,3=>4,5=>6]
     assert_equal({1=>2,3=>4,5=>6}, h.keep_if{true})
+    h = @cls[1=>2,3=>4,5=>6]
+    assert_raise(FrozenError) do
+      h.keep_if do
+        h.freeze
+        false
+      end
+    end
+    assert_equal(@cls[1=>2,3=>4,5=>6], h)
   end
 
   def test_compact
@@ -456,6 +492,7 @@ class TestHash < Test::Unit::TestCase
     h1 = @cls[h => 1]
     assert_equal(h1, h1.dup)
     h[1] = 2
+    h1.rehash
     assert_equal(h1, h1.dup)
   end
 
@@ -723,6 +760,15 @@ class TestHash < Test::Unit::TestCase
     h = base.dup
     assert_equal(h3, h.reject! {|k,v| v })
     assert_equal(h3, h)
+
+    h = base.dup
+    assert_raise(FrozenError) do
+      h.reject! do
+        h.freeze
+        true
+      end
+    end
+    assert_equal(base.dup, h)
   end
 
   def test_replace
@@ -878,7 +924,7 @@ class TestHash < Test::Unit::TestCase
   def test_to_s
     h = @cls[ 1 => 2, "cat" => "dog", 1.5 => :fred ]
     assert_equal(h.inspect, h.to_s)
-    $, = ":"
+    assert_deprecated_warning { $, = ":" }
     assert_equal(h.inspect, h.to_s)
     h = @cls[]
     assert_equal(h.inspect, h.to_s)
@@ -947,7 +993,7 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_fetch2
-    assert_equal(:bar, @h.fetch(0, :foo) { :bar })
+    assert_equal(:bar, assert_warning(/block supersedes default value argument/) {@h.fetch(0, :foo) { :bar }})
   end
 
   def test_default_proc
@@ -1026,6 +1072,14 @@ class TestHash < Test::Unit::TestCase
     assert_equal({3=>4,5=>6}, h)
     h = @cls[1=>2,3=>4,5=>6]
     assert_equal(nil, h.select!{true})
+    h = @cls[1=>2,3=>4,5=>6]
+    assert_raise(FrozenError) do
+      h.select! do
+        h.freeze
+        false
+      end
+    end
+    assert_equal(@cls[1=>2,3=>4,5=>6], h)
   end
 
   def test_slice
@@ -1034,6 +1088,14 @@ class TestHash < Test::Unit::TestCase
     assert_equal({}, h.slice(7))
     assert_equal({}, h.slice)
     assert_equal({}, {}.slice)
+  end
+
+  def test_except
+    h = @cls[1=>2,3=>4,5=>6]
+    assert_equal({5=>6}, h.except(1, 3))
+    assert_equal({1=>2,3=>4,5=>6}, h.except(7))
+    assert_equal({1=>2,3=>4,5=>6}, h.except)
+    assert_equal({}, {}.except)
   end
 
   def test_filter
@@ -1070,6 +1132,14 @@ class TestHash < Test::Unit::TestCase
     assert_equal({3=>4,5=>6}, h)
     h = @cls[1=>2,3=>4,5=>6]
     assert_equal(nil, h.filter!{true})
+    h = @cls[1=>2,3=>4,5=>6]
+    assert_raise(FrozenError) do
+      h.filter! do
+        h.freeze
+        false
+      end
+    end
+    assert_equal(@cls[1=>2,3=>4,5=>6], h)
   end
 
   def test_clear2
@@ -1104,6 +1174,7 @@ class TestHash < Test::Unit::TestCase
     def o.to_hash; @cls[]; end
     def o.==(x); true; end
     assert_equal({}, o)
+    o.singleton_class.remove_method(:==)
     def o.==(x); false; end
     assert_not_equal({}, o)
 
@@ -1120,6 +1191,7 @@ class TestHash < Test::Unit::TestCase
     def o.to_hash; @cls[]; end
     def o.eql?(x); true; end
     assert_send([@cls[], :eql?, o])
+    o.singleton_class.remove_method(:eql?)
     def o.eql?(x); false; end
     assert_not_send([@cls[], :eql?, o])
   end
@@ -1160,6 +1232,20 @@ class TestHash < Test::Unit::TestCase
     assert_equal({1=>8, 2=>4, 3=>4, 5=>7}, h1)
   end
 
+  def test_update5
+    h = @cls[a: 1, b: 2, c: 3]
+    assert_raise(FrozenError) do
+      h.update({a: 10, b: 20}){ |key, v1, v2| key == :b && h.freeze; v2 }
+    end
+    assert_equal(@cls[a: 10, b: 2, c: 3], h)
+
+    h = @cls[a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9, j: 10]
+    assert_raise(FrozenError) do
+      h.update({a: 10, b: 20}){ |key, v1, v2| key == :b && h.freeze; v2 }
+    end
+    assert_equal(@cls[a: 10, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9, j: 10], h)
+  end
+
   def test_merge
     h1 = @cls[1=>2, 3=>4]
     h2 = {1=>3, 5=>7}
@@ -1169,6 +1255,20 @@ class TestHash < Test::Unit::TestCase
     assert_equal({1=>6, 3=>4, 5=>7}, h1.merge(h2) {|k, v1, v2| k + v1 + v2 })
     assert_equal({1=>1, 2=>4, 3=>4, 5=>7}, h1.merge(h2, h3))
     assert_equal({1=>8, 2=>4, 3=>4, 5=>7}, h1.merge(h2, h3) {|k, v1, v2| k + v1 + v2 })
+  end
+
+  def test_merge!
+    h = @cls[a: 1, b: 2, c: 3]
+    assert_raise(FrozenError) do
+      h.merge!({a: 10, b: 20}){ |key, v1, v2| key == :b && h.freeze; v2 }
+    end
+    assert_equal(@cls[a: 10, b: 2, c: 3], h)
+
+    h = @cls[a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9, j: 10]
+    assert_raise(FrozenError) do
+      h.merge!({a: 10, b: 20}){ |key, v1, v2| key == :b && h.freeze; v2 }
+    end
+    assert_equal(@cls[a: 10, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9, j: 10], h)
   end
 
   def test_assoc
@@ -1665,6 +1765,10 @@ class TestHash < Test::Unit::TestCase
     x.transform_keys! {|k| -k }
     assert_equal([-1, :a, 1, :b], x.flatten)
 
+    x = @cls[a: 1, b: 2, c: 3]
+    x.transform_keys! { |k| k == :b && break }
+    assert_equal({false => 1, b: 2, c: 3}, x)
+
     x = @cls[true => :a, false => :b]
     x.transform_keys! {|k| !k }
     assert_equal([false, :a, true, :b], x.flatten)
@@ -1688,6 +1792,7 @@ class TestHash < Test::Unit::TestCase
     x.default_proc = proc {|h, k| k}
     y = x.transform_values {|v| v ** 2 }
     assert_nil(y.default_proc)
+    assert_nil(y.default)
 
     y = x.transform_values.with_index {|v, i| "#{v}.#{i}" }
     assert_equal(%w(1.0  2.1  3.2), y.values_at(:a, :b, :c))
@@ -1700,8 +1805,21 @@ class TestHash < Test::Unit::TestCase
     assert_same(x, y)
 
     x = @cls[a: 1, b: 2, c: 3]
+    x.transform_values! { |v| v == 2 && break }
+    assert_equal({a: false, b: 2, c: 3}, x)
+
+    x = @cls[a: 1, b: 2, c: 3]
     y = x.transform_values!.with_index {|v, i| "#{v}.#{i}" }
     assert_equal(%w(1.0  2.1  3.2), y.values_at(:a, :b, :c))
+
+    x = @cls[a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9, j: 10]
+    assert_raise(FrozenError) do
+      x.transform_values!() do |v|
+        x.freeze if v == 2
+        v.succ
+      end
+    end
+    assert_equal(@cls[a: 2, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9, j: 10], x)
   end
 
   def test_broken_hash_value
@@ -1759,6 +1877,12 @@ class TestHash < Test::Unit::TestCase
     def setup
       @cls = SubHash
       super
+    end
+
+    def test_reject
+      assert_warning(/extra states are no longer copied/) do
+        super
+      end
     end
   end
 
@@ -1847,6 +1971,32 @@ class TestHash < Test::Unit::TestCase
   def test_bug_12706
     assert_raise(ArgumentError) do
       {a: 1}.each(&->(k, v) {})
+    end
+  end
+
+  def test_any_hash_fixable
+    20.times do
+      assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
+        require "delegate"
+        typename = DelegateClass(String)
+
+        hash = {
+          "Int" => true,
+          "Float" => true,
+          "String" => true,
+          "Boolean" => true,
+          "WidgetFilter" => true,
+          "WidgetAggregation" => true,
+          "WidgetEdge" => true,
+          "WidgetSortOrder" => true,
+          "WidgetGrouping" => true,
+        }
+
+        hash.each_key do |key|
+          assert_send([hash, :key?, typename.new(key)])
+        end
+      end;
     end
   end
 end

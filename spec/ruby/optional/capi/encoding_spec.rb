@@ -58,6 +58,15 @@ describe "C-API Encoding function" do
     end
   end
 
+  describe "rb_enc_codelen" do
+    it "returns the correct length for the given codepoint" do
+      @s.rb_enc_codelen(0x24, Encoding::UTF_8).should == 1
+      @s.rb_enc_codelen(0xA2, Encoding::UTF_8).should == 2
+      @s.rb_enc_codelen(0x20AC, Encoding::UTF_8).should == 3
+      @s.rb_enc_codelen(0x24B62, Encoding::UTF_8).should == 4
+    end
+  end
+
   describe "rb_enc_find" do
     it "returns the encoding of an Encoding" do
       @s.rb_enc_find("UTF-8").should == "UTF-8"
@@ -82,9 +91,63 @@ describe "C-API Encoding function" do
     end
   end
 
+  describe "rb_enc_isalnum" do
+    it "returns non-zero for alpha-numeric characters" do
+      @s.rb_enc_isalnum("a".ord, Encoding::US_ASCII).should == true
+      @s.rb_enc_isalnum("2".ord, Encoding::US_ASCII).should == true
+      @s.rb_enc_isalnum("a".ord, Encoding::UTF_8).should == true
+      @s.rb_enc_isalnum("2".ord, Encoding::UTF_8).should == true
+      @s.rb_enc_isalnum("é".encode(Encoding::ISO_8859_1).ord, Encoding::ISO_8859_1).should == true
+    end
+
+    it "returns zero for non alpha-numeric characters" do
+      @s.rb_enc_isalnum("-".ord, Encoding::US_ASCII).should == false
+      @s.rb_enc_isalnum(" ".ord, Encoding::US_ASCII).should == false
+      @s.rb_enc_isalnum("-".ord, Encoding::UTF_8).should == false
+      @s.rb_enc_isalnum(" ".ord, Encoding::UTF_8).should == false
+    end
+  end
+
+  describe "rb_enc_isspace" do
+    it "returns non-zero for space characters" do
+      @s.rb_enc_isspace(" ".ord, Encoding::US_ASCII).should == true
+      @s.rb_enc_isspace(" ".ord, Encoding::UTF_8).should == true
+    end
+
+    it "returns zero for non space characters" do
+      @s.rb_enc_isspace("-".ord, Encoding::US_ASCII).should == false
+      @s.rb_enc_isspace("A".ord, Encoding::US_ASCII).should == false
+      @s.rb_enc_isspace("3".ord, Encoding::US_ASCII).should == false
+      @s.rb_enc_isspace("-".ord, Encoding::UTF_8).should == false
+      @s.rb_enc_isspace("A".ord, Encoding::UTF_8).should == false
+      @s.rb_enc_isspace("3".ord, Encoding::UTF_8).should == false
+    end
+  end
+
   describe "rb_enc_from_index" do
     it "returns an Encoding" do
       @s.rb_enc_from_index(0).should be_an_instance_of(String)
+    end
+  end
+
+  describe "rb_enc_mbc_to_codepoint" do
+    it "returns the correct codepoint for the given character and size" do
+       @s.rb_enc_mbc_to_codepoint("é", 2).should == 0x00E9
+       @s.rb_enc_mbc_to_codepoint("éa", 2).should == 0x00E9
+       @s.rb_enc_mbc_to_codepoint("éa", 1).should == 0xC3
+       @s.rb_enc_mbc_to_codepoint("éa", 3).should == 0x00E9
+    end
+  end
+
+  describe "rb_enc_mbcput" do
+    it "writes the correct bytes to the buffer" do
+      @s.rb_enc_mbcput(0x24, Encoding::UTF_8).should == "$"
+      @s.rb_enc_mbcput(0xA2, Encoding::UTF_8).should == "¢"
+      @s.rb_enc_mbcput(0x20AC, Encoding::UTF_8).should == "€"
+      @s.rb_enc_mbcput(0x24B62, Encoding::UTF_8).should == "𤭢"
+
+      @s.rb_enc_mbcput(0x24, Encoding::UTF_16BE).bytes.should == [0, 0x24]
+      @s.rb_enc_mbcput(0x24B62, Encoding::UTF_16LE).bytes.should == [82, 216, 98, 223]
     end
   end
 
@@ -566,6 +629,23 @@ describe "C-API Encoding function" do
         len = @s.rb_uv_to_utf8(str, num + 1)
         str[0..len-1].should == result
       end
+    end
+  end
+
+  describe "ONIGENC_MBC_CASE_FOLD" do
+    it "returns the correct case fold for the given string" do
+      @s.ONIGENC_MBC_CASE_FOLD("lower").should == ["l", 1]
+      @s.ONIGENC_MBC_CASE_FOLD("Upper").should == ["u", 1]
+    end
+
+    it "works with other encodings" do
+      @s.ONIGENC_MBC_CASE_FOLD("lower".force_encoding("binary")).should == ["l", 1]
+      @s.ONIGENC_MBC_CASE_FOLD("Upper".force_encoding("binary")).should == ["u", 1]
+      @s.ONIGENC_MBC_CASE_FOLD("É").should == ["é", 2]
+
+      str, length = @s.ONIGENC_MBC_CASE_FOLD('$'.encode(Encoding::UTF_16BE))
+      length.should == 2
+      str.bytes.should == [0, 0x24]
     end
   end
 end

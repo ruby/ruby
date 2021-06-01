@@ -12,23 +12,42 @@
 
 /*
  * call-seq:
- *    TCPSocket.new(remote_host, remote_port, local_host=nil, local_port=nil)
+ *    TCPSocket.new(remote_host, remote_port, local_host=nil, local_port=nil, connect_timeout: nil)
  *
  * Opens a TCP connection to +remote_host+ on +remote_port+.  If +local_host+
  * and +local_port+ are specified, then those parameters are used on the local
  * end to establish the connection.
+ *
+ * [:connect_timeout] specify the timeout in seconds.
  */
 static VALUE
 tcp_init(int argc, VALUE *argv, VALUE sock)
 {
     VALUE remote_host, remote_serv;
     VALUE local_host, local_serv;
+    VALUE opt;
+    static ID keyword_ids[2];
+    VALUE kwargs[2];
+    VALUE resolv_timeout = Qnil;
+    VALUE connect_timeout = Qnil;
 
-    rb_scan_args(argc, argv, "22", &remote_host, &remote_serv,
-			&local_host, &local_serv);
+    if (!keyword_ids[0]) {
+	CONST_ID(keyword_ids[0], "resolv_timeout");
+	CONST_ID(keyword_ids[1], "connect_timeout");
+    }
+
+    rb_scan_args(argc, argv, "22:", &remote_host, &remote_serv,
+			&local_host, &local_serv, &opt);
+
+    if (!NIL_P(opt)) {
+	rb_get_kwargs(opt, keyword_ids, 0, 2, kwargs);
+	if (kwargs[0] != Qundef) { resolv_timeout = kwargs[0]; }
+	if (kwargs[1] != Qundef) { connect_timeout = kwargs[1]; }
+    }
 
     return rsock_init_inetsock(sock, remote_host, remote_serv,
-			       local_host, local_serv, INET_CLIENT);
+			       local_host, local_serv, INET_CLIENT,
+			       resolv_timeout, connect_timeout);
 }
 
 static VALUE
@@ -59,6 +78,7 @@ tcp_sockaddr(struct sockaddr *addr, socklen_t len)
 static VALUE
 tcp_s_gethostbyname(VALUE obj, VALUE host)
 {
+    rb_warn("TCPSocket.gethostbyname is deprecated; use Addrinfo.getaddrinfo instead.");
     struct rb_addrinfo *res =
 	rsock_addrinfo(host, Qnil, AF_UNSPEC, SOCK_STREAM, AI_CANONNAME);
     return rsock_make_hostent(host, res, tcp_sockaddr);

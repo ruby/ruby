@@ -13,15 +13,16 @@ require "bundler"
 require "rspec/core"
 require "rspec/expectations"
 require "rspec/mocks"
+require "diff/lcs"
 
 require_relative "support/builders"
+require_relative "support/build_metadata"
 require_relative "support/filters"
 require_relative "support/helpers"
 require_relative "support/indexes"
 require_relative "support/matchers"
 require_relative "support/permissions"
 require_relative "support/platforms"
-require_relative "support/sometimes"
 require_relative "support/sudo"
 
 $debug = false
@@ -65,20 +66,14 @@ RSpec.configure do |config|
     mocks.allow_message_expectations_on_nil = false
   end
 
-  config.around :each do |example|
-    if ENV["RUBY"]
-      orig_ruby = Gem.ruby
-      Gem.ruby = ENV["RUBY"]
-    end
-    example.run
-    Gem.ruby = orig_ruby if ENV["RUBY"]
-  end
-
   config.before :suite do
+    Gem.ruby = ENV["RUBY"] if ENV["RUBY"]
+
     require_relative "support/rubygems_ext"
     Spec::Rubygems.test_setup
     ENV["BUNDLE_SPEC_RUN"] = "true"
     ENV["BUNDLE_USER_CONFIG"] = ENV["BUNDLE_USER_CACHE"] = ENV["BUNDLE_USER_PLUGIN"] = nil
+    ENV["XDG_CONFIG_HOME"] = nil
     ENV["GEMRC"] = nil
 
     # Don't wrap output in tests
@@ -89,6 +84,8 @@ RSpec.configure do |config|
   end
 
   config.before :all do
+    check_test_gems!
+
     build_repo1
 
     reset_paths!
@@ -99,14 +96,11 @@ RSpec.configure do |config|
       FileUtils.cp_r pristine_system_gem_path, system_gem_path
 
       with_gem_path_as(system_gem_path) do
-        @command_executions = []
-
         Bundler.ui.silence { example.run }
 
-        all_output = @command_executions.map(&:to_s_verbose).join("\n\n")
+        all_output = all_commands_output
         if example.exception && !all_output.empty?
-          warn all_output unless config.formatters.grep(RSpec::Core::Formatters::DocumentationFormatter).empty?
-          message = example.exception.message + "\n\nCommands:\n#{all_output}"
+          message = all_output + "\n" + example.exception.message
           (class << example.exception; self; end).send(:define_method, :message) do
             message
           end

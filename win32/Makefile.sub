@@ -24,9 +24,6 @@ REVISION_FORCE = PHONY
 !ifndef CROSS_COMPILING
 CROSS_COMPILING = no
 !endif
-!ifndef LARGEFILE_SUPPORT
-LARGEFILE_SUPPORT = 1
-!endif
 !ifndef win_srcdir
 win_srcdir = $(srcdir)/win32
 !endif
@@ -66,9 +63,6 @@ icondirs=$(ICONDIRS)
 !if defined(icondirs)
 icondirs=$(icondirs:\=/)
 iconinc=-I$(icondirs: = -I)
-!endif
-!if !defined(MATHN)
-MATHN = yes
 !endif
 ###############
 
@@ -308,9 +302,6 @@ ARFLAGS = -machine:$(MACHINE) -out:
 LD = $(CC)
 LDSHARED = $(LD) -LD
 XCFLAGS = -DRUBY_EXPORT $(INCFLAGS) $(XCFLAGS)
-!if "$(MATHN)" == "yes"
-XCFLAGS = $(XCFLAGS) -DCANONICALIZATION_FOR_MATHN
-!endif
 !if $(MSC_VER) >= 1400
 # Prevents VC++ 2005 (cl ver 14) warnings
 MANIFESTTOOL = mt -nologo
@@ -645,11 +636,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #ifndef _INTEGRAL_MAX_BITS
 #define _INTEGRAL_MAX_BITS 64
 #endif
-!if $(LARGEFILE_SUPPORT)
 #define SIZEOF_OFF_T 8
-!else
-#define SIZEOF_OFF_T 4
-!endif
 !if "$(ARCH)" == "x64"
 #define SIZEOF_VOIDP 8
 !else
@@ -686,9 +673,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !if $(MSC_VER) < 1400
 #define SIZE_MAX UINT_MAX
 !endif
-#define HAVE_PROTOTYPES 1
-#define TOKEN_PASTE(x,y) x##y
-#define HAVE_STDARG_PROTOTYPES 1
 !if $(MSC_VER) >= 1800
 #define HAVE_VA_COPY 1
 !else
@@ -699,7 +683,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !endif
 !if $(MSC_VER) >= 1300
 #define DEPRECATED(x) __declspec(deprecated) x
-#define DEPRECATED_TYPE(mesg, x) __declspec(deprecated mesg) x
 #define RUBY_CXX_DEPRECATED(mesg) __declspec(deprecated(mesg))
 #define NOINLINE(x) __declspec(noinline) x
 !endif
@@ -735,7 +718,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define rb_gid_t int
 #define rb_uid_t int
 #define HAVE_STRUCT_STAT_ST_RDEV 1
-#define HAVE_ST_RDEV 1
 #define HAVE_STRUCT_TIMEVAL 1
 !if $(MSC_VER) >= 1900
 #define HAVE_STRUCT_TIMESPEC
@@ -793,7 +775,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define PRI_LL_PREFIX "I64"
 #define PRI_PIDT_PREFIX PRI_INT_PREFIX
 #define GETGROUPS_T int
-#define RETSIGTYPE void
 #define TYPEOF_TIMEVAL_TV_SEC long
 !if $(RT_VER) >= 120
 #define HAVE_ACOSH 1
@@ -882,7 +863,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define STACK_GROW_DIRECTION -1
 !endif
 #define COROUTINE_H "$(COROUTINE_H)"
-#define DEFAULT_KCODE KCODE_NONE
 #define LOAD_RELATIVE 1
 #define DLEXT ".so"
 !if "$(libdir_basename)" != "lib"
@@ -986,7 +966,6 @@ s,@RMALL@,$$(COMSPEC) /C $$(top_srcdir:/=\)\win32\rm.bat -f -r,:t t
 s,@MAKEDIRS@,$$(COMSPEC) /E:ON /C $$(top_srcdir:/=\)\win32\makedirs.bat,;t t
 s,@LIBOBJS@,$(LIBOBJS),;t t
 s,@ALLOCA@,$(ALLOCA),;t t
-s,@DEFAULT_KCODE@,$(DEFAULT_KCODE),;t t
 s,@EXEEXT@,.exe,;t t
 s,@EXECUTABLE_EXTS@,$(EXECUTABLE_EXTS),;t t
 s,@OBJEXT@,$(OBJEXT),;t t
@@ -1281,16 +1260,16 @@ $(ruby_pc): $(RBCONFIG)
 
 {$(srcdir)/missing}.c.i:
 	$(ECHO) preprocessing $(<:\=/)
-	$(Q) $(CC) $(XCFLAGS) $(CPPFLAGS) -P $(CSRCFLAG)$(<:\=/) > $@
+	$(Q) $(CC) $(XCFLAGS) $(CPPFLAGS) -P -Fi:$@ $(CSRCFLAG)$(<:\=/)
 {$(win_srcdir)}.c.i:
 	$(ECHO) preprocessing $(<:\=/)
-	$(Q) $(CC) $(XCFLAGS) $(CPPFLAGS) -P $(CSRCFLAG)$(<:\=/)
+	$(Q) $(CC) $(XCFLAGS) $(CPPFLAGS) -P -Fi:$@ $(CSRCFLAG)$(<:\=/)
 {$(srcdir)}.c{}.i:
 	$(ECHO) preprocessing $(<:\=/)
-	$(Q) $(CC) $(XCFLAGS) $(CPPFLAGS) -P $(CSRCFLAG)$(<:\=/)
+	$(Q) $(CC) $(XCFLAGS) $(CPPFLAGS) -P -Fi:$@ $(CSRCFLAG)$(<:\=/)
 .c.i:
 	$(ECHO) preprocessing $(<:\=/)
-	$(Q) $(CC) $(XCFLAGS) $(CPPFLAGS) -P $(CSRCFLAG)$(<:\=/)
+	$(Q) $(CC) $(XCFLAGS) $(CPPFLAGS) -P -Fi:$@ $(CSRCFLAG)$(<:\=/)
 
 .rc.res:
 	$(ECHO) compiling $(<:\=/)

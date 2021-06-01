@@ -1,0 +1,388 @@
+== Tutorial
+
+=== Why OptionParser?
+
+When a Ruby program executes, it captures its command-line arguments
+and options into variable ARGV.
+This simple program just prints its \ARGV:
+
+  :include: ruby/argv.rb
+
+Execution, with arguments and options:
+
+  $ ruby argv.rb foo --bar --baz bat bam
+  ["foo", "--bar", "--baz", "bat", "bam"]
+
+The executing program is responsible for parsing and handling
+the command-line options.
+
+OptionParser offers methods for parsing and handling those options.
+
+With \OptionParser, you can define options so that for each option:
+
+- The code that defines the option and code that handles that option
+  are in the same place.
+- The option may take no argument, a required argument, or an optional argument.
+- The argument may be automatically converted to a specified class.
+- The argument may be restricted to specified _forms_.
+- The argument may be restricted to specified _values_.
+
+The class also has:
+
+- Method #summarize: returns a text summary of the options.
+- Method #help: displays automatically-generated help text.
+
+=== Contents
+
+- {Defining Options}[#label-Defining+Options]
+- {Option Names}[#label-Option+Names]
+  - {Short Option Names}[#label-Short+Option+Names]
+  - {Long Option Names}[#label-Long+Option+Names]
+  - {Mixing Option Names}[#label-Mixing+Option+Names]
+  - {Command-Line Abbreviations}[#label-Command-Line+Abbreviations]
+- {Option Arguments}[#label-Option+Arguments]
+  - {Option with No Argument}[#label-Option+with+No+Argument]
+  - {Option with Required Argument}[#label-Option+with+Required+Argument]
+  - {Option with Optional Argument}[#label-Option+with+Optional+Argument]
+- {Keyword Argument <tt>into<tt>}[#label-Keyword+Argument+into]
+  - {Collecting Options}[#label-Collecting+Options]
+  - {Checking for Missing Options}[#label-Checking+for+Missing+Options]
+  - {Default Values for Options}[#label-Default+Values+for+Options]
+- {Argument Converters}[#label-Argument+Converters]
+
+=== Defining Options
+
+A common way to define an option in \OptionParser
+is with instance method OptionParser#on.
+
+The method may be called with any number of arguments
+(whose order does not matter),
+and may also have a trailing optional keyword argument +into+.
+
+The given arguments determine the characteristics of the new option.
+These may include:
+
+- One or more short option names.
+- One or more long option names.
+- Whether the option takes no argument, an optional argument, or a required argument.
+- Acceptable _forms_ for the argument.
+- Acceptable _values_ for the argument.
+- A proc or method to be called when the parser encounters the option.
+- String descriptions for the option.
+
+=== Option Names
+
+You can give an option one or more names of two types:
+
+- Short (1-character) name, beginning with one hyphen (<tt>-</tt>).
+- Long (multi-character) name, beginning with two hyphens (<tt>--</tt>).
+
+==== Short Option Names
+
+A short option name consists of a hyphen and a single character.
+
+File +short_names.rb+
+defines an option with a short name, <tt>-x</tt>,
+and an option with two short names (aliases, in effect) <tt>-y</tt> and <tt>-z</tt>.
+
+  :include: ruby/short_names.rb
+
+Executions:
+
+  $ ruby short_names.rb --help
+  Usage: short_names [options]
+      -x                               Short name
+      -1, -%                           Two short names
+  $ ruby short_names.rb -x
+  ["x", true]
+  $ ruby short_names.rb -1
+  ["-1 or -%", true]
+  $ ruby short_names.rb -%
+  ["-1 or -%", true]
+
+Multiple short names can "share" a hyphen:
+
+  $ ruby short_names.rb -x1%
+  ["x", true]
+  ["-1 or -%", true]
+  ["-1 or -%", true]
+
+This is a good time to note that giving an undefined option raises an exception:
+
+  $ ruby short_names.rb -z
+  short_names.rb:9:in `<main>': invalid option: -z (OptionParser::InvalidOption)
+
+==== Long Option Names
+
+A long option name consists of two hyphens and a one or more characters
+(usually two or more characters).
+
+File +long_names.rb+
+defines an option with a long name, <tt>--xxx</tt>,
+and an option with two long names (aliases, in effect) <tt>--y1%</tt> and <tt>--z2#</tt>.
+
+  :include: ruby/long_names.rb
+
+Executions:
+
+  $ ruby long_names.rb --help
+  Usage: long_names [options]
+          --xxx                        Long name
+          --y1%, --z2#                 Two long names
+  $ ruby long_names.rb --xxx
+  ["-xxx", true]
+  $ ruby long_names.rb --y1%
+  ["--y1% or --z2#", true]
+  $ ruby long_names.rb --z2#
+  ["--y1% or --z2#", true]
+
+A long name may be defined with both positive and negative senses.
+
+File +long_with_negation.rb+ defines an option that has both senses.
+
+  :include: ruby/long_with_negation.rb
+
+Executions:
+
+  $ ruby long_with_negation.rb --help
+  Usage: long_with_negation [options]
+          --[no-]binary                Long name with negation
+  $ ruby long_with_negation.rb --binary
+  [true, TrueClass]
+  $ ruby long_with_negation.rb --no-binary
+  [false, FalseClass]
+
+==== Mixing Option Names
+
+Many developers like to mix short and long option names,
+so that a short name is in effect an abbreviation of a long name.
+
+File +mixed_names.rb+
+defines options that each have both a short and a long name.
+
+  :include: ruby/mixed_names.rb
+
+Executions:
+
+  $ ruby mixed_names.rb --help
+  Usage: mixed_names [options]
+      -x, --xxx                        Short and long, no argument
+      -y, --yyyYYY                     Short and long, required argument
+      -z, --zzz [ZZZ]                  Short and long, optional argument
+  $ ruby mixed_names.rb -x
+  ["--xxx", true]
+  $ ruby mixed_names.rb --xxx
+  ["--xxx", true]
+  $ ruby mixed_names.rb -y
+  mixed_names.rb:12:in `<main>': missing argument: -y (OptionParser::MissingArgument)
+  $ ruby mixed_names.rb -y FOO
+  ["--yyy", "FOO"]
+  $ ruby mixed_names.rb --yyy
+  mixed_names.rb:12:in `<main>': missing argument: --yyy (OptionParser::MissingArgument)
+  $ ruby mixed_names.rb --yyy BAR
+  ["--yyy", "BAR"]
+  $ ruby mixed_names.rb -z
+  ["--zzz", nil]
+  $ ruby mixed_names.rb -z BAZ
+  ["--zzz", "BAZ"]
+  $ ruby mixed_names.rb --zzz
+  ["--zzz", nil]
+  $ ruby mixed_names.rb --zzz BAT
+  ["--zzz", "BAT"]
+
+==== Command-Line Abbreviations
+
+By default, abbreviations for command-line option names are allowed.
+An abbreviated option is valid if it is unique among abbreviated option names.
+
+  :include: ruby/abbreviation.rb
+
+Executions:
+
+  $ ruby abbreviation.rb --help
+  Usage: abbreviation [options]
+      -n, --dry-run
+      -d, --draft
+  $ ruby abbreviation.rb -n
+  ["--dry-run", true]
+  $ ruby abbreviation.rb --dry-run
+  ["--dry-run", true]
+  $ ruby abbreviation.rb -d
+  ["--draft", true]
+  $ ruby abbreviation.rb --draft
+  ["--draft", true]
+  $ ruby abbreviation.rb --d
+  abbreviation.rb:9:in `<main>': ambiguous option: --d (OptionParser::AmbiguousOption)
+  $ ruby abbreviation.rb --dr
+  abbreviation.rb:9:in `<main>': ambiguous option: --dr (OptionParser::AmbiguousOption)
+  $ ruby abbreviation.rb --dry
+  ["--dry-run", true]
+  $ ruby abbreviation.rb --dra
+  ["--draft", true]
+
+You can disable abbreviation using method +require_exact+.
+
+  :include: ruby/no_abbreviation.rb
+
+Executions:
+
+  $ ruby no_abbreviation.rb --dry-ru
+  no_abbreviation.rb:10:in `<main>': invalid option: --dry-ru (OptionParser::InvalidOption)
+  $ ruby no_abbreviation.rb --dry-run
+  ["--dry-run", true]
+
+=== Option Arguments
+
+An option may take no argument, a required argument, or an optional argument.
+
+==== Option with No Argument
+
+All the examples above define options with no argument.
+
+==== Option with Required Argument
+
+Specify a required argument for an option by adding a dummy word
+to its name definition.
+
+File +required_argument.rb+ defines two options;
+each has a required argument because the name definition has a following dummy word.
+
+  :include: ruby/required_argument.rb
+
+When an option is found, the given argument is yielded.
+
+Executions:
+
+  $ ruby required_argument.rb --help
+  Usage: required_argument [options]
+      -x, --xxx XXX                    Required argument via short name
+      -y, --y YYY                      Required argument via long name
+  $ ruby required_argument.rb -x AAA
+  ["--xxx", "AAA"]
+  $ ruby required_argument.rb -y BBB
+  ["--yyy", "BBB"]
+
+Omitting a required argument raises an error:
+
+  $ ruby required_argument.rb -x
+  required_argument.rb:9:in `<main>': missing argument: -x (OptionParser::MissingArgument)
+
+==== Option with Optional Argument
+
+Specify an optional argument for an option by adding a dummy word
+enclosed in square brackets to its name definition.
+
+File +optional_argument.rb+ defines two options;
+each has an optional argument because the name definition has a following dummy word
+in square brackets.
+
+  :include: ruby/optional_argument.rb
+
+When an option with an argument is found, the given argument yielded.
+
+Executions:
+
+  $ ruby optional_argument.rb --help
+  Usage: optional_argument [options]
+      -x, --xxx [XXX]                  Optional argument via short  name
+      -y, --yyy [YYY]                  Optional argument via long name
+  $ ruby optional_argument.rb -x AAA
+  ["--xxx", "AAA"]
+  $ ruby optional_argument.rb -y BBB
+  ["--yyy", "BBB"]
+
+Omitting an optional argument does not raise an error.
+
+=== Keyword Argument +into+
+
+In parsing options, you can add keyword option +into+ with a hash-like argument;
+each parsed option will be added as a name/value pair.
+
+This is useful for:
+
+- Collecting options.
+- Checking for missing options.
+- Providing default values for options.
+
+==== Collecting Options
+
+Use keyword argument +into+ to collect options.
+
+  :include: ruby/collected_options.rb
+
+Executions:
+
+  $ ruby collected_options.rb --help
+  Usage: into [options]
+      -x, --xxx                        Short and long, no argument
+      -y, --yyyYYY                     Short and long, required argument
+      -z, --zzz [ZZZ]                  Short and long, optional argument
+  $ ruby collected_options.rb --xxx
+  {:xxx=>true}
+  $ ruby collected_options.rb --xxx --yyy FOO
+  {:xxx=>true, :yyy=>"FOO"}
+  $ ruby collected_options.rb --xxx --yyy FOO --zzz Bar
+  {:xxx=>true, :yyy=>"FOO", :zzz=>"Bar"}
+  $ ruby collected_options.rb --xxx --yyy FOO --yyy BAR
+  {:xxx=>true, :yyy=>"BAR"}
+
+Note in the last execution that the argument value for option <tt>--yyy</tt>
+was overwritten.
+
+==== Checking for Missing Options
+
+Use the collected options to check for missing options.
+
+  :include: ruby/missing_options.rb
+
+Executions:
+
+  $ ruby missing_options.rb --help
+  Usage: missing_options [options]
+      -x, --xxx                        Short and long, no argument
+      -y, --yyyYYY                     Short and long, required argument
+      -z, --zzz [ZZZ]                  Short and long, optional argument
+  $ ruby missing_options.rb --yyy FOO
+  missing_options.rb:11:in `<main>': Missing required options: [:xxx, :zzz] (RuntimeError)
+
+==== Default Values for Options
+
+Initialize the +into+ argument to define default values for options.
+
+  :include: ruby/default_values.rb
+
+Executions:
+
+  $ ruby default_values.rb --help
+  Usage: default_values [options]
+      -x, --xxx                        Short and long, no argument
+      -y, --yyyYYY                     Short and long, required argument
+      -z, --zzz [ZZZ]                  Short and long, optional argument
+  $ ruby default_values.rb --yyy FOO
+  {:yyy=>"FOO", :zzz=>"BBB"}
+
+
+=== Argument Converters
+
+An option can specify that its argument is to be converted
+from the default \String to an instance of another class.
+There are a number of built-in converters.
+
+Example: File +date.rb+
+defines an option whose argument is to be converted to a \Date object.
+The argument is converted by method Date#parse.
+
+  :include: ruby/date.rb
+
+Executions:
+
+  $ ruby date.rb --date 2001-02-03
+  [#<Date: 2001-02-03 ((2451944j,0s,0n),+0s,2299161j)>, Date]
+  $ ruby date.rb --date 20010203
+  [#<Date: 2001-02-03 ((2451944j,0s,0n),+0s,2299161j)>, Date]
+  $ ruby date.rb --date "3rd Feb 2001"
+  [#<Date: 2001-02-03 ((2451944j,0s,0n),+0s,2299161j)>, Date]
+
+You can also define custom converters.
+See {Argument Converters}[./argument_converters_rdoc.html]
+for both built-in and custom converters.

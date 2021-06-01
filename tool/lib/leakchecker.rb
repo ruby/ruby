@@ -265,7 +265,7 @@ class LeakChecker
     leaked
   end
 
-  WARNING_CATEGORIES = %i[deprecated experimental].freeze
+  WARNING_CATEGORIES = (Warning.respond_to?(:[]) ? %i[deprecated experimental] : []).freeze
 
   def find_warning_flags
     WARNING_CATEGORIES.to_h do |category|

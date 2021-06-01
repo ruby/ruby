@@ -30,7 +30,7 @@ module Bundler
           FileUtils.rm_rf spec.full_gem_path
         when Source::Git
           if source.local?
-            Bundler.ui.warn("Cannot pristine #{gem_name}. Gem is locally overriden.")
+            Bundler.ui.warn("Cannot pristine #{gem_name}. Gem is locally overridden.")
             next
           end
 

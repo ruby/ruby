@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 <%- config[:constant_array].each_with_index do |c, i| -%>
 <%= "  " * i %>module <%= c %>
 <%- end -%>

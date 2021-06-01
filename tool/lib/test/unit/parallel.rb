@@ -198,6 +198,9 @@ if $0 == __FILE__
         def on_parallel_worker?
           true
         end
+        def self.on_parallel_worker?
+          true
+        end
       end
     end
   end

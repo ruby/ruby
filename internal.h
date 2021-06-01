@@ -31,6 +31,9 @@
 /* Following macros were formerly defined in this header but moved to somewhere
  * else.  In order to detect them we undef here. */
 
+/* internal/array.h */
+#undef RARRAY_AREF
+
 /* internal/class.h */
 #undef RClass
 #undef RCLASS_SUPER
@@ -43,6 +46,11 @@
 /* internal/hash.h */
 #undef RHASH_IFNONE
 #undef RHASH_SIZE
+#undef RHASH_TBL
+#undef RHASH_EMPTY_P
+
+/* internal/object.h */
+#undef ROBJECT_IV_INDEX_TBL
 
 /* internal/struct.h */
 #undef RSTRUCT_LEN

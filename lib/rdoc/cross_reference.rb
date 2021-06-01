@@ -19,7 +19,7 @@ class RDoc::CrossReference
   #
   # See CLASS_REGEXP_STR
 
-  METHOD_REGEXP_STR = '([a-z]\w*[!?=]?|%|===|\[\]=?|<<|>>|-|\+|\*)(?:\([\w.+*/=<>-]*\))?'
+  METHOD_REGEXP_STR = '([a-z]\w*[!?=]?|%|===|\[\]=?|<<|>>|\+@|-@|-|\+|\*)(?:\([\w.+*/=<>-]*\))?'
 
   ##
   # Regular expressions matching text that should potentially have
@@ -173,7 +173,7 @@ class RDoc::CrossReference
           end unless ref
 
     # Try a page name
-    ref = @store.page name if not ref and name =~ /^\w+$/
+    ref = @store.page name if not ref and name =~ /^[\w.]+$/
 
     ref = nil if RDoc::Alias === ref # external alias, can't link to it
 

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe "double checking sources", :realworld => true, :sometimes => true do
+RSpec.describe "double checking sources", :realworld => true do
   it "finds already-installed gems" do
     create_file("rails.gemspec", <<-RUBY)
       Gem::Specification.new do |s|
@@ -34,7 +34,7 @@ RSpec.describe "double checking sources", :realworld => true, :sometimes => true
       end
     RUBY
 
-    ruby! cmd
-    ruby! cmd
+    ruby cmd
+    ruby cmd
   end
 end

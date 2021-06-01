@@ -20,14 +20,14 @@ module TestCSVWriteConverters
   end
 
   def test_nil_value
-    assert_equal(%Q[a,NaN,c\n],
-                 generate_line(["a", nil, "c"],
+    assert_equal(%Q[a,NaN,29\n],
+                 generate_line(["a", nil, 29],
                                write_nil_value: "NaN"))
   end
 
   def test_empty_value
-    assert_equal(%Q[a,,c\n],
-                 generate_line(["a", "", "c"],
+    assert_equal(%Q[a,,29\n],
+                 generate_line(["a", "", 29],
                                write_empty_value: nil))
   end
 end

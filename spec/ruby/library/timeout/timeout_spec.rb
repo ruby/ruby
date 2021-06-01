@@ -18,6 +18,22 @@ describe "Timeout.timeout" do
     end.should raise_error(StandardError)
   end
 
+  it "raises specified error type with specified message when it times out" do
+    -> do
+      Timeout.timeout(1, StandardError, "foobar") do
+        sleep
+      end
+    end.should raise_error(StandardError, "foobar")
+  end
+
+  it "raises specified error type with a default message when it times out if message is nil" do
+    -> do
+      Timeout.timeout(1, StandardError, nil) do
+        sleep
+      end
+    end.should raise_error(StandardError, "execution expired")
+  end
+
   it "returns back the last value in the block" do
     Timeout.timeout(1) do
       42

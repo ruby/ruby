@@ -161,11 +161,13 @@ struct __sbuf {
  * _ub, _up, and _ur are used when ungetc() pushes back more characters
  * than fit in the current _bf, or when ungetc() pushes back a character
  * that does not match the previous one in _bf.  When this happens,
- * _ub._base becomes non-nil (i.e., a stream has ungetc() data iff
+ * _ub._base becomes non-nil (i.e., a stream has ungetc() data if and only if
  * _ub._base!=NULL) and _up and _ur save the current values of _p and _r.
  *
  * NB: see WARNING above before changing the layout of this structure!
  */
+struct __suio;
+
 typedef	struct __sFILE {
 	unsigned char *_p;	/* current position in (some) buffer */
 #if 0
@@ -178,8 +180,8 @@ typedef	struct __sFILE {
 #if 0
 	size_t	_lbfsize;	/* 0 or -_bf._size, for inline putc */
 #endif
-	int	(*vwrite)(/* struct __sFILE*, struct __suio * */);
-	const char *(*vextra)(/* struct __sFILE*, size_t, void*, long*, int */);
+	int	(*vwrite)(struct __sFILE*, struct __suio *);
+	const char *(*vextra)(struct __sFILE*, size_t, void*, long*, int);
 } FILE;
 
 
@@ -196,7 +198,7 @@ typedef	struct __sFILE {
 #define	__SSTR	0x0200		/* this is an sprintf/snprintf string */
 #define	__SOPT	0x0400		/* do fseek() optimisation */
 #define	__SNPT	0x0800		/* do not do fseek() optimisation */
-#define	__SOFF	0x1000		/* set iff _offset is in fact correct */
+#define	__SOFF	0x1000		/* set if and only if _offset is in fact correct */
 #define	__SMOD	0x2000		/* true => fgetln modified _p text */
 
 

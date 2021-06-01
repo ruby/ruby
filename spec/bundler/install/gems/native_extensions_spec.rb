@@ -38,7 +38,7 @@ RSpec.describe "installing a gem with native extensions", :ruby_repo do
     G
 
     bundle "config set build.c_extension --with-c_extension=hello"
-    bundle! "install"
+    bundle "install"
 
     expect(out).to include("Installing c_extension 1.0 with native extensions")
 
@@ -75,15 +75,15 @@ RSpec.describe "installing a gem with native extensions", :ruby_repo do
       C
     end
 
-    bundle! "config set build.c_extension --with-c_extension=hello"
+    bundle "config set build.c_extension --with-c_extension=hello"
 
-    install_gemfile! <<-G
+    install_gemfile <<-G
       gem "c_extension", :git => #{lib_path("c_extension-1.0").to_s.dump}
     G
 
     expect(err).to_not include("warning: conflicting chdir during another chdir block")
 
-    run! "Bundler.require; puts CExtension.new.its_true"
+    run "Bundler.require; puts CExtension.new.its_true"
     expect(out).to eq("true")
   end
 
@@ -121,21 +121,21 @@ RSpec.describe "installing a gem with native extensions", :ruby_repo do
       build_git "gems", :path => lib_path("gems"), :gemspec => false
     end
 
-    bundle! "config set build.c_extension_one --with-c_extension_one=one"
-    bundle! "config set build.c_extension_two --with-c_extension_two=two"
+    bundle "config set build.c_extension_one --with-c_extension_one=one"
+    bundle "config set build.c_extension_two --with-c_extension_two=two"
 
     # 1st time, require only one gem -- only one of the extensions gets built.
-    install_gemfile! <<-G
+    install_gemfile <<-G
       gem "c_extension_one", :git => #{lib_path("gems").to_s.dump}
     G
 
     # 2nd time, require both gems -- we need both extensions to be built now.
-    install_gemfile! <<-G
+    install_gemfile <<-G
       gem "c_extension_one", :git => #{lib_path("gems").to_s.dump}
       gem "c_extension_two", :git => #{lib_path("gems").to_s.dump}
     G
 
-    run! "Bundler.require; puts CExtension_one.new.value; puts CExtension_two.new.value"
+    run "Bundler.require; puts CExtension_one.new.value; puts CExtension_two.new.value"
     expect(out).to eq("one\ntwo")
   end
 
@@ -168,13 +168,13 @@ RSpec.describe "installing a gem with native extensions", :ruby_repo do
       C
     end
 
-    bundle! "config set build.c_extension --with-c_extension=hello --with-c_extension_bundle-dir=hola"
+    bundle "config set build.c_extension --with-c_extension=hello --with-c_extension_bundle-dir=hola"
 
-    install_gemfile! <<-G
+    install_gemfile <<-G
       gem "c_extension", :git => #{lib_path("c_extension-1.0").to_s.dump}
     G
 
-    run! "Bundler.require; puts CExtension.new.its_true"
+    run "Bundler.require; puts CExtension.new.its_true"
     expect(out).to eq("true")
   end
 end

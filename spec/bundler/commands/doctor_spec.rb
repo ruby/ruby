@@ -7,7 +7,7 @@ require "bundler/cli/doctor"
 
 RSpec.describe "bundle doctor" do
   before(:each) do
-    install_gemfile! <<-G
+    install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "rack"
     G
@@ -24,8 +24,6 @@ RSpec.describe "bundle doctor" do
 
   it "succeeds on a sane installation" do
     bundle :doctor
-
-    expect(exitstatus).to eq(0)
   end
 
   context "when all files in home are readable/writable" do

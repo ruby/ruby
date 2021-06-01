@@ -2,7 +2,6 @@
 require 'rubygems/text'
 
 class Gem::Licenses
-
   extend Gem::Text
 
   NONSTANDARD = 'Nonstandard'.freeze
@@ -435,5 +434,4 @@ class Gem::Licenses
     return unless lowest < license.size
     by_distance[lowest]
   end
-
 end

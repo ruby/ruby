@@ -15,13 +15,14 @@ module Bundler
         file.puts "ruby_engine = RUBY_ENGINE"
         file.puts "ruby_version = RbConfig::CONFIG[\"ruby_version\"]"
         file.puts "path = File.expand_path('..', __FILE__)"
+        file.puts reverse_rubygems_kernel_mixin
         paths.each do |path|
-          file.puts %($:.unshift "\#{path}/#{path}")
+          file.puts %($:.unshift File.expand_path("\#{path}/#{path}"))
         end
       end
     end
 
-  private
+    private
 
     def paths
       @specs.map do |spec|
@@ -47,6 +48,20 @@ module Bundler
     rescue TypeError
       error_message = "#{spec.name} #{spec.version} has an invalid gemspec"
       raise Gem::InvalidSpecificationException.new(error_message)
+    end
+
+    def reverse_rubygems_kernel_mixin
+      <<~END
+      kernel = (class << ::Kernel; self; end)
+      [kernel, ::Kernel].each do |k|
+        if k.private_method_defined?(:gem_original_require)
+          private_require = k.private_method_defined?(:require)
+          k.send(:remove_method, :require)
+          k.send(:define_method, :require, k.instance_method(:gem_original_require))
+          k.send(:private, :require) if private_require
+        end
+      end
+      END
     end
   end
 end

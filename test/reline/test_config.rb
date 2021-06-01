@@ -36,6 +36,51 @@ class Reline::Config::Test < Reline::TestCase
     assert_equal true, @config.instance_variable_get(:@disable_completion)
   end
 
+  def test_string_value
+    @config.read_lines(<<~LINES.lines)
+      set show-mode-in-prompt on
+      set emacs-mode-string Emacs
+    LINES
+
+    assert_equal 'Emacs', @config.instance_variable_get(:@emacs_mode_string)
+  end
+
+  def test_string_value_with_brackets
+    @config.read_lines(<<~LINES.lines)
+      set show-mode-in-prompt on
+      set emacs-mode-string [Emacs]
+    LINES
+
+    assert_equal '[Emacs]', @config.instance_variable_get(:@emacs_mode_string)
+  end
+
+  def test_string_value_with_brackets_and_quotes
+    @config.read_lines(<<~LINES.lines)
+      set show-mode-in-prompt on
+      set emacs-mode-string "[Emacs]"
+    LINES
+
+    assert_equal '[Emacs]', @config.instance_variable_get(:@emacs_mode_string)
+  end
+
+  def test_string_value_with_parens
+    @config.read_lines(<<~LINES.lines)
+      set show-mode-in-prompt on
+      set emacs-mode-string (Emacs)
+    LINES
+
+    assert_equal '(Emacs)', @config.instance_variable_get(:@emacs_mode_string)
+  end
+
+  def test_string_value_with_parens_and_quotes
+    @config.read_lines(<<~LINES.lines)
+      set show-mode-in-prompt on
+      set emacs-mode-string "(Emacs)"
+    LINES
+
+    assert_equal '(Emacs)', @config.instance_variable_get(:@emacs_mode_string)
+  end
+
   def test_comment_line
     @config.read_lines([" #a: error\n"])
     assert_not_include @config.key_bindings, nil
@@ -193,6 +238,21 @@ class Reline::Config::Test < Reline::TestCase
     LINES
 
     expected = { 'ef'.bytes => 'EF'.bytes, 'gh'.bytes => 'GH'.bytes }
+    assert_equal expected, @config.key_bindings
+  end
+
+  def test_additional_key_bindings_for_other_keymap
+    @config.read_lines(<<~'LINES'.lines)
+      set keymap vi-command
+      "ab": "AB"
+      set keymap vi-insert
+      "cd": "CD"
+      set keymap emacs
+      "ef": "EF"
+      set editing-mode vi # keymap changes to be vi-insert
+    LINES
+
+    expected = { 'cd'.bytes => 'CD'.bytes }
     assert_equal expected, @config.key_bindings
   end
 

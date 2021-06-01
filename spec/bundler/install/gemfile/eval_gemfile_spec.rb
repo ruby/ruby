@@ -39,16 +39,16 @@ RSpec.describe "bundle install with gemfile that uses eval_gemfile" do
     end
 
     it "installs the path gem" do
-      bundle! :install
+      bundle :install
       expect(the_bundle).to include_gem("a 1.0")
     end
 
     # Make sure that we are properly comparing path based gems between the
     # parsed lockfile and the evaluated gemfile.
     it "bundles with deployment mode configured" do
-      bundle! :install
-      bundle "config --local deployment true"
-      bundle! :install
+      bundle :install
+      bundle "config set --local deployment true"
+      bundle :install
     end
   end
 
@@ -75,7 +75,7 @@ RSpec.describe "bundle install with gemfile that uses eval_gemfile" do
         source "#{file_uri_for(gem_repo1)}"
         eval_gemfile "other/Gemfile"
       G
-      install_gemfile! "eval_gemfile File.expand_path('Gemfile-alt')"
+      install_gemfile "eval_gemfile File.expand_path('Gemfile-alt')"
 
       expect(the_bundle).to include_gem "rack 1.0.0"
     end

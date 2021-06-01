@@ -39,11 +39,19 @@ module Bundler
       constant_name = name.gsub(/-[_-]*(?![_-]|$)/) { "::" }.gsub(/([_-]+|(::)|^)(.|$)/) { $2.to_s + $3.upcase }
       constant_array = constant_name.split("::")
 
-      git_installed = Bundler.git_present?
+      use_git = Bundler.git_present? && options[:git]
 
-      git_author_name = git_installed ? `git config user.name`.chomp : ""
-      github_username = git_installed ? `git config github.user`.chomp : ""
-      git_user_email = git_installed ? `git config user.email`.chomp : ""
+      git_author_name = use_git ? `git config user.name`.chomp : ""
+      git_username = use_git ? `git config github.user`.chomp : ""
+      git_user_email = use_git ? `git config user.email`.chomp : ""
+
+      github_username = if options[:github_username].nil?
+        git_username
+      elsif options[:github_username] == false
+        ""
+      else
+        options[:github_username]
+      end
 
       config = {
         :name             => name,
@@ -58,7 +66,9 @@ module Bundler
         :ext              => options[:ext],
         :exe              => options[:exe],
         :bundler_version  => bundler_dependency_version,
+        :git              => use_git,
         :github_username  => github_username.empty? ? "[USERNAME]" : github_username,
+        :required_ruby_version => Gem.ruby_version < Gem::Version.new("2.4.a") ? "2.3.0" : "2.4.0",
       }
       ensure_safe_gem_name(name, constant_array)
 
@@ -78,13 +88,11 @@ module Bundler
         bin/setup
       ]
 
-      templates.merge!("gitignore.tt" => ".gitignore") if Bundler.git_present?
+      templates.merge!("gitignore.tt" => ".gitignore") if use_git
 
       if test_framework = ask_and_set_test_framework
         config[:test] = test_framework
         config[:test_framework_version] = TEST_FRAMEWORK_VERSIONS[test_framework]
-
-        templates.merge!("travis.yml.tt" => ".travis.yml")
 
         case test_framework
         when "rspec"
@@ -97,7 +105,7 @@ module Bundler
         when "minitest"
           templates.merge!(
             "test/minitest/test_helper.rb.tt" => "test/test_helper.rb",
-            "test/minitest/newgem_test.rb.tt" => "test/#{namespaced_path}_test.rb"
+            "test/minitest/test_newgem.rb.tt" => "test/test_#{namespaced_path}.rb"
           )
           config[:test_task] = :test
         when "test-unit"
@@ -107,6 +115,18 @@ module Bundler
           )
           config[:test_task] = :test
         end
+      end
+
+      config[:ci] = ask_and_set_ci
+      case config[:ci]
+      when "github"
+        templates.merge!("github/workflows/main.yml.tt" => ".github/workflows/main.yml")
+      when "travis"
+        templates.merge!("travis.yml.tt" => ".travis.yml")
+      when "gitlab"
+        templates.merge!("gitlab-ci.yml.tt" => ".gitlab-ci.yml")
+      when "circle"
+        templates.merge!("circleci/config.yml.tt" => ".circleci/config.yml")
       end
 
       if ask_and_set(:mit, "Do you want to license your code permissively under the MIT license?",
@@ -131,13 +151,28 @@ module Bundler
         templates.merge!("CODE_OF_CONDUCT.md.tt" => "CODE_OF_CONDUCT.md")
       end
 
-      if ask_and_set(:rubocop, "Do you want to add rubocop as a dependency for gems you generate?",
-        "RuboCop is a static code analyzer that has out-of-the-box rules for many " \
-        "of the guidelines in the community style guide. " \
-        "For more information, see the RuboCop docs (https://docs.rubocop.org/en/stable/) " \
-        "and the Ruby Style Guides (https://github.com/rubocop-hq/ruby-style-guide).")
-        config[:rubocop] = true
+      if ask_and_set(:changelog, "Do you want to include a changelog?",
+        "A changelog is a file which contains a curated, chronologically ordered list of notable " \
+        "changes for each version of a project. To make it easier for users and contributors to" \
+        " see precisely what notable changes have been made between each release (or version) of" \
+        " the project. Whether consumers or developers, the end users of software are" \
+        " human beings who care about what's in the software. When the software changes, people " \
+        "want to know why and how. see https://keepachangelog.com")
+        config[:changelog] = true
+        Bundler.ui.info "Changelog enabled in config"
+        templates.merge!("CHANGELOG.md.tt" => "CHANGELOG.md")
+      end
+
+      config[:linter] = ask_and_set_linter
+      case config[:linter]
+      when "rubocop"
+        config[:linter_version] = Gem.ruby_version < Gem::Version.new("2.4.a") ? "0.81.0" : "1.7"
         Bundler.ui.info "RuboCop enabled in config"
+        templates.merge!("rubocop.yml.tt" => ".rubocop.yml")
+      when "standard"
+        config[:linter_version] = Gem.ruby_version < Gem::Version.new("2.4.a") ? "0.2.5" : "1.0"
+        Bundler.ui.info "Standard enabled in config"
+        templates.merge!("standard.yml.tt" => ".standard.yml")
       end
 
       templates.merge!("exe/newgem.tt" => "exe/#{name}") if config[:exe]
@@ -150,24 +185,31 @@ module Bundler
         )
       end
 
+      if File.exist?(target) && !File.directory?(target)
+        Bundler.ui.error "Couldn't create a new gem named `#{gem_name}` because there's an existing file named `#{gem_name}`."
+        exit Bundler::BundlerError.all_errors[Bundler::GenericSystemCallError]
+      end
+
+      if use_git
+        Bundler.ui.info "Initializing git repo in #{target}"
+        `git init #{target}`
+
+        config[:git_default_branch] = File.read("#{target}/.git/HEAD").split("/").last.chomp
+      end
+
       templates.each do |src, dst|
         destination = target.join(dst)
-        SharedHelpers.filesystem_access(destination) do
-          thor.template("newgem/#{src}", destination, config)
-        end
+        thor.template("newgem/#{src}", destination, config)
       end
 
       executables.each do |file|
-        SharedHelpers.filesystem_access(target.join(file)) do |path|
-          executable = (path.stat.mode | 0o111)
-          path.chmod(executable)
-        end
+        path = target.join(file)
+        executable = (path.stat.mode | 0o111)
+        path.chmod(executable)
       end
 
-      if Bundler.git_present? && options[:git]
-        Bundler.ui.info "Initializing git repo in #{target}"
+      if use_git
         Dir.chdir(target) do
-          `git init`
           `git add .`
         end
       end
@@ -177,17 +219,9 @@ module Bundler
 
       Bundler.ui.info "Gem '#{name}' was successfully created. " \
         "For more information on making a RubyGem visit https://bundler.io/guides/creating_gem.html"
-
-      if options[:test] == Bundler.settings["gem.test"]
-        Bundler.ui.info "Bundler is configured to generate test files for #{Bundler.settings["gem.test"]}, "\
-                        "so -t is not needed if you want to continue using it. " \
-                        "This setting can be changed anytime with `bundle config gem.test`."
-      end
-    rescue Errno::EEXIST => e
-      raise GenericSystemCallError.new(e, "There was a conflict while creating the new gem.")
     end
 
-  private
+    private
 
     def resolve_name(name)
       SharedHelpers.pwd.join(name).basename.to_s
@@ -221,9 +255,9 @@ module Bundler
 
       if test_framework.to_s.empty?
         Bundler.ui.confirm "Do you want to generate tests with your gem?"
-        Bundler.ui.info test_framework_hint
-        result = Bundler.ui.ask "Type 'rspec', 'minitest' or 'test-unit' to generate those test files now. " \
-                                "rspec/minitest/test-unit/(none):"
+        Bundler.ui.info hint_text("test")
+
+        result = Bundler.ui.ask "Enter a test framework. rspec/minitest/test-unit/(none):"
         if result =~ /rspec|minitest|test-unit/
           test_framework = result
         else
@@ -235,15 +269,103 @@ module Bundler
         Bundler.settings.set_global("gem.test", test_framework)
       end
 
+      if options[:test] == Bundler.settings["gem.test"]
+        Bundler.ui.info "#{options[:test]} is already configured, ignoring --test flag."
+      end
+
       test_framework
     end
 
-    def test_framework_hint
-      if Bundler.settings["gem.test"] == false
+    def hint_text(setting)
+      if Bundler.settings["gem.#{setting}"] == false
         "Your choice will only be applied to this gem."
       else
         "Future `bundle gem` calls will use your choice. " \
-        "This setting can be changed anytime with `bundle config gem.test`."
+        "This setting can be changed anytime with `bundle config gem.#{setting}`."
+      end
+    end
+
+    def ask_and_set_ci
+      ci_template = options[:ci] || Bundler.settings["gem.ci"]
+
+      if ci_template.to_s.empty?
+        Bundler.ui.confirm "Do you want to set up continuous integration for your gem? " \
+          "Supported services:\n" \
+          "* CircleCI:       https://circleci.com/\n" \
+          "* GitHub Actions: https://github.com/features/actions\n" \
+          "* GitLab CI:      https://docs.gitlab.com/ee/ci/\n" \
+          "* Travis CI:      https://travis-ci.org/\n" \
+          "\n"
+        Bundler.ui.info hint_text("ci")
+
+        result = Bundler.ui.ask "Enter a CI service. github/travis/gitlab/circle/(none):"
+        if result =~ /github|travis|gitlab|circle/
+          ci_template = result
+        else
+          ci_template = false
+        end
+      end
+
+      if Bundler.settings["gem.ci"].nil?
+        Bundler.settings.set_global("gem.ci", ci_template)
+      end
+
+      if options[:ci] == Bundler.settings["gem.ci"]
+        Bundler.ui.info "#{options[:ci]} is already configured, ignoring --ci flag."
+      end
+
+      ci_template
+    end
+
+    def ask_and_set_linter
+      linter_template = options[:linter] || Bundler.settings["gem.linter"]
+      linter_template = deprecated_rubocop_option if linter_template.nil?
+
+      if linter_template.to_s.empty?
+        Bundler.ui.confirm "Do you want to add a code linter and formatter to your gem? " \
+          "Supported Linters:\n" \
+          "* RuboCop:       https://rubocop.org\n" \
+          "* Standard:      https://github.com/testdouble/standard\n" \
+          "\n"
+        Bundler.ui.info hint_text("linter")
+
+        result = Bundler.ui.ask "Enter a linter. rubocop/standard/(none):"
+        if result =~ /rubocop|standard/
+          linter_template = result
+        else
+          linter_template = false
+        end
+      end
+
+      if Bundler.settings["gem.linter"].nil?
+        Bundler.settings.set_global("gem.linter", linter_template)
+      end
+
+      # Once gem.linter safely set, unset the deprecated gem.rubocop
+      unless Bundler.settings["gem.rubocop"].nil?
+        Bundler.settings.set_global("gem.rubocop", nil)
+      end
+
+      if options[:linter] == Bundler.settings["gem.linter"]
+        Bundler.ui.info "#{options[:linter]} is already configured, ignoring --linter flag."
+      end
+
+      linter_template
+    end
+
+    def deprecated_rubocop_option
+      if !options[:rubocop].nil?
+        if options[:rubocop]
+          Bundler::SharedHelpers.major_deprecation 2, "--rubocop is deprecated, use --linter=rubocop"
+          "rubocop"
+        else
+          Bundler::SharedHelpers.major_deprecation 2, "--no-rubocop is deprecated, use --linter"
+          false
+        end
+      elsif !Bundler.settings["gem.rubocop"].nil?
+        Bundler::SharedHelpers.major_deprecation 2,
+          "config gem.rubocop is deprecated; we've updated your config to use gem.linter instead"
+        Bundler.settings["gem.rubocop"] ? "rubocop" : false
       end
     end
 

@@ -8,7 +8,6 @@
 # object to `Gem::Package.new`.
 
 class Gem::Package::IOSource < Gem::Package::Source # :nodoc: all
-
   attr_reader :io
 
   def initialize(io)
@@ -41,5 +40,4 @@ class Gem::Package::IOSource < Gem::Package::Source # :nodoc: all
 
   def path
   end
-
 end

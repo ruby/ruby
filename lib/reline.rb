@@ -7,6 +7,7 @@ require 'reline/key_actor'
 require 'reline/key_stroke'
 require 'reline/line_editor'
 require 'reline/history'
+require 'rbconfig'
 
 module Reline
   FILENAME_COMPLETION_PROC = nil
@@ -35,7 +36,6 @@ module Reline
     attr_accessor :config
     attr_accessor :key_stroke
     attr_accessor :line_editor
-    attr_accessor :ambiguous_width
     attr_accessor :last_incremental_search
     attr_reader :output
 
@@ -43,6 +43,7 @@ module Reline
       self.output = STDOUT
       yield self
       @completion_quote_character = nil
+      @bracketed_paste_finished = false
     end
 
     def encoding
@@ -198,7 +199,11 @@ module Reline
 
     private def inner_readline(prompt, add_hist, multiline, &confirm_multiline_termination)
       if ENV['RELINE_STDERR_TTY']
-        $stderr.reopen(ENV['RELINE_STDERR_TTY'], 'w')
+        if Reline::IOGate.win?
+          $stderr = File.open(ENV['RELINE_STDERR_TTY'], 'a')
+        else
+          $stderr.reopen(ENV['RELINE_STDERR_TTY'], 'w')
+        end
         $stderr.sync = true
         $stderr.puts "Reline is used by #{Process.pid}"
       end
@@ -222,27 +227,40 @@ module Reline
       line_editor.auto_indent_proc = auto_indent_proc
       line_editor.dig_perfect_match_proc = dig_perfect_match_proc
       line_editor.pre_input_hook = pre_input_hook
-      line_editor.rerender
 
       unless config.test_mode
         config.read
         config.reset_default_key_bindings
-        Reline::IOGate::RAW_KEYSTROKE_CONFIG.each_pair do |key, func|
-          config.add_default_key_binding(key, func)
-        end
+        Reline::IOGate.set_default_key_bindings(config)
       end
 
+      line_editor.rerender
+
       begin
+        prev_pasting_state = false
         loop do
+          prev_pasting_state = Reline::IOGate.in_pasting?
           read_io(config.keyseq_timeout) { |inputs|
+            line_editor.set_pasting_state(Reline::IOGate.in_pasting?)
             inputs.each { |c|
               line_editor.input_key(c)
               line_editor.rerender
             }
+            if @bracketed_paste_finished
+              line_editor.rerender_all
+              @bracketed_paste_finished = false
+            end
           }
+          if prev_pasting_state == true and not Reline::IOGate.in_pasting? and not line_editor.finished?
+            line_editor.set_pasting_state(false)
+            prev_pasting_state = false
+            line_editor.rerender_all
+          end
           break if line_editor.finished?
         end
         Reline::IOGate.move_cursor_column(0)
+      rescue Errno::EIO
+        # Maybe the I/O has been closed.
       rescue StandardError => e
         line_editor.finalize
         Reline::IOGate.deprep(otio)
@@ -265,8 +283,13 @@ module Reline
       buffer = []
       loop do
         c = Reline::IOGate.getc
-        buffer << c
-        result = key_stroke.match_status(buffer)
+        if c == -1
+          result = :unmatched
+          @bracketed_paste_finished = true
+        else
+          buffer << c
+          result = key_stroke.match_status(buffer)
+        end
         case result
         when :matched
           expanded = key_stroke.expand(buffer).map{ |expanded_c|
@@ -332,9 +355,14 @@ module Reline
       end
     end
 
+    def ambiguous_width
+      may_req_ambiguous_char_width unless defined? @ambiguous_width
+      @ambiguous_width
+    end
+
     private def may_req_ambiguous_char_width
       @ambiguous_width = 2 if Reline::IOGate == Reline::GeneralIO or STDOUT.is_a?(File)
-      return if ambiguous_width
+      return if @ambiguous_width
       Reline::IOGate.move_cursor_column(0)
       begin
         output.write "\u{25bd}"
@@ -414,6 +442,10 @@ module Reline
       core.filename_quote_characters = ""
       core.special_prefixes = ""
     }
+  end
+
+  def self.ungetc(c)
+    Reline::IOGate.ungetc(c)
   end
 
   def self.line_editor

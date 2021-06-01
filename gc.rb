@@ -26,17 +26,37 @@ module GC
   #
   #  Use full_mark: false to perform a minor GC.
   #  Use immediate_sweep: false to defer sweeping (use lazy sweep).
-  #  Use compact: true to compact the heap (it implies a full mark and sweep).
   #
   #  Note: These keyword arguments are implementation and version dependent. They
   #  are not guaranteed to be future-compatible, and may be ignored if the
   #  underlying implementation does not support them.
-  def self.start full_mark: true, immediate_mark: true, immediate_sweep: true, compact: false
-    __builtin_gc_start_internal full_mark, immediate_mark, immediate_sweep, compact
+  def self.start full_mark: true, immediate_mark: true, immediate_sweep: true
+    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep, false
   end
 
   def garbage_collect full_mark: true, immediate_mark: true, immediate_sweep: true
-    __builtin_gc_start_internal full_mark, immediate_mark, immediate_sweep, false
+    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep, false
+  end
+
+  #  call-seq:
+  #     GC.auto_compact    -> true or false
+  #
+  #  Returns whether or not automatic compaction has been enabled.
+  #
+  def self.auto_compact
+    Primitive.gc_get_auto_compact
+  end
+
+  #  call-seq:
+  #     GC.auto_compact = flag
+  #
+  #  Updates automatic compaction mode.
+  #
+  #  When enabled, the compactor will execute on every major collection.
+  #
+  #  Enabling compaction will degrade performance on major collections.
+  def self.auto_compact=(flag)
+    Primitive.gc_set_auto_compact(flag)
   end
 
   #  call-seq:
@@ -50,7 +70,7 @@ module GC
   #     GC.enable    #=> false
   #
   def self.enable
-    __builtin_gc_enable
+    Primitive.gc_enable
   end
 
   #  call-seq:
@@ -62,7 +82,7 @@ module GC
   #     GC.disable   #=> false
   #     GC.disable   #=> true
   def self.disable
-    __builtin_gc_disable
+    Primitive.gc_disable
   end
 
   #  call-seq:
@@ -70,7 +90,7 @@ module GC
   #
   #  Returns current status of GC stress mode.
   def self.stress
-    __builtin_gc_stress_get
+    Primitive.gc_stress_get
   end
 
   #  call-seq:
@@ -88,7 +108,7 @@ module GC
   #    0x02:: no immediate sweep
   #    0x04:: full mark after malloc/calloc/realloc
   def self.stress=(flag)
-    __builtin_gc_stress_set_m flag
+    Primitive.gc_stress_set_m flag
   end
 
   #  call-seq:
@@ -98,7 +118,7 @@ module GC
   #
   #  It returns the number of times GC occurred since the process started.
   def self.count
-    __builtin_gc_count
+    Primitive.gc_count
   end
 
   #  call-seq:
@@ -147,7 +167,7 @@ module GC
   #
   #  This method is only expected to work on C Ruby.
   def self.stat hash_or_key = nil
-    __builtin_gc_stat hash_or_key
+    Primitive.gc_stat hash_or_key
   end
 
   #  call-seq:
@@ -161,11 +181,36 @@ module GC
   # it is overwritten and returned.
   # This is intended to avoid probe effect.
   def self.latest_gc_info hash_or_key = nil
-    __builtin_gc_latest_gc_info hash_or_key
+    Primitive.gc_latest_gc_info hash_or_key
   end
 
+  #  call-seq:
+  #     GC.latest_compact_info -> {:considered=>{:T_CLASS=>11}, :moved=>{:T_CLASS=>11}}
+  #
+  #  Returns information about object moved in the most recent GC compaction.
+  #
+  # The returned hash has two keys :considered and :moved.  The hash for
+  # :considered lists the number of objects that were considered for movement
+  # by the compactor, and the :moved hash lists the number of objects that
+  # were actually moved.  Some objects can't be moved (maybe they were pinned)
+  # so these numbers can be used to calculate compaction efficiency.
+  def self.latest_compact_info
+    Primitive.gc_compact_stats
+  end
+
+  #  call-seq:
+  #     GC.compact
+  #
+  # This function compacts objects together in Ruby's heap.  It eliminates
+  # unused space (or fragmentation) in the heap by moving objects in to that
+  # unused space.  This function returns a hash which contains statistics about
+  # which objects were moved.  See `GC.latest_gc_info` for details about
+  # compaction statistics.
+  #
+  # This method is implementation specific and not expected to be implemented
+  # in any implementation besides MRI.
   def self.compact
-    __builtin_rb_gc_compact
+    Primitive.gc_compact
   end
 
   # call-seq:
@@ -183,13 +228,13 @@ module GC
   # object, that object should be pushed on the mark stack, and will
   # make a SEGV.
   def self.verify_compaction_references(toward: nil, double_heap: false)
-    __builtin_gc_verify_compaction_references(toward, double_heap)
+    Primitive.gc_verify_compaction_references(double_heap, toward == :empty)
   end
 end
 
 module ObjectSpace
   def garbage_collect full_mark: true, immediate_mark: true, immediate_sweep: true
-    __builtin_gc_start_internal full_mark, immediate_mark, immediate_sweep, false
+    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep, false
   end
 
   module_function :garbage_collect

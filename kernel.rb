@@ -1,6 +1,27 @@
 module Kernel
   #
   #  call-seq:
+  #     obj.class    -> class
+  #
+  #  Returns the class of <i>obj</i>. This method must always be called
+  #  with an explicit receiver, as #class is also a reserved word in
+  #  Ruby.
+  #
+  #     1.class      #=> Integer
+  #     self.class   #=> Object
+  #--
+  # Equivalent to \c Object\#class in Ruby.
+  #
+  # Returns the class of \c obj, skipping singleton classes or module inclusions.
+  #++
+  #
+  def class
+    Primitive.attr! 'inline'
+    Primitive.cexpr! 'rb_obj_class(self)'
+  end
+
+  #
+  #  call-seq:
   #     obj.clone(freeze: nil) -> an_object
   #
   #  Produces a shallow copy of <i>obj</i>---the instance variables of
@@ -24,7 +45,107 @@ module Kernel
   #  the class.
   #
   def clone(freeze: nil)
-    __builtin_rb_obj_clone2(freeze)
+    Primitive.rb_obj_clone2(freeze)
+  end
+
+  #
+  #  call-seq:
+  #     obj.frozen?    -> true or false
+  #
+  #  Returns the freeze status of <i>obj</i>.
+  #
+  #     a = [ "a", "b", "c" ]
+  #     a.freeze    #=> ["a", "b", "c"]
+  #     a.frozen?   #=> true
+  #--
+  # Determines if the object is frozen. Equivalent to \c Object\#frozen? in Ruby.
+  # \param[in] obj  the object to be determines
+  # \retval Qtrue if frozen
+  # \retval Qfalse if not frozen
+  #++
+  #
+  def frozen?
+    Primitive.attr! 'inline'
+    Primitive.cexpr! 'rb_obj_frozen_p(self)'
+  end
+
+  #
+  #  call-seq:
+  #     obj.tap {|x| block }    -> obj
+  #
+  #  Yields self to the block, and then returns self.
+  #  The primary purpose of this method is to "tap into" a method chain,
+  #  in order to perform operations on intermediate results within the chain.
+  #
+  #     (1..10)                  .tap {|x| puts "original: #{x}" }
+  #       .to_a                  .tap {|x| puts "array:    #{x}" }
+  #       .select {|x| x.even? } .tap {|x| puts "evens:    #{x}" }
+  #       .map {|x| x*x }        .tap {|x| puts "squares:  #{x}" }
+  #
+  #--
+  # \private
+  #++
+  #
+  def tap
+    yield(self)
+    self
+  end
+
+  #
+  #  call-seq:
+  #     obj.then {|x| block }          -> an_object
+  #
+  #  Yields self to the block and returns the result of the block.
+  #
+  #     3.next.then {|x| x**x }.to_s             #=> "256"
+  #
+  #  Good usage for +then+ is value piping in method chains:
+  #
+  #     require 'open-uri'
+  #     require 'json'
+  #
+  #     construct_url(arguments).
+  #       then {|url| URI(url).read }.
+  #       then {|response| JSON.parse(response) }
+  #
+  #  When called without block, the method returns +Enumerator+,
+  #  which can be used, for example, for conditional
+  #  circuit-breaking:
+  #
+  #     # meets condition, no-op
+  #     1.then.detect(&:odd?)            # => 1
+  #     # does not meet condition, drop value
+  #     2.then.detect(&:odd?)            # => nil
+  #
+  def then
+    unless Primitive.block_given_p
+      return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, rb_obj_size)'
+    end
+    yield(self)
+  end
+
+  #
+  #  call-seq:
+  #     obj.yield_self {|x| block }    -> an_object
+  #
+  #  Yields self to the block and returns the result of the block.
+  #
+  #     "my string".yield_self {|s| s.upcase }   #=> "MY STRING"
+  #
+  #  Good usage for +then+ is value piping in method chains:
+  #
+  #     require 'open-uri'
+  #     require 'json'
+  #
+  #     construct_url(arguments).
+  #       then {|url| URI(url).read }.
+  #       then {|response| JSON.parse(response) }
+  #
+  def yield_self
+    unless Primitive.block_given_p
+      return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, rb_obj_size)'
+    end
+    yield(self)
   end
 
   module_function
@@ -48,6 +169,6 @@ module Kernel
   #     Float("123.0_badstring", exception: false)  #=> nil
   #
   def Float(arg, exception: true)
-    __builtin_rb_f_float(arg, exception)
+    Primitive.rb_f_float(arg, exception)
   end
 end

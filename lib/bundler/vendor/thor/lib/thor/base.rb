@@ -22,6 +22,15 @@ class Bundler::Thor
 
   TEMPLATE_EXTNAME = ".tt"
 
+  class << self
+    def deprecation_warning(message) #:nodoc:
+      unless ENV['THOR_SILENCE_DEPRECATION']
+        warn "Deprecation warning: #{message}\n" +
+          'You can silence deprecations warning by setting the environment variable THOR_SILENCE_DEPRECATION.'
+      end
+    end
+  end
+
   module Base
     attr_accessor :options, :parent_options, :args
 

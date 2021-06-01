@@ -8,13 +8,14 @@
 
 **********************************************************************/
 
-#include "ruby/internal/config.h"
+#include "ruby/internal/config.h" // defines USE_MJIT
+#include "ruby/internal/stdbool.h"
+#include "vm_core.h"
 
-#if USE_MJIT
+# if USE_MJIT
 
 #include "debug_counter.h"
 #include "ruby.h"
-#include "vm_core.h"
 
 // Special address values of a function generated from the
 // corresponding iseq by MJIT:
@@ -69,6 +70,8 @@ struct rb_mjit_compile_info {
     bool disable_send_cache;
     // Disable method inlining
     bool disable_inlining;
+    // Disable opt_getinlinecache inlining
+    bool disable_const_cache;
 };
 
 typedef VALUE (*mjit_func_t)(rb_execution_context_t *, rb_control_frame_t *);
@@ -84,6 +87,7 @@ extern void rb_mjit_recompile_send(const rb_iseq_t *iseq);
 extern void rb_mjit_recompile_ivar(const rb_iseq_t *iseq);
 extern void rb_mjit_recompile_exivar(const rb_iseq_t *iseq);
 extern void rb_mjit_recompile_inlining(const rb_iseq_t *iseq);
+extern void rb_mjit_recompile_const(const rb_iseq_t *iseq);
 RUBY_SYMBOL_EXPORT_END
 
 extern bool mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id);
@@ -95,27 +99,13 @@ extern void mjit_update_references(const rb_iseq_t *iseq);
 extern void mjit_mark(void);
 extern struct mjit_cont *mjit_cont_new(rb_execution_context_t *ec);
 extern void mjit_cont_free(struct mjit_cont *cont);
-extern void mjit_add_class_serial(rb_serial_t class_serial);
-extern void mjit_remove_class_serial(rb_serial_t class_serial);
 extern void mjit_mark_cc_entries(const struct rb_iseq_constant_body *const body);
 
-// A threshold used to reject long iseqs from JITting as such iseqs
-// takes too much time to be compiled.
-#define JIT_ISEQ_SIZE_THRESHOLD 1000
-
-// Return TRUE if given ISeq body should be compiled by MJIT
-static inline int
-mjit_target_iseq_p(struct rb_iseq_constant_body *body)
-{
-    return (body->type == ISEQ_TYPE_METHOD || body->type == ISEQ_TYPE_BLOCK)
-        && body->iseq_size < JIT_ISEQ_SIZE_THRESHOLD;
-}
-
-#ifdef MJIT_HEADER
+#  ifdef MJIT_HEADER
 NOINLINE(static COLDFUNC VALUE mjit_exec_slowpath(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_iseq_constant_body *body));
-#else
+#  else
 static inline VALUE mjit_exec_slowpath(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_iseq_constant_body *body);
-#endif
+#  endif
 static VALUE
 mjit_exec_slowpath(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_iseq_constant_body *body)
 {
@@ -124,7 +114,7 @@ mjit_exec_slowpath(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_
     switch ((enum rb_mjit_iseq_func)func_i) {
       case NOT_ADDED_JIT_ISEQ_FUNC:
         RB_DEBUG_COUNTER_INC(mjit_exec_not_added);
-        if (body->total_calls == mjit_opts.min_calls && mjit_target_iseq_p(body)) {
+        if (body->total_calls == mjit_opts.min_calls) {
             rb_mjit_add_iseq_to_process(iseq);
             if (UNLIKELY(mjit_opts.wait)) {
                 return rb_mjit_wait_call(ec, body);
@@ -161,36 +151,49 @@ mjit_exec(rb_execution_context_t *ec)
 
     mjit_func_t func = body->jit_func;
     if (UNLIKELY((uintptr_t)func <= LAST_JIT_ISEQ_FUNC)) {
-#     ifdef MJIT_HEADER
+#  ifdef MJIT_HEADER
         RB_DEBUG_COUNTER_INC(mjit_frame_JT2VM);
-#     else
+#  else
         RB_DEBUG_COUNTER_INC(mjit_frame_VM2VM);
-#     endif
+#  endif
         return mjit_exec_slowpath(ec, iseq, body);
     }
 
-# ifdef MJIT_HEADER
+#  ifdef MJIT_HEADER
     RB_DEBUG_COUNTER_INC(mjit_frame_JT2JT);
-# else
+#  else
     RB_DEBUG_COUNTER_INC(mjit_frame_VM2JT);
-# endif
+#  endif
     RB_DEBUG_COUNTER_INC(mjit_exec_call_func);
     return func(ec, ec->cfp);
 }
 
 void mjit_child_after_fork(void);
 
-#else // USE_MJIT
+#  ifdef MJIT_HEADER
+#define mjit_enabled true
+#  else // MJIT_HEADER
+extern bool mjit_enabled;
+#  endif // MJIT_HEADER
+VALUE mjit_pause(bool wait_p);
+VALUE mjit_resume(void);
+void mjit_finish(bool close_handle_p);
+
+# else // USE_MJIT
+
 static inline struct mjit_cont *mjit_cont_new(rb_execution_context_t *ec){return NULL;}
 static inline void mjit_cont_free(struct mjit_cont *cont){}
 static inline void mjit_gc_start_hook(void){}
 static inline void mjit_gc_exit_hook(void){}
 static inline void mjit_free_iseq(const rb_iseq_t *iseq){}
 static inline void mjit_mark(void){}
-static inline void mjit_add_class_serial(rb_serial_t class_serial){}
-static inline void mjit_remove_class_serial(rb_serial_t class_serial){}
 static inline VALUE mjit_exec(rb_execution_context_t *ec) { return Qundef; /* unreachable */ }
 static inline void mjit_child_after_fork(void){}
 
-#endif // USE_MJIT
+#define mjit_enabled false
+static inline VALUE mjit_pause(bool wait_p){ return Qnil; } // unreachable
+static inline VALUE mjit_resume(void){ return Qnil; } // unreachable
+static inline void mjit_finish(bool close_handle_p){}
+
+# endif // USE_MJIT
 #endif // RUBY_MJIT_H

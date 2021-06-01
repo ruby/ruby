@@ -21,7 +21,7 @@
  * @brief      Routines to manipulate struct ::RHash.
  *
  * Shyouhei really suffered agnish over placement of macros in this file.  They
- * are half-brken.  The situation (as of wriring) is:
+ * are half-broken.  The situation (as of writing) is:
  *
  * - #RHASH_TBL: works.
  * - #RHASH_ITER_LEV: compile-time error.

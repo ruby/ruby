@@ -1,7 +1,7 @@
-require "set"
 require_relative "thor/base"
 
 class Bundler::Thor
+  $thor_runner ||= false
   class << self
     # Allows for custom "Command" package naming.
     #
@@ -323,7 +323,7 @@ class Bundler::Thor
     # ==== Parameters
     # Symbol ...:: A list of commands that should be affected.
     def stop_on_unknown_option!(*command_names)
-      stop_on_unknown_option.merge(command_names)
+      @stop_on_unknown_option = stop_on_unknown_option | command_names
     end
 
     def stop_on_unknown_option?(command) #:nodoc:
@@ -337,29 +337,22 @@ class Bundler::Thor
     # ==== Parameters
     # Symbol ...:: A list of commands that should be affected.
     def disable_required_check!(*command_names)
-      disable_required_check.merge(command_names)
+      @disable_required_check = disable_required_check | command_names
     end
 
     def disable_required_check?(command) #:nodoc:
       command && disable_required_check.include?(command.name.to_sym)
     end
 
-    def deprecation_warning(message) #:nodoc:
-      unless ENV['THOR_SILENCE_DEPRECATION']
-        warn "Deprecation warning: #{message}\n" +
-          'You can silence deprecations warning by setting the environment variable THOR_SILENCE_DEPRECATION.'
-      end
-    end
-
   protected
 
     def stop_on_unknown_option #:nodoc:
-      @stop_on_unknown_option ||= Set.new
+      @stop_on_unknown_option ||= []
     end
 
     # help command has the required check disabled by default.
     def disable_required_check #:nodoc:
-      @disable_required_check ||= Set.new([:help])
+      @disable_required_check ||= [:help]
     end
 
     # The method responsible for dispatching given the args.
@@ -405,7 +398,6 @@ class Bundler::Thor
     # the namespace should be displayed as arguments.
     #
     def banner(command, namespace = nil, subcommand = false)
-      $thor_runner ||= false
       command.formatted_usage(self, $thor_runner, subcommand).split("\n").map do |formatted_usage|
         "#{basename} #{formatted_usage}"
       end.join("\n")

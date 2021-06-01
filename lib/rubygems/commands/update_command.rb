@@ -10,7 +10,6 @@ require 'rubygems/install_message' # must come before rdoc for messaging
 require 'rubygems/rdoc'
 
 class Gem::Commands::UpdateCommand < Gem::Command
-
   include Gem::InstallUpdateOptions
   include Gem::LocalRemoteOptions
   include Gem::VersionOption
@@ -20,9 +19,13 @@ class Gem::Commands::UpdateCommand < Gem::Command
   attr_reader :updated # :nodoc:
 
   def initialize
-    super 'update', 'Update installed gems to the latest version',
-      :document => %w[rdoc ri],
-      :force    => false
+    options = {
+      :force => false,
+    }
+
+    options.merge!(install_update_options)
+
+    super 'update', 'Update installed gems to the latest version', options
 
     add_install_update_options
 
@@ -52,7 +55,8 @@ class Gem::Commands::UpdateCommand < Gem::Command
   end
 
   def defaults_str # :nodoc:
-    "--document --no-force --install-dir #{Gem.dir}"
+    "--no-force --install-dir #{Gem.dir}\n" +
+    install_update_defaults_str
   end
 
   def description # :nodoc:
@@ -72,6 +76,13 @@ command to remove old versions.
     if Gem.rubygems_version == version
       say "Latest version already installed. Done."
       terminate_interaction
+    end
+  end
+
+  def check_oldest_rubygems(version) # :nodoc:
+    if oldest_supported_version > version
+      alert_error "rubygems #{version} is not supported on #{RUBY_VERSION}. The oldest version supported by this ruby is #{oldest_supported_version}"
+      terminate_interaction 1
     end
   end
 
@@ -107,7 +118,7 @@ command to remove old versions.
 
     updated = update_gems gems_to_update
 
-    updated_names = updated.map { |spec| spec.name }
+    updated_names = updated.map {|spec| spec.name }
     not_updated_names = options[:args].uniq - updated_names
 
     if updated.empty?
@@ -126,7 +137,7 @@ command to remove old versions.
 
     spec_tuples, errors = fetcher.search_for_dependency dependency
 
-    error = errors.find { |e| e.respond_to? :exception }
+    error = errors.find {|e| e.respond_to? :exception }
 
     raise error if error
 
@@ -168,13 +179,13 @@ command to remove old versions.
     update_dir = File.join Gem.dir, 'gems', "rubygems-update-#{version}"
 
     Dir.chdir update_dir do
-      say "Installing RubyGems #{version}"
+      say "Installing RubyGems #{version}" unless options[:silent]
 
       installed = preparing_gem_layout_for(version) do
         system Gem.ruby, '--disable-gems', 'setup.rb', *args
       end
 
-      say "RubyGems system software updated" if installed
+      say "RubyGems system software updated" if installed unless options[:silent]
     end
   end
 
@@ -215,7 +226,7 @@ command to remove old versions.
     rubygems_update.version = version
 
     hig = {
-      'rubygems-update' => rubygems_update
+      'rubygems-update' => rubygems_update,
     }
 
     gems_to_update = which_to_update hig, options[:args], :system
@@ -231,14 +242,14 @@ command to remove old versions.
   end
 
   def update_gem(name, version = Gem::Requirement.default)
-    return if @updated.any? { |spec| spec.name == name }
+    return if @updated.any? {|spec| spec.name == name }
 
     update_options = options.dup
     update_options[:prerelease] = version.prerelease?
 
     @installer = Gem::DependencyInstaller.new update_options
 
-    say "Updating #{name}"
+    say "Updating #{name}" unless options[:system] && options[:silent]
     begin
       @installer.install name, Gem::Requirement.new(version)
     rescue Gem::InstallError, Gem::DependencyError => e
@@ -262,11 +273,18 @@ command to remove old versions.
   # Update RubyGems software to the latest version.
 
   def update_rubygems
+    if Gem.disable_system_update_message
+      alert_error Gem.disable_system_update_message
+      terminate_interaction 1
+    end
+
     check_update_arguments
 
     version, requirement = rubygems_target_version
 
     check_latest_rubygems version
+
+    check_oldest_rubygems version
 
     update_gem 'rubygems-update', version
 
@@ -278,6 +296,7 @@ command to remove old versions.
 
   def update_rubygems_arguments # :nodoc:
     args = []
+    args << '--silent' if options[:silent]
     args << '--prefix' << Gem.prefix if Gem.prefix
     args << '--no-document' unless options[:document].include?('rdoc') || options[:document].include?('ri')
     args << '--no-format-executable' if options[:no_format_executable]
@@ -292,7 +311,7 @@ command to remove old versions.
 
     highest_installed_gems.each do |l_name, l_spec|
       next if not gem_names.empty? and
-              gem_names.none? { |name| name == l_spec.name }
+              gem_names.none? {|name| name == l_spec.name }
 
       highest_remote_tup = highest_remote_name_tuple l_spec
       highest_remote_ver = highest_remote_tup.version
@@ -306,4 +325,28 @@ command to remove old versions.
     result
   end
 
+  private
+
+  #
+  # Oldest version we support downgrading to. This is the version that
+  # originally ships with the first patch version of each ruby, because we never
+  # test each ruby against older rubygems, so we can't really guarantee it
+  # works. Version list can be checked here: https://stdgems.org/rubygems
+  #
+  def oldest_supported_version
+    @oldest_supported_version ||=
+      if Gem.ruby_version > Gem::Version.new("3.0.a")
+        Gem::Version.new("3.2.3")
+      elsif Gem.ruby_version > Gem::Version.new("2.7.a")
+        Gem::Version.new("3.1.2")
+      elsif Gem.ruby_version > Gem::Version.new("2.6.a")
+        Gem::Version.new("3.0.1")
+      elsif Gem.ruby_version > Gem::Version.new("2.5.a")
+        Gem::Version.new("2.7.3")
+      elsif Gem.ruby_version > Gem::Version.new("2.4.a")
+        Gem::Version.new("2.6.8")
+      else
+        Gem::Version.new("2.5.2")
+      end
+  end
 end

@@ -47,12 +47,13 @@ module EnvUtil
   class << self
     attr_accessor :timeout_scale
     attr_reader :original_internal_encoding, :original_external_encoding,
-                :original_verbose
+                :original_verbose, :original_warning
 
     def capture_global_values
       @original_internal_encoding = Encoding.default_internal
       @original_external_encoding = Encoding.default_external
       @original_verbose = $VERBOSE
+      @original_warning = defined?(Warning.[]) ? %i[deprecated experimental].to_h {|i| [i, Warning[i]]} : nil
     end
   end
 
@@ -124,7 +125,7 @@ module EnvUtil
 
   def invoke_ruby(args, stdin_data = "", capture_stdout = false, capture_stderr = false,
                   encoding: nil, timeout: 10, reprieve: 1, timeout_error: Timeout::Error,
-                  stdout_filter: nil, stderr_filter: nil,
+                  stdout_filter: nil, stderr_filter: nil, ios: nil,
                   signal: :TERM,
                   rubybin: EnvUtil.rubybin, precommand: nil,
                   **opt)
@@ -140,6 +141,8 @@ module EnvUtil
       out_p.set_encoding(encoding) if out_p
       err_p.set_encoding(encoding) if err_p
     end
+    ios.each {|i, o = i|opt[i] = o} if ios
+
     c = "C"
     child_env = {}
     LANG_ENVS.each {|lc| child_env[lc] = c}
@@ -149,8 +152,9 @@ module EnvUtil
     if RUBYLIB and lib = child_env["RUBYLIB"]
       child_env["RUBYLIB"] = [lib, RUBYLIB].join(File::PATH_SEPARATOR)
     end
+    child_env['ASAN_OPTIONS'] = ENV['ASAN_OPTIONS'] if ENV['ASAN_OPTIONS']
     args = [args] if args.kind_of?(String)
-    pid = spawn(child_env, *precommand, rubybin, *args, **opt)
+    pid = spawn(child_env, *precommand, rubybin, *args, opt)
     in_c.close
     out_c&.close
     out_c = nil
@@ -197,11 +201,6 @@ module EnvUtil
   end
   module_function :invoke_ruby
 
-  alias rubyexec invoke_ruby
-  class << self
-    alias rubyexec invoke_ruby
-  end
-
   def verbose_warning
     class << (stderr = "".dup)
       alias write concat
@@ -214,6 +213,7 @@ module EnvUtil
   ensure
     stderr, $stderr = $stderr, stderr
     $VERBOSE = EnvUtil.original_verbose
+    EnvUtil.original_warning&.each {|i, v| Warning[i] = v}
   end
   module_function :verbose_warning
 

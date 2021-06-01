@@ -29,10 +29,18 @@ class TestVariable < Test::Unit::TestCase
     @@rule = "Cronus"			# modifies @@rule in Gods
     include Olympians
     def ruler4
-      EnvUtil.suppress_warning {
-        @@rule
-      }
+      @@rule
     end
+  end
+
+  def test_setting_class_variable_on_module_through_inheritance
+    mod = Module.new
+    mod.class_variable_set(:@@foo, 1)
+    mod.freeze
+    c = Class.new { include(mod) }
+    assert_raise(FrozenError) { c.class_variable_set(:@@foo, 2) }
+    assert_raise(FrozenError) { c.class_eval("@@foo = 2") }
+    assert_equal(1, c.class_variable_get(:@@foo))
   end
 
   def test_singleton_class_included_class_variable
@@ -61,6 +69,67 @@ class TestVariable < Test::Unit::TestCase
     c.class_variable_set(:@@foo, 1)
     assert_equal([:@@foo, :@@rule], o.singleton_class.class_variables.sort)
     assert_equal(1, o.singleton_class.class_variable_get(:@@foo))
+  end
+
+  def test_cvar_overtaken_by_parent_class
+    error = eval <<~EORB
+      class Parent
+      end
+
+      class Child < Parent
+        @@cvar = 1
+
+        def self.cvar
+          @@cvar
+        end
+      end
+
+      assert_equal 1, Child.cvar
+
+      class Parent
+        @@cvar = 2
+      end
+
+      assert_raise RuntimeError do
+        Child.cvar
+      end
+    EORB
+
+    assert_equal "class variable @@cvar of TestVariable::Child is overtaken by TestVariable::Parent", error.message
+  ensure
+    TestVariable.send(:remove_const, :Child) rescue nil
+    TestVariable.send(:remove_const, :Parent) rescue nil
+  end
+
+  def test_cvar_overtaken_by_module
+    error = eval <<~EORB
+      class ParentForModule
+        @@cvar = 1
+
+        def self.cvar
+          @@cvar
+        end
+      end
+
+      assert_equal 1, ParentForModule.cvar
+
+      module Mixin
+        @@cvar = 2
+      end
+
+      class ParentForModule
+        include Mixin
+      end
+
+      assert_raise RuntimeError do
+        ParentForModule.cvar
+      end
+    EORB
+
+    assert_equal "class variable @@cvar of TestVariable::ParentForModule is overtaken by TestVariable::Mixin", error.message
+  ensure
+    TestVariable.send(:remove_const, :Mixin) rescue nil
+    TestVariable.send(:remove_const, :ParentForModule) rescue nil
   end
 
   class IncludeRefinedModuleClassVariableNoWarning
@@ -107,7 +176,7 @@ class TestVariable < Test::Unit::TestCase
     atlas = Titans.new
     assert_equal("Cronus", atlas.ruler0)
     assert_equal("Zeus", atlas.ruler3)
-    assert_equal("Cronus", atlas.ruler4)
+    assert_raise(RuntimeError) { atlas.ruler4 }
     assert_nothing_raised do
       class << Gods
         defined?(@@rule) && @@rule

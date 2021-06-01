@@ -6,7 +6,6 @@
 # lockfile.
 
 class Gem::Resolver::LockSpecification < Gem::Resolver::Specification
-
   attr_reader :sources
 
   def initialize(set, name, version, sources, platform)
@@ -83,5 +82,4 @@ class Gem::Resolver::LockSpecification < Gem::Resolver::Specification
       s.dependencies.concat @dependencies
     end
   end
-
 end

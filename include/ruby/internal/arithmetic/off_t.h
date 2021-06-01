@@ -46,4 +46,14 @@
 # define NUM2OFFT RB_NUM2INT
 #endif
 
+#ifdef PRI_OFFT_PREFIX
+# /* take that. */
+#elif SIZEOF_OFF_T == SIZEOF_LONG_LONG
+# define PRI_OFFT_PREFIX PRI_LL_PREFIX
+#elif SIZEOF_OFF_T == SIZEOF_LONG
+# define PRI_OFFT_PREFIX PRI_LONG_PREFIX
+#else
+# define PRI_OFFT_PREFIX PRI_INT_PREFIX
+#endif
+
 #endif /* RBIMPL_ARITHMETIC_OFF_T_H */

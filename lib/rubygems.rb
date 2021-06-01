@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-# -*- ruby -*-
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -9,7 +8,7 @@
 require 'rbconfig'
 
 module Gem
-  VERSION = "3.2.0.pre1".freeze
+  VERSION = "3.3.0.dev".freeze
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -119,6 +118,10 @@ module Gem
   # This allows switching ".untaint" to ".tap(&Gem::UNTAINT)",
   # to avoid deprecation warnings in Ruby 2.7.
   UNTAINT = RUBY_VERSION < '2.7' ? :untaint.to_sym : proc{}
+
+  # When https://bugs.ruby-lang.org/issues/17259 is available, there is no need to override Kernel#warn
+  KERNEL_WARN_IGNORES_INTERNAL_ENTRIES = RUBY_ENGINE == "truffleruby" ||
+      (RUBY_ENGINE == "ruby" && RUBY_VERSION >= '3.0')
 
   ##
   # An Array of Regexps that match windows Ruby platforms.
@@ -272,7 +275,7 @@ module Gem
 
     unless spec = specs.first
       msg = "can't find gem #{dep} with executable #{exec_name}"
-      if name == "bundler" && bundler_message = Gem::BundlerVersionFinder.missing_version_message
+      if dep.filters_bundler? && bundler_message = Gem::BundlerVersionFinder.missing_version_message
         msg = bundler_message
       end
       raise Gem::GemNotFoundException, msg
@@ -466,7 +469,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
       next if File.exist? subdir
       begin
         FileUtils.mkdir_p subdir, **options
-      rescue Errno::EACCES
+      rescue SystemCallError
       end
     end
   ensure
@@ -504,7 +507,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
     gem_specifications = @gemdeps ? Gem.loaded_specs.values : Gem::Specification.stubs
 
-    files.concat gem_specifications.map { |spec|
+    files.concat gem_specifications.map {|spec|
       spec.matches_for_glob("#{glob}#{Gem.suffix_pattern}")
     }.flatten
 
@@ -519,7 +522,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     glob_with_suffixes = "#{glob}#{Gem.suffix_pattern}"
     $LOAD_PATH.map do |load_path|
       Gem::Util.glob_files_in_dir(glob_with_suffixes, load_path)
-    end.flatten.select { |file| File.file? file.tap(&Gem::UNTAINT) }
+    end.flatten.select {|file| File.file? file.tap(&Gem::UNTAINT) }
   end
 
   ##
@@ -539,7 +542,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
     files = find_files_from_load_path glob if check_load_path
 
-    files.concat Gem::Specification.latest_specs(true).map { |spec|
+    files.concat Gem::Specification.latest_specs(true).map {|spec|
       spec.matches_for_glob("#{glob}#{Gem.suffix_pattern}")
     }.flatten
 
@@ -618,13 +621,12 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
   def self.load_yaml
     return if @yaml_loaded
-    return unless defined?(gem)
 
     begin
       # Try requiring the gem version *or* stdlib version of psych.
       require 'psych'
     rescue ::LoadError
-      # If we can't load psych, thats fine, go on.
+      # If we can't load psych, that's fine, go on.
     else
       # If 'yaml' has already been required, then we have to
       # be sure to switch it over to the newly loaded psych.
@@ -811,7 +813,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   ##
   # Safely write a file in binary mode on all platforms.
   def self.write_binary(path, data)
-    open(path, 'wb') do |io|
+    File.open(path, 'wb') do |io|
       begin
         io.flock(File::LOCK_EX)
       rescue *WRITE_BINARY_ERRORS
@@ -822,7 +824,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     if Thread.main != Thread.current
       raise
     else
-      open(path, 'wb') do |io|
+      File.open(path, 'wb') do |io|
         io.write data
       end
     end
@@ -977,7 +979,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
                      val = RbConfig::CONFIG[key]
                      next unless val and not val.empty?
                      ".#{val}"
-                   end
+                   end,
                   ].compact.uniq
   end
 
@@ -1014,7 +1016,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     paths.flatten!
     paths.compact!
     hash = { "GEM_HOME" => home, "GEM_PATH" => paths.empty? ? home : paths.join(File::PATH_SEPARATOR) }
-    hash.delete_if { |_, v| v.nil? }
+    hash.delete_if {|_, v| v.nil? }
     self.paths = hash
   end
 
@@ -1024,7 +1026,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   def self.win_platform?
     if @@win_platform.nil?
       ruby_platform = RbConfig::CONFIG['host_os']
-      @@win_platform = !!WIN_PATTERNS.find { |r| ruby_platform =~ r }
+      @@win_platform = !!WIN_PATTERNS.find {|r| ruby_platform =~ r }
     end
 
     @@win_platform
@@ -1101,7 +1103,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
     if path == "-"
       Gem::Util.traverse_parents Dir.pwd do |directory|
-        dep_file = GEM_DEP_FILES.find { |f| File.file?(f) }
+        dep_file = GEM_DEP_FILES.find {|f| File.file?(f) }
 
         next unless dep_file
 
@@ -1187,6 +1189,11 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # methods, and then we switch over to `class << self` here. Pick one or the
   # other.
   class << self
+    ##
+    # RubyGems distributors (like operating system package managers) can
+    # disable RubyGems update by setting this to error message printed to
+    # end-users on gem update --system instead of actual update.
+    attr_accessor :disable_system_update_message
 
     ##
     # Hash of loaded Gem::Specification keyed by name
@@ -1212,7 +1219,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     #
 
     def register_default_spec(spec)
-      extended_require_paths = spec.require_paths.map {|f| f + "/"}
+      extended_require_paths = spec.require_paths.map {|f| f + "/" }
       new_format = extended_require_paths.any? {|path| spec.files.any? {|f| f.start_with? path } }
 
       if new_format
@@ -1296,15 +1303,14 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     private
 
     def already_loaded?(file)
-      default_gem_load_paths.find do |load_path_entry|
-        $LOADED_FEATURES.include?("#{load_path_entry}/#{file}")
+      $LOADED_FEATURES.any? do |feature_path|
+        feature_path.end_with?(file) && default_gem_load_paths.any? {|load_path_entry| feature_path == "#{load_path_entry}/#{file}" }
       end
     end
 
     def default_gem_load_paths
       @default_gem_load_paths ||= $LOAD_PATH[load_path_insert_index..-1]
     end
-
   end
 
   ##
@@ -1330,8 +1336,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   autoload :Specification,      File.expand_path('rubygems/specification', __dir__)
   autoload :Util,               File.expand_path('rubygems/util', __dir__)
   autoload :Version,            File.expand_path('rubygems/version', __dir__)
-
-  require "rubygems/specification"
 end
 
 require 'rubygems/exceptions'

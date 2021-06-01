@@ -46,7 +46,6 @@ DESCRIPTION
   s.extra_rdoc_files = ["README.md"]
 
   s.required_ruby_version = Gem::Requirement.new(">= 2.4.0")
-  s.rubygems_version = "2.5.1"
   s.required_rubygems_version = Gem::Requirement.new(">= 0")
 
   if RUBY_ENGINE == 'jruby'
@@ -60,7 +59,7 @@ DESCRIPTION
       "lib/psych_jars.rb",
       "lib/psych.jar"
     ]
-    s.requirements = "jar org.yaml:snakeyaml, #{Psych::DEFAULT_SNAKEYAML_VERSION}"
+    s.requirements = "jar org.yaml:snakeyaml, #{version_module::Psych::DEFAULT_SNAKEYAML_VERSION}"
     s.add_dependency 'jar-dependencies', '>= 0.1.7'
   else
     s.extensions = ["ext/psych/extconf.rb"]

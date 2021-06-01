@@ -37,11 +37,18 @@ describe "The --enable and --disable flags" do
     ruby_exe("p 'foo'.frozen?", options: "--disable-frozen-string-literal").chomp.should == "false"
   end
 
-  it "can be used with all" do
+  platform_is_not :darwin do # frequently hangs for >60s on GitHub Actions macos-latest
+    it "can be used with all for enable" do
+      e = "p [defined?(Gem), defined?(DidYouMean), $VERBOSE, 'foo'.frozen?]"
+      env = {'RUBYOPT' => '-w'}
+      # Use a single variant here because it can be quite slow as it might enable jit, etc
+      ruby_exe(e, options: "--enable-all", env: env).chomp.should == "[\"constant\", \"constant\", true, true]"
+    end
+  end
+
+  it "can be used with all for disable" do
     e = "p [defined?(Gem), defined?(DidYouMean), $VERBOSE, 'foo'.frozen?]"
     env = {'RUBYOPT' => '-w'}
-    ruby_exe(e, options: "--enable=all", env: env).chomp.should == "[\"constant\", \"constant\", true, true]"
-    ruby_exe(e, options: "--enable-all", env: env).chomp.should == "[\"constant\", \"constant\", true, true]"
     ruby_exe(e, options: "--disable=all", env: env).chomp.should == "[nil, nil, false, false]"
     ruby_exe(e, options: "--disable-all", env: env).chomp.should == "[nil, nil, false, false]"
   end

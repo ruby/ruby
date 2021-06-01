@@ -330,7 +330,7 @@ rsock_sock_s_socketpair(int argc, VALUE *argv, VALUE klass)
  * * Errno::EOPNOTSUPP - the calling +socket+ is listening and cannot be connected
  * * Errno::EPROTOTYPE - the _sockaddr_ has a different type than the socket
  *   bound to the specified peer address
- * * Errno::ETIMEDOUT - the attempt to connect time out before a connection
+ * * Errno::ETIMEDOUT - the attempt to connect timed out before a connection
  *   was made.
  *
  * On unix-based systems if the address family of the calling +socket+ is
@@ -371,7 +371,7 @@ rsock_sock_s_socketpair(int argc, VALUE *argv, VALUE klass)
  * * Errno::EHOSTUNREACH - no route to the network is present
  * * Errno::ENOBUFS - no buffer space is available
  * * Errno::ENOTSOCK - the +socket+ argument does not refer to a socket
- * * Errno::ETIMEDOUT - the attempt to connect time out before a connection
+ * * Errno::ETIMEDOUT - the attempt to connect timed out before a connection
  *   was made.
  * * Errno::EWOULDBLOCK - the socket is marked as nonblocking and the
  *   connection cannot be completed immediately
@@ -393,7 +393,7 @@ sock_connect(VALUE sock, VALUE addr)
     addr = rb_str_new4(addr);
     GetOpenFile(sock, fptr);
     fd = fptr->fd;
-    n = rsock_connect(fd, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_SOCKLEN(addr), 0);
+    n = rsock_connect(fd, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_SOCKLEN(addr), 0, NULL);
     if (n < 0) {
 	rsock_sys_fail_raddrinfo_or_sockaddr("connect(2)", addr, rai);
     }
@@ -965,6 +965,7 @@ sock_sockaddr(struct sockaddr *addr, socklen_t len)
 static VALUE
 sock_s_gethostbyname(VALUE obj, VALUE host)
 {
+    rb_warn("Socket.gethostbyname is deprecated; use Addrinfo.getaddrinfo instead.");
     struct rb_addrinfo *res =
 	rsock_addrinfo(host, Qnil, AF_UNSPEC, SOCK_STREAM, AI_CANONNAME);
     return rsock_make_hostent(host, res, sock_sockaddr);
@@ -1003,6 +1004,8 @@ sock_s_gethostbyaddr(int argc, VALUE *argv, VALUE _)
     char **pch;
     VALUE ary, names;
     int t = AF_INET;
+
+    rb_warn("Socket.gethostbyaddr is deprecated; use Addrinfo#getnameinfo instead.");
 
     rb_scan_args(argc, argv, "11", &addr, &family);
     StringValue(addr);
@@ -1151,7 +1154,7 @@ sock_s_getservbyport(int argc, VALUE *argv, VALUE _)
  * be one of below.  If _reverse_lookup_ is omitted, the default value is +nil+.
  *
  *   +true+, +:hostname+:  hostname is obtained from numeric address using reverse lookup, which may take a time.
- *   +false+, +:numeric+:  hostname is same as numeric address.
+ *   +false+, +:numeric+:  hostname is the same as numeric address.
  *   +nil+:              obey to the current +do_not_reverse_lookup+ flag.
  *
  * If Addrinfo object is preferred, use Addrinfo.getaddrinfo.
@@ -1181,6 +1184,7 @@ sock_s_getaddrinfo(int argc, VALUE *argv, VALUE _)
     if (NIL_P(revlookup) || !rsock_revlookup_flag(revlookup, &norevlookup)) {
 	norevlookup = rsock_do_not_reverse_lookup;
     }
+
     res = rsock_getaddrinfo(host, port, &hints, 0);
 
     ret = make_addrinfo(res, norevlookup);
@@ -1890,6 +1894,8 @@ socket_s_ip_address_list(VALUE self)
 void
 Init_socket(void)
 {
+    rb_ext_ractor_safe(true);
+
     rsock_init_basicsocket();
 
     /*

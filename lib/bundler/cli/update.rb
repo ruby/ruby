@@ -82,7 +82,7 @@ module Bundler
           locked_spec = locked_info[:spec]
           new_spec = Bundler.definition.specs[name].first
           unless new_spec
-            if Bundler.rubygems.platforms.none? {|p| locked_spec.match_platform(p) }
+            unless locked_spec.match_platform(Bundler.local_platform)
               Bundler.ui.warn "Bundler attempted to update #{name} but it was not considered because it is for a different platform from the current one"
             end
 
@@ -106,6 +106,8 @@ module Bundler
       Bundler.ui.confirm "Bundle updated!"
       Bundler::CLI::Common.output_without_groups_message(:update)
       Bundler::CLI::Common.output_post_install_messages installer.post_install_messages
+
+      Bundler::CLI::Common.output_fund_metadata_summary
     end
   end
 end

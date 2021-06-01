@@ -253,6 +253,19 @@ class TestAst < Test::Unit::TestCase
     mid, defn = body.children
     assert_equal(:a, mid)
     assert_equal(:SCOPE, defn.type)
+    _, args, = defn.children
+    assert_equal(:ARGS, args.type)
+  end
+
+  def test_defn_endless
+    node = RubyVM::AbstractSyntaxTree.parse("def a = nil")
+    _, _, body = *node.children
+    assert_equal(:DEFN, body.type)
+    mid, defn = body.children
+    assert_equal(:a, mid)
+    assert_equal(:SCOPE, defn.type)
+    _, args, = defn.children
+    assert_equal(:ARGS, args.type)
   end
 
   def test_defs
@@ -263,6 +276,20 @@ class TestAst < Test::Unit::TestCase
     assert_equal(:VCALL, recv.type)
     assert_equal(:b, mid)
     assert_equal(:SCOPE, defn.type)
+    _, args, = defn.children
+    assert_equal(:ARGS, args.type)
+  end
+
+  def test_defs_endless
+    node = RubyVM::AbstractSyntaxTree.parse("def a.b = nil")
+    _, _, body = *node.children
+    assert_equal(:DEFS, body.type)
+    recv, mid, defn = body.children
+    assert_equal(:VCALL, recv.type)
+    assert_equal(:b, mid)
+    assert_equal(:SCOPE, defn.type)
+    _, args, = defn.children
+    assert_equal(:ARGS, args.type)
   end
 
   def test_dstr
@@ -318,5 +345,31 @@ class TestAst < Test::Unit::TestCase
     helper = Helper.new(__FILE__, src: "1.times {_1}")
     helper.validate_range
     assert_equal([], helper.errors)
+  end
+
+  def test_op_asgn2
+    node = RubyVM::AbstractSyntaxTree.parse("struct.field += foo")
+    _, _, body = *node.children
+    assert_equal(:OP_ASGN2, body.type)
+    recv, _, mid, op, value = body.children
+    assert_equal(:VCALL, recv.type)
+    assert_equal(:field, mid)
+    assert_equal(:+, op)
+    assert_equal(:VCALL, value.type)
+  end
+
+  def test_args
+    rest = 6
+    node = RubyVM::AbstractSyntaxTree.parse("proc { |a| }")
+    _, args = *node.children.last.children[1].children
+    assert_equal(nil, args.children[rest])
+
+    node = RubyVM::AbstractSyntaxTree.parse("proc { |a,| }")
+    _, args = *node.children.last.children[1].children
+    assert_equal(:NODE_SPECIAL_EXCESSIVE_COMMA, args.children[rest])
+
+    node = RubyVM::AbstractSyntaxTree.parse("proc { |*a| }")
+    _, args = *node.children.last.children[1].children
+    assert_equal(:a, args.children[rest])
   end
 end

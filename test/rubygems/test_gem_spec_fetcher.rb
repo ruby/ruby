@@ -1,9 +1,8 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'test_case'
 require 'rubygems/spec_fetcher'
 
 class TestGemSpecFetcher < Gem::TestCase
-
   def tuple(*args)
     Gem::NameTuple.new(*args)
   end
@@ -33,13 +32,13 @@ class TestGemSpecFetcher < Gem::TestCase
   end
 
   def test_initialize_nonexistent_home_dir
-    FileUtils.rm_rf Gem.user_home
+    FileUtils.rmdir Gem.user_home
 
     assert Gem::SpecFetcher.new
   end
 
   def test_initialize_unwritable_home_dir
-    skip 'chmod not supported' if Gem.win_platform?
+    pend 'chmod not supported' if Gem.win_platform?
 
     FileUtils.chmod 0000, Gem.user_home
 
@@ -335,5 +334,4 @@ class TestGemSpecFetcher < Gem::TestCase
     assert_equal({}, specs)
     assert_kind_of Gem::SourceFetchProblem, errors.first
   end
-
 end

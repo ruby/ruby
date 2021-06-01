@@ -53,6 +53,8 @@ static double positive_inf, negative_inf;
 #define f_add3(x,y,z) f_add(f_add(x, y), z)
 #define f_sub3(x,y,z) f_sub(f_sub(x, y), z)
 
+#define f_frozen_ary(...) rb_obj_freeze(rb_ary_new3(__VA_ARGS__))
+
 static VALUE date_initialize(int argc, VALUE *argv, VALUE self);
 static VALUE datetime_initialize(int argc, VALUE *argv, VALUE self);
 
@@ -2971,11 +2973,15 @@ d_lite_memsize(const void *ptr)
     return complex_dat_p(dat) ? sizeof(struct ComplexDateData) : sizeof(struct SimpleDateData);
 }
 
+#ifndef HAVE_RB_EXT_RACTOR_SAFE
+#   define RUBY_TYPED_FROZEN_SHAREABLE 0
+#endif
+
 static const rb_data_type_t d_lite_type = {
     "Date",
     {d_lite_gc_mark, RUBY_TYPED_DEFAULT_FREE, d_lite_memsize,},
     0, 0,
-    RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED,
+    RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED|RUBY_TYPED_FROZEN_SHAREABLE,
 };
 
 inline static VALUE
@@ -3767,89 +3773,89 @@ rt_complete_frags(VALUE klass, VALUE hash)
     VALUE k, a, d;
 
     if (NIL_P(tab)) {
-	tab = rb_ary_new3(11,
-			  rb_ary_new3(2,
+	tab = f_frozen_ary(11,
+			  f_frozen_ary(2,
 				      sym("time"),
-				      rb_ary_new3(3,
+				      f_frozen_ary(3,
 						  sym("hour"),
 						  sym("min"),
 						  sym("sec"))),
-			  rb_ary_new3(2,
+			  f_frozen_ary(2,
 				      Qnil,
-				      rb_ary_new3(1,
+				      f_frozen_ary(1,
 						  sym("jd"))),
-			  rb_ary_new3(2,
+			  f_frozen_ary(2,
 				      sym("ordinal"),
-				      rb_ary_new3(5,
+				      f_frozen_ary(5,
 						  sym("year"),
 						  sym("yday"),
 						  sym("hour"),
 						  sym("min"),
 						  sym("sec"))),
-			  rb_ary_new3(2,
+			  f_frozen_ary(2,
 				      sym("civil"),
-				      rb_ary_new3(6,
+				      f_frozen_ary(6,
 						  sym("year"),
 						  sym("mon"),
 						  sym("mday"),
 						  sym("hour"),
 						  sym("min"),
 						  sym("sec"))),
-			  rb_ary_new3(2,
+			  f_frozen_ary(2,
 				      sym("commercial"),
-				      rb_ary_new3(6,
+				      f_frozen_ary(6,
 						  sym("cwyear"),
 						  sym("cweek"),
 						  sym("cwday"),
 						  sym("hour"),
 						  sym("min"),
 						  sym("sec"))),
-			  rb_ary_new3(2,
+			  f_frozen_ary(2,
 				      sym("wday"),
-				      rb_ary_new3(4,
+				      f_frozen_ary(4,
 						  sym("wday"),
 						  sym("hour"),
 						  sym("min"),
 						  sym("sec"))),
-			  rb_ary_new3(2,
+			  f_frozen_ary(2,
 				      sym("wnum0"),
-				      rb_ary_new3(6,
+				      f_frozen_ary(6,
 						  sym("year"),
 						  sym("wnum0"),
 						  sym("wday"),
 						  sym("hour"),
 						  sym("min"),
 						  sym("sec"))),
-			  rb_ary_new3(2,
+			  f_frozen_ary(2,
 				      sym("wnum1"),
-				      rb_ary_new3(6,
+				      f_frozen_ary(6,
 						  sym("year"),
 						  sym("wnum1"),
 						  sym("wday"),
 						  sym("hour"),
 						  sym("min"),
 						  sym("sec"))),
-			  rb_ary_new3(2,
+			  f_frozen_ary(2,
 				      Qnil,
-				      rb_ary_new3(6,
+				      f_frozen_ary(6,
 						  sym("cwyear"),
 						  sym("cweek"),
 						  sym("wday"),
 						  sym("hour"),
 						  sym("min"),
 						  sym("sec"))),
-			  rb_ary_new3(2,
+			  f_frozen_ary(2,
 				      Qnil,
-				      rb_ary_new3(6,
+				      f_frozen_ary(6,
 						  sym("year"),
 						  sym("wnum0"),
 						  sym("cwday"),
 						  sym("hour"),
 						  sym("min"),
 						  sym("sec"))),
-			  rb_ary_new3(2,
+			  f_frozen_ary(2,
 				      Qnil,
-				      rb_ary_new3(6,
+				      f_frozen_ary(6,
 						  sym("year"),
 						  sym("wnum1"),
 						  sym("cwday"),
@@ -4345,8 +4351,12 @@ date_s__parse_internal(int argc, VALUE *argv, VALUE klass)
  *    Date._parse(string[, comp=true])  ->  hash
  *
  * Parses the given representation of date and time, and returns a
- * hash of parsed elements.  This method does not function as a
- * validator.
+ * hash of parsed elements.
+ *
+ * This method **does not** function as a validator.  If the input
+ * string does not match valid formats strictly, you may get a cryptic
+ * result.  Should consider to use `Date._strptime` or
+ * `DateTime._strptime` instead of this method as possible.
  *
  * If the optional second argument is true and the detected year is in
  * the range "00" to "99", considers the year a 2-digit form and makes
@@ -4365,7 +4375,12 @@ date_s__parse(int argc, VALUE *argv, VALUE klass)
  *    Date.parse(string='-4712-01-01'[, comp=true[, start=Date::ITALY]])  ->  date
  *
  * Parses the given representation of date and time, and creates a
- * date object.  This method does not function as a validator.
+ * date object.
+ *
+ * This method **does not** function as a validator.  If the input
+ * string does not match valid formats strictly, you may get a cryptic
+ * result.  Should consider to use `Date.strptime` instead of this
+ * method as possible.
  *
  * If the optional second argument is true and the detected year is in
  * the range "00" to "99", considers the year a 2-digit form and makes
@@ -7202,11 +7217,14 @@ d_lite_marshal_load(VALUE self, VALUE a)
 
     if (simple_dat_p(dat)) {
 	if (df || !f_zero_p(sf) || of) {
-	    rb_raise(rb_eArgError,
-		     "cannot load complex into simple");
+	    /* loading a fractional date; promote to complex */
+	    dat = ruby_xrealloc(dat, sizeof(struct ComplexDateData));
+	    RTYPEDDATA(self)->data = dat;
+	    goto complex_data;
 	}
 	set_to_simple(self, &dat->s, nth, jd, sg, 0, 0, 0, HAVE_JD);
     } else {
+      complex_data:
 	set_to_complex(self, &dat->c, nth, jd, df, sf, of, sg,
 		       0, 0, 0, 0, 0, 0,
 		       HAVE_JD | HAVE_DF);
@@ -7998,7 +8016,12 @@ datetime_s_strptime(int argc, VALUE *argv, VALUE klass)
  *    DateTime.parse(string='-4712-01-01T00:00:00+00:00'[, comp=true[, start=Date::ITALY]])  ->  datetime
  *
  * Parses the given representation of date and time, and creates a
- * DateTime object.  This method does not function as a validator.
+ * DateTime object.
+ *
+ * This method **does not** function as a validator.  If the input
+ * string does not match valid formats strictly, you may get a cryptic
+ * result.  Should consider to use `DateTime.strptime` instead of this
+ * method as possible.
  *
  * If the optional second argument is true and the detected year is in
  * the range "00" to "99", makes it full.
@@ -9099,13 +9122,13 @@ d_lite_zero(VALUE x)
 void
 Init_date_core(void)
 {
-#undef rb_intern
-#define rb_intern(str) rb_intern_const(str)
-
-    id_cmp = rb_intern("<=>");
-    id_le_p = rb_intern("<=");
-    id_ge_p = rb_intern(">=");
-    id_eqeq_p = rb_intern("==");
+    #ifdef HAVE_RB_EXT_RACTOR_SAFE
+	RB_EXT_RACTOR_SAFE(true);
+    #endif
+    id_cmp = rb_intern_const("<=>");
+    id_le_p = rb_intern_const("<=");
+    id_ge_p = rb_intern_const(">=");
+    id_eqeq_p = rb_intern_const("==");
 
     half_days_in_day = rb_rational_new2(INT2FIX(1), INT2FIX(2));
 
@@ -9512,6 +9535,8 @@ Init_date_core(void)
      * A subclass of Date that easily handles date, hour, minute, second,
      * and offset.
      *
+     * DateTime class is considered deprecated. Use Time class.
+     *
      * DateTime does not consider any leap seconds, does not track
      * any summer time rules.
      *
@@ -9572,18 +9597,18 @@ Init_date_core(void)
      * === When should you use DateTime and when should you use Time?
      *
      * It's a common misconception that
-     * {William Shakespeare}[http://en.wikipedia.org/wiki/William_Shakespeare]
+     * {William Shakespeare}[https://en.wikipedia.org/wiki/William_Shakespeare]
      * and
-     * {Miguel de Cervantes}[http://en.wikipedia.org/wiki/Miguel_de_Cervantes]
+     * {Miguel de Cervantes}[https://en.wikipedia.org/wiki/Miguel_de_Cervantes]
      * died on the same day in history -
      * so much so that UNESCO named April 23 as
-     * {World Book Day because of this fact}[http://en.wikipedia.org/wiki/World_Book_Day].
+     * {World Book Day because of this fact}[https://en.wikipedia.org/wiki/World_Book_Day].
      * However, because England hadn't yet adopted the
-     * {Gregorian Calendar Reform}[http://en.wikipedia.org/wiki/Gregorian_calendar#Gregorian_reform]
-     * (and wouldn't until {1752}[http://en.wikipedia.org/wiki/Calendar_(New_Style)_Act_1750])
+     * {Gregorian Calendar Reform}[https://en.wikipedia.org/wiki/Gregorian_calendar#Gregorian_reform]
+     * (and wouldn't until {1752}[https://en.wikipedia.org/wiki/Calendar_(New_Style)_Act_1750])
      * their deaths are actually 10 days apart.
      * Since Ruby's Time class implements a
-     * {proleptic Gregorian calendar}[http://en.wikipedia.org/wiki/Proleptic_Gregorian_calendar]
+     * {proleptic Gregorian calendar}[https://en.wikipedia.org/wiki/Proleptic_Gregorian_calendar]
      * and has no concept of calendar reform there's no way
      * to express this with Time objects. This is where DateTime steps in:
      *
@@ -9627,7 +9652,7 @@ Init_date_core(void)
      *      #=> Fri, 04 May 1753 00:00:00 +0000
      *
      * As you can see, if we're accurately tracking the number of
-     * {solar years}[http://en.wikipedia.org/wiki/Tropical_year]
+     * {solar years}[https://en.wikipedia.org/wiki/Tropical_year]
      * since Shakespeare's birthday then the correct anniversary date
      * would be the 4th May and not the 23rd April.
      *
@@ -9639,10 +9664,10 @@ Init_date_core(void)
      * making the same mistakes as UNESCO. If you also have to deal
      * with timezones then best of luck - just bear in mind that
      * you'll probably be dealing with
-     * {local solar times}[http://en.wikipedia.org/wiki/Solar_time],
+     * {local solar times}[https://en.wikipedia.org/wiki/Solar_time],
      * since it wasn't until the 19th century that the introduction
      * of the railways necessitated the need for
-     * {Standard Time}[http://en.wikipedia.org/wiki/Standard_time#Great_Britain]
+     * {Standard Time}[https://en.wikipedia.org/wiki/Standard_time#Great_Britain]
      * and eventually timezones.
      */
 

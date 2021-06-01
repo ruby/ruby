@@ -21,19 +21,23 @@ struct RRational {
     VALUE den;
 };
 
-#define RRATIONAL(obj) (R_CAST(RRational)(obj))
+#define RRATIONAL(obj) ((struct RRational *)(obj))
 
 /* rational.c */
 VALUE rb_rational_canonicalize(VALUE x);
 VALUE rb_rational_uminus(VALUE self);
 VALUE rb_rational_plus(VALUE self, VALUE other);
+VALUE rb_rational_minus(VALUE self, VALUE other);
 VALUE rb_rational_mul(VALUE self, VALUE other);
+VALUE rb_rational_div(VALUE self, VALUE other);
 VALUE rb_lcm(VALUE x, VALUE y);
 VALUE rb_rational_reciprocal(VALUE x);
 VALUE rb_cstr_to_rat(const char *, int);
+VALUE rb_rational_hash(VALUE self);
 VALUE rb_rational_abs(VALUE self);
 VALUE rb_rational_cmp(VALUE self, VALUE other);
 VALUE rb_rational_pow(VALUE self, VALUE other);
+VALUE rb_rational_floor(VALUE self, int ndigits);
 VALUE rb_numeric_quo(VALUE x, VALUE y);
 VALUE rb_float_numerator(VALUE x);
 VALUE rb_float_denominator(VALUE x);

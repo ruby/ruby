@@ -49,42 +49,82 @@ class CSV
     def_delegators :@row, :empty?, :length, :size
 
     def initialize_copy(other)
-      super
-      @row = @row.dup
+      super_return_value = super
+      @row = @row.collect(&:dup)
+      super_return_value
     end
 
-    # Returns +true+ if this is a header row.
+    # :call-seq:
+    #   row.header_row? -> true or false
+    #
+    # Returns +true+ if this is a header row, +false+ otherwise.
     def header_row?
       @header_row
     end
 
-    # Returns +true+ if this is a field row.
+    # :call-seq:
+    #   row.field_row? -> true or false
+    #
+    # Returns +true+ if this is a field row, +false+ otherwise.
     def field_row?
       not header_row?
     end
 
-    # Returns the headers of this row.
+    # :call-seq:
+    #    row.headers
+    #
+    # Returns the headers for this row:
+    #   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table.first
+    #   row.headers # => ["Name", "Value"]
     def headers
       @row.map(&:first)
     end
 
-    #
     # :call-seq:
-    #   field( header )
-    #   field( header, offset )
-    #   field( index )
+    #   field(index)
+    #   field(header)
+    #   field(header, offset)
     #
-    # This method will return the field value by +header+ or +index+. If a field
-    # is not found, +nil+ is returned.
+    # Returns the field value for the given +index+ or +header+.
     #
-    # When provided, +offset+ ensures that a header match occurs on or later
-    # than the +offset+ index. You can use this to find duplicate headers,
-    # without resorting to hard-coding exact indices.
+    # ---
     #
+    # Fetch field value by \Integer index:
+    #   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row.field(0) # => "foo"
+    #   row.field(1) # => "bar"
+    #
+    # Counts backward from the last column if +index+ is negative:
+    #   row.field(-1) # => "0"
+    #   row.field(-2) # => "foo"
+    #
+    # Returns +nil+ if +index+ is out of range:
+    #   row.field(2) # => nil
+    #   row.field(-3) # => nil
+    #
+    # ---
+    #
+    # Fetch field value by header (first found):
+    #   source = "Name,Name,Name\nFoo,Bar,Baz\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row.field('Name') # => "Foo"
+    #
+    # Fetch field value by header, ignoring +offset+ leading fields:
+    #   source = "Name,Name,Name\nFoo,Bar,Baz\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row.field('Name', 2) # => "Baz"
+    #
+    # Returns +nil+ if the header does not exist.
     def field(header_or_index, minimum_index = 0)
       # locate the pair
       finder = (header_or_index.is_a?(Integer) || header_or_index.is_a?(Range)) ? :[] : :assoc
-      pair   = @row[minimum_index..-1].send(finder, header_or_index)
+      pair   = @row[minimum_index..-1].public_send(finder, header_or_index)
 
       # return the field if we have a pair
       if pair.nil?
@@ -97,16 +137,45 @@ class CSV
 
     #
     # :call-seq:
-    #   fetch( header )
-    #   fetch( header ) { |row| ... }
-    #   fetch( header, default )
+    #   fetch(header)
+    #   fetch(header, default)
+    #   fetch(header) {|row| ... }
     #
-    # This method will fetch the field value by +header+. It has the same
-    # behavior as Hash#fetch: if there is a field with the given +header+, its
-    # value is returned. Otherwise, if a block is given, it is yielded the
-    # +header+ and its result is returned; if a +default+ is given as the
-    # second argument, it is returned; otherwise a KeyError is raised.
+    # Returns the field value as specified by +header+.
     #
+    # ---
+    #
+    # With the single argument +header+, returns the field value
+    # for that header (first found):
+    #   source = "Name,Name,Name\nFoo,Bar,Baz\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row.fetch('Name') # => "Foo"
+    #
+    # Raises exception +KeyError+ if the header does not exist.
+    #
+    # ---
+    #
+    # With arguments +header+ and +default+ given,
+    # returns the field value for the header (first found)
+    # if the header exists, otherwise returns +default+:
+    #   source = "Name,Name,Name\nFoo,Bar,Baz\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row.fetch('Name', '') # => "Foo"
+    #   row.fetch(:nosuch, '') # => ""
+    #
+    # ---
+    #
+    # With argument +header+ and a block given,
+    # returns the field value for the header (first found)
+    # if the header exists; otherwise calls the block
+    # and returns its return value:
+    #   source = "Name,Name,Name\nFoo,Bar,Baz\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row.fetch('Name') {|header| fail 'Cannot happen' } # => "Foo"
+    #   row.fetch(:nosuch) {|header| "Header '#{header} not found'" } # => "Header 'nosuch not found'"
     def fetch(header, *varargs)
       raise ArgumentError, "Too many arguments" if varargs.length > 1
       pair = @row.assoc(header)
@@ -123,7 +192,11 @@ class CSV
       end
     end
 
-    # Returns +true+ if there is a field with the given +header+.
+    # :call-seq:
+    #   row.has_key?(header)
+    #
+    # Returns +true+ if there is a field with the given +header+,
+    # +false+ otherwise.
     def has_key?(header)
       !!@row.assoc(header)
     end
@@ -134,17 +207,56 @@ class CSV
 
     #
     # :call-seq:
-    #   []=( header, value )
-    #   []=( header, offset, value )
-    #   []=( index, value )
+    #   row[index] = value -> value
+    #   row[header, offset] = value -> value
+    #   row[header] = value -> value
     #
-    # Looks up the field by the semantics described in CSV::Row.field() and
-    # assigns the +value+.
+    # Assigns the field value for the given +index+ or +header+;
+    # returns +value+.
     #
-    # Assigning past the end of the row with an index will set all pairs between
-    # to <tt>[nil, nil]</tt>. Assigning to an unused header appends the new
-    # pair.
+    # ---
     #
+    # Assign field value by \Integer index:
+    #   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row[0] = 'Bat'
+    #   row[1] = 3
+    #   row # => #<CSV::Row "Name":"Bat" "Value":3>
+    #
+    # Counts backward from the last column if +index+ is negative:
+    #   row[-1] = 4
+    #   row[-2] = 'Bam'
+    #   row # => #<CSV::Row "Name":"Bam" "Value":4>
+    #
+    # Extends the row with <tt>nil:nil</tt> if positive +index+ is not in the row:
+    #   row[4] = 5
+    #   row # => #<CSV::Row "Name":"bad" "Value":4 nil:nil nil:nil nil:5>
+    #
+    # Raises IndexError if negative +index+ is too small (too far from zero).
+    #
+    # ---
+    #
+    # Assign field value by header (first found):
+    #   source = "Name,Name,Name\nFoo,Bar,Baz\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row['Name'] = 'Bat'
+    #   row # => #<CSV::Row "Name":"Bat" "Name":"Bar" "Name":"Baz">
+    #
+    # Assign field value by header, ignoring +offset+ leading fields:
+    #   source = "Name,Name,Name\nFoo,Bar,Baz\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row['Name', 2] = 4
+    #   row # => #<CSV::Row "Name":"Foo" "Name":"Bar" "Name":4>
+    #
+    # Append new field by (new) header:
+    #   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row['New'] = 6
+    #   row# => #<CSV::Row "Name":"foo" "Value":"0" "New":6>
     def []=(*args)
       value = args.pop
 
@@ -167,17 +279,34 @@ class CSV
 
     #
     # :call-seq:
-    #   <<( field )
-    #   <<( header_and_field_array )
-    #   <<( header_and_field_hash )
+    #   row << [header, value] -> self
+    #   row << hash -> self
+    #   row << value -> self
     #
-    # If a two-element Array is provided, it is assumed to be a header and field
-    # and the pair is appended. A Hash works the same way with the key being
-    # the header and the value being the field. Anything else is assumed to be
-    # a lone field which is appended with a +nil+ header.
+    # Adds a field to +self+; returns +self+:
     #
-    # This method returns the row for chaining.
+    # If the argument is a 2-element \Array <tt>[header, value]</tt>,
+    # a field is added with the given +header+ and +value+:
+    #   source = "Name,Name,Name\nFoo,Bar,Baz\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row << ['NAME', 'Bat']
+    #   row # => #<CSV::Row "Name":"Foo" "Name":"Bar" "Name":"Baz" "NAME":"Bat">
     #
+    # If the argument is a \Hash, each <tt>key-value</tt> pair is added
+    # as a field with header +key+ and value +value+.
+    #   source = "Name,Name,Name\nFoo,Bar,Baz\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row << {NAME: 'Bat', name: 'Bam'}
+    #   row # => #<CSV::Row "Name":"Foo" "Name":"Bar" "Name":"Baz" NAME:"Bat" name:"Bam">
+    #
+    # Otherwise, the given +value+ is added as a field with no header.
+    #   source = "Name,Name,Name\nFoo,Bar,Baz\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row << 'Bag'
+    #   row # => #<CSV::Row "Name":"Foo" "Name":"Bar" "Name":"Baz" nil:"Bag">
     def <<(arg)
       if arg.is_a?(Array) and arg.size == 2  # appending a header and name
         @row << arg
@@ -190,13 +319,15 @@ class CSV
       self  # for chaining
     end
 
+    # :call-seq:
+    #   row.push(*values) ->self
     #
-    # A shortcut for appending multiple fields. Equivalent to:
-    #
-    #   args.each { |arg| csv_row << arg }
-    #
-    # This method returns the row for chaining.
-    #
+    # Appends each of the given +values+ to +self+ as a field; returns +self+:
+    #   source = "Name,Name,Name\nFoo,Bar,Baz\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row.push('Bat', 'Bam')
+    #   row # => #<CSV::Row "Name":"Foo" "Name":"Bar" "Name":"Baz" nil:"Bat" nil:"Bam">
     def push(*args)
       args.each { |arg| self << arg }
 
@@ -205,14 +336,39 @@ class CSV
 
     #
     # :call-seq:
-    #   delete( header )
-    #   delete( header, offset )
-    #   delete( index )
+    #   delete(index) -> [header, value] or nil
+    #   delete(header) -> [header, value] or empty_array
+    #   delete(header, offset) -> [header, value] or empty_array
     #
-    # Removes a pair from the row by +header+ or +index+. The pair is
-    # located as described in CSV::Row.field(). The deleted pair is returned,
-    # or +nil+ if a pair could not be found.
+    # Removes a specified field from +self+; returns the 2-element \Array
+    # <tt>[header, value]</tt> if the field exists.
     #
+    # If an \Integer argument +index+ is given,
+    # removes and returns the field at offset +index+,
+    # or returns +nil+ if the field does not exist:
+    #   source = "Name,Name,Name\nFoo,Bar,Baz\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row.delete(1) # => ["Name", "Bar"]
+    #   row.delete(50) # => nil
+    #
+    # Otherwise, if the single argument +header+ is given,
+    # removes and returns the first-found field with the given header,
+    # of returns a new empty \Array if the field does not exist:
+    #   source = "Name,Name,Name\nFoo,Bar,Baz\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row.delete('Name') # => ["Name", "Foo"]
+    #   row.delete('NAME') # => []
+    #
+    # If argument +header+ and \Integer argument +offset+ are given,
+    # removes and returns the first-found field with the given header
+    # whose +index+ is at least as large as +offset+:
+    #   source = "Name,Name,Name\nFoo,Bar,Baz\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row.delete('Name', 1) # => ["Name", "Bar"]
+    #   row.delete('NAME', 1) # => []
     def delete(header_or_index, minimum_index = 0)
       if header_or_index.is_a? Integer                 # by index
         @row.delete_at(header_or_index)
@@ -223,15 +379,21 @@ class CSV
       end
     end
 
+    # :call-seq:
+    #   row.delete_if {|header, value| ... } -> self
     #
-    # The provided +block+ is passed a header and field for each pair in the row
-    # and expected to return +true+ or +false+, depending on whether the pair
-    # should be deleted.
+    # Removes fields from +self+ as selected by the block; returns +self+.
     #
-    # This method returns the row for chaining.
+    # Removes each field for which the block returns a truthy value:
+    #   source = "Name,Name,Name\nFoo,Bar,Baz\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row.delete_if {|header, value| value.start_with?('B') } # => true
+    #   row # => #<CSV::Row "Name":"Foo">
+    #   row.delete_if {|header, value| header.start_with?('B') } # => false
     #
-    # If no block is given, an Enumerator is returned.
-    #
+    # If no block is given, returns a new Enumerator:
+    #   row.delete_if # => #<Enumerator: #<CSV::Row "Name":"Foo">:delete_if>
     def delete_if(&block)
       return enum_for(__method__) { size } unless block_given?
 
@@ -240,14 +402,52 @@ class CSV
       self  # for chaining
     end
 
+    # :call-seq:
+    #   self.fields(*specifiers)
     #
-    # This method accepts any number of arguments which can be headers, indices,
-    # Ranges of either, or two-element Arrays containing a header and offset.
-    # Each argument will be replaced with a field lookup as described in
-    # CSV::Row.field().
+    # Returns field values per the given +specifiers+, which may be any mixture of:
+    # - \Integer index.
+    # - \Range of \Integer indexes.
+    # - 2-element \Array containing a header and offset.
+    # - Header.
+    # - \Range of headers.
     #
-    # If called with no arguments, all fields are returned.
+    # For +specifier+ in one of the first four cases above,
+    # returns the result of <tt>self.field(specifier)</tt>;  see #field.
     #
+    # Although there may be any number of +specifiers+,
+    # the examples here will illustrate one at a time.
+    #
+    # When the specifier is an \Integer +index+,
+    # returns <tt>self.field(index)</tt>L
+    #   source = "Name,Name,Name\nFoo,Bar,Baz\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row.fields(1) # => ["Bar"]
+    #
+    # When the specifier is a \Range of \Integers +range+,
+    # returns <tt>self.field(range)</tt>:
+    #   row.fields(1..2) # => ["Bar", "Baz"]
+    #
+    # When the specifier is a 2-element \Array +array+,
+    # returns <tt>self.field(array)</tt>L
+    #   row.fields('Name', 1) # => ["Foo", "Bar"]
+    #
+    # When the specifier is a header +header+,
+    # returns <tt>self.field(header)</tt>L
+    #   row.fields('Name') # => ["Foo"]
+    #
+    # When the specifier is a \Range of headers +range+,
+    # forms a new \Range +new_range+ from the indexes of
+    # <tt>range.start</tt> and <tt>range.end</tt>,
+    # and returns <tt>self.field(new_range)</tt>:
+    #   source = "Name,NAME,name\nFoo,Bar,Baz\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row.fields('Name'..'NAME') # => ["Foo", "Bar"]
+    #
+    # Returns all fields if no argument given:
+    #   row.fields # => ["Foo", "Bar", "Baz"]
     def fields(*headers_and_or_indices)
       if headers_and_or_indices.empty?  # return all fields--no arguments
         @row.map(&:last)
@@ -324,10 +524,21 @@ class CSV
       @row == other
     end
 
+    # :call-seq:
+    #   row.to_h -> hash
     #
-    # Collapses the row into a simple Hash. Be warned that this discards field
-    # order and clobbers duplicate fields.
+    # Returns the new \Hash formed by adding each header-value pair in +self+
+    # as a key-value pair in the \Hash.
+    #   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row.to_h # => {"Name"=>"foo", "Value"=>"0"}
     #
+    # Header order is preserved, but repeated headers are ignored:
+    #   source = "Name,Name,Name\nFoo,Bar,Baz\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row.to_h # => {"Name"=>"Foo"}
     def to_h
       hash = {}
       each do |key, _value|
@@ -339,20 +550,35 @@ class CSV
 
     alias_method :to_ary, :to_a
 
+    # :call-seq:
+    #   row.to_csv -> csv_string
     #
-    # Returns the row as a CSV String. Headers are not used. Equivalent to:
-    #
-    #   csv_row.fields.to_csv( options )
-    #
+    # Returns the row as a \CSV String. Headers are not included:
+    #   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row.to_csv # => "foo,0\n"
     def to_csv(**options)
       fields.to_csv(**options)
     end
     alias_method :to_s, :to_csv
 
+    # :call-seq:
+    #   row.dig(index_or_header, *identifiers) -> object
     #
-    # Extracts the nested value specified by the sequence of +index+ or +header+ objects by calling dig at each step,
-    # returning nil if any intermediate step is nil.
+    # Finds and returns the object in nested object that is specified
+    # by +index_or_header+ and +specifiers+.
     #
+    # The nested objects may be instances of various classes.
+    # See {Dig Methods}[https://docs.ruby-lang.org/en/master/doc/dig_methods_rdoc.html].
+    #
+    # Examples:
+    #   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row.dig(1) # => "0"
+    #   row.dig('Value') # => "0"
+    #   row.dig(5) # => nil
     def dig(index_or_header, *indexes)
       value = field(index_or_header)
       if value.nil?
@@ -367,9 +593,17 @@ class CSV
       end
     end
 
+    # :call-seq:
+    #   row.inspect -> string
     #
-    # A summary of fields, by header, in an ASCII compatible String.
-    #
+    # Returns an ASCII-compatible \String showing:
+    # - Class \CSV::Row.
+    # - Header-value pairs.
+    # Example:
+    #   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row.inspect # => "#<CSV::Row \"Name\":\"foo\" \"Value\":\"0\">"
     def inspect
       str = ["#<", self.class.to_s]
       each do |header, field|

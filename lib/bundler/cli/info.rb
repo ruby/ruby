@@ -22,7 +22,7 @@ module Bundler
       end
     end
 
-  private
+    private
 
     def spec_for_gem(gem_name)
       spec = Bundler.definition.specs.find {|s| s.name == gem_name }
@@ -60,6 +60,7 @@ module Bundler
       gem_info << "\tHomepage: #{spec.homepage}\n" if spec.homepage
       gem_info << "\tDocumentation: #{metadata["documentation_uri"]}\n" if metadata.key?("documentation_uri")
       gem_info << "\tSource Code: #{metadata["source_code_uri"]}\n" if metadata.key?("source_code_uri")
+      gem_info << "\tFunding: #{metadata["funding_uri"]}\n" if metadata.key?("funding_uri")
       gem_info << "\tWiki: #{metadata["wiki_uri"]}\n" if metadata.key?("wiki_uri")
       gem_info << "\tChangelog: #{metadata["changelog_uri"]}\n" if metadata.key?("changelog_uri")
       gem_info << "\tBug Tracker: #{metadata["bug_tracker_uri"]}\n" if metadata.key?("bug_tracker_uri")
