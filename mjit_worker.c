@@ -1396,9 +1396,9 @@ unload_units(void)
 void
 mjit_worker(void)
 {
-    // Allow only `max_cache_size / 10` times (default: 10) of compaction.
+    // Allow only `max_cache_size / 100` times (default: 100) of compaction.
     // Note: GC of compacted code has not been implemented yet.
-    int max_compact_size = mjit_opts.max_cache_size / 10;
+    int max_compact_size = mjit_opts.max_cache_size / 100;
     if (max_compact_size < 10) max_compact_size = 10;
 
     // Run unload_units after it's requested `max_cache_size / 10` (default: 10) times.
