@@ -56,11 +56,6 @@ mjit_gc_start_hook(void)
     if (!mjit_enabled)
         return;
     CRITICAL_SECTION_START(4, "mjit_gc_start_hook");
-    while (in_jit) {
-        verbose(4, "Waiting wakeup from a worker for GC");
-        rb_native_cond_wait(&mjit_client_wakeup, &mjit_engine_mutex);
-        verbose(4, "Getting wakeup from a worker for GC");
-    }
     in_gc++;
     CRITICAL_SECTION_FINISH(4, "mjit_gc_start_hook");
 }
