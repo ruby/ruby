@@ -16712,6 +16712,7 @@ yjit_codegen.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 yjit_codegen.$(OBJEXT): $(top_srcdir)/internal/object.h
 yjit_codegen.$(OBJEXT): $(top_srcdir)/internal/serial.h
 yjit_codegen.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+yjit_codegen.$(OBJEXT): $(top_srcdir)/internal/string.h
 yjit_codegen.$(OBJEXT): $(top_srcdir)/internal/vm.h
 yjit_codegen.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 yjit_codegen.$(OBJEXT): {$(VPATH)}assert.h
@@ -16730,6 +16731,7 @@ yjit_codegen.$(OBJEXT): {$(VPATH)}config.h
 yjit_codegen.$(OBJEXT): {$(VPATH)}darray.h
 yjit_codegen.$(OBJEXT): {$(VPATH)}debug_counter.h
 yjit_codegen.$(OBJEXT): {$(VPATH)}defines.h
+yjit_codegen.$(OBJEXT): {$(VPATH)}encoding.h
 yjit_codegen.$(OBJEXT): {$(VPATH)}id.h
 yjit_codegen.$(OBJEXT): {$(VPATH)}id_table.h
 yjit_codegen.$(OBJEXT): {$(VPATH)}insns.def
@@ -16880,6 +16882,8 @@ yjit_codegen.$(OBJEXT): {$(VPATH)}iseq.h
 yjit_codegen.$(OBJEXT): {$(VPATH)}method.h
 yjit_codegen.$(OBJEXT): {$(VPATH)}missing.h
 yjit_codegen.$(OBJEXT): {$(VPATH)}node.h
+yjit_codegen.$(OBJEXT): {$(VPATH)}onigmo.h
+yjit_codegen.$(OBJEXT): {$(VPATH)}oniguruma.h
 yjit_codegen.$(OBJEXT): {$(VPATH)}ruby_assert.h
 yjit_codegen.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 yjit_codegen.$(OBJEXT): {$(VPATH)}st.h

@@ -977,3 +977,47 @@ assert_equal '{:foo=>:bar}', %q{
   build_hash(:bar)
   build_hash(:bar)
 }
+
+# test string interpolation with known types
+assert_equal 'foobar', %q{
+  def make_str
+    foo = -"foo"
+    bar = -"bar"
+    "#{foo}#{bar}"
+  end
+
+  make_str
+  make_str
+}
+
+# test string interpolation with unknown types
+assert_equal 'foobar', %q{
+  def make_str(foo, bar)
+    "#{foo}#{bar}"
+  end
+
+  make_str("foo", "bar")
+  make_str("foo", "bar")
+}
+
+# test string interpolation with known non-strings
+assert_equal 'foo123', %q{
+  def make_str
+    foo = -"foo"
+    bar = 123
+    "#{foo}#{bar}"
+  end
+
+  make_str
+  make_str
+}
+
+# test string interpolation with unknown non-strings
+assert_equal 'foo123', %q{
+  def make_str(foo, bar)
+    "#{foo}#{bar}"
+  end
+
+  make_str("foo", 123)
+  make_str("foo", 123)
+}

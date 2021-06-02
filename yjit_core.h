@@ -32,6 +32,8 @@ enum yjit_type_enum
 {
     ETYPE_UNKNOWN = 0,
     ETYPE_NIL,
+    ETYPE_TRUE,
+    ETYPE_FALSE,
     ETYPE_FIXNUM,
     ETYPE_ARRAY,
     ETYPE_HASH,
@@ -49,7 +51,7 @@ typedef struct yjit_type_struct
     uint8_t is_imm : 1;
 
     // Specific value type, if known
-    uint8_t type : 3;
+    uint8_t type : 4;
 
 } val_type_t;
 STATIC_ASSERT(val_type_size, sizeof(val_type_t) == 1);
@@ -64,6 +66,8 @@ STATIC_ASSERT(val_type_size, sizeof(val_type_t) == 1);
 #define TYPE_IMM ( (val_type_t){ .is_imm = 1 } )
 
 #define TYPE_NIL ( (val_type_t){ .is_imm = 1, .type = ETYPE_NIL } )
+#define TYPE_TRUE ( (val_type_t){ .is_imm = 1, .type = ETYPE_TRUE } )
+#define TYPE_FALSE ( (val_type_t){ .is_imm = 1, .type = ETYPE_FALSE } )
 #define TYPE_FIXNUM ( (val_type_t){ .is_imm = 1, .type = ETYPE_FIXNUM } )
 #define TYPE_ARRAY ( (val_type_t){ .is_heap = 1, .type = ETYPE_ARRAY } )
 #define TYPE_HASH ( (val_type_t){ .is_heap = 1, .type = ETYPE_HASH } )

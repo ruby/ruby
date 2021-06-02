@@ -8,6 +8,7 @@
 #include "internal/compile.h"
 #include "internal/class.h"
 #include "internal/object.h"
+#include "internal/string.h"
 #include "insns_info.inc"
 #include "yjit.h"
 #include "yjit_iface.h"
@@ -1312,6 +1313,89 @@ gen_defined(jitstate_t* jit, ctx_t* ctx)
     // Push the return value onto the stack
     val_type_t out_type = SPECIAL_CONST_P(pushval)? TYPE_IMM:TYPE_UNKNOWN;
     x86opnd_t stack_ret = ctx_stack_push(ctx, out_type);
+    mov(cb, stack_ret, RAX);
+
+    return YJIT_KEEP_COMPILING;
+}
+
+static codegen_status_t
+gen_checktype(jitstate_t* jit, ctx_t* ctx)
+{
+    // TODO: could we specialize on the type we detect
+    uint8_t* side_exit = yjit_side_exit(jit, ctx);
+
+    enum ruby_value_type type_val = (enum ruby_value_type)jit_get_arg(jit, 0);
+    // Only three types are emitted by compile.c
+    if (type_val == T_STRING || type_val == T_ARRAY || type_val == T_HASH) {
+        val_type_t val_type = ctx_get_opnd_type(ctx, OPND_STACK(0));
+        x86opnd_t val = ctx_stack_pop(ctx, 1);
+
+        x86opnd_t stack_ret;
+
+        // Check if we know from type information
+        if ((type_val == T_STRING && val_type.type == ETYPE_STRING) ||
+                (type_val == T_ARRAY && val_type.type == ETYPE_ARRAY) ||
+                (type_val == T_HASH && val_type.type == ETYPE_HASH)) {
+            // guaranteed type match
+            stack_ret = ctx_stack_push(ctx, TYPE_TRUE);
+            mov(cb, stack_ret, imm_opnd(Qtrue));
+            return YJIT_KEEP_COMPILING;
+        } else if (val_type.is_imm || val_type.type != ETYPE_UNKNOWN) {
+            // guaranteed not to match T_STRING/T_ARRAY/T_HASH
+            stack_ret = ctx_stack_push(ctx, TYPE_FALSE);
+            mov(cb, stack_ret, imm_opnd(Qfalse));
+            return YJIT_KEEP_COMPILING;
+        }
+
+        mov(cb, REG0, val);
+
+        if (!val_type.is_heap) {
+            // if (SPECIAL_CONST_P(val)) {
+            // Bail if receiver is not a heap object
+            test(cb, REG0, imm_opnd(RUBY_IMMEDIATE_MASK));
+            jnz_ptr(cb, side_exit);
+            cmp(cb, REG0, imm_opnd(Qfalse));
+            je_ptr(cb, side_exit);
+            cmp(cb, REG0, imm_opnd(Qnil));
+            je_ptr(cb, side_exit);
+        }
+
+        // Check type on object
+        mov(cb, REG0, mem_opnd(64, REG0, offsetof(struct RBasic, flags)));
+        and(cb, REG0, imm_opnd(RUBY_T_MASK));
+        cmp(cb, REG0, imm_opnd(type_val));
+        mov(cb, REG1, imm_opnd(Qfalse));
+        cmovne(cb, REG0, REG1);
+
+        stack_ret = ctx_stack_push(ctx, TYPE_IMM);
+        mov(cb, stack_ret, REG0);
+
+        return YJIT_KEEP_COMPILING;
+    } else {
+        return YJIT_CANT_COMPILE;
+    }
+}
+
+static codegen_status_t
+gen_concatstrings(jitstate_t* jit, ctx_t* ctx)
+{
+    rb_num_t n = (rb_num_t)jit_get_arg(jit, 0);
+
+    // Save the PC and SP because we are allocating
+    jit_save_pc(jit, REG0);
+    jit_save_sp(jit, ctx);
+
+    x86opnd_t values_ptr = ctx_sp_opnd(ctx, -(sizeof(VALUE) * (uint32_t)n));
+
+    // call rb_str_concat_literals(long n, const VALUE *strings);
+    yjit_save_regs(cb);
+    mov(cb, C_ARG_REGS[0], imm_opnd(n));
+    lea(cb, C_ARG_REGS[1], values_ptr);
+    call_ptr(cb, REG0, (void *)rb_str_concat_literals);
+    yjit_load_regs(cb);
+
+    ctx_stack_pop(ctx, n);
+    x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_STRING);
     mov(cb, stack_ret, RAX);
 
     return YJIT_KEEP_COMPILING;
@@ -2902,6 +2986,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(adjuststack), gen_adjuststack);
     yjit_reg_op(BIN(newarray), gen_newarray);
     yjit_reg_op(BIN(newhash), gen_newhash);
+    yjit_reg_op(BIN(concatstrings), gen_concatstrings);
     yjit_reg_op(BIN(putnil), gen_putnil);
     yjit_reg_op(BIN(putobject), gen_putobject);
     yjit_reg_op(BIN(putobject_INT2FIX_0_), gen_putobject_int2fix);
@@ -2913,6 +2998,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(getinstancevariable), gen_getinstancevariable);
     yjit_reg_op(BIN(setinstancevariable), gen_setinstancevariable);
     yjit_reg_op(BIN(defined), gen_defined);
+    yjit_reg_op(BIN(checktype), gen_checktype);
     yjit_reg_op(BIN(opt_lt), gen_opt_lt);
     yjit_reg_op(BIN(opt_le), gen_opt_le);
     yjit_reg_op(BIN(opt_ge), gen_opt_ge);
