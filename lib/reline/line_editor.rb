@@ -678,7 +678,6 @@ class Reline::LineEditor
   private def render_partial(prompt, prompt_width, line_to_render, this_started_from, with_control: true)
     visual_lines, height = split_by_width(line_to_render.nil? ? prompt : prompt + line_to_render, @screen_size.last)
     cursor_up_from_last_line = 0
-    # TODO: This logic would be sometimes buggy if this logical line isn't the current @line_index.
     if @scroll_partial_screen
       last_visual_line = this_started_from + (height - 1)
       last_screen_line = @scroll_partial_screen + (@screen_height - 1)
