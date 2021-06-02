@@ -96,6 +96,7 @@ mjit_update_references(const rb_iseq_t *iseq)
         // To efficiently do that, we use the same thing as TracePoint and thus everything is cancelled for now.
         // See mjit.h and tool/ruby_vm/views/_mjit_compile_insn.erb for how `mjit_call_p` is used.
         mjit_call_p = false; // TODO: instead of cancelling all, invalidate only this one and recompile it with some threshold.
+        mjit_valid_p = false; // No longer reusable.
     }
 
     // Units in stale_units (list of over-speculated and invalidated code) are not referenced from
@@ -401,6 +402,14 @@ rb_mjit_recompile_const(const rb_iseq_t *iseq)
 {
     rb_mjit_iseq_compile_info(iseq->body)->disable_const_cache = true;
     mjit_recompile(iseq);
+}
+
+// Called when all traces get disabled. This activates JIT-ed code again.
+void
+rb_mjit_all_traces_disabled_hook(void)
+{
+    if (!mjit_call_p && mjit_valid_p)
+        mjit_call_p = true;
 }
 
 extern VALUE ruby_archlibdir_path, ruby_prefix_path;

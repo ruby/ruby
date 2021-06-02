@@ -203,6 +203,10 @@ bool mjit_enabled = false;
 // true if JIT-ed code should be called. When `ruby_vm_event_enabled_global_flags & ISEQ_TRACE_EVENTS`
 // and `mjit_call_p == false`, any JIT-ed code execution is cancelled as soon as possible.
 bool mjit_call_p = false;
+// This is set to true if any existing code is no longer valid, e.g. after GC.compact.
+// If still true and TracePoint was the only reason mjit_call_p is set to false, mjit_call_p
+// can be changed to true again when all TracePoints get disabled.
+static bool mjit_valid_p = true;
 
 // Priority queue of iseqs waiting for JIT compilation.
 // This variable is a pointer to head unit of the queue.
@@ -734,7 +738,8 @@ set_compiling_iseqs(const rb_iseq_t *iseq)
 
     unsigned int pos = 0;
     while (pos < iseq->body->iseq_size) {
-        int insn = rb_vm_insn_decode(iseq->body->iseq_encoded[pos]);
+        extern int rb_vm_insn_decode_untraced(const VALUE encoded);
+        int insn = rb_vm_insn_decode_untraced(iseq->body->iseq_encoded[pos]);
         if (insn == BIN(opt_send_without_block)) {
             CALL_DATA cd = (CALL_DATA)iseq->body->iseq_encoded[pos + 1];
             extern const rb_iseq_t *rb_mjit_inlinable_iseq(const struct rb_callinfo *ci, const struct rb_callcache *cc);

@@ -1255,6 +1255,10 @@ rb_tracepoint_disable(VALUE tpval)
     }
     tp->tracing = 0;
     tp->target_th = NULL;
+
+    if ((ruby_vm_event_flags & ISEQ_TRACE_EVENTS) == 0 && ruby_vm_event_local_num == 0) { // vm_trace became no-op
+        rb_mjit_all_traces_disabled_hook();
+    }
     return Qundef;
 }
 
