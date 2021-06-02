@@ -146,6 +146,18 @@ RSpec.describe Object, "#ruby_exe" do
 
     @script = RubyExeSpecs.new
     allow(@script).to receive(:`)
+
+    status_successful = double(Process::Status,  exitstatus: 0)
+    allow(Process).to receive(:last_status).and_return(status_successful)
+  end
+
+  it "returns command STDOUT when given command" do
+    code = "code"
+    options = {}
+    output = "output"
+    allow(@script).to receive(:`).and_return(output)
+
+    expect(@script.ruby_exe(code, options)).to eq output
   end
 
   it "returns an Array containing the interpreter executable and flags when given no arguments" do
@@ -158,6 +170,30 @@ RSpec.describe Object, "#ruby_exe" do
     expect(@script).to receive(:ruby_cmd).and_return("ruby_cmd")
     expect(@script).to receive(:`).with("ruby_cmd")
     @script.ruby_exe(code, options)
+  end
+
+  it "raises exception when command exit status is not successful" do
+    code = "code"
+    options = {}
+
+    status_failed = double(Process::Status, exitstatus: 4)
+    allow(Process).to receive(:last_status).and_return(status_failed)
+
+    expect {
+      @script.ruby_exe(code, options)
+    }.to raise_error(%r{Expected exit status is 0 but actual is 4 for command ruby_exe\(.+\)})
+  end
+
+  it "shows in the exception message if exitstatus is nil (e.g., signal)" do
+    code = "code"
+    options = {}
+
+    status_failed = double(Process::Status, exitstatus: nil)
+    allow(Process).to receive(:last_status).and_return(status_failed)
+
+    expect {
+      @script.ruby_exe(code, options)
+    }.to raise_error(%r{Expected exit status is 0 but actual is nil for command ruby_exe\(.+\)})
   end
 
   describe "with :dir option" do
@@ -195,6 +231,26 @@ RSpec.describe Object, "#ruby_exe" do
       expect do
         @script.ruby_exe nil, :env => { :ABC => "xyz" }
       end.to raise_error(Exception)
+    end
+  end
+
+  describe "with :exit_status option" do
+    before do
+      status_failed = double(Process::Status, exitstatus: 4)
+      allow(Process).to receive(:last_status).and_return(status_failed)
+    end
+
+    it "raises exception when command ends with not expected status" do
+      expect {
+        @script.ruby_exe("path", exit_status: 1)
+      }.to raise_error(%r{Expected exit status is 1 but actual is 4 for command ruby_exe\(.+\)})
+    end
+
+    it "does not raise exception when command ends with expected status" do
+      output = "output"
+      allow(@script).to receive(:`).and_return(output)
+
+      expect(@script.ruby_exe("path", exit_status: 4)).to eq output
     end
   end
 end
