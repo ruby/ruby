@@ -222,18 +222,13 @@ static void
 compile_insns(FILE *f, const struct rb_iseq_constant_body *body, unsigned int stack_size,
               unsigned int pos, struct compile_status *status)
 {
-    int insn;
     struct compile_branch branch;
 
     branch.stack_size = stack_size;
     branch.finish_p = false;
 
     while (pos < body->iseq_size && !ALREADY_COMPILED_P(status, pos) && !branch.finish_p) {
-#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
-        insn = rb_vm_insn_addr2insn((void *)body->iseq_encoded[pos]);
-#else
-        insn = (int)body->iseq_encoded[pos];
-#endif
+        int insn = rb_vm_insn_decode(body->iseq_encoded[pos]);
         status->stack_size_for_pos[pos] = (int)branch.stack_size;
 
         fprintf(f, "\nlabel_%d: /* %s */\n", pos, insn_name(insn));
@@ -406,11 +401,7 @@ inlinable_iseq_p(const struct rb_iseq_constant_body *body)
 
     unsigned int pos = 0;
     while (pos < body->iseq_size) {
-#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
-        int insn = rb_vm_insn_addr2insn((void *)body->iseq_encoded[pos]);
-#else
-        int insn = (int)body->iseq_encoded[pos];
-#endif
+        int insn = rb_vm_insn_decode(body->iseq_encoded[pos]);
         // All insns in the ISeq except `leave` (to be overridden in the inlined code)
         // should meet following strong assumptions:
         //   * Do not require `cfp->sp` motion
@@ -468,11 +459,7 @@ init_ivar_compile_status(const struct rb_iseq_constant_body *body, struct compil
     status->ivar_serial = 0;
 
     while (pos < body->iseq_size) {
-#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
-        int insn = rb_vm_insn_addr2insn((void *)body->iseq_encoded[pos]);
-#else
-        int insn = (int)body->iseq_encoded[pos];
-#endif
+        int insn = rb_vm_insn_decode(body->iseq_encoded[pos]);
         if (insn == BIN(getinstancevariable) || insn == BIN(setinstancevariable)) {
             IVC ic = (IVC)body->iseq_encoded[pos+2];
             IVC ic_copy = &(status->is_entries + ((union iseq_inline_storage_entry *)ic - body->is_entries))->iv_cache;
@@ -527,11 +514,7 @@ precompile_inlinable_iseqs(FILE *f, const rb_iseq_t *iseq, struct compile_status
     const struct rb_iseq_constant_body *body = iseq->body;
     unsigned int pos = 0;
     while (pos < body->iseq_size) {
-#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
-        int insn = rb_vm_insn_addr2insn((void *)body->iseq_encoded[pos]);
-#else
-        int insn = (int)body->iseq_encoded[pos];
-#endif
+        int insn = rb_vm_insn_decode(body->iseq_encoded[pos]);
         if (insn == BIN(opt_send_without_block)) { // `compile_inlined_cancel_handler` supports only `opt_send_without_block`
             CALL_DATA cd = (CALL_DATA)body->iseq_encoded[pos + 1];
             const struct rb_callinfo *ci = cd->ci;

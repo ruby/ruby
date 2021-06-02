@@ -734,11 +734,7 @@ set_compiling_iseqs(const rb_iseq_t *iseq)
 
     unsigned int pos = 0;
     while (pos < iseq->body->iseq_size) {
-#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
-        int insn = rb_vm_insn_addr2insn((void *)iseq->body->iseq_encoded[pos]);
-#else
-        int insn = (int)iseq->body->iseq_encoded[pos];
-#endif
+        int insn = rb_vm_insn_decode(iseq->body->iseq_encoded[pos]);
         if (insn == BIN(opt_send_without_block)) {
             CALL_DATA cd = (CALL_DATA)iseq->body->iseq_encoded[pos + 1];
             extern const rb_iseq_t *rb_mjit_inlinable_iseq(const struct rb_callinfo *ci, const struct rb_callcache *cc);

@@ -23,6 +23,7 @@ VALUE rb_insns_name_array(void);
 
 /* iseq.c */
 int rb_vm_insn_addr2insn(const void *);
+int rb_vm_insn_decode(const VALUE encoded);
 
 MJIT_SYMBOL_EXPORT_BEGIN
 /* iseq.c (export) */

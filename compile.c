@@ -1383,11 +1383,7 @@ update_catch_except_flags(struct rb_iseq_constant_body *body)
        BREAK/NEXT/REDO catch table entries are used only when `throw` insn is used in the block. */
     pos = 0;
     while (pos < body->iseq_size) {
-#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
-        insn = rb_vm_insn_addr2insn((void *)body->iseq_encoded[pos]);
-#else
-        insn = (int)body->iseq_encoded[pos];
-#endif
+        insn = rb_vm_insn_decode(body->iseq_encoded[pos]);
         if (insn == BIN(throw)) {
             set_catch_except_p(body);
             break;

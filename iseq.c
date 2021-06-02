@@ -3192,6 +3192,18 @@ rb_vm_insn_addr2insn(const void *addr)
     rb_bug("rb_vm_insn_addr2insn: invalid insn address: %p", addr);
 }
 
+// Decode `iseq->body->iseq_encoded[i]` to an insn.
+int
+rb_vm_insn_decode(const VALUE encoded)
+{
+#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
+    int insn = rb_vm_insn_addr2insn((void *)encoded);
+#else
+    int insn = (int)encoded;
+#endif
+    return insn;
+}
+
 static inline int
 encoded_iseq_trace_instrument(VALUE *iseq_encoded_insn, rb_event_flag_t turnon, bool remain_current_trace)
 {
