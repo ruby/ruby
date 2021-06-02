@@ -753,6 +753,18 @@ set_compiling_iseqs(const rb_iseq_t *iseq)
     return true;
 }
 
+static void
+free_compiling_iseqs(void)
+{
+    RBIMPL_WARNING_PUSH();
+#ifdef _MSC_VER
+    RBIMPL_WARNING_IGNORED(4090); /* suppress false warning by MSVC */
+#endif
+    free(compiling_iseqs);
+    RBIMPL_WARNING_POP();
+    compiling_iseqs = NULL;
+}
+
 bool
 rb_mjit_compiling_iseq_p(const rb_iseq_t *iseq)
 {
@@ -1008,8 +1020,7 @@ compile_compact_jit_code(char* c_file)
         success &= mjit_compile(f, child_unit->iseq, funcname, child_unit->id);
 
         CRITICAL_SECTION_START(3, "before compiling_iseqs free");
-        free(compiling_iseqs);
-        compiling_iseqs = NULL;
+        free_compiling_iseqs();
         CRITICAL_SECTION_FINISH(3, "after compiling_iseqs free");
     }
 
@@ -1209,8 +1220,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
 
     // release blocking mjit_gc_start_hook
     CRITICAL_SECTION_START(3, "after mjit_compile to wakeup client for GC");
-    free(compiling_iseqs);
-    compiling_iseqs = NULL;
+    free_compiling_iseqs();
     in_jit = false;
     verbose(3, "Sending wakeup signal to client in a mjit-worker for GC");
     rb_native_cond_signal(&mjit_client_wakeup);
