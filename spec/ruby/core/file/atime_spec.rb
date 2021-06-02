@@ -22,6 +22,11 @@ describe "File.atime" do
       if supports_subseconds != 0
         expected_time = Time.at(Time.now.to_i + 0.123456)
         File.utime expected_time, 0, @file
+        # FIXME: A random failing test on Travis ppc64le.
+        # https://bugs.ruby-lang.org/issues/17926
+        if ENV.key?('TRAVIS') && ENV['TRAVIS_CPU_ARCH'] == 'ppc64le'
+          skip '[ruby-core:17926] A random failure on Travis ppc64le'
+        end
         File.atime(@file).usec.should == expected_time.usec
       else
         File.atime(__FILE__).usec.should == 0
