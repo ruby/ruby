@@ -30,7 +30,7 @@ ruby/spec is known to be tested in these implementations for every commit:
 * [Opal](https://github.com/opal/opal/tree/master/spec)
 
 ruby/spec describes the behavior of Ruby 2.5 and more recent Ruby versions.
-More precisely, every latest stable MRI release should [pass](https://travis-ci.org/ruby/spec) all specs of ruby/spec (2.5.x, 2.6.x, 2.7.x, etc), and those are tested in TravisCI.
+More precisely, every latest stable MRI release should [pass](https://github.com/ruby/spec/actions/workflows/ci.yml) all specs of ruby/spec (2.5.x, 2.6.x, 2.7.x, etc), and those are tested in CI.
 
 ### Synchronization with Ruby Implementations
 

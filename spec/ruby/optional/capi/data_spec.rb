@@ -36,6 +36,13 @@ describe "CApiWrappedStruct" do
     end
   end
 
+  describe "rb_check_type" do
+    it "does not raise an exception when checking data objects" do
+      a = @s.wrap_struct(1024)
+      @s.rb_check_type(a, a).should == true
+    end
+  end
+
   describe "DATA_PTR" do
     it "returns the struct data" do
       a = @s.wrap_struct(1024)

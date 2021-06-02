@@ -84,4 +84,23 @@ end
       dup.close
     end
   end
+
+  it "always sets the autoclose flag for the new IO object" do
+    @f.autoclose = true
+    dup = @f.dup
+    begin
+      dup.should.autoclose?
+    ensure
+      dup.close
+    end
+
+    @f.autoclose = false
+    dup = @f.dup
+    begin
+      dup.should.autoclose?
+    ensure
+      dup.close
+      @f.autoclose = true
+    end
+  end
 end

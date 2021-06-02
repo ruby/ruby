@@ -36,6 +36,7 @@ describe "Array#[]=" do
     a[3, 2] = ['a', 'b', 'c', 'd']
     a.should == [2, 2, 3, "a", "b", "c", "d", 6]
   end
+
   it "replaces the section defined by [start,length] with the given values" do
     a = [1, 2, 3, 4, 5, 6]
     a[3, 2] = 'a', 'b', 'c', 'd'
@@ -169,6 +170,7 @@ describe "Array#[]=" do
     ary[1...1] = []
     ary.should == [1, 2, 3]
   end
+
   it "does nothing if the section defined by range has negative width and the rhs is an empty array" do
     ary = [1, 2, 3, 4, 5]
     ary[1...0] = []
@@ -282,6 +284,12 @@ describe "Array#[]= with [index, count]" do
   it "returns array if array assigned" do
     a = [1, 2, 3, 4, 5]
     (a[2, 3] = [4, 5]).should == [4, 5]
+  end
+
+  it "accepts a frozen String literal as RHS" do
+    a = ['a', 'b', 'c']
+    a[0, 2] = 'd'.freeze
+    a.should == ['d', 'c']
   end
 
   it "just sets the section defined by [start,length] to nil even if the rhs is nil" do

@@ -4,7 +4,7 @@ require_relative 'fixtures/classes'
 # Why do we not test that finalizers are run by the GC? The documentation
 # says that finalizers are never guaranteed to be run, so we can't
 # spec that they are. On some implementations of Ruby the finalizers may
-# run asyncronously, meaning that we can't predict when they'll run,
+# run asynchronously, meaning that we can't predict when they'll run,
 # even if they were guaranteed to do so. Even on MRI finalizers can be
 # very unpredictable, due to conservative stack scanning and references
 # left in unused memory.

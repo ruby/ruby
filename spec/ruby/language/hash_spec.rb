@@ -48,6 +48,21 @@ describe "Hash literal" do
     }.should complain(/key :foo is duplicated|duplicated key/)
     @h.keys.size.should == 1
     @h.should == {foo: :foo}
+    -> {
+      @h = eval "{%q{a} => :bar, %q{a} => :foo}"
+    }.should complain(/key "a" is duplicated|duplicated key/)
+    @h.keys.size.should == 1
+    @h.should == {%q{a} => :foo}
+    -> {
+      @h = eval "{1000 => :bar, 1000 => :foo}"
+    }.should complain(/key 1000 is duplicated|duplicated key/)
+    @h.keys.size.should == 1
+    @h.should == {1000 => :foo}
+    -> {
+      @h = eval "{1.0 => :bar, 1.0 => :foo}"
+    }.should complain(/key 1.0 is duplicated|duplicated key/)
+    @h.keys.size.should == 1
+    @h.should == {1.0 => :foo}
   end
 
   it "accepts a hanging comma" do

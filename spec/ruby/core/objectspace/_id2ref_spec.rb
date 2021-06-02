@@ -7,16 +7,43 @@ describe "ObjectSpace._id2ref" do
     r.should == s
   end
 
-  it "retrieves an Integer by object_id" do
-    f = 1
-    r = ObjectSpace._id2ref(f.object_id)
-    r.should == f
+  it "retrieves true by object_id" do
+    ObjectSpace._id2ref(true.object_id).should == true
+  end
+
+  it "retrieves false by object_id" do
+    ObjectSpace._id2ref(false.object_id).should == false
+  end
+
+  it "retrieves nil by object_id" do
+    ObjectSpace._id2ref(nil.object_id).should == nil
+  end
+
+  it "retrieves a small Integer by object_id" do
+    ObjectSpace._id2ref(1.object_id).should == 1
+    ObjectSpace._id2ref((-42).object_id).should == -42
+  end
+
+  it "retrieves a large Integer by object_id" do
+    obj = 1 << 88
+    ObjectSpace._id2ref(obj.object_id).should.equal?(obj)
   end
 
   it "retrieves a Symbol by object_id" do
-    s = :sym
-    r = ObjectSpace._id2ref(s.object_id)
-    r.should == s
+    ObjectSpace._id2ref(:sym.object_id).should.equal?(:sym)
+  end
+
+  it "retrieves a String by object_id" do
+    obj = "str"
+    ObjectSpace._id2ref(obj.object_id).should.equal?(obj)
+  end
+
+  it "retrieves a frozen literal String by object_id" do
+    ObjectSpace._id2ref("frozen string literal _id2ref".freeze.object_id).should.equal?("frozen string literal _id2ref".freeze)
+  end
+
+  it "retrieves an Encoding by object_id" do
+    ObjectSpace._id2ref(Encoding::UTF_8.object_id).should.equal?(Encoding::UTF_8)
   end
 
   it 'raises RangeError when an object could not be found' do

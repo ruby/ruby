@@ -95,7 +95,7 @@ describe "SignalException" do
 
   platform_is_not :windows do
     it "runs after at_exit" do
-      output = ruby_exe(<<-RUBY)
+      output = ruby_exe(<<-RUBY, exit_status: nil)
         at_exit do
           puts "hello"
           $stdout.flush
@@ -109,7 +109,7 @@ describe "SignalException" do
     end
 
     it "cannot be trapped with Signal.trap" do
-      ruby_exe(<<-RUBY)
+      ruby_exe(<<-RUBY, exit_status: nil)
         Signal.trap("PROF") {}
         raise(SignalException, "PROF")
       RUBY
@@ -118,7 +118,7 @@ describe "SignalException" do
     end
 
     it "self-signals for USR1" do
-      ruby_exe("raise(SignalException, 'USR1')")
+      ruby_exe("raise(SignalException, 'USR1')", exit_status: nil)
       $?.termsig.should == Signal.list.fetch('USR1')
     end
   end

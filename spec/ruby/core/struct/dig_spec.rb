@@ -10,6 +10,16 @@ describe "Struct#dig" do
     @instance.dig(:a, :a).should == { b: [1, 2, 3] }
   end
 
+  it "accepts String keys" do
+    @instance.dig('a', 'a').should == { b: [1, 2, 3] }
+  end
+
+  it "returns the value by the index" do
+    instance = Struct.new(:a, :b).new(:one, :two)
+    instance.dig(0).should == :one
+    instance.dig(1).should == :two
+  end
+
   it "returns the nested value specified if the sequence includes an index" do
     @instance.dig(:a, :a, :b, 0).should == 1
   end

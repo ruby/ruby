@@ -461,6 +461,16 @@ describe "String#split with Regexp" do
     ->{ broken_str.split(/\r\n|\r|\n/) }.should raise_error(ArgumentError)
   end
 
+  # See https://bugs.ruby-lang.org/issues/12689 and https://github.com/jruby/jruby/issues/4868
+  it "allows concurrent Regexp calls in a shared context" do
+    str = 'a,b,c,d,e'
+
+    p = proc { str.split(/,/) }
+    results = 10.times.map { Thread.new { x = nil; 100.times { x = p.call }; x } }.map(&:value)
+
+    results.should == [%w[a b c d e]] * 10
+  end
+
   ruby_version_is "2.6" do
     context "when a block is given" do
       it "yields each split substring with default pattern" do

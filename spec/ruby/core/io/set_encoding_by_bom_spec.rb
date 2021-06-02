@@ -34,6 +34,20 @@ describe "IO#set_encoding_by_bom" do
       @io.external_encoding.should == Encoding::UTF_16BE
     end
 
+    it "returns the result encoding if found BOM UTF_32LE sequence" do
+      File.binwrite(@name, "\xFF\xFE\x00\x00abc")
+
+      @io.set_encoding_by_bom.should == Encoding::UTF_32LE
+      @io.external_encoding.should == Encoding::UTF_32LE
+    end
+
+    it "returns the result encoding if found BOM UTF_32BE sequence" do
+      File.binwrite(@name, "\x00\x00\xFE\xFFabc")
+
+      @io.set_encoding_by_bom.should == Encoding::UTF_32BE
+      @io.external_encoding.should == Encoding::UTF_32BE
+    end
+
     it "returns nil if found BOM sequence not provided" do
       File.write(@name, "abc")
 
