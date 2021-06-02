@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TESTOPTS: '-q --tty=no'
-      RUN_OPTS: '--disable-gems ${{ matrix.jit_opts }} --jit-debug=-ggdb3'
+      RUN_OPTS: '--disable-gems ${{ matrix.jit_opts }} --jit-debug=-ggdb3 --disable-yjit'
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
     steps:
       - run: mkdir build
