@@ -3635,7 +3635,7 @@ objspace_each_objects(rb_objspace_t *objspace, each_obj_callback *callback, void
     }
 
     /* Create pages buffer */
-    size_t size = size_mul_or_raise(heap_allocated_pages, sizeof(struct heap_page *), rb_eRuntimeError);
+    size_t size = size_mul_or_raise(heap_eden->total_pages, sizeof(struct heap_page *), rb_eRuntimeError);
     struct heap_page **pages = malloc(size);
     if (!pages) rb_memerror();
 
@@ -3650,7 +3650,7 @@ objspace_each_objects(rb_objspace_t *objspace, each_obj_callback *callback, void
         pages[pages_count] = page;
         pages_count++;
     }
-    GC_ASSERT(pages_count <= heap_allocated_pages);
+    GC_ASSERT(pages_count == heap_eden->total_pages);
 
     /* Run the callback */
     struct each_obj_data each_obj_data = {
