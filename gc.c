@@ -5191,13 +5191,13 @@ gc_compact_finish(rb_objspace_t *objspace, rb_heap_t *heap)
     objspace->flags.during_compacting = FALSE;
 }
 
-static int
+static bool
 gc_fill_swept_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page, int *freed_slots, int *empty_slots)
 {
     /* Find any pinned but not marked objects and try to fill those slots */
     int i;
     int moved_slots = 0;
-    int finished_compacting = 0;
+    bool finished_compacting = false;
     bits_t *mark_bits, *pin_bits;
     bits_t bitset;
     RVALUE *p, *offset;
@@ -5242,7 +5242,7 @@ gc_fill_swept_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *s
                          * their memory until they have their finalizers run.*/
                         if (BUILTIN_TYPE(dest) != T_ZOMBIE) {
                             if(!try_move(objspace, heap, sweep_page, dest)) {
-                                finished_compacting = 1;
+                                finished_compacting = true;
                                 (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
                                 gc_report(5, objspace, "Quit compacting, couldn't find an object to move\n");
                                 if (BUILTIN_TYPE(dest) == T_NONE) {
