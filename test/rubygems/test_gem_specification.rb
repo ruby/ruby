@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 require 'benchmark'
-require_relative 'test_case'
+require_relative 'helper'
 require 'date'
 require 'pathname'
 require 'stringio'

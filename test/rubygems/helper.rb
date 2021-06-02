@@ -1596,4 +1596,4 @@ class Object
   end
 end
 
-require_relative 'test_utilities'
+require_relative 'utilities'

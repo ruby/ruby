@@ -1,5 +1,5 @@
 # coding: US-ASCII
-require_relative 'test_case'
+require_relative 'helper'
 require 'rubygems'
 require 'rubygems/command'
 require 'rubygems/installer'

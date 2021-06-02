@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative 'test_case'
+require_relative 'helper'
 require 'rubygems/ext'
 
 class TestGemExtExtConfBuilder < Gem::TestCase

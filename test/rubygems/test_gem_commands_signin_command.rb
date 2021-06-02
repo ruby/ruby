@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require_relative 'test_case'
+require_relative 'helper'
 require 'rubygems/commands/signin_command'
 require 'rubygems/installer'
 
