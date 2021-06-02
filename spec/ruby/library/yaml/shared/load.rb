@@ -1,16 +1,14 @@
 require_relative '../fixtures/common'
 require_relative '../fixtures/strings'
 
-describe :yaml_load, shared: true do
-  after :each do
-    rm_r $test_file
-  end
-
+describe :yaml_load_safe, shared: true do
   it "returns a document from current io stream when io provided" do
     File.open($test_file, 'w') do |io|
       YAML.dump( ['badger', 'elephant', 'tiger'], io )
     end
     File.open($test_file) { |yf| YAML.send(@method,  yf ) }.should == ['badger', 'elephant', 'tiger']
+  ensure
+    rm_r $test_file
   end
 
   it "loads strings" do
@@ -90,6 +88,14 @@ describe :yaml_load, shared: true do
     YAML.send(@method, block_seq).should == [[["one", "two", "three"]]]
   end
 
+  it "loads a symbol key that contains spaces" do
+    string = ":user name: This is the user name."
+    expected = { :"user name" => "This is the user name."}
+    YAML.send(@method, string).should == expected
+  end
+end
+
+describe :yaml_load_unsafe, shared: true do
   it "works on complex keys" do
     require 'date'
     expected = {
@@ -99,12 +105,6 @@ describe :yaml_load, shared: true do
                                                     Date.new( 2001, 8, 14 ) ]
     }
     YAML.send(@method, $complex_key_1).should == expected
-  end
-
-  it "loads a symbol key that contains spaces" do
-    string = ":user name: This is the user name."
-    expected = { :"user name" => "This is the user name."}
-    YAML.send(@method, string).should == expected
   end
 
   describe "with iso8601 timestamp" do
