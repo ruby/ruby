@@ -11,13 +11,13 @@
 
 **********************************************************************/
 
-RUBY_SYMBOL_EXPORT_BEGIN
+MJIT_SYMBOL_EXPORT_BEGIN
 
 RUBY_EXTERN VALUE ruby_vm_const_missing_count;
 RUBY_EXTERN rb_serial_t ruby_vm_global_constant_state;
 RUBY_EXTERN rb_serial_t ruby_vm_class_serial;
 
-RUBY_SYMBOL_EXPORT_END
+MJIT_SYMBOL_EXPORT_END
 
 #if VM_COLLECT_USAGE_DETAILS
 #define COLLECT_USAGE_INSN(insn)           vm_collect_usage_insn(insn)
