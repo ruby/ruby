@@ -350,16 +350,21 @@ mjit_recompile(const rb_iseq_t *iseq)
             RSTRING_PTR(rb_iseq_path(iseq)), FIX2INT(iseq->body->location.first_lineno));
     assert(iseq->body->jit_unit != NULL);
 
-    // Lazily move active_units to stale_units to avoid race conditions around active_units with compaction
-    CRITICAL_SECTION_START(3, "in rb_mjit_recompile_iseq");
-    iseq->body->jit_unit->stale_p = true;
-    pending_stale_p = true;
-    CRITICAL_SECTION_FINISH(3, "in rb_mjit_recompile_iseq");
-
-    iseq->body->jit_func = (mjit_func_t)NOT_ADDED_JIT_ISEQ_FUNC;
-    mjit_add_iseq_to_process(iseq, &iseq->body->jit_unit->compile_info);
     if (UNLIKELY(mjit_opts.wait)) {
+        remove_from_list(iseq->body->jit_unit, &active_units);
+        add_to_list(iseq->body->jit_unit, &stale_units);
+        mjit_add_iseq_to_process(iseq, &iseq->body->jit_unit->compile_info);
         mjit_wait(iseq->body);
+    }
+    else {
+        // Lazily move active_units to stale_units to avoid race conditions around active_units with compaction.
+        // Also, it's lazily moved to unit_queue as well because otherwise it won't be added to stale_units properly.
+        // It's good to avoid a race condition between mjit_add_iseq_to_process and mjit_compile around jit_unit as well.
+        CRITICAL_SECTION_START(3, "in rb_mjit_recompile_iseq");
+        iseq->body->jit_unit->stale_p = true;
+        iseq->body->jit_func = (mjit_func_t)NOT_ADDED_JIT_ISEQ_FUNC;
+        pending_stale_p = true;
+        CRITICAL_SECTION_FINISH(3, "in rb_mjit_recompile_iseq");
     }
 }
 
