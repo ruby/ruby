@@ -81,9 +81,11 @@ update_global_event_hook(rb_event_flag_t vm_events)
     rb_event_flag_t enabled_iseq_events = ruby_vm_event_enabled_global_flags & ISEQ_TRACE_EVENTS;
 
     if (new_iseq_events & ~enabled_iseq_events) {
-        /* Stop calling all JIT-ed code. Compiling trace insns is not supported for now. */
 #if USE_MJIT
-        mjit_call_p = FALSE;
+        /* Stop calling all JIT-ed code. Compiling trace insns is not supported for now. */
+        mjit_call_p = false;
+        if (mjit_opts.warnings || mjit_opts.verbose)
+            fprintf(stderr, "JIT disable: TracePoint is enabled\n");
 #endif
 
 	/* write all ISeqs if and only if new events are added */
@@ -93,6 +95,14 @@ update_global_event_hook(rb_event_flag_t vm_events)
     ruby_vm_event_flags = vm_events;
     ruby_vm_event_enabled_global_flags |= vm_events;
     rb_objspace_set_event_hook(vm_events);
+
+#if USE_MJIT
+    if ((ruby_vm_event_flags & ISEQ_TRACE_EVENTS) == 0 && ruby_vm_event_local_num == 0) { // vm_trace became no-op
+        rb_mjit_all_traces_disabled_hook();
+        if (mjit_opts.warnings || mjit_opts.verbose)
+            fprintf(stderr, "JIT enable: TracePoint is disabled\n");
+    }
+#endif
 }
 
 /* add/remove hooks */
@@ -1255,10 +1265,6 @@ rb_tracepoint_disable(VALUE tpval)
     }
     tp->tracing = 0;
     tp->target_th = NULL;
-
-    if ((ruby_vm_event_flags & ISEQ_TRACE_EVENTS) == 0 && ruby_vm_event_local_num == 0) { // vm_trace became no-op
-        rb_mjit_all_traces_disabled_hook();
-    }
     return Qundef;
 }
 

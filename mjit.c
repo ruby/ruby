@@ -97,6 +97,8 @@ mjit_update_references(const rb_iseq_t *iseq)
         // See mjit.h and tool/ruby_vm/views/_mjit_compile_insn.erb for how `mjit_call_p` is used.
         mjit_call_p = false; // TODO: instead of cancelling all, invalidate only this one and recompile it with some threshold.
         mjit_valid_p = false; // No longer reusable.
+        if (mjit_opts.warnings || mjit_opts.verbose)
+            fprintf(stderr, "JIT disable: GC.compact is called\n");
     }
 
     // Units in stale_units (list of over-speculated and invalidated code) are not referenced from
