@@ -1967,8 +1967,8 @@ iseq_set_local_table(rb_iseq_t *iseq, const ID *tbl)
     return COMPILE_OK;
 }
 
-static int
-cdhash_cmp(VALUE val, VALUE lit)
+int
+rb_iseq_cdhash_cmp(VALUE val, VALUE lit)
 {
     int tval, tlit;
 
@@ -2004,20 +2004,20 @@ cdhash_cmp(VALUE val, VALUE lit)
     else if (tlit == T_RATIONAL) {
         const struct RRational *rat1 = RRATIONAL(val);
         const struct RRational *rat2 = RRATIONAL(lit);
-        return cdhash_cmp(rat1->num, rat2->num) || cdhash_cmp(rat1->den, rat2->den);
+        return rb_iseq_cdhash_cmp(rat1->num, rat2->num) || rb_iseq_cdhash_cmp(rat1->den, rat2->den);
     }
     else if (tlit == T_COMPLEX) {
         const struct RComplex *comp1 = RCOMPLEX(val);
         const struct RComplex *comp2 = RCOMPLEX(lit);
-        return cdhash_cmp(comp1->real, comp2->real) || cdhash_cmp(comp1->imag, comp2->imag);
+        return rb_iseq_cdhash_cmp(comp1->real, comp2->real) || rb_iseq_cdhash_cmp(comp1->imag, comp2->imag);
     }
     else {
         UNREACHABLE_RETURN(-1);
     }
 }
 
-static st_index_t
-cdhash_hash(VALUE a)
+st_index_t
+rb_iseq_cdhash_hash(VALUE a)
 {
     switch (OBJ_BUILTIN_TYPE(a)) {
       case -1:
@@ -2039,8 +2039,8 @@ cdhash_hash(VALUE a)
 }
 
 static const struct st_hash_type cdhash_type = {
-    cdhash_cmp,
-    cdhash_hash,
+    rb_iseq_cdhash_cmp,
+    rb_iseq_cdhash_hash,
 };
 
 struct cdhash_set_label_struct {

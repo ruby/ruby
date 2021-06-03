@@ -480,6 +480,10 @@ class TestRubyLiteral < Test::Unit::TestCase
       '"a"',
       '1000',
       '1.0',
+      '1_000_000_000_000_000_000_000',
+      '1.0r',
+      '1.0i',
+      '1.72723e-77',
     ) do |key|
       assert_warning(/key #{Regexp.quote(eval(key).inspect)} is duplicated/) do
         eval("{#{key} => :bar, #{key} => :foo}")
