@@ -82,7 +82,7 @@ update_global_event_hook(rb_event_flag_t vm_events)
 
     if (new_iseq_events & ~enabled_iseq_events) {
 #if USE_MJIT
-        /* Stop calling all JIT-ed code. Compiling trace insns is not supported for now. */
+        // Stop calling all JIT-ed code. Compiling trace insns is not supported for now.
         mjit_call_p = false;
         if (mjit_opts.warnings || mjit_opts.verbose)
             fprintf(stderr, "JIT disable: TracePoint is enabled\n");
