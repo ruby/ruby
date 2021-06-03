@@ -28,6 +28,15 @@ To cite this repository in your publications, please use this bibtex snippet:
 }
 ```
 
+## Current Limitations
+
+YJIT is a work in progress and as such may not yet be mature enough for mission-critical software. Below is a list of known limitations, all of which we plan to eventually address:
+
+- No support for the `TracePoint` API (see [#54](https://github.com/Shopify/yjit/issues/54)).
+- No garbage collection for generated code.
+
+Because there is no GC for generated code yet, your software could run out of executable memory if it is large enough. You can change how much executable memory is allocated using [YJIT's command-line options](https://github.com/Shopify/yjit#command-line-options).
+
 ## Installation
 
 Start by cloning the `yjit` branch of the `Shopify/ruby` repository:
