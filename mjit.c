@@ -230,13 +230,13 @@ finish_conts(void)
     }
 }
 
-// Create unit for `iseq`.
+// Create unit for `iseq`. This function may be called from an MJIT worker.
 static void
 create_unit(const rb_iseq_t *iseq)
 {
     struct rb_mjit_unit *unit;
 
-    unit = ZALLOC(struct rb_mjit_unit);
+    unit = calloc(1, sizeof(struct rb_mjit_unit));
     if (unit == NULL)
         return;
 
@@ -253,8 +253,9 @@ mjit_target_iseq_p(struct rb_iseq_constant_body *body)
         && !body->builtin_inline_p;
 }
 
+// This is called from an MJIT worker when worker_p is true.
 static void
-mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_info *compile_info)
+mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_info *compile_info, bool worker_p)
 {
     if (!mjit_enabled || pch_status == PCH_FAILED)
         return;
@@ -273,14 +274,18 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_inf
     if (compile_info != NULL)
         iseq->body->jit_unit->compile_info = *compile_info;
 
-    CRITICAL_SECTION_START(3, "in add_iseq_to_process");
+    if (!worker_p) {
+        CRITICAL_SECTION_START(3, "in add_iseq_to_process");
+    }
     add_to_list(iseq->body->jit_unit, &unit_queue);
     if (active_units.length >= mjit_opts.max_cache_size) {
         unload_requests++;
     }
-    verbose(3, "Sending wakeup signal to workers in mjit_add_iseq_to_process");
-    rb_native_cond_broadcast(&mjit_worker_wakeup);
-    CRITICAL_SECTION_FINISH(3, "in add_iseq_to_process");
+    if (!worker_p) {
+        verbose(3, "Sending wakeup signal to workers in mjit_add_iseq_to_process");
+        rb_native_cond_broadcast(&mjit_worker_wakeup);
+        CRITICAL_SECTION_FINISH(3, "in add_iseq_to_process");
+    }
 }
 
 // Add ISEQ to be JITed in parallel with the current thread.
@@ -288,7 +293,7 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_inf
 void
 rb_mjit_add_iseq_to_process(const rb_iseq_t *iseq)
 {
-    mjit_add_iseq_to_process(iseq, NULL);
+    mjit_add_iseq_to_process(iseq, NULL, false);
 }
 
 // For this timeout seconds, --jit-wait will wait for JIT compilation finish.
@@ -353,7 +358,7 @@ mjit_recompile(const rb_iseq_t *iseq)
     if (UNLIKELY(mjit_opts.wait)) {
         remove_from_list(iseq->body->jit_unit, &active_units);
         add_to_list(iseq->body->jit_unit, &stale_units);
-        mjit_add_iseq_to_process(iseq, &iseq->body->jit_unit->compile_info);
+        mjit_add_iseq_to_process(iseq, &iseq->body->jit_unit->compile_info, false);
         mjit_wait(iseq->body);
     }
     else {

@@ -1396,7 +1396,7 @@ unload_units(void)
     }
 }
 
-static void mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_info *compile_info);
+static void mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_info *compile_info, bool worker_p);
 
 // The function implementing a worker. It is executed in a separate
 // thread by rb_thread_create_mjit_thread. It compiles precompiled header
@@ -1448,7 +1448,7 @@ mjit_worker(void)
                         remove_from_list(unit, &active_units);
                         add_to_list(unit, &stale_units);
                         // Lazily put it to unit_queue as well to avoid race conditions on jit_unit with mjit_compile.
-                        mjit_add_iseq_to_process(unit->iseq, &unit->iseq->body->jit_unit->compile_info);
+                        mjit_add_iseq_to_process(unit->iseq, &unit->iseq->body->jit_unit->compile_info, true);
                     }
                 }
             }
