@@ -3009,7 +3009,7 @@ static st_index_t reg_hash(VALUE re);
  * See also Object#hash.
  */
 
-static VALUE
+VALUE
 rb_reg_hash(VALUE re)
 {
     st_index_t hashval = reg_hash(re);
@@ -3043,7 +3043,7 @@ reg_hash(VALUE re)
  *     /abc/u == /abc/n   #=> false
  */
 
-static VALUE
+VALUE
 rb_reg_equal(VALUE re1, VALUE re2)
 {
     if (re1 == re2) return Qtrue;

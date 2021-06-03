@@ -12189,7 +12189,6 @@ hash_literal_key_p(VALUE k)
 {
     switch (OBJ_BUILTIN_TYPE(k)) {
       case T_NODE:
-      case T_REGEXP:
 	return false;
       default:
 	return true;
