@@ -10,8 +10,8 @@ To simplify development, we currently support only macOS and Linux on x86-64, bu
 is part of future plans.
 This project is open source and falls under the same license as CRuby.
 
-If you wish to learn more about the architecture, there 3 recorded conference talks and two published papers:
-- [YJIT: Building a New JIT Compiler Inside CRuby](https://www.youtube.com/watch?v=vucLAqv7qpc) (MoreVMs 2021)
+If you wish to learn more about the approach taken, here are some written resources and conference talks:
+- [YJIT: Building a New JIT Compiler Inside CRuby](https://pointersgonewild.com/2021/06/02/yjit-building-a-new-jit-compiler-inside-cruby/) ([MoreVMs 2021 talk](https://www.youtube.com/watch?v=vucLAqv7qpc))
 - [Simple and Effective Type Check Removal through Lazy Basic Block Versioning](https://arxiv.org/pdf/1411.0352.pdf) ([ECOOP 2015 talk](https://www.youtube.com/watch?v=S-aHBuoiYE0))
 - [Interprocedural Type Specialization of JavaScript Programs Without Type Analysis](https://drops.dagstuhl.de/opus/volltexte/2016/6101/pdf/LIPIcs-ECOOP-2016-7.pdf) ([ECOOP 2016 talk](https://www.youtube.com/watch?v=sRNBY7Ss97A))
 
