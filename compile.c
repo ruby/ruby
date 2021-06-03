@@ -2011,6 +2011,9 @@ rb_iseq_cdhash_cmp(VALUE val, VALUE lit)
         const struct RComplex *comp2 = RCOMPLEX(lit);
         return rb_iseq_cdhash_cmp(comp1->real, comp2->real) || rb_iseq_cdhash_cmp(comp1->imag, comp2->imag);
     }
+    else if (tlit == T_REGEXP) {
+        return rb_reg_equal(val, lit) ? 0 : -1;
+    }
     else {
         UNREACHABLE_RETURN(-1);
     }
@@ -2033,6 +2036,8 @@ rb_iseq_cdhash_hash(VALUE a)
         return rb_rational_hash(a);
       case T_COMPLEX:
         return rb_complex_hash(a);
+      case T_REGEXP:
+        return NUM2LONG(rb_reg_hash(a));
       default:
         UNREACHABLE_RETURN(0);
     }
