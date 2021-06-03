@@ -1025,7 +1025,7 @@ rb_vm_bugreport(const void *ctx)
     enum {other_runtime_info = 0};
 #endif
     const rb_vm_t *const vm = GET_VM();
-    const rb_execution_context_t *ec = GET_EC();
+    const rb_execution_context_t *ec = rb_current_execution_context(false);
 
     if (vm && ec) {
 	SDR();
