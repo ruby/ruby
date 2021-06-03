@@ -115,9 +115,8 @@ You can also compile YJIT in debug mode and use the `--yjit-stats` command-line 
 We welcome open source contributors. You should feel free to open new issues to report bugs or just to ask questions.
 Suggestions on how to make this readme file more helpful for new contributors are most welcome.
 
-Bug fixes and bug reports are very valuable to us. If you find bugs in YJIT, it's very possible be that nobody has reported this bug before,
-or that we don't have a good reproduction for it, so please open an issue and provide some information about your configuration and a description of how you
-encountered the problem. If you are able to produce a small reproduction to help us track down the bug, that is very much appreciated as well.
+Bug fixes and bug reports are very valuable to us. If you find a bug in YJIT, it's very possible be that nobody has reported it before,
+or that we don't have a good reproduction for it, so please open an issue and provide as much information as you can about your configuration and a description of how you encountered the problem. List the commands you used to run YJIT so that we can easily reproduce the issue on our end and investigate it. If you are able to produce a small program reproducing the error to help us track it down, that is very much appreciated as well. 
 
 If you would like to contribute a large patch to YJIT, we suggest opening an issue or a discussion on this repository so that
 we can have an active discussion. A common problem is that sometimes people submit large pull requests to open source projects
