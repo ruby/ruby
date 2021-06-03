@@ -100,7 +100,6 @@ VALUE *yjit_iseq_pc_at_idx(const rb_iseq_t *iseq, uint32_t insn_idx);
 int yjit_opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc);
 
 void check_cfunc_dispatch(VALUE receiver, struct rb_callinfo *ci, void *callee, rb_callable_method_entry_t *compile_time_cme);
-bool cfunc_needs_frame(const rb_method_cfunc_t *cfunc);
 
 RBIMPL_ATTR_NODISCARD() bool assume_bop_not_redefined(block_t *block, int redefined_flag, enum ruby_basic_operators bop);
 void assume_method_lookup_stable(VALUE receiver_klass, const rb_callable_method_entry_t *cme, block_t *block);
