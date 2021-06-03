@@ -2500,7 +2500,7 @@ rb_fiber_m_resume(int argc, VALUE *argv, VALUE fiber)
     return rb_fiber_resume_kw(fiber, argc, argv, rb_keyword_given_p());
 }
 
-static VALUE rb_fiber_transfer_kw(VALUE fiber_value, int argc, VALUE *argv, int kw_splat);
+VALUE rb_fiber_transfer_kw(VALUE fiber_value, int argc, const VALUE *argv, int kw_splat);
 
 /*
  *  call-seq:
@@ -2704,8 +2704,8 @@ rb_fiber_m_transfer(int argc, VALUE *argv, VALUE fiber_value)
     return rb_fiber_transfer_kw(fiber_value, argc, argv, rb_keyword_given_p());
 }
 
-static VALUE
-rb_fiber_transfer_kw(VALUE fiber_value, int argc, VALUE *argv, int kw_splat)
+VALUE
+rb_fiber_transfer_kw(VALUE fiber_value, int argc, const VALUE *argv, int kw_splat)
 {
     rb_fiber_t *fiber = fiber_ptr(fiber_value);
     if (RTEST(fiber->resuming_fiber)) {

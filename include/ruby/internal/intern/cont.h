@@ -28,12 +28,17 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 /* cont.c */
 VALUE rb_fiber_new(rb_block_call_func_t, VALUE);
-VALUE rb_fiber_resume(VALUE fib, int argc, const VALUE *argv);
-VALUE rb_fiber_resume_kw(VALUE fib, int argc, const VALUE *argv, int kw_splat);
-VALUE rb_fiber_yield(int argc, const VALUE *argv);
-VALUE rb_fiber_yield_kw(int argc, const VALUE *argv, int kw_splat);
 VALUE rb_fiber_current(void);
 VALUE rb_fiber_alive_p(VALUE);
+
+VALUE rb_fiber_resume(VALUE fiber, int argc, const VALUE *argv);
+VALUE rb_fiber_resume_kw(VALUE fiber, int argc, const VALUE *argv, int kw_splat);
+
+VALUE rb_fiber_yield(int argc, const VALUE *argv);
+VALUE rb_fiber_yield_kw(int argc, const VALUE *argv, int kw_splat);
+
+VALUE rb_fiber_transfer(VALUE fiber, int argc, const VALUE *argv);
+VALUE rb_fiber_transfer_kw(VALUE fiber, int argc, const VALUE *argv, int kw_splat);
 
 RBIMPL_SYMBOL_EXPORT_END()
 
