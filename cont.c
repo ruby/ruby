@@ -2041,7 +2041,6 @@ rb_fiber_start(void)
     rb_proc_t *proc;
     enum ruby_tag_type state;
     int need_interrupt = TRUE;
-    VALUE err = Qfalse;
 
     VM_ASSERT(th->ec == GET_EC());
     VM_ASSERT(FIBER_RESUMED_P(fiber));
@@ -2067,6 +2066,7 @@ rb_fiber_start(void)
     }
     EC_POP_TAG();
 
+    VALUE err = Qfalse;
     if (state) {
         err = th->ec->errinfo;
         VM_ASSERT(FIBER_RESUMED_P(fiber));
