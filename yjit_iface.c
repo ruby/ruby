@@ -126,19 +126,6 @@ check_cfunc_dispatch(VALUE receiver, struct rb_callinfo *ci, void *callee, rb_ca
 
 MJIT_FUNC_EXPORTED VALUE rb_hash_has_key(VALUE hash, VALUE key);
 
-bool
-cfunc_needs_frame(const rb_method_cfunc_t *cfunc)
-{
-    void* fptr = (void*)cfunc->func;
-
-    // Leaf C functions do not need a stack frame
-    // or a stack overflow check
-    return !(
-        // Hash#key?
-        fptr == (void*)rb_hash_has_key
-    );
-}
-
 // GC root for interacting with the GC
 struct yjit_root_struct {
     int unused; // empty structs are not legal in C99
