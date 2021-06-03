@@ -4408,13 +4408,13 @@ int
 rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 {
     struct pollfd fds[2];
-    int result = 0, lerrno;
-    rb_hrtime_t *to, rel, end = 0;
+    int result = 0;
     int drained;
     nfds_t nfds;
     rb_unblock_function_t *ubf;
     struct waiting_fd wfd;
     int state;
+    volatile int lerrno;
 
     wfd.th = GET_THREAD();
     wfd.fd = fd;
@@ -4427,6 +4427,7 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 
     EC_PUSH_TAG(wfd.th->ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+        rb_hrtime_t *to, rel, end = 0;
         RUBY_VM_CHECK_INTS_BLOCKING(wfd.th->ec);
         timeout_prepare(&to, &rel, &end, timeout);
         fds[0].fd = fd;
