@@ -26,8 +26,6 @@ cache:
 
 env:
   global:
-    # Reset timestamps early
-    - _=$(touch NEWS && find . -type f -exec touch -r NEWS {} +)
     - CONFIGURE_TTY=no
     - CCACHE_COMPILERCHECK=none
     - CCACHE_NOCOMPRESS=1
@@ -52,6 +50,8 @@ env:
     - optflags=-O1
     # -g0 disables backtraces when SEGV.  Do not set that.
     - debugflags=-ggdb3
+    # Reset timestamps before installing packages
+    - _=$(touch NEWS && find . -type f -exec touch -r NEWS {} +)
 
 .org.ruby-lang.ci.matrix-definitions:
 
