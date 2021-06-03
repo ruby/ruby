@@ -136,6 +136,9 @@ Excluding feature bug fixes.
 
 * The default `--jit-max-cache` is changed from 100 to 10000.
 
+* The JIT compiler no longer skips compilation of methods longer than
+  1000 instructions.
+
 * `RubyVM::MJIT` is renamed to `RubyVM::JIT`. [[Feature #17490]]
 
 ## Static analysis
