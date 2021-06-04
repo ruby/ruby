@@ -350,7 +350,7 @@ def lldb_inspect(debugger, target, result, val):
         elif flType == RUBY_T_FLOAT:
             tRFloat = target.FindFirstType("struct RFloat").GetPointerType()
             val = val.Cast(tRFloat)
-            append_command_output(debugger, "p *(double *)%0#x" % val.GetValueForExpressionPath("->float_value").GetAddress(), result)
+            print(val.GetValueForExpressionPath("->float_value"), file=result)
         elif flType == RUBY_T_RATIONAL:
             tRRational = target.FindFirstType("struct RRational").GetPointerType()
             val = val.Cast(tRRational)
