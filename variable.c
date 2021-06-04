@@ -2557,46 +2557,112 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
     return rb_const_missing(klass, ID2SYM(id));
 }
 
+#define CONSTANT_FOUND 0
+#define CONSTANT_NOT_FOUND 1
+#define CONSTANT_NOT_FOUND_STOP 2
+static int
+rb_const_search_from0(ID id, int exclude, int visibility, VALUE tmp, VALUE *ret)
+{
+    VALUE am = 0;
+    rb_const_entry_t *ce;
+    VALUE origin = RCLASS_ORIGIN(tmp);
+
+    if (origin != tmp && origin != RCLASS_SUPER(tmp)) {
+        /* Current class has an origin class, skip lookup of this
+         * class until the origin class is reached so constants in
+         * prepended classes will be found first.
+         */
+        int res;
+        VALUE recurse_tmp = RCLASS_SUPER(tmp);
+        while (RTEST(recurse_tmp)) {
+            res = rb_const_search_from0(id, exclude, visibility, recurse_tmp, ret);
+            switch(res) {
+              case CONSTANT_FOUND:
+              case CONSTANT_NOT_FOUND_STOP:
+                return res;
+              case CONSTANT_NOT_FOUND:
+                if (*ret == origin) {
+                    /* Returned value is the origin class we were looking for,
+                     * now look in the original class.  If it is not found
+                     * in the original class, continue searching with the
+                     * ancestor of the origin class.
+                     */
+                    goto lookup;
+                }
+                recurse_tmp = *ret;
+                break;
+              default:
+                rb_bug("invalid return code from rb_const_search_from0");
+            }
+        }
+        rb_bug("origin class not found in rb_const_search_from0");
+    } else {
+        origin = tmp;
+    }
+
+  lookup:
+    while ((ce = rb_const_lookup(tmp, id))) {
+        if (visibility && RB_CONST_PRIVATE_P(ce)) {
+            if (BUILTIN_TYPE(tmp) == T_ICLASS) tmp = RBASIC(tmp)->klass;
+            GET_EC()->private_const_reference = tmp;
+            *ret = Qundef;
+            return CONSTANT_FOUND;
+        }
+        rb_const_warn_if_deprecated(ce, tmp, id);
+        VALUE value = ce->value;
+        if (value == Qundef) {
+            struct autoload_const *ac;
+            if (am == tmp) break;
+            am = tmp;
+            ac = autoloading_const_entry(tmp, id);
+            if (ac) {
+                *ret = ac->value;
+                return CONSTANT_FOUND;
+            }
+            rb_autoload_load(tmp, id);
+            continue;
+        }
+        if (exclude && tmp == rb_cObject) {
+            return CONSTANT_NOT_FOUND_STOP;
+        }
+        *ret = value;
+        return CONSTANT_FOUND;
+    }
+
+    *ret = RCLASS_SUPER(origin);
+    return CONSTANT_NOT_FOUND;
+}
+
 static VALUE
 rb_const_search_from(VALUE klass, ID id, int exclude, int recurse, int visibility)
 {
-    VALUE value, tmp;
+    VALUE tmp, ret;
+    int res;
 
     tmp = klass;
     while (RTEST(tmp)) {
-	VALUE am = 0;
-	rb_const_entry_t *ce;
-
-	while ((ce = rb_const_lookup(tmp, id))) {
-	    if (visibility && RB_CONST_PRIVATE_P(ce)) {
-		if (BUILTIN_TYPE(tmp) == T_ICLASS) tmp = RBASIC(tmp)->klass;
-		GET_EC()->private_const_reference = tmp;
-		return Qundef;
-	    }
-	    rb_const_warn_if_deprecated(ce, tmp, id);
-	    value = ce->value;
-	    if (value == Qundef) {
-                struct autoload_const *ac;
-		if (am == tmp) break;
-		am = tmp;
-                ac = autoloading_const_entry(tmp, id);
-                if (ac) return ac->value;
-		rb_autoload_load(tmp, id);
-		continue;
-	    }
-            if (exclude && tmp == rb_cObject) {
-		goto not_found;
-	    }
-	    return value;
-	}
-	if (!recurse) break;
-	tmp = RCLASS_SUPER(tmp);
+        res = rb_const_search_from0(id, exclude, visibility, tmp, &ret);
+        switch(res) {
+          case CONSTANT_FOUND:
+            return ret;
+          case CONSTANT_NOT_FOUND:
+            if (!recurse) goto not_found;
+            tmp = ret;
+            break;
+          case CONSTANT_NOT_FOUND_STOP:
+            goto not_found;
+          default:
+            rb_bug("invalid return code from rb_const_search_from0");
+        }
     }
 
   not_found:
     GET_EC()->private_const_reference = 0;
     return Qundef;
 }
+#undef CONSTANT_FOUND
+#undef CONSTANT_NOT_FOUND
+#undef CONSTANT_NOT_FOUND_STOP
 
 static VALUE
 rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility)

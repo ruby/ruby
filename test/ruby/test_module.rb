@@ -2890,6 +2890,58 @@ class TestModule < Test::Unit::TestCase
     }
   end
 
+  def test_prepend_constant_lookup
+    m = Module.new do
+      const_set(:C, :m)
+    end
+    c = Class.new do
+      const_set(:C, :c)
+      prepend m
+    end
+    sc = Class.new(c)
+    assert_equal(:m, sc.const_get(:C))
+    assert_equal(:m, sc::C)
+
+    assert_equal(:m, c.const_get(:C))
+    assert_equal(:m, c::C)
+    assert_equal(:m, c.const_get(:C, false))
+
+    m2 = Module.new do
+      const_set(:C, :m2)
+      prepend m
+    end
+    assert_equal(:m, m2.const_get(:C))
+    assert_equal(:m, m2::C)
+
+    c2 = Class.new do
+      const_set(:C, :c2)
+      prepend m2
+    end
+    assert_equal(:m, c2.const_get(:C))
+    assert_equal(:m, c2::C)
+
+    m3 = Module.new do
+      const_set(:C, :m3)
+      include m
+    end
+    assert_equal(:m3, m3.const_get(:C))
+    assert_equal(:m3, m3::C)
+
+    c3 = Class.new do
+      const_set(:C, :c3)
+      prepend m3
+    end
+    assert_equal(:m3, c3.const_get(:C))
+    assert_equal(:m3, c3::C)
+
+    c4 = Class.new do
+      const_set(:C, :c4)
+      include m2
+    end
+    assert_equal(:c4, c4.const_get(:C))
+    assert_equal(:c4, c4::C)
+  end
+
   def test_inspect_segfault
     bug_10282 = '[ruby-core:65214] [Bug #10282]'
     assert_separately [], "#{<<~"begin;"}\n#{<<~'end;'}"
