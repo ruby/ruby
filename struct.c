@@ -9,10 +9,18 @@
 
 **********************************************************************/
 
-#include "internal.h"
-#include "vm_core.h"
 #include "id.h"
+#include "internal.h"
+#include "internal/class.h"
+#include "internal/error.h"
+#include "internal/hash.h"
+#include "internal/object.h"
+#include "internal/proc.h"
+#include "internal/struct.h"
+#include "internal/symbol.h"
 #include "transient_heap.h"
+#include "vm_core.h"
+#include "builtin.h"
 
 /* only for struct[:field] access */
 enum {
@@ -20,8 +28,8 @@ enum {
     AREF_HASH_THRESHOLD = 10
 };
 
-const rb_iseq_t *rb_method_for_self_aref(VALUE name, VALUE arg, rb_insn_func_t func);
-const rb_iseq_t *rb_method_for_self_aset(VALUE name, VALUE arg, rb_insn_func_t func);
+const rb_iseq_t *rb_method_for_self_aref(VALUE name, VALUE arg, const struct rb_builtin_function *func);
+const rb_iseq_t *rb_method_for_self_aset(VALUE name, VALUE arg, const struct rb_builtin_function *func);
 
 VALUE rb_cStruct;
 static ID id_members, id_back_members, id_keyword_init;
@@ -250,7 +258,6 @@ static void
 rb_struct_modify(VALUE s)
 {
     rb_check_frozen(s);
-    rb_check_trusted(s);
 }
 
 static VALUE
@@ -282,11 +289,42 @@ new_struct(VALUE name, VALUE super)
     return rb_define_class_id_under(super, id, super);
 }
 
+NORETURN(static void invalid_struct_pos(VALUE s, VALUE idx));
+
+static inline long
+struct_pos_num(VALUE s, VALUE idx)
+{
+    long i = NUM2INT(idx);
+    if (i < 0 || i >= RSTRUCT_LEN(s)) invalid_struct_pos(s, idx);
+    return i;
+}
+
+static VALUE
+opt_struct_aref(rb_execution_context_t *ec, VALUE self, VALUE idx)
+{
+    long i = struct_pos_num(self, idx);
+    return RSTRUCT_GET(self, i);
+}
+
+static VALUE
+opt_struct_aset(rb_execution_context_t *ec, VALUE self, VALUE val, VALUE idx)
+{
+    long i = struct_pos_num(self, idx);
+    rb_struct_modify(self);
+    RSTRUCT_SET(self, i, val);
+    return val;
+}
+
+static const struct rb_builtin_function struct_aref_builtin =
+    RB_BUILTIN_FUNCTION(0, struct_aref, opt_struct_aref, 1, 0);
+static const struct rb_builtin_function struct_aset_builtin =
+    RB_BUILTIN_FUNCTION(1, struct_aref, opt_struct_aset, 2, 0);
+
 static void
 define_aref_method(VALUE nstr, VALUE name, VALUE off)
 {
-    rb_control_frame_t *FUNC_FASTCALL(rb_vm_opt_struct_aref)(rb_execution_context_t *, rb_control_frame_t *);
-    const rb_iseq_t *iseq = rb_method_for_self_aref(name, off, rb_vm_opt_struct_aref);
+    const rb_iseq_t *iseq = rb_method_for_self_aref(name, off, &struct_aref_builtin);
+    iseq->body->builtin_inline_p = true;
 
     rb_add_method_iseq(nstr, SYM2ID(name), iseq, NULL, METHOD_VISI_PUBLIC);
 }
@@ -294,8 +332,7 @@ define_aref_method(VALUE nstr, VALUE name, VALUE off)
 static void
 define_aset_method(VALUE nstr, VALUE name, VALUE off)
 {
-    rb_control_frame_t *FUNC_FASTCALL(rb_vm_opt_struct_aset)(rb_execution_context_t *, rb_control_frame_t *);
-    const rb_iseq_t *iseq = rb_method_for_self_aset(name, off, rb_vm_opt_struct_aset);
+    const rb_iseq_t *iseq = rb_method_for_self_aset(name, off, &struct_aset_builtin);
 
     rb_add_method_iseq(nstr, SYM2ID(name), iseq, NULL, METHOD_VISI_PUBLIC);
 }
@@ -318,8 +355,8 @@ setup_struct(VALUE nstr, VALUE members)
     members = struct_set_members(nstr, members);
 
     rb_define_alloc_func(nstr, struct_alloc);
-    rb_define_singleton_method(nstr, "new", rb_class_new_instance, -1);
-    rb_define_singleton_method(nstr, "[]", rb_class_new_instance, -1);
+    rb_define_singleton_method(nstr, "new", rb_class_new_instance_pass_kw, -1);
+    rb_define_singleton_method(nstr, "[]", rb_class_new_instance_pass_kw, -1);
     rb_define_singleton_method(nstr, "members", rb_struct_s_members_m, 0);
     rb_define_singleton_method(nstr, "inspect", rb_struct_s_inspect, 0);
     len = RARRAY_LEN(members);
@@ -351,9 +388,10 @@ struct_make_members_list(va_list ar)
 {
     char *mem;
     VALUE ary, list = rb_ident_hash_new();
-    st_table *tbl = RHASH_TBL(list);
+    st_table *tbl = RHASH_TBL_RAW(list);
 
     RBASIC_CLEAR_CLASS(list);
+    OBJ_WB_UNPROTECT(list);
     while ((mem = va_arg(ar, char*)) != 0) {
 	VALUE sym = rb_sym_intern_ascii_cstr(mem);
 	if (st_insert(tbl, sym, Qtrue)) {
@@ -516,7 +554,7 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
 static VALUE
 rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE name, rest, keyword_init;
+    VALUE name, rest, keyword_init = Qnil;
     long i;
     VALUE st;
     st_table *tbl;
@@ -532,25 +570,27 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
     }
 
     if (RB_TYPE_P(argv[argc-1], T_HASH)) {
-	VALUE kwargs[1];
 	static ID keyword_ids[1];
 
 	if (!keyword_ids[0]) {
 	    keyword_ids[0] = rb_intern("keyword_init");
 	}
-	rb_get_kwargs(argv[argc-1], keyword_ids, 0, 1, kwargs);
+        rb_get_kwargs(argv[argc-1], keyword_ids, 0, 1, &keyword_init);
+        if (keyword_init == Qundef) {
+            keyword_init = Qnil;
+        }
 	--argc;
-	keyword_init = kwargs[0];
-    }
-    else {
-	keyword_init = Qfalse;
     }
 
     rest = rb_ident_hash_new();
     RBASIC_CLEAR_CLASS(rest);
-    tbl = RHASH_TBL(rest);
+    OBJ_WB_UNPROTECT(rest);
+    tbl = RHASH_TBL_RAW(rest);
     for (i=0; i<argc; i++) {
 	VALUE mem = rb_to_symbol(argv[i]);
+        if (rb_is_attrset_sym(mem)) {
+            rb_raise(rb_eArgError, "invalid struct member: %"PRIsVALUE, mem);
+        }
 	if (st_insert(tbl, mem, Qtrue)) {
 	    rb_raise(rb_eArgError, "duplicate member: %"PRIsVALUE, mem);
 	}
@@ -568,7 +608,7 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
     setup_struct(st, rest);
     rb_ivar_set(st, id_keyword_init, keyword_init);
     if (rb_block_given_p()) {
-	rb_mod_module_eval(0, 0, st);
+        rb_mod_module_eval(0, 0, st);
     }
 
     return st;
@@ -617,13 +657,17 @@ static VALUE
 rb_struct_initialize_m(int argc, const VALUE *argv, VALUE self)
 {
     VALUE klass = rb_obj_class(self);
-    long i, n;
-
     rb_struct_modify(self);
-    n = num_members(klass);
-    if (argc > 0 && RTEST(rb_struct_s_keyword_init(klass))) {
+    long n = num_members(klass);
+    if (argc == 0) {
+        rb_mem_clear((VALUE *)RSTRUCT_CONST_PTR(self), n);
+        return Qnil;
+    }
+
+    VALUE keyword_init = rb_struct_s_keyword_init(klass);
+    if (RTEST(keyword_init)) {
 	struct struct_hash_set_arg arg;
-	if (argc > 2 || !RB_TYPE_P(argv[0], T_HASH)) {
+	if (argc > 1 || !RB_TYPE_P(argv[0], T_HASH)) {
 	    rb_raise(rb_eArgError, "wrong number of arguments (given %d, expected 0)", argc);
 	}
 	rb_mem_clear((VALUE *)RSTRUCT_CONST_PTR(self), n);
@@ -639,7 +683,11 @@ rb_struct_initialize_m(int argc, const VALUE *argv, VALUE self)
 	if (n < argc) {
 	    rb_raise(rb_eArgError, "struct size differs");
 	}
-	for (i=0; i<argc; i++) {
+        if (keyword_init == Qnil && argc == 1 && RB_TYPE_P(argv[0], T_HASH) && rb_keyword_given_p()) {
+            rb_warn("Passing only keyword arguments to Struct#initialize will behave differently from Ruby 3.2. "\
+                    "Please use a Hash literal like .new({k: v}) instead of .new(k: v).");
+        }
+        for (long i=0; i<argc; i++) {
 	    RSTRUCT_SET(self, i, argv[i]);
 	}
 	if (n > argc) {
@@ -652,7 +700,9 @@ rb_struct_initialize_m(int argc, const VALUE *argv, VALUE self)
 VALUE
 rb_struct_initialize(VALUE self, VALUE values)
 {
-    return rb_struct_initialize_m(RARRAY_LENINT(values), RARRAY_CONST_PTR(values), self);
+    rb_struct_initialize_m(RARRAY_LENINT(values), RARRAY_CONST_PTR(values), self);
+    RB_GC_GUARD(values);
+    return Qnil;
 }
 
 static VALUE *
@@ -805,7 +855,7 @@ rb_struct_each_pair(VALUE s)
 
     RETURN_SIZED_ENUMERATOR(s, 0, 0, struct_enum_size);
     members = rb_struct_members(s);
-    if (rb_block_arity() > 1) {
+    if (rb_block_pair_yield_optimizable()) {
 	for (i=0; i<RSTRUCT_LEN(s); i++) {
 	    VALUE key = rb_ary_entry(members, i);
 	    VALUE value = RSTRUCT_GET(s, i);
@@ -862,7 +912,6 @@ inspect_struct(VALUE s, VALUE dummy, int recur)
 	rb_str_append(str, rb_inspect(RSTRUCT_GET(s, i)));
     }
     rb_str_cat2(str, ">");
-    OBJ_INFECT(str, s);
 
     return str;
 }
@@ -934,6 +983,36 @@ rb_struct_to_h(VALUE s)
     return h;
 }
 
+static VALUE
+rb_struct_deconstruct_keys(VALUE s, VALUE keys)
+{
+    VALUE h;
+    long i;
+
+    if (NIL_P(keys)) {
+        return rb_struct_to_h(s);
+    }
+    if (UNLIKELY(!RB_TYPE_P(keys, T_ARRAY))) {
+	rb_raise(rb_eTypeError,
+                 "wrong argument type %"PRIsVALUE" (expected Array or nil)",
+                 rb_obj_class(keys));
+
+    }
+    if (RSTRUCT_LEN(s) < RARRAY_LEN(keys)) {
+        return rb_hash_new_with_size(0);
+    }
+    h = rb_hash_new_with_size(RARRAY_LEN(keys));
+    for (i=0; i<RARRAY_LEN(keys); i++) {
+        VALUE key = RARRAY_AREF(keys, i);
+        int i = rb_struct_pos(s, &key);
+        if (i < 0) {
+            return h;
+        }
+        rb_hash_aset(h, key, RSTRUCT_GET(s, i));
+    }
+    return h;
+}
+
 /* :nodoc: */
 VALUE
 rb_struct_init_copy(VALUE copy, VALUE s)
@@ -985,7 +1064,6 @@ rb_struct_pos(VALUE s, VALUE *name)
     }
 }
 
-NORETURN(static void invalid_struct_pos(VALUE s, VALUE idx));
 static void
 invalid_struct_pos(VALUE s, VALUE idx)
 {
@@ -1260,18 +1338,21 @@ rb_struct_size(VALUE s)
 
 /*
  * call-seq:
- *   struct.dig(key, ...)              -> object
+ *   struct.dig(key, *identifiers) -> object
  *
- * Extracts the nested value specified by the sequence of +key+
- * objects by calling +dig+ at each step, returning +nil+ if any
- * intermediate step is +nil+.
+ * Finds and returns the object in nested objects
+ * that is specified by +key+ and +identifiers+.
+ * The nested objects may be instances of various classes.
+ * See {Dig Methods}[rdoc-ref:doc/dig_methods.rdoc].
  *
+ * Examples:
  *   Foo = Struct.new(:a)
  *   f = Foo.new(Foo.new({b: [1, 2, 3]}))
- *
- *   f.dig(:a, :a, :b, 0)    # => 1
- *   f.dig(:b, 0)            # => nil
- *   f.dig(:a, :a, :b, :c)   # TypeError: no implicit conversion of Symbol into Integer
+ *   f.dig(:a) # => #<struct Foo a={:b=>[1, 2, 3]}>
+ *   f.dig(:a, :a) # => {:b=>[1, 2, 3]}
+ *   f.dig(:a, :a, :b) # => [1, 2, 3]
+ *   f.dig(:a, :a, :b, 0) # => 1
+ *   f.dig(:b, 0) # => nil
  */
 
 static VALUE
@@ -1347,6 +1428,7 @@ InitVM_Struct(void)
     rb_define_method(rb_cStruct, "dig", rb_struct_dig, -1);
 
     rb_define_method(rb_cStruct, "deconstruct", rb_struct_to_a, 0);
+    rb_define_method(rb_cStruct, "deconstruct_keys", rb_struct_deconstruct_keys, 1);
 }
 
 #undef rb_intern

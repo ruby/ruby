@@ -38,8 +38,14 @@ class RubyVM::InstructionSequence
     i2
   end
 
-  CHECK_TO_A      = ENV['RUBY_ISEQ_DUMP_DEBUG'] == 'to_a'
-  CHECK_TO_BINARY = ENV['RUBY_ISEQ_DUMP_DEBUG'] == 'to_binary'
+  opt = ENV['RUBY_ISEQ_DUMP_DEBUG']
+
+  if opt && caller.any?{|e| /test\/runner\.rb/ =~ e}
+    puts "RUBY_ISEQ_DUMP_DEBUG = #{opt}" if opt
+  end
+
+  CHECK_TO_A      = 'to_a'      == opt
+  CHECK_TO_BINARY = 'to_binary' == opt
 
   def self.translate i1
     # check to_a/load_iseq

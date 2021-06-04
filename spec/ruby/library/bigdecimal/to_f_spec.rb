@@ -41,7 +41,7 @@ describe "BigDecimal#to_f" do
     @zero.to_f.should == 0
     @zero.to_f.to_s.should == "0.0"
 
-    @nan.to_f.nan?.should == true
+    @nan.to_f.should.nan?
 
     @infinity.to_f.infinite?.should == 1
     @infinity_minus.to_f.infinite?.should == -1

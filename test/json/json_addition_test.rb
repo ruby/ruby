@@ -195,9 +195,5 @@ class JSONAdditionTest < Test::Unit::TestCase
   def test_set
     s = Set.new([:a, :b, :c, :a])
     assert_equal s, JSON.parse(JSON(s), :create_additions => true)
-    ss = SortedSet.new([:d, :b, :a, :c])
-    ss_again = JSON.parse(JSON(ss), :create_additions => true)
-    assert_kind_of ss.class, ss_again
-    assert_equal ss, ss_again
   end
 end

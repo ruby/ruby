@@ -1,9 +1,8 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/commands/sources_command'
 
 class TestGemCommandsSourcesCommand < Gem::TestCase
-
   def setup
     super
 
@@ -74,6 +73,110 @@ class TestGemCommandsSourcesCommand < Gem::TestCase
     assert_equal '', @ui.error
   end
 
+  def test_execute_add_allow_typo_squatting_source
+    rubygems_org = "https://rubyems.org"
+
+    spec_fetcher do |fetcher|
+      fetcher.spec("a", 1)
+    end
+
+    specs = Gem::Specification.map do |spec|
+      [spec.name, spec.version, spec.original_platform]
+    end
+
+    specs_dump_gz = StringIO.new
+    Zlib::GzipWriter.wrap(specs_dump_gz) do |io|
+      Marshal.dump(specs, io)
+    end
+
+    @fetcher.data["#{rubygems_org}/specs.#{@marshal_version}.gz"] = specs_dump_gz.string
+    @cmd.handle_options %W[--add #{rubygems_org}]
+    ui = Gem::MockGemUi.new("y")
+
+    use_ui ui do
+      @cmd.execute
+    end
+
+    expected = "https://rubyems.org is too similar to https://rubygems.org\n\nDo you want to add this source? [yn]  https://rubyems.org added to sources\n"
+
+    assert_equal expected, ui.output
+
+    source = Gem::Source.new(rubygems_org)
+    assert Gem.sources.include?(source)
+
+    assert_empty ui.error
+  end
+
+  def test_execute_add_allow_typo_squatting_source_forced
+    rubygems_org = "https://rubyems.org"
+
+    spec_fetcher do |fetcher|
+      fetcher.spec("a", 1)
+    end
+
+    specs = Gem::Specification.map do |spec|
+      [spec.name, spec.version, spec.original_platform]
+    end
+
+    specs_dump_gz = StringIO.new
+    Zlib::GzipWriter.wrap(specs_dump_gz) do |io|
+      Marshal.dump(specs, io)
+    end
+
+    @fetcher.data["#{rubygems_org}/specs.#{@marshal_version}.gz"] = specs_dump_gz.string
+    @cmd.handle_options %W[--force --add #{rubygems_org}]
+
+    @cmd.execute
+
+    expected = "https://rubyems.org added to sources\n"
+    assert_equal expected, ui.output
+
+    source = Gem::Source.new(rubygems_org)
+    assert Gem.sources.include?(source)
+
+    assert_empty ui.error
+  end
+
+  def test_execute_add_deny_typo_squatting_source
+    rubygems_org = "https://rubyems.org"
+
+    spec_fetcher do |fetcher|
+      fetcher.spec("a", 1)
+    end
+
+    specs = Gem::Specification.map do |spec|
+      [spec.name, spec.version, spec.original_platform]
+    end
+
+    specs_dump_gz = StringIO.new
+    Zlib::GzipWriter.wrap(specs_dump_gz) do |io|
+      Marshal.dump(specs, io)
+    end
+
+    @fetcher.data["#{rubygems_org}/specs.#{@marshal_version}.gz"] =
+      specs_dump_gz.string
+
+    @cmd.handle_options %W[--add #{rubygems_org}]
+
+    ui = Gem::MockGemUi.new("n")
+
+    use_ui ui do
+
+      assert_raise Gem::MockGemUi::TermError do
+        @cmd.execute
+      end
+    end
+
+    expected = "https://rubyems.org is too similar to https://rubygems.org\n\nDo you want to add this source? [yn]  "
+
+    assert_equal expected, ui.output
+
+    source = Gem::Source.new(rubygems_org)
+    refute Gem.sources.include?(source)
+
+    assert_empty ui.error
+  end
+
   def test_execute_add_nonexistent_source
     spec_fetcher
 
@@ -85,7 +188,7 @@ class TestGemCommandsSourcesCommand < Gem::TestCase
     @cmd.handle_options %w[--add http://beta-gems.example.com]
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
     end
@@ -173,7 +276,7 @@ source http://gems.example.com/ already present in the cache
   end
 
   def test_execute_add_http_rubygems_org
-    http_rubygems_org = 'http://rubygems.org'
+    http_rubygems_org = 'http://rubygems.org/'
 
     spec_fetcher do |fetcher|
       fetcher.spec 'a', 1
@@ -196,7 +299,75 @@ source http://gems.example.com/ already present in the cache
     ui = Gem::MockGemUi.new "n"
 
     use_ui ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
+        @cmd.execute
+      end
+    end
+
+    assert_equal [@gem_repo], Gem.sources
+
+    expected = <<-EXPECTED
+    EXPECTED
+
+    assert_equal expected, @ui.output
+    assert_empty @ui.error
+  end
+
+  def test_execute_add_http_rubygems_org_forced
+    rubygems_org = "http://rubygems.org"
+
+    spec_fetcher do |fetcher|
+      fetcher.spec("a", 1)
+    end
+
+    specs = Gem::Specification.map do |spec|
+      [spec.name, spec.version, spec.original_platform]
+    end
+
+    specs_dump_gz = StringIO.new
+    Zlib::GzipWriter.wrap(specs_dump_gz) do |io|
+      Marshal.dump(specs, io)
+    end
+
+    @fetcher.data["#{rubygems_org}/specs.#{@marshal_version}.gz"] = specs_dump_gz.string
+    @cmd.handle_options %W[--force --add #{rubygems_org}]
+
+    @cmd.execute
+
+    expected = "http://rubygems.org added to sources\n"
+    assert_equal expected, ui.output
+
+    source = Gem::Source.new(rubygems_org)
+    assert Gem.sources.include?(source)
+
+    assert_empty ui.error
+  end
+
+  def test_execute_add_https_rubygems_org
+    https_rubygems_org = 'https://rubygems.org/'
+
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 1
+    end
+
+    specs = Gem::Specification.map do |spec|
+      [spec.name, spec.version, spec.original_platform]
+    end
+
+    specs_dump_gz = StringIO.new
+    Zlib::GzipWriter.wrap specs_dump_gz do |io|
+      Marshal.dump specs, io
+    end
+
+    @fetcher.data["#{https_rubygems_org}/specs.#{@marshal_version}.gz"] =
+      specs_dump_gz.string
+
+    @cmd.handle_options %W[--add #{https_rubygems_org}]
+
+    ui = Gem::MockGemUi.new "n"
+
+    use_ui ui do
+      assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
     end
@@ -214,7 +385,7 @@ source http://gems.example.com/ already present in the cache
     @cmd.handle_options %w[--add beta-gems.example.com]
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
     end
@@ -310,5 +481,4 @@ beta-gems.example.com is not a URI
     assert_equal "source cache successfully updated\n", @ui.output
     assert_equal '', @ui.error
   end
-
 end

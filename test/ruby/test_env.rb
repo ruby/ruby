@@ -22,7 +22,6 @@ class TestEnv < Test::Unit::TestCase
 
   def setup
     @verbose = $VERBOSE
-    $VERBOSE = nil
     @backup = ENV.to_hash
     ENV.delete('test')
     ENV.delete('TEST')
@@ -46,7 +45,6 @@ class TestEnv < Test::Unit::TestCase
     end
     ENV['TEST'] = 'bar'
     assert_equal('bar', ENV['TEST'])
-    assert_predicate(ENV['TEST'], :tainted?)
     if IGNORE_CASE
       assert_equal('bar', ENV['test'])
     else
@@ -85,7 +83,6 @@ class TestEnv < Test::Unit::TestCase
     ENV['test'] = val[0...-1]
 
     assert_nil(ENV.key(val))
-    assert_nil(ENV.index(val))
     assert_nil(ENV.key(val.upcase))
     ENV['test'] = val
     if IGNORE_CASE
@@ -107,13 +104,13 @@ class TestEnv < Test::Unit::TestCase
     assert_invalid_env {|v| ENV.delete(v)}
     assert_nil(ENV.delete("TEST"))
     assert_nothing_raised { ENV.delete(PATH_ENV) }
+    assert_equal("NO TEST", ENV.delete("TEST") {|name| "NO "+name})
   end
 
   def test_getenv
     assert_invalid_env {|v| ENV[v]}
     ENV[PATH_ENV] = ""
     assert_equal("", ENV[PATH_ENV])
-    assert_predicate(ENV[PATH_ENV], :tainted?)
     assert_nil(ENV[""])
   end
 
@@ -122,7 +119,7 @@ class TestEnv < Test::Unit::TestCase
     assert_equal("foo", ENV.fetch("test"))
     ENV.delete("test")
     feature8649 = '[ruby-core:56062] [Feature #8649]'
-    e = assert_raise_with_message(KeyError, 'key not found: "test"', feature8649) do
+    e = assert_raise_with_message(KeyError, /key not found: "test"/, feature8649) do
       ENV.fetch("test")
     end
     assert_same(ENV, e.receiver)
@@ -136,7 +133,6 @@ class TestEnv < Test::Unit::TestCase
     assert_nothing_raised { ENV.fetch(PATH_ENV, "foo") }
     ENV[PATH_ENV] = ""
     assert_equal("", ENV.fetch(PATH_ENV))
-    assert_predicate(ENV.fetch(PATH_ENV), :tainted?)
   end
 
   def test_aset
@@ -154,9 +150,6 @@ class TestEnv < Test::Unit::TestCase
       assert_equal("test", ENV["foo"])
     rescue Errno::EINVAL
     end
-
-    ENV[PATH_ENV] = "/tmp/".taint
-    assert_equal("/tmp/", ENV[PATH_ENV])
   end
 
   def test_keys
@@ -292,6 +285,17 @@ class TestEnv < Test::Unit::TestCase
     assert_equal({"foo"=>"bar", "baz"=>"qux"}, ENV.slice("foo", "baz"))
   end
 
+  def test_except
+    ENV.clear
+    ENV["foo"] = "bar"
+    ENV["baz"] = "qux"
+    ENV["bar"] = "rab"
+    assert_equal({"bar"=>"rab", "baz"=>"qux", "foo"=>"bar"}, ENV.except())
+    assert_equal({"bar"=>"rab", "baz"=>"qux", "foo"=>"bar"}, ENV.except(""))
+    assert_equal({"bar"=>"rab", "baz"=>"qux", "foo"=>"bar"}, ENV.except("unknown"))
+    assert_equal({"bar"=>"rab"}, ENV.except("foo", "baz"))
+  end
+
   def test_clear
     ENV.clear
     assert_equal(0, ENV.size)
@@ -364,8 +368,8 @@ class TestEnv < Test::Unit::TestCase
       assert_equal("foo", v)
     end
     assert_invalid_env {|var| ENV.assoc(var)}
-    assert_predicate(v, :tainted?)
-    assert_equal(Encoding.find("locale"), v.encoding)
+    encoding = /mswin|mingw/ =~ RUBY_PLATFORM ? Encoding::UTF_8 : Encoding.find("locale")
+    assert_equal(encoding, v.encoding)
   end
 
   def test_has_value2
@@ -413,8 +417,8 @@ class TestEnv < Test::Unit::TestCase
 
   def check(as, bs)
     if IGNORE_CASE
-      as = as.map {|xs| xs.map {|x| x.upcase } }
-      bs = bs.map {|xs| xs.map {|x| x.upcase } }
+      as = as.map {|k, v| [k.upcase, v] }
+      bs = bs.map {|k, v| [k.upcase, v] }
     end
     assert_equal(as.sort, bs.sort)
   end
@@ -440,6 +444,8 @@ class TestEnv < Test::Unit::TestCase
     ENV["foo"] = "xxx"
     ENV.replace({"foo"=>"bar", "baz"=>"qux"})
     check(ENV.to_hash.to_a, [%w(foo bar), %w(baz qux)])
+    ENV.replace({"Foo"=>"Bar", "Baz"=>"Qux"})
+    check(ENV.to_hash.to_a, [%w(Foo Bar), %w(Baz Qux)])
   end
 
   def test_update
@@ -452,7 +458,7 @@ class TestEnv < Test::Unit::TestCase
     ENV.clear
     ENV["foo"] = "bar"
     ENV["baz"] = "qux"
-    ENV.update({"baz"=>"quux","a"=>"b"}) {|k, v1, v2| v1 ? k + "_" + v1 + "_" + v2 : v2 }
+    ENV.update({"baz"=>"quux","a"=>"b"}) {|k, v1, v2| k + "_" + v1 + "_" + v2 }
     check(ENV.to_hash.to_a, [%w(foo bar), %w(baz baz_qux_quux), %w(a b)])
   end
 
@@ -573,15 +579,13 @@ class TestEnv < Test::Unit::TestCase
       end;
     end
 
-    if Encoding.find("locale") == Encoding::UTF_8
-      def test_utf8
-        text = "testing \u{e5 e1 e2 e4 e3 101 3042}"
-        test = ENV["test"]
-        ENV["test"] = text
-        assert_equal text, ENV["test"]
-      ensure
-        ENV["test"] = test
-      end
+    def test_utf8
+      text = "testing \u{e5 e1 e2 e4 e3 101 3042}"
+      test = ENV["test"]
+      ENV["test"] = text
+      assert_equal text, ENV["test"]
+    ensure
+      ENV["test"] = test
     end
   end
 end

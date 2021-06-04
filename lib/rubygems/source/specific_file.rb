@@ -4,7 +4,6 @@
 # local gems.
 
 class Gem::Source::SpecificFile < Gem::Source
-
   ##
   # The path to the gem for this specific file.
 
@@ -69,5 +68,4 @@ class Gem::Source::SpecificFile < Gem::Source
       super
     end
   end
-
 end

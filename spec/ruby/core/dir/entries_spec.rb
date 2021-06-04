@@ -35,9 +35,16 @@ describe "Dir.entries" do
     Dir.entries(p)
   end
 
-  it "accepts an options Hash" do
-    a = Dir.entries("#{DirSpecs.mock_dir}/deeply/nested", encoding: "utf-8").sort
-    a.should == %w|. .. .dotfile.ext directory|
+  it "accepts an encoding keyword for the encoding of the entries" do
+    dirs = Dir.entries("#{DirSpecs.mock_dir}/deeply/nested", encoding: "utf-8").to_a.sort
+    dirs.each {|dir| dir.encoding.should == Encoding::UTF_8}
+  end
+
+  ruby_version_is ""..."2.7" do
+    it "accepts nil options" do
+      dirs = Dir.entries("#{DirSpecs.mock_dir}/deeply/nested", nil).to_a.sort
+      dirs.each {|dir| dir.encoding.should == Encoding.find("filesystem")}
+    end
   end
 
   it "returns entries encoded with the filesystem encoding by default" do

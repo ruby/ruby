@@ -46,4 +46,10 @@ describe "Range#last" do
   it "raises a TypeError when passed a String" do
     -> { (2..3).last("1") }.should raise_error(TypeError)
   end
+
+  ruby_version_is "2.6" do
+    it "raises a RangeError when called on an endless range" do
+      -> { eval("(1..)").last }.should raise_error(RangeError)
+    end
+  end
 end

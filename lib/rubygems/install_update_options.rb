@@ -25,12 +25,12 @@ module Gem::InstallUpdateOptions
     end
 
     add_option(:"Install/Update", '-n', '--bindir DIR',
-               'Directory where executables are',
-               'located') do |value, options|
+               'Directory where executables will be',
+               'placed when the gem is installed') do |value, options|
       options[:bin_dir] = File.expand_path(value)
     end
 
-    add_option(:"Install/Update",       '--document [TYPES]', Array,
+    add_option(:"Install/Update", '--document [TYPES]', Array,
                'Generate documentation for installed gems',
                'List the documentation types you wish to',
                'generate.  For example: rdoc,ri') do |value, options|
@@ -88,7 +88,7 @@ module Gem::InstallUpdateOptions
       options[:ignore_dependencies] = value
     end
 
-    add_option(:"Install/Update",       '--[no-]format-executable',
+    add_option(:"Install/Update", '--[no-]format-executable',
                'Make installed executable names match Ruby.',
                'If Ruby is ruby18, foo_exec will be',
                'foo_exec18') do |value, options|
@@ -122,10 +122,10 @@ module Gem::InstallUpdateOptions
       options[:minimal_deps] = true
     end
 
-    add_option(:"Install/Update", "--minimal-deps",
+    add_option(:"Install/Update", "--[no-]minimal-deps",
                 "Don't upgrade any dependencies that already",
                 "meet version requirements") do |value, options|
-      options[:minimal_deps] = true
+      options[:minimal_deps] = value
     end
 
     add_option(:"Install/Update", "--[no-]post-install-message",
@@ -154,7 +154,7 @@ module Gem::InstallUpdateOptions
                'Omit the named groups (comma separated)',
                'when installing from a gem dependencies',
                'file') do |v,o|
-      options[:without_groups].concat v.map { |without| without.intern }
+      options[:without_groups].concat v.map {|without| without.intern }
     end
 
     add_option(:"Install/Update", '--default',
@@ -181,10 +181,19 @@ module Gem::InstallUpdateOptions
   end
 
   ##
-  # Default options for the gem install command.
+  # Default options for the gem install and update commands.
+
+  def install_update_options
+    {
+      :document => %w[ri],
+    }
+  end
+
+  ##
+  # Default description for the gem install and update commands.
 
   def install_update_defaults_str
-    '--document=rdoc,ri --wrappers'
+    '--document=ri'
   end
 
 end

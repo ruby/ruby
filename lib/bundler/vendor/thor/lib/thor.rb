@@ -1,7 +1,7 @@
-require "set"
 require_relative "thor/base"
 
 class Bundler::Thor
+  $thor_runner ||= false
   class << self
     # Allows for custom "Command" package naming.
     #
@@ -90,9 +90,14 @@ class Bundler::Thor
     # ==== Parameters
     # Hash[String|Array => Symbol]:: Maps the string or the strings in the array to the given command.
     #
-    def map(mappings = nil)
+    def map(mappings = nil, **kw)
       @map ||= from_superclass(:map, {})
 
+      if mappings && !kw.empty?
+        mappings = kw.merge!(mappings)
+      else
+        mappings ||= kw
+      end
       if mappings
         mappings.each do |key, value|
           if key.respond_to?(:each)
@@ -170,7 +175,7 @@ class Bundler::Thor
       handle_no_command_error(meth) unless command
 
       shell.say "Usage:"
-      shell.say "  #{banner(command)}"
+      shell.say "  #{banner(command).split("\n").join("\n  ")}"
       shell.say
       class_options_help(shell, nil => command.options.values)
       if command.long_description
@@ -318,7 +323,7 @@ class Bundler::Thor
     # ==== Parameters
     # Symbol ...:: A list of commands that should be affected.
     def stop_on_unknown_option!(*command_names)
-      stop_on_unknown_option.merge(command_names)
+      @stop_on_unknown_option = stop_on_unknown_option | command_names
     end
 
     def stop_on_unknown_option?(command) #:nodoc:
@@ -332,7 +337,7 @@ class Bundler::Thor
     # ==== Parameters
     # Symbol ...:: A list of commands that should be affected.
     def disable_required_check!(*command_names)
-      disable_required_check.merge(command_names)
+      @disable_required_check = disable_required_check | command_names
     end
 
     def disable_required_check?(command) #:nodoc:
@@ -342,12 +347,12 @@ class Bundler::Thor
   protected
 
     def stop_on_unknown_option #:nodoc:
-      @stop_on_unknown_option ||= Set.new
+      @stop_on_unknown_option ||= []
     end
 
     # help command has the required check disabled by default.
     def disable_required_check #:nodoc:
-      @disable_required_check ||= Set.new([:help])
+      @disable_required_check ||= [:help]
     end
 
     # The method responsible for dispatching given the args.
@@ -393,7 +398,9 @@ class Bundler::Thor
     # the namespace should be displayed as arguments.
     #
     def banner(command, namespace = nil, subcommand = false)
-      "#{basename} #{command.formatted_usage(self, $thor_runner, subcommand)}"
+      command.formatted_usage(self, $thor_runner, subcommand).split("\n").map do |formatted_usage|
+        "#{basename} #{formatted_usage}"
+      end.join("\n")
     end
 
     def baseclass #:nodoc:

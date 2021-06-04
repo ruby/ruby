@@ -65,7 +65,7 @@ static VALUE bignum_spec_rb_big_pack_array(VALUE self, VALUE val, VALUE len) {
   long long_len = NUM2LONG(len);
 
   VALUE ary = rb_ary_new_capa(long_len);
-  unsigned long *buf = malloc(long_len * SIZEOF_LONG);
+  unsigned long *buf = (unsigned long*) malloc(long_len * SIZEOF_LONG);
 
   /* The array should be filled with recognisable junk so we can check
      it is all cleared properly. */
@@ -102,5 +102,5 @@ void Init_bignum_spec(void) {
 }
 
 #ifdef __cplusplus
-extern "C" {
+}
 #endif

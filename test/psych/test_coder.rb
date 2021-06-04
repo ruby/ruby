@@ -112,9 +112,19 @@ module Psych
       end
     end
 
+    class CustomEncode
+      def initialize(**opts)
+        @opts = opts
+      end
+
+      def encode_with(coder)
+        @opts.each { |k,v| coder.public_send :"#{k}=", v }
+      end
+    end
+
     def test_self_referential
       x = Referential.new
-      copy = Psych.load Psych.dump x
+      copy = Psych.unsafe_load Psych.dump x
       assert_equal copy, copy.a
     end
 
@@ -153,23 +163,23 @@ module Psych
     end
 
     def test_represent_map
-      thing = Psych.load(Psych.dump(RepresentWithMap.new))
+      thing = Psych.unsafe_load(Psych.dump(RepresentWithMap.new))
       assert_equal({ "string" => 'a', :symbol => 'b' }, thing.map)
     end
 
     def test_represent_sequence
-      thing = Psych.load(Psych.dump(RepresentWithSeq.new))
+      thing = Psych.unsafe_load(Psych.dump(RepresentWithSeq.new))
       assert_equal %w{ foo bar }, thing.seq
     end
 
     def test_represent_with_init
-      thing = Psych.load(Psych.dump(RepresentWithInit.new))
+      thing = Psych.unsafe_load(Psych.dump(RepresentWithInit.new))
       assert_equal 'bar', thing.str
     end
 
     def test_represent!
       assert_match(/foo/, Psych.dump(Represent.new))
-      assert_instance_of(Represent, Psych.load(Psych.dump(Represent.new)))
+      assert_instance_of(Represent, Psych.unsafe_load(Psych.dump(Represent.new)))
     end
 
     def test_scalar_coder
@@ -179,7 +189,7 @@ module Psych
 
     def test_load_dumped_tagging
       foo = InitApi.new
-      bar = Psych.load(Psych.dump(foo))
+      bar = Psych.unsafe_load(Psych.dump(foo))
       assert_equal false, bar.implicit
       assert_equal "!ruby/object:Psych::TestCoder::InitApi", bar.tag
       assert_equal Psych::Nodes::Mapping::BLOCK, bar.style
@@ -198,10 +208,121 @@ module Psych
 
     def test_dump_init_with
       foo = InitApi.new
-      bar = Psych.load(Psych.dump(foo))
+      bar = Psych.unsafe_load(Psych.dump(foo))
       assert_equal foo.a, bar.a
       assert_equal foo.b, bar.b
       assert_nil bar.c
+    end
+
+    def test_coder_style_map_default
+      foo = Psych.dump a: 1, b: 2
+      assert_equal "---\n:a: 1\n:b: 2\n", foo
+    end
+
+    def test_coder_style_map_any
+      foo = Psych.dump CustomEncode.new \
+        map: {a: 1, b: 2},
+        style: Psych::Nodes::Mapping::ANY,
+        tag: nil
+      assert_equal "---\n:a: 1\n:b: 2\n", foo
+    end
+
+    def test_coder_style_map_block
+      foo = Psych.dump CustomEncode.new \
+        map: {a: 1, b: 2},
+        style: Psych::Nodes::Mapping::BLOCK,
+        tag: nil
+      assert_equal "---\n:a: 1\n:b: 2\n", foo
+    end
+
+    def test_coder_style_map_flow
+      foo = Psych.dump CustomEncode.new \
+        map: { a: 1, b: 2 },
+        style: Psych::Nodes::Mapping::FLOW,
+        tag: nil
+      assert_equal "--- {! ':a': 1, ! ':b': 2}\n", foo
+    end
+
+    def test_coder_style_seq_default
+      foo = Psych.dump [ 1, 2, 3 ]
+      assert_equal "---\n- 1\n- 2\n- 3\n", foo
+    end
+
+    def test_coder_style_seq_any
+      foo = Psych.dump CustomEncode.new \
+        seq: [ 1, 2, 3 ],
+        style: Psych::Nodes::Sequence::ANY,
+        tag: nil
+      assert_equal "---\n- 1\n- 2\n- 3\n", foo
+    end
+
+    def test_coder_style_seq_block
+      foo = Psych.dump CustomEncode.new \
+        seq: [ 1, 2, 3 ],
+        style: Psych::Nodes::Sequence::BLOCK,
+        tag: nil
+      assert_equal "---\n- 1\n- 2\n- 3\n", foo
+    end
+
+    def test_coder_style_seq_flow
+      foo = Psych.dump CustomEncode.new \
+        seq: [ 1, 2, 3 ],
+        style: Psych::Nodes::Sequence::FLOW,
+        tag: nil
+      assert_equal "--- [1, 2, 3]\n", foo
+    end
+
+    def test_coder_style_scalar_default
+      foo = Psych.dump 'some scalar'
+      assert_match(/\A--- some scalar\n(?:\.\.\.\n)?\z/, foo)
+    end
+
+    def test_coder_style_scalar_any
+      foo = Psych.dump CustomEncode.new \
+        scalar: 'some scalar',
+        style: Psych::Nodes::Scalar::ANY,
+        tag: nil
+      assert_match(/\A--- some scalar\n(?:\.\.\.\n)?\z/, foo)
+    end
+
+    def test_coder_style_scalar_plain
+      foo = Psych.dump CustomEncode.new \
+        scalar: 'some scalar',
+        style: Psych::Nodes::Scalar::PLAIN,
+        tag: nil
+      assert_match(/\A--- some scalar\n(?:\.\.\.\n)?\z/, foo)
+    end
+
+    def test_coder_style_scalar_single_quoted
+      foo = Psych.dump CustomEncode.new \
+        scalar: 'some scalar',
+        style: Psych::Nodes::Scalar::SINGLE_QUOTED,
+        tag: nil
+      assert_equal "--- ! 'some scalar'\n", foo
+    end
+
+    def test_coder_style_scalar_double_quoted
+      foo = Psych.dump CustomEncode.new \
+        scalar: 'some scalar',
+        style: Psych::Nodes::Scalar::DOUBLE_QUOTED,
+        tag: nil
+      assert_equal %Q'--- ! "some scalar"\n', foo
+    end
+
+    def test_coder_style_scalar_literal
+      foo = Psych.dump CustomEncode.new \
+        scalar: 'some scalar',
+        style: Psych::Nodes::Scalar::LITERAL,
+        tag: nil
+      assert_equal "--- ! |-\n  some scalar\n", foo
+    end
+
+    def test_coder_style_scalar_folded
+      foo = Psych.dump CustomEncode.new \
+        scalar: 'some scalar',
+        style: Psych::Nodes::Scalar::FOLDED,
+        tag: nil
+      assert_equal "--- ! >-\n  some scalar\n", foo
     end
   end
 end

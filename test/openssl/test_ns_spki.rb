@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require_relative 'utils'
 
 if defined?(OpenSSL)
@@ -9,7 +9,7 @@ class OpenSSL::TestNSSPI < OpenSSL::TestCase
     # This request data is adopt from the specification of
     # "Netscape Extensions for User Key Generation".
     # -- http://wp.netscape.com/eng/security/comm4-keygen.html
-    @b64  = "MIHFMHEwXDANBgkqhkiG9w0BAQEFAANLADBIAkEAnX0TILJrOMUue+PtwBRE6XfV"
+    @b64 = +"MIHFMHEwXDANBgkqhkiG9w0BAQEFAANLADBIAkEAnX0TILJrOMUue+PtwBRE6XfV"
     @b64 << "WtKQbsshxk5ZhcUwcwyvcnIq9b82QhJdoACdD34rqfCAIND46fXKQUnb0mvKzQID"
     @b64 << "AQABFhFNb3ppbGxhSXNNeUZyaWVuZDANBgkqhkiG9w0BAQQFAANBAAKv2Eex2n/S"
     @b64 << "r/7iJNroWlSzSMtTiQTEB+ADWHGj9u1xrUrOilq/o2cuQxIfZcNZkYAkWP4DubqW"
@@ -22,7 +22,7 @@ class OpenSSL::TestNSSPI < OpenSSL::TestCase
     spki = OpenSSL::Netscape::SPKI.new
     spki.challenge = "RandomString"
     spki.public_key = key1.public_key
-    spki.sign(key1, OpenSSL::Digest::SHA1.new)
+    spki.sign(key1, OpenSSL::Digest.new('SHA1'))
     assert(spki.verify(spki.public_key))
     assert(spki.verify(key1.public_key))
     assert(!spki.verify(key2.public_key))

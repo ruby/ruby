@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # frozen_string_literal: true
 #--
 # Copyright (C) 2004 Mauricio Julio Fernández Pradier
@@ -29,7 +28,6 @@
 # A header for a tar file
 
 class Gem::Package::TarHeader
-
   ##
   # Fields in the tar header
 
@@ -126,7 +124,8 @@ class Gem::Package::TarHeader
   end
 
   def self.strict_oct(str)
-    return str.oct if str =~ /\A[0-7]*\z/
+    return str.strip.oct if str.strip =~ /\A[0-7]*\z/
+
     raise ArgumentError, "#{str.inspect} is not an octal string"
   end
 
@@ -209,7 +208,7 @@ class Gem::Package::TarHeader
   private
 
   def calculate_checksum(header)
-    header.unpack("C*").inject { |a, b| a + b }
+    header.unpack("C*").inject {|a, b| a + b }
   end
 
   def header(checksum = @checksum)
@@ -230,7 +229,7 @@ class Gem::Package::TarHeader
       gname,
       oct(devmajor, 7),
       oct(devminor, 7),
-      prefix
+      prefix,
     ]
 
     header = header.pack PACK_FORMAT
@@ -241,5 +240,4 @@ class Gem::Package::TarHeader
   def oct(num, len)
     "%0#{len}o" % num
   end
-
 end

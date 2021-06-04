@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 =begin
 = Info
   'OpenSSL for Ruby 2' project
@@ -12,11 +12,26 @@
 
 require 'openssl.so'
 
-require 'openssl/bn'
-require 'openssl/pkey'
-require 'openssl/cipher'
-require 'openssl/config'
-require 'openssl/digest'
-require 'openssl/x509'
-require 'openssl/ssl'
-require 'openssl/pkcs5'
+require_relative 'openssl/bn'
+require_relative 'openssl/pkey'
+require_relative 'openssl/cipher'
+require_relative 'openssl/digest'
+require_relative 'openssl/hmac'
+require_relative 'openssl/x509'
+require_relative 'openssl/ssl'
+require_relative 'openssl/pkcs5'
+require_relative 'openssl/version'
+
+module OpenSSL
+  # call-seq:
+  #   OpenSSL.secure_compare(string, string) -> boolean
+  #
+  # Constant time memory comparison. Inputs are hashed using SHA-256 to mask
+  # the length of the secret. Returns +true+ if the strings are identical,
+  # +false+ otherwise.
+  def self.secure_compare(a, b)
+    hashed_a = OpenSSL::Digest.digest('SHA256', a)
+    hashed_b = OpenSSL::Digest.digest('SHA256', b)
+    OpenSSL.fixed_length_secure_compare(hashed_a, hashed_b) && a == b
+  end
+end

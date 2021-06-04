@@ -31,7 +31,7 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
         alias compile_error on_error
       end
     end
-    lexer.lex.select {|_1,type,_2| type == sym }.map {|_1,_2,tok| tok }
+    lexer.lex.select {|_,type,_| type == sym }.map {|_,_,tok| tok }
   end
 
   def test_tokenize
@@ -269,7 +269,7 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('embvar', '"#@ivar"')
     assert_equal ['#'],
                  scan('embvar', '"#@@cvar"')
-    assert_equal ['#'],
+    assert_equal [],
                  scan('embvar', '"#@1"')
     assert_equal [],
                  scan('embvar', '"#lvar"')
@@ -358,13 +358,6 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('ivar', '@IVAR')
     assert_equal ['@ivar'],
                  scan('ivar', 'm(lvar, @ivar, @@cvar, $gvar)')
-  end
-
-  def test_tnumparam
-    assert_equal [],
-                 scan('tnumparam', '')
-    assert_equal ['@1'],
-                 scan('tnumparam', 'proc {@1}')
   end
 
   def test_kw
@@ -569,12 +562,8 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('op', ':[]=')
     assert_equal ['&.'],
                  scan('op', 'a&.f')
-    assert_equal %w(.:),
-                 scan('op', 'obj.:foo')
     assert_equal [],
                  scan('op', %q[`make all`])
-    assert_equal %w[|>],
-                 scan('op', %q[x|>y])
   end
 
   def test_symbeg

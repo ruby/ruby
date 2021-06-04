@@ -20,7 +20,7 @@ Gem::Specification.new do |spec|
   spec.summary       = %q{Provides access to information typically stored in UNIX /etc directory.}
   spec.description   = spec.summary
   spec.homepage      = "https://github.com/ruby/etc"
-  spec.license       = "BSD-2-Clause"
+  spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   spec.files         = %w[
     LICENSE.txt
@@ -29,7 +29,6 @@ Gem::Specification.new do |spec|
     ext/etc/etc.c
     ext/etc/extconf.rb
     ext/etc/mkconstants.rb
-    stub/etc.rb
     test/etc/test_etc.rb
   ]
   spec.bindir        = "exe"

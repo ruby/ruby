@@ -1,0 +1,4 @@
+name: "CodeQL config for the Ruby language"
+
+paths-ignore:
+  - '/ext/**/*/conftest.c'

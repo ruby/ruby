@@ -49,6 +49,9 @@ class RDoc::TestCase < Test::Unit::TestCase
   def setup
     super
 
+    @orig_home = ENV["HOME"]
+    ENV["HOME"] = Dir.tmpdir
+
     @top_level = nil
 
     @RM = RDoc::Markup
@@ -67,6 +70,15 @@ class RDoc::TestCase < Test::Unit::TestCase
     @rdoc.generator = g
 
     RDoc::Markup::PreProcess.reset
+  end
+
+  ##
+  # Abstract test-case teardown
+
+  def teardown
+    ENV["HOME"] = @orig_home if defined?(@orig_home)
+
+    super
   end
 
   ##

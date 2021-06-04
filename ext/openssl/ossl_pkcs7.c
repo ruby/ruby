@@ -9,21 +9,6 @@
  */
 #include "ossl.h"
 
-#define NewPKCS7(klass) \
-    TypedData_Wrap_Struct((klass), &ossl_pkcs7_type, 0)
-#define SetPKCS7(obj, pkcs7) do { \
-    if (!(pkcs7)) { \
-	ossl_raise(rb_eRuntimeError, "PKCS7 wasn't initialized."); \
-    } \
-    RTYPEDDATA_DATA(obj) = (pkcs7); \
-} while (0)
-#define GetPKCS7(obj, pkcs7) do { \
-    TypedData_Get_Struct((obj), PKCS7, &ossl_pkcs7_type, (pkcs7)); \
-    if (!(pkcs7)) { \
-	ossl_raise(rb_eRuntimeError, "PKCS7 wasn't initialized."); \
-    } \
-} while (0)
-
 #define NewPKCS7si(klass) \
     TypedData_Wrap_Struct((klass), &ossl_pkcs7_signer_info_type, 0)
 #define SetPKCS7si(obj, p7si) do { \
@@ -75,7 +60,7 @@ ossl_pkcs7_free(void *ptr)
     PKCS7_free(ptr);
 }
 
-static const rb_data_type_t ossl_pkcs7_type = {
+const rb_data_type_t ossl_pkcs7_type = {
     "OpenSSL/PKCS7",
     {
 	0, ossl_pkcs7_free,
@@ -116,19 +101,24 @@ static const rb_data_type_t ossl_pkcs7_recip_info_type = {
  * (MADE PRIVATE UNTIL SOMEBODY WILL NEED THEM)
  */
 static PKCS7_SIGNER_INFO *
-ossl_PKCS7_SIGNER_INFO_dup(const PKCS7_SIGNER_INFO *si)
+ossl_PKCS7_SIGNER_INFO_dup(PKCS7_SIGNER_INFO *si)
 {
-    return (PKCS7_SIGNER_INFO *)ASN1_dup((i2d_of_void *)i2d_PKCS7_SIGNER_INFO,
-					 (d2i_of_void *)d2i_PKCS7_SIGNER_INFO,
-					 (char *)si);
+    PKCS7_SIGNER_INFO *si_new = ASN1_dup((i2d_of_void *)i2d_PKCS7_SIGNER_INFO,
+                                         (d2i_of_void *)d2i_PKCS7_SIGNER_INFO,
+                                         si);
+    if (si_new && si->pkey) {
+        EVP_PKEY_up_ref(si->pkey);
+        si_new->pkey = si->pkey;
+    }
+    return si_new;
 }
 
 static PKCS7_RECIP_INFO *
-ossl_PKCS7_RECIP_INFO_dup(const PKCS7_RECIP_INFO *si)
+ossl_PKCS7_RECIP_INFO_dup(PKCS7_RECIP_INFO *si)
 {
-    return (PKCS7_RECIP_INFO *)ASN1_dup((i2d_of_void *)i2d_PKCS7_RECIP_INFO,
-					(d2i_of_void *)d2i_PKCS7_RECIP_INFO,
-					(char *)si);
+    return ASN1_dup((i2d_of_void *)i2d_PKCS7_RECIP_INFO,
+                    (d2i_of_void *)d2i_PKCS7_RECIP_INFO,
+                    si);
 }
 
 static VALUE
@@ -145,19 +135,6 @@ ossl_pkcs7si_new(PKCS7_SIGNER_INFO *p7si)
     return obj;
 }
 
-static PKCS7_SIGNER_INFO *
-DupPKCS7SignerPtr(VALUE obj)
-{
-    PKCS7_SIGNER_INFO *p7si, *pkcs7;
-
-    GetPKCS7si(obj, p7si);
-    if (!(pkcs7 = ossl_PKCS7_SIGNER_INFO_dup(p7si))) {
-	ossl_raise(ePKCS7Error, NULL);
-    }
-
-    return pkcs7;
-}
-
 static VALUE
 ossl_pkcs7ri_new(PKCS7_RECIP_INFO *p7ri)
 {
@@ -170,19 +147,6 @@ ossl_pkcs7ri_new(PKCS7_RECIP_INFO *p7ri)
     SetPKCS7ri(obj, pkcs7);
 
     return obj;
-}
-
-static PKCS7_RECIP_INFO *
-DupPKCS7RecipientPtr(VALUE obj)
-{
-    PKCS7_RECIP_INFO *p7ri, *pkcs7;
-
-    GetPKCS7ri(obj, p7ri);
-    if (!(pkcs7 = ossl_PKCS7_RECIP_INFO_dup(p7ri))) {
-	ossl_raise(ePKCS7Error, NULL);
-    }
-
-    return pkcs7;
 }
 
 /*
@@ -536,17 +500,18 @@ static VALUE
 ossl_pkcs7_add_signer(VALUE self, VALUE signer)
 {
     PKCS7 *pkcs7;
-    PKCS7_SIGNER_INFO *p7si;
+    PKCS7_SIGNER_INFO *si, *si_new;
 
-    p7si = DupPKCS7SignerPtr(signer); /* NEED TO DUP */
     GetPKCS7(self, pkcs7);
-    if (!PKCS7_add_signer(pkcs7, p7si)) {
-	PKCS7_SIGNER_INFO_free(p7si);
-	ossl_raise(ePKCS7Error, "Could not add signer.");
-    }
-    if (PKCS7_type_is_signed(pkcs7)){
-	PKCS7_add_signed_attribute(p7si, NID_pkcs9_contentType,
-				   V_ASN1_OBJECT, OBJ_nid2obj(NID_pkcs7_data));
+    GetPKCS7si(signer, si);
+
+    si_new = ossl_PKCS7_SIGNER_INFO_dup(si);
+    if (!si_new)
+        ossl_raise(ePKCS7Error, "PKCS7_SIGNER_INFO_dup");
+
+    if (PKCS7_add_signer(pkcs7, si_new) != 1) {
+        PKCS7_SIGNER_INFO_free(si_new);
+        ossl_raise(ePKCS7Error, "PKCS7_add_signer");
     }
 
     return self;
@@ -582,13 +547,18 @@ static VALUE
 ossl_pkcs7_add_recipient(VALUE self, VALUE recip)
 {
     PKCS7 *pkcs7;
-    PKCS7_RECIP_INFO *ri;
+    PKCS7_RECIP_INFO *ri, *ri_new;
 
-    ri = DupPKCS7RecipientPtr(recip); /* NEED TO DUP */
     GetPKCS7(self, pkcs7);
-    if (!PKCS7_add_recipient_info(pkcs7, ri)) {
-	PKCS7_RECIP_INFO_free(ri);
-	ossl_raise(ePKCS7Error, "Could not add recipient.");
+    GetPKCS7ri(recip, ri);
+
+    ri_new = ossl_PKCS7_RECIP_INFO_dup(ri);
+    if (!ri_new)
+        ossl_raise(ePKCS7Error, "PKCS7_RECIP_INFO_dup");
+
+    if (PKCS7_add_recipient_info(pkcs7, ri_new) != 1) {
+        PKCS7_RECIP_INFO_free(ri_new);
+        ossl_raise(ePKCS7Error, "PKCS7_add_recipient_info");
     }
 
     return self;
@@ -1088,7 +1058,6 @@ Init_ossl_pkcs7(void)
     rb_define_alloc_func(cPKCS7Signer, ossl_pkcs7si_alloc);
     rb_define_method(cPKCS7Signer, "initialize", ossl_pkcs7si_initialize,3);
     rb_define_method(cPKCS7Signer, "issuer", ossl_pkcs7si_get_issuer, 0);
-    rb_define_alias(cPKCS7Signer, "name", "issuer");
     rb_define_method(cPKCS7Signer, "serial", ossl_pkcs7si_get_serial,0);
     rb_define_method(cPKCS7Signer,"signed_time",ossl_pkcs7si_get_signed_time,0);
 

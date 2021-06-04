@@ -10,7 +10,7 @@ module Bundler
         be sure to check out these resources:
 
         1. Check out our troubleshooting guide for quick fixes to common issues:
-        https://github.com/bundler/bundler/blob/master/doc/TROUBLESHOOTING.md
+        https://github.com/rubygems/rubygems/blob/master/bundler/doc/TROUBLESHOOTING.md
 
         2. Instructions for common Bundler uses can be found on the documentation
         site: https://bundler.io/
@@ -22,7 +22,7 @@ module Bundler
         still aren't working the way you expect them to, please let us know so
         that we can diagnose and help fix the problem you're having. Please
         view the Filing Issues guide for more information:
-        https://github.com/bundler/bundler/blob/master/doc/contributing/ISSUES.md
+        https://github.com/rubygems/rubygems/blob/master/bundler/doc/contributing/ISSUES.md
 
       EOS
 

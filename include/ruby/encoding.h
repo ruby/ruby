@@ -1,33 +1,22 @@
-/**********************************************************************
-
-  encoding.h -
-
-  $Author: matz $
-  created at: Thu May 24 11:49:41 JST 2007
-
-  Copyright (C) 2007 Yukihiro Matsumoto
-
-**********************************************************************/
-
-#ifndef RUBY_ENCODING_H
+#ifndef RUBY_ENCODING_H                              /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_ENCODING_H 1
-
-#ifdef RUBY_INTERNAL_H
-#error "Include this file before internal.h"
-#endif
-
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
+/**
+ * @file
+ * @author     $Author: matz $
+ * @date       Thu May 24 11:49:41 JST 2007
+ * @copyright  Copyright (C) 2007 Yukihiro Matsumoto
+ * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
+ *             Permission  is hereby  granted,  to  either redistribute  and/or
+ *             modify this file, provided that  the conditions mentioned in the
+ *             file COPYING are met.  Consult the file for details.
+ */
+#include "ruby/internal/config.h"
 #include <stdarg.h>
 #include "ruby/ruby.h"
 #include "ruby/oniguruma.h"
+#include "ruby/internal/dllexport.h"
 
-RUBY_SYMBOL_EXPORT_BEGIN
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 enum ruby_encoding_consts {
     RUBY_ENCODING_INLINE_MAX = 127,
@@ -138,6 +127,8 @@ void rb_enc_copy(VALUE dst, VALUE src);
 VALUE rb_enc_str_new(const char*, long, rb_encoding*);
 VALUE rb_enc_str_new_cstr(const char*, rb_encoding*);
 VALUE rb_enc_str_new_static(const char*, long, rb_encoding*);
+VALUE rb_enc_interned_str(const char *, long, rb_encoding *);
+VALUE rb_enc_interned_str_cstr(const char *, rb_encoding *);
 VALUE rb_enc_reg_new(const char*, long, rb_encoding*, int);
 PRINTF_ARGS(VALUE rb_enc_sprintf(rb_encoding *, const char*, ...), 2, 3);
 VALUE rb_enc_vsprintf(rb_encoding *, const char*, va_list);
@@ -417,13 +408,6 @@ enum ruby_econv_flag_type {
 /* end of flags for rb_econv_convert */
 RUBY_ECONV_FLAGS_PLACEHOLDER};
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RUBY_ENCODING_H */

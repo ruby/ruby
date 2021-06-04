@@ -83,7 +83,7 @@ describe :string_encode, shared: true do
       options = mock("string encode options")
       options.should_receive(:to_hash).and_return({ undef: :replace })
 
-      result = "あ\ufffdあ".send(@method, options)
+      result = "あ\ufffdあ".send(@method, **options)
       result.should == "あ\ufffdあ"
     end
 
@@ -145,7 +145,7 @@ describe :string_encode, shared: true do
       options = mock("string encode options")
       options.should_receive(:to_hash).and_return({ undef: :replace })
 
-      result = "あ?あ".send(@method, Encoding::EUC_JP, options)
+      result = "あ?あ".send(@method, Encoding::EUC_JP, **options)
       xA4xA2 = [0xA4, 0xA2].pack('CC').force_encoding('utf-8')
       result.should == "#{xA4xA2}?#{xA4xA2}".force_encoding("euc-jp")
     end
@@ -189,7 +189,7 @@ describe :string_encode, shared: true do
 
       xFF = [0xFF].pack('C').force_encoding('utf-8')
       str = "ab#{xFF}c".force_encoding Encoding::BINARY
-      str.send(@method, "iso-8859-1", "utf-8", options).should == "ab?c"
+      str.send(@method, "iso-8859-1", "utf-8", **options).should == "ab?c"
     end
   end
 

@@ -79,12 +79,12 @@ describe "Hash#transform_values!" do
       @hash.freeze
     end
 
-    it "raises a #{frozen_error_class} on an empty hash" do
-      ->{ {}.freeze.transform_values!(&:succ) }.should raise_error(frozen_error_class)
+    it "raises a FrozenError on an empty hash" do
+      ->{ {}.freeze.transform_values!(&:succ) }.should raise_error(FrozenError)
     end
 
-    it "keeps pairs and raises a #{frozen_error_class}" do
-      ->{ @hash.transform_values!(&:succ) }.should raise_error(frozen_error_class)
+    it "keeps pairs and raises a FrozenError" do
+      ->{ @hash.transform_values!(&:succ) }.should raise_error(FrozenError)
       @hash.should == @initial_pairs
     end
 

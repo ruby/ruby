@@ -17,8 +17,8 @@ class TestRDocOptions < RDoc::TestCase
   end
 
   def test_check_files
-    skip "assumes UNIX permission model" if /mswin|mingw/ =~ RUBY_PLATFORM
-    skip "assumes that euid is not root" if Process.euid == 0
+    omit "assumes UNIX permission model" if /mswin|mingw/ =~ RUBY_PLATFORM
+    omit "assumes that euid is not root" if Process.euid == 0
 
     out, err = capture_output do
       temp_dir do
@@ -145,7 +145,7 @@ class TestRDocOptions < RDoc::TestCase
 
     @options.encoding = Encoding::IBM437
 
-    options = YAML.load YAML.dump @options
+    options = YAML.safe_load(YAML.dump(@options), permitted_classes: [RDoc::Options, Symbol])
 
     assert_equal Encoding::IBM437, options.encoding
   end
@@ -161,7 +161,7 @@ rdoc_include:
 - /etc
     YAML
 
-    options = YAML.load yaml
+    options = YAML.safe_load(yaml, permitted_classes: [RDoc::Options, Symbol])
 
     assert_empty options.rdoc_include
     assert_empty options.static_path
@@ -294,6 +294,20 @@ rdoc_include:
 
     assert_equal 'invalid option: --format generator already set to darkfish',
                  e.message
+  end
+
+  def test_parse_force_update
+    @options.parse %w[--force-update]
+
+    assert @options.force_update
+
+    @options.parse %w[--no-force-update]
+
+    assert !@options.force_update
+
+    @options.parse %w[-U]
+
+    assert @options.force_update
   end
 
   def test_parse_formatter_ri
@@ -493,8 +507,14 @@ rdoc_include:
     assert_empty out
     assert_empty err
 
-    expected =
-      Pathname(Dir.tmpdir).expand_path.relative_path_from @options.root
+    expected = nil
+    begin
+      expected =
+        Pathname(Dir.tmpdir).expand_path.relative_path_from @options.root
+    rescue ArgumentError
+      # On Windows, sometimes crosses different drive letters.
+      expected = Pathname(Dir.tmpdir).expand_path
+    end
 
     assert_equal expected,     @options.page_dir
     assert_equal [Dir.tmpdir], @options.files
@@ -729,7 +749,7 @@ rdoc_include:
 
       assert File.exist? '.rdoc_options'
 
-      assert_equal @options, YAML.load(File.read('.rdoc_options'))
+      assert_equal @options, YAML.safe_load(File.read('.rdoc_options'), permitted_classes: [RDoc::Options, Symbol])
     end
   end
 

@@ -2,33 +2,6 @@ require_relative '../../spec_helper'
 require 'thread'
 
 describe "ConditionVariable#broadcast" do
-  it "returns self if nothing to broadcast to" do
-    cv = ConditionVariable.new
-    cv.broadcast.should == cv
-  end
-
-  it "returns self if something is waiting for a broadcast" do
-    m = Mutex.new
-    cv = ConditionVariable.new
-    in_synchronize = false
-
-    th = Thread.new do
-      m.synchronize do
-        in_synchronize = true
-        cv.wait(m)
-      end
-    end
-
-    # wait for m to acquire the mutex
-    Thread.pass until in_synchronize
-    # wait until th is sleeping (ie waiting)
-    Thread.pass while th.status and th.status != "sleep"
-
-    m.synchronize { cv.broadcast }.should == cv
-
-    th.join
-  end
-
   it "releases all threads waiting in line for this resource" do
     m = Mutex.new
     cv = ConditionVariable.new
@@ -50,7 +23,7 @@ describe "ConditionVariable#broadcast" do
     # wait for all threads to acquire the mutex the first time
     Thread.pass until m.synchronize { r1.size == threads.size }
     # wait until all threads are sleeping (ie waiting)
-    Thread.pass until threads.all? {|th| th.status == "sleep" }
+    Thread.pass until threads.all?(&:stop?)
 
     r2.should be_empty
     m.synchronize do

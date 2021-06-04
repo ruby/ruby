@@ -21,6 +21,17 @@ module Fiddle
       assert_equal 'sin', func.name
     end
 
+    def test_need_gvl?
+      libruby = Fiddle.dlopen(nil)
+      rb_str_dup = Function.new(libruby['rb_str_dup'],
+                                [:voidp],
+                                :voidp,
+                                need_gvl: true)
+      assert(rb_str_dup.need_gvl?)
+      assert_equal('Hello',
+                   Fiddle.dlunwrap(rb_str_dup.call(Fiddle.dlwrap('Hello'))))
+    end
+
     def test_argument_errors
       assert_raise(TypeError) do
         Function.new(@libm['sin'], TYPE_DOUBLE, TYPE_DOUBLE)
@@ -33,6 +44,25 @@ module Fiddle
       assert_raise(TypeError) do
         Function.new(@libm['sin'], [TYPE_DOUBLE], 'foo')
       end
+    end
+
+    def test_argument_type_conversion
+      type = Struct.new(:int, :call_count) do
+        def initialize(int)
+          super(int, 0)
+        end
+        def to_int
+          raise "exhausted" if (self.call_count += 1) > 1
+          self.int
+        end
+      end
+      type_arg = type.new(TYPE_DOUBLE)
+      type_result = type.new(TYPE_DOUBLE)
+      assert_nothing_raised(RuntimeError) do
+        Function.new(@libm['sin'], [type_arg], type_result)
+      end
+      assert_equal(1, type_arg.call_count)
+      assert_equal(1, type_result.call_count)
     end
 
     def test_call
@@ -72,6 +102,30 @@ module Fiddle
       assert_equal("123", str.to_s)
     end
 
+    def call_proc(string_to_copy)
+      buff = +"000"
+      str = yield(buff, string_to_copy)
+      [buff, str]
+    end
+
+    def test_function_as_proc
+      f = Function.new(@libc['strcpy'], [TYPE_VOIDP, TYPE_VOIDP], TYPE_VOIDP)
+      buff, str = call_proc("123", &f)
+      assert_equal("123", buff)
+      assert_equal("123", str.to_s)
+    end
+
+    def test_function_as_method
+      f = Function.new(@libc['strcpy'], [TYPE_VOIDP, TYPE_VOIDP], TYPE_VOIDP)
+      klass = Class.new do
+        define_singleton_method(:strcpy, &f)
+      end
+      buff = +"000"
+      str = klass.strcpy(buff, "123")
+      assert_equal("123", buff)
+      assert_equal("123", str.to_s)
+    end
+
     def test_nogvl_poll
       # XXX hack to quiet down CI errors on EINTR from r64353
       # [ruby-core:88360] [Misc #14937]
@@ -98,7 +152,7 @@ module Fiddle
     end
 
     def test_no_memory_leak
-      prep = 'r = Fiddle::Function.new(Fiddle.dlopen(nil)["rb_obj_tainted"], [Fiddle::TYPE_UINTPTR_T], Fiddle::TYPE_UINTPTR_T); a = "a"'
+      prep = 'r = Fiddle::Function.new(Fiddle.dlopen(nil)["rb_obj_frozen_p"], [Fiddle::TYPE_UINTPTR_T], Fiddle::TYPE_UINTPTR_T); a = "a"'
       code = 'begin r.call(a); rescue TypeError; end'
       assert_no_memory_leak(%w[-W0 -rfiddle], "#{prep}\n1000.times{#{code}}", "10_000.times {#{code}}", limit: 1.2)
     end

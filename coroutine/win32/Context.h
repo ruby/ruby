@@ -1,13 +1,18 @@
+#ifndef COROUTINE_WIN32_CONTEXT_H
+#define COROUTINE_WIN32_CONTEXT_H 1
+
 /*
  *  This file is part of the "Coroutine" project and released under the MIT License.
  *
  *  Created by Samuel Williams on 10/5/2018.
- *  Copyright, 2018, by Samuel Williams. All rights reserved.
+ *  Copyright, 2018, by Samuel Williams.
 */
 
 #pragma once
 
 #include <assert.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <string.h>
 
 #define COROUTINE __declspec(noreturn) void __fastcall
@@ -42,7 +47,7 @@ static inline void coroutine_initialize(
     *--context->stack_pointer = (void*)start;
 
     /* Windows Thread Information Block */
-    *--context->stack_pointer = 0; /* fs:[0] */
+    *--context->stack_pointer = (void*)0xFFFFFFFF; /* fs:[0] */
     *--context->stack_pointer = (void*)top; /* fs:[4] */
     *--context->stack_pointer = (void*)stack;  /* fs:[8] */
 
@@ -55,3 +60,5 @@ struct coroutine_context * __fastcall coroutine_transfer(struct coroutine_contex
 static inline void coroutine_destroy(struct coroutine_context * context)
 {
 }
+
+#endif /* COROUTINE_WIN32_CONTEXT_H */

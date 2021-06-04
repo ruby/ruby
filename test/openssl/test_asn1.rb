@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require_relative 'utils'
 
 if defined?(OpenSSL)
@@ -14,7 +14,7 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
       ["keyUsage","keyCertSign, cRLSign",true],
       ["subjectKeyIdentifier","hash",false],
     ]
-    dgst = OpenSSL::Digest::SHA1.new
+    dgst = OpenSSL::Digest.new('SHA1')
     cert = OpenSSL::TestUtils.issue_cert(
       subj, key, s, exts, nil, nil, digest: dgst, not_before: now, not_after: now+3600)
 
@@ -167,7 +167,7 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
     assert_equal(OpenSSL::ASN1::OctetString, ext.value[2].class)
     extv = OpenSSL::ASN1.decode(ext.value[2].value)
     assert_equal(OpenSSL::ASN1::BitString, extv.class)
-    str = "\000"; str[0] = 0b00000110.chr
+    str = +"\000"; str[0] = 0b00000110.chr
     assert_equal(str, extv.value)
 
     ext = extensions.value[0].value[2]  # subjetKeyIdentifier
@@ -178,7 +178,7 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
     assert_equal(OpenSSL::ASN1::OctetString, ext.value[1].class)
     extv = OpenSSL::ASN1.decode(ext.value[1].value)
     assert_equal(OpenSSL::ASN1::OctetString, extv.class)
-    sha1 = OpenSSL::Digest::SHA1.new
+    sha1 = OpenSSL::Digest.new('SHA1')
     sha1.update(pkey.value[1].value)
     assert_equal(sha1.digest, extv.value)
 
@@ -189,7 +189,7 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
     assert_equal(OpenSSL::ASN1::Null, pkey.value[0].value[1].class)
 
     assert_equal(OpenSSL::ASN1::BitString, sig_val.class)
-    cululated_sig = key.sign(OpenSSL::Digest::SHA1.new, tbs_cert.to_der)
+    cululated_sig = key.sign(OpenSSL::Digest.new('SHA1'), tbs_cert.to_der)
     assert_equal(cululated_sig, sig_val.value)
   end
 
@@ -332,6 +332,32 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
       pend "OBJ_obj2txt() not working (LibreSSL?)" if $!.message =~ /OBJ_obj2txt/
       raise
     end
+
+    aki = [
+      OpenSSL::ASN1::ObjectId.new("authorityKeyIdentifier"),
+      OpenSSL::ASN1::ObjectId.new("X509v3 Authority Key Identifier"),
+      OpenSSL::ASN1::ObjectId.new("2.5.29.35")
+    ]
+
+    ski = [
+      OpenSSL::ASN1::ObjectId.new("subjectKeyIdentifier"),
+      OpenSSL::ASN1::ObjectId.new("X509v3 Subject Key Identifier"),
+      OpenSSL::ASN1::ObjectId.new("2.5.29.14")
+    ]
+
+    aki.each do |a|
+      aki.each do |b|
+        assert a == b
+      end
+
+      ski.each do |b|
+        refute a == b
+      end
+    end
+
+    assert_raise(TypeError) {
+      OpenSSL::ASN1::ObjectId.new("authorityKeyIdentifier") == nil
+    }
   end
 
   def test_sequence
@@ -634,6 +660,11 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
 
     assert_equal data, seq.entries
   end
+
+  # Very time consuming test.
+  # def test_gc_stress
+  #   assert_ruby_status(['--disable-gems', '-eGC.stress=true', '-erequire "openssl.so"'])
+  # end
 
   private
 

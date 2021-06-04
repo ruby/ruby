@@ -6,14 +6,14 @@ describe :kernel_system, shared: true do
     -> { @object.system("echo a") }.should output_to_fd("a\n")
 
     $?.should be_an_instance_of Process::Status
-    $?.success?.should == true
+    $?.should.success?
   end
 
   it "returns true when the command exits with a zero exit status" do
     @object.system(ruby_cmd('exit 0')).should == true
 
     $?.should be_an_instance_of Process::Status
-    $?.success?.should == true
+    $?.should.success?
     $?.exitstatus.should == 0
   end
 
@@ -21,7 +21,7 @@ describe :kernel_system, shared: true do
     @object.system(ruby_cmd('exit 1')).should == false
 
     $?.should be_an_instance_of Process::Status
-    $?.success?.should == false
+    $?.should_not.success?
     $?.exitstatus.should == 1
   end
 
@@ -40,7 +40,7 @@ describe :kernel_system, shared: true do
 
     $?.should be_an_instance_of Process::Status
     $?.pid.should be_kind_of(Integer)
-    $?.exitstatus.should == 127
+    $?.should_not.success?
   end
 
   it "does not write to stderr when command execution fails" do

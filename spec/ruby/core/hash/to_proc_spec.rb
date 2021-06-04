@@ -19,8 +19,20 @@ describe "Hash#to_proc" do
       @proc = @hash.to_proc
     end
 
-    it "is not a lambda" do
-      @proc.lambda?.should == false
+    ruby_version_is ""..."3.0" do
+      it "is not a lambda" do
+        @proc.should_not.lambda?
+      end
+    end
+
+    ruby_version_is "3.0" do
+      it "is a lambda" do
+        @proc.should.lambda?
+      end
+
+      it "has an arity of 1" do
+        @proc.arity.should == 1
+      end
     end
 
     it "raises ArgumentError if not passed exactly one argument" do

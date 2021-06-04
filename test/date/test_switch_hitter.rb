@@ -568,35 +568,6 @@ class TestSH < Test::Unit::TestCase
     assert_equal(Date::GREGORIAN, d.start)
   end
 
-  def test_taint
-    h = Date._strptime('15:43+09:00', '%R%z')
-    assert_equal(false, h[:zone].tainted?)
-    h = Date._strptime('15:43+09:00'.dup.taint, '%R%z')
-    assert_equal(true, h[:zone].tainted?)
-
-    h = Date._strptime('1;1/0', '%d')
-    assert_equal(false, h[:leftover].tainted?)
-    h = Date._strptime('1;1/0'.dup.taint, '%d')
-    assert_equal(true, h[:leftover].tainted?)
-
-    h = Date._parse('15:43+09:00')
-    assert_equal(false, h[:zone].tainted?)
-    h = Date._parse('15:43+09:00'.dup.taint)
-    assert_equal(true, h[:zone].tainted?)
-
-    s = Date.today.strftime('new 105')
-    assert_equal(false, s.tainted?)
-    s = Date.today.strftime('new 105'.dup.taint)
-    assert_equal(true, s.tainted?)
-    s = Date.today.strftime("new \000 105".dup.taint)
-    assert_equal(true, s.tainted?)
-
-    s = DateTime.now.strftime('super $record')
-    assert_equal(false, s.tainted?)
-    s = DateTime.now.strftime('super $record'.dup.taint)
-    assert_equal(true, s.tainted?)
-  end
-
   def test_enc
     Date::MONTHNAMES.each do |s|
       assert_equal(Encoding::US_ASCII, s.encoding) if s

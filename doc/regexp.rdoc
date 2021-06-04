@@ -68,8 +68,9 @@ a backslash literally, backslash-escape it: <tt>\\\\</tt>.
     /1 \+ 2 = 3\?/.match('Does 1 + 2 = 3?') #=> #<MatchData "1 + 2 = 3?">
     /a\\\\b/.match('a\\\\b')                    #=> #<MatchData "a\\b">
 
-Patterns behave like double-quoted strings so can contain the same
-backslash escapes.
+Patterns behave like double-quoted strings and can contain the same
+backslash escapes (the meaning of <tt>\s</tt> is different, however,
+see below[#label-Character+Classes]).
 
     /\s\u{6771 4eac 90fd}/.match("Go to 東京都")
         #=> #<MatchData " 東京都">
@@ -131,6 +132,9 @@ The following metacharacters also behave like character classes:
 * <tt>/\H/</tt> - A non-hexdigit character (<tt>[^0-9a-fA-F]</tt>)
 * <tt>/\s/</tt> - A whitespace character: <tt>/[ \t\r\n\f\v]/</tt>
 * <tt>/\S/</tt> - A non-whitespace character: <tt>/[^ \t\r\n\f\v]/</tt>
+* <tt>/\R/</tt> - A linebreak: <tt>\n</tt>, <tt>\v</tt>, <tt>\f</tt>, <tt>\r</tt>
+  <tt>\u0085</tt> (NEXT LINE), <tt>\u2028</tt> (LINE SEPARATOR), <tt>\u2029</tt> (PARAGRAPH SEPARATOR)
+  or <tt>\r\n</tt>.
 
 POSIX <i>bracket expressions</i> are also similar to character classes.
 They provide a portable alternative to the above, with the added benefit
@@ -186,11 +190,16 @@ At least one uppercase character ('H'), at least one lowercase character
 
     "Hello".match(/[[:upper:]]+[[:lower:]]+l{2}o/) #=> #<MatchData "Hello">
 
+=== Greedy match
+
 Repetition is <i>greedy</i> by default: as many occurrences as possible
 are matched while still allowing the overall match to succeed. By
 contrast, <i>lazy</i> matching makes the minimal amount of matches
-necessary for overall success. A greedy metacharacter can be made lazy by
-following it with <tt>?</tt>.
+necessary for overall success. Most greedy metacharacters can be made lazy
+by following them with <tt>?</tt>. For the <tt>{n}</tt> pattern, because
+it specifies an exact number of characters to match and not a variable
+number of characters, the <tt>?</tt> metacharacter instead makes the
+repeated pattern optional.
 
 Both patterns below match the string. The first uses a greedy quantifier so
 '.+' matches '<a><b>'; the second uses a lazy quantifier so '.+?' matches
@@ -199,10 +208,16 @@ Both patterns below match the string. The first uses a greedy quantifier so
     /<.+>/.match("<a><b>")  #=> #<MatchData "<a><b>">
     /<.+?>/.match("<a><b>") #=> #<MatchData "<a>">
 
+=== Possessive match
+
 A quantifier followed by <tt>+</tt> matches <i>possessively</i>: once it
 has matched it does not backtrack. They behave like greedy quantifiers,
 but having matched they refuse to "give up" their match even if this
 jeopardises the overall match.
+
+    /<.*><.+>/.match("<a><b>") #=> #<MatchData "<a><b>">
+    /<.*+><.+>/.match("<a><b>") #=> nil
+    /<.*><.++>/.match("<a><b>") #=> nil
 
 == Capturing
 
@@ -222,6 +237,8 @@ Regexp#match returns a MatchData object which makes the captured text
 available with its #[] method:
 
     /[csh](..) [csh]\1 in/.match("The cat sat in the hat")[1] #=> 'at'
+
+=== Named captures
 
 Capture groups can be referred to by name when defined with the
 <tt>(?<</tt><i>name</i><tt>>)</tt> or <tt>(?'</tt><i>name</i><tt>')</tt>

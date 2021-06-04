@@ -23,4 +23,17 @@ describe :string_length, shared: true do
 
     str.force_encoding('BINARY').send(@method).should == 12
   end
+
+  it "returns the correct length after force_encoding(BINARY)" do
+    utf8 = "あ"
+    ascii = "a"
+    concat = utf8 + ascii
+
+    concat.encoding.should == Encoding::UTF_8
+    concat.bytesize.should == 4
+
+    concat.size.should == 2
+    concat.force_encoding(Encoding::ASCII_8BIT)
+    concat.size.should == 4
+  end
 end

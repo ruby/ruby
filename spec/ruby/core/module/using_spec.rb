@@ -243,6 +243,96 @@ describe "Module#using" do
       mod.call_foo(c).should == "foo from refinement"
     end
 
+    it "is active for module defined via Module.new {}" do
+      refinement = Module.new do
+        refine Integer do
+          def foo; "foo from refinement"; end
+        end
+      end
+
+      result = nil
+
+      Module.new do
+        using refinement
+
+        Module.new do
+          result = 1.foo
+        end
+      end
+
+      result.should == "foo from refinement"
+    end
+
+    it "is active for class defined via Class.new {}" do
+      refinement = Module.new do
+        refine Integer do
+          def foo; "foo from refinement"; end
+        end
+      end
+
+      result = nil
+
+      Module.new do
+        using refinement
+
+        Class.new do
+          result = 1.foo
+        end
+      end
+
+      result.should == "foo from refinement"
+    end
+
+    it "is active for block called via instance_exec" do
+      refinement = Module.new do
+        refine Integer do
+          def foo; "foo from refinement"; end
+        end
+      end
+
+      c = Class.new do
+        using refinement
+
+        def abc
+          block = -> {
+            1.foo
+          }
+
+          self.instance_exec(&block)
+        end
+      end
+
+      c.new.abc.should == "foo from refinement"
+    end
+
+    it "is active for block called via instance_eval" do
+      refinement = Module.new do
+        refine String do
+          def foo; "foo from refinement"; end
+        end
+      end
+
+      c = Class.new do
+        using refinement
+
+        def initialize
+          @a = "1703"
+
+          @a.instance_eval do
+            def abc
+              "#{self}: #{self.foo}"
+            end
+          end
+        end
+
+        def abc
+          @a.abc
+        end
+      end
+
+      c.new.abc.should == "1703: foo from refinement"
+    end
+
     it "is not active if `using` call is not evaluated" do
       result = nil
 

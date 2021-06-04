@@ -1,20 +1,17 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/config_file'
 
 class TestGemConfigFile < Gem::TestCase
-
   def setup
     super
+
+    credential_setup
 
     @temp_conf = File.join @tempdir, '.gemrc'
 
     @cfg_args = %W[--config-file #{@temp_conf}]
 
-    @orig_SYSTEM_WIDE_CONFIG_FILE = Gem::ConfigFile::SYSTEM_WIDE_CONFIG_FILE
-    Gem::ConfigFile.send :remove_const, :SYSTEM_WIDE_CONFIG_FILE
-    Gem::ConfigFile.send :const_set, :SYSTEM_WIDE_CONFIG_FILE,
-                         File.join(@tempdir, 'system-gemrc')
     Gem::ConfigFile::OPERATING_SYSTEM_DEFAULTS.clear
     Gem::ConfigFile::PLATFORM_DEFAULTS.clear
 
@@ -27,11 +24,10 @@ class TestGemConfigFile < Gem::TestCase
   def teardown
     Gem::ConfigFile::OPERATING_SYSTEM_DEFAULTS.clear
     Gem::ConfigFile::PLATFORM_DEFAULTS.clear
-    Gem::ConfigFile.send :remove_const, :SYSTEM_WIDE_CONFIG_FILE
-    Gem::ConfigFile.send :const_set, :SYSTEM_WIDE_CONFIG_FILE,
-                         @orig_SYSTEM_WIDE_CONFIG_FILE
 
     ENV['GEMRC'] = @env_gemrc
+
+    credential_teardown
 
     super
   end
@@ -45,6 +41,7 @@ class TestGemConfigFile < Gem::TestCase
     assert_equal true, @cfg.verbose
     assert_equal [@gem_repo], Gem.sources
     assert_equal 365, @cfg.cert_expiration_length_days
+    assert_equal false, @cfg.ipv4_fallback_enabled
 
     File.open @temp_conf, 'w' do |fp|
       fp.puts ":backtrace: true"
@@ -60,6 +57,7 @@ class TestGemConfigFile < Gem::TestCase
       fp.puts ":ssl_verify_mode: 0"
       fp.puts ":ssl_ca_cert: /etc/ssl/certs"
       fp.puts ":cert_expiration_length_days: 28"
+      fp.puts ":ipv4_fallback_enabled: true"
     end
 
     util_config_file
@@ -74,6 +72,14 @@ class TestGemConfigFile < Gem::TestCase
     assert_equal 0, @cfg.ssl_verify_mode
     assert_equal '/etc/ssl/certs', @cfg.ssl_ca_cert
     assert_equal 28, @cfg.cert_expiration_length_days
+    assert_equal true, @cfg.ipv4_fallback_enabled
+  end
+
+  def test_initialize_ipv4_fallback_enabled_env
+    ENV['IPV4_FALLBACK_ENABLED'] = 'true'
+    util_config_file %W[--config-file #{@temp_conf}]
+
+    assert_equal true, @cfg.ipv4_fallback_enabled
   end
 
   def test_initialize_handle_arguments_config_file
@@ -177,7 +183,7 @@ class TestGemConfigFile < Gem::TestCase
     assert_nil @cfg.instance_variable_get :@api_keys
 
     temp_cred = File.join Gem.user_home, '.gem', 'credentials'
-    FileUtils.mkdir File.dirname(temp_cred)
+    FileUtils.mkdir_p File.dirname(temp_cred)
     File.open temp_cred, 'w', 0600 do |fp|
       fp.puts ':rubygems_api_key: 701229f217cdf23b1344c7b4b54ca97'
     end
@@ -189,14 +195,14 @@ class TestGemConfigFile < Gem::TestCase
   end
 
   def test_check_credentials_permissions
-    skip 'chmod not supported' if win_platform?
+    pend 'chmod not supported' if win_platform?
 
     @cfg.rubygems_api_key = 'x'
 
     File.chmod 0644, @cfg.credentials_path
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @cfg.load_api_keys
       end
     end
@@ -247,7 +253,7 @@ if you believe they were disclosed to a third party.
 
     args = %w[--debug]
 
-    _, err = capture_io do
+    _, err = capture_output do
       @cfg.handle_arguments args
     end
 
@@ -303,7 +309,7 @@ if you believe they were disclosed to a third party.
 
   def test_load_api_keys
     temp_cred = File.join Gem.user_home, '.gem', 'credentials'
-    FileUtils.mkdir File.dirname(temp_cred)
+    FileUtils.mkdir_p File.dirname(temp_cred)
     File.open temp_cred, 'w', 0600 do |fp|
       fp.puts ":rubygems_api_key: 701229f217cdf23b1344c7b4b54ca97"
       fp.puts ":other: a5fdbb6ba150cbb83aad2bb2fede64c"
@@ -316,13 +322,13 @@ if you believe they were disclosed to a third party.
   end
 
   def test_load_api_keys_bad_permission
-    skip 'chmod not supported' if win_platform?
+    pend 'chmod not supported' if win_platform?
 
     @cfg.rubygems_api_key = 'x'
 
     File.chmod 0644, @cfg.credentials_path
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       @cfg.load_api_keys
     end
   end
@@ -348,7 +354,7 @@ if you believe they were disclosed to a third party.
       :rubygems_api_key => 'x',
     }
 
-    assert_equal expected, YAML.load_file(@cfg.credentials_path)
+    assert_equal expected, load_yaml_file(@cfg.credentials_path)
 
     unless win_platform?
       stat = File.stat @cfg.credentials_path
@@ -358,13 +364,13 @@ if you believe they were disclosed to a third party.
   end
 
   def test_rubygems_api_key_equals_bad_permission
-    skip 'chmod not supported' if win_platform?
+    pend 'chmod not supported' if win_platform?
 
     @cfg.rubygems_api_key = 'x'
 
     File.chmod 0644, @cfg.credentials_path
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       @cfg.rubygems_api_key = 'y'
     end
 
@@ -372,7 +378,7 @@ if you believe they were disclosed to a third party.
       :rubygems_api_key => 'x',
     }
 
-    assert_equal expected, YAML.load_file(@cfg.credentials_path)
+    assert_equal expected, load_yaml_file(@cfg.credentials_path)
 
     stat = File.stat @cfg.credentials_path
 
@@ -392,7 +398,7 @@ if you believe they were disclosed to a third party.
     util_config_file
 
     # These should not be written out to the config file.
-    assert_equal false, @cfg.backtrace,     'backtrace'
+    assert_equal false, @cfg.backtrace, 'backtrace'
     assert_equal Gem::ConfigFile::DEFAULT_BULK_THRESHOLD, @cfg.bulk_threshold,
                  'bulk_threshold'
     assert_equal true, @cfg.update_sources, 'update_sources'
@@ -495,5 +501,4 @@ if you believe they were disclosed to a third party.
     util_config_file
     assert_equal(true, @cfg.disable_default_gem_server)
   end
-
 end

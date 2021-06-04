@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 module Gem
   class List
-
     include Enumerable
     attr_accessor :value, :tail
 
@@ -34,6 +33,5 @@ module Gem
       return List.new(value) unless list
       List.new value, list
     end
-
   end
 end

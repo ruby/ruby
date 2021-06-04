@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "tsort"
-require "set"
 
 module Bundler
   class SpecSet
@@ -13,21 +12,24 @@ module Bundler
     end
 
     def for(dependencies, skip = [], check = false, match_current_platform = false, raise_on_missing = true)
-      handled = Set.new
+      handled = []
       deps = dependencies.dup
       specs = []
       skip += ["bundler"]
 
       loop do
         break unless dep = deps.shift
-        next if !handled.add?(dep) || skip.include?(dep.name)
+        next if handled.include?(dep) || skip.include?(dep.name)
 
-        if spec = spec_for_dependency(dep, match_current_platform)
-          specs << spec
+        handled << dep
 
-          spec.dependencies.each do |d|
+        specs_for_dep = spec_for_dependency(dep, match_current_platform)
+        if specs_for_dep.any?
+          specs += specs_for_dep
+
+          specs_for_dep.first.dependencies.each do |d|
             next if d.type == :development
-            d = DepProxy.new(d, dep.__platform) unless match_current_platform
+            d = DepProxy.get_proxy(d, dep.__platform) unless match_current_platform
             deps << d
           end
         elsif check
@@ -76,10 +78,17 @@ module Bundler
 
     def materialize(deps, missing_specs = nil)
       materialized = self.for(deps, [], false, true, !missing_specs).to_a
-      deps = materialized.map(&:name).uniq
+
+      materialized.group_by(&:source).each do |source, specs|
+        next unless specs.any?{|s| s.is_a?(LazySpecification) }
+
+        source.local!
+        names = -> { specs.map(&:name).uniq }
+        source.double_check_for(names)
+      end
+
       materialized.map! do |s|
         next s unless s.is_a?(LazySpecification)
-        s.source.dependency_names = deps if s.source.respond_to?(:dependency_names=)
         spec = s.__materialize__
         unless spec
           unless missing_specs
@@ -96,10 +105,17 @@ module Bundler
     # This is in contrast to how for does platform filtering (and specifically different from how `materialize` calls `for` only for the current platform)
     # @return [Array<Gem::Specification>]
     def materialized_for_all_platforms
-      names = @specs.map(&:name).uniq
+      @specs.group_by(&:source).each do |source, specs|
+        next unless specs.any?{|s| s.is_a?(LazySpecification) }
+
+        source.local!
+        source.remote!
+        names = -> { specs.map(&:name).uniq }
+        source.double_check_for(names)
+      end
+
       @specs.map do |s|
         next s unless s.is_a?(LazySpecification)
-        s.source.dependency_names = names if s.source.respond_to?(:dependency_names=)
         spec = s.__materialize__
         raise GemNotFound, "Could not find #{s.full_name} in any of the sources" unless spec
         spec
@@ -147,7 +163,7 @@ module Bundler
       sorted.each(&b)
     end
 
-  private
+    private
 
     def sorted
       rake = @specs.find {|s| s.name == "rake" }
@@ -183,11 +199,7 @@ module Bundler
     def spec_for_dependency(dep, match_current_platform)
       specs_for_platforms = lookup[dep.name]
       if match_current_platform
-        Bundler.rubygems.platforms.reverse_each do |pl|
-          match = GemHelpers.select_best_platform_match(specs_for_platforms, pl)
-          return match if match
-        end
-        nil
+        GemHelpers.select_best_platform_match(specs_for_platforms, Bundler.local_platform)
       else
         GemHelpers.select_best_platform_match(specs_for_platforms, dep.__platform)
       end

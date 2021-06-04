@@ -1,6 +1,0 @@
-prelude: "@a = 1\n"
-benchmark:
-  vm1_ivar: |
-    j = @a
-    k = @a
-loop_count: 30000000

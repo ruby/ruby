@@ -20,15 +20,8 @@ describe "Module#remove_method" do
     @module = Module.new { def method_to_remove; end }
   end
 
-  ruby_version_is ''...'2.5' do
-    it "is a private method" do
-      Module.should have_private_instance_method(:remove_method, false)
-    end
-  end
-  ruby_version_is '2.5' do
-    it "is a public method" do
-      Module.should have_public_instance_method(:remove_method, false)
-    end
+  it "is a public method" do
+    Module.should have_public_instance_method(:remove_method, false)
   end
 
   it "removes the method from a class" do
@@ -48,6 +41,28 @@ describe "Module#remove_method" do
     x = child.new
     x.respond_to?(:method_to_remove).should == true
     x.method_to_remove.should == 1
+  end
+
+  it "updates the method implementation" do
+    m_module = Module.new do
+      def foo
+        'm'
+      end
+    end
+
+    a_class = Class.new do
+      include m_module
+
+      def foo
+        'a'
+      end
+    end
+
+    a = a_class.new
+    foo = -> { a.foo }
+    foo.call.should == 'a'
+    a_class.remove_method(:foo)
+    foo.call.should == 'm'
   end
 
   it "removes multiple methods with 1 call" do
@@ -97,12 +112,12 @@ describe "Module#remove_method" do
       @frozen = @module.dup.freeze
     end
 
-    it "raises a #{frozen_error_class} when passed a name" do
-      -> { @frozen.send :remove_method, :method_to_remove }.should raise_error(frozen_error_class)
+    it "raises a FrozenError when passed a name" do
+      -> { @frozen.send :remove_method, :method_to_remove }.should raise_error(FrozenError)
     end
 
-    it "raises a #{frozen_error_class} when passed a missing name" do
-      -> { @frozen.send :remove_method, :not_exist }.should raise_error(frozen_error_class)
+    it "raises a FrozenError when passed a missing name" do
+      -> { @frozen.send :remove_method, :not_exist }.should raise_error(FrozenError)
     end
 
     it "raises a TypeError when passed a not name" do

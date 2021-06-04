@@ -252,7 +252,7 @@ module NetFTPSpecs
         end
       end
 
-      #@datasocket.close()
+      @datasocket.close()
       self.response("200 OK, Data received. (STOR #{file})")
     end
 

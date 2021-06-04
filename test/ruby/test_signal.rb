@@ -137,11 +137,6 @@ class TestSignal < Test::Unit::TestCase
 
       assert_raise(ArgumentError) { Signal.trap }
 
-      assert_raise(SecurityError) do
-        s = proc {}.taint
-        Signal.trap(:INT, s)
-      end
-
       # FIXME!
       Signal.trap(:INT, nil)
       Signal.trap(:INT, "")

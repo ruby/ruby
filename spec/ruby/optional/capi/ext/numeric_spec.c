@@ -54,11 +54,15 @@ static VALUE numeric_spec_NUM2INT(VALUE self, VALUE num) {
 }
 
 static VALUE numeric_spec_INT2NUM(VALUE self, VALUE num) {
-  return INT2NUM(NUM2LONG(num));
+  return INT2NUM(NUM2INT(num));
 }
 
 static VALUE numeric_spec_NUM2LONG(VALUE self, VALUE num) {
   return LONG2NUM(NUM2LONG(num));
+}
+
+static VALUE numeric_spec_NUM2SHORT(VALUE self, VALUE num) {
+  return LONG2NUM(NUM2SHORT(num));
 }
 
 static VALUE numeric_spec_NUM2UINT(VALUE self, VALUE num) {
@@ -109,6 +113,7 @@ void Init_numeric_spec(void) {
   rb_define_method(cls, "NUM2DBL", numeric_spec_NUM2DBL, 1);
   rb_define_method(cls, "NUM2INT", numeric_spec_NUM2INT, 1);
   rb_define_method(cls, "NUM2LONG", numeric_spec_NUM2LONG, 1);
+  rb_define_method(cls, "NUM2SHORT", numeric_spec_NUM2SHORT, 1);
   rb_define_method(cls, "INT2NUM", numeric_spec_INT2NUM, 1);
   rb_define_method(cls, "NUM2UINT", numeric_spec_NUM2UINT, 1);
   rb_define_method(cls, "NUM2ULONG", numeric_spec_NUM2ULONG, 1);

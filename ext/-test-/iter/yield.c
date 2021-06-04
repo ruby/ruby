@@ -4,7 +4,7 @@ static VALUE
 yield_block(int argc, VALUE *argv, VALUE self)
 {
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
-    return rb_block_call(self, rb_to_id(argv[0]), argc-1, argv+1, rb_yield_block, 0);
+    return rb_block_call_kw(self, rb_to_id(argv[0]), argc-1, argv+1, rb_yield_block, 0, RB_PASS_CALLED_KEYWORDS);
 }
 
 void

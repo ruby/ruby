@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require_relative 'utils'
 
 if defined?(OpenSSL)
@@ -85,6 +85,19 @@ class OpenSSL::TestX509Extension < OpenSSL::TestCase
     assert_equal false, ext1 == 12345
     assert_equal true, ext1 == ext2
     assert_equal false, ext1 == ext3
+  end
+
+  def test_marshal
+    ef = OpenSSL::X509::ExtensionFactory.new
+    ext = ef.create_extension("basicConstraints", "critical, CA:TRUE, pathlen:2")
+    deserialized = Marshal.load(Marshal.dump(ext))
+
+    assert_equal ext.to_der, deserialized.to_der
+  end
+
+  def test_value_der
+    ext = OpenSSL::X509::Extension.new(@basic_constraints.to_der)
+    assert_equal @basic_constraints_value.to_der, ext.value_der
   end
 end
 

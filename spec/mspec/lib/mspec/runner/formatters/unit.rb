@@ -1,4 +1,3 @@
-require 'mspec/expectations/expectations'
 require 'mspec/runner/formatters/dotted'
 
 class UnitdiffFormatter < DottedFormatter

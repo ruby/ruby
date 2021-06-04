@@ -1,4 +1,4 @@
-require_relative '../../spec_helper'
+require_relative 'spec_helper'
 require_relative '../enumerable/shared/enumeratorized'
 
 describe "ENV.each_value" do
@@ -10,7 +10,7 @@ describe "ENV.each_value" do
       ENV.clear
       ENV["1"] = "3"
       ENV["2"] = "4"
-      ENV.each_value { |v| e << v }
+      ENV.each_value { |v| e << v }.should equal(ENV)
       e.should include("3")
       e.should include("4")
     ensure
@@ -19,12 +19,14 @@ describe "ENV.each_value" do
   end
 
   it "returns an Enumerator if called without a block" do
-    ENV.each_value.should be_an_instance_of(Enumerator)
+    enum = ENV.each_value
+    enum.should be_an_instance_of(Enumerator)
+    enum.to_a.should == ENV.values
   end
 
   it "uses the locale encoding" do
     ENV.each_value do |value|
-      value.encoding.should == Encoding.find('locale')
+      value.should.be_locale_env
     end
   end
 

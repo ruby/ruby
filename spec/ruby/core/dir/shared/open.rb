@@ -52,7 +52,7 @@ describe :dir_open, shared: true do
     options = mock("dir_open")
     options.should_receive(:to_hash).and_return({ encoding: Encoding::UTF_8 })
 
-    dir = Dir.send(@method, DirSpecs.mock_dir, options) {|d| d }
+    dir = Dir.send(@method, DirSpecs.mock_dir, **options) {|d| d }
     dir.should be_kind_of(Dir)
   end
 
@@ -66,7 +66,7 @@ describe :dir_open, shared: true do
       Dir.send(@method, DirSpecs.mock_dir) do |dir|
         io = IO.for_fd(dir.fileno)
         io.autoclose = false
-        io.close_on_exec?.should == true
+        io.should.close_on_exec?
       end
     end
   end

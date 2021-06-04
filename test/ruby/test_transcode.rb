@@ -469,6 +469,25 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u00A0", "\xFF", 'IBM437') # non-breaking space
   end
 
+  def test_IBM720
+    assert_raise(Encoding::UndefinedConversionError) { "\x80".encode("utf-8", 'IBM720') }
+    assert_raise(Encoding::UndefinedConversionError) { "\x8F".encode("utf-8", 'IBM720') }
+    assert_raise(Encoding::UndefinedConversionError) { "\x90".encode("utf-8", 'IBM720') }
+    check_both_ways("\u0627", "\x9F", 'IBM720') # ا
+    check_both_ways("\u0628", "\xA0", 'IBM720') # ب
+    check_both_ways("\u00BB", "\xAF", 'IBM720') # »
+    check_both_ways("\u2591", "\xB0", 'IBM720') # ░
+    check_both_ways("\u2510", "\xBF", 'IBM720') # ┐
+    check_both_ways("\u2514", "\xC0", 'IBM720') # └
+    check_both_ways("\u2567", "\xCF", 'IBM720') # ╧
+    check_both_ways("\u2568", "\xD0", 'IBM720') # ╨
+    check_both_ways("\u2580", "\xDF", 'IBM720') # ▀
+    check_both_ways("\u0636", "\xE0", 'IBM720') # ض
+    check_both_ways("\u064A", "\xEF", 'IBM720') # ي
+    check_both_ways("\u2261", "\xF0", 'IBM720') # ≡
+    check_both_ways("\u00A0", "\xFF", 'IBM720') # non-breaking space
+  end
+
   def test_IBM775
     check_both_ways("\u0106", "\x80", 'IBM775') # Ć
     check_both_ways("\u00C5", "\x8F", 'IBM775') # Å
@@ -2183,6 +2202,14 @@ class TestTranscode < Test::Unit::TestCase
     assert_equal("U+3042", "\u{3042}".encode("US-ASCII", fallback: fallback.method(:escape)))
   end
 
+  def test_fallback_aref
+    fallback = Object.new
+    def fallback.[](x)
+      "U+%.4X" % x.unpack("U")
+    end
+    assert_equal("U+3042", "\u{3042}".encode("US-ASCII", fallback: fallback))
+  end
+
   bug8940 = '[ruby-core:57318] [Bug #8940]'
   %w[UTF-32 UTF-16].each do |enc|
     define_method("test_pseudo_encoding_inspect(#{enc})") do
@@ -2242,12 +2269,19 @@ class TestTranscode < Test::Unit::TestCase
                  "#{bug} coderange should not have side effects")
   end
 
-  def test_universal_newline
+  def test_newline_options
     bug11324 = '[ruby-core:69841] [Bug #11324]'
     usascii = Encoding::US_ASCII
     s = "A\nB\r\nC".force_encoding(usascii)
     assert_equal("A\nB\nC", s.encode(usascii, universal_newline: true), bug11324)
     assert_equal("A\nB\nC", s.encode(usascii, universal_newline: true, undef: :replace), bug11324)
     assert_equal("A\nB\nC", s.encode(usascii, universal_newline: true, undef: :replace, replace: ''), bug11324)
+    assert_equal("A\nB\nC", s.encode(usascii, newline: :universal))
+    assert_equal("A\nB\nC", s.encode(usascii, newline: :universal, undef: :replace))
+    assert_equal("A\nB\nC", s.encode(usascii, newline: :universal, undef: :replace, replace: ''))
+    assert_equal("A\rB\r\rC", s.encode(usascii, cr_newline: true))
+    assert_equal("A\rB\r\rC", s.encode(usascii, newline: :cr))
+    assert_equal("A\r\nB\r\r\nC", s.encode(usascii, crlf_newline: true))
+    assert_equal("A\r\nB\r\r\nC", s.encode(usascii, newline: :crlf))
   end
 end

@@ -1,51 +1,20 @@
-/**********************************************************************
-
-  util.h -
-
-  $Author$
-  created at: Thu Mar  9 11:55:53 JST 1995
-
-  Copyright (C) 1993-2007 Yukihiro Matsumoto
-
-**********************************************************************/
-
-#ifndef RUBY_UTIL_H
+#ifndef RUBY_UTIL_H                                  /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_UTIL_H 1
-
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
-
+/**
+ * @file
+ * @author     $Author$
+ * @date       Thu Mar  9 11:55:53 JST 1995
+ * @copyright  Copyright (C) 1993-2007 Yukihiro Matsumoto
+ * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
+ *             Permission  is hereby  granted,  to  either redistribute  and/or
+ *             modify this file, provided that  the conditions mentioned in the
+ *             file COPYING are met.  Consult the file for details.
+ */
+#include "ruby/internal/config.h"
+#include "ruby/internal/dllexport.h"
 #include "ruby/defines.h"
-#ifdef RUBY_EXTCONF_H
-#include RUBY_EXTCONF_H
-#endif
 
-#ifndef _
-#ifdef __cplusplus
-# ifndef  HAVE_PROTOTYPES
-#  define HAVE_PROTOTYPES 1
-# endif
-# ifndef  HAVE_STDARG_PROTOTYPES
-#  define HAVE_STDARG_PROTOTYPES 1
-# endif
-#endif
-#ifdef HAVE_PROTOTYPES
-# define _(args) args
-#else
-# define _(args) ()
-#endif
-#ifdef HAVE_STDARG_PROTOTYPES
-# define __(args) args
-#else
-# define __(args) ()
-#endif
-#endif
-
-RUBY_SYMBOL_EXPORT_BEGIN
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 #define DECIMAL_SIZE_OF_BITS(n) (((n) * 3010 + 9998) / 9999)
 /* an approximation of ceil(n * log10(2)), up to 65536 at least */
@@ -77,13 +46,6 @@ double ruby_strtod(const char *, char **);
 
 void ruby_each_words(const char *, void (*)(const char*, int, void*), void *);
 
-RUBY_SYMBOL_EXPORT_END
-
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
+RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RUBY_UTIL_H */

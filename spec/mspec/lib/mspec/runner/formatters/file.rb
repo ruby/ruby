@@ -14,6 +14,11 @@ class FileFormatter < DottedFormatter
     MSpec.register   :unload,    self
   end
 
-  alias_method :load, :before
-  alias_method :unload, :after
+  def load(state = nil)
+    before(state)
+  end
+
+  def unload(state = nil)
+    after(state)
+  end
 end

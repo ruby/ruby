@@ -9,7 +9,7 @@ describe "Date#gregorian?" do
   end
 
   it "marks a day after the calendar reform as Julian" do
-    Date.civil(2007, 2, 27).gregorian?.should == true
+    Date.civil(2007, 2, 27).should.gregorian?
     Date.civil(1607, 2, 27, Date.civil(1582, 1, 1).jd).gregorian?.should be_true
   end
 

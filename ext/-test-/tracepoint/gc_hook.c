@@ -4,7 +4,7 @@
 static int invoking; /* TODO: should not be global variable */
 
 static VALUE
-invoke_proc_ensure(void *dmy)
+invoke_proc_ensure(VALUE _)
 {
     invoking = 0;
     return Qnil;
@@ -42,14 +42,12 @@ set_gc_hook(VALUE module, VALUE proc, rb_event_flag_t event, const char *tp_str,
 {
     VALUE tpval;
     ID tp_key = rb_intern(tp_str);
-    ID proc_key = rb_intern(proc_str);
 
     /* disable previous keys */
     if (rb_ivar_defined(module, tp_key) != 0 &&
 	RTEST(tpval = rb_ivar_get(module, tp_key))) {
 	rb_tracepoint_disable(tpval);
 	rb_ivar_set(module, tp_key, Qnil);
-	rb_ivar_set(module, proc_key, Qnil);
     }
 
     if (RTEST(proc)) {
@@ -59,7 +57,6 @@ set_gc_hook(VALUE module, VALUE proc, rb_event_flag_t event, const char *tp_str,
 
 	tpval = rb_tracepoint_new(0, event, gc_start_end_i, (void *)proc);
 	rb_ivar_set(module, tp_key, tpval);
-	rb_ivar_set(module, proc_key, proc); /* GC guard */
 	rb_tracepoint_enable(tpval);
     }
 
@@ -73,8 +70,16 @@ set_after_gc_start(VALUE module, VALUE proc)
 		       "__set_after_gc_start_tpval__", "__set_after_gc_start_proc__");
 }
 
+static VALUE
+start_after_gc_exit(VALUE module, VALUE proc)
+{
+    return set_gc_hook(module, proc, RUBY_INTERNAL_EVENT_GC_EXIT,
+                       "__set_after_gc_exit_tpval__", "__set_after_gc_exit_proc__");
+}
+
 void
 Init_gc_hook(VALUE module)
 {
     rb_define_module_function(module, "after_gc_start_hook=", set_after_gc_start, 1);
+    rb_define_module_function(module, "after_gc_exit_hook=", start_after_gc_exit, 1);
 }

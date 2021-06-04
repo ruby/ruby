@@ -19,28 +19,28 @@
   <p>Here you can browse local documentation from the ruby standard library and
   your installed gems.
 
-<% extra_dirs = installed.select { |_, _, _, type,| type == :extra } %>
-<% unless extra_dirs.empty? %>
+<%- extra_dirs = installed.select { |_, _, _, type,| type == :extra } -%>
+<%- unless extra_dirs.empty? -%>
   <h2>Extra Documentation Directories</h2>
 
   <p>The following additional documentation directories are available:</p>
 
   <ol>
-  <% extra_dirs.each do |name, href, exists, _, path| %>
+  <%- extra_dirs.each do |name, href, exists, _, path| -%>
     <li>
-    <% if exists %>
+    <%- if exists -%>
       <a href="<%= href %>"><%= h name %></a> (<%= h path %>)
-    <% else %>
+    <%- else -%>
       <%= h name %> (<%= h path %>; <i>not available</i>)
-    <% end %>
+    <%- end -%>
     </li>
-  <% end %>
+  <%- end -%>
   </ol>
-<% end %>
+<%- end -%>
 
-<% gems = installed.select { |_, _, _, type,| type == :gem } %>
-<% missing = gems.reject { |_, _, exists,| exists } %>
-<% unless missing.empty? then %>
+<%- gems = installed.select { |_, _, _, type,| type == :gem } -%>
+<%- missing = gems.reject { |_, _, exists,| exists } -%>
+<%- unless missing.empty? then -%>
   <h2>Missing Gem Documentation</h2>
 
   <p>You are missing documentation for some of your installed gems.
@@ -53,11 +53,10 @@
   the following commands.
 
   <ul>
-  <% names = missing.map { |name,| name.sub(/-([^-]*)$/, '') }.uniq %>
-  <% names.each do |name| %>
+  <%- names = missing.map { |name,| name.sub(/-([^-]*)$/, '') }.uniq -%>
+  <%- names.each do |name| -%>
     <li><kbd>gem rdoc <%=h name %></kbd>
-  <% end %>
+  <%- end -%>
   </ul>
-<% end %>
+<%- end -%>
 </main>
-

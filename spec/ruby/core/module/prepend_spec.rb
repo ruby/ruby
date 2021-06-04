@@ -36,6 +36,192 @@ describe "Module#prepend" do
     ScratchPad.recorded.should == [ [ m3, c], [ m2, c ], [ m, c ] ]
   end
 
+  it "updates the method when a module is prepended" do
+    m_module = Module.new do
+      def foo
+        "m"
+      end
+    end
+    a_class = Class.new do
+      def foo
+        'a'
+      end
+    end
+    a = a_class.new
+    foo = -> { a.foo }
+    foo.call.should == 'a'
+    a_class.class_eval do
+      prepend m_module
+    end
+    foo.call.should == 'm'
+  end
+
+  it "updates the method when a prepended module is updated" do
+    m_module = Module.new
+    a_class = Class.new do
+      prepend m_module
+      def foo
+        'a'
+      end
+    end
+    a = a_class.new
+    foo = -> { a.foo }
+    foo.call.should == 'a'
+    m_module.module_eval do
+      def foo
+        "m"
+      end
+    end
+    foo.call.should == 'm'
+  end
+
+  it "updates the method when there is a base included method and the prepended module overrides it" do
+    base_module = Module.new do
+      def foo
+        'a'
+      end
+    end
+    a_class = Class.new do
+      include base_module
+    end
+    a = a_class.new
+    foo = -> { a.foo }
+    foo.call.should == 'a'
+
+    m_module = Module.new do
+      def foo
+        "m"
+      end
+    end
+    a_class.prepend m_module
+    foo.call.should == 'm'
+  end
+
+  it "updates the method when there is a base included method and the prepended module is later updated" do
+    base_module = Module.new do
+      def foo
+        'a'
+      end
+    end
+    a_class = Class.new do
+      include base_module
+    end
+    a = a_class.new
+    foo = -> { a.foo }
+    foo.call.should == 'a'
+
+    m_module = Module.new
+    a_class.prepend m_module
+    foo.call.should == 'a'
+
+    m_module.module_eval do
+      def foo
+        "m"
+      end
+    end
+    foo.call.should == 'm'
+  end
+
+  it "updates the method when a module prepended after a call is later updated" do
+    m_module = Module.new
+    a_class = Class.new do
+      def foo
+        'a'
+      end
+    end
+    a = a_class.new
+    foo = -> { a.foo }
+    foo.call.should == 'a'
+
+    a_class.prepend m_module
+    foo.call.should == 'a'
+
+    m_module.module_eval do
+      def foo
+        "m"
+      end
+    end
+    foo.call.should == 'm'
+  end
+
+  it "updates the method when a module is prepended after another and the method is defined later on that module" do
+    m_module = Module.new do
+      def foo
+        'a'
+      end
+    end
+    a_class = Class.new
+    a_class.prepend m_module
+    a = a_class.new
+    foo = -> { a.foo }
+    foo.call.should == 'a'
+
+    n_module = Module.new
+    a_class.prepend n_module
+    foo.call.should == 'a'
+
+    n_module.module_eval do
+      def foo
+        "n"
+      end
+    end
+    foo.call.should == 'n'
+  end
+
+  it "updates the method when a module is included in a prepended module and the method is defined later" do
+    a_class = Class.new
+    base_module = Module.new do
+      def foo
+        'a'
+      end
+    end
+    a_class.prepend base_module
+    a = a_class.new
+    foo = -> { a.foo }
+    foo.call.should == 'a'
+
+    m_module = Module.new
+    n_module = Module.new
+    m_module.include n_module
+    a_class.prepend m_module
+
+    n_module.module_eval do
+      def foo
+        "n"
+      end
+    end
+    foo.call.should == 'n'
+  end
+
+  it "updates the method when a new module with an included module is prepended" do
+    a_class = Class.new do
+      def foo
+        'a'
+      end
+    end
+
+    n_module = Module.new do
+      def foo
+        'n'
+      end
+    end
+
+    m_module = Module.new  do
+      include n_module
+    end
+
+    a = a_class.new
+    foo = -> { a.foo }
+
+    foo.call.should == 'a'
+
+    a_class.class_eval do
+      prepend m_module
+    end
+
+    foo.call.should == 'n'
+  end
+
   it "raises a TypeError when the argument is not a Module" do
     -> { ModuleSpecs::Basic.prepend(Class.new) }.should raise_error(TypeError)
   end
@@ -128,17 +314,34 @@ describe "Module#prepend" do
     c.dup.new.should be_kind_of(m)
   end
 
-  it "keeps the module in the chain when dupping an intermediate module" do
-    m1 = Module.new { def calc(x) x end }
-    m2 = Module.new { prepend(m1) }
-    c1 = Class.new { prepend(m2) }
-    m2dup = m2.dup
-    m2dup.ancestors.should == [m2dup,m1,m2]
-    c2 = Class.new { prepend(m2dup) }
-    c1.ancestors[0,3].should == [m1,m2,c1]
-    c1.new.should be_kind_of(m1)
-    c2.ancestors[0,4].should == [m2dup,m1,m2,c2]
-    c2.new.should be_kind_of(m1)
+  ruby_version_is '0'...'3.0' do
+    it "keeps the module in the chain when dupping an intermediate module" do
+      m1 = Module.new { def calc(x) x end }
+      m2 = Module.new { prepend(m1) }
+      c1 = Class.new { prepend(m2) }
+      m2dup = m2.dup
+      m2dup.ancestors.should == [m2dup,m1,m2]
+      c2 = Class.new { prepend(m2dup) }
+      c1.ancestors[0,3].should == [m1,m2,c1]
+      c1.new.should be_kind_of(m1)
+      c2.ancestors[0,4].should == [m2dup,m1,m2,c2]
+      c2.new.should be_kind_of(m1)
+    end
+  end
+
+  ruby_version_is '3.0' do
+    it "uses only new module when dupping the module" do
+      m1 = Module.new { def calc(x) x end }
+      m2 = Module.new { prepend(m1) }
+      c1 = Class.new { prepend(m2) }
+      m2dup = m2.dup
+      m2dup.ancestors.should == [m1,m2dup]
+      c2 = Class.new { prepend(m2dup) }
+      c1.ancestors[0,3].should == [m1,m2,c1]
+      c1.new.should be_kind_of(m1)
+      c2.ancestors[0,3].should == [m1,m2dup,c2]
+      c2.new.should be_kind_of(m1)
+    end
   end
 
   it "depends on prepend_features to add the module" do

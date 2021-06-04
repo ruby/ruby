@@ -1,11 +1,14 @@
+#--
 #
-# $Id: a101d6acb72abc392f7757cda89bf6f0a683a43d $
+#
 #
 # Copyright (c) 1999-2006 Minero Aoki
 #
 # This program is free software.
 # You can distribute/modify this program under the same terms of ruby.
 # see the file "COPYING".
+#
+#++
 
 require 'racc/iset'
 require 'racc/statetransitiontable'

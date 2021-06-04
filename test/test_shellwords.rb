@@ -68,6 +68,11 @@ class TestShellwords < Test::Unit::TestCase
     assert_equal "ps -p #{$$}", joined
   end
 
+  def test_shellescape
+    assert_equal "''", shellescape('')
+    assert_equal "\\^AZaz09_\\\\-.,:/@'\n'+\\'\\\"", shellescape("^AZaz09_\\-.,:\/@\n+'\"")
+  end
+
   def test_whitespace
     empty = ''
     space = " "

@@ -34,6 +34,23 @@ describe "Symbol#match" do
     :a.match(/(.)/)[0].should == 'a'
     $1.should == "a"
   end
+
+  describe "when passed a block" do
+    it "yields the MatchData" do
+      :abc.match(/./) {|m| ScratchPad.record m }
+      ScratchPad.recorded.should be_kind_of(MatchData)
+    end
+
+    it "returns the block result" do
+      :abc.match(/./) { :result }.should == :result
+    end
+
+    it "does not yield if there is no match" do
+      ScratchPad.record []
+      :b.match(/a/) {|m| ScratchPad << m }
+      ScratchPad.recorded.should == []
+    end
+  end
 end
 
 describe "Symbol#match?" do

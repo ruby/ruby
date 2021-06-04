@@ -1,8 +1,11 @@
+#ifndef COROUTINE_COPY_CONTEXT_H
+#define COROUTINE_COPY_CONTEXT_H 1
+
 /*
  *  This file is part of the "Coroutine" project and released under the MIT License.
  *
  *  Created by Samuel Williams on 27/6/2019.
- *  Copyright, 2019, by Samuel Williams. All rights reserved.
+ *  Copyright, 2019, by Samuel Williams.
 */
 
 #pragma once
@@ -12,12 +15,19 @@
 #include <setjmp.h>
 #include <string.h>
 #include <stdlib.h>
+
+/* OpenBSD supports alloca, but does not include alloca.h */
+#ifndef __OpenBSD__
 #include <alloca.h>
+#endif
 
 #define COROUTINE __attribute__((noreturn)) void
 
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
 #if INTPTR_MAX <= INT32_MAX
 #define COROUTINE_LIMITED_ADDRESS_SPACE
+#endif
 #endif
 
 // This stack copying implementation which uses a private stack for each coroutine, including the main one.
@@ -84,3 +94,5 @@ static inline void coroutine_destroy(struct coroutine_context *context)
     context->size = 0;
     context->from = NULL;
 }
+
+#endif /* COROUTINE_COPY_CONTEXT_H */

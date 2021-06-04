@@ -12,7 +12,7 @@ describe "Tempfile#initialize" do
 
   it "opens a new tempfile with the passed name in the passed directory" do
     @tempfile.send(:initialize, "basename", tmp(""))
-    File.exist?(@tempfile.path).should be_true
+    File.should.exist?(@tempfile.path)
 
     tmpdir = tmp("")
     path = @tempfile.path

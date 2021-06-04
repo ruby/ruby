@@ -28,6 +28,266 @@ RSpec.describe "Resolving platform craziness" do
     end
   end
 
+  it "resolves multiplatform gems with redundant platforms correctly" do
+    @index = build_index do
+      gem "zookeeper", "1.4.11"
+      gem "zookeeper", "1.4.11", "java" do
+        dep "slyphon-log4j", "= 1.2.15"
+        dep "slyphon-zookeeper_jar", "= 3.3.5"
+      end
+      gem "slyphon-log4j", "1.2.15"
+      gem "slyphon-zookeeper_jar", "3.3.5", "java"
+    end
+
+    dep "zookeeper"
+    platforms "java", "ruby", "universal-java-11"
+
+    should_resolve_as %w[zookeeper-1.4.11 zookeeper-1.4.11-java slyphon-log4j-1.2.15 slyphon-zookeeper_jar-3.3.5-java]
+  end
+
+  it "takes the latest ruby gem, even if an older platform specific version is available" do
+    @index = build_index do
+      gem "foo", "1.0.0"
+      gem "foo", "1.0.0", "x64-mingw32"
+      gem "foo", "1.1.0"
+    end
+    dep "foo"
+    platforms "x64-mingw32"
+
+    should_resolve_as %w[foo-1.1.0]
+  end
+
+  it "takes the ruby version if the platform version is incompatible" do
+    @index = build_index do
+      gem "bar", "1.0.0"
+      gem "foo", "1.0.0"
+      gem "foo", "1.0.0", "x64-mingw32" do
+        dep "bar", "< 1"
+      end
+    end
+    dep "foo"
+    platforms "x64-mingw32"
+
+    should_resolve_as %w[foo-1.0.0]
+  end
+
+  it "prefers the platform specific gem to the ruby version" do
+    @index = build_index do
+      gem "foo", "1.0.0"
+      gem "foo", "1.0.0", "x64-mingw32"
+    end
+    dep "foo"
+    platforms "x64-mingw32"
+
+    should_resolve_as %w[foo-1.0.0-x64-mingw32]
+  end
+
+  it "takes the latest ruby gem if the platform specific gem doesn't match the required_ruby_version" do
+    @index = build_index do
+      gem "foo", "1.0.0"
+      gem "foo", "1.0.0", "x64-mingw32"
+      gem "foo", "1.1.0"
+      gem "foo", "1.1.0", "x64-mingw32" do |s|
+        s.required_ruby_version = [">= 2.0", "< 2.4"]
+      end
+      gem "Ruby\0", "2.5.1"
+    end
+    dep "foo"
+    dep "Ruby\0", "2.5.1"
+    platforms "x64-mingw32"
+
+    should_resolve_as %w[foo-1.1.0]
+  end
+
+  it "takes the latest ruby gem with required_ruby_version if the platform specific gem doesn't match the required_ruby_version" do
+    @index = build_index do
+      gem "foo", "1.0.0"
+      gem "foo", "1.0.0", "x64-mingw32"
+      gem "foo", "1.1.0" do |s|
+        s.required_ruby_version = [">= 2.0"]
+      end
+      gem "foo", "1.1.0", "x64-mingw32" do |s|
+        s.required_ruby_version = [">= 2.0", "< 2.4"]
+      end
+      gem "Ruby\0", "2.5.1"
+    end
+    dep "foo"
+    dep "Ruby\0", "2.5.1"
+    platforms "x64-mingw32"
+
+    should_resolve_as %w[foo-1.1.0]
+  end
+
+  it "takes the latest ruby gem if the platform specific gem doesn't match the required_ruby_version with multiple platforms" do
+    @index = build_index do
+      gem "foo", "1.0.0"
+      gem "foo", "1.0.0", "x64-mingw32"
+      gem "foo", "1.1.0" do |s|
+        s.required_ruby_version = [">= 2.0"]
+      end
+      gem "foo", "1.1.0", "x64-mingw32" do |s|
+        s.required_ruby_version = [">= 2.0", "< 2.4"]
+      end
+      gem "Ruby\0", "2.5.1"
+    end
+    dep "foo"
+    dep "Ruby\0", "2.5.1"
+    platforms "x86_64-linux", "x64-mingw32"
+
+    should_resolve_as %w[foo-1.1.0]
+  end
+
+  it "doesn't include gems not needed for none of the platforms" do
+    @index = build_index do
+      gem "empyrean", "0.1.0"
+      gem "coderay", "1.1.2"
+      gem "method_source", "0.9.0"
+
+      gem "spoon", "0.0.6" do
+        dep "ffi", ">= 0"
+      end
+
+      gem "pry", "0.11.3", "java" do
+        dep "coderay", "~> 1.1.0"
+        dep "method_source", "~> 0.9.0"
+        dep "spoon", "~> 0.0"
+      end
+
+      gem "pry", "0.11.3" do
+        dep "coderay", "~> 1.1.0"
+        dep "method_source", "~> 0.9.0"
+      end
+
+      gem "ffi", "1.9.23", "java"
+      gem "ffi", "1.9.23"
+    end
+
+    dep "empyrean", "0.1.0"
+    dep "pry"
+
+    platforms "ruby", "java"
+
+    should_resolve_as %w[coderay-1.1.2 empyrean-0.1.0 ffi-1.9.23-java method_source-0.9.0 pry-0.11.3 pry-0.11.3-java spoon-0.0.6]
+  end
+
+  it "includes gems needed for at least one platform" do
+    @index = build_index do
+      gem "empyrean", "0.1.0"
+      gem "coderay", "1.1.2"
+      gem "method_source", "0.9.0"
+
+      gem "spoon", "0.0.6" do
+        dep "ffi", ">= 0"
+      end
+
+      gem "pry", "0.11.3", "java" do
+        dep "coderay", "~> 1.1.0"
+        dep "method_source", "~> 0.9.0"
+        dep "spoon", "~> 0.0"
+      end
+
+      gem "pry", "0.11.3" do
+        dep "coderay", "~> 1.1.0"
+        dep "method_source", "~> 0.9.0"
+      end
+
+      gem "ffi", "1.9.23", "java"
+      gem "ffi", "1.9.23"
+
+      gem "extra", "1.0.0" do
+        dep "ffi", ">= 0"
+      end
+    end
+
+    dep "empyrean", "0.1.0"
+    dep "pry"
+    dep "extra"
+
+    platforms "ruby", "java"
+
+    should_resolve_as %w[coderay-1.1.2 empyrean-0.1.0 extra-1.0.0 ffi-1.9.23 ffi-1.9.23-java method_source-0.9.0 pry-0.11.3 pry-0.11.3-java spoon-0.0.6]
+  end
+
+  it "includes gems needed for at least one platform even when the platform specific requirement is processed earlier than the generic requirement" do
+    @index = build_index do
+      gem "empyrean", "0.1.0"
+      gem "coderay", "1.1.2"
+      gem "method_source", "0.9.0"
+
+      gem "spoon", "0.0.6" do
+        dep "ffi", ">= 0"
+      end
+
+      gem "pry", "0.11.3", "java" do
+        dep "coderay", "~> 1.1.0"
+        dep "method_source", "~> 0.9.0"
+        dep "spoon", "~> 0.0"
+      end
+
+      gem "pry", "0.11.3" do
+        dep "coderay", "~> 1.1.0"
+        dep "method_source", "~> 0.9.0"
+      end
+
+      gem "ffi", "1.9.23", "java"
+      gem "ffi", "1.9.23"
+
+      gem "extra", "1.0.0" do
+        dep "extra2", ">= 0"
+      end
+
+      gem "extra2", "1.0.0" do
+        dep "extra3", ">= 0"
+      end
+
+      gem "extra3", "1.0.0" do
+        dep "ffi", ">= 0"
+      end
+    end
+
+    dep "empyrean", "0.1.0"
+    dep "pry"
+    dep "extra"
+
+    platforms "ruby", "java"
+
+    should_resolve_as %w[coderay-1.1.2 empyrean-0.1.0 extra-1.0.0 extra2-1.0.0 extra3-1.0.0 ffi-1.9.23 ffi-1.9.23-java method_source-0.9.0 pry-0.11.3 pry-0.11.3-java spoon-0.0.6]
+  end
+
+  it "properly adds platforms when platform requirements come from different dependencies" do
+    @index = build_index do
+      gem "ffi", "1.9.14"
+      gem "ffi", "1.9.14", "universal-mingw32"
+
+      gem "gssapi", "0.1"
+      gem "gssapi", "0.2"
+      gem "gssapi", "0.3"
+      gem "gssapi", "1.2.0" do
+        dep "ffi", ">= 1.0.1"
+      end
+
+      gem "mixlib-shellout", "2.2.6"
+      gem "mixlib-shellout", "2.2.6", "universal-mingw32" do
+        dep "win32-process", "~> 0.8.2"
+      end
+
+      # we need all these versions to get the sorting the same as it would be
+      # pulling from rubygems.org
+      %w[0.8.3 0.8.2 0.8.1 0.8.0].each do |v|
+        gem "win32-process", v do
+          dep "ffi", ">= 1.0.0"
+        end
+      end
+    end
+
+    dep "mixlib-shellout"
+    dep "gssapi"
+
+    platforms "universal-mingw32", "ruby"
+
+    should_resolve_as %w[ffi-1.9.14 ffi-1.9.14-universal-mingw32 gssapi-1.2.0 mixlib-shellout-2.2.6 mixlib-shellout-2.2.6-universal-mingw32 win32-process-0.8.3]
+  end
+
   describe "with mingw32" do
     before :each do
       @index = build_index do
@@ -90,11 +350,11 @@ RSpec.describe "Resolving platform craziness" do
       end
     end
 
-    it "reports on the conflict" do
+    it "takes the ruby version as fallback" do
       platforms "ruby", "java"
       dep "foo"
 
-      should_conflict_on "baz"
+      should_resolve_as %w[bar-1.0.0 baz-1.0.0 foo-1.0.0]
     end
   end
 end

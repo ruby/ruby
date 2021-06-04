@@ -43,7 +43,6 @@ describe :enumerator_lazy_to_enum, shared: true do
       each_entry: [],
       each_cons: [2]
     }.each_pair do |method, args|
-      @infinite.method(method).owner.should_not equal(Enumerator::Lazy)
       @infinite.send(method, *args).should be_an_instance_of(Enumerator::Lazy)
     end
   end

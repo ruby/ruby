@@ -347,6 +347,10 @@ class TestEval < Test::Unit::TestCase
       assert_equal(55, eval("foo22"))
       assert_equal(55, foo22)
     }.call
+
+    self.class.class_eval do
+      remove_const :EvTest
+    end
   end
 
   def test_nil_instance_eval_cvar
@@ -470,9 +474,12 @@ class TestEval < Test::Unit::TestCase
   end
 
   def test_eval_location_binding
-    assert_warning(/__FILE__ in eval/) do
-      assert_equal(__FILE__, eval("__FILE__", binding))
-    end
+    assert_equal(['(eval)', 1], eval("[__FILE__, __LINE__]", nil))
+    assert_equal(['(eval)', 1], eval("[__FILE__, __LINE__]", binding))
+    assert_equal(['foo', 1], eval("[__FILE__, __LINE__]", nil, 'foo'))
+    assert_equal(['foo', 1], eval("[__FILE__, __LINE__]", binding, 'foo'))
+    assert_equal(['foo', 2], eval("[__FILE__, __LINE__]", nil, 'foo', 2))
+    assert_equal(['foo', 2], eval("[__FILE__, __LINE__]", binding, 'foo', 2))
   end
 
   def test_fstring_instance_eval

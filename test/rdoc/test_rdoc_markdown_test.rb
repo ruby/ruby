@@ -744,7 +744,7 @@ foo
              "I strongly recommend against using any `<blink>` tags.\n",
              "\n",
              "I wish SmartyPants used named entities like `&mdash;`\n",
-             "instead of decimal-encoded entites like `&#8212;`.\n"),
+             "instead of decimal-encoded entities like `&#8212;`.\n"),
 
         para("Output:"),
 
@@ -753,7 +753,7 @@ foo
              "\n",
              "<p>I wish SmartyPants used named entities like\n",
              "<code>&amp;mdash;</code> instead of decimal-encoded\n",
-             "entites like <code>&amp;#8212;</code>.</p>\n"),
+             "entities like <code>&amp;#8212;</code>.</p>\n"),
 
         para("To specify an entire block of pre-formatted code, indent every line of\n" +
              "the block by 4 spaces or 1 tab. Just like with code spans, <code>&</code>, <code><</code>,\n" +

@@ -9,13 +9,22 @@
 
 **********************************************************************/
 
+#include "ruby/internal/config.h"
+
 #ifdef _MSC_VER
 # define _USE_MATH_DEFINES 1
 #endif
-#include "internal.h"
+
+#include <errno.h>
 #include <float.h>
 #include <math.h>
-#include <errno.h>
+
+#include "internal.h"
+#include "internal/bignum.h"
+#include "internal/complex.h"
+#include "internal/math.h"
+#include "internal/object.h"
+#include "internal/vm.h"
 
 #if defined(HAVE_SIGNBIT) && defined(__GNUC__) && defined(__sun) && \
     !defined(signbit)
@@ -573,6 +582,8 @@ math_log10(VALUE unused_obj, VALUE x)
     return DBL2NUM(log10(d) + numbits * log10(2)); /* log10(d * 2 ** numbits) */
 }
 
+static VALUE rb_math_sqrt(VALUE x);
+
 /*
  *  call-seq:
  *     Math.sqrt(x)    -> Float
@@ -630,7 +641,7 @@ f_signbit(VALUE x)
     return f_negative_p(x);
 }
 
-VALUE
+static VALUE
 rb_math_sqrt(VALUE x)
 {
     double d;
@@ -692,7 +703,7 @@ math_cbrt(VALUE unused_obj, VALUE x)
     double f = Get_Double(x);
     double r = cbrt(f);
 #if defined __GLIBC__
-    if (isfinite(r)) {
+    if (isfinite(r) && !(f == 0.0 && r == 0.0)) {
 	r = (2.0 * r + (f / r / r)) / 3.0;
     }
 #endif
@@ -798,7 +809,7 @@ math_erfc(VALUE unused_obj, VALUE x)
  *
  *  Calculates the gamma function of x.
  *
- *  Note that gamma(n) is same as fact(n-1) for integer n > 0.
+ *  Note that gamma(n) is the same as fact(n-1) for integer n > 0.
  *  However gamma(n) returns float and can be an approximation.
  *
  *   def fact(n) (1..n).inject(1) {|r,i| r*i } end
@@ -889,9 +900,9 @@ math_gamma(VALUE unused_obj, VALUE x)
  *
  *  Calculates the logarithmic gamma of +x+ and the sign of gamma of +x+.
  *
- *  Math.lgamma(x) is same as
+ *  Math.lgamma(x) is the same as
  *   [Math.log(Math.gamma(x).abs), Math.gamma(x) < 0 ? -1 : 1]
- *  but avoid overflow by Math.gamma(x) for large x.
+ *  but avoids overflow by Math.gamma(x) for large x.
  *
  *    Math.lgamma(0) #=> [Infinity, 1]
  *
@@ -982,7 +993,7 @@ InitVM_Math(void)
     rb_define_const(rb_mMath, "PI", DBL2NUM(M_PI));
 
 #ifdef M_E
-    /*  Definition of the mathematical constant E (e) as a Float number. */
+    /*  Definition of the mathematical constant E for Euler's number (e) as a Float number. */
     rb_define_const(rb_mMath, "E", DBL2NUM(M_E));
 #else
     rb_define_const(rb_mMath, "E", DBL2NUM(exp(1.0)));

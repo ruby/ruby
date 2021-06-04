@@ -1,9 +1,8 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/commands/open_command'
 
 class TestGemCommandsOpenCommand < Gem::TestCase
-
   def setup
     super
 
@@ -22,20 +21,19 @@ class TestGemCommandsOpenCommand < Gem::TestCase
 
   def test_execute
     @cmd.options[:args] = %w[foo]
-    @cmd.options[:editor] = "#{Gem.ruby} -e0 --"
+    @cmd.options[:editor] = "#{Gem.ruby} -eexit --"
 
     gem 'foo', '1.0.0'
     spec = gem 'foo', '1.0.1'
-    mock = MiniTest::Mock.new
-    mock.expect(:call, true, [spec.full_gem_path])
 
-    Dir.stub(:chdir, mock) do
-      use_ui @ui do
-        @cmd.execute
+    assert_nothing_raised Gem::MockGemUi::TermError do
+      Dir.stub(:chdir, spec.full_gem_path) do
+        use_ui @ui do
+          @cmd.execute
+        end
       end
     end
 
-    assert mock.verify
     assert_equal "", @ui.error
   end
 
@@ -45,26 +43,26 @@ class TestGemCommandsOpenCommand < Gem::TestCase
 
     gem "foo", "5.0"
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end
     end
 
-    assert_match %r|Unable to find gem 'foo'|, @ui.output
+    assert_match %r{Unable to find gem 'foo'}, @ui.output
     assert_equal "", @ui.error
   end
 
   def test_execute_bad_gem
     @cmd.options[:args] = %w[foo]
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end
     end
 
-    assert_match %r|Unable to find gem 'foo'|, @ui.output
+    assert_match %r{Unable to find gem 'foo'}, @ui.output
     assert_equal "", @ui.error
   end
 
@@ -87,14 +85,13 @@ class TestGemCommandsOpenCommand < Gem::TestCase
 
     gem("foo", "1.0")
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end
     end
 
-    assert_match %r|'foo' is a default gem and can't be opened\.| , @ui.output
+    assert_match %r{'foo' is a default gem and can't be opened\.} , @ui.output
     assert_equal "", @ui.error
   end
-
 end

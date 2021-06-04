@@ -4,7 +4,7 @@ describe "Rational#<=> when passed a Rational object" do
   it_behaves_like :rational_cmp_rat, :<=>
 end
 
-describe "Rational#<=> when passed a Integer object" do
+describe "Rational#<=> when passed an Integer object" do
   it_behaves_like :rational_cmp_int, :<=>
 end
 

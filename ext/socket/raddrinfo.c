@@ -429,10 +429,6 @@ str_is_number(const char *p)
 #define str_equal(ptr, len, name) \
     ((ptr)[0] == name[0] && \
      rb_strlen_lit(name) == (len) && memcmp(ptr, name, len) == 0)
-#define SafeStringValueCStr(v) do {\
-    StringValueCStr(v);\
-    rb_check_safe_obj(v);\
-} while(0)
 
 static char*
 host_str(VALUE host, char *hbuf, size_t hbuflen, int *flags_ptr)
@@ -451,7 +447,7 @@ host_str(VALUE host, char *hbuf, size_t hbuflen, int *flags_ptr)
         const char *name;
         size_t len;
 
-        SafeStringValueCStr(host);
+        StringValueCStr(host);
         RSTRING_GETMEM(host, name, len);
         if (!len || str_equal(name, len, "<any>")) {
             make_inetaddr(INADDR_ANY, hbuf, hbuflen);
@@ -490,7 +486,7 @@ port_str(VALUE port, char *pbuf, size_t pbuflen, int *flags_ptr)
         const char *serv;
         size_t len;
 
-        SafeStringValueCStr(port);
+        StringValueCStr(port);
         RSTRING_GETMEM(port, serv, len);
         if (len >= pbuflen) {
             rb_raise(rb_eArgError, "service name too long (%"PRIuSIZE")",
@@ -654,8 +650,9 @@ struct hostent_arg {
 };
 
 static VALUE
-make_hostent_internal(struct hostent_arg *arg)
+make_hostent_internal(VALUE v)
 {
+    struct hostent_arg *arg = (void *)v;
     VALUE host = arg->host;
     struct addrinfo* addr = arg->addr->ai;
     VALUE (*ipaddr)(struct sockaddr*, socklen_t) = arg->ipaddr;
@@ -816,7 +813,7 @@ rsock_addrinfo_new(struct sockaddr *addr, socklen_t len,
 static struct rb_addrinfo *
 call_getaddrinfo(VALUE node, VALUE service,
                  VALUE family, VALUE socktype, VALUE protocol, VALUE flags,
-                 int socktype_hack)
+                 int socktype_hack, VALUE timeout)
 {
     struct addrinfo hints;
     struct rb_addrinfo *res;
@@ -833,6 +830,7 @@ call_getaddrinfo(VALUE node, VALUE service,
     if (!NIL_P(flags)) {
 	hints.ai_flags = NUM2INT(flags);
     }
+
     res = rsock_getaddrinfo(node, service, &hints, socktype_hack);
 
     if (res == NULL)
@@ -847,13 +845,13 @@ init_addrinfo_getaddrinfo(rb_addrinfo_t *rai, VALUE node, VALUE service,
                           VALUE family, VALUE socktype, VALUE protocol, VALUE flags,
                           VALUE inspectnode, VALUE inspectservice)
 {
-    struct rb_addrinfo *res = call_getaddrinfo(node, service, family, socktype, protocol, flags, 1);
+    struct rb_addrinfo *res = call_getaddrinfo(node, service, family, socktype, protocol, flags, 1, Qnil);
     VALUE canonname;
     VALUE inspectname = rb_str_equal(node, inspectnode) ? Qnil : make_inspectname(inspectnode, inspectservice, res->ai);
 
     canonname = Qnil;
     if (res->ai->ai_canonname) {
-        canonname = rb_tainted_str_new_cstr(res->ai->ai_canonname);
+        canonname = rb_str_new_cstr(res->ai->ai_canonname);
         OBJ_FREEZE(canonname);
     }
 
@@ -903,8 +901,6 @@ make_inspectname(VALUE node, VALUE service, struct addrinfo *res)
             rb_str_catf(inspectname, ":%d", FIX2INT(service));
     }
     if (!NIL_P(inspectname)) {
-        OBJ_INFECT(inspectname, node);
-        OBJ_INFECT(inspectname, service);
         OBJ_FREEZE(inspectname);
     }
     return inspectname;
@@ -917,13 +913,13 @@ addrinfo_firstonly_new(VALUE node, VALUE service, VALUE family, VALUE socktype, 
     VALUE canonname;
     VALUE inspectname;
 
-    struct rb_addrinfo *res = call_getaddrinfo(node, service, family, socktype, protocol, flags, 0);
+    struct rb_addrinfo *res = call_getaddrinfo(node, service, family, socktype, protocol, flags, 0, Qnil);
 
     inspectname = make_inspectname(node, service, res->ai);
 
     canonname = Qnil;
     if (res->ai->ai_canonname) {
-        canonname = rb_tainted_str_new_cstr(res->ai->ai_canonname);
+        canonname = rb_str_new_cstr(res->ai->ai_canonname);
         OBJ_FREEZE(canonname);
     }
 
@@ -937,13 +933,13 @@ addrinfo_firstonly_new(VALUE node, VALUE service, VALUE family, VALUE socktype, 
 }
 
 static VALUE
-addrinfo_list_new(VALUE node, VALUE service, VALUE family, VALUE socktype, VALUE protocol, VALUE flags)
+addrinfo_list_new(VALUE node, VALUE service, VALUE family, VALUE socktype, VALUE protocol, VALUE flags, VALUE timeout)
 {
     VALUE ret;
     struct addrinfo *r;
     VALUE inspectname;
 
-    struct rb_addrinfo *res = call_getaddrinfo(node, service, family, socktype, protocol, flags, 0);
+    struct rb_addrinfo *res = call_getaddrinfo(node, service, family, socktype, protocol, flags, 0, timeout);
 
     inspectname = make_inspectname(node, service, res->ai);
 
@@ -953,7 +949,7 @@ addrinfo_list_new(VALUE node, VALUE service, VALUE family, VALUE socktype, VALUE
         VALUE canonname = Qnil;
 
         if (r->ai_canonname) {
-            canonname = rb_tainted_str_new_cstr(r->ai_canonname);
+            canonname = rb_str_new_cstr(r->ai_canonname);
             OBJ_FREEZE(canonname);
         }
 
@@ -1695,7 +1691,7 @@ addrinfo_mload(VALUE self, VALUE ary)
 #endif
         res = call_getaddrinfo(rb_ary_entry(pair, 0), rb_ary_entry(pair, 1),
                                INT2NUM(pfamily), INT2NUM(socktype), INT2NUM(protocol),
-                               INT2NUM(flags), 1);
+                               INT2NUM(flags), 1, Qnil);
 
         len = res->ai->ai_addrlen;
         memcpy(&ss, res->ai->ai_addr, res->ai->ai_addrlen);
@@ -1792,7 +1788,6 @@ addrinfo_to_sockaddr(VALUE self)
     rb_addrinfo_t *rai = get_addrinfo(self);
     VALUE ret;
     ret = rb_str_new((char*)&rai->addr, rai->sockaddr_len);
-    OBJ_INFECT(ret, self);
     return ret;
 }
 
@@ -1800,7 +1795,7 @@ addrinfo_to_sockaddr(VALUE self)
  * call-seq:
  *   addrinfo.canonname => string or nil
  *
- * returns the canonical name as an string.
+ * returns the canonical name as a string.
  *
  * nil is returned if no canonical name.
  *
@@ -2330,6 +2325,8 @@ addrinfo_unix_path(VALUE self)
 }
 #endif
 
+static ID id_timeout;
+
 /*
  * call-seq:
  *   Addrinfo.getaddrinfo(nodename, service, family, socktype, protocol, flags) => [addrinfo, ...]
@@ -2376,10 +2373,16 @@ addrinfo_unix_path(VALUE self)
 static VALUE
 addrinfo_s_getaddrinfo(int argc, VALUE *argv, VALUE self)
 {
-    VALUE node, service, family, socktype, protocol, flags;
+    VALUE node, service, family, socktype, protocol, flags, opts, timeout;
 
-    rb_scan_args(argc, argv, "24", &node, &service, &family, &socktype, &protocol, &flags);
-    return addrinfo_list_new(node, service, family, socktype, protocol, flags);
+    rb_scan_args(argc, argv, "24:", &node, &service, &family, &socktype,
+		 &protocol, &flags, &opts);
+    rb_get_kwargs(opts, &id_timeout, 0, 1, &timeout);
+    if (timeout == Qundef) {
+	timeout = Qnil;
+    }
+
+    return addrinfo_list_new(node, service, family, socktype, protocol, flags, timeout);
 }
 
 /*
@@ -2467,7 +2470,6 @@ addrinfo_s_unix(int argc, VALUE *argv, VALUE self)
     addr = addrinfo_s_allocate(rb_cAddrinfo);
     DATA_PTR(addr) = rai = alloc_addrinfo();
     init_unix_addrinfo(rai, path, socktype);
-    OBJ_INFECT(addr, path);
     return addr;
 }
 
@@ -2564,7 +2566,9 @@ rsock_init_addrinfo(void)
      * The Addrinfo class maps <tt>struct addrinfo</tt> to ruby.  This
      * structure identifies an Internet host and a service.
      */
-    rb_cAddrinfo = rb_define_class("Addrinfo", rb_cData);
+    id_timeout = rb_intern("timeout");
+
+    rb_cAddrinfo = rb_define_class("Addrinfo", rb_cObject);
     rb_define_alloc_func(rb_cAddrinfo, addrinfo_s_allocate);
     rb_define_method(rb_cAddrinfo, "initialize", addrinfo_initialize, -1);
     rb_define_method(rb_cAddrinfo, "inspect", addrinfo_inspect, 0);

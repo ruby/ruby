@@ -5,7 +5,7 @@ describe "WeakRef#weakref_alive?" do
   it "returns true if the object is reachable" do
     obj = Object.new
     ref = WeakRef.new(obj)
-    ref.weakref_alive?.should == true
+    ref.weakref_alive?.should be_true
   end
 
   it "returns a falsy value if the object is no longer reachable" do

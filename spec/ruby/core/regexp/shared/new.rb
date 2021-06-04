@@ -58,7 +58,7 @@ describe :regexp_new_string, shared: true do
     end
   end
 
-  it "sets options from second argument if it is one of the Fixnum option constants" do
+  it "sets options from second argument if it is one of the Integer option constants" do
     r = Regexp.send(@method, 'Hi', Regexp::IGNORECASE)
     (r.options & Regexp::IGNORECASE).should_not == 0
     (r.options & Regexp::MULTILINE).should == 0
@@ -81,14 +81,14 @@ describe :regexp_new_string, shared: true do
     end
   end
 
-  it "accepts a Fixnum of two or more options ORed together as the second argument" do
+  it "accepts an Integer of two or more options ORed together as the second argument" do
     r = Regexp.send(@method, 'Hi', Regexp::IGNORECASE | Regexp::EXTENDED)
     (r.options & Regexp::IGNORECASE).should_not == 0
     (r.options & Regexp::MULTILINE).should == 0
     (r.options & Regexp::EXTENDED).should_not == 0
   end
 
-  it "treats any non-Fixnum, non-nil, non-false second argument as IGNORECASE" do
+  it "treats any non-Integer, non-nil, non-false second argument as IGNORECASE" do
     r = Regexp.send(@method, 'Hi', Object.new)
     (r.options & Regexp::IGNORECASE).should_not == 0
     (r.options & Regexp::MULTILINE).should == 0

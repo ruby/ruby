@@ -1,4 +1,4 @@
-#include "internal.h"
+#include "internal/rational.h"
 
 #if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)
 static VALUE
@@ -14,14 +14,14 @@ big(VALUE x)
 #endif
 
 static VALUE
-gcd_normal(VALUE x, VALUE y)
+gcd_normal(VALUE klass, VALUE x, VALUE y)
 {
     return rb_big_norm(rb_gcd_normal(rb_to_int(x), rb_to_int(y)));
 }
 
 #if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)
 static VALUE
-gcd_gmp(VALUE x, VALUE y)
+gcd_gmp(VALUE klass, VALUE x, VALUE y)
 {
     return rb_big_norm(rb_gcd_gmp(big(x), big(y)));
 }
@@ -29,9 +29,20 @@ gcd_gmp(VALUE x, VALUE y)
 #define gcd_gmp rb_f_notimplement
 #endif
 
-void
-Init_rational(VALUE klass)
+static VALUE
+s_rational_raw(VALUE klass, VALUE x, VALUE y)
 {
-    rb_define_method(rb_cInteger, "gcd_normal", gcd_normal, 1);
-    rb_define_method(rb_cInteger, "gcd_gmp", gcd_gmp, 1);
+    return rb_rational_raw(x, y);
+}
+
+void
+Init_rational(void)
+{
+    VALUE mBug = rb_define_module("Bug");
+    VALUE klass = rb_define_module_under(mBug, "Rational");
+
+    rb_define_singleton_method(klass, "gcd_normal", gcd_normal, 2);
+    rb_define_singleton_method(klass, "gcd_gmp", gcd_gmp, 2);
+
+    rb_define_singleton_method(klass, "raw", s_rational_raw, 2);
 }

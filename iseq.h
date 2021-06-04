@@ -1,3 +1,5 @@
+#ifndef RUBY_ISEQ_H
+#define RUBY_ISEQ_H 1
 /**********************************************************************
 
   iseq.h -
@@ -8,13 +10,14 @@
   Copyright (C) 2004-2008 Koichi Sasada
 
 **********************************************************************/
-
-#ifndef RUBY_ISEQ_H
-#define RUBY_ISEQ_H 1
+#include "internal/gc.h"
+#include "vm_core.h"
 
 RUBY_EXTERN const int ruby_api_version[];
 #define ISEQ_MAJOR_VERSION ((unsigned int)ruby_api_version[0])
 #define ISEQ_MINOR_VERSION ((unsigned int)ruby_api_version[1])
+
+//#define EXPERIMENTAL_ISEQ_NODE_ID
 
 #ifndef rb_iseq_t
 typedef struct rb_iseq_struct rb_iseq_t;
@@ -22,12 +25,6 @@ typedef struct rb_iseq_struct rb_iseq_t;
 #endif
 
 extern const ID rb_iseq_shared_exc_local_tbl[];
-
-static inline size_t
-rb_call_info_kw_arg_bytes(int keyword_len)
-{
-    return sizeof(struct rb_call_info_kw_arg) + sizeof(VALUE) * (keyword_len - 1);
-}
 
 #define ISEQ_COVERAGE(iseq)           iseq->body->variable.coverage
 #define ISEQ_COVERAGE_SET(iseq, cov)  RB_OBJ_WRITE(iseq, &iseq->body->variable.coverage, cov)
@@ -67,7 +64,7 @@ static inline VALUE *
 ISEQ_ORIGINAL_ISEQ_ALLOC(const rb_iseq_t *iseq, long size)
 {
     return iseq->body->variable.original_iseq =
-        ruby_xmalloc2(size, sizeof(VALUE));
+        ALLOC_N(VALUE, size);
 }
 
 #define ISEQ_TRACE_EVENTS (RUBY_EVENT_LINE  | \
@@ -85,12 +82,11 @@ ISEQ_ORIGINAL_ISEQ_ALLOC(const rb_iseq_t *iseq, long size)
 #define ISEQ_TRANSLATED       IMEMO_FL_USER3
 #define ISEQ_MARKABLE_ISEQ    IMEMO_FL_USER4
 
-#define ISEQ_EXECUTABLE_P(iseq) (FL_TEST_RAW((iseq), ISEQ_NOT_LOADED_YET | ISEQ_USE_COMPILE_DATA) == 0)
+#define ISEQ_EXECUTABLE_P(iseq) (FL_TEST_RAW(((VALUE)iseq), ISEQ_NOT_LOADED_YET | ISEQ_USE_COMPILE_DATA) == 0)
 
 struct iseq_compile_data {
     /* GC is needed */
     const VALUE err_info;
-    VALUE mark_ary;
     const VALUE catch_table_ary;	/* Array */
 
     /* GC is not needed */
@@ -99,17 +95,25 @@ struct iseq_compile_data {
     struct iseq_label_data *redo_label;
     const rb_iseq_t *current_block;
     struct iseq_compile_data_ensure_node_stack *ensure_node_stack;
-    struct iseq_compile_data_storage *storage_head;
-    struct iseq_compile_data_storage *storage_current;
+    struct {
+      struct iseq_compile_data_storage *storage_head;
+      struct iseq_compile_data_storage *storage_current;
+    } node;
+    struct {
+      struct iseq_compile_data_storage *storage_head;
+      struct iseq_compile_data_storage *storage_current;
+    } insn;
+    bool in_rescue;
     int loopval_popped;	/* used by NODE_BREAK */
     int last_line;
     int label_no;
     int node_level;
+    int isolated_depth;
     unsigned int ci_index;
-    unsigned int ci_kw_index;
     const rb_compile_option_t *option;
     struct rb_id_table *ivar_cache_table;
-#if SUPPORT_JOKE
+    const struct rb_builtin_function *builtin_function_table;
+#if OPT_SUPPORT_JOKE
     st_table *labels_table;
 #endif
 };
@@ -148,6 +152,7 @@ iseq_imemo_alloc(void)
 VALUE rb_iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt);
 void rb_ibf_load_iseq_complete(rb_iseq_t *iseq);
 const rb_iseq_t *rb_iseq_ibf_load(VALUE str);
+const rb_iseq_t *rb_iseq_ibf_load_bytes(const char *cstr, size_t);
 VALUE rb_iseq_ibf_load_extra_data(VALUE str);
 void rb_iseq_init_trace(rb_iseq_t *iseq);
 int rb_iseq_add_local_tracepoint_recursively(const rb_iseq_t *iseq, rb_event_flag_t turnon_events, VALUE tpval, unsigned int target_line);
@@ -162,23 +167,25 @@ RUBY_SYMBOL_EXPORT_BEGIN
 
 /* compile.c */
 VALUE rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node);
-VALUE rb_iseq_compile_ifunc(rb_iseq_t *iseq, const struct vm_ifunc *ifunc);
-int rb_iseq_translate_threaded_code(rb_iseq_t *iseq);
+VALUE rb_iseq_compile_callback(rb_iseq_t *iseq, const struct rb_iseq_new_with_callback_callback_func * ifunc);
 VALUE *rb_iseq_original_iseq(const rb_iseq_t *iseq);
 void rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc,
 			    VALUE locals, VALUE args,
 			    VALUE exception, VALUE body);
+void rb_iseq_mark_insn_storage(struct iseq_compile_data_storage *arena);
 
 /* iseq.c */
 VALUE rb_iseq_load(VALUE data, VALUE parent, VALUE opt);
 VALUE rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc);
-struct st_table *ruby_insn_make_insn_table(void);
 unsigned int rb_iseq_line_no(const rb_iseq_t *iseq, size_t pos);
+#ifdef EXPERIMENTAL_ISEQ_NODE_ID
+int rb_iseq_node_id(const rb_iseq_t *iseq, size_t pos);
+#endif
 void rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events);
 void rb_iseq_trace_set_all(rb_event_flag_t turnon_events);
-void rb_iseq_trace_on_all(void);
 void rb_iseq_insns_info_encode_positions(const rb_iseq_t *iseq);
 
+struct rb_iseq_constant_body *rb_iseq_constant_body_alloc(void);
 VALUE rb_iseqw_new(const rb_iseq_t *iseq);
 const rb_iseq_t *rb_iseqw_to_iseq(VALUE iseqw);
 
@@ -211,6 +218,9 @@ struct rb_compile_option_struct {
 
 struct iseq_insn_info_entry {
     int line_no;
+#ifdef EXPERIMENTAL_ISEQ_NODE_ID
+    int node_id;
+#endif
     rb_event_flag_t events;
 };
 
@@ -288,13 +298,12 @@ enum defined_type {
     DEFINED_FALSE,
     DEFINED_ASGN,
     DEFINED_EXPR,
-    DEFINED_IVAR2,
     DEFINED_REF,
-    DEFINED_FUNC
+    DEFINED_FUNC,
+    DEFINED_CONST_FROM
 };
 
 VALUE rb_iseq_defined_string(enum defined_type type);
-void rb_iseq_make_compile_option(struct rb_compile_option_struct *option, VALUE opt);
 
 /* vm.c */
 VALUE rb_iseq_local_variables(const rb_iseq_t *iseq);

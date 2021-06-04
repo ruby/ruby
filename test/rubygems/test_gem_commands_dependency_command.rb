@@ -1,9 +1,8 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/commands/dependency_command'
 
 class TestGemCommandsDependencyCommand < Gem::TestCase
-
   def setup
     super
     @stub_ui = Gem::MockGemUi.new
@@ -65,7 +64,7 @@ Gem x-2
   def test_execute_no_match
     @cmd.options[:args] = %w[foo]
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @stub_ui do
         @cmd.execute
       end
@@ -156,7 +155,7 @@ Gem foo-2
     @cmd.options[:reverse_dependencies] = true
     @cmd.options[:domain] = :remote
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @stub_ui do
         @cmd.execute
       end
@@ -225,5 +224,4 @@ ERROR:  Only reverse dependencies for local gems are supported.
     assert_equal "Gem a-2.a\n\n", @stub_ui.output
     assert_equal '', @stub_ui.error
   end
-
 end

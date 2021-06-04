@@ -7,11 +7,13 @@ describe "Encoding.locale_charmap" do
 
   # FIXME: Get this working on Windows
   platform_is :linux do
-    it "returns a value based on the LC_ALL environment variable" do
-      old_lc_all = ENV['LC_ALL']
-      ENV['LC_ALL'] = 'C'
-      ruby_exe("print Encoding.locale_charmap").should == 'ANSI_X3.4-1968'
-      ENV['LC_ALL'] = old_lc_all
+    platform_is_not :android do
+      it "returns a value based on the LC_ALL environment variable" do
+        old_lc_all = ENV['LC_ALL']
+        ENV['LC_ALL'] = 'C'
+        ruby_exe("print Encoding.locale_charmap").should == 'ANSI_X3.4-1968'
+        ENV['LC_ALL'] = old_lc_all
+      end
     end
   end
 
@@ -29,6 +31,15 @@ describe "Encoding.locale_charmap" do
       old_lc_all = ENV['LC_ALL']
       ENV['LC_ALL'] = 'C'
       ruby_exe("print Encoding.locale_charmap").should == '646'
+      ENV['LC_ALL'] = old_lc_all
+    end
+  end
+
+  platform_is :android do
+    it "always returns UTF-8" do
+      old_lc_all = ENV['LC_ALL']
+      ENV['LC_ALL'] = 'C'
+      ruby_exe("print Encoding.locale_charmap").should == 'UTF-8'
       ENV['LC_ALL'] = old_lc_all
     end
   end

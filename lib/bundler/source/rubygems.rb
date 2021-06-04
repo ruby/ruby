@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "uri"
 require "rubygems/user_interaction"
 
 module Bundler
@@ -21,17 +20,29 @@ module Bundler
         @dependency_names = []
         @allow_remote = false
         @allow_cached = false
+        @allow_local = options["allow_local"] || false
         @caches = [cache_path, *Bundler.rubygems.gem_cache]
 
-        Array(options["remotes"] || []).reverse_each {|r| add_remote(r) }
+        Array(options["remotes"]).reverse_each {|r| add_remote(r) }
+      end
+
+      def local!
+        return if @allow_local
+
+        @specs = nil
+        @allow_local = true
       end
 
       def remote!
+        return if @allow_remote
+
         @specs = nil
         @allow_remote = true
       end
 
       def cached!
+        return if @allow_cached
+
         @specs = nil
         @allow_cached = true
       end
@@ -50,8 +61,12 @@ module Bundler
         o.is_a?(Rubygems) && (o.credless_remotes - credless_remotes).empty?
       end
 
+      def disable_multisource?
+        @remotes.size <= 1
+      end
+
       def can_lock?(spec)
-        return super if Bundler.feature_flag.disable_multisource?
+        return super if disable_multisource?
         spec.source.is_a?(Rubygems)
       end
 
@@ -88,7 +103,7 @@ module Bundler
           # small_idx.use large_idx.
           idx = @allow_remote ? remote_specs.dup : Index.new
           idx.use(cached_specs, :override_dupes) if @allow_cached || @allow_remote
-          idx.use(installed_specs, :override_dupes)
+          idx.use(installed_specs, :override_dupes) if @allow_local
           idx
         end
       end
@@ -146,20 +161,19 @@ module Bundler
 
           Bundler.mkdir_p bin_path, :no_sudo => true unless spec.executables.empty? || Bundler.rubygems.provides?(">= 2.7.5")
 
-          installed_spec = nil
-          Bundler.rubygems.preserve_paths do
-            installed_spec = Bundler::RubyGemsGemInstaller.at(
-              path,
-              :install_dir         => install_path.to_s,
-              :bin_dir             => bin_path.to_s,
-              :ignore_dependencies => true,
-              :wrappers            => true,
-              :env_shebang         => true,
-              :build_args          => opts[:build_args],
-              :bundler_expected_checksum => spec.respond_to?(:checksum) && spec.checksum,
-              :bundler_extension_cache_path => extension_cache_path(spec)
-            ).install
-          end
+          require_relative "../rubygems_gem_installer"
+
+          installed_spec = Bundler::RubyGemsGemInstaller.at(
+            path,
+            :install_dir         => install_path.to_s,
+            :bin_dir             => bin_path.to_s,
+            :ignore_dependencies => true,
+            :wrappers            => true,
+            :env_shebang         => true,
+            :build_args          => opts[:build_args],
+            :bundler_expected_checksum => spec.respond_to?(:checksum) && spec.checksum,
+            :bundler_extension_cache_path => extension_cache_path(spec)
+          ).install
           spec.full_gem_path = installed_spec.full_gem_path
 
           # SUDO HAX
@@ -295,7 +309,7 @@ module Bundler
         names
       end
 
-    protected
+      protected
 
       def credless_remotes
         remotes.map(&method(:suppress_configured_credentials))
@@ -328,9 +342,10 @@ module Bundler
       def normalize_uri(uri)
         uri = uri.to_s
         uri = "#{uri}/" unless uri =~ %r{/$}
-        uri = URI(uri)
+        require_relative "../vendored_uri"
+        uri = Bundler::URI(uri)
         raise ArgumentError, "The source must be an absolute URI. For example:\n" \
-          "source 'https://rubygems.org'" if !uri.absolute? || (uri.is_a?(URI::HTTP) && uri.host.nil?)
+          "source 'https://rubygems.org'" if !uri.absolute? || (uri.is_a?(Bundler::URI::HTTP) && uri.host.nil?)
         uri
       end
 
@@ -354,7 +369,6 @@ module Bundler
       def installed_specs
         @installed_specs ||= Index.build do |idx|
           Bundler.rubygems.all_specs.reverse_each do |spec|
-            next if spec.name == "bundler"
             spec.source = self
             if Bundler.rubygems.spec_missing_extensions?(spec, false)
               Bundler.ui.debug "Source #{self} is ignoring #{spec} because it is missing extensions"
@@ -367,7 +381,7 @@ module Bundler
 
       def cached_specs
         @cached_specs ||= begin
-          idx = installed_specs.dup
+          idx = @allow_local ? installed_specs.dup : Index.new
 
           Dir["#{cache_path}/*.gem"].each do |gemfile|
             next if gemfile =~ /^bundler\-[\d\.]+?\.gem/
@@ -409,11 +423,11 @@ module Bundler
       def fetch_names(fetchers, dependency_names, index, override_dupes)
         fetchers.each do |f|
           if dependency_names
-            Bundler.ui.info "Fetching gem metadata from #{f.uri}", Bundler.ui.debug?
+            Bundler.ui.info "Fetching gem metadata from #{URICredentialsFilter.credential_filtered_uri(f.uri)}", Bundler.ui.debug?
             index.use f.specs_with_retry(dependency_names, self), override_dupes
             Bundler.ui.info "" unless Bundler.ui.debug? # new line now that the dots are over
           else
-            Bundler.ui.info "Fetching source index from #{f.uri}"
+            Bundler.ui.info "Fetching source index from #{URICredentialsFilter.credential_filtered_uri(f.uri)}"
             index.use f.specs_with_retry(nil, self), override_dupes
           end
         end
@@ -468,7 +482,7 @@ module Bundler
         Bundler.app_cache
       end
 
-    private
+      private
 
       # Checks if the requested spec exists in the global cache. If it does,
       # we copy it to the download path, and if it does not, we download it.
@@ -490,8 +504,15 @@ module Bundler
           uri = spec.remote.uri
           Bundler.ui.confirm("Fetching #{version_message(spec)}")
           rubygems_local_path = Bundler.rubygems.download_gem(spec, uri, download_path)
+
+          # older rubygems return varying file:// variants depending on version
+          rubygems_local_path = rubygems_local_path.gsub(/\Afile:/, "") unless Bundler.rubygems.provides?(">= 3.2.0.rc.2")
+          rubygems_local_path = rubygems_local_path.gsub(%r{\A//}, "") if Bundler.rubygems.provides?("< 3.1.0")
+
           if rubygems_local_path != local_path
-            FileUtils.mv(rubygems_local_path, local_path)
+            SharedHelpers.filesystem_access(local_path) do
+              FileUtils.mv(rubygems_local_path, local_path)
+            end
           end
           cache_globally(spec, local_path)
         end

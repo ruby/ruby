@@ -34,14 +34,13 @@ class DRbSSLService < DRbService
         [ ["C","JP"], ["O","Foo.DRuby.Org"], ["CN", "Sample"] ]
     end
 
-    @server = DRb::DRbServer.new('drbssl://:0', manager, config)
+    @server = DRb::DRbServer.new('drbssl://localhost:0', manager, config)
   end
 end
 
 class TestDRbSSLCore < Test::Unit::TestCase
   include DRbCore
   def setup
-    skip 'FIXME: BUG in OpenSSL on Solaris' if RUBY_PLATFORM =~ /solaris/i
     @drb_service = DRbSSLService.new
     super
     setup_service 'ut_drb_drbssl.rb'
@@ -60,7 +59,7 @@ end
 class TestDRbSSLAry < Test::Unit::TestCase
   include DRbAry
   def setup
-    skip 'FIXME: BUG in OpenSSL on Solaris' if RUBY_PLATFORM =~ /solaris/i
+    LeakChecker.skip if defined?(LeakChecker)
     @drb_service = DRbSSLService.new
     super
     setup_service 'ut_array_drbssl.rb'

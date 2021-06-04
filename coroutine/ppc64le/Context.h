@@ -1,6 +1,11 @@
+#ifndef COROUTINE_PPC64LE_CONTEXT_H
+#define COROUTINE_PPC64LE_CONTEXT_H 1
+
 #pragma once
 
 #include <assert.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <string.h>
 
 #define COROUTINE __attribute__((noreturn)) void
@@ -47,3 +52,5 @@ static inline void coroutine_destroy(struct coroutine_context * context)
 {
     context->stack_pointer = NULL;
 }
+
+#endif /* COROUTINE_PPC64LE_CONTEXT_H */

@@ -2,7 +2,7 @@
 
 RSpec.describe Bundler::Fetcher::Dependency do
   let(:downloader)  { double(:downloader) }
-  let(:remote)      { double(:remote, :uri => URI("http://localhost:5000")) }
+  let(:remote)      { double(:remote, :uri => Bundler::URI("http://localhost:5000")) }
   let(:display_uri) { "http://sample_uri.com" }
 
   subject { described_class.new(downloader, remote, display_uri) }
@@ -258,7 +258,7 @@ RSpec.describe Bundler::Fetcher::Dependency do
   end
 
   describe "#dependency_api_uri" do
-    let(:uri) { URI("http://gem-api.com") }
+    let(:uri) { Bundler::URI("http://gem-api.com") }
 
     context "with gem names" do
       let(:gem_names) { %w[foo bar bundler rubocop] }

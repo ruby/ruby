@@ -1,5 +1,5 @@
 # frozen_string_literal: false
-require_relative "testbase"
+require_relative "helper"
 require "bigdecimal/math"
 
 class TestBigMath < Test::Unit::TestCase

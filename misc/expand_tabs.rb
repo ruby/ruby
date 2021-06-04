@@ -24,9 +24,9 @@ class Git
   # [0, 1, 4, ...]
   def updated_lines(file)
     lines = []
-    revs_pattern = /\A0{40} /
+    revs_pattern = ("0"*40) + " "
     with_clean_env { IO.popen(['git', 'blame', '-l', '--', file], &:readlines) }.each_with_index do |line, index|
-      if revs_pattern =~ line
+      if line.b.start_with?(revs_pattern)
         lines << index
       end
     end
@@ -59,46 +59,85 @@ class Git
 end
 
 DEFAULT_GEM_LIBS = %w[
+  abbrev
+  base64
+  benchmark
   bundler
   cmath
   csv
-  e2mmap
+  debug
+  delegate
+  did_you_mean
+  drb
+  english
+  erb
   fileutils
+  find
   forwardable
+  getoptlong
   ipaddr
   irb
   logger
-  matrix
   mutex_m
+  net-http
+  net-protocol
+  observer
+  open3
+  open-uri
+  optparse
   ostruct
+  pp
+  prettyprint
   prime
-  racc
+  pstore
   rdoc
+  readline
+  reline
+  resolv
+  resolv-replace
   rexml
+  rinda
   rss
+  rubygems
   scanf
-  shell
-  sync
+  securerandom
+  set
+  shellwords
+  singleton
+  tempfile
   thwait
-  tracer
-  webrick
+  time
+  timeout
+  tmpdir
+  un
+  tsort
+  uri
+  weakref
+  yaml
 ]
 
 DEFAULT_GEM_EXTS = %w[
   bigdecimal
+  cgi
   date
-  dbm
+  digest
   etc
   fcntl
   fiddle
-  gdbm
-  io/console
+  io-console
+  io-nonblock
+  io-wait
   json
+  nkf
   openssl
+  pathname
   psych
-  sdbm
+  racc
+  readline-ext
   stringio
   strscan
+  syslog
+  win32ole
   zlib
 ]
 

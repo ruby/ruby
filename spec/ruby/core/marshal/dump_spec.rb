@@ -235,13 +235,13 @@ describe "Marshal.dump" do
     end
 
     it "dumps a Regexp with instance variables" do
-      o = //
+      o = Regexp.new("")
       o.instance_variable_set(:@ivar, :ivar)
       Marshal.dump(o).should == "\x04\bI/\x00\x00\a:\x06EF:\n@ivar:\tivar"
     end
 
     it "dumps an extended Regexp" do
-      Marshal.dump(//.extend(Meths)).should == "\x04\bIe:\nMeths/\x00\x00\x06:\x06EF"
+      Marshal.dump(Regexp.new("").extend(Meths)).should == "\x04\bIe:\nMeths/\x00\x00\x06:\x06EF"
     end
 
     it "dumps a Regexp subclass" do
@@ -411,13 +411,15 @@ describe "Marshal.dump" do
       load.should == (1...2)
     end
 
-    it "dumps a Range with extra instance variables" do
-      range = (1...3)
-      range.instance_variable_set :@foo, 42
-      dump = Marshal.dump(range)
-      load = Marshal.load(dump)
-      load.should == range
-      load.instance_variable_get(:@foo).should == 42
+    ruby_version_is ""..."3.0" do
+      it "dumps a Range with extra instance variables" do
+        range = (1...3)
+        range.instance_variable_set :@foo, 42
+        dump = Marshal.dump(range)
+        load = Marshal.load(dump)
+        load.should == range
+        load.instance_variable_get(:@foo).should == 42
+      end
     end
   end
 
@@ -471,6 +473,12 @@ describe "Marshal.dump" do
       obj = Exception.new("foo")
       obj.set_backtrace(["foo/bar.rb:10"])
       Marshal.dump(obj).should == "\x04\bo:\x0EException\a:\tmesg\"\bfoo:\abt[\x06\"\x12foo/bar.rb:10"
+    end
+
+    it "dumps instance variables if they exist" do
+      obj = Exception.new("foo")
+      obj.instance_variable_set(:@ivar, 1)
+      Marshal.dump(obj).should == "\x04\bo:\x0EException\b:\tmesg\"\bfoo:\abt0:\n@ivari\x06"
     end
 
     it "dumps the cause for the exception" do
@@ -550,13 +558,10 @@ describe "Marshal.dump" do
   end
 
   describe "when passed a StringIO" do
-
     it "should raise an error" do
       require "stringio"
-
       -> { Marshal.dump(StringIO.new) }.should raise_error(TypeError)
     end
-
   end
 
   it "raises a TypeError if marshalling a Method instance" do
@@ -581,27 +586,29 @@ describe "Marshal.dump" do
     -> { Marshal.dump(m) }.should raise_error(TypeError)
   end
 
-  it "returns an untainted string if object is untainted" do
-    Marshal.dump(Object.new).tainted?.should be_false
-  end
+  ruby_version_is ''...'2.7' do
+    it "returns an untainted string if object is untainted" do
+      Marshal.dump(Object.new).tainted?.should be_false
+    end
 
-  it "returns a tainted string if object is tainted" do
-    Marshal.dump(Object.new.taint).tainted?.should be_true
-  end
+    it "returns a tainted string if object is tainted" do
+      Marshal.dump(Object.new.taint).tainted?.should be_true
+    end
 
-  it "returns a tainted string if nested object is tainted" do
-    Marshal.dump([[Object.new.taint]]).tainted?.should be_true
-  end
+    it "returns a tainted string if nested object is tainted" do
+      Marshal.dump([[Object.new.taint]]).tainted?.should be_true
+    end
 
-  it "returns a trusted string if object is trusted" do
-    Marshal.dump(Object.new).untrusted?.should be_false
-  end
+    it "returns a trusted string if object is trusted" do
+      Marshal.dump(Object.new).untrusted?.should be_false
+    end
 
-  it "returns an untrusted string if object is untrusted" do
-    Marshal.dump(Object.new.untrust).untrusted?.should be_true
-  end
+    it "returns an untrusted string if object is untrusted" do
+      Marshal.dump(Object.new.untrust).untrusted?.should be_true
+    end
 
-  it "returns an untrusted string if nested object is untrusted" do
-    Marshal.dump([[Object.new.untrust]]).untrusted?.should be_true
+    it "returns an untrusted string if nested object is untrusted" do
+      Marshal.dump([[Object.new.untrust]]).untrusted?.should be_true
+    end
   end
 end

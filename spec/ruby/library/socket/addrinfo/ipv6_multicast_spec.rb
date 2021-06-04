@@ -18,19 +18,19 @@ describe "Addrinfo#ipv6_multicast?" do
 
   describe "for an ipv6 socket" do
     it "returns true for a multicast address" do
-      Addrinfo.ip('ff00::').ipv6_multicast?.should == true
-      Addrinfo.ip('ff00::1').ipv6_multicast?.should == true
-      Addrinfo.ip('ff08::1').ipv6_multicast?.should == true
-      Addrinfo.ip('fff8::1').ipv6_multicast?.should == true
+      Addrinfo.ip('ff00::').should.ipv6_multicast?
+      Addrinfo.ip('ff00::1').should.ipv6_multicast?
+      Addrinfo.ip('ff08::1').should.ipv6_multicast?
+      Addrinfo.ip('fff8::1').should.ipv6_multicast?
 
-      Addrinfo.ip('ff02::').ipv6_multicast?.should == true
-      Addrinfo.ip('ff02::1').ipv6_multicast?.should == true
-      Addrinfo.ip('ff0f::').ipv6_multicast?.should == true
+      Addrinfo.ip('ff02::').should.ipv6_multicast?
+      Addrinfo.ip('ff02::1').should.ipv6_multicast?
+      Addrinfo.ip('ff0f::').should.ipv6_multicast?
     end
 
     it "returns false for another address" do
-      Addrinfo.ip('::1').ipv6_multicast?.should == false
-      Addrinfo.ip('fe80::').ipv6_multicast?.should == false
+      Addrinfo.ip('::1').should_not.ipv6_multicast?
+      Addrinfo.ip('fe80::').should_not.ipv6_multicast?
     end
   end
 

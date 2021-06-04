@@ -14,7 +14,7 @@ describe "Regexp.new given a Regexp" do
   it_behaves_like :regexp_new_string_binary, :compile
 end
 
-describe "Regexp.new given a Fixnum" do
+describe "Regexp.new given an Integer" do
   it "raises a TypeError" do
     -> { Regexp.new(1) }.should raise_error(TypeError)
   end

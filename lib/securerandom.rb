@@ -66,40 +66,9 @@
 #
 
 module SecureRandom
-  @rng_chooser = Mutex.new # :nodoc:
-
   class << self
     def bytes(n)
       return gen_random(n)
-    end
-
-    def gen_random(n)
-      ret = Random.urandom(1)
-      if ret.nil?
-        begin
-          require 'openssl'
-        rescue NoMethodError
-          raise NotImplementedError, "No random device"
-        else
-          @rng_chooser.synchronize do
-            class << self
-              remove_method :gen_random
-              alias gen_random gen_random_openssl
-              public :gen_random
-            end
-          end
-          return gen_random(n)
-        end
-      else
-        @rng_chooser.synchronize do
-          class << self
-            remove_method :gen_random
-            alias gen_random gen_random_urandom
-            public :gen_random
-          end
-        end
-        return gen_random(n)
-      end
     end
 
     private
@@ -129,6 +98,21 @@ module SecureRandom
       end
       ret
     end
+
+    ret = Random.urandom(1)
+    if ret.nil?
+      begin
+        require 'openssl'
+      rescue NoMethodError
+        raise NotImplementedError, "No random device"
+      else
+        alias gen_random gen_random_openssl
+      end
+    else
+      alias gen_random gen_random_urandom
+    end
+
+    public :gen_random
   end
 end
 

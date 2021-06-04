@@ -1,15 +1,13 @@
 # -*- ruby -*-
-_VERSION = "0.4.9"
-date = %w$Date::                           $[1]
+_VERSION = "0.5.9"
 
 Gem::Specification.new do |s|
   s.name = "io-console"
   s.version = _VERSION
-  s.date = date
   s.summary = "Console interface"
   s.email = "nobu@ruby-lang.org"
   s.description = "add console capabilities to IO instances."
-  s.required_ruby_version = ">= 2.2.0"
+  s.required_ruby_version = ">= 2.4.0"
   s.homepage = "https://github.com/ruby/io-console"
   s.metadata["source_code_url"] = s.homepage
   s.authors = ["Nobu Nakada"]
@@ -20,9 +18,24 @@ Gem::Specification.new do |s|
     ext/io/console/console.c
     ext/io/console/extconf.rb
     ext/io/console/win32_vk.inc
-    lib/io/console.rb
     lib/io/console/size.rb
   ]
   s.extensions = %w[ext/io/console/extconf.rb]
-  s.license = "BSD-2-Clause"
+
+  if Gem::Platform === s.platform and s.platform =~ 'java'
+    s.files.delete_if {|f| f.start_with?("ext/")}
+    s.extensions.clear
+    s.files.concat(%w[
+      lib/io/console.rb
+      lib/io/console/ffi/bsd_console.rb
+      lib/io/console/ffi/common.rb
+      lib/io/console/ffi/console.rb
+      lib/io/console/ffi/linux_console.rb
+      lib/io/console/ffi/native_console.rb
+      lib/io/console/ffi/stty_console.rb
+      lib/io/console/ffi/stub_console.rb
+    ])
+  end
+
+  s.licenses = ["Ruby", "BSD-2-Clause"]
 end

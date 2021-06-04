@@ -104,7 +104,7 @@ ENC_ALIAS("ISO8859-8", "ISO-8859-8")
  * MIBenum: 2255
  * Link: http://www.iana.org/assignments/character-sets
  * Link: http://www.microsoft.com/globaldev/reference/sbcs/1255.mspx
- * Link: http://en.wikipedia.org/wiki/Windows-1255
+ * Link: https://en.wikipedia.org/wiki/Windows-1255
  */
 ENC_REPLICATE("Windows-1255", "ISO-8859-8")
 ENC_ALIAS("CP1255", "Windows-1255")

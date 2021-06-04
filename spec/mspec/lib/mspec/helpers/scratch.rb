@@ -14,4 +14,8 @@ module ScratchPad
   def self.recorded
     @record
   end
+
+  def self.inspect
+    "<ScratchPad @record=#{@record.inspect}>"
+  end
 end

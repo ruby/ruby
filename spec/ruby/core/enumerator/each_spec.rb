@@ -40,10 +40,10 @@ describe "Enumerator#each" do
   end
 
   it "calls the method given in the constructor until it's exhausted" do
-    each = mock('each')
-    each.should_receive(:each).and_yield(1).and_yield(2).and_yield(3)
+    each = mock('peach')
+    each.should_receive(:peach).and_yield(1).and_yield(2).and_yield(3)
     acc = []
-    each.to_enum.each {|e| acc << e }
+    each.to_enum(:peach).each {|e| acc << e }
     acc.should == [1,2,3]
   end
 

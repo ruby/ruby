@@ -4,7 +4,6 @@
 # used by both Specification and StubSpecification.
 
 class Gem::BasicSpecification
-
   ##
   # Allows installation of extensions for git: gems.
 
@@ -39,10 +38,8 @@ class Gem::BasicSpecification
   end
 
   class << self
-
     extend Gem::Deprecate
-    deprecate :default_specifications_dir, "Gem.default_specifications_dir", 2020, 02
-
+    rubygems_deprecate :default_specifications_dir, "Gem.default_specifications_dir"
   end
 
   ##
@@ -78,7 +75,7 @@ class Gem::BasicSpecification
     elsif missing_extensions?
       @ignored = true
 
-      if RUBY_ENGINE == platform || Gem::Platform.local === platform
+      if Gem::Platform::RUBY == platform || Gem::Platform.local === platform
         warn "Ignoring #{full_name} because its extensions are not built. " +
           "Try: gem pristine #{name} --version #{version}"
       end
@@ -98,7 +95,7 @@ class Gem::BasicSpecification
   # Returns full path to the directory where gem's extensions are installed.
 
   def extension_dir
-    @extension_dir ||= File.expand_path(File.join(extensions_dir, full_name)).untaint
+    @extension_dir ||= File.expand_path(File.join(extensions_dir, full_name)).tap(&Gem::UNTAINT)
   end
 
   ##
@@ -113,7 +110,7 @@ class Gem::BasicSpecification
   def find_full_gem_path # :nodoc:
     # TODO: also, shouldn't it default to full_name if it hasn't been written?
     path = File.expand_path File.join(gems_dir, full_name)
-    path.untaint
+    path.tap(&Gem::UNTAINT)
     path
   end
 
@@ -135,9 +132,9 @@ class Gem::BasicSpecification
 
   def full_name
     if platform == Gem::Platform::RUBY or platform.nil?
-      "#{name}-#{version}".dup.untaint
+      "#{name}-#{version}".dup.tap(&Gem::UNTAINT)
     else
-      "#{name}-#{version}-#{platform}".dup.untaint
+      "#{name}-#{version}-#{platform}".dup.tap(&Gem::UNTAINT)
     end
   end
 
@@ -149,7 +146,7 @@ class Gem::BasicSpecification
     @full_require_paths ||=
     begin
       full_paths = raw_require_paths.map do |path|
-        File.join full_gem_path, path.untaint
+        File.join full_gem_path, path.tap(&Gem::UNTAINT)
       end
 
       full_paths << extension_dir if have_extensions?
@@ -163,7 +160,7 @@ class Gem::BasicSpecification
 
   def datadir
     # TODO: drop the extra ", gem_name" which is uselessly redundant
-    File.expand_path(File.join(gems_dir, full_name, "data", name)).untaint
+    File.expand_path(File.join(gems_dir, full_name, "data", name)).tap(&Gem::UNTAINT)
   end
 
   ##
@@ -206,8 +203,8 @@ class Gem::BasicSpecification
 
   def internal_init # :nodoc:
     @extension_dir = nil
-    @full_gem_path         = nil
-    @gem_dir               = nil
+    @full_gem_path = nil
+    @gem_dir = nil
     @ignored = nil
   end
 
@@ -274,10 +271,16 @@ class Gem::BasicSpecification
   # Return all files in this gem that match for +glob+.
 
   def matches_for_glob(glob) # TODO: rename?
-    # TODO: do we need these?? Kill it
     glob = File.join(self.lib_dirs_glob, glob)
 
-    Dir[glob].map { |f| f.untaint } # FIX our tests are broken, run w/ SAFE=1
+    Dir[glob].map {|f| f.tap(&Gem::UNTAINT) } # FIX our tests are broken, run w/ SAFE=1
+  end
+
+  ##
+  # Returns the list of plugins in this spec.
+
+  def plugins
+    matches_for_glob("rubygems#{Gem.plugin_suffix_pattern}")
   end
 
   ##
@@ -295,7 +298,7 @@ class Gem::BasicSpecification
              "lib" # default value for require_paths for bundler/inline
            end
 
-    "#{self.full_gem_path}/#{dirs}".dup.untaint
+    "#{self.full_gem_path}/#{dirs}".dup.tap(&Gem::UNTAINT)
   end
 
   ##
@@ -328,16 +331,15 @@ class Gem::BasicSpecification
 
   def have_file?(file, suffixes)
     return true if raw_require_paths.any? do |path|
-      base = File.join(gems_dir, full_name, path.untaint, file).untaint
-      suffixes.any? { |suf| File.file? base + suf }
+      base = File.join(gems_dir, full_name, path.tap(&Gem::UNTAINT), file).tap(&Gem::UNTAINT)
+      suffixes.any? {|suf| File.file? base + suf }
     end
 
     if have_extensions?
       base = File.join extension_dir, file
-      suffixes.any? { |suf| File.file? base + suf }
+      suffixes.any? {|suf| File.file? base + suf }
     else
       false
     end
   end
-
 end

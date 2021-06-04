@@ -20,14 +20,14 @@
 %     # For `leave`. We can't proceed next ISeq in the same JIT function.
 %     expr.gsub!(/^(?<indent>\s*)RESTORE_REGS\(\);\n/) do
 %       indent = Regexp.last_match[:indent]
-%       <<-RESTORE_REGS.gsub(/^ +/, '')
+%       <<-end.gsub(/^ +/, '')
 %         #if OPT_CALL_THREADED_CODE
 %         #{indent}rb_ec_thread_ptr(ec)->retval = val;
 %         #{indent}return 0;
 %         #else
 %         #{indent}return val;
 %         #endif
-%       RESTORE_REGS
+%       end
 %     end
 %     expr.gsub!(/^(?<indent>\s*)NEXT_INSN\(\);\n/) do
 %       indent = Regexp.last_match[:indent]
@@ -47,6 +47,20 @@
 %   #
 %   # TODO: support combination of following macros in the same line
 %   case line
+%   when /\A\s+RUBY_VM_CHECK_INTS\(ec\);\s+\z/
+%     if insn.leaf_without_check_ints? # lazily move PC and optionalize mjit_call_p here
+        fprintf(f, "            if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(ec))) {\n");
+        fprintf(f, "                reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
+        fprintf(f, "                rb_threadptr_execute_interrupts(rb_ec_thread_ptr(ec), 0);\n");
+        fprintf(f, "                if (UNLIKELY(!mjit_call_p)) {\n");
+        fprintf(f, "                    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "                    RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+        fprintf(f, "                    goto cancel;\n");
+        fprintf(f, "                }\n");
+        fprintf(f, "            }\n");
+%     else
+        fprintf(f, <%= to_cstr.call(line) %>);
+%     end
 %   when /\A\s+JUMP\((?<dest>[^)]+)\);\s+\z/
 %     dest = Regexp.last_match[:dest]
 %
@@ -101,7 +115,7 @@
 %         # #define STACK_ADDR_FROM_TOP(n) (GET_SP()-(n))
 %         num = Regexp.last_match[:num]
         fprintf(f, <%= to_cstr.call(line.sub(/\bSTACK_ADDR_FROM_TOP\(([^)]+)\)/, '%s')) %>,
-                (status->local_stack_p ? "stack + (stack_size - (<%= num %>))" : "STACK_ADDR_FROM_TOP(<%= num %>)"));
+                (status->local_stack_p ? "(stack + (stack_size - (<%= num %>)))" : "STACK_ADDR_FROM_TOP(<%= num %>)"));
 %       when /\bTOPN\((?<num>[^)]+)\)/
 %         # #define TOPN(n) (*(GET_SP()-(n)-1))
 %         num = Regexp.last_match[:num]

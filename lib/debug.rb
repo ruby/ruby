@@ -5,11 +5,6 @@
 
 require 'continuation'
 
-if $SAFE > 0
-  STDERR.print "-r debug.rb is not available in safe mode\n"
-  exit 1
-end
-
 require 'tracer'
 require 'pp'
 
@@ -432,7 +427,7 @@ class DEBUGGER__
             pos = $2
             if $1
               klass = debug_silent_eval($1, binding)
-              file = $1
+              file = File.expand_path($1)
             end
             if pos =~ /^\d+$/
               pname = pos
@@ -1017,8 +1012,8 @@ EOHELP
     #
     #   (rdb:1) DEBUGGER__.thread_list_all
     #   +1 #<Thread:0x007fb2320c03f0 run> debug_me.rb.rb:3
-    #    2 #<Thread:0x007fb23218a538@debug_me.rb.rb:3 sleep>
-    #    3 #<Thread:0x007fb23218b0f0@debug_me.rb.rb:3 sleep>
+    #    2 #<Thread:0x007fb23218a538 debug_me.rb.rb:3 sleep>
+    #    3 #<Thread:0x007fb23218b0f0 debug_me.rb.rb:3 sleep>
     #   [1, 2, 3]
     #
     # Your current thread is indicated by a <b>+</b>
@@ -1027,8 +1022,8 @@ EOHELP
     #
     #   (rdb:1) th l
     #    +1 #<Thread:0x007f99328c0410 run>  debug_me.rb:3
-    #     2 #<Thread:0x007f9932938230@debug_me.rb:3 sleep> debug_me.rb:3
-    #     3 #<Thread:0x007f9932938e10@debug_me.rb:3 sleep> debug_me.rb:3
+    #     2 #<Thread:0x007f9932938230 debug_me.rb:3 sleep> debug_me.rb:3
+    #     3 #<Thread:0x007f9932938e10 debug_me.rb:3 sleep> debug_me.rb:3
     #
     # See DEBUGGER__ for more usage.
 

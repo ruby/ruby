@@ -10,22 +10,26 @@
 **********************************************************************/
 
 #if defined __MINGW32__ || defined __MINGW64__
-#define MINGW_HAS_SECURE_API 1
+# define MINGW_HAS_SECURE_API 1
+#endif
+
+#include "ruby/internal/config.h"
+
+#include <ctype.h>
+#include <errno.h>
+#include <float.h>
+#include <math.h>
+#include <stdio.h>
+
+#ifdef _WIN32
+# include "missing/file.h"
 #endif
 
 #include "internal.h"
-
-#include <ctype.h>
-#include <stdio.h>
-#include <errno.h>
-#include <math.h>
-#include <float.h>
-
-#ifdef _WIN32
-#include "missing/file.h"
-#endif
-
+#include "internal/sanitizers.h"
+#include "internal/util.h"
 #include "ruby/util.h"
+#include "ruby_atomic.h"
 
 const char ruby_hexdigits[] = "0123456789abcdef0123456789ABCDEF";
 #define hexdigit ruby_hexdigits
@@ -396,7 +400,8 @@ ruby_qsort(void* base, const size_t nel, const size_t size, cmpfunc_t *cmp, void
   for (;;) {
     start:
     if (L + size == R) {       /* 2 elements */
-      if ((*cmp)(L,R,d) > 0) mmswap(L,R); goto nxt;
+      if ((*cmp)(L,R,d) > 0) mmswap(L,R);
+      goto nxt;
     }
 
     l = L; r = R;

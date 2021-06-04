@@ -4,7 +4,6 @@
 # locally.
 
 class Gem::Resolver::InstalledSpecification < Gem::Resolver::SpecSpecification
-
   def ==(other) # :nodoc:
     self.class === other and
       @set  == other.set and
@@ -54,5 +53,4 @@ class Gem::Resolver::InstalledSpecification < Gem::Resolver::SpecSpecification
   def source
     @source ||= Gem::Source::Installed.new
   end
-
 end

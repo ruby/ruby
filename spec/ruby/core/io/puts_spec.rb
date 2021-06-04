@@ -16,7 +16,7 @@ describe "IO#puts" do
     ScratchPad.clear
     @io.close if @io
     rm_r @name
-    $/ = @before_separator
+    suppress_warning {$/ = @before_separator}
   end
 
   it "writes just a newline when given no args" do
@@ -25,7 +25,7 @@ describe "IO#puts" do
   end
 
   it "writes just a newline when given just a newline" do
-    -> { $stdout.puts "\n" }.should output_to_fd("\n", STDOUT)
+    -> { $stdout.puts "\n" }.should output_to_fd("\n", $stdout)
   end
 
   it "writes empty string with a newline when given nil as an arg" do
@@ -105,7 +105,7 @@ describe "IO#puts" do
   end
 
   it "ignores the $/ separator global" do
-    $/ = ":"
+    suppress_warning {$/ = ":"}
     @io.puts(5).should == nil
     ScratchPad.recorded.should == "5\n"
   end

@@ -5,7 +5,6 @@
 # to the rest of RubyGems.
 #
 class Gem::PathSupport
-
   ##
   # The default system path for managing Gems.
   attr_reader :home
@@ -36,7 +35,7 @@ class Gem::PathSupport
 
     @spec_cache_dir = env["GEM_SPEC_CACHE"] || Gem.default_spec_cache_dir
 
-    @spec_cache_dir = @spec_cache_dir.dup.untaint
+    @spec_cache_dir = @spec_cache_dir.dup.tap(&Gem::UNTAINT)
   end
 
   private
@@ -68,7 +67,7 @@ class Gem::PathSupport
       gem_path = default_path
     end
 
-    gem_path.map { |path| expand(path) }.uniq
+    gem_path.map {|path| expand(path) }.uniq
   end
 
   # Return the default Gem path
@@ -88,5 +87,4 @@ class Gem::PathSupport
       path
     end
   end
-
 end

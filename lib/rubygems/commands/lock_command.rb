@@ -2,7 +2,6 @@
 require 'rubygems/command'
 
 class Gem::Commands::LockCommand < Gem::Command
-
   def initialize
     super 'lock', 'Generate a lockdown list of gems',
           :strict => false
@@ -104,7 +103,6 @@ lock it down to the exact version.
       File.join path, "specifications", "#{gem_full_name}.gemspec"
     end
 
-    gemspecs.find { |path| File.exist? path }
+    gemspecs.find {|path| File.exist? path }
   end
-
 end

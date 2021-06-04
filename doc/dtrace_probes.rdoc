@@ -52,14 +52,20 @@ with when they are fired and the arguments they take:
 [ruby:::method-entry(classname, methodname, filename, lineno);]
   This probe is fired just before a method is entered.
 
-    classname name of the class (a string)
-    methodname name of the method about to be executed (a string)
-    filename the file name where the method is _being called_ (a string)
-    lineno the line number where the method is _being called_ (an int)
+  classname::    name of the class (a string)
+  methodname::   name of the method about to be executed (a string)
+  filename::     the file name where the method is _being called_ (a string)
+  lineno::       the line number where the method is _being called_ (an int)
+
+  *NOTE*: will only be fired if tracing is enabled, e.g. with: <code>TracePoint.new{}.enable</code>.
+  See Feature#14104[https://bugs.ruby-lang.org/issues/14104] for more details.
 
 [ruby:::method-return(classname, methodname, filename, lineno);]
   This probe is fired just after a method has returned. The arguments are the
   same as "ruby:::method-entry".
+
+  *NOTE*: will only be fired if tracing is enabled, e.g. with: <code>TracePoint.new{}.enable</code>.
+  See Feature#14104[https://bugs.ruby-lang.org/issues/14104] for more details.
 
 [ruby:::cmethod-entry(classname, methodname, filename, lineno);]
   This probe is fired just before a C method is entered. The arguments are the
@@ -72,9 +78,9 @@ with when they are fired and the arguments they take:
 [ruby:::require-entry(requiredfile, filename, lineno);]
   This probe is fired on calls to rb_require_safe (when a file is required).
 
-    requiredfile is the name of the file to be required (string).
-    filename is the file that called "require" (string).
-    lineno is the line number where the call to require was made (int).
+  requiredfile:: the name of the file to be required (string).
+  filename::     the file that called "+require+" (string).
+  lineno::       the line number where the call to require was made (int).
 
 [ruby:::require-return(requiredfile, filename, lineno);]
   This probe is fired just before rb_require_safe (when a file is required)
@@ -84,11 +90,11 @@ with when they are fired and the arguments they take:
 [ruby:::find-require-entry(requiredfile, filename, lineno);]
   This probe is fired right before search_required is called. search_required
   determines whether the file has already been required by searching loaded
-  features ($"), and if not, figures out which file must be loaded.
+  features (<code>$"</code>), and if not, figures out which file must be loaded.
 
-    requiredfile is the file to be required (string).
-    filename is the file that called "require" (string).
-    lineno is the line number where the call to require was made (int).
+  requiredfile:: the file to be required (string).
+  filename::     the file that called "require" (string).
+  lineno::       the line number where the call to require was made (int).
 
 [ruby:::find-require-return(requiredfile, filename, lineno);]
   This probe is fired right after search_required returns. See the
@@ -106,56 +112,56 @@ with when they are fired and the arguments they take:
 [ruby:::raise(classname, filename, lineno);]
   This probe is fired when an exception is raised.
 
-    classname is the class name of the raised exception (string)
-    filename the name of the file where the exception was raised (string)
-    lineno the line number in the file where the exception was raised (int)
+  classname::    the class name of the raised exception (string)
+  filename::     the name of the file where the exception was raised (string)
+  lineno::       the line number in the file where the exception was raised (int)
 
 [ruby:::object-create(classname, filename, lineno);]
   This probe is fired when an object is about to be allocated.
 
-    classname the class of the allocated object (string)
-    filename the name of the file where the object is allocated (string)
-    lineno the line number in the file where the object is allocated (int)
+  classname::    the class of the allocated object (string)
+  filename::     the name of the file where the object is allocated (string)
+  lineno::       the line number in the file where the object is allocated (int)
 
 [ruby:::array-create(length, filename, lineno);]
   This probe is fired when an Array is about to be allocated.
 
-    length the size of the array (long)
-    filename the name of the file where the array is allocated (string)
-    lineno the line number in the file where the array is allocated (int)
+  length::       the size of the array (long)
+  filename::     the name of the file where the array is allocated (string)
+  lineno::       the line number in the file where the array is allocated (int)
 
 [ruby:::hash-create(length, filename, lineno);]
   This probe is fired when a Hash is about to be allocated.
 
-    length the size of the hash (long)
-    filename the name of the file where the hash is allocated (string)
-    lineno the line number in the file where the hash is allocated (int)
+  length::       the size of the hash (long)
+  filename::     the name of the file where the hash is allocated (string)
+  lineno::       the line number in the file where the hash is allocated (int)
 
 [ruby:::string-create(length, filename, lineno);]
   This probe is fired when a String is about to be allocated.
 
-    length the size of the string (long)
-    filename the name of the file where the string is allocated (string)
-    lineno the line number in the file where the string is allocated (int)
+  length::       the size of the string (long)
+  filename::     the name of the file where the string is allocated (string)
+  lineno::       the line number in the file where the string is allocated (int)
 
 [ruby:::symbol-create(str, filename, lineno);]
   This probe is fired when a Symbol is about to be allocated.
 
-    str the contents of the symbol (string)
-    filename the name of the file where the string is allocated (string)
-    lineno the line number in the file where the string is allocated (int)
+  str::          the contents of the symbol (string)
+  filename::     the name of the file where the string is allocated (string)
+  lineno::       the line number in the file where the string is allocated (int)
 
 [ruby:::parse-begin(sourcefile, lineno);]
   Fired just before parsing and compiling a source file.
 
-    sourcefile the file being parsed (string)
-    lineno the line number where the source starts (int)
+  sourcefile::   the file being parsed (string)
+  lineno::       the line number where the source starts (int)
 
 [ruby:::parse-end(sourcefile, lineno);]
   Fired just after parsing and compiling a source file.
 
-    sourcefile the file being parsed (string)
-    lineno the line number where the source ended (int)
+  sourcefile::   the file being parsed (string)
+  lineno::       the line number where the source ended (int)
 
 [ruby:::gc-mark-begin();]
   Fired at the beginning of a mark phase.
@@ -172,7 +178,7 @@ with when they are fired and the arguments they take:
 [ruby:::method-cache-clear(class, sourcefile, lineno);]
   Fired when the method cache is cleared.
 
-    class is the classname being cleared, or "global" (string)
-    sourcefile the file being parsed (string)
-    lineno the line number where the source ended (int)
+  class::        the classname being cleared, or "global" (string)
+  sourcefile::   the file being parsed (string)
+  lineno::       the line number where the source ended (int)
 

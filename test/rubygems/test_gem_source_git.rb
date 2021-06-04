@@ -1,9 +1,8 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/source'
 
 class TestGemSourceGit < Gem::TestCase
-
   def setup
     super
 
@@ -25,7 +24,7 @@ class TestGemSourceGit < Gem::TestCase
   def test_checkout
     @source.checkout
 
-    assert_path_exists File.join @source.install_dir, 'a.gemspec'
+    assert_path_exist File.join @source.install_dir, 'a.gemspec'
   end
 
   def test_checkout_master
@@ -40,7 +39,7 @@ class TestGemSourceGit < Gem::TestCase
 
     @source.checkout
 
-    assert_path_exists File.join @source.install_dir, 'b.gemspec'
+    assert_path_exist File.join @source.install_dir, 'b.gemspec'
   end
 
   def test_checkout_local
@@ -50,7 +49,7 @@ class TestGemSourceGit < Gem::TestCase
 
     install_dir = File.join Gem.dir, 'bundler', 'gems', "a-#{@head[0..11]}"
 
-    refute_path_exists File.join install_dir, 'a.gemspec'
+    assert_path_not_exist File.join install_dir, 'a.gemspec'
   end
 
   def test_checkout_local_cached
@@ -60,7 +59,7 @@ class TestGemSourceGit < Gem::TestCase
 
     @source.checkout
 
-    assert_path_exists File.join @source.install_dir, 'a.gemspec'
+    assert_path_exist File.join @source.install_dir, 'a.gemspec'
   end
 
   def test_checkout_submodules
@@ -69,21 +68,22 @@ class TestGemSourceGit < Gem::TestCase
     git_gem 'b'
 
     Dir.chdir 'git/a' do
-      Gem::Util.silent_system @git, 'submodule', '--quiet',
-                              'add', File.expand_path('../b'), 'b'
+      output, status = Open3.capture2e(@git, 'submodule', '--quiet', 'add', File.expand_path('../b'), 'b')
+      assert status.success?, output
+
       system @git, 'commit', '--quiet', '-m', 'add submodule b'
     end
 
     source.checkout
 
-    assert_path_exists File.join source.install_dir, 'a.gemspec'
-    assert_path_exists File.join source.install_dir, 'b/b.gemspec'
+    assert_path_exist File.join source.install_dir, 'a.gemspec'
+    assert_path_exist File.join source.install_dir, 'b/b.gemspec'
   end
 
   def test_cache
     assert @source.cache
 
-    assert_path_exists @source.repo_cache_dir
+    assert_path_exist @source.repo_cache_dir
 
     Dir.chdir @source.repo_cache_dir do
       assert_equal @head, Gem::Util.popen(@git, 'rev-parse', 'master').strip
@@ -95,7 +95,7 @@ class TestGemSourceGit < Gem::TestCase
 
     @source.cache
 
-    refute_path_exists @source.repo_cache_dir
+    assert_path_not_exist @source.repo_cache_dir
   end
 
   def test_dir_shortref
@@ -186,8 +186,8 @@ class TestGemSourceGit < Gem::TestCase
 
     source.cache
 
-    e = assert_raises Gem::Exception do
-      capture_subprocess_io {source.rev_parse}
+    e = assert_raise Gem::Exception do
+      capture_subprocess_io { source.rev_parse }
     end
 
     assert_equal "unable to find reference nonexistent in #{@repository}",
@@ -208,16 +208,16 @@ class TestGemSourceGit < Gem::TestCase
     installed = Gem::Source::Installed.new
     vendor    = Gem::Source::Vendor.new 'vendor/foo'
 
-    assert_equal(0, git.      <=>(git),       'git    <=> git')
+    assert_equal(0, git.<=>(git),       'git <=> git')
 
-    assert_equal(1, git.      <=>(remote),    'git    <=> remote')
-    assert_equal(-1, remote.   <=>(git),       'remote <=> git')
+    assert_equal(1, git.<=>(remote),    'git <=> remote')
+    assert_equal(-1, remote.<=>(git), 'remote <=> git')
 
-    assert_equal(1, git.      <=>(installed), 'git       <=> installed')
-    assert_equal(-1, installed.<=>(git),       'installed <=> git')
+    assert_equal(1, git.<=>(installed), 'git <=> installed')
+    assert_equal(-1, installed.<=>(git), 'installed <=> git')
 
-    assert_equal(-1, git.      <=>(vendor),    'git       <=> vendor')
-    assert_equal(1, vendor.   <=>(git),       'vendor    <=> git')
+    assert_equal(-1, git.<=>(vendor), 'git <=> vendor')
+    assert_equal(1, vendor.<=>(git), 'vendor <=> git')
   end
 
   def test_specs
@@ -240,11 +240,11 @@ class TestGemSourceGit < Gem::TestCase
 
     specs = nil
 
-    capture_io do
+    capture_output do
       specs = source.specs
     end
 
-    assert_equal %w[a-1 b-1], specs.map { |spec| spec.full_name }
+    assert_equal %w[a-1 b-1], specs.map {|spec| spec.full_name }
 
     a_spec = specs.shift
 
@@ -275,7 +275,7 @@ class TestGemSourceGit < Gem::TestCase
     source = Gem::Source::Git.new @name, @repository, 'master', true
     source.remote = false
 
-    capture_io do
+    capture_output do
       assert_empty source.specs
     end
   end
@@ -299,5 +299,4 @@ class TestGemSourceGit < Gem::TestCase
     assert_equal '291c4caac7feba8bb64c297987028acb3dde6cfe',
                  source.uri_hash
   end
-
 end

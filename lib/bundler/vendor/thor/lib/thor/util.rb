@@ -211,7 +211,7 @@ class Bundler::Thor
       #
       def globs_for(path)
         path = escape_globs(path)
-        ["#{path}/Bundler::Thorfile", "#{path}/*.thor", "#{path}/tasks/*.thor", "#{path}/lib/tasks/*.thor"]
+        ["#{path}/Thorfile", "#{path}/*.thor", "#{path}/tasks/*.thor", "#{path}/lib/tasks/*.thor"]
       end
 
       # Return the path to the ruby interpreter taking into account multiple
@@ -262,6 +262,22 @@ class Bundler::Thor
       #
       def escape_globs(path)
         path.to_s.gsub(/[*?{}\[\]]/, '\\\\\\&')
+      end
+
+      # Returns a string that has had any HTML characters escaped.
+      #
+      # ==== Examples
+      #
+      #   Bundler::Thor::Util.escape_html('<div>')   # => "&lt;div&gt;"
+      #
+      # ==== Parameters
+      # String
+      #
+      # ==== Returns
+      # String
+      #
+      def escape_html(string)
+        CGI.escapeHTML(string)
       end
     end
   end

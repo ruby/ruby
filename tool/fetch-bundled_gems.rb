@@ -8,20 +8,20 @@ BEGIN {
   Dir.chdir(dir)
 }
 
-n, v, u = $F
-case n
-when "minitest"
-  v = "master"
-when "test-unit"
-else
-  v = "v" + v
-end
+n, v, u, r = $F
+
+next if n =~ /^#/
 
 if File.directory?(n)
   puts "updating #{n} ..."
-  system(*%W"git fetch", chdir: n) or abort
+  system("git", "fetch", chdir: n) or abort
 else
   puts "retrieving #{n} ..."
   system(*%W"git clone #{u} #{n}") or abort
 end
-system(*%W"git checkout #{v}", chdir: n) or abort
+c = r || "v#{v}"
+checkout = %w"git -c advice.detachedHead=false checkout"
+puts "checking out #{c} (v=#{v}, r=#{r}) ..."
+unless system(*checkout, c, "--", chdir: n)
+  abort
+end

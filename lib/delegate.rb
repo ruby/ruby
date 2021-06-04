@@ -21,6 +21,8 @@
 # SimpleDelegator's implementation serves as a nice example of the use of
 # Delegator:
 #
+#   require 'delegate'
+#
 #   class SimpleDelegator < Delegator
 #     def __getobj__
 #       @delegate_sd_obj # return object we are delegating to, required
@@ -37,6 +39,8 @@
 # Be advised, RDoc will not detect delegated methods.
 #
 class Delegator < BasicObject
+  VERSION = "0.2.0"
+
   kernel = ::Kernel.dup
   kernel.class_eval do
     alias __raise__ raise
@@ -75,14 +79,14 @@ class Delegator < BasicObject
   #
   # Handles the magic of delegation through \_\_getobj\_\_.
   #
-  def method_missing(m, *args, &block)
+  ruby2_keywords def method_missing(m, *args, &block)
     r = true
     target = self.__getobj__ {r = false}
 
-    if r && target.respond_to?(m)
+    if r && target_respond_to?(target, m, false)
       target.__send__(m, *args, &block)
     elsif ::Kernel.method_defined?(m) || ::Kernel.private_method_defined?(m)
-      ::Kernel.instance_method(m).bind(self).(*args, &block)
+      ::Kernel.instance_method(m).bind_call(self, *args, &block)
     else
       super(m, *args, &block)
     end
@@ -95,12 +99,29 @@ class Delegator < BasicObject
   def respond_to_missing?(m, include_private)
     r = true
     target = self.__getobj__ {r = false}
-    r &&= target.respond_to?(m, include_private)
-    if r && include_private && !target.respond_to?(m, false)
+    r &&= target_respond_to?(target, m, include_private)
+    if r && include_private && !target_respond_to?(target, m, false)
       warn "delegator does not forward private method \##{m}", uplevel: 3
       return false
     end
     r
+  end
+
+  KERNEL_RESPOND_TO = ::Kernel.instance_method(:respond_to?)
+  private_constant :KERNEL_RESPOND_TO
+
+  # Handle BasicObject instances
+  private def target_respond_to?(target, m, include_private)
+    case target
+    when Object
+      target.respond_to?(m, include_private)
+    else
+      if KERNEL_RESPOND_TO.bind_call(target, :respond_to?)
+        target.respond_to?(m, include_private)
+      else
+        KERNEL_RESPOND_TO.bind_call(target, m, include_private)
+      end
+    end
   end
 
   #
@@ -201,8 +222,8 @@ class Delegator < BasicObject
     end
   end
 
-  def initialize_clone(obj) # :nodoc:
-    self.__setobj__(obj.__getobj__.clone)
+  def initialize_clone(obj, freeze: nil) # :nodoc:
+    self.__setobj__(obj.__getobj__.clone(freeze: freeze))
   end
   def initialize_dup(obj) # :nodoc:
     self.__setobj__(obj.__getobj__.dup)
@@ -210,35 +231,12 @@ class Delegator < BasicObject
   private :initialize_clone, :initialize_dup
 
   ##
-  # :method: trust
-  # Trust both the object returned by \_\_getobj\_\_ and self.
-  #
-
-  ##
-  # :method: untrust
-  # Untrust both the object returned by \_\_getobj\_\_ and self.
-  #
-
-  ##
-  # :method: taint
-  # Taint both the object returned by \_\_getobj\_\_ and self.
-  #
-
-  ##
-  # :method: untaint
-  # Untaint both the object returned by \_\_getobj\_\_ and self.
-  #
-
-  ##
   # :method: freeze
   # Freeze both the object returned by \_\_getobj\_\_ and self.
   #
-
-  [:trust, :untrust, :taint, :untaint, :freeze].each do |method|
-    define_method method do
-      __getobj__.send(method)
-      super()
-    end
+  def freeze
+    __getobj__.freeze
+    super()
   end
 
   @delegator_api = self.public_instance_methods
@@ -258,6 +256,8 @@ end
 #       Date.new(1989, 9, 10)
 #     end
 #   end
+#
+#   require 'delegate'
 #
 #   class UserDecorator < SimpleDelegator
 #     def birth_year
@@ -347,7 +347,7 @@ def Delegator.delegating_block(mid) # :nodoc:
   lambda do |*args, &block|
     target = self.__getobj__
     target.__send__(mid, *args, &block)
-  end
+  end.ruby2_keywords
 end
 
 #
@@ -423,6 +423,21 @@ def DelegateClass(superclass, &block)
   end
   klass.define_singleton_method :protected_instance_methods do |all=true|
     super(all) | superclass.protected_instance_methods
+  end
+  klass.define_singleton_method :instance_methods do |all=true|
+    super(all) | superclass.instance_methods
+  end
+  klass.define_singleton_method :public_instance_method do |name|
+    super(name)
+  rescue NameError
+    raise unless self.public_instance_methods.include?(name)
+    superclass.public_instance_method(name)
+  end
+  klass.define_singleton_method :instance_method do |name|
+    super(name)
+  rescue NameError
+    raise unless self.instance_methods.include?(name)
+    superclass.instance_method(name)
   end
   klass.module_eval(&block) if block
   return klass

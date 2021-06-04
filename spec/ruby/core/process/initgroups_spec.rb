@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
 
 describe "Process.initgroups" do
-  platform_is_not :windows do
+  platform_is_not :windows, :android do
     as_user do
       it "initializes the supplemental group access list" do
         name = `id -un`.strip

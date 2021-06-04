@@ -57,7 +57,7 @@ numhash_aset(VALUE self, VALUE key, VALUE data)
 }
 
 static int
-numhash_i(st_data_t key, st_data_t value, st_data_t arg)
+numhash_i(st_data_t key, st_data_t value, st_data_t arg, int _)
 {
     VALUE ret;
     ret = rb_yield_values(3, (VALUE)key, (VALUE)value, (VALUE)arg);
@@ -125,7 +125,7 @@ numhash_delete_safe(VALUE self, VALUE key)
 void
 Init_numhash(void)
 {
-    VALUE st = rb_define_class_under(rb_define_module("Bug"), "StNumHash", rb_cData);
+    VALUE st = rb_define_class_under(rb_define_module("Bug"), "StNumHash", rb_cObject);
     rb_define_alloc_func(st, numhash_alloc);
     rb_define_method(st, "initialize", numhash_init, 0);
     rb_define_method(st, "[]", numhash_aref, 1);
@@ -135,4 +135,3 @@ Init_numhash(void)
     rb_define_method(st, "size", numhash_size, 0);
     rb_define_method(st, "delete_safe", numhash_delete_safe, 1);
 }
-

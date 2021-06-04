@@ -77,14 +77,16 @@ describe :hash_to_s, shared: true do
     y.send(@method).should == "{1=>{0=>{...}}}"
   end
 
-  it "returns a tainted string if self is tainted and not empty" do
-    {}.taint.send(@method).tainted?.should be_false
-    { nil => nil }.taint.send(@method).tainted?.should be_true
-  end
+  ruby_version_is ''...'2.7' do
+    it "returns a tainted string if self is tainted and not empty" do
+      {}.taint.send(@method).tainted?.should be_false
+      { nil => nil }.taint.send(@method).tainted?.should be_true
+    end
 
-  it "returns an untrusted string if self is untrusted and not empty" do
-    {}.untrust.send(@method).untrusted?.should be_false
-    { nil => nil }.untrust.send(@method).untrusted?.should be_true
+    it "returns an untrusted string if self is untrusted and not empty" do
+      {}.untrust.send(@method).untrusted?.should be_false
+      { nil => nil }.untrust.send(@method).untrusted?.should be_true
+    end
   end
 
   it "does not raise if inspected result is not default external encoding" do

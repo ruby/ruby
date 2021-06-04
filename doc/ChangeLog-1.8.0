@@ -13020,7 +13020,7 @@ Tue Jun 12 00:41:18 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Mon Jun 11 14:29:41 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
-	* confgure.in: add RUBY_CANONICAL_BUILD.
+	* configure.in: add RUBY_CANONICAL_BUILD.
 
 Sun Jun 10 17:31:47 2001  Guy Decoux  <decoux@moulon.inra.fr>
 

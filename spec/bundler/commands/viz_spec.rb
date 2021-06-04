@@ -1,13 +1,10 @@
 # frozen_string_literal: true
 
 RSpec.describe "bundle viz", :bundler => "< 3", :if => Bundler.which("dot") do
-  let(:ruby_graphviz) do
-    graphviz_glob = base_system_gems.join("cache/ruby-graphviz*")
-    Pathname.glob(graphviz_glob).first
-  end
-
   before do
-    system_gems ruby_graphviz
+    graphviz_version = RUBY_VERSION >= "2.4" ? "1.2.5" : "1.2.4"
+
+    realworld_system_gems "ruby-graphviz --version #{graphviz_version}"
   end
 
   it "graphs gems from the Gemfile" do
@@ -17,10 +14,10 @@ RSpec.describe "bundle viz", :bundler => "< 3", :if => Bundler.which("dot") do
       gem "rack-obama"
     G
 
-    bundle! "viz"
+    bundle "viz"
     expect(out).to include("gem_graph.png")
 
-    bundle! "viz", :format => "debug"
+    bundle "viz", :format => "debug"
     expect(out).to eq(strip_whitespace(<<-DOT).strip)
       digraph Gemfile {
       concentrate = "true";
@@ -51,10 +48,10 @@ RSpec.describe "bundle viz", :bundler => "< 3", :if => Bundler.which("dot") do
       gem "rack-obama"
     G
 
-    bundle! "viz"
+    bundle "viz"
     expect(out).to include("gem_graph.png")
 
-    bundle! "viz", :format => :debug, :version => true
+    bundle "viz", :format => :debug, :version => true
     expect(out).to eq(strip_whitespace(<<-EOS).strip)
       digraph Gemfile {
       concentrate = "true";
@@ -82,7 +79,7 @@ RSpec.describe "bundle viz", :bundler => "< 3", :if => Bundler.which("dot") do
         end
       end
 
-      system_gems ruby_graphviz, "graphviz-999", :gem_repo => gem_repo4
+      system_gems "graphviz-999", :gem_repo => gem_repo4
     end
 
     it "loads the correct ruby-graphviz gem" do
@@ -92,7 +89,7 @@ RSpec.describe "bundle viz", :bundler => "< 3", :if => Bundler.which("dot") do
         gem "rack-obama"
       G
 
-      bundle! "viz", :format => "debug"
+      bundle "viz", :format => "debug"
       expect(out).to eq(strip_whitespace(<<-DOT).strip)
         digraph Gemfile {
         concentrate = "true";
@@ -124,7 +121,7 @@ RSpec.describe "bundle viz", :bundler => "< 3", :if => Bundler.which("dot") do
         end
       G
 
-      bundle! "viz --without=rails"
+      bundle "viz --without=rails"
       expect(out).to include("gem_graph.png")
     end
 
@@ -142,7 +139,7 @@ RSpec.describe "bundle viz", :bundler => "< 3", :if => Bundler.which("dot") do
         end
       G
 
-      bundle! "viz --without=rails:rack"
+      bundle "viz --without=rails:rack"
       expect(out).to include("gem_graph.png")
     end
   end

@@ -1,0 +1,4 @@
+benchmark:
+  vm_eval: |
+    eval("1")
+loop_count: 6000000

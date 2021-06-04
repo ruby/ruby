@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require_relative "utils"
 
 if defined?(OpenSSL)
@@ -78,6 +78,16 @@ class OpenSSL::TestX509Attribute < OpenSSL::TestCase
     assert_equal false, attr1 == 12345
     assert_equal true, attr1 == attr2
     assert_equal false, attr1 == attr3
+  end
+
+  def test_marshal
+    val = OpenSSL::ASN1::Set([
+      OpenSSL::ASN1::UTF8String("abc123")
+    ])
+    attr = OpenSSL::X509::Attribute.new("challengePassword", val)
+    deserialized = Marshal.load(Marshal.dump(attr))
+
+    assert_equal attr.to_der, deserialized.to_der
   end
 end
 

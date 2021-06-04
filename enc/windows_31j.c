@@ -57,7 +57,7 @@ OnigEncodingDefine(windows_31j, Windows_31J) = {
  * MIBenum: 2024
  * Link: http://www.iana.org/assignments/character-sets
  * Link: http://www.microsoft.com/globaldev/reference/dbcs/932.mspx
- * Link: http://ja.wikipedia.org/wiki/Windows-31J
+ * Link: https://ja.wikipedia.org/wiki/Windows-31J
  * Link: http://source.icu-project.org/repos/icu/data/trunk/charset/data/ucm/windows-932-2000.ucm
  *
  * Windows Standard Character Set and its mapping to Unicode by Microsoft.

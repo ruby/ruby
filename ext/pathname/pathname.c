@@ -110,7 +110,6 @@ path_initialize(VALUE self, VALUE arg)
     str = rb_obj_dup(str);
 
     set_strpath(self, str);
-    OBJ_INFECT(self, str);
     return self;
 }
 
@@ -134,15 +133,12 @@ path_freeze(VALUE self)
  * call-seq:
  *   pathname.taint -> obj
  *
- * Taints this Pathname.
- *
- * See Object.taint.
+ * Returns pathname.  This method is deprecated and will be removed in Ruby 3.2.
  */
 static VALUE
 path_taint(VALUE self)
 {
-    rb_call_super(0, 0);
-    rb_obj_taint(get_strpath(self));
+    rb_warn("Pathname#taint is deprecated and will be removed in Ruby 3.2.");
     return self;
 }
 
@@ -150,15 +146,12 @@ path_taint(VALUE self)
  * call-seq:
  *   pathname.untaint -> obj
  *
- * Untaints this Pathname.
- *
- * See Object.untaint.
+ * Returns pathname.  This method is deprecated and will be removed in Ruby 3.2.
  */
 static VALUE
 path_untaint(VALUE self)
 {
-    rb_call_super(0, 0);
-    rb_obj_untaint(get_strpath(self));
+    rb_warn("Pathname#untaint is deprecated and will be removed in Ruby 3.2.");
     return self;
 }
 
@@ -308,7 +301,6 @@ path_sub_ext(VALUE self, VALUE repl)
     }
     str2 = rb_str_subseq(str, 0, ext-p);
     rb_str_append(str2, repl);
-    OBJ_INFECT(str2, str);
     return rb_class_new_instance(1, &str2, rb_obj_class(self));
 }
 
@@ -368,10 +360,10 @@ path_each_line(int argc, VALUE *argv, VALUE self)
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
     if (rb_block_given_p()) {
-        return rb_block_call(rb_cFile, id_foreach, 1+n, args, 0, 0);
+        return rb_block_call_kw(rb_cFile, id_foreach, 1+n, args, 0, 0, RB_PASS_CALLED_KEYWORDS);
     }
     else {
-        return rb_funcallv(rb_cFile, id_foreach, 1+n, args);
+        return rb_funcallv_kw(rb_cFile, id_foreach, 1+n, args, RB_PASS_CALLED_KEYWORDS);
     }
 }
 
@@ -393,7 +385,7 @@ path_read(int argc, VALUE *argv, VALUE self)
 
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
-    return rb_funcallv(rb_cFile, id_read, 1+n, args);
+    return rb_funcallv_kw(rb_cFile, id_read, 1+n, args, RB_PASS_CALLED_KEYWORDS);
 }
 
 /*
@@ -434,7 +426,7 @@ path_write(int argc, VALUE *argv, VALUE self)
 
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
-    return rb_funcallv(rb_cFile, id_write, 1+n, args);
+    return rb_funcallv_kw(rb_cFile, id_write, 1+n, args, RB_PASS_CALLED_KEYWORDS);
 }
 
 /*
@@ -455,7 +447,7 @@ path_binwrite(int argc, VALUE *argv, VALUE self)
 
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
-    return rb_funcallv(rb_cFile, id_binwrite, 1+n, args);
+    return rb_funcallv_kw(rb_cFile, id_binwrite, 1+n, args, RB_PASS_CALLED_KEYWORDS);
 }
 
 /*
@@ -477,7 +469,7 @@ path_readlines(int argc, VALUE *argv, VALUE self)
 
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
-    return rb_funcallv(rb_cFile, id_readlines, 1+n, args);
+    return rb_funcallv_kw(rb_cFile, id_readlines, 1+n, args, RB_PASS_CALLED_KEYWORDS);
 }
 
 /*
@@ -562,7 +554,7 @@ path_mtime(VALUE self)
 
 /*
  * call-seq:
- *   pathname.chmod	-> integer
+ *   pathname.chmod(mode_int)	-> integer
  *
  * Changes file permissions.
  *
@@ -576,7 +568,7 @@ path_chmod(VALUE self, VALUE mode)
 
 /*
  * call-seq:
- *   pathname.lchmod	-> integer
+ *   pathname.lchmod(mode_int)	-> integer
  *
  * Same as Pathname.chmod, but does not follow symbolic links.
  *
@@ -590,7 +582,7 @@ path_lchmod(VALUE self, VALUE mode)
 
 /*
  * call-seq:
- *   pathname.chown	-> integer
+ *   pathname.chown(owner_int, group_int)	-> integer
  *
  * Change owner and group of the file.
  *
@@ -604,7 +596,7 @@ path_chown(VALUE self, VALUE owner, VALUE group)
 
 /*
  * call-seq:
- *   pathname.lchown	-> integer
+ *   pathname.lchown(owner_int, group_int)	-> integer
  *
  * Same as Pathname.chown, but does not follow symbolic links.
  *
@@ -618,8 +610,8 @@ path_lchown(VALUE self, VALUE owner, VALUE group)
 
 /*
  * call-seq:
- *    pathname.fnmatch(pattern, [flags])        -> string
- *    pathname.fnmatch?(pattern, [flags])       -> string
+ *    pathname.fnmatch(pattern, [flags])        -> true or false
+ *    pathname.fnmatch?(pattern, [flags])       -> true or false
  *
  * Return +true+ if the receiver matches the given pattern.
  *
@@ -665,6 +657,13 @@ path_make_link(VALUE self, VALUE old)
 }
 
 /*
+ * call-seq:
+ *   pathname.open()
+ *   pathname.open(mode="r" [, opt])                        -> file
+ *   pathname.open([mode [, perm]] [, opt])                 -> file
+ *   pathname.open(mode="r" [, opt]) {|file| block }        -> obj
+ *   pathname.open([mode [, perm]] [, opt]) {|file| block } -> obj
+ *
  * Opens the file for reading or writing.
  *
  * See File.open.
@@ -678,10 +677,10 @@ path_open(int argc, VALUE *argv, VALUE self)
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
     if (rb_block_given_p()) {
-        return rb_block_call(rb_cFile, id_open, 1+n, args, 0, 0);
+        return rb_block_call_kw(rb_cFile, id_open, 1+n, args, 0, 0, RB_PASS_CALLED_KEYWORDS);
     }
     else {
-        return rb_funcallv(rb_cFile, id_open, 1+n, args);
+        return rb_funcallv_kw(rb_cFile, id_open, 1+n, args, RB_PASS_CALLED_KEYWORDS);
     }
 }
 
@@ -835,7 +834,7 @@ path_split(VALUE self)
     VALUE str = get_strpath(self);
     VALUE ary, dirname, basename;
     ary = rb_funcall(rb_cFile, id_split, 1, str);
-    ary = rb_check_array_type(ary);
+    Check_Type(ary, T_ARRAY);
     dirname = rb_ary_entry(ary, 0);
     basename = rb_ary_entry(ary, 1);
     dirname = rb_class_new_instance(1, &dirname, rb_obj_class(self));
@@ -1097,12 +1096,12 @@ path_s_glob(int argc, VALUE *argv, VALUE klass)
 
     n = rb_scan_args(argc, argv, "12", &args[0], &args[1], &args[2]);
     if (rb_block_given_p()) {
-        return rb_block_call(rb_cDir, id_glob, n, args, s_glob_i, klass);
+        return rb_block_call_kw(rb_cDir, id_glob, n, args, s_glob_i, klass, RB_PASS_CALLED_KEYWORDS);
     }
     else {
         VALUE ary;
         long i;
-        ary = rb_funcallv(rb_cDir, id_glob, n, args);
+        ary = rb_funcallv_kw(rb_cDir, id_glob, n, args, RB_PASS_CALLED_KEYWORDS);
         ary = rb_convert_type(ary, T_ARRAY, "Array", "to_ary");
         for (i = 0; i < RARRAY_LEN(ary); i++) {
             VALUE elt = RARRAY_AREF(ary, i);
@@ -1145,12 +1144,12 @@ path_glob(int argc, VALUE *argv, VALUE self)
     n = 3;
 
     if (rb_block_given_p()) {
-        return rb_block_call(rb_cDir, id_glob, n, args, glob_i, self);
+        return rb_block_call_kw(rb_cDir, id_glob, n, args, glob_i, self, RB_PASS_KEYWORDS);
     }
     else {
         VALUE ary;
         long i;
-        ary = rb_funcallv(rb_cDir, id_glob, n, args);
+        ary = rb_funcallv_kw(rb_cDir, id_glob, n, args, RB_PASS_KEYWORDS);
         ary = rb_convert_type(ary, T_ARRAY, "Array", "to_ary");
         for (i = 0; i < RARRAY_LEN(ary); i++) {
             VALUE elt = RARRAY_AREF(ary, i);
@@ -1323,6 +1322,8 @@ path_unlink(VALUE self)
 static VALUE
 path_f_pathname(VALUE self, VALUE str)
 {
+    if (CLASS_OF(str) == rb_cPathname)
+        return str;
     return rb_class_new_instance(1, &str, rb_cPathname);
 }
 
@@ -1488,6 +1489,8 @@ path_f_pathname(VALUE self, VALUE str)
  * - #binread(*args)
  * - #readlines(*args)
  * - #sysopen(*args)
+ * - #write(*args)
+ * - #binwrite(*args)
  *
  * === Utilities
  *
@@ -1509,6 +1512,10 @@ path_f_pathname(VALUE self, VALUE str)
 void
 Init_pathname(void)
 {
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    rb_ext_ractor_safe(true);
+#endif
+
     InitVM(pathname);
 
     rb_cPathname = rb_define_class("Pathname", rb_cObject);

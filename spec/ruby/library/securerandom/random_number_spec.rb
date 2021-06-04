@@ -1,12 +1,16 @@
 require_relative '../../spec_helper'
+require_relative '../../core/random/shared/rand'
 
 require 'securerandom'
 
 describe "SecureRandom.random_number" do
+  it_behaves_like :random_number, :rand, SecureRandom
+  it_behaves_like :random_number, :random_number, SecureRandom
+
   it "generates a random positive number smaller then the positive integer argument" do
     (1..64).each do |idx|
       num = SecureRandom.random_number(idx)
-      num.should be_kind_of(Fixnum)
+      num.should be_kind_of(Integer)
       (0 <= num).should == true
       (num < idx).should == true
     end

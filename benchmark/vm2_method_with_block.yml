@@ -1,8 +1,0 @@
-prelude: |
-  def m
-    nil
-  end
-benchmark:
-  vm2_method_with_block: |
-    m{}; m{}; m{}; m{}; m{}; m{}; m{}; m{};
-loop_count: 6000000

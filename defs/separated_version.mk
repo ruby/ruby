@@ -1,6 +1,6 @@
 # ******** FOR DEVELEPERS ONLY ********
 # Separate version.o into a shared library which varies every
-# revisions, in order to make the rest sharable.
+# revisions, in order to make the rest shareable.
 
 include $(firstword $(wildcard GNUmakefile Makefile))
 

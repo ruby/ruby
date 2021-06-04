@@ -29,9 +29,129 @@ class TestVariable < Test::Unit::TestCase
     @@rule = "Cronus"			# modifies @@rule in Gods
     include Olympians
     def ruler4
-      EnvUtil.suppress_warning {
-        @@rule
-      }
+      @@rule
+    end
+  end
+
+  def test_setting_class_variable_on_module_through_inheritance
+    mod = Module.new
+    mod.class_variable_set(:@@foo, 1)
+    mod.freeze
+    c = Class.new { include(mod) }
+    assert_raise(FrozenError) { c.class_variable_set(:@@foo, 2) }
+    assert_raise(FrozenError) { c.class_eval("@@foo = 2") }
+    assert_equal(1, c.class_variable_get(:@@foo))
+  end
+
+  def test_singleton_class_included_class_variable
+    c = Class.new
+    c.extend(Olympians)
+    assert_empty(c.singleton_class.class_variables)
+    assert_raise(NameError){ c.singleton_class.class_variable_get(:@@rule) }
+    c.class_variable_set(:@@foo, 1)
+    assert_equal([:@@foo], c.singleton_class.class_variables)
+    assert_equal(1, c.singleton_class.class_variable_get(:@@foo))
+
+    c = Class.new
+    c.extend(Olympians)
+    sc = Class.new(c)
+    assert_empty(sc.singleton_class.class_variables)
+    assert_raise(NameError){ sc.singleton_class.class_variable_get(:@@rule) }
+    c.class_variable_set(:@@foo, 1)
+    assert_equal([:@@foo], sc.singleton_class.class_variables)
+    assert_equal(1, sc.singleton_class.class_variable_get(:@@foo))
+
+    c = Class.new
+    o = c.new
+    o.extend(Olympians)
+    assert_equal([:@@rule], o.singleton_class.class_variables)
+    assert_equal("Zeus", o.singleton_class.class_variable_get(:@@rule))
+    c.class_variable_set(:@@foo, 1)
+    assert_equal([:@@foo, :@@rule], o.singleton_class.class_variables.sort)
+    assert_equal(1, o.singleton_class.class_variable_get(:@@foo))
+  end
+
+  def test_cvar_overtaken_by_parent_class
+    error = eval <<~EORB
+      class Parent
+      end
+
+      class Child < Parent
+        @@cvar = 1
+
+        def self.cvar
+          @@cvar
+        end
+      end
+
+      assert_equal 1, Child.cvar
+
+      class Parent
+        @@cvar = 2
+      end
+
+      assert_raise RuntimeError do
+        Child.cvar
+      end
+    EORB
+
+    assert_equal "class variable @@cvar of TestVariable::Child is overtaken by TestVariable::Parent", error.message
+  ensure
+    TestVariable.send(:remove_const, :Child) rescue nil
+    TestVariable.send(:remove_const, :Parent) rescue nil
+  end
+
+  def test_cvar_overtaken_by_module
+    error = eval <<~EORB
+      class ParentForModule
+        @@cvar = 1
+
+        def self.cvar
+          @@cvar
+        end
+      end
+
+      assert_equal 1, ParentForModule.cvar
+
+      module Mixin
+        @@cvar = 2
+      end
+
+      class ParentForModule
+        include Mixin
+      end
+
+      assert_raise RuntimeError do
+        ParentForModule.cvar
+      end
+    EORB
+
+    assert_equal "class variable @@cvar of TestVariable::ParentForModule is overtaken by TestVariable::Mixin", error.message
+  ensure
+    TestVariable.send(:remove_const, :Mixin) rescue nil
+    TestVariable.send(:remove_const, :ParentForModule) rescue nil
+  end
+
+  class IncludeRefinedModuleClassVariableNoWarning
+    module Mod
+      @@_test_include_refined_module_class_variable = true
+    end
+
+    module Mod2
+      refine Mod do
+      end
+    end
+
+    include Mod
+
+    def t
+      @@_test_include_refined_module_class_variable
+    end
+  end
+
+  def test_include_refined_module_class_variable
+    assert_warning('') do
+      IncludeRefinedModuleClassVariableNoWarning.new.t
     end
   end
 
@@ -56,7 +176,7 @@ class TestVariable < Test::Unit::TestCase
     atlas = Titans.new
     assert_equal("Cronus", atlas.ruler0)
     assert_equal("Zeus", atlas.ruler3)
-    assert_equal("Cronus", atlas.ruler4)
+    assert_raise(RuntimeError) { atlas.ruler4 }
     assert_nothing_raised do
       class << Gods
         defined?(@@rule) && @@rule
@@ -148,6 +268,25 @@ class TestVariable < Test::Unit::TestCase
         v.remove_instance_variable(:@foo)
       end
     end
+  end
+
+  class ExIvar < Hash
+    def initialize
+      @a = 1
+      @b = 2
+      @c = 3
+    end
+
+    def ivars
+      [@a, @b, @c]
+    end
+  end
+
+  def test_external_ivars
+    3.times{
+      # check inline cache for external ivar access
+      assert_equal [1, 2, 3], ExIvar.new.ivars
+    }
   end
 
   def test_local_variables_with_kwarg

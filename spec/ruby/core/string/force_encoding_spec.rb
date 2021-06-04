@@ -64,8 +64,8 @@ describe "String#force_encoding" do
     str.dup.force_encoding('utf-16le').should_not == str.encode('utf-16le')
   end
 
-  it "raises a #{frozen_error_class} if self is frozen" do
+  it "raises a FrozenError if self is frozen" do
     str = "abcd".freeze
-    -> { str.force_encoding(str.encoding) }.should raise_error(frozen_error_class)
+    -> { str.force_encoding(str.encoding) }.should raise_error(FrozenError)
   end
 end

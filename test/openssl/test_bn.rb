@@ -1,7 +1,6 @@
 # coding: us-ascii
-# frozen_string_literal: false
+# frozen_string_literal: true
 require_relative 'utils'
-require "prime"
 
 if defined?(OpenSSL)
 
@@ -15,6 +14,10 @@ class OpenSSL::TestBN < OpenSSL::TestCase
   end
 
   def test_new
+    assert_raise(ArgumentError) { OpenSSL::BN.new }
+    assert_raise(ArgumentError) { OpenSSL::BN.new(nil) }
+    assert_raise(ArgumentError) { OpenSSL::BN.new(nil, 2) }
+
     assert_equal(@e1, OpenSSL::BN.new("999"))
     assert_equal(@e1, OpenSSL::BN.new("999", 10))
     assert_equal(@e1, OpenSSL::BN.new("\x03\xE7", 2))
@@ -226,23 +229,29 @@ class OpenSSL::TestBN < OpenSSL::TestCase
     }
   end
 
-  def test_prime
-    p1 = OpenSSL::BN.generate_prime(32)
-    assert_include(0...2**32, p1)
-    assert_equal(true, Prime.prime?(p1.to_i))
-    p2 = OpenSSL::BN.generate_prime(32, true)
-    assert_equal(true, Prime.prime?((p2.to_i - 1) / 2))
-    p3 = OpenSSL::BN.generate_prime(32, false, 4)
-    assert_equal(1, p3 % 4)
-    p4 = OpenSSL::BN.generate_prime(32, false, 4, 3)
-    assert_equal(3, p4 % 4)
+  begin
+    require "prime"
 
-    assert_equal(true, p1.prime?)
-    assert_equal(true, p2.prime?)
-    assert_equal(true, p3.prime?)
-    assert_equal(true, p4.prime?)
-    assert_equal(true, @e3.prime?)
-    assert_equal(true, @e3.prime_fasttest?)
+    def test_prime
+      p1 = OpenSSL::BN.generate_prime(32)
+      assert_include(0...2**32, p1)
+      assert_equal(true, Prime.prime?(p1.to_i))
+      p2 = OpenSSL::BN.generate_prime(32, true)
+      assert_equal(true, Prime.prime?((p2.to_i - 1) / 2))
+      p3 = OpenSSL::BN.generate_prime(32, false, 4)
+      assert_equal(1, p3 % 4)
+      p4 = OpenSSL::BN.generate_prime(32, false, 4, 3)
+      assert_equal(3, p4 % 4)
+
+      assert_equal(true, p1.prime?)
+      assert_equal(true, p2.prime?)
+      assert_equal(true, p3.prime?)
+      assert_equal(true, p4.prime?)
+      assert_equal(true, @e3.prime?)
+      assert_equal(true, @e3.prime_fasttest?)
+    end
+  rescue LoadError
+    # prime is the bundled gems at Ruby 3.1
   end
 
   def test_num_bits_bytes
@@ -273,9 +282,9 @@ class OpenSSL::TestBN < OpenSSL::TestCase
     assert_instance_of(String, @e1.hash.to_s)
   end
 
-  def test_type_error
+  def test_argument_error
     bug15760 = '[ruby-core:92231] [Bug #15760]'
-    assert_raise(TypeError, bug15760) { OpenSSL::BN.new(nil, 2) }
+    assert_raise(ArgumentError, bug15760) { OpenSSL::BN.new(nil, 2) }
   end
 end
 

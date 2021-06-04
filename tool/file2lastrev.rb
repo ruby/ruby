@@ -22,10 +22,23 @@ end
 @limit = 20
 
 format = '%Y-%m-%dT%H:%M:%S%z'
-srcdir = nil
-parser = OptionParser.new {|opts|
+vcs = nil
+OptionParser.new {|opts|
+  opts.banner << " paths..."
+  vcs_options = VCS.define_options(opts)
+  new_vcs = proc do |path|
+    begin
+      vcs = VCS.detect(path, vcs_options, opts.new)
+    rescue VCS::NotFoundError => e
+      abort "#{File.basename(Program)}: #{e.message}" unless @suppress_not_found
+      opts.remove
+    end
+    nil
+  end
+  opts.new
   opts.on("--srcdir=PATH", "use PATH as source directory") do |path|
-    srcdir = path
+    abort "#{File.basename(Program)}: srcdir is already set" if vcs
+    new_vcs[path]
   end
   opts.on("--changed", "changed rev") do
     self.output = :changed
@@ -46,10 +59,15 @@ parser = OptionParser.new {|opts|
   opts.on("-q", "--suppress_not_found") do
     @suppress_not_found = true
   end
+  opts.order! rescue abort "#{File.basename(Program)}: #{$!}\n#{opts}"
+  if vcs
+    vcs.set_options(vcs_options) # options after --srcdir
+  else
+    new_vcs["."]
+  end
 }
-parser.parse! rescue abort "#{File.basename(Program)}: #{$!}\n#{parser}"
+exit unless vcs
 
-vcs = nil
 @output =
   case @output
   when :changed, nil
@@ -93,21 +111,14 @@ vcs = nil
     raise "unknown output format `#{@output}'"
   end
 
-srcdir ||= File.dirname(File.dirname(Program))
-begin
-  vcs = VCS.detect(srcdir)
-rescue VCS::NotFoundError => e
-  abort "#{File.basename(Program)}: #{e.message}" unless @suppress_not_found
-else
-  ok = true
-  (ARGV.empty? ? [nil] : ARGV).each do |arg|
-    begin
-      puts @output[*vcs.get_revisions(arg)]
-    rescue => e
-      next if @suppress_not_found and VCS::NotFoundError === e
-      warn "#{File.basename(Program)}: #{e.message}"
-      ok = false
-    end
+ok = true
+(ARGV.empty? ? [nil] : ARGV).each do |arg|
+  begin
+    puts @output[*vcs.get_revisions(arg)]
+  rescue => e
+    next if @suppress_not_found and VCS::NotFoundError === e
+    warn "#{File.basename(Program)}: #{e.message}"
+    ok = false
   end
-  exit ok
 end
+exit ok

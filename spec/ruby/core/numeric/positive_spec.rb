@@ -31,11 +31,11 @@ describe "Numeric#positive?" do
 
   it "returns true if self is greater than 0" do
     @obj.should_receive(:>).with(0).and_return(true)
-    @obj.positive?.should == true
+    @obj.should.positive?
   end
 
   it "returns false if self is less than 0" do
     @obj.should_receive(:>).with(0).and_return(false)
-    @obj.positive?.should == false
+    @obj.should_not.positive?
   end
 end

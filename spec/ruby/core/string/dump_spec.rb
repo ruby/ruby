@@ -3,22 +3,32 @@ require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
 describe "String#dump" do
-  it "taints the result if self is tainted" do
-    "foo".taint.dump.tainted?.should == true
-    "foo\n".taint.dump.tainted?.should == true
-  end
+  ruby_version_is ''...'2.7' do
+    it "taints the result if self is tainted" do
+      "foo".taint.dump.should.tainted?
+      "foo\n".taint.dump.should.tainted?
+    end
 
-  it "untrusts the result if self is untrusted" do
-    "foo".untrust.dump.untrusted?.should == true
-    "foo\n".untrust.dump.untrusted?.should == true
+    it "untrusts the result if self is untrusted" do
+      "foo".untrust.dump.should.untrusted?
+      "foo\n".untrust.dump.should.untrusted?
+    end
   end
 
   it "does not take into account if a string is frozen" do
-    "foo".freeze.dump.frozen?.should == false
+    "foo".freeze.dump.should_not.frozen?
   end
 
-  it "returns a subclass instance" do
-    StringSpecs::MyString.new.dump.should be_an_instance_of(StringSpecs::MyString)
+  ruby_version_is ''...'3.0' do
+    it "returns a subclass instance" do
+      StringSpecs::MyString.new.dump.should be_an_instance_of(StringSpecs::MyString)
+    end
+  end
+
+  ruby_version_is '3.0' do
+    it "returns a String instance" do
+      StringSpecs::MyString.new.dump.should be_an_instance_of(String)
+    end
   end
 
   it "wraps string with \"" do
@@ -388,8 +398,8 @@ describe "String#dump" do
   end
 
   it "includes .force_encoding(name) if the encoding isn't ASCII compatible" do
-    "\u{876}".encode('utf-16be').dump.end_with?(".force_encoding(\"UTF-16BE\")").should be_true
-    "\u{876}".encode('utf-16le').dump.end_with?(".force_encoding(\"UTF-16LE\")").should be_true
+    "\u{876}".encode('utf-16be').dump.should.end_with?(".force_encoding(\"UTF-16BE\")")
+    "\u{876}".encode('utf-16le').dump.should.end_with?(".force_encoding(\"UTF-16LE\")")
   end
 
   it "keeps origin encoding" do

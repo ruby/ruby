@@ -1,5 +1,6 @@
 #ifndef RUBY_TIMEV_H
 #define RUBY_TIMEV_H
+#include "ruby/ruby.h"
 
 #if 0
 struct vtm {/* dummy for TAGS */};

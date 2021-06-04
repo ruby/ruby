@@ -13,7 +13,7 @@ module Psych
 
     def test_empty_string
       s = ""
-      assert_equal false, Psych.load(s)
+      assert_equal false, Psych.unsafe_load(s)
       assert_equal [], Psych.load_stream(s)
       assert_equal false, Psych.parse(s)
       assert_equal [], Psych.parse_stream(s).transform
@@ -58,8 +58,8 @@ module Psych
 
     def test_NaN
       s = ".NaN"
-      assert Float::NAN, Psych.load(s).nan?
-      assert [Float::NAN], Psych.load_stream(s).first.nan?
+      assert Psych.load(s).nan?
+      assert Psych.load_stream(s).first.nan?
       assert Psych.parse(s).transform.nan?
       assert Psych.parse_stream(s).transform.first.nan?
       assert Psych.safe_load(s).nan?

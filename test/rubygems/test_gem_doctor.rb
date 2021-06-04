@@ -1,9 +1,8 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/doctor'
 
 class TestGemDoctor < Gem::TestCase
-
   def gem(name)
     spec = quick_gem name do |gem|
       gem.files = %W[lib/#{name}.rb Rakefile]
@@ -28,31 +27,31 @@ class TestGemDoctor < Gem::TestCase
       io.write 'this will raise an exception when evaluated.'
     end
 
-    assert_path_exists File.join(a.gem_dir, 'Rakefile')
-    assert_path_exists File.join(a.gem_dir, 'lib', 'a.rb')
+    assert_path_exist File.join(a.gem_dir, 'Rakefile')
+    assert_path_exist File.join(a.gem_dir, 'lib', 'a.rb')
 
-    assert_path_exists b.gem_dir
-    refute_path_exists b.spec_file
+    assert_path_exist b.gem_dir
+    assert_path_not_exist b.spec_file
 
-    assert_path_exists c.gem_dir
-    assert_path_exists c.spec_file
+    assert_path_exist c.gem_dir
+    assert_path_exist c.spec_file
 
     doctor = Gem::Doctor.new @gemhome
 
-    capture_io do
+    capture_output do
       use_ui @ui do
         doctor.doctor
       end
     end
 
-    assert_path_exists File.join(a.gem_dir, 'Rakefile')
-    assert_path_exists File.join(a.gem_dir, 'lib', 'a.rb')
+    assert_path_exist File.join(a.gem_dir, 'Rakefile')
+    assert_path_exist File.join(a.gem_dir, 'lib', 'a.rb')
 
-    refute_path_exists b.gem_dir
-    refute_path_exists b.spec_file
+    assert_path_not_exist b.gem_dir
+    assert_path_not_exist b.spec_file
 
-    refute_path_exists c.gem_dir
-    refute_path_exists c.spec_file
+    assert_path_not_exist c.gem_dir
+    assert_path_not_exist c.spec_file
 
     expected = <<-OUTPUT
 Checking #{@gemhome}
@@ -81,31 +80,31 @@ Removed directory gems/c-2
       io.write 'this will raise an exception when evaluated.'
     end
 
-    assert_path_exists File.join(a.gem_dir, 'Rakefile')
-    assert_path_exists File.join(a.gem_dir, 'lib', 'a.rb')
+    assert_path_exist File.join(a.gem_dir, 'Rakefile')
+    assert_path_exist File.join(a.gem_dir, 'lib', 'a.rb')
 
-    assert_path_exists b.gem_dir
-    refute_path_exists b.spec_file
+    assert_path_exist b.gem_dir
+    assert_path_not_exist b.spec_file
 
-    assert_path_exists c.gem_dir
-    assert_path_exists c.spec_file
+    assert_path_exist c.gem_dir
+    assert_path_exist c.spec_file
 
     doctor = Gem::Doctor.new @gemhome, true
 
-    capture_io do
+    capture_output do
       use_ui @ui do
         doctor.doctor
       end
     end
 
-    assert_path_exists File.join(a.gem_dir, 'Rakefile')
-    assert_path_exists File.join(a.gem_dir, 'lib', 'a.rb')
+    assert_path_exist File.join(a.gem_dir, 'Rakefile')
+    assert_path_exist File.join(a.gem_dir, 'lib', 'a.rb')
 
-    assert_path_exists b.gem_dir
-    refute_path_exists b.spec_file
+    assert_path_exist b.gem_dir
+    assert_path_not_exist b.spec_file
 
-    assert_path_exists c.gem_dir
-    assert_path_exists c.spec_file
+    assert_path_exist c.gem_dir
+    assert_path_exist c.spec_file
 
     expected = <<-OUTPUT
 Checking #{@gemhome}
@@ -128,13 +127,13 @@ Extra directory gems/c-2
 
     doctor = Gem::Doctor.new @tempdir
 
-    capture_io do
+    capture_output do
       use_ui @ui do
         doctor.doctor
       end
     end
 
-    assert_path_exists other_dir
+    assert_path_exist other_dir
 
     expected = <<-OUTPUT
 Checking #{@tempdir}
@@ -153,6 +152,34 @@ This directory does not appear to be a RubyGems repository, skipping
     assert true # count
   end
 
+  def test_doctor_badly_named_plugins
+    gem 'a'
+
+    Gem.use_paths @gemhome.to_s
+
+    FileUtils.mkdir_p Gem.plugindir
+    bad_plugin = File.join(Gem.plugindir, "a_badly_named_file.rb")
+    write_file bad_plugin
+
+    doctor = Gem::Doctor.new @gemhome
+
+    capture_output do
+      use_ui @ui do
+        doctor.doctor
+      end
+    end
+
+    # assert_path_not_exist bad_plugin
+
+    expected = <<-OUTPUT
+Checking #{@gemhome}
+Removed file plugins/a_badly_named_file.rb
+
+    OUTPUT
+
+    assert_equal expected, @ui.output
+  end
+
   def test_gem_repository_eh
     doctor = Gem::Doctor.new @gemhome
 
@@ -164,5 +191,4 @@ This directory does not appear to be a RubyGems repository, skipping
 
     assert doctor.gem_repository?, 'gems installed'
   end
-
 end

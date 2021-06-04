@@ -1,8 +1,0 @@
-prelude: |
-  f = 0.0
-benchmark:
-  vm1_float_simple: |
-    f += 0.1; f -= 0.1
-    f += 0.1; f -= 0.1
-    f += 0.1; f -= 0.1
-loop_count: 30000000

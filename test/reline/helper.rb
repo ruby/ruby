@@ -2,6 +2,30 @@ $LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
 require 'reline'
 require 'test/unit'
 
+module Reline
+  class <<self
+    def test_mode
+        remove_const('IOGate') if const_defined?('IOGate')
+        const_set('IOGate', Reline::GeneralIO)
+        Reline::GeneralIO.reset
+        send(:core).config.instance_variable_set(:@test_mode, true)
+        send(:core).config.reset
+    end
+
+    def test_reset
+      Reline.instance_variable_set(:@core, nil)
+    end
+  end
+end
+
+def start_pasting
+  Reline::GeneralIO.start_pasting
+end
+
+def finish_pasting
+  Reline::GeneralIO.finish_pasting
+end
+
 RELINE_TEST_ENCODING ||=
   if ENV['RELINE_TEST_ENCODING']
     Encoding.find(ENV['RELINE_TEST_ENCODING'])
@@ -16,7 +40,7 @@ class Reline::TestCase < Test::Unit::TestCase
       if Reline::Unicode::EscapedChars.include?(c.ord)
         c
       else
-        c.encode(@line_editor.instance_variable_get(:@encoding), Encoding::UTF_8, options)
+        c.encode(@line_editor.instance_variable_get(:@encoding), Encoding::UTF_8, **options)
       end
     }.join
   rescue Encoding::UndefinedConversionError, Encoding::InvalidByteSequenceError
@@ -27,6 +51,10 @@ class Reline::TestCase < Test::Unit::TestCase
     end
     normalized = true
     retry
+  end
+
+  def input_key_by_symbol(input)
+    @line_editor.input_key(Reline::Key.new(input, input, false))
   end
 
   def input_keys(input, convert = true)
@@ -67,5 +95,19 @@ class Reline::TestCase < Test::Unit::TestCase
 
   def assert_cursor_max(expected)
     assert_equal(expected, @line_editor.instance_variable_get(:@cursor_max))
+  end
+
+  def assert_line_index(expected)
+    assert_equal(expected, @line_editor.instance_variable_get(:@line_index))
+  end
+
+  def assert_whole_lines(expected)
+    previous_line_index = @line_editor.instance_variable_get(:@previous_line_index)
+    if previous_line_index
+      lines = @line_editor.whole_lines(index: previous_line_index)
+    else
+      lines = @line_editor.whole_lines
+    end
+    assert_equal(expected, lines)
   end
 end

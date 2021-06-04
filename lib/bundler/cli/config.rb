@@ -25,7 +25,7 @@ module Bundler
           ["config", "get", ARGV[1]]
         end
 
-      SharedHelpers.major_deprecation 2,
+      SharedHelpers.major_deprecation 3,
         "Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle #{new_args.join(" ")}` instead."
 
       Base.new(options, name, value, self).run

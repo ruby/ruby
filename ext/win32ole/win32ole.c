@@ -507,6 +507,7 @@ static UINT ole_encoding2cp(rb_encoding *enc)
     ENC_MACHING_CP(enc, "GB2312", 20936);
     ENC_MACHING_CP(enc, "GBK", 936);
     ENC_MACHING_CP(enc, "IBM437", 437);
+    ENC_MACHING_CP(enc, "IBM720", 720);
     ENC_MACHING_CP(enc, "IBM737", 737);
     ENC_MACHING_CP(enc, "IBM775", 775);
     ENC_MACHING_CP(enc, "IBM852", 852);
@@ -994,7 +995,7 @@ ole_val2variant_ex(VALUE val, VARIANT *var, VARTYPE vt)
         }
         return;
     }
-#if (_MSC_VER >= 1300) || defined(__CYGWIN__) || defined(__MINGW32__)
+#if (defined(_MSC_VER) && (_MSC_VER >= 1300)) || defined(__CYGWIN__) || defined(__MINGW32__)
     switch(vt & ~VT_BYREF) {
     case VT_I8:
         V_VT(var) = VT_I8;
@@ -1008,7 +1009,7 @@ ole_val2variant_ex(VALUE val, VARIANT *var, VARTYPE vt)
         ole_val2variant2(val, var);
         break;
     }
-#else  /* (_MSC_VER >= 1300) || defined(__CYGWIN__) || defined(__MINGW32__) */
+#else  /* (defined(_MSC_VER) && (_MSC_VER >= 1300)) || defined(__CYGWIN__) || defined(__MINGW32__) */
     ole_val2variant2(val, var);
 #endif
 }
@@ -1062,7 +1063,7 @@ get_ptr_of_variant(VARIANT *pvar)
     case VT_R8:
         return &V_R8(pvar);
         break;
-#if (_MSC_VER >= 1300) || defined(__CYGWIN__) || defined(__MINGW32__)
+#if (defined(_MSC_VER) && (_MSC_VER >= 1300)) || defined(__CYGWIN__) || defined(__MINGW32__)
     case VT_I8:
         return &V_I8(pvar);
         break;
@@ -1549,10 +1550,10 @@ ole_variant2val(VARIANT *pvar)
             obj = RB_INT2NUM((long)V_UINT(pvar));
         break;
 
-#if (_MSC_VER >= 1300) || defined(__CYGWIN__) || defined(__MINGW32__)
+#if (defined(_MSC_VER) && (_MSC_VER >= 1300)) || defined(__CYGWIN__) || defined(__MINGW32__)
     case VT_I8:
         if(V_ISBYREF(pvar))
-#if (_MSC_VER >= 1300) || defined(__CYGWIN__) || defined(__MINGW32__)
+#if (defined(_MSC_VER) && (_MSC_VER >= 1300)) || defined(__CYGWIN__) || defined(__MINGW32__)
 #ifdef V_I8REF
             obj = I8_2_NUM(*V_I8REF(pvar));
 #endif
@@ -1564,7 +1565,7 @@ ole_variant2val(VARIANT *pvar)
         break;
     case VT_UI8:
         if(V_ISBYREF(pvar))
-#if (_MSC_VER >= 1300) || defined(__CYGWIN__) || defined(__MINGW32__)
+#if (defined(_MSC_VER) && (_MSC_VER >= 1300)) || defined(__CYGWIN__) || defined(__MINGW32__)
 #ifdef V_UI8REF
             obj = UI8_2_NUM(*V_UI8REF(pvar));
 #endif
@@ -1574,7 +1575,7 @@ ole_variant2val(VARIANT *pvar)
         else
             obj = UI8_2_NUM(V_UI8(pvar));
         break;
-#endif  /* (_MSC_VER >= 1300) || defined(__CYGWIN__) || defined(__MINGW32__) */
+#endif  /* (defined(_MSC_VER) && (_MSC_VER >= 1300)) || defined(__CYGWIN__) || defined(__MINGW32__) */
 
     case VT_R4:
         if(V_ISBYREF(pvar))
@@ -1985,10 +1986,6 @@ fole_s_connect(int argc, VALUE *argv, VALUE self)
 
     rb_scan_args(argc, argv, "1*", &svr_name, &others);
     StringValue(svr_name);
-    if (rb_safe_level() > 0 && OBJ_TAINTED(svr_name)) {
-        rb_raise(rb_eSecurityError, "insecure connection - `%s'",
-		StringValuePtr(svr_name));
-    }
 
     /* get CLSID from OLE server name */
     pBuf = ole_vstr2wc(svr_name);
@@ -2478,16 +2475,8 @@ fole_initialize(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "11*:", &svr_name, &host, &others, &opts);
 
     StringValue(svr_name);
-    if (rb_safe_level() > 0 && OBJ_TAINTED(svr_name)) {
-        rb_raise(rb_eSecurityError, "insecure object creation - `%s'",
-                 StringValuePtr(svr_name));
-    }
     if (!NIL_P(host)) {
         StringValue(host);
-        if (rb_safe_level() > 0 && OBJ_TAINTED(host)) {
-            rb_raise(rb_eSecurityError, "insecure object creation - `%s'",
-                     StringValuePtr(host));
-        }
         return ole_create_dcom(self, svr_name, host, others);
     }
 
@@ -2663,7 +2652,7 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
         /*------------------------------------------
           hash object ==> named dispatch parameters
         --------------------------------------------*/
-        cNamedArgs = rb_long2int(RHASH_SIZE(param));
+        cNamedArgs = rb_long2int((long)RHASH_SIZE(param));
         op.dp.cArgs = cNamedArgs + argc - 2;
         op.pNamedArgs = ALLOCA_N(OLECHAR*, cNamedArgs + 1);
         op.dp.rgvarg = ALLOCA_N(VARIANTARG, op.dp.cArgs);
@@ -3764,7 +3753,7 @@ ole_typedesc2val(ITypeInfo *pTypeInfo, TYPEDESC *pTypeDesc, VALUE typedetails)
     case VT_UI4:
         typestr = rb_str_new2("UI4");
         break;
-#if (_MSC_VER >= 1300) || defined(__CYGWIN__) || defined(__MINGW32__)
+#if (defined(_MSC_VER) && (_MSC_VER >= 1300)) || defined(__CYGWIN__) || defined(__MINGW32__)
     case VT_I8:
         typestr = rb_str_new2("I8");
         break;
@@ -3974,6 +3963,7 @@ check_nano_server(void)
     }
 }
 
+LCID cWIN32OLE_lcid;
 
 void
 Init_win32ole(void)

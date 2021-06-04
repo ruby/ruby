@@ -13,7 +13,7 @@ most frequently used with <code>ruby -e</code>.
 Ruby does not require any indentation.  Typically, ruby programs are indented
 two spaces.
 
-If you run ruby with warnings enabled and have an indentation mis-match, you
+If you run ruby with warnings enabled and have an indentation mismatch, you
 will receive a warning.
 
 == +alias+
@@ -82,6 +82,36 @@ defined and +false+ when the instance variable is not zero.
 Using the specific reflection methods such as instance_variable_defined? for
 instance variables or const_defined? for constants is less error prone than
 using +defined?+.
+
++defined?+ handles some regexp global variables specially based on whether
+there is an active regexp match and how many capture groups there are:
+
+  /b/ =~ 'a'
+  defined?($~) # => "global-variable"
+  defined?($&) # => nil
+  defined?($`) # => nil
+  defined?($') # => nil
+  defined?($+) # => nil
+  defined?($1) # => nil
+  defined?($2) # => nil
+
+  /./ =~ 'a'
+  defined?($~) # => "global-variable"
+  defined?($&) # => "global-variable"
+  defined?($`) # => "global-variable"
+  defined?($') # => "global-variable"
+  defined?($+) # => nil
+  defined?($1) # => nil
+  defined?($2) # => nil
+
+  /(.)/ =~ 'a'
+  defined?($~) # => "global-variable"
+  defined?($&) # => "global-variable"
+  defined?($`) # => "global-variable"
+  defined?($') # => "global-variable"
+  defined?($+) # => "global-variable"
+  defined?($1) # => "global-variable"
+  defined?($2) # => nil
 
 == +BEGIN+ and +END+
 

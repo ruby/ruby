@@ -14,8 +14,8 @@ describe "Math.tan" do
   end
 
   it "returns NaN if called with +-Infinity" do
-    Math.tan(infinity_value).nan?.should == true
-    Math.tan(-infinity_value).nan?.should == true
+    Math.tan(infinity_value).should.nan?
+    Math.tan(-infinity_value).should.nan?
   end
 
   it "raises a TypeError if the argument cannot be coerced with Float()" do

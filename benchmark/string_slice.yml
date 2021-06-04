@@ -1,0 +1,11 @@
+prelude: |
+  long_string = "x"*1000+"-hår"
+benchmark:
+  regexp-short: |
+    "x-hår".slice!(/-(.)(.)(.)/, 3)
+  regexp-long: |
+    long_string.dup.slice!(/-(.)(.)(.)/, 3)
+  string-short: |
+    "x-hår".slice!("r")
+  string-long: |
+    long_string.dup.slice!("r")

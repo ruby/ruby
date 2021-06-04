@@ -26,8 +26,7 @@ describe :file_grpowned, shared: true do
 
         @object.send(@method, @file).should == true
       else
-        # No supplementary groups
-        1.should == 1
+        skip "No supplementary groups"
       end
     end
   end

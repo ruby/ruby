@@ -168,12 +168,12 @@ describe :io_each_default_separator, shared: true do
   before :each do
     @io = IOSpecs.io_fixture "lines.txt"
     ScratchPad.record []
-    @sep, $/ = $/, " "
+    suppress_warning {@sep, $/ = $/, " "}
   end
 
   after :each do
     @io.close if @io
-    $/ = @sep
+    suppress_warning {$/ = @sep}
   end
 
   it "uses $/ as the default line separator" do

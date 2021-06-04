@@ -36,7 +36,7 @@ describe 'Socket.tcp' do
       @socket = socket
     end
 
-    @socket.closed?.should == true
+    @socket.should.closed?
   end
 
   it 'binds to a local address and port when specified' do

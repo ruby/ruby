@@ -12,8 +12,6 @@ module Bundler
 
       warn_if_root
 
-      normalize_groups
-
       Bundler::SharedHelpers.set_env "RB_USER_INSTALL", "1" if Bundler::FREEBSD
 
       # Disable color in deployment mode
@@ -35,11 +33,8 @@ module Bundler
 
         options[:local] = true if Bundler.app_cache.exist?
 
-        if Bundler.feature_flag.deployment_means_frozen?
-          Bundler.settings.set_command_option :deployment, true
-        else
-          Bundler.settings.set_command_option :frozen, true
-        end
+        Bundler.settings.set_command_option :deployment, true if options[:deployment]
+        Bundler.settings.set_command_option :frozen, true if options[:frozen]
       end
 
       # When install is called with --no-deployment, disable deployment mode
@@ -54,7 +49,7 @@ module Bundler
 
       if options["binstubs"]
         Bundler::SharedHelpers.major_deprecation 2,
-          "The --binstubs option will be removed in favor of `bundle binstubs`"
+          "The --binstubs option will be removed in favor of `bundle binstubs --all`"
       end
 
       Plugin.gemfile_install(Bundler.default_gemfile) if Bundler.feature_flag.plugins?
@@ -83,6 +78,8 @@ module Bundler
         require_relative "clean"
         Bundler::CLI::Clean.new(options).run
       end
+
+      Bundler::CLI::Common.output_fund_metadata_summary
     rescue GemNotFound, VersionConflict => e
       if options[:local] && Bundler.app_cache.exist?
         Bundler.ui.warn "Some gems seem to be missing from your #{Bundler.settings.app_cache_path} directory."
@@ -101,7 +98,7 @@ module Bundler
       raise e
     end
 
-  private
+    private
 
     def warn_if_root
       return if Bundler.settings[:silence_root_warning] || Bundler::WINDOWS || !Process.uid.zero?
@@ -164,12 +161,20 @@ module Bundler
 
       options[:with]    = with
       options[:without] = without
+
+      unless Bundler.settings[:without] == options[:without] && Bundler.settings[:with] == options[:with]
+        # need to nil them out first to get around validation for backwards compatibility
+        Bundler.settings.set_command_option :without, nil
+        Bundler.settings.set_command_option :with,    nil
+        Bundler.settings.set_command_option :without, options[:without] - options[:with]
+        Bundler.settings.set_command_option :with,    options[:with]
+      end
     end
 
     def normalize_settings
       Bundler.settings.set_command_option :path, nil if options[:system]
       Bundler.settings.temporary(:path_relative_to_cwd => false) do
-        Bundler.settings.set_command_option :path, "vendor/bundle" if options[:deployment]
+        Bundler.settings.set_command_option :path, "vendor/bundle" if Bundler.settings[:deployment] && Bundler.settings[:path].nil?
       end
       Bundler.settings.set_command_option_if_given :path, options[:path]
       Bundler.settings.temporary(:path_relative_to_cwd => false) do
@@ -190,13 +195,7 @@ module Bundler
 
       Bundler.settings.set_command_option_if_given :clean, options["clean"]
 
-      unless Bundler.settings[:without] == options[:without] && Bundler.settings[:with] == options[:with]
-        # need to nil them out first to get around validation for backwards compatibility
-        Bundler.settings.set_command_option :without, nil
-        Bundler.settings.set_command_option :with,    nil
-        Bundler.settings.set_command_option :without, options[:without] - options[:with]
-        Bundler.settings.set_command_option :with,    options[:with]
-      end
+      normalize_groups
 
       options[:force] = options[:redownload]
     end

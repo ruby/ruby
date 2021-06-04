@@ -166,9 +166,9 @@ b|a|c
 
   def test_options_not_modified
     options = {}.freeze
-    CSV.generate(options) {}
-    CSV.generate_line([], options)
-    CSV.filter("", "", options)
-    CSV.instance("", options)
+    CSV.generate(**options) {}
+    CSV.generate_line([], **options)
+    CSV.filter("", "", **options)
+    CSV.instance("", **options)
   end
 end

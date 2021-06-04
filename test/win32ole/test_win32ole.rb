@@ -176,39 +176,6 @@ if defined?(WIN32OLE)
       }
     end
 
-    def test_s_new_exc_svr_tainted
-      th = Thread.start {
-        $SAFE = 1
-        svr = "Scripting.Dictionary"
-        svr.taint
-        Thread.current.report_on_exception = false
-        WIN32OLE.new(svr)
-      }
-      exc = assert_raise(SecurityError) {
-        th.join
-      }
-      assert_match(/insecure object creation - `Scripting.Dictionary'/, exc.message)
-    ensure
-      $SAFE = 0
-    end
-
-    def test_s_new_exc_host_tainted
-      th = Thread.start {
-        $SAFE = 1
-        svr = "Scripting.Dictionary"
-        host = "localhost"
-        host.taint
-        Thread.current.report_on_exception = false
-        WIN32OLE.new(svr, host)
-      }
-      exc = assert_raise(SecurityError) {
-        th.join
-      }
-      assert_match(/insecure object creation - `localhost'/, exc.message)
-    ensure
-      $SAFE = 0
-    end
-
     def test_s_new_DCOM
       rshell = WIN32OLE.new("Shell.Application")
       assert_instance_of(WIN32OLE, rshell)
@@ -232,22 +199,6 @@ if defined?(WIN32OLE)
       assert_raise(TypeError) {
         WIN32OLE.connect(1)
       }
-    end
-
-    def test_s_coonect_exc_tainted
-      th = Thread.start {
-        $SAFE = 1
-        svr = "winmgmts:"
-        svr.taint
-        Thread.current.report_on_exception = false
-        WIN32OLE.connect(svr)
-      }
-      exc = assert_raise(SecurityError) {
-        th.join
-      }
-      assert_match(/insecure connection - `winmgmts:'/, exc.message)
-    ensure
-      $SAFE = 0
     end
 
     def test_invoke_accept_symbol_hash_key

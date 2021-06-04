@@ -43,14 +43,6 @@ module Bundler
       self
     end
 
-    REQUIRE_ERRORS = [
-      /^no such file to load -- (.+)$/i,
-      /^Missing \w+ (?:file\s*)?([^\s]+.rb)$/i,
-      /^Missing API definition file in (.+)$/i,
-      /^cannot load such file -- (.+)$/i,
-      /^dlopen\([^)]*\): Library not loaded: (.+)$/i,
-    ].freeze
-
     def require(*groups)
       groups.map!(&:to_sym)
       groups = [:default] if groups.empty?
@@ -79,16 +71,14 @@ module Bundler
             end
           end
         rescue LoadError => e
-          REQUIRE_ERRORS.find {|r| r =~ e.message }
-          raise if dep.autorequire || $1 != required_file
+          raise if dep.autorequire || e.path != required_file
 
           if dep.autorequire.nil? && dep.name.include?("-")
             begin
               namespaced_file = dep.name.tr("-", "/")
               Kernel.require namespaced_file
             rescue LoadError => e
-              REQUIRE_ERRORS.find {|r| r =~ e.message }
-              raise if $1 != namespaced_file
+              raise if e.path != namespaced_file
             end
           end
         end
@@ -165,7 +155,7 @@ module Bundler
       spec_cache_paths     = []
       spec_gemspec_paths   = []
       spec_extension_paths = []
-      specs.each do |spec|
+      Bundler.rubygems.add_default_gems_to(specs).values.each do |spec|
         spec_gem_paths << spec.full_gem_path
         # need to check here in case gems are nested like for the rails git repo
         md = %r{(.+bundler/gems/.+-[a-f0-9]{7,12})}.match(spec.full_gem_path)
@@ -213,7 +203,7 @@ module Bundler
       output
     end
 
-  private
+    private
 
     def prune_gem_cache(resolve, cache_path)
       cached = Dir["#{cache_path}/*.gem"]

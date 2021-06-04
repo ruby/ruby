@@ -159,8 +159,6 @@ class TestSocket_BasicSocket < Test::Unit::TestCase
       set_nb = true
       buf = String.new
       if ssock.respond_to?(:nonblock?)
-        assert_not_predicate(ssock, :nonblock?)
-        assert_not_predicate(csock, :nonblock?)
         csock.nonblock = ssock.nonblock = false
 
         # Linux may use MSG_DONTWAIT to avoid setting O_NONBLOCK

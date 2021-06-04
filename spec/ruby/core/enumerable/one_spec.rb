@@ -10,7 +10,7 @@ describe "Enumerable#one?" do
   end
 
   it "always returns false on empty enumeration" do
-    @empty.one?.should == false
+    @empty.should_not.one?
     @empty.one? { true }.should == false
   end
 
@@ -18,15 +18,6 @@ describe "Enumerable#one?" do
     -> { @enum.one?(1, 2, 3) }.should raise_error(ArgumentError)
     -> { [].one?(1, 2, 3) }.should raise_error(ArgumentError)
     -> { {}.one?(1, 2, 3) }.should raise_error(ArgumentError)
-  end
-
-  ruby_version_is ""..."2.5" do
-    it "raises an ArgumentError when any arguments provided" do
-      -> { @enum.one?(Proc.new {}) }.should raise_error(ArgumentError)
-      -> { @enum.one?(nil) }.should raise_error(ArgumentError)
-      -> { @empty.one?(1) }.should raise_error(ArgumentError)
-      -> { @enum.one?(1) {} }.should raise_error(ArgumentError)
-    end
   end
 
   it "does not hide exceptions out of #each" do
@@ -93,77 +84,75 @@ describe "Enumerable#one?" do
   end
 
 
-  ruby_version_is "2.5" do
-    describe 'when given a pattern argument' do
-      it "calls `===` on the pattern the return value " do
-        pattern = EnumerableSpecs::Pattern.new { |x| x == 1 }
-        @enum1.one?(pattern).should == true
-        pattern.yielded.should == [[0], [1], [2], [-1]]
+  describe 'when given a pattern argument' do
+    it "calls `===` on the pattern the return value " do
+      pattern = EnumerableSpecs::Pattern.new { |x| x == 1 }
+      @enum1.one?(pattern).should == true
+      pattern.yielded.should == [[0], [1], [2], [-1]]
+    end
+
+    # may raise an exception in future versions
+    ruby_version_is ""..."2.6" do
+      it "ignores block" do
+        @enum2.one?(NilClass) { raise }.should == true
+        [1, 2, nil].one?(NilClass) { raise }.should == true
+        {a: 1}.one?(Array) { raise }.should == true
       end
+    end
 
-      # may raise an exception in future versions
-      ruby_version_is ""..."2.6" do
-        it "ignores block" do
-          @enum2.one?(NilClass) { raise }.should == true
-          [1, 2, nil].one?(NilClass) { raise }.should == true
-          {a: 1}.one?(Array) { raise }.should == true
-        end
-      end
+    it "always returns false on empty enumeration" do
+      @empty.one?(Integer).should == false
+      [].one?(Integer).should == false
+      {}.one?(NilClass).should == false
+    end
 
-      it "always returns false on empty enumeration" do
-        @empty.one?(Integer).should == false
-        [].one?(Integer).should == false
-        {}.one?(NilClass).should == false
-      end
+    it "does not hide exceptions out of #each" do
+      -> {
+        EnumerableSpecs::ThrowingEach.new.one?(Integer)
+      }.should raise_error(RuntimeError)
+    end
 
-      it "does not hide exceptions out of #each" do
-        -> {
-          EnumerableSpecs::ThrowingEach.new.one?(Integer)
-        }.should raise_error(RuntimeError)
-      end
+    it "returns true if the pattern returns a truthy value only once" do
+      @enum2.one?(NilClass).should == true
+      pattern = EnumerableSpecs::Pattern.new { |x| x == 2 }
+      @enum1.one?(pattern).should == true
 
-      it "returns true if the pattern returns a truthy value only once" do
-        @enum2.one?(NilClass).should == true
-        pattern = EnumerableSpecs::Pattern.new { |x| x == 2 }
-        @enum1.one?(pattern).should == true
+      [1, 2, 42, 3].one?(pattern).should == true
 
-        [1, 2, 42, 3].one?(pattern).should == true
+      pattern = EnumerableSpecs::Pattern.new { |x| x == [:b, 2] }
+      {a: 1, b: 2}.one?(pattern).should == true
+    end
 
-        pattern = EnumerableSpecs::Pattern.new { |x| x == [:b, 2] }
-        {a: 1, b: 2}.one?(pattern).should == true
-      end
+    it "returns false if the pattern returns a truthy value more than once" do
+      pattern = EnumerableSpecs::Pattern.new { |x| !x }
+      @enum2.one?(pattern).should == false
+      pattern.yielded.should == [[nil], [false]]
 
-      it "returns false if the pattern returns a truthy value more than once" do
-        pattern = EnumerableSpecs::Pattern.new { |x| !x }
-        @enum2.one?(pattern).should == false
-        pattern.yielded.should == [[nil], [false]]
+      [1, 2, 3].one?(Integer).should == false
+      {a: 1, b: 2}.one?(Array).should == false
+    end
 
-        [1, 2, 3].one?(Integer).should == false
-        {a: 1, b: 2}.one?(Array).should == false
-      end
+    it "returns false if the pattern never returns a truthy value" do
+      pattern = EnumerableSpecs::Pattern.new { |x| nil }
+      @enum1.one?(pattern).should == false
+      pattern.yielded.should == [[0], [1], [2], [-1]]
 
-      it "returns false if the pattern never returns a truthy value" do
-        pattern = EnumerableSpecs::Pattern.new { |x| nil }
-        @enum1.one?(pattern).should == false
-        pattern.yielded.should == [[0], [1], [2], [-1]]
+      [1, 2, 3].one?(pattern).should == false
+      {a: 1}.one?(pattern).should == false
+    end
 
-        [1, 2, 3].one?(pattern).should == false
-        {a: 1}.one?(pattern).should == false
-      end
+    it "does not hide exceptions out of pattern#===" do
+      pattern = EnumerableSpecs::Pattern.new { raise "from pattern" }
+      -> {
+        @enum.one?(pattern)
+      }.should raise_error(RuntimeError)
+    end
 
-      it "does not hide exceptions out of pattern#===" do
-        pattern = EnumerableSpecs::Pattern.new { raise "from pattern" }
-        -> {
-          @enum.one?(pattern)
-        }.should raise_error(RuntimeError)
-      end
-
-      it "calls the pattern with gathered array when yielded with multiple arguments" do
-        multi = EnumerableSpecs::YieldsMulti.new
-        pattern = EnumerableSpecs::Pattern.new { false }
-        multi.one?(pattern).should == false
-        pattern.yielded.should == [[[1, 2]], [[3, 4, 5]], [[6, 7, 8, 9]]]
-      end
+    it "calls the pattern with gathered array when yielded with multiple arguments" do
+      multi = EnumerableSpecs::YieldsMulti.new
+      pattern = EnumerableSpecs::Pattern.new { false }
+      multi.one?(pattern).should == false
+      pattern.yielded.should == [[[1, 2]], [[3, 4, 5]], [[6, 7, 8, 9]]]
     end
   end
 end

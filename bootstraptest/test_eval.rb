@@ -190,7 +190,8 @@ assert_equal %q{[10, main]}, %q{
 }
 
 %w[break next redo].each do |keyword|
-  assert_match %r"Can't escape from eval with #{keyword}\z", %{
+  assert_match %r"Can't escape from eval with #{keyword}\b", %{
+    STDERR.reopen(STDOUT)
     begin
       eval "0 rescue #{keyword}"
     rescue SyntaxError => e
@@ -249,7 +250,9 @@ assert_equal 'ok', %q{
 
 assert_equal 'ok', %q{
   begin
-    12.instance_eval { @@a }
+    class A
+      12.instance_eval { @@a }
+    end
   rescue NameError
     :ok
   end
@@ -257,7 +260,9 @@ assert_equal 'ok', %q{
 
 assert_equal 'ok', %q{
   begin
-    12.instance_exec { @@a }
+    class A
+      12.instance_exec { @@a }
+    end
   rescue NameError
     :ok
   end

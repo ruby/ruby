@@ -47,16 +47,18 @@ describe "Module#append_features" do
 
   end
 
-  it "copies own tainted status to the given module" do
-    other = Module.new
-    Module.new.taint.send :append_features, other
-    other.tainted?.should be_true
-  end
+  ruby_version_is ''...'2.7' do
+    it "copies own tainted status to the given module" do
+      other = Module.new
+      Module.new.taint.send :append_features, other
+      other.tainted?.should be_true
+    end
 
-  it "copies own untrusted status to the given module" do
-    other = Module.new
-    Module.new.untrust.send :append_features, other
-    other.untrusted?.should be_true
+    it "copies own untrusted status to the given module" do
+      other = Module.new
+      Module.new.untrust.send :append_features, other
+      other.untrusted?.should be_true
+    end
   end
 
   describe "when other is frozen" do
@@ -65,8 +67,8 @@ describe "Module#append_features" do
       @other = Module.new.freeze
     end
 
-    it "raises a #{frozen_error_class} before appending self" do
-      -> { @receiver.send(:append_features, @other) }.should raise_error(frozen_error_class)
+    it "raises a FrozenError before appending self" do
+      -> { @receiver.send(:append_features, @other) }.should raise_error(FrozenError)
       @other.ancestors.should_not include(@receiver)
     end
   end

@@ -40,13 +40,11 @@ module YAML # :nodoc:
   # should.
   module Syck
     class DefaultKey
-
       remove_method :to_s rescue nil
 
       def to_s
         '='
       end
-
     end
   end
 

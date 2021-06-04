@@ -63,6 +63,15 @@ class DRbEx
     FooBar.new
   end
 
+  class BO < ::BasicObject
+    def foo; 1 end
+    protected def prot; 2; end
+    private def priv; 3; end
+  end
+  def basic_object
+    @basic_object = BO.new
+  end
+
   def unknown_class
     Unknown2.new
   end
@@ -137,6 +146,18 @@ class DRbEx
     else
       super(msg, *a, &b)
     end
+  end
+
+  def keyword_test1(a:)
+    a
+  end
+
+  def keyword_test2(b: "default")
+    b
+  end
+
+  def keyword_test3(**opt)
+    opt
   end
 
   private

@@ -90,6 +90,12 @@ describe "IO.write" do
     IO.write(@filename, 'hi', mode: "w", encoding: Encoding::UTF_32LE).should == 8
   end
 
+  it "writes the file with the permissions in the :perm parameter" do
+    rm_r @filename
+    IO.write(@filename, 'write :perm spec', mode: "w", perm: 0o755).should == 16
+    (File.stat(@filename).mode & 0o777) == 0o755
+  end
+
   it "writes binary data if no encoding is given" do
     IO.write(@filename, 'Hëllö'.encode('ISO-8859-1'))
     xEB = [235].pack('C*')
@@ -126,14 +132,12 @@ end
 describe "IO#write" do
   it_behaves_like :io_write, :write
 
-  ruby_version_is "2.5" do
-    it "accepts multiple arguments" do
-      IO.pipe do |r, w|
-        w.write("foo", "bar")
-        w.close
+  it "accepts multiple arguments" do
+    IO.pipe do |r, w|
+      w.write("foo", "bar")
+      w.close
 
-        r.read.should == "foobar"
-      end
+      r.read.should == "foobar"
     end
   end
 end

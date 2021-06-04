@@ -22,7 +22,7 @@ module Bundler
       end
     end
 
-  private
+    private
 
     def spec_for_gem(gem_name)
       spec = Bundler.definition.specs.find {|s| s.name == gem_name }
@@ -40,20 +40,31 @@ module Bundler
     end
 
     def print_gem_path(spec)
-      path = if spec.name == "bundler"
-        File.expand_path("../../../..", __FILE__)
+      if spec.name == "bundler"
+        path = File.expand_path("../../../..", __FILE__)
       else
-        spec.full_gem_path
+        path = spec.full_gem_path
+        unless File.directory?(path)
+          return Bundler.ui.warn "The gem #{gem_name} has been deleted. It was installed at: #{path}"
+        end
       end
 
       Bundler.ui.info path
     end
 
     def print_gem_info(spec)
+      metadata = spec.metadata
       gem_info = String.new
       gem_info << "  * #{spec.name} (#{spec.version}#{spec.git_version})\n"
       gem_info << "\tSummary: #{spec.summary}\n" if spec.summary
       gem_info << "\tHomepage: #{spec.homepage}\n" if spec.homepage
+      gem_info << "\tDocumentation: #{metadata["documentation_uri"]}\n" if metadata.key?("documentation_uri")
+      gem_info << "\tSource Code: #{metadata["source_code_uri"]}\n" if metadata.key?("source_code_uri")
+      gem_info << "\tFunding: #{metadata["funding_uri"]}\n" if metadata.key?("funding_uri")
+      gem_info << "\tWiki: #{metadata["wiki_uri"]}\n" if metadata.key?("wiki_uri")
+      gem_info << "\tChangelog: #{metadata["changelog_uri"]}\n" if metadata.key?("changelog_uri")
+      gem_info << "\tBug Tracker: #{metadata["bug_tracker_uri"]}\n" if metadata.key?("bug_tracker_uri")
+      gem_info << "\tMailing List: #{metadata["mailing_list_uri"]}\n" if metadata.key?("mailing_list_uri")
       gem_info << "\tPath: #{spec.full_gem_path}\n"
       gem_info << "\tDefault Gem: yes" if spec.respond_to?(:default_gem?) && spec.default_gem?
       Bundler.ui.info gem_info

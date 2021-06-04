@@ -32,7 +32,7 @@ IO.foreach("#{srcdir}/configure.ac") do |line|
   end
 end
 
-builddir = srcdir == "." ? enable['builddir'] : "."
+builddir = srcdir == "." ? (enable['builddir'] || ".") : "."
 conf['TARGET'] = /^x64/ =~ host ? "X86_WIN64" : "X86_WIN32"
 
 FileUtils.mkdir_p([builddir, "#{builddir}/include", "#{builddir}/src/x86"])

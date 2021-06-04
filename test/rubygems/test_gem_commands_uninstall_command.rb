@@ -1,9 +1,8 @@
 # frozen_string_literal: true
-require 'rubygems/installer_test_case'
+require_relative 'installer_test_case'
 require 'rubygems/commands/uninstall_command'
 
 class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
-
   def setup
     super
     @cmd = Gem::Commands::UninstallCommand.new
@@ -39,6 +38,51 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
 
     assert_equal %w[a_evil-9 b-2 c-1.2 default-1 dep_x-1 pl-1-x86-linux x-1],
                  Gem::Specification.all_names.sort
+  end
+
+  def test_execute_all_named_default_single
+    z_1 = new_default_spec 'z', '1'
+    install_default_gems z_1
+
+    assert_includes Gem::Specification.all_names, 'z-1'
+
+    @cmd.options[:all] = true
+    @cmd.options[:args] = %w[z]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    assert_equal %w[z-1], Gem::Specification.all_names.sort
+
+    output = @ui.output.split "\n"
+
+    assert_equal 'Gem z-1 cannot be uninstalled because it is a default gem', output.shift
+  end
+
+  def test_execute_all_named_default_multiple
+    z_1 = new_default_spec 'z', '1'
+    install_default_gems z_1
+
+    z_2, = util_gem 'z', 2
+    install_gem z_2
+
+    assert_includes Gem::Specification.all_names, 'z-1'
+    assert_includes Gem::Specification.all_names, 'z-2'
+
+    @cmd.options[:all] = true
+    @cmd.options[:args] = %w[z]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    assert_equal %w[z-1], Gem::Specification.all_names.sort
+
+    output = @ui.output.split "\n"
+
+    assert_equal 'Gem z-1 cannot be uninstalled because it is a default gem', output.shift
+    assert_equal 'Successfully uninstalled z-2', output.shift
   end
 
   def test_execute_dependency_order
@@ -316,6 +360,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     end
 
     assert_equal %w[default-1], Gem::Specification.all_names.sort
+    assert_equal "INFO:  Uninstalled all gems in #{@gemhome}", @ui.output.split("\n").last
   end
 
   def test_execute_outside_gem_home
@@ -332,7 +377,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
 
     @cmd.options[:args] = ['a:4']
 
-    e = assert_raises Gem::InstallError do
+    e = assert_raise Gem::InstallError do
       use_ui ui do
         @cmd.execute
       end
@@ -375,7 +420,7 @@ WARNING:  Use your OS package manager to uninstall vendor gems
     @cmd.options[:version] = Gem::Requirement.new("> 1")
 
     use_ui @ui do
-      e = assert_raises Gem::MockGemUi::TermError do
+      e = assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
 
@@ -391,7 +436,7 @@ WARNING:  Use your OS package manager to uninstall vendor gems
 
   def test_handle_options_vendor_missing
     vendordir(nil) do
-      e = assert_raises OptionParser::InvalidOption do
+      e = assert_raise OptionParser::InvalidOption do
         @cmd.handle_options %w[--vendor]
       end
 
@@ -432,7 +477,7 @@ WARNING:  Use your OS package manager to uninstall vendor gems
     e = nil
     @cmd.stub :uninstall, uninstall_exception do
       use_ui @ui do
-        e = assert_raises Gem::MockGemUi::TermError do
+        e = assert_raise Gem::MockGemUi::TermError do
           @cmd.execute
         end
       end
@@ -441,7 +486,7 @@ WARNING:  Use your OS package manager to uninstall vendor gems
     end
 
     assert_empty @ui.output
-    assert_match %r!Error: unable to successfully uninstall '#{@spec.name}'!, @ui.error
+    assert_match %r{Error: unable to successfully uninstall '#{@spec.name}'}, @ui.error
   end
 
   private
@@ -456,5 +501,4 @@ WARNING:  Use your OS package manager to uninstall vendor gems
       end
     end
   end
-
 end

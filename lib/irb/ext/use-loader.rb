@@ -47,7 +47,7 @@ module IRB
     alias use_loader? use_loader
 
     remove_method :use_loader= if method_defined?(:use_loader=)
-    # Sets IRB.conf[:USE_LOADER]
+    # Sets <code>IRB.conf[:USE_LOADER]</code>
     #
     # See #use_loader for more information.
     def use_loader=(opt)
@@ -73,5 +73,3 @@ module IRB
     end
   end
 end
-
-

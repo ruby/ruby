@@ -35,15 +35,6 @@ class Test_SPrintf < Test::Unit::TestCase
     assert_equal("<\u{3042 3044 3046 3048 304a}>", Bug::Printf.s(self))
   end
 
-  def test_taint
-    obj = Object.new.taint
-    assert_equal({to_s: true, inspect: true},
-                 {
-                   to_s: Bug::Printf.s(obj).tainted?,
-                   inspect: Bug::Printf.v(obj).tainted?,
-                 })
-  end
-
   VS = [
     #-0x1000000000000000000000000000000000000000000000002,
     #-0x1000000000000000000000000000000000000000000000001,

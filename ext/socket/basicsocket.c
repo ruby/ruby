@@ -672,7 +672,7 @@ bsock_recv_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str, VALUE ex)
  *   BasicSocket.do_not_reverse_lookup  #=> false
  */
 static VALUE
-bsock_do_not_rev_lookup(void)
+bsock_do_not_rev_lookup(VALUE _)
 {
     return rsock_do_not_reverse_lookup?Qtrue:Qfalse;
 }

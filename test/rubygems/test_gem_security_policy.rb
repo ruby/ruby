@@ -1,14 +1,12 @@
-# coding: utf-8
 # frozen_string_literal: true
 
-require 'rubygems/test_case'
+require_relative 'helper'
 
-unless defined?(OpenSSL::SSL)
+unless Gem::HAVE_OPENSSL
   warn 'Skipping Gem::Security::Policy tests.  openssl not found.'
 end
 
 class TestGemSecurityPolicy < Gem::TestCase
-
   ALTERNATE_KEY    = load_key 'alternate'
   INVALID_KEY      = load_key 'invalid'
   CHILD_KEY        = load_key 'child'
@@ -34,7 +32,7 @@ class TestGemSecurityPolicy < Gem::TestCase
       s.files = %w[lib/code.rb]
     end
 
-    @digest = Gem::Security::DIGEST_ALGORITHM
+    @digest = OpenSSL::Digest.new Gem::Security::DIGEST_NAME
     @trust_dir = Gem::Security.trust_dir.dir # HACK use the object
 
     @no        = Gem::Security::NoSecurity
@@ -79,7 +77,7 @@ class TestGemSecurityPolicy < Gem::TestCase
 
     invalid = digest 'hello!'
 
-    e = assert_raises Gem::Security::Exception do
+    e = assert_raise Gem::Security::Exception do
       @almost_no.check_data PUBLIC_KEY, @digest, signature, invalid
     end
 
@@ -93,7 +91,7 @@ class TestGemSecurityPolicy < Gem::TestCase
   end
 
   def test_check_chain_empty_chain
-    e = assert_raises Gem::Security::Exception do
+    e = assert_raise Gem::Security::Exception do
       @chain.check_chain [], Time.now
     end
 
@@ -103,7 +101,7 @@ class TestGemSecurityPolicy < Gem::TestCase
   def test_check_chain_invalid
     chain = [PUBLIC_CERT, CHILD_CERT, INVALIDCHILD_CERT]
 
-    e = assert_raises Gem::Security::Exception do
+    e = assert_raise Gem::Security::Exception do
       @chain.check_chain chain, Time.now
     end
 
@@ -113,7 +111,7 @@ class TestGemSecurityPolicy < Gem::TestCase
   end
 
   def test_check_chain_no_chain
-    e = assert_raises Gem::Security::Exception do
+    e = assert_raise Gem::Security::Exception do
       @chain.check_chain nil, Time.now
     end
 
@@ -125,7 +123,7 @@ class TestGemSecurityPolicy < Gem::TestCase
   end
 
   def test_check_cert_expired
-    e = assert_raises Gem::Security::Exception do
+    e = assert_raise Gem::Security::Exception do
       @low.check_cert EXPIRED_CERT, nil, Time.now
     end
 
@@ -135,7 +133,7 @@ class TestGemSecurityPolicy < Gem::TestCase
   end
 
   def test_check_cert_future
-    e = assert_raises Gem::Security::Exception do
+    e = assert_raise Gem::Security::Exception do
       @low.check_cert FUTURE_CERT, nil, Time.now
     end
 
@@ -145,7 +143,7 @@ class TestGemSecurityPolicy < Gem::TestCase
   end
 
   def test_check_cert_invalid_issuer
-    e = assert_raises Gem::Security::Exception do
+    e = assert_raise Gem::Security::Exception do
       @low.check_cert INVALID_ISSUER_CERT, PUBLIC_CERT, Time.now
     end
 
@@ -159,7 +157,7 @@ class TestGemSecurityPolicy < Gem::TestCase
   end
 
   def test_check_cert_no_signer
-    e = assert_raises Gem::Security::Exception do
+    e = assert_raise Gem::Security::Exception do
       @high.check_cert(nil, nil, Time.now)
     end
 
@@ -173,7 +171,7 @@ class TestGemSecurityPolicy < Gem::TestCase
   def test_check_key_no_signer
     assert @almost_no.check_key(nil, nil)
 
-    e = assert_raises Gem::Security::Exception do
+    e = assert_raise Gem::Security::Exception do
       @high.check_key(nil, nil)
     end
 
@@ -181,7 +179,7 @@ class TestGemSecurityPolicy < Gem::TestCase
   end
 
   def test_check_key_wrong_key
-    e = assert_raises Gem::Security::Exception do
+    e = assert_raise Gem::Security::Exception do
       @almost_no.check_key(PUBLIC_CERT, ALTERNATE_KEY)
     end
 
@@ -196,7 +194,7 @@ class TestGemSecurityPolicy < Gem::TestCase
   end
 
   def test_check_root_empty_chain
-    e = assert_raises Gem::Security::Exception do
+    e = assert_raise Gem::Security::Exception do
       @chain.check_root [], Time.now
     end
 
@@ -206,7 +204,7 @@ class TestGemSecurityPolicy < Gem::TestCase
   def test_check_root_invalid_signer
     chain = [INVALID_SIGNER_CERT]
 
-    e = assert_raises Gem::Security::Exception do
+    e = assert_raise Gem::Security::Exception do
       @chain.check_root chain, Time.now
     end
 
@@ -218,7 +216,7 @@ class TestGemSecurityPolicy < Gem::TestCase
   def test_check_root_not_self_signed
     chain = [INVALID_ISSUER_CERT]
 
-    e = assert_raises Gem::Security::Exception do
+    e = assert_raise Gem::Security::Exception do
       @chain.check_root chain, Time.now
     end
 
@@ -228,7 +226,7 @@ class TestGemSecurityPolicy < Gem::TestCase
   end
 
   def test_check_root_no_chain
-    e = assert_raises Gem::Security::Exception do
+    e = assert_raise Gem::Security::Exception do
       @chain.check_root nil, Time.now
     end
 
@@ -248,7 +246,7 @@ class TestGemSecurityPolicy < Gem::TestCase
   end
 
   def test_check_trust_empty_chain
-    e = assert_raises Gem::Security::Exception do
+    e = assert_raise Gem::Security::Exception do
       @chain.check_trust [], @digest, @trust_dir
     end
 
@@ -258,7 +256,7 @@ class TestGemSecurityPolicy < Gem::TestCase
   def test_check_trust_mismatch
     Gem::Security.trust_dir.trust_cert PUBLIC_CERT
 
-    e = assert_raises Gem::Security::Exception do
+    e = assert_raise Gem::Security::Exception do
       @high.check_trust [WRONG_KEY_CERT], @digest, @trust_dir
     end
 
@@ -267,7 +265,7 @@ class TestGemSecurityPolicy < Gem::TestCase
   end
 
   def test_check_trust_no_chain
-    e = assert_raises Gem::Security::Exception do
+    e = assert_raise Gem::Security::Exception do
       @chain.check_trust nil, @digest, @trust_dir
     end
 
@@ -275,7 +273,7 @@ class TestGemSecurityPolicy < Gem::TestCase
   end
 
   def test_check_trust_no_trust
-    e = assert_raises Gem::Security::Exception do
+    e = assert_raise Gem::Security::Exception do
       @high.check_trust [PUBLIC_CERT], @digest, @trust_dir
     end
 
@@ -283,7 +281,7 @@ class TestGemSecurityPolicy < Gem::TestCase
   end
 
   def test_check_trust_no_trust_child
-    e = assert_raises Gem::Security::Exception do
+    e = assert_raise Gem::Security::Exception do
       @high.check_trust [PUBLIC_CERT, CHILD_CERT], @digest, @trust_dir
     end
 
@@ -317,7 +315,7 @@ class TestGemSecurityPolicy < Gem::TestCase
 
     _, signatures = dummy_signatures
 
-    e = assert_raises Gem::Security::Exception do
+    e = assert_raise Gem::Security::Exception do
       @almost_no.verify [PUBLIC_CERT], nil, {}, signatures
     end
 
@@ -329,7 +327,7 @@ class TestGemSecurityPolicy < Gem::TestCase
 
     _, signatures = dummy_signatures
 
-    e = assert_raises Gem::Security::Exception do
+    e = assert_raise Gem::Security::Exception do
       @no.verify [PUBLIC_CERT], nil, {}, signatures
     end
 
@@ -347,7 +345,7 @@ class TestGemSecurityPolicy < Gem::TestCase
 
     assert_match "WARNING:  some_gem is not signed\n", @ui.error
 
-    assert_raises Gem::Security::Exception do
+    assert_raise Gem::Security::Exception do
       @high.verify [PUBLIC_CERT], nil, digests, {}
     end
   end
@@ -372,7 +370,7 @@ class TestGemSecurityPolicy < Gem::TestCase
 
     signatures[1] = PRIVATE_KEY.sign @digest.new, data.digest
 
-    e = assert_raises Gem::Security::Exception do
+    e = assert_raise Gem::Security::Exception do
       @almost_no.verify [PUBLIC_CERT], nil, digests, signatures
     end
 
@@ -389,7 +387,7 @@ class TestGemSecurityPolicy < Gem::TestCase
     assert_equal "WARNING:  email:nobody@example is not trusted for some_gem\n",
                  @ui.error
 
-    assert_raises Gem::Security::Exception do
+    assert_raise Gem::Security::Exception do
       @medium.verify [PUBLIC_CERT], nil, digests, signatures
     end
   end
@@ -397,16 +395,14 @@ class TestGemSecurityPolicy < Gem::TestCase
   def test_verify_wrong_digest_type
     Gem::Security.trust_dir.trust_cert PUBLIC_CERT
 
-    sha512 = OpenSSL::Digest::SHA512
-
-    data = sha512.new
+    data = OpenSSL::Digest.new('SHA512')
     data << 'hello'
 
     digests    = { 'SHA512' => { 0 => data } }
-    signature  = PRIVATE_KEY.sign sha512.new, data.digest
+    signature  = PRIVATE_KEY.sign 'sha512', data.digest
     signatures = { 0 => signature }
 
-    e = assert_raises Gem::Security::Exception do
+    e = assert_raise Gem::Security::Exception do
       @almost_no.verify [PUBLIC_CERT], nil, digests, signatures
     end
 
@@ -482,7 +478,7 @@ class TestGemSecurityPolicy < Gem::TestCase
     def s.full_name() 'metadata.gz' end
 
     digests = package.digest s
-    digests[Gem::Security::DIGEST_NAME]['data.tar.gz'] = @digest.new 'hello'
+    digests[Gem::Security::DIGEST_NAME]['data.tar.gz'] = @digest.hexdigest 'hello'
 
     metadata_gz_digest = digests[Gem::Security::DIGEST_NAME]['metadata.gz']
 
@@ -490,7 +486,7 @@ class TestGemSecurityPolicy < Gem::TestCase
     signatures['metadata.gz'] =
       PRIVATE_KEY.sign @digest.new, metadata_gz_digest.digest
 
-    e = assert_raises Gem::Security::Exception do
+    e = assert_raise Gem::Security::Exception do
       @high.verify_signatures @spec, digests, signatures
     end
 
@@ -511,9 +507,9 @@ class TestGemSecurityPolicy < Gem::TestCase
     def s.full_name() 'metadata.gz' end
 
     digests = package.digest s
-    digests[Gem::Security::DIGEST_NAME]['data.tar.gz'] = @digest.new 'hello'
+    digests[Gem::Security::DIGEST_NAME]['data.tar.gz'] = @digest.hexdigest 'hello'
 
-    assert_raises Gem::Security::Exception do
+    assert_raise Gem::Security::Exception do
       @high.verify_signatures @spec, digests, {}
     end
   end
@@ -536,5 +532,4 @@ class TestGemSecurityPolicy < Gem::TestCase
 
     return digests, signatures
   end
-
-end if defined?(OpenSSL::SSL)
+end if Gem::HAVE_OPENSSL

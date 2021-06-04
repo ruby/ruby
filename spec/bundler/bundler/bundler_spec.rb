@@ -124,7 +124,15 @@ RSpec.describe Bundler do
 
   describe "#which" do
     let(:executable) { "executable" }
-    let(:path) { %w[/a /b c ../d /e] }
+
+    let(:path) do
+      if Gem.win_platform?
+        %w[C:/a C:/b C:/c C:/../d C:/e]
+      else
+        %w[/a /b c ../d /e]
+      end
+    end
+
     let(:expected) { "executable" }
 
     before do
@@ -149,7 +157,13 @@ RSpec.describe Bundler do
     it_behaves_like "it returns the correct executable"
 
     context "when the executable in inside a quoted path" do
-      let(:expected) { "/e/executable" }
+      let(:expected) do
+        if Gem.win_platform?
+          "C:/e/executable"
+        else
+          "/e/executable"
+        end
+      end
       it_behaves_like "it returns the correct executable"
     end
 
@@ -181,7 +195,7 @@ RSpec.describe Bundler do
         message = <<EOF
 It is a security vulnerability to allow your home directory to be world-writable, and bundler can not continue.
 You should probably consider fixing this issue by running `chmod o-w ~` on *nix.
-Please refer to http://ruby-doc.org/stdlib-2.1.2/libdoc/fileutils/rdoc/FileUtils.html#method-c-remove_entry_secure for details.
+Please refer to https://ruby-doc.org/stdlib-2.1.2/libdoc/fileutils/rdoc/FileUtils.html#method-c-remove_entry_secure for details.
 EOF
         expect(bundler_ui).to receive(:warn).with(message)
         expect { Bundler.send(:rm_rf, bundled_app) }.to raise_error(Bundler::PathError)
@@ -195,6 +209,8 @@ EOF
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
+
+      allow(Bundler).to receive(:root).and_return(bundled_app)
 
       Bundler.mkdir_p(bundled_app.join("foo", "bar"))
       expect(bundled_app.join("foo", "bar")).to exist
@@ -232,16 +248,13 @@ EOF
           path = "/home/oggy"
           allow(Bundler.rubygems).to receive(:user_home).and_return(path)
           allow(File).to receive(:directory?).with(path).and_return false
-          allow(Etc).to receive(:getlogin).and_return("USER")
-          allow(Dir).to receive(:tmpdir).and_return("/TMP")
-          allow(FileTest).to receive(:exist?).with("/TMP/bundler/home").and_return(true)
-          expect(FileUtils).to receive(:mkpath).with("/TMP/bundler/home/USER")
+          allow(Bundler).to receive(:tmp).and_return(Pathname.new("/tmp/trulyrandom"))
           message = <<EOF
 `/home/oggy` is not a directory.
-Bundler will use `/TMP/bundler/home/USER' as your home directory temporarily.
+Bundler will use `/tmp/trulyrandom' as your home directory temporarily.
 EOF
           expect(Bundler.ui).to receive(:warn).with(message)
-          expect(Bundler.user_home).to eq(Pathname("/TMP/bundler/home/USER"))
+          expect(Bundler.user_home).to eq(Pathname("/tmp/trulyrandom"))
         end
       end
 
@@ -254,16 +267,13 @@ EOF
           allow(File).to receive(:directory?).with(path).and_return true
           allow(File).to receive(:writable?).with(path).and_return false
           allow(File).to receive(:directory?).with(dotbundle).and_return false
-          allow(Etc).to receive(:getlogin).and_return("USER")
-          allow(Dir).to receive(:tmpdir).and_return("/TMP")
-          allow(FileTest).to receive(:exist?).with("/TMP/bundler/home").and_return(true)
-          expect(FileUtils).to receive(:mkpath).with("/TMP/bundler/home/USER")
+          allow(Bundler).to receive(:tmp).and_return(Pathname.new("/tmp/trulyrandom"))
           message = <<EOF
 `/home/oggy` is not writable.
-Bundler will use `/TMP/bundler/home/USER' as your home directory temporarily.
+Bundler will use `/tmp/trulyrandom' as your home directory temporarily.
 EOF
           expect(Bundler.ui).to receive(:warn).with(message)
-          expect(Bundler.user_home).to eq(Pathname("/TMP/bundler/home/USER"))
+          expect(Bundler.user_home).to eq(Pathname("/tmp/trulyrandom"))
         end
 
         context ".bundle exists and have correct permissions" do
@@ -282,28 +292,14 @@ EOF
     context "home directory is not set" do
       it "should issue warning and return a temporary user home" do
         allow(Bundler.rubygems).to receive(:user_home).and_return(nil)
-        allow(Etc).to receive(:getlogin).and_return("USER")
-        allow(Dir).to receive(:tmpdir).and_return("/TMP")
-        allow(FileTest).to receive(:exist?).with("/TMP/bundler/home").and_return(true)
-        expect(FileUtils).to receive(:mkpath).with("/TMP/bundler/home/USER")
+        allow(Bundler).to receive(:tmp).and_return(Pathname.new("/tmp/trulyrandom"))
         message = <<EOF
 Your home directory is not set.
-Bundler will use `/TMP/bundler/home/USER' as your home directory temporarily.
+Bundler will use `/tmp/trulyrandom' as your home directory temporarily.
 EOF
         expect(Bundler.ui).to receive(:warn).with(message)
-        expect(Bundler.user_home).to eq(Pathname("/TMP/bundler/home/USER"))
+        expect(Bundler.user_home).to eq(Pathname("/tmp/trulyrandom"))
       end
-    end
-  end
-
-  describe "#tmp_home_path" do
-    it "should create temporary user home" do
-      allow(Dir).to receive(:tmpdir).and_return("/TMP")
-      allow(FileTest).to receive(:exist?).with("/TMP/bundler/home").and_return(false)
-      expect(FileUtils).to receive(:mkpath).once.ordered.with("/TMP/bundler/home")
-      expect(FileUtils).to receive(:mkpath).once.ordered.with("/TMP/bundler/home/USER")
-      expect(File).to receive(:chmod).with(0o777, "/TMP/bundler/home")
-      expect(Bundler.tmp_home_path("USER", "")).to eq(Pathname("/TMP/bundler/home/USER"))
     end
   end
 
@@ -342,7 +338,7 @@ EOF
       end
 
       context "with unwritable files in a parent dir" do
-        # Regression test for https://github.com/bundler/bundler/pull/6316
+        # Regression test for https://github.com/rubygems/bundler/pull/6316
         # It doesn't matter if there are other unwritable files so long as
         # bundle_path can be created
         before do

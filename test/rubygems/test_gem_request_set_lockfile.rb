@@ -1,10 +1,9 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/request_set'
 require 'rubygems/request_set/lockfile'
 
 class TestGemRequestSetLockfile < Gem::TestCase
-
   def setup
     super
 
@@ -52,7 +51,7 @@ class TestGemRequestSetLockfile < Gem::TestCase
     expected = [
       'DEPENDENCIES',
       '  a',
-      nil
+      nil,
     ]
 
     assert_equal expected, out
@@ -79,7 +78,7 @@ class TestGemRequestSetLockfile < Gem::TestCase
     expected = [
       'DEPENDENCIES',
       '  a (~> 2.0)',
-      nil
+      nil,
     ]
 
     assert_equal expected, out
@@ -112,7 +111,7 @@ class TestGemRequestSetLockfile < Gem::TestCase
       '    a (2)',
       '      b',
       '    b (2)',
-      nil
+      nil,
     ]
 
     assert_equal expected, out
@@ -140,7 +139,7 @@ class TestGemRequestSetLockfile < Gem::TestCase
       'PLATFORMS',
       '  ruby',
       '  x86-darwin-8',
-      nil
+      nil,
     ]
 
     assert_equal expected, out
@@ -444,7 +443,7 @@ DEPENDENCIES
 
     gem_deps_lock_file = "#{@gem_deps_file}.lock"
 
-    assert_path_exists gem_deps_lock_file
+    assert_path_exist gem_deps_lock_file
 
     refute_empty File.read gem_deps_lock_file
   end
@@ -458,13 +457,12 @@ DEPENDENCIES
       io.write 'hello'
     end
 
-    assert_raises Gem::UnsatisfiableDependencyError do
+    assert_raise Gem::UnsatisfiableDependencyError do
       lockfile.write
     end
 
-    assert_path_exists gem_deps_lock_file
+    assert_path_exist gem_deps_lock_file
 
     assert_equal 'hello', File.read(gem_deps_lock_file)
   end
-
 end

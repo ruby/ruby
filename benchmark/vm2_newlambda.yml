@@ -1,4 +1,0 @@
-benchmark:
-  vm2_newlambda: |
-    lambda {}
-loop_count: 6000000

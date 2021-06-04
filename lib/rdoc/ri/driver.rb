@@ -17,7 +17,7 @@ require 'rdoc'
 ##
 # For RubyGems backwards compatibility
 
-require 'rdoc/ri/formatter'
+require_relative 'formatter'
 
 ##
 # The RI driver implements the command-line ri tool.
@@ -356,7 +356,7 @@ or the PAGER environment variable.
       end
     end
 
-    argv = ENV['RI'].to_s.split.concat argv
+    argv = ENV['RI'].to_s.split(' ').concat argv
 
     opts.parse! argv
 
@@ -1228,7 +1228,7 @@ or the PAGER environment variable.
   # +cache+ indicate if it is a class or instance method.
 
   def load_method store, cache, klass, type, name
-    methods = store.send(cache)[klass]
+    methods = store.public_send(cache)[klass]
 
     return unless methods
 
@@ -1521,7 +1521,7 @@ or the PAGER environment variable.
     pagers.compact.uniq.each do |pager|
       next unless pager
 
-      pager_cmd = pager.split.first
+      pager_cmd = pager.split(' ').first
 
       next unless in_path? pager_cmd
 
@@ -1551,7 +1551,11 @@ or the PAGER environment variable.
   # Starts a WEBrick server for ri.
 
   def start_server
-    require 'webrick'
+    begin
+      require 'webrick'
+    rescue LoadError
+      abort "webrick is not found. You may need to `gem install webrick` to install webrick."
+    end
 
     server = WEBrick::HTTPServer.new :Port => @server
 

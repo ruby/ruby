@@ -88,6 +88,23 @@ describe "Module#define_method when given an UnboundMethod" do
   end
 end
 
+describe "Module#define_method" do
+  describe "when the default definee is not the same as the module" do
+    it "sets the visibility of the method to public" do
+      klass = Class.new
+      class << klass
+        private
+        define_method(:meta) do
+          define_method(:foo) { :foo }
+        end
+      end
+
+      klass.send :meta
+      klass.new.foo.should == :foo
+    end
+  end
+end
+
 describe "Module#define_method when name is not a special private name" do
   describe "given an UnboundMethod" do
     describe "and called from the target module" do
@@ -245,10 +262,10 @@ describe "Module#define_method" do
     -> { obj.proc_style_test :arg }.should raise_error(ArgumentError)
   end
 
-  it "raises a #{frozen_error_class} if frozen" do
+  it "raises a FrozenError if frozen" do
     -> {
       Class.new { freeze; define_method(:foo) {} }
-    }.should raise_error(frozen_error_class)
+    }.should raise_error(FrozenError)
   end
 
   it "accepts a Method (still bound)" do
@@ -355,15 +372,8 @@ describe "Module#define_method" do
     klass.new.string_test.should == "string_test result"
   end
 
-  ruby_version_is ''...'2.5' do
-    it "is a private method" do
-      Module.should have_private_instance_method(:define_method)
-    end
-  end
-  ruby_version_is '2.5' do
-    it "is a public method" do
-      Module.should have_public_instance_method(:define_method)
-    end
+  it "is a public method" do
+    Module.should have_public_instance_method(:define_method)
   end
 
   it "returns its symbol" do
@@ -498,7 +508,36 @@ describe "Module#define_method" do
     it "receives the value passed as the argument when passed one argument" do
       @klass.new.m(1).should == 1
     end
+  end
 
+  describe "passed { |a,|  } creates a method that" do
+    before :each do
+      @klass = Class.new do
+        define_method(:m) { |a,| a }
+      end
+    end
+
+    it "raises an ArgumentError when passed zero arguments" do
+      -> { @klass.new.m }.should raise_error(ArgumentError)
+    end
+
+    it "raises an ArgumentError when passed zero arguments and a block" do
+      -> { @klass.new.m { :computed } }.should raise_error(ArgumentError)
+    end
+
+    it "raises an ArgumentError when passed two arguments" do
+      -> { @klass.new.m 1, 2 }.should raise_error(ArgumentError)
+    end
+
+    it "receives the value passed as the argument when passed one argument" do
+      @klass.new.m(1).should == 1
+    end
+
+    it "does not destructure the passed argument" do
+      @klass.new.m([1, 2]).should == [1, 2]
+      # for comparison:
+      proc { |a,| a }.call([1, 2]).should == 1
+    end
   end
 
   describe "passed { |*a|  } creates a method that" do

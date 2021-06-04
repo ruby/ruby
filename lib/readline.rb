@@ -1,6 +1,6 @@
 begin
   require 'readline.so'
 rescue LoadError
-  require 'reline'
+  require 'reline' unless defined? Reline
   Readline = Reline
 end

@@ -1,10 +1,8 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 
 class TestGemResolverSpecification < Gem::TestCase
-
   class TestSpec < Gem::Resolver::Specification
-
     attr_writer :source
     attr_reader :spec
 
@@ -13,7 +11,6 @@ class TestGemResolverSpecification < Gem::TestCase
 
       @spec = spec
     end
-
   end
 
   def test_install
@@ -29,7 +26,7 @@ class TestGemResolverSpecification < Gem::TestCase
 
     a_spec.install :install_dir => gemhome
 
-    assert_path_exists File.join gemhome, 'gems', a.full_name
+    assert_path_exist File.join gemhome, 'gems', a.full_name
 
     expected = File.join gemhome, 'specifications', a.spec_name
 
@@ -62,5 +59,4 @@ class TestGemResolverSpecification < Gem::TestCase
 
     assert_equal source, a_spec.source
   end
-
 end

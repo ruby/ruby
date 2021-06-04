@@ -38,7 +38,7 @@ describe "Hash literal" do
     key.reverse!
     h["foo"].should == "bar"
     h.keys.first.should == "foo"
-    h.keys.first.frozen?.should == true
+    h.keys.first.should.frozen?
     key.should == "oof"
   end
 
@@ -48,6 +48,21 @@ describe "Hash literal" do
     }.should complain(/key :foo is duplicated|duplicated key/)
     @h.keys.size.should == 1
     @h.should == {foo: :foo}
+    -> {
+      @h = eval "{%q{a} => :bar, %q{a} => :foo}"
+    }.should complain(/key "a" is duplicated|duplicated key/)
+    @h.keys.size.should == 1
+    @h.should == {%q{a} => :foo}
+    -> {
+      @h = eval "{1000 => :bar, 1000 => :foo}"
+    }.should complain(/key 1000 is duplicated|duplicated key/)
+    @h.keys.size.should == 1
+    @h.should == {1000 => :foo}
+    -> {
+      @h = eval "{1.0 => :bar, 1.0 => :foo}"
+    }.should complain(/key 1.0 is duplicated|duplicated key/)
+    @h.keys.size.should == 1
+    @h.should == {1.0 => :foo}
   end
 
   it "accepts a hanging comma" do
@@ -128,9 +143,18 @@ describe "Hash literal" do
     {a: 1, **obj, c: 3}.should == {a:1, b: 2, c: 3, d: 4}
   end
 
-  it "raises a TypeError if any splatted elements keys are not symbols" do
-    h = {1 => 2, b: 3}
-    -> { {a: 1, **h} }.should raise_error(TypeError)
+  ruby_version_is ""..."2.7" do
+    it "raises a TypeError if any splatted elements keys are not symbols" do
+      h = {1 => 2, b: 3}
+      -> { {a: 1, **h} }.should raise_error(TypeError)
+    end
+  end
+
+  ruby_version_is "2.7" do
+    it "allows splatted elements keys that are not symbols" do
+      h = {1 => 2, b: 3}
+      {a: 1, **h}.should == {a: 1, 1 => 2, b: 3}
+    end
   end
 
   it "raises a TypeError if #to_hash does not return a Hash" do
@@ -138,6 +162,12 @@ describe "Hash literal" do
     obj.should_receive(:to_hash).and_return(obj)
 
     -> { {**obj} }.should raise_error(TypeError)
+  end
+
+  it "raises a TypeError if the object does not respond to #to_hash" do
+    obj = 42
+    -> { {**obj} }.should raise_error(TypeError)
+    -> { {a: 1, **obj} }.should raise_error(TypeError)
   end
 
   it "does not change encoding of literal string keys during creation" do
@@ -150,5 +180,44 @@ describe "Hash literal" do
     utf8_hash.keys.first.encoding.should == Encoding::UTF_8
     utf8_hash.keys.first.should == usascii_hash.keys.first
     usascii_hash.keys.first.encoding.should == Encoding::US_ASCII
+  end
+end
+
+describe "The ** operator" do
+  it "makes a copy when calling a method taking a keyword rest argument" do
+    def m(**h)
+      h.delete(:one); h
+    end
+
+    h = { one: 1, two: 2 }
+    m(**h).should == { two: 2 }
+    m(**h).should_not.equal?(h)
+    h.should == { one: 1, two: 2 }
+  end
+
+  ruby_version_is ""..."3.0" do
+    it "makes a caller-side copy when calling a method taking a positional Hash" do
+      def m(h)
+        h.delete(:one); h
+      end
+
+      h = { one: 1, two: 2 }
+      m(**h).should == { two: 2 }
+      m(**h).should_not.equal?(h)
+      h.should == { one: 1, two: 2 }
+    end
+  end
+
+  ruby_version_is "3.0" do
+    it "does not copy when calling a method taking a positional Hash" do
+      def m(h)
+        h.delete(:one); h
+      end
+
+      h = { one: 1, two: 2 }
+      m(**h).should == { two: 2 }
+      m(**h).should.equal?(h)
+      h.should == { two: 2 }
+    end
   end
 end

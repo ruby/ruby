@@ -17,7 +17,7 @@ describe "Dir.home" do
     end
 
     it "returns a non-frozen string" do
-      Dir.home.frozen?.should == false
+      Dir.home.should_not.frozen?
     end
   end
 
@@ -28,14 +28,14 @@ describe "Dir.home" do
       end
     end
 
-    platform_is_not :windows, :solaris do
+    platform_is_not :windows, :solaris, :android do
       it "returns the named user's home directory, from the user database" do
         Dir.home(ENV['USER']).should == `echo ~#{ENV['USER']}`.chomp
       end
     end
 
     it "returns a non-frozen string" do
-      Dir.home(ENV['USER']).frozen?.should == false
+      Dir.home(ENV['USER']).should_not.frozen?
     end
   end
 

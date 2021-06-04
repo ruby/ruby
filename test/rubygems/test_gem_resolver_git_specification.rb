@@ -1,9 +1,8 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/installer'
 
 class TestGemResolverGitSpecification < Gem::TestCase
-
   def setup
     super
 
@@ -63,7 +62,8 @@ class TestGemResolverGitSpecification < Gem::TestCase
   # functional test for Gem::Ext::Builder
 
   def test_install_extension
-    skip if Gem.java_platform?
+    pend if Gem.java_platform?
+    pend if /mswin/ =~ RUBY_PLATFORM && ENV.key?('GITHUB_ACTIONS') # not working from the beginning
     name, _, repository, = git_gem 'a', 1 do |s|
       s.extensions << 'ext/extconf.rb'
     end
@@ -92,7 +92,7 @@ class TestGemResolverGitSpecification < Gem::TestCase
 
     git_spec.install({})
 
-    assert_path_exists File.join git_spec.spec.extension_dir, 'b.rb'
+    assert_path_exist File.join git_spec.spec.extension_dir, 'b.rb'
   end
 
   def test_install_installed
@@ -110,5 +110,4 @@ class TestGemResolverGitSpecification < Gem::TestCase
 
     assert called
   end
-
 end

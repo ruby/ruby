@@ -20,12 +20,12 @@ describe "String#prepend" do
     -> { 'hello '.prepend mock('x') }.should raise_error(TypeError)
   end
 
-  it "raises a #{frozen_error_class} when self is frozen" do
+  it "raises a FrozenError when self is frozen" do
     a = "hello"
     a.freeze
 
-    -> { a.prepend "" }.should raise_error(frozen_error_class)
-    -> { a.prepend "test" }.should raise_error(frozen_error_class)
+    -> { a.prepend "" }.should raise_error(FrozenError)
+    -> { a.prepend "test" }.should raise_error(FrozenError)
   end
 
   it "works when given a subclass instance" do
@@ -34,12 +34,14 @@ describe "String#prepend" do
     a.should == "hello world"
   end
 
-  it "taints self if other is tainted" do
-    x = "x"
-    x.prepend("".taint).tainted?.should be_true
+  ruby_version_is ''...'2.7' do
+    it "taints self if other is tainted" do
+      x = "x"
+      x.prepend("".taint).tainted?.should be_true
 
-    x = "x"
-    x.prepend("y".taint).tainted?.should be_true
+      x = "x"
+      x.prepend("y".taint).tainted?.should be_true
+    end
   end
 
   it "takes multiple arguments" do

@@ -1,20 +1,26 @@
 # frozen_string_literal: true
 
 # `uplevel` keyword argument of Kernel#warn is available since ruby 2.5.
-if RUBY_VERSION >= "2.5"
+if RUBY_VERSION >= "2.5" && !Gem::KERNEL_WARN_IGNORES_INTERNAL_ENTRIES
 
   module Kernel
-    path = "#{__dir__}/" # Frames to be skipped start with this path.
+    rubygems_path = "#{__dir__}/" # Frames to be skipped start with this path.
 
-    # Suppress "method redefined" warning
     original_warn = instance_method(:warn)
-    Module.new {define_method(:warn, original_warn)}
 
-    original_warn = method(:warn)
+    remove_method :warn
 
-    module_function define_method(:warn) {|*messages, uplevel: nil|
-      unless uplevel
-        return original_warn.call(*messages)
+    class << self
+      remove_method :warn
+    end
+
+    module_function define_method(:warn) {|*messages, **kw|
+      unless uplevel = kw[:uplevel]
+        if Gem.java_platform?
+          return original_warn.bind(self).call(*messages)
+        else
+          return original_warn.bind(self).call(*messages, **kw)
+        end
       end
 
       # Ensure `uplevel` fits a `long`
@@ -32,14 +38,17 @@ if RUBY_VERSION >= "2.5"
 
           start += 1
 
-          unless loc.path.start_with?(path)
-            # Non-rubygems frames
-            uplevel -= 1
+          if path = loc.path
+            unless path.start_with?(rubygems_path) or path.start_with?('<internal:')
+              # Non-rubygems frames
+              uplevel -= 1
+            end
           end
         end
-        uplevel = start
+        kw[:uplevel] = start
       end
-      original_warn.call(*messages, uplevel: uplevel)
+
+      original_warn.bind(self).call(*messages, **kw)
     }
   end
 end

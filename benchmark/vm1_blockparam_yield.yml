@@ -1,8 +1,0 @@
-prelude: |
-  def bp_yield &b
-    yield
-  end
-benchmark:
-  vm1_blockparam_yield: |
-    bp_yield{}
-loop_count: 30000000

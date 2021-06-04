@@ -1,7 +1,0 @@
-prelude: |
-  obj1 = Object.new
-  obj2 = Object.new
-benchmark:
-  vm1_neq: |
-    obj1 != obj2
-loop_count: 30000000

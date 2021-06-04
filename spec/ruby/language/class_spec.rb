@@ -285,11 +285,29 @@ describe "A class definition extending an object (sclass)" do
     }.should raise_error(TypeError)
   end
 
+  it "raises a TypeError when trying to extend non-Class" do
+    error_msg = /superclass must be a.* Class/
+    -> { class TestClass < "";              end }.should raise_error(TypeError, error_msg)
+    -> { class TestClass < 1;               end }.should raise_error(TypeError, error_msg)
+    -> { class TestClass < :symbol;         end }.should raise_error(TypeError, error_msg)
+    -> { class TestClass < mock('o');       end }.should raise_error(TypeError, error_msg)
+    -> { class TestClass < Module.new;      end }.should raise_error(TypeError, error_msg)
+    -> { class TestClass < BasicObject.new; end }.should raise_error(TypeError, error_msg)
+  end
+
   ruby_version_is ""..."3.0" do
     it "allows accessing the block of the original scope" do
       suppress_warning do
         ClassSpecs.sclass_with_block { 123 }.should == 123
       end
+    end
+  end
+
+  ruby_version_is "3.0" do
+    it "does not allow accessing the block of the original scope" do
+      -> {
+        ClassSpecs.sclass_with_block { 123 }
+      }.should raise_error(SyntaxError)
     end
   end
 

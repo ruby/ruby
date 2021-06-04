@@ -18,6 +18,12 @@ describe "Literal Regexps" do
     /Hello/.should be_kind_of(Regexp)
   end
 
+  ruby_version_is "3.0" do
+    it "is frozen" do
+      /Hello/.should.frozen?
+    end
+  end
+
   it "caches the Regexp object" do
     rs = []
     2.times do |i|
@@ -107,6 +113,12 @@ describe "Literal Regexps" do
 
   it "supports (?<= ) (positive lookbehind)" do
     /foo.(?<=\d)/.match("fooA foo1").to_a.should == ["foo1"]
+  end
+
+  # https://bugs.ruby-lang.org/issues/13671
+  it "raises a RegexpError for lookbehind with specific characters" do
+    r =  Regexp.new("(?<!dss)", Regexp::IGNORECASE)
+    -> { r =~ "✨" }.should raise_error(RegexpError)
   end
 
   it "supports (?<! ) (negative lookbehind)" do

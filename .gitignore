@@ -18,6 +18,7 @@
 *.orig
 *.pch
 *.pdb
+*.rbinc
 *.rej
 *.s
 *.sav
@@ -26,7 +27,6 @@
 *.swp
 *.yarb
 *~
-.*-*
 .*.list
 .*.time
 .DS_Store
@@ -37,6 +37,7 @@
 .ppack
 .svn
 .time
+.ruby-version
 Makefile
 cygruby*.def
 extconf.h
@@ -56,6 +57,8 @@ lcov*.info
 /*.pc
 /*.rc
 /*_prelude.c
+/.downloaded-cache
+/.top-enc.mk
 /build*/
 /COPYING.LIB
 /ChangeLog
@@ -116,6 +119,7 @@ lcov*.info
 /rename2.h
 /repack
 /revision.h
+/revision.tmp
 /riscos
 /rubicon
 /ruby
@@ -124,6 +128,7 @@ lcov*.info
 /ruby-man.rd.gz
 /run.gdb
 /sizes.c
+/static-ruby
 /test.rb
 /test-coverage.dat
 /tmp
@@ -169,6 +174,9 @@ lcov*.info
 /ext/configure-ext.mk
 /ext/*/exts.mk
 
+# /ext/-test-/cxxanyargs
+/ext/-test-/cxxanyargs/failure*.failed
+
 # /ext/-test-/win32/dln/
 /ext/-test-/win32/dln/dlntest.dll
 /ext/-test-/win32/dln/dlntest.exp
@@ -186,6 +194,7 @@ lcov*.info
 
 # /ext/ripper/
 /ext/ripper/eventids1.c
+/ext/ripper/.eventids2-check
 /ext/ripper/eventids2table.c
 /ext/ripper/ripper.*
 /ext/ripper/ids1

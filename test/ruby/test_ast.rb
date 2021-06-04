@@ -42,10 +42,11 @@ class TestAst < Test::Unit::TestCase
   class Helper
     attr_reader :errors
 
-    def initialize(path)
+    def initialize(path, src: nil)
       @path = path
       @errors = []
       @debug = false
+      @ast = RubyVM::AbstractSyntaxTree.parse(src) if src
     end
 
     def validate_range
@@ -74,7 +75,7 @@ class TestAst < Test::Unit::TestCase
       children = node.children.grep(RubyVM::AbstractSyntaxTree::Node)
 
       return true if children.empty?
-      # These NODE_D* has NODE_ARRAY as nd_next->nd_next whose last locations
+      # These NODE_D* has NODE_LIST as nd_next->nd_next whose last locations
       # we can not update when item is appended.
       return true if [:DSTR, :DXSTR, :DREGX, :DSYM].include? node.type
 
@@ -252,6 +253,19 @@ class TestAst < Test::Unit::TestCase
     mid, defn = body.children
     assert_equal(:a, mid)
     assert_equal(:SCOPE, defn.type)
+    _, args, = defn.children
+    assert_equal(:ARGS, args.type)
+  end
+
+  def test_defn_endless
+    node = RubyVM::AbstractSyntaxTree.parse("def a = nil")
+    _, _, body = *node.children
+    assert_equal(:DEFN, body.type)
+    mid, defn = body.children
+    assert_equal(:a, mid)
+    assert_equal(:SCOPE, defn.type)
+    _, args, = defn.children
+    assert_equal(:ARGS, args.type)
   end
 
   def test_defs
@@ -262,15 +276,20 @@ class TestAst < Test::Unit::TestCase
     assert_equal(:VCALL, recv.type)
     assert_equal(:b, mid)
     assert_equal(:SCOPE, defn.type)
+    _, args, = defn.children
+    assert_equal(:ARGS, args.type)
   end
 
-  def test_methref
-    node = RubyVM::AbstractSyntaxTree.parse("obj.:foo")
+  def test_defs_endless
+    node = RubyVM::AbstractSyntaxTree.parse("def a.b = nil")
     _, _, body = *node.children
-    assert_equal(:METHREF, body.type)
-    recv, mid = body.children
+    assert_equal(:DEFS, body.type)
+    recv, mid, defn = body.children
     assert_equal(:VCALL, recv.type)
-    assert_equal(:foo, mid)
+    assert_equal(:b, mid)
+    assert_equal(:SCOPE, defn.type)
+    _, args, = defn.children
+    assert_equal(:ARGS, args.type)
   end
 
   def test_dstr
@@ -307,5 +326,50 @@ class TestAst < Test::Unit::TestCase
     assert_equal(:UNTIL, body.type)
     type2 = body.children[2]
     assert_not_equal(type1, type2)
+  end
+
+  def test_keyword_rest
+    kwrest = lambda do |arg_str|
+      node = RubyVM::AbstractSyntaxTree.parse("def a(#{arg_str}) end")
+      node = node.children.last.children.last.children[1].children[-2]
+      node ? node.children : node
+    end
+
+    assert_equal(nil, kwrest.call(''))
+    assert_equal([nil], kwrest.call('**'))
+    assert_equal(false, kwrest.call('**nil'))
+    assert_equal([:a], kwrest.call('**a'))
+  end
+
+  def test_ranges_numbered_parameter
+    helper = Helper.new(__FILE__, src: "1.times {_1}")
+    helper.validate_range
+    assert_equal([], helper.errors)
+  end
+
+  def test_op_asgn2
+    node = RubyVM::AbstractSyntaxTree.parse("struct.field += foo")
+    _, _, body = *node.children
+    assert_equal(:OP_ASGN2, body.type)
+    recv, _, mid, op, value = body.children
+    assert_equal(:VCALL, recv.type)
+    assert_equal(:field, mid)
+    assert_equal(:+, op)
+    assert_equal(:VCALL, value.type)
+  end
+
+  def test_args
+    rest = 6
+    node = RubyVM::AbstractSyntaxTree.parse("proc { |a| }")
+    _, args = *node.children.last.children[1].children
+    assert_equal(nil, args.children[rest])
+
+    node = RubyVM::AbstractSyntaxTree.parse("proc { |a,| }")
+    _, args = *node.children.last.children[1].children
+    assert_equal(:NODE_SPECIAL_EXCESSIVE_COMMA, args.children[rest])
+
+    node = RubyVM::AbstractSyntaxTree.parse("proc { |*a| }")
+    _, args = *node.children.last.children[1].children
+    assert_equal(:a, args.children[rest])
   end
 end

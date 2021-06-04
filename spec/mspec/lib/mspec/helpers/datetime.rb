@@ -6,7 +6,7 @@
 #
 # Possible keys are:
 #   :year, :month, :day, :hour, :minute, :second, :offset and :sg.
-def new_datetime(opts={})
+def new_datetime(opts = {})
   require 'date'
 
   value = {

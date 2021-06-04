@@ -81,6 +81,64 @@ class TestAssignment < Test::Unit::TestCase
     a,b,*c = [*[1,2]]; assert_equal([1,2,[]], [a,b,c])
   end
 
+  def test_massign_order
+    order = []
+    define_singleton_method(:x1){order << :x1; self}
+    define_singleton_method(:y1){order << :y1; self}
+    define_singleton_method(:z=){|x| order << [:z=, x]}
+    define_singleton_method(:x2){order << :x2; self}
+    define_singleton_method(:x3){order << :x3; self}
+    define_singleton_method(:x4){order << :x4; self}
+    define_singleton_method(:x5=){|x| order << [:x5=, x]; self}
+    define_singleton_method(:[]=){|*args| order << [:[]=, *args]}
+    define_singleton_method(:r1){order << :r1; :r1}
+    define_singleton_method(:r2){order << :r2; :r2}
+
+    x1.y1.z, x2[1, 2, 3], self[4] = r1, 6, r2
+    assert_equal([:x1, :y1, :x2, :r1, :r2, [:z=, :r1], [:[]=, 1, 2, 3, 6], [:[]=, 4, :r2]], order)
+    order.clear
+
+    x1.y1.z, *x2[1, 2, 3], self[4] = r1, 6, 7, r2
+    assert_equal([:x1, :y1, :x2, :r1, :r2, [:z=, :r1], [:[]=, 1, 2, 3, [6, 7]], [:[]=, 4, :r2]], order)
+    order.clear
+
+    x1.y1.z, *x2[1, 2, 3], x3[4] = r1, 6, 7, r2
+    assert_equal([:x1, :y1, :x2, :x3, :r1, :r2, [:z=, :r1], [:[]=, 1, 2, 3, [6, 7]], [:[]=, 4, :r2]], order)
+    order.clear
+
+    x1.y1.z, *x2[1, 2, 3], x3[4], x4.x5 = r1, 6, 7, r2, 8
+    assert_equal([:x1, :y1, :x2, :x3, :x4, :r1, :r2, [:z=, :r1], [:[]=, 1, 2, 3, [6, 7]], [:[]=, 4, :r2], [:x5=, 8]], order)
+    order.clear
+
+    (x1.y1.z, x2.x5), _a = [r1, r2], 7
+    assert_equal([:x1, :y1, :x2, :r1, :r2, [:z=, :r1], [:x5=, :r2]], order)
+    order.clear
+
+    (x1.y1.z, x1.x5), *x2[1, 2, 3] = [r1, 5], 6, 7, r2, 8
+    assert_equal([:x1, :y1, :x1, :x2, :r1, :r2, [:z=, :r1], [:x5=, 5], [:[]=, 1, 2, 3, [6, 7, :r2, 8]]], order)
+    order.clear
+
+    *x2[1, 2, 3], (x3[4], x4.x5) = 6, 7, [r2, 8]
+    assert_equal([:x2, :x3, :x4, :r2, [:[]=, 1, 2, 3, [6, 7]], [:[]=, 4, :r2], [:x5=, 8]], order)
+    order.clear
+
+    (x1.y1.z, x1.x5), *x2[1, 2, 3], x3[4], x4.x5 = [r1, 5], 6, 7, r2, 8
+    assert_equal([:x1, :y1, :x1, :x2, :x3, :x4, :r1, :r2, [:z=, :r1], [:x5=, 5], [:[]=, 1, 2, 3, [6, 7]], [:[]=, 4, :r2], [:x5=, 8]], order)
+    order.clear
+
+    (x1.y1.z, x1.x5), *x2[1, 2, 3], (x3[4], x4.x5) = [r1, 5], 6, 7, [r2, 8]
+    assert_equal([:x1, :y1, :x1, :x2, :x3, :x4, :r1, :r2, [:z=, :r1], [:x5=, 5], [:[]=, 1, 2, 3, [6, 7]], [:[]=, 4, :r2], [:x5=, 8]], order)
+    order.clear
+
+    ((x1.y1.z, x1.x5), _a), *x2[1, 2, 3], ((x3[4], x4.x5), _b) = [[r1, 5], 10], 6, 7, [[r2, 8], 11]
+    assert_equal([:x1, :y1, :x1, :x2, :x3, :x4, :r1, :r2, [:z=, :r1], [:x5=, 5], [:[]=, 1, 2, 3, [6, 7]], [:[]=, 4, :r2], [:x5=, 8]], order)
+    order.clear
+
+    ((x1.y1.z, *x1.x5), _a), *x2[1, 2, 3], ((*x3[4], x4.x5), _b) = [[r1, 5], 10], 6, 7, [[r2, 8], 11]
+    assert_equal([:x1, :y1, :x1, :x2, :x3, :x4, :r1, :r2, [:z=, :r1], [:x5=, [5]], [:[]=, 1, 2, 3, [6, 7]], [:[]=, 4, [:r2]], [:x5=, 8]], order)
+    order.clear
+  end
+
   def test_massign_splat
     a,b,*c = *[]; assert_equal([nil,nil,[]], [a,b,c])
     a,b,*c = *[1]; assert_equal([1,nil,[]], [a,b,c])
@@ -119,31 +177,31 @@ class TestAssignment < Test::Unit::TestCase
       def []=(i, a); 42; end
     end
 
-    assert_raise(NoMethodError) {
+    assert_raise(NoMethodError, bug11096) {
       o.instance_eval {o.foo = 1}
     }
-    assert_nothing_raised(NoMethodError) {
+    assert_nothing_raised(NoMethodError, bug11096) {
       assert_equal(1, o.instance_eval {self.foo = 1})
     }
 
-    assert_raise(NoMethodError) {
+    assert_raise(NoMethodError, bug11096) {
       o.instance_eval {o[0] = 1}
     }
-    assert_nothing_raised(NoMethodError) {
+    assert_nothing_raised(NoMethodError, bug11096) {
       assert_equal(1, o.instance_eval {self[0] = 1})
     }
 
-    assert_raise(NoMethodError, bug11096) {
+    assert_nothing_raised(NoMethodError, bug11096) {
       o.instance_eval {self.foo += 1}
     }
-    assert_raise(NoMethodError, bug11096) {
+    assert_nothing_raised(NoMethodError, bug11096) {
       o.instance_eval {self.foo &&= 1}
     }
 
-    assert_raise(NoMethodError, bug11096) {
+    assert_nothing_raised(NoMethodError, bug11096) {
       o.instance_eval {self[0] += 1}
     }
-    assert_raise(NoMethodError, bug11096) {
+    assert_nothing_raised(NoMethodError, bug11096) {
       o.instance_eval {self[0] &&= 1}
     }
   end
@@ -456,7 +514,7 @@ class TestAssignment < Test::Unit::TestCase
     assert(defined?(a))
     assert_nil(a)
 
-    # multiple asignment
+    # multiple assignment
     a, b = 1, 2
     assert_equal 1, a
     assert_equal 2, b

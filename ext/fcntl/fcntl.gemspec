@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.summary       = "Loads constants defined in the OS fcntl.h C header file"
   spec.description   = "Loads constants defined in the OS fcntl.h C header file"
   spec.homepage      = "https://github.com/ruby/fcntl"
-  spec.license       = "BSD-2-Clause"
+  spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   spec.files         = ["ext/fcntl/extconf.rb", "ext/fcntl/fcntl.c"]
   spec.bindir        = "exe"
@@ -18,8 +18,4 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
   spec.extensions    = "ext/fcntl/extconf.rb"
   spec.required_ruby_version = ">= 2.3.0"
-
-  spec.add_development_dependency "bundler", "~> 1.14"
-  spec.add_development_dependency "rake", "~> 12"
-  spec.add_development_dependency "rake-compiler"
 end

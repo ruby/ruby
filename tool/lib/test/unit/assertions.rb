@@ -8,32 +8,6 @@ module Test
     module Assertions
       include Test::Unit::CoreAssertions
 
-      MINI_DIR = File.join(File.dirname(File.dirname(File.expand_path(__FILE__))), "minitest") #:nodoc:
-
-      # :call-seq:
-      #   assert(test, [failure_message])
-      #
-      #Tests if +test+ is true.
-      #
-      #+msg+ may be a String or a Proc. If +msg+ is a String, it will be used
-      #as the failure message. Otherwise, the result of calling +msg+ will be
-      #used as the message if the assertion fails.
-      #
-      #If no +msg+ is given, a default message will be used.
-      #
-      #    assert(false, "This was expected to be true")
-      def assert(test, *msgs)
-        case msg = msgs.first
-        when String, Proc
-        when nil
-          msgs.shift
-        else
-          bt = caller.reject { |s| s.start_with?(MINI_DIR) }
-          raise ArgumentError, "assertion message must be String or Proc, but #{msg.class} was given.", bt
-        end unless msgs.empty?
-        super
-      end
-
       # :call-seq:
       #   assert_block( failure_message = nil )
       #
@@ -48,99 +22,8 @@ module Test
         assert yield, *msgs
       end
 
-      # :call-seq:
-      #   assert_raise( *args, &block )
-      #
-      #Tests if the given block raises an exception. Acceptable exception
-      #types may be given as optional arguments. If the last argument is a
-      #String, it will be used as the error message.
-      #
-      #    assert_raise do #Fails, no Exceptions are raised
-      #    end
-      #
-      #    assert_raise NameError do
-      #      puts x  #Raises NameError, so assertion succeeds
-      #    end
-      def assert_raise(*exp, &b)
-        case exp.last
-        when String, Proc
-          msg = exp.pop
-        end
-
-        begin
-          yield
-        rescue MiniTest::Skip => e
-          return e if exp.include? MiniTest::Skip
-          raise e
-        rescue Exception => e
-          expected = exp.any? { |ex|
-            if ex.instance_of? Module then
-              e.kind_of? ex
-            else
-              e.instance_of? ex
-            end
-          }
-
-          assert expected, proc {
-            exception_details(e, message(msg) {"#{mu_pp(exp)} exception expected, not"}.call)
-          }
-
-          return e
-        ensure
-          unless e
-            exp = exp.first if exp.size == 1
-
-            flunk(message(msg) {"#{mu_pp(exp)} expected but nothing was raised"})
-          end
-        end
-      end
-
       def assert_raises(*exp, &b)
         raise NoMethodError, "use assert_raise", caller
-      end
-
-      # :call-seq:
-      #   assert_nothing_raised( *args, &block )
-      #
-      #If any exceptions are given as arguments, the assertion will
-      #fail if one of those exceptions are raised. Otherwise, the test fails
-      #if any exceptions are raised.
-      #
-      #The final argument may be a failure message.
-      #
-      #    assert_nothing_raised RuntimeError do
-      #      raise Exception #Assertion passes, Exception is not a RuntimeError
-      #    end
-      #
-      #    assert_nothing_raised do
-      #      raise Exception #Assertion fails
-      #    end
-      def assert_nothing_raised(*args)
-        self._assertions += 1
-        if Module === args.last
-          msg = nil
-        else
-          msg = args.pop
-        end
-        begin
-          line = __LINE__; yield
-        rescue MiniTest::Skip
-          raise
-        rescue Exception => e
-          bt = e.backtrace
-          as = e.instance_of?(MiniTest::Assertion)
-          if as
-            ans = /\A#{Regexp.quote(__FILE__)}:#{line}:in /o
-            bt.reject! {|ln| ans =~ ln}
-          end
-          if ((args.empty? && !as) ||
-              args.any? {|a| a.instance_of?(Module) ? e.is_a?(a) : e.class == a })
-            msg = message(msg) { "Exception raised:\n<#{mu_pp(e)}>" }
-            raise MiniTest::Assertion, msg.call, bt
-          else
-            raise
-          end
-        end
       end
 
       # :call-seq:
@@ -273,52 +156,6 @@ EOT
       end
 
       # :call-seq:
-      #   assert_respond_to( object, method, failure_message = nil )
-      #
-      #Tests if the given Object responds to +method+.
-      #
-      #An optional failure message may be provided as the final argument.
-      #
-      #    assert_respond_to("hello", :reverse)  #Succeeds
-      #    assert_respond_to("hello", :does_not_exist)  #Fails
-      def assert_respond_to(obj, (meth, *priv), msg = nil)
-        unless priv.empty?
-          msg = message(msg) {
-            "Expected #{mu_pp(obj)} (#{obj.class}) to respond to ##{meth}#{" privately" if priv[0]}"
-          }
-          return assert obj.respond_to?(meth, *priv), msg
-        end
-        #get rid of overcounting
-        if caller_locations(1, 1)[0].path.start_with?(MINI_DIR)
-          return if obj.respond_to?(meth)
-        end
-        super(obj, meth, msg)
-      end
-
-      # :call-seq:
-      #   assert_not_respond_to( object, method, failure_message = nil )
-      #
-      #Tests if the given Object does not respond to +method+.
-      #
-      #An optional failure message may be provided as the final argument.
-      #
-      #    assert_not_respond_to("hello", :reverse)  #Fails
-      #    assert_not_respond_to("hello", :does_not_exist)  #Succeeds
-      def assert_not_respond_to(obj, (meth, *priv), msg = nil)
-        unless priv.empty?
-          msg = message(msg) {
-            "Expected #{mu_pp(obj)} (#{obj.class}) to not respond to ##{meth}#{" privately" if priv[0]}"
-          }
-          return assert !obj.respond_to?(meth, *priv), msg
-        end
-        #get rid of overcounting
-        if caller_locations(1, 1)[0].path.start_with?(MINI_DIR)
-          return unless obj.respond_to?(meth)
-        end
-        refute_respond_to(obj, meth, msg)
-      end
-
-      # :call-seq:
       #   assert_send( +send_array+, failure_message = nil )
       #
       # Passes if the method send returns a true value.
@@ -378,16 +215,6 @@ EOT
       alias assert_include assert_includes
       alias assert_not_include assert_not_includes
 
-      def assert_all?(obj, m = nil, &blk)
-        failed = []
-        obj.each do |*a, &b|
-          unless blk.call(*a, &b)
-            failed << (a.size > 1 ? a : a[0])
-          end
-        end
-        assert(failed.empty?, message(m) {failed.pretty_inspect})
-      end
-
       def assert_not_all?(obj, m = nil, &blk)
         failed = []
         obj.each do |*a, &b|
@@ -401,57 +228,8 @@ EOT
       # compatibility with test-unit
       alias pend skip
 
-      if defined?(RubyVM::InstructionSequence)
-        def syntax_check(code, fname, line)
-          code = code.dup.force_encoding(Encoding::UTF_8)
-          RubyVM::InstructionSequence.compile(code, fname, fname, line)
-          :ok
-        end
-      else
-        def syntax_check(code, fname, line)
-          code = code.b
-          code.sub!(/\A(?:\xef\xbb\xbf)?(\s*\#.*$)*(\n)?/n) {
-            "#$&#{"\n" if $1 && !$2}BEGIN{throw tag, :ok}\n"
-          }
-          code = code.force_encoding(Encoding::UTF_8)
-          catch {|tag| eval(code, binding, fname, line - 1)}
-        end
-      end
-
-      def prepare_syntax_check(code, fname = nil, mesg = nil, verbose: nil)
-        fname ||= caller_locations(2, 1)[0]
-        mesg ||= fname.to_s
-        verbose, $VERBOSE = $VERBOSE, verbose
-        case
-        when Array === fname
-          fname, line = *fname
-        when defined?(fname.path) && defined?(fname.lineno)
-          fname, line = fname.path, fname.lineno
-        else
-          line = 1
-        end
-        yield(code, fname, line, message(mesg) {
-                if code.end_with?("\n")
-                  "```\n#{code}```\n"
-                else
-                  "```\n#{code}\n```\n""no-newline"
-                end
-              })
-      ensure
-        $VERBOSE = verbose
-      end
-
-      def assert_valid_syntax(code, *args, **opt)
+      def assert_syntax_error(code, error, *args, **opt)
         prepare_syntax_check(code, *args, **opt) do |src, fname, line, mesg|
-          yield if defined?(yield)
-          assert_nothing_raised(SyntaxError, mesg) do
-            assert_equal(:ok, syntax_check(src, fname, line), mesg)
-          end
-        end
-      end
-
-      def assert_syntax_error(code, error, *args)
-        prepare_syntax_check(code, *args) do |src, fname, line, mesg|
           yield if defined?(yield)
           e = assert_raise(SyntaxError, mesg) do
             syntax_check(src, fname, line)
@@ -459,17 +237,6 @@ EOT
           assert_match(error, e.message, mesg)
           e
         end
-      end
-
-      def assert_normal_exit(testsrc, message = '', child_env: nil, **opt)
-        assert_valid_syntax(testsrc, caller_locations(1, 1)[0])
-        if child_env
-          child_env = [child_env]
-        else
-          child_env = []
-        end
-        out, _, status = EnvUtil.invoke_ruby(child_env + %W'-W0', testsrc, true, :merge_to_stdout, **opt)
-        assert !status.signaled?, FailDesc[status, message, out]
       end
 
       def assert_no_warning(pat, msg = nil)
@@ -482,51 +249,6 @@ EOT
         msg = message(msg) {diff pat, stderr}
         refute(pat === stderr, msg)
         result
-      end
-
-      def assert_no_memory_leak(args, prepare, code, message=nil, limit: 2.0, rss: false, **opt)
-        # TODO: consider choosing some appropriate limit for MJIT and stop skipping this once it does not randomly fail
-        skip 'assert_no_memory_leak may consider MJIT memory usage as leak' if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
-
-        require_relative '../../memory_status'
-        raise MiniTest::Skip, "unsupported platform" unless defined?(Memory::Status)
-
-        token = "\e[7;1m#{$$.to_s}:#{Time.now.strftime('%s.%L')}:#{rand(0x10000).to_s(16)}:\e[m"
-        token_dump = token.dump
-        token_re = Regexp.quote(token)
-        envs = args.shift if Array === args and Hash === args.first
-        args = [
-          "--disable=gems",
-          "-r", File.expand_path("../../../memory_status", __FILE__),
-          *args,
-          "-v", "-",
-        ]
-        if defined? Memory::NO_MEMORY_LEAK_ENVS then
-          envs ||= {}
-          newenvs = envs.merge(Memory::NO_MEMORY_LEAK_ENVS) { |_, _, _| break }
-          envs = newenvs if newenvs
-        end
-        args.unshift(envs) if envs
-        cmd = [
-          'END {STDERR.puts '"#{token_dump}"'"FINAL=#{Memory::Status.new}"}',
-          prepare,
-          'STDERR.puts('"#{token_dump}"'"START=#{$initial_status = Memory::Status.new}")',
-          '$initial_size = $initial_status.size',
-          code,
-          'GC.start',
-        ].join("\n")
-        _, err, status = EnvUtil.invoke_ruby(args, cmd, true, true, **opt)
-        before = err.sub!(/^#{token_re}START=(\{.*\})\n/, '') && Memory::Status.parse($1)
-        after = err.sub!(/^#{token_re}FINAL=(\{.*\})\n/, '') && Memory::Status.parse($1)
-        assert(status.success?, FailDesc[status, message, err])
-        ([:size, (rss && :rss)] & after.members).each do |n|
-          b = before[n]
-          a = after[n]
-          next unless a > 0 and b > 0
-          assert_operator(a.fdiv(b), :<, limit, message(message) {"#{n}: #{b} => #{a}"})
-        end
-      rescue LoadError
-        skip
       end
 
       # kernel resolution can limit the minimum time we can measure
@@ -568,81 +290,6 @@ EOT
         assert(1.0/f == -Float::INFINITY, "#{f} is not -0.0")
       end
 
-      # pattern_list is an array which contains regexp and :*.
-      # :* means any sequence.
-      #
-      # pattern_list is anchored.
-      # Use [:*, regexp, :*] for non-anchored match.
-      def assert_pattern_list(pattern_list, actual, message=nil)
-        rest = actual
-        anchored = true
-        pattern_list.each_with_index {|pattern, i|
-          if pattern == :*
-            anchored = false
-          else
-            if anchored
-              match = /\A#{pattern}/.match(rest)
-            else
-              match = pattern.match(rest)
-            end
-            unless match
-              msg = message(msg) {
-                expect_msg = "Expected #{mu_pp pattern}\n"
-                if /\n[^\n]/ =~ rest
-                  actual_mesg = +"to match\n"
-                  rest.scan(/.*\n+/) {
-                    actual_mesg << '  ' << $&.inspect << "+\n"
-                  }
-                  actual_mesg.sub!(/\+\n\z/, '')
-                else
-                  actual_mesg = "to match " + mu_pp(rest)
-                end
-                actual_mesg << "\nafter #{i} patterns with #{actual.length - rest.length} characters"
-                expect_msg + actual_mesg
-              }
-              assert false, msg
-            end
-            rest = match.post_match
-            anchored = true
-          end
-        }
-        if anchored
-          assert_equal("", rest)
-        end
-      end
-
-      # threads should respond to shift method.
-      # Array can be used.
-      def assert_join_threads(threads, message = nil)
-        errs = []
-        values = []
-        while th = threads.shift
-          begin
-            values << th.value
-          rescue Exception
-            errs << [th, $!]
-            th = nil
-          end
-        end
-        values
-      ensure
-        if th&.alive?
-          th.raise(Timeout::Error.new)
-          th.join rescue errs << [th, $!]
-        end
-        if !errs.empty?
-          msg = "exceptions on #{errs.length} threads:\n" +
-            errs.map {|t, err|
-            "#{t.inspect}:\n" +
-              err.full_message(highlight: false, order: :top)
-          }.join("\n---\n")
-          if message
-            msg = "#{message}\n#{msg}"
-          end
-          raise MiniTest::Assertion, msg
-        end
-      end
-
       def assert_all_assertions_foreach(msg = nil, *keys, &block)
         all = AllFailures.new
         all.foreach(*keys, &block)
@@ -654,24 +301,6 @@ EOT
       def build_message(head, template=nil, *arguments) #:nodoc:
         template &&= template.chomp
         template.gsub(/\G((?:[^\\]|\\.)*?)(\\)?\?/) { $1 + ($2 ? "?" : mu_pp(arguments.shift)) }
-      end
-
-      def message(msg = nil, *args, &default) # :nodoc:
-        if Proc === msg
-          super(nil, *args) do
-            ary = [msg.call, (default.call if default)].compact.reject(&:empty?)
-            if 1 < ary.length
-              ary[0...-1] = ary[0...-1].map {|str| str.sub(/(?<!\.)\z/, '.') }
-            end
-            begin
-              ary.join("\n")
-            rescue Encoding::CompatibilityError
-              ary.map(&:b).join("\n")
-            end
-          end
-        else
-          super
-        end
       end
     end
   end

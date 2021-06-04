@@ -1,0 +1,6 @@
+benchmark:
+  kernel_then: 1.then { |i| i + 1 }
+  kernel_then_enum: 1.then
+  kernel_yield_self: 1.yield_self { |i| i + 1 }
+  kernel_yield_self_enum: 1.yield_self
+loop_count: 20000000

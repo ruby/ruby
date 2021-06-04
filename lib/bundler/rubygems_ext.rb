@@ -29,7 +29,7 @@ module Gem
       # gems at that time, this method could be called inside another require,
       # thus raising with that constant being undefined. Better to check a method
       if source.respond_to?(:path) || (source.respond_to?(:bundler_plugin_api_source?) && source.bundler_plugin_api_source?)
-        Pathname.new(loaded_from).dirname.expand_path(source.root).to_s.untaint
+        Pathname.new(loaded_from).dirname.expand_path(source.root).to_s.tap{|x| x.untaint if RUBY_VERSION < "2.7" }
       else
         rg_full_gem_path
       end
@@ -47,14 +47,13 @@ module Gem
       full_require_paths
     end
 
-    if method_defined?(:extension_dir)
-      alias_method :rg_extension_dir, :extension_dir
-      def extension_dir
-        @bundler_extension_dir ||= if source.respond_to?(:extension_dir_name)
-          File.expand_path(File.join(extensions_dir, source.extension_dir_name))
-        else
-          rg_extension_dir
-        end
+    alias_method :rg_extension_dir, :extension_dir
+    def extension_dir
+      @bundler_extension_dir ||= if source.respond_to?(:extension_dir_name)
+        unique_extension_dir = [source.extension_dir_name, File.basename(full_gem_path)].uniq.join("-")
+        File.expand_path(File.join(extensions_dir, unique_extension_dir))
+      else
+        rg_extension_dir
       end
     end
 
@@ -86,7 +85,7 @@ module Gem
       dependencies - development_dependencies
     end
 
-  private
+    private
 
     def dependencies_to_gemfile(dependencies, group = nil)
       gemfile = String.new
@@ -130,6 +129,51 @@ module Gem
     end
   end
 
+  # comparison is done order independently since rubygems 3.2.0.rc.2
+  unless Gem::Requirement.new("> 1", "< 2") == Gem::Requirement.new("< 2", "> 1")
+    class Requirement
+      module OrderIndependentComparison
+        def ==(other)
+          if _requirements_sorted? && other._requirements_sorted?
+            super
+          else
+            _with_sorted_requirements == other._with_sorted_requirements
+          end
+        end
+
+        protected
+
+        def _requirements_sorted?
+          return @_are_requirements_sorted if defined?(@_are_requirements_sorted)
+          strings = as_list
+          @_are_requirements_sorted = strings == strings.sort
+        end
+
+        def _with_sorted_requirements
+          @_with_sorted_requirements ||= _requirements_sorted? ? self : self.class.new(as_list.sort)
+        end
+      end
+
+      prepend OrderIndependentComparison
+    end
+  end
+
+  if Gem::Requirement.new("~> 2.0").hash == Gem::Requirement.new("~> 2.0.0").hash
+    class Requirement
+      module CorrectHashForLambdaOperator
+        def hash
+          if requirements.any? {|r| r.first == "~>" }
+            requirements.map {|r| r.first == "~>" ? [r[0], r[1].to_s] : r }.sort.hash
+          else
+            super
+          end
+        end
+      end
+
+      prepend CorrectHashForLambdaOperator
+    end
+  end
+
   class Platform
     JAVA  = Gem::Platform.new("java") unless defined?(JAVA)
     MSWIN = Gem::Platform.new("mswin32") unless defined?(MSWIN)
@@ -144,6 +188,22 @@ module Gem
 
     undef_method :eql? if method_defined? :eql?
     alias_method :eql?, :==
+  end
+
+  require "rubygems/util"
+
+  Util.singleton_class.module_eval do
+    if Util.singleton_methods.include?(:glob_files_in_dir) # since 3.0.0.beta.2
+      remove_method :glob_files_in_dir
+    end
+
+    def glob_files_in_dir(glob, base_path)
+      if RUBY_VERSION >= "2.5"
+        Dir.glob(glob, :base => base_path).map! {|f| File.expand_path(f, base_path) }
+      else
+        Dir.glob(File.join(base_path.to_s.gsub(/[\[\]]/, '\\\\\\&'), glob)).map! {|f| File.expand_path(f) }
+      end
+    end
   end
 end
 

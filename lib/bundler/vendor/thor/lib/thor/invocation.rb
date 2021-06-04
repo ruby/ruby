@@ -1,6 +1,7 @@
 class Bundler::Thor
   module Invocation
     def self.included(base) #:nodoc:
+      super(base)
       base.extend ClassMethods
     end
 

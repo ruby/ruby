@@ -51,7 +51,7 @@ class NameMap
     SpecVersion
   ]
 
-  def initialize(filter=false)
+  def initialize(filter = false)
     @seen = {}
     @filter = filter
   end
@@ -73,7 +73,7 @@ class NameMap
     "#{mod}::#{const}"
   end
 
-  def map(hash, constants, mod=nil)
+  def map(hash, constants, mod = nil)
     @seen = {} unless mod
 
     constants.each do |const|

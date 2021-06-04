@@ -1,8 +1,8 @@
 # frozen_string_literal: false
-# HTTPGenericRequest is the parent of the HTTPRequest class.
-# Do not use this directly; use a subclass of HTTPRequest.
+# HTTPGenericRequest is the parent of the Net::HTTPRequest class.
+# Do not use this directly; use a subclass of Net::HTTPRequest.
 #
-# Mixes in the HTTPHeader module to provide easier access to HTTP headers.
+# Mixes in the Net::HTTPHeader module to provide easier access to HTTP headers.
 #
 class Net::HTTPGenericRequest
 
@@ -143,7 +143,7 @@ class Net::HTTPGenericRequest
     end
 
     if host = self['host']
-      host.sub!(/:.*/s, ''.freeze)
+      host.sub!(/:.*/m, ''.freeze)
     elsif host = @uri.host
     else
      host = addr

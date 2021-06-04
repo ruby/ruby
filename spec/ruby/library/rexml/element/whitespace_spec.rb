@@ -1,23 +1,26 @@
-require 'rexml/document'
 require_relative '../../../spec_helper'
 
-describe "REXML::Element#whitespace" do
-  it "returns true if whitespace is respected in the element" do
-    e = REXML::Element.new("root")
-    e.whitespace.should be_true
+ruby_version_is ''...'3.0' do
+  require 'rexml/document'
 
-    e = REXML::Element.new("root", nil, respect_whitespace: :all)
-    e.whitespace.should be_true
+  describe "REXML::Element#whitespace" do
+    it "returns true if whitespace is respected in the element" do
+      e = REXML::Element.new("root")
+      e.whitespace.should be_true
 
-    e = REXML::Element.new("root", nil, respect_whitespace: ["root"])
-    e.whitespace.should be_true
-  end
+      e = REXML::Element.new("root", nil, respect_whitespace: :all)
+      e.whitespace.should be_true
 
-  it "returns false if whitespace is ignored inside element" do
-    e = REXML::Element.new("root", nil, compress_whitespace: :all)
-    e.whitespace.should be_false
+      e = REXML::Element.new("root", nil, respect_whitespace: ["root"])
+      e.whitespace.should be_true
+    end
 
-    e = REXML::Element.new("root", nil, compress_whitespace: ["root"])
-    e.whitespace.should be_false
+    it "returns false if whitespace is ignored inside element" do
+      e = REXML::Element.new("root", nil, compress_whitespace: :all)
+      e.whitespace.should be_false
+
+      e = REXML::Element.new("root", nil, compress_whitespace: ["root"])
+      e.whitespace.should be_false
+    end
   end
 end

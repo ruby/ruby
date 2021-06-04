@@ -1,0 +1,30 @@
+type: lib/benchmark_driver/runner/mjit
+prelude: |
+  def mjit_abs(int)        int.abs        end
+  def mjit_bit_length(int) int.bit_length end
+  def mjit_comp(int)       ~int           end
+  def mjit_even?(int)      int.even?      end
+  def mjit_integer?(int)   int.integer?   end
+  def mjit_magnitude(int)  int.magnitude  end
+  def mjit_odd?(int)       int.odd?       end
+  def mjit_ord(int)        int.ord        end
+  def mjit_to_i(int)       int.to_i       end
+  def mjit_to_int(int)     int.to_int     end
+  def mjit_uminus(int)     -int           end
+  def mjit_zero?(int)      int.zero?      end
+
+benchmark:
+  - mjit_abs(-1)
+  - mjit_bit_length(100)
+  - mjit_comp(1)
+  - mjit_even?(2)
+  - mjit_integer?(0)
+  - mjit_magnitude(-1)
+  - mjit_odd?(1)
+  - mjit_ord(1)
+  - mjit_to_i(1)
+  - mjit_to_int(1)
+  - mjit_uminus(1)
+  - mjit_zero?(0)
+
+loop_count: 40000000

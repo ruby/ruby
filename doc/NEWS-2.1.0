@@ -155,7 +155,7 @@ with all sufficient information, see the ChangeLog file.
     Foo#foo private.
 
 * Kernel#untrusted?, untrust, and trust
-  * These methods are deprecated and their behavior is same as tainted?,
+  * These methods are deprecated and their behavior is the same as tainted?,
     taint, and untaint, respectively.  If $VERBOSE is true, they show warnings.
 
 * Module#ancestors

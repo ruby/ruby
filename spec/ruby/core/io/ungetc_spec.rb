@@ -74,10 +74,10 @@ describe "IO#ungetc" do
     touch(@empty)
 
     File.open(@empty) { |empty|
-      empty.eof?.should == true
+      empty.should.eof?
       empty.getc.should == nil
       empty.ungetc(100)
-      empty.eof?.should == false
+      empty.should_not.eof?
     }
   end
 
@@ -103,10 +103,19 @@ describe "IO#ungetc" do
     -> { @io.sysread(1) }.should raise_error(IOError)
   end
 
-  it "does not affect the stream and returns nil when passed nil" do
-    @io.getc.should == ?V
-    @io.ungetc(nil)
-    @io.getc.should == ?o
+  ruby_version_is "0"..."3.0" do
+    it "does not affect the stream and returns nil when passed nil" do
+      @io.getc.should == ?V
+      @io.ungetc(nil)
+      @io.getc.should == ?o
+    end
+  end
+
+  ruby_version_is "3.0" do
+    it "raises TypeError if passed nil" do
+      @io.getc.should == ?V
+      proc{@io.ungetc(nil)}.should raise_error(TypeError)
+    end
   end
 
   it "puts one or more characters back in the stream" do
@@ -125,6 +134,10 @@ describe "IO#ungetc" do
 
   it "returns nil when invoked on stream that was not yet read" do
     @io.ungetc(100).should be_nil
+  end
+
+  it "raises IOError on stream not opened for reading" do
+    -> { STDOUT.ungetc(100) }.should raise_error(IOError, "not opened for reading")
   end
 
   it "raises IOError on closed stream" do

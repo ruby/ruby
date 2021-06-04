@@ -90,6 +90,16 @@ describe "Kernel#require_relative with a relative path" do
     ScratchPad.recorded.should == []
   end
 
+  it "raises a LoadError that includes the missing path" do
+    missing_path = "#{@dir}/nonexistent.rb"
+    expanded_missing_path = File.expand_path(missing_path, File.dirname(__FILE__))
+    -> { require_relative(missing_path) }.should raise_error(LoadError) { |e|
+      e.message.should include(expanded_missing_path)
+      e.path.should == expanded_missing_path
+    }
+    ScratchPad.recorded.should == []
+  end
+
   it "raises a LoadError if basepath does not exist" do
     -> { eval("require_relative('#{@dir}/nonexistent.rb')") }.should raise_error(LoadError)
   end

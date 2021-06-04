@@ -7,7 +7,7 @@ describe "Time#dup" do
   end
 
   it "copies the gmt state flag" do
-    Time.now.gmtime.dup.gmt?.should == true
+    Time.now.gmtime.dup.should.gmt?
   end
 
   it "returns an independent Time object" do
@@ -15,7 +15,7 @@ describe "Time#dup" do
     t2 = t.dup
     t.gmtime
 
-    t2.gmt?.should == false
+    t2.should_not.gmt?
   end
 
   it "returns a subclass instance" do

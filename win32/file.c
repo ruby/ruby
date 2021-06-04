@@ -5,6 +5,7 @@
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
 #include "internal.h"
+#include "internal/error.h"
 #include <winbase.h>
 #include <wchar.h>
 #include <shlwapi.h>
@@ -35,8 +36,6 @@ IS_ABSOLUTE_PATH_P(const WCHAR *path, size_t len)
 /* MultiByteToWideChar() doesn't work with code page 51932 */
 #define INVALID_CODE_PAGE 51932
 #define PATH_BUFFER_SIZE MAX_PATH * 2
-
-#define insecure_obj_p(obj, level) ((level) > 0 && OBJ_TAINTED(obj))
 
 /* defined in win32/win32.c */
 #define system_code_page rb_w32_filecp
@@ -156,11 +155,11 @@ replace_to_long_name(wchar_t **wfullpath, size_t size, size_t buffer_size)
     /*
       Skip long name conversion if the path is already long name.
       Short name is 8.3 format.
-      http://en.wikipedia.org/wiki/8.3_filename
+      https://en.wikipedia.org/wiki/8.3_filename
       This check can be skipped for directory components that have file
       extensions longer than 3 characters, or total lengths longer than
       12 characters.
-      http://msdn.microsoft.com/en-us/library/windows/desktop/aa364980(v=vs.85).aspx
+      https://msdn.microsoft.com/en-us/library/windows/desktop/aa364980(v=vs.85).aspx
     */
     size_t const max_short_name_size = 8 + 1 + 3;
     size_t const max_extension_size = 3;
@@ -287,10 +286,6 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     wchar_t path_drive = L'\0', dir_drive = L'\0';
     int ignore_dir = 0;
     rb_encoding *path_encoding;
-    int tainted = 0;
-
-    /* tainted if path is tainted */
-    tainted = OBJ_TAINTED(path);
 
     /* get path encoding */
     if (NIL_P(dir)) {
@@ -327,9 +322,6 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     /* expand '~' only if NOT rb_file_absolute_path() where `abs_mode` is 1 */
     if (abs_mode == 0 && wpath_len > 0 && wpath_pos[0] == L'~' &&
 	(wpath_len == 1 || IS_DIR_SEPARATOR_P(wpath_pos[1]))) {
-	/* tainted if expanding '~' */
-	tainted = 1;
-
 	whome = rb_w32_home_dir();
 	if (whome == NULL) {
 	    free(wpath);
@@ -346,7 +338,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	if (path_cp == INVALID_CODE_PAGE || rb_enc_str_asciionly_p(path)) {
 	    /* use filesystem encoding if expanding home dir */
 	    path_encoding = rb_filesystem_encoding();
-	    cp = path_cp = system_code_page();
+	    cp = path_cp = code_page(path_encoding);
 	}
 
 	/* ignores dir since we are expanding home */
@@ -408,9 +400,6 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 
 	if (abs_mode == 0 && wdir_len > 0 && wdir_pos[0] == L'~' &&
 	    (wdir_len == 1 || IS_DIR_SEPARATOR_P(wdir_pos[1]))) {
-	    /* tainted if expanding '~' */
-	    tainted = 1;
-
 	    whome = rb_w32_home_dir();
 	    if (whome == NULL) {
 		free(wpath);
@@ -515,10 +504,6 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     }
 
     if (wdir_len) {
-	/* tainted if dir is used and dir is tainted */
-	if (!tainted && OBJ_TAINTED(dir))
-	    tainted = 1;
-
 	wcsncpy(buffer_pos, wdir_pos, wdir_len);
 	buffer_pos += wdir_len;
     }
@@ -544,15 +529,11 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     /* Ensure buffer is NULL terminated */
     buffer_pos[0] = L'\0';
 
-    /* tainted if path is relative */
-    if (!tainted && !IS_ABSOLUTE_PATH_P(buffer, buffer_len))
-	tainted = 1;
-
     /* FIXME: Make this more robust */
     /* Determine require buffer size */
     size = GetFullPathNameW(buffer, PATH_BUFFER_SIZE, wfullpath_buffer, NULL);
     if (size > PATH_BUFFER_SIZE) {
-	/* allocate more memory than alloted originally by PATH_BUFFER_SIZE */
+	/* allocate more memory than allotted originally by PATH_BUFFER_SIZE */
 	wfullpath = ALLOC_N(wchar_t, size);
 	size = GetFullPathNameW(buffer, size, wfullpath, NULL);
     }
@@ -589,10 +570,6 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     /* convert to VALUE and set the path encoding */
     rb_str_set_len(result, 0);
     result = append_wstr(result, wfullpath, size, path_cp, path_encoding);
-
-    /* makes the result object tainted if expanding tainted strings or returning modified path */
-    if (tainted)
-	OBJ_TAINT(result);
 
     /* TODO: better cleanup */
     if (buffer)

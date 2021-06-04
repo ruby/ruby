@@ -15,7 +15,7 @@ end
 
 describe "Time.new with a utc_offset argument" do
   it "returns a non-UTC time" do
-    Time.new(2000, 1, 1, 0, 0, 0, 0).utc?.should == false
+    Time.new(2000, 1, 1, 0, 0, 0, 0).should_not.utc?
   end
 
   it "returns a Time with a UTC offset of the specified number of Integer seconds" do
@@ -113,6 +113,12 @@ describe "Time.new with a utc_offset argument" do
   it "raises ArgumentError if the utc_offset argument is greater than or equal to 10e9" do
     -> { Time.new(2000, 1, 1, 0, 0, 0, 1000000000) }.should raise_error(ArgumentError)
   end
+
+  it "raises ArgumentError if the month is greater than 12" do
+    # For some reason MRI uses a different message for month in 13-15 and month>=16
+    -> { Time.new(2000, 13, 1, 0, 0, 0, "+01:00") }.should raise_error(ArgumentError, /(mon|argument) out of range/)
+    -> { Time.new(2000, 16, 1, 0, 0, 0, "+01:00") }.should raise_error(ArgumentError, "argument out of range")
+  end
 end
 
 ruby_version_is "2.6" do
@@ -123,6 +129,10 @@ ruby_version_is "2.6" do
 
       time.zone.should == zone
       time.utc_offset.should == 5*3600+30*60
+      ruby_version_is "3.0" do
+        time.wday.should == 6
+        time.yday.should == 1
+      end
     end
 
     it "accepts timezone argument that must have #local_to_utc and #utc_to_local methods" do
@@ -265,7 +275,7 @@ ruby_version_is "2.6" do
 
     context "#name method" do
       it "uses the optional #name method for marshaling" do
-        zone = TimeSpecs::TimezoneWithName.new(name: "Asia/Colombo", offset: (5*3600+30*60))
+        zone = TimeSpecs::TimezoneWithName.new(name: "Asia/Colombo")
         time = Time.new(2000, 1, 1, 12, 0, 0, zone)
         time_loaded = Marshal.load(Marshal.dump(time))
 
@@ -284,7 +294,7 @@ ruby_version_is "2.6" do
     end
 
     it "the #abbr method is used by '%Z' in #strftime" do
-      zone = TimeSpecs::TimezoneWithAbbr.new(abbr: "MMT", offset: (5*3600+30*60))
+      zone = TimeSpecs::TimezoneWithAbbr.new(name: "Asia/Colombo")
       time = Time.new(2000, 1, 1, 12, 0, 0, zone)
 
       time.strftime("%Z").should == "MMT"
@@ -292,11 +302,11 @@ ruby_version_is "2.6" do
 
     # At loading marshaled data, a timezone name will be converted to a timezone object
     # by find_timezone class method, if the method is defined.
-    # Similary, that class method will be called when a timezone argument does not have
+    # Similarly, that class method will be called when a timezone argument does not have
     # the necessary methods mentioned above.
     context "subject's class implements .find_timezone method" do
       it "calls .find_timezone to build a time object at loading marshaled data" do
-        zone = TimeSpecs::TimezoneWithName.new(name: "Asia/Colombo", offset: (5*3600+30*60))
+        zone = TimeSpecs::TimezoneWithName.new(name: "Asia/Colombo")
         time = TimeSpecs::TimeWithFindTimezone.new(2000, 1, 1, 12, 0, 0, zone)
         time_loaded = Marshal.load(Marshal.dump(time))
 

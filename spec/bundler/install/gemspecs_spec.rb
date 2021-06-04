@@ -107,7 +107,7 @@ RSpec.describe "bundle install" do
         s.required_ruby_version = "#{RUBY_VERSION}.#{RUBY_PATCHLEVEL}"
       end
 
-      install_gemfile <<-G
+      install_gemfile <<-G, :raise_on_error => false
         ruby '#{RUBY_VERSION}', :engine_version => '#{RUBY_VERSION}', :engine => 'ruby', :patchlevel => '#{RUBY_PATCHLEVEL}'
         gemspec
       G
@@ -121,14 +121,14 @@ RSpec.describe "bundle install" do
         s.required_ruby_version = "#{RUBY_VERSION}.#{patchlevel}"
       end
 
-      install_gemfile <<-G
+      install_gemfile <<-G, :raise_on_error => false
         ruby '#{RUBY_VERSION}', :engine_version => '#{RUBY_VERSION}', :engine => 'ruby', :patchlevel => '#{patchlevel}'
         gemspec
       G
 
       expect(err).to include("Ruby patchlevel")
       expect(err).to include("but your Gemfile specified")
-      expect(exitstatus).to eq(18) if exitstatus
+      expect(exitstatus).to eq(18)
     end
 
     it "fails and complains about version on version mismatch" do
@@ -138,14 +138,14 @@ RSpec.describe "bundle install" do
         s.required_ruby_version = version
       end
 
-      install_gemfile <<-G
+      install_gemfile <<-G, :raise_on_error => false
         ruby '#{version}', :engine_version => '#{version}', :engine => 'ruby'
         gemspec
       G
 
       expect(err).to include("Ruby version")
       expect(err).to include("but your Gemfile specified")
-      expect(exitstatus).to eq(18) if exitstatus
+      expect(exitstatus).to eq(18)
     end
   end
 end

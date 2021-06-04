@@ -45,7 +45,8 @@ class TestRDocServlet < RDoc::TestCase
     @orig_base = RDoc::RI::Paths::BASE
     RDoc::RI::Paths::BASE.replace @base
     @orig_ri_path_homedir = RDoc::RI::Paths::HOMEDIR
-    RDoc::RI::Paths::HOMEDIR.replace @home_dir
+    RDoc::RI::Paths.send :remove_const, :HOMEDIR
+    RDoc::RI::Paths.const_set :HOMEDIR, @home_dir
 
     RDoc::RI::Paths.instance_variable_set \
       :@gemdirs, %w[/nonexistent/gems/example-1.0/ri]
@@ -60,7 +61,8 @@ class TestRDocServlet < RDoc::TestCase
     FileUtils.rm_rf @tempdir
 
     RDoc::RI::Paths::BASE.replace @orig_base
-    RDoc::RI::Paths::HOMEDIR.replace @orig_ri_path_homedir
+    RDoc::RI::Paths.send :remove_const, :HOMEDIR
+    RDoc::RI::Paths.const_set :HOMEDIR, @orig_ri_path_homedir
     RDoc::RI::Paths.instance_variable_set :@gemdirs, nil
   end
 
@@ -294,7 +296,7 @@ class TestRDocServlet < RDoc::TestCase
   end
 
   def test_if_modified_since
-    skip 'File.utime on directory not supported' if Gem.win_platform?
+    omit 'File.utime on directory not supported' if Gem.win_platform?
 
     temp_dir do
       now = Time.now
@@ -307,7 +309,7 @@ class TestRDocServlet < RDoc::TestCase
   end
 
   def test_if_modified_since_not_modified
-    skip 'File.utime on directory not supported' if Gem.win_platform?
+    omit 'File.utime on directory not supported' if Gem.win_platform?
 
     temp_dir do
       now = Time.now
@@ -546,4 +548,4 @@ class TestRDocServlet < RDoc::TestCase
     store.save
   end
 
-end
+end if defined?(WEBrick)

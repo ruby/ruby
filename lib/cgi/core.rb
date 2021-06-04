@@ -544,11 +544,11 @@ class CGI
         /Content-Disposition:.* filename=(?:"(.*?)"|([^;\r\n]*))/i.match(head)
         filename = $1 || $2 || ''.dup
         filename = CGI.unescape(filename) if unescape_filename?()
-        body.instance_variable_set(:@original_filename, filename.taint)
+        body.instance_variable_set(:@original_filename, filename)
         ## content type
         /Content-Type: (.*)/i.match(head)
         (content_type = $1 || ''.dup).chomp!
-        body.instance_variable_set(:@content_type, content_type.taint)
+        body.instance_variable_set(:@content_type, content_type)
         ## query parameter name
         /Content-Disposition:.* name=(?:"(.*?)"|([^;\r\n]*))/i.match(head)
         name = $1 || $2 || ''

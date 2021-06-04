@@ -49,4 +49,18 @@ module BindingSpecs
       end
     end
   end
+
+  module AddFooToString
+    refine(String) do
+      def foo
+        "foo"
+      end
+    end
+  end
+  class Refined
+    using AddFooToString
+    def self.refined_binding
+      binding
+    end
+  end
 end

@@ -46,8 +46,8 @@ module Psych
       # Convert this node to Ruby.
       #
       # See also Psych::Visitors::ToRuby
-      def to_ruby
-        Visitors::ToRuby.create.accept(self)
+      def to_ruby(symbolize_names: false, freeze: false)
+        Visitors::ToRuby.create(symbolize_names: symbolize_names, freeze: freeze).accept(self)
       end
       alias :transform :to_ruby
 

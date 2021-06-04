@@ -105,6 +105,12 @@ class TestSymbol < Test::Unit::TestCase
     end
   end
 
+  def test_name
+    assert_equal("foo", :foo.name)
+    assert_same(:foo.name, :foo.name)
+    assert_predicate(:foo.name, :frozen?)
+  end
+
   def test_to_proc
     assert_equal %w(1 2 3), (1..3).map(&:to_s)
     [
@@ -153,6 +159,14 @@ class TestSymbol < Test::Unit::TestCase
     end;
   end
 
+  def test_to_proc_lambda?
+    assert_predicate(:itself.to_proc, :lambda?)
+  end
+
+  def test_to_proc_arity
+    assert_equal(-2, :itself.to_proc.arity)
+  end
+
   def test_to_proc_call_with_symbol_proc
     first = 1
     bug11594 = "[ruby-core:71088] [Bug #11594] corrupted the first local variable"
@@ -165,6 +179,9 @@ class TestSymbol < Test::Unit::TestCase
   def _test_to_proc_arg_with_refinements_call(&block)
     block.call TestToPRocArgWithRefinements.new
   end
+  def _test_to_proc_with_refinements_call(&block)
+    block
+  end
   using Module.new {
     refine TestToPRocArgWithRefinements do
       def hoge
@@ -174,6 +191,14 @@ class TestSymbol < Test::Unit::TestCase
   }
   def test_to_proc_arg_with_refinements
     assert_equal(:hoge, _test_to_proc_arg_with_refinements_call(&:hoge))
+  end
+
+  def test_to_proc_lambda_with_refinements
+    assert_predicate(_test_to_proc_with_refinements_call(&:hoge), :lambda?)
+  end
+
+  def test_to_proc_arity_with_refinements
+    assert_equal(-2, _test_to_proc_with_refinements_call(&:hoge).arity)
   end
 
   def self._test_to_proc_arg_with_refinements_call(&block)
@@ -219,11 +244,11 @@ class TestSymbol < Test::Unit::TestCase
     begin;
       bug11845 = '[ruby-core:72381] [Bug #11845]'
       assert_nil(:class.to_proc.source_location, bug11845)
-      assert_equal([[:rest]], :class.to_proc.parameters, bug11845)
+      assert_equal([[:req], [:rest]], :class.to_proc.parameters, bug11845)
       c = Class.new {define_method(:klass, :class.to_proc)}
       m = c.instance_method(:klass)
       assert_nil(m.source_location, bug11845)
-      assert_equal([[:rest]], m.parameters, bug11845)
+      assert_equal([[:req], [:rest]], m.parameters, bug11845)
     end;
   end
 
@@ -504,12 +529,14 @@ class TestSymbol < Test::Unit::TestCase
     assert_nothing_raised(NoMethodError, bug10259) {obj.send("unagi=".intern, 1)}
   end
 
-  def test_symbol_fstr_leak
+  def test_symbol_fstr_memory_leak
     bug10686 = '[ruby-core:67268] [Bug #10686]'
-    x = x = 0
-    assert_no_memory_leak([], '200_000.times { |i| i.to_s.to_sym }; GC.start', "#{<<-"begin;"}\n#{<<-"end;"}", bug10686, limit: 1.71, rss: true, timeout: 20)
+    assert_no_memory_leak([], "#{<<~"begin;"}\n#{<<~'else;'}", "#{<<~'end;'}", bug10686, limit: 1.71, rss: true, timeout: 20)
     begin;
-      200_000.times { |i| (i + 200_000).to_s.to_sym }
+      n = 100_000
+      n.times { |i| i.to_s.to_sym }
+    else;
+      (2 * n).times { |i| (i + n).to_s.to_sym }
     end;
   end
 
@@ -533,14 +560,6 @@ class TestSymbol < Test::Unit::TestCase
     end;
   end
 
-  def test_not_freeze
-    bug11721 = '[ruby-core:71611] [Bug #11721]'
-    str = "\u{1f363}".taint
-    assert_not_predicate(str, :frozen?)
-    assert_equal str, str.to_sym.to_s
-    assert_not_predicate(str, :frozen?, bug11721)
-  end
-
   def test_hash_nondeterministic
     ruby = EnvUtil.rubybin
     assert_not_equal :foo.hash, `#{ruby} -e 'puts :foo.hash'`.to_i,
@@ -562,5 +581,28 @@ class TestSymbol < Test::Unit::TestCase
 
       puts :a == :a
     RUBY
+  end
+
+  def test_start_with?
+    assert_equal(true, :hello.start_with?("hel"))
+    assert_equal(false, :hello.start_with?("el"))
+    assert_equal(true, :hello.start_with?("el", "he"))
+
+    bug5536 = '[ruby-core:40623]'
+    assert_raise(TypeError, bug5536) {:str.start_with? :not_convertible_to_string}
+
+    assert_equal(true, :hello.start_with?(/hel/))
+    assert_equal("hel", $&)
+    assert_equal(false, :hello.start_with?(/el/))
+    assert_nil($&)
+  end
+
+  def test_end_with?
+    assert_equal(true, :hello.end_with?("llo"))
+    assert_equal(false, :hello.end_with?("ll"))
+    assert_equal(true, :hello.end_with?("el", "lo"))
+
+    bug5536 = '[ruby-core:40623]'
+    assert_raise(TypeError, bug5536) {:str.end_with? :not_convertible_to_string}
   end
 end

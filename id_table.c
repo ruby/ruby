@@ -7,6 +7,7 @@
 #endif
 
 #if ID_TABLE_DEBUG == 0
+#undef NDEBUG
 #define NDEBUG
 #endif
 #include "ruby_assert.h"
@@ -229,7 +230,7 @@ rb_id_table_lookup(struct rb_id_table *tbl, ID id, VALUE *valp)
     int index = hash_table_index(tbl, key);
 
     if (index >= 0) {
-	*valp = tbl->items[index].val;
+        *valp = tbl->items[index].val;
 	return TRUE;
     }
     else {
@@ -273,9 +274,8 @@ rb_id_table_foreach_with_replace(struct rb_id_table *tbl, rb_id_table_foreach_fu
 
     for (i=0; i<capa; i++) {
         if (ITEM_KEY_ISSET(tbl, i)) {
-            const id_key_t key = ITEM_GET_KEY(tbl, i);
             enum rb_id_table_iterator_result ret = (*func)(Qundef, tbl->items[i].val, data);
-            assert(key != 0);
+            assert(ITEM_GET_KEY(tbl, i));
 
             if (ret == ID_TABLE_REPLACE) {
                 VALUE val = tbl->items[i].val;

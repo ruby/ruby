@@ -34,4 +34,15 @@ describe "Kernel#local_variables" do
     ScratchPad.recorded.should include(:a, :b)
     ScratchPad.recorded.length.should == 2
   end
+
+  it "includes only unique variable names" do
+    def local_var_method
+      a = 1
+      1.times do |;a|
+        return local_variables
+      end
+    end
+
+    local_var_method.should == [:a]
+  end
 end

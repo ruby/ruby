@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "remote_specification"
-
 module Bundler
   class StubSpecification < RemoteSpecification
     def self.from_stub(stub)
@@ -28,9 +26,21 @@ module Bundler
 
     # @!group Stub Delegates
 
-    # This is defined directly to avoid having to load every installed spec
+    def manually_installed?
+      # This is for manually installed gems which are gems that were fixed in place after a
+      # failed installation. Once the issue was resolved, the user then manually created
+      # the gem specification using the instructions provided by `gem help install`
+      installed_by_version == Gem::Version.new(0)
+    end
+
+    # This is defined directly to avoid having to loading the full spec
     def missing_extensions?
-      stub.missing_extensions?
+      return false if default_gem?
+      return false if extensions.empty?
+      return false if File.exist? gem_build_complete_path
+      return false if manually_installed?
+
+      true
     end
 
     def activated
@@ -41,8 +51,16 @@ module Bundler
       stub.instance_variable_set(:@activated, activated)
     end
 
-    def default_gem
-      stub.default_gem
+    def extensions
+      stub.extensions
+    end
+
+    def gem_build_complete_path
+      File.join(extension_dir, "gem.build_complete")
+    end
+
+    def default_gem?
+      stub.default_gem?
     end
 
     def full_gem_path
@@ -71,7 +89,7 @@ module Bundler
       stub.raw_require_paths
     end
 
-  private
+    private
 
     def _remote_specification
       @_remote_specification ||= begin

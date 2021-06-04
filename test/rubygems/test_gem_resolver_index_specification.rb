@@ -1,9 +1,8 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/available_set'
 
 class TestGemResolverIndexSpecification < Gem::TestCase
-
   def test_initialize
     set     = Gem::Resolver::IndexSet.new
     source  = Gem::Source.new @gem_repo
@@ -47,7 +46,7 @@ class TestGemResolverIndexSpecification < Gem::TestCase
       called = installer
     end
 
-    assert_path_exists File.join @gemhome, 'specifications', 'a-2.gemspec'
+    assert_path_exist File.join @gemhome, 'specifications', 'a-2.gemspec'
 
     assert_kind_of Gem::Installer, called
   end
@@ -90,5 +89,4 @@ class TestGemResolverIndexSpecification < Gem::TestCase
 
     assert_equal a_2_p.full_name, spec.full_name
   end
-
 end

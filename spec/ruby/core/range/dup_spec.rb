@@ -5,11 +5,11 @@ describe "Range#dup" do
     copy = (1..3).dup
     copy.begin.should == 1
     copy.end.should == 3
-    copy.exclude_end?.should == false
+    copy.should_not.exclude_end?
 
     copy = ("a"..."z").dup
     copy.begin.should == "a"
     copy.end.should == "z"
-    copy.exclude_end?.should == true
+    copy.should.exclude_end?
   end
 end

@@ -57,7 +57,7 @@ describe "Proc#parameters" do
   end
 
   it "sets the first element of each sub-Array to :block for parameters prefixed with ampersands" do
-    ->&x { }.parameters.first.first.should == :block
+    -> &x { }.parameters.first.first.should == :block
     -> x, &y { }.parameters.last.first.should == :block
     proc {|&x| }.parameters.first.first.should == :block
     proc {|x,&y| }.parameters.last.first.should == :block
@@ -68,7 +68,7 @@ describe "Proc#parameters" do
     -> x=Math::PI { }.parameters.first.last.should == :x
     -> an_argument, glark, &foo { }.parameters[1].last.should == :glark
     -> *rest { }.parameters.first.last.should == :rest
-    ->&block { }.parameters.first.last.should == :block
+    -> &block { }.parameters.first.last.should == :block
     proc {|x| }.parameters.first.last.should == :x
     proc {|x=Math::PI| }.parameters.first.last.should == :x
     proc {|an_argument, glark, &foo| }.parameters[1].last.should == :glark

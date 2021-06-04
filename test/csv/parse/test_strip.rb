@@ -21,6 +21,11 @@ class TestCSVParseStrip < Test::Unit::TestCase
                  CSV.parse_line(%Q{a  ,b  }, strip: true))
   end
 
+  def test_middle
+    assert_equal(["a b"],
+                 CSV.parse_line(%Q{a b}, strip: true))
+  end
+
   def test_quoted
     assert_equal(["  a  ", "  b  "],
                  CSV.parse_line(%Q{"  a  ","  b  "}, strip: true))

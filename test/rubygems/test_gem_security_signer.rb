@@ -1,12 +1,11 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 
-unless defined?(OpenSSL::SSL)
+unless Gem::HAVE_OPENSSL
   warn 'Skipping Gem::Security::Signer tests.  openssl not found.'
 end
 
 class TestGemSecuritySigner < Gem::TestCase
-
   ALTERNATE_KEY  = load_key 'alternate'
   CHILD_KEY      = load_key 'child'
   GRANDCHILD_KEY = load_key 'grandchild'
@@ -37,12 +36,12 @@ class TestGemSecuritySigner < Gem::TestCase
   def test_initialize_cert_chain_mixed
     signer = Gem::Security::Signer.new nil, [@cert_file, CHILD_CERT]
 
-    assert_equal [PUBLIC_CERT, CHILD_CERT].map { |c| c.to_pem },
-                 signer.cert_chain.map { |c| c.to_pem }
+    assert_equal [PUBLIC_CERT, CHILD_CERT].map {|c| c.to_pem },
+                 signer.cert_chain.map {|c| c.to_pem }
   end
 
   def test_initialize_cert_chain_invalid
-    assert_raises OpenSSL::X509::CertificateError do
+    assert_raise OpenSSL::X509::CertificateError do
       Gem::Security::Signer.new nil, ['garbage']
     end
   end
@@ -50,8 +49,8 @@ class TestGemSecuritySigner < Gem::TestCase
   def test_initialize_cert_chain_path
     signer = Gem::Security::Signer.new nil, [@cert_file]
 
-    assert_equal [PUBLIC_CERT].map { |c| c.to_pem },
-                 signer.cert_chain.map { |c| c.to_pem }
+    assert_equal [PUBLIC_CERT].map {|c| c.to_pem },
+                 signer.cert_chain.map {|c| c.to_pem }
   end
 
   def test_initialize_default
@@ -66,7 +65,7 @@ class TestGemSecuritySigner < Gem::TestCase
     signer = Gem::Security::Signer.new nil, nil
 
     assert_equal PRIVATE_KEY.to_pem, signer.key.to_pem
-    assert_equal [PUBLIC_CERT.to_pem], signer.cert_chain.map { |c| c.to_pem }
+    assert_equal [PUBLIC_CERT.to_pem], signer.cert_chain.map {|c| c.to_pem }
   end
 
   def test_initialize_key_path
@@ -100,7 +99,7 @@ class TestGemSecuritySigner < Gem::TestCase
     signer.load_cert_chain
 
     assert_equal [PUBLIC_CERT.to_pem, CHILD_CERT.to_pem],
-                 signer.cert_chain.map { |c| c.to_pem }
+                 signer.cert_chain.map {|c| c.to_pem }
   end
 
   def test_load_cert_chain_broken
@@ -112,7 +111,7 @@ class TestGemSecuritySigner < Gem::TestCase
     signer.load_cert_chain
 
     assert_equal [CHILD_CERT.to_pem, GRANDCHILD_CERT.to_pem],
-                 signer.cert_chain.map { |c| c.to_pem }
+                 signer.cert_chain.map {|c| c.to_pem }
   end
 
   def test_sign
@@ -135,7 +134,7 @@ toqvglr0kdbknSRRjBVLK6tsgr07aLT9gNP7mTW2PA==
   def test_sign_expired
     signer = Gem::Security::Signer.new PRIVATE_KEY, [EXPIRED_CERT]
 
-    e = assert_raises Gem::Security::Exception do
+    e = assert_raise Gem::Security::Exception do
       signer.sign 'hello'
     end
 
@@ -143,7 +142,7 @@ toqvglr0kdbknSRRjBVLK6tsgr07aLT9gNP7mTW2PA==
   end
 
   def test_sign_expired_auto_update
-    skip if Gem.java_platform?
+    pend if Gem.java_platform?
     FileUtils.mkdir_p File.join(Gem.user_home, '.gem'), :mode => 0700
 
     private_key_path = File.join(Gem.user_home, '.gem', 'gem-private_key.pem')
@@ -166,7 +165,7 @@ toqvglr0kdbknSRRjBVLK6tsgr07aLT9gNP7mTW2PA==
     expired_path =
       File.join Gem.user_home, '.gem', "gem-public_cert.pem.expired.#{expiry}"
 
-    assert_path_exists expired_path
+    assert_path_exist expired_path
     assert_equal EXPIRED_CERT.to_pem, File.read(expired_path)
   end
 
@@ -187,11 +186,11 @@ toqvglr0kdbknSRRjBVLK6tsgr07aLT9gNP7mTW2PA==
 
     signer = Gem::Security::Signer.new PRIVATE_KEY, [EXPIRED_CERT]
 
-    e = assert_raises Gem::Security::Exception do
+    e = assert_raise Gem::Security::Exception do
       signer.sign 'hello'
     end
 
-    assert_match %r%certificate /CN=nobody/DC=example not valid%, e.message
+    assert_match %r{certificate /CN=nobody/DC=example not valid}, e.message
   end
 
   def test_sign_no_key
@@ -203,7 +202,7 @@ toqvglr0kdbknSRRjBVLK6tsgr07aLT9gNP7mTW2PA==
   def test_sign_wrong_key
     signer = Gem::Security::Signer.new ALTERNATE_KEY, [PUBLIC_CERT]
 
-    assert_raises Gem::Security::Exception do
+    assert_raise Gem::Security::Exception do
       signer.sign 'hello'
     end
   end
@@ -211,9 +210,8 @@ toqvglr0kdbknSRRjBVLK6tsgr07aLT9gNP7mTW2PA==
   def test_sign_no_certs
     signer = Gem::Security::Signer.new ALTERNATE_KEY, []
 
-    assert_raises Gem::Security::Exception do
+    assert_raise Gem::Security::Exception do
       signer.sign 'hello'
     end
   end
-
-end if defined?(OpenSSL::SSL)
+end if Gem::HAVE_OPENSSL

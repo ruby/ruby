@@ -1,5 +1,6 @@
 # -*- encoding: binary -*-
 require_relative '../../spec_helper'
+require_relative 'fixtures/common'
 
 describe "ENV.[]" do
   before :each do
@@ -16,7 +17,18 @@ describe "ENV.[]" do
 
   it "returns only frozen values" do
     ENV[@variable] = "a non-frozen string"
-    ENV[@variable].frozen?.should == true
+    ENV[@variable].should.frozen?
+  end
+
+  it "coerces a non-string name with #to_str" do
+    ENV[@variable] = "bar"
+    k = mock('key')
+    k.should_receive(:to_str).and_return(@variable)
+    ENV[k].should == "bar"
+  end
+
+  it "raises TypeError if the argument is not a String and does not respond to #to_str" do
+    -> { ENV[Object.new] }.should raise_error(TypeError, "no implicit conversion of Object into String")
   end
 
   platform_is :windows do
@@ -47,7 +59,7 @@ describe "ENV.[]" do
   it "uses the locale encoding if Encoding.default_internal is nil" do
     Encoding.default_internal = nil
 
-    locale = Encoding.find('locale')
+    locale = ENVSpecs.encoding
     locale = Encoding::BINARY if locale == Encoding::US_ASCII
     ENV[@variable] = "\xC3\xB8"
     ENV[@variable].encoding.should == locale

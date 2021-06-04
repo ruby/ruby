@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require 'test/unit'
 
-verbose, $VERBOSE = $VERBOSE, nil # suppress "warning: Pattern matching is experimental, and the behavior may change in future versions of Ruby!"
+experimental, Warning[:experimental] = Warning[:experimental], false # suppress "warning: Pattern matching is experimental, and the behavior may change in future versions of Ruby!"
 eval "\n#{<<~'END_of_GUARD'}", binding, __FILE__, __LINE__
 class TestPatternMatching < Test::Unit::TestCase
   class C
@@ -92,7 +92,8 @@ class TestPatternMatching < Test::Unit::TestCase
     end
 
     assert_block do
-      verbose, $VERBOSE = $VERBOSE, nil # suppress "warning: Pattern matching is experimental, and the behavior may change in future versions of Ruby!"
+      # suppress "warning: Pattern matching is experimental, and the behavior may change in future versions of Ruby!"
+      experimental, Warning[:experimental] = Warning[:experimental], false
       eval(%q{
         case true
         in a
@@ -100,7 +101,7 @@ class TestPatternMatching < Test::Unit::TestCase
         end
       })
     ensure
-      $VERBOSE = verbose
+      Warning[:experimental] = experimental
     end
 
     assert_block do
@@ -193,25 +194,25 @@ class TestPatternMatching < Test::Unit::TestCase
   def test_var_pattern
     # NODE_DASGN_CURR
     assert_block do
-      case [0, 1]
-      in a, a
-        a == 1
+      case 0
+      in a
+        a == 0
       end
     end
 
     # NODE_DASGN
     b = 0
     assert_block do
-      case [0, 1]
-      in b, b
+      case 1
+      in b
         b == 1
       end
     end
 
     # NODE_LASGN
-    case [0, 1]
-    in c, c
-      assert_equal(1, c)
+    case 0
+    in c
+      assert_equal(0, c)
     else
       flunk
     end
@@ -221,6 +222,58 @@ class TestPatternMatching < Test::Unit::TestCase
       in ^a
       end
     }, /no such local variable/)
+
+    assert_syntax_error(%q{
+      case 0
+      in a, a
+      end
+    }, /duplicated variable name/)
+
+    assert_block do
+      case [0, 1, 2, 3]
+      in _, _, _a, _a
+        true
+      end
+    end
+
+    assert_syntax_error(%q{
+      case 0
+      in a, {a:}
+      end
+    }, /duplicated variable name/)
+
+    assert_syntax_error(%q{
+      case 0
+      in a, {"a":}
+      end
+    }, /duplicated variable name/)
+
+    assert_block do
+      case [0, "1"]
+      in a, "#{case 1; in a; a; end}"
+        true
+      end
+    end
+
+    assert_syntax_error(%q{
+      case [0, "1"]
+      in a, "#{case 1; in a; a; end}", a
+      end
+    }, /duplicated variable name/)
+
+    assert_block do
+      case 0
+      in a
+        assert_equal(0, a)
+        true
+      in a
+        flunk
+      end
+    end
+
+    assert_syntax_error(%q{
+      0 => [a, a]
+    }, /duplicated variable name/)
   end
 
   def test_literal_value_pattern
@@ -349,6 +402,29 @@ END
     end
   end
 
+  def test_pin_operator_expr_pattern
+    assert_block do
+      case 'abc'
+        in ^(/a/)
+        true
+      end
+    end
+
+    assert_block do
+      case {name: '2.6', released_at: Time.new(2018, 12, 25)}
+        in {released_at: ^(Time.new(2010)..Time.new(2020))}
+        true
+      end
+    end
+
+    assert_block do
+      case 0
+      in ^(0+0)
+        true
+      end
+    end
+  end
+
   def test_array_pattern
     assert_block do
       [[0], C.new([0])].all? do |i|
@@ -419,6 +495,7 @@ END
       [[0], C.new([0])].all? do |i|
         case i
         in *a, 0, 1
+          raise a # suppress "unused variable: a" warning
         else
           true
         end
@@ -585,6 +662,7 @@ END
     assert_block do
       case []
       in [0, *a]
+        raise a # suppress "unused variable: a" warning
       else
         true
       end
@@ -600,6 +678,7 @@ END
     assert_block do
       case [0]
       in [0, *a, 1]
+        raise a # suppress "unused variable: a" warning
       else
         true
       end
@@ -644,6 +723,7 @@ END
     assert_block do
       case []
       in [0, *a]
+        raise a # suppress "unused variable: a" warning
       else
         true
       end
@@ -675,6 +755,74 @@ END
       case [0, 1]
       in [0, *, 1]
         true
+      end
+    end
+  end
+
+  def test_find_pattern
+    [0, 1, 2] => [*, 1 => a, *]
+    assert_equal(1, a)
+
+    [0, 1, 2] => [*a, 1 => b, *c]
+    assert_equal([0], a)
+    assert_equal(1, b)
+    assert_equal([2], c)
+
+    assert_block do
+      case [0, 1, 2]
+      in [*, 9, *]
+        false
+      else
+        true
+      end
+    end
+
+    assert_block do
+      case [0, 1, 2]
+      in [*, Integer, String, *]
+        false
+      else
+        true
+      end
+    end
+
+    [0, 1, 2] => [*a, 1 => b, 2 => c, *d]
+    assert_equal([0], a)
+    assert_equal(1, b)
+    assert_equal(2, c)
+    assert_equal([], d)
+
+    case [0, 1, 2]
+    in *, 1 => a, *;
+        assert_equal(1, a)
+    end
+
+    assert_block do
+      case [0, 1, 2]
+      in String(*, 1, *)
+        false
+      in Array(*, 1, *)
+        true
+      end
+    end
+
+    assert_block do
+      case [0, 1, 2]
+      in String[*, 1, *]
+        false
+      in Array[*, 1, *]
+        true
+      end
+    end
+
+    # https://bugs.ruby-lang.org/issues/17534
+    assert_block do
+      case [0, 1, 2]
+      in x
+        x = x # avoid a warning "assigned but unused variable - x"
+        true
+      in [*, 2, *]
+        false
       end
     end
   end
@@ -740,6 +888,7 @@ END
       [{}, C.new({})].all? do |i|
         case i
         in a:
+          raise a # suppress "unused variable: a" warning
         else
           true
         end
@@ -822,6 +971,8 @@ END
       [{}, C.new({})].all? do |i|
         case i
         in a:, **b
+          raise a # suppress "unused variable: a" warning
+          raise b # suppress "unused variable: b" warning
         else
           true
         end
@@ -842,6 +993,46 @@ END
         case i
         in a:, **b
           a == 0 && b == {b: 1}
+        end
+      end
+    end
+
+    assert_block do
+      [{}, C.new({})].all? do |i|
+        case i
+        in **nil
+          true
+        end
+      end
+    end
+
+    assert_block do
+      [{a: 0}, C.new({a: 0})].all? do |i|
+        case i
+        in **nil
+        else
+          true
+        end
+      end
+    end
+
+    assert_block do
+      [{a: 0}, C.new({a: 0})].all? do |i|
+        case i
+        in a:, **nil
+          assert_equal(0, a)
+          true
+        end
+      end
+    end
+
+    assert_block do
+      [{a: 0, b: 1}, C.new({a: 0, b: 1})].all? do |i|
+        case i
+        in a:, **nil
+          assert_equal(0, a)
+        else
+          true
         end
       end
     end
@@ -942,6 +1133,34 @@ END
       end
     end
 
+    assert_block do
+      case {a: 0, b: 1}
+      in {a: 1,}
+        false
+      in {a:,}
+        _a = a
+        true
+      end
+    end
+
+    assert_block do
+      case {a: 0}
+      in {a: 1
+      }
+        false
+      in {a:
+            2}
+        false
+      in a: {b:}, c:
+        _b = b
+        p c
+      in {a:
+      }
+        _a = a
+        true
+      end
+    end
+
     assert_syntax_error(%q{
       case _
       in "a-b":
@@ -975,6 +1194,10 @@ END
         true
       end
     end
+  end
+
+  def test_nomatchingpatternerror
+    assert_equal(StandardError, NoMatchingPatternError.superclass)
   end
 
   def test_invalid_syntax
@@ -1040,6 +1263,7 @@ END
     assert_block do
       case C.new({a: 0, b: 0, c: 0})
       in {a: 0, b:}
+        assert_equal(0, b)
         C.keys == [:a, :b]
       end
     end
@@ -1047,6 +1271,7 @@ END
     assert_block do
       case C.new({a: 0, b: 0, c: 0})
       in {a: 0, b:, **}
+        assert_equal(0, b)
         C.keys == [:a, :b]
       end
     end
@@ -1054,6 +1279,8 @@ END
     assert_block do
       case C.new({a: 0, b: 0, c: 0})
       in {a: 0, b:, **r}
+        assert_equal(0, b)
+        assert_equal({c: 0}, r)
         C.keys == nil
       end
     end
@@ -1068,7 +1295,96 @@ END
     assert_block do
       case C.new({a: 0, b: 0, c: 0})
       in {**r}
+        assert_equal({a: 0, b: 0, c: 0}, r)
         C.keys == nil
+      end
+    end
+  end
+
+  ################################################################
+
+  class CDeconstructCache
+    def initialize(v)
+      @v = v
+    end
+
+    def deconstruct
+      @v.shift
+    end
+  end
+
+  def test_deconstruct_cache
+    assert_block do
+      case CDeconstructCache.new([[0]])
+      in [1]
+      in [0]
+        true
+      end
+    end
+
+    assert_block do
+      case CDeconstructCache.new([[0, 1]])
+      in [1,]
+      in [0,]
+        true
+      end
+    end
+
+    assert_block do
+      case CDeconstructCache.new([[[0]]])
+      in [[1]]
+      in [[*a]]
+        a == [0]
+      end
+    end
+
+    assert_block do
+      case CDeconstructCache.new([[0]])
+      in [x] if x > 0
+      in [0]
+        true
+      end
+    end
+
+    assert_block do
+      case CDeconstructCache.new([[0]])
+      in []
+      in [1] | [0]
+        true
+      end
+    end
+
+    assert_block do
+      case CDeconstructCache.new([[0]])
+      in [1] => _
+      in [0] => _
+        true
+      end
+    end
+
+    assert_block do
+      case CDeconstructCache.new([[0]])
+      in C[0]
+      in CDeconstructCache[0]
+        true
+      end
+    end
+
+    assert_block do
+      case [CDeconstructCache.new([[0], [1]])]
+      in [[1]]
+        false
+      in [[1]]
+        true
+      end
+    end
+
+    assert_block do
+      case CDeconstructCache.new([[0, :a, 1]])
+      in [*, String => x, *]
+        false
+      in [*, Symbol => x, *]
+        x == :a
       end
     end
   end
@@ -1141,7 +1457,73 @@ END
         true
       end
     end
+
+    s = Struct.new(:a, :b, keyword_init: true)
+    assert_block do
+      case s[a: 0, b: 1]
+      in **r
+        r == {a: 0, b: 1}
+      end
+    end
+    assert_block do
+      s = Struct.new(:a, :b, keyword_init: true)
+      case s[a: 0, b: 1]
+      in a:, b:
+        a == 0 && b == 1
+      end
+    end
+    assert_block do
+      s = Struct.new(:a, :b, keyword_init: true)
+      case s[a: 0, b: 1]
+      in a:, c:
+        raise a # suppress "unused variable: a" warning
+        raise c # suppress "unused variable: c" warning
+        flunk
+      in a:, b:, c:
+        flunk
+      in b:
+        b == 1
+      end
+    end
+  end
+
+  ################################################################
+
+  def test_one_line
+    1 => a
+    assert_equal 1, a
+    assert_raise(NoMatchingPatternError) do
+      {a: 1} => {a: 0}
+    end
+    assert_syntax_error("if {} => {a:}; end", /void value expression/)
+    assert_syntax_error(%q{
+      1 => a, b
+    }, /unexpected/, '[ruby-core:95098]')
+    assert_syntax_error(%q{
+      1 => a:
+    }, /unexpected/, '[ruby-core:95098]')
+
+    assert_equal true, (1 in 1)
+    assert_equal false, (1 in 2)
+  end
+
+  def assert_experimental_warning(code)
+    w = Warning[:experimental]
+
+    Warning[:experimental] = false
+    assert_warn('') {eval(code)}
+
+    Warning[:experimental] = true
+    assert_warn(/is experimental/) {eval(code)}
+  ensure
+    Warning[:experimental] = w
+  end
+
+  def test_experimental_warning
+    assert_experimental_warning("case [0]; in [*, 0, *]; end")
+    assert_experimental_warning("0 => 0")
+    assert_experimental_warning("0 in a")
   end
 end
 END_of_GUARD
-$VERBOSE = verbose
+Warning[:experimental] = experimental

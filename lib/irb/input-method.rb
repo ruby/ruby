@@ -12,6 +12,7 @@
 require_relative 'src_encoding'
 require_relative 'magic-file'
 require_relative 'completion'
+require 'io/console'
 require 'reline'
 
 module IRB
@@ -32,9 +33,17 @@ module IRB
     #
     # See IO#gets for more information.
     def gets
-      IRB.fail NotImplementedError, "gets"
+      fail NotImplementedError, "gets"
     end
     public :gets
+
+    def winsize
+      if instance_variable_defined?(:@stdout)
+        @stdout.winsize
+      else
+        [24, 80]
+      end
+    end
 
     # Whether this input method is still readable when there is no more data to
     # read.
@@ -42,6 +51,11 @@ module IRB
     # See IO#eof for more information.
     def readable_after_eof?
       false
+    end
+
+    # For debug message
+    def inspect
+      'Abstract InputMethod'
     end
   end
 
@@ -69,7 +83,15 @@ module IRB
     #
     # See IO#eof? for more information.
     def eof?
-      @stdin.eof?
+      rs, = IO.select([@stdin], [], [], 0.00001)
+      if rs and rs[0]
+        c = @stdin.getc
+        result = c.nil? ? true : false
+        @stdin.ungetc(c) unless c.nil?
+        result
+      else # buffer is empty
+        false
+      end
     end
 
     # Whether this input method is still readable when there is no more data to
@@ -93,14 +115,31 @@ module IRB
     def encoding
       @stdin.external_encoding
     end
+
+    # For debug message
+    def inspect
+      'StdioInputMethod'
+    end
   end
 
   # Use a File for IO with irb, see InputMethod
   class FileInputMethod < InputMethod
+    class << self
+      def open(file, &block)
+        begin
+          io = new(file)
+          block.call(io)
+        ensure
+          io&.close
+        end
+      end
+    end
+
     # Creates a new input method object
     def initialize(file)
       super
       @io = IRB::MagicFile.open(file)
+      @external_encoding = @io.external_encoding
     end
     # The file name of this input method, usually given during initialization.
     attr_reader :file_name
@@ -110,7 +149,7 @@ module IRB
     #
     # See IO#eof? for more information.
     def eof?
-      @io.eof?
+      @io.closed? || @io.eof?
     end
 
     # Reads the next line from this input method.
@@ -118,22 +157,39 @@ module IRB
     # See IO#gets for more information.
     def gets
       print @prompt
-      l = @io.gets
-      l
+      @io.gets
     end
 
     # The external encoding for standard input.
     def encoding
-      @io.external_encoding
+      @external_encoding
+    end
+
+    # For debug message
+    def inspect
+      'FileInputMethod'
+    end
+
+    def close
+      @io.close
     end
   end
 
   begin
-    require "readline"
     class ReadlineInputMethod < InputMethod
-      include Readline
+      def self.initialize_readline
+        require "readline"
+      rescue LoadError
+      else
+        include ::Readline
+      end
+
       # Creates a new input method object using Readline
       def initialize
+        self.class.initialize_readline
+        if Readline.respond_to?(:encoding_system_needs)
+          IRB.__send__(:set_encoding, Readline.encoding_system_needs.name, override: false)
+        end
         super
 
         @line_no = 0
@@ -195,19 +251,22 @@ module IRB
         @stdin.external_encoding
       end
 
-      if Readline.respond_to?("basic_word_break_characters=")
-        Readline.basic_word_break_characters = IRB::InputCompletor::BASIC_WORD_BREAK_CHARACTERS
+      # For debug message
+      def inspect
+        readline_impl = (defined?(Reline) && Readline == Reline) ? 'Reline' : 'ext/readline'
+        str = "ReadlineInputMethod with #{readline_impl} #{Readline::VERSION}"
+        inputrc_path = File.expand_path(ENV['INPUTRC'] || '~/.inputrc')
+        str += " and #{inputrc_path}" if File.exist?(inputrc_path)
+        str
       end
-      Readline.completion_append_character = nil
-      Readline.completion_proc = IRB::InputCompletor::CompletionProc
     end
-  rescue LoadError
   end
 
   class ReidlineInputMethod < InputMethod
     include Reline
     # Creates a new input method object using Readline
     def initialize
+      IRB.__send__(:set_encoding, Reline.encoding_system_needs.name, override: false)
       super
 
       @line_no = 0
@@ -221,10 +280,11 @@ module IRB
         Reline.basic_word_break_characters = IRB::InputCompletor::BASIC_WORD_BREAK_CHARACTERS
       end
       Reline.completion_append_character = nil
+      Reline.completer_quote_characters = ''
       Reline.completion_proc = IRB::InputCompletor::CompletionProc
       Reline.output_modifier_proc =
         if IRB.conf[:USE_COLORIZE]
-          proc do |output, complete:|
+          proc do |output, complete: |
             next unless IRB::Color.colorable?
             IRB::Color.colorize_code(output, complete: complete)
           end
@@ -270,7 +330,7 @@ module IRB
     #
     # See IO#eof? for more information.
     def eof?
-      super
+      @eof
     end
 
     # Whether this input method is still readable when there is no more data to
@@ -293,6 +353,19 @@ module IRB
     # The external encoding for standard input.
     def encoding
       @stdin.external_encoding
+    end
+
+    # For debug message
+    def inspect
+      config = Reline::Config.new
+      str = "ReidlineInputMethod with Reline #{Reline::VERSION}"
+      if config.respond_to?(:inputrc_path)
+        inputrc_path = File.expand_path(config.inputrc_path)
+      else
+        inputrc_path = File.expand_path(ENV['INPUTRC'] || '~/.inputrc')
+      end
+      str += " and #{inputrc_path}" if File.exist?(inputrc_path)
+      str
     end
   end
 end

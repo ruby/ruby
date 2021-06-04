@@ -35,7 +35,7 @@ rb_call_end_proc(VALUE data)
  */
 
 static VALUE
-rb_f_at_exit(void)
+rb_f_at_exit(VALUE _)
 {
     VALUE proc;
 
@@ -48,7 +48,7 @@ rb_f_at_exit(void)
 }
 
 struct end_proc_data {
-    void (*func) ();
+    void (*func) (VALUE);
     VALUE data;
     struct end_proc_data *next;
 };

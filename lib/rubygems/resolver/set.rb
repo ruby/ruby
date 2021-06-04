@@ -4,7 +4,6 @@
 # dependencies) used in resolution.  This set is abstract.
 
 class Gem::Resolver::Set
-
   ##
   # Set to true to disable network access for this set
 
@@ -53,5 +52,4 @@ class Gem::Resolver::Set
   def remote? # :nodoc:
     @remote
   end
-
 end

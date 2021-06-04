@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #--
 # = Ruby-space definitions that completes C-space funcs for X509 and subclasses
 #
@@ -11,6 +11,8 @@
 # This program is licensed under the same licence as Ruby.
 # (See the file 'LICENCE'.)
 #++
+
+require_relative 'marshal'
 
 module OpenSSL
   module X509
@@ -41,6 +43,8 @@ module OpenSSL
     end
 
     class Extension
+      include OpenSSL::Marshal
+
       def ==(other)
         return false unless Extension === other
         to_der == other.to_der
@@ -60,9 +64,146 @@ module OpenSSL
       def to_a
         [ self.oid, self.value, self.critical? ]
       end
+
+      module Helpers
+        def find_extension(oid)
+          extensions.find { |e| e.oid == oid }
+        end
+      end
+
+      module SubjectKeyIdentifier
+        include Helpers
+
+        # Get the subject's key identifier from the subjectKeyIdentifier
+        # exteension, as described in RFC5280 Section 4.2.1.2.
+        #
+        # Returns the binary String key identifier or nil or raises
+        # ASN1::ASN1Error.
+        def subject_key_identifier
+          ext = find_extension("subjectKeyIdentifier")
+          return nil if ext.nil?
+
+          ski_asn1 = ASN1.decode(ext.value_der)
+          if ext.critical? || ski_asn1.tag_class != :UNIVERSAL || ski_asn1.tag != ASN1::OCTET_STRING
+            raise ASN1::ASN1Error, "invalid extension"
+          end
+
+          ski_asn1.value
+        end
+      end
+
+      module AuthorityKeyIdentifier
+        include Helpers
+
+        # Get the issuing certificate's key identifier from the
+        # authorityKeyIdentifier extension, as described in RFC5280
+        # Section 4.2.1.1
+        #
+        # Returns the binary String keyIdentifier or nil or raises
+        # ASN1::ASN1Error.
+        def authority_key_identifier
+          ext = find_extension("authorityKeyIdentifier")
+          return nil if ext.nil?
+
+          aki_asn1 = ASN1.decode(ext.value_der)
+          if ext.critical? || aki_asn1.tag_class != :UNIVERSAL || aki_asn1.tag != ASN1::SEQUENCE
+            raise ASN1::ASN1Error, "invalid extension"
+          end
+
+          key_id = aki_asn1.value.find do |v|
+            v.tag_class == :CONTEXT_SPECIFIC && v.tag == 0
+          end
+
+          key_id.nil? ? nil : key_id.value
+        end
+      end
+
+      module CRLDistributionPoints
+        include Helpers
+
+        # Get the distributionPoint fullName URI from the certificate's CRL
+        # distribution points extension, as described in RFC5280 Section
+        # 4.2.1.13
+        #
+        # Returns an array of strings or nil or raises ASN1::ASN1Error.
+        def crl_uris
+          ext = find_extension("crlDistributionPoints")
+          return nil if ext.nil?
+
+          cdp_asn1 = ASN1.decode(ext.value_der)
+          if cdp_asn1.tag_class != :UNIVERSAL || cdp_asn1.tag != ASN1::SEQUENCE
+            raise ASN1::ASN1Error, "invalid extension"
+          end
+
+          crl_uris = cdp_asn1.map do |crl_distribution_point|
+            distribution_point = crl_distribution_point.value.find do |v|
+              v.tag_class == :CONTEXT_SPECIFIC && v.tag == 0
+            end
+            full_name = distribution_point&.value&.find do |v|
+              v.tag_class == :CONTEXT_SPECIFIC && v.tag == 0
+            end
+            full_name&.value&.find do |v|
+              v.tag_class == :CONTEXT_SPECIFIC && v.tag == 6 # uniformResourceIdentifier
+            end
+          end
+
+          crl_uris&.map(&:value)
+        end
+      end
+
+      module AuthorityInfoAccess
+        include Helpers
+
+        # Get the information and services for the issuer from the certificate's
+        # authority information access extension exteension, as described in RFC5280
+        # Section 4.2.2.1.
+        #
+        # Returns an array of strings or nil or raises ASN1::ASN1Error.
+        def ca_issuer_uris
+          aia_asn1 = parse_aia_asn1
+          return nil if aia_asn1.nil?
+
+          ca_issuer = aia_asn1.value.select do |authority_info_access|
+            authority_info_access.value.first.value == "caIssuers"
+          end
+
+          ca_issuer&.map(&:value)&.map(&:last)&.map(&:value)
+        end
+
+        # Get the URIs for OCSP from the certificate's authority information access
+        # extension exteension, as described in RFC5280 Section 4.2.2.1.
+        #
+        # Returns an array of strings or nil or raises ASN1::ASN1Error.
+        def ocsp_uris
+          aia_asn1 = parse_aia_asn1
+          return nil if aia_asn1.nil?
+
+          ocsp = aia_asn1.value.select do |authority_info_access|
+            authority_info_access.value.first.value == "OCSP"
+          end
+
+          ocsp&.map(&:value)&.map(&:last)&.map(&:value)
+        end
+
+        private
+
+          def parse_aia_asn1
+            ext = find_extension("authorityInfoAccess")
+            return nil if ext.nil?
+
+            aia_asn1 = ASN1.decode(ext.value_der)
+            if ext.critical? || aia_asn1.tag_class != :UNIVERSAL || aia_asn1.tag != ASN1::SEQUENCE
+              raise ASN1::ASN1Error, "invalid extension"
+            end
+
+            aia_asn1
+          end
+      end
     end
 
     class Name
+      include OpenSSL::Marshal
+
       module RFC2253DN
         Special = ',=+<>#;'
         HexChar = /[0-9a-fA-F]/
@@ -166,6 +307,8 @@ module OpenSSL
     end
 
     class Attribute
+      include OpenSSL::Marshal
+
       def ==(other)
         return false unless Attribute === other
         to_der == other.to_der
@@ -179,6 +322,12 @@ module OpenSSL
     end
 
     class Certificate
+      include OpenSSL::Marshal
+      include Extension::SubjectKeyIdentifier
+      include Extension::AuthorityKeyIdentifier
+      include Extension::CRLDistributionPoints
+      include Extension::AuthorityInfoAccess
+
       def pretty_print(q)
         q.object_group(self) {
           q.breakable
@@ -192,6 +341,9 @@ module OpenSSL
     end
 
     class CRL
+      include OpenSSL::Marshal
+      include Extension::AuthorityKeyIdentifier
+
       def ==(other)
         return false unless CRL === other
         to_der == other.to_der
@@ -206,6 +358,8 @@ module OpenSSL
     end
 
     class Request
+      include OpenSSL::Marshal
+
       def ==(other)
         return false unless Request === other
         to_der == other.to_der

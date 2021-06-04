@@ -12,7 +12,6 @@
 # Please pretend this doesn't exist.
 
 class Gem::Package::Old < Gem::Package
-
   undef_method :spec=
 
   ##
@@ -42,7 +41,7 @@ class Gem::Package::Old < Gem::Package
       read_until_dashes io # spec
       header = file_list io
 
-      @contents = header.map { |file| file['path'] }
+      @contents = header.map {|file| file['path'] }
     end
   end
 
@@ -166,5 +165,4 @@ class Gem::Package::Old < Gem::Package
 
     true
   end
-
 end

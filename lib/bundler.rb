@@ -14,10 +14,29 @@ require_relative "bundler/constants"
 require_relative "bundler/current_ruby"
 require_relative "bundler/build_metadata"
 
+# Bundler provides a consistent environment for Ruby projects by
+# tracking and installing the exact gems and versions that are needed.
+#
+# Since Ruby 2.6, Bundler is a part of Ruby's standard library.
+#
+# Bunder is used by creating _gemfiles_ listing all the project dependencies
+# and (optionally) their versions and then using
+#
+#   require 'bundler/setup'
+#
+# or Bundler.setup to setup environment where only specified gems and their
+# specified versions could be used.
+#
+# See {Bundler website}[https://bundler.io/docs.html] for extensive documentation
+# on gemfiles creation and Bundler usage.
+#
+# As a standard library inside project, Bundler could be used for introspection
+# of loaded and required modules.
+#
 module Bundler
-  environment_preserver = EnvironmentPreserver.new(ENV, EnvironmentPreserver::BUNDLER_KEYS)
+  environment_preserver = EnvironmentPreserver.from_env
   ORIGINAL_ENV = environment_preserver.restore
-  ENV.replace(environment_preserver.backup)
+  environment_preserver.replace_with_backup
   SUDO_MUTEX = Mutex.new
 
   autoload :Definition,             File.expand_path("bundler/definition", __dir__)
@@ -31,7 +50,6 @@ module Bundler
   autoload :FeatureFlag,            File.expand_path("bundler/feature_flag", __dir__)
   autoload :GemHelper,              File.expand_path("bundler/gem_helper", __dir__)
   autoload :GemHelpers,             File.expand_path("bundler/gem_helpers", __dir__)
-  autoload :GemRemoteFetcher,       File.expand_path("bundler/gem_remote_fetcher", __dir__)
   autoload :GemVersionPromoter,     File.expand_path("bundler/gem_version_promoter", __dir__)
   autoload :Graph,                  File.expand_path("bundler/graph", __dir__)
   autoload :Index,                  File.expand_path("bundler/index", __dir__)
@@ -45,7 +63,6 @@ module Bundler
   autoload :Resolver,               File.expand_path("bundler/resolver", __dir__)
   autoload :Retry,                  File.expand_path("bundler/retry", __dir__)
   autoload :RubyDsl,                File.expand_path("bundler/ruby_dsl", __dir__)
-  autoload :RubyGemsGemInstaller,   File.expand_path("bundler/rubygems_gem_installer", __dir__)
   autoload :RubyVersion,            File.expand_path("bundler/ruby_version", __dir__)
   autoload :Runtime,                File.expand_path("bundler/runtime", __dir__)
   autoload :Settings,               File.expand_path("bundler/settings", __dir__)
@@ -64,11 +81,11 @@ module Bundler
     end
 
     def ui
-      (defined?(@ui) && @ui) || (self.ui = UI::Silent.new)
+      (defined?(@ui) && @ui) || (self.ui = UI::Shell.new)
     end
 
     def ui=(ui)
-      Bundler.rubygems.ui = ui ? UI::RGProxy.new(ui) : nil
+      Bundler.rubygems.ui = UI::RGProxy.new(ui)
       @ui = ui
     end
 
@@ -91,6 +108,33 @@ module Bundler
       end
     end
 
+    # Turns on the Bundler runtime. After +Bundler.setup+ call, all +load+ or
+    # +require+ of the gems would be allowed only if they are part of
+    # the Gemfile or Ruby's standard library. If the versions specified
+    # in Gemfile, only those versions would be loaded.
+    #
+    # Assuming Gemfile
+    #
+    #    gem 'first_gem', '= 1.0'
+    #    group :test do
+    #      gem 'second_gem', '= 1.0'
+    #    end
+    #
+    # The code using Bundler.setup works as follows:
+    #
+    #    require 'third_gem' # allowed, required from global gems
+    #    require 'first_gem' # allowed, loads the last installed version
+    #    Bundler.setup
+    #    require 'fourth_gem' # fails with LoadError
+    #    require 'second_gem' # loads exactly version 1.0
+    #
+    # +Bundler.setup+ can be called only once, all subsequent calls are no-op.
+    #
+    # If _groups_ list is provided, only gems from specified groups would
+    # be allowed (gems specified outside groups belong to special +:default+ group).
+    #
+    # To require all gems from Gemfile (or only some groups), see Bundler.require.
+    #
     def setup(*groups)
       # Return if all groups are already loaded
       return @setup if defined?(@setup) && @setup
@@ -107,6 +151,24 @@ module Bundler
       end
     end
 
+    # Setups Bundler environment (see Bundler.setup) if it is not already set,
+    # and loads all gems from groups specified. Unlike ::setup, can be called
+    # multiple times with different groups (if they were allowed by setup).
+    #
+    # Assuming Gemfile
+    #
+    #    gem 'first_gem', '= 1.0'
+    #    group :test do
+    #      gem 'second_gem', '= 1.0'
+    #    end
+    #
+    # The code will work as follows:
+    #
+    #    Bundler.setup # allow all groups
+    #    Bundler.require(:default) # requires only first_gem
+    #    # ...later
+    #    Bundler.require(:test)   # requires second_gem
+    #
     def require(*groups)
       setup(*groups).require(*groups)
     end
@@ -116,7 +178,7 @@ module Bundler
     end
 
     def environment
-      SharedHelpers.major_deprecation 2, "Bundler.environment has been removed in favor of Bundler.load"
+      SharedHelpers.major_deprecation 2, "Bundler.environment has been removed in favor of Bundler.load", :print_caller_location => true
       load
     end
 
@@ -135,7 +197,7 @@ module Bundler
 
     def frozen_bundle?
       frozen = settings[:deployment]
-      frozen ||= settings[:frozen] unless feature_flag.deployment_means_frozen?
+      frozen ||= settings[:frozen]
       frozen
     end
 
@@ -147,6 +209,12 @@ module Bundler
           lock = Bundler.read_file(Bundler.default_lockfile)
           LockfileParser.new(lock)
         end
+    end
+
+    def most_specific_locked_platform?(platform)
+      return false unless defined?(@definition) && @definition
+
+      definition.most_specific_locked_platform == platform
     end
 
     def ruby_scope
@@ -167,29 +235,13 @@ module Bundler
         end
 
         if warning
-          Kernel.send(:require, "etc")
-          user_home = tmp_home_path(Etc.getlogin, warning)
+          user_home = tmp_home_path(warning)
           Bundler.ui.warn "#{warning}\nBundler will use `#{user_home}' as your home directory temporarily.\n"
           user_home
         else
           Pathname.new(home)
         end
       end
-    end
-
-    def tmp_home_path(login, warning)
-      login ||= "unknown"
-      Kernel.send(:require, "tmpdir")
-      path = Pathname.new(Dir.tmpdir).join("bundler", "home")
-      SharedHelpers.filesystem_access(path) do |tmp_home_path|
-        unless tmp_home_path.exist?
-          tmp_home_path.mkpath
-          tmp_home_path.chmod(0o777)
-        end
-        tmp_home_path.join(login).tap(&:mkpath)
-      end
-    rescue RuntimeError => e
-      raise e.exception("#{warning}\nBundler also failed to create a temporary home directory at `#{path}':\n#{e}")
     end
 
     def user_bundle_path(dir = "home")
@@ -238,7 +290,13 @@ module Bundler
 
     def app_config_path
       if app_config = ENV["BUNDLE_APP_CONFIG"]
-        Pathname.new(app_config).expand_path(root)
+        app_config_pathname = Pathname.new(app_config)
+
+        if app_config_pathname.absolute?
+          app_config_pathname
+        else
+          app_config_pathname.expand_path(root)
+        end
       else
         root.join(".bundle")
       end
@@ -260,7 +318,7 @@ module Bundler
       message = <<EOF
 It is a security vulnerability to allow your home directory to be world-writable, and bundler can not continue.
 You should probably consider fixing this issue by running `chmod o-w ~` on *nix.
-Please refer to http://ruby-doc.org/stdlib-2.1.2/libdoc/fileutils/rdoc/FileUtils.html#method-c-remove_entry_secure for details.
+Please refer to https://ruby-doc.org/stdlib-2.1.2/libdoc/fileutils/rdoc/FileUtils.html#method-c-remove_entry_secure for details.
 EOF
       File.world_writable?(path) ? Bundler.ui.warn(message) : raise
       raise PathError, "Please fix the world-writable issue with your #{path} directory"
@@ -282,7 +340,8 @@ EOF
       Bundler::SharedHelpers.major_deprecation(
         2,
         "`Bundler.clean_env` has been deprecated in favor of `Bundler.unbundled_env`. " \
-        "If you instead want the environment before bundler was originally loaded, use `Bundler.original_env`"
+        "If you instead want the environment before bundler was originally loaded, use `Bundler.original_env`",
+        :print_caller_location => true
       )
 
       unbundled_env
@@ -299,7 +358,10 @@ EOF
       env.delete_if {|k, _| k[0, 7] == "BUNDLE_" }
 
       if env.key?("RUBYOPT")
-        env["RUBYOPT"] = env["RUBYOPT"].sub "-rbundler/setup", ""
+        rubyopt = env["RUBYOPT"].split(" ")
+        rubyopt.delete("-r#{File.expand_path("bundler/setup", __dir__)}")
+        rubyopt.delete("-rbundler/setup")
+        env["RUBYOPT"] = rubyopt.join(" ")
       end
 
       if env.key?("RUBYLIB")
@@ -321,7 +383,8 @@ EOF
       Bundler::SharedHelpers.major_deprecation(
         2,
         "`Bundler.with_clean_env` has been deprecated in favor of `Bundler.with_unbundled_env`. " \
-        "If you instead want the environment before bundler was originally loaded, use `Bundler.with_original_env`"
+        "If you instead want the environment before bundler was originally loaded, use `Bundler.with_original_env`",
+        :print_caller_location => true
       )
 
       with_env(unbundled_env) { yield }
@@ -342,7 +405,8 @@ EOF
       Bundler::SharedHelpers.major_deprecation(
         2,
         "`Bundler.clean_system` has been deprecated in favor of `Bundler.unbundled_system`. " \
-        "If you instead want to run the command in the environment before bundler was originally loaded, use `Bundler.original_system`"
+        "If you instead want to run the command in the environment before bundler was originally loaded, use `Bundler.original_system`",
+        :print_caller_location => true
       )
 
       with_env(unbundled_env) { Kernel.system(*args) }
@@ -363,7 +427,8 @@ EOF
       Bundler::SharedHelpers.major_deprecation(
         2,
         "`Bundler.clean_exec` has been deprecated in favor of `Bundler.unbundled_exec`. " \
-        "If you instead want to exec to a command in the environment before bundler was originally loaded, use `Bundler.original_exec`"
+        "If you instead want to exec to a command in the environment before bundler was originally loaded, use `Bundler.original_exec`",
+        :print_caller_location => true
       )
 
       with_env(unbundled_env) { Kernel.exec(*args) }
@@ -375,7 +440,7 @@ EOF
     end
 
     def local_platform
-      return Gem::Platform::RUBY if settings[:force_ruby_platform]
+      return Gem::Platform::RUBY if settings[:force_ruby_platform] || Gem.platforms == [Gem::Platform::RUBY]
       Gem::Platform.local
     end
 
@@ -396,8 +461,12 @@ EOF
       # system binaries. If you put '-n foo' in your .gemrc, RubyGems will
       # install binstubs there instead. Unfortunately, RubyGems doesn't expose
       # that directory at all, so rather than parse .gemrc ourselves, we allow
-      # the directory to be set as well, via `bundle config set bindir foo`.
+      # the directory to be set as well, via `bundle config set --local bindir foo`.
       Bundler.settings[:system_bindir] || Bundler.rubygems.gem_bindir
+    end
+
+    def preferred_gemfile_name
+      Bundler.settings[:init_gems_rb] ? "gems.rb" : "Gemfile"
     end
 
     def use_system_gems?
@@ -461,7 +530,8 @@ EOF
         Your user account isn't allowed to install to the system RubyGems.
         You can cancel this installation and run:
 
-            bundle install --path vendor/bundle
+            bundle config set --local path 'vendor/bundle'
+            bundle install
 
         to install the gems into ./vendor/bundle/, or you can enter your password
         and install the bundled gems to RubyGems using sudo.
@@ -537,6 +607,11 @@ EOF
       reset_rubygems!
     end
 
+    def reset_settings_and_root!
+      @settings = nil
+      @root = nil
+    end
+
     def reset_paths!
       @bin_path = nil
       @bundler_major_version = nil
@@ -559,7 +634,7 @@ EOF
       @rubygems = nil
     end
 
-  private
+    private
 
     def eval_yaml_gemspec(path, contents)
       require_relative "bundler/psyched_yaml"
@@ -606,6 +681,17 @@ EOF
     def configure_gem_home
       Bundler::SharedHelpers.set_env "GEM_HOME", File.expand_path(bundle_path, root)
       Bundler.rubygems.clear_paths
+    end
+
+    def tmp_home_path(warning)
+      Kernel.send(:require, "tmpdir")
+      SharedHelpers.filesystem_access(Dir.tmpdir) do
+        path = Bundler.tmp
+        at_exit { Bundler.rm_rf(path) }
+        path
+      end
+    rescue RuntimeError => e
+      raise e.exception("#{warning}\nBundler also failed to create a temporary home directory':\n#{e}")
     end
 
     # @param env [Hash]

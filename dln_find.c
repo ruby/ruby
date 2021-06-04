@@ -23,10 +23,6 @@
 # include <stdlib.h>
 #endif
 
-#ifdef USE_DLN_A_OUT
-char *dln_argv0;
-#endif
-
 #if defined(HAVE_ALLOCA_H)
 #include <alloca.h>
 #endif
@@ -218,7 +214,7 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
 			       dp[1] == '\\' ||
 #endif
 			       dp[1] == '/')) {
-		char *home;
+		const char *home;
 
 		home = getenv("HOME");
 		if (home != NULL) {
@@ -248,26 +244,14 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
 	/* now append the file name */
 	i = fnlen;
 	if (fspace < i) {
-	  toolong:
-	    PATHNAME_TOO_LONG();
-	    goto next;
+            goto toolong;
 	}
 	fspace -= i;
 	memcpy(bp, fname, i + 1);
 
 #if defined(DOSISH)
 	if (exe_flag && !ext) {
-	  needs_extension:
-	    for (j = 0; j < sizeof(extension) / sizeof(extension[0]); j++) {
-		if (fspace < strlen(extension[j])) {
-		    PATHNAME_TOO_LONG();
-		    continue;
-		}
-		strlcpy(bp + i, extension[j], fspace);
-		if (stat(fbuf, &st) == 0)
-		    return fbuf;
-	    }
-	    goto next;
+            goto needs_extension;
 	}
 #endif
 
@@ -284,7 +268,25 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
 	if (*ep == '\0') {
 	    return NULL;
 	}
+        continue;
 
+      toolong:
+        PATHNAME_TOO_LONG();
+        goto next;
+
+#if defined(DOSISH)
+      needs_extension:
+        for (j = 0; j < sizeof(extension) / sizeof(extension[0]); j++) {
+            if (fspace < strlen(extension[j])) {
+                PATHNAME_TOO_LONG();
+                continue;
+            }
+            strlcpy(bp + i, extension[j], fspace);
+            if (stat(fbuf, &st) == 0)
+                return fbuf;
+        }
+        goto next;
+#endif
 	/* otherwise try the next component in the search path */
     }
 }

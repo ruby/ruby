@@ -10,17 +10,21 @@
 #
 #
 
-require "e2mmap"
 require_relative "output-method"
 
 module IRB
   # An output formatter used internally by the lexer.
   module Notifier
-    extend Exception2MessageMapper
-    def_exception :ErrUndefinedNotifier,
-      "undefined notifier level: %d is specified"
-    def_exception :ErrUnrecognizedLevel,
-      "unrecognized notifier level: %s is specified"
+    class ErrUndefinedNotifier < StandardError
+      def initialize(val)
+        super("undefined notifier level: #{val} is specified")
+      end
+    end
+    class ErrUnrecognizedLevel < StandardError
+      def initialize(val)
+        super("unrecognized notifier level: #{val} is specified")
+      end
+    end
 
     # Define a new Notifier output source, returning a new CompositeNotifier
     # with the given +prefix+ and +output_method+.
@@ -162,10 +166,10 @@ module IRB
           @level_notifier = value
         when Integer
           l = @notifiers[value]
-          Notifier.Raise ErrUndefinedNotifier, value unless l
+          raise ErrUndefinedNotifier, value unless l
           @level_notifier = l
         else
-          Notifier.Raise ErrUnrecognizedLevel, value unless l
+          raise ErrUnrecognizedLevel, value unless l
         end
       end
 

@@ -21,6 +21,13 @@ class RubyVM::Attribute
     @key = opts[:name]
     @expr = RubyVM::CExpr.new location: opts[:location], expr: opts[:expr]
     @type = opts[:type]
+    @ope_decls = @insn.opes.map do |operand|
+      decl = operand[:decl]
+      if @key == 'comptime_sp_inc' && operand[:type] == 'CALL_DATA'
+        decl = decl.gsub('CALL_DATA', 'CALL_INFO').gsub('cd', 'ci')
+      end
+      decl
+    end
   end
 
   def name
@@ -32,22 +39,20 @@ class RubyVM::Attribute
   end
 
   def declaration
-    opes = @insn.opes
-    if opes.empty?
+    if @ope_decls.empty?
       argv = "void"
     else
-      argv = opes.map {|o| o[:decl] }.join(', ')
+      argv = @ope_decls.join(', ')
     end
     sprintf '%s %s(%s)', @type, name, argv
   end
 
   def definition
-    opes = @insn.opes
-    if opes.empty?
+    if @ope_decls.empty?
       argv = "void"
     else
-      argv = opes.map {|o| "MAYBE_UNUSED(#{o[:decl]})" }.join(",\n    ")
-      argv = "\n    #{argv}\n" if opes.size > 1
+      argv = @ope_decls.map {|decl| "MAYBE_UNUSED(#{decl})" }.join(",\n    ")
+      argv = "\n    #{argv}\n" if @ope_decls.size > 1
     end
     sprintf "%s\n%s(%s)", @type, name, argv
   end

@@ -10,6 +10,12 @@ describe "KeyError" do
 
       error.receiver.should == receiver
       error.key.should == key
+
+      error = KeyError.new("message", receiver: receiver, key: key)
+
+      error.message.should == "message"
+      error.receiver.should == receiver
+      error.key.should == key
     end
   end
 end

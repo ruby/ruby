@@ -1,8 +1,7 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 
 class TestGemResolverBestSet < Gem::TestCase
-
   def setup
     super
 
@@ -30,7 +29,7 @@ class TestGemResolverBestSet < Gem::TestCase
 
     found = set.find_all req
 
-    assert_equal %w[a-1], found.map { |s| s.full_name }
+    assert_equal %w[a-1], found.map {|s| s.full_name }
   end
 
   def test_find_all_fallback
@@ -40,7 +39,7 @@ class TestGemResolverBestSet < Gem::TestCase
 
     set = @DR::BestSet.new
 
-    api_uri = URI(@gem_repo) + './api/v1/dependencies'
+    api_uri = URI(@gem_repo)
 
     set.sets << Gem::Resolver::APISet.new(api_uri)
 
@@ -50,7 +49,7 @@ class TestGemResolverBestSet < Gem::TestCase
 
     found = set.find_all req
 
-    assert_equal %w[a-1], found.map { |s| s.full_name }
+    assert_equal %w[a-1], found.map {|s| s.full_name }
   end
 
   def test_find_all_local
@@ -100,12 +99,12 @@ class TestGemResolverBestSet < Gem::TestCase
   def test_replace_failed_api_set
     set = @DR::BestSet.new
 
-    api_uri = URI(@gem_repo) + './api/v1/dependencies'
+    api_uri = URI(@gem_repo) + './info/'
     api_set = Gem::Resolver::APISet.new api_uri
 
     set.sets << api_set
 
-    error_uri = api_uri + '?gems=a'
+    error_uri = api_uri + 'a'
 
     error = Gem::RemoteFetcher::FetchError.new 'bogus', error_uri
 
@@ -127,11 +126,33 @@ class TestGemResolverBestSet < Gem::TestCase
 
     error = Gem::RemoteFetcher::FetchError.new 'bogus', @gem_repo
 
-    e = assert_raises Gem::RemoteFetcher::FetchError do
+    e = assert_raise Gem::RemoteFetcher::FetchError do
       set.replace_failed_api_set error
     end
 
     assert_equal error, e
   end
 
+  def test_replace_failed_api_set_uri_with_credentials
+    set = @DR::BestSet.new
+
+    api_uri = URI(@gem_repo) + './info/'
+    api_uri.user = 'user'
+    api_uri.password = 'pass'
+    api_set = Gem::Resolver::APISet.new api_uri
+
+    set.sets << api_set
+
+    error_uri = api_uri + 'a'
+
+    error = Gem::RemoteFetcher::FetchError.new 'bogus', error_uri
+
+    set.replace_failed_api_set error
+
+    assert_equal 1, set.sets.size
+
+    refute_includes set.sets, api_set
+
+    assert_kind_of Gem::Resolver::IndexSet, set.sets.first
+  end
 end

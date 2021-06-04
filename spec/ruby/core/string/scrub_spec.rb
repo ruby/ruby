@@ -39,6 +39,13 @@ describe "String#scrub with a custom replacement" do
     "abc\u3042#{x81}".scrub("*").should == "abc\u3042*"
   end
 
+  it "replaces invalid byte sequences in frozen strings" do
+    x81 = [0x81].pack('C').force_encoding('utf-8')
+    (-"abc\u3042#{x81}").scrub("*").should == "abc\u3042*"
+    utf16_str = ("abc".encode('UTF-16LE').bytes + [0x81]).pack('c*').force_encoding('UTF-16LE')
+    (-(utf16_str)).scrub("*".encode('UTF-16LE')).should == "abc*".encode('UTF-16LE')
+  end
+
   it "replaces an incomplete character at the end with a single replacement" do
     xE3x80 = [0xE3, 0x80].pack('CC').force_encoding 'utf-8'
     xE3x80.scrub("*").should == "*"
@@ -97,5 +104,19 @@ describe "String#scrub!" do
     input = "a#{x81}"
     input.scrub! { |b| "<?>" }
     input.should == "a<?>"
+  end
+
+  it "maintains the state of frozen strings that are already valid" do
+    input = "a"
+    input.freeze
+    input.scrub!
+    input.frozen?.should be_true
+  end
+
+  it "preserves the instance variables of already valid strings" do
+    input = "a"
+    input.instance_variable_set(:@a, 'b')
+    input.scrub!
+    input.instance_variable_get(:@a).should == 'b'
   end
 end

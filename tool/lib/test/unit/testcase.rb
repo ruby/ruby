@@ -18,10 +18,6 @@ module Test
         super runner
       end
 
-      def self.test_order
-        :sorted
-      end
-
       def self.method_added(name)
         super
         return unless name.to_s.start_with?("test_")

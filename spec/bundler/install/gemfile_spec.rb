@@ -3,7 +3,7 @@
 RSpec.describe "bundle install" do
   context "with duplicated gems" do
     it "will display a warning" do
-      install_gemfile <<-G
+      install_gemfile <<-G, :raise_on_error => false
         gem 'rails', '~> 4.0.0'
         gem 'rails', '~> 4.0.0'
       G
@@ -44,56 +44,42 @@ RSpec.describe "bundle install" do
     end
     it "uses the gemfile while in a subdirectory" do
       bundled_app("subdir").mkpath
-      Dir.chdir(bundled_app("subdir")) do
-        bundle "install"
-        bundle "list"
+      bundle "install", :dir => bundled_app("subdir")
+      bundle "list", :dir => bundled_app("subdir")
 
-        expect(out).to include("rack (1.0.0)")
-      end
+      expect(out).to include("rack (1.0.0)")
     end
   end
 
   context "with deprecated features" do
-    before :each do
-      in_app_root
-    end
-
     it "reports that lib is an invalid option" do
       gemfile <<-G
         gem "rack", :lib => "rack"
       G
 
-      bundle :install
+      bundle :install, :raise_on_error => false
       expect(err).to match(/You passed :lib as an option for gem 'rack', but it is invalid/)
     end
   end
 
-  context "with engine specified in symbol" do
+  context "with engine specified in symbol", :jruby do
     it "does not raise any error parsing Gemfile" do
-      simulate_ruby_version "2.3.0" do
-        simulate_ruby_engine "jruby", "9.1.2.0" do
-          install_gemfile! <<-G
-            source "#{file_uri_for(gem_repo1)}"
-            ruby "2.3.0", :engine => :jruby, :engine_version => "9.1.2.0"
-          G
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        ruby "#{RUBY_VERSION}", :engine => :jruby, :engine_version => "#{RUBY_ENGINE_VERSION}"
+      G
 
-          expect(out).to match(/Bundle complete!/)
-        end
-      end
+      expect(out).to match(/Bundle complete!/)
     end
 
     it "installation succeeds" do
-      simulate_ruby_version "2.3.0" do
-        simulate_ruby_engine "jruby", "9.1.2.0" do
-          install_gemfile! <<-G
-            source "#{file_uri_for(gem_repo1)}"
-            ruby "2.3.0", :engine => :jruby, :engine_version => "9.1.2.0"
-            gem "rack"
-          G
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        ruby "#{RUBY_VERSION}", :engine => :jruby, :engine_version => "#{RUBY_ENGINE_VERSION}"
+        gem "rack"
+      G
 
-          expect(the_bundle).to include_gems "rack 1.0.0"
-        end
-      end
+      expect(the_bundle).to include_gems "rack 1.0.0"
     end
   end
 

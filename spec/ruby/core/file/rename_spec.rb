@@ -14,11 +14,11 @@ describe "File.rename" do
   end
 
   it "renames a file" do
-    File.exist?(@old).should == true
-    File.exist?(@new).should == false
+    File.should.exist?(@old)
+    File.should_not.exist?(@new)
     File.rename(@old, @new)
-    File.exist?(@old).should == false
-    File.exist?(@new).should == true
+    File.should_not.exist?(@old)
+    File.should.exist?(@new)
   end
 
   it "raises an Errno::ENOENT if the source does not exist" do

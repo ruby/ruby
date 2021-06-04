@@ -138,11 +138,14 @@ describe "Thread#raise on a running thread" do
   end
 
   it "can go unhandled" do
+    q = Queue.new
     t = Thread.new do
       Thread.current.report_on_exception = false
+      q << true
       loop { Thread.pass }
     end
 
+    q.pop # wait for `report_on_exception = false`.
     t.raise
     -> { t.value }.should raise_error(RuntimeError)
   end
@@ -200,6 +203,6 @@ describe "Thread#raise on same thread" do
         Thread.current.raise
       end
     end
-    -> { t.value }.should raise_error(RuntimeError)
+    -> { t.value }.should raise_error(RuntimeError, '')
   end
 end

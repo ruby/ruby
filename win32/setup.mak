@@ -132,9 +132,6 @@ int main(void) {return (EnumProcesses(NULL,0,NULL) ? 0 : 1);}
 <<
 
 -version-: nul verconf.mk
-	@$(CPP) -I$(srcdir) -I$(srcdir)/include <<"Creating $(MAKEFILE)" | findstr "=" >>$(MAKEFILE)
-MSC_VER = _MSC_VER
-<<
 
 verconf.mk: nul
 	@$(CPP) -I$(srcdir) -I$(srcdir)/include <<"Creating $(@)" > $(*F).bat && cmd /c $(*F).bat > $(@)
@@ -143,15 +140,29 @@ verconf.mk: nul
 #define STRINGIZE0(expr) #expr
 #define STRINGIZE(x) STRINGIZE0(x)
 #include "version.h"
-for %%I in (RUBY_RELEASE_DATE) do set ruby_release_date=%%~I
-#undef RUBY_RELEASE_DATE
-echo RUBY_RELEASE_DATE = %ruby_release_date:""=%
+set ruby_release_year=RUBY_RELEASE_YEAR
+set ruby_release_month=RUBY_RELEASE_MONTH
+set ruby_release_day=RUBY_RELEASE_DAY
+set ruby_release_month=0%ruby_release_month%
+set ruby_release_day=0%ruby_release_day%
+#undef RUBY_RELEASE_YEAR
+#undef RUBY_RELEASE_MONTH
+#undef RUBY_RELEASE_DAY
+echo RUBY_RELEASE_YEAR = %ruby_release_year%
+echo RUBY_RELEASE_MONTH = %ruby_release_month:~-2%
+echo RUBY_RELEASE_DAY = %ruby_release_day:~-2%
 echo MAJOR = RUBY_VERSION_MAJOR
 echo MINOR = RUBY_VERSION_MINOR
 echo TEENY = RUBY_VERSION_TEENY
 #if defined RUBY_PATCHLEVEL && RUBY_PATCHLEVEL < 0
 echo RUBY_DEVEL = yes
 #endif
+set /a MSC_VER = _MSC_VER
+#if _MSC_VER > 1900
+set /a MSC_VER_LOWER = MSC_VER/10*10+0
+set /a MSC_VER_UPPER = MSC_VER/10*10+9
+#endif
+set MSC_VER
 del %0 & exit
 <<
 

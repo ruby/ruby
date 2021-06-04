@@ -143,13 +143,5 @@ class TestRDocContextSection < RDoc::TestCase
     assert_equal doc(other_comment.parse), loaded.comments
   end
 
-  def test_sequence
-    _, err = verbose_capture_output do
-      assert_match(/\ASEC\d{5}\Z/, @s.sequence)
-    end
-
-    assert_equal "#{@S}#sequence is deprecated, use #aref\n", err
-  end
-
 end
 

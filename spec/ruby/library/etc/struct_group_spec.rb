@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
 require 'etc'
 
-describe "Struct::Group" do
+describe "Etc::Group" do
   platform_is_not :windows do
     grpname = IO.popen(%w'id -gn', err: IO::NULL, &:read)
     next unless $?.success?

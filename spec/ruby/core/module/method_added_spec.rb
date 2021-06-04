@@ -59,4 +59,25 @@ describe "Module#method_added" do
     end
     m.should_not have_method(:method_to_undef)
   end
+
+  it "is called with a precise caller location with the line of the 'def'" do
+    ScratchPad.record []
+    line = nil
+
+    Module.new do
+      def self.method_added(name)
+        location = caller_locations(1, 1)[0]
+        ScratchPad << location.lineno
+      end
+
+      line = __LINE__
+      def first
+      end
+
+      def second
+      end
+    end
+
+    ScratchPad.recorded.should == [line + 1, line + 4]
+  end
 end

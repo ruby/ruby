@@ -1,11 +1,10 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/source'
 
 require 'fileutils'
 
 class TestGemSourceLocal < Gem::TestCase
-
   def setup
     super
 
@@ -73,7 +72,7 @@ class TestGemSourceLocal < Gem::TestCase
 
     @sl.load_specs :released
 
-    inner = [@a, @ap, @b].map { |t| t.name_tuple }.inspect
+    inner = [@a, @ap, @b].map {|t| t.name_tuple }.inspect
 
     assert_equal "#<Gem::Source::Local specs: #{inner}>", @sl.inspect
   end
@@ -93,16 +92,15 @@ class TestGemSourceLocal < Gem::TestCase
     installed = Gem::Source::Installed.new
     local     = Gem::Source::Local.new
 
-    assert_equal(0, local.    <=>(local),     'local     <=> local')
+    assert_equal(0, local.<=>(local), 'local <=> local')
 
-    assert_equal(-1, remote.   <=>(local),     'remote    <=> local')
-    assert_equal(1, local.    <=>(remote),    'local     <=> remote')
+    assert_equal(-1, remote.<=>(local), 'remote <=> local')
+    assert_equal(1, local.<=>(remote), 'local <=> remote')
 
-    assert_equal(1, installed.<=>(local),     'installed <=> local')
-    assert_equal(-1, local.    <=>(installed), 'local     <=> installed')
+    assert_equal(1, installed.<=>(local), 'installed <=> local')
+    assert_equal(-1, local.<=>(installed), 'local <=> installed')
 
-    assert_equal(-1, specific. <=>(local),     'specific  <=> local')
-    assert_equal(1, local.    <=>(specific),  'local     <=> specific')
+    assert_equal(-1, specific.<=>(local), 'specific <=> local')
+    assert_equal(1, local.<=>(specific), 'local <=> specific')
   end
-
 end

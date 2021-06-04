@@ -21,18 +21,58 @@ RSpec.describe "bundle install" do
       expect(the_bundle).to include_gems "bundler #{Bundler::VERSION}"
     end
 
-    it "are not added if not already present" do
+    it "are forced to the current bundler version even if not already present" do
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
-      expect(the_bundle).not_to include_gems "bundler #{Bundler::VERSION}"
+      expect(the_bundle).to include_gems "bundler #{Bundler::VERSION}"
     end
 
-    it "causes a conflict if explicitly requesting a different version" do
-      bundle "config set force_ruby_platform true"
+    it "causes a conflict if explicitly requesting a different version of bundler" do
+      install_gemfile <<-G, :raise_on_error => false
+        source "#{file_uri_for(gem_repo2)}"
+        gem "rails", "3.0"
+        gem "bundler", "0.9.1"
+      G
 
-      install_gemfile <<-G
+      nice_error = <<-E.strip.gsub(/^ {8}/, "")
+        Bundler could not find compatible versions for gem "bundler":
+          In Gemfile:
+            bundler (= 0.9.1)
+
+          Current Bundler version:
+            bundler (#{Bundler::VERSION})
+
+        Your bundle requires a different version of Bundler than the one you're running.
+        Install the necessary version with `gem install bundler:0.9.1` and rerun bundler using `bundle _0.9.1_ install`
+        E
+      expect(err).to include(nice_error)
+    end
+
+    it "causes a conflict if explicitly requesting a non matching requirement on bundler" do
+      install_gemfile <<-G, :raise_on_error => false
+        source "#{file_uri_for(gem_repo2)}"
+        gem "rails", "3.0"
+        gem "bundler", "~> 0.8"
+      G
+
+      nice_error = <<-E.strip.gsub(/^ {8}/, "")
+        Bundler could not find compatible versions for gem "bundler":
+          In Gemfile:
+            bundler (~> 0.8)
+
+          Current Bundler version:
+            bundler (#{Bundler::VERSION})
+
+        Your bundle requires a different version of Bundler than the one you're running.
+        Install the necessary version with `gem install bundler:0.9.1` and rerun bundler using `bundle _0.9.1_ install`
+        E
+      expect(err).to include(nice_error)
+    end
+
+    it "causes a conflict if explicitly requesting a version of bundler that doesn't exist" do
+      install_gemfile <<-G, :raise_on_error => false
         source "#{file_uri_for(gem_repo2)}"
         gem "rails", "3.0"
         gem "bundler", "0.9.2"
@@ -45,15 +85,19 @@ RSpec.describe "bundle install" do
 
           Current Bundler version:
             bundler (#{Bundler::VERSION})
-        This Gemfile requires a different version of Bundler.
-        Perhaps you need to update Bundler by running `gem install bundler`?
 
-        Could not find gem 'bundler (= 0.9.2)' in any
+        Your bundle requires a different version of Bundler than the one you're running, and that version could not be found.
         E
       expect(err).to include(nice_error)
     end
 
     it "works for gems with multiple versions in its dependencies" do
+      build_repo2 do
+        build_gem "multiple_versioned_deps" do |s|
+          s.add_dependency "weakling", ">= 0.0.1", "< 0.1"
+        end
+      end
+
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
 
@@ -93,10 +137,16 @@ RSpec.describe "bundle install" do
     it "causes a conflict if child dependencies conflict" do
       bundle "config set force_ruby_platform true"
 
-      install_gemfile <<-G
+      update_repo2 do
+        build_gem "rails_pinned_to_old_activesupport" do |s|
+          s.add_dependency "activesupport", "= 1.2.3"
+        end
+      end
+
+      install_gemfile <<-G, :raise_on_error => false
         source "#{file_uri_for(gem_repo2)}"
         gem "activemerchant"
-        gem "rails_fail"
+        gem "rails_pinned_to_old_activesupport"
       G
 
       nice_error = <<-E.strip.gsub(/^ {8}/, "")
@@ -105,7 +155,7 @@ RSpec.describe "bundle install" do
             activemerchant was resolved to 1.0, which depends on
               activesupport (>= 2.0.0)
 
-            rails_fail was resolved to 1.0, which depends on
+            rails_pinned_to_old_activesupport was resolved to 1.0, which depends on
               activesupport (= 1.2.3)
       E
       expect(err).to include(nice_error)
@@ -114,9 +164,15 @@ RSpec.describe "bundle install" do
     it "causes a conflict if a child dependency conflicts with the Gemfile" do
       bundle "config set force_ruby_platform true"
 
-      install_gemfile <<-G
+      update_repo2 do
+        build_gem "rails_pinned_to_old_activesupport" do |s|
+          s.add_dependency "activesupport", "= 1.2.3"
+        end
+      end
+
+      install_gemfile <<-G, :raise_on_error => false
         source "#{file_uri_for(gem_repo2)}"
-        gem "rails_fail"
+        gem "rails_pinned_to_old_activesupport"
         gem "activesupport", "2.3.5"
       G
 
@@ -125,58 +181,59 @@ RSpec.describe "bundle install" do
           In Gemfile:
             activesupport (= 2.3.5)
 
-            rails_fail was resolved to 1.0, which depends on
+            rails_pinned_to_old_activesupport was resolved to 1.0, which depends on
               activesupport (= 1.2.3)
       E
       expect(err).to include(nice_error)
     end
 
+    it "does not cause a conflict if new dependencies in the Gemfile require older dependencies than the lockfile" do
+      update_repo2 do
+        build_gem "rails_pinned_to_old_activesupport" do |s|
+          s.add_dependency "activesupport", "= 1.2.3"
+        end
+      end
+
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo2)}"
+        gem 'rails', "2.3.2"
+      G
+
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo2)}"
+        gem "rails_pinned_to_old_activesupport"
+      G
+
+      expect(out).to include("Installing activesupport 1.2.3 (was 2.3.2)")
+      expect(err).to be_empty
+    end
+
     it "can install dependencies with newer bundler version with system gems" do
-      bundle! "config set path.system true"
-      install_gemfile! <<-G
+      bundle "config set path.system true"
+
+      system_gems "bundler-99999999.99.1"
+
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
         gem "rails", "3.0"
       G
 
-      simulate_bundler_version "99999999.99.1"
-
-      bundle! "check"
+      bundle "check"
       expect(out).to include("The Gemfile's dependencies are satisfied")
     end
 
     it "can install dependencies with newer bundler version with a local path" do
-      bundle! "config set path .bundle"
-      install_gemfile! <<-G
+      bundle "config set path .bundle"
+
+      system_gems "bundler-99999999.99.1"
+
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
         gem "rails", "3.0"
       G
 
-      simulate_bundler_version "99999999.99.1"
-
-      bundle! "check"
+      bundle "check"
       expect(out).to include("The Gemfile's dependencies are satisfied")
-    end
-
-    context "with allow_bundler_dependency_conflicts set" do
-      before { bundle! "config set allow_bundler_dependency_conflicts true" }
-
-      it "are forced to the current bundler version with warnings when no compatible version is found" do
-        build_repo4 do
-          build_gem "requires_nonexistant_bundler" do |s|
-            s.add_runtime_dependency "bundler", "99.99.99.99"
-          end
-        end
-
-        install_gemfile! <<-G
-          source "#{file_uri_for(gem_repo4)}"
-          gem "requires_nonexistant_bundler"
-        G
-
-        expect(err).to include "requires_nonexistant_bundler (1.0) has dependency bundler (= 99.99.99.99), " \
-                               "which is unsatisfied by the current bundler version #{Bundler::VERSION}, so the dependency is being ignored"
-
-        expect(the_bundle).to include_gems "bundler #{Bundler::VERSION}", "requires_nonexistant_bundler 1.0"
-      end
     end
   end
 end

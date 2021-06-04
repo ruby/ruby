@@ -1,5 +1,5 @@
 # frozen_string_literal: false
-# $Id$
+#
 
 require 'mkmf'
 

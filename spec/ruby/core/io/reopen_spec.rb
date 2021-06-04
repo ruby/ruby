@@ -150,25 +150,25 @@ describe "IO#reopen with a String" do
 
     @io.close_on_exec = true
     @io.reopen @other_name
-    @io.close_on_exec?.should == true
+    @io.should.close_on_exec?
 
     @io.close_on_exec = false
     @io.reopen @other_name
-    @io.close_on_exec?.should == true
+    @io.should.close_on_exec?
   end
 
   it "creates the file if it doesn't exist if the IO is opened in write mode" do
     @io = new_io @name, "w"
 
     @io.reopen(@other_name)
-    File.exist?(@other_name).should be_true
+    File.should.exist?(@other_name)
   end
 
   it "creates the file if it doesn't exist if the IO is opened in write mode" do
     @io = new_io @name, "a"
 
     @io.reopen(@other_name)
-    File.exist?(@other_name).should be_true
+    File.should.exist?(@other_name)
   end
 end
 
@@ -230,7 +230,7 @@ describe "IO#reopen with an IO" do
     end
 
     @io = new_io @name
-    @other_io = new_io @other_name, "r"
+    @other_io = IO.new(new_fd(@other_name, "r"), "r")
   end
 
   after :each do
@@ -293,12 +293,12 @@ describe "IO#reopen with an IO" do
     @other_io.close_on_exec = true
     @io.close_on_exec = true
     @io.reopen @other_io
-    @io.close_on_exec?.should == true
+    @io.should.close_on_exec?
 
     @other_io.close_on_exec = false
     @io.close_on_exec = false
     @io.reopen @other_io
-    @io.close_on_exec?.should == true
+    @io.should.close_on_exec?
   end
 
   it "may change the class of the instance" do

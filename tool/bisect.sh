@@ -38,6 +38,18 @@ case $1 in
     ;;
 esac
 
+# Apply $(srcdir)/bisect.patch to build if exists
+# e.g., needs 5c2508060b~2..5c2508060b to use Bison 3.5.91.
+if [ -f bisect.patch ]; then
+    if ! patch -p1 -N < bisect.patch || git diff --no-patch --exit-code; then
+        exit 125
+    fi
+    git status
+    exec=
+else
+    exec=exec
+fi
+
 case "$0" in
 */*)
     # assume a copy of this script is in builddir
@@ -47,4 +59,7 @@ esac
 for target in srcs Makefile $prep; do
     $MAKE $target || exit 125
 done
-exec $MAKE $run
+$exec $MAKE $run
+status=$?
+git checkout -f HEAD
+exit $status

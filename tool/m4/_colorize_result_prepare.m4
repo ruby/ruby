@@ -1,4 +1,4 @@
-# -*- Autoconf -*-
+dnl -*- Autoconf -*-
 AC_DEFUN([_COLORIZE_RESULT_PREPARE], [
     msg_checking= msg_result_yes= msg_result_no= msg_result_other= msg_reset=
     AS_CASE(["x${CONFIGURE_TTY}"],

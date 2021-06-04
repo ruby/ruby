@@ -113,7 +113,7 @@ class TestSyslog < Test::Unit::TestCase
   end
 
   def syslog_line_regex(ident, message)
-    /(?:^| )#{Regexp.quote(ident)}(?:\[([1-9][0-9]*)\])?(?: |[: ].* )#{Regexp.quote(message)}$/
+    /(?:^| )#{Regexp.quote(ident)}(?:\[([1-9][0-9]*)\])?(?: | ([1-9][0-9]*) - - ||[: ].* )#{Regexp.quote(message)}$/
   end
 
   def test_log
@@ -143,6 +143,8 @@ class TestSyslog < Test::Unit::TestCase
       # LOG_PERROR is not implemented on Cygwin or Solaris.  Only test
       # these on systems that define it.
       return unless Syslog.const_defined?(:LOG_PERROR)
+      # LOG_PERROR is defined but not supported yet on Android.
+      return if RUBY_PLATFORM =~ /android/
 
       2.times {
         re = syslog_line_regex("syslog_test", "test1 - hello, world!")
@@ -168,8 +170,9 @@ class TestSyslog < Test::Unit::TestCase
         end
         m = re.match(line)
         assert_not_nil(m)
-        assert_not_nil(m[1])
-        assert_equal(pid, m[1].to_i)
+        output_pid = m[1] || m[2]
+        assert_not_nil(output_pid)
+        assert_equal(pid, output_pid.to_i)
       }
     }
   end

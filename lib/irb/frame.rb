@@ -10,13 +10,18 @@
 #
 #
 
-require "e2mmap"
-
 module IRB
   class Frame
-    extend Exception2MessageMapper
-    def_exception :FrameOverflow, "frame overflow"
-    def_exception :FrameUnderflow, "frame underflow"
+    class FrameOverflow < StandardError
+      def initialize
+        super("frame overflow")
+      end
+    end
+    class FrameUnderflow < StandardError
+      def initialize
+        super("frame underflow")
+      end
+    end
 
     # Default number of stack frames
     INIT_STACK_TIMES = 3
@@ -44,7 +49,7 @@ module IRB
     # Raises FrameUnderflow if there are no frames in the given stack range.
     def top(n = 0)
       bind = @frames[-(n + CALL_STACK_OFFSET)]
-      Fail FrameUnderflow unless bind
+      fail FrameUnderflow unless bind
       bind
     end
 
@@ -54,7 +59,7 @@ module IRB
     # Raises FrameOverflow if there are no frames in the given stack range.
     def bottom(n = 0)
       bind = @frames[n]
-      Fail FrameOverflow unless bind
+      fail FrameOverflow unless bind
       bind
     end
 
