@@ -2460,8 +2460,7 @@ rb_leaf_invokebuiltin_iseq_p(const rb_iseq_t *iseq)
     unsigned int invokebuiltin_len = insn_len(BIN(opt_invokebuiltin_delegate_leave));
     unsigned int leave_len = insn_len(BIN(leave));
 
-    return iseq->body->iseq_size == (
-        (invokebuiltin_len + leave_len) &&
+    return (iseq->body->iseq_size == (invokebuiltin_len + leave_len) &&
         rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[0]) == BIN(opt_invokebuiltin_delegate_leave) &&
         rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[invokebuiltin_len]) == BIN(leave) &&
         iseq->body->builtin_inline_p
@@ -2546,6 +2545,8 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
     const struct rb_builtin_function *leaf_builtin = rb_leaf_builtin_function(iseq);
 
     if (leaf_builtin && !block && leaf_builtin->argc + 1 <= NUM_C_ARG_REGS) {
+        ADD_COMMENT(cb, "inlined leaf builtin");
+
         // TODO: figure out if this is necessary
         // If the calls don't allocate, do they need up to date PC, SP?
         // Save YJIT registers
