@@ -2234,14 +2234,6 @@ rb_ary_set_len(VALUE ary, long len)
     ARY_SET_LEN(ary, len);
 }
 
-/*!
- * expands or shrinks \a ary to \a len elements.
- * expanded region will be filled with Qnil.
- * \param ary  an array
- * \param len  new size
- * \return     \a ary
- * \post       the size of \a ary is \a len.
- */
 VALUE
 rb_ary_resize(VALUE ary, long len)
 {
