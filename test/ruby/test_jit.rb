@@ -1148,6 +1148,27 @@ class TestJIT < Test::Unit::TestCase
     end
   end if defined?(fork)
 
+  def test_tracepoint_disable
+    out, err = eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", verbose: 1, min_calls: 1)
+    begin;
+      def a = nil
+      def b = nil
+      def c = nil
+      t = TracePoint.new(:class) {}
+
+      a
+      t.enable
+      b
+      t.disable
+      c
+    end;
+    compiled_methods = err.scan(/^#{JIT_SUCCESS_PREFIX}: [^@]+@-e/).map do |line|
+      line.sub(/\A#{JIT_SUCCESS_PREFIX}: /, '').delete_suffix("@-e")
+    end
+    debug_info = "stdout:\n```\n#{out}\n```\n\nstderr:\n```\n#{err}```\n"
+    assert_equal(['a', 'c'], compiled_methods, debug_info)
+  end
+
   private
 
   # The shortest way to test one proc

@@ -180,6 +180,13 @@ comment_id(FILE *f, ID id)
 #endif
 }
 
+// Basically rb_vm_insn_decode, but converts a trace_ insn to its non-trace version.
+int
+rb_vm_insn_decode_untraced(const VALUE encoded)
+{
+    return rb_vm_insn_decode(encoded) % (VM_INSTRUCTION_SIZE/2);
+}
+
 static void compile_insns(FILE *f, const struct rb_iseq_constant_body *body, unsigned int stack_size,
                           unsigned int pos, struct compile_status *status);
 
@@ -228,7 +235,7 @@ compile_insns(FILE *f, const struct rb_iseq_constant_body *body, unsigned int st
     branch.finish_p = false;
 
     while (pos < body->iseq_size && !ALREADY_COMPILED_P(status, pos) && !branch.finish_p) {
-        int insn = rb_vm_insn_decode(body->iseq_encoded[pos]);
+        int insn = rb_vm_insn_decode_untraced(body->iseq_encoded[pos]);
         status->stack_size_for_pos[pos] = (int)branch.stack_size;
 
         fprintf(f, "\nlabel_%d: /* %s */\n", pos, insn_name(insn));
@@ -401,7 +408,7 @@ inlinable_iseq_p(const struct rb_iseq_constant_body *body)
 
     unsigned int pos = 0;
     while (pos < body->iseq_size) {
-        int insn = rb_vm_insn_decode(body->iseq_encoded[pos]);
+        int insn = rb_vm_insn_decode_untraced(body->iseq_encoded[pos]);
         // All insns in the ISeq except `leave` (to be overridden in the inlined code)
         // should meet following strong assumptions:
         //   * Do not require `cfp->sp` motion
@@ -459,7 +466,7 @@ init_ivar_compile_status(const struct rb_iseq_constant_body *body, struct compil
     status->ivar_serial = 0;
 
     while (pos < body->iseq_size) {
-        int insn = rb_vm_insn_decode(body->iseq_encoded[pos]);
+        int insn = rb_vm_insn_decode_untraced(body->iseq_encoded[pos]);
         if (insn == BIN(getinstancevariable) || insn == BIN(setinstancevariable)) {
             IVC ic = (IVC)body->iseq_encoded[pos+2];
             IVC ic_copy = &(status->is_entries + ((union iseq_inline_storage_entry *)ic - body->is_entries))->iv_cache;
@@ -514,7 +521,7 @@ precompile_inlinable_iseqs(FILE *f, const rb_iseq_t *iseq, struct compile_status
     const struct rb_iseq_constant_body *body = iseq->body;
     unsigned int pos = 0;
     while (pos < body->iseq_size) {
-        int insn = rb_vm_insn_decode(body->iseq_encoded[pos]);
+        int insn = rb_vm_insn_decode_untraced(body->iseq_encoded[pos]);
         if (insn == BIN(opt_send_without_block)) { // `compile_inlined_cancel_handler` supports only `opt_send_without_block`
             CALL_DATA cd = (CALL_DATA)body->iseq_encoded[pos + 1];
             const struct rb_callinfo *ci = cd->ci;
