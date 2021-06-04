@@ -348,9 +348,7 @@ def lldb_inspect(debugger, target, result, val):
                 append_command_output(debugger, "expression -Z %x -fx -- (const BDIGIT*)((struct RBignum*)%d)->as.heap.digits" % (len, val.GetValueAsUnsigned()), result)
                 # append_command_output(debugger, "x ((struct RBignum *) %0#x)->as.heap.digits / %d" % (val.GetValueAsUnsigned(), len), result)
         elif flType == RUBY_T_FLOAT:
-            tRFloat = target.FindFirstType("struct RFloat").GetPointerType()
-            val = val.Cast(tRFloat)
-            print(val.GetValueForExpressionPath("->float_value"), file=result)
+            append_command_output(debugger, "print ((struct RFloat *)%d)->float_value" % val.GetValueAsUnsigned(), result)
         elif flType == RUBY_T_RATIONAL:
             tRRational = target.FindFirstType("struct RRational").GetPointerType()
             val = val.Cast(tRRational)
