@@ -199,6 +199,8 @@ class Gem::Requirement
 
   def marshal_load(array) # :nodoc:
     @requirements = array[0]
+
+    raise TypeError, "wrong @requirements" unless Array === @requirements
   end
 
   def yaml_initialize(tag, vals) # :nodoc:
