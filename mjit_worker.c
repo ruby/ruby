@@ -735,7 +735,7 @@ set_compiling_iseqs(const rb_iseq_t *iseq)
     unsigned int pos = 0;
     while (pos < iseq->body->iseq_size) {
         int insn = rb_vm_insn_decode(iseq->body->iseq_encoded[pos]);
-        if (insn == BIN(opt_send_without_block)) {
+        if (insn == BIN(opt_send_without_block) || insn == BIN(opt_size)) {
             CALL_DATA cd = (CALL_DATA)iseq->body->iseq_encoded[pos + 1];
             extern const rb_iseq_t *rb_mjit_inlinable_iseq(const struct rb_callinfo *ci, const struct rb_callcache *cc);
             const rb_iseq_t *iseq = rb_mjit_inlinable_iseq(cd->ci, cd->cc);
