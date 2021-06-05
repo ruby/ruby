@@ -44,7 +44,7 @@ module IRB # :nodoc:
     @CONF[:IRB_RC] = nil
 
     @CONF[:USE_SINGLELINE] = false unless defined?(ReadlineInputMethod)
-    @CONF[:USE_COLORIZE] = true
+    @CONF[:USE_COLORIZE] = !ENV['NO_COLOR']
     @CONF[:INSPECT_MODE] = true
     @CONF[:USE_TRACER] = false
     @CONF[:USE_LOADER] = false
@@ -108,12 +108,87 @@ module IRB # :nodoc:
     @CONF[:PROMPT_MODE] = (STDIN.tty? ? :DEFAULT : :NULL)
     @CONF[:AUTO_INDENT] = true
 
-    @CONF[:CONTEXT_MODE] = 3 # use binding in function on TOPLEVEL_BINDING
+    @CONF[:CONTEXT_MODE] = 4 # use a copy of TOPLEVEL_BINDING
     @CONF[:SINGLE_IRB] = false
+
+    @CONF[:MEASURE] = false
+    @CONF[:MEASURE_PROC] = {}
+    @CONF[:MEASURE_PROC][:TIME] = proc { |context, code, line_no, &block|
+      time = Time.now
+      result = block.()
+      now = Time.now
+      puts 'processing time: %fs' % (now - time) if IRB.conf[:MEASURE]
+      result
+    }
+    @CONF[:MEASURE_PROC][:STACKPROF] = proc { |context, code, line_no, arg, &block|
+      success = false
+      begin
+        require 'stackprof'
+        success = true
+      rescue LoadError
+        puts 'Please run "gem install stackprof" before measuring by StackProf.'
+      end
+      if success
+        result = nil
+        stackprof_result = StackProf.run(mode: arg ? arg : :cpu) do
+          result = block.()
+        end
+        StackProf::Report.new(stackprof_result).print_text if IRB.conf[:MEASURE]
+        result
+      else
+        block.()
+      end
+    }
+    @CONF[:MEASURE_CALLBACKS] = []
 
     @CONF[:LC_MESSAGES] = Locale.new
 
     @CONF[:AT_EXIT] = []
+  end
+
+  def IRB.set_measure_callback(type = nil, arg = nil, &block)
+    added = nil
+    if type
+      type_sym = type.upcase.to_sym
+      if IRB.conf[:MEASURE_PROC][type_sym]
+        added = [type_sym, IRB.conf[:MEASURE_PROC][type_sym], arg]
+      end
+    elsif IRB.conf[:MEASURE_PROC][:CUSTOM]
+      added = [:CUSTOM, IRB.conf[:MEASURE_PROC][:CUSTOM], arg]
+    elsif block_given?
+      added = [:BLOCK, block, arg]
+      found = IRB.conf[:MEASURE_CALLBACKS].find{ |m| m[0] == added[0] && m[2] == added[2] }
+      if found
+        found[1] = block
+        return added
+      else
+        IRB.conf[:MEASURE_CALLBACKS] << added
+        return added
+      end
+    else
+      added = [:TIME, IRB.conf[:MEASURE_PROC][:TIME], arg]
+    end
+    if added
+      found = IRB.conf[:MEASURE_CALLBACKS].find{ |m| m[0] == added[0] && m[2] == added[2] }
+      if found
+        # already added
+        nil
+      else
+        IRB.conf[:MEASURE_CALLBACKS] << added if added
+        added
+      end
+    else
+      nil
+    end
+  end
+
+  def IRB.unset_measure_callback(type = nil)
+    if type.nil?
+      IRB.conf[:MEASURE_CALLBACKS].clear
+    else
+      type_sym = type.upcase.to_sym
+      IRB.conf[:MEASURE_CALLBACKS].reject!{ |t, | t == type_sym }
+    end
   end
 
   def IRB.init_error
@@ -131,7 +206,7 @@ module IRB # :nodoc:
         $DEBUG = true
         $VERBOSE = true
       when "-w"
-        $VERBOSE = true
+        Warning[:deprecated] = $VERBOSE = true
       when /^-W(.+)?/
         opt = $1 || argv.shift
         case opt
@@ -140,7 +215,7 @@ module IRB # :nodoc:
         when "1"
           $VERBOSE = false
         else
-          $VERBOSE = true
+          Warning[:deprecated] = $VERBOSE = true
         end
       when /^-r(.+)?/
         opt = $1 || argv.shift
@@ -177,6 +252,8 @@ module IRB # :nodoc:
         @CONF[:ECHO_ON_ASSIGNMENT] = true
       when "--noecho-on-assignment"
         @CONF[:ECHO_ON_ASSIGNMENT] = false
+      when "--truncate-echo-on-assignment"
+        @CONF[:ECHO_ON_ASSIGNMENT] = :truncate
       when "--verbose"
         @CONF[:VERBOSE] = true
       when "--noverbose"
@@ -224,11 +301,11 @@ module IRB # :nodoc:
         break
       end
     end
+
     load_path.collect! do |path|
       /\A\.\// =~ path ? path : File.expand_path(path)
     end
     $LOAD_PATH.unshift(*load_path)
-
   end
 
   # running config

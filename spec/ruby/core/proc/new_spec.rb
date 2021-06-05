@@ -203,7 +203,7 @@ describe "Proc.new without a block" do
     end
   end
 
-  ruby_version_is "2.7"..."2.8" do
+  ruby_version_is "2.7"..."3.0" do
     it "can be created if invoked from within a method with a block" do
       -> { ProcSpecs.new_proc_in_method { "hello" } }.should complain(/Capturing the given block using Proc.new is deprecated/)
     end
@@ -224,7 +224,7 @@ describe "Proc.new without a block" do
     end
   end
 
-  ruby_version_is "2.8" do
+  ruby_version_is "3.0" do
     it "raises an ArgumentError when passed no block" do
       def some_method
         Proc.new

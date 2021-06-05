@@ -194,7 +194,7 @@ class Gem::Security::Policy
     ("[Policy: %s - data: %p signer: %p chain: %p root: %p " +
      "signed-only: %p trusted-only: %p]") % [
        @name, @verify_chain, @verify_data, @verify_root, @verify_signer,
-       @only_signed, @only_trusted,
+       @only_signed, @only_trusted
      ]
   end
 

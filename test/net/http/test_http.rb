@@ -188,6 +188,23 @@ class TestNetHTTP < Test::Unit::TestCase
     end
   end
 
+  def test_proxy_eh_ENV_with_urlencoded_user
+    TestNetHTTPUtils.clean_http_proxy_env do
+      ENV['http_proxy'] = 'http://Y%5CX:R%25S%5D%20%3FX@proxy.example:8000'
+
+      http = Net::HTTP.new 'hostname.example'
+
+      assert_equal true, http.proxy?
+      if Net::HTTP::ENVIRONMENT_VARIABLE_IS_MULTIUSER_SAFE
+        assert_equal "Y\\X", http.proxy_user
+        assert_equal "R%S] ?X", http.proxy_pass
+      else
+        assert_nil http.proxy_user
+        assert_nil http.proxy_pass
+      end
+    end
+  end
+
   def test_proxy_eh_ENV_none_set
     TestNetHTTPUtils.clean_http_proxy_env do
       assert_equal false, Net::HTTP.new('hostname.example').proxy?

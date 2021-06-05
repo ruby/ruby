@@ -201,6 +201,7 @@ class TestMath < Test::Unit::TestCase
     check(-2, Math.cbrt(-8))
     check(3, Math.cbrt(27))
     check(-0.1, Math.cbrt(-0.001))
+    check(0.0, Math.cbrt(0.0))
     assert_nothing_raised { assert_infinity(Math.cbrt(1.0/0)) }
     assert_operator(Math.cbrt(1.0 - Float::EPSILON), :<=, 1.0)
   end

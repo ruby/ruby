@@ -69,4 +69,11 @@ describe 'String#-@' do
       (-dynamic).should equal(-"this string is frozen".freeze)
     end
   end
+
+  ruby_version_is "3.0" do
+    it "interns the provided string if it is frozen" do
+      dynamic = "this string is unique and frozen #{rand}".freeze
+      (-dynamic).should equal(dynamic)
+    end
+  end
 end

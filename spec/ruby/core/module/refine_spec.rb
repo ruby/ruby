@@ -574,6 +574,43 @@ describe "Module#refine" do
     end
 
     ruby_version_is "" ... "2.7" do
+      it "is not honored by Kernel#public_method" do
+        klass = Class.new
+        refinement = Module.new do
+          refine klass do
+            def foo; end
+          end
+        end
+
+        -> {
+          Module.new do
+            using refinement
+            klass.new.public_method(:foo)
+          end
+        }.should raise_error(NameError, /undefined method `foo'/)
+      end
+    end
+
+    ruby_version_is "2.7" do
+      it "is honored by Kernel#public_method" do
+        klass = Class.new
+        refinement = Module.new do
+          refine klass do
+            def foo; end
+          end
+        end
+
+        result = nil
+        Module.new do
+          using refinement
+          result = klass.new.public_method(:foo).class
+        end
+
+        result.should == Method
+      end
+    end
+
+    ruby_version_is "" ... "2.7" do
       it "is not honored by Kernel#instance_method" do
         klass = Class.new
         refinement = Module.new do
@@ -592,7 +629,7 @@ describe "Module#refine" do
     end
 
     ruby_version_is "2.7" do
-      it "is honored by Kernel#method" do
+      it "is honored by Kernel#instance_method" do
         klass = Class.new
         refinement = Module.new do
           refine klass do
@@ -980,77 +1017,38 @@ describe "Module#refine" do
       result.should == [:B, :A, :LAST, :C]
     end
 
-    ruby_version_is ""..."2.8" do
-      it "looks in the lexical scope refinements before other active refinements" do
-        refined_class = ModuleSpecs.build_refined_class(for_super: true)
+    it "looks in the lexical scope refinements before other active refinements" do
+      refined_class = ModuleSpecs.build_refined_class(for_super: true)
 
-        refinement_local = Module.new do
-          refine refined_class do
-            def foo
-              [:LOCAL] + super
-            end
-          end
-        end
-
-        a = Module.new do
-          using refinement_local
-
+      refinement_local = Module.new do
+        refine refined_class do
           def foo
-            [:A] + super
+            [:LOCAL] + super
           end
         end
-
-        refinement = Module.new do
-          refine refined_class do
-            include a
-          end
-        end
-
-        result = nil
-        Module.new do
-          using refinement
-          result = refined_class.new.foo
-        end
-
-        result.should == [:A, :LOCAL, :C]
       end
-    end
 
-    ruby_version_is "2.8" do
-      # https://bugs.ruby-lang.org/issues/17007
-      it "does not look in the lexical scope refinements before other active refinements" do
-        refined_class = ModuleSpecs.build_refined_class(for_super: true)
+      a = Module.new do
+        using refinement_local
 
-        refinement_local = Module.new do
-          refine refined_class do
-            def foo
-              [:LOCAL] + super
-            end
-          end
+        def foo
+          [:A] + super
         end
-
-        a = Module.new do
-          using refinement_local
-
-          def foo
-            [:A] + super
-          end
-        end
-
-        refinement = Module.new do
-          refine refined_class do
-            include a
-          end
-        end
-
-        result = nil
-        Module.new do
-          using refinement
-          result = refined_class.new.foo
-        end
-
-        result.should == [:A, :C]
       end
+
+      refinement = Module.new do
+        refine refined_class do
+          include a
+        end
+      end
+
+      result = nil
+      Module.new do
+        using refinement
+        result = refined_class.new.foo
+      end
+
+      result.should == [:A, :LOCAL, :C]
     end
   end
 

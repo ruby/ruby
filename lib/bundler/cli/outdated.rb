@@ -72,7 +72,7 @@ module Bundler
         gemfile_specs + dependency_specs
       end
 
-      specs.sort_by(&:name).each do |current_spec|
+      specs.sort_by(&:name).uniq(&:name).each do |current_spec|
         next unless gems.empty? || gems.include?(current_spec.name)
 
         active_spec = retrieve_active_spec(definition, current_spec)
@@ -127,7 +127,7 @@ module Bundler
       end
     end
 
-  private
+    private
 
     def groups_text(group_text, groups)
       "#{group_text}#{groups.split(",").size > 1 ? "s" : ""} \"#{groups}\""
@@ -146,8 +146,6 @@ module Bundler
     end
 
     def retrieve_active_spec(definition, current_spec)
-      return unless current_spec.match_platform(Bundler.local_platform)
-
       if strict
         active_spec = definition.find_resolved_spec(current_spec)
       else

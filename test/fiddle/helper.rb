@@ -47,16 +47,15 @@ when /linux/
     libm_so = libc_so
   else
     # glibc
-    libc_so = File.join(libdir, "libc.so.6")
-    libm_so = File.join(libdir, "libm.so.6")
+    libc_so = "libc.so.6"
+    libm_so = "libm.so.6"
   end
 when /mingw/, /mswin/
   require "rbconfig"
   crtname = RbConfig::CONFIG["RUBY_SO_NAME"][/msvc\w+/] || 'ucrtbase'
   libc_so = libm_so = "#{crtname}.dll"
 when /darwin/
-  libc_so = "/usr/lib/libc.dylib"
-  libm_so = "/usr/lib/libm.dylib"
+  libc_so = libm_so = "/usr/lib/libSystem.B.dylib"
 when /kfreebsd/
   libc_so = "/lib/libc.so.0.1"
   libm_so = "/lib/libm.so.1"
@@ -93,9 +92,9 @@ when /aix/
     funcs=%w!sin sinf strcpy strncpy!
     expfile='dltest.exp'
     require 'tmpdir'
-    Dir.mktmpdir do |dir|
+    Dir.mktmpdir do |_dir|
       begin
-        Dir.chdir dir
+        Dir.chdir _dir
         %x!/usr/bin/ar x /usr/lib/libc.a #{cobjs.join(' ')}!
         %x!/usr/bin/ar x /usr/lib/libm.a #{mobjs.join(' ')}!
         %x!echo "#{funcs.join("\n")}\n" > #{expfile}!
@@ -112,6 +111,18 @@ when /aix/
       end
     end
   end
+when /haiku/
+  libdir = '/system/lib'
+  case [0].pack('L!').size
+  when 4
+    # 32-bit ruby
+    libdir = '/system/lib/x86' if File.directory? '/system/lib/x86'
+  when 8
+    # 64-bit ruby
+    libdir = '/system/lib/' if File.directory? '/system/lib/'
+  end
+  libc_so = File.join(libdir, "libroot.so")
+  libm_so = File.join(libdir, "libroot.so")
 else
   libc_so = ARGV[0] if ARGV[0] && ARGV[0][0] == ?/
   libm_so = ARGV[1] if ARGV[1] && ARGV[1][0] == ?/
@@ -122,6 +133,11 @@ end
 
 libc_so = nil if !libc_so || (libc_so[0] == ?/ && !File.file?(libc_so))
 libm_so = nil if !libm_so || (libm_so[0] == ?/ && !File.file?(libm_so))
+
+# macOS 11.0+ removed libSystem.B.dylib from /usr/lib. But It works with dlopen.
+if RUBY_PLATFORM =~ /darwin/
+  libc_so = libm_so = "/usr/lib/libSystem.B.dylib"
+end
 
 if !libc_so || !libm_so
   ruby = EnvUtil.rubybin

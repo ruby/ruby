@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/deprecate'
 
 class TestDeprecate < Gem::TestCase
@@ -49,6 +49,22 @@ class TestDeprecate < Gem::TestCase
       @message = "bar"
     end
     rubygems_deprecate :foo, :bar
+
+    def foo_arg(msg)
+      @message = "foo" + msg
+    end
+    def bar_arg(msg)
+      @message = "bar" + msg
+    end
+    rubygems_deprecate :foo_arg, :bar_arg
+
+    def foo_kwarg(message:)
+      @message = "foo" + message
+    end
+    def bar_kwarg(message:)
+      @message = "bar" + message
+    end
+    rubygems_deprecate :foo_kwarg, :bar_kwarg
   end
 
   class OtherThing
@@ -61,24 +77,48 @@ class TestDeprecate < Gem::TestCase
       @message = "bar"
     end
     deprecate :foo, :bar, 2099, 3
+
+    def foo_arg(msg)
+      @message = "foo" + msg
+    end
+    def bar_arg(msg)
+      @message = "bar" + msg
+    end
+    deprecate :foo_arg, :bar_arg, 2099, 3
+
+    def foo_kwarg(message:)
+      @message = "foo" + message
+    end
+    def bar_kwarg(message:)
+      @message = "bar" + message
+    end
+    deprecate :foo_kwarg, :bar_kwarg, 2099, 3
   end
 
   def test_deprecated_method_calls_the_old_method
-    capture_io do
+    capture_output do
       thing = Thing.new
       thing.foo
       assert_equal "foo", thing.message
+      thing.foo_arg("msg")
+      assert_equal "foomsg", thing.message
+      thing.foo_kwarg(message: "msg")
+      assert_equal "foomsg", thing.message
     end
   end
 
   def test_deprecated_method_outputs_a_warning
-    out, err = capture_io do
+    out, err = capture_output do
       thing = Thing.new
       thing.foo
+      thing.foo_arg("msg")
+      thing.foo_kwarg(message: "msg")
     end
 
     assert_equal "", out
     assert_match(/Thing#foo is deprecated; use bar instead\./, err)
+    assert_match(/Thing#foo_arg is deprecated; use bar_arg instead\./, err)
+    assert_match(/Thing#foo_kwarg is deprecated; use bar_kwarg instead\./, err)
     assert_match(/in Rubygems [0-9]+/, err)
   end
 
@@ -101,13 +141,17 @@ class TestDeprecate < Gem::TestCase
   end
 
   def test_deprecated_method_outputs_a_warning_old_way
-    out, err = capture_io do
+    out, err = capture_output do
       thing = OtherThing.new
       thing.foo
+      thing.foo_arg("msg")
+      thing.foo_kwarg(message: "msg")
     end
 
     assert_equal "", out
-    assert_match(/Thing#foo is deprecated; use bar instead\./, err)
-    assert_match(/on or after 2099-03-01/, err)
+    assert_match(/OtherThing#foo is deprecated; use bar instead\./, err)
+    assert_match(/OtherThing#foo_arg is deprecated; use bar_arg instead\./, err)
+    assert_match(/OtherThing#foo_kwarg is deprecated; use bar_kwarg instead\./, err)
+    assert_match(/on or after 2099-03/, err)
   end
 end

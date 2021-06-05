@@ -1,5 +1,5 @@
 # frozen_string_literal: false
-require 'win32/importer'
+require 'fiddle/import'
 
 module Win32
 
@@ -169,7 +169,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     #
     class Error < ::StandardError
       module Kernel32
-        extend Importer
+        extend Fiddle::Importer
         dlload "kernel32.dll"
       end
       FormatMessageW = Kernel32.extern "int FormatMessageW(int, void *, int, int, void *, int, void *)", :stdcall
@@ -225,7 +225,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     #
     module API
       include Constants
-      extend Importer
+      extend Fiddle::Importer
       dlload "advapi32.dll"
       [
         "long RegOpenKeyExW(void *, void *, long, long, void *)",
@@ -667,14 +667,14 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
 
     #
     # Read a registry value named name and return its value data.
-    # The class of value is same as #read method returns.
+    # The class of the value is the same as the #read method returns.
     #
     # If the value type is REG_EXPAND_SZ, returns value data whose environment
     # variables are replaced.
     # If the value type is neither REG_SZ, REG_MULTI_SZ, REG_DWORD,
     # REG_DWORD_BIG_ENDIAN, nor REG_QWORD, TypeError is raised.
     #
-    # The meaning of rtype is same as #read method.
+    # The meaning of rtype is the same as for the #read method.
     #
     def [](name, *rtype)
       type, data = read(name, *rtype)

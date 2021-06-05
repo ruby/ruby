@@ -234,6 +234,148 @@ describe "Module#include" do
       remove_const :C
     end
   end
+
+  it "updates the method when an included module is updated" do
+    a_class = Class.new do
+      def foo
+        'a'
+      end
+    end
+
+    m_module = Module.new
+
+    b_class = Class.new(a_class) do
+      include m_module
+    end
+
+    b = b_class.new
+
+    foo = -> { b.foo }
+
+    foo.call.should == 'a'
+
+    m_module.module_eval do
+      def foo
+        'm'
+      end
+    end
+
+    foo.call.should == 'm'
+  end
+
+
+  it "updates the method when a module included after a call is later updated" do
+    m_module = Module.new
+    a_class = Class.new do
+      def foo
+        'a'
+      end
+    end
+    b_class = Class.new(a_class)
+    b = b_class.new
+    foo = -> { b.foo }
+    foo.call.should == 'a'
+
+    b_class.include m_module
+    foo.call.should == 'a'
+
+    m_module.module_eval do
+      def foo
+        "m"
+      end
+    end
+    foo.call.should == 'm'
+  end
+
+  it "updates the method when a nested included module is updated" do
+    a_class = Class.new do
+      def foo
+        'a'
+      end
+    end
+
+    n_module = Module.new
+
+    m_module = Module.new  do
+      include n_module
+    end
+
+    b_class = Class.new(a_class) do
+      include m_module
+    end
+
+    b = b_class.new
+
+    foo = -> { b.foo }
+
+    foo.call.should == 'a'
+
+    n_module.module_eval do
+      def foo
+        'n'
+      end
+    end
+
+    foo.call.should == 'n'
+  end
+
+  it "updates the method when a new module is included" do
+    a_class = Class.new do
+      def foo
+        'a'
+      end
+    end
+
+    m_module = Module.new do
+      def foo
+        'm'
+      end
+    end
+
+    b_class = Class.new(a_class)
+    b = b_class.new
+
+    foo = -> { b.foo }
+
+    foo.call.should == 'a'
+
+    b_class.class_eval do
+      include m_module
+    end
+
+    foo.call.should == 'm'
+  end
+
+  it "updates the method when a new module with nested module is included" do
+    a_class = Class.new do
+      def foo
+        'a'
+      end
+    end
+
+    n_module = Module.new do
+      def foo
+        'n'
+      end
+    end
+
+    m_module = Module.new  do
+      include n_module
+    end
+
+    b_class = Class.new(a_class)
+    b = b_class.new
+
+    foo = -> { b.foo }
+
+    foo.call.should == 'a'
+
+    b_class.class_eval do
+      include m_module
+    end
+
+    foo.call.should == 'n'
+  end
 end
 
 describe "Module#include?" do

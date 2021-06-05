@@ -60,8 +60,8 @@ RSpec.describe "gemcutter's dependency API" do
     G
     bundle :install, :artifice => "endpoint"
 
-    bundle "config --local deployment true"
-    bundle "config --local path vendor/bundle"
+    bundle "config set --local deployment true"
+    bundle "config set --local path vendor/bundle"
     bundle :install, :artifice => "endpoint"
     expect(out).to include("Fetching gem metadata from #{source_uri}")
     expect(the_bundle).to include_gems "rack 1.0.0"
@@ -98,7 +98,7 @@ RSpec.describe "gemcutter's dependency API" do
 
     bundle :install, :artifice => "endpoint"
 
-    bundle "config --local deployment true"
+    bundle "config set --local deployment true"
     bundle :install, :artifice => "endpoint"
 
     expect(the_bundle).to include_gems("rails 2.3.2")
@@ -112,7 +112,7 @@ RSpec.describe "gemcutter's dependency API" do
     G
 
     bundle "install", :artifice => "endpoint"
-    bundle "config --local deployment true"
+    bundle "config set --local deployment true"
     bundle :install, :artifice => "endpoint"
 
     expect(the_bundle).to include_gems("foo 1.0")
@@ -121,12 +121,20 @@ RSpec.describe "gemcutter's dependency API" do
   it "falls back when the API errors out" do
     simulate_platform mswin
 
+    build_repo2 do
+      # The rcov gem is platform mswin32, but has no arch
+      build_gem "rcov" do |s|
+        s.platform = Gem::Platform.new([nil, "mswin32", nil])
+        s.write "lib/rcov.rb", "RCOV = '1.0.0'"
+      end
+    end
+
     gemfile <<-G
       source "#{source_uri}"
       gem "rcov"
     G
 
-    bundle :install, :artifice => "windows"
+    bundle :install, :artifice => "windows", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
     expect(out).to include("Fetching source index from #{source_uri}")
     expect(the_bundle).to include_gems "rcov 1.0.0"
   end
@@ -467,19 +475,25 @@ RSpec.describe "gemcutter's dependency API" do
 
     bundle :install, :artifice => "endpoint_extra"
 
-    bundle "config --local deployment true"
+    bundle "config set --local deployment true"
     bundle "install", :artifice => "endpoint_extra"
     expect(the_bundle).to include_gems "back_deps 1.0"
   end
 
   it "does not refetch if the only unmet dependency is bundler" do
+    build_repo2 do
+      build_gem "bundler_dep" do |s|
+        s.add_dependency "bundler"
+      end
+    end
+
     gemfile <<-G
       source "#{source_uri}"
 
       gem "bundler_dep"
     G
 
-    bundle :install, :artifice => "endpoint"
+    bundle :install, :artifice => "endpoint", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
     expect(out).to include("Fetching gem metadata from #{source_uri}")
   end
 
@@ -572,13 +586,24 @@ RSpec.describe "gemcutter's dependency API" do
       expect(the_bundle).to include_gems "rack 1.0.0"
     end
 
+    it "passes basic authentication details and strips out creds also in verbose mode" do
+      gemfile <<-G
+        source "#{basic_auth_source_uri}"
+        gem "rack"
+      G
+
+      bundle :install, :verbose => true, :artifice => "endpoint_basic_authentication"
+      expect(out).not_to include("#{user}:#{password}")
+      expect(the_bundle).to include_gems "rack 1.0.0"
+    end
+
     it "strips http basic authentication creds for modern index" do
       gemfile <<-G
         source "#{basic_auth_source_uri}"
         gem "rack"
       G
 
-      bundle :install, :artifice => "endopint_marshal_fail_basic_authentication"
+      bundle :install, :artifice => "endpoint_marshal_fail_basic_authentication"
       expect(out).not_to include("#{user}:#{password}")
       expect(the_bundle).to include_gems "rack 1.0.0"
     end
@@ -614,6 +639,22 @@ RSpec.describe "gemcutter's dependency API" do
 
       bundle :install, :artifice => "endpoint_creds_diff_host"
       expect(the_bundle).to include_gems "rack 1.0.0"
+    end
+
+    describe "with host including dashes" do
+      before do
+        gemfile <<-G
+          source "http://local-gemserver.test"
+          gem "rack"
+        G
+      end
+
+      it "reads authentication details from a valid ENV variable" do
+        bundle :install, :artifice => "endpoint_strict_basic_authentication", :env => { "BUNDLE_LOCAL___GEMSERVER__TEST" => "#{user}:#{password}" }
+
+        expect(out).to include("Fetching gem metadata from http://local-gemserver.test")
+        expect(the_bundle).to include_gems "rack 1.0.0"
+      end
     end
 
     describe "with authentication details in bundle config" do
@@ -664,7 +705,7 @@ RSpec.describe "gemcutter's dependency API" do
 
       it "shows instructions if auth is not provided for the source" do
         bundle :install, :artifice => "endpoint_strict_basic_authentication", :raise_on_error => false
-        expect(err).to include("bundle config set #{source_hostname} username:password")
+        expect(err).to include("bundle config set --global #{source_hostname} username:password")
       end
 
       it "fails if authentication has already been provided, but failed" do

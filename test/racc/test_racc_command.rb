@@ -318,5 +318,22 @@ module Racc
       assert_debugfile 'tp_plus.y', [21, 0, 0, 0]
       assert_output_unchanged 'tp_plus.y'
     end
+
+    def test_ifelse
+      omit if RUBY_PLATFORM =~ /java/
+
+      stderr = nil
+      racc "-o#{@TAB_DIR}/ifelse", "#{ASSET_DIR}/ifelse.y", stdout_filter: ->(s) { stderr = s }
+      stderr = stderr.lines[1..-1].join if RUBY_PLATFORM.match?(/java/)
+      assert_equal(<<~STDERR, stderr)
+        1 useless nonterminals:
+          dummy
+        2 useless rules:
+          #4 (dummy)
+          #5 (dummy)
+        1 shift/reduce conflicts
+        Turn on logging with "-v" and check ".output" file for details
+      STDERR
+    end
   end
 end

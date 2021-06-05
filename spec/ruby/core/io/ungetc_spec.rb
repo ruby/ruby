@@ -103,7 +103,7 @@ describe "IO#ungetc" do
     -> { @io.sysread(1) }.should raise_error(IOError)
   end
 
-  ruby_version_is "0"..."2.8" do
+  ruby_version_is "0"..."3.0" do
     it "does not affect the stream and returns nil when passed nil" do
       @io.getc.should == ?V
       @io.ungetc(nil)
@@ -111,7 +111,7 @@ describe "IO#ungetc" do
     end
   end
 
-  ruby_version_is "2.8" do
+  ruby_version_is "3.0" do
     it "raises TypeError if passed nil" do
       @io.getc.should == ?V
       proc{@io.ungetc(nil)}.should raise_error(TypeError)

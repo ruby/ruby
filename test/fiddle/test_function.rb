@@ -21,6 +21,17 @@ module Fiddle
       assert_equal 'sin', func.name
     end
 
+    def test_need_gvl?
+      libruby = Fiddle.dlopen(nil)
+      rb_str_dup = Function.new(libruby['rb_str_dup'],
+                                [:voidp],
+                                :voidp,
+                                need_gvl: true)
+      assert(rb_str_dup.need_gvl?)
+      assert_equal('Hello',
+                   Fiddle.dlunwrap(rb_str_dup.call(Fiddle.dlwrap('Hello'))))
+    end
+
     def test_argument_errors
       assert_raise(TypeError) do
         Function.new(@libm['sin'], TYPE_DOUBLE, TYPE_DOUBLE)
@@ -91,6 +102,30 @@ module Fiddle
       assert_equal("123", str.to_s)
     end
 
+    def call_proc(string_to_copy)
+      buff = +"000"
+      str = yield(buff, string_to_copy)
+      [buff, str]
+    end
+
+    def test_function_as_proc
+      f = Function.new(@libc['strcpy'], [TYPE_VOIDP, TYPE_VOIDP], TYPE_VOIDP)
+      buff, str = call_proc("123", &f)
+      assert_equal("123", buff)
+      assert_equal("123", str.to_s)
+    end
+
+    def test_function_as_method
+      f = Function.new(@libc['strcpy'], [TYPE_VOIDP, TYPE_VOIDP], TYPE_VOIDP)
+      klass = Class.new do
+        define_singleton_method(:strcpy, &f)
+      end
+      buff = +"000"
+      str = klass.strcpy(buff, "123")
+      assert_equal("123", buff)
+      assert_equal("123", str.to_s)
+    end
+
     def test_nogvl_poll
       # XXX hack to quiet down CI errors on EINTR from r64353
       # [ruby-core:88360] [Misc #14937]
@@ -111,8 +146,7 @@ module Fiddle
       n1 = f.call(nil, 0, msec)
       n2 = th.value
       t1 = Process.clock_gettime(Process::CLOCK_MONOTONIC, :millisecond)
-      delta = EnvUtil.apply_timeout_scale(180)
-      assert_in_delta(msec, t1 - t0, delta, 'slept amount of time')
+      assert_in_delta(msec, t1 - t0, 180, 'slept amount of time')
       assert_equal(0, n1, perror("poll(2) in main-thread"))
       assert_equal(0, n2, perror("poll(2) in sub-thread"))
     end

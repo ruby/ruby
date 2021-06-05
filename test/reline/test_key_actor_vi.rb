@@ -615,6 +615,24 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     assert_cursor_max(6)
   end
 
+  def test_vi_replace_char_with_mbchar
+    input_keys("あいうえお\C-[0l")
+    assert_line('あいうえお')
+    assert_byte_pointer_size('あ')
+    assert_cursor(2)
+    assert_cursor_max(10)
+    input_keys('rx')
+    assert_line('あxうえお')
+    assert_byte_pointer_size('あ')
+    assert_cursor(2)
+    assert_cursor_max(9)
+    input_keys('l2ry')
+    assert_line('あxyyお')
+    assert_byte_pointer_size('あxyy')
+    assert_cursor(5)
+    assert_cursor_max(7)
+  end
+
   def test_vi_next_char
     input_keys("abcdef\C-[0")
     assert_line('abcdef')
@@ -1215,26 +1233,223 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     assert_line('aaa ddd eee')
   end
 
+  def test_vi_delete_meta_with_vi_next_word_at_eol
+    input_keys("foo bar\C-[0w")
+    assert_byte_pointer_size('foo ')
+    assert_cursor(4)
+    assert_cursor_max(7)
+    assert_line('foo bar')
+    input_keys('w')
+    assert_byte_pointer_size('foo ba')
+    assert_cursor(6)
+    assert_cursor_max(7)
+    assert_line('foo bar')
+    input_keys('0dw')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(3)
+    assert_line('bar')
+    input_keys('dw')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    assert_line('')
+  end
+
+  def test_vi_delete_meta_with_vi_next_char
+    input_keys("aaa bbb ccc ___ ddd\C-[02w")
+    assert_byte_pointer_size('aaa bbb ')
+    assert_cursor(8)
+    assert_cursor_max(19)
+    assert_line('aaa bbb ccc ___ ddd')
+    input_keys('df_')
+    assert_byte_pointer_size('aaa bbb ')
+    assert_cursor(8)
+    assert_cursor_max(14)
+    assert_line('aaa bbb __ ddd')
+  end
+
+  def test_vi_delete_meta_with_arg
+    input_keys("aaa bbb ccc\C-[02w")
+    assert_byte_pointer_size('aaa bbb ')
+    assert_cursor(8)
+    assert_cursor_max(11)
+    assert_line('aaa bbb ccc')
+    input_keys('2dl')
+    assert_byte_pointer_size('aaa bbb ')
+    assert_cursor(8)
+    assert_cursor_max(9)
+    assert_line('aaa bbb c')
+  end
+
   def test_vi_change_meta
     input_keys("aaa bbb ccc ddd eee\C-[02w")
     assert_byte_pointer_size('aaa bbb ')
     assert_cursor(8)
     assert_cursor_max(19)
     assert_line('aaa bbb ccc ddd eee')
-    input_keys('cwaiueo ')
-    assert_byte_pointer_size('aaa bbb aiueo ')
-    assert_cursor(14)
+    input_keys('cwaiueo')
+    assert_byte_pointer_size('aaa bbb aiueo')
+    assert_cursor(13)
     assert_cursor_max(21)
     assert_line('aaa bbb aiueo ddd eee')
     input_keys("\C-[")
-    assert_byte_pointer_size('aaa bbb aiueo')
-    assert_cursor(13)
+    assert_byte_pointer_size('aaa bbb aiue')
+    assert_cursor(12)
     assert_cursor_max(21)
     assert_line('aaa bbb aiueo ddd eee')
     input_keys('cb')
     assert_byte_pointer_size('aaa bbb ')
     assert_cursor(8)
-    assert_cursor_max(16)
-    assert_line('aaa bbb  ddd eee')
+    assert_cursor_max(17)
+    assert_line('aaa bbb o ddd eee')
+  end
+
+  def test_vi_change_meta_with_vi_next_word
+    input_keys("foo  bar  baz\C-[0w")
+    assert_byte_pointer_size('foo  ')
+    assert_cursor(5)
+    assert_cursor_max(13)
+    assert_line('foo  bar  baz')
+    input_keys('cwhoge')
+    assert_byte_pointer_size('foo  hoge')
+    assert_cursor(9)
+    assert_cursor_max(14)
+    assert_line('foo  hoge  baz')
+    input_keys("\C-[")
+    assert_byte_pointer_size('foo  hog')
+    assert_cursor(8)
+    assert_cursor_max(14)
+    assert_line('foo  hoge  baz')
+  end
+
+  def test_unimplemented_vi_command_should_be_no_op
+    input_keys("abc\C-[h")
+    assert_byte_pointer_size('a')
+    assert_cursor(1)
+    assert_cursor_max(3)
+    assert_line('abc')
+    input_keys('@')
+    assert_byte_pointer_size('a')
+    assert_cursor(1)
+    assert_cursor_max(3)
+    assert_line('abc')
+  end
+
+  def test_vi_yank
+    input_keys("foo bar\C-[0")
+    assert_line('foo bar')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(7)
+    input_keys('y3l')
+    assert_line('foo bar')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(7)
+    input_keys('P')
+    assert_line('foofoo bar')
+    assert_byte_pointer_size('fo')
+    assert_cursor(2)
+    assert_cursor_max(10)
+  end
+
+  def test_vi_end_word_with_operator
+    input_keys("foo bar\C-[0")
+    assert_line('foo bar')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(7)
+    input_keys('de')
+    assert_line(' bar')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(4)
+    input_keys('de')
+    assert_line('')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    input_keys('de')
+    assert_line('')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+  end
+
+  def test_vi_end_big_word_with_operator
+    input_keys("aaa   b{b}}}b\C-[0")
+    assert_line('aaa   b{b}}}b')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(13)
+    input_keys('dE')
+    assert_line('   b{b}}}b')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(10)
+    input_keys('dE')
+    assert_line('')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    input_keys('dE')
+    assert_line('')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+  end
+
+  def test_vi_next_char_with_operator
+    input_keys("foo bar\C-[0")
+    assert_line('foo bar')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(7)
+    input_keys('df ')
+    assert_line('bar')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(3)
+  end
+
+  def test_pasting
+    start_pasting
+    input_keys('ab')
+    finish_pasting
+    input_keys('c')
+    assert_line('abc')
+    assert_byte_pointer_size('abc')
+    assert_cursor(3)
+    assert_cursor_max(3)
+  end
+
+  def test_pasting_fullwidth
+    start_pasting
+    input_keys('あ')
+    finish_pasting
+    input_keys('い')
+    assert_line('あい')
+    assert_byte_pointer_size('あい')
+    assert_cursor(4)
+    assert_cursor_max(4)
+  end
+
+  def test_ed_delete_next_char_at_eol
+    input_keys('"あ"')
+    assert_line('"あ"')
+    assert_byte_pointer_size('"あ"')
+    assert_cursor(4)
+    assert_cursor_max(4)
+    input_keys("\C-[")
+    assert_line('"あ"')
+    assert_byte_pointer_size('"あ')
+    assert_cursor(3)
+    assert_cursor_max(4)
+    input_keys('xa"')
+    assert_line('"あ"')
+    assert_byte_pointer_size('"あ"')
+    assert_cursor(4)
+    assert_cursor_max(4)
   end
 end

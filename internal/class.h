@@ -25,8 +25,14 @@ struct rb_subclass_entry {
     struct rb_subclass_entry *next;
 };
 
+struct rb_iv_index_tbl_entry {
+    uint32_t index;
+    rb_serial_t class_serial;
+    VALUE class_value;
+};
+
 struct rb_classext_struct {
-    struct st_table *iv_index_tbl;
+    struct st_table *iv_index_tbl; // ID -> struct rb_iv_index_tbl_entry
     struct st_table *iv_tbl;
 #if SIZEOF_SERIAL_T == SIZEOF_VALUE /* otherwise m_tbl is in struct RClass */
     struct rb_id_table *m_tbl;
@@ -86,6 +92,10 @@ typedef struct rb_classext_struct rb_classext_t;
 # define RCLASS_SERIAL(c) (RCLASS_EXT(c)->class_serial)
 #endif
 #define RCLASS_INCLUDER(c) (RCLASS_EXT(c)->includer)
+#define RCLASS_PARENT_SUBCLASSES(c) (RCLASS_EXT(c)->parent_subclasses)
+#define RCLASS_MODULE_SUBCLASSES(c) (RCLASS_EXT(c)->module_subclasses)
+#define RCLASS_ALLOCATOR(c) (RCLASS_EXT(c)->allocator)
+#define RCLASS_SUBCLASSES(c) (RCLASS_EXT(c)->subclasses)
 
 #define RICLASS_IS_ORIGIN FL_USER5
 #define RCLASS_CLONED     FL_USER6

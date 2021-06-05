@@ -1,4 +1,5 @@
 require_relative '../spec_helper'
+require_relative '../fixtures/constants'
 
 describe 'Optional variable assignments' do
   describe 'using ||=' do
@@ -348,6 +349,110 @@ describe 'Optional variable assignments' do
 
     it 'with operator assignments will fail with non-existent constants' do
       -> { Object::A += 10 }.should raise_error(NameError)
+    end
+  end
+end
+
+describe 'Optional constant assignment' do
+  describe 'with ||=' do
+    it "assigns a scoped constant if previously undefined" do
+      ConstantSpecs.should_not have_constant(:OpAssignUndefined)
+      module ConstantSpecs
+        OpAssignUndefined ||= 42
+      end
+      ConstantSpecs::OpAssignUndefined.should == 42
+      ConstantSpecs::OpAssignUndefinedOutside ||= 42
+      ConstantSpecs::OpAssignUndefinedOutside.should == 42
+      ConstantSpecs.send(:remove_const, :OpAssignUndefined)
+      ConstantSpecs.send(:remove_const, :OpAssignUndefinedOutside)
+    end
+
+    it "assigns a global constant if previously undefined" do
+      OpAssignGlobalUndefined ||= 42
+      ::OpAssignGlobalUndefinedExplicitScope ||= 42
+      OpAssignGlobalUndefined.should == 42
+      ::OpAssignGlobalUndefinedExplicitScope.should == 42
+      Object.send :remove_const, :OpAssignGlobalUndefined
+      Object.send :remove_const, :OpAssignGlobalUndefinedExplicitScope
+    end
+
+    it 'correctly defines non-existing constants' do
+      ConstantSpecs::ClassA::OR_ASSIGNED_CONSTANT1 ||= :assigned
+      ConstantSpecs::ClassA::OR_ASSIGNED_CONSTANT1.should == :assigned
+    end
+
+    it 'correctly overwrites nil constants' do
+      suppress_warning do # already initialized constant
+      ConstantSpecs::ClassA::NIL_OR_ASSIGNED_CONSTANT1 = nil
+      ConstantSpecs::ClassA::NIL_OR_ASSIGNED_CONSTANT1 ||= :assigned
+      ConstantSpecs::ClassA::NIL_OR_ASSIGNED_CONSTANT1.should == :assigned
+      end
+    end
+
+    it 'causes side-effects of the module part to be applied only once (for undefined constant)' do
+      x = 0
+      (x += 1; ConstantSpecs::ClassA)::OR_ASSIGNED_CONSTANT2 ||= :assigned
+      x.should == 1
+      ConstantSpecs::ClassA::OR_ASSIGNED_CONSTANT2.should == :assigned
+    end
+
+    it 'causes side-effects of the module part to be applied (for nil constant)' do
+      suppress_warning do # already initialized constant
+      ConstantSpecs::ClassA::NIL_OR_ASSIGNED_CONSTANT2 = nil
+      x = 0
+      (x += 1; ConstantSpecs::ClassA)::NIL_OR_ASSIGNED_CONSTANT2 ||= :assigned
+      x.should == 1
+      ConstantSpecs::ClassA::NIL_OR_ASSIGNED_CONSTANT2.should == :assigned
+      end
+    end
+
+    it 'does not evaluate the right-hand side if the module part raises an exception (for undefined constant)' do
+      x = 0
+      y = 0
+
+      -> {
+        (x += 1; raise Exception; ConstantSpecs::ClassA)::OR_ASSIGNED_CONSTANT3 ||= (y += 1; :assigned)
+      }.should raise_error(Exception)
+
+      x.should == 1
+      y.should == 0
+      defined?(ConstantSpecs::ClassA::OR_ASSIGNED_CONSTANT3).should == nil
+    end
+
+    it 'does not evaluate the right-hand side if the module part raises an exception (for nil constant)' do
+      ConstantSpecs::ClassA::NIL_OR_ASSIGNED_CONSTANT3 = nil
+      x = 0
+      y = 0
+
+      -> {
+        (x += 1; raise Exception; ConstantSpecs::ClassA)::NIL_OR_ASSIGNED_CONSTANT3 ||= (y += 1; :assigned)
+      }.should raise_error(Exception)
+
+      x.should == 1
+      y.should == 0
+      ConstantSpecs::ClassA::NIL_OR_ASSIGNED_CONSTANT3.should == nil
+    end
+  end
+
+  describe "with &&=" do
+    it "re-assigns a scoped constant if already true" do
+      module ConstantSpecs
+        OpAssignTrue = true
+      end
+      suppress_warning do
+        ConstantSpecs::OpAssignTrue &&= 1
+      end
+      ConstantSpecs::OpAssignTrue.should == 1
+      ConstantSpecs.send :remove_const, :OpAssignTrue
+    end
+
+    it "leaves scoped constant if not true" do
+      module ConstantSpecs
+        OpAssignFalse = false
+      end
+      ConstantSpecs::OpAssignFalse &&= 1
+      ConstantSpecs::OpAssignFalse.should == false
+      ConstantSpecs.send :remove_const, :OpAssignFalse
     end
   end
 end

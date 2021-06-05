@@ -241,6 +241,21 @@ class Reline::Config::Test < Reline::TestCase
     assert_equal expected, @config.key_bindings
   end
 
+  def test_additional_key_bindings_for_other_keymap
+    @config.read_lines(<<~'LINES'.lines)
+      set keymap vi-command
+      "ab": "AB"
+      set keymap vi-insert
+      "cd": "CD"
+      set keymap emacs
+      "ef": "EF"
+      set editing-mode vi # keymap changes to be vi-insert
+    LINES
+
+    expected = { 'cd'.bytes => 'CD'.bytes }
+    assert_equal expected, @config.key_bindings
+  end
+
   def test_history_size
     @config.read_lines(<<~LINES.lines)
       set history-size 5000

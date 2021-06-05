@@ -17,6 +17,8 @@ module Kernel
     private :gem_original_require
   end
 
+  file = Gem::KERNEL_WARN_IGNORES_INTERNAL_ENTRIES ? "<internal:#{__FILE__}>" : __FILE__
+  module_eval <<'RUBY', file, __LINE__ + 1
   ##
   # When RubyGems is required, Kernel#require is replaced with our own which
   # is capable of loading gems on demand.
@@ -166,6 +168,7 @@ module Kernel
       end
     end
   end
+RUBY
 
   private :require
 

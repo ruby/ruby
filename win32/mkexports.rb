@@ -9,14 +9,11 @@ end
 class Exports
   PrivateNames = /(?:Init_|InitVM_|ruby_static_id_|threadptr|_ec_|DllMain\b)/
 
-  @@subclass = []
-  def self.inherited(klass)
-    @@subclass << [/#{klass.name.sub(/.*::/, '').downcase}/i, klass]
-  end
-
   def self.create(*args, &block)
     platform = RUBY_PLATFORM
-    pat, klass = @@subclass.find {|p, k| p =~ platform}
+    klass = constants.find do |p|
+      break const_get(p) if platform.include?(p.to_s.downcase)
+    end
     unless klass
       raise ArgumentError, "unsupported platform: #{platform}"
     end
@@ -165,6 +162,9 @@ class Exports::Cygwin < Exports
       yield $2, !$1 if re =~ l
     end
   end
+end
+
+class Exports::Msys < Exports::Cygwin
 end
 
 class Exports::Mingw < Exports::Cygwin

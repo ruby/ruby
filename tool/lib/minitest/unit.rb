@@ -452,11 +452,15 @@ module MiniTest
       msg = message(msg) { "Expected path '#{path}' to exist" }
       assert File.exist?(path), msg
     end
+    alias assert_path_exist assert_path_exists
+    alias refute_path_not_exist assert_path_exists
 
     def refute_path_exists(path, msg = nil)
       msg = message(msg) { "Expected path '#{path}' to not exist" }
       refute File.exist?(path), msg
     end
+    alias refute_path_exist refute_path_exists
+    alias assert_path_not_exist refute_path_exists
 
     ##
     # Captures $stdout and $stderr into strings:
@@ -973,7 +977,7 @@ module MiniTest
           puts if @verbose
           $stdout.flush
 
-          unless defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # compiler process is wrongly considered as leak
+          unless defined?(RubyVM::JIT) && RubyVM::JIT.enabled? # compiler process is wrongly considered as leak
             leakchecker.check("#{inst.class}\##{inst.__name__}")
           end
 
@@ -1405,6 +1409,7 @@ module MiniTest
 
       def self.test_suites # :nodoc:
         suites = @@test_suites.keys
+
         case self.test_order
         when :random
           # shuffle test suites based on CRC32 of their names

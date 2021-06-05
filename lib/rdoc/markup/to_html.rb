@@ -314,6 +314,29 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
     @res << raw.parts.join("\n")
   end
 
+  ##
+  # Adds +table+ to the output
+
+  def accept_table header, body, aligns
+    @res << "\n<table role=\"table\">\n<thead>\n<tr>\n"
+    header.zip(aligns) do |text, align|
+      @res << '<th'
+      @res << ' align="' << align << '"' if align
+      @res << '>' << CGI.escapeHTML(text) << "</th>\n"
+    end
+    @res << "</tr>\n</thead>\n<tbody>\n"
+    body.each do |row|
+      @res << "<tr>\n"
+      row.zip(aligns) do |text, align|
+        @res << '<td'
+        @res << ' align="' << align << '"' if align
+        @res << '>' << CGI.escapeHTML(text) << "</td>\n"
+      end
+      @res << "</tr>\n"
+    end
+    @res << "</tbody>\n</table>\n"
+  end
+
   # :section: Utilities
 
   ##
@@ -334,6 +357,10 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
        url =~ /\.(gif|png|jpg|jpeg|bmp)$/ then
       "<img src=\"#{url}\" />"
     else
+      if scheme != 'link' and /\.(?:rb|rdoc|md)\z/i =~ url
+        url = url.sub(%r%\A([./]*)(.*)\z%) { "#$1#{$2.tr('.', '_')}.html" }
+      end
+
       text = text.sub %r%^#{scheme}:/*%i, ''
       text = text.sub %r%^[*\^](\d+)$%,   '\1'
 

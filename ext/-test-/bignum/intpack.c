@@ -1,7 +1,7 @@
 #include "internal/bignum.h"
 
 static VALUE
-rb_integer_pack_raw_m(VALUE val, VALUE buf, VALUE numwords_arg, VALUE wordsize_arg, VALUE nails, VALUE flags)
+rb_integer_pack_raw_m(VALUE klass, VALUE val, VALUE buf, VALUE numwords_arg, VALUE wordsize_arg, VALUE nails, VALUE flags)
 {
   int sign;
   size_t numwords = 0;
@@ -17,7 +17,7 @@ rb_integer_pack_raw_m(VALUE val, VALUE buf, VALUE numwords_arg, VALUE wordsize_a
 }
 
 static VALUE
-rb_integer_pack_m(VALUE val, VALUE numwords_arg, VALUE wordsize_arg, VALUE nails, VALUE flags)
+rb_integer_pack_m(VALUE klass, VALUE val, VALUE numwords_arg, VALUE wordsize_arg, VALUE nails, VALUE flags)
 {
   int sign;
   size_t numwords = NUM2SIZET(numwords_arg);
@@ -45,7 +45,7 @@ rb_integer_unpack_m(VALUE klass, VALUE buf, VALUE numwords, VALUE wordsize, VALU
 }
 
 static VALUE
-rb_integer_test_numbits_2comp_without_sign(VALUE val)
+rb_integer_test_numbits_2comp_without_sign(VALUE klass, VALUE val)
 {
   size_t size;
   int neg = FIXNUM_P(val) ? FIX2LONG(val) < 0 : BIGNUM_NEGATIVE_P(val);
@@ -54,7 +54,7 @@ rb_integer_test_numbits_2comp_without_sign(VALUE val)
 }
 
 static VALUE
-rb_integer_test_numbytes_2comp_with_sign(VALUE val)
+rb_integer_test_numbytes_2comp_with_sign(VALUE klass, VALUE val)
 {
   int neg = FIXNUM_P(val) ? FIX2LONG(val) < 0 : BIGNUM_NEGATIVE_P(val);
   int nlz_bits;
@@ -67,21 +67,21 @@ rb_integer_test_numbytes_2comp_with_sign(VALUE val)
 void
 Init_intpack(VALUE klass)
 {
-    rb_define_method(rb_cInteger, "test_pack_raw", rb_integer_pack_raw_m, 5);
-    rb_define_method(rb_cInteger, "test_pack", rb_integer_pack_m, 4);
-    rb_define_singleton_method(rb_cInteger, "test_unpack", rb_integer_unpack_m, 5);
-    rb_define_const(rb_cInteger, "INTEGER_PACK_MSWORD_FIRST", INT2NUM(INTEGER_PACK_MSWORD_FIRST));
-    rb_define_const(rb_cInteger, "INTEGER_PACK_LSWORD_FIRST", INT2NUM(INTEGER_PACK_LSWORD_FIRST));
-    rb_define_const(rb_cInteger, "INTEGER_PACK_MSBYTE_FIRST", INT2NUM(INTEGER_PACK_MSBYTE_FIRST));
-    rb_define_const(rb_cInteger, "INTEGER_PACK_LSBYTE_FIRST", INT2NUM(INTEGER_PACK_LSBYTE_FIRST));
-    rb_define_const(rb_cInteger, "INTEGER_PACK_NATIVE_BYTE_ORDER", INT2NUM(INTEGER_PACK_NATIVE_BYTE_ORDER));
-    rb_define_const(rb_cInteger, "INTEGER_PACK_2COMP", INT2NUM(INTEGER_PACK_2COMP));
-    rb_define_const(rb_cInteger, "INTEGER_PACK_LITTLE_ENDIAN", INT2NUM(INTEGER_PACK_LITTLE_ENDIAN));
-    rb_define_const(rb_cInteger, "INTEGER_PACK_BIG_ENDIAN", INT2NUM(INTEGER_PACK_BIG_ENDIAN));
-    rb_define_const(rb_cInteger, "INTEGER_PACK_FORCE_BIGNUM", INT2NUM(INTEGER_PACK_FORCE_BIGNUM));
-    rb_define_const(rb_cInteger, "INTEGER_PACK_NEGATIVE", INT2NUM(INTEGER_PACK_NEGATIVE));
-    rb_define_const(rb_cInteger, "INTEGER_PACK_FORCE_GENERIC_IMPLEMENTATION", INT2NUM(INTEGER_PACK_FORCE_GENERIC_IMPLEMENTATION));
+    rb_define_singleton_method(klass, "test_pack_raw", rb_integer_pack_raw_m, 6);
+    rb_define_singleton_method(klass, "test_pack", rb_integer_pack_m, 5);
+    rb_define_singleton_method(klass, "test_unpack", rb_integer_unpack_m, 5);
+    rb_define_const(klass, "INTEGER_PACK_MSWORD_FIRST", INT2NUM(INTEGER_PACK_MSWORD_FIRST));
+    rb_define_const(klass, "INTEGER_PACK_LSWORD_FIRST", INT2NUM(INTEGER_PACK_LSWORD_FIRST));
+    rb_define_const(klass, "INTEGER_PACK_MSBYTE_FIRST", INT2NUM(INTEGER_PACK_MSBYTE_FIRST));
+    rb_define_const(klass, "INTEGER_PACK_LSBYTE_FIRST", INT2NUM(INTEGER_PACK_LSBYTE_FIRST));
+    rb_define_const(klass, "INTEGER_PACK_NATIVE_BYTE_ORDER", INT2NUM(INTEGER_PACK_NATIVE_BYTE_ORDER));
+    rb_define_const(klass, "INTEGER_PACK_2COMP", INT2NUM(INTEGER_PACK_2COMP));
+    rb_define_const(klass, "INTEGER_PACK_LITTLE_ENDIAN", INT2NUM(INTEGER_PACK_LITTLE_ENDIAN));
+    rb_define_const(klass, "INTEGER_PACK_BIG_ENDIAN", INT2NUM(INTEGER_PACK_BIG_ENDIAN));
+    rb_define_const(klass, "INTEGER_PACK_FORCE_BIGNUM", INT2NUM(INTEGER_PACK_FORCE_BIGNUM));
+    rb_define_const(klass, "INTEGER_PACK_NEGATIVE", INT2NUM(INTEGER_PACK_NEGATIVE));
+    rb_define_const(klass, "INTEGER_PACK_FORCE_GENERIC_IMPLEMENTATION", INT2NUM(INTEGER_PACK_FORCE_GENERIC_IMPLEMENTATION));
 
-    rb_define_method(rb_cInteger, "test_numbits_2comp_without_sign", rb_integer_test_numbits_2comp_without_sign, 0);
-    rb_define_method(rb_cInteger, "test_numbytes_2comp_with_sign", rb_integer_test_numbytes_2comp_with_sign, 0);
+    rb_define_singleton_method(klass, "test_numbits_2comp_without_sign", rb_integer_test_numbits_2comp_without_sign, 1);
+    rb_define_singleton_method(klass, "test_numbytes_2comp_with_sign", rb_integer_test_numbytes_2comp_with_sign, 1);
 }

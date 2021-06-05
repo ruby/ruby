@@ -51,7 +51,7 @@ end
 
 describe "Random#rand with Fixnum" do
   it "returns an Integer" do
-    Random.new.rand(20).should be_an_instance_of(Fixnum)
+    Random.new.rand(20).should be_an_instance_of(Integer)
   end
 
   it "returns a Fixnum greater than or equal to 0" do
@@ -95,7 +95,7 @@ end
 describe "Random#rand with Bignum" do
   it "typically returns a Bignum" do
     rnd = Random.new(1)
-    10.times.map{ rnd.rand(bignum_value*2) }.max.should be_an_instance_of(Bignum)
+    10.times.map{ rnd.rand(bignum_value*2) }.max.should be_an_instance_of(Integer)
   end
 
   it "returns a Bignum greater than or equal to 0" do
@@ -159,7 +159,7 @@ end
 
 describe "Random#rand with Range" do
   it "returns an element from the Range" do
-    Random.new.rand(20..43).should be_an_instance_of(Fixnum)
+    Random.new.rand(20..43).should be_an_instance_of(Integer)
   end
 
   it "supports custom object types" do

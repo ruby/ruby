@@ -60,7 +60,7 @@ describe :kernel_require_basic, shared: true do
       -> { @object.send(@method, nil) }.should raise_error(TypeError)
     end
 
-    it "raises a TypeError if passed a Fixnum" do
+    it "raises a TypeError if passed an Integer" do
       -> { @object.send(@method, 42) }.should raise_error(TypeError)
     end
 
@@ -160,6 +160,14 @@ describe :kernel_require_basic, shared: true do
       ScratchPad.recorded.should == [:loaded]
     end
 
+    it "accepts an Object with #to_path in $LOAD_PATH" do
+      obj = mock("to_path")
+      obj.should_receive(:to_path).at_least(:once).and_return(CODE_LOADING_DIR)
+      $LOAD_PATH << obj
+      @object.send(@method, "load_fixture.rb").should be_true
+      ScratchPad.recorded.should == [:loaded]
+    end
+
     it "does not require file twice after $LOAD_PATH change" do
       $LOAD_PATH << CODE_LOADING_DIR
       @object.require("load_fixture.rb").should be_true
@@ -243,7 +251,7 @@ describe :kernel_require, shared: true do
       ScratchPad.recorded.should == [:loaded]
     end
 
-    ruby_bug "#16926", "2.7"..."2.8" do
+    ruby_bug "#16926", "2.7"..."3.0" do
       it "does not load a feature twice when $LOAD_PATH has been modified" do
         $LOAD_PATH.replace [CODE_LOADING_DIR]
         @object.require("load_fixture").should be_true
@@ -343,6 +351,21 @@ describe :kernel_require, shared: true do
           @object.require(symlink_path).should be_true
           loaded_feature = $LOADED_FEATURES.last
           ScratchPad.recorded.should == [loaded_feature]
+        end
+
+        it "requires only once when a new matching file added to path" do
+          @object.require('load_fixture').should be_true
+          ScratchPad.recorded.should == [:loaded]
+
+          symlink_to_code_dir_two = tmp("codesymlinktwo")
+          File.symlink("#{CODE_LOADING_DIR}/b", symlink_to_code_dir_two)
+          begin
+            $LOAD_PATH.unshift(symlink_to_code_dir_two)
+
+            @object.require('load_fixture').should be_false
+          ensure
+            rm_r symlink_to_code_dir_two
+          end
         end
       end
 
@@ -523,8 +546,12 @@ describe :kernel_require, shared: true do
       ScratchPad.recorded.should == []
     end
 
-    it "complex, enumerator, rational and thread are already required" do
-      provided = %w[complex enumerator rational thread]
+    provided = %w[complex enumerator rational thread]
+    ruby_version_is "2.7" do
+      provided << 'ruby2_keywords'
+    end
+
+    it "#{provided.join(', ')} are already required" do
       features = ruby_exe("puts $LOADED_FEATURES", options: '--disable-gems')
       provided.each { |feature|
         features.should =~ /\b#{feature}\.(rb|so|jar)$/

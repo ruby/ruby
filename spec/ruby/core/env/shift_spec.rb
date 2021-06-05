@@ -1,4 +1,5 @@
 require_relative '../../spec_helper'
+require_relative 'fixtures/common'
 
 describe "ENV.shift" do
   it "returns a pair and deletes it" do
@@ -43,8 +44,8 @@ describe "ENV.shift" do
     Encoding.default_internal = nil
 
     pair = ENV.shift
-    pair.first.encoding.should equal(Encoding.find("locale"))
-    pair.last.encoding.should equal(Encoding.find("locale"))
+    pair.first.encoding.should equal(ENVSpecs.encoding)
+    pair.last.encoding.should equal(ENVSpecs.encoding)
   end
 
   it "transcodes from the locale encoding to Encoding.default_internal if set" do

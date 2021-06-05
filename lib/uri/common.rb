@@ -60,82 +60,6 @@ module URI
     module_function :make_components_hash
   end
 
-  # Module for escaping unsafe characters with codes.
-  module Escape
-    #
-    # == Synopsis
-    #
-    #   URI.escape(str [, unsafe])
-    #
-    # == Args
-    #
-    # +str+::
-    #   String to replaces in.
-    # +unsafe+::
-    #   Regexp that matches all symbols that must be replaced with codes.
-    #   By default uses <tt>UNSAFE</tt>.
-    #   When this argument is a String, it represents a character set.
-    #
-    # == Description
-    #
-    # Escapes the string, replacing all unsafe characters with codes.
-    #
-    # This method is obsolete and should not be used. Instead, use
-    # CGI.escape, URI.encode_www_form or URI.encode_www_form_component
-    # depending on your specific use case.
-    #
-    # == Usage
-    #
-    #   require 'uri'
-    #
-    #   enc_uri = URI.escape("http://example.com/?a=\11\15")
-    #   # => "http://example.com/?a=%09%0D"
-    #
-    #   URI.unescape(enc_uri)
-    #   # => "http://example.com/?a=\t\r"
-    #
-    #   URI.escape("@?@!", "!?")
-    #   # => "@%3F@%21"
-    #
-    def escape(*arg)
-      warn "URI.#{__callee__} is obsolete", uplevel: 1
-      DEFAULT_PARSER.escape(*arg)
-    end
-    alias encode escape
-    #
-    # == Synopsis
-    #
-    #   URI.unescape(str)
-    #
-    # == Args
-    #
-    # +str+::
-    #   String to unescape.
-    #
-    # == Description
-    #
-    # This method is obsolete and should not be used. Instead, use
-    # CGI.unescape, URI.decode_www_form or URI.decode_www_form_component
-    # depending on your specific use case.
-    #
-    # == Usage
-    #
-    #   require 'uri'
-    #
-    #   enc_uri = URI.escape("http://example.com/?a=\11\15")
-    #   # => "http://example.com/?a=%09%0D"
-    #
-    #   URI.unescape(enc_uri)
-    #   # => "http://example.com/?a=\t\r"
-    #
-    def unescape(*arg)
-      warn "URI.#{__callee__} is obsolete", uplevel: 1
-      DEFAULT_PARSER.unescape(*arg)
-    end
-    alias decode unescape
-  end # module Escape
-
-  extend Escape
   include REGEXP
 
   @@schemes = {}
@@ -328,7 +252,7 @@ module URI
   #
   # Returns a Regexp object which matches to URI-like strings.
   # The Regexp object returned by this method includes arbitrary
-  # number of capture group (parentheses).  Never rely on it's number.
+  # number of capture group (parentheses).  Never rely on its number.
   #
   # == Usage
   #
@@ -397,7 +321,7 @@ module URI
   #
   # See URI.encode_www_form_component, URI.decode_www_form.
   def self.decode_www_form_component(str, enc=Encoding::UTF_8)
-    raise ArgumentError, "invalid %-encoding (#{str})" if /%(?!\h\h)/ =~ str
+    raise ArgumentError, "invalid %-encoding (#{str})" if /%(?!\h\h)/.match?(str)
     str.b.gsub(/\+|%\h\h/, TBLDECWWWCOMP_).force_encoding(enc)
   end
 

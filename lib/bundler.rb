@@ -63,7 +63,6 @@ module Bundler
   autoload :Resolver,               File.expand_path("bundler/resolver", __dir__)
   autoload :Retry,                  File.expand_path("bundler/retry", __dir__)
   autoload :RubyDsl,                File.expand_path("bundler/ruby_dsl", __dir__)
-  autoload :RubyGemsGemInstaller,   File.expand_path("bundler/rubygems_gem_installer", __dir__)
   autoload :RubyVersion,            File.expand_path("bundler/ruby_version", __dir__)
   autoload :Runtime,                File.expand_path("bundler/runtime", __dir__)
   autoload :Settings,               File.expand_path("bundler/settings", __dir__)
@@ -198,7 +197,7 @@ module Bundler
 
     def frozen_bundle?
       frozen = settings[:deployment]
-      frozen ||= settings[:frozen] unless feature_flag.deployment_means_frozen?
+      frozen ||= settings[:frozen]
       frozen
     end
 
@@ -210,6 +209,12 @@ module Bundler
           lock = Bundler.read_file(Bundler.default_lockfile)
           LockfileParser.new(lock)
         end
+    end
+
+    def most_specific_locked_platform?(platform)
+      return false unless defined?(@definition) && @definition
+
+      definition.most_specific_locked_platform == platform
     end
 
     def ruby_scope
@@ -353,7 +358,10 @@ EOF
       env.delete_if {|k, _| k[0, 7] == "BUNDLE_" }
 
       if env.key?("RUBYOPT")
-        env["RUBYOPT"] = env["RUBYOPT"].sub "-rbundler/setup", ""
+        rubyopt = env["RUBYOPT"].split(" ")
+        rubyopt.delete("-r#{File.expand_path("bundler/setup", __dir__)}")
+        rubyopt.delete("-rbundler/setup")
+        env["RUBYOPT"] = rubyopt.join(" ")
       end
 
       if env.key?("RUBYLIB")
@@ -432,7 +440,7 @@ EOF
     end
 
     def local_platform
-      return Gem::Platform::RUBY if settings[:force_ruby_platform]
+      return Gem::Platform::RUBY if settings[:force_ruby_platform] || Gem.platforms == [Gem::Platform::RUBY]
       Gem::Platform.local
     end
 
@@ -453,7 +461,7 @@ EOF
       # system binaries. If you put '-n foo' in your .gemrc, RubyGems will
       # install binstubs there instead. Unfortunately, RubyGems doesn't expose
       # that directory at all, so rather than parse .gemrc ourselves, we allow
-      # the directory to be set as well, via `bundle config set bindir foo`.
+      # the directory to be set as well, via `bundle config set --local bindir foo`.
       Bundler.settings[:system_bindir] || Bundler.rubygems.gem_bindir
     end
 
@@ -599,6 +607,11 @@ EOF
       reset_rubygems!
     end
 
+    def reset_settings_and_root!
+      @settings = nil
+      @root = nil
+    end
+
     def reset_paths!
       @bin_path = nil
       @bundler_major_version = nil
@@ -621,7 +634,7 @@ EOF
       @rubygems = nil
     end
 
-  private
+    private
 
     def eval_yaml_gemspec(path, contents)
       require_relative "bundler/psyched_yaml"

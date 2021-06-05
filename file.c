@@ -577,7 +577,13 @@ rb_stat_cmp(VALUE self, VALUE other)
 static VALUE
 rb_stat_dev(VALUE self)
 {
+#if SIZEOF_STRUCT_STAT_ST_DEV <= SIZEOF_DEV_T
     return DEVT2NUM(get_stat(self)->st_dev);
+#elif SIZEOF_STRUCT_STAT_ST_DEV <= SIZEOF_LONG
+    return ULONG2NUM(get_stat(self)->st_dev);
+#else
+    return ULL2NUM(get_stat(self)->st_dev);
+#endif
 }
 
 /*
@@ -747,7 +753,13 @@ static VALUE
 rb_stat_rdev(VALUE self)
 {
 #ifdef HAVE_STRUCT_STAT_ST_RDEV
+# if SIZEOF_STRUCT_STAT_ST_RDEV <= SIZEOF_DEV_T
     return DEVT2NUM(get_stat(self)->st_rdev);
+# elif SIZEOF_STRUCT_STAT_ST_RDEV <= SIZEOF_LONG
+    return ULONG2NUM(get_stat(self)->st_rdev);
+# else
+    return ULL2NUM(get_stat(self)->st_rdev);
+# endif
 #else
     return Qnil;
 #endif
@@ -1253,7 +1265,7 @@ statx_birthtime(const struct statx *stx, VALUE fname)
         /* birthtime is not supported on the filesystem */
         statx_notimplement("birthtime");
     }
-    return rb_time_nano_new(stx->stx_btime.tv_sec, stx->stx_btime.tv_nsec);
+    return rb_time_nano_new((time_t)stx->stx_btime.tv_sec, stx->stx_btime.tv_nsec);
 }
 
 typedef struct statx statx_data;
@@ -3467,6 +3479,20 @@ rb_enc_path_end(const char *path, const char *end, rb_encoding *enc)
     return chompdirsep(path, end, enc);
 }
 
+static rb_encoding *
+fs_enc_check(VALUE path1, VALUE path2)
+{
+    rb_encoding *enc = rb_enc_check(path1, path2);
+    int encidx = rb_enc_to_index(enc);
+    if (encidx == ENCINDEX_US_ASCII) {
+        encidx = rb_enc_get_index(path1);
+        if (encidx == ENCINDEX_US_ASCII)
+            encidx = rb_enc_get_index(path2);
+        enc = rb_enc_from_index(encidx);
+    }
+    return enc;
+}
+
 #if USE_NTFS
 static char *
 ntfs_tail(const char *path, const char *end, rb_encoding *enc)
@@ -3667,7 +3693,7 @@ append_fspath(VALUE result, VALUE fname, char *dir, rb_encoding **enc, rb_encodi
     size_t dirlen = strlen(dir), buflen = rb_str_capacity(result);
 
     if (NORMALIZE_UTF8PATH || *enc != fsenc) {
-	rb_encoding *direnc = rb_enc_check(fname, dirname = ospath_new(dir, dirlen, fsenc));
+	rb_encoding *direnc = fs_enc_check(fname, dirname = ospath_new(dir, dirlen, fsenc));
 	if (direnc != fsenc) {
 	    dirname = rb_str_conv_enc(dirname, fsenc, direnc);
 	    RSTRING_GETMEM(dirname, cwdp, dirlen);
@@ -3763,7 +3789,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 		p = e;
 	    }
 	    else {
-		rb_enc_associate(result, enc = rb_enc_check(result, fname));
+		rb_enc_associate(result, enc = fs_enc_check(result, fname));
 		p = pend;
 	    }
 	    p = chompdirsep(skiproot(buf, p, enc), p, enc);
@@ -3774,7 +3800,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     else if (!rb_is_absolute_path(s)) {
 	if (!NIL_P(dname)) {
 	    rb_file_expand_path_internal(dname, Qnil, abs_mode, long_name, result);
-	    rb_enc_associate(result, rb_enc_check(result, fname));
+	    rb_enc_associate(result, fs_enc_check(result, fname));
 	    BUFINIT();
 	    p = pend;
 	}
@@ -3802,7 +3828,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	BUFCHECK(bdiff >= buflen);
 	memset(buf, '/', len);
 	rb_str_set_len(result, len);
-	rb_enc_associate(result, rb_enc_check(result, fname));
+	rb_enc_associate(result, fs_enc_check(result, fname));
     }
     if (p > buf && p[-1] == '/')
 	--p;
@@ -4263,7 +4289,7 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE f
 			rb_encoding *tmpenc, *linkenc = rb_enc_get(link);
 			link_orig = link;
 			link = rb_str_subseq(link, 0, link_prefixlen);
-			tmpenc = rb_enc_check(*resolvedp, link);
+			tmpenc = fs_enc_check(*resolvedp, link);
 			if (tmpenc != linkenc) link = rb_str_conv_enc(link, linkenc, tmpenc);
 			*resolvedp = link;
 			*prefixlenp = link_prefixlen;
@@ -4669,9 +4695,11 @@ rb_file_s_basename(int argc, VALUE *argv, VALUE _)
     return basename;
 }
 
+static VALUE rb_file_dirname_n(VALUE fname, int n);
+
 /*
  *  call-seq:
- *     File.dirname(file_name)  ->  dir_name
+ *     File.dirname(file_name, level = 1)  ->  dir_name
  *
  *  Returns all components of the filename given in <i>file_name</i>
  *  except the last one (after first stripping trailing separators).
@@ -4680,21 +4708,40 @@ rb_file_s_basename(int argc, VALUE *argv, VALUE _)
  *  not <code>nil</code>.
  *
  *     File.dirname("/home/gumby/work/ruby.rb")   #=> "/home/gumby/work"
+ *
+ *  If +level+ is given, removes the last +level+ components, not only
+ *  one.
+ *
+ *     File.dirname("/home/gumby/work/ruby.rb", 2) #=> "/home/gumby"
+ *     File.dirname("/home/gumby/work/ruby.rb", 4) #=> "/"
  */
 
 static VALUE
-rb_file_s_dirname(VALUE klass, VALUE fname)
+rb_file_s_dirname(int argc, VALUE *argv, VALUE klass)
 {
-    return rb_file_dirname(fname);
+    int n = 1;
+    if ((argc = rb_check_arity(argc, 1, 2)) > 1) {
+	n = NUM2INT(argv[1]);
+    }
+    return rb_file_dirname_n(argv[0], n);
 }
 
 VALUE
 rb_file_dirname(VALUE fname)
 {
+    return rb_file_dirname_n(fname, 1);
+}
+
+static VALUE
+rb_file_dirname_n(VALUE fname, int n)
+{
     const char *name, *root, *p, *end;
     VALUE dirname;
     rb_encoding *enc;
+    VALUE sepsv = 0;
+    const char **seps;
 
+    if (n < 0) rb_raise(rb_eArgError, "negative level: %d", n);
     FilePathStringValue(fname);
     name = StringValueCStr(fname);
     end = name + RSTRING_LEN(fname);
@@ -4707,9 +4754,38 @@ rb_file_dirname(VALUE fname)
     if (root > name + 1)
 	name = root - 1;
 #endif
-    p = strrdirsep(root, end, enc);
-    if (!p) {
+    if (n > (end - root + 1) / 2) {
 	p = root;
+    }
+    else {
+	int i;
+	switch (n) {
+	  case 0:
+	    p = end;
+	    break;
+	  case 1:
+	    if (!(p = strrdirsep(root, end, enc))) p = root;
+	    break;
+	  default:
+	    seps = ALLOCV_N(const char *, sepsv, n);
+	    for (i = 0; i < n; ++i) seps[i] = root;
+	    i = 0;
+	    for (p = root; p < end; ) {
+		if (isdirsep(*p)) {
+		    const char *tmp = p++;
+		    while (p < end && isdirsep(*p)) p++;
+		    if (p >= end) break;
+		    seps[i++] = tmp;
+		    if (i == n) i = 0;
+		}
+		else {
+		    Inc(p, end, enc);
+		}
+	    }
+	    p = seps[i];
+	    ALLOCV_END(sepsv);
+	    break;
+	}
     }
     if (p == name)
 	return rb_usascii_str_new2(".");
@@ -4937,7 +5013,7 @@ rb_file_join(VALUE ary)
 		rb_str_cat(result, "/", 1);
 	    }
 	}
-	enc = rb_enc_check(result, tmp);
+	enc = fs_enc_check(result, tmp);
 	rb_str_buf_append(result, tmp);
 	rb_enc_associate(result, enc);
     }
@@ -6190,7 +6266,11 @@ path_check_0(VALUE path)
 #endif
 	    && !access(p0, W_OK)) {
 	    rb_enc_warn(enc, "Insecure world writable dir %s in PATH, mode 0%"
+#if SIZEOF_DEV_T > SIZEOF_INT
 			PRI_MODET_PREFIX"o",
+#else
+			"o",
+#endif
 			p0, st.st_mode);
 	    if (p) *p = '/';
 	    RB_GC_GUARD(path);
@@ -6302,13 +6382,6 @@ copy_path_class(VALUE path, VALUE orig)
 }
 
 int
-rb_find_file_ext_safe(VALUE *filep, const char *const *ext, int _level)
-{
-    rb_warn("rb_find_file_ext_safe will be removed in Ruby 3.0");
-    return rb_find_file_ext(filep, ext);
-}
-
-int
 rb_find_file_ext(VALUE *filep, const char *const *ext)
 {
     const char *f = StringValueCStr(*filep);
@@ -6365,13 +6438,6 @@ rb_find_file_ext(VALUE *filep, const char *const *ext)
     rb_str_resize(tmp, 0);
     RB_GC_GUARD(load_path);
     return 0;
-}
-
-VALUE
-rb_find_file_safe(VALUE path, int _level)
-{
-    rb_warn("rb_find_file_safe will be removed in Ruby 3.0");
-    return rb_find_file(path);
 }
 
 VALUE
@@ -6471,6 +6537,138 @@ const char ruby_null_device[] =
  *  read-only, which is reported as <code>0444</code>.
  *
  *  Various constants for the methods in File can be found in File::Constants.
+ *
+ *  == What's Here
+ *
+ *  First, what's elsewhere. \Class \File:
+ *
+ *  - Inherits from class IO -- in particular, methods for creating,
+ *    reading, and writing files.
+ *  - Includes module FileTest.
+ *
+ *  Here, Class \File provides methods that are useful for:
+ *
+ *  - {Creating}[#class-File-label-Creating]
+ *  - {Querying}[#class-File-label-Querying]
+ *  - {Settings}[#class-File-label-Settings]
+ *  - {Other}[#class-File-label-Other]
+ *
+ *  === Creating
+ *
+ *  - ::new:: Opens the file at the given path; returns the file.
+ *  - ::open:: Same as ::new, but when given a block will yield the file to the block,
+ *             and close the file upon exiting the block.
+ *  - ::link:: Creates a new name for an existing file using a hard link.
+ *  - ::mkfifo:: Returns the FIFO file created at the given path.
+ *  - ::symlink:: Creates a symbolic link for the given file path.
+ *
+ *  === Querying
+ *
+ *  _Paths_
+ *
+ *  - ::absolute_path:: Returns the absolute file path for the given path.
+ *  - ::absolute_path?:: Returns whether the given path is the absolute file path.
+ *  - ::basename:: Returns the last component of the given file path.
+ *  - ::dirname:: Returns all but the last component of the given file path.
+ *  - ::expand_path:: Returns the absolute file path for the given path,
+ *                    expanding <tt>~</tt> for a home directory.
+ *  - ::extname:: Returns the file extension for the given file path.
+ *  - ::fnmatch? (aliased as ::fnmatch):: Returns whether the given file path
+ *                                        matches the given pattern.
+ *  - ::join:: Joins path components into a single path string.
+ *  - ::path:: Returns the string representation of the given path.
+ *  - ::readlink:: Returns the path to the file at the given symbolic link.
+ *  - ::realdirpath:: Returns the real path for the given file path,
+ *                    where the last component need not exist.
+ *  - ::realpath:: Returns the real path for the given file path,
+ *                 where all components must exist.
+ *  - ::split:: Returns an array of two strings: the directory name and basename
+ *              of the file at the given path.
+ *  - #path (aliased as #to_path)::  Returns the string representation of the given path.
+ *
+ *  _Times_
+ *
+ *  - ::atime:: Returns a \Time for the most recent access to the given file.
+ *  - ::birthtime:: Returns a \Time  for the creation of the given file.
+ *  - ::ctime:: Returns a \Time  for the metadata change of the given file.
+ *  - ::mtime:: Returns a \Time for the most recent data modification to
+ *              the content of the given file.
+ *  - #atime:: Returns a \Time for the most recent access to +self+.
+ *  - #birthtime:: Returns a \Time  the creation for +self+.
+ *  - #ctime:: Returns a \Time for the metadata change of +self+.
+ *  - #mtime:: Returns a \Time for the most recent data modification
+ *             to the content of +self+.
+ *
+ *  _Types_
+ *
+ *  - ::blockdev?:: Returns whether the file at the given path is a block device.
+ *  - ::chardev?:: Returns whether the file at the given path is a character device.
+ *  - ::directory?:: Returns whether the file at the given path is a diretory.
+ *  - ::executable?:: Returns whether the file at the given path is executable
+ *                    by the effective user and group of the current process.
+ *  - ::executable_real?:: Returns whether the file at the given path is executable
+ *                         by the real user and group of the current process.
+ *  - ::exist?:: Returns whether the file at the given path exists.
+ *  - ::file?:: Returns whether the file at the given path is a regular file.
+ *  - ::ftype:: Returns a string giving the type of the file at the given path.
+ *  - ::grpowned?:: Returns whether the effective group of the current process
+ *                  owns the file at the given path.
+ *  - ::identical?:: Returns whether the files at two given paths are identical.
+ *  - ::lstat:: Returns the File::Stat object for the last symbolic link
+ *              in the given path.
+ *  - ::owned?:: Returns whether the effective user of the current process
+ *               owns the file at the given path.
+ *  - ::pipe?:: Returns whether the file at the given path is a pipe.
+ *  - ::readable?:: Returns whether the file at the given path is readable
+ *                  by the effective user and group of the current process.
+ *  - ::readable_real?:: Returns whether the file at the given path is readable
+ *                       by the real user and group of the current process.
+ *  - ::setgid?:: Returns whether the setgid bit is set for the file at the given path.
+ *  - ::setuid?:: Returns whether the setuid bit is set for the file at the given path.
+ *  - ::socket?:: Returns whether the file at the given path is a socket.
+ *  - ::stat:: Returns the File::Stat object for the file at the given path.
+ *  - ::sticky?:: Returns whether the file at the given path has its sticky bit set.
+ *  - ::symlink?:: Returns whether the file at the given path is a symbolic link.
+ *  - ::umask:: Returns the umask value for the current process.
+ *  - ::world_readable?:: Returns whether the file at the given path is readable
+ *                        by others.
+ *  - ::world_writable?:: Returns whether the file at the given path is writable
+ *                        by others.
+ *  - ::writable?:: Returns whether the file at the given path is writable
+ *                  by the effective user and group of the current process.
+ *  - ::writable_real?:: Returns whether the file at the given path is writable
+ *                       by the real user and group of the current process.
+ *  - #lstat:: Returns the File::Stat object for the last symbolic link
+ *             in the path for +self+.
+ *
+ *  _Contents_
+ *
+ *  - ::empty? (aliased as ::zero?):: Returns whether the file at the given path
+ *                                   exists and is empty.
+ *  - ::size:: Returns the size (bytes) of the file at the given path.
+ *  - ::size?:: Returns +nil+ if there is no file at the given path,
+ *              or if that file is empty; otherwise returns the file size (bytes).
+ *  - #size:: Returns the size (bytes) of +self+.
+ *
+ *  === Settings
+ *
+ *  - ::chmod:: Changes permissions of the file at the given path.
+ *  - ::chown:: Change ownership of the file at the given path.
+ *  - ::lchmod:: Changes permissions of the last symbolic link in the given path.
+ *  - ::lchown:: Change ownership of the last symbolic in the given path.
+ *  - ::lutime:: For each given file path, sets the access time and modification time
+ *               of the last symbolic link in the path.
+ *  - ::rename:: Moves the file at one given path to another given path.
+ *  - ::utime:: Sets the access time and modification time of each file
+ *              at the given paths.
+ *  - #flock:: Locks or unlocks +self+.
+ *
+ *  === Other
+ *
+ *  - ::truncate:: Truncates the file at the given file path to the given size.
+ *  - ::unlink (aliased as ::delete):: Deletes the file for each given file path.
+ *  - #truncate:: Truncates +self+ to the given size.
+ *
  */
 
 void
@@ -6545,7 +6743,7 @@ Init_File(void)
     rb_define_singleton_method(rb_cFile, "realpath", rb_file_s_realpath, -1);
     rb_define_singleton_method(rb_cFile, "realdirpath", rb_file_s_realdirpath, -1);
     rb_define_singleton_method(rb_cFile, "basename", rb_file_s_basename, -1);
-    rb_define_singleton_method(rb_cFile, "dirname", rb_file_s_dirname, 1);
+    rb_define_singleton_method(rb_cFile, "dirname", rb_file_s_dirname, -1);
     rb_define_singleton_method(rb_cFile, "extname", rb_file_s_extname, 1);
     rb_define_singleton_method(rb_cFile, "path", rb_file_s_path, 1);
 

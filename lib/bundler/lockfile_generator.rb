@@ -25,7 +25,7 @@ module Bundler
       out
     end
 
-  private
+    private
 
     def add_sources
       definition.send(:sources).lock_sources.each_with_index do |source, idx|

@@ -4,7 +4,6 @@ require 'test/unit'
 class TestProc < Test::Unit::TestCase
   def setup
     @verbose = $VERBOSE
-    $VERBOSE = nil
   end
 
   def teardown
@@ -271,7 +270,7 @@ class TestProc < Test::Unit::TestCase
 
   def test_curry_given_blocks
     b = lambda {|x, y, &blk| blk.call(x + y) }.curry
-    b = b.call(2) { raise }
+    b = assert_warning(/given block not used/) {b.call(2) { raise }}
     b = b.call(3) {|x| x + 4 }
     assert_equal(9, b)
   end
@@ -281,7 +280,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal(false, l.lambda?)
     assert_equal(false, l.curry.lambda?, '[ruby-core:24127]')
     assert_equal(false, proc(&l).lambda?)
-    assert_equal(false, lambda(&l).lambda?)
+    assert_equal(false, assert_deprecated_warning {lambda(&l)}.lambda?)
     assert_equal(false, Proc.new(&l).lambda?)
     l = lambda {}
     assert_equal(true, l.lambda?)
@@ -289,6 +288,49 @@ class TestProc < Test::Unit::TestCase
     assert_equal(true, proc(&l).lambda?)
     assert_equal(true, lambda(&l).lambda?)
     assert_equal(true, Proc.new(&l).lambda?)
+  end
+
+  def self.helper_test_warn_lamda_with_passed_block &b
+    lambda(&b)
+  end
+
+  def self.def_lambda_warning name, warn
+    define_method(name, proc do
+      prev = Warning[:deprecated]
+      assert_warn warn do
+        Warning[:deprecated] = true
+        yield
+      end
+    ensure
+      Warning[:deprecated] = prev
+    end)
+  end
+
+  def_lambda_warning 'test_lambda_warning_normal', '' do
+    lambda{}
+  end
+
+  def_lambda_warning 'test_lambda_warning_pass_lambda', '' do
+    b = lambda{}
+    lambda(&b)
+  end
+
+  def_lambda_warning 'test_lambda_warning_pass_symbol_proc', '' do
+    lambda(&:to_s)
+  end
+
+  def_lambda_warning 'test_lambda_warning_pass_proc', /deprecated/ do
+    b = proc{}
+    lambda(&b)
+  end
+
+  def_lambda_warning 'test_lambda_warning_pass_block', /deprecated/ do
+    helper_test_warn_lamda_with_passed_block{}
+  end
+
+  def_lambda_warning 'test_lambda_warning_pass_block_symbol_proc', '' do
+    # Symbol#to_proc returns lambda
+    helper_test_warn_lamda_with_passed_block(&:to_s)
   end
 
   def test_curry_ski_fib
@@ -391,7 +433,7 @@ class TestProc < Test::Unit::TestCase
 
   def test_proc_lambda
     assert_raise(ArgumentError) { proc }
-    assert_raise(ArgumentError) { lambda }
+    assert_raise(ArgumentError) { assert_warn(/deprecated/) {lambda} }
 
     o = Object.new
     def o.foo
@@ -399,14 +441,18 @@ class TestProc < Test::Unit::TestCase
       1.times { b = lambda }
       b
     end
-    assert_raise(ArgumentError) {o.foo { :foo }.call}
+    assert_raise(ArgumentError) do
+      assert_deprecated_warning {o.foo { :foo }}.call
+    end
 
-    def o.foo(&b)
+    def o.bar(&b)
       b = nil
       1.times { b = lambda }
       b
     end
-    assert_raise(ArgumentError) {o.foo { :foo }.call}
+    assert_raise(ArgumentError) do
+      assert_deprecated_warning {o.bar { :foo }}.call
+    end
   end
 
   def test_arity2
@@ -1538,6 +1584,57 @@ class TestProc < Test::Unit::TestCase
     assert_equal(42, Module.new { extend self
       def m1(&b) b end; def m2(); m1 { next 42 } end }.m2.call)
   end
+
+  def test_isolate
+    assert_raise_with_message ArgumentError, /\(a\)/ do
+      a = :a
+      Proc.new{p a}.isolate.call
+    end
+
+    assert_raise_with_message ArgumentError, /\(a\)/ do
+      a = :a
+      1.times{
+        Proc.new{p a}.isolate.call
+      }
+    end
+
+    assert_raise_with_message ArgumentError, /yield/ do
+      Proc.new{yield}.isolate.call
+    end
+
+    # binding
+
+    :a.tap{|a|
+      :b.tap{|b|
+        Proc.new{
+          :c.tap{|c|
+            assert_equal :c, eval('c')
+
+            assert_raise_with_message SyntaxError, /\`a\'/ do
+              eval('p a')
+            end
+
+            assert_raise_with_message SyntaxError, /\`b\'/ do
+              eval('p b')
+            end
+
+            assert_raise_with_message SyntaxError, /can not yield from isolated Proc/ do
+              eval('p yield')
+            end
+
+            assert_equal :c, binding.local_variable_get(:c)
+
+            assert_raise_with_message NameError, /local variable \`a\' is not defined/ do
+              binding.local_variable_get(:a)
+            end
+
+            assert_equal [:c], local_variables
+            assert_equal [:c], binding.local_variables
+          }
+        }.isolate.call
+      }
+    }
+  end if proc{}.respond_to? :isolate
 end
 
 class TestProcKeywords < Test::Unit::TestCase

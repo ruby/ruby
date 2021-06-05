@@ -61,7 +61,7 @@ rb_fix_plus_fix(VALUE x, VALUE y)
      * (3) Of course `z = x + (y-1)` may overflow.
      *     At that time true value is
      *     * positive: 0b0 1xxx...1, and z = 0b1xxx...1
-     *     * nevative: 0b1 0xxx...1, and z = 0b0xxx...1
+     *     * negative: 0b1 0xxx...1, and z = 0b0xxx...1
      *     To convert this true value to long,
      *     (a) Use arithmetic shift
      *         * positive: 0b11xxx...

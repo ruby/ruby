@@ -46,14 +46,27 @@ describe "String#chomp" do
       end
     end
 
-    it "returns subclass instances when called on a subclass" do
-      str = StringSpecs::MyString.new("hello\n").chomp
-      str.should be_an_instance_of(StringSpecs::MyString)
+    ruby_version_is ''...'3.0' do
+      it "returns subclass instances when called on a subclass" do
+        str = StringSpecs::MyString.new("hello\n").chomp
+        str.should be_an_instance_of(StringSpecs::MyString)
+      end
+    end
+
+    ruby_version_is '3.0' do
+      it "returns String instances when called on a subclass" do
+        str = StringSpecs::MyString.new("hello\n").chomp
+        str.should be_an_instance_of(String)
+      end
     end
 
     it "removes trailing characters that match $/ when it has been assigned a value" do
       $/ = "cdef"
       "abcdef".chomp.should == "ab"
+    end
+
+    it "removes one trailing newline for string with invalid encoding" do
+      "\xa0\xa1\n".chomp.should == "\xa0\xa1"
     end
   end
 
@@ -107,6 +120,10 @@ describe "String#chomp" do
 
     it "returns an empty String when self is empty" do
       "".chomp("").should == ""
+    end
+
+    it "removes one trailing newline for string with invalid encoding" do
+      "\xa0\xa1\n".chomp("").should == "\xa0\xa1"
     end
   end
 

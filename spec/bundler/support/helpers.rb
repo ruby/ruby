@@ -10,7 +10,7 @@ module Spec
 
     def reset!
       Dir.glob("#{tmp}/{gems/*,*}", File::FNM_DOTMATCH).each do |dir|
-        next if %w[base base_system remote1 gems rubygems . ..].include?(File.basename(dir))
+        next if %w[base base_system remote1 rubocop standard gems rubygems . ..].include?(File.basename(dir))
         FileUtils.rm_rf(dir)
       end
       FileUtils.mkdir_p(home)
@@ -87,9 +87,11 @@ module Spec
       env = options.delete(:env) || {}
 
       requires = options.delete(:requires) || []
+      realworld = RSpec.current_example.metadata[:realworld]
+      options[:verbose] = true if options[:verbose].nil? && realworld
 
       artifice = options.delete(:artifice) do
-        if RSpec.current_example.metadata[:realworld]
+        if realworld
           "vcr"
         else
           "fail"
@@ -130,7 +132,7 @@ module Spec
 
     def ruby(ruby, options = {})
       ruby_cmd = build_ruby_cmd
-      escaped_ruby = RUBY_PLATFORM == "java" ? ruby.shellescape.dump : ruby.shellescape
+      escaped_ruby = ruby.shellescape
       sys_exec(%(#{ruby_cmd} -w -e #{escaped_ruby}), options)
     end
 
@@ -275,14 +277,12 @@ module Spec
     def install_gemfile(*args)
       gemfile(*args)
       opts = args.last.is_a?(Hash) ? args.last : {}
-      opts[:retry] ||= 0
       bundle :install, opts
     end
 
     def lock_gemfile(*args)
       gemfile(*args)
       opts = args.last.is_a?(Hash) ? args.last : {}
-      opts[:retry] ||= 0
       bundle :lock, opts
     end
 
@@ -290,26 +290,30 @@ module Spec
       gems = gems.flatten
       options = gems.last.is_a?(Hash) ? gems.pop : {}
       path = options.fetch(:path, system_gem_path)
+      default = options.fetch(:default, false)
       with_gem_path_as(path) do
         gem_repo = options.fetch(:gem_repo, gem_repo1)
         gems.each do |g|
           gem_name = g.to_s
           if gem_name.start_with?("bundler")
             version = gem_name.match(/\Abundler-(?<version>.*)\z/)[:version] if gem_name != "bundler"
-            with_built_bundler(version) {|gem_path| install_gem(gem_path) }
+            with_built_bundler(version) {|gem_path| install_gem(gem_path, default) }
           elsif gem_name =~ %r{\A(?:[a-zA-Z]:)?/.*\.gem\z}
-            install_gem(gem_name)
+            install_gem(gem_name, default)
           else
-            install_gem("#{gem_repo}/gems/#{gem_name}.gem")
+            install_gem("#{gem_repo}/gems/#{gem_name}.gem", default)
           end
         end
       end
     end
 
-    def install_gem(path)
+    def install_gem(path, default = false)
       raise "OMG `#{path}` does not exist!" unless File.exist?(path)
 
-      gem_command "install --no-document --ignore-dependencies '#{path}'"
+      args = "--no-document --ignore-dependencies"
+      args += " --default --install-dir #{system_gem_path}" if default
+
+      gem_command "install #{args} '#{path}'"
     end
 
     def with_built_bundler(version = nil)
@@ -330,12 +334,7 @@ module Spec
 
         replace_version_file(version, dir: build_path) # rubocop:disable Style/HashSyntax
 
-        build_metadata = {
-          :built_at => loaded_gemspec.date.utc.strftime("%Y-%m-%d"),
-          :git_commit_sha => git_commit_sha,
-        }
-
-        replace_build_metadata(build_metadata, dir: build_path) # rubocop:disable Style/HashSyntax
+        Spec::BuildMetadata.write_build_metadata(dir: build_path) # rubocop:disable Style/HashSyntax
 
         gem_command "build #{relative_gemspec}", :dir => build_path
 
@@ -570,7 +569,7 @@ module Spec
       port
     end
 
-  private
+    private
 
     def git_root_dir?
       root.to_s == `git rev-parse --show-toplevel`.chomp

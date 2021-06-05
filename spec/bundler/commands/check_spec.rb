@@ -71,13 +71,19 @@ RSpec.describe "bundle check" do
   end
 
   it "prints a generic message if you changed your lockfile" do
+    build_repo2 do
+      build_gem "rails_pinned_to_old_activesupport" do |s|
+        s.add_dependency "activesupport", "= 1.2.3"
+      end
+    end
+
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "#{file_uri_for(gem_repo2)}"
       gem 'rails'
     G
 
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "#{file_uri_for(gem_repo2)}"
       gem "rails"
       gem "rails_pinned_to_old_activesupport"
     G
@@ -118,7 +124,7 @@ RSpec.describe "bundle check" do
       gem "rack", :group => :foo
     G
 
-    bundle "config --local without foo"
+    bundle "config set --local without foo"
     bundle :install
 
     gemfile <<-G
@@ -211,7 +217,7 @@ RSpec.describe "bundle check" do
       gem "foo"
     G
 
-    bundle "config --local deployment true"
+    bundle "config set --local deployment true"
     bundle "install"
     FileUtils.rm(bundled_app_lock)
 
@@ -305,6 +311,8 @@ RSpec.describe "bundle check" do
     end
 
     before do
+      bundle "config set --local path vendor/bundle"
+
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
@@ -330,9 +338,10 @@ RSpec.describe "bundle check" do
 
     context "is older" do
       it "does not change the lock" do
-        lockfile lock_with("1.10.1")
-        bundle :check, :raise_on_error => false
-        lockfile_should_be lock_with("1.10.1")
+        system_gems "bundler-1.18.0"
+        lockfile lock_with("1.18.0")
+        bundle :check
+        lockfile_should_be lock_with("1.18.0")
       end
     end
   end

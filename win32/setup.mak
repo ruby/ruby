@@ -140,9 +140,17 @@ verconf.mk: nul
 #define STRINGIZE0(expr) #expr
 #define STRINGIZE(x) STRINGIZE0(x)
 #include "version.h"
-for %%I in (RUBY_RELEASE_DATE) do set ruby_release_date=%%~I
-#undef RUBY_RELEASE_DATE
-echo RUBY_RELEASE_DATE = %ruby_release_date:""=%
+set ruby_release_year=RUBY_RELEASE_YEAR
+set ruby_release_month=RUBY_RELEASE_MONTH
+set ruby_release_day=RUBY_RELEASE_DAY
+set ruby_release_month=0%ruby_release_month%
+set ruby_release_day=0%ruby_release_day%
+#undef RUBY_RELEASE_YEAR
+#undef RUBY_RELEASE_MONTH
+#undef RUBY_RELEASE_DAY
+echo RUBY_RELEASE_YEAR = %ruby_release_year%
+echo RUBY_RELEASE_MONTH = %ruby_release_month:~-2%
+echo RUBY_RELEASE_DAY = %ruby_release_day:~-2%
 echo MAJOR = RUBY_VERSION_MAJOR
 echo MINOR = RUBY_VERSION_MINOR
 echo TEENY = RUBY_VERSION_TEENY

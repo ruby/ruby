@@ -135,7 +135,6 @@ class2name.o: $(hdrdir)/ruby/internal/static_assert.h
 class2name.o: $(hdrdir)/ruby/internal/stdalign.h
 class2name.o: $(hdrdir)/ruby/internal/stdbool.h
 class2name.o: $(hdrdir)/ruby/internal/symbol.h
-class2name.o: $(hdrdir)/ruby/internal/token_paste.h
 class2name.o: $(hdrdir)/ruby/internal/value.h
 class2name.o: $(hdrdir)/ruby/internal/value_type.h
 class2name.o: $(hdrdir)/ruby/internal/variable.h
@@ -296,7 +295,6 @@ init.o: $(hdrdir)/ruby/internal/static_assert.h
 init.o: $(hdrdir)/ruby/internal/stdalign.h
 init.o: $(hdrdir)/ruby/internal/stdbool.h
 init.o: $(hdrdir)/ruby/internal/symbol.h
-init.o: $(hdrdir)/ruby/internal/token_paste.h
 init.o: $(hdrdir)/ruby/internal/value.h
 init.o: $(hdrdir)/ruby/internal/value_type.h
 init.o: $(hdrdir)/ruby/internal/variable.h

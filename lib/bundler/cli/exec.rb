@@ -34,7 +34,7 @@ module Bundler
       end
     end
 
-  private
+    private
 
     def validate_cmd!
       return unless cmd.nil?
@@ -63,10 +63,10 @@ module Bundler
       Kernel.load(file)
     rescue SystemExit, SignalException
       raise
-    rescue Exception => e # rubocop:disable Lint/RescueException
+    rescue Exception # rubocop:disable Lint/RescueException
       Bundler.ui.error "bundler: failed to load command: #{cmd} (#{file})"
-      backtrace = e.backtrace ? e.backtrace.take_while {|bt| !bt.start_with?(__FILE__) } : []
-      abort "#{e.class}: #{e.message}\n  #{backtrace.join("\n  ")}"
+      Bundler::FriendlyErrors.disable!
+      raise
     end
 
     def process_title(file, args)

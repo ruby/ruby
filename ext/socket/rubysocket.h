@@ -4,7 +4,7 @@
 #include "ruby/config.h"
 #include RUBY_EXTCONF_H
 
-#ifdef __sun
+#if defined(__sun) || defined(_AIX)
 /* (Recent?)  Solaris' <nfs/nfs.h> have conflicting definition of T_DATA.  Let
  * us honour system definition by undefining ours.
  *
@@ -320,9 +320,6 @@ int rb_getnameinfo(const struct sockaddr *sa, socklen_t salen, char *host, size_
 int rsock_fd_family(int fd);
 struct rb_addrinfo *rsock_addrinfo(VALUE host, VALUE port, int family, int socktype, int flags);
 struct rb_addrinfo *rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack);
-#ifdef HAVE_GETADDRINFO_A
-struct rb_addrinfo *rsock_getaddrinfo_a(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack, VALUE timeout);
-#endif
 
 VALUE rsock_fd_socket_addrinfo(int fd, struct sockaddr *addr, socklen_t len);
 VALUE rsock_io_socket_addrinfo(VALUE io, struct sockaddr *addr, socklen_t len);
@@ -349,7 +346,7 @@ int rsock_socket(int domain, int type, int proto);
 int rsock_detect_cloexec(int fd);
 VALUE rsock_init_sock(VALUE sock, int fd);
 VALUE rsock_sock_s_socketpair(int argc, VALUE *argv, VALUE klass);
-VALUE rsock_init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv, VALUE local_host, VALUE local_serv, int type);
+VALUE rsock_init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv, VALUE local_host, VALUE local_serv, int type, VALUE resolv_timeout, VALUE connect_timeout);
 VALUE rsock_init_unixsock(VALUE sock, VALUE path, int server);
 
 struct rsock_send_arg {
@@ -374,7 +371,7 @@ VALUE rsock_s_recvfrom_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str,
 			        VALUE ex, enum sock_recv_type from);
 VALUE rsock_s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from);
 
-int rsock_connect(int fd, const struct sockaddr *sockaddr, int len, int socks);
+int rsock_connect(int fd, const struct sockaddr *sockaddr, int len, int socks, struct timeval *timeout);
 
 VALUE rsock_s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len);
 VALUE rsock_s_accept_nonblock(VALUE klass, VALUE ex, rb_io_t *fptr,

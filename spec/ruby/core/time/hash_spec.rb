@@ -1,8 +1,8 @@
 require_relative '../../spec_helper'
 
 describe "Time#hash" do
-  it "returns a Fixnum" do
-    Time.at(100).hash.should be_an_instance_of(Fixnum)
+  it "returns an Integer" do
+    Time.at(100).hash.should be_an_instance_of(Integer)
   end
 
   it "is stable" do

@@ -88,9 +88,9 @@ ancillary_initialize(VALUE self, VALUE vfamily, VALUE vlevel, VALUE vtype, VALUE
 static VALUE
 ancdata_new(int family, int level, int type, VALUE data)
 {
-    NEWOBJ_OF(obj, struct RObject, rb_cAncillaryData, T_OBJECT);
+    VALUE obj = rb_obj_alloc(rb_cAncillaryData);
     StringValue(data);
-    ancillary_initialize((VALUE)obj, INT2NUM(family), INT2NUM(level), INT2NUM(type), data);
+    ancillary_initialize(obj, INT2NUM(family), INT2NUM(level), INT2NUM(type), data);
     return (VALUE)obj;
 }
 

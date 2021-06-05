@@ -37,7 +37,7 @@ describe "Kernel#clone" do
     o3.should.frozen?
   end
 
-  ruby_version_is '2.8' do
+  ruby_version_is '3.0' do
     it 'takes an freeze: true option to frozen copy' do
       @obj.clone(freeze: true).should.frozen?
       @obj.freeze

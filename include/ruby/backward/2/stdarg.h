@@ -20,7 +20,7 @@
  *             extension libraries. They could be written in C++98.
  * @brief      Defines old #_
  *
- * Nobody should  ever use these  macros any  longer.  No konwn  compilers lack
+ * Nobody should  ever use these  macros any  longer.  No known  compilers lack
  * prototypes today.  It's 21st century.  Just forget them.
  */
 

@@ -8,7 +8,6 @@ class TestDir < Test::Unit::TestCase
 
   def setup
     @verbose = $VERBOSE
-    $VERBOSE = nil
     @root = File.realpath(Dir.mktmpdir('__test_dir__'))
     @nodir = File.join(@root, "dummy")
     @dirs = []
@@ -88,36 +87,67 @@ class TestDir < Test::Unit::TestCase
   end
 
   def test_chdir
-    @pwd = Dir.pwd
-    @env_home = ENV["HOME"]
-    @env_logdir = ENV["LOGDIR"]
+    pwd = Dir.pwd
+    env_home = ENV["HOME"]
+    env_logdir = ENV["LOGDIR"]
     ENV.delete("HOME")
     ENV.delete("LOGDIR")
 
     assert_raise(Errno::ENOENT) { Dir.chdir(@nodir) }
     assert_raise(ArgumentError) { Dir.chdir }
-    ENV["HOME"] = @pwd
+    ENV["HOME"] = pwd
     Dir.chdir do
-      assert_equal(@pwd, Dir.pwd)
-      Dir.chdir(@root)
+      assert_warning(/conflicting chdir during another chdir block/) { Dir.chdir(pwd) }
+
+      assert_warning(/conflicting chdir during another chdir block/) { Dir.chdir(@root) }
       assert_equal(@root, Dir.pwd)
+
+      assert_warning(/conflicting chdir during another chdir block/) { Dir.chdir(pwd) }
+
+      assert_raise(RuntimeError) { Thread.new { Thread.current.report_on_exception = false; Dir.chdir(@root) }.join }
+      assert_raise(RuntimeError) { Thread.new { Thread.current.report_on_exception = false; Dir.chdir(@root) { } }.join }
+
+      assert_warning(/conflicting chdir during another chdir block/) { Dir.chdir(pwd) }
+
+      assert_warning(/conflicting chdir during another chdir block/) { Dir.chdir(@root) }
+      assert_equal(@root, Dir.pwd)
+
+      assert_warning(/conflicting chdir during another chdir block/) { Dir.chdir(pwd) }
+      Dir.chdir(@root) do
+        assert_equal(@root, Dir.pwd)
+      end
+      assert_equal(pwd, Dir.pwd)
     end
 
   ensure
     begin
-      Dir.chdir(@pwd)
+      Dir.chdir(pwd)
     rescue
-      abort("cannot return the original directory: #{ @pwd }")
+      abort("cannot return the original directory: #{ pwd }")
     end
-    if @env_home
-      ENV["HOME"] = @env_home
-    else
-      ENV.delete("HOME")
+    ENV["HOME"] = env_home
+    ENV["LOGDIR"] = env_logdir
+  end
+
+  def test_chdir_conflict
+    pwd = Dir.pwd
+    q = Queue.new
+    t = Thread.new do
+      q.pop
+      Dir.chdir(pwd) rescue $!
     end
-    if @env_logdir
-      ENV["LOGDIR"] = @env_logdir
-    else
-      ENV.delete("LOGDIR")
+    Dir.chdir(pwd) do
+      q.push nil
+      assert_instance_of(RuntimeError, t.value)
+    end
+
+    t = Thread.new do
+      q.pop
+      Dir.chdir(pwd){} rescue $!
+    end
+    Dir.chdir(pwd) do
+      q.push nil
+      assert_instance_of(RuntimeError, t.value)
     end
   end
 
@@ -135,7 +165,7 @@ class TestDir < Test::Unit::TestCase
   end
 
   def test_glob
-    assert_equal((%w(. ..) + ("a".."z").to_a).map{|f| File.join(@root, f) },
+    assert_equal((%w(.) + ("a".."z").to_a).map{|f| File.join(@root, f) },
                  Dir.glob(File.join(@root, "*"), File::FNM_DOTMATCH))
     assert_equal([@root] + ("a".."z").map {|f| File.join(@root, f) },
                  Dir.glob([@root, File.join(@root, "*")]))
@@ -172,6 +202,9 @@ class TestDir < Test::Unit::TestCase
     bug8006 = '[ruby-core:53108] [Bug #8006]'
     Dir.chdir(@root) do
       assert_include(Dir.glob("a/**/*", File::FNM_DOTMATCH), "a/.", bug8006)
+
+      Dir.mkdir("a/b")
+      assert_not_include(Dir.glob("a/**/*", File::FNM_DOTMATCH), "a/b/.")
 
       FileUtils.mkdir_p("a/b/c/d/e/f")
       assert_equal(["a/b/c/d/e/f"], Dir.glob("a/**/e/f"), bug6977)

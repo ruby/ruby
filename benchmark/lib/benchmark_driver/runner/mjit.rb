@@ -14,17 +14,17 @@ class BenchmarkDriver::Runner::Mjit < BenchmarkDriver::Runner::Ips
       jobs.map do |job|
         job = job.dup
         job.prelude = "#{job.prelude}\n#{<<~EOS}"
-          if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
+          if defined?(RubyVM::JIT) && RubyVM::JIT.enabled?
             __bmdv_ruby_i = 0
             while __bmdv_ruby_i < 10000 # jit_min_calls
               #{job.script}
               __bmdv_ruby_i += 1
             end
-            RubyVM::MJIT.pause # compile
+            RubyVM::JIT.pause # compile
             #{job.script}
-            RubyVM::MJIT.resume; RubyVM::MJIT.pause # recompile
+            RubyVM::JIT.resume; RubyVM::JIT.pause # recompile
             #{job.script}
-            RubyVM::MJIT.resume; RubyVM::MJIT.pause # recompile 2
+            RubyVM::JIT.resume; RubyVM::JIT.pause # recompile 2
           end
         EOS
         job

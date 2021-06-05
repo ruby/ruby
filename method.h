@@ -159,6 +159,7 @@ typedef struct rb_method_refined_struct {
 typedef struct rb_method_bmethod_struct {
     VALUE proc; /* should be marked */
     struct rb_hook_list_struct *hooks;
+    VALUE defined_ractor;
 } rb_method_bmethod_t;
 
 enum method_optimized_type {

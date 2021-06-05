@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require 'cgi'
 
 ##
 # The UriFormatter handles URIs from user-input and escaping.
@@ -18,6 +17,8 @@ class Gem::UriFormatter
   # Creates a new URI formatter for +uri+.
 
   def initialize(uri)
+    require 'cgi'
+
     @uri = uri
   end
 

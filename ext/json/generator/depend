@@ -140,7 +140,6 @@ generator.o: $(hdrdir)/ruby/internal/static_assert.h
 generator.o: $(hdrdir)/ruby/internal/stdalign.h
 generator.o: $(hdrdir)/ruby/internal/stdbool.h
 generator.o: $(hdrdir)/ruby/internal/symbol.h
-generator.o: $(hdrdir)/ruby/internal/token_paste.h
 generator.o: $(hdrdir)/ruby/internal/value.h
 generator.o: $(hdrdir)/ruby/internal/value_type.h
 generator.o: $(hdrdir)/ruby/internal/variable.h

@@ -1281,6 +1281,36 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_equal(%w{foo_foo foo_bar foo_baz}, @line_editor.instance_variable_get(:@menu_info).list)
   end
 
+  def test_completion_duplicated_list
+    @line_editor.completion_proc = proc { |word|
+      %w{
+        foo_foo
+        foo_foo
+        foo_bar
+      }.map { |i|
+        i.encode(@encoding)
+      }
+    }
+    input_keys('foo_')
+    assert_byte_pointer_size('foo_')
+    assert_cursor(4)
+    assert_cursor_max(4)
+    assert_line('foo_')
+    assert_equal(nil, @line_editor.instance_variable_get(:@menu_info))
+    input_keys("\C-i", false)
+    assert_byte_pointer_size('foo_')
+    assert_cursor(4)
+    assert_cursor_max(4)
+    assert_line('foo_')
+    assert_equal(nil, @line_editor.instance_variable_get(:@menu_info))
+    input_keys("\C-i", false)
+    assert_byte_pointer_size('foo_')
+    assert_cursor(4)
+    assert_cursor_max(4)
+    assert_line('foo_')
+    assert_equal(%w{foo_foo foo_bar}, @line_editor.instance_variable_get(:@menu_info).list)
+  end
+
   def test_completion
     @line_editor.completion_proc = proc { |word|
       %w{
@@ -1864,6 +1894,36 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_cursor_max(0)
   end
 
+  def test_search_history_with_isearch_terminator
+    @config.read_lines(<<~LINES.split(/(?<=\n)/))
+      set isearch-terminators "XYZ"
+    LINES
+    Reline::HISTORY.concat([
+      '1235', # old
+      '12aa',
+      '1234' # new
+    ])
+    assert_line('')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    input_keys("\C-r12a")
+    assert_line('12aa')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0) # doesn't determine yet
+    input_keys('Y')
+    assert_line('12aa')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(4)
+    input_keys('x')
+    assert_line('x12aa')
+    assert_byte_pointer_size('x')
+    assert_cursor(1)
+    assert_cursor_max(5)
+  end
+
   def test_em_set_mark_and_em_exchange_mark
     input_keys('aaa bbb ccc ddd')
     assert_byte_pointer_size('aaa bbb ccc ddd')
@@ -1894,6 +1954,26 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_cursor_max(15)
     assert_line('aaa bbb ccc ddd')
     assert_equal([0, 0], @line_editor.instance_variable_get(:@mark_pointer))
+  end
+
+  def test_em_exchange_mark_without_mark
+    input_keys('aaa bbb ccc ddd')
+    assert_byte_pointer_size('aaa bbb ccc ddd')
+    assert_cursor(15)
+    assert_cursor_max(15)
+    assert_line('aaa bbb ccc ddd')
+    input_keys("\C-a\M-f", false)
+    assert_byte_pointer_size('aaa')
+    assert_cursor(3)
+    assert_cursor_max(15)
+    assert_line('aaa bbb ccc ddd')
+    assert_equal(nil, @line_editor.instance_variable_get(:@mark_pointer))
+    input_key_by_symbol(:em_exchange_mark)
+    assert_byte_pointer_size('aaa')
+    assert_cursor(3)
+    assert_cursor_max(15)
+    assert_line('aaa bbb ccc ddd')
+    assert_equal(nil, @line_editor.instance_variable_get(:@mark_pointer))
   end
 
   def test_modify_lines_with_wrong_rs
@@ -2053,6 +2133,159 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_cursor(0)
     assert_cursor_max(0)
     assert_line('')
+  end
+
+  # Unicode emoji test
+  if RELINE_TEST_ENCODING == Encoding::UTF_8
+    def test_ed_insert_for_include_zwj_emoji
+      # U+1F468 U+200D U+1F469 U+200D U+1F467 U+200D U+1F466 is family: man, woman, girl, boy "👨‍👩‍👧‍👦"
+      input_keys("\u{1F468}") # U+1F468 is man "👨"
+      assert_line("\u{1F468}")
+      assert_byte_pointer_size("\u{1F468}")
+      assert_cursor(2)
+      assert_cursor_max(2)
+      input_keys("\u200D") # U+200D is ZERO WIDTH JOINER
+      assert_line("\u{1F468 200D}")
+      assert_byte_pointer_size("\u{1F468 200D}")
+      assert_cursor(2)
+      assert_cursor_max(2)
+      input_keys("\u{1F469}") # U+1F469 is woman "👩"
+      assert_line("\u{1F468 200D 1F469}")
+      assert_byte_pointer_size("\u{1F468 200D 1F469}")
+      assert_cursor(2)
+      assert_cursor_max(2)
+      input_keys("\u200D") # U+200D is ZERO WIDTH JOINER
+      assert_line("\u{1F468 200D 1F469 200D}")
+      assert_byte_pointer_size("\u{1F468 200D 1F469 200D}")
+      assert_cursor(2)
+      assert_cursor_max(2)
+      input_keys("\u{1F467}") # U+1F467 is girl "👧"
+      assert_line("\u{1F468 200D 1F469 200D 1F467}")
+      assert_byte_pointer_size("\u{1F468 200D 1F469 200D 1F467}")
+      assert_cursor(2)
+      assert_cursor_max(2)
+      input_keys("\u200D") # U+200D is ZERO WIDTH JOINER
+      assert_line("\u{1F468 200D 1F469 200D 1F467 200D}")
+      assert_byte_pointer_size("\u{1F468 200D 1F469 200D 1F467 200D}")
+      assert_cursor(2)
+      assert_cursor_max(2)
+      input_keys("\u{1F466}") # U+1F466 is boy "👦"
+      assert_line("\u{1F468 200D 1F469 200D 1F467 200D 1F466}")
+      assert_byte_pointer_size("\u{1F468 200D 1F469 200D 1F467 200D 1F466}")
+      assert_cursor(2)
+      assert_cursor_max(2)
+      # U+1F468 U+200D U+1F469 U+200D U+1F467 U+200D U+1F466 is family: man, woman, girl, boy "👨‍👩‍👧‍👦"
+      input_keys("\u{1F468 200D 1F469 200D 1F467 200D 1F466}")
+      assert_line("\u{1F468 200D 1F469 200D 1F467 200D 1F466 1F468 200D 1F469 200D 1F467 200D 1F466}")
+      assert_byte_pointer_size("\u{1F468 200D 1F469 200D 1F467 200D 1F466 1F468 200D 1F469 200D 1F467 200D 1F466}")
+      assert_cursor(4)
+      assert_cursor_max(4)
+    end
+
+    def test_ed_insert_for_include_valiation_selector
+      # U+0030 U+FE00 is DIGIT ZERO + VARIATION SELECTOR-1 "0︀"
+      input_keys("\u0030") # U+0030 is DIGIT ZERO
+      assert_line("\u0030")
+      assert_byte_pointer_size("\u0030")
+      assert_cursor(1)
+      assert_cursor_max(1)
+      input_keys("\uFE00") # U+FE00 is VARIATION SELECTOR-1
+      assert_line("\u{0030 FE00}")
+      assert_byte_pointer_size("\u{0030 FE00}")
+      assert_cursor(1)
+      assert_cursor_max(1)
+    end
+  end
+
+  def test_em_yank_pop
+    input_keys("def hoge\C-w\C-b\C-f\C-w", false)
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    assert_line('')
+    input_keys("\C-y", false)
+    assert_byte_pointer_size('def ')
+    assert_cursor(4)
+    assert_cursor_max(4)
+    assert_line('def ')
+    input_keys("\M-\C-y", false)
+    assert_byte_pointer_size('hoge')
+    assert_cursor(4)
+    assert_cursor_max(4)
+    assert_line('hoge')
+  end
+
+  def test_em_kill_region_with_kill_ring
+    input_keys("def hoge\C-b\C-b\C-b\C-b", false)
+    assert_byte_pointer_size('def ')
+    assert_cursor(4)
+    assert_cursor_max(8)
+    assert_line('def hoge')
+    input_keys("\C-k\C-w", false)
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    assert_line('')
+    input_keys("\C-y", false)
+    assert_byte_pointer_size('def hoge')
+    assert_cursor(8)
+    assert_cursor_max(8)
+    assert_line('def hoge')
+  end
+
+  def test_ed_search_prev_next_history_in_multibyte
+    Reline::HISTORY.concat([
+      "def hoge\n  67890\n  12345\nend", # old
+      "def aiu\n  0xDEADBEEF\nend",
+      "def foo\n  12345\nend" # new
+    ])
+    @line_editor.multiline_on
+    input_keys('  123')
+    # The ed_search_prev_history doesn't have default binding
+    @line_editor.__send__(:ed_search_prev_history, "\C-p".ord)
+    assert_whole_lines(['def foo', '  12345', 'end'])
+    assert_line_index(1)
+    assert_whole_lines(['def foo', '  12345', 'end'])
+    assert_byte_pointer_size('  123')
+    assert_cursor(5)
+    assert_cursor_max(7)
+    assert_line('  12345')
+    @line_editor.__send__(:ed_search_prev_history, "\C-p".ord)
+    assert_line_index(2)
+    assert_whole_lines(['def hoge', '  67890', '  12345', 'end'])
+    assert_byte_pointer_size('  123')
+    assert_cursor(5)
+    assert_cursor_max(7)
+    assert_line('  12345')
+    @line_editor.__send__(:ed_search_prev_history, "\C-p".ord)
+    assert_line_index(2)
+    assert_whole_lines(['def hoge', '  67890', '  12345', 'end'])
+    assert_byte_pointer_size('  123')
+    assert_cursor(5)
+    assert_cursor_max(7)
+    assert_line('  12345')
+    @line_editor.__send__(:ed_search_next_history, "\C-n".ord)
+    assert_line_index(1)
+    assert_whole_lines(['def foo', '  12345', 'end'])
+    assert_byte_pointer_size('  123')
+    assert_cursor(5)
+    assert_cursor_max(7)
+    assert_line('  12345')
+    @line_editor.__send__(:ed_search_next_history, "\C-n".ord)
+    assert_line_index(1)
+    assert_whole_lines(['def foo', '  12345', 'end'])
+    assert_byte_pointer_size('  123')
+    assert_cursor(5)
+    assert_cursor_max(7)
+    assert_line('  12345')
+  end
+
+  def test_input_unknown_char
+    input_keys('͸') # U+0378 (unassigned)
+    assert_line('͸')
+    assert_byte_pointer_size('͸')
+    assert_cursor(1)
+    assert_cursor_max(1)
   end
 
 =begin # TODO: move KeyStroke instance from Reline to LineEditor

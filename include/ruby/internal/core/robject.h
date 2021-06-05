@@ -61,10 +61,6 @@ struct RObject {
     } as;
 };
 
-RBIMPL_SYMBOL_EXPORT_BEGIN()
-struct st_table *rb_obj_iv_index_tbl(const struct RObject *obj);
-RBIMPL_SYMBOL_EXPORT_END()
-
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
 static inline uint32_t
@@ -95,19 +91,6 @@ ROBJECT_IVPTR(VALUE obj)
     else {
         return ptr->as.heap.ivptr;
     }
-}
-
-RBIMPL_ATTR_DEPRECATED(("Whoever have used it before?  Just tell us so.  We can stop deleting it."))
-RBIMPL_ATTR_PURE_UNLESS_DEBUG()
-RBIMPL_ATTR_ARTIFICIAL()
-static inline struct st_table *
-ROBJECT_IV_INDEX_TBL(VALUE obj)
-{
-    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
-
-    struct RObject *const ptr = ROBJECT(obj);
-
-    return rb_obj_iv_index_tbl(ptr);
 }
 
 #endif /* RBIMPL_ROBJECT_H */

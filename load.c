@@ -991,10 +991,29 @@ rb_resolve_feature_path(VALUE klass, VALUE fname)
         sym = ID2SYM(rb_intern("so"));
         break;
       default:
-        load_failed(fname);
+        return Qnil;
     }
 
     return rb_ary_new_from_args(2, sym, path);
+}
+
+static void
+ext_config_push(rb_thread_t *th, struct rb_ext_config *prev)
+{
+    *prev = th->ext_config;
+    th->ext_config = (struct rb_ext_config){0};
+}
+
+static void
+ext_config_pop(rb_thread_t *th, struct rb_ext_config *prev)
+{
+    th->ext_config = *prev;
+}
+
+void
+rb_ext_ractor_safe(bool flag)
+{
+    GET_THREAD()->ext_config.ractor_safe = flag;
 }
 
 /*
@@ -1015,6 +1034,8 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception)
     enum ruby_tag_type state;
     char *volatile ftptr = 0;
     VALUE path;
+    volatile bool reset_ext_config = false;
+    struct rb_ext_config prev_ext_config;
 
     fname = rb_get_path(fname);
     path = rb_str_encode_ospath(fname);
@@ -1045,6 +1066,8 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception)
 		    break;
 
 		  case 's':
+                    reset_ext_config = true;
+                    ext_config_push(th, &prev_ext_config);
 		    handle = (long)rb_vm_call_cfunc(rb_vm_top_self(), load_ext,
 						    path, VM_BLOCK_HANDLER_NONE, path);
 		    rb_ary_push(ruby_dln_librefs, LONG2NUM(handle));
@@ -1055,9 +1078,12 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception)
 	}
     }
     EC_POP_TAG();
-    th = rb_ec_thread_ptr(ec);
-    th->top_self = self;
-    th->top_wrapper = wrapper;
+
+    rb_thread_t *th2 = rb_ec_thread_ptr(ec);
+    th2->top_self = self;
+    th2->top_wrapper = wrapper;
+    if (reset_ext_config) ext_config_pop(th2, &prev_ext_config);
+
     if (ftptr) load_unlock(RSTRING_PTR(path), !state);
 
     if (state) {
@@ -1234,7 +1260,7 @@ static VALUE
 rb_f_autoload(VALUE obj, VALUE sym, VALUE file)
 {
     VALUE klass = rb_class_real(rb_vm_cbase());
-    if (NIL_P(klass)) {
+    if (!klass) {
 	rb_raise(rb_eTypeError, "Can not set autoload on singleton class");
     }
     return rb_mod_autoload(klass, sym, file);
@@ -1265,15 +1291,13 @@ rb_f_autoload_p(int argc, VALUE *argv, VALUE obj)
 void
 Init_load(void)
 {
-#undef rb_intern
-#define rb_intern(str) rb_intern2((str), strlen(str))
     rb_vm_t *vm = GET_VM();
     static const char var_load_path[] = "$:";
     ID id_load_path = rb_intern2(var_load_path, sizeof(var_load_path)-1);
 
     rb_define_hooked_variable(var_load_path, (VALUE*)vm, load_path_getter, rb_gvar_readonly_setter);
-    rb_alias_variable(rb_intern("$-I"), id_load_path);
-    rb_alias_variable(rb_intern("$LOAD_PATH"), id_load_path);
+    rb_alias_variable(rb_intern_const("$-I"), id_load_path);
+    rb_alias_variable(rb_intern_const("$LOAD_PATH"), id_load_path);
     vm->load_path = rb_ary_new();
     vm->expanded_load_path = rb_ary_tmp_new(0);
     vm->load_path_snapshot = rb_ary_tmp_new(0);

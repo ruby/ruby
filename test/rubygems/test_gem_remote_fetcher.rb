@@ -1,20 +1,15 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 
 require 'webrick'
-begin
-  require 'webrick/https'
-rescue LoadError => e
-  raise unless e.path == 'openssl'
-end
+require 'webrick/https' if Gem::HAVE_OPENSSL
 
-unless defined?(OpenSSL::SSL)
+unless Gem::HAVE_OPENSSL
   warn 'Skipping Gem::RemoteFetcher tests.  openssl not found.'
 end
 
 require 'rubygems/remote_fetcher'
 require 'rubygems/package'
-require 'minitest/mock'
 
 # = Testing Proxy Settings
 #
@@ -150,7 +145,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     fetcher = Gem::RemoteFetcher.new nil
     @fetcher = fetcher
 
-    e = assert_raises ArgumentError do
+    e = assert_raise ArgumentError do
       @fetcher.fetch_path("gems.example.com/yaml", nil, true)
     end
 
@@ -188,7 +183,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
     assert_equal 'hello', data
 
-    refute_path_exists path
+    assert_path_not_exist path
   end
 
   def util_fuck_with_fetcher(data, blow = false)
@@ -209,7 +204,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
           @test_data
         end
 
-        raise Gem::RemoteFetcher::FetchError.new("haha!", nil)
+        raise Gem::RemoteFetcher::FetchError.new("haha!", '')
       end
     end
 
@@ -321,6 +316,8 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       local_path = File.join @tempdir, @a1.file_name
       inst = nil
       FileUtils.chmod 0555, @a1.cache_dir
+      FileUtils.mkdir_p File.join(Gem.user_dir, "cache") rescue nil
+      FileUtils.chmod 0555, File.join(Gem.user_dir, "cache")
 
       Dir.chdir @tempdir do
         inst = Gem::RemoteFetcher.fetcher
@@ -329,6 +326,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       assert_equal(File.join(@tempdir, @a1.file_name),
                    inst.download(@a1, local_path))
     ensure
+      FileUtils.chmod 0755, File.join(Gem.user_dir, "cache")
       FileUtils.chmod 0755, @a1.cache_dir
     end
 
@@ -391,7 +389,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   def test_download_unsupported
     inst = Gem::RemoteFetcher.fetcher
 
-    e = assert_raises ArgumentError do
+    e = assert_raise ArgumentError do
       inst.download @a1, 'ftp://gems.rubyforge.org'
     end
 
@@ -452,7 +450,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
     url = 'http://example.com/uri'
 
-    e = assert_raises Gem::RemoteFetcher::FetchError do
+    e = assert_raise Gem::RemoteFetcher::FetchError do
       fetcher.fetch_path url
     end
 
@@ -470,7 +468,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
     url = 'http://example.com/uri'
 
-    e = assert_raises Gem::RemoteFetcher::FetchError do
+    e = assert_raise Gem::RemoteFetcher::FetchError do
       fetcher.fetch_path url
     end
 
@@ -488,11 +486,49 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
     url = 'http://example.com/uri'
 
-    e = assert_raises Gem::RemoteFetcher::FetchError do
+    e = assert_raise Gem::RemoteFetcher::FetchError do
       fetcher.fetch_path url
     end
 
     assert_match %r{ECONNREFUSED:.*connect\(2\) \(#{Regexp.escape url}\)\z},
+                 e.message
+    assert_equal url, e.uri
+  end
+
+  def test_fetch_path_timeout_error
+    fetcher = Gem::RemoteFetcher.new nil
+    @fetcher = fetcher
+
+    def fetcher.fetch_http(uri, mtime = nil, head = nil)
+      raise Timeout::Error, 'timed out'
+    end
+
+    url = 'http://example.com/uri'
+
+    e = assert_raise Gem::RemoteFetcher::FetchError do
+      fetcher.fetch_path url
+    end
+
+    assert_match %r{Timeout::Error: timed out \(#{Regexp.escape url}\)\z},
+                 e.message
+    assert_equal url, e.uri
+  end
+
+  def test_fetch_path_getaddrinfo_error
+    fetcher = Gem::RemoteFetcher.new nil
+    @fetcher = fetcher
+
+    def fetcher.fetch_http(uri, mtime = nil, head = nil)
+      raise SocketError, 'getaddrinfo: nodename nor servname provided'
+    end
+
+    url = 'http://example.com/uri'
+
+    e = assert_raise Gem::RemoteFetcher::FetchError do
+      fetcher.fetch_path url
+    end
+
+    assert_match %r{SocketError: getaddrinfo: nodename nor servname provided \(#{Regexp.escape url}\)\z},
                  e.message
     assert_equal url, e.uri
   end
@@ -507,7 +543,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
     url = 'http://example.com/uri'
 
-    e = assert_raises Gem::RemoteFetcher::FetchError do
+    e = assert_raise Gem::RemoteFetcher::FetchError do
       fetcher.fetch_path url
     end
 
@@ -597,7 +633,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       res
     end
 
-    e = assert_raises Gem::RemoteFetcher::FetchError do
+    e = assert_raise Gem::RemoteFetcher::FetchError do
       fetcher.fetch_http URI.parse(url)
     end
 
@@ -614,7 +650,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       res
     end
 
-    e = assert_raises Gem::RemoteFetcher::FetchError do
+    e = assert_raise Gem::RemoteFetcher::FetchError do
       fetcher.fetch_http URI.parse(url)
     end
 
@@ -664,7 +700,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def test_fetch_s3_config_creds
     Gem.configuration[:s3_source] = {
-      'my-bucket' => {:id => 'testuser', :secret => 'testpass'}
+      'my-bucket' => {:id => 'testuser', :secret => 'testpass'},
     }
     url = 's3://my-bucket/gems/specs.4.8.gz'
     Time.stub :now, Time.at(1561353581) do
@@ -676,7 +712,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def test_fetch_s3_config_creds_with_region
     Gem.configuration[:s3_source] = {
-      'my-bucket' => {:id => 'testuser', :secret => 'testpass', :region => 'us-west-2'}
+      'my-bucket' => {:id => 'testuser', :secret => 'testpass', :region => 'us-west-2'},
     }
     url = 's3://my-bucket/gems/specs.4.8.gz'
     Time.stub :now, Time.at(1561353581) do
@@ -688,7 +724,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def test_fetch_s3_config_creds_with_token
     Gem.configuration[:s3_source] = {
-      'my-bucket' => {:id => 'testuser', :secret => 'testpass', :security_token => 'testtoken'}
+      'my-bucket' => {:id => 'testuser', :secret => 'testpass', :security_token => 'testtoken'},
     }
     url = 's3://my-bucket/gems/specs.4.8.gz'
     Time.stub :now, Time.at(1561353581) do
@@ -703,7 +739,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     ENV['AWS_SECRET_ACCESS_KEY'] = 'testpass'
     ENV['AWS_SESSION_TOKEN'] = nil
     Gem.configuration[:s3_source] = {
-      'my-bucket' => {:provider => 'env'}
+      'my-bucket' => {:provider => 'env'},
     }
     url = 's3://my-bucket/gems/specs.4.8.gz'
     Time.stub :now, Time.at(1561353581) do
@@ -719,7 +755,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     ENV['AWS_SECRET_ACCESS_KEY'] = 'testpass'
     ENV['AWS_SESSION_TOKEN'] = nil
     Gem.configuration[:s3_source] = {
-      'my-bucket' => {:provider => 'env', :region => 'us-west-2'}
+      'my-bucket' => {:provider => 'env', :region => 'us-west-2'},
     }
     url = 's3://my-bucket/gems/specs.4.8.gz'
     Time.stub :now, Time.at(1561353581) do
@@ -735,7 +771,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     ENV['AWS_SECRET_ACCESS_KEY'] = 'testpass'
     ENV['AWS_SESSION_TOKEN'] = 'testtoken'
     Gem.configuration[:s3_source] = {
-      'my-bucket' => {:provider => 'env'}
+      'my-bucket' => {:provider => 'env'},
     }
     url = 's3://my-bucket/gems/specs.4.8.gz'
     Time.stub :now, Time.at(1561353581) do
@@ -755,7 +791,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def test_fetch_s3_instance_profile_creds
     Gem.configuration[:s3_source] = {
-      'my-bucket' => {:provider => 'instance_profile'}
+      'my-bucket' => {:provider => 'instance_profile'},
     }
 
     url = 's3://my-bucket/gems/specs.4.8.gz'
@@ -769,7 +805,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def test_fetch_s3_instance_profile_creds_with_region
     Gem.configuration[:s3_source] = {
-      'my-bucket' => {:provider => 'instance_profile', :region => 'us-west-2'}
+      'my-bucket' => {:provider => 'instance_profile', :region => 'us-west-2'},
     }
 
     url = 's3://my-bucket/gems/specs.4.8.gz'
@@ -783,7 +819,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def test_fetch_s3_instance_profile_creds_with_token
     Gem.configuration[:s3_source] = {
-      'my-bucket' => {:provider => 'instance_profile'}
+      'my-bucket' => {:provider => 'instance_profile'},
     }
 
     url = 's3://my-bucket/gems/specs.4.8.gz'
@@ -799,7 +835,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     fetcher = Gem::RemoteFetcher.new nil
     @fetcher = fetcher
 
-    e = assert_raises Gem::RemoteFetcher::FetchError do
+    e = assert_raise Gem::RemoteFetcher::FetchError do
       fetcher.fetch_s3 URI.parse(url)
     end
 
@@ -813,7 +849,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def test_fetch_s3_no_host
     Gem.configuration[:s3_source] = {
-      'my-bucket' => {:id => 'testuser', :secret => 'testpass'}
+      'my-bucket' => {:id => 'testuser', :secret => 'testpass'},
     }
 
     url = 's3://other-bucket/gems/specs.4.8.gz'
@@ -915,7 +951,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     with_configured_fetcher(
       ":ssl_ca_cert: #{temp_ca_cert}\n" +
       ":ssl_client_cert: #{temp_client_cert}\n") do |fetcher|
-      assert_raises Gem::RemoteFetcher::FetchError do
+      assert_raise Gem::RemoteFetcher::FetchError do
         fetcher.fetch_path("https://localhost:#{ssl_server.config[:Port]}/yaml")
       end
     end
@@ -924,7 +960,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   def test_do_not_allow_insecure_ssl_connection_by_default
     ssl_server = start_ssl_server
     with_configured_fetcher do |fetcher|
-      assert_raises Gem::RemoteFetcher::FetchError do
+      assert_raise Gem::RemoteFetcher::FetchError do
         fetcher.fetch_path("https://localhost:#{ssl_server.config[:Port]}/yaml")
       end
     end
@@ -944,7 +980,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       "redirecting to non-https resource: #{@server_uri} (https://localhost:#{ssl_server.config[:Port]}/insecure_redirect?to=#{@server_uri})"
 
     with_configured_fetcher(":ssl_ca_cert: #{temp_ca_cert}") do |fetcher|
-      err = assert_raises Gem::RemoteFetcher::FetchError do
+      err = assert_raise Gem::RemoteFetcher::FetchError do
         fetcher.fetch_path("https://localhost:#{ssl_server.config[:Port]}/insecure_redirect?to=#{@server_uri}")
       end
 
@@ -957,7 +993,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     temp_ca_cert = nil
 
     with_configured_fetcher(":ssl_ca_cert: #{temp_ca_cert}") do |fetcher|
-      assert_raises Gem::RemoteFetcher::FetchError do
+      assert_raise Gem::RemoteFetcher::FetchError do
         fetcher.fetch_path("https://localhost:#{ssl_server.config[:Port]}")
       end
     end
@@ -1047,7 +1083,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def start_ssl_server(config = {})
-    skip "starting this test server fails randomly on jruby" if Gem.java_platform?
+    pend "starting this test server fails randomly on jruby" if Gem.java_platform?
 
     null_logger = NilLog.new
     server = WEBrick::HTTPServer.new({
@@ -1059,7 +1095,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       :SSLCertificate => cert('ssl_cert.pem'),
       :SSLPrivateKey => key('ssl_key.pem'),
       :SSLVerifyClient => nil,
-      :SSLCertName => nil
+      :SSLCertName => nil,
     }.merge(config))
     server.mount_proc("/yaml") do |req, res|
       res.body = "--- true\n"
@@ -1142,4 +1178,4 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   def key(filename)
     OpenSSL::PKey::RSA.new(File.read(File.join(__dir__, filename)))
   end
-end if defined?(OpenSSL::SSL)
+end if Gem::HAVE_OPENSSL

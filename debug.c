@@ -26,6 +26,7 @@
 #include "vm_debug.h"
 #include "vm_callinfo.h"
 #include "ruby/thread_native.h"
+#include "ractor_core.h"
 
 /* This is the only place struct RIMemo is actually used */
 struct RIMemo {
@@ -244,7 +245,9 @@ set_debug_option(const char *str, int len, void *arg)
     }
 }
 
+#ifdef USE_RUBY_DEBUG_LOG
 STATIC_ASSERT(USE_RUBY_DEBUG_LOG, USE_RUBY_DEBUG_LOG ? RUBY_DEVEL : 1);
+#endif
 
 #if RUBY_DEVEL
 static void setup_debug_log(void);
@@ -422,9 +425,8 @@ ruby_debug_log(const char *file, int line, const char *func_name, const char *fm
         len += r;
     }
 
-#if 0 // not yet
     // ractor information
-    if (GET_VM()->ractor.cnt > 1) {
+    if (ruby_single_main_ractor == NULL) {
         rb_ractor_t *cr = GET_RACTOR();
         if (r && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
             r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tr:#%u/%u",
@@ -433,7 +435,6 @@ ruby_debug_log(const char *file, int line, const char *func_name, const char *fm
             len += r;
         }
     }
-#endif
 
     // thread information
     if (!rb_thread_alone()) {

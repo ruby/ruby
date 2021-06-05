@@ -29,6 +29,9 @@ VALUE rb_ary_tmp_new_fill(long capa);
 VALUE rb_ary_at(VALUE, VALUE);
 size_t rb_ary_memsize(VALUE);
 VALUE rb_to_array_type(VALUE obj);
+VALUE rb_to_array(VALUE obj);
+void rb_ary_cancel_sharing(VALUE ary);
+
 static inline VALUE rb_ary_entry_internal(VALUE ary, long offset);
 static inline bool ARY_PTR_USING_P(VALUE ary);
 static inline void RARY_TRANSIENT_SET(VALUE ary);
@@ -37,7 +40,6 @@ static inline void RARY_TRANSIENT_UNSET(VALUE ary);
 RUBY_SYMBOL_EXPORT_BEGIN
 /* array.c (export) */
 void rb_ary_detransient(VALUE a);
-VALUE *rb_ary_ptr_use_start(VALUE ary);
 void rb_ary_ptr_use_end(VALUE ary);
 RUBY_SYMBOL_EXPORT_END
 
@@ -46,6 +48,9 @@ VALUE rb_ary_tmp_new_from_values(VALUE, long, const VALUE *);
 VALUE rb_check_to_array(VALUE ary);
 VALUE rb_ary_behead(VALUE, long);
 VALUE rb_ary_aref1(VALUE ary, VALUE i);
+
+struct rb_execution_context_struct;
+VALUE rb_ec_ary_new_from_values(struct rb_execution_context_struct *ec, long n, const VALUE *elts);
 MJIT_SYMBOL_EXPORT_END
 
 static inline VALUE

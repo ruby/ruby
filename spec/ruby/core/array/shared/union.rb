@@ -31,7 +31,7 @@ describe :array_binary_union, shared: true do
     [0].send(@method, obj).should == ([0] | [1, 2, 3])
   end
 
-  # MRI follows hashing semantics here, so doesn't actually call eql?/hash for Fixnum/Symbol
+  # MRI follows hashing semantics here, so doesn't actually call eql?/hash for Integer/Symbol
   it "acts as if using an intermediate hash to collect values" do
     not_supported_on :opal do
       [5.0, 4.0].send(@method, [5, 4]).should == [5.0, 4.0, 5, 4]

@@ -22,7 +22,6 @@
  */
 #include "ruby/internal/compiler_since.h"
 #include "ruby/internal/has/attribute.h"
-#include "ruby/internal/token_paste.h"
 
 /* :FIXME:  config.h  includes conflicting  `#define  restrict`.   MSVC can  be
  * detected  using `RBIMPL_COMPILER_SINCE()`,  but  Clang &  family cannot  use
@@ -30,7 +29,7 @@
 
 /** Wraps (or simulates) `__declspec(restrict)` */
 #if RBIMPL_COMPILER_SINCE(MSVC, 14, 0, 0)
-# define RBIMPL_ATTR_RESTRICT() __declspec(RBIMPL_TOKEN_PASTE(re, strict))
+# define RBIMPL_ATTR_RESTRICT() __declspec(re ## strict)
 
 #elif RBIMPL_HAS_ATTRIBUTE(malloc)
 # define RBIMPL_ATTR_RESTRICT() __attribute__((__malloc__))

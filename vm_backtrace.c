@@ -11,6 +11,7 @@
 
 #include "eval_intern.h"
 #include "internal.h"
+#include "internal/error.h"
 #include "internal/vm.h"
 #include "iseq.h"
 #include "ruby/debug.h"
@@ -281,7 +282,9 @@ location_path(rb_backtrace_location_t *loc)
 }
 
 /*
- * Returns the file name of this frame.
+ * Returns the file name of this frame. This will generally be an absolute
+ * path, unless the frame is in the main script, in which case it will be the
+ * script location passed on the command line.
  *
  * For example, using +caller_locations.rb+ from Thread::Backtrace::Location
  *
@@ -315,7 +318,8 @@ location_realpath(rb_backtrace_location_t *loc)
 /*
  * Returns the full file path of this frame.
  *
- * Same as #path, but includes the absolute path.
+ * Same as #path, except that it will return absolute path
+ * even if the frame is in the main script.
  */
 static VALUE
 location_absolute_path_m(VALUE self)
@@ -512,7 +516,7 @@ backtrace_each(const rb_execution_context_t *ec,
     const rb_control_frame_t *last_cfp = ec->cfp;
     const rb_control_frame_t *start_cfp = RUBY_VM_END_CONTROL_FRAME(ec);
     const rb_control_frame_t *cfp;
-    ptrdiff_t size, i, last, start = 0;
+    ptrdiff_t size, real_size, i, j, last, start = 0;
     int ret = 0;
 
     // In the case the thread vm_stack or cfp is not initialized, there is no backtrace.
@@ -536,10 +540,15 @@ backtrace_each(const rb_execution_context_t *ec,
 	  RUBY_VM_NEXT_CONTROL_FRAME(start_cfp)); /* skip top frames */
 
     if (start_cfp < last_cfp) {
-        size = last = 0;
+        real_size = size = last = 0;
     }
     else {
-	size = start_cfp - last_cfp + 1;
+        /* Ensure we don't look at frames beyond the ones requested */
+        for(; from_last > 0 && start_cfp >= last_cfp; from_last--) {
+            last_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(last_cfp);
+        }
+
+        real_size = size = start_cfp - last_cfp + 1;
 
         if (from_last > size) {
             size = last = 0;
@@ -564,9 +573,52 @@ backtrace_each(const rb_execution_context_t *ec,
 
     init(arg, size);
 
-    /* SDR(); */
-    for (i=0, cfp = start_cfp; i<last; i++, cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
-        if (i < start) {
+    /* If a limited number of frames is requested, scan the VM stack for
+     * ignored frames (iseq without pc).  Then adjust the start for the
+     * backtrace to account for skipped frames.
+     */
+    if (start > 0 && num_frames >= 0 && num_frames < real_size) {
+        ptrdiff_t ignored_frames;
+        bool ignored_frames_before_start = false;
+        for (i=0, j=0, cfp = start_cfp; i<last && j<real_size; i++, j++, cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
+            if (cfp->iseq && !cfp->pc) {
+                if (j < start)
+                    ignored_frames_before_start = true;
+                else
+                    i--;
+            }
+        }
+        ignored_frames = j - i;
+
+        if (ignored_frames) {
+            if (ignored_frames_before_start) {
+                /* There were ignored frames before start.  So just decrementing
+                 * start for ignored frames could still result in not all desired
+                 * frames being captured.
+                 *
+                 * First, scan to the CFP of the desired start frame.
+                 *
+                 * Then scan backwards to previous frames, skipping the number of
+                 * frames ignored after start and any additional ones before start,
+                 * so the number of desired frames will be correctly captured.
+                 */
+                for (i=0, j=0, cfp = start_cfp; i<last && j<real_size && j < start; i++, j++, cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
+                    /* nothing */
+                }
+                for (; start > 0 && ignored_frames > 0 && j > 0; j--, ignored_frames--, start--, cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp)) {
+                    if (cfp->iseq && !cfp->pc) {
+                        ignored_frames++;
+                    }
+                }
+            } else {
+                /* No ignored frames before start frame, just decrement start */
+                start -= ignored_frames;
+            }
+        }
+    }
+
+    for (i=0, j=0, cfp = start_cfp; i<last && j<real_size; i++, j++, cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
+        if (j < start) {
             if (iter_skip) {
                 iter_skip(arg, cfp);
             }
@@ -575,9 +627,11 @@ backtrace_each(const rb_execution_context_t *ec,
 
 	/* fprintf(stderr, "cfp: %d\n", (rb_control_frame_t *)(ec->vm_stack + ec->vm_stack_size) - cfp); */
 	if (cfp->iseq) {
-	    if (cfp->pc) {
-		iter_iseq(arg, cfp);
-	    }
+            if (cfp->pc) {
+                iter_iseq(arg, cfp);
+            } else {
+                i--;
+            }
 	}
 	else if (RUBYVM_CFUNC_FRAME_P(cfp)) {
 	    const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
@@ -597,6 +651,15 @@ struct bt_iter_arg {
     const rb_control_frame_t *prev_cfp;
     rb_backtrace_location_t *init_loc;
 };
+
+static bool
+is_internal_location(const rb_control_frame_t *cfp)
+{
+    static const char prefix[] = "<internal:";
+    const size_t prefix_len = sizeof(prefix) - 1;
+    VALUE file = rb_iseq_path(cfp->iseq);
+    return strncmp(prefix, RSTRING_PTR(file), prefix_len) == 0;
+}
 
 static void
 bt_init(void *ptr, size_t size)
@@ -621,6 +684,27 @@ bt_iter_iseq(void *ptr, const rb_control_frame_t *cfp)
     loc->body.iseq.iseq = iseq;
     loc->body.iseq.lineno.pc = pc;
     arg->prev_loc = loc;
+}
+
+static void
+bt_iter_iseq_skip_internal(void *ptr, const rb_control_frame_t *cfp)
+{
+    struct bt_iter_arg *arg = (struct bt_iter_arg *)ptr;
+    rb_backtrace_location_t *loc = &arg->bt->backtrace[arg->bt->backtrace_size++-1];
+
+    if (!is_internal_location(cfp)) {
+        loc->type = LOCATION_TYPE_ISEQ;
+        loc->body.iseq.iseq = cfp->iseq;
+        loc->body.iseq.lineno.pc = cfp->pc;
+        arg->prev_loc = loc;
+    } else if (arg->prev_cfp) {
+        loc->type = LOCATION_TYPE_ISEQ;
+        loc->body.iseq.iseq = arg->prev_cfp->iseq;
+        loc->body.iseq.lineno.pc = arg->prev_cfp->pc;
+        arg->prev_loc = loc;
+    } else {
+        rb_bug("No non-internal backtrace entry before an <internal: backtrace entry");
+    }
 }
 
 static void
@@ -653,8 +737,18 @@ bt_iter_skip(void *ptr, const rb_control_frame_t *cfp)
     }
 }
 
+static void
+bt_iter_skip_skip_internal(void *ptr, const rb_control_frame_t *cfp)
+{
+    if (cfp->iseq && cfp->pc) {
+        if (!is_internal_location(cfp)) {
+            ((struct bt_iter_arg *) ptr)->prev_cfp = cfp;
+        }
+    }
+}
+
 static VALUE
-rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long lev, long n, int* level_too_large)
+rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long lev, long n, int* level_too_large, bool skip_internal)
 {
     struct bt_iter_arg arg;
     int too_large;
@@ -664,9 +758,9 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long lev, long 
                                lev,
                                n,
                                bt_init,
-                               bt_iter_iseq,
+                               skip_internal ? bt_iter_iseq_skip_internal : bt_iter_iseq,
                                bt_iter_cfunc,
-                               bt_iter_skip,
+                               skip_internal ? bt_iter_skip_skip_internal : bt_iter_skip,
                                &arg);
 
     if (level_too_large) *level_too_large = too_large;
@@ -677,7 +771,7 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long lev, long 
 MJIT_FUNC_EXPORTED VALUE
 rb_ec_backtrace_object(const rb_execution_context_t *ec)
 {
-    return rb_ec_partial_backtrace_object(ec, BACKTRACE_START, ALL_BACKTRACE_LINES, NULL);
+    return rb_ec_partial_backtrace_object(ec, BACKTRACE_START, ALL_BACKTRACE_LINES, NULL, FALSE);
 }
 
 static VALUE
@@ -796,16 +890,22 @@ backtrace_load_data(VALUE self, VALUE str)
     return self;
 }
 
-VALUE
-rb_ec_backtrace_str_ary(const rb_execution_context_t *ec, long lev, long n)
+static VALUE
+backtrace_limit(VALUE self)
 {
-    return backtrace_to_str_ary(rb_ec_partial_backtrace_object(ec, lev, n, NULL));
+    return LONG2NUM(rb_backtrace_length_limit);
 }
 
 VALUE
-rb_ec_backtrace_location_ary(const rb_execution_context_t *ec, long lev, long n)
+rb_ec_backtrace_str_ary(const rb_execution_context_t *ec, long lev, long n)
 {
-    return backtrace_to_location_ary(rb_ec_partial_backtrace_object(ec, lev, n, NULL));
+    return backtrace_to_str_ary(rb_ec_partial_backtrace_object(ec, lev, n, NULL, FALSE));
+}
+
+VALUE
+rb_ec_backtrace_location_ary(const rb_execution_context_t *ec, long lev, long n, bool skip_internal)
+{
+    return backtrace_to_location_ary(rb_ec_partial_backtrace_object(ec, lev, n, NULL, skip_internal));
 }
 
 /* make old style backtrace directly */
@@ -1028,7 +1128,7 @@ ec_backtrace_to_ary(const rb_execution_context_t *ec, int argc, const VALUE *arg
 	return rb_ary_new();
     }
 
-    btval = rb_ec_partial_backtrace_object(ec, lev, n, &too_large);
+    btval = rb_ec_partial_backtrace_object(ec, lev, n, &too_large, FALSE);
 
     if (too_large) {
         return Qnil;
@@ -1158,6 +1258,7 @@ Init_vm_backtrace(void)
     rb_define_alloc_func(rb_cBacktrace, backtrace_alloc);
     rb_undef_method(CLASS_OF(rb_cBacktrace), "new");
     rb_marshal_define_compat(rb_cBacktrace, rb_cArray, backtrace_dump_data, backtrace_load_data);
+    rb_define_singleton_method(rb_cBacktrace, "limit", backtrace_limit, 0);
 
     /*
      *	An object representation of a stack frame, initialized by
@@ -1352,7 +1453,7 @@ rb_debug_inspector_open(rb_debug_inspector_func_t func, void *data)
 
     dbg_context.ec = ec;
     dbg_context.cfp = dbg_context.ec->cfp;
-    dbg_context.backtrace = rb_ec_backtrace_location_ary(ec, BACKTRACE_START, ALL_BACKTRACE_LINES);
+    dbg_context.backtrace = rb_ec_backtrace_location_ary(ec, BACKTRACE_START, ALL_BACKTRACE_LINES, FALSE);
     dbg_context.backtrace_size = RARRAY_LEN(dbg_context.backtrace);
     dbg_context.contexts = collect_caller_bindings(ec);
 

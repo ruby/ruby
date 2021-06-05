@@ -30,7 +30,7 @@ describe "ENV.delete" do
     ScratchPad.recorded.should == "foo"
   end
 
-  ruby_version_is "2.8" do
+  ruby_version_is "3.0" do
     it "returns the result of given block if the named environment variable does not exist" do
       ENV.delete("foo")
       ENV.delete("foo") { |name| "bar" }.should == "bar"

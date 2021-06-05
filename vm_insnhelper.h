@@ -11,14 +11,13 @@
 
 **********************************************************************/
 
-RUBY_SYMBOL_EXPORT_BEGIN
+MJIT_SYMBOL_EXPORT_BEGIN
 
 RUBY_EXTERN VALUE ruby_vm_const_missing_count;
-RUBY_EXTERN rb_serial_t ruby_vm_global_method_state;
 RUBY_EXTERN rb_serial_t ruby_vm_global_constant_state;
 RUBY_EXTERN rb_serial_t ruby_vm_class_serial;
 
-RUBY_SYMBOL_EXPORT_END
+MJIT_SYMBOL_EXPORT_END
 
 #if VM_COLLECT_USAGE_DETAILS
 #define COLLECT_USAGE_INSN(insn)           vm_collect_usage_insn(insn)
@@ -93,7 +92,7 @@ enum vm_regan_acttype {
 #define SET_SP(x)  (VM_REG_SP  = (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
 #define INC_SP(x)  (VM_REG_SP += (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
 #define DEC_SP(x)  (VM_REG_SP -= (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
-#define SET_SV(x)  (*GET_SP() = (x))
+#define SET_SV(x)  (*GET_SP() = rb_ractor_confirm_belonging(x))
   /* set current stack value as x */
 
 /* instruction sequence C struct */
@@ -154,7 +153,7 @@ CC_SET_FASTPATH(const struct rb_callcache *cc, vm_call_handler func, bool enable
             *canary = Qfalse; /* cleanup */ \
         } \
         else { \
-            vm_canary_is_found_dead(insn, *canary); \
+            rb_vm_canary_is_found_dead(insn, *canary); \
         } \
     }
 #else
@@ -178,8 +177,6 @@ CC_SET_FASTPATH(const struct rb_callcache *cc, vm_call_handler func, bool enable
 
 #define PREV_CLASS_SERIAL() (ruby_vm_class_serial)
 #define NEXT_CLASS_SERIAL() (++ruby_vm_class_serial)
-#define GET_GLOBAL_METHOD_STATE() (ruby_vm_global_method_state)
-#define INC_GLOBAL_METHOD_STATE() (++ruby_vm_global_method_state)
 #define GET_GLOBAL_CONSTANT_STATE() (ruby_vm_global_constant_state)
 #define INC_GLOBAL_CONSTANT_STATE() (++ruby_vm_global_constant_state)
 
@@ -250,7 +247,7 @@ THROW_DATA_CONSUMED_SET(struct vm_throw_data *obj)
 
 /* If this returns true, an optimized function returned by `vm_call_iseq_setup_func`
    can be used as a fastpath. */
-static bool
+static inline bool
 vm_call_iseq_optimizable_p(const struct rb_callinfo *ci, const struct rb_callcache *cc)
 {
     return !IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) &&

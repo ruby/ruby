@@ -650,32 +650,32 @@ struct rb_define_global_function  : public driver0<const char *, ::rb_define_glo
 /// @brief        Defines klass\#mid.
 /// @param        klass  Where the method lives.
 /// @copydetails  #rb_define_global_function(mid, func, arity)
-#define rb_define_method(klass, mid, func, arity)           ruby::backward::cxxanyargs::define_method::rb_define_method::specific<arity>::define(klass, mid, func)
+#define rb_define_method(klass, mid, func, arity)           ::ruby::backward::cxxanyargs::define_method::rb_define_method::specific<arity>::define(klass, mid, func)
 
 /// @copydoc #rb_define_method(klass, mid, func, arity)
-#define rb_define_method_id(klass, mid, func, arity)        ruby::backward::cxxanyargs::define_method::rb_define_method_id::specific<arity>::define(klass, mid, func)
+#define rb_define_method_id(klass, mid, func, arity)        ::ruby::backward::cxxanyargs::define_method::rb_define_method_id::specific<arity>::define(klass, mid, func)
 
 /// @brief        Defines klass\#mid and makes it private.
 /// @copydetails  #rb_define_method(klass, mid, func, arity)
-#define rb_define_private_method(klass, mid, func, arity)   ruby::backward::cxxanyargs::define_method::rb_define_private_method::specific<arity>::define(klass, mid, func)
+#define rb_define_private_method(klass, mid, func, arity)   ::ruby::backward::cxxanyargs::define_method::rb_define_private_method::specific<arity>::define(klass, mid, func)
 
 /// @brief        Defines klass\#mid and makes it protected.
 /// @copydetails  #rb_define_method
-#define rb_define_protected_method(klass, mid, func, arity) ruby::backward::cxxanyargs::define_method::rb_define_protected_method::specific<arity>::define(klass, mid, func)
+#define rb_define_protected_method(klass, mid, func, arity) ::ruby::backward::cxxanyargs::define_method::rb_define_protected_method::specific<arity>::define(klass, mid, func)
 
 /// @brief        Defines klass.mid.(klass, mid, func, arity)
 /// @copydetails  #rb_define_method
-#define rb_define_singleton_method(klass, mid, func, arity) ruby::backward::cxxanyargs::define_method::rb_define_singleton_method::specific<arity>::define(klass, mid, func)
+#define rb_define_singleton_method(klass, mid, func, arity) ::ruby::backward::cxxanyargs::define_method::rb_define_singleton_method::specific<arity>::define(klass, mid, func)
 
 /// @brief        Defines klass\#mid and makes it a module function.
 /// @copydetails  #rb_define_method(klass, mid, func, arity)
-#define rb_define_module_function(klass, mid, func, arity)  ruby::backward::cxxanyargs::define_method::rb_define_module_function::specific<arity>::define(klass, mid, func)
+#define rb_define_module_function(klass, mid, func, arity)  ::ruby::backward::cxxanyargs::define_method::rb_define_module_function::specific<arity>::define(klass, mid, func)
 
 /// @brief Defines ::rb_mKernel \#mid.
 /// @param mid    Name of the defining method.
 /// @param func   Implementation of \#mid.
 /// @param arity  Arity of \#mid.
-#define rb_define_global_function(mid, func, arity)         ruby::backward::cxxanyargs::define_method::rb_define_global_function::specific<arity>::define(mid, func)
+#define rb_define_global_function(mid, func, arity)         ::ruby::backward::cxxanyargs::define_method::rb_define_global_function::specific<arity>::define(mid, func)
 
 }}}}}
 

@@ -155,7 +155,7 @@ module Bundler
       spec_cache_paths     = []
       spec_gemspec_paths   = []
       spec_extension_paths = []
-      specs.each do |spec|
+      Bundler.rubygems.add_default_gems_to(specs).values.each do |spec|
         spec_gem_paths << spec.full_gem_path
         # need to check here in case gems are nested like for the rails git repo
         md = %r{(.+bundler/gems/.+-[a-f0-9]{7,12})}.match(spec.full_gem_path)
@@ -203,7 +203,7 @@ module Bundler
       output
     end
 
-  private
+    private
 
     def prune_gem_cache(resolve, cache_path)
       cached = Dir["#{cache_path}/*.gem"]

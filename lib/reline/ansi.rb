@@ -1,4 +1,5 @@
 require 'io/console'
+require 'timeout'
 
 class Reline::ANSI
   def self.encoding
@@ -9,46 +10,64 @@ class Reline::ANSI
     false
   end
 
-  RAW_KEYSTROKE_CONFIG = {
-    # Console (80x25)
-    [27, 91, 49, 126] => :ed_move_to_beg, # Home
-    [27, 91, 52, 126] => :ed_move_to_end, # End
-    [27, 91, 51, 126] => :key_delete,     # Del
-    [27, 91, 65] => :ed_prev_history,     # ↑
-    [27, 91, 66] => :ed_next_history,     # ↓
-    [27, 91, 67] => :ed_next_char,        # →
-    [27, 91, 68] => :ed_prev_char,        # ←
+  def self.set_default_key_bindings(config)
+    {
+      # Console (80x25)
+      [27, 91, 49, 126] => :ed_move_to_beg, # Home
+      [27, 91, 52, 126] => :ed_move_to_end, # End
+      [27, 91, 51, 126] => :key_delete,     # Del
+      [27, 91, 65] => :ed_prev_history,     # ↑
+      [27, 91, 66] => :ed_next_history,     # ↓
+      [27, 91, 67] => :ed_next_char,        # →
+      [27, 91, 68] => :ed_prev_char,        # ←
 
-    # KDE
-    [27, 91, 72] => :ed_move_to_beg,      # Home
-    [27, 91, 70] => :ed_move_to_end,      # End
-    # Del is 0x08
-    [27, 71, 65] => :ed_prev_history,     # ↑
-    [27, 71, 66] => :ed_next_history,     # ↓
-    [27, 71, 67] => :ed_next_char,        # →
-    [27, 71, 68] => :ed_prev_char,        # ←
+      # KDE
+      [27, 91, 72] => :ed_move_to_beg,      # Home
+      [27, 91, 70] => :ed_move_to_end,      # End
+      # Del is 0x08
+      [27, 71, 65] => :ed_prev_history,     # ↑
+      [27, 71, 66] => :ed_next_history,     # ↓
+      [27, 71, 67] => :ed_next_char,        # →
+      [27, 71, 68] => :ed_prev_char,        # ←
 
-    # urxvt / exoterm
-    [27, 91, 55, 126] => :ed_move_to_beg, # Home
-    [27, 91, 56, 126] => :ed_move_to_end, # End
+      # urxvt / exoterm
+      [27, 91, 55, 126] => :ed_move_to_beg, # Home
+      [27, 91, 56, 126] => :ed_move_to_end, # End
 
-    # GNOME
-    [27, 79, 72] => :ed_move_to_beg,      # Home
-    [27, 79, 70] => :ed_move_to_end,      # End
-    # Del is 0x08
-    # Arrow keys are the same of KDE
+      # GNOME
+      [27, 79, 72] => :ed_move_to_beg,      # Home
+      [27, 79, 70] => :ed_move_to_end,      # End
+      # Del is 0x08
+      # Arrow keys are the same of KDE
 
-    # others
-    [27, 32] => :em_set_mark,             # M-<space>
-    [24, 24] => :em_exchange_mark,        # C-x C-x TODO also add Windows
-    [27, 91, 49, 59, 53, 67] => :em_next_word, # Ctrl+→
-    [27, 91, 49, 59, 53, 68] => :ed_prev_word, # Ctrl+←
+      # iTerm2
+      [27, 27, 91, 67] => :em_next_word,    # Option+→
+      [27, 27, 91, 68] => :ed_prev_word,    # Option+←
+      [195, 166] => :em_next_word,          # Option+f
+      [195, 162] => :ed_prev_word,          # Option+b
 
-    [27, 79, 65] => :ed_prev_history,     # ↑
-    [27, 79, 66] => :ed_next_history,     # ↓
-    [27, 79, 67] => :ed_next_char,        # →
-    [27, 79, 68] => :ed_prev_char,        # ←
-  }
+      # others
+      [27, 91, 49, 59, 53, 67] => :em_next_word, # Ctrl+→
+      [27, 91, 49, 59, 53, 68] => :ed_prev_word, # Ctrl+←
+
+      [27, 79, 65] => :ed_prev_history,     # ↑
+      [27, 79, 66] => :ed_next_history,     # ↓
+      [27, 79, 67] => :ed_next_char,        # →
+      [27, 79, 68] => :ed_prev_char,        # ←
+    }.each_pair do |key, func|
+      config.add_default_key_binding_by_keymap(:emacs, key, func)
+      config.add_default_key_binding_by_keymap(:vi_insert, key, func)
+      config.add_default_key_binding_by_keymap(:vi_command, key, func)
+    end
+
+    {
+      # others
+      [27, 32] => :em_set_mark,             # M-<space>
+      [24, 24] => :em_exchange_mark,        # C-x C-x TODO also add Windows
+    }.each_pair do |key, func|
+      config.add_default_key_binding_by_keymap(:emacs, key, func)
+    end
+  end
 
   @@input = STDIN
   def self.input=(val)
@@ -61,15 +80,73 @@ class Reline::ANSI
   end
 
   @@buf = []
-  def self.getc
+  def self.inner_getc
     unless @@buf.empty?
       return @@buf.shift
     end
-    c = @@input.raw(intr: true, &:getbyte)
+    until c = @@input.raw(intr: true, &:getbyte)
+      sleep 0.1
+    end
     (c == 0x16 && @@input.raw(min: 0, tim: 0, &:getbyte)) || c
   rescue Errno::EIO
     # Maybe the I/O has been closed.
     nil
+  end
+
+  @@in_bracketed_paste_mode = false
+  START_BRACKETED_PASTE = String.new("\e[200~,", encoding: Encoding::ASCII_8BIT)
+  END_BRACKETED_PASTE = String.new("\e[200~.", encoding: Encoding::ASCII_8BIT)
+  def self.getc_with_bracketed_paste
+    buffer = String.new(encoding: Encoding::ASCII_8BIT)
+    buffer << inner_getc
+    while START_BRACKETED_PASTE.start_with?(buffer) or END_BRACKETED_PASTE.start_with?(buffer) do
+      if START_BRACKETED_PASTE == buffer
+        @@in_bracketed_paste_mode = true
+        return inner_getc
+      elsif END_BRACKETED_PASTE == buffer
+        @@in_bracketed_paste_mode = false
+        ungetc(-1)
+        return inner_getc
+      end
+      begin
+        succ_c = nil
+        Timeout.timeout(Reline.core.config.keyseq_timeout * 100) {
+          succ_c = inner_getc
+        }
+      rescue Timeout::Error
+        break
+      else
+        buffer << succ_c
+      end
+    end
+    buffer.bytes.reverse_each do |ch|
+      ungetc ch
+    end
+    inner_getc
+  end
+
+  def self.getc
+    if Reline.core.config.enable_bracketed_paste
+      getc_with_bracketed_paste
+    else
+      inner_getc
+    end
+  end
+
+  def self.in_pasting?
+    @@in_bracketed_paste_mode or (not Reline::IOGate.empty_buffer?)
+  end
+
+  def self.empty_buffer?
+    unless @@buf.empty?
+      return false
+    end
+    rs, = IO.select([@@input], [], [], 0.00001)
+    if rs and rs[0]
+      false
+    else
+      true
+    end
   end
 
   def self.ungetc(c)
@@ -107,12 +184,14 @@ class Reline::ANSI
 
   def self.cursor_pos
     begin
-      res = ''
+      res = +''
       m = nil
       @@input.raw do |stdin|
         @@output << "\e[6n"
         @@output.flush
-        while (c = stdin.getc)
+        loop do
+          c = stdin.getc
+          next if c.nil?
           res << c
           m = res.match(/\e\[(?<row>\d+);(?<column>\d+)R/)
           break if m

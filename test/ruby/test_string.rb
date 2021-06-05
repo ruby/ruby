@@ -2,8 +2,6 @@
 require 'test/unit'
 
 class TestString < Test::Unit::TestCase
-  ENUMERATOR_WANTARRAY = RUBY_VERSION >= "3.0.0"
-
   WIDE_ENCODINGS = [
      Encoding::UTF_16BE, Encoding::UTF_16LE,
      Encoding::UTF_32BE, Encoding::UTF_32LE,
@@ -697,6 +695,7 @@ CODE
 
     @cls == String and
       assert_no_memory_leak([], "s = ''; salt_proc = proc{#{(crypt_supports_des_crypt? ? '..' : good_salt).inspect}}", "#{<<~"begin;"}\n#{<<~'end;'}")
+
     begin;
       1000.times { s.crypt(-salt_proc.call).clear  }
     end;
@@ -915,21 +914,15 @@ CODE
     s = S("ABC")
     assert_equal [65, 66, 67], s.bytes
 
-    if ENUMERATOR_WANTARRAY
-      assert_warn(/block not used/) {
-        assert_equal [65, 66, 67], s.bytes {}
-      }
-    else
-      res = []
-      assert_equal s.object_id, s.bytes {|x| res << x }.object_id
-      assert_equal(65, res[0])
-      assert_equal(66, res[1])
-      assert_equal(67, res[2])
-      s = S("ABC")
-      res = []
-      assert_same s, s.bytes {|x| res << x }
-      assert_equal [65, 66, 67], res
-    end
+    res = []
+    assert_equal s.object_id, s.bytes {|x| res << x }.object_id
+    assert_equal(65, res[0])
+    assert_equal(66, res[1])
+    assert_equal(67, res[2])
+    s = S("ABC")
+    res = []
+    assert_same s, s.bytes {|x| res << x }
+    assert_equal [65, 66, 67], res
   end
 
   def test_each_codepoint
@@ -954,21 +947,15 @@ CODE
     s = S("\u3042\u3044\u3046")
     assert_equal [0x3042, 0x3044, 0x3046], s.codepoints
 
-    if ENUMERATOR_WANTARRAY
-      assert_warn(/block not used/) {
-        assert_equal [0x3042, 0x3044, 0x3046], s.codepoints {}
-      }
-    else
-      res = []
-      assert_equal s.object_id, s.codepoints {|x| res << x }.object_id
-      assert_equal(0x3042, res[0])
-      assert_equal(0x3044, res[1])
-      assert_equal(0x3046, res[2])
-      s = S("ABC")
-      res = []
-      assert_same s, s.codepoints {|x| res << x }
-      assert_equal [65, 66, 67], res
-    end
+    res = []
+    assert_equal s.object_id, s.codepoints {|x| res << x }.object_id
+    assert_equal(0x3042, res[0])
+    assert_equal(0x3044, res[1])
+    assert_equal(0x3046, res[2])
+    s = S("ABC")
+    res = []
+    assert_same s, s.codepoints {|x| res << x }
+    assert_equal [65, 66, 67], res
   end
 
   def test_each_char
@@ -987,17 +974,11 @@ CODE
     s = S("ABC")
     assert_equal ["A", "B", "C"], s.chars
 
-    if ENUMERATOR_WANTARRAY
-      assert_warn(/block not used/) {
-        assert_equal ["A", "B", "C"], s.chars {}
-      }
-    else
-      res = []
-      assert_equal s.object_id, s.chars {|x| res << x }.object_id
-      assert_equal("A", res[0])
-      assert_equal("B", res[1])
-      assert_equal("C", res[2])
-    end
+    res = []
+    assert_equal s.object_id, s.chars {|x| res << x }.object_id
+    assert_equal("A", res[0])
+    assert_equal("B", res[1])
+    assert_equal("C", res[2])
   end
 
   def test_each_grapheme_cluster
@@ -1058,19 +1039,13 @@ CODE
     end
     assert_equal ["a", "b", "c"], "abc".b.grapheme_clusters
 
-    if ENUMERATOR_WANTARRAY
-      assert_warn(/block not used/) {
-        assert_equal ["A", "B", "C"], "ABC".grapheme_clusters {}
-      }
-    else
-      s = "ABC".b
-      res = []
-      assert_same s, s.grapheme_clusters {|x| res << x }
-      assert_equal(3, res.size)
-      assert_equal("A", res[0])
-      assert_equal("B", res[1])
-      assert_equal("C", res[2])
-    end
+    s = "ABC".b
+    res = []
+    assert_same s, s.grapheme_clusters {|x| res << x }
+    assert_equal(3, res.size)
+    assert_equal("A", res[0])
+    assert_equal("B", res[1])
+    assert_equal("C", res[2])
   end
 
   def test_each_line
@@ -1180,16 +1155,10 @@ CODE
     assert_equal ["hello\n", "world"], s.lines
     assert_equal ["hello\nworld"], s.lines(nil)
 
-    if ENUMERATOR_WANTARRAY
-      assert_warn(/block not used/) {
-        assert_equal ["hello\n", "world"], s.lines {}
-      }
-    else
-      res = []
-      assert_equal s.object_id, s.lines {|x| res << x }.object_id
-      assert_equal(S("hello\n"), res[0])
-      assert_equal(S("world"),  res[1])
-    end
+    res = []
+    assert_equal s.object_id, s.lines {|x| res << x }.object_id
+    assert_equal(S("hello\n"), res[0])
+    assert_equal(S("world"),  res[1])
   end
 
   def test_empty?
@@ -1620,8 +1589,10 @@ CODE
     a = S("FooBar")
     if @aref_slicebang_silent
       assert_nil( a.slice!(6) )
+      assert_nil( a.slice!(6r) )
     else
       assert_raise(IndexError) { a.slice!(6) }
+      assert_raise(IndexError) { a.slice!(6r) }
     end
     assert_equal(S("FooBar"), a)
 
@@ -1794,13 +1765,6 @@ CODE
       GC.start
       assert_equal([], "".split, bug)
     end;
-
-    begin
-      fs = $;
-      assert_warn(/`\$;' is deprecated/) {$; = " "}
-    ensure
-      EnvUtil.suppress_warning {$; = fs}
-    end
   end
 
   def test_split_encoding
@@ -1889,6 +1853,7 @@ CODE
   def test_strip
     assert_equal(S("x"), S("      x        ").strip)
     assert_equal(S("x"), S(" \n\r\t     x  \t\r\n\n      ").strip)
+    assert_equal(S("x"), S("\x00x\x00").strip)
 
     assert_equal("0b0 ".force_encoding("UTF-16BE"),
                  "\x00 0b0 ".force_encoding("UTF-16BE").strip)
@@ -1904,6 +1869,10 @@ CODE
     assert_equal(S("      x        "), b)
 
     a = S(" \n\r\t     x  \t\r\n\n      ")
+    assert_equal(S("x"), a.strip!)
+    assert_equal(S("x"), a)
+
+    a = S("\x00x\x00")
     assert_equal(S("x"), a.strip!)
     assert_equal(S("x"), a)
 
@@ -2126,6 +2095,8 @@ CODE
 
   def test_swapcase
     assert_equal(S("hi&LOW"), S("HI&low").swapcase)
+    s = S("")
+    assert_not_same(s, s.swapcase)
   end
 
   def test_swapcase!
@@ -2738,6 +2709,7 @@ CODE
   def test_rstrip
     assert_equal("  hello", "  hello  ".rstrip)
     assert_equal("\u3042", "\u3042   ".rstrip)
+    assert_equal("\u3042", "\u3042\u0000".rstrip)
     assert_raise(Encoding::CompatibilityError) { "\u3042".encode("ISO-2022-JP").rstrip }
   end
 
@@ -2758,12 +2730,17 @@ CODE
     assert_equal(nil, s4.rstrip!)
     assert_equal("\u3042", s4)
 
+    s5 = S("\u3042\u0000")
+    assert_equal("\u3042", s5.rstrip!)
+    assert_equal("\u3042", s5)
+
     assert_raise(Encoding::CompatibilityError) { "\u3042".encode("ISO-2022-JP").rstrip! }
   end
 
   def test_lstrip
     assert_equal("hello  ", "  hello  ".lstrip)
     assert_equal("\u3042", "   \u3042".lstrip)
+    assert_equal("hello  ", "\x00hello  ".lstrip)
   end
 
   def test_lstrip_bang
@@ -2782,6 +2759,11 @@ CODE
     s4 = S("\u3042")
     assert_equal(nil, s4.lstrip!)
     assert_equal("\u3042", s4)
+
+    s5 = S("\u0000\u3042")
+    assert_equal("\u3042", s5.lstrip!)
+    assert_equal("\u3042", s5)
+
   end
 
   def test_delete_prefix

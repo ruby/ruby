@@ -1,3 +1,6 @@
+# This script is based on commands from the wiki:
+# https://github.com/ruby/spec/wiki/Merging-specs-from-JRuby-and-other-sources
+
 IMPLS = {
   truffleruby: {
     git: "https://github.com/oracle/truffleruby.git",
@@ -157,19 +160,23 @@ def rebase_commits(impl)
   end
 end
 
+def new_commits?(impl)
+  Dir.chdir(SOURCE_REPO) do
+    diff = `git diff master #{impl.rebased_branch}`
+    !diff.empty?
+  end
+end
+
 def test_new_specs
   require "yaml"
   Dir.chdir(SOURCE_REPO) do
-    diff = `git diff master`
-    abort "#{BRIGHT_YELLOW}No new commits, aborting#{RESET}" if diff.empty?
-
     workflow = YAML.load_file(".github/workflows/ci.yml")
     job_name = MSPEC ? "test" : "specs"
     versions = workflow.dig("jobs", job_name, "strategy", "matrix", "ruby")
     versions = versions.grep(/^\d+\./) # Test on MRI
     min_version, max_version = versions.minmax
 
-    test_command = MSPEC ? "bundle exec rspec" : "../mspec/bin/mspec -j"
+    test_command = MSPEC ? "bundle install && bundle exec rspec" : "../mspec/bin/mspec -j"
 
     run_test = -> version {
       command = "chruby #{version} && #{test_command}"
@@ -195,8 +202,8 @@ end
 def fast_forward_master(impl)
   Dir.chdir(SOURCE_REPO) do
     sh "git", "checkout", "master"
-    sh "git", "merge", "--ff-only", "#{impl.name}-rebased"
-    sh "git", "branch", "--delete", "#{impl.name}-rebased"
+    sh "git", "merge", "--ff-only", impl.rebased_branch
+    sh "git", "branch", "--delete", impl.rebased_branch
   end
 end
 
@@ -215,10 +222,15 @@ def main(impls)
     update_repo(impl)
     filter_commits(impl)
     rebase_commits(impl)
-    test_new_specs
-    verify_commits(impl)
-    fast_forward_master(impl)
-    check_ci
+    if new_commits?(impl)
+      test_new_specs
+      verify_commits(impl)
+      fast_forward_master(impl)
+      check_ci
+    else
+      STDERR.puts "#{BRIGHT_YELLOW}No new commits#{RESET}"
+      fast_forward_master(impl)
+    end
   end
 end
 

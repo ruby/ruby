@@ -135,7 +135,6 @@ call_without_gvl.o: $(hdrdir)/ruby/internal/static_assert.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/stdalign.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/stdbool.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/symbol.h
-call_without_gvl.o: $(hdrdir)/ruby/internal/token_paste.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/value.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/value_type.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/variable.h

@@ -26,6 +26,13 @@ describe :range_cover_and_include, shared: true do
     end
   end
 
+  ruby_version_is "2.7" do
+    it "returns true if other is an element of self for beginless ranges" do
+      eval("(..10)").send(@method, 2.4).should == true
+      eval("(...10.5)").send(@method, 2.4).should == true
+    end
+  end
+
   it "compares values using <=>" do
     rng = (1..5)
     m = mock("int")

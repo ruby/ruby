@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+# shareable_constant_value: literal
 
 require 'date'
 
@@ -92,6 +93,7 @@ class Time
       off
     end
 
+    # :stopdoc:
     def zone_utc?(zone)
       # * +0000
       #   In RFC 2822, +0000 indicate a time zone at Universal Time.
@@ -267,6 +269,7 @@ class Time
       end
     end
     private :make_time
+    # :startdoc:
 
     #
     # Takes a string representation of a Time and attempts to parse it
@@ -664,29 +667,9 @@ class Time
   # You must require 'time' to use this method.
   #
   def rfc2822
-    sprintf('%s, %02d %s %0*d %02d:%02d:%02d ',
-      RFC2822_DAY_NAME[wday],
-      day, RFC2822_MONTH_NAME[mon-1], year < 0 ? 5 : 4, year,
-      hour, min, sec) <<
-    if utc?
-      '-0000'
-    else
-      off = utc_offset
-      sign = off < 0 ? '-' : '+'
-      sprintf('%s%02d%02d', sign, *(off.abs / 60).divmod(60))
-    end
+    strftime('%a, %d %b %Y %T ') << (utc? ? '-0000' : strftime('%z'))
   end
   alias rfc822 rfc2822
-
-
-  RFC2822_DAY_NAME = [ # :nodoc:
-    'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'
-  ]
-
-  RFC2822_MONTH_NAME = [ # :nodoc:
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-  ]
 
   #
   # Returns a string which represents the time as RFC 1123 date of HTTP-date
@@ -704,11 +687,7 @@ class Time
   # You must require 'time' to use this method.
   #
   def httpdate
-    t = dup.utc
-    sprintf('%s, %02d %s %0*d %02d:%02d:%02d GMT',
-      RFC2822_DAY_NAME[t.wday],
-      t.day, RFC2822_MONTH_NAME[t.mon-1], t.year < 0 ? 5 : 4, t.year,
-      t.hour, t.min, t.sec)
+    getutc.strftime('%a, %d %b %Y %T GMT')
   end
 
   #

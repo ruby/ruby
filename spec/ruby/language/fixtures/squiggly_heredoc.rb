@@ -29,6 +29,14 @@ module SquigglyHeredocSpecs
     HERE
   end
 
+  def self.backslash
+    <<~HERE
+      a
+      b\
+      c
+    HERE
+  end
+
   def self.least_indented_on_the_first_line
     <<~HERE
       a

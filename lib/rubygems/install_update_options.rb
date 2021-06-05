@@ -122,10 +122,10 @@ module Gem::InstallUpdateOptions
       options[:minimal_deps] = true
     end
 
-    add_option(:"Install/Update", "--minimal-deps",
+    add_option(:"Install/Update", "--[no-]minimal-deps",
                 "Don't upgrade any dependencies that already",
                 "meet version requirements") do |value, options|
-      options[:minimal_deps] = true
+      options[:minimal_deps] = value
     end
 
     add_option(:"Install/Update", "--[no-]post-install-message",
@@ -181,10 +181,19 @@ module Gem::InstallUpdateOptions
   end
 
   ##
-  # Default options for the gem install command.
+  # Default options for the gem install and update commands.
+
+  def install_update_options
+    {
+      :document => %w[ri],
+    }
+  end
+
+  ##
+  # Default description for the gem install and update commands.
 
   def install_update_defaults_str
-    '--document=rdoc,ri --wrappers'
+    '--document=ri'
   end
 
 end

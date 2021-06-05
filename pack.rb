@@ -77,14 +77,14 @@ class Array
   #   S> s> S!> s!> | Integer | same as the directives without ">" except
   #   L> l> L!> l!> |         | big endian
   #   I!> i!>       |         | (available since Ruby 1.9.3)
-  #   Q> q> Q!> q!> |         | "S>" is same as "n"
-  #   J> j> J!> j!> |         | "L>" is same as "N"
+  #   Q> q> Q!> q!> |         | "S>" is the same as "n"
+  #   J> j> J!> j!> |         | "L>" is the same as "N"
   #                 |         |
   #   S< s< S!< s!< | Integer | same as the directives without "<" except
   #   L< l< L!< l!< |         | little endian
   #   I!< i!<       |         | (available since Ruby 1.9.3)
-  #   Q< q< Q!< q!< |         | "S<" is same as "v"
-  #   J< j< J!< j!< |         | "L<" is same as "V"
+  #   Q< q< Q!< q!< |         | "S<" is the same as "v"
+  #   J< j< J!< j!< |         | "L<" is the same as "V"
   #                 |         |
   #   n             | Integer | 16-bit unsigned, network (big-endian) byte order
   #   N             | Integer | 32-bit unsigned, network (big-endian) byte order
@@ -197,14 +197,14 @@ class String
   #  S> s> S!> s!> | Integer | same as the directives without ">" except
   #  L> l> L!> l!> |         | big endian
   #  I!> i!>       |         |
-  #  Q> q> Q!> q!> |         | "S>" is same as "n"
-  #  J> j> J!> j!> |         | "L>" is same as "N"
+  #  Q> q> Q!> q!> |         | "S>" is the same as "n"
+  #  J> j> J!> j!> |         | "L>" is the same as "N"
   #                |         |
   #  S< s< S!< s!< | Integer | same as the directives without "<" except
   #  L< l< L!< l!< |         | little endian
   #  I!< i!<       |         |
-  #  Q< q< Q!< q!< |         | "S<" is same as "v"
-  #  J< j< J!< j!< |         | "L<" is same as "V"
+  #  Q< q< Q!< q!< |         | "S<" is the same as "v"
+  #  J< j< J!< j!< |         | "L<" is the same as "V"
   #                |         |
   #  n             | Integer | 16-bit unsigned, network (big-endian) byte order
   #  N             | Integer | 32-bit unsigned, network (big-endian) byte order
@@ -212,7 +212,7 @@ class String
   #  V             | Integer | 32-bit unsigned, VAX (little-endian) byte order
   #                |         |
   #  U             | Integer | UTF-8 character
-  #  w             | Integer | BER-compressed integer (see Array.pack)
+  #  w             | Integer | BER-compressed integer (see Array#pack)
   #
   #  Float        |         |
   #  Directive    | Returns | Meaning

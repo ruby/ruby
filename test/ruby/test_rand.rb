@@ -336,18 +336,6 @@ class TestRand < Test::Unit::TestCase
     }
   end
 
-  def test_default
-    r1 = Random::DEFAULT.dup
-    r2 = Random::DEFAULT.dup
-    3.times do
-      x0 = rand
-      x1 = r1.rand
-      x2 = r2.rand
-      assert_equal(x0, x1)
-      assert_equal(x0, x2)
-    end
-  end
-
   def test_marshal
     bug3656 = '[ruby-core:31622]'
     assert_raise(TypeError, bug3656) {
@@ -406,8 +394,10 @@ class TestRand < Test::Unit::TestCase
   def test_default_seed
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
+      verbose, $VERBOSE = $VERBOSE, nil
       seed = Random::DEFAULT::seed
       rand1 = Random::DEFAULT::rand
+      $VERBOSE = verbose
       rand2 = Random.new(seed).rand
       assert_equal(rand1, rand2)
 

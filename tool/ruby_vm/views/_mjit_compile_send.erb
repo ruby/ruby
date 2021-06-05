@@ -13,7 +13,9 @@
     MAYBE_UNUSED(<%= ope.fetch(:decl) %>) = (<%= ope.fetch(:type) %>)operands[<%= i %>];
 % end
 % # compiler: Use captured cc to avoid race condition
-    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    size_t cd_index = call_data_index(cd, body);
+    const struct rb_callcache **cc_entries = captured_cc_entries(status);
+    const struct rb_callcache *captured_cc = cc_entries[cd_index];
 %
 % # compiler: Inline send insn where some supported fastpath is used.
     const rb_iseq_t *iseq = NULL;
@@ -30,7 +32,8 @@
             && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
             && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
     )) {
-        if (false && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
             fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
         int sp_inc = (int)sp_inc_of_sendish(ci);
@@ -75,20 +78,21 @@
 
             if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
 %               # TODO: optimize this more
-                fprintf(f, "        struct rb_call_data cc_cd = { .ci = (CALL_INFO)0x%"PRIxVALUE", .cc = cc };\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
-                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling, &cc_cd);\n");
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
             }
             else { // VM_METHOD_TYPE_ISEQ
 %               # fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
                     fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "        val = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
                     fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
                     fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "            val = vm_exec(ec, FALSE);\n");
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
                     fprintf(f, "        }\n");
                 }
             }

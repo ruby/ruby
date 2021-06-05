@@ -98,7 +98,7 @@ RSpec.describe "bundler plugin install" do
 
       bundle "plugin install charlie --source #{file_uri_for(gem_repo2)}"
 
-      expect(err).to include("plugins.rb was not found")
+      expect(err).to include("Failed to install the following plugins: `charlie`. The underlying error was: plugins.rb was not found")
 
       expect(global_plugin_gem("charlie-1.0")).not_to be_directory
 
@@ -208,6 +208,19 @@ RSpec.describe "bundler plugin install" do
       plugin_should_be_installed("ga-plugin")
     end
 
+    it "accepts path sources" do
+      build_lib "ga-plugin" do |s|
+        s.write "plugins.rb"
+      end
+
+      install_gemfile <<-G
+        plugin 'ga-plugin', :path => "#{lib_path("ga-plugin-1.0")}"
+      G
+
+      expect(out).to include("Installed plugin ga-plugin")
+      plugin_should_be_installed("ga-plugin")
+    end
+
     context "in deployment mode" do
       it "installs plugins" do
         install_gemfile <<-G
@@ -215,7 +228,7 @@ RSpec.describe "bundler plugin install" do
           gem 'rack', "1.0.0"
         G
 
-        bundle "config --local deployment true"
+        bundle "config set --local deployment true"
         install_gemfile <<-G
           source '#{file_uri_for(gem_repo2)}'
           plugin 'foo'

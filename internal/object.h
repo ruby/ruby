@@ -47,8 +47,8 @@ MJIT_SYMBOL_EXPORT_END
 static inline void
 RBASIC_SET_CLASS_RAW(VALUE obj, VALUE klass)
 {
-    struct { VALUE flags; VALUE klass; } *ptr = (void *)obj;
-    ptr->klass = klass;
+    const VALUE *ptr = &RBASIC(obj)->klass;
+    *(VALUE *)ptr = klass;
 }
 
 static inline void

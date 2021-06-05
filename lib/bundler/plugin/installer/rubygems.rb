@@ -8,7 +8,7 @@ module Bundler
           "#{spec.name} #{spec.version}"
         end
 
-      private
+        private
 
         def requires_sudo?
           false # Will change on implementation of project level plugins

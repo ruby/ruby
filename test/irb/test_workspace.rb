@@ -9,6 +9,7 @@ require 'irb/color'
 module TestIRB
   class TestWorkSpace < Test::Unit::TestCase
     def test_code_around_binding
+      IRB.conf[:USE_COLORIZE] = false
       Tempfile.create('irb') do |f|
         code = <<~RUBY
           # 1
@@ -33,6 +34,8 @@ module TestIRB
 
         EOS
       end
+    ensure
+      IRB.conf.delete(:USE_COLORIZE)
     end
 
     def test_code_around_binding_with_existing_unreadable_file
@@ -52,6 +55,7 @@ module TestIRB
     end
 
     def test_code_around_binding_with_script_lines__
+      IRB.conf[:USE_COLORIZE] = false
       with_script_lines do |script_lines|
         Tempfile.create('irb') do |f|
           code = "IRB::WorkSpace.new(binding)\n"
@@ -67,6 +71,8 @@ module TestIRB
           EOS
         end
       end
+    ensure
+      IRB.conf.delete(:USE_COLORIZE)
     end
 
     def test_code_around_binding_on_irb

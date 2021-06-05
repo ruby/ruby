@@ -87,7 +87,7 @@ module Bundler
       @parsed_checksums = true
     end
 
-  private
+    private
 
     def update(local_path, remote_path)
       Bundler::CompactIndexClient.debug { "update(#{local_path}, #{remote_path})" }

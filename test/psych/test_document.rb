@@ -30,7 +30,7 @@ module Psych
     end
 
     def test_emit_bad_tag
-      assert_raises(RuntimeError) do
+      assert_raise(RuntimeError) do
         @doc.tag_directives = [['!']]
         @stream.yaml
       end

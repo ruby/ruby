@@ -16,7 +16,7 @@ class Gem::Requirement
     "<"  =>  lambda {|v, r| v <  r },
     ">=" =>  lambda {|v, r| v >= r },
     "<=" =>  lambda {|v, r| v <= r },
-    "~>" =>  lambda {|v, r| v >= r && v.release < r.bump }
+    "~>" =>  lambda {|v, r| v >= r && v.release < r.bump },
   }.freeze
 
   SOURCE_SET_REQUIREMENT = Struct.new(:for_lockfile).new "!" # :nodoc:
@@ -190,7 +190,7 @@ class Gem::Requirement
   end
 
   def hash # :nodoc:
-    requirements.sort.hash
+    requirements.map {|r| r.first == "~>" ? [r[0], r[1].to_s] : r }.sort.hash
   end
 
   def marshal_dump # :nodoc:
@@ -270,7 +270,7 @@ class Gem::Requirement
     return unless Gem::Requirement === other
 
     # An == check is always necessary
-    return false unless requirements == other.requirements
+    return false unless _sorted_requirements == other._sorted_requirements
 
     # An == check is sufficient unless any requirements use ~>
     return true unless _tilde_requirements.any?
@@ -282,8 +282,12 @@ class Gem::Requirement
 
   protected
 
+  def _sorted_requirements
+    @_sorted_requirements ||= requirements.sort_by(&:to_s)
+  end
+
   def _tilde_requirements
-    requirements.select {|r| r.first == "~>" }
+    @_tilde_requirements ||= _sorted_requirements.select {|r| r.first == "~>" }
   end
 
   private

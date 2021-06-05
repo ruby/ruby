@@ -66,7 +66,6 @@ ast_new_internal(rb_ast_t *ast, const NODE *node)
 
 static VALUE rb_ast_parse_str(VALUE str);
 static VALUE rb_ast_parse_file(VALUE path);
-static VALUE rb_ast_parse_array(VALUE array);
 
 static VALUE
 ast_parse_new(void)
@@ -245,6 +244,17 @@ ast_node_type(rb_execution_context_t *ec, VALUE self)
 
     return rb_sym_intern_ascii_cstr(node_type_to_str(data->node));
 }
+
+#ifdef EXPERIMENTAL_ISEQ_NODE_ID
+static VALUE
+ast_node_node_id(VALUE self)
+{
+    struct ASTNodeData *data;
+    TypedData_Get_Struct(self, struct ASTNodeData, &rb_node_type, data);
+
+    return INT2FIX(nd_node_id(data->node));
+}
+#endif
 
 #define NEW_CHILD(ast, node) node ? ast_new_internal(ast, node) : Qnil
 
@@ -485,9 +495,15 @@ node_children(rb_ast_t *ast, const NODE *node)
       case NODE_DXSTR:
       case NODE_DREGX:
       case NODE_DSYM:
-        return rb_ary_new_from_args(3, node->nd_lit,
-                                    NEW_CHILD(ast, node->nd_next->nd_head),
-                                    NEW_CHILD(ast, node->nd_next->nd_next));
+        {
+            NODE *n = node->nd_next;
+            VALUE head = Qnil, next = Qnil;
+            if (n) {
+                head = NEW_CHILD(ast, n->nd_head);
+                next = NEW_CHILD(ast, n->nd_next);
+            }
+            return rb_ary_new_from_args(3, node->nd_lit, head, next);
+        }
       case NODE_EVSTR:
         return rb_ary_new_from_node_args(ast, 1, node->nd_body);
       case NODE_ARGSCAT:
@@ -690,4 +706,7 @@ Init_ast(void)
     rb_mAST = rb_define_module_under(rb_cRubyVM, "AbstractSyntaxTree");
     rb_cNode = rb_define_class_under(rb_mAST, "Node", rb_cObject);
     rb_undef_alloc_func(rb_cNode);
+#ifdef EXPERIMENTAL_ISEQ_NODE_ID
+    rb_define_method(rb_cNode, "node_id", ast_node_node_id, 0);
+#endif
 }

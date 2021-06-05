@@ -76,12 +76,6 @@ Lint/LiteralInInterpolation:
     - 'language/undef_spec.rb'
     - 'library/net/ftp/connect_spec.rb'
 
-# Offense count: 16
-Lint/Loop:
-  Exclude:
-    - 'language/until_spec.rb'
-    - 'language/while_spec.rb'
-
 # Offense count: 8
 # Cop supports --auto-correct.
 Lint/MultipleComparison:

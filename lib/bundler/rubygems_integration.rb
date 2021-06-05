@@ -110,11 +110,6 @@ module Bundler
       obj.to_s
     end
 
-    def platforms
-      return [Gem::Platform::RUBY] if Bundler.settings[:force_ruby_platform]
-      Gem.platforms
-    end
-
     def configuration
       require_relative "psyched_yaml"
       Gem.configuration
@@ -227,6 +222,10 @@ module Bundler
       Gem.load_plugin_files(files) if Gem.respond_to?(:load_plugin_files)
     end
 
+    def load_env_plugins
+      Gem.load_env_plugins if Gem.respond_to?(:load_env_plugins)
+    end
+
     def ui=(obj)
       Gem::DefaultUserInteraction.ui = obj
     end
@@ -313,8 +312,13 @@ module Bundler
           end
 
           message = if spec.nil?
+            target_file = begin
+                            Bundler.default_gemfile.basename
+                          rescue GemfileNotFound
+                            "inline Gemfile"
+                          end
             "#{dep.name} is not part of the bundle." \
-            " Add it to your #{Bundler.default_gemfile.basename}."
+            " Add it to your #{target_file}."
           else
             "can't activate #{dep}, already activated #{spec.full_name}. " \
             "Make sure all dependencies are added to Gemfile."
@@ -406,6 +410,17 @@ module Bundler
     # Replace or hook into RubyGems to provide a bundlerized view
     # of the world.
     def replace_entrypoints(specs)
+      specs_by_name = add_default_gems_to(specs)
+
+      replace_gem(specs, specs_by_name)
+      stub_rubygems(specs)
+      replace_bin_path(specs_by_name)
+
+      Gem.clear_paths
+    end
+
+    # Add default gems not already present in specs, and return them as a hash.
+    def add_default_gems_to(specs)
       specs_by_name = specs.reduce({}) do |h, s|
         h[s.name] = s
         h
@@ -420,11 +435,7 @@ module Bundler
         specs_by_name[default_spec_name] = default_spec
       end
 
-      replace_gem(specs, specs_by_name)
-      stub_rubygems(specs)
-      replace_bin_path(specs_by_name)
-
-      Gem.clear_paths
+      specs_by_name
     end
 
     def undo_replacements
@@ -549,7 +560,6 @@ module Bundler
     end
 
     def all_specs
-      require_relative "remote_specification"
       Gem::Specification.stubs.map do |stub|
         StubSpecification.from_stub(stub)
       end

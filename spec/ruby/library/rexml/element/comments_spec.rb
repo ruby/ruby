@@ -1,6 +1,6 @@
 require_relative '../../../spec_helper'
 
-ruby_version_is ''...'2.8' do
+ruby_version_is ''...'3.0' do
   require 'rexml/document'
 
   describe "REXML::Element#comments" do

@@ -166,8 +166,7 @@ RSpec.describe "bundle flex_install" do
 
       expect(the_bundle).to include_gems "rack_middleware 1.0", "rack 0.9.1"
 
-      build_repo2
-      update_repo2 do
+      build_repo2 do
         build_gem "rack-obama", "2.0" do |s|
           s.add_dependency "rack", "=1.2"
         end
@@ -246,37 +245,7 @@ RSpec.describe "bundle flex_install" do
   end
 
   describe "when adding a new source" do
-    it "updates the lockfile", :bundler => "< 3" do
-      build_repo2
-      install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
-      G
-      install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        source "#{file_uri_for(gem_repo2)}"
-        gem "rack"
-      G
-
-      lockfile_should_be <<-L
-      GEM
-        remote: #{file_uri_for(gem_repo1)}/
-        remote: #{file_uri_for(gem_repo2)}/
-        specs:
-          rack (1.0.0)
-
-      PLATFORMS
-        #{lockfile_platforms}
-
-      DEPENDENCIES
-        rack
-
-      BUNDLED WITH
-         #{Bundler::VERSION}
-      L
-    end
-
-    it "updates the lockfile", :bundler => "3" do
+    it "updates the lockfile" do
       build_repo2
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"

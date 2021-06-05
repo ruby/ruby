@@ -16,6 +16,13 @@ NOINLINE(void rb_gc_set_stack_end(VALUE **stack_end_p));
 #define USE_CONSERVATIVE_STACK_END
 #endif
 
+#define RB_GC_SAVE_MACHINE_CONTEXT(th)				\
+    do {							\
+	FLUSH_REGISTER_WINDOWS;					\
+	setjmp((th)->ec->machine.regs);				\
+	SET_MACHINE_STACK_END(&(th)->ec->machine.stack_end);	\
+    } while (0)
+
 /* for GC debug */
 
 #ifndef RUBY_MARK_FREE_DEBUG

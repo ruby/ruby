@@ -785,6 +785,7 @@ class CSV
     end
 
     def skip_line?(line)
+      line = line.delete_suffix(@row_separator)
       case @skip_lines
       when String
         line.include?(@skip_lines)

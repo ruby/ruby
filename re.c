@@ -19,6 +19,7 @@
 #include "internal/imemo.h"
 #include "internal/re.h"
 #include "internal/string.h"
+#include "internal/variable.h"
 #include "regint.h"
 #include "ruby/encoding.h"
 #include "ruby/re.h"
@@ -311,7 +312,7 @@ char_to_option(int c)
     return val;
 }
 
-static const int OPTBUF_SIZE = 4;
+enum { OPTBUF_SIZE = 4 };
 
 static char *
 option_to_str(char str[OPTBUF_SIZE], int options)
@@ -1112,7 +1113,7 @@ match_regexp(VALUE match)
  *    mtch.names   -> [name1, name2, ...]
  *
  * Returns a list of names of captures as an array of strings.
- * It is same as mtch.regexp.names.
+ * This is the same as mtch.regexp.names.
  *
  *     /(?<foo>.)(?<bar>.)(?<baz>.)/.match("hoge").names
  *     #=> ["foo", "bar", "baz"]
@@ -2076,6 +2077,7 @@ match_aref(int argc, VALUE *argv, VALUE match)
  *     m = /(.)(.)(\d+)(\d)/.match("THX1138: The Movie")
  *     m.to_a               #=> ["HX1138", "H", "X", "113", "8"]
  *     m.values_at(0, 2, -2)   #=> ["HX1138", "X", "113"]
+ *     m.values_at(1..2, -1)   #=> ["H", "X", "8"]
  *
  *     m = /(?<a>\d+) *(?<op>[+\-*\/]) *(?<b>\d+)/.match("1 + 2")
  *     m.to_a               #=> ["1 + 2", "1", "+", "2"]
@@ -2943,7 +2945,9 @@ rb_reg_init_str_enc(VALUE re, VALUE s, rb_encoding *enc, int options)
 MJIT_FUNC_EXPORTED VALUE
 rb_reg_new_ary(VALUE ary, int opt)
 {
-    return rb_reg_new_str(rb_reg_preprocess_dregexp(ary, opt), opt);
+    VALUE re = rb_reg_new_str(rb_reg_preprocess_dregexp(ary, opt), opt);
+    rb_obj_freeze(re);
+    return re;
 }
 
 VALUE
@@ -3005,7 +3009,7 @@ static st_index_t reg_hash(VALUE re);
  * See also Object#hash.
  */
 
-static VALUE
+VALUE
 rb_reg_hash(VALUE re)
 {
     st_index_t hashval = reg_hash(re);
@@ -3039,7 +3043,7 @@ reg_hash(VALUE re)
  *     /abc/u == /abc/n   #=> false
  */
 
-static VALUE
+VALUE
 rb_reg_equal(VALUE re1, VALUE re2)
 {
     if (re1 == re2) return Qtrue;
@@ -3224,7 +3228,7 @@ rb_reg_match(VALUE re, VALUE str)
  *	/^[A-Z]*$/ === "HELLO" #=> true
  */
 
-VALUE
+static VALUE
 rb_reg_eqq(VALUE re, VALUE str)
 {
     long start;
@@ -3464,7 +3468,7 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
 		flags |= ARG_ENCODING_NONE;
 	    }
 	    else {
-		rb_warn("encoding option is ignored - %s", kcode);
+                rb_category_warn(RB_WARN_CATEGORY_DEPRECATED, "encoding option is ignored - %s", kcode);
 	    }
 	}
 	str = StringValue(argv[0]);
@@ -3606,7 +3610,7 @@ rb_reg_options(VALUE re)
     return options;
 }
 
-VALUE
+static VALUE
 rb_check_regexp_type(VALUE re)
 {
     return rb_check_convert_type(re, T_REGEXP, "Regexp", "to_regexp");
@@ -3917,29 +3921,16 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
 }
 
 static VALUE
-kcode_getter(ID _x, VALUE *_y)
-{
-    rb_warn("variable $KCODE is no longer effective");
-    return Qnil;
-}
-
-static void
-kcode_setter(VALUE val, ID id, VALUE *_)
-{
-    rb_warn("variable $KCODE is no longer effective; ignored");
-}
-
-static VALUE
 ignorecase_getter(ID _x, VALUE *_y)
 {
-    rb_warn("variable $= is no longer effective");
+    rb_category_warn(RB_WARN_CATEGORY_DEPRECATED, "variable $= is no longer effective");
     return Qfalse;
 }
 
 static void
 ignorecase_setter(VALUE val, ID id, VALUE *_)
 {
-    rb_warn("variable $= is no longer effective; ignored");
+    rb_category_warn(RB_WARN_CATEGORY_DEPRECATED, "variable $= is no longer effective; ignored");
 }
 
 static VALUE
@@ -4052,9 +4043,13 @@ Init_Regexp(void)
     rb_define_virtual_variable("$'", postmatch_getter, 0);
     rb_define_virtual_variable("$+", last_paren_match_getter, 0);
 
+    rb_gvar_ractor_local("$~");
+    rb_gvar_ractor_local("$&");
+    rb_gvar_ractor_local("$`");
+    rb_gvar_ractor_local("$'");
+    rb_gvar_ractor_local("$+");
+
     rb_define_virtual_variable("$=", ignorecase_getter, ignorecase_setter);
-    rb_define_virtual_variable("$KCODE", kcode_getter, kcode_setter);
-    rb_define_virtual_variable("$-K", kcode_getter, kcode_setter);
 
     rb_cRegexp = rb_define_class("Regexp", rb_cObject);
     rb_define_alloc_func(rb_cRegexp, rb_reg_s_alloc);

@@ -207,8 +207,8 @@ module MakeMakefile
         ['RUBYCOMMONDIR', '$(vendordir)$(target_prefix)'],
         ['RUBYLIBDIR',    '$(vendorlibdir)$(target_prefix)'],
         ['RUBYARCHDIR',   '$(vendorarchdir)$(target_prefix)'],
-        ['HDRDIR',        '$(rubyhdrdir)/ruby$(target_prefix)'],
-        ['ARCHHDRDIR',    '$(rubyhdrdir)/$(arch)/ruby$(target_prefix)'],
+        ['HDRDIR',        '$(vendorhdrdir)$(target_prefix)'],
+        ['ARCHHDRDIR',    '$(vendorarchhdrdir)$(target_prefix)'],
       ]
     else
       dirs = [
@@ -216,8 +216,8 @@ module MakeMakefile
         ['RUBYCOMMONDIR', '$(sitedir)$(target_prefix)'],
         ['RUBYLIBDIR',    '$(sitelibdir)$(target_prefix)'],
         ['RUBYARCHDIR',   '$(sitearchdir)$(target_prefix)'],
-        ['HDRDIR',        '$(rubyhdrdir)/ruby$(target_prefix)'],
-        ['ARCHHDRDIR',    '$(rubyhdrdir)/$(arch)/ruby$(target_prefix)'],
+        ['HDRDIR',        '$(sitehdrdir)$(target_prefix)'],
+        ['ARCHHDRDIR',    '$(sitearchhdrdir)$(target_prefix)'],
       ]
     end
     dirs << ['target_prefix', (target_prefix ? "/#{target_prefix}" : "")]
@@ -616,7 +616,7 @@ MSG
     MakeMakefile.rm_f "#{CONFTEST}*"
   end
 
-  alias_method :try_header, (config_string('try_header') || :try_cpp)
+  alias try_header try_compile
 
   def cpp_include(header)
     if header
@@ -784,7 +784,7 @@ int main() {printf("%"PRI_CONFTEST_PREFIX"#{neg ? 'd' : 'u'}\\n", conftest_const
     if opt and !opt.empty?
       [[:to_str], [:join, " "], [:to_s]].each do |meth, *args|
         if opt.respond_to?(meth)
-          break opt = opt.send(meth, *args)
+          break opt = opt.__send__(meth, *args)
         end
       end
       opt = "#{opt} #{libs}"
@@ -982,7 +982,7 @@ SRC
       if noun
         [[:to_str], [:join, ","], [:to_s]].each do |meth, *args|
           if noun.respond_to?(meth)
-            break noun = noun.send(meth, *args)
+            break noun = noun.__send__(meth, *args)
           end
         end
         unless noun.empty?
@@ -1821,7 +1821,7 @@ SRC
   # without modifying any of the global values mentioned above.
   def pkg_config(pkg, option=nil)
     if pkgconfig = with_config("#{pkg}-config") and find_executable0(pkgconfig)
-      # iff package specific config command is given
+      # if and only if package specific config command is given
     elsif ($PKGCONFIG ||=
            (pkgconfig = with_config("pkg-config", ("pkg-config" unless CROSS_COMPILING))) &&
            find_executable0(pkgconfig) && pkgconfig) and
@@ -1908,7 +1908,7 @@ SRC
         path.sub!(/\A([A-Za-z]):(?=\/)/, '/\1')
         path
       end
-    when 'cygwin'
+    when 'cygwin', 'msys'
       if CONFIG['target_os'] != 'cygwin'
         def mkintpath(path)
           IO.popen(["cygpath", "-u", path], &:read).chomp
@@ -1931,6 +1931,7 @@ SHELL = /bin/sh
 
 # V=0 quiet, V=1 verbose.  other values don't work.
 V = 0
+V0 = $(V:0=)
 Q1 = $(V:1=)
 Q = $(Q1:0=@)
 ECHO1 = $(V:1=@ #{CONFIG['NULLCMD']})
@@ -1942,7 +1943,7 @@ NULLCMD = #{CONFIG['NULLCMD']}
 srcdir = #{srcdir.gsub(/\$\((srcdir)\)|\$\{(srcdir)\}/) {mkintpath(CONFIG[$1||$2]).unspace}}
 topdir = #{mkintpath(topdir = $extmk ? CONFIG["topdir"] : $topdir).unspace}
 hdrdir = #{(hdrdir = CONFIG["hdrdir"]) == topdir ? "$(topdir)" : mkintpath(hdrdir).unspace}
-arch_hdrdir = #{$arch_hdrdir.quote}
+arch_hdrdir = #{mkintpath($arch_hdrdir).unspace}
 PATH_SEPARATOR = #{CONFIG['PATH_SEPARATOR']}
 VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
 }
@@ -2769,7 +2770,7 @@ distclean-rb::
 distclean-so::
 distclean-static::
 distclean: clean distclean-so distclean-static distclean-rb-default distclean-rb
-\t\t-$(Q)$(RM) Makefile $(RUBY_EXTCONF_H) #{CONFTEST}.* mkmf.log
+\t\t-$(Q)$(RM) Makefile $(RUBY_EXTCONF_H) #{CONFTEST}.* mkmf.log#{' exts.mk' if $extmk}
 \t\t-$(Q)$(RM) core ruby$(EXEEXT) *~ $(DISTCLEANFILES#{sep})
 \t\t-$(Q)$(RMDIRS) $(DISTCLEANDIRS#{sep})#{$ignore_error}
 

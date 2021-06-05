@@ -27,7 +27,7 @@ module Bundler
       return false, specific_failure_message(e)
     end
 
-  private
+    private
 
     def specific_failure_message(e)
       message = "#{e.class}: #{e.message}\n"

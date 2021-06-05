@@ -22,13 +22,16 @@
  */
 #include "ruby/internal/config.h"      /* for ENUM_OVER_INT */
 #include "ruby/internal/attr/artificial.h"
+#include "ruby/internal/attr/deprecated.h"
 #include "ruby/internal/attr/flag_enum.h"
 #include "ruby/internal/attr/forceinline.h"
 #include "ruby/internal/attr/noalias.h"
 #include "ruby/internal/attr/pure.h"
 #include "ruby/internal/cast.h"
+#include "ruby/internal/compiler_since.h"
 #include "ruby/internal/core/rbasic.h"
 #include "ruby/internal/dllexport.h"
+#include "ruby/internal/has/extension.h"
 #include "ruby/internal/special_consts.h"
 #include "ruby/internal/stdbool.h"
 #include "ruby/internal/value.h"
@@ -37,6 +40,12 @@
 #include "ruby/defines.h"
 
 /** @cond INTERNAL_MACRO */
+#if RBIMPL_HAS_EXTENSION(enumerator_attributes)
+# define RBIMPL_HAVE_ENUM_ATTRIBUTE 1
+#elif RBIMPL_COMPILER_SINCE(GCC, 6, 0, 0)
+# define RBIMPL_HAVE_ENUM_ATTRIBUTE 1
+#endif
+
 #ifdef ENUM_OVER_INT
 # define RBIMPL_WIDER_ENUM 1
 #elif SIZEOF_INT * CHAR_BIT > 12+19+1
@@ -52,6 +61,7 @@
 #define FL_PROMOTED1    RBIMPL_CAST((VALUE)RUBY_FL_PROMOTED1)
 #define FL_FINALIZE     RBIMPL_CAST((VALUE)RUBY_FL_FINALIZE)
 #define FL_TAINT        RBIMPL_CAST((VALUE)RUBY_FL_TAINT)
+#define FL_SHAREABLE    RBIMPL_CAST((VALUE)RUBY_FL_SHAREABLE)
 #define FL_UNTRUSTED    RBIMPL_CAST((VALUE)RUBY_FL_UNTRUSTED)
 #define FL_SEEN_OBJ_ID  RBIMPL_CAST((VALUE)RUBY_FL_SEEN_OBJ_ID)
 #define FL_EXIVAR       RBIMPL_CAST((VALUE)RUBY_FL_EXIVAR)
@@ -108,8 +118,8 @@
 #define RB_OBJ_TAINTED       RB_OBJ_TAINTED
 #define RB_OBJ_TAINTED_RAW   RB_OBJ_TAINTED_RAW
 #define RB_OBJ_TAINT_RAW     RB_OBJ_TAINT_RAW
-#define RB_OBJ_UNTRUST       RB_OBJ_UNTRUST
-#define RB_OBJ_UNTRUSTED     RB_OBJ_UNTRUSTED
+#define RB_OBJ_UNTRUST       RB_OBJ_TAINT
+#define RB_OBJ_UNTRUSTED     RB_OBJ_TAINTED
 /** @endcond */
 
 /**
@@ -164,8 +174,25 @@ ruby_fl_type {
     RUBY_FL_PROMOTED1    = (1<<6),
     RUBY_FL_PROMOTED     = RUBY_FL_PROMOTED0 | RUBY_FL_PROMOTED1,
     RUBY_FL_FINALIZE     = (1<<7),
-    RUBY_FL_TAINT        = (1<<8),
-    RUBY_FL_UNTRUSTED    = RUBY_FL_TAINT,
+    RUBY_FL_TAINT
+
+#if defined(RBIMPL_HAVE_ENUM_ATTRIBUTE)
+    RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
+#elif defined(_MSC_VER)
+# pragma deprecated(RUBY_FL_TAINT)
+#endif
+
+                         = (1<<8),
+    RUBY_FL_SHAREABLE    = (1<<8),
+    RUBY_FL_UNTRUSTED
+
+#if defined(RBIMPL_HAVE_ENUM_ATTRIBUTE)
+    RBIMPL_ATTR_DEPRECATED(("trustedness turned out to be a wrong idea."))
+#elif defined(_MSC_VER)
+# pragma deprecated(RUBY_FL_UNTRUSTED)
+#endif
+
+                         = (1<<8),
     RUBY_FL_SEEN_OBJ_ID  = (1<<9),
     RUBY_FL_EXIVAR       = (1<<10),
     RUBY_FL_FREEZE       = (1<<11),
@@ -190,7 +217,7 @@ ruby_fl_type {
     RBIMPL_FL_USER_N(16),
     RBIMPL_FL_USER_N(17),
     RBIMPL_FL_USER_N(18),
-#if ENUM_OVER_INT
+#ifdef ENUM_OVER_INT
     RBIMPL_FL_USER_N(19),
 #else
 # define RUBY_FL_USER19 (RBIMPL_VALUE_ONE<<(RUBY_FL_USHIFT+19))
@@ -202,7 +229,19 @@ ruby_fl_type {
     RUBY_FL_SINGLETON = RUBY_FL_USER0,
 };
 
-enum { RUBY_FL_DUPPED = RUBY_T_MASK | RUBY_FL_EXIVAR | RUBY_FL_TAINT };
+enum {
+    RUBY_FL_DUPPED
+
+#if defined(RBIMPL_HAVE_ENUM_ATTRIBUTE)
+    RBIMPL_ATTR_DEPRECATED(("It seems there is no actual usage of this enum."))
+#elif defined(_MSC_VER)
+# pragma deprecated(RUBY_FL_DUPPED)
+#endif
+
+    = RUBY_T_MASK | RUBY_FL_EXIVAR
+};
+
+#undef RBIMPL_HAVE_ENUM_ATTRIBUTE
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 void rb_obj_infect(VALUE victim, VALUE carrier);
@@ -357,71 +396,61 @@ RB_FL_REVERSE(VALUE obj, VALUE flags)
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
 static inline bool
 RB_OBJ_TAINTABLE(VALUE obj)
 {
-    if (! RB_FL_ABLE(obj)) {
-        return false;
-    }
-    else if (RB_TYPE_P(obj, RUBY_T_BIGNUM)) {
-        return false;
-    }
-    else if (RB_TYPE_P(obj, RUBY_T_FLOAT)) {
-        return false;
-    }
-    else {
-        return true;
-    }
+    return false;
 }
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
 static inline VALUE
 RB_OBJ_TAINTED_RAW(VALUE obj)
 {
-    return RB_FL_TEST_RAW(obj, RUBY_FL_TAINT);
+    return false;
 }
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
 static inline bool
 RB_OBJ_TAINTED(VALUE obj)
 {
-    return RB_FL_ANY(obj, RUBY_FL_TAINT);
+    return false;
 }
 
 RBIMPL_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
 static inline void
 RB_OBJ_TAINT_RAW(VALUE obj)
 {
-    RB_FL_SET_RAW(obj, RUBY_FL_TAINT);
+    return;
 }
 
 RBIMPL_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
 static inline void
 RB_OBJ_TAINT(VALUE obj)
 {
-    if (RB_OBJ_TAINTABLE(obj)) {
-        RB_OBJ_TAINT_RAW(obj);
-    }
+    return;
 }
 
 RBIMPL_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
 static inline void
 RB_OBJ_INFECT_RAW(VALUE dst, VALUE src)
 {
-    RBIMPL_ASSERT_OR_ASSUME(RB_OBJ_TAINTABLE(dst));
-    RBIMPL_ASSERT_OR_ASSUME(RB_FL_ABLE(src));
-    RB_FL_SET_RAW(dst, RB_OBJ_TAINTED_RAW(src));
+    return;
 }
 
 RBIMPL_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
 static inline void
 RB_OBJ_INFECT(VALUE dst, VALUE src)
 {
-    if (RB_OBJ_TAINTABLE(dst) && RB_FL_ABLE(src)) {
-        RB_OBJ_INFECT_RAW(dst, src);
-    }
+    return;
 }
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()

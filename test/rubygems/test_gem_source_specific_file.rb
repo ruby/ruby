@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/source'
 
 class TestGemSourceSpecificFile < Gem::TestCase
@@ -27,7 +27,7 @@ class TestGemSourceSpecificFile < Gem::TestCase
   end
 
   def test_fetch_spec_fails_on_unknown_name
-    assert_raises Gem::Exception do
+    assert_raise Gem::Exception do
       @sf.fetch_spec(nil)
     end
   end

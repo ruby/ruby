@@ -8,7 +8,7 @@
 require 'rbconfig'
 
 module Gem
-  VERSION = "3.2.0.rc.1".freeze
+  VERSION = "3.3.0.dev".freeze
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -118,6 +118,10 @@ module Gem
   # This allows switching ".untaint" to ".tap(&Gem::UNTAINT)",
   # to avoid deprecation warnings in Ruby 2.7.
   UNTAINT = RUBY_VERSION < '2.7' ? :untaint.to_sym : proc{}
+
+  # When https://bugs.ruby-lang.org/issues/17259 is available, there is no need to override Kernel#warn
+  KERNEL_WARN_IGNORES_INTERNAL_ENTRIES = RUBY_ENGINE == "truffleruby" ||
+      (RUBY_ENGINE == "ruby" && RUBY_VERSION >= '3.0')
 
   ##
   # An Array of Regexps that match windows Ruby platforms.
@@ -271,7 +275,7 @@ module Gem
 
     unless spec = specs.first
       msg = "can't find gem #{dep} with executable #{exec_name}"
-      if name == "bundler" && bundler_message = Gem::BundlerVersionFinder.missing_version_message
+      if dep.filters_bundler? && bundler_message = Gem::BundlerVersionFinder.missing_version_message
         msg = bundler_message
       end
       raise Gem::GemNotFoundException, msg
@@ -465,7 +469,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
       next if File.exist? subdir
       begin
         FileUtils.mkdir_p subdir, **options
-      rescue Errno::EACCES
+      rescue SystemCallError
       end
     end
   ensure
@@ -622,7 +626,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
       # Try requiring the gem version *or* stdlib version of psych.
       require 'psych'
     rescue ::LoadError
-      # If we can't load psych, thats fine, go on.
+      # If we can't load psych, that's fine, go on.
     else
       # If 'yaml' has already been required, then we have to
       # be sure to switch it over to the newly loaded psych.
@@ -809,7 +813,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   ##
   # Safely write a file in binary mode on all platforms.
   def self.write_binary(path, data)
-    open(path, 'wb') do |io|
+    File.open(path, 'wb') do |io|
       begin
         io.flock(File::LOCK_EX)
       rescue *WRITE_BINARY_ERRORS
@@ -820,7 +824,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     if Thread.main != Thread.current
       raise
     else
-      open(path, 'wb') do |io|
+      File.open(path, 'wb') do |io|
         io.write data
       end
     end
@@ -975,7 +979,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
                      val = RbConfig::CONFIG[key]
                      next unless val and not val.empty?
                      ".#{val}"
-                   end
+                   end,
                   ].compact.uniq
   end
 

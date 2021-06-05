@@ -131,7 +131,7 @@ module IRB
 
       @echo_on_assignment = IRB.conf[:ECHO_ON_ASSIGNMENT]
       if @echo_on_assignment.nil?
-        @echo_on_assignment = false
+        @echo_on_assignment = :truncate
       end
 
       @newline_before_multiline_output = IRB.conf[:NEWLINE_BEFORE_MULTILINE_OUTPUT]
@@ -251,12 +251,23 @@ module IRB
     attr_accessor :echo
     # Whether to echo for assignment expressions
     #
-    # Uses <code>IRB.conf[:ECHO_ON_ASSIGNMENT]</code> if available, or defaults to +false+.
+    # If set to +false+, the value of assignment will not be shown.
     #
+    # If set to +true+, the value of assignment will be shown.
+    #
+    # If set to +:truncate+, the value of assignment will be shown and truncated.
+    #
+    # It defaults to +:truncate+.
+    #
+    #     a = "omg"
+    #     #=> omg
+    #     a = "omg" * 10
+    #     #=> omgomgomgomgomgomgomg...
+    #     IRB.CurrentContext.echo_on_assignment = false
     #     a = "omg"
     #     IRB.CurrentContext.echo_on_assignment = true
     #     a = "omg"
-    #     #=> omg
+    #     #=> omgomgomgomgomgomgomgomgomgomg
     attr_accessor :echo_on_assignment
     # Whether a newline is put before multiline output.
     #

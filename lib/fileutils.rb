@@ -102,7 +102,7 @@ end
 # <tt>:verbose</tt> flags to methods in FileUtils.
 #
 module FileUtils
-  VERSION = "1.4.1"
+  VERSION = "1.5.0"
 
   def self.private_module_function(name)   #:nodoc:
     module_function name
@@ -208,7 +208,9 @@ module FileUtils
     fu_output_message "mkdir -p #{mode ? ('-m %03o ' % mode) : ''}#{list.join ' '}" if verbose
     return *list if noop
 
-    list.map {|path| remove_trailing_slash(path)}.each do |path|
+    list.each do |item|
+      path = remove_trailing_slash(item)
+
       # optimize for the most common case
       begin
         fu_mkdir path, mode
@@ -221,8 +223,9 @@ module FileUtils
       until path == stack.last   # dirname("/")=="/", dirname("C:/")=="C:/"
         stack.push path
         path = File.dirname(path)
+        break if File.directory?(path)
       end
-      stack.pop                 # root directory should exist
+      stack.pop if path == stack.last   # root directory should exist
       stack.reverse_each do |dir|
         begin
           fu_mkdir dir, mode
@@ -834,13 +837,8 @@ module FileUtils
   def compare_stream(a, b)
     bsize = fu_stream_blksize(a, b)
 
-    if RUBY_VERSION > "2.4"
-      sa = String.new(capacity: bsize)
-      sb = String.new(capacity: bsize)
-    else
-      sa = String.new
-      sb = String.new
-    end
+    sa = String.new(capacity: bsize)
+    sb = String.new(capacity: bsize)
 
     begin
       a.read(bsize, sa)
@@ -1289,12 +1287,7 @@ module FileUtils
       opts = {}
       opts[:encoding] = fu_windows? ? ::Encoding::UTF_8 : path.encoding
 
-      files = if Dir.respond_to?(:children)
-        Dir.children(path, **opts)
-      else
-        Dir.entries(path(), **opts)
-           .reject {|n| n == '.' or n == '..' }
-      end
+      files = Dir.children(path, **opts)
 
       untaint = RUBY_VERSION < '2.7'
       files.map {|n| Entry_.new(prefix(), join(rel(), untaint ? n.untaint : n)) }
@@ -1620,7 +1613,7 @@ module FileUtils
 
   def fu_output_message(msg)   #:nodoc:
     output = @fileutils_output if defined?(@fileutils_output)
-    output ||= $stderr
+    output ||= $stdout
     if defined?(@fileutils_label)
       msg = @fileutils_label + msg
     end

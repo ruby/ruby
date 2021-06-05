@@ -18,6 +18,7 @@
 #include "internal/object.h"
 #include "internal/proc.h"
 #include "internal/symbol.h"
+#include "method.h"
 #include "iseq.h"
 #include "vm_core.h"
 
@@ -48,12 +49,30 @@ VALUE rb_cProc;
 static rb_block_call_func bmcall;
 static int method_arity(VALUE);
 static int method_min_max_arity(VALUE, int *max);
+static VALUE proc_binding(VALUE self);
 
 #define attached id__attached__
 
 /* Proc */
 
 #define IS_METHOD_PROC_IFUNC(ifunc) ((ifunc)->func == bmcall)
+
+/* :FIXME: The way procs are cloned has been historically different from the
+ * way everything else are.  @shyouhei is not sure for the intention though.
+ */
+#undef CLONESETUP
+static inline void
+CLONESETUP(VALUE clone, VALUE obj)
+{
+    RBIMPL_ASSERT_OR_ASSUME(! RB_SPECIAL_CONST_P(obj));
+    RBIMPL_ASSERT_OR_ASSUME(! RB_SPECIAL_CONST_P(clone));
+
+    const VALUE flags = RUBY_FL_PROMOTED0 | RUBY_FL_PROMOTED1 | RUBY_FL_FINALIZE;
+    rb_obj_setup(clone, rb_singleton_class_clone(obj),
+                 RB_FL_TEST_RAW(obj, ~flags));
+    rb_singleton_class_attached(RBASIC_CLASS(clone), clone);
+    if (RB_FL_TEST(obj, RUBY_FL_EXIVAR)) rb_copy_generic_ivar(clone, obj);
+}
 
 static void
 block_mark(const struct rb_block *block)
@@ -66,7 +85,7 @@ block_mark(const struct rb_block *block)
 	    RUBY_MARK_MOVABLE_UNLESS_NULL(captured->self);
 	    RUBY_MARK_MOVABLE_UNLESS_NULL((VALUE)captured->code.val);
 	    if (captured->ep && captured->ep[VM_ENV_DATA_INDEX_ENV] != Qundef /* cfunc_proc_t */) {
-                RUBY_MARK_MOVABLE_UNLESS_NULL(VM_ENV_ENVVAL(captured->ep));
+                rb_gc_mark(VM_ENV_ENVVAL(captured->ep));
 	    }
 	}
 	break;
@@ -89,9 +108,6 @@ block_compact(struct rb_block *block)
 	    struct rb_captured_block *captured = &block->as.captured;
             captured->self = rb_gc_location(captured->self);
             captured->code.val = rb_gc_location(captured->code.val);
-            if (captured->ep && captured->ep[VM_ENV_DATA_INDEX_ENV] != Qundef /* cfunc_proc_t */) {
-                UPDATE_REFERENCE(captured->ep[VM_ENV_DATA_INDEX_ENV]);
-            }
 	}
 	break;
       case block_type_symbol:
@@ -423,7 +439,11 @@ get_local_variable_ptr(const rb_env_t **envp, ID lid)
     const rb_env_t *env = *envp;
     do {
 	if (!VM_ENV_FLAGS(env->ep, VM_FRAME_FLAG_CFRAME)) {
-	    const rb_iseq_t *iseq = env->iseq;
+            if (VM_ENV_FLAGS(env->ep, VM_ENV_FLAG_ISOLATED)) {
+                return NULL;
+            }
+
+            const rb_iseq_t *iseq = env->iseq;
 	    unsigned int i;
 
 	    VM_ASSERT(rb_obj_is_iseq((VALUE)iseq));
@@ -797,18 +817,15 @@ proc_new(VALUE klass, int8_t is_lambda, int8_t kernel)
 /*
  *  call-seq:
  *     Proc.new {|...| block } -> a_proc
- *     Proc.new                -> a_proc
  *
- *  Creates a new Proc object, bound to the current context. Proc::new
- *  may be called without a block only within a method with an
- *  attached block, in which case that block is converted to the Proc
- *  object.
+ *  Creates a new Proc object, bound to the current context.
  *
- *     def proc_from
- *       Proc.new
- *     end
- *     proc = proc_from { "hello" }
+ *     proc = Proc.new { "hello" }
  *     proc.call   #=> "hello"
+ *
+ *  Raises ArgumentError if called without a block.
+ *
+ *     Proc.new    #=> ArgumentError
  */
 
 static VALUE
@@ -845,6 +862,34 @@ rb_block_lambda(void)
     return proc_new(rb_cProc, TRUE, FALSE);
 }
 
+static void
+f_lambda_warn(void)
+{
+    rb_control_frame_t *cfp = GET_EC()->cfp;
+    VALUE block_handler = rb_vm_frame_block_handler(cfp);
+
+    if (block_handler != VM_BLOCK_HANDLER_NONE) {
+        switch (vm_block_handler_type(block_handler)) {
+          case block_handler_type_iseq:
+            if (RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp)->ep == VM_BH_TO_ISEQ_BLOCK(block_handler)->ep) {
+                return;
+            }
+            break;
+          case block_handler_type_symbol:
+            return;
+          case block_handler_type_proc:
+            if (rb_proc_lambda_p(VM_BH_TO_PROC(block_handler))) {
+                return;
+            }
+            break;
+          case block_handler_type_ifunc:
+            break;
+        }
+    }
+
+    rb_warn_deprecated("lambda without a literal block", "the proc without lambda");
+}
+
 /*
  * call-seq:
  *   lambda { |...| block }  -> a_proc
@@ -856,19 +901,7 @@ rb_block_lambda(void)
 static VALUE
 f_lambda(VALUE _)
 {
-    VALUE block_handler = rb_vm_frame_block_handler(GET_EC()->cfp);
-
-    if (block_handler != VM_BLOCK_HANDLER_NONE) {
-        switch (vm_block_handler_type(block_handler)) {
-          case block_handler_type_proc:
-          case block_handler_type_symbol:
-          case block_handler_type_ifunc:
-            rb_warn_deprecated("lambda without a literal block", "the proc without lambda");
-          default:
-            break;
-        }
-    }
-
+    f_lambda_warn();
     return rb_block_lambda();
 }
 
@@ -1255,6 +1288,32 @@ rb_proc_get_iseq(VALUE self, int *is_proc)
     return NULL;
 }
 
+/* call-seq:
+ *   prc == other -> true or false
+ *   prc.eql?(other) -> true or false
+ *
+ * Two procs are the same if, and only if, they were created from the same code block.
+ *
+ *   def return_block(&block)
+ *     block
+ *   end
+ *
+ *   def pass_block_twice(&block)
+ *     [return_block(&block), return_block(&block)]
+ *   end
+ *
+ *   block1, block2 = pass_block_twice { puts 'test' }
+ *   # Blocks might be instantiated into Proc's lazily, so they may, or may not,
+ *   # be the same object.
+ *   # But they are produced from the same code block, so they are equal
+ *   block1 == block2
+ *   #=> true
+ *
+ *   # Another Proc will never be equal, even if the code is the "same"
+ *   block1 == proc { puts 'test' }
+ *   #=> false
+ *
+ */
 static VALUE
 proc_eq(VALUE self, VALUE other)
 {
@@ -1651,18 +1710,24 @@ mnew_from_me(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
 }
 
 static VALUE
-mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
+mnew_callable(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
 {
     const rb_method_entry_t *me;
     VALUE iclass = Qnil;
 
-    if (obj == Qundef) { /* UnboundMethod */
-        me = rb_method_entry_with_refinements(klass, id, &iclass);
-    }
-    else {
-        me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(klass, id, &iclass);
-    }
+    ASSUME(obj != Qundef);
+    me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(klass, id, &iclass);
     return mnew_from_me(me, klass, iclass, obj, id, mclass, scope);
+}
+
+static VALUE
+mnew_unbound(VALUE klass, ID id, VALUE mclass, int scope)
+{
+    const rb_method_entry_t *me;
+    VALUE iclass = Qnil;
+
+    me = rb_method_entry_with_refinements(klass, id, &iclass);
+    return mnew_from_me(me, klass, iclass, Qundef, id, mclass, scope);
 }
 
 static inline VALUE
@@ -1902,7 +1967,7 @@ obj_method(VALUE obj, VALUE vid, int scope)
         if (m) return m;
 	rb_method_name_error(klass, vid);
     }
-    return mnew(klass, obj, id, mclass, scope);
+    return mnew_callable(klass, obj, id, mclass, scope);
 }
 
 /*
@@ -2063,7 +2128,7 @@ rb_mod_instance_method(VALUE mod, VALUE vid)
     if (!id) {
 	rb_method_name_error(mod, vid);
     }
-    return mnew(mod, Qundef, id, rb_cUnboundMethod, FALSE);
+    return mnew_unbound(mod, id, rb_cUnboundMethod, FALSE);
 }
 
 /*
@@ -2080,7 +2145,7 @@ rb_mod_public_instance_method(VALUE mod, VALUE vid)
     if (!id) {
 	rb_method_name_error(mod, vid);
     }
-    return mnew(mod, Qundef, id, rb_cUnboundMethod, TRUE);
+    return mnew_unbound(mod, id, rb_cUnboundMethod, TRUE);
 }
 
 /*
@@ -2448,12 +2513,8 @@ rb_method_call_with_block(int argc, const VALUE *argv, VALUE method, VALUE passe
  */
 
 static void
-convert_umethod_to_method_components(VALUE method, VALUE recv, VALUE *methclass_out, VALUE *klass_out, VALUE *iclass_out, const rb_method_entry_t **me_out)
+convert_umethod_to_method_components(const struct METHOD *data, VALUE recv, VALUE *methclass_out, VALUE *klass_out, VALUE *iclass_out, const rb_method_entry_t **me_out)
 {
-    struct METHOD *data;
-
-    TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
-
     VALUE methclass = data->me->owner;
     VALUE iclass = data->me->defined_class;
     VALUE klass = CLASS_OF(recv);
@@ -2534,7 +2595,9 @@ umethod_bind(VALUE method, VALUE recv)
 {
     VALUE methclass, klass, iclass;
     const rb_method_entry_t *me;
-    convert_umethod_to_method_components(method, recv, &methclass, &klass, &iclass, &me);
+    const struct METHOD *data;
+    TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
+    convert_umethod_to_method_components(data, recv, &methclass, &klass, &iclass, &me);
 
     struct METHOD *bound;
     method = TypedData_Make_Struct(rb_cMethod, struct METHOD, &method_data_type, bound);
@@ -2562,15 +2625,24 @@ umethod_bind_call(int argc, VALUE *argv, VALUE method)
     argc--;
     argv++;
 
-    VALUE methclass, klass, iclass;
-    const rb_method_entry_t *me;
-    convert_umethod_to_method_components(method, recv, &methclass, &klass, &iclass, &me);
-    struct METHOD bound = { recv, klass, 0, me };
-
     VALUE passed_procval = rb_block_given_p() ? rb_block_proc() : Qnil;
-
     rb_execution_context_t *ec = GET_EC();
-    return call_method_data(ec, &bound, argc, argv, passed_procval, RB_PASS_CALLED_KEYWORDS);
+
+    const struct METHOD *data;
+    TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
+
+    const rb_callable_method_entry_t *cme = rb_callable_method_entry(CLASS_OF(recv), data->me->called_id);
+    if (data->me == (const rb_method_entry_t *)cme) {
+        vm_passed_block_handler_set(ec, proc_to_block_handler(passed_procval));
+        return rb_vm_call_kw(ec, recv, cme->called_id, argc, argv, cme, RB_PASS_CALLED_KEYWORDS);
+    } else {
+        VALUE methclass, klass, iclass;
+        const rb_method_entry_t *me;
+        convert_umethod_to_method_components(data, recv, &methclass, &klass, &iclass, &me);
+        struct METHOD bound = { recv, klass, 0, me };
+
+        return call_method_data(ec, &bound, argc, argv, passed_procval, RB_PASS_CALLED_KEYWORDS);
+    }
 }
 
 /*
@@ -2737,6 +2809,21 @@ int
 rb_obj_method_arity(VALUE obj, ID id)
 {
     return rb_mod_method_arity(CLASS_OF(obj), id);
+}
+
+VALUE
+rb_callable_receiver(VALUE callable)
+{
+    if (rb_obj_is_proc(callable)) {
+        VALUE binding = proc_binding(callable);
+        return rb_funcall(binding, rb_intern("receiver"), 0);
+    }
+    else if (rb_obj_is_method(callable)) {
+        return method_receiver(callable);
+    }
+    else {
+        return Qundef;
+    }
 }
 
 const rb_method_definition_t *
@@ -2944,9 +3031,12 @@ method_inspect(VALUE method)
     else {
         mklass = data->klass;
         if (FL_TEST(mklass, FL_SINGLETON)) {
-            do {
-               mklass = RCLASS_SUPER(mklass);
-            } while (RB_TYPE_P(mklass, T_ICLASS));
+            VALUE v = rb_ivar_get(mklass, attached);
+            if (!(RB_TYPE_P(v, T_CLASS) || RB_TYPE_P(v, T_MODULE))) {
+                do {
+                   mklass = RCLASS_SUPER(mklass);
+                } while (RB_TYPE_P(mklass, T_ICLASS));
+            }
         }
 	rb_str_buf_append(str, rb_inspect(mklass));
 	if (defined_class != mklass) {
@@ -3137,7 +3227,7 @@ method_super_method(VALUE method)
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
     iclass = data->iclass;
     if (!iclass) return Qnil;
-    if (data->me->def->type == VM_METHOD_TYPE_ALIAS) {
+    if (data->me->def->type == VM_METHOD_TYPE_ALIAS && data->me->defined_class) {
         super_class = RCLASS_SUPER(rb_find_defined_class_by_owner(data->me->defined_class,
             data->me->def->body.alias.original_me->owner));
         mid = data->me->def->body.alias.original_me->def->original_id;
@@ -3228,6 +3318,8 @@ proc_binding(VALUE self)
 
     GetProcPtr(self, proc);
     block = &proc->block;
+
+    if (proc->is_isolated) rb_raise(rb_eArgError, "Can't create Binding from isolated Proc");
 
   again:
     switch (vm_block_type(block)) {
@@ -3900,7 +3992,7 @@ proc_ruby2_keywords(VALUE procval)
  * == Conversion of other objects to procs
  *
  * Any object that implements the +to_proc+ method can be converted into
- * a proc by the <code>&</code> operator, and therefore con be
+ * a proc by the <code>&</code> operator, and therefore can be
  * consumed by iterators.
  *
 
@@ -4049,6 +4141,7 @@ Init_Proc(void)
     rb_define_method(rb_cProc, "source_location", rb_proc_location, 0);
     rb_define_method(rb_cProc, "parameters", rb_proc_parameters, 0);
     rb_define_method(rb_cProc, "ruby2_keywords", proc_ruby2_keywords, 0);
+    // rb_define_method(rb_cProc, "isolate", rb_proc_isolate, 0); is not accepted.
 
     /* Exceptions */
     rb_eLocalJumpError = rb_define_class("LocalJumpError", rb_eStandardError);

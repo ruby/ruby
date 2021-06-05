@@ -3,13 +3,11 @@ require_relative 'fixtures/classes'
 
 describe 'TracePoint#inspect' do
   before do
-    ruby_version_is ""..."2.8" do
-      # Old behavior for Ruby < 2.8
+    ruby_version_is ""..."3.0" do
       @path_prefix = '@'
     end
 
-    ruby_version_is "2.8" do
-      # New behavior for Ruby >= 2.8
+    ruby_version_is "3.0" do
       @path_prefix = ' '
     end
   end

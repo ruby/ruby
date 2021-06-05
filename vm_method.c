@@ -8,6 +8,7 @@
 
 static int vm_redefinition_check_flag(VALUE klass);
 static void rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass);
+static inline rb_method_entry_t *lookup_method_table(VALUE klass, ID id);
 
 #define object_id           idObject_id
 #define added               idMethod_added
@@ -25,12 +26,12 @@ static enum rb_id_table_iterator_result
 vm_ccs_dump_i(ID mid, VALUE val, void *data)
 {
     const struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)val;
-    fprintf(stderr,     "  | %s (%d) ", rb_id2name(mid), ccs->len);
+    fprintf(stderr,     "  | %s (len:%d) ", rb_id2name(mid), ccs->len);
     rp(ccs->cme);
 
     for (int i=0; i<ccs->len; i++) {
-        fprintf(stderr, "  | [%d] ", i); vm_ci_dump(ccs->entries[i].ci);
-        rp_m(           "  | ", ccs->entries[i].cc);
+        fprintf(stderr, "  | [%d]\t", i); vm_ci_dump(ccs->entries[i].ci);
+        rp_m(           "  |   \t", ccs->entries[i].cc);
     }
 
     return ID_TABLE_CONTINUE;
@@ -114,7 +115,7 @@ rb_vm_mtbl_dump(const char *msg, VALUE klass, ID target_mid)
 }
 
 static inline void
-vm_me_invalidate_cache(rb_callable_method_entry_t *cme)
+vm_cme_invalidate(rb_callable_method_entry_t *cme)
 {
     VM_ASSERT(IMEMO_TYPE_P(cme, imemo_ment));
     VM_ASSERT(callable_method_entry_p(cme));
@@ -128,6 +129,19 @@ rb_clear_constant_cache(void)
     INC_GLOBAL_CONSTANT_STATE();
 }
 
+static void
+invalidate_negative_cache(ID mid)
+{
+    const rb_callable_method_entry_t *cme;
+    rb_vm_t *vm = GET_VM();
+
+    if (rb_id_table_lookup(vm->negative_cme_table, mid, (VALUE *)&cme)) {
+        rb_id_table_delete(vm->negative_cme_table, mid);
+        vm_cme_invalidate((rb_callable_method_entry_t *)cme);
+        RB_DEBUG_COUNTER_INC(cc_invalidate_negative);
+    }
+}
+
 static rb_method_entry_t *rb_method_entry_alloc(ID called_id, VALUE owner, VALUE defined_class, const rb_method_definition_t *def);
 const rb_method_entry_t * rb_method_entry_clone(const rb_method_entry_t *src_me);
 static const rb_callable_method_entry_t *complemented_callable_method_entry(VALUE klass, ID id);
@@ -136,9 +150,9 @@ static void
 clear_method_cache_by_id_in_class(VALUE klass, ID mid)
 {
     VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS));
-    if (!(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS))) rb_bug("type confusion"); // temporary. Remove before release
+    if (rb_objspace_garbage_object_p(klass)) return;
 
-    if (LIKELY(RCLASS_EXT(klass)->subclasses == NULL)) {
+    if (LIKELY(RCLASS_SUBCLASSES(klass) == NULL)) {
         // no subclasses
         // check only current class
 
@@ -147,6 +161,7 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
 
         // invalidate CCs
         if (cc_tbl && rb_id_table_lookup(cc_tbl, mid, (VALUE *)&ccs)) {
+            if (NIL_P(ccs->cme->owner)) invalidate_negative_cache(mid);
             rb_vm_ccs_free(ccs);
             rb_id_table_delete(cc_tbl, mid);
             RB_DEBUG_COUNTER_INC(cc_invalidate_leaf_ccs);
@@ -165,7 +180,6 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
 
         if (cme) {
             // invalidate cme if found to invalidate the inline method cache.
-
             if (METHOD_ENTRY_CACHED(cme)) {
                 if (METHOD_ENTRY_COMPLEMENTED(cme)) {
                     // do nothing
@@ -174,11 +188,20 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
                     // invalidate cc by invalidating cc->cme
                     VALUE owner = cme->owner;
                     VM_ASSERT(BUILTIN_TYPE(owner) == T_CLASS);
+                    VALUE klass_housing_cme;
+                    if (cme->def->type == VM_METHOD_TYPE_REFINED && !cme->def->body.refined.orig_me) {
+                        klass_housing_cme = owner;
+                    }
+                    else {
+                        klass_housing_cme = RCLASS_ORIGIN(owner);
+                    }
+                    // replace the cme that will be invalid
+                    VM_ASSERT(lookup_method_table(klass_housing_cme, mid) == (const rb_method_entry_t *)cme);
                     const rb_method_entry_t *new_cme = rb_method_entry_clone((const rb_method_entry_t *)cme);
-                    VALUE origin = RCLASS_ORIGIN(owner);
-                    rb_method_table_insert(origin, RCLASS_M_TBL(origin), mid, new_cme);
+                    rb_method_table_insert(klass_housing_cme, RCLASS_M_TBL(klass_housing_cme), mid, new_cme);
                 }
-                vm_me_invalidate_cache((rb_callable_method_entry_t *)cme);
+
+                vm_cme_invalidate((rb_callable_method_entry_t *)cme);
                 RB_DEBUG_COUNTER_INC(cc_invalidate_tree_cme);
             }
 
@@ -193,6 +216,9 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
             }
 
             RB_DEBUG_COUNTER_INC(cc_invalidate_tree);
+        }
+        else {
+            invalidate_negative_cache(mid);
         }
     }
 }
@@ -240,6 +266,8 @@ invalidate_all_cc(void *vstart, void *vend, size_t stride, void *data)
 {
     VALUE v = (VALUE)vstart;
     for (; v != (VALUE)vend; v += stride) {
+        void *ptr = asan_poisoned_object_p(v);
+        asan_unpoison_object(v, false);
         if (RBASIC(v)->flags) { // liveness check
             if (RB_TYPE_P(v, T_CLASS) ||
                 RB_TYPE_P(v, T_ICLASS)) {
@@ -248,6 +276,9 @@ invalidate_all_cc(void *vstart, void *vend, size_t stride, void *data)
                 }
                 RCLASS_CC_TBL(v) = NULL;
             }
+        }
+        if (ptr) {
+            asan_poison_object(v);
         }
     }
     return 0; // continue to iteration
@@ -343,32 +374,58 @@ extern int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_me
 static VALUE
 (*call_cfunc_invoker_func(int argc))(VALUE recv, int argc, const VALUE *, VALUE (*func)(ANYARGS))
 {
-    switch (argc) {
-      case -2: return &call_cfunc_m2;
-      case -1: return &call_cfunc_m1;
-      case 0: return &call_cfunc_0;
-      case 1: return &call_cfunc_1;
-      case 2: return &call_cfunc_2;
-      case 3: return &call_cfunc_3;
-      case 4: return &call_cfunc_4;
-      case 5: return &call_cfunc_5;
-      case 6: return &call_cfunc_6;
-      case 7: return &call_cfunc_7;
-      case 8: return &call_cfunc_8;
-      case 9: return &call_cfunc_9;
-      case 10: return &call_cfunc_10;
-      case 11: return &call_cfunc_11;
-      case 12: return &call_cfunc_12;
-      case 13: return &call_cfunc_13;
-      case 14: return &call_cfunc_14;
-      case 15: return &call_cfunc_15;
-      default:
-	rb_bug("call_cfunc_func: unsupported length: %d", argc);
+    if (!GET_THREAD()->ext_config.ractor_safe) {
+        switch (argc) {
+          case -2: return &call_cfunc_m2;
+          case -1: return &call_cfunc_m1;
+          case 0: return &call_cfunc_0;
+          case 1: return &call_cfunc_1;
+          case 2: return &call_cfunc_2;
+          case 3: return &call_cfunc_3;
+          case 4: return &call_cfunc_4;
+          case 5: return &call_cfunc_5;
+          case 6: return &call_cfunc_6;
+          case 7: return &call_cfunc_7;
+          case 8: return &call_cfunc_8;
+          case 9: return &call_cfunc_9;
+          case 10: return &call_cfunc_10;
+          case 11: return &call_cfunc_11;
+          case 12: return &call_cfunc_12;
+          case 13: return &call_cfunc_13;
+          case 14: return &call_cfunc_14;
+          case 15: return &call_cfunc_15;
+          default:
+            rb_bug("unsupported length: %d", argc);
+        }
+    }
+    else {
+        switch (argc) {
+          case -2: return &ractor_safe_call_cfunc_m2;
+          case -1: return &ractor_safe_call_cfunc_m1;
+          case 0: return  &ractor_safe_call_cfunc_0;
+          case 1: return  &ractor_safe_call_cfunc_1;
+          case 2: return  &ractor_safe_call_cfunc_2;
+          case 3: return  &ractor_safe_call_cfunc_3;
+          case 4: return  &ractor_safe_call_cfunc_4;
+          case 5: return  &ractor_safe_call_cfunc_5;
+          case 6: return  &ractor_safe_call_cfunc_6;
+          case 7: return  &ractor_safe_call_cfunc_7;
+          case 8: return  &ractor_safe_call_cfunc_8;
+          case 9: return  &ractor_safe_call_cfunc_9;
+          case 10: return &ractor_safe_call_cfunc_10;
+          case 11: return &ractor_safe_call_cfunc_11;
+          case 12: return &ractor_safe_call_cfunc_12;
+          case 13: return &ractor_safe_call_cfunc_13;
+          case 14: return &ractor_safe_call_cfunc_14;
+          case 15: return &ractor_safe_call_cfunc_15;
+          default:
+            rb_bug("unsupported length: %d", argc);
+        }
     }
 }
 
 static void
-setup_method_cfunc_struct(rb_method_cfunc_t *cfunc, VALUE (*func)(), int argc)
+setup_method_cfunc_struct(rb_method_cfunc_t *cfunc, VALUE (*func)(ANYARGS), int argc)
 {
     cfunc->func = func;
     cfunc->argc = argc;
@@ -430,6 +487,7 @@ rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *de
 	    }
 	  case VM_METHOD_TYPE_BMETHOD:
             RB_OBJ_WRITE(me, &def->body.bmethod.proc, (VALUE)opts);
+            RB_OBJ_WRITE(me, &def->body.bmethod.defined_ractor, rb_ractor_self(GET_RACTOR()));
 	    return;
 	  case VM_METHOD_TYPE_NOTIMPLEMENTED:
 	    setup_method_cfunc_struct(UNALIGNED_MEMBER_PTR(def, body.cfunc), rb_f_notimplement, -1);
@@ -471,6 +529,7 @@ method_definition_reset(const rb_method_entry_t *me)
 	break;
       case VM_METHOD_TYPE_BMETHOD:
         RB_OBJ_WRITTEN(me, Qundef, def->body.bmethod.proc);
+        RB_OBJ_WRITTEN(me, Qundef, def->body.bmethod.defined_ractor);
         /* give up to check all in a list */
         if (def->body.bmethod.hooks) rb_gc_writebarrier_remember((VALUE)me);
 	break;
@@ -889,7 +948,7 @@ void
 rb_define_alloc_func(VALUE klass, VALUE (*func)(VALUE))
 {
     Check_Type(klass, T_CLASS);
-    RCLASS_EXT(klass)->allocator = func;
+    RCLASS_ALLOCATOR(klass) = func;
 }
 
 void
@@ -904,7 +963,7 @@ rb_get_alloc_func(VALUE klass)
     Check_Type(klass, T_CLASS);
 
     for (; klass; klass = RCLASS_SUPER(klass)) {
-	rb_alloc_func_t allocator = RCLASS_EXT(klass)->allocator;
+	rb_alloc_func_t allocator = RCLASS_ALLOCATOR(klass);
 	if (allocator == UNDEF_ALLOC_FUNC) break;
 	if (allocator) return allocator;
     }
@@ -918,7 +977,7 @@ rb_method_entry_at(VALUE klass, ID id)
 }
 
 static inline rb_method_entry_t*
-search_method(VALUE klass, ID id, VALUE *defined_class_ptr)
+search_method0(VALUE klass, ID id, VALUE *defined_class_ptr, bool skip_refined)
 {
     rb_method_entry_t *me = NULL;
 
@@ -927,7 +986,10 @@ search_method(VALUE klass, ID id, VALUE *defined_class_ptr)
     for (; klass; klass = RCLASS_SUPER(klass)) {
 	RB_DEBUG_COUNTER_INC(mc_search_super);
         if ((me = lookup_method_table(klass, id)) != 0) {
-            break;
+            if (!skip_refined || me->def->type != VM_METHOD_TYPE_REFINED ||
+                    me->def->body.refined.orig_me) {
+                break;
+            }
         }
     }
 
@@ -937,6 +999,12 @@ search_method(VALUE klass, ID id, VALUE *defined_class_ptr)
 
     VM_ASSERT(me == NULL || !METHOD_ENTRY_INVALIDATED(me));
     return me;
+}
+
+static inline rb_method_entry_t*
+search_method(VALUE klass, ID id, VALUE *defined_class_ptr)
+{
+    return search_method0(klass, id, defined_class_ptr, false);
 }
 
 static rb_method_entry_t *
@@ -1006,13 +1074,15 @@ static const rb_callable_method_entry_t *
 complemented_callable_method_entry(VALUE klass, ID id)
 {
     VALUE defined_class;
-    rb_method_entry_t *me = search_method_protect(klass, id, &defined_class);
+    rb_method_entry_t *me = search_method(klass, id, &defined_class);
     return prepare_callable_method_entry(defined_class, id, me, FALSE);
 }
 
 static const rb_callable_method_entry_t *
 cached_callable_method_entry(VALUE klass, ID mid)
 {
+    ASSERT_vm_locking();
+
     struct rb_id_table *cc_tbl = RCLASS_CC_TBL(klass);
     struct rb_class_cc_entries *ccs;
 
@@ -1029,12 +1099,17 @@ cached_callable_method_entry(VALUE klass, ID mid)
             rb_id_table_delete(cc_tbl, mid);
         }
     }
+
+    RB_DEBUG_COUNTER_INC(ccs_not_found);
     return NULL;
 }
 
 static void
 cache_callable_method_entry(VALUE klass, ID mid, const rb_callable_method_entry_t *cme)
 {
+    ASSERT_vm_locking();
+    VM_ASSERT(cme != NULL);
+
     struct rb_id_table *cc_tbl = RCLASS_CC_TBL(klass);
     struct rb_class_cc_entries *ccs;
 
@@ -1052,23 +1127,51 @@ cache_callable_method_entry(VALUE klass, ID mid, const rb_callable_method_entry_
 }
 
 static const rb_callable_method_entry_t *
+negative_cme(ID mid)
+{
+    rb_vm_t *vm = GET_VM();
+    const rb_callable_method_entry_t *cme;
+
+    if (!rb_id_table_lookup(vm->negative_cme_table, mid, (VALUE *)&cme)) {
+        cme = (rb_callable_method_entry_t *)rb_method_entry_alloc(mid, Qnil, Qnil, NULL);
+        rb_id_table_insert(vm->negative_cme_table, mid, (VALUE)cme);
+    }
+
+    VM_ASSERT(cme != NULL);
+    return cme;
+}
+
+static const rb_callable_method_entry_t *
 callable_method_entry(VALUE klass, ID mid, VALUE *defined_class_ptr)
 {
+    const rb_callable_method_entry_t *cme;
+
     VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS));
-    const rb_callable_method_entry_t *cme = cached_callable_method_entry(klass, mid);
+    RB_VM_LOCK_ENTER();
+    {
+        cme = cached_callable_method_entry(klass, mid);
 
-    if (cme) {
-        if (defined_class_ptr != NULL) *defined_class_ptr = cme->defined_class;
-    }
-    else {
-        VALUE defined_class;
-        rb_method_entry_t *me = search_method_protect(klass, mid, &defined_class);
-        if (defined_class_ptr) *defined_class_ptr = defined_class;
-        cme = prepare_callable_method_entry(defined_class, mid, me, TRUE);
-        if (cme) cache_callable_method_entry(klass, mid, cme);
-    }
+        if (cme) {
+            if (defined_class_ptr != NULL) *defined_class_ptr = cme->defined_class;
+        }
+        else {
+            VALUE defined_class;
+            rb_method_entry_t *me = search_method(klass, mid, &defined_class);
+            if (defined_class_ptr) *defined_class_ptr = defined_class;
 
-    return cme;
+            if (me != NULL) {
+                cme = prepare_callable_method_entry(defined_class, mid, me, TRUE);
+            }
+            else {
+                cme = negative_cme(mid);
+            }
+
+            cache_callable_method_entry(klass, mid, cme);
+        }
+    }
+    RB_VM_LOCK_LEAVE();
+
+    return !UNDEFINED_METHOD_ENTRY_P(cme) ? cme : NULL;
 }
 
 MJIT_FUNC_EXPORTED const rb_callable_method_entry_t *
@@ -1108,18 +1211,37 @@ rb_method_entry_with_refinements(VALUE klass, ID id, VALUE *defined_class_ptr)
     return method_entry_resolve_refinement(klass, id, TRUE, defined_class_ptr);
 }
 
-MJIT_FUNC_EXPORTED const rb_callable_method_entry_t *
-rb_callable_method_entry_with_refinements(VALUE klass, ID id, VALUE *defined_class_ptr)
+static const rb_callable_method_entry_t *
+callable_method_entry_refeinements0(VALUE klass, ID id, VALUE *defined_class_ptr, bool with_refinements,
+                                    const rb_callable_method_entry_t *cme)
 {
-    const rb_callable_method_entry_t *cme = callable_method_entry(klass, id, defined_class_ptr);
-    if (cme == NULL || cme->def->type != VM_METHOD_TYPE_REFINED) {
+    if (cme == NULL || LIKELY(cme->def->type != VM_METHOD_TYPE_REFINED)) {
         return cme;
     }
     else {
         VALUE defined_class, *dcp = defined_class_ptr ? defined_class_ptr : &defined_class;
-        const rb_method_entry_t *me = method_entry_resolve_refinement(klass, id, TRUE, dcp);
+        const rb_method_entry_t *me = method_entry_resolve_refinement(klass, id, with_refinements, dcp);
         return prepare_callable_method_entry(*dcp, id, me, TRUE);
     }
+}
+
+static const rb_callable_method_entry_t *
+callable_method_entry_refeinements(VALUE klass, ID id, VALUE *defined_class_ptr, bool with_refinements)
+{
+    const rb_callable_method_entry_t *cme = callable_method_entry(klass, id, defined_class_ptr);
+    return callable_method_entry_refeinements0(klass, id, defined_class_ptr, with_refinements, cme);
+}
+
+MJIT_FUNC_EXPORTED const rb_callable_method_entry_t *
+rb_callable_method_entry_with_refinements(VALUE klass, ID id, VALUE *defined_class_ptr)
+{
+    return callable_method_entry_refeinements(klass, id, defined_class_ptr, true);
+}
+
+static const rb_callable_method_entry_t *
+callable_method_entry_without_refinements(VALUE klass, ID id, VALUE *defined_class_ptr)
+{
+    return callable_method_entry_refeinements(klass, id, defined_class_ptr, false);
 }
 
 const rb_method_entry_t *
@@ -1272,7 +1394,7 @@ rb_export_method(VALUE klass, ID name, rb_method_visibility_t visi)
     VALUE defined_class;
     VALUE origin_class = RCLASS_ORIGIN(klass);
 
-    me = search_method(origin_class, name, &defined_class);
+    me = search_method0(origin_class, name, &defined_class, true);
 
     if (!me && RB_TYPE_P(klass, T_MODULE)) {
 	me = search_method(rb_cObject, name, &defined_class);
@@ -1287,11 +1409,16 @@ rb_export_method(VALUE klass, ID name, rb_method_visibility_t visi)
 	rb_vm_check_redefinition_opt_method(me, klass);
 
 	if (klass == defined_class || origin_class == defined_class) {
-	    METHOD_ENTRY_VISI_SET(me, visi);
-
-	    if (me->def->type == VM_METHOD_TYPE_REFINED && me->def->body.refined.orig_me) {
-		METHOD_ENTRY_VISI_SET((rb_method_entry_t *)me->def->body.refined.orig_me, visi);
-	    }
+            if (me->def->type == VM_METHOD_TYPE_REFINED) {
+                // Refinement method entries should always be public because the refinement
+                // search is always performed.
+                if (me->def->body.refined.orig_me) {
+                    METHOD_ENTRY_VISI_SET((rb_method_entry_t *)me->def->body.refined.orig_me, visi);
+                }
+            }
+            else {
+                METHOD_ENTRY_VISI_SET(me, visi);
+            }
             rb_clear_method_cache(klass, name);
 	}
 	else {
@@ -1303,21 +1430,23 @@ rb_export_method(VALUE klass, ID name, rb_method_visibility_t visi)
 #define BOUND_PRIVATE  0x01
 #define BOUND_RESPONDS 0x02
 
-int
-rb_method_boundp(VALUE klass, ID id, int ex)
+static int
+method_boundp(VALUE klass, ID id, int ex)
 {
-    const rb_method_entry_t *me;
+    const rb_callable_method_entry_t *cme;
+
+    VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS));
 
     if (ex & BOUND_RESPONDS) {
-        me = method_entry_resolve_refinement(klass, id, TRUE, NULL);
+        cme = rb_callable_method_entry_with_refinements(klass, id, NULL);
     }
     else {
-        me = rb_method_entry_without_refinements(klass, id, NULL);
+        cme = callable_method_entry_without_refinements(klass, id, NULL);
     }
 
-    if (me != NULL) {
+    if (cme != NULL) {
         if (ex & ~BOUND_RESPONDS) {
-            switch (METHOD_ENTRY_VISI(me)) {
+            switch (METHOD_ENTRY_VISI(cme)) {
               case METHOD_VISI_PRIVATE:
                 return 0;
               case METHOD_VISI_PROTECTED:
@@ -1327,13 +1456,20 @@ rb_method_boundp(VALUE klass, ID id, int ex)
             }
 	}
 
-	if (me->def->type == VM_METHOD_TYPE_NOTIMPLEMENTED) {
+	if (cme->def->type == VM_METHOD_TYPE_NOTIMPLEMENTED) {
 	    if (ex & BOUND_RESPONDS) return 2;
 	    return 0;
 	}
 	return 1;
     }
     return 0;
+}
+
+// deprecated
+int
+rb_method_boundp(VALUE klass, ID id, int ex)
+{
+    return method_boundp(klass, id, ex);
 }
 
 static void
@@ -1354,7 +1490,7 @@ static void
 scope_visibility_check(void)
 {
     /* Check for public/protected/private/module_function called inside a method */
-    rb_control_frame_t *cfp = rb_current_execution_context()->cfp+1;
+    rb_control_frame_t *cfp = GET_EC()->cfp+1;
     if (cfp && cfp->iseq && cfp->iseq->body->type == ISEQ_TYPE_METHOD) {
         rb_warn("calling %s without arguments inside a method may not have the intended effect",
             rb_id2name(rb_frame_this_func()));
@@ -1777,9 +1913,9 @@ rb_hash_method_definition(st_index_t hash, const rb_method_definition_t *def)
       case VM_METHOD_TYPE_REFINED:
       case VM_METHOD_TYPE_ALIAS:
 	break; /* unreachable */
-	}
-	rb_bug("rb_hash_method_definition: unsupported method type (%d)\n", def->type);
     }
+    rb_bug("rb_hash_method_definition: unsupported method type (%d)\n", def->type);
+}
 
 st_index_t
 rb_hash_method_entry(st_index_t hash, const rb_method_entry_t *me)
@@ -1817,11 +1953,17 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
 	}
     }
 
-    if (orig_me->def->type == VM_METHOD_TYPE_ZSUPER) {
+    switch (orig_me->def->type) {
+      case VM_METHOD_TYPE_ZSUPER:
 	klass = RCLASS_SUPER(klass);
 	original_name = orig_me->def->original_id;
 	visi = METHOD_ENTRY_VISI(orig_me);
 	goto again;
+      case VM_METHOD_TYPE_ALIAS:
+        orig_me = orig_me->def->body.alias.original_me;
+        VM_ASSERT(orig_me->def->type != VM_METHOD_TYPE_ALIAS);
+        break;
+      default: break;
     }
 
     if (visi == METHOD_VISI_UNDEF) visi = METHOD_ENTRY_VISI(orig_me);
@@ -1843,13 +1985,13 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
 
 /*
  *  call-seq:
- *     alias_method(new_name, old_name)   -> self
+ *     alias_method(new_name, old_name)   -> symbol
  *
  *  Makes <i>new_name</i> a new copy of the method <i>old_name</i>. This can
  *  be used to retain access to methods that are overridden.
  *
  *     module Mod
- *       alias_method :orig_exit, :exit
+ *       alias_method :orig_exit, :exit #=> :orig_exit
  *       def exit(code=0)
  *         puts "Exiting with code #{code}"
  *         orig_exit(code)
@@ -1870,8 +2012,19 @@ rb_mod_alias_method(VALUE mod, VALUE newname, VALUE oldname)
     if (!oldid) {
 	rb_print_undef_str(mod, oldname);
     }
-    rb_alias(mod, rb_to_id(newname), oldid);
-    return mod;
+    VALUE id = rb_to_id(newname);
+    rb_alias(mod, id, oldid);
+    return ID2SYM(id);
+}
+
+static void
+check_and_export_method(VALUE self, VALUE name, rb_method_visibility_t visi)
+{
+    ID id = rb_check_id(&name);
+    if (!id) {
+	rb_print_undef_str(self, name);
+    }
+    rb_export_method(self, id, visi);
 }
 
 static void
@@ -1886,13 +2039,19 @@ set_method_visibility(VALUE self, int argc, const VALUE *argv, rb_method_visibil
 	return;
     }
 
-    for (i = 0; i < argc; i++) {
-	VALUE v = argv[i];
-	ID id = rb_check_id(&v);
-	if (!id) {
-	    rb_print_undef_str(self, v);
+
+    VALUE v;
+
+    if (argc == 1 && (v = rb_check_array_type(argv[0])) != Qnil) {
+        long j;
+
+	for (j = 0; j < RARRAY_LEN(v); j++) {
+	    check_and_export_method(self, RARRAY_AREF(v, j), visi);
 	}
-	rb_export_method(self, id, visi);
+    } else {
+        for (i = 0; i < argc; i++) {
+            check_and_export_method(self, argv[i], visi);
+        }
     }
 }
 
@@ -1914,11 +2073,13 @@ set_visibility(int argc, const VALUE *argv, VALUE module, rb_method_visibility_t
  *     public                 -> self
  *     public(symbol, ...)    -> self
  *     public(string, ...)    -> self
+ *     public(array)          -> self
  *
  *  With no arguments, sets the default visibility for subsequently
  *  defined methods to public. With arguments, sets the named methods to
  *  have public visibility.
  *  String arguments are converted to symbols.
+ *  An Array of Symbols and/or Strings is also accepted.
  */
 
 static VALUE
@@ -1932,11 +2093,13 @@ rb_mod_public(int argc, VALUE *argv, VALUE module)
  *     protected                -> self
  *     protected(symbol, ...)   -> self
  *     protected(string, ...)   -> self
+ *     protected(array)         -> self
  *
  *  With no arguments, sets the default visibility for subsequently
  *  defined methods to protected. With arguments, sets the named methods
  *  to have protected visibility.
  *  String arguments are converted to symbols.
+ *  An Array of Symbols and/or Strings is also accepted.
  *
  *  If a method has protected visibility, it is callable only where
  *  <code>self</code> of the context is the same as the method.
@@ -1959,11 +2122,13 @@ rb_mod_protected(int argc, VALUE *argv, VALUE module)
  *     private                 -> self
  *     private(symbol, ...)    -> self
  *     private(string, ...)    -> self
+ *     private(array)          -> self
  *
  *  With no arguments, sets the default visibility for subsequently
  *  defined methods to private. With arguments, sets the named methods
  *  to have private visibility.
  *  String arguments are converted to symbols.
+ *  An Array of Symbols and/or Strings is also accepted.
  *
  *     module Mod
  *       def a()  end
@@ -1985,7 +2150,7 @@ rb_mod_private(int argc, VALUE *argv, VALUE module)
 
 /*
  *  call-seq:
- *     ruby2_keywords(method_name, ...)    -> self
+ *     ruby2_keywords(method_name, ...)    -> nil
  *
  *  For the given method names, marks the method as passing keywords through
  *  a normal argument splat.  This should only be called on methods that
@@ -2076,7 +2241,7 @@ rb_mod_ruby2_keywords(int argc, VALUE *argv, VALUE module)
                     else {
                         rb_warn("Skipping set of ruby2_keywords flag for %s (method accepts keywords or method does not accept argument splat)", rb_id2name(name));
                     }
-                    return Qnil;
+                    break;
                 }
               }
               /* fallthrough */
@@ -2096,10 +2261,12 @@ rb_mod_ruby2_keywords(int argc, VALUE *argv, VALUE module)
  *  call-seq:
  *     mod.public_class_method(symbol, ...)    -> mod
  *     mod.public_class_method(string, ...)    -> mod
+ *     mod.public_class_method(array)          -> mod
  *
  *  Makes a list of existing class methods public.
  *
  *  String arguments are converted to symbols.
+ *  An Array of Symbols and/or Strings is also accepted.
  */
 
 static VALUE
@@ -2113,11 +2280,13 @@ rb_mod_public_method(int argc, VALUE *argv, VALUE obj)
  *  call-seq:
  *     mod.private_class_method(symbol, ...)   -> mod
  *     mod.private_class_method(string, ...)   -> mod
+ *     mod.private_class_method(array)         -> mod
  *
  *  Makes existing class methods private. Often used to hide the default
  *  constructor <code>new</code>.
  *
  *  String arguments are converted to symbols.
+ *  An Array of Symbols and/or Strings is also accepted.
  *
  *     class SimpleSingleton  # Not thread safe
  *       private_class_method :new
@@ -2140,12 +2309,14 @@ rb_mod_private_method(int argc, VALUE *argv, VALUE obj)
  *     public
  *     public(symbol, ...)
  *     public(string, ...)
+ *     public(array)
  *
  *  With no arguments, sets the default visibility for subsequently
  *  defined methods to public. With arguments, sets the named methods to
  *  have public visibility.
  *
  *  String arguments are converted to symbols.
+ *  An Array of Symbols and/or Strings is also accepted.
  */
 
 static VALUE
@@ -2159,12 +2330,14 @@ top_public(int argc, VALUE *argv, VALUE _)
  *     private
  *     private(symbol, ...)
  *     private(string, ...)
+ *     private(array)
  *
  *  With no arguments, sets the default visibility for subsequently
  *  defined methods to private. With arguments, sets the named methods to
  *  have private visibility.
  *
  *  String arguments are converted to symbols.
+ *  An Array of Symbols and/or Strings is also accepted.
  */
 static VALUE
 top_private(int argc, VALUE *argv, VALUE _)
@@ -2311,7 +2484,7 @@ basic_obj_respond_to(rb_execution_context_t *ec, VALUE obj, ID id, int pub)
     VALUE klass = CLASS_OF(obj);
     VALUE ret;
 
-    switch (rb_method_boundp(klass, id, pub|BOUND_RESPONDS)) {
+    switch (method_boundp(klass, id, pub|BOUND_RESPONDS)) {
       case 2:
 	return FALSE;
       case 0:
@@ -2353,7 +2526,8 @@ vm_respond_to(rb_execution_context_t *ec, VALUE klass, VALUE obj, ID id, int pri
 	    }
 	    else if (!NIL_P(ruby_verbose)) {
 		VALUE location = rb_method_entry_location((const rb_method_entry_t *)cme);
-		rb_warn("%"PRIsVALUE"%c""respond_to?(:%"PRIsVALUE") uses"
+                rb_category_warn(RB_WARN_CATEGORY_DEPRECATED,
+                        "%"PRIsVALUE"%c""respond_to?(:%"PRIsVALUE") uses"
 			" the deprecated method signature, which takes one parameter",
 			(FL_TEST(klass, FL_SINGLETON) ? obj : klass),
 			(FL_TEST(klass, FL_SINGLETON) ? '.' : '#'),
@@ -2362,7 +2536,8 @@ vm_respond_to(rb_execution_context_t *ec, VALUE klass, VALUE obj, ID id, int pri
 		    VALUE path = RARRAY_AREF(location, 0);
 		    VALUE line = RARRAY_AREF(location, 1);
 		    if (!NIL_P(path)) {
-			rb_compile_warn(RSTRING_PTR(path), NUM2INT(line),
+			rb_category_compile_warn(RB_WARN_CATEGORY_DEPRECATED,
+					RSTRING_PTR(path), NUM2INT(line),
 					"respond_to? is defined here");
 		    }
 		}
@@ -2465,9 +2640,6 @@ Init_Method(void)
 void
 Init_eval_method(void)
 {
-#undef rb_intern
-#define rb_intern(str) rb_intern_const(str)
-
     rb_define_method(rb_mKernel, "respond_to?", obj_respond_to, -1);
     rb_define_method(rb_mKernel, "respond_to_missing?", obj_respond_to_missing, 2);
 

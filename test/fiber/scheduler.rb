@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+# This is an example and simplified scheduler for test purposes.
+# It is not efficient for a large number of file descriptors as it uses IO.select().
+# Production Fiber schedulers should use epoll/kqueue/etc.
+
 require 'fiber'
 require 'socket'
 
@@ -14,15 +18,19 @@ class Scheduler
     @readable = {}
     @writable = {}
     @waiting = {}
-    @blocking = []
 
-    @ios = ObjectSpace::WeakMap.new
+    @closed = false
+
+    @lock = Mutex.new
+    @blocking = 0
+    @ready = []
+
+    @urgent = IO.pipe
   end
 
   attr :readable
   attr :writable
   attr :waiting
-  attr :blocking
 
   def next_timeout
     _fiber, timeout = @waiting.min_by{|key, value| value}
@@ -39,117 +47,173 @@ class Scheduler
   end
 
   def run
-    while @readable.any? or @writable.any? or @waiting.any?
+    # $stderr.puts [__method__, Fiber.current].inspect
+
+    while @readable.any? or @writable.any? or @waiting.any? or @blocking.positive?
       # Can only handle file descriptors up to 1024...
-      readable, writable = IO.select(@readable.keys, @writable.keys, [], next_timeout)
+      readable, writable = IO.select(@readable.keys + [@urgent.first], @writable.keys, [], next_timeout)
 
       # puts "readable: #{readable}" if readable&.any?
       # puts "writable: #{writable}" if writable&.any?
 
+      selected = {}
+
       readable&.each do |io|
-        @readable[io]&.resume
+        if fiber = @readable.delete(io)
+          selected[fiber] = IO::READABLE
+        elsif io == @urgent.first
+          @urgent.first.read_nonblock(1024)
+        end
       end
 
       writable&.each do |io|
-        @writable[io]&.resume
+        if fiber = @writable.delete(io)
+          selected[fiber] |= IO::WRITABLE
+        end
+      end
+
+      selected.each do |fiber, events|
+        fiber.resume(events)
       end
 
       if @waiting.any?
         time = current_time
-        waiting = @waiting
-        @waiting = {}
+        waiting, @waiting = @waiting, {}
 
         waiting.each do |fiber, timeout|
-          if timeout <= time
-            fiber.resume
-          else
-            @waiting[fiber] = timeout
+          if fiber.alive?
+            if timeout <= time
+              fiber.resume
+            else
+              @waiting[fiber] = timeout
+            end
           end
+        end
+      end
+
+      if @ready.any?
+        ready = nil
+
+        @lock.synchronize do
+          ready, @ready = @ready, []
+        end
+
+        ready.each do |fiber|
+          fiber.resume
         end
       end
     end
   end
 
-  def for_fd(fd)
-    @ios[fd] ||= ::IO.for_fd(fd, autoclose: false)
+  def close
+    # $stderr.puts [__method__, Fiber.current].inspect
+
+    raise "Scheduler already closed!" if @closed
+
+    self.run
+  ensure
+    @urgent.each(&:close)
+    @urgent = nil
+
+    @closed = true
+
+    # We freeze to detect any unintended modifications after the scheduler is closed:
+    self.freeze
   end
 
-  def wait_readable(io)
-    @readable[io] = Fiber.current
-
-    Fiber.yield
-
-    @readable.delete(io)
-
-    return true
-  end
-
-  def wait_readable_fd(fd)
-    wait_readable(
-      for_fd(fd)
-    )
-  end
-
-  def wait_writable(io)
-    @writable[io] = Fiber.current
-
-    Fiber.yield
-
-    @writable.delete(io)
-
-    return true
-  end
-
-  def wait_writable_fd(fd)
-    wait_writable(
-      for_fd(fd)
-    )
+  def closed?
+    @closed
   end
 
   def current_time
     Process.clock_gettime(Process::CLOCK_MONOTONIC)
   end
 
-  def wait_sleep(duration = nil)
-    @waiting[Fiber.current] = current_time + duration
+  def timeout_after(duration, klass, message, &block)
+    fiber = Fiber.current
 
-    Fiber.yield
+    self.fiber do
+      sleep(duration)
 
-    return true
+      if fiber&.alive?
+        fiber.raise(klass, message)
+      end
+    end
+
+    begin
+      yield(duration)
+    ensure
+      fiber = nil
+    end
   end
 
-  def wait_any(io, events, duration)
-    unless (events & IO::WAIT_READABLE).zero?
+  def process_wait(pid, flags)
+    # $stderr.puts [__method__, pid, flags, Fiber.current].inspect
+
+    # This is a very simple way to implement a non-blocking wait:
+    Thread.new do
+      Process::Status.wait(pid, flags)
+    end.value
+  end
+
+  def io_wait(io, events, duration)
+    # $stderr.puts [__method__, io, events, duration, Fiber.current].inspect
+
+    unless (events & IO::READABLE).zero?
       @readable[io] = Fiber.current
     end
 
-    unless (events & IO::WAIT_WRITABLE).zero?
+    unless (events & IO::WRITABLE).zero?
       @writable[io] = Fiber.current
     end
 
     Fiber.yield
+  end
 
-    @readable.delete(io)
-    @writable.delete(io)
+  # Used for Kernel#sleep and Mutex#sleep
+  def kernel_sleep(duration = nil)
+    # $stderr.puts [__method__, duration, Fiber.current].inspect
+
+    self.block(:sleep, duration)
 
     return true
   end
 
-  def wait_for_single_fd(fd, events, duration)
-    wait_any(
-      for_fd(fd),
-      events,
-      duration
-    )
+  # Used when blocking on synchronization (Mutex#lock, Queue#pop, SizedQueue#push, ...)
+  def block(blocker, timeout = nil)
+    # $stderr.puts [__method__, blocker, timeout].inspect
+
+    if timeout
+      @waiting[Fiber.current] = current_time + timeout
+      begin
+        Fiber.yield
+      ensure
+        # Remove from @waiting in the case #unblock was called before the timeout expired:
+        @waiting.delete(Fiber.current)
+      end
+    else
+      @blocking += 1
+      begin
+        Fiber.yield
+      ensure
+        @blocking -= 1
+      end
+    end
   end
 
-  def enter_blocking_region
-    # puts "Enter blocking region: #{caller.first}"
-  end
+  # Used when synchronization wakes up a previously-blocked fiber (Mutex#unlock, Queue#push, ...).
+  # This might be called from another thread.
+  def unblock(blocker, fiber)
+    # $stderr.puts [__method__, blocker, fiber].inspect
+    # $stderr.puts blocker.backtrace.inspect
+    # $stderr.puts fiber.backtrace.inspect
 
-  def exit_blocking_region
-    # puts "Exit blocking region: #{caller.first}"
-    @blocking << caller.first
+    @lock.synchronize do
+      @ready << fiber
+    end
+
+    io = @urgent.last
+    io.write_nonblock('.')
   end
 
   def fiber(&block)

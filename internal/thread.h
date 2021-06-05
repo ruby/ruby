@@ -37,9 +37,7 @@ void rb_mutex_allow_trap(VALUE self, int val);
 VALUE rb_uninterruptible(VALUE (*b_proc)(VALUE), VALUE data);
 VALUE rb_mutex_owned_p(VALUE self);
 
-VALUE rb_thread_scheduler_get(VALUE);
-VALUE rb_thread_scheduler_set(VALUE, VALUE);
-VALUE rb_thread_scheduler_if_nonblocking(VALUE thread);
+int rb_thread_wait_for_single_fd(int fd, int events, struct timeval * timeout);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* Temporary.  This API will be removed (renamed). */
