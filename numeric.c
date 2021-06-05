@@ -4721,8 +4721,8 @@ fix_size(VALUE fix)
     return INT2FIX(sizeof(long));
 }
 
-static VALUE
-int_size(VALUE num)
+MJIT_FUNC_EXPORTED VALUE
+rb_int_size(VALUE num)
 {
     if (FIXNUM_P(num)) {
 	return fix_size(num);

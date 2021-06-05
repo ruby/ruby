@@ -184,7 +184,7 @@ class Integer
   #
   def size
     Primitive.attr! 'inline'
-    Primitive.cexpr! 'int_size(self)'
+    Primitive.cexpr! 'rb_int_size(self)'
   end
 
   #  call-seq:
