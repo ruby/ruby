@@ -31,12 +31,12 @@ class Net::HTTPGenericRequest
 
     @decode_content = false
 
-    if @response_has_body and Net::HTTP::HAVE_ZLIB then
+    if Net::HTTP::HAVE_ZLIB then
       if !initheader ||
          !initheader.keys.any? { |k|
            %w[accept-encoding range].include? k.downcase
          } then
-        @decode_content = true
+        @decode_content = true if @response_has_body
         initheader = initheader ? initheader.dup : {}
         initheader["accept-encoding"] =
           "gzip;q=1.0,deflate;q=0.6,identity;q=0.3"
