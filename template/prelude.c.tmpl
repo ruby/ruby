@@ -40,11 +40,19 @@ class Prelude
     idx = @preludes[filename]
     return idx if idx
     lines = []
+    start_line = nil
+    lineno = 0
     result = [@preludes.size, @vpath.strip(filename), lines, sub]
     @vpath.foreach(filename) do |line|
       line.force_encoding("ASCII-8BIT") if line.respond_to?(:force_encoding)
+      line.rstrip!
+      lineno += 1
       @preludes[filename] ||= result
       comment = ($1 || '' if line.sub!(/(?:^|\s+)\#(?:$|[#\s](.*))/, ''))
+      if !line.empty? or start_line
+        line << "\n"
+        start_line ||= lineno
+      end
       if line.size > LINE_LIMIT
         raise "#{filename}:#{lines.size+1}: too long line"
       end
@@ -64,6 +72,7 @@ class Prelude
       end
       lines << [line, comment]
     end
+    result << (start_line || 1)
     result
   end
 end
@@ -157,10 +166,10 @@ prelude_ast(VALUE name, VALUE code, int line)
 
 % end
 % if @builtin_count > 0
-#define PRELUDE_AST(n, name_str) \
+#define PRELUDE_AST(n, name_str, start_line) \
     (((sizeof(prelude_name<%='##'%><%=%>n) - prefix_len - 2) == namelen) && \
      (strncmp(prelude_name<%='##'%><%=%>n + prefix_len, feature_name, namelen) == 0) ? \
-     prelude_ast((name_str) = PRELUDE_NAME(n), PRELUDE_CODE(n), 1) : 0)
+     prelude_ast((name_str) = PRELUDE_NAME(n), PRELUDE_CODE(n), start_line) : 0)
 
 rb_ast_t *
 rb_builtin_ast(const char *feature_name, VALUE *name_str)
@@ -169,9 +178,9 @@ rb_builtin_ast(const char *feature_name, VALUE *name_str)
     size_t namelen = strlen(feature_name);
     rb_ast_t *ast = 0;
 
-%   @preludes.each_value do |i, prelude, lines, sub|
+%   @preludes.each_value do |i, prelude, lines, sub, start_line|
 %     if sub and sub != true
-    if ((ast = PRELUDE_AST(<%=i%><%=%>, *name_str)) != 0) return ast;
+    if ((ast = PRELUDE_AST(<%=i%><%=%>, *name_str, <%=start_line%>)) != 0) return ast;
 %     end
 %   end
     return ast;
@@ -215,23 +224,25 @@ prelude_require(VALUE self, VALUE nth)
     struct prelude_env *ptr = DATA_PTR(self);
     VALUE code, name;
     int n = FIX2INT(nth);
+    int start_line;
 
     if (n > PRELUDE_COUNT) return Qfalse;
     if (ptr->loaded[n]) return Qfalse;
     ptr->loaded[n] = 1;
     switch (n) {
-%   @preludes.each_value do |i, prelude, lines, sub|
+%   @preludes.each_value do |i, prelude, lines, sub, start_line|
 %     if sub == true
       case <%=i%><%=%>:
 	code = PRELUDE_CODE(<%=i%><%=%>);
 	name = PRELUDE_NAME(<%=i%><%=%>);
+	start_line = <%=start_line%>;
 	break;
 %     end
 %   end
       default:
 	return Qfalse;
     }
-    prelude_eval(code, name, 1);
+    prelude_eval(code, name, start_line);
     return Qtrue;
 }
 
@@ -255,9 +266,9 @@ Init_<%=init_name%><%=%>(void)
     memset(memo.loaded, 0, sizeof(memo.loaded));
     rb_define_singleton_method(prelude, "require", prelude_require, 1);
 % end
-% preludes.each do |i, prelude, lines, sub|
+% preludes.each do |i, prelude, lines, sub, start_line|
 %   next if sub
-    prelude_eval(PRELUDE_CODE(<%=i%><%=%>), PRELUDE_NAME(<%=i%><%=%>), 1);
+    prelude_eval(PRELUDE_CODE(<%=i%><%=%>), PRELUDE_NAME(<%=i%><%=%>), <%=start_line%>);
 % end
 % if @have_sublib
     rb_gc_force_recycle(prelude);
