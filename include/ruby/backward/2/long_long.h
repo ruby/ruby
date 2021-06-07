@@ -29,7 +29,15 @@
 #include "ruby/internal/has/warning.h"
 #include "ruby/internal/warning_push.h"
 
-#if RBIMPL_HAS_WARNING("-Wc++11-long-long")
+#if defined(__DOXYGEN__)
+# /** @cond INTERNAL_MACRO */
+# define HAVE_LONG_LONG 1
+# define HAVE_TRUE_LONG_LONG 1
+# /** @endcond */
+# /** @deprecated  Just use `long long` directly. */
+# define LONG_LONG long long.
+
+#elif RBIMPL_HAS_WARNING("-Wc++11-long-long")
 # define HAVE_TRUE_LONG_LONG 1
 # define LONG_LONG                           \
     RBIMPL_WARNING_PUSH()                     \
