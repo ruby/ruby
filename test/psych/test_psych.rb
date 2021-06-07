@@ -424,7 +424,7 @@ eoyml
     end
     assert_equal "Tried to dump unspecified class: Symbol(:foo)", error.message
 
-    assert_equal "--- :foo\n", Psych.safe_dump(:foo, permitted_classes: [Symbol], permitted_symbols: [:foo])
+    assert_match(/\A--- :foo\n(?:\.\.\.\n)?\z/, Psych.safe_dump(:foo, permitted_classes: [Symbol], permitted_symbols: [:foo]))
   end
 
   def test_safe_dump_aliases
