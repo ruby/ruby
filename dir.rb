@@ -144,7 +144,7 @@ class Dir
   #
   # <code>*</code>::
   #   Matches any file. Can be restricted by other values in the glob.
-  #   Equivalent to <code>/ .* /mx</code> in regexp.
+  #   Equivalent to <code>/.*/mx</code> in regexp.
   #
   #   <code>*</code>::     Matches all files
   #   <code>c*</code>::    Matches all files beginning with <code>c</code>
@@ -175,7 +175,7 @@ class Dir
   #   Matching literals may be more than one character in length.  More than
   #   two literals may be specified.
   #
-  # <code> \\ </code>::
+  # <code>\\</code>::
   #   Escapes the next metacharacter.
   #
   #   Note that this means you cannot use backslash on windows as part of a
@@ -222,7 +222,7 @@ class << File
   #
   # <code>*</code>::
   #   Matches any file. Can be restricted by other values in the glob.
-  #   Equivalent to <code>/ .* /x</code> in regexp.
+  #   Equivalent to <code>/.*/x</code> in regexp.
   #
   #   <code>*</code>::    Matches all files regular files
   #   <code>c*</code>::   Matches all files beginning with <code>c</code>
@@ -243,7 +243,7 @@ class << File
   #   Matches any one character in +set+.  Behaves exactly like character sets
   #   in Regexp, including set negation (<code>[^a-z]</code>).
   #
-  # <code> \ </code>::
+  # <code>\\</code>::
   #   Escapes the next metacharacter.
   #
   # <code>{a,b}</code>::
