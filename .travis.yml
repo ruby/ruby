@@ -38,7 +38,6 @@ env:
     - SETARCH=
     - RUBY_PREFIX=/tmp/ruby-prefix
     - GEMS_FOR_TEST='timezone tzinfo'
-    - UPDATE_UNICODE="UNICODE_FILES=. UNICODE_PROPERTY_FILES=. UNICODE_AUXILIARY_FILES=. UNICODE_EMOJI_FILES=."
     # The tests skipped in `make test-all`.
     - TEST_ALL_SKIPPED_TESTS=
     # Run the separated tests with allowing failures.
@@ -154,8 +153,7 @@ before_script:
   - "> config.status"
   - "> .rbconfig.time"
   - sed -f tool/prereq.status template/Makefile.in common.mk > Makefile
-  - make touch-unicode-files
-  - make -s $JOBS $UPDATE_UNICODE up
+  - make -s $JOBS up
   - make -s $JOBS srcs
   - rm -f config.status Makefile rbconfig.rb .rbconfig.time
   - |-
