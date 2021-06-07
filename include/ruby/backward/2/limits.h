@@ -1,7 +1,6 @@
 #ifndef RUBY_BACKWARD2_LIMITS_H                      /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_BACKWARD2_LIMITS_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -21,7 +20,7 @@
  * @brief      Historical shim for `<limits.h>`.
  *
  * The macros in this header file are obsolescent.  Does anyone really need our
- * own definition of #CHAR_BIT today?
+ * own definition of `CHAR_BIT` today?
  */
 #include "ruby/internal/config.h"
 
