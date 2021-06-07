@@ -203,11 +203,8 @@ script:
   - $SETARCH make -s test-spec MSPECOPT=-ff # not using `-j` because sometimes `mspec -j` silently dies
   - $SETARCH make -s -o showflags leaked-globals
 
-# Branch matrix.  Not all branches are Travis-ready so we limit branches here.
-branches:
-  only:
-    - master
-    - /^ruby_\d_\d$/
+# We enable Travis on the specific branches or forked repositories here.
+if: (repo = ruby/ruby AND (branch = master OR branch =~ /^ruby_\d_\d$/)) OR repo != ruby/ruby
 
 # We want to be notified when something happens.
 notifications:
