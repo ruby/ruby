@@ -623,6 +623,28 @@ gen_newarray(jitstate_t* jit, ctx_t* ctx)
     return YJIT_KEEP_COMPILING;
 }
 
+// dup array
+static codegen_status_t
+gen_duparray(jitstate_t* jit, ctx_t* ctx)
+{
+    VALUE ary = jit_get_arg(jit, 0);
+
+    // Save the PC and SP because we are allocating
+    jit_save_pc(jit, REG0);
+    jit_save_sp(jit, ctx);
+
+    // call rb_ary_resurrect(VALUE ary);
+    yjit_save_regs(cb);
+    jit_mov_gc_ptr(jit, cb, C_ARG_REGS[0], ary);
+    call_ptr(cb, REG0, (void *)rb_ary_resurrect);
+    yjit_load_regs(cb);
+
+    x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_ARRAY);
+    mov(cb, stack_ret, RAX);
+
+    return YJIT_KEEP_COMPILING;
+}
+
 // new hash initialized from top N values
 static codegen_status_t
 gen_newhash(jitstate_t* jit, ctx_t* ctx)
@@ -3033,6 +3055,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(pop), gen_pop);
     yjit_reg_op(BIN(adjuststack), gen_adjuststack);
     yjit_reg_op(BIN(newarray), gen_newarray);
+    yjit_reg_op(BIN(duparray), gen_duparray);
     yjit_reg_op(BIN(newhash), gen_newhash);
     yjit_reg_op(BIN(concatstrings), gen_concatstrings);
     yjit_reg_op(BIN(putnil), gen_putnil);
