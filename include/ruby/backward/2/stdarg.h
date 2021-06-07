@@ -25,6 +25,10 @@
  */
 
 #undef _
+/**
+ * @deprecated  Nobody practically needs this macro any longer.
+ * @brief       This was a transition path from K&R to ANSI.
+ */
 #ifdef HAVE_PROTOTYPES
 # define _(args) args
 #else
@@ -32,12 +36,30 @@
 #endif
 
 #undef __
+/**
+ * @deprecated  Nobody practically needs this macro any longer.
+ * @brief       This was a transition path from K&R to ANSI.
+ */
 #ifdef HAVE_STDARG_PROTOTYPES
 # define __(args) args
 #else
 # define __(args) ()
 #endif
 
+/**
+ * Functions  declared using  this  macro take  arbitrary arguments,  including
+ * void.
+ *
+ * ```CXX
+ * void func(ANYARGS);
+ * ```
+ *
+ * This  was a  necessary  evil when  there  was no  such  thing like  function
+ * overloading.  But it  is the 21st century today.  People  generally need not
+ * use this.  Just use a granular typed function.
+ *
+ * @see ruby::backward::cxxanyargs
+ */
 #ifdef __cplusplus
 #define ANYARGS ...
 #else
