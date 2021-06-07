@@ -1048,7 +1048,7 @@ rb_vm_bugreport(const void *ctx)
 	fprintf(stderr, "-- Other runtime information "
 		"-----------------------------------------------\n\n");
     }
-    if (vm) {
+    if (vm && !rb_during_gc()) {
 	int i;
 	VALUE name;
 	long len;
