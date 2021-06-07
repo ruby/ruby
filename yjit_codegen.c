@@ -199,6 +199,10 @@ _counted_side_exit(uint8_t *existing_side_exit, int64_t *counter)
 static void
 _add_comment(codeblock_t* cb, const char* comment_str)
 {
+    // We can't add comments to the outlined code block
+    if (cb == ocb)
+        return;
+
     // Avoid adding duplicate comment strings (can happen due to deferred codegen)
     size_t num_comments = rb_darray_size(yjit_code_comments);
     if (num_comments > 0) {
@@ -244,7 +248,7 @@ yjit_load_regs(codeblock_t* cb)
     pop(cb, REG_CFP);
 }
 
-// Generate an inline exit to return to the interpreter
+// Generate an exit to return to the interpreter
 static uint8_t *
 yjit_gen_exit(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 {
