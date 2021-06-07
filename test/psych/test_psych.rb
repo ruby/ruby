@@ -402,13 +402,13 @@ eoyml
   end
 
   def test_safe_dump_unpermitted_class
-    error = assert_raises Psych::DisallowedClass do
+    error = assert_raise Psych::DisallowedClass do
       YAML.safe_dump(Object.new)
     end
     assert_equal "Tried to dump unspecified class: Object", error.message
 
     hash_subclass = Class.new(Hash)
-    error = assert_raises Psych::DisallowedClass do
+    error = assert_raise Psych::DisallowedClass do
       YAML.safe_dump(hash_subclass.new)
     end
     assert_equal "Tried to dump unspecified class: #{hash_subclass.inspect}", error.message
@@ -419,7 +419,7 @@ eoyml
   end
 
   def test_safe_dump_symbols
-    error = assert_raises Psych::DisallowedClass do
+    error = assert_raise Psych::DisallowedClass do
       YAML.safe_dump(:foo, permitted_classes: [Symbol])
     end
     assert_equal "Tried to dump unspecified class: Symbol(:foo)", error.message
@@ -430,7 +430,7 @@ eoyml
   def test_safe_dump_aliases
     x = []
     x << x
-    error = assert_raises Psych::BadAlias do
+    error = assert_raise Psych::BadAlias do
       YAML.safe_dump(x)
     end
     assert_equal "Tried to dump an aliased object", error.message
