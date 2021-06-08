@@ -7877,11 +7877,11 @@ gc_marks_wb_unprotected_objects_in_plane(rb_objspace_t *objspace, intptr_t p, bi
 }
 
 static void
-gc_marks_wb_unprotected_objects(rb_objspace_t *objspace)
+gc_marks_wb_unprotected_objects(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     struct heap_page *page = 0;
 
-    list_for_each(&heap_eden->pages, page, page_node) {
+    list_for_each(&heap->pages, page, page_node) {
 	bits_t *mark_bits = page->mark_bits;
 	bits_t *wbun_bits = page->wb_unprotected_bits;
 	RVALUE *p = page->start;
@@ -7950,7 +7950,7 @@ gc_marks_finish(rb_objspace_t *objspace)
 
 	objspace->flags.during_incremental_marking = FALSE;
 	/* check children of all marked wb-unprotected objects */
-	gc_marks_wb_unprotected_objects(objspace);
+        gc_marks_wb_unprotected_objects(objspace, heap_eden);
     }
 #endif /* GC_ENABLE_INCREMENTAL_MARK */
 
