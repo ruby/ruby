@@ -73,17 +73,17 @@ class TestEnv < Test::Unit::TestCase
     clone = assert_deprecated_warning(warning) {
       ENV.clone
     }
-    assert_equal(ENV.to_h, clone.to_h)
+    assert_same(ENV, clone)
 
     clone = assert_deprecated_warning(warning) {
       ENV.clone(freeze: false)
     }
-    assert_equal(ENV.to_h, clone.to_h)
+    assert_same(ENV, clone)
 
     clone = assert_deprecated_warning(warning) {
       ENV.clone(freeze: nil)
     }
-    assert_equal(ENV.to_h, clone.to_h)
+    assert_same(ENV, clone)
 
     assert_raise(TypeError) {
       ENV.clone(freeze: true)
