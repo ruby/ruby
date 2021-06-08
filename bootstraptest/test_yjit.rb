@@ -1021,3 +1021,17 @@ assert_equal 'foo123', %q{
   make_str("foo", 123)
   make_str("foo", 123)
 }
+
+# getlocal with 2 levels
+assert_equal '7', %q{
+  def foo(foo, bar)
+    while foo > 0
+      while bar > 0
+        return foo + bar
+      end
+    end
+  end
+
+  foo(5,2)
+  foo(5,2)
+}
