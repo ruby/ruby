@@ -254,7 +254,7 @@ ast_node_type(rb_execution_context_t *ec, VALUE self)
     return rb_sym_intern_ascii_cstr(node_type_to_str(data->node));
 }
 
-#ifdef EXPERIMENTAL_ISEQ_NODE_ID
+#ifdef DEBUG_ISEQ_NODE_ID
 static VALUE
 ast_node_node_id(VALUE self)
 {
@@ -725,7 +725,7 @@ Init_ast(void)
     rb_mAST = rb_define_module_under(rb_cRubyVM, "AbstractSyntaxTree");
     rb_cNode = rb_define_class_under(rb_mAST, "Node", rb_cObject);
     rb_undef_alloc_func(rb_cNode);
-#ifdef EXPERIMENTAL_ISEQ_NODE_ID
+#ifdef DEBUG_ISEQ_NODE_ID
     rb_define_method(rb_cNode, "node_id", ast_node_node_id, 0);
 #endif
 }
