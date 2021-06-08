@@ -6488,6 +6488,61 @@ env_update(VALUE env, VALUE hash)
 }
 
 /*
+ * call-seq:
+ *   ENV.clone(freeze: nil) -> copy of ENV
+ *
+ * Returns a clone of ENV, but warns because the ENV data is shared with the
+ * clone.
+ * If +freeze+ keyword is given and not +nil+ or +false+, raises ArgumentError.
+ * If +freeze+ keyword is given and +true+, raises TypeError, as ENV storage
+ * cannot be frozen.
+ */
+static VALUE
+env_clone(int argc, VALUE *argv, VALUE obj)
+{
+    if (argc) {
+        static ID keyword_ids[1];
+        VALUE opt, kwfreeze;
+
+        if (!keyword_ids[0]) {
+            CONST_ID(keyword_ids[0], "freeze");
+        }
+        rb_scan_args(argc, argv, "0:", &opt);
+        if (!NIL_P(opt)) {
+            rb_get_kwargs(opt, keyword_ids, 0, 1, &kwfreeze);
+            switch(kwfreeze) {
+              case Qtrue:
+                rb_raise(rb_eTypeError, "cannot freeze ENV");
+                break;
+              default:
+                rb_raise(rb_eArgError, "invalid value for freeze keyword");
+                break;
+              case Qnil:
+              case Qfalse:
+                break;
+            }
+        }
+    }
+
+    rb_warn_deprecated("ENV.clone", "ENV.to_h");
+    return envtbl;
+}
+
+NORETURN(static VALUE env_dup(VALUE));
+/*
+ * call-seq:
+ *   ENV.dup # raises TypeError
+ *
+ * Raises TypeError, because ENV is a singleton object.
+ * Use #to_h to get a copy of ENV data as a hash.
+ */
+static VALUE
+env_dup(VALUE obj)
+{
+    rb_raise(rb_eTypeError, "Cannot dup ENV, use ENV.to_h to get a copy of ENV as a hash");
+}
+
+/*
  *  A \Hash maps each of its unique keys to a specific value.
  *
  *  A \Hash has certain similarities to an \Array, but:
@@ -7193,6 +7248,14 @@ Init_Hash(void)
     rb_define_singleton_method(envtbl, "to_h", env_to_h, 0);
     rb_define_singleton_method(envtbl, "assoc", env_assoc, 1);
     rb_define_singleton_method(envtbl, "rassoc", env_rassoc, 1);
+    rb_define_singleton_method(envtbl, "clone", env_clone, -1);
+    rb_define_singleton_method(envtbl, "dup", env_dup, 0);
+
+    VALUE envtbl_class = rb_singleton_class(envtbl);
+    rb_undef_method(envtbl_class, "initialize");
+    rb_undef_method(envtbl_class, "initialize_clone");
+    rb_undef_method(envtbl_class, "initialize_copy");
+    rb_undef_method(envtbl_class, "initialize_dup");
 
     /*
      * ENV is a Hash-like accessor for environment variables.
