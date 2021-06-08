@@ -2998,7 +2998,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 		INT2FIX(iseq_body->location.code_location.end_pos.lineno),
 		INT2FIX(iseq_body->location.code_location.end_pos.column)));
 #ifdef EXPERIMENTAL_ISEQ_NODE_ID
-    rb_hash_aset(misc, ID2SYM(rb_intern("node_ids_for_each_insn")), node_ids);
+    rb_hash_aset(misc, ID2SYM(rb_intern("node_ids")), node_ids);
 #endif
 
     /*
