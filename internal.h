@@ -1,7 +1,6 @@
 #ifndef RUBY_INTERNAL_H                                  /*-*-C-*-vi:se ft=c:*/
 #define RUBY_INTERNAL_H 1
 /**
- * @file
  * @author     $Author$
  * @date       Tue May 17 11:42:20 JST 2011
  * @copyright  Copyright (C) 2011 Yukihiro Matsumoto
