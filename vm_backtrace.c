@@ -34,7 +34,7 @@ id2str(ID id)
 #define ALL_BACKTRACE_LINES -1
 
 inline static int
-calc_lineno(const rb_iseq_t *iseq, const VALUE *pc)
+calc_pos(const rb_iseq_t *iseq, const VALUE *pc, int *lineno, int *node_id)
 {
     VM_ASSERT(iseq);
     VM_ASSERT(iseq->body);
@@ -46,7 +46,11 @@ calc_lineno(const rb_iseq_t *iseq, const VALUE *pc)
             VM_ASSERT(! iseq->body->local_table_size);
             return 0;
         }
-        return FIX2INT(iseq->body->location.first_lineno);
+        if (lineno) *lineno = FIX2INT(iseq->body->location.first_lineno);
+#ifdef EXPERIMENTAL_ISEQ_NODE_ID
+        if (node_id) *node_id = -1;
+#endif
+        return 1;
     }
     else {
         ptrdiff_t n = pc - iseq->body->iseq_encoded;
@@ -65,9 +69,31 @@ calc_lineno(const rb_iseq_t *iseq, const VALUE *pc)
             __builtin_trap();
         }
 #endif
-        return rb_iseq_line_no(iseq, pos);
+        if (lineno) *lineno = rb_iseq_line_no(iseq, pos);
+#ifdef EXPERIMENTAL_ISEQ_NODE_ID
+        if (node_id) *node_id = rb_iseq_node_id(iseq, pos);
+#endif
+        return 1;
     }
 }
+
+inline static int
+calc_lineno(const rb_iseq_t *iseq, const VALUE *pc)
+{
+    int lineno;
+    if (calc_pos(iseq, pc, &lineno, NULL)) return lineno;
+    return 0;
+}
+
+#ifdef EXPERIMENTAL_ISEQ_NODE_ID
+inline static int
+calc_node_id(const rb_iseq_t *iseq, const VALUE *pc)
+{
+    int node_id;
+    if (calc_pos(iseq, pc, NULL, &node_id)) return node_id;
+    return -1;
+}
+#endif
 
 int
 rb_vm_get_sourceline(const rb_control_frame_t *cfp)
@@ -142,6 +168,12 @@ static const rb_data_type_t location_data_type = {
     {location_mark, RUBY_TYPED_DEFAULT_FREE, location_memsize,},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
+
+int
+rb_frame_info_p(VALUE obj)
+{
+    return rb_typeddata_is_kind_of(obj, &location_data_type);
+}
 
 static inline rb_backtrace_location_t *
 location_ptr(VALUE locobj)
@@ -285,6 +317,37 @@ static VALUE
 location_path_m(VALUE self)
 {
     return location_path(location_ptr(self));
+}
+
+#ifdef EXPERIMENTAL_ISEQ_NODE_ID
+static int
+location_node_id(rb_backtrace_location_t *loc)
+{
+    switch (loc->type) {
+      case LOCATION_TYPE_ISEQ:
+	return calc_node_id(loc->body.iseq.iseq, loc->body.iseq.pc);
+      case LOCATION_TYPE_CFUNC:
+        if (loc->body.cfunc.prev_loc) {
+            return location_node_id(loc->body.cfunc.prev_loc);
+        }
+        return -1;
+      default:
+        rb_bug("location_node_id: unreachable");
+        UNREACHABLE;
+    }
+}
+#endif
+
+void
+rb_frame_info_get(VALUE obj, VALUE *path, int *node_id)
+{
+#ifdef EXPERIMENTAL_ISEQ_NODE_ID
+    rb_backtrace_location_t *loc = location_ptr(obj);
+    *path = location_path(loc);
+    *node_id = location_node_id(loc);
+#else
+    *path = Qnil;
+#endif
 }
 
 static VALUE

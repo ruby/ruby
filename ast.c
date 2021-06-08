@@ -197,23 +197,26 @@ ast_s_of(rb_execution_context_t *ec, VALUE module, VALUE body, VALUE save_script
 {
     VALUE path, node, lines;
     int node_id;
-    const rb_iseq_t *iseq = NULL;
 
-    if (rb_obj_is_proc(body)) {
-        iseq = vm_proc_iseq(body);
-
-        if (!rb_obj_is_iseq((VALUE)iseq)) {
-            iseq = NULL;
-        }
+    if (rb_frame_info_p(body)) {
+        rb_frame_info_get(body, &path, &node_id);
+        if (NIL_P(path)) return Qnil;
     }
     else {
-        iseq = rb_method_iseq(body);
+        const rb_iseq_t *iseq = NULL;
+
+        if (rb_obj_is_proc(body)) {
+            iseq = vm_proc_iseq(body);
+
+            if (!rb_obj_is_iseq((VALUE)iseq)) return Qnil;
+        }
+        else {
+            iseq = rb_method_iseq(body);
+        }
+        path = rb_iseq_path(iseq);
+        node_id = iseq->body->location.node_id;
     }
 
-    if (!iseq) return Qnil;
-
-    path = rb_iseq_path(iseq);
-    node_id = iseq->body->location.node_id;
     if (!NIL_P(lines = script_lines(path))) {
         node = rb_ast_parse_array(lines, save_script_lines);
     }
