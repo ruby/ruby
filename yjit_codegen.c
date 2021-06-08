@@ -787,22 +787,21 @@ gen_getlocal_wc0(jitstate_t* jit, ctx_t* ctx)
 }
 
 static codegen_status_t
-gen_getlocal_wc1(jitstate_t* jit, ctx_t* ctx)
+gen_getlocal_generic(ctx_t* ctx, uint32_t local_idx, uint32_t level)
 {
-    //fprintf(stderr, "gen_getlocal_wc1\n");
-
     // Load environment pointer EP from CFP
     mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, ep));
 
-    // Get the previous EP from the current EP
-    // See GET_PREV_EP(ep) macro
-    // VALUE* prev_ep = ((VALUE *)((ep)[VM_ENV_DATA_INDEX_SPECVAL] & ~0x03))
-    mov(cb, REG0, mem_opnd(64, REG0, SIZEOF_VALUE * VM_ENV_DATA_INDEX_SPECVAL));
-    and(cb, REG0, imm_opnd(~0x03));
+    while (level--) {
+        // Get the previous EP from the current EP
+        // See GET_PREV_EP(ep) macro
+        // VALUE* prev_ep = ((VALUE *)((ep)[VM_ENV_DATA_INDEX_SPECVAL] & ~0x03))
+        mov(cb, REG0, mem_opnd(64, REG0, SIZEOF_VALUE * VM_ENV_DATA_INDEX_SPECVAL));
+        and(cb, REG0, imm_opnd(~0x03));
+    }
 
     // Load the local from the block
     // val = *(vm_get_ep(GET_EP(), level) - idx);
-    int32_t local_idx = (int32_t)jit_get_arg(jit, 0);
     const int32_t offs = -(SIZEOF_VALUE * local_idx);
     mov(cb, REG0, mem_opnd(64, REG0, offs));
 
@@ -811,6 +810,21 @@ gen_getlocal_wc1(jitstate_t* jit, ctx_t* ctx)
     mov(cb, stack_top, REG0);
 
     return YJIT_KEEP_COMPILING;
+}
+
+static codegen_status_t
+gen_getlocal(jitstate_t* jit, ctx_t* ctx)
+{
+    int32_t idx = (int32_t)jit_get_arg(jit, 0);
+    int32_t level = (int32_t)jit_get_arg(jit, 1);
+    return gen_getlocal_generic(ctx, idx, level);
+}
+
+static codegen_status_t
+gen_getlocal_wc1(jitstate_t* jit, ctx_t* ctx)
+{
+    int32_t idx = (int32_t)jit_get_arg(jit, 0);
+    return gen_getlocal_generic(ctx, idx, 1);
 }
 
 static codegen_status_t
@@ -3067,6 +3081,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(putobject_INT2FIX_0_), gen_putobject_int2fix);
     yjit_reg_op(BIN(putobject_INT2FIX_1_), gen_putobject_int2fix);
     yjit_reg_op(BIN(putself), gen_putself);
+    yjit_reg_op(BIN(getlocal), gen_getlocal);
     yjit_reg_op(BIN(getlocal_WC_0), gen_getlocal_wc0);
     yjit_reg_op(BIN(getlocal_WC_1), gen_getlocal_wc1);
     yjit_reg_op(BIN(setlocal_WC_0), gen_setlocal_wc0);
