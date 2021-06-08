@@ -1840,7 +1840,7 @@ rb_iseq_line_no(const rb_iseq_t *iseq, size_t pos)
     }
 }
 
-#ifdef EXPERIMENTAL_ISEQ_NODE_ID
+#ifdef USE_ISEQ_NODE_ID
 int
 rb_iseq_node_id(const rb_iseq_t *iseq, size_t pos)
 {
@@ -2943,7 +2943,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     /* make body with labels and insert line number */
     body = rb_ary_new();
     prev_insn_info = NULL;
-#ifdef EXPERIMENTAL_ISEQ_NODE_ID
+#ifdef USE_ISEQ_NODE_ID
     VALUE node_ids = rb_ary_new();
 #endif
 
@@ -2957,7 +2957,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 	}
 
 	info = get_insn_info(iseq, pos);
-#ifdef EXPERIMENTAL_ISEQ_NODE_ID
+#ifdef USE_ISEQ_NODE_ID
         rb_ary_push(node_ids, INT2FIX(info->node_id));
 #endif
 
@@ -2997,7 +2997,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 		INT2FIX(iseq_body->location.code_location.beg_pos.column),
 		INT2FIX(iseq_body->location.code_location.end_pos.lineno),
 		INT2FIX(iseq_body->location.code_location.end_pos.column)));
-#ifdef EXPERIMENTAL_ISEQ_NODE_ID
+#ifdef USE_ISEQ_NODE_ID
     rb_hash_aset(misc, ID2SYM(rb_intern("node_ids")), node_ids);
 #endif
 

@@ -2216,12 +2216,12 @@ add_insn_info(struct iseq_insn_info_entry *insns_info, unsigned int *positions,
 {
     if (insns_info_index == 0 ||
         insns_info[insns_info_index-1].line_no != iobj->insn_info.line_no ||
-#ifdef EXPERIMENTAL_ISEQ_NODE_ID
+#ifdef USE_ISEQ_NODE_ID
         insns_info[insns_info_index-1].node_id != iobj->insn_info.node_id ||
 #endif
         insns_info[insns_info_index-1].events  != iobj->insn_info.events) {
         insns_info[insns_info_index].line_no    = iobj->insn_info.line_no;
-#ifdef EXPERIMENTAL_ISEQ_NODE_ID
+#ifdef USE_ISEQ_NODE_ID
         insns_info[insns_info_index].node_id    = iobj->insn_info.node_id;
 #endif
         insns_info[insns_info_index].events     = iobj->insn_info.events;
@@ -10059,7 +10059,7 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
     }
 
     VALUE node_ids = Qfalse;
-#ifdef EXPERIMENTAL_ISEQ_NODE_ID
+#ifdef USE_ISEQ_NODE_ID
     node_ids = rb_hash_aref(misc, ID2SYM(rb_intern("node_ids")));
     if (!RB_TYPE_P(node_ids, T_ARRAY)) {
 	rb_raise(rb_eTypeError, "node_ids is not an array");
@@ -10940,7 +10940,7 @@ ibf_dump_insns_info_body(struct ibf_dump *dump, const rb_iseq_t *iseq)
     unsigned int i;
     for (i = 0; i < iseq->body->insns_info.size; i++) {
         ibf_dump_write_small_value(dump, entries[i].line_no);
-#ifdef EXPERIMENTAL_ISEQ_NODE_ID
+#ifdef USE_ISEQ_NODE_ID
         ibf_dump_write_small_value(dump, entries[i].node_id);
 #endif
         ibf_dump_write_small_value(dump, entries[i].events);
@@ -10958,7 +10958,7 @@ ibf_load_insns_info_body(const struct ibf_load *load, ibf_offset_t body_offset, 
     unsigned int i;
     for (i = 0; i < size; i++) {
         entries[i].line_no = (int)ibf_load_small_value(load, &reading_pos);
-#ifdef EXPERIMENTAL_ISEQ_NODE_ID
+#ifdef USE_ISEQ_NODE_ID
         entries[i].node_id = (int)ibf_load_small_value(load, &reading_pos);
 #endif
         entries[i].events = (rb_event_flag_t)ibf_load_small_value(load, &reading_pos);

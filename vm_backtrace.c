@@ -47,7 +47,7 @@ calc_pos(const rb_iseq_t *iseq, const VALUE *pc, int *lineno, int *node_id)
             return 0;
         }
         if (lineno) *lineno = FIX2INT(iseq->body->location.first_lineno);
-#ifdef EXPERIMENTAL_ISEQ_NODE_ID
+#ifdef USE_ISEQ_NODE_ID
         if (node_id) *node_id = -1;
 #endif
         return 1;
@@ -70,7 +70,7 @@ calc_pos(const rb_iseq_t *iseq, const VALUE *pc, int *lineno, int *node_id)
         }
 #endif
         if (lineno) *lineno = rb_iseq_line_no(iseq, pos);
-#ifdef EXPERIMENTAL_ISEQ_NODE_ID
+#ifdef USE_ISEQ_NODE_ID
         if (node_id) *node_id = rb_iseq_node_id(iseq, pos);
 #endif
         return 1;
@@ -85,7 +85,7 @@ calc_lineno(const rb_iseq_t *iseq, const VALUE *pc)
     return 0;
 }
 
-#ifdef EXPERIMENTAL_ISEQ_NODE_ID
+#ifdef USE_ISEQ_NODE_ID
 inline static int
 calc_node_id(const rb_iseq_t *iseq, const VALUE *pc)
 {
@@ -319,7 +319,7 @@ location_path_m(VALUE self)
     return location_path(location_ptr(self));
 }
 
-#ifdef EXPERIMENTAL_ISEQ_NODE_ID
+#ifdef USE_ISEQ_NODE_ID
 static int
 location_node_id(rb_backtrace_location_t *loc)
 {
@@ -341,7 +341,7 @@ location_node_id(rb_backtrace_location_t *loc)
 void
 rb_frame_info_get(VALUE obj, VALUE *path, int *node_id)
 {
-#ifdef EXPERIMENTAL_ISEQ_NODE_ID
+#ifdef USE_ISEQ_NODE_ID
     rb_backtrace_location_t *loc = location_ptr(obj);
     *path = location_path(loc);
     *node_id = location_node_id(loc);
