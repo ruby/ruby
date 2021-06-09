@@ -2967,6 +2967,20 @@ gen_invokesuper(jitstate_t *jit, ctx_t *ctx)
     // Guard that the receiver has the same class as the one from compile time
     uint8_t *side_exit = yjit_side_exit(jit, ctx);
 
+    if (!block) {
+        // Guard no block passed
+        // rb_vm_frame_block_handler(GET_EC()->cfp) == VM_BLOCK_HANDLER_NONE
+        // note, we assume VM_ASSERT(VM_ENV_LOCAL_P(ep))
+        //
+        // TODO: this could properly forward the current block handler, but
+        // would require changes to gen_send_*
+        ADD_COMMENT(cb, "guard no block given");
+        mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, ep));
+        mov(cb, REG0, mem_opnd(64, REG0, SIZEOF_VALUE * VM_ENV_DATA_INDEX_SPECVAL));
+        cmp(cb, REG0, imm_opnd(VM_BLOCK_HANDLER_NONE));
+        jne_ptr(cb, side_exit);
+    }
+
     // Points to the receiver operand on the stack
     x86opnd_t recv = ctx_stack_opnd(ctx, argc);
     insn_opnd_t recv_opnd = OPND_STACK(argc);
