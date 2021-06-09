@@ -2909,6 +2909,90 @@ gen_send(jitstate_t *jit, ctx_t *ctx)
 }
 
 static codegen_status_t
+gen_invokesuper(jitstate_t *jit, ctx_t *ctx)
+{
+    struct rb_call_data *cd = (struct rb_call_data *)jit_get_arg(jit, 0);
+    rb_iseq_t *block = (rb_iseq_t *)jit_get_arg(jit, 1);
+
+    // Defer compilation so we can specialize on class of receiver
+    if (!jit_at_current_insn(jit)) {
+        defer_compilation(jit->block, jit->insn_idx, ctx);
+        return YJIT_END_BLOCK;
+    }
+
+    const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(jit->ec->cfp);
+    if (!me) {
+        return YJIT_CANT_COMPILE;
+    } else if (me->def->type == VM_METHOD_TYPE_BMETHOD) {
+        return YJIT_CANT_COMPILE;
+    }
+
+    VALUE current_defined_class = me->defined_class;
+    ID mid = me->def->original_id;
+    VALUE comptime_superclass = RCLASS_SUPER(RCLASS_ORIGIN(current_defined_class));
+
+    const struct rb_callinfo *ci = cd->ci;
+    int32_t argc = (int32_t)vm_ci_argc(ci);
+
+    // Don't JIT calls that aren't simple
+    // Note, not using VM_CALL_ARGS_SIMPLE because sometimes we pass a block.
+    if ((vm_ci_flag(ci) & (VM_CALL_KW_SPLAT | VM_CALL_KWARG | VM_CALL_ARGS_SPLAT | VM_CALL_ARGS_BLOCKARG)) != 0) {
+        GEN_COUNTER_INC(cb, send_callsite_not_simple);
+        return YJIT_CANT_COMPILE;
+    }
+
+    VALUE comptime_recv = jit_peek_at_stack(jit, ctx, argc);
+    VALUE comptime_recv_klass = CLASS_OF(comptime_recv);
+
+    if (!rb_obj_is_kind_of(comptime_recv, current_defined_class)) {
+        return YJIT_CANT_COMPILE;
+    }
+
+    // Do method lookup
+    const rb_callable_method_entry_t *cme = rb_callable_method_entry(comptime_superclass, mid);
+
+    if (!cme) {
+        return YJIT_CANT_COMPILE;
+    }
+
+    switch (cme->def->type) {
+        case VM_METHOD_TYPE_ISEQ:
+        case VM_METHOD_TYPE_CFUNC:
+            break;
+        default:
+            // others unimplemented
+            return YJIT_CANT_COMPILE;
+    }
+
+    // Guard that the receiver has the same class as the one from compile time
+    uint8_t *side_exit = yjit_side_exit(jit, ctx);
+
+    // Points to the receiver operand on the stack
+    x86opnd_t recv = ctx_stack_opnd(ctx, argc);
+    insn_opnd_t recv_opnd = OPND_STACK(argc);
+    mov(cb, REG0, recv);
+    if (!jit_guard_known_klass(jit, ctx, comptime_recv_klass, recv_opnd, SEND_MAX_DEPTH, side_exit)) {
+        return YJIT_CANT_COMPILE;
+    }
+
+    assume_method_lookup_stable(comptime_recv_klass, cme, jit->block);
+
+    // Method calls may corrupt types
+    ctx_clear_local_types(ctx);
+
+    switch (cme->def->type) {
+        case VM_METHOD_TYPE_ISEQ:
+            return gen_send_iseq(jit, ctx, ci, cme, block, argc);
+        case VM_METHOD_TYPE_CFUNC:
+            return gen_send_cfunc(jit, ctx, ci, cme, block, argc);
+        default:
+            break;
+    }
+
+    RUBY_ASSERT(false);
+}
+
+static codegen_status_t
 gen_leave(jitstate_t* jit, ctx_t* ctx)
 {
     // Only the return value should be on the stack
@@ -3115,5 +3199,6 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(getblockparamproxy), gen_getblockparamproxy);
     yjit_reg_op(BIN(opt_send_without_block), gen_opt_send_without_block);
     yjit_reg_op(BIN(send), gen_send);
+    yjit_reg_op(BIN(invokesuper), gen_invokesuper);
     yjit_reg_op(BIN(leave), gen_leave);
 }
