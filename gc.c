@@ -5536,6 +5536,19 @@ gc_sweep_start_heap(rb_objspace_t *objspace, rb_heap_t *heap)
     heap->free_pages = NULL;
 #if GC_ENABLE_INCREMENTAL_MARK
     heap->pooled_pages = NULL;
+#endif
+}
+
+#if defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ == 4
+__attribute__((noinline))
+#endif
+static void
+gc_sweep_start(rb_objspace_t *objspace)
+{
+    gc_mode_transition(objspace, gc_mode_sweeping);
+    gc_sweep_start_heap(objspace, heap_eden);
+
+#if GC_ENABLE_INCREMENTAL_MARK
     objspace->rincgc.pooled_slots = 0;
 #endif
 
@@ -5568,16 +5581,6 @@ gc_sweep_start_heap(rb_objspace_t *objspace, rb_heap_t *heap)
         r->newobj_cache.using_page = NULL;
         r->newobj_cache.freelist = NULL;
     }
-}
-
-#if defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ == 4
-__attribute__((noinline))
-#endif
-static void
-gc_sweep_start(rb_objspace_t *objspace)
-{
-    gc_mode_transition(objspace, gc_mode_sweeping);
-    gc_sweep_start_heap(objspace, heap_eden);
 }
 
 static void
