@@ -1836,6 +1836,7 @@ ubf_timer_disarm(void)
 #if UBF_TIMER == UBF_TIMER_POSIX
     rb_atomic_t prev;
 
+    if (timer_posix.owner && timer_posix.owner != getpid()) return;
     prev = timer_state_cas(RTIMER_ARMED, RTIMER_DISARM);
     switch (prev) {
       case RTIMER_DISARM: return; /* likely */
