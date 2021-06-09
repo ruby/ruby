@@ -10,10 +10,6 @@
 #include "yjit_core.h"
 #include "yjit_codegen.h"
 
-// Maximum number of specialized block versions per block
-// Zero means generic versions only
-#define MAX_VERSIONS 3
-
 /*
 Get an operand for the adjusted stack pointer address
 */
