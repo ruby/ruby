@@ -2924,6 +2924,10 @@ gen_invokesuper(jitstate_t *jit, ctx_t *ctx)
     if (!me) {
         return YJIT_CANT_COMPILE;
     } else if (me->def->type == VM_METHOD_TYPE_BMETHOD) {
+        // In the interpreter the method id can change which is tested for and
+        // invalidates the cache.
+        // By skipping super calls inside a BMETHOD definition, I believe we
+        // avoid this case
         return YJIT_CANT_COMPILE;
     }
 
@@ -2949,6 +2953,11 @@ gen_invokesuper(jitstate_t *jit, ctx_t *ctx)
     VALUE comptime_recv = jit_peek_at_stack(jit, ctx, argc);
     VALUE comptime_recv_klass = CLASS_OF(comptime_recv);
 
+    // Ensure we haven't rebound this method onto an incompatible class.
+    // In the interpreter we try to avoid making this check by performing some
+    // cheaper calculations first, but since we specialize on the receiver
+    // class and so only have to do this once at compile time this is fine to
+    // always check and side exit.
     if (!rb_obj_is_kind_of(comptime_recv, current_defined_class)) {
         return YJIT_CANT_COMPILE;
     }
@@ -2967,6 +2976,7 @@ gen_invokesuper(jitstate_t *jit, ctx_t *ctx)
         return YJIT_CANT_COMPILE;
     }
 
+    // Check that we'll be able to write this method dispatch before generating checks
     switch (cme->def->type) {
         case VM_METHOD_TYPE_ISEQ:
         case VM_METHOD_TYPE_CFUNC:
@@ -2997,6 +3007,7 @@ gen_invokesuper(jitstate_t *jit, ctx_t *ctx)
     x86opnd_t recv = ctx_stack_opnd(ctx, argc);
     insn_opnd_t recv_opnd = OPND_STACK(argc);
     mov(cb, REG0, recv);
+
     if (!jit_guard_known_klass(jit, ctx, comptime_recv_klass, recv_opnd, SEND_MAX_DEPTH, side_exit)) {
         return YJIT_CANT_COMPILE;
     }
