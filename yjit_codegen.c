@@ -2953,6 +2953,13 @@ gen_invokesuper(jitstate_t *jit, ctx_t *ctx)
         return YJIT_CANT_COMPILE;
     }
 
+    // Because we're assuming only one current_defined_class for a given
+    // receiver class we need to check that the superclass doesn't also
+    // re-include the same module.
+    if (rb_class_search_ancestor(comptime_superclass, current_defined_class)) {
+        return YJIT_CANT_COMPILE;
+    }
+
     // Do method lookup
     const rb_callable_method_entry_t *cme = rb_callable_method_entry(comptime_superclass, mid);
 
