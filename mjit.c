@@ -23,6 +23,7 @@
 #include "internal/file.h"
 #include "internal/hash.h"
 #include "internal/warnings.h"
+#include "vm_sync.h"
 
 #include "mjit_worker.c"
 
@@ -253,16 +254,26 @@ mjit_target_iseq_p(struct rb_iseq_constant_body *body)
         && !body->builtin_inline_p;
 }
 
-// This is called from an MJIT worker when worker_p is true.
+// If recompile_p is true, the call is initiated by mjit_recompile.
+// This assumes the caller holds CRITICAL_SECTION when recompile_p is true.
 static void
-mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_info *compile_info, bool worker_p)
+mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_info *compile_info, bool recompile_p)
 {
     if (!mjit_enabled || pch_status == PCH_FAILED)
         return;
-
     if (!mjit_target_iseq_p(iseq->body)) {
         iseq->body->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC; // skip mjit_wait
         return;
+    }
+
+    if (!recompile_p) {
+        CRITICAL_SECTION_START(3, "in add_iseq_to_process");
+
+        // This prevents multiple Ractors from enqueueing the same ISeq twice.
+        if (rb_multi_ractor_p() && iseq->body->jit_func != NOT_ADDED_JIT_ISEQ_FUNC) {
+            CRITICAL_SECTION_FINISH(3, "in add_iseq_to_process");
+            return;
+        }
     }
 
     RB_DEBUG_COUNTER_INC(mjit_add_iseq_to_process);
@@ -273,15 +284,12 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_inf
         return;
     if (compile_info != NULL)
         iseq->body->jit_unit->compile_info = *compile_info;
-
-    if (!worker_p) {
-        CRITICAL_SECTION_START(3, "in add_iseq_to_process");
-    }
     add_to_list(iseq->body->jit_unit, &unit_queue);
     if (active_units.length >= mjit_opts.max_cache_size) {
         unload_requests++;
     }
-    if (!worker_p) {
+
+    if (!recompile_p) {
         verbose(3, "Sending wakeup signal to workers in mjit_add_iseq_to_process");
         rb_native_cond_broadcast(&mjit_worker_wakeup);
         CRITICAL_SECTION_FINISH(3, "in add_iseq_to_process");
@@ -356,9 +364,11 @@ mjit_recompile(const rb_iseq_t *iseq)
     assert(iseq->body->jit_unit != NULL);
 
     if (UNLIKELY(mjit_opts.wait)) {
+        CRITICAL_SECTION_START(3, "in rb_mjit_recompile_iseq");
         remove_from_list(iseq->body->jit_unit, &active_units);
         add_to_list(iseq->body->jit_unit, &stale_units);
-        mjit_add_iseq_to_process(iseq, &iseq->body->jit_unit->compile_info, false);
+        mjit_add_iseq_to_process(iseq, &iseq->body->jit_unit->compile_info, true);
+        CRITICAL_SECTION_FINISH(3, "in rb_mjit_recompile_iseq");
         mjit_wait(iseq->body);
     }
     else {
@@ -367,7 +377,7 @@ mjit_recompile(const rb_iseq_t *iseq)
         // It's good to avoid a race condition between mjit_add_iseq_to_process and mjit_compile around jit_unit as well.
         CRITICAL_SECTION_START(3, "in rb_mjit_recompile_iseq");
         iseq->body->jit_unit->stale_p = true;
-        iseq->body->jit_func = (mjit_func_t)NOT_ADDED_JIT_ISEQ_FUNC;
+        iseq->body->jit_func = (mjit_func_t)NOT_READY_JIT_ISEQ_FUNC;
         pending_stale_p = true;
         CRITICAL_SECTION_FINISH(3, "in rb_mjit_recompile_iseq");
     }

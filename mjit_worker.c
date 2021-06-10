@@ -1106,7 +1106,7 @@ load_func_from_so(const char *so_file, const char *funcname, struct rb_mjit_unit
     handle = dlopen(so_file, RTLD_NOW);
     if (handle == NULL) {
         mjit_warning("failure in loading code from '%s': %s", so_file, dlerror());
-        return (void *)NOT_ADDED_JIT_ISEQ_FUNC;
+        return (void *)NOT_COMPILED_JIT_ISEQ_FUNC;
     }
 
     func = dlsym(handle, funcname);

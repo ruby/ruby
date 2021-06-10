@@ -8608,6 +8608,7 @@ mjit.$(OBJEXT): {$(VPATH)}util.h
 mjit.$(OBJEXT): {$(VPATH)}vm_callinfo.h
 mjit.$(OBJEXT): {$(VPATH)}vm_core.h
 mjit.$(OBJEXT): {$(VPATH)}vm_opts.h
+mjit.$(OBJEXT): {$(VPATH)}vm_sync.h
 mjit_build_dir.$(OBJEXT): {$(VPATH)}config.h
 mjit_build_dir.$(OBJEXT): {$(VPATH)}internal/compiler_is.h
 mjit_build_dir.$(OBJEXT): {$(VPATH)}internal/compiler_is/apple.h

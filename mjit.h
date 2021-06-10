@@ -20,7 +20,7 @@
 // Special address values of a function generated from the
 // corresponding iseq by MJIT:
 enum rb_mjit_iseq_func {
-    // ISEQ was not queued yet for the machine code generation
+    // ISEQ has never been enqueued to unit_queue yet
     NOT_ADDED_JIT_ISEQ_FUNC = 0,
     // ISEQ is already queued for the machine code generation but the
     // code is not ready yet for the execution
