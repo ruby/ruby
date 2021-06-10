@@ -270,7 +270,7 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_inf
         CRITICAL_SECTION_START(3, "in add_iseq_to_process");
 
         // This prevents multiple Ractors from enqueueing the same ISeq twice.
-        if (rb_multi_ractor_p() && iseq->body->jit_func != NOT_ADDED_JIT_ISEQ_FUNC) {
+        if (rb_multi_ractor_p() && (uintptr_t)iseq->body->jit_func != NOT_ADDED_JIT_ISEQ_FUNC) {
             CRITICAL_SECTION_FINISH(3, "in add_iseq_to_process");
             return;
         }
