@@ -55,6 +55,43 @@ module YJIT
     def self.comments_for(start_address, end_address)
       Primitive.comments_for(start_address, end_address)
     end
+
+    def self.graphviz_for(iseq)
+      iseq = RubyVM::InstructionSequence.of(iseq)
+      buff = ''
+      blocks = blocks_for(iseq)
+      buff << "digraph g {"
+      buff << "  node [shape=record];"
+      blocks.each do |block|
+        buff << "b#{block.id} [label=\"#{disasm_block(block).gsub(/\n/, "\\l\n")}\"];"
+        block.outgoing_ids.each do |id|
+          buff << "b#{block.id} -> b#{id};"
+        end
+      end
+      buff << "}"
+      buff
+    end
+
+    def self.disasm_block(block)
+      cs = YJIT::Disasm.new
+      comments = comments_for(block.address, block.address + block.code.length)
+      comment_idx = 0
+      str = ''
+      cs.disasm(block.code, block.address).each do |i|
+        while (comment = comments[comment_idx]) && comment.address <= i.address
+          str << "  ; #{comment.comment}\n"
+          comment_idx += 1
+        end
+
+        str << sprintf(
+          "  %<address>08x:  %<instruction>s\t%<details>s\n",
+          address: i.address,
+          instruction: i.mnemonic,
+          details: i.op_str
+        )
+      end
+      str
+    end
   end
 
   # Return a hash for statistics generated for the --yjit-stats command line option.

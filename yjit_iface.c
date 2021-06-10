@@ -1025,6 +1025,55 @@ rb_yjit_call_threshold(void)
     return rb_yjit_opts.call_threshold;
 }
 
+# define PTR2NUM(x)   (LONG2NUM((long)(x)))
+
+/**
+ *  call-seq: block.id -> unique_id
+ *
+ *  Returns a unique integer ID for the block.  For example:
+ *
+ *      blocks = blocks_for(iseq)
+ *      blocks.group_by(&:id)
+ */
+static VALUE
+block_id(VALUE self)
+{
+    block_t * block;
+    TypedData_Get_Struct(self, block_t, &yjit_block_type, block);
+    return PTR2NUM(block);
+}
+
+/**
+ *  call-seq: block.outgoing_ids -> list
+ *
+ *  Returns a list of outgoing ids for the current block.  This list can be used
+ *  in conjunction with Block#id to construct a graph of block objects.
+ */
+static VALUE
+outgoing_ids(VALUE self)
+{
+    block_t * block;
+    TypedData_Get_Struct(self, block_t, &yjit_block_type, block);
+
+    VALUE ids = rb_ary_new();
+
+    rb_darray_for(block->outgoing, branch_idx) {
+        branch_t* out_branch = rb_darray_get(block->outgoing, branch_idx);
+
+        for (size_t succ_idx = 0; succ_idx < 2; succ_idx++) {
+            block_t* succ = out_branch->blocks[succ_idx];
+
+            if (succ == NULL)
+                continue;
+
+            rb_ary_push(ids, PTR2NUM(succ));
+        }
+
+    }
+
+    return ids;
+}
+
 // Can raise RuntimeError
 void
 rb_yjit_init(struct rb_yjit_options *options)
@@ -1069,9 +1118,11 @@ rb_yjit_init(struct rb_yjit_options *options)
     // YJIT::Block (block version, code block)
     cYjitBlock = rb_define_class_under(mYjit, "Block", rb_cObject);
     rb_define_method(cYjitBlock, "address", block_address, 0);
+    rb_define_method(cYjitBlock, "id", block_id, 0);
     rb_define_method(cYjitBlock, "code", block_code, 0);
     rb_define_method(cYjitBlock, "iseq_start_index", iseq_start_index, 0);
     rb_define_method(cYjitBlock, "iseq_end_index", iseq_end_index, 0);
+    rb_define_method(cYjitBlock, "outgoing_ids", outgoing_ids, 0);
 
     // YJIT disassembler interface
 #if HAVE_LIBCAPSTONE
