@@ -2051,6 +2051,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     rb_gvar_ractor_local("$-a");
 
     if ((rb_e_script = opt->e_script) != 0) {
+        rb_str_freeze(rb_e_script);
         rb_gc_register_mark_object(opt->e_script);
     }
 
