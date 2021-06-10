@@ -583,6 +583,23 @@ gen_setn(jitstate_t* jit, ctx_t* ctx)
     return YJIT_KEEP_COMPILING;
 }
 
+// get nth stack value, then push it
+static codegen_status_t
+gen_topn(jitstate_t* jit, ctx_t* ctx)
+{
+    int32_t n = (int32_t)jit_get_arg(jit, 0);
+
+    // Get top n type / operand
+    val_type_t top_n_type = ctx_get_opnd_type(ctx, OPND_STACK(n));
+    x86opnd_t top_n_val = ctx_stack_opnd(ctx, n);
+
+    x86opnd_t loc0 = ctx_stack_push(ctx, top_n_type);
+    mov(cb, REG0, top_n_val);
+    mov(cb, loc0, REG0);
+
+    return YJIT_KEEP_COMPILING;
+}
+
 static codegen_status_t
 gen_pop(jitstate_t* jit, ctx_t* ctx)
 {
@@ -3191,6 +3208,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(dup), gen_dup);
     yjit_reg_op(BIN(dupn), gen_dupn);
     yjit_reg_op(BIN(setn), gen_setn);
+    yjit_reg_op(BIN(topn), gen_topn);
     yjit_reg_op(BIN(pop), gen_pop);
     yjit_reg_op(BIN(adjuststack), gen_adjuststack);
     yjit_reg_op(BIN(newarray), gen_newarray);

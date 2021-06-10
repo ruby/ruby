@@ -1,3 +1,21 @@
+# Test for topn
+assert_equal 'array', %q{
+  def threequals(a)
+    case a
+    when Array
+      "array"
+    when Hash
+      "hash"
+    else
+      "unknown"
+    end
+  end
+
+  threequals([])
+  threequals([])
+  threequals([])
+}
+
 # Test for opt_mod
 assert_equal '2', %q{
   def mod(a, b)
