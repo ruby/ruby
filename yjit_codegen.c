@@ -2929,6 +2929,11 @@ gen_invokesuper(jitstate_t *jit, ctx_t *ctx)
 
     VALUE current_defined_class = me->defined_class;
     ID mid = me->def->original_id;
+
+    // vm_search_normal_superclass
+    if (BUILTIN_TYPE(current_defined_class) == T_ICLASS && FL_TEST_RAW(RBASIC(current_defined_class)->klass, RMODULE_IS_REFINEMENT)) {
+        return YJIT_CANT_COMPILE;
+    }
     VALUE comptime_superclass = RCLASS_SUPER(RCLASS_ORIGIN(current_defined_class));
 
     const struct rb_callinfo *ci = cd->ci;
