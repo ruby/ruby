@@ -10773,6 +10773,8 @@ gc_set_initial_pages(void)
     size_t min_pages;
     rb_objspace_t *objspace = &rb_objspace;
 
+    gc_rest(objspace);
+
     min_pages = gc_params.heap_init_slots / HEAP_PAGE_OBJ_LIMIT;
     if (min_pages > heap_eden->total_pages) {
 	heap_add_pages(objspace, heap_eden, min_pages - heap_eden->total_pages);
