@@ -115,17 +115,6 @@ rb_obj_setup(VALUE obj, VALUE klass, VALUE type)
     /* The default implementation of #=== is
      * to call #== with the rb_equal() optimization. */
 
-/*!
- * This function is an optimized version of calling #==.
- * It checks equality between two objects by first doing a fast
- * identity check using using C's == (same as BasicObject#equal?).
- * If that check fails, it calls #== dynamically.
- * This optimization actually affects semantics,
- * because when #== returns false for the same object obj,
- * rb_equal(obj, obj) would still return true.
- * This happens for Float::NAN, where Float::NAN == Float::NAN
- * is false, but rb_equal(Float::NAN, Float::NAN) is true.
- */
 VALUE
 rb_equal(VALUE obj1, VALUE obj2)
 {
