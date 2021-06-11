@@ -1035,6 +1035,8 @@ rb_yjit_init(struct rb_yjit_options *options)
     rb_yjit_opts = *options;
     rb_yjit_opts.yjit_enabled = true;
 
+    rb_yjit_opts.gen_stats |= !!getenv("YJIT_STATS");
+
     // Normalize command-line options to default values
     if (rb_yjit_opts.exec_mem_size < 1) {
         rb_yjit_opts.exec_mem_size = 256;
