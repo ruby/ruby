@@ -41,6 +41,8 @@ rb_pid_t rb_spawn_err(int, const VALUE*, char*, size_t);
 VALUE rb_proc_times(VALUE);
 VALUE rb_detach_process(rb_pid_t pid);
 
+VALUE rb_process_status_new(rb_pid_t pid, int status, int error);
+
 RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RBIMPL_INTERN_PROCESS_H */
