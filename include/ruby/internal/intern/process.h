@@ -268,6 +268,8 @@ VALUE rb_proc_times(VALUE _);
  */
 VALUE rb_detach_process(rb_pid_t pid);
 
+VALUE rb_process_status_new(rb_pid_t pid, int status, int error);
+
 RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RBIMPL_INTERN_PROCESS_H */

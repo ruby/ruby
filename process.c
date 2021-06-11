@@ -621,18 +621,34 @@ proc_s_last_status(VALUE mod)
     return rb_last_status_get();
 }
 
-VALUE
-rb_process_status_new(rb_pid_t pid, int status, int error)
+static void
+process_status_initialize(struct rb_process_status *data, rb_pid_t pid, int status, int error)
 {
-    VALUE last_status = rb_process_status_allocate(rb_cProcessStatus);
-
-    struct rb_process_status *data = RTYPEDDATA_DATA(last_status);
     data->pid = pid;
     data->status = status;
     data->error = error;
+}
 
-    rb_obj_freeze(last_status);
-    return last_status;
+static VALUE
+rb_process_status_initialize(VALUE self, VALUE pid, VALUE status, VALUE error)
+{
+    struct rb_process_status *data = RTYPEDDATA_DATA(self);
+
+    process_status_initialize(data, NUM2PIDT(pid), NUM2INT(status), NUM2INT(error));
+
+    return self;
+}
+
+VALUE
+rb_process_status_new(rb_pid_t pid, int status, int error)
+{
+    VALUE instance = rb_process_status_allocate(rb_cProcessStatus);
+
+    struct rb_process_status *data = RTYPEDDATA_DATA(instance);
+    process_status_initialize(data, pid, status, error);
+
+    rb_obj_freeze(instance);
+    return instance;
 }
 
 static VALUE
@@ -8712,7 +8728,8 @@ InitVM_process(void)
 
     rb_cProcessStatus = rb_define_class_under(rb_mProcess, "Status", rb_cObject);
     rb_define_alloc_func(rb_cProcessStatus, rb_process_status_allocate);
-    rb_undef_method(CLASS_OF(rb_cProcessStatus), "new");
+    rb_define_method(rb_cProcessStatus, "initialize", rb_process_status_initialize, 3);
+
     rb_marshal_define_compat(rb_cProcessStatus, rb_cObject,
                              process_status_dump, process_status_load);
 
