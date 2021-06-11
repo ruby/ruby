@@ -2758,10 +2758,10 @@ each_with_object_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memo))
  *    enum.each_with_object(obj) { |(*args), memo_obj| ... }  ->  obj
  *    enum.each_with_object(obj)                              ->  an_enumerator
  *
- *  Iterates the given block for each element with an arbitrary
- *  object given, and returns the initially given object.  The 
- *  object must not be reassigned within the block, or its value
- *  in that iteration will be ignored.
+ *  For each element in <i>enum</i>, the block is passed an accumulator 
+ *  value (<i>memo_obj</i>, a reference to the initially given object 
+ *  <i>obj</i>) and the element.  At the end of the iteration, <i>obj</i>
+ *  is returned.
  *
  *  If no block is given, returns an enumerator.
  *
