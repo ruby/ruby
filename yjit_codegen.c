@@ -3043,7 +3043,7 @@ gen_invokesuper(jitstate_t *jit, ctx_t *ctx)
             break;
     }
 
-    RUBY_ASSERT(false);
+    RUBY_ASSERT_ALWAYS(false);
 }
 
 static codegen_status_t
