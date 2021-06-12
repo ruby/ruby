@@ -208,5 +208,9 @@ rb_fiber_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, size_t offs
 VALUE
 rb_fiber_scheduler_address_resolve(VALUE scheduler, VALUE hostname)
 {
-    return rb_funcall(scheduler, id_address_resolve, 1, hostname);
+    VALUE arguments[] = {
+        hostname
+    };
+
+    return rb_check_funcall(scheduler, id_address_resolve, 1, arguments);
 }

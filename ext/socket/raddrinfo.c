@@ -465,8 +465,8 @@ port_str(VALUE port, char *pbuf, size_t pbuflen, int *flags_ptr)
 }
 
 static int
-rb_schedule_getaddrinfo(VALUE scheduler, VALUE host, const char *service,
-               const struct addrinfo *hints, struct rb_addrinfo **res)
+rb_scheduler_getaddrinfo(VALUE scheduler, VALUE host, const char *service,
+    const struct addrinfo *hints, struct rb_addrinfo **res)
 {
     int error, res_allocated = 0, _additional_flags = 0;
     long i, len;
@@ -476,7 +476,11 @@ rb_schedule_getaddrinfo(VALUE scheduler, VALUE host, const char *service,
     VALUE ip_addresses_array, ip_address;
 
     ip_addresses_array = rb_fiber_scheduler_address_resolve(scheduler, host);
-    if (NIL_P(ip_addresses_array)) {
+
+    if (ip_addresses_array == Qundef) {
+        // Returns EAI_FAIL if the scheduler hook is not implemented:
+        return EAI_FAIL;
+    } else if (ip_addresses_array == Qnil) {
         len = 0;
     } else {
         len = RARRAY_LEN(ip_addresses_array);
@@ -516,7 +520,7 @@ rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_h
     struct rb_addrinfo* res = NULL;
     struct addrinfo *ai;
     char *hostp, *portp;
-    int error;
+    int error = 0;
     char hbuf[NI_MAXHOST], pbuf[NI_MAXSERV];
     int additional_flags = 0;
 
@@ -535,10 +539,17 @@ rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_h
         res->ai = ai;
     } else {
         VALUE scheduler = rb_fiber_scheduler_current();
+        int resolved = 0;
 
         if (scheduler != Qnil && hostp && !(hints->ai_flags & AI_NUMERICHOST)) {
-            error = rb_schedule_getaddrinfo(scheduler, host, portp, hints, &res);
-        } else {
+            error = rb_scheduler_getaddrinfo(scheduler, host, portp, hints, &res);
+
+            if (error != EAI_FAIL) {
+                resolved = 1;
+            }
+        }
+
+        if (!resolved) {
 #ifdef GETADDRINFO_EMU
             error = getaddrinfo(hostp, portp, hints, &ai);
 #else
