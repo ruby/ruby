@@ -1040,6 +1040,36 @@ assert_equal 'foo123', %q{
   make_str("foo", 123)
 }
 
+# test invokebuiltin_delegate as used inside Dir.open
+assert_equal '.', %q{
+  def foo(path)
+    Dir.open(path).path
+  end
+
+  foo(".")
+  foo(".")
+}
+
+# test invokebuiltin_delegate_leave in method called from jit
+assert_normal_exit %q{
+  def foo(obj)
+    obj.clone
+  end
+
+  foo(Object.new)
+  foo(Object.new)
+}
+
+# test invokebuiltin_delegate_leave in method called from cfunc
+assert_normal_exit %q{
+  def foo(obj)
+    [obj].map(&:clone)
+  end
+
+  foo(Object.new)
+  foo(Object.new)
+}
+
 # getlocal with 2 levels
 assert_equal '7', %q{
   def foo(foo, bar)
