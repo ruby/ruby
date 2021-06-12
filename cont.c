@@ -2000,7 +2000,7 @@ rb_fiber_s_scheduler(VALUE klass)
  *     Fiber.current_scheduler -> obj or nil
  *
  *  Returns the Fiber scheduler, that was last set for the current thread with Fiber.set_scheduler
- *  iff the current fiber is non-blocking.
+ *  if and only if the current fiber is non-blocking.
  *
  */
 static VALUE
