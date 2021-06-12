@@ -11,7 +11,12 @@
 #   $Id$
 
 require 'digest'
-require 'digest/sha2.so'
+
+if RUBY_ENGINE == 'jruby'
+  JRuby::Util.load_ext("org.jruby.ext.digest.SHA2")
+else
+  require 'digest/sha2.so'
+end
 
 module Digest
   #

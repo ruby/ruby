@@ -10,7 +10,11 @@ Gem::Specification.new do |spec|
   spec.summary       = %q{Provides a framework for message digest libraries.}
   spec.description   = %q{Provides a framework for message digest libraries.}
   spec.homepage      = "https://github.com/ruby/digest"
-  spec.licenses      = ["Ruby", "BSD-2-Clause"]
+  if Gem::Platform === spec.platform and spec.platform =~ 'java' or RUBY_ENGINE == 'jruby'
+    spec.licenses      = ["Ruby", "BSD-2-Clause", "EPL-2.0", "GPL-2.0", "LGPL-2.1"]
+  else
+    spec.licenses      = ["Ruby", "BSD-2-Clause"]
+  end
 
   spec.files         = [
     "LICENSE.txt", "README.md",
@@ -46,13 +50,27 @@ Gem::Specification.new do |spec|
   spec.bindir        = "exe"
   spec.executables   = []
   spec.require_paths = ["lib"]
-  spec.extensions    = %w[
-    ext/digest/extconf.rb
-    ext/digest/bubblebabble/extconf.rb
-    ext/digest/md5/extconf.rb
-    ext/digest/rmd160/extconf.rb
-    ext/digest/sha1/extconf.rb
-    ext/digest/sha2/extconf.rb
-  ]
+
+  if Gem::Platform === spec.platform and spec.platform =~ 'java' or RUBY_ENGINE == 'jruby'
+    spec.platform = 'java'
+    spec.files.concat [
+      "lib/digest.jar",
+      "lib/digest/md5.rb",
+      "lib/digest/sha1.rb",
+      "lib/digest/sha2.rb",
+      "lib/digest/rmd160.rb",
+      "lib/digest/bubblebabble.rb"
+    ]
+  else
+    spec.extensions    = %w[
+      ext/digest/extconf.rb
+      ext/digest/bubblebabble/extconf.rb
+      ext/digest/md5/extconf.rb
+      ext/digest/rmd160/extconf.rb
+      ext/digest/sha1/extconf.rb
+      ext/digest/sha2/extconf.rb
+    ]
+  end
+
   spec.metadata["msys2_mingw_dependencies"] = "openssl"
 end
