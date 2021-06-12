@@ -3176,6 +3176,56 @@ gen_getblockparamproxy(jitstate_t *jit, ctx_t *ctx)
     return YJIT_KEEP_COMPILING;
 }
 
+// opt_invokebuiltin_delegate calls a builtin function, like
+// invokebuiltin does, but instead of taking arguments from the top of the
+// stack uses the argument locals (and self) from the current method.
+static codegen_status_t
+gen_opt_invokebuiltin_delegate(jitstate_t *jit, ctx_t *ctx)
+{
+    const struct rb_builtin_function *bf = (struct rb_builtin_function *)jit_get_arg(jit, 0);
+    int32_t start_index = (int32_t)jit_get_arg(jit, 1);
+
+    if (bf->argc + 2 >= NUM_C_ARG_REGS) {
+        return YJIT_CANT_COMPILE;
+    }
+
+    // If the calls don't allocate, do they need up to date PC, SP?
+    jit_save_pc(jit, REG0);
+    jit_save_sp(jit, ctx);
+
+    // Save YJIT registers
+    yjit_save_regs(cb);
+
+    if (bf->argc > 0) {
+        // Load environment pointer EP from CFP
+        mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, ep));
+    }
+
+    // Save self from CFP
+    mov(cb, REG1, member_opnd(REG_CFP, rb_control_frame_t, self));
+
+    // Call the builtin func (ec, recv, arg1, arg2, ...)
+    mov(cb, C_ARG_REGS[0], REG_EC); // clobbers REG_CFP
+    mov(cb, C_ARG_REGS[1], REG1); // self, clobbers REG_EC
+
+    // Copy arguments from locals
+    for (int32_t i = 0; i < bf->argc; i++) {
+        const int32_t offs = -jit->iseq->body->local_table_size - VM_ENV_DATA_SIZE + 1 + start_index + i;
+        x86opnd_t local_opnd = mem_opnd(64, REG0, offs * SIZEOF_VALUE);
+        x86opnd_t c_arg_reg = C_ARG_REGS[i + 2];
+        mov(cb, c_arg_reg, local_opnd);
+    }
+    call_ptr(cb, REG0, (void *)bf->func_ptr);
+
+    // Load YJIT registers
+    yjit_load_regs(cb);
+
+    // Push the return value
+    x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_UNKNOWN);
+    mov(cb, stack_ret, RAX);
+
+    return YJIT_KEEP_COMPILING;
+}
 
 static void
 yjit_reg_op(int opcode, codegen_fn gen_fn)
@@ -3247,6 +3297,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(opt_str_uminus), gen_opt_str_uminus);
     yjit_reg_op(BIN(opt_not), gen_opt_not);
     yjit_reg_op(BIN(opt_getinlinecache), gen_opt_getinlinecache);
+    yjit_reg_op(BIN(opt_invokebuiltin_delegate), gen_opt_invokebuiltin_delegate);
     yjit_reg_op(BIN(branchif), gen_branchif);
     yjit_reg_op(BIN(branchunless), gen_branchunless);
     yjit_reg_op(BIN(branchnil), gen_branchnil);
