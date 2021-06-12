@@ -102,7 +102,7 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_not_respond_to(o, :foo=)
 
     assert_raise(NameError) { o.delete_field(s) }
-    assert_equal(s.to_sym, o.delete_field(s) { :foo })
+    assert_equal(:bar, o.delete_field(s) { :bar })
 
     o[s] = :foobar
     assert_respond_to(o, :foo)
