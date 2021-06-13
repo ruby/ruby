@@ -1579,18 +1579,13 @@ iterate_method(VALUE obj)
     return rb_call(arg->obj, arg->mid, arg->argc, arg->argv, arg->kw_splat ? CALL_FCALL_KW : CALL_FCALL);
 }
 
+VALUE rb_block_call_kw(VALUE obj, ID mid, int argc, const VALUE * argv, rb_block_call_func_t bl_proc, VALUE data2, int kw_splat);
+
 VALUE
 rb_block_call(VALUE obj, ID mid, int argc, const VALUE * argv,
 	      rb_block_call_func_t bl_proc, VALUE data2)
 {
-    struct iter_method_arg arg;
-
-    arg.obj = obj;
-    arg.mid = mid;
-    arg.argc = argc;
-    arg.argv = argv;
-    arg.kw_splat = 0;
-    return rb_iterate(iterate_method, (VALUE)&arg, bl_proc, data2);
+    return rb_block_call_kw(obj, mid, argc, argv, bl_proc, data2, RB_NO_KEYWORDS);
 }
 
 VALUE
