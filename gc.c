@@ -45,7 +45,7 @@
 
 #ifdef HAVE_MALLOC_USABLE_SIZE
 # ifdef RUBY_ALTERNATIVE_MALLOC_HEADER
-#  include RUBY_ALTERNATIVE_MALLOC_HEADER
+/* Alternative malloc header is included in ruby/missing.h */
 # elif defined(HAVE_MALLOC_H)
 #  include <malloc.h>
 # elif defined(HAVE_MALLOC_NP_H)
