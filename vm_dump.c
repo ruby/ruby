@@ -1019,36 +1019,38 @@ rb_vm_bugreport(const void *ctx)
 		    LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));
 	    fprintf(stderr, "\n");
         }
-	fprintf(stderr, "* Loaded features:\n\n");
-	for (i=0; i<RARRAY_LEN(vm->loaded_features); i++) {
-	    name = RARRAY_AREF(vm->loaded_features, i);
-	    if (RB_TYPE_P(name, T_STRING)) {
-		fprintf(stderr, " %4d %.*s\n", i,
-			LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));
-	    }
-	    else if (RB_TYPE_P(name, T_CLASS) || RB_TYPE_P(name, T_MODULE)) {
-		const char *const type = RB_TYPE_P(name, T_CLASS) ?
-		    "class" : "module";
-		name = rb_search_class_path(rb_class_real(name));
-		if (!RB_TYPE_P(name, T_STRING)) {
-		    fprintf(stderr, " %4d %s:<unnamed>\n", i, type);
-		    continue;
-		}
-		fprintf(stderr, " %4d %s:%.*s\n", i, type,
-			LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));
-	    }
-	    else {
-		VALUE klass = rb_search_class_path(rb_obj_class(name));
-		if (!RB_TYPE_P(klass, T_STRING)) {
-		    fprintf(stderr, " %4d #<%p:%p>\n", i,
-			    (void *)CLASS_OF(name), (void *)name);
-		    continue;
-		}
-		fprintf(stderr, " %4d #<%.*s:%p>\n", i,
-			LIMITED_NAME_LENGTH(klass), RSTRING_PTR(klass),
-			(void *)name);
-	    }
-	}
+        if (vm->loaded_features) {
+            fprintf(stderr, "* Loaded features:\n\n");
+            for (i=0; i<RARRAY_LEN(vm->loaded_features); i++) {
+                name = RARRAY_AREF(vm->loaded_features, i);
+                if (RB_TYPE_P(name, T_STRING)) {
+                    fprintf(stderr, " %4d %.*s\n", i,
+                            LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));
+                }
+                else if (RB_TYPE_P(name, T_CLASS) || RB_TYPE_P(name, T_MODULE)) {
+                    const char *const type = RB_TYPE_P(name, T_CLASS) ?
+                        "class" : "module";
+                    name = rb_search_class_path(rb_class_real(name));
+                    if (!RB_TYPE_P(name, T_STRING)) {
+                        fprintf(stderr, " %4d %s:<unnamed>\n", i, type);
+                        continue;
+                    }
+                    fprintf(stderr, " %4d %s:%.*s\n", i, type,
+                            LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));
+                }
+                else {
+                    VALUE klass = rb_search_class_path(rb_obj_class(name));
+                    if (!RB_TYPE_P(klass, T_STRING)) {
+                        fprintf(stderr, " %4d #<%p:%p>\n", i,
+                                (void *)CLASS_OF(name), (void *)name);
+                        continue;
+                    }
+                    fprintf(stderr, " %4d #<%.*s:%p>\n", i,
+                            LIMITED_NAME_LENGTH(klass), RSTRING_PTR(klass),
+                            (void *)name);
+                }
+            }
+        }
 	fprintf(stderr, "\n");
     }
 
