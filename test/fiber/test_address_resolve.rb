@@ -269,12 +269,9 @@ class TestAddressResolve < Test::Unit::TestCase
       Fiber.set_scheduler scheduler
 
       Fiber.schedule do
-        result = Socket.getnameinfo(["AF_INET", 80, "example.com"])
+        result = Socket.getnameinfo(["AF_INET", 80, "example.com"], Socket::NI_NUMERICSERV)
 
-        assert_equal([
-          "1.2.3.4",
-          "http"
-        ], result)
+        assert_equal(["1.2.3.4", "80"], result)
       end
     end.join
   end
