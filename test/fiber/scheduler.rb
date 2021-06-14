@@ -188,3 +188,11 @@ class Scheduler
     return fiber
   end
 end
+
+class BrokenUnblockScheduler < Scheduler
+  def unblock(blocker, fiber)
+    super
+
+    raise "Broken unblock!"
+  end
+end
