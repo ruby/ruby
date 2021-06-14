@@ -130,7 +130,7 @@ class TestGemPathSupport < Gem::TestCase
     begin
       File.symlink(dir, symlink)
     rescue NotImplementedError, SystemCallError
-      skip 'symlinks not supported'
+      pend 'symlinks not supported'
     end
     not_existing = "#{@tempdir}/does_not_exist"
     path = "#{symlink}#{File::PATH_SEPARATOR}#{not_existing}"

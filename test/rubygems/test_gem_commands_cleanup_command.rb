@@ -62,7 +62,7 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
 
     @cmd.execute
 
-    refute_path_exists @a_1.gem_dir
+    assert_path_not_exist @a_1.gem_dir
   end
 
   def test_execute_all_dependencies
@@ -81,8 +81,8 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
 
     @cmd.execute
 
-    refute_path_exists @a_1.gem_dir
-    refute_path_exists @b_1.gem_dir
+    assert_path_not_exist @a_1.gem_dir
+    assert_path_not_exist @b_1.gem_dir
   end
 
   def test_execute_dev_dependencies
@@ -101,7 +101,7 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
 
     @cmd.execute
 
-    assert_path_exists @a_1.gem_dir
+    assert_path_exist @a_1.gem_dir
   end
 
   def test_execute_without_dev_dependencies
@@ -120,7 +120,7 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
 
     @cmd.execute
 
-    refute_path_exists @a_1.gem_dir
+    assert_path_not_exist @a_1.gem_dir
   end
 
   def test_execute_all
@@ -143,8 +143,8 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
     assert_equal @gemhome, Gem.dir, 'GEM_HOME'
     assert_equal [@gemhome, gemhome2], Gem.path.sort, 'GEM_PATH'
 
-    refute_path_exists @a_1.gem_dir
-    refute_path_exists @b_1.gem_dir
+    assert_path_not_exist @a_1.gem_dir
+    assert_path_not_exist @b_1.gem_dir
   end
 
   def test_execute_all_user
@@ -153,15 +153,15 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
 
     Gem::Specification.dirs = [Gem.dir, Gem.user_dir]
 
-    assert_path_exists @a_1.gem_dir
-    assert_path_exists @a_1_1.gem_dir
+    assert_path_exist @a_1.gem_dir
+    assert_path_exist @a_1_1.gem_dir
 
     @cmd.options[:args] = %w[a]
 
     @cmd.execute
 
-    refute_path_exists @a_1.gem_dir
-    refute_path_exists @a_1_1.gem_dir
+    assert_path_not_exist @a_1.gem_dir
+    assert_path_not_exist @a_1_1.gem_dir
   end
 
   def test_execute_all_user_no_sudo
@@ -172,15 +172,15 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
 
     Gem::Specification.dirs = [Gem.dir, Gem.user_dir]
 
-    assert_path_exists @a_1.gem_dir
-    assert_path_exists @a_1_1.gem_dir
+    assert_path_exist @a_1.gem_dir
+    assert_path_exist @a_1_1.gem_dir
 
     @cmd.options[:args] = %w[a]
 
     @cmd.execute
 
-    assert_path_exists @a_1.gem_dir
-    assert_path_exists @a_1_1.gem_dir
+    assert_path_exist @a_1.gem_dir
+    assert_path_exist @a_1_1.gem_dir
   ensure
     FileUtils.chmod 0755, @gemhome
   end unless win_platform? || Process.uid.zero?
@@ -191,7 +191,7 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
 
     @cmd.execute
 
-    assert_path_exists @a_1.gem_dir
+    assert_path_exist @a_1.gem_dir
   end
 
   def test_execute_keeps_older_versions_with_deps
@@ -210,7 +210,7 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
 
     @cmd.execute
 
-    assert_path_exists @b_1.gem_dir
+    assert_path_exist @b_1.gem_dir
   end
 
   def test_execute_ignore_default_gem_verbose
@@ -257,9 +257,9 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
 
     @cmd.execute
 
-    assert_path_exists c_1.gem_dir
-    refute_path_exists d_1.gem_dir
-    refute_path_exists e_1.gem_dir
+    assert_path_exist c_1.gem_dir
+    assert_path_not_exist d_1.gem_dir
+    assert_path_not_exist e_1.gem_dir
   end
 
   def test_execute_user_install
@@ -282,10 +282,10 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
 
     @cmd.execute
 
-    refute_path_exists c_1.gem_dir
-    assert_path_exists c_2.gem_dir
+    assert_path_not_exist c_1.gem_dir
+    assert_path_exist c_2.gem_dir
 
-    assert_path_exists d_1.gem_dir
-    assert_path_exists d_2.gem_dir
+    assert_path_exist d_1.gem_dir
+    assert_path_exist d_2.gem_dir
   end
 end

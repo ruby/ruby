@@ -92,7 +92,7 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
   end
 
   def test_security_policy
-    skip 'openssl is missing' unless Gem::HAVE_OPENSSL
+    pend 'openssl is missing' unless Gem::HAVE_OPENSSL
 
     @cmd.handle_options %w[-P HighSecurity]
 
@@ -100,11 +100,11 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
   end
 
   def test_security_policy_unknown
-    skip 'openssl is missing' unless Gem::HAVE_OPENSSL
+    pend 'openssl is missing' unless Gem::HAVE_OPENSSL
 
     @cmd.add_install_update_options
 
-    e = assert_raises OptionParser::InvalidArgument do
+    e = assert_raise OptionParser::InvalidArgument do
       @cmd.handle_options %w[-P UnknownSecurity]
     end
     assert_includes e.message, "UnknownSecurity"
@@ -124,8 +124,8 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
 
     @installer = Gem::Installer.at @gem, @cmd.options
     @installer.install
-    assert_path_exists File.join(Gem.user_dir, 'gems')
-    assert_path_exists File.join(Gem.user_dir, 'gems', @spec.full_name)
+    assert_path_exist File.join(Gem.user_dir, 'gems')
+    assert_path_exist File.join(Gem.user_dir, 'gems', @spec.full_name)
   end
 
   def test_user_install_disabled_read_only
@@ -137,9 +137,9 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
     @gem = @spec.cache_file
 
     if win_platform?
-      skip('test_user_install_disabled_read_only test skipped on MS Windows')
+      pend('test_user_install_disabled_read_only test skipped on MS Windows')
     elsif Process.uid.zero?
-      skip('test_user_install_disabled_read_only test skipped in root privilege')
+      pend('test_user_install_disabled_read_only test skipped in root privilege')
     else
       @cmd.handle_options %w[--no-user-install]
 
@@ -150,7 +150,7 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
 
       Gem.use_paths @gemhome, @userhome
 
-      assert_raises(Gem::FilePermissionError) do
+      assert_raise(Gem::FilePermissionError) do
         Gem::Installer.at(@gem, @cmd.options).install
       end
     end
@@ -169,7 +169,7 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
 
   def test_vendor_missing
     vendordir(nil) do
-      e = assert_raises OptionParser::InvalidOption do
+      e = assert_raise OptionParser::InvalidOption do
         @cmd.handle_options %w[--vendor]
       end
 

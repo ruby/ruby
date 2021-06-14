@@ -25,16 +25,15 @@ class TestGemCommandsOpenCommand < Gem::TestCase
 
     gem 'foo', '1.0.0'
     spec = gem 'foo', '1.0.1'
-    mock = Minitest::Mock.new
-    mock.expect(:call, true, [spec.full_gem_path])
 
-    Dir.stub(:chdir, mock) do
-      use_ui @ui do
-        @cmd.execute
+    assert_nothing_raised Gem::MockGemUi::TermError do
+      Dir.stub(:chdir, spec.full_gem_path) do
+        use_ui @ui do
+          @cmd.execute
+        end
       end
     end
 
-    assert mock.verify
     assert_equal "", @ui.error
   end
 
@@ -44,7 +43,7 @@ class TestGemCommandsOpenCommand < Gem::TestCase
 
     gem "foo", "5.0"
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end
@@ -57,7 +56,7 @@ class TestGemCommandsOpenCommand < Gem::TestCase
   def test_execute_bad_gem
     @cmd.options[:args] = %w[foo]
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end
@@ -86,7 +85,7 @@ class TestGemCommandsOpenCommand < Gem::TestCase
 
     gem("foo", "1.0")
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end

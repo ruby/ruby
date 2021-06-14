@@ -109,7 +109,7 @@ class TestGemCommandsEnvironmentCommand < Gem::TestCase
   def test_execute_unknown
     @cmd.send :handle_options, %w[unknown]
 
-    assert_raises Gem::CommandLineError do
+    assert_raise Gem::CommandLineError do
       use_ui @ui do
         @cmd.execute
       end

@@ -41,7 +41,7 @@ class TestGemSecuritySigner < Gem::TestCase
   end
 
   def test_initialize_cert_chain_invalid
-    assert_raises OpenSSL::X509::CertificateError do
+    assert_raise OpenSSL::X509::CertificateError do
       Gem::Security::Signer.new nil, ['garbage']
     end
   end
@@ -134,7 +134,7 @@ toqvglr0kdbknSRRjBVLK6tsgr07aLT9gNP7mTW2PA==
   def test_sign_expired
     signer = Gem::Security::Signer.new PRIVATE_KEY, [EXPIRED_CERT]
 
-    e = assert_raises Gem::Security::Exception do
+    e = assert_raise Gem::Security::Exception do
       signer.sign 'hello'
     end
 
@@ -142,7 +142,7 @@ toqvglr0kdbknSRRjBVLK6tsgr07aLT9gNP7mTW2PA==
   end
 
   def test_sign_expired_auto_update
-    skip if Gem.java_platform?
+    pend if Gem.java_platform?
     FileUtils.mkdir_p File.join(Gem.user_home, '.gem'), :mode => 0700
 
     private_key_path = File.join(Gem.user_home, '.gem', 'gem-private_key.pem')
@@ -165,7 +165,7 @@ toqvglr0kdbknSRRjBVLK6tsgr07aLT9gNP7mTW2PA==
     expired_path =
       File.join Gem.user_home, '.gem', "gem-public_cert.pem.expired.#{expiry}"
 
-    assert_path_exists expired_path
+    assert_path_exist expired_path
     assert_equal EXPIRED_CERT.to_pem, File.read(expired_path)
   end
 
@@ -186,7 +186,7 @@ toqvglr0kdbknSRRjBVLK6tsgr07aLT9gNP7mTW2PA==
 
     signer = Gem::Security::Signer.new PRIVATE_KEY, [EXPIRED_CERT]
 
-    e = assert_raises Gem::Security::Exception do
+    e = assert_raise Gem::Security::Exception do
       signer.sign 'hello'
     end
 
@@ -202,7 +202,7 @@ toqvglr0kdbknSRRjBVLK6tsgr07aLT9gNP7mTW2PA==
   def test_sign_wrong_key
     signer = Gem::Security::Signer.new ALTERNATE_KEY, [PUBLIC_CERT]
 
-    assert_raises Gem::Security::Exception do
+    assert_raise Gem::Security::Exception do
       signer.sign 'hello'
     end
   end
@@ -210,7 +210,7 @@ toqvglr0kdbknSRRjBVLK6tsgr07aLT9gNP7mTW2PA==
   def test_sign_no_certs
     signer = Gem::Security::Signer.new ALTERNATE_KEY, []
 
-    assert_raises Gem::Security::Exception do
+    assert_raise Gem::Security::Exception do
       signer.sign 'hello'
     end
   end

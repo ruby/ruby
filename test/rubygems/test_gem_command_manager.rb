@@ -22,7 +22,7 @@ class TestGemCommandManager < Gem::TestCase
   end
 
   def test_find_command_ambiguous
-    e = assert_raises Gem::CommandLineError do
+    e = assert_raise Gem::CommandLineError do
       @command_manager.find_command 'u'
     end
 
@@ -50,7 +50,7 @@ class TestGemCommandManager < Gem::TestCase
   end
 
   def test_find_command_unknown
-    e = assert_raises Gem::CommandLineError do
+    e = assert_raise Gem::CommandLineError do
       @command_manager.find_command 'xyz'
     end
 
@@ -65,7 +65,7 @@ class TestGemCommandManager < Gem::TestCase
     @command_manager.register_command :interrupt
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @command_manager.run %w[interrupt]
       end
       assert_equal '', ui.output
@@ -82,7 +82,7 @@ class TestGemCommandManager < Gem::TestCase
 
     @command_manager.register_command :crash
     use_ui @ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @command_manager.run %w[crash]
       end
       assert_equal '', ui.output
@@ -96,7 +96,7 @@ class TestGemCommandManager < Gem::TestCase
 
   def test_process_args_bad_arg
     use_ui @ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @command_manager.process_args %w[--bad-arg]
       end
     end

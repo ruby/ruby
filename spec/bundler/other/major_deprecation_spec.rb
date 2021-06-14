@@ -439,7 +439,7 @@ RSpec.describe "major deprecations" do
       G
 
       ruby <<-RUBY
-        require '#{lib_dir}/bundler'
+        require '#{entrypoint}'
 
         Bundler.setup
         Bundler.setup
@@ -547,18 +547,6 @@ The :gist git source is deprecated, and will be removed in the future. Add this 
       G
     end
 
-    context "without flags" do
-      before do
-        bundle :show
-      end
-
-      it "prints a deprecation warning recommending `bundle list`", :bundler => "< 3" do
-        expect(deprecations).to include("use `bundle list` instead of `bundle show`")
-      end
-
-      pending "fails with a helpful message", :bundler => "3"
-    end
-
     context "with --outdated flag" do
       before do
         bundle "show --outdated"
@@ -566,54 +554,6 @@ The :gist git source is deprecated, and will be removed in the future. Add this 
 
       it "prints a deprecation warning informing about its removal", :bundler => "< 3" do
         expect(deprecations).to include("the `--outdated` flag to `bundle show` was undocumented and will be removed without replacement")
-      end
-
-      pending "fails with a helpful message", :bundler => "3"
-    end
-
-    context "with --verbose flag" do
-      before do
-        bundle "show --verbose"
-      end
-
-      it "prints a deprecation warning informing about its removal", :bundler => "< 3" do
-        expect(deprecations).to include("the `--verbose` flag to `bundle show` was undocumented and will be removed without replacement")
-      end
-
-      pending "fails with a helpful message", :bundler => "3"
-    end
-
-    context "with a gem argument" do
-      before do
-        bundle "show rack"
-      end
-
-      it "prints a deprecation warning recommending `bundle info`", :bundler => "< 3" do
-        expect(deprecations).to include("use `bundle info rack` instead of `bundle show rack`")
-      end
-
-      pending "fails with a helpful message", :bundler => "3"
-    end
-
-    context "with the --paths option" do
-      before do
-        bundle "show --paths"
-      end
-
-      it "prints a deprecation warning recommending `bundle list`", :bundler => "< 3" do
-        expect(deprecations).to include("use `bundle list` instead of `bundle show --paths`")
-      end
-
-      pending "fails with a helpful message", :bundler => "3"
-    end
-
-    context "with a gem argument and the --paths option" do
-      before do
-        bundle "show rack --paths"
-      end
-
-      it "prints deprecation warning recommending `bundle info`", :bundler => "< 3" do
-        expect(deprecations).to include("use `bundle info rack --path` instead of `bundle show rack --paths`")
       end
 
       pending "fails with a helpful message", :bundler => "3"

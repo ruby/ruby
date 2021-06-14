@@ -38,7 +38,7 @@ class TestKernel < Gem::TestCase
   def test_gem_re_gem_mismatch
     assert gem('a', '=1')
 
-    assert_raises Gem::LoadError do
+    assert_raise Gem::LoadError do
       gem('a', '= 2')
     end
 
@@ -65,7 +65,7 @@ class TestKernel < Gem::TestCase
 
   def test_gem_env_req
     ENV["GEM_REQUIREMENT_A"] = '~> 2.0'
-    assert_raises(Gem::MissingSpecVersionError) { gem('a', '= 1') }
+    assert_raise(Gem::MissingSpecVersionError) { gem('a', '= 1') }
     assert gem('a', '> 1')
     assert_equal @a2, Gem.loaded_specs['a']
   end
@@ -73,7 +73,7 @@ class TestKernel < Gem::TestCase
   def test_gem_conflicting
     assert gem('a', '= 1'), "Should load"
 
-    ex = assert_raises Gem::LoadError do
+    ex = assert_raise Gem::LoadError do
       gem 'a', '= 2'
     end
 
@@ -120,7 +120,7 @@ class TestKernel < Gem::TestCase
       quick_gem 'bundler', '1'
       quick_gem 'bundler', '2.a'
 
-      e = assert_raises Gem::MissingSpecVersionError do
+      e = assert_raise Gem::MissingSpecVersionError do
         gem('bundler')
       end
       assert_match "Could not find 'bundler' (55) required by reason.", e.message

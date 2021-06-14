@@ -47,7 +47,7 @@ RSpec.describe "bundle install with gemfile that uses eval_gemfile" do
     # parsed lockfile and the evaluated gemfile.
     it "bundles with deployment mode configured" do
       bundle :install
-      bundle "config --local deployment true"
+      bundle "config set --local deployment true"
       bundle :install
     end
   end

@@ -20,12 +20,11 @@ module Spec
       default_source = instance_double("Bundler::Source::Rubygems", :specs => @index)
       source_requirements = { :default => default_source }
       @deps.each do |d|
+        source_requirements[d.name] = d.source = default_source
         @platforms.each do |p|
-          source_requirements[d.name] = d.source = default_source
           deps << Bundler::DepProxy.get_proxy(d, p)
         end
       end
-      source_requirements ||= {}
       args[0] ||= [] # base
       args[1] ||= Bundler::GemVersionPromoter.new # gem_version_promoter
       args[2] ||= [] # additional_base_requirements

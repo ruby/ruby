@@ -26,14 +26,14 @@ class TestBundledCA < Gem::TestCase
   end
 
   def assert_https(host)
-    self.assertions += 1
+    assert true
     http = Net::HTTP.new(host, 443)
     http.use_ssl = true
     http.verify_mode = OpenSSL::SSL::VERIFY_PEER
     http.cert_store = bundled_certificate_store
     http.get('/')
   rescue Errno::ENOENT, Errno::ETIMEDOUT, SocketError
-    skip "#{host} seems offline, I can't tell whether ssl would work."
+    pend "#{host} seems offline, I can't tell whether ssl would work."
   rescue OpenSSL::SSL::SSLError => e
     # Only fail for certificate verification errors
     if e.message =~ /certificate verify failed/

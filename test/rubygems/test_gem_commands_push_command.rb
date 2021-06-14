@@ -123,7 +123,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     Gem.configuration.disable_default_gem_server = true
     response = "You must specify a gem server"
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.send_gem(@path)
       end
@@ -252,7 +252,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
 
     response = %(ERROR:  "#{@host}" is not allowed by the gemspec, which only allows "https://privategemserver.example")
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       send_battery
     end
 
@@ -284,7 +284,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
 
     response = "ERROR:  \"#{@host}\" is not allowed by the gemspec, which only allows \"#{push_host}\""
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       send_battery
     end
 
@@ -332,7 +332,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
 
   def test_raises_error_with_no_arguments
     def @cmd.sign_in(*); end
-    assert_raises Gem::CommandLineError do
+    assert_raise Gem::CommandLineError do
       @cmd.execute
     end
   end
@@ -342,7 +342,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     @fetcher.data["#{@host}/api/v1/gems"] = [response, 403, 'Forbidden']
     @cmd.instance_variable_set :@host, @host
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.send_gem(@path)
       end
@@ -392,7 +392,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     @fetcher.data["#{Gem.host}/api/v1/gems"] = [response, 401, 'Unauthorized']
 
     @otp_ui = Gem::MockGemUi.new "111111\n"
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @otp_ui do
         @cmd.send_gem(@path)
       end

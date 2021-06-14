@@ -126,7 +126,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
 
       use_ui @ui do
         Dir.chdir @tempdir do
-          assert_raises Gem::InvalidSpecificationException do
+          assert_raise Gem::InvalidSpecificationException do
             @cmd.execute
           end
         end
@@ -180,7 +180,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
 
     use_ui @ui do
       Dir.chdir @tempdir do
-        assert_raises Gem::InvalidSpecificationException do
+        assert_raise Gem::InvalidSpecificationException do
           @cmd.execute
         end
       end
@@ -208,8 +208,8 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     @cmd.options[:args] = [gemspec_file]
 
     out, err = use_ui @ui do
-      capture_io do
-        assert_raises Gem::MockGemUi::TermError do
+      capture_output do
+        assert_raise Gem::MockGemUi::TermError do
           @cmd.execute
         end
       end
@@ -225,7 +225,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
   def test_execute_missing_file
     @cmd.options[:args] = %w[some_gem]
     use_ui @ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
     end
@@ -329,7 +329,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     @cmd.options[:args] = ["*.gemspec"]
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
     end
@@ -527,7 +527,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
 
     use_ui @ui do
       Dir.chdir(gemspec_dir) do
-        assert_raises Gem::MockGemUi::TermError do
+        assert_raise Gem::MockGemUi::TermError do
           @cmd.execute
         end
       end
@@ -582,7 +582,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
   end
 
   def test_build_signed_gem
-    skip 'openssl is missing' unless Gem::HAVE_OPENSSL && !java_platform?
+    pend 'openssl is missing' unless Gem::HAVE_OPENSSL && !java_platform?
 
     trust_dir = Gem::Security.trust_dir
 
@@ -609,7 +609,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
   end
 
   def test_build_signed_gem_with_cert_expiration_length_days
-    skip 'openssl is missing' unless Gem::HAVE_OPENSSL && !java_platform?
+    pend 'openssl is missing' unless Gem::HAVE_OPENSSL && !java_platform?
 
     gem_path = File.join Gem.user_home, ".gem"
     Dir.mkdir gem_path
@@ -653,7 +653,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
   end
 
   def test_build_auto_resign_cert
-    skip 'openssl is missing' unless Gem::HAVE_OPENSSL && !java_platform?
+    pend 'openssl is missing' unless Gem::HAVE_OPENSSL && !java_platform?
 
     gem_path = File.join Gem.user_home, ".gem"
     Dir.mkdir gem_path

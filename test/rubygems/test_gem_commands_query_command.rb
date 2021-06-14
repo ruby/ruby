@@ -213,7 +213,7 @@ pl (1)
   def test_execute_installed
     @cmd.handle_options %w[-n a --installed]
 
-    assert_raises Gem::MockGemUi::SystemExitException do
+    assert_raise Gem::MockGemUi::SystemExitException do
       use_ui @stub_ui do
         @cmd.execute
       end
@@ -226,7 +226,7 @@ pl (1)
   def test_execute_installed_inverse
     @cmd.handle_options %w[-n a --no-installed]
 
-    e = assert_raises Gem::MockGemUi::TermError do
+    e = assert_raise Gem::MockGemUi::TermError do
       use_ui @stub_ui do
         @cmd.execute
       end
@@ -241,7 +241,7 @@ pl (1)
   def test_execute_installed_inverse_not_installed
     @cmd.handle_options %w[-n not_installed --no-installed]
 
-    assert_raises Gem::MockGemUi::SystemExitException do
+    assert_raise Gem::MockGemUi::SystemExitException do
       use_ui @stub_ui do
         @cmd.execute
       end
@@ -254,7 +254,7 @@ pl (1)
   def test_execute_installed_no_name
     @cmd.handle_options %w[--installed]
 
-    e = assert_raises Gem::MockGemUi::TermError do
+    e = assert_raise Gem::MockGemUi::TermError do
       use_ui @stub_ui do
         @cmd.execute
       end
@@ -269,7 +269,7 @@ pl (1)
   def test_execute_installed_not_installed
     @cmd.handle_options %w[-n not_installed --installed]
 
-    e = assert_raises Gem::MockGemUi::TermError do
+    e = assert_raise Gem::MockGemUi::TermError do
       use_ui @stub_ui do
         @cmd.execute
       end
@@ -284,7 +284,7 @@ pl (1)
   def test_execute_installed_version
     @cmd.handle_options %w[-n a --installed --version 2]
 
-    assert_raises Gem::MockGemUi::SystemExitException do
+    assert_raise Gem::MockGemUi::SystemExitException do
       use_ui @stub_ui do
         @cmd.execute
       end
@@ -297,7 +297,7 @@ pl (1)
   def test_execute_installed_version_not_installed
     @cmd.handle_options %w[-n c --installed --version 2]
 
-    e = assert_raises Gem::MockGemUi::TermError do
+    e = assert_raise Gem::MockGemUi::TermError do
       use_ui @stub_ui do
         @cmd.execute
       end

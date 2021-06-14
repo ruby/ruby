@@ -53,7 +53,7 @@ EOF
   end
 
   def test_show_owners_dont_load_objects
-    skip "testing a psych-only API" unless defined?(::Psych::DisallowedClass)
+    pend "testing a psych-only API" unless defined?(::Psych::DisallowedClass)
 
     response = <<EOF
 ---
@@ -68,7 +68,7 @@ EOF
 
     @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners.yaml"] = [response, 200, 'OK']
 
-    assert_raises Psych::DisallowedClass do
+    assert_raise Psych::DisallowedClass do
       use_ui @ui do
         @cmd.show_owners("freewill")
       end
@@ -109,7 +109,7 @@ EOF
     response = "You don't have permission to push to this gem"
     @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners.yaml"] = [response, 403, 'Forbidden']
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @stub_ui do
         @cmd.show_owners("freewill")
       end

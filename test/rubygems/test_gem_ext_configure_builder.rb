@@ -17,7 +17,7 @@ class TestGemExtConfigureBuilder < Gem::TestCase
   end
 
   def test_self_build
-    skip("test_self_build skipped on MS Windows (VC++)") if vc_windows?
+    pend("test_self_build skipped on MS Windows (VC++)") if vc_windows?
 
     File.open File.join(@ext, './configure'), 'w' do |configure|
       configure.puts "#!/bin/sh\necho \"#{@makefile_body}\" > Makefile"
@@ -42,10 +42,10 @@ class TestGemExtConfigureBuilder < Gem::TestCase
   end
 
   def test_self_build_fail
-    skip("test_self_build_fail skipped on MS Windows (VC++)") if vc_windows?
+    pend("test_self_build_fail skipped on MS Windows (VC++)") if vc_windows?
     output = []
 
-    error = assert_raises Gem::InstallError do
+    error = assert_raise Gem::InstallError do
       Gem::Ext::ConfigureBuilder.build nil, @dest_path, output, [], nil, @ext
     end
 
@@ -62,7 +62,7 @@ class TestGemExtConfigureBuilder < Gem::TestCase
 
   def test_self_build_has_makefile
     if vc_windows? && !nmake_found?
-      skip("test_self_build_has_makefile skipped - nmake not found")
+      pend("test_self_build_has_makefile skipped - nmake not found")
     end
 
     File.open File.join(@ext, 'Makefile'), 'w' do |makefile|

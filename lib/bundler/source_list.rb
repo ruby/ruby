@@ -21,15 +21,19 @@ module Bundler
       @rubygems_sources       = []
       @metadata_source        = Source::Metadata.new
 
-      @disable_multisource = true
+      @merged_gem_lockfile_sections = false
     end
 
-    def disable_multisource?
-      @disable_multisource
+    def merged_gem_lockfile_sections?
+      @merged_gem_lockfile_sections
     end
 
     def merged_gem_lockfile_sections!
-      @disable_multisource = false
+      @merged_gem_lockfile_sections = true
+    end
+
+    def no_aggregate_global_source?
+      global_rubygems_source.remotes.size <= 1
     end
 
     def add_path_source(options = {})
@@ -70,7 +74,11 @@ module Bundler
     end
 
     def rubygems_sources
-      @rubygems_sources + [global_rubygems_source]
+      non_global_rubygems_sources + [global_rubygems_source]
+    end
+
+    def non_global_rubygems_sources
+      @rubygems_sources
     end
 
     def rubygems_remotes
@@ -81,16 +89,27 @@ module Bundler
       path_sources + git_sources + plugin_sources + rubygems_sources + [metadata_source]
     end
 
+    def non_default_explicit_sources
+      all_sources - [default_source, metadata_source]
+    end
+
     def get(source)
       source_list_for(source).find {|s| equal_source?(source, s) || equivalent_source?(source, s) }
     end
 
     def lock_sources
-      lock_sources = (path_sources + git_sources + plugin_sources).sort_by(&:to_s)
-      if disable_multisource?
-        lock_sources + rubygems_sources.sort_by(&:to_s).uniq
+      lock_other_sources + lock_rubygems_sources
+    end
+
+    def lock_other_sources
+      (path_sources + git_sources + plugin_sources).sort_by(&:to_s)
+    end
+
+    def lock_rubygems_sources
+      if merged_gem_lockfile_sections?
+        [combine_rubygems_sources]
       else
-        lock_sources << combine_rubygems_sources
+        rubygems_sources.sort_by(&:to_s).uniq
       end
     end
 
@@ -104,7 +123,7 @@ module Bundler
         end
       end
 
-      replacement_rubygems = !disable_multisource? &&
+      replacement_rubygems = merged_gem_lockfile_sections? &&
         replacement_sources.detect {|s| s.is_a?(Source::Rubygems) }
       @global_rubygems_source = replacement_rubygems if replacement_rubygems
 

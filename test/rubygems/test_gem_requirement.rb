@@ -97,7 +97,7 @@ class TestGemRequirement < Gem::TestCase
       '= junk',
       '1..2',
     ].each do |bad|
-      e = assert_raises Gem::Requirement::BadRequirementError do
+      e = assert_raise Gem::Requirement::BadRequirementError do
         Gem::Requirement.parse bad
       end
 
@@ -128,7 +128,7 @@ class TestGemRequirement < Gem::TestCase
     refute_satisfied_by "1.2", r
     assert_satisfied_by "1.3", r
 
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       assert_satisfied_by nil, r
     end
   end
@@ -140,7 +140,7 @@ class TestGemRequirement < Gem::TestCase
     assert_satisfied_by "1.2", r
     refute_satisfied_by "1.3", r
 
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       assert_satisfied_by nil, r
     end
   end
@@ -152,7 +152,7 @@ class TestGemRequirement < Gem::TestCase
     assert_satisfied_by "1.2", r
     refute_satisfied_by "1.3", r
 
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       assert_satisfied_by nil, r
     end
   end
@@ -164,7 +164,7 @@ class TestGemRequirement < Gem::TestCase
     refute_satisfied_by "1.2", r
     assert_satisfied_by "1.3", r
 
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       r.satisfied_by? nil
     end
   end
@@ -176,7 +176,7 @@ class TestGemRequirement < Gem::TestCase
     assert_satisfied_by "1.2", r
     assert_satisfied_by "1.3", r
 
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       r.satisfied_by? nil
     end
   end
@@ -188,7 +188,7 @@ class TestGemRequirement < Gem::TestCase
     assert_satisfied_by "1.2", r
     refute_satisfied_by "1.3", r
 
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       r.satisfied_by? nil
     end
   end
@@ -200,7 +200,7 @@ class TestGemRequirement < Gem::TestCase
     refute_satisfied_by "1.2", r
     refute_satisfied_by "1.3", r
 
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       r.satisfied_by? nil
     end
   end
@@ -212,7 +212,7 @@ class TestGemRequirement < Gem::TestCase
     assert_satisfied_by "1.2", r
     refute_satisfied_by "1.3", r
 
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       r.satisfied_by? nil
     end
   end
@@ -224,7 +224,7 @@ class TestGemRequirement < Gem::TestCase
     assert_satisfied_by "1.2", r
     assert_satisfied_by "1.3", r
 
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       r.satisfied_by? nil
     end
   end
@@ -282,18 +282,18 @@ class TestGemRequirement < Gem::TestCase
 
   def test_illformed_requirements
     [ ">>> 1.3.5", "> blah" ].each do |rq|
-      assert_raises Gem::Requirement::BadRequirementError, "req [#{rq}] should fail" do
+      assert_raise Gem::Requirement::BadRequirementError, "req [#{rq}] should fail" do
         Gem::Requirement.new rq
       end
     end
   end
 
   def test_satisfied_by_eh_non_versions
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       req(">= 0").satisfied_by? Object.new
     end
 
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       req(">= 0").satisfied_by? Gem::Requirement.default
     end
   end

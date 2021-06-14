@@ -30,10 +30,10 @@ class TestGemCommandsSigninCommand < Gem::TestCase
     host = 'http://some-gemcutter-compatible-host.org'
 
     util_capture(nil, host) { @cmd.execute }
-    old_credentials = YAML.load_file Gem.configuration.credentials_path
+    old_credentials = load_yaml_file Gem.configuration.credentials_path
 
     util_capture(nil, host) { @cmd.execute }
-    new_credentials = YAML.load_file Gem.configuration.credentials_path
+    new_credentials = load_yaml_file Gem.configuration.credentials_path
 
     assert_equal old_credentials[host], new_credentials[host]
   end
@@ -45,7 +45,7 @@ class TestGemCommandsSigninCommand < Gem::TestCase
     host = 'http://some-gemcutter-compatible-host.org'
 
     util_capture(nil, host, api_key) { @cmd.execute }
-    credentials = YAML.load_file Gem.configuration.credentials_path
+    credentials = load_yaml_file Gem.configuration.credentials_path
 
     assert_equal credentials[:rubygems_api_key], api_key
 
@@ -60,7 +60,7 @@ class TestGemCommandsSigninCommand < Gem::TestCase
     assert_match %r{Signed in.}, sign_in_ui.output
 
     api_key     = 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903'
-    credentials = YAML.load_file Gem.configuration.credentials_path
+    credentials = load_yaml_file Gem.configuration.credentials_path
     assert_equal api_key, credentials[host]
   end
 
@@ -68,7 +68,7 @@ class TestGemCommandsSigninCommand < Gem::TestCase
     util_capture { @cmd.execute }
 
     api_key     = 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903'
-    credentials = YAML.load_file Gem.configuration.credentials_path
+    credentials = load_yaml_file Gem.configuration.credentials_path
 
     assert_equal api_key, credentials[:rubygems_api_key]
   end
@@ -94,7 +94,7 @@ class TestGemCommandsSigninCommand < Gem::TestCase
     assert_match "show_dashboard [y/N]", key_name_ui.output
     assert_equal "name=test-key&push_rubygem=true", fetcher.last_request.body
 
-    credentials = YAML.load_file Gem.configuration.credentials_path
+    credentials = load_yaml_file Gem.configuration.credentials_path
     assert_equal api_key, credentials[:rubygems_api_key]
   end
 

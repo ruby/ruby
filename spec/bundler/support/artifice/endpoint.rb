@@ -45,10 +45,14 @@ class Endpoint < Sinatra::Base
         Pathname.new(ENV["BUNDLER_SPEC_GEM_REPO"])
       else
         case request.host
+        when "gem.repo1"
+          Spec::Path.gem_repo1
         when "gem.repo2"
           Spec::Path.gem_repo2
         when "gem.repo3"
           Spec::Path.gem_repo3
+        when "gem.repo4"
+          Spec::Path.gem_repo4
         else
           Spec::Path.gem_repo1
         end

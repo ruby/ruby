@@ -155,7 +155,7 @@ class TestGemCommandsPristineCommand < Gem::TestCase
       @cmd.execute
     end
 
-    assert_path_exists gem_exec
+    assert_path_exist gem_exec
 
     ruby_exec = sprintf Gem.default_exec_format, 'ruby'
 
@@ -356,10 +356,10 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     assert_equal "Restored #{b.full_name}", out.shift
     assert_empty out, out.inspect
 
-    assert_path_exists File.join(@gemhome, "gems", 'a-2')
-    refute_path_exists File.join(gemhome2, "gems", 'a-2')
-    assert_path_exists File.join(gemhome2, "gems", 'b-2')
-    refute_path_exists File.join(@gemhome, "gems", 'b-2')
+    assert_path_exist File.join(@gemhome, "gems", 'a-2')
+    assert_path_not_exist File.join(gemhome2, "gems", 'a-2')
+    assert_path_exist File.join(gemhome2, "gems", 'b-2')
+    assert_path_not_exist File.join(@gemhome, "gems", 'b-2')
   end
 
   def test_execute_missing_cache_gem
@@ -434,21 +434,21 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     assert_empty out, out.inspect
     assert_empty @ui.error
 
-    assert_path_exists File.join(@gemhome, "cache", 'a-1.gem')
-    refute_path_exists File.join(gemhome2, "cache", 'a-2.gem')
-    assert_path_exists File.join(@gemhome, "gems", 'a-1')
-    refute_path_exists File.join(gemhome2, "gems", 'a-1')
+    assert_path_exist File.join(@gemhome, "cache", 'a-1.gem')
+    assert_path_not_exist File.join(gemhome2, "cache", 'a-2.gem')
+    assert_path_exist File.join(@gemhome, "gems", 'a-1')
+    assert_path_not_exist File.join(gemhome2, "gems", 'a-1')
 
-    assert_path_exists File.join(gemhome2, "cache", 'b-1.gem')
-    refute_path_exists File.join(@gemhome, "cache", 'b-2.gem')
-    assert_path_exists File.join(gemhome2, "gems", 'b-1')
-    refute_path_exists File.join(@gemhome, "gems", 'b-1')
+    assert_path_exist File.join(gemhome2, "cache", 'b-1.gem')
+    assert_path_not_exist File.join(@gemhome, "cache", 'b-2.gem')
+    assert_path_exist File.join(gemhome2, "gems", 'b-1')
+    assert_path_not_exist File.join(@gemhome, "gems", 'b-1')
   end
 
   def test_execute_no_gem
     @cmd.options[:args] = %w[]
 
-    e = assert_raises Gem::CommandLineError do
+    e = assert_raise Gem::CommandLineError do
       use_ui @ui do
         @cmd.execute
       end

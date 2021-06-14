@@ -205,8 +205,8 @@ RSpec.describe "bundle outdated" do
     end
 
     it "works" do
-      bundle :install, :artifice => :compact_index
-      bundle :outdated, :artifice => :compact_index, :raise_on_error => false
+      bundle :install, :artifice => "compact_index"
+      bundle :outdated, :artifice => "compact_index", :raise_on_error => false
 
       expected_output = <<~TABLE
         Gem  Current  Latest  Requested  Groups
