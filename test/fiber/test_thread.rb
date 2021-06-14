@@ -52,7 +52,9 @@ class TestFiberThread < Test::Unit::TestCase
       Fiber.set_scheduler scheduler
 
       Fiber.schedule do
-        Thread.new{}.join
+        Thread.new{
+          Thread.current.report_on_exception = false
+        }.join
       end
 
       scheduler.run
