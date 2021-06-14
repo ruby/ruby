@@ -1047,10 +1047,12 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception)
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	long handle;
 	int found;
+        volatile VALUE found_path;
 
 	RUBY_DTRACE_HOOK(FIND_REQUIRE_ENTRY, RSTRING_PTR(fname));
-        found = search_required(path, &path, rb_feature_p);
+        found = search_required(path, &found_path, rb_feature_p);
 	RUBY_DTRACE_HOOK(FIND_REQUIRE_RETURN, RSTRING_PTR(fname));
+        path = found_path;
 
 	if (found) {
             if (!path || !(ftptr = load_lock(RSTRING_PTR(path)))) {
