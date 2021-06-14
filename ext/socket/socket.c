@@ -1218,7 +1218,6 @@ static VALUE
 sock_s_getnameinfo(int argc, VALUE *argv, VALUE _)
 {
     VALUE sa, af = Qnil, host = Qnil, port = Qnil, flags, tmp;
-    char *hptr, *pptr;
     char hbuf[1024], pbuf[1024];
     int fl;
     struct rb_addrinfo *res = NULL;
