@@ -60,9 +60,4 @@
 	CCAN_BUILD_ASSERT_OR_ZERO(sizeof(expr1) == sizeof(expr2))
 #endif /* HAVE_TYPEOF */
 
-#ifndef CCAN_NO_UNPREFIXED
-#define check_type		ccan_check_type
-#define check_types_match	ccan_check_types_match
-#endif
-
 #endif /* CCAN_CHECK_TYPE_H */
