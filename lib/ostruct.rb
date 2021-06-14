@@ -326,8 +326,10 @@ class OpenStruct
   end
 
   #
-  # Removes the named field from the object. Returns the value that the field
-  # contained if it was defined.
+  # Removes the named field from the object and returns the value the field
+  # contained if it was defined. You may optionally provide a block. 
+  # If the field is not defined, the result of the block is returned, 
+  # or a NameError is raised if no block was given.
   #
   #   require "ostruct"
   #
@@ -341,6 +343,10 @@ class OpenStruct
   #   person.pension = nil
   #   person                 # => #<OpenStruct name="John", pension=nil>
   #
+  #   person.delete_field('number')  # => NameError
+  #
+  #   person.delete_field('number') { 8675_309 } # => 8675309
+  #
   def delete_field(name)
     sym = name.to_sym
     begin
@@ -348,6 +354,7 @@ class OpenStruct
     rescue NameError
     end
     @table.delete(sym) do
+      return yield if block_given?
       raise! NameError.new("no field `#{sym}' in #{self}", sym)
     end
   end
