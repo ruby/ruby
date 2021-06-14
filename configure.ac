@@ -135,8 +135,15 @@ AS_IF([test ! -z "$ac_cv_prog_CC" -a ! -z "$CC" -a "$CC" != "$ac_cv_prog_CC"], [
   AC_MSG_ERROR(cached CC is different -- throw away $cache_file
 (it is also a good idea to do 'make clean' before compiling))
 ])
-AS_CASE(["${build_os}"], [linux*|cygwin*|msys*], [
+AS_CASE(["${build_os}"],
+[linux*|cygwin*|msys*], [
+    # Naruse prefers GCC on Linux
     AC_CHECK_TOOLS([CC], [gcc clang cc])
+],
+[solaris*], [
+    # Clang on Solaris is largely untested.
+    # https://bugs.ruby-lang.org/issues/17949
+    AC_CHECK_TOOLS([CC], [cc gcc])
 ], [
     # OpenBSD wants to prefer cc over gcc.
     # See https://github.com/ruby/ruby/pull/2443
