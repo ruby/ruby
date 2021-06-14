@@ -34,11 +34,14 @@ Gem::Specification.new do |s|
   s.required_ruby_version     = ">= 2.3.0"
   s.required_rubygems_version = ">= 2.5.2"
 
-  s.files = (Dir.glob("lib/bundler/**/*", File::FNM_DOTMATCH) + Dir.glob("man/bundle*") + Dir.glob("man/gemfile*") + Dir.glob("libexec/bundle*")).reject {|f| File.directory?(f) }
+  s.files = Dir.glob("{lib,exe}/**/*", File::FNM_DOTMATCH).reject {|f| File.directory?(f) }
 
-  s.files += ["lib/bundler.rb"]
+  # Include the CHANGELOG.md, LICENSE.md, README.md manually
+  s.files += %w[CHANGELOG.md LICENSE.md README.md]
+  # include the gemspec itself because warbler breaks w/o it
+  s.files += %w[bundler.gemspec]
 
-  s.bindir        = "libexec"
+  s.bindir        = "exe"
   s.executables   = %w[bundle bundler]
   s.require_paths = ["lib"]
 end

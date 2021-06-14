@@ -194,6 +194,10 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    Disallow changes to the `Gemfile`. When the `Gemfile` is changed and the
    lockfile has not been updated, running Bundler commands will be blocked.
    Defaults to `true` when `--deployment` is used.
+* `gem.github_username` (`BUNDLE_GEM__GITHUB_USERNAME`):
+   Sets a GitHub username or organization to be used in `README` file when you
+   create a new gem via `bundle gem` command. It can be overriden by passing an
+   explicit `--github-username` flag to `bundle gem`.
 * `gem.push_key` (`BUNDLE_GEM__PUSH_KEY`):
    Sets the `--key` parameter for `gem push` when using the `rake release`
    command with a private gemstash server.
@@ -218,9 +222,6 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    Whether `bundle package` should skip installing gems.
 * `no_prune` (`BUNDLE_NO_PRUNE`):
    Whether Bundler should leave outdated gems unpruned when caching.
-* `only_update_to_newer_versions` (`BUNDLE_ONLY_UPDATE_TO_NEWER_VERSIONS`):
-   During `bundle update`, only resolve to newer versions of the gems in the
-   lockfile.
 * `path` (`BUNDLE_PATH`):
    The location on disk where all gems in your bundle will be located regardless
    of `$GEM_HOME` or `$GEM_PATH` values. Bundle gems not found in this location

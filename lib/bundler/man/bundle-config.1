@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "BUNDLE\-CONFIG" "1" "January 2021" "" ""
+.TH "BUNDLE\-CONFIG" "1" "April 2021" "" ""
 .
 .SH "NAME"
 \fBbundle\-config\fR \- Set bundler configuration options
@@ -199,6 +199,9 @@ The following is a list of all configuration keys and their purpose\. You can le
 \fBfrozen\fR (\fBBUNDLE_FROZEN\fR): Disallow changes to the \fBGemfile\fR\. When the \fBGemfile\fR is changed and the lockfile has not been updated, running Bundler commands will be blocked\. Defaults to \fBtrue\fR when \fB\-\-deployment\fR is used\.
 .
 .IP "\(bu" 4
+\fBgem\.github_username\fR (\fBBUNDLE_GEM__GITHUB_USERNAME\fR): Sets a GitHub username or organization to be used in \fBREADME\fR file when you create a new gem via \fBbundle gem\fR command\. It can be overriden by passing an explicit \fB\-\-github\-username\fR flag to \fBbundle gem\fR\.
+.
+.IP "\(bu" 4
 \fBgem\.push_key\fR (\fBBUNDLE_GEM__PUSH_KEY\fR): Sets the \fB\-\-key\fR parameter for \fBgem push\fR when using the \fBrake release\fR command with a private gemstash server\.
 .
 .IP "\(bu" 4
@@ -221,9 +224,6 @@ The following is a list of all configuration keys and their purpose\. You can le
 .
 .IP "\(bu" 4
 \fBno_prune\fR (\fBBUNDLE_NO_PRUNE\fR): Whether Bundler should leave outdated gems unpruned when caching\.
-.
-.IP "\(bu" 4
-\fBonly_update_to_newer_versions\fR (\fBBUNDLE_ONLY_UPDATE_TO_NEWER_VERSIONS\fR): During \fBbundle update\fR, only resolve to newer versions of the gems in the lockfile\.
 .
 .IP "\(bu" 4
 \fBpath\fR (\fBBUNDLE_PATH\fR): The location on disk where all gems in your bundle will be located regardless of \fB$GEM_HOME\fR or \fB$GEM_PATH\fR values\. Bundle gems not found in this location will be installed by \fBbundle install\fR\. Defaults to \fBGem\.dir\fR\. When \-\-deployment is used, defaults to vendor/bundle\.

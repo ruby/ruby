@@ -22,7 +22,7 @@ RSpec.describe Bundler::DepProxy do
   end
 
   describe "frozen" do
-    if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new("2.5.0")
+    if Gem.ruby_version >= Gem::Version.new("2.5.0")
       error = Object.const_get("FrozenError")
     else
       error = RuntimeError

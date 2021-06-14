@@ -33,7 +33,6 @@ module Bundler
       init_gems_rb
       no_install
       no_prune
-      only_update_to_newer_versions
       path_relative_to_cwd
       path.system
       plugins
