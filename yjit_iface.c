@@ -1025,6 +1025,7 @@ rb_yjit_call_threshold(void)
     return rb_yjit_opts.call_threshold;
 }
 
+// Can raise RuntimeError
 void
 rb_yjit_init(struct rb_yjit_options *options)
 {
@@ -1036,6 +1037,12 @@ rb_yjit_init(struct rb_yjit_options *options)
     rb_yjit_opts.yjit_enabled = true;
 
     rb_yjit_opts.gen_stats |= !!getenv("YJIT_STATS");
+
+#if !RUBY_DEBUG
+    if(rb_yjit_opts.gen_stats) {
+        rb_raise(rb_eRuntimeError, "--yjit-stats requires that Ruby is compiled with CPPFLAGS='-DRUBY_DEBUG=1'");
+    }
+#endif
 
     // Normalize command-line options to default values
     if (rb_yjit_opts.exec_mem_size < 1) {
