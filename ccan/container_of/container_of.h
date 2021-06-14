@@ -139,12 +139,4 @@ static inline char *container_of_or_null_(void *member_ptr, size_t offset)
 	((const char *)&(var)->member - (const char *)(var))
 #endif
 
-#ifndef CCAN_NO_UNPREFIXED
-#define container_of		ccan_container_of
-#define container_of_or_null	ccan_container_of_or_null
-#define container_off		ccan_container_off
-#define container_of_var	ccan_container_of_var
-#define container_off_var	ccan_container_off_var
-#endif
-
 #endif /* CCAN_CONTAINER_OF_H */
