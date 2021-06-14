@@ -735,6 +735,26 @@ gem 'other', version
     assert_match(/#{default_shebang}/, shebang_line)
   end
 
+  def test_generate_bin_with_dangling_symlink
+    gem_with_dangling_symlink = File.expand_path("packages/ascii_binder-0.1.10.1.gem", __dir__)
+
+    installer = Gem::Installer.at(
+      gem_with_dangling_symlink,
+      :install_dir => @gem_home,
+      :user_install => false,
+      :force => true
+    )
+
+    build_rake_in do
+      use_ui @ui do
+        installer.install
+      end
+    end
+
+    assert_match %r{bin/ascii_binder` is dangling symlink pointing to `bin/asciibinder`}, @ui.error
+    assert_empty @ui.output
+  end
+
   def test_generate_plugins
     installer = util_setup_installer do |spec|
       write_file File.join(@tempdir, 'lib', 'rubygems_plugin.rb') do |io|

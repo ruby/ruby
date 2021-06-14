@@ -61,10 +61,16 @@ RSpec.describe Bundler::GemHelper do
       mock_confirm_message message
     end
 
+    def mock_checksum_message(name, version)
+      message = "#{name} #{version} checksum written to checksums/#{name}-#{version}.gem.sha512."
+      mock_confirm_message message
+    end
+
     subject! { Bundler::GemHelper.new(app_path) }
     let(:app_version) { "0.1.0" }
     let(:app_gem_dir) { app_path.join("pkg") }
     let(:app_gem_path) { app_gem_dir.join("#{app_name}-#{app_version}.gem") }
+    let(:app_sha_path) { app_path.join("checksums", "#{app_name}-#{app_version}.gem.sha512") }
     let(:app_gemspec_content) { File.read(app_gemspec_path) }
 
     before(:each) do
@@ -158,6 +164,37 @@ RSpec.describe Bundler::GemHelper do
             Bundler::GemHelper.new(File.basename(app_path)).build_gem
           end
           expect(app_gem_path).to exist
+        end
+      end
+    end
+
+    describe "#build_checksum" do
+      context "when build was successful" do
+        it "creates .sha512 file" do
+          mock_build_message app_name, app_version
+          mock_checksum_message app_name, app_version
+          subject.build_checksum
+          expect(app_sha_path).to exist
+        end
+      end
+      context "when building in the current working directory" do
+        it "creates a .sha512 file" do
+          mock_build_message app_name, app_version
+          mock_checksum_message app_name, app_version
+          Dir.chdir app_path do
+            Bundler::GemHelper.new.build_checksum
+          end
+          expect(app_sha_path).to exist
+        end
+      end
+      context "when building in a location relative to the current working directory" do
+        it "creates a .sha512 file" do
+          mock_build_message app_name, app_version
+          mock_checksum_message app_name, app_version
+          Dir.chdir File.dirname(app_path) do
+            Bundler::GemHelper.new(File.basename(app_path)).build_checksum
+          end
+          expect(app_sha_path).to exist
         end
       end
     end

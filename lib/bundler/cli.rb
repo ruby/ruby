@@ -591,6 +591,7 @@ module Bundler
                          :desc => "Generate a test directory for your library, either rspec, minitest or test-unit. Set a default with `bundle config set --global gem.test (rspec|minitest|test-unit)`."
     method_option :ci, :type => :string, :lazy_default => Bundler.settings["gem.ci"] || "",
                        :desc => "Generate CI configuration, either GitHub Actions, Travis CI, GitLab CI or CircleCI. Set a default with `bundle config set --global gem.ci (github|travis|gitlab|circle)`"
+    method_option :github_username, :type => :string, :default => Bundler.settings["gem.github_username"], :banner => "Set your username on GitHub", :desc => "Fill in GitHub username on README so that you don't have to do it manually. Set a default with `bundle config set --global gem.github_username <your_username>`."
 
     def gem(name)
     end

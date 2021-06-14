@@ -1244,16 +1244,16 @@ end
 
     describe "default gem activation" do
       let(:exemptions) do
-        exempts = if Gem::Version.new(Gem::VERSION) >= Gem::Version.new("2.7")
+        exempts = if Gem.rubygems_version >= Gem::Version.new("2.7")
           %w[did_you_mean]
         else
           %w[io-console openssl]
         end << "bundler"
-        exempts << "fiddle" if Gem.win_platform? && Gem::Version.new(Gem::VERSION) >= Gem::Version.new("2.7")
-        exempts << "uri" if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new("2.7")
-        exempts << "pathname" if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new("3.0")
-        exempts << "set" unless Gem::Version.new(Gem::VERSION) >= Gem::Version.new("3.2.6")
-        exempts << "tsort" if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new("3.0")
+        exempts << "fiddle" if Gem.win_platform? && Gem.rubygems_version >= Gem::Version.new("2.7")
+        exempts << "uri" if Gem.ruby_version >= Gem::Version.new("2.7")
+        exempts << "pathname" if Gem.ruby_version >= Gem::Version.new("3.0")
+        exempts << "set" unless Gem.rubygems_version >= Gem::Version.new("3.2.6")
+        exempts << "tsort" if Gem.ruby_version >= Gem::Version.new("3.0")
         exempts
       end
 

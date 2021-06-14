@@ -929,4 +929,54 @@ RSpec.describe "bundle outdated" do
       expect(out).to end_with(expected_output)
     end
   end
+
+  describe "with a multiplatform lockfile" do
+    before do
+      build_repo4 do
+        build_gem "nokogiri", "1.11.1"
+        build_gem "nokogiri", "1.11.1" do |s|
+          s.platform = Bundler.local_platform
+        end
+
+        build_gem "nokogiri", "1.11.2"
+        build_gem "nokogiri", "1.11.2" do |s|
+          s.platform = Bundler.local_platform
+        end
+      end
+
+      lockfile <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            nokogiri (1.11.1)
+            nokogiri (1.11.1-#{Bundler.local_platform})
+
+        PLATFORMS
+          ruby
+          #{Bundler.local_platform}
+
+        DEPENDENCIES
+          nokogiri
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem "nokogiri"
+      G
+    end
+
+    it "reports a single entry per gem" do
+      bundle "outdated", :raise_on_error => false
+
+      expected_output = <<~TABLE.strip
+        Gem       Current  Latest  Requested  Groups
+        nokogiri  1.11.1   1.11.2  >= 0       default
+      TABLE
+
+      expect(out).to end_with(expected_output)
+    end
+  end
 end

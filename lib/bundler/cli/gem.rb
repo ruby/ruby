@@ -42,8 +42,16 @@ module Bundler
       use_git = Bundler.git_present? && options[:git]
 
       git_author_name = use_git ? `git config user.name`.chomp : ""
-      github_username = use_git ? `git config github.user`.chomp : ""
+      git_username = use_git ? `git config github.user`.chomp : ""
       git_user_email = use_git ? `git config user.email`.chomp : ""
+
+      github_username = if options[:github_username].nil?
+        git_username
+      elsif options[:github_username] == false
+        ""
+      else
+        options[:github_username]
+      end
 
       config = {
         :name             => name,

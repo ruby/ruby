@@ -252,14 +252,7 @@ class Gem::Package
       stat = File.lstat file
 
       if stat.symlink?
-        target_path = File.readlink(file)
-
-        unless target_path.start_with? '.'
-          relative_dir = File.dirname(file).sub("#{Dir.pwd}/", '')
-          target_path = File.join(relative_dir, target_path)
-        end
-
-        tar.add_symlink file, target_path, stat.mode
+        tar.add_symlink file, File.readlink(file), stat.mode
       end
 
       next unless stat.file?
