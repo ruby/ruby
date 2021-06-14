@@ -37,9 +37,4 @@
 #define CCAN_BUILD_ASSERT_OR_ZERO(cond) \
 	(sizeof(char [1 - 2*!(cond)]) - 1)
 
-#ifndef CCAN_NO_UNPREFIXED
-#define BUILD_ASSERT		CCAN_BUILD_ASSERT
-#define BUILD_ASSERT_OR_ZERO	CCAN_BUILD_ASSERT_OR_ZERO
-#endif
-
 #endif /* CCAN_BUILD_ASSERT_H */
