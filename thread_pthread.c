@@ -1409,7 +1409,7 @@ ubf_wakeup_all_threads(void)
     if (!ubf_threads_empty()) {
         rb_native_mutex_lock(&ubf_list_lock);
 	list_for_each(&ubf_list_head, dat, node.ubf) {
-	    th = container_of(dat, rb_thread_t, native_thread_data);
+	    th = ccan_container_of(dat, rb_thread_t, native_thread_data);
 	    ubf_wakeup_thread(th);
 	}
         rb_native_mutex_unlock(&ubf_list_lock);
