@@ -408,6 +408,14 @@ E
       expect(out).to eq "spec_run=true"
     end
 
+    it "list with credentials" do
+      bundle "config list", :env => { "BUNDLE_GEMS__MYSERVER__COM" => "user:password" }
+      expect(out).to eq "Settings are listed in order of priority. The top value will be used.\ngems.myserver.com\nSet via BUNDLE_GEMS__MYSERVER__COM: \"user:[REDACTED]\"\n\nspec_run\nSet via BUNDLE_SPEC_RUN: \"true\""
+
+      bundle "config list", :parseable => true, :env => { "BUNDLE_GEMS__MYSERVER__COM" => "user:password" }
+      expect(out).to eq "gems.myserver.com=user:password\nspec_run=true"
+    end
+
     it "get" do
       ENV["BUNDLE_BAR"] = "bar_val"
 

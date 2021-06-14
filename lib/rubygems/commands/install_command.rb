@@ -127,7 +127,7 @@ You can use `i` command instead of `install`.
   end
 
   def usage # :nodoc:
-    "#{program_name} GEMNAME [GEMNAME ...] [options] -- --build-flags"
+    "#{program_name} [options] GEMNAME [GEMNAME ...] -- --build-flags"
   end
 
   def check_install_dir # :nodoc:

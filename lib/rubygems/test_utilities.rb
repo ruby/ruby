@@ -76,7 +76,7 @@ class Gem::FakeFetcher
 
   def cache_update_path(uri, path = nil, update = true)
     if data = fetch_path(uri)
-      open(path, 'wb') {|io| io.write data } if path and update
+      File.open(path, 'wb') {|io| io.write data } if path and update
       data
     else
       Gem.read_binary(path) if path

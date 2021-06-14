@@ -171,9 +171,16 @@ RSpec.describe "The library itself" do
     exemptions = %w[
       deployment_means_frozen
       forget_cli_options
+      gem.changelog
+      gem.ci
       gem.coc
+      gem.linter
       gem.mit
+      gem.rubocop
+      gem.test
+      git.allow_insecure
       inline
+      trust-policy
       use_gem_version_promoter_for_major_updates
     ]
 
@@ -183,6 +190,7 @@ RSpec.describe "The library itself" do
     Bundler::Settings::BOOL_KEYS.each {|k| all_settings[k] << "in Bundler::Settings::BOOL_KEYS" }
     Bundler::Settings::NUMBER_KEYS.each {|k| all_settings[k] << "in Bundler::Settings::NUMBER_KEYS" }
     Bundler::Settings::ARRAY_KEYS.each {|k| all_settings[k] << "in Bundler::Settings::ARRAY_KEYS" }
+    Bundler::Settings::STRING_KEYS.each {|k| all_settings[k] << "in Bundler::Settings::STRING_KEYS" }
 
     key_pattern = /([a-z\._-]+)/i
     lib_tracked_files.each do |filename|

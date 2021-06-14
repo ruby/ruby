@@ -255,6 +255,21 @@ RSpec.describe "bundle cache" do
       expect(the_bundle).to include_gem "rack 1.0"
       expect(the_bundle).not_to include_gems "weakling", "uninstallable"
     end
+
+    it "does not fail to cache gems in excluded groups when there's a lockfile but gems not previously installed" do
+      bundle "config set --local without wo"
+      gemfile <<-G
+        source "https://my.gem.repo.1"
+        gem "rack"
+        group :wo do
+          gem "weakling"
+        end
+      G
+
+      bundle :lock, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo1.to_s }
+      bundle :cache, "all-platforms" => true, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo1.to_s }
+      expect(bundled_app("vendor/cache/weakling-0.0.3.gem")).to exist
+    end
   end
 
   context "with frozen configured" do

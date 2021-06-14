@@ -83,6 +83,11 @@ RSpec.describe Bundler::Fetcher::Downloader do
           /Authentication is required for www.uri-to-fetch.com/)
       end
 
+      it "should raise a Bundler::Fetcher::AuthenticationRequiredError with advices" do
+        expect { subject.fetch(uri, options, counter) }.to raise_error(Bundler::Fetcher::AuthenticationRequiredError,
+          /`bundle config set --global www\.uri-to-fetch\.com username:password`.*`BUNDLE_WWW__URI___TO___FETCH__COM`/m)
+      end
+
       context "when the there are credentials provided in the request" do
         let(:uri) { Bundler::URI("http://user:password@www.uri-to-fetch.com") }
 

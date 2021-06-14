@@ -199,7 +199,7 @@ The following is a list of all configuration keys and their purpose\. You can le
 \fBfrozen\fR (\fBBUNDLE_FROZEN\fR): Disallow changes to the \fBGemfile\fR\. When the \fBGemfile\fR is changed and the lockfile has not been updated, running Bundler commands will be blocked\. Defaults to \fBtrue\fR when \fB\-\-deployment\fR is used\.
 .
 .IP "\(bu" 4
-\fBgem\.github_username\fR (\fBBUNDLE_GEM__GITHUB_USERNAME\fR): Sets a GitHub username or organization to be used in \fBREADME\fR file when you create a new gem via \fBbundle gem\fR command\. It can be overriden by passing an explicit \fB\-\-github\-username\fR flag to \fBbundle gem\fR\.
+\fBgem\.github_username\fR (\fBBUNDLE_GEM__GITHUB_USERNAME\fR): Sets a GitHub username or organization to be used in \fBREADME\fR file when you create a new gem via \fBbundle gem\fR command\. It can be overridden by passing an explicit \fB\-\-github\-username\fR flag to \fBbundle gem\fR\.
 .
 .IP "\(bu" 4
 \fBgem\.push_key\fR (\fBBUNDLE_GEM__PUSH_KEY\fR): Sets the \fB\-\-key\fR parameter for \fBgem push\fR when using the \fBrake release\fR command with a private gemstash server\.
@@ -469,6 +469,23 @@ export BUNDLE_GITHUB__COM=abcd0123generatedtoken:x\-oauth\-basic
 .fi
 .
 .IP "" 0
+.
+.P
+Note that any configured credentials will be redacted by informative commands such as \fBbundle config list\fR or \fBbundle config get\fR, unless you use the \fB\-\-parseable\fR flag\. This is to avoid unintentially leaking credentials when copy\-pasting bundler output\.
+.
+.P
+Also note that to guarantee a sane mapping between valid environment variable names and valid host names, bundler makes the following transformations:
+.
+.IP "\(bu" 4
+Any \fB\-\fR characters in a host name are mapped to a triple dash (\fB___\fR) in the corresponding enviroment variable\.
+.
+.IP "\(bu" 4
+Any \fB\.\fR characters in a host name are mapped to a double dash (\fB__\fR) in the corresponding environment variable\.
+.
+.IP "" 0
+.
+.P
+This means that if you have a gem server named \fBmy\.gem\-host\.com\fR, you\'ll need to use the \fBBUNDLE_MY__GEM___HOST__COM\fR variable to configure credentials for it through ENV\.
 .
 .SH "CONFIGURE BUNDLER DIRECTORIES"
 Bundler\'s home, config, cache and plugin directories are able to be configured through environment variables\. The default location for Bundler\'s home directory is \fB~/\.bundle\fR, which all directories inherit from by default\. The following outlines the available environment variables and their default values

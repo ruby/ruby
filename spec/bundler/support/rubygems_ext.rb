@@ -77,7 +77,7 @@ module Spec
       gem_activate(gem_name)
       load Gem.bin_path(gem_name, bin_container)
     rescue Gem::LoadError => e
-      abort "We couln't activate #{gem_name} (#{e.requirement}). Run `gem install #{gem_name}:'#{e.requirement}'`"
+      abort "We couldn't activate #{gem_name} (#{e.requirement}). Run `gem install #{gem_name}:'#{e.requirement}'`"
     end
 
     def gem_activate(gem_name)

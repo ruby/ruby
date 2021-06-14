@@ -13,6 +13,7 @@ module Bundler
       auto_install
       cache_all
       cache_all_platforms
+      clean
       default_install_uses_path
       deployment
       deployment_means_frozen
@@ -26,11 +27,14 @@ module Bundler
       force_ruby_platform
       forget_cli_options
       frozen
+      gem.changelog
       gem.coc
       gem.mit
+      git.allow_insecure
       global_gem_cache
       ignore_messages
       init_gems_rb
+      inline
       no_install
       no_prune
       path_relative_to_cwd
@@ -58,6 +62,22 @@ module Bundler
     ARRAY_KEYS = %w[
       with
       without
+    ].freeze
+
+    STRING_KEYS = %w[
+      bin
+      cache_path
+      console
+      gem.ci
+      gem.github_username
+      gem.linter
+      gem.rubocop
+      gem.test
+      gemfile
+      path
+      shebang
+      system_bindir
+      trust-policy
     ].freeze
 
     DEFAULT_CONFIG = {
@@ -125,8 +145,8 @@ module Bundler
       keys = @temporary.keys | @global_config.keys | @local_config.keys | @env_config.keys
 
       keys.map do |key|
-        key.sub(/^BUNDLE_/, "").gsub(/__/, ".").downcase
-      end
+        key.sub(/^BUNDLE_/, "").gsub(/___/, "-").gsub(/__/, ".").downcase
+      end.sort
     end
 
     def local_overrides
@@ -172,19 +192,19 @@ module Bundler
       locations = []
 
       if value = @temporary[key]
-        locations << "Set for the current command: #{converted_value(value, exposed_key).inspect}"
+        locations << "Set for the current command: #{printable_value(value, exposed_key).inspect}"
       end
 
       if value = @local_config[key]
-        locations << "Set for your local app (#{local_config_file}): #{converted_value(value, exposed_key).inspect}"
+        locations << "Set for your local app (#{local_config_file}): #{printable_value(value, exposed_key).inspect}"
       end
 
       if value = @env_config[key]
-        locations << "Set via #{key}: #{converted_value(value, exposed_key).inspect}"
+        locations << "Set via #{key}: #{printable_value(value, exposed_key).inspect}"
       end
 
       if value = @global_config[key]
-        locations << "Set for the current user (#{global_config_file}): #{converted_value(value, exposed_key).inspect}"
+        locations << "Set for the current user (#{global_config_file}): #{printable_value(value, exposed_key).inspect}"
       end
 
       return ["You have not configured a value for `#{exposed_key}`"] if locations.empty?
@@ -276,9 +296,7 @@ module Bundler
     end
 
     def key_for(key)
-      key = Settings.normalize_uri(key).to_s if key.is_a?(String) && /https?:/ =~ key
-      key = key.to_s.gsub(".", "__").upcase
-      "BUNDLE_#{key}"
+      self.class.key_for(key)
     end
 
     private
@@ -313,6 +331,10 @@ module Bundler
       BOOL_KEYS.include?(name.to_s) || BOOL_KEYS.include?(parent_setting_for(name.to_s))
     end
 
+    def is_string(name)
+      STRING_KEYS.include?(name.to_s) || name.to_s.start_with?("local.") || name.to_s.start_with?("mirror.") || name.to_s.start_with?("build.")
+    end
+
     def to_bool(value)
       case value
       when nil, /\A(false|f|no|n|0|)\z/i, false
@@ -328,6 +350,14 @@ module Bundler
 
     def is_array(key)
       ARRAY_KEYS.include?(key.to_s)
+    end
+
+    def is_credential(key)
+      key == "gem.push_key"
+    end
+
+    def is_userinfo(value)
+      value.include?(":")
     end
 
     def to_array(value)
@@ -376,6 +406,21 @@ module Bundler
       end
     end
 
+    def printable_value(value, key)
+      converted = converted_value(value, key)
+      return converted unless converted.is_a?(String)
+
+      if is_string(key)
+        converted
+      elsif is_credential(key)
+        "[REDACTED]"
+      elsif is_userinfo(converted)
+        converted.gsub(/:.*$/, ":[REDACTED]")
+      else
+        converted
+      end
+    end
+
     def global_config_file
       if ENV["BUNDLE_CONFIG"] && !ENV["BUNDLE_CONFIG"].empty?
         Pathname.new(ENV["BUNDLE_CONFIG"])
@@ -414,6 +459,12 @@ module Bundler
         (\.#{Regexp.union(PER_URI_OPTIONS)})? # optional suffix key
         \z
       /ix.freeze
+
+    def self.key_for(key)
+      key = normalize_uri(key).to_s if key.is_a?(String) && /https?:/ =~ key
+      key = key.to_s.gsub(".", "__").gsub("-", "___").upcase
+      "BUNDLE_#{key}"
+    end
 
     # TODO: duplicates Rubygems#normalize_uri
     # TODO: is this the correct place to validate mirror URIs?

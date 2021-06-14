@@ -192,13 +192,6 @@ module Spec
       update_repo2(&blk) if block_given?
     end
 
-    def build_repo3
-      build_repo gem_repo3 do
-        build_gem "rack"
-      end
-      FileUtils.rm_rf Dir[gem_repo3("prerelease*")]
-    end
-
     # A repo that has no pre-installed gems included. (The caller completely
     # determines the contents with the block.)
     def build_repo4(&blk)
