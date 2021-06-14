@@ -110,6 +110,9 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_equal(:foobar, o.delete_field(s) { :baz })
 
     assert_equal(42, OpenStruct.new(foo: 42).delete_field(:foo) { :bug })
+
+    o = OpenStruct.new(block_given?: 42)
+    assert_raise(NameError) { o.delete_field(:foo) }
   end
 
   def test_setter

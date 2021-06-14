@@ -197,7 +197,7 @@ class OpenStruct
   #   data.each_pair.to_a   # => [[:country, "Australia"], [:capital, "Canberra"]]
   #
   def each_pair
-    return to_enum(__method__) { @table.size } unless block_given?
+    return to_enum(__method__) { @table.size } unless block_given!
     @table.each_pair{|p| yield p}
     self
   end
@@ -327,8 +327,8 @@ class OpenStruct
 
   #
   # Removes the named field from the object and returns the value the field
-  # contained if it was defined. You may optionally provide a block. 
-  # If the field is not defined, the result of the block is returned, 
+  # contained if it was defined. You may optionally provide a block.
+  # If the field is not defined, the result of the block is returned,
   # or a NameError is raised if no block was given.
   #
   #   require "ostruct"
@@ -354,7 +354,7 @@ class OpenStruct
     rescue NameError
     end
     @table.delete(sym) do
-      return yield if block_given?
+      return yield if block_given!
       raise! NameError.new("no field `#{sym}' in #{self}", sym)
     end
   end
@@ -453,5 +453,6 @@ class OpenStruct
   end
   # Other builtin private methods we use:
   alias_method :raise!, :raise
-  private :raise!
+  alias_method :block_given!, :block_given?
+  private :raise!, :block_given!
 end
