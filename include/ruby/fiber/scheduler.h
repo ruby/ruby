@@ -44,6 +44,8 @@ VALUE rb_fiber_scheduler_io_wait_writable(VALUE scheduler, VALUE io);
 VALUE rb_fiber_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t offset, size_t length);
 VALUE rb_fiber_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, size_t offset, size_t length);
 
+VALUE rb_fiber_scheduler_address_resolve(VALUE scheduler, VALUE hostname);
+
 RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RUBY_FIBER_SCHEDULER_H */

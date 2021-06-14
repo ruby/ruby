@@ -25,6 +25,8 @@ static ID id_io_read;
 static ID id_io_write;
 static ID id_io_wait;
 
+static ID id_address_resolve;
+
 void
 Init_Fiber_Scheduler(void)
 {
@@ -40,6 +42,8 @@ Init_Fiber_Scheduler(void)
     id_io_read = rb_intern_const("io_read");
     id_io_write = rb_intern_const("io_write");
     id_io_wait = rb_intern_const("io_wait");
+
+    id_address_resolve = rb_intern_const("address_resolve");
 }
 
 VALUE
@@ -199,4 +203,14 @@ rb_fiber_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, size_t offs
 
     // We should ensure string has capacity to receive data, and then resize it afterwards.
     return rb_check_funcall(scheduler, id_io_write, 4, arguments);
+}
+
+VALUE
+rb_fiber_scheduler_address_resolve(VALUE scheduler, VALUE hostname)
+{
+    VALUE arguments[] = {
+        hostname
+    };
+
+    return rb_check_funcall(scheduler, id_address_resolve, 1, arguments);
 }
