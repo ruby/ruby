@@ -1028,9 +1028,11 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception)
 {
     volatile int result = -1;
     rb_thread_t *th = rb_ec_thread_ptr(ec);
-    volatile VALUE wrapper = th->top_wrapper;
-    volatile VALUE self = th->top_self;
-    volatile VALUE errinfo = ec->errinfo;
+    volatile const struct {
+        VALUE wrapper, self, errinfo;
+    } saved = {
+        th->top_wrapper, th->top_self, ec->errinfo,
+    };
     enum ruby_tag_type state;
     char *volatile ftptr = 0;
     VALUE path;
@@ -1082,8 +1084,8 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception)
     EC_POP_TAG();
 
     rb_thread_t *th2 = rb_ec_thread_ptr(ec);
-    th2->top_self = self;
-    th2->top_wrapper = wrapper;
+    th2->top_self = saved.self;
+    th2->top_wrapper = saved.wrapper;
     if (reset_ext_config) ext_config_pop(th2, &prev_ext_config);
 
     if (ftptr) load_unlock(RSTRING_PTR(path), !state);
@@ -1112,7 +1114,7 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception)
     }
 
     if (result == TAG_RETURN) rb_provide_feature(path);
-    ec->errinfo = errinfo;
+    ec->errinfo = saved.errinfo;
 
     RUBY_DTRACE_HOOK(REQUIRE_RETURN, RSTRING_PTR(fname));
 
