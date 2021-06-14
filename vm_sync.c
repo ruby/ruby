@@ -254,7 +254,7 @@ rb_vm_barrier(void)
 
         // send signal
         rb_ractor_t *r = 0;
-        list_for_each(&vm->ractor.set, r, vmlr_node) {
+        ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
             if (r != cr) {
                 rb_ractor_vm_barrier_interrupt_running_thread(r);
             }
@@ -272,7 +272,7 @@ rb_vm_barrier(void)
         vm->ractor.sync.barrier_waiting = false;
         vm->ractor.sync.barrier_cnt++;
 
-        list_for_each(&vm->ractor.set, r, vmlr_node) {
+        ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
             rb_native_cond_signal(&r->barrier_wait_cond);
         }
     }

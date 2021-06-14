@@ -4742,7 +4742,7 @@ static void clear_codeconv(rb_io_t *fptr);
 
 static void
 fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl,
-                    struct list_head *busy)
+                    struct ccan_list_head *busy)
 {
     VALUE err = Qnil;
     int fd = fptr->fd;
@@ -4779,7 +4779,7 @@ fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl,
      * to exit before we call close().
      */
     if (busy) {
-        do rb_thread_schedule(); while (!list_empty(busy));
+        do rb_thread_schedule(); while (!ccan_list_empty(busy));
     }
 
     if (IS_PREP_STDIO(fptr) || fd <= 2) {
@@ -4916,16 +4916,16 @@ rb_io_memsize(const rb_io_t *fptr)
 # define KEEPGVL FALSE
 #endif
 
-int rb_notify_fd_close(int fd, struct list_head *);
+int rb_notify_fd_close(int fd, struct ccan_list_head *);
 static rb_io_t *
 io_close_fptr(VALUE io)
 {
     rb_io_t *fptr;
     VALUE write_io;
     rb_io_t *write_fptr;
-    struct list_head busy;
+    struct ccan_list_head busy;
 
-    list_head_init(&busy);
+    ccan_list_head_init(&busy);
     write_io = GetWriteIO(io);
     if (io != write_io) {
         write_fptr = RFILE(write_io)->fptr;

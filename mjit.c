@@ -103,7 +103,7 @@ mjit_update_references(const rb_iseq_t *iseq)
     // `iseq->body->jit_unit` anymore (because new one replaces that). So we need to check them too.
     // TODO: we should be able to reduce the number of units checked here.
     struct rb_mjit_unit *unit = NULL;
-    list_for_each(&stale_units.head, unit, unode) {
+    ccan_list_for_each(&stale_units.head, unit, unode) {
         if (unit->iseq == iseq) {
             unit->iseq = (rb_iseq_t *)rb_gc_location((VALUE)unit->iseq);
         }
@@ -131,7 +131,7 @@ mjit_free_iseq(const rb_iseq_t *iseq)
     // `iseq->body->jit_unit` anymore (because new one replaces that). So we need to check them too.
     // TODO: we should be able to reduce the number of units checked here.
     struct rb_mjit_unit *unit = NULL;
-    list_for_each(&stale_units.head, unit, unode) {
+    ccan_list_for_each(&stale_units.head, unit, unode) {
         if (unit->iseq == iseq) {
             unit->iseq = NULL;
         }
@@ -147,8 +147,8 @@ free_list(struct rb_mjit_unit_list *list, bool close_handle_p)
 {
     struct rb_mjit_unit *unit = 0, *next;
 
-    list_for_each_safe(&list->head, unit, next, unode) {
-        list_del(&unit->unode);
+    ccan_list_for_each_safe(&list->head, unit, next, unode) {
+        ccan_list_del(&unit->unode);
         if (!close_handle_p) unit->handle = NULL; /* Skip dlclose in free_unit() */
 
         if (list == &stale_units) { // `free_unit(unit)` crashes after GC.compact on `stale_units`
@@ -815,7 +815,7 @@ skip_cleaning_object_files(struct rb_mjit_unit_list *list)
     struct rb_mjit_unit *unit = NULL, *next;
 
     // No mutex for list, assuming MJIT worker does not exist yet since it's immediately after fork.
-    list_for_each_safe(&list->head, unit, next, unode) {
+    ccan_list_for_each_safe(&list->head, unit, next, unode) {
 #if defined(_WIN32) // mswin doesn't reach here either. This is for MinGW.
         if (unit->so_file) unit->so_file = NULL;
 #endif
@@ -965,7 +965,7 @@ mjit_mark(void)
             i++;
         }
     }
-    list_for_each(&active_units.head, unit, unode) {
+    ccan_list_for_each(&active_units.head, unit, unode) {
         iseqs[i] = unit->iseq;
         i++;
     }
