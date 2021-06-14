@@ -59,6 +59,9 @@ class TestFiberSleep < Test::Unit::TestCase
       Fiber.schedule do
         sleep 0
       end
+
+    ensure
+      scheduler.close
     end
 
     assert_raise(RuntimeError) do
