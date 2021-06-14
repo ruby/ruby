@@ -152,7 +152,7 @@ typedef intptr_t pid_t;
 
 // The unit structure that holds metadata of ISeq for MJIT.
 struct rb_mjit_unit {
-    struct list_node unode;
+    struct ccan_list_node unode;
     // Unique order number of unit.
     int id;
     // Dlopen handle of the loaded object file.
@@ -175,7 +175,7 @@ struct rb_mjit_unit {
 
 // Linked list of struct rb_mjit_unit.
 struct rb_mjit_unit_list {
-    struct list_head head;
+    struct ccan_list_head head;
     int length; // the list length
 };
 
@@ -206,13 +206,13 @@ bool mjit_call_p = false;
 
 // Priority queue of iseqs waiting for JIT compilation.
 // This variable is a pointer to head unit of the queue.
-static struct rb_mjit_unit_list unit_queue = { LIST_HEAD_INIT(unit_queue.head) };
+static struct rb_mjit_unit_list unit_queue = { CCAN_LIST_HEAD_INIT(unit_queue.head) };
 // List of units which are successfully compiled.
-static struct rb_mjit_unit_list active_units = { LIST_HEAD_INIT(active_units.head) };
+static struct rb_mjit_unit_list active_units = { CCAN_LIST_HEAD_INIT(active_units.head) };
 // List of compacted so files which will be cleaned up by `free_list()` in `mjit_finish()`.
-static struct rb_mjit_unit_list compact_units = { LIST_HEAD_INIT(compact_units.head) };
+static struct rb_mjit_unit_list compact_units = { CCAN_LIST_HEAD_INIT(compact_units.head) };
 // List of units before recompilation and just waiting for dlclose().
-static struct rb_mjit_unit_list stale_units = { LIST_HEAD_INIT(stale_units.head) };
+static struct rb_mjit_unit_list stale_units = { CCAN_LIST_HEAD_INIT(stale_units.head) };
 // The number of so far processed ISEQs, used to generate unique id.
 static int current_unit_num;
 // A mutex for conitionals and critical sections.
@@ -370,7 +370,7 @@ add_to_list(struct rb_mjit_unit *unit, struct rb_mjit_unit_list *list)
     (void)RB_DEBUG_COUNTER_INC_IF(mjit_length_compact_units, list == &compact_units);
     (void)RB_DEBUG_COUNTER_INC_IF(mjit_length_stale_units, list == &stale_units);
 
-    list_add_tail(&list->head, &unit->unode);
+    ccan_list_add_tail(&list->head, &unit->unode);
     list->length++;
 }
 
@@ -384,7 +384,7 @@ remove_from_list(struct rb_mjit_unit *unit, struct rb_mjit_unit_list *list)
     rb_debug_counter_add(RB_DEBUG_COUNTER_mjit_length_stale_units, -1, list == &stale_units);
 #endif
 
-    list_del(&unit->unode);
+    ccan_list_del(&unit->unode);
     list->length--;
 }
 
@@ -503,7 +503,7 @@ get_from_list(struct rb_mjit_unit_list *list)
 
     // Find iseq with max total_calls
     struct rb_mjit_unit *unit = NULL, *next, *best = NULL;
-    list_for_each_safe(&list->head, unit, next, unode) {
+    ccan_list_for_each_safe(&list->head, unit, next, unode) {
         if (unit->iseq == NULL) { // ISeq is GCed.
             remove_from_list(unit, list);
             free_unit(unit);
@@ -977,7 +977,7 @@ compile_compact_jit_code(char* c_file)
     // We need to check again here because we could've waited on GC above
     bool iseq_gced = false;
     struct rb_mjit_unit *child_unit = 0, *next;
-    list_for_each_safe(&active_units.head, child_unit, next, unode) {
+    ccan_list_for_each_safe(&active_units.head, child_unit, next, unode) {
         if (child_unit->iseq == NULL) { // ISeq is GC-ed
             iseq_gced = true;
             verbose(1, "JIT compaction: A method for JIT code u%d is obsoleted. Compaction will be skipped.", child_unit->id);
@@ -1002,7 +1002,7 @@ compile_compact_jit_code(char* c_file)
     // TODO: Consider using a more granular lock after we implement inlining across
     // compacted functions (not done yet).
     bool success = true;
-    list_for_each(&active_units.head, child_unit, unode) {
+    ccan_list_for_each(&active_units.head, child_unit, unode) {
         CRITICAL_SECTION_START(3, "before set_compiling_iseqs");
         success &= set_compiling_iseqs(child_unit->iseq);
         CRITICAL_SECTION_FINISH(3, "after set_compiling_iseqs");
@@ -1080,7 +1080,7 @@ compact_all_jit_code(void)
             remove_so_file(so_file, unit);
 
         CRITICAL_SECTION_START(3, "in compact_all_jit_code to read list");
-        list_for_each(&active_units.head, cur, unode) {
+        ccan_list_for_each(&active_units.head, cur, unode) {
             void *func;
             char funcname[MAXPATHLEN];
             sprint_funcname(funcname, cur);
@@ -1347,7 +1347,7 @@ unload_units(void)
 
     // For now, we don't unload units when ISeq is GCed. We should
     // unload such ISeqs first here.
-    list_for_each_safe(&active_units.head, unit, next, unode) {
+    ccan_list_for_each_safe(&active_units.head, unit, next, unode) {
         if (unit->iseq == NULL) { // ISeq is GCed.
             remove_from_list(unit, &active_units);
             free_unit(unit);
@@ -1355,7 +1355,7 @@ unload_units(void)
     }
 
     // Detect units which are in use and can't be unloaded.
-    list_for_each(&active_units.head, unit, unode) {
+    ccan_list_for_each(&active_units.head, unit, unode) {
         assert(unit->iseq != NULL && unit->handle != NULL);
         unit->used_code_p = false;
     }
@@ -1372,7 +1372,7 @@ unload_units(void)
     while (true) {
         // Calculate the next max total_calls in unit_queue
         long unsigned max_queue_calls = 0;
-        list_for_each(&unit_queue.head, unit, unode) {
+        ccan_list_for_each(&unit_queue.head, unit, unode) {
             if (unit->iseq != NULL && max_queue_calls < ISEQ_BODY(unit->iseq)->total_calls
                     && ISEQ_BODY(unit->iseq)->total_calls < prev_queue_calls) {
                 max_queue_calls = ISEQ_BODY(unit->iseq)->total_calls;
@@ -1381,7 +1381,7 @@ unload_units(void)
         prev_queue_calls = max_queue_calls;
 
         bool unloaded_p = false;
-        list_for_each_safe(&active_units.head, unit, next, unode) {
+        ccan_list_for_each_safe(&active_units.head, unit, next, unode) {
             if (unit->used_code_p) // We can't unload code on stack.
                 continue;
 
@@ -1441,7 +1441,7 @@ mjit_worker(void)
 
         // Wait until a unit becomes available
         CRITICAL_SECTION_START(3, "in worker dequeue");
-        while ((list_empty(&unit_queue.head) || active_units.length >= mjit_opts.max_cache_size) && !stop_worker_p) {
+        while ((ccan_list_empty(&unit_queue.head) || active_units.length >= mjit_opts.max_cache_size) && !stop_worker_p) {
             rb_native_cond_wait(&mjit_worker_wakeup, &mjit_engine_mutex);
             verbose(3, "Getting wakeup from client");
 
@@ -1449,7 +1449,7 @@ mjit_worker(void)
             if (pending_stale_p) {
                 pending_stale_p = false;
                 struct rb_mjit_unit *next;
-                list_for_each_safe(&active_units.head, unit, next, unode) {
+                ccan_list_for_each_safe(&active_units.head, unit, next, unode) {
                     if (unit->stale_p) {
                         unit->stale_p = false;
                         remove_from_list(unit, &active_units);

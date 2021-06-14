@@ -2634,12 +2634,12 @@ rb_vm_each_stack_value(void *ptr, void (*cb)(VALUE, void*), void *ctx)
     if (ptr) {
         rb_vm_t *vm = ptr;
         rb_ractor_t *r = 0;
-        list_for_each(&vm->ractor.set, r, vmlr_node) {
+        ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
             VM_ASSERT(rb_ractor_status_p(r, ractor_blocking) ||
                       rb_ractor_status_p(r, ractor_running));
             if (r->threads.cnt > 0) {
                 rb_thread_t *th = 0;
-                list_for_each(&r->threads.set, th, lt_node) {
+                ccan_list_for_each(&r->threads.set, th, lt_node) {
                     VM_ASSERT(th != NULL);
                     rb_execution_context_t * ec = th->ec;
                     if (ec->vm_stack) {
@@ -2676,7 +2676,7 @@ rb_vm_mark(void *ptr)
         long i, len;
         const VALUE *obj_ary;
 
-	list_for_each(&vm->ractor.set, r, vmlr_node) {
+	ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
             // ractor.set only contains blocking or running ractors
             VM_ASSERT(rb_ractor_status_p(r, ractor_blocking) ||
                       rb_ractor_status_p(r, ractor_running));

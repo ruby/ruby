@@ -150,7 +150,7 @@ void rb_sigwait_fd_migrate(rb_vm_t *); /* process.c */
 static volatile int system_working = 1;
 
 struct waiting_fd {
-    struct list_node wfd_node; /* <=> vm.waiting_fds */
+    struct ccan_list_node wfd_node; /* <=> vm.waiting_fds */
     rb_thread_t *th;
     int fd;
 };
@@ -500,7 +500,7 @@ terminate_all(rb_ractor_t *r, const rb_thread_t *main_thread)
 {
     rb_thread_t *th = 0;
 
-    list_for_each(&r->threads.set, th, lt_node) {
+    ccan_list_for_each(&r->threads.set, th, lt_node) {
         if (th != main_thread) {
 	    thread_debug("terminate_all: begin (thid: %"PRI_THREAD_ID", status: %s)\n",
 			 thread_id_str(th), thread_status_name(th, TRUE));
@@ -1799,7 +1799,7 @@ rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
 
     RB_VM_LOCK_ENTER();
     {
-        list_add(&rb_ec_vm_ptr(ec)->waiting_fds, &waiting_fd.wfd_node);
+        ccan_list_add(&rb_ec_vm_ptr(ec)->waiting_fds, &waiting_fd.wfd_node);
     }
     RB_VM_LOCK_LEAVE();
 
@@ -1814,11 +1814,11 @@ rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
 
     /*
      * must be deleted before jump
-     * this will delete either from waiting_fds or on-stack LIST_HEAD(busy)
+     * this will delete either from waiting_fds or on-stack CCAN_LIST_HEAD(busy)
      */
     RB_VM_LOCK_ENTER();
     {
-        list_del(&waiting_fd.wfd_node);
+        ccan_list_del(&waiting_fd.wfd_node);
     }
     RB_VM_LOCK_LEAVE();
 
@@ -2574,20 +2574,20 @@ rb_ec_reset_raised(rb_execution_context_t *ec)
 }
 
 int
-rb_notify_fd_close(int fd, struct list_head *busy)
+rb_notify_fd_close(int fd, struct ccan_list_head *busy)
 {
     rb_vm_t *vm = GET_THREAD()->vm;
     struct waiting_fd *wfd = 0, *next;
 
     RB_VM_LOCK_ENTER();
     {
-        list_for_each_safe(&vm->waiting_fds, wfd, next, wfd_node) {
+        ccan_list_for_each_safe(&vm->waiting_fds, wfd, next, wfd_node) {
             if (wfd->fd == fd) {
                 rb_thread_t *th = wfd->th;
                 VALUE err;
 
-                list_del(&wfd->wfd_node);
-                list_add(busy, &wfd->wfd_node);
+                ccan_list_del(&wfd->wfd_node);
+                ccan_list_add(busy, &wfd->wfd_node);
 
                 err = th->vm->special_exceptions[ruby_error_stream_closed];
                 rb_threadptr_pending_interrupt_enque(th, err);
@@ -2597,17 +2597,17 @@ rb_notify_fd_close(int fd, struct list_head *busy)
     }
     RB_VM_LOCK_LEAVE();
 
-    return !list_empty(busy);
+    return !ccan_list_empty(busy);
 }
 
 void
 rb_thread_fd_close(int fd)
 {
-    struct list_head busy;
+    struct ccan_list_head busy;
 
-    list_head_init(&busy);
+    ccan_list_head_init(&busy);
     if (rb_notify_fd_close(fd, &busy)) {
-	do rb_thread_schedule(); while (!list_empty(&busy));
+	do rb_thread_schedule(); while (!ccan_list_empty(&busy));
     }
 }
 
@@ -4353,7 +4353,7 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 
     RB_VM_LOCK_ENTER();
     {
-        list_add(&wfd.th->vm->waiting_fds, &wfd.wfd_node);
+        ccan_list_add(&wfd.th->vm->waiting_fds, &wfd.wfd_node);
     }
     RB_VM_LOCK_LEAVE();
 
@@ -4404,7 +4404,7 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 
     RB_VM_LOCK_ENTER();
     {
-        list_del(&wfd.wfd_node);
+        ccan_list_del(&wfd.wfd_node);
     }
     RB_VM_LOCK_LEAVE();
 
@@ -4480,7 +4480,7 @@ select_single_cleanup(VALUE ptr)
 {
     struct select_args *args = (struct select_args *)ptr;
 
-    list_del(&args->wfd.wfd_node);
+    ccan_list_del(&args->wfd.wfd_node);
     if (args->read) rb_fd_term(args->read);
     if (args->write) rb_fd_term(args->write);
     if (args->except) rb_fd_term(args->except);
@@ -4506,7 +4506,7 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 
     RB_VM_LOCK_ENTER();
     {
-        list_add(&args.wfd.th->vm->waiting_fds, &args.wfd.wfd_node);
+        ccan_list_add(&args.wfd.th->vm->waiting_fds, &args.wfd.wfd_node);
     }
     RB_VM_LOCK_LEAVE();
 
@@ -4702,8 +4702,8 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
     ubf_list_atfork();
 
     // OK. Only this thread accesses:
-    list_for_each(&vm->ractor.set, r, vmlr_node) {
-        list_for_each(&r->threads.set, i, lt_node) {
+    ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
+        ccan_list_for_each(&r->threads.set, i, lt_node) {
             atfork(i, th);
         }
     }
@@ -4843,7 +4843,7 @@ thgroup_list(VALUE group)
     rb_thread_t *th = 0;
     rb_ractor_t *r = GET_RACTOR();
 
-    list_for_each(&r->threads.set, th, lt_node) {
+    ccan_list_for_each(&r->threads.set, th, lt_node) {
         if (th->thgroup == group) {
 	    rb_ary_push(ary, th->self);
 	}
@@ -5513,7 +5513,7 @@ debug_deadlock_check(rb_ractor_t *r, VALUE msg)
 		rb_ractor_living_thread_num(r), rb_ractor_sleeper_thread_num(r),
                 (void *)GET_THREAD(), (void *)r->threads.main);
 
-    list_for_each(&r->threads.set, th, lt_node) {
+    ccan_list_for_each(&r->threads.set, th, lt_node) {
         rb_str_catf(msg, "* %+"PRIsVALUE"\n   rb_thread_t:%p "
                     "native:%"PRI_THREAD_ID" int:%u",
                     th->self, (void *)th, thread_id_str(th), th->ec->interrupt_flag);
@@ -5551,13 +5551,13 @@ rb_check_deadlock(rb_ractor_t *r)
     if (ltnum < sleeper_num) rb_bug("sleeper must not be more than vm_living_thread_num(vm)");
     if (patrol_thread && patrol_thread != GET_THREAD()) return;
 
-    list_for_each(&r->threads.set, th, lt_node) {
+    ccan_list_for_each(&r->threads.set, th, lt_node) {
         if (th->status != THREAD_STOPPED_FOREVER || RUBY_VM_INTERRUPTED(th->ec)) {
             found = 1;
         }
         else if (th->locking_mutex) {
             rb_mutex_t *mutex = mutex_ptr(th->locking_mutex);
-            if (mutex->fiber == th->ec->fiber_ptr || (!mutex->fiber && !list_empty(&mutex->waitq))) {
+            if (mutex->fiber == th->ec->fiber_ptr || (!mutex->fiber && !ccan_list_empty(&mutex->waitq))) {
                 found = 1;
             }
         }
