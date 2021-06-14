@@ -59,19 +59,19 @@ static void
 verify_interface(VALUE scheduler)
 {
     if (!rb_respond_to(scheduler, id_block)) {
-        rb_raise(rb_eArgError, "Scheduler must implement #block!");
+        rb_raise(rb_eArgError, "Scheduler must implement #block");
     }
 
     if (!rb_respond_to(scheduler, id_unblock)) {
-        rb_raise(rb_eArgError, "Scheduler must implement #unblock!");
+        rb_raise(rb_eArgError, "Scheduler must implement #unblock");
     }
 
     if (!rb_respond_to(scheduler, id_kernel_sleep)) {
-        rb_raise(rb_eArgError, "Scheduler must implement #kernel_sleep!");
+        rb_raise(rb_eArgError, "Scheduler must implement #kernel_sleep");
     }
 
     if (!rb_respond_to(scheduler, id_io_wait)) {
-        rb_raise(rb_eArgError, "Scheduler must implement #io_wait!");
+        rb_raise(rb_eArgError, "Scheduler must implement #io_wait");
     }
 }
 
