@@ -1036,12 +1036,14 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception)
     enum ruby_tag_type state;
     char *volatile ftptr = 0;
     VALUE path;
+    volatile VALUE saved_path;
     volatile bool reset_ext_config = false;
     struct rb_ext_config prev_ext_config;
 
     fname = rb_get_path(fname);
     path = rb_str_encode_ospath(fname);
     RUBY_DTRACE_HOOK(REQUIRE_ENTRY, RSTRING_PTR(fname));
+    saved_path = path;
 
     EC_PUSH_TAG(ec);
     ec->errinfo = Qnil; /* ensure */
@@ -1051,8 +1053,9 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception)
 	int found;
 
 	RUBY_DTRACE_HOOK(FIND_REQUIRE_ENTRY, RSTRING_PTR(fname));
-        found = search_required(path, &path, rb_feature_p);
+        found = search_required(path, &saved_path, rb_feature_p);
 	RUBY_DTRACE_HOOK(FIND_REQUIRE_RETURN, RSTRING_PTR(fname));
+        path = saved_path;
 
 	if (found) {
             if (!path || !(ftptr = load_lock(RSTRING_PTR(path)))) {
@@ -1086,6 +1089,7 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception)
     th2->top_wrapper = saved.wrapper;
     if (reset_ext_config) ext_config_pop(th2, &prev_ext_config);
 
+    path = saved_path;
     if (ftptr) load_unlock(RSTRING_PTR(path), !state);
 
     if (state) {
