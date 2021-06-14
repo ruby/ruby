@@ -56,6 +56,8 @@ class TestFiberThread < Test::Unit::TestCase
       end
 
       scheduler.run
+    ensure
+      scheduler.close
     end
 
     assert_raise(RuntimeError) do
