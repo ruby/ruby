@@ -107,7 +107,7 @@
 # For all these reasons, consider not using OpenStruct at all.
 #
 class OpenStruct
-  VERSION = "0.3.3"
+  VERSION = "0.4.0.pre"
 
   #
   # Creates a new OpenStruct object.  By default, the resulting OpenStruct
@@ -327,8 +327,8 @@ class OpenStruct
 
   #
   # Removes the named field from the object and returns the value the field
-  # contained if it was defined. You may optionally provide a block. 
-  # If the field is not defined, the result of the block is returned, 
+  # contained if it was defined. You may optionally provide a block.
+  # If the field is not defined, the result of the block is returned,
   # or a NameError is raised if no block was given.
   #
   #   require "ostruct"
