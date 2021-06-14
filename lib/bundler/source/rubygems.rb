@@ -398,10 +398,6 @@ module Bundler
             next if gemfile =~ /^bundler\-[\d\.]+?\.gem/
             s ||= Bundler.rubygems.spec_from_gem(gemfile)
             s.source = self
-            if Bundler.rubygems.spec_missing_extensions?(s, false)
-              Bundler.ui.debug "Source #{self} is ignoring #{s} because it is missing extensions"
-              next
-            end
             idx << s
           end
 

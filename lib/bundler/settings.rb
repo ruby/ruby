@@ -442,7 +442,20 @@ module Bundler
         valid_file = file.exist? && !file.size.zero?
         return {} unless valid_file
         require_relative "yaml_serializer"
-        YAMLSerializer.load file.read
+        YAMLSerializer.load(file.read).inject({}) do |config, (k, v)|
+          new_k = k
+
+          if k.include?("-")
+            Bundler.ui.warn "Your #{file} config includes `#{k}`, which contains the dash character (`-`).\n" \
+              "This is deprecated, because configuration through `ENV` should be possible, but `ENV` keys cannot include dashes.\n" \
+              "Please edit #{file} and replace any dashes in configuration keys with a triple underscore (`___`)."
+
+            new_k = k.gsub("-", "___")
+          end
+
+          config[new_k] = v
+          config
+        end
       end
     end
 
