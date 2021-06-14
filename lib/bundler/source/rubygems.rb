@@ -26,6 +26,12 @@ module Bundler
         Array(options["remotes"]).reverse_each {|r| add_remote(r) }
       end
 
+      def local_only!
+        @specs = nil
+        @allow_local = true
+        @allow_remote = false
+      end
+
       def local!
         return if @allow_local
 

@@ -3,6 +3,12 @@ require 'rubygems/test_case'
 require 'rubygems/dependency'
 
 class TestGemDependency < Gem::TestCase
+  def setup
+    super
+
+    without_any_upwards_gemfiles
+  end
+
   def test_initialize
     d = dep "pkg", "> 1.0"
 

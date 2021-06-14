@@ -3612,7 +3612,7 @@ Did you mean 'Ruby'?
         @m2.validate
       end
 
-      assert_equal "metadata key too large (129 > 128)", e.message
+      assert_equal "metadata key is too large (129 > 128)", e.message
     end
   end
 
@@ -3629,7 +3629,7 @@ Did you mean 'Ruby'?
         @m2.validate
       end
 
-      assert_equal "metadata values must be a String", e.message
+      assert_equal "metadata['fail'] value must be a String", e.message
     end
   end
 
@@ -3646,7 +3646,7 @@ Did you mean 'Ruby'?
         @m2.validate
       end
 
-      assert_equal "metadata value too large (1025 > 1024)", e.message
+      assert_equal "metadata['fail'] value is too large (1025 > 1024)", e.message
     end
   end
 

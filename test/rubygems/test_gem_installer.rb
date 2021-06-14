@@ -1776,6 +1776,26 @@ gem 'other', version
     end
   end
 
+  def test_pre_install_checks_malicious_platform_before_eval
+    gem_with_ill_formated_platform = File.expand_path("packages/ill-formatted-platform-1.0.0.10.gem", __dir__)
+
+    installer = Gem::Installer.at(
+      gem_with_ill_formated_platform,
+      :install_dir => @gem_home,
+      :user_install => false,
+      :force => true
+    )
+
+    use_ui @ui do
+      e = assert_raise Gem::InstallError do
+        installer.pre_install_checks
+      end
+
+      assert_equal "x86-mswin32\n system('id > /tmp/nyangawa')# is an invalid platform", e.message
+      assert_empty @ui.output
+    end
+  end
+
   def test_shebang
     installer = setup_base_installer
 

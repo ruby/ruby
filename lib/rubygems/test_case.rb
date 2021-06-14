@@ -553,6 +553,10 @@ class Gem::TestCase < Test::Unit::TestCase
     Gem.pre_uninstall_hooks.clear
   end
 
+  def without_any_upwards_gemfiles
+    ENV["BUNDLE_GEMFILE"] = File.join(@tempdir, "Gemfile")
+  end
+
   ##
   # A git_gem is used with a gem dependencies file.  The gem created here
   # has no files, just a gem specification for the given +name+ and +version+.
