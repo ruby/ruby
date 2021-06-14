@@ -42,4 +42,24 @@ class TestFiberThread < Test::Unit::TestCase
 
     assert_equal :done, thread.value
   end
+
+  def test_broken_unblock
+    thread = Thread.new do
+      Thread.current.report_on_exception = false
+
+      scheduler = BrokenUnblockScheduler.new
+
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        Thread.new{}.join
+      end
+
+      scheduler.run
+    end
+
+    assert_raise(RuntimeError) do
+      thread.join
+    end
+  end
 end
