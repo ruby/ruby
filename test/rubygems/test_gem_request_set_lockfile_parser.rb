@@ -25,7 +25,7 @@ class TestGemRequestSetLockfileParser < Gem::TestCase
     tokenizer = Gem::RequestSet::Lockfile::Tokenizer.new "foo", filename, 1, 0
     parser = tokenizer.make_parser nil, nil
 
-    e = assert_raises Gem::RequestSet::Lockfile::ParseError do
+    e = assert_raise Gem::RequestSet::Lockfile::ParseError do
       parser.get :section
     end
 
@@ -52,7 +52,7 @@ class TestGemRequestSetLockfileParser < Gem::TestCase
     tokenizer = Gem::RequestSet::Lockfile::Tokenizer.new "x", filename, 1
     parser = tokenizer.make_parser nil, nil
 
-    e = assert_raises Gem::RequestSet::Lockfile::ParseError do
+    e = assert_raise Gem::RequestSet::Lockfile::ParseError do
       parser.get :text, 'y'
     end
 
@@ -518,7 +518,7 @@ DEPENDENCIES
   end
 
   def test_parse_missing
-    assert_raises(Errno::ENOENT) do
+    assert_raise(Errno::ENOENT) do
       parse_lockfile @set, []
     end
 

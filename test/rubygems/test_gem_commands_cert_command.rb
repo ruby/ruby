@@ -54,7 +54,7 @@ class TestGemCommandsCertCommand < Gem::TestCase
     assert_equal PUBLIC_CERT.to_pem, match.first.to_pem
     assert_equal @trust_dir.cert_path(PUBLIC_CERT), match.last
 
-    assert_raises StopIteration do
+    assert_raise StopIteration do
       matches.next
     end
   end
@@ -69,7 +69,7 @@ class TestGemCommandsCertCommand < Gem::TestCase
     assert_equal ALTERNATE_CERT.to_pem, match.first.to_pem
     assert_equal @trust_dir.cert_path(ALTERNATE_CERT), match.last
 
-    assert_raises StopIteration do
+    assert_raise StopIteration do
       matches.next
     end
   end
@@ -83,7 +83,7 @@ class TestGemCommandsCertCommand < Gem::TestCase
 
     cert_path = @trust_dir.cert_path PUBLIC_CERT
 
-    assert_path_exists cert_path
+    assert_path_exist cert_path
 
     assert_equal "Added '/CN=nobody/DC=example'\n", @ui.output
     assert_empty @ui.error
@@ -138,8 +138,8 @@ Added '/CN=alternate/DC=example'
     assert_empty output
     assert_empty @build_ui.error
 
-    assert_path_exists File.join(@tempdir, 'gem-private_key.pem')
-    assert_path_exists File.join(@tempdir, 'gem-public_cert.pem')
+    assert_path_exist File.join(@tempdir, 'gem-private_key.pem')
+    assert_path_exist File.join(@tempdir, 'gem-public_cert.pem')
   end
 
   def test_execute_build_bad_email_address
@@ -152,15 +152,15 @@ Added '/CN=alternate/DC=example'
 
     use_ui @build_ui do
 
-      e = assert_raises Gem::CommandLineError do
+      e = assert_raise Gem::CommandLineError do
         @cmd.execute
       end
 
       assert_equal "Invalid email address #{email}",
         e.message
 
-      refute_path_exists File.join(@tempdir, 'gem-private_key.pem')
-      refute_path_exists File.join(@tempdir, 'gem-public_cert.pem')
+      assert_path_not_exist File.join(@tempdir, 'gem-private_key.pem')
+      assert_path_not_exist File.join(@tempdir, 'gem-public_cert.pem')
     end
   end
 
@@ -195,8 +195,8 @@ Added '/CN=alternate/DC=example'
     assert_empty output
     assert_empty @build_ui.error
 
-    assert_path_exists File.join(@tempdir, 'gem-private_key.pem')
-    assert_path_exists File.join(@tempdir, 'gem-public_cert.pem')
+    assert_path_exist File.join(@tempdir, 'gem-private_key.pem')
+    assert_path_exist File.join(@tempdir, 'gem-public_cert.pem')
 
     pem = File.read("#{@tempdir}/gem-public_cert.pem")
     cert = OpenSSL::X509::Certificate.new(pem)
@@ -214,7 +214,7 @@ Added '/CN=alternate/DC=example'
     @build_ui = Gem::MockGemUi.new "#{passphrase}\n#{passphrase_confirmation}"
 
     use_ui @build_ui do
-      e = assert_raises Gem::CommandLineError do
+      e = assert_raise Gem::CommandLineError do
         @cmd.execute
       end
 
@@ -232,8 +232,8 @@ Added '/CN=alternate/DC=example'
 
     end
 
-    refute_path_exists File.join(@tempdir, 'gem-private_key.pem')
-    refute_path_exists File.join(@tempdir, 'gem-public_cert.pem')
+    assert_path_not_exist File.join(@tempdir, 'gem-private_key.pem')
+    assert_path_not_exist File.join(@tempdir, 'gem-public_cert.pem')
   end
 
   def test_execute_build_key
@@ -254,8 +254,8 @@ Added '/CN=alternate/DC=example'
     assert_empty output
     assert_empty @ui.error
 
-    assert_path_exists File.join(@tempdir, 'gem-public_cert.pem')
-    refute_path_exists File.join(@tempdir, 'gem-private_key.pem')
+    assert_path_exist File.join(@tempdir, 'gem-public_cert.pem')
+    assert_path_not_exist File.join(@tempdir, 'gem-private_key.pem')
   end
 
   def test_execute_build_encrypted_key
@@ -276,7 +276,7 @@ Added '/CN=alternate/DC=example'
     assert_empty output
     assert_empty @ui.error
 
-    assert_path_exists File.join(@tempdir, 'gem-public_cert.pem')
+    assert_path_exist File.join(@tempdir, 'gem-public_cert.pem')
   end
 
   def test_execute_certificate
@@ -346,7 +346,7 @@ Added '/CN=alternate/DC=example'
 
     cert_path = @trust_dir.cert_path PUBLIC_CERT
 
-    assert_path_exists cert_path
+    assert_path_exist cert_path
 
     @cmd.handle_options %W[--remove nobody]
 
@@ -357,7 +357,7 @@ Added '/CN=alternate/DC=example'
     assert_equal "Removed '/CN=nobody/DC=example'\n", @ui.output
     assert_equal '', @ui.error
 
-    refute_path_exists cert_path
+    assert_path_not_exist cert_path
   end
 
   def test_execute_remove_multiple
@@ -367,8 +367,8 @@ Added '/CN=alternate/DC=example'
     public_path = @trust_dir.cert_path PUBLIC_CERT
     alternate_path = @trust_dir.cert_path ALTERNATE_CERT
 
-    assert_path_exists public_path
-    assert_path_exists alternate_path
+    assert_path_exist public_path
+    assert_path_exist alternate_path
 
     @cmd.handle_options %W[--remove example]
 
@@ -384,8 +384,8 @@ Removed '/CN=nobody/DC=example'
     assert_equal expected, @ui.output
     assert_equal '', @ui.error
 
-    refute_path_exists public_path
-    refute_path_exists alternate_path
+    assert_path_not_exist public_path
+    assert_path_not_exist alternate_path
   end
 
   def test_execute_remove_twice
@@ -395,8 +395,8 @@ Removed '/CN=nobody/DC=example'
     public_path = @trust_dir.cert_path PUBLIC_CERT
     alternate_path = @trust_dir.cert_path ALTERNATE_CERT
 
-    assert_path_exists public_path
-    assert_path_exists alternate_path
+    assert_path_exist public_path
+    assert_path_exist alternate_path
 
     @cmd.handle_options %W[--remove nobody --remove alternate]
 
@@ -412,8 +412,8 @@ Removed '/CN=alternate/DC=example'
     assert_equal expected, @ui.output
     assert_equal '', @ui.error
 
-    refute_path_exists public_path
-    refute_path_exists alternate_path
+    assert_path_not_exist public_path
+    assert_path_not_exist alternate_path
   end
 
   def test_execute_sign
@@ -552,7 +552,7 @@ Removed '/CN=alternate/DC=example'
     @cmd.handle_options %W[--sign #{path}]
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
     end
@@ -580,7 +580,7 @@ ERROR:  --certificate not specified and ~/.gem/gem-public_cert.pem does not exis
     @cmd.handle_options %W[--sign #{path}]
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
     end
@@ -686,7 +686,7 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
 
   def test_handle_options_add_bad
     nonexistent = File.join @tempdir, 'nonexistent'
-    e = assert_raises OptionParser::InvalidArgument do
+    e = assert_raise OptionParser::InvalidArgument do
       @cmd.handle_options %W[--add #{nonexistent}]
     end
 
@@ -696,7 +696,7 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
     bad = File.join @tempdir, 'bad'
     FileUtils.touch bad
 
-    e = assert_raises OptionParser::InvalidArgument do
+    e = assert_raise OptionParser::InvalidArgument do
       @cmd.handle_options %W[--add #{bad}]
     end
 
@@ -706,7 +706,7 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
 
   def test_handle_options_certificate
     nonexistent = File.join @tempdir, 'nonexistent'
-    e = assert_raises OptionParser::InvalidArgument do
+    e = assert_raise OptionParser::InvalidArgument do
       @cmd.handle_options %W[--certificate #{nonexistent}]
     end
 
@@ -716,7 +716,7 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
     bad = File.join @tempdir, 'bad'
     FileUtils.touch bad
 
-    e = assert_raises OptionParser::InvalidArgument do
+    e = assert_raise OptionParser::InvalidArgument do
       @cmd.handle_options %W[--certificate #{bad}]
     end
 
@@ -727,7 +727,7 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
 
   def test_handle_options_key_bad
     nonexistent = File.join @tempdir, 'nonexistent'
-    e = assert_raises OptionParser::InvalidArgument do
+    e = assert_raise OptionParser::InvalidArgument do
       @cmd.handle_options %W[--private-key #{nonexistent}]
     end
 
@@ -738,14 +738,14 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
     bad = File.join @tempdir, 'bad'
     FileUtils.touch bad
 
-    e = assert_raises OptionParser::InvalidArgument do
+    e = assert_raise OptionParser::InvalidArgument do
       @cmd.handle_options %W[--private-key #{bad}]
     end
 
     assert_equal "invalid argument: --private-key #{bad}: invalid RSA key",
                  e.message
 
-    e = assert_raises OptionParser::InvalidArgument do
+    e = assert_raise OptionParser::InvalidArgument do
       @cmd.handle_options %W[--private-key #{PUBLIC_KEY_FILE}]
     end
 
@@ -792,7 +792,7 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
 
   def test_handle_options_sign_nonexistent
     nonexistent = File.join @tempdir, 'nonexistent'
-    e = assert_raises OptionParser::InvalidArgument do
+    e = assert_raise OptionParser::InvalidArgument do
       @cmd.handle_options %W[
         --private-key #{ALTERNATE_KEY_FILE}
 

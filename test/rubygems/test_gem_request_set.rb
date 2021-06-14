@@ -64,8 +64,8 @@ class TestGemRequestSet < Gem::TestCase
     end
 
     assert_includes installed, 'a-2'
-    assert_path_exists File.join @gemhome, 'gems', 'a-2'
-    assert_path_exists 'gem.deps.rb.lock'
+    assert_path_exist File.join @gemhome, 'gems', 'a-2'
+    assert_path_exist 'gem.deps.rb.lock'
 
     assert rs.remote
     refute done_installing_ran
@@ -87,9 +87,10 @@ Gems to install:
   a-2
       EXPECTED
 
-      assert_output expected do
+      actual, _ = capture_output do
         rs.install_from_gemdeps :gemdeps => io.path, :explain => true
       end
+      assert_equal(expected, actual)
     end
   end
 
@@ -99,7 +100,7 @@ Gems to install:
     end
 
     util_clear_gems
-    refute_path_exists File.join Gem.dir, 'gems', 'a-2'
+    assert_path_not_exist File.join Gem.dir, 'gems', 'a-2'
 
     rs = Gem::RequestSet.new
     installed = []
@@ -118,7 +119,7 @@ Gems to install:
     end
 
     assert_includes installed, 'a-2'
-    refute_path_exists File.join Gem.dir, 'gems', 'a-2'
+    assert_path_not_exist File.join Gem.dir, 'gems', 'a-2'
   end
 
   def test_install_from_gemdeps_local
@@ -132,7 +133,7 @@ Gems to install:
       io.puts 'gem "a"'
       io.flush
 
-      assert_raises Gem::UnsatisfiableDependencyError do
+      assert_raise Gem::UnsatisfiableDependencyError do
         rs.install_from_gemdeps :gemdeps => io.path, :domain => :local
       end
     end
@@ -178,8 +179,8 @@ DEPENDENCIES
     assert_includes installed, 'b-1'
     assert_includes installed, 'a-1'
 
-    assert_path_exists File.join @gemhome, 'specifications', 'a-1.gemspec'
-    assert_path_exists File.join @gemhome, 'specifications', 'b-1.gemspec'
+    assert_path_exist File.join @gemhome, 'specifications', 'a-1.gemspec'
+    assert_path_exist File.join @gemhome, 'specifications', 'b-1.gemspec'
   end
 
   def test_install_from_gemdeps_complex_dependencies
@@ -231,7 +232,7 @@ end
 
     assert_includes installed, 'z-1.0.3'
 
-    assert_path_exists File.join @gemhome, 'specifications', 'z-1.0.3.gemspec'
+    assert_path_exist File.join @gemhome, 'specifications', 'z-1.0.3.gemspec'
   end
 
   def test_install_from_gemdeps_version_mismatch
@@ -443,7 +444,7 @@ ruby "0"
 
     set = StaticSet.new [a1, a2]
 
-    assert_raises Gem::UnsatisfiableDependencyError do
+    assert_raise Gem::UnsatisfiableDependencyError do
       rs.resolve set
     end
   end
@@ -524,8 +525,8 @@ ruby "0"
     assert_equal %w[b-1 a-1],
                  installers.map {|installer| installer.spec.full_name }
 
-    assert_path_exists File.join @gemhome, 'specifications', 'a-1.gemspec'
-    assert_path_exists File.join @gemhome, 'specifications', 'b-1.gemspec'
+    assert_path_exist File.join @gemhome, 'specifications', 'a-1.gemspec'
+    assert_path_exist File.join @gemhome, 'specifications', 'b-1.gemspec'
 
     assert_equal %w[b-1 a-1], installed.map {|s| s.full_name }
 
@@ -547,8 +548,8 @@ ruby "0"
       assert_equal @tempdir, ENV['GEM_HOME']
     end
 
-    assert_path_exists File.join @tempdir, 'specifications', 'a-1.gemspec'
-    assert_path_exists File.join @tempdir, 'specifications', 'b-1.gemspec'
+    assert_path_exist File.join @tempdir, 'specifications', 'a-1.gemspec'
+    assert_path_exist File.join @tempdir, 'specifications', 'b-1.gemspec'
 
     assert_equal %w[b-1 a-1], installed.map {|s| s.full_name }
   end

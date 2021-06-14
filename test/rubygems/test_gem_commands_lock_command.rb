@@ -55,7 +55,7 @@ gem 'd', '= 1'
   def test_execute_strict
     @cmd.handle_options %w[c-1 --strict]
 
-    e = assert_raises Gem::Exception do
+    e = assert_raise Gem::Exception do
       use_ui @ui do
         @cmd.execute
       end

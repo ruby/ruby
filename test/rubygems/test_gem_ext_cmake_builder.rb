@@ -7,13 +7,13 @@ class TestGemExtCmakeBuilder < Gem::TestCase
     super
 
     # Details: https://github.com/rubygems/rubygems/issues/1270#issuecomment-177368340
-    skip "CmakeBuilder doesn't work on Windows." if Gem.win_platform?
+    pend "CmakeBuilder doesn't work on Windows." if Gem.win_platform?
 
     begin
       _, status = Open3.capture2e('cmake')
-      skip 'cmake not present' unless status.success?
+      pend 'cmake not present' unless status.success?
     rescue Errno::ENOENT
-      skip 'cmake not present'
+      pend 'cmake not present'
     end
 
     @ext = File.join @tempdir, 'ext'
@@ -50,7 +50,7 @@ install (FILES test.txt DESTINATION bin)
   def test_self_build_fail
     output = []
 
-    error = assert_raises Gem::InstallError do
+    error = assert_raise Gem::InstallError do
       Gem::Ext::CmakeBuilder.build nil, @dest_path, output, [], nil, @ext
     end
 

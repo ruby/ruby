@@ -10,7 +10,6 @@ end
 
 require 'rubygems/remote_fetcher'
 require 'rubygems/package'
-require 'minitest/mock'
 
 # = Testing Proxy Settings
 #
@@ -146,7 +145,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     fetcher = Gem::RemoteFetcher.new nil
     @fetcher = fetcher
 
-    e = assert_raises ArgumentError do
+    e = assert_raise ArgumentError do
       @fetcher.fetch_path("gems.example.com/yaml", nil, true)
     end
 
@@ -184,7 +183,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
     assert_equal 'hello', data
 
-    refute_path_exists path
+    assert_path_not_exist path
   end
 
   def util_fuck_with_fetcher(data, blow = false)
@@ -390,7 +389,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   def test_download_unsupported
     inst = Gem::RemoteFetcher.fetcher
 
-    e = assert_raises ArgumentError do
+    e = assert_raise ArgumentError do
       inst.download @a1, 'ftp://gems.rubyforge.org'
     end
 
@@ -451,7 +450,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
     url = 'http://example.com/uri'
 
-    e = assert_raises Gem::RemoteFetcher::FetchError do
+    e = assert_raise Gem::RemoteFetcher::FetchError do
       fetcher.fetch_path url
     end
 
@@ -469,7 +468,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
     url = 'http://example.com/uri'
 
-    e = assert_raises Gem::RemoteFetcher::FetchError do
+    e = assert_raise Gem::RemoteFetcher::FetchError do
       fetcher.fetch_path url
     end
 
@@ -487,7 +486,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
     url = 'http://example.com/uri'
 
-    e = assert_raises Gem::RemoteFetcher::FetchError do
+    e = assert_raise Gem::RemoteFetcher::FetchError do
       fetcher.fetch_path url
     end
 
@@ -506,7 +505,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
     url = 'http://example.com/uri'
 
-    e = assert_raises Gem::RemoteFetcher::FetchError do
+    e = assert_raise Gem::RemoteFetcher::FetchError do
       fetcher.fetch_path url
     end
 
@@ -525,7 +524,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
     url = 'http://example.com/uri'
 
-    e = assert_raises Gem::RemoteFetcher::FetchError do
+    e = assert_raise Gem::RemoteFetcher::FetchError do
       fetcher.fetch_path url
     end
 
@@ -544,7 +543,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
     url = 'http://example.com/uri'
 
-    e = assert_raises Gem::RemoteFetcher::FetchError do
+    e = assert_raise Gem::RemoteFetcher::FetchError do
       fetcher.fetch_path url
     end
 
@@ -634,7 +633,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       res
     end
 
-    e = assert_raises Gem::RemoteFetcher::FetchError do
+    e = assert_raise Gem::RemoteFetcher::FetchError do
       fetcher.fetch_http URI.parse(url)
     end
 
@@ -651,7 +650,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       res
     end
 
-    e = assert_raises Gem::RemoteFetcher::FetchError do
+    e = assert_raise Gem::RemoteFetcher::FetchError do
       fetcher.fetch_http URI.parse(url)
     end
 
@@ -836,7 +835,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     fetcher = Gem::RemoteFetcher.new nil
     @fetcher = fetcher
 
-    e = assert_raises Gem::RemoteFetcher::FetchError do
+    e = assert_raise Gem::RemoteFetcher::FetchError do
       fetcher.fetch_s3 URI.parse(url)
     end
 
@@ -952,7 +951,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     with_configured_fetcher(
       ":ssl_ca_cert: #{temp_ca_cert}\n" +
       ":ssl_client_cert: #{temp_client_cert}\n") do |fetcher|
-      assert_raises Gem::RemoteFetcher::FetchError do
+      assert_raise Gem::RemoteFetcher::FetchError do
         fetcher.fetch_path("https://localhost:#{ssl_server.config[:Port]}/yaml")
       end
     end
@@ -961,7 +960,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   def test_do_not_allow_insecure_ssl_connection_by_default
     ssl_server = start_ssl_server
     with_configured_fetcher do |fetcher|
-      assert_raises Gem::RemoteFetcher::FetchError do
+      assert_raise Gem::RemoteFetcher::FetchError do
         fetcher.fetch_path("https://localhost:#{ssl_server.config[:Port]}/yaml")
       end
     end
@@ -981,7 +980,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       "redirecting to non-https resource: #{@server_uri} (https://localhost:#{ssl_server.config[:Port]}/insecure_redirect?to=#{@server_uri})"
 
     with_configured_fetcher(":ssl_ca_cert: #{temp_ca_cert}") do |fetcher|
-      err = assert_raises Gem::RemoteFetcher::FetchError do
+      err = assert_raise Gem::RemoteFetcher::FetchError do
         fetcher.fetch_path("https://localhost:#{ssl_server.config[:Port]}/insecure_redirect?to=#{@server_uri}")
       end
 
@@ -994,7 +993,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     temp_ca_cert = nil
 
     with_configured_fetcher(":ssl_ca_cert: #{temp_ca_cert}") do |fetcher|
-      assert_raises Gem::RemoteFetcher::FetchError do
+      assert_raise Gem::RemoteFetcher::FetchError do
         fetcher.fetch_path("https://localhost:#{ssl_server.config[:Port]}")
       end
     end
@@ -1084,7 +1083,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def start_ssl_server(config = {})
-    skip "starting this test server fails randomly on jruby" if Gem.java_platform?
+    pend "starting this test server fails randomly on jruby" if Gem.java_platform?
 
     null_logger = NilLog.new
     server = WEBrick::HTTPServer.new({

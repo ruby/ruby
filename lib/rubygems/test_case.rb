@@ -12,7 +12,7 @@ if File.exist?(bundler_gemspec)
 end
 
 begin
-  gem 'minitest', '~> 5.13'
+  gem 'test-unit', '~> 3.0'
 rescue Gem::LoadError
 end
 
@@ -32,16 +32,7 @@ else
   require 'bundler'
 end
 
-# Enable server plugin needed for bisection
-if ENV["RG_BISECT_SERVER_PLUGIN"]
-  require ENV["RG_BISECT_SERVER_PLUGIN"]
-
-  Minitest.extensions << "server"
-end
-
-ENV["MT_NO_PLUGINS"] = "true"
-
-require 'minitest/autorun'
+require 'test/unit'
 
 ENV["JARS_SKIP"] = "true" if Gem.java_platform? # avoid unnecessary and noisy `jar-dependencies` post install hook
 
@@ -111,7 +102,7 @@ end
 # and uninstall gems, fetch remote gems through a stub fetcher and be assured
 # your normal set of gems is not affected.
 
-class Gem::TestCase < Minitest::Test
+class Gem::TestCase < Test::Unit::TestCase
   extend Gem::Deprecate
 
   attr_accessor :fetcher # :nodoc:
@@ -140,9 +131,46 @@ class Gem::TestCase < Minitest::Test
   end
 
   def assert_directory_exists(path, msg = nil)
-    msg = message(msg) { "Expected path '#{path}' to be a directory" }
-    assert_path_exists path
+    msg = build_message(msg, "Expected path '#{path}' to be a directory")
+    assert_path_exist path
     assert File.directory?(path), msg
+  end
+
+  # https://github.com/seattlerb/minitest/blob/21d9e804b63c619f602f3f4ece6c71b48974707a/lib/minitest/assertions.rb#L188
+  def _synchronize
+    yield
+  end
+
+  # https://github.com/seattlerb/minitest/blob/21d9e804b63c619f602f3f4ece6c71b48974707a/lib/minitest/assertions.rb#L546
+  def capture_subprocess_io
+    _synchronize do
+      begin
+        require "tempfile"
+
+        captured_stdout, captured_stderr = Tempfile.new("out"), Tempfile.new("err")
+
+        orig_stdout, orig_stderr = $stdout.dup, $stderr.dup
+        $stdout.reopen captured_stdout
+        $stderr.reopen captured_stderr
+
+        yield
+
+        $stdout.rewind
+        $stderr.rewind
+
+        return captured_stdout.read, captured_stderr.read
+      ensure
+        captured_stdout.unlink
+        captured_stderr.unlink
+        $stdout.reopen orig_stdout
+        $stderr.reopen orig_stderr
+
+        orig_stdout.close
+        orig_stderr.close
+        captured_stdout.close
+        captured_stderr.close
+      end
+    end
   end
 
   ##
@@ -262,19 +290,19 @@ class Gem::TestCase < Minitest::Test
 
   def assert_contains_make_command(target, output, msg = nil)
     if output.match(/\n/)
-      msg = message(msg) do
+      msg = build_message(msg,
         "Expected output containing make command \"%s\", but was \n\nBEGIN_OF_OUTPUT\n%sEND_OF_OUTPUT" % [
           ('%s %s' % [make_command, target]).rstrip,
           output,
         ]
-      end
+      )
     else
-      msg = message(msg) do
+      msg = build_message(msg,
         'Expected make command "%s": %s' % [
           ('%s %s' % [make_command, target]).rstrip,
           output,
         ]
-      end
+      )
     end
 
     assert scan_make_command_lines(output).any? {|line|
@@ -662,6 +690,28 @@ class Gem::TestCase < Minitest::Test
     end
 
     path
+  end
+
+  ##
+  # Load a YAML string, the psych 3 way
+
+  def load_yaml(yaml)
+    if YAML.respond_to?(:unsafe_load)
+      YAML.unsafe_load(yaml)
+    else
+      YAML.load(yaml)
+    end
+  end
+
+  ##
+  # Load a YAML file, the psych 3 way
+
+  def load_yaml_file(file)
+    if YAML.respond_to?(:unsafe_load_file)
+      YAML.unsafe_load_file(file)
+    else
+      YAML.load_file(file)
+    end
   end
 
   def all_spec_names
@@ -1517,6 +1567,40 @@ Also, a list:
     PUBLIC_KEY  = nil
     PUBLIC_CERT = nil
   end if Gem::HAVE_OPENSSL
+end
+
+# https://github.com/seattlerb/minitest/blob/13c48a03d84a2a87855a4de0c959f96800100357/lib/minitest/mock.rb#L192
+class Object
+  def stub(name, val_or_callable, *block_args)
+    new_name = "__minitest_stub__#{name}"
+
+    metaclass = class << self; self; end
+
+    if respond_to? name and not methods.map(&:to_s).include? name.to_s
+      metaclass.send :define_method, name do |*args|
+        super(*args)
+      end
+    end
+
+    metaclass.send :alias_method, new_name, name
+
+    metaclass.send :define_method, name do |*args, &blk|
+      if val_or_callable.respond_to? :call
+        val_or_callable.call(*args, &blk)
+      else
+        blk.call(*block_args) if blk
+        val_or_callable
+      end
+    end
+
+    metaclass.send(:ruby2_keywords, name) if metaclass.respond_to?(:ruby2_keywords, true)
+
+    yield self
+  ensure
+    metaclass.send :undef_method, name
+    metaclass.send :alias_method, name, new_name
+    metaclass.send :undef_method, new_name
+  end
 end
 
 require 'rubygems/test_utilities'

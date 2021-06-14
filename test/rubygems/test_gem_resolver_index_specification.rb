@@ -46,7 +46,7 @@ class TestGemResolverIndexSpecification < Gem::TestCase
       called = installer
     end
 
-    assert_path_exists File.join @gemhome, 'specifications', 'a-2.gemspec'
+    assert_path_exist File.join @gemhome, 'specifications', 'a-2.gemspec'
 
     assert_kind_of Gem::Installer, called
   end

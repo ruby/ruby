@@ -64,7 +64,7 @@ Gem x-2
   def test_execute_no_match
     @cmd.options[:args] = %w[foo]
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @stub_ui do
         @cmd.execute
       end
@@ -155,7 +155,7 @@ Gem foo-2
     @cmd.options[:reverse_dependencies] = true
     @cmd.options[:domain] = :remote
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @stub_ui do
         @cmd.execute
       end

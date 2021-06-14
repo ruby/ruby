@@ -278,7 +278,7 @@ RSpec.describe "bundle install across platforms" do
       gem "rack", "1.0.0"
     G
 
-    bundle "config --local path vendor/bundle"
+    bundle "config set --local path vendor/bundle"
     bundle :install
 
     FileUtils.mv(vendored_gems, bundled_app("vendor/bundle", Gem.ruby_engine, "1.8"))

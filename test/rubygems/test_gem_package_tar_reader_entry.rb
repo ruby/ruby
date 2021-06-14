@@ -42,19 +42,19 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
 
     assert @entry.bytes_read
 
-    e = assert_raises(IOError) { @entry.eof? }
+    e = assert_raise(IOError) { @entry.eof? }
     assert_equal 'closed Gem::Package::TarReader::Entry', e.message
 
-    e = assert_raises(IOError) { @entry.getc }
+    e = assert_raise(IOError) { @entry.getc }
     assert_equal 'closed Gem::Package::TarReader::Entry', e.message
 
-    e = assert_raises(IOError) { @entry.pos }
+    e = assert_raise(IOError) { @entry.pos }
     assert_equal 'closed Gem::Package::TarReader::Entry', e.message
 
-    e = assert_raises(IOError) { @entry.read }
+    e = assert_raise(IOError) { @entry.read }
     assert_equal 'closed Gem::Package::TarReader::Entry', e.message
 
-    e = assert_raises(IOError) { @entry.rewind }
+    e = assert_raise(IOError) { @entry.rewind }
     assert_equal 'closed Gem::Package::TarReader::Entry', e.message
   end
 
@@ -75,10 +75,10 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
   end
 
   def test_full_name_null
-    skip "jruby strips the null byte and does not think it's corrupt" if Gem.java_platform?
+    pend "jruby strips the null byte and does not think it's corrupt" if Gem.java_platform?
     @entry.header.prefix << "\000"
 
-    e = assert_raises Gem::Package::TarInvalidError do
+    e = assert_raise Gem::Package::TarInvalidError do
       @entry.full_name
     end
 
@@ -134,7 +134,7 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
   end
 
   def test_readpartial
-    assert_raises(EOFError) do
+    assert_raise(EOFError) do
       @entry.read(@contents.size)
       @entry.readpartial(1)
     end

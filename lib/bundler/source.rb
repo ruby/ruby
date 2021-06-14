@@ -7,6 +7,7 @@ module Bundler
     autoload :Metadata, File.expand_path("source/metadata", __dir__)
     autoload :Path,     File.expand_path("source/path", __dir__)
     autoload :Rubygems, File.expand_path("source/rubygems", __dir__)
+    autoload :RubygemsAggregate, File.expand_path("source/rubygems_aggregate", __dir__)
 
     attr_accessor :dependency_names
 
@@ -39,6 +40,10 @@ module Bundler
 
     def remote!; end
 
+    def add_dependency_names(names)
+      @dependency_names = Array(dependency_names) | Array(names)
+    end
+
     # it's possible that gems from one source depend on gems from some
     # other source, so now we download gemspecs and iterate over those
     # dependencies, looking for gems we don't have info on yet.
@@ -46,6 +51,10 @@ module Bundler
 
     def dependency_names_to_double_check
       specs.dependency_names
+    end
+
+    def spec_names
+      specs.spec_names
     end
 
     def include?(other)

@@ -219,7 +219,6 @@ module Bundler
       Bundler.ui.debug "The definition is missing #{missing.map(&:full_name)}"
       true
     rescue BundlerError => e
-      @index = nil
       @resolve = nil
       @specs = nil
       @gem_version_promoter = nil
@@ -281,50 +280,6 @@ module Bundler
         end
       end
     end
-
-    def index
-      @index ||= Index.build do |idx|
-        dependency_names = @dependencies.map(&:name)
-
-        sources.all_sources.each do |source|
-          source.dependency_names = dependency_names - pinned_spec_names(source)
-          idx.add_source source.specs
-          dependency_names.concat(source.unmet_deps).uniq!
-        end
-
-        double_check_for_index(idx, dependency_names)
-      end
-    end
-
-    # Suppose the gem Foo depends on the gem Bar.  Foo exists in Source A.  Bar has some versions that exist in both
-    # sources A and B.  At this point, the API request will have found all the versions of Bar in source A,
-    # but will not have found any versions of Bar from source B, which is a problem if the requested version
-    # of Foo specifically depends on a version of Bar that is only found in source B. This ensures that for
-    # each spec we found, we add all possible versions from all sources to the index.
-    def double_check_for_index(idx, dependency_names)
-      pinned_names = pinned_spec_names
-      loop do
-        idxcount = idx.size
-
-        names = :names # do this so we only have to traverse to get dependency_names from the index once
-        unmet_dependency_names = lambda do
-          return names unless names == :names
-          new_names = sources.all_sources.map(&:dependency_names_to_double_check)
-          return names = nil if new_names.compact!
-          names = new_names.flatten(1).concat(dependency_names)
-          names.uniq!
-          names -= pinned_names
-          names
-        end
-
-        sources.all_sources.each do |source|
-          source.double_check_for(unmet_dependency_names)
-        end
-
-        break if idxcount == idx.size
-      end
-    end
-    private :double_check_for_index
 
     def has_rubygems_remotes?
       sources.rubygems_sources.any? {|s| s.remotes.any? }
@@ -532,14 +487,6 @@ module Bundler
       end
     end
 
-    def find_resolved_spec(current_spec)
-      specs.find_by_name_and_platform(current_spec.name, current_spec.platform)
-    end
-
-    def find_indexed_specs(current_spec)
-      index[current_spec.name].select {|spec| spec.match_platform(current_spec.platform) }.sort_by(&:version)
-    end
-
     attr_reader :sources
     private :sources
 
@@ -555,6 +502,10 @@ module Bundler
     end
 
     private
+
+    def precompute_source_requirements_for_indirect_dependencies?
+      sources.non_global_rubygems_sources.all?(&:dependency_api_available?) && sources.no_aggregate_global_source?
+    end
 
     def current_ruby_platform_locked?
       return false unless generic_local_platform == Gem::Platform::RUBY
@@ -681,9 +632,9 @@ module Bundler
       changes = false
 
       # If there is a RubyGems source in both
-      locked_gem_sources.each do |locked_gem|
+      locked_gem_sources.each do |locked_gem_source|
         # Merge the remotes from the Gemfile into the Gemfile.lock
-        changes |= locked_gem.replace_remotes(actual_remotes, Bundler.settings[:allow_deployment_source_credential_changes])
+        changes |= locked_gem_source.replace_remotes(actual_remotes, Bundler.settings[:allow_deployment_source_credential_changes])
       end
 
       changes
@@ -902,24 +853,20 @@ module Bundler
     end
 
     def source_requirements
-      # Load all specs from remote sources
-      index
-
       # Record the specs available in each gem's source, so that those
       # specs will be available later when the resolver knows where to
       # look for that gemspec (or its dependencies)
-      source_requirements = { :default => sources.default_source }.merge(dependency_source_requirements)
+      source_requirements = if precompute_source_requirements_for_indirect_dependencies?
+        { :default => sources.default_source }.merge(source_map.all_requirements)
+      else
+        { :default => Source::RubygemsAggregate.new(sources, source_map) }.merge(source_map.direct_requirements)
+      end
       metadata_dependencies.each do |dep|
         source_requirements[dep.name] = sources.metadata_source
       end
-      source_requirements[:global] = index unless Bundler.feature_flag.disable_multisource?
-      source_requirements[:default_bundler] = source_requirements["bundler"] || source_requirements[:default]
+      source_requirements[:default_bundler] = source_requirements["bundler"] || sources.default_source
       source_requirements["bundler"] = sources.metadata_source # needs to come last to override
       source_requirements
-    end
-
-    def pinned_spec_names(skip = nil)
-      dependency_source_requirements.reject {|_, source| source == skip }.keys
     end
 
     def requested_groups
@@ -977,16 +924,8 @@ module Bundler
       Bundler.settings[:allow_deployment_source_credential_changes] && source.equivalent_remotes?(sources.rubygems_remotes)
     end
 
-    def dependency_source_requirements
-      @dependency_source_requirements ||= begin
-        source_requirements = {}
-        default = sources.default_source
-        dependencies.each do |dep|
-          dep_source = dep.source || default
-          source_requirements[dep.name] = dep_source
-        end
-        source_requirements
-      end
+    def source_map
+      @source_map ||= SourceMap.new(sources, dependencies)
     end
   end
 end

@@ -113,7 +113,7 @@ class TestGemDependencyInstaller < Gem::TestCase
 
     dep = Gem::Dependency.new "p"
     inst = Gem::DependencyInstaller.new
-    assert_raises Gem::UnsatisfiableDependencyError do
+    assert_raise Gem::UnsatisfiableDependencyError do
       inst.install dep
     end
 
@@ -392,7 +392,7 @@ class TestGemDependencyInstaller < Gem::TestCase
 
     assert_equal %w[f-1], inst.installed_gems.map {|s| s.full_name }
 
-    assert_path_exists e1.extension_dir
+    assert_path_exist e1.extension_dir
   end
 
   def test_install_dependency_old
@@ -712,7 +712,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     inst = nil
 
     Dir.chdir @tempdir do
-      e = assert_raises Gem::UnsatisfiableDependencyError do
+      e = assert_raise Gem::UnsatisfiableDependencyError do
         inst = Gem::DependencyInstaller.new :domain => :local
         inst.install 'b'
       end
@@ -883,7 +883,7 @@ class TestGemDependencyInstaller < Gem::TestCase
       policy = Gem::Security::HighSecurity
       inst = Gem::DependencyInstaller.new :security_policy => policy
 
-      e = assert_raises Gem::Security::Exception do
+      e = assert_raise Gem::Security::Exception do
         inst.install 'b'
       end
 

@@ -377,7 +377,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
 
     @cmd.options[:args] = ['a:4']
 
-    e = assert_raises Gem::InstallError do
+    e = assert_raise Gem::InstallError do
       use_ui ui do
         @cmd.execute
       end
@@ -420,7 +420,7 @@ WARNING:  Use your OS package manager to uninstall vendor gems
     @cmd.options[:version] = Gem::Requirement.new("> 1")
 
     use_ui @ui do
-      e = assert_raises Gem::MockGemUi::TermError do
+      e = assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
 
@@ -436,7 +436,7 @@ WARNING:  Use your OS package manager to uninstall vendor gems
 
   def test_handle_options_vendor_missing
     vendordir(nil) do
-      e = assert_raises OptionParser::InvalidOption do
+      e = assert_raise OptionParser::InvalidOption do
         @cmd.handle_options %w[--vendor]
       end
 
@@ -477,7 +477,7 @@ WARNING:  Use your OS package manager to uninstall vendor gems
     e = nil
     @cmd.stub :uninstall, uninstall_exception do
       use_ui @ui do
-        e = assert_raises Gem::MockGemUi::TermError do
+        e = assert_raise Gem::MockGemUi::TermError do
           @cmd.execute
         end
       end

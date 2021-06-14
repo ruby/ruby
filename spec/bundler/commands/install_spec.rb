@@ -291,7 +291,7 @@ RSpec.describe "bundle install with gem sources" do
       end
 
       it "works" do
-        bundle "config --local path vendor"
+        bundle "config set --local path vendor"
         bundle "install"
         expect(the_bundle).to include_gems "rack 1.0"
       end
@@ -614,7 +614,7 @@ RSpec.describe "bundle install with gem sources" do
     it "should display a proper message to explain the problem" do
       FileUtils.chmod(0o500, cache_path)
 
-      bundle "config --local path vendor"
+      bundle "config set --local path vendor"
       bundle :install, :raise_on_error => false
       expect(err).to include(cache_path.to_s)
       expect(err).to include("grant write permissions")
@@ -627,7 +627,7 @@ RSpec.describe "bundle install with gem sources" do
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
-      bundle "config --local path bundle"
+      bundle "config set --local path bundle"
       bundle "install", :standalone => true
     end
 

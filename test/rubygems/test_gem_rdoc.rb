@@ -24,7 +24,7 @@ class TestGemRDoc < Gem::TestCase
     begin
       Gem::RDoc.load_rdoc
     rescue Gem::DocumentError => e
-      skip e.message
+      pend e.message
     end
 
     Gem.configuration[:rdoc] = nil
@@ -84,16 +84,16 @@ class TestGemRDoc < Gem::TestCase
     refute @hook.rdoc_installed?
     refute @hook.ri_installed?
 
-    assert_path_exists @a.doc_dir
+    assert_path_exist @a.doc_dir
   end
 
   def test_remove_unwritable
-    skip 'chmod not supported' if Gem.win_platform?
-    skip 'skipped in root privilege' if Process.uid.zero?
+    pend 'chmod not supported' if Gem.win_platform?
+    pend 'skipped in root privilege' if Process.uid.zero?
     FileUtils.mkdir_p @a.base_dir
     FileUtils.chmod 0, @a.base_dir
 
-    e = assert_raises Gem::FilePermissionError do
+    e = assert_raise Gem::FilePermissionError do
       @hook.remove
     end
 
@@ -113,16 +113,16 @@ class TestGemRDoc < Gem::TestCase
   def test_setup
     @hook.setup
 
-    assert_path_exists @a.doc_dir
+    assert_path_exist @a.doc_dir
   end
 
   def test_setup_unwritable
-    skip 'chmod not supported' if Gem.win_platform?
-    skip 'skipped in root privilege' if Process.uid.zero?
+    pend 'chmod not supported' if Gem.win_platform?
+    pend 'skipped in root privilege' if Process.uid.zero?
     FileUtils.mkdir_p @a.doc_dir
     FileUtils.chmod 0, @a.doc_dir
 
-    e = assert_raises Gem::FilePermissionError do
+    e = assert_raise Gem::FilePermissionError do
       @hook.setup
     end
 

@@ -126,7 +126,7 @@ class TestGemResolverBestSet < Gem::TestCase
 
     error = Gem::RemoteFetcher::FetchError.new 'bogus', @gem_repo
 
-    e = assert_raises Gem::RemoteFetcher::FetchError do
+    e = assert_raise Gem::RemoteFetcher::FetchError do
       set.replace_failed_api_set error
     end
 

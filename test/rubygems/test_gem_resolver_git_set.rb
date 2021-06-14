@@ -51,7 +51,7 @@ class TestGemResolverGitSet < Gem::TestCase
 
     assert @set.need_submodules[repository]
 
-    refute_path_exists spec.source.repo_cache_dir
+    assert_path_not_exist spec.source.repo_cache_dir
   end
 
   def test_find_all

@@ -133,7 +133,7 @@ class TestGemServer < Gem::TestCase
   def test_listen
     util_listen
 
-    capture_io do
+    capture_output do
       @server.listen
     end
 
@@ -143,7 +143,7 @@ class TestGemServer < Gem::TestCase
   def test_listen_addresses
     util_listen
 
-    capture_io do
+    capture_output do
       @server.listen %w[a b]
     end
 

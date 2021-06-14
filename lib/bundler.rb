@@ -69,6 +69,7 @@ module Bundler
   autoload :SharedHelpers,          File.expand_path("bundler/shared_helpers", __dir__)
   autoload :Source,                 File.expand_path("bundler/source", __dir__)
   autoload :SourceList,             File.expand_path("bundler/source_list", __dir__)
+  autoload :SourceMap,              File.expand_path("bundler/source_map", __dir__)
   autoload :SpecSet,                File.expand_path("bundler/spec_set", __dir__)
   autoload :StubSpecification,      File.expand_path("bundler/stub_specification", __dir__)
   autoload :UI,                     File.expand_path("bundler/ui", __dir__)
