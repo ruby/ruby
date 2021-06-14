@@ -112,6 +112,20 @@ RSpec.describe Bundler::Env do
       end
     end
 
+    context "when there's bundler config with credentials" do
+      before do
+        bundle "config set https://localgemserver.test/ user:pass"
+      end
+
+      let(:output) { described_class.report(:print_gemfile => true) }
+
+      it "prints the config with redacted values" do
+        expect(output).to include("https://localgemserver.test")
+        expect(output).to include("user:[REDACTED]")
+        expect(output).to_not include("user:pass")
+      end
+    end
+
     context "when Gemfile contains a gemspec and print_gemspecs is true" do
       let(:gemspec) do
         strip_whitespace(<<-GEMSPEC)

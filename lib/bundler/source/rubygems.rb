@@ -423,11 +423,11 @@ module Bundler
       def fetch_names(fetchers, dependency_names, index, override_dupes)
         fetchers.each do |f|
           if dependency_names
-            Bundler.ui.info "Fetching gem metadata from #{f.uri}", Bundler.ui.debug?
+            Bundler.ui.info "Fetching gem metadata from #{URICredentialsFilter.credential_filtered_uri(f.uri)}", Bundler.ui.debug?
             index.use f.specs_with_retry(dependency_names, self), override_dupes
             Bundler.ui.info "" unless Bundler.ui.debug? # new line now that the dots are over
           else
-            Bundler.ui.info "Fetching source index from #{f.uri}"
+            Bundler.ui.info "Fetching source index from #{URICredentialsFilter.credential_filtered_uri(f.uri)}"
             index.use f.specs_with_retry(nil, self), override_dupes
           end
         end

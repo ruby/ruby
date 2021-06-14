@@ -161,16 +161,14 @@ module Bundler
     end
 
     def resolve_with_cache!
-      raise "Specs already loaded" if @specs
       sources.cached!
-      specs
+      resolve
     end
 
     def resolve_remotely!
-      return if @specs
       @remote = true
       sources.remote!
-      specs
+      resolve
     end
 
     # For given dependency list returns a SpecSet with Gemspec of all the required

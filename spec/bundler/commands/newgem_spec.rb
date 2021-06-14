@@ -97,7 +97,7 @@ RSpec.describe "bundle gem" do
       expect(bundled_app("#{gem_name}/README.md").read).to match(%r{https://github\.com/bundleuser/#{gem_name}/blob/.*/CODE_OF_CONDUCT.md})
     end
 
-    it "generates the README with a section for the Code of Conduct, respecting the configured git default branch" do
+    it "generates the README with a section for the Code of Conduct, respecting the configured git default branch", :git => ">= 2.28.0" do
       sys_exec("git config --global init.defaultBranch main")
       bundle "gem #{gem_name} --coc"
 

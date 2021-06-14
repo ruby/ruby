@@ -90,7 +90,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
             gem "thin" # comes first to test name sorting
             gem "rack"
           end
-          gem "rack-obama" # shoud come from repo3!
+          gem "rack-obama" # should come from repo3!
         G
       end
 
@@ -596,7 +596,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           L
         end
 
-        it "it keeps the currrent lockfile format and upgrades the requested gem when running bundle update with an argument, and warns", :bundler => "< 3" do
+        it "it keeps the current lockfile format and upgrades the requested gem when running bundle update with an argument, and warns", :bundler => "< 3" do
           bundle "update concurrent-ruby"
           expect(err).to include("Your lockfile contains a single rubygems source section with multiple remotes, which is insecure.")
 
@@ -921,7 +921,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack" # shoud come from repo1!
+        gem "rack" # should come from repo1!
       G
     end
 
@@ -974,7 +974,10 @@ RSpec.describe "bundle install with gems on multiple sources" do
   context "re-resolving" do
     context "when there is a mix of sources in the gemfile" do
       before do
-        build_repo3
+        build_repo gem_repo3 do
+          build_gem "rack"
+        end
+
         build_lib "path1"
         build_lib "path2"
         build_git "git1"
