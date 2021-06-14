@@ -355,6 +355,8 @@ class Gem::Command
   def add_option(*opts, &handler) # :yields: value, options
     group_name = Symbol === opts.first ? opts.shift : :options
 
+    raise "Do not pass an empty string in opts" if opts.include?("")
+
     @option_groups[group_name] << [opts, handler]
   end
 
