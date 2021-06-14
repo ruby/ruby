@@ -3298,6 +3298,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(opt_not), gen_opt_not);
     yjit_reg_op(BIN(opt_getinlinecache), gen_opt_getinlinecache);
     yjit_reg_op(BIN(opt_invokebuiltin_delegate), gen_opt_invokebuiltin_delegate);
+    yjit_reg_op(BIN(opt_invokebuiltin_delegate_leave), gen_opt_invokebuiltin_delegate);
     yjit_reg_op(BIN(branchif), gen_branchif);
     yjit_reg_op(BIN(branchunless), gen_branchunless);
     yjit_reg_op(BIN(branchnil), gen_branchnil);
