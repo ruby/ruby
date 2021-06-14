@@ -2760,7 +2760,7 @@ each_with_object_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memo))
  *
  *  For each element in <i>enum</i>, the block is passed an accumulator 
  *  value (<i>memo_obj</i>, a reference to the initially given object 
- *  <i>obj</i>) and the element.  At the end of the iteration, <i>obj</i>
+ *  <i>obj</i>) and the element. At the end of the iteration, <i>obj</i>
  *  is returned.
  *
  *  If no block is given, returns an enumerator.
