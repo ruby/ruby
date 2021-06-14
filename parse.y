@@ -2381,7 +2381,8 @@ arg		: lhs '=' lex_ctxt arg_rhs
 		| tCOLON3 tCONSTANT tOP_ASGN lex_ctxt arg_rhs
 		    {
 		    /*%%%*/
-			$$ = new_const_op_assign(p, NEW_COLON3($2, &@$), $3, $5, $4, &@$);
+			YYLTYPE loc = code_loc_gen(&@1, &@2);
+			$$ = new_const_op_assign(p, NEW_COLON3($2, &loc), $3, $5, $4, &@$);
 		    /*% %*/
 		    /*% ripper: opassign!(top_const_field!($2), $3, $5) %*/
 		    }
