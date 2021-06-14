@@ -132,6 +132,10 @@ module Bundler
       false
     end
 
+    def local_only!
+      all_sources.each(&:local_only!)
+    end
+
     def cached!
       all_sources.each(&:cached!)
     end

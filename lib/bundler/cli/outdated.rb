@@ -147,6 +147,8 @@ module Bundler
 
     def retrieve_active_spec(definition, current_spec)
       active_spec = definition.resolve.find_by_name_and_platform(current_spec.name, current_spec.platform)
+      return unless active_spec
+
       return active_spec if strict
 
       active_specs = active_spec.source.specs.search(current_spec.name).select {|spec| spec.match_platform(current_spec.platform) }.sort_by(&:version)
