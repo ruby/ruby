@@ -1623,7 +1623,7 @@ localtime_with_gmtoff_zone(const time_t *t, struct tm *result, long *gmtoff, VAL
 #if defined(HAVE_TM_ZONE)
             *zone = zone_str(tm.tm_zone);
 #elif defined(HAVE_TZNAME) && defined(HAVE_DAYLIGHT)
-# if RUBY_MSVCRT_VERSION >= 140
+# if defined(RUBY_MSVCRT_VERSION) && RUBY_MSVCRT_VERSION >= 140
 #  define tzname _tzname
 #  define daylight _daylight
 # endif
