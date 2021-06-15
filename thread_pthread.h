@@ -19,8 +19,8 @@
 
 typedef struct native_thread_data_struct {
     union {
-        struct list_node ubf;
-        struct list_node gvl;
+        struct ccan_list_node ubf;
+        struct ccan_list_node gvl;
     } node;
 #if defined(__GLIBC__) || defined(__FreeBSD__)
     union
@@ -58,7 +58,7 @@ typedef struct rb_global_vm_lock_struct {
      *   switching between contended/uncontended GVL won't reset the
      *   timer.
      */
-    struct list_head waitq; /* <=> native_thread_data_t.node.ubf */
+    struct ccan_list_head waitq; /* <=> native_thread_data_t.node.ubf */
     const struct rb_thread_struct *timer;
     int timer_err;
 
