@@ -270,9 +270,6 @@ Init_<%=init_name%><%=%>(void)
 %   next if sub
     prelude_eval(PRELUDE_CODE(<%=i%><%=%>), PRELUDE_NAME(<%=i%><%=%>), <%=start_line%>);
 % end
-% if @have_sublib
-    rb_gc_force_recycle(prelude);
-% end
 
 #if 0
 % preludes.length.times {|i|

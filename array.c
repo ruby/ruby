@@ -514,13 +514,9 @@ rb_ary_decrement_share(VALUE shared_root)
 {
     if (shared_root) {
         long num = ARY_SHARED_ROOT_REFCNT(shared_root) - 1;
-	if (num == 0) {
-            rb_ary_free(shared_root);
-            rb_gc_force_recycle(shared_root);
-	}
-	else if (num > 0) {
+        if (num > 0) {
             ARY_SET_SHARED_ROOT_REFCNT(shared_root, num);
-	}
+        }
     }
 }
 

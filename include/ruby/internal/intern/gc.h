@@ -39,7 +39,6 @@ void rb_gc_mark_maybe(VALUE);
 void rb_gc_mark(VALUE);
 void rb_gc_mark_movable(VALUE);
 VALUE rb_gc_location(VALUE);
-void rb_gc_force_recycle(VALUE);
 void rb_gc(void);
 void rb_gc_copy_finalizer(VALUE,VALUE);
 VALUE rb_gc_enable(void);
