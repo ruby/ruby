@@ -1228,6 +1228,16 @@ class TestTime < Test::Unit::TestCase
     }
   end
 
+  def test_getlocal_utc
+    t = Time.gm(2000)
+    assert_equal [00, 00, 00,  1,  1, 2000], (t1 = t.getlocal("UTC")).to_a[0, 6]
+    assert_predicate t1, :utc?
+    assert_equal [00, 00, 00,  1,  1, 2000], (t1 = t.getlocal("-0000")).to_a[0, 6]
+    assert_predicate t1, :utc?
+    assert_equal [00, 00, 00,  1,  1, 2000], (t1 = t.getlocal("+0000")).to_a[0, 6]
+    assert_not_predicate t1, :utc?
+  end
+
   def test_getlocal_utc_offset
     t = Time.gm(2000)
     assert_equal [00, 30, 21, 31, 12, 1999], t.getlocal("-02:30").to_a[0, 6]
