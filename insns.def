@@ -1023,6 +1023,7 @@ opt_setinlinecache
 (IC ic)
 (VALUE val)
 (VALUE val)
+// attr bool leaf = false;
 {
     vm_ic_update(GET_ISEQ(), ic, val, GET_EP());
 }
