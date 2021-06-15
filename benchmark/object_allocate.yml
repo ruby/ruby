@@ -18,4 +18,4 @@ benchmark:
   allocate_32_deep: ThirtyTwo.new
   allocate_64_deep: SixtyFour.new
   allocate_128_deep: OneTwentyEight.new
-loop_count: 100000
+loop_count: 1000000

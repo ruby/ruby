@@ -213,6 +213,10 @@ tests = [
     'true'.freeze
   },
 
+  [ 'opt_new',      %q{ Struct.new(:foo).new(true).foo }, ],
+  [ 'opt_new',      %q{ String.new("testing") == "testing"}, ],
+  [ 'opt_new',      %q{ Thread.new do; true; end.value } ],
+
   [ 'opt_newarray_max', %q{ [ ].max.nil? }, ],
   [ 'opt_newarray_max', %q{ [1, x = 2, 3].max == 3 }, ],
   [ 'opt_newarray_max', <<-'},', ], # {

@@ -385,6 +385,26 @@ class TestJIT < Test::Unit::TestCase
     end;
   end
 
+  def test_compile_insn_opt_new
+    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '""', insns: %i[opt_new])
+    begin;
+      String.new
+    end;
+
+    # initialize should be compiled
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '33', success_count: 1, min_calls: 2)
+    begin;
+      class A
+        def initialize
+          print "3"
+        end
+      end
+
+      A.new
+      A.new
+    end;
+  end
+
   def test_compile_insn_opt_newarray_max
     assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '2', insns: %i[opt_newarray_max])
     begin;
@@ -1215,7 +1235,7 @@ class TestJIT < Test::Unit::TestCase
     insns = []
     RubyVM::InstructionSequence.compile(script).to_a.last.each do |(insn, *args)|
       case insn
-      when :send
+      when :send, :opt_new
         insns += collect_insns(args.last)
       when :definemethod, :definesmethod
         insns += collect_insns(args[1])

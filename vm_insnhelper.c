@@ -5250,6 +5250,46 @@ vm_opt_regexpmatch2(VALUE recv, VALUE obj)
     }
 }
 
+static VALUE
+vm_opt_new(
+    struct rb_execution_context_struct *ec,
+    struct rb_control_frame_struct *reg_cfp,
+    CALL_DATA cd_new,
+    CALL_DATA cd_init,
+    VALUE bh
+) {
+    int argc = vm_ci_argc(cd_new->ci);
+    VALUE klass = TOPN(argc);
+
+    if (vm_method_cfunc_is(GET_ISEQ(), cd_new, klass, rb_class_new_instance_pass_kw)) {
+        VALUE obj = rb_class_alloc(klass);
+
+        /* Replace receiver with allocated object */
+        TOPN(argc) = obj;
+
+        /* Call initialize method */
+        VALUE init_ret = vm_sendish(ec, GET_CFP(), cd_init, bh, mexp_search_method);
+
+#ifndef MJIT_HEADER
+        if (init_ret == Qundef) {
+		/* We must call vm_exec instead of jumping to the initialize
+		 * method, because we need to ignore the returned value in
+		 * favour of obj
+		 */
+		RESTORE_REGS();
+		VM_ENV_FLAGS_SET(GET_EP(), VM_FRAME_FLAG_FINISH);
+		vm_exec(ec, false);
+		RESTORE_REGS();
+        }
+#endif
+
+	return obj;
+    } else {
+        /* Overridden "new" */
+        return vm_sendish(ec, GET_CFP(), cd_new, bh, mexp_search_method);
+    }
+}
+
 rb_event_flag_t rb_iseq_event_flags(const rb_iseq_t *iseq, size_t pos);
 
 NOINLINE(static void vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp));
