@@ -795,7 +795,7 @@ static const char *received_signal;
 NORETURN(void rb_ec_stack_overflow(rb_execution_context_t *ec, int crit));
 # if defined __HAIKU__
 #   define USE_UCONTEXT_REG 1
-# elif !(defined(HAVE_UCONTEXT_H) && (defined __i386__ || defined __x86_64__ || defined __amd64__))
+# elif !(defined(HAVE_UCONTEXT_H) && (defined __i386__ || defined __x86_64__ || defined __amd64__ || defined __aarch64__ ))
 # elif defined __linux__
 #   define USE_UCONTEXT_REG 1
 # elif defined __APPLE__
@@ -830,6 +830,7 @@ check_stack_overflow(int sig, const uintptr_t addr, const ucontext_t *ctx)
 {
     const DEFINE_MCONTEXT_PTR(mctx, ctx);
 # if defined __linux__
+#   if !defined __aarch64__
 #   if defined REG_RSP
     const greg_t sp = mctx->gregs[REG_RSP];
     const greg_t bp = mctx->gregs[REG_RBP];
@@ -837,12 +838,17 @@ check_stack_overflow(int sig, const uintptr_t addr, const ucontext_t *ctx)
     const greg_t sp = mctx->gregs[REG_ESP];
     const greg_t bp = mctx->gregs[REG_EBP];
 #   endif
+#   else
+    const greg_t sp = mctx->sp;
+    const greg_t bp = mctx->regs[29];
+#   endif
 # elif defined __APPLE__
 #   if __DARWIN_UNIX03
 #     define MCTX_SS_REG(reg) __ss.__##reg
 #   else
 #     define MCTX_SS_REG(reg) ss.reg
 #   endif
+#   if !defined __aarch64__
 #   if defined(__LP64__)
     const uintptr_t sp = mctx->MCTX_SS_REG(rsp);
     const uintptr_t bp = mctx->MCTX_SS_REG(rbp);
@@ -850,10 +856,17 @@ check_stack_overflow(int sig, const uintptr_t addr, const ucontext_t *ctx)
     const uintptr_t sp = mctx->MCTX_SS_REG(esp);
     const uintptr_t bp = mctx->MCTX_SS_REG(ebp);
 #   endif
+#   else
+    const uintptr_t sp = mctx->MCTX_SS_REG(sp);
+    const uintptr_t bp = mctx->MCTX_SS_REG(fp);
+#   endif
 # elif defined __FreeBSD__
 #   if defined(__amd64__)
     const __register_t sp = mctx->mc_rsp;
     const __register_t bp = mctx->mc_rbp;
+#   elif defined(__aarch64__)
+    const __register_t sp = mctx->mc_pgreps.gp_sp;
+    const __register_t bp = mctx->mc_pgreps.gp_x[29];
 #   else
     const __register_t sp = mctx->mc_esp;
     const __register_t bp = mctx->mc_ebp;
