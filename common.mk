@@ -306,6 +306,7 @@ exts-note: $(EXTS_MK)
 	$(Q)$(MAKE) $(EXTS_NOTE)
 
 ext/extinit.c: $(srcdir)/template/extinit.c.tmpl $(PREP)
+	$(MAKEDIRS) $(@D)
 	$(Q)$(MINIRUBY) $(tooldir)/generic_erb.rb -o $@ -c \
 	    $(srcdir)/template/extinit.c.tmpl $(EXTINITS)
 
