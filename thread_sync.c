@@ -859,11 +859,13 @@ rb_queue_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE initial;
     struct rb_queue *q = queue_ptr(self);
+    if ((argc = rb_scan_args(argc, argv, "01", &initial)) == 1) {
+        initial = rb_to_array(initial);
+    }
     RB_OBJ_WRITE(self, &q->que, ary_buf_new());
     list_head_init(queue_waitq(q));
-    rb_scan_args(argc, argv, "01", &initial);
     if (argc == 1) {
-        rb_ary_concat(q->que, rb_to_array(initial));
+        rb_ary_concat(q->que, initial);
     }
     return self;
 }
