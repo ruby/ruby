@@ -4,6 +4,7 @@ require 'test/unit'
 require 'stringio'
 require 'tempfile'
 require 'tmpdir'
+require 'securerandom'
 
 begin
   require 'zlib'
@@ -502,6 +503,66 @@ if defined? Zlib
       z = Zlib::Inflate.new
       assert_raise(Zlib::StreamError) { z.set_dictionary("foo") }
       z.close
+    end
+
+    def test_multithread_deflate
+      zd = Zlib::Deflate.new
+
+      s = "x" * 10000
+      (0...10).map do |x|
+        Thread.new do
+          1000.times { zd.deflate(s) }
+        end
+      end.each do |th|
+        th.join
+      end
+    ensure
+      zd&.finish
+      zd&.close
+    end
+
+    def test_multithread_inflate
+      zi = Zlib::Inflate.new
+
+      s = Zlib.deflate("x" * 10000)
+      (0...10).map do |x|
+        Thread.new do
+          1000.times { zi.inflate(s) }
+        end
+      end.each do |th|
+        th.join
+      end
+    ensure
+      zi&.finish
+      zi&.close
+    end
+
+    def test_recursive_deflate
+      zd = Zlib::Deflate.new
+
+      s = SecureRandom.random_bytes(1024**2)
+      assert_raise(Zlib::BufError) do
+        zd.deflate(s) do
+          zd.deflate(s)
+        end
+      end
+    ensure
+      zd&.finish
+      zd&.close
+    end
+
+    def test_recursive_inflate
+      zi = Zlib::Inflate.new
+
+      s = Zlib.deflate(SecureRandom.random_bytes(1024**2))
+
+      assert_raise(Zlib::DataError) do
+        zi.inflate(s) do
+          zi.inflate(s)
+        end
+      end
+    ensure
+      zi&.close
     end
   end
 
