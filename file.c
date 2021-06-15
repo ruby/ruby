@@ -3363,7 +3363,6 @@ getcwdofdrv(int drv)
     }
     return drvcwd;
 }
-#endif
 
 static inline int
 not_same_drive(VALUE path, int drive)
@@ -3377,6 +3376,7 @@ not_same_drive(VALUE path, int drive)
 	return has_unc(p);
     }
 }
+#endif
 #endif
 
 static inline char *
