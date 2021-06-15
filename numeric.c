@@ -4293,6 +4293,32 @@ rb_num_coerce_bit(VALUE x, VALUE y, ID func)
 }
 
 /*
+ * call-seq:
+ *   int.coerce(numeric)  ->  array
+ *
+ * Returns an array with both a +numeric+ and a +int+ represented as Integer or Float
+ * objects.
+ *
+ *
+ * A TypeError is raised if the +numeric+ is not a Integer type.
+ *
+ *     (0x3FFFFFFFFFFFFFFF+1).coerce(42)   #=> [42, 4611686018427387904]
+ */
+
+static VALUE
+rb_int_coerce(VALUE x, VALUE y)
+{
+    if (RB_INTEGER_TYPE_P(y)) {
+        return rb_assoc_new(y, x);
+    }
+    else {
+        x = rb_Float(x);
+        y = rb_Float(y);
+        return rb_assoc_new(y, x);
+    }
+}
+
+/*
  * Document-method: Integer#&
  * call-seq:
  *   int & other_int  ->  integer
@@ -5433,6 +5459,7 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, ">=", rb_int_ge, 1);
     rb_define_method(rb_cInteger, "<", int_lt, 1);
     rb_define_method(rb_cInteger, "<=", int_le, 1);
+    rb_define_method(rb_cInteger, "coerce", rb_int_coerce, 1);
 
     rb_define_method(rb_cInteger, "&", rb_int_and, 1);
     rb_define_method(rb_cInteger, "|", int_or,  1);
