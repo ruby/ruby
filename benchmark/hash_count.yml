@@ -1,0 +1,7 @@
+prelude: |
+  list = ("aaa".."zzz").to_a*10
+  hash = list.each_with_index.to_h { |v, i| [ "#{v}#{i}", v ] }
+benchmark:
+  count: hash.count
+  count_with_arg: hash.count(['a', 'z'])
+  count_with_block: hash.count(&:itself)
