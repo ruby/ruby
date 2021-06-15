@@ -217,6 +217,32 @@ class TestArray < Test::Unit::TestCase
     assert_equal([0, 1, 2, 13, 14, 15], [0, 1, 2, 3, 4, 5].fill(3...){|i| i+10})
   end
 
+  def test_fill_with_block_and_frozen_error
+    array = @cls[42, 43, 44, 45, 46, 47, 48]
+    assert_raise(FrozenError) do
+      array.fill{ |i| i < 2 ? i + 10 : array.freeze }
+    end
+    assert_equal([10, 11, 44, 45, 46, 47, 48], array)
+
+    array = @cls[42, 43, 44, 45, 46, 47, 48]
+    assert_raise(FrozenError) do
+      array.fill(2){ |i| i < 4 ? i + 10 : array.freeze }
+    end
+    assert_equal([42, 43, 12, 13, 46, 47, 48], array)
+
+    array = @cls[42, 43, 44, 45, 46, 47, 48]
+    assert_raise(FrozenError) do
+      array.fill(2, 3){ |i| i < 4 ? i + 10 : array.freeze }
+    end
+    assert_equal([42, 43, 12, 13, 46, 47, 48], array)
+
+    array = @cls[42, 43, 44, 45, 46, 47, 48]
+    assert_raise(FrozenError) do
+      array.fill(3..4){ |i| i < 4 ? i + 10 : array.freeze }
+    end
+    assert_equal([42, 43, 44, 13, 46, 47, 48], array)
+  end
+
   # From rubicon
 
   def test_00_new
