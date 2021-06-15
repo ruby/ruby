@@ -57,13 +57,7 @@ calc_lineno(const rb_iseq_t *iseq, const VALUE *pc)
             /* use pos-1 because PC points next instruction at the beginning of instruction */
             pos--;
         }
-#if VMDEBUG && defined(HAVE_BUILTIN___BUILTIN_TRAP)
-        else {
-            /* SDR() is not possible; that causes infinite loop. */
-            rb_print_backtrace();
-            __builtin_trap();
-        }
-#endif
+
         return rb_iseq_line_no(iseq, pos);
     }
 }
