@@ -474,7 +474,14 @@ class Set
   #     Set[1, 2, 3].intersect? Set[4, 5]   #=> false
   #     Set[1, 2, 3].intersect? Set[3, 4]   #=> true
   def intersect?(set)
-    set.is_a?(Set) or raise ArgumentError, "value must be a set"
+    case set
+    when Set
+      # nothing
+    when Array
+      Set.new(set)
+    else
+      raise ArgumentError, "value must be a set or array"
+    end
     if size < set.size
       any? { |o| set.include?(o) }
     else
