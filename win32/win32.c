@@ -2597,7 +2597,7 @@ set_pioinfo_extra(void)
         for (pend += 10; pend < p + 300; pend++) {
             // find end of function
             if (memcmp(pend, FUNCTION_BEFORE_RET_MARK, sizeof(FUNCTION_BEFORE_RET_MARK) - 1) == 0 &&
-                *(pend + (sizeof(FUNCTION_BEFORE_RET_MARK) - 1) + FUNCTION_SKIP_BYTES) & FUNCTION_RET == FUNCTION_RET) {
+                (*(pend + (sizeof(FUNCTION_BEFORE_RET_MARK) - 1) + FUNCTION_SKIP_BYTES) & FUNCTION_RET) == FUNCTION_RET) {
                 // search backwards from end of function
                 for (pend -= (sizeof(PIOINFO_MARK) - 1); pend > p; pend--) {
                     if (memcmp(pend, PIOINFO_MARK, sizeof(PIOINFO_MARK) - 1) == 0) {
