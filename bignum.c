@@ -5604,8 +5604,6 @@ bigsub(VALUE x, VALUE y)
     return z;
 }
 
-static VALUE bigadd_int(VALUE x, long y);
-
 static VALUE
 bigsub_int(VALUE x, long y0)
 {
