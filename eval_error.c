@@ -311,14 +311,17 @@ show_cause(VALUE errinfo, VALUE str, VALUE highlight, VALUE reverse, long backtr
 }
 
 void
-rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE highlight, VALUE reverse)
+rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE highlight, VALUE reverse, VALUE limit)
 {
     volatile VALUE eclass;
     VALUE shown_causes = 0;
-    long backtrace_limit = rb_backtrace_length_limit;
+    long backtrace_limit;
 
     if (NIL_P(errinfo))
 	return;
+
+    backtrace_limit = (NIL_P(limit) ? rb_backtrace_length_limit :
+                       limit ? NUM2LONG(limit) : -1);
 
     if (errat == Qundef) {
 	errat = Qnil;
@@ -380,7 +383,7 @@ rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE errinfo)
 
     if (!written) {
         written = true;
-        rb_error_write(errinfo, emesg, errat, Qnil, Qnil, Qfalse);
+        rb_error_write(errinfo, emesg, errat, Qnil, Qnil, Qfalse, Qnil);
     }
 
     EC_POP_TAG();

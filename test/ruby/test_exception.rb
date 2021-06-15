@@ -1325,6 +1325,13 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     end
     assert_operator(message, :start_with?, bottom)
     assert_operator(message, :end_with?, top)
+
+    message = e.full_message(highlight: false, backtrace_limit: 1)
+    assert_equal(<<~MESSAGE, message)
+    test:100: testerror (RuntimeError)
+    \tfrom test:99
+    \t ... 2 levels...
+    MESSAGE
   end
 
   def test_exception_in_message

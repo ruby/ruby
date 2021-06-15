@@ -1026,6 +1026,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/io.rb \
 		$(srcdir)/pack.rb \
 		$(srcdir)/trace_point.rb \
+		$(srcdir)/exception.rb \
 		$(srcdir)/warning.rb \
 		$(srcdir)/array.rb \
 		$(srcdir)/kernel.rb \
@@ -5040,6 +5041,7 @@ error.$(OBJEXT): {$(VPATH)}defines.h
 error.$(OBJEXT): {$(VPATH)}encoding.h
 error.$(OBJEXT): {$(VPATH)}error.c
 error.$(OBJEXT): {$(VPATH)}eval_intern.h
+error.$(OBJEXT): {$(VPATH)}exception.rbinc
 error.$(OBJEXT): {$(VPATH)}id.h
 error.$(OBJEXT): {$(VPATH)}id_table.h
 error.$(OBJEXT): {$(VPATH)}intern.h
