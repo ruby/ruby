@@ -430,8 +430,8 @@ rb_print_inaccessible(VALUE klass, ID id, rb_method_visibility_t visi)
     switch (visi & METHOD_VISI_MASK) {
       case METHOD_VISI_UNDEF:
       case METHOD_VISI_PUBLIC:    mesg = inaccessible_mesg(""); break;
-      case METHOD_VISI_PRIVATE:   mesg = inaccessible_mesg(" private"); break;
-      case METHOD_VISI_PROTECTED: mesg = inaccessible_mesg(" protected"); break;
+      case METHOD_VISI_PRIVATE:   mesg = inaccessible_mesg("private"); break;
+      case METHOD_VISI_PROTECTED: mesg = inaccessible_mesg("protected"); break;
       default: UNREACHABLE;
     }
     rb_name_err_raise_str(mesg, klass, ID2SYM(id));
