@@ -476,16 +476,15 @@ class Set
   def intersect?(set)
     case set
     when Set
-      # nothing
-    when Array
-      Set.new(set)
-    else
-      raise ArgumentError, "value must be a set or array"
-    end
-    if size < set.size
-      any? { |o| set.include?(o) }
-    else
+      if size < set.size
+        any? { |o| set.include?(o) }
+      else
+        set.any? { |o| include?(o) }
+      end
+    when Enumerable
       set.any? { |o| include?(o) }
+    else
+      raise ArgumentError, "value must be enumerable"
     end
   end
 
