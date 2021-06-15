@@ -1451,7 +1451,7 @@ rb_hash_proc(st_index_t hash, VALUE prc)
     GetProcPtr(prc, proc);
     hash = rb_hash_uint(hash, (st_index_t)proc->block.as.captured.code.val);
     hash = rb_hash_uint(hash, (st_index_t)proc->block.as.captured.self);
-    return rb_hash_uint(hash, (st_index_t)proc->block.as.captured.ep >> 16);
+    return rb_hash_uint(hash, (st_index_t)proc->block.as.captured.ep);
 }
 
 MJIT_FUNC_EXPORTED VALUE
