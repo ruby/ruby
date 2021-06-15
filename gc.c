@@ -4083,10 +4083,13 @@ static void
 finalize_deferred(rb_objspace_t *objspace)
 {
     VALUE zombie;
+    rb_thread_t *current_th = GET_THREAD();
+    current_th->running_finalizer = 1;
 
     while ((zombie = ATOMIC_VALUE_EXCHANGE(heap_pages_deferred_final, 0)) != 0) {
 	finalize_list(objspace, zombie);
     }
+    current_th->running_finalizer = 0;
 }
 
 static void

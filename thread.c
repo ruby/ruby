@@ -2088,7 +2088,7 @@ threadptr_pending_interrupt_active_p(rb_thread_t *th)
      * if the queue and the thread interrupt mask were not changed
      * since last check.
      */
-    if (th->pending_interrupt_queue_checked) {
+    if (th->pending_interrupt_queue_checked || th->running_finalizer) {
 	return 0;
     }
 

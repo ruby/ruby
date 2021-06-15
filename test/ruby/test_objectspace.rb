@@ -161,6 +161,31 @@ End
     END
   end
 
+  def test_finalizer_thread_raise
+    GC.disable
+    fzer = proc do |id|
+      sleep 0.2
+    end
+    2.times do
+      o = Object.new
+      ObjectSpace.define_finalizer(o, fzer)
+    end
+
+    my_error = Class.new(RuntimeError)
+    begin
+      main_th = Thread.current
+      Thread.new do
+        sleep 0.1
+        main_th.raise(my_error)
+      end
+      GC.start
+      puts "After GC"
+      sleep(10)
+      assert(false)
+    rescue my_error
+    end
+  end
+
   def test_each_object
     klass = Class.new
     new_obj = klass.new
