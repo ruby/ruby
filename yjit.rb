@@ -6,7 +6,7 @@ module YJIT
       blocks = YJIT.blocks_for(iseq)
       return if blocks.empty?
 
-      str = ""
+      str = String.new
       str << iseq.disasm
       str << "\n"
 
