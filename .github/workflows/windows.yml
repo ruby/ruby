@@ -70,8 +70,8 @@ jobs:
         timeout-minutes: 60
         run: |
           call "%VCVARS%"
-          # %TEMP% is inconsistent with %TMP% and test-all expects they are consistent.
-          # https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
+          ::- %TEMP% is inconsistent with %TMP% and test-all expects they are consistent.
+          ::- https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
           set TMP=%USERPROFILE%\AppData\Local\Temp
           set TEMP=%USERPROFILE%\AppData\Local\Temp
           nmake test-all
