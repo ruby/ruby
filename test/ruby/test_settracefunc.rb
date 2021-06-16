@@ -247,6 +247,8 @@ class TestSetTraceFunc < Test::Unit::TestCase
     EOF
     assert_equal(["c-return", 1, :set_trace_func, Kernel],
                  events.shift)
+    assert_equal(["line", 4, __method__, self.class],
+                 events.shift)
     assert_equal(["line", 5, __method__, self.class],
                  events.shift)
     assert_equal(["c-call", 5, :raise, Kernel],
@@ -2400,5 +2402,31 @@ class TestSetTraceFunc < Test::Unit::TestCase
       end
     }
     assert_equal [__LINE__ - 5, __LINE__ - 4, __LINE__ - 3], lines, 'Bug #17868'
+  end
+
+  def test_tracepoint_call_raise
+    def self.foo
+      :good
+    rescue
+      :bad
+    end
+
+    def self.foo2
+      if true
+        begin
+          :good
+        rescue
+          :bad
+        end
+      end
+    end
+
+    v = nil
+    TracePoint.new(:call){|tp|
+      raise if tp.method_id == :foo || tp.method_id == :foo2
+    }.enable{
+      assert_raise(RuntimeError){foo}
+      assert_raise(RuntimeError){foo2}
+    }
   end
 end

@@ -7154,6 +7154,14 @@ compile_rescue(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
 					     rb_str_concat(rb_str_new2("rescue in "), iseq->body->location.label),
 					     ISEQ_TYPE_RESCUE, line);
 
+    /* Add nop so that exceptions during tracepoint :call processing
+     * do not get rescued by a method's rescue.
+     */
+    LABEL *prestart = NEW_LABEL(line - 1);
+    NODE dummy_line_node = generate_dummy_line_node(line, -1);
+    ADD_INSN (ret, &dummy_line_node, nop);
+    ADD_LABEL(ret, prestart);
+
     lstart->rescued = LABEL_RESCUE_BEG;
     lend->rescued = LABEL_RESCUE_END;
     ADD_LABEL(ret, lstart);
