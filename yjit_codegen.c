@@ -1964,51 +1964,8 @@ gen_opt_str_uminus(jitstate_t* jit, ctx_t* ctx)
 }
 
 static codegen_status_t
-gen_opt_not(jitstate_t* jit, ctx_t* ctx)
+gen_opt_not(jitstate_t *jit, ctx_t *ctx)
 {
-    // Defer compilation so we can specialize type of argument
-    if (!jit_at_current_insn(jit)) {
-        defer_compilation(jit->block, jit->insn_idx, ctx);
-        return YJIT_END_BLOCK;
-    }
-
-    uint8_t* side_exit = yjit_side_exit(jit, ctx);
-
-    VALUE comptime_val = jit_peek_at_stack(jit, ctx, 0);
-
-    // For the true/false case
-    if (comptime_val == Qtrue || comptime_val == Qfalse) {
-
-        // Get the operand from the stack
-        x86opnd_t arg = ctx_stack_pop(ctx, 1);
-
-        uint32_t DONE = cb_new_label(cb, "DONE");
-
-        // Qtrue => Qfalse
-        mov(cb, REG0, imm_opnd(Qfalse));
-        cmp(cb, arg, imm_opnd(Qtrue));
-        je_label(cb, DONE);
-
-        // Qfalse => Qtrue
-        mov(cb, REG0, imm_opnd(Qtrue));
-        cmp(cb, arg, imm_opnd(Qfalse));
-        je_label(cb, DONE);
-
-        // For any other values, we side-exit
-        // This never happens in railsbench
-        jmp_ptr(cb, side_exit);
-
-        cb_write_label(cb, DONE);
-        cb_link_labels(cb);
-
-        // Push the return value onto the stack
-        x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_IMM);
-        mov(cb, stack_ret, REG0);
-
-        return YJIT_KEEP_COMPILING;
-    }
-
-    // Delegate to send, call the method on the recv
     return gen_opt_send_without_block(jit, ctx);
 }
 
@@ -2107,13 +2064,8 @@ gen_branchunless(jitstate_t* jit, ctx_t* ctx)
     test(cb, val_opnd, imm_opnd(~Qnil));
 
     // Get the branch target instruction offsets
-<<<<<<< HEAD
-    uint32_t next_idx = jit_next_idx(jit);
-    uint32_t jump_idx = next_idx + (uint32_t)jit_get_arg(jit, 0);
-=======
     uint32_t next_idx = jit_next_insn_idx(jit);
     uint32_t jump_idx = next_idx + jump_offset;
->>>>>>> ef0d1ca495 (Avoid interrupt checks for forward branches (#41))
     blockid_t next_block = { jit->iseq, next_idx };
     blockid_t jump_block = { jit->iseq, jump_idx };
 
@@ -2199,11 +2151,7 @@ gen_jump(jitstate_t* jit, ctx_t* ctx)
     }
 
     // Get the branch target instruction offsets
-<<<<<<< HEAD
-    uint32_t jump_idx = jit_next_idx(jit) + (int32_t)jit_get_arg(jit, 0);
-=======
     uint32_t jump_idx = jit_next_insn_idx(jit) + jump_offset;
->>>>>>> ef0d1ca495 (Avoid interrupt checks for forward branches (#41))
     blockid_t jump_block = { jit->iseq, jump_idx };
 
     // Generate the jump instruction
@@ -2223,31 +2171,67 @@ Recompile as contingency if possible, or take side exit a last resort.
 static bool
 jit_guard_known_klass(jitstate_t *jit, ctx_t* ctx, VALUE known_klass, insn_opnd_t insn_opnd, const int max_chain_depth, uint8_t *side_exit)
 {
-    // Can't guard for for these classes because some of they are sometimes immediate (special const).
-    // Can remove this by adding appropriate dynamic checks.
-    if (known_klass == rb_cInteger ||
-        known_klass == rb_cSymbol ||
-        known_klass == rb_cFloat ||
-        known_klass == rb_cNilClass ||
-        known_klass == rb_cTrueClass ||
-        known_klass == rb_cFalseClass) {
-        return false;
-    }
-
     val_type_t val_type = ctx_get_opnd_type(ctx, insn_opnd);
 
-    // Check that the receiver is a heap object
-    if (!val_type.is_heap)
-    {
-        // FIXME: use two comparisons instead of 3 here
-        ADD_COMMENT(cb, "guard not immediate");
-        RUBY_ASSERT(Qfalse < Qnil);
-        test(cb, REG0, imm_opnd(RUBY_IMMEDIATE_MASK));
-        jnz_ptr(cb, side_exit);
-        cmp(cb, REG0, imm_opnd(Qnil));
-        jbe_ptr(cb, side_exit);
+    if (known_klass == rb_cNilClass) {
+        if (val_type.type != ETYPE_NIL) {
+            ADD_COMMENT(cb, "guard object is nil");
+            cmp(cb, REG0, imm_opnd(Qnil));
+            jit_chain_guard(JCC_JNE, jit, ctx, max_chain_depth, side_exit);
 
-        ctx_set_opnd_type(ctx, insn_opnd, TYPE_HEAP);
+            ctx_set_opnd_type(ctx, insn_opnd, TYPE_NIL);
+        }
+    }
+    else if (known_klass == rb_cTrueClass) {
+        if (val_type.type != ETYPE_TRUE) {
+            ADD_COMMENT(cb, "guard object is true");
+            cmp(cb, REG0, imm_opnd(Qtrue));
+            jit_chain_guard(JCC_JNE, jit, ctx, max_chain_depth, side_exit);
+
+            ctx_set_opnd_type(ctx, insn_opnd, TYPE_TRUE);
+        }
+
+    }
+    else if (known_klass == rb_cFalseClass) {
+        if (val_type.type != ETYPE_FALSE) {
+            ADD_COMMENT(cb, "guard object is false");
+            STATIC_ASSERT(qfalse_is_zero, Qfalse == 0);
+            test(cb, REG0, REG0);
+            jit_chain_guard(JCC_JNZ, jit, ctx, max_chain_depth, side_exit);
+
+            ctx_set_opnd_type(ctx, insn_opnd, TYPE_FALSE);
+        }
+    }
+    else {
+        // Can't guard for for these classes because some of they are sometimes immediate (special const).
+        // Can remove this by adding appropriate dynamic checks.
+        if (known_klass == rb_cInteger ||
+            known_klass == rb_cSymbol ||
+            known_klass == rb_cFloat) {
+            return false;
+        }
+
+        // Check that the receiver is a heap object
+        // Note: if we get here, the class doesn't have immediate instances.
+        if (!val_type.is_heap) {
+            ADD_COMMENT(cb, "guard not immediate");
+            RUBY_ASSERT(Qfalse < Qnil);
+            test(cb, REG0, imm_opnd(RUBY_IMMEDIATE_MASK));
+            jnz_ptr(cb, side_exit);
+            cmp(cb, REG0, imm_opnd(Qnil));
+            jbe_ptr(cb, side_exit);
+
+            ctx_set_opnd_type(ctx, insn_opnd, TYPE_HEAP);
+        }
+
+        x86opnd_t klass_opnd = mem_opnd(64, REG0, offsetof(struct RBasic, klass));
+
+        // Bail if receiver class is different from known_klass
+        // TODO: jit_mov_gc_ptr keeps a strong reference, which leaks the class.
+        ADD_COMMENT(cb, "guard known class");
+        jit_mov_gc_ptr(jit, cb, REG1, known_klass);
+        cmp(cb, klass_opnd, REG1);
+        jit_chain_guard(JCC_JNE, jit, ctx, max_chain_depth, side_exit);
     }
 
     // Pointer to the klass field of the receiver &(recv->klass)
@@ -2278,6 +2262,48 @@ jit_protected_callee_ancestry_guard(jitstate_t *jit, codeblock_t *cb, const rb_c
     jz_ptr(cb, COUNTED_EXIT(side_exit, send_se_protected_check_failed));
 }
 
+// Return true when the codegen function generates code.
+typedef bool (*cfunc_codegen_t)(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_callable_method_entry_t *cme, rb_iseq_t *block, const int32_t argc);
+
+// Codegen for rb_obj_not().
+// Note, caller is responsible for generating all the right guards, including
+// arity guards.
+static bool
+jit_rb_obj_not(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_callable_method_entry_t *cme, rb_iseq_t *block, const int32_t argc)
+{
+    const val_type_t recv_opnd = ctx_get_opnd_type(ctx, OPND_STACK(0));
+    x86opnd_t out_opnd = ctx_stack_opnd(ctx, 0);
+
+    if (recv_opnd.type == ETYPE_NIL || recv_opnd.type == ETYPE_FALSE) {
+        ADD_COMMENT(cb, "rb_obj_not(nil_or_false)");
+        mov(cb, out_opnd, imm_opnd(Qtrue));
+        ctx_set_opnd_type(ctx, OPND_STACK(0), TYPE_TRUE);
+    }
+    else if (recv_opnd.is_heap || recv_opnd.type != ETYPE_UNKNOWN) {
+        // Note: recv_opnd.type != ETYPE_NIL && recv_opnd.type != ETYPE_FALSE.
+        ADD_COMMENT(cb, "rb_obj_not(truthy)");
+        mov(cb, out_opnd, imm_opnd(Qfalse));
+        ctx_set_opnd_type(ctx, OPND_STACK(0), TYPE_FALSE);
+    }
+    else {
+        // jit_guard_known_klass() already ran on the receiver which should
+        // have deduced deduced the type of the receiver. This case should be
+        // rare if not unreachable.
+        return false;
+    }
+    return true;
+}
+
+// Check if we know how to codegen for a particular cfunc method
+static cfunc_codegen_t
+lookup_cfunc_codegen(const rb_method_cfunc_t *cfunc)
+{
+    if (cfunc->func == rb_obj_not) {
+        return jit_rb_obj_not;
+    }
+    return NULL;
+}
+
 static codegen_status_t
 gen_send_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_callable_method_entry_t *cme, rb_iseq_t *block, const int32_t argc)
 {
@@ -2299,6 +2325,19 @@ gen_send_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const 
     if (argc + 1 > NUM_C_ARG_REGS) {
         GEN_COUNTER_INC(cb, send_cfunc_toomany_args);
         return YJIT_CANT_COMPILE;
+    }
+
+    // Delegate to codegen for C methods if we have it.
+    {
+        cfunc_codegen_t known_cfunc_codegen;
+        if ((known_cfunc_codegen = lookup_cfunc_codegen(cfunc))) {
+            if (known_cfunc_codegen(jit, ctx, ci, cme, block, argc)) {
+                // cfunc codegen generated code. Terminate the block so
+                // there isn't multiple calls in the same block.
+                jit_jump_to_next_insn(jit, ctx);
+                return YJIT_END_BLOCK;
+            }
+        }
     }
 
     // Callee method ID
