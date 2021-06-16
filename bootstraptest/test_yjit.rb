@@ -1070,6 +1070,76 @@ assert_normal_exit %q{
   foo(Object.new)
 }
 
+# defining TrueClass#!
+assert_equal '[false, false, :ok]', %q{
+  def foo(obj)
+    !obj
+  end
+
+  x = foo(true)
+  y = foo(true)
+
+  class TrueClass
+    def !
+      :ok
+    end
+  end
+
+  z = foo(true)
+
+  [x, y, z]
+}
+
+# defining FalseClass#!
+assert_equal '[true, true, :ok]', %q{
+  def foo(obj)
+    !obj
+  end
+
+  x = foo(false)
+  y = foo(false)
+
+  class FalseClass
+    def !
+      :ok
+    end
+  end
+
+  z = foo(false)
+
+  [x, y, z]
+}
+
+# defining NilClass#!
+assert_equal '[true, true, :ok]', %q{
+  def foo(obj)
+    !obj
+  end
+
+  x = foo(nil)
+  y = foo(nil)
+
+  class NilClass
+    def !
+      :ok
+    end
+  end
+
+  z = foo(nil)
+
+  [x, y, z]
+}
+
+# polymorphic opt_not
+assert_equal '[true, true, false, false, false, false, false]', %q{
+  def foo(obj)
+    !obj
+  end
+
+  foo(0)
+  [foo(nil), foo(false), foo(true), foo([]), foo(0), foo(4.2), foo(:sym)]
+}
+
 # getlocal with 2 levels
 assert_equal '7', %q{
   def foo(foo, bar)
