@@ -2753,6 +2753,36 @@ AS_IF([test "x$rb_cv_const_page_size" = xyes],
     [AC_DEFINE(HAVE_CONST_PAGE_SIZE, 1)],
     [AC_DEFINE(HAVE_CONST_PAGE_SIZE, 0)]
 )
+
+AS_IF([test "x$ac_cv_func_ioctl" = xyes], [
+    AC_CACHE_CHECK([ioctl request type], rb_cv_ioctl_request_type,
+        [rb_cv_ioctl_request_type=no
+        dnl corresponding NUM2IOCTLREQ needs to be defined
+        for type in "unsigned long:ULONG_MAX" int:INT_MAX; do
+            max=`echo $type | sed 's/.*://'`
+            type=`echo $type | sed 's/:.*//'`
+            RUBY_WERROR_FLAG([
+                AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+                    @%:@include <limits.h>
+                    @%:@include <sys/types.h>
+                    @%:@if defined(HAVE_SYS_IOCTL_H) && !defined(_WIN32)
+                    @%:@include <sys/ioctl.h>
+                    @%:@endif
+                ]], [[
+                    $type req = $max;
+                    if (ioctl(0, req)) {/* do nothing*/};
+                ]])],
+                [rb_cv_ioctl_request_type="$type"])
+            ])
+            test "x$rb_cv_ioctl_request_type" = xno || break
+        done])
+    AS_CASE(["$rb_cv_ioctl_request_type"], [no|int], [],
+    ["unsigned long"], [
+        AC_DEFINE_UNQUOTED(IOCTL_REQ_TYPE, [$rb_cv_ioctl_request_type])
+        AC_DEFINE_UNQUOTED(NUM2IOCTLREQ(num), [NUM2ULONG(num)])
+    ])
+])
+
 }
 
 : "runtime section" && {
