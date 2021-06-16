@@ -2503,6 +2503,9 @@ gen_send_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const 
         imm_opnd(sizeof(rb_control_frame_t))
     );
 
+    // cfunc calls may corrupt types
+    ctx_clear_local_types(ctx);
+
     // Note: gen_oswb_iseq() jumps to the next instruction with ctx->sp_offset == 0
     // after the call, while this does not. This difference prevents
     // the two call types from sharing the same successor.
@@ -2670,6 +2673,9 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
         x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_UNKNOWN);
         mov(cb, stack_ret, RAX);
 
+        // Note: assuming that the leaf builtin doesn't change local variables here.
+        // Seems like a safe assumption.
+
         return YJIT_KEEP_COMPILING;
     }
 
@@ -2769,6 +2775,9 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
     }
     val_type_t recv_type = ctx_get_opnd_type(ctx, OPND_STACK(argc));
     ctx_set_opnd_type(&callee_ctx, OPND_SELF, recv_type);
+
+    // The callee might change locals through Kernel#binding and other means.
+    ctx_clear_local_types(ctx);
 
     // Pop arguments and receiver in return context, push the return value
     // After the return, the JIT and interpreter SP will match up
@@ -2888,9 +2897,6 @@ gen_send_general(jitstate_t *jit, ctx_t *ctx, struct rb_call_data *cd, rb_iseq_t
     // Register block for invalidation
     RUBY_ASSERT(cme->called_id == mid);
     assume_method_lookup_stable(comptime_recv_klass, cme, jit->block);
-
-    // Method calls may corrupt types
-    ctx_clear_local_types(ctx);
 
     // To handle the aliased method case (VM_METHOD_TYPE_ALIAS)
     while (true) {
