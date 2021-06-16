@@ -9,6 +9,7 @@ class TestEnv < Test::Unit::TestCase
     "\xa1\xa1".force_encoding(Encoding::UTF_16LE),
     "foo".force_encoding(Encoding::ISO_2022_JP),
   ]
+  CLONED_ENV = ENV.clone
 
   def assert_invalid_env(msg = nil)
     all_assertions(msg) do |a|
@@ -173,6 +174,11 @@ class TestEnv < Test::Unit::TestCase
     assert_nothing_raised { ENV.fetch(PATH_ENV, "foo") }
     ENV[PATH_ENV] = ""
     assert_equal("", ENV.fetch(PATH_ENV))
+
+    e = assert_raise_with_message(KeyError, /key not found: "test"/) do
+      CLONED_ENV.fetch("test")
+    end
+    assert_same(CLONED_ENV, e.receiver)
   end
 
   def test_aset
@@ -199,7 +205,8 @@ class TestEnv < Test::Unit::TestCase
   end
 
   def test_each_key
-    ENV.each_key {|k| assert_kind_of(String, k) }
+    assert_same(ENV, ENV.each_key {|k| assert_kind_of(String, k) })
+    assert_same(CLONED_ENV, CLONED_ENV.each_key {|k| assert_kind_of(String, k) })
   end
 
   def test_values
@@ -209,21 +216,31 @@ class TestEnv < Test::Unit::TestCase
   end
 
   def test_each_value
-    ENV.each_value {|k| assert_kind_of(String, k) }
+    assert_same(ENV, ENV.each_value {|k| assert_kind_of(String, k) })
+    assert_same(CLONED_ENV, CLONED_ENV.each_value {|k| assert_kind_of(String, k) })
   end
 
   def test_each_pair
-    ENV.each_pair do |k, v|
+    ret = ENV.each_pair do |k, v|
       assert_kind_of(String, k)
       assert_kind_of(String, v)
     end
+    assert_same(ENV, ret)
+
+    ret = CLONED_ENV.each_pair do |k, v|
+      assert_kind_of(String, k)
+      assert_kind_of(String, v)
+    end
+    assert_same(CLONED_ENV, ret)
   end
 
   def test_reject_bang
     h1 = {}
     ENV.each_pair {|k, v| h1[k] = v }
     ENV["test"] = "foo"
-    ENV.reject! {|k, v| IGNORE_CASE ? k.upcase == "TEST" : k == "test" }
+    assert_same(ENV, ENV.reject! {|k, v| IGNORE_CASE ? k.upcase == "TEST" : k == "test" })
+    CLONED_ENV["test"] = "foo"
+    assert_same(CLONED_ENV, CLONED_ENV.reject! {|k, v| IGNORE_CASE ? k.upcase == "TEST" : k == "test" })
     h2 = {}
     ENV.each_pair {|k, v| h2[k] = v }
     assert_equal(h1, h2)
@@ -240,14 +257,17 @@ class TestEnv < Test::Unit::TestCase
     ENV.each_pair {|k, v| h2[k] = v }
     assert_equal(h1, h2)
 
-    assert_equal(ENV, ENV.delete_if {|k, v| IGNORE_CASE ? k.upcase == "TEST" : k == "test" })
+    assert_same(ENV, ENV.delete_if {|k, v| IGNORE_CASE ? k.upcase == "TEST" : k == "test" })
+    assert_same(CLONED_ENV, CLONED_ENV.delete_if {|k, v| IGNORE_CASE ? k.upcase == "TEST" : k == "test" })
   end
 
   def test_select_bang
     h1 = {}
     ENV.each_pair {|k, v| h1[k] = v }
     ENV["test"] = "foo"
-    ENV.select! {|k, v| IGNORE_CASE ? k.upcase != "TEST" : k != "test" }
+    assert_same(ENV, ENV.select! {|k, v| IGNORE_CASE ? k.upcase != "TEST" : k != "test" })
+    CLONED_ENV["test"] = "foo"
+    assert_same(CLONED_ENV, CLONED_ENV.select! {|k, v| IGNORE_CASE ? k.upcase != "TEST" : k != "test" })
     h2 = {}
     ENV.each_pair {|k, v| h2[k] = v }
     assert_equal(h1, h2)
@@ -259,7 +279,9 @@ class TestEnv < Test::Unit::TestCase
     h1 = {}
     ENV.each_pair {|k, v| h1[k] = v }
     ENV["test"] = "foo"
-    ENV.filter! {|k, v| IGNORE_CASE ? k.upcase != "TEST" : k != "test" }
+    assert_same(ENV, ENV.filter! {|k, v| IGNORE_CASE ? k.upcase != "TEST" : k != "test" })
+    CLONED_ENV["test"] = "foo"
+    assert_same(CLONED_ENV, CLONED_ENV.filter! {|k, v| IGNORE_CASE ? k.upcase != "TEST" : k != "test" })
     h2 = {}
     ENV.each_pair {|k, v| h2[k] = v }
     assert_equal(h1, h2)
@@ -276,7 +298,8 @@ class TestEnv < Test::Unit::TestCase
     ENV.each_pair {|k, v| h2[k] = v }
     assert_equal(h1, h2)
 
-    assert_equal(ENV, ENV.keep_if {|k, v| IGNORE_CASE ? k.upcase != "TEST" : k != "test" })
+    assert_same(ENV, ENV.keep_if {|k, v| IGNORE_CASE ? k.upcase != "TEST" : k != "test" })
+    assert_same(CLONED_ENV, CLONED_ENV.keep_if {|k, v| IGNORE_CASE ? k.upcase == "TEST" : k == "test" })
   end
 
   def test_values_at
@@ -337,8 +360,9 @@ class TestEnv < Test::Unit::TestCase
   end
 
   def test_clear
-    ENV.clear
+    assert_same(ENV, ENV.clear)
     assert_equal(0, ENV.size)
+    assert_same(CLONED_ENV, CLONED_ENV.clear)
   end
 
   def test_to_s
@@ -482,18 +506,20 @@ class TestEnv < Test::Unit::TestCase
 
   def test_replace
     ENV["foo"] = "xxx"
-    ENV.replace({"foo"=>"bar", "baz"=>"qux"})
+    assert_same(ENV, ENV.replace({"foo"=>"bar", "baz"=>"qux"}))
     check(ENV.to_hash.to_a, [%w(foo bar), %w(baz qux)])
     ENV.replace({"Foo"=>"Bar", "Baz"=>"Qux"})
     check(ENV.to_hash.to_a, [%w(Foo Bar), %w(Baz Qux)])
+    assert_same(CLONED_ENV, CLONED_ENV.replace({"foo"=>"bar", "baz"=>"qux"}))
   end
 
   def test_update
     ENV.clear
     ENV["foo"] = "bar"
     ENV["baz"] = "qux"
-    ENV.update({"baz"=>"quux","a"=>"b"})
+    assert_same(ENV, ENV.update({"baz"=>"quux","a"=>"b"}))
     check(ENV.to_hash.to_a, [%w(foo bar), %w(baz quux), %w(a b)])
+    assert_same(CLONED_ENV, CLONED_ENV.update({"baz"=>"quux","a"=>"b"}))
 
     ENV.clear
     ENV["foo"] = "bar"

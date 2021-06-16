@@ -5016,7 +5016,7 @@ rb_f_getenv(VALUE obj, VALUE name)
  * See {Invalid Names and Values}[#class-ENV-label-Invalid+Names+and+Values].
  */
 static VALUE
-env_fetch(int argc, VALUE *argv, VALUE _)
+env_fetch(int argc, VALUE *argv, VALUE ehash)
 {
     VALUE key;
     long block_given;
@@ -5033,7 +5033,7 @@ env_fetch(int argc, VALUE *argv, VALUE _)
     if (!env) {
 	if (block_given) return rb_yield(key);
 	if (argc == 1) {
-	    rb_key_err_raise(rb_sprintf("key not found: \"%"PRIsVALUE"\"", key), envtbl, key);
+	    rb_key_err_raise(rb_sprintf("key not found: \"%"PRIsVALUE"\"", key), ehash, key);
 	}
 	return argv[1];
     }
@@ -5602,7 +5602,7 @@ env_reject_bang(VALUE ehash)
     }
     RB_GC_GUARD(keys);
     if (del == 0) return Qnil;
-    return envtbl;
+    return ehash;
 }
 
 /*
@@ -5630,7 +5630,7 @@ env_delete_if(VALUE ehash)
 {
     RETURN_SIZED_ENUMERATOR(ehash, 0, 0, rb_env_size);
     env_reject_bang(ehash);
-    return envtbl;
+    return ehash;
 }
 
 /*
@@ -5766,7 +5766,7 @@ env_select_bang(VALUE ehash)
     }
     RB_GC_GUARD(keys);
     if (del == 0) return Qnil;
-    return envtbl;
+    return ehash;
 }
 
 /*
@@ -5792,7 +5792,7 @@ env_keep_if(VALUE ehash)
 {
     RETURN_SIZED_ENUMERATOR(ehash, 0, 0, rb_env_size);
     env_select_bang(ehash);
-    return envtbl;
+    return ehash;
 }
 
 /*
@@ -5828,8 +5828,8 @@ env_slice(int argc, VALUE *argv, VALUE _)
     return result;
 }
 
-VALUE
-rb_env_clear(void)
+static VALUE
+rb_env_clear2(VALUE ehash)
 {
     VALUE keys;
     long i;
@@ -5841,7 +5841,13 @@ rb_env_clear(void)
         ruby_setenv(nam, 0);
     }
     RB_GC_GUARD(keys);
-    return envtbl;
+    return ehash;
+}
+
+VALUE
+rb_env_clear(void)
+{
+    return rb_env_clear2(envtbl);
 }
 
 /*
@@ -5855,9 +5861,9 @@ rb_env_clear(void)
  *   ENV.size # => 0
  */
 static VALUE
-env_clear(VALUE _)
+env_clear(VALUE ehash)
 {
-    return rb_env_clear();
+    return rb_env_clear2(ehash);
 }
 
 /*
