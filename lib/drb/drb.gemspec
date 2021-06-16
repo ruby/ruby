@@ -37,8 +37,6 @@ Gem::Specification.new do |spec|
     lib/drb/version.rb
     lib/drb/weakidconv.rb
   ]
-  spec.bindir        = "exe"
-  spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
   spec.add_dependency "ruby2_keywords"
