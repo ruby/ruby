@@ -1040,7 +1040,7 @@ rb_yjit_init(struct rb_yjit_options *options)
 
 #if !RUBY_DEBUG
     if(rb_yjit_opts.gen_stats) {
-        rb_raise(rb_eRuntimeError, "--yjit-stats requires that Ruby is compiled with CPPFLAGS='-DRUBY_DEBUG=1'");
+        rb_warning("--yjit-stats requires that Ruby is compiled with CPPFLAGS='-DRUBY_DEBUG=1'");
     }
 #endif
 
