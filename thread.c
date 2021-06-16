@@ -549,7 +549,8 @@ rb_threadptr_join_list_wakeup(rb_thread_t *thread)
 
         if (target_thread->scheduler != Qnil && rb_fiberptr_blocking(join_list->fiber) == 0) {
             rb_fiber_scheduler_unblock(target_thread->scheduler, target_thread->self, rb_fiberptr_self(join_list->fiber));
-        } else {
+        }
+        else {
             rb_threadptr_interrupt(target_thread);
 
             switch (target_thread->status) {
@@ -820,7 +821,8 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
 
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         SAVE_ROOT_JMPBUF(th, thread_do_start(th));
-    } else {
+    }
+    else {
         errinfo = th->ec->errinfo;
 
         if (state == TAG_FATAL) {
@@ -1182,7 +1184,8 @@ thread_join_sleep(VALUE arg)
 
         if (scheduler != Qnil) {
             rb_fiber_scheduler_block(scheduler, target_th->self, p->timeout);
-        } else if (!limit) {
+        }
+        else if (!limit) {
             th->status = THREAD_STOPPED_FOREVER;
             rb_ractor_sleeper_threads_inc(th->ractor);
             rb_check_deadlock(th->ractor);
@@ -1528,7 +1531,8 @@ rb_thread_sleep_deadly_allow_spurious_wakeup(VALUE blocker)
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
         rb_fiber_scheduler_block(scheduler, blocker, Qnil);
-    } else {
+    }
+    else {
         thread_debug("rb_thread_sleep_deadly_allow_spurious_wakeup\n");
         sleep_forever(GET_THREAD(), SLEEP_DEADLOCKABLE);
     }
@@ -4276,7 +4280,8 @@ do_select(VALUE p)
             if (result > 0 && rb_fd_isset(set->sigwait_fd, set->rset)) {
                 result--;
                 (void)check_signals_nogvl(set->th, set->sigwait_fd);
-            } else {
+            }
+            else {
                 (void)check_signals_nogvl(set->th, -1);
             }
         }

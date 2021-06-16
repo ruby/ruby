@@ -7145,7 +7145,7 @@ tokadd_string(struct parser_params *p,
                         int i;
                         char escbuf[5];
                         snprintf(escbuf, sizeof(escbuf), "\\x%02X", c);
-                        for(i = 0; i < 4; i++) {
+                        for (i = 0; i < 4; i++) {
                             tokadd(p, escbuf[i]);
                         }
                         continue;

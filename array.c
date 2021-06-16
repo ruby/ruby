@@ -3074,11 +3074,13 @@ ary_rotate_ptr(VALUE *ptr, long len, long cnt)
         VALUE tmp = *ptr;
         memmove(ptr, ptr + 1, sizeof(VALUE)*(len - 1));
         *(ptr + len - 1) = tmp;
-    } else if (cnt == len - 1) {
+    }
+    else if (cnt == len - 1) {
         VALUE tmp = *(ptr + len - 1);
         memmove(ptr + 1, ptr, sizeof(VALUE)*(len - 1));
         *ptr = tmp;
-    } else {
+    }
+    else {
         --len;
         if (cnt < len) ary_reverse(ptr + cnt, ptr + len);
         if (--cnt > 0) ary_reverse(ptr, ptr + cnt);

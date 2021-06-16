@@ -2635,7 +2635,8 @@ umethod_bind_call(int argc, VALUE *argv, VALUE method)
     if (data->me == (const rb_method_entry_t *)cme) {
         vm_passed_block_handler_set(ec, proc_to_block_handler(passed_procval));
         return rb_vm_call_kw(ec, recv, cme->called_id, argc, argv, cme, RB_PASS_CALLED_KEYWORDS);
-    } else {
+    }
+    else {
         VALUE methclass, klass, iclass;
         const rb_method_entry_t *me;
         convert_umethod_to_method_components(data, recv, &methclass, &klass, &iclass, &me);

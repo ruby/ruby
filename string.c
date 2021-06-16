@@ -3718,7 +3718,8 @@ rb_str_index_m(int argc, VALUE *argv, VALUE str)
 
 	if (rb_reg_search(sub, str, pos, 0) < 0) {
             return Qnil;
-        } else {
+        }
+        else {
             VALUE match = rb_backref_get();
             struct re_registers *regs = RMATCH_REGS(match);
             pos = rb_str_sublen(str, BEG(0));
@@ -10132,7 +10133,7 @@ rb_str_rpartition(VALUE str, VALUE sep)
     else {
 	pos = rb_str_sublen(str, pos);
 	pos = rb_str_rindex(str, sep, pos);
-        if(pos < 0) {
+        if (pos < 0) {
             goto failed;
         }
         pos = rb_str_offset(str, pos);

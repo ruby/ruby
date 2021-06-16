@@ -2155,7 +2155,8 @@ fix_sp_depth(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			}
 			if (lobj->sp == -1) {
 			    lobj->sp = sp;
-                        } else if (lobj->sp != sp) {
+                        }
+                        else if (lobj->sp != sp) {
                             debugs("%s:%d: sp inconsistency found but ignored (" LABEL_FORMAT " sp: %d, calculated sp: %d)\n",
                                    RSTRING_PTR(rb_iseq_path(iseq)), line,
                                    lobj->label_no, lobj->sp, sp);
@@ -4997,7 +4998,7 @@ compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node,
         struct masgn_attrasgn *memo = state.first_memo, *tmp_memo;
         while (memo) {
             VALUE topn_arg = INT2FIX((state.num_args - memo->argn) + memo->lhs_pos);
-            for(int i = 0; i < memo->num_args; i++) {
+            for (int i = 0; i < memo->num_args; i++) {
                 INSERT_BEFORE_INSN1(memo->before_insn, memo->line_node, topn, topn_arg);
             }
             tmp_memo = memo->next;
@@ -5211,7 +5212,7 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	}
 	if (explicit_receiver) {
             defined_expr0(iseq, ret, node->nd_recv, lfinish, Qfalse, true);
-            switch(nd_type(node->nd_recv)) {
+            switch (nd_type(node->nd_recv)) {
               case NODE_CALL:
               case NODE_OPCALL:
               case NODE_VCALL:
@@ -11696,7 +11697,8 @@ ibf_load_object_string(const struct ibf_load *load, const struct ibf_object_head
     VALUE str;
     if (header->frozen && !header->internal) {
         str = rb_enc_interned_str(ptr, len, rb_enc_from_index(encindex));
-    } else {
+    }
+    else {
         str = rb_enc_str_new(ptr, len, rb_enc_from_index(encindex));
 
         if (header->internal) rb_obj_hide(str);

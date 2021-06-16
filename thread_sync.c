@@ -195,7 +195,8 @@ rb_mutex_locked_p(VALUE self)
 }
 
 static void
-thread_mutex_insert(rb_thread_t *thread, rb_mutex_t *mutex) {
+thread_mutex_insert(rb_thread_t *thread, rb_mutex_t *mutex)
+{
     if (thread->keeping_mutexes) {
         mutex->next_mutex = thread->keeping_mutexes;
     }
@@ -204,7 +205,8 @@ thread_mutex_insert(rb_thread_t *thread, rb_mutex_t *mutex) {
 }
 
 static void
-thread_mutex_remove(rb_thread_t *thread, rb_mutex_t *mutex) {
+thread_mutex_remove(rb_thread_t *thread, rb_mutex_t *mutex)
+{
     rb_mutex_t **keeping_mutexes = &thread->keeping_mutexes;
 
     while (*keeping_mutexes && *keeping_mutexes != mutex) {
@@ -268,7 +270,9 @@ mutex_owned_p(rb_fiber_t *fiber, rb_mutex_t *mutex)
     }
 }
 
-static VALUE call_rb_fiber_scheduler_block(VALUE mutex) {
+static VALUE
+call_rb_fiber_scheduler_block(VALUE mutex)
+{
     return rb_fiber_scheduler_block(rb_fiber_scheduler_current(), mutex, Qnil);
 }
 

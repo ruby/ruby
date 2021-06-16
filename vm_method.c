@@ -518,7 +518,7 @@ method_definition_reset(const rb_method_entry_t *me)
 {
     rb_method_definition_t *def = me->def;
 
-    switch(def->type) {
+    switch (def->type) {
       case VM_METHOD_TYPE_ISEQ:
 	RB_OBJ_WRITTEN(me, Qundef, def->body.iseq.iseqptr);
 	RB_OBJ_WRITTEN(me, Qundef, def->body.iseq.cref);
@@ -2048,7 +2048,8 @@ set_method_visibility(VALUE self, int argc, const VALUE *argv, rb_method_visibil
 	for (j = 0; j < RARRAY_LEN(v); j++) {
 	    check_and_export_method(self, RARRAY_AREF(v, j), visi);
 	}
-    } else {
+    }
+    else {
         for (i = 0; i < argc; i++) {
             check_and_export_method(self, argv[i], visi);
         }

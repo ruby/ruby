@@ -859,7 +859,7 @@ fill_id_and_klass(rb_trace_arg_t *trace_arg)
 VALUE
 rb_tracearg_parameters(rb_trace_arg_t *trace_arg)
 {
-    switch(trace_arg->event) {
+    switch (trace_arg->event) {
       case RUBY_EVENT_CALL:
       case RUBY_EVENT_RETURN:
       case RUBY_EVENT_B_CALL:

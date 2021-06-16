@@ -2289,7 +2289,7 @@ rvargc_find_contiguous_slots(int slots, RVALUE *freelist)
     RVALUE *cursor = freelist;
     RVALUE *previous_region = NULL;
 
-    while(cursor) {
+    while (cursor) {
         int i;
         RVALUE *search = cursor;
         for (i = 0; i < (slots - 1); i++) {
@@ -3551,7 +3551,7 @@ objspace_each_objects_try(VALUE arg)
         while (cursor_end < pend) {
             int payload_len = 0;
 
-            while(cursor_end < pend && BUILTIN_TYPE((VALUE)cursor_end) != T_PAYLOAD) {
+            while (cursor_end < pend && BUILTIN_TYPE((VALUE)cursor_end) != T_PAYLOAD) {
                 cursor_end++;
             }
 
@@ -4869,7 +4869,7 @@ lock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
 
     if (!VirtualProtect(body, HEAP_PAGE_SIZE, PAGE_NOACCESS, &old_protect)) {
 #else
-    if(mprotect(body, HEAP_PAGE_SIZE, PROT_NONE)) {
+    if (mprotect(body, HEAP_PAGE_SIZE, PROT_NONE)) {
 #endif
         rb_bug("Couldn't protect page %p", (void *)body);
     }
@@ -4886,7 +4886,7 @@ unlock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
 
     if (!VirtualProtect(body, HEAP_PAGE_SIZE, PAGE_READWRITE, &old_protect)) {
 #else
-    if(mprotect(body, HEAP_PAGE_SIZE, PROT_READ | PROT_WRITE)) {
+    if (mprotect(body, HEAP_PAGE_SIZE, PROT_READ | PROT_WRITE)) {
 #endif
         rb_bug("Couldn't unprotect page %p", (void *)body);
     }
@@ -4944,7 +4944,7 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
      * T_NONE, it is an object that just got freed but hasn't been
      * added to the freelist yet */
 
-    while(1) {
+    while (1) {
         size_t index;
 
         bits_t *mark_bits = cursor->mark_bits;
@@ -4955,7 +4955,8 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
             index = BITMAP_INDEX(heap->compact_cursor_index);
             p = heap->compact_cursor_index;
             GC_ASSERT(cursor == GET_HEAP_PAGE(p));
-        } else {
+        }
+        else {
             index = 0;
             p = cursor->start;
         }
@@ -4967,7 +4968,8 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
 
         if (index == 0) {
             p = cursor->start + (BITS_BITLENGTH - NUM_IN_PAGE(cursor->start));
-        } else {
+        }
+        else {
             p = cursor->start + (BITS_BITLENGTH - NUM_IN_PAGE(cursor->start)) + (BITS_BITLENGTH * index);
         }
 
@@ -5010,7 +5012,7 @@ gc_unprotect_pages(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     struct heap_page *cursor = heap->compact_cursor;
 
-    while(cursor) {
+    while (cursor) {
         unlock_page_body(objspace, GET_PAGE_BODY(cursor->start));
         cursor = list_next(&heap->pages, cursor, page_node);
     }
@@ -5227,7 +5229,7 @@ gc_fill_swept_page_plane(rb_objspace_t *objspace, rb_heap_t *heap, intptr_t p, b
                     /* Zombie slots don't get marked, but we can't reuse
                      * their memory until they have their finalizers run.*/
                     if (BUILTIN_TYPE(dest) != T_ZOMBIE) {
-                        if(!try_move(objspace, heap, sweep_page, dest)) {
+                        if (!try_move(objspace, heap, sweep_page, dest)) {
                             *finished_compacting = true;
                             (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
                             gc_report(5, objspace, "Quit compacting, couldn't find an object to move\n");
@@ -10059,11 +10061,11 @@ gc_compact_stats(rb_execution_context_t *ec, VALUE self)
     VALUE moved = rb_hash_new();
 
     for (i=0; i<T_MASK; i++) {
-        if(objspace->rcompactor.considered_count_table[i]) {
+        if (objspace->rcompactor.considered_count_table[i]) {
             rb_hash_aset(considered, type_sym(i), SIZET2NUM(objspace->rcompactor.considered_count_table[i]));
         }
 
-        if(objspace->rcompactor.moved_count_table[i]) {
+        if (objspace->rcompactor.moved_count_table[i]) {
             rb_hash_aset(moved, type_sym(i), SIZET2NUM(objspace->rcompactor.moved_count_table[i]));
         }
     }

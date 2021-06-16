@@ -393,7 +393,7 @@ special_object_p(VALUE obj)
 static VALUE
 obj_freeze_opt(VALUE freeze)
 {
-    switch(freeze) {
+    switch (freeze) {
       case Qfalse:
       case Qtrue:
       case Qnil:

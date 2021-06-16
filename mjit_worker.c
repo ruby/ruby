@@ -1142,7 +1142,7 @@ compile_prelude(FILE *f)
     fprintf(f, "#include \"");
     // print pch_file except .gch for gcc, but keep .pch for mswin
     for (; s < e; s++) {
-        switch(*s) {
+        switch (*s) {
           case '\\': case '"':
             fputc('\\', f);
         }

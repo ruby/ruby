@@ -102,7 +102,8 @@ rb_fiber_scheduler_current_for_threadptr(rb_thread_t *thread)
 
     if (thread->blocking == 0) {
         return thread->scheduler;
-    } else {
+    }
+    else {
         return Qnil;
     }
 }

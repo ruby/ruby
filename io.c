@@ -1289,7 +1289,8 @@ rb_io_wait(VALUE io, VALUE events, VALUE timeout)
 
     if (ready > 0) {
         return RB_INT2NUM(ready);
-    } else {
+    }
+    else {
         return Qfalse;
     }
 }
@@ -1323,7 +1324,8 @@ rb_io_wait_readable(int f)
             return RTEST(
                 rb_fiber_scheduler_io_wait_readable(scheduler, rb_io_from_fd(f))
             );
-        } else {
+        }
+        else {
             rb_thread_wait_fd(f);
         }
         return TRUE;
@@ -1365,7 +1367,8 @@ rb_io_wait_writable(int f)
             return RTEST(
                 rb_fiber_scheduler_io_wait_writable(scheduler, rb_io_from_fd(f))
             );
-        } else {
+        }
+        else {
             rb_thread_fd_writable(f);
         }
         return TRUE;

@@ -544,7 +544,7 @@ backtrace_each(const rb_execution_context_t *ec,
     }
     else {
         /* Ensure we don't look at frames beyond the ones requested */
-        for(; from_last > 0 && start_cfp >= last_cfp; from_last--) {
+        for (; from_last > 0 && start_cfp >= last_cfp; from_last--) {
             last_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(last_cfp);
         }
 
@@ -610,7 +610,8 @@ backtrace_each(const rb_execution_context_t *ec,
                         ignored_frames++;
                     }
                 }
-            } else {
+            }
+            else {
                 /* No ignored frames before start frame, just decrement start */
                 start -= ignored_frames;
             }
@@ -629,7 +630,8 @@ backtrace_each(const rb_execution_context_t *ec,
 	if (cfp->iseq) {
             if (cfp->pc) {
                 iter_iseq(arg, cfp);
-            } else {
+            }
+            else {
                 i--;
             }
 	}
@@ -697,12 +699,14 @@ bt_iter_iseq_skip_internal(void *ptr, const rb_control_frame_t *cfp)
         loc->body.iseq.iseq = cfp->iseq;
         loc->body.iseq.lineno.pc = cfp->pc;
         arg->prev_loc = loc;
-    } else if (arg->prev_cfp) {
+    }
+    else if (arg->prev_cfp) {
         loc->type = LOCATION_TYPE_ISEQ;
         loc->body.iseq.iseq = arg->prev_cfp->iseq;
         loc->body.iseq.lineno.pc = arg->prev_cfp->pc;
         arg->prev_loc = loc;
-    } else {
+    }
+    else {
         rb_bug("No non-internal backtrace entry before an <internal: backtrace entry");
     }
 }
@@ -724,7 +728,8 @@ bt_iter_cfunc(void *ptr, const rb_control_frame_t *cfp, ID mid)
         arg->init_loc->body.iseq.iseq = iseq;
         arg->init_loc->body.iseq.lineno.pc = pc;
         loc->body.cfunc.prev_loc = arg->prev_loc = arg->init_loc;
-    } else {
+    }
+    else {
         loc->body.cfunc.prev_loc = NULL;
     }
 }

@@ -6510,7 +6510,7 @@ env_clone(int argc, VALUE *argv, VALUE obj)
         rb_scan_args(argc, argv, "0:", &opt);
         if (!NIL_P(opt)) {
             rb_get_kwargs(opt, keyword_ids, 0, 1, &kwfreeze);
-            switch(kwfreeze) {
+            switch (kwfreeze) {
               case Qtrue:
                 rb_raise(rb_eTypeError, "cannot freeze ENV");
                 break;

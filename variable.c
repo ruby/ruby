@@ -1422,7 +1422,8 @@ init_iv_list(VALUE obj, uint32_t len, uint32_t newsize, st_table *index_tbl)
         MEMCPY(newptr, ptr, VALUE, len);
         RBASIC(obj)->flags &= ~ROBJECT_EMBED;
         ROBJECT(obj)->as.heap.ivptr = newptr;
-    } else {
+    }
+    else {
         newptr = obj_ivar_heap_realloc(obj, len, newsize);
     }
 
