@@ -342,6 +342,17 @@ class TestDir < Test::Unit::TestCase
     assert_equal(%w[dir/], Dir.chdir(@root) {Dir.open("a") {|d| Dir.glob("**/*/", base: d, sort: false).sort}})
   end
 
+  def test_glob_ignore_casefold_invalid_encoding
+    bug14456 = "[ruby-core:85448]"
+    filename = "\u00AAa123".encode('ISO-8859-1')
+    File.write(File.join(@root, filename), "")
+    matches = Dir.chdir(@root) {|d| Dir.glob("*a123".encode('UTF-8'), File::FNM_CASEFOLD)}
+    assert_equal(1, matches.size, bug14456)
+    matches.each{|f| f.force_encoding('ISO-8859-1')}
+    # Handle MacOS/Windows, which saves under a different filename
+    assert_include([filename, "\u00C2\u00AAa123".encode('ISO-8859-1')], matches.first, bug14456)
+  end
+
   def assert_entries(entries, children_only = false)
     entries.sort!
     expected = ("a".."z").to_a

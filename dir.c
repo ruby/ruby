@@ -2955,7 +2955,7 @@ static VALUE
 dir_s_glob(rb_execution_context_t *ec, VALUE obj, VALUE str, VALUE rflags, VALUE base, VALUE sort)
 {
     VALUE ary = rb_check_array_type(str);
-    const int flags = NUM2INT(rflags) | dir_glob_option_sort(sort);
+    const int flags = (NUM2INT(rflags) | dir_glob_option_sort(sort)) & ~FNM_CASEFOLD;
     base = dir_glob_option_base(base);
     if (NIL_P(ary)) {
 	ary = rb_push_glob(str, base, flags);
