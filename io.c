@@ -10703,13 +10703,23 @@ io_s_foreach(VALUE v)
  *     IO.foreach(name, limit [, getline_args, open_args]) {|line| block }      -> nil
  *     IO.foreach(name, sep, limit [, getline_args, open_args]) {|line| block } -> nil
  *     IO.foreach(...)                                            -> an_enumerator
+ *     File.foreach(name, sep=$/ [, getline_args, open_args]) {|line| block }     -> nil
+ *     File.foreach(name, limit [, getline_args, open_args]) {|line| block }      -> nil
+ *     File.foreach(name, sep, limit [, getline_args, open_args]) {|line| block } -> nil
+ *     File.foreach(...)                                            -> an_enumerator
  *
  *  Executes the block for every line in the named I/O port, where lines
  *  are separated by <em>sep</em>.
  *
  *  If no block is given, an enumerator is returned instead.
  *
- *     IO.foreach("testfile") {|x| print "GOT ", x }
+ *  If +name+ starts with a pipe character (<code>"|"</code>) and the receiver
+ *  is the IO class, a subprocess is created in the same way as Kernel#open,
+ *  and its output is returned.
+ *  Consider to use File.foreach to disable the behavior of subprocess invocation.
+ *
+ *     File.foreach("testfile") {|x| print "GOT ", x }
+ *     IO.foreach("| cat testfile") {|x| print "GOT ", x }
  *
  *  <em>produces:</em>
  *
@@ -10754,15 +10764,23 @@ io_s_readlines(VALUE v)
  *     IO.readlines(name, sep=$/ [, getline_args, open_args])     -> array
  *     IO.readlines(name, limit [, getline_args, open_args])      -> array
  *     IO.readlines(name, sep, limit [, getline_args, open_args]) -> array
+ *     File.readlines(name, sep=$/ [, getline_args, open_args])     -> array
+ *     File.readlines(name, limit [, getline_args, open_args])      -> array
+ *     File.readlines(name, sep, limit [, getline_args, open_args]) -> array
  *
  *  Reads the entire file specified by <i>name</i> as individual
  *  lines, and returns those lines in an array. Lines are separated by
  *  <i>sep</i>.
  *
- *     a = IO.readlines("testfile")
+ *  If +name+ starts with a pipe character (<code>"|"</code>) and the receiver
+ *  is the IO class, a subprocess is created in the same way as Kernel#open,
+ *  and its output is returned.
+ *  Consider to use File.readlines to disable the behavior of subprocess invocation.
+ *
+ *     a = File.readlines("testfile")
  *     a[0]   #=> "This is line one\n"
  *
- *     b = IO.readlines("testfile", chomp: true)
+ *     b = File.readlines("testfile", chomp: true)
  *     b[0]   #=> "This is line one"
  *
  *     IO.readlines("|ls -a")     #=> [".\n", "..\n", ...]
@@ -10821,13 +10839,16 @@ seek_before_access(VALUE argp)
 /*
  *  call-seq:
  *     IO.read(name, [length [, offset]] [, opt])   -> string
+ *     File.read(name, [length [, offset]] [, opt]) -> string
  *
  *  Opens the file, optionally seeks to the given +offset+, then returns
  *  +length+ bytes (defaulting to the rest of the file).  #read ensures
  *  the file is closed before returning.
  *
- *  If +name+ starts with a pipe character (<code>"|"</code>), a subprocess is
- *  created in the same way as Kernel#open, and its output is returned.
+ *  If +name+ starts with a pipe character (<code>"|"</code>) and the receiver
+ *  is the IO class, a subprocess is created in the same way as Kernel#open,
+ *  and its output is returned.
+ *  Consider to use File.read to disable the behavior of subprocess invocation.
  *
  *  === Options
  *
@@ -10854,10 +10875,10 @@ seek_before_access(VALUE argp)
  *
  *  Examples:
  *
- *    IO.read("testfile")              #=> "This is line one\nThis is line two\nThis is line three\nAnd so on...\n"
- *    IO.read("testfile", 20)          #=> "This is line one\nThi"
- *    IO.read("testfile", 20, 10)      #=> "ne one\nThis is line "
- *    IO.read("binfile", mode: "rb")   #=> "\xF7\x00\x00\x0E\x12"
+ *    File.read("testfile")            #=> "This is line one\nThis is line two\nThis is line three\nAnd so on...\n"
+ *    File.read("testfile", 20)        #=> "This is line one\nThi"
+ *    File.read("testfile", 20, 10)    #=> "ne one\nThis is line "
+ *    File.read("binfile", mode: "rb") #=> "\xF7\x00\x00\x0E\x12"
  *    IO.read("|ls -a")                #=> ".\n..\n"...
  */
 
@@ -10889,15 +10910,22 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
 /*
  *  call-seq:
  *     IO.binread(name, [length [, offset]])   -> string
+ *     File.binread(name, [length [, offset]]) -> string
  *
  *  Opens the file, optionally seeks to the given <i>offset</i>, then
  *  returns <i>length</i> bytes (defaulting to the rest of the file).
  *  #binread ensures the file is closed before returning.  The open mode
  *  would be <code>"rb:ASCII-8BIT"</code>.
  *
- *     IO.binread("testfile")           #=> "This is line one\nThis is line two\nThis is line three\nAnd so on...\n"
- *     IO.binread("testfile", 20)       #=> "This is line one\nThi"
- *     IO.binread("testfile", 20, 10)   #=> "ne one\nThis is line "
+ *  If +name+ starts with a pipe character (<code>"|"</code>) and the receiver
+ *  is the IO class, a subprocess is created in the same way as Kernel#open,
+ *  and its output is returned.
+ *  Consider to use File.binread to disable the behavior of subprocess invocation.
+ *
+ *     File.binread("testfile")           #=> "This is line one\nThis is line two\nThis is line three\nAnd so on...\n"
+ *     File.binread("testfile", 20)       #=> "This is line one\nThi"
+ *     File.binread("testfile", 20, 10)   #=> "ne one\nThis is line "
+ *     IO.binread("| cat testfile")       #=> "This is line one\nThis is line two\nThis is line three\nAnd so on...\n"
  *
  *  See also IO.read for details about +name+ and open_args.
  */
@@ -10997,17 +11025,24 @@ io_s_write(int argc, VALUE *argv, VALUE klass, int binary)
  *  call-seq:
  *     IO.write(name, string [, offset])           -> integer
  *     IO.write(name, string [, offset] [, opt])   -> integer
+ *     File.write(name, string [, offset])         -> integer
+ *     File.write(name, string [, offset] [, opt]) -> integer
  *
  *  Opens the file, optionally seeks to the given <i>offset</i>, writes
  *  <i>string</i>, then returns the length written.  #write ensures the
  *  file is closed before returning.  If <i>offset</i> is not given in
  *  write mode, the file is truncated.  Otherwise, it is not truncated.
  *
- *    IO.write("testfile", "0123456789", 20)  #=> 10
+ *  If +name+ starts with a pipe character (<code>"|"</code>) and the receiver
+ *  is the IO class, a subprocess is created in the same way as Kernel#open,
+ *  and its output is returned.
+ *  Consider to use File.write to disable the behavior of subprocess invocation.
+ *
+ *    File.write("testfile", "0123456789", 20)  #=> 10
  *    # File could contain:  "This is line one\nThi0123456789two\nThis is line three\nAnd so on...\n"
- *    IO.write("testfile", "0123456789")      #=> 10
+ *    File.write("testfile", "0123456789")      #=> 10
  *    # File would now read: "0123456789"
- *    IO.write("|tr a-z A-Z", "abc")          #=> 3
+ *    IO.write("|tr a-z A-Z", "abc")            #=> 3
  *    # Prints "ABC" to the standard output
  *
  *  If the last argument is a hash, it specifies options for the internal
@@ -11048,11 +11083,18 @@ rb_io_s_write(int argc, VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
- *     IO.binwrite(name, string, [offset])             -> integer
- *     IO.binwrite(name, string, [offset], open_args)  -> integer
+ *     IO.binwrite(name, string, [offset])               -> integer
+ *     IO.binwrite(name, string, [offset], open_args)    -> integer
+ *     File.binwrite(name, string, [offset])             -> integer
+ *     File.binwrite(name, string, [offset], open_args)  -> integer
  *
  *  Same as IO.write except opening the file in binary mode and
  *  ASCII-8BIT encoding (<code>"wb:ASCII-8BIT"</code>).
+ *
+ *  If +name+ starts with a pipe character (<code>"|"</code>) and the receiver
+ *  is the IO class, a subprocess is created in the same way as Kernel#open,
+ *  and its output is returned.
+ *  Consider to use File.binwrite to disable the behavior of subprocess invocation.
  *
  *  See also IO.read for details about +name+ and open_args.
  */
