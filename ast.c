@@ -710,7 +710,7 @@ ast_node_script_lines(rb_execution_context_t *ec, VALUE self)
     struct ASTNodeData *data;
     TypedData_Get_Struct(self, struct ASTNodeData, &rb_node_type, data);
     VALUE ret = data->ast->body.script_lines;
-    if (!ret) ret = Qnil;
+    if (!RB_TYPE_P(ret, T_ARRAY)) return Qnil;
     return ret;
 }
 

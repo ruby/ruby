@@ -6286,7 +6286,7 @@ yycompile0(VALUE arg)
         RB_OBJ_WRITE(p->ast, &p->ast->body.compile_option, opt);
     }
     p->ast->body.root = tree;
-    p->ast->body.line_count = p->line_count;
+    if (!p->ast->body.script_lines) p->ast->body.script_lines = INT2FIX(p->line_count);
     return TRUE;
 }
 
