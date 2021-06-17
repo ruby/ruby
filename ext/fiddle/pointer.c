@@ -770,6 +770,7 @@ rb_fiddle_ptr_s_to_ptr(VALUE self, VALUE val)
     }
     else if (RTEST(rb_obj_is_kind_of(val, rb_cString))){
 	char *str = StringValuePtr(val);
+        wrap = val;
 	ptr = rb_fiddle_ptr_new(str, RSTRING_LEN(val), NULL);
     }
     else if ((vptr = rb_check_funcall(val, id_to_ptr, 0, 0)) != Qundef){
