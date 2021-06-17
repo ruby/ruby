@@ -576,6 +576,8 @@ class TestInteger < Test::Unit::TestCase
     assert_equal([0, 9, 8, 7, 6, 5, 4, 3, 2, 1], 1234567890.digits)
     assert_equal([90, 78, 56, 34, 12], 1234567890.digits(100))
     assert_equal([10, 5, 6, 8, 0, 10, 8, 6, 1], 1234567890.digits(13))
+    assert_equal((2 ** 1024).to_s(7).chars.map(&:to_i).reverse, (2 ** 1024).digits(7))
+    assert_equal([0] * 100 + [1], (2 ** (128 * 100)).digits(2 ** 128))
   end
 
   def test_digits_for_negative_numbers
