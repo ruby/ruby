@@ -813,13 +813,23 @@ rb_iseq_new(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath,
                                 0, type, &COMPILE_OPTION_DEFAULT);
 }
 
+static int
+ast_line_count(const rb_ast_body_t *ast)
+{
+    if (RB_TYPE_P(ast->script_lines, T_ARRAY)){
+        return (int)RARRAY_LEN(ast->script_lines);
+    }
+    return FIX2INT(ast->script_lines);
+}
+
 rb_iseq_t *
 rb_iseq_new_top(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent)
 {
     VALUE coverages = rb_get_coverages();
     if (RTEST(coverages)) {
-        if (ast->line_count >= 0) {
-            int len = (rb_get_coverage_mode() & COVERAGE_TARGET_ONESHOT_LINES) ? 0 : ast->line_count;
+        int line_count = ast_line_count(ast);
+        if (line_count >= 0) {
+            int len = (rb_get_coverage_mode() & COVERAGE_TARGET_ONESHOT_LINES) ? 0 : line_count;
             VALUE coverage = rb_default_coverage(len);
             rb_hash_aset(coverages, path, coverage);
         }
