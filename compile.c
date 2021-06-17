@@ -207,11 +207,15 @@ const ID rb_iseq_shared_exc_local_tbl[] = {idERROR_INFO};
 #define NEW_LABEL(l) new_label_body(iseq, (l))
 #define LABEL_FORMAT "<L%03d>"
 
+static const rb_iseq_t * set_defined_in_eval_if_eval(const rb_iseq_t *, const rb_iseq_t *);
+
 #define NEW_ISEQ(node, name, type, line_no) \
-  new_child_iseq(iseq, (node), rb_fstring(name), 0, (type), (line_no))
+  set_defined_in_eval_if_eval(iseq, \
+    new_child_iseq(iseq, (node), rb_fstring(name), 0, (type), (line_no)))
 
 #define NEW_CHILD_ISEQ(node, name, type, line_no) \
-  new_child_iseq(iseq, (node), rb_fstring(name), iseq, (type), (line_no))
+  set_defined_in_eval_if_eval(iseq, \
+     new_child_iseq(iseq, (node), rb_fstring(name), iseq, (type), (line_no)))
 
 /* add instructions */
 #define ADD_SEQ(seq1, seq2) \
@@ -7874,6 +7878,17 @@ check_yield_place(const rb_iseq_t *iseq)
       default:
         return TRUE;
     }
+}
+
+static const rb_iseq_t *
+set_defined_in_eval_if_eval(const rb_iseq_t *iseq, const rb_iseq_t *defined_iseq) {
+        do {
+            if (iseq->body->type == ISEQ_TYPE_EVAL) {
+                defined_iseq->body->param.flags.defined_in_eval = 1;
+                return defined_iseq;
+            }
+        } while ((iseq = iseq->body->parent_iseq));
+        return defined_iseq;
 }
 
 static int

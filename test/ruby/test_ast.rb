@@ -211,6 +211,26 @@ class TestAst < Test::Unit::TestCase
     end
   end
 
+  def test_of_eval
+    method = self.method(eval("def example_method_#{$$}; end"))
+    assert_raise(ArgumentError) { RubyVM::AbstractSyntaxTree.of(method) }
+
+    method = self.method(eval("def self.example_singleton_method_#{$$}; end"))
+    assert_raise(ArgumentError) { RubyVM::AbstractSyntaxTree.of(method) }
+
+    method = eval("proc{}")
+    assert_raise(ArgumentError) { RubyVM::AbstractSyntaxTree.of(method) }
+
+    method = self.method(eval("singleton_class.define_method(:example_define_method_#{$$}){}"))
+    assert_raise(ArgumentError) { RubyVM::AbstractSyntaxTree.of(method) }
+
+    method = self.method(eval("define_singleton_method(:example_dsm_#{$$}){}"))
+    assert_raise(ArgumentError) { RubyVM::AbstractSyntaxTree.of(method) }
+
+    method = eval("Class.new{def example_method; end}.instance_method(:example_method)")
+    assert_raise(ArgumentError) { RubyVM::AbstractSyntaxTree.of(method) }
+  end
+
   def test_scope_local_variables
     node = RubyVM::AbstractSyntaxTree.parse("_x = 0")
     lv, _, body = *node.children
