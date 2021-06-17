@@ -372,4 +372,54 @@ class TestAst < Test::Unit::TestCase
     _, args = *node.children.last.children[1].children
     assert_equal(:a, args.children[rest])
   end
+
+  def test_save_script_lines_for_parse
+    node = RubyVM::AbstractSyntaxTree.parse(<<~END, save_script_lines: true)
+1.times do
+  2.times do
+  end
+end
+__END__
+dummy
+    END
+
+    expected = [
+      "1.times do\n",
+      "  2.times do\n",
+      "  end\n",
+      "end\n",
+      "__END__\n",
+    ]
+    assert_equal(expected, node.script_lines)
+
+    expected =
+      "1.times do\n" +
+      "  2.times do\n" +
+      "  end\n" +
+      "end"
+    assert_equal(expected, node.source)
+
+    expected =
+             "do\n" +
+      "  2.times do\n" +
+      "  end\n" +
+      "end"
+    assert_equal(expected, node.children.last.children.last.source)
+
+    expected =
+        "2.times do\n" +
+      "  end"
+    assert_equal(expected, node.children.last.children.last.children.last.source)
+  end
+
+  def test_save_script_lines_for_of
+    proc = Proc.new { 1 + 2 }
+    method = self.method(__method__)
+
+    node_proc = RubyVM::AbstractSyntaxTree.of(proc, save_script_lines: true)
+    node_method = RubyVM::AbstractSyntaxTree.of(method, save_script_lines: true)
+
+    assert_equal("{ 1 + 2 }", node_proc.source)
+    assert_equal("def test_save_script_lines_for_of\n", node_method.source.lines.first)
+  end
 end
