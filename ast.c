@@ -64,8 +64,8 @@ ast_new_internal(rb_ast_t *ast, const NODE *node)
     return obj;
 }
 
-static VALUE rb_ast_parse_str(VALUE str);
-static VALUE rb_ast_parse_file(VALUE path);
+static VALUE rb_ast_parse_str(VALUE str, VALUE save_script_lines);
+static VALUE rb_ast_parse_file(VALUE path, VALUE save_script_lines);
 
 static VALUE
 ast_parse_new(void)
@@ -85,29 +85,31 @@ ast_parse_done(rb_ast_t *ast)
 }
 
 static VALUE
-ast_s_parse(rb_execution_context_t *ec, VALUE module, VALUE str)
+ast_s_parse(rb_execution_context_t *ec, VALUE module, VALUE str, VALUE save_script_lines)
 {
-    return rb_ast_parse_str(str);
+    return rb_ast_parse_str(str, save_script_lines);
 }
 
 static VALUE
-rb_ast_parse_str(VALUE str)
+rb_ast_parse_str(VALUE str, VALUE save_script_lines)
 {
     rb_ast_t *ast = 0;
 
     StringValue(str);
-    ast = rb_parser_compile_string_path(ast_parse_new(), Qnil, str, 1);
+    VALUE vparser = ast_parse_new();
+    if (RTEST(save_script_lines)) rb_parser_save_script_lines(vparser);
+    ast = rb_parser_compile_string_path(vparser, Qnil, str, 1);
     return ast_parse_done(ast);
 }
 
 static VALUE
-ast_s_parse_file(rb_execution_context_t *ec, VALUE module, VALUE path)
+ast_s_parse_file(rb_execution_context_t *ec, VALUE module, VALUE path, VALUE save_script_lines)
 {
-    return rb_ast_parse_file(path);
+    return rb_ast_parse_file(path, save_script_lines);
 }
 
 static VALUE
-rb_ast_parse_file(VALUE path)
+rb_ast_parse_file(VALUE path, VALUE save_script_lines)
 {
     VALUE f;
     rb_ast_t *ast = 0;
@@ -116,7 +118,9 @@ rb_ast_parse_file(VALUE path)
     FilePathValue(path);
     f = rb_file_open_str(path, "r");
     rb_funcall(f, rb_intern("set_encoding"), 2, rb_enc_from_encoding(enc), rb_str_new_cstr("-"));
-    ast = rb_parser_compile_file_path(ast_parse_new(), Qnil, f, 1);
+    VALUE vparser = ast_parse_new();
+    if (RTEST(save_script_lines)) rb_parser_save_script_lines(vparser);
+    ast = rb_parser_compile_file_path(vparser, Qnil, f, 1);
     rb_io_close(f);
     return ast_parse_done(ast);
 }
@@ -135,12 +139,14 @@ lex_array(VALUE array, int index)
 }
 
 static VALUE
-rb_ast_parse_array(VALUE array)
+rb_ast_parse_array(VALUE array, VALUE save_script_lines)
 {
     rb_ast_t *ast = 0;
 
     array = rb_check_array_type(array);
-    ast = rb_parser_compile_generic(ast_parse_new(), lex_array, Qnil, array, 1);
+    VALUE vparser = ast_parse_new();
+    if (RTEST(save_script_lines)) rb_parser_save_script_lines(vparser);
+    ast = rb_parser_compile_generic(vparser, lex_array, Qnil, array, 1);
     return ast_parse_done(ast);
 }
 
@@ -187,7 +193,7 @@ script_lines(VALUE path)
 }
 
 static VALUE
-ast_s_of(rb_execution_context_t *ec, VALUE module, VALUE body)
+ast_s_of(rb_execution_context_t *ec, VALUE module, VALUE body, VALUE save_script_lines)
 {
     VALUE path, node, lines;
     int node_id;
@@ -209,13 +215,13 @@ ast_s_of(rb_execution_context_t *ec, VALUE module, VALUE body)
     path = rb_iseq_path(iseq);
     node_id = iseq->body->location.node_id;
     if (!NIL_P(lines = script_lines(path))) {
-        node = rb_ast_parse_array(lines);
+        node = rb_ast_parse_array(lines, save_script_lines);
     }
     else if (RSTRING_LEN(path) == 2 && memcmp(RSTRING_PTR(path), "-e", 2) == 0) {
-        node = rb_ast_parse_str(rb_e_script);
+        node = rb_ast_parse_str(rb_e_script, save_script_lines);
     }
     else {
-        node = rb_ast_parse_file(path);
+        node = rb_ast_parse_file(path, save_script_lines);
     }
 
     return node_find(node, node_id);
@@ -696,6 +702,16 @@ ast_node_inspect(rb_execution_context_t *ec, VALUE self)
                 nd_last_lineno(data->node), nd_last_column(data->node));
 
     return str;
+}
+
+static VALUE
+ast_node_script_lines(rb_execution_context_t *ec, VALUE self)
+{
+    struct ASTNodeData *data;
+    TypedData_Get_Struct(self, struct ASTNodeData, &rb_node_type, data);
+    VALUE ret = data->ast->body.script_lines;
+    if (!ret) ret = Qnil;
+    return ret;
 }
 
 #include "ast.rbinc"

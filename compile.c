@@ -1329,6 +1329,7 @@ new_child_iseq(rb_iseq_t *iseq, const NODE *const node,
     ast.root = node;
     ast.compile_option = 0;
     ast.line_count = -1;
+    ast.script_lines = Qfalse;
 
     debugs("[new_child_iseq]> ---------------------------------------\n");
     int isolated_depth = ISEQ_COMPILE_DATA(iseq)->isolated_depth;

@@ -1407,6 +1407,7 @@ rb_ast_mark(rb_ast_t *ast)
 
         iterate_node_values(&nb->markable, mark_ast_value, NULL);
     }
+    if (ast->body.script_lines) rb_gc_mark(ast->body.script_lines);
 }
 
 void

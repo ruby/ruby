@@ -399,6 +399,7 @@ typedef struct rb_ast_body_struct {
     const NODE *root;
     VALUE compile_option;
     int line_count;
+    VALUE script_lines;
 } rb_ast_body_t;
 typedef struct rb_ast_struct {
     VALUE flags;
