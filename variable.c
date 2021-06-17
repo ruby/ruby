@@ -2569,16 +2569,31 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
 static VALUE
 rb_const_search_from(VALUE klass, ID id, int exclude, int recurse, int visibility)
 {
-    VALUE value, tmp;
+    VALUE value, current;
+    bool first_iteration = true;
 
-    tmp = klass;
-    while (RTEST(tmp)) {
+    for (current = klass;
+            RTEST(current);
+            current = RCLASS_SUPER(current), first_iteration = false) {
+        VALUE tmp;
 	VALUE am = 0;
 	rb_const_entry_t *ce;
 
+        if (!first_iteration && RCLASS_ORIGIN(current) != current) {
+            // This item in the super chain has an origin iclass
+            // that comes later in the chain. Skip this item so
+            // prepended modules take precedence.
+            continue;
+        }
+
+        // Do lookup in original class or module in case we are at an origin
+        // iclass in the chain.
+        tmp = current;
+        if (BUILTIN_TYPE(tmp) == T_ICLASS) tmp = RBASIC(tmp)->klass;
+
+        // Do the lookup. Loop in case of autoload.
 	while ((ce = rb_const_lookup(tmp, id))) {
 	    if (visibility && RB_CONST_PRIVATE_P(ce)) {
-		if (BUILTIN_TYPE(tmp) == T_ICLASS) tmp = RBASIC(tmp)->klass;
 		GET_EC()->private_const_reference = tmp;
 		return Qundef;
 	    }
@@ -2599,7 +2614,6 @@ rb_const_search_from(VALUE klass, ID id, int exclude, int recurse, int visibilit
 	    return value;
 	}
 	if (!recurse) break;
-	tmp = RCLASS_SUPER(tmp);
     }
 
   not_found:
