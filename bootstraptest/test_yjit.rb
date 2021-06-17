@@ -1153,3 +1153,34 @@ assert_equal '7', %q{
   foo(5,2)
   foo(5,2)
 }
+
+# Call to object with singleton
+assert_equal '123', %q{
+  obj = Object.new
+  def obj.foo
+    123
+  end
+
+  def foo(obj)
+    obj.foo()
+  end
+
+  foo(obj)
+  foo(obj)
+}
+
+# Call to singleton class
+assert_equal '123', %q{
+  class Foo
+    def self.foo
+      123
+    end
+  end
+
+  def foo(obj)
+    obj.foo()
+  end
+
+  foo(Foo)
+  foo(Foo)
+}

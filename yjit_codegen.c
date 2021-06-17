@@ -2172,6 +2172,7 @@ static bool
 jit_guard_known_klass(jitstate_t *jit, ctx_t* ctx, VALUE known_klass, insn_opnd_t insn_opnd, const int max_chain_depth, uint8_t *side_exit)
 {
     val_type_t val_type = ctx_get_opnd_type(ctx, insn_opnd);
+    bool singleton_klass = FL_TEST(known_klass, FL_SINGLETON);
 
     if (known_klass == rb_cNilClass) {
         if (val_type.type != ETYPE_NIL) {
@@ -2190,7 +2191,6 @@ jit_guard_known_klass(jitstate_t *jit, ctx_t* ctx, VALUE known_klass, insn_opnd_
 
             ctx_set_opnd_type(ctx, insn_opnd, TYPE_TRUE);
         }
-
     }
     else if (known_klass == rb_cFalseClass) {
         if (val_type.type != ETYPE_FALSE) {
@@ -2202,15 +2202,26 @@ jit_guard_known_klass(jitstate_t *jit, ctx_t* ctx, VALUE known_klass, insn_opnd_
             ctx_set_opnd_type(ctx, insn_opnd, TYPE_FALSE);
         }
     }
-    else {
-        // Can't guard for for these classes because some of they are sometimes immediate (special const).
-        // Can remove this by adding appropriate dynamic checks.
-        if (known_klass == rb_cInteger ||
+    else if (known_klass == rb_cInteger ||
             known_klass == rb_cSymbol ||
             known_klass == rb_cFloat) {
-            return false;
-        }
-
+        // Can't guard for for these classes because some of they are sometimes
+        // immediate (special const). Can remove this by adding appropriate
+        // dynamic checks.
+        return false;
+    }
+    else if (singleton_klass) {
+        // Singleton classes are attached to one specific object, so we can
+        // avoid one memory access (and potentially the is_heap check) by
+        // looking for the expected object directly.
+        ADD_COMMENT(cb, "guard known object with singleton class");
+        VALUE known_obj = rb_attr_get(known_klass, id__attached__);
+        // TODO: jit_mov_gc_ptr keeps a strong reference, which leaks the object.
+        jit_mov_gc_ptr(jit, cb, REG1, known_obj);
+        cmp(cb, REG0, REG1);
+        jit_chain_guard(JCC_JNE, jit, ctx, max_chain_depth, side_exit);
+    }
+    else {
         // Check that the receiver is a heap object
         // Note: if we get here, the class doesn't have immediate instances.
         if (!val_type.is_heap) {
@@ -2234,14 +2245,6 @@ jit_guard_known_klass(jitstate_t *jit, ctx_t* ctx, VALUE known_klass, insn_opnd_
         jit_chain_guard(JCC_JNE, jit, ctx, max_chain_depth, side_exit);
     }
 
-    // Pointer to the klass field of the receiver &(recv->klass)
-    x86opnd_t klass_opnd = mem_opnd(64, REG0, offsetof(struct RBasic, klass));
-
-    // Bail if receiver class is different from known_klass
-    // TODO: jit_mov_gc_ptr keeps a strong reference, which leaks the class.
-    jit_mov_gc_ptr(jit, cb, REG1, known_klass);
-    cmp(cb, klass_opnd, REG1);
-    jit_chain_guard(JCC_JNE, jit, ctx, max_chain_depth, side_exit);
     return true;
 }
 
