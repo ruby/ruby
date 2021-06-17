@@ -76,6 +76,18 @@ in the mail body (not subject) to the address [ruby-talk-request@ruby-lang.org].
 
 [ruby-talk-request@ruby-lang.org]: mailto:ruby-talk-request@ruby-lang.org?subject=Join%20Ruby%20Mailing%20List&body=subscribe
 
+## Requirements to build from repository
+
+1. GNU or BSD make
+2. C99 compiler
+3. autoconf 2.67 or higher
+4. automake 1.15 or higher
+5. bison 2.3 or higher
+6. Ruby 2.2 or higher
+
+When building from a released version, only a C99 compiler and GNU or BSD make
+is required.
+
 ## How to compile and install
 
 1.  If you want to use Microsoft Visual C++ to compile Ruby, read
