@@ -2100,21 +2100,11 @@ heap_extend_pages(rb_objspace_t *objspace, size_t free_slots, size_t total_slots
 	if (next_used > max_used) next_used = max_used;
     }
 
-    return next_used - used;
-}
+    size_t extend_page_count = next_used - used;
+    /* Extend by at least 1 page. */
+    if (extend_page_count == 0) extend_page_count = 1;
 
-static void
-heap_set_increment(rb_objspace_t *objspace, size_t additional_pages)
-{
-    size_t used = heap_eden->total_pages;
-    size_t next_used_limit = used + additional_pages;
-
-    if (next_used_limit == heap_allocated_pages) next_used_limit++;
-
-    heap_allocatable_pages_set(objspace, next_used_limit - used);
-
-    gc_report(1, objspace, "heap_set_increment: heap_allocatable_pages is %"PRIdSIZE"\n",
-              heap_allocatable_pages);
+    return extend_page_count;
 }
 
 static int
@@ -5498,7 +5488,7 @@ gc_heap_prepare_minimum_pages(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     if (!heap->free_pages && heap_increment(objspace, heap) == FALSE) {
 	/* there is no free after page_sweep() */
-	heap_set_increment(objspace, 1);
+        heap_allocatable_pages_set(objspace, 1);
 	if (!heap_increment(objspace, heap)) { /* can't allocate additional free objects */
 	    rb_memerror();
 	}
@@ -8019,7 +8009,7 @@ gc_marks_finish(rb_objspace_t *objspace)
             if (full_marking) {
               /* increment: */
 		gc_report(1, objspace, "gc_marks_finish: heap_set_increment!!\n");
-		heap_set_increment(objspace, heap_extend_pages(objspace, sweep_slots, total_slots));
+                heap_allocatable_pages_set(objspace, heap_extend_pages(objspace, sweep_slots, total_slots));
 		heap_increment(objspace, heap);
 	    }
 	}
@@ -8766,7 +8756,7 @@ heap_ready_to_gc(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     if (!heap->free_pages) {
 	if (!heap_increment(objspace, heap)) {
-	    heap_set_increment(objspace, 1);
+            heap_allocatable_pages_set(objspace, 1);
 	    heap_increment(objspace, heap);
 	}
     }
