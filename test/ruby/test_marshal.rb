@@ -817,7 +817,7 @@ class TestMarshal < Test::Unit::TestCase
       nameerror_test
     rescue NameError => e
       e2 = Marshal.load(Marshal.dump(e))
-      assert_equal(e.message, e2.message)
+      assert_equal(e.message.lines.first.chomp, e2.message.lines.first)
       assert_equal(e.name, e2.name)
       assert_equal(e.backtrace, e2.backtrace)
       assert_nil(e2.backtrace_locations) # temporal
