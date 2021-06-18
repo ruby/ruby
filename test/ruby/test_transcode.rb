@@ -2305,5 +2305,7 @@ class TestTranscode < Test::Unit::TestCase
     assert_equal("A\rB\r\rC", s.encode(usascii, newline: :cr))
     assert_equal("A\r\nB\r\r\nC", s.encode(usascii, crlf_newline: true))
     assert_equal("A\r\nB\r\r\nC", s.encode(usascii, newline: :crlf))
+    assert_equal("A\nB\nC", s.encode(usascii, lf_newline: true))
+    assert_equal("A\nB\nC", s.encode(usascii, newline: :lf))
   end
 end
