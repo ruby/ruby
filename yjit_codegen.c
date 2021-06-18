@@ -1973,6 +1973,18 @@ gen_opt_not(jitstate_t *jit, ctx_t *ctx)
     return gen_opt_send_without_block(jit, ctx);
 }
 
+static codegen_status_t
+gen_opt_size(jitstate_t *jit, ctx_t *ctx)
+{
+    return gen_opt_send_without_block(jit, ctx);
+}
+
+static codegen_status_t
+gen_opt_length(jitstate_t *jit, ctx_t *ctx)
+{
+    return gen_opt_send_without_block(jit, ctx);
+}
+
 void
 gen_branchif_branch(codeblock_t* cb, uint8_t* target0, uint8_t* target1, uint8_t shape)
 {
@@ -3372,6 +3384,8 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(opt_str_freeze), gen_opt_str_freeze);
     yjit_reg_op(BIN(opt_str_uminus), gen_opt_str_uminus);
     yjit_reg_op(BIN(opt_not), gen_opt_not);
+    yjit_reg_op(BIN(opt_size), gen_opt_size);
+    yjit_reg_op(BIN(opt_length), gen_opt_length);
     yjit_reg_op(BIN(opt_getinlinecache), gen_opt_getinlinecache);
     yjit_reg_op(BIN(opt_invokebuiltin_delegate), gen_opt_invokebuiltin_delegate);
     yjit_reg_op(BIN(opt_invokebuiltin_delegate_leave), gen_opt_invokebuiltin_delegate);
