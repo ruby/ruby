@@ -1,7 +1,14 @@
 module DidYouMean
   module Correctable
+    SKIP_TO_S_FOR_SUPER_LOOKUP = true
+    private_constant :SKIP_TO_S_FOR_SUPER_LOOKUP
+
     def original_message
-      method(:to_s).super_method.call
+      meth = method(:to_s)
+      while meth.owner.const_defined?(:SKIP_TO_S_FOR_SUPER_LOOKUP)
+        meth = meth.super_method
+      end
+      meth.call
     end
 
     def to_s
