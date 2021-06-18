@@ -460,6 +460,48 @@ class TestFile < Test::Unit::TestCase
     end
   end
 
+  def test_file_open_newline_option
+    Dir.mktmpdir(__method__.to_s) do |tmpdir|
+      path = File.join(tmpdir, "foo")
+      test = lambda do |newline|
+        File.open(path, "wt", newline: newline) do |f|
+          f.write "a\n"
+          f.puts "b"
+        end
+        File.binread(path)
+      end
+      assert_equal("a\nb\n", test.(:lf))
+      assert_equal("a\nb\n", test.(:universal))
+      assert_equal("a\r\nb\r\n", test.(:crlf))
+      assert_equal("a\rb\r", test.(:cr))
+
+      test = lambda do |newline|
+        File.open(path, "rt", newline: newline) do |f|
+          f.read
+        end
+      end
+
+      File.binwrite(path, "a\nb\n")
+      assert_equal("a\nb\n", test.(:lf))
+      assert_equal("a\nb\n", test.(:universal))
+      assert_equal("a\nb\n", test.(:crlf))
+      assert_equal("a\nb\n", test.(:cr))
+
+      File.binwrite(path, "a\r\nb\r\n")
+      assert_equal("a\r\nb\r\n", test.(:lf))
+      assert_equal("a\nb\n", test.(:universal))
+      # Work on both Windows and non-Windows
+      assert_include(["a\r\nb\r\n", "a\nb\n"], test.(:crlf))
+      assert_equal("a\r\nb\r\n", test.(:cr))
+
+      File.binwrite(path, "a\rb\r")
+      assert_equal("a\rb\r", test.(:lf))
+      assert_equal("a\nb\n", test.(:universal))
+      assert_equal("a\rb\r", test.(:crlf))
+      assert_equal("a\rb\r", test.(:cr))
+    end
+  end
+
   def test_open_nul
     Dir.mktmpdir(__method__.to_s) do |tmpdir|
       path = File.join(tmpdir, "foo")

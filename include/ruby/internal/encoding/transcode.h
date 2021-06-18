@@ -476,16 +476,16 @@ enum ruby_econv_flag_type {
     RUBY_ECONV_UNDEF_HEX_CHARREF                = 0x00000030,
 
     /** Decorators are there. */
-    RUBY_ECONV_DECORATOR_MASK                   = 0x0000ff00,
+    RUBY_ECONV_DECORATOR_MASK                   = 0x0001ff00,
 
     /** Newline converters are there. */
-    RUBY_ECONV_NEWLINE_DECORATOR_MASK           = 0x00003f00,
+    RUBY_ECONV_NEWLINE_DECORATOR_MASK           = 0x00007f00,
 
     /** (Unclear; seems unused). */
     RUBY_ECONV_NEWLINE_DECORATOR_READ_MASK      = 0x00000f00,
 
     /** (Unclear; seems unused). */
-    RUBY_ECONV_NEWLINE_DECORATOR_WRITE_MASK     = 0x00003000,
+    RUBY_ECONV_NEWLINE_DECORATOR_WRITE_MASK     = 0x00007000,
 
     /** Universal newline mode. */
     RUBY_ECONV_UNIVERSAL_NEWLINE_DECORATOR      = 0x00000100,
@@ -496,11 +496,14 @@ enum ruby_econv_flag_type {
     /** CRLF to CR conversion shall happen. */
     RUBY_ECONV_CR_NEWLINE_DECORATOR             = 0x00002000,
 
+    /** CRLF to LF conversion shall happen. */
+    RUBY_ECONV_LF_NEWLINE_DECORATOR             = 0x00004000,
+
     /** Texts shall be XML-escaped. */
-    RUBY_ECONV_XML_TEXT_DECORATOR               = 0x00004000,
+    RUBY_ECONV_XML_TEXT_DECORATOR               = 0x00008000,
 
     /** Texts shall be AttrValue escaped */
-    RUBY_ECONV_XML_ATTR_CONTENT_DECORATOR       = 0x00008000,
+    RUBY_ECONV_XML_ATTR_CONTENT_DECORATOR       = 0x00010000,
 
     /** (Unclear; seems unused). */
     RUBY_ECONV_STATEFUL_DECORATOR_MASK          = 0x00f00000,
@@ -529,6 +532,7 @@ enum ruby_econv_flag_type {
 #define ECONV_UNIVERSAL_NEWLINE_DECORATOR       RUBY_ECONV_UNIVERSAL_NEWLINE_DECORATOR  /**< @old{RUBY_ECONV_UNIVERSAL_NEWLINE_DECORATOR} */
 #define ECONV_CRLF_NEWLINE_DECORATOR            RUBY_ECONV_CRLF_NEWLINE_DECORATOR       /**< @old{RUBY_ECONV_CRLF_NEWLINE_DECORATOR} */
 #define ECONV_CR_NEWLINE_DECORATOR              RUBY_ECONV_CR_NEWLINE_DECORATOR         /**< @old{RUBY_ECONV_CR_NEWLINE_DECORATOR} */
+#define ECONV_LF_NEWLINE_DECORATOR              RUBY_ECONV_LF_NEWLINE_DECORATOR         /**< @old{RUBY_ECONV_LF_NEWLINE_DECORATOR} */
 #define ECONV_XML_TEXT_DECORATOR                RUBY_ECONV_XML_TEXT_DECORATOR           /**< @old{RUBY_ECONV_XML_TEXT_DECORATOR} */
 #define ECONV_XML_ATTR_CONTENT_DECORATOR        RUBY_ECONV_XML_ATTR_CONTENT_DECORATOR   /**< @old{RUBY_ECONV_XML_ATTR_CONTENT_DECORATOR} */
 #define ECONV_STATEFUL_DECORATOR_MASK           RUBY_ECONV_STATEFUL_DECORATOR_MASK      /**< @old{RUBY_ECONV_STATEFUL_DECORATOR_MASK} */
@@ -543,10 +547,10 @@ enum ruby_econv_flag_type {
      */
 
     /** Indicates the input is a part of much larger one. */
-    RUBY_ECONV_PARTIAL_INPUT                    = 0x00010000,
+    RUBY_ECONV_PARTIAL_INPUT                    = 0x00020000,
 
     /** Instructs the converter to stop after output. */
-    RUBY_ECONV_AFTER_OUTPUT                     = 0x00020000,
+    RUBY_ECONV_AFTER_OUTPUT                     = 0x00040000,
 #define ECONV_PARTIAL_INPUT                     RUBY_ECONV_PARTIAL_INPUT /**< @old{RUBY_ECONV_PARTIAL_INPUT} */
 #define ECONV_AFTER_OUTPUT                      RUBY_ECONV_AFTER_OUTPUT  /**< @old{RUBY_ECONV_AFTER_OUTPUT} */
 
