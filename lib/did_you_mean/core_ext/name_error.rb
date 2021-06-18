@@ -15,7 +15,7 @@ module DidYouMean
       msg = super.dup
       suggestion = DidYouMean.formatter.message_for(corrections)
 
-      msg << suggestion if !msg.end_with?(suggestion)
+      msg << suggestion if !msg.include?(suggestion)
       msg
     rescue
       super
