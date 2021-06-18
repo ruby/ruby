@@ -20,6 +20,9 @@
 // Map from YARV opcodes to code generation functions
 static codegen_fn gen_fns[VM_INSTRUCTION_SIZE] = { NULL };
 
+// Map from method entries to code generation functions
+static st_table *yjit_method_codegen_table = NULL;
+
 // Code block into which we write machine code
 static codeblock_t block;
 codeblock_t* cb = NULL;
@@ -2272,7 +2275,7 @@ jit_protected_callee_ancestry_guard(jitstate_t *jit, codeblock_t *cb, const rb_c
 }
 
 // Return true when the codegen function generates code.
-typedef bool (*cfunc_codegen_t)(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_callable_method_entry_t *cme, rb_iseq_t *block, const int32_t argc);
+typedef bool (*method_codegen_t)(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_callable_method_entry_t *cme, rb_iseq_t *block, const int32_t argc);
 
 // Codegen for rb_obj_not().
 // Note, caller is responsible for generating all the right guards, including
@@ -2304,11 +2307,12 @@ jit_rb_obj_not(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const 
 }
 
 // Check if we know how to codegen for a particular cfunc method
-static cfunc_codegen_t
-lookup_cfunc_codegen(const rb_method_cfunc_t *cfunc)
+static method_codegen_t
+lookup_cfunc_codegen(const rb_method_definition_t *def)
 {
-    if (cfunc->func == rb_obj_not) {
-        return jit_rb_obj_not;
+    method_codegen_t gen_fn;
+    if (st_lookup(yjit_method_codegen_table, def->method_serial, (st_data_t *)&gen_fn)) {
+        return gen_fn;
     }
     return NULL;
 }
@@ -2338,8 +2342,8 @@ gen_send_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const 
 
     // Delegate to codegen for C methods if we have it.
     {
-        cfunc_codegen_t known_cfunc_codegen;
-        if ((known_cfunc_codegen = lookup_cfunc_codegen(cfunc))) {
+        method_codegen_t known_cfunc_codegen;
+        if ((known_cfunc_codegen = lookup_cfunc_codegen(cme->def))) {
             if (known_cfunc_codegen(jit, ctx, ci, cme, block, argc)) {
                 // cfunc codegen generated code. Terminate the block so
                 // there isn't multiple calls in the same block.
@@ -3283,6 +3287,23 @@ gen_opt_invokebuiltin_delegate(jitstate_t *jit, ctx_t *ctx)
 }
 
 static void
+yjit_reg_method(VALUE klass, const char *mid_str, method_codegen_t gen_fn)
+{
+    ID mid = rb_intern(mid_str);
+    const rb_method_entry_t *me = rb_method_entry_at(klass, mid);
+
+    if (!me) {
+        rb_bug("undefined optimized method: %s", rb_id2name(mid));
+    }
+
+    // For now, only cfuncs are supported
+    VM_ASSERT(me && me->def);
+    VM_ASSERT(me->def->type == VM_METHOD_TYPE_CFUNC);
+
+    st_insert(yjit_method_codegen_table, (st_data_t)me->def->method_serial, (st_data_t)gen_fn);
+}
+
+static void
 yjit_reg_op(int opcode, codegen_fn gen_fn)
 {
     RUBY_ASSERT(opcode >= 0 && opcode < VM_INSTRUCTION_SIZE);
@@ -3362,4 +3383,8 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(opt_send_without_block), gen_opt_send_without_block);
     yjit_reg_op(BIN(send), gen_send);
     yjit_reg_op(BIN(leave), gen_leave);
+
+    yjit_method_codegen_table = st_init_numtable();
+
+    yjit_reg_method(rb_cBasicObject, "!", jit_rb_obj_not);
 }
