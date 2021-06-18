@@ -21,6 +21,7 @@ class TestRDocRubygemsHook < Test::Unit::TestCase
     @a.instance_variable_set(:@doc_dir, File.join(@tempdir, "doc"))
     @a.instance_variable_set(:@gem_dir, File.join(@tempdir, "a-2"))
     @a.instance_variable_set(:@full_gem_path, File.join(@tempdir, "a-2"))
+    @a.loaded_from = File.join(@tempdir, 'a-2', 'a-2.gemspec')
 
     FileUtils.mkdir_p File.join(@tempdir, 'a-2', 'lib')
     FileUtils.touch   File.join(@tempdir, 'a-2', 'lib', 'a.rb')
@@ -33,9 +34,12 @@ class TestRDocRubygemsHook < Test::Unit::TestCase
     rescue Gem::DocumentError => e
       skip e.message
     end
+    @old_ui = Gem::DefaultUserInteraction.ui
+    Gem::DefaultUserInteraction.ui = Gem::SilentUI.new
   end
 
   def teardown
+    Gem::DefaultUserInteraction.ui = @old_ui
     FileUtils.rm_rf File.expand_path("tmp")
   end
 
