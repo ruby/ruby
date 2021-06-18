@@ -109,6 +109,7 @@ rb_fiddle_memview_initialize(VALUE obj, VALUE target)
     TypedData_Get_Struct(obj, struct memview_data, &fiddle_memview_data_type, data);
 
     if (!rb_memory_view_get(target, &data->view, 0)) {
+        data->view.obj = Qnil;
         rb_raise(rb_eArgError, "Unable to get a memory view from %+"PRIsVALUE, target);
     }
 
