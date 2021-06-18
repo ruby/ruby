@@ -1421,6 +1421,7 @@ gen_checktype(jitstate_t* jit, ctx_t* ctx)
         mov(cb, REG0, mem_opnd(64, REG0, offsetof(struct RBasic, flags)));
         and(cb, REG0, imm_opnd(RUBY_T_MASK));
         cmp(cb, REG0, imm_opnd(type_val));
+        mov(cb, REG0, imm_opnd(Qtrue));
         mov(cb, REG1, imm_opnd(Qfalse));
         cmovne(cb, REG0, REG1);
 

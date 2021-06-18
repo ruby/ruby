@@ -1154,6 +1154,26 @@ assert_equal '7', %q{
   foo(5,2)
 }
 
+# test pattern matching
+assert_equal '[:ok, :ok]', %q{
+  class C
+    def destructure_keys
+      {}
+    end
+  end
+
+  pattern_match = ->(i) do
+    case i
+    in a: 0
+      :ng
+    else
+      :ok
+    end
+  end
+
+  [{}, C.new].map(&pattern_match)
+}
+
 # Call to object with singleton
 assert_equal '123', %q{
   obj = Object.new
