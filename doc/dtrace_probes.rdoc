@@ -19,6 +19,13 @@ probe name is "method-entry", and the probe takes four arguments:
 * file name
 * line number
 
+== Enabling DTrace Probes
+
+Most DTrace probes are not enabled by default for performance reasons. To enable
+the DTrace probes, enable an empty TracePoint:
+
+  TracePoint.new{}.enable
+
 == Probes List
 
 === Stability
