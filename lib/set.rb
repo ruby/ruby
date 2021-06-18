@@ -468,11 +468,13 @@ class Set
     end
   end
 
-  # Returns true if the set and the given set have at least one
+  # Returns true if the set and the given enumerable have at least one
   # element in common.
   #
   #     Set[1, 2, 3].intersect? Set[4, 5]   #=> false
   #     Set[1, 2, 3].intersect? Set[3, 4]   #=> true
+  #     Set[1, 2, 3].intersect? 4..5        #=> false
+  #     Set[1, 2, 3].intersect? [3, 4]      #=> true
   def intersect?(set)
     case set
     when Set
@@ -488,11 +490,13 @@ class Set
     end
   end
 
-  # Returns true if the set and the given set have no element in
-  # common.  This method is the opposite of `intersect?`.
+  # Returns true if the set and the given enumerable have
+  # no element in common.  This method is the opposite of `intersect?`.
   #
   #     Set[1, 2, 3].disjoint? Set[3, 4]   #=> false
   #     Set[1, 2, 3].disjoint? Set[4, 5]   #=> true
+  #     Set[1, 2, 3].disjoint? [3, 4]      #=> false
+  #     Set[1, 2, 3].disjoint? 4..5        #=> true
   def disjoint?(set)
     !intersect?(set)
   end
