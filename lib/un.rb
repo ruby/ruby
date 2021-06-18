@@ -346,6 +346,21 @@ def httpd
     end
     options[:Port] ||= 8080     # HTTP Alternate
     options[:DocumentRoot] = argv.shift || '.'
+    s = nil
+    options[:StartCallback] = proc {
+      logger = s.logger
+      logger.info("To access this server, open this file in a browser:")
+      s.listeners.each do |listener|
+        if options[:SSLEnable]
+          addr = listener.addr
+          addr[3] = "127.0.0.1" if addr[3] == "0.0.0.0"
+          addr[3] = "::1" if addr[3] == "::"
+          logger.info("    https://#{Addrinfo.new(addr).inspect_sockaddr}")
+        else
+          logger.info("    http://#{listener.connect_address.inspect_sockaddr}")
+        end
+      end
+    }
     s = WEBrick::HTTPServer.new(options)
     shut = proc {s.shutdown}
     siglist = %w"TERM QUIT"
