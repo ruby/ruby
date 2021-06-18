@@ -349,6 +349,8 @@ extern VALUE rb_vm_invoke_bmethod(rb_execution_context_t *ec, rb_proc_t *proc, V
                                   const rb_callable_method_entry_t *me);
 static VALUE vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self, int argc, const VALUE *argv, int kw_splat, VALUE block_handler);
 
+static void invoke_bmethod_return_hooks(rb_execution_context_t *ec, VALUE self, const rb_callable_method_entry_t *me, VALUE ret);
+
 #include "vm_insnhelper.c"
 
 #ifndef MJIT_HEADER
@@ -1260,12 +1262,24 @@ invoke_block(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE self, cons
     return vm_exec(ec, true);
 }
 
+static void
+invoke_bmethod_return_hooks(rb_execution_context_t *ec, VALUE self, const rb_callable_method_entry_t *me, VALUE ret)
+{
+    rb_hook_list_t *hooks;
+    EXEC_EVENT_HOOK(ec, RUBY_EVENT_RETURN, self, me->def->original_id, me->called_id, me->owner, ret);
+    if ((hooks = me->def->body.bmethod.hooks) != NULL &&
+        hooks->events & RUBY_EVENT_RETURN) {
+        rb_exec_event_hook_orig(ec, hooks, RUBY_EVENT_RETURN, self,
+                                me->def->original_id, me->called_id, me->owner, ret, FALSE);
+    }
+    RUBY_DTRACE_METHOD_RETURN_HOOK(ec, me->owner, me->def->original_id);
+}
+
 static VALUE
 invoke_bmethod(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE self, const struct rb_captured_block *captured, const rb_callable_method_entry_t *me, VALUE type, int opt_pc)
 {
     /* bmethod */
     int arg_size = iseq->body->param.size;
-    VALUE ret;
     rb_hook_list_t *hooks;
 
     VM_ASSERT(me->def->type == VM_METHOD_TYPE_BMETHOD);
@@ -1287,16 +1301,7 @@ invoke_bmethod(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE self, co
                                 me->def->original_id, me->called_id, me->owner, Qnil, FALSE);
     }
     VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);
-    ret = vm_exec(ec, true);
-
-    EXEC_EVENT_HOOK(ec, RUBY_EVENT_RETURN, self, me->def->original_id, me->called_id, me->owner, ret);
-    if ((hooks = me->def->body.bmethod.hooks) != NULL &&
-        hooks->events & RUBY_EVENT_RETURN) {
-        rb_exec_event_hook_orig(ec, hooks, RUBY_EVENT_RETURN, self,
-                                me->def->original_id, me->called_id, me->owner, ret, FALSE);
-    }
-    RUBY_DTRACE_METHOD_RETURN_HOOK(ec, me->owner, me->def->original_id);
-    return ret;
+    return vm_exec(ec, true);
 }
 
 ALWAYS_INLINE(static VALUE
@@ -2241,6 +2246,13 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
 			    ec->errinfo = Qnil;
 			    THROW_DATA_CATCH_FRAME_SET(err, cfp + 1);
 			    hook_before_rewind(ec, ec->cfp, TRUE, state, err);
+
+                            /* Must invoke bmethod hooks before popping frame so return
+                             * location is correct */
+                            if (VM_FRAME_BMETHOD_P(ec->cfp)) {
+                                invoke_bmethod_return_hooks(ec, ec->cfp->self, (const rb_callable_method_entry_t *)ec->cfp->ep[VM_ENV_DATA_INDEX_ME_CREF], THROW_DATA_VAL(err));
+                            }
+
 			    rb_vm_pop_frame(ec);
 			    return THROW_DATA_VAL(err);
 			}

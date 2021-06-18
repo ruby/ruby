@@ -393,7 +393,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     [["c-return", 3, :set_trace_func, Kernel],
      ["line", 6, __method__, self.class],
      ["call", 1, :foobar, FooBar],
-     ["return", 6, :foobar, FooBar],
+     ["return", 1, :foobar, FooBar],
      ["line", 7, __method__, self.class],
      ["c-call", 7, :set_trace_func, Kernel]].each{|e|
       assert_equal(e, events.shift)
@@ -2337,6 +2337,16 @@ class TestSetTraceFunc < Test::Unit::TestCase
     end
 
     assert_equal Array.new(2){th}, events
+  end
+
+  def test_return_bmethod_location
+    bug13392 = "[ruby-core:80515] incorrect bmethod return location"
+    actual = nil
+    expected = __LINE__ + 1
+    define_singleton_method(:t){}
+    tp = TracePoint.new(:return) {actual = tp.lineno}
+    tp.enable {t}
+    assert_equal(expected, actual, bug13392)
   end
 
   def test_return_event_with_rescue

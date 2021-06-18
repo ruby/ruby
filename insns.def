@@ -903,6 +903,12 @@ leave
 	}
     }
 
+    /* Must invoke bmethod hooks before popping frame so return
+     * location is correct */
+    if (VM_FRAME_BMETHOD_P(GET_CFP())) {
+        invoke_bmethod_return_hooks(ec, GET_CFP()->self, (const rb_callable_method_entry_t *)GET_EP()[VM_ENV_DATA_INDEX_ME_CREF], val);
+    }
+
     if (vm_pop_frame(ec, GET_CFP(), GET_EP())) {
 #if OPT_CALL_THREADED_CODE
 	rb_ec_thread_ptr(ec)->retval = val;
