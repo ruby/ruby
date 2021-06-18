@@ -1,0 +1,8 @@
+prelude: |
+  def a; end
+  define_method(:b){}
+  p = lambda{}
+benchmark:
+  def: "a"
+  define_method: "b"
+  lambda: "p.call"
