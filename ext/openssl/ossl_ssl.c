@@ -1532,6 +1532,26 @@ no_exception_p(VALUE opts)
     return 0;
 }
 
+static void
+io_wait_writable(rb_io_t *fptr)
+{
+#ifdef HAVE_RB_IO_MAYBE_WAIT
+    rb_io_maybe_wait_writable(errno, fptr->self, Qnil);
+#else
+    rb_io_wait_writable(fptr->fd);
+#endif
+}
+
+static void
+io_wait_readable(rb_io_t *fptr)
+{
+#ifdef HAVE_RB_IO_MAYBE_WAIT
+    rb_io_maybe_wait_readable(errno, fptr->self, Qnil);
+#else
+    rb_io_wait_readable(fptr->fd);
+#endif
+}
+
 static VALUE
 ossl_start_ssl(VALUE self, int (*func)(), const char *funcname, VALUE opts)
 {
@@ -1566,12 +1586,12 @@ ossl_start_ssl(VALUE self, int (*func)(), const char *funcname, VALUE opts)
 	case SSL_ERROR_WANT_WRITE:
             if (no_exception_p(opts)) { return sym_wait_writable; }
             write_would_block(nonblock);
-            rb_io_maybe_wait_writable(errno, fptr->self, Qnil);
+            io_wait_writable(fptr);
             continue;
 	case SSL_ERROR_WANT_READ:
             if (no_exception_p(opts)) { return sym_wait_readable; }
             read_would_block(nonblock);
-            rb_io_maybe_wait_readable(errno, fptr->self, Qnil);
+            io_wait_readable(fptr);
             continue;
 	case SSL_ERROR_SYSCALL:
 #ifdef __APPLE__
@@ -1749,12 +1769,12 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
 	    case SSL_ERROR_WANT_WRITE:
 		if (no_exception_p(opts)) { return sym_wait_writable; }
                 write_would_block(nonblock);
-                rb_io_maybe_wait_writable(errno, fptr->self, Qnil);
+                io_wait_writable(fptr);
                 continue;
 	    case SSL_ERROR_WANT_READ:
 		if (no_exception_p(opts)) { return sym_wait_readable; }
                 read_would_block(nonblock);
-                rb_io_maybe_wait_readable(errno, fptr->self, Qnil);
+                io_wait_readable(fptr);
 		continue;
 	    case SSL_ERROR_SYSCALL:
 		if (!ERR_peek_error()) {
@@ -1865,12 +1885,12 @@ ossl_ssl_write_internal(VALUE self, VALUE str, VALUE opts)
 	    case SSL_ERROR_WANT_WRITE:
 		if (no_exception_p(opts)) { return sym_wait_writable; }
                 write_would_block(nonblock);
-                rb_io_maybe_wait_writable(errno, fptr->self, Qnil);
+                io_wait_writable(fptr);
                 continue;
 	    case SSL_ERROR_WANT_READ:
 		if (no_exception_p(opts)) { return sym_wait_readable; }
                 read_would_block(nonblock);
-                rb_io_maybe_wait_readable(errno, fptr->self, Qnil);
+                io_wait_readable(fptr);
                 continue;
 	    case SSL_ERROR_SYSCALL:
 #ifdef __APPLE__
