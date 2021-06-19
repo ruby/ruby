@@ -988,6 +988,23 @@ gen_putself(jitstate_t* jit, ctx_t* ctx)
     return YJIT_KEEP_COMPILING;
 }
 
+static codegen_status_t
+gen_putspecialobject(jitstate_t* jit, ctx_t* ctx)
+{
+    enum vm_special_object_type type = (enum vm_special_object_type)jit_get_arg(jit, 0);
+
+    if (type == VM_SPECIAL_OBJECT_VMCORE) {
+        x86opnd_t stack_top = ctx_stack_push(ctx, TYPE_HEAP);
+        jit_mov_gc_ptr(jit, cb, REG0, rb_mRubyVMFrozenCore);
+        mov(cb, stack_top, REG0);
+        return YJIT_KEEP_COMPILING;
+    } else {
+        // TODO: implement for VM_SPECIAL_OBJECT_CBASE and
+        // VM_SPECIAL_OBJECT_CONST_BASE
+        return YJIT_CANT_COMPILE;
+    }
+}
+
 // Compute the index of a local variable from its slot index
 static uint32_t
 slot_to_local_idx(const rb_iseq_t *iseq, int32_t slot_idx)
@@ -3693,6 +3710,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(putobject_INT2FIX_0_), gen_putobject_int2fix);
     yjit_reg_op(BIN(putobject_INT2FIX_1_), gen_putobject_int2fix);
     yjit_reg_op(BIN(putself), gen_putself);
+    yjit_reg_op(BIN(putspecialobject), gen_putspecialobject);
     yjit_reg_op(BIN(getlocal), gen_getlocal);
     yjit_reg_op(BIN(getlocal_WC_0), gen_getlocal_wc0);
     yjit_reg_op(BIN(getlocal_WC_1), gen_getlocal_wc1);
