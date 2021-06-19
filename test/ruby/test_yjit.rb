@@ -59,6 +59,10 @@ class TestYJIT < Test::Unit::TestCase
     assert_compiles('$foo = 123; $foo', insns: %i[setglobal], result: 123)
   end
 
+  def test_compile_putspecialobject
+    assert_compiles('-> {}', insns: %i[putspecialobject])
+  end
+
   def test_compile_tostring
     assert_no_exits('"i am a string #{true}"')
   end
@@ -201,7 +205,7 @@ class TestYJIT < Test::Unit::TestCase
 
       iseq = RubyVM::InstructionSequence.of(_test_proc)
       IO.open(3).write Marshal.dump({
-        result: result,
+        result: #{result == ANY ? "nil" : "result"},
         stats: stats,
         iseqs: collect_iseqs(iseq),
         disasm: iseq.disasm
