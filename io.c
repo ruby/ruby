@@ -5349,30 +5349,24 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
         rb_raise(rb_eIOError, "sysread for buffered IO");
     }
 
-    /*
-     * FIXME: removing rb_thread_wait_fd() here changes sysread semantics
-     * on non-blocking IOs.  However, it's still currently possible
-     * for sysread to raise Errno::EAGAIN if another thread read()s
-     * the IO after we return from rb_thread_wait_fd() but before
-     * we call read()
-     */
-    rb_io_wait(fptr->self, RB_INT2NUM(RUBY_IO_READABLE), Qnil);
-
     rb_io_check_closed(fptr);
 
     io_setstrbuf(&str, ilen);
+    iis.th = rb_thread_current();
     iis.fd = fptr->fd;
-    iis.nonblock = 1; /* for historical reasons, maybe (see above) */
+    iis.nonblock = 0;
     iis.buf = RSTRING_PTR(str);
     iis.capa = ilen;
     n = read_internal_locktmp(str, &iis);
 
     if (n < 0) {
-	rb_sys_fail_path(fptr->pathv);
+        rb_sys_fail_path(fptr->pathv);
     }
+
     io_set_read_length(str, n, shrinkable);
+
     if (n == 0 && ilen > 0) {
-	rb_eof_error();
+        rb_eof_error();
     }
 
     return str;
