@@ -2305,7 +2305,7 @@ open_load_file(VALUE fname_v, int *xflag)
 	      We need to wait if FIFO is empty. It's FIFO's semantics.
 	      rb_thread_wait_fd() release GVL. So, it's safe.
 	    */
-	    rb_thread_wait_fd(fd);
+	    rb_io_wait(f, RB_INT2NUM(RUBY_IO_READABLE), Qnil);
 	}
     }
     return f;

@@ -198,7 +198,10 @@ rsock_s_recvfrom(VALUE socket, int argc, VALUE *argv, enum sock_recv_type from)
 
     while (true) {
         rb_io_check_closed(fptr);
-        rsock_maybe_wait_fd(arg.fd);
+
+#ifdef RSOCK_WAIT_BEFORE_BLOCKING
+        rb_io_wait(fptr->self, RB_INT2NUM(RUBY_IO_READABLE), Qnil);
+#endif
 
         slen = (long)rb_str_locktmp_ensure(str, recvfrom_locktmp, (VALUE)&arg);
 
@@ -701,11 +704,13 @@ rsock_s_accept(VALUE klass, VALUE io, struct sockaddr *sockaddr, socklen_t *len)
       .len = len
     };
 
-    int retry = 0;
+    int retry = 0, peer;
 
   retry:
-    rsock_maybe_wait_fd(accept_arg.fd);
-    int peer = (int)BLOCKING_REGION_FD(accept_blocking, &accept_arg);
+#ifdef RSOCK_WAIT_BEFORE_BLOCKING
+    rb_io_wait(fptr->self, RB_INT2NUM(RUBY_IO_READABLE), Qnil);
+#endif
+    peer = (int)BLOCKING_REGION_FD(accept_blocking, &accept_arg);
     if (peer < 0) {
         int error = errno;
 

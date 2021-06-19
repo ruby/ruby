@@ -492,7 +492,7 @@ rb_cloexec_fcntl_dupfd(int fd, int minfd)
 
 #if defined(_WIN32)
 #define WAIT_FD_IN_WIN32(fptr) \
-    (rb_w32_io_cancelable_p((fptr)->fd) ? 0 : rb_thread_wait_fd((fptr)->fd))
+    (rb_w32_io_cancelable_p((fptr)->fd) ? 0 : RB_NUM2INT(rb_io_wait(fptr->self, RB_INT2NUM(RUBY_IO_READABLE), Qnil)))
 #else
 #define WAIT_FD_IN_WIN32(fptr)
 #endif
@@ -998,7 +998,7 @@ void
 rb_io_read_check(rb_io_t *fptr)
 {
     if (!READ_DATA_PENDING(fptr)) {
-	rb_thread_wait_fd(fptr->fd);
+        rb_io_wait(fptr->self, RB_INT2NUM(RUBY_IO_READABLE), Qnil);
     }
     return;
 }
@@ -1248,13 +1248,17 @@ static int
 io_fflush(rb_io_t *fptr)
 {
     rb_io_check_closed(fptr);
+
     if (fptr->wbuf.len == 0)
         return 0;
+
     while (fptr->wbuf.len > 0 && io_flush_buffer(fptr) != 0) {
-	if (!rb_io_wait_writable(fptr->fd))
-	    return -1;
+        if (!rb_io_maybe_wait_writable(errno, fptr->self, Qnil))
+            return -1;
+
         rb_io_check_closed(fptr);
     }
+
     return 0;
 }
 
@@ -1296,9 +1300,23 @@ rb_io_wait(VALUE io, VALUE events, VALUE timeout)
 }
 
 static VALUE
-rb_io_from_fd(int fd)
+io_from_fd(int fd)
 {
     return prep_io(fd, FMODE_PREP, rb_cIO, NULL);
+}
+
+static
+int io_wait_for_single_fd(int fd, int events, struct timeval *timeout)
+{
+    VALUE scheduler = rb_fiber_scheduler_current();
+
+    if (scheduler != Qnil) {
+        return RTEST(
+            rb_fiber_scheduler_io_wait(scheduler, io_from_fd(fd), RB_INT2NUM(events), rb_fiber_scheduler_make_timeout(timeout))
+        );
+    }
+
+    return rb_thread_wait_for_single_fd(fd, events, timeout);
 }
 
 int
@@ -1322,11 +1340,11 @@ rb_io_wait_readable(int f)
 #endif
         if (scheduler != Qnil) {
             return RTEST(
-                rb_fiber_scheduler_io_wait_readable(scheduler, rb_io_from_fd(f))
+                rb_fiber_scheduler_io_wait_readable(scheduler, io_from_fd(f))
             );
         }
         else {
-            rb_thread_wait_fd(f);
+            io_wait_for_single_fd(f, RUBY_IO_READABLE, NULL);
         }
         return TRUE;
 
@@ -1365,11 +1383,11 @@ rb_io_wait_writable(int f)
 #endif
         if (scheduler != Qnil) {
             return RTEST(
-                rb_fiber_scheduler_io_wait_writable(scheduler, rb_io_from_fd(f))
+                rb_fiber_scheduler_io_wait_writable(scheduler, io_from_fd(f))
             );
         }
         else {
-            rb_thread_fd_writable(f);
+            io_wait_for_single_fd(f, RUBY_IO_WRITABLE, NULL);
         }
         return TRUE;
 
@@ -1381,20 +1399,19 @@ rb_io_wait_writable(int f)
 int
 rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 {
-    VALUE scheduler = rb_fiber_scheduler_current();
-
-    if (scheduler != Qnil) {
-        return RTEST(
-            rb_fiber_scheduler_io_wait(scheduler, rb_io_from_fd(fd), RB_INT2NUM(events), rb_fiber_scheduler_make_timeout(timeout))
-        );
-    }
-
-    return rb_thread_wait_for_single_fd(fd, events, timeout);
+    return io_wait_for_single_fd(fd, events, timeout);
 }
 
 VALUE rb_io_maybe_wait(int error, VALUE io, VALUE events, VALUE timeout)
 {
     switch (error) {
+      // In old Linux, several special files under /proc and /sys don't handle
+      // select properly. Thus we need avoid to call if don't use O_NONBLOCK.
+      // Otherwise, we face nasty hang up. Sigh.
+      // e.g. http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=31b07093c44a7a442394d44423e21d783f5523b8
+      // http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=31b07093c44a7a442394d44423e21d783f5523b8
+      // In EINTR case, we only need to call RUBY_VM_CHECK_INTS_BLOCKING().
+      // Then rb_thread_check_ints() is enough.
       case EINTR:
 #if defined(ERESTART)
       case ERESTART:
@@ -1561,9 +1578,6 @@ io_binwrite_string(VALUE arg)
 	    return len;
     }
 
-    if (fptr->stdio_file != stderr && !rb_thread_fd_writable(fptr->fd))
-	rb_io_check_closed(fptr);
-
     return rb_write_internal(p->fptr->fd, p->ptr, p->length);
 }
 #endif
@@ -1623,7 +1637,7 @@ io_binwrite(VALUE str, const char *ptr, long len, rb_io_t *fptr, int nosync)
 	}
 	if (r == -2L)
 	    return -1L;
-        if (rb_io_wait_writable(fptr->fd)) {
+        if (rb_io_maybe_wait_writable(errno, fptr->self, Qnil)) {
             rb_io_check_closed(fptr);
 	    if (offset < len)
 		goto retry;
@@ -1861,7 +1875,7 @@ io_binwritev(struct iovec *iov, int iovcnt, rb_io_t *fptr)
 
 	errno = EAGAIN;
     }
-    if (rb_io_wait_writable(fptr->fd)) {
+    if (rb_io_maybe_wait_writable(errno, fptr->self, Qnil)) {
 	rb_io_check_closed(fptr);
 	goto retry;
     }
@@ -2250,7 +2264,7 @@ rb_io_rewind(VALUE io)
 static int
 fptr_wait_readable(rb_io_t *fptr)
 {
-    int ret = rb_io_wait_readable(fptr->fd);
+    int ret = rb_io_maybe_wait_readable(errno, fptr->self, Qnil);
 
     if (ret)
         rb_io_check_closed(fptr);
@@ -4689,7 +4703,7 @@ finish_writeconv(rb_io_t *fptr, int noalloc)
                 if (0 <= r) {
                     ds += r;
                 }
-                if (rb_io_wait_writable(fptr->fd)) {
+                if (rb_io_maybe_wait_writable(errno, fptr->self, Qnil)) {
                     if (fptr->fd < 0)
                         return noalloc ? Qtrue : rb_exc_new3(rb_eIOError, rb_str_new_cstr(closed_stream));
                     goto retry;
@@ -5332,7 +5346,7 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
     rb_io_check_byte_readable(fptr);
 
     if (READ_DATA_BUFFERED(fptr)) {
-	rb_raise(rb_eIOError, "sysread for buffered IO");
+        rb_raise(rb_eIOError, "sysread for buffered IO");
     }
 
     /*
@@ -5342,7 +5356,7 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
      * the IO after we return from rb_thread_wait_fd() but before
      * we call read()
      */
-    rb_thread_wait_fd(fptr->fd);
+    rb_io_wait(fptr->self, RB_INT2NUM(RUBY_IO_READABLE), Qnil);
 
     rb_io_check_closed(fptr);
 
@@ -11104,7 +11118,7 @@ rb_thread_fiber_scheduler_wait_for_single_fd(void * _args)
 {
     struct wait_for_single_fd *args = (struct wait_for_single_fd *)_args;
 
-    args->result = rb_fiber_scheduler_io_wait(args->scheduler, rb_io_from_fd(args->fd), INT2NUM(args->events), Qnil);
+    args->result = rb_fiber_scheduler_io_wait(args->scheduler, io_from_fd(args->fd), INT2NUM(args->events), Qnil);
 
     return NULL;
 }
@@ -11170,12 +11184,12 @@ maygvl_copy_stream_wait_read(int has_gvl, struct copy_stream_struct *stp)
     int ret;
 
     do {
-	if (has_gvl) {
-	    ret = rb_wait_for_single_fd(stp->src_fd, RB_WAITFD_IN, NULL);
-	}
-	else {
-	    ret = nogvl_wait_for_single_fd(stp->th, stp->src_fd, RB_WAITFD_IN);
-	}
+        if (has_gvl) {
+            ret = RB_NUM2INT(rb_io_wait(stp->src, RB_INT2NUM(RUBY_IO_READABLE), Qnil));
+        }
+        else {
+            ret = nogvl_wait_for_single_fd(stp->th, stp->src_fd, RB_WAITFD_IN);
+        }
     } while (ret < 0 && maygvl_copy_stream_continue_p(has_gvl, stp));
 
     if (ret < 0) {

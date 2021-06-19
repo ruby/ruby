@@ -31,8 +31,8 @@ struct timeval;
 
 /* thread.c */
 void rb_thread_schedule(void);
-void rb_thread_wait_fd(int);
-int rb_thread_fd_writable(int);
+#define rb_thread_wait_fd(fd) rb_wait_for_single_fd((fd), RUBY_IO_READABLE, NULL)
+#define rb_thread_fd_writable(fd) rb_wait_for_single_fd((fd), RUBY_IO_WRITABLE, NULL)
 void rb_thread_fd_close(int);
 int rb_thread_alone(void);
 void rb_thread_sleep(int);

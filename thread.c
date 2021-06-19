@@ -4296,39 +4296,6 @@ do_select(VALUE p)
     return (VALUE)result;
 }
 
-static void
-rb_thread_wait_fd_rw(int fd, int read)
-{
-    int result = 0;
-    int events = read ? RB_WAITFD_IN : RB_WAITFD_OUT;
-
-    thread_debug("rb_thread_wait_fd_rw(%d, %s)\n", fd, read ? "read" : "write");
-
-    if (fd < 0) {
-	rb_raise(rb_eIOError, "closed stream");
-    }
-
-    result = rb_wait_for_single_fd(fd, events, NULL);
-    if (result < 0) {
-	rb_sys_fail(0);
-    }
-
-    thread_debug("rb_thread_wait_fd_rw(%d, %s): done\n", fd, read ? "read" : "write");
-}
-
-void
-rb_thread_wait_fd(int fd)
-{
-    rb_thread_wait_fd_rw(fd, 1);
-}
-
-int
-rb_thread_fd_writable(int fd)
-{
-    rb_thread_wait_fd_rw(fd, 0);
-    return TRUE;
-}
-
 static rb_fdset_t *
 init_set_fd(int fd, rb_fdset_t *fds)
 {
