@@ -110,6 +110,16 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_opt_regexpmatch2
+    assert_compiles(<<~RUBY, insns: %i[opt_regexpmatch2], result: 0)
+      def foo(str)
+        str =~ /foo/
+      end
+
+      foo("foobar")
+    RUBY
+  end
+
   def test_compile_opt_getinlinecache
     assert_compiles(<<~RUBY, insns: %i[opt_getinlinecache], result: 123, min_calls: 2)
       def get_foo
