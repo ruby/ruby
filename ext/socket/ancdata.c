@@ -1279,7 +1279,7 @@ bsock_sendmsg_internal(VALUE sock, VALUE data, VALUE vflags,
 
     if (ss == -1) {
 	int e;
-        if (!nonblock && rb_io_wait_writable(fptr->fd)) {
+        if (!nonblock && rb_io_maybe_wait_writable(errno, fptr->self, Qnil)) {
             rb_io_check_closed(fptr);
             goto retry;
         }
@@ -1551,7 +1551,7 @@ bsock_recvmsg_internal(VALUE sock,
 
     if (ss == -1) {
 	int e;
-        if (!nonblock && rb_io_wait_readable(fptr->fd)) {
+        if (!nonblock && rb_io_maybe_wait_readable(errno, fptr->self, Qnil)) {
             rb_io_check_closed(fptr);
             goto retry;
         }

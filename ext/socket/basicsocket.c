@@ -537,12 +537,11 @@ bsock_remote_address(VALUE sock)
  *   }
  */
 VALUE
-rsock_bsock_send(int argc, VALUE *argv, VALUE sock)
+rsock_bsock_send(int argc, VALUE *argv, VALUE socket)
 {
     struct rsock_send_arg arg;
     VALUE flags, to;
     rb_io_t *fptr;
-    ssize_t n;
     rb_blocking_function_t *func;
     const char *funcname;
 
@@ -550,28 +549,38 @@ rsock_bsock_send(int argc, VALUE *argv, VALUE sock)
 
     StringValue(arg.mesg);
     if (!NIL_P(to)) {
-	SockAddrStringValue(to);
-	to = rb_str_new4(to);
-	arg.to = (struct sockaddr *)RSTRING_PTR(to);
-	arg.tolen = RSTRING_SOCKLEN(to);
-	func = rsock_sendto_blocking;
-	funcname = "sendto(2)";
+        SockAddrStringValue(to);
+        to = rb_str_new4(to);
+        arg.to = (struct sockaddr *)RSTRING_PTR(to);
+        arg.tolen = RSTRING_SOCKLEN(to);
+        func = rsock_sendto_blocking;
+        funcname = "sendto(2)";
     }
     else {
-	func = rsock_send_blocking;
-	funcname = "send(2)";
+        func = rsock_send_blocking;
+        funcname = "send(2)";
     }
-    GetOpenFile(sock, fptr);
+
+    RB_IO_POINTER(socket, fptr);
+
     arg.fd = fptr->fd;
     arg.flags = NUM2INT(flags);
-    while (rsock_maybe_fd_writable(arg.fd),
-	   (n = (ssize_t)BLOCKING_REGION_FD(func, &arg)) < 0) {
-	if (rb_io_maybe_wait_writable(errno, sock, Qnil)) {
-	    continue;
-	}
-	rb_sys_fail(funcname);
+
+    while (true) {
+#ifdef RSOCK_WAIT_BEFORE_BLOCKING
+        rb_io_wait(socket, RB_INT2NUM(RUBY_IO_WRITABLE), Qnil);
+#endif
+
+        ssize_t n = (ssize_t)BLOCKING_REGION_FD(func, &arg);
+
+        if (n >= 0) return SSIZET2NUM(n);
+
+        if (rb_io_maybe_wait_writable(errno, socket, Qnil)) {
+            continue;
+        }
+
+        rb_sys_fail(funcname);
     }
-    return SSIZET2NUM(n);
 }
 
 /*
