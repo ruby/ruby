@@ -377,23 +377,30 @@ module TestIRB
 
     def test_ls
       input = TestInputMethod.new([
-        "class C\n",
-        "  def m1() end\n",
-        "end\n",
-
-        "module M\n",
+        "class P\n",
+        "  def m() end\n",
         "  def m2() end\n",
         "end\n",
 
+        "class C < P\n",
+        "  def m1() end\n",
+        "  def m2() end\n",
+        "end\n",
+
+        "module M\n",
+        "  def m1() end\n",
+        "  def m3() end\n",
+        "end\n",
+        
         "module M2\n",
         "  include M\n",
-        "  def m3() end\n",
+        "  def m4() end\n",
         "end\n",
 
         "obj = C.new\n",
         "obj.instance_variable_set(:@a, 1)\n",
         "obj.extend M2\n",
-        "def obj.m4() end\n",
+        "def obj.m5() end\n",
         "ls obj\n",
       ])
       IRB.init_config(nil)
@@ -407,10 +414,11 @@ module TestIRB
       end
       assert_empty err
       assert_match(/^instance variables:\s+@a\n/m, out)
-      assert_match(/C#methods:\s+m1\n/m, out)
-      assert_match(/M#methods:\s+m2\n/m, out)
-      assert_match(/M2#methods:\s+m3\n/m, out)
-      assert_match(/C.methods:\s+m4\n/m, out)
+      assert_match(/P#methods:\s+m\n/m, out)
+      assert_match(/C#methods:\s+m2\n/m, out)
+      assert_match(/M#methods:\s+m1\s+m3\n/m, out)
+      assert_match(/M2#methods:\s+m4\n/m, out)
+      assert_match(/C.methods:\s+m5\n/m, out)
     end
 
     def test_show_source

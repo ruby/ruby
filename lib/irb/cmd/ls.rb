@@ -17,25 +17,17 @@ module IRB
         klass  = (obj.class == Class || obj.class == Module ? obj : obj.class)
 
         o.dump("constants", obj.constants) if obj.respond_to?(:constants)
-        dump_singleton_methods(o, klass, obj)
-        dump_instance_methods(o, klass)
+        dump_methods(o, klass, obj)
         o.dump("instance variables", obj.instance_variables)
         o.dump("class variables", klass.class_variables)
         o.dump("locals", locals)
       end
 
-      def dump_singleton_methods(o, klass, obj)
-        maps = class_method_map(obj.singleton_class.ancestors.take_while { |c| c != klass })
+      def dump_methods(o, klass, obj)
+        maps = class_method_map(obj.singleton_class.ancestors)
         maps.each do |mod, methods|
           name = mod == obj.singleton_class ? "#{klass}.methods" : "#{mod}#methods"
           o.dump(name, methods)
-        end
-      end
-
-      def dump_instance_methods(o, klass)
-        maps = class_method_map(klass.ancestors)
-        maps.each do |mod, methods|
-          o.dump("#{mod}#methods", methods)
         end
       end
 
