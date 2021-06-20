@@ -5591,6 +5591,7 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
  *  nanosecond), Time works slower than when integer is used.
  */
 
+//
 void
 Init_Time(void)
 {
