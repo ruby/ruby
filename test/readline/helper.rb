@@ -23,6 +23,6 @@ else
   end
 
   def finish_using_lib_reline
-    Reline.test_reset
+    Reline.instance_variable_set(:@core, nil)
   end
 end
