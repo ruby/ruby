@@ -806,6 +806,10 @@ class TestRelineAsReadline < Test::Unit::TestCase
     super
   end
 
+  def teardown
+    Reline.test_reset
+  end
+
   def get_default_internal_encoding
     if RUBY_PLATFORM =~ /mswin|mingw/
       Encoding.default_internal || Encoding::UTF_8
