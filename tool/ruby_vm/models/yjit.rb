@@ -10,7 +10,7 @@
 # conditions  mentioned in  the file  COPYING are  met.  Consult  the file  for
 # details.
 
-module RubyVM::MicroJIT
+module RubyVM::YJIT
   ScrapeResult = Struct.new(:pre_call_bytes, :post_call_bytes, :disassembly_lines)
 
   class << self
@@ -218,4 +218,4 @@ module RubyVM::MicroJIT
   end
 end
 
-require_relative 'micro_jit/example_instructions'
+require_relative 'yjit/example_instructions'

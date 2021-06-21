@@ -8,11 +8,11 @@
 %# details.
 <%= render 'copyright' %>
 <%= render 'notice', locals: {
-    this_file: 'contains raw instruction bytes that helps MicroJIT generate code',
+    this_file: 'contains raw instruction bytes that helps YJIT generate code',
     edit: __FILE__,
 } -%>
 
-% success, byte_arrays = RubyVM::MicroJIT.scrape
+% success, byte_arrays = RubyVM::YJIT.scrape
 static const uint8_t yjit_scrape_successful = <%= success %>;
 % byte_arrays.each do |(prefix, scrape_result)|
 // Disassembly:

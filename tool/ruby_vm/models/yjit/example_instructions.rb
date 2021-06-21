@@ -10,7 +10,7 @@
 # conditions  mentioned in  the file  COPYING are  met.  Consult  the file  for
 # details.
 
-class RubyVM::MicroJIT::ExampleInstructions
+class RubyVM::YJIT::ExampleInstructions
   include RubyVM::CEscape
 
   attr_reader :name

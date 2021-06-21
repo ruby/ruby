@@ -25,7 +25,7 @@
 <%= render 'insn_entry', locals: { insn: insn } -%>
 % end
 %
-% RubyVM::MicroJIT::ExampleInstructions.to_a.each do |insn|
+% RubyVM::YJIT::ExampleInstructions.to_a.each do |insn|
 INSN_ENTRY(yjit_call_example_with_ec)
 {
     START_OF_ORIGINAL_INSN(yjit_call_example_with_ec);

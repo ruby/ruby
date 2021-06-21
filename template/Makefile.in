@@ -610,8 +610,8 @@ $(INSNS): $(srcdir)/insns.def vm_opts.h \
 	  $(tooldir)/ruby_vm/models/instructions_unifications.rb \
 	  $(tooldir)/ruby_vm/models/operands_unifications.rb \
 	  $(tooldir)/ruby_vm/models/trace_instructions.rb \
-	  $(tooldir)/ruby_vm/models/micro_jit.rb \
-	  $(tooldir)/ruby_vm/models/micro_jit/example_instructions.rb \
+	  $(tooldir)/ruby_vm/models/yjit.rb \
+	  $(tooldir)/ruby_vm/models/yjit/example_instructions.rb \
 	  $(tooldir)/ruby_vm/models/typemap.rb \
 	  $(tooldir)/ruby_vm/scripts/converter.rb \
 	  $(tooldir)/ruby_vm/scripts/insns2vm.rb \
