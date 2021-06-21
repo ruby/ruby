@@ -7,7 +7,11 @@ module Reline
     def test_mode
         remove_const('IOGate') if const_defined?('IOGate')
         const_set('IOGate', Reline::GeneralIO)
-        encoding = (RELINE_TEST_ENCODING rescue nil)
+        if ENV['RELINE_TEST_ENCODING']
+          encoding = Encoding.find(ENV['RELINE_TEST_ENCODING'])
+        else
+          encoding = Encoding::UTF_8
+        end
         Reline::GeneralIO.reset(encoding: encoding)
         send(:core).config.instance_variable_set(:@test_mode, true)
         send(:core).config.reset
@@ -26,13 +30,6 @@ end
 def finish_pasting
   Reline::GeneralIO.finish_pasting
 end
-
-RELINE_TEST_ENCODING ||=
-  if ENV['RELINE_TEST_ENCODING']
-    Encoding.find(ENV['RELINE_TEST_ENCODING'])
-  else
-    Encoding::UTF_8
-  end
 
 class Reline::TestCase < Test::Unit::TestCase
   private def convert_str(input, options = {}, normalized = nil)

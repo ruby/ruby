@@ -7,7 +7,7 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     @config = Reline::Config.new # Emacs mode is default
     Reline::HISTORY.instance_variable_set(:@config, @config)
     Reline::HISTORY.clear
-    @encoding = (RELINE_TEST_ENCODING rescue Encoding.default_external)
+    @encoding = Reline::IOGate.encoding
     @line_editor = Reline::LineEditor.new(@config, @encoding)
     @line_editor.reset(@prompt, encoding: @encoding)
   end
@@ -2140,7 +2140,7 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
   end
 
   # Unicode emoji test
-  if RELINE_TEST_ENCODING == Encoding::UTF_8
+  if Reline::IOGate.encoding == Encoding::UTF_8
     def test_ed_insert_for_include_zwj_emoji
       # U+1F468 U+200D U+1F469 U+200D U+1F467 U+200D U+1F466 is family: man, woman, girl, boy "👨‍👩‍👧‍👦"
       input_keys("\u{1F468}") # U+1F468 is man "👨"
