@@ -808,6 +808,7 @@ class TestRelineAsReadline < Test::Unit::TestCase
 
   def teardown
     finish_using_lib_reline
+    super
   end
 
   def get_default_internal_encoding
