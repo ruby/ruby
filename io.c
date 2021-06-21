@@ -560,6 +560,12 @@ raise_on_write(rb_io_t *fptr, int e, VALUE errinfo)
 #define NEED_NEWLINE_DECORATOR_ON_READ(fptr) ((fptr)->mode & FMODE_TEXTMODE)
 #define NEED_NEWLINE_DECORATOR_ON_WRITE(fptr) ((fptr)->mode & FMODE_TEXTMODE)
 #if defined(RUBY_TEST_CRLF_ENVIRONMENT) || defined(_WIN32)
+# define RUBY_CRLF_ENVIRONMENT 1
+#else
+# define RUBY_CRLF_ENVIRONMENT 0
+#endif
+
+#if RUBY_CRLF_ENVIRONMENT
 /* Windows */
 # define DEFAULT_TEXTMODE FMODE_TEXTMODE
 # define TEXTMODE_NEWLINE_DECORATOR_ON_WRITE ECONV_CRLF_NEWLINE_DECORATOR
@@ -845,7 +851,7 @@ rb_io_s_try_convert(VALUE dummy, VALUE io)
     return rb_io_check_io(io);
 }
 
-#if !(defined(RUBY_TEST_CRLF_ENVIRONMENT) || defined(_WIN32))
+#if !RUBY_CRLF_ENVIRONMENT
 static void
 io_unread(rb_io_t *fptr)
 {
@@ -1699,7 +1705,7 @@ do_writeconv(VALUE str, rb_io_t *fptr, int *converted)
 	    *converted = 1;
         }
     }
-#if defined(RUBY_TEST_CRLF_ENVIRONMENT) || defined(_WIN32)
+#if RUBY_CRLF_ENVIRONMENT
 #define fmode (fptr->mode)
     else if (MODE_BTMODE(DEFAULT_TEXTMODE,0,1)) {
 	if ((fptr->mode & FMODE_READABLE) &&
@@ -2355,7 +2361,7 @@ rb_io_eof(VALUE io)
     if (READ_CHAR_PENDING(fptr)) return Qfalse;
     if (READ_DATA_PENDING(fptr)) return Qfalse;
     READ_CHECK(fptr);
-#if defined(RUBY_TEST_CRLF_ENVIRONMENT) || defined(_WIN32)
+#if RUBY_CRLF_ENVIRONMENT
     if (!NEED_READCONV(fptr) && NEED_NEWLINE_DECORATOR_ON_READ(fptr)) {
 	return eof(fptr->fd) ? Qtrue : Qfalse;
     }
@@ -3322,7 +3328,7 @@ io_read(int argc, VALUE *argv, VALUE io)
     long n, len;
     VALUE length, str;
     int shrinkable;
-#if defined(RUBY_TEST_CRLF_ENVIRONMENT) || defined(_WIN32)
+#if RUBY_CRLF_ENVIRONMENT
     int previous_mode;
 #endif
 
@@ -3348,12 +3354,12 @@ io_read(int argc, VALUE *argv, VALUE io)
     }
 
     READ_CHECK(fptr);
-#if defined(RUBY_TEST_CRLF_ENVIRONMENT) || defined(_WIN32)
+#if RUBY_CRLF_ENVIRONMENT
     previous_mode = set_binary_mode_with_seek_cur(fptr);
 #endif
     n = io_fread(str, 0, len, fptr);
     io_set_read_length(str, n, shrinkable);
-#if defined(RUBY_TEST_CRLF_ENVIRONMENT) || defined(_WIN32)
+#if RUBY_CRLF_ENVIRONMENT
     if (previous_mode == O_TEXT) {
 	setmode(fptr->fd, O_TEXT);
     }
@@ -6928,7 +6934,7 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode,
     fptr->mode = fmode | FMODE_SYNC|FMODE_DUPLEX;
     if (convconfig) {
         fptr->encs = *convconfig;
-#if defined(RUBY_TEST_CRLF_ENVIRONMENT) || defined(_WIN32)
+#if RUBY_CRLF_ENVIRONMENT
 	if (fptr->encs.ecflags & ECONV_DEFAULT_NEWLINE_DECORATOR) {
 	    fptr->encs.ecflags |= ECONV_UNIVERSAL_NEWLINE_DECORATOR;
 	}
@@ -10617,7 +10623,7 @@ rb_io_s_pipe(int argc, VALUE *argv, VALUE klass)
 	fptr->mode &= ~FMODE_TEXTMODE;
 	setmode(fptr->fd, O_BINARY);
     }
-#if defined(RUBY_TEST_CRLF_ENVIRONMENT) || defined(_WIN32)
+#if RUBY_CRLF_ENVIRONMENT
     if (fptr->encs.ecflags & ECONV_DEFAULT_NEWLINE_DECORATOR) {
 	fptr->encs.ecflags |= ECONV_UNIVERSAL_NEWLINE_DECORATOR;
     }
