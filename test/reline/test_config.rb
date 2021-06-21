@@ -295,6 +295,8 @@ class Reline::Config::Test < Reline::TestCase
     LINES
     assert_equal '🍸', @config.vi_cmd_mode_string
     assert_equal '🍶', @config.vi_ins_mode_string
+  rescue Reline::ConfigEncodingConversionError
+    # do nothing
   end
 
   def test_inputrc_with_eucjp
@@ -305,6 +307,8 @@ class Reline::Config::Test < Reline::TestCase
     LINES
     assert_equal 'ｫｬｯ'.encode(Reline.encoding_system_needs), @config.vi_cmd_mode_string
     assert_equal '能'.encode(Reline.encoding_system_needs), @config.vi_ins_mode_string
+  rescue Reline::ConfigEncodingConversionError
+    # do nothing
   end
 
   def test_xdg_config_home

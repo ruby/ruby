@@ -13,6 +13,8 @@ module Reline
   FILENAME_COMPLETION_PROC = nil
   USERNAME_COMPLETION_PROC = nil
 
+  class ConfigEncodingConversionError < StandardError; end
+
   Key = Struct.new('Key', :char, :combined_char, :with_meta)
   CursorPos = Struct.new(:x, :y)
 

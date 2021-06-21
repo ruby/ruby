@@ -159,7 +159,14 @@ class Reline::Config
 
   def read_lines(lines, file = nil)
     if lines.first.encoding != Reline.encoding_system_needs
-      lines = lines.map { |l| l.encode(Reline.encoding_system_needs) }
+      begin
+        lines = lines.map do |l|
+          l.encode(Reline.encoding_system_needs)
+        rescue Encoding::UndefinedConversionError
+          mes = "The inputrc encoded in #{lines.first.encoding.name} can't be converted to the locale #{Reline.encoding_system_needs.name}."
+          raise Reline::ConfigEncodingConversionError.new(mes)
+        end
+      end
     end
     conditions = [@skip_section, @if_stack]
     @skip_section = nil
