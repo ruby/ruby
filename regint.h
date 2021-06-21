@@ -382,6 +382,7 @@ typedef unsigned int  BitStatusType;
 #define IS_MULTILINE(option)      ((option) & ONIG_OPTION_MULTILINE)
 #define IS_IGNORECASE(option)     ((option) & ONIG_OPTION_IGNORECASE)
 #define IS_EXTEND(option)         ((option) & ONIG_OPTION_EXTEND)
+#define IS_NOMATCHDATA(option)    ((option) & ONIG_OPTION_NOMATCHDATA)
 #define IS_FIND_LONGEST(option)   ((option) & ONIG_OPTION_FIND_LONGEST)
 #define IS_FIND_NOT_EMPTY(option) ((option) & ONIG_OPTION_FIND_NOT_EMPTY)
 #define IS_FIND_CONDITION(option) ((option) & \
