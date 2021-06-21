@@ -1204,3 +1204,23 @@ assert_equal '123', %q{
   foo(Foo)
   foo(Foo)
 }
+
+# invokesuper edge case
+assert_equal '[:A, [:A, :B]]', %q{
+  class B
+    def foo = :B
+  end
+
+  class A < B
+    def foo = [:A, super()]
+  end
+
+  A.new.foo
+  A.new.foo # compile A#foo
+
+  class C < A
+    define_method(:bar, A.instance_method(:foo))
+  end
+
+  C.new.bar
+}

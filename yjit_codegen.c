@@ -2974,6 +2974,7 @@ gen_send(jitstate_t *jit, ctx_t *ctx)
     return gen_send_general(jit, ctx, cd, block);
 }
 
+RBIMPL_ATTR_MAYBE_UNUSED() // not in use as it has problems in some situations.
 static codegen_status_t
 gen_invokesuper(jitstate_t *jit, ctx_t *ctx)
 {
@@ -3355,6 +3356,5 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(getblockparamproxy), gen_getblockparamproxy);
     yjit_reg_op(BIN(opt_send_without_block), gen_opt_send_without_block);
     yjit_reg_op(BIN(send), gen_send);
-    yjit_reg_op(BIN(invokesuper), gen_invokesuper);
     yjit_reg_op(BIN(leave), gen_leave);
 }
