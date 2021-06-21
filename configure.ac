@@ -2508,10 +2508,10 @@ AS_CASE([$coroutine_type], [yes|''], [
         [*86-linux*], [
             coroutine_type=x86
         ],
-        [x64-mingw32], [
+        [x64-mingw*], [
             coroutine_type=win64
         ],
-        [*86-mingw32], [
+        [*86-mingw*], [
             coroutine_type=win32
         ],
         [arm*-linux*], [
