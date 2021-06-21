@@ -244,11 +244,11 @@ module BasetestReadlineHistory
 
   def assert_external_string_equal(expected, actual)
     assert_equal(expected, actual)
-    assert_equal(get_default_encoding, actual.encoding)
+    assert_equal(get_default_internal_encoding, actual.encoding)
   end
 
-  def get_default_encoding
-    return Encoding.default_external || Encoding.find("locale")
+  def get_default_internal_encoding
+    return Encoding.default_internal || Encoding.find("locale")
   end
 end
 
@@ -277,7 +277,7 @@ class TestRelineAsReadlineHistory < Test::Unit::TestCase
     super
   end
 
-  def get_default_encoding
+  def get_default_internal_encoding
     if RUBY_PLATFORM =~ /mswin|mingw/
       Encoding.default_internal || Encoding::UTF_8
     else
