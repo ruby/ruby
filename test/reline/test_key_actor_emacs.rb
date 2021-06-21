@@ -12,6 +12,10 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     @line_editor.reset(@prompt, encoding: @encoding)
   end
 
+  def teardown
+    Reline.test_reset
+  end
+
   def test_ed_insert_one
     input_keys('a')
     assert_line('a')

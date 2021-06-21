@@ -23,6 +23,7 @@ class Reline::WithinPipeTest < Reline::TestCase
     @output_writer.close
     @config.reset
     @config.reset_default_key_bindings
+    Reline.test_reset
   end
 
   def test_simple_input

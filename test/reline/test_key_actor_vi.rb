@@ -13,6 +13,10 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     @line_editor.reset(@prompt, encoding: @encoding)
   end
 
+  def teardown
+    Reline.test_reset
+  end
+
   def test_vi_command_mode
     input_keys("\C-[")
     assert_instance_of(Reline::KeyActor::ViCommand, @config.editing_mode)

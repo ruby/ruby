@@ -6,6 +6,10 @@ class Reline::History::Test < Reline::TestCase
     Reline.send(:test_mode)
   end
 
+  def teardown
+    Reline.test_reset
+  end
+
   def test_ancestors
     assert_equal(Reline::History.ancestors.include?(Array), true)
   end

@@ -11,6 +11,10 @@ class Reline::LineEditor::StringProcessingTest < Reline::TestCase
     @line_editor.reset(@prompt, encoding: @encoding)
   end
 
+  def teardown
+    Reline.test_reset
+  end
+
   def test_calculate_width
     width = @line_editor.send(:calculate_width, 'Ruby string')
     assert_equal('Ruby string'.size, width)
