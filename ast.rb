@@ -141,6 +141,17 @@ module RubyVM::AbstractSyntaxTree
     end
 
     #  call-seq:
+    #     node.node_id -> integer
+    #
+    #  Returns an internal node_id number.
+    #  Note that this is an API for ruby internal use, debugging,
+    #  and research. Do not use this for any other purpose.
+    #  The compatibility is not guaranteed.
+    def node_id
+      Primitive.ast_node_node_id
+    end
+
+    #  call-seq:
     #     node.script_lines -> array
     #
     #  Returns the original source code as an array of lines.
