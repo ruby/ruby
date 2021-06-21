@@ -21,4 +21,8 @@ else
     Object.send(:remove_const, :Readline) if Object.const_defined?(:Readline)
     Object.const_set(:Readline, Reline)
   end
+
+  def finish_using_lib_reline
+    Reline.test_reset
+  end
 end
