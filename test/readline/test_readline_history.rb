@@ -281,7 +281,7 @@ class TestRelineAsReadlineHistory < Test::Unit::TestCase
     if RUBY_PLATFORM =~ /mswin|mingw/
       Encoding.default_internal || Encoding::UTF_8
     else
-      super
+      Reline::IOGate.encoding
     end
   end
 end if defined?(Reline) && ENV["TEST_READLINE_OR_RELINE"] != "Readline"
