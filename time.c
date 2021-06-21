@@ -5592,7 +5592,6 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
  */
 
 /*
-//
 void
 Init_Time(void)
 {
