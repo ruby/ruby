@@ -5392,6 +5392,7 @@ rb_int_s_isqrt(VALUE self, VALUE num)
  *           to a given precision.
  * - #coerce:: Returns array <tt>[coerced_self, coerced_other]</tt>
  *             for the given other value.
+ * - #conj (aliased as #conjugate):: Returns the complex conjugate of +self+.
  * - #denominator:: Returns the denominator (always positive)
  *                  of the Rational representation of +self+.
  * - #div:: Returns the value of +self+ divided by the given value
@@ -5420,11 +5421,8 @@ rb_int_s_isqrt(VALUE self, VALUE num)
  * === Other
  *
  * - #clone:: Returns +self+; does not allow freezing.
- * - #conj (aliased as #conjugate):: Returns the complex conjugate of +self+.
- * - #dup (aliased as #+:: Returns +self+.
+ * - #dup (aliased as #+@):: Returns +self+.
  * - #step:: Invokes the given block with the sequence of specified numbers.
- *
- *
  *
  */
 void

@@ -3439,6 +3439,7 @@ rb_dir_s_empty_p(VALUE obj, VALUE dirname)
     return result;
 }
 
+/*
 void
 Init_Dir(void)
 {
