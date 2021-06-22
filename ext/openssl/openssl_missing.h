@@ -21,10 +21,6 @@
 #  define EVP_MD_CTX_free EVP_MD_CTX_destroy
 #endif
 
-#if !defined(HAVE_EVP_MD_CTX_PKEY_CTX)
-#  define EVP_MD_CTX_pkey_ctx(x) (x)->pctx
-#endif
-
 #if !defined(HAVE_X509_STORE_GET_EX_DATA)
 #  define X509_STORE_get_ex_data(x, idx) \
 	CRYPTO_get_ex_data(&(x)->ex_data, (idx))
@@ -221,6 +217,18 @@ IMPL_PKEY_GETTER(EC_KEY, ec)
 
 #ifndef HAVE_EVP_MD_CTX_GET0_MD
 #  define EVP_MD_CTX_get0_md(ctx) EVP_MD_CTX_md(ctx)
+#endif
+
+/*
+ * OpenSSL 1.1.0 added EVP_MD_CTX_pkey_ctx(), and then it was renamed to
+ * EVP_MD_CTX_get_pkey_ctx(x) in OpenSSL 3.0.
+ */
+#ifndef HAVE_EVP_MD_CTX_GET_PKEY_CTX
+# ifdef HAVE_EVP_MD_CTX_PKEY_CTX
+#  define EVP_MD_CTX_get_pkey_ctx(x) EVP_MD_CTX_pkey_ctx(x)
+# else
+#  define EVP_MD_CTX_get_pkey_ctx(x) (x)->pctx
+# endif
 #endif
 
 #endif /* _OSSL_OPENSSL_MISSING_H_ */
