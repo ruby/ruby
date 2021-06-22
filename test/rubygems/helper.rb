@@ -1591,7 +1591,7 @@ class Object
     metaclass.send :undef_method, name
     metaclass.send :alias_method, name, new_name
     metaclass.send :undef_method, new_name
-  end
+  end unless method_defined?(:stub) # lib/resolv/test_dns.rb also has the same method definition
 end
 
 require_relative 'utilities'
