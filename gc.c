@@ -3552,16 +3552,18 @@ objspace_each_objects_try(VALUE arg)
         while (cursor_end < pend) {
             int payload_len = 0;
 
+#if USE_RVARGC
             while (cursor_end < pend && BUILTIN_TYPE((VALUE)cursor_end) != T_PAYLOAD) {
                 cursor_end++;
             }
 
-#if USE_RVARGC
             //Make sure the Payload header slot is yielded
             if (cursor_end < pend && BUILTIN_TYPE((VALUE)cursor_end) == T_PAYLOAD) {
                 payload_len = RPAYLOAD_LEN((VALUE)cursor_end);
                 cursor_end++;
             }
+#else
+            cursor_end = pend;
 #endif
 
             if ((*data->callback)(pstart, cursor_end, sizeof(RVALUE), data->data)) {
