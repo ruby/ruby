@@ -4817,6 +4817,10 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
         RB_GC_GUARD(status);
     }
 
+    if (status.pid > 0) {
+        rb_last_status_set(status.pid, status.status);
+    }
+
     if (eargp->exception) {
         VALUE command = eargp->invoke.sh.shell_script;
         RB_GC_GUARD(execarg_obj);
