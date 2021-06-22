@@ -1189,6 +1189,20 @@ assert_equal '123', %q{
   foo(obj)
 }
 
+# Call method on an object that has a non-material
+# singleton class.
+# TODO: assert that it takes no side exits? This
+# test case revealed that we were taking exits unnecessarily.
+assert_normal_exit %q{
+  def foo(obj)
+    obj.itself
+  end
+
+  o = Object.new.singleton_class
+  foo(o)
+  foo(o)
+}
+
 # Call to singleton class
 assert_equal '123', %q{
   class Foo

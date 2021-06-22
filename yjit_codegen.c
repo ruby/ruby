@@ -167,7 +167,7 @@ jit_save_sp(jitstate_t* jit, ctx_t* ctx)
     }
 }
 
-static bool jit_guard_known_klass(jitstate_t *jit, ctx_t* ctx, VALUE known_klass, insn_opnd_t insn_opnd, const int max_chain_depth, uint8_t *side_exit);
+static bool jit_guard_known_klass(jitstate_t *jit, ctx_t* ctx, VALUE known_klass, insn_opnd_t insn_opnd, VALUE sample_instance, const int max_chain_depth, uint8_t *side_exit);
 
 #if RUBY_DEBUG
 
@@ -1271,7 +1271,7 @@ gen_getinstancevariable(jitstate_t *jit, ctx_t *ctx)
     mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, self));
     guard_self_is_heap(cb, REG0, COUNTED_EXIT(side_exit, getivar_se_self_not_heap), ctx);
 
-    jit_guard_known_klass(jit, ctx, comptime_val_klass, OPND_SELF, GETIVAR_MAX_DEPTH, side_exit);
+    jit_guard_known_klass(jit, ctx, comptime_val_klass, OPND_SELF, comptime_val, GETIVAR_MAX_DEPTH, side_exit);
 
     return gen_get_ivar(jit, ctx, GETIVAR_MAX_DEPTH, comptime_val, ivar_name, OPND_SELF, side_exit);
 }
@@ -2170,10 +2170,9 @@ Guard that a stack operand has the same class as known_klass.
 Recompile as contingency if possible, or take side exit a last resort.
 */
 static bool
-jit_guard_known_klass(jitstate_t *jit, ctx_t* ctx, VALUE known_klass, insn_opnd_t insn_opnd, const int max_chain_depth, uint8_t *side_exit)
+jit_guard_known_klass(jitstate_t *jit, ctx_t *ctx, VALUE known_klass, insn_opnd_t insn_opnd, VALUE sample_instance, const int max_chain_depth, uint8_t *side_exit)
 {
     val_type_t val_type = ctx_get_opnd_type(ctx, insn_opnd);
-    bool singleton_klass = FL_TEST(known_klass, FL_SINGLETON);
 
     if (known_klass == rb_cNilClass) {
         if (val_type.type != ETYPE_NIL) {
@@ -2206,19 +2205,25 @@ jit_guard_known_klass(jitstate_t *jit, ctx_t* ctx, VALUE known_klass, insn_opnd_
     else if (known_klass == rb_cInteger ||
             known_klass == rb_cSymbol ||
             known_klass == rb_cFloat) {
-        // Can't guard for for these classes because some of they are sometimes
-        // immediate (special const). Can remove this by adding appropriate
-        // dynamic checks.
+        // Can't guard for for these classes because they can have both
+        // immediate (special const) instances and instances on the heap. Can
+        // remove this by adding appropriate dynamic checks.
         return false;
     }
-    else if (singleton_klass) {
+    else if (FL_TEST(known_klass, FL_SINGLETON) && sample_instance == rb_attr_get(known_klass, id__attached__)) {
         // Singleton classes are attached to one specific object, so we can
         // avoid one memory access (and potentially the is_heap check) by
         // looking for the expected object directly.
+        // Note that in case the sample instance has a singleton class that
+        // doesn't attach to the sample instance, it means the sample instance
+        // has an empty singleton class that hasn't been materialized yet. In
+        // this case, comparing against the sample instance doesn't gurantee
+        // that its singleton class is empty, so we can't avoid the memory
+        // access. As an example, `Object.new.singleton_class` is an object in
+        // this situation.
         ADD_COMMENT(cb, "guard known object with singleton class");
-        VALUE known_obj = rb_attr_get(known_klass, id__attached__);
         // TODO: jit_mov_gc_ptr keeps a strong reference, which leaks the object.
-        jit_mov_gc_ptr(jit, cb, REG1, known_obj);
+        jit_mov_gc_ptr(jit, cb, REG1, sample_instance);
         cmp(cb, REG0, REG1);
         jit_chain_guard(JCC_JNE, jit, ctx, max_chain_depth, side_exit);
     }
@@ -2868,7 +2873,7 @@ gen_send_general(jitstate_t *jit, ctx_t *ctx, struct rb_call_data *cd, rb_iseq_t
     x86opnd_t recv = ctx_stack_opnd(ctx, argc);
     insn_opnd_t recv_opnd = OPND_STACK(argc);
     mov(cb, REG0, recv);
-    if (!jit_guard_known_klass(jit, ctx, comptime_recv_klass, recv_opnd, SEND_MAX_DEPTH, side_exit)) {
+    if (!jit_guard_known_klass(jit, ctx, comptime_recv_klass, recv_opnd, comptime_recv, SEND_MAX_DEPTH, side_exit)) {
         return YJIT_CANT_COMPILE;
     }
 
@@ -3075,7 +3080,7 @@ gen_invokesuper(jitstate_t *jit, ctx_t *ctx)
     insn_opnd_t recv_opnd = OPND_STACK(argc);
     mov(cb, REG0, recv);
 
-    if (!jit_guard_known_klass(jit, ctx, comptime_recv_klass, recv_opnd, SEND_MAX_DEPTH, side_exit)) {
+    if (!jit_guard_known_klass(jit, ctx, comptime_recv_klass, recv_opnd, comptime_recv, SEND_MAX_DEPTH, side_exit)) {
         return YJIT_CANT_COMPILE;
     }
 
