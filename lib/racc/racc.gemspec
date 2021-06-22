@@ -90,6 +90,7 @@ DESC
   ]
   s.require_paths = ["lib"]
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
+  s.required_ruby_version = ">= 2.5"
   s.rdoc_options = ["--main", "README.rdoc"]
   s.extra_rdoc_files = [
     "README.ja.rdoc", "README.rdoc",
