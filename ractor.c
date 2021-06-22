@@ -1420,8 +1420,14 @@ cancel_single_ractor_mode(void)
     // enable multi-ractor mode
     RUBY_DEBUG_LOG("enable multi-ractor mode", 0);
 
+    VALUE was_disabled = rb_gc_enable();
+
     rb_gc_start();
     rb_transient_heap_evacuate();
+
+    if (was_disabled) {
+        rb_gc_disable();
+    }
 
     ruby_single_main_ractor = NULL;
 
