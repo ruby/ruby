@@ -126,7 +126,7 @@ Outstanding ones only.
     * IO hooks `io_wait`, `io_read`, `io_write`, receive the original IO object
       where possible. [[Bug #18003]]
 
-    * Make `Monitor` fiber-safe. [Bug #17827]
+    * Make `Monitor` fiber-safe. [[Bug #17827]]
 
 ## Stdlib updates
 
