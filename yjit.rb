@@ -74,6 +74,7 @@ module YJIT
       # Subgraph contains disassembly
       buff << "  subgraph disasm {\n"
       buff << "  node [shape=record fontname=\"courier\"];\n"
+      buff << "  edge [fontname=\"courier\" penwidth=3];\n"
       blocks.each do |block|
         disasm = disasm_block(cs, block, highlight)
 
@@ -87,9 +88,9 @@ module YJIT
         buff << block.outgoing_ids.map { |id|
           next_block = blocks.bsearch { |nb| id <=> nb.id }
           if next_block.address == (block.address + block.code.length)
-            "b#{block.id} -> b#{id}[color=\"green\"];"
+            "b#{block.id} -> b#{id}[label=\"Fall\"];"
           else
-            "b#{block.id} -> b#{id};"
+            "b#{block.id} -> b#{id}[label=\"Jump\" style=dashed];"
           end
         }.join("\n")
         buff << "\n"
