@@ -3458,10 +3458,10 @@ time_to_i(VALUE time)
  *  the exact number of nanoseconds since the Epoch.
  *  (IEEE 754 double has 53bit mantissa.
  *  So it can represent exact number of nanoseconds only in
- *  `2 ** 53 / 1_000_000_000 / 60 / 60 / 24 = 104.2` days.)
+ *  <tt>2 ** 53 / 1_000_000_000 / 60 / 60 / 24 = 104.2</tt> days.)
  *  When Ruby uses a nanosecond-resolution clock function,
  *  such as +clock_gettime+ of POSIX, to obtain the current time,
- *  Time#to_f can lost information of a Time object created with +Time.now+.
+ *  Time#to_f can lose information of a Time object created with +Time.now+.
  */
 
 static VALUE
