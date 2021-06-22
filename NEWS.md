@@ -115,6 +115,19 @@ Outstanding ones only.
 
     * $LOAD_PATH.resolve_feature_path does not raise. [[Feature #16043]]
 
+* Fiber Scheduler
+
+    * Add support for `Addrinfo.getaddrinfo` using `address_resolve` hook.
+      [[Feature #17370]]
+
+    * Introduce non-blocking `Timeout.timeout` using `timeout_after` hook.
+      [[Feature #17470]]
+
+    * IO hooks `io_wait`, `io_read`, `io_write`, receive the original IO object
+      where possible. [[Bug #18003]]
+
+    * Make `Monitor` fiber-safe. [Bug #17827]
+
 ## Stdlib updates
 
 Outstanding ones only.
@@ -122,6 +135,11 @@ Outstanding ones only.
 ## Compatibility issues
 
 Excluding feature bug fixes.
+
+* `rb_io_wait_readable`, `rb_io_wait_writable` and `rb_wait_for_single_fd` are
+  deprecated in favour of `rb_io_maybe_wait_readable`,
+  `rb_io_maybe_wait_writable` and `rb_io_maybe_wait` respectively.
+  `rb_thread_wait_fd` and `rb_thread_fd_writable` are deprecated. [[Bug #18003]]
 
 ## Stdlib compatibility issues
 
@@ -170,3 +188,7 @@ Excluding feature bug fixes.
 [Feature #17490]: https://bugs.ruby-lang.org/issues/17490
 [Feature #17744]: https://bugs.ruby-lang.org/issues/17744
 [Feature #17762]: https://bugs.ruby-lang.org/issues/17762
+[Bug #18003]: https://bugs.ruby-lang.org/issues/18003
+[Feature #17370]: https://bugs.ruby-lang.org/issues/17370
+[Feature #17470]: https://bugs.ruby-lang.org/issues/17470
+[Bug #17827]: https://bugs.ruby-lang.org/issues/17827
