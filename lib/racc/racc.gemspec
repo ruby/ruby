@@ -37,11 +37,11 @@ DESC
     "lib/racc/parser.rb", "lib/racc/parserfilegenerator.rb",
     "lib/racc/pre-setup", "lib/racc/sourcetext.rb",
     "lib/racc/state.rb", "lib/racc/statetransitiontable.rb",
-    "lib/racc/static.rb", "rdoc/en/NEWS.en.rdoc",
-    "rdoc/en/grammar.en.rdoc", "rdoc/ja/NEWS.ja.rdoc",
-    "rdoc/ja/command.ja.html", "rdoc/ja/debug.ja.rdoc",
-    "rdoc/ja/grammar.ja.rdoc", "rdoc/ja/index.ja.html",
-    "rdoc/ja/parser.ja.rdoc", "rdoc/ja/usage.ja.html",
+    "lib/racc/static.rb", "doc/en/NEWS.en.rdoc",
+    "doc/en/grammar.en.rdoc", "doc/ja/NEWS.ja.rdoc",
+    "doc/ja/command.ja.html", "doc/ja/debug.ja.rdoc",
+    "doc/ja/grammar.ja.rdoc", "doc/ja/index.ja.html",
+    "doc/ja/parser.ja.rdoc", "doc/ja/usage.ja.html",
     "sample/array.y", "sample/array2.y", "sample/calc-ja.y",
     "sample/calc.y", "sample/conflict.y", "sample/hash.y",
     "sample/lalr.y", "sample/lists.y", "sample/syntax.y",
@@ -85,7 +85,8 @@ DESC
     "test/scandata/slash", "test/src.intp", "test/start.y",
     "test/test_chk_y.rb", "test/test_grammar_file_parser.rb",
     "test/test_racc_command.rb", "test/test_scan_y.rb",
-    "test/testscanner.rb", "web/racc.en.rhtml", "web/racc.ja.rhtml"
+    "test/testscanner.rb", "doc/en/racc.en.rhtml", "doc/ja/racc.ja.rhtml",
+    "doc/en/Overview-of-racc.md"
   ]
   s.require_paths = ["lib"]
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
