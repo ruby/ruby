@@ -4818,7 +4818,7 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
     }
 
     if (status.pid > 0) {
-        rb_last_status_set(status.pid, status.status);
+        GET_THREAD()->last_status = rb_process_status_new(status.pid, status.status, status.error);
     }
 
     if (eargp->exception) {
