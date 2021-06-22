@@ -926,11 +926,12 @@ invalidate_block_version(block_t* block)
         cb_set_pos(cb, branch->start_pos);
         branch->gen_fn(cb, branch->dst_addrs[0], branch->dst_addrs[1], branch->shape);
         branch->end_pos = cb->write_pos;
+        branch->block->end_pos = cb->write_pos;
         cb_set_pos(cb, cur_pos);
 
         if (target_next && branch->end_pos > block->end_pos)
         {
-            rb_bug("yjit invalidate rewrote branch past block end");
+            rb_bug("yjit invalidate rewrote branch past end of invalidated block");
         }
     }
 
