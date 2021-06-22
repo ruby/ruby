@@ -1405,4 +1405,17 @@ assert_equal "ok", %q{
   end
 }
 
+assert_equal "ok", %q{
+  GC.disable
+  Ractor.new {}
+  raise "not ok" unless GC.disable
+
+  foo = []
+  10.times { foo << 1 }
+
+  GC.start
+
+  'ok'
+}
+
 end # if !ENV['GITHUB_WORKFLOW']
