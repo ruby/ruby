@@ -4318,12 +4318,12 @@ rb_fork_ruby2(struct rb_process_status *status) {
         err = errno;
         after_fork_ruby();
         disable_child_handler_fork_parent(&old); /* yes, bad name */
-        
+
         if (mjit_enabled && pid > 0) mjit_resume(); /* child (pid == 0) is cared by rb_thread_atfork */
-        
+
         if (pid >= 0) /* fork succeed */
             return pid;
-        
+
         /* fork failed */
         if (handle_fork_error(err, status, NULL, &try_gc)) {
             return -1;
