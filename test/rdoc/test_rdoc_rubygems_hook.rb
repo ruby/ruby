@@ -7,8 +7,6 @@ require "test/unit"
 
 class TestRDocRubygemsHook < Test::Unit::TestCase
   def setup
-    FileUtils.mkdir_p File.expand_path("tmp")
-
     @a = Gem::Specification.new do |s|
       s.platform    = Gem::Platform::RUBY
       s.name        = "a"
@@ -16,7 +14,7 @@ class TestRDocRubygemsHook < Test::Unit::TestCase
       s.rdoc_options = %w[--main MyTitle]
       s.extra_rdoc_files = %w[README]
     end
-    @tempdir = Dir.mktmpdir("test_rubygems_", File.expand_path("tmp"))
+    @tempdir = File.realpath(Dir.mktmpdir("test_rubygems_hook_"))
 
     @a.instance_variable_set(:@doc_dir, File.join(@tempdir, "doc"))
     @a.instance_variable_set(:@gem_dir, File.join(@tempdir, "a-2"))
@@ -41,7 +39,7 @@ class TestRDocRubygemsHook < Test::Unit::TestCase
   def teardown
     ui = Gem::DefaultUserInteraction.ui
     Gem::DefaultUserInteraction.ui = @old_ui
-    FileUtils.rm_rf File.expand_path("tmp")
+    FileUtils.rm_rf @tempdir
     ui.close
   end
 
