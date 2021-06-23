@@ -3088,6 +3088,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
          */
         int stop_optimization =
 	    ISEQ_COVERAGE(iseq) && ISEQ_LINE_COVERAGE(iseq) &&
+            nobj->link.type == ISEQ_ELEMENT_INSN &&
             nobj->insn_info.events;
 	if (!stop_optimization) {
             INSN *pobj = (INSN *)iobj->link.prev;
