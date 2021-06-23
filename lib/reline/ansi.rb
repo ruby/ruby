@@ -183,12 +183,7 @@ class Reline::ANSI
     unless @@buf.empty?
       return false
     end
-    rs, = IO.select([@@input], [], [], 0.00001)
-    if rs and rs[0]
-      false
-    else
-      true
-    end
+    !@@input.wait_readable(0)
   end
 
   def self.ungetc(c)
@@ -197,8 +192,7 @@ class Reline::ANSI
 
   def self.retrieve_keybuffer
     begin
-      result = select([@@input], [], [], 0.001)
-      return if result.nil?
+      return unless @@input.wait_readable(0.001)
       str = @@input.read_nonblock(1024)
       str.bytes.each do |c|
         @@buf.push(c)
