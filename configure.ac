@@ -962,6 +962,8 @@ AS_CASE(["$target_os"], [*android*], [
 AS_UNSET(ORIG_LIBS)
 POSTLINK=:
 AC_SUBST(POSTLINK)
+cleanlibs=
+AC_SUBST(cleanlibs)
 AS_CASE(["$target_os"],
 [nextstep*], [	],
 [openstep*], [	],
@@ -1060,6 +1062,7 @@ main()
 		AC_CHECK_HEADERS(crt_externs.h, [], [], [
 		    #include <crt_externs.h>
 		])
+		cleanlibs='$(TARGET_SO).dSYM'
 		],
 [hpux*], [	LIBS="-lm $LIBS"
 		ac_cv_c_inline=no],
