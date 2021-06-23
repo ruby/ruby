@@ -168,7 +168,7 @@ udp_send_internal(VALUE v)
 
         ssize_t n = (ssize_t)BLOCKING_REGION_FD(rsock_sendto_blocking, &arg->sarg);
 
-        if (n >= 0) return RB_INT2NUM(n);
+        if (n >= 0) return RB_SSIZE2NUM(n);
 
         if (rb_io_maybe_wait_writable(errno, fptr->self, Qnil)) {
             goto retry;
