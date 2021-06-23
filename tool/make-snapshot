@@ -394,24 +394,21 @@ def package(vcs, rev, destdir, tmp = nil)
       mk << commonmk.gsub(/\{\$([^(){}]*)[^{}]*\}/, "")
       mk << <<-'APPEND'
 
-prereq: clean-cache $(CLEAN_CACHE)
+prepare-package: touch-unicode-files:
+prepare-package: prereq update-download clean-cache $(CLEAN_CACHE)
 clean-cache $(CLEAN_CACHE): after-update
-touch-unicode-files: _touch-unicode-files
-update-download:: touch-unicode-files
 update-download:: update-gems
 after-update:: extract-gems
 extract-gems: update-gems
 update-gems:
-_touch-unicode-files:
-	$(MAKEDIRS) $(UNICODE_SRC_DATA_DIR)
-	touch $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time $(UNICODE_DATA_HEADERS)
+$(UNICODE_SRC_DATA_DIR)/.unicode-tables.time:
+touch-unicode-files:
       APPEND
       open(clean.add("Makefile"), "w") do |f|
-        f.puts "prereq: update-download"
         f.puts mk
       end
       ENV["CACHE_SAVE"] = "no"
-      system(ENV["MAKE"] || ENV["make"] || "make", "prereq", *args.map {|arg| arg.join("=")})
+      system(ENV["MAKE"] || ENV["make"] || "make", "prepare-package", *args.map {|arg| arg.join("=")})
       clean.push("rbconfig.rb", ".rbconfig.time", "enc.mk")
       print "prerequisites"
     else
