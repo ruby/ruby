@@ -95,7 +95,7 @@ YJIT supports all command-line options supported by upstream CRuby, but also add
 - `--yjit-stats`: produce statistics after the execution of a program (must compile with `cppflags=-DRUBY_DEBUG` to use this)
 - `--yjit-exec-mem-size=N`: size of the executable memory block to allocate (default 256 MiB)
 - `--yjit-call-threshold=N`: number of calls after which YJIT begins to compile a function (default 2)
-- `--yjit-version-limit=N`: maximum number of versions to generate per basic block (default 4)
+- `--yjit-max-versions=N`: maximum number of versions to generate per basic block (default 4)
 - `--yjit-greedy-versioning`: greedy versioning mode (disabled by default, may increase code size)
 
 ### Benchmarking
@@ -125,7 +125,7 @@ We welcome open source contributors. You should feel free to open new issues to 
 Suggestions on how to make this readme file more helpful for new contributors are most welcome.
 
 Bug fixes and bug reports are very valuable to us. If you find a bug in YJIT, it's very possible be that nobody has reported it before,
-or that we don't have a good reproduction for it, so please open an issue and provide as much information as you can about your configuration and a description of how you encountered the problem. List the commands you used to run YJIT so that we can easily reproduce the issue on our end and investigate it. If you are able to produce a small program reproducing the error to help us track it down, that is very much appreciated as well. 
+or that we don't have a good reproduction for it, so please open an issue and provide as much information as you can about your configuration and a description of how you encountered the problem. List the commands you used to run YJIT so that we can easily reproduce the issue on our end and investigate it. If you are able to produce a small program reproducing the error to help us track it down, that is very much appreciated as well.
 
 If you would like to contribute a large patch to YJIT, we suggest opening an issue or a discussion on this repository so that
 we can have an active discussion. A common problem is that sometimes people submit large pull requests to open source projects

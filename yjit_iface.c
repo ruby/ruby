@@ -1100,8 +1100,8 @@ rb_yjit_init(struct rb_yjit_options *options)
     if (rb_yjit_opts.call_threshold < 1) {
         rb_yjit_opts.call_threshold = 10;
     }
-    if (rb_yjit_opts.version_limit < 1) {
-        rb_yjit_opts.version_limit = 4;
+    if (rb_yjit_opts.max_versions < 1) {
+        rb_yjit_opts.max_versions = 4;
     }
 
     blocks_assuming_stable_global_constant_state = st_init_numtable();
