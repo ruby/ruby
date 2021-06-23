@@ -28,7 +28,7 @@ class TestRDocRubygemsHook < Test::Unit::TestCase
     ].map {|e| [e, ENV.delete(e)]}.to_h
     ENV["HOME"] = @tempdir
 
-    Gem.configuration[:rdoc] = nil
+    Gem.configuration = nil
 
     @a.instance_variable_set(:@doc_dir, File.join(@tempdir, "doc"))
     @a.instance_variable_set(:@gem_dir, File.join(@tempdir, "a-2"))
