@@ -391,7 +391,7 @@ module TestIRB
         "  def m1() end\n",
         "  def m3() end\n",
         "end\n",
-        
+
         "module M2\n",
         "  include M\n",
         "  def m4() end\n",
