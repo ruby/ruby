@@ -884,18 +884,19 @@ rb_alias_variable(ID name1, ID name2)
 static bool
 iv_index_tbl_lookup(struct st_table *tbl, ID id, uint32_t *indexp)
 {
-    struct rb_iv_index_tbl_entry *ent;
+    st_data_t ent_data;
     int r;
 
     if (tbl == NULL) return false;
 
     RB_VM_LOCK_ENTER();
     {
-        r = st_lookup(tbl, (st_data_t)id, (st_data_t *)&ent);
+        r = st_lookup(tbl, (st_data_t)id, &ent_data);
     }
     RB_VM_LOCK_LEAVE();
 
     if (r) {
+        struct rb_iv_index_tbl_entry *ent = (void *)ent_data;
         *indexp = ent->index;
         return true;
     }
@@ -1149,20 +1150,19 @@ void
 rb_mv_generic_ivar(VALUE rsrc, VALUE dst)
 {
     st_data_t key = (st_data_t)rsrc;
-    struct gen_ivtbl *ivtbl;
+    st_data_t ivtbl;
 
-    if (st_delete(generic_ivtbl_no_ractor_check(rsrc), &key, (st_data_t *)&ivtbl))
-        st_insert(generic_ivtbl_no_ractor_check(dst), (st_data_t)dst, (st_data_t)ivtbl);
+    if (st_delete(generic_ivtbl_no_ractor_check(rsrc), &key, &ivtbl))
+        st_insert(generic_ivtbl_no_ractor_check(dst), (st_data_t)dst, ivtbl);
 }
 
 void
 rb_free_generic_ivar(VALUE obj)
 {
-    st_data_t key = (st_data_t)obj;
-    struct gen_ivtbl *ivtbl;
+    st_data_t key = (st_data_t)obj, ivtbl;
 
-    if (st_delete(generic_ivtbl_no_ractor_check(obj), &key, (st_data_t *)&ivtbl))
-	xfree(ivtbl);
+    if (st_delete(generic_ivtbl_no_ractor_check(obj), &key, &ivtbl))
+	xfree((struct gen_ivtbl *)ivtbl);
 }
 
 RUBY_FUNC_EXPORTED size_t
@@ -1193,8 +1193,6 @@ gen_ivtbl_count(const struct gen_ivtbl *ivtbl)
 VALUE
 rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
 {
-    VALUE val;
-
     if (SPECIAL_CONST_P(obj)) return undef;
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
@@ -1202,6 +1200,7 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
             uint32_t index;
             uint32_t len = ROBJECT_NUMIV(obj);
             VALUE *ptr = ROBJECT_IVPTR(obj);
+            VALUE val;
 
             if (iv_index_tbl_lookup(ROBJECT_IV_INDEX_TBL(obj), id, &index) &&
                 index < len &&
@@ -1215,10 +1214,12 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
       case T_CLASS:
       case T_MODULE:
         {
+            st_data_t val;
+
             IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
             if (RCLASS_IV_TBL(obj) &&
-                st_lookup(RCLASS_IV_TBL(obj), (st_data_t)id, (st_data_t *)&val)) {
-                return val;
+                st_lookup(RCLASS_IV_TBL(obj), (st_data_t)id, &val)) {
+                return (VALUE)val;
             }
             else {
                 break;
@@ -1249,7 +1250,7 @@ rb_attr_get(VALUE obj, ID id)
 static VALUE
 rb_ivar_delete(VALUE obj, ID id, VALUE undef)
 {
-    VALUE val, *ptr;
+    VALUE *ptr;
     struct st_table *iv_index_tbl;
     uint32_t len, index;
 
@@ -1261,7 +1262,7 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
         iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
         if (iv_index_tbl_lookup(iv_index_tbl, id, &index) &&
             index < len) {
-            val = ptr[index];
+            VALUE val = ptr[index];
             ptr[index] = Qundef;
 
             if (val != Qundef) {
@@ -1272,9 +1273,11 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
       case T_CLASS:
       case T_MODULE:
         IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
-	if (RCLASS_IV_TBL(obj) &&
-            st_delete(RCLASS_IV_TBL(obj), (st_data_t *)&id, (st_data_t *)&val)) {
-            return val;
+	if (RCLASS_IV_TBL(obj)) {
+            st_data_t id_data = (st_data_t)id, val;
+            if (st_delete(RCLASS_IV_TBL(obj), &id_data, &val)) {
+                return (VALUE)val;
+            }
         }
 	break;
       default:
@@ -1315,9 +1318,11 @@ static void
 iv_index_tbl_extend(struct ivar_update *ivup, ID id, VALUE klass)
 {
     ASSERT_vm_locking();
+    st_data_t ent_data;
     struct rb_iv_index_tbl_entry *ent;
 
-    if (st_lookup(ivup->u.iv_index_tbl, (st_data_t)id, (st_data_t *)&ent)) {
+    if (st_lookup(ivup->u.iv_index_tbl, (st_data_t)id, &ent_data)) {
+        ent = (void *)ent_data;
         ivup->index = ent->index;
 	return;
     }
@@ -1694,10 +1699,10 @@ rb_replace_generic_ivar(VALUE clone, VALUE obj)
 
     RB_VM_LOCK_ENTER();
     {
-        struct gen_ivtbl **ivtbl;
-        if (st_lookup(generic_iv_tbl_, (st_data_t)obj, (st_data_t *)&ivtbl)) {
-            st_insert(generic_iv_tbl_, (st_data_t)clone, (st_data_t)ivtbl);
-            st_delete(generic_iv_tbl_, (st_data_t *)&obj, NULL);
+        st_data_t ivtbl, obj_data = (st_data_t)obj;
+        if (st_lookup(generic_iv_tbl_, (st_data_t)obj, &ivtbl)) {
+            st_insert(generic_iv_tbl_, (st_data_t)clone, ivtbl);
+            st_delete(generic_iv_tbl_, &obj_data, NULL);
         }
         else {
             rb_bug("unreachable");
@@ -2036,7 +2041,7 @@ struct autoload_state {
     struct autoload_const *ac;
     VALUE result;
     VALUE thread;
-    struct list_node waitq;
+    struct list_head waitq;
 };
 
 struct autoload_data_i {
@@ -2405,11 +2410,11 @@ autoload_reset(VALUE arg)
     if (need_wakeups) {
 	struct autoload_state *cur = 0, *nxt;
 
-	list_for_each_safe((struct list_head *)&state->waitq, cur, nxt, waitq) {
+	list_for_each_safe(&state->waitq, cur, nxt, waitq.n) {
 	    VALUE th = cur->thread;
 
 	    cur->thread = Qfalse;
-	    list_del_init(&cur->waitq); /* idempotent */
+	    list_del_init(&cur->waitq.n); /* idempotent */
 
 	    /*
 	     * cur is stored on the stack of cur->waiting_th,
@@ -2444,7 +2449,7 @@ autoload_sleep_done(VALUE arg)
     struct autoload_state *state = (struct autoload_state *)arg;
 
     if (state->thread != Qfalse && rb_thread_to_be_killed(state->thread)) {
-	list_del(&state->waitq); /* idempotent after list_del_init */
+	list_del(&state->waitq.n); /* idempotent after list_del_init */
     }
 
     return Qfalse;
@@ -2485,13 +2490,13 @@ rb_autoload_load(VALUE mod, ID id)
 	 * autoload_reset will wake up any threads added to this
 	 * if and only if the GVL is released during autoload_require
 	 */
-	list_head_init((struct list_head *)&state.waitq);
+	list_head_init(&state.waitq);
     }
     else if (state.thread == ele->state->thread) {
 	return Qfalse;
     }
     else {
-	list_add_tail((struct list_head *)&ele->state->waitq, &state.waitq);
+	list_add_tail(&ele->state->waitq, &state.waitq.n);
 
 	rb_ensure(autoload_sleep, (VALUE)&state,
 		autoload_sleep_done, (VALUE)&state);
