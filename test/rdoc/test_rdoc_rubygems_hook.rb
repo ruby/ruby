@@ -16,6 +16,18 @@ class TestRDocRubygemsHook < Test::Unit::TestCase
     end
     @tempdir = File.realpath(Dir.mktmpdir("test_rubygems_hook_"))
 
+    @orig_envs = %w[
+      GEM_VENDOR
+      GEMRC
+      XDG_CACHE_HOME
+      XDG_CONFIG_HOME
+      XDG_DATA_HOME
+      SOURCE_DATE_EPOCH
+      BUNDLER_VERSION
+      HOME
+    ].map {|e| [e, ENV.delete(e)]}.to_h
+    ENV["HOME"] = @tempdir
+
     @a.instance_variable_set(:@doc_dir, File.join(@tempdir, "doc"))
     @a.instance_variable_set(:@gem_dir, File.join(@tempdir, "a-2"))
     @a.instance_variable_set(:@full_gem_path, File.join(@tempdir, "a-2"))
@@ -41,6 +53,7 @@ class TestRDocRubygemsHook < Test::Unit::TestCase
     Gem::DefaultUserInteraction.ui = @old_ui
     FileUtils.rm_rf @tempdir
     ui.close
+    ENV.update(@orig_envs)
   end
 
   def test_initialize
