@@ -1581,6 +1581,17 @@ gen_opt_eq(jitstate_t* jit, ctx_t* ctx)
 
 static codegen_status_t gen_opt_send_without_block(jitstate_t *jit, ctx_t *ctx);
 
+static codegen_status_t gen_send_general(jitstate_t *jit, ctx_t *ctx, struct rb_call_data *cd, rb_iseq_t *block);
+
+static codegen_status_t
+gen_opt_neq(jitstate_t* jit, ctx_t* ctx)
+{
+    // opt_neq is passed two rb_call_data as arguments:
+    // first for ==, second for !=
+    struct rb_call_data *cd = (struct rb_call_data *)jit_get_arg(jit, 1);
+    return gen_send_general(jit, ctx, cd, NULL);
+}
+
 static codegen_status_t
 gen_opt_aref(jitstate_t *jit, ctx_t *ctx)
 {
@@ -3375,6 +3386,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(opt_ge), gen_opt_ge);
     yjit_reg_op(BIN(opt_gt), gen_opt_gt);
     yjit_reg_op(BIN(opt_eq), gen_opt_eq);
+    yjit_reg_op(BIN(opt_neq), gen_opt_neq);
     yjit_reg_op(BIN(opt_aref), gen_opt_aref);
     yjit_reg_op(BIN(opt_aset), gen_opt_aset);
     yjit_reg_op(BIN(opt_and), gen_opt_and);
