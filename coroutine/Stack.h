@@ -13,9 +13,11 @@
 #ifdef COROUTINE_PRIVATE_STACK
 #define COROUTINE_STACK_LOCAL(type, name) type *name = ruby_xmalloc(sizeof(type))
 #define COROUTINE_STACK_FREE(name) ruby_xfree(name)
+#define COROUTINE_PROTECT_NEEDED 1
 #else
 #define COROUTINE_STACK_LOCAL(type, name) type name##_local; type * name = &name##_local
 #define COROUTINE_STACK_FREE(name)
+#define COROUTINE_PROTECT_NEEDED 0
 #endif
 
 #endif /* COROUTINE_STACK_H */

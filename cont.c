@@ -1326,7 +1326,9 @@ cont_restore_thread(rb_context_t *cont)
         th->ec->cfp = sec->cfp;
         th->ec->raised_flag = sec->raised_flag;
         th->ec->tag = sec->tag;
+#if COROUTINE_PROTECT_NEEDED
         th->ec->protect_tag = sec->protect_tag;
+#endif
         th->ec->root_lep = sec->root_lep;
         th->ec->root_svar = sec->root_svar;
         th->ec->ensure_list = sec->ensure_list;
@@ -1670,9 +1672,11 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
     if (cont_thread_value(cont) != th->self) {
         rb_raise(rb_eRuntimeError, "continuation called across threads");
     }
+#if COROUTINE_PROTECT_NEEDED
     if (cont->saved_ec.protect_tag != th->ec->protect_tag) {
         rb_raise(rb_eRuntimeError, "continuation called across stack rewinding barrier");
     }
+#endif
     if (cont->saved_ec.fiber_ptr) {
         if (th->ec->fiber_ptr != cont->saved_ec.fiber_ptr) {
             rb_raise(rb_eRuntimeError, "continuation called across fiber");
@@ -2245,20 +2249,24 @@ fiber_switch(rb_fiber_t *fiber, int argc, const VALUE *argv, int kw_splat, VALUE
     /* make sure the root_fiber object is available */
     if (th->root_fiber == NULL) root_fiber_alloc(th);
 
-    if (th->ec->fiber_ptr == fiber) {
+    if (RB_UNLIKELY(th->ec->fiber_ptr == fiber)) {
         /* ignore fiber context switch
          * because destination fiber is the same as current fiber
          */
         return make_passing_arg(argc, argv);
     }
 
-    if (cont_thread_value(cont) != th->self) {
+    if (RB_UNLIKELY(cont_thread_value(cont) != th->self)) {
         rb_raise(rb_eFiberError, "fiber called across threads");
     }
-    else if (cont->saved_ec.protect_tag != th->ec->protect_tag) {
+
+#if COROUTINE_PROTECT_NEEDED
+    if (cont->saved_ec.protect_tag != th->ec->protect_tag) {
         rb_raise(rb_eFiberError, "fiber called across stack rewinding barrier");
     }
-    else if (FIBER_TERMINATED_P(fiber)) {
+#endif
+
+    if (RB_UNLIKELY(FIBER_TERMINATED_P(fiber))) {
         value = rb_exc_new2(rb_eFiberError, "dead fiber called");
 
         if (!FIBER_TERMINATED_P(th->ec->fiber_ptr)) {

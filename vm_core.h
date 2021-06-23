@@ -85,6 +85,8 @@
 #include "thread_pthread.h"
 #endif
 
+#include "coroutine/Stack.h"
+
 #define RUBY_VM_THREAD_MODEL 2
 
 /*
@@ -830,9 +832,11 @@ STATIC_ASSERT(rb_vm_tag_buf_end,
 	      offsetof(struct rb_vm_tag, buf) + sizeof(rb_jmpbuf_t) <
 	      sizeof(struct rb_vm_tag));
 
+#if COROUTINE_PROTECT_NEEDED
 struct rb_vm_protect_tag {
     struct rb_vm_protect_tag *prev;
 };
+#endif
 
 struct rb_unblock_callback {
     rb_unblock_function_t *func;
@@ -869,7 +873,10 @@ struct rb_execution_context_struct {
     rb_control_frame_t *cfp;
 
     struct rb_vm_tag *tag;
+
+#if COROUTINE_PROTECT_NEEDED
     struct rb_vm_protect_tag *protect_tag;
+#endif
 
     /* interrupt flags */
     rb_atomic_t interrupt_flag;
