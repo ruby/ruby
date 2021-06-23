@@ -39,8 +39,10 @@ class TestRDocRubygemsHook < Test::Unit::TestCase
   end
 
   def teardown
+    ui = Gem::DefaultUserInteraction.ui
     Gem::DefaultUserInteraction.ui = @old_ui
     FileUtils.rm_rf File.expand_path("tmp")
+    ui.close
   end
 
   def test_initialize
