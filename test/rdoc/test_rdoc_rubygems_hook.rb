@@ -25,6 +25,7 @@ class TestRDocRubygemsHook < Test::Unit::TestCase
       SOURCE_DATE_EPOCH
       BUNDLER_VERSION
       HOME
+      RDOCOPT
     ].map {|e| [e, ENV.delete(e)]}.to_h
     ENV["HOME"] = @tempdir
 
