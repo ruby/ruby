@@ -1295,3 +1295,55 @@ assert_equal '[:B, [:B, :m]]', %q{
   ins.singleton_class.define_method(:bar, B.instance_method(:foo))
   ins.bar
 }
+
+# Call to fixnum
+assert_equal '[true, false]', %q{
+  def is_odd(obj)
+    obj.odd?
+  end
+
+  is_odd(1)
+  is_odd(1)
+
+  [is_odd(123), is_odd(456)]
+}
+
+# Call to bignum
+assert_equal '[true, false]', %q{
+  def is_odd(obj)
+    obj.odd?
+  end
+
+  bignum = 99999999999999999999
+  is_odd(bignum)
+  is_odd(bignum)
+
+  [is_odd(bignum), is_odd(bignum+1)]
+}
+
+# Call to fixnum and bignum
+assert_equal '[true, false, true, false]', %q{
+  def is_odd(obj)
+    obj.odd?
+  end
+
+  bignum = 99999999999999999999
+  is_odd(bignum)
+  is_odd(bignum)
+  is_odd(123)
+  is_odd(123)
+
+  [is_odd(123), is_odd(456), is_odd(bignum), is_odd(bignum+1)]
+}
+
+# Call to static and dynamic symbol
+assert_equal 'bar', %q{
+  def to_string(obj)
+    obj.to_s
+  end
+
+  to_string(:foo)
+  to_string(:foo)
+  to_string((-"bar").to_sym)
+  to_string((-"bar").to_sym)
+}

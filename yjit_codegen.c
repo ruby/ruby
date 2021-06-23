@@ -2250,9 +2250,29 @@ jit_guard_known_klass(jitstate_t *jit, ctx_t *ctx, VALUE known_klass, insn_opnd_
             ctx_set_opnd_type(ctx, insn_opnd, TYPE_FALSE);
         }
     }
-    else if (known_klass == rb_cInteger ||
-            known_klass == rb_cSymbol ||
-            known_klass == rb_cFloat) {
+    else if (known_klass == rb_cInteger && FIXNUM_P(sample_instance)) {
+        // We will guard FIXNUM and BIGNUM as though they were separate classes
+        // BIGNUM can be handled by the general else case below
+        if (val_type.type != ETYPE_FIXNUM || !val_type.is_imm) {
+            ADD_COMMENT(cb, "guard object is fixnum");
+            test(cb, REG0, imm_opnd(RUBY_FIXNUM_FLAG));
+            jit_chain_guard(JCC_JZ, jit, ctx, max_chain_depth, side_exit);
+            ctx_set_opnd_type(ctx, insn_opnd, TYPE_FIXNUM);
+        }
+    }
+    else if (known_klass == rb_cSymbol && STATIC_SYM_P(sample_instance)) {
+        // We will guard STATIC vs DYNAMIC as though they were separate classes
+        // DYNAMIC symbols can be handled by the general else case below
+        if (val_type.type != ETYPE_SYMBOL || !val_type.is_imm) {
+            ADD_COMMENT(cb, "guard object is static symbol");
+            STATIC_ASSERT(special_shift_is_8, RUBY_SPECIAL_SHIFT == 8);
+            cmp(cb, REG0_8, imm_opnd(RUBY_SYMBOL_FLAG));
+            jit_chain_guard(JCC_JNE, jit, ctx, max_chain_depth, side_exit);
+
+            ctx_set_opnd_type(ctx, insn_opnd, TYPE_STATIC_SYMBOL);
+        }
+    }
+    else if (known_klass == rb_cFloat) {
         // Can't guard for for these classes because they can have both
         // immediate (special const) instances and instances on the heap. Can
         // remove this by adding appropriate dynamic checks.

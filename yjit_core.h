@@ -69,6 +69,7 @@ STATIC_ASSERT(val_type_size, sizeof(val_type_t) == 1);
 #define TYPE_TRUE ( (val_type_t){ .is_imm = 1, .type = ETYPE_TRUE } )
 #define TYPE_FALSE ( (val_type_t){ .is_imm = 1, .type = ETYPE_FALSE } )
 #define TYPE_FIXNUM ( (val_type_t){ .is_imm = 1, .type = ETYPE_FIXNUM } )
+#define TYPE_STATIC_SYMBOL ( (val_type_t){ .is_imm = 1, .type = ETYPE_SYMBOL } )
 #define TYPE_ARRAY ( (val_type_t){ .is_heap = 1, .type = ETYPE_ARRAY } )
 #define TYPE_HASH ( (val_type_t){ .is_heap = 1, .type = ETYPE_HASH } )
 #define TYPE_STRING ( (val_type_t){ .is_heap = 1, .type = ETYPE_STRING } )
