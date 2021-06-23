@@ -2038,7 +2038,7 @@ RUBY = $(ruby#{sep})
 ruby_headers = #{headers.join(' ')}
 
 RM = #{config_string('RM', &possible_command) || '$(RUBY) -run -e rm -- -f'}
-RM_RF = #{'$(RUBY) -run -e rm -- -rf'}
+RM_RF = #{config_string('RMALL', &possible_command) || '$(RUBY) -run -e rm -- -rf'}
 RMDIRS = #{config_string('RMDIRS', &possible_command) || '$(RUBY) -run -e rmdir -- -p'}
 MAKEDIRS = #{config_string('MAKEDIRS', &possible_command) || '@$(RUBY) -run -e mkdir -- -p'}
 INSTALL = #{config_string('INSTALL', &possible_command) || '@$(RUBY) -run -e install -- -vp'}
