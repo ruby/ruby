@@ -1,4 +1,5 @@
 require 'io/console'
+require 'io/wait'
 require 'timeout'
 require_relative 'terminfo'
 
