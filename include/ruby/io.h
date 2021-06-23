@@ -154,13 +154,13 @@ int rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **
 void rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash, int *oflags_p, int *fmode_p, rb_io_enc_t *convconfig_p);
 ssize_t rb_io_bufwrite(VALUE io, const void *buf, size_t size);
 
-RBIMPL_ATTR_DEPRECATED(("use rb_io_maybe_wait_readable"))
+//RBIMPL_ATTR_DEPRECATED(("use rb_io_maybe_wait_readable"))
 int rb_io_wait_readable(int fd);
 
-RBIMPL_ATTR_DEPRECATED(("use rb_io_maybe_wait_writable"))
+//RBIMPL_ATTR_DEPRECATED(("use rb_io_maybe_wait_writable"))
 int rb_io_wait_writable(int fd);
 
-RBIMPL_ATTR_DEPRECATED(("use rb_io_wait"))
+//RBIMPL_ATTR_DEPRECATED(("use rb_io_wait"))
 int rb_wait_for_single_fd(int fd, int events, struct timeval *tv);
 
 VALUE rb_io_wait(VALUE io, VALUE events, VALUE timeout);
