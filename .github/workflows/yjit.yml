@@ -1,16 +1,23 @@
-name: YJIT threshold one
+name: YJIT options
 on: [push, pull_request]
 jobs:
   make:
     strategy:
       matrix:
-        test_task: [ "check" ] # to make job names consistent
+        # To make job names consistent
+        test_task: [ "check" ]
+        # Run with multiple thresholds and params to surface more bugs
+        yjit_opts: [
+          "--yjit-call-threshold=1 --yjit-max-versions=1",
+          "--yjit-call-threshold=1",
+          "--yjit-call-threshold=2"
+        ]
       fail-fast: false
     runs-on: ubuntu-latest
     env:
       TESTOPTS: '-q --tty=no'
-      RUN_OPTS: '--disable-gems --yjit-call-threshold=1'
-      GITPULLOPTIONS: --no-tags origin ${{github.ref}}
+      RUN_OPTS: '--disable-gems ${{ matrix.yjit_opts }}'
+      GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
     steps:
       - run: mkdir build
         working-directory:

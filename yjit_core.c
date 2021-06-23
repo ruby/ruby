@@ -421,7 +421,7 @@ block_t* find_block_version(blockid_t blockid, const ctx_t* ctx)
     if (rb_yjit_opts.greedy_versioning)
     {
         // If we're below the version limit, don't settle for an imperfect match
-        if ((uint32_t)rb_darray_size(versions) + 1 < rb_yjit_opts.version_limit && best_diff > 0) {
+        if ((uint32_t)rb_darray_size(versions) + 1 < rb_yjit_opts.max_versions && best_diff > 0) {
             return NULL;
         }
     }
@@ -438,7 +438,7 @@ void limit_block_versions(blockid_t blockid, ctx_t* ctx)
         return;
 
     // If this block version we're about to add will hit the version limit
-    if (get_num_versions(blockid) + 1 >= rb_yjit_opts.version_limit)
+    if (get_num_versions(blockid) + 1 >= rb_yjit_opts.max_versions)
     {
         // Produce a generic context that stores no type information,
         // but still respects the stack_size and sp_offset constraints

@@ -45,7 +45,7 @@ struct rb_yjit_options {
 
     // Maximum number of versions per block
     // 1 means always create generic versions
-    unsigned version_limit;
+    unsigned max_versions;
 
     // Capture and print out stats
     bool gen_stats;
