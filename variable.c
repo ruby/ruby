@@ -3407,14 +3407,17 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
     }
 
     struct rb_cvar_class_tbl_entry *ent;
+    VALUE ent_data;
 
-    if (!rb_id_table_lookup(rb_cvc_tbl, id, (VALUE*)&ent)) {
+    if (!rb_id_table_lookup(rb_cvc_tbl, id, &ent_data)) {
         ent = ALLOC(struct rb_cvar_class_tbl_entry);
         ent->class_value = target;
         ent->global_cvar_state = GET_GLOBAL_CVAR_STATE();
         rb_id_table_insert(rb_cvc_tbl, id, (VALUE)ent);
         RB_DEBUG_COUNTER_INC(cvar_inline_miss);
-    } else {
+    }
+    else {
+        ent = (void *)ent_data;
         ent->global_cvar_state = GET_GLOBAL_CVAR_STATE();
     }
 

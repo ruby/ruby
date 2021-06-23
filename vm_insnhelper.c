@@ -1281,6 +1281,35 @@ vm_setivar(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, const str
     }
 }
 
+static VALUE
+update_classvariable_cache(const rb_iseq_t *iseq, VALUE klass, ID id, ICVARC ic)
+{
+    VALUE defined_class = 0;
+    VALUE cvar_value = rb_cvar_find(klass, id, &defined_class);
+
+    if (RB_TYPE_P(defined_class, T_ICLASS)) {
+        defined_class = RBASIC(defined_class)->klass;
+    }
+
+    struct rb_id_table *rb_cvc_tbl = RCLASS_CVC_TBL(defined_class);
+    if (!rb_cvc_tbl) {
+        rb_bug("the cvc table should be set");
+    }
+
+    VALUE ent_data;
+    if (!rb_id_table_lookup(rb_cvc_tbl, id, &ent_data)) {
+        rb_bug("should have cvar cache entry");
+    }
+
+    struct rb_cvar_class_tbl_entry *ent = (void *)ent_data;
+    ent->global_cvar_state = GET_GLOBAL_CVAR_STATE();
+
+    ic->entry = ent;
+    RB_OBJ_WRITTEN(iseq, Qundef, ent->class_value);
+
+    return cvar_value;
+}
+
 static inline VALUE
 vm_getclassvariable(const rb_iseq_t *iseq, const rb_cref_t *cref, const rb_control_frame_t *cfp, ID id, ICVARC ic)
 {
@@ -1294,32 +1323,8 @@ vm_getclassvariable(const rb_iseq_t *iseq, const rb_cref_t *cref, const rb_contr
     }
 
     VALUE klass = vm_get_cvar_base(cref, cfp, 1);
-    VALUE defined_class = 0;
 
-    VALUE cvar_value = rb_cvar_find(klass, id, &defined_class);
-
-    if (RB_TYPE_P(defined_class, T_ICLASS)) {
-        defined_class = RBASIC(defined_class)->klass;
-    }
-
-    struct rb_id_table *rb_cvc_tbl = RCLASS_CVC_TBL(defined_class);
-
-    if (!rb_cvc_tbl) {
-        rb_cvc_tbl = RCLASS_CVC_TBL(defined_class) = rb_id_table_create(2);
-    }
-
-    struct rb_cvar_class_tbl_entry *ent;
-
-    if (!rb_id_table_lookup(rb_cvc_tbl, id, (VALUE*)&ent)) {
-        rb_bug("should have cvar cache entry");
-    } else {
-        ent->global_cvar_state = GET_GLOBAL_CVAR_STATE();
-    }
-
-    ic->entry = ent;
-    RB_OBJ_WRITTEN(iseq, Qundef, ent->class_value);
-
-    return cvar_value;
+    return update_classvariable_cache(iseq, klass, id, ic);
 }
 
 static inline void
@@ -1336,29 +1341,7 @@ vm_setclassvariable(const rb_iseq_t *iseq, const rb_cref_t *cref, const rb_contr
 
     rb_cvar_set(klass, id, val);
 
-    VALUE defined_class = 0;
-    rb_cvar_find(klass, id, &defined_class);
-
-    if (RB_TYPE_P(defined_class, T_ICLASS)) {
-        defined_class = RBASIC(defined_class)->klass;
-    }
-
-    struct rb_id_table *rb_cvc_tbl = RCLASS_CVC_TBL(defined_class);
-
-    if (!rb_cvc_tbl) {
-        rb_bug("the cvc table should be set");
-    }
-
-    struct rb_cvar_class_tbl_entry *ent;
-
-    if (!rb_id_table_lookup(rb_cvc_tbl, id, (VALUE*)&ent)) {
-        rb_bug("should have cvar cache entry");
-    } else {
-        ent->global_cvar_state = GET_GLOBAL_CVAR_STATE();
-    }
-
-    ic->entry = ent;
-    RB_OBJ_WRITTEN(iseq, Qundef, ent->class_value);
+    update_classvariable_cache(iseq, klass, id, ic);
 }
 
 static inline VALUE
