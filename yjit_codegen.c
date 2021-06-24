@@ -2251,7 +2251,7 @@ jit_guard_known_klass(jitstate_t *jit, ctx_t *ctx, VALUE known_klass, insn_opnd_
         }
     }
     else if (known_klass == rb_cInteger && FIXNUM_P(sample_instance)) {
-        // We will guard FIXNUM and BIGNUM as though they were separate classes
+        // We will guard fixnum and bignum as though they were separate classes
         // BIGNUM can be handled by the general else case below
         if (val_type.type != ETYPE_FIXNUM || !val_type.is_imm) {
             ADD_COMMENT(cb, "guard object is fixnum");
@@ -2268,15 +2268,19 @@ jit_guard_known_klass(jitstate_t *jit, ctx_t *ctx, VALUE known_klass, insn_opnd_
             STATIC_ASSERT(special_shift_is_8, RUBY_SPECIAL_SHIFT == 8);
             cmp(cb, REG0_8, imm_opnd(RUBY_SYMBOL_FLAG));
             jit_chain_guard(JCC_JNE, jit, ctx, max_chain_depth, side_exit);
-
             ctx_set_opnd_type(ctx, insn_opnd, TYPE_STATIC_SYMBOL);
         }
     }
-    else if (known_klass == rb_cFloat) {
-        // Can't guard for for these classes because they can have both
-        // immediate (special const) instances and instances on the heap. Can
-        // remove this by adding appropriate dynamic checks.
-        return false;
+    else if (known_klass == rb_cFloat && FLONUM_P(sample_instance)) {
+        if (val_type.type != ETYPE_FLONUM || !val_type.is_imm) {
+            // We will guard flonum vs heap float as though they were separate classes
+            ADD_COMMENT(cb, "guard object is flonum");
+            mov(cb, REG1, REG0);
+            and(cb, REG1, imm_opnd(RUBY_FLONUM_MASK));
+            cmp(cb, REG1, imm_opnd(RUBY_FLONUM_FLAG));
+            jit_chain_guard(JCC_JNE, jit, ctx, max_chain_depth, side_exit);
+            ctx_set_opnd_type(ctx, insn_opnd, TYPE_FLONUM);
+        }
     }
     else if (FL_TEST(known_klass, FL_SINGLETON) && sample_instance == rb_attr_get(known_klass, id__attached__)) {
         // Singleton classes are attached to one specific object, so we can
