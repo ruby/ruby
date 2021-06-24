@@ -1196,7 +1196,7 @@ rand_bytes(const rb_random_interface_t *rng, rb_random_t *rnd, long n)
 
     bytes = rb_str_new(0, n);
     ptr = RSTRING_PTR(bytes);
-    rb_rand_bytes_int32(rng->get_int32, rnd, ptr, n);
+    rng->get_bytes(rnd, ptr, n);
     return bytes;
 }
 
