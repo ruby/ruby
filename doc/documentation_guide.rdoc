@@ -25,7 +25,7 @@ Use your judgment about what the user needs to know.
   {headers}[https://docs.ruby-lang.org/en/master/RDoc/Markup.html#class-RDoc::Markup-label-Headers].
 - Refer to authoritative and relevant sources using
   {links}[https://docs.ruby-lang.org/en/master/RDoc/Markup.html#class-RDoc::Markup-label-Links].
-- Use simple verb tenses:  simple present, simple past, simple future.
+- Use simple verb tenses: simple present, simple past, simple future.
 - Use simple sentence structure, not compound or complex structure.
 - Avoid:
 
