@@ -1347,3 +1347,22 @@ assert_equal 'bar', %q{
   to_string((-"bar").to_sym)
   to_string((-"bar").to_sym)
 }
+
+# Call to flonum and heap float
+assert_equal '[nil, nil, nil, 1]', %q{
+  def is_inf(obj)
+    obj.infinite?
+  end
+
+  is_inf(0.0)
+  is_inf(0.0)
+  is_inf(1e256)
+  is_inf(1e256)
+
+  [
+    is_inf(0.0),
+    is_inf(1.0),
+    is_inf(1e256),
+    is_inf(1.0/0.0)
+  ]
+}
