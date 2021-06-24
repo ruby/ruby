@@ -45,7 +45,7 @@ For information on \RDoc syntax and features, see the
 For code examples, consider using interactive Ruby,
 {irb}[https://ruby-doc.org/stdlib/libdoc/irb/rdoc/IRB.html].
 
-For an code example that includes +irb+ output,
+For a code example that includes +irb+ output,
 consider aligning <tt># => ...</tt> in successive lines.
 Alignment may sometimes aid readability:
 
