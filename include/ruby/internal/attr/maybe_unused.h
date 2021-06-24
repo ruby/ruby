@@ -27,7 +27,7 @@
 /** Wraps  (or simulates)  `[[maybe_unused]]` */
 #if RBIMPL_HAS_CPP_ATTRIBUTE(maybe_unused)
 # define RBIMPL_ATTR_MAYBE_UNUSED() [[maybe_unused]]
-#elif RBIMPL_HAS_C_ATTRIBUTE(maybe_unused)
+#elif RBIMPL_HAS_C_ATTRIBUTE(maybe_unused) && (__STDC_VERSION__ >= 202000L)
 # define RBIMPL_ATTR_MAYBE_UNUSED() [[maybe_unused]]
 #elif RBIMPL_HAS_ATTRIBUTE(unused)
 # define RBIMPL_ATTR_MAYBE_UNUSED() __attribute__((__unused__))
