@@ -1419,7 +1419,7 @@ module MiniTest
           end
           suites = suites.sort_by do |suite|
             crc32 = 0xffffffff
-            (suite.name + salt).each_byte do |data|
+            "#{suite.name}#{salt}".each_byte do |data|
               crc32 = crc_tbl[(crc32 ^ data) & 0xff] ^ (crc32 >> 8)
             end
             crc32 ^ 0xffffffff
