@@ -6489,10 +6489,10 @@ env_update(VALUE env, VALUE hash)
 
 /*
  * call-seq:
- *   ENV.clone(freeze: nil) -> copy of ENV
+ *   ENV.clone(freeze: nil) -> ENV
  *
- * Returns a clone of ENV, but warns because the ENV data is shared with the
- * clone.
+ * Returns ENV itself, and warns because ENV is a wrapper for the
+ * process-wide environment variables and a clone is useless.
  * If +freeze+ keyword is given and not +nil+ or +false+, raises ArgumentError.
  * If +freeze+ keyword is given and +true+, raises TypeError, as ENV storage
  * cannot be frozen.
