@@ -62,13 +62,16 @@ module Test
         non_options(args, options)
         @run_options = orig_args
 
+        order = options[:test_order]
         if seed = options[:seed]
+          order ||= :random
           srand(seed)
         else
           seed = options[:seed] = srand % 100_000
           srand(seed)
           orig_args.unshift "--seed=#{seed}"
         end
+        MiniTest::Unit::TestCase.test_order = order if order
 
         @help = "\n" + orig_args.map { |s|
           "  " + (s =~ /[\s|&<>$()]/ ? s.inspect : s)
@@ -100,7 +103,7 @@ module Test
         end
 
         opts.on '--test-order=random|alpha|sorted|nosort', [:random, :alpha, :sorted, :nosort] do |a|
-          MiniTest::Unit::TestCase.test_order = a
+          options[:test_order] = a
         end
       end
 
