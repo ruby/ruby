@@ -1098,7 +1098,7 @@ rb_yjit_init(struct rb_yjit_options *options)
         rb_yjit_opts.exec_mem_size = 256;
     }
     if (rb_yjit_opts.call_threshold < 1) {
-        rb_yjit_opts.call_threshold = 10;
+        rb_yjit_opts.call_threshold = YJIT_DEFAULT_CALL_THRESHOLD;
     }
     if (rb_yjit_opts.max_versions < 1) {
         rb_yjit_opts.max_versions = 4;
