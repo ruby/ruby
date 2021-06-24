@@ -218,8 +218,9 @@ add_lookup_dependency_i(st_data_t *key, st_data_t *value, st_data_t data, int ex
     return ST_CONTINUE;
 }
 
-// Remember that a block assumes that rb_callable_method_entry(receiver_klass, mid) == cme and that
-// cme is vald.
+// Remember that a block assumes that
+// `rb_callable_method_entry(receiver_klass, cme->called_id) == cme` and that
+// `cme` is valid.
 // When either of these assumptions becomes invalid, rb_yjit_method_lookup_change() or
 // rb_yjit_cme_invalidate() invalidates the block.
 //
@@ -230,6 +231,7 @@ assume_method_lookup_stable(VALUE receiver_klass, const rb_callable_method_entry
     RUBY_ASSERT(!block->receiver_klass && !block->callee_cme);
     RUBY_ASSERT(cme_validity_dependency);
     RUBY_ASSERT(method_lookup_dependency);
+    RUBY_ASSERT(rb_callable_method_entry(receiver_klass, cme->called_id) == cme);
     RUBY_ASSERT_ALWAYS(RB_TYPE_P(receiver_klass, T_CLASS));
     RUBY_ASSERT_ALWAYS(!rb_objspace_garbage_object_p(receiver_klass));
 

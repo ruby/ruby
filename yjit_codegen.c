@@ -2995,7 +2995,8 @@ gen_send(jitstate_t *jit, ctx_t *ctx)
     return gen_send_general(jit, ctx, cd, block);
 }
 
-RBIMPL_ATTR_MAYBE_UNUSED() // not in use as it has problems in some situations.
+// Not in use as it's incorrect in some situations. See comments.
+RBIMPL_ATTR_MAYBE_UNUSED()
 static codegen_status_t
 gen_invokesuper(jitstate_t *jit, ctx_t *ctx)
 {
@@ -3096,6 +3097,9 @@ gen_invokesuper(jitstate_t *jit, ctx_t *ctx)
     insn_opnd_t recv_opnd = OPND_STACK(argc);
     mov(cb, REG0, recv);
 
+    // FIXME: This guard and the assume_method_lookup_stable() call below isn't
+    // always enough to correctly replicate the interpreter's behavior of
+    // searching at runtime for the callee through the method entry of the stack frame.
     if (!jit_guard_known_klass(jit, ctx, comptime_recv_klass, recv_opnd, comptime_recv, SEND_MAX_DEPTH, side_exit)) {
         return YJIT_CANT_COMPILE;
     }

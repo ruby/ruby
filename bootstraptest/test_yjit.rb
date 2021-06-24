@@ -1238,3 +1238,60 @@ assert_equal '[:A, [:A, :B]]', %q{
 
   C.new.bar
 }
+
+# Same invokesuper bytecode, multiple destinations
+assert_equal '[:Forward, :SecondTerminus]', %q{
+  module Terminus
+    def foo = :Terminus
+  end
+
+  module SecondTerminus
+    def foo = :SecondTerminus
+  end
+
+
+  module Forward
+    def foo = [:Forward, super]
+  end
+
+  class B
+    include SecondTerminus
+  end
+
+  class A < B
+    include Terminus
+    include Forward
+  end
+
+  A.new.foo
+  A.new.foo # compile
+
+  class B
+    include Forward
+    alias bar foo
+  end
+
+  # A.ancestors.take(5) == [A, Forward, Terminus, B, Forward, SecondTerminus]
+
+  A.new.bar
+}
+
+# invokesuper calling into itself
+assert_equal '[:B, [:B, :m]]', %q{
+  module M
+    def foo = :m
+  end
+
+  class B
+    include M
+    def foo = [:B, super]
+  end
+
+  ins = B.new
+  ins.singleton_class # materialize the singleton class
+  ins.foo
+  ins.foo # compile
+
+  ins.singleton_class.define_method(:bar, B.instance_method(:foo))
+  ins.bar
+}
