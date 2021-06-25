@@ -816,6 +816,10 @@ rb_iseq_new(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath,
 static int
 ast_line_count(const rb_ast_body_t *ast)
 {
+    if (ast->script_lines == Qfalse) {
+        // this occurs when failed to parse the source code with a syntax error
+        return 0;
+    }
     if (RB_TYPE_P(ast->script_lines, T_ARRAY)){
         return (int)RARRAY_LEN(ast->script_lines);
     }
