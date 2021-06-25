@@ -5251,8 +5251,13 @@ time_mload(VALUE time, VALUE str)
                 year = rb_int_plus(year, year_extend);
             }
         }
+        unsigned int mon = ((int)(p >> 10) & 0xf); /* 0...12 */
+        if (mon >= 12) {
+            mon -= 12;
+            year = addv(year, LONG2FIX(1));
+        }
         vtm.year = year;
-	vtm.mon  = ((int)(p >> 10) & 0xf) + 1;
+	vtm.mon  = mon + 1;
 	vtm.mday = (int)(p >>  5) & 0x1f;
 	vtm.hour = (int) p        & 0x1f;
 	vtm.min  = (int)(s >> 26) & 0x3f;

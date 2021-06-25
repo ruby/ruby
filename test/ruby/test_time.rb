@@ -386,6 +386,11 @@ class TestTime < Test::Unit::TestCase
     end
   end
 
+  def test_marshal_broken_month
+    data = "\x04\x08u:\tTime\r\x20\x7c\x1e\xc0\x00\x00\x00\x00"
+    assert_equal(Time.utc(2022, 4, 1), Marshal.load(data))
+  end
+
   def test_marshal_distant_past
     assert_marshal_roundtrip(Time.utc(1890, 1, 1))
     assert_marshal_roundtrip(Time.utc(-4.5e9, 1, 1))
