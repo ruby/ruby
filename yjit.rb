@@ -134,6 +134,10 @@ module YJIT
     Primitive.reset_stats_bang
   end
 
+  def self.enabled?
+    Primitive.cexpr! 'rb_yjit_enabled_p() ? Qtrue : Qfalse'
+  end
+
   class << self
     private
 
