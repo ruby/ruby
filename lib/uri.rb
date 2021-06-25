@@ -30,7 +30,7 @@
 #     class RSYNC < Generic
 #       DEFAULT_PORT = 873
 #     end
-#     @@schemes['RSYNC'] = RSYNC
+#     register_scheme 'RSYNC', RSYNC
 #   end
 #   #=> URI::RSYNC
 #
@@ -100,3 +100,9 @@ require_relative 'uri/https'
 require_relative 'uri/ldap'
 require_relative 'uri/ldaps'
 require_relative 'uri/mailto'
+
+module URI
+  INITIAL_SCHEMES = scheme_list
+  private_constant :INITIAL_SCHEMES
+  Ractor.make_shareable(INITIAL_SCHEMES) if defined?(Ractor)
+end

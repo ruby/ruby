@@ -289,5 +289,5 @@ module URI
     alias to_rfc822text to_mailtext
   end
 
-  @@schemes['MAILTO'] = MailTo
+  register_scheme 'MAILTO', MailTo
 end

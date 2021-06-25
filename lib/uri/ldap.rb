@@ -257,5 +257,5 @@ module URI
     end
   end
 
-  @@schemes['LDAP'] = LDAP
+  register_scheme 'LDAP', LDAP
 end
