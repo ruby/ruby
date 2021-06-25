@@ -51,6 +51,8 @@ static VALUE sym_finished;
 static VALUE sym_after_output;
 static VALUE sym_incomplete_input;
 
+static ID id_encode;
+
 static unsigned char *
 allocate_converted_string(const char *sname, const char *dname,
         const unsigned char *str, size_t len,
@@ -2719,6 +2721,14 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
         }
     }
     else {
+        if (senc && denc && !rb_enc_asciicompat(senc) && !rb_enc_asciicompat(denc)) {
+            VALUE encode_args[2];
+            encode_args[1] = rb_enc_from_encoding(senc);
+            senc = rb_utf8_encoding();
+            encode_args[0] = rb_enc_from_encoding(senc);
+            str = rb_funcallv_kw(str, id_encode, 2, encode_args, RB_NO_KEYWORDS);
+            sname = "UTF-8";
+        }
         if (encoding_equal(sname, dname)) {
             sname = "";
             dname = "";
@@ -4578,6 +4588,8 @@ InitVM_transcode(void)
     rb_define_method(rb_eInvalidByteSequenceError, "error_bytes", ecerr_error_bytes, 0);
     rb_define_method(rb_eInvalidByteSequenceError, "readagain_bytes", ecerr_readagain_bytes, 0);
     rb_define_method(rb_eInvalidByteSequenceError, "incomplete_input?", ecerr_incomplete_input, 0);
+
+    id_encode = rb_intern("encode");
 
     Init_newline();
 }
