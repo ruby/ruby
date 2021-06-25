@@ -16,6 +16,7 @@ module URI
   REGEXP = RFC2396_REGEXP
   Parser = RFC2396_Parser
   RFC3986_PARSER = RFC3986_Parser.new
+  Ractor.make_shareable(RFC3986_PARSER) if defined?(Ractor)
 
   # URI::Parser.new
   DEFAULT_PARSER = Parser.new
@@ -27,6 +28,7 @@ module URI
   DEFAULT_PARSER.regexp.each_pair do |sym, str|
     const_set(sym, str)
   end
+  Ractor.make_shareable(DEFAULT_PARSER) if defined?(Ractor)
 
   module Util # :nodoc:
     def make_components_hash(klass, array_hash)
@@ -62,10 +64,19 @@ module URI
 
   include REGEXP
 
-  @@schemes = {}
+  module Schemes
+  end
+  private_constant :Schemes
+
+  def self.register_scheme(scheme, klass)
+    Schemes.const_set(scheme, klass)
+  end
+
   # Returns a Hash of the defined schemes.
   def self.scheme_list
-    @@schemes
+    Schemes.constants.map { |name|
+      [name.to_s.upcase, Schemes.const_get(name)]
+    }.to_h
   end
 
   #
@@ -73,11 +84,13 @@ module URI
   # from +URI.scheme_list+.
   #
   def self.for(scheme, *arguments, default: Generic)
-    if scheme
-      uri_class = @@schemes[scheme.upcase] || default
-    else
-      uri_class = default
+    const_name = scheme.to_s.upcase
+
+    uri_class = INITIAL_SCHEMES[const_name]
+    if !uri_class && !const_name.empty? && Schemes.const_defined?(const_name, false)
+      uri_class = Schemes.const_get(const_name, false)
     end
+    uri_class ||= default
 
     return uri_class.new(scheme, *arguments)
   end
@@ -653,6 +666,7 @@ module URI
     "utf-16"=>"utf-16le",
     "utf-16le"=>"utf-16le",
   } # :nodoc:
+  Ractor.make_shareable(WEB_ENCODINGS_) if defined?(Ractor)
 
   # :nodoc:
   # return encoding or nil
