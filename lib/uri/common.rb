@@ -16,7 +16,6 @@ module URI
   REGEXP = RFC2396_REGEXP
   Parser = RFC2396_Parser
   RFC3986_PARSER = RFC3986_Parser.new
-  Ractor.make_shareable(RFC3986_PARSER) if defined?(Ractor)
 
   # URI::Parser.new
   DEFAULT_PARSER = Parser.new
@@ -28,7 +27,6 @@ module URI
   DEFAULT_PARSER.regexp.each_pair do |sym, str|
     const_set(sym, str)
   end
-  Ractor.make_shareable(DEFAULT_PARSER) if defined?(Ractor)
 
   module Util # :nodoc:
     def make_components_hash(klass, array_hash)
@@ -64,30 +62,10 @@ module URI
 
   include REGEXP
 
-  SCHEME_LIST_MUTEX = Mutex.new
-  private_constant :SCHEME_LIST_MUTEX
-
+  @@schemes = {}
   # Returns a Hash of the defined schemes.
-  # The list is lazily calculated.
   def self.scheme_list
-    return const_get(:SCHEMES) if defined?(SCHEMES)
-
-    SCHEME_LIST_MUTEX.synchronize do
-      const_set(:SCHEMES, ObjectSpace.
-        each_object(Class).
-        select { |klass| klass < URI::Generic }.
-        each_with_object({}) { |klass, acc| acc[klass.name.split('::').last.upcase] = klass }.
-        freeze)
-    end
-  end
-
-  # Re-calculate scheme list
-  def self.refresh_scheme_list
-    SCHEME_LIST_MUTEX.synchronize do
-      remove_const(:SCHEMES) if defined?(SCHEMES)
-    end
-
-    scheme_list
+    @@schemes
   end
 
   #
@@ -95,7 +73,11 @@ module URI
   # from +URI.scheme_list+.
   #
   def self.for(scheme, *arguments, default: Generic)
-    uri_class = scheme_list[scheme.to_s.upcase] || default
+    if scheme
+      uri_class = @@schemes[scheme.upcase] || default
+    else
+      uri_class = default
+    end
 
     return uri_class.new(scheme, *arguments)
   end

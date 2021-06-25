@@ -256,4 +256,6 @@ module URI
       false
     end
   end
+
+  @@schemes['LDAP'] = LDAP
 end
