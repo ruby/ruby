@@ -19,12 +19,12 @@ assert_equal %q{ok}, %q{
 }
 
 assert_equal %q{ok}, %q{
-  10_000.times.collect{Fiber.new{}}
+  100.times.collect{Fiber.new{}}
   :ok
 }
 
 assert_equal %q{ok}, %q{
-  fibers = 100.times.collect{Fiber.new{Fiber.yield}}
+  fibers = 1000.times.collect{Fiber.new{Fiber.yield}}
   fibers.each(&:resume)
   fibers.each(&:resume)
   :ok

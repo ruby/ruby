@@ -608,7 +608,7 @@ null_func(int i)
     /* null */
 }
 
-static rb_thread_t *
+rb_thread_t *
 ruby_thread_from_native(void)
 {
 #ifdef RB_THREAD_LOCAL_SPECIFIER
@@ -618,7 +618,7 @@ ruby_thread_from_native(void)
 #endif
 }
 
-static int
+int
 ruby_thread_set_native(rb_thread_t *th)
 {
     if (th && th->ec) {

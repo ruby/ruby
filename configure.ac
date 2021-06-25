@@ -2533,10 +2533,10 @@ AS_CASE([$coroutine_type], [yes|''], [
             coroutine_type=x86
         ],
         [*-openbsd*], [
-            coroutine_type=copy
+            coroutine_type=pthread
         ],
         [*-haiku*], [
-            coroutine_type=copy
+            coroutine_type=pthread
         ],
         [*-emscripten*], [
             coroutine_type=emscripten
@@ -2544,7 +2544,7 @@ AS_CASE([$coroutine_type], [yes|''], [
         [
             AC_CHECK_FUNCS([getcontext swapcontext makecontext],
                 [coroutine_type=ucontext],
-                [coroutine_type=copy; break]
+                [coroutine_type=pthread; break]
             )
         ]
     )
@@ -2554,7 +2554,7 @@ COROUTINE_H=coroutine/$coroutine_type/Context.h
 AS_IF([test ! -f "$srcdir/$COROUTINE_H"],
       [AC_MSG_ERROR('$coroutine_type' is not supported as coroutine)])
 AS_CASE([$coroutine_type],
-    [copy|ucontext], [
+    [ucontext|pthread], [
         COROUTINE_SRC=coroutine/$coroutine_type/Context.c
     ],
     [

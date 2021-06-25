@@ -830,10 +830,6 @@ STATIC_ASSERT(rb_vm_tag_buf_end,
 	      offsetof(struct rb_vm_tag, buf) + sizeof(rb_jmpbuf_t) <
 	      sizeof(struct rb_vm_tag));
 
-struct rb_vm_protect_tag {
-    struct rb_vm_protect_tag *prev;
-};
-
 struct rb_unblock_callback {
     rb_unblock_function_t *func;
     void *arg;
@@ -869,7 +865,6 @@ struct rb_execution_context_struct {
     rb_control_frame_t *cfp;
 
     struct rb_vm_tag *tag;
-    struct rb_vm_protect_tag *protect_tag;
 
     /* interrupt flags */
     rb_atomic_t interrupt_flag;
@@ -1730,6 +1725,8 @@ rb_control_frame_t *rb_vm_get_binding_creatable_next_cfp(const rb_execution_cont
 int rb_vm_get_sourceline(const rb_control_frame_t *);
 void rb_vm_stack_to_heap(rb_execution_context_t *ec);
 void ruby_thread_init_stack(rb_thread_t *th);
+rb_thread_t * ruby_thread_from_native(void);
+int ruby_thread_set_native(rb_thread_t *th);
 int rb_vm_control_frame_id_and_class(const rb_control_frame_t *cfp, ID *idp, ID *called_idp, VALUE *klassp);
 void rb_vm_rewind_cfp(rb_execution_context_t *ec, rb_control_frame_t *cfp);
 MJIT_STATIC VALUE rb_vm_bh_to_procval(const rb_execution_context_t *ec, VALUE block_handler);

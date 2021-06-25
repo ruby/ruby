@@ -128,6 +128,8 @@ Outstanding ones only.
 
     * Make `Monitor` fiber-safe. [[Bug #17827]]
 
+    * Replace copy coroutine with pthread implementation. [[Feature #18015]]
+
 ## Stdlib updates
 
 Outstanding ones only.
@@ -193,3 +195,4 @@ Excluding feature bug fixes.
 [Feature #17470]: https://bugs.ruby-lang.org/issues/17470
 [Feature #17853]: https://bugs.ruby-lang.org/issues/17853
 [Bug #17827]: https://bugs.ruby-lang.org/issues/17827
+[Feature #18015]: https://bugs.ruby-lang.org/issues/18015
