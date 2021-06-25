@@ -112,6 +112,17 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_recursion
+    assert_compiles(<<~'RUBY', insns: %i[opt_le opt_minus opt_plus], stdout: '34')
+      def fib(n)
+        return n if n <= 1
+        fib(n-1) + fib(n-2)
+      end
+
+      fib(9)
+    RUBY
+  end
+
   def assert_compiles(test_script, insns: [], min_calls: 1, stdout: nil, exits: {})
     reset_stats = <<~RUBY
       YJIT.runtime_stats
