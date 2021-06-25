@@ -12,6 +12,7 @@ enum {COROUTINE_REGISTERS = 0xd0 / 8};
 struct coroutine_context
 {
     void **stack_pointer;
+    void *argument;
 };
 
 typedef COROUTINE(* coroutine_start)(struct coroutine_context *from, struct coroutine_context *self);

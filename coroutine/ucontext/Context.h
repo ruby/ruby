@@ -27,6 +27,7 @@ struct coroutine_context
 {
     ucontext_t state;
     struct coroutine_context * from;
+    void *argument;
 };
 
 typedef COROUTINE(* coroutine_start)(struct coroutine_context *from, struct coroutine_context *self);

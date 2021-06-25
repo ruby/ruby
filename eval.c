@@ -1112,13 +1112,9 @@ rb_protect(VALUE (* proc) (VALUE), VALUE data, int *pstate)
     volatile enum ruby_tag_type state;
     rb_execution_context_t * volatile ec = GET_EC();
     rb_control_frame_t *volatile cfp = ec->cfp;
-    struct rb_vm_protect_tag protect_tag;
     rb_jmpbuf_t org_jmpbuf;
 
-    protect_tag.prev = ec->protect_tag;
-
     EC_PUSH_TAG(ec);
-    ec->protect_tag = &protect_tag;
     MEMCPY(&org_jmpbuf, &rb_ec_thread_ptr(ec)->root_jmpbuf, rb_jmpbuf_t, 1);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	SAVE_ROOT_JMPBUF(rb_ec_thread_ptr(ec), result = (*proc) (data));
@@ -1127,7 +1123,6 @@ rb_protect(VALUE (* proc) (VALUE), VALUE data, int *pstate)
 	rb_vm_rewind_cfp(ec, cfp);
     }
     MEMCPY(&rb_ec_thread_ptr(ec)->root_jmpbuf, &org_jmpbuf, rb_jmpbuf_t, 1);
-    ec->protect_tag = protect_tag.prev;
     EC_POP_TAG();
 
     if (pstate != NULL) *pstate = state;

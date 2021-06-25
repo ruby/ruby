@@ -14,7 +14,6 @@
 #include "ruby/internal/config.h"
 
 #include "ruby/fiber/scheduler.h"
-#include "coroutine/Stack.h"
 
 #include <ctype.h>
 #include <errno.h>
@@ -1350,29 +1349,26 @@ rb_process_status_wait(rb_pid_t pid, int flags)
         if (result != Qundef) return result;
     }
 
-    COROUTINE_STACK_LOCAL(struct waitpid_state, w);
+    struct waitpid_state waitpid_state;
 
-    waitpid_state_init(w, pid, flags);
-    w->ec = GET_EC();
+    waitpid_state_init(&waitpid_state, pid, flags);
+    waitpid_state.ec = GET_EC();
 
     if (WAITPID_USE_SIGCHLD) {
-        waitpid_wait(w);
+        waitpid_wait(&waitpid_state);
     }
     else {
-        waitpid_no_SIGCHLD(w);
+        waitpid_no_SIGCHLD(&waitpid_state);
     }
 
-    rb_pid_t ret = w->ret;
-    int s = w->status, e = w->errnum;
-    COROUTINE_STACK_FREE(w);
+    if (waitpid_state.ret == 0) return Qnil;
 
-    if (ret == 0) return Qnil;
-    if (ret > 0 && ruby_nocldwait) {
-        ret = -1;
-        e = ECHILD;
+    if (waitpid_state.ret > 0 && ruby_nocldwait) {
+        waitpid_state.ret = -1;
+        waitpid_state.errnum = ECHILD;
     }
 
-    return rb_process_status_new(ret, s, e);
+    return rb_process_status_new(waitpid_state.ret, waitpid_state.status, waitpid_state.errnum);
 }
 
 /*

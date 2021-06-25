@@ -124,7 +124,7 @@ LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
       SAVE_ROOT_JMPBUF_AFTER_STMT \
   } \
   else { \
-      rb_fiber_start(); \
+      rb_fiber_start(th->ec->fiber_ptr); \
   } while (0)
 
 #define EC_PUSH_TAG(ec) do { \
@@ -280,7 +280,7 @@ VALUE rb_make_exception(int argc, const VALUE *argv);
 
 NORETURN(void rb_method_name_error(VALUE, VALUE));
 
-NORETURN(void rb_fiber_start(void));
+void rb_fiber_start(rb_fiber_t*);
 
 NORETURN(void rb_print_undef(VALUE, ID, rb_method_visibility_t));
 NORETURN(void rb_print_undef_str(VALUE, VALUE));
