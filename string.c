@@ -697,6 +697,18 @@ rb_enc_cr_str_exact_copy(VALUE dest, VALUE src)
     ENC_CODERANGE_SET(dest, ENC_CODERANGE(src));
 }
 
+static int
+enc_coderange_scan(VALUE str, rb_encoding *enc, int encidx)
+{
+    if (rb_enc_mbminlen(enc) > 1 && rb_enc_dummy_p(enc) &&
+	rb_enc_mbminlen(enc = get_actual_encoding(encidx, str)) == 1) {
+	return ENC_CODERANGE_BROKEN;
+    }
+    else {
+	return coderange_scan(RSTRING_PTR(str), RSTRING_LEN(str), enc);
+    }
+}
+
 int
 rb_enc_str_coderange(VALUE str)
 {
@@ -705,14 +717,7 @@ rb_enc_str_coderange(VALUE str)
     if (cr == ENC_CODERANGE_UNKNOWN) {
 	int encidx = ENCODING_GET(str);
 	rb_encoding *enc = rb_enc_from_index(encidx);
-	if (rb_enc_mbminlen(enc) > 1 && rb_enc_dummy_p(enc) &&
-            rb_enc_mbminlen(enc = get_actual_encoding(encidx, str)) == 1) {
-	    cr = ENC_CODERANGE_BROKEN;
-	}
-	else {
-	    cr = coderange_scan(RSTRING_PTR(str), RSTRING_LEN(str),
-                                enc);
-	}
+	cr = enc_coderange_scan(str, enc, encidx);
         ENC_CODERANGE_SET(str, cr);
     }
     return cr;
@@ -954,6 +959,15 @@ static VALUE str_cat_conv_enc_opts(VALUE newstr, long ofs, const char *ptr, long
 				   rb_encoding *from, rb_encoding *to,
 				   int ecflags, VALUE ecopts);
 
+static inline bool
+is_enc_ascii_string(VALUE str, rb_encoding *enc)
+{
+    int encidx = rb_enc_to_index(enc);
+    if (rb_enc_get_index(str) == encidx)
+	return is_ascii_string(str);
+    return enc_coderange_scan(str, enc, encidx) == ENC_CODERANGE_7BIT;
+}
+
 VALUE
 rb_str_conv_enc_opts(VALUE str, rb_encoding *from, rb_encoding *to, int ecflags, VALUE ecopts)
 {
@@ -964,7 +978,7 @@ rb_str_conv_enc_opts(VALUE str, rb_encoding *from, rb_encoding *to, int ecflags,
     if (!to) return str;
     if (!from) from = rb_enc_get(str);
     if (from == to) return str;
-    if ((rb_enc_asciicompat(to) && is_ascii_string(str)) ||
+    if ((rb_enc_asciicompat(to) && is_enc_ascii_string(str, from)) ||
 	to == rb_ascii8bit_encoding()) {
 	if (STR_ENC_GET(str) != to) {
 	    str = rb_str_dup(str);
