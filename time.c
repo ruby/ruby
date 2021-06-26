@@ -745,7 +745,7 @@ rb_gmtime_r(const time_t *t, struct tm *result)
 #   define GMTIME(tm, result) rb_gmtime_r((tm), &(result))
 #endif
 
-static const int common_year_yday_offset[] = {
+static const int16_t common_year_yday_offset[] = {
     -1,
     -1 + 31,
     -1 + 31 + 28,
@@ -760,7 +760,7 @@ static const int common_year_yday_offset[] = {
     -1 + 31 + 28 + 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31 + 30
       /* 1    2    3    4    5    6    7    8    9    10   11 */
 };
-static const int leap_year_yday_offset[] = {
+static const int16_t leap_year_yday_offset[] = {
     -1,
     -1 + 31,
     -1 + 31 + 29,
@@ -776,10 +776,10 @@ static const int leap_year_yday_offset[] = {
       /* 1    2    3    4    5    6    7    8    9    10   11 */
 };
 
-static const int common_year_days_in_month[] = {
+static const int8_t common_year_days_in_month[] = {
     31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
 };
-static const int leap_year_days_in_month[] = {
+static const int8_t leap_year_days_in_month[] = {
     31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
 };
 
@@ -1107,7 +1107,7 @@ gmtime_with_leapsecond(const time_t *timep, struct tm *result)
                 result->tm_yday = leap_year_p(result->tm_year + 1900) ? 365 : 364;
             }
             else if (result->tm_mday == 1) {
-                const int *days_in_month = leap_year_p(result->tm_year + 1900) ?
+                const int8_t *days_in_month = leap_year_p(result->tm_year + 1900) ?
                                            leap_year_days_in_month :
                                            common_year_days_in_month;
                 result->tm_mon--;
@@ -2030,7 +2030,7 @@ vtm_add_offset(struct vtm *vtm, VALUE off, int sign)
                 vtm->yday = leap_year_v_p(vtm->year) ? 366 : 365;
             }
             else if (vtm->mday == 1) {
-                const int *days_in_month = leap_year_v_p(vtm->year) ?
+                const int8_t *days_in_month = leap_year_v_p(vtm->year) ?
                                            leap_year_days_in_month :
                                            common_year_days_in_month;
                 vtm->mon--;
