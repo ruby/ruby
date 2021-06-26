@@ -783,6 +783,9 @@ static const int8_t leap_year_days_in_month[] = {
     31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
 };
 
+#define days_in_month_of(leap) ((leap) ? leap_year_days_in_month : common_year_days_in_month)
+#define days_in_month_in(y) days_in_month_of(leap_year_p(y))
+
 #define M28(m) \
     (m),(m),(m),(m),(m),(m),(m),(m),(m),(m), \
     (m),(m),(m),(m),(m),(m),(m),(m),(m),(m), \
@@ -1107,9 +1110,7 @@ gmtime_with_leapsecond(const time_t *timep, struct tm *result)
                 result->tm_yday = leap_year_p(result->tm_year + 1900) ? 365 : 364;
             }
             else if (result->tm_mday == 1) {
-                const int8_t *days_in_month = leap_year_p(result->tm_year + 1900) ?
-                                           leap_year_days_in_month :
-                                           common_year_days_in_month;
+                const int8_t *days_in_month = days_in_month_of(result->tm_year + 1900);
                 result->tm_mon--;
                 result->tm_mday = days_in_month[result->tm_mon];
                 result->tm_yday--;
@@ -1128,8 +1129,7 @@ gmtime_with_leapsecond(const time_t *timep, struct tm *result)
                 result->tm_mday = 1;
                 result->tm_yday = 0;
             }
-            else if (result->tm_mday == (leap ? leap_year_days_in_month :
-                                                common_year_days_in_month)[result->tm_mon]) {
+            else if (result->tm_mday == days_in_month_of(leap)[result->tm_mon]) {
                 result->tm_mon++;
                 result->tm_mday = 1;
                 result->tm_yday++;
@@ -2030,9 +2030,7 @@ vtm_add_offset(struct vtm *vtm, VALUE off, int sign)
                 vtm->yday = leap_year_v_p(vtm->year) ? 366 : 365;
             }
             else if (vtm->mday == 1) {
-                const int8_t *days_in_month = leap_year_v_p(vtm->year) ?
-                                           leap_year_days_in_month :
-                                           common_year_days_in_month;
+                const int8_t *days_in_month = days_in_month_in(vtm->year);
                 vtm->mon--;
                 vtm->mday = days_in_month[vtm->mon-1];
                 vtm->yday--;
@@ -2051,8 +2049,7 @@ vtm_add_offset(struct vtm *vtm, VALUE off, int sign)
                 vtm->mday = 1;
                 vtm->yday = 1;
             }
-            else if (vtm->mday == (leap ? leap_year_days_in_month :
-                                          common_year_days_in_month)[vtm->mon-1]) {
+            else if (vtm->mday == days_in_month_of(leap)[vtm->mon-1]) {
                 vtm->mon++;
                 vtm->mday = 1;
                 vtm->yday++;
@@ -3061,9 +3058,7 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
 	tm0.tm_min = 0;
 	tm0.tm_sec = 0;
     }
-    else if ((d = (leap_year_p(1900 + tm0.tm_year) ?
-                   leap_year_days_in_month :
-		   common_year_days_in_month)[tm0.tm_mon]) < tm0.tm_mday) {
+    else if ((d = days_in_month_in(1900 + tm0.tm_year)[tm0.tm_mon]) < tm0.tm_mday) {
 	tm0.tm_mday = d;
 	tm0.tm_hour = 23;
 	tm0.tm_min = 59;
