@@ -616,11 +616,11 @@ or the PAGER environment variable.
 
       stores = classes[current]
 
-      break unless stores and not stores.empty?
+      next unless stores and not stores.empty?
 
-      klasses = stores.map do |store|
-        store.ancestors[current]
-      end.flatten.uniq
+      klasses = stores.flat_map do |store|
+        store.ancestors[current] || []
+      end.uniq
 
       klasses = klasses - seen
 
