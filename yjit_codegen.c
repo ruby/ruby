@@ -944,11 +944,29 @@ gen_jz_to_target0(codeblock_t *cb, uint8_t *target0, uint8_t *target1, uint8_t s
     }
 }
 
+static void
+gen_jbe_to_target0(codeblock_t *cb, uint8_t *target0, uint8_t *target1, uint8_t shape)
+{
+    switch (shape)
+    {
+        case SHAPE_NEXT0:
+        case SHAPE_NEXT1:
+        RUBY_ASSERT(false);
+        break;
+
+        case SHAPE_DEFAULT:
+        jbe_ptr(cb, target0);
+        break;
+    }
+}
+
 enum jcc_kinds {
     JCC_JNE,
     JCC_JNZ,
     JCC_JZ,
     JCC_JE,
+    JCC_JBE,
+    JCC_JNA,
 };
 
 // Generate a jump to a stub that recompiles the current YARV instruction on failure.
@@ -966,6 +984,10 @@ jit_chain_guard(enum jcc_kinds jcc, jitstate_t *jit, const ctx_t *ctx, uint8_t d
         case JCC_JZ:
         case JCC_JE:
             target0_gen_fn = gen_jz_to_target0;
+            break;
+        case JCC_JBE:
+        case JCC_JNA:
+            target0_gen_fn = gen_jbe_to_target0;
             break;
         default:
             RUBY_ASSERT(false && "unimplemented jump kind");
@@ -2260,9 +2282,9 @@ jit_guard_known_klass(jitstate_t *jit, ctx_t *ctx, VALUE known_klass, insn_opnd_
             ADD_COMMENT(cb, "guard not immediate");
             RUBY_ASSERT(Qfalse < Qnil);
             test(cb, REG0, imm_opnd(RUBY_IMMEDIATE_MASK));
-            jnz_ptr(cb, side_exit);
+            jit_chain_guard(JCC_JNZ, jit, ctx, max_chain_depth, side_exit);
             cmp(cb, REG0, imm_opnd(Qnil));
-            jbe_ptr(cb, side_exit);
+            jit_chain_guard(JCC_JBE, jit, ctx, max_chain_depth, side_exit);
 
             ctx_set_opnd_type(ctx, insn_opnd, TYPE_HEAP);
         }
