@@ -55,6 +55,20 @@ class TestYJIT < Test::Unit::TestCase
     assert_compiles('-"foo" == -"bar"', insns: %i[opt_eq], stdout: 'false')
   end
 
+  def test_getlocal_with_level
+    assert_compiles(<<~RUBY, insns: %i[getlocal opt_plus], stdout: '[[7]]', exits: {leave: 2})
+      def foo(foo, bar)
+        [1].map do |x|
+          [1].map do |y|
+            foo + bar
+          end
+        end
+      end
+
+      foo(5, 2)
+    RUBY
+  end
+
   def test_string_then_nil
     assert_compiles(<<~RUBY, insns: %i[opt_nil_p], stdout: 'true')
       def foo(val)
@@ -112,8 +126,8 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
-  def test_recursion
-    assert_compiles(<<~'RUBY', insns: %i[opt_le opt_minus opt_plus], stdout: '34')
+  def test_fib_recursion
+    assert_compiles(<<~'RUBY', insns: %i[opt_le opt_minus opt_plus opt_send_without_block], stdout: '34')
       def fib(n)
         return n if n <= 1
         fib(n-1) + fib(n-2)
