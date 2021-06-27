@@ -961,37 +961,37 @@ module MiniTest
       }
 
       leakchecker = LeakChecker.new
-
-      continuation = proc do
-        assertions = filtered_test_methods.map { |method|
-          inst = suite.new method
-          inst._assertions = 0
-
-          print "#{suite}##{method} = " if @verbose
-
-          start_time = Time.now if @verbose
-          result = inst.run self
-
-          print "%.2f s = " % (Time.now - start_time) if @verbose
-          print result
-          puts if @verbose
-          $stdout.flush
-
-          unless defined?(RubyVM::JIT) && RubyVM::JIT.enabled? # compiler process is wrongly considered as leak
-            leakchecker.check("#{inst.class}\##{inst.__name__}")
-          end
-
-          inst._assertions
-        }
-        return assertions.size, assertions.inject(0) { |sum, n| sum + n }
-      end
-
       if ENV["LEAK_CHECKER_TRACE_OBJECT_ALLOCATION"]
         require "objspace"
-        ObjectSpace.trace_object_allocations(&continuation)
-      else
-        continuation.call
+        trace = true
       end
+
+      assertions = filtered_test_methods.map { |method|
+        inst = suite.new method
+        inst._assertions = 0
+
+        print "#{suite}##{method} = " if @verbose
+
+        start_time = Time.now if @verbose
+        result =
+          if trace
+            ObjectSpace.trace_object_allocations {inst.run self}
+          else
+            inst.run self
+          end
+
+        print "%.2f s = " % (Time.now - start_time) if @verbose
+        print result
+        puts if @verbose
+        $stdout.flush
+
+        unless defined?(RubyVM::JIT) && RubyVM::JIT.enabled? # compiler process is wrongly considered as leak
+          leakchecker.check("#{inst.class}\##{inst.__name__}")
+        end
+
+        inst._assertions
+      }
+      return assertions.size, assertions.inject(0) { |sum, n| sum + n }
     end
 
     ##
