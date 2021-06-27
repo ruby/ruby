@@ -163,6 +163,14 @@ kdf_scrypt(int argc, VALUE *argv, VALUE self)
  *   HashLen is the length of the hash function output in octets.
  * _hash_::
  *   The hash function.
+ *
+ * === Example
+ *   # The values from https://datatracker.ietf.org/doc/html/rfc5869#appendix-A.1
+ *   ikm = ["0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b"].pack("H*")
+ *   salt = ["000102030405060708090a0b0c"].pack("H*")
+ *   info = ["f0f1f2f3f4f5f6f7f8f9"].pack("H*")
+ *   p OpenSSL::KDF.hkdf(ikm, salt: salt, info: info, length: 42, hash: "SHA256").unpack1("H*")
+ *   # => "3cb25f25faacd57a90434f64d0362f2a2d2d0a90cf1a5a4c5db02d56ecc4c5bf34007208d5b887185865"
  */
 static VALUE
 kdf_hkdf(int argc, VALUE *argv, VALUE self)
