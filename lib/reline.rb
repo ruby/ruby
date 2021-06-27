@@ -7,6 +7,7 @@ require 'reline/key_actor'
 require 'reline/key_stroke'
 require 'reline/line_editor'
 require 'reline/history'
+require 'reline/terminfo'
 require 'rbconfig'
 
 module Reline
