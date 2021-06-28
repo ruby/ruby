@@ -7977,7 +7977,9 @@ gc_marks_finish(rb_objspace_t *objspace)
     }
 
 #if RGENGC_CHECK_MODE >= 4
+    during_gc = FALSE;
     gc_marks_check(objspace, gc_check_after_marks_i, "after_marks");
+    during_gc = TRUE;
 #endif
 
     {
