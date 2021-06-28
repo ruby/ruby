@@ -27,6 +27,12 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
     first_timeout *= 3
   end
 
+  if gem == "minitest"
+    # Tentatively exclude some tests that conflict with error_highlight
+    # https://github.com/seattlerb/minitest/pull/880
+    test_command << " 'TESTOPTS=-e /test_stub_value_block_args_5__break_if_not_passed|test_no_method_error_on_unexpected_methods/'"
+  end
+
   puts test_command
   pid = Process.spawn(test_command, "#{/mingw|mswin/ =~ RUBY_PLATFORM ? 'new_' : ''}pgroup": true)
   {nil => first_timeout, INT: 30, TERM: 10, KILL: nil}.each do |sig, sec|
