@@ -362,6 +362,24 @@ RSpec.describe "bundle install with gem sources" do
       expect(the_bundle).to include_gems "rack 1.0.0"
     end
 
+    it "does not hit the remote at all when cache_all_platforms configured" do
+      build_repo2
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo2)}"
+        gem "rack"
+      G
+
+      bundle :cache
+      simulate_new_machine
+      FileUtils.rm_rf gem_repo2
+
+      bundle "config set --local cache_all_platforms true"
+      bundle "config set --local path vendor/bundle"
+      bundle "install --local"
+      expect(out).not_to include("Fetching gem metadata")
+      expect(the_bundle).to include_gems "rack 1.0.0"
+    end
+
     it "does not reinstall already-installed gems" do
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"

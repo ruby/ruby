@@ -320,7 +320,7 @@ if you believe they were disclosed to a third party.
     config = load_file(credentials_path).merge(host => api_key)
 
     dirname = File.dirname credentials_path
-    Dir.mkdir(dirname) unless File.exist? dirname
+    FileUtils.mkdir_p(dirname) unless File.exist? dirname
 
     Gem.load_yaml
 

@@ -612,9 +612,66 @@ RSpec.describe "bundle install with gems on multiple sources" do
         L
       end
 
-      it "does not install newer versions or generate lockfile changes when running bundle install, and warns", :bundler => "< 3" do
+      it "does not install newer versions but updates the lockfile format when running bundle install in non frozen mode, and doesn't warn" do
+        bundle :install, :artifice => "compact_index"
+        expect(err).to be_empty
+
+        expect(the_bundle).to include_gems("activesupport 6.0.3.4")
+        expect(the_bundle).not_to include_gems("activesupport 6.1.2.1")
+        expect(the_bundle).to include_gems("tzinfo 1.2.9")
+        expect(the_bundle).not_to include_gems("tzinfo 2.0.4")
+        expect(the_bundle).to include_gems("concurrent-ruby 1.1.8")
+        expect(the_bundle).not_to include_gems("concurrent-ruby 1.1.9")
+
+        expect(lockfile).to eq <<~L
+          GEM
+            remote: https://gem.repo2/
+            specs:
+              activesupport (6.0.3.4)
+                concurrent-ruby (~> 1.0, >= 1.0.2)
+                i18n (>= 0.7, < 2)
+                minitest (~> 5.1)
+                tzinfo (~> 1.1)
+                zeitwerk (~> 2.2, >= 2.2.2)
+              concurrent-ruby (1.1.8)
+              connection_pool (2.2.3)
+              i18n (1.8.9)
+                concurrent-ruby (~> 1.0)
+              minitest (5.14.3)
+              rack (2.2.3)
+              redis (4.2.5)
+              sidekiq (6.1.3)
+                connection_pool (>= 2.2.2)
+                rack (~> 2.0)
+                redis (>= 4.2.0)
+              thread_safe (0.3.6)
+              tzinfo (1.2.9)
+                thread_safe (~> 0.1)
+              zeitwerk (2.4.2)
+
+          GEM
+            remote: https://gem.repo3/
+            specs:
+              sidekiq-pro (5.2.1)
+                connection_pool (>= 2.2.3)
+                sidekiq (>= 6.1.0)
+
+          PLATFORMS
+            #{specific_local_platform}
+
+          DEPENDENCIES
+            activesupport
+            sidekiq-pro!
+
+          BUNDLED WITH
+             #{Bundler::VERSION}
+        L
+      end
+
+      it "does not install newer versions or generate lockfile changes when running bundle install in frozen mode, and warns", :bundler => "< 3" do
         initial_lockfile = lockfile
 
+        bundle "config set --local frozen true"
         bundle :install, :artifice => "compact_index"
 
         expect(err).to include("Your lockfile contains a single rubygems source section with multiple remotes, which is insecure.")
@@ -629,9 +686,10 @@ RSpec.describe "bundle install with gems on multiple sources" do
         expect(lockfile).to eq(initial_lockfile)
       end
 
-      it "fails when running bundle install", :bundler => "3" do
+      it "fails when running bundle install in frozen mode", :bundler => "3" do
         initial_lockfile = lockfile
 
+        bundle "config set --local frozen true"
         bundle :install, :artifice => "compact_index", :raise_on_error => false
 
         expect(err).to include("Your lockfile contains a single rubygems source section with multiple remotes, which is insecure.")
@@ -694,9 +752,9 @@ RSpec.describe "bundle install with gems on multiple sources" do
         L
       end
 
-      it "it keeps the current lockfile format and upgrades the requested gem when running bundle update with an argument, and warns", :bundler => "< 3" do
+      it "upgrades the lockfile format and upgrades the requested gem when running bundle update with an argument" do
         bundle "update concurrent-ruby", :artifice => "compact_index"
-        expect(err).to include("Your lockfile contains a single rubygems source section with multiple remotes, which is insecure.")
+        expect(err).to be_empty
 
         expect(the_bundle).to include_gems("activesupport 6.0.3.4")
         expect(the_bundle).not_to include_gems("activesupport 6.1.2.1")
@@ -708,7 +766,6 @@ RSpec.describe "bundle install with gems on multiple sources" do
         expect(lockfile).to eq <<~L
           GEM
             remote: https://gem.repo2/
-            remote: https://gem.repo3/
             specs:
               activesupport (6.0.3.4)
                 concurrent-ruby (~> 1.0, >= 1.0.2)
@@ -727,13 +784,17 @@ RSpec.describe "bundle install with gems on multiple sources" do
                 connection_pool (>= 2.2.2)
                 rack (~> 2.0)
                 redis (>= 4.2.0)
-              sidekiq-pro (5.2.1)
-                connection_pool (>= 2.2.3)
-                sidekiq (>= 6.1.0)
               thread_safe (0.3.6)
               tzinfo (1.2.9)
                 thread_safe (~> 0.1)
               zeitwerk (2.4.2)
+
+          GEM
+            remote: https://gem.repo3/
+            specs:
+              sidekiq-pro (5.2.1)
+                connection_pool (>= 2.2.3)
+                sidekiq (>= 6.1.0)
 
           PLATFORMS
             #{specific_local_platform}
@@ -745,16 +806,6 @@ RSpec.describe "bundle install with gems on multiple sources" do
           BUNDLED WITH
              #{Bundler::VERSION}
         L
-      end
-
-      it "fails when running bundle update with an argument", :bundler => "3" do
-        initial_lockfile = lockfile
-
-        bundle "update concurrent-ruby", :artifice => "compact_index", :raise_on_error => false
-
-        expect(err).to include("Your lockfile contains a single rubygems source section with multiple remotes, which is insecure.")
-
-        expect(lockfile).to eq(initial_lockfile)
       end
     end
 

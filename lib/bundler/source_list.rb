@@ -32,8 +32,8 @@ module Bundler
       @merged_gem_lockfile_sections = true
     end
 
-    def no_aggregate_global_source?
-      global_rubygems_source.remotes.size <= 1
+    def aggregate_global_source?
+      global_rubygems_source.multiple_remotes?
     end
 
     def add_path_source(options = {})
@@ -185,6 +185,8 @@ module Bundler
     end
 
     def equal_source?(source, other_source)
+      return source.include?(other_source) if source.is_a?(Source::Rubygems) && other_source.is_a?(Source::Rubygems) && !merged_gem_lockfile_sections?
+
       source == other_source
     end
 

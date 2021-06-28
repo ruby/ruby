@@ -26,6 +26,13 @@ class TestGemCommandsSigninCommand < Gem::TestCase
     assert_match %r{Signed in.}, sign_in_ui.output
   end
 
+  def test_execute_when_not_already_signed_in_and_not_preexisting_credentials_folder
+    FileUtils.rm Gem.configuration.credentials_path
+
+    sign_in_ui = util_capture { @cmd.execute }
+    assert_match %r{Signed in.}, sign_in_ui.output
+  end
+
   def test_execute_when_already_signed_in_with_same_host
     host = 'http://some-gemcutter-compatible-host.org'
 
