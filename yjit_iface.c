@@ -26,9 +26,7 @@ static VALUE mYjit;
 static VALUE cYjitBlock;
 
 #if RUBY_DEBUG
-static int64_t vm_insns_count = 0;
 static int64_t exit_op_count[VM_INSTRUCTION_SIZE] = { 0 };
-int64_t rb_compiled_iseq_count = 0;
 struct rb_yjit_runtime_counters yjit_runtime_counters = { 0 };
 static VALUE cYjitCodeComment;
 #endif
@@ -761,8 +759,6 @@ static VALUE
 reset_stats_bang(rb_execution_context_t *ec, VALUE self)
 {
 #if RUBY_DEBUG
-    vm_insns_count = 0;
-    rb_compiled_iseq_count = 0;
     memset(&exit_op_count, 0, sizeof(exit_op_count));
     memset(&yjit_runtime_counters, 0, sizeof(yjit_runtime_counters));
 #endif // if RUBY_DEBUG
@@ -777,7 +773,7 @@ reset_stats_bang(rb_execution_context_t *ec, VALUE self)
 void
 rb_yjit_collect_vm_usage_insn(int insn)
 {
-    vm_insns_count++;
+    yjit_runtime_counters.vm_insns_count++;
 }
 
 void
@@ -903,16 +899,16 @@ print_yjit_stats(void)
     double avg_len_in_yjit = (double)retired_in_yjit / total_exit_count;
 
     // Proportion of instructions that retire in YJIT
-    int64_t total_insns_count = retired_in_yjit + vm_insns_count;
+    int64_t total_insns_count = retired_in_yjit + yjit_runtime_counters.vm_insns_count;
     double ratio = retired_in_yjit / (double)total_insns_count;
 
-    fprintf(stderr, "compiled_iseq_count:   %10" PRId64 "\n", rb_compiled_iseq_count);
+    fprintf(stderr, "compiled_iseq_count:   %10" PRId64 "\n", yjit_runtime_counters.compiled_iseq_count);
     fprintf(stderr, "inline_code_size:      %10d\n", cb->write_pos);
     fprintf(stderr, "outlined_code_size:    %10d\n", ocb->write_pos);
 
     fprintf(stderr, "total_exit_count:      %10" PRId64 "\n", total_exit_count);
     fprintf(stderr, "total_insns_count:     %10" PRId64 "\n", total_insns_count);
-    fprintf(stderr, "vm_insns_count:        %10" PRId64 "\n", vm_insns_count);
+    fprintf(stderr, "vm_insns_count:        %10" PRId64 "\n", yjit_runtime_counters.vm_insns_count);
     fprintf(stderr, "yjit_insns_count:      %10" PRId64 "\n", yjit_runtime_counters.exec_instruction);
     fprintf(stderr, "ratio_in_yjit:         %9.1f%%\n", ratio * 100);
     fprintf(stderr, "avg_len_in_yjit:       %10.1f\n", avg_len_in_yjit);
