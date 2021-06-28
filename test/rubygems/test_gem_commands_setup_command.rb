@@ -175,7 +175,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
       assert_path_exist File.join(dir, 'bundler.rb')
       assert_path_exist File.join(dir, 'bundler/b.rb')
 
-      assert_path_exist File.join(dir, 'bundler/templates/.circleci/config.yml') unless RUBY_ENGINE == "truffleruby" # https://github.com/oracle/truffleruby/issues/2116
+      assert_path_exist File.join(dir, 'bundler/templates/.circleci/config.yml')
       assert_path_exist File.join(dir, 'bundler/templates/.travis.yml')
     end
   end
@@ -272,7 +272,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
 
     @cmd.remove_old_lib_files lib
 
-    files_that_go.each {|file| assert_path_not_exist(file) unless file == old_bundler_ci && RUBY_ENGINE == "truffleruby" } # https://github.com/oracle/truffleruby/issues/2116
+    files_that_go.each {|file| assert_path_not_exist(file) unless file == old_bundler_ci }
 
     files_that_stay.each {|file| assert_path_exist file }
   end

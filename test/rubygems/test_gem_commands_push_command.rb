@@ -155,7 +155,6 @@ class TestGemCommandsPushCommand < Gem::TestCase
       @host => @api_key,
     }
 
-    FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
     File.open Gem.configuration.credentials_path, 'w' do |f|
       f.write keys.to_yaml
     end
@@ -190,7 +189,6 @@ class TestGemCommandsPushCommand < Gem::TestCase
       @host => @api_key,
     }
 
-    FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
     File.open Gem.configuration.credentials_path, 'w' do |f|
       f.write keys.to_yaml
     end
@@ -232,7 +230,6 @@ class TestGemCommandsPushCommand < Gem::TestCase
       :rubygems_api_key => @api_key,
     }
 
-    FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
     File.open Gem.configuration.credentials_path, 'w' do |f|
       f.write keys.to_yaml
     end
@@ -274,7 +271,6 @@ class TestGemCommandsPushCommand < Gem::TestCase
       @host => @api_key,
     }
 
-    FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
     File.open Gem.configuration.credentials_path, 'w' do |f|
       f.write keys.to_yaml
     end
@@ -305,7 +301,6 @@ class TestGemCommandsPushCommand < Gem::TestCase
       host => api_key,
     }
 
-    FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
     File.open Gem.configuration.credentials_path, 'w' do |f|
       f.write keys.to_yaml
     end

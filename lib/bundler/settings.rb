@@ -16,7 +16,6 @@ module Bundler
       clean
       default_install_uses_path
       deployment
-      deployment_means_frozen
       disable_checksum_validation
       disable_exec_load
       disable_local_branch_check
@@ -208,6 +207,13 @@ module Bundler
 
       return ["You have not configured a value for `#{exposed_key}`"] if locations.empty?
       locations
+    end
+
+    def processor_count
+      require "etc"
+      Etc.nprocessors
+    rescue StandardError
+      1
     end
 
     # for legacy reasons, in Bundler 2, we do not respect :disable_shared_gems

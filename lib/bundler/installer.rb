@@ -222,14 +222,7 @@ module Bundler
       # Parallelization has some issues on Windows, so it's not yet the default
       return 1 if Gem.win_platform?
 
-      processor_count
-    end
-
-    def processor_count
-      require "etc"
-      Etc.nprocessors
-    rescue StandardError
-      1
+      Bundler.settings.processor_count
     end
 
     def load_plugins

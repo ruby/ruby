@@ -387,10 +387,38 @@ RSpec.describe "major deprecations" do
       )
     end
 
+    it "doesn't show lockfile deprecations if there's a lockfile", :bundler => "< 3" do
+      bundle "install"
+
+      expect(deprecations).to include(
+        "Your Gemfile contains multiple primary sources. " \
+        "Using `source` more than once without a block is a security risk, and " \
+        "may result in installing unexpected gems. To resolve this warning, use " \
+        "a block to indicate which gems should come from the secondary source."
+      )
+      expect(deprecations).not_to include(
+        "Your lockfile contains a single rubygems source section with multiple remotes, which is insecure. " \
+        "Make sure you run `bundle install` in non frozen mode and commit the result to make your lockfile secure."
+      )
+      bundle "config set --local frozen true"
+      bundle "install"
+
+      expect(deprecations).to include(
+        "Your Gemfile contains multiple primary sources. " \
+        "Using `source` more than once without a block is a security risk, and " \
+        "may result in installing unexpected gems. To resolve this warning, use " \
+        "a block to indicate which gems should come from the secondary source."
+      )
+      expect(deprecations).not_to include(
+        "Your lockfile contains a single rubygems source section with multiple remotes, which is insecure. " \
+        "Make sure you run `bundle install` in non frozen mode and commit the result to make your lockfile secure."
+      )
+    end
+
     pending "fails with a helpful error", :bundler => "3"
   end
 
-  context "bundle install with a lockfile with a single rubygems section with multiple remotes" do
+  context "bundle install in frozen mode with a lockfile with a single rubygems section with multiple remotes" do
     before do
       build_repo gem_repo3 do
         build_gem "rack", "0.9.1"
@@ -419,12 +447,14 @@ RSpec.describe "major deprecations" do
         BUNDLED WITH
            #{Bundler::VERSION}
       L
+
+      bundle "config set --local frozen true"
     end
 
     it "shows a deprecation", :bundler => "< 3" do
       bundle "install"
 
-      expect(deprecations).to include("Your lockfile contains a single rubygems source section with multiple remotes, which is insecure. You should run `bundle update` or generate your lockfile from scratch.")
+      expect(deprecations).to include("Your lockfile contains a single rubygems source section with multiple remotes, which is insecure. Make sure you run `bundle install` in non frozen mode and commit the result to make your lockfile secure.")
     end
 
     pending "fails with a helpful error", :bundler => "3"
