@@ -2907,7 +2907,7 @@ vm_ccs_free(struct rb_class_cc_entries *ccs, int alive, rb_objspace_t *objspace,
                     asan_poison_object((VALUE)cc);
                 }
             }
-            rb_vm_cc_invalidate(cc);
+            vm_cc_invalidate(cc);
         }
         ruby_xfree(ccs->entries);
     }

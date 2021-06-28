@@ -115,18 +115,6 @@ rb_vm_mtbl_dump(const char *msg, VALUE klass, ID target_mid)
     vm_mtbl_dump(klass, target_mid);
 }
 
-void
-rb_vm_cc_invalidate(const struct rb_callcache *cc)
-{
-    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
-    VM_ASSERT(cc != vm_cc_empty());
-    VM_ASSERT(cc->klass != 0); // should be enable
-
-    *(VALUE *)&cc->klass = 0;
-    RB_DEBUG_COUNTER_INC(cc_ent_invalidate);
-}
-
-
 static inline void
 vm_cme_invalidate(rb_callable_method_entry_t *cme)
 {
