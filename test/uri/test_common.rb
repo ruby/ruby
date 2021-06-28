@@ -35,8 +35,10 @@ class TestCommon < Test::Unit::TestCase
 
   def test_ractor
     return unless defined?(Ractor)
-    r = Ractor.new { URI.parse("https://ruby-lang.org/").inspect }
-    assert_equal(URI.parse("https://ruby-lang.org/").inspect, r.take)
+    assert_ractor(<<~RUBY, require: 'uri')
+      r = Ractor.new { URI.parse("https://ruby-lang.org/").inspect }
+      assert_equal(URI.parse("https://ruby-lang.org/").inspect, r.take)
+    RUBY
   end
 
   def test_register_scheme
