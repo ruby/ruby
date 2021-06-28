@@ -93,8 +93,8 @@ struct pty_info {
 static void getDevice(int*, int*, char [DEVICELEN], int);
 
 struct child_info {
-    int master, slave;
-    char *slavename;
+    int controller, worker;
+    char *workername;
     VALUE execarg_obj;
     struct rb_execarg *eargp;
 };
@@ -103,8 +103,8 @@ static int
 chfunc(void *data, char *errbuf, size_t errbuf_len)
 {
     struct child_info *carg = data;
-    int master = carg->master;
-    int slave = carg->slave;
+    int controller = carg->controller;
+    int worker = carg->worker;
 
 #define ERROR_EXIT(str) do { \
 	strlcpy(errbuf, (str), errbuf_len); \
@@ -140,22 +140,22 @@ chfunc(void *data, char *errbuf, size_t errbuf_len)
      * obtain new controlling terminal
      */
 #if defined(TIOCSCTTY)
-    close(master);
-    (void) ioctl(slave, TIOCSCTTY, (char *)0);
+    close(controller);
+    (void) ioctl(worker, TIOCSCTTY, (char *)0);
     /* errors ignored for sun */
 #else
-    close(slave);
-    slave = rb_cloexec_open(carg->slavename, O_RDWR, 0);
-    if (slave < 0) {
-        ERROR_EXIT("open: pty slave");
+    close(worker);
+    worker = rb_cloexec_open(carg->workername, O_RDWR, 0);
+    if (worker < 0) {
+        ERROR_EXIT("open: pty worker");
     }
-    rb_update_max_fd(slave);
-    close(master);
+    rb_update_max_fd(worker);
+    close(controller);
 #endif
-    dup2(slave,0);
-    dup2(slave,1);
-    dup2(slave,2);
-    if (slave < 0 || slave > 2) (void)!close(slave);
+    dup2(worker,0);
+    dup2(worker,1);
+    dup2(worker,2);
+    if (worker < 0 || worker > 2) (void)!close(worker);
 #if defined(HAVE_SETEUID) || defined(HAVE_SETREUID) || defined(HAVE_SETRESUID)
     if (seteuid(getuid())) ERROR_EXIT("seteuid()");
 #endif
@@ -166,9 +166,9 @@ chfunc(void *data, char *errbuf, size_t errbuf_len)
 
 static void
 establishShell(int argc, VALUE *argv, struct pty_info *info,
-	       char SlaveName[DEVICELEN])
+	       char WorkerName[DEVICELEN])
 {
-    int 		master, slave, status = 0;
+    int 		controller, worker, status = 0;
     rb_pid_t		pid;
     char		*p, *getenv();
     VALUE		v;
@@ -198,39 +198,39 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
     carg.eargp = rb_execarg_get(carg.execarg_obj);
     rb_execarg_parent_start(carg.execarg_obj);
 
-    getDevice(&master, &slave, SlaveName, 0);
+    getDevice(&controller, &worker, WorkerName, 0);
 
-    carg.master = master;
-    carg.slave = slave;
-    carg.slavename = SlaveName;
+    carg.controller = controller;
+    carg.worker = worker;
+    carg.workername = WorkerName;
     errbuf[0] = '\0';
     pid = rb_fork_async_signal_safe(&status, chfunc, &carg, Qnil, errbuf, sizeof(errbuf));
 
     if (pid < 0) {
 	int e = errno;
-	close(master);
-	close(slave);
+	close(controller);
+	close(worker);
         rb_execarg_parent_end(carg.execarg_obj);
 	errno = e;
 	if (status) rb_jump_tag(status);
 	rb_sys_fail(errbuf[0] ? errbuf : "fork failed");
     }
 
-    close(slave);
+    close(worker);
     rb_execarg_parent_end(carg.execarg_obj);
 
     info->child_pid = pid;
-    info->fd = master;
+    info->fd = controller;
 
     RB_GC_GUARD(carg.execarg_obj);
 }
 
 #if defined(HAVE_POSIX_OPENPT) || defined(HAVE_OPENPTY) || defined(HAVE_PTSNAME)
 static int
-no_mesg(char *slavedevice, int nomesg)
+no_mesg(char *workerdevice, int nomesg)
 {
     if (nomesg)
-        return chmod(slavedevice, 0600);
+        return chmod(workerdevice, 0600);
     else
         return 0;
 }
@@ -252,20 +252,20 @@ ioctl_I_PUSH(int fd, const char *const name)
 #endif
 
 static int
-get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, int fail)
+get_device_once(int *controller, int *worker, char WorkerName[DEVICELEN], int nomesg, int fail)
 {
 #if defined(HAVE_POSIX_OPENPT)
     /* Unix98 PTY */
-    int masterfd = -1, slavefd = -1;
-    char *slavedevice;
+    int controllerfd = -1, workerfd = -1;
+    char *workerdevice;
 
 #if defined(__sun) || defined(__OpenBSD__) || (defined(__FreeBSD__) && __FreeBSD_version < 902000)
     /* workaround for Solaris 10: grantpt() doesn't work if FD_CLOEXEC is set.  [ruby-dev:44688] */
     /* FreeBSD 9.2 or later supports O_CLOEXEC
      * http://www.freebsd.org/cgi/query-pr.cgi?pr=162374 */
-    if ((masterfd = posix_openpt(O_RDWR|O_NOCTTY)) == -1) goto error;
-    if (rb_grantpt(masterfd) == -1) goto error;
-    rb_fd_fix_cloexec(masterfd);
+    if ((controllerfd = posix_openpt(O_RDWR|O_NOCTTY)) == -1) goto error;
+    if (rb_grantpt(controllerfd) == -1) goto error;
+    rb_fd_fix_cloexec(controllerfd);
 #else
     {
 	int flags = O_RDWR|O_NOCTTY;
@@ -275,33 +275,33 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
 	 * O_CLOEXEC is available since Linux 2.6.23.  Linux 2.6.18 silently ignore it. */
 	flags |= O_CLOEXEC;
 # endif
-	if ((masterfd = posix_openpt(flags)) == -1) goto error;
+	if ((controllerfd = posix_openpt(flags)) == -1) goto error;
     }
-    rb_fd_fix_cloexec(masterfd);
-    if (rb_grantpt(masterfd) == -1) goto error;
+    rb_fd_fix_cloexec(controllerfd);
+    if (rb_grantpt(controllerfd) == -1) goto error;
 #endif
-    if (unlockpt(masterfd) == -1) goto error;
-    if ((slavedevice = ptsname(masterfd)) == NULL) goto error;
-    if (no_mesg(slavedevice, nomesg) == -1) goto error;
-    if ((slavefd = rb_cloexec_open(slavedevice, O_RDWR|O_NOCTTY, 0)) == -1) goto error;
-    rb_update_max_fd(slavefd);
+    if (unlockpt(controllerfd) == -1) goto error;
+    if ((workerdevice = ptsname(controllerfd)) == NULL) goto error;
+    if (no_mesg(workerdevice, nomesg) == -1) goto error;
+    if ((workerfd = rb_cloexec_open(workerdevice, O_RDWR|O_NOCTTY, 0)) == -1) goto error;
+    rb_update_max_fd(workerfd);
 
 #if defined(I_PUSH) && !defined(__linux__) && !defined(_AIX)
-    if (ioctl_I_PUSH(slavefd, "ptem") == -1) goto error;
-    if (ioctl_I_PUSH(slavefd, "ldterm") == -1) goto error;
-    if (ioctl_I_PUSH(slavefd, "ttcompat") == -1) goto error;
+    if (ioctl_I_PUSH(workerfd, "ptem") == -1) goto error;
+    if (ioctl_I_PUSH(workerfd, "ldterm") == -1) goto error;
+    if (ioctl_I_PUSH(workerfd, "ttcompat") == -1) goto error;
 #endif
 
-    *master = masterfd;
-    *slave = slavefd;
-    strlcpy(SlaveName, slavedevice, DEVICELEN);
+    *controller = controllerfd;
+    *worker = workerfd;
+    strlcpy(WorkerName, workerdevice, DEVICELEN);
     return 0;
 
   error:
-    if (slavefd != -1) close(slavefd);
-    if (masterfd != -1) close(masterfd);
+    if (workerfd != -1) close(workerfd);
+    if (controllerfd != -1) close(controllerfd);
     if (fail) {
-        rb_raise(rb_eRuntimeError, "can't get Master/Slave device");
+        rb_raise(rb_eRuntimeError, "can't get Controller/Worker device");
     }
     return -1;
 #elif defined HAVE_OPENPTY
@@ -309,16 +309,16 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
  * Use openpty(3) of 4.3BSD Reno and later,
  * or the same interface function.
  */
-    if (openpty(master, slave, SlaveName,
+    if (openpty(controller, worker, WorkerName,
 		(struct termios *)0, (struct winsize *)0) == -1) {
 	if (!fail) return -1;
 	rb_raise(rb_eRuntimeError, "openpty() failed");
     }
-    rb_fd_fix_cloexec(*master);
-    rb_fd_fix_cloexec(*slave);
-    if (no_mesg(SlaveName, nomesg) == -1) {
+    rb_fd_fix_cloexec(*controller);
+    rb_fd_fix_cloexec(*worker);
+    if (no_mesg(WorkerName, nomesg) == -1) {
 	if (!fail) return -1;
-	rb_raise(rb_eRuntimeError, "can't chmod slave pty");
+	rb_raise(rb_eRuntimeError, "can't chmod worker pty");
     }
 
     return 0;
@@ -328,22 +328,22 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     char *name;
     mode_t mode = nomesg ? 0600 : 0622;
 
-    if (!(name = _getpty(master, O_RDWR, mode, 0))) {
+    if (!(name = _getpty(controller, O_RDWR, mode, 0))) {
 	if (!fail) return -1;
 	rb_raise(rb_eRuntimeError, "_getpty() failed");
     }
-    rb_fd_fix_cloexec(*master);
+    rb_fd_fix_cloexec(*controller);
 
-    *slave = rb_cloexec_open(name, O_RDWR, 0);
+    *worker = rb_cloexec_open(name, O_RDWR, 0);
     /* error check? */
-    rb_update_max_fd(*slave);
-    strlcpy(SlaveName, name, DEVICELEN);
+    rb_update_max_fd(*worker);
+    strlcpy(WorkerName, name, DEVICELEN);
 
     return 0;
 #elif defined(HAVE_PTSNAME)
     /* System V */
-    int	 masterfd = -1, slavefd = -1;
-    char *slavedevice;
+    int  controllerfd = -1, workerfd = -1;
+    char *workerdevice;
     void (*s)();
 
     extern char *ptsname(int);
@@ -351,54 +351,54 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
 
 #if defined(__sun)
     /* workaround for Solaris 10: grantpt() doesn't work if FD_CLOEXEC is set.  [ruby-dev:44688] */
-    if((masterfd = open("/dev/ptmx", O_RDWR, 0)) == -1) goto error;
-    if(rb_grantpt(masterfd) == -1) goto error;
-    rb_fd_fix_cloexec(masterfd);
+    if((controllerfd = open("/dev/ptmx", O_RDWR, 0)) == -1) goto error;
+    if(rb_grantpt(controllerfd) == -1) goto error;
+    rb_fd_fix_cloexec(controllerfd);
 #else
-    if((masterfd = rb_cloexec_open("/dev/ptmx", O_RDWR, 0)) == -1) goto error;
-    rb_update_max_fd(masterfd);
-    if(rb_grantpt(masterfd) == -1) goto error;
+    if((controllerfd = rb_cloexec_open("/dev/ptmx", O_RDWR, 0)) == -1) goto error;
+    rb_update_max_fd(controllerfd);
+    if(rb_grantpt(controllerfd) == -1) goto error;
 #endif
-    if(unlockpt(masterfd) == -1) goto error;
-    if((slavedevice = ptsname(masterfd)) == NULL) goto error;
-    if (no_mesg(slavedevice, nomesg) == -1) goto error;
-    if((slavefd = rb_cloexec_open(slavedevice, O_RDWR, 0)) == -1) goto error;
-    rb_update_max_fd(slavefd);
+    if(unlockpt(controllerfd) == -1) goto error;
+    if((workerdevice = ptsname(controllerfd)) == NULL) goto error;
+    if (no_mesg(workerdevice, nomesg) == -1) goto error;
+    if((workerfd = rb_cloexec_open(workerdevice, O_RDWR, 0)) == -1) goto error;
+    rb_update_max_fd(workerfd);
 #if defined(I_PUSH) && !defined(__linux__) && !defined(_AIX)
-    if(ioctl_I_PUSH(slavefd, "ptem") == -1) goto error;
-    if(ioctl_I_PUSH(slavefd, "ldterm") == -1) goto error;
-    ioctl_I_PUSH(slavefd, "ttcompat");
+    if(ioctl_I_PUSH(workerfd, "ptem") == -1) goto error;
+    if(ioctl_I_PUSH(workerfd, "ldterm") == -1) goto error;
+    ioctl_I_PUSH(workerfd, "ttcompat");
 #endif
-    *master = masterfd;
-    *slave = slavefd;
-    strlcpy(SlaveName, slavedevice, DEVICELEN);
+    *controller = controllerfd;
+    *worker = workerfd;
+    strlcpy(WorkerName, workerdevice, DEVICELEN);
     return 0;
 
   error:
-    if (slavefd != -1) close(slavefd);
-    if (masterfd != -1) close(masterfd);
-    if (fail) rb_raise(rb_eRuntimeError, "can't get Master/Slave device");
+    if (workerfd != -1) close(workerfd);
+    if (controllerfd != -1) close(controllerfd);
+    if (fail) rb_raise(rb_eRuntimeError, "can't get Controller/Worker device");
     return -1;
 #else
     /* BSD */
-    int	 masterfd = -1, slavefd = -1;
+    int  controllerfd = -1, workerfd = -1;
     int  i;
-    char MasterName[DEVICELEN];
+    char ControllerName[DEVICELEN];
 
 #define HEX1(c) \
 	c"0",c"1",c"2",c"3",c"4",c"5",c"6",c"7", \
 	c"8",c"9",c"a",c"b",c"c",c"d",c"e",c"f"
 
 #if defined(__hpux)
-    static const char MasterDevice[] = "/dev/ptym/pty%s";
-    static const char SlaveDevice[] =  "/dev/pty/tty%s";
+    static const char ControllerDevice[] = "/dev/ptym/pty%s";
+    static const char WorkerDevice[] =  "/dev/pty/tty%s";
     static const char deviceNo[][3] = {
 	HEX1("p"), HEX1("q"), HEX1("r"), HEX1("s"),
 	HEX1("t"), HEX1("u"), HEX1("v"), HEX1("w"),
     };
 #elif defined(_IBMESA)  /* AIX/ESA */
-    static const char MasterDevice[] = "/dev/ptyp%s";
-    static const char SlaveDevice[] = "/dev/ttyp%s";
+    static const char ControllerDevice[] = "/dev/ptyp%s";
+    static const char WorkerDevice[] = "/dev/ttyp%s";
     static const char deviceNo[][3] = {
 	HEX1("0"), HEX1("1"), HEX1("2"), HEX1("3"),
 	HEX1("4"), HEX1("5"), HEX1("6"), HEX1("7"),
@@ -406,8 +406,8 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
 	HEX1("c"), HEX1("d"), HEX1("e"), HEX1("f"),
     };
 #else /* 4.2BSD */
-    static const char MasterDevice[] = "/dev/pty%s";
-    static const char SlaveDevice[] = "/dev/tty%s";
+    static const char ControllerDevice[] = "/dev/pty%s";
+    static const char WorkerDevice[] = "/dev/tty%s";
     static const char deviceNo[][3] = {
 	HEX1("p"), HEX1("q"), HEX1("r"), HEX1("s"),
     };
@@ -415,35 +415,35 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
 #undef HEX1
     for (i = 0; i < numberof(deviceNo); i++) {
 	const char *const devno = deviceNo[i];
-	snprintf(MasterName, sizeof MasterName, MasterDevice, devno);
-	if ((masterfd = rb_cloexec_open(MasterName,O_RDWR,0)) >= 0) {
-            rb_update_max_fd(masterfd);
-	    *master = masterfd;
-	    snprintf(SlaveName, DEVICELEN, SlaveDevice, devno);
-	    if ((slavefd = rb_cloexec_open(SlaveName,O_RDWR,0)) >= 0) {
-                rb_update_max_fd(slavefd);
-		*slave = slavefd;
-		if (chown(SlaveName, getuid(), getgid()) != 0) goto error;
-		if (chmod(SlaveName, nomesg ? 0600 : 0622) != 0) goto error;
+	snprintf(ControllerName, sizeof ControllerName, ControllerDevice, devno);
+	if ((controllerfd = rb_cloexec_open(ControllerName,O_RDWR,0)) >= 0) {
+            rb_update_max_fd(controllerfd);
+	    *controller = controllerfd;
+	    snprintf(WorkerName, DEVICELEN, WorkerDevice, devno);
+	    if ((workerfd = rb_cloexec_open(WorkerName,O_RDWR,0)) >= 0) {
+                rb_update_max_fd(workerfd);
+		*worker = workerfd;
+		if (chown(WorkerName, getuid(), getgid()) != 0) goto error;
+		if (chmod(WorkerName, nomesg ? 0600 : 0622) != 0) goto error;
 		return 0;
 	    }
-	    close(masterfd);
+	    close(controllerfd);
 	}
     }
   error:
-    if (slavefd != -1) close(slavefd);
-    if (masterfd != -1) close(masterfd);
-    if (fail) rb_raise(rb_eRuntimeError, "can't get %s", SlaveName);
+    if (workerfd != -1) close(workerfd);
+    if (controllerfd != -1) close(controllerfd);
+    if (fail) rb_raise(rb_eRuntimeError, "can't get %s", WorkerName);
     return -1;
 #endif
 }
 
 static void
-getDevice(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg)
+getDevice(int *controller, int *worker, char WorkerName[DEVICELEN], int nomesg)
 {
-    if (get_device_once(master, slave, SlaveName, nomesg, 0)) {
+    if (get_device_once(controller, worker, WorkerName, nomesg, 0)) {
 	rb_gc();
-	get_device_once(master, slave, SlaveName, nomesg, 1);
+	get_device_once(controller, worker, WorkerName, nomesg, 1);
     }
 }
 
@@ -463,40 +463,40 @@ pty_close_pty(VALUE assoc)
 
 /*
  * call-seq:
- *   PTY.open => [master_io, slave_file]
- *   PTY.open {|(master_io, slave_file)| ... } => block value
+ *   PTY.open => [controller_io, worker_file]
+ *   PTY.open {|(controller_io, worker_file)| ... } => block value
  *
  * Allocates a pty (pseudo-terminal).
  *
- * In the block form, yields an array of two elements (<tt>master_io, slave_file</tt>)
+ * In the block form, yields an array of two elements (<tt>controller_io, worker_file</tt>)
  * and the value of the block is returned from +open+.
  *
  * The IO and File are both closed after the block completes if they haven't
  * been already closed.
  *
- *   PTY.open {|master, slave|
- *     p master      #=> #<IO:masterpty:/dev/pts/1>
- *     p slave      #=> #<File:/dev/pts/1>
- *     p slave.path #=> "/dev/pts/1"
+ *   PTY.open {|controller, worker|
+ *     p controller  #=> #<IO:controllerpty:/dev/pts/1>
+ *     p worker      #=> #<File:/dev/pts/1>
+ *     p worker.path #=> "/dev/pts/1"
  *   }
  *
- * In the non-block form, returns a two element array, <tt>[master_io,
- * slave_file]</tt>.
+ * In the non-block form, returns a two element array, <tt>[controller_io,
+ * worker_file]</tt>.
  *
- *   master, slave = PTY.open
- *   # do something with master for IO, or the slave file
+ *   controller, worker = PTY.open
+ *   # do something with controller for IO, or the worker file
  *
  * The arguments in both forms are:
  *
- * +master_io+::    the master of the pty, as an IO.
- * +slave_file+::   the slave of the pty, as a File.  The path to the
- *		    terminal device is available via +slave_file.path+
+ * +controller_io+:: the controller of the pty, as an IO.
+ * +worker_file+::   the worker of the pty, as a File. The path to the
+ *                   terminal device is available via +worker_file.path+
  *
  * IO#raw! is usable to disable newline conversions:
  *
  *   require 'io/console'
- *   PTY.open {|m, s|
- *     s.raw!
+ *   PTY.open {|c, w|
+ *     w.raw!
  *     # ...
  *   }
  *
@@ -504,27 +504,27 @@ pty_close_pty(VALUE assoc)
 static VALUE
 pty_open(VALUE klass)
 {
-    int master_fd, slave_fd;
-    char slavename[DEVICELEN];
-    VALUE master_io, slave_file;
-    rb_io_t *master_fptr, *slave_fptr;
+    int controller_fd, worker_fd;
+    char workername[DEVICELEN];
+    VALUE controller_io, worker_file;
+    rb_io_t *controller_fptr, *worker_fptr;
     VALUE assoc;
 
-    getDevice(&master_fd, &slave_fd, slavename, 1);
+    getDevice(&controller_fd, &worker_fd, workername, 1);
 
-    master_io = rb_obj_alloc(rb_cIO);
-    MakeOpenFile(master_io, master_fptr);
-    master_fptr->mode = FMODE_READWRITE | FMODE_SYNC | FMODE_DUPLEX;
-    master_fptr->fd = master_fd;
-    master_fptr->pathv = rb_obj_freeze(rb_sprintf("masterpty:%s", slavename));
+    controller_io = rb_obj_alloc(rb_cIO);
+    MakeOpenFile(controller_io, controller_fptr);
+    controller_fptr->mode = FMODE_READWRITE | FMODE_SYNC | FMODE_DUPLEX;
+    controller_fptr->fd = controller_fd;
+    controller_fptr->pathv = rb_obj_freeze(rb_sprintf("controllerpty:%s", workername));
 
-    slave_file = rb_obj_alloc(rb_cFile);
-    MakeOpenFile(slave_file, slave_fptr);
-    slave_fptr->mode = FMODE_READWRITE | FMODE_SYNC | FMODE_DUPLEX | FMODE_TTY;
-    slave_fptr->fd = slave_fd;
-    slave_fptr->pathv = rb_obj_freeze(rb_str_new_cstr(slavename));
+    worker_file = rb_obj_alloc(rb_cFile);
+    MakeOpenFile(worker_file, worker_fptr);
+    worker_fptr->mode = FMODE_READWRITE | FMODE_SYNC | FMODE_DUPLEX | FMODE_TTY;
+    worker_fptr->fd = worker_fd;
+    worker_fptr->pathv = rb_obj_freeze(rb_str_new_cstr(workername));
 
-    assoc = rb_assoc_new(master_io, slave_file);
+    assoc = rb_assoc_new(controller_io, worker_file);
     if (rb_block_given_p()) {
 	return rb_ensure(rb_yield, assoc, pty_close_pty, assoc);
     }
@@ -554,8 +554,8 @@ pty_detach_process(VALUE v)
  * Spawns the specified command on a newly allocated pty. You can also use the
  * alias ::getpty.
  *
- * The command's controlling tty is set to the slave device of the pty
- * and its standard input/output/error is redirected to the slave device.
+ * The command's controlling tty is set to the worker device of the pty
+ * and its standard input/output/error is redirected to the worker device.
  *
  * +command+ and +command_line+ are the full commands to run, given a String.
  * Any additional +arguments+ will be passed to the command.
@@ -580,16 +580,16 @@ pty_getpty(int argc, VALUE *argv, VALUE self)
     rb_io_t *wfptr,*rfptr;
     VALUE rport = rb_obj_alloc(rb_cFile);
     VALUE wport = rb_obj_alloc(rb_cFile);
-    char SlaveName[DEVICELEN];
+    char WorkerName[DEVICELEN];
 
     MakeOpenFile(rport, rfptr);
     MakeOpenFile(wport, wfptr);
 
-    establishShell(argc, argv, &info, SlaveName);
+    establishShell(argc, argv, &info, WorkerName);
 
     rfptr->mode = rb_io_modestr_fmode("r");
     rfptr->fd = info.fd;
-    rfptr->pathv = rb_obj_freeze(rb_str_new_cstr(SlaveName));
+    rfptr->pathv = rb_obj_freeze(rb_str_new_cstr(WorkerName));
 
     wfptr->mode = rb_io_modestr_fmode("w") | FMODE_SYNC;
     wfptr->fd = rb_cloexec_dup(info.fd);
@@ -710,26 +710,26 @@ static VALUE cPTY;
  *   # start by requiring the standard library PTY
  *   require 'pty'
  *
- *   master, slave = PTY.open
+ *   controller, worker = PTY.open
  *   read, write = IO.pipe
- *   pid = spawn("factor", :in=>read, :out=>slave)
- *   read.close	    # we dont need the read
- *   slave.close    # or the slave
+ *   pid = spawn("factor", :in=>read, :out=>worker)
+ *   read.close	   # we dont need the read
+ *   worker.close  # or the worker
  *
  *   # pipe "42" to the factor command
  *   write.puts "42"
  *   # output the response from factor
- *   p master.gets #=> "42: 2 3 7\n"
+ *   p controller.gets #=> "42: 2 3 7\n"
  *
  *   # pipe "144" to factor and print out the response
  *   write.puts "144"
- *   p master.gets #=> "144: 2 2 2 2 3 3\n"
+ *   p controller.gets #=> "144: 2 2 2 2 3 3\n"
  *   write.close # close the pipe
  *
- *   # The result of read operation when pty slave is closed is platform
+ *   # The result of read operation when pty worker is closed is platform
  *   # dependent.
  *   ret = begin
- *           master.gets     # FreeBSD returns nil.
+ *           controller.gets # FreeBSD returns nil.
  *         rescue Errno::EIO # GNU/Linux raises EIO.
  *           nil
  *         end
