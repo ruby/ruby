@@ -6501,25 +6501,11 @@ static VALUE
 env_clone(int argc, VALUE *argv, VALUE obj)
 {
     if (argc) {
-        static ID keyword_ids[1];
         VALUE opt, kwfreeze;
-
-        if (!keyword_ids[0]) {
-            CONST_ID(keyword_ids[0], "freeze");
-        }
-        rb_scan_args(argc, argv, "0:", &opt);
-        if (!NIL_P(opt)) {
-            rb_get_kwargs(opt, keyword_ids, 0, 1, &kwfreeze);
-            switch (kwfreeze) {
-              case Qtrue:
+        if (rb_scan_args(argc, argv, "0:", &opt) < argc) {
+            kwfreeze = rb_get_freeze_opt(1, &opt);
+            if (RTEST(kwfreeze)) {
                 rb_raise(rb_eTypeError, "cannot freeze ENV");
-                break;
-              default:
-                rb_raise(rb_eArgError, "invalid value for freeze keyword");
-                break;
-              case Qnil:
-              case Qfalse:
-                break;
             }
         }
     }

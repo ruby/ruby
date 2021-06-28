@@ -369,7 +369,6 @@ init_copy(VALUE dest, VALUE obj)
     }
 }
 
-static VALUE freeze_opt(int argc, VALUE *argv);
 static VALUE immutable_obj_clone(VALUE obj, VALUE kwfreeze);
 static VALUE mutable_obj_clone(VALUE obj, VALUE kwfreeze);
 PUREFUNC(static inline int special_object_p(VALUE obj)); /*!< \private */
@@ -418,12 +417,12 @@ rb_obj_clone2(rb_execution_context_t *ec, VALUE obj, VALUE freeze)
 VALUE
 rb_immutable_obj_clone(int argc, VALUE *argv, VALUE obj)
 {
-    VALUE kwfreeze = freeze_opt(argc, argv);
+    VALUE kwfreeze = rb_get_freeze_opt(argc, argv);
     return immutable_obj_clone(obj, kwfreeze);
 }
 
-static VALUE
-freeze_opt(int argc, VALUE *argv)
+VALUE
+rb_get_freeze_opt(int argc, VALUE *argv)
 {
     static ID keyword_ids[1];
     VALUE opt;
@@ -657,9 +656,10 @@ static VALUE
 rb_obj_init_clone(int argc, VALUE *argv, VALUE obj)
 {
     VALUE orig, opts;
-    rb_scan_args(argc, argv, "1:", &orig, &opts);
-    /* Ignore a freeze keyword */
-    if (argc == 2) (void)freeze_opt(1, &opts);
+    if (rb_scan_args(argc, argv, "1:", &orig, &opts) < argc) {
+        /* Ignore a freeze keyword */
+        rb_get_freeze_opt(1, &opts);
+    }
     rb_funcall(obj, id_init_copy, 1, orig);
     return obj;
 }
