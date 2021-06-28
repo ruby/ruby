@@ -1,8 +1,8 @@
 require "test/unit"
 
-require "error_squiggle"
+require "error_highlight"
 
-class ErrorSquiggleTest < Test::Unit::TestCase
+class ErrorHighlightTest < Test::Unit::TestCase
   class DummyFormatter
     def message_for(corrections)
       ""
@@ -613,7 +613,7 @@ undefined method `foo=' for #{ v.inspect }
 
   def test_CONST
     assert_error_message(NameError, <<~END) do
-uninitialized constant ErrorSquiggleTest::NotDefined
+uninitialized constant ErrorHighlightTest::NotDefined
 
       1 + NotDefined + 1
           ^^^^^^^^^^
@@ -625,25 +625,25 @@ uninitialized constant ErrorSquiggleTest::NotDefined
 
   def test_COLON2_1
     assert_error_message(NameError, <<~END) do
-uninitialized constant ErrorSquiggleTest::NotDefined
+uninitialized constant ErrorHighlightTest::NotDefined
 
-      ErrorSquiggleTest::NotDefined
-                       ^^^^^^^^^^^^
+      ErrorHighlightTest::NotDefined
+                        ^^^^^^^^^^^^
     END
 
-      ErrorSquiggleTest::NotDefined
+      ErrorHighlightTest::NotDefined
     end
   end
 
   def test_COLON2_2
     assert_error_message(NameError, <<~END) do
-uninitialized constant ErrorSquiggleTest::NotDefined
+uninitialized constant ErrorHighlightTest::NotDefined
 
         NotDefined
         ^^^^^^^^^^
     END
 
-      ErrorSquiggleTest::
+      ErrorHighlightTest::
         NotDefined
     end
   end
@@ -666,7 +666,7 @@ uninitialized constant NotDefined
 
   def test_OP_CDECL_read_1
     assert_error_message(NameError, <<~END) do
-uninitialized constant ErrorSquiggleTest::OP_CDECL_TEST::NotDefined
+uninitialized constant ErrorHighlightTest::OP_CDECL_TEST::NotDefined
 
       OP_CDECL_TEST::NotDefined += 1
                    ^^^^^^^^^^^^
@@ -678,7 +678,7 @@ uninitialized constant ErrorSquiggleTest::OP_CDECL_TEST::NotDefined
 
   def test_OP_CDECL_read_2
     assert_error_message(NameError, <<~END) do
-uninitialized constant ErrorSquiggleTest::OP_CDECL_TEST::NotDefined
+uninitialized constant ErrorHighlightTest::OP_CDECL_TEST::NotDefined
 
       OP_CDECL_TEST::NotDefined += # comment
                    ^^^^^^^^^^^^
@@ -691,7 +691,7 @@ uninitialized constant ErrorSquiggleTest::OP_CDECL_TEST::NotDefined
 
   def test_OP_CDECL_read_3
     assert_error_message(NameError, <<~END) do
-uninitialized constant ErrorSquiggleTest::OP_CDECL_TEST::NotDefined
+uninitialized constant ErrorHighlightTest::OP_CDECL_TEST::NotDefined
     END
 
       OP_CDECL_TEST::
@@ -751,13 +751,13 @@ uninitialized constant NotDefined
 
   def test_OP_CDECL_toplevel_2
     assert_error_message(NoMethodError, <<~END) do
-undefined method `+' for ErrorSquiggleTest:Class
+undefined method `+' for ErrorHighlightTest:Class
 
-      ::ErrorSquiggleTest += 1
-                          ^
+      ::ErrorHighlightTest += 1
+                           ^
     END
 
-      ::ErrorSquiggleTest += 1
+      ::ErrorHighlightTest += 1
     end
   end
 
@@ -787,13 +787,13 @@ NoMethodError
 
   def test_const_get
     assert_error_message(NameError, <<~END) do
-uninitialized constant ErrorSquiggleTest::NotDefined
+uninitialized constant ErrorHighlightTest::NotDefined
 
-      ErrorSquiggleTest.const_get(:NotDefined)
-                       ^^^^^^^^^^
+      ErrorHighlightTest.const_get(:NotDefined)
+                        ^^^^^^^^^^
     END
 
-      ErrorSquiggleTest.const_get(:NotDefined)
+      ErrorHighlightTest.const_get(:NotDefined)
     end
   end
 

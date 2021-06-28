@@ -5,10 +5,10 @@ rescue LoadError
 end if defined?(Gem)
 
 begin
-  require 'error_squiggle'
+  require 'error_highlight'
 rescue LoadError
-  warn "`error_squiggle' was not loaded."
-end if defined?(ErrorSquiggle)
+  warn "`error_highlight' was not loaded."
+end if defined?(ErrorHighlight)
 
 begin
   require 'did_you_mean'
