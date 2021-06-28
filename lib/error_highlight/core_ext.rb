@@ -1,4 +1,4 @@
-module ErrorSquiggle
+module ErrorHighlight
   module CoreExt
     SKIP_TO_S_FOR_SUPER_LOOKUP = true
     private_constant :SKIP_TO_S_FOR_SUPER_LOOKUP
@@ -22,7 +22,7 @@ module ErrorSquiggle
           point = :args
         end
 
-        spot = ErrorSquiggle.spot(node, point, **opts) do |lineno, last_lineno|
+        spot = ErrorHighlight.spot(node, point, **opts) do |lineno, last_lineno|
           last_lineno ||= lineno
           node.script_lines[lineno - 1 .. last_lineno - 1].join("")
         end

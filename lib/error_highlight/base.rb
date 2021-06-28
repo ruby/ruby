@@ -1,6 +1,6 @@
 require_relative "version"
 
-module ErrorSquiggle
+module ErrorHighlight
   # Identify the code fragment that seems associated with a given error
   #
   # Arguments:
