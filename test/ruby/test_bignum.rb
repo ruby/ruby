@@ -632,7 +632,7 @@ class TestBignum < Test::Unit::TestCase
     time = Time.now
     end_flag = false
     num = (65536 ** 65536)
-    q = Queue.new
+    q = Thread::Queue.new
     thread = Thread.new do
       assert_raise(RuntimeError) {
         q << true

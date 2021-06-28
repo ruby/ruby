@@ -131,7 +131,7 @@ class TestDir < Test::Unit::TestCase
 
   def test_chdir_conflict
     pwd = Dir.pwd
-    q = Queue.new
+    q = Thread::Queue.new
     t = Thread.new do
       q.pop
       Dir.chdir(pwd) rescue $!

@@ -1984,7 +1984,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
   def test_thread_add_trace_func
     events = []
     base_line = __LINE__
-    q = Queue.new
+    q = Thread::Queue.new
     t = Thread.new{
       Thread.current.add_trace_func proc{|ev, file, line, *args|
         events << [ev, line]
@@ -2010,7 +2010,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
     # other thread
     events = []
-    m2t_q = Queue.new
+    m2t_q = Thread::Queue.new
 
     t = Thread.new{
       Thread.current.abort_on_exception = true
@@ -2320,8 +2320,8 @@ class TestSetTraceFunc < Test::Unit::TestCase
       events << Thread.current
     end
 
-    q1 = Queue.new
-    q2 = Queue.new
+    q1 = Thread::Queue.new
+    q2 = Thread::Queue.new
 
     th = Thread.new{
       q1 << :ok; q2.pop

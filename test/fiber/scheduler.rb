@@ -21,7 +21,7 @@ class Scheduler
 
     @closed = false
 
-    @lock = Mutex.new
+    @lock = Thread::Mutex.new
     @blocking = 0
     @ready = []
 
@@ -170,7 +170,7 @@ class Scheduler
     Fiber.yield
   end
 
-  # Used for Kernel#sleep and Mutex#sleep
+  # Used for Kernel#sleep and Thread::Mutex#sleep
   def kernel_sleep(duration = nil)
     # $stderr.puts [__method__, duration, Fiber.current].inspect
 
@@ -179,7 +179,8 @@ class Scheduler
     return true
   end
 
-  # Used when blocking on synchronization (Mutex#lock, Queue#pop, SizedQueue#push, ...)
+  # Used when blocking on synchronization (Thread::Mutex#lock,
+  # Thread::Queue#pop, Thread::SizedQueue#push, ...)
   def block(blocker, timeout = nil)
     # $stderr.puts [__method__, blocker, timeout].inspect
 
@@ -201,7 +202,8 @@ class Scheduler
     end
   end
 
-  # Used when synchronization wakes up a previously-blocked fiber (Mutex#unlock, Queue#push, ...).
+  # Used when synchronization wakes up a previously-blocked fiber
+  # (Thread::Mutex#unlock, Thread::Queue#push, ...).
   # This might be called from another thread.
   def unblock(blocker, fiber)
     # $stderr.puts [__method__, blocker, fiber].inspect

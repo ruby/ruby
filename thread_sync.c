@@ -65,14 +65,14 @@ static void rb_mutex_abandon_locking_mutex(rb_thread_t *th);
 static const char* rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_fiber_t *fiber);
 
 /*
- *  Document-class: Mutex
+ *  Document-class: Thread::Mutex
  *
- *  Mutex implements a simple semaphore that can be used to coordinate access to
- *  shared data from multiple concurrent threads.
+ *  Thread::Mutex implements a simple semaphore that can be used to
+ *  coordinate access to shared data from multiple concurrent threads.
  *
  *  Example:
  *
- *    semaphore = Mutex.new
+ *    semaphore = Thread::Mutex.new
  *
  *    a = Thread.new {
  *      semaphore.synchronize {
@@ -164,7 +164,7 @@ mutex_alloc(VALUE klass)
 
 /*
  *  call-seq:
- *     Mutex.new   -> mutex
+ *     Thread::Mutex.new   -> mutex
  *
  *  Creates a new Mutex
  */
@@ -600,7 +600,7 @@ mutex_sleep(int argc, VALUE *argv, VALUE self)
  *    mutex.synchronize { ... }    -> result of the block
  *
  * Obtains a lock, runs the block, and releases the lock when the block
- * completes.  See the example under +Mutex+.
+ * completes.  See the example under Thread::Mutex.
  */
 
 VALUE
@@ -615,7 +615,7 @@ rb_mutex_synchronize(VALUE mutex, VALUE (*func)(VALUE arg), VALUE arg)
  *    mutex.synchronize { ... }    -> result of the block
  *
  * Obtains a lock, runs the block, and releases the lock when the block
- * completes.  See the example under +Mutex+.
+ * completes.  See the example under Thread::Mutex.
  */
 static VALUE
 rb_mutex_synchronize_m(VALUE self)
@@ -792,7 +792,7 @@ queue_closed_p(VALUE self)
  *  Document-class: ClosedQueueError
  *
  *  The exception class which will be raised when pushing into a closed
- *  Queue.  See Queue#close and SizedQueue#close.
+ *  Queue.  See Thread::Queue#close and Thread::SizedQueue#close.
  */
 
 NORETURN(static void raise_closed_queue_error(VALUE self));
@@ -811,19 +811,19 @@ queue_closed_result(VALUE self, struct rb_queue *q)
 }
 
 /*
- *  Document-class: Queue
+ *  Document-class: Thread::Queue
  *
- *  The Queue class implements multi-producer, multi-consumer queues.
- *  It is especially useful in threaded programming when information
- *  must be exchanged safely between multiple threads. The Queue class
- *  implements all the required locking semantics.
+ *  The Thread::Queue class implements multi-producer, multi-consumer
+ *  queues.  It is especially useful in threaded programming when
+ *  information must be exchanged safely between multiple threads. The
+ *  Thread::Queue class implements all the required locking semantics.
  *
  *  The class implements FIFO type of queue. In a FIFO queue, the first
  *  tasks added are the first retrieved.
  *
  *  Example:
  *
- *	queue = Queue.new
+ *	queue = Thread::Queue.new
  *
  *	producer = Thread.new do
  *	  5.times do |i|
@@ -853,9 +853,9 @@ queue_closed_result(VALUE self, struct rb_queue *q)
  *
  *  Example:
  *
- *    	q = Queue.new
- *    	q = Queue.new([a, b, c])
- *    	q = Queue.new(items)
+ *    	q = Thread::Queue.new
+ *    	q = Thread::Queue.new([a, b, c])
+ *    	q = Thread::Queue.new(items)
  */
 
 static VALUE
@@ -886,7 +886,7 @@ queue_do_push(VALUE self, struct rb_queue *q, VALUE obj)
 }
 
 /*
- * Document-method: Queue#close
+ * Document-method: Thread::Queue#close
  * call-seq:
  *   close
  *
@@ -909,7 +909,7 @@ queue_do_push(VALUE self, struct rb_queue *q, VALUE obj)
  *
  * Example:
  *
- *    	q = Queue.new
+ *    	q = Thread::Queue.new
  *      Thread.new{
  *        while e = q.deq # wait for nil to break loop
  *          # ...
@@ -933,7 +933,7 @@ rb_queue_close(VALUE self)
 }
 
 /*
- * Document-method: Queue#closed?
+ * Document-method: Thread::Queue#closed?
  * call-seq: closed?
  *
  * Returns +true+ if the queue is closed.
@@ -946,7 +946,7 @@ rb_queue_closed_p(VALUE self)
 }
 
 /*
- * Document-method: Queue#push
+ * Document-method: Thread::Queue#push
  * call-seq:
  *   push(object)
  *   enq(object)
@@ -1049,7 +1049,7 @@ queue_pop_should_block(int argc, const VALUE *argv)
 }
 
 /*
- * Document-method: Queue#pop
+ * Document-method: Thread::Queue#pop
  * call-seq:
  *   pop(non_block=false)
  *   deq(non_block=false)
@@ -1070,7 +1070,7 @@ rb_queue_pop(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- * Document-method: Queue#empty?
+ * Document-method: Thread::Queue#empty?
  * call-seq: empty?
  *
  * Returns +true+ if the queue is empty.
@@ -1083,7 +1083,7 @@ rb_queue_empty_p(VALUE self)
 }
 
 /*
- * Document-method: Queue#clear
+ * Document-method: Thread::Queue#clear
  *
  * Removes all objects from the queue.
  */
@@ -1098,7 +1098,7 @@ rb_queue_clear(VALUE self)
 }
 
 /*
- * Document-method: Queue#length
+ * Document-method: Thread::Queue#length
  * call-seq:
  *   length
  *   size
@@ -1113,7 +1113,7 @@ rb_queue_length(VALUE self)
 }
 
 /*
- * Document-method: Queue#num_waiting
+ * Document-method: Thread::Queue#num_waiting
  *
  * Returns the number of threads waiting on the queue.
  */
@@ -1127,12 +1127,12 @@ rb_queue_num_waiting(VALUE self)
 }
 
 /*
- *  Document-class: SizedQueue
+ *  Document-class: Thread::SizedQueue
  *
  * This class represents queues of specified size capacity.  The push operation
  * may be blocked if the capacity is full.
  *
- * See Queue for an example of how a SizedQueue works.
+ * See Thread::Queue for an example of how a Thread::SizedQueue works.
  */
 
 /*
@@ -1162,11 +1162,11 @@ rb_szqueue_initialize(VALUE self, VALUE vmax)
 }
 
 /*
- * Document-method: SizedQueue#close
+ * Document-method: Thread::SizedQueue#close
  * call-seq:
  *   close
  *
- * Similar to Queue#close.
+ * Similar to Thread::Queue#close.
  *
  * The difference is behavior with waiting enqueuing threads.
  *
@@ -1187,7 +1187,7 @@ rb_szqueue_close(VALUE self)
 }
 
 /*
- * Document-method: SizedQueue#max
+ * Document-method: Thread::SizedQueue#max
  *
  * Returns the maximum size of the queue.
  */
@@ -1199,7 +1199,7 @@ rb_szqueue_max_get(VALUE self)
 }
 
 /*
- * Document-method: SizedQueue#max=
+ * Document-method: Thread::SizedQueue#max=
  * call-seq: max=(number)
  *
  * Sets the maximum size of the queue to the given +number+.
@@ -1235,7 +1235,7 @@ szqueue_push_should_block(int argc, const VALUE *argv)
 }
 
 /*
- * Document-method: SizedQueue#push
+ * Document-method: Thread::SizedQueue#push
  * call-seq:
  *   push(object, non_block=false)
  *   enq(object, non_block=false)
@@ -1299,7 +1299,7 @@ szqueue_do_pop(VALUE self, int should_block)
 }
 
 /*
- * Document-method: SizedQueue#pop
+ * Document-method: Thread::SizedQueue#pop
  * call-seq:
  *   pop(non_block=false)
  *   deq(non_block=false)
@@ -1320,7 +1320,7 @@ rb_szqueue_pop(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- * Document-method: SizedQueue#clear
+ * Document-method: Thread::SizedQueue#clear
  *
  * Removes all objects from the queue.
  */
@@ -1336,7 +1336,7 @@ rb_szqueue_clear(VALUE self)
 }
 
 /*
- * Document-method: SizedQueue#length
+ * Document-method: Thread::SizedQueue#length
  * call-seq:
  *   length
  *   size
@@ -1353,7 +1353,7 @@ rb_szqueue_length(VALUE self)
 }
 
 /*
- * Document-method: SizedQueue#num_waiting
+ * Document-method: Thread::SizedQueue#num_waiting
  *
  * Returns the number of threads waiting on the queue.
  */
@@ -1367,7 +1367,7 @@ rb_szqueue_num_waiting(VALUE self)
 }
 
 /*
- * Document-method: SizedQueue#empty?
+ * Document-method: Thread::SizedQueue#empty?
  * call-seq: empty?
  *
  * Returns +true+ if the queue is empty.
@@ -1389,7 +1389,7 @@ struct rb_condvar {
 };
 
 /*
- *  Document-class: ConditionVariable
+ *  Document-class: Thread::ConditionVariable
  *
  *  ConditionVariable objects augment class Mutex. Using condition variables,
  *  it is possible to suspend while in the middle of a critical section until a
@@ -1397,8 +1397,8 @@ struct rb_condvar {
  *
  *  Example:
  *
- *    mutex = Mutex.new
- *    resource = ConditionVariable.new
+ *    mutex = Thread::Mutex.new
+ *    resource = Thread::ConditionVariable.new
  *
  *    a = Thread.new {
  *	 mutex.synchronize {
@@ -1486,7 +1486,7 @@ do_sleep(VALUE args)
 }
 
 /*
- * Document-method: ConditionVariable#wait
+ * Document-method: Thread::ConditionVariable#wait
  * call-seq: wait(mutex, timeout=nil)
  *
  * Releases the lock held in +mutex+ and waits; reacquires the lock on wakeup.
@@ -1517,7 +1517,7 @@ rb_condvar_wait(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- * Document-method: ConditionVariable#signal
+ * Document-method: Thread::ConditionVariable#signal
  *
  * Wakes up the first thread in line waiting for this lock.
  */
@@ -1531,7 +1531,7 @@ rb_condvar_signal(VALUE self)
 }
 
 /*
- * Document-method: ConditionVariable#broadcast
+ * Document-method: Thread::ConditionVariable#broadcast
  *
  * Wakes up all threads waiting for this lock.
  */
@@ -1565,11 +1565,11 @@ static void
 Init_thread_sync(void)
 {
 #undef rb_intern
-#if 0
-    rb_cMutex = rb_define_class("Mutex", rb_cObject); /* teach rdoc Mutex */
-    rb_cConditionVariable = rb_define_class("ConditionVariable", rb_cObject); /* teach rdoc ConditionVariable */
-    rb_cQueue = rb_define_class("Queue", rb_cObject); /* teach rdoc Queue */
-    rb_cSizedQueue = rb_define_class("SizedQueue", rb_cObject); /* teach rdoc SizedQueue */
+#if defined(TEACH_RDOC) && TEACH_RDOC == 42
+    rb_cMutex = rb_define_class_under(rb_cThread, "Mutex", rb_cObject);
+    rb_cConditionVariable = rb_define_class_under(rb_cThread, "ConditionVariable", rb_cObject);
+    rb_cQueue = rb_define_class_under(rb_cThread, "Queue", rb_cObject);
+    rb_cSizedQueue = rb_define_class_under(rb_cThread, "SizedQueue", rb_cObject);
 #endif
 
 #define DEFINE_CLASS(name, super) \

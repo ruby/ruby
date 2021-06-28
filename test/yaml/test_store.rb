@@ -75,7 +75,7 @@ class YAMLStoreTest < Test::Unit::TestCase
   end
 
   def test_thread_safe
-    q1 = Queue.new
+    q1 = Thread::Queue.new
     assert_raise(PStore::Error) do
       th = Thread.new do
         @yaml_store.transaction do
@@ -92,7 +92,7 @@ class YAMLStoreTest < Test::Unit::TestCase
         th.join
       end
     end
-    q2 = Queue.new
+    q2 = Thread::Queue.new
     begin
       yaml_store = YAML::Store.new(second_file, true)
       cur = Thread.current

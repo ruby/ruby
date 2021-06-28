@@ -3153,7 +3153,7 @@ rb_thread_s_ignore_deadlock(VALUE _)
  *  deadlock condition via some other means, such as a signal.
  *
  *     Thread.ignore_deadlock = true
- *     queue = Queue.new
+ *     queue = Thread::Queue.new
  *
  *     trap(:SIGUSR1){queue.push "Received signal"}
  *

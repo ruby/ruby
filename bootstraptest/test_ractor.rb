@@ -533,7 +533,7 @@ assert_equal '[RuntimeError, "ok", true]', %q{
 # threads in a ractor will killed
 assert_equal '{:ok=>3}', %q{
   Ractor.new Ractor.current do |main|
-    q = Queue.new
+    q = Thread::Queue.new
     Thread.new do
       q << true
       loop{}

@@ -496,7 +496,7 @@ class TestThread < Test::Unit::TestCase
     end
     assert_in_out_err([], <<-INPUT, %w(false :sig), [], :signal=>:INT, timeout: 1, timeout_error: nil)
       p Thread.ignore_deadlock
-      q = Queue.new
+      q = Thread::Queue.new
       trap(:INT){q.push :sig}
       Thread.ignore_deadlock = true
       p q.pop
@@ -731,8 +731,8 @@ class TestThread < Test::Unit::TestCase
 
   def make_handle_interrupt_test_thread1 flag
     r = []
-    ready_q = Queue.new
-    done_q = Queue.new
+    ready_q = Thread::Queue.new
+    done_q = Thread::Queue.new
     th = Thread.new{
       begin
         Thread.handle_interrupt(RuntimeError => flag){
@@ -809,7 +809,7 @@ class TestThread < Test::Unit::TestCase
 
   def test_handle_interrupt_blocking
     r = nil
-    q = Queue.new
+    q = Thread::Queue.new
     e = Class.new(Exception)
     th_s = Thread.current
     th = Thread.start {
@@ -833,7 +833,7 @@ class TestThread < Test::Unit::TestCase
   def test_handle_interrupt_and_io
     assert_in_out_err([], <<-INPUT, %w(ok), [])
       th_waiting = true
-      q = Queue.new
+      q = Thread::Queue.new
 
       t = Thread.new {
         Thread.current.report_on_exception = false
@@ -1235,7 +1235,7 @@ q.pop
   end if Process.respond_to?(:fork)
 
   def test_fork_while_locked
-    m = Mutex.new
+    m = Thread::Mutex.new
     thrs = []
     3.times do |i|
       thrs << Thread.new { m.synchronize { Process.waitpid2(fork{})[1] } }
@@ -1268,7 +1268,7 @@ q.pop
 
   def test_fork_while_mutex_locked_by_forker
     skip 'needs fork' unless Process.respond_to?(:fork)
-    m = Mutex.new
+    m = Thread::Mutex.new
     m.synchronize do
       pid = fork do
         exit!(2) unless m.locked?
