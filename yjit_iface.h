@@ -75,6 +75,9 @@ YJIT_DECLARE_COUNTERS(
     binding_allocations,
     binding_set,
 
+    vm_insns_count,
+    compiled_iseq_count,
+
     // Member with known name for iterating over counters
     last_member
 )
@@ -93,7 +96,6 @@ extern yjit_comment_array_t yjit_code_comments;
 #endif // if RUBY_DEBUG
 
 RUBY_EXTERN struct rb_yjit_options rb_yjit_opts;
-RUBY_EXTERN int64_t rb_compiled_iseq_count;
 RUBY_EXTERN struct rb_yjit_runtime_counters yjit_runtime_counters;
 
 void cb_write_pre_call_bytes(codeblock_t* cb);

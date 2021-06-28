@@ -344,7 +344,7 @@ add_block_version(blockid_t blockid, block_t* block)
 
 #if RUBY_DEBUG
         // First block compiled for this iseq
-        rb_compiled_iseq_count++;
+        yjit_runtime_counters.compiled_iseq_count++;
 #endif
     }
 
