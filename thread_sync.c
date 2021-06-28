@@ -1554,10 +1554,10 @@ undumpable(VALUE obj)
 }
 
 static VALUE
-define_thread_class(VALUE outer, const char *name, VALUE super)
+define_thread_class(VALUE outer, const ID name, VALUE super)
 {
-    VALUE klass = rb_define_class_under(outer, name, super);
-    rb_define_const(rb_cObject, name, klass);
+    VALUE klass = rb_define_class_id_under(outer, name, super);
+    rb_const_set(rb_cObject, name, klass);
     return klass;
 }
 
@@ -1573,7 +1573,7 @@ Init_thread_sync(void)
 #endif
 
 #define DEFINE_CLASS(name, super) \
-    rb_c##name = define_thread_class(rb_cThread, #name, rb_c##super)
+    rb_c##name = define_thread_class(rb_cThread, rb_intern(#name), rb_c##super)
 
     /* Mutex */
     DEFINE_CLASS(Mutex, Object);
