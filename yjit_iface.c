@@ -29,6 +29,8 @@ static VALUE cYjitBlock;
 static int64_t exit_op_count[VM_INSTRUCTION_SIZE] = { 0 };
 struct rb_yjit_runtime_counters yjit_runtime_counters = { 0 };
 static VALUE cYjitCodeComment;
+
+extern const int rb_vm_max_insn_name_size;
 #endif
 
 // Machine code blocks (executable memory)
@@ -707,15 +709,26 @@ comments_for(rb_execution_context_t *ec, VALUE self, VALUE start_address, VALUE 
     return comment_array;
 }
 
-// Primitive called in yjit.rb. Export all runtime counters as a Ruby hash.
+// Primitive called in yjit.rb. Export all YJIT statistics as a Ruby hash.
 static VALUE
-get_stat_counters(rb_execution_context_t *ec, VALUE self)
+get_yjit_stats(rb_execution_context_t *ec, VALUE self)
 {
 #if RUBY_DEBUG
     if (!rb_yjit_opts.gen_stats) return Qnil;
 
     VALUE hash = rb_hash_new();
     RB_VM_LOCK_ENTER();
+
+    {
+        VALUE key = ID2SYM(rb_intern("inline_code_size"));
+        VALUE value = LL2NUM((long long)cb->write_pos);
+        rb_hash_aset(hash, key, value);
+
+        key = ID2SYM(rb_intern("outlined_code_size"));
+        value = LL2NUM((long long)ocb->write_pos);
+        rb_hash_aset(hash, key, value);
+    }
+
     {
         int64_t *counter_reader = (int64_t *)&yjit_runtime_counters;
         int64_t *counter_reader_end = &yjit_runtime_counters.last_member;
@@ -747,6 +760,22 @@ get_stat_counters(rb_execution_context_t *ec, VALUE self)
             name_reader = name_end;
         }
     }
+
+    {
+        // Iterate through exit_op_count
+
+        char key_string[rb_vm_max_insn_name_size + 6]; // Leave room for exit_ and a final NUL
+        strcpy(key_string, "exit_");
+        for (int i = 0; i < VM_INSTRUCTION_SIZE; i++) {
+            const char *i_name = insn_name(i);
+            strcpy(key_string + 5, i_name);
+
+            VALUE key = ID2SYM(rb_intern(key_string));
+            VALUE value = LL2NUM((long long)exit_op_count[i]);
+            rb_hash_aset(hash, key, value);
+        }
+    }
+
     RB_VM_LOCK_LEAVE();
     return hash;
 #else
