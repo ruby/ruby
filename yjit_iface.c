@@ -762,13 +762,14 @@ get_yjit_stats(rb_execution_context_t *ec, VALUE self)
     }
 
     {
-        // Iterate through exit_op_count
+        // For each entry in exit_op_count, add a stats entry with key "exit_INSTRUCTION_NAME",
+        // where the value is the count of side exits for that instruction.
 
-        char key_string[rb_vm_max_insn_name_size + 6]; // Leave room for exit_ and a final NUL
+        char key_string[rb_vm_max_insn_name_size + 6]; // Leave room for "exit_" and a final NUL
         strcpy(key_string, "exit_");
         for (int i = 0; i < VM_INSTRUCTION_SIZE; i++) {
-            const char *i_name = insn_name(i);
-            strcpy(key_string + 5, i_name);
+            const char *i_name = insn_name(i); // Look up Ruby's NUL-terminated insn name string
+            strncpy(key_string + 5, i_name, rb_vm_max_insn_name_size + 1);
 
             VALUE key = ID2SYM(rb_intern(key_string));
             VALUE value = LL2NUM((long long)exit_op_count[i]);
