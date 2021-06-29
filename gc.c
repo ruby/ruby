@@ -5483,6 +5483,18 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
         }
     }
 
+#if RGENGC_CHECK_MODE
+    short freelist_len = 0;
+    RVALUE *ptr = sweep_page->freelist;
+    while (ptr) {
+        freelist_len++;
+        ptr = ptr->as.free.next;
+    }
+    if (freelist_len != sweep_page->free_slots) {
+        rb_bug("inconsistent freelist length: expected %d but was %d", sweep_page->free_slots, freelist_len);
+    }
+#endif
+
     gc_report(2, objspace, "page_sweep: end.\n");
 
     return ctx.freed_slots + ctx.empty_slots;
