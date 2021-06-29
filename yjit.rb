@@ -139,18 +139,78 @@ module YJIT
 
     # Format and print out counters
     def _print_stats
-      counters = runtime_stats
-      return unless counters
+      stats = runtime_stats
+      return unless stats
 
       $stderr.puts("***YJIT: Printing YJIT statistics on exit***")
-      $stderr.puts("Number of bindings allocated: %d\n" % counters[:binding_allocations])
-      $stderr.puts("Number of locals modified through binding: %d\n" % counters[:binding_set])
+      $stderr.puts("Number of bindings allocated: %d\n" % stats[:binding_allocations])
+      $stderr.puts("Number of locals modified through binding: %d\n" % stats[:binding_set])
 
-      print_counters(counters, prefix: 'send_', prompt: 'method call exit reasons: ')
-      print_counters(counters, prefix: 'leave_', prompt: 'leave exit reasons: ')
-      print_counters(counters, prefix: 'getivar_', prompt: 'getinstancevariable exit reasons:')
-      print_counters(counters, prefix: 'setivar_', prompt: 'setinstancevariable exit reasons:')
-      print_counters(counters, prefix: 'oaref_', prompt: 'opt_aref exit reasons: ')
+      print_counters(stats, prefix: 'send_', prompt: 'method call exit reasons: ')
+      print_counters(stats, prefix: 'leave_', prompt: 'leave exit reasons: ')
+      print_counters(stats, prefix: 'getivar_', prompt: 'getinstancevariable exit reasons:')
+      print_counters(stats, prefix: 'setivar_', prompt: 'setinstancevariable exit reasons:')
+      print_counters(stats, prefix: 'oaref_', prompt: 'opt_aref exit reasons: ')
+
+      total_exits = total_exit_count(stats)
+
+      # Number of instructions that finish executing in YJIT
+      retired_in_yjit = stats[:exec_instruction] - total_exits
+
+      # Average length of instruction sequences executed by YJIT
+      avg_len_in_yjit = retired_in_yjit.to_f / total_exits
+
+      # Proportion of instructions that retire in YJIT
+      total_insns_count = retired_in_yjit + stats[:vm_insns_count]
+      yjit_ratio_pct = 100.0 * retired_in_yjit.to_f / total_insns_count
+
+      $stderr.puts "compiled_iseq_count:   " + ("%10d" % stats[:compiled_iseq_count])
+      $stderr.puts "inline_code_size:      " + ("%10d" % stats[:inline_code_size])
+      $stderr.puts "outlined_code_size:    " + ("%10d" % stats[:outlined_code_size])
+
+      $stderr.puts "total_exit_count:      " + ("%10d" % total_exits)
+      $stderr.puts "total_insns_count:     " + ("%10d" % total_insns_count)
+      $stderr.puts "vm_insns_count:        " + ("%10d" % stats[:vm_insns_count])
+      $stderr.puts "yjit_insns_count:      " + ("%10d" % stats[:exec_instruction])
+      $stderr.puts "ratio_in_yjit:         " + ("%9.1f" % yjit_ratio_pct) + "%"
+      $stderr.puts "avg_len_in_yjit:       " + ("%10.1f" % avg_len_in_yjit)
+
+      print_sorted_exit_counts(stats, prefix: "exit_")
+    end
+
+    def print_sorted_exit_counts(stats, prefix:, how_many: 20, left_pad: 4)
+      exits = []
+      stats.each do |k, v|
+        if k.start_with?(prefix)
+          exits.push [k.to_s.delete_prefix(prefix), v]
+        end
+      end
+
+      exits = exits.sort_by { |name, count| -count }[0...how_many]
+      total_exits = total_exit_count(stats)
+
+      top_n_total = exits.map { |name, count| count }.sum
+      top_n_exit_pct = top_n_total / total_exits
+
+      $stderr.puts "Top-#{how_many} most frequent exit ops (#{"%.1f" % top_n_exit_pct}% of exits):"
+
+      longest_insn_name_len = exits.map { |name, count| name.length }.max
+      exits.each do |name, count|
+        padding = longest_insn_name_len + left_pad
+        padded_name = "%#{padding}s" % name
+        padded_count = "%10d" % count
+        percent = 100.0 * count / total_exits
+        formatted_percent = "%.1f" % percent
+        $stderr.puts("#{padded_name}: #{padded_count} (#{formatted_percent})" )
+      end
+    end
+
+    def total_exit_count(stats, prefix: "exit_")
+      total = 0
+      stats.each do |k,v|
+        total += v if k.start_with?(prefix)
+      end
+      total
     end
 
     def print_counters(counters, prefix:, prompt:)
