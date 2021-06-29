@@ -796,6 +796,7 @@ reset_stats_bang(rb_execution_context_t *ec, VALUE self)
 
 #include "yjit.rbinc"
 
+#if RUBY_DEBUG
 void
 rb_yjit_collect_vm_usage_insn(int insn)
 {
@@ -821,6 +822,7 @@ rb_yjit_count_side_exit_op(const VALUE *exit_pc)
     exit_op_count[insn]++;
     return exit_pc; // This function must return exit_pc!
 }
+#endif
 
 void
 rb_yjit_iseq_mark(const struct rb_iseq_constant_body *body)
