@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "reline"
-require 'set'
 require_relative "nop"
 require_relative "../color"
 
@@ -33,9 +32,11 @@ module IRB
       end
 
       def class_method_map(classes)
-        dumped = Set.new
+        dumped = Array.new
         classes.reject { |mod| mod >= Object }.map do |mod|
-          methods = mod.public_instance_methods(false).select { |m| dumped.add?(m) }
+          methods = mod.public_instance_methods(false).select do |m|
+            dumped.push(m) unless dumped.include?(m)
+          end
           [mod, methods]
         end.reverse
       end
