@@ -766,7 +766,7 @@ get_yjit_stats(rb_execution_context_t *ec, VALUE self)
         // where the value is the count of side exits for that instruction.
 
         char key_string[rb_vm_max_insn_name_size + 6]; // Leave room for "exit_" and a final NUL
-        strcpy(key_string, "exit_");
+        strncpy(key_string, "exit_", 6);               // Copy 6 characters to include the NUL.
         for (int i = 0; i < VM_INSTRUCTION_SIZE; i++) {
             const char *i_name = insn_name(i); // Look up Ruby's NUL-terminated insn name string
             strncpy(key_string + 5, i_name, rb_vm_max_insn_name_size + 1);
