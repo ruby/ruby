@@ -125,7 +125,7 @@ module YJIT
   # Return nil when option is not passed or unavailable.
   def self.runtime_stats
     # defined in yjit_iface.c
-    Primitive.get_stat_counters
+    Primitive.get_yjit_stats
   end
 
   # Discard statistics collected for --yjit-stats.
@@ -142,7 +142,7 @@ module YJIT
       counters = runtime_stats
       return unless counters
 
-      $stderr.puts("***YJIT: Printing runtime counters from yjit.rb***")
+      $stderr.puts("***YJIT: Printing YJIT statistics on exit***")
       $stderr.puts("Number of bindings allocated: %d\n" % counters[:binding_allocations])
       $stderr.puts("Number of locals modified through binding: %d\n" % counters[:binding_set])
 
