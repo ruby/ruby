@@ -24,9 +24,10 @@ module IRB
       end
 
       def dump_methods(o, klass, obj)
-        maps = class_method_map(obj.singleton_class.ancestors)
+        singleton_class = obj.singleton_class rescue nil
+        maps = class_method_map((singleton_class || klass).ancestors)
         maps.each do |mod, methods|
-          name = mod == obj.singleton_class ? "#{klass}.methods" : "#{mod}#methods"
+          name = mod == singleton_class ? "#{klass}.methods" : "#{mod}#methods"
           o.dump(name, methods)
         end
       end

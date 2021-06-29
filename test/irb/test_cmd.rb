@@ -421,6 +421,25 @@ module TestIRB
       assert_match(/C.methods:\s+m5\n/m, out)
     end
 
+    def test_ls_with_no_singleton_class
+      input = TestInputMethod.new([
+        "ls 42",
+      ])
+      IRB.init_config(nil)
+      workspace = IRB::WorkSpace.new(self)
+      IRB.conf[:VERBOSE] = false
+      irb = IRB::Irb.new(workspace, input)
+      IRB.conf[:MAIN_CONTEXT] = irb.context
+      irb.context.return_format = "=> %s\n"
+      out, err = capture_output do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_match(/Comparable#methods:\s+/, out)
+      assert_match(/Numeric#methods:\s+/, out)
+      assert_match(/Integer#methods:\s+/, out)
+    end
+
     def test_show_source
       input = TestInputMethod.new([
         "show_source 'IRB.conf'\n",
