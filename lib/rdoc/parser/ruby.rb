@@ -1194,6 +1194,22 @@ class RDoc::Parser::Ruby < RDoc::Parser
   end
 
   ##
+  # Parses an +included+ with a block feature of ActiveSupport::Concern.
+
+  def parse_included_with_activesupport_concern container, comment # :nodoc:
+    skip_tkspace_without_nl
+    tk = get_tk
+    unless tk[:kind] == :on_lbracket || (tk[:kind] == :on_kw && tk[:text] == 'do')
+      unget_tk tk
+      return nil # should be a block
+    end
+
+    parse_statements container
+
+    container
+  end
+
+  ##
   # Parses identifiers that can create new methods or change visibility.
   #
   # Returns true if the comment was not consumed.
@@ -1893,6 +1909,8 @@ class RDoc::Parser::Ruby < RDoc::Parser
           parse_extend_or_include RDoc::Include, container, comment
         when "extend" then
           parse_extend_or_include RDoc::Extend, container, comment
+        when "included" then
+          parse_included_with_activesupport_concern container, comment
         end
 
       else
