@@ -567,6 +567,28 @@ gen_dupn(jitstate_t* jit, ctx_t* ctx)
     return YJIT_KEEP_COMPILING;
 }
 
+// Swap top 2 stack entries
+static codegen_status_t
+gen_swap(jitstate_t* jit, ctx_t* ctx)
+{
+    val_type_t type0 = ctx_get_opnd_type(ctx, OPND_STACK(0));
+    x86opnd_t opnd0 = ctx_stack_opnd(ctx, 0);
+
+    val_type_t type1 = ctx_get_opnd_type(ctx, OPND_STACK(1));
+    x86opnd_t opnd1 = ctx_stack_opnd(ctx, 1);
+
+    mov(cb, REG0, opnd0);
+    mov(cb, REG1, opnd1);
+
+    ctx_set_opnd_type(ctx, OPND_STACK(0), type1);
+    ctx_set_opnd_type(ctx, OPND_STACK(1), type0);
+
+    mov(cb, opnd0, REG1);
+    mov(cb, opnd1, REG0);
+
+    return YJIT_KEEP_COMPILING;
+}
+
 // set Nth stack entry to stack top
 static codegen_status_t
 gen_setn(jitstate_t* jit, ctx_t* ctx)
@@ -3406,6 +3428,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(nop), gen_nop);
     yjit_reg_op(BIN(dup), gen_dup);
     yjit_reg_op(BIN(dupn), gen_dupn);
+    yjit_reg_op(BIN(swap), gen_swap);
     yjit_reg_op(BIN(setn), gen_setn);
     yjit_reg_op(BIN(topn), gen_topn);
     yjit_reg_op(BIN(pop), gen_pop);
