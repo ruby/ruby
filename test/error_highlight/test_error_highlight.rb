@@ -981,4 +981,25 @@ nil can't be coerced into Integer
   end
 
   end
+
+  def test_custom_formatter
+    custom_formatter = Object.new
+    def custom_formatter.message_for(spot)
+      "\n\n" + spot.inspect
+    end
+
+    original_formatter, ErrorHighlight.formatter = ErrorHighlight.formatter, custom_formatter
+
+    assert_error_message(NoMethodError, <<~END) do
+undefined method `time' for 1:Integer
+
+{:first_lineno=>#{ __LINE__ + 3 }, :first_column=>7, :last_lineno=>#{ __LINE__ + 3 }, :last_column=>12, :snippet=>"      1.time {}\\n"}
+    END
+
+      1.time {}
+    end
+
+  ensure
+    ErrorHighlight.formatter = original_formatter
+  end
 end

@@ -1,3 +1,5 @@
+require_relative "formatter"
+
 module ErrorHighlight
   module CoreExt
     # This is a marker to let `DidYouMean::Correctable#original_message` skip
@@ -34,8 +36,7 @@ module ErrorHighlight
       end
 
       if spot
-        marker = " " * spot[:first_column] + "^" * (spot[:last_column] - spot[:first_column])
-        points = "\n\n#{ spot[:line] }#{ marker }"
+        points = ErrorHighlight.formatter.message_for(spot)
         msg << points if !msg.include?(points)
       end
 

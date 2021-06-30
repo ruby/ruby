@@ -15,7 +15,7 @@ module ErrorHighlight
   #    first_column: Integer,
   #    last_lineno: Integer,
   #    last_column: Integer,
-  #    line: String,
+  #    snippet: String,
   #  } | nil
   def self.spot(...)
     Spotter.new(...).spot
@@ -103,13 +103,13 @@ module ErrorHighlight
         spot_op_cdecl
       end
 
-      if @line && @beg_column && @end_column && @beg_column < @end_column
+      if @snippet && @beg_column && @end_column && @beg_column < @end_column
         return {
           first_lineno: @beg_lineno,
           first_column: @beg_column,
           last_lineno: @end_lineno,
           last_column: @end_column,
-          line: @line,
+          snippet: @snippet,
         }
       else
         return nil
@@ -135,10 +135,10 @@ module ErrorHighlight
       lines = @fetch[lineno, @node.last_lineno]
       if mid == :[] && lines.match(/\G\s*(\[(?:\s*\])?)/, nd_recv.last_column)
         @beg_column = $~.begin(1)
-        @line = lines[/.*\n/]
+        @snippet = lines[/.*\n/]
         @beg_lineno = @end_lineno = lineno
         if nd_args
-          if nd_recv.last_lineno == nd_args.last_lineno && @line.match(/\s*\]/, nd_args.last_column)
+          if nd_recv.last_lineno == nd_args.last_lineno && @snippet.match(/\s*\]/, nd_args.last_column)
             @end_column = $~.end(0)
           end
         else
@@ -152,15 +152,15 @@ module ErrorHighlight
         @end_column = $~.end(3)
         if i = lines[..@beg_column].rindex("\n")
           @beg_lineno = @end_lineno = lineno + lines[..@beg_column].count("\n")
-          @line = lines[i + 1..]
+          @snippet = lines[i + 1..]
           @beg_column -= i + 1
           @end_column -= i + 1
         else
-          @line = lines
+          @snippet = lines
           @beg_lineno = @end_lineno = lineno
         end
       elsif mid.to_s =~ /\A\W+\z/ && lines.match(/\G\s*(#{ Regexp.quote(mid) })=.*\n/, nd_recv.last_column)
-        @line = $` + $&
+        @snippet = $` + $&
         @beg_column = $~.begin(1)
         @end_column = $~.end(1)
       end
@@ -192,16 +192,16 @@ module ErrorHighlight
       nd_recv, mid, nd_args = @node.children
       *nd_args, _nd_last_arg, _nil = nd_args.children
       fetch_line(nd_recv.last_lineno)
-      if mid == :[]= && @line.match(/\G\s*(\[)/, nd_recv.last_column)
+      if mid == :[]= && @snippet.match(/\G\s*(\[)/, nd_recv.last_column)
         @beg_column = $~.begin(1)
         args_last_column = $~.end(0)
         if nd_args.last && nd_recv.last_lineno == nd_args.last.last_lineno
           args_last_column = nd_args.last.last_column
         end
-        if @line.match(/\s*\]\s*=/, args_last_column)
+        if @snippet.match(/\s*\]\s*=/, args_last_column)
           @end_column = $~.end(0)
         end
-      elsif @line.match(/\G\s*(\.\s*#{ Regexp.quote(mid.to_s.sub(/=\z/, "")) }\s*=)/, nd_recv.last_column)
+      elsif @snippet.match(/\G\s*(\.\s*#{ Regexp.quote(mid.to_s.sub(/=\z/, "")) }\s*=)/, nd_recv.last_column)
         @beg_column = $~.begin(1)
         @end_column = $~.end(1)
       end
@@ -217,7 +217,7 @@ module ErrorHighlight
     def spot_attrasgn_for_args
       nd_recv, mid, nd_args = @node.children
       fetch_line(nd_recv.last_lineno)
-      if mid == :[]= && @line.match(/\G\s*\[/, nd_recv.last_column)
+      if mid == :[]= && @snippet.match(/\G\s*\[/, nd_recv.last_column)
         @beg_column = $~.end(0)
         if nd_recv.last_lineno == nd_args.last_lineno
           @end_column = nd_args.last_column
@@ -239,13 +239,13 @@ module ErrorHighlight
       fetch_line(nd_recv.last_lineno)
       if nd_arg
         # binary operator
-        if @line.match(/\G\s*(#{ Regexp.quote(op) })/, nd_recv.last_column)
+        if @snippet.match(/\G\s*(#{ Regexp.quote(op) })/, nd_recv.last_column)
           @beg_column = $~.begin(1)
           @end_column = $~.end(1)
         end
       else
         # unary operator
-        if @line[...nd_recv.first_column].match(/(#{ Regexp.quote(op.to_s.sub(/@\z/, "")) })\s*\(?\s*\z/)
+        if @snippet[...nd_recv.first_column].match(/(#{ Regexp.quote(op.to_s.sub(/@\z/, "")) })\s*\(?\s*\z/)
           @beg_column = $~.begin(1)
           @end_column = $~.end(1)
         end
@@ -273,7 +273,7 @@ module ErrorHighlight
     def spot_fcall_for_name
       mid, _nd_args = @node.children
       fetch_line(@node.first_lineno)
-      if @line.match(/(#{ Regexp.quote(mid) })/, @node.first_column)
+      if @snippet.match(/(#{ Regexp.quote(mid) })/, @node.first_column)
         @beg_column = $~.begin(1)
         @end_column = $~.end(1)
       end
@@ -315,13 +315,13 @@ module ErrorHighlight
     def spot_op_asgn1_for_name
       nd_recv, op, nd_args, _nd_rhs = @node.children
       fetch_line(nd_recv.last_lineno)
-      if @line.match(/\G\s*(\[)/, nd_recv.last_column)
+      if @snippet.match(/\G\s*(\[)/, nd_recv.last_column)
         bracket_beg_column = $~.begin(1)
         args_last_column = $~.end(0)
         if nd_args && nd_recv.last_lineno == nd_args.last_lineno
           args_last_column = nd_args.last_column
         end
-        if @line.match(/\s*\](\s*)(#{ Regexp.quote(op) })=()/, args_last_column)
+        if @snippet.match(/\s*\](\s*)(#{ Regexp.quote(op) })=()/, args_last_column)
           case @name
           when :[], :[]=
             @beg_column = bracket_beg_column
@@ -340,7 +340,7 @@ module ErrorHighlight
     def spot_op_asgn1_for_args
       nd_recv, mid, nd_args, nd_rhs = @node.children
       fetch_line(nd_recv.last_lineno)
-      if mid == :[]= && @line.match(/\G\s*\[/, nd_recv.last_column)
+      if mid == :[]= && @snippet.match(/\G\s*\[/, nd_recv.last_column)
         @beg_column = $~.end(0)
         if nd_recv.last_lineno == nd_rhs.last_lineno
           @end_column = nd_rhs.last_column
@@ -362,7 +362,7 @@ module ErrorHighlight
     def spot_op_asgn2_for_name
       nd_recv, _qcall, attr, op, _nd_rhs = @node.children
       fetch_line(nd_recv.last_lineno)
-      if @line.match(/\G\s*(\.)\s*#{ Regexp.quote(attr) }()\s*(#{ Regexp.quote(op) })(=)/, nd_recv.last_column)
+      if @snippet.match(/\G\s*(\.)\s*#{ Regexp.quote(attr) }()\s*(#{ Regexp.quote(op) })(=)/, nd_recv.last_column)
         case @name
         when attr
           @beg_column = $~.begin(1)
@@ -399,8 +399,8 @@ module ErrorHighlight
         @beg_column = nd_parent.last_column
         @end_column = @node.last_column
       else
-        @line = @fetch[@node.last_lineno]
-        if @line[...@node.last_column].match(/#{ Regexp.quote(const) }\z/)
+        @snippet = @fetch[@node.last_lineno]
+        if @snippet[...@node.last_column].match(/#{ Regexp.quote(const) }\z/)
           @beg_column = $~.begin(0)
           @end_column = $~.end(0)
         end
@@ -414,8 +414,8 @@ module ErrorHighlight
       nd_lhs, op, _nd_rhs = @node.children
       *nd_parent_lhs, _const = nd_lhs.children
       if @name == op
-        @line = @fetch[nd_lhs.last_lineno]
-        if @line.match(/\G\s*(#{ Regexp.quote(op) })=/, nd_lhs.last_column)
+        @snippet = @fetch[nd_lhs.last_lineno]
+        if @snippet.match(/\G\s*(#{ Regexp.quote(op) })=/, nd_lhs.last_column)
           @beg_column = $~.begin(1)
           @end_column = $~.end(1)
         end
@@ -424,12 +424,12 @@ module ErrorHighlight
         @end_column = nd_lhs.last_column
         if nd_parent_lhs.empty? # example: ::C += 1
           if nd_lhs.first_lineno == nd_lhs.last_lineno
-            @line = @fetch[nd_lhs.last_lineno]
+            @snippet = @fetch[nd_lhs.last_lineno]
             @beg_column = nd_lhs.first_column
           end
         else # example: Foo::Bar::C += 1
           if nd_parent_lhs.last.last_lineno == nd_lhs.last_lineno
-            @line = @fetch[nd_lhs.last_lineno]
+            @snippet = @fetch[nd_lhs.last_lineno]
             @beg_column = nd_parent_lhs.last.last_column
           end
         end
@@ -438,7 +438,7 @@ module ErrorHighlight
 
     def fetch_line(lineno)
       @beg_lineno = @end_lineno = lineno
-      @line = @fetch[lineno]
+      @snippet = @fetch[lineno]
     end
   end
 
