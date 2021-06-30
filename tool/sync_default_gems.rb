@@ -317,7 +317,6 @@ def sync_default_gems(gem)
     cp_r(Dir.glob("#{upstream}/lib/error_highlight*"), "lib")
     cp_r("#{upstream}/error_highlight.gemspec", "lib/error_highlight")
     cp_r("#{upstream}/test", "test/error_highlight")
-    rm_rf(%w[test/error_highlight/tree_spell/test_explore.rb])
   else
     sync_lib gem, upstream
   end
