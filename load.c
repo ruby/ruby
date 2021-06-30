@@ -153,6 +153,12 @@ get_loaded_features(void)
 }
 
 static VALUE
+get_loaded_features_realpaths(void)
+{
+    return GET_VM()->loaded_features_realpaths;
+}
+
+static VALUE
 get_LOADED_FEATURES(ID _x, VALUE *_y)
 {
     return get_loaded_features();
@@ -317,6 +323,9 @@ get_loaded_features_index(void)
 	/* The sharing was broken; something (other than us in rb_provide_feature())
 	   modified loaded_features.  Rebuild the index. */
 	st_foreach(vm->loaded_features_index, loaded_features_index_clear_i, 0);
+
+        VALUE realpaths = vm->loaded_features_realpaths;
+        rb_hash_clear(realpaths);
 	features = vm->loaded_features;
 	for (i = 0; i < RARRAY_LEN(features); i++) {
 	    VALUE entry, as_str;
@@ -328,6 +337,15 @@ get_loaded_features_index(void)
 	    features_index_add(as_str, INT2FIX(i));
 	}
 	reset_loaded_features_snapshot();
+
+        features = rb_ary_dup(vm->loaded_features_snapshot);
+        long j = RARRAY_LEN(features);
+        for (i = 0; i < j; i++) {
+            VALUE as_str = rb_ary_entry(features, i);
+            VALUE realpath = rb_check_realpath(Qnil, as_str, NULL);
+            if (NIL_P(realpath)) realpath = as_str;
+            rb_hash_aset(realpaths, rb_fstring(realpath), Qtrue);
+        }
     }
     return vm->loaded_features_index;
 }
@@ -1063,6 +1081,8 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception)
     char *volatile ftptr = 0;
     VALUE path;
     volatile VALUE saved_path;
+    VALUE realpath = 0;
+    VALUE realpaths = get_loaded_features_realpaths();
     volatile bool reset_ext_config = false;
     struct rb_ext_config prev_ext_config;
 
@@ -1090,6 +1110,10 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception)
 	    else if (!*ftptr) {
 		result = TAG_RETURN;
 	    }
+            else if (RTEST(rb_hash_aref(realpaths,
+                                        realpath = rb_realpath_internal(Qnil, path, 1)))) {
+                result = 0;
+            }
 	    else {
 		switch (found) {
 		  case 'r':
@@ -1141,7 +1165,12 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception)
         rb_exc_raise(ec->errinfo);
     }
 
-    if (result == TAG_RETURN) rb_provide_feature(path);
+    if (result == TAG_RETURN) {
+        rb_provide_feature(path);
+        if (realpath) {
+            rb_hash_aset(realpaths, rb_fstring(realpath), Qtrue);
+        }
+    }
     ec->errinfo = saved.errinfo;
 
     RUBY_DTRACE_HOOK(REQUIRE_RETURN, RSTRING_PTR(fname));
@@ -1341,6 +1370,8 @@ Init_load(void)
     vm->loaded_features = rb_ary_new();
     vm->loaded_features_snapshot = rb_ary_tmp_new(0);
     vm->loaded_features_index = st_init_numtable();
+    vm->loaded_features_realpaths = rb_hash_new();
+    rb_obj_hide(vm->loaded_features_realpaths);
 
     rb_define_global_function("load", rb_f_load, -1);
     rb_define_global_function("require", rb_f_require, 1);

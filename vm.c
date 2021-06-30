@@ -2486,6 +2486,7 @@ rb_vm_update_references(void *ptr)
         vm->expanded_load_path = rb_gc_location(vm->expanded_load_path);
         vm->loaded_features = rb_gc_location(vm->loaded_features);
         vm->loaded_features_snapshot = rb_gc_location(vm->loaded_features_snapshot);
+        vm->loaded_features_realpaths = rb_gc_location(vm->loaded_features_realpaths);
         vm->top_self = rb_gc_location(vm->top_self);
         vm->orig_progname = rb_gc_location(vm->orig_progname);
 
@@ -2573,6 +2574,7 @@ rb_vm_mark(void *ptr)
         rb_gc_mark_movable(vm->expanded_load_path);
         rb_gc_mark_movable(vm->loaded_features);
         rb_gc_mark_movable(vm->loaded_features_snapshot);
+        rb_gc_mark_movable(vm->loaded_features_realpaths);
         rb_gc_mark_movable(vm->top_self);
         rb_gc_mark_movable(vm->orig_progname);
         RUBY_MARK_MOVABLE_UNLESS_NULL(vm->coverages);
