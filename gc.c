@@ -6911,6 +6911,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
         }
 	if (!RCLASS_EXT(obj)) break;
 
+        gc_mark(objspace, RCLASS_EXT(obj)->file);
         mark_m_tbl(objspace, RCLASS_M_TBL(obj));
         cc_table_mark(objspace, obj);
         mark_tbl_no_pin(objspace, RCLASS_IV_TBL(obj));
@@ -9857,6 +9858,7 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
             UPDATE_IF_MOVED(objspace, RCLASS(obj)->super);
         }
         if (!RCLASS_EXT(obj)) break;
+        UPDATE_IF_MOVED(objspace, RCLASS_EXT(obj)->file);
         update_m_tbl(objspace, RCLASS_M_TBL(obj));
         update_cc_tbl(objspace, obj);
         update_cvc_tbl(objspace, obj);
