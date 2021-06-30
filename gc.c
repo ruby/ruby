@@ -3728,10 +3728,9 @@ static int
 os_obj_of_i(void *vstart, void *vend, size_t stride, void *data)
 {
     struct os_each_struct *oes = (struct os_each_struct *)data;
-    RVALUE *p = (RVALUE *)vstart, *pend = (RVALUE *)vend;
 
-    for (; p != pend; p++) {
-	volatile VALUE v = (VALUE)p;
+    VALUE v = (VALUE)vstart;
+    for (; v != (VALUE)vend; v += stride) {
 	if (!internal_object_p(v)) {
 	    if (!oes->of || rb_obj_is_kind_of(v, oes->of)) {
                 if (!rb_multi_ractor_p() || rb_ractor_shareable_p(v)) {
