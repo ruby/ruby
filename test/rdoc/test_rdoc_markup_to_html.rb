@@ -739,6 +739,8 @@ EXPECTED
   end
 
   def test_gen_url_rdoc_file
+    assert_equal '<a href="example_rdoc.html">example</a>',
+                 @to.gen_url('example.rdoc', 'example')
     assert_equal '<a href="doc/example_rdoc.html">example</a>',
                  @to.gen_url('doc/example.rdoc', 'example')
     assert_equal '<a href="../ex.doc/example_rdoc.html">example</a>',
@@ -750,6 +752,8 @@ EXPECTED
   end
 
   def test_gen_url_md_file
+    assert_equal '<a href="example_md.html">example</a>',
+                 @to.gen_url('example.md', 'example')
     assert_equal '<a href="doc/example_md.html">example</a>',
                  @to.gen_url('doc/example.md', 'example')
     assert_equal '<a href="../ex.doc/example_md.html">example</a>',
@@ -761,6 +765,8 @@ EXPECTED
   end
 
   def test_gen_url_rb_file
+    assert_equal '<a href="example_rb.html">example</a>',
+                 @to.gen_url('example.rb', 'example')
     assert_equal '<a href="doc/example_rb.html">example</a>',
                  @to.gen_url('doc/example.rb', 'example')
     assert_equal '<a href="../ex.doc/example_rb.html">example</a>',
