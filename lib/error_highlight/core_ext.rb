@@ -1,5 +1,8 @@
 module ErrorHighlight
   module CoreExt
+    # This is a marker to let `DidYouMean::Correctable#original_message` skip
+    # the following method definition of `to_s`.
+    # See https://github.com/ruby/did_you_mean/pull/152
     SKIP_TO_S_FOR_SUPER_LOOKUP = true
     private_constant :SKIP_TO_S_FOR_SUPER_LOOKUP
 
@@ -42,7 +45,8 @@ module ErrorHighlight
 
   NameError.prepend(CoreExt)
 
-  # temporarily disabled
+  # The extension for TypeError/ArgumentError is temporarily disabled due to many test failures
+
   #TypeError.prepend(CoreExt)
   #ArgumentError.prepend(CoreExt)
 end
