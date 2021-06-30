@@ -141,6 +141,9 @@ class TestFloat < Test::Unit::TestCase
     assert_raise(ArgumentError){Float("1__1")}
     assert_raise(ArgumentError){Float("1.")}
     assert_raise(ArgumentError){Float("1.e+00")}
+    assert_raise(ArgumentError){Float("0x.1")}
+    assert_raise(ArgumentError){Float("0x1.")}
+    assert_raise(ArgumentError){Float("0x1.0")}
     assert_raise(ArgumentError){Float("0x1.p+0")}
     # add expected behaviour here.
     assert_equal(10, Float("1_0"))
