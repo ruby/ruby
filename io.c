@@ -7355,7 +7355,8 @@ check_pipe_command(VALUE filename_or_command)
  *  If the command following the pipe is a single minus sign
  *  (<code>"|-"</code>), Ruby forks, and this subprocess is connected to the
  *  parent.  If the command is not <code>"-"</code>, the subprocess runs the
- *  command.
+ *  command.  Note that the command may be processed by shell if it contains
+ *  shell metacharacters.
  *
  *  When the subprocess is Ruby (opened via <code>"|-"</code>), the +open+
  *  call returns +nil+.  If a block is associated with the open call, that
@@ -10765,6 +10766,8 @@ io_s_readlines(VALUE v)
  *     b = IO.readlines("testfile", chomp: true)
  *     b[0]   #=> "This is line one"
  *
+ *     IO.readlines("|ls -a")     #=> [".\n", "..\n", ...]
+ *
  *  If the last argument is a hash, it's the keyword argument to open.
  *
  *  === Options for getline
@@ -10776,7 +10779,7 @@ io_s_readlines(VALUE v)
  *    <code>\n</code>, <code>\r</code>, and <code>\r\n</code>
  *    will be removed from the end of each line.
  *
- *  See also IO.read for details about open_args.
+ *  See also IO.read for details about +name+ and open_args.
  */
 
 static VALUE
@@ -10818,7 +10821,7 @@ seek_before_access(VALUE argp)
 
 /*
  *  call-seq:
- *     IO.read(name, [length [, offset]] [, opt] )   -> string
+ *     IO.read(name, [length [, offset]] [, opt])   -> string
  *
  *  Opens the file, optionally seeks to the given +offset+, then returns
  *  +length+ bytes (defaulting to the rest of the file).  #read ensures
@@ -10856,6 +10859,7 @@ seek_before_access(VALUE argp)
  *    IO.read("testfile", 20)          #=> "This is line one\nThi"
  *    IO.read("testfile", 20, 10)      #=> "ne one\nThis is line "
  *    IO.read("binfile", mode: "rb")   #=> "\xF7\x00\x00\x0E\x12"
+ *    IO.read("|ls -a")                #=> ".\n..\n"...
  */
 
 static VALUE
@@ -10885,7 +10889,7 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
- *     IO.binread(name, [length [, offset]] )   -> string
+ *     IO.binread(name, [length [, offset]])   -> string
  *
  *  Opens the file, optionally seeks to the given <i>offset</i>, then
  *  returns <i>length</i> bytes (defaulting to the rest of the file).
@@ -10895,6 +10899,8 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
  *     IO.binread("testfile")           #=> "This is line one\nThis is line two\nThis is line three\nAnd so on...\n"
  *     IO.binread("testfile", 20)       #=> "This is line one\nThi"
  *     IO.binread("testfile", 20, 10)   #=> "ne one\nThis is line "
+ *
+ *  See also IO.read for details about +name+ and open_args.
  */
 
 static VALUE
@@ -10936,7 +10942,7 @@ rb_io_s_binread(int argc, VALUE *argv, VALUE io)
 static VALUE
 io_s_write0(VALUE v)
 {
-    struct write_arg *arg = (void * )v;
+    struct write_arg *arg = (void *)v;
     return io_write(arg->io,arg->str,arg->nosync);
 }
 
@@ -11002,6 +11008,8 @@ io_s_write(int argc, VALUE *argv, VALUE klass, int binary)
  *    # File could contain:  "This is line one\nThi0123456789two\nThis is line three\nAnd so on...\n"
  *    IO.write("testfile", "0123456789")      #=> 10
  *    # File would now read: "0123456789"
+ *    IO.write("|tr a-z A-Z", "abc")          #=> 3
+ *    # Prints "ABC" to the standard output
  *
  *  If the last argument is a hash, it specifies options for the internal
  *  open().  It accepts the following keys:
@@ -11029,6 +11037,8 @@ io_s_write(int argc, VALUE *argv, VALUE klass, int binary)
  *
  *    Specifies arguments for open() as an array.
  *    This key can not be used in combination with other keys.
+ *
+ *  See also IO.read for details about +name+ and open_args.
  */
 
 static VALUE
@@ -11039,11 +11049,13 @@ rb_io_s_write(int argc, VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
- *     IO.binwrite(name, string, [offset] )             -> integer
- *     IO.binwrite(name, string, [offset], open_args )  -> integer
+ *     IO.binwrite(name, string, [offset])             -> integer
+ *     IO.binwrite(name, string, [offset], open_args)  -> integer
  *
  *  Same as IO.write except opening the file in binary mode and
  *  ASCII-8BIT encoding (<code>"wb:ASCII-8BIT"</code>).
+ *
+ *  See also IO.read for details about +name+ and open_args.
  */
 
 static VALUE
