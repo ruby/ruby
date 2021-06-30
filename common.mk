@@ -472,7 +472,7 @@ what-where-nodoc: no-install-nodoc
 no-install-nodoc: pre-no-install-nodoc dont-install-nodoc post-no-install-nodoc
 pre-no-install-nodoc:: pre-no-install-local pre-no-install-ext
 dont-install-nodoc:  $(PREP)
-	$(INSTRUBY) -n --make="$(MAKE)" $(INSTRUBY_ARGS)
+	$(INSTRUBY) -n --make="$(MAKE)" $(INSTRUBY_ARGS) --exclude=doc
 post-no-install-nodoc:: post-no-install-local post-no-install-ext
 
 what-where-local: no-install-local
