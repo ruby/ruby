@@ -4,14 +4,15 @@ jobs:
   make:
     strategy:
       matrix:
-        test_task: [ "check", "test-bundler-parallel", "test-bundled-gems", "test-all TESTS=--repeat-count=2" ]
+        test_task: ["check", "test-bundler-parallel", "test-bundled-gems"]
         os:
           - ubuntu-20.04
 #         - ubuntu-18.04
-        debug: ["", "-DRUBY_DEBUG"]
-        exclude:
+        configure: ["", "--with-coroutine=pthread", "cppflags=-DRUBY_DEBUG"]
+        include:
           - test_task: "test-all TESTS=--repeat-count=2"
-            debug: -DRUBY_DEBUG
+            os: ubuntu-20.04
+            configure: ""
       fail-fast: false
     env:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
@@ -43,7 +44,7 @@ jobs:
       - run: ./autogen.sh
         working-directory: src
       - name: Run configure
-        run: ../src/configure -C --disable-install-doc cppflags=${{ matrix.debug }}
+        run: ../src/configure -C --disable-install-doc ${{ matrix.configure }}
       - run: make $JOBS incs
       - run: make $JOBS
       - run: make leaked-globals
@@ -64,7 +65,7 @@ jobs:
           payload: |
             {
               "ci": "GitHub Actions",
-              "env": "${{ matrix.os }} / ${{ matrix.test_task }}${{ matrix.debug }}",
+              "env": "${{ matrix.os }} / ${{ matrix.test_task }}${{ matrix.configure }}",
               "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
               "commit": "${{ github.sha }}",
               "branch": "${{ github.ref }}".split('/').reverse()[0]
