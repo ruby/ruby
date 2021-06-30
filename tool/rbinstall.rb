@@ -682,6 +682,28 @@ install?(:dbg, :nodefault) do
 end
 
 module RbInstall
+  def self.no_write(options = nil)
+    u = File.umask(0022)
+    if $dryrun
+      fu = ::Object.class_eval do
+        fu = remove_const(:FileUtils)
+        const_set(:FileUtils, fu::NoWrite)
+        fu
+      end
+      dir_mode = options.delete(:dir_mode) if options
+    end
+    yield
+  ensure
+    options[:dir_mode] = dir_mode if dir_mode
+    if fu
+      ::Object.class_eval do
+        remove_const(:FileUtils)
+        const_set(:FileUtils, fu)
+      end
+    end
+    File.umask(u)
+  end
+
   module Specs
     class FileCollector
       def initialize(gemspec)
@@ -849,25 +871,7 @@ module RbInstall
   class GemInstaller
     def install
       spec.post_install_message = nil
-      u = File.umask(0022)
-      if $dryrun
-        fu = ::Object.class_eval do
-          fu = remove_const(:FileUtils)
-          const_set(:FileUtils, fu::NoWrite)
-          fu
-        end
-        dir_mode = options.delete(:dir_mode)
-      end
-      super
-    ensure
-      options[:dir_mode] = dir_mode if dir_mode
-      if fu
-        ::Object.class_eval do
-          remove_const(:FileUtils)
-          const_set(:FileUtils, fu)
-        end
-      end
-      File.umask(u)
+      RbInstall.no_write(options) {super}
     end
 
     def generate_bin_script(filename, bindir)
@@ -930,7 +934,9 @@ def install_default_gem(dir, srcdir, bindir)
   gem_dir = Gem.default_dir
   install_dir = with_destdir(gem_dir)
   prepare "default gems from #{dir}", gem_dir
-  makedirs(Gem.ensure_default_gem_subdirectories(install_dir, $dir_mode).map {|d| File.join(gem_dir, d)})
+  RbInstall.no_write do
+    makedirs(Gem.ensure_default_gem_subdirectories(install_dir, $dir_mode).map {|d| File.join(gem_dir, d)})
+  end
 
   options = {
     :install_dir => with_destdir(gem_dir),
@@ -974,7 +980,10 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
   gem_dir = Gem.default_dir
   install_dir = with_destdir(gem_dir)
   prepare "bundled gems", gem_dir
-  makedirs(Gem.ensure_gem_subdirectories(install_dir, $dir_mode).map {|d| File.join(gem_dir, d)})
+  RbInstall.no_write do
+    makedirs(Gem.ensure_gem_subdirectories(install_dir, $dir_mode).map {|d| File.join(gem_dir, d)})
+  end
+
   installed_gems = {}
   options = {
     :install_dir => install_dir,
