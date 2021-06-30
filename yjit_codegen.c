@@ -2813,6 +2813,28 @@ jit_rb_obj_not(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const 
     return true;
 }
 
+// Codegen for rb_true()
+static bool
+jit_rb_true(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_callable_method_entry_t *cme, rb_iseq_t *block, const int32_t argc)
+{
+    ADD_COMMENT(cb, "nil? == true");
+    ctx_stack_pop(ctx, 1);
+    x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_TRUE);
+    mov(cb, stack_ret, imm_opnd(Qtrue));
+    return true;
+}
+
+// Codegen for rb_false()
+static bool
+jit_rb_false(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_callable_method_entry_t *cme, rb_iseq_t *block, const int32_t argc)
+{
+    ADD_COMMENT(cb, "nil? == false");
+    ctx_stack_pop(ctx, 1);
+    x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_FALSE);
+    mov(cb, stack_ret, imm_opnd(Qfalse));
+    return true;
+}
+
 // Check if we know how to codegen for a particular cfunc method
 static method_codegen_t
 lookup_cfunc_codegen(const rb_method_definition_t *def)
@@ -4103,4 +4125,7 @@ yjit_init_codegen(void)
     yjit_method_codegen_table = st_init_numtable();
 
     yjit_reg_method(rb_cBasicObject, "!", jit_rb_obj_not);
+
+    yjit_reg_method(rb_cNilClass, "nil?", jit_rb_true);
+    yjit_reg_method(rb_mKernel, "nil?", jit_rb_false);
 }
