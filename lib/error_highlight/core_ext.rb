@@ -21,16 +21,13 @@ module ErrorHighlight
 
         case self
         when NoMethodError, NameError
-          point = :name
+          opts[:point_type] = :name
           opts[:name] = name
         when TypeError, ArgumentError
-          point = :args
+          opts[:point_type] = :args
         end
 
-        spot = ErrorHighlight.spot(node, point, **opts) do |lineno, last_lineno|
-          last_lineno ||= lineno
-          node.script_lines[lineno - 1 .. last_lineno - 1].join("")
-        end
+        spot = ErrorHighlight.spot(node, **opts)
 
       rescue Errno::ENOENT
       end

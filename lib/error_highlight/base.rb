@@ -4,10 +4,9 @@ module ErrorHighlight
   # Identify the code fragment that seems associated with a given error
   #
   # Arguments:
-  #  node: RubyVM::AbstractSyntaxTree::Node
-  #  point: :name | :args
+  #  node: RubyVM::AbstractSyntaxTree::Node (script_lines should be enabled)
+  #  point_type: :name | :args
   #  name: The name associated with the NameError/NoMethodError
-  #  fetch: A block to fetch a specified code line (or lines)
   #
   # Returns:
   #  {
@@ -22,16 +21,18 @@ module ErrorHighlight
   end
 
   class Spotter
-    def initialize(node, point, name: nil, &fetch)
+    def initialize(node, point_type: :name, name: nil)
       @node = node
-      @point = point
+      @point_type = point_type
       @name = name
 
       # Not-implemented-yet options
       @arg = nil # Specify the index or keyword at which argument caused the TypeError/ArgumentError
       @multiline = false # Allow multiline spot
 
-      @fetch = fetch
+      @fetch = -> (lineno, last_lineno = lineno) do
+        @node.script_lines[lineno - 1 .. last_lineno - 1].join("")
+      end
     end
 
     def spot
@@ -40,7 +41,7 @@ module ErrorHighlight
       case @node.type
 
       when :CALL, :QCALL
-        case @point
+        case @point_type
         when :name
           spot_call_for_name
         when :args
@@ -48,7 +49,7 @@ module ErrorHighlight
         end
 
       when :ATTRASGN
-        case @point
+        case @point_type
         when :name
           spot_attrasgn_for_name
         when :args
@@ -56,7 +57,7 @@ module ErrorHighlight
         end
 
       when :OPCALL
-        case @point
+        case @point_type
         when :name
           spot_opcall_for_name
         when :args
@@ -64,7 +65,7 @@ module ErrorHighlight
         end
 
       when :FCALL
-        case @point
+        case @point_type
         when :name
           spot_fcall_for_name
         when :args
@@ -75,7 +76,7 @@ module ErrorHighlight
         spot_vcall
 
       when :OP_ASGN1
-        case @point
+        case @point_type
         when :name
           spot_op_asgn1_for_name
         when :args
@@ -83,7 +84,7 @@ module ErrorHighlight
         end
 
       when :OP_ASGN2
-        case @point
+        case @point_type
         when :name
           spot_op_asgn2_for_name
         when :args
