@@ -71,6 +71,7 @@ REPOSITORIES = {
   drb: "ruby/drb",
   pathname: "ruby/pathname",
   digest: "ruby/digest",
+  error_highlight: "ruby/error_highlight",
 }
 
 def sync_default_gems(gem)
@@ -311,6 +312,12 @@ def sync_default_gems(gem)
   when "set"
     sync_lib gem, upstream
     cp_r("#{upstream}/test", ".")
+  when "error_highlight"
+    rm_rf(%w[lib/error_highlight lib/error_highlight.rb test/error_highlight])
+    cp_r(Dir.glob("#{upstream}/lib/error_highlight*"), "lib")
+    cp_r("#{upstream}/error_highlight.gemspec", "lib/error_highlight")
+    cp_r("#{upstream}/test", "test/error_highlight")
+    rm_rf(%w[test/error_highlight/tree_spell/test_explore.rb])
   else
     sync_lib gem, upstream
   end
