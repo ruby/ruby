@@ -450,11 +450,13 @@ AS_CASE(["$target_os"],
 		    [[FILE* volatile f = stdin; return 0;]])],
 		    [rb_cv_msvcrt=`$OBJDUMP -p conftest$ac_exeext |
 				   tr A-Z a-z |
-				   sed -n '/^[[ 	]]*dll name: \(msvc.*\)\.dll$/{s//\1/p;q;}'`],
+				   sed -n '/^[[ 	]]*dll name: \(msvc.*\)\.dll$/{s//\1/p;q;};
+					/^[[ 	]]*dll name: \(ucrtbase\|api-ms-win-crt-.*\)\.dll$/{s//ucrt/p;q;}'`],
 		    [rb_cv_msvcrt=msvcrt])
 	test "$rb_cv_msvcrt" = "" && rb_cv_msvcrt=msvcrt])
 	RT_VER=`echo "$rb_cv_msvcrt" | tr -cd [0-9]`
 	test "$RT_VER" = "" && RT_VER=60
+	test "$rb_cv_msvcrt" = "ucrt" && RT_VER=140
 	AC_DEFINE_UNQUOTED(RUBY_MSVCRT_VERSION, $RT_VER)
 	sysconfdir=
     ])
@@ -2508,10 +2510,10 @@ AS_CASE([$coroutine_type], [yes|''], [
         [*86-linux*], [
             coroutine_type=x86
         ],
-        [x64-mingw32], [
+        [x64-mingw*], [
             coroutine_type=win64
         ],
-        [*86-mingw32], [
+        [*86-mingw*], [
             coroutine_type=win32
         ],
         [arm*-linux*], [
@@ -4043,7 +4045,11 @@ AS_IF([test "${universal_binary-no}" = yes ], [
     AC_DEFINE_UNQUOTED(RUBY_ARCH, "universal-" RUBY_PLATFORM_OS)
     AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "universal." RUBY_PLATFORM_CPU "-" RUBY_PLATFORM_OS)
 ], [
-    arch="${target_cpu}-${target_os}"
+    AS_IF([test "${target_os}-${rb_cv_msvcrt}" = "mingw32-ucrt" ], [
+        arch="${target_cpu}-mingw-ucrt"
+    ], [
+        arch="${target_cpu}-${target_os}"
+    ])
     AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "$arch")
 ])
 

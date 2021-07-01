@@ -503,15 +503,15 @@ class TestEnv < Test::Unit::TestCase
   end
 
   def test_huge_value
-    huge_value = "bar" * 40960
-    ENV["foo"] = "bar"
-    if /mswin/ =~ RUBY_PLATFORM
-      assert_raise(Errno::EINVAL) { ENV["foo"] = huge_value }
-      assert_equal("bar", ENV["foo"])
+    if /mswin/ =~ RUBY_PLATFORM || /ucrt/ =~ RbConfig::CONFIG['sitearch']
+      # On Windows >= Vista each environment variable can be max 32768 characters
+      huge_value = "bar" * 10900
     else
-      assert_nothing_raised { ENV["foo"] = huge_value }
-      assert_equal(huge_value, ENV["foo"])
+      huge_value = "bar" * 40960
     end
+    ENV["foo"] = "overwritten"
+    assert_nothing_raised { ENV["foo"] = huge_value }
+    assert_equal(huge_value, ENV["foo"])
   end
 
   if /mswin|mingw/ =~ RUBY_PLATFORM

@@ -887,6 +887,13 @@ socklist_delete(SOCKET *sockp, int *flagp)
     return ret;
 }
 
+#if RUBY_MSVCRT_VERSION >= 80
+# ifdef __MINGW32__
+#  define _CrtSetReportMode(type,mode) ((void)0)
+#  define _RTC_SetErrorFunc(func) ((void)0)
+# endif
+static void set_pioinfo_extra(void);
+#endif
 static int w32_cmdvector(const WCHAR *, char ***, UINT, rb_encoding *);
 //
 // Initialization stuff
@@ -896,7 +903,6 @@ void
 rb_w32_sysinit(int *argc, char ***argv)
 {
 #if RUBY_MSVCRT_VERSION >= 80
-    static void set_pioinfo_extra(void);
 
     _CrtSetReportMode(_CRT_ASSERT, 0);
     _set_invalid_parameter_handler(invalid_parameter);
@@ -2572,7 +2578,7 @@ set_pioinfo_extra(void)
     char *pend = p;
     /* _osfile(fh) & FDEV */
 
-# if _WIN64
+# ifdef _WIN64
     int32_t rel;
     char *rip;
     /* add rsp, _ */
@@ -2614,7 +2620,7 @@ set_pioinfo_extra(void)
 
     found:
     p += sizeof(PIOINFO_MARK) - 1;
-#if _WIN64
+#ifdef _WIN64
     rel = *(int32_t*)(p);
     rip = p + sizeof(int32_t);
     __pioinfo = (ioinfo**)(rip + rel);

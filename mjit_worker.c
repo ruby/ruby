@@ -1154,6 +1154,9 @@ compile_prelude(FILE *f)
 #ifdef _WIN32
     fprintf(f, "void _pei386_runtime_relocator(void){}\n");
     fprintf(f, "int __stdcall DllMainCRTStartup(void* hinstDLL, unsigned int fdwReason, void* lpvReserved) { return 1; }\n");
+#if defined(__MINGW32__) && defined(_UCRT)
+    fprintf(f, "int __cdecl atexit(void (__cdecl *func )( void )){ return 0; }\n");
+#endif
 #endif
 }
 

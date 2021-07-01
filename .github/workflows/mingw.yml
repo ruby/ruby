@@ -8,8 +8,7 @@ jobs:
   make:
     runs-on: windows-2019
     env:
-      MSYSTEM: MINGW64
-      MSYSTEM_PREFIX: /mingw64
+      MSYSTEM: ${{ matrix.msystem }}
       MSYS2_ARCH: x86_64
       CHOST: "x86_64-w64-mingw32"
       CFLAGS:   "-march=x86-64 -mtune=generic -O3 -pipe -fstack-protector-strong"
@@ -20,7 +19,13 @@ jobs:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
     strategy:
       matrix:
-        test_task: [ "check" ] # to make job names consistent
+        include:
+          - msystem: "MINGW64"
+            base_ruby: 2.6
+            test_task: [ "check" ] # to make job names consistent
+          - msystem: "UCRT64"
+            base_ruby: head
+            test_task: [ "check" ] # to make job names consistent
       fail-fast: false
     steps:
       - run: mkdir build
@@ -35,10 +40,11 @@ jobs:
         with:
           path: src
       - name: Set up Ruby & MSYS2
-        uses: MSP-Greg/setup-ruby-pkgs@v1
+        uses: MSP-Greg/setup-ruby-pkgs@ucrt
         with:
-          ruby-version: 2.6
-          mingw: _upgrade_ gdbm gmp libffi libyaml openssl ragel readline
+          ruby-version: ${{ matrix.base_ruby }}
+          setup-ruby-ref: MSP-Greg/ruby-setup-ruby/00-win-ucrt
+          mingw: _upgrade_ gdbm gmp libffi libyaml openssl ragel readline gcc
           msys2: automake1.16 bison
       - name: where check
         run: |
