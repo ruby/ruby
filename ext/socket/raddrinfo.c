@@ -2496,9 +2496,7 @@ addrinfo_s_getaddrinfo(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "24:", &node, &service, &family, &socktype,
 		 &protocol, &flags, &opts);
     rb_get_kwargs(opts, &id_timeout, 0, 1, &timeout);
-    if (timeout == Qundef) {
-	timeout = Qnil;
-    }
+    timeout = Qnil;
 
     return addrinfo_list_new(node, service, family, socktype, protocol, flags, timeout);
 }
