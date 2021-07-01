@@ -237,9 +237,13 @@ struct coroutine_context * coroutine_transfer(struct coroutine_context * current
 static
 void coroutine_join(struct coroutine_context * context) {
     if (DEBUG) fprintf(stderr, "coroutine_join:pthread_cancel\n");
-    check("coroutine_join:pthread_cancel",
-        pthread_cancel(context->id)
-    );
+    int result = pthread_cancel(context->id);
+    if (result == -1 && errno == ESRCH) {
+        // The thread may be dead due to fork, so it cannot be joined and this doesn't represent a real error:
+        return;
+    }
+
+    check("coroutine_join:pthread_cancel", result);
 
     if (DEBUG) fprintf(stderr, "coroutine_join:pthread_join\n");
     check("coroutine_join:pthread_join",
