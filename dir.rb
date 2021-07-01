@@ -298,7 +298,7 @@ class << File
   #    File.fnmatch('**/foo', 'c:/a/b/c/foo', File::FNM_PATHNAME)  #=> true
   #    File.fnmatch('**/foo', 'a/.b/c/foo', File::FNM_PATHNAME)    #=> false
   #    File.fnmatch('**/foo', 'a/.b/c/foo', File::FNM_PATHNAME | File::FNM_DOTMATCH) #=> true
-  def fnmatch(pattern, path, flags = nil)
+  def fnmatch(pattern, path, flags = 0)
   end
   alias fnmatch? fnmatch
 end if false
