@@ -11,6 +11,8 @@
 #include "vm_core.h"
 #include "ruby/fiber/scheduler.h"
 #include "ruby/io.h"
+#include "ruby/io/buffer.h"
+
 #include "internal/thread.h"
 
 static ID id_close;
@@ -26,6 +28,7 @@ static ID id_process_wait;
 static ID id_io_read;
 static ID id_io_write;
 static ID id_io_wait;
+static ID id_io_close;
 
 static ID id_address_resolve;
 
@@ -45,6 +48,7 @@ Init_Fiber_Scheduler(void)
     id_io_read = rb_intern_const("io_read");
     id_io_write = rb_intern_const("io_write");
     id_io_wait = rb_intern_const("io_wait");
+    id_io_close = rb_intern_const("io_close");
 
     id_address_resolve = rb_intern_const("address_resolve");
 }
@@ -225,24 +229,55 @@ rb_fiber_scheduler_io_wait_writable(VALUE scheduler, VALUE io)
 }
 
 VALUE
-rb_fiber_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t offset, size_t length)
+rb_fiber_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t length)
 {
     VALUE arguments[] = {
-        io, buffer, SIZET2NUM(offset), SIZET2NUM(length)
+        io, buffer, SIZET2NUM(length)
     };
 
-    return rb_check_funcall(scheduler, id_io_read, 4, arguments);
+    return rb_check_funcall(scheduler, id_io_read, 3, arguments);
 }
 
 VALUE
-rb_fiber_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, size_t offset, size_t length)
+rb_fiber_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, size_t length)
 {
     VALUE arguments[] = {
-        io, buffer, SIZET2NUM(offset), SIZET2NUM(length)
+        io, buffer, SIZET2NUM(length)
     };
 
-    // We should ensure string has capacity to receive data, and then resize it afterwards.
-    return rb_check_funcall(scheduler, id_io_write, 4, arguments);
+    return rb_check_funcall(scheduler, id_io_write, 3, arguments);
+}
+
+VALUE
+rb_fiber_scheduler_io_read_memory(VALUE scheduler, VALUE io, void *base, size_t size, size_t length)
+{
+    VALUE buffer = rb_io_buffer_new(base, size, RB_IO_BUFFER_LOCKED);
+
+    VALUE result = rb_fiber_scheduler_io_read(scheduler, io, buffer, length);
+
+    rb_io_buffer_free(buffer);
+
+    return result;
+}
+
+VALUE
+rb_fiber_scheduler_io_write_memory(VALUE scheduler, VALUE io, const void *base, size_t size, size_t length)
+{
+    VALUE buffer = rb_io_buffer_new((void*)base, size, RB_IO_BUFFER_LOCKED|RB_IO_BUFFER_IMMUTABLE);
+
+    VALUE result = rb_fiber_scheduler_io_write(scheduler, io, buffer, length);
+
+    rb_io_buffer_free(buffer);
+
+    return result;
+}
+
+VALUE
+rb_fiber_scheduler_io_close(VALUE scheduler, VALUE io)
+{
+    VALUE arguments[] = {io};
+
+    return rb_check_funcall(scheduler, id_io_close, 1, arguments);
 }
 
 VALUE

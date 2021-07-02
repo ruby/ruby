@@ -51,6 +51,7 @@ rb_call_inits(void)
     CALL(marshal);
     CALL(Range);
     CALL(IO);
+    CALL(IO_Buffer)
     CALL(Dir);
     CALL(Time);
     CALL(Random);

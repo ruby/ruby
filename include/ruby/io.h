@@ -671,6 +671,15 @@ VALUE rb_io_set_write_io(VALUE io, VALUE w);
 void rb_io_set_nonblock(rb_io_t *fptr);
 
 /**
+ * Returns an integer representing the numeric file descriptor for
+ * <em>io</em>.
+ *
+ * @param[in]   io         An IO.
+ * @retval      int        A file descriptor.
+ */
+int rb_io_descriptor(VALUE io);
+
+/**
  * This function  breaks down the  option hash that `IO#initialize`  takes into
  * components.   This is  an implementation  detail of  rb_io_extract_modeenc()
  * today.  People prefer that API instead.
