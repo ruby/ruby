@@ -1,0 +1,9 @@
+benchmark:
+  - name: buffer.get
+    prelude: buffer = IO::Buffer.new(32, IO::Buffer::MAPPED)
+    script: buffer.get(:U32, 0)
+    loop_count: 20000000
+  - name: string.unpack
+    prelude: string = "\0" * 32
+    script: string.unpack("C")
+    loop_count: 20000000

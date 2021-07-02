@@ -11,6 +11,9 @@
 #include "vm_core.h"
 #include "ruby/fiber/scheduler.h"
 #include "ruby/io.h"
+#include "ruby/io/buffer.h"
+
+#include "internal/string.h"
 
 static ID id_close;
 
@@ -210,24 +213,47 @@ rb_fiber_scheduler_io_wait_writable(VALUE scheduler, VALUE io)
 }
 
 VALUE
-rb_fiber_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t offset, size_t length)
+rb_fiber_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t length)
 {
     VALUE arguments[] = {
-        io, buffer, SIZET2NUM(offset), SIZET2NUM(length)
+        io, buffer, SIZET2NUM(length)
     };
 
-    return rb_check_funcall(scheduler, id_io_read, 4, arguments);
+    return rb_check_funcall(scheduler, id_io_read, 3, arguments);
 }
 
 VALUE
-rb_fiber_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, size_t offset, size_t length)
+rb_fiber_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, size_t length)
 {
     VALUE arguments[] = {
-        io, buffer, SIZET2NUM(offset), SIZET2NUM(length)
+        io, buffer, SIZET2NUM(length)
     };
 
-    // We should ensure string has capacity to receive data, and then resize it afterwards.
-    return rb_check_funcall(scheduler, id_io_write, 4, arguments);
+    return rb_check_funcall(scheduler, id_io_write, 3, arguments);
+}
+
+VALUE
+rb_fiber_scheduler_io_read_memory(VALUE scheduler, VALUE io, void *base, size_t size, size_t length)
+{
+    VALUE buffer = rb_io_buffer_new(base, size, RB_IO_BUFFER_LOCKED);
+
+    VALUE result = rb_fiber_scheduler_io_read(scheduler, io, buffer, length);
+
+    rb_io_buffer_free(buffer);
+
+    return result;
+}
+
+VALUE
+rb_fiber_scheduler_io_write_memory(VALUE scheduler, VALUE io, const void *base, size_t size, size_t length)
+{
+    VALUE buffer = rb_io_buffer_new((void*)base, size, RB_IO_BUFFER_LOCKED|RB_IO_BUFFER_IMMUTABLE);
+
+    VALUE result = rb_fiber_scheduler_io_write(scheduler, io, buffer, length);
+
+    rb_io_buffer_free(buffer);
+
+    return result;
 }
 
 VALUE

@@ -2539,20 +2539,27 @@ rb_file_birthtime(VALUE obj)
  *
  */
 
-static VALUE
-rb_file_size(VALUE obj)
+size_t rb_file_size(VALUE file)
 {
     rb_io_t *fptr;
     struct stat st;
 
-    GetOpenFile(obj, fptr);
+    RB_IO_POINTER(file, fptr);
     if (fptr->mode & FMODE_WRITABLE) {
-	rb_io_flush_raw(obj, 0);
+        rb_io_flush_raw(file, 0);
     }
+
     if (fstat(fptr->fd, &st) == -1) {
-	rb_sys_fail_path(fptr->pathv);
+        rb_sys_fail_path(fptr->pathv);
     }
-    return OFFT2NUM(st.st_size);
+
+    return st.st_size;
+}
+
+static VALUE
+file_size(VALUE self)
+{
+    return RB_SIZE2NUM(rb_file_size(self));
 }
 
 static int
@@ -6772,7 +6779,7 @@ Init_File(void)
     rb_define_method(rb_cFile, "mtime", rb_file_mtime, 0);
     rb_define_method(rb_cFile, "ctime", rb_file_ctime, 0);
     rb_define_method(rb_cFile, "birthtime", rb_file_birthtime, 0);
-    rb_define_method(rb_cFile, "size", rb_file_size, 0);
+    rb_define_method(rb_cFile, "size", file_size, 0);
 
     rb_define_method(rb_cFile, "chmod", rb_file_chmod, 1);
     rb_define_method(rb_cFile, "chown", rb_file_chown, 2);

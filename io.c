@@ -14,6 +14,7 @@
 #include "ruby/internal/config.h"
 
 #include "ruby/fiber/scheduler.h"
+#include "ruby/io/buffer.h"
 
 #ifdef _WIN32
 # include "ruby/ruby.h"
@@ -131,6 +132,7 @@
 #include "internal/transcode.h"
 #include "internal/variable.h"
 #include "ruby/io.h"
+#include "ruby/io/buffer.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
 #include "ruby_atomic.h"
@@ -1126,36 +1128,62 @@ internal_writev_func(void *ptr)
 #endif
 
 static ssize_t
-rb_read_internal(int fd, void *buf, size_t count)
+rb_read_internal(rb_io_t *fptr, void *buf, size_t count)
 {
+    VALUE scheduler = rb_fiber_scheduler_current();
+    if (scheduler != Qnil) {
+        VALUE result = rb_fiber_scheduler_io_read_memory(scheduler, fptr->self, buf, count, 1);
+
+        if (result != Qundef) {
+          ssize_t length = RB_NUM2SSIZE(result);
+
+          if (length < 0) rb_sys_fail_path(fptr->pathv);
+
+          return length;
+        }
+    }
+
     struct io_internal_read_struct iis = {
         .th = rb_thread_current(),
-        .fd = fd,
+        .fd = fptr->fd,
         .nonblock = 0,
         .buf = buf,
         .capa = count
     };
 
-    return (ssize_t)rb_thread_io_blocking_region(internal_read_func, &iis, fd);
+    return (ssize_t)rb_thread_io_blocking_region(internal_read_func, &iis, fptr->fd);
 }
 
 static ssize_t
-rb_write_internal(int fd, const void *buf, size_t count)
+rb_write_internal(rb_io_t *fptr, const void *buf, size_t count)
 {
+    VALUE scheduler = rb_fiber_scheduler_current();
+    if (scheduler != Qnil) {
+        VALUE result = rb_fiber_scheduler_io_write_memory(scheduler, fptr->self, buf, count, count);
+
+        if (result != Qundef) {
+          ssize_t length = RB_NUM2SSIZE(result);
+
+          if (length < 0) rb_sys_fail_path(fptr->pathv);
+
+          return length;
+        }
+    }
+
     struct io_internal_write_struct iis = {
-        .fd = fd,
+        .fd = fptr->fd,
         .buf = buf,
         .capa = count
     };
 
-    return (ssize_t)rb_thread_io_blocking_region(internal_write_func, &iis, fd);
+    return (ssize_t)rb_thread_io_blocking_region(internal_write_func, &iis, fptr->fd);
 }
 
 static ssize_t
-rb_write_internal2(int fd, const void *buf, size_t count)
+rb_write_internal2(rb_io_t *fptr, const void *buf, size_t count)
 {
     struct io_internal_write_struct iis = {
-        .fd = fd,
+        .fd = fptr->fd,
         .buf = buf,
         .capa = count
     };
@@ -1553,7 +1581,7 @@ io_binwrite_string(VALUE arg)
 	}
     }
     else {
-	r = rb_write_internal(fptr->fd, p->ptr, p->length);
+	r = rb_write_internal(fptr, p->ptr, p->length);
     }
 
     return r;
@@ -1584,7 +1612,7 @@ io_binwrite_string(VALUE arg)
 	    return len;
     }
 
-    return rb_write_internal(p->fptr->fd, p->ptr, p->length);
+    return rb_write_internal(p->fptr, p->ptr, p->length);
 }
 #endif
 
@@ -1600,7 +1628,7 @@ io_binwrite(VALUE str, const char *ptr, long len, rb_io_t *fptr, int nosync)
 
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
-        VALUE result = rb_fiber_scheduler_io_write(scheduler, fptr->self, str, offset, len);
+        VALUE result = rb_fiber_scheduler_io_write_memory(scheduler, fptr->self, ptr, len, len);
 
         if (result != Qundef) {
           ssize_t length = RB_NUM2SSIZE(result);
@@ -2288,27 +2316,26 @@ io_fillbuf(rb_io_t *fptr)
         fptr->rbuf.capa = IO_RBUF_CAPA_FOR(fptr);
         fptr->rbuf.ptr = ALLOC_N(char, fptr->rbuf.capa);
 #ifdef _WIN32
-	fptr->rbuf.capa--;
+        fptr->rbuf.capa--;
 #endif
     }
     if (fptr->rbuf.len == 0) {
       retry:
-	{
-	    r = rb_read_internal(fptr->fd, fptr->rbuf.ptr, fptr->rbuf.capa);
-	}
+        r = rb_read_internal(fptr, fptr->rbuf.ptr, fptr->rbuf.capa);
+
         if (r < 0) {
             if (fptr_wait_readable(fptr))
                 goto retry;
-	    {
-		int e = errno;
-		VALUE path = rb_sprintf("fd:%d ", fptr->fd);
-		if (!NIL_P(fptr->pathv)) {
-		    rb_str_append(path, fptr->pathv);
-		}
-		rb_syserr_fail_path(e, path);
-	    }
+
+            int e = errno;
+            VALUE path = rb_sprintf("fd:%d ", fptr->fd);
+            if (!NIL_P(fptr->pathv)) {
+                rb_str_append(path, fptr->pathv);
+            }
+
+            rb_syserr_fail_path(e, path);
         }
-	if (r > 0) rb_io_check_closed(fptr);
+        if (r > 0) rb_io_check_closed(fptr);
         fptr->rbuf.off = 0;
         fptr->rbuf.len = (int)r; /* r should be <= rbuf_capa */
         if (r == 0)
@@ -2532,6 +2559,12 @@ rb_io_fileno(VALUE io)
     return INT2FIX(fd);
 }
 
+int rb_io_descriptor(VALUE io)
+{
+    rb_io_t *fptr = RFILE(io)->fptr;
+    rb_io_check_closed(fptr);
+    return fptr->fd;
+}
 
 /*
  *  call-seq:
@@ -2639,7 +2672,7 @@ io_bufread(char *ptr, long len, rb_io_t *fptr)
     if (READ_DATA_PENDING(fptr) == 0) {
 	while (n > 0) {
           again:
-	    c = rb_read_internal(fptr->fd, ptr+offset, n);
+	    c = rb_read_internal(fptr, ptr+offset, n);
 	    if (c == 0) break;
 	    if (c < 0) {
                 if (fptr_wait_readable(fptr))
@@ -2685,19 +2718,6 @@ bufread_call(VALUE arg)
 static long
 io_fread(VALUE str, long offset, long size, rb_io_t *fptr)
 {
-    VALUE scheduler = rb_fiber_scheduler_current();
-    if (scheduler != Qnil) {
-        VALUE result = rb_fiber_scheduler_io_read(scheduler, fptr->self, str, offset, size);
-
-        if (result != Qundef) {
-          ssize_t length = RB_NUM2SSIZE(result);
-
-          if (length < 0) rb_sys_fail_path(fptr->pathv);
-
-          return length;
-        }
-    }
-
     long len;
     struct bufread_arg arg;
 
@@ -4702,10 +4722,10 @@ finish_writeconv(rb_io_t *fptr, int noalloc)
             res = rb_econv_convert(fptr->writeconv, NULL, NULL, &dp, de, 0);
             while (dp-ds) {
               retry:
-		if (fptr->write_lock && rb_mutex_owned_p(fptr->write_lock))
-		    r = rb_write_internal2(fptr->fd, ds, dp-ds);
-		else
-		    r = rb_write_internal(fptr->fd, ds, dp-ds);
+                if (fptr->write_lock && rb_mutex_owned_p(fptr->write_lock))
+                    r = rb_write_internal2(fptr, ds, dp-ds);
+                else
+                    r = rb_write_internal(fptr, ds, dp-ds);
                 if (r == dp-ds)
                     break;
                 if (0 <= r) {
@@ -5309,7 +5329,7 @@ rb_io_syswrite(VALUE io, VALUE str)
 
     tmp = rb_str_tmp_frozen_acquire(str);
     RSTRING_GETMEM(tmp, ptr, len);
-    n = rb_write_internal(fptr->fd, ptr, len);
+    n = rb_write_internal(fptr, ptr, len);
     if (n < 0) rb_sys_fail_path(fptr->pathv);
     rb_str_tmp_frozen_release(str, tmp);
 
@@ -11070,8 +11090,8 @@ struct copy_stream_struct {
     off_t copy_length; /* (off_t)-1 if not specified */
     off_t src_offset; /* (off_t)-1 if not specified */
 
-    int src_fd;
-    int dst_fd;
+    rb_io_t *src_fptr;
+    rb_io_t *dst_fptr;
     unsigned close_src : 1;
     unsigned close_dst : 1;
     int error_no;
@@ -11202,7 +11222,7 @@ maygvl_copy_stream_wait_read(int has_gvl, struct copy_stream_struct *stp)
             ret = RB_NUM2INT(rb_io_wait(stp->src, RB_INT2NUM(RUBY_IO_READABLE), Qnil));
         }
         else {
-            ret = nogvl_wait_for_single_fd(stp->th, stp->src_fd, RB_WAITFD_IN);
+            ret = nogvl_wait_for_single_fd(stp->th, stp->src_fptr->fd, RB_WAITFD_IN);
         }
     } while (ret < 0 && maygvl_copy_stream_continue_p(has_gvl, stp));
 
@@ -11220,7 +11240,7 @@ nogvl_copy_stream_wait_write(struct copy_stream_struct *stp)
     int ret;
 
     do {
-	ret = nogvl_wait_for_single_fd(stp->th, stp->dst_fd, RB_WAITFD_OUT);
+	ret = nogvl_wait_for_single_fd(stp->th, stp->dst_fptr->fd, RB_WAITFD_OUT);
     } while (ret < 0 && maygvl_copy_stream_continue_p(0, stp));
 
     if (ret < 0) {
@@ -11267,7 +11287,7 @@ nogvl_copy_file_range(struct copy_stream_struct *stp)
         if (src_offset < (off_t)0) {
 	    off_t current_offset;
             errno = 0;
-            current_offset = lseek(stp->src_fd, 0, SEEK_CUR);
+            current_offset = lseek(stp->src_fptr->fd, 0, SEEK_CUR);
             if (current_offset < (off_t)0 && errno) {
                 stp->syserr = "lseek";
                 stp->error_no = errno;
@@ -11287,7 +11307,7 @@ nogvl_copy_file_range(struct copy_stream_struct *stp)
 # else
     ss = (ssize_t)copy_length;
 # endif
-    ss = simple_copy_file_range(stp->src_fd, src_offset_ptr, stp->dst_fd, NULL, ss, 0);
+    ss = simple_copy_file_range(stp->src_fptr->fd, src_offset_ptr, stp->dst_fptr->fd, NULL, ss, 0);
     if (0 < ss) {
         stp->total += ss;
         copy_length -= ss;
@@ -11322,7 +11342,7 @@ nogvl_copy_file_range(struct copy_stream_struct *stp)
 	  case EBADF:
 	    {
 		int e = errno;
-		int flags = fcntl(stp->dst_fd, F_GETFL);
+		int flags = fcntl(stp->dst_fptr->fd, F_GETFL);
 
 		if (flags != -1 && flags & O_APPEND) {
 		    return 0;
@@ -11356,7 +11376,7 @@ nogvl_fcopyfile(struct copy_stream_struct *stp)
 
     if (!S_ISREG(stp->dst_stat.st_mode))
         return 0;
-    if (lseek(stp->dst_fd, 0, SEEK_CUR) > (off_t)0) /* if dst IO was already written */
+    if (lseek(stp->dst_fptr->fd, 0, SEEK_CUR) > (off_t)0) /* if dst IO was already written */
         return 0;
 
     if (src_offset > (off_t)0) {
@@ -11364,14 +11384,14 @@ nogvl_fcopyfile(struct copy_stream_struct *stp)
 
         /* get current offset */
         errno = 0;
-        cur = lseek(stp->src_fd, 0, SEEK_CUR);
+        cur = lseek(stp->src_fptr->fd, 0, SEEK_CUR);
         if (cur < (off_t)0 && errno) {
             stp->error_no = errno;
             return 1;
         }
 
         errno = 0;
-        r = lseek(stp->src_fd, src_offset, SEEK_SET);
+        r = lseek(stp->src_fptr->fd, src_offset, SEEK_SET);
         if (r < (off_t)0 && errno) {
             stp->error_no = errno;
             return 1;
@@ -11379,7 +11399,7 @@ nogvl_fcopyfile(struct copy_stream_struct *stp)
     }
 
     stp->copyfile_state = copyfile_state_alloc(); /* this will be freed by copy_stream_finalize() */
-    ret = fcopyfile(stp->src_fd, stp->dst_fd, stp->copyfile_state, COPYFILE_DATA);
+    ret = fcopyfile(stp->src_fptr->fd, stp->dst_fptr->fd, stp->copyfile_state, COPYFILE_DATA);
     copyfile_state_get(stp->copyfile_state, COPYFILE_STATE_COPIED, &ss); /* get copied bytes */
 
     if (ret == 0) { /* success */
@@ -11388,7 +11408,7 @@ nogvl_fcopyfile(struct copy_stream_struct *stp)
             off_t r;
             errno = 0;
             /* reset offset */
-            r = lseek(stp->src_fd, cur, SEEK_SET);
+            r = lseek(stp->src_fptr->fd, cur, SEEK_SET);
             if (r < (off_t)0 && errno) {
                 stp->error_no = errno;
                 return 1;
@@ -11486,7 +11506,7 @@ nogvl_copy_stream_sendfile(struct copy_stream_struct *stp)
         else {
             off_t cur;
             errno = 0;
-            cur = lseek(stp->src_fd, 0, SEEK_CUR);
+            cur = lseek(stp->src_fptr->fd, 0, SEEK_CUR);
             if (cur < (off_t)0 && errno) {
                 stp->syserr = "lseek";
                 stp->error_no = errno;
@@ -11504,10 +11524,10 @@ nogvl_copy_stream_sendfile(struct copy_stream_struct *stp)
     ss = (ssize_t)copy_length;
 # endif
     if (use_pread) {
-        ss = simple_sendfile(stp->dst_fd, stp->src_fd, &src_offset, ss);
+        ss = simple_sendfile(stp->dst_fptr->fd, stp->src_fptr->fd, &src_offset, ss);
     }
     else {
-        ss = simple_sendfile(stp->dst_fd, stp->src_fd, NULL, ss);
+        ss = simple_sendfile(stp->dst_fptr->fd, stp->src_fptr->fd, NULL, ss);
     }
     if (0 < ss) {
         stp->total += ss;
@@ -11538,7 +11558,7 @@ nogvl_copy_stream_sendfile(struct copy_stream_struct *stp)
                 int ret;
 #ifndef __linux__
                /*
-                * Linux requires stp->src_fd to be a mmap-able (regular) file,
+                * Linux requires stp->src_fptr->fd to be a mmap-able (regular) file,
                 * select() reports regular files to always be "ready", so
                 * there is no need to select() on it.
                 * Other OSes may have the same limitation for sendfile() which
@@ -11561,12 +11581,12 @@ nogvl_copy_stream_sendfile(struct copy_stream_struct *stp)
 #endif
 
 static ssize_t
-maygvl_read(int has_gvl, int fd, void *buf, size_t count)
+maygvl_read(int has_gvl, rb_io_t *fptr, void *buf, size_t count)
 {
     if (has_gvl)
-        return rb_read_internal(fd, buf, count);
+        return rb_read_internal(fptr, buf, count);
     else
-        return read(fd, buf, count);
+        return read(fptr->fd, buf, count);
 }
 
 static ssize_t
@@ -11575,11 +11595,11 @@ maygvl_copy_stream_read(int has_gvl, struct copy_stream_struct *stp, char *buf, 
     ssize_t ss;
   retry_read:
     if (offset < (off_t)0) {
-        ss = maygvl_read(has_gvl, stp->src_fd, buf, len);
+        ss = maygvl_read(has_gvl, stp->src_fptr, buf, len);
     }
     else {
 #ifdef HAVE_PREAD
-        ss = pread(stp->src_fd, buf, len, offset);
+        ss = pread(stp->src_fptr->fd, buf, len, offset);
 #else
         stp->notimp = "pread";
         return -1;
@@ -11619,7 +11639,7 @@ nogvl_copy_stream_write(struct copy_stream_struct *stp, char *buf, size_t len)
     ssize_t ss;
     int off = 0;
     while (len) {
-        ss = write(stp->dst_fd, buf+off, len);
+        ss = write(stp->dst_fptr->fd, buf+off, len);
         if (ss < 0) {
             if (maygvl_copy_stream_continue_p(0, stp))
                 continue;
@@ -11659,7 +11679,7 @@ nogvl_copy_stream_read_write(struct copy_stream_struct *stp)
     if (use_pread && stp->close_src) {
         off_t r;
 	errno = 0;
-        r = lseek(stp->src_fd, src_offset, SEEK_SET);
+        r = lseek(stp->src_fptr->fd, src_offset, SEEK_SET);
         if (r < (off_t)0 && errno) {
             stp->syserr = "lseek";
             stp->error_no = errno;
@@ -11741,7 +11761,7 @@ copy_stream_fallback_body(VALUE arg)
     off_t off = stp->src_offset;
     ID read_method = id_readpartial;
 
-    if (stp->src_fd < 0) {
+    if (!stp->src_fptr) {
 	if (!rb_respond_to(stp->src, read_method)) {
 	    read_method = id_read;
 	}
@@ -11760,7 +11780,7 @@ copy_stream_fallback_body(VALUE arg)
 	    }
             l = buflen < rest ? buflen : (long)rest;
         }
-        if (stp->src_fd < 0) {
+        if (!stp->src_fptr) {
             VALUE rc = rb_funcall(stp->src, read_method, 2, INT2FIX(l), buf);
 
             if (read_method == id_read && NIL_P(rc))
@@ -11793,7 +11813,7 @@ copy_stream_fallback_body(VALUE arg)
 static VALUE
 copy_stream_fallback(struct copy_stream_struct *stp)
 {
-    if (stp->src_fd < 0 && stp->src_offset >= (off_t)0) {
+    if (!stp->src_fptr && stp->src_offset >= (off_t)0) {
 	rb_raise(rb_eArgError, "cannot specify src_offset for non-IO");
     }
     rb_rescue2(copy_stream_fallback_body, (VALUE)stp,
@@ -11807,8 +11827,6 @@ copy_stream_body(VALUE arg)
 {
     struct copy_stream_struct *stp = (struct copy_stream_struct *)arg;
     VALUE src_io = stp->src, dst_io = stp->dst;
-    rb_io_t *src_fptr = 0, *dst_fptr = 0;
-    int src_fd, dst_fd;
     const int common_oflags = 0
 #ifdef O_NOCTTY
 	| O_NOCTTY
@@ -11823,7 +11841,7 @@ copy_stream_body(VALUE arg)
 	!(RB_TYPE_P(src_io, T_FILE) ||
 	  RB_TYPE_P(src_io, T_STRING) ||
 	  rb_respond_to(src_io, rb_intern("to_path")))) {
-	src_fd = -1;
+        stp->src_fptr = NULL;
     }
     else {
         int stat_ret;
@@ -11840,24 +11858,22 @@ copy_stream_body(VALUE arg)
 	    stp->src = src_io;
 	    stp->close_src = 1;
 	}
-	GetOpenFile(src_io, src_fptr);
-	rb_io_check_byte_readable(src_fptr);
-	src_fd = src_fptr->fd;
+	RB_IO_POINTER(src_io, stp->src_fptr);
+	rb_io_check_byte_readable(stp->src_fptr);
 
-        stat_ret = fstat(src_fd, &stp->src_stat);
+        stat_ret = fstat(stp->src_fptr->fd, &stp->src_stat);
         if (stat_ret < 0) {
             stp->syserr = "fstat";
             stp->error_no = errno;
             return Qnil;
         }
     }
-    stp->src_fd = src_fd;
 
     if (dst_io == argf ||
 	!(RB_TYPE_P(dst_io, T_FILE) ||
 	  RB_TYPE_P(dst_io, T_STRING) ||
 	  rb_respond_to(dst_io, rb_intern("to_path")))) {
-	dst_fd = -1;
+	stp->dst_fptr = NULL;
     }
     else {
         int stat_ret;
@@ -11879,38 +11895,36 @@ copy_stream_body(VALUE arg)
 	    dst_io = GetWriteIO(dst_io);
 	    stp->dst = dst_io;
 	}
-	GetOpenFile(dst_io, dst_fptr);
-	rb_io_check_writable(dst_fptr);
-	dst_fd = dst_fptr->fd;
+	RB_IO_POINTER(dst_io, stp->dst_fptr);
+	rb_io_check_writable(stp->dst_fptr);
 
-        stat_ret = fstat(dst_fd, &stp->dst_stat);
+        stat_ret = fstat(stp->dst_fptr->fd, &stp->dst_stat);
         if (stat_ret < 0) {
             stp->syserr = "fstat";
             stp->error_no = errno;
             return Qnil;
         }
     }
-    stp->dst_fd = dst_fd;
 
 #ifdef O_BINARY
-    if (src_fptr)
-	SET_BINARY_MODE_WITH_SEEK_CUR(src_fptr);
+    if (stp->src_fptr)
+	SET_BINARY_MODE_WITH_SEEK_CUR(stp->src_fptr);
 #endif
-    if (dst_fptr)
-	io_ascii8bit_binmode(dst_fptr);
+    if (stp->dst_fptr)
+	io_ascii8bit_binmode(stp->dst_fptr);
 
-    if (stp->src_offset < (off_t)0 && src_fptr && src_fptr->rbuf.len) {
-        size_t len = src_fptr->rbuf.len;
+    if (stp->src_offset < (off_t)0 && stp->src_fptr && stp->src_fptr->rbuf.len) {
+        size_t len = stp->src_fptr->rbuf.len;
         VALUE str;
         if (stp->copy_length >= (off_t)0 && stp->copy_length < (off_t)len) {
             len = (size_t)stp->copy_length;
         }
         str = rb_str_buf_new(len);
         rb_str_resize(str,len);
-        read_buffered_data(RSTRING_PTR(str), len, src_fptr);
-        if (dst_fptr) { /* IO or filename */
-            if (io_binwrite(str, RSTRING_PTR(str), RSTRING_LEN(str), dst_fptr, 0) < 0)
-                rb_sys_fail_on_write(dst_fptr);
+        read_buffered_data(RSTRING_PTR(str), len, stp->src_fptr);
+        if (stp->dst_fptr) { /* IO or filename */
+            if (io_binwrite(str, RSTRING_PTR(str), RSTRING_LEN(str), stp->dst_fptr, 0) < 0)
+                rb_sys_fail_on_write(stp->dst_fptr);
         }
         else /* others such as StringIO */
 	    rb_io_write(dst_io, str);
@@ -11920,14 +11934,14 @@ copy_stream_body(VALUE arg)
             stp->copy_length -= len;
     }
 
-    if (dst_fptr && io_fflush(dst_fptr) < 0) {
+    if (stp->dst_fptr && io_fflush(stp->dst_fptr) < 0) {
 	rb_raise(rb_eIOError, "flush failed");
     }
 
     if (stp->copy_length == 0)
         return Qnil;
 
-    if (src_fd < 0 || dst_fd < 0) {
+    if (stp->src_fptr == NULL || stp->dst_fptr == NULL) {
         return copy_stream_fallback(stp);
     }
 
@@ -12005,6 +12019,9 @@ rb_io_s_copy_stream(int argc, VALUE *argv, VALUE io)
 
     st.src = src;
     st.dst = dst;
+
+    st.src_fptr = NULL;
+    st.dst_fptr = NULL;
 
     if (NIL_P(length))
         st.copy_length = (off_t)-1;
