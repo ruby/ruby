@@ -18,6 +18,7 @@
 % else
 %   pathrep = proc {|path| path}
 % end
+% ignore_error = $ignore_error
 
 VPATH = <%=%w[$(arch_hdrdir)/ruby $(hdrdir)/ruby $(srcdir) $(encsrcdir)].join(CONFIG["PATH_SEPARATOR"])%>
 LIBPATH = <%=libpathflag($DEFLIBPATH)%>
@@ -73,12 +74,12 @@ $(LIBENC): $(ENCOBJS)
 	@$(RM) $@
 	$(ECHO) linking statically-linked encoding library $@
 	$(Q) $(AR) $(ARFLAGS)$@ $(ENCOBJS)
-	@-$(RANLIB) $@ 2> /dev/null || true
+	@-$(RANLIB) $@<%=ignore_error%>
 $(LIBTRANS): $(TRANSOBJS)
 	@$(RM) $@
 	$(ECHO) linking statically-linked transcoder library $@
 	$(Q) $(AR) $(ARFLAGS)$@ $(TRANSOBJS)
-	@-$(RANLIB) $@ 2> /dev/null || true
+	@-$(RANLIB) $@<%=ignore_error%>
 
 enc trans $(ENCSOS) $(TRANSSOS): config.status
 
@@ -156,24 +157,23 @@ clean:
 % %w[$(ENCSOS) $(LIBENC) $(ENCOBJS) $(ENCCLEANOBJS) $(ENCCLEANLIBS) $(TRANSSOS) $(LIBTRANS) $(TRANSOBJS) $(TRANSCLEANOBJS) $(TRANSCLEANLIBS) $(ENC_TRANS_D) $(ENC_TRANS_SO_D)].each do |clean|
 	$(Q)$(RM) <%=pathrep[clean]%>
 % end
-% @ignore_error = $nmake ? '' : ' 2> /dev/null || true'
 % unless inplace
 	$(Q)$(RM) enc/unicode/*/casefold.h enc/unicode/*/name2ctype.h
 	$(Q)$(RM) enc/jis/props.h
-	-$(Q)$(RMDIR) enc/unicode<%=@ignore_error%>
+	-$(Q)$(RMDIR) enc/unicode<%=ignore_error%>
 % end
 % workdirs.reverse_each do|d|
-	-$(Q)$(RMDIR) <%=pathrep[d]%><%=@ignore_error%>
+	-$(Q)$(RMDIR) <%=pathrep[d]%><%=ignore_error%>
 % end
 
 clean-srcs:
 	$(Q)$(RM) <%=pathrep['$(TRANSCSRCS)']%>
-	-$(Q)$(RMDIR) <%=pathrep['enc/trans']%><%=@ignore_error%>
+	-$(Q)$(RMDIR) <%=pathrep['enc/trans']%><%=ignore_error%>
 	$(Q)$(RM) enc/unicode/*/casefold.h enc/unicode/*/name2ctype.h
 	$(Q)$(RM) enc/jis/props.h
-	-$(Q)$(RMDIR) <%=pathrep['enc/unicode']%><%=@ignore_error%>
-	-$(Q)$(RMDIR) <%=pathrep['enc/props']%><%=@ignore_error%>
-	-$(Q)$(RMDIR) <%=pathrep['enc']%><%=@ignore_error%>
+	-$(Q)$(RMDIR) <%=pathrep['enc/unicode']%><%=ignore_error%>
+	-$(Q)$(RMDIR) <%=pathrep['enc/props']%><%=ignore_error%>
+	-$(Q)$(RMDIR) <%=pathrep['enc']%><%=ignore_error%>
 
 <%# vim: set ft=eruby noexpandtab ts=8 sw=2 : -%>
 
