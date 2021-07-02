@@ -1,7 +1,6 @@
 #ifndef RUBY_MISSING_H                               /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_MISSING_H 1
 /**
- * @file
  * @author     $Author$
  * @date       Sat May 11 23:46:03 JST 2002
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
