@@ -187,6 +187,8 @@ RBIMPL_ATTR_PURE()
  */
 int rb_is_absolute_path(const char *path);
 
+size_t rb_file_size(VALUE file);
+
 RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RBIMPL_INTERN_FILE_H */

@@ -193,12 +193,11 @@ VALUE rb_fiber_scheduler_io_wait_writable(VALUE scheduler, VALUE io);
  * @param[in]   scheduler    Target scheduler.
  * @param[out]  io           An io object to read from.
  * @param[out]  buffer       Return buffer.
- * @param[in]   offset       Offset inside of `buffer`.
  * @param[in]   length       Requested number of bytes to read.
  * @retval      RUBY_Qundef  `scheduler` doesn't have `#io_read`.
  * @return      otherwise    What `scheduler.io_read` returns.
  */
-VALUE rb_fiber_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t offset, size_t length);
+VALUE rb_fiber_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t length);
 
 /**
  * Nonblocking write to the passed IO.
@@ -206,12 +205,45 @@ VALUE rb_fiber_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t
  * @param[in]   scheduler    Target scheduler.
  * @param[out]  io           An io object to write to.
  * @param[in]   buffer       What to write.
- * @param[in]   offset       Offset inside of `buffer`.
  * @param[in]   length       Number of bytes to write.
  * @retval      RUBY_Qundef  `scheduler` doesn't have `#io_write`.
  * @return      otherwise    What `scheduler.io_write` returns.
  */
-VALUE rb_fiber_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, size_t offset, size_t length);
+VALUE rb_fiber_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, size_t length);
+
+/**
+ * Nonblocking read from the passed IO using a native buffer.
+ *
+ * @param[in]   scheduler    Target scheduler.
+ * @param[out]  io           An io object to read from.
+ * @param[out]  buffer       Return buffer.
+ * @param[in]   length       Requested number of bytes to read.
+ * @retval      RUBY_Qundef  `scheduler` doesn't have `#io_read`.
+ * @return      otherwise    What `scheduler.io_read` returns.
+ */
+VALUE rb_fiber_scheduler_io_read_memory(VALUE scheduler, VALUE io, void *buffer, size_t size, size_t length);
+
+/**
+ * Nonblocking write to the passed IO using a native buffer.
+ *
+ * @param[in]   scheduler    Target scheduler.
+ * @param[out]  io           An io object to write to.
+ * @param[in]   buffer       What to write.
+ * @param[in]   length       Number of bytes to write.
+ * @retval      RUBY_Qundef  `scheduler` doesn't have `#io_write`.
+ * @return      otherwise    What `scheduler.io_write` returns.
+ */
+VALUE rb_fiber_scheduler_io_write_memory(VALUE scheduler, VALUE io, const void *buffer, size_t size, size_t length);
+
+/**
+ * Nonblocking close the given IO.
+ *
+ * @param[in]  scheduler    Target scheduler.
+ * @param[in]  io           An io object to close.
+ * @retval     RUBY_Qundef  `scheduler` doesn't have `#io_close`.
+ * @return     otherwise    What `scheduler.io_close` returns.
+ */
+VALUE rb_fiber_scheduler_io_close(VALUE scheduler, VALUE io);
 
 /**
  * Nonblocking DNS lookup.
