@@ -284,7 +284,8 @@ MESSAGE
   end
 
   def split_libs(*strs)
-    strs.map {|s| s.split(/\s+(?=-|\z)/)}.flatten
+    sep = $mswin ? /\s+/ : /\s+(?=-|\z)/
+    strs.map {|s| s.lstrip.split(sep)}.flatten
   end
 
   def merge_libs(*libs)
