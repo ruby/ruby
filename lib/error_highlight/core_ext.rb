@@ -29,7 +29,7 @@ module ErrorHighlight
 
         spot = ErrorHighlight.spot(node, **opts)
 
-      rescue Errno::ENOENT
+      rescue Errno::ENOENT, SyntaxError
       end
 
       if spot
