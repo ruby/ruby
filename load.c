@@ -921,9 +921,14 @@ search_required(VALUE fname, volatile VALUE *path, feature_func rb_feature_p)
 	    }
 	}
     }
-    else if ((ft = rb_feature_p(ftptr, 0, FALSE, FALSE, &loading)) == 'r') {
-	if (loading) *path = rb_filesystem_str_new_cstr(loading);
-	return 'r';
+    else {
+        ft = rb_feature_p(ftptr, 0, FALSE, FALSE, &loading);
+        switch (ft) {
+          case 'r':
+          case 's':
+            if (loading) *path = rb_filesystem_str_new_cstr(loading);
+            return ft;
+        }
     }
     tmp = fname;
     type = rb_find_file_ext(&tmp, loadable_ext);

@@ -269,14 +269,28 @@ describe :kernel_require, shared: true do
       ScratchPad.recorded.should == [:loaded]
     end
 
-    it "loads a .rb extensioned file when a C-extension file of the same name is loaded" do
-      $LOADED_FEATURES << File.expand_path("load_fixture.bundle", CODE_LOADING_DIR)
-      $LOADED_FEATURES << File.expand_path("load_fixture.dylib", CODE_LOADING_DIR)
-      $LOADED_FEATURES << File.expand_path("load_fixture.so", CODE_LOADING_DIR)
-      $LOADED_FEATURES << File.expand_path("load_fixture.dll", CODE_LOADING_DIR)
-      path = File.expand_path "load_fixture", CODE_LOADING_DIR
-      @object.require(path).should be_true
-      ScratchPad.recorded.should == [:loaded]
+    ruby_version_is '3.1' do
+      it "does not load a .rb extensioned file when a C-extension file of the same name is loaded" do
+        $LOADED_FEATURES << File.expand_path("load_fixture.bundle", CODE_LOADING_DIR)
+        $LOADED_FEATURES << File.expand_path("load_fixture.dylib", CODE_LOADING_DIR)
+        $LOADED_FEATURES << File.expand_path("load_fixture.so", CODE_LOADING_DIR)
+        $LOADED_FEATURES << File.expand_path("load_fixture.dll", CODE_LOADING_DIR)
+        path = File.expand_path "load_fixture", CODE_LOADING_DIR
+        @object.require(path).should be_false
+        ScratchPad.recorded.should == []
+      end
+    end
+
+    ruby_version_is ''...'3.1' do
+      it "loads a .rb extensioned file when a C-extension file of the same name is loaded" do
+        $LOADED_FEATURES << File.expand_path("load_fixture.bundle", CODE_LOADING_DIR)
+        $LOADED_FEATURES << File.expand_path("load_fixture.dylib", CODE_LOADING_DIR)
+        $LOADED_FEATURES << File.expand_path("load_fixture.so", CODE_LOADING_DIR)
+        $LOADED_FEATURES << File.expand_path("load_fixture.dll", CODE_LOADING_DIR)
+        path = File.expand_path "load_fixture", CODE_LOADING_DIR
+        @object.require(path).should be_true
+        ScratchPad.recorded.should == [:loaded]
+      end
     end
 
     it "does not load a C-extension file if a .rb extensioned file is already loaded" do
