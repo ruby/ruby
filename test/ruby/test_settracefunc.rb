@@ -2387,6 +2387,32 @@ class TestSetTraceFunc < Test::Unit::TestCase
     assert_equal [:return, :unpack], event
   end
 
+  def test_block_default_target
+    threads = []
+    lines = []
+    trace = TracePoint.new(:line) do |tp|
+      threads << Thread.current
+      lines << tp.lineno
+    end
+
+    done = false
+    thread = Thread.new do
+      Thread.pass until done
+    end
+
+    expected_lines = [__LINE__+2, __LINE__+3, __LINE__+4]
+    trace.enable(target: :block) do
+      line_event = true
+      done = true
+      sleep 1
+    end
+    thread.join
+
+    bug16889 = "[ruby-core:98355]"
+    assert_equal([Thread.current], threads.uniq, bug16889)
+    assert_equal(expected_lines, lines, 16889)
+  end
+
   def test_while_in_while
     lines = []
 
