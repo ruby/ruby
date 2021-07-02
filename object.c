@@ -1736,7 +1736,6 @@ rb_mod_to_s(VALUE klass)
 static VALUE
 rb_mod_freeze(VALUE mod)
 {
-    rb_class_name(mod);
     return rb_obj_freeze(mod);
 }
 
