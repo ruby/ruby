@@ -126,6 +126,28 @@ class TestTranscode < Test::Unit::TestCase
     assert_equal("D\xFCrst".force_encoding('iso-8859-2'), "D\xFCrst".encode('iso-8859-2', 'iso-8859-1'))
   end
 
+  def test_encode_xml_multibyte
+    encodings = %w'UTF-8 UTF-16LE UTF-16BE UTF-32LE UTF-32BE'
+    encodings.each do |src_enc|
+      encodings.each do |dst_enc|
+        escaped = "<>".encode(src_enc).encode(dst_enc, :xml=>:text)
+        assert_equal("&lt;&gt;", escaped.encode('UTF-8'), "failed encoding #{src_enc} to #{dst_enc} with xml: :text")
+
+        escaped = '<">'.encode(src_enc).encode(dst_enc, :xml=>:attr)
+        assert_equal('"&lt;&quot;&gt;"', escaped.encode('UTF-8'), "failed encoding #{src_enc} to #{dst_enc} with xml: :attr")
+
+        escaped = "<>".encode(src_enc).force_encoding("UTF-8").encode(dst_enc, src_enc, :xml=>:text)
+        assert_equal("&lt;&gt;", escaped.encode('UTF-8'), "failed encoding #{src_enc} to #{dst_enc} with xml: :text")
+
+        escaped = '<">'.encode(src_enc).force_encoding("UTF-8").encode(dst_enc, src_enc, :xml=>:attr)
+        assert_equal('"&lt;&quot;&gt;"', escaped.encode('UTF-8'), "failed encoding #{src_enc} to #{dst_enc} with xml: :attr")
+      end
+    end
+    # regression test; U+6E7F (湿) uses the same bytes in ISO-2022-JP as "<>"
+    assert_equal(  "&lt;&gt;\u6E7F",   "<>\u6E7F".encode("ISO-2022-JP").encode("ISO-2022-JP", :xml=>:text).encode("UTF-8"))
+    assert_equal("\"&lt;&gt;\u6E7F\"", "<>\u6E7F".encode("ISO-2022-JP").encode("ISO-2022-JP", :xml=>:attr).encode("UTF-8"))
+  end
+
   def test_ascii_range
     encodings = [
       'US-ASCII', 'ASCII-8BIT',
