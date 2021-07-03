@@ -20,6 +20,7 @@ require 'fileutils'
 require 'shellwords'
 require 'optparse'
 require 'optparse/shellwords'
+require 'pathname'
 require 'rubygems'
 begin
   require "zlib"
@@ -701,6 +702,10 @@ module RbInstall
         when "lib"
           base = @base_dir
           prefix = base.sub(/lib\/.*?\z/, "") + "lib/"
+          # for lib/net/net-smtp.gemspec
+          if m = Pathname.new(@gemspec).basename(".gemspec").to_s.match(/.*\-(.*)\z/)
+            base = "#{@base_dir}/#{m[1]}" unless remove_prefix(prefix, @base_dir).include?(m[1])
+          end
         end
 
         if base
