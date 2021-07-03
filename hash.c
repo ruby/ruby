@@ -5194,20 +5194,24 @@ ruby_setenv(const char *name, const char *value)
 	invalid_envname(name);
     }
 #elif defined(HAVE_SETENV) && defined(HAVE_UNSETENV)
-    rb_native_mutex_lock(&env_lock);
     if (value) {
-	if (setenv(name, value, 1))
+        rb_native_mutex_lock(&env_lock);
+	bool setenv_fail = setenv(name, value, 1);
+	rb_native_mutex_unlock(&env_lock);
+	if (setenv_fail)
 	    rb_sys_fail_str(rb_sprintf("setenv(%s)", name));
     }
     else {
 #ifdef VOID_UNSETENV
 	unsetenv(name);
 #else
-	if (unsetenv(name))
+        rb_native_mutex_lock(&env_lock);
+	bool unsetenv_fail = unsetenv(name);
+	rb_native_mutex_unlock(&env_lock);
+	if (unsetenv_fail)
 	    rb_sys_fail_str(rb_sprintf("unsetenv(%s)", name));
 #endif
     }
-    rb_native_mutex_unlock(&env_lock);
 #elif defined __sun
     /* Solaris 9 (or earlier) does not have setenv(3C) and unsetenv(3C). */
     /* The below code was tested on Solaris 10 by:
@@ -5234,12 +5238,16 @@ ruby_setenv(const char *name, const char *value)
 	}
     }
     if (value) {
-	if (putenv(mem_ptr)) {
+	bool putenv_fail = putenv(mem_ptr);
+	rb_native_mutex_unlock(&env_lock);
+	if (putenv_fail) {
 	    free(mem_ptr);
 	    rb_sys_fail_str(rb_sprintf("putenv(%s)", name));
 	}
     }
-    rb_native_mutex_unlock(&env_lock);
+    else {
+	rb_native_mutex_unlock(&env_lock);
+    }
 #else  /* WIN32 */
     size_t len;
     int i;
@@ -5359,29 +5367,44 @@ env_aset(VALUE nm, VALUE val)
     return val;
 }
 
+static int
+env_entry_count()
+{
+    int i;
+    char **env;
+    env = GET_ENVIRON(environ);
+    for (i=0; env[i]; i++)
+	;
+    FREE_ENVIRON(environ);
+    return i;
+}
+
+static void
+copy_env_pairs(VALUE arr[], int size) {
+    char **env;
+    env = GET_ENVIRON(environ);
+    for(int i = 0; i < size; i++)
+    {
+	const char *p = *env;
+	arr[i] = p;
+	env++;
+    }
+    FREE_ENVIRON(environ);
+}
+
 static VALUE
 env_keys(int raw)
 {
-    char **env;
     VALUE ary;
     rb_encoding *enc = raw ? 0 : rb_locale_encoding();
 
     ary = rb_ary_new();
     rb_native_mutex_lock(&env_lock);
-    env = GET_ENVIRON(environ);
-    int pair_count = 0;
-    while(*(env+pair_count)) {
-	pair_count++;
-    }
+    int pair_count = env_entry_count();
     VALUE env_pairs[pair_count];
-    for(int i = 0; i < pair_count; i++)
-    {
-	const char *p = *env;
-	env_pairs[i] = p;
-	env++;
-    }
-    FREE_ENVIRON(environ);
+    copy_env_pairs(env_pairs, pair_count);
     rb_native_mutex_unlock(&env_lock);
+
     for(int current_pair = 0; current_pair < pair_count; current_pair++)
     {
 	const char *p = env_pairs[current_pair];
@@ -5471,20 +5494,11 @@ env_values(void)
 
     ary = rb_ary_new();
     rb_native_mutex_lock(&env_lock);
-    env = GET_ENVIRON(environ);
-    int pair_count = 0;
-    while (*(env+pair_count)) {
-	pair_count++;
-    }
+    int pair_count = env_entry_count();
     VALUE env_pairs[pair_count];
-    for(int i = 0; i < pair_count; i++)
-    {
-	const char *p = *env;
-	env_pairs[i] = p;
-	env++;
-    }
-    FREE_ENVIRON(environ);
+    copy_env_pairs(env_pairs, pair_count);
     rb_native_mutex_unlock(&env_lock);
+
     for(int current_pair = 0; current_pair < pair_count; current_pair++)
     {
 	const char *p = env_pairs[current_pair];
@@ -5574,20 +5588,11 @@ env_each_pair(VALUE ehash)
 
     ary = rb_ary_new();
     rb_native_mutex_lock(&env_lock);
-    env = GET_ENVIRON(environ);
-    int pair_count = 0;
-    while (*(env+pair_count)) {
-	pair_count++;
-    }
+    int pair_count = env_entry_count();
     VALUE env_pairs[pair_count];
-    for(int i = 0; i < pair_count; i++)
-    {
-	const char *p = *env;
-	env_pairs[i] = p;
-	env++;
-    }
-    FREE_ENVIRON(environ);
+    copy_env_pairs(env_pairs, pair_count);
     rb_native_mutex_unlock(&env_lock);
+
     for(int current_pair = 0; current_pair < pair_count; current_pair++)
     {
 	const char *p = env_pairs[current_pair];
@@ -5941,20 +5946,11 @@ env_inspect(VALUE _)
 
     str = rb_str_buf_new2("{");
     rb_native_mutex_lock(&env_lock);
-    env = GET_ENVIRON(environ);
-    int pair_count = 0;
-    while (*(env+pair_count)) {
-	pair_count++;
-    }
+    int pair_count = env_entry_count();
     VALUE env_pairs[pair_count];
-    for(int i = 0; i < pair_count; i++)
-    {
-	const char *p = *env;
-	env_pairs[i] = p;
-	env++;
-    }
-    FREE_ENVIRON(environ);
+    copy_env_pairs(env_pairs, pair_count);
     rb_native_mutex_unlock(&env_lock);
+
     for(int current_pair = 0; current_pair < pair_count; current_pair++)
     {
 	const char *p = env_pairs[current_pair];
@@ -5993,20 +5989,11 @@ env_to_a(VALUE _)
 
     ary = rb_ary_new();
     rb_native_mutex_lock(&env_lock);
-    env = GET_ENVIRON(environ);
-    int pair_count = 0;
-    while (*(env+pair_count)) {
-	pair_count++;
-    }
+    int pair_count = env_entry_count();
     VALUE env_pairs[pair_count];
-    for(int i = 0; i < pair_count; i++)
-    {
-	const char *p = *env;
-	env_pairs[i] = p;
-	env++;
-    }
-    FREE_ENVIRON(environ);
+    copy_env_pairs(env_pairs, pair_count);
     rb_native_mutex_unlock(&env_lock);
+
     for(int current_pair = 0; current_pair < pair_count; current_pair++)
     {
 	const char *p = env_pairs[current_pair];
@@ -6046,14 +6033,8 @@ env_none(VALUE _)
 static VALUE
 env_size(VALUE _)
 {
-    int i;
-    char **env;
-
     rb_native_mutex_lock(&env_lock);
-    env = GET_ENVIRON(environ);
-    for (i=0; env[i]; i++)
-	;
-    FREE_ENVIRON(environ);
+    int i = env_entry_count();
     rb_native_mutex_unlock(&env_lock);
     return INT2FIX(i);
 }
@@ -6254,20 +6235,11 @@ env_key(VALUE dmy, VALUE value)
 
     SafeStringValue(value);
     rb_native_mutex_lock(&env_lock);
-    env = GET_ENVIRON(environ);
-    int pair_count = 0;
-    while (*(env+pair_count)) {
-	pair_count++;
-    }
+    int pair_count = env_entry_count();
     VALUE env_pairs[pair_count];
-    for(int i = 0; i < pair_count; i++)
-    {
-	const char *p = *env;
-	env_pairs[i] = p;
-	env++;
-    }
-    FREE_ENVIRON(environ);
+    copy_env_pairs(env_pairs, pair_count);
     rb_native_mutex_unlock(&env_lock);
+
     for(int current_pair = 0; current_pair < pair_count; current_pair++)
     {
 	const char *p = env_pairs[current_pair];
@@ -6292,20 +6264,11 @@ env_to_hash(void)
 
     hash = rb_hash_new();
     rb_native_mutex_lock(&env_lock);
-    env = GET_ENVIRON(environ);
-    int pair_count = 0;
-    while (*(env+pair_count)) {
-	pair_count++;
-    }
+    int pair_count = env_entry_count();
     VALUE env_pairs[pair_count];
-    for(int i = 0; i < pair_count; i++)
-    {
-	const char *p = *env;
-	env_pairs[i] = p;
-	env++;
-    }
-    FREE_ENVIRON(environ);
+    copy_env_pairs(env_pairs, pair_count);
     rb_native_mutex_unlock(&env_lock);
+
     for(int current_pair = 0; current_pair < pair_count; current_pair++)
     {
 	const char *p = env_pairs[current_pair];
