@@ -2781,7 +2781,7 @@ method_super_method(VALUE method)
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
     iclass = data->iclass;
     if (!iclass) return Qnil;
-    if (data->me->def->type == VM_METHOD_TYPE_ALIAS) {
+    if (data->me->def->type == VM_METHOD_TYPE_ALIAS && data->me->defined_class) {
         super_class = RCLASS_SUPER(rb_find_defined_class_by_owner(data->me->defined_class,
             data->me->def->body.alias.original_me->owner));
         mid = data->me->def->body.alias.original_me->def->original_id;

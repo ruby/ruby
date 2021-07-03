@@ -1038,6 +1038,19 @@ class TestMethod < Test::Unit::TestCase
     assert_nil(m.super_method)
   end
 
+  # Bug 17780
+  def test_super_method_module_alias
+    m = Module.new do
+      def foo
+      end
+      alias :f :foo
+    end
+
+    method = m.instance_method(:f)
+    super_method = method.super_method
+    assert_nil(super_method)
+  end
+
   def rest_parameter(*rest)
     rest
   end
