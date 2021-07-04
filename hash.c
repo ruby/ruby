@@ -1814,21 +1814,27 @@ rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
  *
  *  With no argument, returns a new empty \Hash.
  *
- *  When the single given argument is a \Hash,
- *  returns a new \Hash populated with the entries from the given \Hash.
+ *  When the single given argument is a \Hash, returns a new \Hash
+ *  populated with the entries from the given \Hash, excluding the
+ *  default value or proc.
+ *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    Hash[h] # => {:foo=>0, :bar=>1, :baz=>2}
  *
  *  When the single given argument is an \Array of 2-element Arrays,
- *  returns a new \Hash object wherein each 2-element array forms a key-value entry:
+ *  returns a new \Hash object wherein each 2-element array forms a
+ *  key-value entry:
+ *
  *    Hash[ [ [:foo, 0], [:bar, 1] ] ] # => {:foo=>0, :bar=>1}
  *
  *  When the argument count is an even number;
  *  returns a new \Hash object wherein each successive pair of arguments
  *  has become a key-value entry:
+ *
  *    Hash[:foo, 0, :bar, 1] # => {:foo=>0, :bar=>1}
  *
- *  Raises an exception if the argument list does not conform to any of the above.
+ *  Raises an exception if the argument list does not conform to any
+ *  of the above.
  */
 
 static VALUE
