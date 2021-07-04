@@ -158,9 +158,13 @@ class TestMath < Test::Unit::TestCase
     assert_nothing_raised { assert_infinity(-Math.log(+0.0)) }
     assert_nothing_raised { assert_infinity(-Math.log(-0.0)) }
     assert_raise_with_message(Math::DomainError, /\blog\b/) { Math.log(-1.0) }
+    assert_raise_with_message(Math::DomainError, /\blog\b/) { Math.log(-Float::EPSILON) }
     assert_raise(TypeError) { Math.log(1,nil) }
-    assert_raise(Math::DomainError, '[ruby-core:62309] [ruby-Bug #9797]') { Math.log(1.0, -1.0) }
+    assert_raise_with_message(Math::DomainError, /\blog\b/, '[ruby-core:62309] [ruby-Bug #9797]') { Math.log(1.0, -1.0) }
+    assert_raise_with_message(Math::DomainError, /\blog\b/) { Math.log(1.0, -Float::EPSILON) }
     assert_nothing_raised { assert_nan(Math.log(0.0, 0.0)) }
+    assert_nothing_raised { assert_nan(Math.log(Float::NAN)) }
+    assert_nothing_raised { assert_nan(Math.log(1.0, Float::NAN)) }
   end
 
   def test_log2
@@ -173,6 +177,8 @@ class TestMath < Test::Unit::TestCase
     assert_nothing_raised { assert_infinity(-Math.log2(+0.0)) }
     assert_nothing_raised { assert_infinity(-Math.log2(-0.0)) }
     assert_raise_with_message(Math::DomainError, /\blog2\b/) { Math.log2(-1.0) }
+    assert_raise_with_message(Math::DomainError, /\blog2\b/) { Math.log2(-Float::EPSILON) }
+    assert_nothing_raised { assert_nan(Math.log2(Float::NAN)) }
   end
 
   def test_log10
@@ -185,6 +191,8 @@ class TestMath < Test::Unit::TestCase
     assert_nothing_raised { assert_infinity(-Math.log10(+0.0)) }
     assert_nothing_raised { assert_infinity(-Math.log10(-0.0)) }
     assert_raise_with_message(Math::DomainError, /\blog10\b/) { Math.log10(-1.0) }
+    assert_raise_with_message(Math::DomainError, /\blog10\b/) { Math.log10(-Float::EPSILON) }
+    assert_nothing_raised { assert_nan(Math.log10(Float::NAN)) }
   end
 
   def test_sqrt
@@ -194,6 +202,8 @@ class TestMath < Test::Unit::TestCase
     assert_nothing_raised { assert_infinity(Math.sqrt(1.0/0)) }
     assert_equal("0.0", Math.sqrt(-0.0).to_s) # insure it is +0.0, not -0.0
     assert_raise_with_message(Math::DomainError, /\bsqrt\b/) { Math.sqrt(-1.0) }
+    assert_raise_with_message(Math::DomainError, /\bsqrt\b/) { Math.sqrt(-Float::EPSILON) }
+    assert_nothing_raised { assert_nan(Math.sqrt(Float::NAN)) }
   end
 
   def test_cbrt
@@ -204,6 +214,8 @@ class TestMath < Test::Unit::TestCase
     check(0.0, Math.cbrt(0.0))
     assert_nothing_raised { assert_infinity(Math.cbrt(1.0/0)) }
     assert_operator(Math.cbrt(1.0 - Float::EPSILON), :<=, 1.0)
+    assert_nothing_raised { assert_nan(Math.sqrt(Float::NAN)) }
+    assert_nothing_raised { assert_nan(Math.cbrt(Float::NAN)) }
   end
 
   def test_frexp
@@ -212,6 +224,7 @@ class TestMath < Test::Unit::TestCase
     assert_float_and_int([0.5,  1], Math.frexp(1.0))
     assert_float_and_int([0.5,  2], Math.frexp(2.0))
     assert_float_and_int([0.75, 2], Math.frexp(3.0))
+    assert_nan(Math.frexp(Float::NAN)[0])
   end
 
   def test_ldexp
@@ -229,11 +242,13 @@ class TestMath < Test::Unit::TestCase
   def test_erf
     check(0, Math.erf(0))
     check(1, Math.erf(1.0 / 0.0))
+    assert_nan(Math.erf(Float::NAN))
   end
 
   def test_erfc
     check(1, Math.erfc(0))
     check(0, Math.erfc(1.0 / 0.0))
+    assert_nan(Math.erfc(Float::NAN))
   end
 
   def test_gamma
@@ -259,10 +274,12 @@ class TestMath < Test::Unit::TestCase
     end
 
     assert_raise_with_message(Math::DomainError, /\bgamma\b/) { Math.gamma(-Float::INFINITY) }
+    assert_raise_with_message(Math::DomainError, /\bgamma\b/) { Math.gamma(-1.0) }
     x = Math.gamma(-0.0)
     mesg = "Math.gamma(-0.0) should be -INF"
     assert_infinity(x, mesg)
     assert_predicate(x, :negative?, mesg)
+    assert_nan(Math.gamma(Float::NAN))
   end
 
   def test_lgamma
@@ -284,6 +301,8 @@ class TestMath < Test::Unit::TestCase
     assert_infinity(x, mesg)
     assert_predicate(x, :positive?, mesg)
     assert_equal(-1, sign, mesg)
+    x, sign = Math.lgamma(Float::NAN)
+    assert_nan(x)
   end
 
   def test_fixnum_to_f

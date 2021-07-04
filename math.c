@@ -40,6 +40,10 @@ VALUE rb_eMathDomainError;
 
 #define domain_error(msg) \
     rb_raise(rb_eMathDomainError, "Numerical argument is out of domain - " msg)
+#define domain_check_min(val, min, msg) \
+    ((val) < (min) ? domain_error(msg) : (void)0)
+#define domain_check_range(val, min, max, msg) \
+    ((val) < (min) || (max) < (val) ? domain_error(msg) : (void)0)
 
 /*
  *  call-seq:
@@ -184,8 +188,7 @@ math_acos(VALUE unused_obj, VALUE x)
     double d;
 
     d = Get_Double(x);
-    /* check for domain error */
-    if (d < -1.0 || 1.0 < d) domain_error("acos");
+    domain_check_range(d, -1.0, 1.0, "acos");
     return DBL2NUM(acos(d));
 }
 
@@ -208,8 +211,7 @@ math_asin(VALUE unused_obj, VALUE x)
     double d;
 
     d = Get_Double(x);
-    /* check for domain error */
-    if (d < -1.0 || 1.0 < d) domain_error("asin");
+    domain_check_range(d, -1.0, 1.0, "asin");
     return DBL2NUM(asin(d));
 }
 
@@ -343,8 +345,7 @@ math_acosh(VALUE unused_obj, VALUE x)
     double d;
 
     d = Get_Double(x);
-    /* check for domain error */
-    if (d < 1.0) domain_error("acosh");
+    domain_check_min(d, 1.0, "acosh");
     return DBL2NUM(acosh(d));
 }
 
@@ -388,8 +389,7 @@ math_atanh(VALUE unused_obj, VALUE x)
     double d;
 
     d = Get_Double(x);
-    /* check for domain error */
-    if (d <  -1.0 || +1.0 <  d) domain_error("atanh");
+    domain_check_range(d, -1.0, +1.0, "atanh");
     /* check for pole error */
     if (d == -1.0) return DBL2NUM(-HUGE_VAL);
     if (d == +1.0) return DBL2NUM(+HUGE_VAL);
@@ -501,8 +501,7 @@ math_log1(VALUE x)
     size_t numbits;
     double d = get_double_rshift(x, &numbits);
 
-    /* check for domain error */
-    if (d < 0.0) domain_error("log");
+    domain_check_min(d, 0.0, "log");
     /* check for pole error */
     if (d == 0.0) return -HUGE_VAL;
 
@@ -544,8 +543,7 @@ math_log2(VALUE unused_obj, VALUE x)
     size_t numbits;
     double d = get_double_rshift(x, &numbits);
 
-    /* check for domain error */
-    if (d < 0.0) domain_error("log2");
+    domain_check_min(d, 0.0, "log2");
     /* check for pole error */
     if (d == 0.0) return DBL2NUM(-HUGE_VAL);
 
@@ -574,8 +572,7 @@ math_log10(VALUE unused_obj, VALUE x)
     size_t numbits;
     double d = get_double_rshift(x, &numbits);
 
-    /* check for domain error */
-    if (d < 0.0) domain_error("log10");
+    domain_check_min(d, 0.0, "log10");
     /* check for pole error */
     if (d == 0.0) return DBL2NUM(-HUGE_VAL);
 
@@ -656,8 +653,7 @@ rb_math_sqrt(VALUE x)
 	return rb_complex_new(DBL2NUM(re), DBL2NUM(im));
     }
     d = Get_Double(x);
-    /* check for domain error */
-    if (d < 0.0) domain_error("sqrt");
+    domain_check_min(d, 0.0, "sqrt");
     if (d == 0.0) return DBL2NUM(0.0);
     return DBL2NUM(sqrt(d));
 }
@@ -886,7 +882,7 @@ math_gamma(VALUE unused_obj, VALUE x)
 	return signbit(d) ? DBL2NUM(-HUGE_VAL) : DBL2NUM(HUGE_VAL);
     }
     if (d == floor(d)) {
-	if (d < 0.0) domain_error("gamma");
+	domain_check_min(d, 0.0, "gamma");
 	if (1.0 <= d && d <= (double)NFACT_TABLE) {
 	    return DBL2NUM(fact_table[(int)d - 1]);
 	}
