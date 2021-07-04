@@ -1301,6 +1301,7 @@ AS_IF([test "x$with_jemalloc" != xno],[
     [
       AC_DEFINE(HAVE_LIBJEMALLOC, 1)
       with_jemalloc=yes
+      LDFLAGS="$LDFLAGS -Wl,--push-state,--no-as-needed,-ljemalloc,--pop-state"
     ],
     [test x$with_jemalloc = xyes && with_jemalloc=no])
   AC_CHECK_HEADER(jemalloc/jemalloc.h, [
