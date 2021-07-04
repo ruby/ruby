@@ -18,8 +18,8 @@ mflags = $(MFLAGS)
 gnumake_recursive =
 enable_shared = $(ENABLE_SHARED:no=)
 
-UNICODE_VERSION = 12.1.0
-UNICODE_EMOJI_VERSION = 12.1
+UNICODE_VERSION = 13.0.0
+UNICODE_EMOJI_VERSION = 13.0
 UNICODE_BETA = NO
 
 ### set the following environment variable or uncomment the line if
@@ -1425,16 +1425,19 @@ UNICODE_AUXILIARY_FILES =  \
 		$(UNICODE_SRC_DATA_DIR)/auxiliary/GraphemeBreakTest.txt \
 		$(empty)
 
+UNICODE_UCD_EMOJI_FILES = \
+		$(UNICODE_SRC_DATA_DIR)/emoji/emoji-data.txt \
+		$(UNICODE_SRC_DATA_DIR)/emoji/emoji-variation-sequences.txt \
+		$(empty)
+
 UNICODE_EMOJI_FILES = \
-		$(UNICODE_SRC_EMOJI_DATA_DIR)/emoji-data.txt \
 		$(UNICODE_SRC_EMOJI_DATA_DIR)/emoji-sequences.txt \
 		$(UNICODE_SRC_EMOJI_DATA_DIR)/emoji-test.txt \
-		$(UNICODE_SRC_EMOJI_DATA_DIR)/emoji-variation-sequences.txt \
 		$(UNICODE_SRC_EMOJI_DATA_DIR)/emoji-zwj-sequences.txt \
 		$(empty)
 
 update-unicode: $(UNICODE_FILES) $(UNICODE_PROPERTY_FILES) \
-		$(UNICODE_AUXILIARY_FILES) $(UNICODE_EMOJI_FILES)
+		$(UNICODE_AUXILIARY_FILES) $(UNICODE_UCD_EMOJI_FILES) $(UNICODE_EMOJI_FILES)
 
 CACHE_DIR = $(srcdir)/.downloaded-cache
 UNICODE_DOWNLOAD = \
@@ -1450,6 +1453,13 @@ UNICODE_AUXILIARY_DOWNLOAD = \
 	    --unicode-beta $(UNICODE_BETA) \
 	    -d $(UNICODE_SRC_DATA_DIR)/auxiliary \
 	    -p $(UNICODE_VERSION)/ucd/auxiliary \
+	    -e $(ALWAYS_UPDATE_UNICODE:yes=-a) unicode
+UNICODE_UCD_EMOJI_DOWNLOAD = \
+	$(BASERUBY) $(tooldir)/downloader.rb \
+	    --cache-dir=$(CACHE_DIR) \
+	    --unicode-beta $(UNICODE_BETA) \
+	    -d $(UNICODE_SRC_DATA_DIR)/emoji \
+	    -p $(UNICODE_VERSION)/ucd/emoji \
 	    -e $(ALWAYS_UPDATE_UNICODE:yes=-a) unicode
 UNICODE_EMOJI_DOWNLOAD = \
 	$(BASERUBY) $(tooldir)/downloader.rb \
@@ -1471,6 +1481,12 @@ update-unicode-auxiliary-files:
 	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)/auxiliary"
 	$(Q) $(UNICODE_AUXILIARY_DOWNLOAD) $(UNICODE_AUXILIARY_FILES)
 
+$(UNICODE_UCD_EMOJI_FILES): update-unicode-ucd-emoji-files
+update-unicode-ucd-emoji-files:
+	$(ECHO) Downloading Unicode UCD emoji $(UNICODE_EMOJI_VERSION) files...
+	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)/emoji"
+	$(Q) $(UNICODE_UCD_EMOJI_DOWNLOAD) $(UNICODE_UCD_EMOJI_FILES)
+
 $(UNICODE_EMOJI_FILES): update-unicode-emoji-files
 update-unicode-emoji-files:
 	$(ECHO) Downloading Unicode emoji $(UNICODE_EMOJI_VERSION) files...
@@ -1482,7 +1498,7 @@ $(srcdir)/lib/unicode_normalize/$(ALWAYS_UPDATE_UNICODE:yes=tables.rb): \
 
 $(UNICODE_SRC_DATA_DIR)/$(ALWAYS_UPDATE_UNICODE:yes=.unicode-tables.time): \
 	$(UNICODE_FILES) $(UNICODE_PROPERTY_FILES) \
-	$(UNICODE_AUXILIARY_FILES) $(UNICODE_EMOJI_FILES)
+	$(UNICODE_AUXILIARY_FILES) $(UNICODE_UCD_EMOJI_FILES) $(UNICODE_EMOJI_FILES)
 
 touch-unicode-files:
 	$(MAKEDIRS) $(UNICODE_SRC_DATA_DIR)
