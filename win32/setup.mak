@@ -22,7 +22,6 @@ MAKEFILE = Makefile
 CPU = PROCESSOR_LEVEL
 CC = $(CC) -nologo
 CPP = $(CC) -EP
-AS = $(AS) -nologo
 
 all: -prologue- -generic- -epilogue-
 i386-mswin32: -prologue- -i386- -epilogue-
@@ -237,8 +236,15 @@ MACHINE = x86
 # RFLAGS = -r
 # EXTLIBS =
 CC = $(CC)
-AS = $(AS)
+!if "$(AS)" != "ml64"
+AS = $(AS) -nologo
+!endif
 <<
+!if "$(AS)" == "ml64"
+	@(findstr -r -c:"^MACHINE *= *x86" $(MAKEFILE) > nul && \
+	(echo AS = $(AS:64=) -nologo) || \
+	(echo AS = $(AS) -nologo) ) >>$(MAKEFILE)
+!endif
 	@(for %I in (cl.exe) do @set MJIT_CC=%~$$PATH:I) && (call echo MJIT_CC = "%MJIT_CC:\=/%" -nologo>>$(MAKEFILE))
 	@type << >>$(MAKEFILE)
 
