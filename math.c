@@ -39,7 +39,7 @@ VALUE rb_eMathDomainError;
 #define Get_Double(x) rb_num_to_dbl(x)
 
 #define domain_error(msg) \
-    rb_raise(rb_eMathDomainError, "Numerical argument is out of domain - " #msg)
+    rb_raise(rb_eMathDomainError, "Numerical argument is out of domain - " msg)
 
 /*
  *  call-seq:
