@@ -1,10 +1,11 @@
+#include <fiddle.h>
+
+#ifdef FIDDLE_MEMORY_VIEW
+
 #include <stdbool.h>
 #include <ruby/ruby.h>
 #include <ruby/encoding.h>
-
-#ifdef HAVE_RUBY_MEMORY_VIEW_H
-# include <ruby/memory_view.h>
-#endif
+#include <ruby/memory_view.h>
 
 #if SIZEOF_INTPTR_T == SIZEOF_LONG_LONG
 #   define INTPTR2NUM LL2NUM
@@ -17,9 +18,6 @@
 #   define UINTPTR2NUM UINT2NUM
 #endif
 
-#include <fiddle.h>
-
-#ifdef FIDDLE_MEMORY_VIEW
 VALUE rb_cMemoryView = Qnil;
 
 struct memview_data {

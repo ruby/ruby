@@ -222,10 +222,6 @@ types.each do |type, signed|
   end
 end
 
-if have_header("ruby/memory_view.h")
-  have_type("rb_memory_view_t", ["ruby/memory_view.h"])
-end
-
 if libffi
   $LOCAL_LIBS.prepend("./#{libffi.a} ").strip! # to exts.mk
   $INCFLAGS.gsub!(/-I#{libffi.dir}/, '-I$(LIBFFI_DIR)')

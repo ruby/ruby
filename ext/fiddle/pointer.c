@@ -6,12 +6,12 @@
 #include <ruby/ruby.h>
 #include <ruby/io.h>
 
-#ifdef HAVE_RUBY_MEMORY_VIEW_H
-# include <ruby/memory_view.h>
-#endif
-
 #include <ctype.h>
 #include <fiddle.h>
+
+#ifdef FIDDLE_MEMORY_VIEW
+# include <ruby/memory_view.h>
+#endif
 
 #ifdef PRIsVALUE
 # define RB_OBJ_CLASSNAME(obj) rb_obj_class(obj)
