@@ -168,6 +168,26 @@ math_tan(VALUE unused_obj, VALUE x)
     return DBL2NUM(tan(Get_Double(x)));
 }
 
+enum acos_asin_flags
+{
+    MATH_ASIN = 0,
+    MATH_ACOS = 1
+};
+
+static VALUE
+math_acos_or_asin(VALUE x, double func(double), enum acos_asin_flags flag)
+{
+    double d;
+
+    d = Get_Double(x);
+    if (flag) {
+        domain_check_range(d, -1.0, 1.0, "acos");
+    } else {
+        domain_check_range(d, -1.0, 1.0, "asin");
+    }
+    return DBL2NUM(func(d));
+}
+
 /*
  *  call-seq:
  *     Math.acos(x)    -> Float
@@ -185,11 +205,7 @@ math_tan(VALUE unused_obj, VALUE x)
 static VALUE
 math_acos(VALUE unused_obj, VALUE x)
 {
-    double d;
-
-    d = Get_Double(x);
-    domain_check_range(d, -1.0, 1.0, "acos");
-    return DBL2NUM(acos(d));
+    return math_acos_or_asin(x, acos, MATH_ACOS);
 }
 
 /*
@@ -208,11 +224,7 @@ math_acos(VALUE unused_obj, VALUE x)
 static VALUE
 math_asin(VALUE unused_obj, VALUE x)
 {
-    double d;
-
-    d = Get_Double(x);
-    domain_check_range(d, -1.0, 1.0, "asin");
-    return DBL2NUM(asin(d));
+    return math_acos_or_asin(x, asin, MATH_ASIN);
 }
 
 /*
