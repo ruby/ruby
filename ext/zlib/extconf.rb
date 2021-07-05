@@ -10,11 +10,12 @@ require 'rbconfig'
 
 dir_config 'zlib'
 
-
+libs = $libs
 if %w'z libz zlib1 zlib zdll zlibwapi'.find {|z| have_library(z, 'deflateReset')} and
     have_header('zlib.h') then
   have_zlib = true
 else
+  $libs = libs
   unless File.directory?(zsrc = "#{$srcdir}/zlib")
     dirs = Dir.open($srcdir) {|z| z.grep(/\Azlib-\d+[.\d]*\z/) {|x|"#{$srcdir}/#{x}"}}
     dirs.delete_if {|x| !File.directory?(x)}
