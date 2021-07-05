@@ -934,6 +934,8 @@ feature_option(const char *str, int len, void *arg, const unsigned int enable)
 	rb_exc_raise(rb_exc_new_str(rb_eRuntimeError, mesg));
 #undef ADD_FEATURE_NAME
     }
+#else
+    (void)set;
 #endif
     rb_warn("unknown argument for --%s: `%.*s'",
 	    enable ? "enable" : "disable", len, str);
