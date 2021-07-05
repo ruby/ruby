@@ -6,6 +6,16 @@ module Reline::Terminfo
 
   class TerminfoError < StandardError; end
 
+  def self.curses_dl_files
+    case RUBY_PLATFORM
+    when /mingw/, /mswin/
+      # aren't supported
+      []
+    else
+      %w[libncursesw.so libcursesw.so libncurses.so libcurses.so]
+    end
+  end
+
   @curses_dl = nil
   def self.curses_dl
     return @curses_dl if @curses_dl
@@ -24,7 +34,7 @@ module Reline::Terminfo
       fiddle_supports_variadic = false
     end
     if fiddle_supports_variadic
-      %w[libncursesw.so libcursesw.so libncurses.so libcurses.so].each do |curses_name|
+      curses_dl_files.each do |curses_name|
         result = Fiddle::Handle.new(curses_name)
       rescue Fiddle::DLError
         next
