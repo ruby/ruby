@@ -3413,6 +3413,10 @@ AS_CASE("$enable_shared", [yes], [
 	AS_IF([test "$rb_cv_binary_elf" != "yes" ], [
 	    LIBRUBY_SO="$LIBRUBY_SO.\$(TEENY)"
 	    LIBRUBY_ALIASES=''
+	], [test "$load_relative" = yes], [
+	    libprefix="'\$\$ORIGIN/../${libdir_basename}'"
+	    LIBRUBY_RPATHFLAGS="-Wl,-rpath,${libprefix}"
+	    LIBRUBY_RELATIVE=yes
 	])
 	],
     [netbsd*], [
