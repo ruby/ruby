@@ -2,16 +2,6 @@
 
 require "bundler/cli"
 
-using Module.new {
-  # Some `man` (e.g., on macOS) always highlights the output even to
-  # non-tty.
-  refine Spec::Helpers do
-    def out
-      super.gsub(/.[\b]/, "")
-    end
-  end
-} if RUBY_VERSION >= "2.4"
-
 RSpec.describe "bundle executable" do
   it "returns non-zero exit status when passed unrecognized options" do
     bundle "--invalid_argument", :raise_on_error => false
@@ -42,49 +32,57 @@ RSpec.describe "bundle executable" do
     it "aliases e to exec" do
       bundle "e --help"
 
-      expect(out).to include("bundle-exec")
+      expect(out_with_macos_man_workaround).to include("bundle-exec")
     end
 
     it "aliases ex to exec" do
       bundle "ex --help"
 
-      expect(out).to include("bundle-exec")
+      expect(out_with_macos_man_workaround).to include("bundle-exec")
     end
 
     it "aliases exe to exec" do
       bundle "exe --help"
 
-      expect(out).to include("bundle-exec")
+      expect(out_with_macos_man_workaround).to include("bundle-exec")
     end
 
     it "aliases c to check" do
       bundle "c --help"
 
-      expect(out).to include("bundle-check")
+      expect(out_with_macos_man_workaround).to include("bundle-check")
     end
 
     it "aliases i to install" do
       bundle "i --help"
 
-      expect(out).to include("bundle-install")
+      expect(out_with_macos_man_workaround).to include("bundle-install")
     end
 
     it "aliases ls to list" do
       bundle "ls --help"
 
-      expect(out).to include("bundle-list")
+      expect(out_with_macos_man_workaround).to include("bundle-list")
     end
 
     it "aliases package to cache" do
       bundle "package --help"
 
-      expect(out).to include("bundle-cache")
+      expect(out_with_macos_man_workaround).to include("bundle-cache")
     end
 
     it "aliases pack to cache" do
       bundle "pack --help"
 
-      expect(out).to include("bundle-cache")
+      expect(out_with_macos_man_workaround).to include("bundle-cache")
+    end
+
+    private
+
+    # Some `man` (e.g., on macOS) always highlights the output even to
+    # non-tty.
+    def out_with_macos_man_workaround
+      out.gsub(/.[\b]/, "")
     end
   end
 

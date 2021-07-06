@@ -68,8 +68,7 @@ module Bundler
         raise CertificateFailureError.new(uri)
       rescue *HTTP_ERRORS => e
         Bundler.ui.trace e
-        case e.message
-        when /host down:/, /getaddrinfo: nodename nor servname provided/
+        if e.is_a?(SocketError) || e.message =~ /host down:/
           raise NetworkDownError, "Could not reach host #{uri.host}. Check your network " \
             "connection and try again."
         else

@@ -100,8 +100,11 @@ module Bundler
       files_not_readable_or_writable = []
       files_not_rw_and_owned_by_different_user = []
       files_not_owned_by_current_user_but_still_rw = []
+      broken_symlinks = []
       Find.find(Bundler.bundle_path.to_s).each do |f|
-        if !File.writable?(f) || !File.readable?(f)
+        if !File.exist?(f)
+          broken_symlinks << f
+        elsif !File.writable?(f) || !File.readable?(f)
           if File.stat(f).uid != Process.uid
             files_not_rw_and_owned_by_different_user << f
           else
@@ -113,6 +116,13 @@ module Bundler
       end
 
       ok = true
+
+      if broken_symlinks.any?
+        Bundler.ui.warn "Broken links exist in the Bundler home. Please report them to the offending gem's upstream repo. These files are:\n - #{broken_symlinks.join("\n - ")}"
+
+        ok = false
+      end
+
       if files_not_owned_by_current_user_but_still_rw.any?
         Bundler.ui.warn "Files exist in the Bundler home that are owned by another " \
           "user, but are still readable/writable. These files are:\n - #{files_not_owned_by_current_user_but_still_rw.join("\n - ")}"

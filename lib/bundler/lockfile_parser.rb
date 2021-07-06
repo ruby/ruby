@@ -1,16 +1,5 @@
 # frozen_string_literal: true
 
-#--
-# Some versions of the Bundler 1.1 RC series introduced corrupted
-# lockfiles. There were two major problems:
-#
-# * multiple copies of the same GIT section appeared in the lockfile
-# * when this happened, those sections got multiple copies of gems
-#   in those sections.
-#
-# As a result, Bundler 1.1 contains code that fixes the earlier
-# corruption. We will remove this fix-up code in Bundler 1.2.
-
 module Bundler
   class LockfileParser
     attr_reader :sources, :dependencies, :specs, :platforms, :bundler_version, :ruby_version
@@ -124,12 +113,7 @@ module Bundler
           @sources << @current_source
         when GIT
           @current_source = TYPES[@type].from_lock(@opts)
-          # Strip out duplicate GIT sections
-          if @sources.include?(@current_source)
-            @current_source = @sources.find {|s| s == @current_source }
-          else
-            @sources << @current_source
-          end
+          @sources << @current_source
         when GEM
           @opts["remotes"] = Array(@opts.delete("remote")).reverse
           @current_source = TYPES[@type].from_lock(@opts)
@@ -212,9 +196,7 @@ module Bundler
         @current_spec = LazySpecification.new(name, version, platform)
         @current_spec.source = @current_source
 
-        # Avoid introducing multiple copies of the same spec (caused by
-        # duplicate GIT sections)
-        @specs[@current_spec.identifier] ||= @current_spec
+        @specs[@current_spec.identifier] = @current_spec
       elsif spaces.size == 6
         version = version.split(",").map(&:strip) if version
         dep = Gem::Dependency.new(name, version)
