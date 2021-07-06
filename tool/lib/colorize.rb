@@ -8,7 +8,7 @@ class Colorize
     @colors = @reset = nil
     @color = (opts[:color] if opts)
     if color or (color == nil && STDOUT.tty?)
-      if (/\A\e\[.*m\z/ =~ IO.popen("tput smso", "r", :err => IO::NULL, &:read) rescue nil)
+      if (%w[smso so].any? {|attr| /\A\e\[.*m\z/ =~ IO.popen("tput #{attr}", "r", :err => IO::NULL, &:read)} rescue nil)
         @beg = "\e["
         colors = (colors = ENV['TEST_COLORS']) ? Hash[colors.scan(/(\w+)=([^:\n]*)/)] : {}
         if opts and colors_file = opts[:colors_file]
