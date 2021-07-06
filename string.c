@@ -1180,13 +1180,13 @@ rb_filesystem_str_new_cstr(const char *ptr)
 VALUE
 rb_str_export(VALUE str)
 {
-    return rb_str_conv_enc(str, STR_ENC_GET(str), rb_default_external_encoding());
+    return rb_str_export_to_enc(str, rb_default_external_encoding());
 }
 
 VALUE
 rb_str_export_locale(VALUE str)
 {
-    return rb_str_conv_enc(str, STR_ENC_GET(str), rb_locale_encoding());
+    return rb_str_export_to_enc(str, rb_locale_encoding());
 }
 
 VALUE
