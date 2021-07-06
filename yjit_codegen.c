@@ -1794,7 +1794,7 @@ gen_opt_aset(jitstate_t *jit, ctx_t *ctx)
     x86opnd_t arg1 = ctx_stack_pop(ctx, 1);
     x86opnd_t arg0 = ctx_stack_pop(ctx, 1);
 
-    // Call rb_vm_opt_mod(VALUE recv, VALUE obj)
+    // Call rb_vm_opt_aset(VALUE recv, VALUE obj)
     yjit_save_regs(cb);
     mov(cb, C_ARG_REGS[0], arg0);
     mov(cb, C_ARG_REGS[1], arg1);
@@ -1931,6 +1931,13 @@ gen_opt_plus(jitstate_t* jit, ctx_t* ctx)
     mov(cb, dst, REG0);
 
     return YJIT_KEEP_COMPILING;
+}
+
+static codegen_status_t
+gen_opt_mult(jitstate_t* jit, ctx_t* ctx)
+{
+    // Delegate to send, call the method on the recv
+    return gen_opt_send_without_block(jit, ctx);
 }
 
 VALUE rb_vm_opt_mod(VALUE recv, VALUE obj);
@@ -3462,6 +3469,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(opt_or), gen_opt_or);
     yjit_reg_op(BIN(opt_minus), gen_opt_minus);
     yjit_reg_op(BIN(opt_plus), gen_opt_plus);
+    yjit_reg_op(BIN(opt_mult), gen_opt_mult);
     yjit_reg_op(BIN(opt_mod), gen_opt_mod);
     yjit_reg_op(BIN(opt_ltlt), gen_opt_ltlt);
     yjit_reg_op(BIN(opt_nil_p), gen_opt_nil_p);
