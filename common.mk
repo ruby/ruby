@@ -6061,6 +6061,7 @@ goruby.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
 goruby.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 goruby.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 goruby.$(OBJEXT): {$(VPATH)}config.h
+goruby.$(OBJEXT): {$(VPATH)}darray.h
 goruby.$(OBJEXT): {$(VPATH)}defines.h
 goruby.$(OBJEXT): {$(VPATH)}golf_prelude.c
 goruby.$(OBJEXT): {$(VPATH)}golf_prelude.rb
