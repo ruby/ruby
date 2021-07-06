@@ -247,7 +247,33 @@ RSpec.describe "bundle install with gems on multiple sources" do
           bundle :install, :artifice => "compact_index"
           expect(err).to include("Warning: the gem 'rack' was found in multiple sources.")
           expect(err).to include("Installed from: https://gem.repo2")
+
+          expect(lockfile).to eq <<~L
+            GEM
+              remote: https://gem.repo1/
+              remote: https://gem.repo2/
+              specs:
+                rack (1.0.0)
+
+            GEM
+              remote: https://gem.repo3/
+              specs:
+                depends_on_rack (1.0.1)
+                  rack
+
+            PLATFORMS
+              #{specific_local_platform}
+
+            DEPENDENCIES
+              depends_on_rack!
+
+            BUNDLED WITH
+               #{Bundler::VERSION}
+          L
+
+          previous_lockfile = lockfile
           expect(the_bundle).to include_gems("depends_on_rack 1.0.1", "rack 1.0.0")
+          expect(lockfile).to eq(previous_lockfile)
         end
 
         it "fails", :bundler => "3" do
@@ -945,7 +971,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
               rack (0.9.1)
 
           PLATFORMS
-            ruby
+            #{specific_local_platform}
 
           DEPENDENCIES
             rack!
@@ -1254,6 +1280,25 @@ RSpec.describe "bundle install with gems on multiple sources" do
     expect(out).to include("Using example 0.1.0")
   end
 
+  it "fails inmmediately with a helpful error when a non retriable network error happens while resolving sources" do
+    gemfile <<-G
+      source "https://gem.repo1"
+
+      source "https://gem.repo4" do
+        gem "example"
+      end
+    G
+
+    simulate_bundler_version_when_missing_prerelease_default_gem_activation do
+      ruby <<~R, :raise_on_error => false
+        require 'bundler/setup'
+      R
+    end
+
+    expect(last_command).to be_failure
+    expect(err).to include("Could not reach host gem.repo4. Check your network connection and try again.")
+  end
+
   context "when an indirect dependency is available from multiple ambiguous sources", :bundler => "< 3" do
     it "succeeds but warns, suggesting a source block" do
       build_repo4 do
@@ -1308,6 +1353,76 @@ RSpec.describe "bundle install with gems on multiple sources" do
         You must add this gem to the source block for the source you wish it to be installed from.
       EOS
       expect(the_bundle).not_to be_locked
+    end
+  end
+
+  context "when upgrading a lockfile suffering from dependency confusion" do
+    before do
+      build_repo4 do
+        build_gem "mime-types", "3.0.0"
+      end
+
+      build_repo2 do
+        build_gem "capybara", "2.5.0" do |s|
+          s.add_dependency "mime-types", ">= 1.16"
+        end
+
+        build_gem "mime-types", "3.3.1"
+      end
+
+      gemfile <<~G
+        source "https://gem.repo2"
+
+        gem "capybara", "~> 2.5.0"
+
+        source "https://gem.repo4" do
+          gem "mime-types", "~> 3.0"
+        end
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo2/
+          remote: https://gem.repo4/
+          specs:
+            capybara (2.5.0)
+              mime-types (>= 1.16)
+            mime-types (3.3.1)
+
+        PLATFORMS
+          #{specific_local_platform}
+
+        DEPENDENCIES
+          capybara (~> 2.5.0)
+          mime-types (~> 3.0)!
+      L
+    end
+
+    it "upgrades the lockfile correctly" do
+      bundle "lock --update", :artifice => "compact_index"
+
+      expect(lockfile).to eq <<~L
+        GEM
+          remote: https://gem.repo2/
+          specs:
+            capybara (2.5.0)
+              mime-types (>= 1.16)
+
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            mime-types (3.0.0)
+
+        PLATFORMS
+          #{specific_local_platform}
+
+        DEPENDENCIES
+          capybara (~> 2.5.0)
+          mime-types (~> 3.0)!
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
     end
   end
 end

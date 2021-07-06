@@ -5,7 +5,7 @@ GEM
     diff-lcs (1.4.4)
     minitest (5.14.4)
     parallel (1.19.2)
-    parser (3.0.0.0)
+    parser (3.0.1.0)
       ast (~> 2.4.1)
     power_assert (2.0.0)
     rainbow (3.0.0)
@@ -56,4 +56,4 @@ DEPENDENCIES
   test-unit
 
 BUNDLED WITH
-   2.2.21
+   2.2.22

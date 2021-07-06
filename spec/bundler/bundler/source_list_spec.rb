@@ -115,15 +115,15 @@ RSpec.describe Bundler::SourceList do
       end
     end
 
-    describe "#add_rubygems_remote", :bundler => "< 3" do
-      let!(:returned_source) { source_list.add_rubygems_remote("https://rubygems.org/") }
+    describe "#add_global_rubygems_remote" do
+      let!(:returned_source) { source_list.add_global_rubygems_remote("https://rubygems.org/") }
 
       it "returns the aggregate rubygems source" do
         expect(returned_source).to be_instance_of(Bundler::Source::Rubygems)
       end
 
       it "adds the provided remote to the beginning of the aggregate source" do
-        source_list.add_rubygems_remote("https://othersource.org")
+        source_list.add_global_rubygems_remote("https://othersource.org")
         expect(returned_source.remotes).to eq [
           Bundler::URI("https://othersource.org/"),
           Bundler::URI("https://rubygems.org/"),
@@ -212,22 +212,22 @@ RSpec.describe Bundler::SourceList do
 
   describe "#path_sources" do
     it "returns an empty array when no path sources have been added" do
-      source_list.add_rubygems_remote("https://rubygems.org")
+      source_list.add_global_rubygems_remote("https://rubygems.org")
       source_list.add_git_source("uri" => "git://host/path.git")
       expect(source_list.path_sources).to be_empty
     end
 
     it "returns path sources in the reverse order that they were added" do
       source_list.add_git_source("uri" => "git://third-git.org/path.git")
-      source_list.add_rubygems_remote("https://fifth-rubygems.org")
+      source_list.add_global_rubygems_remote("https://fifth-rubygems.org")
       source_list.add_path_source("path" => "/third/path/to/gem")
-      source_list.add_rubygems_remote("https://fourth-rubygems.org")
+      source_list.add_global_rubygems_remote("https://fourth-rubygems.org")
       source_list.add_path_source("path" => "/second/path/to/gem")
-      source_list.add_rubygems_remote("https://third-rubygems.org")
+      source_list.add_global_rubygems_remote("https://third-rubygems.org")
       source_list.add_git_source("uri" => "git://second-git.org/path.git")
-      source_list.add_rubygems_remote("https://second-rubygems.org")
+      source_list.add_global_rubygems_remote("https://second-rubygems.org")
       source_list.add_path_source("path" => "/first/path/to/gem")
-      source_list.add_rubygems_remote("https://first-rubygems.org")
+      source_list.add_global_rubygems_remote("https://first-rubygems.org")
       source_list.add_git_source("uri" => "git://first-git.org/path.git")
 
       expect(source_list.path_sources).to eq [
@@ -240,7 +240,7 @@ RSpec.describe Bundler::SourceList do
 
   describe "#git_sources" do
     it "returns an empty array when no git sources have been added" do
-      source_list.add_rubygems_remote("https://rubygems.org")
+      source_list.add_global_rubygems_remote("https://rubygems.org")
       source_list.add_path_source("path" => "/path/to/gem")
 
       expect(source_list.git_sources).to be_empty
@@ -248,15 +248,15 @@ RSpec.describe Bundler::SourceList do
 
     it "returns git sources in the reverse order that they were added" do
       source_list.add_git_source("uri" => "git://third-git.org/path.git")
-      source_list.add_rubygems_remote("https://fifth-rubygems.org")
+      source_list.add_global_rubygems_remote("https://fifth-rubygems.org")
       source_list.add_path_source("path" => "/third/path/to/gem")
-      source_list.add_rubygems_remote("https://fourth-rubygems.org")
+      source_list.add_global_rubygems_remote("https://fourth-rubygems.org")
       source_list.add_path_source("path" => "/second/path/to/gem")
-      source_list.add_rubygems_remote("https://third-rubygems.org")
+      source_list.add_global_rubygems_remote("https://third-rubygems.org")
       source_list.add_git_source("uri" => "git://second-git.org/path.git")
-      source_list.add_rubygems_remote("https://second-rubygems.org")
+      source_list.add_global_rubygems_remote("https://second-rubygems.org")
       source_list.add_path_source("path" => "/first/path/to/gem")
-      source_list.add_rubygems_remote("https://first-rubygems.org")
+      source_list.add_global_rubygems_remote("https://first-rubygems.org")
       source_list.add_git_source("uri" => "git://first-git.org/path.git")
 
       expect(source_list.git_sources).to eq [
@@ -269,7 +269,7 @@ RSpec.describe Bundler::SourceList do
 
   describe "#plugin_sources" do
     it "returns an empty array when no plugin sources have been added" do
-      source_list.add_rubygems_remote("https://rubygems.org")
+      source_list.add_global_rubygems_remote("https://rubygems.org")
       source_list.add_path_source("path" => "/path/to/gem")
 
       expect(source_list.plugin_sources).to be_empty
@@ -279,13 +279,13 @@ RSpec.describe Bundler::SourceList do
       source_list.add_plugin_source("new_source", "uri" => "https://third-git.org/path.git")
       source_list.add_git_source("https://new-git.org")
       source_list.add_path_source("path" => "/third/path/to/gem")
-      source_list.add_rubygems_remote("https://fourth-rubygems.org")
+      source_list.add_global_rubygems_remote("https://fourth-rubygems.org")
       source_list.add_path_source("path" => "/second/path/to/gem")
-      source_list.add_rubygems_remote("https://third-rubygems.org")
+      source_list.add_global_rubygems_remote("https://third-rubygems.org")
       source_list.add_plugin_source("new_source", "uri" => "git://second-git.org/path.git")
-      source_list.add_rubygems_remote("https://second-rubygems.org")
+      source_list.add_global_rubygems_remote("https://second-rubygems.org")
       source_list.add_path_source("path" => "/first/path/to/gem")
-      source_list.add_rubygems_remote("https://first-rubygems.org")
+      source_list.add_global_rubygems_remote("https://first-rubygems.org")
       source_list.add_plugin_source("new_source", "uri" => "git://first-git.org/path.git")
 
       expect(source_list.plugin_sources).to eq [
@@ -339,7 +339,7 @@ RSpec.describe Bundler::SourceList do
   describe "#get" do
     context "when it includes an equal source" do
       let(:rubygems_source) { Bundler::Source::Rubygems.new("remotes" => ["https://rubygems.org"]) }
-      before { @equal_source = source_list.add_rubygems_remote("https://rubygems.org") }
+      before { @equal_source = source_list.add_global_rubygems_remote("https://rubygems.org") }
 
       it "returns the equal source" do
         expect(source_list.get(rubygems_source)).to be @equal_source

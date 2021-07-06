@@ -260,9 +260,6 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    The location where RubyGems installs binstubs. Defaults to `Gem.bindir`.
 * `timeout` (`BUNDLE_TIMEOUT`):
    The seconds allowed before timing out for network requests. Defaults to `10`.
-* `unlock_source_unlocks_spec` (`BUNDLE_UNLOCK_SOURCE_UNLOCKS_SPEC`):
-   Whether running `bundle update --source NAME` unlocks a gem with the given
-   name. Defaults to `true`.
 * `update_requires_all_flag` (`BUNDLE_UPDATE_REQUIRES_ALL_FLAG`):
    Require passing `--all` to `bundle update` when everything should be updated,
    and disallow passing no options to `bundle update`.

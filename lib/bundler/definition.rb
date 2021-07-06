@@ -56,10 +56,8 @@ module Bundler
         @unlocking_bundler = false
         @unlocking = unlock
       else
-        unlock = unlock.dup
         @unlocking_bundler = unlock.delete(:bundler)
-        unlock.delete_if {|_k, v| Array(v).empty? }
-        @unlocking = !unlock.empty?
+        @unlocking = unlock.any? {|_k, v| !Array(v).empty? }
       end
 
       @dependencies    = dependencies
@@ -106,8 +104,8 @@ module Bundler
         @locked_platforms = []
       end
 
-      @locked_gem_sources = @locked_sources.select {|s| s.is_a?(Source::Rubygems) }
-      @multisource_allowed = @locked_gem_sources.any?(&:multiple_remotes?) && (sources.aggregate_global_source? || Bundler.frozen_bundle?)
+      locked_gem_sources = @locked_sources.select {|s| s.is_a?(Source::Rubygems) }
+      @multisource_allowed = locked_gem_sources.size == 1 && locked_gem_sources.first.multiple_remotes? && Bundler.frozen_bundle?
 
       if @multisource_allowed
         unless sources.aggregate_global_source?
@@ -116,10 +114,9 @@ module Bundler
           Bundler::SharedHelpers.major_deprecation 2, msg
         end
 
-        @sources.merged_gem_lockfile_sections!
+        @sources.merged_gem_lockfile_sections!(locked_gem_sources.first)
       end
 
-      @unlock[:gems] ||= []
       @unlock[:sources] ||= []
       @unlock[:ruby] ||= if @ruby_version && locked_ruby_version_object
         @ruby_version.diff(locked_ruby_version_object)
@@ -132,8 +129,10 @@ module Bundler
       @path_changes = converge_paths
       @source_changes = converge_sources
 
-      unless @unlock[:lock_shared_dependencies]
-        eager_unlock = expand_dependencies(@unlock[:gems], true)
+      if @unlock[:conservative]
+        @unlock[:gems] ||= @dependencies.map(&:name)
+      else
+        eager_unlock = expand_dependencies(@unlock[:gems] || [], true)
         @unlock[:gems] = @locked_specs.for(eager_unlock, [], false, false, false).map(&:name)
       end
 
@@ -257,7 +256,7 @@ module Bundler
 
     def specs_for(groups)
       deps = dependencies_for(groups)
-      specs.for(expand_dependencies(deps))
+      SpecSet.new(specs.for(expand_dependencies(deps)))
     end
 
     def dependencies_for(groups)
@@ -498,9 +497,6 @@ module Bundler
     attr_reader :sources
     private :sources
 
-    attr_reader :locked_gem_sources
-    private :locked_gem_sources
-
     def nothing_changed?
       !@source_changes && !@dependency_changes && !@new_platform && !@path_changes && !@local_changes && !@locked_specs_incomplete_for_platform
     end
@@ -628,35 +624,11 @@ module Bundler
       end
     end
 
-    def converge_rubygems_sources
-      return false unless multisource_allowed?
-
-      return false if locked_gem_sources.empty?
-
-      # Get the RubyGems remotes from the Gemfile
-      actual_remotes = sources.rubygems_remotes
-      return false if actual_remotes.empty?
-
-      changes = false
-
-      # If there is a RubyGems source in both
-      locked_gem_sources.each do |locked_gem_source|
-        # Merge the remotes from the Gemfile into the Gemfile.lock
-        changes |= locked_gem_source.replace_remotes(actual_remotes, Bundler.settings[:allow_deployment_source_credential_changes])
-      end
-
-      changes
-    end
-
     def converge_sources
-      changes = false
-
-      changes |= converge_rubygems_sources
-
       # Replace the sources from the Gemfile with the sources from the Gemfile.lock,
       # if they exist in the Gemfile.lock and are `==`. If you can't find an equivalent
       # source in the Gemfile.lock, use the one from the Gemfile.
-      changes |= sources.replace_sources!(@locked_sources)
+      changes = sources.replace_sources!(@locked_sources)
 
       sources.all_sources.each do |source|
         # If the source is unlockable and the current command allows an unlock of
@@ -741,8 +713,6 @@ module Bundler
         end
       end
 
-      unlock_source_unlocks_spec = Bundler.feature_flag.unlock_source_unlocks_spec?
-
       converged = []
       @locked_specs.each do |s|
         # Replace the locked dependency's source with the equivalent source from the Gemfile
@@ -753,11 +723,6 @@ module Bundler
         # if you change a Git gem to RubyGems.
         next if s.source.nil?
         next if @unlock[:sources].include?(s.source.name)
-
-        # XXX This is a backwards-compatibility fix to preserve the ability to
-        # unlock a single gem by passing its name via `--source`. See issue #3759
-        # TODO: delete in Bundler 2
-        next if unlock_source_unlocks_spec && @unlock[:sources].include?(s.name)
 
         # If the spec is from a path source and it doesn't exist anymore
         # then we unlock it.
@@ -790,7 +755,7 @@ module Bundler
 
       resolve = SpecSet.new(converged)
       @locked_specs_incomplete_for_platform = !resolve.for(expand_dependencies(requested_dependencies & deps), @unlock[:gems], true, true)
-      resolve = resolve.for(expand_dependencies(deps, true), @unlock[:gems], false, false, false)
+      resolve = SpecSet.new(resolve.for(expand_dependencies(deps, true), [], false, false, false).reject{|s| @unlock[:gems].include?(s.name) })
       diff    = nil
 
       # Now, we unlock any sources that do not have anymore gems pinned to it
@@ -912,14 +877,13 @@ module Bundler
     end
 
     def additional_base_requirements_for_resolve
-      return [] unless @locked_gems
+      return [] unless @locked_gems && unlocking? && !sources.expired_sources?(@locked_gems.sources)
       dependencies_by_name = dependencies.inject({}) {|memo, dep| memo.update(dep.name => dep) }
       @locked_gems.specs.reduce({}) do |requirements, locked_spec|
         name = locked_spec.name
         dependency = dependencies_by_name[name]
-        next requirements unless dependency
         next requirements if @locked_gems.dependencies[name] != dependency
-        next requirements if dependency.source.is_a?(Source::Path)
+        next requirements if dependency && dependency.source.is_a?(Source::Path)
         dep = Gem::Dependency.new(name, ">= #{locked_spec.version}")
         requirements[name] = DepProxy.get_proxy(dep, locked_spec.platform)
         requirements

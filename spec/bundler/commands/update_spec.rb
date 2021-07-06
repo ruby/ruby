@@ -241,6 +241,94 @@ RSpec.describe "bundle update" do
       expect(the_bundle).to include_gems("slim 3.0.9", "slim-rails 3.1.3", "slim_lint 0.16.1")
     end
 
+    it "does not go to an older version, even if the version upgrade that could cause another gem to downgrade is activated first" do
+      build_repo4 do
+        # countries is processed before country_select by the resolver due to having less spec groups (groups of versions with the same dependencies) (2 vs 3)
+
+        build_gem "countries", "2.1.4"
+        build_gem "countries", "3.1.0"
+
+        build_gem "countries", "4.0.0" do |s|
+          s.add_dependency "sixarm_ruby_unaccent", "~> 1.1"
+        end
+
+        build_gem "country_select", "1.2.0"
+
+        build_gem "country_select", "2.1.4" do |s|
+          s.add_dependency "countries", "~> 2.0"
+        end
+        build_gem "country_select", "3.1.1" do |s|
+          s.add_dependency "countries", "~> 2.0"
+        end
+
+        build_gem "country_select", "5.1.0" do |s|
+          s.add_dependency "countries", "~> 3.0"
+        end
+
+        build_gem "sixarm_ruby_unaccent", "1.1.0"
+      end
+
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}"
+
+        gem "country_select"
+        gem "countries"
+      G
+
+      lockfile <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            countries (3.1.0)
+            country_select (5.1.0)
+              countries (~> 3.0)
+
+        PLATFORMS
+          #{specific_local_platform}
+
+        DEPENDENCIES
+          countries
+          country_select
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      previous_lockfile = lockfile
+
+      bundle "lock --update"
+
+      expect(lockfile).to eq(previous_lockfile)
+    end
+
+    it "does not downgrade indirect dependencies unnecessarily" do
+      build_repo4 do
+        build_gem "a" do |s|
+          s.add_dependency "b"
+          s.add_dependency "c"
+        end
+        build_gem "b"
+        build_gem "c"
+        build_gem "c", "2.0"
+      end
+
+      install_gemfile <<-G, :verbose => true
+        source "#{file_uri_for(gem_repo4)}"
+        gem "a"
+      G
+
+      expect(the_bundle).to include_gems("a 1.0", "b 1.0", "c 2.0")
+
+      update_repo4 do
+        build_gem "b", "2.0" do |s|
+          s.add_dependency "c", "< 2"
+        end
+      end
+
+      bundle "update", :all => true, :verbose => true
+      expect(the_bundle).to include_gems("a 1.0", "b 1.0", "c 2.0")
+    end
+
     it "should still downgrade if forced by the Gemfile" do
       build_repo4 do
         build_gem "a"
@@ -411,18 +499,7 @@ RSpec.describe "bundle update" do
       build_repo2
     end
 
-    it "should not update gems not included in the source that happen to have the same name", :bundler => "< 3" do
-      install_gemfile <<-G
-        source "#{file_uri_for(gem_repo2)}"
-        gem "activesupport"
-      G
-      update_repo2 { build_gem "activesupport", "3.0" }
-
-      bundle "update --source activesupport"
-      expect(the_bundle).to include_gem "activesupport 3.0"
-    end
-
-    it "should not update gems not included in the source that happen to have the same name", :bundler => "3" do
+    it "should not update gems not included in the source that happen to have the same name" do
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
         gem "activesupport"
@@ -433,19 +510,15 @@ RSpec.describe "bundle update" do
       expect(the_bundle).not_to include_gem "activesupport 3.0"
     end
 
-    context "with unlock_source_unlocks_spec set to false" do
-      before { bundle "config set unlock_source_unlocks_spec false" }
+    it "should not update gems not included in the source that happen to have the same name" do
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo2)}"
+        gem "activesupport"
+      G
+      update_repo2 { build_gem "activesupport", "3.0" }
 
-      it "should not update gems not included in the source that happen to have the same name" do
-        install_gemfile <<-G
-          source "#{file_uri_for(gem_repo2)}"
-          gem "activesupport"
-        G
-        update_repo2 { build_gem "activesupport", "3.0" }
-
-        bundle "update --source activesupport"
-        expect(the_bundle).not_to include_gems "activesupport 3.0"
-      end
+      bundle "update --source activesupport"
+      expect(the_bundle).not_to include_gems "activesupport 3.0"
     end
   end
 
@@ -465,20 +538,7 @@ RSpec.describe "bundle update" do
       G
     end
 
-    it "should not update the child dependencies of a gem that has the same name as the source", :bundler => "< 3" do
-      update_repo2 do
-        build_gem "fred", "2.0"
-        build_gem "harry", "2.0" do |s|
-          s.add_dependency "fred"
-        end
-      end
-
-      bundle "update --source harry"
-      expect(the_bundle).to include_gems "harry 2.0"
-      expect(the_bundle).to include_gems "fred 1.0"
-    end
-
-    it "should not update the child dependencies of a gem that has the same name as the source", :bundler => "3" do
+    it "should not update the child dependencies of a gem that has the same name as the source" do
       update_repo2 do
         build_gem "fred", "2.0"
         build_gem "harry", "2.0" do |s|
@@ -510,21 +570,7 @@ RSpec.describe "bundle update" do
       G
     end
 
-    it "should not update the child dependencies of a gem that has the same name as the source", :bundler => "< 3" do
-      update_repo2 do
-        build_gem "george", "2.0"
-        build_gem "harry", "2.0" do |s|
-          s.add_dependency "george"
-        end
-      end
-
-      bundle "update --source harry"
-      expect(the_bundle).to include_gems "harry 2.0"
-      expect(the_bundle).to include_gems "fred 1.0"
-      expect(the_bundle).to include_gems "george 1.0"
-    end
-
-    it "should not update the child dependencies of a gem that has the same name as the source", :bundler => "3" do
+    it "should not update the child dependencies of a gem that has the same name as the source" do
       update_repo2 do
         build_gem "george", "2.0"
         build_gem "harry", "2.0" do |s|
@@ -1106,9 +1152,9 @@ RSpec.describe "bundle update conservative" do
         gem 'shared_owner_b'
       G
 
-      lockfile <<-L
+      lockfile <<~L
         GEM
-          remote: #{file_uri_for(gem_repo4)}
+          remote: #{file_uri_for(gem_repo4)}/
           specs:
             isolated_dep (2.0.1)
             isolated_owner (1.0.1)
@@ -1120,12 +1166,12 @@ RSpec.describe "bundle update conservative" do
               shared_dep (~> 5.0)
 
         PLATFORMS
-          ruby
+          #{specific_local_platform}
 
         DEPENDENCIES
+          isolated_owner
           shared_owner_a
           shared_owner_b
-          isolated_owner
 
         BUNDLED WITH
            #{Bundler::VERSION}
@@ -1147,7 +1193,42 @@ RSpec.describe "bundle update conservative" do
     it "should not eagerly unlock with --conservative" do
       bundle "update --conservative shared_owner_a isolated_owner"
 
-      expect(the_bundle).to include_gems "isolated_owner 1.0.2", "isolated_dep 2.0.2", "shared_dep 5.0.1", "shared_owner_a 3.0.2", "shared_owner_b 4.0.1"
+      expect(the_bundle).to include_gems "isolated_owner 1.0.2", "isolated_dep 2.0.1", "shared_dep 5.0.1", "shared_owner_a 3.0.2", "shared_owner_b 4.0.1"
+    end
+
+    it "should only update direct dependencies when fully updating with --conservative" do
+      bundle "update --conservative"
+
+      expect(the_bundle).to include_gems "isolated_owner 1.0.2", "isolated_dep 2.0.1", "shared_dep 5.0.1", "shared_owner_a 3.0.2", "shared_owner_b 4.0.2"
+    end
+
+    it "should only change direct dependencies when updating the lockfile with --conservative" do
+      bundle "lock --update --conservative"
+
+      expect(lockfile).to eq <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            isolated_dep (2.0.1)
+            isolated_owner (1.0.2)
+              isolated_dep (~> 2.0)
+            shared_dep (5.0.1)
+            shared_owner_a (3.0.2)
+              shared_dep (~> 5.0)
+            shared_owner_b (4.0.2)
+              shared_dep (~> 5.0)
+
+        PLATFORMS
+          #{specific_local_platform}
+
+        DEPENDENCIES
+          isolated_owner
+          shared_owner_a
+          shared_owner_b
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
     end
 
     it "should match bundle install conservative update behavior when not eagerly unlocking" do

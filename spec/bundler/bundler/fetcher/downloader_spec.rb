@@ -231,16 +231,7 @@ RSpec.describe Bundler::Fetcher::Downloader do
         end
       end
 
-      context "when error message is about getaddrinfo issues" do
-        let(:message) { "getaddrinfo: nodename nor servname provided for http://www.uri-to-fetch.com" }
-
-        it "should raise a Bundler::Fetcher::NetworkDownError" do
-          expect { subject.request(uri, options) }.to raise_error(Bundler::Fetcher::NetworkDownError,
-            /Could not reach host www.uri-to-fetch.com/)
-        end
-      end
-
-      context "when error message is about neither host down or getaddrinfo" do
+      context "when error message is not about host down" do
         let(:message) { "other error about network" }
 
         it "should raise a Bundler::HTTPError" do

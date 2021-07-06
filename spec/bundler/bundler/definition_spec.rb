@@ -194,7 +194,7 @@ RSpec.describe Bundler::Definition do
       context "eager unlock" do
         let(:source_list) do
           Bundler::SourceList.new.tap do |source_list|
-            source_list.global_rubygems_source = file_uri_for(gem_repo4)
+            source_list.add_global_rubygems_remote(file_uri_for(gem_repo4))
           end
         end
 
@@ -258,7 +258,7 @@ RSpec.describe Bundler::Definition do
             bundled_app_lock,
             updated_deps_in_gemfile,
             source_list,
-            :gems => ["shared_owner_a"], :lock_shared_dependencies => true
+            :gems => ["shared_owner_a"], :conservative => true
           )
           locked = definition.send(:converge_locked_specs).map(&:name)
           expect(locked).to eq %w[isolated_dep isolated_owner shared_dep shared_owner_b]

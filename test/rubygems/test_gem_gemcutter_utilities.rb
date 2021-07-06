@@ -14,6 +14,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
     Gem.configuration.disable_default_gem_server = nil
 
     ENV['RUBYGEMS_HOST'] = nil
+    ENV['GEM_HOST_OTP_CODE'] = nil
     Gem.configuration.rubygems_api_key = nil
 
     @cmd = Gem::Command.new '', 'summary'
@@ -22,6 +23,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
 
   def teardown
     ENV['RUBYGEMS_HOST'] = nil
+    ENV['GEM_HOST_OTP_CODE'] = nil
     Gem.configuration.rubygems_api_key = nil
 
     credential_teardown
@@ -184,6 +186,16 @@ class TestGemGemcutterUtilities < Gem::TestCase
 
     assert_match %r{Enter your RubyGems.org credentials.}, @sign_in_ui.output
     assert_match %r{Access Denied.}, @sign_in_ui.output
+  end
+
+  def test_signin_with_env_otp_code
+    ENV['GEM_HOST_OTP_CODE'] = '111111'
+    api_key = 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903'
+
+    util_sign_in [api_key, 200, 'OK']
+
+    assert_match 'Signed in with API key:', @sign_in_ui.output
+    assert_equal '111111', @fetcher.last_request['OTP']
   end
 
   def test_sign_in_with_correct_otp_code
