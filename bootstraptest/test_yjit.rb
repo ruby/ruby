@@ -36,6 +36,16 @@ assert_equal '12', %q{
   mult(6, 2)
 }
 
+# Test for opt_div
+assert_equal '3', %q{
+  def div(a, b)
+    a / b
+  end
+
+  div(6, 2)
+  div(6, 2)
+}
+
 # BOP redefined methods work when JIT compiled
 assert_equal 'false', %q{
   def less_than x

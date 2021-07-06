@@ -1940,6 +1940,13 @@ gen_opt_mult(jitstate_t* jit, ctx_t* ctx)
     return gen_opt_send_without_block(jit, ctx);
 }
 
+static codegen_status_t
+gen_opt_div(jitstate_t* jit, ctx_t* ctx)
+{
+    // Delegate to send, call the method on the recv
+    return gen_opt_send_without_block(jit, ctx);
+}
+
 VALUE rb_vm_opt_mod(VALUE recv, VALUE obj);
 
 static codegen_status_t
@@ -3470,6 +3477,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(opt_minus), gen_opt_minus);
     yjit_reg_op(BIN(opt_plus), gen_opt_plus);
     yjit_reg_op(BIN(opt_mult), gen_opt_mult);
+    yjit_reg_op(BIN(opt_div), gen_opt_div);
     yjit_reg_op(BIN(opt_mod), gen_opt_mod);
     yjit_reg_op(BIN(opt_ltlt), gen_opt_ltlt);
     yjit_reg_op(BIN(opt_nil_p), gen_opt_nil_p);
