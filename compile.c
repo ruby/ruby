@@ -10797,6 +10797,11 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
                     rb_hash_rehash(v); // hash function changed
                     freeze_hide_obj(v);
 
+                    // Overwrite the existing hash in the object list.  This
+                    // is to keep the object alive during load time.
+                    // [Bug #17984] [ruby-core:104259]
+                    pinned_list_store(load->current_buffer->obj_list, (long)op, v);
+
                     code[code_index] = v;
                     RB_OBJ_WRITTEN(iseqv, Qundef, v);
                     FL_SET(iseqv, ISEQ_MARKABLE_ISEQ);
