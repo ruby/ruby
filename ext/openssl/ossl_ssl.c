@@ -39,7 +39,7 @@ static VALUE eSSLErrorWaitReadable;
 static VALUE eSSLErrorWaitWritable;
 
 static ID id_call, ID_callback_state, id_tmp_dh_callback,
-	  id_npn_protocols_encoded;
+	  id_npn_protocols_encoded, id_each;
 static VALUE sym_exception, sym_wait_readable, sym_wait_writable;
 
 static ID id_i_cert_store, id_i_ca_file, id_i_ca_path, id_i_verify_mode,
@@ -583,7 +583,7 @@ static VALUE
 ssl_encode_npn_protocols(VALUE protocols)
 {
     VALUE encoded = rb_str_new(NULL, 0);
-    rb_iterate(rb_each, protocols, ssl_npn_encode_protocol_i, encoded);
+    rb_block_call(protocols, id_each, 0, 0, ssl_npn_encode_protocol_i, encoded);
     return encoded;
 }
 
@@ -2864,6 +2864,7 @@ Init_ossl_ssl(void)
 
     id_tmp_dh_callback = rb_intern_const("tmp_dh_callback");
     id_npn_protocols_encoded = rb_intern_const("npn_protocols_encoded");
+    id_each = rb_intern_const("each");
 
 #define DefIVarID(name) do \
     id_i_##name = rb_intern_const("@"#name); while (0)
