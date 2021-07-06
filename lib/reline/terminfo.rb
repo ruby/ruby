@@ -11,6 +11,10 @@ module Reline::Terminfo
     when /mingw/, /mswin/
       # aren't supported
       []
+    when /cygwin/
+      %w[cygncursesw-10.dll cygncurses-10.dll]
+    when /darwin/
+      %w[libncursesw.dylib libcursesw.dylib libncurses.dylib libcurses.dylib]
     else
       %w[libncursesw.so libcursesw.so libncurses.so libcurses.so]
     end
