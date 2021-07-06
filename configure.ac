@@ -2486,7 +2486,6 @@ AC_ARG_WITH(coroutine,
     AS_HELP_STRING([--with-coroutine=IMPLEMENTATION], [specify the coroutine implementation to use]),
     [coroutine_type=$withval], [coroutine_type=])
 AS_CASE([$coroutine_type], [yes|''], [
-    AC_MSG_CHECKING(native coroutine implementation for ${target_cpu}-${target_os})
     coroutine_type=
     AS_CASE(["$target_cpu-$target_os"],
         [universal-darwin*], [
@@ -2548,6 +2547,7 @@ AS_CASE([$coroutine_type], [yes|''], [
             )
         ]
     )
+    AC_MSG_CHECKING(native coroutine implementation for ${target_cpu}-${target_os})
     AC_MSG_RESULT(${coroutine_type})
 ])
 COROUTINE_H=coroutine/$coroutine_type/Context.h
