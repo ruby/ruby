@@ -3153,18 +3153,6 @@ method_inspect(VALUE method)
 }
 
 static VALUE
-mproc(VALUE method)
-{
-    return rb_funcallv(rb_mRubyVMFrozenCore, idProc, 0, 0);
-}
-
-static VALUE
-mlambda(VALUE method)
-{
-    return rb_funcallv(rb_mRubyVMFrozenCore, idLambda, 0, 0);
-}
-
-static VALUE
 bmcall(RB_BLOCK_CALL_FUNC_ARGLIST(args, method))
 {
     return rb_method_call_with_block_kw(argc, argv, method, blockarg, RB_PASS_CALLED_KEYWORDS);
@@ -3175,7 +3163,7 @@ rb_proc_new(
     rb_block_call_func_t func,
     VALUE val)
 {
-    VALUE procval = rb_iterate(mproc, 0, func, val);
+    VALUE procval = rb_block_call(rb_mRubyVMFrozenCore, idProc, 0, 0, func, val);
     return procval;
 }
 
@@ -3201,7 +3189,7 @@ method_to_proc(VALUE method)
      *   end
      * end
      */
-    procval = rb_iterate(mlambda, 0, bmcall, method);
+    procval = rb_block_call(rb_mRubyVMFrozenCore, idLambda, 0, 0, bmcall, method);
     GetProcPtr(procval, proc);
     proc->is_from_method = 1;
     return procval;

@@ -1557,13 +1557,20 @@ rb_iterate0(VALUE (* it_proc) (VALUE), VALUE data1,
     return retval;
 }
 
-VALUE
-rb_iterate(VALUE (* it_proc)(VALUE), VALUE data1,
-           rb_block_call_func_t bl_proc, VALUE data2)
+static VALUE
+rb_iterate_internal(VALUE (* it_proc)(VALUE), VALUE data1,
+                    rb_block_call_func_t bl_proc, VALUE data2)
 {
     return rb_iterate0(it_proc, data1,
 		       bl_proc ? rb_vm_ifunc_proc_new(bl_proc, (void *)data2) : 0,
 		       GET_EC());
+}
+
+VALUE
+rb_iterate(VALUE (* it_proc)(VALUE), VALUE data1,
+           rb_block_call_func_t bl_proc, VALUE data2)
+{
+    return rb_iterate_internal(it_proc, data1, bl_proc, data2);
 }
 
 struct iter_method_arg {
@@ -1603,7 +1610,7 @@ rb_block_call_kw(VALUE obj, ID mid, int argc, const VALUE * argv,
     arg.argc = argc;
     arg.argv = argv;
     arg.kw_splat = kw_splat;
-    return rb_iterate(iterate_method, (VALUE)&arg, bl_proc, data2);
+    return rb_iterate_internal(iterate_method, (VALUE)&arg, bl_proc, data2);
 }
 
 VALUE
@@ -1644,7 +1651,7 @@ rb_check_block_call(VALUE obj, ID mid, int argc, const VALUE *argv,
     arg.argc = argc;
     arg.argv = argv;
     arg.kw_splat = 0;
-    return rb_iterate(iterate_check_method, (VALUE)&arg, bl_proc, data2);
+    return rb_iterate_internal(iterate_check_method, (VALUE)&arg, bl_proc, data2);
 }
 
 VALUE
