@@ -46,7 +46,6 @@ YJIT_DECLARE_COUNTERS(
     send_se_cf_overflow,
     send_se_protected_check_failed,
 
-    leave_se_finish_frame,
     leave_se_interrupt,
     leave_interp_return,
 
