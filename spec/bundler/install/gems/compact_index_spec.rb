@@ -399,7 +399,7 @@ The checksum of /versions does not match the checksum provided by the server! So
 
     api_request_limit = low_api_request_limit_for(gem_repo2)
 
-    install_gemfile <<-G, :artifice => "compact_index_extra_missing", :env => { "BUNDLER_SPEC_API_REQUEST_LIMIT" => api_request_limit.to_s }.merge(env_for_missing_prerelease_default_gem_activation)
+    install_gemfile <<-G, :artifice => "compact_index_extra_missing", :requires => [api_request_limit_hack_file], :env => { "BUNDLER_SPEC_API_REQUEST_LIMIT" => api_request_limit.to_s }.merge(env_for_missing_prerelease_default_gem_activation)
       source "#{source_uri}"
       source "#{source_uri}/extra" do
         gem "back_deps"
@@ -421,7 +421,7 @@ The checksum of /versions does not match the checksum provided by the server! So
 
     api_request_limit = low_api_request_limit_for(gem_repo4)
 
-    install_gemfile <<-G, :artifice => "compact_index_extra_api_missing", :env => { "BUNDLER_SPEC_API_REQUEST_LIMIT" => api_request_limit.to_s }.merge(env_for_missing_prerelease_default_gem_activation)
+    install_gemfile <<-G, :artifice => "compact_index_extra_api_missing", :requires => [api_request_limit_hack_file], :env => { "BUNDLER_SPEC_API_REQUEST_LIMIT" => api_request_limit.to_s }.merge(env_for_missing_prerelease_default_gem_activation)
       source "#{source_uri}"
       source "#{source_uri}/extra" do
         gem "back_deps"

@@ -1,23 +1,70 @@
 # frozen_string_literal: true
 ##
-# Provides a single method +deprecate+ to be used to declare when
-# something is going away.
+# Provides 3 methods for declaring when something is going away.
+#
+# +deprecate(name, repl, year, month)+:
+#     Indicate something may be removed on/after a certain date.
+#
+# +rubygems_deprecate(name, replacement=:none)+:
+#     Indicate something will be removed in the next major RubyGems version,
+#     and (optionally) a replacement for it.
+#
+# +rubygems_deprecate_command+:
+#     Indicate a RubyGems command (in +lib/rubygems/commands/*.rb+) will be
+#     removed in the next RubyGems version.
+#
+# Also provides +skip_during+ for temporarily turning off deprecation warnings.
+# This is intended to be used in the test suite, so deprecation warnings
+# don't cause test failures if you need to make sure stderr is otherwise empty.
+#
+#
+# Example usage of +deprecate+ and +rubygems_deprecate+:
 #
 #     class Legacy
-#       def self.klass_method
+#       def self.some_class_method
 #         # ...
 #       end
 #
-#       def instance_method
+#       def some_instance_method
+#         # ...
+#       end
+#
+#       def some_old_method
 #         # ...
 #       end
 #
 #       extend Gem::Deprecate
-#       deprecate :instance_method, "X.z", 2011, 4
+#       deprecate :some_instance_method, "X.z", 2011, 4
+#       rubygems_deprecate :some_old_method, "Modern#some_new_method"
 #
 #       class << self
 #         extend Gem::Deprecate
-#         deprecate :klass_method, :none, 2011, 4
+#         deprecate :some_class_method, :none, 2011, 4
+#       end
+#     end
+#
+#
+# Example usage of +rubygems_deprecate_command+:
+#
+#     class Gem::Commands::QueryCommand < Gem::Command
+#       extend Gem::Deprecate
+#       rubygems_deprecate_command
+#
+#       # ...
+#     end
+#
+#
+# Example usage of +skip_during+:
+#
+#     class TestSomething < Gem::Testcase
+#       def test_some_thing_with_deprecations
+#         Gem::Deprecate.skip_during do
+#           actual_stdout, actual_stderr = capture_output do
+#             Gem.something_deprecated
+#           end
+#           assert_empty actual_stdout
+#           assert_equal(expected, actual_stderr)
+#         end
 #       end
 #     end
 

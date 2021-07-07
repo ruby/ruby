@@ -1178,83 +1178,6 @@ RSpec.describe "the lockfile format" do
     G
   end
 
-  # Some versions of the Bundler 1.1 RC series introduced corrupted
-  # lockfiles. There were two major problems:
-  #
-  # * multiple copies of the same GIT section appeared in the lockfile
-  # * when this happened, those sections got multiple copies of gems
-  #   in those sections.
-  it "fixes corrupted lockfiles" do
-    build_git "omg", :path => lib_path("omg")
-    revision = revision_for(lib_path("omg"))
-
-    gemfile <<-G
-      source "#{file_uri_for(gem_repo2)}/"
-      gem "omg", :git => "#{lib_path("omg")}", :branch => 'master'
-    G
-
-    bundle "config set --local path vendor"
-    bundle :install
-    expect(the_bundle).to include_gems "omg 1.0"
-
-    # Create a Gemfile.lock that has duplicate GIT sections
-    lockfile <<-L
-      GIT
-        remote: #{lib_path("omg")}
-        revision: #{revision}
-        branch: master
-        specs:
-          omg (1.0)
-
-      GIT
-        remote: #{lib_path("omg")}
-        revision: #{revision}
-        branch: master
-        specs:
-          omg (1.0)
-
-      GEM
-        remote: #{file_uri_for(gem_repo2)}/
-        specs:
-
-      PLATFORMS
-        #{lockfile_platforms}
-
-      DEPENDENCIES
-        omg!
-
-      BUNDLED WITH
-         #{Bundler::VERSION}
-    L
-
-    FileUtils.rm_rf(bundled_app("vendor"))
-    bundle "install"
-    expect(the_bundle).to include_gems "omg 1.0"
-
-    # Confirm that duplicate specs do not appear
-    lockfile_should_be(<<-L)
-      GIT
-        remote: #{lib_path("omg")}
-        revision: #{revision}
-        branch: master
-        specs:
-          omg (1.0)
-
-      GEM
-        remote: #{file_uri_for(gem_repo2)}/
-        specs:
-
-      PLATFORMS
-        #{lockfile_platforms}
-
-      DEPENDENCIES
-        omg!
-
-      BUNDLED WITH
-         #{Bundler::VERSION}
-    L
-  end
-
   it "raises a helpful error message when the lockfile is missing deps" do
     lockfile <<-L
       GEM
@@ -1326,7 +1249,10 @@ RSpec.describe "the lockfile format" do
 
         expect { bundle "update", :all => true }.to change { File.mtime(bundled_app_lock) }
         expect(File.read(bundled_app_lock)).to match("\r\n")
-        expect(the_bundle).to include_gems "rack 1.2"
+
+        simulate_bundler_version_when_missing_prerelease_default_gem_activation do
+          expect(the_bundle).to include_gems "rack 1.2"
+        end
       end
     end
 

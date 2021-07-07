@@ -252,19 +252,6 @@ module Bundler
         other_remotes.map(&method(:remove_auth)) == @remotes.map(&method(:remove_auth))
       end
 
-      def replace_remotes(other_remotes, allow_equivalent = false)
-        return false if other_remotes == @remotes
-
-        equivalent = allow_equivalent && equivalent_remotes?(other_remotes)
-
-        @remotes = []
-        other_remotes.reverse_each do |r|
-          add_remote r.to_s
-        end
-
-        !equivalent
-      end
-
       def spec_names
         if @allow_remote && dependency_api_available?
           remote_specs.spec_names

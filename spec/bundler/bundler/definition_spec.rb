@@ -204,7 +204,7 @@ RSpec.describe Bundler::Definition do
       context "eager unlock" do
         let(:source_list) do
           Bundler::SourceList.new.tap do |source_list|
-            source_list.global_rubygems_source = file_uri_for(gem_repo4)
+            source_list.add_global_rubygems_remote(file_uri_for(gem_repo4))
           end
         end
 

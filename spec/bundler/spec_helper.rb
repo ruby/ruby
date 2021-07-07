@@ -13,7 +13,7 @@ require "bundler"
 require "rspec/core"
 require "rspec/expectations"
 require "rspec/mocks"
-require "diff/lcs"
+require "rspec/support/differ"
 
 require_relative "support/builders"
 require_relative "support/build_metadata"

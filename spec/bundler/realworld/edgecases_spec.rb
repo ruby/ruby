@@ -211,133 +211,6 @@ RSpec.describe "real world edgecases", :realworld => true do
     expect(err).to be_empty
   end
 
-  it "checks out git repos when the lockfile is corrupted" do
-    gemfile <<-G
-      source "https://rubygems.org"
-      git_source(:github) {|repo| "https://github.com/\#{repo}.git" }
-
-      gem 'activerecord',  :github => 'carlhuda/rails-bundler-test', :branch => 'master'
-      gem 'activesupport', :github => 'carlhuda/rails-bundler-test', :branch => 'master'
-      gem 'actionpack',    :github => 'carlhuda/rails-bundler-test', :branch => 'master'
-    G
-
-    lockfile <<-L
-      GIT
-        remote: https://github.com/carlhuda/rails-bundler-test.git
-        revision: 369e28a87419565f1940815219ea9200474589d4
-        branch: master
-        specs:
-          actionpack (3.2.2)
-            activemodel (= 3.2.2)
-            activesupport (= 3.2.2)
-            builder (~> 3.0.0)
-            erubis (~> 2.7.0)
-            journey (~> 1.0.1)
-            rack (~> 1.4.0)
-            rack-cache (~> 1.2)
-            rack-test (~> 0.6.1)
-            sprockets (~> 2.1.2)
-          activemodel (3.2.2)
-            activesupport (= 3.2.2)
-            builder (~> 3.0.0)
-          activerecord (3.2.2)
-            activemodel (= 3.2.2)
-            activesupport (= 3.2.2)
-            arel (~> 3.0.2)
-            tzinfo (~> 0.3.29)
-          activesupport (3.2.2)
-            i18n (~> 0.6)
-            multi_json (~> 1.0)
-
-      GIT
-        remote: https://github.com/carlhuda/rails-bundler-test.git
-        revision: 369e28a87419565f1940815219ea9200474589d4
-        branch: master
-        specs:
-          actionpack (3.2.2)
-            activemodel (= 3.2.2)
-            activesupport (= 3.2.2)
-            builder (~> 3.0.0)
-            erubis (~> 2.7.0)
-            journey (~> 1.0.1)
-            rack (~> 1.4.0)
-            rack-cache (~> 1.2)
-            rack-test (~> 0.6.1)
-            sprockets (~> 2.1.2)
-          activemodel (3.2.2)
-            activesupport (= 3.2.2)
-            builder (~> 3.0.0)
-          activerecord (3.2.2)
-            activemodel (= 3.2.2)
-            activesupport (= 3.2.2)
-            arel (~> 3.0.2)
-            tzinfo (~> 0.3.29)
-          activesupport (3.2.2)
-            i18n (~> 0.6)
-            multi_json (~> 1.0)
-
-      GIT
-        remote: https://github.com/carlhuda/rails-bundler-test.git
-        revision: 369e28a87419565f1940815219ea9200474589d4
-        branch: master
-        specs:
-          actionpack (3.2.2)
-            activemodel (= 3.2.2)
-            activesupport (= 3.2.2)
-            builder (~> 3.0.0)
-            erubis (~> 2.7.0)
-            journey (~> 1.0.1)
-            rack (~> 1.4.0)
-            rack-cache (~> 1.2)
-            rack-test (~> 0.6.1)
-            sprockets (~> 2.1.2)
-          activemodel (3.2.2)
-            activesupport (= 3.2.2)
-            builder (~> 3.0.0)
-          activerecord (3.2.2)
-            activemodel (= 3.2.2)
-            activesupport (= 3.2.2)
-            arel (~> 3.0.2)
-            tzinfo (~> 0.3.29)
-          activesupport (3.2.2)
-            i18n (~> 0.6)
-            multi_json (~> 1.0)
-
-      GEM
-        remote: https://rubygems.org/
-        specs:
-          arel (3.0.2)
-          builder (3.0.0)
-          erubis (2.7.0)
-          hike (1.2.1)
-          i18n (0.6.0)
-          journey (1.0.3)
-          multi_json (1.1.0)
-          rack (1.4.1)
-          rack-cache (1.2)
-            rack (>= 0.4)
-          rack-test (0.6.1)
-            rack (>= 1.0)
-          sprockets (2.1.2)
-            hike (~> 1.2)
-            rack (~> 1.0)
-            tilt (~> 1.1, != 1.3.0)
-          tilt (1.3.3)
-          tzinfo (0.3.32)
-
-      PLATFORMS
-        ruby
-
-      DEPENDENCIES
-        actionpack!
-        activerecord!
-        activesupport!
-    L
-
-    bundle :lock
-    expect(err).to be_empty
-  end
-
   it "outputs a helpful error message when gems have invalid gemspecs" do
     install_gemfile <<-G, :standalone => true, :raise_on_error => false
       source 'https://rubygems.org'
@@ -349,7 +222,7 @@ RSpec.describe "real world edgecases", :realworld => true do
   end
 
   it "doesn't hang on big gemfile" do
-    skip "Only for ruby 2.7.3" if RUBY_VERSION != "2.7.3"
+    skip "Only for ruby 2.7.3" if RUBY_VERSION != "2.7.3" || RUBY_PLATFORM =~ /darwin/
 
     gemfile <<~G
       # frozen_string_literal: true
@@ -461,7 +334,7 @@ RSpec.describe "real world edgecases", :realworld => true do
   end
 
   it "doesn't hang on tricky gemfile" do
-    skip "Only for ruby 2.7.3" if RUBY_VERSION != "2.7.3"
+    skip "Only for ruby 2.7.3" if RUBY_VERSION != "2.7.3" || RUBY_PLATFORM =~ /darwin/
 
     gemfile <<~G
       source 'https://rubygems.org'
@@ -487,7 +360,7 @@ RSpec.describe "real world edgecases", :realworld => true do
   end
 
   it "doesn't hang on nix gemfile" do
-    skip "Only for ruby 3.0.1" if RUBY_VERSION != "3.0.1"
+    skip "Only for ruby 3.0.1" if RUBY_VERSION != "3.0.1" || RUBY_PLATFORM =~ /darwin/
 
     gemfile <<~G
       source "https://rubygems.org" do

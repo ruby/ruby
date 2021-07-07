@@ -37,7 +37,7 @@ module Bundler
   environment_preserver = EnvironmentPreserver.from_env
   ORIGINAL_ENV = environment_preserver.restore
   environment_preserver.replace_with_backup
-  SUDO_MUTEX = Mutex.new
+  SUDO_MUTEX = Thread::Mutex.new
 
   autoload :Definition,             File.expand_path("bundler/definition", __dir__)
   autoload :Dependency,             File.expand_path("bundler/dependency", __dir__)

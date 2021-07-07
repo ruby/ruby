@@ -1355,4 +1355,74 @@ RSpec.describe "bundle install with gems on multiple sources" do
       expect(the_bundle).not_to be_locked
     end
   end
+
+  context "when upgrading a lockfile suffering from dependency confusion" do
+    before do
+      build_repo4 do
+        build_gem "mime-types", "3.0.0"
+      end
+
+      build_repo2 do
+        build_gem "capybara", "2.5.0" do |s|
+          s.add_dependency "mime-types", ">= 1.16"
+        end
+
+        build_gem "mime-types", "3.3.1"
+      end
+
+      gemfile <<~G
+        source "https://gem.repo2"
+
+        gem "capybara", "~> 2.5.0"
+
+        source "https://gem.repo4" do
+          gem "mime-types", "~> 3.0"
+        end
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo2/
+          remote: https://gem.repo4/
+          specs:
+            capybara (2.5.0)
+              mime-types (>= 1.16)
+            mime-types (3.3.1)
+
+        PLATFORMS
+          #{specific_local_platform}
+
+        DEPENDENCIES
+          capybara (~> 2.5.0)
+          mime-types (~> 3.0)!
+      L
+    end
+
+    it "upgrades the lockfile correctly" do
+      bundle "lock --update", :artifice => "compact_index"
+
+      expect(lockfile).to eq <<~L
+        GEM
+          remote: https://gem.repo2/
+          specs:
+            capybara (2.5.0)
+              mime-types (>= 1.16)
+
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            mime-types (3.0.0)
+
+        PLATFORMS
+          #{specific_local_platform}
+
+        DEPENDENCIES
+          capybara (~> 2.5.0)
+          mime-types (~> 3.0)!
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+  end
 end
