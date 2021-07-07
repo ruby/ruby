@@ -720,6 +720,118 @@ gen_splatarray(jitstate_t* jit, ctx_t* ctx)
     return YJIT_KEEP_COMPILING;
 }
 
+static void
+guard_object_is_heap(codeblock_t *cb, ctx_t *ctx, uint8_t *side_exit, x86opnd_t object_opnd)
+{
+    ADD_COMMENT(cb, "guard object is heap");
+
+    // Test that the object is not an immediate
+    test(cb, object_opnd, imm_opnd(RUBY_IMMEDIATE_MASK));
+    jnz_ptr(cb, side_exit);
+
+    // Test that the object is not false or nil
+    cmp(cb, object_opnd, imm_opnd(Qnil));
+    RUBY_ASSERT(Qfalse < Qnil);
+    jbe_ptr(cb, side_exit);
+}
+
+static inline void
+guard_object_is_array(codeblock_t *cb, x86opnd_t object_opnd, x86opnd_t flags_opnd, ctx_t *ctx, uint8_t *side_exit)
+{
+    guard_object_is_heap(cb, ctx, side_exit, object_opnd);
+    ADD_COMMENT(cb, "guard object is array");
+
+    // Pull out the type mask
+    mov(cb, flags_opnd, member_opnd(object_opnd, struct RBasic, flags));
+    and(cb, flags_opnd, imm_opnd(RUBY_T_MASK));
+
+    // Compare the result with T_ARRAY
+    cmp(cb, flags_opnd, imm_opnd(T_ARRAY));
+    jne_ptr(cb, side_exit);
+}
+
+// push enough nils onto the stack to fill out an array
+static codegen_status_t
+gen_expandarray(jitstate_t* jit, ctx_t* ctx)
+{
+    int flag = (int) jit_get_arg(jit, 1);
+
+    // If this instruction has the splat flag, then bail out.
+    if (flag & 0x01) {
+        GEN_COUNTER_INC(cb, expandarray_splat);
+        return YJIT_CANT_COMPILE;
+    }
+
+    // If this instruction has the postarg flag, then bail out.
+    if (flag & 0x02) {
+        GEN_COUNTER_INC(cb, expandarray_postarg);
+        return YJIT_CANT_COMPILE;
+    }
+
+    // num is the number of requested values. If there aren't enough in the
+    // array then we're going to push on nils.
+    rb_num_t num = (rb_num_t) jit_get_arg(jit, 0);
+
+    // If we don't actually want any values, then just return.
+    if (num == 0) {
+        return YJIT_KEEP_COMPILING;
+    }
+
+    uint8_t *side_exit = yjit_side_exit(jit, ctx);
+
+    // Move the array from the stack into REG0 and check that it's an array.
+    mov(cb, REG0, ctx_stack_pop(ctx, 1));
+    guard_object_is_array(cb, REG0, REG1, ctx, COUNTED_EXIT(side_exit, expandarray_not_array));
+
+    uint32_t embedded_length_label = cb_new_label(cb, "ea_embedded");
+    uint32_t push_values_label = cb_new_label(cb, "ea_push_vals");
+
+    // Pull out the embed flag to check if it's an embedded array.
+    mov(cb, REG1, member_opnd(REG0, struct RBasic, flags));
+    and(cb, REG1, imm_opnd(RARRAY_EMBED_FLAG));
+    jmp_label(cb, embedded_length_label);
+
+    // Pull out the length of the heap array and write it to REG1.
+    mov(cb, REG1, member_opnd(REG0, struct RArray, as.heap.len));
+    jmp_label(cb, push_values_label);
+
+    // Pull out the length of the embedded array and write it to REG1.
+    cb_write_label(cb, embedded_length_label);
+    mov(cb, REG1, member_opnd(REG0, struct RBasic, flags));
+    and(cb, REG1, imm_opnd(RARRAY_EMBED_LEN_MASK));
+    shr(cb, REG1, imm_opnd(RARRAY_EMBED_LEN_SHIFT));
+
+    // Only handle the case where the number of values in the array is greater
+    // than or equal to the number of values requested.
+    cb_write_label(cb, push_values_label);
+    cmp(cb, REG1, imm_opnd(num));
+    jl_ptr(cb, COUNTED_EXIT(side_exit, expandarray_not_equal_len));
+
+    // Once more, compare if it is an embedded array to use for cmovs.
+    mov(cb, REG1, member_opnd(REG0, struct RBasic, flags));
+    test(cb, REG1, imm_opnd(RARRAY_EMBED_FLAG));
+
+    // If the last comparison was not 0, then we have an embedded array, so
+    // we're going to get the values from the embedded array.
+    // (struct RArray *)(obj)->as.ary
+    lea(cb, REG1, member_opnd(REG0, struct RArray, as.ary));
+
+    // If the last comparison was 0, then we don't have an embedded array,
+    // so we're going to get the values off the heap.
+    // (struct RArray *)(obj)->as.heap.ptr
+    cmovz(cb, REG1, member_opnd(REG0, struct RArray, as.heap.ptr));
+
+    // Loop backward through the array and push each element onto the stack.
+    for (int32_t i = (int32_t) num - 1; i >= 0; i--) {
+        x86opnd_t top = ctx_stack_push(ctx, TYPE_UNKNOWN);
+        mov(cb, REG0, mem_opnd(64, REG1, i * SIZEOF_VALUE));
+        mov(cb, top, REG0);
+    }
+
+    cb_link_labels(cb);
+    return YJIT_KEEP_COMPILING;
+}
+
 // new hash initialized from top N values
 static codegen_status_t
 gen_newhash(jitstate_t* jit, ctx_t* ctx)
@@ -3499,7 +3611,11 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(adjuststack), gen_adjuststack);
     yjit_reg_op(BIN(newarray), gen_newarray);
     yjit_reg_op(BIN(duparray), gen_duparray);
+<<<<<<< HEAD
     yjit_reg_op(BIN(splatarray), gen_splatarray);
+=======
+    yjit_reg_op(BIN(expandarray), gen_expandarray);
+>>>>>>> dc01eb5c5e (Implement expandarray)
     yjit_reg_op(BIN(newhash), gen_newhash);
     yjit_reg_op(BIN(concatstrings), gen_concatstrings);
     yjit_reg_op(BIN(putnil), gen_putnil);

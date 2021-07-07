@@ -151,6 +151,7 @@ module YJIT
       print_counters(stats, prefix: 'getivar_', prompt: 'getinstancevariable exit reasons:')
       print_counters(stats, prefix: 'setivar_', prompt: 'setinstancevariable exit reasons:')
       print_counters(stats, prefix: 'oaref_', prompt: 'opt_aref exit reasons: ')
+      print_counters(stats, prefix: 'expandarray_', prompt: 'expandarray exit reasons: ')
 
       total_exits = total_exit_count(stats)
 
