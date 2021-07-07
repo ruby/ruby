@@ -240,8 +240,12 @@ x86opnd_t const_ptr_opnd(const void *ptr);
      sizeof(((struct_type*)0)->member_name[0]) * idx)  \
 )
 
-// Code block methods
+// Machine code allocation
 uint8_t* alloc_exec_mem(uint32_t mem_size);
+uint8_t* alloc_code_page();
+void free_code_page(uint8_t* page_ptr);
+
+// Code block methods
 void cb_init(codeblock_t* cb, uint8_t* mem_block, uint32_t mem_size);
 void cb_align_pos(codeblock_t* cb, uint32_t multiple);
 void cb_set_pos(codeblock_t* cb, uint32_t pos);
