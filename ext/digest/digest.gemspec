@@ -10,11 +10,7 @@ Gem::Specification.new do |spec|
   spec.summary       = %q{Provides a framework for message digest libraries.}
   spec.description   = %q{Provides a framework for message digest libraries.}
   spec.homepage      = "https://github.com/ruby/digest"
-  if Gem::Platform === spec.platform and spec.platform =~ 'java' or RUBY_ENGINE == 'jruby'
-    spec.licenses      = ["Ruby", "BSD-2-Clause", "EPL-2.0", "GPL-2.0", "LGPL-2.1"]
-  else
-    spec.licenses      = ["Ruby", "BSD-2-Clause"]
-  end
+  spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   spec.files         = [
     "LICENSE.txt", "README.md",
