@@ -62,7 +62,7 @@ void rb_yjit_cme_invalidate(VALUE cme);
 void rb_yjit_collect_vm_usage_insn(int insn);
 void rb_yjit_collect_binding_alloc(void);
 void rb_yjit_collect_binding_set(void);
-void rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec);
+bool rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec);
 void rb_yjit_init(struct rb_yjit_options *options);
 void rb_yjit_bop_redefined(VALUE klass, const rb_method_entry_t *me, enum ruby_basic_operators bop);
 void rb_yjit_constant_state_changed(void);

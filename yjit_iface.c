@@ -465,9 +465,10 @@ yjit_block_assumptions_free(block_t *block)
     }
 }
 
-void
+bool
 rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec)
 {
+    bool success = true;
 #if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
     RB_VM_LOCK_ENTER();
     // TODO: I think we need to stop all other ractors here
@@ -478,14 +479,16 @@ rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec)
 
     if (code_ptr)
     {
-        // Map the code address to the corresponding opcode
-        int first_opcode = yjit_opcode_at_pc(iseq, &encoded[0]);
-        map_addr2insn(code_ptr, first_opcode);
-        encoded[0] = (VALUE)code_ptr;
+        iseq->body->jit_func = code_ptr;
+    }
+    else {
+        iseq->body->jit_func = 0;
+        success = false;
     }
 
     RB_VM_LOCK_LEAVE();
 #endif
+    return success;
 }
 
 struct yjit_block_itr {

@@ -261,21 +261,6 @@ yjit_gen_exit(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
 
     VALUE *exit_pc = jit->pc;
 
-    // YJIT only ever patches the first instruction in an iseq
-    if (jit->insn_idx == 0) {
-        // Table mapping opcodes to interpreter handlers
-        const void *const *handler_table = rb_vm_get_insns_address_table();
-
-        // Write back the old instruction at the exit PC
-        // Otherwise the interpreter may jump right back to the
-        // JITted code we're trying to exit
-        int exit_opcode = yjit_opcode_at_pc(jit->iseq, exit_pc);
-        void* handler_addr = (void*)handler_table[exit_opcode];
-        mov(cb, REG0, const_ptr_opnd(exit_pc));
-        mov(cb, REG1, const_ptr_opnd(handler_addr));
-        mov(cb, mem_opnd(64, REG0, 0), REG1);
-    }
-
     // Generate the code to exit to the interpreters
     // Write the adjusted SP back into the CFP
     if (ctx->sp_offset != 0) {
@@ -299,7 +284,8 @@ yjit_gen_exit(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     }
 #endif
 
-    cb_write_post_call_bytes(cb);
+    mov(cb, RAX, imm_opnd(Qundef));
+    ret(cb);
 
     return code_ptr;
 }
@@ -316,10 +302,13 @@ yjit_gen_leave_exit(codeblock_t *cb)
     // Every exit to the interpreter should be counted
     GEN_COUNTER_INC(cb, leave_interp_return);
 
-    // Put PC into the return register, which the post call bytes dispatches to
-    mov(cb, RAX, member_opnd(REG_CFP, rb_control_frame_t, pc));
+    // GEN_COUNTER_INC clobbers RAX, so put the top of the stack
+    // in to RAX and return.
+    mov(cb, RAX, mem_opnd(64, REG_SP, -SIZEOF_VALUE));
+    sub(cb, member_opnd(REG_CFP, rb_control_frame_t, sp), imm_opnd(SIZEOF_VALUE));
+    mov(cb, REG_SP, member_opnd(REG_CFP, rb_control_frame_t, sp));
 
-    cb_write_post_call_bytes(cb);
+    ret(cb);
 
     return code_ptr;
 }
@@ -348,9 +337,14 @@ yjit_entry_prologue(void)
     cb_align_pos(cb, 64);
 
     uint8_t *code_ptr = cb_get_ptr(cb, cb->write_pos);
+    ADD_COMMENT(cb, "yjit prolog");
 
-    // Write the interpreter entry prologue
-    cb_write_pre_call_bytes(cb);
+    // Fix registers for YJIT.  The MJIT callback puts the ec in RDI
+    // and the CFP in RSI, but REG_CFP == RDI and REG_EC == RSI
+    mov(cb, REG0, RDI); // EC
+    mov(cb, REG1, RSI); // CFP
+    mov(cb, REG_EC, REG0);
+    mov(cb, REG_CFP, REG1);
 
     // Load the current SP from the CFP into REG_SP
     mov(cb, REG_SP, member_opnd(REG_CFP, rb_control_frame_t, sp));
@@ -363,7 +357,8 @@ yjit_entry_prologue(void)
     return code_ptr;
 }
 
-// Generate code to check for interrupts and take a side-exit
+// Generate code to check for interrupts and take a side-exit.
+// Warning: this function clobbers REG0
 static void
 yjit_check_ints(codeblock_t* cb, uint8_t* side_exit)
 {
@@ -3374,15 +3369,10 @@ gen_leave(jitstate_t* jit, ctx_t* ctx)
     uint8_t* side_exit = yjit_side_exit(jit, ctx);
 
     // Load environment pointer EP from CFP
-    mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, ep));
-
-    // if (flags & VM_FRAME_FLAG_FINISH) != 0
-    ADD_COMMENT(cb, "check for finish frame");
-    x86opnd_t flags_opnd = mem_opnd(64, REG0, sizeof(VALUE) * VM_ENV_DATA_INDEX_FLAGS);
-    test(cb, flags_opnd, imm_opnd(VM_FRAME_FLAG_FINISH));
-    jnz_ptr(cb, COUNTED_EXIT(side_exit, leave_se_finish_frame));
+    mov(cb, REG1, member_opnd(REG_CFP, rb_control_frame_t, ep));
 
     // Check for interrupts
+    ADD_COMMENT(cb, "check for interrupts");
     yjit_check_ints(cb, COUNTED_EXIT(side_exit, leave_se_interrupt));
 
     // Load the return value

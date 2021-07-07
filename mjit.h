@@ -150,17 +150,27 @@ mjit_exec(rb_execution_context_t *ec)
 
 #ifndef MJIT_HEADER
     if (rb_yjit_enabled_p() && !mjit_call_p && body->total_calls == rb_yjit_call_threshold())  {
-        rb_yjit_compile_iseq(iseq, ec);
-        return Qundef;
+        // If we couldn't generate any code for this iseq, then return
+        // Qundef so the interpreter will handle the call.
+        if (!rb_yjit_compile_iseq(iseq, ec)) {
+          return Qundef;
+        }
     }
 #endif
 
-    if (!mjit_call_p)
+    if (!(mjit_call_p || rb_yjit_enabled_p()))
         return Qundef;
 
     RB_DEBUG_COUNTER_INC(mjit_exec);
 
     mjit_func_t func = body->jit_func;
+
+    // YJIT tried compiling this function once before and couldn't do
+    // it, so return Qundef so the interpreter handles it.
+    if (rb_yjit_enabled_p() && func == 0) {
+      return Qundef;
+    }
+
     if (UNLIKELY((uintptr_t)func <= LAST_JIT_ISEQ_FUNC)) {
 #  ifdef MJIT_HEADER
         RB_DEBUG_COUNTER_INC(mjit_frame_JT2VM);
@@ -176,6 +186,8 @@ mjit_exec(rb_execution_context_t *ec)
     RB_DEBUG_COUNTER_INC(mjit_frame_VM2JT);
 #  endif
     RB_DEBUG_COUNTER_INC(mjit_exec_call_func);
+    // ec -> RDI
+    // cfp -> RSI
     return func(ec, ec->cfp);
 }
 
