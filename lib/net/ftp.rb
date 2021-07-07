@@ -97,6 +97,10 @@ module Net
     # When +true+, the connection is in passive mode.  Default: +true+.
     attr_accessor :passive
 
+    # When +true+, use the IP address in PASV responses.  Otherwise, it uses
+    # the same IP address for the control connection.  Default: +false+.
+    attr_accessor :use_pasv_ip
+
     # When +true+, all traffic to and from the server is written
     # to +$stdout+.  Default: +false+.
     attr_accessor :debug_mode
@@ -205,6 +209,9 @@ module Net
     #                          handshake.
     #                          See Net::FTP#ssl_handshake_timeout for
     #                          details.  Default: +nil+.
+    # use_pasv_ip::  When +true+, use the IP address in PASV responses.
+    #                Otherwise, it uses the same IP address for the control
+    #                connection.  Default: +false+.
     # debug_mode::  When +true+, all traffic to and from the server is
     #               written to +$stdout+.  Default: +false+.
     #
@@ -265,6 +272,7 @@ module Net
       @open_timeout = options[:open_timeout]
       @ssl_handshake_timeout = options[:ssl_handshake_timeout]
       @read_timeout = options[:read_timeout] || 60
+      @use_pasv_ip = options[:use_pasv_ip] || false
       if host
         connect(host, options[:port] || FTP_PORT)
         if options[:username]
@@ -1330,7 +1338,12 @@ module Net
         raise FTPReplyError, resp
       end
       if m = /\((?<host>\d+(,\d+){3}),(?<port>\d+,\d+)\)/.match(resp)
-        return parse_pasv_ipv4_host(m["host"]), parse_pasv_port(m["port"])
+        if @use_pasv_ip
+          host = parse_pasv_ipv4_host(m["host"])
+        else
+          host = @bare_sock.remote_address.ip_address
+        end
+        return host, parse_pasv_port(m["port"])
       else
         raise FTPProtoError, resp
       end
