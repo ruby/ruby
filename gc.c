@@ -6461,10 +6461,10 @@ static void
 mark_current_machine_context(rb_objspace_t *objspace, rb_execution_context_t *ec)
 {
     emscripten_scan_stack(rb_emscripten_mark_locations);
-    mark_stack_locations(objspace, ec, rb_emscripten_stack_range_tmp[0], rb_emscripten_stack_range_tmp[1]);
+    each_stack_location(objspace, ec, rb_emscripten_stack_range_tmp[0], rb_emscripten_stack_range_tmp[1], gc_mark_maybe);
 
     emscripten_scan_registers(rb_emscripten_mark_locations);
-    mark_stack_locations(objspace, ec, rb_emscripten_stack_range_tmp[0], rb_emscripten_stack_range_tmp[1]);
+    each_stack_location(objspace, ec, rb_emscripten_stack_range_tmp[0], rb_emscripten_stack_range_tmp[1], gc_mark_maybe);
 }
 #endif
 
