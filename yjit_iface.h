@@ -71,6 +71,11 @@ YJIT_DECLARE_COUNTERS(
     vm_insns_count,
     compiled_iseq_count,
 
+    expandarray_splat,
+    expandarray_postarg,
+    expandarray_not_array,
+    expandarray_not_equal_len,
+
     // Member with known name for iterating over counters
     last_member
 )
