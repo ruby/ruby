@@ -4,7 +4,7 @@ require 'rubygems/request'
 require 'rubygems/request/connection_pools'
 require 'rubygems/s3_uri_signer'
 require 'rubygems/uri_formatter'
-require 'rubygems/uri_parsing'
+require 'rubygems/uri_parser'
 require 'rubygems/user_interaction'
 require 'resolv'
 
@@ -14,15 +14,12 @@ require 'resolv'
 
 class Gem::RemoteFetcher
   include Gem::UserInteraction
-  include Gem::UriParsing
 
   ##
   # A FetchError exception wraps up the various possible IO and HTTP failures
   # that could happen while downloading from the internet.
 
   class FetchError < Gem::Exception
-    include Gem::UriParsing
-
     ##
     # The URI which was being accessed when the exception happened.
 
@@ -31,7 +28,7 @@ class Gem::RemoteFetcher
     def initialize(message, uri)
       super message
 
-      uri = parse_uri(uri)
+      uri = Gem::UriParser.parse_uri(uri)
 
       @original_uri = uri.dup
 
@@ -88,7 +85,7 @@ class Gem::RemoteFetcher
 
     @proxy = proxy
     @pools = {}
-    @pool_lock = Mutex.new
+    @pool_lock = Thread::Mutex.new
     @cert_files = Gem::Request.get_cert_files
 
     @headers = headers
@@ -133,7 +130,7 @@ class Gem::RemoteFetcher
     require "fileutils"
     FileUtils.mkdir_p cache_dir rescue nil unless File.exist? cache_dir
 
-    source_uri = parse_uri(source_uri)
+    source_uri = Gem::UriParser.parse_uri(source_uri)
 
     scheme = source_uri.scheme
 
@@ -228,7 +225,7 @@ class Gem::RemoteFetcher
       unless location = response['Location']
         raise FetchError.new("redirecting but no redirect location was given", uri)
       end
-      location = parse_uri location
+      location = Gem::UriParser.parse_uri location
 
       if https?(uri) && !https?(location)
         raise FetchError.new("redirecting to non-https resource: #{location}", uri)
@@ -246,7 +243,7 @@ class Gem::RemoteFetcher
   # Downloads +uri+ and returns it as a String.
 
   def fetch_path(uri, mtime = nil, head = false)
-    uri = parse_uri uri
+    uri = Gem::UriParser.parse_uri uri
 
     unless uri.scheme
       raise ArgumentError, "uri scheme is invalid: #{uri.scheme.inspect}"

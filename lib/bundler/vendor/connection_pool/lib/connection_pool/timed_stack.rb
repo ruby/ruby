@@ -39,8 +39,8 @@ class Bundler::ConnectionPool::TimedStack
     @created = 0
     @que = []
     @max = size
-    @mutex = Mutex.new
-    @resource = ConditionVariable.new
+    @mutex = Thread::Mutex.new
+    @resource = Thread::ConditionVariable.new
     @shutdown_block = nil
   end
 

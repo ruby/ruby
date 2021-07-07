@@ -27,7 +27,7 @@ class Bundler::ConnectionPool
 
       # @!visibility private
       def initialize
-        @mutex = Mutex.new
+        @mutex = Thread::Mutex.new
         @last_time = Time.now.to_f
       end
 

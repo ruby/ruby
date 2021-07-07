@@ -371,7 +371,7 @@ RSpec.describe "gemcutter's dependency API" do
 
     api_request_limit = low_api_request_limit_for(gem_repo2)
 
-    install_gemfile <<-G, :artifice => "endpoint_extra_missing", :env => { "BUNDLER_SPEC_API_REQUEST_LIMIT" => api_request_limit.to_s }.merge(env_for_missing_prerelease_default_gem_activation)
+    install_gemfile <<-G, :artifice => "endpoint_extra_missing", :requires => [api_request_limit_hack_file], :env => { "BUNDLER_SPEC_API_REQUEST_LIMIT" => api_request_limit.to_s }.merge(env_for_missing_prerelease_default_gem_activation)
       source "#{source_uri}"
       source "#{source_uri}/extra"
       gem "back_deps"
@@ -392,7 +392,7 @@ RSpec.describe "gemcutter's dependency API" do
 
     api_request_limit = low_api_request_limit_for(gem_repo2)
 
-    install_gemfile <<-G, :artifice => "endpoint_extra_missing", :env => { "BUNDLER_SPEC_API_REQUEST_LIMIT" => api_request_limit.to_s }.merge(env_for_missing_prerelease_default_gem_activation)
+    install_gemfile <<-G, :artifice => "endpoint_extra_missing", :requires => [api_request_limit_hack_file], :env => { "BUNDLER_SPEC_API_REQUEST_LIMIT" => api_request_limit.to_s }.merge(env_for_missing_prerelease_default_gem_activation)
       source "#{source_uri}"
       source "#{source_uri}/extra" do
         gem "back_deps"
