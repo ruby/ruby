@@ -127,6 +127,16 @@ class IMAPTest < Test::Unit::TestCase
         imap.disconnect
       end
     end
+
+    def test_starttls_stripping
+      starttls_stripping_test do |port|
+        imap = Net::IMAP.new("localhost", :port => port)
+        assert_raise(Net::IMAP::UnknownResponseError) do
+          imap.starttls(:ca_file => CA_FILE)
+        end
+        imap
+      end
+    end
   end
 
   def start_server
@@ -779,6 +789,27 @@ EOF
     begin
       imap = yield(port)
       imap.logout if !imap.disconnected?
+    ensure
+      imap.disconnect if imap && !imap.disconnected?
+    end
+  end
+
+  def starttls_stripping_test
+    server = create_tcp_server
+    port = server.addr[1]
+    start_server do
+      sock = server.accept
+      begin
+        sock.print("* OK test server\r\n")
+        sock.gets
+        sock.print("RUBY0001 BUG unhandled command\r\n")
+      ensure
+        sock.close
+        server.close
+      end
+    end
+    begin
+      imap = yield(port)
     ensure
       imap.disconnect if imap && !imap.disconnected?
     end
