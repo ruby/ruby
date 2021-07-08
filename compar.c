@@ -62,8 +62,7 @@ rb_invcmp(VALUE x, VALUE y)
 static VALUE
 cmp_eq_recursive(VALUE arg1, VALUE arg2, int recursive)
 {
-    if (recursive) return Qnil;
-    return rb_cmp(arg1, arg2);
+    return invcmp_recursive(arg2, arg1, recursive);
 }
 
 /*
