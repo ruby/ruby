@@ -65,7 +65,7 @@ strio_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
 		n = strchr(n, '|');
 	    }
 	    e = strchr(++n, ':');
-	    len = e ? e - n : strlen(n);
+	    len = e ? e - n : (long)strlen(n);
 	    if (len > 0 && len <= ENCODING_MAXNAMELEN) {
 		if (e) {
 		    memcpy(encname, n, len);
