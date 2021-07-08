@@ -142,7 +142,7 @@ class TestHash < Test::Unit::TestCase
     end
   end
 
-  def test_s_AREF
+  def test_s_AREF_from_hash
     h = @cls["a" => 100, "b" => 200]
     assert_equal(100, h['a'])
     assert_equal(200, h['b'])
@@ -153,11 +153,21 @@ class TestHash < Test::Unit::TestCase
     assert_equal(200, h['b'])
     assert_nil(h['c'])
 
+    h = @cls[Hash.new(42)]
+    assert_nil(h['a'])
+
+    h = @cls[Hash.new {42}]
+    assert_nil(h['a'])
+  end
+
+  def test_s_AREF_from_list
     h = @cls["a", 100, "b", 200]
     assert_equal(100, h['a'])
     assert_equal(200, h['b'])
     assert_nil(h['c'])
+  end
 
+  def test_s_AREF_from_pairs
     h = @cls[[["a", 100], ["b", 200]]]
     assert_equal(100, h['a'])
     assert_equal(200, h['b'])
