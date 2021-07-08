@@ -44,6 +44,7 @@
 #include "symbol.h"
 #include "transient_heap.h"
 #include "ruby/thread_native.h"
+#include "ruby/ractor.h"
 
 #ifndef HASH_DEBUG
 #define HASH_DEBUG 0
@@ -7285,6 +7286,8 @@ Init_Hash(void)
     origenviron = environ;
     envtbl = rb_obj_alloc(rb_cObject);
     rb_extend_object(envtbl, rb_mEnumerable);
+    FL_SET_RAW(envtbl, RUBY_FL_SHAREABLE);
+
 
     rb_define_singleton_method(envtbl, "[]", rb_f_getenv, 1);
     rb_define_singleton_method(envtbl, "fetch", env_fetch, -1);
