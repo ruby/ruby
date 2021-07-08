@@ -585,6 +585,13 @@ class TestDateParse < Test::Unit::TestCase
     assert_equal(5025, h[:offset])
   end
 
+  def test__parse_too_long_year
+    str = "Jan 1" + "0" * 100_000
+    h = Timeout.timeout(1) {Date._parse(str)}
+    assert_equal(100_000, Math.log10(h[:year]))
+    assert_equal(1, h[:mon])
+  end
+
   require 'time'
 
   def test_parse__time
