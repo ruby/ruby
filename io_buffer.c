@@ -739,16 +739,28 @@ static void io_buffer_validate_type(size_t size, size_t offset) {
 
 #define ruby_swap8(value) value
 
+union swapf32 {
+    uint32_t integral;
+    float value;
+};
+
 static float ruby_swapf32(float value)
 {
-    uint32_t swapped = ruby_swap32(*(uint32_t*)&value);
-    return *(float*)&swapped;
+    union swapf32 swap = {.value = value};
+    swap.integral = ruby_swap32(swap.integral);
+    return swap.value;
 }
+
+union swapf64 {
+    uint64_t integral;
+    double value;
+};
 
 static double ruby_swapf64(double value)
 {
-    uint64_t swapped = ruby_swap64(*(uint64_t*)&value);
-    return *(double*)&swapped;
+    union swapf64 swap = {.value = value};
+    swap.integral = ruby_swap64(swap.integral);
+    return swap.value;
 }
 
 #define DECLAIR_TYPE(name, type, endian, wrap, unwrap, swap) \
