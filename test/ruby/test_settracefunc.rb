@@ -2401,4 +2401,18 @@ class TestSetTraceFunc < Test::Unit::TestCase
     }
     assert_equal [__LINE__ - 5, __LINE__ - 4, __LINE__ - 3], lines, 'Bug #17868'
   end
+
+  def test_b_return_raising_with_bmethod_and_break
+    assert_normal_exit <<-EOS
+      class Foo
+        define_singleton_method(:foo) { return }
+      end
+
+      TracePoint.trace(:b_return) do |tp|
+        raise
+      end
+
+      Foo.foo
+    EOS
+  end
 end
