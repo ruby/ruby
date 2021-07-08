@@ -161,6 +161,23 @@ int rb_iseq_add_local_tracepoint_recursively(const rb_iseq_t *iseq, rb_event_fla
 int rb_iseq_remove_local_tracepoint_recursively(const rb_iseq_t *iseq, VALUE tpval);
 const rb_iseq_t *rb_iseq_load_iseq(VALUE fname);
 
+// We need to fire call events on instruction with b_call events if the block
+// is running as a method. So, if we are listening for call events, then
+// instructions that have b_call events need to become trace variants.
+// Use this function when making decisions about recompiling to trace variants.
+static inline rb_event_flag_t
+rb_iseq_insn_effective_events(rb_event_flag_t events)
+{
+    if (events & RUBY_EVENT_CALL) {
+        events |= RUBY_EVENT_B_CALL;
+    }
+    if (events & RUBY_EVENT_RETURN) {
+        events |= RUBY_EVENT_B_RETURN;
+    }
+    return events;
+}
+
+
 #if VM_INSN_INFO_TABLE_IMPL == 2
 unsigned int *rb_iseq_insns_info_decode_positions(const struct rb_iseq_constant_body *body);
 #endif

@@ -80,7 +80,8 @@ update_global_event_hook(rb_event_flag_t vm_events)
     rb_event_flag_t new_iseq_events = vm_events & ISEQ_TRACE_EVENTS;
     rb_event_flag_t enabled_iseq_events = ruby_vm_event_enabled_global_flags & ISEQ_TRACE_EVENTS;
 
-    if (new_iseq_events & ~enabled_iseq_events) {
+    if (rb_iseq_insn_effective_events(new_iseq_events) &
+            ~rb_iseq_insn_effective_events(enabled_iseq_events)) {
         /* Stop calling all JIT-ed code. Compiling trace insns is not supported for now. */
 #if USE_MJIT
         mjit_call_p = FALSE;

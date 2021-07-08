@@ -5386,7 +5386,7 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
 
         VM_ASSERT((local_hook_events & ~ISEQ_TRACE_EVENTS) == 0);
 
-        if ((pc_events & enabled_flags) == 0) {
+        if ((pc_events & rb_iseq_insn_effective_events(enabled_flags)) == 0) {
 #if 0
 	    /* disable trace */
             /* TODO: incomplete */
@@ -5415,17 +5415,25 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
             }
             VM_ASSERT(reg_cfp->pc == pc);
             VM_ASSERT(pc_events != 0);
-            VM_ASSERT(enabled_flags & pc_events);
 
             /* check traces */
+            if ((pc_events & RUBY_EVENT_B_CALL) && (enabled_flags & RUBY_EVENT_CALL) && VM_FRAME_BMETHOD_P(reg_cfp)) {
+                /* b_call instruction running as a method. Fire call event. */
+                vm_trace_hook(ec, reg_cfp, pc, RUBY_EVENT_CALL, RUBY_EVENT_CALL, global_hooks, local_hooks, Qundef);
+            }
             VM_TRACE_HOOK(RUBY_EVENT_CLASS | RUBY_EVENT_CALL | RUBY_EVENT_B_CALL,   Qundef);
             VM_TRACE_HOOK(RUBY_EVENT_LINE,                                          Qundef);
             VM_TRACE_HOOK(RUBY_EVENT_COVERAGE_LINE,                                 Qundef);
             VM_TRACE_HOOK(RUBY_EVENT_COVERAGE_BRANCH,                               Qundef);
             VM_TRACE_HOOK(RUBY_EVENT_END | RUBY_EVENT_RETURN | RUBY_EVENT_B_RETURN, TOPN(0));
+            if ((pc_events & RUBY_EVENT_B_RETURN) && (enabled_flags & RUBY_EVENT_RETURN) && VM_FRAME_BMETHOD_P(reg_cfp)) {
+                /* b_return instruction running as a method. Fire return event. */
+                vm_trace_hook(ec, reg_cfp, pc, RUBY_EVENT_RETURN, RUBY_EVENT_RETURN, global_hooks, local_hooks, TOPN(0));
+            }
         }
     }
 }
+#undef VM_TRACE_HOOK
 
 #if VM_CHECK_MODE > 0
 NORETURN( NOINLINE( COLDFUNC

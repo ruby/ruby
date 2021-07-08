@@ -313,16 +313,18 @@ describe 'TracePoint#enable' do
       end
 
       it "raises ArgumentError if target object cannot trigger specified event" do
-        trace = TracePoint.new(:call) do |tp|
+        trace = TracePoint.new(:b_return) do |tp|
           next unless TracePointSpec.target_thread?
           ScratchPad << tp.method_id
         end
 
-        block = proc {}
+        obj = Object.new
+        def obj.empty_method
+        end
 
         -> {
-          trace.enable(target: block) do
-            block.call # triggers :b_call and :b_return events
+          trace.enable(target: obj.method(:empty_method)) do
+            block.empty_method # can never trigger b_return
           end
         }.should raise_error(ArgumentError, /can not enable any hooks/)
       end
