@@ -694,6 +694,9 @@ parse_time(VALUE str, VALUE hash)
 #endif
 }
 
+#define BEGIN_ERA "\\b"
+#define END_ERA "(?!(?<!\\.)[a-z])"
+
 #ifdef TIGHT_PARSER
 static int
 parse_era1_cb(VALUE m, VALUE hash)
@@ -705,7 +708,7 @@ static int
 parse_era1(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
-	"(a(?:d|\\.d\\.))";
+	BEGIN_ERA "(a(?:d\\b|\\.d\\.))" END_ERA;
     static VALUE pat = Qnil;
 
     REGCOMP_I(pat);
@@ -727,8 +730,9 @@ parse_era2_cb(VALUE m, VALUE hash)
 static int
 parse_era2(VALUE str, VALUE hash)
 {
-    static const char pat_source[] =
-	"(c(?:e|\\.e\\.)|b(?:ce|\\.c\\.e\\.)|b(?:c|\\.c\\.))";
+    static const char pat_source[] = BEGIN_ERA
+	"(c(?:e\\b|\\.e\\.)|b(?:ce\\b|\\.c\\.e\\.)|b(?:c\\b|\\.c\\.))"
+	END_ERA;
     static VALUE pat = Qnil;
 
     REGCOMP_I(pat);
@@ -845,7 +849,11 @@ parse_eu(VALUE str, VALUE hash)
 		 "(?:"
 		   "\\s*"
 #ifndef TIGHT_PARSER
-		   "(c(?:e|\\.e\\.)|b(?:ce|\\.c\\.e\\.)|a(?:d|\\.d\\.)|b(?:c|\\.c\\.))?"
+		   "(?:"
+		     BEGIN_ERA
+		     "(c(?:e|\\.e\\.)|b(?:ce|\\.c\\.e\\.)|a(?:d|\\.d\\.)|b(?:c|\\.c\\.))"
+		     END_ERA
+		   ")?"
 		   "\\s*"
 		   "('?-?\\d+(?:(?:st|nd|rd|th)\\b)?)"
 #else
