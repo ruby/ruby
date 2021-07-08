@@ -812,11 +812,19 @@ SRC
   # You should use +have_var+ rather than +try_var+.
   def try_var(var, headers = nil, opt = "", &b)
     headers = cpp_include(headers)
-    try_compile(<<"SRC", opt, &b)
+    try_compile(<<"SRC", opt, &b) or
 #{headers}
 /*top*/
 extern int t(void);
 #{MAIN_DOES_NOTHING 't'}
+int t(void) { const volatile void *volatile p; p = &(&#{var})[0]; return !p; }
+SRC
+    try_link(<<"SRC", opt, &b)
+#{headers}
+/*top*/
+extern int t(void);
+#{MAIN_DOES_NOTHING 't'}
+extern int #{var};
 int t(void) { const volatile void *volatile p; p = &(&#{var})[0]; return !p; }
 SRC
   end
