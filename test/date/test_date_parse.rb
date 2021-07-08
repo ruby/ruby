@@ -590,6 +590,11 @@ class TestDateParse < Test::Unit::TestCase
     h = Timeout.timeout(1) {Date._parse(str)}
     assert_equal(100_000, Math.log10(h[:year]))
     assert_equal(1, h[:mon])
+
+    str = "Jan - 1" + "0" * 100_000
+    h = Timeout.timeout(1) {Date._parse(str)}
+    assert_equal(1, h[:mon])
+    assert_not_include(h, :year)
   end
 
   require 'time'

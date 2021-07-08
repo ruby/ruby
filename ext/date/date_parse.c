@@ -980,7 +980,7 @@ parse_iso(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
 #ifndef TIGHT_PARSER
-	"('?[-+]?\\d+)-(\\d+)-('?-?\\d+)"
+	"('?[-+]?" NUMBER "+)-(\\d+)-('?-?\\d+)"
 #else
 	BOS
 	FPW_COM FPT_COM
