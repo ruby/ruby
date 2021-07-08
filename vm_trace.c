@@ -390,6 +390,7 @@ exec_hooks_protected(rb_execution_context_t *ec, rb_hook_list_t *list, const rb_
     return state;
 }
 
+// pop_p: Whether to pop the frame for the TracePoint when it throws.
 MJIT_FUNC_EXPORTED void
 rb_exec_event_hooks(rb_trace_arg_t *trace_arg, rb_hook_list_t *hooks, int pop_p)
 {
