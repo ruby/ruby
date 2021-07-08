@@ -922,8 +922,8 @@ parse_us(VALUE str, VALUE hash)
 		COM_FPT
 #endif
 		 "(?:"
-		   "\\s*,?"
-		   "\\s*"
+		   "\\s*+,?"
+		   "\\s*+"
 #ifndef TIGHT_PARSER
 		   "(c(?:e|\\.e\\.)|b(?:ce|\\.c\\.e\\.)|a(?:d|\\.d\\.)|b(?:c|\\.c\\.))?"
 		   "\\s*"
