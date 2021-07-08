@@ -190,9 +190,6 @@ class Reline::Windows
       # It's treated as Meta+Space on Windows.
       @@output_buf.push("\e".ord)
       @@output_buf.push(char_code)
-    elsif control_key_state.anybits?(LEFT_ALT_PRESSED | RIGHT_ALT_PRESSED)
-      @@output_buf.push("\e".ord)
-      @@output_buf.concat(char.bytes)
     elsif control_key_state.anybits?(ENHANCED_KEY)
       case virtual_key_code # Emulate getwch() key sequences.
       when VK_END
