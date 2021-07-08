@@ -8,7 +8,7 @@ jobs:
         os:
           - ubuntu-20.04
 #         - ubuntu-18.04
-        configure: ["", "--with-coroutine=pthread", "cppflags=-DRUBY_DEBUG"]
+        configure: ["", "cppflags=-DRUBY_DEBUG"]
         include:
           - test_task: "test-all TESTS=--repeat-count=2"
             os: ubuntu-20.04
