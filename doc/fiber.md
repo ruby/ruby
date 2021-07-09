@@ -48,6 +48,14 @@ When the thread exits, there is an implicit call to `set_scheduler`:
 Fiber.set_scheduler(nil)
 ```
 
+### Design
+
+The scheduler interface is designed to be a un-opinionated light-weight layer
+between user code and blocking operations. The scheduler hooks should avoid
+translating or converting arguments or return values. Ideally, the exact same
+arguments from the user code are provided directly to the scheduler hook with
+no changes.
+
 ### Interface
 
 This is the interface you need to implement.
