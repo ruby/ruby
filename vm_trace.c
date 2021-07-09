@@ -1213,6 +1213,28 @@ rb_tracepoint_enable_for_target(VALUE tpval, VALUE target, VALUE target_line)
     return Qnil;
 }
 
+static void
+hook_list_filter_tracepoint(rb_hook_list_t *list, VALUE tpval)
+{
+    rb_event_hook_t *hook = list->hooks;
+    rb_event_hook_t *prev_hook = NULL;
+
+    while (hook) {
+        if (hook->data == tpval) {
+            if (prev_hook) {
+                prev_hook->next = hook->next;
+            }
+            else {
+                list->hooks = hook->next;
+            }
+        }
+        else {
+            prev_hook = hook;
+        }
+        hook = hook->next;
+    }
+}
+
 static int
 disable_local_event_iseq_i(VALUE target, VALUE iseq_p, VALUE tpval)
 {
@@ -1228,7 +1250,7 @@ disable_local_event_iseq_i(VALUE target, VALUE iseq_p, VALUE tpval)
         if (hooks->running == 0) {
             rb_hook_list_free(def->body.bmethod.hooks);
         }
-        def->body.bmethod.hooks = NULL;
+        hook_list_filter_tracepoint(def->body.bmethod.hooks, tpval);
     }
     return ST_CONTINUE;
 }
