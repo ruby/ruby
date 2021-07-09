@@ -422,7 +422,7 @@ static VALUE io_buffer_hexdump(VALUE string, size_t width, char *base, size_t si
     return string;
 }
 
-VALUE rb_io_buffer_inspect(int argc, VALUE *argv, VALUE self)
+VALUE rb_io_buffer_inspect(VALUE self)
 {
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
@@ -959,7 +959,7 @@ void Init_IO_Buffer()
 
     // General use:
     rb_define_method(rb_cIOBuffer, "initialize", rb_io_buffer_initialize, -1);
-    rb_define_method(rb_cIOBuffer, "inspect", rb_io_buffer_inspect, -1);
+    rb_define_method(rb_cIOBuffer, "inspect", rb_io_buffer_inspect, 0);
     rb_define_method(rb_cIOBuffer, "to_s", rb_io_buffer_to_s, 0);
     rb_define_method(rb_cIOBuffer, "size", rb_io_buffer_size, 0);
 
