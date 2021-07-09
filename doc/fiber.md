@@ -65,13 +65,27 @@ class Scheduler
     end.value
   end
 
-  # Wait for the given file descriptor to match the specified events within
+  # Wait for the given io readiness to match the specified events within
   # the specified timeout.
   # @parameter event [Integer] A bit mask of `IO::READABLE`,
   #   `IO::WRITABLE` and `IO::PRIORITY`.
   # @parameter timeout [Numeric] The amount of time to wait for the event in seconds.
   # @returns [Integer] The subset of events that are ready.
   def io_wait(io, events, timeout)
+  end
+
+  # Read from the given io into the specified buffer.
+  # @parameter io [IO] The io to read from.
+  # @parameter buffer [IO::Buffer] The buffer to read into.
+  # @parameter length [Integer] The minimum amount to read.
+  def io_read(io, buffer, length)
+  end
+
+  # Write from the given buffer into the specified IO.
+  # @parameter io [IO] The io to write to.
+  # @parameter buffer [IO::Buffer] The buffer to write from.
+  # @parameter length [Integer] The minimum amount to write.
+  def io_write(io, buffer, length)
   end
 
   # Sleep the current task for the specified duration, or forever if not
