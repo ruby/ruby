@@ -4136,6 +4136,39 @@ gen_getblockparamproxy(jitstate_t *jit, ctx_t *ctx)
     return YJIT_KEEP_COMPILING;
 }
 
+static codegen_status_t
+gen_invokebuiltin(jitstate_t *jit, ctx_t *ctx)
+{
+    const struct rb_builtin_function *bf = (struct rb_builtin_function *)jit_get_arg(jit, 0);
+
+    if (bf->argc + 2 > NUM_C_ARG_REGS) {
+        return YJIT_CANT_COMPILE;
+    }
+
+    // If the calls don't allocate, do they need up to date PC, SP?
+    jit_prepare_routine_call(jit, ctx, REG0);
+
+    // Call the builtin func (ec, recv, arg1, arg2, ...)
+    mov(cb, C_ARG_REGS[0], REG_EC);
+    mov(cb, C_ARG_REGS[1], member_opnd(REG_CFP, rb_control_frame_t, self));
+
+    // Copy arguments from locals
+    for (int32_t i = 0; i < bf->argc; i++) {
+        x86opnd_t stack_opnd = ctx_stack_opnd(ctx, bf->argc - i - 1);
+        x86opnd_t c_arg_reg = C_ARG_REGS[2 + i];
+        mov(cb, c_arg_reg, stack_opnd);
+    }
+
+    call_ptr(cb, REG0, (void *)bf->func_ptr);
+
+    // Push the return value
+    ctx_stack_pop(ctx, bf->argc);
+    x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_UNKNOWN);
+    mov(cb, stack_ret, RAX);
+
+    return YJIT_KEEP_COMPILING;
+}
+
 // opt_invokebuiltin_delegate calls a builtin function, like
 // invokebuiltin does, but instead of taking arguments from the top of the
 // stack uses the argument locals (and self) from the current method.
@@ -4145,7 +4178,7 @@ gen_opt_invokebuiltin_delegate(jitstate_t *jit, ctx_t *ctx)
     const struct rb_builtin_function *bf = (struct rb_builtin_function *)jit_get_arg(jit, 0);
     int32_t start_index = (int32_t)jit_get_arg(jit, 1);
 
-    if (bf->argc + 2 >= NUM_C_ARG_REGS) {
+    if (bf->argc + 2 > NUM_C_ARG_REGS) {
         return YJIT_CANT_COMPILE;
     }
 
@@ -4387,6 +4420,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(opt_length), gen_opt_length);
     yjit_reg_op(BIN(opt_regexpmatch2), gen_opt_regexpmatch2);
     yjit_reg_op(BIN(opt_getinlinecache), gen_opt_getinlinecache);
+    yjit_reg_op(BIN(invokebuiltin), gen_invokebuiltin);
     yjit_reg_op(BIN(opt_invokebuiltin_delegate), gen_opt_invokebuiltin_delegate);
     yjit_reg_op(BIN(opt_invokebuiltin_delegate_leave), gen_opt_invokebuiltin_delegate);
     yjit_reg_op(BIN(opt_case_dispatch), gen_opt_case_dispatch);

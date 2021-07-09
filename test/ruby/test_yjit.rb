@@ -310,6 +310,19 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_invokebuiltin
+    assert_compiles(<<~RUBY)
+      def foo(obj)
+        obj.foo = 123
+        obj.bar = 123
+      end
+
+      Foo = Struct.new(:foo, :bar)
+      foo(Foo.new(123))
+      foo(Foo.new(123))
+    RUBY
+  end
+
   def test_super_iseq
     assert_compiles(<<~'RUBY', insns: %i[invokesuper opt_plus opt_mult], result: 15)
       class A
