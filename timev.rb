@@ -285,7 +285,8 @@ class Time
   # :include: doc/time/sec.rdoc
   # :include: doc/time/zone_and_in.rdoc
   #
-  def initialize(year = (now = true), mon = (time = year; nil), mday = nil, hour = nil, min = nil, sec = nil, zone = nil, in: nil, base: nil)
+  def initialize(year = (now = true), mon = (time = String.try_convert(year); nil),
+                 mday = nil, hour = nil, min = nil, sec = nil, zone = nil, in: nil, base: nil)
     if zone
       if __builtin.arg!(:in)
         raise ArgumentError, "timezone argument given as positional and keyword arguments"
@@ -298,7 +299,7 @@ class Time
       return __builtin.time_init_now(zone)
     end
 
-    if time and !(year = Integer(String.try_convert(time), 10, exception: false))
+    if time and !(year = Integer(time, 10, exception: false))
       year = time
       # :x is for Extensions
       # :b is for Basic Rules
