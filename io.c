@@ -205,7 +205,7 @@ VALUE rb_default_rs;
 
 static VALUE argf;
 
-static ID id_write, id_read, id_getc, id_flush, id_readpartial, id_set_encoding;
+static ID id_write, id_read, id_getc, id_flush, id_readpartial, id_set_encoding, id_fileno;
 static VALUE sym_mode, sym_perm, sym_flags, sym_extenc, sym_intenc, sym_encoding, sym_open_args;
 static VALUE sym_textmode, sym_binmode, sym_autoclose;
 static VALUE sym_SET, sym_CUR, sym_END;
@@ -2561,9 +2561,13 @@ rb_io_fileno(VALUE io)
 
 int rb_io_descriptor(VALUE io)
 {
-    rb_io_t *fptr = RFILE(io)->fptr;
-    rb_io_check_closed(fptr);
-    return fptr->fd;
+    if (RB_TYPE_P(io, T_FILE)) {
+        rb_io_t *fptr = RFILE(io)->fptr;
+        rb_io_check_closed(fptr);
+        return fptr->fd;
+    } else {
+        return RB_NUM2INT(rb_funcall(io, id_fileno, 0));
+    }
 }
 
 /*
@@ -13627,6 +13631,7 @@ Init_IO(void)
     id_flush = rb_intern_const("flush");
     id_readpartial = rb_intern_const("readpartial");
     id_set_encoding = rb_intern_const("set_encoding");
+    id_fileno = rb_intern_const("fileno");
 
     rb_define_global_function("syscall", rb_f_syscall, -1);
 
