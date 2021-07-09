@@ -1210,6 +1210,18 @@ assert_equal 'foo123', %q{
   make_str("foo", 123)
 }
 
+# test invokebuiltin as used in struct assignment
+assert_equal '123', %q{
+  def foo(obj)
+    obj.foo = 123
+  end
+
+  struct = Struct.new(:foo)
+  obj = struct.new
+  foo(obj)
+  foo(obj)
+}
+
 # test invokebuiltin_delegate as used inside Dir.open
 assert_equal '.', %q{
   def foo(path)
