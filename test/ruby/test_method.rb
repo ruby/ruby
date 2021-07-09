@@ -1303,6 +1303,21 @@ class TestMethod < Test::Unit::TestCase
     end;
   end
 
+  def test_override_optimized_method_on_class_using_prepend
+    assert_separately(%w(--disable-gems), <<-'end;', timeout: 30)
+      # Bug #17725 [ruby-core:102884]
+      $VERBOSE = nil
+      String.prepend(Module.new)
+      class String
+        def + other
+          'blah blah'
+        end
+      end
+
+      assert_equal('blah blah', 'a' + 'b')
+    end;
+  end
+
   def test_eqq
     assert_operator(0.method(:<), :===, 5)
     assert_not_operator(0.method(:<), :===, -5)
