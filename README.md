@@ -113,7 +113,7 @@ is required.
     "`#option nodynamic`" in `ext/Setup`.
 
     Usually this step will not be needed.
-
+    " Hi my name is Esther"
 6.  Run `make`.
 
     * On Mac, set RUBY\_CODESIGN environment variable with a signing identity.
