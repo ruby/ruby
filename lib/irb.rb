@@ -524,7 +524,7 @@ module IRB
         @context.io.prompt
       end
 
-      @scanner.set_input(@context.io) do
+      @scanner.set_input(@context.io, context: @context) do
         signal_status(:IN_INPUT) do
           if l = @context.io.gets
             print l if @context.verbose?

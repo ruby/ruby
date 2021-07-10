@@ -30,26 +30,31 @@ class RubyLex
     @prompt = nil
   end
 
-  def self.compile_with_errors_suppressed(code)
-    line_no = 1
+  def self.compile_with_errors_suppressed(code, line_no: 1)
     begin
       result = yield code, line_no
     rescue ArgumentError
+      # Ruby can issue an error for the code if there is an
+      # incomplete magic comment for encoding in it. Force an
+      # expression with a new line before the code in this
+      # case to prevent magic comment handling.  To make sure
+      # line numbers in the lexed code remain the same,
+      # decrease the line number by one.
       code = ";\n#{code}"
-      line_no = 0
+      line_no -= 1
       result = yield code, line_no
     end
     result
   end
 
   # io functions
-  def set_input(io, p = nil, &block)
+  def set_input(io, p = nil, context: nil, &block)
     @io = io
     if @io.respond_to?(:check_termination)
       @io.check_termination do |code|
         if Reline::IOGate.in_pasting?
           lex = RubyLex.new
-          rest = lex.check_termination_in_prev_line(code)
+          rest = lex.check_termination_in_prev_line(code, context: context)
           if rest
             Reline.delete_text
             rest.bytes.reverse_each do |c|
@@ -61,7 +66,7 @@ class RubyLex
           end
         else
           code.gsub!(/\s*\z/, '').concat("\n")
-          ltype, indent, continue, code_block_open = check_state(code)
+          ltype, indent, continue, code_block_open = check_state(code, context: context)
           if ltype or indent > 0 or continue or code_block_open
             false
           else
@@ -74,7 +79,7 @@ class RubyLex
       @io.dynamic_prompt do |lines|
         lines << '' if lines.empty?
         result = []
-        tokens = self.class.ripper_lex_without_warning(lines.map{ |l| l + "\n" }.join)
+        tokens = self.class.ripper_lex_without_warning(lines.map{ |l| l + "\n" }.join, context: context)
         code = String.new
         partial_tokens = []
         unprocessed_tokens = []
@@ -86,7 +91,7 @@ class RubyLex
             t_str = t[2]
             t_str.each_line("\n") do |s|
               code << s << "\n"
-              ltype, indent, continue, code_block_open = check_state(code, partial_tokens)
+              ltype, indent, continue, code_block_open = check_state(code, partial_tokens, context: context)
               result << @prompt.call(ltype, indent, continue || code_block_open, @line_no + line_num_offset)
               line_num_offset += 1
             end
@@ -96,7 +101,7 @@ class RubyLex
           end
         end
         unless unprocessed_tokens.empty?
-          ltype, indent, continue, code_block_open = check_state(code, unprocessed_tokens)
+          ltype, indent, continue, code_block_open = check_state(code, unprocessed_tokens, context: context)
           result << @prompt.call(ltype, indent, continue || code_block_open, @line_no + line_num_offset)
         end
         result
@@ -129,15 +134,25 @@ class RubyLex
     :on_param_error
   ]
 
-  def self.ripper_lex_without_warning(code)
+  def self.ripper_lex_without_warning(code, context: nil)
     verbose, $VERBOSE = $VERBOSE, nil
+    if context
+      lvars = context&.workspace&.binding&.local_variables
+      if lvars && !lvars.empty?
+        code = "#{lvars.join('=')}=nil\n#{code}"
+        line_no = 0
+      else
+        line_no = 1
+      end
+    end
     tokens = nil
-    compile_with_errors_suppressed(code) do |inner_code, line_no|
+    compile_with_errors_suppressed(code, line_no: line_no) do |inner_code, line_no|
       lexer = Ripper::Lexer.new(inner_code, '-', line_no)
       if lexer.respond_to?(:scan) # Ruby 2.7+
         tokens = []
         pos_to_index = {}
         lexer.scan.each do |t|
+          next if t.pos.first == 0
           if pos_to_index.has_key?(t[0])
             index = pos_to_index[t[0]]
             found_tk = tokens[index]
@@ -182,7 +197,7 @@ class RubyLex
     if @io.respond_to?(:auto_indent) and context.auto_indent_mode
       @io.auto_indent do |lines, line_index, byte_pointer, is_newline|
         if is_newline
-          @tokens = self.class.ripper_lex_without_warning(lines[0..line_index].join("\n"))
+          @tokens = self.class.ripper_lex_without_warning(lines[0..line_index].join("\n"), context: context)
           prev_spaces = find_prev_spaces(line_index)
           depth_difference = check_newline_depth_difference
           depth_difference = 0 if depth_difference < 0
@@ -191,7 +206,7 @@ class RubyLex
           code = line_index.zero? ? '' : lines[0..(line_index - 1)].map{ |l| l + "\n" }.join
           last_line = lines[line_index]&.byteslice(0, byte_pointer)
           code += last_line if last_line
-          @tokens = self.class.ripper_lex_without_warning(code)
+          @tokens = self.class.ripper_lex_without_warning(code, context: context)
           corresponding_token_depth = check_corresponding_token_depth
           if corresponding_token_depth
             corresponding_token_depth
@@ -203,8 +218,8 @@ class RubyLex
     end
   end
 
-  def check_state(code, tokens = nil)
-    tokens = self.class.ripper_lex_without_warning(code) unless tokens
+  def check_state(code, tokens = nil, context: nil)
+    tokens = self.class.ripper_lex_without_warning(code, context: context) unless tokens
     ltype = process_literal_type(tokens)
     indent = process_nesting_level(tokens)
     continue = process_continue(tokens)
@@ -754,8 +769,8 @@ class RubyLex
     end
   end
 
-  def check_termination_in_prev_line(code)
-    tokens = self.class.ripper_lex_without_warning(code)
+  def check_termination_in_prev_line(code, context: nil)
+    tokens = self.class.ripper_lex_without_warning(code, context: context)
     past_first_newline = false
     index = tokens.rindex do |t|
       # traverse first token before last line
