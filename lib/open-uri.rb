@@ -102,6 +102,7 @@ module OpenURI
     :ftp_active_mode => false,
     :redirect => true,
     :encoding => nil,
+    :http_basic_authentication_follow_redirect => false,
   }
 
   def OpenURI.check_options(options) # :nodoc:
@@ -224,7 +225,7 @@ module OpenURI
         unless OpenURI.redirectable?(uri, redirect)
           raise "redirection forbidden: #{uri} -> #{redirect}"
         end
-        if options.include? :http_basic_authentication
+        if options.include?(:http_basic_authentication) && !options.fetch(:http_basic_authentication_follow_redirect, false)
           # send authentication only for the URI directly specified.
           options = options.dup
           options.delete :http_basic_authentication
