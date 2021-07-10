@@ -69,6 +69,8 @@ module TestIRB
       IRB.conf[:USE_MULTILINE] = true
       IRB.conf[:USE_SINGLELINE] = false
       IRB.conf[:VERBOSE] = false
+      lang_backup = ENV.delete("LANG")
+      lc_all_backup = ENV.delete("LC_ALL")
       workspace = IRB::WorkSpace.new(self)
       irb = IRB::Irb.new(workspace, TestInputMethod.new([]))
       IRB.conf[:MAIN_CONTEXT] = irb.context
@@ -80,6 +82,9 @@ module TestIRB
         RUBY_PLATFORM: .+
       }x
       assert_match expected, irb.context.main.irb_info.to_s
+    ensure
+      ENV["LANG"] = lang_backup
+      ENV["LC_ALL"] = lc_all_backup
     end
 
     def test_irb_info_singleline
@@ -89,6 +94,8 @@ module TestIRB
       IRB.conf[:USE_MULTILINE] = false
       IRB.conf[:USE_SINGLELINE] = true
       IRB.conf[:VERBOSE] = false
+      lang_backup = ENV.delete("LANG")
+      lc_all_backup = ENV.delete("LC_ALL")
       workspace = IRB::WorkSpace.new(self)
       irb = IRB::Irb.new(workspace, TestInputMethod.new([]))
       IRB.conf[:MAIN_CONTEXT] = irb.context
@@ -100,6 +107,9 @@ module TestIRB
         RUBY_PLATFORM: .+
       }x
       assert_match expected, irb.context.main.irb_info.to_s
+    ensure
+      ENV["LANG"] = lang_backup
+      ENV["LC_ALL"] = lc_all_backup
     end
 
     def test_irb_info_multiline_without_rc_files
@@ -112,6 +122,8 @@ module TestIRB
       IRB.conf[:USE_MULTILINE] = true
       IRB.conf[:USE_SINGLELINE] = false
       IRB.conf[:VERBOSE] = false
+      lang_backup = ENV.delete("LANG")
+      lc_all_backup = ENV.delete("LC_ALL")
       workspace = IRB::WorkSpace.new(self)
       irb = IRB::Irb.new(workspace, TestInputMethod.new([]))
       IRB.conf[:MAIN_CONTEXT] = irb.context
@@ -127,6 +139,8 @@ module TestIRB
       ENV["INPUTRC"] = inputrc_backup
       IRB.__send__(:remove_const, :IRBRC_EXT)
       IRB.const_set(:IRBRC_EXT, ext_backup)
+      ENV["LANG"] = lang_backup
+      ENV["LC_ALL"] = lc_all_backup
     end
 
     def test_irb_info_singleline_without_rc_files
@@ -139,6 +153,8 @@ module TestIRB
       IRB.conf[:USE_MULTILINE] = false
       IRB.conf[:USE_SINGLELINE] = true
       IRB.conf[:VERBOSE] = false
+      lang_backup = ENV.delete("LANG")
+      lc_all_backup = ENV.delete("LC_ALL")
       workspace = IRB::WorkSpace.new(self)
       irb = IRB::Irb.new(workspace, TestInputMethod.new([]))
       IRB.conf[:MAIN_CONTEXT] = irb.context
@@ -154,6 +170,37 @@ module TestIRB
       ENV["INPUTRC"] = inputrc_backup
       IRB.__send__(:remove_const, :IRBRC_EXT)
       IRB.const_set(:IRBRC_EXT, ext_backup)
+      ENV["LANG"] = lang_backup
+      ENV["LC_ALL"] = lc_all_backup
+    end
+
+    def test_irb_info_lang
+      FileUtils.touch("#{@tmpdir}/.inputrc")
+      FileUtils.touch("#{@tmpdir}/.irbrc")
+      IRB.setup(__FILE__, argv: [])
+      IRB.conf[:USE_MULTILINE] = true
+      IRB.conf[:USE_SINGLELINE] = false
+      IRB.conf[:VERBOSE] = false
+      lang_backup = ENV.delete("LANG")
+      lc_all_backup = ENV.delete("LC_ALL")
+      ENV["LANG"] = "ja_JP.UTF-8"
+      ENV["LC_ALL"] = "en_US.UTF-8"
+      workspace = IRB::WorkSpace.new(self)
+      irb = IRB::Irb.new(workspace, TestInputMethod.new([]))
+      IRB.conf[:MAIN_CONTEXT] = irb.context
+      expected = %r{
+        Ruby\sversion: .+\n
+        IRB\sversion:\sirb .+\n
+        InputMethod:\sAbstract\sInputMethod\n
+        \.irbrc\spath: .+\n
+        RUBY_PLATFORM: .+\n
+        LANG\senv:\sja_JP\.UTF-8\n
+        LC_ALL\s env:\sen_US\.UTF-8\n
+      }x
+      assert_match expected, irb.context.main.irb_info.to_s
+    ensure
+      ENV["LANG"] = lang_backup
+      ENV["LC_ALL"] = lc_all_backup
     end
 
     def test_measure
