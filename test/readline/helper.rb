@@ -12,6 +12,7 @@ end
 begin
   require "reline"
 rescue LoadError
+  Object.class_eval {remove_const :Reline} if defined?(Reline)
 else
   def use_lib_reline # Use lib/reline as Readline
     Reline.send(:remove_const, 'IOGate') if Reline.const_defined?('IOGate')
