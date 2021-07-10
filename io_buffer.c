@@ -623,7 +623,7 @@ void rb_io_buffer_get_immutable(VALUE self, const void **base, size_t *size)
     rb_raise(rb_eRuntimeError, "Buffer is not allocated!");
 }
 
-void rb_io_buffer_copy(VALUE self, VALUE source, size_t offset)
+size_t rb_io_buffer_copy(VALUE self, VALUE source, size_t offset)
 {
     const void *source_base = NULL;
     size_t source_size = 0;
@@ -640,13 +640,15 @@ void rb_io_buffer_copy(VALUE self, VALUE source, size_t offset)
     rb_io_buffer_validate(data, offset, source_size);
 
     memcpy((char*)data->base + offset, source_base, source_size);
+
+    return source_size;
 }
 
 static VALUE io_buffer_copy(VALUE self, VALUE source, VALUE offset)
 {
-    rb_io_buffer_copy(self, source, NUM2SIZET(offset));
+    size_t size = rb_io_buffer_copy(self, source, NUM2SIZET(offset));
 
-    return self;
+    return RB_SIZE2NUM(size);
 }
 
 static int io_buffer_external_p(enum rb_io_buffer_flags flags)
