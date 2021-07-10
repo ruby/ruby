@@ -82,6 +82,8 @@
 #include <emscripten.h>
 #endif
 
+#undef LIST_HEAD /* ccan/list conflicts with BSD-origin sys/queue.h. */
+
 #include "constant.h"
 #include "debug_counter.h"
 #include "eval_intern.h"
