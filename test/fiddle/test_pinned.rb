@@ -2,6 +2,7 @@
 begin
   require_relative 'helper'
 rescue LoadError
+  return
 end
 
 module Fiddle

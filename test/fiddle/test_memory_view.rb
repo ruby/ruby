@@ -2,11 +2,13 @@
 begin
   require_relative 'helper'
 rescue LoadError
+  return
 end
 
 begin
   require '-test-/memory_view'
 rescue LoadError
+  return
 end
 
 module Fiddle
