@@ -1076,7 +1076,7 @@ struct io_internal_writev_struct {
 };
 #endif
 
-static int nogvl_wait_for_single_fd(VALUE th, int fd, short events);
+static int nogvl_wait_for(VALUE th, rb_io_t *fptr, short events);
 static VALUE
 internal_read_func(void *ptr)
 {
@@ -1087,7 +1087,7 @@ retry:
     if (r < 0 && !iis->nonblock) {
         int e = errno;
         if (e == EAGAIN || e == EWOULDBLOCK) {
-            if (nogvl_wait_for_single_fd(iis->th, iis->fptr->fd, RB_WAITFD_IN) != -1) {
+            if (nogvl_wait_for(iis->th, iis->fptr, RB_WAITFD_IN) != -1) {
                 goto retry;
             }
             errno = e;
@@ -11154,18 +11154,18 @@ maygvl_copy_stream_continue_p(int has_gvl, struct copy_stream_struct *stp)
 struct wait_for_single_fd {
     VALUE scheduler;
 
-    int fd;
+    rb_io_t *fptr;
     short events;
 
     VALUE result;
 };
 
 static void *
-rb_thread_fiber_scheduler_wait_for_single_fd(void * _args)
+rb_thread_fiber_scheduler_wait_for(void * _args)
 {
     struct wait_for_single_fd *args = (struct wait_for_single_fd *)_args;
 
-    args->result = rb_fiber_scheduler_io_wait(args->scheduler, io_from_fd(args->fd), INT2NUM(args->events), Qnil);
+    args->result = rb_fiber_scheduler_io_wait(args->scheduler, args->fptr->self, INT2NUM(args->events), Qnil);
 
     return NULL;
 }
@@ -11175,18 +11175,18 @@ rb_thread_fiber_scheduler_wait_for_single_fd(void * _args)
 STATIC_ASSERT(pollin_expected, POLLIN == RB_WAITFD_IN);
 STATIC_ASSERT(pollout_expected, POLLOUT == RB_WAITFD_OUT);
 static int
-nogvl_wait_for_single_fd(VALUE th, int fd, short events)
+nogvl_wait_for(VALUE th, rb_io_t *fptr, short events)
 {
     VALUE scheduler = rb_fiber_scheduler_current_for_thread(th);
     if (scheduler != Qnil) {
-        struct wait_for_single_fd args = {.scheduler = scheduler, .fd = fd, .events = events};
-        rb_thread_call_with_gvl(rb_thread_fiber_scheduler_wait_for_single_fd, &args);
+        struct wait_for_single_fd args = {.scheduler = scheduler, .fptr = fptr, .events = events};
+        rb_thread_call_with_gvl(rb_thread_fiber_scheduler_wait_for, &args);
         return RTEST(args.result);
     }
 
     struct pollfd fds;
 
-    fds.fd = fd;
+    fds.fd = fptr->fd;
     fds.events = events;
 
     return poll(&fds, 1, -1);
@@ -11194,12 +11194,12 @@ nogvl_wait_for_single_fd(VALUE th, int fd, short events)
 #else /* !USE_POLL */
 #  define IOWAIT_SYSCALL "select"
 static int
-nogvl_wait_for_single_fd(VALUE th, int fd, short events)
+nogvl_wait_for(VALUE th, rb_io_t *fptr, short events)
 {
     VALUE scheduler = rb_fiber_scheduler_current_for_thread(th);
     if (scheduler != Qnil) {
-        struct wait_for_single_fd args = {.scheduler = scheduler, .fd = fd, .events = events};
-        rb_thread_call_with_gvl(rb_thread_fiber_scheduler_wait_for_single_fd, &args);
+        struct wait_for_single_fd args = {.scheduler = scheduler, .fptr = fptr, .events = events};
+        rb_thread_call_with_gvl(rb_thread_fiber_scheduler_wait_for, &args);
         return RTEST(args.result);
     }
 
@@ -11207,17 +11207,17 @@ nogvl_wait_for_single_fd(VALUE th, int fd, short events)
     int ret;
 
     rb_fd_init(&fds);
-    rb_fd_set(fd, &fds);
+    rb_fd_set(fptr->fd, &fds);
 
     switch (events) {
       case RB_WAITFD_IN:
-        ret = rb_fd_select(fd + 1, &fds, 0, 0, 0);
+        ret = rb_fd_select(fptr->fd + 1, &fds, 0, 0, 0);
         break;
       case RB_WAITFD_OUT:
-        ret = rb_fd_select(fd + 1, 0, &fds, 0, 0);
+        ret = rb_fd_select(fptr->fd + 1, 0, &fds, 0, 0);
         break;
       default:
-        VM_UNREACHABLE(nogvl_wait_for_single_fd);
+        VM_UNREACHABLE(nogvl_wait_for);
     }
 
     rb_fd_term(&fds);
@@ -11235,7 +11235,7 @@ maygvl_copy_stream_wait_read(int has_gvl, struct copy_stream_struct *stp)
             ret = RB_NUM2INT(rb_io_wait(stp->src, RB_INT2NUM(RUBY_IO_READABLE), Qnil));
         }
         else {
-            ret = nogvl_wait_for_single_fd(stp->th, stp->src_fptr->fd, RB_WAITFD_IN);
+            ret = nogvl_wait_for(stp->th, stp->src_fptr, RB_WAITFD_IN);
         }
     } while (ret < 0 && maygvl_copy_stream_continue_p(has_gvl, stp));
 
@@ -11253,7 +11253,7 @@ nogvl_copy_stream_wait_write(struct copy_stream_struct *stp)
     int ret;
 
     do {
-	ret = nogvl_wait_for_single_fd(stp->th, stp->dst_fptr->fd, RB_WAITFD_OUT);
+	ret = nogvl_wait_for(stp->th, stp->dst_fptr, RB_WAITFD_OUT);
     } while (ret < 0 && maygvl_copy_stream_continue_p(0, stp));
 
     if (ret < 0) {
