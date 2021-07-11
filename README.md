@@ -167,12 +167,12 @@ See the file [COPYING](COPYING).
 
 ## Feedback
 
-Questions about the Ruby language can be asked on the Ruby-Talk mailing list
-(https://www.ruby-lang.org/en/community/mailing-lists) or on websites like
-(https://stackoverflow.com).
+Questions about the Ruby language can be asked on the [Ruby-Talk] mailing list
+or on websites like https://stackoverflow.com.
 
 Bugs should be reported at https://bugs.ruby-lang.org. Read [HowToReport] for more information.
 
+[Ruby-Talk]: https://www.ruby-lang.org/en/community/mailing-lists
 [HowToReport]: https://bugs.ruby-lang.org/projects/ruby/wiki/HowToReport
 
 ## Contributing
