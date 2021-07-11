@@ -1,26 +1,53 @@
 prelude: |
-  lstr1 = [*"a".."z",*"0".."9"].join("")
-  lstr10 = lstr1 * 10
-  lstr100 = lstr10 * 10
-  lstr1000 = lstr100 * 10
-  lnonascii1 = [*"\u{e0}".."\u{ff}"].join("")
-  lnonascii10 = lnonascii1 * 10
-  lnonascii100 = lnonascii10 * 10
-  lnonascii1000 = lnonascii100 * 10
-  ustr1 = [*"A".."Z",*"0".."9"].join("")
-  ustr10 = ustr1 * 10
-  ustr100 = ustr10 * 10
-  ustr1000 = ustr100 * 10
-  unonascii1 = [*"\u{c0}".."\u{df}"].join("")
-  unonascii10 = unonascii1 * 10
-  unonascii100 = unonascii10 * 10
-  unonascii1000 = unonascii100 * 10
+  lascii = [*"a".."z",*"0".."9"].join("")
+  uascii = [*"A".."Z",*"0".."9"].join("")
+  lstr = lascii + "\u{c0}"
+  ustr = uascii + "\u{c0}"
+  llatin = lstr.encode("ISO8859-1")
+  ulatin = ustr.encode("ISO8859-1")
+  lwide = lstr.encode("UTF-16BE")
+  uwide = ustr.encode("UTF-16BE")
+  n = 10
+  lascii_10 = lascii * n
+  uascii_10 = uascii * n
+  lstr_10 =   lstr * n
+  ustr_10 =   ustr * n
+  llatin_10 = llatin * n
+  ulatin_10 = ulatin * n
+  lwide_10 =  lwide * n
+  uwide_10 =  uwide * n
+  n = 100
+  lascii_100 = lascii * n
+  uascii_100 = uascii * n
+  lstr_100 =   lstr * n
+  ustr_100 =   ustr * n
+  llatin_100 = llatin * n
+  ulatin_100 = ulatin * n
+  lwide_100 =  lwide * n
+  uwide_100 =  uwide * n
+  #x
+  lascii_x = lascii + "{"
+  uascii_x = uascii + "["
+  lstr_x =   lstr + "é"
+  ustr_x =   ustr + "É"
+  llatin_x = llatin + "é".encode("ISO8859-1")
+  ulatin_x = ulatin + "É".encode("ISO8859-1")
+  lwide_x =  lwide + "é".encode("UTF-16BE")
+  uwide_x =  uwide + "É".encode("UTF-16BE")
 benchmark:
-  casecmp-1: lstr1.casecmp(ustr1)
-  casecmp-10: lstr10.casecmp(ustr10)
-  casecmp-100: lstr100.casecmp(ustr100)
-  casecmp-1000: lstr1000.casecmp(ustr1000)
-  casecmp-nonascii1: lnonascii1.casecmp(unonascii1)
-  casecmp-nonascii10: lnonascii10.casecmp(unonascii10)
-  casecmp-nonascii100: lnonascii100.casecmp(unonascii100)
-  casecmp-nonascii1000: lnonascii1000.casecmp(unonascii1000)
+  casecmp-ascii-1: lascii.casecmp(uascii)
+  casecmp-ascii-10: lascii_10.casecmp(uascii_100)
+  casecmp-ascii-100: lascii_100.casecmp(uascii_100)
+  casecmp-ascii-x: lascii_x.casecmp(uascii_x)
+  casecmp-latin-1: llatin.casecmp(ulatin)
+  casecmp-latin-10: llatin_10.casecmp(ulatin_100)
+  casecmp-latin-100: llatin_100.casecmp(ulatin_100)
+  casecmp-latin-x: llatin_x.casecmp(ulatin_x)
+  casecmp-str-1: lstr.casecmp(ustr)
+  casecmp-str-10: lstr_10.casecmp(ustr_100)
+  casecmp-str-100: lstr_100.casecmp(ustr_100)
+  casecmp-str-x: lstr_x.casecmp(ustr_x)
+  casecmp-wide-1: lwide.casecmp(uwide)
+  casecmp-wide-10: lwide_10.casecmp(uwide_100)
+  casecmp-wide-100: lwide_100.casecmp(uwide_100)
+  casecmp-wide-x: lwide_x.casecmp(uwide_x)

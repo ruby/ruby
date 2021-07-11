@@ -89,6 +89,7 @@ static rb_encoding *global_enc_ascii,
 
 
 #define ENC_DUMMY_FLAG (1<<24)
+#define ENC_ASCIISAFE_FLAG (1<<25)
 #define ENC_INDEX_MASK (~(~0U<<24))
 
 #define ENC_TO_ENCINDEX(enc) (int)((enc)->ruby_encoding_index & ENC_INDEX_MASK)
@@ -109,6 +110,12 @@ static const rb_data_type_t encoding_data_type = {
 
 #define is_data_encoding(obj) (RTYPEDDATA_P(obj) && RTYPEDDATA_TYPE(obj) == &encoding_data_type)
 #define is_obj_encoding(obj) (RB_TYPE_P((obj), T_DATA) && is_data_encoding(obj))
+
+int
+rb_enc_asciisafe_p(rb_encoding *enc)
+{
+    return enc->flags & ENC_ASCIISAFE_FLAG;
+}
 
 int
 rb_data_is_encoding(VALUE obj)
@@ -382,6 +389,25 @@ enc_register_at(struct enc_table *enc_table, int index, const char *name, rb_enc
     }
     encoding->name = name;
     encoding->ruby_encoding_index = index;
+    if (encoding->max_enc_len == 1 ||
+        STRCASECMP(name, "UTF-8") == 0 ||
+        STRCASECMP(name, "UTF8-MAC") == 0 ||
+        STRCASECMP(name, "UTF8-DoCoMo") == 0 ||
+        STRCASECMP(name, "UTF8-KDDI") == 0 ||
+        STRCASECMP(name, "UTF8-SoftBank") == 0 ||
+        STRCASECMP(name, "CP51932") == 0 ||
+        STRCASECMP(name, "Emacs-Mule") == 0 ||
+        STRCASECMP(name, "EUC-JIS-2004") == 0 ||
+        STRCASECMP(name, "EUC-JP") == 0 ||
+        STRCASECMP(name, "eucJP-ms") == 0 ||
+        STRCASECMP(name, "EUC-KR") == 0 ||
+        STRCASECMP(name, "EUC-TW") == 0 ||
+        STRCASECMP(name, "GB12345") == 0 ||
+        STRCASECMP(name, "GB2312") == 0 ||
+        STRCASECMP(name, "stateless-ISO-2022-JP") == 0 ||
+        STRCASECMP(name, "stateless-ISO-2022-JP-KDDI") == 0) {
+        encoding->flags |= ENC_ASCIISAFE_FLAG;
+    }
     ent->enc = encoding;
     st_insert(enc_table->names, (st_data_t)name, (st_data_t)index);
 
@@ -1241,8 +1267,7 @@ rb_enc_precise_mbclen(const char *p, const char *e, rb_encoding *enc)
 int
 rb_enc_ascget(const char *p, const char *e, int *len, rb_encoding *enc)
 {
-    unsigned int c;
-    int l;
+    int c;
     if (e <= p)
         return -1;
     if (rb_enc_asciicompat(enc)) {
@@ -1252,12 +1277,20 @@ rb_enc_ascget(const char *p, const char *e, int *len, rb_encoding *enc)
         if (len) *len = 1;
         return c;
     }
+    c = rb_enc_mbcget(p, e, len, enc);
+    if (!rb_enc_isascii(c, enc))
+        return -1;
+    return c;
+}
+
+int
+rb_enc_mbcget(const char *p, const char *e, int *len, rb_encoding *enc)
+{
+    int c, l;
     l = rb_enc_precise_mbclen(p, e, enc);
     if (!MBCLEN_CHARFOUND_P(l))
         return -1;
     c = rb_enc_mbc_to_codepoint(p, e, enc);
-    if (!rb_enc_isascii(c, enc))
-        return -1;
     if (len) *len = l;
     return c;
 }

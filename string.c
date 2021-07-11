@@ -3478,6 +3478,117 @@ rb_str_cmp_m(VALUE str1, VALUE str2)
 static VALUE str_casecmp(VALUE str1, VALUE str2);
 static VALUE str_casecmp_p(VALUE str1, VALUE str2);
 
+#ifdef WORDS_BIGENDIAN
+# define V_COUNTZERO(bits)  (nlz_intptr(bits)>>3)
+# define V_FIRST_BYTE_HIGHBIT(TYPE)  (0x80 << (sizeof(TYPE) * 8 - 8))
+#else
+# define V_COUNTZERO(bits)  (ntz_intptr(bits)>>3)
+# define V_FIRST_BYTE_HIGHBIT(TYPE)  0x80
+#endif
+
+#define V_UPPER(v, ONES)  (v - (                                               \
+        (   (~v) &  /* if ascii */                                             \
+            ( ((v & 0x7F*ONES) + 31*ONES) ^ /* and /7 >= 'a' */                \
+              ((v & 0x7F*ONES) +  5*ONES)   /* and /7 <= 'z' */                \
+            ) &                                                                \
+            (0x80*ONES) /* keep high bit = 128 */                              \
+        ) >> 2 /* reduce to 32 */                                              \
+    ))
+
+#define V_CASECHECK(IF_WHILE, TYPE, ONES)                                      \
+    p1end = p1initial + len - sizeof(TYPE);                                    \
+    IF_WHILE (p1 <= p1end) {                                                   \
+        v1 = *((TYPE *)p1);                                                    \
+        v2 = *((TYPE *)p2);                                                    \
+        mismatch = 0;                                                          \
+        if (ascii_only) {                                                      \
+            mismatch = (v1 | v2) & 0x80*ONES;                                  \
+            if (mismatch & V_FIRST_BYTE_HIGHBIT(TYPE)) {                       \
+                return p1 - p1initial;                                         \
+            }                                                                  \
+        }                                                                      \
+        if (case_insensitive) {                                                \
+            v1 = V_UPPER(v1, ONES);                                            \
+            v2 = V_UPPER(v2, ONES);                                            \
+        }                                                                      \
+        mismatch |= v1 ^ v2;                                                   \
+        if (mismatch) {                                                        \
+            p1 += V_COUNTZERO(mismatch);                                       \
+            return p1 - p1initial;                                             \
+        }                                                                      \
+        p1 += sizeof(TYPE);                                                    \
+        p2 += sizeof(TYPE);                                                    \
+    }
+
+#define ALGN(ptr,t)  (((uintptr_t)ptr & (sizeof(t)-1)) == 0)
+
+#define ONE8 0x0101010101010101ULL
+#define ONE4 0x01010101UL
+#define ONE2 0x0101
+#define ONE1 0x01
+
+#if SIZEOF_UINTPTR_T >= 8
+# define V_64
+#endif
+
+static inline long
+generic_eqv_bytes_len(const char *p1, const char *p2, long len, long len2,
+    const int ascii_only, const int case_insensitive)
+{
+    register uintptr_t v1, v2;
+    uintptr_t mismatch;
+    if (len2 < len) len = len2;
+    const char *p1initial = p1, *p1end;
+
+    if (len > 2) {
+        if (!UNALIGNED_WORD_ACCESS) {
+#ifdef V_64
+            if (!ALGN(p1,uint64_t) && !ALGN(p2,uint64_t)){
+#endif
+                if (!ALGN(p1,uint32_t) && !ALGN(p2,uint32_t)){
+                    if (!ALGN(p1,uint16_t) && !ALGN(p2,uint16_t)){
+                        V_CASECHECK(if, uint8_t, ONE1);
+                    }
+                    if (ALGN(p1,uint16_t) && ALGN(p2,uint16_t)){
+                        V_CASECHECK(if, uint16_t, ONE2);
+                    }
+                }
+#ifdef V_64
+                if (ALGN(p1,uint32_t) && ALGN(p2,uint32_t)){
+                    V_CASECHECK(if, uint32_t, ONE4);
+                }
+            }
+#endif
+        }
+#ifdef V_64
+        if (UNALIGNED_WORD_ACCESS || (ALGN(p1,uint64_t) && ALGN(p2,uint64_t))) {
+            V_CASECHECK(while, uint64_t, ONE8);
+        }
+#endif
+        if (UNALIGNED_WORD_ACCESS || (ALGN(p1,uint32_t) && ALGN(p2,uint32_t))) {
+            V_CASECHECK(while, uint32_t, ONE4);
+        }
+        if (UNALIGNED_WORD_ACCESS || (ALGN(p1,uint16_t) && ALGN(p2,uint16_t))) {
+            V_CASECHECK(while, uint16_t, ONE2);
+        }
+    }
+    V_CASECHECK(while, uint8_t, ONE1);
+
+    return p1 - p1initial;
+}
+
+static long
+ascii_safe_eqv_bytes_len(const char *p1, const char *p2, long len, long len2)
+{
+    return generic_eqv_bytes_len(p1, p2, len, len2, 0, 1);
+}
+
+static long
+ascii_only_eqv_bytes_len(const char *p1, const char *p2, long len, long len2)
+{
+    return generic_eqv_bytes_len(p1, p2, len, len2, 1, 1);
+}
+
 /*
  *  call-seq:
  *    str.casecmp(other_str) -> -1, 0, 1, or nil
@@ -3507,12 +3618,25 @@ rb_str_casecmp(VALUE str1, VALUE str2)
     return str_casecmp(str1, s);
 }
 
+static int
+memcmp2(const char *p1, const char *p2, int l1, int l2)
+{
+    int r;
+    r = memcmp(p1, p2, l1 < l2 ? l1 : l2);
+    if (r != 0)
+        return r < 0 ? -1 : 1;
+    if (l1 != l2)
+        return l1 < l2 ? -1 : 1;
+    return 0;
+}
+
 static VALUE
 str_casecmp(VALUE str1, VALUE str2)
 {
     long len;
     rb_encoding *enc;
     const char *p1, *p1end, *p2, *p2end;
+    int l1, l2, c1, c2, r;
 
     enc = rb_enc_compatible(str1, str2);
     if (!enc) {
@@ -3521,39 +3645,65 @@ str_casecmp(VALUE str1, VALUE str2)
 
     p1 = RSTRING_PTR(str1); p1end = RSTRING_END(str1);
     p2 = RSTRING_PTR(str2); p2end = RSTRING_END(str2);
-    if (single_byte_optimizable(str1) && single_byte_optimizable(str2)) {
-	while (p1 < p1end && p2 < p2end) {
-	    if (*p1 != *p2) {
-                unsigned int c1 = TOLOWER(*p1 & 0xff);
-                unsigned int c2 = TOLOWER(*p2 & 0xff);
+    if (rb_enc_asciisafe_p(enc) ||
+        (single_byte_optimizable(str1) && single_byte_optimizable(str2))) {
+        /* ascii-safe, like ISO-8859-1 or UTF-8 */
+        len = ascii_safe_eqv_bytes_len(p1, p2, p1end-p1, p2end-p2);
+        p1 += len;
+        p2 += len;
+        if (p1 < p1end && p2 < p2end) {
+            c1 = TOLOWER(*(unsigned char*)p1);
+            c2 = TOLOWER(*(unsigned char*)p2);
+            return INT2FIX(c1 < c2 ? -1 : 1);
+        }
+    }
+    else if (rb_enc_asciicompat(enc)) {
+        /* ascii-compatible but not ascii-safe, like Shift-JIS */
+        while (p1 < p1end && p2 < p2end) {
+            len = ascii_only_eqv_bytes_len(p1, p2, p1end-p1, p2end-p2);
+            if (len) {
+                p1 += len;
+                p2 += len;
+                if (p1 >= p1end || p2 >= p2end) break;
+            }
+            c1 = *(unsigned char*)p1;
+            c2 = *(unsigned char*)p2;
+
+            if (ISASCII(c1) && ISASCII(c2)) {
+                c1 = TOLOWER(c1);
+                c2 = TOLOWER(c2);
                 if (c1 != c2)
                     return INT2FIX(c1 < c2 ? -1 : 1);
-	    }
-	    p1++;
-	    p2++;
-	}
+                rb_bug("unexpected case-equal ascii char");
+            }
+            else {
+                l1 = rb_enc_mbclen(p1, p1end, enc);
+                l2 = rb_enc_mbclen(p2, p2end, enc);
+                r = memcmp2(p1, p2, l1, l2);
+                if (r) return INT2FIX(r);
+            }
+            p1 += l1;
+            p2 += l2;
+        }
     }
     else {
+        /* not ascii-compatible, like UTF-16 */
 	while (p1 < p1end && p2 < p2end) {
-            int l1, c1 = rb_enc_ascget(p1, p1end, &l1, enc);
-            int l2, c2 = rb_enc_ascget(p2, p2end, &l2, enc);
+            c1 = rb_enc_mbcget(p1, p1end, &l1, enc);
+            c2 = rb_enc_mbcget(p2, p2end, &l2, enc);
 
-            if (0 <= c1 && 0 <= c2) {
+            if (c1 == c2 && c1 >= 0);
+            else if (ISASCII(c1) && ISASCII(c2)) {
                 c1 = TOLOWER(c1);
                 c2 = TOLOWER(c2);
                 if (c1 != c2)
                     return INT2FIX(c1 < c2 ? -1 : 1);
             }
             else {
-                int r;
                 l1 = rb_enc_mbclen(p1, p1end, enc);
                 l2 = rb_enc_mbclen(p2, p2end, enc);
-                len = l1 < l2 ? l1 : l2;
-                r = memcmp(p1, p2, len);
-                if (r != 0)
-                    return INT2FIX(r < 0 ? -1 : 1);
-                if (l1 != l2)
-                    return INT2FIX(l1 < l2 ? -1 : 1);
+                r = memcmp2(p1, p2, l1, l2);
+                if (r) return INT2FIX(r);
             }
 	    p1 += l1;
 	    p2 += l2;
