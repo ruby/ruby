@@ -1056,7 +1056,7 @@ io_alloc(VALUE klass)
 
 struct io_internal_read_struct {
     VALUE th;
-    int fd;
+    rb_io_t *fptr;
     int nonblock;
     void *buf;
     size_t capa;
@@ -1083,11 +1083,11 @@ internal_read_func(void *ptr)
     struct io_internal_read_struct *iis = ptr;
     ssize_t r;
 retry:
-    r = read(iis->fd, iis->buf, iis->capa);
+    r = read(iis->fptr->fd, iis->buf, iis->capa);
     if (r < 0 && !iis->nonblock) {
         int e = errno;
         if (e == EAGAIN || e == EWOULDBLOCK) {
-            if (nogvl_wait_for_single_fd(iis->th, iis->fd, RB_WAITFD_IN) != -1) {
+            if (nogvl_wait_for_single_fd(iis->th, iis->fptr->fd, RB_WAITFD_IN) != -1) {
                 goto retry;
             }
             errno = e;
@@ -1145,7 +1145,7 @@ rb_read_internal(rb_io_t *fptr, void *buf, size_t count)
 
     struct io_internal_read_struct iis = {
         .th = rb_thread_current(),
-        .fd = fptr->fd,
+        .fptr = fptr,
         .nonblock = 0,
         .buf = buf,
         .capa = count
@@ -3033,7 +3033,16 @@ read_internal_call(VALUE arg)
 {
     struct io_internal_read_struct *iis = (struct io_internal_read_struct *)arg;
 
-    return rb_thread_io_blocking_region(internal_read_func, iis, iis->fd);
+    VALUE scheduler = rb_fiber_scheduler_current();
+    if (scheduler != Qnil) {
+        VALUE result = rb_fiber_scheduler_io_read_memory(scheduler, iis->fptr->self, iis->buf, iis->capa, 1);
+
+        if (result != Qundef) {
+          return (VALUE)RB_NUM2SSIZE(result);
+        }
+    }
+
+    return rb_thread_io_blocking_region(internal_read_func, iis, iis->fptr->fd);
 }
 
 static long
@@ -3077,7 +3086,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int no_exception, int nonblock)
         }
 	io_setstrbuf(&str, len);
         iis.th = rb_thread_current();
-        iis.fd = fptr->fd;
+        iis.fptr = fptr;
         iis.nonblock = nonblock;
         iis.buf = RSTRING_PTR(str);
         iis.capa = len;
@@ -3215,7 +3224,7 @@ io_read_nonblock(rb_execution_context_t *ec, VALUE io, VALUE length, VALUE str, 
     if (n <= 0) {
 	rb_io_set_nonblock(fptr);
 	shrinkable |= io_setstrbuf(&str, len);
-        iis.fd = fptr->fd;
+        iis.fptr = fptr;
         iis.nonblock = 1;
         iis.buf = RSTRING_PTR(str);
         iis.capa = len;
@@ -5385,7 +5394,7 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
 
     io_setstrbuf(&str, ilen);
     iis.th = rb_thread_current();
-    iis.fd = fptr->fd;
+    iis.fptr = fptr;
     iis.nonblock = 0;
     iis.buf = RSTRING_PTR(str);
     iis.capa = ilen;
