@@ -5039,6 +5039,56 @@ rb_file_s_join(VALUE klass, VALUE args)
     return rb_file_join(args);
 }
 
+
+/*
+ *  call-seq:
+ *     File.read(name, [length [, offset]] [, opt] )   -> string
+ *
+ *  Opens the file, optionally seeks to the given +offset+, then returns
+ *  +length+ bytes (defaulting to the rest of the file).  #read ensures
+ *  the file is closed before returning.
+ *
+ *  This method is almost the same as `IO.read`. But if a file name starts
+ *  with a `|` character, `File.read` reads the given filename, and
+ *  `IO.read` invokes a subprocess. Use `File.read` instead of `IO.read`
+ *  if you don't need a subprocess invocation.
+ *
+ *  === Options
+ *
+ *  The options hash accepts the following keys:
+ *
+ *  :encoding::
+ *    string or encoding
+ *
+ *    Specifies the encoding of the read string.  +:encoding+ will be ignored
+ *    if +length+ is specified.  See Encoding.aliases for possible encodings.
+ *
+ *  :mode::
+ *    string or integer
+ *
+ *    Specifies the <i>mode</i> argument for open().  It must start
+ *    with an "r", otherwise it will cause an error.
+ *    See IO.new for the list of possible modes.
+ *
+ *  :open_args::
+ *    array
+ *
+ *    Specifies arguments for open() as an array.  This key can not be used
+ *    in combination with either +:encoding+ or +:mode+.
+ *
+ *  Examples:
+ *
+ *    File.read("testfile")              #=> "This is line one\nThis is line two\nThis is line three\nAnd so on...\n"
+ *    File.read("testfile", 20)          #=> "This is line one\nThi"
+ *    File.read("testfile", 20, 10)      #=> "ne one\nThis is line "
+ *    File.read("binfile", mode: "rb")   #=> "\xF7\x00\x00\x0E\x12"
+ */
+static VALUE
+rb_file_s_read(int argc, VALUE *argv, VALUE klass)
+{
+    return rb_io_s_read(argc, argv, klass);
+}
+
 #if defined(HAVE_TRUNCATE) || defined(HAVE_CHSIZE)
 struct truncate_arg {
     const char *path;
@@ -6755,6 +6805,7 @@ Init_File(void)
     rb_define_const(rb_cFile, "SEPARATOR", separator);
     rb_define_singleton_method(rb_cFile, "split",  rb_file_s_split, 1);
     rb_define_singleton_method(rb_cFile, "join",   rb_file_s_join, -2);
+    rb_define_singleton_method(rb_cFile, "read", rb_file_s_read, -1);
 
 #ifdef DOSISH
     /* platform specific alternative separator */

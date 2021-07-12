@@ -24,6 +24,7 @@ void rb_io_fptr_finalize_internal(void *ptr);
 #endif
 #define rb_io_fptr_finalize rb_io_fptr_finalize_internal
 VALUE rb_io_popen(VALUE pname, VALUE pmode, VALUE env, VALUE opt);
+VALUE rb_io_s_read(int argc, VALUE *argv, VALUE klass);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* io.c (export) */
