@@ -4805,7 +4805,7 @@ static int
 maygvl_close(int fd, int keepgvl)
 {
     if (keepgvl)
-	return close(fd);
+        return close(fd);
 
     /*
      * close() may block for certain file types (NFS, SO_LINGER sockets,
@@ -4826,7 +4826,7 @@ static int
 maygvl_fclose(FILE *file, int keepgvl)
 {
     if (keepgvl)
-	return fclose(file);
+        return fclose(file);
 
     return (int)(intptr_t)rb_thread_call_without_gvl(nogvl_fclose, file, RUBY_UBF_IO, 0);
 }
@@ -4844,64 +4844,76 @@ fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl,
     int mode = fptr->mode;
 
     if (fptr->writeconv) {
-	if (fptr->write_lock && !noraise) {
+        if (fptr->write_lock && !noraise) {
             struct finish_writeconv_arg arg;
             arg.fptr = fptr;
             arg.noalloc = noraise;
             err = rb_mutex_synchronize(fptr->write_lock, finish_writeconv_sync, (VALUE)&arg);
-	}
-	else {
-	    err = finish_writeconv(fptr, noraise);
-	}
+        }
+        else {
+            err = finish_writeconv(fptr, noraise);
+        }
     }
     if (fptr->wbuf.len) {
-	if (noraise) {
-	    io_flush_buffer_sync(fptr);
-	}
-	else {
-	    if (io_fflush(fptr) < 0 && NIL_P(err))
-		err = INT2NUM(errno);
-	}
+        if (noraise) {
+            io_flush_buffer_sync(fptr);
+        }
+        else {
+            if (io_fflush(fptr) < 0 && NIL_P(err))
+        	err = INT2NUM(errno);
+        }
+    }
+
+    int done = 0;
+
+    if (IS_PREP_STDIO(fptr) || fd <= 2) {
+        // Need to keep FILE objects of stdin, stdout and stderr, so we are done:
+        done = 1;
+    }
+
+    // Ensure waiting_fd users do not hit EBADF.
+    if (busy) {
+        // Wait for them to exit before we call close().
+        do rb_thread_schedule(); while (!list_empty(busy));
+    }
+
+    if (!done && fd >= 0) {
+        VALUE scheduler = rb_fiber_scheduler_current();
+        if (scheduler != Qnil) {
+            VALUE result = rb_fiber_scheduler_io_close(scheduler, fptr->self);
+            if (result != Qundef) done = 1;
+        }
     }
 
     fptr->fd = -1;
     fptr->stdio_file = 0;
     fptr->mode &= ~(FMODE_READABLE|FMODE_WRITABLE);
 
-    /*
-     * ensure waiting_fd users do not hit EBADF, wait for them
-     * to exit before we call close().
-     */
-    if (busy) {
-        do rb_thread_schedule(); while (!list_empty(busy));
+    if (!done && stdio_file) {
+        // stdio_file is deallocated anyway even if fclose failed.
+        if ((maygvl_fclose(stdio_file, noraise) < 0) && NIL_P(err))
+            if (!noraise) err = INT2NUM(errno);
+
+        done = 1;
     }
 
-    if (IS_PREP_STDIO(fptr) || fd <= 2) {
-	/* need to keep FILE objects of stdin, stdout and stderr */
-    }
-    else if (stdio_file) {
-	/* stdio_file is deallocated anyway
-         * even if fclose failed.  */
-	if ((maygvl_fclose(stdio_file, noraise) < 0) && NIL_P(err))
-	    if (!noraise) err = INT2NUM(errno);
-    }
-    else if (0 <= fd) {
-	/* fptr->fd may be closed even if close fails.
-         * POSIX doesn't specify it.
-         * We assumes it is closed.  */
+    if (!done && fd >= 0) {
+        // fptr->fd may be closed even if close fails. POSIX doesn't specify it.
+        // We assumes it is closed.
 
-	/**/
-	keepgvl |= !(mode & FMODE_WRITABLE);
-	keepgvl |= noraise;
-	if ((maygvl_close(fd, keepgvl) < 0) && NIL_P(err))
-	    if (!noraise) err = INT2NUM(errno);
+        keepgvl |= !(mode & FMODE_WRITABLE);
+        keepgvl |= noraise;
+        if ((maygvl_close(fd, keepgvl) < 0) && NIL_P(err))
+            if (!noraise) err = INT2NUM(errno);
+
+        done = 1;
     }
 
     if (!NIL_P(err) && !noraise) {
-	if (RB_INTEGER_TYPE_P(err))
-	    rb_syserr_fail_path(NUM2INT(err), fptr->pathv);
-	else
-	    rb_exc_raise(err);
+        if (RB_INTEGER_TYPE_P(err))
+            rb_syserr_fail_path(NUM2INT(err), fptr->pathv);
+        else
+            rb_exc_raise(err);
     }
 }
 

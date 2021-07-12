@@ -48,6 +48,8 @@ VALUE rb_fiber_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, size_
 VALUE rb_fiber_scheduler_io_read_memory(VALUE scheduler, VALUE io, void *buffer, size_t size, size_t length);
 VALUE rb_fiber_scheduler_io_write_memory(VALUE scheduler, VALUE io, const void *buffer, size_t size, size_t length);
 
+VALUE rb_fiber_scheduler_io_close(VALUE scheduler, VALUE io);
+
 VALUE rb_fiber_scheduler_address_resolve(VALUE scheduler, VALUE hostname);
 
 RBIMPL_SYMBOL_EXPORT_END()

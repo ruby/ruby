@@ -27,6 +27,7 @@ static ID id_process_wait;
 static ID id_io_read;
 static ID id_io_write;
 static ID id_io_wait;
+static ID id_io_close;
 
 static ID id_address_resolve;
 
@@ -45,6 +46,7 @@ Init_Fiber_Scheduler(void)
     id_io_read = rb_intern_const("io_read");
     id_io_write = rb_intern_const("io_write");
     id_io_wait = rb_intern_const("io_wait");
+    id_io_close = rb_intern_const("io_close");
 
     id_address_resolve = rb_intern_const("address_resolve");
 }
@@ -254,6 +256,14 @@ rb_fiber_scheduler_io_write_memory(VALUE scheduler, VALUE io, const void *base, 
     rb_io_buffer_free(buffer);
 
     return result;
+}
+
+VALUE
+rb_fiber_scheduler_io_close(VALUE scheduler, VALUE io)
+{
+    VALUE arguments[] = {io};
+
+    return rb_check_funcall(scheduler, id_io_close, 1, arguments);
 }
 
 VALUE
