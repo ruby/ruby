@@ -69,6 +69,7 @@ rb_event_flag_t rb_tracearg_event_flag(rb_trace_arg_t *trace_arg);
 VALUE rb_tracearg_event(rb_trace_arg_t *trace_arg);
 VALUE rb_tracearg_lineno(rb_trace_arg_t *trace_arg);
 VALUE rb_tracearg_path(rb_trace_arg_t *trace_arg);
+unsigned int rb_tracearg_locindex(rb_trace_arg_t *trace_arg);
 VALUE rb_tracearg_method_id(rb_trace_arg_t *trace_arg);
 VALUE rb_tracearg_callee_id(rb_trace_arg_t *trace_arg);
 VALUE rb_tracearg_defined_class(rb_trace_arg_t *trace_arg);
@@ -97,6 +98,8 @@ typedef enum {
 
 void rb_add_event_hook2(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data, rb_event_hook_flag_t hook_flag);
 void rb_thread_add_event_hook2(VALUE thval, rb_event_hook_func_t func, rb_event_flag_t events, VALUE data, rb_event_hook_flag_t hook_flag);
+
+bool rb_locindex_resolve(unsigned int locindex, VALUE *fname, int *line);
 
 RBIMPL_SYMBOL_EXPORT_END()
 

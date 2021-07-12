@@ -9,12 +9,12 @@ struct allocation_info {
     VALUE klass;
 
     /* allocation info */
-    const char *path;
-    unsigned long line;
+    unsigned int locindex;
     const char *class_path;
     VALUE mid;
     size_t generation;
 };
 struct allocation_info *objspace_lookup_allocation_info(VALUE obj);
+unsigned int objspace_lookup_locindex(VALUE obj);
 
 #endif

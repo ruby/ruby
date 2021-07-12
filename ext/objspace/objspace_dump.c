@@ -333,6 +333,7 @@ dump_object(VALUE obj, struct dump_config *dc)
 {
     size_t memsize;
     struct allocation_info *ainfo = objspace_lookup_allocation_info(obj);
+    unsigned int locindex = ainfo ? ainfo->locindex : objspace_lookup_locindex(obj);
     rb_io_t *fptr;
     ID flags[RB_OBJ_GC_FLAGS_MAX];
     size_t n, i;
@@ -493,16 +494,21 @@ dump_object(VALUE obj, struct dump_config *dc)
     if (dc->cur_obj_references > 0)
         dump_append(dc, "]");
 
-    if (ainfo) {
-        if (ainfo->path) {
+    VALUE path = Qnil;
+    int line = 0;
+    if (locindex && rb_locindex_resolve(locindex, &path, &line)) {
+        if (RTEST(path)) {
             dump_append(dc, ", \"file\":\"");
-            dump_append(dc, ainfo->path);
+            dump_append(dc, RSTRING_PTR(path));
             dump_append(dc, "\"");
         }
-        if (ainfo->line) {
+        if (line) {
             dump_append(dc, ", \"line\":");
-            dump_append_lu(dc, ainfo->line);
+            dump_append_d(dc, line);
         }
+    }
+
+    if (ainfo) {
         if (RTEST(ainfo->mid)) {
             VALUE m = rb_sym2str(ainfo->mid);
             dump_append(dc, ", \"method\":");
