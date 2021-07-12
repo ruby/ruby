@@ -38,6 +38,7 @@ static VALUE sym_xml, sym_text, sym_attr;
 static VALUE sym_universal_newline;
 static VALUE sym_crlf_newline;
 static VALUE sym_cr_newline;
+static VALUE sym_lf_newline;
 #ifdef ENABLE_ECONV_NEWLINE_OPTION
 static VALUE sym_newline, sym_universal, sym_crlf, sym_cr, sym_lf;
 #endif
@@ -1028,6 +1029,7 @@ decorator_names(int ecflags, const char **decorators_ret)
       case ECONV_UNIVERSAL_NEWLINE_DECORATOR:
       case ECONV_CRLF_NEWLINE_DECORATOR:
       case ECONV_CR_NEWLINE_DECORATOR:
+      case ECONV_LF_NEWLINE_DECORATOR:
       case 0:
 	break;
       default:
@@ -1051,6 +1053,8 @@ decorator_names(int ecflags, const char **decorators_ret)
         decorators_ret[num_decorators++] = "crlf_newline";
     if (ecflags & ECONV_CR_NEWLINE_DECORATOR)
         decorators_ret[num_decorators++] = "cr_newline";
+    if (ecflags & ECONV_LF_NEWLINE_DECORATOR)
+        decorators_ret[num_decorators++] = "lf_newline";
     if (ecflags & ECONV_UNIVERSAL_NEWLINE_DECORATOR)
         decorators_ret[num_decorators++] = "universal_newline";
 
@@ -1945,6 +1949,9 @@ rb_econv_binmode(rb_econv_t *ec)
       case ECONV_CR_NEWLINE_DECORATOR:
 	dname = "cr_newline";
 	break;
+      case ECONV_LF_NEWLINE_DECORATOR:
+        dname = "lf_newline";
+        break;
     }
 
     if (dname) {
@@ -2002,6 +2009,10 @@ econv_description(const char *sname, const char *dname, int ecflags, VALUE mesg)
         if (ecflags & ECONV_CR_NEWLINE_DECORATOR) {
             rb_str_cat2(mesg, pre); pre = ",";
             rb_str_cat2(mesg, "cr_newline");
+        }
+        if (ecflags & ECONV_LF_NEWLINE_DECORATOR) {
+            rb_str_cat2(mesg, pre); pre = ",";
+            rb_str_cat2(mesg, "lf_newline");
         }
         if (ecflags & ECONV_XML_TEXT_DECORATOR) {
             rb_str_cat2(mesg, pre); pre = ",";
@@ -2468,7 +2479,7 @@ econv_opts(VALUE opt, int ecflags)
     if (!NIL_P(v)) {
         newlineflag = 2;
 	ecflags &= ~ECONV_NEWLINE_DECORATOR_MASK;
-	if (v == sym_universal) {
+        if (v == sym_universal) {
 	    ecflags |= ECONV_UNIVERSAL_NEWLINE_DECORATOR;
 	}
 	else if (v == sym_crlf) {
@@ -2477,9 +2488,9 @@ econv_opts(VALUE opt, int ecflags)
 	else if (v == sym_cr) {
 	    ecflags |= ECONV_CR_NEWLINE_DECORATOR;
 	}
-	else if (v == sym_lf) {
-	    /* ecflags |= ECONV_LF_NEWLINE_DECORATOR; */
-	}
+        else if (v == sym_lf) {
+            ecflags |= ECONV_LF_NEWLINE_DECORATOR;
+        }
 	else if (SYMBOL_P(v)) {
 	    rb_raise(rb_eArgError, "unexpected value for newline option: %"PRIsVALUE,
 		     rb_sym2str(v));
@@ -2506,6 +2517,11 @@ econv_opts(VALUE opt, int ecflags)
 	if (RTEST(v))
 	    setflags |= ECONV_CR_NEWLINE_DECORATOR;
 	newlineflag |= !NIL_P(v);
+
+        v = rb_hash_aref(opt, sym_lf_newline);
+        if (RTEST(v))
+            setflags |= ECONV_LF_NEWLINE_DECORATOR;
+        newlineflag |= !NIL_P(v);
 
         switch (newlineflag) {
           case 1:
@@ -2876,6 +2892,8 @@ static VALUE encoded_dup(VALUE newstr, VALUE str, int encidx);
  *    Replaces LF ("\n") with CR ("\r") if value is true.
  *  :crlf_newline ::
  *    Replaces LF ("\n") with CRLF ("\r\n") if value is true.
+ *  :lf_newline ::
+ *    Replaces CRLF ("\r\n") and CR ("\r") with LF ("\n") when writing if value is true.
  *  :universal_newline ::
  *    Replaces CRLF ("\r\n") and CR ("\r") with LF ("\n") if value is true.
  */
@@ -3305,11 +3323,13 @@ rb_econv_init_by_convpath(VALUE self, VALUE convpath,
  *     :undef => :replace         # replace undefined conversion
  *     :replace => string         # replacement string ("?" or "\uFFFD" if not specified)
  *     :newline => :universal     # decorator for converting CRLF and CR to LF
+ *     :newline => :lf            # decorator for converting CRLF and CR to LF when writing
  *     :newline => :crlf          # decorator for converting LF to CRLF
  *     :newline => :cr            # decorator for converting LF to CR
  *     :universal_newline => true # decorator for converting CRLF and CR to LF
  *     :crlf_newline => true      # decorator for converting LF to CRLF
  *     :cr_newline => true        # decorator for converting LF to CR
+ *     :lf_newline => true        # decorator for converting CRLF and CR to LF when writing
  *     :xml => :text              # escape as XML CharData.
  *     :xml => :attr              # escape as XML AttValue
  *   integer form:
@@ -3317,6 +3337,7 @@ rb_econv_init_by_convpath(VALUE self, VALUE convpath,
  *     Encoding::Converter::UNDEF_REPLACE
  *     Encoding::Converter::UNDEF_HEX_CHARREF
  *     Encoding::Converter::UNIVERSAL_NEWLINE_DECORATOR
+ *     Encoding::Converter::LF_NEWLINE_DECORATOR
  *     Encoding::Converter::CRLF_NEWLINE_DECORATOR
  *     Encoding::Converter::CR_NEWLINE_DECORATOR
  *     Encoding::Converter::XML_TEXT_DECORATOR
@@ -3359,6 +3380,8 @@ rb_econv_init_by_convpath(VALUE self, VALUE convpath,
  *   Convert LF to CRLF.
  * [:cr_newline => true]
  *   Convert LF to CR.
+ * [:lf_newline => true]
+ *   Convert CRLF and CR to LF (when writing).
  * [:xml => :text]
  *   Escape as XML CharData.
  *   This form can be used as an HTML 4.0 #PCDATA.
@@ -4445,6 +4468,7 @@ Init_transcode(void)
     sym_universal_newline = ID2SYM(rb_intern("universal_newline"));
     sym_crlf_newline = ID2SYM(rb_intern("crlf_newline"));
     sym_cr_newline = ID2SYM(rb_intern("cr_newline"));
+    sym_lf_newline = ID2SYM(rb_intern("lf_newline"));
     sym_partial_input = ID2SYM(rb_intern("partial_input"));
 
 #ifdef ENABLE_ECONV_NEWLINE_OPTION
@@ -4540,6 +4564,12 @@ InitVM_transcode(void)
      * Decorator for converting CRLF and CR to LF
      */
     rb_define_const(rb_cEncodingConverter, "UNIVERSAL_NEWLINE_DECORATOR", INT2FIX(ECONV_UNIVERSAL_NEWLINE_DECORATOR));
+
+    /* Document-const: LF_NEWLINE_DECORATOR
+     *
+     * Decorator for converting CRLF and CR to LF when writing
+     */
+    rb_define_const(rb_cEncodingConverter, "LF_NEWLINE_DECORATOR", INT2FIX(ECONV_LF_NEWLINE_DECORATOR));
 
     /* Document-const: CRLF_NEWLINE_DECORATOR
      *
