@@ -412,6 +412,11 @@ class TestProc < Test::Unit::TestCase
     assert_equal(:foo, bc.foo)
   end
 
+  def test_dup_subclass
+    c1 = Class.new(Proc)
+    assert_equal c1, c1.new{}.dup.class, '[Bug #17545]'
+  end
+
   def test_binding
     b = proc {|x, y, z| proc {}.binding }.call(1, 2, 3)
     class << b; attr_accessor :foo; end
