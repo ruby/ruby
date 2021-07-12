@@ -6462,6 +6462,9 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
       case NODE_CONST:
       case NODE_LVAR:
       case NODE_DVAR:
+      case NODE_IVAR:
+      case NODE_CVAR:
+      case NODE_GVAR:
       case NODE_TRUE:
       case NODE_FALSE:
       case NODE_SELF:
