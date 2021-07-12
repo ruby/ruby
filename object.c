@@ -683,8 +683,10 @@ rb_any_to_s(VALUE obj)
 {
     VALUE str;
     VALUE cname = rb_class_name(CLASS_OF(obj));
+    VALUE object_id = rb_obj_id(obj);
 
-    str = rb_sprintf("#<%"PRIsVALUE":%p>", cname, (void*)obj);
+    str = rb_sprintf("#<%"PRIsVALUE":%%#06x>", cname);
+    str = rb_str_format(1, &object_id, str);
 
     return str;
 }
@@ -789,8 +791,10 @@ rb_obj_inspect(VALUE obj)
     if (rb_ivar_count(obj) > 0) {
 	VALUE str;
 	VALUE c = rb_class_name(CLASS_OF(obj));
+        VALUE object_id = rb_obj_id(obj);
 
-	str = rb_sprintf("-<%"PRIsVALUE":%p", c, (void*)obj);
+        str = rb_sprintf("-<%"PRIsVALUE":%%#06x", c);
+        str = rb_str_format(1, &object_id, str);
 	return rb_exec_recursive(inspect_obj, obj, str);
     }
     else {
