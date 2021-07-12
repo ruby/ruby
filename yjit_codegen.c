@@ -2259,7 +2259,10 @@ jit_guard_known_klass(jitstate_t *jit, ctx_t *ctx, VALUE known_klass, insn_opnd_
     val_type_t val_type = ctx_get_opnd_type(ctx, insn_opnd);
 
     if (known_klass == rb_cNilClass) {
+        RUBY_ASSERT(!val_type.is_heap);
         if (val_type.type != ETYPE_NIL) {
+            RUBY_ASSERT(val_type.type == ETYPE_UNKNOWN);
+
             ADD_COMMENT(cb, "guard object is nil");
             cmp(cb, REG0, imm_opnd(Qnil));
             jit_chain_guard(JCC_JNE, jit, ctx, max_chain_depth, side_exit);
@@ -2268,7 +2271,10 @@ jit_guard_known_klass(jitstate_t *jit, ctx_t *ctx, VALUE known_klass, insn_opnd_
         }
     }
     else if (known_klass == rb_cTrueClass) {
+        RUBY_ASSERT(!val_type.is_heap);
         if (val_type.type != ETYPE_TRUE) {
+            RUBY_ASSERT(val_type.type == ETYPE_UNKNOWN);
+
             ADD_COMMENT(cb, "guard object is true");
             cmp(cb, REG0, imm_opnd(Qtrue));
             jit_chain_guard(JCC_JNE, jit, ctx, max_chain_depth, side_exit);
@@ -2277,7 +2283,10 @@ jit_guard_known_klass(jitstate_t *jit, ctx_t *ctx, VALUE known_klass, insn_opnd_
         }
     }
     else if (known_klass == rb_cFalseClass) {
+        RUBY_ASSERT(!val_type.is_heap);
         if (val_type.type != ETYPE_FALSE) {
+            RUBY_ASSERT(val_type.type == ETYPE_UNKNOWN);
+
             ADD_COMMENT(cb, "guard object is false");
             STATIC_ASSERT(qfalse_is_zero, Qfalse == 0);
             test(cb, REG0, REG0);
@@ -2287,9 +2296,12 @@ jit_guard_known_klass(jitstate_t *jit, ctx_t *ctx, VALUE known_klass, insn_opnd_
         }
     }
     else if (known_klass == rb_cInteger && FIXNUM_P(sample_instance)) {
+        RUBY_ASSERT(!val_type.is_heap);
         // We will guard fixnum and bignum as though they were separate classes
         // BIGNUM can be handled by the general else case below
         if (val_type.type != ETYPE_FIXNUM || !val_type.is_imm) {
+            RUBY_ASSERT(val_type.type == ETYPE_UNKNOWN);
+
             ADD_COMMENT(cb, "guard object is fixnum");
             test(cb, REG0, imm_opnd(RUBY_FIXNUM_FLAG));
             jit_chain_guard(JCC_JZ, jit, ctx, max_chain_depth, side_exit);
@@ -2297,9 +2309,12 @@ jit_guard_known_klass(jitstate_t *jit, ctx_t *ctx, VALUE known_klass, insn_opnd_
         }
     }
     else if (known_klass == rb_cSymbol && STATIC_SYM_P(sample_instance)) {
+        RUBY_ASSERT(!val_type.is_heap);
         // We will guard STATIC vs DYNAMIC as though they were separate classes
         // DYNAMIC symbols can be handled by the general else case below
         if (val_type.type != ETYPE_SYMBOL || !val_type.is_imm) {
+            RUBY_ASSERT(val_type.type == ETYPE_UNKNOWN);
+
             ADD_COMMENT(cb, "guard object is static symbol");
             STATIC_ASSERT(special_shift_is_8, RUBY_SPECIAL_SHIFT == 8);
             cmp(cb, REG0_8, imm_opnd(RUBY_SYMBOL_FLAG));
@@ -2308,7 +2323,10 @@ jit_guard_known_klass(jitstate_t *jit, ctx_t *ctx, VALUE known_klass, insn_opnd_
         }
     }
     else if (known_klass == rb_cFloat && FLONUM_P(sample_instance)) {
+        RUBY_ASSERT(!val_type.is_heap);
         if (val_type.type != ETYPE_FLONUM || !val_type.is_imm) {
+            RUBY_ASSERT(val_type.type == ETYPE_UNKNOWN);
+
             // We will guard flonum vs heap float as though they were separate classes
             ADD_COMMENT(cb, "guard object is flonum");
             mov(cb, REG1, REG0);
@@ -2336,6 +2354,8 @@ jit_guard_known_klass(jitstate_t *jit, ctx_t *ctx, VALUE known_klass, insn_opnd_
         jit_chain_guard(JCC_JNE, jit, ctx, max_chain_depth, side_exit);
     }
     else {
+        RUBY_ASSERT(!val_type.is_imm);
+
         // Check that the receiver is a heap object
         // Note: if we get here, the class doesn't have immediate instances.
         if (!val_type.is_heap) {
