@@ -5756,11 +5756,10 @@ str_byte_substr(VALUE str, long beg, long len, int empty)
     else
 	p = s + beg;
 
-    if (!STR_EMBEDDABLE_P(len, TERM_LEN(str)) && SHARABLE_SUBSTRING_P(beg, len, n)) {
-	str2 = rb_str_new_frozen(str);
-        str2 = str_new_shared(rb_cString, str2);
-	RSTRING(str2)->as.heap.ptr += beg;
-	RSTRING(str2)->as.heap.len = len;
+    if (!STR_EMBEDDABLE_P(len, TERM_LEN(str)) && SHARABLE_SUBSTRING_P(beg, len, n) && OBJ_FROZEN(str)) {
+        str2 = str_new_shared(rb_cString, str);
+        RSTRING(str2)->as.heap.ptr += beg;
+        RSTRING(str2)->as.heap.len = len;
     }
     else {
         str2 = rb_str_new(p, len);
