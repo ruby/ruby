@@ -350,16 +350,15 @@ module TestStruct
     end
   end
 
-  def test_keyword_args_warning
-    warning = /warning: Passing only keyword arguments to Struct#initialize will behave differently from Ruby 3\.2\./
-    assert_warn(warning) { assert_equal({a: 1}, @Struct.new(:a).new(a: 1).a) }
-    assert_warn(warning) { assert_equal({a: 1}, @Struct.new(:a, keyword_init: nil).new(a: 1).a) }
-    assert_warn('') { assert_equal({a: 1}, @Struct.new(:a).new({a: 1}).a) }
-    assert_warn('') { assert_equal({a: 1}, @Struct.new(:a, :b).new(1, a: 1).b) }
-    assert_warn('') { assert_equal(1, @Struct.new(:a, keyword_init: true).new(a: 1).a) }
-    assert_warn('') { assert_equal({a: 1}, @Struct.new(:a, keyword_init: nil).new({a: 1}).a) }
-    assert_warn('') { assert_equal({a: 1}, @Struct.new(:a, keyword_init: false).new(a: 1).a) }
-    assert_warn('') { assert_equal({a: 1}, @Struct.new(:a, keyword_init: false).new({a: 1}).a) }
+  def test_keyword_args
+    assert_equal(1, @Struct.new(:a).new(a: 1).a)
+    assert_equal(1, @Struct.new(:a, keyword_init: nil).new(a: 1).a)
+    assert_equal({a: 1}, @Struct.new(:a).new({a: 1}).a)
+    assert_equal({a: 1}, @Struct.new(:a, :b).new(1, a: 1).b)
+    assert_equal(1, @Struct.new(:a, keyword_init: true).new(a: 1).a)
+    assert_equal({a: 1}, @Struct.new(:a, keyword_init: nil).new({a: 1}).a)
+    assert_equal({a: 1}, @Struct.new(:a, keyword_init: false).new(a: 1).a)
+    assert_equal({a: 1}, @Struct.new(:a, keyword_init: false).new({a: 1}).a)
   end
 
   def test_nonascii
