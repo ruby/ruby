@@ -79,6 +79,5 @@ module URI
     end
   end
 
-  @@schemes['WS'] = WS
-
+  register_scheme 'WS', WS
 end
