@@ -1436,6 +1436,14 @@ class TestPathname < Test::Unit::TestCase
     }
   end
 
+  def test_touch
+    with_tmpchdir('rubytest-pathname') {|dir|
+      Pathname("a/b/c/d.txt").touch
+      assert_file.directory?("a/b/c")
+      assert_file.file?("a/b/c/d.txt")
+    }
+  end
+
   def test_rmtree
     with_tmpchdir('rubytest-pathname') {|dir|
       Pathname("a/b/c/d").mkpath

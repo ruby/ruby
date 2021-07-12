@@ -585,6 +585,27 @@ class Pathname    # * FileUtils *
     nil
   end
 
+  # Creates a file and the full path to the file including any intermediate directories that don't yet
+  # exist.
+  #
+  # Example:
+  #
+  #   Dir.exist?("/a/b/c") # => false
+  #
+  #   p = Pathname.new("/a/b/c/d.txt")
+  #   p.file? => false
+  #   p.touch
+  #   p.file? => true
+  #
+  #   Dir.exist?("/a/b/c") # => true
+  def touch
+    require 'fileutils'
+    dirname.mkpath
+
+    FileUtils.touch(self)
+    self
+  end
+
   # Recursively deletes a directory, including all directories beneath it.
   #
   # See FileUtils.rm_r
