@@ -54,20 +54,6 @@ rsock_raise_socket_error(const char *reason, int error)
 #endif
 }
 
-#ifdef _WIN32
-#define is_socket(fd) rb_w32_is_socket(fd)
-#else
-static int
-is_socket(int fd)
-{
-    struct stat sbuf;
-
-    if (fstat(fd, &sbuf) < 0)
-        rb_sys_fail("fstat(2)");
-    return S_ISSOCK(sbuf.st_mode);
-}
-#endif
-
 #if defined __APPLE__
 # define do_write_retry(code) do {ret = code;} while (ret == -1 && errno == EPROTOTYPE)
 #else
@@ -78,10 +64,6 @@ VALUE
 rsock_init_sock(VALUE sock, int fd)
 {
     rb_io_t *fp;
-
-    if (!is_socket(fd) || rb_reserved_fd_p(fd)) {
-	rb_syserr_fail(EBADF, "not a socket file descriptor");
-    }
 
     rb_update_max_fd(fd);
     MakeOpenFile(sock, fp);
