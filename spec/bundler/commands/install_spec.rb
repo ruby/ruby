@@ -388,6 +388,7 @@ RSpec.describe "bundle install with gem sources" do
       bundle :install
 
       expect(err).to be_empty
+      expect(the_bundle).to include_gems("my-private-gem 1.0")
     end
 
     it "throws an error if a gem is added twice in Gemfile when version of one dependency is not specified" do
