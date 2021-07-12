@@ -813,9 +813,6 @@ local variable `foo' is not defined for #{ b.inspect }
   def test_multibyte
     assert_error_message(NoMethodError, <<~END) do
 undefined method `あいうえお' for nil:NilClass
-
-      nil.あいうえお
-         ^^^^^^
     END
 
       nil.あいうえお
