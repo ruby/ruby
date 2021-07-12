@@ -10,6 +10,28 @@
 
 #include "rubysocket.h"
 
+#ifdef _WIN32
+#define is_socket(fd) rb_w32_is_socket(fd)
+#else
+static int
+is_socket(int fd)
+{
+    struct stat sbuf;
+
+    if (fstat(fd, &sbuf) < 0)
+        rb_sys_fail("fstat(2)");
+    return S_ISSOCK(sbuf.st_mode);
+}
+#endif
+
+static void
+rsock_validate_descriptor(int descriptor)
+{
+    if (!is_socket(descriptor) || rb_reserved_fd_p(descriptor)) {
+        rb_syserr_fail(EBADF, "not a socket file descriptor");
+    }
+}
+
 /*
  * call-seq:
  *   BasicSocket.for_fd(fd) => basicsocket
@@ -22,10 +44,14 @@
  *
  */
 static VALUE
-bsock_s_for_fd(VALUE klass, VALUE fd)
+bsock_s_for_fd(VALUE klass, VALUE _descriptor)
 {
     rb_io_t *fptr;
-    VALUE sock = rsock_init_sock(rb_obj_alloc(klass), NUM2INT(fd));
+
+    int descriptor = RB_NUM2INT(_descriptor);
+    rsock_validate_descriptor(descriptor);
+
+    VALUE sock = rsock_init_sock(rb_obj_alloc(klass), descriptor);
 
     GetOpenFile(sock, fptr);
 
