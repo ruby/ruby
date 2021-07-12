@@ -4801,7 +4801,7 @@ rb_fix_digits(VALUE fix, long base)
 static VALUE
 rb_int_digits_bigbase(VALUE num, VALUE base)
 {
-    VALUE digits;
+    VALUE digits, bases;
 
     assert(!rb_num_negative_p(num));
 
@@ -4819,11 +4819,32 @@ rb_int_digits_bigbase(VALUE num, VALUE base)
     if (FIXNUM_P(num))
         return rb_ary_new_from_args(1, num);
 
-    digits = rb_ary_new();
-    while (!FIXNUM_P(num) || FIX2LONG(num) > 0) {
-        VALUE qr = rb_int_divmod(num, base);
-        rb_ary_push(digits, RARRAY_AREF(qr, 1));
-        num = RARRAY_AREF(qr, 0);
+    if (int_lt(rb_int_div(rb_int_bit_length(num), rb_int_bit_length(base)), INT2FIX(50))) {
+        digits = rb_ary_new();
+        while (!FIXNUM_P(num) || FIX2LONG(num) > 0) {
+            VALUE qr = rb_int_divmod(num, base);
+            rb_ary_push(digits, RARRAY_AREF(qr, 1));
+            num = RARRAY_AREF(qr, 0);
+        }
+        return digits;
+    }
+
+    bases = rb_ary_new();
+    for (VALUE b = base; int_lt(b, num) == Qtrue; b = rb_int_mul(b, b)) {
+        rb_ary_push(bases, b);
+    }
+    digits = rb_ary_new_from_args(1, num);
+    while (RARRAY_LEN(bases)) {
+        VALUE b = rb_ary_pop(bases);
+        long i, last_idx = RARRAY_LEN(digits) - 1;
+        for(i = last_idx; i >= 0; i--) {
+            VALUE n = RARRAY_AREF(digits, i);
+            VALUE divmod = rb_int_divmod(n, b);
+            VALUE div = RARRAY_AREF(divmod, 0);
+            VALUE mod = RARRAY_AREF(divmod, 1);
+            if (i != last_idx || div != INT2FIX(0)) rb_ary_store(digits, 2 * i + 1,  div);
+            rb_ary_store(digits, 2 * i, mod);
+        }
     }
 
     return digits;
