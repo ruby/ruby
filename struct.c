@@ -347,6 +347,29 @@ rb_struct_s_inspect(VALUE klass)
     return inspect;
 }
 
+/*
+ * call-seq:
+ *   StructClass.keyword_init? -> true or false
+ *
+ * Returns true if the class was initialized with +keyword_init: true+.
+ * Otherwise returns false.
+ *
+ * Examples:
+ *   Foo = Struct.new(:a)
+ *   Foo.keyword_init? # => false
+ *   Bar = Struct.new(:a, keyword_init: true)
+ *   Bar.keyword_init? # => true
+ */
+static VALUE
+rb_struct_s_keyword_init_p(VALUE klass)
+{
+    if (RTEST(rb_struct_s_keyword_init(klass))) {
+        return Qtrue;
+    } else {
+        return Qfalse;
+    }
+}
+
 static VALUE
 setup_struct(VALUE nstr, VALUE members)
 {
@@ -359,6 +382,8 @@ setup_struct(VALUE nstr, VALUE members)
     rb_define_singleton_method(nstr, "[]", rb_class_new_instance_pass_kw, -1);
     rb_define_singleton_method(nstr, "members", rb_struct_s_members_m, 0);
     rb_define_singleton_method(nstr, "inspect", rb_struct_s_inspect, 0);
+    rb_define_singleton_method(nstr, "keyword_init?", rb_struct_s_keyword_init_p, 0);
+
     len = RARRAY_LEN(members);
     for (i=0; i< len; i++) {
         VALUE sym = RARRAY_AREF(members, i);
