@@ -2409,18 +2409,19 @@ static bool
 jit_rb_obj_not(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const rb_callable_method_entry_t *cme, rb_iseq_t *block, const int32_t argc)
 {
     const val_type_t recv_opnd = ctx_get_opnd_type(ctx, OPND_STACK(0));
-    x86opnd_t out_opnd = ctx_stack_opnd(ctx, 0);
 
     if (recv_opnd.type == ETYPE_NIL || recv_opnd.type == ETYPE_FALSE) {
         ADD_COMMENT(cb, "rb_obj_not(nil_or_false)");
+        ctx_stack_pop(ctx, 1);
+        x86opnd_t out_opnd = ctx_stack_push(ctx, TYPE_TRUE);
         mov(cb, out_opnd, imm_opnd(Qtrue));
-        ctx_set_opnd_type(ctx, OPND_STACK(0), TYPE_TRUE);
     }
     else if (recv_opnd.is_heap || recv_opnd.type != ETYPE_UNKNOWN) {
         // Note: recv_opnd.type != ETYPE_NIL && recv_opnd.type != ETYPE_FALSE.
         ADD_COMMENT(cb, "rb_obj_not(truthy)");
+        ctx_stack_pop(ctx, 1);
+        x86opnd_t out_opnd = ctx_stack_push(ctx, TYPE_FALSE);
         mov(cb, out_opnd, imm_opnd(Qfalse));
-        ctx_set_opnd_type(ctx, OPND_STACK(0), TYPE_FALSE);
     }
     else {
         // jit_guard_known_klass() already ran on the receiver which should
