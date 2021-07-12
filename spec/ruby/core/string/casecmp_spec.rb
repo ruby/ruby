@@ -137,8 +137,18 @@ describe 'String#casecmp? independent of case' do
     "abc".casecmp?(other).should == true
   end
 
-  it "returns nil if incompatible encodings" do
-    "あれ".casecmp?("れ".encode(Encoding::EUC_JP)).should be_nil
+  describe "when incompatible encodings" do
+    describe "for ASCII characters" do
+      it "returns nil" do
+        "abc".casecmp?("abc".encode(Encoding::UTF_16BE)).should be_nil
+      end
+    end
+
+    describe "for non-ASCII characters" do
+      it "returns nil" do
+        "あれ".casecmp?("れ".encode(Encoding::EUC_JP)).should be_nil
+      end
+    end
   end
 
   describe 'for UNICODE characters' do
