@@ -15,6 +15,16 @@ describe "IO#each_byte" do
     -> { IOSpecs.closed_io.each_byte {} }.should raise_error(IOError)
   end
 
+  ruby_bug '#17661', ''...'3.0.1' do
+    it "raises IOError when stream is closed mid-read" do
+      -> do
+        @io.each_byte do |byte|
+          @io.close
+        end
+      end.should raise_error(IOError)
+    end
+  end
+
   it "yields each byte" do
     count = 0
     @io.each_byte do |byte|
