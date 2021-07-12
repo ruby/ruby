@@ -21,6 +21,9 @@ module ErrorHighlight
   end
 
   class Spotter
+    class NonAscii < Exception; end
+    private_constant :NonAscii
+
     def initialize(node, point_type: :name, name: nil)
       @node = node
       @point_type = point_type
@@ -31,7 +34,14 @@ module ErrorHighlight
       @multiline = false # Allow multiline spot
 
       @fetch = -> (lineno, last_lineno = lineno) do
-        @node.script_lines[lineno - 1 .. last_lineno - 1].join("")
+        snippet = @node.script_lines[lineno - 1 .. last_lineno - 1].join("")
+
+        # It require some work to support Unicode (or multibyte) characters.
+        # Tentatively, we stop highlighting if the code snippet has non-ascii characters.
+        # See https://github.com/ruby/error_highlight/issues/4
+        raise NonAscii unless snippet.ascii_only?
+
+        snippet
       end
     end
 
@@ -115,6 +125,9 @@ module ErrorHighlight
       else
         return nil
       end
+
+    rescue NonAscii
+      nil
     end
 
     private
