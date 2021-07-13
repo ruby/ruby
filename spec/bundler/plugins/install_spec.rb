@@ -29,6 +29,12 @@ RSpec.describe "bundler plugin install" do
     plugin_should_be_installed("foo")
   end
 
+  it "shows help when --help flag is given" do
+    bundle "plugin install --help"
+
+    expect(out).to include("bundle plugin install PLUGINS    # Install the plugin from the source")
+  end
+
   context "plugin is already installed" do
     before do
       bundle "plugin install foo --source #{file_uri_for(gem_repo2)}"
