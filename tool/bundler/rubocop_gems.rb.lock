@@ -44,6 +44,7 @@ GEM
     unicode-display_width (2.0.0)
 
 PLATFORMS
+  arm64-darwin-20
   universal-java-11
   x86_64-linux
 
