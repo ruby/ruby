@@ -333,8 +333,11 @@ IGNORE_FILE_PATTERN =
 
 def message_filter(repo, sha)
   log = STDIN.read
-  print "[#{repo}] ", log.sub(/\s*(?=(?i:\nCo-authored-by:.*)*\Z)/) {
-    "\n\n" "https://github.com/#{repo}/commit/#{sha[0,10]}\n"
+  url = "https://github.com/#{repo}"
+  print "[#{repo}] ", log.gsub(/fix +#\d+|\(#\d+\)/i) {
+    $&.sub(/#/) {"#{url}/pull/"}
+  }.sub(/\s*(?=(?i:\nCo-authored-by:.*)*\Z)/) {
+    "\n\n" "#{url}/commit/#{sha[0,10]}\n"
   }
 end
 
