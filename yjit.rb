@@ -63,7 +63,7 @@ module YJIT
       highlight = ->(comment) { "<b>#{comment}</b>" }
       linebreak = "<br align=\"left\"/>\n"
 
-      buff = ''
+      buff = ''.dup
       blocks = blocks_for(iseq).sort_by(&:id)
       buff << "digraph g {\n"
 
@@ -103,7 +103,7 @@ module YJIT
     def self.disasm_block(cs, block, highlight)
       comments = comments_for(block.address, block.address + block.code.length)
       comment_idx = 0
-      str = ''
+      str = ''.dup
       cs.disasm(block.code, block.address).each do |i|
         while (comment = comments[comment_idx]) && comment.address <= i.address
           str << "  ; #{highlight.call(comment.comment)}\n"
