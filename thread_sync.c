@@ -637,21 +637,21 @@ void rb_mutex_allow_trap(VALUE self, int val)
 /* Queue */
 
 #define queue_waitq(q) UNALIGNED_MEMBER_PTR(q, waitq)
-PACKED_STRUCT_UNALIGNED(struct rb_queue {
+struct rb_queue {
     struct list_head waitq;
     rb_serial_t fork_gen;
     const VALUE que;
     int num_waiting;
-});
+};
 
 #define szqueue_waitq(sq) UNALIGNED_MEMBER_PTR(sq, q.waitq)
 #define szqueue_pushq(sq) UNALIGNED_MEMBER_PTR(sq, pushq)
-PACKED_STRUCT_UNALIGNED(struct rb_szqueue {
+struct rb_szqueue {
     struct rb_queue q;
     int num_waiting_push;
     struct list_head pushq;
     long max;
-});
+};
 
 static void
 queue_mark(void *ptr)
