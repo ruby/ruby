@@ -644,6 +644,25 @@ RSpec.describe "Bundler.setup" do
       expect(err).to be_empty
     end
 
+    it "doesn't re-resolve when a pre-release bundler is used and a dependency includes a dependency on bundler" do
+      system_gems "bundler-9.99.9.beta1"
+
+      build_repo4 do
+        build_gem "depends_on_bundler", "1.0" do |s|
+          s.add_dependency "bundler", ">= 1.5.0"
+        end
+      end
+
+      install_gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}"
+        gem "depends_on_bundler"
+      G
+
+      ruby "require '#{system_gem_path("gems/bundler-9.99.9.beta1/lib/bundler.rb")}'; Bundler.setup", :env => { "DEBUG" => "1" }
+      expect(out).to include("Found no changes, using resolution from the lockfile")
+      expect(err).to be_empty
+    end
+
     it "remembers --without and does not include groups passed to Bundler.setup" do
       bundle "config set --local without rails"
       install_gemfile <<-G

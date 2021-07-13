@@ -12,12 +12,10 @@ module Bundler
     def setup(*groups)
       @definition.ensure_equivalent_gemfile_and_lockfile if Bundler.frozen_bundle?
 
-      groups.map!(&:to_sym)
-
       # Has to happen first
       clean_load_path
 
-      specs = groups.any? ? @definition.specs_for(groups) : requested_specs
+      specs = @definition.specs_for(groups)
 
       SharedHelpers.set_bundle_environment
       Bundler.rubygems.replace_entrypoints(specs)
