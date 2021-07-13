@@ -889,6 +889,7 @@ memory_view.o: $(hdrdir)/ruby/backward/2/long_long.h
 memory_view.o: $(hdrdir)/ruby/backward/2/stdalign.h
 memory_view.o: $(hdrdir)/ruby/backward/2/stdarg.h
 memory_view.o: $(hdrdir)/ruby/defines.h
+memory_view.o: $(hdrdir)/ruby/encoding.h
 memory_view.o: $(hdrdir)/ruby/intern.h
 memory_view.o: $(hdrdir)/ruby/internal/anyargs.h
 memory_view.o: $(hdrdir)/ruby/internal/arithmetic.h
@@ -1031,6 +1032,8 @@ memory_view.o: $(hdrdir)/ruby/internal/warning_push.h
 memory_view.o: $(hdrdir)/ruby/internal/xmalloc.h
 memory_view.o: $(hdrdir)/ruby/memory_view.h
 memory_view.o: $(hdrdir)/ruby/missing.h
+memory_view.o: $(hdrdir)/ruby/onigmo.h
+memory_view.o: $(hdrdir)/ruby/oniguruma.h
 memory_view.o: $(hdrdir)/ruby/ruby.h
 memory_view.o: $(hdrdir)/ruby/st.h
 memory_view.o: $(hdrdir)/ruby/subst.h
