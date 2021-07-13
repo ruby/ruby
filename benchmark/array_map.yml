@@ -1,0 +1,5 @@
+benchmark:
+    - Array.new(10).map
+    - Array.new(10).map{|v|}
+    - Array.new(1000).map{|v|}
+    - Array.new(30_000_000).map{|v|}

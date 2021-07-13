@@ -3648,6 +3648,12 @@ rb_ary_sort_by_bang(VALUE ary)
  */
 
 static VALUE
+block_given_p(rb_execution_context_t *ec, VALUE self)
+{
+    return rb_block_given_p() ? Qtrue : Qfalse;
+}
+
+static VALUE
 rb_ary_collect(VALUE ary)
 {
     long i;
@@ -8399,7 +8405,6 @@ Init_Array(void)
     rb_define_method(rb_cArray, "sort_by!", rb_ary_sort_by_bang, 0);
     rb_define_method(rb_cArray, "collect", rb_ary_collect, 0);
     rb_define_method(rb_cArray, "collect!", rb_ary_collect_bang, 0);
-    rb_define_method(rb_cArray, "map", rb_ary_collect, 0);
     rb_define_method(rb_cArray, "map!", rb_ary_collect_bang, 0);
     rb_define_method(rb_cArray, "select", rb_ary_select, 0);
     rb_define_method(rb_cArray, "select!", rb_ary_select_bang, 0);
