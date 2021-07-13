@@ -3257,7 +3257,7 @@ iseq_add_local_tracepoint(const rb_iseq_t *iseq, rb_event_flag_t turnon_events, 
     for (pc=0; pc<body->iseq_size;) {
         const struct iseq_insn_info_entry *entry = get_insn_info(iseq, pc);
         rb_event_flag_t pc_events = entry->events;
-        rb_event_flag_t target_events = turnon_events;
+        rb_event_flag_t target_events = rb_iseq_insn_effective_events(turnon_events);
         unsigned int line = (int)entry->line_no;
 
         if (target_line == 0 || target_line == line) {
@@ -3333,6 +3333,7 @@ iseq_remove_local_tracepoint(const rb_iseq_t *iseq, VALUE tpval)
             ((rb_iseq_t *)iseq)->aux.exec.local_hooks = NULL;
         }
 
+        local_events = rb_iseq_insn_effective_events(local_events);
         for (pc = 0; pc<body->iseq_size;) {
             rb_event_flag_t pc_events = rb_iseq_event_flags(iseq, pc);
             pc += encoded_iseq_trace_instrument(&iseq_encoded[pc], pc_events & (local_events | iseq->aux.exec.global_trace_events), false);
@@ -3383,7 +3384,7 @@ rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events)
         rb_event_flag_t enabled_events;
         rb_event_flag_t local_events = iseq->aux.exec.local_hooks ? iseq->aux.exec.local_hooks->events : 0;
         ((rb_iseq_t *)iseq)->aux.exec.global_trace_events = turnon_events;
-        enabled_events = turnon_events | local_events;
+        enabled_events = rb_iseq_insn_effective_events(turnon_events | local_events);
 
         for (pc=0; pc<body->iseq_size;) {
             rb_event_flag_t pc_events = rb_iseq_event_flags(iseq, pc);
