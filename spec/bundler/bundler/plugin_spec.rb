@@ -277,7 +277,7 @@ RSpec.describe Bundler::Plugin do
       Bundler::Plugin::Events.send(:define, :EVENT_2, "event-2")
 
       allow(index).to receive(:hook_plugins).with(Bundler::Plugin::Events::EVENT_1).
-        and_return(["foo-plugin"])
+        and_return(["foo-plugin", "", nil])
       allow(index).to receive(:hook_plugins).with(Bundler::Plugin::Events::EVENT_2).
         and_return(["foo-plugin"])
       allow(index).to receive(:plugin_path).with("foo-plugin").and_return(path)
