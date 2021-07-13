@@ -630,6 +630,7 @@ SO_SELECT_ERR_QUEUE     nil     Make select() detect socket error queue with err
 SO_BUSY_POLL    nil     Set the threshold in microseconds for low latency polling (Linux 3.11)
 SO_MAX_PACING_RATE      nil     Cap the rate computed by transport layer. [bytes per second] (Linux 3.13)
 SO_BPF_EXTENSIONS       nil     Query supported BPF extensions (Linux 3.14)
+SO_RTABLE               nil     Set the routing table for this socket (OpenBSD)
 
 SOPRI_INTERACTIVE	nil	Interactive socket priority
 SOPRI_NORMAL	nil	Normal socket priority
