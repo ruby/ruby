@@ -2,7 +2,6 @@
 #define FIDDLE_H
 
 #include <ruby.h>
-#include <ruby/version.h>
 #include <errno.h>
 
 #if defined(_WIN32)
@@ -190,7 +189,7 @@
 #define ALIGN_INT32_T ALIGN_OF(int32_t)
 #define ALIGN_INT64_T ALIGN_OF(int64_t)
 
-#if RUBY_API_VERSION_MAJOR >= 3
+#ifdef HAVE_RUBY_MEMORY_VIEW_H
 # define FIDDLE_MEMORY_VIEW
 #endif
 
