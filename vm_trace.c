@@ -1228,7 +1228,6 @@ disable_local_event_iseq_i(VALUE target, VALUE iseq_p, VALUE tpval)
         if (hooks->running == 0) {
             rb_hook_list_free(def->body.bmethod.hooks);
         }
-        def->body.bmethod.hooks = NULL;
     }
     return ST_CONTINUE;
 }

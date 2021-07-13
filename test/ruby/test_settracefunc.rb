@@ -1494,6 +1494,30 @@ class TestSetTraceFunc < Test::Unit::TestCase
     end
   end
 
+  def test_multiple_nested_tracepoints_on_bmethod
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      calls = []
+      one = TracePoint.new(:call) {|tp| calls << :one}
+      two = TracePoint.new(:call) {|tp| calls << :two}
+
+      obj = Object.new
+      obj.define_singleton_method(:foo) {calls << :foo} # a bmethod
+
+      foo = obj.method(:foo)
+      foo.call
+      one.enable(target: foo) do
+        foo.call
+        two.enable(target: foo) do
+          foo.call
+        end
+      end
+      foo.call
+
+      assert_equal([:foo, :one, :foo, :two, :foo, :foo], calls, '[Bug #18031]')
+    end;
+  end
+
   def test_rb_rescue
     assert_consistent_call_return '[Bug #9961]' do
       begin
