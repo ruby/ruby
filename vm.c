@@ -2017,10 +2017,10 @@ hook_before_rewind(rb_execution_context_t *ec, const rb_control_frame_t *cfp,
             break;
           case VM_FRAME_MAGIC_BLOCK:
             if (VM_FRAME_BMETHOD_P(ec->cfp)) {
-                EXEC_EVENT_HOOK(ec, RUBY_EVENT_B_RETURN, ec->cfp->self, 0, 0, 0, frame_return_value(err));
+                EXEC_EVENT_HOOK_AND_POP_FRAME(ec, RUBY_EVENT_B_RETURN, ec->cfp->self, 0, 0, 0, frame_return_value(err));
                 if (UNLIKELY(local_hooks && local_hooks->events & RUBY_EVENT_B_RETURN)) {
                     rb_exec_event_hook_orig(ec, local_hooks, RUBY_EVENT_B_RETURN,
-                                            ec->cfp->self, 0, 0, 0, frame_return_value(err), FALSE);
+                                            ec->cfp->self, 0, 0, 0, frame_return_value(err), TRUE);
                 }
 
                 if (!will_finish_vm_exec) {
