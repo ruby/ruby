@@ -288,6 +288,34 @@ RSpec.describe "bundle check" do
     end
   end
 
+  describe "when locked with multiple dependents with different requirements" do
+    before :each do
+      build_repo4 do
+        build_gem "depends_on_rack" do |s|
+          s.add_dependency "rack", ">= 1.0"
+        end
+        build_gem "also_depends_on_rack" do |s|
+          s.add_dependency "rack", "~> 1.0"
+        end
+        build_gem "rack"
+      end
+
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem "depends_on_rack"
+        gem "also_depends_on_rack"
+      G
+
+      bundle "lock"
+    end
+
+    it "shows what is missing with the current Gemfile without duplications" do
+      bundle :check, :raise_on_error => false
+      expect(err).to match(/The following gems are missing/)
+      expect(err).to include("* rack (1.0").once
+    end
+  end
+
   describe "when using only scoped rubygems sources" do
     before do
       gemfile <<~G

@@ -31,7 +31,8 @@ module Gem::GemcutterUtilities
 
   def add_otp_option
     add_option('--otp CODE',
-               'Digit code for multifactor authentication') do |value, options|
+               'Digit code for multifactor authentication',
+               'You can also use the environment variable GEM_HOST_OTP_CODE') do |value, options|
       options[:otp] = value
     end
   end

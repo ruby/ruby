@@ -307,42 +307,42 @@ RSpec.describe "bundle gem" do
     skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
     bundle "gem #{gem_name} --linter=rubocop"
     bundle_exec_rubocop
-    expect(err).to be_empty
+    expect(last_command).to be_success
   end
 
   it "has no rubocop offenses when using --ext and --linter=rubocop flag", :readline do
     skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
     bundle "gem #{gem_name} --ext --linter=rubocop"
     bundle_exec_rubocop
-    expect(err).to be_empty
+    expect(last_command).to be_success
   end
 
   it "has no rubocop offenses when using --ext, --test=minitest, and --linter=rubocop flag", :readline do
     skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
     bundle "gem #{gem_name} --ext --test=minitest --linter=rubocop"
     bundle_exec_rubocop
-    expect(err).to be_empty
+    expect(last_command).to be_success
   end
 
   it "has no rubocop offenses when using --ext, --test=rspec, and --linter=rubocop flag", :readline do
     skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
     bundle "gem #{gem_name} --ext --test=rspec --linter=rubocop"
     bundle_exec_rubocop
-    expect(err).to be_empty
+    expect(last_command).to be_success
   end
 
   it "has no rubocop offenses when using --ext, --ext=test-unit, and --linter=rubocop flag", :readline do
     skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
     bundle "gem #{gem_name} --ext --test=test-unit --linter=rubocop"
     bundle_exec_rubocop
-    expect(err).to be_empty
+    expect(last_command).to be_success
   end
 
   it "has no standard offenses when using --linter=standard flag", :readline do
     skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
     bundle "gem #{gem_name} --linter=standard"
     bundle_exec_standardrb
-    expect(err).to be_empty
+    expect(last_command).to be_success
   end
 
   shared_examples_for "CI config is absent" do

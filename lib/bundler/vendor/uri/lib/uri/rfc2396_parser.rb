@@ -3,7 +3,6 @@
 # = uri/common.rb
 #
 # Author:: Akira Yamada <akira@ruby-lang.org>
-# Revision:: $Id$
 # License::
 #   You can redistribute it and/or modify it under the same term as Ruby.
 #
@@ -208,20 +207,8 @@ module Bundler::URI
     #   #=> #<Bundler::URI::LDAP ldap://ldap.example.com/dc=example?user=john>
     #
     def parse(uri)
-      scheme, userinfo, host, port,
-        registry, path, opaque, query, fragment = self.split(uri)
-
-      if scheme && Bundler::URI.scheme_list.include?(scheme.upcase)
-        Bundler::URI.scheme_list[scheme.upcase].new(scheme, userinfo, host, port,
-                                           registry, path, opaque, query,
-                                           fragment, self)
-      else
-        Generic.new(scheme, userinfo, host, port,
-                    registry, path, opaque, query,
-                    fragment, self)
-      end
+      Bundler::URI.for(*self.split(uri), self)
     end
-
 
     #
     # == Args

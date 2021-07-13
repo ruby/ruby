@@ -24,6 +24,16 @@ RSpec.describe "bundle exec" do
     expect(out).to eq("0.9.1")
   end
 
+  it "works and prints no warnings when HOME is not writable" do
+    gemfile <<-G
+      gem "rack", "0.9.1"
+    G
+
+    bundle "exec rackup", :env => { "HOME" => "/" }
+    expect(out).to eq("0.9.1")
+    expect(err).to be_empty
+  end
+
   it "works when the bins are in ~/.bundle" do
     install_gemfile <<-G
       gem "rack"

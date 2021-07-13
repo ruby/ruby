@@ -11,15 +11,14 @@ module Bundler
       @specs = specs
     end
 
-    def for(dependencies, skip = [], check = false, match_current_platform = false, raise_on_missing = true)
+    def for(dependencies, check = false, match_current_platform = false, raise_on_missing = true)
       handled = []
       deps = dependencies.dup
       specs = []
-      skip += ["bundler"]
 
       loop do
         break unless dep = deps.shift
-        next if handled.include?(dep) || skip.include?(dep.name)
+        next if handled.any?{|d| d.name == dep.name && (match_current_platform || d.__platform == dep.__platform) } || dep.name == "bundler"
 
         handled << dep
 
@@ -73,7 +72,7 @@ module Bundler
     end
 
     def materialize(deps, missing_specs = nil)
-      materialized = self.for(deps, [], false, true, !missing_specs)
+      materialized = self.for(deps, false, true, !missing_specs)
 
       materialized.group_by(&:source).each do |source, specs|
         next unless specs.any?{|s| s.is_a?(LazySpecification) }
@@ -195,7 +194,7 @@ module Bundler
     def spec_for_dependency(dep, match_current_platform)
       specs_for_platforms = lookup[dep.name]
       if match_current_platform
-        GemHelpers.select_best_platform_match(specs_for_platforms, Bundler.local_platform)
+        GemHelpers.select_best_platform_match(specs_for_platforms.select{|s| Gem::Platform.match_spec?(s) }, Bundler.local_platform)
       else
         GemHelpers.select_best_platform_match(specs_for_platforms, dep.__platform)
       end

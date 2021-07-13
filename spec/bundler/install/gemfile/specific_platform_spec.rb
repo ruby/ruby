@@ -249,6 +249,38 @@ RSpec.describe "bundle install with specific platforms" do
     end
   end
 
+  it "installs sorbet-static, which does not provide a pure ruby variant, just fine on truffleruby", :truffleruby do
+    build_repo2 do
+      build_gem("sorbet-static", "0.5.6403") {|s| s.platform = "x86_64-linux" }
+      build_gem("sorbet-static", "0.5.6403") {|s| s.platform = "universal-darwin-20" }
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo2)}"
+
+      gem "sorbet-static", "0.5.6403"
+    G
+
+    lockfile <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo2)}/
+        specs:
+          sorbet-static (0.5.6403-universal-darwin-20)
+          sorbet-static (0.5.6403-x86_64-linux)
+
+      PLATFORMS
+        ruby
+
+      DEPENDENCIES
+        sorbet-static (= 0.5.6403)
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "install --verbose"
+  end
+
   private
 
   def setup_multiplatform_gem

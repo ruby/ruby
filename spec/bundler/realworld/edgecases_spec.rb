@@ -196,21 +196,6 @@ RSpec.describe "real world edgecases", :realworld => true do
     expect(lockfile).to include(rubygems_version("paperclip", "~> 5.1.0"))
   end
 
-  # https://github.com/rubygems/bundler/issues/1500
-  it "does not fail install because of gem plugins" do
-    realworld_system_gems("open_gem --version 1.4.2", "rake --version 0.9.2")
-    gemfile <<-G
-      source "https://rubygems.org"
-
-      gem 'rack', '1.0.1'
-    G
-
-    bundle "config set --local path vendor/bundle"
-    bundle :install
-    expect(err).not_to include("Could not find rake")
-    expect(err).to be_empty
-  end
-
   it "outputs a helpful error message when gems have invalid gemspecs" do
     install_gemfile <<-G, :standalone => true, :raise_on_error => false
       source 'https://rubygems.org'

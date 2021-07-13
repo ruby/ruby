@@ -1145,6 +1145,13 @@ class TestGemPackage < Gem::Package::TarTestCase
     end
   end
 
+  def test_contents_from_io
+    io = StringIO.new Gem.read_binary @gem
+    package = Gem::Package.new io
+
+    assert_equal %w[lib/code.rb], package.contents
+  end
+
   def util_tar
     tar_io = StringIO.new
 
