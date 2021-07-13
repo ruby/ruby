@@ -3,7 +3,8 @@ module ErrorHighlight
     def message_for(spot)
       # currently only a one-line code snippet is supported
       if spot[:first_lineno] == spot[:last_lineno]
-        marker = " " * spot[:first_column] + "^" * (spot[:last_column] - spot[:first_column])
+        indent = spot[:snippet][0...spot[:first_column]].gsub(/[^\t]/, " ")
+        marker = indent + "^" * (spot[:last_column] - spot[:first_column])
 
         "\n\n#{ spot[:snippet] }#{ marker }"
       else
