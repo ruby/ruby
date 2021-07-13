@@ -333,6 +333,7 @@ IGNORE_FILE_PATTERN =
 
 def message_filter(repo, sha)
   log = STDIN.read
+  log.delete!("\r")
   url = "https://github.com/#{repo}"
   print "[#{repo}] ", log.gsub(/fix +#\d+|\(#\d+\)/i) {
     $&.sub(/#/) {"#{url}/pull/"}
