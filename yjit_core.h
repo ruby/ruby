@@ -242,8 +242,12 @@ typedef struct yjit_block_version
     VALUE receiver_klass;
     VALUE callee_cme;
 
+    // Code page this block lives on
+    VALUE code_page;
+
     // Index one past the last instruction in the iseq
     uint32_t end_idx;
+
 } block_t;
 
 // Context object methods

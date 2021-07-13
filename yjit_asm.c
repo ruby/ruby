@@ -224,18 +224,11 @@ uint8_t* alloc_exec_mem(uint32_t mem_size)
 // How many code pages to allocate at once
 #define PAGES_PER_ALLOC 512
 
-typedef struct free_list_node
-{
-    uint8_t* page_ptr;
-
-    struct free_list_node *next;
-
-} freelist_t;
-
-freelist_t *freelist = NULL;
+// Head of the list of free code pages
+code_page_t *freelist = NULL;
 
 // Allocate a single code page from a pool of free pages
-uint8_t* alloc_code_page()
+code_page_t* alloc_code_page()
 {
     fprintf(stderr, "allocating code page\n");
 
@@ -246,29 +239,25 @@ uint8_t* alloc_code_page()
 
         // Do this in reverse order so we allocate our pages in order
         for (int i = PAGES_PER_ALLOC - 1; i >= 0; --i) {
-            freelist_t* node = malloc(sizeof(freelist_t));
-            node->page_ptr = code_chunk + i * CODE_PAGE_SIZE;
-            node->next = freelist;
-            freelist = node;
+            code_page_t* code_page = malloc(sizeof(code_page_t));
+            code_page->mem_block = code_chunk + i * CODE_PAGE_SIZE;
+            code_page->page_size = CODE_PAGE_SIZE;
+            code_page->_next = freelist;
+            freelist = code_page;
         }
     }
 
-    freelist_t* free_node = freelist;
-    uint8_t* page_ptr = freelist->page_ptr;
+    code_page_t* free_page = freelist;
+    freelist = freelist->_next;
 
-    freelist = freelist->next;
-    free(free_node);
-
-    return page_ptr;
+    return free_page;
 }
 
 // Put a code page back into the allocation pool
-void free_code_page(uint8_t* page_ptr)
+void free_code_page(code_page_t* code_page)
 {
-    freelist_t* node = malloc(sizeof(freelist_t));
-    node->page_ptr = page_ptr;
-    node->next = freelist;
-    freelist = node;
+    code_page->_next = freelist;
+    freelist = code_page;
 }
 
 // Initialize a code block object

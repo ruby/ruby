@@ -855,6 +855,9 @@ rb_yjit_iseq_mark(const struct rb_iseq_constant_body *body)
                 memcpy(&object, value_address, SIZEOF_VALUE);
                 rb_gc_mark_movable(object);
             }
+
+            // Mark the machine code page this block lives on
+            rb_gc_mark_movable(block->code_page);
         }
     }
 }
@@ -895,6 +898,9 @@ rb_yjit_iseq_update_references(const struct rb_iseq_constant_body *body)
                     memcpy(value_address, &possibly_moved, SIZEOF_VALUE);
                 }
             }
+
+            // Update the machine code page this block lives on
+            block->code_page = rb_gc_location(block->code_page);
         }
     }
 }
@@ -915,6 +921,35 @@ rb_yjit_iseq_free(const struct rb_iseq_constant_body *body)
     }
 
     rb_darray_free(body->yjit_blocks);
+}
+
+static void
+yjit_code_page_free(void *code_page)
+{
+    free_code_page((code_page_t*)code_page);
+}
+
+// Custom type for interacting with the GC
+static const rb_data_type_t yjit_code_page_type = {
+    "yjit_code_page",
+    {NULL, yjit_code_page_free, NULL, NULL},
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+};
+
+// Allocate a code page and wrap it into a Ruby object owned by the GC
+VALUE rb_yjit_code_page_alloc()
+{
+    code_page_t* code_page = alloc_code_page();
+    VALUE cp_obj = TypedData_Wrap_Struct(0, &yjit_code_page_type, code_page);
+    return cp_obj;
+}
+
+// Unwrap the Ruby object representing a code page
+code_page_t *rb_yjit_code_page_unwrap(VALUE cp_obj)
+{
+    code_page_t * code_page;
+    TypedData_Get_Struct(cp_obj, code_page_t, &yjit_code_page_type, code_page);
+    return code_page;
 }
 
 bool
