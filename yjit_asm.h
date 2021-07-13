@@ -131,6 +131,20 @@ typedef struct X86Opnd
 
 } x86opnd_t;
 
+// Struct representing a code page
+typedef struct code_page_struct
+{
+    // Chunk of executable memory
+    uint8_t* mem_block;
+
+    // Size of the executable memory chunk
+    uint32_t page_size;
+
+    // Next node in the free list (private)
+    struct code_page_struct* _next;
+
+} code_page_t;
+
 // Dummy none/null operand
 static const x86opnd_t NO_OPND = { OPND_NONE, 0, .as.imm = 0 };
 
@@ -242,8 +256,8 @@ x86opnd_t const_ptr_opnd(const void *ptr);
 
 // Machine code allocation
 uint8_t* alloc_exec_mem(uint32_t mem_size);
-uint8_t* alloc_code_page();
-void free_code_page(uint8_t* page_ptr);
+code_page_t* alloc_code_page();
+void free_code_page(code_page_t* code_page);
 
 // Code block methods
 void cb_init(codeblock_t* cb, uint8_t* mem_block, uint32_t mem_size);
