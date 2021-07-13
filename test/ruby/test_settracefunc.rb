@@ -393,7 +393,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     [["c-return", 3, :set_trace_func, Kernel],
      ["line", 6, __method__, self.class],
      ["call", 1, :foobar, FooBar],
-     ["return", 6, :foobar, FooBar],
+     ["return", 1, :foobar, FooBar],
      ["line", 7, __method__, self.class],
      ["c-call", 7, :set_trace_func, Kernel]].each{|e|
       assert_equal(e, events.shift)
@@ -1951,7 +1951,7 @@ CODE
   end
 
   define_method(:f_break_defined) do
-    return :f_break_defined
+    break :f_break_defined
   end
 
   define_method(:f_raise_defined) do
@@ -1972,25 +1972,42 @@ CODE
                  tp_return_value(:f_last_defined),
                  '[Bug #13369]'
 
-    assert_equal [[:b_return, :f_return_defined, nil], # current limitation
+    assert_equal [[:b_return, :f_return_defined, :f_return_defined],
                   [:return,   :f_return_defined, :f_return_defined]],
                  tp_return_value(:f_return_defined),
                  '[Bug #13369]'
 
-    assert_equal [[:b_return, :f_break_defined, nil],
+    assert_equal [[:b_return, :f_break_defined, :f_break_defined],
                   [:return,   :f_break_defined, :f_break_defined]],
                  tp_return_value(:f_break_defined),
                  '[Bug #13369]'
 
-    assert_equal [[:b_return, :f_raise_defined, nil],
+    assert_equal [[:b_return, :f_raise_defined, f_raise_defined],
                   [:return,   :f_raise_defined, f_raise_defined]],
                  tp_return_value(:f_raise_defined),
                  '[Bug #13369]'
 
-    assert_equal [[:b_return, :f_break_in_rescue_defined, nil],
+    assert_equal [[:b_return, :f_break_in_rescue_defined, f_break_in_rescue_defined],
                   [:return,   :f_break_in_rescue_defined, f_break_in_rescue_defined]],
                  tp_return_value(:f_break_in_rescue_defined),
                  '[Bug #13369]'
+  end
+
+  define_method(:just_yield) do |&block|
+    block.call
+  end
+
+  define_method(:unwind_multiple_bmethods) do
+    just_yield { return :unwind_multiple_bmethods }
+  end
+
+  def test_non_local_return_across_multiple_define_methods
+    assert_equal [[:b_return, :unwind_multiple_bmethods, nil],
+                  [:b_return, :just_yield, nil],
+                  [:return,   :just_yield, nil],
+                  [:b_return, :unwind_multiple_bmethods, :unwind_multiple_bmethods],
+                  [:return,   :unwind_multiple_bmethods, :unwind_multiple_bmethods]],
+                 tp_return_value(:unwind_multiple_bmethods)
   end
 
   def f_iter
@@ -2401,6 +2418,99 @@ CODE
     end
 
     assert_equal Array.new(2){th}, events
+  end
+
+  def test_return_bmethod_location
+    bug13392 = "[ruby-core:80515] incorrect bmethod return location"
+    actual = nil
+    obj = Object.new
+    expected = __LINE__ + 1
+    obj.define_singleton_method(:t){}
+    tp = TracePoint.new(:return) do
+      next unless target_thread?
+      actual = tp.lineno
+    end
+    tp.enable {obj.t}
+    assert_equal(expected, actual, bug13392)
+  end
+
+  def test_b_tracepoints_going_away
+    # test that call and return TracePoints continue to work
+    # when b_call and b_return TracePoints stop
+    events = []
+    record_events = ->(tp) do
+      next unless target_thread?
+      events << [tp.event, tp.method_id]
+    end
+
+    call_ret_tp = TracePoint.new(:call, :return, &record_events)
+    block_call_ret_tp = TracePoint.new(:b_call, :b_return, &record_events)
+
+    obj = Object.new
+    obj.define_singleton_method(:foo) {} # a bmethod
+
+    foo = obj.method(:foo)
+    call_ret_tp.enable(target: foo) do
+      block_call_ret_tp.enable(target: foo) do
+        obj.foo
+      end
+      obj.foo
+    end
+
+    assert_equal(
+      [
+        [:call,     :foo],
+        [:b_call,   :foo],
+        [:b_return, :foo],
+        [:return,   :foo],
+        [:call,     :foo],
+        [:return,   :foo],
+      ],
+      events,
+    )
+  end
+
+  def test_target_different_bmethod_same_iseq
+    # make two bmethods that share the same block iseq
+    block = Proc.new {}
+    obj = Object.new
+    obj.define_singleton_method(:one, &block)
+    obj.define_singleton_method(:two, &block)
+
+    events = []
+    record_events = ->(tp) do
+      next unless target_thread?
+      events << [tp.event, tp.method_id]
+    end
+    tp_one = TracePoint.new(:call, :return, &record_events)
+    tp_two = TracePoint.new(:call, :return, &record_events)
+
+    tp_one.enable(target: obj.method(:one)) do
+      obj.one
+      obj.two # not targeted
+    end
+    assert_equal([[:call, :one], [:return, :one]], events)
+    events.clear
+
+    tp_one.enable(target: obj.method(:one)) do
+      obj.one
+      tp_two.enable(target: obj.method(:two)) do
+        obj.two
+      end
+      obj.two
+      obj.one
+    end
+    assert_equal(
+      [
+        [:call,   :one],
+        [:return, :one],
+        [:call,   :two],
+        [:return, :two],
+        [:call,   :one],
+        [:return, :one],
+      ],
+      events
+    )
   end
 
   def test_return_event_with_rescue

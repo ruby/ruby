@@ -1313,7 +1313,6 @@ invoke_bmethod(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE self, co
     /* bmethod */
     int arg_size = iseq->body->param.size;
     VALUE ret;
-    rb_hook_list_t *hooks;
 
     VM_ASSERT(me->def->type == VM_METHOD_TYPE_BMETHOD);
 
@@ -1325,24 +1324,9 @@ invoke_bmethod(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE self, co
 		  iseq->body->local_table_size - arg_size,
 		  iseq->body->stack_max);
 
-    RUBY_DTRACE_METHOD_ENTRY_HOOK(ec, me->owner, me->def->original_id);
-    EXEC_EVENT_HOOK(ec, RUBY_EVENT_CALL, self, me->def->original_id, me->called_id, me->owner, Qnil);
-
-    if (UNLIKELY((hooks = me->def->body.bmethod.hooks) != NULL) &&
-        hooks->events & RUBY_EVENT_CALL) {
-        rb_exec_event_hook_orig(ec, hooks, RUBY_EVENT_CALL, self,
-                                me->def->original_id, me->called_id, me->owner, Qnil, FALSE);
-    }
     VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);
     ret = vm_exec(ec, true);
 
-    EXEC_EVENT_HOOK(ec, RUBY_EVENT_RETURN, self, me->def->original_id, me->called_id, me->owner, ret);
-    if ((hooks = me->def->body.bmethod.hooks) != NULL &&
-        hooks->events & RUBY_EVENT_RETURN) {
-        rb_exec_event_hook_orig(ec, hooks, RUBY_EVENT_RETURN, self,
-                                me->def->original_id, me->called_id, me->owner, ret, FALSE);
-    }
-    RUBY_DTRACE_METHOD_RETURN_HOOK(ec, me->owner, me->def->original_id);
     return ret;
 }
 
@@ -2033,9 +2017,11 @@ frame_name(const rb_control_frame_t *cfp)
 }
 #endif
 
+// cfp_returning_with_value:
+//     Whether cfp is the last frame in the unwinding process for a non-local return.
 static void
 hook_before_rewind(rb_execution_context_t *ec, const rb_control_frame_t *cfp,
-                   int will_finish_vm_exec, int state, struct vm_throw_data *err)
+                   bool cfp_returning_with_value, int state, struct vm_throw_data *err)
 {
     if (state == TAG_RAISE && RBASIC(err)->klass == rb_eSysStackError) {
 	return;
@@ -2058,32 +2044,36 @@ hook_before_rewind(rb_execution_context_t *ec, const rb_control_frame_t *cfp,
             break;
           case VM_FRAME_MAGIC_BLOCK:
             if (VM_FRAME_BMETHOD_P(ec->cfp)) {
-                EXEC_EVENT_HOOK(ec, RUBY_EVENT_B_RETURN, ec->cfp->self, 0, 0, 0, frame_return_value(err));
-                if (UNLIKELY(local_hooks && local_hooks->events & RUBY_EVENT_B_RETURN)) {
-                    rb_exec_event_hook_orig(ec, local_hooks, RUBY_EVENT_B_RETURN,
-                                            ec->cfp->self, 0, 0, 0, frame_return_value(err), FALSE);
+                VALUE bmethod_return_value = frame_return_value(err);
+                if (cfp_returning_with_value) {
+                    // Non-local return terminating at a BMETHOD control frame.
+                    bmethod_return_value = THROW_DATA_VAL(err);
                 }
 
-                if (!will_finish_vm_exec) {
-                    const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(ec->cfp);
 
-                    /* kick RUBY_EVENT_RETURN at invoke_block_from_c() for bmethod */
-                    EXEC_EVENT_HOOK_AND_POP_FRAME(ec, RUBY_EVENT_RETURN, ec->cfp->self,
-                                                  rb_vm_frame_method_entry(ec->cfp)->def->original_id,
-                                                  rb_vm_frame_method_entry(ec->cfp)->called_id,
-                                                  rb_vm_frame_method_entry(ec->cfp)->owner,
-                                                  frame_return_value(err));
+                EXEC_EVENT_HOOK(ec, RUBY_EVENT_B_RETURN, ec->cfp->self, 0, 0, 0, bmethod_return_value);
+                if (UNLIKELY(local_hooks && local_hooks->events & RUBY_EVENT_B_RETURN)) {
+                    rb_exec_event_hook_orig(ec, local_hooks, RUBY_EVENT_B_RETURN,
+                                            ec->cfp->self, 0, 0, 0, bmethod_return_value, FALSE);
+                }
 
-                    VM_ASSERT(me->def->type == VM_METHOD_TYPE_BMETHOD);
-                    local_hooks = me->def->body.bmethod.hooks;
+                const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(ec->cfp);
 
-                    if (UNLIKELY(local_hooks && local_hooks->events & RUBY_EVENT_RETURN)) {
-                        rb_exec_event_hook_orig(ec, local_hooks, RUBY_EVENT_RETURN, ec->cfp->self,
-                                                rb_vm_frame_method_entry(ec->cfp)->def->original_id,
-                                                rb_vm_frame_method_entry(ec->cfp)->called_id,
-                                                rb_vm_frame_method_entry(ec->cfp)->owner,
-                                                frame_return_value(err), TRUE);
-                    }
+                EXEC_EVENT_HOOK_AND_POP_FRAME(ec, RUBY_EVENT_RETURN, ec->cfp->self,
+                                              rb_vm_frame_method_entry(ec->cfp)->def->original_id,
+                                              rb_vm_frame_method_entry(ec->cfp)->called_id,
+                                              rb_vm_frame_method_entry(ec->cfp)->owner,
+                                              bmethod_return_value);
+
+                VM_ASSERT(me->def->type == VM_METHOD_TYPE_BMETHOD);
+                local_hooks = me->def->body.bmethod.hooks;
+
+                if (UNLIKELY(local_hooks && local_hooks->events & RUBY_EVENT_RETURN)) {
+                    rb_exec_event_hook_orig(ec, local_hooks, RUBY_EVENT_RETURN, ec->cfp->self,
+                                            rb_vm_frame_method_entry(ec->cfp)->def->original_id,
+                                            rb_vm_frame_method_entry(ec->cfp)->called_id,
+                                            rb_vm_frame_method_entry(ec->cfp)->owner,
+                                            bmethod_return_value, TRUE);
                 }
                 THROW_DATA_CONSUMED_SET(err);
             }
@@ -2284,7 +2274,8 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
 			if (catch_iseq == NULL) {
 			    ec->errinfo = Qnil;
 			    THROW_DATA_CATCH_FRAME_SET(err, cfp + 1);
-			    hook_before_rewind(ec, ec->cfp, TRUE, state, err);
+                            // cfp == escape_cfp here so calling with cfp_returning_with_value = true
+                            hook_before_rewind(ec, ec->cfp, true, state, err);
 			    rb_vm_pop_frame(ec);
 			    return THROW_DATA_VAL(err);
 			}
@@ -2425,7 +2416,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
 	    return Qundef;
 	}
 	else {
-	    hook_before_rewind(ec, ec->cfp, FALSE, state, err);
+	    hook_before_rewind(ec, ec->cfp, (cfp == escape_cfp), state, err);
 
 	    if (VM_FRAME_FINISHED_P(ec->cfp)) {
 		rb_vm_pop_frame(ec);

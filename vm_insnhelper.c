@@ -5638,6 +5638,7 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
 {
     const VALUE *pc = reg_cfp->pc;
     rb_event_flag_t enabled_flags = ruby_vm_event_flags & ISEQ_TRACE_EVENTS;
+    rb_event_flag_t global_events = enabled_flags;
 
     if (enabled_flags == 0 && ruby_vm_event_local_num == 0) {
         return;
@@ -5647,12 +5648,25 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
 	size_t pos = pc - iseq->body->iseq_encoded;
         rb_event_flag_t pc_events = rb_iseq_event_flags(iseq, pos);
         rb_hook_list_t *local_hooks = iseq->aux.exec.local_hooks;
-        rb_event_flag_t local_hook_events = local_hooks != NULL ? local_hooks->events : 0;
-        enabled_flags |= local_hook_events;
+        rb_event_flag_t iseq_local_events = local_hooks != NULL ? local_hooks->events : 0;
+        rb_hook_list_t *bmethod_local_hooks = NULL;
+        rb_event_flag_t bmethod_local_events = 0;
+        bool bmethod_frame = VM_FRAME_BMETHOD_P(reg_cfp);
+        enabled_flags |= iseq_local_events;
 
-        VM_ASSERT((local_hook_events & ~ISEQ_TRACE_EVENTS) == 0);
+        VM_ASSERT((iseq_local_events & ~ISEQ_TRACE_EVENTS) == 0);
 
-        if ((pc_events & enabled_flags) == 0) {
+        if (bmethod_frame) {
+            const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(reg_cfp);
+            VM_ASSERT(me->def->type == VM_METHOD_TYPE_BMETHOD);
+            bmethod_local_hooks = me->def->body.bmethod.hooks;
+            if (bmethod_local_hooks) {
+                bmethod_local_events = bmethod_local_hooks->events;
+            }
+        }
+
+
+        if ((pc_events & enabled_flags) == 0 && !bmethod_frame) {
 #if 0
 	    /* disable trace */
             /* TODO: incomplete */
@@ -5670,6 +5684,9 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
         }
         else {
             rb_hook_list_t *global_hooks = rb_ec_ractor_hooks(ec);
+            /* Note, not considering iseq local events here since the same
+             * iseq could be used in multiple bmethods. */
+            rb_event_flag_t bmethod_events = global_events | bmethod_local_events;
 
             if (0) {
                 ruby_debug_printf("vm_trace>>%4d (%4x) - %s:%d %s\n",
@@ -5681,17 +5698,25 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
             }
             VM_ASSERT(reg_cfp->pc == pc);
             VM_ASSERT(pc_events != 0);
-            VM_ASSERT(enabled_flags & pc_events);
 
             /* check traces */
+            if ((pc_events & RUBY_EVENT_B_CALL) && bmethod_frame && (bmethod_events & RUBY_EVENT_CALL)) {
+                /* b_call instruction running as a method. Fire call event. */
+                vm_trace_hook(ec, reg_cfp, pc, RUBY_EVENT_CALL, RUBY_EVENT_CALL, global_hooks, bmethod_local_hooks, Qundef);
+            }
             VM_TRACE_HOOK(RUBY_EVENT_CLASS | RUBY_EVENT_CALL | RUBY_EVENT_B_CALL,   Qundef);
             VM_TRACE_HOOK(RUBY_EVENT_LINE,                                          Qundef);
             VM_TRACE_HOOK(RUBY_EVENT_COVERAGE_LINE,                                 Qundef);
             VM_TRACE_HOOK(RUBY_EVENT_COVERAGE_BRANCH,                               Qundef);
             VM_TRACE_HOOK(RUBY_EVENT_END | RUBY_EVENT_RETURN | RUBY_EVENT_B_RETURN, TOPN(0));
+            if ((pc_events & RUBY_EVENT_B_RETURN) && bmethod_frame && (bmethod_events & RUBY_EVENT_RETURN)) {
+                /* b_return instruction running as a method. Fire return event. */
+                vm_trace_hook(ec, reg_cfp, pc, RUBY_EVENT_RETURN, RUBY_EVENT_RETURN, global_hooks, bmethod_local_hooks, TOPN(0));
+            }
         }
     }
 }
+#undef VM_TRACE_HOOK
 
 #if VM_CHECK_MODE > 0
 NORETURN( NOINLINE( COLDFUNC
