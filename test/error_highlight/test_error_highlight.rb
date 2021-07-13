@@ -1016,4 +1016,20 @@ _ _ ^^^^^
       load tmp.path
     end
   end
+
+  def test_no_final_newline
+    tmp = Tempfile.new(["error_highlight_test", ".rb"])
+    tmp << "1.time {}"
+    tmp.close(false)
+
+    assert_error_message(NoMethodError, <<~END) do
+undefined method `time' for 1:Integer
+
+1.time {}
+ ^^^^^
+    END
+
+      load tmp.path
+    end
+  end
 end

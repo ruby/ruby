@@ -35,6 +35,7 @@ module ErrorHighlight
 
       @fetch = -> (lineno, last_lineno = lineno) do
         snippet = @node.script_lines[lineno - 1 .. last_lineno - 1].join("")
+        snippet += "\n" unless snippet.end_with?("\n")
 
         # It require some work to support Unicode (or multibyte) characters.
         # Tentatively, we stop highlighting if the code snippet has non-ascii characters.
