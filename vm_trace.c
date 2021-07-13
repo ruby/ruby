@@ -33,6 +33,8 @@
 
 #include "builtin.h"
 
+static VALUE sym_block;
+
 /* (1) trace mechanisms */
 
 typedef struct rb_event_hook_struct {
@@ -1312,6 +1314,9 @@ tracepoint_enable_m(rb_execution_context_t *ec, VALUE tpval, VALUE target, VALUE
         rb_tracepoint_enable(tpval);
     }
     else {
+        if (target == sym_block) {
+            target = rb_block_proc();
+        }
         rb_tracepoint_enable_for_target(tpval, target, target_line);
     }
 
@@ -1534,6 +1539,8 @@ tracepoint_stat_s(rb_execution_context_t *ec, VALUE self)
 void
 Init_vm_trace(void)
 {
+    sym_block = ID2SYM(rb_intern("block"));
+
     /* trace_func */
     rb_define_global_function("set_trace_func", set_trace_func, 1);
     rb_define_method(rb_cThread, "set_trace_func", thread_set_trace_func_m, 1);
