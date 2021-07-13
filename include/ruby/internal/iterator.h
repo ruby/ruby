@@ -45,6 +45,7 @@ int rb_keyword_given_p(void);
 int rb_block_given_p(void);
 void rb_need_block(void);
 VALUE rb_iterate(VALUE(*)(VALUE),VALUE,rb_block_call_func_t,VALUE);
+DEPRECATED_BY(rb_block_call since 1.9, VALUE rb_iterate(VALUE(*)(VALUE),VALUE,rb_block_call_func_t,VALUE));
 VALUE rb_block_call(VALUE,ID,int,const VALUE*,rb_block_call_func_t,VALUE);
 VALUE rb_block_call_kw(VALUE,ID,int,const VALUE*,rb_block_call_func_t,VALUE,int);
 VALUE rb_rescue(VALUE(*)(VALUE),VALUE,VALUE(*)(VALUE,VALUE),VALUE);
