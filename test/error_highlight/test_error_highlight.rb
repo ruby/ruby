@@ -1002,7 +1002,7 @@ undefined method `time' for 1:Integer
   end
 
   def test_hard_tabs
-    tmp = Tempfile.new(["error_highlight_test", ".rb"])
+    tmp = Tempfile.new(["error_highlight_test", ".rb"], binmode: true)
     tmp << "\t \t1.time {}\n"
     tmp.close(false)
 
