@@ -675,7 +675,6 @@ uint8_t* get_branch_target(
     push(ocb, REG_CFP);
     push(ocb, REG_EC);
     push(ocb, REG_SP);
-    push(ocb, REG_SP);
 
     // Call branch_stub_hit(branch_idx, target_idx, ec)
     mov(ocb, C_ARG_REGS[2], REG_EC);
@@ -684,7 +683,6 @@ uint8_t* get_branch_target(
     call_ptr(ocb, REG0, (void *)&branch_stub_hit);
 
     // Restore the yjit registers
-    pop(ocb, REG_SP);
     pop(ocb, REG_SP);
     pop(ocb, REG_EC);
     pop(ocb, REG_CFP);
