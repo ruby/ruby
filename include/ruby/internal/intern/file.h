@@ -37,6 +37,8 @@ VALUE rb_file_directory_p(VALUE,VALUE);
 VALUE rb_str_encode_ospath(VALUE);
 int rb_is_absolute_path(const char *);
 
+size_t rb_file_size(VALUE file);
+
 RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RBIMPL_INTERN_FILE_H */

@@ -123,6 +123,9 @@ Outstanding ones only.
     * Introduce non-blocking `Timeout.timeout` using `timeout_after` hook.
       [[Feature #17470]]
 
+    * Introduce new scheduler hooks `io_read` and `io_write` along with a
+      low level `IO::Buffer` for zero-copy read/write. [[Feature #18020]]
+
     * IO hooks `io_wait`, `io_read`, `io_write`, receive the original IO object
       where possible. [[Bug #18003]]
 
@@ -196,3 +199,4 @@ Excluding feature bug fixes.
 [Feature #17853]: https://bugs.ruby-lang.org/issues/17853
 [Bug #17827]: https://bugs.ruby-lang.org/issues/17827
 [Feature #18015]: https://bugs.ruby-lang.org/issues/18015
+[Feature #18020]: https://bugs.ruby-lang.org/issues/18020
