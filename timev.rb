@@ -285,7 +285,8 @@ class Time
   # :include: doc/time/sec.rdoc
   # :include: doc/time/zone_and_in.rdoc
   #
-  def initialize(year = (now = true), mon = nil, mday = nil, hour = nil, min = nil, sec = nil, zone = nil, in: nil)
+  def initialize(year = (now = true), mon = (time = String.try_convert(year); nil),
+                 mday = nil, hour = nil, min = nil, sec = nil, zone = nil, in: nil, base: nil)
     if zone
       if __builtin.arg!(:in)
         raise ArgumentError, "timezone argument given as positional and keyword arguments"
@@ -298,6 +299,52 @@ class Time
       return __builtin.time_init_now(zone)
     end
 
-    __builtin.time_init_args(year, mon, mday, hour, min, sec, zone)
+    if time and !(year = Integer(time, 10, exception: false))
+      year = time
+      # :x is for Extensions
+      # :b is for Basic Rules
+      %r[\A\s*
+        (?<year>  [-+]?\d{4,}                        ){0}
+        (?<mon>   \d\d                               ){0}
+        (?<mday>  \d\d                               ){0}
+        (?<date:x>\g<year>(?:-\g<mon>(?:-\g<mday>)?)?){0}
+        (?<date:b>\g<year>\g<mon>\g<mday>            ){0}
+
+        (?<hour>  \d\d                               ){0}
+        (?<min>   \d\d                               ){0}
+        (?<sec>   \d\d                               ){0}
+        (?<t:sub> (?:[.,](?<sub>\d+))?               ){0}
+        (?<time:x>\g<hour>(?::\g<min>(?::\g<sec>)?)?
+                  \g<t:sub>                          ){0}
+        (?<time:b>\g<hour>\g<min>(?:\g<sec>)?
+                  \g<t:sub>                          ){0}
+
+        (?<z:mil> [A-IK-Z]                           ){0}
+        (?<z:fix> [-+]\d\d
+                  (?:(?:\d\d){0,2}|(?::\d\d){0,2})   ){0}
+        (?<z:tz>  (?i:[a-z]+/[a-z]+(?:_[a-z]+)*)     ){0}
+        (?<z:abbr>[A-Za-z]{2,4}(?:[-+]\d+(?:[A-Za-z]{2,4})?)?){0}
+
+        (?:\g<date:x>(?:[T\s]\g<time:x>)?|
+           \g<date:b>(?:[T\s]\g<time:b>)?|
+           \g<time:x>|\g<time:b>
+        )
+        (?:(?<z>\g<z:mil>)|
+           \s*(?<z>\g<z:fix>)|
+           \s+(?<z>(?:\g<z:tz>|\g<z:abbr>)))?
+       \s*\z]x =~ time or raise ArgumentError, "cannot parse: #{time}"
+      if sub
+        if sec
+          sec << '.' << sub
+        elsif min
+          sec = Rational("0.#{sub}") * 60
+        else
+          min, sec = (Rational("0.#{sub}") * 3600).divmod(60)
+        end
+      end
+      zone = z if z
+    end
+
+    __builtin.time_init_args(year, mon, mday, hour, min, sec, zone, base)
   end
 end
