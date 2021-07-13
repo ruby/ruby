@@ -98,7 +98,7 @@ RSpec.describe Bundler::Plugin::Index do
       expect(index.hook_plugins("after-bar")).to eq([plugin_name])
     end
 
-    context "that are not registered", :focused do
+    context "that are not registered" do
       let(:file) { double("index-file") }
 
       before do
