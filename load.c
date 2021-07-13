@@ -191,14 +191,14 @@ features_index_add_single(const char* str, size_t len, VALUE offset)
     struct st_table *features_index;
     VALUE this_feature_index = Qnil;
     st_data_t short_feature_key;
+    st_data_t data;
 
     Check_Type(offset, T_FIXNUM);
     short_feature_key = feature_key(str, len);
 
     features_index = get_loaded_features_index_raw();
-    st_lookup(features_index, short_feature_key, (st_data_t *)&this_feature_index);
-
-    if (NIL_P(this_feature_index)) {
+    if (!st_lookup(features_index, short_feature_key, &data) ||
+        NIL_P(this_feature_index = (VALUE)data)) {
 	st_insert(features_index, short_feature_key, (st_data_t)offset);
     }
     else if (RB_TYPE_P(this_feature_index, T_FIXNUM)) {
@@ -397,7 +397,6 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
     features_index = get_loaded_features_index();
 
     key = feature_key(feature, strlen(feature));
-    st_lookup(features_index, key, (st_data_t *)&this_feature_index);
     /* We search `features` for an entry such that either
          "#{features[i]}" == "#{load_path[j]}/#{feature}#{e}"
        for some j, or
@@ -424,7 +423,7 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
        or ends in '/'.  This includes both match forms above, as well
        as any distractors, so we may ignore all other entries in `features`.
      */
-    if (!NIL_P(this_feature_index)) {
+    if (st_lookup(features_index, key, &data) && !NIL_P(this_feature_index = (VALUE)data)) {
 	for (i = 0; ; i++) {
 	    VALUE entry;
 	    long index;
