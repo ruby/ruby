@@ -1667,6 +1667,26 @@ guard_two_fixnums(ctx_t* ctx, uint8_t* side_exit)
     val_type_t arg1_type = ctx_get_opnd_type(ctx, OPND_STACK(0));
     val_type_t arg0_type = ctx_get_opnd_type(ctx, OPND_STACK(1));
 
+    if (arg0_type.is_heap || arg1_type.is_heap) {
+        jmp_ptr(cb, side_exit);
+        return;
+    }
+
+    if (arg0_type.type != ETYPE_FIXNUM && arg0_type.type != ETYPE_UNKNOWN) {
+        jmp_ptr(cb, side_exit);
+        return;
+    }
+
+    if (arg1_type.type != ETYPE_FIXNUM && arg1_type.type != ETYPE_UNKNOWN) {
+        jmp_ptr(cb, side_exit);
+        return;
+    }
+
+    RUBY_ASSERT(!arg0_type.is_heap);
+    RUBY_ASSERT(!arg1_type.is_heap);
+    RUBY_ASSERT(arg0_type.type == ETYPE_FIXNUM || arg0_type.type == ETYPE_UNKNOWN);
+    RUBY_ASSERT(arg1_type.type == ETYPE_FIXNUM || arg1_type.type == ETYPE_UNKNOWN);
+
     // Get stack operands without popping them
     x86opnd_t arg1 = ctx_stack_opnd(ctx, 0);
     x86opnd_t arg0 = ctx_stack_opnd(ctx, 1);
