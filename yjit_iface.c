@@ -937,7 +937,7 @@ static const rb_data_type_t yjit_code_page_type = {
 };
 
 // Allocate a code page and wrap it into a Ruby object owned by the GC
-VALUE rb_yjit_code_page_alloc()
+VALUE rb_yjit_code_page_alloc(void)
 {
     code_page_t* code_page = alloc_code_page();
     VALUE cp_obj = TypedData_Wrap_Struct(0, &yjit_code_page_type, code_page);
