@@ -75,11 +75,11 @@ module TestIRB
       irb = IRB::Irb.new(workspace, TestInputMethod.new([]))
       IRB.conf[:MAIN_CONTEXT] = irb.context
       expected = %r{
-        Ruby\sversion: .+\n
-        IRB\sversion:\sirb .+\n
+        Ruby\sversion:\s.+\n
+        IRB\sversion:\sirb\s.+\n
         InputMethod:\sAbstract\sInputMethod\n
-        \.irbrc\spath: .+\n
-        RUBY_PLATFORM: .+
+        \.irbrc\spath:\s.+\n
+        RUBY_PLATFORM:\s.+\n
       }x
       assert_match expected, irb.context.main.irb_info.to_s
     ensure
@@ -100,11 +100,11 @@ module TestIRB
       irb = IRB::Irb.new(workspace, TestInputMethod.new([]))
       IRB.conf[:MAIN_CONTEXT] = irb.context
       expected = %r{
-        Ruby\sversion: .+\n
-        IRB\sversion:\sirb .+\n
+        Ruby\sversion:\s.+\n
+        IRB\sversion:\sirb\s.+\n
         InputMethod:\sAbstract\sInputMethod\n
-        \.irbrc\spath: .+\n
-        RUBY_PLATFORM: .+
+        \.irbrc\spath:\s.+\n
+        RUBY_PLATFORM:\s.+\n
       }x
       assert_match expected, irb.context.main.irb_info.to_s
     ensure
@@ -128,10 +128,10 @@ module TestIRB
       irb = IRB::Irb.new(workspace, TestInputMethod.new([]))
       IRB.conf[:MAIN_CONTEXT] = irb.context
       expected = %r{
-        Ruby\sversion: .+\n
-        IRB\sversion:\sirb .+\n
+        Ruby\sversion:\s.+\n
+        IRB\sversion:\sirb\s.+\n
         InputMethod:\sAbstract\sInputMethod\n
-        RUBY_PLATFORM: .+\n
+        RUBY_PLATFORM:\s.+\n
         \z
       }x
       assert_match expected, irb.context.main.irb_info.to_s
@@ -159,10 +159,10 @@ module TestIRB
       irb = IRB::Irb.new(workspace, TestInputMethod.new([]))
       IRB.conf[:MAIN_CONTEXT] = irb.context
       expected = %r{
-        Ruby\sversion: .+\n
-        IRB\sversion:\sirb .+\n
+        Ruby\sversion:\s.+\n
+        IRB\sversion:\sirb\s.+\n
         InputMethod:\sAbstract\sInputMethod\n
-        RUBY_PLATFORM: .+\n
+        RUBY_PLATFORM:\s.+\n
         \z
       }x
       assert_match expected, irb.context.main.irb_info.to_s
