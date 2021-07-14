@@ -553,11 +553,11 @@ static codegen_status_t
 gen_dup(jitstate_t* jit, ctx_t* ctx)
 {
     // Get the top value and its type
-    val_type_t dup_type = ctx_get_opnd_type(ctx, OPND_STACK(0));
     x86opnd_t dup_val = ctx_stack_pop(ctx, 0);
+    temp_type_mapping_t mapping = ctx_get_opnd_mapping(ctx, OPND_STACK(0));
 
     // Push the same value on top
-    x86opnd_t loc0 = ctx_stack_push(ctx, dup_type);
+    x86opnd_t loc0 = ctx_stack_push_mapping(ctx, mapping);
     mov(cb, REG0, dup_val);
     mov(cb, loc0, REG0);
 
@@ -575,17 +575,16 @@ gen_dupn(jitstate_t* jit, ctx_t* ctx)
         return YJIT_CANT_COMPILE;
     }
 
-    val_type_t type1 = ctx_get_opnd_type(ctx, OPND_STACK(1));
     x86opnd_t opnd1 = ctx_stack_opnd(ctx, 1);
-
-    val_type_t type0 = ctx_get_opnd_type(ctx, OPND_STACK(0));
     x86opnd_t opnd0 = ctx_stack_opnd(ctx, 0);
+    temp_type_mapping_t mapping1 = ctx_get_opnd_mapping(ctx, OPND_STACK(1));
+    temp_type_mapping_t mapping0 = ctx_get_opnd_mapping(ctx, OPND_STACK(0));
 
-    x86opnd_t dst1 = ctx_stack_push(ctx, type1);
+    x86opnd_t dst1 = ctx_stack_push_mapping(ctx, mapping1);
     mov(cb, REG0, opnd1);
     mov(cb, dst1, REG0);
 
-    x86opnd_t dst0 = ctx_stack_push(ctx, type0);
+    x86opnd_t dst0 = ctx_stack_push_mapping(ctx, mapping0);
     mov(cb, REG0, opnd0);
     mov(cb, dst0, REG0);
 
@@ -596,20 +595,18 @@ gen_dupn(jitstate_t* jit, ctx_t* ctx)
 static codegen_status_t
 gen_swap(jitstate_t* jit, ctx_t* ctx)
 {
-    val_type_t type0 = ctx_get_opnd_type(ctx, OPND_STACK(0));
     x86opnd_t opnd0 = ctx_stack_opnd(ctx, 0);
-
-    val_type_t type1 = ctx_get_opnd_type(ctx, OPND_STACK(1));
     x86opnd_t opnd1 = ctx_stack_opnd(ctx, 1);
+    temp_type_mapping_t mapping0 = ctx_get_opnd_mapping(ctx, OPND_STACK(0));
+    temp_type_mapping_t mapping1 = ctx_get_opnd_mapping(ctx, OPND_STACK(1));
 
     mov(cb, REG0, opnd0);
     mov(cb, REG1, opnd1);
-
-    ctx_set_opnd_type(ctx, OPND_STACK(0), type1);
-    ctx_set_opnd_type(ctx, OPND_STACK(1), type0);
-
     mov(cb, opnd0, REG1);
     mov(cb, opnd1, REG0);
+
+    ctx_set_opnd_mapping(ctx, OPND_STACK(0), mapping1);
+    ctx_set_opnd_mapping(ctx, OPND_STACK(1), mapping0);
 
     return YJIT_KEEP_COMPILING;
 }
@@ -620,15 +617,14 @@ gen_setn(jitstate_t* jit, ctx_t* ctx)
 {
     rb_num_t n = (rb_num_t)jit_get_arg(jit, 0);
 
-    // Get the top value and its type
-    val_type_t top_type = ctx_get_opnd_type(ctx, OPND_STACK(0));
+    // Set the destination
     x86opnd_t top_val = ctx_stack_pop(ctx, 0);
-
-    // Set the destination and its type
-    ctx_set_opnd_type(ctx, OPND_STACK(n), top_type);
     x86opnd_t dst_opnd = ctx_stack_opnd(ctx, (int32_t)n);
     mov(cb, REG0, top_val);
     mov(cb, dst_opnd, REG0);
+
+    temp_type_mapping_t mapping = ctx_get_opnd_mapping(ctx, OPND_STACK(0));
+    ctx_set_opnd_mapping(ctx, OPND_STACK(n), mapping);
 
     return YJIT_KEEP_COMPILING;
 }
@@ -640,10 +636,10 @@ gen_topn(jitstate_t* jit, ctx_t* ctx)
     int32_t n = (int32_t)jit_get_arg(jit, 0);
 
     // Get top n type / operand
-    val_type_t top_n_type = ctx_get_opnd_type(ctx, OPND_STACK(n));
     x86opnd_t top_n_val = ctx_stack_opnd(ctx, n);
+    temp_type_mapping_t mapping = ctx_get_opnd_mapping(ctx, OPND_STACK(n));
 
-    x86opnd_t loc0 = ctx_stack_push(ctx, top_n_type);
+    x86opnd_t loc0 = ctx_stack_push_mapping(ctx, mapping);
     mov(cb, REG0, top_n_val);
     mov(cb, loc0, REG0);
 

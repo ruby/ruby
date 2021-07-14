@@ -104,6 +104,13 @@ STATIC_ASSERT(temp_mapping_size, sizeof(temp_mapping_t) == 1);
 // Temp value is actually self
 #define MAP_SELF ( (temp_mapping_t) { .kind = TEMP_SELF } )
 
+// Represents both the type and mapping
+typedef struct {
+    temp_mapping_t mapping;
+    val_type_t type;
+} temp_type_mapping_t;
+STATIC_ASSERT(temp_type_mapping_size, sizeof(temp_type_mapping_t) == 2);
+
 // Operand to a bytecode instruction
 typedef struct yjit_insn_opnd
 {
@@ -252,6 +259,7 @@ typedef struct yjit_block_version
 
 // Context object methods
 x86opnd_t ctx_sp_opnd(ctx_t* ctx, int32_t offset_bytes);
+x86opnd_t ctx_stack_push_mapping(ctx_t* ctx, temp_type_mapping_t mapping);
 x86opnd_t ctx_stack_push(ctx_t* ctx, val_type_t type);
 x86opnd_t ctx_stack_push_self(ctx_t* ctx);
 x86opnd_t ctx_stack_push_local(ctx_t* ctx, size_t local_idx);
@@ -262,6 +270,9 @@ void ctx_upgrade_opnd_type(ctx_t* ctx, insn_opnd_t opnd, val_type_t type);
 void ctx_set_local_type(ctx_t* ctx, size_t idx, val_type_t type);
 void ctx_clear_local_types(ctx_t* ctx);
 int ctx_diff(const ctx_t* src, const ctx_t* dst);
+
+temp_type_mapping_t ctx_get_opnd_mapping(const ctx_t* ctx, insn_opnd_t opnd);
+void ctx_set_opnd_mapping(ctx_t* ctx, insn_opnd_t opnd, temp_type_mapping_t type_mapping);
 
 block_t* find_block_version(blockid_t blockid, const ctx_t* ctx);
 block_t* gen_block_version(blockid_t blockid, const ctx_t* ctx, rb_execution_context_t *ec);
