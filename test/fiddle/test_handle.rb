@@ -112,6 +112,12 @@ module Fiddle
       assert !handle.close_enabled?, 'close is enabled'
     end
 
+    def test_file_name
+      handle = Handle.new(LIBC_SO)
+      assert_kind_of String, handle.file_name
+      assert_equal File.basename(handle.file_name), File.basename(LIBC_SO)
+    end unless /darwin/ =~ RUBY_PLATFORM
+
     def test_NEXT
       begin
         # Linux / Darwin

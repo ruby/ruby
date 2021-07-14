@@ -12,6 +12,10 @@
 #include <sys/mman.h>
 #endif
 
+#if defined(HAVE_LINK_H)
+# include <link.h>
+#endif
+
 #if defined(HAVE_DLFCN_H)
 # include <dlfcn.h>
 # /* some stranger systems may not define all of these */

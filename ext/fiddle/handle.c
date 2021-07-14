@@ -386,6 +386,48 @@ fiddle_handle_sym(void *handle, VALUE symbol)
     return PTR2NUM(func);
 }
 
+/*
+ * call-seq: file_name
+ *
+ * Returns the file name of this handle.
+ */
+static VALUE
+rb_fiddle_handle_file_name(VALUE self)
+{
+    struct dl_handle *fiddle_handle;
+
+    TypedData_Get_Struct(self, struct dl_handle, &fiddle_handle_data_type, fiddle_handle);
+
+#if defined(HAVE_DLINFO) && defined(HAVE_CONST_RTLD_DI_LINKMAP)
+    {
+	struct link_map *lm = NULL;
+	int res = dlinfo(fiddle_handle->ptr, RTLD_DI_LINKMAP, &lm);
+	if (res == 0 && lm != NULL) {
+	    return rb_str_new_cstr(lm->l_name);
+	}
+	else {
+#if defined(HAVE_DLERROR)
+	    rb_raise(rb_eFiddleDLError, "could not get handle file name: %s", dlerror());
+#else
+	    rb_raise(rb_eFiddleDLError, "could not get handle file name");
+#endif
+	}
+    }
+#elif defined(HAVE_GETMODULEFILENAME)
+    {
+	char filename[MAX_PATH];
+	DWORD res = GetModuleFileName(fiddle_handle->ptr, filename, MAX_PATH);
+	if (res == 0) {
+	    rb_raise(rb_eFiddleDLError, "could not get handle file name: %s", dlerror());
+	}
+	return rb_str_new_cstr(filename);
+    }
+#else
+    (void)fiddle_handle;
+    return Qnil;
+#endif
+}
+
 void
 Init_fiddle_handle(void)
 {
@@ -484,6 +526,7 @@ Init_fiddle_handle(void)
     rb_define_method(rb_cHandle, "close", rb_fiddle_handle_close, 0);
     rb_define_method(rb_cHandle, "sym",  rb_fiddle_handle_sym, 1);
     rb_define_method(rb_cHandle, "[]",  rb_fiddle_handle_sym,  1);
+    rb_define_method(rb_cHandle, "file_name", rb_fiddle_handle_file_name, 0);
     rb_define_method(rb_cHandle, "disable_close", rb_fiddle_handle_disable_close, 0);
     rb_define_method(rb_cHandle, "enable_close", rb_fiddle_handle_enable_close, 0);
     rb_define_method(rb_cHandle, "close_enabled?", rb_fiddle_handle_close_enabled_p, 0);
