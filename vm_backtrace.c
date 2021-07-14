@@ -151,6 +151,9 @@ location_mark_entry(rb_backtrace_location_t *fi)
 	rb_gc_mark_movable((VALUE)fi->body.iseq.iseq);
 	break;
       case LOCATION_TYPE_CFUNC:
+        if (fi->body.cfunc.prev_loc) {
+            rb_gc_mark_movable((VALUE)fi->body.cfunc.prev_loc->body.iseq.iseq);
+        }
       default:
 	break;
     }
@@ -482,6 +485,10 @@ location_update_entry(rb_backtrace_location_t *fi)
 	fi->body.iseq.iseq = (rb_iseq_t*)rb_gc_location((VALUE)fi->body.iseq.iseq);
 	break;
       case LOCATION_TYPE_CFUNC:
+        if (fi->body.cfunc.prev_loc) {
+            rb_iseq_t * new_ref = (rb_iseq_t*)rb_gc_location((VALUE)fi->body.cfunc.prev_loc->body.iseq.iseq);
+            fi->body.cfunc.prev_loc->body.iseq.iseq = new_ref;
+        }
       default:
 	break;
     }
