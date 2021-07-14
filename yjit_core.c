@@ -21,16 +21,18 @@ ctx_sp_opnd(ctx_t* ctx, int32_t offset_bytes)
 }
 
 /*
-Push one new value on the temp stack
+Push one new value on the temp stack with an explicit mapping
 Return a pointer to the new stack top
 */
 x86opnd_t
-ctx_stack_push(ctx_t* ctx, val_type_t type)
+ctx_stack_push_mapping(ctx_t* ctx, temp_type_mapping_t mapping)
 {
-    // Keep track of the type of the value
+    // Keep track of the type and mapping of the value
     if (ctx->stack_size < MAX_TEMP_TYPES) {
-        ctx->temp_mapping[ctx->stack_size] = MAP_STACK;
-        ctx->temp_types[ctx->stack_size] = type;
+        ctx->temp_mapping[ctx->stack_size] = mapping.mapping;
+        ctx->temp_types[ctx->stack_size] = mapping.type;
+
+        RUBY_ASSERT(mapping.mapping.kind != TEMP_LOCAL || mapping.mapping.idx < MAX_LOCAL_TYPES);
     }
 
     ctx->stack_size += 1;
@@ -39,6 +41,18 @@ ctx_stack_push(ctx_t* ctx, val_type_t type)
     // SP points just above the topmost value
     int32_t offset = (ctx->sp_offset - 1) * sizeof(VALUE);
     return mem_opnd(64, REG_SP, offset);
+}
+
+
+/*
+Push one new value on the temp stack
+Return a pointer to the new stack top
+*/
+x86opnd_t
+ctx_stack_push(ctx_t* ctx, val_type_t type)
+{
+    temp_type_mapping_t mapping = { MAP_STACK, type };
+    return ctx_stack_push_mapping(ctx, mapping);
 }
 
 /*
@@ -47,18 +61,8 @@ Push the self value on the stack
 x86opnd_t
 ctx_stack_push_self(ctx_t* ctx)
 {
-    // Keep track of the type of the value
-    if (ctx->stack_size < MAX_TEMP_TYPES) {
-        ctx->temp_mapping[ctx->stack_size] = MAP_SELF;
-        ctx->temp_types[ctx->stack_size] = ctx->self_type;
-    }
-
-    ctx->stack_size += 1;
-    ctx->sp_offset += 1;
-
-    // SP points just above the topmost value
-    int32_t offset = (ctx->sp_offset - 1) * sizeof(VALUE);
-    return mem_opnd(64, REG_SP, offset);
+    temp_type_mapping_t mapping = { MAP_SELF, TYPE_UNKNOWN };
+    return ctx_stack_push_mapping(ctx, mapping);
 }
 
 /*
@@ -67,17 +71,15 @@ Push a local variable on the stack
 x86opnd_t
 ctx_stack_push_local(ctx_t* ctx, size_t local_idx)
 {
-    // Keep track of the type of the value
-    if (ctx->stack_size < MAX_TEMP_TYPES && local_idx < MAX_LOCAL_TYPES) {
-        ctx->temp_mapping[ctx->stack_size] = (temp_mapping_t){ .kind = TEMP_LOCAL, .idx = local_idx };
+    if (local_idx >= MAX_LOCAL_TYPES) {
+        return ctx_stack_push(ctx, TYPE_UNKNOWN);
     }
 
-    ctx->stack_size += 1;
-    ctx->sp_offset += 1;
-
-    // SP points just above the topmost value
-    int32_t offset = (ctx->sp_offset - 1) * sizeof(VALUE);
-    return mem_opnd(64, REG_SP, offset);
+    temp_type_mapping_t mapping = {
+        (temp_mapping_t){ .kind = TEMP_LOCAL, .idx = local_idx },
+        TYPE_UNKNOWN
+    };
+    return ctx_stack_push_mapping(ctx, mapping);
 }
 
 /*
@@ -131,7 +133,7 @@ ctx_get_opnd_type(const ctx_t* ctx, insn_opnd_t opnd)
     if (opnd.is_self)
         return ctx->self_type;
 
-    if (ctx->stack_size > MAX_TEMP_TYPES)
+    if (ctx->stack_size >= MAX_TEMP_TYPES)
         return TYPE_UNKNOWN;
 
     RUBY_ASSERT(opnd.idx < ctx->stack_size);
@@ -170,11 +172,13 @@ void ctx_upgrade_opnd_type(ctx_t* ctx, insn_opnd_t opnd, val_type_t type)
         return;
     }
 
-    if (ctx->stack_size > MAX_TEMP_TYPES)
+    if (ctx->stack_size >= MAX_TEMP_TYPES)
         return;
 
     RUBY_ASSERT(opnd.idx < ctx->stack_size);
-    temp_mapping_t mapping = ctx->temp_mapping[ctx->stack_size - 1 - opnd.idx];
+    int stack_index = ctx->stack_size - 1 - opnd.idx;
+    RUBY_ASSERT(stack_index < MAX_TEMP_TYPES);
+    temp_mapping_t mapping = ctx->temp_mapping[stack_index];
 
     switch (mapping.kind)
     {
@@ -183,7 +187,6 @@ void ctx_upgrade_opnd_type(ctx_t* ctx, insn_opnd_t opnd, val_type_t type)
         break;
 
         case TEMP_STACK:
-        int stack_index = ctx->stack_size - 1 - opnd.idx;
         UPGRADE_TYPE(ctx->temp_types[stack_index], type);
         break;
 
@@ -192,6 +195,51 @@ void ctx_upgrade_opnd_type(ctx_t* ctx, insn_opnd_t opnd, val_type_t type)
         UPGRADE_TYPE(ctx->local_types[mapping.idx], type);
         break;
     }
+}
+
+temp_type_mapping_t
+ctx_get_opnd_mapping(const ctx_t* ctx, insn_opnd_t opnd)
+{
+    temp_type_mapping_t type_mapping;
+    type_mapping.type = ctx_get_opnd_type(ctx, opnd);
+
+    if (opnd.is_self) {
+        type_mapping.mapping = MAP_SELF;
+        return type_mapping;
+    }
+
+    RUBY_ASSERT(opnd.idx < ctx->stack_size);
+    int stack_idx = ctx->stack_size - 1 - opnd.idx;
+
+    if (stack_idx < MAX_TEMP_TYPES) {
+        type_mapping.mapping = ctx->temp_mapping[stack_idx];
+    } else {
+        // We can't know the source of this stack operand, so we assume it is
+        // a stack-only temporary. type will be UNKNOWN
+        RUBY_ASSERT(type_mapping.type.type == ETYPE_UNKNOWN);
+        type_mapping.mapping = MAP_STACK;
+    }
+
+    return type_mapping;
+}
+
+void
+ctx_set_opnd_mapping(ctx_t* ctx, insn_opnd_t opnd, temp_type_mapping_t type_mapping)
+{
+    // self is always MAP_SELF
+    RUBY_ASSERT(!opnd.is_self);
+
+    RUBY_ASSERT(opnd.idx < ctx->stack_size);
+    int stack_idx = ctx->stack_size - 1 - opnd.idx;
+
+    // If outside of tracked range, do nothing
+    if (stack_idx >= MAX_TEMP_TYPES)
+        return;
+
+    ctx->temp_mapping[stack_idx] = type_mapping.mapping;
+
+    // Only used when mapping == MAP_STACK
+    ctx->temp_types[stack_idx] = type_mapping.type;
 }
 
 /**
