@@ -33,6 +33,7 @@ module Psych
 
     def test_big_decimal_round_trip
       decimal = BigDecimal("12.34")
+      $DEBUG = false
       assert_cycle decimal
     end
 

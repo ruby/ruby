@@ -149,7 +149,6 @@ readline.o: $(hdrdir)/ruby/internal/static_assert.h
 readline.o: $(hdrdir)/ruby/internal/stdalign.h
 readline.o: $(hdrdir)/ruby/internal/stdbool.h
 readline.o: $(hdrdir)/ruby/internal/symbol.h
-readline.o: $(hdrdir)/ruby/internal/token_paste.h
 readline.o: $(hdrdir)/ruby/internal/value.h
 readline.o: $(hdrdir)/ruby/internal/value_type.h
 readline.o: $(hdrdir)/ruby/internal/variable.h

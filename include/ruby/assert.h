@@ -167,7 +167,7 @@ RBIMPL_SYMBOL_EXPORT_END()
 #define RUBY_ASSERT_ALWAYS(expr) RUBY_ASSERT_MESG((expr), #expr)
 
 /**
- * Asserts that the given expression is truthy iff #RUBY_DEBUG is truthy.
+ * Asserts that the given expression is truthy if and only if #RUBY_DEBUG is truthy.
  *
  * @param  expr  What supposedly evaluates to true.
  */

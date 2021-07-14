@@ -97,8 +97,10 @@ class TestTmpdir < Test::Unit::TestCase
       target = target.chomp('/') + '/'
       traversal_path = target.sub(/\A\w:/, '') # for DOSISH
       traversal_path = Array.new(target.count('/')-2, '..').join('/') + traversal_path
-      actual = yield traversal_path
-      assert_not_send([File.absolute_path(actual), :start_with?, target])
+      [File::SEPARATOR, File::ALT_SEPARATOR].compact.each do |separator|
+        actual = yield traversal_path.tr('/', separator)
+        assert_not_send([File.absolute_path(actual), :start_with?, target])
+      end
     end
   end
 end

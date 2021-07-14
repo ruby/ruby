@@ -21,11 +21,11 @@ class Scheduler
 
     @closed = false
 
-    @lock = Mutex.new
+    @lock = Thread::Mutex.new
     @blocking = 0
     @ready = []
 
-    @urgent = nil
+    @urgent = IO.pipe
   end
 
   attr :readable
@@ -47,7 +47,7 @@ class Scheduler
   end
 
   def run
-    @urgent = IO.pipe
+    # $stderr.puts [__method__, Fiber.current].inspect
 
     while @readable.any? or @writable.any? or @waiting.any? or @blocking.positive?
       # Can only handle file descriptors up to 1024...
@@ -56,9 +56,11 @@ class Scheduler
       # puts "readable: #{readable}" if readable&.any?
       # puts "writable: #{writable}" if writable&.any?
 
+      selected = {}
+
       readable&.each do |io|
         if fiber = @readable.delete(io)
-          fiber.resume
+          selected[fiber] = IO::READABLE
         elsif io == @urgent.first
           @urgent.first.read_nonblock(1024)
         end
@@ -66,8 +68,12 @@ class Scheduler
 
       writable&.each do |io|
         if fiber = @writable.delete(io)
-          fiber.resume
+          selected[fiber] |= IO::WRITABLE
         end
+      end
+
+      selected.each do |fiber, events|
+        fiber.resume(events)
       end
 
       if @waiting.any?
@@ -75,10 +81,12 @@ class Scheduler
         waiting, @waiting = @waiting, {}
 
         waiting.each do |fiber, timeout|
-          if timeout <= time
-            fiber.resume
-          else
-            @waiting[fiber] = timeout
+          if fiber.alive?
+            if timeout <= time
+              fiber.resume
+            else
+              @waiting[fiber] = timeout
+            end
           end
         end
       end
@@ -95,14 +103,18 @@ class Scheduler
         end
       end
     end
-  ensure
-    @urgent.each(&:close)
-    @urgent = nil
   end
 
   def close
+    # $stderr.puts [__method__, Fiber.current].inspect
+
+    raise "Scheduler already closed!" if @closed
+
     self.run
   ensure
+    @urgent.each(&:close)
+    @urgent = nil
+
     @closed = true
 
     # We freeze to detect any unintended modifications after the scheduler is closed:
@@ -117,7 +129,36 @@ class Scheduler
     Process.clock_gettime(Process::CLOCK_MONOTONIC)
   end
 
+  def timeout_after(duration, klass, message, &block)
+    fiber = Fiber.current
+
+    self.fiber do
+      sleep(duration)
+
+      if fiber&.alive?
+        fiber.raise(klass, message)
+      end
+    end
+
+    begin
+      yield(duration)
+    ensure
+      fiber = nil
+    end
+  end
+
+  def process_wait(pid, flags)
+    # $stderr.puts [__method__, pid, flags, Fiber.current].inspect
+
+    # This is a very simple way to implement a non-blocking wait:
+    Thread.new do
+      Process::Status.wait(pid, flags)
+    end.value
+  end
+
   def io_wait(io, events, duration)
+    # $stderr.puts [__method__, io, events, duration, Fiber.current].inspect
+
     unless (events & IO::READABLE).zero?
       @readable[io] = Fiber.current
     end
@@ -127,25 +168,22 @@ class Scheduler
     end
 
     Fiber.yield
-
-    return true
   end
 
-  # Used for Kernel#sleep and Mutex#sleep
+  # Used for Kernel#sleep and Thread::Mutex#sleep
   def kernel_sleep(duration = nil)
-    # p [__method__, duration]
-    if duration
-      @waiting[Fiber.current] = current_time + duration
-    end
+    # $stderr.puts [__method__, duration, Fiber.current].inspect
 
-    Fiber.yield
+    self.block(:sleep, duration)
 
     return true
   end
 
-  # Used when blocking on synchronization (Mutex#lock, Queue#pop, SizedQueue#push, ...)
+  # Used when blocking on synchronization (Thread::Mutex#lock,
+  # Thread::Queue#pop, Thread::SizedQueue#push, ...)
   def block(blocker, timeout = nil)
-    # p [__method__, blocker, timeout]
+    # $stderr.puts [__method__, blocker, timeout].inspect
+
     if timeout
       @waiting[Fiber.current] = current_time + timeout
       begin
@@ -164,17 +202,20 @@ class Scheduler
     end
   end
 
-  # Used when synchronization wakes up a previously-blocked fiber (Mutex#unlock, Queue#push, ...).
+  # Used when synchronization wakes up a previously-blocked fiber
+  # (Thread::Mutex#unlock, Thread::Queue#push, ...).
   # This might be called from another thread.
   def unblock(blocker, fiber)
-    # p [__method__, blocker, fiber]
+    # $stderr.puts [__method__, blocker, fiber].inspect
+    # $stderr.puts blocker.backtrace.inspect
+    # $stderr.puts fiber.backtrace.inspect
+
     @lock.synchronize do
       @ready << fiber
     end
 
-    if io = @urgent&.last
-      io.write_nonblock('.')
-    end
+    io = @urgent.last
+    io.write_nonblock('.')
   end
 
   def fiber(&block)
@@ -183,5 +224,19 @@ class Scheduler
     fiber.resume
 
     return fiber
+  end
+
+  def address_resolve(hostname)
+    Thread.new do
+      Addrinfo.getaddrinfo(hostname, nil).map(&:ip_address).uniq
+    end.value
+  end
+end
+
+class BrokenUnblockScheduler < Scheduler
+  def unblock(blocker, fiber)
+    super
+
+    raise "Broken unblock!"
   end
 end

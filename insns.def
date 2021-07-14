@@ -210,10 +210,10 @@ getinstancevariable
 (ID id, IVC ic)
 ()
 (VALUE val)
-/* "instance variable not initialized" warning can be hooked. */
-// attr bool leaf = false; /* has rb_warning() */
+/* Ractor crashes when it accesses class/module-level instances variables. */
+// attr bool leaf = false; /* has IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR() */
 {
-    val = vm_getinstancevariable(GET_SELF(), id, ic);
+    val = vm_getinstancevariable(GET_ISEQ(), GET_SELF(), id, ic);
 }
 
 /* Set value of instance variable id of self to val. */
@@ -224,32 +224,34 @@ setinstancevariable
 ()
 // attr bool leaf = false; /* has rb_check_frozen_internal() */
 {
-    vm_setinstancevariable(GET_SELF(), id, val, ic);
+    vm_setinstancevariable(GET_ISEQ(), GET_SELF(), id, val, ic);
 }
 
 /* Get value of class variable id of klass as val. */
 DEFINE_INSN
 getclassvariable
-(ID id)
+(ID id, IVC ic)
 ()
 (VALUE val)
 /* "class variable access from toplevel" warning can be hooked. */
 // attr bool leaf = false; /* has rb_warning() */
 {
-    val = rb_cvar_get(vm_get_cvar_base(vm_get_cref(GET_EP()), GET_CFP(), 1), id);
+    rb_cref_t * cref = vm_get_cref(GET_EP());
+    rb_control_frame_t *cfp = GET_CFP();
+    val = vm_getclassvariable(GET_ISEQ(), cref, cfp, id, (ICVARC)ic);
 }
 
 /* Set value of class variable id of klass as val. */
 DEFINE_INSN
 setclassvariable
-(ID id)
+(ID id, IVC ic)
 (VALUE val)
 ()
 /* "class variable access from toplevel" warning can be hooked. */
 // attr bool leaf = false; /* has rb_warning() */
 {
     vm_ensure_not_refinement_module(GET_SELF());
-    rb_cvar_set(vm_get_cvar_base(vm_get_cref(GET_EP()), GET_CFP(), 1), id, val);
+    vm_setclassvariable(GET_ISEQ(), vm_get_cref(GET_EP()), GET_CFP(), id,  val, (ICVARC)ic);
 }
 
 /* Get constant variable id. If klass is Qnil and allow_nil is Qtrue, constants
@@ -363,7 +365,7 @@ putstring
 ()
 (VALUE val)
 {
-    val = rb_str_resurrect(str);
+    val = rb_ec_str_resurrect(ec, str);
 }
 
 /* put concatenate strings */
@@ -426,7 +428,7 @@ newarray
 (VALUE val)
 // attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
 {
-    val = rb_ary_new4(num, STACK_ADDR_FROM_TOP(num));
+    val = rb_ec_ary_new_from_values(ec, num, STACK_ADDR_FROM_TOP(num));
 }
 
 /* put new array initialized with num values on the stack. There
@@ -592,25 +594,6 @@ swap
     /* none */
 }
 
-/* reverse stack top N order. */
-DEFINE_INSN
-reverse
-(rb_num_t n)
-(...)
-(...)
-// attr rb_snum_t sp_inc = 0;
-{
-    rb_num_t i;
-    VALUE *sp = STACK_ADDR_FROM_TOP(n);
-
-    for (i=0; i<n/2; i++) {
-	VALUE v0 = sp[i];
-	VALUE v1 = TOPN(i);
-	sp[i] = v1;
-	TOPN(i) = v0;
-    }
-}
-
 /* for stack caching. */
 DEFINE_INSN_IF(STACK_CACHING)
 reput
@@ -662,12 +645,15 @@ adjuststack
 /* defined? */
 DEFINE_INSN
 defined
-(rb_num_t op_type, VALUE obj, VALUE needstr)
+(rb_num_t op_type, VALUE obj, VALUE pushval)
 (VALUE v)
 (VALUE val)
 // attr bool leaf = leafness_of_defined(op_type);
 {
-    val = vm_defined(ec, GET_CFP(), op_type, obj, needstr, v);
+    val = Qnil;
+    if (vm_defined(ec, GET_CFP(), op_type, obj, v)) {
+      val = pushval;
+    }
 }
 
 /* check `target' matches `pattern'.
@@ -712,7 +698,7 @@ checktype
 /**********************************************************/
 
 /* enter class definition scope. if super is Qfalse, and class
-   "klass" is defined, it's redefine. otherwise, define "klass" class.
+   "klass" is defined, it's redefined. Otherwise, define "klass" class.
  */
 DEFINE_INSN
 defineclass
@@ -767,7 +753,7 @@ send
 // attr rb_snum_t comptime_sp_inc = sp_inc_of_sendish(ci);
 {
     VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, false);
-    val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);
+    val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);
 
     if (val == Qundef) {
         RESTORE_REGS();
@@ -786,7 +772,7 @@ opt_send_without_block
 // attr rb_snum_t comptime_sp_inc = sp_inc_of_sendish(ci);
 {
     VALUE bh = VM_BLOCK_HANDLER_NONE;
-    val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);
+    val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);
 
     if (val == Qundef) {
         RESTORE_REGS();
@@ -873,7 +859,7 @@ invokesuper
 // attr rb_snum_t comptime_sp_inc = sp_inc_of_sendish(ci);
 {
     VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, true);
-    val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_super_method);
+    val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_super);
 
     if (val == Qundef) {
         RESTORE_REGS();
@@ -891,13 +877,8 @@ invokeblock
 // attr rb_snum_t sp_inc = sp_inc_of_invokeblock(cd->ci);
 // attr rb_snum_t comptime_sp_inc = sp_inc_of_invokeblock(ci);
 {
-    if (UNLIKELY(vm_cc_call(cd->cc) != vm_invokeblock_i)) {
-        const struct rb_callcache *cc = vm_cc_new(0, NULL, vm_invokeblock_i);
-        RB_OBJ_WRITE(GET_ISEQ(), &cd->cc, cc);
-    }
-
     VALUE bh = VM_BLOCK_HANDLER_NONE;
-    val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_invokeblock);
+    val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_invokeblock);
 
     if (val == Qundef) {
         RESTORE_REGS();
@@ -966,7 +947,7 @@ jump
 ()
 ()
 /* Same discussion as leave. */
-// attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
+// attr bool leaf = leafness_of_check_ints; /* has rb_threadptr_execute_interrupts() */
 {
     RUBY_VM_CHECK_INTS(ec);
     JUMP(dst);
@@ -979,7 +960,7 @@ branchif
 (VALUE val)
 ()
 /* Same discussion as jump. */
-// attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
+// attr bool leaf = leafness_of_check_ints; /* has rb_threadptr_execute_interrupts() */
 {
     if (RTEST(val)) {
 	RUBY_VM_CHECK_INTS(ec);
@@ -994,7 +975,7 @@ branchunless
 (VALUE val)
 ()
 /* Same discussion as jump. */
-// attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
+// attr bool leaf = leafness_of_check_ints; /* has rb_threadptr_execute_interrupts() */
 {
     if (!RTEST(val)) {
 	RUBY_VM_CHECK_INTS(ec);
@@ -1009,7 +990,7 @@ branchnil
 (VALUE val)
 ()
 /* Same discussion as jump. */
-// attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
+// attr bool leaf = leafness_of_check_ints; /* has rb_threadptr_execute_interrupts() */
 {
     if (NIL_P(val)) {
 	RUBY_VM_CHECK_INTS(ec);
@@ -1028,9 +1009,10 @@ opt_getinlinecache
 ()
 (VALUE val)
 {
-    if (vm_ic_hit_p(ic, GET_EP())) {
-	val = ic->value;
-	JUMP(dst);
+    struct iseq_inline_constant_cache_entry *ice = ic->entry;
+    if (ice && vm_ic_hit_p(ice, GET_EP())) {
+        val = ice->value;
+        JUMP(dst);
     }
     else {
 	val = Qnil;
@@ -1043,8 +1025,9 @@ opt_setinlinecache
 (IC ic)
 (VALUE val)
 (VALUE val)
+// attr bool leaf = false;
 {
-    vm_ic_update(ic, val, GET_EP());
+    vm_ic_update(GET_ISEQ(), ic, val, GET_EP());
 }
 
 /* run iseq only once */
@@ -1139,7 +1122,7 @@ opt_mod
 (CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
-/* Same discussion as opt_mod. */
+/* Same discussion as opt_div. */
 // attr bool leaf = false;
 {
     val = vm_opt_mod(recv, obj);

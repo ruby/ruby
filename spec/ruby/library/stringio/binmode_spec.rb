@@ -9,7 +9,7 @@ describe "StringIO#binmode" do
 
   it "changes external encoding to BINARY" do
     io = StringIO.new
-    io.external_encoding.should == Encoding.find('locale')
+    io.external_encoding.should == Encoding.find('external')
     io.binmode
     io.external_encoding.should == Encoding::BINARY
   end

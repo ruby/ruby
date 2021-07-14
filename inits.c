@@ -65,7 +65,7 @@ rb_call_inits(void)
     CALL(VM);
     CALL(ISeq);
     CALL(Thread);
-    CALL(Scheduler);
+    CALL(Fiber_Scheduler);
     CALL(process);
     CALL(Cont);
     CALL(Rational);
@@ -87,7 +87,7 @@ rb_call_builtin_inits(void)
 #define BUILTIN(n) CALL(builtin_##n)
     BUILTIN(gc);
     BUILTIN(ractor);
-    BUILTIN(integer);
+    BUILTIN(numeric);
     BUILTIN(io);
     BUILTIN(dir);
     BUILTIN(ast);
@@ -96,6 +96,8 @@ rb_call_builtin_inits(void)
     BUILTIN(warning);
     BUILTIN(array);
     BUILTIN(kernel);
+    BUILTIN(timev);
+    BUILTIN(nilclass);
     Init_builtin_prelude();
 }
 #undef CALL

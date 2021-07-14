@@ -130,6 +130,10 @@ with_gvl_callback(void *ptr)
 	    rb_ary_push(params, ULL2NUM(*(unsigned LONG_LONG *)x->args[i]));
 	    break;
 #endif
+	  case TYPE_CONST_STRING:
+	    rb_ary_push(params,
+                        rb_str_new_cstr(*((const char **)(x->args[i]))));
+	    break;
 	  default:
 	    rb_raise(rb_eRuntimeError, "closure args: %d", type);
         }
@@ -175,6 +179,10 @@ with_gvl_callback(void *ptr)
 	*(unsigned LONG_LONG *)x->resp = NUM2ULL(ret);
 	break;
 #endif
+      case TYPE_CONST_STRING:
+        /* Dangerous. Callback must keep reference of the String. */
+        *((const char **)(x->resp)) = StringValueCStr(ret);
+        break;
       default:
 	rb_raise(rb_eRuntimeError, "closure retval: %d", type);
     }
@@ -221,6 +229,7 @@ initialize(int rbargc, VALUE argv[], VALUE self)
 {
     VALUE ret;
     VALUE args;
+    VALUE normalized_args;
     VALUE abi;
     fiddle_closure * cl;
     ffi_cif * cif;
@@ -239,21 +248,26 @@ initialize(int rbargc, VALUE argv[], VALUE self)
 
     cl->argv = (ffi_type **)xcalloc(argc + 1, sizeof(ffi_type *));
 
+    normalized_args = rb_ary_new_capa(argc);
     for (i = 0; i < argc; i++) {
-        int type = NUM2INT(RARRAY_AREF(args, i));
-        cl->argv[i] = INT2FFI_TYPE(type);
+        VALUE arg = rb_fiddle_type_ensure(RARRAY_AREF(args, i));
+        rb_ary_push(normalized_args, arg);
+        cl->argv[i] = rb_fiddle_int_to_ffi_type(NUM2INT(arg));
     }
     cl->argv[argc] = NULL;
 
+    ret = rb_fiddle_type_ensure(ret);
     rb_iv_set(self, "@ctype", ret);
-    rb_iv_set(self, "@args", args);
+    rb_iv_set(self, "@args", normalized_args);
 
     cif = &cl->cif;
     pcl = cl->pcl;
 
-    result = ffi_prep_cif(cif, NUM2INT(abi), argc,
-                INT2FFI_TYPE(NUM2INT(ret)),
-		cl->argv);
+    result = ffi_prep_cif(cif,
+                          NUM2INT(abi),
+                          argc,
+                          rb_fiddle_int_to_ffi_type(NUM2INT(ret)),
+                          cl->argv);
 
     if (FFI_OK != result)
 	rb_raise(rb_eRuntimeError, "error prepping CIF %d", result);

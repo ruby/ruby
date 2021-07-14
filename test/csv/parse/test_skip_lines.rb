@@ -109,4 +109,10 @@ class TestCSVParseSkipLines < Test::Unit::TestCase
                            :liberal_parsing => true,
                            :skip_lines => /^$/))
   end
+
+  def test_crlf
+    assert_equal([["a", "b"]],
+                 CSV.parse("a,b\r\n,\r\n",
+                           :skip_lines => /^,+$/))
+  end
 end

@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/dependency_list'
 
 class TestGemDependencyList < Gem::TestCase
@@ -139,8 +139,8 @@ class TestGemDependencyList < Gem::TestCase
 
     exp = {
       "b" => [
-        Gem::Dependency.new("a", ">= 1")
-      ]
+        Gem::Dependency.new("a", ">= 1"),
+      ],
     }
 
     assert_equal exp, @deplist.why_not_ok?

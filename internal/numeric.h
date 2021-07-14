@@ -50,11 +50,11 @@ double ruby_float_step_size(double beg, double end, double unit, int excl);
 int ruby_float_step(VALUE from, VALUE to, VALUE step, int excl, int allow_endless);
 int rb_num_negative_p(VALUE);
 VALUE rb_int_succ(VALUE num);
-VALUE rb_int_uminus(VALUE num);
 VALUE rb_float_uminus(VALUE num);
 VALUE rb_int_plus(VALUE x, VALUE y);
 VALUE rb_float_plus(VALUE x, VALUE y);
 VALUE rb_int_minus(VALUE x, VALUE y);
+VALUE rb_float_minus(VALUE x, VALUE y);
 VALUE rb_int_mul(VALUE x, VALUE y);
 VALUE rb_float_mul(VALUE x, VALUE y);
 VALUE rb_float_div(VALUE x, VALUE y);
@@ -79,6 +79,7 @@ int rb_int_positive_p(VALUE num);
 int rb_int_negative_p(VALUE num);
 VALUE rb_num_pow(VALUE x, VALUE y);
 VALUE rb_float_ceil(VALUE num, int ndigits);
+VALUE rb_float_floor(VALUE x, int ndigits);
 VALUE rb_float_abs(VALUE flt);
 static inline VALUE rb_num_compare_with_zero(VALUE num, ID mid);
 static inline int rb_num_positive_int_p(VALUE num);
@@ -110,6 +111,8 @@ VALUE rb_int_even_p(VALUE num);
 VALUE rb_int_odd_p(VALUE num);
 VALUE rb_int_abs(VALUE num);
 VALUE rb_int_bit_length(VALUE num);
+VALUE rb_int_uminus(VALUE num);
+VALUE rb_int_comp(VALUE num);
 MJIT_SYMBOL_EXPORT_END
 
 static inline bool

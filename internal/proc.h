@@ -21,6 +21,7 @@ int rb_block_pair_yield_optimizable(void);
 int rb_block_arity(void);
 int rb_block_min_max_arity(int *max);
 VALUE rb_block_to_s(VALUE self, const struct rb_block *block, const char *additional_info);
+VALUE rb_callable_receiver(VALUE);
 
 MJIT_SYMBOL_EXPORT_BEGIN
 VALUE rb_func_proc_new(rb_block_call_func_t func, VALUE val);

@@ -97,7 +97,11 @@ class Bundler::Thor
     protected
 
       def can_display_colors?
-        stdout.tty? && !are_colors_disabled?
+        are_colors_supported? && !are_colors_disabled?
+      end
+
+      def are_colors_supported?
+        stdout.tty? && ENV["TERM"] != "dumb"
       end
 
       def are_colors_disabled?

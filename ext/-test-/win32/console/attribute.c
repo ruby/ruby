@@ -13,7 +13,7 @@ io_handle(VALUE io)
 }
 
 static VALUE
-console_info(VALUE io)
+console_info(VALUE klass, VALUE io)
 {
     HANDLE h = io_handle(io);
     CONSOLE_SCREEN_BUFFER_INFO csbi;
@@ -29,7 +29,7 @@ console_info(VALUE io)
 }
 
 static VALUE
-console_set_attribute(VALUE io, VALUE attr)
+console_set_attribute(VALUE klass, VALUE io, VALUE attr)
 {
     HANDLE h = io_handle(io);
 
@@ -47,8 +47,8 @@ Init_attribute(VALUE m)
 							 "size_x", "size_y",
 							 "cur_x", "cur_y",
 							 "attr", NULL);
-    rb_define_method(rb_cIO, "console_info", console_info, 0);
-    rb_define_method(rb_cIO, "console_attribute", console_set_attribute, 1);
+    rb_define_singleton_method(m, "console_info", console_info, 1);
+    rb_define_singleton_method(m, "console_attribute", console_set_attribute, 2);
 
     rb_define_const(m, "FOREGROUND_MASK", INT2FIX(FOREGROUND_MASK));
     rb_define_const(m, "FOREGROUND_BLUE", INT2FIX(FOREGROUND_BLUE));

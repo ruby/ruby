@@ -136,7 +136,6 @@ recursion.o: $(hdrdir)/ruby/internal/static_assert.h
 recursion.o: $(hdrdir)/ruby/internal/stdalign.h
 recursion.o: $(hdrdir)/ruby/internal/stdbool.h
 recursion.o: $(hdrdir)/ruby/internal/symbol.h
-recursion.o: $(hdrdir)/ruby/internal/token_paste.h
 recursion.o: $(hdrdir)/ruby/internal/value.h
 recursion.o: $(hdrdir)/ruby/internal/value_type.h
 recursion.o: $(hdrdir)/ruby/internal/variable.h

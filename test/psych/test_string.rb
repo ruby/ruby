@@ -104,7 +104,7 @@ module Psych
     end
 
     def test_string_subclass_with_anchor
-      y = Psych.load <<-eoyml
+      y = Psych.unsafe_load <<-eoyml
 ---
 body:
   string: &70121654388580 !ruby/string
@@ -116,7 +116,7 @@ body:
     end
 
     def test_self_referential_string
-      y = Psych.load <<-eoyml
+      y = Psych.unsafe_load <<-eoyml
 ---
 string: &70121654388580 !ruby/string
   str: ! 'foo'
@@ -129,32 +129,32 @@ string: &70121654388580 !ruby/string
     end
 
     def test_another_subclass_with_attributes
-      y = Psych.load Psych.dump Y.new("foo").tap {|o| o.val = 1}
+      y = Psych.unsafe_load Psych.dump Y.new("foo").tap {|o| o.val = 1}
       assert_equal "foo", y
       assert_equal Y, y.class
       assert_equal 1, y.val
     end
 
     def test_backwards_with_syck
-      x = Psych.load "--- !str:#{X.name} foo\n\n"
+      x = Psych.unsafe_load "--- !str:#{X.name} foo\n\n"
       assert_equal X, x.class
       assert_equal 'foo', x
     end
 
     def test_empty_subclass
       assert_match "!ruby/string:#{X}", Psych.dump(X.new)
-      x = Psych.load Psych.dump X.new
+      x = Psych.unsafe_load Psych.dump X.new
       assert_equal X, x.class
     end
 
     def test_empty_character_subclass
       assert_match "!ruby/string:#{Z}", Psych.dump(Z.new)
-      x = Psych.load Psych.dump Z.new
+      x = Psych.unsafe_load Psych.dump Z.new
       assert_equal Z, x.class
     end
 
     def test_subclass_with_attributes
-      y = Psych.load Psych.dump Y.new.tap {|o| o.val = 1}
+      y = Psych.unsafe_load Psych.dump Y.new.tap {|o| o.val = 1}
       assert_equal Y, y.class
       assert_equal 1, y.val
     end

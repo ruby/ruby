@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 
 describe "An Exception reaching the top level" do
   it "is printed on STDERR" do
-    ruby_exe('raise "foo"', args: "2>&1").should.include?("in `<main>': foo (RuntimeError)")
+    ruby_exe('raise "foo"', args: "2>&1", exit_status: 1).should.include?("in `<main>': foo (RuntimeError)")
   end
 
   ruby_version_is "2.6" do
@@ -20,7 +20,7 @@ describe "An Exception reaching the top level" do
         raise_wrapped
       end
       RUBY
-      lines = ruby_exe(code, args: "2>&1").lines
+      lines = ruby_exe(code, args: "2>&1", exit_status: 1).lines
       lines.reject! { |l| l.include?('rescue in') }
       lines.map! { |l| l.chomp[/:(in.+)/, 1] }
       lines.should == ["in `raise_wrapped': wrapped (RuntimeError)",
@@ -38,7 +38,7 @@ describe "An Exception reaching the top level" do
         "/dir/bar.rb:20:in `caller'",
       ]
       RUBY
-      ruby_exe(code, args: "2>&1").should == <<-EOS
+      ruby_exe(code, args: "2>&1", exit_status: 1).should == <<-EOS
 /dir/foo.rb:10:in `raising': foo (RuntimeError)
 \tfrom /dir/bar.rb:20:in `caller'
       EOS

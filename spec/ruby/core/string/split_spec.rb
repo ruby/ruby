@@ -159,28 +159,48 @@ describe "String#split with String" do
     "foo".split("bar", 3).should == ["foo"]
   end
 
-  it "returns subclass instances based on self" do
-    ["", "x.y.z.", "  x  y  "].each do |str|
-      ["", ".", " "].each do |pat|
-        [-1, 0, 1, 2].each do |limit|
-          StringSpecs::MyString.new(str).split(pat, limit).each do |x|
-            x.should be_an_instance_of(StringSpecs::MyString)
-          end
+  ruby_version_is ''...'3.0' do
+    it "returns subclass instances based on self" do
+      ["", "x.y.z.", "  x  y  "].each do |str|
+        ["", ".", " "].each do |pat|
+          [-1, 0, 1, 2].each do |limit|
+            StringSpecs::MyString.new(str).split(pat, limit).each do |x|
+              x.should be_an_instance_of(StringSpecs::MyString)
+            end
 
-          str.split(StringSpecs::MyString.new(pat), limit).each do |x|
-            x.should be_an_instance_of(String)
+            str.split(StringSpecs::MyString.new(pat), limit).each do |x|
+              x.should be_an_instance_of(String)
+            end
           end
         end
       end
     end
+
+    it "does not call constructor on created subclass instances" do
+      # can't call should_not_receive on an object that doesn't yet exist
+      # so failure here is signalled by exception, not expectation failure
+
+      s = StringSpecs::StringWithRaisingConstructor.new('silly:string')
+      s.split(':').first.should == 'silly'
+    end
   end
 
-  it "does not call constructor on created subclass instances" do
-    # can't call should_not_receive on an object that doesn't yet exist
-    # so failure here is signalled by exception, not expectation failure
+  ruby_version_is '3.0' do
+    it "returns String instances based on self" do
+      ["", "x.y.z.", "  x  y  "].each do |str|
+        ["", ".", " "].each do |pat|
+          [-1, 0, 1, 2].each do |limit|
+            StringSpecs::MyString.new(str).split(pat, limit).each do |x|
+              x.should be_an_instance_of(String)
+            end
 
-    s = StringSpecs::StringWithRaisingConstructor.new('silly:string')
-    s.split(':').first.should == 'silly'
+            str.split(StringSpecs::MyString.new(pat), limit).each do |x|
+              x.should be_an_instance_of(String)
+            end
+          end
+        end
+      end
+    end
   end
 
   ruby_version_is ''...'2.7' do
@@ -355,24 +375,40 @@ describe "String#split with Regexp" do
     "foo".split(/bar/, 3).should == ["foo"]
   end
 
-  it "returns subclass instances based on self" do
-    ["", "x:y:z:", "  x  y  "].each do |str|
-      [//, /:/, /\s+/].each do |pat|
-        [-1, 0, 1, 2].each do |limit|
-          StringSpecs::MyString.new(str).split(pat, limit).each do |x|
-            x.should be_an_instance_of(StringSpecs::MyString)
+  ruby_version_is ''...'3.0' do
+    it "returns subclass instances based on self" do
+      ["", "x:y:z:", "  x  y  "].each do |str|
+        [//, /:/, /\s+/].each do |pat|
+          [-1, 0, 1, 2].each do |limit|
+            StringSpecs::MyString.new(str).split(pat, limit).each do |x|
+              x.should be_an_instance_of(StringSpecs::MyString)
+            end
           end
         end
       end
     end
+
+    it "does not call constructor on created subclass instances" do
+      # can't call should_not_receive on an object that doesn't yet exist
+      # so failure here is signalled by exception, not expectation failure
+
+      s = StringSpecs::StringWithRaisingConstructor.new('silly:string')
+      s.split(/:/).first.should == 'silly'
+    end
   end
 
-  it "does not call constructor on created subclass instances" do
-    # can't call should_not_receive on an object that doesn't yet exist
-    # so failure here is signalled by exception, not expectation failure
-
-    s = StringSpecs::StringWithRaisingConstructor.new('silly:string')
-    s.split(/:/).first.should == 'silly'
+  ruby_version_is '3.0' do
+    it "returns String instances based on self" do
+      ["", "x:y:z:", "  x  y  "].each do |str|
+        [//, /:/, /\s+/].each do |pat|
+          [-1, 0, 1, 2].each do |limit|
+            StringSpecs::MyString.new(str).split(pat, limit).each do |x|
+              x.should be_an_instance_of(String)
+            end
+          end
+        end
+      end
+    end
   end
 
   ruby_version_is ''...'2.7' do
@@ -425,6 +461,16 @@ describe "String#split with Regexp" do
     ->{ broken_str.split(/\r\n|\r|\n/) }.should raise_error(ArgumentError)
   end
 
+  # See https://bugs.ruby-lang.org/issues/12689 and https://github.com/jruby/jruby/issues/4868
+  it "allows concurrent Regexp calls in a shared context" do
+    str = 'a,b,c,d,e'
+
+    p = proc { str.split(/,/) }
+    results = 10.times.map { Thread.new { x = nil; 100.times { x = p.call }; x } }.map(&:value)
+
+    results.should == [%w[a b c d e]] * 10
+  end
+
   ruby_version_is "2.6" do
     context "when a block is given" do
       it "yields each split substring with default pattern" do
@@ -433,6 +479,14 @@ describe "String#split with Regexp" do
 
         returned_object.should == "chunky bacon"
         a.should == ["Chunky", "Bacon"]
+      end
+
+      it "yields each split substring with default pattern for a non-ASCII string" do
+        a = []
+        returned_object = "l'été arrive bientôt".split { |str| a << str }
+
+        returned_object.should == "l'été arrive bientôt"
+        a.should == ["l'été", "arrive", "bientôt"]
       end
 
       it "yields the string when limit is 1" do
@@ -493,16 +547,32 @@ describe "String#split with Regexp" do
     end
 
     describe "for a String subclass" do
-      it "yields instances of the same subclass" do
-        a = []
-        StringSpecs::MyString.new("a|b").split("|") { |str| a << str }
-        first, last = a
+      ruby_version_is ''...'3.0' do
+        it "yields instances of the same subclass" do
+          a = []
+          StringSpecs::MyString.new("a|b").split("|") { |str| a << str }
+          first, last = a
 
-        first.should be_an_instance_of(StringSpecs::MyString)
-        first.should == "a"
+          first.should be_an_instance_of(StringSpecs::MyString)
+          first.should == "a"
 
-        last.should be_an_instance_of(StringSpecs::MyString)
-        last.should == "b"
+          last.should be_an_instance_of(StringSpecs::MyString)
+          last.should == "b"
+        end
+      end
+
+      ruby_version_is '3.0' do
+        it "yields instances of String" do
+          a = []
+          StringSpecs::MyString.new("a|b").split("|") { |str| a << str }
+          first, last = a
+
+          first.should be_an_instance_of(String)
+          first.should == "a"
+
+          last.should be_an_instance_of(String)
+          last.should == "b"
+        end
       end
     end
   end

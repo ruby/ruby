@@ -70,7 +70,6 @@
 # - URI::REGEXP - (in uri/common.rb)
 #   - URI::REGEXP::PATTERN - (in uri/common.rb)
 # - URI::Util - (in uri/common.rb)
-# - URI::Escape - (in uri/common.rb)
 # - URI::Error - (in uri/common.rb)
 #   - URI::InvalidURIError - (in uri/common.rb)
 #   - URI::InvalidComponentError - (in uri/common.rb)

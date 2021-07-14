@@ -62,9 +62,11 @@ class TestTracepointObj < Test::Unit::TestCase
     bug8492 = '[ruby-dev:47400] [Bug #8492]: infinite after_gc_start_hook reentrance'
     assert_nothing_raised(Timeout::Error, bug8492) do
       assert_in_out_err(%w[-r-test-/tracepoint], <<-'end;', /\A[1-9]/, timeout: 2)
-        stress, GC.stress = GC.stress, false
         count = 0
-        Bug.after_gc_start_hook = proc {count += 1}
+        hook = proc {count += 1}
+        def run(hook)
+        stress, GC.stress = GC.stress, false
+        Bug.after_gc_start_hook = hook
         begin
           GC.stress = true
           3.times {Object.new}
@@ -72,6 +74,8 @@ class TestTracepointObj < Test::Unit::TestCase
           GC.stress = stress
           Bug.after_gc_start_hook = nil
         end
+        end
+        run(hook)
         puts count
       end;
     end

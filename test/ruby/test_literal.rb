@@ -461,17 +461,35 @@ class TestRubyLiteral < Test::Unit::TestCase
 
   def test_hash_duplicated_key
     h = EnvUtil.suppress_warning do
-      eval <<~end
+      eval "#{<<-"begin;"}\n#{<<-'end;'}"
+      begin;
         # This is a syntax that renders warning at very early stage.
         # eval used to delay warning, to be suppressible by EnvUtil.
         {"a" => 100, "b" => 200, "a" => 300, "a" => 400}
-      end
+      end;
     end
     assert_equal(2, h.size)
     assert_equal(400, h['a'])
     assert_equal(200, h['b'])
     assert_nil(h['c'])
     assert_equal(nil, h.key('300'))
+
+    assert_all_assertions_foreach(
+      "duplicated literal key",
+      ':foo',
+      '"a"',
+      '1000',
+      '1.0',
+      '1_000_000_000_000_000_000_000',
+      '1.0r',
+      '1.0i',
+      '1.72723e-77',
+      '//',
+    ) do |key|
+      assert_warning(/key #{Regexp.quote(eval(key).inspect)} is duplicated/) do
+        eval("{#{key} => :bar, #{key} => :foo}")
+      end
+    end
   end
 
   def test_hash_frozen_key_id

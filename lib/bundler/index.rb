@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "set"
-
 module Bundler
   class Index
     include Enumerable
@@ -65,11 +63,14 @@ module Bundler
     def unsorted_search(query, base)
       results = local_search(query, base)
 
-      seen = results.map(&:full_name).to_set unless @sources.empty?
+      seen = results.map(&:full_name).uniq unless @sources.empty?
 
       @sources.each do |source|
         source.unsorted_search(query, base).each do |spec|
-          results << spec if seen.add?(spec.full_name)
+          next if seen.include?(spec.full_name)
+
+          seen << spec.full_name
+          results << spec
         end
       end
 
@@ -121,10 +122,9 @@ module Bundler
       names
     end
 
-    # returns a list of the dependencies
     def unmet_dependency_names
       dependency_names.select do |name|
-        name != "bundler" && search(name).empty?
+        search(name).empty?
       end
     end
 
@@ -170,7 +170,7 @@ module Bundler
     def dependencies_eql?(spec, other_spec)
       deps       = spec.dependencies.select {|d| d.type != :development }
       other_deps = other_spec.dependencies.select {|d| d.type != :development }
-      Set.new(deps) == Set.new(other_deps)
+      deps.sort == other_deps.sort
     end
 
     def add_source(index)
@@ -179,7 +179,7 @@ module Bundler
       @sources.uniq! # need to use uniq! here instead of checking for the item before adding
     end
 
-  private
+    private
 
     def specs_by_name(name)
       @specs[name].values
@@ -195,7 +195,7 @@ module Bundler
           if base # allow all platforms when searching from a lockfile
             dependency.matches_spec?(spec)
           else
-            dependency.matches_spec?(spec) && Gem::Platform.match(spec.platform)
+            dependency.matches_spec?(spec) && Gem::Platform.match_spec?(spec)
           end
         end
 

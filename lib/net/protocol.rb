@@ -26,7 +26,7 @@ require 'io/wait'
 module Net # :nodoc:
 
   class Protocol   #:nodoc: internal use only
-    VERSION = "0.1.0"
+    VERSION = "0.1.1"
 
     private
     def Protocol.protocol_param(name, val)
@@ -383,7 +383,7 @@ module Net # :nodoc:
       len = writing {
         using_each_crlf_line {
           begin
-            block.call(WriteAdapter.new(self, :write_message_0))
+            block.call(WriteAdapter.new(self.method(:write_message_0)))
           rescue LocalJumpError
             # allow `break' from writer block
           end
@@ -447,17 +447,16 @@ module Net # :nodoc:
   # The writer adapter class
   #
   class WriteAdapter
-    def initialize(socket, method)
-      @socket = socket
-      @method_id = method
+    def initialize(writer)
+      @writer = writer
     end
 
     def inspect
-      "#<#{self.class} socket=#{@socket.inspect}>"
+      "#<#{self.class} writer=#{@writer.inspect}>"
     end
 
     def write(str)
-      @socket.__send__(@method_id, str)
+      @writer.call(str)
     end
 
     alias print write

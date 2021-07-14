@@ -609,6 +609,12 @@ describe "Regexp with character classes" do
     "루비(Ruby)".match(/\p{Hangul}+/u).to_a.should == ["루비"]
   end
 
+  ruby_bug "#17340", ''...'3.0' do
+    it "raises a RegexpError for an unterminated unicode property" do
+      -> { Regexp.new('\p{') }.should raise_error(RegexpError)
+    end
+  end
+
   it "supports \\X (unicode 9.0 with UTR #51 workarounds)" do
     # simple emoji without any fancy modifier or ZWJ
     /\X/.match("\u{1F98A}").to_a.should == ["🦊"]

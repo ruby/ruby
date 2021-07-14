@@ -4,7 +4,7 @@ require_relative 'fixtures/classes'
 # Why do we not test that finalizers are run by the GC? The documentation
 # says that finalizers are never guaranteed to be run, so we can't
 # spec that they are. On some implementations of Ruby the finalizers may
-# run asyncronously, meaning that we can't predict when they'll run,
+# run asynchronously, meaning that we can't predict when they'll run,
 # even if they were guaranteed to do so. Even on MRI finalizers can be
 # very unpredictable, due to conservative stack scanning and references
 # left in unused memory.
@@ -60,7 +60,7 @@ describe "ObjectSpace.define_finalizer" do
     ruby_exe(code, :args => "2>&1").should include("finalizer run\n")
   end
 
-  ruby_version_is "2.8" do
+  ruby_version_is "3.0" do
     it "warns if the finalizer has the object as the receiver" do
       code = <<-RUBY
         class CapturesSelf
@@ -94,7 +94,7 @@ describe "ObjectSpace.define_finalizer" do
       ruby_exe(code, :args => "2>&1").should include("warning: finalizer references object to be finalized\n")
     end
 
-    it "warns if the finalizer was a block in the reciever" do
+    it "warns if the finalizer was a block in the receiver" do
       code = <<-RUBY
         class CapturesSelf
           def initialize

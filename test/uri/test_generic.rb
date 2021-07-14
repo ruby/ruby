@@ -799,8 +799,12 @@ class URI::TestGeneric < Test::Unit::TestCase
 
     u = URI("http://foo/bar")
     assert_equal("http://foo/bar", u.to_s)
+    u.hostname = "[::1]"
+    assert_equal("http://[::1]/bar", u.to_s)
     u.hostname = "::1"
     assert_equal("http://[::1]/bar", u.to_s)
+    u.hostname = ""
+    assert_equal("http:///bar", u.to_s)
   end
 
   def test_build

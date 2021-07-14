@@ -31,7 +31,7 @@
 #
 # To filter what is traced, you can pass any of the following as +events+:
 #
-# +:line+:: execute code on a new line
+# +:line+:: execute an expression or statement on a new line
 # +:class+:: start a class or module definition
 # +:end+:: finish a class or module definition
 # +:call+:: call a Ruby method
@@ -309,15 +309,21 @@ class TracePoint
     Primitive.tracepoint_attr_defined_class
   end
 
-  # Return the generated binding object from event
+  # Return the generated binding object from event.
+  #
+  # Note that for +c_call+ and +c_return+ events, the binding returned is the
+  # binding of the nearest Ruby method calling the C method, since C methods
+  # themselves do not have bindings.
   def binding
     Primitive.tracepoint_attr_binding
   end
 
   # Return the trace object during event
   #
-  # Same as TracePoint#binding:
-  #	trace.binding.eval('self')
+  # Same as the following, except it returns the correct object (the method
+  # receiver) for +c_call+ and +c_return+ events:
+  #
+  #   trace.binding.eval('self')
   def self
     Primitive.tracepoint_attr_self
   end

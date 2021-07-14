@@ -127,6 +127,8 @@ void rb_enc_copy(VALUE dst, VALUE src);
 VALUE rb_enc_str_new(const char*, long, rb_encoding*);
 VALUE rb_enc_str_new_cstr(const char*, rb_encoding*);
 VALUE rb_enc_str_new_static(const char*, long, rb_encoding*);
+VALUE rb_enc_interned_str(const char *, long, rb_encoding *);
+VALUE rb_enc_interned_str_cstr(const char *, rb_encoding *);
 VALUE rb_enc_reg_new(const char*, long, rb_encoding*, int);
 PRINTF_ARGS(VALUE rb_enc_sprintf(rb_encoding *, const char*, ...), 2, 3);
 VALUE rb_enc_vsprintf(rb_encoding *, const char*, va_list);

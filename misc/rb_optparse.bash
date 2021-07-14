@@ -1,4 +1,5 @@
-#! /bin/bash
+# -*- bash -*-
+#
 # Completion for bash:
 #
 # (1) install this file,
@@ -16,5 +17,5 @@ _rb_optparse() {
 }
 
 rb_optparse () {
-    [ $# = 0 ] || complete -o default -F _rb_optparse "$@"
+  [ $# = 0 ] || complete -o default -F _rb_optparse "$@"
 }

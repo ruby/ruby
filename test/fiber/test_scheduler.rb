@@ -11,11 +11,27 @@ class TestFiberScheduler < Test::Unit::TestCase
     end
   end
 
+  def test_fiber_new
+    f = Fiber.new{}
+    refute f.blocking?
+  end
+
+  def test_fiber_new_with_options
+    f = Fiber.new(blocking: true){}
+    assert f.blocking?
+
+    f = Fiber.new(blocking: false){}
+    refute f.blocking?
+
+    f = Fiber.new(pool: nil){}
+    refute f.blocking?
+  end
+
   def test_closed_at_thread_exit
     scheduler = Scheduler.new
 
     thread = Thread.new do
-      Thread.current.scheduler = scheduler
+      Fiber.set_scheduler scheduler
     end
 
     thread.join
@@ -27,8 +43,8 @@ class TestFiberScheduler < Test::Unit::TestCase
     scheduler = Scheduler.new
 
     thread = Thread.new do
-      Thread.current.scheduler = scheduler
-      Thread.current.scheduler = nil
+      Fiber.set_scheduler scheduler
+      Fiber.set_scheduler nil
 
       assert scheduler.closed?
     end
@@ -41,12 +57,50 @@ class TestFiberScheduler < Test::Unit::TestCase
     require 'scheduler'
 
     scheduler = Scheduler.new
-    Thread.current.scheduler = scheduler
+    Fiber.set_scheduler scheduler
 
     Fiber.schedule do
       sleep(0)
       puts "Running Fiber"
     end
     RUBY
+  end
+
+  def test_minimal_interface
+    scheduler = Object.new
+
+    def scheduler.block
+    end
+
+    def scheduler.unblock
+    end
+
+    def scheduler.io_wait
+    end
+
+    def scheduler.kernel_sleep
+    end
+
+    thread = Thread.new do
+      Fiber.set_scheduler scheduler
+    end
+
+    thread.join
+  end
+
+  def test_current_scheduler
+    thread = Thread.new do
+      scheduler = Scheduler.new
+      Fiber.set_scheduler scheduler
+
+      assert Fiber.scheduler
+      refute Fiber.current_scheduler
+
+      Fiber.schedule do
+        assert Fiber.current_scheduler
+      end
+    end
+
+    thread.join
   end
 end

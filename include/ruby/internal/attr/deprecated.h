@@ -28,7 +28,11 @@
 #include "ruby/internal/has/extension.h"
 
 /** Wraps (or simulates) `[[deprecated]]` */
-#if RBIMPL_HAS_EXTENSION(attribute_deprecated_with_message)
+#if defined(__COVERITY__)
+/* Coverity Scan emulates gcc but seems not to support this attribute correctly */
+# define RBIMPL_ATTR_DEPRECATED(msg)
+
+#elif RBIMPL_HAS_EXTENSION(attribute_deprecated_with_message)
 # define RBIMPL_ATTR_DEPRECATED(msg) __attribute__((__deprecated__ msg))
 
 #elif defined(__cplusplus) && RBIMPL_COMPILER_SINCE(GCC, 10, 1, 0) /* && RBIMPL_COMPILER_BEFORE(GCC, 10, X, Y) */

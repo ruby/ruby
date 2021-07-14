@@ -71,13 +71,19 @@ RSpec.describe "bundle check" do
   end
 
   it "prints a generic message if you changed your lockfile" do
+    build_repo2 do
+      build_gem "rails_pinned_to_old_activesupport" do |s|
+        s.add_dependency "activesupport", "= 1.2.3"
+      end
+    end
+
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "#{file_uri_for(gem_repo2)}"
       gem 'rails'
     G
 
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "#{file_uri_for(gem_repo2)}"
       gem "rails"
       gem "rails_pinned_to_old_activesupport"
     G
@@ -118,7 +124,7 @@ RSpec.describe "bundle check" do
       gem "rack", :group => :foo
     G
 
-    bundle "config --local without foo"
+    bundle "config set --local without foo"
     bundle :install
 
     gemfile <<-G
@@ -211,7 +217,7 @@ RSpec.describe "bundle check" do
       gem "foo"
     G
 
-    bundle "config --local deployment true"
+    bundle "config set --local deployment true"
     bundle "install"
     FileUtils.rm(bundled_app_lock)
 
@@ -282,6 +288,94 @@ RSpec.describe "bundle check" do
     end
   end
 
+  describe "when locked with multiple dependents with different requirements" do
+    before :each do
+      build_repo4 do
+        build_gem "depends_on_rack" do |s|
+          s.add_dependency "rack", ">= 1.0"
+        end
+        build_gem "also_depends_on_rack" do |s|
+          s.add_dependency "rack", "~> 1.0"
+        end
+        build_gem "rack"
+      end
+
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem "depends_on_rack"
+        gem "also_depends_on_rack"
+      G
+
+      bundle "lock"
+    end
+
+    it "shows what is missing with the current Gemfile without duplications" do
+      bundle :check, :raise_on_error => false
+      expect(err).to match(/The following gems are missing/)
+      expect(err).to include("* rack (1.0").once
+    end
+  end
+
+  describe "when using only scoped rubygems sources" do
+    before do
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo1)}" do
+          gem "rack"
+        end
+      G
+    end
+
+    it "returns success when the Gemfile is satisfied" do
+      system_gems "rack-1.0.0", :path => default_bundle_path
+      bundle :check
+      expect(out).to include("The Gemfile's dependencies are satisfied")
+    end
+  end
+
+  describe "when using only scoped rubygems sources with indirect dependencies" do
+    before do
+      build_repo4 do
+        build_gem "depends_on_rack" do |s|
+          s.add_dependency "rack"
+        end
+
+        build_gem "rack"
+      end
+
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}" do
+          gem "depends_on_rack"
+        end
+      G
+    end
+
+    it "returns success when the Gemfile is satisfied and generates a correct lockfile" do
+      system_gems "depends_on_rack-1.0", "rack-1.0", :gem_repo => gem_repo4, :path => default_bundle_path
+      bundle :check
+      expect(out).to include("The Gemfile's dependencies are satisfied")
+      expect(lockfile).to eq <<~L
+        GEM
+          specs:
+
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            depends_on_rack (1.0)
+              rack
+            rack (1.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          depends_on_rack!
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+  end
+
   describe "BUNDLED WITH" do
     def lock_with(bundler_version = nil)
       lock = <<-L
@@ -305,6 +399,8 @@ RSpec.describe "bundle check" do
     end
 
     before do
+      bundle "config set --local path vendor/bundle"
+
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
@@ -330,9 +426,10 @@ RSpec.describe "bundle check" do
 
     context "is older" do
       it "does not change the lock" do
-        lockfile lock_with("1.10.1")
-        bundle :check, :raise_on_error => false
-        lockfile_should_be lock_with("1.10.1")
+        system_gems "bundler-1.18.0"
+        lockfile lock_with("1.18.0")
+        bundle :check
+        lockfile_should_be lock_with("1.18.0")
       end
     end
   end

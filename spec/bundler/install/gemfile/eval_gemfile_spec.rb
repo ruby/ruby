@@ -26,6 +26,38 @@ RSpec.describe "bundle install with gemfile that uses eval_gemfile" do
     end
   end
 
+  context "eval-ed Gemfile points to an internal gemspec and uses a scoped source that duplicates the main Gemfile global source" do
+    before do
+      build_repo2 do
+        build_gem "rails", "6.1.3.2"
+
+        build_gem "zip-zip", "0.3"
+      end
+
+      create_file bundled_app("gems/Gemfile"), <<-G
+        gemspec :path => "\#{__dir__}/gunks"
+
+        source "#{file_uri_for(gem_repo2)}" do
+          gem "zip-zip"
+        end
+      G
+    end
+
+    it "installs and finds gems correctly" do
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo2)}"
+
+        gem "rails"
+
+        eval_gemfile File.join(__dir__, "gems/Gemfile")
+      G
+      expect(out).to include("Resolving dependencies")
+      expect(out).to include("Bundle complete")
+
+      expect(the_bundle).to include_gem "rails 6.1.3.2"
+    end
+  end
+
   context "eval-ed Gemfile has relative-path gems" do
     before do
       build_lib("a", :path => bundled_app("gems/a"))
@@ -47,7 +79,7 @@ RSpec.describe "bundle install with gemfile that uses eval_gemfile" do
     # parsed lockfile and the evaluated gemfile.
     it "bundles with deployment mode configured" do
       bundle :install
-      bundle "config --local deployment true"
+      bundle "config set --local deployment true"
       bundle :install
     end
   end

@@ -452,11 +452,15 @@ module MiniTest
       msg = message(msg) { "Expected path '#{path}' to exist" }
       assert File.exist?(path), msg
     end
+    alias assert_path_exist assert_path_exists
+    alias refute_path_not_exist assert_path_exists
 
     def refute_path_exists(path, msg = nil)
       msg = message(msg) { "Expected path '#{path}' to not exist" }
       refute File.exist?(path), msg
     end
+    alias refute_path_exist refute_path_exists
+    alias assert_path_not_exist refute_path_exists
 
     ##
     # Captures $stdout and $stderr into strings:
@@ -957,37 +961,37 @@ module MiniTest
       }
 
       leakchecker = LeakChecker.new
-
-      continuation = proc do
-        assertions = filtered_test_methods.map { |method|
-          inst = suite.new method
-          inst._assertions = 0
-
-          print "#{suite}##{method} = " if @verbose
-
-          start_time = Time.now if @verbose
-          result = inst.run self
-
-          print "%.2f s = " % (Time.now - start_time) if @verbose
-          print result
-          puts if @verbose
-          $stdout.flush
-
-          unless defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # compiler process is wrongly considered as leak
-            leakchecker.check("#{inst.class}\##{inst.__name__}")
-          end
-
-          inst._assertions
-        }
-        return assertions.size, assertions.inject(0) { |sum, n| sum + n }
-      end
-
       if ENV["LEAK_CHECKER_TRACE_OBJECT_ALLOCATION"]
         require "objspace"
-        ObjectSpace.trace_object_allocations(&continuation)
-      else
-        continuation.call
+        trace = true
       end
+
+      assertions = filtered_test_methods.map { |method|
+        inst = suite.new method
+        inst._assertions = 0
+
+        print "#{suite}##{method} = " if @verbose
+
+        start_time = Time.now if @verbose
+        result =
+          if trace
+            ObjectSpace.trace_object_allocations {inst.run self}
+          else
+            inst.run self
+          end
+
+        print "%.2f s = " % (Time.now - start_time) if @verbose
+        print result
+        puts if @verbose
+        $stdout.flush
+
+        unless defined?(RubyVM::JIT) && RubyVM::JIT.enabled? # compiler process is wrongly considered as leak
+          leakchecker.check("#{inst.class}\##{inst.__name__}")
+        end
+
+        inst._assertions
+      }
+      return assertions.size, assertions.inject(0) { |sum, n| sum + n }
     end
 
     ##
@@ -1405,6 +1409,7 @@ module MiniTest
 
       def self.test_suites # :nodoc:
         suites = @@test_suites.keys
+
         case self.test_order
         when :random
           # shuffle test suites based on CRC32 of their names
@@ -1414,7 +1419,7 @@ module MiniTest
           end
           suites = suites.sort_by do |suite|
             crc32 = 0xffffffff
-            (suite.name + salt).each_byte do |data|
+            "#{suite.name}#{salt}".each_byte do |data|
               crc32 = crc_tbl[(crc32 ^ data) & 0xff] ^ (crc32 >> 8)
             end
             crc32 ^ 0xffffffff

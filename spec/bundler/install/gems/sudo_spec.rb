@@ -49,8 +49,23 @@ RSpec.describe "when using sudo", :sudo => true do
     end
 
     it "installs rake and a gem dependent on rake in the same session" do
+      build_repo2 do
+        build_gem "another_implicit_rake_dep" do |s|
+          s.extensions << "Rakefile"
+          s.write "Rakefile", <<-RUBY
+            task :default do
+              path = File.expand_path("../lib", __FILE__)
+              FileUtils.mkdir_p(path)
+              File.open("\#{path}/another_implicit_rake_dep.rb", "w") do |f|
+                f.puts "ANOTHER_IMPLICIT_RAKE_DEP = 'YES'"
+              end
+            end
+          RUBY
+        end
+      end
+
       gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
+          source "#{file_uri_for(gem_repo2)}"
           gem "rake"
           gem "another_implicit_rake_dep"
       G

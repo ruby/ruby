@@ -229,7 +229,7 @@ class Gem::Package::TarHeader
       gname,
       oct(devmajor, 7),
       oct(devminor, 7),
-      prefix
+      prefix,
     ]
 
     header = header.pack PACK_FORMAT

@@ -44,15 +44,21 @@
 # include <wincrypt.h>
 #endif
 
-#ifdef __OpenBSD__
-/* to define OpenBSD for version check */
+#if defined(__OpenBSD__) || defined(__FreeBSD__)
+/* to define OpenBSD and FreeBSD for version check */
 # include <sys/param.h>
 #endif
 
-#if defined HAVE_GETRANDOM
-# include <sys/random.h>
+#if defined HAVE_GETRANDOM || defined HAVE_GETENTROPY
+# if defined(HAVE_SYS_RANDOM_H)
+#  include <sys/random.h>
+# endif
 #elif defined __linux__ && defined __NR_getrandom
 # include <linux/random.h>
+#endif
+
+#if defined __APPLE__
+# include <AvailabilityMacros.h>
 #endif
 
 #include "internal.h"
@@ -61,8 +67,10 @@
 #include "internal/numeric.h"
 #include "internal/random.h"
 #include "internal/sanitizers.h"
+#include "internal/variable.h"
 #include "ruby_atomic.h"
 #include "ruby/random.h"
+#include "ruby/ractor.h"
 
 typedef int int_must_be_32bit_at_least[sizeof(int) * CHAR_BIT < 32 ? -1 : 1];
 
@@ -120,8 +128,6 @@ typedef struct {
 
 #define DEFAULT_SEED_CNT 4
 
-static rb_random_mt_t default_rand;
-
 static VALUE rand_init(const rb_random_interface_t *, rb_random_t *, VALUE);
 static VALUE random_seed(VALUE);
 static void fill_random_seed(uint32_t *seed, size_t cnt);
@@ -148,10 +154,37 @@ rand_start(rb_random_mt_t *r)
     return &rand_mt_start(r)->base;
 }
 
+static rb_ractor_local_key_t default_rand_key;
+
+static void
+default_rand_mark(void *ptr)
+{
+    rb_random_mt_t *rnd = (rb_random_mt_t *)ptr;
+    rb_gc_mark(rnd->base.seed);
+}
+
+static const struct rb_ractor_local_storage_type default_rand_key_storage_type = {
+    default_rand_mark,
+    ruby_xfree,
+};
+
+static rb_random_mt_t *
+default_rand(void)
+{
+    rb_random_mt_t *rnd;
+
+    if ((rnd = rb_ractor_local_storage_ptr(default_rand_key)) == NULL) {
+        rnd = ZALLOC(rb_random_mt_t);
+        rb_ractor_local_storage_ptr_set(default_rand_key, rnd);
+    }
+
+    return rnd;
+}
+
 static rb_random_mt_t *
 default_mt(void)
 {
-    return rand_mt_start(&default_rand);
+    return rand_mt_start(default_rand());
 }
 
 unsigned int
@@ -230,7 +263,8 @@ const rb_data_type_t rb_random_data_type = {
 static void
 random_mt_free(void *ptr)
 {
-    if (ptr != &default_rand)
+    rb_random_mt_t *rnd = rb_ractor_local_storage_ptr(default_rand_key);
+    if (ptr != rnd)
 	xfree(ptr);
 }
 
@@ -274,7 +308,7 @@ static rb_random_t *
 try_get_rnd(VALUE obj)
 {
     if (obj == rb_cRandom) {
-	return rand_start(&default_rand);
+	return rand_start(default_rand());
     }
     if (!rb_typeddata_is_kind_of(obj, &rb_random_data_type)) return NULL;
     if (RTYPEDDATA_TYPE(obj) == &random_mt_type)
@@ -290,7 +324,7 @@ try_get_rnd(VALUE obj)
 static const rb_random_interface_t *
 try_rand_if(VALUE obj, rb_random_t *rnd)
 {
-    if (rnd == &default_rand.base) {
+    if (rnd == &default_rand()->base) {
 	return &random_mt_if;
     }
     return rb_rand_if(obj);
@@ -394,7 +428,23 @@ random_init(int argc, VALUE *argv, VALUE obj)
 # define USE_DEV_URANDOM 0
 #endif
 
-#if USE_DEV_URANDOM
+#ifdef HAVE_GETENTROPY
+# define MAX_SEED_LEN_PER_READ 256
+static int
+fill_random_bytes_urandom(void *seed, size_t size)
+{
+     unsigned char *p = (unsigned char *)seed;
+     while (size) {
+	size_t len = size < MAX_SEED_LEN_PER_READ ? size : MAX_SEED_LEN_PER_READ;
+	if (getentropy(p, len) != 0) {
+            return -1;
+	}
+	p += len;
+	size -= len;
+     }
+     return 0;
+}
+#elif USE_DEV_URANDOM
 static int
 fill_random_bytes_urandom(void *seed, size_t size)
 {
@@ -445,20 +495,36 @@ fill_random_bytes_urandom(void *seed, size_t size)
 
 #if 0
 #elif defined MAC_OS_X_VERSION_10_7 && MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_7
-#include <Security/Security.h>
+
+# if defined MAC_OS_X_VERSION_10_10 && MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_10
+#   include <CommonCrypto/CommonCryptoError.h> /* for old Xcode */
+#   include <CommonCrypto/CommonRandom.h>
+#   define USE_COMMON_RANDOM 1
+# else
+#   include <Security/SecRandom.h>
+#   define USE_COMMON_RANDOM 0
+# endif
 
 static int
 fill_random_bytes_syscall(void *seed, size_t size, int unused)
 {
-    int status = SecRandomCopyBytes(kSecRandomDefault, size, seed);
+#if USE_COMMON_RANDOM
+    int failed = CCRandomGenerateBytes(seed, size) != kCCSuccess;
+#else
+    int failed = SecRandomCopyBytes(kSecRandomDefault, size, seed) != errSecSuccess;
+#endif
 
-    if (status != errSecSuccess) {
+    if (failed) {
 # if 0
+# if USE_COMMON_RANDOM
+        /* How to get the error message? */
+# else
         CFStringRef s = SecCopyErrorMessageString(status, NULL);
         const char *m = s ? CFStringGetCStringPtr(s, kCFStringEncodingUTF8) : NULL;
         fprintf(stderr, "SecRandomCopyBytes failed: %d: %s\n", status,
                 m ? m : "unknown");
         if (s) CFRelease(s);
+# endif
 # endif
         return -1;
     }
@@ -556,7 +622,7 @@ ruby_fill_random_bytes(void *seed, size_t size, int need_secure)
 static void
 fill_random_seed(uint32_t *seed, size_t cnt)
 {
-    static int n = 0;
+    static rb_atomic_t n = 0;
 #if defined HAVE_CLOCK_GETTIME
     struct timespec tv;
 #elif defined HAVE_GETTIMEOFDAY
@@ -579,7 +645,7 @@ fill_random_seed(uint32_t *seed, size_t cnt)
 #if SIZEOF_TIME_T > SIZEOF_INT
     seed[0] ^= (uint32_t)((time_t)tv.tv_sec >> SIZEOF_INT * CHAR_BIT);
 #endif
-    seed[2] ^= getpid() ^ (n++ << 16);
+    seed[2] ^= getpid() ^ (ATOMIC_FETCH_ADD(n, 1) << 16);
     seed[3] ^= (uint32_t)(VALUE)&seed;
 #if SIZEOF_VOIDP > SIZEOF_INT
     seed[2] ^= (uint32_t)((VALUE)&seed >> SIZEOF_INT * CHAR_BIT);
@@ -709,7 +775,7 @@ rand_mt_state(VALUE obj)
 static VALUE
 random_s_state(VALUE klass)
 {
-    return mt_state(&default_rand.mt);
+    return mt_state(&default_rand()->mt);
 }
 
 /* :nodoc: */
@@ -724,7 +790,7 @@ rand_mt_left(VALUE obj)
 static VALUE
 random_s_left(VALUE klass)
 {
-    return INT2FIX(default_rand.mt.left);
+    return INT2FIX(default_rand()->mt.left);
 }
 
 /* :nodoc: */
@@ -806,8 +872,8 @@ rand_mt_get_bytes(rb_random_t *rnd, void *ptr, size_t n)
  * call-seq:
  *   srand(number = Random.new_seed) -> old_seed
  *
- * Seeds the system pseudo-random number generator, Random::DEFAULT, with
- * +number+.  The previous seed value is returned.
+ * Seeds the system pseudo-random number generator, with +number+.
+ * The previous seed value is returned.
  *
  * If +number+ is omitted, seeds the generator using a source of entropy
  * provided by the operating system, if available (/dev/urandom on Unix systems
@@ -829,7 +895,7 @@ static VALUE
 rb_f_srand(int argc, VALUE *argv, VALUE obj)
 {
     VALUE seed, old;
-    rb_random_mt_t *r = &default_rand;
+    rb_random_mt_t *r = rand_mt_start(default_rand());
 
     if (rb_check_arity(argc, 0, 1) == 0) {
         seed = random_seed(obj);
@@ -1130,7 +1196,7 @@ rand_bytes(const rb_random_interface_t *rng, rb_random_t *rnd, long n)
 
     bytes = rb_str_new(0, n);
     ptr = RSTRING_PTR(bytes);
-    rb_rand_bytes_int32(rng->get_int32, rnd, ptr, n);
+    rng->get_bytes(rnd, ptr, n);
     return bytes;
 }
 
@@ -1191,8 +1257,15 @@ rb_random_bytes(VALUE obj, long n)
 static VALUE
 random_s_bytes(VALUE obj, VALUE len)
 {
-    rb_random_t *rnd = rand_start(&default_rand);
+    rb_random_t *rnd = rand_start(default_rand());
     return rand_bytes(&random_mt_if, rnd, NUM2LONG(rb_to_int(len)));
+}
+
+static VALUE
+random_s_seed(VALUE obj)
+{
+    rb_random_mt_t *rnd = rand_mt_start(default_rand());
+    return rnd->base.seed;
 }
 
 static VALUE
@@ -1518,7 +1591,7 @@ static VALUE
 rb_f_rand(int argc, VALUE *argv, VALUE obj)
 {
     VALUE vmax;
-    rb_random_t *rnd = rand_start(&default_rand);
+    rb_random_t *rnd = rand_start(default_rand());
 
     if (rb_check_arity(argc, 0, 1) && !NIL_P(vmax = argv[0])) {
         VALUE v = rand_range(obj, rnd, vmax);
@@ -1536,14 +1609,12 @@ rb_f_rand(int argc, VALUE *argv, VALUE obj)
  * call-seq:
  *   Random.rand -> float
  *   Random.rand(max) -> number
- *
- * Alias of Random::DEFAULT.rand.
  */
 
 static VALUE
 random_s_rand(int argc, VALUE *argv, VALUE obj)
 {
-    VALUE v = rand_random(argc, argv, Qnil, rand_start(&default_rand));
+    VALUE v = rand_random(argc, argv, Qnil, rand_start(default_rand()));
     check_random_number(v, argv);
     return v;
 }
@@ -1613,7 +1684,7 @@ Init_RandomSeedCore(void)
       If failed to fill siphash's salt with random data, expand less random
       data with MT.
 
-      Don't reuse this MT for Random::DEFAULT. Random::DEFAULT::seed shouldn't
+      Don't reuse this MT for default_rand(). default_rand()::seed shouldn't
       provide a hint that an attacker guess siphash's seed.
     */
     struct MT mt;
@@ -1626,27 +1697,10 @@ Init_RandomSeedCore(void)
     explicit_bzero(&mt, sizeof(mt));
 }
 
-/* construct Random::DEFAULT bits */
-static VALUE
-Init_Random_default(VALUE klass)
-{
-    rb_random_mt_t *r = &default_rand;
-    struct MT *mt = &r->mt;
-    VALUE v = TypedData_Wrap_Struct(klass, &random_mt_type, r);
-
-    rb_gc_register_mark_object(v);
-    with_random_seed(DEFAULT_SEED_CNT, 1) {
-        init_by_array(mt, seedbuf, DEFAULT_SEED_CNT);
-        r->base.seed = make_seed_value(seedbuf, DEFAULT_SEED_CNT);
-    }
-
-    return v;
-}
-
 void
 rb_reset_random_seed(void)
 {
-    rb_random_mt_t *r = &default_rand;
+    rb_random_mt_t *r = default_rand();
     uninit_genrand(&r->mt);
     r->base.seed = INT2FIX(0);
 }
@@ -1664,15 +1718,16 @@ rb_reset_random_seed(void)
  *
  * The class method Random.rand provides the base functionality of Kernel.rand
  * along with better handling of floating point values. These are both
- * interfaces to Random::DEFAULT, the Ruby system PRNG.
+ * interfaces to the Ruby system PRNG.
  *
- * Random.new will create a new PRNG with a state independent of
- * Random::DEFAULT, allowing multiple generators with different seed values or
+ * Random.new will create a new PRNG with a state independent of the Ruby
+ * system PRNG, allowing multiple generators with different seed values or
  * sequence positions to exist simultaneously. Random objects can be
  * marshaled, allowing sequences to be saved and resumed.
  *
  * PRNGs are currently implemented as a modified Mersenne Twister with a period
- * of 2**19937-1.
+ * of 2**19937-1.  As this algorithm is _not_ for cryptographical use, you must
+ * use SecureRandom for security purpose, instead of this PRNG.
  */
 
 void
@@ -1688,7 +1743,6 @@ InitVM_Random(void)
     rb_undef_alloc_func(base);
     rb_cRandom = rb_define_class("Random", base);
     rb_const_set(rb_cRandom, id_base, base);
-    rb_set_class_path(base, rb_cRandom, "Base");
     rb_define_alloc_func(rb_cRandom, random_alloc);
     rb_define_method(base, "initialize", random_init, -1);
     rb_define_method(base, "rand", random_rand, -1);
@@ -1701,17 +1755,20 @@ InitVM_Random(void)
     rb_define_private_method(rb_cRandom, "left", rand_mt_left, 0);
     rb_define_method(rb_cRandom, "==", rand_mt_equal, 1);
 
-    {
-	/* Direct access to Ruby's Pseudorandom number generator (PRNG). */
-        VALUE rand_default = Init_Random_default(rb_cRandom);
-	/* The default Pseudorandom number generator.  Used by class
-	 * methods of Random. */
-	rb_define_const(rb_cRandom, "DEFAULT", rand_default);
-    }
+#if 0 /* for RDoc: it can't handle unnamed base class */
+    rb_define_method(rb_cRandom, "initialize", random_init, -1);
+    rb_define_method(rb_cRandom, "rand", random_rand, -1);
+    rb_define_method(rb_cRandom, "bytes", random_bytes, 1);
+    rb_define_method(rb_cRandom, "seed", random_get_seed, 0);
+#endif
+
+    rb_define_const(rb_cRandom, "DEFAULT", rb_cRandom);
+    rb_deprecate_constant(rb_cRandom, "DEFAULT");
 
     rb_define_singleton_method(rb_cRandom, "srand", rb_f_srand, -1);
     rb_define_singleton_method(rb_cRandom, "rand", random_s_rand, -1);
     rb_define_singleton_method(rb_cRandom, "bytes", random_s_bytes, 1);
+    rb_define_singleton_method(rb_cRandom, "seed", random_s_seed, 0);
     rb_define_singleton_method(rb_cRandom, "new_seed", random_seed, 0);
     rb_define_singleton_method(rb_cRandom, "urandom", random_raw_seed, 1);
     rb_define_private_method(CLASS_OF(rb_cRandom), "state", random_s_state, 0);
@@ -1725,6 +1782,8 @@ InitVM_Random(void)
 	rb_define_method(m, "random_number", rand_random_number, -1);
 	rb_define_method(m, "rand", rand_random_number, -1);
     }
+
+    default_rand_key = rb_ractor_local_storage_ptr_newkey(&default_rand_key_storage_type);
 }
 
 #undef rb_intern

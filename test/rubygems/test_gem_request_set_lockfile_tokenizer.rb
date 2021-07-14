@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/request_set'
 require 'rubygems/request_set/lockfile'
 require 'rubygems/request_set/lockfile/tokenizer'
@@ -193,7 +193,7 @@ DEPENDENCIES
   def test_tokenize_conflict_markers
     write_lockfile '<<<<<<<'
 
-    e = assert_raises Gem::RequestSet::Lockfile::ParseError do
+    e = assert_raise Gem::RequestSet::Lockfile::ParseError do
       tokenize_lockfile
     end
 
@@ -202,7 +202,7 @@ DEPENDENCIES
 
     write_lockfile '|||||||'
 
-    e = assert_raises Gem::RequestSet::Lockfile::ParseError do
+    e = assert_raise Gem::RequestSet::Lockfile::ParseError do
       tokenize_lockfile
     end
 
@@ -211,7 +211,7 @@ DEPENDENCIES
 
     write_lockfile '======='
 
-    e = assert_raises Gem::RequestSet::Lockfile::ParseError do
+    e = assert_raise Gem::RequestSet::Lockfile::ParseError do
       tokenize_lockfile
     end
 
@@ -220,7 +220,7 @@ DEPENDENCIES
 
     write_lockfile '>>>>>>>'
 
-    e = assert_raises Gem::RequestSet::Lockfile::ParseError do
+    e = assert_raise Gem::RequestSet::Lockfile::ParseError do
       tokenize_lockfile
     end
 

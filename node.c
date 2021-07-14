@@ -26,10 +26,10 @@
 #define A_ID(id) add_id(buf, (id))
 #define A_INT(val) rb_str_catf(buf, "%d", (val))
 #define A_LONG(val) rb_str_catf(buf, "%ld", (val))
-#define A_LIT(lit) AR(rb_inspect(lit))
+#define A_LIT(lit) AR(rb_dump_literal(lit))
 #define A_NODE_HEADER(node, term) \
-    rb_str_catf(buf, "@ %s (line: %d, location: (%d,%d)-(%d,%d))%s"term, \
-		ruby_node_name(nd_type(node)), nd_line(node), \
+    rb_str_catf(buf, "@ %s (id: %d, line: %d, location: (%d,%d)-(%d,%d))%s"term, \
+		ruby_node_name(nd_type(node)), nd_node_id(node), nd_line(node), \
 		nd_first_lineno(node), nd_first_column(node), \
 		nd_last_lineno(node), nd_last_column(node), \
 		(node->flags & NODE_FL_NEWLINE ? "*" : ""))
@@ -78,6 +78,25 @@
     }
 
 #define LAST_NODE (next_indent = "    ")
+
+VALUE
+rb_dump_literal(VALUE lit)
+{
+    if (!RB_SPECIAL_CONST_P(lit)) {
+        VALUE str;
+        switch (RB_BUILTIN_TYPE(lit)) {
+          case T_CLASS: case T_MODULE: case T_ICLASS:
+            str = rb_class_path(lit);
+            if (FL_TEST(lit, FL_SINGLETON)) {
+                str = rb_sprintf("<%"PRIsVALUE">", str);
+            }
+            return str;
+          default:
+            break;
+        }
+    }
+    return rb_inspect(lit);
+}
 
 static void
 add_indent(VALUE buf, VALUE indent)
@@ -1120,7 +1139,7 @@ void
 rb_node_init(NODE *n, enum node_type type, VALUE a0, VALUE a1, VALUE a2)
 {
     n->flags = T_NODE;
-    nd_set_type(n, type);
+    nd_init_type(n, type);
     n->u1.value = a0;
     n->u2.value = a1;
     n->u3.value = a2;
@@ -1219,10 +1238,10 @@ ast_newnode_in_bucket(node_buffer_list_t *nb)
     return &nb->head->buf[nb->idx++];
 }
 
-NODE *
-rb_ast_newnode(rb_ast_t *ast, enum node_type type)
+RBIMPL_ATTR_PURE()
+static bool
+nodetype_markable_p(enum node_type type)
 {
-    node_buffer_t *nb = ast->node_buffer;
     switch (type) {
       case NODE_MATCH:
       case NODE_LIT:
@@ -1235,9 +1254,28 @@ rb_ast_newnode(rb_ast_t *ast, enum node_type type)
       case NODE_ARGS:
       case NODE_ARYPTN:
       case NODE_FNDPTN:
-        return ast_newnode_in_bucket(&nb->markable);
+        return true;
       default:
-        return ast_newnode_in_bucket(&nb->unmarkable);
+        return false;
+    }
+}
+
+NODE *
+rb_ast_newnode(rb_ast_t *ast, enum node_type type)
+{
+    node_buffer_t *nb = ast->node_buffer;
+    node_buffer_list_t *bucket =
+        (nodetype_markable_p(type) ? &nb->markable : &nb->unmarkable);
+    return ast_newnode_in_bucket(bucket);
+}
+
+void
+rb_ast_node_type_change(NODE *n, enum node_type type)
+{
+    enum node_type old_type = nd_type(n);
+    if (nodetype_markable_p(old_type) != nodetype_markable_p(type)) {
+        rb_bug("node type changed: %s -> %s",
+               ruby_node_name(old_type), ruby_node_name(type));
     }
 }
 
@@ -1309,9 +1347,11 @@ mark_ast_value(void *ctx, NODE * node)
       case NODE_DXSTR:
       case NODE_DREGX:
       case NODE_DSYM:
+        rb_gc_mark_movable(node->nd_lit);
+        break;
       case NODE_ARYPTN:
       case NODE_FNDPTN:
-        rb_gc_mark_movable(node->nd_lit);
+        rb_gc_mark_movable(node->nd_rval);
         break;
       default:
         rb_bug("unreachable node %s", ruby_node_name(nd_type(node)));
@@ -1336,9 +1376,11 @@ update_ast_value(void *ctx, NODE * node)
       case NODE_DXSTR:
       case NODE_DREGX:
       case NODE_DSYM:
+        node->nd_lit = rb_gc_location(node->nd_lit);
+        break;
       case NODE_ARYPTN:
       case NODE_FNDPTN:
-        node->nd_lit = rb_gc_location(node->nd_lit);
+        node->nd_rval = rb_gc_location(node->nd_rval);
         break;
       default:
         rb_bug("unreachable");
@@ -1365,6 +1407,7 @@ rb_ast_mark(rb_ast_t *ast)
 
         iterate_node_values(&nb->markable, mark_ast_value, NULL);
     }
+    if (ast->body.script_lines) rb_gc_mark(ast->body.script_lines);
 }
 
 void

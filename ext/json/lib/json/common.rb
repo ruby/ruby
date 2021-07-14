@@ -71,22 +71,30 @@ module JSON
       end
       self.state = generator::State
       const_set :State, self.state
-      const_set :SAFE_STATE_PROTOTYPE, State.new
-      const_set :FAST_STATE_PROTOTYPE, State.new(
+      const_set :SAFE_STATE_PROTOTYPE, State.new # for JRuby
+      const_set :FAST_STATE_PROTOTYPE, create_fast_state
+      const_set :PRETTY_STATE_PROTOTYPE, create_pretty_state
+    ensure
+      $VERBOSE = old
+    end
+
+    def create_fast_state
+      State.new(
         :indent         => '',
         :space          => '',
         :object_nl      => "",
         :array_nl       => "",
         :max_nesting    => false
       )
-      const_set :PRETTY_STATE_PROTOTYPE, State.new(
+    end
+
+    def create_pretty_state
+      State.new(
         :indent         => '  ',
         :space          => ' ',
         :object_nl      => "\n",
         :array_nl       => "\n"
       )
-    ensure
-      $VERBOSE = old
     end
 
     # Returns the JSON generator module that is used by JSON. This is
@@ -98,13 +106,26 @@ module JSON
     # either JSON::Ext::Generator::State or JSON::Pure::Generator::State:
     #   JSON.state # => JSON::Ext::Generator::State
     attr_accessor :state
-
-    # Sets or returns create identifier, which is used to decide if the _json_create_
-    # hook of a class should be called; initial value is +json_class+:
-    #   JSON.create_id # => 'json_class'
-    attr_accessor :create_id
   end
-  self.create_id = 'json_class'
+
+  DEFAULT_CREATE_ID = 'json_class'.freeze
+  private_constant :DEFAULT_CREATE_ID
+
+  CREATE_ID_TLS_KEY = "JSON.create_id".freeze
+  private_constant :CREATE_ID_TLS_KEY
+
+  # Sets create identifier, which is used to decide if the _json_create_
+  # hook of a class should be called; initial value is +json_class+:
+  #   JSON.create_id # => 'json_class'
+  def self.create_id=(new_value)
+    Thread.current[CREATE_ID_TLS_KEY] = new_value.dup.freeze
+  end
+
+  # Returns the current create identifier.
+  # See also JSON.create_id=.
+  def self.create_id
+    Thread.current[CREATE_ID_TLS_KEY] || DEFAULT_CREATE_ID
+  end
 
   NaN           = 0.0/0
 
@@ -276,7 +297,7 @@ module JSON
     if State === opts
       state, opts = opts, nil
     else
-      state = SAFE_STATE_PROTOTYPE.dup
+      state = State.new
     end
     if opts
       if opts.respond_to? :to_hash
@@ -315,7 +336,7 @@ module JSON
     if State === opts
       state, opts = opts, nil
     else
-      state = FAST_STATE_PROTOTYPE.dup
+      state = JSON.create_fast_state
     end
     if opts
       if opts.respond_to? :to_hash
@@ -370,7 +391,7 @@ module JSON
     if State === opts
       state, opts = opts, nil
     else
-      state = PRETTY_STATE_PROTOTYPE.dup
+      state = JSON.create_pretty_state
     end
     if opts
       if opts.respond_to? :to_hash

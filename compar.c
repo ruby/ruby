@@ -289,14 +289,27 @@ cmp_clamp(int argc, VALUE *argv, VALUE x)
  *     s4.between?(s3, s5)           #=> true
  *     [ s3, s2, s5, s4, s1 ].sort   #=> [Z, YY, XXX, WWWW, VVVVV]
  *
+ *  == What's Here
+ *
+ *  \Module \Comparable provides these methods, all of which use method <tt><=></tt>:
+ *
+ *  - {<}[#method-i-3C]:: Returns whether +self+ is less than the given object.
+ *  - {<=}[#method-i-3C-3D]:: Returns whether +self+ is less than or equal to
+ *                            the given object.
+ *  - {==}[#method-i-3D-3D]:: Returns whether +self+ is equal to the given object.
+ *  - {>}[#method-i-3E]:: Returns whether +self+ is greater than or equal to
+ *                        the given object.
+ *  - {>=}[#method-i-3E-3D]:: Returns whether +self+ is greater than the given object.
+ *  - #between? Returns +true+ if +self+ is between two given objects.
+ *  - #clamp:: For given objects +min+ and +max+, or range <tt>(min..max)</tt>, returns:
+ *    - +min+ if <tt>(self <=> min) < 0</tt>.
+ *    - +max+ if <tt>(self <=> max) > 0</tt>.
+ *    - +self+ otherwise.
  */
 
 void
 Init_Comparable(void)
 {
-#undef rb_intern
-#define rb_intern(str) rb_intern_const(str)
-
     rb_mComparable = rb_define_module("Comparable");
     rb_define_method(rb_mComparable, "==", cmp_equal, 1);
     rb_define_method(rb_mComparable, ">", cmp_gt, 1);

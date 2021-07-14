@@ -2514,7 +2514,7 @@ econv_opts(VALUE opt, int ecflags)
             break;
 
           case 3:
-            rb_warning(":newline option preceds other newline options");
+            rb_warning(":newline option precedes other newline options");
             break;
 	}
     }
@@ -2719,6 +2719,12 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
         }
     }
     else {
+        if (senc && denc && !rb_enc_asciicompat(senc) && !rb_enc_asciicompat(denc)) {
+            rb_encoding *utf8 = rb_utf8_encoding();
+            str = rb_str_conv_enc(str, senc, utf8);
+            senc = utf8;
+            sname = "UTF-8";
+        }
         if (encoding_equal(sname, dname)) {
             sname = "";
             dname = "";
@@ -2784,14 +2790,14 @@ str_encode_associate(VALUE str, int encidx)
 
 /*
  *  call-seq:
- *     str.encode!(encoding [, options] )   -> str
- *     str.encode!(dst_encoding, src_encoding [, options] )   -> str
+ *     str.encode!(encoding, **options)   -> str
+ *     str.encode!(dst_encoding, src_encoding, **options)   -> str
  *
  *  The first form transcodes the contents of <i>str</i> from
  *  str.encoding to +encoding+.
  *  The second form transcodes the contents of <i>str</i> from
  *  src_encoding to dst_encoding.
- *  The options Hash gives details for conversion. See String#encode
+ *  The +options+ keyword arguments give details for conversion. See String#encode
  *  for details.
  *  Returns the string even if no changes were made.
  */
@@ -2820,9 +2826,9 @@ static VALUE encoded_dup(VALUE newstr, VALUE str, int encidx);
 
 /*
  *  call-seq:
- *     str.encode(encoding [, options] )   -> str
- *     str.encode(dst_encoding, src_encoding [, options] )   -> str
- *     str.encode([options])   -> str
+ *     str.encode(encoding, **options)   -> str
+ *     str.encode(dst_encoding, src_encoding, **options)   -> str
+ *     str.encode(**options)   -> str
  *
  *  The first form returns a copy of +str+ transcoded
  *  to encoding +encoding+.
@@ -2838,8 +2844,8 @@ static VALUE encoded_dup(VALUE newstr, VALUE str, int encidx);
  *  in the source encoding. The last form by default does not raise
  *  exceptions but uses replacement strings.
  *
- *  The +options+ Hash gives details for conversion and can have the following
- *  keys:
+ *  The +options+ keyword arguments give details for conversion.
+ *  The arguments are:
  *
  *  :invalid ::
  *    If the value is +:replace+, #encode replaces invalid byte sequences in
@@ -3959,7 +3965,7 @@ econv_finish(VALUE self)
  *   ec = Encoding::Converter.new("EUC-JP", "Shift_JIS")
  *   ec.primitive_convert(src="\xff", dst="", nil, 10)
  *   p ec.primitive_errinfo
- *   #=> [:invalid_byte_sequence, "EUC-JP", "UTF-8", "\xFF", ""]
+ *   #=> [:invalid_byte_sequence, "EUC-JP", "Shift_JIS", "\xFF", ""]
  *
  *   # HIRAGANA LETTER A (\xa4\xa2 in EUC-JP) is not representable in ISO-8859-1.
  *   # Since this error is occur in UTF-8 to ISO-8859-1 conversion,
@@ -4462,7 +4468,7 @@ InitVM_transcode(void)
     rb_define_method(rb_cString, "encode", str_encode, -1);
     rb_define_method(rb_cString, "encode!", str_encode_bang, -1);
 
-    rb_cEncodingConverter = rb_define_class_under(rb_cEncoding, "Converter", rb_cData);
+    rb_cEncodingConverter = rb_define_class_under(rb_cEncoding, "Converter", rb_cObject);
     rb_define_alloc_func(rb_cEncodingConverter, econv_s_allocate);
     rb_define_singleton_method(rb_cEncodingConverter, "asciicompat_encoding", econv_s_asciicompat_encoding, 1);
     rb_define_singleton_method(rb_cEncodingConverter, "search_convpath", econv_s_search_convpath, -1);

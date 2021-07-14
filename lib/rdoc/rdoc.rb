@@ -162,12 +162,20 @@ class RDoc::RDoc
     RDoc.load_yaml
 
     begin
-      options = YAML.load_file '.rdoc_options'
+      options = YAML.safe_load File.read('.rdoc_options'), permitted_classes: [RDoc::Options, Symbol]
     rescue Psych::SyntaxError
+      raise RDoc::Error, "#{options_file} is not a valid rdoc options file"
     end
 
+    return RDoc::Options.new unless options # Allow empty file.
+
     raise RDoc::Error, "#{options_file} is not a valid rdoc options file" unless
-      RDoc::Options === options
+      RDoc::Options === options or Hash === options
+
+    if Hash === options
+      # Override the default values with the contents of YAML file.
+      options = RDoc::Options.new options
+    end
 
     options
   end
@@ -436,7 +444,7 @@ The internal error was:
     files.reject do |file, *|
       file =~ /\.(?:class|eps|erb|scpt\.txt|svg|ttf|yml)$/i or
         (file =~ /tags$/i and
-         open(file, 'rb') { |io|
+         File.open(file, 'rb') { |io|
            io.read(100) =~ /\A(\f\n[^,]+,\d+$|!_TAG_)/
          })
     end

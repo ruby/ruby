@@ -122,6 +122,8 @@ YoaOffgTf5qxiwkjnlVZQc3whgnEt9FpVMvQ9eknyeGB5KHfayAc3+hUAvI3/Cr3
       def initialize(version = nil)
         self.options |= OpenSSL::SSL::OP_ALL
         self.ssl_version = version if version
+        self.verify_mode = OpenSSL::SSL::VERIFY_NONE
+        self.verify_hostname = false
       end
 
       ##

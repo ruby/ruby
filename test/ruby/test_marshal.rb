@@ -8,7 +8,6 @@ class TestMarshal < Test::Unit::TestCase
 
   def setup
     @verbose = $VERBOSE
-    $VERBOSE = nil
   end
 
   def teardown
@@ -59,6 +58,8 @@ class TestMarshal < Test::Unit::TestCase
     TestMarshal.instance_eval { remove_const :StructOrNot }
     TestMarshal.const_set :StructOrNot, Class.new
     assert_raise(TypeError, "[ruby-dev:31709]") { Marshal.load(s) }
+  ensure
+    TestMarshal.instance_eval { remove_const :StructOrNot }
   end
 
   def test_struct_invalid_members
@@ -67,6 +68,8 @@ class TestMarshal < Test::Unit::TestCase
       Marshal.load("\004\bIc&TestMarshal::StructInvalidMembers\006:\020__members__\"\bfoo")
       TestMarshal::StructInvalidMembers.members
     }
+  ensure
+    TestMarshal.instance_eval { remove_const :StructInvalidMembers }
   end
 
   class C
@@ -157,20 +160,29 @@ class TestMarshal < Test::Unit::TestCase
   end
 
   def test_change_class_name
+    self.class.__send__(:remove_const, :C3) if self.class.const_defined?(:C3)
     eval("class C3; def _dump(s); 'foo'; end; end")
     m = Marshal.dump(C3.new)
     assert_raise(TypeError) { Marshal.load(m) }
+    self.class.__send__(:remove_const, :C3)
     eval("C3 = nil")
     assert_raise(TypeError) { Marshal.load(m) }
+  ensure
+    self.class.__send__(:remove_const, :C3) if self.class.const_defined?(:C3)
   end
 
   def test_change_struct
+    self.class.__send__(:remove_const, :C3) if self.class.const_defined?(:C3)
     eval("C3 = Struct.new(:foo, :bar)")
     m = Marshal.dump(C3.new("FOO", "BAR"))
+    self.class.__send__(:remove_const, :C3)
     eval("C3 = Struct.new(:foo)")
     assert_raise(TypeError) { Marshal.load(m) }
+    self.class.__send__(:remove_const, :C3)
     eval("C3 = Struct.new(:foo, :baz)")
     assert_raise(TypeError) { Marshal.load(m) }
+  ensure
+    self.class.__send__(:remove_const, :C3) if self.class.const_defined?(:C3)
   end
 
   class C4
@@ -542,7 +554,7 @@ class TestMarshal < Test::Unit::TestCase
   end
 
   class TestForRespondToFalse
-    def respond_to?(a)
+    def respond_to?(a, priv = false)
       false
     end
   end
@@ -570,7 +582,7 @@ class TestMarshal < Test::Unit::TestCase
   end
 
   def test_continuation
-    require "continuation"
+    EnvUtil.suppress_warning {require "continuation"}
     c = Bug9523.new
     assert_raise_with_message(RuntimeError, /Marshal\.dump reentered at marshal_dump/) do
       Marshal.dump(c)
@@ -805,7 +817,7 @@ class TestMarshal < Test::Unit::TestCase
       nameerror_test
     rescue NameError => e
       e2 = Marshal.load(Marshal.dump(e))
-      assert_equal(e.message, e2.message)
+      assert_equal(e.message.lines.first.chomp, e2.message.lines.first)
       assert_equal(e.name, e2.name)
       assert_equal(e.backtrace, e2.backtrace)
       assert_nil(e2.backtrace_locations) # temporal

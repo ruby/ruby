@@ -176,7 +176,7 @@ module BasetestReadline
       assert_equal("", line2)
       begin
         assert_equal("", Readline.line_buffer)
-      rescue NotimplementedError
+      rescue NotImplementedError
       end
     end
   end
@@ -492,8 +492,8 @@ module BasetestReadline
     saved_completer_word_break_characters = Readline.completer_word_break_characters
 
     # skip if previous value is nil because Readline... = nil is not allowed.
-    skip unless saved_completer_quote_characters
-    skip unless saved_completer_word_break_characters
+    omit "No completer_quote_characters" unless saved_completer_quote_characters
+    omit "No completer_word_break_characters" unless saved_completer_word_break_characters
 
     return unless Readline.respond_to?(:quoting_detection_proc=)
 
@@ -535,8 +535,8 @@ module BasetestReadline
     saved_completer_word_break_characters = Readline.completer_word_break_characters
 
     # skip if previous value is nil because Readline... = nil is not allowed.
-    skip unless saved_completer_quote_characters
-    skip unless saved_completer_word_break_characters
+    omit "No completer_quote_characters" unless saved_completer_quote_characters
+    omit "No completer_word_break_characters" unless saved_completer_word_break_characters
 
     return unless Readline.respond_to?(:quoting_detection_proc=)
     unless get_default_internal_encoding == Encoding::UTF_8
@@ -806,11 +806,16 @@ class TestRelineAsReadline < Test::Unit::TestCase
     super
   end
 
+  def teardown
+    finish_using_lib_reline
+    super
+  end
+
   def get_default_internal_encoding
     if RUBY_PLATFORM =~ /mswin|mingw/
       Encoding.default_internal || Encoding::UTF_8
     else
-      super
+      Reline::IOGate.encoding
     end
   end
 end if defined?(Reline) && ENV["TEST_READLINE_OR_RELINE"] != "Readline"

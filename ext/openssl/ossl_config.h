@@ -7,13 +7,10 @@
  * This program is licensed under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
-#if !defined(_OSSL_CONFIG_H_)
-#define _OSSL_CONFIG_H_
+#ifndef OSSL_CONFIG_H
+#define OSSL_CONFIG_H
 
-extern VALUE cConfig;
-extern VALUE eConfigError;
-
-CONF* DupConfigPtr(VALUE obj);
+CONF *GetConfig(VALUE obj);
 void Init_ossl_config(void);
 
-#endif /* _OSSL_CONFIG_H_ */
+#endif /* OSSL_CONFIG_H */

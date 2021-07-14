@@ -47,8 +47,8 @@ when /linux/
     libm_so = libc_so
   else
     # glibc
-    libc_so = File.join(libdir, "libc.so.6")
-    libm_so = File.join(libdir, "libm.so.6")
+    libc_so = "libc.so.6"
+    libm_so = "libm.so.6"
   end
 when /mingw/, /mswin/
   require "rbconfig"
@@ -92,9 +92,9 @@ when /aix/
     funcs=%w!sin sinf strcpy strncpy!
     expfile='dltest.exp'
     require 'tmpdir'
-    Dir.mktmpdir do |dir|
+    Dir.mktmpdir do |_dir|
       begin
-        Dir.chdir dir
+        Dir.chdir _dir
         %x!/usr/bin/ar x /usr/lib/libc.a #{cobjs.join(' ')}!
         %x!/usr/bin/ar x /usr/lib/libm.a #{mobjs.join(' ')}!
         %x!echo "#{funcs.join("\n")}\n" > #{expfile}!
@@ -111,6 +111,18 @@ when /aix/
       end
     end
   end
+when /haiku/
+  libdir = '/system/lib'
+  case [0].pack('L!').size
+  when 4
+    # 32-bit ruby
+    libdir = '/system/lib/x86' if File.directory? '/system/lib/x86'
+  when 8
+    # 64-bit ruby
+    libdir = '/system/lib/' if File.directory? '/system/lib/'
+  end
+  libc_so = File.join(libdir, "libroot.so")
+  libm_so = File.join(libdir, "libroot.so")
 else
   libc_so = ARGV[0] if ARGV[0] && ARGV[0][0] == ?/
   libm_so = ARGV[1] if ARGV[1] && ARGV[1][0] == ?/

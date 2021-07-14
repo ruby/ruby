@@ -90,16 +90,12 @@
 #define ERRORFUNC(mesg, x) RBIMPL_ATTR_ERROR(mesg) x
 #if RBIMPL_HAS_ATTRIBUTE(error)
 # define HAVE_ATTRIBUTE_ERRORFUNC 1
-#else
-# define HAVE_ATTRIBUTE_ERRORFUNC 0
 #endif
 
 #undef WARNINGFUNC
 #define WARNINGFUNC(mesg, x) RBIMPL_ATTR_WARNING(mesg) x
 #if RBIMPL_HAS_ATTRIBUTE(warning)
 # define HAVE_ATTRIBUTE_WARNINGFUNC 1
-#else
-# define HAVE_ATTRIBUTE_WARNINGFUNC 0
 #endif
 
 /*

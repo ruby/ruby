@@ -1,4 +1,6 @@
-void Init_golf(void);
+static void Init_golf(void);
+static void *goruby_options(int argc, char **argv);
+static int goruby_run_node(void *arg);
 #define ruby_options goruby_options
 #define ruby_run_node goruby_run_node
 #include "main.c"
@@ -16,6 +18,8 @@ void Init_golf(void);
 RUBY_EXTERN void *ruby_options(int argc, char **argv);
 RUBY_EXTERN int ruby_run_node(void*);
 RUBY_EXTERN void ruby_init_ext(const char *name, void (*init)(void));
+
+#include "golf_prelude.c"
 
 static VALUE
 init_golf(VALUE arg)

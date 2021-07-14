@@ -30,6 +30,7 @@
 #include "internal.h"
 #include "internal/error.h"
 #include "internal/eval.h"
+#include "internal/hash.h"
 #include "internal/io.h"
 #include "internal/load.h"
 #include "internal/object.h"
@@ -73,8 +74,12 @@ static VALUE rb_cWarningBuffer;
 
 static ID id_warn;
 static ID id_category;
+static ID id_deprecated;
+static ID id_experimental;
 static VALUE sym_category;
-static VALUE warning_categories;
+static struct {
+    st_table *id2enum, *enum2id;
+} warning_categories;
 
 extern const char ruby_description[];
 
@@ -158,18 +163,24 @@ rb_warning_category_mask(VALUE category)
 rb_warning_category_t
 rb_warning_category_from_name(VALUE category)
 {
-    rb_warning_category_t cat = RB_WARN_CATEGORY_NONE;
+    st_data_t cat_value;
+    ID cat_id;
     Check_Type(category, T_SYMBOL);
-    if (category == ID2SYM(rb_intern("deprecated"))) {
-        cat = RB_WARN_CATEGORY_DEPRECATED;
-    }
-    else if (category == ID2SYM(rb_intern("experimental"))) {
-        cat = RB_WARN_CATEGORY_EXPERIMENTAL;
-    }
-    else {
+    if (!(cat_id = rb_check_id(&category)) ||
+        !st_lookup(warning_categories.id2enum, cat_id, &cat_value)) {
         rb_raise(rb_eArgError, "unknown category: %"PRIsVALUE, category);
     }
-    return cat;
+    return (rb_warning_category_t)cat_value;
+}
+
+static VALUE
+rb_warning_category_to_name(rb_warning_category_t category)
+{
+    st_data_t id;
+    if (!st_lookup(warning_categories.enum2id, category, &id)) {
+        rb_raise(rb_eArgError, "invalid category: %d", (int)category);
+    }
+    return id ? ID2SYM(id) : Qnil;
 }
 
 void
@@ -186,7 +197,7 @@ rb_warning_category_enabled_p(rb_warning_category_t category)
 }
 
 /*
- * call-seq
+ * call-seq:
  *    Warning[category]  -> true or false
  *
  * Returns the flag to show the warning messages for +category+.
@@ -212,7 +223,7 @@ rb_warning_s_aref(VALUE mod, VALUE category)
 }
 
 /*
- * call-seq
+ * call-seq:
  *    Warning[category] = flag -> flag
  *
  * Sets the warning flags for +category+.
@@ -238,7 +249,9 @@ rb_warning_s_aset(VALUE mod, VALUE category, VALUE flag)
  *
  * Writes warning message +msg+ to $stderr. This method is called by
  * Ruby for all emitted warnings. A +category+ may be included with
- * the warning, but is ignored by default.
+ * the warning.
+ *
+ * See the documentation of the Warning module for how to customize this.
  */
 
 static VALUE
@@ -246,13 +259,17 @@ rb_warning_s_warn(int argc, VALUE *argv, VALUE mod)
 {
     VALUE str;
     VALUE opt;
-    VALUE category;
+    VALUE category = Qnil;
 
     rb_scan_args(argc, argv, "1:", &str, &opt);
     if (!NIL_P(opt)) rb_get_kwargs(opt, &id_category, 0, 1, &category);
 
     Check_Type(str, T_STRING);
     rb_must_asciicompat(str);
+    if (!NIL_P(category)) {
+        rb_warning_category_t cat = rb_warning_category_from_name(category);
+        if (!rb_warning_category_enabled_p(cat)) return Qnil;
+    }
     rb_write_error_str(str);
     return Qnil;
 }
@@ -265,11 +282,30 @@ rb_warning_s_warn(int argc, VALUE *argv, VALUE mod)
  *  Warning.warn is called for all warnings issued by Ruby.
  *  By default, warnings are printed to $stderr.
  *
- *  By overriding Warning.warn, you can change how warnings are
- *  handled by Ruby, either filtering some warnings, and/or outputting
- *  warnings somewhere other than $stderr.  When Warning.warn is
- *  overridden, super can be called to get the default behavior of
- *  printing the warning to $stderr.
+ *  Changing the behavior of Warning.warn is useful to customize how warnings are
+ *  handled by Ruby, for instance by filtering some warnings, and/or outputting
+ *  warnings somewhere other than $stderr.
+ *
+ *  If you want to change the behavior of Warning.warn you should use
+ *  +Warning.extend(MyNewModuleWithWarnMethod)+ and you can use `super`
+ *  to get the default behavior of printing the warning to $stderr.
+ *
+ *  Example:
+ *    module MyWarningFilter
+ *      def warn(message, category: nil, **kwargs)
+ *        if /some warning I want to ignore/.match?(message)
+ *          # ignore
+ *        else
+ *          super
+ *        end
+ *      end
+ *    end
+ *    Warning.extend MyWarningFilter
+ *
+ *  You should never redefine Warning#warn (the instance method), as that will
+ *  then no longer provide a way to use the default behavior.
+ *
+ *  The +warning+ gem provides convenient ways to customize Warning.warn.
  */
 
 static VALUE
@@ -280,18 +316,16 @@ rb_warning_warn(VALUE mod, VALUE str)
 
 
 static int
-rb_warning_warn_arity(void) {
+rb_warning_warn_arity(void)
+{
     return rb_method_entry_arity(rb_method_entry(rb_singleton_class(rb_mWarning), id_warn));
 }
 
 static VALUE
 rb_warn_category(VALUE str, VALUE category)
 {
-    if (category != Qnil) {
-        category = rb_to_symbol_type(category);
-        if (rb_hash_aref(warning_categories, category) != Qtrue) {
-            rb_raise(rb_eArgError, "invalid warning category used: %s", rb_id2name(SYM2ID(category)));
-        }
+    if (RUBY_DEBUG && !NIL_P(category)) {
+        rb_warning_category_from_name(category);
     }
 
     if (rb_warning_warn_arity() == 1) {
@@ -350,6 +384,20 @@ rb_compile_warning(const char *file, int line, const char *fmt, ...)
     rb_write_warning_str(str);
 }
 
+void
+rb_category_compile_warn(rb_warning_category_t category, const char *file, int line, const char *fmt, ...)
+{
+    VALUE str;
+    va_list args;
+
+    if (NIL_P(ruby_verbose)) return;
+
+    va_start(args, fmt);
+    str = warn_vsprintf(NULL, file, line, fmt, args);
+    va_end(args);
+    rb_warn_category(str, rb_warning_category_to_name(category));
+}
+
 static VALUE
 warning_string(rb_encoding *enc, const char *fmt, va_list args)
 {
@@ -375,11 +423,11 @@ rb_warn(const char *fmt, ...)
 }
 
 void
-rb_category_warn(const char *category, const char *fmt, ...)
+rb_category_warn(rb_warning_category_t category, const char *fmt, ...)
 {
     if (!NIL_P(ruby_verbose)) {
         with_warning_string(mesg, 0, fmt) {
-            rb_warn_category(mesg, ID2SYM(rb_intern(category)));
+            rb_warn_category(mesg, rb_warning_category_to_name(category));
         }
     }
 }
@@ -407,11 +455,11 @@ rb_warning(const char *fmt, ...)
 
 /* rb_category_warning() reports only in verbose mode */
 void
-rb_category_warning(const char *category, const char *fmt, ...)
+rb_category_warning(rb_warning_category_t category, const char *fmt, ...)
 {
     if (RTEST(ruby_verbose)) {
         with_warning_string(mesg, 0, fmt) {
-            rb_warn_category(mesg, ID2SYM(rb_intern(category)));
+            rb_warn_category(mesg, rb_warning_category_to_name(category));
         }
     }
 }
@@ -436,34 +484,51 @@ rb_enc_warning(rb_encoding *enc, const char *fmt, ...)
 }
 #endif
 
+static bool
+deprecation_warning_enabled(void)
+{
+    if (NIL_P(ruby_verbose)) return false;
+    if (!rb_warning_category_enabled_p(RB_WARN_CATEGORY_DEPRECATED)) return false;
+    return true;
+}
+
+static void
+warn_deprecated(VALUE mesg, const char *removal, const char *suggest)
+{
+    rb_str_set_len(mesg, RSTRING_LEN(mesg) - 1);
+    rb_str_cat_cstr(mesg, " is deprecated");
+    if (removal) {
+        rb_str_catf(mesg, " and will be removed in Ruby %s", removal);
+    }
+    if (suggest) rb_str_catf(mesg, "; use %s instead", suggest);
+    rb_str_cat_cstr(mesg, "\n");
+    rb_warn_category(mesg, ID2SYM(id_deprecated));
+}
+
 void
 rb_warn_deprecated(const char *fmt, const char *suggest, ...)
 {
-    if (NIL_P(ruby_verbose)) return;
-    if (!rb_warning_category_enabled_p(RB_WARN_CATEGORY_DEPRECATED)) return;
+    if (!deprecation_warning_enabled()) return;
+
     va_list args;
     va_start(args, suggest);
     VALUE mesg = warning_string(0, fmt, args);
     va_end(args);
-    rb_str_set_len(mesg, RSTRING_LEN(mesg) - 1);
-    rb_str_cat_cstr(mesg, " is deprecated");
-    if (suggest) rb_str_catf(mesg, "; use %s instead", suggest);
-    rb_str_cat_cstr(mesg, "\n");
-    rb_warn_category(mesg, ID2SYM(rb_intern("deprecated")));
+
+    warn_deprecated(mesg, NULL, suggest);
 }
 
 void
-rb_warn_deprecated_to_remove(const char *fmt, const char *removal, ...)
+rb_warn_deprecated_to_remove(const char *removal, const char *fmt, const char *suggest, ...)
 {
-    if (NIL_P(ruby_verbose)) return;
-    if (!rb_warning_category_enabled_p(RB_WARN_CATEGORY_DEPRECATED)) return;
+    if (!deprecation_warning_enabled()) return;
+
     va_list args;
-    va_start(args, removal);
+    va_start(args, suggest);
     VALUE mesg = warning_string(0, fmt, args);
     va_end(args);
-    rb_str_set_len(mesg, RSTRING_LEN(mesg) - 1);
-    rb_str_catf(mesg, " is deprecated and will be removed in Ruby %s\n", removal);
-    rb_warn_category(mesg, ID2SYM(rb_intern("deprecated")));
+
+    warn_deprecated(mesg, removal, suggest);
 }
 
 static inline int
@@ -483,7 +548,8 @@ warning_write(int argc, VALUE *argv, VALUE buf)
     return buf;
 }
 
-VALUE rb_ec_backtrace_location_ary(rb_execution_context_t *ec, long lev, long n);
+VALUE rb_ec_backtrace_location_ary(const rb_execution_context_t *ec, long lev, long n, bool skip_internal);
+
 static VALUE
 rb_warn_m(rb_execution_context_t *ec, VALUE exc, VALUE msgs, VALUE uplevel, VALUE category)
 {
@@ -498,7 +564,7 @@ rb_warn_m(rb_execution_context_t *ec, VALUE exc, VALUE msgs, VALUE uplevel, VALU
             if (lev < 0) {
                 rb_raise(rb_eArgError, "negative level (%ld)", lev);
             }
-            location = rb_ec_backtrace_location_ary(ec, lev + 1, 1);
+            location = rb_ec_backtrace_location_ary(ec, lev + 1, 1, TRUE);
             if (!NIL_P(location)) {
                 location = rb_ary_entry(location, 0);
             }
@@ -521,6 +587,11 @@ rb_warn_m(rb_execution_context_t *ec, VALUE exc, VALUE msgs, VALUE uplevel, VALU
 	    rb_io_puts(argc, argv, str);
 	    RBASIC_SET_CLASS(str, rb_cString);
 	}
+
+        if (!NIL_P(category)) {
+            category = rb_to_symbol_type(category);
+            rb_warning_category_from_name(category);
+        }
 
 	if (exc == rb_mWarning) {
 	    rb_must_asciicompat(str);
@@ -607,7 +678,7 @@ preface_dump(FILE *out)
     static const char msg[] = ""
 	"-- Crash Report log information "
 	"--------------------------------------------\n"
-	"   See Crash Report log file under the one of following:\n"
+	"   See Crash Report log file in one of the following locations:\n"
 # if MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_6
 	"     * ~/Library/Logs/CrashReporter\n"
 	"     * /Library/Logs/CrashReporter\n"
@@ -711,17 +782,25 @@ die(void)
 }
 
 void
-rb_bug(const char *fmt, ...)
+rb_bug_without_die(const char *fmt, va_list args)
 {
     const char *file = NULL;
     int line = 0;
 
     if (GET_EC()) {
-	file = rb_source_location_cstr(&line);
+        file = rb_source_location_cstr(&line);
     }
 
-    report_bug(file, line, fmt, NULL);
+    report_bug_valist(file, line, fmt, NULL, args);
+}
 
+void
+rb_bug(const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    rb_bug_without_die(fmt, args);
+    va_end(args);
     die();
 }
 
@@ -1799,9 +1878,9 @@ static const rb_data_type_t name_err_mesg_data_type = {
 
 /* :nodoc: */
 static VALUE
-rb_name_err_mesg_new(VALUE mesg, VALUE recv, VALUE method)
+rb_name_err_mesg_init(VALUE klass, VALUE mesg, VALUE recv, VALUE method)
 {
-    VALUE result = TypedData_Wrap_Struct(rb_cNameErrorMesg, &name_err_mesg_data_type, 0);
+    VALUE result = TypedData_Wrap_Struct(klass, &name_err_mesg_data_type, 0);
     VALUE *ptr = ALLOC_N(VALUE, NAME_ERR_MESG_COUNT);
 
     ptr[NAME_ERR_MESG__MESG] = mesg;
@@ -1809,6 +1888,35 @@ rb_name_err_mesg_new(VALUE mesg, VALUE recv, VALUE method)
     ptr[NAME_ERR_MESG__NAME] = method;
     RTYPEDDATA_DATA(result) = ptr;
     return result;
+}
+
+/* :nodoc: */
+static VALUE
+rb_name_err_mesg_new(VALUE mesg, VALUE recv, VALUE method)
+{
+    return rb_name_err_mesg_init(rb_cNameErrorMesg, mesg, recv, method);
+}
+
+/* :nodoc: */
+static VALUE
+name_err_mesg_alloc(VALUE klass)
+{
+    return rb_name_err_mesg_init(klass, Qnil, Qnil, Qnil);
+}
+
+/* :nodoc: */
+static VALUE
+name_err_mesg_init_copy(VALUE obj1, VALUE obj2)
+{
+    VALUE *ptr1, *ptr2;
+
+    if (obj1 == obj2) return obj1;
+    rb_obj_init_copy(obj1, obj2);
+
+    TypedData_Get_Struct(obj1, VALUE, &name_err_mesg_data_type, ptr1);
+    TypedData_Get_Struct(obj2, VALUE, &name_err_mesg_data_type, ptr2);
+    MEMCPY(ptr1, ptr2, VALUE, NAME_ERR_MESG_COUNT);
+    return obj1;
 }
 
 /* :nodoc: */
@@ -1873,8 +1981,10 @@ name_err_mesg_to_str(VALUE obj)
 	    d = rb_protect(name_err_mesg_receiver_name, obj, &state);
 	    if (state || d == Qundef || d == Qnil)
 		d = rb_protect(rb_inspect, obj, &state);
-	    if (state)
+	    if (state) {
 		rb_set_errinfo(Qnil);
+	    }
+	    d = rb_check_string_type(d);
 	    if (NIL_P(d)) {
 		d = rb_any_to_s(obj);
 	    }
@@ -2544,6 +2654,8 @@ syserr_eqq(VALUE self, VALUE exc)
  */
 
 /*
+ *  Document-class: Exception
+ *
  *  \Class Exception and its subclasses are used to communicate between
  *  Kernel#raise and +rescue+ statements in <code>begin ... end</code> blocks.
  *
@@ -2736,7 +2848,9 @@ Init_Exception(void)
     rb_define_method(rb_eNameError, "name", name_err_name, 0);
     rb_define_method(rb_eNameError, "receiver", name_err_receiver, 0);
     rb_define_method(rb_eNameError, "local_variables", name_err_local_variables, 0);
-    rb_cNameErrorMesg = rb_define_class_under(rb_eNameError, "message", rb_cData);
+    rb_cNameErrorMesg = rb_define_class_under(rb_eNameError, "message", rb_cObject);
+    rb_define_alloc_func(rb_cNameErrorMesg, name_err_mesg_alloc);
+    rb_define_method(rb_cNameErrorMesg, "initialize_copy", name_err_mesg_init_copy, 1);
     rb_define_method(rb_cNameErrorMesg, "==", name_err_mesg_equal, 1);
     rb_define_method(rb_cNameErrorMesg, "to_str", name_err_mesg_to_str, 0);
     rb_define_method(rb_cNameErrorMesg, "_dump", name_err_mesg_dump, 1);
@@ -2754,7 +2868,7 @@ Init_Exception(void)
     rb_eNoMemError = rb_define_class("NoMemoryError", rb_eException);
     rb_eEncodingError = rb_define_class("EncodingError", rb_eStandardError);
     rb_eEncCompatError = rb_define_class_under(rb_cEncoding, "CompatibilityError", rb_eEncodingError);
-    rb_eNoMatchingPatternError = rb_define_class("NoMatchingPatternError", rb_eRuntimeError);
+    rb_eNoMatchingPatternError = rb_define_class("NoMatchingPatternError", rb_eStandardError);
 
     syserr_tbl = st_init_numtable();
     rb_eSystemCallError = rb_define_class("SystemCallError", rb_eStandardError);
@@ -2787,6 +2901,8 @@ Init_Exception(void)
     id_i_path = rb_intern_const("@path");
     id_warn = rb_intern_const("warn");
     id_category = rb_intern_const("category");
+    id_deprecated = rb_intern_const("deprecated");
+    id_experimental = rb_intern_const("experimental");
     id_top = rb_intern_const("top");
     id_bottom = rb_intern_const("bottom");
     id_iseq = rb_make_internal_id();
@@ -2794,10 +2910,14 @@ Init_Exception(void)
 
     sym_category = ID2SYM(id_category);
 
-    warning_categories = rb_hash_new();
-    rb_gc_register_mark_object(warning_categories);
-    rb_hash_aset(warning_categories, ID2SYM(rb_intern("deprecated")), Qtrue);
-    rb_obj_freeze(warning_categories);
+    warning_categories.id2enum = rb_init_identtable();
+    st_add_direct(warning_categories.id2enum, id_deprecated, RB_WARN_CATEGORY_DEPRECATED);
+    st_add_direct(warning_categories.id2enum, id_experimental, RB_WARN_CATEGORY_EXPERIMENTAL);
+
+    warning_categories.enum2id = rb_init_identtable();
+    st_add_direct(warning_categories.enum2id, RB_WARN_CATEGORY_NONE, 0);
+    st_add_direct(warning_categories.enum2id, RB_WARN_CATEGORY_DEPRECATED, id_deprecated);
+    st_add_direct(warning_categories.enum2id, RB_WARN_CATEGORY_EXPERIMENTAL, id_experimental);
 }
 
 void
@@ -3193,14 +3313,14 @@ rb_check_frozen(VALUE obj)
 void
 rb_error_untrusted(VALUE obj)
 {
-    rb_warn_deprecated_to_remove("rb_error_untrusted", "3.2");
+    rb_warn_deprecated_to_remove_at(3.2, "rb_error_untrusted", NULL);
 }
 
 #undef rb_check_trusted
 void
 rb_check_trusted(VALUE obj)
 {
-    rb_warn_deprecated_to_remove("rb_check_trusted", "3.2");
+    rb_warn_deprecated_to_remove_at(3.2, "rb_check_trusted", NULL);
 }
 
 void

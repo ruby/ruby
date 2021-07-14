@@ -24,6 +24,16 @@ RSpec.describe "bundle exec" do
     expect(out).to eq("0.9.1")
   end
 
+  it "works and prints no warnings when HOME is not writable" do
+    gemfile <<-G
+      gem "rack", "0.9.1"
+    G
+
+    bundle "exec rackup", :env => { "HOME" => "/" }
+    expect(out).to eq("0.9.1")
+    expect(err).to be_empty
+  end
+
   it "works when the bins are in ~/.bundle" do
     install_gemfile <<-G
       gem "rack"
@@ -67,8 +77,34 @@ RSpec.describe "bundle exec" do
     expect(out).to eq(Gem::VERSION)
   end
 
+  it "works when exec'ing back to bundler with a lockfile that doesn't include the current platform" do
+    install_gemfile <<-G
+      gem "rack", "0.9.1"
+    G
+
+    # simulate lockfile generated with old version not including specific platform
+    lockfile <<-L
+      GEM
+        specs:
+          rack (0.9.1)
+
+      PLATFORMS
+        RUBY
+
+      DEPENDENCIES
+        rack (= 0.9.1)
+
+      BUNDLED WITH
+          2.1.4
+    L
+
+    bundle "exec bundle cache", :env => { "BUNDLER_VERSION" => Bundler::VERSION }
+
+    expect(out).to include("Updating files in vendor/cache")
+  end
+
   it "respects custom process title when loading through ruby" do
-    skip "https://github.com/rubygems/bundler/issues/6898" if Gem.win_platform?
+    skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
 
     script_that_changes_its_own_title_and_checks_if_picked_up_by_ps_unix_utility = <<~'RUBY'
       Process.setproctitle("1-2-3-4-5-6-7")
@@ -93,7 +129,7 @@ RSpec.describe "bundle exec" do
   end
 
   it "handles --keep-file-descriptors" do
-    skip "https://github.com/rubygems/bundler/issues/6898" if Gem.win_platform?
+    skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
 
     require "tempfile"
 
@@ -126,7 +162,7 @@ RSpec.describe "bundle exec" do
   end
 
   it "can run a command named --verbose" do
-    skip "https://github.com/rubygems/bundler/issues/6898" if Gem.win_platform?
+    skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
 
     install_gemfile 'gem "rack"'
     File.open(bundled_app("--verbose"), "w") do |f|
@@ -269,7 +305,7 @@ RSpec.describe "bundle exec" do
   end
 
   it "handles gems installed with --without" do
-    bundle "config --local without middleware"
+    bundle "config set --local without middleware"
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "rack" # rack 0.9.1 and 1.0 exist
@@ -286,7 +322,7 @@ RSpec.describe "bundle exec" do
   end
 
   it "does not duplicate already exec'ed RUBYOPT" do
-    skip "https://github.com/rubygems/bundler/issues/6898" if Gem.win_platform?
+    skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
 
     install_gemfile <<-G
       gem "rack"
@@ -304,7 +340,7 @@ RSpec.describe "bundle exec" do
   end
 
   it "does not duplicate already exec'ed RUBYLIB" do
-    skip "https://github.com/rubygems/bundler/issues/6898" if Gem.win_platform?
+    skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
 
     install_gemfile <<-G
       gem "rack"
@@ -357,7 +393,7 @@ RSpec.describe "bundle exec" do
     bundle "config set clean false" # want to keep the rackup binstub
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
-      gem "with_license"
+      gem "foo"
     G
     [true, false].each do |l|
       bundle "config set disable_exec_load #{l}"
@@ -373,7 +409,7 @@ RSpec.describe "bundle exec" do
     each_prefix.call("exec") do |exec|
       describe "when #{exec} is used" do
         before(:each) do
-          skip "https://github.com/rubygems/bundler/issues/6898" if Gem.win_platform?
+          skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
 
           install_gemfile <<-G
             gem "rack"
@@ -422,35 +458,35 @@ RSpec.describe "bundle exec" do
           with_fake_man do
             bundle "#{exec} --help cat"
           end
-          expect(out).to include(%(["#{root}/man/bundle-exec.1"]))
+          expect(out).to include(%(["#{man_dir}/bundle-exec.1"]))
         end
 
         it "shows bundle-exec's man page when --help is before exec" do
           with_fake_man do
             bundle "--help #{exec}"
           end
-          expect(out).to include(%(["#{root}/man/bundle-exec.1"]))
+          expect(out).to include(%(["#{man_dir}/bundle-exec.1"]))
         end
 
         it "shows bundle-exec's man page when -h is before exec" do
           with_fake_man do
             bundle "-h #{exec}"
           end
-          expect(out).to include(%(["#{root}/man/bundle-exec.1"]))
+          expect(out).to include(%(["#{man_dir}/bundle-exec.1"]))
         end
 
         it "shows bundle-exec's man page when --help is after exec" do
           with_fake_man do
             bundle "#{exec} --help"
           end
-          expect(out).to include(%(["#{root}/man/bundle-exec.1"]))
+          expect(out).to include(%(["#{man_dir}/bundle-exec.1"]))
         end
 
         it "shows bundle-exec's man page when -h is after exec" do
           with_fake_man do
             bundle "#{exec} -h"
           end
-          expect(out).to include(%(["#{root}/man/bundle-exec.1"]))
+          expect(out).to include(%(["#{man_dir}/bundle-exec.1"]))
         end
       end
     end
@@ -588,7 +624,7 @@ RSpec.describe "bundle exec" do
 
   describe "with gems bundled for deployment" do
     it "works when calling bundler from another script" do
-      skip "https://github.com/rubygems/bundler/issues/6898" if Gem.win_platform?
+      skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
 
       gemfile <<-G
       module Monkey
@@ -642,29 +678,40 @@ RSpec.describe "bundle exec" do
 
     subject { bundle "exec #{path} arg1 arg2", :raise_on_error => false }
 
-    shared_examples_for "it runs" do
-      it "like a normally executed executable" do
-        skip "https://github.com/rubygems/bundler/issues/6898" if Gem.win_platform?
+    it "runs" do
+      skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
 
-        subject
-        expect(exitstatus).to eq(exit_code)
-        expect(err).to eq(expected_err)
-        expect(out).to eq(expected)
-      end
+      subject
+      expect(exitstatus).to eq(exit_code)
+      expect(err).to eq(expected_err)
+      expect(out).to eq(expected)
     end
-
-    it_behaves_like "it runs"
 
     context "the executable exits explicitly" do
       let(:executable) { super() << "\nexit #{exit_code}\nputs 'POST_EXIT'\n" }
 
       context "with exit 0" do
-        it_behaves_like "it runs"
+        it "runs" do
+          skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
+
+          subject
+          expect(exitstatus).to eq(exit_code)
+          expect(err).to eq(expected_err)
+          expect(out).to eq(expected)
+        end
       end
 
       context "with exit 99" do
         let(:exit_code) { 99 }
-        it_behaves_like "it runs"
+
+        it "runs" do
+          skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
+
+          subject
+          expect(exitstatus).to eq(exit_code)
+          expect(err).to eq(expected_err)
+          expect(out).to eq(expected)
+        end
       end
     end
 
@@ -681,7 +728,15 @@ RSpec.describe "bundle exec" do
         # this is specified by C99
         128 + 15
       end
-      it_behaves_like "it runs"
+
+      it "runs" do
+        skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
+
+        subject
+        expect(exitstatus).to eq(exit_code)
+        expect(err).to eq(expected_err)
+        expect(out).to eq(expected)
+      end
     end
 
     context "the executable is empty" do
@@ -690,7 +745,15 @@ RSpec.describe "bundle exec" do
       let(:exit_code) { 0 }
       let(:expected_err) { "#{path} is empty" }
       let(:expected) { "" }
-      it_behaves_like "it runs"
+
+      it "runs" do
+        skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
+
+        subject
+        expect(exitstatus).to eq(exit_code)
+        expect(err).to eq(expected_err)
+        expect(out).to eq(expected)
+      end
     end
 
     context "the executable raises" do
@@ -698,23 +761,46 @@ RSpec.describe "bundle exec" do
       let(:exit_code) { 1 }
       let(:expected_err) do
         "bundler: failed to load command: #{path} (#{path})" \
-        "\nRuntimeError: ERROR\n  #{path}:10:in `<top (required)>'"
+        "\n#{path}:10:in `<top (required)>': ERROR (RuntimeError)"
       end
-      it_behaves_like "it runs"
+
+      it "runs like a normally executed executable" do
+        skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
+
+        subject
+        expect(exitstatus).to eq(exit_code)
+        expect(err).to start_with(expected_err)
+        expect(out).to eq(expected)
+      end
     end
 
     context "the executable raises an error without a backtrace" do
       let(:executable) { super() << "\nclass Err < Exception\ndef backtrace; end;\nend\nraise Err" }
       let(:exit_code) { 1 }
-      let(:expected_err) { "bundler: failed to load command: #{path} (#{path})\nErr: Err" }
+      let(:expected_err) { "bundler: failed to load command: #{path} (#{path})\n#{system_gem_path("bin/bundle")}: Err (Err)" }
       let(:expected) { super() }
 
-      it_behaves_like "it runs"
+      it "runs" do
+        skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
+
+        subject
+        expect(exitstatus).to eq(exit_code)
+        expect(err).to eq(expected_err)
+        expect(out).to eq(expected)
+      end
     end
 
     context "when the file uses the current ruby shebang" do
       let(:shebang) { "#!#{Gem.ruby}" }
-      it_behaves_like "it runs"
+
+      it "runs" do
+        skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
+
+        subject
+        expect(exitstatus).to eq(exit_code)
+        expect(err).to eq(expected_err)
+        expect(out).to eq(expected)
+      end
     end
 
     context "when Bundler.setup fails", :bundler => "< 3" do
@@ -728,11 +814,19 @@ RSpec.describe "bundle exec" do
       let(:exit_code) { Bundler::GemNotFound.new.status_code }
       let(:expected) { "" }
       let(:expected_err) { <<-EOS.strip }
-\e[31mCould not find gem 'rack (= 2)' in any of the gem sources listed in your Gemfile.\e[0m
+\e[31mCould not find gem 'rack (= 2)' in locally installed gems.
+The source contains the following versions of 'rack': 0.9.1, 1.0.0\e[0m
 \e[33mRun `bundle install` to install missing gems.\e[0m
       EOS
 
-      it_behaves_like "it runs"
+      it "runs" do
+        skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
+
+        subject
+        expect(exitstatus).to eq(exit_code)
+        expect(err).to eq(expected_err)
+        expect(out).to eq(expected)
+      end
     end
 
     context "when Bundler.setup fails", :bundler => "3" do
@@ -747,18 +841,32 @@ RSpec.describe "bundle exec" do
       let(:expected) { "" }
       let(:expected_err) { <<-EOS.strip }
 \e[31mCould not find gem 'rack (= 2)' in locally installed gems.
-The source contains 'rack' at: 1.0.0\e[0m
+The source contains the following versions of 'rack': 1.0.0\e[0m
 \e[33mRun `bundle install` to install missing gems.\e[0m
       EOS
 
-      it_behaves_like "it runs"
+      it "runs" do
+        skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
+
+        subject
+        expect(exitstatus).to eq(exit_code)
+        expect(err).to eq(expected_err)
+        expect(out).to eq(expected)
+      end
     end
 
     context "when the executable exits non-zero via at_exit" do
       let(:executable) { super() + "\n\nat_exit { $! ? raise($!) : exit(1) }" }
       let(:exit_code) { 1 }
 
-      it_behaves_like "it runs"
+      it "runs" do
+        skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
+
+        subject
+        expect(exitstatus).to eq(exit_code)
+        expect(err).to eq(expected_err)
+        expect(out).to eq(expected)
+      end
     end
 
     context "when disable_exec_load is set" do
@@ -769,7 +877,14 @@ The source contains 'rack' at: 1.0.0\e[0m
         bundle "config set disable_exec_load true"
       end
 
-      it_behaves_like "it runs"
+      it "runs" do
+        skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
+
+        subject
+        expect(exitstatus).to eq(exit_code)
+        expect(err).to eq(expected_err)
+        expect(out).to eq(expected)
+      end
     end
 
     context "regarding $0 and __FILE__" do
@@ -785,12 +900,26 @@ $0: #{path.to_s.inspect}
 __FILE__: #{path.to_s.inspect}
       EOS
 
-      it_behaves_like "it runs"
+      it "runs" do
+        skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
+
+        subject
+        expect(exitstatus).to eq(exit_code)
+        expect(err).to eq(expected_err)
+        expect(out).to eq(expected)
+      end
 
       context "when the path is relative" do
         let(:path) { super().relative_path_from(bundled_app) }
 
-        it_behaves_like "it runs"
+        it "runs" do
+          skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
+
+          subject
+          expect(exitstatus).to eq(exit_code)
+          expect(err).to eq(expected_err)
+          expect(out).to eq(expected)
+        end
       end
 
       context "when the path is relative with a leading ./" do
@@ -825,7 +954,7 @@ __FILE__: #{path.to_s.inspect}
         RUBY
 
         it "receives the signal" do
-          skip "https://github.com/rubygems/bundler/issues/6898" if Gem.win_platform?
+          skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
 
           bundle("exec #{path}") do |_, o, thr|
             o.gets # Consumes 'Started' and ensures that thread has started
@@ -848,7 +977,7 @@ __FILE__: #{path.to_s.inspect}
         RUBY
 
         it "makes sure no unexpected signals are restored to DEFAULT" do
-          skip "https://github.com/rubygems/bundler/issues/6898" if Gem.win_platform?
+          skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
 
           test_signals.each do |n|
             Signal.trap(n, "IGNORE")
@@ -865,6 +994,8 @@ __FILE__: #{path.to_s.inspect}
   context "nested bundle exec" do
     context "when bundle in a local path" do
       before do
+        skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
+
         gemfile <<-G
           source "#{file_uri_for(gem_repo1)}"
           gem "rack"
@@ -874,8 +1005,6 @@ __FILE__: #{path.to_s.inspect}
       end
 
       it "correctly shells out" do
-        skip "https://github.com/rubygems/bundler/issues/6898" if Gem.win_platform?
-
         file = bundled_app("file_that_bundle_execs.rb")
         create_file(file, <<-RUBY)
           #!#{Gem.ruby}
@@ -887,12 +1016,98 @@ __FILE__: #{path.to_s.inspect}
       end
     end
 
+    context "when Kernel.require uses extra monkeypatches" do
+      before do
+        skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
+
+        install_gemfile ""
+      end
+
+      it "does not undo the monkeypatches" do
+        karafka = bundled_app("bin/karafka")
+        create_file(karafka, <<~RUBY)
+          #!#{Gem.ruby}
+
+          module Kernel
+            module_function
+
+            alias_method :require_before_extra_monkeypatches, :require
+
+            def require(path)
+              puts "requiring \#{path} used the monkeypatch"
+
+              require_before_extra_monkeypatches(path)
+            end
+          end
+
+          Bundler.setup(:default)
+
+          require "foo"
+        RUBY
+        karafka.chmod(0o777)
+
+        foreman = bundled_app("bin/foreman")
+        create_file(foreman, <<~RUBY)
+          #!#{Gem.ruby}
+
+          puts `bundle exec bin/karafka`
+        RUBY
+        foreman.chmod(0o777)
+
+        bundle "exec #{foreman}"
+        expect(out).to eq("requiring foo used the monkeypatch")
+      end
+    end
+
+    context "when gemfile and path are configured", :ruby_repo do
+      before do
+        skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
+
+        build_repo2 do
+          build_gem "rails", "6.1.0" do |s|
+            s.executables = "rails"
+          end
+        end
+
+        bundle "config set path vendor/bundle"
+        bundle "config set gemfile gemfiles/rack_6_1.gemfile"
+
+        create_file(bundled_app("gemfiles/rack_6_1.gemfile"), <<~RUBY)
+          source "#{file_uri_for(gem_repo2)}"
+
+          gem "rails", "6.1.0"
+        RUBY
+
+        # A Gemfile needs to be in the root to trick bundler's root resolution
+        create_file(bundled_app("Gemfile"))
+
+        bundle "install"
+      end
+
+      it "can still find gems after a nested subprocess" do
+        script = bundled_app("bin/myscript")
+
+        create_file(script, <<~RUBY)
+          #!#{Gem.ruby}
+
+          puts `bundle exec rails`
+        RUBY
+
+        script.chmod(0o777)
+
+        bundle "exec #{script}"
+
+        expect(err).to be_empty
+        expect(out).to eq("6.1.0")
+      end
+    end
+
     context "with a system gem that shadows a default gem" do
       let(:openssl_version) { "99.9.9" }
       let(:expected) { ruby "gem 'openssl', '< 999999'; require 'openssl'; puts OpenSSL::VERSION", :artifice => nil, :raise_on_error => false }
 
       it "only leaves the default gem in the stdlib available" do
-        skip "https://github.com/rubygems/bundler/issues/6898" if Gem.win_platform?
+        skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
         skip "openssl isn't a default gem" if expected.empty?
 
         install_gemfile "" # must happen before installing the broken system gem

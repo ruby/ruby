@@ -29,6 +29,13 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
 VALUE rb_errinfo(void);
 void rb_set_errinfo(VALUE);
 
+typedef enum {
+    RB_WARN_CATEGORY_NONE,
+    RB_WARN_CATEGORY_DEPRECATED,
+    RB_WARN_CATEGORY_EXPERIMENTAL,
+    RB_WARN_CATEGORY_ALL_BITS = 0x6 /* no RB_WARN_CATEGORY_NONE bit */
+} rb_warning_category_t;
+
 /* for rb_readwrite_sys_fail first argument */
 enum rb_io_wait_readwrite {RB_IO_WAIT_READABLE, RB_IO_WAIT_WRITABLE};
 #define RB_IO_WAIT_READABLE RB_IO_WAIT_READABLE
@@ -63,12 +70,13 @@ VALUE *rb_ruby_debug_ptr(void);
 
 /* reports if `-W' specified */
 PRINTF_ARGS(void rb_warning(const char*, ...), 1, 2);
-PRINTF_ARGS(void rb_category_warning(const char*, const char*, ...), 2, 3);
+PRINTF_ARGS(void rb_category_warning(rb_warning_category_t, const char*, ...), 2, 3);
 PRINTF_ARGS(void rb_compile_warning(const char *, int, const char*, ...), 3, 4);
+PRINTF_ARGS(void rb_category_compile_warn(rb_warning_category_t, const char *, int, const char*, ...), 4, 5);
 PRINTF_ARGS(void rb_sys_warning(const char*, ...), 1, 2);
 /* reports always */
 COLDFUNC PRINTF_ARGS(void rb_warn(const char*, ...), 1, 2);
-COLDFUNC PRINTF_ARGS(void rb_category_warn(const char *, const char*, ...), 2, 3);
+COLDFUNC PRINTF_ARGS(void rb_category_warn(rb_warning_category_t, const char*, ...), 2, 3);
 PRINTF_ARGS(void rb_compile_warn(const char *, int, const char*, ...), 3, 4);
 
 RBIMPL_SYMBOL_EXPORT_END()

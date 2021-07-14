@@ -149,7 +149,6 @@ c.o: $(hdrdir)/ruby/internal/static_assert.h
 c.o: $(hdrdir)/ruby/internal/stdalign.h
 c.o: $(hdrdir)/ruby/internal/stdbool.h
 c.o: $(hdrdir)/ruby/internal/symbol.h
-c.o: $(hdrdir)/ruby/internal/token_paste.h
 c.o: $(hdrdir)/ruby/internal/value.h
 c.o: $(hdrdir)/ruby/internal/value_type.h
 c.o: $(hdrdir)/ruby/internal/variable.h

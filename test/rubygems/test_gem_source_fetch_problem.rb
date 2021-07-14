@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 
 class TestGemSourceFetchProblem < Gem::TestCase
   def test_exception
@@ -8,7 +8,7 @@ class TestGemSourceFetchProblem < Gem::TestCase
 
     sf = Gem::SourceFetchProblem.new source, error
 
-    e = assert_raises RuntimeError do
+    e = assert_raise RuntimeError do
       raise sf
     end
 

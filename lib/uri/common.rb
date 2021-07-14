@@ -252,7 +252,7 @@ module URI
   #
   # Returns a Regexp object which matches to URI-like strings.
   # The Regexp object returned by this method includes arbitrary
-  # number of capture group (parentheses).  Never rely on it's number.
+  # number of capture group (parentheses).  Never rely on its number.
   #
   # == Usage
   #
@@ -321,7 +321,7 @@ module URI
   #
   # See URI.encode_www_form_component, URI.decode_www_form.
   def self.decode_www_form_component(str, enc=Encoding::UTF_8)
-    raise ArgumentError, "invalid %-encoding (#{str})" if /%(?!\h\h)/ =~ str
+    raise ArgumentError, "invalid %-encoding (#{str})" if /%(?!\h\h)/.match?(str)
     str.b.gsub(/\+|%\h\h/, TBLDECWWWCOMP_).force_encoding(enc)
   end
 

@@ -1,15 +1,27 @@
 require 'timeout'
 
 class Reline::GeneralIO
+  def self.reset(encoding: nil)
+    @@pasting = false
+    @@encoding = encoding
+  end
+
   def self.encoding
-    RUBY_PLATFORM =~ /mswin|mingw/ ? Encoding::UTF_8 : Encoding::default_external
+    if defined?(@@encoding)
+      @@encoding
+    elsif RUBY_PLATFORM =~ /mswin|mingw/
+      Encoding::UTF_8
+    else
+      Encoding::default_external
+    end
   end
 
   def self.win?
     false
   end
 
-  RAW_KEYSTROKE_CONFIG = {}
+  def self.set_default_key_bindings(_)
+  end
 
   @@buf = []
 
@@ -65,6 +77,20 @@ class Reline::GeneralIO
   end
 
   def self.set_winch_handler(&handler)
+  end
+
+  @@pasting = false
+
+  def self.in_pasting?
+    @@pasting
+  end
+
+  def self.start_pasting
+    @@pasting = true
+  end
+
+  def self.finish_pasting
+    @@pasting = false
   end
 
   def self.prep

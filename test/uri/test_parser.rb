@@ -7,6 +7,11 @@ class URI::TestParser < Test::Unit::TestCase
     uri.class.component.collect {|c| uri.send(c)}
   end
 
+  def test_inspect
+    assert_match(/URI::RFC2396_Parser/, URI::Parser.new.inspect)
+    assert_match(/URI::RFC3986_Parser/, URI::RFC3986_Parser.new.inspect)
+  end
+
   def test_compare
     url = 'http://a/b/c/d;p?q'
     u0 = URI.parse(url)

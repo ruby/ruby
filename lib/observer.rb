@@ -136,7 +136,7 @@
 #   ticker.add_observer(warner, :call)
 #   ticker.run
 module Observable
-  VERSION = "0.1.0"
+  VERSION = "0.1.1"
 
   #
   # Add +observer+ as an observer on this object. So that it will receive
@@ -219,7 +219,7 @@ module Observable
     if defined? @observer_state and @observer_state
       if defined? @observer_peers
         @observer_peers.each do |k, v|
-          k.send v, *arg
+          k.__send__(v, *arg)
         end
       end
       @observer_state = false

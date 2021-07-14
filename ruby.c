@@ -63,6 +63,7 @@
 #include "ruby/thread.h"
 #include "ruby/util.h"
 #include "ruby/version.h"
+#include "ruby/internal/error.h"
 
 #ifndef MAXPATHLEN
 # define MAXPATHLEN 1024
@@ -92,6 +93,8 @@ void rb_warning_category_update(unsigned int mask, unsigned int bits);
 #define FEATURE_BIT(bit) (1U << feature_##bit)
 #define EACH_FEATURES(X, SEP) \
     X(gems) \
+    SEP \
+    X(error_highlight) \
     SEP \
     X(did_you_mean) \
     SEP \
@@ -302,14 +305,14 @@ usage(const char *name, int help, int highlight, int columns)
 	M("--copyright",                            "", "print the copyright"),
 	M("--dump={insns|parsetree|...}[,...]",     "",
           "dump debug information. see below for available dump list"),
-	M("--enable={gems|rubyopt|...}[,...]", ", --disable={gems|rubyopt|...}[,...]",
+	M("--enable={jit|rubyopt|...}[,...]", ", --disable={jit|rubyopt|...}[,...]",
 	  "enable or disable features. see below for available features"),
 	M("--external-encoding=encoding",           ", --internal-encoding=encoding",
 	  "specify the default external or internal character encoding"),
+	M("--backtrace-limit=num",                  "", "limit the maximum length of backtrace"),
 	M("--verbose",                              "", "turn on verbose mode and disable script from stdin"),
 	M("--version",                              "", "print the version number, then exit"),
 	M("--help",			            "", "show this message, -h for short message"),
-	M("--backtrace-limit=num",                  "", "limit the maximum length of backtrace"),
     };
     static const struct message dumps[] = {
 	M("insns",                  "", "instruction sequences"),
@@ -318,7 +321,8 @@ usage(const char *name, int help, int highlight, int columns)
 	M("parsetree_with_comment", "", "AST with comments"),
     };
     static const struct message features[] = {
-	M("gems",    "",        "rubygems (default: "DEFAULT_RUBYGEMS_ENABLED")"),
+	M("gems",    "",        "rubygems (only for debugging, default: "DEFAULT_RUBYGEMS_ENABLED")"),
+	M("error_highlight", "", "error_highlight (default: "DEFAULT_RUBYGEMS_ENABLED")"),
 	M("did_you_mean", "",   "did_you_mean (default: "DEFAULT_RUBYGEMS_ENABLED")"),
 	M("rubyopt", "",        "RUBYOPT environment variable (default: enabled)"),
 	M("frozen-string-literal", "", "freeze all string literals (default: disabled)"),
@@ -670,8 +674,11 @@ ruby_init_loadpath(void)
 	    p = p2;
 	}
 #endif
+        baselen = p - libpath;
     }
-    baselen = p - libpath;
+    else {
+        baselen = 0;
+    }
     rb_str_resize(sopath, baselen);
     libpath = RSTRING_PTR(sopath);
 #define PREFIX_PATH() sopath
@@ -927,6 +934,8 @@ feature_option(const char *str, int len, void *arg, const unsigned int enable)
 	rb_exc_raise(rb_exc_new_str(rb_eRuntimeError, mesg));
 #undef ADD_FEATURE_NAME
     }
+#else
+    (void)set;
 #endif
     rb_warn("unknown argument for --%s: `%.*s'",
 	    enable ? "enable" : "disable", len, str);
@@ -1139,7 +1148,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 		if (*++s) {
 		    v = scan_oct(s, 1, &numlen);
 		    if (numlen == 0)
-			v = 1;
+                        v = 2;
 		    s += numlen;
 		}
 		if (!opt->warning) {
@@ -1504,10 +1513,15 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
 
     if (opt->features.set & FEATURE_BIT(gems)) {
         rb_define_module("Gem");
+        if (opt->features.set & FEATURE_BIT(error_highlight)) {
+            rb_define_module("ErrorHighlight");
+        }
         if (opt->features.set & FEATURE_BIT(did_you_mean)) {
             rb_define_module("DidYouMean");
         }
     }
+
+    rb_warning_category_update(opt->warn.mask, opt->warn.set);
 
     Init_ext(); /* load statically linked extensions before rubygems */
     rb_call_builtin_inits();
@@ -1646,6 +1660,23 @@ setup_pager_env(void)
     if (!getenv("LESS")) ruby_setenv("LESS", "-R"); // Output "raw" control characters.
 }
 
+#ifdef _WIN32
+static int
+tty_enabled(void)
+{
+    HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+    DWORD m;
+    if (!GetConsoleMode(h, &m)) return 0;
+# ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
+#   define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x4
+# endif
+    if (!(m & ENABLE_VIRTUAL_TERMINAL_PROCESSING)) return 0;
+    return 1;
+}
+#elif !defined(HAVE_WORKING_FORK)
+# define tty_enabled() 0
+#endif
+
 static VALUE
 process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 {
@@ -1655,7 +1686,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     const rb_iseq_t *iseq;
     rb_encoding *enc, *lenc;
 #if UTF8_PATH
-    rb_encoding *uenc, *ienc = 0;
+    rb_encoding *ienc = 0;
+    rb_encoding *const uenc = rb_utf8_encoding();
 #endif
     const char *s;
     char fbuf[MAXPATHLEN];
@@ -1705,10 +1737,10 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
                     int oldout = dup(1);
                     int olderr = dup(2);
                     int fd = RFILE(port)->fptr->fd;
+                    tty = tty_enabled();
                     dup2(fd, 1);
                     dup2(fd, 2);
-                    /* more.com doesn't support CSI sequence */
-                    usage(progname, 1, 0, columns);
+                    usage(progname, 1, tty, columns);
                     fflush(stdout);
                     dup2(oldout, 1);
                     dup2(olderr, 2);
@@ -1745,7 +1777,10 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     }
 
     if (opt->src.enc.name)
-	rb_warning("-K is specified; it is for 1.8 compatibility and may cause odd behavior");
+        /* cannot set deprecated category, as enabling deprecation warnings based on flags
+         * has not happened yet.
+         */
+        rb_warning("-K is specified; it is for 1.8 compatibility and may cause odd behavior");
 
 #if USE_MJIT
     if (opt->features.set & FEATURE_BIT(jit)) {
@@ -1776,7 +1811,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 		opt->script = "-";
 	    }
 	    else if (opt->do_search) {
-		char *path = getenv("RUBYPATH");
+		const char *path = getenv("RUBYPATH");
 
 		opt->script = 0;
 		if (path) {
@@ -1799,7 +1834,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     opt->script_name = rb_str_new_cstr(opt->script);
     opt->script = RSTRING_PTR(opt->script_name);
 
-#if _WIN32
+#ifdef _WIN32
     translit_char_bin(RSTRING_PTR(opt->script_name), '\\', '/');
 #elif defined DOSISH
     translit_char(RSTRING_PTR(opt->script_name), '\\', '/');
@@ -1837,7 +1872,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	enc = rb_enc_from_index(opt->ext.enc.index);
     }
     else {
-	enc = lenc;
+	enc = IF_UTF8_PATH(uenc, lenc);
     }
     rb_enc_set_default_external(rb_enc_from_encoding(enc));
     if (opt->intern.enc.index >= 0) {
@@ -1849,8 +1884,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #endif
     }
     script_name = opt->script_name;
-    rb_enc_associate(opt->script_name,
-		     IF_UTF8_PATH(uenc = rb_utf8_encoding(), lenc));
+    rb_enc_associate(opt->script_name, IF_UTF8_PATH(uenc, lenc));
 #if UTF8_PATH
     if (uenc != lenc) {
 	opt->script_name = str_conv_enc(opt->script_name, uenc, lenc);
@@ -1925,7 +1959,6 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         ruby_set_script_name(progname);
 	rb_parser_set_options(parser, opt->do_print, opt->do_loop,
 			      opt->do_line, opt->do_split);
-        rb_warning_category_update(opt->warn.mask, opt->warn.set);
 	ast = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
     }
     else {
@@ -1943,7 +1976,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	enc = rb_enc_from_index(opt->ext.enc.index);
     }
     else {
-	enc = lenc;
+	enc = IF_UTF8_PATH(uenc, lenc);
     }
     rb_enc_set_default_external(rb_enc_from_encoding(enc));
     if (opt->intern.enc.index >= 0) {
@@ -2021,7 +2054,12 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     rb_define_readonly_boolean("$-l", opt->do_line);
     rb_define_readonly_boolean("$-a", opt->do_split);
 
+    rb_gvar_ractor_local("$-p");
+    rb_gvar_ractor_local("$-l");
+    rb_gvar_ractor_local("$-a");
+
     if ((rb_e_script = opt->e_script) != 0) {
+        rb_str_freeze(rb_e_script);
         rb_gc_register_mark_object(opt->e_script);
     }
 
@@ -2161,7 +2199,6 @@ load_file_internal(VALUE argp_v)
     }
     rb_parser_set_options(parser, opt->do_print, opt->do_loop,
 			  opt->do_line, opt->do_split);
-    rb_warning_category_update(opt->warn.mask, opt->warn.set);
     if (NIL_P(f)) {
 	f = rb_str_new(0, 0);
 	rb_enc_associate(f, enc);
@@ -2187,6 +2224,26 @@ load_file_internal(VALUE argp_v)
 	argp->f = Qnil;
     }
     return (VALUE)ast;
+}
+
+/* disabling O_NONBLOCK, and returns 0 on success, otherwise errno */
+static inline int
+disable_nonblock(int fd)
+{
+#if defined(HAVE_FCNTL) && defined(F_SETFL)
+    if (fcntl(fd, F_SETFL, 0) < 0) {
+        const int e = errno;
+        ASSUME(e != 0);
+# if defined ENOTSUP
+        if (e == ENOTSUP) return 0;
+# endif
+# if defined B_UNSUPPORTED
+        if (e == B_UNSUPPORTED) return 0;
+# endif
+        return e;
+    }
+#endif
+    return 0;
 }
 
 static VALUE
@@ -2238,14 +2295,10 @@ open_load_file(VALUE fname_v, int *xflag)
 	}
 	rb_update_max_fd(fd);
 
-#if defined HAVE_FCNTL && MODE_TO_LOAD != O_RDONLY
-	/* disabling O_NONBLOCK */
-	if (fcntl(fd, F_SETFL, 0) < 0) {
-	    e = errno;
+	if (MODE_TO_LOAD != O_RDONLY && (e = disable_nonblock(fd)) != 0) {
 	    (void)close(fd);
 	    rb_load_fail(fname_v, strerror(e));
 	}
-#endif
 
 	e = ruby_is_fd_loadable(fd);
 	if (!e) {
@@ -2260,7 +2313,7 @@ open_load_file(VALUE fname_v, int *xflag)
 	      We need to wait if FIFO is empty. It's FIFO's semantics.
 	      rb_thread_wait_fd() release GVL. So, it's safe.
 	    */
-	    rb_thread_wait_fd(fd);
+	    rb_io_wait(f, RB_INT2NUM(RUBY_IO_READABLE), Qnil);
 	}
     }
     return f;
@@ -2430,16 +2483,24 @@ forbid_setid(const char *s, const ruby_cmdline_options_t *opt)
         rb_raise(rb_eSecurityError, "no %s allowed while running setgid", s);
 }
 
+static VALUE
+verbose_getter(ID id, VALUE *ptr)
+{
+    return *rb_ruby_verbose_ptr();
+}
+
 static void
 verbose_setter(VALUE val, ID id, VALUE *variable)
 {
-    *variable = RTEST(val) ? Qtrue : val;
+    *rb_ruby_verbose_ptr() = RTEST(val) ? Qtrue : val;
 }
 
 static VALUE
-opt_W_getter(ID id, VALUE *variable)
+opt_W_getter(ID id, VALUE *dmy)
 {
-    switch (*variable) {
+    VALUE v = *rb_ruby_verbose_ptr();
+
+    switch (v) {
       case Qnil:
 	return INT2FIX(0);
       case Qfalse:
@@ -2451,16 +2512,35 @@ opt_W_getter(ID id, VALUE *variable)
     }
 }
 
+static VALUE
+debug_getter(ID id, VALUE *dmy)
+{
+    return *rb_ruby_debug_ptr();
+}
+
+static void
+debug_setter(VALUE val, ID id, VALUE *dmy)
+{
+    *rb_ruby_debug_ptr() = val;
+}
+
 /*! Defines built-in variables */
 void
 ruby_prog_init(void)
 {
-    rb_define_hooked_variable("$VERBOSE", &ruby_verbose, 0, verbose_setter);
-    rb_define_hooked_variable("$-v", &ruby_verbose, 0, verbose_setter);
-    rb_define_hooked_variable("$-w", &ruby_verbose, 0, verbose_setter);
-    rb_define_hooked_variable("$-W", &ruby_verbose, opt_W_getter, rb_gvar_readonly_setter);
-    rb_define_variable("$DEBUG", &ruby_debug);
-    rb_define_variable("$-d", &ruby_debug);
+    rb_define_virtual_variable("$VERBOSE", verbose_getter, verbose_setter);
+    rb_define_virtual_variable("$-v",      verbose_getter, verbose_setter);
+    rb_define_virtual_variable("$-w",      verbose_getter, verbose_setter);
+    rb_define_virtual_variable("$-W",      opt_W_getter,   rb_gvar_readonly_setter);
+    rb_define_virtual_variable("$DEBUG",   debug_getter,   debug_setter);
+    rb_define_virtual_variable("$-d",      debug_getter,   debug_setter);
+
+    rb_gvar_ractor_local("$VERBOSE");
+    rb_gvar_ractor_local("$-v");
+    rb_gvar_ractor_local("$-w");
+    rb_gvar_ractor_local("$-W");
+    rb_gvar_ractor_local("$DEBUG");
+    rb_gvar_ractor_local("$-d");
 
     rb_define_hooked_variable("$0", &rb_progname, 0, set_arg0);
     rb_define_hooked_variable("$PROGRAM_NAME", &rb_progname, 0, set_arg0);
@@ -2483,12 +2563,6 @@ ruby_set_argv(int argc, char **argv)
     int i;
     VALUE av = rb_argv;
 
-#if defined(USE_DLN_A_OUT)
-    if (origarg.argc > 0 && origarg.argv)
-	dln_argv0 = origarg.argv[0];
-    else if (argc > 0 && argv)
-	dln_argv0 = argv[0];
-#endif
     rb_ary_clear(av);
     for (i = 0; i < argc; i++) {
 	VALUE arg = external_str_new_cstr(argv[i]);
@@ -2567,9 +2641,6 @@ ruby_sysinit(int *argc, char ***argv)
     if (*argc >= 0 && *argv) {
 	origarg.argc = *argc;
 	origarg.argv = *argv;
-#if defined(USE_DLN_A_OUT)
-	dln_argv0 = origarg.argv[0];
-#endif
     }
     fill_standard_fds();
 }

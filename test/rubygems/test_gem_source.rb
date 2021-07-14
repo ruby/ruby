@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/source'
 require 'rubygems/indexer'
 
@@ -22,7 +22,7 @@ class TestGemSource < Gem::TestCase
   end
 
   def test_initialize_invalid_uri
-    assert_raises URI::InvalidURIError do
+    assert_raise URI::InvalidURIError do
       Gem::Source.new 'git@example:a.git'
     end
   end
@@ -44,9 +44,9 @@ class TestGemSource < Gem::TestCase
 
   def test_dependency_resolver_set_bundler_api
     response = Net::HTTPResponse.new '1.1', 200, 'OK'
-    response.uri = URI('http://example') if response.respond_to? :uri
+    response.uri = URI('http://example')
 
-    @fetcher.data["#{@gem_repo}api/v1/dependencies"] = response
+    @fetcher.data[@gem_repo] = response
 
     set = @source.dependency_resolver_set
 
@@ -185,7 +185,7 @@ class TestGemSource < Gem::TestCase
   def test_load_specs_from_unavailable_uri
     src = Gem::Source.new("http://not-there.nothing")
 
-    assert_raises Gem::RemoteFetcher::FetchError do
+    assert_raise Gem::RemoteFetcher::FetchError do
       src.load_specs :latest
     end
   end
@@ -238,6 +238,11 @@ class TestGemSource < Gem::TestCase
     assert rubygems_source.typo_squatting?("rubyagems.org")
     assert rubygems_source.typo_squatting?("rubyasgems.org")
     refute rubygems_source.typo_squatting?("rubysertgems.org")
+  end
+
+  def test_typo_squatting_false_positive
+    rubygems_source = Gem::Source.new("https://rubygems.org")
+    refute rubygems_source.typo_squatting?("rubygems.org")
   end
 
   def test_typo_squatting_custom_distance_threshold

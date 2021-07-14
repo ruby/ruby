@@ -20,6 +20,7 @@ struct inetsock_arg
     int type;
     int fd;
     VALUE resolv_timeout;
+    VALUE connect_timeout;
 };
 
 static VALUE
@@ -50,17 +51,18 @@ init_inetsock_internal(VALUE v)
     int fd, status = 0, local = 0;
     int family = AF_UNSPEC;
     const char *syscall = 0;
+    VALUE connect_timeout = arg->connect_timeout;
+    struct timeval tv_storage;
+    struct timeval *tv = NULL;
 
-#ifdef HAVE_GETADDRINFO_A
-    arg->remote.res = rsock_addrinfo_a(arg->remote.host, arg->remote.serv,
-				       family, SOCK_STREAM,
-				       (type == INET_SERVER) ? AI_PASSIVE : 0,
-				       arg->resolv_timeout);
-#else
+    if (!NIL_P(connect_timeout)) {
+        tv_storage = rb_time_interval(connect_timeout);
+        tv = &tv_storage;
+    }
+
     arg->remote.res = rsock_addrinfo(arg->remote.host, arg->remote.serv,
 				     family, SOCK_STREAM,
 				     (type == INET_SERVER) ? AI_PASSIVE : 0);
-#endif
 
 
     /*
@@ -123,7 +125,7 @@ init_inetsock_internal(VALUE v)
 
 	    if (status >= 0) {
 		status = rsock_connect(fd, res->ai_addr, res->ai_addrlen,
-				       (type == INET_SOCKS));
+				       (type == INET_SOCKS), tv);
 		syscall = "connect(2)";
 	    }
 	}
@@ -168,7 +170,7 @@ init_inetsock_internal(VALUE v)
 VALUE
 rsock_init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv,
 	            VALUE local_host, VALUE local_serv, int type,
-		    VALUE resolv_timeout)
+		    VALUE resolv_timeout, VALUE connect_timeout)
 {
     struct inetsock_arg arg;
     arg.sock = sock;
@@ -181,6 +183,7 @@ rsock_init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv,
     arg.type = type;
     arg.fd = -1;
     arg.resolv_timeout = resolv_timeout;
+    arg.connect_timeout = connect_timeout;
     return rb_ensure(init_inetsock_internal, (VALUE)&arg,
 		     inetsock_cleanup, (VALUE)&arg);
 }
@@ -255,7 +258,7 @@ ip_inspect(VALUE sock)
  * If +reverse_lookup+ is +true+ or +:hostname+,
  * hostname is obtained from numeric_address using reverse lookup.
  * Or if it is +false+, or +:numeric+,
- * hostname is same as numeric_address.
+ * hostname is the same as numeric_address.
  * Or if it is +nil+ or omitted, obeys to +ipsocket.do_not_reverse_lookup+.
  * See +Socket.getaddrinfo+ also.
  *
@@ -296,7 +299,7 @@ ip_addr(int argc, VALUE *argv, VALUE sock)
  * If +reverse_lookup+ is +true+ or +:hostname+,
  * hostname is obtained from numeric_address using reverse lookup.
  * Or if it is +false+, or +:numeric+,
- * hostname is same as numeric_address.
+ * hostname is the same as numeric_address.
  * Or if it is +nil+ or omitted, obeys to +ipsocket.do_not_reverse_lookup+.
  * See +Socket.getaddrinfo+ also.
  *
@@ -338,7 +341,7 @@ ip_peeraddr(int argc, VALUE *argv, VALUE sock)
  *
  * _flags_ should be a bitwise OR of Socket::MSG_* constants.
  *
- * ipaddr is same as IPSocket#{peeraddr,addr}.
+ * ipaddr is the same as IPSocket#{peeraddr,addr}.
  *
  *   u1 = UDPSocket.new
  *   u1.bind("127.0.0.1", 4913)

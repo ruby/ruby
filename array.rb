@@ -4,7 +4,8 @@ class Array
   #
   # Shuffles the elements of +self+ in place.
   #    a = [1, 2, 3] #=> [1, 2, 3]
-  #    a.shuffle! #=> [2, 3, 1]
+  #    a.shuffle!    #=> [2, 3, 1]
+  #    a             #=> [2, 3, 1]
   #
   # The optional +random+ argument will be used as the random number generator:
   #    a.shuffle!(random: Random.new(1))  #=> [1, 3, 2]
@@ -17,7 +18,8 @@ class Array
   #
   # Returns a new array with elements of +self+ shuffled.
   #    a = [1, 2, 3] #=> [1, 2, 3]
-  #    a.shuffle #=> [2, 3, 1]
+  #    a.shuffle     #=> [2, 3, 1]
+  #    a             #=> [1, 2, 3]
   #
   # The optional +random+ argument will be used as the random number generator:
   #    a.shuffle(random: Random.new(1))  #=> [1, 3, 2]
@@ -37,8 +39,8 @@ class Array
   #    a.sample # => 8
   # If +self+ is empty, returns +nil+.
   #
-  # When argument +n+ is given (but not keyword argument +random+),
-  # returns a new \Array containing +n+ random elements from +self+:
+  # When argument +n+ is given, returns a new \Array containing +n+ random
+  # elements from +self+:
   #    a.sample(3) # => [8, 9, 2]
   #    a.sample(6) # => [9, 6, 10, 3, 1, 4]
   # Returns no more than <tt>a.size</tt> elements

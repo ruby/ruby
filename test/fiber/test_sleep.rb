@@ -10,7 +10,7 @@ class TestFiberSleep < Test::Unit::TestCase
 
     thread = Thread.new do
       scheduler = Scheduler.new
-      Thread.current.scheduler = scheduler
+      Fiber.set_scheduler scheduler
 
       5.times do |i|
         Fiber.schedule do
@@ -33,7 +33,7 @@ class TestFiberSleep < Test::Unit::TestCase
 
     thread = Thread.new do
       scheduler = Scheduler.new
-      Thread.current.scheduler = scheduler
+      Fiber.set_scheduler scheduler
       Fiber.schedule do
         seconds = sleep(2)
       end
@@ -42,5 +42,30 @@ class TestFiberSleep < Test::Unit::TestCase
     thread.join
 
     assert_operator seconds, :>=, 2, "actual: %p" % seconds
+  end
+
+  def test_broken_sleep
+    thread = Thread.new do
+      Thread.current.report_on_exception = false
+
+      scheduler = Scheduler.new
+
+      def scheduler.kernel_sleep(duration = nil)
+        raise "Broken sleep!"
+      end
+
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        sleep 0
+      end
+
+    ensure
+      scheduler.close
+    end
+
+    assert_raise(RuntimeError) do
+      thread.join
+    end
   end
 end

@@ -65,7 +65,7 @@
 #elif RBIMPL_HAS_DECLSPEC_ATTRIBUTE(align)
 # define RBIMPL_ALIGNAS(_) __declspec(align(_))
 
-#elif RBIMPL_HAS_ATTRIBUTE(aliged)
+#elif RBIMPL_HAS_ATTRIBUTE(aligned)
 # define RBIMPL_ALIGNAS(_) __attribute__((__aligned__(_)))
 
 #else

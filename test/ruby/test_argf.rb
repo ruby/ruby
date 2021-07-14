@@ -745,6 +745,18 @@ class TestArgf < Test::Unit::TestCase
                       ["\"a\\n\"", "\"b\\n\""], [])
     assert_in_out_err(['-e', 'ARGF.each_line(chomp: true) {|para| p para}'], "a\nb\n",
                       ["\"a\"", "\"b\""], [])
+
+    t = make_tempfile
+    argf = ARGF.class.new(t.path)
+    lines = []
+    begin
+      argf.each_line(chomp: true) do |line|
+        lines << line
+      end
+    ensure
+      argf.close
+    end
+    assert_equal(%w[foo bar baz], lines)
   end
 
   def test_each_byte
@@ -993,48 +1005,54 @@ class TestArgf < Test::Unit::TestCase
     assert_nil(argf.gets, bug4274)
   end
 
+  def test_readlines_chomp
+    t = make_tempfile
+    argf = ARGF.class.new(t.path)
+    begin
+      assert_equal(%w[foo bar baz], argf.readlines(chomp: true))
+    ensure
+      argf.close
+    end
+
+    assert_in_out_err(['-e', 'p readlines(chomp: true)'], "a\nb\n",
+                      ["[\"a\", \"b\"]"], [])
+  end
+
+  def test_readline_chomp
+    t = make_tempfile
+    argf = ARGF.class.new(t.path)
+    begin
+      assert_equal("foo", argf.readline(chomp: true))
+    ensure
+      argf.close
+    end
+
+    assert_in_out_err(['-e', 'p readline(chomp: true)'], "a\nb\n",
+                      ["\"a\""], [])
+  end
+
+  def test_gets_chomp
+    t = make_tempfile
+    argf = ARGF.class.new(t.path)
+    begin
+      assert_equal("foo", argf.gets(chomp: true))
+    ensure
+      argf.close
+    end
+
+    assert_in_out_err(['-e', 'p gets(chomp: true)'], "a\nb\n",
+                      ["\"a\""], [])
+  end
+
   def test_readlines_twice
     bug5952 = '[ruby-dev:45160]'
     assert_ruby_status(["-e", "2.times {STDIN.tty?; readlines}"], "", bug5952)
   end
 
-  def test_lines
+  def test_each_codepoint
     ruby('-W1', '-e', "#{<<~"{#"}\n#{<<~'};'}", @t1.path, @t2.path, @t3.path) do |f|
       {#
-        $stderr = $stdout
-        s = []
-        ARGF.lines {|l| s << l }
-        p s
-      };
-      assert_equal("[\"1\\n\", \"2\\n\", \"3\\n\", \"4\\n\", \"5\\n\", \"6\\n\"]\n", f.read)
-    end
-  end
-
-  def test_bytes
-    ruby('-W1', '-e', "#{<<~"{#"}\n#{<<~'};'}", @t1.path, @t2.path, @t3.path) do |f|
-      {#
-        $stderr = $stdout
-        print Marshal.dump(ARGF.bytes.to_a)
-      };
-      assert_equal([49, 10, 50, 10, 51, 10, 52, 10, 53, 10, 54, 10], Marshal.load(f.read))
-    end
-  end
-
-  def test_chars
-    ruby('-W1', '-e', "#{<<~"{#"}\n#{<<~'};'}", @t1.path, @t2.path, @t3.path) do |f|
-      {#
-        $stderr = $stdout
-        print [Marshal.dump(ARGF.chars.to_a)].pack('m')
-      };
-      assert_equal(["1", "\n", "2", "\n", "3", "\n", "4", "\n", "5", "\n", "6", "\n"], Marshal.load(f.read.unpack('m').first))
-    end
-  end
-
-  def test_codepoints
-    ruby('-W1', '-e', "#{<<~"{#"}\n#{<<~'};'}", @t1.path, @t2.path, @t3.path) do |f|
-      {#
-        $stderr = $stdout
-        print Marshal.dump(ARGF.codepoints.to_a)
+        print Marshal.dump(ARGF.each_codepoint.to_a)
       };
       assert_equal([49, 10, 50, 10, 51, 10, 52, 10, 53, 10, 54, 10], Marshal.load(f.read))
     end

@@ -84,11 +84,23 @@ RSpec.describe "Bundler.with_env helpers" do
       expect(last_command.stdboth).to include "false"
     end
 
-    it "should remove '-rbundler/setup' from RUBYOPT" do
+    it "should remove absolute path to 'bundler/setup' from RUBYOPT even if it was present in original env" do
       create_file("source.rb", <<-RUBY)
         print #{modified_env}['RUBYOPT']
       RUBY
-      ENV["RUBYOPT"] = "-W2 -rbundler/setup #{ENV["RUBYOPT"]}"
+      setup_require = "-r#{lib_dir}/bundler/setup"
+      ENV["BUNDLER_ORIG_RUBYOPT"] = "-W2 #{setup_require} #{ENV["RUBYOPT"]}"
+      simulate_bundler_version_when_missing_prerelease_default_gem_activation do
+        bundle_exec_ruby bundled_app("source.rb")
+      end
+      expect(last_command.stdboth).not_to include(setup_require)
+    end
+
+    it "should remove relative path to 'bundler/setup' from RUBYOPT even if it was present in original env" do
+      create_file("source.rb", <<-RUBY)
+        print #{modified_env}['RUBYOPT']
+      RUBY
+      ENV["BUNDLER_ORIG_RUBYOPT"] = "-W2 -rbundler/setup #{ENV["RUBYOPT"]}"
       simulate_bundler_version_when_missing_prerelease_default_gem_activation do
         bundle_exec_ruby bundled_app("source.rb")
       end

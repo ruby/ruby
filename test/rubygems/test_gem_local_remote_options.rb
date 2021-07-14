@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/local_remote_options'
 require 'rubygems/command'
 
@@ -123,7 +123,7 @@ class TestGemLocalRemoteOptions < Gem::TestCase
 
     s1 = 'htp://more-gems.example.com'
 
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       @cmd.handle_options %W[--source #{s1}]
     end
 

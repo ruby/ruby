@@ -9,6 +9,10 @@ module Fiddle
     def setup
       super
       Fiddle.last_error = nil
+      if WINDOWS
+        Fiddle.win32_last_error = nil
+        Fiddle.win32_last_socket_error = nil
+      end
     end
 
     def test_default_abi
@@ -19,6 +23,17 @@ module Fiddle
     def test_name
       func = Function.new(@libm['sin'], [TYPE_DOUBLE], TYPE_DOUBLE, name: 'sin')
       assert_equal 'sin', func.name
+    end
+
+    def test_need_gvl?
+      libruby = Fiddle.dlopen(nil)
+      rb_str_dup = Function.new(libruby['rb_str_dup'],
+                                [:voidp],
+                                :voidp,
+                                need_gvl: true)
+      assert(rb_str_dup.need_gvl?)
+      assert_equal('Hello',
+                   Fiddle.dlunwrap(rb_str_dup.call(Fiddle.dlwrap('Hello'))))
     end
 
     def test_argument_errors
@@ -83,10 +98,58 @@ module Fiddle
       refute_nil Fiddle.last_error
     end
 
+    if WINDOWS
+      def test_win32_last_error
+        kernel32 = Fiddle.dlopen("kernel32")
+        args = [kernel32["SetLastError"], [-TYPE_LONG], TYPE_VOID]
+        args << Function::STDCALL if Function.const_defined?(:STDCALL)
+        set_last_error = Function.new(*args)
+        assert_nil(Fiddle.win32_last_error)
+        n = 1 << 29 | 1
+        set_last_error.call(n)
+        assert_equal(n, Fiddle.win32_last_error)
+      end
+
+      def test_win32_last_socket_error
+        ws2_32 = Fiddle.dlopen("ws2_32")
+        args = [ws2_32["WSASetLastError"], [TYPE_INT], TYPE_VOID]
+        args << Function::STDCALL if Function.const_defined?(:STDCALL)
+        wsa_set_last_error = Function.new(*args)
+        assert_nil(Fiddle.win32_last_socket_error)
+        n = 1 << 29 | 1
+        wsa_set_last_error.call(n)
+        assert_equal(n, Fiddle.win32_last_socket_error)
+      end
+    end
+
     def test_strcpy
       f = Function.new(@libc['strcpy'], [TYPE_VOIDP, TYPE_VOIDP], TYPE_VOIDP)
       buff = +"000"
       str = f.call(buff, "123")
+      assert_equal("123", buff)
+      assert_equal("123", str.to_s)
+    end
+
+    def call_proc(string_to_copy)
+      buff = +"000"
+      str = yield(buff, string_to_copy)
+      [buff, str]
+    end
+
+    def test_function_as_proc
+      f = Function.new(@libc['strcpy'], [TYPE_VOIDP, TYPE_VOIDP], TYPE_VOIDP)
+      buff, str = call_proc("123", &f)
+      assert_equal("123", buff)
+      assert_equal("123", str.to_s)
+    end
+
+    def test_function_as_method
+      f = Function.new(@libc['strcpy'], [TYPE_VOIDP, TYPE_VOIDP], TYPE_VOIDP)
+      klass = Class.new do
+        define_singleton_method(:strcpy, &f)
+      end
+      buff = +"000"
+      str = klass.strcpy(buff, "123")
       assert_equal("123", buff)
       assert_equal("123", str.to_s)
     end
@@ -111,8 +174,7 @@ module Fiddle
       n1 = f.call(nil, 0, msec)
       n2 = th.value
       t1 = Process.clock_gettime(Process::CLOCK_MONOTONIC, :millisecond)
-      delta = EnvUtil.apply_timeout_scale(180)
-      assert_in_delta(msec, t1 - t0, delta, 'slept amount of time')
+      assert_in_delta(msec, t1 - t0, 180, 'slept amount of time')
       assert_equal(0, n1, perror("poll(2) in main-thread"))
       assert_equal(0, n2, perror("poll(2) in sub-thread"))
     end

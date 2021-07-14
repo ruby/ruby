@@ -34,7 +34,7 @@ module Bundler::Molinillo
 
   # An error caused by attempting to fulfil a dependency that was circular
   #
-  # @note This exception will be thrown iff a {Vertex} is added to a
+  # @note This exception will be thrown if and only if a {Vertex} is added to a
   #   {DependencyGraph} that has a {DependencyGraph::Vertex#path_to?} an
   #   existing {DependencyGraph::Vertex}
   class CircularDependencyError < ResolverError
@@ -65,7 +65,7 @@ module Bundler::Molinillo
     # @param [SpecificationProvider] specification_provider see {#specification_provider}
     def initialize(conflicts, specification_provider)
       pairs = []
-      Compatibility.flat_map(conflicts.values.flatten, &:requirements).each do |conflicting|
+      conflicts.values.flat_map(&:requirements).each do |conflicting|
         conflicting.each do |source, conflict_requirements|
           conflict_requirements.each do |c|
             pairs << [c, source]
@@ -121,7 +121,7 @@ module Bundler::Molinillo
           t = ''.dup
           depth = 2
           tree.each do |req|
-            t << '  ' * depth << req.to_s
+            t << '  ' * depth << printable_requirement.call(req)
             unless tree.last == req
               if spec = conflict.activated_by_name[name_for(req)]
                 t << %( was resolved to #{version_for_spec.call(spec)}, which)

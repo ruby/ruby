@@ -5,7 +5,6 @@ require 'test/unit'
 class TestMethod < Test::Unit::TestCase
   def setup
     @verbose = $VERBOSE
-    $VERBOSE = nil
   end
 
   def teardown
@@ -473,6 +472,15 @@ class TestMethod < Test::Unit::TestCase
     o.singleton_class
     m4 = o.method(:bar)
     assert_equal("#<Method: #{c4.inspect}(#{c.inspect})#bar(foo)() #{__FILE__}:#{line_no}>", m4.inspect, bug15608)
+
+    bug17428 = '[ruby-core:101635] [Bug #17428]'
+    assert_equal("#<Method: #<Class:String>(Module)#prepend(*)>", String.method(:prepend).inspect, bug17428)
+
+    c5 = Class.new(String)
+    m = Module.new{def prepend; end; alias prep prepend}; line_no = __LINE__
+    c5.extend(m)
+    c6 = Class.new(c5)
+    assert_equal("#<Method: #<Class:#{c6.inspect}>(#{m.inspect})#prep(prepend)() #{__FILE__}:#{line_no}>", c6.method(:prep).inspect, bug17428)
   end
 
   def test_callee_top_level
@@ -1160,6 +1168,19 @@ class TestMethod < Test::Unit::TestCase
     assert_nil(m.super_method)
   end
 
+  # Bug 17780
+  def test_super_method_module_alias
+    m = Module.new do
+      def foo
+      end
+      alias :f :foo
+    end
+
+    method = m.instance_method(:f)
+    super_method = method.super_method
+    assert_nil(super_method)
+  end
+
   def rest_parameter(*rest)
     rest
   end
@@ -1387,5 +1408,9 @@ class TestMethod < Test::Unit::TestCase
 
     assert_operator nummodule, :>, 0
     assert_operator nummethod, :>, 0
+  end
+
+  def test_invalidating_CC_ASAN
+    assert_ruby_status(['-e', 'using Module.new'])
   end
 end

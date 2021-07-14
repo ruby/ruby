@@ -228,7 +228,7 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
 }
 
 static void
-print_backtrace(const VALUE eclass, const VALUE errat, const VALUE str, int reverse)
+print_backtrace(const VALUE eclass, const VALUE errat, const VALUE str, int reverse, long backtrace_limit)
 {
     if (!NIL_P(errat)) {
 	long i;
@@ -253,9 +253,9 @@ print_backtrace(const VALUE eclass, const VALUE errat, const VALUE str, int reve
         }
 
         // skip for explicit limit
-        if (rb_backtrace_length_limit >= 0 && len > rb_backtrace_length_limit + 1) {
-            skip_start = rb_backtrace_length_limit + 1;
-            skip_len = len - rb_backtrace_length_limit;
+        if (backtrace_limit >= 0 && len > backtrace_limit + 2) {
+            skip_start = backtrace_limit + 1;
+            skip_len = len - skip_start;
         }
 
 	for (i = 1; i < len; i++) {
@@ -289,7 +289,7 @@ shown_cause_p(VALUE cause, VALUE *shown_causes)
 }
 
 static void
-show_cause(VALUE errinfo, VALUE str, VALUE highlight, VALUE reverse, VALUE *shown_causes)
+show_cause(VALUE errinfo, VALUE str, VALUE highlight, VALUE reverse, long backtrace_limit, VALUE *shown_causes)
 {
     VALUE cause = rb_attr_get(errinfo, id_cause);
     if (!NIL_P(cause) && rb_obj_is_kind_of(cause, rb_eException) &&
@@ -298,14 +298,14 @@ show_cause(VALUE errinfo, VALUE str, VALUE highlight, VALUE reverse, VALUE *show
         VALUE errat = rb_get_backtrace(cause);
         VALUE emesg = rb_get_message(cause);
         if (reverse) {
-            show_cause(cause, str, highlight, reverse, shown_causes);
-            print_backtrace(eclass, errat, str, TRUE);
+            show_cause(cause, str, highlight, reverse, backtrace_limit, shown_causes);
+            print_backtrace(eclass, errat, str, TRUE, backtrace_limit);
             print_errinfo(eclass, errat, emesg, str, highlight!=0);
         }
         else {
             print_errinfo(eclass, errat, emesg, str, highlight!=0);
-            print_backtrace(eclass, errat, str, FALSE);
-            show_cause(cause, str, highlight, reverse, shown_causes);
+            print_backtrace(eclass, errat, str, FALSE, backtrace_limit);
+            show_cause(cause, str, highlight, reverse, backtrace_limit, shown_causes);
         }
     }
 }
@@ -315,6 +315,7 @@ rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE highlig
 {
     volatile VALUE eclass;
     VALUE shown_causes = 0;
+    long backtrace_limit = rb_backtrace_length_limit;
 
     if (NIL_P(errinfo))
 	return;
@@ -345,14 +346,14 @@ rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE highlig
 	    len = p - (msg = buff);
 	}
 	write_warn2(str, msg, len);
-        show_cause(errinfo, str, highlight, reverse, &shown_causes);
-	print_backtrace(eclass, errat, str, TRUE);
+        show_cause(errinfo, str, highlight, reverse, backtrace_limit, &shown_causes);
+	print_backtrace(eclass, errat, str, TRUE, backtrace_limit);
 	print_errinfo(eclass, errat, emesg, str, highlight!=0);
     }
     else {
 	print_errinfo(eclass, errat, emesg, str, highlight!=0);
-	print_backtrace(eclass, errat, str, FALSE);
-        show_cause(errinfo, str, highlight, reverse, &shown_causes);
+	print_backtrace(eclass, errat, str, FALSE, backtrace_limit);
+        show_cause(errinfo, str, highlight, reverse, backtrace_limit, &shown_causes);
     }
 }
 

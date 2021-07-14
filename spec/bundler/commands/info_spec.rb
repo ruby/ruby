@@ -3,8 +3,22 @@
 RSpec.describe "bundle info" do
   context "with a standard Gemfile" do
     before do
+      build_repo2 do
+        build_gem "has_metadata" do |s|
+          s.metadata = {
+            "bug_tracker_uri"   => "https://example.com/user/bestgemever/issues",
+            "changelog_uri"     => "https://example.com/user/bestgemever/CHANGELOG.md",
+            "documentation_uri" => "https://www.example.info/gems/bestgemever/0.0.1",
+            "homepage_uri"      => "https://bestgemever.example.io",
+            "mailing_list_uri"  => "https://groups.example.com/bestgemever",
+            "source_code_uri"   => "https://example.com/user/bestgemever",
+            "wiki_uri"          => "https://example.com/user/bestgemever/wiki",
+          }
+        end
+      end
+
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "rails"
         gem "has_metadata"
       G
@@ -151,7 +165,7 @@ RSpec.describe "bundle info" do
       G
 
       bundle "info rac"
-      expect(out).to eq "1 : rack\n2 : rack-obama\n0 : - exit -\n>"
+      expect(out).to match(/\A1 : rack\n2 : rack-obama\n0 : - exit -(\n>)?\z/)
     end
   end
 
@@ -166,6 +180,20 @@ RSpec.describe "bundle info" do
 
       bundle "info #{invalid_regexp}", :raise_on_error => false
       expect(err).to include("Could not find gem '#{invalid_regexp}'.")
+    end
+  end
+
+  context "with without configured" do
+    it "does not find the gem, but gives a helpful error" do
+      bundle "config without test"
+
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rails", group: :test
+      G
+
+      bundle "info rails", :raise_on_error => false
+      expect(err).to include("Could not find gem 'rails', because it's in the group 'test', configured to be ignored.")
     end
   end
 end

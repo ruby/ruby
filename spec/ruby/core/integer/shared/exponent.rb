@@ -47,7 +47,9 @@ describe :integer_exponent, shared: true do
     end
 
     it "returns Float::INFINITY when the number is too big" do
-      2.send(@method, 427387904).should == Float::INFINITY
+      -> {
+        2.send(@method, 427387904).should == Float::INFINITY
+      }.should complain(/warning: in a\*\*b, b may be too big/)
     end
 
     it "raises a ZeroDivisionError for 0 ** -1" do
@@ -105,7 +107,10 @@ describe :integer_exponent, shared: true do
     end
 
     it "switch to a Float when the values is too big" do
-      flt = @bignum.send(@method, @bignum)
+      flt = nil
+      -> {
+        flt = @bignum.send(@method, @bignum)
+      }.should complain(/warning: in a\*\*b, b may be too big/)
       flt.should be_kind_of(Float)
       flt.infinite?.should == 1
     end

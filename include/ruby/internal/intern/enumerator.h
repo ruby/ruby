@@ -42,6 +42,7 @@ VALUE rb_enumeratorize(VALUE, VALUE, int, const VALUE *);
 VALUE rb_enumeratorize_with_size(VALUE, VALUE, int, const VALUE *, rb_enumerator_size_func *);
 VALUE rb_enumeratorize_with_size_kw(VALUE, VALUE, int, const VALUE *, rb_enumerator_size_func *, int);
 int rb_arithmetic_sequence_extract(VALUE, rb_arithmetic_sequence_components_t *);
+VALUE rb_arithmetic_sequence_beg_len_step(VALUE, long *begp, long *lenp, long *stepp, long len, int err);
 
 RBIMPL_SYMBOL_EXPORT_END()
 

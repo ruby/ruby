@@ -581,7 +581,7 @@ class TestOpenURI < Test::Unit::TestCase
           ) {|f|
         assert_equal(1, length.length)
         assert_equal(nil, length[0])
-        assert(progress.length>1,"maybe test is worng")
+        assert(progress.length>1,"maybe test is wrong")
         assert(progress.sort == progress,"monotone increasing expected but was\n#{progress.inspect}")
         assert_equal(content.length, progress[-1])
         assert_equal(content, f.read)
@@ -703,143 +703,149 @@ class TestOpenURI < Test::Unit::TestCase
 
   # 192.0.2.0/24 is TEST-NET.  [RFC3330]
 
-  def test_ftp_invalid_request
-    assert_raise(ArgumentError) { URI("ftp://127.0.0.1/").read }
-    assert_raise(ArgumentError) { URI("ftp://127.0.0.1/a%0Db").read }
-    assert_raise(ArgumentError) { URI("ftp://127.0.0.1/a%0Ab").read }
-    assert_raise(ArgumentError) { URI("ftp://127.0.0.1/a%0Db/f").read }
-    assert_raise(ArgumentError) { URI("ftp://127.0.0.1/a%0Ab/f").read }
-    assert_nothing_raised(URI::InvalidComponentError) { URI("ftp://127.0.0.1/d/f;type=x") }
-  end
+  begin
+    require 'net/ftp'
 
-  def test_ftp
-    TCPServer.open("127.0.0.1", 0) {|serv|
-      _, port, _, host = serv.addr
-      th = Thread.new {
-        s = serv.accept
+    def test_ftp_invalid_request
+      assert_raise(ArgumentError) { URI("ftp://127.0.0.1/").read }
+      assert_raise(ArgumentError) { URI("ftp://127.0.0.1/a%0Db").read }
+      assert_raise(ArgumentError) { URI("ftp://127.0.0.1/a%0Ab").read }
+      assert_raise(ArgumentError) { URI("ftp://127.0.0.1/a%0Db/f").read }
+      assert_raise(ArgumentError) { URI("ftp://127.0.0.1/a%0Ab/f").read }
+      assert_nothing_raised(URI::InvalidComponentError) { URI("ftp://127.0.0.1/d/f;type=x") }
+    end
+
+    def test_ftp
+      TCPServer.open("127.0.0.1", 0) {|serv|
+        _, port, _, host = serv.addr
+        th = Thread.new {
+          s = serv.accept
+          begin
+            s.print "220 Test FTP Server\r\n"
+            assert_equal("USER anonymous\r\n", s.gets); s.print "331 name ok\r\n"
+            assert_match(/\APASS .*\r\n\z/, s.gets); s.print "230 logged in\r\n"
+            assert_equal("TYPE I\r\n", s.gets); s.print "200 type set to I\r\n"
+            assert_equal("CWD foo\r\n", s.gets); s.print "250 CWD successful\r\n"
+            assert_equal("PASV\r\n", s.gets)
+            TCPServer.open("127.0.0.1", 0) {|data_serv|
+              _, data_serv_port, _, _ = data_serv.addr
+              hi = data_serv_port >> 8
+              lo = data_serv_port & 0xff
+              s.print "227 Entering Passive Mode (127,0,0,1,#{hi},#{lo}).\r\n"
+              assert_equal("RETR bar\r\n", s.gets); s.print "150 file okay\r\n"
+              data_sock = data_serv.accept
+              begin
+                data_sock << "content"
+              ensure
+                data_sock.close
+              end
+              s.print "226 transfer complete\r\n"
+              assert_nil(s.gets)
+            }
+          ensure
+            s.close if s
+          end
+        }
         begin
-          s.print "220 Test FTP Server\r\n"
-          assert_equal("USER anonymous\r\n", s.gets); s.print "331 name ok\r\n"
-          assert_match(/\APASS .*\r\n\z/, s.gets); s.print "230 logged in\r\n"
-          assert_equal("TYPE I\r\n", s.gets); s.print "200 type set to I\r\n"
-          assert_equal("CWD foo\r\n", s.gets); s.print "250 CWD successful\r\n"
-          assert_equal("PASV\r\n", s.gets)
-          TCPServer.open("127.0.0.1", 0) {|data_serv|
-            _, data_serv_port, _, _ = data_serv.addr
-            hi = data_serv_port >> 8
-            lo = data_serv_port & 0xff
-            s.print "227 Entering Passive Mode (127,0,0,1,#{hi},#{lo}).\r\n"
-            assert_equal("RETR bar\r\n", s.gets); s.print "150 file okay\r\n"
-            data_sock = data_serv.accept
-            begin
-              data_sock << "content"
-            ensure
-              data_sock.close
-            end
-            s.print "226 transfer complete\r\n"
-            assert_nil(s.gets)
-          }
+          content = URI("ftp://#{host}:#{port}/foo/bar").read
+          assert_equal("content", content)
         ensure
-          s.close if s
+          Thread.kill(th)
+          th.join
         end
       }
-      begin
-        content = URI("ftp://#{host}:#{port}/foo/bar").read
-        assert_equal("content", content)
-      ensure
-        Thread.kill(th)
-        th.join
-      end
-    }
-  end
+    end
 
-  def test_ftp_active
-    TCPServer.open("127.0.0.1", 0) {|serv|
-      _, port, _, host = serv.addr
-      th = Thread.new {
-        s = serv.accept
+    def test_ftp_active
+      TCPServer.open("127.0.0.1", 0) {|serv|
+        _, port, _, host = serv.addr
+        th = Thread.new {
+          s = serv.accept
+          begin
+            content = "content"
+            s.print "220 Test FTP Server\r\n"
+            assert_equal("USER anonymous\r\n", s.gets); s.print "331 name ok\r\n"
+            assert_match(/\APASS .*\r\n\z/, s.gets); s.print "230 logged in\r\n"
+            assert_equal("TYPE I\r\n", s.gets); s.print "200 type set to I\r\n"
+            assert_equal("CWD foo\r\n", s.gets); s.print "250 CWD successful\r\n"
+            assert(m = /\APORT 127,0,0,1,(\d+),(\d+)\r\n\z/.match(s.gets))
+            active_port = m[1].to_i << 8 | m[2].to_i
+            TCPSocket.open("127.0.0.1", active_port) {|data_sock|
+              s.print "200 data connection opened\r\n"
+              assert_equal("RETR bar\r\n", s.gets); s.print "150 file okay\r\n"
+              begin
+                data_sock << content
+              ensure
+                data_sock.close
+              end
+              s.print "226 transfer complete\r\n"
+              assert_nil(s.gets)
+            }
+          ensure
+            s.close if s
+          end
+        }
         begin
-          content = "content"
-          s.print "220 Test FTP Server\r\n"
-          assert_equal("USER anonymous\r\n", s.gets); s.print "331 name ok\r\n"
-          assert_match(/\APASS .*\r\n\z/, s.gets); s.print "230 logged in\r\n"
-          assert_equal("TYPE I\r\n", s.gets); s.print "200 type set to I\r\n"
-          assert_equal("CWD foo\r\n", s.gets); s.print "250 CWD successful\r\n"
-          assert(m = /\APORT 127,0,0,1,(\d+),(\d+)\r\n\z/.match(s.gets))
-          active_port = m[1].to_i << 8 | m[2].to_i
-          TCPSocket.open("127.0.0.1", active_port) {|data_sock|
-            s.print "200 data connection opened\r\n"
-            assert_equal("RETR bar\r\n", s.gets); s.print "150 file okay\r\n"
-            begin
-              data_sock << content
-            ensure
-              data_sock.close
-            end
-            s.print "226 transfer complete\r\n"
-            assert_nil(s.gets)
-          }
+          content = URI("ftp://#{host}:#{port}/foo/bar").read(:ftp_active_mode=>true)
+          assert_equal("content", content)
         ensure
-          s.close if s
+          Thread.kill(th)
+          th.join
         end
       }
-      begin
-        content = URI("ftp://#{host}:#{port}/foo/bar").read(:ftp_active_mode=>true)
-        assert_equal("content", content)
-      ensure
-        Thread.kill(th)
-        th.join
-      end
-    }
-  end
+    end
 
-  def test_ftp_ascii
-    TCPServer.open("127.0.0.1", 0) {|serv|
-      _, port, _, host = serv.addr
-      th = Thread.new {
-        s = serv.accept
+    def test_ftp_ascii
+      TCPServer.open("127.0.0.1", 0) {|serv|
+        _, port, _, host = serv.addr
+        th = Thread.new {
+          s = serv.accept
+          begin
+            content = "content"
+            s.print "220 Test FTP Server\r\n"
+            assert_equal("USER anonymous\r\n", s.gets); s.print "331 name ok\r\n"
+            assert_match(/\APASS .*\r\n\z/, s.gets); s.print "230 logged in\r\n"
+            assert_equal("TYPE I\r\n", s.gets); s.print "200 type set to I\r\n"
+            assert_equal("CWD /foo\r\n", s.gets); s.print "250 CWD successful\r\n"
+            assert_equal("TYPE A\r\n", s.gets); s.print "200 type set to A\r\n"
+            assert_equal("SIZE bar\r\n", s.gets); s.print "213 #{content.bytesize}\r\n"
+            assert_equal("PASV\r\n", s.gets)
+            TCPServer.open("127.0.0.1", 0) {|data_serv|
+              _, data_serv_port, _, _ = data_serv.addr
+              hi = data_serv_port >> 8
+              lo = data_serv_port & 0xff
+              s.print "227 Entering Passive Mode (127,0,0,1,#{hi},#{lo}).\r\n"
+              assert_equal("RETR bar\r\n", s.gets); s.print "150 file okay\r\n"
+              data_sock = data_serv.accept
+              begin
+                data_sock << content
+              ensure
+                data_sock.close
+              end
+              s.print "226 transfer complete\r\n"
+              assert_nil(s.gets)
+            }
+          ensure
+            s.close if s
+          end
+        }
         begin
-          content = "content"
-          s.print "220 Test FTP Server\r\n"
-          assert_equal("USER anonymous\r\n", s.gets); s.print "331 name ok\r\n"
-          assert_match(/\APASS .*\r\n\z/, s.gets); s.print "230 logged in\r\n"
-          assert_equal("TYPE I\r\n", s.gets); s.print "200 type set to I\r\n"
-          assert_equal("CWD /foo\r\n", s.gets); s.print "250 CWD successful\r\n"
-          assert_equal("TYPE A\r\n", s.gets); s.print "200 type set to A\r\n"
-          assert_equal("SIZE bar\r\n", s.gets); s.print "213 #{content.bytesize}\r\n"
-          assert_equal("PASV\r\n", s.gets)
-          TCPServer.open("127.0.0.1", 0) {|data_serv|
-            _, data_serv_port, _, _ = data_serv.addr
-            hi = data_serv_port >> 8
-            lo = data_serv_port & 0xff
-            s.print "227 Entering Passive Mode (127,0,0,1,#{hi},#{lo}).\r\n"
-            assert_equal("RETR bar\r\n", s.gets); s.print "150 file okay\r\n"
-            data_sock = data_serv.accept
-            begin
-              data_sock << content
-            ensure
-              data_sock.close
-            end
-            s.print "226 transfer complete\r\n"
-            assert_nil(s.gets)
-          }
+          length = []
+          progress = []
+          content = URI("ftp://#{host}:#{port}/%2Ffoo/b%61r;type=a").read(
+          :content_length_proc => lambda {|n| length << n },
+          :progress_proc => lambda {|n| progress << n })
+          assert_equal("content", content)
+          assert_equal([7], length)
+          assert_equal(7, progress.inject(&:+))
         ensure
-          s.close if s
+          Thread.kill(th)
+          th.join
         end
       }
-      begin
-        length = []
-        progress = []
-        content = URI("ftp://#{host}:#{port}/%2Ffoo/b%61r;type=a").read(
-         :content_length_proc => lambda {|n| length << n },
-         :progress_proc => lambda {|n| progress << n })
-        assert_equal("content", content)
-        assert_equal([7], length)
-        assert_equal(7, progress.inject(&:+))
-      ensure
-        Thread.kill(th)
-        th.join
-      end
-    }
+    end
+  rescue LoadError
+    # net-ftp is the bundled gems at Ruby 3.1
   end
 
   def test_ftp_over_http_proxy

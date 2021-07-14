@@ -20,14 +20,15 @@ ruby_version_is "3.0" do
       @hash.except(:a, :chunky_bacon).should == { b: 2, c: 3 }
     end
 
-    it "returns an instance of a subclass" do
+    it "always returns a Hash without a default" do
       klass = Class.new(Hash)
-      h = klass.new
+      h = klass.new(:default)
       h[:bar] = 12
       h[:foo] = 42
       r = h.except(:foo)
       r.should == {bar: 12}
-      r.class.should == klass
+      r.class.should == Hash
+      r.default.should == nil
     end
   end
 end

@@ -53,7 +53,7 @@ To install the gem dependencies with Bundler, run the following:
 ruby -S bundle install
 ```
 
-## Running Specs
+## Development
 
 Use RSpec to run the MSpec specs. There are no plans currently to make the
 MSpec specs runnable by MSpec: https://github.com/ruby/mspec/issues/19.

@@ -45,7 +45,7 @@ RSpec.describe ".bundle/config" do
 
     it "can be moved with an environment variable" do
       ENV["BUNDLE_APP_CONFIG"] = tmp("foo/bar").to_s
-      bundle "config --local path vendor/bundle"
+      bundle "config set --local path vendor/bundle"
       bundle "install"
 
       expect(bundled_app(".bundle")).not_to exist
@@ -57,7 +57,7 @@ RSpec.describe ".bundle/config" do
       FileUtils.mkdir_p bundled_app("omg")
 
       ENV["BUNDLE_APP_CONFIG"] = "../foo"
-      bundle "config --local path vendor/bundle"
+      bundle "config set --local path vendor/bundle"
       bundle "install", :dir => bundled_app("omg")
 
       expect(bundled_app(".bundle")).not_to exist
@@ -406,6 +406,14 @@ E
 
       bundle "config list", :parseable => true
       expect(out).to eq "spec_run=true"
+    end
+
+    it "list with credentials" do
+      bundle "config list", :env => { "BUNDLE_GEMS__MYSERVER__COM" => "user:password" }
+      expect(out).to eq "Settings are listed in order of priority. The top value will be used.\ngems.myserver.com\nSet via BUNDLE_GEMS__MYSERVER__COM: \"user:[REDACTED]\"\n\nspec_run\nSet via BUNDLE_SPEC_RUN: \"true\""
+
+      bundle "config list", :parseable => true, :env => { "BUNDLE_GEMS__MYSERVER__COM" => "user:password" }
+      expect(out).to eq "gems.myserver.com=user:password\nspec_run=true"
     end
 
     it "get" do

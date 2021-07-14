@@ -36,7 +36,9 @@ module ObjectSpace
       raise ArgumentError, "wrong output option: #{output.inspect}"
     end
 
-    _dump(obj, out)
+    ret = _dump(obj, out)
+    return nil if output == :stdout
+    ret
   end
 
 
@@ -82,6 +84,8 @@ module ObjectSpace
       raise ArgumentError, "wrong output option: #{output.inspect}"
     end
 
-    _dump_all(out, full, since)
+    ret = _dump_all(out, full, since)
+    return nil if output == :stdout
+    ret
   end
 end

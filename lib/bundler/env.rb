@@ -105,7 +105,7 @@ module Bundler
       out << ["  User Home", Gem.user_home]
       out << ["  User Path", Gem.user_dir]
       out << ["  Bin Dir", Gem.bindir]
-      if defined?(OpenSSL)
+      if defined?(OpenSSL::SSL)
         out << ["OpenSSL"]
         out << ["  Compiled", OpenSSL::OPENSSL_VERSION] if defined?(OpenSSL::OPENSSL_VERSION)
         out << ["  Loaded", OpenSSL::OPENSSL_LIBRARY_VERSION] if defined?(OpenSSL::OPENSSL_LIBRARY_VERSION)

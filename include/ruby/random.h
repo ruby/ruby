@@ -12,18 +12,12 @@
 
 #include "ruby/ruby.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#if 0
-} /* satisfy cc-mode */
-#endif
-#endif
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 
-RUBY_SYMBOL_EXPORT_BEGIN
-
-typedef struct {
+struct rb_random_struct {
     VALUE seed;
-} rb_random_t;
+};
+typedef struct rb_random_struct rb_random_t;
 
 typedef void rb_random_init_func(rb_random_t *, const uint32_t *, size_t);
 typedef unsigned int rb_random_get_int32_func(rb_random_t *);
@@ -37,9 +31,6 @@ typedef struct {
     rb_random_get_bytes_func *get_bytes;
     rb_random_get_real_func *get_real;
 } rb_random_interface_t;
-
-#define rb_rand_if(obj) \
-    ((const rb_random_interface_t *)RTYPEDDATA_TYPE(obj)->data)
 
 #define RB_RANDOM_INTERFACE_DECLARE(prefix) \
     static void prefix##_init(rb_random_t *, const uint32_t *, size_t); \
@@ -62,13 +53,13 @@ typedef struct {
 #if defined _WIN32 && !defined __CYGWIN__
 typedef rb_data_type_t rb_random_data_type_t;
 # define RB_RANDOM_PARENT 0
-# define RB_RANDOM_DATA_INIT_PARENT(random_data) \
-    (random_data.parent = &rb_random_data_type)
 #else
 typedef const rb_data_type_t rb_random_data_type_t;
 # define RB_RANDOM_PARENT &rb_random_data_type
-# define RB_RANDOM_DATA_INIT_PARENT(random_data) ((void)0)
 #endif
+
+#define RB_RANDOM_DATA_INIT_PARENT(random_data) \
+    rbimpl_random_data_init_parent(&random_data)
 
 void rb_random_mark(void *ptr);
 void rb_random_base_init(rb_random_t *rnd);
@@ -76,13 +67,26 @@ double rb_int_pair_to_real(uint32_t a, uint32_t b, int excl);
 void rb_rand_bytes_int32(rb_random_get_int32_func *, rb_random_t *, void *, size_t);
 RUBY_EXTERN const rb_data_type_t rb_random_data_type;
 
-RUBY_SYMBOL_EXPORT_END
+RBIMPL_SYMBOL_EXPORT_END()
 
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
+/* :TODO: can this function be __attribute__((returns_nonnull)) or not? */
+static inline const rb_random_interface_t *
+rb_rand_if(VALUE obj)
+{
+    RBIMPL_ASSERT_OR_ASSUME(RTYPEDDATA_P(obj));
+    const struct rb_data_type_struct *t = RTYPEDDATA_TYPE(obj);
+    const void *ret = t->data;
+    return RBIMPL_CAST((const rb_random_interface_t *)ret);
+}
+
+RBIMPL_ATTR_NOALIAS()
+static inline void
+rbimpl_random_data_init_parent(rb_random_data_type_t *random_data)
+{
+#if defined _WIN32 && !defined __CYGWIN__
+    random_data->parent = &rb_random_data_type;
 #endif
-}  /* extern "C" { */
-#endif
+}
 
 #endif /* RUBY_RANDOM_H */

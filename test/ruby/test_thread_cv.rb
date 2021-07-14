@@ -13,8 +13,8 @@ class TestThreadConditionVariable < Test::Unit::TestCase
   end
 
   def test_condvar_signal_and_wait
-    mutex = Mutex.new
-    condvar = ConditionVariable.new
+    mutex = Thread::Mutex.new
+    condvar = Thread::ConditionVariable.new
     result = []
     mutex.synchronize do
       t = Thread.new do
@@ -35,8 +35,8 @@ class TestThreadConditionVariable < Test::Unit::TestCase
   def test_condvar_wait_exception_handling
     # Calling wait in the only thread running should raise a ThreadError of
     # 'stopping only thread'
-    mutex = Mutex.new
-    condvar = ConditionVariable.new
+    mutex = Thread::Mutex.new
+    condvar = Thread::ConditionVariable.new
 
     locked = false
     thread = Thread.new do
@@ -61,8 +61,8 @@ class TestThreadConditionVariable < Test::Unit::TestCase
   def test_condvar_wait_and_broadcast
     nr_threads = 3
     threads = Array.new
-    mutex = Mutex.new
-    condvar = ConditionVariable.new
+    mutex = Thread::Mutex.new
+    condvar = Thread::ConditionVariable.new
     result = []
 
     nr_threads.times do |i|
@@ -91,8 +91,8 @@ class TestThreadConditionVariable < Test::Unit::TestCase
 
   def test_condvar_wait_deadlock
     assert_in_out_err([], <<-INPUT, /\Afatal\nNo live threads left\. Deadlock/, [])
-      mutex = Mutex.new
-      cv = ConditionVariable.new
+      mutex = Thread::Mutex.new
+      cv = Thread::ConditionVariable.new
 
       klass = nil
       mesg = nil
@@ -112,8 +112,8 @@ INPUT
   def test_condvar_wait_deadlock_2
     nr_threads = 3
     threads = Array.new
-    mutex = Mutex.new
-    condvar = ConditionVariable.new
+    mutex = Thread::Mutex.new
+    condvar = Thread::ConditionVariable.new
 
     nr_threads.times do |i|
       if (i != 0)
@@ -136,8 +136,8 @@ INPUT
   end
 
   def test_condvar_timed_wait
-    mutex = Mutex.new
-    condvar = ConditionVariable.new
+    mutex = Thread::Mutex.new
+    condvar = Thread::ConditionVariable.new
     timeout = 0.3
     locked = false
 
@@ -157,15 +157,15 @@ INPUT
   end
 
   def test_condvar_nolock
-    mutex = Mutex.new
-    condvar = ConditionVariable.new
+    mutex = Thread::Mutex.new
+    condvar = Thread::ConditionVariable.new
 
     assert_raise(ThreadError) {condvar.wait(mutex)}
   end
 
   def test_condvar_nolock_2
-    mutex = Mutex.new
-    condvar = ConditionVariable.new
+    mutex = Thread::Mutex.new
+    condvar = Thread::ConditionVariable.new
 
     Thread.new do
       assert_raise(ThreadError) {condvar.wait(mutex)}
@@ -173,8 +173,8 @@ INPUT
   end
 
   def test_condvar_nolock_3
-    mutex = Mutex.new
-    condvar = ConditionVariable.new
+    mutex = Thread::Mutex.new
+    condvar = Thread::ConditionVariable.new
 
     Thread.new do
       assert_raise(ThreadError) {condvar.wait(mutex, 0.1)}
@@ -182,22 +182,22 @@ INPUT
   end
 
   def test_condvar_empty_signal
-    mutex = Mutex.new
-    condvar = ConditionVariable.new
+    mutex = Thread::Mutex.new
+    condvar = Thread::ConditionVariable.new
 
     assert_nothing_raised(Exception) { mutex.synchronize {condvar.signal} }
   end
 
   def test_condvar_empty_broadcast
-    mutex = Mutex.new
-    condvar = ConditionVariable.new
+    mutex = Thread::Mutex.new
+    condvar = Thread::ConditionVariable.new
 
     assert_nothing_raised(Exception) { mutex.synchronize {condvar.broadcast} }
   end
 
   def test_dup
     bug9440 = '[ruby-core:59961] [Bug #9440]'
-    condvar = ConditionVariable.new
+    condvar = Thread::ConditionVariable.new
     assert_raise(NoMethodError, bug9440) do
       condvar.dup
     end
@@ -207,7 +207,7 @@ INPUT
 
   def test_dump
     bug9674 = '[ruby-core:61677] [Bug #9674]'
-    condvar = ConditionVariable.new
+    condvar = Thread::ConditionVariable.new
     assert_raise_with_message(TypeError, /#{ConditionVariable}/, bug9674) do
       Marshal.dump(condvar)
     end
@@ -219,8 +219,8 @@ INPUT
   end
 
   def test_condvar_fork
-    mutex = Mutex.new
-    condvar = ConditionVariable.new
+    mutex = Thread::Mutex.new
+    condvar = Thread::ConditionVariable.new
     thrs = (1..10).map do
       Thread.new { mutex.synchronize { condvar.wait(mutex) } }
     end

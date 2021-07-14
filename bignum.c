@@ -75,7 +75,7 @@ STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGIT % SIZEOF_LONG == 0);
 #else
 #   define HOST_BIGENDIAN_P 0
 #endif
-/* (!LSHIFTABLE(d, n) ? 0 : (n)) is same as n but suppress a warning, C4293, by Visual Studio.  */
+/* (!LSHIFTABLE(d, n) ? 0 : (n)) is the same as n but suppress a warning, C4293, by Visual Studio.  */
 #define LSHIFTABLE(d, n) ((n) < sizeof(d) * CHAR_BIT)
 #define LSHIFTX(d, n) (!LSHIFTABLE(d, n) ? 0 : ((d) << (!LSHIFTABLE(d, n) ? 0 : (n))))
 #define CLEAR_LOWBITS(d, numbits) ((d) & LSHIFTX(~((d)*0), (numbits)))
@@ -159,15 +159,11 @@ typedef void (mulfunc_t)(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, c
 static mulfunc_t bary_mul_toom3_start;
 static mulfunc_t bary_mul_karatsuba_start;
 static BDIGIT bigdivrem_single(BDIGIT *qds, const BDIGIT *xds, size_t xn, BDIGIT y);
-static void bary_divmod(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn);
 
-static VALUE bigmul0(VALUE x, VALUE y);
-static void bary_mul_toom3(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn, BDIGIT *wds, size_t wn);
 static VALUE bignew_1(VALUE klass, size_t len, int sign);
 static inline VALUE bigtrunc(VALUE x);
 
 static VALUE bigsq(VALUE x);
-static void bigdivmod(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp);
 static inline VALUE power_cache_get_power(int base, int power_level, size_t *numdigits_ret);
 
 #if SIZEOF_BDIGIT <= SIZEOF_INT
@@ -2359,9 +2355,9 @@ bary_sparse_p(const BDIGIT *ds, size_t n)
 {
     long c = 0;
 
-    if (          ds[rb_genrand_ulong_limited(n / 2) + n / 4]) c++;
-    if (c <= 1 && ds[rb_genrand_ulong_limited(n / 2) + n / 4]) c++;
-    if (c <= 1 && ds[rb_genrand_ulong_limited(n / 2) + n / 4]) c++;
+    if (          ds[2 * n / 5]) c++;
+    if (c <= 1 && ds[    n / 2]) c++;
+    if (c <= 1 && ds[3 * n / 5]) c++;
 
     return (c <= 1) ? 1 : 0;
 }
@@ -3689,10 +3685,10 @@ rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t na
         if (u == 0)
             return LONG2FIX(0);
 	if (0 < sign && POSFIXABLE(u))
-            return LONG2FIX(u);
+            return LONG2FIX((long)u);
 	if (sign < 0 && BDIGIT_MSB(fixbuf[1]) == 0 &&
                 NEGFIXABLE(-(BDIGIT_DBL_SIGNED)u))
-            return LONG2FIX(-(BDIGIT_DBL_SIGNED)u);
+            return LONG2FIX((long)-(BDIGIT_DBL_SIGNED)u);
         val = bignew((long)num_bdigits, 0 <= sign);
         MEMCPY(BDIGITS(val), fixbuf, BDIGIT, num_bdigits);
     }
@@ -4487,14 +4483,14 @@ rb_ll2big(LONG_LONG n)
 VALUE
 rb_ull2inum(unsigned LONG_LONG n)
 {
-    if (POSFIXABLE(n)) return LONG2FIX(n);
+    if (POSFIXABLE(n)) return LONG2FIX((long)n);
     return rb_ull2big(n);
 }
 
 VALUE
 rb_ll2inum(LONG_LONG n)
 {
-    if (FIXABLE(n)) return LONG2FIX(n);
+    if (FIXABLE(n)) return LONG2FIX((long)n);
     return rb_ll2big(n);
 }
 
@@ -5512,7 +5508,7 @@ rb_big_le(VALUE x, VALUE y)
  *
  *  Returns <code>true</code> only if <i>obj</i> has the same value
  *  as <i>big</i>. Contrast this with Integer#eql?, which requires
- *  <i>obj</i> to be a Integer.
+ *  <i>obj</i> to be an Integer.
  *
  *     68719476736 == 68719476736.0   #=> true
  */
@@ -7136,6 +7132,7 @@ rb_int_powm(int const argc, VALUE * const argv, VALUE const num)
             long const half_val = (long)HALF_LONG_MSB;
             long const mm = FIX2LONG(m);
             if (!mm) rb_num_zerodiv();
+            if (mm == 1) return INT2FIX(0);
             if (mm <= half_val) {
                 return int_pow_tmp1(rb_int_modulo(a, m), b, mm, nega_flg);
             }
@@ -7145,6 +7142,7 @@ rb_int_powm(int const argc, VALUE * const argv, VALUE const num)
         }
         else {
             if (rb_bigzero_p(m)) rb_num_zerodiv();
+	    if (bignorm(m) == INT2FIX(1)) return INT2FIX(0);
             return int_pow_tmp3(rb_int_modulo(a, m), b, m, nega_flg);
         }
     }

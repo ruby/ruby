@@ -34,7 +34,7 @@ class Gem::Security::Signer
   attr_reader :options
 
   DEFAULT_OPTIONS = {
-    expiration_length_days: 365
+    expiration_length_days: 365,
   }.freeze
 
   ##

@@ -1,8 +1,14 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/dependency'
 
 class TestGemDependency < Gem::TestCase
+  def setup
+    super
+
+    without_any_upwards_gemfiles
+  end
+
   def test_initialize
     d = dep "pkg", "> 1.0"
 
@@ -11,7 +17,7 @@ class TestGemDependency < Gem::TestCase
   end
 
   def test_initialize_type_bad
-    e = assert_raises ArgumentError do
+    e = assert_raise ArgumentError do
       Gem::Dependency.new 'monkey' => '1.0'
     end
 
@@ -43,7 +49,7 @@ class TestGemDependency < Gem::TestCase
     assert_equal :runtime, dep("pkg").type
     assert_equal :development, dep("pkg", [], :development).type
 
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       dep "pkg", :sometimes
     end
   end
@@ -248,7 +254,7 @@ class TestGemDependency < Gem::TestCase
     a = dep 'a'
     b = dep 'b'
 
-    e = assert_raises ArgumentError do
+    e = assert_raise ArgumentError do
       a.merge b
     end
 
@@ -330,7 +336,7 @@ class TestGemDependency < Gem::TestCase
 
     dep = Gem::Dependency.new "a", "= 2.0"
 
-    e = assert_raises Gem::MissingSpecVersionError do
+    e = assert_raise Gem::MissingSpecVersionError do
       dep.to_specs
     end
 
@@ -353,7 +359,7 @@ class TestGemDependency < Gem::TestCase
     assert_equal [b, b_1], dep.to_specs
 
     Gem::BundlerVersionFinder.stub(:bundler_version_with_reason, ["3.5", "reason"]) do
-      e = assert_raises Gem::MissingSpecVersionError do
+      e = assert_raise Gem::MissingSpecVersionError do
         dep.to_specs
       end
 
@@ -377,7 +383,7 @@ class TestGemDependency < Gem::TestCase
 
     dep = Gem::Dependency.new "b", "= 2.0"
 
-    e = assert_raises Gem::MissingSpecError do
+    e = assert_raise Gem::MissingSpecError do
       dep.to_specs
     end
 

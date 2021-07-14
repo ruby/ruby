@@ -6,6 +6,6 @@ describe "StringScanner#concat" do
   it_behaves_like :strscan_concat, :concat
 end
 
-describe "StringScanner#concat when passed a Fixnum" do
+describe "StringScanner#concat when passed an Integer" do
   it_behaves_like :strscan_concat_fixnum, :concat
 end

@@ -3,9 +3,7 @@
 
 #include <ruby/ruby.h>
 #include "../digest.h"
-#if defined(SHA2_USE_OPENSSL)
-#include "sha2ossl.h"
-#elif defined(SHA2_USE_COMMONDIGEST)
+#if defined(SHA2_USE_COMMONDIGEST)
 #include "sha2cc.h"
 #else
 #include "sha2.h"
@@ -49,9 +47,7 @@ Init_sha2(void)
     cDigest_SHA##bitlen = rb_define_class_under(mDigest, "SHA" #bitlen, cDigest_Base); \
 \
     rb_ivar_set(cDigest_SHA##bitlen, id_metadata, \
-		Data_Wrap_Struct(0, 0, 0, (void *)&sha##bitlen));
+		rb_digest_make_metadata(&sha##bitlen));
 
-#undef RUBY_UNTYPED_DATA_WARNING
-#define RUBY_UNTYPED_DATA_WARNING 0
     FOREACH_BITLEN(DEFINE_ALGO_CLASS)
 }

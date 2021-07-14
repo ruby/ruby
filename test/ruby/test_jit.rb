@@ -45,10 +45,8 @@ class TestJIT < Test::Unit::TestCase
     # ci.rvm.jp caches its build environment. Clean up temporary files left by SEGV.
     if ENV['RUBY_DEBUG']&.include?('ci')
       Dir.glob("#{ENV.fetch('TMPDIR', '/tmp')}/_ruby_mjit_p*u*.*").each do |file|
-        if File.mtime(file) < Time.now - 60 * 60 * 24
-          puts "test/ruby/test_jit.rb: removing #{file}"
-          File.unlink(file)
-        end
+        puts "test/ruby/test_jit.rb: removing #{file}"
+        File.unlink(file)
       end
     end
 
@@ -320,10 +318,6 @@ class TestJIT < Test::Unit::TestCase
     assert_compile_once('{}["true"] = true', result_inspect: 'true', insns: %i[swap topn])
   end
 
-  def test_compile_insn_reverse
-    assert_compile_once('q, (w, e), r = 1, [2, 3], 4; [q, w, e, r]', result_inspect: '[1, 2, 3, 4]', insns: %i[reverse])
-  end
-
   def test_compile_insn_reput
     skip "write test"
   end
@@ -503,7 +497,7 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_checkmatch_opt_case_dispatch
-    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '"world"', insns: %i[checkmatch opt_case_dispatch])
+    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '"world"', insns: %i[opt_case_dispatch])
     begin;
       case 'hello'
       when 'hello'
@@ -692,17 +686,12 @@ class TestJIT < Test::Unit::TestCase
         assert_match(/\A#{JIT_SUCCESS_PREFIX}: mjit#{i}@\(eval\):/, errs[i], debug_info)
       end
 
+      assert_equal("No units can be unloaded -- incremented max-cache-size to 11 for --jit-wait\n", errs[10], debug_info)
+      assert_match(/\A#{JIT_SUCCESS_PREFIX}: mjit10@\(eval\):/, errs[11], debug_info)
       # On --jit-wait, when the number of JIT-ed code reaches --jit-max-cache,
       # it should trigger compaction.
-      if RUBY_PLATFORM.match?(/mswin|mingw/) # compaction is not supported on Windows yet
-        assert_equal("Too many JIT code -- 1 units unloaded\n", errs[10], debug_info)
-        assert_match(/\A#{JIT_SUCCESS_PREFIX}: mjit10@\(eval\):/, errs[11], debug_info)
-      else
-        assert_equal("Too many JIT code, but skipped unloading units for JIT compaction\n", errs[10], debug_info)
-        assert_equal("No units can be unloaded -- incremented max-cache-size to 11 for --jit-wait\n", errs[11], debug_info)
-        assert_match(/\A#{JIT_SUCCESS_PREFIX}: mjit10@\(eval\):/, errs[12], debug_info)
-
-        assert_equal(3, compactions.size, debug_info)
+      unless RUBY_PLATFORM.match?(/mswin|mingw/) # compaction is not supported on Windows yet
+        assert_equal(1, compactions.size, debug_info)
       end
 
       if RUBY_PLATFORM.match?(/mswin/)
@@ -784,6 +773,20 @@ class TestJIT < Test::Unit::TestCase
     end;
   end
 
+  def test_inlined_builtin_methods
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '', success_count: 1, min_calls: 2)
+    begin;
+      def test
+        float = 0.0
+        float.abs
+        float.-@
+        float.zero?
+      end
+      test
+      test
+    end;
+  end
+
   def test_inlined_c_method
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "aaa", success_count: 2, recompile_count: 1, min_calls: 2)
     begin;
@@ -836,11 +839,9 @@ class TestJIT < Test::Unit::TestCase
         end
       end
 
-      verbose, $VERBOSE = $VERBOSE, false # suppress "instance variable @b not initialized"
       print(Foo.new.bar)
       print(Foo.new.bar)
       print(Foo.new.bar)
-      $VERBOSE = verbose
     end;
   end
 
@@ -863,6 +864,18 @@ class TestJIT < Test::Unit::TestCase
       rescue FrozenError => e
         p e.class
       end
+    end;
+  end
+
+  def test_inlined_getconstant
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '11', success_count: 1, min_calls: 2)
+    begin;
+      FOO = 1
+      def const
+        FOO
+      end
+      print const
+      print const
     end;
   end
 
@@ -1076,6 +1089,14 @@ class TestJIT < Test::Unit::TestCase
       2.times do
         p(Thread.current["a"])
       end
+    end;
+  end
+
+  def test_mjit_pause_wait
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '', success_count: 0, min_calls: 1)
+    begin;
+      RubyVM::JIT.pause
+      proc {}.call
     end;
   end
 

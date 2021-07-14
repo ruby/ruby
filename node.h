@@ -187,6 +187,8 @@ typedef struct RNode {
 
 #define nd_type(n) ((int) (((n)->flags & NODE_TYPEMASK)>>NODE_TYPESHIFT))
 #define nd_set_type(n,t) \
+    rb_node_set_type(n, t)
+#define nd_init_type(n,t) \
     (n)->flags=(((n)->flags&~NODE_TYPEMASK)|((((unsigned long)(t))<<NODE_TYPESHIFT)&NODE_TYPEMASK))
 
 #define NODE_LSHIFT (NODE_TYPESHIFT+7)
@@ -273,8 +275,8 @@ typedef struct RNode {
 
 #define nd_brace u2.argc
 
-#define nd_pkwargs    u1.node
-#define nd_pconst     u2.node
+#define nd_pconst     u1.node
+#define nd_pkwargs    u2.node
 #define nd_pkwrestarg u3.node
 
 #define nd_apinfo u3.apinfo
@@ -396,7 +398,10 @@ typedef struct node_buffer_struct node_buffer_t;
 typedef struct rb_ast_body_struct {
     const NODE *root;
     VALUE compile_option;
-    int line_count;
+    VALUE script_lines;
+    // script_lines is either:
+    // - a Fixnum that represents the line count of the original source, or
+    // - an Array that contains the lines of the original source
 } rb_ast_body_t;
 typedef struct rb_ast_struct {
     VALUE flags;
@@ -471,8 +476,18 @@ void *rb_parser_realloc(struct parser_params *, void *, size_t);
 void *rb_parser_calloc(struct parser_params *, size_t, size_t);
 void rb_parser_free(struct parser_params *, void *);
 PRINTF_ARGS(void rb_parser_printf(struct parser_params *parser, const char *fmt, ...), 2, 3);
+void rb_ast_node_type_change(NODE *n, enum node_type type);
 
 RUBY_SYMBOL_EXPORT_END
+
+static inline VALUE
+rb_node_set_type(NODE *n, enum node_type t)
+{
+#if RUBY_DEBUG
+    rb_ast_node_type_change(n, t);
+#endif
+    return nd_init_type(n, t);
+}
 
 #if defined(__cplusplus)
 #if 0

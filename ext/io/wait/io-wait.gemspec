@@ -1,6 +1,8 @@
+_VERSION = "0.1.1"
+
 Gem::Specification.new do |spec|
   spec.name          = "io-wait"
-  spec.version       = "0.1.0"
+  spec.version       = _VERSION
   spec.authors       = ["Nobu Nakada"]
   spec.email         = ["nobu@ruby-lang.org"]
 
@@ -14,9 +16,12 @@ Gem::Specification.new do |spec|
   spec.metadata["source_code_uri"] = spec.homepage
 
   spec.files         = Dir.chdir(File.expand_path('..', __FILE__)) do
-    `git ls-files -z`.split("\x0").reject { |f| f.match(%r{^(test|spec|features)/}) }
+    `git ls-files -z`.split("\x0").reject do |f|
+      f.match(%r{\A(?:test|spec|features)/|\A\.(?:git|travis)})
+    end
   end
+  spec.extensions    = %w[ext/io/wait/extconf.rb]
   spec.bindir        = "exe"
-  spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
+  spec.executables   = []
   spec.require_paths = ["lib"]
 end

@@ -39,12 +39,6 @@ VALUE rb_mutex_owned_p(VALUE self);
 
 int rb_thread_wait_for_single_fd(int fd, int events, struct timeval * timeout);
 
-VALUE rb_thread_scheduler_get(VALUE thread);
-VALUE rb_thread_scheduler_set(VALUE thread, VALUE scheduler);
-
-VALUE rb_thread_scheduler_if_nonblocking(VALUE thread);
-VALUE rb_thread_current_scheduler();
-
 RUBY_SYMBOL_EXPORT_BEGIN
 /* Temporary.  This API will be removed (renamed). */
 VALUE rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd);

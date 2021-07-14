@@ -18,7 +18,7 @@ describe :io_new, shared: true do
     rm_r @name
   end
 
-  it "creates an IO instance from a Fixnum argument" do
+  it "creates an IO instance from an Integer argument" do
     @io = IO.send(@method, @fd, "w")
     @io.should be_an_instance_of(IO)
   end
@@ -55,7 +55,7 @@ describe :io_new, shared: true do
     end
   end
 
-  it "calls #to_int on an object to convert to a Fixnum" do
+  it "calls #to_int on an object to convert to an Integer" do
     obj = mock("file descriptor")
     obj.should_receive(:to_int).and_return(@fd)
     @io = IO.send(@method, obj, "w")

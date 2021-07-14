@@ -394,6 +394,24 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
+  def test_each_byte_closed
+    pipe(proc do |w|
+      w << "abc def"
+      w.close
+    end, proc do |r|
+      assert_raise(IOError) do
+        r.each_byte {|byte| r.close if byte == 32 }
+      end
+    end)
+    make_tempfile {|t|
+      File.open(t, 'rt') {|f|
+        assert_raise(IOError) do
+          f.each_byte {|c| f.close if c == 10}
+        end
+      }
+    }
+  end
+
   def test_each_codepoint
     make_tempfile {|t|
       bug2959 = '[ruby-core:28650]'
@@ -405,16 +423,21 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
-  def test_each_codepoint_enumerator
+  def test_each_codepoint_closed
+    pipe(proc do |w|
+      w.print("abc def")
+      w.close
+    end, proc do |r|
+      assert_raise(IOError) do
+        r.each_codepoint {|c| r.close if c == 32}
+      end
+    end)
     make_tempfile {|t|
-      a = ""
-      b = ""
       File.open(t, 'rt') {|f|
-        a = f.each_codepoint.take(4).pack('U*')
-        b = f.read(8)
+        assert_raise(IOError) do
+          f.each_codepoint {|c| f.close if c == 10}
+        end
       }
-      assert_equal("foo\n", a)
-      assert_equal("bar\nbaz\n", b)
     }
   end
 
@@ -620,7 +643,7 @@ class TestIO < Test::Unit::TestCase
 
   if have_nonblock?
     def test_copy_stream_no_busy_wait
-      skip "MJIT has busy wait on GC. This sometimes fails with --jit." if RubyVM::MJIT.enabled?
+      skip "MJIT has busy wait on GC. This sometimes fails with --jit." if defined?(RubyVM::JIT) && RubyVM::JIT.enabled?
       skip "multiple threads already active" if Thread.list.size > 1
 
       msg = 'r58534 [ruby-core:80969] [Backport #13533]'
@@ -1575,7 +1598,7 @@ class TestIO < Test::Unit::TestCase
   end if have_nonblock?
 
   def test_read_nonblock_no_exceptions
-    skip '[ruby-core:90895] MJIT worker may leave fd open in a forked child' if RubyVM::MJIT.enabled? # TODO: consider acquiring GVL from MJIT worker.
+    skip '[ruby-core:90895] MJIT worker may leave fd open in a forked child' if defined?(RubyVM::JIT) && RubyVM::JIT.enabled? # TODO: consider acquiring GVL from MJIT worker.
     with_pipe {|r, w|
       assert_equal :wait_readable, r.read_nonblock(4096, exception: false)
       w.puts "HI!"
@@ -1819,6 +1842,61 @@ class TestIO < Test::Unit::TestCase
       a = []
       r.each_char {|c| a << c }
       assert_equal(%w(f o o) + ["\n"] + %w(b a r) + ["\n"] + %w(b a z) + ["\n"], a)
+    end)
+  end
+
+  def test_each_line
+    pipe(proc do |w|
+      w.puts "foo"
+      w.puts "bar"
+      w.puts "baz"
+      w.close
+    end, proc do |r|
+      e = nil
+      assert_warn('') {
+        e = r.each_line
+      }
+      assert_equal("foo\n", e.next)
+      assert_equal("bar\n", e.next)
+      assert_equal("baz\n", e.next)
+      assert_raise(StopIteration) { e.next }
+    end)
+  end
+
+  def test_each_byte2
+    pipe(proc do |w|
+      w.binmode
+      w.puts "foo"
+      w.puts "bar"
+      w.puts "baz"
+      w.close
+    end, proc do |r|
+      e = nil
+      assert_warn('') {
+        e = r.each_byte
+      }
+      (%w(f o o) + ["\n"] + %w(b a r) + ["\n"] + %w(b a z) + ["\n"]).each do |c|
+        assert_equal(c.ord, e.next)
+      end
+      assert_raise(StopIteration) { e.next }
+    end)
+  end
+
+  def test_each_char2
+    pipe(proc do |w|
+      w.puts "foo"
+      w.puts "bar"
+      w.puts "baz"
+      w.close
+    end, proc do |r|
+      e = nil
+      assert_warn('') {
+        e = r.each_char
+      }
+      (%w(f o o) + ["\n"] + %w(b a r) + ["\n"] + %w(b a z) + ["\n"]).each do |c|
+        assert_equal(c, e.next)
+      end
+      assert_raise(StopIteration) { e.next }
     end)
   end
 
@@ -2168,7 +2246,7 @@ class TestIO < Test::Unit::TestCase
   def test_autoclose_true_closed_by_finalizer
     # http://ci.rvm.jp/results/trunk-mjit@silicon-docker/1465760
     # http://ci.rvm.jp/results/trunk-mjit@silicon-docker/1469765
-    skip 'this randomly fails with MJIT' if RubyVM::MJIT.enabled?
+    skip 'this randomly fails with MJIT' if defined?(RubyVM::JIT) && RubyVM::JIT.enabled?
 
     feature2250 = '[ruby-core:26222]'
     pre = 'ft2250'
@@ -2579,7 +2657,7 @@ class TestIO < Test::Unit::TestCase
     end
 
     capture.clear
-    assert_warning(/[.#]write is outdated/) do
+    assert_deprecated_warning(/[.#]write is outdated/) do
       stdout, $stdout = $stdout, capture
       puts "hey"
     ensure
@@ -3274,11 +3352,17 @@ __END__
     data = "a" * 100
     with_pipe do |r,w|
       th = Thread.new {r.sysread(100, buf)}
+
       Thread.pass until th.stop?
-      buf.replace("")
-      assert_empty(buf, bug6099)
+
+      assert_equal 100, buf.bytesize
+
+      msg = /can't modify string; temporarily locked/
+      assert_raise_with_message(RuntimeError, msg) do
+        buf.replace("")
+      end
+      assert_predicate(th, :alive?)
       w.write(data)
-      Thread.pass while th.alive?
       th.join
     end
     assert_equal(data, buf, bug6099)
@@ -3652,7 +3736,7 @@ __END__
     begin;
       bug13158 = '[ruby-core:79262] [Bug #13158]'
       closed = nil
-      q = Queue.new
+      q = Thread::Queue.new
       IO.pipe do |r, w|
         thread = Thread.new do
           begin

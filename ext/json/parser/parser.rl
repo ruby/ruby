@@ -89,13 +89,12 @@ static int convert_UTF32_to_UTF8(char *buf, UTF32 ch)
 
 static VALUE mJSON, mExt, cParser, eParserError, eNestingError;
 static VALUE CNaN, CInfinity, CMinusInfinity;
-static VALUE cBigDecimal = Qundef;
 
 static ID i_json_creatable_p, i_json_create, i_create_id, i_create_additions,
           i_chr, i_max_nesting, i_allow_nan, i_symbolize_names,
           i_object_class, i_array_class, i_decimal_class, i_key_p,
           i_deep_const_get, i_match, i_match_string, i_aset, i_aref,
-          i_leftshift, i_new, i_BigDecimal;
+          i_leftshift, i_new, i_try_convert, i_freeze, i_uminus;
 
 %%{
     machine JSON_common;
@@ -290,6 +289,10 @@ static char *JSON_parse_value(JSON_Parser *json, char *p, char *pe, VALUE *resul
     %% write init;
     %% write exec;
 
+    if (json->freeze) {
+        OBJ_FREEZE(*result);
+    }
+
     if (cs >= JSON_value_first_final) {
         return p;
     } else {
@@ -341,19 +344,6 @@ static char *JSON_parse_integer(JSON_Parser *json, char *p, char *pe, VALUE *res
              )  (^[0-9Ee.\-]? @exit );
 }%%
 
-static int is_bigdecimal_class(VALUE obj)
-{
-  if (cBigDecimal == Qundef) {
-    if (rb_const_defined(rb_cObject, i_BigDecimal)) {
-      cBigDecimal = rb_const_get_at(rb_cObject, i_BigDecimal);
-    }
-    else {
-      return 0;
-    }
-  }
-  return obj == cBigDecimal;
-}
-
 static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *result)
 {
     int cs = EVIL;
@@ -363,21 +353,46 @@ static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *resul
     %% write exec;
 
     if (cs >= JSON_float_first_final) {
+        VALUE mod = Qnil;
+        ID method_id = 0;
+        if (rb_respond_to(json->decimal_class, i_try_convert)) {
+            mod = json->decimal_class;
+            method_id = i_try_convert;
+        } else if (rb_respond_to(json->decimal_class, i_new)) {
+            mod = json->decimal_class;
+            method_id = i_new;
+        } else if (RB_TYPE_P(json->decimal_class, T_CLASS)) {
+            VALUE name = rb_class_name(json->decimal_class);
+            const char *name_cstr = RSTRING_PTR(name);
+            const char *last_colon = strrchr(name_cstr, ':');
+            if (last_colon) {
+                const char *mod_path_end = last_colon - 1;
+                VALUE mod_path = rb_str_substr(name, 0, mod_path_end - name_cstr);
+                mod = rb_path_to_class(mod_path);
+
+                const char *method_name_beg = last_colon + 1;
+                long before_len = method_name_beg - name_cstr;
+                long len = RSTRING_LEN(name) - before_len;
+                VALUE method_name = rb_str_substr(name, before_len, len);
+                method_id = SYM2ID(rb_str_intern(method_name));
+            } else {
+                mod = rb_mKernel;
+                method_id = SYM2ID(rb_str_intern(name));
+            }
+        }
+
         long len = p - json->memo;
         fbuffer_clear(json->fbuffer);
         fbuffer_append(json->fbuffer, json->memo, len);
         fbuffer_append_char(json->fbuffer, '\0');
-        if (NIL_P(json->decimal_class)) {
-          *result = rb_float_new(rb_cstr_to_dbl(FBUFFER_PTR(json->fbuffer), 1));
+
+        if (method_id) {
+            VALUE text = rb_str_new2(FBUFFER_PTR(json->fbuffer));
+            *result = rb_funcallv(mod, method_id, 1, &text);
         } else {
-          VALUE text;
-          text = rb_str_new2(FBUFFER_PTR(json->fbuffer));
-          if (is_bigdecimal_class(json->decimal_class)) {
-            *result = rb_funcall(Qnil, i_BigDecimal, 1, text);
-          } else {
-            *result = rb_funcall(json->decimal_class, i_new, 1, text);
-          }
+            *result = DBL2NUM(rb_cstr_to_dbl(FBUFFER_PTR(json->fbuffer), 1));
         }
+
         return p + 1;
     } else {
         return NULL;
@@ -437,17 +452,29 @@ static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *resul
     }
 }
 
-static VALUE json_string_unescape(VALUE result, char *string, char *stringEnd)
+static const size_t MAX_STACK_BUFFER_SIZE = 128;
+static VALUE json_string_unescape(char *string, char *stringEnd, int intern, int symbolize)
 {
-    char *p = string, *pe = string, *unescape;
+    VALUE result = Qnil;
+    size_t bufferSize = stringEnd - string;
+    char *p = string, *pe = string, *unescape, *bufferStart, *buffer;
     int unescape_len;
     char buf[4];
+
+    if (bufferSize > MAX_STACK_BUFFER_SIZE) {
+      bufferStart = buffer = ALLOC_N(char, bufferSize);
+    } else {
+      bufferStart = buffer = ALLOCA_N(char, bufferSize);
+    }
 
     while (pe < stringEnd) {
         if (*pe == '\\') {
             unescape = (char *) "?";
             unescape_len = 1;
-            if (pe > p) rb_str_buf_cat(result, p, pe - p);
+            if (pe > p) {
+              MEMCPY(buffer, p, char, pe - p);
+              buffer += pe - p;
+            }
             switch (*++pe) {
                 case 'n':
                     unescape = (char *) "\n";
@@ -472,6 +499,9 @@ static VALUE json_string_unescape(VALUE result, char *string, char *stringEnd)
                     break;
                 case 'u':
                     if (pe > stringEnd - 4) {
+                      if (bufferSize > MAX_STACK_BUFFER_SIZE) {
+                        free(bufferStart);
+                      }
                       rb_enc_raise(
                         EXC_ENCODING eParserError,
                         "%u: incomplete unicode character escape sequence at '%s'", __LINE__, p
@@ -482,6 +512,9 @@ static VALUE json_string_unescape(VALUE result, char *string, char *stringEnd)
                         if (UNI_SUR_HIGH_START == (ch & 0xFC00)) {
                             pe++;
                             if (pe > stringEnd - 6) {
+                              if (bufferSize > MAX_STACK_BUFFER_SIZE) {
+                                free(bufferStart);
+                              }
                               rb_enc_raise(
                                 EXC_ENCODING eParserError,
                                 "%u: incomplete surrogate pair at '%s'", __LINE__, p
@@ -505,13 +538,55 @@ static VALUE json_string_unescape(VALUE result, char *string, char *stringEnd)
                     p = pe;
                     continue;
             }
-            rb_str_buf_cat(result, unescape, unescape_len);
+            MEMCPY(buffer, unescape, char, unescape_len);
+            buffer += unescape_len;
             p = ++pe;
         } else {
             pe++;
         }
     }
-    rb_str_buf_cat(result, p, pe - p);
+
+    if (pe > p) {
+      MEMCPY(buffer, p, char, pe - p);
+      buffer += pe - p;
+    }
+
+# ifdef HAVE_RB_ENC_INTERNED_STR
+      if (intern) {
+        result = rb_enc_interned_str(bufferStart, (long)(buffer - bufferStart), rb_utf8_encoding());
+      } else {
+        result = rb_utf8_str_new(bufferStart, (long)(buffer - bufferStart));
+      }
+      if (bufferSize > MAX_STACK_BUFFER_SIZE) {
+        free(bufferStart);
+      }
+# else
+      result = rb_utf8_str_new(bufferStart, (long)(buffer - bufferStart));
+
+      if (bufferSize > MAX_STACK_BUFFER_SIZE) {
+        free(bufferStart);
+      }
+
+      if (intern) {
+  # if STR_UMINUS_DEDUPE_FROZEN
+        // Starting from MRI 2.8 it is preferable to freeze the string
+        // before deduplication so that it can be interned directly
+        // otherwise it would be duplicated first which is wasteful.
+        result = rb_funcall(rb_str_freeze(result), i_uminus, 0);
+  # elif STR_UMINUS_DEDUPE
+        // MRI 2.5 and older do not deduplicate strings that are already
+        // frozen.
+        result = rb_funcall(result, i_uminus, 0);
+  # else
+        result = rb_str_freeze(result);
+  # endif
+      }
+# endif
+
+    if (symbolize) {
+      result = rb_str_intern(result);
+    }
+
     return result;
 }
 
@@ -522,12 +597,11 @@ static VALUE json_string_unescape(VALUE result, char *string, char *stringEnd)
     write data;
 
     action parse_string {
-        *result = json_string_unescape(*result, json->memo + 1, p);
+        *result = json_string_unescape(json->memo + 1, p, json->parsing_name || json-> freeze, json->parsing_name && json->symbolize_names);
         if (NIL_P(*result)) {
             fhold;
             fbreak;
         } else {
-            FORCE_UTF8(*result);
             fexec p + 1;
         }
     }
@@ -554,7 +628,6 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
     int cs = EVIL;
     VALUE match_string;
 
-    *result = rb_str_buf_new(0);
     %% write init;
     json->memo = p;
     %% write exec;
@@ -570,11 +643,6 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
           }
     }
 
-    if (json->symbolize_names && json->parsing_name) {
-      *result = rb_str_intern(*result);
-    } else if (RB_TYPE_P(*result, T_STRING)) {
-      rb_str_resize(*result, RSTRING_LEN(*result));
-    }
     if (cs >= JSON_string_first_final) {
         return p + 1;
     } else {
@@ -680,6 +748,12 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
                 json->symbolize_names = RTEST(rb_hash_aref(opts, tmp)) ? 1 : 0;
             } else {
                 json->symbolize_names = 0;
+            }
+            tmp = ID2SYM(i_freeze);
+            if (option_given_p(opts, tmp)) {
+                json->freeze = RTEST(rb_hash_aref(opts, tmp)) ? 1 : 0;
+            } else {
+                json->freeze = 0;
             }
             tmp = ID2SYM(i_create_additions);
             if (option_given_p(opts, tmp)) {
@@ -843,6 +917,10 @@ static VALUE cParser_source(VALUE self)
 
 void Init_parser(void)
 {
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    rb_ext_ractor_safe(true);
+#endif
+
 #undef rb_intern
     rb_require("json/common");
     mJSON = rb_define_module("JSON");
@@ -885,7 +963,9 @@ void Init_parser(void)
     i_aref = rb_intern("[]");
     i_leftshift = rb_intern("<<");
     i_new = rb_intern("new");
-    i_BigDecimal = rb_intern("BigDecimal");
+    i_try_convert = rb_intern("try_convert");
+    i_freeze = rb_intern("freeze");
+    i_uminus = rb_intern("-@");
 }
 
 /*

@@ -22,24 +22,23 @@ jobs:
       matrix:
         test_task: [ "check" ] # to make job names consistent
       fail-fast: false
-    if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
+      - run: mkdir build
+        working-directory:
       - name: git config
         run: |
-          git config --system core.autocrlf false
-          git config --system core.eol lf
-          git config --system advice.detachedHead 0
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+          git config --global advice.detachedHead 0
+          git config --global init.defaultBranch garbage
       - uses: actions/checkout@v2
         with:
           path: src
-      - run: ./src/tool/actions-commit-info.sh
-        shell: bash
-        id: commit_info
       - name: Set up Ruby & MSYS2
         uses: MSP-Greg/setup-ruby-pkgs@v1
         with:
           ruby-version: 2.6
-          mingw: _upgrade_ gdbm gmp libffi libyaml openssl ragel readline
+          mingw: _upgrade_ gmp libffi libyaml openssl ragel readline
           msys2: automake1.16 bison
       - name: where check
         run: |
@@ -53,14 +52,13 @@ jobs:
           }
       - name: misc setup, autoreconf
         run: |
-          mkdir build
           mkdir install
           mkdir temp
           cd src
           sh -c "autoreconf -fi"
+        working-directory:
 
       - name: configure
-        working-directory: build
         run: |
           # Actions uses UTF8, causes test failures, similar to normal OS setup
           $PSDefaultParameterValues['*:Encoding'] = 'utf8'
@@ -73,26 +71,24 @@ jobs:
           # Get-Content ./config.log | foreach {Write-Output $_}
 
       - name: update
-        working-directory: build
         run: |
           $jobs = [int](2 * $env:NUMBER_OF_PROCESSORS)
           make -j $jobs incs
 
       - name: download gems
-        working-directory: build
         run: |
           $jobs = [int](2 * $env:NUMBER_OF_PROCESSORS)
           make -j $jobs update-gems
 
       - name: make all
         timeout-minutes: 40
-        working-directory: build
         run: |
           $jobs = [int](2 * $env:NUMBER_OF_PROCESSORS)
           make -j $jobs
 
+      - run: make leaked-globals
+
       - name: make install
-        working-directory: build
         run: |
           # Actions uses UTF8, causes test failures, similar to normal OS setup
           $PSDefaultParameterValues['*:Encoding'] = 'utf8'
@@ -102,19 +98,18 @@ jobs:
 
       - name: test
         timeout-minutes: 5
-        working-directory: build
         run: |
           make test
 
       - name: test-all
         timeout-minutes: 60
-        working-directory: build
         run: |
           # Actions uses UTF8, causes test failures, similar to normal OS setup
           $PSDefaultParameterValues['*:Encoding'] = 'utf8'
           [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding("IBM437")
           [Console]::InputEncoding  = [System.Text.Encoding]::GetEncoding("IBM437")
           $jobs = [int](1.5 * $env:NUMBER_OF_PROCESSORS)
+          if ($env:BUNDLER_VERSION) { Remove-Item env:\BUNDLER_VERSION }
           make test-all TESTOPTS="-j $jobs --retry --job-status=normal --show-skip --timeout-scale=1.5"
 
       - name: test-spec
@@ -127,7 +122,7 @@ jobs:
           [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding("IBM437")
           [Console]::InputEncoding  = [System.Text.Encoding]::GetEncoding("IBM437")
           ruby -v
-          ruby ../mspec/bin/mspec -j
+          ruby ../mspec/bin/mspec -I../../tool/lib -j --timeout 60
 
       - uses: k0kubun/action-slack@v2.0.0
         with:
@@ -142,3 +137,7 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: failure() && github.event_name == 'push'
+
+defaults:
+  run:
+    working-directory: build

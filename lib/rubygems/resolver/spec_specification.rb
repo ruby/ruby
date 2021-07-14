@@ -23,6 +23,20 @@ class Gem::Resolver::SpecSpecification < Gem::Resolver::Specification
   end
 
   ##
+  # The required_ruby_version constraint for this specification
+
+  def required_ruby_version
+    spec.required_ruby_version
+  end
+
+  ##
+  # The required_rubygems_version constraint for this specification
+
+  def required_rubygems_version
+    spec.required_rubygems_version
+  end
+
+  ##
   # The name and version of the specification.
   #
   # Unlike Gem::Specification#full_name, the platform is not included.

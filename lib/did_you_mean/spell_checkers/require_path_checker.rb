@@ -2,6 +2,7 @@
 
 require_relative "../spell_checker"
 require_relative "../tree_spell_checker"
+require "rbconfig"
 
 module DidYouMean
   class RequirePathChecker

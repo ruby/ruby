@@ -51,7 +51,7 @@ class RubygemsVersionManager
     end
   end
 
-private
+  private
 
   def use_system?
     @source.nil?
@@ -78,6 +78,7 @@ private
   end
 
   def rubygems_unrequire_needed?
+    require "rubygems"
     !$LOADED_FEATURES.include?(local_copy_path.join("lib/rubygems.rb").to_s)
   end
 

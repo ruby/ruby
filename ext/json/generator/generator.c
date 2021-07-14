@@ -1,11 +1,6 @@
 #include "../fbuffer/fbuffer.h"
 #include "generator.h"
 
-#ifdef HAVE_RUBY_ENCODING_H
-static VALUE CEncoding_UTF_8;
-static ID i_encoding, i_encode;
-#endif
-
 static VALUE mJSON, mExt, mGenerator, cState, mGeneratorMethods, mObject,
              mHash, mArray,
 #ifdef RUBY_INTEGER_UNIFICATION
@@ -15,8 +10,7 @@ static VALUE mJSON, mExt, mGenerator, cState, mGeneratorMethods, mObject,
 #endif
              mFloat, mString, mString_Extend,
              mTrueClass, mFalseClass, mNilClass, eGeneratorError,
-             eNestingError,
-             i_SAFE_STATE_PROTOTYPE;
+             eNestingError;
 
 static ID i_to_s, i_to_json, i_new, i_indent, i_space, i_space_before,
           i_object_nl, i_array_nl, i_max_nesting, i_allow_nan, i_ascii_only,
@@ -620,13 +614,18 @@ static size_t State_memsize(const void *ptr)
     return size;
 }
 
+#ifndef HAVE_RB_EXT_RACTOR_SAFE
+#   undef RUBY_TYPED_FROZEN_SHAREABLE
+#   define RUBY_TYPED_FROZEN_SHAREABLE 0
+#endif
+
 #ifdef NEW_TYPEDDATA_WRAPPER
 static const rb_data_type_t JSON_Generator_State_type = {
     "JSON/Generator/State",
     {NULL, State_free, State_memsize,},
 #ifdef RUBY_TYPED_FREE_IMMEDIATELY
     0, 0,
-    RUBY_TYPED_FREE_IMMEDIATELY,
+    RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_FROZEN_SHAREABLE,
 #endif
 };
 #endif
@@ -944,7 +943,7 @@ static void generate_json_string(FBuffer *buffer, VALUE Vstate, JSON_Generator_S
     fbuffer_append_char(buffer, '"');
 #ifdef HAVE_RUBY_ENCODING_H
     if (!enc_utf8_compatible_p(rb_enc_get(obj))) {
-        obj = rb_str_encode(obj, CEncoding_UTF_8, 0, Qnil);
+        obj = rb_str_export_to_enc(obj, rb_utf8_encoding());
     }
 #endif
     if (state->ascii_only) {
@@ -1166,8 +1165,7 @@ static VALUE cState_from_state_s(VALUE self, VALUE opts)
     } else if (rb_obj_is_kind_of(opts, rb_cHash)) {
         return rb_funcall(self, i_new, 1, opts);
     } else {
-        VALUE prototype = rb_const_get(mJSON, i_SAFE_STATE_PROTOTYPE);
-        return rb_funcall(prototype, i_dup, 0);
+        return rb_class_new_instance(0, NULL, cState);
     }
 }
 
@@ -1499,6 +1497,10 @@ static VALUE cState_buffer_initial_length_set(VALUE self, VALUE buffer_initial_l
  */
 void Init_generator(void)
 {
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    rb_ext_ractor_safe(true);
+#endif
+
 #undef rb_intern
     rb_require("json/common");
 
@@ -1603,10 +1605,4 @@ void Init_generator(void)
     i_match = rb_intern("match");
     i_keys = rb_intern("keys");
     i_dup = rb_intern("dup");
-#ifdef HAVE_RUBY_ENCODING_H
-    CEncoding_UTF_8 = rb_funcall(rb_path2class("Encoding"), rb_intern("find"), 1, rb_str_new2("utf-8"));
-    i_encoding = rb_intern("encoding");
-    i_encode = rb_intern("encode");
-#endif
-    i_SAFE_STATE_PROTOTYPE = rb_intern("SAFE_STATE_PROTOTYPE");
 }

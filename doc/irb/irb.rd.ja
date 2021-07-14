@@ -144,12 +144,12 @@ PROMPT_I, PROMPT_N, PROMPT_S, PROMPT_Cは, フォーマットを指定します.
 
 例えば, デフォルトのプロンプトモードは:
 
-  IRB.conf[:PROMPT_MODE][:DEFAULT] = {
+  IRB.conf[:PROMPT][:DEFAULT] = {
       :PROMPT_I => "%N(%m):%03n:%i> ",
       :PROMPT_N => "%N(%m):%03n:%i> ",
       :PROMPT_S => "%N(%m):%03n:%i%l ",
       :PROMPT_C => "%N(%m):%03n:%i* ",
-      :RETURN => "%s\n"
+      :RETURN => "=> %s\n"
   }
 
 となっています.
@@ -381,7 +381,7 @@ rubyでは, 以下のプログラムはエラーになります.
 パイルしてローカル変数を決定するからです. それに対し, irbは実行可能に
 なる(式が閉じる)と自動的に評価しているからです. 上記の例では,
 
-  evel "foo = 0"
+  eval "foo = 0"
 
 を行なった時点で評価を行ない, その時点で変数が定義されるため, 次式で
 変数fooは定義されているからです.

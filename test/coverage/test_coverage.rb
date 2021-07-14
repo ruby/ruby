@@ -760,4 +760,18 @@ class TestCoverage < Test::Unit::TestCase
       foo { raise } rescue nil
     end;
   end
+
+  def test_coverage_with_asan
+    result = { :lines => [1, 1, 0, 0, nil, nil, nil] }
+
+    assert_coverage(<<~"end;", { lines: true }, result) # Bug #18001
+      class Foo
+        def bar
+          baz do |x|
+            next unless Integer == x
+          end
+        end
+      end
+    end;
+  end
 end

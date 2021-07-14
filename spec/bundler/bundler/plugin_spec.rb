@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../support/streams"
-
 RSpec.describe Bundler::Plugin do
   Plugin = Bundler::Plugin
 
@@ -112,6 +110,7 @@ RSpec.describe Bundler::Plugin do
     before do
       allow(Plugin::DSL).to receive(:new) { builder }
       allow(builder).to receive(:eval_gemfile).with(gemfile)
+      allow(builder).to receive(:check_primary_source_safety)
       allow(builder).to receive(:to_definition) { definition }
       allow(builder).to receive(:inferred_plugins) { [] }
     end
@@ -296,11 +295,9 @@ RSpec.describe Bundler::Plugin do
     end
 
     it "executes the hook" do
-      out = capture(:stdout) do
+      expect do
         Plugin.hook(Bundler::Plugin::Events::EVENT_1)
-      end.strip
-
-      expect(out).to eq("hook for event 1")
+      end.to output("hook for event 1\n").to_stdout
     end
 
     context "single plugin declaring more than one hook" do
@@ -311,12 +308,10 @@ RSpec.describe Bundler::Plugin do
       RUBY
 
       it "evals plugins.rb once" do
-        out = capture(:stdout) do
+        expect do
           Plugin.hook(Bundler::Plugin::Events::EVENT_1)
           Plugin.hook(Bundler::Plugin::Events::EVENT_2)
-        end.strip
-
-        expect(out).to eq("loaded")
+        end.to output("loaded\n").to_stdout
       end
     end
 
@@ -326,11 +321,9 @@ RSpec.describe Bundler::Plugin do
       RUBY
 
       it "is passed to the hook" do
-        out = capture(:stdout) do
+        expect do
           Plugin.hook(Bundler::Plugin::Events::EVENT_1) { puts "win" }
-        end.strip
-
-        expect(out).to eq("win")
+        end.to output("win\n").to_stdout
       end
     end
   end

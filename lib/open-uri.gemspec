@@ -19,4 +19,8 @@ Gem::Specification.new do |spec|
   spec.bindir        = "exe"
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
+
+  spec.add_dependency "uri"
+  spec.add_dependency "stringio"
+  spec.add_dependency "time"
 end

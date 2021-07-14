@@ -92,7 +92,7 @@ describe "Kernel#instance_variable_get when passed String" do
   end
 end
 
-describe "Kernel#instance_variable_get when passed Fixnum" do
+describe "Kernel#instance_variable_get when passed Integer" do
   before :each do
     @obj = Object.new
     @obj.instance_variable_set("@test", :test)

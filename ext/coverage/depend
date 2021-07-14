@@ -3,6 +3,7 @@ coverage.o: $(RUBY_EXTCONF_H)
 coverage.o: $(arch_hdrdir)/ruby/config.h
 coverage.o: $(hdrdir)/ruby.h
 coverage.o: $(hdrdir)/ruby/assert.h
+coverage.o: $(hdrdir)/ruby/atomic.h
 coverage.o: $(hdrdir)/ruby/backward.h
 coverage.o: $(hdrdir)/ruby/backward/2/assume.h
 coverage.o: $(hdrdir)/ruby/backward/2/attributes.h
@@ -149,7 +150,6 @@ coverage.o: $(hdrdir)/ruby/internal/static_assert.h
 coverage.o: $(hdrdir)/ruby/internal/stdalign.h
 coverage.o: $(hdrdir)/ruby/internal/stdbool.h
 coverage.o: $(hdrdir)/ruby/internal/symbol.h
-coverage.o: $(hdrdir)/ruby/internal/token_paste.h
 coverage.o: $(hdrdir)/ruby/internal/value.h
 coverage.o: $(hdrdir)/ruby/internal/value_type.h
 coverage.o: $(hdrdir)/ruby/internal/variable.h
