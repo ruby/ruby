@@ -4257,6 +4257,12 @@ vm_splat_array(VALUE flag, VALUE ary)
     }
 }
 
+VALUE
+rb_vm_splat_array(VALUE flag, VALUE ary)
+{
+    return vm_splat_array(flag, ary);
+}
+
 static VALUE
 vm_check_match(rb_execution_context_t *ec, VALUE target, VALUE pattern, rb_num_t flag)
 {

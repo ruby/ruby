@@ -691,6 +691,35 @@ gen_duparray(jitstate_t* jit, ctx_t* ctx)
     return YJIT_KEEP_COMPILING;
 }
 
+VALUE rb_vm_splat_array(VALUE flag, VALUE ary);
+
+// call to_a on the array on the stack
+static codegen_status_t
+gen_splatarray(jitstate_t* jit, ctx_t* ctx)
+{
+    VALUE flag = (VALUE) jit_get_arg(jit, 0);
+
+    // Save the PC and SP because the callee may allocate
+    // Note that this modifies REG_SP, which is why we do it first
+    jit_save_pc(jit, REG0);
+    jit_save_sp(jit, ctx);
+
+    // Get the operands from the stack
+    x86opnd_t ary_opnd = ctx_stack_pop(ctx, 1);
+
+    // Call rb_vm_splat_array(flag, ary)
+    yjit_save_regs(cb);
+    jit_mov_gc_ptr(jit, cb, C_ARG_REGS[0], flag);
+    mov(cb, C_ARG_REGS[1], ary_opnd);
+    call_ptr(cb, REG1, (void *) rb_vm_splat_array);
+    yjit_load_regs(cb);
+
+    x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_ARRAY);
+    mov(cb, stack_ret, RAX);
+
+    return YJIT_KEEP_COMPILING;
+}
+
 // new hash initialized from top N values
 static codegen_status_t
 gen_newhash(jitstate_t* jit, ctx_t* ctx)
@@ -3470,6 +3499,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(adjuststack), gen_adjuststack);
     yjit_reg_op(BIN(newarray), gen_newarray);
     yjit_reg_op(BIN(duparray), gen_duparray);
+    yjit_reg_op(BIN(splatarray), gen_splatarray);
     yjit_reg_op(BIN(newhash), gen_newhash);
     yjit_reg_op(BIN(concatstrings), gen_concatstrings);
     yjit_reg_op(BIN(putnil), gen_putnil);
