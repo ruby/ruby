@@ -153,13 +153,20 @@ ctx_get_opnd_type(const ctx_t* ctx, insn_opnd_t opnd)
     rb_bug("unreachable");
 }
 
+int type_diff(val_type_t src, val_type_t dst);
+#define UPGRADE_TYPE(dest, src) do { \
+    RUBY_ASSERT(type_diff((src), (dest)) != INT_MAX); \
+    (dest) = (src); \
+} while (false)
+
+
 /**
 Set the type of an instruction operand
 */
-void ctx_set_opnd_type(ctx_t* ctx, insn_opnd_t opnd, val_type_t type)
+void ctx_upgrade_opnd_type(ctx_t* ctx, insn_opnd_t opnd, val_type_t type)
 {
     if (opnd.is_self) {
-        ctx->self_type = type;
+        UPGRADE_TYPE(ctx->self_type, type);
         return;
     }
 
@@ -172,16 +179,17 @@ void ctx_set_opnd_type(ctx_t* ctx, insn_opnd_t opnd, val_type_t type)
     switch (mapping.kind)
     {
         case TEMP_SELF:
-        ctx->self_type = type;
+        UPGRADE_TYPE(ctx->self_type, type);
         break;
 
         case TEMP_STACK:
-        ctx->temp_types[ctx->stack_size - 1 - opnd.idx] = type;
+        int stack_index = ctx->stack_size - 1 - opnd.idx;
+        UPGRADE_TYPE(ctx->temp_types[stack_index], type);
         break;
 
         case TEMP_LOCAL:
         RUBY_ASSERT(mapping.idx < MAX_LOCAL_TYPES);
-        ctx->local_types[mapping.idx] = type;
+        UPGRADE_TYPE(ctx->local_types[mapping.idx], type);
         break;
     }
 }
