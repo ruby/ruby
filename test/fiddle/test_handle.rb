@@ -113,9 +113,15 @@ module Fiddle
     end
 
     def test_file_name
-      handle = Handle.new(LIBC_SO)
-      assert_kind_of String, handle.file_name
-      assert_equal File.basename(handle.file_name), File.basename(LIBC_SO)
+      file_name = Handle.new(LIBC_SO).file_name
+      assert_kind_of String, file_name
+      expected = File.basename(LIBC_SO)
+      basename = File.basename(file_name)
+      if File::FNM_SYSCASE.zero?
+        assert_equal expected, basename
+      else
+        assert_send [basename, :casecmp?, expected]
+      end
     end unless /darwin/ =~ RUBY_PLATFORM
 
     def test_NEXT
