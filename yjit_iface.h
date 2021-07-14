@@ -74,7 +74,7 @@ YJIT_DECLARE_COUNTERS(
     expandarray_splat,
     expandarray_postarg,
     expandarray_not_array,
-    expandarray_not_equal_len,
+    expandarray_rhs_too_small,
 
     // Member with known name for iterating over counters
     last_member

@@ -1395,3 +1395,87 @@ assert_equal '[1, 2, 3, 4, 5]', %q{
   splatarray
   splatarray
 }
+
+assert_equal '[1, 1, 2, 1, 2, 3]', %q{
+  def expandarray
+    arr = [1, 2, 3]
+
+    a, = arr
+    b, c, = arr
+    d, e, f = arr
+
+    [a, b, c, d, e, f]
+  end
+
+  expandarray
+  expandarray
+}
+
+assert_equal '[1, 1]', %q{
+  def expandarray_useless_splat
+    arr = (1..10).to_a
+
+    a, * = arr
+    b, (*) = arr
+
+    [a, b]
+  end
+
+  expandarray_useless_splat
+  expandarray_useless_splat
+}
+
+assert_equal '[:not_heap, nil, nil]', %q{
+  def expandarray_not_heap
+    a, b, c = :not_heap
+    [a, b, c]
+  end
+
+  expandarray_not_heap
+  expandarray_not_heap
+}
+
+assert_equal '[:not_array, nil, nil]', %q{
+  def expandarray_not_array(obj)
+    a, b, c = obj
+    [a, b, c]
+  end
+
+  obj = Object.new
+  def obj.to_ary
+    [:not_array]
+  end
+
+  expandarray_not_array(obj)
+  expandarray_not_array(obj)
+}
+
+assert_equal '[1, 2, nil]', %q{
+  def expandarray_rhs_too_small
+    a, b, c = [1, 2]
+    [a, b, c]
+  end
+
+  expandarray_rhs_too_small
+  expandarray_rhs_too_small
+}
+
+assert_equal '[1, [2]]', %q{
+  def expandarray_splat
+    a, *b = [1, 2]
+    [a, b]
+  end
+
+  expandarray_splat
+  expandarray_splat
+}
+
+assert_equal '2', %q{
+  def expandarray_postarg
+    *, a = [1, 2]
+    a
+  end
+
+  expandarray_postarg
+  expandarray_postarg
+}

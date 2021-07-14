@@ -721,7 +721,7 @@ gen_splatarray(jitstate_t* jit, ctx_t* ctx)
 }
 
 static void
-guard_object_is_heap(codeblock_t *cb, ctx_t *ctx, uint8_t *side_exit, x86opnd_t object_opnd)
+guard_object_is_heap(codeblock_t *cb, x86opnd_t object_opnd, ctx_t *ctx, uint8_t *side_exit)
 {
     ADD_COMMENT(cb, "guard object is heap");
 
@@ -738,7 +738,6 @@ guard_object_is_heap(codeblock_t *cb, ctx_t *ctx, uint8_t *side_exit, x86opnd_t 
 static inline void
 guard_object_is_array(codeblock_t *cb, x86opnd_t object_opnd, x86opnd_t flags_opnd, ctx_t *ctx, uint8_t *side_exit)
 {
-    guard_object_is_heap(cb, ctx, side_exit, object_opnd);
     ADD_COMMENT(cb, "guard object is array");
 
     // Pull out the type mask
@@ -768,19 +767,21 @@ gen_expandarray(jitstate_t* jit, ctx_t* ctx)
         return YJIT_CANT_COMPILE;
     }
 
+    uint8_t *side_exit = yjit_side_exit(jit, ctx);
+
     // num is the number of requested values. If there aren't enough in the
     // array then we're going to push on nils.
     rb_num_t num = (rb_num_t) jit_get_arg(jit, 0);
+    x86opnd_t array_opnd = ctx_stack_pop(ctx, 1);
 
     // If we don't actually want any values, then just return.
     if (num == 0) {
         return YJIT_KEEP_COMPILING;
     }
 
-    uint8_t *side_exit = yjit_side_exit(jit, ctx);
-
     // Move the array from the stack into REG0 and check that it's an array.
-    mov(cb, REG0, ctx_stack_pop(ctx, 1));
+    mov(cb, REG0, array_opnd);
+    guard_object_is_heap(cb, REG0, ctx, COUNTED_EXIT(side_exit, expandarray_not_array));
     guard_object_is_array(cb, REG0, REG1, ctx, COUNTED_EXIT(side_exit, expandarray_not_array));
 
     // Pull out the embed flag to check if it's an embedded array.
@@ -798,7 +799,7 @@ gen_expandarray(jitstate_t* jit, ctx_t* ctx)
     // Only handle the case where the number of values in the array is greater
     // than or equal to the number of values requested.
     cmp(cb, REG1, imm_opnd(num));
-    jl_ptr(cb, COUNTED_EXIT(side_exit, expandarray_not_equal_len));
+    jl_ptr(cb, COUNTED_EXIT(side_exit, expandarray_rhs_too_small));
 
     // Load the address of the embedded array into REG1.
     // (struct RArray *)(obj)->as.ary
@@ -3598,11 +3599,8 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(adjuststack), gen_adjuststack);
     yjit_reg_op(BIN(newarray), gen_newarray);
     yjit_reg_op(BIN(duparray), gen_duparray);
-<<<<<<< HEAD
     yjit_reg_op(BIN(splatarray), gen_splatarray);
-=======
     yjit_reg_op(BIN(expandarray), gen_expandarray);
->>>>>>> dc01eb5c5e (Implement expandarray)
     yjit_reg_op(BIN(newhash), gen_newhash);
     yjit_reg_op(BIN(concatstrings), gen_concatstrings);
     yjit_reg_op(BIN(putnil), gen_putnil);
