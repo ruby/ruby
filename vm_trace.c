@@ -1194,7 +1194,9 @@ rb_tracepoint_enable_for_target(VALUE tpval, VALUE target, VALUE target_line)
         rb_method_definition_t *def = (rb_method_definition_t *)rb_method_def(target);
         if (def->type == VM_METHOD_TYPE_BMETHOD &&
             (tp->events & (RUBY_EVENT_CALL | RUBY_EVENT_RETURN))) {
-            def->body.bmethod.hooks = ZALLOC(rb_hook_list_t);
+            if (def->body.bmethod.hooks == NULL) {
+                def->body.bmethod.hooks = ZALLOC(rb_hook_list_t);
+            }
             rb_hook_list_connect_tracepoint(target, def->body.bmethod.hooks, tpval, 0);
             rb_hash_aset(tp->local_target_set, target, Qfalse);
 
@@ -1228,7 +1230,6 @@ disable_local_event_iseq_i(VALUE target, VALUE iseq_p, VALUE tpval)
         if (hooks->running == 0) {
             rb_hook_list_free(def->body.bmethod.hooks);
         }
-        def->body.bmethod.hooks = NULL;
     }
     return ST_CONTINUE;
 }
