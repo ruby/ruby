@@ -239,6 +239,8 @@ VALUE rb_fiber_transfer(VALUE fiber, int argc, const VALUE *argv);
  */
 VALUE rb_fiber_transfer_kw(VALUE fiber, int argc, const VALUE *argv, int kw_splat);
 
+VALUE rb_fiber_raise(VALUE fiber, int argc, VALUE *argv);
+
 RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RBIMPL_INTERN_CONT_H */
