@@ -783,42 +783,30 @@ gen_expandarray(jitstate_t* jit, ctx_t* ctx)
     mov(cb, REG0, ctx_stack_pop(ctx, 1));
     guard_object_is_array(cb, REG0, REG1, ctx, COUNTED_EXIT(side_exit, expandarray_not_array));
 
-    uint32_t embedded_length_label = cb_new_label(cb, "ea_embedded");
-    uint32_t push_values_label = cb_new_label(cb, "ea_push_vals");
-
     // Pull out the embed flag to check if it's an embedded array.
-    mov(cb, REG1, member_opnd(REG0, struct RBasic, flags));
-    and(cb, REG1, imm_opnd(RARRAY_EMBED_FLAG));
-    jmp_label(cb, embedded_length_label);
+    x86opnd_t flags_opnd = member_opnd(REG0, struct RBasic, flags);
+    mov(cb, REG1, flags_opnd);
 
-    // Pull out the length of the heap array and write it to REG1.
-    mov(cb, REG1, member_opnd(REG0, struct RArray, as.heap.len));
-    jmp_label(cb, push_values_label);
-
-    // Pull out the length of the embedded array and write it to REG1.
-    cb_write_label(cb, embedded_length_label);
-    mov(cb, REG1, member_opnd(REG0, struct RBasic, flags));
+    // Move the length of the embedded array into REG1.
     and(cb, REG1, imm_opnd(RARRAY_EMBED_LEN_MASK));
     shr(cb, REG1, imm_opnd(RARRAY_EMBED_LEN_SHIFT));
 
+    // Conditionally move the length of the heap array into REG1.
+    test(cb, flags_opnd, imm_opnd(RARRAY_EMBED_FLAG));
+    cmovz(cb, REG1, member_opnd(REG0, struct RArray, as.heap.len));
+
     // Only handle the case where the number of values in the array is greater
     // than or equal to the number of values requested.
-    cb_write_label(cb, push_values_label);
     cmp(cb, REG1, imm_opnd(num));
     jl_ptr(cb, COUNTED_EXIT(side_exit, expandarray_not_equal_len));
 
-    // Once more, compare if it is an embedded array to use for cmovs.
-    mov(cb, REG1, member_opnd(REG0, struct RBasic, flags));
-    test(cb, REG1, imm_opnd(RARRAY_EMBED_FLAG));
-
-    // If the last comparison was not 0, then we have an embedded array, so
-    // we're going to get the values from the embedded array.
+    // Load the address of the embedded array into REG1.
     // (struct RArray *)(obj)->as.ary
     lea(cb, REG1, member_opnd(REG0, struct RArray, as.ary));
 
-    // If the last comparison was 0, then we don't have an embedded array,
-    // so we're going to get the values off the heap.
+    // Conditionally load the address of the heap array into REG1.
     // (struct RArray *)(obj)->as.heap.ptr
+    test(cb, flags_opnd, imm_opnd(RARRAY_EMBED_FLAG));
     cmovz(cb, REG1, member_opnd(REG0, struct RArray, as.heap.ptr));
 
     // Loop backward through the array and push each element onto the stack.
@@ -828,7 +816,6 @@ gen_expandarray(jitstate_t* jit, ctx_t* ctx)
         mov(cb, top, REG0);
     }
 
-    cb_link_labels(cb);
     return YJIT_KEEP_COMPILING;
 }
 
