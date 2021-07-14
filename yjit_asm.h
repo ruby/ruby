@@ -256,7 +256,7 @@ x86opnd_t const_ptr_opnd(const void *ptr);
 
 // Machine code allocation
 uint8_t* alloc_exec_mem(uint32_t mem_size);
-code_page_t* alloc_code_page();
+code_page_t* alloc_code_page(void);
 void free_code_page(code_page_t* code_page);
 
 // Code block methods
