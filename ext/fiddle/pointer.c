@@ -9,7 +9,7 @@
 #include <ctype.h>
 #include <fiddle.h>
 
-#ifdef FIDDLE_MEMORY_VIEW
+#ifdef HAVE_RUBY_MEMORY_VIEW_H
 # include <ruby/memory_view.h>
 #endif
 
@@ -92,7 +92,7 @@ static const rb_data_type_t fiddle_ptr_data_type = {
     {fiddle_ptr_mark, fiddle_ptr_free, fiddle_ptr_memsize,},
 };
 
-#ifdef FIDDLE_MEMORY_VIEW
+#ifdef HAVE_RUBY_MEMORY_VIEW_H
 static struct ptr_data *
 fiddle_ptr_check_memory_view(VALUE obj)
 {
@@ -841,7 +841,7 @@ Init_fiddle_pointer(void)
     rb_define_method(rb_cPointer, "size", rb_fiddle_ptr_size_get, 0);
     rb_define_method(rb_cPointer, "size=", rb_fiddle_ptr_size_set, 1);
 
-#ifdef FIDDLE_MEMORY_VIEW
+#ifdef HAVE_RUBY_MEMORY_VIEW_H
     rb_memory_view_register(rb_cPointer, &fiddle_ptr_memory_view_entry);
 #endif
 

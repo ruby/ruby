@@ -1,6 +1,6 @@
 #include <fiddle.h>
 
-#ifdef FIDDLE_MEMORY_VIEW
+#ifdef HAVE_RUBY_MEMORY_VIEW_H
 
 #include <stdbool.h>
 #include <ruby/ruby.h>
@@ -318,4 +318,4 @@ Init_fiddle_memory_view(void)
     rb_define_method(rb_cMemoryView, "to_s", rb_fiddle_memview_to_s, 0);
 }
 
-#endif /* FIDDLE_MEMORY_VIEW */
+#endif /* HAVE_RUBY_MEMORY_VIEW_H */
