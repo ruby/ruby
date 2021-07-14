@@ -1386,3 +1386,12 @@ assert_equal '[nil, nil, nil, 1]', %q{
     is_inf(1.0/0.0)
   ]
 }
+
+assert_equal '[1, 2, 3, 4, 5]', %q{
+  def splatarray
+    [*(1..5)]
+  end
+
+  splatarray
+  splatarray
+}
