@@ -198,5 +198,8 @@ extern VALUE rb_eFiddleDLError;
 
 VALUE rb_fiddle_new_function(VALUE address, VALUE arg_types, VALUE ret_type);
 
+typedef void (*rb_fiddle_freefunc_t)(void*);
+VALUE rb_fiddle_ptr_new_wrap(void *ptr, long size, rb_fiddle_freefunc_t func, VALUE wrap0, VALUE wrap1);
+
 #endif
 /* vim: set noet sws=4 sw=4: */

@@ -13,6 +13,12 @@ module Fiddle
       assert_kind_of Integer, handle.to_i
     end
 
+    def test_to_ptr
+      handle = Fiddle::Handle.new(LIBC_SO)
+      ptr = handle.to_ptr
+      assert_equal ptr.to_i, handle.to_i
+    end
+
     def test_static_sym_unknown
       assert_raise(DLError) { Fiddle::Handle.sym('fooo') }
       assert_raise(DLError) { Fiddle::Handle['fooo'] }

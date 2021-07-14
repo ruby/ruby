@@ -24,7 +24,7 @@
 
 VALUE rb_cPointer;
 
-typedef void (*freefunc_t)(void*);
+typedef rb_fiddle_freefunc_t freefunc_t;
 
 struct ptr_data {
     void *ptr;
@@ -125,7 +125,7 @@ static const rb_memory_view_entry_t fiddle_ptr_memory_view_entry = {
 #endif
 
 static VALUE
-rb_fiddle_ptr_new2(VALUE klass, void *ptr, long size, freefunc_t func)
+rb_fiddle_ptr_new2(VALUE klass, void *ptr, long size, freefunc_t func, VALUE wrap0, VALUE wrap1)
 {
     struct ptr_data *data;
     VALUE val;
@@ -135,14 +135,22 @@ rb_fiddle_ptr_new2(VALUE klass, void *ptr, long size, freefunc_t func)
     data->free = func;
     data->freed = false;
     data->size = size;
+    data->wrap[0] = wrap0;
+    data->wrap[1] = wrap1;
 
     return val;
+}
+
+VALUE
+rb_fiddle_ptr_new_wrap(void *ptr, long size, freefunc_t func, VALUE wrap0, VALUE wrap1)
+{
+    return rb_fiddle_ptr_new2(rb_cPointer, ptr, size, func, wrap0, wrap1);
 }
 
 static VALUE
 rb_fiddle_ptr_new(void *ptr, long size, freefunc_t func)
 {
-    return rb_fiddle_ptr_new2(rb_cPointer, ptr, size, func);
+    return rb_fiddle_ptr_new2(rb_cPointer, ptr, size, func, 0, 0);
 }
 
 static VALUE
@@ -152,7 +160,7 @@ rb_fiddle_ptr_malloc(VALUE klass, long size, freefunc_t func)
 
     ptr = ruby_xmalloc((size_t)size);
     memset(ptr,0,(size_t)size);
-    return rb_fiddle_ptr_new2(klass, ptr, size, func);
+    return rb_fiddle_ptr_new2(klass, ptr, size, func, 0, 0);
 }
 
 static void *

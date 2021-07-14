@@ -259,7 +259,21 @@ rb_fiddle_handle_to_i(VALUE self)
     struct dl_handle *fiddle_handle;
 
     TypedData_Get_Struct(self, struct dl_handle, &fiddle_handle_data_type, fiddle_handle);
-    return PTR2NUM(fiddle_handle);
+    return PTR2NUM(fiddle_handle->ptr);
+}
+
+/*
+ * call-seq: to_ptr
+ *
+ * Returns the Fiddle::Pointer of this handle.
+ */
+static VALUE
+rb_fiddle_handle_to_ptr(VALUE self)
+{
+    struct dl_handle *fiddle_handle;
+
+    TypedData_Get_Struct(self, struct dl_handle, &fiddle_handle_data_type, fiddle_handle);
+    return rb_fiddle_ptr_new_wrap(fiddle_handle->ptr, 0, 0, self, 0);
 }
 
 static VALUE fiddle_handle_sym(void *handle, VALUE symbol);
@@ -466,6 +480,7 @@ Init_fiddle_handle(void)
 
     rb_define_method(rb_cHandle, "initialize", rb_fiddle_handle_initialize, -1);
     rb_define_method(rb_cHandle, "to_i", rb_fiddle_handle_to_i, 0);
+    rb_define_method(rb_cHandle, "to_ptr", rb_fiddle_handle_to_ptr, 0);
     rb_define_method(rb_cHandle, "close", rb_fiddle_handle_close, 0);
     rb_define_method(rb_cHandle, "sym",  rb_fiddle_handle_sym, 1);
     rb_define_method(rb_cHandle, "[]",  rb_fiddle_handle_sym,  1);
