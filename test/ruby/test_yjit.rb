@@ -137,6 +137,10 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def assert_no_exits(script)
+    assert_compiles(script)
+  end
+
   def assert_compiles(test_script, insns: [], min_calls: 1, stdout: nil, exits: {})
     reset_stats = <<~RUBY
       YJIT.runtime_stats
