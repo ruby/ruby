@@ -63,7 +63,7 @@ module YJIT
       highlight = ->(comment) { "<b>#{comment}</b>" }
       linebreak = "<br align=\"left\"/>\n"
 
-      buff = ''.dup
+      buff = +''
       blocks = blocks_for(iseq).sort_by(&:id)
       buff << "digraph g {\n"
 
