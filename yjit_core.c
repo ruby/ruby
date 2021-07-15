@@ -945,7 +945,10 @@ invalidate_block_version(block_t* block)
 
     // Clear out the JIT func so that we can recompile later and so the
     // interpreter will run the iseq
+
+#if JIT_ENABLED
     iseq->body->jit_func = 0;
+#endif
 
     // TODO:
     // May want to recompile a new entry point (for interpreter entry blocks)

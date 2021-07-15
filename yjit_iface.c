@@ -453,8 +453,8 @@ typedef VALUE (*yjit_func_t)(rb_execution_context_t *, rb_control_frame_t *);
 bool
 rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec)
 {
+#if (OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE) && JIT_ENABLED
     bool success = true;
-#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
     RB_VM_LOCK_ENTER();
     // TODO: I think we need to stop all other ractors here
 
@@ -471,8 +471,10 @@ rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec)
     }
 
     RB_VM_LOCK_LEAVE();
-#endif
     return success;
+#else
+    return false;
+#endif
 }
 
 struct yjit_block_itr {
@@ -1004,7 +1006,7 @@ outgoing_ids(VALUE self)
 void
 rb_yjit_init(struct rb_yjit_options *options)
 {
-    if (!PLATFORM_SUPPORTED_P) {
+    if (!PLATFORM_SUPPORTED_P || !JIT_ENABLED) {
         return;
     }
 
