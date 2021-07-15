@@ -103,7 +103,7 @@ module YJIT
     def self.disasm_block(cs, block, highlight)
       comments = comments_for(block.address, block.address + block.code.length)
       comment_idx = 0
-      str = ''.dup
+      str = +''
       cs.disasm(block.code, block.address).each do |i|
         while (comment = comments[comment_idx]) && comment.address <= i.address
           str << "  ; #{highlight.call(comment.comment)}\n"
