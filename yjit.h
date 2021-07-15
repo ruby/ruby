@@ -14,6 +14,8 @@
 #define PLATFORM_SUPPORTED_P 1
 #endif
 
+#define JIT_ENABLED USE_MJIT
+
 #ifndef YJIT_CHECK_MODE
 #define YJIT_CHECK_MODE 0
 #endif
