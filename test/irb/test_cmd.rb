@@ -47,6 +47,7 @@ module TestIRB
       @default_encoding = [Encoding.default_external, Encoding.default_internal]
       @stdio_encodings = [STDIN, STDOUT, STDERR].map {|io| [io.external_encoding, io.internal_encoding] }
       IRB.instance_variable_get(:@CONF).clear
+      @is_win = (RbConfig::CONFIG['host_os'] =~ /mswin|msys|mingw|cygwin|bccwin|wince|emc/)
     end
 
     def teardown
@@ -80,6 +81,7 @@ module TestIRB
         InputMethod:\sAbstract\sInputMethod\n
         \.irbrc\spath:\s.+\n
         RUBY_PLATFORM:\s.+\n
+        #{@is_win ? 'Code\spage:\s\d+\n' : ''}
       }x
       assert_match expected, irb.context.main.irb_info.to_s
     ensure
@@ -105,6 +107,7 @@ module TestIRB
         InputMethod:\sAbstract\sInputMethod\n
         \.irbrc\spath:\s.+\n
         RUBY_PLATFORM:\s.+\n
+        #{@is_win ? 'Code\spage:\s\d+\n' : ''}
       }x
       assert_match expected, irb.context.main.irb_info.to_s
     ensure
@@ -132,6 +135,7 @@ module TestIRB
         IRB\sversion:\sirb\s.+\n
         InputMethod:\sAbstract\sInputMethod\n
         RUBY_PLATFORM:\s.+\n
+        #{@is_win ? 'Code\spage:\s\d+\n' : ''}
         \z
       }x
       assert_match expected, irb.context.main.irb_info.to_s
@@ -163,6 +167,7 @@ module TestIRB
         IRB\sversion:\sirb\s.+\n
         InputMethod:\sAbstract\sInputMethod\n
         RUBY_PLATFORM:\s.+\n
+        #{@is_win ? 'Code\spage:\s\d+\n' : ''}
         \z
       }x
       assert_match expected, irb.context.main.irb_info.to_s
