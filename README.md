@@ -162,25 +162,25 @@ There are 3 test suites:
 The tests can be run in parallel like this:
 
 ```
-make -j16 test-all RUNOPTS="--yjit-call-threshold=1"
+make -j16 test-all RUN_OPTS="--yjit-call-threshold=1"
 ```
 
 Or single-threaded like this, to more easily identify which specific test is failing:
 
 ```
-make test-all TESTOPTS=--verbose RUNOPTS="--yjit-call-threshold=1"
+make test-all TESTOPTS=--verbose RUN_OPTS="--yjit-call-threshold=1"
 ```
 
 To debug a single test in `test-all`:
 
 ```
-make test-all TESTS='test/-ext-/marshal/test_usrmarshal.rb' RUNRUBYOPT=--debugger=lldb RUNOPTS="--yjit-call-threshold=1"
+make test-all TESTS='test/-ext-/marshal/test_usrmarshal.rb' RUNRUBYOPT=--debugger=lldb RUN_OPTS="--yjit-call-threshold=1"
 ```
 
 You can also run one specific test in `btest`:
 
 ```
-make btest BTESTS=bootstraptest/test_ractor.rb RUNOPTS="--yjit-call-threshold=1"
+make btest BTESTS=bootstraptest/test_ractor.rb RUN_OPTS="--yjit-call-threshold=1"
 ```
 
 There are shortcuts to run/debug your own test/repro in `test.rb`:
