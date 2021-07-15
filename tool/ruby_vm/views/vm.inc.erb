@@ -25,20 +25,6 @@
 <%= render 'insn_entry', locals: { insn: insn } -%>
 % end
 %
-% RubyVM::YJIT::ExampleInstructions.to_a.each do |insn|
-INSN_ENTRY(yjit_call_example_with_ec)
-{
-    START_OF_ORIGINAL_INSN(yjit_call_example_with_ec);
-#if USE_MACHINE_REGS
-    // assumes USE_MACHINE_REGS, aka reg_pc setup,
-    // aka #define SET_PC(x) (reg_cfp->pc = reg_pc = (x))
-    rb_yjit_empty_func_with_ec(GET_CFP(), ec);
-    RESTORE_REGS();
-#endif
-    END_INSN(yjit_call_example_with_ec);
-}
-% end
-%
 % RubyVM::TraceInstructions.to_a.each do |insn|
 <%= render 'trace_instruction', locals: { insn: insn } -%>
 % end
