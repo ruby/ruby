@@ -115,7 +115,7 @@ module Fiddle
     def test_file_name
       file_name = Handle.new(LIBC_SO).file_name
       assert_kind_of String, file_name
-      expected = File.basename(LIBC_SO)
+      expected = File.basename(File.realpath(LIBC_SO))
       basename = File.basename(file_name)
       if File::FNM_SYSCASE.zero?
         assert_equal expected, basename
