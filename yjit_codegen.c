@@ -365,13 +365,6 @@ yjit_entry_prologue(const rb_iseq_t *iseq)
     uint8_t *code_ptr = cb_get_ptr(cb, cb->write_pos);
     ADD_COMMENT(cb, "yjit prolog");
 
-    // Fix registers for YJIT.  The MJIT callback puts the ec in RDI
-    // and the CFP in RSI, but REG_CFP == RDI and REG_EC == RSI
-    mov(cb, REG0, RDI); // EC
-    mov(cb, REG1, RSI); // CFP
-    mov(cb, REG_EC, REG0);
-    mov(cb, REG_CFP, REG1);
-
     // Load the current SP from the CFP into REG_SP
     mov(cb, REG_SP, member_opnd(REG_CFP, rb_control_frame_t, sp));
 
