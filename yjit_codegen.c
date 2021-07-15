@@ -774,15 +774,15 @@ gen_expandarray(jitstate_t* jit, ctx_t* ctx)
     rb_num_t num = (rb_num_t) jit_get_arg(jit, 0);
     x86opnd_t array_opnd = ctx_stack_pop(ctx, 1);
 
-    // If we don't actually want any values, then just return.
-    if (num == 0) {
-        return YJIT_KEEP_COMPILING;
-    }
-
     // Move the array from the stack into REG0 and check that it's an array.
     mov(cb, REG0, array_opnd);
     guard_object_is_heap(cb, REG0, ctx, COUNTED_EXIT(side_exit, expandarray_not_array));
     guard_object_is_array(cb, REG0, REG1, ctx, COUNTED_EXIT(side_exit, expandarray_not_array));
+
+    // If we don't actually want any values, then just return.
+    if (num == 0) {
+        return YJIT_KEEP_COMPILING;
+    }
 
     // Pull out the embed flag to check if it's an embedded array.
     x86opnd_t flags_opnd = member_opnd(REG0, struct RBasic, flags);
