@@ -58,6 +58,7 @@ env:
     compiler: gcc-10
     before_install:
       - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
+      - tool/travis_retry.sh sudo apt-get -qq update
       - >-
         tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install
         ccache
