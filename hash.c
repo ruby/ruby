@@ -1559,6 +1559,17 @@ rb_hash_new(void)
     return hash_alloc(rb_cHash);
 }
 
+static VALUE rb_hash_compare_by_id(VALUE hash);
+
+static VALUE
+copy_compare_by_id(VALUE hash, VALUE basis)
+{
+    if (rb_hash_compare_by_id_p(basis)) {
+        return rb_hash_compare_by_id(hash);
+    }
+    return hash;
+}
+
 MJIT_FUNC_EXPORTED VALUE
 rb_hash_new_with_size(st_index_t size)
 {
@@ -1585,6 +1596,12 @@ hash_copy(VALUE ret, VALUE hash)
             RHASH_ST_TABLE_SET(ret, st_copy(RHASH_ST_TABLE(hash)));
     }
     return ret;
+}
+
+static VALUE
+hash_dup_with_compare_by_id(VALUE hash)
+{
+    return hash_copy(copy_compare_by_id(rb_hash_new(), hash), hash);
 }
 
 static VALUE
@@ -2597,7 +2614,7 @@ rb_hash_reject(VALUE hash)
 	    rb_warn("extra states are no longer copied: %+"PRIsVALUE, hash);
 	}
     }
-    result = hash_copy(hash_alloc(rb_cHash), hash);
+    result = hash_dup_with_compare_by_id(hash);
     if (!RHASH_EMPTY_P(hash)) {
 	rb_hash_foreach(result, delete_if_i, result);
     }
@@ -2622,9 +2639,9 @@ rb_hash_slice(int argc, VALUE *argv, VALUE hash)
     VALUE key, value, result;
 
     if (argc == 0 || RHASH_EMPTY_P(hash)) {
-	return rb_hash_new();
+        return copy_compare_by_id(rb_hash_new(), hash);
     }
-    result = rb_hash_new_with_size(argc);
+    result = copy_compare_by_id(rb_hash_new_with_size(argc), hash);
 
     for (i = 0; i < argc; i++) {
 	key = argv[i];
@@ -2653,8 +2670,7 @@ rb_hash_except(int argc, VALUE *argv, VALUE hash)
     int i;
     VALUE key, result;
 
-    result = hash_alloc(rb_cHash);
-    hash_copy(result, hash);
+    result = hash_dup_with_compare_by_id(hash);
 
     for (i = 0; i < argc; i++) {
         key = argv[i];
@@ -2754,7 +2770,7 @@ rb_hash_select(VALUE hash)
     VALUE result;
 
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
-    result = hash_copy(hash_alloc(rb_cHash), hash);
+    result = hash_dup_with_compare_by_id(hash);
     if (!RHASH_EMPTY_P(hash)) {
 	rb_hash_foreach(result, keep_if_i, result);
     }
@@ -3348,7 +3364,7 @@ rb_hash_transform_values(VALUE hash)
     VALUE result;
 
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
-    result = hash_copy(hash_alloc(rb_cHash), hash);
+    result = hash_dup_with_compare_by_id(hash);
     SET_DEFAULT(result, Qnil);
 
     if (!RHASH_EMPTY_P(hash)) {
@@ -4102,7 +4118,7 @@ rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func)
 static VALUE
 rb_hash_merge(int argc, VALUE *argv, VALUE self)
 {
-    return rb_hash_update(argc, argv, rb_hash_dup(self));
+    return rb_hash_update(argc, argv, copy_compare_by_id(rb_hash_dup(self), self));
 }
 
 static int
