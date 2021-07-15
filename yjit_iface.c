@@ -465,6 +465,8 @@ yjit_block_assumptions_free(block_t *block)
     }
 }
 
+typedef VALUE (*yjit_func_t)(rb_execution_context_t *, rb_control_frame_t *);
+
 bool
 rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec)
 {
@@ -472,14 +474,13 @@ rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec)
 #if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
     RB_VM_LOCK_ENTER();
     // TODO: I think we need to stop all other ractors here
-    VALUE *encoded = (VALUE *)iseq->body->iseq_encoded;
 
     // Compile a block version starting at the first instruction
     uint8_t* code_ptr = gen_entry_point(iseq, 0, ec);
 
     if (code_ptr)
     {
-        iseq->body->jit_func = code_ptr;
+        iseq->body->jit_func = (yjit_func_t)code_ptr;
     }
     else {
         iseq->body->jit_func = 0;
