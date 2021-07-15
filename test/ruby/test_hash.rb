@@ -1899,14 +1899,14 @@ class TestHash < Test::Unit::TestCase
     h[str1] = 1
     h[str2] = 2
     h2 = h.transform_keys(&:itself)
-    assert_equal(h, h2)
-    assert_equal(true, h2.compare_by_identity?)
+    assert_equal(Hash[h.to_a], h2)
+    assert_equal(false, h2.compare_by_identity?)
 
     h = @cls[]
     h.compare_by_identity
     h2 = h.transform_keys(&:itself)
-    assert_equal({}.compare_by_identity, h2)
-    assert_equal(true, h2.compare_by_identity?)
+    assert_equal({}, h2)
+    assert_equal(false, h2.compare_by_identity?)
   end
 
   def test_transform_keys_bang

@@ -3246,7 +3246,7 @@ rb_hash_transform_keys(int argc, VALUE *argv, VALUE hash)
     else {
         RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
     }
-    result = copy_compare_by_id(rb_hash_new(), hash);
+    result = rb_hash_new();
     if (!RHASH_EMPTY_P(hash)) {
         if (transarg.trans) {
             transarg.result = result;
