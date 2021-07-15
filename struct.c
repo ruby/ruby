@@ -356,19 +356,14 @@ rb_struct_s_inspect(VALUE klass)
  *
  * Examples:
  *   Foo = Struct.new(:a)
- *   Foo.keyword_init? # => false
+ *   Foo.keyword_init? # => nil
  *   Bar = Struct.new(:a, keyword_init: true)
  *   Bar.keyword_init? # => true
+ *   Baz = Struct.new(:a, keyword_init: false)
+ *   Baz.keyword_init? # => false
  */
-static VALUE
-rb_struct_s_keyword_init_p(VALUE klass)
-{
-    if (RTEST(rb_struct_s_keyword_init(klass))) {
-        return Qtrue;
-    } else {
-        return Qfalse;
-    }
-}
+
+#define rb_struct_s_keyword_init_p rb_struct_s_keyword_init
 
 static VALUE
 setup_struct(VALUE nstr, VALUE members)

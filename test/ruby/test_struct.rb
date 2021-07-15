@@ -144,6 +144,9 @@ module TestStruct
 
     struct = @Struct.new(:a, :b, keyword_init: false)
     assert_equal(false, struct.keyword_init?)
+
+    struct = @Struct.new(:a, :b)
+    assert_nil(struct.keyword_init?)
   end
 
   def test_initialize
