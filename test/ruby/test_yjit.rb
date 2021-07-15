@@ -9,54 +9,54 @@ return unless YJIT.enabled?
 # insipired by the MJIT tests in test/ruby/test_jit.rb
 class TestYJIT < Test::Unit::TestCase
   def test_compile_putnil
-    assert_compiles('nil', insns: %i[putnil], stdout: 'nil')
+    assert_compiles('nil', insns: %i[putnil], result: nil)
   end
 
   def test_compile_putobject
-    assert_compiles('true', insns: %i[putobject], stdout: 'true')
-    assert_compiles('123', insns: %i[putobject], stdout: '123')
-    assert_compiles(':foo', insns: %i[putobject], stdout: ':foo')
+    assert_compiles('true', insns: %i[putobject], result: true)
+    assert_compiles('123', insns: %i[putobject], result: 123)
+    assert_compiles(':foo', insns: %i[putobject], result: :foo)
   end
 
   def test_compile_opt_not
-    assert_compiles('!false', insns: %i[opt_not], stdout: 'true')
-    assert_compiles('!nil', insns: %i[opt_not], stdout: 'true')
-    assert_compiles('!true', insns: %i[opt_not], stdout: 'false')
-    assert_compiles('![]', insns: %i[opt_not], stdout: 'false')
+    assert_compiles('!false', insns: %i[opt_not], result: true)
+    assert_compiles('!nil', insns: %i[opt_not], result: true)
+    assert_compiles('!true', insns: %i[opt_not], result: false)
+    assert_compiles('![]', insns: %i[opt_not], result: false)
   end
 
   def test_compile_opt_newarray
-    assert_compiles('[]', insns: %i[newarray], stdout: '[]')
-    assert_compiles('[1+1]', insns: %i[newarray opt_plus], stdout: '[2]')
-    assert_compiles('[1,1+1,3,4,5,6]', insns: %i[newarray opt_plus], stdout: '[1, 2, 3, 4, 5, 6]')
+    assert_compiles('[]', insns: %i[newarray], result: [])
+    assert_compiles('[1+1]', insns: %i[newarray opt_plus], result: [2])
+    assert_compiles('[1,1+1,3,4,5,6]', insns: %i[newarray opt_plus], result: [1, 2, 3, 4, 5, 6])
   end
 
   def test_compile_opt_duparray
-    assert_compiles('[1]', insns: %i[duparray], stdout: '[1]')
-    assert_compiles('[1, 2, 3]', insns: %i[duparray], stdout: '[1, 2, 3]')
+    assert_compiles('[1]', insns: %i[duparray], result: [1])
+    assert_compiles('[1, 2, 3]', insns: %i[duparray], result: [1, 2, 3])
   end
 
   def test_compile_opt_nil_p
-    assert_compiles('nil.nil?', insns: %i[opt_nil_p], stdout: 'true')
-    assert_compiles('false.nil?', insns: %i[opt_nil_p], stdout: 'false')
-    assert_compiles('true.nil?', insns: %i[opt_nil_p], stdout: 'false')
-    assert_compiles('(-"").nil?', insns: %i[opt_nil_p], stdout: 'false')
-    assert_compiles('123.nil?', insns: %i[opt_nil_p], stdout: 'false')
+    assert_compiles('nil.nil?', insns: %i[opt_nil_p], result: true)
+    assert_compiles('false.nil?', insns: %i[opt_nil_p], result: false)
+    assert_compiles('true.nil?', insns: %i[opt_nil_p], result: false)
+    assert_compiles('(-"").nil?', insns: %i[opt_nil_p], result: false)
+    assert_compiles('123.nil?', insns: %i[opt_nil_p], result: false)
   end
 
   def test_compile_eq_fixnum
-    assert_compiles('123 == 123', insns: %i[opt_eq], stdout: 'true')
-    assert_compiles('123 == 456', insns: %i[opt_eq], stdout: 'false')
+    assert_compiles('123 == 123', insns: %i[opt_eq], result: true)
+    assert_compiles('123 == 456', insns: %i[opt_eq], result: false)
   end
 
   def test_compile_eq_string
-    assert_compiles('-"" == -""', insns: %i[opt_eq], stdout: 'true')
-    assert_compiles('-"foo" == -"foo"', insns: %i[opt_eq], stdout: 'true')
-    assert_compiles('-"foo" == -"bar"', insns: %i[opt_eq], stdout: 'false')
+    assert_compiles('-"" == -""', insns: %i[opt_eq], result: true)
+    assert_compiles('-"foo" == -"foo"', insns: %i[opt_eq], result: true)
+    assert_compiles('-"foo" == -"bar"', insns: %i[opt_eq], result: false)
   end
 
   def test_getlocal_with_level
-    assert_compiles(<<~RUBY, insns: %i[getlocal opt_plus], stdout: '[[7]]', exits: {leave: 2})
+    assert_compiles(<<~RUBY, insns: %i[getlocal opt_plus], result: [[7]], exits: {leave: 2})
       def foo(foo, bar)
         [1].map do |x|
           [1].map do |y|
@@ -70,7 +70,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_string_then_nil
-    assert_compiles(<<~RUBY, insns: %i[opt_nil_p], stdout: 'true')
+    assert_compiles(<<~RUBY, insns: %i[opt_nil_p], result: true)
       def foo(val)
         val.nil?
       end
@@ -81,7 +81,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_nil_then_string
-    assert_compiles(<<~RUBY, insns: %i[opt_nil_p], stdout: 'false')
+    assert_compiles(<<~RUBY, insns: %i[opt_nil_p], result: false)
       def foo(val)
         val.nil?
       end
@@ -92,7 +92,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_opt_length_in_method
-    assert_compiles(<<~RUBY, insns: %i[opt_length], stdout: '5')
+    assert_compiles(<<~RUBY, insns: %i[opt_length], result: 5)
       def foo(str)
         str.length
       end
@@ -103,7 +103,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_compile_opt_getinlinecache
-    assert_compiles(<<~RUBY, insns: %i[opt_getinlinecache], stdout: '123', min_calls: 2)
+    assert_compiles(<<~RUBY, insns: %i[opt_getinlinecache], result: 123, min_calls: 2)
       def get_foo
         FOO
       end
@@ -116,7 +116,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_string_interpolation
-    assert_compiles(<<~'RUBY', insns: %i[checktype concatstrings], stdout: '"foobar"', min_calls: 2)
+    assert_compiles(<<~'RUBY', insns: %i[checktype concatstrings], result: "foobar", min_calls: 2)
       def make_str(foo, bar)
         "#{foo}#{bar}"
       end
@@ -127,7 +127,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_fib_recursion
-    assert_compiles(<<~'RUBY', insns: %i[opt_le opt_minus opt_plus opt_send_without_block], stdout: '34')
+    assert_compiles(<<~'RUBY', insns: %i[opt_le opt_minus opt_plus opt_send_without_block], result: 34)
       def fib(n)
         return n if n <= 1
         fib(n-1) + fib(n-2)
@@ -141,13 +141,14 @@ class TestYJIT < Test::Unit::TestCase
     assert_compiles(script)
   end
 
-  def assert_compiles(test_script, insns: [], min_calls: 1, stdout: nil, exits: {})
+  ANY = Object.new
+  def assert_compiles(test_script, insns: [], min_calls: 1, stdout: nil, exits: {}, result: ANY)
     reset_stats = <<~RUBY
       YJIT.runtime_stats
       YJIT.reset_stats!
     RUBY
 
-    print_stats = <<~RUBY
+    write_results = <<~RUBY
       stats = YJIT.runtime_stats
 
       def collect_blocks(blocks)
@@ -170,6 +171,7 @@ class TestYJIT < Test::Unit::TestCase
 
       iseq = RubyVM::InstructionSequence.of(_test_proc)
       IO.open(3).write Marshal.dump({
+        result: result,
         stats: stats,
         iseqs: collect_iseqs(iseq),
         disasm: iseq.disasm
@@ -181,8 +183,8 @@ class TestYJIT < Test::Unit::TestCase
         #{test_script}
       }
       #{reset_stats}
-      p _test_proc.call
-      #{print_stats}
+      result = _test_proc.call
+      #{write_results}
     RUBY
 
     status, out, err, stats = eval_with_jit(script, min_calls: min_calls)
@@ -190,6 +192,10 @@ class TestYJIT < Test::Unit::TestCase
     assert status.success?, "exited with status #{status.to_i}, stderr:\n#{err}"
 
     assert_equal stdout.chomp, out.chomp if stdout
+
+    unless ANY.equal?(result)
+      assert_equal result, stats[:result]
+    end
 
     runtime_stats = stats[:stats]
     iseqs = stats[:iseqs]
