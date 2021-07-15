@@ -1638,7 +1638,8 @@ eom
       assert_equal(-1, obj.method(:foo).arity)
       parameters = obj.method(:foo).parameters
       assert_equal(:rest, parameters.dig(0, 0))
-      assert_equal(:block, parameters.dig(1, 0))
+      assert_equal(:keyrest, parameters.dig(1, 0))
+      assert_equal(:block, parameters.dig(2, 0))
     end
   end
 

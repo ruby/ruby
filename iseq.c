@@ -3116,9 +3116,18 @@ rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc)
 	    rb_ary_push(args, a);
 	}
     }
-    if (body->param.flags.has_kwrest) {
+    if (body->param.flags.has_kwrest || body->param.flags.ruby2_keywords) {
+        ID param;
 	CONST_ID(keyrest, "keyrest");
-	rb_ary_push(args, PARAM(keyword->rest_start, keyrest));
+        PARAM_TYPE(keyrest);
+        if (body->param.flags.has_kwrest &&
+            rb_id2str(param = PARAM_ID(keyword->rest_start))) {
+            rb_ary_push(a, ID2SYM(param));
+        }
+        else if (body->param.flags.ruby2_keywords) {
+            rb_ary_push(a, ID2SYM(idPow));
+        }
+	rb_ary_push(args, a);
     }
     if (body->param.flags.has_block) {
 	CONST_ID(block, "block");

@@ -3097,7 +3097,12 @@ method_inspect(VALUE method)
                 }
             }
             else if (kind == keyrest) {
-                rb_str_catf(str, "**%"PRIsVALUE, name);
+                if (name != ID2SYM(idPow)) {
+                    rb_str_catf(str, "**%"PRIsVALUE, name);
+                }
+                else if (i > 0) {
+                    rb_str_set_len(str, RSTRING_LEN(str) - 2);
+                }
             }
             else if (kind == block) {
                 if (name == ID2SYM('&')) {
