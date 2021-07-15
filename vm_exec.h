@@ -81,7 +81,7 @@ error !
                         RSTRING_PTR(rb_iseq_path(reg_cfp->iseq)), \
                         rb_iseq_line_no(reg_cfp->iseq, reg_pc - reg_cfp->iseq->body->iseq_encoded)); \
   } \
-  if (USE_INSNS_COUNTER && BIN(insn) != BIN(yjit_call_example_with_ec)) vm_insns_counter_count_insn(BIN(insn));
+  if (USE_INSNS_COUNTER) vm_insns_counter_count_insn(BIN(insn));
 
 #define INSN_DISPATCH_SIG(insn)
 

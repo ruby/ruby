@@ -13,12 +13,10 @@
 require_relative 'bare_instructions'
 require_relative 'operands_unifications'
 require_relative 'instructions_unifications'
-require_relative 'yjit'
 
 RubyVM::Instructions = RubyVM::BareInstructions.to_a + \
                        RubyVM::OperandsUnifications.to_a + \
-                       RubyVM::InstructionsUnifications.to_a + \
-                       RubyVM::YJIT::ExampleInstructions.to_a
+                       RubyVM::InstructionsUnifications.to_a
 
 
 require_relative 'trace_instructions'
