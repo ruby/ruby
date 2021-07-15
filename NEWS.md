@@ -108,7 +108,7 @@ Outstanding ones only.
 * Thread::Backtrace
 
     * Thread::Backtrace.limit, which returns the value to limit backtrace
-      length set by `--backtracse-limit` command line option, is added.
+      length set by `--backtrace-limit` command line option, is added.
       [[Feature #17479]]
 
 * $LOAD_PATH
