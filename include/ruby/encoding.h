@@ -238,7 +238,6 @@ rb_enc_asciicompat_inline(rb_encoding *enc)
 CONSTFUNC(int rb_enc_toupper(int c, rb_encoding *enc));
 CONSTFUNC(int rb_enc_tolower(int c, rb_encoding *enc));
 ID rb_intern3(const char*, long, rb_encoding*);
-ID rb_interned_id_p(const char *, long, rb_encoding *);
 int rb_enc_symname_p(const char*, rb_encoding*);
 int rb_enc_symname2_p(const char*, long, rb_encoding*);
 int rb_enc_str_coderange(VALUE);
