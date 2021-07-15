@@ -1479,3 +1479,18 @@ assert_equal '2', %q{
   expandarray_postarg
   expandarray_postarg
 }
+
+assert_equal '10', %q{
+  obj = Object.new
+  val = nil
+  obj.define_singleton_method(:to_ary) { val = 10; [] }
+
+  def expandarray_always_call_to_ary(object)
+    * = object
+  end
+
+  expandarray_always_call_to_ary(obj)
+  expandarray_always_call_to_ary(obj)
+
+  val
+}
