@@ -604,6 +604,9 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
         if (keyword_init == Qundef) {
             keyword_init = Qnil;
         }
+        else if (RTEST(keyword_init)) {
+            keyword_init = Qtrue;
+        }
 	--argc;
     }
 
