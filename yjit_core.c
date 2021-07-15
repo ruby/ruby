@@ -943,17 +943,9 @@ invalidate_block_version(block_t* block)
         }
     }
 
-    uint32_t idx = block->blockid.idx;
-    // FIXME: the following says "if", but it's unconditional.
-    // If the block is an entry point, it needs to be unmapped from its iseq
-    VALUE* entry_pc = yjit_iseq_pc_at_idx(iseq, idx);
-    int entry_opcode = yjit_opcode_at_pc(iseq, entry_pc);
-
-    // TODO: unmap_addr2insn in yjit_iface.c? Maybe we can write a function to encompass this logic?
-    // Should check how it's used in exit and side-exit
-    const void * const *handler_table = rb_vm_get_insns_address_table();
-    void* handler_addr = (void*)handler_table[entry_opcode];
-    iseq->body->iseq_encoded[idx] = (VALUE)handler_addr;
+    // Clear out the JIT func so that we can recompile later and so the
+    // interpreter will run the iseq
+    iseq->body->jit_func = 0;
 
     // TODO:
     // May want to recompile a new entry point (for interpreter entry blocks)
