@@ -6871,7 +6871,6 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode,
 # if defined(HAVE_WORKING_FORK)
 	pid = rb_fork_ruby(&status);
 	if (pid == 0) {		/* child */
-	    rb_thread_atfork();
 	    popen_redirect(&arg);
 	    rb_io_synchronized(RFILE(orig_stdout)->fptr);
 	    rb_io_synchronized(RFILE(orig_stderr)->fptr);
