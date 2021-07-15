@@ -114,15 +114,21 @@ module Fiddle
 
     def test_file_name
       file_name = Handle.new(LIBC_SO).file_name
-      assert_kind_of String, file_name
-      expected = File.basename(File.realpath(LIBC_SO))
-      basename = File.basename(file_name)
-      if File::FNM_SYSCASE.zero?
-        assert_equal expected, basename
-      else
-        assert_send [basename, :casecmp?, expected]
+      if file_name
+        assert_kind_of String, file_name
+        expected = [File.basename(LIBC_SO)]
+        begin
+          expected << File.basename(File.realpath(LIBC_SO, File.dirname(file_name)))
+        rescue Errno::ENOENT
+        end
+        basename = File.basename(file_name)
+        unless File::FNM_SYSCASE.zero?
+          basename.downcase!
+          expected.each(&:downcase!)
+        end
+        assert_include expected, basename
       end
-    end unless /darwin/ =~ RUBY_PLATFORM
+    end
 
     def test_NEXT
       begin
