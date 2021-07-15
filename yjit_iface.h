@@ -48,6 +48,7 @@ YJIT_DECLARE_COUNTERS(
 
     leave_se_interrupt,
     leave_interp_return,
+    leave_start_pc_non_zero,
 
     getivar_se_self_not_heap,
     getivar_idx_out_of_range,

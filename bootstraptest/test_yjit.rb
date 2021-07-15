@@ -1,3 +1,14 @@
+# Make sure that optional param methods return the correct value
+assert_equal '1', %q{
+  def m(ary = [])
+    yield(ary)
+  end
+
+  # Warm the JIT with a 0 param call
+  2.times { m { } }
+  m(1) { |v| v }
+}
+
 # Test for topn
 assert_equal 'array', %q{
   def threequals(a)
