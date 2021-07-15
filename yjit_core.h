@@ -5,8 +5,8 @@
 #include "yjit_asm.h"
 
 // Register YJIT receives the CFP and EC into
-#define REG_CFP RDI
-#define REG_EC RSI
+#define REG_CFP RSI
+#define REG_EC RDI
 
 // Register YJIT loads the SP into
 #define REG_SP RDX
