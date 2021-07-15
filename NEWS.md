@@ -96,6 +96,8 @@ Outstanding ones only.
       You need to use a Hash literal to set a Hash to a first member.
       [[Feature #16806]]
 
+    * StructClass#keyword_init? is added [[Feature #18008]]
+
 * Queue
 
     * Queue#initialize now accepts an Enumerable of initial values.
