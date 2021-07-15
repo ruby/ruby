@@ -39,6 +39,7 @@ module JITSupport
       '--disable-gems', "--jit-verbose=#{verbose}",
       "--jit-min-calls=#{min_calls}", "--jit-max-cache=#{max_cache}",
     ]
+    args << '--disable-yjit'
     args << '--jit-wait' if wait
     args << '--jit-save-temps' if save_temps
     args << '--jit-debug' if defined?(@jit_debug) && @jit_debug
