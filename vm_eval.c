@@ -645,6 +645,8 @@ rb_check_funcall(VALUE recv, ID mid, int argc, const VALUE *argv)
 static VALUE
 rb_check_funcall_default_kw(VALUE recv, ID mid, int argc, const VALUE *argv, VALUE def, int kw_splat)
 {
+    VM_ASSERT(ruby_thread_has_gvl_p());
+
     VALUE klass = CLASS_OF(recv);
     const rb_callable_method_entry_t *me;
     rb_execution_context_t *ec = GET_EC();
