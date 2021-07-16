@@ -11,6 +11,7 @@
 #include "vm_core.h"
 #include "ruby/fiber/scheduler.h"
 #include "ruby/io.h"
+#include "internal/thread.h"
 
 static ID id_close;
 static ID id_scheduler_close;
@@ -51,6 +52,8 @@ Init_Fiber_Scheduler(void)
 VALUE
 rb_fiber_scheduler_get(void)
 {
+    VM_ASSERT(ruby_thread_has_gvl_p());
+
     rb_thread_t *thread = GET_THREAD();
     VM_ASSERT(thread);
 
@@ -80,6 +83,8 @@ verify_interface(VALUE scheduler)
 VALUE
 rb_fiber_scheduler_set(VALUE scheduler)
 {
+    VM_ASSERT(ruby_thread_has_gvl_p());
+
     rb_thread_t *thread = GET_THREAD();
     VM_ASSERT(thread);
 
@@ -124,6 +129,8 @@ VALUE rb_fiber_scheduler_current_for_thread(VALUE thread)
 VALUE
 rb_fiber_scheduler_close(VALUE scheduler)
 {
+    VM_ASSERT(ruby_thread_has_gvl_p());
+
     VALUE result;
 
     result = rb_check_funcall(scheduler, id_scheduler_close, 0, NULL);
@@ -194,6 +201,8 @@ rb_fiber_scheduler_block(VALUE scheduler, VALUE blocker, VALUE timeout)
 VALUE
 rb_fiber_scheduler_unblock(VALUE scheduler, VALUE blocker, VALUE fiber)
 {
+    VM_ASSERT(rb_obj_is_fiber(fiber));
+
     return rb_funcall(scheduler, id_unblock, 2, blocker, fiber);
 }
 
