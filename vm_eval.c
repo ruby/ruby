@@ -1036,12 +1036,16 @@ rb_funcallv_scope(VALUE recv, ID mid, int argc, const VALUE *argv, call_type sco
 VALUE
 rb_funcallv(VALUE recv, ID mid, int argc, const VALUE *argv)
 {
+    VM_ASSERT(ruby_thread_has_gvl_p());
+
     return rb_funcallv_scope(recv, mid, argc, argv, CALL_FCALL);
 }
 
 VALUE
 rb_funcallv_kw(VALUE recv, ID mid, int argc, const VALUE *argv, int kw_splat)
 {
+    VM_ASSERT(ruby_thread_has_gvl_p());
+
     return rb_call(recv, mid, argc, argv, kw_splat ? CALL_FCALL_KW : CALL_FCALL);
 }
 

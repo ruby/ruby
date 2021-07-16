@@ -23,6 +23,7 @@
 #include "internal/proc.h"
 #include "internal/re.h"
 #include "internal/symbol.h"
+#include "internal/thread.h"
 #include "internal/vm.h"
 #include "internal/sanitizers.h"
 #include "iseq.h"
