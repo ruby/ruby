@@ -15206,6 +15206,7 @@ vm.$(OBJEXT): $(top_srcdir)/internal/serial.h
 vm.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 vm.$(OBJEXT): $(top_srcdir)/internal/string.h
 vm.$(OBJEXT): $(top_srcdir)/internal/symbol.h
+vm.$(OBJEXT): $(top_srcdir)/internal/thread.h
 vm.$(OBJEXT): $(top_srcdir)/internal/variable.h
 vm.$(OBJEXT): $(top_srcdir)/internal/vm.h
 vm.$(OBJEXT): $(top_srcdir)/internal/warnings.h
