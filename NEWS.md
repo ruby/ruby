@@ -15,11 +15,13 @@ Note that each entry is kept to a minimum, see links for details.
     ```
 
 * Pin operator now supports instance, class, and global variables.
-  [[Feature #17724]] 
+  [[Feature #17724]]
 
+    ```ruby
     @n = 5
     Prime.each_cons(2).lazy.find{_1 in [n, ^@n]}
     #=> [3, 5]
+    ```
 
 * Multiple assignment evaluation order has been made consistent with
   single assignment evaluation order.  With single assignment, Ruby
