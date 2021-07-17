@@ -1763,8 +1763,8 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
  *  The concept of <em>non-blocking fiber</em> was introduced in Ruby 3.0.
  *  A non-blocking fiber, when reaching a operation that would normally block
  *  the fiber (like <code>sleep</code>, or wait for another process or I/O)
- #  will yield control to other fibers and allow the <em>scheduler</em> to
- #  handle blocking and waking up (resuming) this fiber when it can proceed.
+ *  will yield control to other fibers and allow the <em>scheduler</em> to
+ *  handle blocking and waking up (resuming) this fiber when it can proceed.
  *
  *  For a Fiber to behave as non-blocking, it need to be created in Fiber.new with
  *  <tt>blocking: false</tt> (which is the default), and Fiber.scheduler
