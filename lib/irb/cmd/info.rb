@@ -17,7 +17,7 @@ module IRB
             str += "LANG env: #{ENV["LANG"]}\n" if ENV["LANG"] && !ENV["LANG"].empty?
             str += "LC_ALL env: #{ENV["LC_ALL"]}\n" if ENV["LC_ALL"] && !ENV["LC_ALL"].empty?
             if RbConfig::CONFIG['host_os'] =~ /mswin|msys|mingw|cygwin|bccwin|wince|emc/
-              codepage = `chcp`.sub(/Active code page: (\d+)\n/, '\1')
+              codepage = `chcp`.sub(/.*: (\d+)\n/, '\1')
               str += "Code page: #{codepage}\n"
             end
             str
