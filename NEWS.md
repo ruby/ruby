@@ -23,6 +23,8 @@ Note that each entry is kept to a minimum, see links for details.
     #=> [3, 5]
     ```
 
+* One-line pattern matching is no longer experimental.
+
 * Multiple assignment evaluation order has been made consistent with
   single assignment evaluation order.  With single assignment, Ruby
   uses a left-to-right evaluation order.  With this code:
