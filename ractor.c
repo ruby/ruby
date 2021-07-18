@@ -1443,6 +1443,9 @@ vm_remove_ractor(rb_vm_t *vm, rb_ractor_t *cr)
         }
         vm->ractor.cnt--;
 
+        /* Clear the cached freelist to prevent a memory leak. */
+        rb_gc_ractor_newobj_cache_clear(&cr->newobj_cache);
+
         ractor_status_set(cr, ractor_terminated);
     }
     RB_VM_UNLOCK();

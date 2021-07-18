@@ -61,6 +61,11 @@ struct rb_objspace; /* in vm_core.h */
     rb_obj_write((VALUE)(a), UNALIGNED_MEMBER_ACCESS((VALUE *)(slot)), \
                  (VALUE)(b), __FILE__, __LINE__)
 
+typedef struct ractor_newobj_cache {
+    struct RVALUE *freelist;
+    struct heap_page *using_page;
+} rb_ractor_newobj_cache_t;
+
 /* gc.c */
 extern VALUE *ruby_initial_gc_stress_ptr;
 extern int ruby_disable_gc;
@@ -100,6 +105,7 @@ void rb_gc_mark_vm_stack_values(long n, const VALUE *values);
 void *ruby_sized_xrealloc(void *ptr, size_t new_size, size_t old_size) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2));
 void *ruby_sized_xrealloc2(void *ptr, size_t new_count, size_t element_size, size_t old_count) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2, 3));
 void ruby_sized_xfree(void *x, size_t size);
+void rb_gc_ractor_newobj_cache_clear(rb_ractor_newobj_cache_t *newobj_cache);
 RUBY_SYMBOL_EXPORT_END
 
 MJIT_SYMBOL_EXPORT_BEGIN
