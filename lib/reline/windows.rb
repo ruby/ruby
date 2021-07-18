@@ -206,6 +206,8 @@ class Reline::Windows
         @@output_buf.push(0, 80)
       when VK_DELETE
         @@output_buf.push(0, 83)
+      when VK_RETURN
+        @@output_buf.push(char_code) # must be 0x0D
       end
     elsif char_code == 0 and control_key_state != 0
       # unknown
