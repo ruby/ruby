@@ -3397,7 +3397,7 @@ rb_bool_expected(VALUE obj, const char *flagname)
 int
 rb_opts_exception_p(VALUE opts, int default_value)
 {
-    static ID kwds[1] = {idException};
+    static const ID kwds[1] = {idException};
     VALUE exception;
     if (rb_get_kwargs(opts, kwds, 0, 1, &exception))
         return rb_bool_expected(exception, "exception");
