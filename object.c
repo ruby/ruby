@@ -3388,7 +3388,7 @@ rb_bool_expected(VALUE obj, const char *flagname)
       case Qtrue: case Qfalse:
         break;
       default:
-        rb_raise(rb_eArgError, "true or false is expected as %s: %+"PRIsVALUE,
+        rb_raise(rb_eArgError, "expected true or false as %s: %+"PRIsVALUE,
                  flagname, obj);
     }
     return obj != Qfalse;

@@ -1271,8 +1271,7 @@ exc_full_message(int argc, VALUE *argv, VALUE exc)
 	rb_get_kwargs(opt, kw, 0, kw_max_, args);
 	switch (args[kw_highlight]) {
 	  default:
-	    rb_raise(rb_eArgError, "expected true or false as "
-		     "highlight: %+"PRIsVALUE, args[kw_highlight]);
+            rb_bool_expected(args[kw_highlight], "highlight");
 	  case Qundef: args[kw_highlight] = Qnil; break;
 	  case Qtrue: case Qfalse: case Qnil: break;
 	}
