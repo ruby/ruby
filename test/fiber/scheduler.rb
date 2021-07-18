@@ -107,10 +107,22 @@ class Scheduler
     end
   end
 
-  def close
+  def scheduler_close
+    close(true)
+  end
+
+  def close(internal = false)
     # $stderr.puts [__method__, Fiber.current].inspect
 
-    raise "Scheduler already closed!" if @closed
+    unless internal
+      if Fiber.scheduler == self
+        return Fiber.set_scheduler(nil)
+      end
+    end
+
+    if @closed
+      raise "Scheduler already closed!"
+    end
 
     self.run
   ensure
@@ -119,7 +131,7 @@ class Scheduler
       @urgent = nil
     end
 
-    @closed = true
+    @closed ||= true
 
     # We freeze to detect any unintended modifications after the scheduler is closed:
     self.freeze
