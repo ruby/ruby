@@ -1176,12 +1176,14 @@ cont_new(VALUE klass)
     return cont;
 }
 
-VALUE rb_fiberptr_self(struct rb_fiber_struct *fiber)
+VALUE
+rb_fiberptr_self(struct rb_fiber_struct *fiber)
 {
     return fiber->cont.self;
 }
 
-unsigned int rb_fiberptr_blocking(struct rb_fiber_struct *fiber)
+unsigned int
+rb_fiberptr_blocking(struct rb_fiber_struct *fiber)
 {
     return fiber->blocking;
 }
