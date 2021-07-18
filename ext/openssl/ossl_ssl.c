@@ -1410,7 +1410,7 @@ static VALUE
 peer_ip_address(VALUE self)
 {
     VALUE remote_address = rb_funcall(rb_attr_get(self, id_i_io), rb_intern("remote_address"), 0);
-    
+
     return rb_funcall(remote_address, rb_intern("inspect_sockaddr"), 0);
 }
 

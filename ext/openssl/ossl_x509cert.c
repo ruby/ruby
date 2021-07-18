@@ -741,7 +741,7 @@ load_chained_certificates_append(VALUE certificates, X509 *certificate) {
     arguments.certificate = certificate;
 
     rb_ensure(load_chained_certificates_append_push, (VALUE)&arguments, load_chained_certificate_append_ensure, (VALUE)&arguments);
-    
+
     return arguments.certificates;
 }
 
