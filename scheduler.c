@@ -13,6 +13,7 @@
 #include "ruby/io.h"
 
 static ID id_close;
+static ID id_scheduler_close;
 
 static ID id_block;
 static ID id_unblock;
@@ -31,6 +32,7 @@ void
 Init_Fiber_Scheduler(void)
 {
     id_close = rb_intern_const("close");
+    id_scheduler_close = rb_intern_const("scheduler_close");
 
     id_block = rb_intern_const("block");
     id_unblock = rb_intern_const("unblock");
@@ -122,9 +124,13 @@ VALUE rb_fiber_scheduler_current_for_thread(VALUE thread)
 VALUE
 rb_fiber_scheduler_close(VALUE scheduler)
 {
-    if (rb_respond_to(scheduler, id_close)) {
-        return rb_funcall(scheduler, id_close, 0);
-    }
+    VALUE result;
+
+    result = rb_check_funcall(scheduler, id_scheduler_close, 0, NULL);
+    if (result != Qundef) return result;
+
+    result = rb_check_funcall(scheduler, id_close, 0, NULL);
+    if (result != Qundef) return result;
 
     return Qnil;
 }
