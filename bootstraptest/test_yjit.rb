@@ -1,3 +1,45 @@
+# Check that global tracepoints work
+assert_equal 'true', %q{
+  def foo
+    1
+  end
+
+  foo
+  foo
+  foo
+
+  called = false
+
+  tp = TracePoint.new(:return) { |event|
+    if event.method_id == :foo
+      called = true
+    end
+  }
+  tp.enable
+  foo
+  tp.disable
+  called
+}
+
+# Check that local tracepoints work
+assert_equal 'true', %q{
+  def foo
+    1
+  end
+
+  foo
+  foo
+  foo
+
+  called = false
+
+  tp = TracePoint.new(:return) { |_| called = true }
+  tp.enable(target: method(:foo))
+  foo
+  tp.disable
+  called
+}
+
 # Make sure that optional param methods return the correct value
 assert_equal '1', %q{
   def m(ary = [])
