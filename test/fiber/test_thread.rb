@@ -66,4 +66,18 @@ class TestFiberThread < Test::Unit::TestCase
       thread.join
     end
   end
+
+  def test_thread_join_hang
+    thread = Thread.new do
+      scheduler = SleepingUnblockScheduler.new
+
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        Thread.new{sleep(0.01)}.value
+      end
+    end
+
+    thread.join
+  end
 end
