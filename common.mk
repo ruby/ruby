@@ -1337,7 +1337,7 @@ update-bundled_gems: PHONY
 	$(Q) $(RUNRUBY) -rrubygems \
 	     $(tooldir)/update-bundled_gems.rb \
 	     "$(srcdir)/gems/bundled_gems" | \
-	"$(IFCHANGE)" "$(srcdir)/gems/bundled_gems" -
+	$(IFCHANGE) "$(srcdir)/gems/bundled_gems" -
 	git -C "$(srcdir)" diff --no-ext-diff --ignore-submodules --exit-code || \
 	git -C "$(srcdir)" commit -m "Update bundled_gems" gems/bundled_gems
 
