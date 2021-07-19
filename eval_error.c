@@ -103,10 +103,6 @@ write_warnq(VALUE out, VALUE str, const char *ptr, long len)
                     rb_write_error2(buf, snprintf(buf, sizeof(buf), "\\x%02X", c));
                 }
             }
-            else if (c == '\\') {
-                rb_write_error2(beg, ptr - beg + 1);
-                beg = ptr;
-            }
         }
         if (ptr > beg) {
             if (beg == RSTRING_PTR(str) && olen == RSTRING_LEN(str))
