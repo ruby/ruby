@@ -3293,6 +3293,8 @@ rb_iseq_trace_flag_cleared(const rb_iseq_t *iseq, size_t pos)
     encoded_iseq_trace_instrument(&iseq_encoded[pos], 0, false);
 }
 
+typedef VALUE (*jit_func_t)(struct rb_execution_context_struct *, struct rb_control_frame_struct *);
+
 static int
 iseq_add_local_tracepoint(const rb_iseq_t *iseq, rb_event_flag_t turnon_events, VALUE tpval, unsigned int target_line)
 {
@@ -3302,6 +3304,11 @@ iseq_add_local_tracepoint(const rb_iseq_t *iseq, rb_event_flag_t turnon_events, 
     VALUE *iseq_encoded = (VALUE *)body->iseq_encoded;
 
     VM_ASSERT(ISEQ_EXECUTABLE_P(iseq));
+
+#if USE_MJIT
+    // Force write the jit function to NULL
+    *((jit_func_t *)(&body->jit_func)) = 0;
+#endif
 
     for (pc=0; pc<body->iseq_size;) {
         const struct iseq_insn_info_entry *entry = get_insn_info(iseq, pc);
@@ -3438,6 +3445,10 @@ rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events)
             rb_event_flag_t pc_events = rb_iseq_event_flags(iseq, pc);
             pc += encoded_iseq_trace_instrument(&iseq_encoded[pc], pc_events & enabled_events, true);
 	}
+#if USE_MJIT
+        // Force write the jit function to NULL
+        *((jit_func_t *)(&body->jit_func)) = 0;
+#endif
     }
 }
 
