@@ -713,10 +713,8 @@ comments_for(rb_execution_context_t *ec, VALUE self, VALUE start_address, VALUE 
 static VALUE
 get_yjit_stats(rb_execution_context_t *ec, VALUE self)
 {
-#if RUBY_DEBUG
-    if (!rb_yjit_opts.gen_stats) return Qnil;
-
     VALUE hash = rb_hash_new();
+
     RB_VM_LOCK_ENTER();
 
     {
@@ -729,9 +727,13 @@ get_yjit_stats(rb_execution_context_t *ec, VALUE self)
         rb_hash_aset(hash, key, value);
     }
 
-    {
+#if RUBY_DEBUG
+    if (rb_yjit_opts.gen_stats) {
         int64_t *counter_reader = (int64_t *)&yjit_runtime_counters;
         int64_t *counter_reader_end = &yjit_runtime_counters.last_member;
+
+        // For each counter in yjit_counter_names, add that counter as
+        // a key/value pair.
 
         // Iterate through comma separated counter name list
         char *name_reader = yjit_counter_names;
@@ -742,7 +744,7 @@ get_yjit_stats(rb_execution_context_t *ec, VALUE self)
                 continue;
             }
 
-            // Compute name of counter name
+            // Compute length of counter name
             int name_len;
             char *name_end;
             {
@@ -759,11 +761,9 @@ get_yjit_stats(rb_execution_context_t *ec, VALUE self)
             counter_reader++;
             name_reader = name_end;
         }
-    }
 
-    {
-        // For each entry in exit_op_count, add a stats entry with key "exit_INSTRUCTION_NAME",
-        // where the value is the count of side exits for that instruction.
+        // For each entry in exit_op_count, add a stats entry with key "exit_INSTRUCTION_NAME"
+        // and the value is the count of side exits for that instruction.
 
         char key_string[rb_vm_max_insn_name_size + 6]; // Leave room for "exit_" and a final NUL
         for (int i = 0; i < VM_INSTRUCTION_SIZE; i++) {
@@ -774,13 +774,13 @@ get_yjit_stats(rb_execution_context_t *ec, VALUE self)
             VALUE value = LL2NUM((long long)exit_op_count[i]);
             rb_hash_aset(hash, key, value);
         }
+
     }
+#endif
 
     RB_VM_LOCK_LEAVE();
+
     return hash;
-#else
-    return Qnil;
-#endif // if RUBY_DEBUG
 }
 
 // Primitive called in yjit.rb. Zero out all the counters.
