@@ -24,10 +24,10 @@ DESC
   s.licenses = ["Ruby", "BSD-2-Clause"]
   s.executables = ["racc"]
   s.files = [
-    "COPYING", "ChangeLog",
-    "README.ja.rdoc", "README.rdoc", "Rakefile", "TODO", "bin/racc",
+    "COPYING", "ChangeLog", "TODO",
+    "README.ja.rdoc", "README.rdoc", "bin/racc",
     "ext/racc/MANIFEST",
-    "ext/racc/com/headius/racc/Cparse.java", "ext/racc/cparse/cparse.c",
+    "ext/racc/cparse/cparse.c",
     "ext/racc/cparse/extconf.rb",
     "lib/racc.rb", "lib/racc/compat.rb",
     "lib/racc/debugflags.rb", "lib/racc/exception.rb",
@@ -43,10 +43,6 @@ DESC
     "doc/ja/command.ja.html", "doc/ja/debug.ja.rdoc",
     "doc/ja/grammar.ja.rdoc", "doc/ja/index.ja.html",
     "doc/ja/parser.ja.rdoc", "doc/ja/usage.ja.html",
-    "sample/array.y", "sample/array2.y", "sample/calc-ja.y",
-    "sample/calc.y", "sample/conflict.y", "sample/hash.y",
-    "sample/lalr.y", "sample/lists.y", "sample/syntax.y",
-    "sample/yyerr.y"
   ]
   s.require_paths = ["lib"]
   s.required_ruby_version = ">= 2.5"
