@@ -35,7 +35,7 @@ DESC
     "lib/racc/info.rb", "lib/racc/iset.rb",
     "lib/racc/logfilegenerator.rb", "lib/racc/parser-text.rb",
     "lib/racc/parser.rb", "lib/racc/parserfilegenerator.rb",
-    "lib/racc/pre-setup", "lib/racc/sourcetext.rb",
+    "lib/racc/sourcetext.rb",
     "lib/racc/state.rb", "lib/racc/statetransitiontable.rb",
     "lib/racc/static.rb",
     "doc/en/NEWS.en.rdoc", "doc/en/grammar2.en.rdoc",
