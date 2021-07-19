@@ -316,7 +316,7 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
     fullchain_path = Fixtures.file_path("pkey", "garbage.txt")
 
     assert_raise(OpenSSL::X509::CertificateError) do
-      certificates = OpenSSL::X509::Certificate.load_file(fullchain_path)
+      OpenSSL::X509::Certificate.load_file(fullchain_path)
     end
   end
 
