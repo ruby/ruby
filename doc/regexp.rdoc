@@ -372,8 +372,8 @@ then matches a literal <i>)</i>:
 
 == Alternation
 
-The vertical bar metacharacter (<tt>|</tt>) combines two expressions into
-a single one that matches either of the expressions. Each expression is an
+The vertical bar metacharacter (<tt>|</tt>) combines several expressions into
+a single one that matches any of the expressions. Each expression is an
 <i>alternative</i>.
 
     /\w(and|or)\w/.match("Feliformia") #=> #<MatchData "form" 1:"or">
