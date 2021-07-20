@@ -718,6 +718,9 @@ get_yjit_stats(rb_execution_context_t *ec, VALUE self)
 
 #if RUBY_DEBUG
     if (rb_yjit_opts.gen_stats) {
+        // Indicate that the complete set of stats is available
+        rb_hash_aset(hash, ID2SYM(rb_intern("all_stats")), Qtrue);
+
         int64_t *counter_reader = (int64_t *)&yjit_runtime_counters;
         int64_t *counter_reader_end = &yjit_runtime_counters.last_member;
 
@@ -763,7 +766,6 @@ get_yjit_stats(rb_execution_context_t *ec, VALUE self)
             VALUE value = LL2NUM((long long)exit_op_count[i]);
             rb_hash_aset(hash, key, value);
         }
-
     }
 #endif
 
