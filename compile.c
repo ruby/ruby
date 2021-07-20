@@ -3452,16 +3452,20 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 static int
 insn_set_specialized_instruction(rb_iseq_t *iseq, INSN *iobj, int insn_id)
 {
-    iobj->insn_id = insn_id;
-    iobj->operand_size = insn_len(insn_id) - 1;
-    iobj->insn_info.events |= RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN;
-
     if (insn_id == BIN(opt_neq)) {
+        // Be careful to not write to iobj before allocating so the old operand stays alive.
         VALUE original_ci = iobj->operands[0];
+        VALUE *new_operands = compile_data_calloc2(iseq, 2, sizeof(VALUE));
+        new_operands[0] = (VALUE)new_callinfo(iseq, idEq, 1, 0, NULL, FALSE);
+        new_operands[1] = original_ci;
+
+        iobj->insn_id = insn_id;
         iobj->operand_size = 2;
-        iobj->operands = compile_data_calloc2(iseq, iobj->operand_size, sizeof(VALUE));
-        iobj->operands[0] = (VALUE)new_callinfo(iseq, idEq, 1, 0, NULL, FALSE);
-        iobj->operands[1] = original_ci;
+        iobj->operands = new_operands;
+    }
+    else {
+        iobj->insn_id = insn_id;
+        iobj->operand_size = insn_len(insn_id) - 1;
     }
 
     return COMPILE_OK;
