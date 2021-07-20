@@ -715,7 +715,7 @@ class RubyLex
         start_token << t
         end_type << :on_regexp_end
       when :on_symbeg
-        acceptable_single_tokens = %i{on_ident on_const on_op on_cvar on_ivar on_gvar on_kw}
+        acceptable_single_tokens = %i{on_ident on_const on_op on_cvar on_ivar on_gvar on_kw on_int}
         if (i + 1) < tokens.size and acceptable_single_tokens.all?{ |st| tokens[i + 1][1] != st }
           start_token << t
           end_type << :on_tstring_end
