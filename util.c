@@ -48,7 +48,7 @@ ruby_scan_oct(const char *start, size_t len, size_t *retlen)
 	retval <<= 3;
 	retval |= *s++ - '0';
     }
-    *retlen = (int)(s - start);	/* less than len */
+    *retlen = (size_t)(s - start);
     return retval;
 }
 
@@ -69,7 +69,7 @@ ruby_scan_hex(const char *start, size_t len, size_t *retlen)
 	retval |= d;
 	s++;
     }
-    *retlen = (int)(s - start);	/* less than len */
+    *retlen = (size_t)(s - start);
     return retval;
 }
 
