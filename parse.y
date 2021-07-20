@@ -10181,7 +10181,10 @@ new_evstr(struct parser_params *p, NODE *node, const YYLTYPE *loc)
 	switch (nd_type(node)) {
 	  case NODE_STR:
 	    nd_set_type(node, NODE_DSTR);
-	  case NODE_DSTR: case NODE_EVSTR:
+            return node;
+          case NODE_DSTR:
+            break;
+          case NODE_EVSTR:
 	    return node;
 	}
     }
