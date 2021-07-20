@@ -1272,7 +1272,7 @@ exc_full_message(int argc, VALUE *argv, VALUE exc)
 	switch (args[kw_highlight]) {
 	  default:
             rb_bool_expected(args[kw_highlight], "highlight");
-	    /* fall through */
+	    UNREACHABLE;
 	  case Qundef: args[kw_highlight] = Qnil; break;
 	  case Qtrue: case Qfalse: case Qnil: break;
 	}
