@@ -55,20 +55,19 @@ class TestYJIT < Test::Unit::TestCase
     assert_compiles('-"foo" == -"bar"', insns: %i[opt_eq], result: false)
   end
 
-  # FIXME: currently not working
-  #def test_getlocal_with_level
-  #  assert_compiles(<<~RUBY, insns: %i[getlocal opt_plus], result: [[7]], exits: {leave: 2})
-  #    def foo(foo, bar)
-  #      [1].map do |x|
-  #        [1].map do |y|
-  #          foo + bar
-  #        end
-  #      end
-  #    end
-  #
-  #    foo(5, 2)
-  #  RUBY
-  #end
+  def test_getlocal_with_level
+    assert_compiles(<<~RUBY, insns: %i[getlocal opt_plus], result: [[7]])
+      def foo(foo, bar)
+        [1].map do |x|
+          [1].map do |y|
+            foo + bar
+          end
+        end
+      end
+
+      foo(5, 2)
+    RUBY
+  end
 
   def test_string_then_nil
     assert_compiles(<<~RUBY, insns: %i[opt_nil_p], result: true)
