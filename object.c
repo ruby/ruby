@@ -3265,8 +3265,7 @@ rb_check_to_integer(VALUE val, const char *method)
 {
     VALUE v;
 
-    if (FIXNUM_P(val)) return val;
-    if (RB_TYPE_P(val, T_BIGNUM)) return val;
+    if (RB_INTEGER_TYPE_P(val)) return val;
     v = convert_type(val, "Integer", method, FALSE);
     if (!RB_INTEGER_TYPE_P(v)) {
         return Qnil;
