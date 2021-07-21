@@ -653,10 +653,6 @@ EOF
     rescue ScriptError, StandardError => e
       msg = "There was an error while loading `#{path.basename}`: #{e.message}"
 
-      if e.is_a?(LoadError)
-        msg += "\nDoes it try to require a relative path? That's been removed in Ruby 1.9"
-      end
-
       raise GemspecError, Dsl::DSLError.new(msg, path, e.backtrace, contents)
     end
 
