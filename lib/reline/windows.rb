@@ -91,6 +91,7 @@ class Reline::Windows
   VK_LMENU = 0xA4
   VK_CONTROL = 0x11
   VK_SHIFT = 0x10
+  VK_DIVIDE = 0x6F
 
   KEY_EVENT = 0x01
   WINDOW_BUFFER_SIZE_EVENT = 0x04
@@ -208,6 +209,8 @@ class Reline::Windows
         @@output_buf.push(0, 83)
       when VK_RETURN
         @@output_buf.push(char_code) # must be 0x0D
+      when VK_DIVIDE
+        @@output_buf.push(char_code)
       end
     elsif char_code == 0 and control_key_state != 0
       # unknown
