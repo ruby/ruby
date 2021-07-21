@@ -4810,9 +4810,9 @@ extern char **environ;
 #define ENVNMATCH(s1, s2, n) (memcmp((s1), (s2), (n)) == 0)
 #endif
 
-rb_nativethread_lock_t env_lock;
+static rb_nativethread_lock_t env_lock;
 
-const char*
+static const char*
 getenv_with_lock(const char *name)
 {
     rb_native_mutex_lock(&env_lock);
