@@ -5381,11 +5381,11 @@ env_entry_count()
 }
 
 static void
-copy_env_pairs(VALUE arr[], int size) {
+copy_env_pairs(VALUE arr[], int size)
+{
     char **env;
     env = GET_ENVIRON(environ);
-    for(int i = 0; i < size; i++)
-    {
+    for (int i = 0; i < size; i++) {
 	const char *p = *env;
 	arr[i] = p;
 	env++;
@@ -5406,8 +5406,7 @@ env_keys(int raw)
     copy_env_pairs(env_pairs, pair_count);
     rb_native_mutex_unlock(&env_lock);
 
-    for(int current_pair = 0; current_pair < pair_count; current_pair++)
-    {
+    for (int current_pair = 0; current_pair < pair_count; current_pair++) {
 	const char *p = env_pairs[current_pair];
 	char *s = strchr(p, '=');
 	if (s) {
@@ -5500,8 +5499,7 @@ env_values(void)
     copy_env_pairs(env_pairs, pair_count);
     rb_native_mutex_unlock(&env_lock);
 
-    for(int current_pair = 0; current_pair < pair_count; current_pair++)
-    {
+    for (int current_pair = 0; current_pair < pair_count; current_pair++) {
 	const char *p = env_pairs[current_pair];
 	char *s = strchr(p, '=');
 	if (s) {
@@ -5594,8 +5592,7 @@ env_each_pair(VALUE ehash)
     copy_env_pairs(env_pairs, pair_count);
     rb_native_mutex_unlock(&env_lock);
 
-    for(int current_pair = 0; current_pair < pair_count; current_pair++)
-    {
+    for (int current_pair = 0; current_pair < pair_count; current_pair++) {
 	const char *p = env_pairs[current_pair];
 	char *s = strchr(p, '=');
 	if (s) {
@@ -5952,8 +5949,7 @@ env_inspect(VALUE _)
     copy_env_pairs(env_pairs, pair_count);
     rb_native_mutex_unlock(&env_lock);
 
-    for(int current_pair = 0; current_pair < pair_count; current_pair++)
-    {
+    for (int current_pair = 0; current_pair < pair_count; current_pair++) {
 	const char *p = env_pairs[current_pair];
 	char *s = strchr(p, '=');
 
@@ -5995,8 +5991,7 @@ env_to_a(VALUE _)
     copy_env_pairs(env_pairs, pair_count);
     rb_native_mutex_unlock(&env_lock);
 
-    for(int current_pair = 0; current_pair < pair_count; current_pair++)
-    {
+    for (int current_pair = 0; current_pair < pair_count; current_pair++) {
 	const char *p = env_pairs[current_pair];
 	char *s = strchr(p, '=');
 	if (s) {
@@ -6241,8 +6236,7 @@ env_key(VALUE dmy, VALUE value)
     copy_env_pairs(env_pairs, pair_count);
     rb_native_mutex_unlock(&env_lock);
 
-    for(int current_pair = 0; current_pair < pair_count; current_pair++)
-    {
+    for (int current_pair = 0; current_pair < pair_count; current_pair++) {
 	const char *p = env_pairs[current_pair];
 	char *s = strchr(p, '=');
 	if (s++) {
@@ -6270,8 +6264,7 @@ env_to_hash(void)
     copy_env_pairs(env_pairs, pair_count);
     rb_native_mutex_unlock(&env_lock);
 
-    for(int current_pair = 0; current_pair < pair_count; current_pair++)
-    {
+    for (int current_pair = 0; current_pair < pair_count; current_pair++) {
 	const char *p = env_pairs[current_pair];
 	char *s = strchr(p, '=');
 	if (s) {
