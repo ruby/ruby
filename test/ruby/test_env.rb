@@ -617,7 +617,7 @@ class TestEnv < Test::Unit::TestCase
       end
     end;
   end
-  
+
   def str_to_receive_invalid_envvar_errors(ractor_var)
     <<-"end;"
       3.times do
@@ -673,7 +673,7 @@ class TestEnv < Test::Unit::TestCase
 
   def test_dup_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do 
+      r = Ractor.new do
         #{str_for_yielding_exception_class("ENV.dup")}
       end
       #{str_for_assert_raise_on_yielded_exception_class(TypeError, "r")}
@@ -713,7 +713,7 @@ class TestEnv < Test::Unit::TestCase
 
   def test_has_value_in_ractor
     assert_ractor(<<-"end;")
-      r = Ractor.new do 
+      r = Ractor.new do
         val = 'a'
         val.succ! while ENV.has_value?(val) || ENV.has_value?(val.upcase)
         ENV['test'] = val[0...-1]
@@ -864,7 +864,7 @@ class TestEnv < Test::Unit::TestCase
         Ractor.yield "finished"
       end
       while((x=r.take) != "finished")
-        assert_kind_of(String, x) 
+        assert_kind_of(String, x)
       end
     end;
   end
@@ -888,7 +888,7 @@ class TestEnv < Test::Unit::TestCase
         Ractor.yield "finished"
       end
       while((x=r.take) != "finished")
-        assert_kind_of(String, x) 
+        assert_kind_of(String, x)
       end
     end;
   end
