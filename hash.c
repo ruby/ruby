@@ -5490,7 +5490,6 @@ static VALUE
 env_values(void)
 {
     VALUE ary;
-    char **env;
 
     ary = rb_ary_new();
     rb_native_mutex_lock(&env_lock);
@@ -5579,7 +5578,6 @@ env_each_value(VALUE ehash)
 static VALUE
 env_each_pair(VALUE ehash)
 {
-    char **env;
     VALUE ary;
     long i;
 
@@ -5939,7 +5937,6 @@ env_to_s(VALUE _)
 static VALUE
 env_inspect(VALUE _)
 {
-    char **env;
     VALUE str, i;
 
     str = rb_str_buf_new2("{");
@@ -5981,7 +5978,6 @@ env_inspect(VALUE _)
 static VALUE
 env_to_a(VALUE _)
 {
-    char **env;
     VALUE ary;
 
     ary = rb_ary_new();
@@ -6226,7 +6222,6 @@ env_rassoc(VALUE dmy, VALUE obj)
 static VALUE
 env_key(VALUE dmy, VALUE value)
 {
-    char **env;
     VALUE str;
 
     SafeStringValue(value);
@@ -6246,7 +6241,6 @@ env_key(VALUE dmy, VALUE value)
 		return str;
 	    }
 	}
-	env++;
     }
     return Qnil;
 }
@@ -6254,7 +6248,6 @@ env_key(VALUE dmy, VALUE value)
 static VALUE
 env_to_hash(void)
 {
-    char **env;
     VALUE hash;
 
     hash = rb_hash_new();
