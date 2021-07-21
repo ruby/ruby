@@ -5381,7 +5381,7 @@ env_entry_count(void)
 }
 
 static void
-copy_env_pairs(VALUE arr[], int size)
+copy_env_pairs(const char **arr, int size)
 {
     char **env;
     env = GET_ENVIRON(environ);
@@ -5402,7 +5402,7 @@ env_keys(int raw)
     ary = rb_ary_new();
     rb_native_mutex_lock(&env_lock);
     int pair_count = env_entry_count();
-    VALUE env_pairs[pair_count];
+    const char *env_pairs[pair_count];
     copy_env_pairs(env_pairs, pair_count);
     rb_native_mutex_unlock(&env_lock);
 
@@ -5495,7 +5495,7 @@ env_values(void)
     ary = rb_ary_new();
     rb_native_mutex_lock(&env_lock);
     int pair_count = env_entry_count();
-    VALUE env_pairs[pair_count];
+    const char *env_pairs[pair_count];
     copy_env_pairs(env_pairs, pair_count);
     rb_native_mutex_unlock(&env_lock);
 
@@ -5588,7 +5588,7 @@ env_each_pair(VALUE ehash)
     ary = rb_ary_new();
     rb_native_mutex_lock(&env_lock);
     int pair_count = env_entry_count();
-    VALUE env_pairs[pair_count];
+    const char *env_pairs[pair_count];
     copy_env_pairs(env_pairs, pair_count);
     rb_native_mutex_unlock(&env_lock);
 
@@ -5945,7 +5945,7 @@ env_inspect(VALUE _)
     str = rb_str_buf_new2("{");
     rb_native_mutex_lock(&env_lock);
     int pair_count = env_entry_count();
-    VALUE env_pairs[pair_count];
+    const char *env_pairs[pair_count];
     copy_env_pairs(env_pairs, pair_count);
     rb_native_mutex_unlock(&env_lock);
 
@@ -5987,7 +5987,7 @@ env_to_a(VALUE _)
     ary = rb_ary_new();
     rb_native_mutex_lock(&env_lock);
     int pair_count = env_entry_count();
-    VALUE env_pairs[pair_count];
+    const char *env_pairs[pair_count];
     copy_env_pairs(env_pairs, pair_count);
     rb_native_mutex_unlock(&env_lock);
 
@@ -6232,7 +6232,7 @@ env_key(VALUE dmy, VALUE value)
     SafeStringValue(value);
     rb_native_mutex_lock(&env_lock);
     int pair_count = env_entry_count();
-    VALUE env_pairs[pair_count];
+    const char *env_pairs[pair_count];
     copy_env_pairs(env_pairs, pair_count);
     rb_native_mutex_unlock(&env_lock);
 
@@ -6260,7 +6260,7 @@ env_to_hash(void)
     hash = rb_hash_new();
     rb_native_mutex_lock(&env_lock);
     int pair_count = env_entry_count();
-    VALUE env_pairs[pair_count];
+    const char *env_pairs[pair_count];
     copy_env_pairs(env_pairs, pair_count);
     rb_native_mutex_unlock(&env_lock);
 
