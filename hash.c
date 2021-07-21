@@ -5369,7 +5369,7 @@ env_aset(VALUE nm, VALUE val)
 }
 
 static int
-env_entry_count()
+env_entry_count(void)
 {
     int i;
     char **env;
