@@ -1077,10 +1077,6 @@ struct waitpid_state {
     int errnum;
 };
 
-void rb_native_mutex_lock(rb_nativethread_lock_t *);
-void rb_native_mutex_unlock(rb_nativethread_lock_t *);
-void rb_native_cond_signal(rb_nativethread_cond_t *);
-void rb_native_cond_wait(rb_nativethread_cond_t *, rb_nativethread_lock_t *);
 int rb_sigwait_fd_get(const rb_thread_t *);
 void rb_sigwait_sleep(const rb_thread_t *, int fd, const rb_hrtime_t *);
 void rb_sigwait_fd_put(const rb_thread_t *, int fd);
