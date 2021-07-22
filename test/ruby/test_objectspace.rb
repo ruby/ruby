@@ -161,6 +161,13 @@ End
     END
   end
 
+  def test_exception_in_finalizer
+    assert_in_out_err([], "#{<<~"begin;"}\n#{<<~'end;'}", [], /finalizing \(RuntimeError\)/)
+    begin;
+      ObjectSpace.define_finalizer(Object.new) {raise "finalizing"}
+    end;
+  end
+
   def test_each_object
     klass = Class.new
     new_obj = klass.new
