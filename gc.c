@@ -4056,7 +4056,6 @@ finalize_list(rb_objspace_t *objspace, VALUE zombie)
                 obj_free_object_id(objspace, zombie);
             }
 
-            RZOMBIE(zombie)->basic.flags = 0;
             GC_ASSERT(heap_pages_final_slots > 0);
             GC_ASSERT(page->final_slots > 0);
 
