@@ -781,8 +781,7 @@ each_i(VALUE v, VALUE arg)
 static int
 sym_each_i(VALUE v, VALUE arg)
 {
-    rb_yield(rb_str_intern(v));
-    return 0;
+    return each_i(rb_str_intern(v), arg);
 }
 
 /*

@@ -48,7 +48,7 @@ ruby_scan_oct(const char *start, size_t len, size_t *retlen)
 	retval <<= 3;
 	retval |= *s++ - '0';
     }
-    *retlen = (int)(s - start);	/* less than len */
+    *retlen = (size_t)(s - start);
     return retval;
 }
 
@@ -57,22 +57,19 @@ ruby_scan_hex(const char *start, size_t len, size_t *retlen)
 {
     register const char *s = start;
     register unsigned long retval = 0;
-    const char *tmp;
+    signed char d;
     size_t i = 0;
 
     for (i = 0; i < len; i++) {
-        if (! s[0]) {
-            break;
-        }
-        tmp = strchr(hexdigit, *s);
-        if (! tmp) {
+        d = ruby_digit36_to_number_table[(unsigned char)*s];
+        if (d < 0 || 15 < d) {
             break;
         }
 	retval <<= 4;
-	retval |= (tmp - hexdigit) & 15;
+	retval |= d;
 	s++;
     }
-    *retlen = (int)(s - start);	/* less than len */
+    *retlen = (size_t)(s - start);
     return retval;
 }
 

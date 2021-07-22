@@ -974,14 +974,12 @@ fmt_setup(char *buf, size_t size, int c, int flags, int width, int prec)
 #undef ferror
 #undef clearerr
 #undef fileno
-#if SIZEOF_LONG < SIZEOF_VOIDP
-# if  SIZEOF_LONG_LONG == SIZEOF_VOIDP
-#  define _HAVE_SANE_QUAD_
-#  define _HAVE_LLP64_
-#  define quad_t LONG_LONG
-#  define u_quad_t unsigned LONG_LONG
+#if SIZEOF_LONG < SIZEOF_LONG_LONG
+# if SIZEOF_LONG_LONG == SIZEOF_VOIDP
+/* actually this doesn't mean a pointer is strictly 64bit, but just
+ * quad_t size */
+#   define _HAVE_LLP64_
 # endif
-#elif SIZEOF_LONG != SIZEOF_LONG_LONG && SIZEOF_LONG_LONG == 8
 # define _HAVE_SANE_QUAD_
 # define quad_t LONG_LONG
 # define u_quad_t unsigned LONG_LONG

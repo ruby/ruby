@@ -1692,7 +1692,7 @@ int
 rb_hash_stlike_update(VALUE hash, st_data_t key, st_update_callback_func *func, st_data_t arg)
 {
     if (RHASH_AR_TABLE_P(hash)) {
-        int result = ar_update(hash, (st_data_t)key, func, arg);
+        int result = ar_update(hash, key, func, arg);
         if (result == -1) {
             ar_try_convert_table(hash);
         }
@@ -1701,7 +1701,7 @@ rb_hash_stlike_update(VALUE hash, st_data_t key, st_update_callback_func *func, 
         }
     }
 
-    return st_update(RHASH_ST_TABLE(hash), (st_data_t)key, func, arg);
+    return st_update(RHASH_ST_TABLE(hash), key, func, arg);
 }
 
 static int

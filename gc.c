@@ -7497,9 +7497,9 @@ check_children_i(const VALUE child, void *ptr)
 }
 
 static int
-verify_internal_consistency_i(void *page_start, void *page_end, size_t stride, void *ptr)
+verify_internal_consistency_i(void *page_start, void *page_end, size_t stride,
+                              struct verify_internal_consistency_struct *data)
 {
-    struct verify_internal_consistency_struct *data = (struct verify_internal_consistency_struct *)ptr;
     VALUE obj;
     rb_objspace_t *objspace = data->objspace;
 
@@ -7702,8 +7702,10 @@ gc_verify_internal_consistency_(rb_objspace_t *objspace)
     gc_report(5, objspace, "gc_verify_internal_consistency: start\n");
 
     /* check relations */
-
-    objspace_each_objects(objspace, verify_internal_consistency_i, &data, FALSE);
+    for (size_t i = 0; i < heap_allocated_pages; i++) {
+        struct heap_page *page = heap_pages_sorted[i];
+        verify_internal_consistency_i(page->start, page->start + page->total_slots, sizeof(RVALUE), &data);
+    }
 
     if (data.err_count != 0) {
 #if RGENGC_CHECK_MODE >= 5
@@ -7756,8 +7758,7 @@ gc_verify_internal_consistency_(rb_objspace_t *objspace)
 	if (heap_pages_final_slots != data.zombie_object_count ||
 	    heap_pages_final_slots != list_count) {
 
-            // TODO: debug it
-            rb_warn("inconsistent finalizing object count:\n"
+            rb_bug("inconsistent finalizing object count:\n"
                     "  expect %"PRIuSIZE"\n"
                     "  but    %"PRIuSIZE" zombies\n"
                     "  heap_pages_deferred_final list has %"PRIuSIZE" items.",
