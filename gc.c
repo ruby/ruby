@@ -3928,9 +3928,6 @@ define_final0(VALUE obj, VALUE block)
 
     RBASIC(obj)->flags |= FL_FINALIZE;
 
-    block = rb_ary_new3(2, INT2FIX(0), block);
-    OBJ_FREEZE(block);
-
     if (st_lookup(finalizer_table, obj, &data)) {
 	table = (VALUE)data;
 
@@ -3942,7 +3939,8 @@ define_final0(VALUE obj, VALUE block)
             for (i = 0; i < len; i++) {
                 VALUE recv = RARRAY_AREF(table, i);
                 if (rb_funcall(recv, idEq, 1, block)) {
-                    return recv;
+                    block = recv;
+                    goto end;
 		}
 	    }
 	}
@@ -3954,6 +3952,9 @@ define_final0(VALUE obj, VALUE block)
 	RBASIC_CLEAR_CLASS(table);
 	st_add_direct(finalizer_table, obj, table);
     }
+  end:
+    block = rb_ary_new3(2, INT2FIX(0), block);
+    OBJ_FREEZE(block);
     return block;
 }
 
@@ -3981,9 +3982,8 @@ rb_gc_copy_finalizer(VALUE dest, VALUE obj)
 }
 
 static VALUE
-run_single_final(VALUE final, VALUE objid)
+run_single_final(VALUE cmd, VALUE objid)
 {
-    const VALUE cmd = RARRAY_AREF(final, 1);
     return rb_check_funcall(cmd, idCall, 1, &objid);
 }
 
