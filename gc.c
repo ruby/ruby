@@ -3990,7 +3990,7 @@ run_single_final(VALUE cmd, VALUE objid)
 static void
 warn_exception_in_finalizer(rb_execution_context_t *ec, VALUE final)
 {
-    if (final != Qundef) {
+    if (final != Qundef && !NIL_P(ruby_verbose)) {
 	VALUE errinfo = ec->errinfo;
 	rb_warn("Exception in finalizer %+"PRIsVALUE, final);
 	rb_ec_error_print(ec, errinfo);

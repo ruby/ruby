@@ -459,7 +459,7 @@ class TestGc < Test::Unit::TestCase
         obj = nil
       }
     }
-    GC.start
+    EnvUtil.suppress_warning {GC.start}
     skip "finalizers did not get run" if result.empty?
     assert_equal([:c1, :c2], result)
   end
@@ -482,7 +482,7 @@ class TestGc < Test::Unit::TestCase
         obj = nil
       }
     }
-    GC.start
+    EnvUtil.suppress_warning {GC.start}
     skip "finalizers did not get run" if @result.empty?
     assert_equal([:c1, :c2], @result)
   end
