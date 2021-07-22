@@ -3988,6 +3988,16 @@ run_single_final(VALUE cmd, VALUE objid)
 }
 
 static void
+warn_exception_in_finalizer(rb_execution_context_t *ec, VALUE final)
+{
+    if (final != Qundef) {
+	VALUE errinfo = ec->errinfo;
+	rb_warn("Exception in finalizer %+"PRIsVALUE, final);
+	rb_ec_error_print(ec, errinfo);
+    }
+}
+
+static void
 run_finalizer(rb_objspace_t *objspace, VALUE obj, VALUE table)
 {
     long i;
@@ -3995,6 +4005,7 @@ run_finalizer(rb_objspace_t *objspace, VALUE obj, VALUE table)
     volatile struct {
 	VALUE errinfo;
 	VALUE objid;
+	VALUE final;
 	rb_control_frame_t *cfp;
 	long finished;
     } saved;
@@ -4007,16 +4018,18 @@ run_finalizer(rb_objspace_t *objspace, VALUE obj, VALUE table)
     saved.objid = rb_obj_id(obj);
     saved.cfp = ec->cfp;
     saved.finished = 0;
+    saved.final = Qundef;
 
     EC_PUSH_TAG(ec);
     state = EC_EXEC_TAG();
     if (state != TAG_NONE) {
 	++saved.finished;	/* skip failed finalizer */
+	warn_exception_in_finalizer(ec, ATOMIC_VALUE_EXCHANGE(saved.final, Qundef));
     }
     for (i = saved.finished;
 	 RESTORE_FINALIZER(), i<RARRAY_LEN(table);
 	 saved.finished = ++i) {
-	run_single_final(RARRAY_AREF(table, i), saved.objid);
+	run_single_final(saved.final = RARRAY_AREF(table, i), saved.objid);
     }
     EC_POP_TAG();
 #undef RESTORE_FINALIZER
