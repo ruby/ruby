@@ -3938,7 +3938,7 @@ define_final0(VALUE obj, VALUE block)
 
             for (i = 0; i < len; i++) {
                 VALUE recv = RARRAY_AREF(table, i);
-                if (rb_funcall(recv, idEq, 1, block)) {
+                if (rb_equal(recv, block)) {
                     block = recv;
                     goto end;
 		}
