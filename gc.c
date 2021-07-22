@@ -4001,9 +4001,9 @@ run_finalizer(rb_objspace_t *objspace, VALUE obj, VALUE table)
     rb_execution_context_t * volatile ec = GET_EC();
 #define RESTORE_FINALIZER() (\
 	ec->cfp = saved.cfp, \
-	rb_set_errinfo(saved.errinfo))
+	ec->errinfo = saved.errinfo)
 
-    saved.errinfo = rb_errinfo();
+    saved.errinfo = ec->errinfo;
     saved.objid = rb_obj_id(obj);
     saved.cfp = ec->cfp;
     saved.finished = 0;
