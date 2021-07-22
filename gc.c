@@ -4062,7 +4062,7 @@ finalize_list(rb_objspace_t *objspace, VALUE zombie)
             heap_pages_final_slots--;
             page->final_slots--;
             page->free_slots++;
-            heap_page_add_freeobj(objspace, GET_HEAP_PAGE(zombie), zombie);
+            heap_page_add_freeobj(objspace, page, zombie);
             objspace->profile.total_freed_objects++;
         }
         RB_VM_LOCK_LEAVE();
