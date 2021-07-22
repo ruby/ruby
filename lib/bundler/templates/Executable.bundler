@@ -60,16 +60,16 @@ m = Module.new do
     Regexp.last_match(1)
   end
 
-  def bundler_version
-    @bundler_version ||=
+  def bundler_requirement
+    @bundler_requirement ||=
       env_var_version || cli_arg_version ||
-        lockfile_version
+        bundler_requirement_for(lockfile_version)
   end
 
-  def bundler_requirement
-    return "#{Gem::Requirement.default}.a" unless bundler_version
+  def bundler_requirement_for(version)
+    return "#{Gem::Requirement.default}.a" unless version
 
-    bundler_gem_version = Gem::Version.new(bundler_version)
+    bundler_gem_version = Gem::Version.new(version)
 
     requirement = bundler_gem_version.approximate_recommendation
 
