@@ -191,9 +191,9 @@ Excluding feature bug fixes.
   Just by `Kernel#p`, you can investigate where an object was created.
   Note that just requiring this file brings a large performance overhead.
   This is only for debugging purpose. Do not use this in production.
-  [Feature #17762]
+  [[Feature #17762]]
 
-[Bug #4443]: https://bugs.ruby-lang.org/issues/4443
+[Bug #4443]:      https://bugs.ruby-lang.org/issues/4443
 [Feature #12194]: https://bugs.ruby-lang.org/issues/12194
 [Feature #14256]: https://bugs.ruby-lang.org/issues/14256
 [Feature #15198]: https://bugs.ruby-lang.org/issues/15198
@@ -203,15 +203,15 @@ Excluding feature bug fixes.
 [Feature #17312]: https://bugs.ruby-lang.org/issues/17312
 [Feature #17327]: https://bugs.ruby-lang.org/issues/17327
 [Feature #17411]: https://bugs.ruby-lang.org/issues/17411
-[Bug #17423]: https://bugs.ruby-lang.org/issues/17423
+[Bug #17423]:     https://bugs.ruby-lang.org/issues/17423
 [Feature #17479]: https://bugs.ruby-lang.org/issues/17479
 [Feature #17490]: https://bugs.ruby-lang.org/issues/17490
 [Feature #17724]: https://bugs.ruby-lang.org/issues/17724
 [Feature #17744]: https://bugs.ruby-lang.org/issues/17744
 [Feature #17762]: https://bugs.ruby-lang.org/issues/17762
-[Bug #18003]: https://bugs.ruby-lang.org/issues/18003
+[Bug #18003]:     https://bugs.ruby-lang.org/issues/18003
 [Feature #17370]: https://bugs.ruby-lang.org/issues/17370
 [Feature #17470]: https://bugs.ruby-lang.org/issues/17470
 [Feature #17853]: https://bugs.ruby-lang.org/issues/17853
-[Bug #17827]: https://bugs.ruby-lang.org/issues/17827
+[Bug #17827]:     https://bugs.ruby-lang.org/issues/17827
 [Feature #18015]: https://bugs.ruby-lang.org/issues/18015
