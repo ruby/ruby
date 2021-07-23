@@ -37,23 +37,11 @@ module Bundler
     end
 
     def failure_message
-      return install_error_message if spec.source.options["git"]
-      "#{install_error_message}\n#{gem_install_message}"
+      install_error_message
     end
 
     def install_error_message
       "An error occurred while installing #{spec.name} (#{spec.version}), and Bundler cannot continue."
-    end
-
-    def gem_install_message
-      source = spec.source
-      return unless source.respond_to?(:remotes)
-
-      if source.remotes.size == 1
-        "Make sure that `gem install #{spec.name} -v '#{spec.version}' --source '#{source.remotes.first}'` succeeds before bundling."
-      else
-        "Make sure that `gem install #{spec.name} -v '#{spec.version}'` succeeds before bundling."
-      end
     end
 
     def spec_settings
