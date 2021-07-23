@@ -193,6 +193,9 @@ Excluding feature bug fixes.
   This is only for debugging purpose. Do not use this in production.
   [[Feature #17762]]
 
+* Now exceptions raised in finalizers will be printed to `STDERR`, unless
+  `$VERBOSE` is `nil`.  [[Feature #17798]]
+
 [Bug #4443]:      https://bugs.ruby-lang.org/issues/4443
 [Feature #12194]: https://bugs.ruby-lang.org/issues/12194
 [Feature #14256]: https://bugs.ruby-lang.org/issues/14256
@@ -209,6 +212,7 @@ Excluding feature bug fixes.
 [Feature #17724]: https://bugs.ruby-lang.org/issues/17724
 [Feature #17744]: https://bugs.ruby-lang.org/issues/17744
 [Feature #17762]: https://bugs.ruby-lang.org/issues/17762
+[Feature #17798]: https://bugs.ruby-lang.org/issues/17798
 [Bug #18003]:     https://bugs.ruby-lang.org/issues/18003
 [Feature #17370]: https://bugs.ruby-lang.org/issues/17370
 [Feature #17470]: https://bugs.ruby-lang.org/issues/17470
