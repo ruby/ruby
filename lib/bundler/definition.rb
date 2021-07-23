@@ -190,7 +190,7 @@ module Bundler
     #
     # @return [Bundler::SpecSet]
     def specs
-      @specs ||= add_bundler_to(resolve.materialize(requested_dependencies))
+      @specs ||= materialize(requested_dependencies)
     rescue GemNotFound => e # Handle yanked gem
       gem_name, gem_version = extract_gem_info(e)
       locked_gem = @locked_specs[gem_name].last
@@ -246,7 +246,7 @@ module Bundler
     def specs_for(groups)
       groups = requested_groups if groups.empty?
       deps = dependencies_for(groups)
-      add_bundler_to(resolve.materialize(expand_dependencies(deps)))
+      materialize(expand_dependencies(deps))
     end
 
     def dependencies_for(groups)
@@ -496,7 +496,9 @@ module Bundler
 
     private
 
-    def add_bundler_to(specs)
+    def materialize(dependencies)
+      specs = resolve.materialize(dependencies)
+
       unless specs["bundler"].any?
         bundler = sources.metadata_source.specs.search(Gem::Dependency.new("bundler", VERSION)).last
         specs["bundler"] = bundler
