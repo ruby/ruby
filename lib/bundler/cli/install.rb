@@ -84,7 +84,7 @@ module Bundler
 
       Bundler::CLI::Common.output_fund_metadata_summary
     rescue GemNotFound
-      if options[:local] && Bundler.app_cache.exist?
+      if options[:local]
         Bundler.ui.warn "Some gems seem to be missing from your #{Bundler.settings.app_cache_path} directory."
       end
 
