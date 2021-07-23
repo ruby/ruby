@@ -104,7 +104,7 @@ module Bundler
 
     alias_method :gems, :specs
 
-    def cache(custom_path = nil)
+    def cache(custom_path = nil, local = false)
       cache_path = Bundler.app_cache(custom_path)
       SharedHelpers.filesystem_access(cache_path) do |p|
         FileUtils.mkdir_p(p)
@@ -112,7 +112,20 @@ module Bundler
 
       Bundler.ui.info "Updating files in #{Bundler.settings.app_cache_path}"
 
-      specs_to_cache = Bundler.settings[:cache_all_platforms] ? @definition.resolve.materialized_for_all_platforms : specs
+      specs_to_cache = if Bundler.settings[:cache_all_platforms]
+        @definition.resolve.materialized_for_all_platforms
+      else
+        begin
+          specs
+        rescue GemNotFound
+          if local
+            Bundler.ui.warn "Some gems seem to be missing from your #{Bundler.settings.app_cache_path} directory."
+          end
+
+          raise
+        end
+      end
+
       specs_to_cache.each do |spec|
         next if spec.name == "bundler"
         next if spec.source.is_a?(Source::Gemspec)
