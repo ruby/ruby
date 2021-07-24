@@ -1121,7 +1121,7 @@ ruby__sfvextra(rb_printf_buffer *fp, size_t valsize, void *valp, long *sz, int s
     else if (SYMBOL_P(value)) {
 	value = rb_sym2str(value);
 	if (sign == ' ' && !rb_str_symname_p(value)) {
-	    value = rb_str_inspect(value);
+	    value = rb_str_escape(value);
 	}
     }
     else {

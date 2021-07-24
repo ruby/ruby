@@ -11050,7 +11050,7 @@ rb_str_quote_unprintable(VALUE str)
     len = RSTRING_LEN(str);
     if ((resenc != enc && !rb_str_is_ascii_only_p(str)) ||
 	!sym_printable(ptr, ptr + len, enc)) {
-	return rb_str_inspect(str);
+	return rb_str_escape(str);
     }
     return str;
 }
@@ -11060,7 +11060,7 @@ rb_id_quote_unprintable(ID id)
 {
     VALUE str = rb_id2str(id);
     if (!rb_str_symname_p(str)) {
-	return rb_str_inspect(str);
+	return rb_str_escape(str);
     }
     return str;
 }
