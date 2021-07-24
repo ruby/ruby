@@ -1816,6 +1816,13 @@ rb_file_exists_p(VALUE obj, VALUE fname)
     return rb_file_exist_p(obj, fname);
 }
 
+static VALUE
+rb_file_able_p(VALUE fname, int mode, int func(VALUE, int))
+{
+    if (func(fname, mode) < 0) return Qfalse;
+    return Qtrue;
+}
+
 /*
  * call-seq:
  *    File.readable?(file_name)   -> true or false
@@ -1830,8 +1837,7 @@ rb_file_exists_p(VALUE obj, VALUE fname)
 static VALUE
 rb_file_readable_p(VALUE obj, VALUE fname)
 {
-    if (rb_eaccess(fname, R_OK) < 0) return Qfalse;
-    return Qtrue;
+    return rb_file_able_p(fname, R_OK, rb_eaccess);
 }
 
 /*
@@ -1848,8 +1854,7 @@ rb_file_readable_p(VALUE obj, VALUE fname)
 static VALUE
 rb_file_readable_real_p(VALUE obj, VALUE fname)
 {
-    if (rb_access(fname, R_OK) < 0) return Qfalse;
-    return Qtrue;
+    return rb_file_able_p(fname, R_OK, rb_access);
 }
 
 #ifndef S_IRUGO
@@ -1904,8 +1909,7 @@ rb_file_world_readable_p(VALUE obj, VALUE fname)
 static VALUE
 rb_file_writable_p(VALUE obj, VALUE fname)
 {
-    if (rb_eaccess(fname, W_OK) < 0) return Qfalse;
-    return Qtrue;
+    return rb_file_able_p(fname, W_OK, rb_eaccess);
 }
 
 /*
@@ -1922,8 +1926,7 @@ rb_file_writable_p(VALUE obj, VALUE fname)
 static VALUE
 rb_file_writable_real_p(VALUE obj, VALUE fname)
 {
-    if (rb_access(fname, W_OK) < 0) return Qfalse;
-    return Qtrue;
+    return rb_file_able_p(fname, W_OK, rb_access);
 }
 
 /*
@@ -1974,8 +1977,7 @@ rb_file_world_writable_p(VALUE obj, VALUE fname)
 static VALUE
 rb_file_executable_p(VALUE obj, VALUE fname)
 {
-    if (rb_eaccess(fname, X_OK) < 0) return Qfalse;
-    return Qtrue;
+    return rb_file_able_p(fname, X_OK, rb_eaccess);
 }
 
 /*
@@ -1996,8 +1998,7 @@ rb_file_executable_p(VALUE obj, VALUE fname)
 static VALUE
 rb_file_executable_real_p(VALUE obj, VALUE fname)
 {
-    if (rb_access(fname, X_OK) < 0) return Qfalse;
-    return Qtrue;
+    return rb_file_able_p(fname, X_OK, rb_access);
 }
 
 #ifndef S_ISREG
