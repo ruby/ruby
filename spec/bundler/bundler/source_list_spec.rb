@@ -441,4 +441,19 @@ RSpec.describe Bundler::SourceList do
       source_list.remote!
     end
   end
+
+  describe "implicit_global_source?" do
+    context "when a global rubygem source provided" do
+      it "returns a falsy value" do
+        source_list.add_global_rubygems_remote("https://rubygems.org")
+
+        expect(source_list.implicit_global_source?).to be_falsey
+      end
+    end
+    context "when no global rubygem source provided" do
+      it "returns a truthy value" do
+        expect(source_list.implicit_global_source?).to be_truthy
+      end
+    end
+  end
 end

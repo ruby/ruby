@@ -37,6 +37,10 @@ module Bundler
       global_rubygems_source.multiple_remotes?
     end
 
+    def implicit_global_source?
+      global_rubygems_source.no_remotes?
+    end
+
     def add_path_source(options = {})
       if options["gemspec"]
         add_source_to_list Source::Gemspec.new(options), path_sources
