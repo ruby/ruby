@@ -245,7 +245,7 @@ RSpec.describe Bundler::Dsl do
   describe "#check_primary_source_safety" do
     context "when a global source is not defined implicitly" do
       it "will raise a major deprecation warning" do
-        not_a_global_source = double("not-a-global-source", no_remotes?: true, multiple_remotes?: false)
+        not_a_global_source = double("not-a-global-source", :no_remotes? => true)
         allow(Bundler::Source::Rubygems).to receive(:new).and_return(not_a_global_source)
 
         warning = "This Gemfile does not include an explicit global source. " \

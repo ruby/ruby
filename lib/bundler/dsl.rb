@@ -448,14 +448,20 @@ repo_name ||= user_name
 
     def check_rubygems_source_safety
       if @sources.implicit_global_source?
-        Bundler::SharedHelpers.major_deprecation 2, "This Gemfile does not include an explicit global source. " \
-          "Not using an explicit global source may result in a different lockfile being generated depending on " \
-          "the gems you have installed locally before bundler is run." \
-          "Instead, define a global source in your Gemfile like this: source \"https://rubygems.org\"."
+        implicit_global_source_warning
+      elsif @sources.aggregate_global_source?
+        multiple_global_source_warning
       end
+    end
 
-      return unless @sources.aggregate_global_source?
+    def implicit_global_source_warning
+      Bundler::SharedHelpers.major_deprecation 2, "This Gemfile does not include an explicit global source. " \
+        "Not using an explicit global source may result in a different lockfile being generated depending on " \
+        "the gems you have installed locally before bundler is run." \
+        "Instead, define a global source in your Gemfile like this: source \"https://rubygems.org\"."
+    end
 
+    def multiple_global_source_warning
       if Bundler.feature_flag.bundler_3_mode?
         msg = "This Gemfile contains multiple primary sources. " \
           "Each source after the first must include a block to indicate which gems " \
