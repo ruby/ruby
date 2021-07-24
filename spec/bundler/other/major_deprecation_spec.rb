@@ -333,7 +333,7 @@ RSpec.describe "major deprecations" do
     end
 
     it "should print a proper warning, and use gems.rb" do
-      create_file "gems.rb"
+      create_file "gems.rb", "source \"#{file_uri_for(gem_repo1)}\""
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
@@ -484,7 +484,7 @@ RSpec.describe "major deprecations" do
 
   context "when Bundler.setup is run in a ruby script" do
     before do
-      create_file "gems.rb"
+      create_file "gems.rb", "source \"#{file_uri_for(gem_repo1)}\""
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack", :group => :test
@@ -629,7 +629,7 @@ The :gist git source is deprecated, and will be removed in the future. Add this 
     before do
       graphviz_version = RUBY_VERSION >= "2.4" ? "1.2.5" : "1.2.4"
       realworld_system_gems "ruby-graphviz --version #{graphviz_version}"
-      create_file "gems.rb"
+      create_file "gems.rb", "source \"#{file_uri_for(gem_repo1)}\""
       bundle "viz"
     end
 

@@ -331,6 +331,7 @@ RSpec.describe "bundle install with gem sources" do
 
     it "gives a useful error if no sources are set" do
       install_gemfile <<-G, :raise_on_error => false
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
 
@@ -339,6 +340,7 @@ RSpec.describe "bundle install with gem sources" do
 
     it "creates a Gemfile.lock on a blank Gemfile" do
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
       G
 
       expect(File.exist?(bundled_app_lock)).to eq(true)
@@ -482,6 +484,7 @@ RSpec.describe "bundle install with gem sources" do
         install_gemfile <<-G, :raise_on_error => false
           ::RUBY_VERSION = '2.0.1'
           ruby '~> 2.2'
+          source "#{file_uri_for(gem_repo1)}"
         G
         expect(err).to include("Your Ruby version is 2.0.1, but your Gemfile specified ~> 2.2")
       end
@@ -493,12 +496,14 @@ RSpec.describe "bundle install with gem sources" do
           ::RUBY_VERSION = '2.1.3'
           ::RUBY_PATCHLEVEL = 100
           ruby '~> 2.1.0'
+          source "#{file_uri_for(gem_repo1)}"
         G
       end
 
       it "writes current Ruby version to Gemfile.lock" do
         lockfile_should_be <<-L
          GEM
+           remote: #{file_uri_for(gem_repo1)}/
            specs:
 
          PLATFORMS
@@ -519,10 +524,12 @@ RSpec.describe "bundle install with gem sources" do
           ::RUBY_VERSION = '2.2.3'
           ::RUBY_PATCHLEVEL = 100
           ruby '~> 2.2.0'
+          source "#{file_uri_for(gem_repo1)}"
         G
 
         lockfile_should_be <<-L
          GEM
+           remote: #{file_uri_for(gem_repo1)}/
            specs:
 
          PLATFORMS
@@ -540,6 +547,7 @@ RSpec.describe "bundle install with gem sources" do
 
       it "does not crash when unlocking" do
         gemfile <<-G
+          source "#{file_uri_for(gem_repo1)}"
           ruby '>= 2.1.0'
         G
 
@@ -558,6 +566,7 @@ RSpec.describe "bundle install with gem sources" do
 
       build_lib "foo"
       gemfile = <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem 'foo', :path => "#{lib_path("foo-1.0")}"
       G
       File.open("#{root_dir}/Gemfile", "w") do |file|
@@ -574,6 +583,7 @@ RSpec.describe "bundle install with gem sources" do
 
       build_lib "foo", :path => root_dir
       gemfile = <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gemspec
       G
       File.open("#{root_dir}/Gemfile", "w") do |file|

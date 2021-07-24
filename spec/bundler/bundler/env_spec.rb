@@ -74,7 +74,7 @@ RSpec.describe Bundler::Env do
 
     context "when there is a Gemfile and a lockfile and print_gemfile is true" do
       before do
-        gemfile "gem 'rack', '1.0.0'"
+        gemfile "source \"#{file_uri_for(gem_repo1)}\"; gem 'rack', '1.0.0'"
 
         lockfile <<-L
           GEM
@@ -138,7 +138,7 @@ RSpec.describe Bundler::Env do
       end
 
       before do
-        gemfile("gemspec")
+        gemfile("source \"#{file_uri_for(gem_repo1)}\"; gemspec")
 
         File.open(bundled_app.join("foo.gemspec"), "wb") do |f|
           f.write(gemspec)

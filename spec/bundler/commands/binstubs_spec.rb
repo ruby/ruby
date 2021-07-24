@@ -261,6 +261,7 @@ RSpec.describe "bundle binstubs <gem>" do
         s.executables = %w[foo]
       end
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :git => "#{lib_path("foo")}"
       G
 
@@ -276,6 +277,7 @@ RSpec.describe "bundle binstubs <gem>" do
         s.executables = %w[foo]
       end
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :path => "#{lib_path("foo")}"
       G
 

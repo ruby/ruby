@@ -321,7 +321,7 @@ E
   end
 
   describe "quoting" do
-    before(:each) { gemfile "# no gems" }
+    before(:each) { gemfile "source \"#{file_uri_for(gem_repo1)}\"" }
     let(:long_string) do
       "--with-xml2-include=/usr/pkg/include/libxml2 --with-xml2-lib=/usr/pkg/lib " \
       "--with-xslt-dir=/usr/pkg"

@@ -48,6 +48,7 @@ RSpec.describe "bundler/inline#gemfile" do
   it "requires the gems" do
     script <<-RUBY
       gemfile do
+        source "#{file_uri_for(gem_repo1)}"
         path "#{lib_path}" do
           gem "two"
         end
@@ -58,6 +59,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
     script <<-RUBY, :raise_on_error => false
       gemfile do
+        source "#{file_uri_for(gem_repo1)}"
         path "#{lib_path}" do
           gem "eleven"
         end
@@ -139,6 +141,7 @@ RSpec.describe "bundler/inline#gemfile" do
       require '#{entrypoint}'
       options = { :ui => Bundler::UI::Shell.new }
       gemfile(false, options) do
+        source "#{file_uri_for(gem_repo1)}"
         path "#{lib_path}" do
           gem "two"
         end
@@ -168,6 +171,7 @@ RSpec.describe "bundler/inline#gemfile" do
     baz_ref = build_git("baz", "2.0.0").ref_for("HEAD")
     script <<-RUBY
       gemfile do
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :git => #{lib_path("foo-1.0.0").to_s.dump}
         gem "baz", :git => #{lib_path("baz-2.0.0").to_s.dump}, :ref => #{baz_ref.dump}
       end
@@ -184,12 +188,14 @@ RSpec.describe "bundler/inline#gemfile" do
     script <<-RUBY
       gemfile do
         path "#{lib_path}" do
+          source "#{file_uri_for(gem_repo1)}"
           gem "two"
         end
       end
 
       gemfile do
         path "#{lib_path}" do
+          source "#{file_uri_for(gem_repo1)}"
           gem "four"
         end
       end
@@ -367,6 +373,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
     script <<-RUBY, :dir => tmp("path_without_gemfile")
       gemfile do
+        source "#{file_uri_for(gem_repo2)}"
         path "#{lib_path}" do
           gem "foo", require: false
         end

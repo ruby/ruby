@@ -430,6 +430,7 @@ RSpec.describe "Bundler.setup" do
       build_git "rack", "1.0.0"
 
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", :git => "#{lib_path("rack-1.0.0")}"
       G
     end
@@ -857,7 +858,7 @@ end
     end
 
     it "should not remove itself from the LOAD_PATH and require a different copy of 'bundler/setup'" do
-      install_gemfile ""
+      install_gemfile "source \"#{file_uri_for(gem_repo1)}\""
 
       ruby <<-R, :env => { "GEM_PATH" => symlinked_gem_home }
         TracePoint.trace(:class) do |tp|
@@ -906,6 +907,7 @@ end
       FileUtils.rm(File.join(path, "foo.gemspec"))
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem 'foo', '1.2.3', :path => 'vendor/foo'
       G
 
@@ -926,6 +928,7 @@ end
       FileUtils.rm(File.join(absolute_path, "foo.gemspec"))
 
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem 'foo', '1.2.3', :path => '#{relative_path}'
       G
 
@@ -944,6 +947,7 @@ end
       build_git "no_gemspec", :gemspec => false
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "no_gemspec", "1.0", :git => "#{lib_path("no_gemspec-1.0")}"
       G
     end
@@ -1046,6 +1050,7 @@ end
       end
 
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "bar", :git => "#{lib_path("bar-1.0")}"
       G
     end
@@ -1092,6 +1097,7 @@ end
   describe "when Bundler is bundled" do
     it "doesn't blow up" do
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "bundler", :path => "#{root}"
       G
 
@@ -1223,7 +1229,7 @@ end
 
   describe "with gemified standard libraries" do
     it "does not load Psych" do
-      gemfile ""
+      gemfile "source \"#{file_uri_for(gem_repo1)}\""
       ruby <<-RUBY
         require '#{entrypoint}/setup'
         puts defined?(Psych::VERSION) ? Psych::VERSION : "undefined"
@@ -1236,7 +1242,7 @@ end
     end
 
     it "does not load openssl" do
-      install_gemfile ""
+      install_gemfile "source \"#{file_uri_for(gem_repo1)}\""
       ruby <<-RUBY
         require "bundler/setup"
         puts defined?(OpenSSL) || "undefined"
@@ -1295,13 +1301,13 @@ end
       RUBY
 
       it "activates no gems with -rbundler/setup" do
-        install_gemfile ""
+        install_gemfile "source \"#{file_uri_for(gem_repo1)}\""
         ruby code, :env => { "RUBYOPT" => activation_warning_hack_rubyopt + " -rbundler/setup" }
         expect(out).to eq("{}")
       end
 
       it "activates no gems with bundle exec" do
-        install_gemfile ""
+        install_gemfile "source \"#{file_uri_for(gem_repo1)}\""
         create_file("script.rb", code)
         bundle "exec ruby ./script.rb", :env => { "RUBYOPT" => activation_warning_hack_rubyopt }
         expect(out).to eq("{}")
@@ -1310,7 +1316,7 @@ end
       it "activates no gems with bundle exec that is loaded" do
         skip "not executable" if Gem.win_platform?
 
-        install_gemfile ""
+        install_gemfile "source \"#{file_uri_for(gem_repo1)}\""
         create_file("script.rb", "#!/usr/bin/env ruby\n\n#{code}")
         FileUtils.chmod(0o777, bundled_app("script.rb"))
         bundle "exec ./script.rb", :artifice => nil, :env => { "RUBYOPT" => activation_warning_hack_rubyopt }

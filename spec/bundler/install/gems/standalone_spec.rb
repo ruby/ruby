@@ -146,6 +146,7 @@ RSpec.shared_examples "bundle install --standalone" do
       end
       bundle "config set --local path #{bundled_app("bundle")}"
       install_gemfile <<-G, :standalone => true, :dir => cwd, :raise_on_error => false
+        source "#{file_uri_for(gem_repo1)}"
         gem "bar", :git => "#{lib_path("bar-1.0")}"
       G
     end

@@ -322,6 +322,8 @@ RSpec.describe "the lockfile format" do
     bundle "config set http://localgemserver.test/ user:pass"
 
     install_gemfile(<<-G, :artifice => "endpoint_strict_basic_authentication", :quiet => true)
+      source "#{file_uri_for(gem_repo1)}"
+
       source "http://localgemserver.test/" do
 
       end
@@ -333,6 +335,7 @@ RSpec.describe "the lockfile format" do
 
     lockfile_should_be <<-G
       GEM
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
 
       GEM
@@ -388,6 +391,7 @@ RSpec.describe "the lockfile format" do
     git = build_git "foo"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :git => "#{lib_path("foo-1.0")}"
     G
 
@@ -399,6 +403,7 @@ RSpec.describe "the lockfile format" do
           foo (1.0)
 
       GEM
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
 
       PLATFORMS
@@ -455,6 +460,7 @@ RSpec.describe "the lockfile format" do
     git = build_git "foo"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       git "#{lib_path("foo-1.0")}" do
         gem "foo"
       end
@@ -468,6 +474,7 @@ RSpec.describe "the lockfile format" do
           foo (1.0)
 
       GEM
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
 
       PLATFORMS
@@ -486,6 +493,7 @@ RSpec.describe "the lockfile format" do
     update_git "foo", :branch => "omg"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :git => "#{lib_path("foo-1.0")}", :branch => "omg"
     G
 
@@ -498,6 +506,7 @@ RSpec.describe "the lockfile format" do
           foo (1.0)
 
       GEM
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
 
       PLATFORMS
@@ -516,6 +525,7 @@ RSpec.describe "the lockfile format" do
     update_git "foo", :tag => "omg"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :git => "#{lib_path("foo-1.0")}", :tag => "omg"
     G
 
@@ -528,6 +538,7 @@ RSpec.describe "the lockfile format" do
           foo (1.0)
 
       GEM
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
 
       PLATFORMS
@@ -545,6 +556,7 @@ RSpec.describe "the lockfile format" do
     build_lib "foo"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :path => "#{lib_path("foo-1.0")}"
     G
 
@@ -555,6 +567,7 @@ RSpec.describe "the lockfile format" do
           foo (1.0)
 
       GEM
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
 
       PLATFORMS
@@ -572,6 +585,7 @@ RSpec.describe "the lockfile format" do
     build_lib "foo"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :path => "#{lib_path("foo-1.0")}"
     G
 
@@ -586,6 +600,7 @@ RSpec.describe "the lockfile format" do
           foo (1.0)
 
       GEM
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
 
       PLATFORMS
@@ -821,6 +836,7 @@ RSpec.describe "the lockfile format" do
     build_lib "foo", :path => bundled_app("foo")
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       path "foo" do
         gem "foo"
       end
@@ -833,6 +849,7 @@ RSpec.describe "the lockfile format" do
           foo (1.0)
 
       GEM
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
 
       PLATFORMS
@@ -850,6 +867,7 @@ RSpec.describe "the lockfile format" do
     build_lib "foo", :path => bundled_app(File.join("..", "foo"))
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       path "../foo" do
         gem "foo"
       end
@@ -862,6 +880,7 @@ RSpec.describe "the lockfile format" do
           foo (1.0)
 
       GEM
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
 
       PLATFORMS
@@ -879,6 +898,7 @@ RSpec.describe "the lockfile format" do
     build_lib "foo", :path => bundled_app("foo")
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       path File.expand_path("../foo", __FILE__) do
         gem "foo"
       end
@@ -891,6 +911,7 @@ RSpec.describe "the lockfile format" do
           foo (1.0)
 
       GEM
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
 
       PLATFORMS
@@ -908,6 +929,7 @@ RSpec.describe "the lockfile format" do
     build_lib("foo", :path => tmp.join("foo"))
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gemspec :path => "../foo"
     G
 
@@ -918,6 +940,7 @@ RSpec.describe "the lockfile format" do
           foo (1.0)
 
       GEM
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
 
       PLATFORMS
