@@ -33,7 +33,7 @@ require 'psych/class_loader'
 #
 # Psych is a YAML parser and emitter.
 # Psych leverages libyaml [Home page: https://pyyaml.org/wiki/LibYAML]
-# or [HG repo: https://bitbucket.org/xi/libyaml] for its YAML parsing
+# or [git repo: https://github.com/yaml/libyaml] for its YAML parsing
 # and emitting capabilities. In addition to wrapping libyaml, Psych also
 # knows how to serialize and de-serialize most Ruby objects to and from
 # the YAML format.
