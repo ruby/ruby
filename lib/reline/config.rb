@@ -158,7 +158,7 @@ class Reline::Config
   end
 
   def read_lines(lines, file = nil)
-    if lines.first.encoding != Reline.encoding_system_needs
+    if not lines.empty? and lines.first.encoding != Reline.encoding_system_needs
       begin
         lines = lines.map do |l|
           l.encode(Reline.encoding_system_needs)
