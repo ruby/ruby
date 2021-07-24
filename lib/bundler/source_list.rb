@@ -215,7 +215,7 @@ module Bundler
     end
 
     def equal_source?(source, other_source)
-      return source.include?(other_source) if source.is_a?(Source::Rubygems) && other_source.is_a?(Source::Rubygems) && !merged_gem_lockfile_sections?
+      return source.include?(other_source) if source.is_a?(Source::Rubygems) && other_source.is_a?(Source::Rubygems)
 
       source == other_source
     end

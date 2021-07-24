@@ -721,7 +721,7 @@ module Bundler
       @locked_specs.each do |s|
         # Replace the locked dependency's source with the equivalent source from the Gemfile
         dep = @dependencies.find {|d| s.satisfies?(d) }
-        s.source = (dep && dep.source) || sources.get(s.source)
+        s.source = (dep && dep.source) || sources.get(s.source) unless multisource_allowed?
 
         # Don't add a spec to the list if its source is expired. For example,
         # if you change a Git gem to RubyGems.
