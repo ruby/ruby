@@ -6,7 +6,6 @@ require 'rubygems/s3_uri_signer'
 require 'rubygems/uri_formatter'
 require 'rubygems/uri_parser'
 require 'rubygems/user_interaction'
-require 'resolv'
 
 ##
 # RemoteFetcher handles the details of fetching gems and gem information from
