@@ -4,7 +4,7 @@ jobs:
   make:
     strategy:
       matrix:
-        test_task: [ "check", "test-bundler-parallel", "test-bundled-gems", "test-all TESTS=--repeat-count=2", "leaked-globals" ]
+        test_task: [ "check", "test-bundler-parallel", "test-bundled-gems", "test-all TESTS=--repeat-count=2" ]
         os:
           - ubuntu-20.04
 #         - ubuntu-18.04
@@ -17,13 +17,9 @@ jobs:
             os: ubuntu-16.04
           - test_task: "test-all TESTS=--repeat-count=2"
             os: ubuntu-16.04
-          - test_task: leaked-globals
-            os: ubuntu-16.04
           - os: ubuntu-16.04
             debug: -DRUBY_DEBUG
           - test_task: "test-all TESTS=--repeat-count=2"
-            debug: -DRUBY_DEBUG
-          - test_task: leaked-globals
             debug: -DRUBY_DEBUG
       fail-fast: false
     env:
@@ -59,6 +55,8 @@ jobs:
         run: ../src/configure -C --disable-install-doc cppflags=${{ matrix.debug }}
       - run: make $JOBS incs
       - run: make $JOBS
+      - run: make leaked-globals
+        if: matrix.test_task == 'check'
       - run: make prepare-gems
         if: matrix.test_task == 'check'
       - name: Create dummy files in build dir
