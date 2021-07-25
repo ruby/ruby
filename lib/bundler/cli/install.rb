@@ -83,18 +83,11 @@ module Bundler
       end
 
       Bundler::CLI::Common.output_fund_metadata_summary
-    rescue GemNotFound, VersionConflict => e
+    rescue GemNotFound => e
       if options[:local] && Bundler.app_cache.exist?
         Bundler.ui.warn "Some gems seem to be missing from your #{Bundler.settings.app_cache_path} directory."
       end
 
-      unless Bundler.definition.has_rubygems_remotes?
-        Bundler.ui.warn <<-WARN, :wrap => true
-          Your Gemfile has no gem server sources. If you need gems that are \
-          not already on your machine, add a line like this to your Gemfile:
-          source 'https://rubygems.org'
-        WARN
-      end
       raise e
     rescue Gem::InvalidSpecificationException => e
       Bundler.ui.warn "You have one or more invalid gemspecs that need to be fixed."

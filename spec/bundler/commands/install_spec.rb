@@ -331,11 +331,13 @@ RSpec.describe "bundle install with gem sources" do
 
     it "gives a useful error if no sources are set" do
       install_gemfile <<-G, :raise_on_error => false
-        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
 
-      expect(err).to include("Your Gemfile has no gem server sources")
+      expect(err).to include("This Gemfile does not include an explicit global source. " \
+        "Not using an explicit global source may result in a different lockfile being generated depending on " \
+        "the gems you have installed locally before bundler is run." \
+        "Instead, define a global source in your Gemfile like this: source \"https://rubygems.org\".")
     end
 
     it "creates a Gemfile.lock on a blank Gemfile" do

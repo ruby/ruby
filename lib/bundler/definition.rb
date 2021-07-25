@@ -279,10 +279,6 @@ module Bundler
       end
     end
 
-    def has_rubygems_remotes?
-      sources.rubygems_sources.any? {|s| s.remotes.any? }
-    end
-
     def spec_git_paths
       sources.git_sources.map {|s| File.realpath(s.path) if File.exist?(s.path) }.compact
     end
