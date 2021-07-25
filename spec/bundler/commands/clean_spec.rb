@@ -633,11 +633,9 @@ RSpec.describe "bundle clean" do
     default_irb_version = ruby "gem 'irb', '< 999999'; require 'irb'; puts IRB::VERSION", :raise_on_error => false
     skip "irb isn't a default gem" if default_irb_version.empty?
 
-    build_repo2 do
-      # simulate executable for default gem
-      build_gem "irb", default_irb_version, :to_system => true, :default => true do |s|
-        s.executables = "irb"
-      end
+    # simulate executable for default gem
+    build_gem "irb", default_irb_version, :to_system => true, :default => true do |s|
+      s.executables = "irb"
     end
 
     realworld_system_gems "fiddle --version 1.0.0"
