@@ -153,7 +153,7 @@ CC_SET_FASTPATH(const struct rb_callcache *cc, vm_call_handler func, bool enable
             *canary = Qfalse; /* cleanup */ \
         } \
         else { \
-            vm_canary_is_found_dead(insn, *canary); \
+            rb_vm_canary_is_found_dead(insn, *canary); \
         } \
     }
 #else
