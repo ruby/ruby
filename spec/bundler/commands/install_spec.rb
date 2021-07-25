@@ -585,7 +585,20 @@ RSpec.describe "bundle install with gem sources" do
   end
 
   describe "when requesting a quiet install via --quiet" do
-    it "should be quiet" do
+    it "should be quiet if there are no warnings" do
+      bundle "config set force_ruby_platform true"
+
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem 'rack'
+      G
+
+      bundle :install, :quiet => true
+      expect(out).to be_empty
+      expect(err).to be_empty
+    end
+
+    it "should still display warnings and errors" do
       bundle "config set force_ruby_platform true"
 
       create_file("install_with_warning.rb", <<~RUBY)
@@ -611,8 +624,9 @@ RSpec.describe "bundle install with gem sources" do
       G
 
       bundle :install, :quiet => true, :raise_on_error => false, :env => { "RUBYOPT" => "-r#{bundled_app("install_with_warning.rb")}" }
+      expect(out).to be_empty
       expect(err).to include("Could not find gem 'non-existing-gem'")
-      expect(err).not_to include("BOOOOO")
+      expect(err).to include("BOOOOO")
     end
   end
 
