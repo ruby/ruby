@@ -108,6 +108,45 @@ RSpec.shared_examples "bundle install --standalone" do
     include_examples "common functionality"
   end
 
+  describe "with default gems and a lockfile", :ruby_repo do
+    before do
+      skip "does not work on rubygems versions where `--install_dir` doesn't respect --default" unless Gem::Installer.for_spec(loaded_gemspec, :install_dir => "/foo").default_spec_file == "/foo/specifications/default/bundler-#{Bundler::VERSION}.gemspec" # Since rubygems 3.2.0.rc.2
+      skip "does not work on old rubies because the realworld gems that need to be installed don't support them" if RUBY_VERSION < "2.7.0"
+
+      realworld_system_gems "fiddle --version 1.0.6", "tsort --version 0.1.0"
+
+      necessary_system_gems = ["optparse --version 0.1.1", "psych --version 3.3.2", "yaml --version 0.1.1", "logger --version 1.4.3", "etc --version 1.2.0"]
+      necessary_system_gems += ["shellwords --version 0.1.0", "base64 --version 0.1.0", "resolv --version 0.2.1"] if Gem.rubygems_version < Gem::Version.new("3.3.3.a")
+      realworld_system_gems(*necessary_system_gems, :path => scoped_gem_path(bundled_app("bundle")))
+
+      build_gem "foo", "1.0.0", :to_system => true, :default => true do |s|
+        s.add_dependency "bar"
+      end
+
+      build_gem "bar", "1.0.0", :to_system => true, :default => true
+
+      build_repo4 do
+        build_gem "foo", "1.0.0" do |s|
+          s.add_dependency "bar"
+        end
+
+        build_gem "bar", "1.0.0"
+      end
+
+      gemfile <<-G
+        source "https://gem.repo4"
+        gem "foo"
+      G
+
+      bundle "lock", :dir => cwd, :artifice => "compact_index"
+    end
+
+    it "works" do
+      bundle "config set --local path #{bundled_app("bundle")}"
+      bundle :install, :standalone => true, :dir => cwd, :artifice => "compact_index", :env => { "BUNDLER_GEM_DEFAULT_DIR" => system_gem_path.to_s }
+    end
+  end
+
   describe "with gems with native extension", :ruby_repo do
     before do
       bundle "config set --local path #{bundled_app("bundle")}"
