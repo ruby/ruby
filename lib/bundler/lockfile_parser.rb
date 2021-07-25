@@ -195,6 +195,7 @@ module Bundler
         platform = platform ? Gem::Platform.new(platform) : Gem::Platform::RUBY
         @current_spec = LazySpecification.new(name, version, platform)
         @current_spec.source = @current_source
+        @current_source.add_dependency_names(name)
 
         @specs[@current_spec.identifier] = @current_spec
       elsif spaces.size == 6

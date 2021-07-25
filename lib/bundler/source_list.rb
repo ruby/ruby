@@ -121,7 +121,8 @@ module Bundler
     def replace_sources!(replacement_sources)
       return false if replacement_sources.empty?
 
-      @path_sources, @git_sources, @plugin_sources = map_sources(replacement_sources)
+      @rubygems_sources, @path_sources, @git_sources, @plugin_sources = map_sources(replacement_sources)
+      @global_rubygems_source = global_replacement_source(replacement_sources)
 
       different_sources?(lock_sources, replacement_sources)
     end
@@ -156,11 +157,19 @@ module Bundler
     end
 
     def map_sources(replacement_sources)
-      [path_sources, git_sources, plugin_sources].map do |sources|
+      [@rubygems_sources, @path_sources, @git_sources, @plugin_sources].map do |sources|
         sources.map do |source|
           replacement_sources.find {|s| s == source } || source
         end
       end
+    end
+
+    def global_replacement_source(replacement_sources)
+      replacement_source = replacement_sources.find {|s| s == global_rubygems_source }
+      return global_rubygems_source unless replacement_source
+
+      replacement_source.local!
+      replacement_source
     end
 
     def different_sources?(lock_sources, replacement_sources)
