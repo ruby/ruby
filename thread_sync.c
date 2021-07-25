@@ -32,7 +32,7 @@ sync_wakeup(struct list_head *head, long max)
 
         if (cur->th->status != THREAD_KILLED) {
 
-            if (cur->th->scheduler != Qnil) {
+            if (cur->th->scheduler != Qnil && rb_fiberptr_blocking(cur->fiber) == 0) {
                 rb_scheduler_unblock(cur->th->scheduler, cur->self, rb_fiberptr_self(cur->fiber));
             } else {
                 rb_threadptr_interrupt(cur->th);
@@ -437,7 +437,7 @@ rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_fiber_t *fiber)
         list_for_each_safe(&mutex->waitq, cur, next, node) {
             list_del_init(&cur->node);
 
-            if (cur->th->scheduler != Qnil) {
+            if (cur->th->scheduler != Qnil && rb_fiberptr_blocking(cur->fiber) == 0) {
                 rb_scheduler_unblock(cur->th->scheduler, cur->self, rb_fiberptr_self(cur->fiber));
                 goto found;
             } else {

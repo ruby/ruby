@@ -544,7 +544,7 @@ rb_threadptr_join_list_wakeup(rb_thread_t *thread)
     while (join_list) {
         rb_thread_t *target_thread = join_list->thread;
 
-        if (target_thread->scheduler != Qnil) {
+        if (target_thread->scheduler != Qnil && rb_fiberptr_blocking(join_list->fiber) == 0) {
             rb_scheduler_unblock(target_thread->scheduler, target_thread->self, rb_fiberptr_self(join_list->fiber));
         } else {
             rb_threadptr_interrupt(target_thread);
