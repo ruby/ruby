@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "shellwords"
-
 module Bundler
   class GemInstaller
     attr_reader :spec, :standalone, :worker, :force, :installer
@@ -47,6 +45,7 @@ module Bundler
     def spec_settings
       # Fetch the build settings, if there are any
       if settings = Bundler.settings["build.#{spec.name}"]
+        require "shellwords"
         Shellwords.shellsplit(settings)
       end
     end
