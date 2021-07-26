@@ -181,47 +181,38 @@ class Reline::Windows
     name =~ /(msys-|cygwin-).*-pty/ ? true : false
   end
 
+  KEY_MAP = [
+    # It's treated as Meta+Enter on Windows.
+    [ { control_keys: :CTRL,  virtual_key_code: 0x0D }, "\e\r".bytes ],
+    [ { control_keys: :SHIFT, virtual_key_code: 0x0D }, "\e\r".bytes ],
+
+    # It's treated as Meta+Space on Windows.
+    [ { control_keys: :CTRL,  char_code: 0x20 }, "\e ".bytes ],
+
+    # Emulate getwch() key sequences.
+    [ { control_keys: [], virtual_key_code: VK_UP },     [0, 72] ],
+    [ { control_keys: [], virtual_key_code: VK_DOWN },   [0, 80] ],
+    [ { control_keys: [], virtual_key_code: VK_RIGHT },  [0, 77] ],
+    [ { control_keys: [], virtual_key_code: VK_LEFT },   [0, 75] ],
+    [ { control_keys: [], virtual_key_code: VK_DELETE }, [0, 83] ],
+    [ { control_keys: [], virtual_key_code: VK_HOME },   [0, 71] ],
+    [ { control_keys: [], virtual_key_code: VK_END },    [0, 79] ],
+  ]
+
   def self.process_key_event(repeat_count, virtual_key_code, virtual_scan_code, char_code, control_key_state)
-    char = char_code.chr(Encoding::UTF_8)
-    if char_code == 0x0D and control_key_state.anybits?(LEFT_CTRL_PRESSED | RIGHT_CTRL_PRESSED | SHIFT_PRESSED)
-      # It's treated as Meta+Enter on Windows.
-      @@output_buf.push("\e".ord)
-      @@output_buf.push(char_code)
-    elsif char_code == 0x20 and control_key_state.anybits?(LEFT_CTRL_PRESSED | RIGHT_CTRL_PRESSED)
-      # It's treated as Meta+Space on Windows.
-      @@output_buf.push("\e".ord)
-      @@output_buf.push(char_code)
-    elsif control_key_state.anybits?(ENHANCED_KEY)
-      case virtual_key_code # Emulate getwch() key sequences.
-      when VK_END
-        @@output_buf.push(0, 79)
-      when VK_HOME
-        @@output_buf.push(0, 71)
-      when VK_LEFT
-        @@output_buf.push(0, 75)
-      when VK_UP
-        @@output_buf.push(0, 72)
-      when VK_RIGHT
-        @@output_buf.push(0, 77)
-      when VK_DOWN
-        @@output_buf.push(0, 80)
-      when VK_DELETE
-        @@output_buf.push(0, 83)
-      when VK_RETURN
-        @@output_buf.push(char_code) # must be 0x0D
-      when VK_DIVIDE
-        @@output_buf.push(char_code)
-      end
-    elsif char_code == 0 and control_key_state != 0
-      # unknown
-    else
-      case virtual_key_code
-      when VK_RETURN
-        @@output_buf.push("\n".ord)
-      else
-        @@output_buf.concat(char.bytes)
-      end
+
+    key = KeyEventRecord.new(virtual_key_code, char_code, control_key_state)
+
+    match = KEY_MAP.find { |args,| key.matches?(**args) }
+    unless match.nil?
+      @@output_buf.concat(match.last)
+      return
     end
+
+    # no char, only control keys
+    return if key.char_code == 0 and key.control_keys.any?
+
+    @@output_buf.concat(key.char.bytes)
   end
 
   def self.check_input_event
@@ -361,5 +352,44 @@ class Reline::Windows
 
   def self.deprep(otio)
     # do nothing
+  end
+
+  class KeyEventRecord
+
+    attr_reader :virtual_key_code, :char_code, :control_key_state, :control_keys
+
+    def initialize(virtual_key_code, char_code, control_key_state)
+      @virtual_key_code = virtual_key_code
+      @char_code = char_code
+      @control_key_state = control_key_state
+      @enhanced = control_key_state & ENHANCED_KEY != 0
+
+      (@control_keys = []).tap do |control_keys|
+        # symbols must be sorted to make comparison is easier later on
+        control_keys << :ALT   if control_key_state & (LEFT_ALT_PRESSED | RIGHT_ALT_PRESSED) != 0
+        control_keys << :CTRL  if control_key_state & (LEFT_CTRL_PRESSED | RIGHT_CTRL_PRESSED) != 0
+        control_keys << :SHIFT if control_key_state & SHIFT_PRESSED != 0
+      end.freeze
+    end
+
+    def char
+      @char_code.chr(Encoding::UTF_8)
+    end
+
+    def enhanced?
+      @enhanced
+    end
+
+    # Verifies if the arguments match with this key event.
+    # Nil arguments are ignored, but at least one must be passed as non-nil.
+    # To verify that no control keys were pressed, pass an empty array: `control_keys: []`.
+    def matches?(control_keys: nil, virtual_key_code: nil, char_code: nil)
+      raise ArgumentError, 'No argument was passed to match key event' if control_keys.nil? && virtual_key_code.nil? && char_code.nil?
+
+      (control_keys.nil? || [*control_keys].sort == @control_keys) &&
+      (virtual_key_code.nil? || @virtual_key_code == virtual_key_code) &&
+      (char_code.nil? || char_code == @char_code)
+    end
+
   end
 end
