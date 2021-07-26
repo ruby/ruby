@@ -56,7 +56,7 @@ PACKAGES = {
   "zip"  => %w".zip     zip -Xqr",
 }
 DEFAULT_PACKAGES = PACKAGES.keys - ["tar"]
-if !$no7z and system("7z", out: IO::NULL, exception: false)
+if !$no7z and system("7z", out: IO::NULL)
   PACKAGES["gzip"] = %w".tar.gz 7z a dummy -tgzip -mx -so"
   PACKAGES["zip"]  = %w".zip    7z a -tzip -l -mx -mtc=off" << {out: IO::NULL}
 elsif gzip = ENV.delete("GZIP")
