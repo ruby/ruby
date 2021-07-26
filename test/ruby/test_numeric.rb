@@ -229,6 +229,15 @@ class TestNumeric < Test::Unit::TestCase
     assert_equal(-1, a.truncate)
   end
 
+  def test_floor_ceil_ndigits
+    bug17183 = "[ruby-core:100090]"
+    f = 291.4
+    31.times do |i|
+      assert_equal(291.4, f.floor(i+1), bug17183)
+      assert_equal(291.4, f.ceil(i+1), bug17183)
+    end
+  end
+
   def assert_step(expected, (from, *args), inf: false)
     kw = args.last.is_a?(Hash) ? args.pop : {}
     enum = from.step(*args, **kw)

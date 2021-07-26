@@ -1829,20 +1829,24 @@ flo_prev_float(VALUE vx)
 VALUE
 rb_float_floor(VALUE num, int ndigits)
 {
-    double number, f;
+    double number;
     number = RFLOAT_VALUE(num);
     if (number == 0.0) {
 	return ndigits > 0 ? DBL2NUM(number) : INT2FIX(0);
     }
     if (ndigits > 0) {
 	int binexp;
+        double f, mul, res;
 	frexp(number, &binexp);
 	if (float_round_overflow(ndigits, binexp)) return num;
 	if (number > 0.0 && float_round_underflow(ndigits, binexp))
 	    return DBL2NUM(0.0);
 	f = pow(10, ndigits);
-	f = floor(number * f) / f;
-	return DBL2NUM(f);
+        mul = floor(number * f);
+        res = (mul + 1) / f;
+        if (res > number)
+            res = mul / f;
+        return DBL2NUM(res);
     }
     else {
 	num = dbl2ival(floor(number));
