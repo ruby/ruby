@@ -836,9 +836,9 @@ RSpec.describe "bundle exec" do
       let(:exit_code) { Bundler::GemNotFound.new.status_code }
       let(:expected) { "" }
       let(:expected_err) { <<-EOS.strip }
-\e[31mCould not find gem 'rack (= 2)' in rubygems repository #{file_uri_for(gem_repo1)}/ or installed locally.
-The source contains the following versions of 'rack': 0.9.1, 1.0.0\e[0m
-\e[33mRun `bundle install` to install missing gems.\e[0m
+Could not find gem 'rack (= 2)' in rubygems repository #{file_uri_for(gem_repo1)}/ or installed locally.
+The source contains the following versions of 'rack': 0.9.1, 1.0.0
+Run `bundle install` to install missing gems.
       EOS
 
       it "runs" do
@@ -863,9 +863,9 @@ The source contains the following versions of 'rack': 0.9.1, 1.0.0\e[0m
       let(:exit_code) { Bundler::GemNotFound.new.status_code }
       let(:expected) { "" }
       let(:expected_err) { <<-EOS.strip }
-\e[31mCould not find gem 'rack (= 2)' in rubygems repository #{file_uri_for(gem_repo1)}/ or installed locally.
-The source contains the following versions of 'rack': 1.0.0\e[0m
-\e[33mRun `bundle install` to install missing gems.\e[0m
+Could not find gem 'rack (= 2)' in rubygems repository #{file_uri_for(gem_repo1)}/ or installed locally.
+The source contains the following versions of 'rack': 1.0.0
+Run `bundle install` to install missing gems.
       EOS
 
       it "runs" do
