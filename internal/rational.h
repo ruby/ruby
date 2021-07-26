@@ -39,6 +39,7 @@ VALUE rb_rational_cmp(VALUE self, VALUE other);
 VALUE rb_rational_pow(VALUE self, VALUE other);
 VALUE rb_rational_floor(VALUE self, int ndigits);
 VALUE rb_numeric_quo(VALUE x, VALUE y);
+VALUE rb_flo_round_by_rational(int argc, VALUE *argv, VALUE num);
 VALUE rb_float_numerator(VALUE x);
 VALUE rb_float_denominator(VALUE x);
 

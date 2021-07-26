@@ -1540,6 +1540,12 @@ nurat_round_n(int argc, VALUE *argv, VALUE self)
     return f_round_common(argc, argv, self, round_func);
 }
 
+VALUE
+rb_flo_round_by_rational(int argc, VALUE *argv, VALUE num)
+{
+    return nurat_to_f(nurat_round_n(argc, argv, float_to_r(num)));
+}
+
 static double
 nurat_to_double(VALUE self)
 {

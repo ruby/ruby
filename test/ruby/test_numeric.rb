@@ -200,6 +200,14 @@ class TestNumeric < Test::Unit::TestCase
     assert_nil(a <=> :foo)
   end
 
+  def test_float_round_ndigits
+    bug14635 = "[ruby-core:86323]"
+    f = 0.5
+    31.times do |i|
+      assert_equal(0.5, f.round(i+1), bug14635 + " (argument: #{i+1})")
+    end
+  end
+
   def test_floor_ceil_round_truncate
     a = Class.new(Numeric) do
       def to_f; 1.5; end
