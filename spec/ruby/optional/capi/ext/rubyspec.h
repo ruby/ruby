@@ -46,7 +46,6 @@
 #define rb_define_singleton_method(mod, name, func, argc) rb_define_singleton_method(mod, name, RUBY_METHOD_FUNC(func), argc)
 #define rb_define_module_function(mod, name, func, argc) rb_define_module_function(mod, name, RUBY_METHOD_FUNC(func), argc)
 #define rb_define_global_function(name, func, argc) rb_define_global_function(name, RUBY_METHOD_FUNC(func), argc)
-#define rb_iterate(function, arg1, block, arg2) rb_iterate(function, arg1, RUBY_METHOD_FUNC(block), arg2)
 #define rb_hash_foreach(hash, func, farg) rb_hash_foreach(hash, (int (*)(...))func, farg)
 #define st_foreach(tab, func, arg) st_foreach(tab, (int (*)(...))func, arg)
 #define rb_block_call(object, name, args_count, args, block_call_func, data) rb_block_call(object, name, args_count, args, RUBY_METHOD_FUNC(block_call_func), data)
