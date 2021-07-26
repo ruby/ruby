@@ -22,10 +22,6 @@ module Bundler
 
       # Activate the specs
       load_paths = specs.map do |spec|
-        unless spec.loaded_from
-          raise GemNotFound, "#{spec.full_name} is missing. Run `bundle install` to get it."
-        end
-
         check_for_activated_spec!(spec)
 
         Bundler.rubygems.mark_loaded(spec)
