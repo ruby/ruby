@@ -4421,38 +4421,37 @@ ecerr_incomplete_input(VALUE self)
  *  correspond with a known converter.
  */
 
-#undef rb_intern
 void
 Init_transcode(void)
 {
     transcoder_table = st_init_strcasetable();
 
-    sym_invalid = ID2SYM(rb_intern("invalid"));
-    sym_undef = ID2SYM(rb_intern("undef"));
-    sym_replace = ID2SYM(rb_intern("replace"));
-    sym_fallback = ID2SYM(rb_intern("fallback"));
-    sym_xml = ID2SYM(rb_intern("xml"));
-    sym_text = ID2SYM(rb_intern("text"));
-    sym_attr = ID2SYM(rb_intern("attr"));
+    sym_invalid = ID2SYM(rb_intern_const("invalid"));
+    sym_undef = ID2SYM(rb_intern_const("undef"));
+    sym_replace = ID2SYM(rb_intern_const("replace"));
+    sym_fallback = ID2SYM(rb_intern_const("fallback"));
+    sym_xml = ID2SYM(rb_intern_const("xml"));
+    sym_text = ID2SYM(rb_intern_const("text"));
+    sym_attr = ID2SYM(rb_intern_const("attr"));
 
-    sym_invalid_byte_sequence = ID2SYM(rb_intern("invalid_byte_sequence"));
-    sym_undefined_conversion = ID2SYM(rb_intern("undefined_conversion"));
-    sym_destination_buffer_full = ID2SYM(rb_intern("destination_buffer_full"));
-    sym_source_buffer_empty = ID2SYM(rb_intern("source_buffer_empty"));
-    sym_finished = ID2SYM(rb_intern("finished"));
-    sym_after_output = ID2SYM(rb_intern("after_output"));
-    sym_incomplete_input = ID2SYM(rb_intern("incomplete_input"));
-    sym_universal_newline = ID2SYM(rb_intern("universal_newline"));
-    sym_crlf_newline = ID2SYM(rb_intern("crlf_newline"));
-    sym_cr_newline = ID2SYM(rb_intern("cr_newline"));
-    sym_partial_input = ID2SYM(rb_intern("partial_input"));
+    sym_invalid_byte_sequence = ID2SYM(rb_intern_const("invalid_byte_sequence"));
+    sym_undefined_conversion = ID2SYM(rb_intern_const("undefined_conversion"));
+    sym_destination_buffer_full = ID2SYM(rb_intern_const("destination_buffer_full"));
+    sym_source_buffer_empty = ID2SYM(rb_intern_const("source_buffer_empty"));
+    sym_finished = ID2SYM(rb_intern_const("finished"));
+    sym_after_output = ID2SYM(rb_intern_const("after_output"));
+    sym_incomplete_input = ID2SYM(rb_intern_const("incomplete_input"));
+    sym_universal_newline = ID2SYM(rb_intern_const("universal_newline"));
+    sym_crlf_newline = ID2SYM(rb_intern_const("crlf_newline"));
+    sym_cr_newline = ID2SYM(rb_intern_const("cr_newline"));
+    sym_partial_input = ID2SYM(rb_intern_const("partial_input"));
 
 #ifdef ENABLE_ECONV_NEWLINE_OPTION
-    sym_newline = ID2SYM(rb_intern("newline"));
-    sym_universal = ID2SYM(rb_intern("universal"));
-    sym_crlf = ID2SYM(rb_intern("crlf"));
-    sym_cr = ID2SYM(rb_intern("cr"));
-    sym_lf = ID2SYM(rb_intern("lf"));
+    sym_newline = ID2SYM(rb_intern_const("newline"));
+    sym_universal = ID2SYM(rb_intern_const("universal"));
+    sym_crlf = ID2SYM(rb_intern_const("crlf"));
+    sym_cr = ID2SYM(rb_intern_const("cr"));
+    sym_lf = ID2SYM(rb_intern_const("lf"));
 #endif
 
     InitVM(transcode);
