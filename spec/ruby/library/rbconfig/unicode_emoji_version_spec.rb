@@ -21,8 +21,8 @@ describe "RbConfig::CONFIG['UNICODE_EMOJI_VERSION']" do
   end
 
   ruby_version_is "3.1" do
-    it "is 13.0 for Ruby 3.1" do
-      RbConfig::CONFIG['UNICODE_EMOJI_VERSION'].should == "13.0"
+    it "is 13.1 for Ruby 3.1" do
+      RbConfig::CONFIG['UNICODE_EMOJI_VERSION'].should == "13.1"
     end
   end
 end
