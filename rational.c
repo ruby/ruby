@@ -1043,7 +1043,7 @@ rb_rational_pow(VALUE self, VALUE other)
 	return rb_float_pow(nurat_to_f(self), other);
     }
     else {
-	return rb_num_coerce_bin(self, other, rb_intern("**"));
+	return rb_num_coerce_bin(self, other, idPow);
     }
 }
 #define nurat_expt rb_rational_pow
@@ -1102,7 +1102,7 @@ rb_rational_cmp(VALUE self, VALUE other)
         return rb_dbl_cmp(nurat_to_double(self), RFLOAT_VALUE(other));
 
       default:
-	return rb_num_coerce_cmp(self, other, rb_intern("<=>"));
+	return rb_num_coerce_cmp(self, other, idCmp);
     }
 }
 

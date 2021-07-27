@@ -477,7 +477,7 @@ mutable_obj_clone(VALUE obj, VALUE kwfreeze)
         if (!freeze_true_hash) {
             freeze_true_hash = rb_hash_new();
             rb_gc_register_mark_object(freeze_true_hash);
-            rb_hash_aset(freeze_true_hash, ID2SYM(rb_intern("freeze")), Qtrue);
+            rb_hash_aset(freeze_true_hash, ID2SYM(idFreeze), Qtrue);
             rb_obj_freeze(freeze_true_hash);
         }
 
@@ -493,7 +493,7 @@ mutable_obj_clone(VALUE obj, VALUE kwfreeze)
         if (!freeze_false_hash) {
             freeze_false_hash = rb_hash_new();
             rb_gc_register_mark_object(freeze_false_hash);
-            rb_hash_aset(freeze_false_hash, ID2SYM(rb_intern("freeze")), Qfalse);
+            rb_hash_aset(freeze_false_hash, ID2SYM(idFreeze), Qfalse);
             rb_obj_freeze(freeze_false_hash);
         }
 
