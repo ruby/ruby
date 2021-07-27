@@ -3448,6 +3448,28 @@ gen_getglobal(jitstate_t* jit, ctx_t* ctx)
 }
 
 static codegen_status_t
+gen_setglobal(jitstate_t* jit, ctx_t* ctx)
+{
+    ID gid = jit_get_arg(jit, 0);
+
+    // Save YJIT registers
+    yjit_save_regs(cb);
+
+    mov(cb, C_ARG_REGS[0], imm_opnd(gid));
+
+    x86opnd_t val = ctx_stack_pop(ctx, 1);
+
+    mov(cb, C_ARG_REGS[1], val);
+
+    call_ptr(cb, REG0, (void *)&rb_gvar_set);
+
+    // Load YJIT registers
+    yjit_load_regs(cb);
+
+    return YJIT_KEEP_COMPILING;
+}
+
+static codegen_status_t
 gen_opt_getinlinecache(jitstate_t *jit, ctx_t *ctx)
 {
     VALUE jump_offset = jit_get_arg(jit, 0);
@@ -3690,6 +3712,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(send), gen_send);
     yjit_reg_op(BIN(leave), gen_leave);
     yjit_reg_op(BIN(getglobal), gen_getglobal);
+    yjit_reg_op(BIN(setglobal), gen_setglobal);
 
     yjit_method_codegen_table = st_init_numtable();
 
