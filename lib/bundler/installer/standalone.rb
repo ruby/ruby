@@ -14,7 +14,11 @@ module Bundler
         file.puts "require 'rbconfig'"
         file.puts reverse_rubygems_kernel_mixin
         paths.each do |path|
-          file.puts %($:.unshift File.expand_path("\#{__dir__}/#{path}"))
+          if Pathname.new(path).absolute?
+            file.puts %($:.unshift "#{path}")
+          else
+            file.puts %($:.unshift File.expand_path("\#{__dir__}/#{path}"))
+          end
         end
       end
     end
@@ -41,7 +45,11 @@ module Bundler
 
     def gem_path(path, spec)
       full_path = Pathname.new(path).absolute? ? path : File.join(spec.full_gem_path, path)
-      Pathname.new(full_path).relative_path_from(Bundler.root.join(bundler_path)).to_s
+      if spec.source.instance_of?(Source::Path)
+        full_path
+      else
+        Pathname.new(full_path).relative_path_from(Bundler.root.join(bundler_path)).to_s
+      end
     rescue TypeError
       error_message = "#{spec.name} #{spec.version} has an invalid gemspec"
       raise Gem::InvalidSpecificationException.new(error_message)
