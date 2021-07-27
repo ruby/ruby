@@ -9,6 +9,7 @@
 #include "internal/class.h"
 #include "internal/object.h"
 #include "internal/string.h"
+#include "internal/variable.h"
 #include "insns_info.inc"
 #include "yjit.h"
 #include "yjit_iface.h"
@@ -3426,6 +3427,27 @@ gen_leave(jitstate_t* jit, ctx_t* ctx)
 RUBY_EXTERN rb_serial_t ruby_vm_global_constant_state;
 
 static codegen_status_t
+gen_getglobal(jitstate_t* jit, ctx_t* ctx)
+{
+    ID gid = jit_get_arg(jit, 0);
+
+    // Save YJIT registers
+    yjit_save_regs(cb);
+
+    mov(cb, C_ARG_REGS[0], imm_opnd(gid));
+
+    call_ptr(cb, REG0, (void *)&rb_gvar_get);
+
+    // Load YJIT registers
+    yjit_load_regs(cb);
+
+    x86opnd_t top = ctx_stack_push(ctx, TYPE_UNKNOWN);
+    mov(cb, top, RAX);
+
+    return YJIT_KEEP_COMPILING;
+}
+
+static codegen_status_t
 gen_opt_getinlinecache(jitstate_t *jit, ctx_t *ctx)
 {
     VALUE jump_offset = jit_get_arg(jit, 0);
@@ -3667,6 +3689,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(opt_send_without_block), gen_opt_send_without_block);
     yjit_reg_op(BIN(send), gen_send);
     yjit_reg_op(BIN(leave), gen_leave);
+    yjit_reg_op(BIN(getglobal), gen_getglobal);
 
     yjit_method_codegen_table = st_init_numtable();
 
