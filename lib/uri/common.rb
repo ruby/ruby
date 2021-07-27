@@ -79,6 +79,10 @@ module URI
     }.to_h
   end
 
+  INITIAL_SCHEMES = scheme_list
+  private_constant :INITIAL_SCHEMES
+  Ractor.make_shareable(INITIAL_SCHEMES) if defined?(Ractor)
+
   #
   # Construct a URI instance, using the scheme to detect the appropriate class
   # from +URI.scheme_list+.
