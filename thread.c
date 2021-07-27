@@ -3484,7 +3484,7 @@ rb_thread_to_s(VALUE thread)
 }
 
 /* variables for recursive traversals */
-static ID recursive_key;
+#define recursive_key id__recursive_key__
 
 static VALUE
 threadptr_local_aref(rb_thread_t *th, ID id)
@@ -5529,7 +5529,6 @@ Init_Thread(void)
 	rb_define_const(cThGroup, "Default", th->thgroup);
     }
 
-    recursive_key = rb_intern_const("__recursive_key__");
     rb_eThreadError = rb_define_class("ThreadError", rb_eStandardError);
 
     /* init thread core */
