@@ -55,6 +55,10 @@ class TestYJIT < Test::Unit::TestCase
     assert_compiles('-"foo" == -"bar"', insns: %i[opt_eq], result: false)
   end
 
+  def test_compile_set_and_get_global
+    assert_compiles('$foo = 123; $foo', insns: %i[setglobal], result: 123)
+  end
+
   def test_getlocal_with_level
     assert_compiles(<<~RUBY, insns: %i[getlocal opt_plus], result: [[7]])
       def foo(foo, bar)
