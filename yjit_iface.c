@@ -702,6 +702,11 @@ comments_for(rb_execution_context_t *ec, VALUE self, VALUE start_address, VALUE 
 static VALUE
 get_yjit_stats(rb_execution_context_t *ec, VALUE self)
 {
+    // Return Qnil if YJIT isn't enabled
+    if (cb == NULL) {
+        return Qnil;
+    }
+
     VALUE hash = rb_hash_new();
 
     RB_VM_LOCK_ENTER();
