@@ -462,7 +462,12 @@ class TestGc < Test::Unit::TestCase
       end
     end
     gen[100]
-    EnvUtil.suppress_warning {GC.start}
+    EnvUtil.suppress_warning do
+      1000.times do
+        break if result.size >= 2
+        GC.start
+      end
+    end
     skip "finalizers did not get run" if result.empty?
     assert_equal([:c1, :c2], result)
   end
@@ -488,7 +493,12 @@ class TestGc < Test::Unit::TestCase
       end
     end
     gen[100]
-    EnvUtil.suppress_warning {GC.start}
+    EnvUtil.suppress_warning do
+      1000.times do
+        break if @result.size >= 2
+        GC.start
+      end
+    end
     skip "finalizers did not get run" if @result.empty?
     assert_equal([:c1, :c2], @result)
   end
