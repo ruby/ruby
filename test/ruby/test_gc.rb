@@ -451,14 +451,17 @@ class TestGc < Test::Unit::TestCase
       result << :c2
       raise
     end
-    tap {
-      tap {
+    gen = proc do |depth|
+      if depth > 0
+        gen[depth-1]
+      else
         obj = Object.new
         ObjectSpace.define_finalizer(obj, c1)
         ObjectSpace.define_finalizer(obj, c2)
         obj = nil
-      }
-    }
+      end
+    end
+    gen[100]
     EnvUtil.suppress_warning {GC.start}
     skip "finalizers did not get run" if result.empty?
     assert_equal([:c1, :c2], result)
@@ -474,14 +477,17 @@ class TestGc < Test::Unit::TestCase
       @result << :c2
       raise
     end
-    tap {
-      tap {
+    gen = proc do |depth|
+      if depth > 0
+        gen[depth-1]
+      else
         obj = Object.new
         ObjectSpace.define_finalizer(obj, method(:c1))
         ObjectSpace.define_finalizer(obj, method(:c2))
         obj = nil
-      }
-    }
+      end
+    end
+    gen[100]
     EnvUtil.suppress_warning {GC.start}
     skip "finalizers did not get run" if @result.empty?
     assert_equal([:c1, :c2], @result)
