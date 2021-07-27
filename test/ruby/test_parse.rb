@@ -1090,7 +1090,7 @@ x = __ENCODING__
 
       v2 = <<~HEREDOC
         something
-        #{other = "/#{var}"}
+        #{_other = "/#{var}"}
       HEREDOC
 
       v3 = <<~HEREDOC
