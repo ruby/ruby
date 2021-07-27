@@ -2668,9 +2668,7 @@ rb_ary_length(VALUE ary)
 static VALUE
 rb_ary_empty_p(VALUE ary)
 {
-    if (RARRAY_LEN(ary) == 0)
-	return Qtrue;
-    return Qfalse;
+    return RBOOL(RARRAY_LEN(ary) == 0);
 }
 
 VALUE
