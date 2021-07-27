@@ -40,7 +40,6 @@ static VALUE r_cover_p(VALUE, VALUE, VALUE, VALUE);
 #define RANGE_SET_BEG(r, v) (RSTRUCT_SET(r, 0, v))
 #define RANGE_SET_END(r, v) (RSTRUCT_SET(r, 1, v))
 #define RANGE_SET_EXCL(r, v) (RSTRUCT_SET(r, 2, v))
-#define RBOOL(v) ((v) ? Qtrue : Qfalse)
 
 #define EXCL(r) RTEST(RANGE_EXCL(r))
 
