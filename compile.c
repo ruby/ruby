@@ -3456,11 +3456,11 @@ insn_set_specialized_instruction(rb_iseq_t *iseq, INSN *iobj, int insn_id)
     iobj->operand_size = insn_len(insn_id) - 1;
 
     if (insn_id == BIN(opt_neq)) {
-	VALUE *old_operands = iobj->operands;
+        VALUE original_ci = iobj->operands[0];
         iobj->operand_size = 2;
         iobj->operands = compile_data_calloc2(iseq, iobj->operand_size, sizeof(VALUE));
         iobj->operands[0] = (VALUE)new_callinfo(iseq, idEq, 1, 0, NULL, FALSE);
-        iobj->operands[1] = old_operands[0];
+        iobj->operands[1] = original_ci;
     }
 
     return COMPILE_OK;
