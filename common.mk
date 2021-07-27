@@ -16724,6 +16724,7 @@ yjit_codegen.$(OBJEXT): $(top_srcdir)/internal/object.h
 yjit_codegen.$(OBJEXT): $(top_srcdir)/internal/serial.h
 yjit_codegen.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 yjit_codegen.$(OBJEXT): $(top_srcdir)/internal/string.h
+yjit_codegen.$(OBJEXT): $(top_srcdir)/internal/variable.h
 yjit_codegen.$(OBJEXT): $(top_srcdir)/internal/vm.h
 yjit_codegen.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 yjit_codegen.$(OBJEXT): {$(VPATH)}assert.h
@@ -16739,6 +16740,7 @@ yjit_codegen.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 yjit_codegen.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 yjit_codegen.$(OBJEXT): {$(VPATH)}builtin.h
 yjit_codegen.$(OBJEXT): {$(VPATH)}config.h
+yjit_codegen.$(OBJEXT): {$(VPATH)}constant.h
 yjit_codegen.$(OBJEXT): {$(VPATH)}darray.h
 yjit_codegen.$(OBJEXT): {$(VPATH)}debug_counter.h
 yjit_codegen.$(OBJEXT): {$(VPATH)}defines.h

@@ -1,3 +1,15 @@
+# Check that global variables work
+
+assert_equal 'string', %q{
+  $foo = "string"
+
+  def foo
+    $foo
+  end
+
+  foo
+}
+
 # Check that global tracepoints work
 assert_equal 'true', %q{
   def foo
