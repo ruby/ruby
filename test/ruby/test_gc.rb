@@ -442,65 +442,43 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_exception_in_finalizer_procs
-    result = []
+    assert_in_out_err(["-W0"], "#{<<~"begin;"}\n#{<<~'end;'}", %w[c1 c2])
     c1 = proc do
-      result << :c1
+      puts "c1"
       raise
     end
     c2 = proc do
-      result << :c2
+      puts "c2"
       raise
     end
-    gen = proc do |depth|
-      if depth > 0
-        gen[depth-1]
-      else
+    begin;
+      tap do
         obj = Object.new
         ObjectSpace.define_finalizer(obj, c1)
         ObjectSpace.define_finalizer(obj, c2)
         obj = nil
       end
-    end
-    gen[100]
-    EnvUtil.suppress_warning do
-      1000.times do
-        break if result.size >= 2
-        GC.start
-      end
-    end
-    skip "finalizers did not get run" if result.empty?
-    assert_equal([:c1, :c2], result)
+    end;
   end
 
   def test_exception_in_finalizer_method
-    @result = []
+    assert_in_out_err(["-W0"], "#{<<~"begin;"}\n#{<<~'end;'}", %w[c1 c2])
     def self.c1(x)
-      @result << :c1
+      puts "c1"
       raise
     end
     def self.c2(x)
-      @result << :c2
+      puts "c2"
       raise
     end
-    gen = proc do |depth|
-      if depth > 0
-        gen[depth-1]
-      else
+    begin;
+      tap do
         obj = Object.new
         ObjectSpace.define_finalizer(obj, method(:c1))
         ObjectSpace.define_finalizer(obj, method(:c2))
         obj = nil
       end
-    end
-    gen[100]
-    EnvUtil.suppress_warning do
-      1000.times do
-        break if @result.size >= 2
-        GC.start
-      end
-    end
-    skip "finalizers did not get run" if @result.empty?
-    assert_equal([:c1, :c2], @result)
+    end;
   end
 
   def test_object_ids_never_repeat
