@@ -100,6 +100,7 @@ require_relative 'uri/https'
 require_relative 'uri/ldap'
 require_relative 'uri/ldaps'
 require_relative 'uri/mailto'
+require_relative 'uri/ws'
 
 module URI
   INITIAL_SCHEMES = scheme_list
