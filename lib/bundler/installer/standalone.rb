@@ -31,7 +31,7 @@ module Bundler
           gem_path(path, spec).sub(version_dir, '#{ruby_engine}/#{ruby_version}')
           # This is a static string intentionally. It's interpolated at a later time.
         end
-      end.flatten
+      end.flatten.compact
     end
 
     def version_dir
