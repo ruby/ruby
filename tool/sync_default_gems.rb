@@ -312,6 +312,11 @@ def sync_default_gems(gem)
   when "set"
     sync_lib gem, upstream
     cp_r("#{upstream}/test", ".")
+  when "optparse"
+    sync_lib gem, upstream
+    rm_rf(%w[doc/optparse])
+    mkdir_p("doc/optparse")
+    cp_r("#{upstream}/doc/optparse", "doc")
   when "error_highlight"
     rm_rf(%w[lib/error_highlight lib/error_highlight.rb test/error_highlight])
     cp_r(Dir.glob("#{upstream}/lib/error_highlight*"), "lib")
