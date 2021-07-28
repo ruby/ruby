@@ -119,6 +119,18 @@ jit_peek_at_self(jitstate_t *jit, ctx_t *ctx)
     return jit->ec->cfp->self;
 }
 
+static VALUE
+jit_peek_at_local(jitstate_t *jit, ctx_t *ctx, int n)
+{
+    RUBY_ASSERT(jit_at_current_insn(jit));
+
+    int32_t local_table_size = jit->iseq->body->local_table_size;
+    RUBY_ASSERT(n < (int)jit->iseq->body->local_table_size);
+
+    const VALUE *ep = jit->ec->cfp->ep;
+    return ep[-VM_ENV_DATA_SIZE - local_table_size + n + 1];
+}
+
 // When we know a VALUE to be static, this returns an appropriate val_type_t
 static val_type_t
 jit_type_of_value(VALUE val)
@@ -232,11 +244,70 @@ _add_comment(codeblock_t* cb, const char* comment_str)
 #define ADD_COMMENT(cb, comment) _add_comment((cb), (comment))
 yjit_comment_array_t yjit_code_comments;
 
+// Verify the ctx's types and mappings against the compile-time stack, self,
+// and locals.
+static void
+verify_ctx(jitstate_t *jit, ctx_t *ctx)
+{
+    // Only able to check types when at current insn
+    RUBY_ASSERT(jit_at_current_insn(jit));
+
+    VALUE self_val = jit_peek_at_self(jit, ctx);
+    if (type_diff(jit_type_of_value(self_val), ctx->self_type) == INT_MAX) {
+        rb_bug("verify_ctx: ctx type (%s) incompatible with actual value of self: %s", yjit_type_name(ctx->self_type), rb_obj_info(self_val));
+    }
+
+    for (int i = 0; i < ctx->stack_size && i < MAX_TEMP_TYPES; i++) {
+        temp_type_mapping_t learned = ctx_get_opnd_mapping(ctx, OPND_STACK(i));
+        VALUE val = jit_peek_at_stack(jit, ctx, i);
+        val_type_t detected = jit_type_of_value(val);
+
+        if (learned.mapping.kind == TEMP_SELF) {
+            if (self_val != val) {
+                rb_bug("verify_ctx: stack value was mapped to self, but values did not match\n"
+                        "  stack: %s\n"
+                        "  self: %s",
+                        rb_obj_info(val),
+                        rb_obj_info(self_val));
+            }
+        }
+
+        if (learned.mapping.kind == TEMP_LOCAL) {
+            int local_idx = learned.mapping.idx;
+            VALUE local_val = jit_peek_at_local(jit, ctx, local_idx);
+            if (local_val != val) {
+                rb_bug("verify_ctx: stack value was mapped to local, but values did not match\n"
+                        "  stack: %s\n"
+                        "  local %i: %s",
+                        rb_obj_info(val),
+                        local_idx,
+                        rb_obj_info(local_val));
+            }
+        }
+
+        if (type_diff(detected, learned.type) == INT_MAX) {
+            rb_bug("verify_ctx: ctx type (%s) incompatible with actual value on stack: %s", yjit_type_name(learned.type), rb_obj_info(val));
+        }
+    }
+
+    int32_t local_table_size = jit->iseq->body->local_table_size;
+    for (int i = 0; i < local_table_size && i < MAX_TEMP_TYPES; i++) {
+        val_type_t learned = ctx->local_types[i];
+        VALUE val = jit_peek_at_local(jit, ctx, i);
+        val_type_t detected = jit_type_of_value(val);
+
+        if (type_diff(detected, learned) == INT_MAX) {
+            rb_bug("verify_ctx: ctx type (%s) incompatible with actual value of local: %s", yjit_type_name(learned), rb_obj_info(val));
+        }
+    }
+}
+
 #else
 
 #define GEN_COUNTER_INC(cb, counter_name) ((void)0)
 #define COUNTED_EXIT(side_exit, counter_name) side_exit
 #define ADD_COMMENT(cb, comment) ((void)0)
+#define verify_ctx(jit, ctx) ((void)0)
 
 #endif // if RUBY_DEBUG
 
@@ -483,6 +554,11 @@ yjit_gen_block(block_t *block, rb_execution_context_t *ec)
         jit.insn_idx = insn_idx;
         jit.pc = pc;
         jit.opcode = opcode;
+
+        // Verify our existing assumption (DEBUG)
+        if (jit_at_current_insn(&jit)) {
+            verify_ctx(&jit, ctx);
+        }
 
         // Lookup the codegen function for this instruction
         codegen_fn gen_fn = gen_fns[opcode];
