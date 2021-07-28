@@ -270,6 +270,8 @@ void ctx_upgrade_opnd_type(ctx_t* ctx, insn_opnd_t opnd, val_type_t type);
 void ctx_set_local_type(ctx_t* ctx, size_t idx, val_type_t type);
 void ctx_clear_local_types(ctx_t* ctx);
 int ctx_diff(const ctx_t* src, const ctx_t* dst);
+int type_diff(val_type_t src, val_type_t dst);
+const char *yjit_type_name(val_type_t type);
 
 temp_type_mapping_t ctx_get_opnd_mapping(const ctx_t* ctx, insn_opnd_t opnd);
 void ctx_set_opnd_mapping(ctx_t* ctx, insn_opnd_t opnd, temp_type_mapping_t type_mapping);

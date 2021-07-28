@@ -33,6 +33,8 @@ ctx_stack_push_mapping(ctx_t* ctx, temp_type_mapping_t mapping)
         ctx->temp_types[ctx->stack_size] = mapping.type;
 
         RUBY_ASSERT(mapping.mapping.kind != TEMP_LOCAL || mapping.mapping.idx < MAX_LOCAL_TYPES);
+        RUBY_ASSERT(mapping.mapping.kind != TEMP_STACK || mapping.mapping.idx == 0);
+        RUBY_ASSERT(mapping.mapping.kind != TEMP_SELF || mapping.mapping.idx == 0);
     }
 
     ctx->stack_size += 1;
@@ -155,7 +157,6 @@ ctx_get_opnd_type(const ctx_t* ctx, insn_opnd_t opnd)
     rb_bug("unreachable");
 }
 
-int type_diff(val_type_t src, val_type_t dst);
 #define UPGRADE_TYPE(dest, src) do { \
     RUBY_ASSERT(type_diff((src), (dest)) != INT_MAX); \
     (dest) = (src); \
@@ -281,6 +282,44 @@ void ctx_clear_local_types(ctx_t* ctx)
         RUBY_ASSERT(mapping->kind == TEMP_STACK || mapping->kind == TEMP_SELF);
     }
     memset(&ctx->local_types, 0, sizeof(ctx->local_types));
+}
+
+/* The name of a type, for debugging */
+const char *
+yjit_type_name(val_type_t type)
+{
+    RUBY_ASSERT(!(type.is_imm && type.is_heap));
+
+    switch (type.type) {
+        case ETYPE_UNKNOWN:
+            if (type.is_imm) {
+                return "unknown immediate";
+            } else if (type.is_heap) {
+                return "unknown heap";
+            } else {
+                return "unknown";
+            }
+        case ETYPE_NIL:
+            return "nil";
+        case ETYPE_TRUE:
+            return "true";
+        case ETYPE_FALSE:
+            return "false";
+        case ETYPE_FIXNUM:
+            return "fixnum";
+        case ETYPE_FLONUM:
+            return "flonum";
+        case ETYPE_ARRAY:
+            return "array";
+        case ETYPE_HASH:
+            return "hash";
+        case ETYPE_SYMBOL:
+            return "symbol";
+        case ETYPE_STRING:
+            return "string";
+    }
+
+    UNREACHABLE_RETURN("");
 }
 
 /*
