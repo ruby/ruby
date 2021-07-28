@@ -259,13 +259,14 @@ void ctx_clear_local_types(ctx_t* ctx)
 {
     // When clearing local types we must detach any stack mappings to those
     // locals. Even if local values may have changed, stack values will not.
-    for (int i = 0; i < ctx->stack_size && i < MAX_LOCAL_TYPES; i++) {
+    for (int i = 0; i < MAX_TEMP_TYPES; i++) {
         temp_mapping_t *mapping = &ctx->temp_mapping[i];
         if (mapping->kind == TEMP_LOCAL) {
             RUBY_ASSERT(mapping->idx < MAX_LOCAL_TYPES);
             ctx->temp_types[i] = ctx->local_types[mapping->idx];
             *mapping = MAP_STACK;
         }
+        RUBY_ASSERT(mapping->kind == TEMP_STACK || mapping->kind == TEMP_SELF);
     }
     memset(&ctx->local_types, 0, sizeof(ctx->local_types));
 }
