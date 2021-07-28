@@ -67,10 +67,10 @@
 
 #include "internal.h"
 #include "internal/string.h"
-#include "internal/util.h"
 #include "internal/vm.h"
 #include "ruby/encoding.h"
 #include "ruby/ruby.h"
+#include "ruby/util.h"
 #include "timev.h"
 
 /* defaults: season to taste */

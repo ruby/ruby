@@ -28,9 +28,9 @@
 #include "internal/object.h"
 #include "internal/sanitizers.h"
 #include "internal/symbol.h"
-#include "internal/util.h"
 #include "ruby/encoding.h"
 #include "ruby/re.h"
+#include "ruby/util.h"
 
 #define BIT_DIGITS(N)   (((N)*146)/485 + 1)  /* log2(10) =~ 146/485 */
 

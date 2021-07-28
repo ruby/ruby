@@ -9,8 +9,8 @@
 #include "internal.h"
 #include "internal/hash.h"
 #include "internal/variable.h"
-#include "internal/util.h"
 #include "ruby/memory_view.h"
+#include "ruby/util.h"
 #include "vm_sync.h"
 
 #if SIZEOF_INTPTR_T == SIZEOF_LONG_LONG

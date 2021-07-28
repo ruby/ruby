@@ -19,6 +19,10 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
 #define DECIMAL_SIZE_OF_BITS(n) (((n) * 3010 + 9998) / 9999)
 /* an approximation of ceil(n * log10(2)), up to 65536 at least */
 
+RUBY_EXTERN const signed char ruby_digit36_to_number_table[];
+RUBY_EXTERN const char ruby_hexdigits[];
+
+unsigned long ruby_scan_digits(const char *str, ssize_t len, int base, size_t *retlen, int *overflow);
 #define scan_oct(s,l,e) ((int)ruby_scan_oct((s),(l),(e)))
 unsigned long ruby_scan_oct(const char *, size_t, size_t *);
 #define scan_hex(s,l,e) ((int)ruby_scan_hex((s),(l),(e)))

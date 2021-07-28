@@ -36,7 +36,6 @@
 #include "internal/numeric.h"
 #include "internal/object.h"
 #include "internal/sanitizers.h"
-#include "internal/util.h"
 #include "internal/variable.h"
 #include "internal/warnings.h"
 #include "ruby/thread.h"
