@@ -355,9 +355,22 @@ int ctx_diff(const ctx_t* src, const ctx_t* dst)
     // For each value on the temp stack
     for (size_t i = 0; i < src->stack_size; ++i)
     {
-        val_type_t t_src = ctx_get_opnd_type(src, OPND_STACK(i));
-        val_type_t t_dst = ctx_get_opnd_type(dst, OPND_STACK(i));
-        int temp_diff = type_diff(t_src, t_dst);
+        temp_type_mapping_t m_src = ctx_get_opnd_mapping(src, OPND_STACK(i));
+        temp_type_mapping_t m_dst = ctx_get_opnd_mapping(dst, OPND_STACK(i));
+
+        if (m_dst.mapping.kind != m_src.mapping.kind) {
+            if (m_dst.mapping.kind == TEMP_STACK) {
+                // We can safely drop information about the source of the temp
+                // stack operand.
+                diff += 1;
+            } else {
+                return INT_MAX;
+            }
+        } else if (m_dst.mapping.idx != m_src.mapping.idx) {
+            return INT_MAX;
+        }
+
+        int temp_diff = type_diff(m_src.type, m_dst.type);
 
         if (temp_diff == INT_MAX)
             return INT_MAX;
