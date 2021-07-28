@@ -561,7 +561,7 @@ end.join
   end
 
   def test_ensure_after_nomemoryerror
-    assert_separately([], "'a' * 1_000_000_000_000_000_000")
+    assert_separately([], "$_ = 'a' * 1_000_000_000_000_000_000")
   rescue NoMemoryError
     assert_raise(NoMemoryError) do
       assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
