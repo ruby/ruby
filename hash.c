@@ -2356,7 +2356,7 @@ rb_hash_stlike_delete(VALUE hash, st_data_t *pkey, st_data_t *pval)
 }
 
 /*
- * delete a specified entry a given key.
+ * delete a specified entry by a given key.
  * if there is the corresponding entry, return a value of the entry.
  * if there is no corresponding entry, return Qundef.
  */
