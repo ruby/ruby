@@ -128,9 +128,17 @@ jit_type_of_value(VALUE val)
             return TYPE_FIXNUM;
         } else if (NIL_P(val)) {
             return TYPE_NIL;
+        } else if (val == Qtrue) {
+            return TYPE_TRUE;
+        } else if (val == Qfalse) {
+            return TYPE_FALSE;
+        } else if (STATIC_SYM_P(val)) {
+            return TYPE_STATIC_SYMBOL;
+        } else if (FLONUM_P(val)) {
+            return TYPE_FLONUM;
         } else {
-            // generic immediate
-            return TYPE_IMM;
+            RUBY_ASSERT(false);
+            UNREACHABLE_RETURN(TYPE_IMM);
         }
     } else {
         switch (BUILTIN_TYPE(val)) {
