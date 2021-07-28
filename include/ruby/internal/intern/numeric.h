@@ -36,6 +36,7 @@ VALUE rb_num_coerce_bit(VALUE, VALUE, ID);
 VALUE rb_num2fix(VALUE);
 VALUE rb_fix2str(VALUE, int);
 CONSTFUNC(VALUE rb_dbl_cmp(double, double));
+RUBY_EXTERN VALUE rb_int_positive_pow(long x, unsigned long y);
 
 RBIMPL_SYMBOL_EXPORT_END()
 
