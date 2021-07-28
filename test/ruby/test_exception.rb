@@ -583,6 +583,9 @@ end.join
   rescue RangeError
     # MingW can raise RangeError instead of NoMemoryError,
     # so we cannot test this case.
+  rescue Timeout::Error
+    # Solaris 11 CI times out instead of raising NoMemoryError,
+    # so we cannot test this case.
   end
 
   def test_equal
