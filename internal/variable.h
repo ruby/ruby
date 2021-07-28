@@ -44,7 +44,6 @@ void rb_mv_generic_ivar(VALUE src, VALUE dst);
 VALUE rb_const_missing(VALUE klass, VALUE name);
 int rb_class_ivar_set(VALUE klass, ID vid, VALUE value);
 void rb_iv_tbl_copy(VALUE dst, VALUE src);
-void rb_deprecate_constant(VALUE mod, const char *name);
 RUBY_SYMBOL_EXPORT_END
 
 MJIT_SYMBOL_EXPORT_BEGIN
