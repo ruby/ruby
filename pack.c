@@ -21,8 +21,8 @@
 #include "internal/bits.h"
 #include "internal/string.h"
 #include "internal/symbol.h"
-#include "internal/util.h"
 #include "internal/variable.h"
+#include "ruby/util.h"
 
 #include "builtin.h"
 

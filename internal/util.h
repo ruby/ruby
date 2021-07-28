@@ -23,9 +23,6 @@ char *ruby_hdtoa(double d, const char *xdigs, int ndigits, int *decpt, int *sign
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* util.c (export) */
-extern const signed char ruby_digit36_to_number_table[];
-extern const char ruby_hexdigits[];
-extern unsigned long ruby_scan_digits(const char *str, ssize_t len, int base, size_t *retlen, int *overflow);
 RUBY_SYMBOL_EXPORT_END
 
 #endif /* INTERNAL_UTIL_H */
