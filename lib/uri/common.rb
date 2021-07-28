@@ -91,8 +91,8 @@ module URI
     const_name = scheme.to_s.upcase
 
     uri_class = INITIAL_SCHEMES[const_name]
-    if !uri_class && !const_name.empty? && Schemes.const_defined?(const_name, false)
-      uri_class = Schemes.const_get(const_name, false)
+    uri_class ||= if /\A[A-Z]\w*\z/.match?(const_name) && Schemes.const_defined?(const_name, false)
+      Schemes.const_get(const_name, false)
     end
     uri_class ||= default
 
