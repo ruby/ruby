@@ -68,8 +68,13 @@ module URI
   end
   private_constant :Schemes
 
+  #
+  # Register the given +klass+ to be instantiated when parsing URLs with the given +scheme+.
+  # Note that currently only schemes which after .upcase are valid constant names
+  # can be registered (no -/+/. allowed).
+  #
   def self.register_scheme(scheme, klass)
-    Schemes.const_set(scheme, klass)
+    Schemes.const_set(scheme.to_s.upcase, klass)
   end
 
   # Returns a Hash of the defined schemes.

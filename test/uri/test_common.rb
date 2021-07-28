@@ -41,18 +41,52 @@ class TestCommon < Test::Unit::TestCase
     RUBY
   end
 
+  DEFAULT_SCHEMES = ["FILE", "FTP", "HTTP", "HTTPS", "LDAP", "LDAPS", "MAILTO", "WS", "WSS"].sort.freeze
+
   def test_register_scheme
-    assert_equal(["FILE", "FTP", "HTTP", "HTTPS", "LDAP", "LDAPS", "MAILTO", "WS", "WSS"].sort, URI.scheme_list.keys.sort)
+    assert_equal(DEFAULT_SCHEMES, URI.scheme_list.keys.sort)
 
     foobar = Class.new(URI::Generic)
     URI.register_scheme 'FOOBAR', foobar
     begin
-      assert_equal(["FILE", "FTP", "HTTP", "HTTPS", "LDAP", "LDAPS", "MAILTO", "WS", "WSS", "FOOBAR"].sort, URI.scheme_list.keys.sort)
+      assert_include(URI.scheme_list.keys, "FOOBAR")
+      assert_equal foobar, URI.parse('foobar://localhost').class
     ensure
       URI.const_get(:Schemes).send(:remove_const, :FOOBAR)
     end
 
-    assert_equal(["FILE", "FTP", "HTTP", "HTTPS", "LDAP", "LDAPS", "MAILTO", "WS", "WSS"].sort, URI.scheme_list.keys.sort)
+    assert_equal(DEFAULT_SCHEMES, URI.scheme_list.keys.sort)
+  end
+
+  def test_register_scheme_lowercase
+    assert_equal(DEFAULT_SCHEMES, URI.scheme_list.keys.sort)
+
+    foobar = Class.new(URI::Generic)
+    URI.register_scheme 'foobarlower', foobar
+    begin
+      assert_include(URI.scheme_list.keys, "FOOBARLOWER")
+      assert_equal foobar, URI.parse('foobarlower://localhost').class
+    ensure
+      URI.const_get(:Schemes).send(:remove_const, :FOOBARLOWER)
+    end
+
+    assert_equal(DEFAULT_SCHEMES, URI.scheme_list.keys.sort)
+  end
+
+  def test_register_scheme_with_symbols
+    # Valid schemes from https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml
+    some_uri_class = Class.new(URI::Generic)
+    assert_raise(NameError) { URI.register_scheme 'ms-search', some_uri_class }
+    assert_raise(NameError) { URI.register_scheme 'microsoft.windows.camera', some_uri_class }
+    assert_raise(NameError) { URI.register_scheme 'coaps+ws', some_uri_class }
+
+    ms_search_class = Class.new(URI::Generic)
+    URI.register_scheme 'MS_SEARCH', ms_search_class
+    begin
+      assert_equal URI::Generic, URI.parse('ms-search://localhost').class
+    ensure
+      URI.const_get(:Schemes).send(:remove_const, :MS_SEARCH)
+    end
   end
 
   def test_regexp
