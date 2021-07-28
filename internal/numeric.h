@@ -97,7 +97,6 @@ static inline bool FLOAT_ZERO_P(VALUE num);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* numeric.c (export) */
-VALUE rb_int_positive_pow(long x, unsigned long y);
 RUBY_SYMBOL_EXPORT_END
 
 MJIT_SYMBOL_EXPORT_BEGIN
