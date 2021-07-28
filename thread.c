@@ -632,7 +632,6 @@ thread_cleanup_func_before_exec(void *th_ptr)
 {
     rb_thread_t *th = th_ptr;
     th->status = THREAD_KILLED;
-
     // The thread stack doesn't exist in the forked process:
     th->ec->machine.stack_start = th->ec->machine.stack_end = NULL;
 
@@ -818,9 +817,6 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
 
     thread_debug("thread start (get lock): %p\n", (void *)th);
 
-    // Ensure that we are not joinable.
-    VM_ASSERT(th->value == Qundef);
-
     EC_PUSH_TAG(th->ec);
 
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
@@ -861,12 +857,6 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
         th->value = Qnil;
     }
 
-    // The thread is effectively finished and can be joined.
-    VM_ASSERT(th->value != Qundef);
-
-    rb_threadptr_join_list_wakeup(th);
-    rb_threadptr_unlock_all_locking_mutexes(th);
-
     if (th->invoke_type == thread_invoke_type_ractor_proc) {
         rb_thread_terminate_all(th);
         rb_ractor_teardown(th->ec);
@@ -883,6 +873,9 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
         /* treat with normal error object */
         rb_threadptr_raise(ractor_main_th, 1, &errinfo);
     }
+
+    rb_threadptr_join_list_wakeup(th);
+    rb_threadptr_unlock_all_locking_mutexes(th);
 
     EC_POP_TAG();
 
@@ -1160,12 +1153,6 @@ remove_from_join_list(VALUE arg)
 
 static rb_hrtime_t *double2hrtime(rb_hrtime_t *, double);
 
-static int
-thread_finished(rb_thread_t *th)
-{
-    return th->status == THREAD_KILLED || th->value != Qundef;
-}
-
 static VALUE
 thread_join_sleep(VALUE arg)
 {
@@ -1192,7 +1179,7 @@ thread_join_sleep(VALUE arg)
         end = rb_hrtime_add(*limit, rb_hrtime_now());
     }
 
-    while (!thread_finished(target_th)) {
+    while (target_th->status != THREAD_KILLED) {
         VALUE scheduler = rb_fiber_scheduler_current();
 
         if (scheduler != Qnil) {

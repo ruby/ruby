@@ -3081,8 +3081,6 @@ th_init(rb_thread_t *th, VALUE self)
     th->thread_id_string[0] = '\0';
 #endif
 
-    th->value = Qundef;
-
 #if OPT_CALL_THREADED_CODE
     th->retval = Qundef;
 #endif
@@ -3095,17 +3093,16 @@ static VALUE
 ruby_thread_init(VALUE self)
 {
     rb_thread_t *th = GET_THREAD();
-    rb_thread_t *target_th = rb_thread_ptr(self);
+    rb_thread_t *targe_th = rb_thread_ptr(self);
     rb_vm_t *vm = th->vm;
 
-    target_th->vm = vm;
-    th_init(target_th, self);
+    targe_th->vm = vm;
+    th_init(targe_th, self);
 
-    target_th->top_wrapper = 0;
-    target_th->top_self = rb_vm_top_self();
-    target_th->ec->root_svar = Qfalse;
-    target_th->ractor = th->ractor;
-
+    targe_th->top_wrapper = 0;
+    targe_th->top_self = rb_vm_top_self();
+    targe_th->ec->root_svar = Qfalse;
+    targe_th->ractor = th->ractor;
     return self;
 }
 
