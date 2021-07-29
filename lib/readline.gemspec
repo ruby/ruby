@@ -30,6 +30,4 @@ Gem::Specification.new do |spec|
   EOM
 
   spec.add_runtime_dependency 'reline'
-  spec.add_development_dependency 'bundler'
-  spec.add_development_dependency 'rake'
 end
