@@ -662,7 +662,7 @@ rb_encdb_dummy(const char *name)
 static VALUE
 enc_dummy_p(VALUE enc)
 {
-    return ENC_DUMMY_P(must_encoding(enc)) ? Qtrue : Qfalse;
+    return RBOOL(ENC_DUMMY_P(must_encoding(enc)));
 }
 
 /*
@@ -678,7 +678,7 @@ enc_dummy_p(VALUE enc)
 static VALUE
 enc_ascii_compatible_p(VALUE enc)
 {
-    return rb_enc_asciicompat(must_encoding(enc)) ? Qtrue : Qfalse;
+    return RBOOL(rb_enc_asciicompat(must_encoding(enc)));
 }
 
 /*
