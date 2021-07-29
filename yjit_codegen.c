@@ -149,7 +149,7 @@ jit_type_of_value(VALUE val)
 
 // Save the incremented PC on the CFP
 // This is necessary when calleees can raise or allocate
-void
+static void
 jit_save_pc(jitstate_t* jit, x86opnd_t scratch_reg)
 {
     mov(cb, scratch_reg, const_ptr_opnd(jit->pc + insn_len(jit->opcode)));
@@ -160,7 +160,7 @@ jit_save_pc(jitstate_t* jit, x86opnd_t scratch_reg)
 // This realigns the interpreter SP with the JIT SP
 // Note: this will change the current value of REG_SP,
 //       which could invalidate memory operands
-void
+static void
 jit_save_sp(jitstate_t* jit, ctx_t* ctx)
 {
     if (ctx->sp_offset != 0) {
@@ -3431,6 +3431,10 @@ gen_getglobal(jitstate_t* jit, ctx_t* ctx)
 {
     ID gid = jit_get_arg(jit, 0);
 
+    // Save the PC and SP because we might make a Ruby call for warning
+    jit_save_pc(jit, REG0);
+    jit_save_sp(jit, ctx);
+
     // Save YJIT registers
     yjit_save_regs(cb);
 
@@ -3451,6 +3455,11 @@ static codegen_status_t
 gen_setglobal(jitstate_t* jit, ctx_t* ctx)
 {
     ID gid = jit_get_arg(jit, 0);
+
+    // Save the PC and SP because we might make a Ruby call for
+    // Kernel#set_trace_var
+    jit_save_pc(jit, REG0);
+    jit_save_sp(jit, ctx);
 
     // Save YJIT registers
     yjit_save_regs(cb);
