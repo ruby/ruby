@@ -7,6 +7,19 @@ assert_equal 'string', %q{
   foo
 }
 
+# Check that exceptions work when setting global variables
+assert_equal 'rescued', %q{
+  def set_var
+    $var = 100
+  rescue
+    :rescued
+  end
+
+  set_var
+  trace_var(:$var) { raise }
+  set_var
+}
+
 # Check that global variables work
 assert_equal 'string', %q{
   $foo = "string"
@@ -16,6 +29,25 @@ assert_equal 'string', %q{
   end
 
   foo
+}
+
+# Check that exceptions work when getting global variable
+assert_equal 'rescued', %q{
+  module Warning
+    def warn(message)
+      raise
+    end
+  end
+
+  def get_var
+    $=
+  rescue
+    :rescued
+  end
+
+  $VERBOSE = true
+  get_var
+  get_var
 }
 
 # Check that global tracepoints work
