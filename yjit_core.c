@@ -163,7 +163,10 @@ int type_diff(val_type_t src, val_type_t dst);
 
 
 /**
-Set the type of an instruction operand
+Upgrade (or "learn") the type of an instruction operand
+This value must be compatible and at least as specific as the previously known type.
+If this value originated from self, or an lvar, the learned type will be
+propagated back to its source.
 */
 void ctx_upgrade_opnd_type(ctx_t* ctx, insn_opnd_t opnd, val_type_t type)
 {
@@ -197,6 +200,11 @@ void ctx_upgrade_opnd_type(ctx_t* ctx, insn_opnd_t opnd, val_type_t type)
     }
 }
 
+/*
+Get both the type and mapping (where the value originates) of an operand.
+This is can be used with ctx_stack_push_mapping or ctx_set_opnd_mapping to copy
+a stack value's type while maintaining the mapping.
+*/
 temp_type_mapping_t
 ctx_get_opnd_mapping(const ctx_t* ctx, insn_opnd_t opnd)
 {
@@ -223,6 +231,9 @@ ctx_get_opnd_mapping(const ctx_t* ctx, insn_opnd_t opnd)
     return type_mapping;
 }
 
+/*
+Overwrite both the type and mapping of a stack operand.
+*/
 void
 ctx_set_opnd_mapping(ctx_t* ctx, insn_opnd_t opnd, temp_type_mapping_t type_mapping)
 {
