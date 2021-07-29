@@ -2165,14 +2165,13 @@ rb_mod_private(int argc, VALUE *argv, VALUE module)
  *  methods.
  *
  *  This should only be used for methods that delegate keywords to another
- *  method, and only for backwards compatibility with Ruby versions before
- *  2.7.
+ *  method, and only for backwards compatibility with Ruby versions before 3.0.
+ *  See https://www.ruby-lang.org/en/news/2019/12/12/separation-of-positional-and-keyword-arguments-in-ruby-3-0/
+ *  for details on why +ruby2_keywords+ exists and when and how to use it.
  *
  *  This method will probably be removed at some point, as it exists only
- *  for backwards compatibility. As it does not exist in Ruby versions
- *  before 2.7, check that the module responds to this method before calling
- *  it. Also, be aware that if this method is removed, the behavior of the
- *  method will change so that it does not pass through keywords.
+ *  for backwards compatibility. As it does not exist in Ruby versions before
+ *  2.7, check that the module responds to this method before calling it:
  *
  *    module Mod
  *      def foo(meth, *args, &block)
@@ -2180,6 +2179,10 @@ rb_mod_private(int argc, VALUE *argv, VALUE module)
  *      end
  *      ruby2_keywords(:foo) if respond_to?(:ruby2_keywords, true)
  *    end
+ *
+ *  However, be aware that if the +ruby2_keywords+ method is removed, the
+ *  behavior of the +foo+ method using the above approach will change so that
+ *  the method does not pass through keywords.
  */
 
 static VALUE
