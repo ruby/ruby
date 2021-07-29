@@ -594,8 +594,7 @@ module TestNetHTTP_version_1_1_methods
       req.body_stream = StringIO.new(data)
 
       th = Thread.new do
-        err = !windows? ? Net::WriteTimeout : Net::ReadTimeout
-        assert_raise(err) { conn.request(req) }
+        assert_raise(Net::WriteTimeout) { conn.request(req) }
       end
       assert th.join(10)
     }
