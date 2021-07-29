@@ -25,8 +25,6 @@ describe "Random#bytes" do
   end
 end
 
-ruby_version_is "2.6" do
-  describe "Random.bytes" do
-    it_behaves_like :random_bytes, :bytes, Random
-  end
+describe "Random.bytes" do
+  it_behaves_like :random_bytes, :bytes, Random
 end

@@ -63,8 +63,9 @@ module NetHTTPSpecs
     end
 
     def start_server
+      bind_address = platform_is(:windows) ? "localhost" : "127.0.0.1"
       server_config = {
-        BindAddress: "localhost",
+        BindAddress: bind_address,
         Port: 0,
         Logger: WEBrick::Log.new(NullWriter.new),
         AccessLog: [],

@@ -55,6 +55,7 @@
 #define rb_catch(tag, func, data) rb_catch(tag, RUBY_METHOD_FUNC(func), data)
 #define rb_catch_obj(tag, func, data) rb_catch_obj(tag, RUBY_METHOD_FUNC(func), data)
 #define rb_proc_new(fn, arg) rb_proc_new(RUBY_METHOD_FUNC(fn), arg)
+#define rb_fiber_new(fn, arg) rb_fiber_new(RUBY_METHOD_FUNC(fn), arg)
 #define rb_thread_create(fn, arg) rb_thread_create(RUBY_METHOD_FUNC(fn), arg)
 #define rb_define_hooked_variable(name, var, getter, setter) rb_define_hooked_variable(name, var, RUBY_METHOD_FUNC(getter), (void (*)(...))setter)
 #endif

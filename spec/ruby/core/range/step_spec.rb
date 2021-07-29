@@ -282,98 +282,96 @@ describe "Range#step" do
     end
   end
 
-  ruby_version_is "2.6" do
-    describe "with an endless range" do
-      describe "and Integer values" do
-        it "yield Integer values incremented by 1 when not passed a step" do
-          eval("(-2..)").step { |x| break if x > 2; ScratchPad << x }
-          ScratchPad.recorded.should eql([-2, -1, 0, 1, 2])
+  describe "with an endless range" do
+    describe "and Integer values" do
+      it "yield Integer values incremented by 1 when not passed a step" do
+        eval("(-2..)").step { |x| break if x > 2; ScratchPad << x }
+        ScratchPad.recorded.should eql([-2, -1, 0, 1, 2])
 
-          ScratchPad.record []
-          eval("(-2...)").step { |x| break if x > 2; ScratchPad << x }
-          ScratchPad.recorded.should eql([-2, -1, 0, 1, 2])
-        end
-
-        it "yields Integer values incremented by an Integer step" do
-          eval("(-5..)").step(2) { |x| break if x > 3; ScratchPad << x }
-          ScratchPad.recorded.should eql([-5, -3, -1, 1, 3])
-
-          ScratchPad.record []
-          eval("(-5...)").step(2) { |x| break if x > 3; ScratchPad << x }
-          ScratchPad.recorded.should eql([-5, -3, -1, 1, 3])
-        end
-
-        it "yields Float values incremented by a Float step" do
-          eval("(-2..)").step(1.5) { |x| break if x > 1.0; ScratchPad << x }
-          ScratchPad.recorded.should eql([-2.0, -0.5, 1.0])
-
-          ScratchPad.record []
-          eval("(-2..)").step(1.5) { |x| break if x > 1.0; ScratchPad << x }
-          ScratchPad.recorded.should eql([-2.0, -0.5, 1.0])
-        end
+        ScratchPad.record []
+        eval("(-2...)").step { |x| break if x > 2; ScratchPad << x }
+        ScratchPad.recorded.should eql([-2, -1, 0, 1, 2])
       end
 
-      describe "and Float values" do
-        it "yields Float values incremented by 1 and less than end when not passed a step" do
-          eval("(-2.0..)").step { |x| break if x > 1.5; ScratchPad << x }
-          ScratchPad.recorded.should eql([-2.0, -1.0, 0.0, 1.0])
+      it "yields Integer values incremented by an Integer step" do
+        eval("(-5..)").step(2) { |x| break if x > 3; ScratchPad << x }
+        ScratchPad.recorded.should eql([-5, -3, -1, 1, 3])
 
-          ScratchPad.record []
-          eval("(-2.0...)").step { |x| break if x > 1.5; ScratchPad << x }
-          ScratchPad.recorded.should eql([-2.0, -1.0, 0.0, 1.0])
-        end
-
-        it "yields Float values incremented by an Integer step" do
-          eval("(-5.0..)").step(2) { |x| break if x > 3.5; ScratchPad << x }
-          ScratchPad.recorded.should eql([-5.0, -3.0, -1.0, 1.0, 3.0])
-
-          ScratchPad.record []
-          eval("(-5.0...)").step(2) { |x| break if x > 3.5; ScratchPad << x }
-          ScratchPad.recorded.should eql([-5.0, -3.0, -1.0, 1.0, 3.0])
-        end
-
-        it "yields Float values incremented by a Float step" do
-          eval("(-1.0..)").step(0.5) { |x| break if x > 0.6; ScratchPad << x }
-          ScratchPad.recorded.should eql([-1.0, -0.5, 0.0, 0.5])
-
-          ScratchPad.record []
-          eval("(-1.0...)").step(0.5) { |x| break if x > 0.6; ScratchPad << x }
-          ScratchPad.recorded.should eql([-1.0, -0.5, 0.0, 0.5])
-        end
-
-        it "handles infinite values at the start" do
-          eval("(-Float::INFINITY..)").step(2) { |x| ScratchPad << x; break if ScratchPad.recorded.size == 3 }
-          ScratchPad.recorded.should eql([-Float::INFINITY, -Float::INFINITY, -Float::INFINITY])
-
-          ScratchPad.record []
-          eval("(-Float::INFINITY...)").step(2) { |x| ScratchPad << x; break if ScratchPad.recorded.size == 3 }
-          ScratchPad.recorded.should eql([-Float::INFINITY, -Float::INFINITY, -Float::INFINITY])
-        end
+        ScratchPad.record []
+        eval("(-5...)").step(2) { |x| break if x > 3; ScratchPad << x }
+        ScratchPad.recorded.should eql([-5, -3, -1, 1, 3])
       end
 
-      describe "and String values" do
-        it "yields String values incremented by #succ and less than or equal to end when not passed a step" do
-          eval("('A'..)").step { |x| break if x > "D"; ScratchPad << x }
-          ScratchPad.recorded.should == ["A", "B", "C", "D"]
+      it "yields Float values incremented by a Float step" do
+        eval("(-2..)").step(1.5) { |x| break if x > 1.0; ScratchPad << x }
+        ScratchPad.recorded.should eql([-2.0, -0.5, 1.0])
 
-          ScratchPad.record []
-          eval("('A'...)").step { |x| break if x > "D"; ScratchPad << x }
-          ScratchPad.recorded.should == ["A", "B", "C", "D"]
-        end
+        ScratchPad.record []
+        eval("(-2..)").step(1.5) { |x| break if x > 1.0; ScratchPad << x }
+        ScratchPad.recorded.should eql([-2.0, -0.5, 1.0])
+      end
+    end
 
-        it "yields String values incremented by #succ called Integer step times" do
-          eval("('A'..)").step(2) { |x| break if x > "F"; ScratchPad << x }
-          ScratchPad.recorded.should == ["A", "C", "E"]
+    describe "and Float values" do
+      it "yields Float values incremented by 1 and less than end when not passed a step" do
+        eval("(-2.0..)").step { |x| break if x > 1.5; ScratchPad << x }
+        ScratchPad.recorded.should eql([-2.0, -1.0, 0.0, 1.0])
 
-          ScratchPad.record []
-          eval("('A'...)").step(2) { |x| break if x > "F"; ScratchPad << x }
-          ScratchPad.recorded.should == ["A", "C", "E"]
-        end
+        ScratchPad.record []
+        eval("(-2.0...)").step { |x| break if x > 1.5; ScratchPad << x }
+        ScratchPad.recorded.should eql([-2.0, -1.0, 0.0, 1.0])
+      end
 
-        it "raises a TypeError when passed a Float step" do
-          -> { eval("('A'..)").step(2.0) { } }.should raise_error(TypeError)
-          -> { eval("('A'...)").step(2.0) { } }.should raise_error(TypeError)
-        end
+      it "yields Float values incremented by an Integer step" do
+        eval("(-5.0..)").step(2) { |x| break if x > 3.5; ScratchPad << x }
+        ScratchPad.recorded.should eql([-5.0, -3.0, -1.0, 1.0, 3.0])
+
+        ScratchPad.record []
+        eval("(-5.0...)").step(2) { |x| break if x > 3.5; ScratchPad << x }
+        ScratchPad.recorded.should eql([-5.0, -3.0, -1.0, 1.0, 3.0])
+      end
+
+      it "yields Float values incremented by a Float step" do
+        eval("(-1.0..)").step(0.5) { |x| break if x > 0.6; ScratchPad << x }
+        ScratchPad.recorded.should eql([-1.0, -0.5, 0.0, 0.5])
+
+        ScratchPad.record []
+        eval("(-1.0...)").step(0.5) { |x| break if x > 0.6; ScratchPad << x }
+        ScratchPad.recorded.should eql([-1.0, -0.5, 0.0, 0.5])
+      end
+
+      it "handles infinite values at the start" do
+        eval("(-Float::INFINITY..)").step(2) { |x| ScratchPad << x; break if ScratchPad.recorded.size == 3 }
+        ScratchPad.recorded.should eql([-Float::INFINITY, -Float::INFINITY, -Float::INFINITY])
+
+        ScratchPad.record []
+        eval("(-Float::INFINITY...)").step(2) { |x| ScratchPad << x; break if ScratchPad.recorded.size == 3 }
+        ScratchPad.recorded.should eql([-Float::INFINITY, -Float::INFINITY, -Float::INFINITY])
+      end
+    end
+
+    describe "and String values" do
+      it "yields String values incremented by #succ and less than or equal to end when not passed a step" do
+        eval("('A'..)").step { |x| break if x > "D"; ScratchPad << x }
+        ScratchPad.recorded.should == ["A", "B", "C", "D"]
+
+        ScratchPad.record []
+        eval("('A'...)").step { |x| break if x > "D"; ScratchPad << x }
+        ScratchPad.recorded.should == ["A", "B", "C", "D"]
+      end
+
+      it "yields String values incremented by #succ called Integer step times" do
+        eval("('A'..)").step(2) { |x| break if x > "F"; ScratchPad << x }
+        ScratchPad.recorded.should == ["A", "C", "E"]
+
+        ScratchPad.record []
+        eval("('A'...)").step(2) { |x| break if x > "F"; ScratchPad << x }
+        ScratchPad.recorded.should == ["A", "C", "E"]
+      end
+
+      it "raises a TypeError when passed a Float step" do
+        -> { eval("('A'..)").step(2.0) { } }.should raise_error(TypeError)
+        -> { eval("('A'...)").step(2.0) { } }.should raise_error(TypeError)
       end
     end
   end
@@ -416,24 +414,7 @@ describe "Range#step" do
           end
         end
 
-        ruby_version_is ""..."2.6" do
-          it "raises an ArgumentError if step is 0" do
-            enum = (-1..1).step(0)
-            -> { enum.size }.should raise_error(ArgumentError)
-          end
-
-          it "raises an ArgumentError if step is 0.0" do
-            enum = (-1..1).step(0.0)
-            -> { enum.size }.should raise_error(ArgumentError)
-          end
-
-          it "raises an ArgumentError if step is negative" do
-            enum = (-1..1).step(-2)
-            -> {  enum.size }.should raise_error(ArgumentError)
-          end
-        end
-
-        ruby_version_is "2.6"..."3.0" do
+        ruby_version_is ""..."3.0" do
           it "returns Float::INFINITY for zero step" do
             (-1..1).step(0).size.should == Float::INFINITY
             (-1..1).step(0.0).size.should == Float::INFINITY
@@ -453,11 +434,9 @@ describe "Range#step" do
           (-5...5).step(2).size.should == 5
         end
 
-        ruby_version_is "2.6" do
-          it "returns the ceil of range size divided by the number of steps even if step is negative" do
-            (-1..1).step(-1).size.should == 0
-            (1..-1).step(-1).size.should == 3
-          end
+        it "returns the ceil of range size divided by the number of steps even if step is negative" do
+          (-1..1).step(-1).size.should == 0
+          (1..-1).step(-1).size.should == 3
         end
 
         it "returns the correct number of steps when one of the arguments is a float" do
@@ -496,23 +475,15 @@ describe "Range#step" do
       end
 
       describe "type" do
-        ruby_version_is ""..."2.6" do
-          it "returns an instance of Enumerator" do
-            (1..10).step.class.should == Enumerator
+        context "when both begin and end are numerics" do
+          it "returns an instance of Enumerator::ArithmeticSequence" do
+            (1..10).step.class.should == Enumerator::ArithmeticSequence
           end
         end
 
-        ruby_version_is "2.6" do
-          context "when both begin and end are numerics" do
-            it "returns an instance of Enumerator::ArithmeticSequence" do
-              (1..10).step.class.should == Enumerator::ArithmeticSequence
-            end
-          end
-
-          context "when begin and end are not numerics" do
-            it "returns an instance of Enumerator" do
-              ("a".."z").step.class.should == Enumerator
-            end
+        context "when begin and end are not numerics" do
+          it "returns an instance of Enumerator" do
+            ("a".."z").step.class.should == Enumerator
           end
         end
       end

@@ -30,10 +30,8 @@ describe "SignalException.new" do
     -> { SignalException.new("NONEXISTENT") }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is "2.6" do
-    it "raises an exception with an invalid first argument type" do
-      -> { SignalException.new(Object.new) }.should raise_error(ArgumentError)
-    end
+  it "raises an exception with an invalid first argument type" do
+    -> { SignalException.new(Object.new) }.should raise_error(ArgumentError)
   end
 
   it "takes a signal symbol without SIG prefix as the first argument" do

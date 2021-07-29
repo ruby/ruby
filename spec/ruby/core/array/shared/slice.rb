@@ -521,18 +521,16 @@ describe :array_slice, shared: true do
     -> { "hello".send(@method, 0..bignum_value) }.should raise_error(RangeError)
   end
 
-  ruby_version_is "2.6" do
-    it "can accept endless ranges" do
-      a = [0, 1, 2, 3, 4, 5]
-      a.send(@method, eval("(2..)")).should == [2, 3, 4, 5]
-      a.send(@method, eval("(2...)")).should == [2, 3, 4, 5]
-      a.send(@method, eval("(-2..)")).should == [4, 5]
-      a.send(@method, eval("(-2...)")).should == [4, 5]
-      a.send(@method, eval("(9..)")).should == nil
-      a.send(@method, eval("(9...)")).should == nil
-      a.send(@method, eval("(-9..)")).should == nil
-      a.send(@method, eval("(-9...)")).should == nil
-    end
+  it "can accept endless ranges" do
+    a = [0, 1, 2, 3, 4, 5]
+    a.send(@method, eval("(2..)")).should == [2, 3, 4, 5]
+    a.send(@method, eval("(2...)")).should == [2, 3, 4, 5]
+    a.send(@method, eval("(-2..)")).should == [4, 5]
+    a.send(@method, eval("(-2...)")).should == [4, 5]
+    a.send(@method, eval("(9..)")).should == nil
+    a.send(@method, eval("(9...)")).should == nil
+    a.send(@method, eval("(-9..)")).should == nil
+    a.send(@method, eval("(-9...)")).should == nil
   end
 
   ruby_version_is "2.7" do

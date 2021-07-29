@@ -119,4 +119,10 @@ describe "String#scrub!" do
     input.scrub!
     input.instance_variable_get(:@a).should == 'b'
   end
+
+  it "accepts a frozen string as a replacement" do
+    input = "a\xE2"
+    input.scrub!('.'.freeze)
+    input.should == 'a.'
+  end
 end

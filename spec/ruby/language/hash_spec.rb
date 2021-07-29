@@ -58,11 +58,16 @@ describe "Hash literal" do
     }.should complain(/key 1000 is duplicated|duplicated key/)
     @h.keys.size.should == 1
     @h.should == {1000 => :foo}
-    -> {
-      @h = eval "{1.0 => :bar, 1.0 => :foo}"
-    }.should complain(/key 1.0 is duplicated|duplicated key/)
-    @h.keys.size.should == 1
-    @h.should == {1.0 => :foo}
+  end
+
+  ruby_version_is "3.1" do
+    it "checks duplicated float keys on initialization" do
+      -> {
+        @h = eval "{1.0 => :bar, 1.0 => :foo}"
+      }.should complain(/key 1.0 is duplicated|duplicated key/)
+      @h.keys.size.should == 1
+      @h.should == {1.0 => :foo}
+    end
   end
 
   it "accepts a hanging comma" do
