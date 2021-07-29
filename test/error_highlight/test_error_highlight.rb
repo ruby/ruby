@@ -1019,7 +1019,7 @@ _ _ ^^^^^
   end
 
   def test_no_final_newline
-    Tempfile.create(["error_highlight_test", ".rb"]) do |tmp|
+    Tempfile.create(["error_highlight_test", ".rb"], binmode: true) do |tmp|
       tmp << "1.time {}"
       tmp.close
 
