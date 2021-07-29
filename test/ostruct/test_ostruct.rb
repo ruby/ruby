@@ -375,7 +375,7 @@ class TC_OpenStruct < Test::Unit::TestCase
 
     o = OpenStruct.new(table: {foo: 42})
     assert_equal({foo: 42}, YAML.safe_load(YAML.dump(o), permitted_classes: [Symbol, OpenStruct]).table)
-  end
+  end if RUBY_VERSION >= '2.6'
 
   def test_yaml
     h = {name: "John Smith", age: 70, pension: 300.42}
@@ -386,7 +386,7 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_equal os1, os2
     assert_equal true, os1.eql?(os2)
     assert_equal 300.42, os2.pension
-  end
+  end if RUBY_VERSION >= '2.6'
 
   def test_marshal
     o = OpenStruct.new(name: "John Smith", age: 70, pension: 300.42)
