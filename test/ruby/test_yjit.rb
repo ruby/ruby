@@ -141,12 +141,24 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_ctx_different_mappings
+    # regression test simplified from URI::Generic#hostname=
+    assert_compiles(<<~'RUBY', frozen_string_literal: true)
+      def foo(v)
+        !(v&.start_with?('[')) && v&.index(':')
+      end
+
+      foo(nil)
+      foo("example.com")
+    RUBY
+  end
+
   def assert_no_exits(script)
     assert_compiles(script)
   end
 
   ANY = Object.new
-  def assert_compiles(test_script, insns: [], min_calls: 1, stdout: nil, exits: {}, result: ANY)
+  def assert_compiles(test_script, insns: [], min_calls: 1, stdout: nil, exits: {}, result: ANY, frozen_string_literal: nil)
     reset_stats = <<~RUBY
       YJIT.runtime_stats
       YJIT.reset_stats!
@@ -183,6 +195,7 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
 
     script = <<~RUBY
+      #{"# frozen_string_literal: true" if frozen_string_literal}
       _test_proc = proc {
         #{test_script}
       }
