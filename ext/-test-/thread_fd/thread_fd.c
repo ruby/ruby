@@ -8,7 +8,7 @@ thread_fd_close(VALUE ign, VALUE fd)
 }
 
 void
-Init_thread_fd_close(void)
+Init_thread_fd(void)
 {
     rb_define_singleton_method(rb_cIO, "thread_fd_close", thread_fd_close, 1);
 }
