@@ -23,6 +23,33 @@
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/value.h"
 
+#if defined(HAVE_POLL)
+#  ifdef _AIX
+#    define reqevents events
+#    define rtnevents revents
+#  endif
+#  include <poll.h>
+#  ifdef _AIX
+#    undef reqevents
+#    undef rtnevents
+#    undef events
+#    undef revents
+#  endif
+#  define RB_WAITFD_IN  POLLIN
+#  define RB_WAITFD_PRI POLLPRI
+#  define RB_WAITFD_OUT POLLOUT
+#else
+#  define RB_WAITFD_IN  0x001
+#  define RB_WAITFD_PRI 0x002
+#  define RB_WAITFD_OUT 0x004
+#endif
+
+typedef enum {
+    RUBY_IO_READABLE = RB_WAITFD_IN,
+    RUBY_IO_WRITABLE = RB_WAITFD_OUT,
+    RUBY_IO_PRIORITY = RB_WAITFD_PRI,
+} rb_io_event_t;
+
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 /* io.c */
@@ -64,6 +91,15 @@ int rb_cloexec_fcntl_dupfd(int fd, int minfd);
 #define RB_RESERVED_FD_P(fd) rb_reserved_fd_p(fd)
 void rb_update_max_fd(int fd);
 void rb_fd_fix_cloexec(int fd);
+
+//RBIMPL_ATTR_DEPRECATED(("use rb_io_maybe_wait_readable"))
+int rb_io_wait_readable(int fd);
+
+//RBIMPL_ATTR_DEPRECATED(("use rb_io_maybe_wait_writable"))
+int rb_io_wait_writable(int fd);
+
+//RBIMPL_ATTR_DEPRECATED(("use rb_io_wait"))
+int rb_wait_for_single_fd(int fd, int events, struct timeval *tv);
 
 RBIMPL_SYMBOL_EXPORT_END()
 

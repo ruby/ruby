@@ -20,32 +20,6 @@
 #endif
 
 #include <errno.h>
-#if defined(HAVE_POLL)
-#  ifdef _AIX
-#    define reqevents events
-#    define rtnevents revents
-#  endif
-#  include <poll.h>
-#  ifdef _AIX
-#    undef reqevents
-#    undef rtnevents
-#    undef events
-#    undef revents
-#  endif
-#  define RB_WAITFD_IN  POLLIN
-#  define RB_WAITFD_PRI POLLPRI
-#  define RB_WAITFD_OUT POLLOUT
-#else
-#  define RB_WAITFD_IN  0x001
-#  define RB_WAITFD_PRI 0x002
-#  define RB_WAITFD_OUT 0x004
-#endif
-
-typedef enum {
-    RUBY_IO_READABLE = RB_WAITFD_IN,
-    RUBY_IO_WRITABLE = RB_WAITFD_OUT,
-    RUBY_IO_PRIORITY = RB_WAITFD_PRI,
-} rb_io_event_t;
 
 #include "ruby/internal/dllexport.h"
 RBIMPL_SYMBOL_EXPORT_BEGIN()
@@ -153,15 +127,6 @@ void rb_io_set_nonblock(rb_io_t *fptr);
 int rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2_p, int *fmode_p);
 void rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash, int *oflags_p, int *fmode_p, rb_io_enc_t *convconfig_p);
 ssize_t rb_io_bufwrite(VALUE io, const void *buf, size_t size);
-
-//RBIMPL_ATTR_DEPRECATED(("use rb_io_maybe_wait_readable"))
-int rb_io_wait_readable(int fd);
-
-//RBIMPL_ATTR_DEPRECATED(("use rb_io_maybe_wait_writable"))
-int rb_io_wait_writable(int fd);
-
-//RBIMPL_ATTR_DEPRECATED(("use rb_io_wait"))
-int rb_wait_for_single_fd(int fd, int events, struct timeval *tv);
 
 VALUE rb_io_wait(VALUE io, VALUE events, VALUE timeout);
 VALUE rb_io_maybe_wait(int error, VALUE io, VALUE events, VALUE timeout);

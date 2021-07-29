@@ -24,6 +24,7 @@
 #include "ruby/internal/cast.h"
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/value.h"
+#include "ruby/internal/intern/io.h"
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
