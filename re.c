@@ -724,8 +724,7 @@ static VALUE
 rb_reg_casefold_p(VALUE re)
 {
     rb_reg_check(re);
-    if (RREGEXP_PTR(re)->options & ONIG_OPTION_IGNORECASE) return Qtrue;
-    return Qfalse;
+    return RBOOL(RREGEXP_PTR(re)->options & ONIG_OPTION_IGNORECASE);
 }
 
 
@@ -1389,10 +1388,7 @@ rb_backref_set_string(VALUE string, long pos, long len)
 static VALUE
 rb_reg_fixed_encoding_p(VALUE re)
 {
-    if (FL_TEST(re, KCODE_FIXED))
-        return Qtrue;
-    else
-        return Qfalse;
+    return RBOOL(FL_TEST(re, KCODE_FIXED));
 }
 
 static VALUE
