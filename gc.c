@@ -8600,7 +8600,7 @@ rb_obj_rgengc_writebarrier_protected_p(VALUE obj)
 VALUE
 rb_obj_rgengc_promoted_p(VALUE obj)
 {
-    return OBJ_PROMOTED(obj) ? Qtrue : Qfalse;
+    return RBOOL(OBJ_PROMOTED(obj));
 }
 
 size_t
@@ -10645,7 +10645,7 @@ rb_objspace_gc_enable(rb_objspace_t *objspace)
     int old = dont_gc_val();
 
     dont_gc_off();
-    return old ? Qtrue : Qfalse;
+    return RBOOL(old);
 }
 
 static VALUE
@@ -10666,7 +10666,7 @@ gc_disable_no_rest(rb_objspace_t *objspace)
 {
     int old = dont_gc_val();
     dont_gc_on();
-    return old ? Qtrue : Qfalse;
+    return RBOOL(old);
 }
 
 VALUE
@@ -10718,7 +10718,7 @@ gc_set_auto_compact(rb_execution_context_t *ec, VALUE _, VALUE v)
 static VALUE
 gc_get_auto_compact(rb_execution_context_t *ec, VALUE _)
 {
-    return ruby_enable_autocompact ? Qtrue : Qfalse;
+    return RBOOL(ruby_enable_autocompact);
 }
 
 static int
@@ -12858,7 +12858,7 @@ static VALUE
 gc_profile_enable_get(VALUE self)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    return objspace->profile.run ? Qtrue : Qfalse;
+    return RBOOL(objspace->profile.run);
 }
 
 /*
