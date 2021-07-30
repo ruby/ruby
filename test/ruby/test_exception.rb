@@ -561,6 +561,7 @@ end.join
   end
 
   def test_ensure_after_nomemoryerror
+    skip "Forcing NoMemoryError causes problems in some environments"
     assert_separately([], "$_ = 'a' * 1_000_000_000_000_000_000")
   rescue NoMemoryError
     assert_raise(NoMemoryError) do
