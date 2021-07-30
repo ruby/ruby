@@ -124,7 +124,7 @@ range_initialize_copy(VALUE range, VALUE orig)
 static VALUE
 range_exclude_end_p(VALUE range)
 {
-    return EXCL(range) ? Qtrue : Qfalse;
+    return RBOOL(EXCL(range));
 }
 
 static VALUE
@@ -136,9 +136,7 @@ recursive_equal(VALUE range, VALUE obj, int recur)
     if (!rb_equal(RANGE_END(range), RANGE_END(obj)))
 	return Qfalse;
 
-    if (EXCL(range) != EXCL(obj))
-	return Qfalse;
-    return Qtrue;
+    return RBOOL(EXCL(range) == EXCL(obj));
 }
 
 
@@ -191,9 +189,7 @@ recursive_eql(VALUE range, VALUE obj, int recur)
     if (!rb_eql(RANGE_END(range), RANGE_END(obj)))
 	return Qfalse;
 
-    if (EXCL(range) != EXCL(obj))
-	return Qfalse;
-    return Qtrue;
+    return RBOOL(EXCL(range) == EXCL(obj));
 }
 
 /*
