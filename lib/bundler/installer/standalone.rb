@@ -12,7 +12,6 @@ module Bundler
       end
       File.open File.join(bundler_path, "setup.rb"), "w" do |file|
         file.puts "require 'rbconfig'"
-        file.puts "ruby_version = RbConfig::CONFIG[\"ruby_version\"]"
         file.puts reverse_rubygems_kernel_mixin
         paths.each do |path|
           file.puts %($:.unshift File.expand_path("\#{__dir__}/#{path}"))
@@ -26,7 +25,7 @@ module Bundler
       @specs.map do |spec|
         next if spec.name == "bundler"
         Array(spec.require_paths).map do |path|
-          gem_path(path, spec).sub(version_dir, '#{RUBY_ENGINE}/#{ruby_version}')
+          gem_path(path, spec).sub(version_dir, '#{RUBY_ENGINE}/#{RbConfig::CONFIG["ruby_version"]}')
           # This is a static string intentionally. It's interpolated at a later time.
         end
       end.flatten.compact
