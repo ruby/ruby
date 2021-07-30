@@ -1196,7 +1196,7 @@ rb_require_string(VALUE fname)
 	load_failed(fname);
     }
 
-    return result ? Qtrue : Qfalse;
+    return RBOOL(result);
 }
 
 VALUE
