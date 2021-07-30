@@ -428,6 +428,8 @@ module Bundler
     def global_config_file
       if ENV["BUNDLE_CONFIG"] && !ENV["BUNDLE_CONFIG"].empty?
         Pathname.new(ENV["BUNDLE_CONFIG"])
+      elsif ENV["BUNDLE_USER_CONFIG"] && !ENV["BUNDLE_USER_CONFIG"].empty?
+        Pathname.new(ENV["BUNDLE_USER_CONFIG"])
       elsif Bundler.rubygems.user_home && !Bundler.rubygems.user_home.empty?
         Pathname.new(Bundler.rubygems.user_home).join(".bundle/config")
       end
