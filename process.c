@@ -3148,8 +3148,8 @@ NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
  *  shell expansion before being executed.
  *
  *  The standard shell always means <code>"/bin/sh"</code> on Unix-like systems,
- *  same as <code>ENV["RUBYSHELL"]</code>
- *  (or <code>ENV["COMSPEC"]</code> on Windows NT series), and similar.
+ *  otherwise, <code>ENV["RUBYSHELL"]</code> or <code>ENV["COMSPEC"]</code> on
+ *  Windows and similar.
  *
  *  If the string from the first form (<code>exec("command")</code>) follows
  *  these simple rules:
