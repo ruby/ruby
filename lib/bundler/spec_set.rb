@@ -92,7 +92,7 @@ module Bundler
     end
 
     def missing_specs
-      select {|s| s.is_a?(LazySpecification) }
+      @specs.select {|s| s.is_a?(LazySpecification) }
     end
 
     def merge(set)
