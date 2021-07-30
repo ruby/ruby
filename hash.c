@@ -1956,7 +1956,7 @@ static VALUE
 rb_hash_s_ruby2_keywords_hash_p(VALUE dummy, VALUE hash)
 {
     Check_Type(hash, T_HASH);
-    return (RHASH(hash)->basic.flags & RHASH_PASS_AS_KEYWORDS) ? Qtrue : Qfalse;
+    return RBOOL(RHASH(hash)->basic.flags & RHASH_PASS_AS_KEYWORDS);
 }
 
 /*
@@ -3029,7 +3029,7 @@ rb_hash_size_num(VALUE hash)
 static VALUE
 rb_hash_empty_p(VALUE hash)
 {
-    return RHASH_EMPTY_P(hash) ? Qtrue : Qfalse;
+    return RBOOL(RHASH_EMPTY_P(hash));
 }
 
 static int
@@ -3667,12 +3667,7 @@ rb_hash_values(VALUE hash)
 MJIT_FUNC_EXPORTED VALUE
 rb_hash_has_key(VALUE hash, VALUE key)
 {
-    if (hash_stlike_lookup(hash, key, NULL)) {
-        return Qtrue;
-    }
-    else {
-        return Qfalse;
-    }
+    return RBOOL(hash_stlike_lookup(hash, key, NULL));
 }
 
 static int
@@ -4446,12 +4441,7 @@ rb_hash_compare_by_id(VALUE hash)
 MJIT_FUNC_EXPORTED VALUE
 rb_hash_compare_by_id_p(VALUE hash)
 {
-    if (RHASH_ST_TABLE_P(hash) && RHASH_ST_TABLE(hash)->type == &identhash) {
-	return Qtrue;
-    }
-    else {
-        return Qfalse;
-    }
+    return RBOOL(RHASH_ST_TABLE_P(hash) && RHASH_ST_TABLE(hash)->type == &identhash);
 }
 
 VALUE
@@ -6053,8 +6043,7 @@ env_has_key(VALUE env, VALUE key)
     const char *s;
 
     s = env_name(key);
-    if (getenv(s)) return Qtrue;
-    return Qfalse;
+    return RBOOL(getenv(s));
 }
 
 /*
