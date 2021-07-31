@@ -67,6 +67,10 @@ module Bundler
       "#<#{self.class}:0x#{object_id} #{self}>"
     end
 
+    def to_err
+      to_s
+    end
+
     def path?
       instance_of?(Bundler::Source::Path)
     end

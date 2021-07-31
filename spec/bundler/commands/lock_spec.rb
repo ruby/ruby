@@ -86,7 +86,7 @@ RSpec.describe "bundle lock" do
   it "does not fetch remote specs when using the --local option" do
     bundle "lock --update --local", :raise_on_error => false
 
-    expect(err).to match(/installed locally/)
+    expect(err).to match(/locally installed gems/)
   end
 
   it "works with --gemfile flag" do
