@@ -1701,13 +1701,13 @@ static VALUE
 rb_mod_method_defined(int argc, VALUE *argv, VALUE mod)
 {
     rb_method_visibility_t visi = check_definition_visibility(mod, argc, argv);
-    return (visi == METHOD_VISI_PUBLIC || visi == METHOD_VISI_PROTECTED) ? Qtrue : Qfalse;
+    return RBOOL(visi == METHOD_VISI_PUBLIC || visi == METHOD_VISI_PROTECTED);
 }
 
 static VALUE
 check_definition(VALUE mod, int argc, VALUE *argv, rb_method_visibility_t visi)
 {
-    return (check_definition_visibility(mod, argc, argv) == visi) ? Qtrue : Qfalse;
+    return RBOOL(check_definition_visibility(mod, argc, argv) == visi);
 }
 
 /*
@@ -2609,9 +2609,7 @@ obj_respond_to(int argc, VALUE *argv, VALUE obj)
 	if (ret == Qundef) ret = Qfalse;
 	return ret;
     }
-    if (basic_obj_respond_to(ec, obj, id, !RTEST(priv)))
-	return Qtrue;
-    return Qfalse;
+    return  RBOOL(basic_obj_respond_to(ec, obj, id, !RTEST(priv)));
 }
 
 /*
