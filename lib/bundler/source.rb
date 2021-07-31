@@ -36,8 +36,6 @@ module Bundler
 
     def local!; end
 
-    def local_only!; end
-
     def cached!; end
 
     def remote!; end
