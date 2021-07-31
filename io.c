@@ -1408,6 +1408,18 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
     return io_wait_for_single_fd(fd, events, timeout);
 }
 
+int
+rb_thread_wait_fd(int fd)
+{
+    return rb_wait_for_single_fd(fd, RUBY_IO_READABLE, NULL);
+}
+
+int
+rb_thread_fd_writable(int fd)
+{
+    return rb_wait_for_single_fd(fd, RUBY_IO_WRITABLE, NULL);
+}
+
 VALUE rb_io_maybe_wait(int error, VALUE io, VALUE events, VALUE timeout)
 {
     switch (error) {
