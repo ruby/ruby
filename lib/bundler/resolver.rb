@@ -269,14 +269,12 @@ module Bundler
             "Try running `bundle update #{name}`\n\n" \
             "If you are updating multiple gems in your Gemfile at once,\n" \
             "try passing them all to `bundle update`"
-        elsif source = @source_requirements[name]
+        else
+          source = source_for(name)
           specs = source.specs.search(name)
           versions_with_platforms = specs.map {|s| [s.version, s.platform] }
           message = String.new("Could not find gem '#{SharedHelpers.pretty_dependency(requirement)}' in #{source}#{cache_message}.\n")
           message << "The source contains the following versions of '#{name}': #{formatted_versions_with_platforms(versions_with_platforms)}" if versions_with_platforms.any?
-        else
-          message = "Could not find gem '#{SharedHelpers.pretty_dependency(requirement)}' in any of the gem sources " \
-            "listed in your Gemfile#{cache_message}."
         end
         raise GemNotFound, message
       end
