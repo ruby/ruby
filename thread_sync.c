@@ -141,12 +141,7 @@ mutex_ptr(VALUE obj)
 VALUE
 rb_obj_is_mutex(VALUE obj)
 {
-    if (rb_typeddata_is_kind_of(obj, &mutex_data_type)) {
-	return Qtrue;
-    }
-    else {
-	return Qfalse;
-    }
+    return RBOOL(rb_typeddata_is_kind_of(obj, &mutex_data_type));
 }
 
 static VALUE
@@ -190,7 +185,7 @@ rb_mutex_locked_p(VALUE self)
 {
     rb_mutex_t *mutex = mutex_ptr(self);
 
-    return mutex->fiber ? Qtrue : Qfalse;
+    return RBOOL(mutex->fiber);
 }
 
 static void
@@ -261,12 +256,7 @@ static const rb_thread_t *patrol_thread = NULL;
 static VALUE
 mutex_owned_p(rb_fiber_t *fiber, rb_mutex_t *mutex)
 {
-    if (mutex->fiber == fiber) {
-        return Qtrue;
-    }
-    else {
-        return Qfalse;
-    }
+    return RBOOL(mutex->fiber == fiber);
 }
 
 static VALUE
@@ -533,8 +523,7 @@ rb_mutex_wait_for(VALUE time)
 {
     rb_hrtime_t *rel = (rb_hrtime_t *)time;
     /* permit spurious check */
-    if (sleep_hrtime(GET_THREAD(), *rel, 0)) return Qtrue;
-    return Qfalse;
+    return RBOOL(sleep_hrtime(GET_THREAD(), *rel, 0));
 }
 
 VALUE
@@ -943,7 +932,7 @@ rb_queue_close(VALUE self)
 static VALUE
 rb_queue_closed_p(VALUE self)
 {
-    return queue_closed_p(self) ? Qtrue : Qfalse;
+    return RBOOL(queue_closed_p(self));
 }
 
 /*
@@ -1074,7 +1063,7 @@ rb_queue_pop(int argc, VALUE *argv, VALUE self)
 static VALUE
 rb_queue_empty_p(VALUE self)
 {
-    return queue_length(self, queue_ptr(self)) == 0 ? Qtrue : Qfalse;
+    return RBOOL(queue_length(self, queue_ptr(self)) == 0);
 }
 
 /*
@@ -1372,7 +1361,7 @@ rb_szqueue_empty_p(VALUE self)
 {
     struct rb_szqueue *sq = szqueue_ptr(self);
 
-    return queue_length(self, &sq->q) == 0 ? Qtrue : Qfalse;
+    return RBOOL(queue_length(self, &sq->q) == 0);
 }
 
 
