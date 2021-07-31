@@ -1741,12 +1741,7 @@ rb_profile_frame_singleton_method_p(VALUE frame)
 {
     VALUE klass = frame2klass(frame);
 
-    if (klass && !NIL_P(klass) && FL_TEST(klass, FL_SINGLETON)) {
-	return Qtrue;
-    }
-    else {
-	return Qfalse;
-    }
+    return RBOOL(klass && !NIL_P(klass) && FL_TEST(klass, FL_SINGLETON));
 }
 
 VALUE
