@@ -3677,8 +3677,7 @@ time_utc_p(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    if (TZMODE_UTC_P(tobj)) return Qtrue;
-    return Qfalse;
+    return RBOOL(TZMODE_UTC_P(tobj));
 }
 
 /*
@@ -4631,7 +4630,7 @@ time_isdst(VALUE time)
     if (tobj->vtm.isdst == VTM_ISDST_INITVAL) {
         rb_raise(rb_eRuntimeError, "isdst is not set yet");
     }
-    return tobj->vtm.isdst ? Qtrue : Qfalse;
+    return RBOOL(tobj->vtm.isdst);
 }
 
 /*
@@ -4732,7 +4731,7 @@ time_to_a(VALUE time)
 		    tobj->vtm.year,
 		    INT2FIX(tobj->vtm.wday),
 		    INT2FIX(tobj->vtm.yday),
-		    tobj->vtm.isdst?Qtrue:Qfalse,
+		    RBOOL(tobj->vtm.isdst),
 		    time_zone(time));
 }
 
