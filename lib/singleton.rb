@@ -196,10 +196,10 @@ module Singleton
   #  Returns the singleton instance.
 end
 
-module PerRactorSingleton
+module RactorLocalSingleton
   include Singleton::SingletonInstanceMethods
 
-  module PerRactorSingletonClassMethods
+  module RactorLocalSingletonClassMethods
     include Singleton::SingletonClassMethods
     def instance
       set_mutex(Thread::Mutex.new) if Ractor.current[mutex_key].nil?
@@ -214,11 +214,11 @@ module PerRactorSingleton
     private
 
     def instance_key
-      :"__PerRactorSingleton_instance_with_class_id_#{object_id}__"
+      :"__RactorLocalSingleton_instance_with_class_id_#{object_id}__"
     end
 
     def mutex_key
-      :"__PerRactorSingleton_mutex_with_class_id_#{object_id}__"
+      :"__RactorLocalSingleton_mutex_with_class_id_#{object_id}__"
     end
 
     def set_instance(val)
@@ -231,7 +231,7 @@ module PerRactorSingleton
   end
 
   def self.module_with_class_methods
-    PerRactorSingletonClassMethods
+    RactorLocalSingletonClassMethods
   end
 
   extend Singleton::SingletonClassProperties
