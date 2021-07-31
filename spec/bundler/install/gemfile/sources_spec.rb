@@ -347,7 +347,6 @@ RSpec.describe "bundle install with gems on multiple sources" do
       it "fails" do
         bundle :install, :artifice => "compact_index", :raise_on_error => false
         expect(err).to include("Could not find gem 'private_gem_1' in rubygems repository https://gem.repo2/ or installed locally.")
-        expect(err).to include("The source does not contain any versions of 'private_gem_1'")
       end
     end
 

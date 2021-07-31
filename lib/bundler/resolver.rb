@@ -273,11 +273,7 @@ module Bundler
           specs = source.specs.search(name)
           versions_with_platforms = specs.map {|s| [s.version, s.platform] }
           message = String.new("Could not find gem '#{SharedHelpers.pretty_dependency(requirement)}' in #{source}#{cache_message}.\n")
-          message << if versions_with_platforms.any?
-            "The source contains the following versions of '#{name}': #{formatted_versions_with_platforms(versions_with_platforms)}"
-          else
-            "The source does not contain any versions of '#{name}'"
-          end
+          message << "The source contains the following versions of '#{name}': #{formatted_versions_with_platforms(versions_with_platforms)}" if versions_with_platforms.any?
         else
           message = "Could not find gem '#{SharedHelpers.pretty_dependency(requirement)}' in any of the gem sources " \
             "listed in your Gemfile#{cache_message}."
