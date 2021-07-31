@@ -50,6 +50,7 @@ module Bundler
         return if @allow_cached
 
         @specs = nil
+        @allow_local = true
         @allow_cached = true
       end
 

@@ -759,4 +759,22 @@ RSpec.describe "bundle install with gem sources" do
       )
     end
   end
+
+  context "with --local flag" do
+    before do
+      system_gems "rack-1.0.0", :path => default_bundle_path
+    end
+
+    it "respects installed gems without fetching any remote sources" do
+      install_gemfile <<-G, :local => true
+        source "#{file_uri_for(gem_repo1)}"
+
+        source "https://not-existing-source" do
+          gem "rack"
+        end
+      G
+
+      expect(last_command).to be_success
+    end
+  end
 end
