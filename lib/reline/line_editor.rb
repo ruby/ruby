@@ -158,8 +158,16 @@ class Reline::LineEditor
       end
       Reline::IOGate.move_cursor_column(0)
       scroll_down(1)
-      @old_trap.call if @old_trap.respond_to?(:call) # can also be string, ex: "DEFAULT"
-      raise Interrupt
+      case @old_trap
+      when 'DEFAULT', 'SYSTEM_DEFAULT'
+        raise Interrupt
+      when 'IGNORE'
+        # Do nothing
+      when 'EXIT'
+        exit
+      else
+        @old_trap.call
+      end
     }
     Reline::IOGate.set_winch_handler do
       @rest_height = (Reline::IOGate.get_screen_size.first - 1) - Reline::IOGate.cursor_pos.y
