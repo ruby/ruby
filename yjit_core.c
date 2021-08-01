@@ -175,13 +175,14 @@ void ctx_upgrade_opnd_type(ctx_t* ctx, insn_opnd_t opnd, val_type_t type)
         return;
     }
 
-    if (ctx->stack_size >= MAX_TEMP_TYPES)
+    RUBY_ASSERT(opnd.idx < ctx->stack_size);
+    int stack_idx = ctx->stack_size - 1 - opnd.idx;
+
+    // If outside of tracked range, do nothing
+    if (stack_idx >= MAX_TEMP_TYPES)
         return;
 
-    RUBY_ASSERT(opnd.idx < ctx->stack_size);
-    int stack_index = ctx->stack_size - 1 - opnd.idx;
-    RUBY_ASSERT(stack_index < MAX_TEMP_TYPES);
-    temp_mapping_t mapping = ctx->temp_mapping[stack_index];
+    temp_mapping_t mapping = ctx->temp_mapping[stack_idx];
 
     switch (mapping.kind)
     {
@@ -190,7 +191,7 @@ void ctx_upgrade_opnd_type(ctx_t* ctx, insn_opnd_t opnd, val_type_t type)
         break;
 
         case TEMP_STACK:
-        UPGRADE_TYPE(ctx->temp_types[stack_index], type);
+        UPGRADE_TYPE(ctx->temp_types[stack_idx], type);
         break;
 
         case TEMP_LOCAL:
