@@ -69,10 +69,11 @@ class TestGCCompact < Test::Unit::TestCase
       }
       count = GC.stat :compact_count
       GC.auto_compact = true
-      loop do
+      n = 1_000_000
+      n.times do
         break if count < GC.stat(:compact_count)
         list2 << Object.new
-      end
+      end and skip "implicit compaction didn't happen within #{n} objects"
       compact_stats = GC.latest_compact_info
       refute_predicate compact_stats[:considered], :empty?
       refute_predicate compact_stats[:moved], :empty?
