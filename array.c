@@ -7923,7 +7923,7 @@ rb_ary_average(int argc, VALUE *argv, VALUE ary)
     long len = RARRAY_LEN(ary);
 
     if (len == 0)
-        return 0;
+        return DBL2NUM(nan(""));
 
     VALUE sum, average;
 
