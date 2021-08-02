@@ -4577,7 +4577,9 @@ obj_memsize_of(VALUE obj, int use_all_types)
             if (RCLASS_CC_TBL(obj)) {
                 size += cc_table_memsize(RCLASS_CC_TBL(obj));
             }
+#if !USE_RVARGC
 	    size += sizeof(rb_classext_t);
+#endif
 	}
 	break;
       case T_ICLASS:
@@ -4666,7 +4668,7 @@ obj_memsize_of(VALUE obj, int use_all_types)
 	       BUILTIN_TYPE(obj), (void*)obj);
     }
 
-    return size + sizeof(RVALUE);
+    return size + GET_HEAP_PAGE(obj)->slot_size;
 }
 
 size_t

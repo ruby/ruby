@@ -167,16 +167,16 @@ rb_class_detach_module_subclasses(VALUE klass)
 static VALUE
 class_alloc(VALUE flags, VALUE klass)
 {
-    size_t payload_size = 0;
+    size_t alloc_size = sizeof(struct RClass);
 
 #if USE_RVARGC
-    payload_size = sizeof(rb_classext_t);
+    alloc_size += sizeof(rb_classext_t);
 #endif
 
-    RVARGC_NEWOBJ_OF(obj, struct RClass, klass, (flags & T_MASK) | FL_PROMOTED1 /* start from age == 2 */ | (RGENGC_WB_PROTECTED_CLASS ? FL_WB_PROTECTED : 0), payload_size);
+    RVARGC_NEWOBJ_OF(obj, struct RClass, klass, (flags & T_MASK) | FL_PROMOTED1 /* start from age == 2 */ | (RGENGC_WB_PROTECTED_CLASS ? FL_WB_PROTECTED : 0), alloc_size);
 
 #if USE_RVARGC
-    obj->ptr = (rb_classext_t *)rb_gc_rvargc_object_data((VALUE)obj);
+    obj->ptr = (rb_classext_t *)((char *)obj + sizeof(struct RClass));
 #else
     obj->ptr = ZALLOC(rb_classext_t);
 #endif

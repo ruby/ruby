@@ -28,16 +28,18 @@ struct rb_objspace; /* in vm_core.h */
 # undef RB_OBJ_WRITE
 #endif
 
+#define RVALUE_SIZE (sizeof(struct RBasic) + sizeof(VALUE[RBIMPL_RVALUE_EMBED_LEN_MAX]))
+
 /* optimized version of NEWOBJ() */
 #define RB_NEWOBJ_OF(var, T, c, f) \
   T *(var) = (T *)(((f) & FL_WB_PROTECTED) ? \
-                   rb_wb_protected_newobj_of((c), (f) & ~FL_WB_PROTECTED, 0) : \
-                   rb_wb_unprotected_newobj_of((c), (f), 0))
+                   rb_wb_protected_newobj_of((c), (f) & ~FL_WB_PROTECTED, RVALUE_SIZE) : \
+                   rb_wb_unprotected_newobj_of((c), (f), RVALUE_SIZE))
 
 #define RB_EC_NEWOBJ_OF(ec, var, T, c, f) \
   T *(var) = (T *)(((f) & FL_WB_PROTECTED) ? \
-                   rb_ec_wb_protected_newobj_of((ec), (c), (f) & ~FL_WB_PROTECTED, 0) : \
-                   rb_wb_unprotected_newobj_of((c), (f), 0))
+                   rb_ec_wb_protected_newobj_of((ec), (c), (f) & ~FL_WB_PROTECTED, RVALUE_SIZE) : \
+                   rb_wb_unprotected_newobj_of((c), (f), RVALUE_SIZE))
 
 #define RB_RVARGC_NEWOBJ_OF(var, T, c, f, s) \
   T *(var) = (T *)(((f) & FL_WB_PROTECTED) ? \
@@ -100,7 +102,6 @@ static inline void *ruby_sized_xrealloc2_inlined(void *ptr, size_t new_count, si
 static inline void ruby_sized_xfree_inlined(void *ptr, size_t size);
 VALUE rb_class_allocate_instance(VALUE klass);
 void rb_gc_ractor_newobj_cache_clear(rb_ractor_newobj_cache_t *newobj_cache);
-void *rb_gc_rvargc_object_data(VALUE obj);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* gc.c (export) */
