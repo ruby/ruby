@@ -189,15 +189,15 @@ jobs:
       - run: $make leaked-globals
       - run: $make test
       - run: $make install
-        if: "matrix.entry.name == '-O3'"
+        if: ${{ matrix.entry.name == '-O3' }}
       - run: /usr/local/bin/gem install --no-doc timezone tzinfo
-        if: "matrix.entry.name == '-O3'"
+        if: ${{ matrix.entry.name == '-O3' }}
       - run: $make test-tool
-        if: "matrix.entry.name == '-O3'"
+        if: ${{ matrix.entry.name == '-O3' }}
       - run: $make test-all TESTS='-- ruby -ext-'
-        if: "matrix.entry.name == '-O3'"
+        if: ${{ matrix.entry.name == '-O3' }}
       - run: $make test-spec
-        if: "matrix.entry.name == '-O3'"
+        if: ${{ matrix.entry.name == '-O3' }}
 
       - uses: k0kubun/action-slack@v2.0.0
         with:
@@ -211,7 +211,7 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: failure() && github.event_name == 'push'
+        if: ${{ failure() && github.event_name == 'push' }}
 
 defaults:
   run:

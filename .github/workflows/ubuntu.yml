@@ -48,13 +48,13 @@ jobs:
       - run: make $JOBS incs
       - run: make $JOBS
       - run: make leaked-globals
-        if: matrix.test_task == 'check'
+        if: ${{ matrix.test_task == 'check' }}
       - run: make prepare-gems
-        if: matrix.test_task == 'check'
+        if: ${{ matrix.test_task == 'check' }}
       - name: Create dummy files in build dir
         run: |
           ./miniruby -e '(("a".."z").to_a+("A".."Z").to_a+("0".."9").to_a+%w[foo bar test zzz]).each{|basename|File.write("#{basename}.rb", "raise %(do not load #{basename}.rb)")}'
-        if: matrix.test_task == 'check'
+        if: ${{ matrix.test_task == 'check' }}
       - run: make $JOBS -s ${{ matrix.test_task }}
         timeout-minutes: 30
         env:
@@ -72,7 +72,7 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: failure() && github.event_name == 'push'
+        if: ${{ failure() && github.event_name == 'push' }}
 
 defaults:
   run:
