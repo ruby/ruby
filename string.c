@@ -1229,7 +1229,7 @@ str_replace_shared_without_enc(VALUE str2, VALUE str)
 
     RSTRING_GETMEM(str, ptr, len);
     if (STR_EMBEDDABLE_P(len, termlen)) {
-	char *ptr2 = RSTRING(str2)->as.ary;
+	char *ptr2 = RSTRING(str2)->as.embed.ary;
 	STR_SET_EMBED(str2);
 	memcpy(ptr2, RSTRING_PTR(str), len);
 	STR_SET_EMBED_LEN(str2, len);
@@ -1598,7 +1598,7 @@ str_duplicate_setup(VALUE klass, VALUE str, VALUE dup)
 	;
     VALUE flags = FL_TEST_RAW(str, flag_mask);
     int encidx = 0;
-    MEMCPY(RSTRING(dup)->as.ary, RSTRING(str)->as.ary,
+    MEMCPY(RSTRING(dup)->as.embed.ary, RSTRING(str)->as.embed.ary,
 	   char, embed_size);
     if (flags & STR_NOEMBED) {
         if (FL_TEST_RAW(str, STR_SHARED)) {
@@ -1613,7 +1613,7 @@ str_duplicate_setup(VALUE klass, VALUE str, VALUE dup)
 	    flags |= STR_SHARED;
 	}
 	else {
-	    MEMCPY(RSTRING(dup)->as.ary, RSTRING(str)->as.ary,
+	    MEMCPY(RSTRING(dup)->as.embed.ary, RSTRING(str)->as.embed.ary,
 		   char, embed_size);
 	}
     }
@@ -1745,7 +1745,7 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
 	    str_modifiable(str);
 	    if (STR_EMBED_P(str)) { /* make noembed always */
                 char *new_ptr = ALLOC_N(char, (size_t)capa + termlen);
-                memcpy(new_ptr, RSTRING(str)->as.ary, RSTRING_EMBED_LEN_MAX + 1);
+                memcpy(new_ptr, RSTRING(str)->as.embed.ary, RSTRING_EMBED_LEN_MAX + 1);
                 RSTRING(str)->as.heap.ptr = new_ptr;
             }
             else if (FL_TEST(str, STR_SHARED|STR_NOFREE)) {
@@ -2247,8 +2247,8 @@ str_make_independent_expand(VALUE str, long len, long expand, const int termlen)
     if (!STR_EMBED_P(str) && STR_EMBEDDABLE_P(capa, termlen)) {
 	ptr = RSTRING(str)->as.heap.ptr;
 	STR_SET_EMBED(str);
-	memcpy(RSTRING(str)->as.ary, ptr, len);
-	TERM_FILL(RSTRING(str)->as.ary + len, termlen);
+	memcpy(RSTRING(str)->as.embed.ary, ptr, len);
+	TERM_FILL(RSTRING(str)->as.embed.ary + len, termlen);
 	STR_SET_EMBED_LEN(str, len);
 	return;
     }
@@ -2887,7 +2887,7 @@ rb_str_resize(VALUE str, long len)
 	    if (len == slen) return str;
 	    if (STR_EMBEDDABLE_P(len, termlen)) {
 		STR_SET_EMBED_LEN(str, len);
-		TERM_FILL(RSTRING(str)->as.ary + len, termlen);
+		TERM_FILL(RSTRING(str)->as.embed.ary + len, termlen);
 		return str;
 	    }
 	    str_make_independent_expand(str, slen, len - slen, termlen);
@@ -2896,8 +2896,8 @@ rb_str_resize(VALUE str, long len)
 	    char *ptr = STR_HEAP_PTR(str);
 	    STR_SET_EMBED(str);
 	    if (slen > len) slen = len;
-	    if (slen > 0) MEMCPY(RSTRING(str)->as.ary, ptr, char, slen);
-	    TERM_FILL(RSTRING(str)->as.ary + len, termlen);
+	    if (slen > 0) MEMCPY(RSTRING(str)->as.embed.ary, ptr, char, slen);
+	    TERM_FILL(RSTRING(str)->as.embed.ary + len, termlen);
 	    STR_SET_EMBED_LEN(str, len);
 	    if (independent) ruby_xfree(ptr);
 	    return str;
@@ -2935,7 +2935,7 @@ str_buf_cat(VALUE str, const char *ptr, long len)
     if (len == 0) return 0;
     if (STR_EMBED_P(str)) {
 	capa = RSTRING_EMBED_LEN_MAX + 1 - termlen;
-	sptr = RSTRING(str)->as.ary;
+	sptr = RSTRING(str)->as.embed.ary;
 	olen = RSTRING_EMBED_LEN(str);
     }
     else {
@@ -4802,7 +4802,7 @@ rb_str_drop_bytes(VALUE str, long len)
 	int fl = (int)(RBASIC(str)->flags & (STR_NOEMBED|STR_SHARED|STR_NOFREE));
 	STR_SET_EMBED(str);
 	STR_SET_EMBED_LEN(str, nlen);
-	ptr = RSTRING(str)->as.ary;
+	ptr = RSTRING(str)->as.embed.ary;
 	memmove(ptr, oldptr + len, nlen);
 	if (fl == STR_NOEMBED) xfree(oldptr);
     }

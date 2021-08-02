@@ -270,15 +270,16 @@ struct RString {
                 VALUE shared;
             } aux;
         } heap;
-
-        /**
-         * Embedded contents.  When a string is short enough, it uses this area
-         * to store the contents themselves.   This was impractical in the 20th
-         * century, but these days 64 bit  machines can typically hold 48 bytes
-         * here.   Could be  sufficiently large.   In this  case the  length is
-         * encoded into the flags.
-         */
-        char ary[RSTRING_EMBED_LEN_MAX + 1];
+        struct {
+            /**
+            * Embedded contents.  When a string is short enough, it uses this area
+            * to store the contents themselves.   This was impractical in the 20th
+            * century, but these days 64 bit  machines can typically hold 48 bytes
+            * here.   Could be  sufficiently large.   In this  case the  length is
+            * encoded into the flags.
+            */
+            char ary[RSTRING_EMBED_LEN_MAX + 1];
+        } embed;
     } as;
 };
 
@@ -440,7 +441,7 @@ rbimpl_rstring_getmem(VALUE str)
         /* Expecting compilers to optimize this on-stack struct away. */
         struct RString retval;
         retval.as.heap.len = RSTRING_EMBED_LEN(str);
-        retval.as.heap.ptr = RSTRING(str)->as.ary;
+        retval.as.heap.ptr = RSTRING(str)->as.embed.ary;
         return retval;
     }
 }
