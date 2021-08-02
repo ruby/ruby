@@ -22,6 +22,13 @@ RSpec.describe "bundler plugin install" do
     plugin_should_be_installed("foo")
   end
 
+  it "installs from sources configured as Gem.sources without any flags" do
+    bundle "plugin install foo", :env => { "BUNDLER_SPEC_GEM_SOURCES" => file_uri_for(gem_repo2).to_s }
+
+    expect(out).to include("Installed plugin foo")
+    plugin_should_be_installed("foo")
+  end
+
   context "plugin is already installed" do
     before do
       bundle "plugin install foo --source #{file_uri_for(gem_repo2)}"

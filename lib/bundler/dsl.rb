@@ -102,28 +102,26 @@ module Bundler
       # if there's already a dependency with this name we try to prefer one
       if current = @dependencies.find {|d| d.name == dep.name }
         deleted_dep = @dependencies.delete(current) if current.type == :development
+        return if deleted_dep
 
         if current.requirement != dep.requirement
-          unless deleted_dep
-            return if dep.type == :development
+          return if dep.type == :development
 
-            update_prompt = ""
+          update_prompt = ""
 
-            if File.basename(@gemfile) == Injector::INJECTED_GEMS
-              if dep.requirements_list.include?(">= 0") && !current.requirements_list.include?(">= 0")
-                update_prompt = ". Gem already added"
-              else
-                update_prompt = ". If you want to update the gem version, run `bundle update #{current.name}`"
+          if File.basename(@gemfile) == Injector::INJECTED_GEMS
+            if dep.requirements_list.include?(">= 0") && !current.requirements_list.include?(">= 0")
+              update_prompt = ". Gem already added"
+            else
+              update_prompt = ". If you want to update the gem version, run `bundle update #{current.name}`"
 
-                update_prompt += ". You may also need to change the version requirement specified in the Gemfile if it's too restrictive." unless current.requirements_list.include?(">= 0")
-              end
+              update_prompt += ". You may also need to change the version requirement specified in the Gemfile if it's too restrictive." unless current.requirements_list.include?(">= 0")
             end
-
-            raise GemfileError, "You cannot specify the same gem twice with different version requirements.\n" \
-                            "You specified: #{current.name} (#{current.requirement}) and #{dep.name} (#{dep.requirement})" \
-                             "#{update_prompt}"
           end
 
+          raise GemfileError, "You cannot specify the same gem twice with different version requirements.\n" \
+                          "You specified: #{current.name} (#{current.requirement}) and #{dep.name} (#{dep.requirement})" \
+                           "#{update_prompt}"
         else
           Bundler.ui.warn "Your Gemfile lists the gem #{current.name} (#{current.requirement}) more than once.\n" \
                           "You should probably keep only one of them.\n" \
@@ -132,12 +130,10 @@ module Bundler
         end
 
         if current.source != dep.source
-          unless deleted_dep
-            return if dep.type == :development
-            raise GemfileError, "You cannot specify the same gem twice coming from different sources.\n" \
-                            "You specified that #{dep.name} (#{dep.requirement}) should come from " \
-                            "#{current.source || "an unspecified source"} and #{dep.source}\n"
-          end
+          return if dep.type == :development
+          raise GemfileError, "You cannot specify the same gem twice coming from different sources.\n" \
+                          "You specified that #{dep.name} (#{dep.requirement}) should come from " \
+                          "#{current.source || "an unspecified source"} and #{dep.source}\n"
         end
       end
 

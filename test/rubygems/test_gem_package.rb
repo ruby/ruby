@@ -937,7 +937,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     build = Gem::Package.new @gem
     build.spec = @spec
     build.setup_signer
-    open @gem, 'wb' do |gem_io|
+    File.open @gem, 'wb' do |gem_io|
       Gem::Package::TarWriter.new gem_io do |gem|
         build.add_metadata gem
         build.add_contents gem
@@ -1143,6 +1143,13 @@ class TestGemPackage < Gem::Package::TarTestCase
     assert_raise(Gem::Package::Error) do
       Gem::Package.new io
     end
+  end
+
+  def test_contents_from_io
+    io = StringIO.new Gem.read_binary @gem
+    package = Gem::Package.new io
+
+    assert_equal %w[lib/code.rb], package.contents
   end
 
   def util_tar

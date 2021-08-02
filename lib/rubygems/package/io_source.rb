@@ -32,10 +32,14 @@ class Gem::Package::IOSource < Gem::Package::Source # :nodoc: all
 
   def with_read_io
     yield io
+  ensure
+    io.rewind
   end
 
   def with_write_io
     yield io
+  ensure
+    io.rewind
   end
 
   def path
