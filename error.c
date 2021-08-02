@@ -217,9 +217,7 @@ static VALUE
 rb_warning_s_aref(VALUE mod, VALUE category)
 {
     rb_warning_category_t cat = rb_warning_category_from_name(category);
-    if (rb_warning_category_enabled_p(cat))
-        return Qtrue;
-    return Qfalse;
+    return RBOOL(rb_warning_category_enabled_p(cat));
 }
 
 /*
@@ -1231,7 +1229,7 @@ rb_get_message(VALUE exc)
 static VALUE
 exc_s_to_tty_p(VALUE self)
 {
-    return rb_stderr_tty_p() ? Qtrue : Qfalse;
+    return RBOOL(rb_stderr_tty_p());
 }
 
 /*
@@ -1802,7 +1800,7 @@ static VALUE
 nometh_err_init_attr(VALUE exc, VALUE args, int priv)
 {
     rb_ivar_set(exc, id_args, args);
-    rb_ivar_set(exc, id_private_call_p, priv ? Qtrue : Qfalse);
+    rb_ivar_set(exc, id_private_call_p, RBOOL(priv));
     return exc;
 }
 

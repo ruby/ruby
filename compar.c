@@ -105,8 +105,7 @@ cmpint(VALUE x, VALUE y)
 static VALUE
 cmp_gt(VALUE x, VALUE y)
 {
-    if (cmpint(x, y) > 0) return Qtrue;
-    return Qfalse;
+    return RBOOL(cmpint(x, y) > 0);
 }
 
 /*
@@ -120,8 +119,7 @@ cmp_gt(VALUE x, VALUE y)
 static VALUE
 cmp_ge(VALUE x, VALUE y)
 {
-    if (cmpint(x, y) >= 0) return Qtrue;
-    return Qfalse;
+    return RBOOL(cmpint(x, y) >= 0);
 }
 
 /*
@@ -135,8 +133,7 @@ cmp_ge(VALUE x, VALUE y)
 static VALUE
 cmp_lt(VALUE x, VALUE y)
 {
-    if (cmpint(x, y) < 0) return Qtrue;
-    return Qfalse;
+    return RBOOL(cmpint(x, y) < 0);
 }
 
 /*
@@ -150,8 +147,7 @@ cmp_lt(VALUE x, VALUE y)
 static VALUE
 cmp_le(VALUE x, VALUE y)
 {
-    if (cmpint(x, y) <= 0) return Qtrue;
-    return Qfalse;
+    return RBOOL(cmpint(x, y) <= 0);
 }
 
 /*

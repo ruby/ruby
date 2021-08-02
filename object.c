@@ -164,8 +164,7 @@ rb_equal(VALUE obj1, VALUE obj2)
     if (result == Qundef) {
 	result = rb_funcall(obj1, id_eq, 1, obj2);
     }
-    if (RTEST(result)) return Qtrue;
-    return Qfalse;
+    return RBOOL(RTEST(result));
 }
 
 /**
@@ -187,8 +186,7 @@ rb_eql(VALUE obj1, VALUE obj2)
     if (result == Qundef) {
 	result = rb_funcall(obj1, id_eql, 1, obj2);
     }
-    if (RTEST(result)) return Qtrue;
-    return Qfalse;
+    return RBOOL(RTEST(result));
 }
 
 /**
@@ -235,8 +233,7 @@ rb_eql(VALUE obj1, VALUE obj2)
 MJIT_FUNC_EXPORTED VALUE
 rb_obj_equal(VALUE obj1, VALUE obj2)
 {
-    if (obj1 == obj2) return Qtrue;
-    return Qfalse;
+    return RBOOL(obj1 == obj2);
 }
 
 VALUE rb_obj_hash(VALUE obj);
@@ -605,7 +602,7 @@ rb_obj_size(VALUE self, VALUE args, VALUE obj)
 static VALUE
 block_given_p(rb_execution_context_t *ec, VALUE self)
 {
-    return rb_block_given_p() ? Qtrue : Qfalse;
+    return RBOOL(rb_block_given_p());
 }
 
 /**
@@ -843,8 +840,7 @@ VALUE
 rb_obj_is_instance_of(VALUE obj, VALUE c)
 {
     c = class_or_module_required(c);
-    if (rb_obj_class(obj) == c) return Qtrue;
-    return Qfalse;
+    return RBOOL(rb_obj_class(obj) == c);
 }
 
 
@@ -889,7 +885,7 @@ rb_obj_is_kind_of(VALUE obj, VALUE c)
     VALUE cl = CLASS_OF(obj);
 
     c = class_or_module_required(c);
-    return class_search_ancestor(cl, RCLASS_ORIGIN(c)) ? Qtrue : Qfalse;
+    return RBOOL(class_search_ancestor(cl, RCLASS_ORIGIN(c)));
 }
 
 static VALUE
@@ -1335,7 +1331,7 @@ rb_obj_freeze(VALUE obj)
 VALUE
 rb_obj_frozen_p(VALUE obj)
 {
-    return OBJ_FROZEN(obj) ? Qtrue : Qfalse;
+    return RBOOL(OBJ_FROZEN(obj));
 }
 
 
@@ -1453,7 +1449,7 @@ true_to_s(VALUE obj)
 static VALUE
 true_and(VALUE obj, VALUE obj2)
 {
-    return RTEST(obj2)?Qtrue:Qfalse;
+    return RBOOL(RTEST(obj2));
 }
 
 /*
@@ -3055,9 +3051,7 @@ rb_mod_cvar_defined(VALUE obj, VALUE iv)
 static VALUE
 rb_mod_singleton_p(VALUE klass)
 {
-    if (RB_TYPE_P(klass, T_CLASS) && FL_TEST(klass, FL_SINGLETON))
-	return Qtrue;
-    return Qfalse;
+    return RBOOL(RB_TYPE_P(klass, T_CLASS) && FL_TEST(klass, FL_SINGLETON));
 }
 
 /*! \private */

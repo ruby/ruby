@@ -171,8 +171,6 @@ int flock(int, int);
 #include "ruby/thread.h"
 #include "ruby/util.h"
 
-#define RBOOL(v) ((v) ? Qtrue : Qfalse)
-
 VALUE rb_cFile;
 VALUE rb_mFileTest;
 VALUE rb_cStat;

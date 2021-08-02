@@ -1321,7 +1321,7 @@ tracepoint_enable_m(rb_execution_context_t *ec, VALUE tpval, VALUE target, VALUE
 			 tpval);
     }
     else {
-	return previous_tracing ? Qtrue : Qfalse;
+	return RBOOL(previous_tracing);
     }
 }
 
@@ -1343,7 +1343,7 @@ tracepoint_disable_m(rb_execution_context_t *ec, VALUE tpval)
     }
     else {
         rb_tracepoint_disable(tpval);
-	return previous_tracing ? Qtrue : Qfalse;
+	return RBOOL(previous_tracing);
     }
 }
 
@@ -1351,7 +1351,7 @@ VALUE
 rb_tracepoint_enabled_p(VALUE tpval)
 {
     rb_tp_t *tp = tpptr(tpval);
-    return tp->tracing ? Qtrue : Qfalse;
+    return RBOOL(tp->tracing);
 }
 
 static VALUE

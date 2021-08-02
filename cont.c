@@ -1085,12 +1085,7 @@ fiber_memsize(const void *ptr)
 VALUE
 rb_obj_is_fiber(VALUE obj)
 {
-    if (rb_typeddata_is_kind_of(obj, &fiber_data_type)) {
-        return Qtrue;
-    }
-    else {
-        return Qfalse;
-    }
+    return RBOOL(rb_typeddata_is_kind_of(obj, &fiber_data_type));
 }
 
 static void
@@ -2351,7 +2346,7 @@ rb_fiber_transfer(VALUE fiber_value, int argc, const VALUE *argv)
 VALUE
 rb_fiber_blocking_p(VALUE fiber)
 {
-    return (fiber_ptr(fiber)->blocking == 0) ? Qfalse : Qtrue;
+    return RBOOL(fiber_ptr(fiber)->blocking != 0);
 }
 
 /*
