@@ -477,6 +477,7 @@ module BasetestReadline
 
   def test_interrupt_in_other_thread
     omit unless respond_to?(:assert_ruby_status)
+    omit if /mswin|mingw/ =~ RUBY_PLATFORM
     code = <<-"end;"
       require 'readline'
       require 'helper'
