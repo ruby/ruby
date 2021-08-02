@@ -7896,29 +7896,29 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
 
 /*
  * call-seq:
- *   array.average() -> object
- *   array.average() {|element| ... } -> object
+ *   array.mean() -> object
+ *   array.mean() {|element| ... } -> object
  *
  *  When no block is given, returns the object equivalent to:
  *    sum = 0
  *    array.each {|element| sum += element }
  *    sum / size
- *  For example, <tt>[e1, e2, e3].average</tt> returns <tt>(e1 + e2 + e3) / 3</tt>.
+ *  For example, <tt>[e1, e2, e3].mean</tt> returns <tt>(e1 + e2 + e3) / 3</tt>.
  *
  *  Examples:
  *    a = [0, 1, 2, 3]
- *    a.average # => 1.5
+ *    a.mean # => 1.5
  *
  *  When a block is given, it is called with each element
  *  and the block's return value (instead of the element itself) is used as the addend:
  *    a = [-3, -2, -1]
- *    s = a.average { |element| element.abs }
+ *    s = a.mean { |element| element.abs }
  *    s # => 2
  *
  */
 
 static VALUE
-rb_ary_average(int argc, VALUE *argv, VALUE ary)
+rb_ary_mean(int argc, VALUE *argv, VALUE ary)
 {
     long len = RARRAY_LEN(ary);
 
@@ -8500,7 +8500,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "one?", rb_ary_one_p, -1);
     rb_define_method(rb_cArray, "dig", rb_ary_dig, -1);
     rb_define_method(rb_cArray, "sum", rb_ary_sum, -1);
-    rb_define_method(rb_cArray, "average", rb_ary_average, -1);
+    rb_define_method(rb_cArray, "mean", rb_ary_mean, -1);
 
     rb_define_method(rb_cArray, "deconstruct", rb_ary_deconstruct, 0);
 }

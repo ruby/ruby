@@ -3376,26 +3376,26 @@ class TestArray < Test::Unit::TestCase
     assert_raise(TypeError) {[1].sum("")}
   end
 
-  def test_average
-    assert_int_equal(3, [3].average)
-    assert_int_equal(4, [3, 5].average)
-    assert_rational_equal(4r, [3, 5r].average)
-    assert_float_equal(5.0, [3, 5, 7.0].average)
-    assert_float_equal(5.0, [3, 5r, 7.0].average)
-    assert_complex_equal((8r+1i)/3, [3, 5r, 1i].average)
-    assert_complex_equal(3.75-1/4i, [3, 5r, 7.0, 1i].average)
+  def test_mean
+    assert_int_equal(3, [3].mean)
+    assert_int_equal(4, [3, 5].mean)
+    assert_rational_equal(4r, [3, 5r].mean)
+    assert_float_equal(5.0, [3, 5, 7.0].mean)
+    assert_float_equal(5.0, [3, 5r, 7.0].mean)
+    assert_complex_equal((8r+1i)/3, [3, 5r, 1i].mean)
+    assert_complex_equal(3.75-1/4i, [3, 5r, 7.0, 1i].mean)
 
-    assert_int_equal(FIXNUM_MAX, Array.new(2, FIXNUM_MAX).average)
-    assert_int_equal((FIXNUM_MAX+1), Array.new(2, FIXNUM_MAX+1).average)
-    assert_int_equal(FIXNUM_MAX, Array.new(10, FIXNUM_MAX).average)
+    assert_int_equal(FIXNUM_MAX, Array.new(2, FIXNUM_MAX).mean)
+    assert_int_equal((FIXNUM_MAX+1), Array.new(2, FIXNUM_MAX+1).mean)
+    assert_int_equal(FIXNUM_MAX, Array.new(10, FIXNUM_MAX).mean)
 
-    assert_float_equal(5.3, [3, 5, 7.9].average)
+    assert_float_equal(5.3, [3, 5, 7.9].mean)
 
-    assert_int_equal(2, [1.5, 2.1].average(&:round))
-    assert_float_equal(1.8, [-1.5, -2.1].average(&:abs))
-    assert_predicate([].average, :nan?)
+    assert_int_equal(2, [1.5, 2.1].mean(&:round))
+    assert_float_equal(1.8, [-1.5, -2.1].mean(&:abs))
+    assert_predicate([].mean, :nan?)
 
-    assert_raise(TypeError) {["ABC"].average}
+    assert_raise(TypeError) {["ABC"].mean}
   end
 
   def test_big_array_literal_with_kwsplat
