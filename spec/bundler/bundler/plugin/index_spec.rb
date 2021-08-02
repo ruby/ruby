@@ -98,7 +98,13 @@ RSpec.describe Bundler::Plugin::Index do
       expect(index.hook_plugins("after-bar")).to eq([plugin_name])
     end
 
-    context "that are not registered", :focused do
+    it "is gone after unregistration" do
+      expect(index.index_file.read).to include("after-bar:\n  - \"new-plugin\"\n")
+      index.unregister_plugin(plugin_name)
+      expect(index.index_file.read).to_not include("after-bar:\n  - \n")
+    end
+
+    context "that are not registered" do
       let(:file) { double("index-file") }
 
       before do

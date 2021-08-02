@@ -309,6 +309,8 @@ module Bundler
     #
     # @param [String] name of the plugin
     def load_plugin(name)
+      return unless name && !name.empty?
+
       # Need to ensure before this that plugin root where the rest of gems
       # are installed to be on load path to support plugin deps. Currently not
       # done to avoid conflicts
