@@ -475,6 +475,82 @@ module BasetestReadline
     end
   end
 
+  def test_interrupt_in_other_thread
+    omit unless respond_to?(:assert_ruby_status)
+    code = <<-"end;"
+      require 'readline'
+      require 'test/readline/helper'
+      #{
+        if self.class == TestReadline
+          "use_ext_readline"
+        elsif self.class == TestRelineAsReadline
+          "use_lib_reline"
+        end
+      }
+      Readline.input = STDIN
+      begin
+        Thread.new{
+          trap(:INT) {
+            p :INT
+          }
+          Readline.readline('input> ')
+        }.value
+      rescue Interrupt => e
+        puts 'FAILED'
+        raise
+      end
+      puts 'SUCCEEDED'
+    end;
+    f = Tempfile.new("interrupt_in_other_thread")
+    path = f.path
+    f.write code
+    f.close
+    f.open
+    asserted = false
+    log, status = EnvUtil.invoke_ruby([path], "", true, :merge_to_stdout) do |_in, _out, _, pid|
+      Timeout.timeout(4) do
+        log = String.new
+        while c = _out.read(1)
+          log << c if c
+          break if log.include?('input>')
+        end
+        Process.kill(:INT, pid)
+        sleep 0.1
+        while c = _out.read(1)
+          log << c if c
+          break if log.include?('INT')
+        end
+        begin
+          _in.write "\n"
+        rescue Errno::EPIPE
+          # The "write" will fail if Reline crashed by SIGINT.
+        end
+        while c = _out.read(1)
+          log << c if c
+          if log.include?('FAILED')
+            assert false, "Should handle SIGINT correctly but failed."
+            asserted = true
+          end
+          if log.include?('SUCCEEDED')
+            assert true, "Should handle SIGINT correctly but failed."
+            asserted = true
+          end
+        end
+      rescue Timeout::Error
+        assert true, "Timed out to handle SIGINT."
+        asserted = true
+      end
+      [log, Process.wait2(pid)[1]]
+    end
+    unless asserted
+      assert false, "Unknown failure with exit status #{status}"
+    end
+  ensure
+    f.close! if f
+  end
+
+
+
   def test_setting_quoting_detection_proc
     return unless Readline.respond_to?(:quoting_detection_proc=)
 
