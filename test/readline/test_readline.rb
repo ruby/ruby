@@ -481,9 +481,9 @@ module BasetestReadline
       require 'readline'
       require 'test/readline/helper'
       #{
-        if self.class == TestReadline
+        if defined?(TestReadline) && self.class == TestReadline
           "use_ext_readline"
-        elsif self.class == TestRelineAsReadline
+        elsif defined?(TestRelineAsReadline) && self.class == TestRelineAsReadline
           "use_lib_reline"
         end
       }
