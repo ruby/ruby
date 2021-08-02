@@ -543,7 +543,7 @@ module BasetestReadline
       [log, Process.wait2(pid)[1]]
     end
     unless asserted
-      assert false, "Unknown failure with exit status #{status}"
+      assert false, "Unknown failure with exit status #{status}\nLog: #{log}\n----"
     end
   ensure
     f.close! if f
