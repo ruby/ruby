@@ -71,6 +71,10 @@ module Bundler
         @remotes.size > 1
       end
 
+      def no_remotes?
+        @remotes.size == 0
+      end
+
       def can_lock?(spec)
         return super unless multiple_remotes?
         include?(spec.source)

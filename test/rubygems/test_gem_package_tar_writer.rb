@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/package/tar_test_case'
+require_relative 'package/tar_test_case'
 require 'rubygems/package/tar_writer'
 
 class TestGemPackageTarWriter < Gem::Package::TarTestCase

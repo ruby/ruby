@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "rubygems/test_case"
+require_relative "helper"
 require "open3"
 
 class TestProjectSanity < Gem::TestCase

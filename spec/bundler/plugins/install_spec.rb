@@ -214,6 +214,7 @@ RSpec.describe "bundler plugin install" do
       end
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         plugin 'ga-plugin', :git => "#{lib_path("ga-plugin-1.0")}"
       G
 
@@ -227,6 +228,7 @@ RSpec.describe "bundler plugin install" do
       end
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         plugin 'ga-plugin', :path => "#{lib_path("ga-plugin-1.0")}"
       G
 

@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 
 unless Gem.java_platform? # jruby can't require the simple_gem file
   require 'rubygems/simple_gem'

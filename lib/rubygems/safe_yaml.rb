@@ -17,8 +17,6 @@ module Gem
       Gem::Specification
       Gem::Version
       Gem::Version::Requirement
-      YAML::Syck::DefaultKey
-      Syck::DefaultKey
     ].freeze
 
     PERMITTED_SYMBOLS = %w[

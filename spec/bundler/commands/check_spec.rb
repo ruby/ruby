@@ -319,6 +319,7 @@ RSpec.describe "bundle check" do
   describe "when using only scoped rubygems sources" do
     before do
       gemfile <<~G
+        source "#{file_uri_for(gem_repo2)}"
         source "#{file_uri_for(gem_repo1)}" do
           gem "rack"
         end
@@ -343,6 +344,7 @@ RSpec.describe "bundle check" do
       end
 
       gemfile <<~G
+        source "#{file_uri_for(gem_repo1)}"
         source "#{file_uri_for(gem_repo4)}" do
           gem "depends_on_rack"
         end
@@ -355,6 +357,7 @@ RSpec.describe "bundle check" do
       expect(out).to include("The Gemfile's dependencies are satisfied")
       expect(lockfile).to eq <<~L
         GEM
+          remote: #{file_uri_for(gem_repo1)}/
           specs:
 
         GEM

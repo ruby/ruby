@@ -76,6 +76,20 @@ RSpec.describe ".bundle/config" do
     end
   end
 
+  describe "config location" do
+    let(:bundle_user_config) { File.join(Dir.home, ".config/bundler") }
+
+    before do
+      Dir.mkdir File.dirname(bundle_user_config)
+    end
+
+    it "can be configured through BUNDLE_USER_CONFIG" do
+      bundle "config set path vendor", :env => { "BUNDLE_USER_CONFIG" => bundle_user_config }
+      bundle "config get path", :env => { "BUNDLE_USER_CONFIG" => bundle_user_config }
+      expect(out).to include("Set for the current user (#{bundle_user_config}): \"vendor\"")
+    end
+  end
+
   describe "global" do
     before(:each) do
       install_gemfile <<-G
@@ -321,7 +335,7 @@ E
   end
 
   describe "quoting" do
-    before(:each) { gemfile "# no gems" }
+    before(:each) { gemfile "source \"#{file_uri_for(gem_repo1)}\"" }
     let(:long_string) do
       "--with-xml2-include=/usr/pkg/include/libxml2 --with-xml2-lib=/usr/pkg/lib " \
       "--with-xslt-dir=/usr/pkg"

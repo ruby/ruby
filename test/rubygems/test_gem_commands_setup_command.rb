@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/commands/setup_command'
 
 class TestGemCommandsSetupCommand < Gem::TestCase
@@ -21,7 +21,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     filelist = %w[
       bin/gem
       lib/rubygems.rb
-      lib/rubygems/test_case.rb
+      lib/rubygems/requirement.rb
       lib/rubygems/ssl_certs/rubygems.org/foo.pem
       bundler/exe/bundle
       bundler/exe/bundler
@@ -159,7 +159,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
   end
 
   def test_files_in
-    assert_equal %w[rubygems.rb rubygems/ssl_certs/rubygems.org/foo.pem rubygems/test_case.rb],
+    assert_equal %w[rubygems.rb rubygems/requirement.rb rubygems/ssl_certs/rubygems.org/foo.pem],
                  @cmd.files_in('lib').sort
   end
 

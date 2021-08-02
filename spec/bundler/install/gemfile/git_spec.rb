@@ -62,6 +62,7 @@ RSpec.describe "bundle install with git sources" do
       update_git "foo"
 
       install_gemfile bundled_app2("Gemfile"), <<-G, :dir => bundled_app2
+        source "#{file_uri_for(gem_repo1)}"
         git "#{lib_path("foo-1.0")}" do
           gem 'foo'
         end
@@ -84,6 +85,7 @@ RSpec.describe "bundle install with git sources" do
       build_git "foo"
 
       install_gemfile <<-G, :raise_on_error => false
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", "1.1", :git => "#{lib_path("foo-1.0")}"
       G
 
@@ -98,6 +100,7 @@ RSpec.describe "bundle install with git sources" do
       end
 
       install_gemfile <<-G, :raise_on_error => false
+        source "#{file_uri_for(gem_repo1)}"
         platforms :jruby do
           gem "only_java", "1.2", :git => "#{lib_path("only_java-1.0-java")}"
         end
@@ -119,6 +122,7 @@ RSpec.describe "bundle install with git sources" do
       end
 
       install_gemfile <<-G, :raise_on_error => false
+        source "#{file_uri_for(gem_repo1)}"
         platforms :jruby do
           gem "only_java", "1.2", :git => "#{lib_path("only_java-1.1-java")}"
         end
@@ -187,6 +191,7 @@ RSpec.describe "bundle install with git sources" do
 
     it "works" do
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         git "#{lib_path("foo-1.0")}", :ref => "#{@revision}" do
           gem "foo"
         end
@@ -202,6 +207,7 @@ RSpec.describe "bundle install with git sources" do
 
     it "works when the revision is a symbol" do
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         git "#{lib_path("foo-1.0")}", :ref => #{@revision.to_sym.inspect} do
           gem "foo"
         end
@@ -230,6 +236,7 @@ RSpec.describe "bundle install with git sources" do
       end
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         git "#{lib_path("foo-1.0")}", :ref => "refs/bundler/1" do
           gem "foo"
         end
@@ -246,6 +253,7 @@ RSpec.describe "bundle install with git sources" do
 
     it "works when the revision is a non-head ref and it was previously downloaded" do
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         git "#{lib_path("foo-1.0")}" do
           gem "foo"
         end
@@ -264,6 +272,7 @@ RSpec.describe "bundle install with git sources" do
       end
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         git "#{lib_path("foo-1.0")}", :ref => "refs/bundler/1" do
           gem "foo"
         end
@@ -284,6 +293,7 @@ RSpec.describe "bundle install with git sources" do
       bundle "config set global_gem_cache true"
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         git "#{lib_path("foo-1.0")}" do
           gem "foo"
         end
@@ -306,6 +316,7 @@ RSpec.describe "bundle install with git sources" do
       update_git("foo", :path => repo, :branch => branch)
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         git "#{repo}", :branch => #{branch.dump} do
           gem "foo"
         end
@@ -322,6 +333,7 @@ RSpec.describe "bundle install with git sources" do
         update_git("foo", :path => repo, :branch => branch)
 
         install_gemfile <<-G
+          source "#{file_uri_for(gem_repo1)}"
           git "#{repo}", :branch => #{branch.dump} do
             gem "foo"
           end
@@ -339,6 +351,7 @@ RSpec.describe "bundle install with git sources" do
         update_git("foo", :path => repo, :branch => branch)
 
         install_gemfile <<-G
+          source "#{file_uri_for(gem_repo1)}"
           git "#{repo}", :branch => #{branch.dump} do
             gem "foo"
           end
@@ -357,6 +370,7 @@ RSpec.describe "bundle install with git sources" do
       update_git("foo", :path => repo, :tag => tag)
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         git "#{repo}", :tag => #{tag.dump} do
           gem "foo"
         end
@@ -373,6 +387,7 @@ RSpec.describe "bundle install with git sources" do
         update_git("foo", :path => repo, :tag => tag)
 
         install_gemfile <<-G
+         source "#{file_uri_for(gem_repo1)}"
           git "#{repo}", :tag => #{tag.dump} do
             gem "foo"
           end
@@ -390,6 +405,7 @@ RSpec.describe "bundle install with git sources" do
         update_git("foo", :path => repo, :tag => tag)
 
         install_gemfile <<-G
+          source "#{file_uri_for(gem_repo1)}"
           git "#{repo}", :tag => #{tag.dump} do
             gem "foo"
           end
@@ -705,6 +721,7 @@ RSpec.describe "bundle install with git sources" do
       build_lib "hi2u", :path => lib_path("hi2u")
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         path "#{lib_path("hi2u")}" do
           gem "omg"
           gem "hi2u"
@@ -721,6 +738,7 @@ RSpec.describe "bundle install with git sources" do
     update_git "foo"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :git => "#{lib_path("foo-1.0")}", :ref => "#{@revision}"
     G
 
@@ -785,6 +803,7 @@ RSpec.describe "bundle install with git sources" do
     build_git "foo", "1.0"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", "1.0", :git => "#{lib_path("foo-1.0")}"
     G
 
@@ -806,6 +825,7 @@ RSpec.describe "bundle install with git sources" do
 
   it "catches git errors and spits out useful output" do
     gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", "1.0", :git => "omgomg"
     G
 
@@ -820,6 +840,7 @@ RSpec.describe "bundle install with git sources" do
     build_git "foo", :path => lib_path("foo space-1.0")
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :git => "#{lib_path("foo space-1.0")}"
     G
 
@@ -830,6 +851,7 @@ RSpec.describe "bundle install with git sources" do
     build_git "forced", "1.0"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       git "#{lib_path("forced-1.0")}" do
         gem 'forced'
       end
@@ -858,6 +880,7 @@ RSpec.describe "bundle install with git sources" do
     sys_exec "git commit -m \"submodulator\"", :dir => lib_path("has_submodule-1.0")
 
     install_gemfile <<-G, :raise_on_error => false
+      source "#{file_uri_for(gem_repo1)}"
       git "#{lib_path("has_submodule-1.0")}" do
         gem "has_submodule"
       end
@@ -876,6 +899,7 @@ RSpec.describe "bundle install with git sources" do
     sys_exec "git commit -m \"submodulator\"", :dir => lib_path("has_submodule-1.0")
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       git "#{lib_path("has_submodule-1.0")}", :submodules => true do
         gem "has_submodule"
       end
@@ -892,6 +916,7 @@ RSpec.describe "bundle install with git sources" do
     sys_exec "git commit -m \"submodulator\"", :dir => lib_path("has_submodule-1.0")
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       git "#{lib_path("has_submodule-1.0")}" do
         gem "has_submodule"
       end
@@ -906,6 +931,7 @@ RSpec.describe "bundle install with git sources" do
     git = build_git "foo"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       git "#{lib_path("foo-1.0")}" do
         gem "foo"
       end
@@ -915,6 +941,7 @@ RSpec.describe "bundle install with git sources" do
     update_git "foo"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       git "#{lib_path("foo-1.0")}", :ref => "#{git.ref_for("HEAD^")}" do
         gem "foo"
       end
@@ -932,6 +959,7 @@ RSpec.describe "bundle install with git sources" do
     build_git "foo"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :git => "#{lib_path("foo-1.0")}"
     G
 
@@ -945,6 +973,7 @@ RSpec.describe "bundle install with git sources" do
     build_git "foo"
 
     gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :git => "#{lib_path("foo-1.0")}"
     G
 
@@ -959,6 +988,7 @@ RSpec.describe "bundle install with git sources" do
     FileUtils.touch(default_bundle_path("bundler"))
 
     install_gemfile <<-G, :raise_on_error => false
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :git => "#{lib_path("foo-1.0")}"
     G
 
@@ -976,6 +1006,7 @@ RSpec.describe "bundle install with git sources" do
     build_git "bar", :path => lib_path("nested")
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :git => "#{lib_path("nested")}"
       gem "bar", :git => "#{lib_path("nested")}"
     G
@@ -1033,6 +1064,7 @@ RSpec.describe "bundle install with git sources" do
       build_git "valim"
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "valim", :git => "#{file_uri_for(lib_path("valim-1.0"))}"
       G
 
@@ -1058,11 +1090,13 @@ RSpec.describe "bundle install with git sources" do
       revision = revision_for(lib_path("foo-1.0"))
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :git => "#{file_uri_for(lib_path("foo-1.0"))}", :ref => "#{revision}"
       G
       expect(out).to_not match(/Revision.*does not exist/)
 
       install_gemfile <<-G, :raise_on_error => false
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :git => "#{file_uri_for(lib_path("foo-1.0"))}", :ref => "deadbeef"
       G
       expect(err).to include("Revision deadbeef does not exist in the repository")
@@ -1089,6 +1123,7 @@ RSpec.describe "bundle install with git sources" do
     it "runs pre-install hooks" do
       build_git "foo"
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :git => "#{lib_path("foo-1.0")}"
       G
 
@@ -1108,6 +1143,7 @@ RSpec.describe "bundle install with git sources" do
     it "runs post-install hooks" do
       build_git "foo"
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :git => "#{lib_path("foo-1.0")}"
       G
 
@@ -1127,6 +1163,7 @@ RSpec.describe "bundle install with git sources" do
     it "complains if the install hook fails" do
       build_git "foo"
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :git => "#{lib_path("foo-1.0")}"
       G
 
@@ -1403,6 +1440,7 @@ In Gemfile:
       build_git "foo"
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         git "#{lib_path("foo-1.0")}" do
           gem 'foo'
         end
@@ -1419,6 +1457,7 @@ In Gemfile:
       build_git "foo"
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         git "#{lib_path("foo-1.0")}" do
           gem 'foo'
         end
@@ -1448,6 +1487,7 @@ In Gemfile:
         build_git "foo", "1.0", :path => lib_path("foo")
 
         gemfile <<-G
+          source "#{file_uri_for(gem_repo1)}"
           gem "foo", :git => "#{lib_path("foo")}", :branch => "master"
         G
 
@@ -1463,6 +1503,7 @@ In Gemfile:
 
       it "does not display the password" do
         install_gemfile <<-G, :raise_on_error => false
+          source "#{file_uri_for(gem_repo1)}"
           git "https://#{credentials}@github.com/company/private-repo" do
             gem "foo"
           end
@@ -1478,6 +1519,7 @@ In Gemfile:
 
       it "displays the oauth scheme but not the oauth token" do
         install_gemfile <<-G, :raise_on_error => false
+          source "#{file_uri_for(gem_repo1)}"
           git "https://#{credentials}:x-oauth-basic@github.com/company/private-repo" do
             gem "foo"
           end

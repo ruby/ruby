@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require "rubygems/requirement"
 
 class TestGemRequirement < Gem::TestCase
@@ -421,6 +421,40 @@ class TestGemRequirement < Gem::TestCase
     assert_requirement_hash_equal "1.0", "1.0.0"
     assert_requirement_hash_equal "1.1", "1.1.0"
     assert_requirement_hash_equal "1", "1.0.0"
+  end
+
+  class Exploit < RuntimeError
+  end
+
+  def self.exploit(arg)
+    raise Exploit, "arg = #{arg}"
+  end
+
+  def test_marshal_load_attack
+    wa = Net::WriteAdapter.allocate
+    wa.instance_variable_set(:@socket, self.class)
+    wa.instance_variable_set(:@method_id, :exploit)
+    request_set = Gem::RequestSet.allocate
+    request_set.instance_variable_set(:@git_set, "id")
+    request_set.instance_variable_set(:@sets, wa)
+    wa = Net::WriteAdapter.allocate
+    wa.instance_variable_set(:@socket, request_set)
+    wa.instance_variable_set(:@method_id, :resolve)
+    ent = Gem::Package::TarReader::Entry.allocate
+    ent.instance_variable_set(:@read, 0)
+    ent.instance_variable_set(:@header, "aaa")
+    io = Net::BufferedIO.allocate
+    io.instance_variable_set(:@io, ent)
+    io.instance_variable_set(:@debug_output, wa)
+    reader = Gem::Package::TarReader.allocate
+    reader.instance_variable_set(:@io, io)
+    requirement = Gem::Requirement.allocate
+    requirement.instance_variable_set(:@requirements, reader)
+    m = [Gem::SpecFetcher, Gem::Installer, requirement]
+    e = assert_raise(TypeError) do
+      Marshal.load(Marshal.dump(m))
+    end
+    assert_equal(e.message, "wrong @requirements")
   end
 
   # Assert that two requirements are equal. Handles Gem::Requirements,

@@ -11,7 +11,7 @@ module Bundler
       @specs = specs
     end
 
-    def for(dependencies, check = false, match_current_platform = false, raise_on_missing = true)
+    def for(dependencies, check = false, match_current_platform = false)
       handled = []
       deps = dependencies.dup
       specs = []
@@ -33,11 +33,6 @@ module Bundler
           end
         elsif check
           return false
-        elsif raise_on_missing
-          others = lookup[dep.name] if match_current_platform
-          message = "Unable to find a spec satisfying #{dep} in the set. Perhaps the lockfile is corrupted?"
-          message += " Found #{others.join(", ")} that did not match the current platform." if others && !others.empty?
-          raise GemNotFound, message
         end
       end
 
@@ -71,50 +66,33 @@ module Bundler
       lookup.dup
     end
 
-    def materialize(deps, missing_specs = nil)
-      materialized = self.for(deps, false, true, !missing_specs)
-
-      materialized.group_by(&:source).each do |source, specs|
-        next unless specs.any?{|s| s.is_a?(LazySpecification) }
-
-        source.local!
-        names = -> { specs.map(&:name).uniq }
-        source.double_check_for(names)
-      end
+    def materialize(deps)
+      materialized = self.for(deps, false, true)
 
       materialized.map! do |s|
         next s unless s.is_a?(LazySpecification)
-        spec = s.__materialize__
-        unless spec
-          unless missing_specs
-            raise GemNotFound, "Could not find #{s.full_name} in any of the sources"
-          end
-          missing_specs << s
-        end
-        spec
+        s.source.local!
+        s.__materialize__ || s
       end
-      SpecSet.new(missing_specs ? materialized.compact : materialized)
+      SpecSet.new(materialized)
     end
 
     # Materialize for all the specs in the spec set, regardless of what platform they're for
     # This is in contrast to how for does platform filtering (and specifically different from how `materialize` calls `for` only for the current platform)
     # @return [Array<Gem::Specification>]
     def materialized_for_all_platforms
-      @specs.group_by(&:source).each do |source, specs|
-        next unless specs.any?{|s| s.is_a?(LazySpecification) }
-
-        source.local!
-        source.remote!
-        names = -> { specs.map(&:name).uniq }
-        source.double_check_for(names)
-      end
-
       @specs.map do |s|
         next s unless s.is_a?(LazySpecification)
+        s.source.local!
+        s.source.remote!
         spec = s.__materialize__
         raise GemNotFound, "Could not find #{s.full_name} in any of the sources" unless spec
         spec
       end
+    end
+
+    def missing_specs
+      @specs.select {|s| s.is_a?(LazySpecification) }
     end
 
     def merge(set)

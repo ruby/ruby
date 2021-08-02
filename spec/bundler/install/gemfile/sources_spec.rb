@@ -1074,6 +1074,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
         build_lib "foo"
 
         gemfile <<-G
+          source "#{file_uri_for(gem_repo1)}"
           gem "rack", :source => "https://gem.repo1"
           gem "foo", :path => "#{lib_path("foo-1.0")}"
         G
@@ -1309,6 +1310,8 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
 
       install_gemfile <<-G, :artifice => "compact_index", :raise_on_error => false
+        source "#{file_uri_for(gem_repo1)}"
+
         source "https://gem.repo4" do
           gem "depends_on_rack"
         end
@@ -1338,6 +1341,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
 
       install_gemfile <<-G, :artifice => "compact_index", :raise_on_error => false
+        source "#{file_uri_for(gem_repo1)}"
         source "https://gem.repo4" do
           gem "depends_on_rack"
         end

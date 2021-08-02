@@ -1,4 +1,3 @@
-require 'base64'
 require 'digest'
 require 'rubygems/openssl'
 
