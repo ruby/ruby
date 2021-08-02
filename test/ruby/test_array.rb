@@ -3377,21 +3377,15 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_mean
-    assert_int_equal(3, [3].mean)
-    assert_int_equal(4, [3, 5].mean)
-    assert_rational_equal(4r, [3, 5r].mean)
+    assert_float_equal(3.0, [3].mean)
+    assert_float_equal(4.0, [3, 5].mean)
+    assert_float_equal(4.0, [3, 5r].mean)
     assert_float_equal(5.0, [3, 5, 7.0].mean)
     assert_float_equal(5.0, [3, 5r, 7.0].mean)
     assert_complex_equal((8r+1i)/3, [3, 5r, 1i].mean)
     assert_complex_equal(3.75-1/4i, [3, 5r, 7.0, 1i].mean)
 
-    assert_int_equal(FIXNUM_MAX, Array.new(2, FIXNUM_MAX).mean)
-    assert_int_equal((FIXNUM_MAX+1), Array.new(2, FIXNUM_MAX+1).mean)
-    assert_int_equal(FIXNUM_MAX, Array.new(10, FIXNUM_MAX).mean)
-
-    assert_float_equal(5.3, [3, 5, 7.9].mean)
-
-    assert_int_equal(2, [1.5, 2.1].mean(&:round))
+    assert_float_equal(2.0, [1.5, 2.1].mean(&:round))
     assert_float_equal(7.0/3.0, [1.5, 2.2, 3.1].mean(&:round))
     assert_float_equal(1.8, [-1.5, -2.1].mean(&:abs))
     assert_predicate([].mean, :nan?)
