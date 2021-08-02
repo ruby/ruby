@@ -7928,7 +7928,7 @@ rb_ary_mean(int argc, VALUE *argv, VALUE ary)
     VALUE sum, average;
 
     sum = rb_ary_sum(argc, 0, ary);
-    average = rb_funcall(sum, '/', 1, LONG2NUM(len));
+    average = rb_funcall(sum, '/', 1, DBL2NUM(len));
 
     return average;
 }

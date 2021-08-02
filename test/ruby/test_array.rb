@@ -3392,6 +3392,7 @@ class TestArray < Test::Unit::TestCase
     assert_float_equal(5.3, [3, 5, 7.9].mean)
 
     assert_int_equal(2, [1.5, 2.1].mean(&:round))
+    assert_float_equal(7.0/3.0, [1.5, 2.2, 3.1].mean(&:round))
     assert_float_equal(1.8, [-1.5, -2.1].mean(&:abs))
     assert_predicate([].mean, :nan?)
 
