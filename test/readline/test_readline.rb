@@ -479,7 +479,7 @@ module BasetestReadline
     omit unless respond_to?(:assert_ruby_status)
     code = <<-"end;"
       require 'readline'
-      require 'test/readline/helper'
+      require 'helper'
       #{
         if defined?(TestReadline) && self.class == TestReadline
           "use_ext_readline"
@@ -507,7 +507,8 @@ module BasetestReadline
     f.close
     f.open
     asserted = false
-    log, status = EnvUtil.invoke_ruby([path], "", true, :merge_to_stdout) do |_in, _out, _, pid|
+    current_dir = File.expand_path("..", __FILE__)
+    log, status = EnvUtil.invoke_ruby(["-I#{current_dir}", path], "", true, :merge_to_stdout) do |_in, _out, _, pid|
       Timeout.timeout(4) do
         log = String.new
         while c = _out.read(1)
