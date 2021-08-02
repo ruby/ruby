@@ -21,8 +21,6 @@ jobs:
 
     - name: Checkout repository
       uses: actions/checkout@v2
-      with:
-        fetch-depth: 2
 
     - name: Remove an obsolete rubygems vendored file
       run: sudo rm /usr/lib/ruby/vendor_ruby/rubygems/defaults/operating_system.rb
