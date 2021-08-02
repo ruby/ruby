@@ -428,12 +428,8 @@ module Bundler
     def global_config_file
       if ENV["BUNDLE_CONFIG"] && !ENV["BUNDLE_CONFIG"].empty?
         Pathname.new(ENV["BUNDLE_CONFIG"])
-      else
-        begin
-          Bundler.user_bundle_path("config")
-        rescue PermissionError, GenericSystemCallError
-          nil
-        end
+      elsif Bundler.rubygems.user_home && !Bundler.rubygems.user_home.empty?
+        Pathname.new(Bundler.rubygems.user_home).join(".bundle/config")
       end
     end
 

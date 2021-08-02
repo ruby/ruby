@@ -365,7 +365,7 @@ class TestGemServer < Gem::TestCase
     specs_dir = File.join dir, 'specifications'
     FileUtils.mkdir_p specs_dir
 
-    open File.join(specs_dir, spec.spec_name), 'w' do |io|
+    File.open File.join(specs_dir, spec.spec_name), 'w' do |io|
       io.write spec.to_ruby
     end
 
@@ -420,7 +420,7 @@ class TestGemServer < Gem::TestCase
     specs_dir = File.join dir, 'specifications'
     FileUtils.mkdir_p specs_dir
 
-    open File.join(specs_dir, spec.spec_name), 'w' do |io|
+    File.open File.join(specs_dir, spec.spec_name), 'w' do |io|
       io.write spec.to_ruby
     end
 
@@ -475,7 +475,7 @@ class TestGemServer < Gem::TestCase
     specs_dir = File.join dir, 'specifications'
     FileUtils.mkdir_p specs_dir
 
-    open File.join(specs_dir, spec.spec_name), 'w' do |io|
+    File.open File.join(specs_dir, spec.spec_name), 'w' do |io|
       io.write spec.to_ruby
     end
 
@@ -502,7 +502,7 @@ class TestGemServer < Gem::TestCase
     specs_dir = File.join dir, 'specifications'
     FileUtils.mkdir_p specs_dir
 
-    open File.join(specs_dir, spec.spec_name), 'w' do |io|
+    File.open File.join(specs_dir, spec.spec_name), 'w' do |io|
       io.write spec.to_ruby
     end
 

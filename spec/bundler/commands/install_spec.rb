@@ -344,54 +344,72 @@ RSpec.describe "bundle install with gem sources" do
       expect(File.exist?(bundled_app_lock)).to eq(true)
     end
 
-    context "throws a warning if a gem is added twice in Gemfile" do
-      it "without version requirements" do
-        install_gemfile <<-G, :raise_on_error => false
-          source "#{file_uri_for(gem_repo2)}"
-          gem "rack"
-          gem "rack"
-        G
+    it "throws a warning if a gem is added twice in Gemfile without version requirements" do
+      install_gemfile <<-G, :raise_on_error => false
+        source "#{file_uri_for(gem_repo2)}"
+        gem "rack"
+        gem "rack"
+      G
 
-        expect(err).to include("Your Gemfile lists the gem rack (>= 0) more than once.")
-        expect(err).to include("Remove any duplicate entries and specify the gem only once.")
-        expect(err).to include("While it's not a problem now, it could cause errors if you change the version of one of them later.")
-      end
-
-      it "with same versions" do
-        install_gemfile <<-G, :raise_on_error => false
-          source "#{file_uri_for(gem_repo2)}"
-          gem "rack", "1.0"
-          gem "rack", "1.0"
-        G
-
-        expect(err).to include("Your Gemfile lists the gem rack (= 1.0) more than once.")
-        expect(err).to include("Remove any duplicate entries and specify the gem only once.")
-        expect(err).to include("While it's not a problem now, it could cause errors if you change the version of one of them later.")
-      end
+      expect(err).to include("Your Gemfile lists the gem rack (>= 0) more than once.")
+      expect(err).to include("Remove any duplicate entries and specify the gem only once.")
+      expect(err).to include("While it's not a problem now, it could cause errors if you change the version of one of them later.")
     end
 
-    context "throws an error if a gem is added twice in Gemfile" do
-      it "when version of one dependency is not specified" do
-        install_gemfile <<-G, :raise_on_error => false
-          source "#{file_uri_for(gem_repo2)}"
-          gem "rack"
-          gem "rack", "1.0"
-        G
+    it "throws a warning if a gem is added twice in Gemfile with same versions" do
+      install_gemfile <<-G, :raise_on_error => false
+        source "#{file_uri_for(gem_repo2)}"
+        gem "rack", "1.0"
+        gem "rack", "1.0"
+      G
 
-        expect(err).to include("You cannot specify the same gem twice with different version requirements")
-        expect(err).to include("You specified: rack (>= 0) and rack (= 1.0).")
+      expect(err).to include("Your Gemfile lists the gem rack (= 1.0) more than once.")
+      expect(err).to include("Remove any duplicate entries and specify the gem only once.")
+      expect(err).to include("While it's not a problem now, it could cause errors if you change the version of one of them later.")
+    end
+
+    it "does not throw a warning if a gem is added once in Gemfile and also inside a gemspec as a development dependency" do
+      build_lib "my-gem", :path => bundled_app do |s|
+        s.add_development_dependency "my-private-gem"
       end
 
-      it "when different versions of both dependencies are specified" do
-        install_gemfile <<-G, :raise_on_error => false
-          source "#{file_uri_for(gem_repo2)}"
-          gem "rack", "1.0"
-          gem "rack", "1.1"
-        G
-
-        expect(err).to include("You cannot specify the same gem twice with different version requirements")
-        expect(err).to include("You specified: rack (= 1.0) and rack (= 1.1).")
+      build_repo2 do
+        build_gem "my-private-gem"
       end
+
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo2)}"
+
+        gemspec
+
+        gem "my-private-gem", :group => :development
+      G
+
+      bundle :install
+
+      expect(err).to be_empty
+    end
+
+    it "throws an error if a gem is added twice in Gemfile when version of one dependency is not specified" do
+      install_gemfile <<-G, :raise_on_error => false
+        source "#{file_uri_for(gem_repo2)}"
+        gem "rack"
+        gem "rack", "1.0"
+      G
+
+      expect(err).to include("You cannot specify the same gem twice with different version requirements")
+      expect(err).to include("You specified: rack (>= 0) and rack (= 1.0).")
+    end
+
+    it "throws an error if a gem is added twice in Gemfile when different versions of both dependencies are specified" do
+      install_gemfile <<-G, :raise_on_error => false
+        source "#{file_uri_for(gem_repo2)}"
+        gem "rack", "1.0"
+        gem "rack", "1.1"
+      G
+
+      expect(err).to include("You cannot specify the same gem twice with different version requirements")
+      expect(err).to include("You specified: rack (= 1.0) and rack (= 1.1).")
     end
 
     it "gracefully handles error when rubygems server is unavailable" do
