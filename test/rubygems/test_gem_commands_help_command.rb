@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 require "rubygems"
-require "rubygems/test_case"
+require_relative "helper"
 require "rubygems/commands/help_command"
 require "rubygems/package"
 require "rubygems/command_manager"

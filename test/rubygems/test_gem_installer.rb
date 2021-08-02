@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/installer_test_case'
+require_relative 'installer_test_case'
 
 class TestGemInstaller < Gem::InstallerTestCase
   def setup
@@ -740,7 +740,6 @@ gem 'other', version
 
     installer = Gem::Installer.at(
       gem_with_dangling_symlink,
-      :install_dir => @gem_home,
       :user_install => false,
       :force => true
     )
@@ -1482,6 +1481,7 @@ gem 'other', version
 
   def test_install_extension_and_script
     pend "Makefile creation crashes on jruby" if Gem.java_platform?
+    pend if /mswin/ =~ RUBY_PLATFORM && ENV.key?('GITHUB_ACTIONS') # not working from the beginning
 
     @spec = setup_base_spec
     @spec.extensions << "extconf.rb"

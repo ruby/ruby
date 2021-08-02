@@ -4,6 +4,8 @@ RSpec.describe "bundle install" do
   context "with duplicated gems" do
     it "will display a warning" do
       install_gemfile <<-G, :raise_on_error => false
+        source "#{file_uri_for(gem_repo1)}"
+
         gem 'rails', '~> 4.0.0'
         gem 'rails', '~> 4.0.0'
       G
@@ -54,6 +56,8 @@ RSpec.describe "bundle install" do
   context "with deprecated features" do
     it "reports that lib is an invalid option" do
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+
         gem "rack", :lib => "rack"
       G
 
@@ -86,6 +90,8 @@ RSpec.describe "bundle install" do
   context "with a Gemfile containing non-US-ASCII characters" do
     it "reads the Gemfile with the UTF-8 encoding by default" do
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+
         str = "Il était une fois ..."
         puts "The source encoding is: " + str.encoding.name
       G
@@ -99,6 +105,8 @@ RSpec.describe "bundle install" do
       # NOTE: This works thanks to #eval interpreting the magic encoding comment
       install_gemfile <<-G
         # encoding: iso-8859-1
+        source "#{file_uri_for(gem_repo1)}"
+
         str = "Il #{"\xE9".dup.force_encoding("binary")}tait une fois ..."
         puts "The source encoding is: " + str.encoding.name
       G

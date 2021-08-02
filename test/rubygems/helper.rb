@@ -52,32 +52,28 @@ require 'rubygems/mock_gem_ui'
 module Gem
 
   ##
-  # Allows setting the gem path searcher.  This method is available when
-  # requiring 'rubygems/test_case'
+  # Allows setting the gem path searcher.
 
   def self.searcher=(searcher)
     @searcher = searcher
   end
 
   ##
-  # Allows toggling Windows behavior.  This method is available when requiring
-  # 'rubygems/test_case'
+  # Allows toggling Windows behavior.
 
   def self.win_platform=(val)
     @@win_platform = val
   end
 
   ##
-  # Allows setting path to Ruby.  This method is available when requiring
-  # 'rubygems/test_case'
+  # Allows setting path to Ruby.
 
   def self.ruby=(ruby)
     @ruby = ruby
   end
 
   ##
-  # When rubygems/test_case is required the default user interaction is a
-  # MockGemUi.
+  # Sets the default user interaction to a MockGemUi.
 
   module DefaultUserInteraction
     @ui = Gem::MockGemUi.new
@@ -88,8 +84,7 @@ require "rubygems/command"
 
 class Gem::Command
   ##
-  # Allows resetting the hash of specific args per command.  This method is
-  # available when requiring 'rubygems/test_case'
+  # Allows resetting the hash of specific args per command.
 
   def self.specific_extra_args_hash=(value)
     @specific_extra_args_hash = value
@@ -110,8 +105,6 @@ class Gem::TestCase < Test::Unit::TestCase
   attr_accessor :gem_repo # :nodoc:
 
   attr_accessor :uri # :nodoc:
-
-  TEST_PATH = ENV.fetch('RUBYGEMS_TEST_PATH', File.expand_path('../../../test/rubygems', __FILE__))
 
   def assert_activate(expected, *specs)
     specs.each do |spec|
@@ -1304,7 +1297,7 @@ Also, a list:
   end
 
   def ruby_with_rubygems_in_load_path
-    [Gem.ruby, "-I", File.expand_path("..", __dir__)]
+    [Gem.ruby, "-I", File.expand_path("../../lib", __dir__)]
   end
 
   def with_clean_path_to_ruby
@@ -1335,8 +1328,8 @@ Also, a list:
     end
   end
 
-  @@good_rake = "#{rubybin} #{escape_path(TEST_PATH, 'good_rake.rb')}"
-  @@bad_rake = "#{rubybin} #{escape_path(TEST_PATH, 'bad_rake.rb')}"
+  @@good_rake = "#{rubybin} #{escape_path(__dir__, 'good_rake.rb')}"
+  @@bad_rake = "#{rubybin} #{escape_path(__dir__, 'bad_rake.rb')}"
 
   ##
   # Construct a new Gem::Dependency.
@@ -1523,12 +1516,12 @@ Also, a list:
 
   def self.cert_path(cert_name)
     if 32 == (Time.at(2**32) rescue 32)
-      cert_file = "#{TEST_PATH}/#{cert_name}_cert_32.pem"
+      cert_file = "#{__dir__}/#{cert_name}_cert_32.pem"
 
       return cert_file if File.exist? cert_file
     end
 
-    "#{TEST_PATH}/#{cert_name}_cert.pem"
+    "#{__dir__}/#{cert_name}_cert.pem"
   end
 
   ##
@@ -1546,7 +1539,7 @@ Also, a list:
   # Returns the path to the key named +key_name+ from <tt>test/rubygems</tt>
 
   def self.key_path(key_name)
-    "#{TEST_PATH}/#{key_name}_key.pem"
+    "#{__dir__}/#{key_name}_key.pem"
   end
 
   # :stopdoc:
@@ -1607,4 +1600,4 @@ class Object
   end
 end
 
-require 'rubygems/test_utilities'
+require_relative 'utilities'

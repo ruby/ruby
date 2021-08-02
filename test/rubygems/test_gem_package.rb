@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'rubygems/package/tar_test_case'
+require_relative 'package/tar_test_case'
 require 'digest'
 
 class TestGemPackage < Gem::Package::TarTestCase

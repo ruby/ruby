@@ -165,6 +165,28 @@ RSpec.describe "major deprecations" do
     pending "fails with a helpful error", :bundler => "3"
   end
 
+  context "bundle cache --path" do
+    before do
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack"
+      G
+
+      bundle "cache --path foo", :raise_on_error => false
+    end
+
+    it "should print a deprecation warning", :bundler => "< 3" do
+      expect(deprecations).to include(
+        "The `--path` flag is deprecated because its semantics are unclear. " \
+        "Use `bundle config cache_path` to configure the path of your cache of gems, " \
+        "and `bundle config path` to configure the path where your gems are installed, " \
+        "and stop using this flag"
+      )
+    end
+
+    pending "fails with a helpful error", :bundler => "3"
+  end
+
   describe "bundle config" do
     describe "old list interface" do
       before do
@@ -311,7 +333,7 @@ RSpec.describe "major deprecations" do
     end
 
     it "should print a proper warning, and use gems.rb" do
-      create_file "gems.rb"
+      create_file "gems.rb", "source \"#{file_uri_for(gem_repo1)}\""
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
@@ -462,7 +484,7 @@ RSpec.describe "major deprecations" do
 
   context "when Bundler.setup is run in a ruby script" do
     before do
-      create_file "gems.rb"
+      create_file "gems.rb", "source \"#{file_uri_for(gem_repo1)}\""
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack", :group => :test
@@ -607,7 +629,7 @@ The :gist git source is deprecated, and will be removed in the future. Add this 
     before do
       graphviz_version = RUBY_VERSION >= "2.4" ? "1.2.5" : "1.2.4"
       realworld_system_gems "ruby-graphviz --version #{graphviz_version}"
-      create_file "gems.rb"
+      create_file "gems.rb", "source \"#{file_uri_for(gem_repo1)}\""
       bundle "viz"
     end
 

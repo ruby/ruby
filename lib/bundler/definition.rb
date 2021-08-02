@@ -133,7 +133,7 @@ module Bundler
         @unlock[:gems] ||= @dependencies.map(&:name)
       else
         eager_unlock = expand_dependencies(@unlock[:gems] || [], true)
-        @unlock[:gems] = @locked_specs.for(eager_unlock, false, false, false).map(&:name)
+        @unlock[:gems] = @locked_specs.for(eager_unlock, false, false).map(&:name)
       end
 
       @dependency_changes = converge_dependencies
@@ -185,15 +185,7 @@ module Bundler
     #
     # @return [Bundler::SpecSet]
     def specs
-      @specs ||= add_bundler_to(resolve.materialize(requested_dependencies))
-    rescue GemNotFound => e # Handle yanked gem
-      gem_name, gem_version = extract_gem_info(e)
-      locked_gem = @locked_specs[gem_name].last
-      raise if locked_gem.nil? || locked_gem.version.to_s != gem_version || !@remote
-      raise GemNotFound, "Your bundle is locked to #{locked_gem} from #{locked_gem.source}, but that version can " \
-                         "no longer be found in that source. That means the author of #{locked_gem} has removed it. " \
-                         "You'll need to update your bundle to a version other than #{locked_gem} that hasn't been " \
-                         "removed in order to install."
+      @specs ||= materialize(requested_dependencies)
     end
 
     def new_specs
@@ -205,9 +197,7 @@ module Bundler
     end
 
     def missing_specs
-      missing = []
-      resolve.materialize(requested_dependencies, missing)
-      missing
+      resolve.materialize(requested_dependencies).missing_specs
     end
 
     def missing_specs?
@@ -241,7 +231,7 @@ module Bundler
     def specs_for(groups)
       groups = requested_groups if groups.empty?
       deps = dependencies_for(groups)
-      add_bundler_to(resolve.materialize(expand_dependencies(deps)))
+      materialize(expand_dependencies(deps))
     end
 
     def dependencies_for(groups)
@@ -272,10 +262,6 @@ module Bundler
           Resolver.resolve(expanded_dependencies, source_requirements, last_resolve, gem_version_promoter, additional_base_requirements_for_resolve, platforms)
         end
       end
-    end
-
-    def has_rubygems_remotes?
-      sources.rubygems_sources.any? {|s| s.remotes.any? }
     end
 
     def spec_git_paths
@@ -493,7 +479,23 @@ module Bundler
 
     private
 
-    def add_bundler_to(specs)
+    def materialize(dependencies)
+      specs = resolve.materialize(dependencies)
+      missing_specs = specs.missing_specs
+
+      if missing_specs.any?
+        missing_specs.each do |s|
+          locked_gem = @locked_specs[s.name].last
+          next if locked_gem.nil? || locked_gem.version != s.version || !@remote
+          raise GemNotFound, "Your bundle is locked to #{locked_gem} from #{locked_gem.source}, but that version can " \
+                             "no longer be found in that source. That means the author of #{locked_gem} has removed it. " \
+                             "You'll need to update your bundle to a version other than #{locked_gem} that hasn't been " \
+                             "removed in order to install."
+        end
+
+        raise GemNotFound, "Could not find #{missing_specs.map(&:full_name).join(", ")} in any of the sources"
+      end
+
       unless specs["bundler"].any?
         bundler = sources.metadata_source.specs.search(Gem::Dependency.new("bundler", VERSION)).last
         specs["bundler"] = bundler
@@ -712,7 +714,7 @@ module Bundler
       @locked_specs.each do |s|
         # Replace the locked dependency's source with the equivalent source from the Gemfile
         dep = @dependencies.find {|d| s.satisfies?(d) }
-        s.source = (dep && dep.source) || sources.get(s.source)
+        s.source = (dep && dep.source) || sources.get(s.source) unless multisource_allowed?
 
         # Don't add a spec to the list if its source is expired. For example,
         # if you change a Git gem to RubyGems.
@@ -730,7 +732,7 @@ module Bundler
             # if we won't need the source (according to the lockfile),
             # don't error if the path/git source isn't available
             next if @locked_specs.
-                    for(requested_dependencies, false, true, false).
+                    for(requested_dependencies, false, true).
                     none? {|locked_spec| locked_spec.source == s.source }
 
             raise
@@ -750,7 +752,7 @@ module Bundler
 
       resolve = SpecSet.new(converged)
       @locked_specs_incomplete_for_platform = !resolve.for(expand_dependencies(requested_dependencies & deps), true, true)
-      resolve = SpecSet.new(resolve.for(expand_dependencies(deps, true), false, false, false).reject{|s| @unlock[:gems].include?(s.name) })
+      resolve = SpecSet.new(resolve.for(expand_dependencies(deps, true), false, false).reject{|s| @unlock[:gems].include?(s.name) })
       diff    = nil
 
       # Now, we unlock any sources that do not have anymore gems pinned to it
@@ -852,12 +854,6 @@ module Bundler
         proposed = proposed.gsub(pattern, "\n").gsub(whitespace_cleanup, "\n\n").strip
       end
       current == proposed
-    end
-
-    def extract_gem_info(error)
-      # This method will extract the error message like "Could not find foo-1.2.3 in any of the sources"
-      # to an array. The first element will be the gem name (e.g. foo), the second will be the version number.
-      error.message.scan(/Could not find (\w+)-(\d+(?:\.\d+)+)/).flatten
     end
 
     def compute_requires

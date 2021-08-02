@@ -173,6 +173,7 @@ RSpec.describe "bundle install with specific platforms" do
       git = build_git "pg_array_parser", "1.0"
 
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "pg_array_parser", :git => "#{lib_path("pg_array_parser-1.0")}"
       G
 
