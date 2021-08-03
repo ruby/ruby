@@ -613,6 +613,12 @@ block_t* gen_block_version(blockid_t blockid, const ctx_t* start_ctx, rb_executi
 // Generate a block version that is an entry point inserted into an iseq
 uint8_t* gen_entry_point(const rb_iseq_t *iseq, uint32_t insn_idx, rb_execution_context_t *ec)
 {
+    // If we aren't at PC 0, don't generate code
+    // See yjit_pc_guard
+    if (iseq->body->iseq_encoded != ec->cfp->pc) {
+        return NULL;
+    }
+
     // The entry context makes no assumptions about types
     blockid_t blockid = { iseq, insn_idx };
 
