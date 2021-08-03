@@ -3149,7 +3149,8 @@ NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
  *
  *  The standard shell always means <code>"/bin/sh"</code> on Unix-like systems,
  *  otherwise, <code>ENV["RUBYSHELL"]</code> or <code>ENV["COMSPEC"]</code> on
- *  Windows and similar.
+ *  Windows and similar.  The command is passed as an argument to the
+ *  <code>"-c"</code> switch to the shell, except in the case of +COMSPEC+.
  *
  *  If the string from the first form (<code>exec("command")</code>) follows
  *  these simple rules:
