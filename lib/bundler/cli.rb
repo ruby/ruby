@@ -477,6 +477,10 @@ module Bundler
       into the system wide RubyGems repository.
     D
     def exec(*args)
+      if ARGV.include?("--no-keep-file-descriptors")
+        SharedHelpers.major_deprecation(2, "The `--no-keep-file-descriptors` has been deprecated. `bundle exec` no longer mess with your file descriptors. Close them in the exec'd script if you need to")
+      end
+
       require_relative "cli/exec"
       Exec.new(options, args).run
     end
