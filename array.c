@@ -7925,12 +7925,12 @@ rb_ary_mean(int argc, VALUE *argv, VALUE ary)
     if (len == 0)
         return DBL2NUM(nan(""));
 
-    VALUE sum, average;
+    VALUE sum, mean;
 
     sum = rb_ary_sum(argc, 0, ary);
-    average = rb_funcall(sum, '/', 1, DBL2NUM(len));
+    mean = rb_funcall(sum, '/', 1, DBL2NUM(len));
 
-    return average;
+    return mean;
 }
 
 static VALUE
