@@ -263,7 +263,7 @@ module Test
         include(*Test::Unit::TestCase.ancestors.select {|c| !c.is_a?(Class) })
         out = out ? IO.new(out, 'w') : STDOUT
         at_exit {
-          out.puts [Marshal.dump($!)].pack('m'), "assertions=\#{self._assertions}"
+          out.puts [Marshal.dump($!)].pack('m'), "assertions=#{self._assertions}"
         }
         Test::Unit::Runner.class_variable_set(:@@stop_auto_run, true) if defined?(Test::Unit::Runner)
       end
