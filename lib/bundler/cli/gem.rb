@@ -185,7 +185,7 @@ module Bundler
         )
       end
 
-      if File.exist?(target) && !File.directory?(target)
+      if target.exist? && !target.directory?
         Bundler.ui.error "Couldn't create a new gem named `#{gem_name}` because there's an existing file named `#{gem_name}`."
         exit Bundler::BundlerError.all_errors[Bundler::GenericSystemCallError]
       end
