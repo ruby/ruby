@@ -191,6 +191,8 @@ End
       assert(false)
     rescue my_error
     end
+  ensure
+    GC.enable
   end
 
   def test_each_object
