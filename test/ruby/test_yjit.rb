@@ -59,6 +59,10 @@ class TestYJIT < Test::Unit::TestCase
     assert_compiles('$foo = 123; $foo', insns: %i[setglobal], result: 123)
   end
 
+  def test_compile_tostring
+    assert_no_exits('"i am a string #{true}"')
+  end
+
   def test_getlocal_with_level
     assert_compiles(<<~RUBY, insns: %i[getlocal opt_plus], result: [[7]])
       def foo(foo, bar)
