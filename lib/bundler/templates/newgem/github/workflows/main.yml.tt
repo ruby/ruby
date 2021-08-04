@@ -1,6 +1,10 @@
 name: Ruby
 
-on: [push,pull_request]
+on:
+  push:
+    - <%= config[:git_default_branch] %>
+
+  pull_request:
 
 jobs:
   build:
