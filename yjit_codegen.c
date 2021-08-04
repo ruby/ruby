@@ -131,42 +131,6 @@ jit_peek_at_local(jitstate_t *jit, ctx_t *ctx, int n)
     return ep[-VM_ENV_DATA_SIZE - local_table_size + n + 1];
 }
 
-// When we know a VALUE to be static, this returns an appropriate val_type_t
-static val_type_t
-jit_type_of_value(VALUE val)
-{
-    if (SPECIAL_CONST_P(val)) {
-        if (FIXNUM_P(val)) {
-            return TYPE_FIXNUM;
-        } else if (NIL_P(val)) {
-            return TYPE_NIL;
-        } else if (val == Qtrue) {
-            return TYPE_TRUE;
-        } else if (val == Qfalse) {
-            return TYPE_FALSE;
-        } else if (STATIC_SYM_P(val)) {
-            return TYPE_STATIC_SYMBOL;
-        } else if (FLONUM_P(val)) {
-            return TYPE_FLONUM;
-        } else {
-            RUBY_ASSERT(false);
-            UNREACHABLE_RETURN(TYPE_IMM);
-        }
-    } else {
-        switch (BUILTIN_TYPE(val)) {
-            case T_ARRAY:
-               return TYPE_ARRAY;
-            case T_HASH:
-               return TYPE_HASH;
-            case T_STRING:
-               return TYPE_STRING;
-            default:
-                // generic heap object
-                return TYPE_HEAP;
-        }
-    }
-}
-
 // Save the incremented PC on the CFP
 // This is necessary when calleees can raise or allocate
 static void
@@ -253,14 +217,14 @@ verify_ctx(jitstate_t *jit, ctx_t *ctx)
     RUBY_ASSERT(jit_at_current_insn(jit));
 
     VALUE self_val = jit_peek_at_self(jit, ctx);
-    if (type_diff(jit_type_of_value(self_val), ctx->self_type) == INT_MAX) {
+    if (type_diff(yjit_type_of_value(self_val), ctx->self_type) == INT_MAX) {
         rb_bug("verify_ctx: ctx type (%s) incompatible with actual value of self: %s", yjit_type_name(ctx->self_type), rb_obj_info(self_val));
     }
 
     for (int i = 0; i < ctx->stack_size && i < MAX_TEMP_TYPES; i++) {
         temp_type_mapping_t learned = ctx_get_opnd_mapping(ctx, OPND_STACK(i));
         VALUE val = jit_peek_at_stack(jit, ctx, i);
-        val_type_t detected = jit_type_of_value(val);
+        val_type_t detected = yjit_type_of_value(val);
 
         if (learned.mapping.kind == TEMP_SELF) {
             if (self_val != val) {
@@ -294,7 +258,7 @@ verify_ctx(jitstate_t *jit, ctx_t *ctx)
     for (int i = 0; i < local_table_size && i < MAX_TEMP_TYPES; i++) {
         val_type_t learned = ctx->local_types[i];
         VALUE val = jit_peek_at_local(jit, ctx, i);
-        val_type_t detected = jit_type_of_value(val);
+        val_type_t detected = yjit_type_of_value(val);
 
         if (type_diff(detected, learned) == INT_MAX) {
             rb_bug("verify_ctx: ctx type (%s) incompatible with actual value of local: %s", yjit_type_name(learned), rb_obj_info(val));
@@ -993,7 +957,7 @@ gen_putobject(jitstate_t* jit, ctx_t* ctx)
         VALUE put_val = jit_get_arg(jit, 0);
         jit_mov_gc_ptr(jit, cb, REG0, put_val);
 
-        val_type_t val_type = jit_type_of_value(put_val);
+        val_type_t val_type = yjit_type_of_value(put_val);
 
         // Write argument at SP
         x86opnd_t stack_top = ctx_stack_push(ctx, val_type);
@@ -3632,7 +3596,7 @@ gen_opt_getinlinecache(jitstate_t *jit, ctx_t *ctx)
     // FIXME: This leaks when st_insert raises NoMemoryError
     assume_stable_global_constant_state(jit->block);
 
-    val_type_t type = jit_type_of_value(ice->value);
+    val_type_t type = yjit_type_of_value(ice->value);
     x86opnd_t stack_top = ctx_stack_push(ctx, type);
     jit_mov_gc_ptr(jit, cb, REG0, ice->value);
     mov(cb, stack_top, REG0);
