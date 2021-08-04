@@ -272,6 +272,8 @@ module Psych
           tag   = 'tag:yaml.org,2002:str'
           plain = false
           quote = false
+        elsif o == 'y' || o == 'n'
+          style = Nodes::Scalar::DOUBLE_QUOTED
         elsif @line_width && o.length > @line_width
           style = Nodes::Scalar::FOLDED
         elsif o =~ /^[^[:word:]][^"]*$/
