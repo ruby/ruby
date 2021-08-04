@@ -284,6 +284,43 @@ void ctx_clear_local_types(ctx_t* ctx)
     memset(&ctx->local_types, 0, sizeof(ctx->local_types));
 }
 
+
+/* This returns an appropriate val_type_t based on a known value */
+val_type_t
+yjit_type_of_value(VALUE val)
+{
+    if (SPECIAL_CONST_P(val)) {
+        if (FIXNUM_P(val)) {
+            return TYPE_FIXNUM;
+        } else if (NIL_P(val)) {
+            return TYPE_NIL;
+        } else if (val == Qtrue) {
+            return TYPE_TRUE;
+        } else if (val == Qfalse) {
+            return TYPE_FALSE;
+        } else if (STATIC_SYM_P(val)) {
+            return TYPE_STATIC_SYMBOL;
+        } else if (FLONUM_P(val)) {
+            return TYPE_FLONUM;
+        } else {
+            RUBY_ASSERT(false);
+            UNREACHABLE_RETURN(TYPE_IMM);
+        }
+    } else {
+        switch (BUILTIN_TYPE(val)) {
+            case T_ARRAY:
+               return TYPE_ARRAY;
+            case T_HASH:
+               return TYPE_HASH;
+            case T_STRING:
+               return TYPE_STRING;
+            default:
+                // generic heap object
+                return TYPE_HEAP;
+        }
+    }
+}
+
 /* The name of a type, for debugging */
 const char *
 yjit_type_name(val_type_t type)
