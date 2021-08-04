@@ -35,37 +35,22 @@ RSpec.describe "bundle gem" do
   end
 
   describe "git repo initialization" do
-    shared_examples_for "a gem with an initial git repo" do
-      before do
-        bundle "gem #{gem_name} #{flags}"
-      end
-
-      it "generates a gem skeleton with a .git folder", :readline do
-        gem_skeleton_assertions
-        expect(bundled_app("#{gem_name}/.git")).to exist
-      end
+    it "generates a gem skeleton with a .git folder", :readline do
+      bundle "gem #{gem_name}"
+      gem_skeleton_assertions
+      expect(bundled_app("#{gem_name}/.git")).to exist
     end
 
-    context "when using the default" do
-      it_behaves_like "a gem with an initial git repo" do
-        let(:flags) { "" }
-      end
+    it "generates a gem skeleton with a .git folder when passing --git", :readline do
+      bundle "gem #{gem_name} --git"
+      gem_skeleton_assertions
+      expect(bundled_app("#{gem_name}/.git")).to exist
     end
 
-    context "when explicitly passing --git" do
-      it_behaves_like "a gem with an initial git repo" do
-        let(:flags) { "--git" }
-      end
-    end
-
-    context "when passing --no-git", :readline do
-      before do
-        bundle "gem #{gem_name} --no-git"
-      end
-      it "generates a gem skeleton without a .git folder" do
-        gem_skeleton_assertions
-        expect(bundled_app("#{gem_name}/.git")).not_to exist
-      end
+    it "generates a gem skeleton without a .git folder when passing --no-git", :readline do
+      bundle "gem #{gem_name} --no-git"
+      gem_skeleton_assertions
+      expect(bundled_app("#{gem_name}/.git")).not_to exist
     end
   end
 
