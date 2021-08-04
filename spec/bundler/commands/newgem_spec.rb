@@ -52,6 +52,17 @@ RSpec.describe "bundle gem" do
       gem_skeleton_assertions
       expect(bundled_app("#{gem_name}/.git")).not_to exist
     end
+
+    context "on a path with spaces" do
+      before do
+        Dir.mkdir(bundled_app("path with spaces"))
+      end
+
+      it "properly initializes git repo", :readline do
+        bundle "gem #{gem_name}", :dir => bundled_app("path with spaces")
+        expect(bundled_app("path with spaces/#{gem_name}/.git")).to exist
+      end
+    end
   end
 
   shared_examples_for "--mit flag" do
