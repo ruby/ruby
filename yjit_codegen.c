@@ -3495,6 +3495,35 @@ gen_setglobal(jitstate_t* jit, ctx_t* ctx)
 }
 
 static codegen_status_t
+gen_tostring(jitstate_t* jit, ctx_t* ctx)
+{
+    // Save the PC and SP because we might make a Ruby call for
+    // Kernel#set_trace_var
+    jit_save_pc(jit, REG0);
+    jit_save_sp(jit, ctx);
+
+    // Save YJIT registers
+    yjit_save_regs(cb);
+
+    x86opnd_t str = ctx_stack_pop(ctx, 1);
+    x86opnd_t val = ctx_stack_pop(ctx, 1);
+
+    mov(cb, C_ARG_REGS[0], str);
+    mov(cb, C_ARG_REGS[1], val);
+
+    call_ptr(cb, REG0, (void *)&rb_obj_as_string_result);
+
+    // Load YJIT registers
+    yjit_load_regs(cb);
+
+    // Push the return value
+    x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_STRING);
+    mov(cb, stack_ret, RAX);
+
+    return YJIT_KEEP_COMPILING;
+}
+
+static codegen_status_t
 gen_opt_getinlinecache(jitstate_t *jit, ctx_t *ctx)
 {
     VALUE jump_offset = jit_get_arg(jit, 0);
@@ -3738,6 +3767,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(leave), gen_leave);
     yjit_reg_op(BIN(getglobal), gen_getglobal);
     yjit_reg_op(BIN(setglobal), gen_setglobal);
+    yjit_reg_op(BIN(tostring), gen_tostring);
 
     yjit_method_codegen_table = st_init_numtable();
 
