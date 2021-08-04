@@ -496,7 +496,7 @@ module BasetestReadline
           }
           Readline.readline('input> ')
         }.value
-      rescue Interrupt => e
+      rescue Interrupt
         puts 'FAILED'
         raise
       end
