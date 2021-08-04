@@ -275,24 +275,6 @@ verify_ctx(jitstate_t *jit, ctx_t *ctx)
 
 #endif // if RUBY_DEBUG
 
-// Save YJIT registers prior to a C call
-static void
-yjit_save_regs(codeblock_t* cb)
-{
-    push(cb, REG_CFP);
-    push(cb, REG_EC);
-    push(cb, REG_SP);
-}
-
-// Restore YJIT registers after a C call
-static void
-yjit_load_regs(codeblock_t* cb)
-{
-    pop(cb, REG_SP);
-    pop(cb, REG_EC);
-    pop(cb, REG_CFP);
-}
-
 // Generate an exit to return to the interpreter
 static uint8_t *
 yjit_gen_exit(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
@@ -326,6 +308,10 @@ yjit_gen_exit(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     }
 #endif
 
+    pop(cb, REG_SP);
+    pop(cb, REG_EC);
+    pop(cb, REG_CFP);
+
     mov(cb, RAX, imm_opnd(Qundef));
     ret(cb);
 
@@ -349,6 +335,10 @@ yjit_gen_leave_exit(codeblock_t *cb)
     mov(cb, RAX, mem_opnd(64, REG_SP, -SIZEOF_VALUE));
     sub(cb, member_opnd(REG_CFP, rb_control_frame_t, sp), imm_opnd(SIZEOF_VALUE));
     mov(cb, REG_SP, member_opnd(REG_CFP, rb_control_frame_t, sp));
+
+    pop(cb, REG_SP);
+    pop(cb, REG_EC);
+    pop(cb, REG_CFP);
 
     ret(cb);
 
@@ -382,6 +372,11 @@ yjit_pc_guard(const rb_iseq_t *iseq)
 
     // We're not starting at the first PC, so we need to exit.
     GEN_COUNTER_INC(cb, leave_start_pc_non_zero);
+
+    pop(cb, REG_SP);
+    pop(cb, REG_EC);
+    pop(cb, REG_CFP);
+
     mov(cb, RAX, imm_opnd(Qundef));
     ret(cb);
 
@@ -408,6 +403,14 @@ yjit_entry_prologue(const rb_iseq_t *iseq)
 
     uint8_t *code_ptr = cb_get_ptr(cb, cb->write_pos);
     ADD_COMMENT(cb, "yjit prolog");
+
+    push(cb, REG_CFP);
+    push(cb, REG_EC);
+    push(cb, REG_SP);
+
+    // We are passed EC and CFP
+    mov(cb, REG_EC, C_ARG_REGS[0]);
+    mov(cb, REG_CFP, C_ARG_REGS[1]);
 
     // Load the current SP from the CFP into REG_SP
     mov(cb, REG_SP, member_opnd(REG_CFP, rb_control_frame_t, sp));
@@ -724,12 +727,10 @@ gen_newarray(jitstate_t* jit, ctx_t* ctx)
     x86opnd_t values_ptr = ctx_sp_opnd(ctx, -(sizeof(VALUE) * (uint32_t)n));
 
     // call rb_ec_ary_new_from_values(struct rb_execution_context_struct *ec, long n, const VALUE *elts);
-    yjit_save_regs(cb);
     mov(cb, C_ARG_REGS[0], REG_EC);
     mov(cb, C_ARG_REGS[1], imm_opnd(n));
     lea(cb, C_ARG_REGS[2], values_ptr);
     call_ptr(cb, REG0, (void *)rb_ec_ary_new_from_values);
-    yjit_load_regs(cb);
 
     ctx_stack_pop(ctx, n);
     x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_ARRAY);
@@ -749,10 +750,8 @@ gen_duparray(jitstate_t* jit, ctx_t* ctx)
     jit_save_sp(jit, ctx);
 
     // call rb_ary_resurrect(VALUE ary);
-    yjit_save_regs(cb);
     jit_mov_gc_ptr(jit, cb, C_ARG_REGS[0], ary);
     call_ptr(cb, REG0, (void *)rb_ary_resurrect);
-    yjit_load_regs(cb);
 
     x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_ARRAY);
     mov(cb, stack_ret, RAX);
@@ -777,11 +776,9 @@ gen_splatarray(jitstate_t* jit, ctx_t* ctx)
     x86opnd_t ary_opnd = ctx_stack_pop(ctx, 1);
 
     // Call rb_vm_splat_array(flag, ary)
-    yjit_save_regs(cb);
     jit_mov_gc_ptr(jit, cb, C_ARG_REGS[0], flag);
     mov(cb, C_ARG_REGS[1], ary_opnd);
     call_ptr(cb, REG1, (void *) rb_vm_splat_array);
-    yjit_load_regs(cb);
 
     x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_ARRAY);
     mov(cb, stack_ret, RAX);
@@ -901,9 +898,7 @@ gen_newhash(jitstate_t* jit, ctx_t* ctx)
         jit_save_sp(jit, ctx);
 
         // val = rb_hash_new();
-        yjit_save_regs(cb);
         call_ptr(cb, REG0, (void *)rb_hash_new);
-        yjit_load_regs(cb);
 
         x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_HASH);
         mov(cb, stack_ret, RAX);
@@ -1376,11 +1371,9 @@ gen_get_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
         // visibile to Ruby.
         // VALUE rb_ivar_get(VALUE obj, ID id)
         ADD_COMMENT(cb, "call rb_ivar_get()");
-        yjit_save_regs(cb);
         mov(cb, C_ARG_REGS[0], REG0);
         mov(cb, C_ARG_REGS[1], imm_opnd((int64_t)ivar_name));
         call_ptr(cb, REG1, (void *)rb_ivar_get);
-        yjit_load_regs(cb);
 
         if (!reg0_opnd.is_self) {
             (void)ctx_stack_pop(ctx, 1);
@@ -1539,14 +1532,12 @@ gen_setinstancevariable(jitstate_t* jit, ctx_t* ctx)
 
     // Call rb_vm_setinstancevariable(iseq, obj, id, val, ic);
     // Out of order because we're going to corrupt REG_SP and REG_CFP
-    yjit_save_regs(cb);
     mov(cb, C_ARG_REGS[1], member_opnd(REG_CFP, rb_control_frame_t, self));
     mov(cb, C_ARG_REGS[3], val_opnd);
     mov(cb, C_ARG_REGS[2], imm_opnd(id));
     mov(cb, C_ARG_REGS[4], const_ptr_opnd(ic));
     jit_mov_gc_ptr(jit, cb, C_ARG_REGS[0], (VALUE)jit->iseq);
     call_ptr(cb, REG0, (void *)rb_vm_setinstancevariable);
-    yjit_load_regs(cb);
 
     return YJIT_KEEP_COMPILING;
 
@@ -1602,7 +1593,6 @@ gen_defined(jitstate_t* jit, ctx_t* ctx)
     mov(cb, C_ARG_REGS[2], imm_opnd(op_type)); // clobers REG_SP
     jit_mov_gc_ptr(jit, cb, C_ARG_REGS[3], (VALUE)obj);
     call_ptr(cb, REG0, (void *)rb_vm_defined);
-    yjit_load_regs(cb);
 
     // if (vm_defined(ec, GET_CFP(), op_type, obj, v)) {
     //  val = pushval;
@@ -1691,11 +1681,9 @@ gen_concatstrings(jitstate_t* jit, ctx_t* ctx)
     x86opnd_t values_ptr = ctx_sp_opnd(ctx, -(sizeof(VALUE) * (uint32_t)n));
 
     // call rb_str_concat_literals(long n, const VALUE *strings);
-    yjit_save_regs(cb);
     mov(cb, C_ARG_REGS[0], imm_opnd(n));
     lea(cb, C_ARG_REGS[1], values_ptr);
     call_ptr(cb, REG0, (void *)rb_str_concat_literals);
-    yjit_load_regs(cb);
 
     ctx_stack_pop(ctx, n);
     x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_STRING);
@@ -1824,11 +1812,9 @@ gen_opt_eq(jitstate_t* jit, ctx_t* ctx)
 
     // Call rb_opt_equality_specialized(VALUE recv, VALUE obj)
     // We know this method won't allocate or perform calls
-    yjit_save_regs(cb);
     mov(cb, C_ARG_REGS[0], arg0);
     mov(cb, C_ARG_REGS[1], arg1);
     call_ptr(cb, REG0, (void *)rb_opt_equality_specialized);
-    yjit_load_regs(cb);
 
     // If val == Qundef, bail to do a method call
     cmp(cb, RAX, imm_opnd(Qundef));
@@ -1916,14 +1902,10 @@ gen_opt_aref(jitstate_t *jit, ctx_t *ctx)
         // Call VALUE rb_ary_entry_internal(VALUE ary, long offset).
         // It never raises or allocates, so we don't need to write to cfp->pc.
         {
-            yjit_save_regs(cb);
-
             mov(cb, RDI, recv_opnd);
             sar(cb, REG1, imm_opnd(1)); // Convert fixnum to int
             mov(cb, RSI, REG1);
             call_ptr(cb, REG0, (void *)rb_ary_entry_internal);
-
-            yjit_load_regs(cb);
 
             // Push the return value onto the stack
             x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_UNKNOWN);
@@ -1972,13 +1954,9 @@ gen_opt_aref(jitstate_t *jit, ctx_t *ctx)
             // Write sp to cfp->sp since rb_hash_aref might need to call #hash on the key
             jit_save_sp(jit, ctx);
 
-            yjit_save_regs(cb);
-
             mov(cb, C_ARG_REGS[0], R8);
             mov(cb, C_ARG_REGS[1], R9);
             call_ptr(cb, REG0, (void *)rb_hash_aref);
-
-            yjit_load_regs(cb);
 
             // Push the return value onto the stack
             x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_UNKNOWN);
@@ -2013,12 +1991,10 @@ gen_opt_aset(jitstate_t *jit, ctx_t *ctx)
     x86opnd_t arg0 = ctx_stack_pop(ctx, 1);
 
     // Call rb_vm_opt_aset(VALUE recv, VALUE obj)
-    yjit_save_regs(cb);
     mov(cb, C_ARG_REGS[0], arg0);
     mov(cb, C_ARG_REGS[1], arg1);
     mov(cb, C_ARG_REGS[2], arg2);
     call_ptr(cb, REG0, (void *)rb_vm_opt_aset);
-    yjit_load_regs(cb);
 
     // If val == Qundef, bail to do a method call
     cmp(cb, RAX, imm_opnd(Qundef));
@@ -2182,11 +2158,9 @@ gen_opt_mod(jitstate_t* jit, ctx_t* ctx)
     x86opnd_t arg0 = ctx_stack_pop(ctx, 1);
 
     // Call rb_vm_opt_mod(VALUE recv, VALUE obj)
-    yjit_save_regs(cb);
     mov(cb, C_ARG_REGS[0], arg0);
     mov(cb, C_ARG_REGS[1], arg1);
     call_ptr(cb, REG0, (void *)rb_vm_opt_mod);
-    yjit_load_regs(cb);
 
     // If val == Qundef, bail to do a method call
     cmp(cb, RAX, imm_opnd(Qundef));
@@ -2606,13 +2580,11 @@ static void
 jit_protected_callee_ancestry_guard(jitstate_t *jit, codeblock_t *cb, const rb_callable_method_entry_t *cme, uint8_t *side_exit)
 {
     // See vm_call_method().
-    yjit_save_regs(cb);
     mov(cb, C_ARG_REGS[0], member_opnd(REG_CFP, rb_control_frame_t, self));
     jit_mov_gc_ptr(jit, cb, C_ARG_REGS[1], cme->defined_class);
     // Note: PC isn't written to current control frame as rb_is_kind_of() shouldn't raise.
     // VALUE rb_obj_is_kind_of(VALUE obj, VALUE klass);
     call_ptr(cb, REG0, (void *)&rb_obj_is_kind_of);
-    yjit_load_regs(cb);
     test(cb, RAX, RAX);
     jz_ptr(cb, COUNTED_EXIT(side_exit, send_se_protected_check_failed));
 }
@@ -2791,18 +2763,12 @@ gen_send_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const 
 
     // Verify that we are calling the right function
     if (YJIT_CHECK_MODE > 0) {
-        // Save YJIT registers
-        yjit_save_regs(cb);
-
         // Call check_cfunc_dispatch
         mov(cb, C_ARG_REGS[0], recv);
         jit_mov_gc_ptr(jit, cb, C_ARG_REGS[1], (VALUE)ci);
         mov(cb, C_ARG_REGS[2], const_ptr_opnd((void *)cfunc->func));
         jit_mov_gc_ptr(jit, cb, C_ARG_REGS[3], (VALUE)cme);
         call_ptr(cb, REG0, (void *)&check_cfunc_dispatch);
-
-        // Load YJIT registers
-        yjit_load_regs(cb);
     }
 
     // Copy SP into RAX because REG_SP will get overwritten
@@ -2814,9 +2780,6 @@ gen_send_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const 
     // Write interpreter SP into CFP.
     // Needed in case the callee yields to the block.
     jit_save_sp(jit, ctx);
-
-    // Save YJIT registers
-    yjit_save_regs(cb);
 
     // Non-variadic method
     if (cfunc->argc >= 0) {
@@ -2843,9 +2806,6 @@ gen_send_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const 
     // cfunc comes from compile-time cme->def, which we assume to be stable.
     // Invalidation logic is in rb_yjit_method_lookup_change()
     call_ptr(cb, REG0, (void*)cfunc->func);
-
-    // Load YJIT registers
-    yjit_load_regs(cb);
 
     // Push the return value on the Ruby stack
     x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_UNKNOWN);
@@ -3001,11 +2961,6 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
     if (leaf_builtin && !block && leaf_builtin->argc + 1 <= NUM_C_ARG_REGS) {
         ADD_COMMENT(cb, "inlined leaf builtin");
 
-        // TODO: figure out if this is necessary
-        // If the calls don't allocate, do they need up to date PC, SP?
-        // Save YJIT registers
-        yjit_save_regs(cb);
-
         // Get a pointer to the top of the stack
         lea(cb, REG0, ctx_stack_opnd(ctx, 0));
 
@@ -3020,9 +2975,6 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
         }
         ctx_stack_pop(ctx, leaf_builtin->argc + 1);
         call_ptr(cb, REG0, (void *)leaf_builtin->func_ptr);
-
-        // Load YJIT registers
-        yjit_load_regs(cb);
 
         // Push the return value
         x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_UNKNOWN);
@@ -3499,15 +3451,9 @@ gen_getglobal(jitstate_t* jit, ctx_t* ctx)
     jit_save_pc(jit, REG0);
     jit_save_sp(jit, ctx);
 
-    // Save YJIT registers
-    yjit_save_regs(cb);
-
     mov(cb, C_ARG_REGS[0], imm_opnd(gid));
 
     call_ptr(cb, REG0, (void *)&rb_gvar_get);
-
-    // Load YJIT registers
-    yjit_load_regs(cb);
 
     x86opnd_t top = ctx_stack_push(ctx, TYPE_UNKNOWN);
     mov(cb, top, RAX);
@@ -3525,9 +3471,6 @@ gen_setglobal(jitstate_t* jit, ctx_t* ctx)
     jit_save_pc(jit, REG0);
     jit_save_sp(jit, ctx);
 
-    // Save YJIT registers
-    yjit_save_regs(cb);
-
     mov(cb, C_ARG_REGS[0], imm_opnd(gid));
 
     x86opnd_t val = ctx_stack_pop(ctx, 1);
@@ -3535,9 +3478,6 @@ gen_setglobal(jitstate_t* jit, ctx_t* ctx)
     mov(cb, C_ARG_REGS[1], val);
 
     call_ptr(cb, REG0, (void *)&rb_gvar_set);
-
-    // Load YJIT registers
-    yjit_load_regs(cb);
 
     return YJIT_KEEP_COMPILING;
 }
@@ -3550,9 +3490,6 @@ gen_tostring(jitstate_t* jit, ctx_t* ctx)
     jit_save_pc(jit, REG0);
     jit_save_sp(jit, ctx);
 
-    // Save YJIT registers
-    yjit_save_regs(cb);
-
     x86opnd_t str = ctx_stack_pop(ctx, 1);
     x86opnd_t val = ctx_stack_pop(ctx, 1);
 
@@ -3560,9 +3497,6 @@ gen_tostring(jitstate_t* jit, ctx_t* ctx)
     mov(cb, C_ARG_REGS[1], val);
 
     call_ptr(cb, REG0, (void *)&rb_obj_as_string_result);
-
-    // Load YJIT registers
-    yjit_load_regs(cb);
 
     // Push the return value
     x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_STRING);
@@ -3674,9 +3608,6 @@ gen_opt_invokebuiltin_delegate(jitstate_t *jit, ctx_t *ctx)
     jit_save_pc(jit, REG0);
     jit_save_sp(jit, ctx);
 
-    // Save YJIT registers
-    yjit_save_regs(cb);
-
     if (bf->argc > 0) {
         // Load environment pointer EP from CFP
         mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, ep));
@@ -3697,9 +3628,6 @@ gen_opt_invokebuiltin_delegate(jitstate_t *jit, ctx_t *ctx)
         mov(cb, c_arg_reg, local_opnd);
     }
     call_ptr(cb, REG0, (void *)bf->func_ptr);
-
-    // Load YJIT registers
-    yjit_load_regs(cb);
 
     // Push the return value
     x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_UNKNOWN);

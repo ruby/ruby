@@ -847,21 +847,11 @@ uint8_t* get_branch_target(
     // Generate an outlined stub that will call branch_stub_hit()
     uint8_t* stub_addr = cb_get_ptr(ocb, ocb->write_pos);
 
-    // Save the yjit registers
-    push(ocb, REG_CFP);
-    push(ocb, REG_EC);
-    push(ocb, REG_SP);
-
     // Call branch_stub_hit(branch_idx, target_idx, ec)
     mov(ocb, C_ARG_REGS[2], REG_EC);
     mov(ocb, C_ARG_REGS[1],  imm_opnd(target_idx));
     mov(ocb, C_ARG_REGS[0], const_ptr_opnd(branch));
     call_ptr(ocb, REG0, (void *)&branch_stub_hit);
-
-    // Restore the yjit registers
-    pop(ocb, REG_SP);
-    pop(ocb, REG_EC);
-    pop(ocb, REG_CFP);
 
     // Jump to the address returned by the
     // branch_stub_hit call

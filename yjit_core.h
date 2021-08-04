@@ -4,12 +4,10 @@
 #include "stddef.h"
 #include "yjit_asm.h"
 
-// Register YJIT receives the CFP and EC into
-#define REG_CFP RSI
-#define REG_EC RDI
-
-// Register YJIT loads the SP into
-#define REG_SP RDX
+// Callee-saved regs
+#define REG_CFP R13
+#define REG_EC R12
+#define REG_SP RBX
 
 // Scratch registers used by YJIT
 #define REG0 RAX
