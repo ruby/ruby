@@ -24,7 +24,7 @@ class RubygemsVersionManager
 
   def assert_system_features_not_loaded!
     at_exit do
-      errors = if $?.nil?
+      errors = if $!.nil?
         ""
       else
         all_commands_output
