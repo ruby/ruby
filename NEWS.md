@@ -218,4 +218,5 @@ Excluding feature bug fixes.
 [Feature #17470]: https://bugs.ruby-lang.org/issues/17470
 [Feature #17853]: https://bugs.ruby-lang.org/issues/17853
 [Bug #17827]:     https://bugs.ruby-lang.org/issues/17827
+[Feature #18008]: https://bugs.ruby-lang.org/issues/18008
 [Feature #18015]: https://bugs.ruby-lang.org/issues/18015
