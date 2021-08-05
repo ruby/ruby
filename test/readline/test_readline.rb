@@ -476,6 +476,7 @@ module BasetestReadline
   end
 
   def test_interrupt_in_other_thread
+    omit "Skip Editline" if /EditLine/n.match(Readline::VERSION)
     omit unless respond_to?(:assert_ruby_status)
     omit if /mswin|mingw/ =~ RUBY_PLATFORM
     code = <<-"end;"
