@@ -365,9 +365,11 @@ cc_new(VALUE klass, ID mid, int argc, const rb_callable_method_entry_t *cme)
     {
         struct rb_class_cc_entries *ccs;
         struct rb_id_table *cc_tbl = RCLASS_CC_TBL(klass);
+        VALUE ccs_data;
 
-        if (rb_id_table_lookup(cc_tbl, mid, (VALUE*)&ccs)) {
+        if (rb_id_table_lookup(cc_tbl, mid, &ccs_data)) {
             // ok
+            ccs = (struct rb_class_cc_entries *)ccs_data;
         }
         else {
             ccs = vm_ccs_create(klass, cme);
