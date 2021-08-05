@@ -513,7 +513,7 @@ module BasetestReadline
     log, status = EnvUtil.invoke_ruby(["-I#{current_dir}", path], "", true, :merge_to_stdout) do |_in, _out, _, pid|
       begin
         Timeout.timeout(4) do
-          log = String.new
+          log = String.new("Readline::VERSION is #{Readline::VERSION}.\n")
           while c = _out.read(1)
             log << c if c
             break if log.include?('input>')
