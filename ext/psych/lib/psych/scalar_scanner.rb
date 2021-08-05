@@ -33,7 +33,7 @@ module Psych
 
       # Check for a String type, being careful not to get caught by hash keys, hex values, and
       # special floats (e.g., -.inf).
-      if string.match?(/^[^\d\.:-]?[A-Za-z_\s!@#\$%\^&\*\(\)\{\}\<\>\|\/\\~;=]+/) || string.match?(/\n/)
+      if string.match?(%r{^[^\d.:-]?[[:alpha:]_\s!@#$%\^&*(){}<>|/\\~;=]+}) || string.match?(/\n/)
         return string if string.length > 5
 
         if string.match?(/^[^ytonf~]/i)

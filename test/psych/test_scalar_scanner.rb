@@ -156,5 +156,27 @@ module Psych
     def test_scan_plus_dot
       assert_equal '+.', ss.tokenize('+.')
     end
+
+    class MatchCallCounter < String
+      attr_reader :match_call_count
+
+      def match?(pat)
+        @match_call_count ||= 0
+        @match_call_count += 1
+        super
+      end
+    end
+
+    def test_scan_ascii_matches_quickly
+      ascii = MatchCallCounter.new('abcdefghijklmnopqrstuvwxyz')
+      ss.tokenize(ascii)
+      assert_equal 1, ascii.match_call_count
+    end
+
+    def test_scan_unicode_matches_quickly
+      unicode = MatchCallCounter.new('鳥かご関連用品')
+      ss.tokenize(unicode)
+      assert_equal 1, unicode.match_call_count
+    end
   end
 end
