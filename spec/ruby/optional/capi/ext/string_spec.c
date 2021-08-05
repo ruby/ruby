@@ -389,7 +389,6 @@ VALUE string_spec_RSTRING_PTR_after_yield(VALUE self, VALUE str) {
 VALUE string_spec_RSTRING_PTR_read(VALUE self, VALUE str, VALUE path) {
   char *cpath = StringValueCStr(path);
   int fd = open(cpath, O_RDONLY);
-  int r;
   VALUE capacities = rb_ary_new();
   if (fd < 0) {
     rb_syserr_fail(errno, "open");
@@ -398,16 +397,14 @@ VALUE string_spec_RSTRING_PTR_read(VALUE self, VALUE str, VALUE path) {
   rb_str_modify_expand(str, 30);
   rb_ary_push(capacities, SIZET2NUM(rb_str_capacity(str)));
   char *buffer = RSTRING_PTR(str);
-  r = read(fd, buffer, 30);
-  if (r < 0) {
+  if (read(fd, buffer, 30) < 0) {
     rb_syserr_fail(errno, "read");
   }
 
   rb_str_modify_expand(str, 53);
   rb_ary_push(capacities, SIZET2NUM(rb_str_capacity(str)));
   char *buffer2 = RSTRING_PTR(str);
-  r = read(fd, buffer2 + 30, 53 - 30);
-  if (r < 0) {
+  if (read(fd, buffer2 + 30, 53 - 30) < 0) {
     rb_syserr_fail(errno, "read");
   }
 
