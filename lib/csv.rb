@@ -502,7 +502,7 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 #  [" 1 ", #<struct CSV::FieldInfo index=1, line=2, header=nil>]
 #  [" baz ", #<struct CSV::FieldInfo index=0, line=3, header=nil>]
 #  [" 2 ", #<struct CSV::FieldInfo index=1, line=3, header=nil>]
-# Each CSV::Info object shows:
+# Each CSV::FieldInfo object shows:
 # - The 0-based field index.
 # - The 1-based line index.
 # - The field header, if any.
