@@ -1,5 +1,5 @@
 require_relative '../helper'
-require 'reline/windows'
+return unless Reline.const_defined?(:Windows)
 
 class Reline::Windows
   class KeyEventRecord::Test < Reline::TestCase
