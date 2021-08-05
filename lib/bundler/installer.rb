@@ -219,9 +219,6 @@ module Bundler
         return jobs
       end
 
-      # Parallelization has some issues on Windows, so it's not yet the default
-      return 1 if Gem.win_platform?
-
       Bundler.settings.processor_count
     end
 
