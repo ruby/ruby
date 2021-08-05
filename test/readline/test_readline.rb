@@ -539,7 +539,7 @@ module BasetestReadline
           end
         end
       rescue Timeout::Error
-        assert true, "Timed out to handle SIGINT."
+        assert true, "Timed out to handle SIGINT.\nLog: #{log}\n----"
         asserted = true
       end
       [log, Process.wait2(pid)[1]]
