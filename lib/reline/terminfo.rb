@@ -33,7 +33,7 @@ module Reline::Terminfo
     else
       fiddle_supports_variadic = false
     end
-    if fiddle_supports_variadic and Fiddle.const_defined?(:TYPE_VARIADIC)
+    if fiddle_supports_variadic and not Fiddle.const_defined?(:TYPE_VARIADIC)
       # If the libffi version is not 3.0.5 or higher, there isn't TYPE_VARIADIC.
       fiddle_supports_variadic = false
     end
