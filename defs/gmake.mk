@@ -399,3 +399,7 @@ $(RUBYSPEC_CAPIEXT)/%.$(DLEXT): $(srcdir)/$(RUBYSPEC_CAPIEXT)/%.c $(srcdir)/$(RU
 
 rubyspec-capiext: $(patsubst %.c,$(RUBYSPEC_CAPIEXT)/%.$(DLEXT),$(notdir $(wildcard $(srcdir)/$(RUBYSPEC_CAPIEXT)/*.c)))
 	@ $(NULLCMD)
+
+ifeq ($(ENABLE_SHARED),yes)
+exts: rubyspec-capiext
+endif
