@@ -510,32 +510,34 @@ module BasetestReadline
     asserted = false
     current_dir = File.expand_path("..", __FILE__)
     log, status = EnvUtil.invoke_ruby(["-I#{current_dir}", path], "", true, :merge_to_stdout) do |_in, _out, _, pid|
-      Timeout.timeout(4) do
-        log = String.new
-        while c = _out.read(1)
-          log << c if c
-          break if log.include?('input>')
-        end
-        Process.kill(:INT, pid)
-        sleep 0.1
-        while c = _out.read(1)
-          log << c if c
-          break if log.include?('INT')
-        end
-        begin
-          _in.write "\n"
-        rescue Errno::EPIPE
-          # The "write" will fail if Reline crashed by SIGINT.
-        end
-        while c = _out.read(1)
-          log << c if c
-          if log.include?('FAILED')
-            assert false, "Should handle SIGINT correctly but failed."
-            asserted = true
+      begin
+        Timeout.timeout(4) do
+          log = String.new
+          while c = _out.read(1)
+            log << c if c
+            break if log.include?('input>')
           end
-          if log.include?('SUCCEEDED')
-            assert true, "Should handle SIGINT correctly but failed."
-            asserted = true
+          Process.kill(:INT, pid)
+          sleep 0.1
+          while c = _out.read(1)
+            log << c if c
+            break if log.include?('INT')
+          end
+          begin
+            _in.write "\n"
+          rescue Errno::EPIPE
+            # The "write" will fail if Reline crashed by SIGINT.
+          end
+          while c = _out.read(1)
+            log << c if c
+            if log.include?('FAILED')
+              assert false, "Should handle SIGINT correctly but failed."
+              asserted = true
+            end
+            if log.include?('SUCCEEDED')
+              assert true, "Should handle SIGINT correctly but failed."
+              asserted = true
+            end
           end
         end
       rescue Timeout::Error
