@@ -26,6 +26,7 @@ class LeakChecker
       check_encodings(test_name),
       check_verbose(test_name),
       check_warning_flags(test_name),
+      check_gc_enable(test_name),
     ]
     GC.start if leaks.any?
   end
@@ -283,6 +284,12 @@ class LeakChecker
       end
     end
     return leaked
+  end
+
+  def check_gc_enable(test_name)
+    if GC.enable # return true if it was disabled
+      raise "#{test_name} leaks GC.disable status"
+    end
   end
 
   def puts(*a)
