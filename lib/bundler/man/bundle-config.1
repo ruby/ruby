@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "BUNDLE\-CONFIG" "1" "June 2021" "" ""
+.TH "BUNDLE\-CONFIG" "1" "August 2021" "" ""
 .
 .SH "NAME"
 \fBbundle\-config\fR \- Set bundler configuration options
@@ -211,7 +211,7 @@ The following is a list of all configuration keys and their purpose\. You can le
 \fBinit_gems_rb\fR (\fBBUNDLE_INIT_GEMS_RB\fR): Generate a \fBgems\.rb\fR instead of a \fBGemfile\fR when running \fBbundle init\fR\.
 .
 .IP "\(bu" 4
-\fBjobs\fR (\fBBUNDLE_JOBS\fR): The number of gems Bundler can install in parallel\. Defaults to 1 on Windows, and to the the number of processors on other platforms\.
+\fBjobs\fR (\fBBUNDLE_JOBS\fR): The number of gems Bundler can install in parallel\. Defaults to the number of available processors\.
 .
 .IP "\(bu" 4
 \fBno_install\fR (\fBBUNDLE_NO_INSTALL\fR): Whether \fBbundle package\fR should skip installing gems\.

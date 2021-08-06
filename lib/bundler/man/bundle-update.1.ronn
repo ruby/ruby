@@ -56,7 +56,8 @@ gem.
   Fall back to using the single-file index of all gems.
 
 * `--jobs=[<number>]`, `-j[<number>]`:
-  Specify the number of jobs to run in parallel. The default is `1`.
+  Specify the number of jobs to run in parallel. The default is the number of
+  available processors.
 
 * `--retry=[<number>]`:
   Retry failed network or git requests for <number> times.
