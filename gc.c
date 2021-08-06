@@ -766,6 +766,8 @@ typedef struct rb_objspace {
 #endif
 	double invoke_time;
 
+	double time;
+
 	size_t minor_gc_count;
 	size_t major_gc_count;
 	size_t compact_count;
@@ -1114,12 +1116,14 @@ static VALUE gc_disable_no_rest(rb_objspace_t *);
 
 static double getrusage_time(void);
 static inline void gc_prof_setup_new_record(rb_objspace_t *objspace, unsigned int reason);
-static inline void gc_prof_timer_start(rb_objspace_t *);
-static inline void gc_prof_timer_stop(rb_objspace_t *);
-static inline void gc_prof_mark_timer_start(rb_objspace_t *);
-static inline void gc_prof_mark_timer_stop(rb_objspace_t *);
-static inline void gc_prof_sweep_timer_start(rb_objspace_t *);
-static inline void gc_prof_sweep_timer_stop(rb_objspace_t *);
+static inline void gc_timer_start(rb_objspace_t *);
+static inline void gc_timer_stop(rb_objspace_t *);
+static double gc_mark_start_time;
+static inline void gc_mark_timer_start(rb_objspace_t *);
+static inline void gc_mark_timer_stop(rb_objspace_t *);
+static double gc_sweep_start_time;
+static inline void gc_sweep_timer_start(rb_objspace_t *);
+static inline void gc_sweep_timer_stop(rb_objspace_t *);
 static inline void gc_prof_set_malloc_info(rb_objspace_t *);
 static inline void gc_prof_set_heap_info(rb_objspace_t *);
 
@@ -5622,7 +5626,7 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
     if (sweep_page == NULL) return FALSE;
 
 #if GC_ENABLE_LAZY_SWEEP
-    gc_prof_sweep_timer_start(objspace);
+    gc_sweep_timer_start(objspace);
 #endif
 
     do {
@@ -5667,7 +5671,7 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
     }
 
 #if GC_ENABLE_LAZY_SWEEP
-    gc_prof_sweep_timer_stop(objspace);
+    gc_sweep_timer_stop(objspace);
 #endif
 
     GC_ASSERT(gc_mode(objspace) == gc_mode_sweeping ? heap->free_pages != NULL : 1);
@@ -5802,7 +5806,7 @@ gc_sweep(rb_objspace_t *objspace)
 
     if (immediate_sweep) {
 #if !GC_ENABLE_LAZY_SWEEP
-	gc_prof_sweep_timer_start(objspace);
+	gc_sweep_timer_start(objspace);
 #endif
 	gc_sweep_start(objspace);
         if (objspace->flags.during_compacting) {
@@ -5817,7 +5821,7 @@ gc_sweep(rb_objspace_t *objspace)
 
 	gc_sweep_rest(objspace);
 #if !GC_ENABLE_LAZY_SWEEP
-	gc_prof_sweep_timer_stop(objspace);
+	gc_sweep_timer_stop(objspace);
 #endif
     }
     else {
@@ -8135,8 +8139,7 @@ gc_marks_continue(rb_objspace_t *objspace, rb_heap_t *heap)
 static void
 gc_marks(rb_objspace_t *objspace, int full_mark)
 {
-    gc_prof_mark_timer_start(objspace);
-
+    gc_mark_timer_start(objspace);
     /* setup marking */
 
     gc_marks_start(objspace, full_mark);
@@ -8150,7 +8153,7 @@ gc_marks(rb_objspace_t *objspace, int full_mark)
         record->old_objects = objspace->rgengc.old_objects;
     }
 #endif
-    gc_prof_mark_timer_stop(objspace);
+    gc_mark_timer_stop(objspace);
 }
 
 /* RGENGC */
@@ -9008,11 +9011,11 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_START, 0 /* TODO: pass minor/immediate flag? */);
     GC_ASSERT(during_gc);
 
-    gc_prof_timer_start(objspace);
+    gc_timer_start(objspace);
     {
-	gc_marks(objspace, do_full_mark);
+        gc_marks(objspace, do_full_mark);
     }
-    gc_prof_timer_stop(objspace);
+    gc_timer_stop(objspace);
 
     gc_exit(objspace, gc_enter_event_start, &lock_lev);
     return TRUE;
@@ -10417,6 +10420,7 @@ enum gc_stat_sym {
     gc_stat_sym_total_freed_objects,
     gc_stat_sym_malloc_increase_bytes,
     gc_stat_sym_malloc_increase_bytes_limit,
+    gc_stat_sym_time,
     gc_stat_sym_minor_gc_count,
     gc_stat_sym_major_gc_count,
     gc_stat_sym_compact_count,
@@ -10465,6 +10469,7 @@ setup_gc_stat_symbols(void)
 	S(total_freed_objects);
 	S(malloc_increase_bytes);
 	S(malloc_increase_bytes_limit);
+	S(time);
 	S(minor_gc_count);
 	S(major_gc_count);
 	S(compact_count);
@@ -10510,12 +10515,11 @@ gc_stat_internal(VALUE hash_or_sym)
 
 #define SET(name, attr) \
     if (key == gc_stat_symbols[gc_stat_sym_##name]) \
-	return attr; \
+        return attr; \
     else if (hash != Qnil) \
-	rb_hash_aset(hash, gc_stat_symbols[gc_stat_sym_##name], SIZET2NUM(attr));
+        rb_hash_aset(hash, gc_stat_symbols[gc_stat_sym_##name], SIZET2NUM(attr));
 
     SET(count, objspace->profile.count);
-
     /* implementation dependent counters */
     SET(heap_allocated_pages, heap_allocated_pages);
     SET(heap_sorted_length, heap_pages_sorted_length);
@@ -10533,6 +10537,7 @@ gc_stat_internal(VALUE hash_or_sym)
     SET(total_freed_objects, objspace->profile.total_freed_objects);
     SET(malloc_increase_bytes, malloc_increase);
     SET(malloc_increase_bytes_limit, malloc_limit);
+    SET(time, (size_t)(objspace->profile.time * 1000));
     SET(minor_gc_count, objspace->profile.minor_gc_count);
     SET(major_gc_count, objspace->profile.major_gc_count);
     SET(compact_count, objspace->profile.compact_count);
@@ -10572,7 +10577,7 @@ gc_stat_internal(VALUE hash_or_sym)
     }
 #endif
 
-    return 0;
+    return hash;
 }
 
 static VALUE
@@ -10582,8 +10587,7 @@ gc_stat(rb_execution_context_t *ec, VALUE self, VALUE arg) // arg is (nil || has
         arg = rb_hash_new();
     }
     else if (SYMBOL_P(arg)) {
-        size_t value = gc_stat_internal(arg);
-        return SIZET2NUM(value);
+        return SIZET2NUM(gc_stat_internal(arg));
     }
     else if (RB_TYPE_P(arg, T_HASH)) {
         // ok
@@ -10592,20 +10596,18 @@ gc_stat(rb_execution_context_t *ec, VALUE self, VALUE arg) // arg is (nil || has
         rb_raise(rb_eTypeError, "non-hash or symbol given");
     }
 
-    gc_stat_internal(arg);
-    return arg;
+    return gc_stat_internal(arg);
 }
 
 size_t
 rb_gc_stat(VALUE key)
 {
     if (SYMBOL_P(key)) {
-	size_t value = gc_stat_internal(key);
-	return value;
+        return gc_stat_internal(key);
     }
     else {
-	gc_stat_internal(key);
-	return 0;
+        gc_stat_internal(key);
+        return 0;
     }
 }
 
@@ -12402,7 +12404,7 @@ gc_prof_setup_new_record(rb_objspace_t *objspace, unsigned int reason)
 }
 
 static inline void
-gc_prof_timer_start(rb_objspace_t *objspace)
+gc_timer_start(rb_objspace_t *objspace)
 {
     if (gc_prof_enabled(objspace)) {
 	gc_profile_record *record = gc_prof_record(objspace);
@@ -12427,7 +12429,7 @@ elapsed_time_from(double time)
 }
 
 static inline void
-gc_prof_timer_stop(rb_objspace_t *objspace)
+gc_timer_stop(rb_objspace_t *objspace)
 {
     if (gc_prof_enabled(objspace)) {
 	gc_profile_record *record = gc_prof_record(objspace);
@@ -12439,64 +12441,67 @@ gc_prof_timer_stop(rb_objspace_t *objspace)
 #define RUBY_DTRACE_GC_HOOK(name) \
     do {if (RUBY_DTRACE_GC_##name##_ENABLED()) RUBY_DTRACE_GC_##name();} while (0)
 static inline void
-gc_prof_mark_timer_start(rb_objspace_t *objspace)
+gc_mark_timer_start(rb_objspace_t *objspace)
 {
+    gc_mark_start_time = getrusage_time();
     RUBY_DTRACE_GC_HOOK(MARK_BEGIN);
 #if GC_PROFILE_MORE_DETAIL
     if (gc_prof_enabled(objspace)) {
-	gc_prof_record(objspace)->gc_mark_time = getrusage_time();
+        gc_prof_record(objspace)->gc_mark_time = gc_mark_start_time;
     }
 #endif
 }
 
 static inline void
-gc_prof_mark_timer_stop(rb_objspace_t *objspace)
+gc_mark_timer_stop(rb_objspace_t *objspace)
 {
     RUBY_DTRACE_GC_HOOK(MARK_END);
+    double elapsed_time = elapsed_time_from(gc_mark_start_time);
+    objspace->profile.time += elapsed_time;
 #if GC_PROFILE_MORE_DETAIL
     if (gc_prof_enabled(objspace)) {
         gc_profile_record *record = gc_prof_record(objspace);
-	record->gc_mark_time = elapsed_time_from(record->gc_mark_time);
+        record->gc_mark_time = elapsed_time;
     }
 #endif
 }
 
 static inline void
-gc_prof_sweep_timer_start(rb_objspace_t *objspace)
+gc_sweep_timer_start(rb_objspace_t *objspace)
 {
+    gc_sweep_start_time = getrusage_time();
     RUBY_DTRACE_GC_HOOK(SWEEP_BEGIN);
     if (gc_prof_enabled(objspace)) {
 	gc_profile_record *record = gc_prof_record(objspace);
 
 	if (record->gc_time > 0 || GC_PROFILE_MORE_DETAIL) {
-	    objspace->profile.gc_sweep_start_time = getrusage_time();
+	    objspace->profile.gc_sweep_start_time = gc_sweep_start_time;
 	}
     }
 }
 
 static inline void
-gc_prof_sweep_timer_stop(rb_objspace_t *objspace)
+gc_sweep_timer_stop(rb_objspace_t *objspace)
 {
     RUBY_DTRACE_GC_HOOK(SWEEP_END);
 
-    if (gc_prof_enabled(objspace)) {
-	double sweep_time;
-	gc_profile_record *record = gc_prof_record(objspace);
+    double sweep_time = elapsed_time_from(gc_sweep_start_time);
+    objspace->profile.time += sweep_time;
 
-	if (record->gc_time > 0) {
-	    sweep_time = elapsed_time_from(objspace->profile.gc_sweep_start_time);
-	    /* need to accumulate GC time for lazy sweep after gc() */
-	    record->gc_time += sweep_time;
-	}
-	else if (GC_PROFILE_MORE_DETAIL) {
-	    sweep_time = elapsed_time_from(objspace->profile.gc_sweep_start_time);
-	}
+    if (gc_prof_enabled(objspace)) {
+        gc_profile_record *record = gc_prof_record(objspace);
+
+        if (record->gc_time > 0) {
+            /* need to accumulate GC time for lazy sweep after gc() */
+            record->gc_time += sweep_time;
+        }
 
 #if GC_PROFILE_MORE_DETAIL
-	record->gc_sweep_time += sweep_time;
-	if (heap_pages_deferred_final) record->flags |= GPR_FLAG_HAVE_FINALIZE;
+    record->gc_sweep_time += sweep_time;
+    if (heap_pages_deferred_final) record->flags |= GPR_FLAG_HAVE_FINALIZE;
 #endif
-	if (heap_pages_deferred_final) objspace->profile.latest_gc_info |= GPR_FLAG_HAVE_FINALIZE;
+
+    if (heap_pages_deferred_final) objspace->profile.latest_gc_info |= GPR_FLAG_HAVE_FINALIZE;
     }
 }
 
