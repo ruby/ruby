@@ -170,6 +170,34 @@ class TestBacktrace < Test::Unit::TestCase
     end
   end
 
+  def test_caller_limit_cfunc_iseq_no_pc
+    def self.a; [1].group_by { b } end
+    def self.b
+      [
+        caller_locations(2, 1).first.base_label,
+        caller_locations(3, 1).first.base_label
+      ]
+    end
+    assert_equal({["each", "group_by"]=>[1]}, a)
+  end
+
+  def test_caller_location_inspect_cfunc_iseq_no_pc
+    def self.foo
+      @res = caller_locations(2, 1).inspect
+    end
+    @line = __LINE__ + 1
+    1.times.map { 1.times.map { foo } }
+    assert_equal("[\"#{__FILE__}:#{@line}:in `times'\"]", @res)
+  end
+
+  def test_caller_location_path_cfunc_iseq_no_pc
+    def self.foo
+      @res = caller_locations(2, 1)[0].path
+    end
+    1.times.map { 1.times.map { foo } }
+    assert_equal(__FILE__, @res)
+  end
+
   def test_caller_locations
     cs = caller(0); locs = caller_locations(0).map{|loc|
       loc.to_s
