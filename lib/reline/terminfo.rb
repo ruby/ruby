@@ -20,9 +20,9 @@ module Reline::Terminfo
     end
   end
 
-  @curses_dl = nil
+  @curses_dl = false
   def self.curses_dl
-    return @curses_dl if @curses_dl
+    return @curses_dl unless @curses_dl == false
     if RUBY_VERSION >= '3.0.0'
       # Gem module isn't defined in test-all of the Ruby repository, and
       # Fiddle in Ruby 3.0.0 or later supports Fiddle::TYPE_VARIADIC.
@@ -47,6 +47,7 @@ module Reline::Terminfo
         break
       end
     end
+    @curses_dl = nil if @curses_dl == false
     @curses_dl
   end
 end
