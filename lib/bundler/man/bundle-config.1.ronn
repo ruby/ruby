@@ -208,8 +208,8 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
 * `init_gems_rb` (`BUNDLE_INIT_GEMS_RB`):
    Generate a `gems.rb` instead of a `Gemfile` when running `bundle init`.
 * `jobs` (`BUNDLE_JOBS`):
-   The number of gems Bundler can install in parallel. Defaults to 1 on Windows,
-   and to the the number of processors on other platforms.
+   The number of gems Bundler can install in parallel. Defaults to the number of
+   available processors.
 * `no_install` (`BUNDLE_NO_INSTALL`):
    Whether `bundle package` should skip installing gems.
 * `no_prune` (`BUNDLE_NO_PRUNE`):

@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "BUNDLE\-INSTALL" "1" "June 2021" "" ""
+.TH "BUNDLE\-INSTALL" "1" "August 2021" "" ""
 .
 .SH "NAME"
 \fBbundle\-install\fR \- Install the dependencies specified in your Gemfile
@@ -63,7 +63,7 @@ The location of the Gemfile(5) which Bundler should use\. This defaults to a Gem
 .
 .TP
 \fB\-\-jobs=[<number>]\fR, \fB\-j[<number>]\fR
-The maximum number of parallel download and install jobs\. The default is \fB1\fR\.
+The maximum number of parallel download and install jobs\. The default is the number of available processors\.
 .
 .TP
 \fB\-\-local\fR
