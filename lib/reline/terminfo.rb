@@ -98,7 +98,12 @@ module Reline::Terminfo
   end
 
   def self.tigetstr(capname)
-    StringWithTiparm.new(@tigetstr.(capname).to_s)
+    capability = @tigetstr.(capname)
+    case capability.to_i
+    when 0, -1
+      raise TerminfoError, "can't find capability: #{capname}"
+    end
+    StringWithTiparm.new(capability.to_s)
   end
 
   def self.tiparm(str, *args)
