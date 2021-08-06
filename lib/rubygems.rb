@@ -1050,7 +1050,9 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # Find rubygems plugin files in the standard location and load them
 
   def self.load_plugins
-    load_plugin_files Gem::Util.glob_files_in_dir("*#{Gem.plugin_suffix_pattern}", plugindir)
+    Gem.path.each do |gem_path|
+      load_plugin_files Gem::Util.glob_files_in_dir("*#{Gem.plugin_suffix_pattern}", plugindir(gem_path))
+    end
   end
 
   ##

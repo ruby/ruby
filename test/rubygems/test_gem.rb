@@ -1578,6 +1578,31 @@ class TestGem < Gem::TestCase
     assert_equal %w[plugin], PLUGINS_LOADED
   end
 
+  def test_load_user_installed_plugins
+    plugin_path = File.join "lib", "rubygems_plugin.rb"
+
+    Dir.chdir @tempdir do
+      FileUtils.mkdir_p 'lib'
+      File.open plugin_path, "w" do |fp|
+        fp.puts "class TestGem; PLUGINS_LOADED << 'plugin'; end"
+      end
+
+      foo = util_spec 'foo', '1' do |s|
+        s.files << plugin_path
+      end
+
+      install_gem_user foo
+    end
+
+    Gem.paths = { "GEM_PATH" => [Gem.dir, Gem.user_dir].join(File::PATH_SEPARATOR) }
+
+    gem 'foo'
+
+    Gem.load_plugins
+
+    assert_equal %w[plugin], PLUGINS_LOADED
+  end
+
   def test_load_env_plugins
     with_plugin('load') { Gem.load_env_plugins }
     assert_equal :loaded, TEST_PLUGIN_LOAD rescue nil
