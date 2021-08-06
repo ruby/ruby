@@ -41,6 +41,7 @@
 module Mutex_m
 
   VERSION = "0.1.1"
+  Ractor.make_shareable(VERSION) if defined?(Ractor)
 
   def Mutex_m.define_aliases(cl) # :nodoc:
     cl.module_eval %q{
