@@ -456,6 +456,28 @@ p Foo::Bar
     end;
   end
 
+  def test_autoload_after_failed_and_removed_from_loaded_features
+    Dir.mktmpdir('autoload') do |tmpdir|
+      autoload_path = File.join(tmpdir, "test-bug-15790.rb")
+      File.write(autoload_path, '')
+
+      assert_separately(%W[-I #{tmpdir}], <<-RUBY)
+        path = #{File.realpath(autoload_path).inspect}
+        autoload :X, path
+        assert_equal(path, Object.autoload?(:X))
+
+        assert_raise(NameError){X}
+        assert_nil(Object.autoload?(:X))
+
+        $LOADED_FEATURES.delete(path)
+        assert_nil(Object.autoload?(:X))
+
+        assert_raise(NameError){X}
+        assert_nil(Object.autoload?(:X))
+      RUBY
+    end
+  end
+
   def add_autoload(path)
     (@autoload_paths ||= []) << path
     ::Object.class_eval {autoload(:AutoloadTest, path)}
