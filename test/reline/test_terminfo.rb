@@ -4,6 +4,8 @@ require "reline"
 class Reline::Terminfo::Test < Reline::TestCase
   def setup
     Reline::Terminfo.setupterm(0, 2)
+  rescue Reline::Terminfo::TerminfoError
+    skip "Reline::Terminfo does not work"
   end
 
   def test_tigetstr
