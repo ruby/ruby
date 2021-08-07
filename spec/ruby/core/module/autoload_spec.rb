@@ -452,7 +452,6 @@ describe "Module#autoload" do
 
     -> { ModuleSpecs::Autoload::O }.should raise_error(NameError)
 
-    ModuleSpecs::Autoload.should have_constant(:O)
     ModuleSpecs::Autoload.const_defined?(:O).should == false
     ModuleSpecs::Autoload.autoload?(:O).should == nil
     -> { ModuleSpecs::Autoload.const_get(:O) }.should raise_error(NameError)
@@ -554,31 +553,54 @@ describe "Module#autoload" do
         # Basically, the parent autoload constant remains in a "undefined" state
         self.autoload?(:DeclaredInParentDefinedInCurrent).should == nil
         const_defined?(:DeclaredInParentDefinedInCurrent).should == false
-        self.should have_constant(:DeclaredInParentDefinedInCurrent)
         -> { DeclaredInParentDefinedInCurrent }.should raise_error(NameError)
 
         ModuleSpecs::Autoload::LexicalScope.send(:remove_const, :DeclaredInParentDefinedInCurrent)
       end
     end
 
-    it "and fails when finding the undefined autoload constant in the current scope when declared in current and defined in parent" do
-      @remove << :DeclaredInCurrentDefinedInParent
-      module ModuleSpecs::Autoload
-        ScratchPad.record -> {
-          DeclaredInCurrentDefinedInParent = :declared_in_current_defined_in_parent
-        }
+    ruby_version_is "3.1" do
+      it "looks up in parent scope after failed autoload" do
+        @remove << :DeclaredInCurrentDefinedInParent
+        module ModuleSpecs::Autoload
+          ScratchPad.record -> {
+            DeclaredInCurrentDefinedInParent = :declared_in_current_defined_in_parent
+          }
 
-        class LexicalScope
-          autoload :DeclaredInCurrentDefinedInParent, fixture(__FILE__, "autoload_callback.rb")
-          -> { DeclaredInCurrentDefinedInParent }.should raise_error(NameError)
-          # Basically, the autoload constant remains in a "undefined" state
-          self.autoload?(:DeclaredInCurrentDefinedInParent).should == nil
-          const_defined?(:DeclaredInCurrentDefinedInParent).should == false
-          self.should have_constant(:DeclaredInCurrentDefinedInParent)
-          -> { const_get(:DeclaredInCurrentDefinedInParent) }.should raise_error(NameError)
+          class LexicalScope
+            autoload :DeclaredInCurrentDefinedInParent, fixture(__FILE__, "autoload_callback.rb")
+            -> { DeclaredInCurrentDefinedInParent }.should_not raise_error(NameError)
+            # Basically, the autoload constant remains in a "undefined" state
+            self.autoload?(:DeclaredInCurrentDefinedInParent).should == nil
+            const_defined?(:DeclaredInCurrentDefinedInParent).should == false
+            -> { const_get(:DeclaredInCurrentDefinedInParent) }.should raise_error(NameError)
+          end
+
+          DeclaredInCurrentDefinedInParent.should == :declared_in_current_defined_in_parent
         end
+      end
+    end
 
-        DeclaredInCurrentDefinedInParent.should == :declared_in_current_defined_in_parent
+    ruby_version_is ""..."3.1" do
+      it "and fails when finding the undefined autoload constant in the current scope when declared in current and defined in parent" do
+        @remove << :DeclaredInCurrentDefinedInParent
+        module ModuleSpecs::Autoload
+          ScratchPad.record -> {
+            DeclaredInCurrentDefinedInParent = :declared_in_current_defined_in_parent
+          }
+
+          class LexicalScope
+            autoload :DeclaredInCurrentDefinedInParent, fixture(__FILE__, "autoload_callback.rb")
+            -> { DeclaredInCurrentDefinedInParent }.should raise_error(NameError)
+            # Basically, the autoload constant remains in a "undefined" state
+            self.autoload?(:DeclaredInCurrentDefinedInParent).should == nil
+            const_defined?(:DeclaredInCurrentDefinedInParent).should == false
+            self.should have_constant(:DeclaredInCurrentDefinedInParent)
+            -> { const_get(:DeclaredInCurrentDefinedInParent) }.should raise_error(NameError)
+          end
+
+          DeclaredInCurrentDefinedInParent.should == :declared_in_current_defined_in_parent
+        end
       end
     end
 
