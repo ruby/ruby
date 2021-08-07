@@ -1226,17 +1226,6 @@ zstream_finalize(struct zstream *z)
 	finalizer_warn("the stream was freed prematurely.");
 }
 
-static void
-zstream_free(void *p)
-{
-    struct zstream *z = p;
-
-    if (ZSTREAM_IS_READY(z)) {
-	zstream_finalize(z);
-    }
-    xfree(z);
-}
-
 static size_t
 zstream_memsize(const void *p)
 {
@@ -1246,7 +1235,7 @@ zstream_memsize(const void *p)
 
 static const rb_data_type_t zstream_data_type = {
     "zstream",
-    { zstream_mark, zstream_free, zstream_memsize, },
+    { zstream_mark, xfree, zstream_memsize, },
      0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
