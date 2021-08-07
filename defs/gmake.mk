@@ -6,6 +6,11 @@ override mflags := $(filter-out -j%,$(MFLAGS))
 MSPECOPT += $(if $(filter -j%,$(MFLAGS)),-j)
 nproc = $(subst -j,,$(filter -j%,$(MFLAGS)))
 
+ifeq ($(GITHUB_ACTIONS),true)
+override ACTIONS_GROUP = @echo "\#\#[group]$(@:yes-=)"
+override ACTIONS_ENDGROUP = @echo "\#\#[endgroup]"
+endif
+
 ifneq ($(filter %darwin%,$(arch)),)
 INSTRUBY_ENV += SDKROOT=/
 endif
