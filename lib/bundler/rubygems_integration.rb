@@ -600,14 +600,6 @@ module Bundler
         Gem::Specification.send(:default_stubs, "*.gemspec")
       end
     end
-
-    def use_gemdeps(gemfile)
-      ENV["BUNDLE_GEMFILE"] ||= File.expand_path(gemfile)
-      require_relative "gemdeps"
-      runtime = Bundler.setup
-      activated_spec_names = runtime.requested_specs.map(&:to_spec).sort_by(&:name)
-      [Gemdeps.new(runtime), activated_spec_names]
-    end
   end
 
   def self.rubygems
