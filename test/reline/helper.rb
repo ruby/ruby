@@ -1,6 +1,6 @@
 $LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
 
-ENV['TERM'] = 'xterm-256color' # for some CI environments
+ENV['TERM'] = 'xterm' # for some CI environments
 
 require 'reline'
 require 'test/unit'
