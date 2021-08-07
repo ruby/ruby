@@ -441,20 +441,42 @@ describe "Module#autoload" do
     ScratchPad.recorded.should == [:raise, :raise]
   end
 
-  it "does not remove the constant from Module#constants if the loaded file does not define it, but leaves it as 'undefined'" do
-    path = fixture(__FILE__, "autoload_o.rb")
-    ScratchPad.record []
-    ModuleSpecs::Autoload.autoload :O, path
+  ruby_version_is "3.1" do
+    it "removes the constant from Module#constants if the loaded file does not define it" do
+      path = fixture(__FILE__, "autoload_o.rb")
+      ScratchPad.record []
+      ModuleSpecs::Autoload.autoload :O, path
 
-    ModuleSpecs::Autoload.const_defined?(:O).should == true
-    ModuleSpecs::Autoload.should have_constant(:O)
-    ModuleSpecs::Autoload.autoload?(:O).should == path
+      ModuleSpecs::Autoload.const_defined?(:O).should == true
+      ModuleSpecs::Autoload.should have_constant(:O)
+      ModuleSpecs::Autoload.autoload?(:O).should == path
 
-    -> { ModuleSpecs::Autoload::O }.should raise_error(NameError)
+      -> { ModuleSpecs::Autoload::O }.should raise_error(NameError)
 
-    ModuleSpecs::Autoload.const_defined?(:O).should == false
-    ModuleSpecs::Autoload.autoload?(:O).should == nil
-    -> { ModuleSpecs::Autoload.const_get(:O) }.should raise_error(NameError)
+      ModuleSpecs::Autoload.const_defined?(:O).should == false
+      ModuleSpecs::Autoload.should_not have_constant(:O)
+      ModuleSpecs::Autoload.autoload?(:O).should == nil
+      -> { ModuleSpecs::Autoload.const_get(:O) }.should raise_error(NameError)
+    end
+  end
+
+  ruby_version_is ""..."3.1" do
+    it "does not remove the constant from Module#constants if the loaded file does not define it, but leaves it as 'undefined'" do
+      path = fixture(__FILE__, "autoload_o.rb")
+      ScratchPad.record []
+      ModuleSpecs::Autoload.autoload :O, path
+
+      ModuleSpecs::Autoload.const_defined?(:O).should == true
+      ModuleSpecs::Autoload.should have_constant(:O)
+      ModuleSpecs::Autoload.autoload?(:O).should == path
+
+      -> { ModuleSpecs::Autoload::O }.should raise_error(NameError)
+
+      ModuleSpecs::Autoload.const_defined?(:O).should == false
+      ModuleSpecs::Autoload.should have_constant(:O)
+      ModuleSpecs::Autoload.autoload?(:O).should == nil
+      -> { ModuleSpecs::Autoload.const_get(:O) }.should raise_error(NameError)
+    end
   end
 
   it "does not try to load the file again if the loaded file did not define the constant" do
