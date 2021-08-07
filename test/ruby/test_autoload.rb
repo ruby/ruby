@@ -468,11 +468,14 @@ p Foo::Bar
 
         assert_raise(NameError){X}
         assert_nil(Object.autoload?(:X))
+        assert_equal(false, Object.const_defined?(:X))
 
         $LOADED_FEATURES.delete(path)
+        assert_equal(false, Object.const_defined?(:X))
         assert_nil(Object.autoload?(:X))
 
         assert_raise(NameError){X}
+        assert_equal(false, Object.const_defined?(:X))
         assert_nil(Object.autoload?(:X))
       RUBY
     end
@@ -485,7 +488,7 @@ p Foo::Bar
 
   def remove_autoload_constant
     $".replace($" - @autoload_paths)
-    ::Object.class_eval {remove_const(:AutoloadTest)}
+    ::Object.class_eval {remove_const(:AutoloadTest)} if defined? Object::AutoloadTest
     TestAutoload.class_eval {remove_const(:AutoloadTest)} if defined? TestAutoload::AutoloadTest
   end
 end

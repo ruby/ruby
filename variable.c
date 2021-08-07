@@ -2510,10 +2510,11 @@ rb_autoload_load(VALUE mod, ID id)
     result = rb_ensure(autoload_require, (VALUE)&state,
 		       autoload_reset, (VALUE)&state);
 
-    if (flag > 0 && (ce = rb_const_lookup(mod, id))) {
+    if (!(ce = rb_const_lookup(mod, id)) || ce->value == Qundef) {
+        rb_const_remove(mod, id);
+    }
+    else if (flag > 0) {
         ce->flag |= flag;
-    } else {
-        autoload_delete(mod, id);
     }
     RB_GC_GUARD(load);
     return result;
