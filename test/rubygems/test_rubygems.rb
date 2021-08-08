@@ -15,7 +15,11 @@ class GemTest < Gem::TestCase
 
     output = Gem::Util.popen(*ruby_with_rubygems_and_fake_operating_system_in_load_path(path), '-e', "'require \"rubygems\"'", {:err => [:child, :out]}).strip
     assert !$?.success?
-    assert_includes output, "This is not expected so please report this issue to your OS support and ask for help"
+    assert_includes output, "unterminated string meets end of file (SyntaxError)"
+    assert_includes output, "Loading the rubygems/defaults/operating_system.rb file caused an error. " \
+    "This file is owned by your OS, not by rubygems upstream. " \
+    "Please find out which OS package this file belongs to and follow the guidelines from your OS to report " \
+    "the problem and ask for help."
   end
 
   private
