@@ -16,7 +16,7 @@ class TestGemPathSupport < Gem::TestCase
 
     assert_equal ENV["GEM_HOME"], ps.home
 
-    expected = util_path
+    expected = ENV["GEM_PATH"].split(File::PATH_SEPARATOR)
     assert_equal expected, ps.path, "defaults to GEM_PATH"
   end
 
@@ -25,7 +25,7 @@ class TestGemPathSupport < Gem::TestCase
 
     assert_equal File.join(@tempdir, "foo"), ps.home
 
-    expected = util_path + [File.join(@tempdir, 'foo')]
+    expected = ENV["GEM_PATH"].split(File::PATH_SEPARATOR) + [File.join(@tempdir, 'foo')]
     assert_equal expected, ps.path
   end
 
@@ -100,10 +100,6 @@ class TestGemPathSupport < Gem::TestCase
       expected = [File.join(@tempdir, 'foo'), File.join(@tempdir, 'bar')]
       assert_equal expected, ps.path
     end
-  end
-
-  def util_path
-    ENV["GEM_PATH"].split(File::PATH_SEPARATOR)
   end
 
   def test_initialize_spec
