@@ -8,6 +8,8 @@ module BasetestReadline
   INPUTRC = "INPUTRC"
   SAVED_ENV = %w[COLUMNS LINES]
 
+  TIMEOUT = 8
+
   def setup
     @saved_env = ENV.values_at(*SAVED_ENV)
     @inputrc, ENV[INPUTRC] = ENV[INPUTRC], IO::NULL
@@ -449,7 +451,7 @@ module BasetestReadline
         w << "\cr\u3042\u3093"
         w.reopen(IO::NULL)
         assert_equal("\u3046\u3093", Readline.readline("", true), bug6602)
-        Timeout.timeout(2) do
+        Timeout.timeout(TIMEOUT) do
           assert_equal("\u3042\u3093", Readline.readline("", true), bug6602)
         end
         assert_equal(nil,            Readline.readline("", true), bug6602)
@@ -482,6 +484,7 @@ module BasetestReadline
     code = <<-"end;"
       require 'readline'
       require 'helper'
+      puts "Readline::VERSION is \#{Readline::VERSION}."
       #{
         if defined?(TestReadline) && self.class == TestReadline
           "use_ext_readline"
@@ -496,6 +499,7 @@ module BasetestReadline
             p :INT
           }
           Readline.readline('input> ')
+          exit!(0) # Cause the process to exit immediately.
         }.value
       rescue Interrupt
         puts 'FAILED'
@@ -503,58 +507,51 @@ module BasetestReadline
       end
       puts 'SUCCEEDED'
     end;
-    f = Tempfile.new("interrupt_in_other_thread")
-    path = f.path
-    f.write code
-    f.close
-    f.open
-    asserted = false
-    current_dir = File.expand_path("..", __FILE__)
-    log, status = EnvUtil.invoke_ruby(["-I#{current_dir}", path], "", true, :merge_to_stdout) do |_in, _out, _, pid|
-      begin
-        Timeout.timeout(4) do
-          log = String.new("Readline::VERSION is #{Readline::VERSION}.\n")
-          while c = _out.read(1)
-            log << c if c
-            break if log.include?('input>')
+
+    script = Tempfile.new("interrupt_in_other_thread")
+    script.write code
+    script.close
+
+    log = String.new
+
+    EnvUtil.invoke_ruby(["-I#{__dir__}", script.path], "", true, :merge_to_stdout) do |_in, _out, _, pid|
+      Timeout.timeout(TIMEOUT) do
+        while c = _out.read(1)
+          log << c if c
+          break if log.include?('input>')
+        end
+        Process.kill(:INT, pid)
+        sleep 0.1
+        while c = _out.read(1)
+          log << c if c
+          break if log.include?('INT')
+        end
+        begin
+          _in.write "\n"
+        rescue Errno::EPIPE
+          # The "write" will fail if Reline crashed by SIGINT.
+        end
+        while c = _out.read(1)
+          log << c if c
+          if log.include?('FAILED')
+            assert false, "Should handle SIGINT correctly but raised interrupt.\nLog: #{log}\n----"
           end
-          Process.kill(:INT, pid)
-          sleep 0.1
-          while c = _out.read(1)
-            log << c if c
-            break if log.include?('INT')
-          end
-          begin
-            _in.write "\n"
-          rescue Errno::EPIPE
-            # The "write" will fail if Reline crashed by SIGINT.
-          end
-          while c = _out.read(1)
-            log << c if c
-            if log.include?('FAILED')
-              assert false, "Should handle SIGINT correctly but failed."
-              asserted = true
-            end
-            if log.include?('SUCCEEDED')
-              assert true, "Should handle SIGINT correctly but failed."
-              asserted = true
-            end
+          if log.include?('SUCCEEDED')
+            assert false, "Should handle SIGINT correctly but exited successfully.\nLog: #{log}\n----"
           end
         end
-      rescue Timeout::Error => e
-        assert false, "Timed out to handle SIGINT.\nLog: #{log}\nBacktrace:\n#{e.full_message(highlight: false)}\n----"
-        asserted = true
+      rescue Timeout::Error
+        assert false, "Timed out to handle SIGINT!\nLog: #{log}\n----"
       end
-      [log, Process.wait2(pid)[1]]
+    ensure
+      status = Process.wait2(pid).last
+      assert status.success?, "Unknown failure with exit status #{status}\nLog: #{log}\n----"
     end
-    unless asserted
-      assert false, "Unknown failure with exit status #{status}\nLog: #{log}\n----"
-    end
+
+    assert log.include?('INT'), "Interrupt was handled correctly."
   ensure
-    f.close! if f
+    script&.close!
   end
-
-
 
   def test_setting_quoting_detection_proc
     return unless Readline.respond_to?(:quoting_detection_proc=)
