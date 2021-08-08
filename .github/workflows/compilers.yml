@@ -3,15 +3,15 @@ name: Compilations
 on: [push, pull_request]
 
 # Github actions does not support YAML anchors.  This creative use of
-# environment variables (plus the "echo ::set-env" hack) is to reroute that
+# environment variables (plus the "echo $GITHUB_ENV" hack) is to reroute that
 # restriction.
 env:
-  default_cc: clang-13
+  default_cc: clang-14
   append_cc: ''
   crosshost: ''
 
   # -O1 is faster than -O3 in our tests... Majority of time are consumed trying
-  # to optimize binaries.  Also Github Actions runs on a relatively modern CPU
+  # to optimize binaries.  Also Github Actions run on relatively modern CPUs
   # compared to, say, GCC 4 or Clang 3.  We don't specify `-march=native`
   # because compilers tend not understand what the CPU is.
   optflags: '-O1'
@@ -55,6 +55,7 @@ jobs:
           - { key: default_cc, name: gcc-6,     value: gcc-6,     container: gcc-6 }
           - { key: default_cc, name: gcc-5,     value: gcc-5,     container: gcc-5 }
           - { key: default_cc, name: gcc-4.8,   value: gcc-4.8,   container: gcc-4.8 }
+          - { key: default_cc, name: clang-14,  value: clang-14,  container: clang-14 }
           - { key: default_cc, name: clang-13,  value: clang-13,  container: clang-13 }
           - { key: default_cc, name: clang-12,  value: clang-12,  container: clang-12 }
           - { key: default_cc, name: clang-11,  value: clang-11,  container: clang-11 }
@@ -157,7 +158,7 @@ jobs:
 
     name: ${{ matrix.entry.name }}
     runs-on: ubuntu-latest
-    container: ghcr.io/ruby/ruby-ci-image:${{ matrix.entry.container || 'clang-13' }}
+    container: ghcr.io/ruby/ruby-ci-image:${{ matrix.entry.container || 'clang-14' }}
     steps:
       - run: mkdir build
         working-directory:
