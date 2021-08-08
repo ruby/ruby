@@ -943,44 +943,9 @@ class TestGem < Gem::TestCase
   def test_self_path_default
     util_path
 
-    if defined?(APPLE_GEM_HOME)
-      orig_APPLE_GEM_HOME = APPLE_GEM_HOME
-      Object.send :remove_const, :APPLE_GEM_HOME
-    end
-
     Gem.instance_variable_set :@paths, nil
 
     assert_equal [Gem.default_path, Gem.dir].flatten.uniq, Gem.path
-  ensure
-    Object.const_set :APPLE_GEM_HOME, orig_APPLE_GEM_HOME if orig_APPLE_GEM_HOME
-  end
-
-  unless win_platform?
-    def test_self_path_APPLE_GEM_HOME
-      util_path
-
-      Gem.clear_paths
-      apple_gem_home = File.join @tempdir, 'apple_gem_home'
-
-      old, $-w = $-w, nil
-      Object.const_set :APPLE_GEM_HOME, apple_gem_home
-      $-w = old
-
-      assert_includes Gem.path, apple_gem_home
-    ensure
-      Object.send :remove_const, :APPLE_GEM_HOME
-    end
-
-    def test_self_path_APPLE_GEM_HOME_GEM_PATH
-      Gem.clear_paths
-      ENV['GEM_PATH'] = @gemhome
-      apple_gem_home = File.join @tempdir, 'apple_gem_home'
-      Gem.const_set :APPLE_GEM_HOME, apple_gem_home
-
-      refute Gem.path.include?(apple_gem_home)
-    ensure
-      Gem.send :remove_const, :APPLE_GEM_HOME
-    end
   end
 
   def test_self_path_ENV_PATH

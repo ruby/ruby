@@ -462,20 +462,8 @@ By default, this RubyGems will install gem as:
       lib_dir = RbConfig::CONFIG[site_or_vendor]
       bin_dir = RbConfig::CONFIG['bindir']
     else
-      # Apple installed RubyGems into libdir, and RubyGems <= 1.1.0 gets
-      # confused about installation location, so switch back to
-      # sitelibdir/vendorlibdir.
-      if defined?(APPLE_GEM_HOME) and
-        # just in case Apple and RubyGems don't get this patched up proper.
-        (prefix == RbConfig::CONFIG['libdir'] or
-         # this one is important
-         prefix == File.join(RbConfig::CONFIG['libdir'], 'ruby'))
-        lib_dir = RbConfig::CONFIG[site_or_vendor]
-        bin_dir = RbConfig::CONFIG['bindir']
-      else
-        lib_dir = File.join prefix, 'lib'
-        bin_dir = File.join prefix, 'bin'
-      end
+      lib_dir = File.join prefix, 'lib'
+      bin_dir = File.join prefix, 'bin'
     end
 
     unless install_destdir.empty?
