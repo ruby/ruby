@@ -10,12 +10,12 @@ class GemTest < Gem::TestCase
     pend "does not apply to truffleruby" if RUBY_ENGINE == 'truffleruby'
 
     path = util_install_operating_system_rb <<-RUBY
-      intentional synt'ax error
+      intentionally_not_implemented_method
     RUBY
 
     output = Gem::Util.popen(*ruby_with_rubygems_and_fake_operating_system_in_load_path(path), '-e', "'require \"rubygems\"'", {:err => [:child, :out]}).strip
     assert !$?.success?
-    assert_includes output, "unterminated string meets end of file (SyntaxError)"
+    assert_includes output, "undefined local variable or method `intentionally_not_implemented_method'"
     assert_includes output, "Loading the rubygems/defaults/operating_system.rb file caused an error. " \
     "This file is owned by your OS, not by rubygems upstream. " \
     "Please find out which OS package this file belongs to and follow the guidelines from your OS to report " \
