@@ -931,17 +931,13 @@ class TestGem < Gem::TestCase
     assert_equal true, Gem.loaded_specs.keys.include?('foo')
   end
 
-  def util_path
-    ENV.delete "GEM_HOME"
-    ENV.delete "GEM_PATH"
-  end
-
   def test_self_path
     assert_equal [Gem.dir], Gem.path
   end
 
   def test_self_path_default
-    util_path
+    ENV.delete "GEM_HOME"
+    ENV.delete "GEM_PATH"
 
     Gem.instance_variable_set :@paths, nil
 
