@@ -1076,7 +1076,6 @@ static void gc_marks(rb_objspace_t *objspace, int full_mark);
 static void gc_marks_start(rb_objspace_t *objspace, int full);
 static int  gc_marks_finish(rb_objspace_t *objspace);
 static void gc_marks_rest(rb_objspace_t *objspace);
-static void gc_marks_step(rb_objspace_t *objspace, size_t slots);
 static void gc_marks_continue(rb_objspace_t *objspace, rb_heap_t *heap);
 
 static void gc_sweep(rb_objspace_t *objspace);
@@ -5610,9 +5609,9 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     struct heap_page *sweep_page = heap->sweeping_page;
     int unlink_limit = 3;
-    int swept_slots = 0;
 
 #if GC_ENABLE_INCREMENTAL_MARK
+    int swept_slots = 0;
     int need_pool = will_be_incremental_marking(objspace) ? TRUE : FALSE;
 
     gc_report(2, objspace, "gc_sweep_step (need_pool: %d)\n", need_pool);
@@ -8055,10 +8054,10 @@ gc_marks_finish(rb_objspace_t *objspace)
     return TRUE;
 }
 
+#if GC_ENABLE_INCREMENTAL_MARK
 static void
 gc_marks_step(rb_objspace_t *objspace, size_t slots)
 {
-#if GC_ENABLE_INCREMENTAL_MARK
     GC_ASSERT(is_marking(objspace));
 
     if (gc_mark_stacked_objects_incremental(objspace, slots)) {
@@ -8068,8 +8067,8 @@ gc_marks_step(rb_objspace_t *objspace, size_t slots)
 	}
     }
     if (0) fprintf(stderr, "objspace->marked_slots: %"PRIdSIZE"\n", objspace->marked_slots);
-#endif
 }
+#endif
 
 static void
 gc_marks_rest(rb_objspace_t *objspace)
@@ -8682,23 +8681,21 @@ rb_gc_force_recycle(VALUE obj)
         CLEAR_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), obj);
         CLEAR_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), obj);
 
-#if GC_ENABLE_INCREMENTAL_MARK
         if (is_incremental_marking(objspace)) {
+#if GC_ENABLE_INCREMENTAL_MARK
             if (MARKED_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), obj)) {
                 invalidate_mark_stack(&objspace->mark_stack, obj);
                 CLEAR_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), obj);
             }
             CLEAR_IN_BITMAP(GET_HEAP_MARK_BITS(obj), obj);
+#endif
         }
         else {
-#endif
             if (is_old || GET_HEAP_PAGE(obj)->flags.before_sweep) {
                 CLEAR_IN_BITMAP(GET_HEAP_MARK_BITS(obj), obj);
             }
             CLEAR_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), obj);
-#if GC_ENABLE_INCREMENTAL_MARK
         }
-#endif
 
         objspace->profile.total_freed_objects++;
 
@@ -8910,7 +8907,9 @@ static int
 gc_start(rb_objspace_t *objspace, int reason)
 {
     unsigned int do_full_mark = !!((unsigned)reason & GPR_FLAG_FULL_MARK);
+#if GC_ENABLE_INCREMENTAL_MARK
     unsigned int immediate_mark = (unsigned)reason & GPR_FLAG_IMMEDIATE_MARK;
+#endif
 
     /* reason may be clobbered, later, so keep set immediate_sweep here */
     objspace->flags.immediate_sweep = !!((unsigned)reason & GPR_FLAG_IMMEDIATE_SWEEP);
