@@ -229,17 +229,17 @@ add_lookup_dependency_i(st_data_t *key, st_data_t *value, st_data_t data, int ex
 void
 assume_method_lookup_stable(VALUE receiver_klass, const rb_callable_method_entry_t *cme, block_t *block)
 {
-    RUBY_ASSERT(!block->receiver_klass && !block->callee_cme);
     RUBY_ASSERT(cme_validity_dependency);
     RUBY_ASSERT(method_lookup_dependency);
     RUBY_ASSERT(rb_callable_method_entry(receiver_klass, cme->called_id) == cme);
     RUBY_ASSERT_ALWAYS(RB_TYPE_P(receiver_klass, T_CLASS));
     RUBY_ASSERT_ALWAYS(!rb_objspace_garbage_object_p(receiver_klass));
 
-    block->callee_cme = (VALUE)cme;
+    cme_dependency_t cme_dep = { receiver_klass, (VALUE)cme };
+    rb_darray_append(&block->cme_dependencies, cme_dep);
+
     st_update(cme_validity_dependency, (st_data_t)cme, add_cme_validity_dependency_i, (st_data_t)block);
 
-    block->receiver_klass = receiver_klass;
     struct lookup_dependency_insertion info = { block, cme->called_id };
     st_update(method_lookup_dependency, (st_data_t)receiver_klass, add_lookup_dependency_i, (st_data_t)&info);
 }
@@ -397,17 +397,16 @@ rb_yjit_invalidate_all_method_lookup_assumptions(void)
 
 // Remove a block from the method lookup dependency table
 static void
-remove_method_lookup_dependency(block_t *block)
+remove_method_lookup_dependency(block_t *block, VALUE receiver_klass, const rb_callable_method_entry_t *callee_cme)
 {
-    if (!block->receiver_klass) return;
-    RUBY_ASSERT(block->callee_cme); // callee_cme should be set when receiver_klass is set
+    RUBY_ASSERT(receiver_klass);
+    RUBY_ASSERT(callee_cme); // callee_cme should be set when receiver_klass is set
 
     st_data_t image;
-    st_data_t key = (st_data_t)block->receiver_klass;
+    st_data_t key = (st_data_t)receiver_klass;
     if (st_lookup(method_lookup_dependency, key, &image)) {
         struct rb_id_table *id2blocks = (void *)image;
-        const rb_callable_method_entry_t *cme = (void *)block->callee_cme;
-        ID mid = cme->called_id;
+        ID mid = callee_cme->called_id;
 
         // Find block set
         VALUE blocks;
@@ -429,12 +428,12 @@ remove_method_lookup_dependency(block_t *block)
 
 // Remove a block from cme_validity_dependency
 static void
-remove_cme_validity_dependency(block_t *block)
+remove_cme_validity_dependency(block_t *block, const rb_callable_method_entry_t *callee_cme)
 {
-    if (!block->callee_cme) return;
+    RUBY_ASSERT(callee_cme);
 
     st_data_t blocks;
-    if (st_lookup(cme_validity_dependency, block->callee_cme, &blocks)) {
+    if (st_lookup(cme_validity_dependency, (st_data_t)callee_cme, &blocks)) {
         st_table *block_set = (st_table *)blocks;
 
         st_data_t block_as_st_data = (st_data_t)block;
@@ -445,8 +444,12 @@ remove_cme_validity_dependency(block_t *block)
 void
 yjit_unlink_method_lookup_dependency(block_t *block)
 {
-    remove_method_lookup_dependency(block);
-    remove_cme_validity_dependency(block);
+    cme_dependency_t *cme_dep;
+    rb_darray_foreach(block->cme_dependencies, cme_dependency_idx, cme_dep) {
+        remove_method_lookup_dependency(block, cme_dep->receiver_klass, (const rb_callable_method_entry_t *)cme_dep->callee_cme);
+        remove_cme_validity_dependency(block, (const rb_callable_method_entry_t *)cme_dep->callee_cme);
+    }
+    rb_darray_free(block->cme_dependencies);
 }
 
 void
@@ -855,8 +858,12 @@ rb_yjit_iseq_mark(const struct rb_iseq_constant_body *body)
             block_t *block = rb_darray_get(version_array, block_idx);
 
             rb_gc_mark_movable((VALUE)block->blockid.iseq);
-            rb_gc_mark_movable(block->receiver_klass);
-            rb_gc_mark_movable(block->callee_cme);
+
+            cme_dependency_t *cme_dep;
+            rb_darray_foreach(block->cme_dependencies, cme_dependency_idx, cme_dep) {
+                rb_gc_mark_movable(cme_dep->receiver_klass);
+                rb_gc_mark_movable(cme_dep->callee_cme);
+            }
 
             // Mark outgoing branch entries
             rb_darray_for(block->outgoing, branch_idx) {
@@ -894,8 +901,11 @@ rb_yjit_iseq_update_references(const struct rb_iseq_constant_body *body)
 
             block->blockid.iseq = (const rb_iseq_t *)rb_gc_location((VALUE)block->blockid.iseq);
 
-            block->receiver_klass = rb_gc_location(block->receiver_klass);
-            block->callee_cme = rb_gc_location(block->callee_cme);
+            cme_dependency_t *cme_dep;
+            rb_darray_foreach(block->cme_dependencies, cme_dependency_idx, cme_dep) {
+                cme_dep->receiver_klass = rb_gc_location(cme_dep->receiver_klass);
+                cme_dep->callee_cme = rb_gc_location(cme_dep->callee_cme);
+            }
 
             // Update outgoing branch entries
             rb_darray_for(block->outgoing, branch_idx) {
