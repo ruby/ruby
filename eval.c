@@ -232,11 +232,9 @@ rb_ec_cleanup(rb_execution_context_t *ec, int ex0)
 
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-        th = th0;
         SAVE_ROOT_JMPBUF(th, { RUBY_VM_CHECK_INTS(ec); });
 
       step_0: step++;
-        th = th0;
         errs[1] = ec->errinfo;
         if (THROW_DATA_P(ec->errinfo)) ec->errinfo = Qnil;
 	ruby_init_stack(&errs[STACK_UPPER(errs, 0, 1)]);
@@ -244,7 +242,6 @@ rb_ec_cleanup(rb_execution_context_t *ec, int ex0)
         SAVE_ROOT_JMPBUF(th, rb_ec_teardown(ec));
 
       step_1: step++;
-        th = th0;
 	/* protect from Thread#raise */
 	th->status = THREAD_KILLED;
 
@@ -252,13 +249,13 @@ rb_ec_cleanup(rb_execution_context_t *ec, int ex0)
 	SAVE_ROOT_JMPBUF(th, rb_ractor_terminate_all());
     }
     else {
+        th = th0;
 	switch (step) {
 	  case 0: goto step_0;
 	  case 1: goto step_1;
 	}
 	if (ex == 0) ex = state;
     }
-    th = th0;
     ec->errinfo = errs[1];
     sysex = error_handle(ec, ex);
 
@@ -297,7 +294,9 @@ rb_ec_cleanup(rb_execution_context_t *ec, int ex0)
 
     /* unlock again if finalizer took mutexes. */
     rb_threadptr_unlock_all_locking_mutexes(th);
+    th = th0;
     EC_POP_TAG();
+    th = th0;
     rb_thread_stop_timer_thread();
     ruby_vm_destruct(th->vm);
     if (state) ruby_default_signal(state);
