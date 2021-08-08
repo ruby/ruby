@@ -514,7 +514,7 @@ typedef enum {
 } gc_profile_record_flag;
 
 typedef struct gc_profile_record {
-    int flags;
+    unsigned int flags;
 
     double gc_time;
     double gc_invoke_time;
@@ -755,7 +755,7 @@ typedef struct rb_objspace {
 
     struct {
 	int run;
-	int latest_gc_info;
+	unsigned int latest_gc_info;
 	gc_profile_record *records;
 	gc_profile_record *current_record;
 	size_t next_index;
@@ -1055,9 +1055,9 @@ static void init_mark_stack(mark_stack_t *stack);
 
 static int ready_to_gc(rb_objspace_t *objspace);
 
-static int garbage_collect(rb_objspace_t *, int reason);
+static int garbage_collect(rb_objspace_t *, unsigned int reason);
 
-static int  gc_start(rb_objspace_t *objspace, int reason);
+static int  gc_start(rb_objspace_t *objspace, unsigned int reason);
 static void gc_rest(rb_objspace_t *objspace);
 
 enum gc_enter_event {
@@ -1113,7 +1113,7 @@ static void gc_stress_set(rb_objspace_t *objspace, VALUE flag);
 static VALUE gc_disable_no_rest(rb_objspace_t *);
 
 static double getrusage_time(void);
-static inline void gc_prof_setup_new_record(rb_objspace_t *objspace, int reason);
+static inline void gc_prof_setup_new_record(rb_objspace_t *objspace, unsigned int reason);
 static inline void gc_prof_timer_start(rb_objspace_t *);
 static inline void gc_prof_timer_stop(rb_objspace_t *);
 static inline void gc_prof_mark_timer_start(rb_objspace_t *);
@@ -8880,7 +8880,7 @@ gc_reset_malloc_info(rb_objspace_t *objspace)
 }
 
 static int
-garbage_collect(rb_objspace_t *objspace, int reason)
+garbage_collect(rb_objspace_t *objspace, unsigned int reason)
 {
     int ret;
 
@@ -8904,18 +8904,18 @@ garbage_collect(rb_objspace_t *objspace, int reason)
 }
 
 static int
-gc_start(rb_objspace_t *objspace, int reason)
+gc_start(rb_objspace_t *objspace, unsigned int reason)
 {
-    unsigned int do_full_mark = !!((unsigned)reason & GPR_FLAG_FULL_MARK);
+    unsigned int do_full_mark = !!(reason & GPR_FLAG_FULL_MARK);
 #if GC_ENABLE_INCREMENTAL_MARK
-    unsigned int immediate_mark = (unsigned)reason & GPR_FLAG_IMMEDIATE_MARK;
+    unsigned int immediate_mark = reason & GPR_FLAG_IMMEDIATE_MARK;
 #endif
 
     /* reason may be clobbered, later, so keep set immediate_sweep here */
-    objspace->flags.immediate_sweep = !!((unsigned)reason & GPR_FLAG_IMMEDIATE_SWEEP);
+    objspace->flags.immediate_sweep = !!(reason & GPR_FLAG_IMMEDIATE_SWEEP);
 
     /* Explicitly enable compaction (GC.compact) */
-    objspace->flags.during_compacting = (!!((unsigned)reason & GPR_FLAG_COMPACT) << 1);
+    objspace->flags.during_compacting = (!!(reason & GPR_FLAG_COMPACT) << 1);
 
     if (!heap_allocated_pages) return FALSE; /* heap is not ready */
     if (!(reason & GPR_FLAG_METHOD) && !ready_to_gc(objspace)) return TRUE; /* GC is not allowed */
@@ -8972,7 +8972,7 @@ gc_start(rb_objspace_t *objspace, int reason)
 
     if (objspace->flags.immediate_sweep) reason |= GPR_FLAG_IMMEDIATE_SWEEP;
 
-    gc_report(1, objspace, "gc_start(reason: %d) => %u, %d, %d\n",
+    gc_report(1, objspace, "gc_start(reason: %x) => %u, %d, %d\n",
 	      reason,
 	      do_full_mark, !is_incremental_marking(objspace), objspace->flags.immediate_sweep);
 
@@ -9042,7 +9042,7 @@ gc_rest(rb_objspace_t *objspace)
 
 struct objspace_and_reason {
     rb_objspace_t *objspace;
-    int reason;
+    unsigned int reason;
 };
 
 static void
@@ -9202,7 +9202,7 @@ gc_with_gvl(void *ptr)
 }
 
 static int
-garbage_collect_with_gvl(rb_objspace_t *objspace, int reason)
+garbage_collect_with_gvl(rb_objspace_t *objspace, unsigned int reason)
 {
     if (dont_gc_val()) return TRUE;
     if (ruby_thread_has_gvl_p()) {
@@ -9227,10 +9227,10 @@ static VALUE
 gc_start_internal(rb_execution_context_t *ec, VALUE self, VALUE full_mark, VALUE immediate_mark, VALUE immediate_sweep, VALUE compact)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    int reason = GPR_FLAG_FULL_MARK |
-                 GPR_FLAG_IMMEDIATE_MARK |
-                 GPR_FLAG_IMMEDIATE_SWEEP |
-                 GPR_FLAG_METHOD;
+    unsigned int reason = (GPR_FLAG_FULL_MARK |
+                           GPR_FLAG_IMMEDIATE_MARK |
+                           GPR_FLAG_IMMEDIATE_SWEEP |
+                           GPR_FLAG_METHOD);
 
     /* For now, compact implies full mark / sweep, so ignore other flags */
     if (RTEST(compact)) {
@@ -10244,7 +10244,7 @@ void
 rb_gc(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    int reason = GPR_DEFAULT_REASON;
+    unsigned int reason = GPR_DEFAULT_REASON;
     garbage_collect(objspace, reason);
 }
 
@@ -10285,7 +10285,7 @@ gc_count(rb_execution_context_t *ec, VALUE self)
 }
 
 static VALUE
-gc_info_decode(rb_objspace_t *objspace, const VALUE hash_or_key, const int orig_flags)
+gc_info_decode(rb_objspace_t *objspace, const VALUE hash_or_key, const unsigned int orig_flags)
 {
     static VALUE sym_major_by = Qnil, sym_gc_by, sym_immediate_sweep, sym_have_finalizer, sym_state;
     static VALUE sym_nofree, sym_oldgen, sym_shady, sym_force, sym_stress;
@@ -10296,7 +10296,7 @@ gc_info_decode(rb_objspace_t *objspace, const VALUE hash_or_key, const int orig_
     static VALUE sym_none, sym_marking, sym_sweeping;
     VALUE hash = Qnil, key = Qnil;
     VALUE major_by;
-    VALUE flags = orig_flags ? orig_flags : objspace->profile.latest_gc_info;
+    unsigned int flags = orig_flags ? orig_flags : objspace->profile.latest_gc_info;
 
     if (SYMBOL_P(hash_or_key)) {
         key = hash_or_key;
@@ -11220,8 +11220,8 @@ static void
 objspace_malloc_gc_stress(rb_objspace_t *objspace)
 {
     if (ruby_gc_stressful && ruby_native_thread_p()) {
-        int reason = GPR_FLAG_IMMEDIATE_MARK | GPR_FLAG_IMMEDIATE_SWEEP |
-                                     GPR_FLAG_STRESS | GPR_FLAG_MALLOC;
+        unsigned int reason = (GPR_FLAG_IMMEDIATE_MARK | GPR_FLAG_IMMEDIATE_SWEEP |
+                               GPR_FLAG_STRESS | GPR_FLAG_MALLOC);
 
         if (gc_stress_full_mark_after_malloc_p()) {
             reason |= GPR_FLAG_FULL_MARK;
@@ -12355,7 +12355,7 @@ getrusage_time(void)
 }
 
 static inline void
-gc_prof_setup_new_record(rb_objspace_t *objspace, int reason)
+gc_prof_setup_new_record(rb_objspace_t *objspace, unsigned int reason)
 {
     if (objspace->profile.run) {
 	size_t index = objspace->profile.next_index;
@@ -12659,9 +12659,9 @@ gc_profile_record_get(VALUE _)
 #define MAJOR_REASON_MAX 0x10
 
 static char *
-gc_profile_dump_major_reason(int flags, char *buff)
+gc_profile_dump_major_reason(unsigned int flags, char *buff)
 {
-    int reason = flags & GPR_FLAG_MAJOR_MASK;
+    unsigned int reason = flags & GPR_FLAG_MAJOR_MASK;
     int i = 0;
 
     if (reason == GPR_FLAG_NONE) {
