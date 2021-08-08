@@ -211,6 +211,15 @@ typedef struct yjit_branch_entry
 
 } branch_t;
 
+// In case this block is invalidated, these two pieces of info
+// help to remove all pointers to this block in the system.
+typedef struct {
+    VALUE receiver_klass;
+    VALUE callee_cme;
+} cme_dependency_t;
+
+typedef rb_darray(cme_dependency_t) cme_dependency_array_t;
+
 typedef rb_darray(branch_t*) branch_array_t;
 
 typedef rb_darray(uint32_t) int32_array_t;
@@ -242,10 +251,9 @@ typedef struct yjit_block_version
     // Offsets for GC managed objects in the mainline code block
     int32_array_t gc_object_offsets;
 
-    // In case this block is invalidated, these two pieces of info
-    // help to remove all pointers to this block in the system.
-    VALUE receiver_klass;
-    VALUE callee_cme;
+    // CME dependencies of this block, to help to remove all pointers to this
+    // block in the system.
+    cme_dependency_array_t cme_dependencies;
 
     // Code page this block lives on
     VALUE code_page;

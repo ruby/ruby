@@ -540,8 +540,11 @@ add_block_version(blockid_t blockid, block_t* block)
     {
         // By writing the new block to the iseq, the iseq now
         // contains new references to Ruby objects. Run write barriers.
-        RB_OBJ_WRITTEN(iseq, Qundef, block->receiver_klass);
-        RB_OBJ_WRITTEN(iseq, Qundef, block->callee_cme);
+        cme_dependency_t *cme_dep;
+        rb_darray_foreach(block->cme_dependencies, cme_dependency_idx, cme_dep) {
+            RB_OBJ_WRITTEN(iseq, Qundef, cme_dep->receiver_klass);
+            RB_OBJ_WRITTEN(iseq, Qundef, cme_dep->callee_cme);
+        }
 
         // Run write barriers for all objects in generated code.
         uint32_t *offset_element;
