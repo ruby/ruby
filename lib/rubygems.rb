@@ -1333,7 +1333,12 @@ begin
 rescue LoadError
   # Ignored
 rescue Exception => e
-  raise e.class, "#{e.message}\nThis is not expected so please report this issue to your OS support and ask for help."
+  msg = "#{e.message}\n" \
+    "Loading the rubygems/defaults/operating_system.rb file caused an error. " \
+    "This file is owned by your OS, not by rubygems upstream. " \
+    "Please find out which OS package this file belongs to and follow the guidelines from your OS to report " \
+    "the problem and ask for help."
+  raise e.class, msg
 end
 
 begin
