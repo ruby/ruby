@@ -7,6 +7,8 @@ class GemTest < Gem::TestCase
   end
 
   def test_operating_system_other_exceptions
+    pend "does not apply to truffleruby" if RUBY_ENGINE == 'truffleruby'
+
     path = util_install_operating_system_rb <<-RUBY
       intentional synt'ax error
     RUBY
