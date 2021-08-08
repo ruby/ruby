@@ -1,6 +1,8 @@
 begin
   require 'rubygems'
-rescue LoadError
+rescue LoadError => e
+  raise unless e.path == 'rubygems'
+
   warn "`RubyGems' were not loaded."
 end if defined?(Gem)
 
