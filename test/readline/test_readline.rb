@@ -542,7 +542,7 @@ module BasetestReadline
           end
         end
       rescue Timeout::Error => e
-        assert false, "Timed out to handle SIGINT.\nLog: #{log}\nBacktrace:\n#{e.backtrace_locations.join("\n")}\n----"
+        assert false, "Timed out to handle SIGINT.\nLog: #{log}\nBacktrace:\n#{e.full_message(highlight: false)}\n----"
         asserted = true
       end
       [log, Process.wait2(pid)[1]]
