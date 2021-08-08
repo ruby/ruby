@@ -45,6 +45,14 @@ int rb_keyword_given_p(void);
 int rb_block_given_p(void);
 void rb_need_block(void);
 VALUE rb_iterate(VALUE(*)(VALUE),VALUE,rb_block_call_func_t,VALUE);
+#ifdef __cplusplus
+namespace ruby {namespace backward {
+static inline VALUE
+rb_iterate(VALUE (*iter)(VALUE), VALUE data1, rb_block_call_func_t bl, VALUE data2)
+{
+    return ::rb_iterate(iter, data1, bl, data2);
+}}}
+#endif
 DEPRECATED_BY(rb_block_call since 1.9, VALUE rb_iterate(VALUE(*)(VALUE),VALUE,rb_block_call_func_t,VALUE));
 VALUE rb_block_call(VALUE,ID,int,const VALUE*,rb_block_call_func_t,VALUE);
 VALUE rb_block_call_kw(VALUE,ID,int,const VALUE*,rb_block_call_func_t,VALUE,int);
