@@ -1331,6 +1331,9 @@ begin
 
   require 'rubygems/defaults/operating_system'
 rescue LoadError
+  # Ignored
+rescue Exception => e
+  raise e.class, "#{e.message}\nThis is not expected so please report this issue to your OS support and ask for help."
 end
 
 begin
