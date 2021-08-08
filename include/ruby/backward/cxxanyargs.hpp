@@ -204,14 +204,14 @@ inline VALUE
 rb_iterate(onearg_type *q, VALUE w, type *e, VALUE r)
 {
     rb_block_call_func_t t = reinterpret_cast<rb_block_call_func_t>(e);
-    return ::rb_iterate(q, w, t, r);
+    return backward::rb_iterate(q, w, t, r);
 }
 
 #ifdef HAVE_NULLPTR
 inline VALUE
 rb_iterate(onearg_type *q, VALUE w, std::nullptr_t e, VALUE r)
 {
-    return ::rb_iterate(q, w, e, r);
+    return backward::rb_iterate(q, w, e, r);
 }
 #endif
 
