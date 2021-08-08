@@ -34,21 +34,7 @@ module Gem
   # specified in the environment
 
   def self.default_dir
-    path = if defined? RUBY_FRAMEWORK_VERSION
-             [
-               File.dirname(RbConfig::CONFIG['sitedir']),
-               'Gems',
-               RbConfig::CONFIG['ruby_version'],
-             ]
-           else
-             [
-               RbConfig::CONFIG['rubylibprefix'],
-               'gems',
-               RbConfig::CONFIG['ruby_version'],
-             ]
-           end
-
-    @default_dir ||= File.join(*path)
+    @default_dir ||= File.join(RbConfig::CONFIG['rubylibprefix'], 'gems', RbConfig::CONFIG['ruby_version'])
   end
 
   ##
@@ -197,11 +183,7 @@ module Gem
   # The default directory for binaries
 
   def self.default_bindir
-    if defined? RUBY_FRAMEWORK_VERSION # mac framework support
-      '/usr/local/bin'
-    else # generic install
-      RbConfig::CONFIG['bindir']
-    end
+    RbConfig::CONFIG['bindir']
   end
 
   def self.ruby_engine
