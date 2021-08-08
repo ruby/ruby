@@ -3306,7 +3306,6 @@ rb_hash_transform_keys_bang(int argc, VALUE *argv, VALUE hash)
             rb_hash_aset(new_keys, new_key, Qnil);
         }
         rb_ary_clear(pairs);
-        rb_gc_force_recycle(pairs);
         rb_hash_clear(new_keys);
         rb_gc_force_recycle(new_keys);
     }
