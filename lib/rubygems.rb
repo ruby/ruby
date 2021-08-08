@@ -1332,7 +1332,7 @@ begin
   require 'rubygems/defaults/operating_system'
 rescue LoadError
   # Ignored
-rescue Exception => e
+rescue StandardError => e
   msg = "#{e.message}\n" \
     "Loading the rubygems/defaults/operating_system.rb file caused an error. " \
     "This file is owned by your OS, not by rubygems upstream. " \
