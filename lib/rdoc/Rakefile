@@ -90,6 +90,12 @@ task "#{path}.gem" => package_parser_files
 desc "Generate all files used racc and kpeg"
 task :generate => parsed_files
 
+task :clean do
+  parsed_files.each do |path|
+    File.delete(path) if File.exist?(path)
+  end
+end
+
 begin
   require 'rubocop/rake_task'
 rescue LoadError
