@@ -519,6 +519,7 @@ module BasetestReadline
 
     EnvUtil.invoke_ruby(["-I#{__dir__}", script.path], "", true, :merge_to_stdout) do |_in, _out, _, pid|
       Timeout.timeout(TIMEOUT) do
+        log << "** START **"
         while c = _out.read(1)
           log << c if c
           break if log.include?('input>')
