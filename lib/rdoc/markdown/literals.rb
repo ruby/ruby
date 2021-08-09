@@ -174,9 +174,8 @@ class RDoc::Markdown::Literals
     end
 
     def scan(reg)
-      if m = reg.match(@string[@pos..-1])
-        width = m.end(0)
-        @pos += width
+      if m = reg.match(@string, @pos)
+        @pos = m.end(0)
         return true
       end
 
@@ -366,14 +365,14 @@ class RDoc::Markdown::Literals
 
   # Alphanumeric = /\p{Word}/
   def _Alphanumeric
-    _tmp = scan(/\A(?-mix:\p{Word})/)
+    _tmp = scan(/\G(?-mix:\p{Word})/)
     set_failed_rule :_Alphanumeric unless _tmp
     return _tmp
   end
 
   # AlphanumericAscii = /[A-Za-z0-9]/
   def _AlphanumericAscii
-    _tmp = scan(/\A(?-mix:[A-Za-z0-9])/)
+    _tmp = scan(/\G(?-mix:[A-Za-z0-9])/)
     set_failed_rule :_AlphanumericAscii unless _tmp
     return _tmp
   end
@@ -387,21 +386,21 @@ class RDoc::Markdown::Literals
 
   # Newline = /\n|\r\n?|\p{Zl}|\p{Zp}/
   def _Newline
-    _tmp = scan(/\A(?-mix:\n|\r\n?|\p{Zl}|\p{Zp})/)
+    _tmp = scan(/\G(?-mix:\n|\r\n?|\p{Zl}|\p{Zp})/)
     set_failed_rule :_Newline unless _tmp
     return _tmp
   end
 
   # NonAlphanumeric = /\p{^Word}/
   def _NonAlphanumeric
-    _tmp = scan(/\A(?-mix:\p{^Word})/)
+    _tmp = scan(/\G(?-mix:\p{^Word})/)
     set_failed_rule :_NonAlphanumeric unless _tmp
     return _tmp
   end
 
   # Spacechar = /\t|\p{Zs}/
   def _Spacechar
-    _tmp = scan(/\A(?-mix:\t|\p{Zs})/)
+    _tmp = scan(/\G(?-mix:\t|\p{Zs})/)
     set_failed_rule :_Spacechar unless _tmp
     return _tmp
   end
