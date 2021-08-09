@@ -123,10 +123,10 @@ matrix:
     - <<: *ppc64le-linux
     - <<: *s390x-linux
   allow_failures:
-    # An arm64 job sometimes does not start right now.
-    # https://travis-ci.community/t/11629
+    # The "TestReadline#test_interrupt_in_other_thread" started failing on arm32
+    # from https://www.travis-ci.com/github/ruby/ruby/jobs/529005145
     - name: arm32-linux
-    - name: arm64-linux
+    # - name: arm64-linux
     # - name: ppc64le-linux
     # - name: s390x-linux
   fast_finish: true
