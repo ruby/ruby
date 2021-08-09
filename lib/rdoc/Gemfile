@@ -9,4 +9,5 @@ group :development do
   gem 'test-unit'
   gem 'minitest' # for test_rdoc_rubygems_hook.rb
   gem 'rubocop'
+  gem 'gettext'
 end
