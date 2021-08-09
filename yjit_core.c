@@ -135,11 +135,14 @@ ctx_get_opnd_type(const ctx_t* ctx, insn_opnd_t opnd)
     if (opnd.is_self)
         return ctx->self_type;
 
-    if (ctx->stack_size >= MAX_TEMP_TYPES)
+    RUBY_ASSERT(opnd.idx < ctx->stack_size);
+    int stack_idx = ctx->stack_size - 1 - opnd.idx;
+
+    // If outside of tracked range, do nothing
+    if (stack_idx >= MAX_TEMP_TYPES)
         return TYPE_UNKNOWN;
 
-    RUBY_ASSERT(opnd.idx < ctx->stack_size);
-    temp_mapping_t mapping = ctx->temp_mapping[ctx->stack_size - 1 - opnd.idx];
+    temp_mapping_t mapping = ctx->temp_mapping[stack_idx];
 
     switch (mapping.kind)
     {
