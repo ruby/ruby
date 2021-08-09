@@ -190,7 +190,7 @@ rb_define_hooked_variable(const char *q, VALUE *w, std::nullptr_t e, void_type *
 /// @name Exceptions and tag jumps
 /// @{
 
-RUBY_CXX_DEPRECATED("by rb_block_call since 1.9")
+// RUBY_CXX_DEPRECATED("by rb_block_call since 1.9")
 RUBY_CXX_DEPRECATED("Use of ANYARGS in this function is deprecated")
 /// @brief       Old way to implement iterators.
 /// @param[in]   q  A function that can yield.
