@@ -1194,4 +1194,19 @@ undefined method `time' for 1:Integer
       end
     end
   end
+
+  def test_disable_error_highlight_opt
+    assert_in_out_err(%w(--disable-error-highlight -e 1+a), "", [], (<<-OUTPUT).split(/\r?\n/))
+-e:1:in `<main>': undefined local variable or method `a' for main:Object (NameError)
+    OUTPUT
+  end
+
+  def test_disable_gems_opt
+    assert_in_out_err(%w(--disable-gems -e 1+a), "", [], (<<-OUTPUT).split(/\r?\n/))
+-e:1:in `<main>': undefined local variable or method `a' for main:Object (NameError)
+
+1+a
+  ^
+    OUTPUT
+  end
 end

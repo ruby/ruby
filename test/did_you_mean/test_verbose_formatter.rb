@@ -17,6 +17,9 @@ class VerboseFormatterTest < Test::Unit::TestCase
     assert_match <<~MESSAGE.strip, @error.message
       undefined method `zeor?' for 1:Integer
 
+          @error = assert_raise(NoMethodError){ 1.zeor? }
+                                                 ^^^^^^
+
           Did you mean? zero?
     MESSAGE
   end

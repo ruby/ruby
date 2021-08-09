@@ -193,7 +193,7 @@ RSpec.describe Bundler::Fetcher::Downloader do
         let(:message) { "undefined method 'undefined_method_call'" }
 
         it "should raise the original NoMethodError" do
-          expect { subject.request(uri, options) }.to raise_error(NoMethodError, "undefined method 'undefined_method_call'")
+          expect { subject.request(uri, options) }.to raise_error(NoMethodError, /undefined method 'undefined_method_call'/)
         end
       end
     end

@@ -182,7 +182,9 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(%w(--disable), "", [], /missing argument for --disable/)
     assert_in_out_err(%w(--disable-gems -e) + ['p defined? Gem'], "", ["nil"], [])
     assert_in_out_err(%w(--disable-did_you_mean -e) + ['p defined? DidYouMean'], "", ["nil"], [])
-    assert_in_out_err(%w(--disable-gems -e) + ['p defined? DidYouMean'], "", ["nil"], [])
+    assert_in_out_err(%w(--disable-gems -e) + ['p defined? DidYouMean'], "", ['"constant"'], [])
+    assert_in_out_err(%w(--disable-error_highlight -e) + ['p defined? ErrorHighlight'], "", ["nil"], [])
+    assert_in_out_err(%w(--disable-gems -e) + ['p defined? ErrorHighlight'], "", ['"constant"'], [])
   end
 
   def test_kanji
@@ -463,10 +465,10 @@ class TestRubyOptions < Test::Unit::TestCase
                       "#!ruby -s\np [$abc, $def, $ghi_jkl, defined?($xyz)]\n",
                       ['[true, "foo", true, nil]'], [])
 
-    assert_in_out_err(%w(- -#), "#!ruby -s\n", [],
+    assert_in_out_err(%w(-s - -#), "#!ruby --disable-did_you_mean\n", [],
                       /invalid name for global variable - -# \(NameError\)/)
 
-    assert_in_out_err(%w(- -#=foo), "#!ruby -s\n", [],
+    assert_in_out_err(%w(-s - -#=foo), "#!ruby --disable-did_you_mean\n", [],
                       /invalid name for global variable - -# \(NameError\)/)
   end
 

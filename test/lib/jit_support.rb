@@ -36,7 +36,8 @@ module JITSupport
 
   def eval_with_jit_without_retry(env = nil, script, verbose: 0, min_calls: 5, save_temps: false, max_cache: 1000, wait: true, timeout: JIT_TIMEOUT)
     args = [
-      '--disable-gems', "--jit-verbose=#{verbose}",
+      '--disable-gems', '--disable-error-highlight', '--disable-did-you-mean',
+      "--jit-verbose=#{verbose}",
       "--jit-min-calls=#{min_calls}", "--jit-max-cache=#{max_cache}",
     ]
     args << '--jit-wait' if wait
