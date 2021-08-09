@@ -496,7 +496,8 @@ module BasetestReadline
       begin
         Thread.new{
           trap(:INT) {
-            p :INT
+            puts 'TRAP'
+            $stdout.flush
           }
           Readline.readline('input> ')
           exit!(0) # Cause the process to exit immediately.
@@ -520,13 +521,15 @@ module BasetestReadline
           log << c if c
           break if log.include?('input>')
         end
+        log << "** SIGINT **"
         Process.kill(:INT, pid)
         sleep 0.1
         while c = _out.read(1)
           log << c if c
-          break if log.include?('INT')
+          break if log.include?('TRAP')
         end
         begin
+          log << "** NEWLINE **"
           _in.write "\n"
         rescue Errno::EPIPE
           # The "write" will fail if Reline crashed by SIGINT.
@@ -540,8 +543,8 @@ module BasetestReadline
             assert false, "Should handle SIGINT correctly but exited successfully.\nLog: #{log}\n----"
           end
         end
-      rescue Timeout::Error
-        assert false, "Timed out to handle SIGINT!\nLog: #{log}\n----"
+      rescue Timeout::Error => e
+        assert false, "Timed out to handle SIGINT!\nLog: #{log}\nBacktrace:\n#{e.full_message(highlight: false)}\n----"
       end
     ensure
       status = Process.wait2(pid).last
