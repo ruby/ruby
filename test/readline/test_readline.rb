@@ -478,6 +478,7 @@ module BasetestReadline
   end
 
   def test_interrupt_in_other_thread
+    # Editline and Readline 7.0 can't treat I/O that is not tty.
     omit "Skip Editline" if /EditLine/n.match(Readline::VERSION)
     omit "Skip Readline 7.0" if Readline::VERSION == "7.0"
     omit unless respond_to?(:assert_ruby_status)
