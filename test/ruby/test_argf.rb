@@ -1110,4 +1110,13 @@ class TestArgf < Test::Unit::TestCase
       assert_raise(TypeError, bug11610) {gets}
     };
   end
+
+  def test_sized_read
+    [@t1, @t2, @t3].each { |t|
+      open(t.path, "wb") { |f| f.write "t" }
+    }
+    ruby('-e', "print ARGF.read(3).size", @t1.path, @t2.path, @t3.path) do |f|
+      assert_equal("3", f.read)
+    end
+  end
 end
