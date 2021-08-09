@@ -541,9 +541,11 @@ module BasetestReadline
           log << c if c
           if log.include?('FAILED')
             assert false, "Should handle SIGINT correctly but raised interrupt.\nLog: #{log}\n----"
+            break
           end
           if log.include?('SUCCEEDED')
             assert false, "Should handle SIGINT correctly but exited successfully.\nLog: #{log}\n----"
+            break
           end
         end
       rescue Timeout::Error => e
