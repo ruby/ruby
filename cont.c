@@ -711,8 +711,6 @@ fiber_pool_stack_release(struct fiber_pool_stack * stack)
 #endif
 }
 
-void rb_fiber_start(rb_fiber_t*);
-
 static inline void
 ec_switch(rb_thread_t *th, rb_fiber_t *fiber)
 {
