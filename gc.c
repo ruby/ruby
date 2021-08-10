@@ -715,7 +715,7 @@ typedef struct rb_objspace {
 	unsigned int dont_gc : 1;
 	unsigned int dont_incremental : 1;
 	unsigned int during_gc : 1;
-        unsigned int during_compacting : 2;
+        unsigned int during_compacting : 1;
 	unsigned int gc_stressful: 1;
 	unsigned int has_hook: 1;
 	unsigned int during_minor_gc : 1;
@@ -8915,7 +8915,7 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
     objspace->flags.immediate_sweep = !!(reason & GPR_FLAG_IMMEDIATE_SWEEP);
 
     /* Explicitly enable compaction (GC.compact) */
-    objspace->flags.during_compacting = (!!(reason & GPR_FLAG_COMPACT) << 1);
+    objspace->flags.during_compacting = !!(reason & GPR_FLAG_COMPACT);
 
     if (!heap_allocated_pages) return FALSE; /* heap is not ready */
     if (!(reason & GPR_FLAG_METHOD) && !ready_to_gc(objspace)) return TRUE; /* GC is not allowed */
