@@ -1121,5 +1121,12 @@ class TestArgf < Test::Unit::TestCase
     ruby('-e', "print ARGF.read(3)", @t1.path, @t2.path, @t3.path) do |f|
       assert_equal("abc", f.read)
     end
+
+    argf = ARGF.class.new(@t1.path, @t2.path, @t3.path)
+    begin
+      assert_equal("abc", argf.read(3))
+    ensure
+      argf.close
+    end
   end
 end
