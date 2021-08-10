@@ -1091,7 +1091,7 @@ marshal_dump(int argc, VALUE *argv, VALUE _)
     return rb_marshal_dump_limited(obj, port, limit);
 }
 
-VALUE
+static VALUE
 rb_marshal_dump_limited(VALUE obj, VALUE port, int limit)
 {
     struct dump_arg *arg;
