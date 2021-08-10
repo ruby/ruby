@@ -157,7 +157,9 @@ jobs:
 
     name: ${{ matrix.entry.name }}
     runs-on: ubuntu-latest
-    container: ghcr.io/fkorotkov/ruby-ci-image:${{ matrix.entry.container || 'clang-13' }}
+    container: 
+      image: ghcr.io/fkorotkov/ruby-ci-image:${{ matrix.entry.container || 'clang-13' }}
+      options: --user root
     steps:
       - run: mkdir build
         working-directory:
