@@ -10,6 +10,7 @@
 #include "internal/object.h"
 #include "internal/string.h"
 #include "internal/variable.h"
+#include "internal/re.h"
 #include "insns_info.inc"
 #include "yjit.h"
 #include "yjit_iface.h"
@@ -3521,6 +3522,47 @@ gen_tostring(jitstate_t* jit, ctx_t* ctx)
 }
 
 static codegen_status_t
+gen_toregexp(jitstate_t* jit, ctx_t* ctx)
+{
+    rb_num_t opt = jit_get_arg(jit, 0);
+    rb_num_t cnt = jit_get_arg(jit, 1);
+
+    // Save the PC and SP because this allocates an object and could
+    // raise an exception.
+    jit_save_pc(jit, REG0);
+    jit_save_sp(jit, ctx);
+
+    x86opnd_t values_ptr = ctx_sp_opnd(ctx, -(sizeof(VALUE) * (uint32_t)cnt));
+    ctx_stack_pop(ctx, cnt);
+
+    mov(cb, C_ARG_REGS[0], imm_opnd(0));
+    mov(cb, C_ARG_REGS[1], imm_opnd(cnt));
+    lea(cb, C_ARG_REGS[2], values_ptr);
+    call_ptr(cb, REG0, (void *)&rb_ary_tmp_new_from_values);
+
+    // Save the array so we can clear it later
+    push(cb, RAX);
+    push(cb, RAX); // Alignment
+    mov(cb, C_ARG_REGS[0], RAX);
+    mov(cb, C_ARG_REGS[1], imm_opnd(opt));
+    call_ptr(cb, REG0, (void *)&rb_reg_new_ary);
+
+    // The actual regex is in RAX now.  Pop the temp array from
+    // rb_ary_tmp_new_from_values into C arg regs so we can clear it
+    pop(cb, REG1); // Alignment
+    pop(cb, C_ARG_REGS[0]);
+
+    // The value we want to push on the stack is in RAX right now
+    x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_UNKNOWN);
+    mov(cb, stack_ret, RAX);
+
+    // Clear the temp array.
+    call_ptr(cb, REG0, (void *)&rb_ary_clear);
+
+    return YJIT_KEEP_COMPILING;
+}
+
+static codegen_status_t
 gen_opt_getinlinecache(jitstate_t *jit, ctx_t *ctx)
 {
     VALUE jump_offset = jit_get_arg(jit, 0);
@@ -3758,6 +3800,7 @@ yjit_init_codegen(void)
     yjit_reg_op(BIN(getglobal), gen_getglobal);
     yjit_reg_op(BIN(setglobal), gen_setglobal);
     yjit_reg_op(BIN(tostring), gen_tostring);
+    yjit_reg_op(BIN(toregexp), gen_toregexp);
 
     yjit_method_codegen_table = st_init_numtable();
 

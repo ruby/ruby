@@ -16721,6 +16721,7 @@ yjit_codegen.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 yjit_codegen.$(OBJEXT): $(top_srcdir)/internal/gc.h
 yjit_codegen.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 yjit_codegen.$(OBJEXT): $(top_srcdir)/internal/object.h
+yjit_codegen.$(OBJEXT): $(top_srcdir)/internal/re.h
 yjit_codegen.$(OBJEXT): $(top_srcdir)/internal/serial.h
 yjit_codegen.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 yjit_codegen.$(OBJEXT): $(top_srcdir)/internal/string.h
