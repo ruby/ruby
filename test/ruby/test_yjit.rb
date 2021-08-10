@@ -67,6 +67,10 @@ class TestYJIT < Test::Unit::TestCase
     assert_no_exits('"i am a string #{true}"')
   end
 
+  def test_compile_regexp
+    assert_no_exits('/#{true}/')
+  end
+
   def test_getlocal_with_level
     assert_compiles(<<~RUBY, insns: %i[getlocal opt_plus], result: [[7]])
       def foo(foo, bar)
