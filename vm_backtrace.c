@@ -648,7 +648,8 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
                 }
             }
         }
-        else if (RUBYVM_CFUNC_FRAME_P(cfp)) {
+        else {
+            VM_ASSERT(RUBYVM_CFUNC_FRAME_P(cfp));
             if (start_frame > 0) {
                 start_frame--;
             }
@@ -917,7 +918,8 @@ backtrace_each(const rb_execution_context_t *ec,
                 iter_iseq(arg, cfp);
             }
         }
-        else if (RUBYVM_CFUNC_FRAME_P(cfp)) {
+        else {
+            VM_ASSERT(RUBYVM_CFUNC_FRAME_P(cfp));
             const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
             ID mid = me->def->original_id;
 
