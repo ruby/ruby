@@ -266,6 +266,15 @@ void ctx_set_local_type(ctx_t* ctx, size_t idx, val_type_t type)
     if (idx >= MAX_LOCAL_TYPES)
         return;
 
+    // If any values on the stack map to this local we must detach them
+    for (int i = 0; i < MAX_TEMP_TYPES; i++) {
+        temp_mapping_t *mapping = &ctx->temp_mapping[i];
+        if (mapping->kind == TEMP_LOCAL && mapping->idx == idx) {
+            ctx->temp_types[i] = ctx->local_types[mapping->idx];
+            *mapping = MAP_STACK;
+        }
+    }
+
     ctx->local_types[idx] = type;
 }
 

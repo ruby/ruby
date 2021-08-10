@@ -1599,3 +1599,16 @@ assert_equal '10', %q{
 
   val
 }
+
+# regression test of local type change
+assert_equal '1.1', %q{
+def bar(baz, quux)
+  if baz.integer?
+    baz, quux = quux, nil
+  end
+  baz.to_s
+end
+
+bar(123, 1.1)
+bar(123, 1.1)
+}
