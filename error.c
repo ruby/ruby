@@ -63,7 +63,6 @@
 
 VALUE rb_iseqw_local_variables(VALUE iseqval);
 VALUE rb_iseqw_new(const rb_iseq_t *);
-int rb_str_end_with_asciichar(VALUE str, int c);
 
 long rb_backtrace_length_limit = -1;
 VALUE rb_eEAGAIN;

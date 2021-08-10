@@ -23,6 +23,7 @@ void rb_io_fptr_finalize_internal(void *ptr);
 #endif
 #define rb_io_fptr_finalize rb_io_fptr_finalize_internal
 VALUE rb_io_popen(VALUE pname, VALUE pmode, VALUE env, VALUE opt);
+int rb_str_end_with_asciichar(VALUE str, int c);
 
 VALUE rb_io_prep_stdin(void);
 VALUE rb_io_prep_stdout(void);
