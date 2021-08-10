@@ -356,7 +356,7 @@ spec/bundler/%: PHONY
 spec/bundler: test-bundler-parallel
 	$(Q)$(NULLCMD)
 
-spec/%: programs exts PHONY
+spec/%/ spec/%_spec.rb: programs exts PHONY
 	+$(RUNRUBY) -r./$(arch)-fake $(srcdir)/spec/mspec/bin/mspec-run -B $(srcdir)/spec/default.mspec $(SPECOPTS) $(patsubst %,$(srcdir)/%,$@)
 
 benchmark/%: miniruby$(EXEEXT) update-benchmark-driver PHONY
