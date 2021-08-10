@@ -1112,11 +1112,14 @@ class TestArgf < Test::Unit::TestCase
   end
 
   def test_sized_read
+    s = "a"
     [@t1, @t2, @t3].each { |t|
-      open(t.path, "wb") { |f| f.write "t" }
+      File.binwrite(t.path, s)
+      s = s.succ
     }
-    ruby('-e', "print ARGF.read(3).size", @t1.path, @t2.path, @t3.path) do |f|
-      assert_equal("3", f.read)
+
+    ruby('-e', "print ARGF.read(3)", @t1.path, @t2.path, @t3.path) do |f|
+      assert_equal("abc", f.read)
     end
   end
 end
