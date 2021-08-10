@@ -982,20 +982,24 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   def test_tracepoint_with_multithreads
     assert_nothing_raised do
-      TracePoint.new{
+      TracePoint.new(:line){
         10.times{
           Thread.pass
         }
       }.enable do
         (1..10).map{
           Thread.new{
-            1000.times{
+            1_000.times{|i|
+              _a = i
             }
           }
         }.each{|th|
           th.join
         }
       end
+      _a = 1
+      _b = 2
+      _c = 3 # to make sure the deletion of unused TracePoints
     end
   end
 
