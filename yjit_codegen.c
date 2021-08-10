@@ -1531,7 +1531,6 @@ gen_setinstancevariable(jitstate_t* jit, ctx_t* ctx)
     x86opnd_t val_opnd = ctx_stack_pop(ctx, 1);
 
     // Call rb_vm_setinstancevariable(iseq, obj, id, val, ic);
-    // Out of order because we're going to corrupt REG_SP and REG_CFP
     mov(cb, C_ARG_REGS[1], member_opnd(REG_CFP, rb_control_frame_t, self));
     mov(cb, C_ARG_REGS[3], val_opnd);
     mov(cb, C_ARG_REGS[2], imm_opnd(id));
@@ -1584,14 +1583,11 @@ gen_defined(jitstate_t* jit, ctx_t* ctx)
     x86opnd_t v_opnd = ctx_stack_pop(ctx, 1);
 
     // Call vm_defined(ec, reg_cfp, op_type, obj, v)
-    // Out of order because we're going to corrupt REG_SP and REG_CFP
-    yjit_save_regs(cb);
-    mov(cb, R9, REG_CFP);
     mov(cb, C_ARG_REGS[0], REG_EC);
-    mov(cb, C_ARG_REGS[1], R9);
-    mov(cb, C_ARG_REGS[4], v_opnd); // depends on REG_SP
-    mov(cb, C_ARG_REGS[2], imm_opnd(op_type)); // clobers REG_SP
+    mov(cb, C_ARG_REGS[1], REG_CFP);
+    mov(cb, C_ARG_REGS[2], imm_opnd(op_type));
     jit_mov_gc_ptr(jit, cb, C_ARG_REGS[3], (VALUE)obj);
+    mov(cb, C_ARG_REGS[4], v_opnd);
     call_ptr(cb, REG0, (void *)rb_vm_defined);
 
     // if (vm_defined(ec, GET_CFP(), op_type, obj, v)) {
@@ -1948,14 +1944,12 @@ gen_opt_aref(jitstate_t *jit, ctx_t *ctx)
             jit_save_pc(jit, REG0);
 
             // About to change REG_SP which these operands depend on. Yikes.
-            mov(cb, R8, recv_opnd);
-            mov(cb, R9, idx_opnd);
+            mov(cb, C_ARG_REGS[0], recv_opnd);
+            mov(cb, C_ARG_REGS[1], idx_opnd);
 
             // Write sp to cfp->sp since rb_hash_aref might need to call #hash on the key
             jit_save_sp(jit, ctx);
 
-            mov(cb, C_ARG_REGS[0], R8);
-            mov(cb, C_ARG_REGS[1], R9);
             call_ptr(cb, REG0, (void *)rb_hash_aref);
 
             // Push the return value onto the stack
@@ -2961,15 +2955,12 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
     if (leaf_builtin && !block && leaf_builtin->argc + 1 <= NUM_C_ARG_REGS) {
         ADD_COMMENT(cb, "inlined leaf builtin");
 
-        // Get a pointer to the top of the stack
-        lea(cb, REG0, ctx_stack_opnd(ctx, 0));
-
         // Call the builtin func (ec, recv, arg1, arg2, ...)
         mov(cb, C_ARG_REGS[0], REG_EC);
 
         // Copy self and arguments
         for (int32_t i = 0; i < leaf_builtin->argc + 1; i++) {
-            x86opnd_t stack_opnd = mem_opnd(64, REG0, -(leaf_builtin->argc - i) * SIZEOF_VALUE);
+            x86opnd_t stack_opnd = ctx_stack_opnd(ctx, leaf_builtin->argc - i);
             x86opnd_t c_arg_reg = C_ARG_REGS[i + 1];
             mov(cb, c_arg_reg, stack_opnd);
         }
@@ -3613,12 +3604,9 @@ gen_opt_invokebuiltin_delegate(jitstate_t *jit, ctx_t *ctx)
         mov(cb, REG0, member_opnd(REG_CFP, rb_control_frame_t, ep));
     }
 
-    // Save self from CFP
-    mov(cb, REG1, member_opnd(REG_CFP, rb_control_frame_t, self));
-
     // Call the builtin func (ec, recv, arg1, arg2, ...)
-    mov(cb, C_ARG_REGS[0], REG_EC); // clobbers REG_CFP
-    mov(cb, C_ARG_REGS[1], REG1); // self, clobbers REG_EC
+    mov(cb, C_ARG_REGS[0], REG_EC);
+    mov(cb, C_ARG_REGS[1], member_opnd(REG_CFP, rb_control_frame_t, self));
 
     // Copy arguments from locals
     for (int32_t i = 0; i < bf->argc; i++) {
