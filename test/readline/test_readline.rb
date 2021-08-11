@@ -502,7 +502,6 @@ module BasetestReadline
             puts 'TRAP'
           }
           Readline.readline('input> ')
-          exit!(0) # Cause the process to exit immediately.
         }.value
       rescue Interrupt
         puts 'FAILED'
