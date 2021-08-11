@@ -537,6 +537,7 @@ module BasetestReadline
           log << "** NEWLINE **"
           _in.write "\n"
         rescue Errno::EPIPE
+          log << "** Errno::EPIPE **"
           # The "write" will fail if Reline crashed by SIGINT.
         end
         loop do
