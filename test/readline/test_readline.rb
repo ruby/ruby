@@ -484,6 +484,7 @@ module BasetestReadline
     omit unless respond_to?(:assert_ruby_status)
     omit if /mswin|mingw/ =~ RUBY_PLATFORM
     code = <<-"end;"
+      $stdout.sync = true
       require 'readline'
       require 'helper'
       puts "Readline::VERSION is \#{Readline::VERSION}."
@@ -499,7 +500,6 @@ module BasetestReadline
         Thread.new{
           trap(:INT) {
             puts 'TRAP'
-            $stdout.flush
           }
           Readline.readline('input> ')
           exit!(0) # Cause the process to exit immediately.
