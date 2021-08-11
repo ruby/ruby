@@ -1534,8 +1534,8 @@ rb_reg_adjust_startpos(VALUE re, VALUE str, long pos, int reverse)
 }
 
 /* returns byte offset */
-long
-rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str)
+static long
+rb_reg_search_set_match(VALUE re, VALUE str, long pos, int reverse, int set_backref_str, VALUE *set_match)
 {
     long result;
     VALUE match;
@@ -1557,18 +1557,7 @@ rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str)
     tmpreg = reg != RREGEXP_PTR(re);
     if (!tmpreg) RREGEXP(re)->usecnt++;
 
-    match = rb_backref_get();
-    if (!NIL_P(match)) {
-	if (FL_TEST(match, MATCH_BUSY)) {
-	    match = Qnil;
-	}
-	else {
-	    regs = RMATCH_REGS(match);
-	}
-    }
-    if (NIL_P(match)) {
-	MEMZERO(regs, struct re_registers, 1);
-    }
+    MEMZERO(regs, struct re_registers, 1);
     if (!reverse) {
 	range += len;
     }
@@ -1601,13 +1590,10 @@ rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str)
 	}
     }
 
-    if (NIL_P(match)) {
-	int err;
-	match = match_alloc(rb_cMatch);
-	err = rb_reg_region_copy(RMATCH_REGS(match), regs);
-	onig_region_free(regs, 0);
-	if (err) rb_memerror();
-    }
+    match = match_alloc(rb_cMatch);
+    int copy_err = rb_reg_region_copy(RMATCH_REGS(match), regs);
+    onig_region_free(regs, 0);
+    if (copy_err) rb_memerror();
 
     if (set_backref_str) {
 	RMATCH(match)->str = rb_str_new4(str);
@@ -1615,8 +1601,15 @@ rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str)
 
     RMATCH(match)->regexp = re;
     rb_backref_set(match);
+    if (set_match) *set_match = match;
 
     return result;
+}
+
+long
+rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str)
+{
+    return rb_reg_search_set_match(re, str, pos, reverse, set_backref_str, NULL);
 }
 
 long
@@ -3124,7 +3117,7 @@ reg_operand(VALUE s, int check)
 }
 
 static long
-reg_match_pos(VALUE re, VALUE *strp, long pos)
+reg_match_pos(VALUE re, VALUE *strp, long pos, VALUE* set_match)
 {
     VALUE str = *strp;
 
@@ -3143,7 +3136,7 @@ reg_match_pos(VALUE re, VALUE *strp, long pos)
 	}
 	pos = rb_str_offset(str, pos);
     }
-    return rb_reg_search(re, str, pos, 0);
+    return rb_reg_search_set_match(re, str, pos, 0, 1, set_match);
 }
 
 /*
@@ -3197,7 +3190,7 @@ reg_match_pos(VALUE re, VALUE *strp, long pos)
 VALUE
 rb_reg_match(VALUE re, VALUE str)
 {
-    long pos = reg_match_pos(re, &str, 0);
+    long pos = reg_match_pos(re, &str, 0, NULL);
     if (pos < 0) return Qnil;
     pos = rb_str_sublen(str, pos);
     return LONG2FIX(pos);
@@ -3308,7 +3301,7 @@ rb_reg_match2(VALUE re)
 static VALUE
 rb_reg_match_m(int argc, VALUE *argv, VALUE re)
 {
-    VALUE result, str, initpos;
+    VALUE result = Qnil, str, initpos;
     long pos;
 
     if (rb_scan_args(argc, argv, "11", &str, &initpos) == 2) {
@@ -3318,12 +3311,11 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
 	pos = 0;
     }
 
-    pos = reg_match_pos(re, &str, pos);
+    pos = reg_match_pos(re, &str, pos, &result);
     if (pos < 0) {
 	rb_backref_set(Qnil);
 	return Qnil;
     }
-    result = rb_backref_get();
     rb_match_busy(result);
     if (!NIL_P(result) && rb_block_given_p()) {
 	return rb_yield(result);
