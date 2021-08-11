@@ -539,18 +539,20 @@ module BasetestReadline
           log << "** Errno::EPIPE **"
           # The "write" will fail if Reline crashed by SIGINT.
         end
+        interrupt_suppressed = nil
         loop do
           c = _out.read(1)
           log << c if c
           if log.include?('FAILED')
-            assert false, "Should handle SIGINT correctly but raised interrupt.\nLog: #{log}\n----"
+            interrupt_suppressed = false
             break
           end
           if log.include?('SUCCEEDED')
-            assert false, "Should handle SIGINT correctly but exited successfully.\nLog: #{log}\n----"
+            interrupt_suppressed = true
             break
           end
         end
+        assert interrupt_suppressed, "Should handle SIGINT correctly but raised interrupt.\nLog: #{log}\n----"
       rescue Timeout::Error => e
         assert false, "Timed out to handle SIGINT!\nLog: #{log}\nBacktrace:\n#{e.full_message(highlight: false)}\n----"
       end
