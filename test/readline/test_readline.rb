@@ -556,9 +556,9 @@ module BasetestReadline
           end
         end
         assert interrupt_suppressed, "Should handle SIGINT correctly but raised interrupt.\nLog: #{log}\n----"
-      rescue Timeout::Error => e
-        assert false, "Timed out to handle SIGINT!\nLog: #{log}\nBacktrace:\n#{e.full_message(highlight: false)}\n----"
       end
+    rescue Timeout::Error => e
+      assert false, "Timed out to handle SIGINT!\nLog: #{log}\nBacktrace:\n#{e.full_message(highlight: false)}\n----"
     ensure
       status = Process.wait2(pid).last
       assert status.success?, "Unknown failure with exit status #{status}\nLog: #{log}\n----"
