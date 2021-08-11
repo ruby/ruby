@@ -496,18 +496,20 @@ module BasetestReadline
         end
       }
       Readline.input = STDIN
+      # 0. Send SIGINT to this script.
       begin
         Thread.new{
           trap(:INT) {
-            puts 'TRAP'
+            puts 'TRAP' # 2. Show 'TRAP' message.
           }
-          Readline.readline('input> ')
+          Readline.readline('input> ') # 1. Should keep working and call old trap.
+                                       # 4. Receive "\\n" and return because still working.
         }.value
       rescue Interrupt
-        puts 'FAILED'
+        puts 'FAILED' # 3. "Interrupt" shouldn't be raised because trapped.
         raise
       end
-      puts 'SUCCEEDED'
+      puts 'SUCCEEDED' # 5. Finish correctly.
     end;
 
     script = Tempfile.new("interrupt_in_other_thread")
