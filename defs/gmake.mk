@@ -106,12 +106,16 @@ yes-test-bundler-parallel: PARALLELRSPECOPTS += $(if $(nproc),-n$(shell expr $(n
 # Cross reference needs to parse all files at once
 love install reinstall: RDOCFLAGS = --force-update
 
+ifneq ($(if $(filter -flto%,$(CFLAGS)),$(subst darwin,,$(arch)),$(arch)),$(arch))
+override EXE_LDFLAGS = $(filter-out -g%,$(LDFLAGS))
+endif
+
 $(srcdir)/missing/des_tables.c: $(srcdir)/missing/crypt.c
 ifeq ($(if $(filter yes,$(CROSS_COMPILING)),,$(CC)),)
 	touch $@
 else
 	@$(ECHO) building make_des_table
-	$(CC) $(INCFLAGS) $(CPPFLAGS) -DDUMP $(LDFLAGS) $(XLDFLAGS) $(LIBS) -omake_des_table $(srcdir)/missing/crypt.c
+	$(CC) $(INCFLAGS) $(CPPFLAGS) -DDUMP $(EXE_LDFLAGS) $(XLDFLAGS) $(LIBS) -omake_des_table $(srcdir)/missing/crypt.c
 	@[ -x ./make_des_table ]
 	@$(ECHO) generating $@
 	$(Q) $(MAKEDIRS) $(@D)
@@ -140,7 +144,7 @@ $(STUBPROGRAM): rubystub.$(OBJEXT) $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(SE
 rubystub$(EXEEXT):
 	@rm -f $@
 	$(ECHO) linking $@
-	$(Q) $(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) rubystub.$(OBJEXT) $(EXTOBJS) $(LIBRUBYARG) $(MAINLIBS) $(LIBS) $(EXTLIBS) $(OUTFLAG)$@
+	$(Q) $(PURIFY) $(CC) $(EXE_LDFLAGS) $(XLDFLAGS) rubystub.$(OBJEXT) $(EXTOBJS) $(LIBRUBYARG) $(MAINLIBS) $(LIBS) $(EXTLIBS) $(OUTFLAG)$@
 	$(Q) $(POSTLINK)
 	$(if $(STRIP),$(Q) $(STRIP) $@)
 
