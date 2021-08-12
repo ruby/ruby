@@ -88,7 +88,7 @@ jobs:
           - { key: CXXFLAGS,  name: c++2a, value: '-std=c++2a -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }
 
           - { key: optflags, name: '-O0', value: '-O0 -march=x86-64 -mtune=generic' }
-#         - { key: optflags, name: '-O3', value: '-O3 -march=x86-64 -mtune=generic' }
+#         - { key: optflags, name: '-O3', value: '-O3 -march=x86-64 -mtune=generic', check: true }
 
           - { key: append_configure, name: gmp,                  value: '--with-gmp' }
           - { key: append_configure, name: jemalloc,             value: '--with-jemalloc' }
@@ -172,33 +172,26 @@ jobs:
       - run: ./autogen.sh
         working-directory: src
       - name: Run configure
-        run: |
-          if [ -n "${crosshost}" ]; then
-            ../src/configure -C \
-              ${default_configure} \
-              ${append_configure} \
-              --host="${crosshost}"
-          else
-            ../src/configure -C \
-              ${default_configure} \
-              ${append_configure} \
-              --with-gcc="${default_cc} ${append_cc}"
-          fi
+        run: ../src/configure -C ${default_configure} ${append_configure} --with-gcc="${default_cc} ${append_cc}"
+        if: ${{ matrix.entry.key != 'crosshost' }}
+      - name: Run cross configure
+        run: ../src/configure -C ${default_configure} ${append_configure} --host="${crosshost}"
+        if: ${{ matrix.entry.key == 'crosshost' }}
       - run: $make extract-extlibs
       - run: $make incs
       - run: $make
       - run: $make leaked-globals
       - run: $make test
       - run: $make install
-        if: ${{ matrix.entry.name == '-O3' }}
+        if: ${{ matrix.entry.check }}
       - run: /usr/local/bin/gem install --no-doc timezone tzinfo
-        if: ${{ matrix.entry.name == '-O3' }}
+        if: ${{ matrix.entry.check }}
       - run: $make test-tool
-        if: ${{ matrix.entry.name == '-O3' }}
+        if: ${{ matrix.entry.check }}
       - run: $make test-all TESTS='-- ruby -ext-'
-        if: ${{ matrix.entry.name == '-O3' }}
+        if: ${{ matrix.entry.check }}
       - run: $make test-spec
-        if: ${{ matrix.entry.name == '-O3' }}
+        if: ${{ matrix.entry.check }}
 
       - uses: k0kubun/action-slack@v2.0.0
         with:
