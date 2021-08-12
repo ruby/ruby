@@ -30,6 +30,7 @@
 #include "ruby/internal/constant_p.h"
 #include "ruby/internal/core/rbasic.h"
 #include "ruby/internal/dllexport.h"
+#include "ruby/internal/error.h"
 #include "ruby/internal/has/builtin.h"
 #include "ruby/internal/special_consts.h"
 #include "ruby/internal/stdbool.h"
@@ -156,6 +157,11 @@ RB_BUILTIN_TYPE(VALUE obj)
 {
     RBIMPL_ASSERT_OR_ASSUME(! RB_SPECIAL_CONST_P(obj));
 
+#if 0 && defined __GNUC__ && !defined __clang__
+    /* Don't move the access to `flags` before the preceding
+     * RB_SPECIAL_CONST_P check. */
+    __asm volatile("": : :"memory");
+#endif
     VALUE ret = RBASIC(obj)->flags & RUBY_T_MASK;
     return RBIMPL_CAST((enum ruby_value_type)ret);
 }
@@ -350,7 +356,7 @@ Check_Type(VALUE v, enum ruby_value_type t)
     return;
 
   slowpath: /* <- :TODO: mark this label as cold. */
-    rb_check_type(v, t);
+    rb_unexpected_type(v, t);
 }
 
 #endif /* RBIMPL_VALUE_TYPE_H */
