@@ -61,7 +61,7 @@ NORETURN(void rb_syserr_fail_str(int, VALUE));
 NORETURN(void rb_mod_syserr_fail(VALUE, int, const char*));
 NORETURN(void rb_mod_syserr_fail_str(VALUE, int, VALUE));
 NORETURN(void rb_readwrite_syserr_fail(enum rb_io_wait_readwrite, int, const char*));
-NORETURN(void rb_unexpected_type(VALUE,int));
+COLDFUNC NORETURN(void rb_unexpected_type(VALUE,int));
 
 VALUE *rb_ruby_verbose_ptr(void);
 VALUE *rb_ruby_debug_ptr(void);
