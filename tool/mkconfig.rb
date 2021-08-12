@@ -30,6 +30,7 @@ continued_line = nil
 install_name = nil
 so_name = nil
 platform = nil
+disable_install_static_library = nil
 File.foreach "config.status" do |line|
   next if /^#/ =~ line
   name = nil
@@ -110,6 +111,9 @@ File.foreach "config.status" do |line|
     eq = win32 && vars[name] ? '<< "\n"' : '='
     vars[name] = val
     if name == "configure_args"
+      if val.include?('--disable-install-static-library')
+        disable_install_static_library = true
+      end
       val.gsub!(/--with-out-ext/, "--without-ext")
     end
     val = val.gsub(/\$(?:\$|\{?(\w+)\}?)/) {$1 ? "$(#{$1})" : $&}.dump
@@ -126,6 +130,10 @@ File.foreach "config.status" do |line|
       end
     when /^includedir$/
       val = '"$(SDKROOT)"'+val if /darwin/ =~ arch
+    when /^LIBRUBYARG_STATIC$/
+      if disable_install_static_library
+        val.sub!('-l$(RUBY_SO_NAME)-static ', '')
+      end
     end
     v = "  CONFIG[\"#{name}\"] #{eq} #{val}\n"
     if fast[name]
