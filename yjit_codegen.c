@@ -2126,33 +2126,13 @@ gen_opt_gt(jitstate_t* jit, ctx_t* ctx)
 
 VALUE rb_opt_equality_specialized(VALUE recv, VALUE obj);
 
+static codegen_status_t gen_opt_send_without_block(jitstate_t *jit, ctx_t *ctx);
+
 static codegen_status_t
 gen_opt_eq(jitstate_t* jit, ctx_t* ctx)
 {
-    uint8_t* side_exit = yjit_side_exit(jit, ctx);
-
-    // Get the operands from the stack
-    x86opnd_t arg1 = ctx_stack_pop(ctx, 1);
-    x86opnd_t arg0 = ctx_stack_pop(ctx, 1);
-
-    // Call rb_opt_equality_specialized(VALUE recv, VALUE obj)
-    // We know this method won't allocate or perform calls
-    mov(cb, C_ARG_REGS[0], arg0);
-    mov(cb, C_ARG_REGS[1], arg1);
-    call_ptr(cb, REG0, (void *)rb_opt_equality_specialized);
-
-    // If val == Qundef, bail to do a method call
-    cmp(cb, RAX, imm_opnd(Qundef));
-    je_ptr(cb, side_exit);
-
-    // Push the return value onto the stack
-    x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_IMM);
-    mov(cb, stack_ret, RAX);
-
-    return YJIT_KEEP_COMPILING;
+	return gen_opt_send_without_block(jit, ctx);
 }
-
-static codegen_status_t gen_opt_send_without_block(jitstate_t *jit, ctx_t *ctx);
 
 static codegen_status_t gen_send_general(jitstate_t *jit, ctx_t *ctx, struct rb_call_data *cd, rb_iseq_t *block);
 
