@@ -35,7 +35,7 @@
 #elif RBIMPL_HAS_EXTENSION(attribute_deprecated_with_message)
 # define RBIMPL_ATTR_DEPRECATED(msg) __attribute__((__deprecated__ msg))
 
-#elif defined(__cplusplus) && RBIMPL_COMPILER_SINCE(GCC, 10, 1, 0) /* && RBIMPL_COMPILER_BEFORE(GCC, 10, X, Y) */
+#elif defined(__cplusplus) && RBIMPL_COMPILER_SINCE(GCC, 10, 1, 0) && RBIMPL_COMPILER_BEFORE(GCC, 10, 3, 0)
 # /* https://gcc.gnu.org/bugzilla/show_bug.cgi?id=95302 */
 # define RBIMPL_ATTR_DEPRECATED(msg) /* disable until they fix this bug */
 
