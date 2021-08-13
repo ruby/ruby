@@ -2781,6 +2781,20 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
       end
 
       assert_equal %("#{f}" or "#{t}" is not a description), e.message
+
+      # Adding #{f} anywhere after the start of the description should be fine.
+      @a1.description = "(some description) #{f}"
+
+      assert_nothing_raised do
+        @a1.validate
+      end
+
+      # Adding #{t} anywhere after the start of the description should be fine.
+      @a1.description = "(some description) #{t}"
+
+      assert_nothing_raised do
+        @a1.validate
+      end
     end
   end
 
