@@ -87,6 +87,9 @@ mjit_gc_exit_hook(void)
 void
 mjit_cancel_all(const char *reason)
 {
+    if (!mjit_enabled)
+        return;
+
     mjit_call_p = false;
     if (mjit_opts.warnings || mjit_opts.verbose) {
         fprintf(stderr, "JIT cancel: Disabled JIT-ed code because %s\n", reason);
