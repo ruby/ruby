@@ -1593,14 +1593,31 @@ di_read_cu(DebugInfoReader *reader)
 }
 
 static void
-read_abstract_origin(DebugInfoReader *reader, uint64_t abstract_origin, line_info_t *line)
+read_abstract_origin(DebugInfoReader *reader, uint64_t form, uint64_t abstract_origin, line_info_t *line)
 {
     const char *p = reader->p;
     const char *q = reader->q;
     int level = reader->level;
     DIE die;
 
-    reader->p = reader->current_cu + abstract_origin;
+    switch (form) {
+      case DW_FORM_ref1:
+      case DW_FORM_ref2:
+      case DW_FORM_ref4:
+      case DW_FORM_ref8:
+      case DW_FORM_ref_udata:
+        reader->p = reader->current_cu + abstract_origin;
+        break;
+      case DW_FORM_ref_addr:
+        goto finish; /* not supported yet */
+      case DW_FORM_ref_sig8:
+        goto finish; /* not supported yet */
+      case DW_FORM_ref_sup4:
+      case DW_FORM_ref_sup8:
+        goto finish; /* not supported yet */
+      default:
+        goto finish;
+    }
     if (!di_read_die(reader, &die)) goto finish;
 
     /* enumerate abbrev */
@@ -1665,7 +1682,7 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
                 /* 1 or 3 */
                 break; /* goto skip_die; */
               case DW_AT_abstract_origin:
-                read_abstract_origin(reader, v.as.uint64, &line);
+                read_abstract_origin(reader, v.form, v.as.uint64, &line);
                 break; /* goto skip_die; */
             }
         }
