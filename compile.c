@@ -3441,6 +3441,7 @@ insn_set_specialized_instruction(rb_iseq_t *iseq, INSN *iobj, int insn_id)
 {
     iobj->insn_id = insn_id;
     iobj->operand_size = insn_len(insn_id) - 1;
+    iobj->insn_info.events |= RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN;
 
     if (insn_id == BIN(opt_neq)) {
         VALUE original_ci = iobj->operands[0];

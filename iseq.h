@@ -74,6 +74,8 @@ ISEQ_ORIGINAL_ISEQ_ALLOC(const rb_iseq_t *iseq, long size)
 			   RUBY_EVENT_END   | \
 			   RUBY_EVENT_CALL  | \
 			   RUBY_EVENT_RETURN| \
+                           RUBY_EVENT_C_CALL| \
+                           RUBY_EVENT_C_RETURN| \
 			   RUBY_EVENT_B_CALL| \
 			   RUBY_EVENT_B_RETURN| \
                            RUBY_EVENT_COVERAGE_LINE| \
