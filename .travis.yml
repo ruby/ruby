@@ -127,7 +127,9 @@ matrix:
     # from https://www.travis-ci.com/github/ruby/ruby/jobs/529005145
     - name: arm32-linux
     # - name: arm64-linux
-    # - name: ppc64le-linux
+    # We see "Some worker was crashed." in about 40% of recent ppc64le-linux jobs
+    # e.g. https://app.travis-ci.com/github/ruby/ruby/jobs/530959548
+    - name: ppc64le-linux
     # - name: s390x-linux
   fast_finish: true
 
