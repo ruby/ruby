@@ -182,8 +182,6 @@ Excluding feature bug fixes.
 * `--jit-verbose` and `--jit-warning` output "JIT cancel" when JIT-ed
   code is disabled because TracePoint or GC.compact is used.
 
-* Pause an MJIT worker when JIT-ed code gets disabled.
-
 * `RubyVM::MJIT` is renamed to `RubyVM::JIT`. [[Feature #17490]]
 
 ## Static analysis

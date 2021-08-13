@@ -94,9 +94,6 @@ mjit_cancel_all(const char *reason)
     if (mjit_opts.warnings || mjit_opts.verbose) {
         fprintf(stderr, "JIT cancel: Disabled JIT-ed code because %s\n", reason);
     }
-
-    // Currently we never re-enable JIT calls. Thus we don't need to run JIT anymore.
-    mjit_pause(false);
 }
 
 // Deal with ISeq movement from compactor
