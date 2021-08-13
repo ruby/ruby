@@ -81,10 +81,8 @@ update_global_event_hook(rb_event_flag_t vm_events)
     rb_event_flag_t enabled_iseq_events = ruby_vm_event_enabled_global_flags & ISEQ_TRACE_EVENTS;
 
     if (new_iseq_events & ~enabled_iseq_events) {
-        /* Stop calling all JIT-ed code. Compiling trace insns is not supported for now. */
-#if USE_MJIT
-        mjit_call_p = FALSE;
-#endif
+        // Stop calling all JIT-ed code. We can't rewrite existing JIT-ed code to trace_ insns for now.
+        mjit_cancel_all("TracePoint is enabled");
 
 	/* write all ISeqs if and only if new events are added */
 	rb_iseq_trace_set_all(new_iseq_events | enabled_iseq_events);

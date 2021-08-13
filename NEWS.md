@@ -176,6 +176,9 @@ Excluding feature bug fixes.
 * The JIT compiler no longer skips compilation of methods longer than
   1000 instructions.
 
+* `--jit-verbose` and `--jit-warning` output "JIT cancel" when JIT-ed
+  code is disabled because TracePoint or GC.compact is used.
+
 * `RubyVM::MJIT` is renamed to `RubyVM::JIT`. [[Feature #17490]]
 
 ## Static analysis
