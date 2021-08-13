@@ -809,7 +809,7 @@ begin
       EOC
     end
 
-    private def write_inputrc(content)
+    def write_inputrc(content)
       File.open(@inputrc_file, 'w') do |f|
         f.write content
       end
