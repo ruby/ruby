@@ -173,6 +173,9 @@ Excluding feature bug fixes.
 
 * The default `--jit-max-cache` is changed from 100 to 10000.
 
+* JIT-ed code is no longer cancelled when a TracePoint for class events
+  is enabled.
+
 * The JIT compiler no longer skips compilation of methods longer than
   1000 instructions.
 

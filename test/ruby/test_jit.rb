@@ -1101,6 +1101,14 @@ class TestJIT < Test::Unit::TestCase
     end;
   end
 
+  def test_not_cancel_by_tracepoint_class
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", success_count: 1, min_calls: 2)
+    begin;
+      TracePoint.new(:class) {}.enable
+      2.times {}
+    end;
+  end
+
   def test_cancel_by_tracepoint
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", success_count: 0, min_calls: 2)
     begin;
