@@ -972,7 +972,7 @@ rb_builtin_class_name(VALUE x)
     return etype;
 }
 
-NORETURN(static void unexpected_type(VALUE, int, int));
+COLDFUNC NORETURN(static void unexpected_type(VALUE, int, int));
 #define UNDEF_LEAKED "undef leaked to the Ruby space"
 
 static void
@@ -1001,7 +1001,7 @@ rb_check_type(VALUE x, int t)
 {
     int xt;
 
-    if (x == Qundef) {
+    if (RB_UNLIKELY(x == Qundef)) {
 	rb_bug(UNDEF_LEAKED);
     }
 
@@ -1022,7 +1022,7 @@ rb_check_type(VALUE x, int t)
 void
 rb_unexpected_type(VALUE x, int t)
 {
-    if (x == Qundef) {
+    if (RB_UNLIKELY(x == Qundef)) {
 	rb_bug(UNDEF_LEAKED);
     }
 
