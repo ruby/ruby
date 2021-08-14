@@ -909,9 +909,9 @@ static const char builtin_types[][10] = {
     "",				/* 0x17 */
     "",				/* 0x18 */
     "",				/* 0x19 */
-    "Memo",			/* internal use: general memo */
-    "Node",			/* internal use: syntax tree node */
-    "iClass",			/* internal use: mixed-in module holder */
+    "<Memo>",			/* internal use: general memo */
+    "<Node>",			/* internal use: syntax tree node */
+    "<iClass>", 		/* internal use: mixed-in module holder */
 };
 
 const char *
