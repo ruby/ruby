@@ -477,7 +477,7 @@ module BasetestReadline
     end
   end
 
-  # TODO Green CI for arm32-linux (Travis CI), Editline, and Readline 7.0.
+  # TODO Green CI for arm32-linux (Travis CI), and Readline 7.0.
   def test_interrupt_in_other_thread
     # Editline and Readline 7.0 can't treat I/O that is not tty.
     omit "Skip Editline" if /EditLine/n.match(Readline::VERSION)
