@@ -49,11 +49,35 @@ rb_scheduler_get(void)
     return thread->scheduler;
 }
 
+static void
+verify_interface(VALUE scheduler)
+{
+    if (!rb_respond_to(scheduler, id_block)) {
+        rb_raise(rb_eArgError, "Scheduler must implement #block!");
+    }
+
+    if (!rb_respond_to(scheduler, id_unblock)) {
+        rb_raise(rb_eArgError, "Scheduler must implement #unblock!");
+    }
+
+    if (!rb_respond_to(scheduler, id_kernel_sleep)) {
+        rb_raise(rb_eArgError, "Scheduler must implement #kernel_sleep!");
+    }
+
+    if (!rb_respond_to(scheduler, id_io_wait)) {
+        rb_raise(rb_eArgError, "Scheduler must implement #io_wait!");
+    }
+}
+
 VALUE
 rb_scheduler_set(VALUE scheduler)
 {
     rb_thread_t *thread = GET_THREAD();
     VM_ASSERT(thread);
+
+    if (scheduler != Qnil) {
+        verify_interface(scheduler);
+    }
 
     // We invoke Scheduler#close when setting it to something else, to ensure the previous scheduler runs to completion before changing the scheduler. That way, we do not need to consider interactions, e.g., of a Fiber from the previous scheduler with the new scheduler.
     if (thread->scheduler != Qnil) {
