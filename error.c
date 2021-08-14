@@ -1007,6 +1007,14 @@ rb_check_type(VALUE x, int t)
 
     xt = TYPE(x);
     if (xt != t || (xt == T_DATA && RTYPEDDATA_P(x))) {
+        /*
+         * Typed data is not simple `T_DATA`, but in a sense an
+         * extension of `struct RVALUE`, which are incompatible with
+         * each other except when inherited.
+         *
+         * So it is not enough to just check `T_DATA`, it must be
+         * identified by its `type` using `Check_TypedStruct` instead.
+         */
 	unexpected_type(x, xt, t);
     }
 }

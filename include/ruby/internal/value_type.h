@@ -340,9 +340,7 @@ Check_Type(VALUE v, enum ruby_value_type t)
         goto unexpected_type;
     }
     else if (t == RUBY_T_DATA && rbimpl_rtypeddata_p(v)) {
-        /* The intention itself is not necessarily clear to me, but at least it
-         * is  intentional   to  rule   out  typed   data  here.    See  commit
-         * a7c32bf81d3391cfb78cfda278f469717d0fb794. */
+        /* Typed data is not simple `T_DATA`, see `rb_check_type` */
         goto unexpected_type;
     }
     else {
