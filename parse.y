@@ -10791,7 +10791,7 @@ parser_token_value_print(struct parser_params *p, enum yytokentype type, const Y
 #ifndef RIPPER
 	v = valp->node->nd_lit;
 #else
-	v = valp->val;
+	v = get_value(valp->val);
 #endif
 	rb_parser_printf(p, "%+"PRIsVALUE, v);
 	break;
