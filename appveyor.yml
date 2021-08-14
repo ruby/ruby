@@ -6,6 +6,7 @@ init:
   - git config --global core.autocrlf false
   - git config --global core.eol lf
   - git config --global advice.detachedHead 0
+shallow_clone: true
 clone_depth: 10
 platform:
   - x64
