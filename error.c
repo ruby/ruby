@@ -1006,7 +1006,7 @@ rb_check_type(VALUE x, int t)
     }
 
     xt = TYPE(x);
-    if (xt != t || (xt == T_DATA && RTYPEDDATA_P(x))) {
+    if (xt != t || (xt == T_DATA && rbimpl_rtypeddata_p(x))) {
         /*
          * Typed data is not simple `T_DATA`, but in a sense an
          * extension of `struct RVALUE`, which are incompatible with
