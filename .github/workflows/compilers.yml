@@ -59,7 +59,7 @@ jobs:
             name: 'gcc-11 LTO'
             value: 'gcc-11 -O2 -flto=auto -ffat-lto-objects'
             container: gcc-11
-            check: true
+            # check: true
           - { key: default_cc, name: clang-14,  value: clang-14,  container: clang-14 }
           - { key: default_cc, name: clang-13,  value: clang-13,  container: clang-13 }
           - { key: default_cc, name: clang-12,  value: clang-12,  container: clang-12 }
@@ -76,7 +76,7 @@ jobs:
             name: 'clang-14 LTO'
             value: 'clang-14 -O2 -flto=auto'
             container: clang-14
-            check: true
+            # check: true
 
           - { key: crosshost, name: aarch64-linux-gnu,     value: aarch64-linux-gnu, container: crossbuild-essential-arm64 }
 #         - { key: crosshost, name: arm-linux-gnueabi,     value: arm-linux-gnueabi }
