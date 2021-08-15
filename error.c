@@ -1104,6 +1104,7 @@ VALUE rb_eNotImpError;
 VALUE rb_eNoMemError;
 VALUE rb_cNameErrorMesg;
 VALUE rb_eNoMatchingPatternError;
+VALUE rb_eNoMatchingPatternKeyError;
 
 VALUE rb_eScriptError;
 VALUE rb_eSyntaxError;
@@ -1116,7 +1117,7 @@ static VALUE rb_eNOERROR;
 ID ruby_static_id_cause;
 #define id_cause ruby_static_id_cause
 static ID id_message, id_backtrace;
-static ID id_key, id_args, id_Errno, id_errno, id_i_path;
+static ID id_key, id_matchee, id_args, id_Errno, id_errno, id_i_path;
 static ID id_receiver, id_recv, id_iseq, id_local_variables;
 static ID id_private_call_p, id_top, id_bottom;
 #define id_bt idBt
@@ -2164,6 +2165,73 @@ key_err_initialize(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
+ *   no_matching_pattern_key_error.matchee  -> object
+ *
+ * Return the matchee associated with this NoMatchingPatternKeyError exception.
+ */
+
+static VALUE
+no_matching_pattern_key_err_matchee(VALUE self)
+{
+    VALUE matchee;
+
+    matchee = rb_ivar_lookup(self, id_matchee, Qundef);
+    if (matchee != Qundef) return matchee;
+    rb_raise(rb_eArgError, "no matchee is available");
+}
+
+/*
+ * call-seq:
+ *   no_matching_pattern_key_error.key  -> object
+ *
+ * Return the key caused this NoMatchingPatternKeyError exception.
+ */
+
+static VALUE
+no_matching_pattern_key_err_key(VALUE self)
+{
+    VALUE key;
+
+    key = rb_ivar_lookup(self, id_key, Qundef);
+    if (key != Qundef) return key;
+    rb_raise(rb_eArgError, "no key is available");
+}
+
+/*
+ * call-seq:
+ *   NoMatchingPatternKeyError.new(message=nil, matchee: nil, key: nil) -> no_matching_pattern_key_error
+ *
+ * Construct a new +NoMatchingPatternKeyError+ exception with the given message,
+ * matchee and key.
+ */
+
+static VALUE
+no_matching_pattern_key_err_initialize(int argc, VALUE *argv, VALUE self)
+{
+    VALUE options;
+
+    rb_call_super(rb_scan_args(argc, argv, "01:", NULL, &options), argv);
+
+    if (!NIL_P(options)) {
+        ID keywords[2];
+        VALUE values[numberof(keywords)];
+        int i;
+        keywords[0] = id_matchee;
+        keywords[1] = id_key;
+        rb_get_kwargs(options, keywords, 0, numberof(values), values);
+        for (i = 0; i < numberof(values); ++i) {
+            if (values[i] != Qundef) {
+                rb_ivar_set(self, keywords[i], values[i]);
+            }
+        }
+    }
+
+    return self;
+}
+
+
+/*
+ * call-seq:
  *   SyntaxError.new([msg])  -> syntax_error
  *
  * Construct a SyntaxError exception.
@@ -2875,6 +2943,10 @@ Init_Exception(void)
     rb_eEncodingError = rb_define_class("EncodingError", rb_eStandardError);
     rb_eEncCompatError = rb_define_class_under(rb_cEncoding, "CompatibilityError", rb_eEncodingError);
     rb_eNoMatchingPatternError = rb_define_class("NoMatchingPatternError", rb_eStandardError);
+    rb_eNoMatchingPatternKeyError = rb_define_class("NoMatchingPatternKeyError", rb_eNoMatchingPatternError);
+    rb_define_method(rb_eNoMatchingPatternKeyError, "initialize", no_matching_pattern_key_err_initialize, -1);
+    rb_define_method(rb_eNoMatchingPatternKeyError, "matchee", no_matching_pattern_key_err_matchee, 0);
+    rb_define_method(rb_eNoMatchingPatternKeyError, "key", no_matching_pattern_key_err_key, 0);
 
     syserr_tbl = st_init_numtable();
     rb_eSystemCallError = rb_define_class("SystemCallError", rb_eStandardError);
@@ -2898,6 +2970,7 @@ Init_Exception(void)
     id_message = rb_intern_const("message");
     id_backtrace = rb_intern_const("backtrace");
     id_key = rb_intern_const("key");
+    id_matchee = rb_intern_const("matchee");
     id_args = rb_intern_const("args");
     id_receiver = rb_intern_const("receiver");
     id_private_call_p = rb_intern_const("private_call?");
