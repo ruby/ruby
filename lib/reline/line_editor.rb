@@ -1165,7 +1165,13 @@ class Reline::LineEditor
 
   def call_completion_proc
     result = retrieve_completion_block(true)
-    preposing, target, postposing = result
+    pre, target, post = result
+    result = call_completion_proc_with_checking_args(pre, target, post)
+    Reline.core.instance_variable_set(:@completion_quote_character, nil)
+    result
+  end
+
+  private def call_completion_proc_with_checking_args(pre, target, post)
     if @completion_proc and target
       argnum = @completion_proc.parameters.inject(0) { |result, item|
         case item.first
@@ -1179,12 +1185,11 @@ class Reline::LineEditor
       when 1
         result = @completion_proc.(target)
       when 2
-        result = @completion_proc.(target, preposing)
+        result = @completion_proc.(target, pre)
       when 3..Float::INFINITY
-        result = @completion_proc.(target, preposing, postposing)
+        result = @completion_proc.(target, pre, post)
       end
     end
-    Reline.core.instance_variable_set(:@completion_quote_character, nil)
     result
   end
 
