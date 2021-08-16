@@ -923,13 +923,16 @@ rb_enc_find(const char *name)
 static inline int
 enc_capable(VALUE obj)
 {
+    VALUE closed;
     if (SPECIAL_CONST_P(obj)) return SYMBOL_P(obj);
     switch (BUILTIN_TYPE(obj)) {
       case T_STRING:
       case T_REGEXP:
-      case T_FILE:
       case T_SYMBOL:
 	return TRUE;
+      case T_FILE:
+        closed = rb_check_funcall(obj, rb_intern("closed?"), 0, 0);
+        return closed ? FALSE : TRUE;
       case T_DATA:
 	if (is_data_encoding(obj)) return TRUE;
       default:
