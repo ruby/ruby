@@ -322,7 +322,7 @@ def mk_builtin_header file
         f.puts %'        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\\n", index);'
         f.puts %'    }'
       end
-      f.puts %'    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == #{cfunc_name} */\\n", (intptr_t)#{cfunc_name});'
+      f.puts %'    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == #{cfunc_name} */\\n", (VALUE)#{cfunc_name});'
       f.puts %'    fprintf(f, "    val = f(ec, self#{argv});\\n");'
       f.puts %'}'
       f.puts
