@@ -193,7 +193,7 @@ size_mul_or_raise(size_t x, size_t y, VALUE exc)
             "integer overflow: %"PRIuSIZE
             " * %"PRIuSIZE
             " > %"PRIuSIZE,
-            x, y, SIZE_MAX);
+            x, y, (size_t)SIZE_MAX);
     }
 }
 
@@ -220,7 +220,7 @@ size_mul_add_or_raise(size_t x, size_t y, size_t z, VALUE exc)
             " * %"PRIuSIZE
             " + %"PRIuSIZE
             " > %"PRIuSIZE,
-            x, y, z, SIZE_MAX);
+            x, y, z, (size_t)SIZE_MAX);
     }
 }
 
@@ -248,7 +248,7 @@ size_mul_add_mul_or_raise(size_t x, size_t y, size_t z, size_t w, VALUE exc)
             " + %"PRIdSIZE
             " * %"PRIdSIZE
             " > %"PRIdSIZE,
-            x, y, z, w, SIZE_MAX);
+            x, y, z, w, (size_t)SIZE_MAX);
     }
 }
 
