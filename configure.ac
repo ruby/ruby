@@ -2573,14 +2573,9 @@ AS_CASE([$coroutine_type], [yes|''], [
 COROUTINE_H=coroutine/$coroutine_type/Context.h
 AS_IF([test ! -f "$srcdir/$COROUTINE_H"],
       [AC_MSG_ERROR('$coroutine_type' is not supported as coroutine)])
-AS_CASE([$coroutine_type],
-    [ucontext|pthread], [
-        COROUTINE_SRC=coroutine/$coroutine_type/Context.c
-    ],
-    [
-        COROUTINE_SRC=coroutine/$coroutine_type/Context.'$(ASMEXT)'
-    ]
-)
+COROUTINE_SRC=coroutine/$coroutine_type/Context.c
+AS_IF([test ! -f "$srcdir/$COROUTINE_SRC"],
+      [COROUTINE_SRC=coroutine/$coroutine_type/Context.'$(ASMEXT)'])
 AC_DEFINE_UNQUOTED(COROUTINE_H, ["$COROUTINE_H"])
 AC_SUBST(X_COROUTINE_H, [$COROUTINE_H])
 AC_SUBST(X_COROUTINE_SRC, [$COROUTINE_SRC])
