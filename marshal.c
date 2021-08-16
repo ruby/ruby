@@ -621,7 +621,15 @@ static VALUE
 encoding_name(VALUE obj, struct dump_arg *arg)
 {
     if (rb_enc_capable(obj)) {
-        int encidx = rb_enc_get_index(obj);
+        int encidx;
+
+        /* encoding can't be retrieved from closed IO */
+        if (RB_TYPE_P(obj, T_FILE)) {
+            VALUE closed = rb_check_funcall(obj, rb_intern("closed?"), 0, 0);
+            if (closed) return Qnil;
+        }
+
+        encidx = rb_enc_get_index(obj);
         rb_encoding *enc = 0;
         st_data_t name;
 
