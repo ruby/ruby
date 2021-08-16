@@ -2924,7 +2924,7 @@ rb_fix2uint(VALUE val)
     }
     num = FIX2ULONG(val);
 
-    check_uint(num, rb_num_negative_int_p(val));
+    check_uint(num, FIXNUM_NEGATIVE_P(val));
     return num;
 }
 #else
@@ -3022,7 +3022,7 @@ rb_fix2ushort(VALUE val)
     }
     num = FIX2ULONG(val);
 
-    check_ushort(num, rb_num_negative_int_p(val));
+    check_ushort(num, FIXNUM_NEGATIVE_P(val));
     return num;
 }
 
