@@ -3991,6 +3991,18 @@ __END__
     }
   end
 
+  def test_marshal_closed_io
+    bug18077 = '[ruby-core:104927] [Bug #18077]'
+    r, w = IO.pipe
+    r.close; w.close
+    assert_raise(TypeError, bug18077) {Marshal.dump(r)}
+
+    class << r
+      undef_method :closed?
+    end
+    assert_raise(TypeError, bug18077) {Marshal.dump(r)}
+  end
+
   def test_stdout_to_closed_pipe
     EnvUtil.invoke_ruby(["-e", "loop {puts :ok}"], "", true, true) do
       |in_p, out_p, err_p, pid|
