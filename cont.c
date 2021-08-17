@@ -711,8 +711,6 @@ fiber_pool_stack_release(struct fiber_pool_stack * stack)
 #endif
 }
 
-void rb_fiber_start(rb_fiber_t*);
-
 static inline void
 ec_switch(rb_thread_t *th, rb_fiber_t *fiber)
 {
@@ -2497,8 +2495,6 @@ rb_fiber_m_resume(int argc, VALUE *argv, VALUE fiber)
 {
     return rb_fiber_resume_kw(fiber, argc, argv, rb_keyword_given_p());
 }
-
-VALUE rb_fiber_transfer_kw(VALUE fiber_value, int argc, const VALUE *argv, int kw_splat);
 
 /*
  *  call-seq:

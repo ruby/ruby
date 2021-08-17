@@ -106,6 +106,8 @@ def sync_default_gems(gem)
     cp_r(Dir.glob("#{upstream}/lib/rdoc*"), "lib")
     cp_r("#{upstream}/test/rdoc", "test")
     cp_r("#{upstream}/rdoc.gemspec", "lib/rdoc")
+    cp_r("#{upstream}/Gemfile", "lib/rdoc")
+    cp_r("#{upstream}/Rakefile", "lib/rdoc")
     cp_r("#{upstream}/exe/rdoc", "libexec")
     cp_r("#{upstream}/exe/ri", "libexec")
     parser_files = {

@@ -42,7 +42,7 @@ NORETURN(static void rb_raise_jump(VALUE, VALUE));
 void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);
 void rb_ec_clear_all_trace_func(const rb_execution_context_t *ec);
 
-static int rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex);
+static int rb_ec_cleanup(rb_execution_context_t *ec, int ex);
 static int rb_ec_exec_node(rb_execution_context_t *ec, void *n);
 
 VALUE rb_eLocalJumpError;
@@ -210,13 +210,13 @@ ruby_finalize(void)
  * @note This function does not raise any exception.
  */
 int
-ruby_cleanup(volatile int ex)
+ruby_cleanup(int ex)
 {
     return rb_ec_cleanup(GET_EC(), ex);
 }
 
 static int
-rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex)
+rb_ec_cleanup(rb_execution_context_t *ec, int ex0)
 {
     int state;
     volatile VALUE errs[2] = { Qundef, Qundef };
@@ -225,17 +225,16 @@ rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex)
     rb_thread_t *const volatile th0 = th;
     volatile int sysex = EXIT_SUCCESS;
     volatile int step = 0;
+    volatile int ex = ex0;
 
     rb_threadptr_interrupt(th);
     rb_threadptr_check_signal(th);
 
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-        th = th0;
         SAVE_ROOT_JMPBUF(th, { RUBY_VM_CHECK_INTS(ec); });
 
       step_0: step++;
-        th = th0;
         errs[1] = ec->errinfo;
         if (THROW_DATA_P(ec->errinfo)) ec->errinfo = Qnil;
 	ruby_init_stack(&errs[STACK_UPPER(errs, 0, 1)]);
@@ -243,7 +242,6 @@ rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex)
         SAVE_ROOT_JMPBUF(th, rb_ec_teardown(ec));
 
       step_1: step++;
-        th = th0;
 	/* protect from Thread#raise */
 	th->status = THREAD_KILLED;
 
@@ -251,13 +249,13 @@ rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex)
 	SAVE_ROOT_JMPBUF(th, rb_ractor_terminate_all());
     }
     else {
+        th = th0;
 	switch (step) {
 	  case 0: goto step_0;
 	  case 1: goto step_1;
 	}
 	if (ex == 0) ex = state;
     }
-    th = th0;
     ec->errinfo = errs[1];
     sysex = error_handle(ec, ex);
 
@@ -296,7 +294,9 @@ rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex)
 
     /* unlock again if finalizer took mutexes. */
     rb_threadptr_unlock_all_locking_mutexes(th);
+    th = th0;
     EC_POP_TAG();
+    th = th0;
     rb_thread_stop_timer_thread();
     ruby_vm_destruct(th->vm);
     if (state) ruby_default_signal(state);
@@ -1112,17 +1112,14 @@ rb_protect(VALUE (* proc) (VALUE), VALUE data, int *pstate)
     volatile enum ruby_tag_type state;
     rb_execution_context_t * volatile ec = GET_EC();
     rb_control_frame_t *volatile cfp = ec->cfp;
-    rb_jmpbuf_t org_jmpbuf;
 
     EC_PUSH_TAG(ec);
-    MEMCPY(&org_jmpbuf, &rb_ec_thread_ptr(ec)->root_jmpbuf, rb_jmpbuf_t, 1);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	SAVE_ROOT_JMPBUF(rb_ec_thread_ptr(ec), result = (*proc) (data));
     }
     else {
 	rb_vm_rewind_cfp(ec, cfp);
     }
-    MEMCPY(&rb_ec_thread_ptr(ec)->root_jmpbuf, &org_jmpbuf, rb_jmpbuf_t, 1);
     EC_POP_TAG();
 
     if (pstate != NULL) *pstate = state;

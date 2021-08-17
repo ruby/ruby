@@ -238,7 +238,7 @@ enum {
 # pragma deprecated(RUBY_FL_DUPPED)
 #endif
 
-    = RUBY_T_MASK | RUBY_FL_EXIVAR
+    = (int)RUBY_T_MASK | (int)RUBY_FL_EXIVAR
 };
 
 #undef RBIMPL_HAVE_ENUM_ATTRIBUTE

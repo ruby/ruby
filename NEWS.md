@@ -113,6 +113,11 @@ Outstanding ones only.
 
     * StructClass#keyword_init? is added [[Feature #18008]]
 
+* String
+
+    * Update Unicode version to 13.0.0 [[Feature #17750]]
+      and Emoji version to 13.0 [[Feature #18029]]
+
 * Queue
 
     * Queue#initialize now accepts an Enumerable of initial values.
@@ -173,8 +178,14 @@ Excluding feature bug fixes.
 
 * The default `--jit-max-cache` is changed from 100 to 10000.
 
+* JIT-ed code is no longer cancelled when a TracePoint for class events
+  is enabled.
+
 * The JIT compiler no longer skips compilation of methods longer than
   1000 instructions.
+
+* `--jit-verbose` and `--jit-warning` output "JIT cancel" when JIT-ed
+  code is disabled because TracePoint or GC.compact is used.
 
 * `RubyVM::MJIT` is renamed to `RubyVM::JIT`. [[Feature #17490]]
 
@@ -218,4 +229,5 @@ Excluding feature bug fixes.
 [Feature #17470]: https://bugs.ruby-lang.org/issues/17470
 [Feature #17853]: https://bugs.ruby-lang.org/issues/17853
 [Bug #17827]:     https://bugs.ruby-lang.org/issues/17827
+[Feature #18008]: https://bugs.ruby-lang.org/issues/18008
 [Feature #18015]: https://bugs.ruby-lang.org/issues/18015

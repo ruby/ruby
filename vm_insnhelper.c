@@ -1724,9 +1724,11 @@ vm_search_cc(const VALUE klass, const struct rb_callinfo * const ci)
     const ID mid = vm_ci_mid(ci);
     struct rb_id_table *cc_tbl = RCLASS_CC_TBL(klass);
     struct rb_class_cc_entries *ccs = NULL;
+    VALUE ccs_data;
 
     if (cc_tbl) {
-        if (rb_id_table_lookup(cc_tbl, mid, (VALUE *)&ccs)) {
+        if (rb_id_table_lookup(cc_tbl, mid, &ccs_data)) {
+            ccs = (struct rb_class_cc_entries *)ccs_data;
             const int ccs_len = ccs->len;
             VM_ASSERT(vm_ccs_verify(ccs, mid, klass));
 
@@ -1790,8 +1792,9 @@ vm_search_cc(const VALUE klass, const struct rb_callinfo * const ci)
     if (ccs == NULL) {
         VM_ASSERT(cc_tbl != NULL);
 
-        if (LIKELY(rb_id_table_lookup(cc_tbl, mid, (VALUE*)&ccs))) {
+        if (LIKELY(rb_id_table_lookup(cc_tbl, mid, &ccs_data))) {
             // rb_callable_method_entry() prepares ccs.
+            ccs = (struct rb_class_cc_entries *)ccs_data;
         }
         else {
             // TODO: required?

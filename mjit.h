@@ -90,6 +90,7 @@ extern void rb_mjit_recompile_inlining(const rb_iseq_t *iseq);
 extern void rb_mjit_recompile_const(const rb_iseq_t *iseq);
 RUBY_SYMBOL_EXPORT_END
 
+extern void mjit_cancel_all(const char *reason);
 extern bool mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id);
 extern void mjit_init(const struct mjit_options *opts);
 extern void mjit_gc_start_hook(void);
@@ -181,6 +182,7 @@ void mjit_finish(bool close_handle_p);
 
 # else // USE_MJIT
 
+static inline void mjit_cancel_all(const char *reason){}
 static inline struct mjit_cont *mjit_cont_new(rb_execution_context_t *ec){return NULL;}
 static inline void mjit_cont_free(struct mjit_cont *cont){}
 static inline void mjit_gc_start_hook(void){}

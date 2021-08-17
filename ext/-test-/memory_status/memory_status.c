@@ -10,11 +10,15 @@
 
 static VALUE cMemoryStatus;
 
+#undef HAVE_RSS
+#undef HAVE_PEAK
+
 static VALUE
 read_status(VALUE self)
 {
     VALUE size = INT2FIX(0);
 #if defined __APPLE__
+# define HAVE_RSS 1
     VALUE rss;
     kern_return_t error;
 # if defined MACH_TASK_BASIC_INFO
@@ -40,14 +44,20 @@ read_status(VALUE self)
     rss = ULL2NUM(taskinfo.resident_size);
     rb_struct_aset(self, INT2FIX(1), rss);
 #elif defined _WIN32
-    VALUE peak;
+# define HAVE_RSS 1
+# define HAVE_PEAK 1
+    VALUE rss, peak;
     PROCESS_MEMORY_COUNTERS c;
     c.cb = sizeof(c);
     if (!GetProcessMemoryInfo(GetCurrentProcess(), &c, c.cb))
 	return Qnil;
     size = SIZET2NUM(c.PagefileUsage);
+    rss = SIZET2NUM(c.WorkingSetSize);
     peak = SIZET2NUM(c.PeakWorkingSetSize);
-    rb_struct_aset(self, INT2FIX(1), peak);
+    rb_struct_aset(self, INT2FIX(2), peak);
+#endif
+#ifdef HAVE_RSS
+    rb_struct_aset(self, INT2FIX(1), rss);
 #endif
     rb_struct_aset(self, INT2FIX(0), size);
     return self;
@@ -59,9 +69,10 @@ Init_memory_status(void)
     VALUE mMemory = rb_define_module("Memory");
     cMemoryStatus =
 	rb_struct_define_under(mMemory, "Status", "size",
-#if defined __APPLE__
+#ifdef HAVE_RSS
 			       "rss",
-#elif defined _WIN32
+#endif
+#ifdef HAVE_PEAK
 			       "peak",
 #endif
 			       (char *)NULL);

@@ -295,8 +295,6 @@ class Reline::ANSI
 
   def self.prep
     retrieve_keybuffer
-    int_handle = Signal.trap('INT', 'IGNORE')
-    Signal.trap('INT', int_handle)
     nil
   end
 

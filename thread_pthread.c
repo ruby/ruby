@@ -765,10 +765,10 @@ get_stack(void **addr, size_t *size)
 # endif
 # ifdef HAVE_PTHREAD_ATTR_GETGUARDSIZE
     CHECK_ERR(pthread_attr_getguardsize(&attr, &guard));
-    *size -= guard;
 # else
-    *size -= getpagesize();
+    guard = getpagesize();
 # endif
+    *size -= guard;
     pthread_attr_destroy(&attr);
 #elif defined HAVE_PTHREAD_ATTR_GET_NP /* FreeBSD, DragonFly BSD, NetBSD */
     pthread_attr_t attr;

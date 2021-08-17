@@ -48,7 +48,7 @@ for:
     - echo>> Makefile RT_VER=0
     - echo>> Makefile BUILTIN_ENCOBJS=nul
     - type win32\Makefile.sub >> Makefile
-    - nmake %mflags% up
+    - nmake %mflags% up VCSUP="echo Update OK"
     - nmake %mflags% extract-extlibs
     - del Makefile
     - mkdir \usr\local\bin

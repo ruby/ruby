@@ -56,11 +56,12 @@ module Memory
       end
     end
 
-    keys << :peak << :size
+    keys.push(:size, :rss, :peak)
     def self.read_status
       if info = Win32.memory_info
-        yield :peak, info.PeakPagefileUsage
         yield :size, info.PagefileUsage
+        yield :rss, info.WorkingSetSize
+        yield :peak, info.PeakWorkingSetSize
       end
     end
   when (require_relative 'find_executable'

@@ -4,7 +4,11 @@ describe "GC.stat" do
   it "returns hash of values" do
     stat = GC.stat
     stat.should be_kind_of(Hash)
-    stat.keys.should include(:count)
+    stat.keys.should.include?(:count)
+  end
+
+  it "the values are all Integer since rb_gc_stat() returns size_t" do
+    GC.stat.values.each { |value| value.should be_kind_of(Integer) }
   end
 
   it "can return a single value" do

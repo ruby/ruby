@@ -8,6 +8,8 @@ module BasetestReadline
   INPUTRC = "INPUTRC"
   SAVED_ENV = %w[COLUMNS LINES]
 
+  TIMEOUT = 8
+
   def setup
     @saved_env = ENV.values_at(*SAVED_ENV)
     @inputrc, ENV[INPUTRC] = ENV[INPUTRC], IO::NULL
@@ -449,7 +451,7 @@ module BasetestReadline
         w << "\cr\u3042\u3093"
         w.reopen(IO::NULL)
         assert_equal("\u3046\u3093", Readline.readline("", true), bug6602)
-        Timeout.timeout(2) do
+        Timeout.timeout(TIMEOUT) do
           assert_equal("\u3042\u3093", Readline.readline("", true), bug6602)
         end
         assert_equal(nil,            Readline.readline("", true), bug6602)
@@ -473,6 +475,98 @@ module BasetestReadline
         end;
       end
     end
+  end
+
+  # TODO Green CI for arm32-linux (Travis CI), and Readline 7.0.
+  def test_interrupt_in_other_thread
+    # Editline and Readline 7.0 can't treat I/O that is not tty.
+    omit "Skip Editline" if /EditLine/n.match(Readline::VERSION)
+    omit "Skip Readline 7.0" if Readline::VERSION == "7.0"
+    omit unless respond_to?(:assert_ruby_status)
+    omit if /mswin|mingw/ =~ RUBY_PLATFORM
+    code = <<-"end;"
+      $stdout.sync = true
+      require 'readline'
+      require 'helper'
+      puts "Readline::VERSION is \#{Readline::VERSION}."
+      #{
+        if defined?(TestReadline) && self.class == TestReadline
+          "use_ext_readline"
+        elsif defined?(TestRelineAsReadline) && self.class == TestRelineAsReadline
+          "use_lib_reline"
+        end
+      }
+      Readline.input = STDIN
+      # 0. Send SIGINT to this script.
+      begin
+        Thread.new{
+          trap(:INT) {
+            puts 'TRAP' # 2. Show 'TRAP' message.
+          }
+          Readline.readline('input> ') # 1. Should keep working and call old trap.
+                                       # 4. Receive "\\n" and return because still working.
+        }.value
+      rescue Interrupt
+        puts 'FAILED' # 3. "Interrupt" shouldn't be raised because trapped.
+        raise
+      end
+      puts 'SUCCEEDED' # 5. Finish correctly.
+    end;
+
+    script = Tempfile.new("interrupt_in_other_thread")
+    script.write code
+    script.close
+
+    log = String.new
+
+    EnvUtil.invoke_ruby(["-I#{__dir__}", script.path], "", true, :merge_to_stdout) do |_in, _out, _, pid|
+      Timeout.timeout(TIMEOUT) do
+        log << "** START **"
+        loop do
+          c = _out.read(1)
+          log << c if c
+          break if log.include?('input>')
+        end
+        log << "** SIGINT **"
+        Process.kill(:INT, pid)
+        sleep 0.1
+        loop do
+          c = _out.read(1)
+          log << c if c
+          break if log.include?('TRAP')
+        end
+        begin
+          log << "** NEWLINE **"
+          _in.write "\n"
+        rescue Errno::EPIPE
+          log << "** Errno::EPIPE **"
+          # The "write" will fail if Reline crashed by SIGINT.
+        end
+        interrupt_suppressed = nil
+        loop do
+          c = _out.read(1)
+          log << c if c
+          if log.include?('FAILED')
+            interrupt_suppressed = false
+            break
+          end
+          if log.include?('SUCCEEDED')
+            interrupt_suppressed = true
+            break
+          end
+        end
+        assert interrupt_suppressed, "Should handle SIGINT correctly but raised interrupt.\nLog: #{log}\n----"
+      end
+    rescue Timeout::Error => e
+      assert false, "Timed out to handle SIGINT!\nLog: #{log}\nBacktrace:\n#{e.full_message(highlight: false)}\n----"
+    ensure
+      status = Process.wait2(pid).last
+      assert status.success?, "Unknown failure with exit status #{status}\nLog: #{log}\n----"
+    end
+
+    assert log.include?('INT'), "Interrupt was handled correctly."
+  ensure
+    script&.close!
   end
 
   def test_setting_quoting_detection_proc

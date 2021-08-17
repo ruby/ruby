@@ -83,6 +83,19 @@ mjit_gc_exit_hook(void)
     CRITICAL_SECTION_FINISH(4, "mjit_gc_exit_hook");
 }
 
+// Prohibit calling JIT-ed code and let existing JIT-ed frames exit before the next insn.
+void
+mjit_cancel_all(const char *reason)
+{
+    if (!mjit_enabled)
+        return;
+
+    mjit_call_p = false;
+    if (mjit_opts.warnings || mjit_opts.verbose) {
+        fprintf(stderr, "JIT cancel: Disabled JIT-ed code because %s\n", reason);
+    }
+}
+
 // Deal with ISeq movement from compactor
 void
 mjit_update_references(const rb_iseq_t *iseq)
@@ -96,7 +109,7 @@ mjit_update_references(const rb_iseq_t *iseq)
         // We need to invalidate JIT-ed code for the ISeq because it embeds pointer addresses.
         // To efficiently do that, we use the same thing as TracePoint and thus everything is cancelled for now.
         // See mjit.h and tool/ruby_vm/views/_mjit_compile_insn.erb for how `mjit_call_p` is used.
-        mjit_call_p = false; // TODO: instead of cancelling all, invalidate only this one and recompile it with some threshold.
+        mjit_cancel_all("GC.compact is used"); // TODO: instead of cancelling all, invalidate only this one and recompile it with some threshold.
     }
 
     // Units in stale_units (list of over-speculated and invalidated code) are not referenced from

@@ -20,9 +20,9 @@ module Reline::Terminfo
     end
   end
 
-  @curses_dl = nil
+  @curses_dl = false
   def self.curses_dl
-    return @curses_dl if @curses_dl
+    return @curses_dl unless @curses_dl == false
     if RUBY_VERSION >= '3.0.0'
       # Gem module isn't defined in test-all of the Ruby repository, and
       # Fiddle in Ruby 3.0.0 or later supports Fiddle::TYPE_VARIADIC.
@@ -33,7 +33,7 @@ module Reline::Terminfo
     else
       fiddle_supports_variadic = false
     end
-    if fiddle_supports_variadic and Fiddle.const_defined?(:TYPE_VARIADIC)
+    if fiddle_supports_variadic and not Fiddle.const_defined?(:TYPE_VARIADIC)
       # If the libffi version is not 3.0.5 or higher, there isn't TYPE_VARIADIC.
       fiddle_supports_variadic = false
     end
@@ -47,6 +47,7 @@ module Reline::Terminfo
         break
       end
     end
+    @curses_dl = nil if @curses_dl == false
     @curses_dl
   end
 end
@@ -97,7 +98,12 @@ module Reline::Terminfo
   end
 
   def self.tigetstr(capname)
-    StringWithTiparm.new(@tigetstr.(capname).to_s)
+    capability = @tigetstr.(capname)
+    case capability.to_i
+    when 0, -1
+      raise TerminfoError, "can't find capability: #{capname}"
+    end
+    StringWithTiparm.new(capability.to_s)
   end
 
   def self.tiparm(str, *args)

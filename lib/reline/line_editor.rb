@@ -150,7 +150,7 @@ class Reline::LineEditor
     @screen_size = Reline::IOGate.get_screen_size
     @screen_height = @screen_size.first
     reset_variables(prompt, encoding: encoding)
-    @old_trap = Signal.trap('SIGINT') {
+    @old_trap = Signal.trap(:INT) {
       if @scroll_partial_screen
         move_cursor_down(@screen_height - (@line_index - @scroll_partial_screen) - 1)
       else
@@ -158,8 +158,16 @@ class Reline::LineEditor
       end
       Reline::IOGate.move_cursor_column(0)
       scroll_down(1)
-      @old_trap.call if @old_trap.respond_to?(:call) # can also be string, ex: "DEFAULT"
-      raise Interrupt
+      case @old_trap
+      when 'DEFAULT', 'SYSTEM_DEFAULT'
+        raise Interrupt
+      when 'IGNORE'
+        # Do nothing
+      when 'EXIT'
+        exit
+      else
+        @old_trap.call
+      end
     }
     Reline::IOGate.set_winch_handler do
       @rest_height = (Reline::IOGate.get_screen_size.first - 1) - Reline::IOGate.cursor_pos.y

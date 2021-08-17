@@ -30,6 +30,7 @@
 #include "ruby/internal/constant_p.h"
 #include "ruby/internal/core/rbasic.h"
 #include "ruby/internal/dllexport.h"
+#include "ruby/internal/error.h"
 #include "ruby/internal/has/builtin.h"
 #include "ruby/internal/special_consts.h"
 #include "ruby/internal/stdbool.h"
@@ -156,6 +157,11 @@ RB_BUILTIN_TYPE(VALUE obj)
 {
     RBIMPL_ASSERT_OR_ASSUME(! RB_SPECIAL_CONST_P(obj));
 
+#if 0 && defined __GNUC__ && !defined __clang__
+    /* Don't move the access to `flags` before the preceding
+     * RB_SPECIAL_CONST_P check. */
+    __asm volatile("": : :"memory");
+#endif
     VALUE ret = RBASIC(obj)->flags & RUBY_T_MASK;
     return RBIMPL_CAST((enum ruby_value_type)ret);
 }
@@ -331,26 +337,18 @@ static inline void
 Check_Type(VALUE v, enum ruby_value_type t)
 {
     if (RB_UNLIKELY(! RB_TYPE_P(v, t))) {
-        goto slowpath;
+        goto unexpected_type;
     }
-    else if (t != RUBY_T_DATA) {
-        goto fastpath;
-    }
-    else if (rbimpl_rtypeddata_p(v)) {
-        /* The intention itself is not necessarily clear to me, but at least it
-         * is  intentional   to  rule   out  typed   data  here.    See  commit
-         * a7c32bf81d3391cfb78cfda278f469717d0fb794. */
-        goto slowpath;
+    else if (t == RUBY_T_DATA && rbimpl_rtypeddata_p(v)) {
+        /* Typed data is not simple `T_DATA`, see `rb_check_type` */
+        goto unexpected_type;
     }
     else {
-        goto fastpath;
+        return;
     }
 
-  fastpath:
-    return;
-
-  slowpath: /* <- :TODO: mark this label as cold. */
-    rb_check_type(v, t);
+  unexpected_type:
+    rb_unexpected_type(v, t);
 }
 
 #endif /* RBIMPL_VALUE_TYPE_H */
