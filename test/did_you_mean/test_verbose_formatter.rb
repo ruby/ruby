@@ -1,14 +1,29 @@
 require_relative './helper'
 
 class VerboseFormatterTest < Test::Unit::TestCase
+  class ErrorHighlightDummyFormatter
+    def message_for(spot)
+      ""
+    end
+  end
+
   def setup
     require_relative File.join(DidYouMean::TestHelper.root, 'verbose')
 
     DidYouMean.formatter = DidYouMean::VerboseFormatter.new
+
+    if defined?(ErrorHighlight)
+      @error_highlight_old_formatter = ErrorHighlight.formatter
+      ErrorHighlight.formatter = ErrorHighlightDummyFormatter.new
+    end
   end
 
   def teardown
     DidYouMean.formatter = DidYouMean::PlainFormatter.new
+
+    if defined?(ErrorHighlight)
+      ErrorHighlight.formatter = @error_highlight_old_formatter
+    end
   end
 
   def test_message
