@@ -624,7 +624,7 @@ inline static VALUE
 f_negative_p(VALUE x)
 {
     if (FIXNUM_P(x))
-        return f_boolcast(FIX2LONG(x) < 0);
+        return RBOOL(FIX2LONG(x) < 0);
     return rb_funcall(x, '<', 1, INT2FIX(0));
 }
 inline static VALUE
@@ -632,7 +632,7 @@ f_signbit(VALUE x)
 {
     if (RB_TYPE_P(x, T_FLOAT)) {
         double f = RFLOAT_VALUE(x);
-        return f_boolcast(!isnan(f) && signbit(f));
+        return RBOOL(!isnan(f) && signbit(f));
     }
     return f_negative_p(x);
 }
