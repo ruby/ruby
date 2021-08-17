@@ -554,7 +554,7 @@ module Spec
           raise "You can't specify `master` as the branch" if branch == "master"
           escaped_branch = Shellwords.shellescape(branch)
 
-          if @context.git("branch -l #{escaped_branch}", libpath).empty?
+          if @context.git("branch --list #{escaped_branch}", libpath).empty?
             @context.git("branch #{escaped_branch}", libpath)
           end
 
