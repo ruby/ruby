@@ -185,6 +185,36 @@ class Reline::Unicode
     [lines, height]
   end
 
+  # Take a chunk of a String with escape sequences.
+  def self.take_range(str, col, length, encoding = str.encoding)
+    chunk = String.new(encoding: encoding)
+    width = 0
+    rest = str.encode(Encoding::UTF_8)
+    in_zero_width = false
+    rest.scan(WIDTH_SCANNER) do |gc|
+      case
+      when gc[NON_PRINTING_START_INDEX]
+        in_zero_width = true
+      when gc[NON_PRINTING_END_INDEX]
+        in_zero_width = false
+      when gc[CSI_REGEXP_INDEX]
+        chunk << gc[CSI_REGEXP_INDEX]
+      when gc[OSC_REGEXP_INDEX]
+        chunk << gc[OSC_REGEXP_INDEX]
+      when gc[GRAPHEME_CLUSTER_INDEX]
+        gc = gc[GRAPHEME_CLUSTER_INDEX]
+        if in_zero_width
+          chunk << gc
+        else
+          width = get_mbchar_width(gc)
+          break if (width + length) <= col
+          chunk << gc if col <= width
+        end
+      end
+    end
+    chunk
+  end
+
   def self.get_next_mbchar_size(line, byte_pointer)
     grapheme = line.byteslice(byte_pointer..-1).grapheme_clusters.first
     grapheme ? grapheme.bytesize : 0

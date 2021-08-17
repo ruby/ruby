@@ -249,6 +249,13 @@ class Reline::LineEditor
     @drop_terminate_spaces = false
     @in_pasting = false
     @auto_indent_proc = nil
+    @with_dialog = nil
+    @dialog_column = nil
+    @dialog_vertical_offset = nil
+    @dialog_contents = nil
+    @dialog_contents_width = nil
+    @dialog_updown = nil
+    @dialog_lines_backup = nil
     reset_line
   end
 
@@ -414,6 +421,7 @@ class Reline::LineEditor
         Reline::IOGate.erase_after_cursor
       end
       @output.flush
+      clear_dialog
       return
     end
     new_highest_in_this = calculate_height_by_width(prompt_width + calculate_width(@line.nil? ? '' : @line))
@@ -424,6 +432,7 @@ class Reline::LineEditor
     else
       if @just_cursor_moving and not @rerender_all
         rendered = just_move_cursor
+        render_dialog((prompt_width + @cursor) % @screen_size.last)
         @just_cursor_moving = false
         return
       elsif @previous_line_index or new_highest_in_this != @highest_in_this
@@ -446,18 +455,20 @@ class Reline::LineEditor
           new_lines = whole_lines
         end
         line = modify_lines(new_lines)[@line_index]
+        clear_dialog
         prompt, prompt_width, prompt_list = check_multiline_prompt(new_lines, prompt)
         render_partial(prompt, prompt_width, line, @first_line_started_from)
         move_cursor_down(@highest_in_all - (@first_line_started_from + @highest_in_this - 1) - 1)
         scroll_down(1)
         Reline::IOGate.move_cursor_column(0)
         Reline::IOGate.erase_after_cursor
-      elsif not rendered
-        unless @in_pasting
+      else
+        if not rendered and not @in_pasting
           line = modify_lines(whole_lines)[@line_index]
           prompt, prompt_width, prompt_list = check_multiline_prompt(whole_lines, prompt)
           render_partial(prompt, prompt_width, line, @first_line_started_from)
         end
+        render_dialog((prompt_width + @cursor) % @screen_size.last)
       end
       @buffer_of_lines[@line_index] = @line
       @rest_height = 0 if @scroll_partial_screen
@@ -470,6 +481,227 @@ class Reline::LineEditor
         Reline::IOGate.erase_after_cursor
       end
     end
+  end
+
+  class DialogProcScope
+    def initialize(line_editor, proc_to_exec)
+      @line_editor = line_editor
+      @proc_to_exec = proc_to_exec
+      @cursor_pos = Reline::CursorPos.new
+    end
+
+    def retrieve_completion_block(set_completion_quote_character = false)
+      @line_editor.retrieve_completion_block(set_completion_quote_character)
+    end
+
+    def call_completion_proc_with_checking_args(pre, target, post)
+      @line_editor.call_completion_proc_with_checking_args(pre, target, post)
+    end
+
+    def set_cursor_pos(col, row)
+      @cursor_pos.x = col
+      @cursor_pos.y = row
+    end
+
+    def cursor_pos
+      @cursor_pos
+    end
+
+    def just_cursor_moving
+      @line_editor.instance_variable_get(:@just_cursor_moving)
+    end
+
+    def call
+      instance_exec(&@proc_to_exec)
+    end
+  end
+
+  def dialog_proc=(p)
+    @dialog_proc_scope = DialogProcScope.new(self, p)
+    @dialog_proc = p
+  end
+
+  DIALOG_HEIGHT = 5
+  DIALOG_WIDTH = 40
+  private def render_dialog(cursor_column)
+    return if @dialog_proc_scope.nil?
+    if @in_pasting
+      @dialog_contents = nil
+      return
+    end
+    @dialog_proc_scope.set_cursor_pos(cursor_column, @first_line_started_from + @started_from)
+    pos, result = @dialog_proc_scope.call
+    old_dialog_contents = @dialog_contents
+    old_dialog_contents_width = @dialog_contents_width
+    old_dialog_column = @dialog_column
+    old_dialog_vertical_offset = @dialog_vertical_offset
+    old_dialog_updown = @dialog_updown
+    if result and not result.empty?
+      @dialog_contents = result
+      @dialog_contents_width = @dialog_contents.map{ |c| calculate_width(c) }
+    else
+      clear_dialog
+      @dialog_contents = nil
+      return
+    end
+    upper_space = @first_line_started_from - @started_from
+    lower_space = @highest_in_all - @first_line_started_from - @started_from - 1
+    @dialog_updown = nil
+    @dialog_column = pos.x
+    if (lower_space + @rest_height) >= DIALOG_HEIGHT
+      @dialog_updown = :down
+      @dialog_vertical_offset = 1
+    elsif upper_space >= DIALOG_HEIGHT
+      @dialog_updown = :up
+      @dialog_vertical_offset = -(DIALOG_HEIGHT + 1)
+    else
+      if (lower_space + @rest_height) < DIALOG_HEIGHT
+        down = DIALOG_HEIGHT - (lower_space + @rest_height)
+        scroll_down(down)
+        move_cursor_up(DIALOG_HEIGHT - 1)
+      end
+      @dialog_updown = :down
+      @dialog_vertical_offset = 1
+    end
+    reset_dialog(old_dialog_contents, old_dialog_contents_width, old_dialog_column, old_dialog_vertical_offset, old_dialog_updown)
+    ue = ?/ + ?~ * (DIALOG_WIDTH - 2) + ?\\
+    sita = ?\\ + ?_ * (DIALOG_WIDTH - 2) + ?/
+    yoko = ?:
+    case @dialog_updown
+    when :down
+      move_cursor_down(1)
+    when :up
+    end
+    Reline::IOGate.move_cursor_column(@dialog_column)
+    @output.write ue
+    Reline::IOGate.move_cursor_column(@dialog_column)
+    @dialog_contents = @dialog_contents[0...(DIALOG_HEIGHT - 2)] if @dialog_contents.size > (DIALOG_HEIGHT - 2)
+    @dialog_contents.each do |item|
+      move_cursor_down(1)
+      @output.write yoko
+      @output.write "%-#{DIALOG_WIDTH - 2}s" % item.slice(0, DIALOG_WIDTH - 2)
+      @output.write yoko
+      Reline::IOGate.move_cursor_column(@dialog_column)
+    end
+    move_cursor_down(1)
+    @output.write sita
+    Reline::IOGate.move_cursor_column(cursor_column)
+    case @dialog_updown
+    when :down
+      move_cursor_up(@dialog_contents.size + 2)
+    when :up
+    end
+    @dialog_lines_backup = {
+      lines: modify_lines(whole_lines),
+      line_index: @line_index,
+      started_from: @started_from,
+      byte_pointer: @byte_pointer
+    }
+  end
+
+  private def reset_dialog(old_dialog_contents, old_dialog_contents_width, old_dialog_column, old_dialog_vertical_offset, old_dialog_updown)
+    return if @dialog_lines_backup.nil? or old_dialog_contents.nil?
+    prompt, prompt_width, prompt_list = check_multiline_prompt(@dialog_lines_backup[:lines], prompt)
+    visual_lines = []
+    visual_start = nil
+    @dialog_lines_backup[:lines].each_with_index { |l, i|
+      pr = prompt_list ? prompt_list[i] : prompt
+      vl, height = split_by_width(pr + l, @screen_size.last)
+      if i == @dialog_lines_backup[:line_index]
+        visual_start = visual_lines.size + @dialog_lines_backup[:started_from]
+      end
+      visual_lines.concat(vl)
+    }
+    if old_dialog_vertical_offset < @dialog_vertical_offset
+      move_cursor_down(old_dialog_vertical_offset)
+      start = visual_start + old_dialog_vertical_offset
+      line_num = @dialog_vertical_offset - old_dialog_vertical_offset
+      line_num.times do |i|
+        Reline::IOGate.move_cursor_column(0)
+        @output.write visual_lines[start + i]
+        Reline::IOGate.erase_after_cursor
+        move_cursor_down(1) if i < (line_num - 1)
+      end
+      move_cursor_up(old_dialog_vertical_offset + line_num - 1)
+    end
+    if (old_dialog_vertical_offset + old_dialog_contents.size + 2) > (@dialog_vertical_offset + @dialog_contents.size + 2)
+      move_cursor_down(@dialog_vertical_offset + @dialog_contents.size + 2)
+      start = visual_start + @dialog_vertical_offset + @dialog_contents.size + 2
+      line_num = (old_dialog_vertical_offset + old_dialog_contents.size + 2) - (@dialog_vertical_offset + @dialog_contents.size + 2)
+      line_num.times do |i|
+        Reline::IOGate.move_cursor_column(0)
+        @output.write visual_lines[start + i]
+        Reline::IOGate.erase_after_cursor
+        move_cursor_down(1) if i < (line_num - 1)
+      end
+      move_cursor_up(@dialog_vertical_offset + @dialog_contents.size + 2 + line_num - 1)
+    end
+    if old_dialog_column < @dialog_column
+      move_cursor_down(old_dialog_vertical_offset)
+      width = @dialog_column - old_dialog_column
+      start = visual_start + old_dialog_vertical_offset
+      line_num = old_dialog_contents.size + 2
+      line_num.times do |i|
+        Reline::IOGate.move_cursor_column(old_dialog_column)
+        if visual_lines[start + i].nil?
+          s = ' ' * width
+        else
+          s = Reline::Unicode.take_range(visual_lines[start + i], old_dialog_column, width)
+        end
+        @output.write "%-#{width}s" % s
+        move_cursor_down(1) if i < (line_num - 1)
+      end
+      move_cursor_up(old_dialog_vertical_offset + line_num - 1)
+    end
+    if (old_dialog_column + DIALOG_WIDTH) > (@dialog_column + DIALOG_WIDTH)
+      move_cursor_down(old_dialog_vertical_offset)
+      width = (old_dialog_column + DIALOG_WIDTH) - (@dialog_column + DIALOG_WIDTH)
+      start = visual_start + old_dialog_vertical_offset
+      line_num = old_dialog_contents.size + 2
+      line_num.times do |i|
+        Reline::IOGate.move_cursor_column(old_dialog_column + DIALOG_WIDTH)
+        if visual_lines[start + i].nil?
+          s = ' ' * width
+        else
+          s = Reline::Unicode.take_range(visual_lines[start + i], old_dialog_column + DIALOG_WIDTH, width)
+        end
+        @output.write "%-#{width}s" % s
+        move_cursor_down(1) if i < (line_num - 1)
+      end
+      move_cursor_up(old_dialog_vertical_offset + line_num - 1)
+    end
+    Reline::IOGate.move_cursor_column(prompt_width + @cursor)
+  end
+
+  private def clear_dialog
+    return unless @dialog_contents
+    prompt, prompt_width, prompt_list = check_multiline_prompt(@dialog_lines_backup[:lines], prompt)
+    visual_lines = []
+    visual_lines_under_dialog = []
+    visual_start = nil
+    @dialog_lines_backup[:lines].each_with_index { |l, i|
+      pr = prompt_list ? prompt_list[i] : prompt
+      vl, height = split_by_width(pr + l, @screen_size.last)
+      if i == @dialog_lines_backup[:line_index]
+        visual_start = visual_lines.size + @dialog_lines_backup[:started_from] + @dialog_vertical_offset
+      end
+      visual_lines.concat(vl)
+    }
+    visual_lines_under_dialog = visual_lines[visual_start, @dialog_contents.size + 2]
+    move_cursor_down(@dialog_vertical_offset)
+    dialog_vertical_size = @dialog_contents.size + 2
+    dialog_vertical_size.times do |i|
+      if i < visual_lines_under_dialog.size
+        Reline::IOGate.move_cursor_column(0)
+        @output.write visual_lines_under_dialog[i]
+      else
+        Reline::IOGate.move_cursor_column(@dialog_column)
+      end
+      Reline::IOGate.erase_after_cursor
+      move_cursor_down(1) if i < (dialog_vertical_size - 1)
+    end
+    move_cursor_up(@dialog_contents.size + 2)
+    Reline::IOGate.move_cursor_column(prompt_width + @cursor)
   end
 
   private def calculate_scroll_partial_screen(highest_in_all, cursor_y)
@@ -1171,7 +1403,7 @@ class Reline::LineEditor
     result
   end
 
-  private def call_completion_proc_with_checking_args(pre, target, post)
+  def call_completion_proc_with_checking_args(pre, target, post)
     if @completion_proc and target
       argnum = @completion_proc.parameters.inject(0) { |result, item|
         case item.first
