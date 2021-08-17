@@ -54,8 +54,6 @@ static ID id_abs, id_arg,
 #define id_quo idQuo
 #define id_fdiv idFdiv
 
-#define f_boolcast(x) ((x) ? Qtrue : Qfalse)
-
 #define fun1(n) \
 inline static VALUE \
 f_##n(VALUE x)\
@@ -1092,15 +1090,15 @@ nucomp_eqeq_p(VALUE self, VALUE other)
     if (RB_TYPE_P(other, T_COMPLEX)) {
 	get_dat2(self, other);
 
-	return f_boolcast(f_eqeq_p(adat->real, bdat->real) &&
+	return RBOOL(f_eqeq_p(adat->real, bdat->real) &&
 			  f_eqeq_p(adat->imag, bdat->imag));
     }
     if (k_numeric_p(other) && f_real_p(other)) {
 	get_dat1(self);
 
-	return f_boolcast(f_eqeq_p(dat->real, other) && f_zero_p(dat->imag));
+	return RBOOL(f_eqeq_p(dat->real, other) && f_zero_p(dat->imag));
     }
-    return f_boolcast(f_eqeq_p(other, self));
+    return RBOOL(f_eqeq_p(other, self));
 }
 
 static bool
@@ -1354,7 +1352,7 @@ nucomp_eql_p(VALUE self, VALUE other)
     if (RB_TYPE_P(other, T_COMPLEX)) {
 	get_dat2(self, other);
 
-	return f_boolcast((CLASS_OF(adat->real) == CLASS_OF(bdat->real)) &&
+	return RBOOL((CLASS_OF(adat->real) == CLASS_OF(bdat->real)) &&
 			  (CLASS_OF(adat->imag) == CLASS_OF(bdat->imag)) &&
 			  f_eqeq_p(self, other));
 

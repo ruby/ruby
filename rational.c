@@ -46,7 +46,6 @@ static ID id_abs, id_integer_p,
 #define id_idiv idDiv
 #define id_to_i idTo_i
 
-#define f_boolcast(x) ((x) ? Qtrue : Qfalse)
 #define f_inspect rb_inspect
 #define f_to_s rb_obj_as_string
 
@@ -1136,12 +1135,12 @@ nurat_eqeq_p(VALUE self, VALUE other)
 	}
         else {
             const double d = nurat_to_double(self);
-            return f_boolcast(FIXNUM_ZERO_P(rb_dbl_cmp(d, NUM2DBL(other))));
+            return RBOOL(FIXNUM_ZERO_P(rb_dbl_cmp(d, NUM2DBL(other))));
         }
     }
     else if (RB_FLOAT_TYPE_P(other)) {
 	const double d = nurat_to_double(self);
-	return f_boolcast(FIXNUM_ZERO_P(rb_dbl_cmp(d, RFLOAT_VALUE(other))));
+	return RBOOL(FIXNUM_ZERO_P(rb_dbl_cmp(d, RFLOAT_VALUE(other))));
     }
     else if (RB_TYPE_P(other, T_RATIONAL)) {
 	{
@@ -1150,7 +1149,7 @@ nurat_eqeq_p(VALUE self, VALUE other)
 	    if (INT_ZERO_P(adat->num) && INT_ZERO_P(bdat->num))
 		return Qtrue;
 
-	    return f_boolcast(rb_int_equal(adat->num, bdat->num) &&
+	    return RBOOL(rb_int_equal(adat->num, bdat->num) &&
 			      rb_int_equal(adat->den, bdat->den));
 	}
     }
@@ -1201,7 +1200,7 @@ static VALUE
 nurat_positive_p(VALUE self)
 {
     get_dat1(self);
-    return f_boolcast(INT_POSITIVE_P(dat->num));
+    return RBOOL(INT_POSITIVE_P(dat->num));
 }
 
 /*
@@ -1214,7 +1213,7 @@ static VALUE
 nurat_negative_p(VALUE self)
 {
     get_dat1(self);
-    return f_boolcast(INT_NEGATIVE_P(dat->num));
+    return RBOOL(INT_NEGATIVE_P(dat->num));
 }
 
 /*
