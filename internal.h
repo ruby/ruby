@@ -106,4 +106,6 @@ RUBY_SYMBOL_EXPORT_END
 
 #define RBOOL(v) ((v) ? Qtrue : Qfalse)
 
+#define f_boolcast(x) ((x) ? Qtrue : Qfalse)
+
 #endif /* RUBY_INTERNAL_H */

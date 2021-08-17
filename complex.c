@@ -54,8 +54,6 @@ static ID id_abs, id_arg,
 #define id_quo idQuo
 #define id_fdiv idFdiv
 
-#define f_boolcast(x) ((x) ? Qtrue : Qfalse)
-
 #define fun1(n) \
 inline static VALUE \
 f_##n(VALUE x)\

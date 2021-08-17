@@ -620,7 +620,6 @@ math_sqrt(VALUE unused_obj, VALUE x)
     return rb_math_sqrt(x);
 }
 
-#define f_boolcast(x) ((x) ? Qtrue : Qfalse)
 inline static VALUE
 f_negative_p(VALUE x)
 {

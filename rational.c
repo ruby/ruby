@@ -46,7 +46,6 @@ static ID id_abs, id_integer_p,
 #define id_idiv idDiv
 #define id_to_i idTo_i
 
-#define f_boolcast(x) ((x) ? Qtrue : Qfalse)
 #define f_inspect rb_inspect
 #define f_to_s rb_obj_as_string
 
