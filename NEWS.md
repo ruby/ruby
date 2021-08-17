@@ -113,6 +113,11 @@ Outstanding ones only.
 
     * StructClass#keyword_init? is added [[Feature #18008]]
 
+* String
+
+    * Update Unicode version to 13.0.0 [[Feature #17750]]
+      and Emoji version to 13.0 [[Feature #18029]]
+
 * Queue
 
     * Queue#initialize now accepts an Enumerable of initial values.
