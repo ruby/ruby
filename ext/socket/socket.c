@@ -750,17 +750,14 @@ sock_recvfrom_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str, VALUE ex)
  *
  */
 static VALUE
-sock_accept(VALUE sock)
+sock_accept(VALUE server)
 {
-    rb_io_t *fptr;
-    VALUE sock2;
-    union_sockaddr buf;
-    socklen_t len = (socklen_t)sizeof buf;
+    union_sockaddr buffer;
+    socklen_t length = (socklen_t)sizeof(buffer);
 
-    GetOpenFile(sock, fptr);
-    sock2 = rsock_s_accept(rb_cSocket,fptr->fd,&buf.addr,&len);
+    VALUE peer = rsock_s_accept(rb_cSocket, server, &buffer.addr, &length);
 
-    return rb_assoc_new(sock2, rsock_io_socket_addrinfo(sock2, &buf.addr, len));
+    return rb_assoc_new(peer, rsock_io_socket_addrinfo(peer, &buffer.addr, length));
 }
 
 /* :nodoc: */
@@ -820,17 +817,14 @@ sock_accept_nonblock(VALUE sock, VALUE ex)
  * * Socket#accept
  */
 static VALUE
-sock_sysaccept(VALUE sock)
+sock_sysaccept(VALUE server)
 {
-    rb_io_t *fptr;
-    VALUE sock2;
-    union_sockaddr buf;
-    socklen_t len = (socklen_t)sizeof buf;
+    union_sockaddr buffer;
+    socklen_t length = (socklen_t)sizeof(buffer);
 
-    GetOpenFile(sock, fptr);
-    sock2 = rsock_s_accept(0,fptr->fd,&buf.addr,&len);
+    VALUE peer = rsock_s_accept(0, server, &buffer.addr, &length);
 
-    return rb_assoc_new(sock2, rsock_io_socket_addrinfo(sock2, &buf.addr, len));
+    return rb_assoc_new(peer, rsock_io_socket_addrinfo(peer, &buffer.addr, length));
 }
 
 #ifdef HAVE_GETHOSTNAME
@@ -1218,7 +1212,6 @@ static VALUE
 sock_s_getnameinfo(int argc, VALUE *argv, VALUE _)
 {
     VALUE sa, af = Qnil, host = Qnil, port = Qnil, flags, tmp;
-    char *hptr, *pptr;
     char hbuf[1024], pbuf[1024];
     int fl;
     struct rb_addrinfo *res = NULL;
@@ -1279,34 +1272,10 @@ sock_s_getnameinfo(int argc, VALUE *argv, VALUE _)
 	    rb_raise(rb_eArgError, "array size should be 3 or 4, %ld given",
 		     RARRAY_LEN(sa));
 	}
-	/* host */
-	if (NIL_P(host)) {
-	    hptr = NULL;
-	}
-	else {
-	    strncpy(hbuf, StringValueCStr(host), sizeof(hbuf));
-	    hbuf[sizeof(hbuf) - 1] = '\0';
-	    hptr = hbuf;
-	}
-	/* port */
-	if (NIL_P(port)) {
-	    strcpy(pbuf, "0");
-	    pptr = NULL;
-	}
-	else if (FIXNUM_P(port)) {
-	    snprintf(pbuf, sizeof(pbuf), "%ld", NUM2LONG(port));
-	    pptr = pbuf;
-	}
-	else {
-	    strncpy(pbuf, StringValueCStr(port), sizeof(pbuf));
-	    pbuf[sizeof(pbuf) - 1] = '\0';
-	    pptr = pbuf;
-	}
 	hints.ai_socktype = (fl & NI_DGRAM) ? SOCK_DGRAM : SOCK_STREAM;
 	/* af */
         hints.ai_family = NIL_P(af) ? PF_UNSPEC : rsock_family_arg(af);
-	error = rb_getaddrinfo(hptr, pptr, &hints, &res);
-	if (error) goto error_exit_addr;
+	res = rsock_getaddrinfo(host, port, &hints, 0);
 	sap = res->ai->ai_addr;
         salen = res->ai->ai_addrlen;
     }
@@ -1335,12 +1304,6 @@ sock_s_getnameinfo(int argc, VALUE *argv, VALUE _)
 	rb_freeaddrinfo(res);
     }
     return rb_assoc_new(rb_str_new2(hbuf), rb_str_new2(pbuf));
-
-  error_exit_addr:
-    saved_errno = errno;
-    if (res) rb_freeaddrinfo(res);
-    errno = saved_errno;
-    rsock_raise_socket_error("getaddrinfo", error);
 
   error_exit_name:
     saved_errno = errno;

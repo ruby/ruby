@@ -30,6 +30,7 @@
 #include "internal/numeric.h"
 #include "internal/object.h"
 #include "internal/struct.h"
+#include "internal/string.h"
 #include "internal/symbol.h"
 #include "internal/variable.h"
 #include "probes.h"
@@ -163,8 +164,7 @@ rb_equal(VALUE obj1, VALUE obj2)
     if (result == Qundef) {
 	result = rb_funcall(obj1, id_eq, 1, obj2);
     }
-    if (RTEST(result)) return Qtrue;
-    return Qfalse;
+    return RBOOL(RTEST(result));
 }
 
 /**
@@ -186,8 +186,7 @@ rb_eql(VALUE obj1, VALUE obj2)
     if (result == Qundef) {
 	result = rb_funcall(obj1, id_eql, 1, obj2);
     }
-    if (RTEST(result)) return Qtrue;
-    return Qfalse;
+    return RBOOL(RTEST(result));
 }
 
 /**
@@ -234,8 +233,7 @@ rb_eql(VALUE obj1, VALUE obj2)
 MJIT_FUNC_EXPORTED VALUE
 rb_obj_equal(VALUE obj1, VALUE obj2)
 {
-    if (obj1 == obj2) return Qtrue;
-    return Qfalse;
+    return RBOOL(obj1 == obj2);
 }
 
 VALUE rb_obj_hash(VALUE obj);
@@ -324,24 +322,33 @@ rb_obj_singleton_class(VALUE obj)
 MJIT_FUNC_EXPORTED void
 rb_obj_copy_ivar(VALUE dest, VALUE obj)
 {
-    RUBY_ASSERT(RBASIC(dest)->flags & ROBJECT_EMBED);
+    VALUE *dst_buf = 0;
+    VALUE *src_buf = 0;
+    uint32_t len = ROBJECT_EMBED_LEN_MAX;
 
     if (RBASIC(obj)->flags & ROBJECT_EMBED) {
-	MEMCPY(ROBJECT(dest)->as.ary, ROBJECT(obj)->as.ary, VALUE, ROBJECT_EMBED_LEN_MAX);
-	RBASIC(dest)->flags |= ROBJECT_EMBED;
+        src_buf = ROBJECT(obj)->as.ary;
+
+        // embedded -> embedded
+        if (RBASIC(dest)->flags & ROBJECT_EMBED) {
+            dst_buf = ROBJECT(dest)->as.ary;
+        }
+        // embedded -> extended
+        else {
+            dst_buf = ROBJECT(dest)->as.heap.ivptr;
+        }
     }
+    // extended -> extended
     else {
-	uint32_t len = ROBJECT(obj)->as.heap.numiv;
-	VALUE *ptr = 0;
-	if (len > 0) {
-	    ptr = ALLOC_N(VALUE, len);
-	    MEMCPY(ptr, ROBJECT(obj)->as.heap.ivptr, VALUE, len);
-	}
-	ROBJECT(dest)->as.heap.ivptr = ptr;
-	ROBJECT(dest)->as.heap.numiv = len;
-	ROBJECT(dest)->as.heap.iv_index_tbl = ROBJECT(obj)->as.heap.iv_index_tbl;
-	RBASIC(dest)->flags &= ~ROBJECT_EMBED;
+        uint32_t src_len = ROBJECT(obj)->as.heap.numiv;
+        uint32_t dst_len = ROBJECT(dest)->as.heap.numiv;
+
+        len = src_len < dst_len ? src_len : dst_len;
+        dst_buf = ROBJECT(dest)->as.heap.ivptr;
+        src_buf = ROBJECT(obj)->as.heap.ivptr;
     }
+
+    MEMCPY(dst_buf, src_buf, VALUE, len);
 }
 
 static void
@@ -360,7 +367,6 @@ init_copy(VALUE dest, VALUE obj)
     }
 }
 
-static VALUE freeze_opt(int argc, VALUE *argv);
 static VALUE immutable_obj_clone(VALUE obj, VALUE kwfreeze);
 static VALUE mutable_obj_clone(VALUE obj, VALUE kwfreeze);
 PUREFUNC(static inline int special_object_p(VALUE obj)); /*!< \private */
@@ -384,7 +390,7 @@ special_object_p(VALUE obj)
 static VALUE
 obj_freeze_opt(VALUE freeze)
 {
-    switch(freeze) {
+    switch (freeze) {
       case Qfalse:
       case Qtrue:
       case Qnil:
@@ -409,12 +415,12 @@ rb_obj_clone2(rb_execution_context_t *ec, VALUE obj, VALUE freeze)
 VALUE
 rb_immutable_obj_clone(int argc, VALUE *argv, VALUE obj)
 {
-    VALUE kwfreeze = freeze_opt(argc, argv);
+    VALUE kwfreeze = rb_get_freeze_opt(argc, argv);
     return immutable_obj_clone(obj, kwfreeze);
 }
 
-static VALUE
-freeze_opt(int argc, VALUE *argv)
+VALUE
+rb_get_freeze_opt(int argc, VALUE *argv)
 {
     static ID keyword_ids[1];
     VALUE opt;
@@ -468,7 +474,7 @@ mutable_obj_clone(VALUE obj, VALUE kwfreeze)
         if (!freeze_true_hash) {
             freeze_true_hash = rb_hash_new();
             rb_gc_register_mark_object(freeze_true_hash);
-            rb_hash_aset(freeze_true_hash, ID2SYM(rb_intern("freeze")), Qtrue);
+            rb_hash_aset(freeze_true_hash, ID2SYM(idFreeze), Qtrue);
             rb_obj_freeze(freeze_true_hash);
         }
 
@@ -484,7 +490,7 @@ mutable_obj_clone(VALUE obj, VALUE kwfreeze)
         if (!freeze_false_hash) {
             freeze_false_hash = rb_hash_new();
             rb_gc_register_mark_object(freeze_false_hash);
-            rb_hash_aset(freeze_false_hash, ID2SYM(rb_intern("freeze")), Qfalse);
+            rb_hash_aset(freeze_false_hash, ID2SYM(idFreeze), Qfalse);
             rb_obj_freeze(freeze_false_hash);
         }
 
@@ -596,7 +602,7 @@ rb_obj_size(VALUE self, VALUE args, VALUE obj)
 static VALUE
 block_given_p(rb_execution_context_t *ec, VALUE self)
 {
-    return rb_block_given_p() ? Qtrue : Qfalse;
+    return RBOOL(rb_block_given_p());
 }
 
 /**
@@ -648,9 +654,10 @@ static VALUE
 rb_obj_init_clone(int argc, VALUE *argv, VALUE obj)
 {
     VALUE orig, opts;
-    rb_scan_args(argc, argv, "1:", &orig, &opts);
-    /* Ignore a freeze keyword */
-    if (argc == 2) (void)freeze_opt(1, &opts);
+    if (rb_scan_args(argc, argv, "1:", &orig, &opts) < argc) {
+        /* Ignore a freeze keyword */
+        rb_get_freeze_opt(1, &opts);
+    }
     rb_funcall(obj, id_init_copy, 1, orig);
     return obj;
 }
@@ -679,7 +686,6 @@ rb_any_to_s(VALUE obj)
     return str;
 }
 
-VALUE rb_str_escape(VALUE str);
 /*!
  * Convenient wrapper of \c Object#inspect.
  * Returns a human-readable string representation of \a obj,
@@ -834,8 +840,7 @@ VALUE
 rb_obj_is_instance_of(VALUE obj, VALUE c)
 {
     c = class_or_module_required(c);
-    if (rb_obj_class(obj) == c) return Qtrue;
-    return Qfalse;
+    return RBOOL(rb_obj_class(obj) == c);
 }
 
 
@@ -880,7 +885,7 @@ rb_obj_is_kind_of(VALUE obj, VALUE c)
     VALUE cl = CLASS_OF(obj);
 
     c = class_or_module_required(c);
-    return class_search_ancestor(cl, RCLASS_ORIGIN(c)) ? Qtrue : Qfalse;
+    return RBOOL(class_search_ancestor(cl, RCLASS_ORIGIN(c)));
 }
 
 static VALUE
@@ -1196,7 +1201,7 @@ rb_obj_dummy1(VALUE _x, VALUE _y)
 VALUE
 rb_obj_tainted(VALUE obj)
 {
-    rb_warn_deprecated_to_remove("Object#tainted?", "3.2");
+    rb_warn_deprecated_to_remove_at(3.2, "Object#tainted?", NULL);
     return Qfalse;
 }
 
@@ -1210,7 +1215,7 @@ rb_obj_tainted(VALUE obj)
 VALUE
 rb_obj_taint(VALUE obj)
 {
-    rb_warn_deprecated_to_remove("Object#taint", "3.2");
+    rb_warn_deprecated_to_remove_at(3.2, "Object#taint", NULL);
     return obj;
 }
 
@@ -1225,7 +1230,7 @@ rb_obj_taint(VALUE obj)
 VALUE
 rb_obj_untaint(VALUE obj)
 {
-    rb_warn_deprecated_to_remove("Object#untaint", "3.2");
+    rb_warn_deprecated_to_remove_at(3.2, "Object#untaint", NULL);
     return obj;
 }
 
@@ -1239,7 +1244,7 @@ rb_obj_untaint(VALUE obj)
 VALUE
 rb_obj_untrusted(VALUE obj)
 {
-    rb_warn_deprecated_to_remove("Object#untrusted?", "3.2");
+    rb_warn_deprecated_to_remove_at(3.2, "Object#untrusted?", NULL);
     return Qfalse;
 }
 
@@ -1253,7 +1258,7 @@ rb_obj_untrusted(VALUE obj)
 VALUE
 rb_obj_untrust(VALUE obj)
 {
-    rb_warn_deprecated_to_remove("Object#untrust", "3.2");
+    rb_warn_deprecated_to_remove_at(3.2, "Object#untrust", NULL);
     return obj;
 }
 
@@ -1268,7 +1273,7 @@ rb_obj_untrust(VALUE obj)
 VALUE
 rb_obj_trust(VALUE obj)
 {
-    rb_warn_deprecated_to_remove("Object#trust", "3.2");
+    rb_warn_deprecated_to_remove_at(3.2, "Object#trust", NULL);
     return obj;
 }
 
@@ -1279,7 +1284,7 @@ rb_obj_trust(VALUE obj)
 void
 rb_obj_infect(VALUE victim, VALUE carrier)
 {
-    rb_warn_deprecated_to_remove("rb_obj_infect", "3.2");
+    rb_warn_deprecated_to_remove_at(3.2, "rb_obj_infect", NULL);
 }
 
 /**
@@ -1326,7 +1331,7 @@ rb_obj_freeze(VALUE obj)
 VALUE
 rb_obj_frozen_p(VALUE obj)
 {
-    return OBJ_FROZEN(obj) ? Qtrue : Qfalse;
+    return RBOOL(OBJ_FROZEN(obj));
 }
 
 
@@ -1335,37 +1340,6 @@ rb_obj_frozen_p(VALUE obj)
  *
  *  The class of the singleton object <code>nil</code>.
  */
-
-/*
- *  call-seq:
- *     nil.to_i -> 0
- *
- *  Always returns zero.
- *
- *     nil.to_i   #=> 0
- */
-
-
-static VALUE
-nil_to_i(VALUE obj)
-{
-    return INT2FIX(0);
-}
-
-/*
- *  call-seq:
- *     nil.to_f    -> 0.0
- *
- *  Always returns zero.
- *
- *     nil.to_f   #=> 0.0
- */
-
-static VALUE
-nil_to_f(VALUE obj)
-{
-    return DBL2NUM(0.0);
-}
 
 /*
  *  call-seq:
@@ -1475,7 +1449,7 @@ true_to_s(VALUE obj)
 static VALUE
 true_and(VALUE obj, VALUE obj2)
 {
-    return RTEST(obj2)?Qtrue:Qfalse;
+    return RBOOL(RTEST(obj2));
 }
 
 /*
@@ -3077,9 +3051,7 @@ rb_mod_cvar_defined(VALUE obj, VALUE iv)
 static VALUE
 rb_mod_singleton_p(VALUE klass)
 {
-    if (RB_TYPE_P(klass, T_CLASS) && FL_TEST(klass, FL_SINGLETON))
-	return Qtrue;
-    return Qfalse;
+    return RBOOL(RB_TYPE_P(klass, T_CLASS) && FL_TEST(klass, FL_SINGLETON));
 }
 
 /*! \private */
@@ -3254,19 +3226,23 @@ rb_check_convert_type_with_id(VALUE val, int type, const char *tname, ID method)
 #define try_to_int(val, mid, raise) \
     convert_type_with_id(val, "Integer", mid, raise, -1)
 
-ALWAYS_INLINE(static VALUE rb_to_integer(VALUE val, const char *method, ID mid));
+ALWAYS_INLINE(static VALUE rb_to_integer_with_id_exception(VALUE val, const char *method, ID mid, int raise));
+/* Integer specific rb_check_convert_type_with_id */
 static inline VALUE
-rb_to_integer(VALUE val, const char *method, ID mid)
+rb_to_integer_with_id_exception(VALUE val, const char *method, ID mid, int raise)
 {
     VALUE v;
 
     if (RB_INTEGER_TYPE_P(val)) return val;
-    v = try_to_int(val, mid, TRUE);
+    v = try_to_int(val, mid, raise);
+    if (!raise && NIL_P(v)) return Qnil;
     if (!RB_INTEGER_TYPE_P(v)) {
         conversion_mismatch(val, "Integer", method, v);
     }
     return v;
 }
+#define rb_to_integer(val, method, mid) \
+    rb_to_integer_with_id_exception(val, method, mid, TRUE)
 
 /**
  * Tries to convert \a val into \c Integer.
@@ -3283,8 +3259,7 @@ rb_check_to_integer(VALUE val, const char *method)
 {
     VALUE v;
 
-    if (FIXNUM_P(val)) return val;
-    if (RB_TYPE_P(val, T_BIGNUM)) return val;
+    if (RB_INTEGER_TYPE_P(val)) return val;
     v = convert_type(val, "Integer", method, FALSE);
     if (!RB_INTEGER_TYPE_P(v)) {
         return Qnil;
@@ -3393,6 +3368,12 @@ rb_Integer(VALUE val)
     return rb_convert_to_integer(val, 0, TRUE);
 }
 
+VALUE
+rb_check_integer_type(VALUE val)
+{
+    return rb_to_integer_with_id_exception(val, "to_int", idTo_int, FALSE);
+}
+
 int
 rb_bool_expected(VALUE obj, const char *flagname)
 {
@@ -3400,7 +3381,7 @@ rb_bool_expected(VALUE obj, const char *flagname)
       case Qtrue: case Qfalse:
         break;
       default:
-        rb_raise(rb_eArgError, "true or false is expected as %s: %+"PRIsVALUE,
+        rb_raise(rb_eArgError, "expected true or false as %s: %+"PRIsVALUE,
                  flagname, obj);
     }
     return obj != Qfalse;
@@ -3409,7 +3390,7 @@ rb_bool_expected(VALUE obj, const char *flagname)
 int
 rb_opts_exception_p(VALUE opts, int default_value)
 {
-    static ID kwds[1] = {idException};
+    static const ID kwds[1] = {idException};
     VALUE exception;
     if (rb_get_kwargs(opts, kwds, 0, 1, &exception))
         return rb_bool_expected(exception, "exception");
@@ -4479,6 +4460,31 @@ f_sprintf(int c, const VALUE *v, VALUE _)
  *        ::Object.const_get(name)
  *      end
  *    end
+ *
+ *  === What's Here
+ *
+ *  These are the methods defined for \BasicObject:
+ *
+ *  - ::new:: Returns a new \BasicObject instance.
+ *  - {!}[#method-i-21]:: Returns the boolean negation of +self+: +true+ or +false+.
+ *  - {!=}[#method-i-21-3D]:: Returns whether +self+ and the given object
+ *                            are _not_ equal.
+ *  - {==}[#method-i-3D-3D]:: Returns whether +self+ and the given object
+ *                            are equivalent.
+ *  - {__id__}[#method-i-__id__]:: Returns the integer object identifier for +self+.
+ *  - {__send__}[#method-i-__send__]:: Calls the method identified by the given symbol.
+ *  - #equal?:: Returns whether +self+ and the given object are the same object.
+ *  - #instance_eval:: Evaluates the given string or block in the context of +self+.
+ *  - #instance_exec:: Executes the given block in the context of +self+,
+ *                     passing the given arguments.
+ *  - #method_missing:: Method called when an undefined method is called on +self+.
+ *  - #singleton_method_added:: Method called when a singleton method
+ *                              is added to +self+.
+ *  - #singleton_method_removed:: Method called when a singleton method
+ *                                is added removed from +self+.
+ *  - #singleton_method_undefined:: Method called when a singleton method
+ *                                  is undefined in +self+.
+ *
  */
 
 /*  Document-class: Object
@@ -4498,6 +4504,90 @@ f_sprintf(int c, const VALUE *v, VALUE _)
  *  In the descriptions of Object's methods, the parameter <i>symbol</i> refers
  *  to a symbol, which is either a quoted string or a Symbol (such as
  *  <code>:name</code>).
+ *
+ *  == What's Here
+ *
+ *  First, what's elsewhere. \Class \Object:
+ *
+ *  - Inherits from {class BasicObject}[BasicObject.html#class-BasicObject-label-What-27s+Here].
+ *  - Includes {module Kernel}[Kernel.html#module-Kernel-label-What-27s+Here].
+ *
+ *  Here, class \Object provides methods for:
+ *
+ *  - {Querying}[#class-Object-label-Querying]
+ *  - {Instance Variables}[#class-Object-label-Instance+Variables]
+ *  - {Other}[#class-Object-label-Other]
+ *
+ *  === Querying
+ *
+ *  - {!~}[#method-i-21~]:: Returns +true+ if +self+ does not match the given object,
+ *                          otherwise +false+.
+ *  - {<=>}[#method-i-3C-3D-3E]:: Returns 0 if +self+ and the given object +object+
+ *                                are the same object, or if
+ *                                <tt>self == object</tt>; otherwise returns +nil+.
+ *  - #===:: Implements case equality, effectively the same as calling #==.
+ *  - #eql?:: Implements hash equality, effectively the same as calling #==.
+ *  - #kind_of? (aliased as #is_a?):: Returns whether given argument is an ancestor
+ *                                    of the singleton class of +self+.
+ *  - #instance_of?:: Returns whether +self+ is an instance of the given class.
+ *  - #instance_variable_defined?:: Returns whether the given instance variable
+ *                                  is defined in +self+.
+ *  - #method:: Returns the Method object for the given method in +self+.
+ *  - #methods:: Returns an array of symbol names of public and protected methods
+ *               in +self+.
+ *  - #nil?:: Returns +false+. (Only +nil+ responds +true+ to method <tt>nil?</tt>.)
+ *  - #object_id:: Returns an integer corresponding to +self+ that is unique
+ *                 for the current process
+ *  - #private_methods:: Returns an array of the symbol names
+ *                       of the private methods in +self+.
+ *  - #protected_methods:: Returns an array of the symbol names
+ *                         of the protected methods in +self+.
+ *  - #public_method:: Returns the Method object for the given public method in +self+.
+ *  - #public_methods:: Returns an array of the symbol names
+ *                      of the public methods in +self+.
+ *  - #respond_to?:: Returns whether +self+ responds to the given method.
+ *  - #singleton_class:: Returns the singleton class of +self+.
+ *  - #singleton_method:: Returns the Method object for the given singleton method
+ *                        in +self+.
+ *  - #singleton_methods:: Returns an array of the symbol names
+ *                         of the singleton methods in +self+.
+ *
+ *  - #define_singleton_method:: Defines a singleton method in +self+
+ *                               for the given symbol method-name and block or proc.
+ *  - #extend:: Includes the given modules in the singleton class of +self+.
+ *  - #public_send:: Calls the given public method in +self+ with the given argument.
+ *  - #send:: Calls the given method in +self+ with the given argument.
+ *
+ *  === Instance Variables
+ *
+ *  - #instance_variable_get:: Returns the value of the given instance variable
+ *                             in +self+, or +nil+ if the instance variable is not set.
+ *  - #instance_variable_set:: Sets the value of the given instance variable in +self+
+ *                             to the given object.
+ *  - #instance_variables:: Returns an array of the symbol names
+ *                          of the instance variables in +self+.
+ *  - #remove_instance_variable:: Removes the named instance variable from +self+.
+ *
+ *  === Other
+ *
+ *  - #clone::  Returns a shallow copy of +self+, including singleton class
+ *              and frozen state.
+ *  - #define_singleton_method:: Defines a singleton method in +self+
+ *                               for the given symbol method-name and block or proc.
+ *  - #display:: Prints +self+ to the given \IO stream or <tt>$stdout</tt>.
+ *  - #dup:: Returns a shallow unfrozen copy of +self+.
+ *  - #enum_for (aliased as #to_enum):: Returns an Enumerator for +self+
+ *                                      using the using the given method,
+ *                                      arguments, and block.
+ *  - #extend:: Includes the given modules in the singleton class of +self+.
+ *  - #freeze:: Prevents further modifications to +self+.
+ *  - #hash:: Returns the integer hash value for +self+.
+ *  - #inspect:: Returns a human-readable  string representation of +self+.
+ *  - #itself:: Returns +self+.
+ *  - #public_send:: Calls the given public method in +self+ with the given argument.
+ *  - #send:: Calls the given method in +self+ with the given argument.
+ *  - #to_s:: Returns a string representation of +self+.
+ *
  */
 
 /*!
@@ -4555,6 +4645,139 @@ InitVM_Object(void)
      * receiver and thus can be called in functional form:
      *
      *   sprintf "%.1f", 1.234 #=> "1.2"
+     *
+     * == What's Here
+     *
+     * \Module \Kernel provides methods that are useful for:
+     *
+     * - {Converting}[#module-Kernel-label-Converting]
+     * - {Querying}[#module-Kernel-label-Querying]
+     * - {Exiting}[#module-Kernel-label-Exiting]
+     * - {Exceptions}[#module-Kernel-label-Exceptions]
+     * - {IO}[#module-Kernel-label-IO]
+     * - {Procs}[#module-Kernel-label-Procs]
+     * - {Tracing}[#module-Kernel-label-Tracing]
+     * - {Subprocesses}[#module-Kernel-label-Subprocesses]
+     * - {Loading}[#module-Kernel-label-Loading]
+     * - {Yielding}[#module-Kernel-label-Yielding]
+     * - {Random Values}[#module-Kernel-label-Random+Values]
+     * - {Other}[#module-Kernel-label-Other]
+     *
+     * === Converting
+     *
+     * - {#Array}[#method-i-Array]:: Returns an Array based on the given argument.
+     * - {#Complex}[#method-i-Complex]:: Returns a Complex based on the given arguments.
+     * - {#Float}[#method-i-Float]:: Returns a Float based on the given arguments.
+     * - {#Hash}[#method-i-Hash]:: Returns a Hash based on the given argument.
+     * - {#Integer}[#method-i-Integer]:: Returns an Integer based on the given arguments.
+     * - {#Rational}[#method-i-Rational]:: Returns a Rational
+     *                                     based on the given arguments.
+     * - {#String}[#method-i-String]:: Returns a String based on the given argument.
+     *
+     * === Querying
+     *
+     * - {#__callee__}[#method-i-__callee__]:: Returns the called name
+     *                                         of the current method as a symbol.
+     * - {#__dir__}[#method-i-__dir__]:: Returns the path to the directory
+     *                                   from which the current method is called.
+     * - {#__method__}[#method-i-__method__]:: Returns the name
+     *                                         of the current method as a symbol.
+     * - #autoload?:: Returns the file to be loaded when the given module is referenced.
+     * - #binding:: Returns a Binding for the context at the point of call.
+     * - #block_given?:: Returns +true+ if a block was passed to the calling method.
+     * - #caller:: Returns the current execution stack as an array of strings.
+     * - #caller_locations:: Returns the current execution stack as an array
+     *                       of Thread::Backtrace::Location objects.
+     * - #class:: Returns the class of +self+.
+     * - #frozen?:: Returns whether +self+ is frozen.
+     * - #global_variables:: Returns an array of global variables as symbols.
+     * - #local_variables:: Returns an array of local variables as symbols.
+     * - #test:: Performs specified tests on the given single file or pair of files.
+     *
+     * === Exiting
+     *
+     * - #abort:: Exits the current process after printing the given arguments.
+     * - #at_exit:: Executes the given block when the process exits.
+     * - #exit:: Exits the current process after calling any registered
+     *           +at_exit+ handlers.
+     * - #exit!:: Exits the current process without calling any registered
+     *            +at_exit+ handlers.
+     *
+     * === Exceptions
+     *
+     * - #catch:: Executes the given block, possibly catching a thrown object.
+     * - #raise (aliased as #fail):: Raises an exception based on the given arguments.
+     * - #throw:: Returns from the active catch block waiting for the given tag.
+     *
+     *
+     * === \IO
+     *
+     * - #gets:: Returns and assigns to <tt>$_</tt> the next line from the current input.
+     * - #open:: Creates an IO object connected to the given stream, file, or subprocess.
+     * - #p::  Prints the given objects' inspect output to the standard output.
+     * - #pp:: Prints the given objects in pretty form.
+     * - #print:: Prints the given objects to standard output without a newline.
+     * - #printf:: Prints the string resulting from applying the given format string
+     *             to any additional arguments.
+     * - #putc:: Equivalent to <tt.$stdout.putc(object)</tt> for the given object.
+     * - #puts:: Equivalent to <tt>$stdout.puts(*objects)</tt> for the given objects.
+     * - #readline:: Similar to #gets, but raises an exception at the end of file.
+     * - #readlines:: Returns an array of the remaining lines from the current input.
+     * - #select:: Same as IO.select.
+     *
+     * === Procs
+     *
+     * - #lambda:: Returns a lambda proc for the given block.
+     * - #proc:: Returns a new Proc; equivalent to Proc.new.
+     *
+     * === Tracing
+     *
+     * - #set_trace_func:: Sets the given proc as the handler for tracing,
+     *                     or disables tracing if given +nil+.
+     * - #trace_var:: Starts tracing assignments to the given global variable.
+     * - #untrace_var:: Disables tracing of assignments to the given global variable.
+     *
+     * === Subprocesses
+     *
+     * - #`cmd`:: Returns the standard output of running +cmd+ in a subshell.
+     * - #exec:: Replaces current process with a new process.
+     * - #fork:: Forks the current process into two processes.
+     * - #spawn:: Executes the given command and returns its pid without waiting
+     *            for completion.
+     * - #system:: Executes the given command in a subshell.
+     *
+     * === Loading
+     *
+     * - #autoload:: Registers the given file to be loaded when the given constant
+     *               is first referenced.
+     * - #load:: Loads the given Ruby file.
+     * - #require:: Loads the given Ruby file unless it has already been loaded.
+     * - #require_relative:: Loads the Ruby file path relative to the calling file,
+     *                       unless it has already been loaded.
+     *
+     * === Yielding
+     *
+     * - #tap:: Yields +self+ to the given block; returns +self+.
+     * - #then (aliased as #yield_self):: Yields +self+ to the block
+     *                                    and returns the result of the block.
+     *
+     * === \Random Values
+     *
+     * - #rand:: Returns a pseudo-random floating point number
+     *           strictly between 0.0 and 1.0.
+     * - #srand:: Seeds the pseudo-random number generator with the given number.
+     *
+     * === Other
+     *
+     * - #eval:: Evaluates the given string as Ruby code.
+     * - #loop:: Repeatedly executes the given block.
+     * - #sleep:: Suspends the current thread for the given number of seconds.
+     * - #sprintf (aliased as #format):: Returns the string resulting from applying
+     *                                   the given format string
+     *                                   to any additional arguments.
+     * - #syscall:: Runs an operating system call.
+     * - #trap:: Specifies the handling of system signals.
+     * - #warn:: Issue a warning based on the given messages and options.
      *
      */
     rb_mKernel = rb_define_module("Kernel");
@@ -4620,8 +4843,6 @@ InitVM_Object(void)
     rb_cNilClass = rb_define_class("NilClass", rb_cObject);
     rb_cNilClass_to_s = rb_fstring_enc_lit("", rb_usascii_encoding());
     rb_gc_register_mark_object(rb_cNilClass_to_s);
-    rb_define_method(rb_cNilClass, "to_i", nil_to_i, 0);
-    rb_define_method(rb_cNilClass, "to_f", nil_to_f, 0);
     rb_define_method(rb_cNilClass, "to_s", nil_to_s, 0);
     rb_define_method(rb_cNilClass, "to_a", nil_to_a, 0);
     rb_define_method(rb_cNilClass, "to_h", nil_to_h, 0);
@@ -4724,6 +4945,7 @@ InitVM_Object(void)
 }
 
 #include "kernel.rbinc"
+#include "nilclass.rbinc"
 
 void
 Init_Object(void)

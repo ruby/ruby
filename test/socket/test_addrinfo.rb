@@ -363,7 +363,12 @@ class TestSocketAddrinfo < Test::Unit::TestCase
   def random_port
     # IANA suggests dynamic port for 49152 to 65535
     # http://www.iana.org/assignments/port-numbers
-    49152 + rand(65535-49152+1)
+    case RUBY_PLATFORM
+    when /mingw|mswin/
+      rand(50000..65535)
+    else
+      rand(49152..65535)
+    end
   end
 
   def errors_addrinuse

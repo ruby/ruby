@@ -189,6 +189,11 @@ static VALUE object_spec_RTEST(VALUE self, VALUE value) {
   return RTEST(value) ? Qtrue : Qfalse;
 }
 
+static VALUE so_check_type(VALUE self, VALUE obj, VALUE other) {
+  rb_check_type(obj, TYPE(other));
+  return Qtrue;
+}
+
 static VALUE so_is_type_nil(VALUE self, VALUE obj) {
   if(TYPE(obj) == T_NIL) {
     return Qtrue;
@@ -434,6 +439,7 @@ void Init_object_spec(void) {
 
   rb_define_method(cls, "rb_to_id", so_to_id, 1);
   rb_define_method(cls, "RTEST", object_spec_RTEST, 1);
+  rb_define_method(cls, "rb_check_type", so_check_type, 2);
   rb_define_method(cls, "rb_is_type_nil", so_is_type_nil, 1);
   rb_define_method(cls, "rb_is_type_object", so_is_type_object, 1);
   rb_define_method(cls, "rb_is_type_array", so_is_type_array, 1);

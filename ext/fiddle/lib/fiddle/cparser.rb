@@ -148,9 +148,11 @@ module Fiddle
     #
     def parse_ctype(ty, tymap=nil)
       tymap ||= {}
-      case ty
-      when Array
+      if ty.is_a?(Array)
         return [parse_ctype(ty[0], tymap), ty[1]]
+      end
+      ty = ty.gsub(/\Aconst\s+/, "")
+      case ty
       when 'void'
         return TYPE_VOID
       when /\A(?:(?:signed\s+)?long\s+long(?:\s+int\s+)?|int64_t)(?:\s+\w+)?\z/

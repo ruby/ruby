@@ -21,7 +21,7 @@ class Scheduler
 
     @closed = false
 
-    @lock = Mutex.new
+    @lock = Thread::Mutex.new
     @blocking = 0
     @ready = []
 
@@ -112,8 +112,10 @@ class Scheduler
 
     self.run
   ensure
-    @urgent.each(&:close)
-    @urgent = nil
+    if @urgent
+      @urgent.each(&:close)
+      @urgent = nil
+    end
 
     @closed = true
 
@@ -170,7 +172,7 @@ class Scheduler
     Fiber.yield
   end
 
-  # Used for Kernel#sleep and Mutex#sleep
+  # Used for Kernel#sleep and Thread::Mutex#sleep
   def kernel_sleep(duration = nil)
     # $stderr.puts [__method__, duration, Fiber.current].inspect
 
@@ -179,7 +181,8 @@ class Scheduler
     return true
   end
 
-  # Used when blocking on synchronization (Mutex#lock, Queue#pop, SizedQueue#push, ...)
+  # Used when blocking on synchronization (Thread::Mutex#lock,
+  # Thread::Queue#pop, Thread::SizedQueue#push, ...)
   def block(blocker, timeout = nil)
     # $stderr.puts [__method__, blocker, timeout].inspect
 
@@ -201,7 +204,8 @@ class Scheduler
     end
   end
 
-  # Used when synchronization wakes up a previously-blocked fiber (Mutex#unlock, Queue#push, ...).
+  # Used when synchronization wakes up a previously-blocked fiber
+  # (Thread::Mutex#unlock, Thread::Queue#push, ...).
   # This might be called from another thread.
   def unblock(blocker, fiber)
     # $stderr.puts [__method__, blocker, fiber].inspect
@@ -222,5 +226,29 @@ class Scheduler
     fiber.resume
 
     return fiber
+  end
+
+  def address_resolve(hostname)
+    Thread.new do
+      Addrinfo.getaddrinfo(hostname, nil).map(&:ip_address).uniq
+    end.value
+  end
+end
+
+class BrokenUnblockScheduler < Scheduler
+  def unblock(blocker, fiber)
+    super
+
+    raise "Broken unblock!"
+  end
+end
+
+class SleepingUnblockScheduler < Scheduler
+  # This method is invoked when the thread is exiting.
+  def unblock(blocker, fiber)
+    super
+
+    # This changes the current thread state to `THREAD_RUNNING` which causes `thread_join_sleep` to hang.
+    sleep(0.1)
   end
 end

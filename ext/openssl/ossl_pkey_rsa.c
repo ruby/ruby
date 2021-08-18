@@ -47,125 +47,28 @@ VALUE eRSAError;
 /*
  * Private
  */
-struct rsa_blocking_gen_arg {
-    RSA *rsa;
-    BIGNUM *e;
-    int size;
-    BN_GENCB *cb;
-    int result;
-};
-
-static void *
-rsa_blocking_gen(void *arg)
-{
-    struct rsa_blocking_gen_arg *gen = (struct rsa_blocking_gen_arg *)arg;
-    gen->result = RSA_generate_key_ex(gen->rsa, gen->size, gen->e, gen->cb);
-    return 0;
-}
-
-static RSA *
-rsa_generate(int size, unsigned long exp)
-{
-    int i;
-    struct ossl_generate_cb_arg cb_arg = { 0 };
-    struct rsa_blocking_gen_arg gen_arg;
-    RSA *rsa = RSA_new();
-    BIGNUM *e = BN_new();
-    BN_GENCB *cb = BN_GENCB_new();
-
-    if (!rsa || !e || !cb) {
-	RSA_free(rsa);
-	BN_free(e);
-	BN_GENCB_free(cb);
-        ossl_raise(eRSAError, "malloc failure");
-    }
-    for (i = 0; i < (int)sizeof(exp) * 8; ++i) {
-	if (exp & (1UL << i)) {
-	    if (BN_set_bit(e, i) == 0) {
-		BN_free(e);
-		RSA_free(rsa);
-		BN_GENCB_free(cb);
-                ossl_raise(eRSAError, "BN_set_bit");
-	    }
-	}
-    }
-
-    if (rb_block_given_p())
-	cb_arg.yield = 1;
-    BN_GENCB_set(cb, ossl_generate_cb_2, &cb_arg);
-    gen_arg.rsa = rsa;
-    gen_arg.e = e;
-    gen_arg.size = size;
-    gen_arg.cb = cb;
-    if (cb_arg.yield == 1) {
-	/* we cannot release GVL when callback proc is supplied */
-	rsa_blocking_gen(&gen_arg);
-    } else {
-	/* there's a chance to unblock */
-	rb_thread_call_without_gvl(rsa_blocking_gen, &gen_arg, ossl_generate_cb_stop, &cb_arg);
-    }
-
-    BN_GENCB_free(cb);
-    BN_free(e);
-    if (!gen_arg.result) {
-	RSA_free(rsa);
-	if (cb_arg.state) {
-	    /* must clear OpenSSL error stack */
-	    ossl_clear_error();
-	    rb_jump_tag(cb_arg.state);
-	}
-        ossl_raise(eRSAError, "RSA_generate_key_ex");
-    }
-
-    return rsa;
-}
-
 /*
  * call-seq:
- *   RSA.generate(size)           => RSA instance
- *   RSA.generate(size, exponent) => RSA instance
+ *   RSA.new -> rsa
+ *   RSA.new(encoded_key [, passphrase]) -> rsa
+ *   RSA.new(encoded_key) { passphrase } -> rsa
+ *   RSA.new(size [, exponent]) -> rsa
  *
- * Generates an RSA keypair.  _size_ is an integer representing the desired key
- * size.  Keys smaller than 1024 should be considered insecure.  _exponent_ is
- * an odd number normally 3, 17, or 65537.
- */
-static VALUE
-ossl_rsa_s_generate(int argc, VALUE *argv, VALUE klass)
-{
-/* why does this method exist?  why can't initialize take an optional exponent? */
-    EVP_PKEY *pkey;
-    RSA *rsa;
-    VALUE size, exp;
-    VALUE obj;
-
-    rb_scan_args(argc, argv, "11", &size, &exp);
-    obj = rb_obj_alloc(klass);
-    GetPKey(obj, pkey);
-
-    rsa = rsa_generate(NUM2INT(size), NIL_P(exp) ? RSA_F4 : NUM2ULONG(exp));
-    if (!EVP_PKEY_assign_RSA(pkey, rsa)) {
-        RSA_free(rsa);
-        ossl_raise(eRSAError, "EVP_PKEY_assign_RSA");
-    }
-    return obj;
-}
-
-/*
- * call-seq:
- *   RSA.new(size [, exponent])        => RSA instance
- *   RSA.new(encoded_key)              => RSA instance
- *   RSA.new(encoded_key, pass_phrase) => RSA instance
+ * Generates or loads an \RSA keypair.
  *
- * Generates or loads an RSA keypair.  If an integer _key_size_ is given it
- * represents the desired key size.  Keys less than 1024 bits should be
- * considered insecure.
+ * If called without arguments, creates a new instance with no key components
+ * set. They can be set individually by #set_key, #set_factors, and
+ * #set_crt_params.
  *
- * A key can instead be loaded from an _encoded_key_ which must be PEM or DER
- * encoded.  A _pass_phrase_ can be used to decrypt the key.  If none is given
- * OpenSSL will prompt for the pass phrase.
+ * If called with a String, tries to parse as DER or PEM encoding of an \RSA key.
+ * Note that, if _passphrase_ is not specified but the key is encrypted with a
+ * passphrase, \OpenSSL will prompt for it.
+ * See also OpenSSL::PKey.read which can parse keys of any kinds.
  *
- * = Examples
+ * If called with a number, generates a new key pair. This form works as an
+ * alias of RSA.generate.
  *
+ * Examples:
  *   OpenSSL::PKey::RSA.new 2048
  *   OpenSSL::PKey::RSA.new File.read 'rsa.pem'
  *   OpenSSL::PKey::RSA.new File.read('rsa.pem'), 'my pass phrase'
@@ -179,14 +82,12 @@ ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
     VALUE arg, pass;
 
     GetPKey(self, pkey);
+    /* The RSA.new(size, generator) form is handled by lib/openssl/pkey.rb */
     rb_scan_args(argc, argv, "02", &arg, &pass);
     if (argc == 0) {
 	rsa = RSA_new();
         if (!rsa)
             ossl_raise(eRSAError, "RSA_new");
-    }
-    else if (RB_INTEGER_TYPE_P(arg)) {
-	rsa = rsa_generate(NUM2INT(arg), NIL_P(pass) ? RSA_F4 : NUM2ULONG(pass));
     }
     else {
 	pass = ossl_pem_passwd_value(pass);
@@ -330,138 +231,6 @@ ossl_rsa_to_der(VALUE self)
 
 /*
  * call-seq:
- *   rsa.public_encrypt(string)          => String
- *   rsa.public_encrypt(string, padding) => String
- *
- * Encrypt _string_ with the public key.  _padding_ defaults to PKCS1_PADDING.
- * The encrypted string output can be decrypted using #private_decrypt.
- */
-static VALUE
-ossl_rsa_public_encrypt(int argc, VALUE *argv, VALUE self)
-{
-    RSA *rsa;
-    const BIGNUM *rsa_n;
-    int buf_len, pad;
-    VALUE str, buffer, padding;
-
-    GetRSA(self, rsa);
-    RSA_get0_key(rsa, &rsa_n, NULL, NULL);
-    if (!rsa_n)
-	ossl_raise(eRSAError, "incomplete RSA");
-    rb_scan_args(argc, argv, "11", &buffer, &padding);
-    pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
-    StringValue(buffer);
-    str = rb_str_new(0, RSA_size(rsa));
-    buf_len = RSA_public_encrypt(RSTRING_LENINT(buffer), (unsigned char *)RSTRING_PTR(buffer),
-				 (unsigned char *)RSTRING_PTR(str), rsa, pad);
-    if (buf_len < 0) ossl_raise(eRSAError, NULL);
-    rb_str_set_len(str, buf_len);
-
-    return str;
-}
-
-/*
- * call-seq:
- *   rsa.public_decrypt(string)          => String
- *   rsa.public_decrypt(string, padding) => String
- *
- * Decrypt _string_, which has been encrypted with the private key, with the
- * public key.  _padding_ defaults to PKCS1_PADDING.
- */
-static VALUE
-ossl_rsa_public_decrypt(int argc, VALUE *argv, VALUE self)
-{
-    RSA *rsa;
-    const BIGNUM *rsa_n;
-    int buf_len, pad;
-    VALUE str, buffer, padding;
-
-    GetRSA(self, rsa);
-    RSA_get0_key(rsa, &rsa_n, NULL, NULL);
-    if (!rsa_n)
-	ossl_raise(eRSAError, "incomplete RSA");
-    rb_scan_args(argc, argv, "11", &buffer, &padding);
-    pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
-    StringValue(buffer);
-    str = rb_str_new(0, RSA_size(rsa));
-    buf_len = RSA_public_decrypt(RSTRING_LENINT(buffer), (unsigned char *)RSTRING_PTR(buffer),
-				 (unsigned char *)RSTRING_PTR(str), rsa, pad);
-    if (buf_len < 0) ossl_raise(eRSAError, NULL);
-    rb_str_set_len(str, buf_len);
-
-    return str;
-}
-
-/*
- * call-seq:
- *   rsa.private_encrypt(string)          => String
- *   rsa.private_encrypt(string, padding) => String
- *
- * Encrypt _string_ with the private key.  _padding_ defaults to PKCS1_PADDING.
- * The encrypted string output can be decrypted using #public_decrypt.
- */
-static VALUE
-ossl_rsa_private_encrypt(int argc, VALUE *argv, VALUE self)
-{
-    RSA *rsa;
-    const BIGNUM *rsa_n;
-    int buf_len, pad;
-    VALUE str, buffer, padding;
-
-    GetRSA(self, rsa);
-    RSA_get0_key(rsa, &rsa_n, NULL, NULL);
-    if (!rsa_n)
-	ossl_raise(eRSAError, "incomplete RSA");
-    if (!RSA_PRIVATE(self, rsa))
-	ossl_raise(eRSAError, "private key needed.");
-    rb_scan_args(argc, argv, "11", &buffer, &padding);
-    pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
-    StringValue(buffer);
-    str = rb_str_new(0, RSA_size(rsa));
-    buf_len = RSA_private_encrypt(RSTRING_LENINT(buffer), (unsigned char *)RSTRING_PTR(buffer),
-				  (unsigned char *)RSTRING_PTR(str), rsa, pad);
-    if (buf_len < 0) ossl_raise(eRSAError, NULL);
-    rb_str_set_len(str, buf_len);
-
-    return str;
-}
-
-/*
- * call-seq:
- *   rsa.private_decrypt(string)          => String
- *   rsa.private_decrypt(string, padding) => String
- *
- * Decrypt _string_, which has been encrypted with the public key, with the
- * private key.  _padding_ defaults to PKCS1_PADDING.
- */
-static VALUE
-ossl_rsa_private_decrypt(int argc, VALUE *argv, VALUE self)
-{
-    RSA *rsa;
-    const BIGNUM *rsa_n;
-    int buf_len, pad;
-    VALUE str, buffer, padding;
-
-    GetRSA(self, rsa);
-    RSA_get0_key(rsa, &rsa_n, NULL, NULL);
-    if (!rsa_n)
-	ossl_raise(eRSAError, "incomplete RSA");
-    if (!RSA_PRIVATE(self, rsa))
-	ossl_raise(eRSAError, "private key needed.");
-    rb_scan_args(argc, argv, "11", &buffer, &padding);
-    pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
-    StringValue(buffer);
-    str = rb_str_new(0, RSA_size(rsa));
-    buf_len = RSA_private_decrypt(RSTRING_LENINT(buffer), (unsigned char *)RSTRING_PTR(buffer),
-				  (unsigned char *)RSTRING_PTR(str), rsa, pad);
-    if (buf_len < 0) ossl_raise(eRSAError, NULL);
-    rb_str_set_len(str, buf_len);
-
-    return str;
-}
-
-/*
- * call-seq:
  *    rsa.sign_pss(digest, data, salt_length:, mgf1_hash:) -> String
  *
  * Signs _data_ using the Probabilistic Signature Scheme (RSA-PSS) and returns
@@ -489,7 +258,7 @@ ossl_rsa_private_decrypt(int argc, VALUE *argv, VALUE self)
  *   data = "Sign me!"
  *   pkey = OpenSSL::PKey::RSA.new(2048)
  *   signature = pkey.sign_pss("SHA256", data, salt_length: :max, mgf1_hash: "SHA256")
- *   pub_key = pkey.public_key
+ *   pub_key = OpenSSL::PKey.read(pkey.public_to_der)
  *   puts pub_key.verify_pss("SHA256", signature, data,
  *                           salt_length: :auto, mgf1_hash: "SHA256") # => true
  */
@@ -687,91 +456,6 @@ ossl_rsa_get_params(VALUE self)
 }
 
 /*
- * call-seq:
- *   rsa.to_text => String
- *
- * THIS METHOD IS INSECURE, PRIVATE INFORMATION CAN LEAK OUT!!!
- *
- * Dumps all parameters of a keypair to a String
- *
- * Don't use :-)) (It's up to you)
- */
-static VALUE
-ossl_rsa_to_text(VALUE self)
-{
-    RSA *rsa;
-    BIO *out;
-    VALUE str;
-
-    GetRSA(self, rsa);
-    if (!(out = BIO_new(BIO_s_mem()))) {
-	ossl_raise(eRSAError, NULL);
-    }
-    if (!RSA_print(out, rsa, 0)) { /* offset = 0 */
-	BIO_free(out);
-	ossl_raise(eRSAError, NULL);
-    }
-    str = ossl_membio2str(out);
-
-    return str;
-}
-
-/*
- * call-seq:
- *    rsa.public_key -> RSA
- *
- * Makes new RSA instance containing the public key from the private key.
- */
-static VALUE
-ossl_rsa_to_public_key(VALUE self)
-{
-    EVP_PKEY *pkey, *pkey_new;
-    RSA *rsa;
-    VALUE obj;
-
-    GetPKeyRSA(self, pkey);
-    obj = rb_obj_alloc(rb_obj_class(self));
-    GetPKey(obj, pkey_new);
-
-    rsa = RSAPublicKey_dup(EVP_PKEY_get0_RSA(pkey));
-    if (!rsa)
-        ossl_raise(eRSAError, "RSAPublicKey_dup");
-    if (!EVP_PKEY_assign_RSA(pkey_new, rsa)) {
-        RSA_free(rsa);
-        ossl_raise(eRSAError, "EVP_PKEY_assign_RSA");
-    }
-    return obj;
-}
-
-/*
- * TODO: Test me
-
-static VALUE
-ossl_rsa_blinding_on(VALUE self)
-{
-    RSA *rsa;
-
-    GetRSA(self, rsa);
-
-    if (RSA_blinding_on(rsa, ossl_bn_ctx) != 1) {
-	ossl_raise(eRSAError, NULL);
-    }
-    return self;
-}
-
-static VALUE
-ossl_rsa_blinding_off(VALUE self)
-{
-    RSA *rsa;
-
-    GetRSA(self, rsa);
-    RSA_blinding_off(rsa);
-
-    return self;
-}
- */
-
-/*
  * Document-method: OpenSSL::PKey::RSA#set_key
  * call-seq:
  *   rsa.set_key(n, e, d) -> self
@@ -832,22 +516,15 @@ Init_ossl_rsa(void)
      */
     cRSA = rb_define_class_under(mPKey, "RSA", cPKey);
 
-    rb_define_singleton_method(cRSA, "generate", ossl_rsa_s_generate, -1);
     rb_define_method(cRSA, "initialize", ossl_rsa_initialize, -1);
     rb_define_method(cRSA, "initialize_copy", ossl_rsa_initialize_copy, 1);
 
     rb_define_method(cRSA, "public?", ossl_rsa_is_public, 0);
     rb_define_method(cRSA, "private?", ossl_rsa_is_private, 0);
-    rb_define_method(cRSA, "to_text", ossl_rsa_to_text, 0);
     rb_define_method(cRSA, "export", ossl_rsa_export, -1);
     rb_define_alias(cRSA, "to_pem", "export");
     rb_define_alias(cRSA, "to_s", "export");
     rb_define_method(cRSA, "to_der", ossl_rsa_to_der, 0);
-    rb_define_method(cRSA, "public_key", ossl_rsa_to_public_key, 0);
-    rb_define_method(cRSA, "public_encrypt", ossl_rsa_public_encrypt, -1);
-    rb_define_method(cRSA, "public_decrypt", ossl_rsa_public_decrypt, -1);
-    rb_define_method(cRSA, "private_encrypt", ossl_rsa_private_encrypt, -1);
-    rb_define_method(cRSA, "private_decrypt", ossl_rsa_private_decrypt, -1);
     rb_define_method(cRSA, "sign_pss", ossl_rsa_sign_pss, -1);
     rb_define_method(cRSA, "verify_pss", ossl_rsa_verify_pss, -1);
 
@@ -864,11 +541,6 @@ Init_ossl_rsa(void)
     rb_define_method(cRSA, "set_crt_params", ossl_rsa_set_crt_params, 3);
 
     rb_define_method(cRSA, "params", ossl_rsa_get_params, 0);
-
-    DefRSAConst(PKCS1_PADDING);
-    DefRSAConst(SSLV23_PADDING);
-    DefRSAConst(NO_PADDING);
-    DefRSAConst(PKCS1_OAEP_PADDING);
 
 /*
  * TODO: Test it

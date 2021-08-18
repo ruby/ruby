@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/commands/signin_command'
 require 'rubygems/installer'
 
@@ -26,14 +26,21 @@ class TestGemCommandsSigninCommand < Gem::TestCase
     assert_match %r{Signed in.}, sign_in_ui.output
   end
 
+  def test_execute_when_not_already_signed_in_and_not_preexisting_credentials_folder
+    FileUtils.rm Gem.configuration.credentials_path
+
+    sign_in_ui = util_capture { @cmd.execute }
+    assert_match %r{Signed in.}, sign_in_ui.output
+  end
+
   def test_execute_when_already_signed_in_with_same_host
     host = 'http://some-gemcutter-compatible-host.org'
 
     util_capture(nil, host) { @cmd.execute }
-    old_credentials = YAML.load_file Gem.configuration.credentials_path
+    old_credentials = load_yaml_file Gem.configuration.credentials_path
 
     util_capture(nil, host) { @cmd.execute }
-    new_credentials = YAML.load_file Gem.configuration.credentials_path
+    new_credentials = load_yaml_file Gem.configuration.credentials_path
 
     assert_equal old_credentials[host], new_credentials[host]
   end
@@ -45,7 +52,7 @@ class TestGemCommandsSigninCommand < Gem::TestCase
     host = 'http://some-gemcutter-compatible-host.org'
 
     util_capture(nil, host, api_key) { @cmd.execute }
-    credentials = YAML.load_file Gem.configuration.credentials_path
+    credentials = load_yaml_file Gem.configuration.credentials_path
 
     assert_equal credentials[:rubygems_api_key], api_key
 
@@ -60,7 +67,7 @@ class TestGemCommandsSigninCommand < Gem::TestCase
     assert_match %r{Signed in.}, sign_in_ui.output
 
     api_key     = 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903'
-    credentials = YAML.load_file Gem.configuration.credentials_path
+    credentials = load_yaml_file Gem.configuration.credentials_path
     assert_equal api_key, credentials[host]
   end
 
@@ -68,7 +75,7 @@ class TestGemCommandsSigninCommand < Gem::TestCase
     util_capture { @cmd.execute }
 
     api_key     = 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903'
-    credentials = YAML.load_file Gem.configuration.credentials_path
+    credentials = load_yaml_file Gem.configuration.credentials_path
 
     assert_equal api_key, credentials[:rubygems_api_key]
   end
@@ -94,7 +101,7 @@ class TestGemCommandsSigninCommand < Gem::TestCase
     assert_match "show_dashboard [y/N]", key_name_ui.output
     assert_equal "name=test-key&push_rubygem=true", fetcher.last_request.body
 
-    credentials = YAML.load_file Gem.configuration.credentials_path
+    credentials = load_yaml_file Gem.configuration.credentials_path
     assert_equal api_key, credentials[:rubygems_api_key]
   end
 

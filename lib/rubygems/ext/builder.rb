@@ -57,6 +57,7 @@ class Gem::Ext::Builder
         p(command)
       end
       results << "current directory: #{dir}"
+      require "shellwords"
       results << command.shelljoin
 
       require "open3"

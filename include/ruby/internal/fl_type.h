@@ -217,7 +217,7 @@ ruby_fl_type {
     RBIMPL_FL_USER_N(16),
     RBIMPL_FL_USER_N(17),
     RBIMPL_FL_USER_N(18),
-#if ENUM_OVER_INT
+#ifdef ENUM_OVER_INT
     RBIMPL_FL_USER_N(19),
 #else
 # define RUBY_FL_USER19 (RBIMPL_VALUE_ONE<<(RUBY_FL_USHIFT+19))
@@ -238,7 +238,7 @@ enum {
 # pragma deprecated(RUBY_FL_DUPPED)
 #endif
 
-    = RUBY_T_MASK | RUBY_FL_EXIVAR
+    = (int)RUBY_T_MASK | (int)RUBY_FL_EXIVAR
 };
 
 #undef RBIMPL_HAVE_ENUM_ATTRIBUTE

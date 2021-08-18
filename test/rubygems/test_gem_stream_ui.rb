@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/user_interaction'
 require 'timeout'
 
@@ -90,7 +90,7 @@ class TestGemStreamUI < Gem::TestCase
     @in.tty = false
 
     Timeout.timeout(SHORT_TIMEOUT) do
-      assert_raises(Gem::OperationNotSupportedError) do
+      assert_raise(Gem::OperationNotSupportedError) do
         @sui.ask_yes_no("do coconuts migrate?")
       end
     end

@@ -138,6 +138,17 @@ module TestStruct
     assert_equal(3, struct.new(a: 1, b: 2).c)
   end
 
+  def test_struct_keyword_init_p
+    struct = @Struct.new(:a, :b, keyword_init: true)
+    assert_equal(true, struct.keyword_init?)
+
+    struct = @Struct.new(:a, :b, keyword_init: false)
+    assert_equal(false, struct.keyword_init?)
+
+    struct = @Struct.new(:a, :b)
+    assert_nil(struct.keyword_init?)
+  end
+
   def test_initialize
     klass = @Struct.new(:a)
     assert_raise(ArgumentError) { klass.new(1, 2) }

@@ -139,10 +139,7 @@ struct rb_ractor_struct {
     VALUE verbose;
     VALUE debug;
 
-    struct {
-        struct RVALUE *freelist;
-        struct heap_page *using_page;
-    } newobj_cache;
+    rb_ractor_newobj_cache_t newobj_cache;
 
     // gc.c rb_objspace_reachable_objects_from
     struct gc_mark_func_data_struct {
@@ -261,7 +258,7 @@ static inline void
 rb_ractor_set_current_ec(rb_ractor_t *cr, rb_execution_context_t *ec)
 {
 #ifdef RB_THREAD_LOCAL_SPECIFIER
-  #if __APPLE__
+  #ifdef __APPLE__
     rb_current_ec_set(ec);
   #else
     ruby_current_ec = ec;

@@ -135,8 +135,15 @@ AS_IF([test ! -z "$ac_cv_prog_CC" -a ! -z "$CC" -a "$CC" != "$ac_cv_prog_CC"], [
   AC_MSG_ERROR(cached CC is different -- throw away $cache_file
 (it is also a good idea to do 'make clean' before compiling))
 ])
-AS_CASE(["${build_os}"], [linux*|cygwin*|msys*], [
+AS_CASE(["${build_os}"],
+[linux*|cygwin*|msys*], [
+    # Naruse prefers GCC on Linux
     AC_CHECK_TOOLS([CC], [gcc clang cc])
+],
+[solaris*], [
+    # Clang on Solaris is largely untested.
+    # https://bugs.ruby-lang.org/issues/17949
+    AC_CHECK_TOOLS([CC], [cc gcc])
 ], [
     # OpenBSD wants to prefer cc over gcc.
     # See https://github.com/ruby/ruby/pull/2443
@@ -662,6 +669,18 @@ AS_CASE(["$GCC:${warnflags+set}:${extra_warnflags:+set}:"],
 	    ])
 	])
     done
+    AS_IF([test "$particular_werror_flags" = "yes"], [
+	wflag=-Werror=undef
+    ], [
+	wflag=-Wundef
+    ])
+    RUBY_TRY_CFLAGS($wflag, [
+	RUBY_APPEND_OPTIONS(warnflags, $wflag)
+    ], [], [
+	@%:@if !defined(RUBY_CONFIG_TEST_NEVER_DEFINED_SYMBOL)
+	@%:@elif RUBY_CONFIG_TEST_NEVER_DEFINED_SYMBOL
+	@%:@endif
+    ])
     AS_CASE([" $warnflags "],[*" -Wno-missing-field-initializers "*], [wflag="-Wall -Wextra"],
                              [wflag=-Wall])
     RUBY_TRY_CFLAGS($wflag, [warnflags="$wflag${warnflags+ $warnflags}"])
@@ -943,6 +962,8 @@ AS_CASE(["$target_os"], [*android*], [
 AS_UNSET(ORIG_LIBS)
 POSTLINK=:
 AC_SUBST(POSTLINK)
+cleanlibs=
+AC_SUBST(cleanlibs)
 AS_CASE(["$target_os"],
 [nextstep*], [	],
 [openstep*], [	],
@@ -1041,6 +1062,7 @@ main()
 		AC_CHECK_HEADERS(crt_externs.h, [], [], [
 		    #include <crt_externs.h>
 		])
+		cleanlibs='$(TARGET_SO).dSYM'
 		],
 [hpux*], [	LIBS="-lm $LIBS"
 		ac_cv_c_inline=no],
@@ -1275,42 +1297,53 @@ AC_ARG_WITH([jemalloc],
   [AS_HELP_STRING([--with-jemalloc],[use jemalloc allocator])],
   [with_jemalloc=$withval], [with_jemalloc=no])
 AS_IF([test "x$with_jemalloc" != xno],[
-  AC_SEARCH_LIBS([malloc_conf], [jemalloc],
-    [
-      AC_DEFINE(HAVE_LIBJEMALLOC, 1)
-      with_jemalloc=yes
-    ],
-    [test x$with_jemalloc = xyes && with_jemalloc=no])
-  AC_CHECK_HEADER(jemalloc/jemalloc.h, [
-    AC_DEFINE(RUBY_ALTERNATIVE_MALLOC_HEADER, [<jemalloc/jemalloc.h>])
-  ],
-  [test x$with_jemalloc = xyes && with_jemalloc=no])
-  AS_IF([test "x$with_jemalloc" != xyes], [
-    AC_CACHE_CHECK([for jemalloc with JEMALLOC_MANGLE], rb_cv_jemalloc_demangle,
-      [AC_LINK_IFELSE([AC_LANG_PROGRAM([@%:@define JEMALLOC_MANGLE 1
-      @%:@ifdef RUBY_ALTERNATIVE_MALLOC_HEADER
-      @%:@include RUBY_ALTERNATIVE_MALLOC_HEADER
-      @%:@else
-      @%:@include <jemalloc.h>
-      @%:@endif], [return !&malloc_conf])],
-      [rb_cv_jemalloc_demangle=yes],
-      [rb_cv_jemalloc_demangle=no])
-    ])
+  # find jemalloc header first
+  malloc_header=
+  AC_CHECK_HEADER(jemalloc/jemalloc.h, [malloc_header=jemalloc/jemalloc.h], [
+    AC_CHECK_HEADER(jemalloc.h, [malloc_header=jemalloc.h])
   ])
-  AS_IF([test "x$rb_cv_jemalloc_demangle" = xyes], [
-    AC_DEFINE(JEMALLOC_MANGLE)
-    with_jemalloc=yes
+  AS_IF([test "$malloc_header" != ""], [
+    AC_DEFINE_UNQUOTED(RUBY_ALTERNATIVE_MALLOC_HEADER, [<$malloc_header>])
+  ])
+  save_LIBS="$LIBS"
+  AC_CACHE_CHECK([for jemalloc library], rb_cv_jemalloc_library, [
+    rb_cv_jemalloc_library=no
+    # try [with mangle, without mangle] x [no more additional
+    # libraries, adding jemalloc] combination, using the jemalloc
+    # header found above.
+    for mangle in '' mangle; do
+      for lib in '' -ljemalloc; do
+        LIBS="${lib:+$lib }$LIBS"
+        AC_LINK_IFELSE([AC_LANG_PROGRAM([${mangle:+@%:@define JEMALLOC_MANGLE 1}
+          @%:@include <stdio.h>
+          @%:@ifdef RUBY_ALTERNATIVE_MALLOC_HEADER
+          @%:@include RUBY_ALTERNATIVE_MALLOC_HEADER
+          @%:@else
+          extern const char *malloc_conf;
+          @%:@endif],
+          [/* access at runtime not to be optimized away */
+          if (malloc_conf) printf("malloc_conf=%s\n", malloc_conf);])],
+          [rb_cv_jemalloc_library="${lib:-none required}${mangle:+ with mangle}"])
+        LIBS="$save_LIBS"
+        test "${rb_cv_jemalloc_library}" = no || break 2
+      done
+    done
+  ])
+  with_jemalloc=${rb_cv_jemalloc_library}
+  AS_CASE(["$with_jemalloc"],
+  [no],
+    [AC_MSG_ERROR([jemalloc requested but not found])],
+  [-l*], [
+    set dummy $with_jemalloc
+    LIBS="$2 $LIBS"
   ])
   AS_CASE(["$with_jemalloc"],
-    [yes],
-    [
-      AC_DEFINE(HAVE_MALLOC_CONF)
-      ac_cv_func_malloc_usable_size=yes
-    ],
-    [no],
-    [AC_MSG_ERROR([jemalloc requested but not found])
+  [*" with mangle"], [
+    AC_DEFINE(JEMALLOC_MANGLE)
   ])
-])
+  AC_DEFINE(HAVE_MALLOC_CONF)
+  ac_cv_func_malloc_usable_size=yes
+]) # with_jemalloc
 
 dnl check for large file stuff
 mv confdefs.h confdefs1.h
@@ -1846,10 +1879,16 @@ AS_CASE(["$target_os"],[freebsd*],[
 	 AC_REPLACE_FUNCS(close)
 	 ])
 
+AC_DEFUN([RUBY_REQUIRE_FUNC], [
+    AC_CHECK_FUNCS([$1])
+    AS_IF([test "$ac_cv_func_[]AS_TR_SH($1)" = yes], [],
+          [AC_MSG_ERROR($1[() must be supported])])
+])
+m4_map_args_w([dup dup2], [RUBY_REQUIRE_FUNC(], [)])
+
 AC_REPLACE_FUNCS(acosh)
 AC_REPLACE_FUNCS(cbrt)
 AC_REPLACE_FUNCS(crypt)
-AC_REPLACE_FUNCS(dup2)
 AC_REPLACE_FUNCS(erf)
 AC_REPLACE_FUNCS(explicit_bzero)
 AC_REPLACE_FUNCS(ffs)
@@ -1910,7 +1949,6 @@ AC_CHECK_FUNCS(dirfd)
 AC_CHECK_FUNCS(dl_iterate_phdr)
 AC_CHECK_FUNCS(dlopen)
 AC_CHECK_FUNCS(dladdr)
-AC_CHECK_FUNCS(dup)
 AC_CHECK_FUNCS(dup3)
 AC_CHECK_FUNCS(eaccess)
 AC_CHECK_FUNCS(endgrent)
@@ -2106,6 +2144,7 @@ AS_IF([test x$rb_cv_builtin___builtin_choose_expr = xyes], [
 ])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_types_compatible_p, [__builtin_types_compatible_p(int, int)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_trap, [__builtin_trap()])
+RUBY_CHECK_BUILTIN_FUNC(__builtin_expect, [__builtin_expect(0, 0)])
 
 AS_IF([test "$ac_cv_func_qsort_r" != no], [
   AC_CACHE_CHECK(whether qsort_r is GNU version, rb_cv_gnu_qsort_r,
@@ -2458,7 +2497,6 @@ AC_ARG_WITH(coroutine,
     AS_HELP_STRING([--with-coroutine=IMPLEMENTATION], [specify the coroutine implementation to use]),
     [coroutine_type=$withval], [coroutine_type=])
 AS_CASE([$coroutine_type], [yes|''], [
-    AC_MSG_CHECKING(native coroutine implementation for ${target_cpu}-${target_os})
     coroutine_type=
     AS_CASE(["$target_cpu-$target_os"],
         [universal-darwin*], [
@@ -2498,6 +2536,15 @@ AS_CASE([$coroutine_type], [yes|''], [
         [riscv64-linux*], [
             coroutine_type=riscv64
         ],
+        [x86_64-freebsd*], [
+            coroutine_type=amd64
+        ],
+        [i386-freebsd*], [
+            coroutine_type=x86
+        ],
+        [aarch64-freebsd*], [
+            coroutine_type=arm64
+        ],
         [x86_64-openbsd*], [
             coroutine_type=amd64
         ],
@@ -2505,10 +2552,10 @@ AS_CASE([$coroutine_type], [yes|''], [
             coroutine_type=x86
         ],
         [*-openbsd*], [
-            coroutine_type=copy
+            coroutine_type=pthread
         ],
         [*-haiku*], [
-            coroutine_type=copy
+            coroutine_type=pthread
         ],
         [*-emscripten*], [
             coroutine_type=emscripten
@@ -2516,23 +2563,19 @@ AS_CASE([$coroutine_type], [yes|''], [
         [
             AC_CHECK_FUNCS([getcontext swapcontext makecontext],
                 [coroutine_type=ucontext],
-                [coroutine_type=copy; break]
+                [coroutine_type=pthread; break]
             )
         ]
     )
+    AC_MSG_CHECKING(native coroutine implementation for ${target_cpu}-${target_os})
     AC_MSG_RESULT(${coroutine_type})
 ])
 COROUTINE_H=coroutine/$coroutine_type/Context.h
 AS_IF([test ! -f "$srcdir/$COROUTINE_H"],
       [AC_MSG_ERROR('$coroutine_type' is not supported as coroutine)])
-AS_CASE([$coroutine_type],
-    [copy|ucontext], [
-        COROUTINE_SRC=coroutine/$coroutine_type/Context.c
-    ],
-    [
-        COROUTINE_SRC=coroutine/$coroutine_type/Context.'$(ASMEXT)'
-    ]
-)
+COROUTINE_SRC=coroutine/$coroutine_type/Context.c
+AS_IF([test ! -f "$srcdir/$COROUTINE_SRC"],
+      [COROUTINE_SRC=coroutine/$coroutine_type/Context.'$(ASMEXT)'])
 AC_DEFINE_UNQUOTED(COROUTINE_H, ["$COROUTINE_H"])
 AC_SUBST(X_COROUTINE_H, [$COROUTINE_H])
 AC_SUBST(X_COROUTINE_SRC, [$COROUTINE_SRC])
@@ -2713,6 +2756,51 @@ main(int argc, char *argv[])
 	rb_cv_fork_with_pthread=yes)])
     test x$rb_cv_fork_with_pthread = xyes || AC_DEFINE(CANNOT_FORK_WITH_PTHREAD)
 ])
+
+AC_CHECK_HEADERS([sys/user.h])
+AS_IF([test "x$ac_cv_func_mmap" = xyes], [
+    AC_CACHE_CHECK([whether PAGE_SIZE is compile-time const], rb_cv_const_page_size,
+	[malloc_headers=`sed -n '/MALLOC_HEADERS_BEGIN/,/MALLOC_HEADERS_END/p' ${srcdir}/gc.c`
+	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[$malloc_headers
+            typedef char conftest_page[PAGE_SIZE];
+        ]], [[]])],
+        [rb_cv_const_page_size=yes],
+        [rb_cv_const_page_size=no])])
+])
+AS_IF([test "x$rb_cv_const_page_size" = xyes],
+    [AC_DEFINE(HAVE_CONST_PAGE_SIZE, 1)],
+    [AC_DEFINE(HAVE_CONST_PAGE_SIZE, 0)]
+)
+
+AS_IF([test "x$ac_cv_func_ioctl" = xyes], [
+    AC_CACHE_CHECK([ioctl request type], rb_cv_ioctl_request_type,
+        [rb_cv_ioctl_request_type=no
+        dnl corresponding NUM2IOCTLREQ needs to be defined
+        for type in "unsigned long:ULONG_MAX" int:INT_MAX; do
+            max=`echo $type | sed 's/.*://'`
+            type=`echo $type | sed 's/:.*//'`
+            RUBY_WERROR_FLAG([
+                AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+                    @%:@include <limits.h>
+                    @%:@include <sys/types.h>
+                    @%:@if defined(HAVE_SYS_IOCTL_H) && !defined(_WIN32)
+                    @%:@include <sys/ioctl.h>
+                    @%:@endif
+                ]], [[
+                    $type req = $max;
+                    if (ioctl(0, req)) {/* do nothing*/};
+                ]])],
+                [rb_cv_ioctl_request_type="$type"])
+            ])
+            test "x$rb_cv_ioctl_request_type" = xno || break
+        done])
+    AS_CASE(["$rb_cv_ioctl_request_type"], [no|int], [],
+    ["unsigned long"], [
+        AC_DEFINE_UNQUOTED(IOCTL_REQ_TYPE, [$rb_cv_ioctl_request_type])
+        AC_DEFINE_UNQUOTED(NUM2IOCTLREQ(num), [NUM2ULONG(num)])
+    ])
+])
+
 }
 
 : "runtime section" && {
@@ -3307,6 +3395,17 @@ AS_CASE("$enable_shared", [yes], [
   AC_DEFINE_UNQUOTED(LIBDIR_BASENAME, ["${libdir_basename}"])
   libdir_basename="${libdir_basename}"${multiarch+'/${arch}'}
 
+  # Debian bullseye reportedly has its ld(1) patched, which breaks
+  # --enable-shared --with-jemalloc combination.  We might have to deal with
+  # the ld(1) change sooner or later, but in the meantime let us force it
+  # the old way.
+  #
+  # See https://github.com/ruby/ruby/pull/4627
+  RUBY_TRY_LDFLAGS([${linker_flag}--no-as-needed], [no_as_needed=yes], [no_as_needed=no])
+  AS_IF([test "$no_as_needed" = yes], [
+      RUBY_APPEND_OPTIONS(LDFLAGS, [${linker_flag}--no-as-needed])
+  ])
+
   AS_CASE(["$target_os"],
     [freebsd*|dragonfly*], [],
     [
@@ -3337,6 +3436,10 @@ AS_CASE("$enable_shared", [yes], [
 	AS_IF([test "$rb_cv_binary_elf" != "yes" ], [
 	    LIBRUBY_SO="$LIBRUBY_SO.\$(TEENY)"
 	    LIBRUBY_ALIASES=''
+	], [test "$load_relative" = yes], [
+	    libprefix="'\$\$ORIGIN/../${libdir_basename}'"
+	    LIBRUBY_RPATHFLAGS="-Wl,-rpath,${libprefix}"
+	    LIBRUBY_RELATIVE=yes
 	])
 	],
     [netbsd*], [
@@ -3770,6 +3873,7 @@ AS_IF([test -n "${LIBS}"], [
     MAINFLAGS=`echo " $MAINLIBS " | sed "s|$libspat"'||;s/^ *//;s/ *$//'`
 ])
 LIBRUBYARG_STATIC="${LIBRUBYARG_STATIC} \$(MAINLIBS)"
+LIBRUBYARG_SHARED="${LIBRUBYARG_SHARED} \$(MAINLIBS)"
 CPPFLAGS="$CPPFLAGS "'$(DEFS)'
 test -z "$CPPFLAGS" || CPPFLAGS="$CPPFLAGS "; CPPFLAGS="$CPPFLAGS"'${cppflags}'
 AS_IF([test -n "${cflags+set}"], [
@@ -4074,7 +4178,7 @@ guard=INCLUDE_RUBY_CONFIG_H
 } | tr -d '\015' |
 (
   AS_IF([test "x$CONFIGURE_TTY" = xyes], [color=--color], [color=])
-  exec ${tooldir}/ifchange $color "${config_h}" -
+  exec ${SHELL} ${tooldir}/ifchange $color "${config_h}" -
 ) >&AS_MESSAGE_FD || AC_MSG_ERROR([failed to create ${config_h}])
 tr -d '\015' < largefile.h > confdefs.h
 rm largefile.h

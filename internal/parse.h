@@ -15,6 +15,7 @@ struct rb_iseq_struct;          /* in vm_core.h */
 /* parse.y */
 VALUE rb_parser_set_yydebug(VALUE, VALUE);
 void *rb_parser_load_file(VALUE parser, VALUE name);
+void rb_parser_save_script_lines(VALUE vparser);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 VALUE rb_parser_set_context(VALUE, const struct rb_iseq_struct *, int);

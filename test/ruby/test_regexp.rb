@@ -496,6 +496,24 @@ class TestRegexp < Test::Unit::TestCase
     assert_raise(RegexpError) { Regexp.new("((?<v>))\\g<0>") }
   end
 
+  def test_match_control_meta_escape
+    assert_equal(0, /\c\xFF/ =~ "\c\xFF")
+    assert_equal(0, /\c\M-\xFF/ =~ "\c\M-\xFF")
+    assert_equal(0, /\C-\xFF/ =~ "\C-\xFF")
+    assert_equal(0, /\C-\M-\xFF/ =~ "\C-\M-\xFF")
+    assert_equal(0, /\M-\xFF/ =~ "\M-\xFF")
+    assert_equal(0, /\M-\C-\xFF/ =~ "\M-\C-\xFF")
+    assert_equal(0, /\M-\c\xFF/ =~ "\M-\c\xFF")
+
+    assert_nil(/\c\xFE/ =~ "\c\xFF")
+    assert_nil(/\c\M-\xFE/ =~ "\c\M-\xFF")
+    assert_nil(/\C-\xFE/ =~ "\C-\xFF")
+    assert_nil(/\C-\M-\xFE/ =~ "\C-\M-\xFF")
+    assert_nil(/\M-\xFE/ =~ "\M-\xFF")
+    assert_nil(/\M-\C-\xFE/ =~ "\M-\C-\xFF")
+    assert_nil(/\M-\c\xFE/ =~ "\M-\c\xFF")
+  end
+
   def test_unescape
     assert_raise(ArgumentError) { s = '\\'; /#{ s }/ }
     assert_equal(/\xFF/n, /#{ s="\\xFF" }/n)

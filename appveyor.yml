@@ -24,7 +24,6 @@ environment:
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       GEMS_FOR_TEST: ""
   RELINE_TEST_ENCODING: "Windows-31J"
-  UPDATE_UNICODE: "UNICODE_FILES=. UNICODE_PROPERTY_FILES=. UNICODE_AUXILIARY_FILES=. UNICODE_EMOJI_FILES=."
 for:
 -
   matrix:
@@ -49,8 +48,7 @@ for:
     - echo>> Makefile RT_VER=0
     - echo>> Makefile BUILTIN_ENCOBJS=nul
     - type win32\Makefile.sub >> Makefile
-    - nmake %mflags% touch-unicode-files
-    - nmake %mflags% %UPDATE_UNICODE% incs
+    - nmake %mflags% up VCSUP="echo Update OK"
     - nmake %mflags% extract-extlibs
     - del Makefile
     - mkdir \usr\local\bin

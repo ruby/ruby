@@ -470,6 +470,7 @@ rb_vmdebug_thread_dump_state(VALUE self)
 #endif
 
 #if defined(HAVE_BACKTRACE)
+# define USE_BACKTRACE 1
 # ifdef HAVE_LIBUNWIND
 #  undef backtrace
 #  define backtrace unw_backtrace
@@ -572,14 +573,14 @@ darwin_sigtramp:
     return n;
 }
 # elif defined(BROKEN_BACKTRACE)
-#  undef HAVE_BACKTRACE
-#  define HAVE_BACKTRACE 0
+#  undef USE_BACKTRACE
+#  define USE_BACKTRACE 0
 # endif
 #else
-# define HAVE_BACKTRACE 0
+# define USE_BACKTRACE 0
 #endif
 
-#if HAVE_BACKTRACE
+#if USE_BACKTRACE
 # include <execinfo.h>
 #elif defined(_WIN32)
 # include <imagehlp.h>
@@ -752,7 +753,7 @@ dump_thread(void *arg)
 void
 rb_print_backtrace(void)
 {
-#if HAVE_BACKTRACE
+#if USE_BACKTRACE
 #define MAX_NATIVE_TRACE 1024
     static void *trace[MAX_NATIVE_TRACE];
     int n = (int)backtrace(trace, MAX_NATIVE_TRACE);
@@ -1024,7 +1025,7 @@ rb_vm_bugreport(const void *ctx)
     enum {other_runtime_info = 0};
 #endif
     const rb_vm_t *const vm = GET_VM();
-    const rb_execution_context_t *ec = GET_EC();
+    const rb_execution_context_t *ec = rb_current_execution_context(false);
 
     if (vm && ec) {
 	SDR();
@@ -1034,20 +1035,20 @@ rb_vm_bugreport(const void *ctx)
 
     rb_dump_machine_register(ctx);
 
-#if HAVE_BACKTRACE || defined(_WIN32)
+#if USE_BACKTRACE || defined(_WIN32)
     fprintf(stderr, "-- C level backtrace information "
 	    "-------------------------------------------\n");
     rb_print_backtrace();
 
 
     fprintf(stderr, "\n");
-#endif /* HAVE_BACKTRACE */
+#endif /* USE_BACKTRACE */
 
     if (other_runtime_info || vm) {
 	fprintf(stderr, "-- Other runtime information "
 		"-----------------------------------------------\n\n");
     }
-    if (vm) {
+    if (vm && !rb_during_gc()) {
 	int i;
 	VALUE name;
 	long len;
@@ -1061,36 +1062,38 @@ rb_vm_bugreport(const void *ctx)
 		    LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));
 	    fprintf(stderr, "\n");
         }
-	fprintf(stderr, "* Loaded features:\n\n");
-	for (i=0; i<RARRAY_LEN(vm->loaded_features); i++) {
-	    name = RARRAY_AREF(vm->loaded_features, i);
-	    if (RB_TYPE_P(name, T_STRING)) {
-		fprintf(stderr, " %4d %.*s\n", i,
-			LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));
-	    }
-	    else if (RB_TYPE_P(name, T_CLASS) || RB_TYPE_P(name, T_MODULE)) {
-		const char *const type = RB_TYPE_P(name, T_CLASS) ?
-		    "class" : "module";
-		name = rb_search_class_path(rb_class_real(name));
-		if (!RB_TYPE_P(name, T_STRING)) {
-		    fprintf(stderr, " %4d %s:<unnamed>\n", i, type);
-		    continue;
-		}
-		fprintf(stderr, " %4d %s:%.*s\n", i, type,
-			LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));
-	    }
-	    else {
-		VALUE klass = rb_search_class_path(rb_obj_class(name));
-		if (!RB_TYPE_P(klass, T_STRING)) {
-		    fprintf(stderr, " %4d #<%p:%p>\n", i,
-			    (void *)CLASS_OF(name), (void *)name);
-		    continue;
-		}
-		fprintf(stderr, " %4d #<%.*s:%p>\n", i,
-			LIMITED_NAME_LENGTH(klass), RSTRING_PTR(klass),
-			(void *)name);
-	    }
-	}
+        if (vm->loaded_features) {
+            fprintf(stderr, "* Loaded features:\n\n");
+            for (i=0; i<RARRAY_LEN(vm->loaded_features); i++) {
+                name = RARRAY_AREF(vm->loaded_features, i);
+                if (RB_TYPE_P(name, T_STRING)) {
+                    fprintf(stderr, " %4d %.*s\n", i,
+                            LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));
+                }
+                else if (RB_TYPE_P(name, T_CLASS) || RB_TYPE_P(name, T_MODULE)) {
+                    const char *const type = RB_TYPE_P(name, T_CLASS) ?
+                        "class" : "module";
+                    name = rb_search_class_path(rb_class_real(name));
+                    if (!RB_TYPE_P(name, T_STRING)) {
+                        fprintf(stderr, " %4d %s:<unnamed>\n", i, type);
+                        continue;
+                    }
+                    fprintf(stderr, " %4d %s:%.*s\n", i, type,
+                            LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));
+                }
+                else {
+                    VALUE klass = rb_search_class_path(rb_obj_class(name));
+                    if (!RB_TYPE_P(klass, T_STRING)) {
+                        fprintf(stderr, " %4d #<%p:%p>\n", i,
+                                (void *)CLASS_OF(name), (void *)name);
+                        continue;
+                    }
+                    fprintf(stderr, " %4d #<%.*s:%p>\n", i,
+                            LIMITED_NAME_LENGTH(klass), RSTRING_PTR(klass),
+                            (void *)name);
+                }
+            }
+        }
 	fprintf(stderr, "\n");
     }
 

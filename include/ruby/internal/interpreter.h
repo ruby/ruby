@@ -64,7 +64,7 @@ void ruby_show_copyright(void);
 void ruby_init_stack(volatile VALUE*);
 
 int ruby_setup(void);
-int ruby_cleanup(volatile int);
+int ruby_cleanup(int);
 
 void ruby_finalize(void);
 

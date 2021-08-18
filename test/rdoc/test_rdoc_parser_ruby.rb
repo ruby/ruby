@@ -4297,4 +4297,52 @@ end
     assert_equal 'A::D', a_d.full_name
   end
 
+  def test_parse_included
+    util_parser <<-CLASS
+module A
+  module B
+    extend ActiveSupport::Concern
+    included do
+      ##
+      # :singleton-method:
+      # Hello
+      mattr_accessor :foo
+    end
+  end
+end
+    CLASS
+
+    @parser.scan
+
+    a = @store.find_module_named 'A'
+    assert_equal 'A', a.full_name
+    a_b = a.find_module_named 'B'
+    assert_equal 'A::B', a_b.full_name
+    meth = a_b.method_list.first
+    assert_equal 'foo', meth.name
+    assert_equal 'Hello', meth.comment.text
+  end
+
+  def test_end_that_doesnt_belong_to_class_doesnt_change_visibility
+    util_parser <<-CLASS
+class A
+  private
+
+  begin
+  end
+
+  # Hello
+  def foo() end
+end
+    CLASS
+
+    @parser.scan
+
+    a = @store.find_class_named 'A'
+    assert_equal 'A', a.full_name
+    assert_equal 'foo', a.find_method_named('foo').name
+    meth = a.method_list.first
+    assert_equal 'Hello', meth.comment.text
+  end
+
 end

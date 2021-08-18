@@ -6,6 +6,10 @@ class Reline::Unicode::Test < Reline::TestCase
     Reline.send(:test_mode)
   end
 
+  def teardown
+    Reline.test_reset
+  end
+
   def test_get_mbchar_width
     assert_equal Reline.ambiguous_width, Reline::Unicode.get_mbchar_width('é')
   end

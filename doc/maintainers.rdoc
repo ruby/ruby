@@ -85,7 +85,7 @@ Yukihiro Matsumoto (matz)
   https://github.com/rubygems/rubygems
   https://rubygems.org/gems/bundler
 [lib/cgi.rb, lib/cgi/*]
-  Takeyuki Fujioka (xibbar)
+  _unmaintained_
   https://github.com/ruby/cgi
   https://rubygems.org/gems/cgi
 [lib/csv.rb]
@@ -150,34 +150,14 @@ Yukihiro Matsumoto (matz)
   Naotoshi Seo (sonots)
   https://github.com/ruby/logger
   https://rubygems.org/gems/logger
-[lib/matrix.rb]
-  Marc-André Lafortune (marcandre)
-  https://github.com/ruby/matrix
-  https://rubygems.org/gems/matrix
 [lib/mutex_m.rb]
   Keiju ISHITSUKA (keiju)
   https://github.com/ruby/mutex_m
   https://rubygems.org/gems/mutex_m
-[lib/net/ftp.rb]
-  Shugo Maeda (shugo)
-  https://github.com/ruby/net-ftp
-  https://rubygems.org/gems/net-ftp
 [lib/net/http.rb, lib/net/https.rb]
   NARUSE, Yui (naruse)
   https://github.com/ruby/net-http
   https://rubygems.org/gems/net-http
-[lib/net/imap.rb]
-  Shugo Maeda (shugo)
-  https://github.com/ruby/net-imap
-  https://rubygems.org/gems/net-imap
-[lib/net/pop.rb]
-  _unmaintained_
-  https://github.com/ruby/net-pop
-  https://rubygems.org/gems/net-pop
-[lib/net/smtp.rb]
-  TOMITA Masahiro (tmtm)
-  https://github.com/ruby/net-smtp
-  https://rubygems.org/gems/net-smtp
 [lib/net/protocol.rb]
   _unmaintained_
   https://github.com/ruby/net-protocol
@@ -205,10 +185,6 @@ Yukihiro Matsumoto (matz)
   Tanaka Akira (akr)
   https://github.com/ruby/prettyprint
   https://rubygems.org/gems/prettyprint
-[lib/prime.rb]
-  Marc-André Lafortune (marcandre)
-  https://github.com/ruby/prime
-  https://rubygems.org/gems/prime
 [lib/pstore.rb]
   _unmaintained_
   https://github.com/ruby/pstore
@@ -277,10 +253,6 @@ Yukihiro Matsumoto (matz)
   _unmaintained_
   https://github.com/ruby/tmpdir
   https://rubygems.org/gems/tmpdir
-[lib/tracer.rb]
-  Keiju ISHITSUKA (keiju)
-  https://github.com/ruby/tracer
-  https://rubygems.org/gems/tracer
 [lib/tsort.rb]
   Tanaka Akira (akr)
   https://github.com/ruby/tsort
@@ -316,10 +288,6 @@ Yukihiro Matsumoto (matz)
   _unmaintained_
   https://github.com/ruby/date
   https://rubygems.org/gems/date
-[ext/dbm]
-  _unmaintained_
-  https://github.com/ruby/dbm
-  https://rubygems.org/gems/dbm
 [ext/etc]
   Ruby core team
   https://github.com/ruby/etc
@@ -332,10 +300,6 @@ Yukihiro Matsumoto (matz)
   Aaron Patterson (tenderlove)
   https://github.com/ruby/fiddle
   https://rubygems.org/gems/fiddle
-[ext/gdbm]
-  Yukihiro Matsumoto (matz)
-  https://github.com/ruby/gdbm
-  https://rubygems.org/gems/gdbm
 [ext/io/console]
   Nobuyuki Nakada (nobu)
   https://github.com/ruby/io-console
@@ -411,6 +375,18 @@ Yukihiro Matsumoto (matz)
   https://github.com/ruby/rexml
 [rss]
   https://github.com/ruby/rss
+[net-ftp]
+  https://github.com/ruby/net-ftp
+[net-imap]
+  https://github.com/ruby/net-imap
+[net-pop]
+  https://github.com/ruby/net-pop
+[net-smtp]
+  https://github.com/ruby/net-smtp
+[matrix]
+  https://github.com/ruby/matrix
+[prime]
+  https://github.com/ruby/prime
 [rbs]
   https://github.com/ruby/rbs
 [typeprof]

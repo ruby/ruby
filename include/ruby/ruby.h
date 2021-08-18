@@ -72,7 +72,7 @@ VALUE rb_get_path_no_checksafe(VALUE);
     ((argc) == 0 ? (vargc) <= 1 : /* [ruby-core:85266] [Bug #14425] */ \
      (argc) == (vargc))
 # if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
-#   if HAVE_ATTRIBUTE_ERRORFUNC
+#   ifdef HAVE_ATTRIBUTE_ERRORFUNC
 ERRORFUNC((" argument length doesn't match"), int rb_varargs_bad_length(int,int));
 #   else
 #     define rb_varargs_bad_length(argc, vargc) \

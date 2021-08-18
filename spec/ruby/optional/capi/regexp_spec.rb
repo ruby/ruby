@@ -80,4 +80,33 @@ describe "C-API Regexp function" do
        @p.rb_reg_match_backref_get(/a/, 'ab')[0].should == 'a'
     end
   end
+
+  describe "rb_backref_set" do
+    before :each do
+      @md = "foo".match(/foo/)
+      $~ = nil
+    end
+
+    it "sets the value of $~" do
+      @p.rb_backref_set(@md)
+      @p.rb_backref_get.should == @md
+      $~.should == @md
+    end
+
+    it "sets a Thread-local value" do
+      running = false
+
+      thr = Thread.new do
+        @p.rb_backref_set(@md)
+        @p.rb_backref_get.should == @md
+        $~.should == @md
+        running = true
+      end
+
+      Thread.pass while thr.status and !running
+      $~.should be_nil
+
+      thr.join
+    end
+  end
 end

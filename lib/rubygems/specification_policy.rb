@@ -124,25 +124,26 @@ class Gem::SpecificationPolicy
     end
 
     metadata.each do |key, value|
+      entry = "metadata['#{key}']"
       if !key.kind_of?(String)
         error "metadata keys must be a String"
       end
 
       if key.size > 128
-        error "metadata key too large (#{key.size} > 128)"
+        error "metadata key is too large (#{key.size} > 128)"
       end
 
       if !value.kind_of?(String)
-        error "metadata values must be a String"
+        error "#{entry} value must be a String"
       end
 
       if value.size > 1024
-        error "metadata value too large (#{value.size} > 1024)"
+        error "#{entry} value is too large (#{value.size} > 1024)"
       end
 
       if METADATA_LINK_KEYS.include? key
         if value !~ VALID_URI_PATTERN
-          error "metadata['#{key}'] has invalid link: #{value.inspect}"
+          error "#{entry} has invalid link: #{value.inspect}"
         end
       end
     end

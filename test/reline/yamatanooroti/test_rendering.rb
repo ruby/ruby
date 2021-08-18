@@ -730,7 +730,86 @@ begin
       EOC
     end
 
-    private def write_inputrc(content)
+    def test_meta_key
+      start_terminal(50, 200, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
+      write("def ge\M-bho")
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> def hoge
+      EOC
+    end
+
+    def test_force_enter
+      start_terminal(50, 200, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
+      write("def hoge\nend\C-p\C-e")
+      write("\M-\x0D")
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> def hoge
+        prompt>
+        prompt> end
+      EOC
+    end
+
+    def test_cyrillic_chars
+      omit unless Reline::IOGate.win?
+      start_terminal(50, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
+      write("`chcp 850`\n")
+      write("`chcp`\n")
+      write("def гопота; 3; end\n")
+      write("гопота\n")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> `chcp 850`
+        => "Active code page: 850\n"
+        prompt> `chcp`
+        => "Active code page: 850\n"
+        prompt> def гопота; 3; end
+        => :гопота
+        prompt> гопота
+        => 3
+        prompt>
+      EOC
+    end
+
+    def test_brackets
+      omit unless Reline::IOGate.win?
+      start_terminal(20, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
+      write("\x80\M-[\x80\M-{\x80\M-}\x80\M-]\n")
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> [{}]
+        => [{}]
+        prompt>
+      EOC
+    end
+
+    def test_with_newline
+      omit if Reline::IOGate.win?
+      cmd = %Q{ruby -e 'print(%Q{abc def \\e\\r})' | ruby -I#{@pwd}/lib -rreline -e 'p Reline.readline(%{> })'}
+      start_terminal(50, 50, ['bash', '-c', cmd])
+      close
+      assert_screen(<<~'EOC')
+        > abc def
+        "abc def "
+      EOC
+    end
+
+    def test_em_set_mark_and_em_exchange_mark
+      start_terminal(10, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
+      write("aaa bbb ccc ddd\M-b\M-b\M-\x20\M-b\C-x\C-xX\C-x\C-xY")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> aaa Ybbb Xccc ddd
+      EOC
+    end
+
+    def write_inputrc(content)
       File.open(@inputrc_file, 'w') do |f|
         f.write content
       end

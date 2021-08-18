@@ -9,7 +9,13 @@
  */
 #include "ossl.h"
 #include <stdarg.h> /* for ossl_raise */
-#include <ruby/thread_native.h> /* for OpenSSL < 1.1.0 locks */
+
+/* OpenSSL >= 1.1.0 and LibreSSL >= 2.9.0 */
+#if defined(LIBRESSL_VERSION_NUMBER) || OPENSSL_VERSION_NUMBER >= 0x10100000
+# define HAVE_OPENSSL_110_THREADING_API
+#else
+# include <ruby/thread_native.h>
+#endif
 
 /*
  * Data Conversion
@@ -386,7 +392,7 @@ ossl_debug_get(VALUE self)
  * call-seq:
  *   OpenSSL.debug = boolean -> boolean
  *
- * Turns on or off debug mode. With debug mode, all erros added to the OpenSSL
+ * Turns on or off debug mode. With debug mode, all errors added to the OpenSSL
  * error queue will be printed to stderr.
  */
 static VALUE

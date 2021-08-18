@@ -1,8 +1,10 @@
 #include "ruby.h"
 #include "rubyspec.h"
 
+#include <fcntl.h>
 #include <string.h>
 #include <stdarg.h>
+#include <errno.h>
 
 #include "ruby/encoding.h"
 
@@ -279,6 +281,16 @@ VALUE string_spec_rb_str_resize_RSTRING_LEN(VALUE self, VALUE str, VALUE size) {
   return INT2FIX(RSTRING_LEN(modified));
 }
 
+VALUE string_spec_rb_str_resize_copy(VALUE self, VALUE str) {
+  rb_str_modify_expand(str, 5);
+  char *buffer = RSTRING_PTR(str);
+  buffer[1] = 'e';
+  buffer[2] = 's';
+  buffer[3] = 't';
+  rb_str_resize(str, 4);
+  return str;
+}
+
 VALUE string_spec_rb_str_split(VALUE self, VALUE str) {
   return rb_str_split(str, ",");
 }
@@ -372,6 +384,33 @@ VALUE string_spec_RSTRING_PTR_after_yield(VALUE self, VALUE str) {
 
   from_rstring_ptr = rb_str_new(ptr, len);
   return from_rstring_ptr;
+}
+
+VALUE string_spec_RSTRING_PTR_read(VALUE self, VALUE str, VALUE path) {
+  char *cpath = StringValueCStr(path);
+  int fd = open(cpath, O_RDONLY);
+  VALUE capacities = rb_ary_new();
+  if (fd < 0) {
+    rb_syserr_fail(errno, "open");
+  }
+
+  rb_str_modify_expand(str, 30);
+  rb_ary_push(capacities, SIZET2NUM(rb_str_capacity(str)));
+  char *buffer = RSTRING_PTR(str);
+  if (read(fd, buffer, 30) < 0) {
+    rb_syserr_fail(errno, "read");
+  }
+
+  rb_str_modify_expand(str, 53);
+  rb_ary_push(capacities, SIZET2NUM(rb_str_capacity(str)));
+  char *buffer2 = RSTRING_PTR(str);
+  if (read(fd, buffer2 + 30, 53 - 30) < 0) {
+    rb_syserr_fail(errno, "read");
+  }
+
+  rb_str_set_len(str, 53);
+  close(fd);
+  return capacities;
 }
 
 VALUE string_spec_StringValue(VALUE self, VALUE str) {
@@ -476,6 +515,18 @@ static VALUE string_spec_rb_utf8_str_new_cstr(VALUE self) {
   return rb_utf8_str_new_cstr("nokogiri");
 }
 
+static VALUE call_rb_str_vcatf(VALUE mesg, const char *fmt, ...){
+  va_list ap;
+  va_start(ap, fmt);
+  VALUE result = rb_str_vcatf(mesg, fmt, ap);
+  va_end(ap);
+  return result;
+}
+
+static VALUE string_spec_rb_str_vcatf(VALUE self, VALUE mesg) {
+  return call_rb_str_vcatf(mesg, "fmt %d %d number", 42, 7);
+}
+
 void Init_string_spec(void) {
   VALUE cls = rb_define_class("CApiStringSpecs", rb_cObject);
   rb_define_method(cls, "rb_cstr2inum", string_spec_rb_cstr2inum, 2);
@@ -527,6 +578,7 @@ void Init_string_spec(void) {
   rb_define_method(cls, "rb_str_modify_expand", string_spec_rb_str_modify_expand, 2);
   rb_define_method(cls, "rb_str_resize", string_spec_rb_str_resize, 2);
   rb_define_method(cls, "rb_str_resize_RSTRING_LEN", string_spec_rb_str_resize_RSTRING_LEN, 2);
+  rb_define_method(cls, "rb_str_resize_copy", string_spec_rb_str_resize_copy, 1);
   rb_define_method(cls, "rb_str_set_len", string_spec_rb_str_set_len, 2);
   rb_define_method(cls, "rb_str_set_len_RSTRING_LEN", string_spec_rb_str_set_len_RSTRING_LEN, 2);
   rb_define_method(cls, "rb_str_split", string_spec_rb_str_split, 1);
@@ -542,6 +594,7 @@ void Init_string_spec(void) {
   rb_define_method(cls, "RSTRING_PTR_set", string_spec_RSTRING_PTR_set, 3);
   rb_define_method(cls, "RSTRING_PTR_after_funcall", string_spec_RSTRING_PTR_after_funcall, 2);
   rb_define_method(cls, "RSTRING_PTR_after_yield", string_spec_RSTRING_PTR_after_yield, 1);
+  rb_define_method(cls, "RSTRING_PTR_read", string_spec_RSTRING_PTR_read, 2);
   rb_define_method(cls, "StringValue", string_spec_StringValue, 1);
   rb_define_method(cls, "SafeStringValue", string_spec_SafeStringValue, 1);
   rb_define_method(cls, "rb_str_hash", string_spec_rb_str_hash, 1);
@@ -563,6 +616,7 @@ void Init_string_spec(void) {
   rb_define_method(cls, "rb_utf8_str_new_static", string_spec_rb_utf8_str_new_static, 0);
   rb_define_method(cls, "rb_utf8_str_new", string_spec_rb_utf8_str_new, 0);
   rb_define_method(cls, "rb_utf8_str_new_cstr", string_spec_rb_utf8_str_new_cstr, 0);
+  rb_define_method(cls, "rb_str_vcatf", string_spec_rb_str_vcatf, 1);
 }
 
 #ifdef __cplusplus

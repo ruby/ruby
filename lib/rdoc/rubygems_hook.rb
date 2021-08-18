@@ -120,7 +120,9 @@ class RDoc::RubygemsHook
     options.exclude ||= [] # TODO maybe move to RDoc::Options#finish
     options.setup_generator generator
     options.op_dir = destination
-    options.finish
+    Dir.chdir @spec.full_gem_path do
+      options.finish
+    end
 
     generator = options.generator.new @rdoc.store, options
 

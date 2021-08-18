@@ -452,17 +452,29 @@ static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *resul
     }
 }
 
-static VALUE json_string_unescape(VALUE result, char *string, char *stringEnd)
+static const size_t MAX_STACK_BUFFER_SIZE = 128;
+static VALUE json_string_unescape(char *string, char *stringEnd, int intern, int symbolize)
 {
-    char *p = string, *pe = string, *unescape;
+    VALUE result = Qnil;
+    size_t bufferSize = stringEnd - string;
+    char *p = string, *pe = string, *unescape, *bufferStart, *buffer;
     int unescape_len;
     char buf[4];
+
+    if (bufferSize > MAX_STACK_BUFFER_SIZE) {
+      bufferStart = buffer = ALLOC_N(char, bufferSize);
+    } else {
+      bufferStart = buffer = ALLOCA_N(char, bufferSize);
+    }
 
     while (pe < stringEnd) {
         if (*pe == '\\') {
             unescape = (char *) "?";
             unescape_len = 1;
-            if (pe > p) rb_str_buf_cat(result, p, pe - p);
+            if (pe > p) {
+              MEMCPY(buffer, p, char, pe - p);
+              buffer += pe - p;
+            }
             switch (*++pe) {
                 case 'n':
                     unescape = (char *) "\n";
@@ -487,6 +499,9 @@ static VALUE json_string_unescape(VALUE result, char *string, char *stringEnd)
                     break;
                 case 'u':
                     if (pe > stringEnd - 4) {
+                      if (bufferSize > MAX_STACK_BUFFER_SIZE) {
+                        free(bufferStart);
+                      }
                       rb_enc_raise(
                         EXC_ENCODING eParserError,
                         "%u: incomplete unicode character escape sequence at '%s'", __LINE__, p
@@ -497,6 +512,9 @@ static VALUE json_string_unescape(VALUE result, char *string, char *stringEnd)
                         if (UNI_SUR_HIGH_START == (ch & 0xFC00)) {
                             pe++;
                             if (pe > stringEnd - 6) {
+                              if (bufferSize > MAX_STACK_BUFFER_SIZE) {
+                                free(bufferStart);
+                              }
                               rb_enc_raise(
                                 EXC_ENCODING eParserError,
                                 "%u: incomplete surrogate pair at '%s'", __LINE__, p
@@ -520,13 +538,55 @@ static VALUE json_string_unescape(VALUE result, char *string, char *stringEnd)
                     p = pe;
                     continue;
             }
-            rb_str_buf_cat(result, unescape, unescape_len);
+            MEMCPY(buffer, unescape, char, unescape_len);
+            buffer += unescape_len;
             p = ++pe;
         } else {
             pe++;
         }
     }
-    rb_str_buf_cat(result, p, pe - p);
+
+    if (pe > p) {
+      MEMCPY(buffer, p, char, pe - p);
+      buffer += pe - p;
+    }
+
+# ifdef HAVE_RB_ENC_INTERNED_STR
+      if (intern) {
+        result = rb_enc_interned_str(bufferStart, (long)(buffer - bufferStart), rb_utf8_encoding());
+      } else {
+        result = rb_utf8_str_new(bufferStart, (long)(buffer - bufferStart));
+      }
+      if (bufferSize > MAX_STACK_BUFFER_SIZE) {
+        free(bufferStart);
+      }
+# else
+      result = rb_utf8_str_new(bufferStart, (long)(buffer - bufferStart));
+
+      if (bufferSize > MAX_STACK_BUFFER_SIZE) {
+        free(bufferStart);
+      }
+
+      if (intern) {
+  # if STR_UMINUS_DEDUPE_FROZEN
+        // Starting from MRI 2.8 it is preferable to freeze the string
+        // before deduplication so that it can be interned directly
+        // otherwise it would be duplicated first which is wasteful.
+        result = rb_funcall(rb_str_freeze(result), i_uminus, 0);
+  # elif STR_UMINUS_DEDUPE
+        // MRI 2.5 and older do not deduplicate strings that are already
+        // frozen.
+        result = rb_funcall(result, i_uminus, 0);
+  # else
+        result = rb_str_freeze(result);
+  # endif
+      }
+# endif
+
+    if (symbolize) {
+      result = rb_str_intern(result);
+    }
+
     return result;
 }
 
@@ -537,12 +597,11 @@ static VALUE json_string_unescape(VALUE result, char *string, char *stringEnd)
     write data;
 
     action parse_string {
-        *result = json_string_unescape(*result, json->memo + 1, p);
+        *result = json_string_unescape(json->memo + 1, p, json->parsing_name || json-> freeze, json->parsing_name && json->symbolize_names);
         if (NIL_P(*result)) {
             fhold;
             fbreak;
         } else {
-            FORCE_UTF8(*result);
             fexec p + 1;
         }
     }
@@ -569,7 +628,6 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
     int cs = EVIL;
     VALUE match_string;
 
-    *result = rb_str_buf_new(0);
     %% write init;
     json->memo = p;
     %% write exec;
@@ -585,26 +643,6 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
           }
     }
 
-    if (json->symbolize_names && json->parsing_name) {
-      *result = rb_str_intern(*result);
-    } else if (RB_TYPE_P(*result, T_STRING)) {
-# if STR_UMINUS_DEDUPE_FROZEN
-      if (json->freeze) {
-        // Starting from MRI 2.8 it is preferable to freeze the string
-        // before deduplication so that it can be interned directly
-        // otherwise it would be duplicated first which is wasteful.
-        *result = rb_funcall(rb_str_freeze(*result), i_uminus, 0);
-      }
-# elif STR_UMINUS_DEDUPE
-      if (json->freeze) {
-        // MRI 2.5 and older do not deduplicate strings that are already
-        // frozen.
-        *result = rb_funcall(*result, i_uminus, 0);
-      }
-# else
-      rb_str_resize(*result, RSTRING_LEN(*result));
-# endif
-    }
     if (cs >= JSON_string_first_final) {
         return p + 1;
     } else {

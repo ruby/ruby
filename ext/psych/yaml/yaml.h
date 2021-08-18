@@ -1095,7 +1095,7 @@ typedef struct yaml_parser_s {
     yaml_error_type_t error;
     /** Error description. */
     const char *problem;
-    /** The byte about which the problem occured. */
+    /** The byte about which the problem occurred. */
     size_t problem_offset;
     /** The problematic value (@c -1 is none). */
     int problem_value;
@@ -1335,7 +1335,7 @@ yaml_parser_delete(yaml_parser_t *parser);
  * Set a string input.
  *
  * Note that the @a input pointer must be valid while the @a parser object
- * exists.  The application is responsible for destroing @a input after
+ * exists.  The application is responsible for destroying @a input after
  * destroying the @a parser.
  *
  * @param[in,out]   parser  A parser object.
@@ -1734,7 +1734,7 @@ typedef struct yaml_emitter_s {
         size_t length;
         /** Does the scalar contain line breaks? */
         int multiline;
-        /** Can the scalar be expessed in the flow plain style? */
+        /** Can the scalar be expressed in the flow plain style? */
         int flow_plain_allowed;
         /** Can the scalar be expressed in the block plain style? */
         int block_plain_allowed;
@@ -1950,7 +1950,7 @@ yaml_emitter_close(yaml_emitter_t *emitter);
 /**
  * Emit a YAML document.
  *
- * The documen object may be generated using the yaml_parser_load() function
+ * The document object may be generated using the yaml_parser_load() function
  * or the yaml_document_initialize() function.  The emitter takes the
  * responsibility for the document object and destroys its content after
  * it is emitted. The document object is destroyed even if the function fails.

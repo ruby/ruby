@@ -31,6 +31,12 @@ struct rb_iv_index_tbl_entry {
     VALUE class_value;
 };
 
+struct rb_cvar_class_tbl_entry {
+    uint32_t index;
+    rb_serial_t global_cvar_state;
+    VALUE class_value;
+};
+
 struct rb_classext_struct {
     struct st_table *iv_index_tbl; // ID -> struct rb_iv_index_tbl_entry
     struct st_table *iv_tbl;
@@ -40,6 +46,7 @@ struct rb_classext_struct {
     struct rb_id_table *const_tbl;
     struct rb_id_table *callable_m_tbl;
     struct rb_id_table *cc_tbl; /* ID -> [[ci, cc1], cc2, ...] */
+    struct rb_id_table *cvc_tbl;
     struct rb_subclass_entry *subclasses;
     struct rb_subclass_entry **parent_subclasses;
     /**
@@ -83,6 +90,7 @@ typedef struct rb_classext_struct rb_classext_t;
 #endif
 #define RCLASS_CALLABLE_M_TBL(c) (RCLASS_EXT(c)->callable_m_tbl)
 #define RCLASS_CC_TBL(c) (RCLASS_EXT(c)->cc_tbl)
+#define RCLASS_CVC_TBL(c) (RCLASS_EXT(c)->cvc_tbl)
 #define RCLASS_IV_INDEX_TBL(c) (RCLASS_EXT(c)->iv_index_tbl)
 #define RCLASS_ORIGIN(c) (RCLASS_EXT(c)->origin_)
 #define RCLASS_REFINED_CLASS(c) (RCLASS_EXT(c)->refined_class)

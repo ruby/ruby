@@ -1,3 +1,4 @@
+require_relative '../../spec_helper'
 require 'date'
 require_relative '../../shared/time/strftime_for_date'
 require_relative '../../shared/time/strftime_for_time'

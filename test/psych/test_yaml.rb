@@ -17,7 +17,7 @@ class Psych_Unit_Tests < Psych::TestCase
     end
 
     def test_y_method
-      assert_raises(NoMethodError) do
+      assert_raise(NoMethodError) do
         OpenStruct.new.y 1
       end
     end
@@ -573,7 +573,7 @@ EOY
 	end
 
 	def test_spec_root_mapping
-		y = Psych::load( <<EOY
+		y = Psych::unsafe_load( <<EOY
 # This stream is an example of a top-level mapping.
 invoice : 34843
 date    : 2001-01-23
@@ -1077,7 +1077,7 @@ EOY
 
 		# Read Psych dumped by the ruby 1.8.3.
 		assert_to_yaml( Rational(1, 2), "!ruby/object:Rational 1/2\n" )
-		assert_raises( ArgumentError ) { Psych.load("!ruby/object:Rational INVALID/RATIONAL\n") }
+		assert_raise( ArgumentError ) { Psych.unsafe_load("!ruby/object:Rational INVALID/RATIONAL\n") }
 	end
 
 	def test_ruby_complex
@@ -1089,7 +1089,7 @@ EOY
 
 		# Read Psych dumped by the ruby 1.8.3.
 		assert_to_yaml( Complex(3, 4), "!ruby/object:Complex 3+4i\n" )
-		assert_raises( ArgumentError ) { Psych.load("!ruby/object:Complex INVALID+COMPLEXi\n") }
+		assert_raise( ArgumentError ) { Psych.unsafe_load("!ruby/object:Complex INVALID+COMPLEXi\n") }
 	end
 
 	def test_emitting_indicators
@@ -1209,7 +1209,7 @@ EOY
     def test_circular_references
         a = []; a[0] = a; a[1] = a
         inspect_str = "[[...], [...]]"
-        assert_equal( inspect_str, Psych::load(Psych.dump(a)).inspect )
+        assert_equal( inspect_str, Psych::unsafe_load(Psych.dump(a)).inspect )
     end
 
     #
@@ -1264,11 +1264,11 @@ EOY
     end
 
     def test_date_out_of_range
-      Psych::load('1900-01-01T00:00:00+00:00')
+      Psych::unsafe_load('1900-01-01T00:00:00+00:00')
     end
 
     def test_normal_exit
-      Psych.load("2000-01-01 00:00:00.#{"0"*1000} +00:00\n")
+      Psych.unsafe_load("2000-01-01 00:00:00.#{"0"*1000} +00:00\n")
       # '[ruby-core:13735]'
     end
 

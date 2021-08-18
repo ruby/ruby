@@ -531,7 +531,6 @@ mentioned below.
 [include/ruby/st.h]
 [missing/acosh.c]
 [missing/alloca.c]
-[missing/dup2.c]
 [missing/erf.c]
 [missing/finite.c]
 [missing/hypot.c]
@@ -934,9 +933,7 @@ mentioned below.
 
 [lib/bundler]
 [lib/bundler.rb]
-[lib/bundler.gemspec]
 [spec/bundler]
-[man/bundle-*,gemfile.*]
 
   Bundler is under the following license.
 

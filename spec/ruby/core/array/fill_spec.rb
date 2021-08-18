@@ -316,13 +316,11 @@ describe "Array#fill with (filler, range)" do
     -> { [].fill('a', obj..obj) }.should raise_error(TypeError)
   end
 
-  ruby_version_is "2.6" do
-    it "works with endless ranges" do
-      [1, 2, 3, 4].fill('x', eval("(1..)")).should == [1, 'x', 'x', 'x']
-      [1, 2, 3, 4].fill('x', eval("(3...)")).should == [1, 2, 3, 'x']
-      [1, 2, 3, 4].fill(eval("(1..)")) { |x| x + 2 }.should == [1, 3, 4, 5]
-      [1, 2, 3, 4].fill(eval("(3...)")) { |x| x + 2 }.should == [1, 2, 3, 5]
-    end
+  it "works with endless ranges" do
+    [1, 2, 3, 4].fill('x', eval("(1..)")).should == [1, 'x', 'x', 'x']
+    [1, 2, 3, 4].fill('x', eval("(3...)")).should == [1, 2, 3, 'x']
+    [1, 2, 3, 4].fill(eval("(1..)")) { |x| x + 2 }.should == [1, 3, 4, 5]
+    [1, 2, 3, 4].fill(eval("(3...)")) { |x| x + 2 }.should == [1, 2, 3, 5]
   end
 
   ruby_version_is "2.7" do

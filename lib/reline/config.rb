@@ -158,6 +158,16 @@ class Reline::Config
   end
 
   def read_lines(lines, file = nil)
+    if not lines.empty? and lines.first.encoding != Reline.encoding_system_needs
+      begin
+        lines = lines.map do |l|
+          l.encode(Reline.encoding_system_needs)
+        rescue Encoding::UndefinedConversionError
+          mes = "The inputrc encoded in #{lines.first.encoding.name} can't be converted to the locale #{Reline.encoding_system_needs.name}."
+          raise Reline::ConfigEncodingConversionError.new(mes)
+        end
+      end
+    end
     conditions = [@skip_section, @if_stack]
     @skip_section = nil
     @if_stack = []
@@ -292,11 +302,8 @@ class Reline::Config
   end
 
   def retrieve_string(str)
-    if str =~ /\A"(.*)"\z/
-      parse_keyseq($1).map(&:chr).join
-    else
-      parse_keyseq(str).map(&:chr).join
-    end
+    str = $1 if str =~ /\A"(.*)"\z/
+    parse_keyseq(str).map { |c| c.chr(Reline.encoding_system_needs) }.join
   end
 
   def bind_key(key, func_name)

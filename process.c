@@ -14,7 +14,6 @@
 #include "ruby/internal/config.h"
 
 #include "ruby/fiber/scheduler.h"
-#include "coroutine/Stack.h"
 
 #include <ctype.h>
 #include <errno.h>
@@ -1078,10 +1077,6 @@ struct waitpid_state {
     int errnum;
 };
 
-void rb_native_mutex_lock(rb_nativethread_lock_t *);
-void rb_native_mutex_unlock(rb_nativethread_lock_t *);
-void rb_native_cond_signal(rb_nativethread_cond_t *);
-void rb_native_cond_wait(rb_nativethread_cond_t *, rb_nativethread_lock_t *);
 int rb_sigwait_fd_get(const rb_thread_t *);
 void rb_sigwait_sleep(const rb_thread_t *, int fd, const rb_hrtime_t *);
 void rb_sigwait_fd_put(const rb_thread_t *, int fd);
@@ -1350,29 +1345,26 @@ rb_process_status_wait(rb_pid_t pid, int flags)
         if (result != Qundef) return result;
     }
 
-    COROUTINE_STACK_LOCAL(struct waitpid_state, w);
+    struct waitpid_state waitpid_state;
 
-    waitpid_state_init(w, pid, flags);
-    w->ec = GET_EC();
+    waitpid_state_init(&waitpid_state, pid, flags);
+    waitpid_state.ec = GET_EC();
 
     if (WAITPID_USE_SIGCHLD) {
-        waitpid_wait(w);
+        waitpid_wait(&waitpid_state);
     }
     else {
-        waitpid_no_SIGCHLD(w);
+        waitpid_no_SIGCHLD(&waitpid_state);
     }
 
-    rb_pid_t ret = w->ret;
-    int s = w->status, e = w->errnum;
-    COROUTINE_STACK_FREE(w);
+    if (waitpid_state.ret == 0) return Qnil;
 
-    if (ret == 0) return Qnil;
-    if (ret > 0 && ruby_nocldwait) {
-        ret = -1;
-        e = ECHILD;
+    if (waitpid_state.ret > 0 && ruby_nocldwait) {
+        waitpid_state.ret = -1;
+        waitpid_state.errnum = ECHILD;
     }
 
-    return rb_process_status_new(ret, s, e);
+    return rb_process_status_new(waitpid_state.ret, waitpid_state.status, waitpid_state.errnum);
 }
 
 /*
@@ -3156,14 +3148,15 @@ NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
  *  shell expansion before being executed.
  *
  *  The standard shell always means <code>"/bin/sh"</code> on Unix-like systems,
- *  same as <code>ENV["RUBYSHELL"]</code>
- *  (or <code>ENV["COMSPEC"]</code> on Windows NT series), and similar.
+ *  otherwise, <code>ENV["RUBYSHELL"]</code> or <code>ENV["COMSPEC"]</code> on
+ *  Windows and similar.  The command is passed as an argument to the
+ *  <code>"-c"</code> switch to the shell, except in the case of +COMSPEC+.
  *
  *  If the string from the first form (<code>exec("command")</code>) follows
  *  these simple rules:
  *
  *  * no meta characters
- *  * no shell reserved word and no special built-in
+ *  * not starting with shell reserved word or special built-in
  *  * Ruby invokes the command directly without shell
  *
  *  You can force shell invocation by adding ";" to the string (because ";" is
@@ -4095,10 +4088,10 @@ struct child_handler_disabler_state
 static void
 disable_child_handler_before_fork(struct child_handler_disabler_state *old)
 {
+#ifdef HAVE_PTHREAD_SIGMASK
     int ret;
     sigset_t all;
 
-#ifdef HAVE_PTHREAD_SIGMASK
     ret = sigfillset(&all);
     if (ret == -1)
         rb_sys_fail("sigfillset");
@@ -4115,9 +4108,9 @@ disable_child_handler_before_fork(struct child_handler_disabler_state *old)
 static void
 disable_child_handler_fork_parent(struct child_handler_disabler_state *old)
 {
+#ifdef HAVE_PTHREAD_SIGMASK
     int ret;
 
-#ifdef HAVE_PTHREAD_SIGMASK
     ret = pthread_sigmask(SIG_SETMASK, &old->sigmask, NULL); /* not async-signal-safe */
     if (ret != 0) {
 	rb_syserr_fail(ret, "pthread_sigmask");
@@ -4297,8 +4290,10 @@ rb_fork_ruby(int *status)
         after_fork_ruby();
 	disable_child_handler_fork_parent(&old); /* yes, bad name */
         if (mjit_enabled && pid > 0) mjit_resume(); /* child (pid == 0) is cared by rb_thread_atfork */
-	if (pid >= 0) /* fork succeed */
+	if (pid >= 0) { /* fork succeed */
+            if (pid == 0) rb_thread_atfork();
 	    return pid;
+        }
 	/* fork failed */
 	if (handle_fork_error(err, status, NULL, &try_gc))
 	    return -1;
@@ -4340,7 +4335,6 @@ rb_f_fork(VALUE obj)
 
     switch (pid = rb_fork_ruby(NULL)) {
       case 0:
-	rb_thread_atfork();
 	if (rb_block_given_p()) {
 	    int status;
 	    rb_protect(rb_yield, Qundef, &status);
@@ -4542,7 +4536,7 @@ rb_syswait(rb_pid_t pid)
     rb_waitpid(pid, &status, 0);
 }
 
-#if !defined HAVE_WORKING_FORK && !defined HAVE_SPAWNV
+#if !defined HAVE_WORKING_FORK && !defined HAVE_SPAWNV && !defined __EMSCRIPTEN__
 char *
 rb_execarg_commandline(const struct rb_execarg *eargp, VALUE *prog)
 {
@@ -7016,7 +7010,7 @@ rb_daemon(int nochdir, int noclose)
 #define fork_daemon() \
     switch (rb_fork_ruby(NULL)) { \
       case -1: return -1; \
-      case 0:  rb_thread_atfork(); break; \
+      case 0:  break; \
       default: _exit(EXIT_SUCCESS); \
     }
 

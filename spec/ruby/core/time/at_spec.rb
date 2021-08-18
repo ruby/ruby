@@ -218,55 +218,53 @@ describe "Time.at" do
     end
   end
 
-  ruby_version_is "2.6" do
-    describe ":in keyword argument" do
-      before do
-        @epoch_time = Time.now.to_i
-      end
+  describe ":in keyword argument" do
+    before do
+      @epoch_time = Time.now.to_i
+    end
 
-      it "could be UTC offset as a String in '+HH:MM or '-HH:MM' format" do
-        time = Time.at(@epoch_time, in: "+05:00")
+    it "could be UTC offset as a String in '+HH:MM or '-HH:MM' format" do
+      time = Time.at(@epoch_time, in: "+05:00")
 
-        time.utc_offset.should == 5*60*60
-        time.zone.should == nil
-        time.to_i.should == @epoch_time
+      time.utc_offset.should == 5*60*60
+      time.zone.should == nil
+      time.to_i.should == @epoch_time
 
-        time = Time.at(@epoch_time, in: "-09:00")
+      time = Time.at(@epoch_time, in: "-09:00")
 
-        time.utc_offset.should == -9*60*60
-        time.zone.should == nil
-        time.to_i.should == @epoch_time
-      end
+      time.utc_offset.should == -9*60*60
+      time.zone.should == nil
+      time.to_i.should == @epoch_time
+    end
 
-      it "could be UTC offset as a number of seconds" do
-        time = Time.at(@epoch_time, in: 5*60*60)
+    it "could be UTC offset as a number of seconds" do
+      time = Time.at(@epoch_time, in: 5*60*60)
 
-        time.utc_offset.should == 5*60*60
-        time.zone.should == nil
-        time.to_i.should == @epoch_time
+      time.utc_offset.should == 5*60*60
+      time.zone.should == nil
+      time.to_i.should == @epoch_time
 
-        time = Time.at(@epoch_time, in: -9*60*60)
+      time = Time.at(@epoch_time, in: -9*60*60)
 
-        time.utc_offset.should == -9*60*60
-        time.zone.should == nil
-        time.to_i.should == @epoch_time
-      end
+      time.utc_offset.should == -9*60*60
+      time.zone.should == nil
+      time.to_i.should == @epoch_time
+    end
 
-      it "could be a timezone object" do
-        zone = TimeSpecs::TimezoneWithName.new(name: "Asia/Colombo")
-        time = Time.at(@epoch_time, in: zone)
+    it "could be a timezone object" do
+      zone = TimeSpecs::TimezoneWithName.new(name: "Asia/Colombo")
+      time = Time.at(@epoch_time, in: zone)
 
-        time.utc_offset.should == 5*3600+30*60
-        time.zone.should == zone
-        time.to_i.should == @epoch_time
+      time.utc_offset.should == 5*3600+30*60
+      time.zone.should == zone
+      time.to_i.should == @epoch_time
 
-        zone = TimeSpecs::TimezoneWithName.new(name: "PST")
-        time = Time.at(@epoch_time, in: zone)
+      zone = TimeSpecs::TimezoneWithName.new(name: "PST")
+      time = Time.at(@epoch_time, in: zone)
 
-        time.utc_offset.should == -9*60*60
-        time.zone.should == zone
-        time.to_i.should == @epoch_time
-      end
+      time.utc_offset.should == -9*60*60
+      time.zone.should == zone
+      time.to_i.should == @epoch_time
     end
   end
 end

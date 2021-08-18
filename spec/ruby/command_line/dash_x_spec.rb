@@ -9,7 +9,7 @@ describe "The -x command line option" do
 
   it "fails when /\#!.*ruby.*/-ish line in target file is not found" do
     bad_embedded_ruby = fixture __FILE__, "bin/bad_embedded_ruby.txt"
-    result = ruby_exe(bad_embedded_ruby, options: '-x', args: '2>&1')
+    result = ruby_exe(bad_embedded_ruby, options: '-x', args: '2>&1', exit_status: 1)
     result.should include "no Ruby script found in input"
   end
 

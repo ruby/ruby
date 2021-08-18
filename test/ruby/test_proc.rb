@@ -159,6 +159,15 @@ class TestProc < Test::Unit::TestCase
     assert_equal(*m_nest{}, "[ruby-core:84583] Feature #14627")
   end
 
+  def test_hash
+    def self.capture(&block)
+      block
+    end
+
+   procs = Array.new(1000){capture{:foo }}
+   assert_operator(procs.map(&:hash).uniq.size, :>=, 500)
+  end
+
   def test_block_par
     assert_equal(10, Proc.new{|&b| b.call(10)}.call {|x| x})
     assert_equal(12, Proc.new{|a,&b| b.call(a)}.call(12) {|x| x})

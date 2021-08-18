@@ -1053,6 +1053,7 @@ integer_unpack_num_bdigits(size_t numwords, size_t wordsize, size_t nails, int *
             size_t num_bdigits1 = integer_unpack_num_bdigits_generic(numwords, wordsize, nails, &nlp_bits1);
             assert(num_bdigits == num_bdigits1);
             assert(*nlp_bits_ret == nlp_bits1);
+            (void)num_bdigits1;
         }
 #endif
     }
@@ -3401,6 +3402,7 @@ rb_absint_numwords(VALUE val, size_t word_numbits, size_t *nlz_bits_ret)
             numwords0 = absint_numwords_generic(numbytes, nlz_bits_in_msbyte, word_numbits, &nlz_bits0);
             assert(numwords0 == numwords);
             assert(nlz_bits0 == nlz_bits);
+            (void)numwords0;
         }
 #endif
     }

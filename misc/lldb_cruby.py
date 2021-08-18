@@ -330,6 +330,9 @@ def lldb_inspect(debugger, target, result, val):
         elif flType == RUBY_T_HASH:
             result.write("T_HASH: %s" % flaginfo)
             append_command_output(debugger, "p *(struct RHash *) %0#x" % val.GetValueAsUnsigned(), result)
+        elif flType == RUBY_T_PAYLOAD:
+            result.write("T_PAYLOAD: %s" % flaginfo)
+            append_command_output(debugger, "p *(struct RPayload *) %0#x" % val.GetValueAsUnsigned(), result)
         elif flType == RUBY_T_BIGNUM:
             tRBignum = target.FindFirstType("struct RBignum").GetPointerType()
             val = val.Cast(tRBignum)
@@ -345,9 +348,7 @@ def lldb_inspect(debugger, target, result, val):
                 append_command_output(debugger, "expression -Z %x -fx -- (const BDIGIT*)((struct RBignum*)%d)->as.heap.digits" % (len, val.GetValueAsUnsigned()), result)
                 # append_command_output(debugger, "x ((struct RBignum *) %0#x)->as.heap.digits / %d" % (val.GetValueAsUnsigned(), len), result)
         elif flType == RUBY_T_FLOAT:
-            tRFloat = target.FindFirstType("struct RFloat").GetPointerType()
-            val = val.Cast(tRFloat)
-            append_command_output(debugger, "p *(double *)%0#x" % val.GetValueForExpressionPath("->float_value").GetAddress(), result)
+            append_command_output(debugger, "print ((struct RFloat *)%d)->float_value" % val.GetValueAsUnsigned(), result)
         elif flType == RUBY_T_RATIONAL:
             tRRational = target.FindFirstType("struct RRational").GetPointerType()
             val = val.Cast(tRRational)
@@ -542,12 +543,9 @@ class HeapPageIter:
     def is_valid(self):
         heap_page_header_size = self.target.FindFirstType("struct heap_page_header").GetByteSize()
         rvalue_size = self.tRValue.GetByteSize()
-        heap_page_obj_limit = (HEAP_PAGE_SIZE - heap_page_header_size)/rvalue_size
+        heap_page_obj_limit = int((HEAP_PAGE_SIZE - heap_page_header_size) / rvalue_size)
 
-        if (self.num_slots > heap_page_obj_limit) or (self.num_slots < heap_page_obj_limit - 1):
-            return False
-        else:
-            return True
+        return (heap_page_obj_limit - 1) <= self.num_slots <= heap_page_obj_limit
 
     def __iter__(self):
         return self
@@ -655,6 +653,51 @@ def ruby_types(debugger):
 
     return types
 
+def rb_ary_entry(target, ary, idx, result):
+    tRArray = target.FindFirstType("struct RArray").GetPointerType()
+    ary = ary.Cast(tRArray)
+    flags = ary.GetValueForExpressionPath("->flags").GetValueAsUnsigned()
+
+    if flags & RUBY_FL_USER1:
+        ptr = ary.GetValueForExpressionPath("->as.ary")
+    else:
+        ptr = ary.GetValueForExpressionPath("->as.heap.ptr")
+
+    ptr_addr = ptr.GetValueAsUnsigned() + (idx * ptr.GetType().GetByteSize())
+    return target.CreateValueFromAddress("ary_entry[%d]" % idx, lldb.SBAddress(ptr_addr, target), ptr.GetType().GetPointeeType())
+
+def rb_id_to_serial(id_val):
+    if id_val > tLAST_OP_ID:
+        return id_val >> RUBY_ID_SCOPE_SHIFT
+    else:
+        return id_val
+
+def rb_id2str(debugger, command, result, internal_dict):
+    if not ('RUBY_Qfalse' in globals()):
+        lldb_init(debugger)
+
+    target = debugger.GetSelectedTarget()
+    process = target.GetProcess()
+    thread = process.GetSelectedThread()
+    frame = thread.GetSelectedFrame()
+    global_symbols = target.FindFirstGlobalVariable("ruby_global_symbols")
+
+    id_val = frame.EvaluateExpression(command).GetValueAsUnsigned()
+    num = rb_id_to_serial(id_val)
+
+    last_id = global_symbols.GetChildMemberWithName("last_id").GetValueAsUnsigned()
+    ID_ENTRY_SIZE = 2
+    ID_ENTRY_UNIT = int(target.FindFirstGlobalVariable("ID_ENTRY_UNIT").GetValue())
+
+    ids = global_symbols.GetChildMemberWithName("ids")
+
+    if (num <= last_id):
+        idx = num // ID_ENTRY_UNIT
+        ary = rb_ary_entry(target, ids, idx, result)
+        pos = (num % ID_ENTRY_UNIT) * ID_ENTRY_SIZE
+        id_str = rb_ary_entry(target, ary, pos, result)
+        lldb_inspect(debugger, target, result, id_str)
+
 def __lldb_init_module(debugger, internal_dict):
     debugger.HandleCommand("command script add -f lldb_cruby.lldb_rp rp")
     debugger.HandleCommand("command script add -f lldb_cruby.count_objects rb_count_objects")
@@ -665,6 +708,7 @@ def __lldb_init_module(debugger, internal_dict):
     debugger.HandleCommand("command script add -f lldb_cruby.rb_backtrace rbbt")
     debugger.HandleCommand("command script add -f lldb_cruby.dump_page dump_page")
     debugger.HandleCommand("command script add -f lldb_cruby.dump_page_rvalue dump_page_rvalue")
+    debugger.HandleCommand("command script add -f lldb_cruby.rb_id2str rb_id2str")
 
     lldb_init(debugger)
     print("lldb scripts for ruby has been installed.")

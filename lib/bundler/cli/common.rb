@@ -94,6 +94,8 @@ module Bundler
     end
 
     def self.ensure_all_gems_in_lockfile!(names, locked_gems = Bundler.locked_gems)
+      return unless locked_gems
+
       locked_names = locked_gems.specs.map(&:name).uniq
       names.-(locked_names).each do |g|
         raise GemNotFound, gem_not_found_message(g, locked_names)

@@ -1,4 +1,5 @@
 require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe :io_external_encoding_write, shared: true do
   describe "when Encoding.default_internal is nil" do
@@ -91,6 +92,10 @@ describe "IO#external_encoding" do
 
     @io.close if @io
     rm_r @name
+  end
+
+  it "raises an IOError on closed stream" do
+    -> { IOSpecs.closed_io.external_encoding }.should raise_error(IOError)
   end
 
   describe "with 'r' mode" do

@@ -100,9 +100,9 @@ native_tls_set(native_tls_key_t key, void *ptr)
 
 RUBY_SYMBOL_EXPORT_BEGIN
 #ifdef RB_THREAD_LOCAL_SPECIFIER
-  #if __APPLE__
+  #ifdef __APPLE__
     // on Darwin, TLS can not be accessed across .so
-    struct rb_execution_context_struct *rb_current_ec();
+    struct rb_execution_context_struct *rb_current_ec(void);
     void rb_current_ec_set(struct rb_execution_context_struct *);
   #else
     RUBY_EXTERN RB_THREAD_LOCAL_SPECIFIER struct rb_execution_context_struct *ruby_current_ec;

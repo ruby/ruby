@@ -99,7 +99,26 @@ module OpenSSL::Buffering
     end
   end
 
+  if "".respond_to?(:unpack1)
+    def unpack_byte(str)
+      str.unpack1("C")
+    end
+  else
+    def unpack_byte(str)
+      str.unpack("C").first
+    end
+  end
+
   public
+
+  # call-seq:
+  #   ssl.getbyte => 81
+  #
+  # Get the next 8bit byte from `ssl`.  Returns `nil` on EOF
+  def getbyte
+    byte = read(1)
+    byte && unpack_byte(byte)
+  end
 
   ##
   # Reads _size_ bytes from the stream.  If _buf_ is provided it must

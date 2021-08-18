@@ -151,6 +151,6 @@ class TestNameError < Test::Unit::TestCase
     error = assert_raise(NameError) do
       receiver::FOO
     end
-    assert_equal "uninitialized constant #{'A' * 120}::FOO", error.message
+    assert_match(/\Auninitialized constant #{'A' * 120}::FOO$/, error.message)
   end
 end

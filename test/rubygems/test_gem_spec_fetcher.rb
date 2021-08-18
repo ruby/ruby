@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/spec_fetcher'
 
 class TestGemSpecFetcher < Gem::TestCase
@@ -38,7 +38,7 @@ class TestGemSpecFetcher < Gem::TestCase
   end
 
   def test_initialize_unwritable_home_dir
-    skip 'chmod not supported' if Gem.win_platform?
+    pend 'chmod not supported' if Gem.win_platform?
 
     FileUtils.chmod 0000, Gem.user_home
 

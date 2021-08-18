@@ -32,6 +32,8 @@ RSpec.describe "bundle doctor" do
       unwritable_file = double("file")
       allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
       allow(Find).to receive(:find).with(Bundler.bundle_path.to_s) { [unwritable_file] }
+      allow(File).to receive(:exist?).and_call_original
+      allow(File).to receive(:exist?).with(unwritable_file).and_return(true)
       allow(File).to receive(:stat).with(unwritable_file) { stat }
       allow(stat).to receive(:uid) { Process.uid }
       allow(File).to receive(:writable?).with(unwritable_file) { true }
@@ -47,7 +49,6 @@ RSpec.describe "bundle doctor" do
       doctor = Bundler::CLI::Doctor.new({})
       expect(doctor).to receive(:bundles_for_gem).exactly(2).times.and_return ["/path/to/rack/rack.bundle"]
       expect(doctor).to receive(:dylibs).exactly(2).times.and_return ["/usr/lib/libSystem.dylib"]
-      allow(File).to receive(:exist?).and_call_original
       allow(File).to receive(:exist?).with("/usr/lib/libSystem.dylib").and_return(true)
       expect { doctor.run }.not_to(raise_error, @stdout.string)
       expect(@stdout.string).to be_empty
@@ -57,7 +58,6 @@ RSpec.describe "bundle doctor" do
       doctor = Bundler::CLI::Doctor.new({})
       expect(doctor).to receive(:bundles_for_gem).exactly(2).times.and_return ["/path/to/rack/rack.bundle"]
       expect(doctor).to receive(:dylibs).exactly(2).times.and_return ["/usr/local/opt/icu4c/lib/libicui18n.57.1.dylib"]
-      allow(File).to receive(:exist?).and_call_original
       allow(File).to receive(:exist?).with("/usr/local/opt/icu4c/lib/libicui18n.57.1.dylib").and_return(false)
       expect { doctor.run }.to raise_error(Bundler::ProductionError, strip_whitespace(<<-E).strip), @stdout.string
         The following gems are missing OS dependencies:
@@ -67,12 +67,32 @@ RSpec.describe "bundle doctor" do
     end
   end
 
+  context "when home contains broken symlinks" do
+    before(:each) do
+      @broken_symlink = double("file")
+      allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
+      allow(Find).to receive(:find).with(Bundler.bundle_path.to_s) { [@broken_symlink] }
+      allow(File).to receive(:exist?).and_call_original
+      allow(File).to receive(:exist?).with(@broken_symlink) { false }
+    end
+
+    it "exits with an error if home contains files that are not readable/writable" do
+      expect { Bundler::CLI::Doctor.new({}).run }.not_to raise_error
+      expect(@stdout.string).to include(
+        "Broken links exist in the Bundler home. Please report them to the offending gem's upstream repo. These files are:\n - #{@unwritable_file}"
+      )
+      expect(@stdout.string).not_to include("No issues")
+    end
+  end
+
   context "when home contains files that are not readable/writable" do
     before(:each) do
       @stat = double("stat")
       @unwritable_file = double("file")
       allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
       allow(Find).to receive(:find).with(Bundler.bundle_path.to_s) { [@unwritable_file] }
+      allow(File).to receive(:exist?).and_call_original
+      allow(File).to receive(:exist?).with(@unwritable_file) { true }
       allow(File).to receive(:stat).with(@unwritable_file) { @stat }
     end
 

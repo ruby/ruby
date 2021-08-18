@@ -26,6 +26,12 @@ module Bundler
         Array(options["remotes"]).reverse_each {|r| add_remote(r) }
       end
 
+      def local_only!
+        @specs = nil
+        @allow_local = true
+        @allow_remote = false
+      end
+
       def local!
         return if @allow_local
 
@@ -61,13 +67,17 @@ module Bundler
         o.is_a?(Rubygems) && (o.credless_remotes - credless_remotes).empty?
       end
 
-      def disable_multisource?
-        @remotes.size <= 1
+      def multiple_remotes?
+        @remotes.size > 1
+      end
+
+      def no_remotes?
+        @remotes.size == 0
       end
 
       def can_lock?(spec)
-        return super if disable_multisource?
-        spec.source.is_a?(Rubygems)
+        return super unless multiple_remotes?
+        include?(spec.source)
       end
 
       def options
@@ -246,21 +256,16 @@ module Bundler
         other_remotes.map(&method(:remove_auth)) == @remotes.map(&method(:remove_auth))
       end
 
-      def replace_remotes(other_remotes, allow_equivalent = false)
-        return false if other_remotes == @remotes
-
-        equivalent = allow_equivalent && equivalent_remotes?(other_remotes)
-
-        @remotes = []
-        other_remotes.reverse_each do |r|
-          add_remote r.to_s
+      def spec_names
+        if @allow_remote && dependency_api_available?
+          remote_specs.spec_names
+        else
+          []
         end
-
-        !equivalent
       end
 
       def unmet_deps
-        if @allow_remote && api_fetchers.any?
+        if @allow_remote && dependency_api_available?
           remote_specs.unmet_dependency_names
         else
           []
@@ -276,7 +281,7 @@ module Bundler
 
       def double_check_for(unmet_dependency_names)
         return unless @allow_remote
-        return unless api_fetchers.any?
+        return unless dependency_api_available?
 
         unmet_dependency_names = unmet_dependency_names.call
         unless unmet_dependency_names.nil?
@@ -298,15 +303,18 @@ module Bundler
         remote_specs.each do |spec|
           case spec
           when EndpointSpecification, Gem::Specification, StubSpecification, LazySpecification
-            names.concat(spec.runtime_dependencies)
+            names.concat(spec.runtime_dependencies.map(&:name))
           when RemoteSpecification # from the full index
             return nil
           else
             raise "unhandled spec type (#{spec.inspect})"
           end
         end
-        names.map!(&:name) if names
         names
+      end
+
+      def dependency_api_available?
+        api_fetchers.any?
       end
 
       protected
@@ -387,10 +395,6 @@ module Bundler
             next if gemfile =~ /^bundler\-[\d\.]+?\.gem/
             s ||= Bundler.rubygems.spec_from_gem(gemfile)
             s.source = self
-            if Bundler.rubygems.spec_missing_extensions?(s, false)
-              Bundler.ui.debug "Source #{self} is ignoring #{s} because it is missing extensions"
-              next
-            end
             idx << s
           end
 
@@ -423,11 +427,11 @@ module Bundler
       def fetch_names(fetchers, dependency_names, index, override_dupes)
         fetchers.each do |f|
           if dependency_names
-            Bundler.ui.info "Fetching gem metadata from #{f.uri}", Bundler.ui.debug?
+            Bundler.ui.info "Fetching gem metadata from #{URICredentialsFilter.credential_filtered_uri(f.uri)}", Bundler.ui.debug?
             index.use f.specs_with_retry(dependency_names, self), override_dupes
             Bundler.ui.info "" unless Bundler.ui.debug? # new line now that the dots are over
           else
-            Bundler.ui.info "Fetching source index from #{f.uri}"
+            Bundler.ui.info "Fetching source index from #{URICredentialsFilter.credential_filtered_uri(f.uri)}"
             index.use f.specs_with_retry(nil, self), override_dupes
           end
         end

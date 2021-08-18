@@ -35,6 +35,11 @@ static const char *const loadable_ext[] = {
     0
 };
 
+static const char *const ruby_ext[] = {
+    ".rb",
+    0
+};
+
 enum expand_type {
     EXPAND_ALL,
     EXPAND_RELATIVE,
@@ -185,34 +190,69 @@ feature_key(const char *str, size_t len)
     return st_hash(str, len, 0xfea7009e);
 }
 
+static bool
+is_rbext_path(VALUE feature_path)
+{
+    long len = RSTRING_LEN(feature_path);
+    long rbext_len = rb_strlen_lit(".rb");
+    if (len <= rbext_len) return false;
+    return IS_RBEXT(RSTRING_PTR(feature_path) + len - rbext_len);
+}
+
 static void
-features_index_add_single(const char* str, size_t len, VALUE offset)
+features_index_add_single(const char* str, size_t len, VALUE offset, bool rb)
 {
     struct st_table *features_index;
     VALUE this_feature_index = Qnil;
     st_data_t short_feature_key;
+    st_data_t data;
 
     Check_Type(offset, T_FIXNUM);
     short_feature_key = feature_key(str, len);
 
     features_index = get_loaded_features_index_raw();
-    st_lookup(features_index, short_feature_key, (st_data_t *)&this_feature_index);
-
-    if (NIL_P(this_feature_index)) {
+    if (!st_lookup(features_index, short_feature_key, &data) ||
+        NIL_P(this_feature_index = (VALUE)data)) {
 	st_insert(features_index, short_feature_key, (st_data_t)offset);
     }
     else if (RB_TYPE_P(this_feature_index, T_FIXNUM)) {
+	VALUE loaded_features = get_loaded_features();
+	VALUE this_feature_path = RARRAY_AREF(loaded_features, FIX2LONG(this_feature_index));
 	VALUE feature_indexes[2];
-	feature_indexes[0] = this_feature_index;
-	feature_indexes[1] = offset;
+	int top = (rb && !is_rbext_path(this_feature_path)) ? 1 : 0;
+	feature_indexes[top^0] = this_feature_index;
+	feature_indexes[top^1] = offset;
 	this_feature_index = (VALUE)xcalloc(1, sizeof(struct RArray));
 	RBASIC(this_feature_index)->flags = T_ARRAY; /* fake VALUE, do not mark/sweep */
 	rb_ary_cat(this_feature_index, feature_indexes, numberof(feature_indexes));
 	st_insert(features_index, short_feature_key, (st_data_t)this_feature_index);
     }
     else {
+        long pos = -1;
+
 	Check_Type(this_feature_index, T_ARRAY);
+        if (rb) {
+            VALUE loaded_features = get_loaded_features();
+            for (long i = 0; i < RARRAY_LEN(this_feature_index); ++i) {
+                VALUE idx = RARRAY_AREF(this_feature_index, i);
+                VALUE this_feature_path = RARRAY_AREF(loaded_features, FIX2LONG(idx));
+                Check_Type(this_feature_path, T_STRING);
+                if (!is_rbext_path(this_feature_path)) {
+                    /* as this_feature_index is a fake VALUE, `push` (which
+                     * doesn't wb_unprotect like as rb_ary_splice) first,
+                     * then rotate partially. */
+                    pos = i;
+                    break;
+                }
+            }
+        }
 	rb_ary_push(this_feature_index, offset);
+        if (pos >= 0) {
+            VALUE *ptr = (VALUE *)RARRAY_CONST_PTR_TRANSIENT(this_feature_index);
+            long len = RARRAY_LEN(this_feature_index);
+            MEMMOVE(ptr + pos, ptr + pos + 1, VALUE, len - pos - 1);
+            ptr[pos] = offset;
+        }
     }
 }
 
@@ -228,6 +268,7 @@ static void
 features_index_add(VALUE feature, VALUE offset)
 {
     const char *feature_str, *feature_end, *ext, *p;
+    bool rb = false;
 
     feature_str = StringValuePtr(feature);
     feature_end = feature_str + RSTRING_LEN(feature);
@@ -237,6 +278,8 @@ features_index_add(VALUE feature, VALUE offset)
 	    break;
     if (*ext != '.')
 	ext = NULL;
+    else
+        rb = IS_RBEXT(ext);
     /* Now `ext` points to the only string matching %r{^\.[^./]*$} that is
        at the end of `feature`, or is NULL if there is no such string. */
 
@@ -248,14 +291,14 @@ features_index_add(VALUE feature, VALUE offset)
 	if (p < feature_str)
 	    break;
 	/* Now *p == '/'.  We reach this point for every '/' in `feature`. */
-	features_index_add_single(p + 1, feature_end - p - 1, offset);
+	features_index_add_single(p + 1, feature_end - p - 1, offset, false);
 	if (ext) {
-	    features_index_add_single(p + 1, ext - p - 1, offset);
+	    features_index_add_single(p + 1, ext - p - 1, offset, rb);
 	}
     }
-    features_index_add_single(feature_str, feature_end - feature_str, offset);
+    features_index_add_single(feature_str, feature_end - feature_str, offset, false);
     if (ext) {
-	features_index_add_single(feature_str, ext - feature_str, offset);
+	features_index_add_single(feature_str, ext - feature_str, offset, rb);
     }
 }
 
@@ -397,7 +440,6 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
     features_index = get_loaded_features_index();
 
     key = feature_key(feature, strlen(feature));
-    st_lookup(features_index, key, (st_data_t *)&this_feature_index);
     /* We search `features` for an entry such that either
          "#{features[i]}" == "#{load_path[j]}/#{feature}#{e}"
        for some j, or
@@ -424,7 +466,7 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
        or ends in '/'.  This includes both match forms above, as well
        as any distractors, so we may ignore all other entries in `features`.
      */
-    if (!NIL_P(this_feature_index)) {
+    if (st_lookup(features_index, key, &data) && !NIL_P(this_feature_index = (VALUE)data)) {
 	for (i = 0; ; i++) {
 	    VALUE entry;
 	    long index;
@@ -926,7 +968,7 @@ search_required(VALUE fname, volatile VALUE *path, feature_func rb_feature_p)
 	return 'r';
     }
     tmp = fname;
-    type = rb_find_file_ext(&tmp, loadable_ext);
+    type = rb_find_file_ext(&tmp, ft == 's' ? ruby_ext : loadable_ext);
     switch (type) {
       case 0:
 	if (ft)
@@ -1028,18 +1070,22 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception)
 {
     volatile int result = -1;
     rb_thread_t *th = rb_ec_thread_ptr(ec);
-    volatile VALUE wrapper = th->top_wrapper;
-    volatile VALUE self = th->top_self;
-    volatile VALUE errinfo = ec->errinfo;
+    volatile const struct {
+        VALUE wrapper, self, errinfo;
+    } saved = {
+        th->top_wrapper, th->top_self, ec->errinfo,
+    };
     enum ruby_tag_type state;
     char *volatile ftptr = 0;
     VALUE path;
+    volatile VALUE saved_path;
     volatile bool reset_ext_config = false;
     struct rb_ext_config prev_ext_config;
 
     fname = rb_get_path(fname);
     path = rb_str_encode_ospath(fname);
     RUBY_DTRACE_HOOK(REQUIRE_ENTRY, RSTRING_PTR(fname));
+    saved_path = path;
 
     EC_PUSH_TAG(ec);
     ec->errinfo = Qnil; /* ensure */
@@ -1049,8 +1095,9 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception)
 	int found;
 
 	RUBY_DTRACE_HOOK(FIND_REQUIRE_ENTRY, RSTRING_PTR(fname));
-        found = search_required(path, &path, rb_feature_p);
+        found = search_required(path, &saved_path, rb_feature_p);
 	RUBY_DTRACE_HOOK(FIND_REQUIRE_RETURN, RSTRING_PTR(fname));
+        path = saved_path;
 
 	if (found) {
             if (!path || !(ftptr = load_lock(RSTRING_PTR(path)))) {
@@ -1080,10 +1127,11 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception)
     EC_POP_TAG();
 
     rb_thread_t *th2 = rb_ec_thread_ptr(ec);
-    th2->top_self = self;
-    th2->top_wrapper = wrapper;
+    th2->top_self = saved.self;
+    th2->top_wrapper = saved.wrapper;
     if (reset_ext_config) ext_config_pop(th2, &prev_ext_config);
 
+    path = saved_path;
     if (ftptr) load_unlock(RSTRING_PTR(path), !state);
 
     if (state) {
@@ -1110,7 +1158,7 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception)
     }
 
     if (result == TAG_RETURN) rb_provide_feature(path);
-    ec->errinfo = errinfo;
+    ec->errinfo = saved.errinfo;
 
     RUBY_DTRACE_HOOK(REQUIRE_RETURN, RSTRING_PTR(fname));
 
@@ -1148,7 +1196,7 @@ rb_require_string(VALUE fname)
 	load_failed(fname);
     }
 
-    return result ? Qtrue : Qfalse;
+    return RBOOL(result);
 }
 
 VALUE

@@ -150,7 +150,7 @@ class Reline::LineEditor
     @screen_size = Reline::IOGate.get_screen_size
     @screen_height = @screen_size.first
     reset_variables(prompt, encoding: encoding)
-    @old_trap = Signal.trap('SIGINT') {
+    @old_trap = Signal.trap(:INT) {
       if @scroll_partial_screen
         move_cursor_down(@screen_height - (@line_index - @scroll_partial_screen) - 1)
       else
@@ -158,8 +158,16 @@ class Reline::LineEditor
       end
       Reline::IOGate.move_cursor_column(0)
       scroll_down(1)
-      @old_trap.call if @old_trap.respond_to?(:call) # can also be string, ex: "DEFAULT"
-      raise Interrupt
+      case @old_trap
+      when 'DEFAULT', 'SYSTEM_DEFAULT'
+        raise Interrupt
+      when 'IGNORE'
+        # Do nothing
+      when 'EXIT'
+        exit
+      else
+        @old_trap.call
+      end
     }
     Reline::IOGate.set_winch_handler do
       @rest_height = (Reline::IOGate.get_screen_size.first - 1) - Reline::IOGate.cursor_pos.y
@@ -409,7 +417,6 @@ class Reline::LineEditor
       return
     end
     new_highest_in_this = calculate_height_by_width(prompt_width + calculate_width(@line.nil? ? '' : @line))
-    # FIXME: end of logical line sometimes breaks
     rendered = false
     if @add_newline_to_end_of_buffer
       rerender_added_newline(prompt, prompt_width)
@@ -678,7 +685,6 @@ class Reline::LineEditor
   private def render_partial(prompt, prompt_width, line_to_render, this_started_from, with_control: true)
     visual_lines, height = split_by_width(line_to_render.nil? ? prompt : prompt + line_to_render, @screen_size.last)
     cursor_up_from_last_line = 0
-    # TODO: This logic would be sometimes buggy if this logical line isn't the current @line_index.
     if @scroll_partial_screen
       last_visual_line = this_started_from + (height - 1)
       last_screen_line = @scroll_partial_screen + (@screen_height - 1)

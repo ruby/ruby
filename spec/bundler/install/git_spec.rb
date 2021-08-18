@@ -6,6 +6,7 @@ RSpec.describe "bundle install" do
       build_git "foo", "1.0", :path => lib_path("foo")
 
       install_gemfile <<-G, :verbose => true
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :git => "#{file_uri_for(lib_path("foo"))}"
       G
 
@@ -17,6 +18,7 @@ RSpec.describe "bundle install" do
       build_git "foo", "1.0", :path => lib_path("foo"), :default_branch => "main"
 
       install_gemfile <<-G, :verbose => true
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :git => "#{file_uri_for(lib_path("foo"))}"
       G
 
@@ -34,6 +36,7 @@ RSpec.describe "bundle install" do
       update_git "foo", "3.0", :path => lib_path("foo"), :gemspec => true
 
       install_gemfile <<-G, :verbose => true
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :git => "#{file_uri_for(lib_path("foo"))}", :ref => "master~2"
       G
 
@@ -51,6 +54,7 @@ RSpec.describe "bundle install" do
       revision = build_git("foo").ref_for("HEAD")
 
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :git => "#{file_uri_for(lib_path("foo-1.0"))}", :group => :development
       G
 

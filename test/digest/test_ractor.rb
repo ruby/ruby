@@ -14,7 +14,7 @@ module TestDigestRactor
   Data2 = "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"
 
   def setup
-    skip unless defined?(Ractor)
+    pend unless defined?(Ractor)
   end
 
   def test_s_hexdigest

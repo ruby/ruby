@@ -149,8 +149,8 @@ monitor_wait_for_cond_body(VALUE v)
     struct wait_for_cond_data *data = (struct wait_for_cond_data *)v;
     struct rb_monitor *mc = monitor_ptr(data->monitor);
     // cond.wait(monitor.mutex, timeout)
-    rb_funcall(data->cond, rb_intern("wait"), 2, mc->mutex, data->timeout);
-    return Qtrue;
+    VALUE signaled = rb_funcall(data->cond, rb_intern("wait"), 2, mc->mutex, data->timeout);
+    return RTEST(signaled) ? Qtrue : Qfalse;
 }
 
 static VALUE
@@ -203,7 +203,7 @@ monitor_synchronize(VALUE monitor)
 void
 Init_monitor(void)
 {
-#if HAVE_RB_EXT_RACTOR_SAFE
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
     rb_ext_ractor_safe(true);
 #endif
 

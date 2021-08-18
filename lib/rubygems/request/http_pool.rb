@@ -12,7 +12,7 @@ class Gem::Request::HTTPPool # :nodoc:
     @http_args  = http_args
     @cert_files = cert_files
     @proxy_uri  = proxy_uri
-    @queue      = SizedQueue.new 1
+    @queue      = Thread::SizedQueue.new 1
     @queue << nil
   end
 

@@ -223,12 +223,29 @@ ossl_bn_alloc(VALUE klass)
 
 /*
  * call-seq:
- *    OpenSSL::BN.new(bn) => aBN
- *    OpenSSL::BN.new(integer) => aBN
- *    OpenSSL::BN.new(string) => aBN
- *    OpenSSL::BN.new(string, 0 | 2 | 10 | 16) => aBN
+ *    OpenSSL::BN.new(bn) -> aBN
+ *    OpenSSL::BN.new(integer) -> aBN
+ *    OpenSSL::BN.new(string, base = 10) -> aBN
  *
- * Construct a new OpenSSL BIGNUM object.
+ * Construct a new \OpenSSL BIGNUM object.
+ *
+ * If +bn+ is an Integer or OpenSSL::BN, a new instance of OpenSSL::BN
+ * representing the same value is returned. See also Integer#to_bn for the
+ * short-hand.
+ *
+ * If a String is given, the content will be parsed according to +base+.
+ *
+ * +string+::
+ *   The string to be parsed.
+ * +base+::
+ *   The format. Must be one of the following:
+ *   - +0+  - MPI format. See the man page BN_mpi2bn(3) for details.
+ *   - +2+  - Variable-length and big-endian binary encoding of a positive
+ *     number.
+ *   - +10+ - Decimal number representation, with a leading '-' for a negative
+ *     number.
+ *   - +16+ - Hexadeciaml number representation, with a leading '-' for a
+ *     negative number.
  */
 static VALUE
 ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
@@ -296,16 +313,21 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *    bn.to_s => string
- *    bn.to_s(base) => string
+ *    bn.to_s(base = 10) -> string
  *
- * === Parameters
- * * _base_ - Integer
- *   Valid values:
- *   * 0 - MPI
- *   * 2 - binary
- *   * 10 - the default
- *   * 16 - hex
+ * Returns the string representation of the bignum.
+ *
+ * BN.new can parse the encoded string to convert back into an OpenSSL::BN.
+ *
+ * +base+::
+ *   The format. Must be one of the following:
+ *   - +0+  - MPI format. See the man page BN_bn2mpi(3) for details.
+ *   - +2+  - Variable-length and big-endian binary encoding. The sign of
+ *     the bignum is ignored.
+ *   - +10+ - Decimal number representation, with a leading '-' for a negative
+ *     bignum.
+ *   - +16+ - Hexadeciaml number representation, with a leading '-' for a
+ *     negative bignum.
  */
 static VALUE
 ossl_bn_to_s(int argc, VALUE *argv, VALUE self)
@@ -936,7 +958,17 @@ ossl_bn_copy(VALUE self, VALUE other)
 static VALUE
 ossl_bn_uplus(VALUE self)
 {
-    return self;
+    VALUE obj;
+    BIGNUM *bn1, *bn2;
+
+    GetBN(self, bn1);
+    obj = NewBN(cBN);
+    bn2 = BN_dup(bn1);
+    if (!bn2)
+	ossl_raise(eBNError, "BN_dup");
+    SetBN(obj, bn2);
+
+    return obj;
 }
 
 /*
@@ -958,6 +990,24 @@ ossl_bn_uminus(VALUE self)
     BN_set_negative(bn2, !BN_is_negative(bn2));
 
     return obj;
+}
+
+/*
+ * call-seq:
+ *   bn.abs -> aBN
+ */
+static VALUE
+ossl_bn_abs(VALUE self)
+{
+    BIGNUM *bn1;
+
+    GetBN(self, bn1);
+    if (BN_is_negative(bn1)) {
+        return ossl_bn_uminus(self);
+    }
+    else {
+        return ossl_bn_uplus(self);
+    }
 }
 
 #define BIGNUM_CMP(func)				\
@@ -1141,6 +1191,42 @@ ossl_bn_is_prime_fasttest(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ * call-seq:
+ *    bn.get_flags(flags) => flags
+ *
+ * Returns the flags on the BN object.
+ * The argument is used as a bit mask.
+ *
+ * === Parameters
+ * * _flags_ - integer
+ */
+static VALUE
+ossl_bn_get_flags(VALUE self, VALUE arg)
+{
+    BIGNUM *bn;
+    GetBN(self, bn);
+
+    return INT2NUM(BN_get_flags(bn, NUM2INT(arg)));
+}
+
+/*
+ * call-seq:
+ *    bn.set_flags(flags) => nil
+ *
+ * Enables the flags on the BN object.
+ * Currently, the flags argument can contain zero of OpenSSL::BN::CONSTTIME.
+ */
+static VALUE
+ossl_bn_set_flags(VALUE self, VALUE arg)
+{
+    BIGNUM *bn;
+    GetBN(self, bn);
+
+    BN_set_flags(bn, NUM2INT(arg));
+    return Qnil;
+}
+
+/*
  * INIT
  * (NOTE: ordering of methods is the same as in 'man bn')
  */
@@ -1176,6 +1262,7 @@ Init_ossl_bn(void)
 
     rb_define_method(cBN, "+@", ossl_bn_uplus, 0);
     rb_define_method(cBN, "-@", ossl_bn_uminus, 0);
+    rb_define_method(cBN, "abs", ossl_bn_abs, 0);
 
     rb_define_method(cBN, "+", ossl_bn_add, 1);
     rb_define_method(cBN, "-", ossl_bn_sub, 1);
@@ -1237,6 +1324,23 @@ Init_ossl_bn(void)
     rb_define_method(cBN, "rshift!", ossl_bn_self_rshift, 1);
     /* lshift1 - DON'T IMPL. */
     /* rshift1 - DON'T IMPL. */
+
+    rb_define_method(cBN, "get_flags", ossl_bn_get_flags, 1);
+    rb_define_method(cBN, "set_flags", ossl_bn_set_flags, 1);
+
+#ifdef BN_FLG_CONSTTIME
+    rb_define_const(cBN, "CONSTTIME", INT2NUM(BN_FLG_CONSTTIME));
+#endif
+    /* BN_FLG_MALLOCED and BN_FLG_STATIC_DATA seems for C programming.
+     * Allowing them leads to memory leak.
+     * So, for now, they are not exported
+#ifdef BN_FLG_MALLOCED
+    rb_define_const(cBN, "MALLOCED", INT2NUM(BN_FLG_MALLOCED));
+#endif
+#ifdef BN_FLG_STATIC_DATA
+    rb_define_const(cBN, "STATIC_DATA", INT2NUM(BN_FLG_STATIC_DATA));
+#endif
+    */
 
     /*
      * bn2bin

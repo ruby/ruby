@@ -22,9 +22,7 @@ describe "Numeric#step" do
 
     describe "when no block is given" do
       step_enum_class = Enumerator
-      ruby_version_is "2.6" do
-        step_enum_class = Enumerator::ArithmeticSequence
-      end
+      step_enum_class = Enumerator::ArithmeticSequence
 
       ruby_version_is ""..."3.0" do
         it "returns an #{step_enum_class} when step is 0" do
@@ -38,19 +36,7 @@ describe "Numeric#step" do
 
       describe "returned #{step_enum_class}" do
         describe "size" do
-          ruby_version_is ""..."2.6" do
-            it "raises an ArgumentError when step is 0" do
-              enum = 1.step(5, 0)
-              -> { enum.size }.should raise_error(ArgumentError)
-            end
-
-            it "raises an ArgumentError when step is 0.0" do
-              enum = 1.step(2, 0.0)
-              -> { enum.size }.should raise_error(ArgumentError)
-            end
-          end
-
-          ruby_version_is "2.6"..."3.0" do
+          ruby_version_is ""..."3.0" do
             it "is infinity when step is 0" do
               enum = 1.step(5, 0)
               enum.size.should == Float::INFINITY
@@ -69,16 +55,8 @@ describe "Numeric#step" do
         end
 
         describe "type" do
-          ruby_version_is ""..."2.6" do
-            it "returns an instance of Enumerator" do
-              1.step(10).class.should == Enumerator
-            end
-          end
-
-          ruby_version_is "2.6" do
-            it "returns an instance of Enumerator::ArithmeticSequence" do
-              1.step(10).class.should == Enumerator::ArithmeticSequence
-            end
+          it "returns an instance of Enumerator::ArithmeticSequence" do
+            1.step(10).class.should == Enumerator::ArithmeticSequence
           end
         end
       end

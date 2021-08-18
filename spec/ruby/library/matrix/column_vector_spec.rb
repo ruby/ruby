@@ -1,25 +1,28 @@
 require_relative '../../spec_helper'
-require_relative 'fixtures/classes'
-require 'matrix'
 
-describe "Matrix.column_vector" do
+ruby_version_is ""..."3.1" do
+  require_relative 'fixtures/classes'
+  require 'matrix'
 
-  it "returns a single column Matrix when called with an Array" do
-    m = Matrix.column_vector([4,5,6])
-    m.should be_an_instance_of(Matrix)
-    m.should == Matrix[ [4],[5],[6] ]
-  end
+  describe "Matrix.column_vector" do
 
-  it "returns an empty Matrix when called with an empty Array" do
-    m = Matrix.column_vector([])
-    m.should be_an_instance_of(Matrix)
-    m.row_size.should == 0
-    m.column_size.should == 1
-  end
+    it "returns a single column Matrix when called with an Array" do
+      m = Matrix.column_vector([4,5,6])
+      m.should be_an_instance_of(Matrix)
+      m.should == Matrix[ [4],[5],[6] ]
+    end
 
-  describe "for a subclass of Matrix" do
-    it "returns an instance of that subclass" do
-      MatrixSub.column_vector([4,5,6]).should be_an_instance_of(MatrixSub)
+    it "returns an empty Matrix when called with an empty Array" do
+      m = Matrix.column_vector([])
+      m.should be_an_instance_of(Matrix)
+      m.row_size.should == 0
+      m.column_size.should == 1
+    end
+
+    describe "for a subclass of Matrix" do
+      it "returns an instance of that subclass" do
+        MatrixSub.column_vector([4,5,6]).should be_an_instance_of(MatrixSub)
+      end
     end
   end
 end

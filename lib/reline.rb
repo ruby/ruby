@@ -7,11 +7,14 @@ require 'reline/key_actor'
 require 'reline/key_stroke'
 require 'reline/line_editor'
 require 'reline/history'
+require 'reline/terminfo'
 require 'rbconfig'
 
 module Reline
   FILENAME_COMPLETION_PROC = nil
   USERNAME_COMPLETION_PROC = nil
+
+  class ConfigEncodingConversionError < StandardError; end
 
   Key = Struct.new('Key', :char, :combined_char, :with_meta)
   CursorPos = Struct.new(:x, :y)
@@ -271,11 +274,12 @@ module Reline
       Reline::IOGate.deprep(otio)
     end
 
-    # Keystrokes of GNU Readline will timeout it with the specification of
-    # "keyseq-timeout" when waiting for the 2nd character after the 1st one.
-    # If the 2nd character comes after 1st ESC without timeout it has a
-    # meta-property of meta-key to discriminate modified key with meta-key
-    # from multibyte characters that come with 8th bit on.
+    # GNU Readline waits for "keyseq-timeout" milliseconds to see if the ESC
+    # is followed by a character, and times out and treats it as a standalone
+    # ESC if the second character does not arrive. If the second character
+    # comes before timed out, it is treated as a modifier key with the
+    # meta-property of meta-key, so that it can be distinguished from
+    # multibyte characters with the 8th bit turned on.
     #
     # GNU Readline will wait for the 2nd character with "keyseq-timeout"
     # milli-seconds but wait forever after 3rd characters.
@@ -453,17 +457,25 @@ module Reline
   end
 end
 
+require 'reline/general_io'
 if RbConfig::CONFIG['host_os'] =~ /mswin|msys|mingw|cygwin|bccwin|wince|emc/
   require 'reline/windows'
   if Reline::Windows.msys_tty?
-    require 'reline/ansi'
-    Reline::IOGate = Reline::ANSI
+    Reline::IOGate = if ENV['TERM'] == 'dumb'
+      Reline::GeneralIO
+    else
+      require 'reline/ansi'
+      Reline::ANSI
+    end
   else
     Reline::IOGate = Reline::Windows
   end
 else
-  require 'reline/ansi'
-  Reline::IOGate = Reline::ANSI
+  Reline::IOGate = if $stdout.isatty
+    require 'reline/ansi'
+    Reline::ANSI
+  else
+    Reline::GeneralIO
+  end
 end
 Reline::HISTORY = Reline::History.new(Reline.core.config)
-require 'reline/general_io'

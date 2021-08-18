@@ -104,4 +104,6 @@ RUBY_SYMBOL_EXPORT_END
 // but breakpoint is set in run.gdb, so `make gdb` can stop here.
 #define bp() ruby_debug_breakpoint()
 
+#define RBOOL(v) ((v) ? Qtrue : Qfalse)
+
 #endif /* RUBY_INTERNAL_H */

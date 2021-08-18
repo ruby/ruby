@@ -267,7 +267,7 @@ class TestModule < Test::Unit::TestCase
     ].each do |name, msg|
       expected = "wrong constant name %s" % name
       msg = "#{msg}#{': ' if msg}wrong constant name #{name.dump}"
-      assert_raise_with_message(NameError, expected, "#{msg} to #{m}") do
+      assert_raise_with_message(NameError, Regexp.compile(Regexp.quote(expected)), "#{msg} to #{m}") do
         yield name
       end
     end
@@ -2888,6 +2888,61 @@ class TestModule < Test::Unit::TestCase
       end
       1_000_000.times{''} # cause GC
     }
+  end
+
+  def test_prepend_constant_lookup
+    m = Module.new do
+      const_set(:C, :m)
+    end
+    c = Class.new do
+      const_set(:C, :c)
+      prepend m
+    end
+    sc = Class.new(c)
+    # Situation from [Bug #17887]
+    assert_equal(sc.ancestors.take(3), [sc, m, c])
+    assert_equal(:m, sc.const_get(:C))
+    assert_equal(:m, sc::C)
+
+    assert_equal(:c, c::C)
+
+    m.send(:remove_const, :C)
+    assert_equal(:c, sc.const_get(:C))
+    assert_equal(:c, sc::C)
+
+    # Same ancestors, built with include instead of prepend
+    m = Module.new do
+      const_set(:C, :m)
+    end
+    c = Class.new do
+      const_set(:C, :c)
+    end
+    sc = Class.new(c) do
+      include m
+    end
+
+    assert_equal(sc.ancestors.take(3), [sc, m, c])
+    assert_equal(:m, sc.const_get(:C))
+    assert_equal(:m, sc::C)
+
+    m.send(:remove_const, :C)
+    assert_equal(:c, sc.const_get(:C))
+    assert_equal(:c, sc::C)
+
+    # Situation from [Bug #17887], but with modules
+    m = Module.new do
+      const_set(:C, :m)
+    end
+    m2 = Module.new do
+      const_set(:C, :m2)
+      prepend m
+    end
+    c = Class.new do
+      include m2
+    end
+    assert_equal(c.ancestors.take(3), [c, m, m2])
+    assert_equal(:m, c.const_get(:C))
+    assert_equal(:m, c::C)
   end
 
   def test_inspect_segfault

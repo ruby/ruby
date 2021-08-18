@@ -12,12 +12,6 @@
 
 require 'racc/parser'
 
-unless Object.method_defined?(:funcall)
-  class Object
-    alias funcall __send__
-  end
-end
-
 module Racc
 
   StateTransitionTable = Struct.new(:action_table,
@@ -300,9 +294,9 @@ module Racc
       c.module_eval "def _reduce_none(vals, vstack) vals[0] end"
       @grammar.each do |rule|
         if rule.action.empty?
-          c.funcall(:alias_method, "_reduce_#{rule.ident}", :_reduce_none)
+          c.alias_method("_reduce_#{rule.ident}", :_reduce_none)
         else
-          c.funcall(:define_method, "_racc_action_#{rule.ident}", &rule.action.proc)
+          c.define_method("_racc_action_#{rule.ident}", &rule.action.proc)
           c.module_eval(<<-End, __FILE__, __LINE__ + 1)
             def _reduce_#{rule.ident}(vals, vstack)
               _racc_action_#{rule.ident}(*vals)

@@ -74,7 +74,10 @@ module Bundler
       def unregister_plugin(name)
         @commands.delete_if {|_, v| v == name }
         @sources.delete_if {|_, v| v == name }
-        @hooks.each {|_, plugin_names| plugin_names.delete(name) }
+        @hooks.each do |hook, names|
+          names.delete(name)
+          @hooks.delete(hook) if names.empty?
+        end
         @plugin_paths.delete(name)
         @load_paths.delete(name)
         save_index

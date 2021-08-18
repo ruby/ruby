@@ -46,7 +46,6 @@ static ID id_abs, id_integer_p,
 #define id_idiv idDiv
 #define id_to_i idTo_i
 
-#define f_boolcast(x) ((x) ? Qtrue : Qfalse)
 #define f_inspect rb_inspect
 #define f_to_s rb_obj_as_string
 
@@ -1043,7 +1042,7 @@ rb_rational_pow(VALUE self, VALUE other)
 	return rb_float_pow(nurat_to_f(self), other);
     }
     else {
-	return rb_num_coerce_bin(self, other, rb_intern("**"));
+	return rb_num_coerce_bin(self, other, idPow);
     }
 }
 #define nurat_expt rb_rational_pow
@@ -1102,7 +1101,7 @@ rb_rational_cmp(VALUE self, VALUE other)
         return rb_dbl_cmp(nurat_to_double(self), RFLOAT_VALUE(other));
 
       default:
-	return rb_num_coerce_cmp(self, other, rb_intern("<=>"));
+	return rb_num_coerce_cmp(self, other, idCmp);
     }
 }
 
@@ -1136,12 +1135,12 @@ nurat_eqeq_p(VALUE self, VALUE other)
 	}
         else {
             const double d = nurat_to_double(self);
-            return f_boolcast(FIXNUM_ZERO_P(rb_dbl_cmp(d, NUM2DBL(other))));
+            return RBOOL(FIXNUM_ZERO_P(rb_dbl_cmp(d, NUM2DBL(other))));
         }
     }
     else if (RB_FLOAT_TYPE_P(other)) {
 	const double d = nurat_to_double(self);
-	return f_boolcast(FIXNUM_ZERO_P(rb_dbl_cmp(d, RFLOAT_VALUE(other))));
+	return RBOOL(FIXNUM_ZERO_P(rb_dbl_cmp(d, RFLOAT_VALUE(other))));
     }
     else if (RB_TYPE_P(other, T_RATIONAL)) {
 	{
@@ -1150,7 +1149,7 @@ nurat_eqeq_p(VALUE self, VALUE other)
 	    if (INT_ZERO_P(adat->num) && INT_ZERO_P(bdat->num))
 		return Qtrue;
 
-	    return f_boolcast(rb_int_equal(adat->num, bdat->num) &&
+	    return RBOOL(rb_int_equal(adat->num, bdat->num) &&
 			      rb_int_equal(adat->den, bdat->den));
 	}
     }
@@ -1201,7 +1200,7 @@ static VALUE
 nurat_positive_p(VALUE self)
 {
     get_dat1(self);
-    return f_boolcast(INT_POSITIVE_P(dat->num));
+    return RBOOL(INT_POSITIVE_P(dat->num));
 }
 
 /*
@@ -1214,7 +1213,7 @@ static VALUE
 nurat_negative_p(VALUE self)
 {
     get_dat1(self);
-    return f_boolcast(INT_NEGATIVE_P(dat->num));
+    return RBOOL(INT_NEGATIVE_P(dat->num));
 }
 
 /*
@@ -1540,6 +1539,12 @@ nurat_round_n(int argc, VALUE *argv, VALUE self)
     return f_round_common(argc, argv, self, round_func);
 }
 
+VALUE
+rb_flo_round_by_rational(int argc, VALUE *argv, VALUE num)
+{
+    return nurat_to_f(nurat_round_n(argc, argv, float_to_r(num)));
+}
+
 static double
 nurat_to_double(VALUE self)
 {
@@ -1742,8 +1747,8 @@ nurat_rationalize(int argc, VALUE *argv, VALUE self)
 }
 
 /* :nodoc: */
-static VALUE
-nurat_hash(VALUE self)
+st_index_t
+rb_rational_hash(VALUE self)
 {
     st_index_t v, h[2];
     VALUE n;
@@ -1754,8 +1759,15 @@ nurat_hash(VALUE self)
     n = rb_hash(dat->den);
     h[1] = NUM2LONG(n);
     v = rb_memhash(h, sizeof(h));
-    return ST2FIX(v);
+    return v;
 }
+
+static VALUE
+nurat_hash(VALUE self)
+{
+    return ST2FIX(rb_rational_hash(self));
+}
+
 
 static VALUE
 f_format(VALUE self, VALUE (*func)(VALUE))

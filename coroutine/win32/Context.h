@@ -24,6 +24,7 @@ enum {COROUTINE_REGISTERS = 4};
 struct coroutine_context
 {
     void **stack_pointer;
+    void *argument;
 };
 
 typedef void(__fastcall * coroutine_start)(struct coroutine_context *from, struct coroutine_context *self);

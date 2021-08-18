@@ -126,6 +126,12 @@
 #if ! defined(HAVE_VA_ARGS_MACRO)
 # undef HAVE___VA_OPT__
 
+#elif defined(__cplusplus)
+# if __cplusplus > 201703L
+#  define HAVE___VA_OPT__
+# else
+#  undef HAVE___VA_OPT__
+# endif
 #else
 # /* Idea taken from: https://stackoverflow.com/a/48045656 */
 # define RBIMPL_TEST3(q, w, e, ...) e

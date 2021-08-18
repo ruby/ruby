@@ -321,7 +321,7 @@ E
   end
 
   describe "quoting" do
-    before(:each) { gemfile "# no gems" }
+    before(:each) { gemfile "source \"#{file_uri_for(gem_repo1)}\"" }
     let(:long_string) do
       "--with-xml2-include=/usr/pkg/include/libxml2 --with-xml2-lib=/usr/pkg/lib " \
       "--with-xslt-dir=/usr/pkg"
@@ -406,6 +406,14 @@ E
 
       bundle "config list", :parseable => true
       expect(out).to eq "spec_run=true"
+    end
+
+    it "list with credentials" do
+      bundle "config list", :env => { "BUNDLE_GEMS__MYSERVER__COM" => "user:password" }
+      expect(out).to eq "Settings are listed in order of priority. The top value will be used.\ngems.myserver.com\nSet via BUNDLE_GEMS__MYSERVER__COM: \"user:[REDACTED]\"\n\nspec_run\nSet via BUNDLE_SPEC_RUN: \"true\""
+
+      bundle "config list", :parseable => true, :env => { "BUNDLE_GEMS__MYSERVER__COM" => "user:password" }
+      expect(out).to eq "gems.myserver.com=user:password\nspec_run=true"
     end
 
     it "get" do

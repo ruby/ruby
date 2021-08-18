@@ -6,7 +6,7 @@ class TestPsychRactor < Test::Unit::TestCase
     assert_ractor(<<~RUBY, require_relative: 'helper')
       obj = {foo: [42]}
       obj2 = Ractor.new(obj) do |obj|
-        Psych.load(Psych.dump(obj))
+        Psych.unsafe_load(Psych.dump(obj))
       end.take
       assert_equal obj, obj2
     RUBY
@@ -47,4 +47,4 @@ class TestPsychRactor < Test::Unit::TestCase
       assert_equal true, r
     RUBY
   end
-end if defined?(Test::Unit::TestCase)
+end if defined?(Ractor)

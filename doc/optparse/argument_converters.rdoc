@@ -216,7 +216,7 @@ Executions:
 
 File +decimal_numeric.rb+
 defines an option whose argument is to be converted to an \Integer object.
-The argument is converted by method {Kernel#Integer
+The argument is converted by method Kernel#Integer
 
   :include: ruby/decimal_numeric.rb
 
@@ -345,8 +345,14 @@ Executions:
 === Custom Argument Converters
 
 You can create custom argument converters.
-To create a custom converter, call OptionParser#accept with a class argument,
-along with a block that converts the argument and returns the converted value.
+To create a custom converter, call OptionParser#accept with:
+
+- An identifier, which may be any object.
+- An optional match pattern, which defaults to <tt>/.*/m</tt>.
+- A block that accepts the argument and returns the converted value.
+
+This custom converter accepts any argument and converts it,
+if possible, to a \Complex object.
 
   :include: ruby/custom_converter.rb
 
@@ -360,3 +366,15 @@ Executions:
   [(1+2i), Complex]
   $ ruby custom_converter.rb --complex 0.3-0.5i
   [(0.3-0.5i), Complex]
+
+This custom converter accepts any 1-word argument
+and capitalizes it, if possible.
+
+  :include: ruby/match_converter.rb
+
+Executions:
+
+  $ ruby match_converter.rb --capitalize foo
+  ["Foo", String]
+  $ ruby match_converter.rb --capitalize "foo bar"
+  match_converter.rb:9:in `<main>': invalid argument: --capitalize foo bar (OptionParser::InvalidArgument)

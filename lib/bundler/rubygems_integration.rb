@@ -526,13 +526,14 @@ module Bundler
       Bundler::Retry.new("download gem from #{uri}").attempts do
         fetcher.download(spec, uri, path)
       end
+    rescue Gem::RemoteFetcher::FetchError => e
+      raise Bundler::HTTPError, "Could not download gem from #{uri} due to underlying error <#{e.message}>"
     end
 
     def gem_remote_fetcher
-      require "resolv"
+      require "rubygems/remote_fetcher"
       proxy = configuration[:http_proxy]
-      dns = Resolv::DNS.new
-      Gem::RemoteFetcher.new(proxy, dns)
+      Gem::RemoteFetcher.new(proxy)
     end
 
     def gem_from_path(path, policy = nil)

@@ -7,6 +7,7 @@ RSpec.describe "bundle update" do
       update_git "foo", :branch => "omg"
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         git "#{lib_path("foo-1.0")}", :branch => "omg" do
           gem 'foo'
         end
@@ -28,6 +29,7 @@ RSpec.describe "bundle update" do
       end
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "rails", :git => "#{file_uri_for(lib_path("rails"))}"
       G
 
@@ -40,6 +42,7 @@ RSpec.describe "bundle update" do
       update_git "foo", :branch => "omg", :path => lib_path("foo")
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         git "#{lib_path("foo")}", :branch => "omg" do
           gem 'foo'
         end
@@ -61,6 +64,7 @@ RSpec.describe "bundle update" do
       end
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :git => "#{file_uri_for(lib_path("foo"))}"
         gem "bar"
       G
@@ -79,12 +83,14 @@ RSpec.describe "bundle update" do
       build_git "foo", :path => lib_path("foo_two")
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", "1.0", :git => "#{file_uri_for(lib_path("foo_one"))}"
       G
 
       FileUtils.rm_rf lib_path("foo_one")
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", "1.0", :git => "#{file_uri_for(lib_path("foo_two"))}"
       G
 
@@ -100,6 +106,7 @@ RSpec.describe "bundle update" do
       update_git "foo", :push => "master"
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem 'foo', :git => "#{@remote.path}"
       G
 
@@ -108,6 +115,7 @@ RSpec.describe "bundle update" do
       update_git "foo", :push => "fubar"
 
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem 'foo', :git => "#{@remote.path}", :tag => "fubar"
       G
 
@@ -183,6 +191,7 @@ RSpec.describe "bundle update" do
       build_git "foo", "1.0"
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :git => "#{file_uri_for(lib_path("foo-1.0"))}"
       G
 
@@ -214,6 +223,7 @@ RSpec.describe "bundle update" do
       build_git "rails", "2.3.2", :path => lib_path("rails")
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "rails", :git => "#{file_uri_for(lib_path("rails"))}"
       G
 

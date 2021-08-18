@@ -46,7 +46,7 @@ require 'erb/version'
 #
 #   <% Ruby code -- inline with output %>
 #   <%= Ruby expression -- replace with result %>
-#   <%# comment -- ignored -- useful in testing %>
+#   <%# comment -- ignored -- useful in testing %> (`<% #` doesn't work. Don't use Ruby comments.)
 #   % a line of Ruby code -- treated as <% line %> (optional -- see ERB.new)
 #   %% replaced with % if first thing on a line and % processing is used
 #   <%% or %%> -- replace with <% or %> respectively

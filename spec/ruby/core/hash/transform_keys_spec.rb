@@ -60,31 +60,12 @@ describe "Hash#transform_keys!" do
   end
 
   # https://bugs.ruby-lang.org/issues/14380
-  ruby_version_is ""..."2.5.1" do
-    it "does not prevent conflicts between new keys and old ones" do
-      @hash.transform_keys!(&:succ)
-      @hash.should == { e: 1 }
-    end
+  it "prevents conflicts between new keys and old ones" do
+    @hash.transform_keys!(&:succ)
+    @hash.should == { b: 1, c: 2, d: 3, e: 4 }
   end
 
-  ruby_version_is "2.5.1" do
-    it "prevents conflicts between new keys and old ones" do
-      @hash.transform_keys!(&:succ)
-      @hash.should == { b: 1, c: 2, d: 3, e: 4 }
-    end
-  end
-
-  ruby_version_is ""..."2.5.1" do
-    it "partially modifies the contents if we broke from the block" do
-      @hash.transform_keys! do |v|
-        break if v == :c
-        v.succ
-      end
-      @hash.should == { c: 1, d: 4 }
-    end
-  end
-
-  ruby_version_is "2.5.1"..."3.0.2" do # https://bugs.ruby-lang.org/issues/17735
+  ruby_version_is ""..."3.0.2" do # https://bugs.ruby-lang.org/issues/17735
     it "returns the processed keys if we broke from the block" do
       @hash.transform_keys! do |v|
         break if v == :c

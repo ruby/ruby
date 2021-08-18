@@ -1,5 +1,8 @@
 #!/usr/bin/ruby -s
 # -*- coding: us-ascii -*-
+require 'rubygems'
+require 'rubygems/package'
+require 'rubygems/package/tar_writer'
 require 'uri'
 require 'digest/sha1'
 require 'digest/sha2'
@@ -158,9 +161,6 @@ at_exit {
 } unless $keep_temp
 
 def tar_create(tarball, dir)
-  require 'rubygems'
-  require 'rubygems/package'
-  require 'rubygems/package/tar_writer'
   header = Gem::Package::TarHeader
   dir_type = "5"
   uname = gname = "ruby"

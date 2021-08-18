@@ -34,18 +34,23 @@ id2str(ID id)
 #define ALL_BACKTRACE_LINES -1
 
 inline static int
-calc_lineno(const rb_iseq_t *iseq, const VALUE *pc)
+calc_pos(const rb_iseq_t *iseq, const VALUE *pc, int *lineno, int *node_id)
 {
     VM_ASSERT(iseq);
     VM_ASSERT(iseq->body);
     VM_ASSERT(iseq->body->iseq_encoded);
     VM_ASSERT(iseq->body->iseq_size);
     if (! pc) {
-        /* This can happen during VM bootup. */
-        VM_ASSERT(iseq->body->type == ISEQ_TYPE_TOP);
-        VM_ASSERT(! iseq->body->local_table);
-        VM_ASSERT(! iseq->body->local_table_size);
-        return 0;
+        if (iseq->body->type == ISEQ_TYPE_TOP) {
+            VM_ASSERT(! iseq->body->local_table);
+            VM_ASSERT(! iseq->body->local_table_size);
+            return 0;
+        }
+        if (lineno) *lineno = FIX2INT(iseq->body->location.first_lineno);
+#ifdef USE_ISEQ_NODE_ID
+        if (node_id) *node_id = -1;
+#endif
+        return 1;
     }
     else {
         ptrdiff_t n = pc - iseq->body->iseq_encoded;
@@ -64,9 +69,31 @@ calc_lineno(const rb_iseq_t *iseq, const VALUE *pc)
             __builtin_trap();
         }
 #endif
-        return rb_iseq_line_no(iseq, pos);
+        if (lineno) *lineno = rb_iseq_line_no(iseq, pos);
+#ifdef USE_ISEQ_NODE_ID
+        if (node_id) *node_id = rb_iseq_node_id(iseq, pos);
+#endif
+        return 1;
     }
 }
+
+inline static int
+calc_lineno(const rb_iseq_t *iseq, const VALUE *pc)
+{
+    int lineno;
+    if (calc_pos(iseq, pc, &lineno, NULL)) return lineno;
+    return 0;
+}
+
+#ifdef USE_ISEQ_NODE_ID
+inline static int
+calc_node_id(const rb_iseq_t *iseq, const VALUE *pc)
+{
+    int node_id;
+    if (calc_pos(iseq, pc, NULL, &node_id)) return node_id;
+    return -1;
+}
+#endif
 
 int
 rb_vm_get_sourceline(const rb_control_frame_t *cfp)
@@ -89,23 +116,12 @@ rb_vm_get_sourceline(const rb_control_frame_t *cfp)
 typedef struct rb_backtrace_location_struct {
     enum LOCATION_TYPE {
 	LOCATION_TYPE_ISEQ = 1,
-	LOCATION_TYPE_ISEQ_CALCED,
 	LOCATION_TYPE_CFUNC,
     } type;
 
-    union {
-	struct {
-	    const rb_iseq_t *iseq;
-	    union {
-		const VALUE *pc;
-		int lineno;
-	    } lineno;
-	} iseq;
-	struct {
-	    ID mid;
-	    struct rb_backtrace_location_struct *prev_loc;
-	} cfunc;
-    } body;
+    const rb_iseq_t *iseq;
+    const VALUE *pc;
+    ID mid;
 } rb_backtrace_location_t;
 
 struct valued_frame_info {
@@ -125,10 +141,13 @@ location_mark_entry(rb_backtrace_location_t *fi)
 {
     switch (fi->type) {
       case LOCATION_TYPE_ISEQ:
-      case LOCATION_TYPE_ISEQ_CALCED:
-	rb_gc_mark_movable((VALUE)fi->body.iseq.iseq);
+        rb_gc_mark_movable((VALUE)fi->iseq);
 	break;
       case LOCATION_TYPE_CFUNC:
+        if (fi->iseq) {
+            rb_gc_mark_movable((VALUE)fi->iseq);
+        }
+        break;
       default:
 	break;
     }
@@ -147,6 +166,12 @@ static const rb_data_type_t location_data_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
+int
+rb_frame_info_p(VALUE obj)
+{
+    return rb_typeddata_is_kind_of(obj, &location_data_type);
+}
+
 static inline rb_backtrace_location_t *
 location_ptr(VALUE locobj)
 {
@@ -160,13 +185,10 @@ location_lineno(rb_backtrace_location_t *loc)
 {
     switch (loc->type) {
       case LOCATION_TYPE_ISEQ:
-	loc->type = LOCATION_TYPE_ISEQ_CALCED;
-	return (loc->body.iseq.lineno.lineno = calc_lineno(loc->body.iseq.iseq, loc->body.iseq.lineno.pc));
-      case LOCATION_TYPE_ISEQ_CALCED:
-	return loc->body.iseq.lineno.lineno;
+        return calc_lineno(loc->iseq, loc->pc);
       case LOCATION_TYPE_CFUNC:
-	if (loc->body.cfunc.prev_loc) {
-	    return location_lineno(loc->body.cfunc.prev_loc);
+        if (loc->iseq && loc->pc) {
+            return calc_lineno(loc->iseq, loc->pc);
 	}
 	return 0;
       default:
@@ -194,10 +216,9 @@ location_label(rb_backtrace_location_t *loc)
 {
     switch (loc->type) {
       case LOCATION_TYPE_ISEQ:
-      case LOCATION_TYPE_ISEQ_CALCED:
-	return loc->body.iseq.iseq->body->location.label;
+        return loc->iseq->body->location.label;
       case LOCATION_TYPE_CFUNC:
-	return rb_id2str(loc->body.cfunc.mid);
+        return rb_id2str(loc->mid);
       default:
 	rb_bug("location_label: unreachable");
 	UNREACHABLE;
@@ -242,10 +263,9 @@ location_base_label(rb_backtrace_location_t *loc)
 {
     switch (loc->type) {
       case LOCATION_TYPE_ISEQ:
-      case LOCATION_TYPE_ISEQ_CALCED:
-	return loc->body.iseq.iseq->body->location.base_label;
+        return loc->iseq->body->location.base_label;
       case LOCATION_TYPE_CFUNC:
-	return rb_id2str(loc->body.cfunc.mid);
+        return rb_id2str(loc->mid);
       default:
 	rb_bug("location_base_label: unreachable");
 	UNREACHABLE;
@@ -268,11 +288,10 @@ location_path(rb_backtrace_location_t *loc)
 {
     switch (loc->type) {
       case LOCATION_TYPE_ISEQ:
-      case LOCATION_TYPE_ISEQ_CALCED:
-	return rb_iseq_path(loc->body.iseq.iseq);
+        return rb_iseq_path(loc->iseq);
       case LOCATION_TYPE_CFUNC:
-	if (loc->body.cfunc.prev_loc) {
-	    return location_path(loc->body.cfunc.prev_loc);
+        if (loc->iseq) {
+            return rb_iseq_path(loc->iseq);
 	}
 	return Qnil;
       default:
@@ -297,16 +316,46 @@ location_path_m(VALUE self)
     return location_path(location_ptr(self));
 }
 
+#ifdef USE_ISEQ_NODE_ID
+static int
+location_node_id(rb_backtrace_location_t *loc)
+{
+    switch (loc->type) {
+      case LOCATION_TYPE_ISEQ:
+        return calc_node_id(loc->iseq, loc->pc);
+      case LOCATION_TYPE_CFUNC:
+        if (loc->iseq && loc->pc) {
+            return calc_node_id(loc->iseq, loc->pc);
+        }
+        return -1;
+      default:
+        rb_bug("location_node_id: unreachable");
+        UNREACHABLE;
+    }
+}
+#endif
+
+void
+rb_frame_info_get(VALUE obj, VALUE *path, int *node_id)
+{
+#ifdef USE_ISEQ_NODE_ID
+    rb_backtrace_location_t *loc = location_ptr(obj);
+    *path = location_path(loc);
+    *node_id = location_node_id(loc);
+#else
+    *path = Qnil;
+#endif
+}
+
 static VALUE
 location_realpath(rb_backtrace_location_t *loc)
 {
     switch (loc->type) {
       case LOCATION_TYPE_ISEQ:
-      case LOCATION_TYPE_ISEQ_CALCED:
-	return rb_iseq_realpath(loc->body.iseq.iseq);
+        return rb_iseq_realpath(loc->iseq);
       case LOCATION_TYPE_CFUNC:
-	if (loc->body.cfunc.prev_loc) {
-	    return location_realpath(loc->body.cfunc.prev_loc);
+        if (loc->iseq) {
+            return rb_iseq_realpath(loc->iseq);
 	}
 	return Qnil;
       default:
@@ -352,27 +401,21 @@ location_to_str(rb_backtrace_location_t *loc)
 
     switch (loc->type) {
       case LOCATION_TYPE_ISEQ:
-	file = rb_iseq_path(loc->body.iseq.iseq);
-	name = loc->body.iseq.iseq->body->location.label;
+        file = rb_iseq_path(loc->iseq);
+        name = loc->iseq->body->location.label;
 
-	lineno = loc->body.iseq.lineno.lineno = calc_lineno(loc->body.iseq.iseq, loc->body.iseq.lineno.pc);
-	loc->type = LOCATION_TYPE_ISEQ_CALCED;
-	break;
-      case LOCATION_TYPE_ISEQ_CALCED:
-	file = rb_iseq_path(loc->body.iseq.iseq);
-	lineno = loc->body.iseq.lineno.lineno;
-	name = loc->body.iseq.iseq->body->location.label;
+        lineno = calc_lineno(loc->iseq, loc->pc);
 	break;
       case LOCATION_TYPE_CFUNC:
-	if (loc->body.cfunc.prev_loc) {
-	    file = rb_iseq_path(loc->body.cfunc.prev_loc->body.iseq.iseq);
-	    lineno = location_lineno(loc->body.cfunc.prev_loc);
+        if (loc->iseq && loc->pc) {
+            file = rb_iseq_path(loc->iseq);
+            lineno = calc_lineno(loc->iseq, loc->pc);
 	}
 	else {
 	    file = GET_VM()->progname;
             lineno = 0;
 	}
-	name = rb_id2str(loc->body.cfunc.mid);
+        name = rb_id2str(loc->mid);
 	break;
       default:
 	rb_bug("location_to_str: unreachable");
@@ -433,10 +476,13 @@ location_update_entry(rb_backtrace_location_t *fi)
 {
     switch (fi->type) {
       case LOCATION_TYPE_ISEQ:
-      case LOCATION_TYPE_ISEQ_CALCED:
-	fi->body.iseq.iseq = (rb_iseq_t*)rb_gc_location((VALUE)fi->body.iseq.iseq);
+        fi->iseq = (rb_iseq_t*)rb_gc_location((VALUE)fi->iseq);
 	break;
       case LOCATION_TYPE_CFUNC:
+        if (fi->iseq) {
+            fi->iseq = (rb_iseq_t*)rb_gc_location((VALUE)fi->iseq);
+        }
+        break;
       default:
 	break;
     }
@@ -503,155 +549,6 @@ backtrace_size(const rb_execution_context_t *ec)
     return start_cfp - last_cfp + 1;
 }
 
-static int
-backtrace_each(const rb_execution_context_t *ec,
-               ptrdiff_t from_last,
-               long num_frames,
-	       void (*init)(void *arg, size_t size),
-	       void (*iter_iseq)(void *arg, const rb_control_frame_t *cfp),
-	       void (*iter_cfunc)(void *arg, const rb_control_frame_t *cfp, ID mid),
-               void (*iter_skip)(void *arg, const rb_control_frame_t *cfp),
-	       void *arg)
-{
-    const rb_control_frame_t *last_cfp = ec->cfp;
-    const rb_control_frame_t *start_cfp = RUBY_VM_END_CONTROL_FRAME(ec);
-    const rb_control_frame_t *cfp;
-    ptrdiff_t size, real_size, i, j, last, start = 0;
-    int ret = 0;
-
-    // In the case the thread vm_stack or cfp is not initialized, there is no backtrace.
-    if (start_cfp == NULL) {
-        init(arg, 0);
-        return ret;
-    }
-
-    /*                <- start_cfp (end control frame)
-     *  top frame (dummy)
-     *  top frame (dummy)
-     *  top frame     <- start_cfp
-     *  top frame
-     *  ...
-     *  2nd frame     <- lev:0
-     *  current frame <- ec->cfp
-     */
-
-    start_cfp =
-      RUBY_VM_NEXT_CONTROL_FRAME(
-	  RUBY_VM_NEXT_CONTROL_FRAME(start_cfp)); /* skip top frames */
-
-    if (start_cfp < last_cfp) {
-        real_size = size = last = 0;
-    }
-    else {
-        /* Ensure we don't look at frames beyond the ones requested */
-        for(; from_last > 0 && start_cfp >= last_cfp; from_last--) {
-            last_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(last_cfp);
-        }
-
-        real_size = size = start_cfp - last_cfp + 1;
-
-        if (from_last > size) {
-            size = last = 0;
-            ret = 1;
-        }
-        else if (num_frames >= 0 && num_frames < size) {
-            if (from_last + num_frames > size) {
-                size -= from_last;
-                last = size;
-            }
-            else {
-                start = size - from_last - num_frames;
-                size = num_frames;
-                last = start + size;
-            }
-        }
-        else {
-            size -= from_last;
-            last = size;
-        }
-    }
-
-    init(arg, size);
-
-    /* If a limited number of frames is requested, scan the VM stack for
-     * ignored frames (iseq without pc).  Then adjust the start for the
-     * backtrace to account for skipped frames.
-     */
-    if (start > 0 && num_frames >= 0 && num_frames < real_size) {
-        ptrdiff_t ignored_frames;
-        bool ignored_frames_before_start = false;
-        for (i=0, j=0, cfp = start_cfp; i<last && j<real_size; i++, j++, cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
-            if (cfp->iseq && !cfp->pc) {
-                if (j < start)
-                    ignored_frames_before_start = true;
-                else
-                    i--;
-            }
-        }
-        ignored_frames = j - i;
-
-        if (ignored_frames) {
-            if (ignored_frames_before_start) {
-                /* There were ignored frames before start.  So just decrementing
-                 * start for ignored frames could still result in not all desired
-                 * frames being captured.
-                 *
-                 * First, scan to the CFP of the desired start frame.
-                 *
-                 * Then scan backwards to previous frames, skipping the number of
-                 * frames ignored after start and any additional ones before start,
-                 * so the number of desired frames will be correctly captured.
-                 */
-                for (i=0, j=0, cfp = start_cfp; i<last && j<real_size && j < start; i++, j++, cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
-                    /* nothing */
-                }
-                for (; start > 0 && ignored_frames > 0 && j > 0; j--, ignored_frames--, start--, cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp)) {
-                    if (cfp->iseq && !cfp->pc) {
-                        ignored_frames++;
-                    }
-                }
-            } else {
-                /* No ignored frames before start frame, just decrement start */
-                start -= ignored_frames;
-            }
-        }
-    }
-
-    for (i=0, j=0, cfp = start_cfp; i<last && j<real_size; i++, j++, cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
-        if (j < start) {
-            if (iter_skip) {
-                iter_skip(arg, cfp);
-            }
-            continue;
-        }
-
-	/* fprintf(stderr, "cfp: %d\n", (rb_control_frame_t *)(ec->vm_stack + ec->vm_stack_size) - cfp); */
-	if (cfp->iseq) {
-            if (cfp->pc) {
-                iter_iseq(arg, cfp);
-            } else {
-                i--;
-            }
-	}
-	else if (RUBYVM_CFUNC_FRAME_P(cfp)) {
-	    const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
-	    ID mid = me->def->original_id;
-
-	    iter_cfunc(arg, cfp, mid);
-	}
-    }
-
-    return ret;
-}
-
-struct bt_iter_arg {
-    rb_backtrace_t *bt;
-    VALUE btobj;
-    rb_backtrace_location_t *prev_loc;
-    const rb_control_frame_t *prev_cfp;
-    rb_backtrace_location_t *init_loc;
-};
-
 static bool
 is_internal_location(const rb_control_frame_t *cfp)
 {
@@ -662,110 +559,103 @@ is_internal_location(const rb_control_frame_t *cfp)
 }
 
 static void
-bt_init(void *ptr, size_t size)
+bt_update_cfunc_loc(unsigned long cfunc_counter, rb_backtrace_location_t *cfunc_loc, const rb_iseq_t *iseq, const VALUE *pc)
 {
-    struct bt_iter_arg *arg = (struct bt_iter_arg *)ptr;
-    arg->btobj = backtrace_alloc(rb_cBacktrace);
-    GetCoreDataFromValue(arg->btobj, rb_backtrace_t, arg->bt);
-    arg->bt->backtrace = ZALLOC_N(rb_backtrace_location_t, size+1);
-    arg->bt->backtrace_size = 1;
-    arg->prev_cfp = NULL;
-    arg->init_loc = &arg->bt->backtrace[size];
-}
-
-static void
-bt_iter_iseq(void *ptr, const rb_control_frame_t *cfp)
-{
-    const rb_iseq_t *iseq = cfp->iseq;
-    const VALUE *pc = cfp->pc;
-    struct bt_iter_arg *arg = (struct bt_iter_arg *)ptr;
-    rb_backtrace_location_t *loc = &arg->bt->backtrace[arg->bt->backtrace_size++-1];
-    loc->type = LOCATION_TYPE_ISEQ;
-    loc->body.iseq.iseq = iseq;
-    loc->body.iseq.lineno.pc = pc;
-    arg->prev_loc = loc;
-}
-
-static void
-bt_iter_iseq_skip_internal(void *ptr, const rb_control_frame_t *cfp)
-{
-    struct bt_iter_arg *arg = (struct bt_iter_arg *)ptr;
-    rb_backtrace_location_t *loc = &arg->bt->backtrace[arg->bt->backtrace_size++-1];
-
-    if (!is_internal_location(cfp)) {
-        loc->type = LOCATION_TYPE_ISEQ;
-        loc->body.iseq.iseq = cfp->iseq;
-        loc->body.iseq.lineno.pc = cfp->pc;
-        arg->prev_loc = loc;
-    } else if (arg->prev_cfp) {
-        loc->type = LOCATION_TYPE_ISEQ;
-        loc->body.iseq.iseq = arg->prev_cfp->iseq;
-        loc->body.iseq.lineno.pc = arg->prev_cfp->pc;
-        arg->prev_loc = loc;
-    } else {
-        rb_bug("No non-internal backtrace entry before an <internal: backtrace entry");
-    }
-}
-
-static void
-bt_iter_cfunc(void *ptr, const rb_control_frame_t *cfp, ID mid)
-{
-    struct bt_iter_arg *arg = (struct bt_iter_arg *)ptr;
-    rb_backtrace_location_t *loc = &arg->bt->backtrace[arg->bt->backtrace_size++-1];
-    loc->type = LOCATION_TYPE_CFUNC;
-    loc->body.cfunc.mid = mid;
-    if (arg->prev_loc) {
-        loc->body.cfunc.prev_loc = arg->prev_loc;
-    }
-    else if (arg->prev_cfp) {
-        const rb_iseq_t *iseq = arg->prev_cfp->iseq;
-        const VALUE *pc = arg->prev_cfp->pc;
-        arg->init_loc->type = LOCATION_TYPE_ISEQ;
-        arg->init_loc->body.iseq.iseq = iseq;
-        arg->init_loc->body.iseq.lineno.pc = pc;
-        loc->body.cfunc.prev_loc = arg->prev_loc = arg->init_loc;
-    } else {
-        loc->body.cfunc.prev_loc = NULL;
-    }
-}
-
-static void
-bt_iter_skip(void *ptr, const rb_control_frame_t *cfp)
-{
-    if (cfp->iseq && cfp->pc) {
-        ((struct bt_iter_arg *)ptr)->prev_cfp = cfp;
-    }
-}
-
-static void
-bt_iter_skip_skip_internal(void *ptr, const rb_control_frame_t *cfp)
-{
-    if (cfp->iseq && cfp->pc) {
-        if (!is_internal_location(cfp)) {
-            ((struct bt_iter_arg *) ptr)->prev_cfp = cfp;
-        }
+    for (; cfunc_counter > 0; cfunc_counter--, cfunc_loc--) {
+        cfunc_loc->iseq = iseq;
+        cfunc_loc->pc = pc;
     }
 }
 
 static VALUE
-rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long lev, long n, int* level_too_large, bool skip_internal)
+rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_frame, long num_frames, int* start_too_large, bool skip_internal)
 {
-    struct bt_iter_arg arg;
-    int too_large;
-    arg.prev_loc = 0;
+    const rb_control_frame_t *cfp = ec->cfp;
+    const rb_control_frame_t *end_cfp = RUBY_VM_END_CONTROL_FRAME(ec);
+    ptrdiff_t size;
+    rb_backtrace_t *bt;
+    VALUE btobj = backtrace_alloc(rb_cBacktrace);
+    rb_backtrace_location_t *loc;
+    unsigned long cfunc_counter = 0;
+    GetCoreDataFromValue(btobj, rb_backtrace_t, bt);
 
-    too_large = backtrace_each(ec,
-                               lev,
-                               n,
-                               bt_init,
-                               skip_internal ? bt_iter_iseq_skip_internal : bt_iter_iseq,
-                               bt_iter_cfunc,
-                               skip_internal ? bt_iter_skip_skip_internal : bt_iter_skip,
-                               &arg);
+    // In the case the thread vm_stack or cfp is not initialized, there is no backtrace.
+    if (end_cfp == NULL) {
+        num_frames = 0;
+    }
+    else {
+        end_cfp = RUBY_VM_NEXT_CONTROL_FRAME(end_cfp);
 
-    if (level_too_large) *level_too_large = too_large;
+        /*
+         *  top frame (dummy) <- RUBY_VM_END_CONTROL_FRAME
+         *  top frame (dummy) <- end_cfp
+         *  top frame         <- main script
+         *  top frame
+         *  ...
+         *  2nd frame         <- lev:0
+         *  current frame     <- ec->cfp
+         */
 
-    return arg.btobj;
+        size = end_cfp - cfp + 1;
+        if (size < 0) {
+            num_frames = 0;
+        }
+        else if (num_frames < 0 || num_frames > size) {
+            num_frames = size;
+        }
+    }
+
+    bt->backtrace = ZALLOC_N(rb_backtrace_location_t, num_frames);
+    bt->backtrace_size = 0;
+    if (num_frames == 0) {
+        if (start_too_large) *start_too_large = 0;
+        return btobj;
+    }
+
+    for (; cfp != end_cfp && (bt->backtrace_size < num_frames); cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp)) {
+        if (cfp->iseq) {
+            if (cfp->pc) {
+                if (start_frame > 0) {
+                    start_frame--;
+                }
+                else if (!skip_internal || !is_internal_location(cfp)) {
+                    const rb_iseq_t *iseq = cfp->iseq;
+                    const VALUE *pc = cfp->pc;
+                    loc = &bt->backtrace[bt->backtrace_size++];
+                    loc->type = LOCATION_TYPE_ISEQ;
+                    loc->iseq = iseq;
+                    loc->pc = pc;
+                    bt_update_cfunc_loc(cfunc_counter, loc-1, iseq, pc);
+                    cfunc_counter = 0;
+                }
+            }
+        }
+        else if (RUBYVM_CFUNC_FRAME_P(cfp)) {
+            if (start_frame > 0) {
+                start_frame--;
+            }
+            else {
+                loc = &bt->backtrace[bt->backtrace_size++];
+                loc->type = LOCATION_TYPE_CFUNC;
+                loc->iseq = NULL;
+                loc->pc = NULL;
+                loc->mid = rb_vm_frame_method_entry(cfp)->def->original_id;
+                cfunc_counter++;
+            }
+        }
+    }
+
+    if (cfunc_counter > 0) {
+        for (; cfp != end_cfp; cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp)) {
+            if (cfp->iseq && cfp->pc && (!skip_internal || !is_internal_location(cfp))) {
+                bt_update_cfunc_loc(cfunc_counter, loc, cfp->iseq, cfp->pc);
+                break;
+            }
+        }
+    }
+
+    if (start_too_large) *start_too_large = (start_frame > 0 ? -1 : 0);
+    return btobj;
 }
 
 MJIT_FUNC_EXPORTED VALUE
@@ -780,10 +670,10 @@ backtrace_collect(rb_backtrace_t *bt, VALUE (*func)(rb_backtrace_location_t *, v
     VALUE btary;
     int i;
 
-    btary = rb_ary_new2(bt->backtrace_size-1);
+    btary = rb_ary_new2(bt->backtrace_size);
 
-    for (i=0; i<bt->backtrace_size-1; i++) {
-        rb_backtrace_location_t *loc = &bt->backtrace[bt->backtrace_size - 2 - i];
+    for (i=0; i<bt->backtrace_size; i++) {
+        rb_backtrace_location_t *loc = &bt->backtrace[i];
 	rb_ary_push(btary, func(loc, arg));
     }
 
@@ -823,19 +713,16 @@ MJIT_FUNC_EXPORTED void
 rb_backtrace_use_iseq_first_lineno_for_last_location(VALUE self)
 {
     const rb_backtrace_t *bt;
-    const rb_iseq_t *iseq;
     rb_backtrace_location_t *loc;
 
     GetCoreDataFromValue(self, rb_backtrace_t, bt);
-    VM_ASSERT(bt->backtrace_size > 1);
+    VM_ASSERT(bt->backtrace_size > 0);
 
-    loc = &bt->backtrace[bt->backtrace_size - 2];
-    iseq = loc->body.iseq.iseq;
+    loc = &bt->backtrace[0];
 
     VM_ASSERT(loc->type == LOCATION_TYPE_ISEQ);
 
-    loc->body.iseq.lineno.lineno = FIX2INT(iseq->body->location.first_lineno);
-    loc->type = LOCATION_TYPE_ISEQ_CALCED;
+    loc->pc = NULL; // means location.first_lineno
 }
 
 static VALUE
@@ -910,6 +797,64 @@ rb_ec_backtrace_location_ary(const rb_execution_context_t *ec, long lev, long n,
 
 /* make old style backtrace directly */
 
+static void
+backtrace_each(const rb_execution_context_t *ec,
+           void (*init)(void *arg, size_t size),
+           void (*iter_iseq)(void *arg, const rb_control_frame_t *cfp),
+           void (*iter_cfunc)(void *arg, const rb_control_frame_t *cfp, ID mid),
+           void *arg)
+{
+    const rb_control_frame_t *last_cfp = ec->cfp;
+    const rb_control_frame_t *start_cfp = RUBY_VM_END_CONTROL_FRAME(ec);
+    const rb_control_frame_t *cfp;
+    ptrdiff_t size, i;
+
+    // In the case the thread vm_stack or cfp is not initialized, there is no backtrace.
+    if (start_cfp == NULL) {
+        init(arg, 0);
+        return;
+    }
+
+    /*                <- start_cfp (end control frame)
+     *  top frame (dummy)
+     *  top frame (dummy)
+     *  top frame     <- start_cfp
+     *  top frame
+     *  ...
+     *  2nd frame     <- lev:0
+     *  current frame <- ec->cfp
+     */
+
+    start_cfp =
+      RUBY_VM_NEXT_CONTROL_FRAME(
+        RUBY_VM_NEXT_CONTROL_FRAME(start_cfp)); /* skip top frames */
+
+    if (start_cfp < last_cfp) {
+        size = 0;
+    }
+    else {
+        size = start_cfp - last_cfp + 1;
+    }
+
+    init(arg, size);
+
+    /* SDR(); */
+    for (i=0, cfp = start_cfp; i<size; i++, cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
+        /* fprintf(stderr, "cfp: %d\n", (rb_control_frame_t *)(ec->vm_stack + ec->vm_stack_size) - cfp); */
+        if (cfp->iseq) {
+            if (cfp->pc) {
+                iter_iseq(arg, cfp);
+            }
+        }
+        else if (RUBYVM_CFUNC_FRAME_P(cfp)) {
+            const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
+            ID mid = me->def->original_id;
+
+            iter_cfunc(arg, cfp, mid);
+        }
+    }
+}
+
 struct oldbt_arg {
     VALUE filename;
     int lineno;
@@ -972,12 +917,9 @@ vm_backtrace_print(FILE *fp)
     arg.func = oldbt_print;
     arg.data = (void *)fp;
     backtrace_each(GET_EC(),
-                   BACKTRACE_START,
-                   ALL_BACKTRACE_LINES,
 		   oldbt_init,
 		   oldbt_iter_iseq,
 		   oldbt_iter_cfunc,
-                   NULL,
 		   &arg);
 }
 
@@ -1008,12 +950,9 @@ rb_backtrace_print_as_bugreport(void)
     arg.data = (int *)&i;
 
     backtrace_each(GET_EC(),
-                   BACKTRACE_START,
-                   ALL_BACKTRACE_LINES,
 		   oldbt_init,
 		   oldbt_iter_iseq,
 		   oldbt_iter_cfunc,
-                   NULL,
 		   &arg);
 }
 
@@ -1054,12 +993,9 @@ rb_backtrace_each(VALUE (*iter)(VALUE recv, VALUE str), VALUE output)
     arg.func = oldbt_print_to;
     arg.data = &parg;
     backtrace_each(GET_EC(),
-                   BACKTRACE_START,
-                   ALL_BACKTRACE_LINES,
 		   oldbt_init,
 		   oldbt_iter_iseq,
 		   oldbt_iter_cfunc,
-                   NULL,
 		   &arg);
 }
 
@@ -1411,12 +1347,9 @@ collect_caller_bindings(const rb_execution_context_t *ec)
     data.ary = rb_ary_new();
 
     backtrace_each(ec,
-                   BACKTRACE_START,
-                   ALL_BACKTRACE_LINES,
 		   collect_caller_bindings_init,
 		   collect_caller_bindings_iseq,
 		   collect_caller_bindings_cfunc,
-                   NULL,
 		   &data);
 
     result = rb_ary_reverse(data.ary);
@@ -1694,12 +1627,7 @@ rb_profile_frame_singleton_method_p(VALUE frame)
 {
     VALUE klass = frame2klass(frame);
 
-    if (klass && !NIL_P(klass) && FL_TEST(klass, FL_SINGLETON)) {
-	return Qtrue;
-    }
-    else {
-	return Qfalse;
-    }
+    return RBOOL(klass && !NIL_P(klass) && FL_TEST(klass, FL_SINGLETON));
 }
 
 VALUE

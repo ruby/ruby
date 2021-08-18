@@ -1,0 +1,6 @@
+benchmark:
+  to_i: |
+    nil.to_i
+  to_f: |
+    nil.to_f
+loop_count: 100000

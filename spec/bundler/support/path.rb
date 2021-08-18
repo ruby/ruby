@@ -71,6 +71,10 @@ module Spec
       @spec_dir ||= source_root.join(ruby_core? ? "spec/bundler" : "spec")
     end
 
+    def api_request_limit_hack_file
+      spec_dir.join("support/api_request_limit_hax.rb")
+    end
+
     def man_dir
       @man_dir ||= lib_dir.join("bundler/man")
     end
@@ -211,6 +215,13 @@ module Spec
 
     def lib_dir
       root.join("lib")
+    end
+
+    # Sometimes rubygems version under test does not include
+    # https://github.com/rubygems/rubygems/pull/2728 and will not always end up
+    # activating the current bundler. In that case, require bundler absolutely.
+    def entrypoint
+      Gem.rubygems_version < Gem::Version.new("3.1.a") ? "#{lib_dir}/bundler" : "bundler"
     end
 
     def global_plugin_gem(*args)

@@ -3,7 +3,7 @@
 module Bundler
   class Standalone
     def initialize(groups, definition)
-      @specs = groups.empty? ? definition.requested_specs : definition.specs_for(groups.map(&:to_sym))
+      @specs = definition.specs_for(groups)
     end
 
     def generate

@@ -1,6 +1,5 @@
 /* included by thread.c */
 #include "ccan/list/list.h"
-#include "coroutine/Stack.h"
 
 static VALUE rb_cMutex, rb_cQueue, rb_cSizedQueue, rb_cConditionVariable;
 static VALUE rb_eClosedQueueError;
@@ -65,14 +64,14 @@ static void rb_mutex_abandon_locking_mutex(rb_thread_t *th);
 static const char* rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_fiber_t *fiber);
 
 /*
- *  Document-class: Mutex
+ *  Document-class: Thread::Mutex
  *
- *  Mutex implements a simple semaphore that can be used to coordinate access to
- *  shared data from multiple concurrent threads.
+ *  Thread::Mutex implements a simple semaphore that can be used to
+ *  coordinate access to shared data from multiple concurrent threads.
  *
  *  Example:
  *
- *    semaphore = Mutex.new
+ *    semaphore = Thread::Mutex.new
  *
  *    a = Thread.new {
  *      semaphore.synchronize {
@@ -142,12 +141,7 @@ mutex_ptr(VALUE obj)
 VALUE
 rb_obj_is_mutex(VALUE obj)
 {
-    if (rb_typeddata_is_kind_of(obj, &mutex_data_type)) {
-	return Qtrue;
-    }
-    else {
-	return Qfalse;
-    }
+    return RBOOL(rb_typeddata_is_kind_of(obj, &mutex_data_type));
 }
 
 static VALUE
@@ -164,7 +158,7 @@ mutex_alloc(VALUE klass)
 
 /*
  *  call-seq:
- *     Mutex.new   -> mutex
+ *     Thread::Mutex.new   -> mutex
  *
  *  Creates a new Mutex
  */
@@ -191,11 +185,12 @@ rb_mutex_locked_p(VALUE self)
 {
     rb_mutex_t *mutex = mutex_ptr(self);
 
-    return mutex->fiber ? Qtrue : Qfalse;
+    return RBOOL(mutex->fiber);
 }
 
 static void
-thread_mutex_insert(rb_thread_t *thread, rb_mutex_t *mutex) {
+thread_mutex_insert(rb_thread_t *thread, rb_mutex_t *mutex)
+{
     if (thread->keeping_mutexes) {
         mutex->next_mutex = thread->keeping_mutexes;
     }
@@ -204,7 +199,8 @@ thread_mutex_insert(rb_thread_t *thread, rb_mutex_t *mutex) {
 }
 
 static void
-thread_mutex_remove(rb_thread_t *thread, rb_mutex_t *mutex) {
+thread_mutex_remove(rb_thread_t *thread, rb_mutex_t *mutex)
+{
     rb_mutex_t **keeping_mutexes = &thread->keeping_mutexes;
 
     while (*keeping_mutexes && *keeping_mutexes != mutex) {
@@ -260,25 +256,20 @@ static const rb_thread_t *patrol_thread = NULL;
 static VALUE
 mutex_owned_p(rb_fiber_t *fiber, rb_mutex_t *mutex)
 {
-    if (mutex->fiber == fiber) {
-        return Qtrue;
-    }
-    else {
-        return Qfalse;
-    }
+    return RBOOL(mutex->fiber == fiber);
 }
 
-static VALUE call_rb_fiber_scheduler_block(VALUE mutex) {
+static VALUE
+call_rb_fiber_scheduler_block(VALUE mutex)
+{
     return rb_fiber_scheduler_block(rb_fiber_scheduler_current(), mutex, Qnil);
 }
 
 static VALUE
-delete_from_waitq(VALUE v)
+delete_from_waitq(VALUE value)
 {
-    struct sync_waiter *w = (void *)v;
-    list_del(&w->node);
-
-    COROUTINE_STACK_FREE(w);
+    struct sync_waiter *sync_waiter = (void *)value;
+    list_del(&sync_waiter->node);
 
     return Qnil;
 }
@@ -305,14 +296,15 @@ do_mutex_lock(VALUE self, int interruptible_p)
         while (mutex->fiber != fiber) {
             VALUE scheduler = rb_fiber_scheduler_current();
             if (scheduler != Qnil) {
-                COROUTINE_STACK_LOCAL(struct sync_waiter, w);
-                w->self = self;
-                w->th = th;
-                w->fiber = fiber;
+                struct sync_waiter sync_waiter = {
+                    .self = self,
+                    .th = th,
+                    .fiber = fiber
+                };
 
-                list_add_tail(&mutex->waitq, &w->node);
+                list_add_tail(&mutex->waitq, &sync_waiter.node);
 
-                rb_ensure(call_rb_fiber_scheduler_block, self, delete_from_waitq, (VALUE)w);
+                rb_ensure(call_rb_fiber_scheduler_block, self, delete_from_waitq, (VALUE)&sync_waiter);
 
                 if (!mutex->fiber) {
                     mutex->fiber = fiber;
@@ -337,18 +329,17 @@ do_mutex_lock(VALUE self, int interruptible_p)
                     patrol_thread = th;
                 }
 
-                COROUTINE_STACK_LOCAL(struct sync_waiter, w);
-                w->self = self;
-                w->th = th;
-                w->fiber = fiber;
+                struct sync_waiter sync_waiter = {
+                    .self = self,
+                    .th = th,
+                    .fiber = fiber
+                };
 
-                list_add_tail(&mutex->waitq, &w->node);
+                list_add_tail(&mutex->waitq, &sync_waiter.node);
 
                 native_sleep(th, timeout); /* release GVL */
 
-                list_del(&w->node);
-
-                COROUTINE_STACK_FREE(w);
+                list_del(&sync_waiter.node);
 
                 if (!mutex->fiber) {
                     mutex->fiber = fiber;
@@ -532,14 +523,14 @@ rb_mutex_wait_for(VALUE time)
 {
     rb_hrtime_t *rel = (rb_hrtime_t *)time;
     /* permit spurious check */
-    sleep_hrtime(GET_THREAD(), *rel, 0);
-    return Qnil;
+    return RBOOL(sleep_hrtime(GET_THREAD(), *rel, 0));
 }
 
 VALUE
 rb_mutex_sleep(VALUE self, VALUE timeout)
 {
     struct timeval t;
+    VALUE woken = Qtrue;
 
     if (!NIL_P(timeout)) {
         t = rb_time_interval(timeout);
@@ -559,18 +550,19 @@ rb_mutex_sleep(VALUE self, VALUE timeout)
         }
         else {
             rb_hrtime_t rel = rb_timeval2hrtime(&t);
-            rb_ensure(rb_mutex_wait_for, (VALUE)&rel, mutex_lock_uninterruptible, self);
+            woken = rb_ensure(rb_mutex_wait_for, (VALUE)&rel, mutex_lock_uninterruptible, self);
         }
     }
 
     RUBY_VM_CHECK_INTS_BLOCKING(GET_EC());
+    if (!woken) return Qnil;
     time_t end = time(0) - beg;
     return TIMET2NUM(end);
 }
 
 /*
  * call-seq:
- *    mutex.sleep(timeout = nil)    -> number
+ *    mutex.sleep(timeout = nil)    -> number or nil
  *
  * Releases the lock and sleeps +timeout+ seconds if it is given and
  * non-nil or forever.  Raises +ThreadError+ if +mutex+ wasn't locked by
@@ -581,6 +573,8 @@ rb_mutex_sleep(VALUE self, VALUE timeout)
  *
  * Note that this method can wakeup without explicit Thread#wakeup call.
  * For example, receiving signal and so on.
+ *
+ * Returns the slept time in seconds if woken up, or +nil+ if timed out.
  */
 static VALUE
 mutex_sleep(int argc, VALUE *argv, VALUE self)
@@ -596,7 +590,7 @@ mutex_sleep(int argc, VALUE *argv, VALUE self)
  *    mutex.synchronize { ... }    -> result of the block
  *
  * Obtains a lock, runs the block, and releases the lock when the block
- * completes.  See the example under +Mutex+.
+ * completes.  See the example under Thread::Mutex.
  */
 
 VALUE
@@ -611,7 +605,7 @@ rb_mutex_synchronize(VALUE mutex, VALUE (*func)(VALUE arg), VALUE arg)
  *    mutex.synchronize { ... }    -> result of the block
  *
  * Obtains a lock, runs the block, and releases the lock when the block
- * completes.  See the example under +Mutex+.
+ * completes.  See the example under Thread::Mutex.
  */
 static VALUE
 rb_mutex_synchronize_m(VALUE self)
@@ -788,7 +782,7 @@ queue_closed_p(VALUE self)
  *  Document-class: ClosedQueueError
  *
  *  The exception class which will be raised when pushing into a closed
- *  Queue.  See Queue#close and SizedQueue#close.
+ *  Queue.  See Thread::Queue#close and Thread::SizedQueue#close.
  */
 
 NORETURN(static void raise_closed_queue_error(VALUE self));
@@ -807,19 +801,19 @@ queue_closed_result(VALUE self, struct rb_queue *q)
 }
 
 /*
- *  Document-class: Queue
+ *  Document-class: Thread::Queue
  *
- *  The Queue class implements multi-producer, multi-consumer queues.
- *  It is especially useful in threaded programming when information
- *  must be exchanged safely between multiple threads. The Queue class
- *  implements all the required locking semantics.
+ *  The Thread::Queue class implements multi-producer, multi-consumer
+ *  queues.  It is especially useful in threaded programming when
+ *  information must be exchanged safely between multiple threads. The
+ *  Thread::Queue class implements all the required locking semantics.
  *
  *  The class implements FIFO type of queue. In a FIFO queue, the first
  *  tasks added are the first retrieved.
  *
  *  Example:
  *
- *	queue = Queue.new
+ *	queue = Thread::Queue.new
  *
  *	producer = Thread.new do
  *	  5.times do |i|
@@ -849,9 +843,9 @@ queue_closed_result(VALUE self, struct rb_queue *q)
  *
  *  Example:
  *
- *    	q = Queue.new
- *    	q = Queue.new([a, b, c])
- *    	q = Queue.new(items)
+ *    	q = Thread::Queue.new
+ *    	q = Thread::Queue.new([a, b, c])
+ *    	q = Thread::Queue.new(items)
  */
 
 static VALUE
@@ -859,11 +853,13 @@ rb_queue_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE initial;
     struct rb_queue *q = queue_ptr(self);
+    if ((argc = rb_scan_args(argc, argv, "01", &initial)) == 1) {
+        initial = rb_to_array(initial);
+    }
     RB_OBJ_WRITE(self, &q->que, ary_buf_new());
     list_head_init(queue_waitq(q));
-    rb_scan_args(argc, argv, "01", &initial);
     if (argc == 1) {
-        rb_ary_concat(q->que, rb_to_array(initial));
+        rb_ary_concat(q->que, initial);
     }
     return self;
 }
@@ -880,7 +876,7 @@ queue_do_push(VALUE self, struct rb_queue *q, VALUE obj)
 }
 
 /*
- * Document-method: Queue#close
+ * Document-method: Thread::Queue#close
  * call-seq:
  *   close
  *
@@ -903,7 +899,7 @@ queue_do_push(VALUE self, struct rb_queue *q, VALUE obj)
  *
  * Example:
  *
- *    	q = Queue.new
+ *    	q = Thread::Queue.new
  *      Thread.new{
  *        while e = q.deq # wait for nil to break loop
  *          # ...
@@ -927,7 +923,7 @@ rb_queue_close(VALUE self)
 }
 
 /*
- * Document-method: Queue#closed?
+ * Document-method: Thread::Queue#closed?
  * call-seq: closed?
  *
  * Returns +true+ if the queue is closed.
@@ -936,11 +932,11 @@ rb_queue_close(VALUE self)
 static VALUE
 rb_queue_closed_p(VALUE self)
 {
-    return queue_closed_p(self) ? Qtrue : Qfalse;
+    return RBOOL(queue_closed_p(self));
 }
 
 /*
- * Document-method: Queue#push
+ * Document-method: Thread::Queue#push
  * call-seq:
  *   push(object)
  *   enq(object)
@@ -978,8 +974,6 @@ queue_sleep_done(VALUE p)
     list_del(&qw->w.node);
     qw->as.q->num_waiting--;
 
-    COROUTINE_STACK_FREE(qw);
-
     return Qfalse;
 }
 
@@ -990,8 +984,6 @@ szqueue_sleep_done(VALUE p)
 
     list_del(&qw->w.node);
     qw->as.sq->num_waiting_push--;
-
-    COROUTINE_STACK_FREE(qw);
 
     return Qfalse;
 }
@@ -1014,17 +1006,15 @@ queue_do_pop(VALUE self, struct rb_queue *q, int should_block)
             assert(RARRAY_LEN(q->que) == 0);
             assert(queue_closed_p(self) == 0);
 
-            COROUTINE_STACK_LOCAL(struct queue_waiter, qw);
+            struct queue_waiter queue_waiter = {
+                .w = {.self = self, .th = ec->thread_ptr, .fiber = ec->fiber_ptr},
+                .as = {.q = q}
+            };
 
-            qw->w.self = self;
-            qw->w.th = ec->thread_ptr;
-            qw->w.fiber = ec->fiber_ptr;
+            list_add_tail(queue_waitq(queue_waiter.as.q), &queue_waiter.w.node);
+            queue_waiter.as.q->num_waiting++;
 
-            qw->as.q = q;
-            list_add_tail(queue_waitq(qw->as.q), &qw->w.node);
-            qw->as.q->num_waiting++;
-
-            rb_ensure(queue_sleep, self, queue_sleep_done, (VALUE)qw);
+            rb_ensure(queue_sleep, self, queue_sleep_done, (VALUE)&queue_waiter);
         }
     }
 
@@ -1043,7 +1033,7 @@ queue_pop_should_block(int argc, const VALUE *argv)
 }
 
 /*
- * Document-method: Queue#pop
+ * Document-method: Thread::Queue#pop
  * call-seq:
  *   pop(non_block=false)
  *   deq(non_block=false)
@@ -1064,7 +1054,7 @@ rb_queue_pop(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- * Document-method: Queue#empty?
+ * Document-method: Thread::Queue#empty?
  * call-seq: empty?
  *
  * Returns +true+ if the queue is empty.
@@ -1073,11 +1063,11 @@ rb_queue_pop(int argc, VALUE *argv, VALUE self)
 static VALUE
 rb_queue_empty_p(VALUE self)
 {
-    return queue_length(self, queue_ptr(self)) == 0 ? Qtrue : Qfalse;
+    return RBOOL(queue_length(self, queue_ptr(self)) == 0);
 }
 
 /*
- * Document-method: Queue#clear
+ * Document-method: Thread::Queue#clear
  *
  * Removes all objects from the queue.
  */
@@ -1092,7 +1082,7 @@ rb_queue_clear(VALUE self)
 }
 
 /*
- * Document-method: Queue#length
+ * Document-method: Thread::Queue#length
  * call-seq:
  *   length
  *   size
@@ -1107,7 +1097,7 @@ rb_queue_length(VALUE self)
 }
 
 /*
- * Document-method: Queue#num_waiting
+ * Document-method: Thread::Queue#num_waiting
  *
  * Returns the number of threads waiting on the queue.
  */
@@ -1121,12 +1111,12 @@ rb_queue_num_waiting(VALUE self)
 }
 
 /*
- *  Document-class: SizedQueue
+ *  Document-class: Thread::SizedQueue
  *
  * This class represents queues of specified size capacity.  The push operation
  * may be blocked if the capacity is full.
  *
- * See Queue for an example of how a SizedQueue works.
+ * See Thread::Queue for an example of how a Thread::SizedQueue works.
  */
 
 /*
@@ -1156,11 +1146,11 @@ rb_szqueue_initialize(VALUE self, VALUE vmax)
 }
 
 /*
- * Document-method: SizedQueue#close
+ * Document-method: Thread::SizedQueue#close
  * call-seq:
  *   close
  *
- * Similar to Queue#close.
+ * Similar to Thread::Queue#close.
  *
  * The difference is behavior with waiting enqueuing threads.
  *
@@ -1181,7 +1171,7 @@ rb_szqueue_close(VALUE self)
 }
 
 /*
- * Document-method: SizedQueue#max
+ * Document-method: Thread::SizedQueue#max
  *
  * Returns the maximum size of the queue.
  */
@@ -1193,7 +1183,7 @@ rb_szqueue_max_get(VALUE self)
 }
 
 /*
- * Document-method: SizedQueue#max=
+ * Document-method: Thread::SizedQueue#max=
  * call-seq: max=(number)
  *
  * Sets the maximum size of the queue to the given +number+.
@@ -1229,7 +1219,7 @@ szqueue_push_should_block(int argc, const VALUE *argv)
 }
 
 /*
- * Document-method: SizedQueue#push
+ * Document-method: Thread::SizedQueue#push
  * call-seq:
  *   push(object, non_block=false)
  *   enq(object, non_block=false)
@@ -1257,18 +1247,17 @@ rb_szqueue_push(int argc, VALUE *argv, VALUE self)
         }
         else {
             rb_execution_context_t *ec = GET_EC();
-            COROUTINE_STACK_LOCAL(struct queue_waiter, qw);
+            struct queue_waiter queue_waiter = {
+                .w = {.self = self, .th = ec->thread_ptr, .fiber = ec->fiber_ptr},
+                .as = {.sq = sq}
+            };
+
             struct list_head *pushq = szqueue_pushq(sq);
 
-            qw->w.self = self;
-            qw->w.th = ec->thread_ptr;
-            qw->w.fiber = ec->fiber_ptr;
-
-            qw->as.sq = sq;
-            list_add_tail(pushq, &qw->w.node);
+            list_add_tail(pushq, &queue_waiter.w.node);
             sq->num_waiting_push++;
 
-            rb_ensure(queue_sleep, self, szqueue_sleep_done, (VALUE)qw);
+            rb_ensure(queue_sleep, self, szqueue_sleep_done, (VALUE)&queue_waiter);
         }
     }
 
@@ -1293,7 +1282,7 @@ szqueue_do_pop(VALUE self, int should_block)
 }
 
 /*
- * Document-method: SizedQueue#pop
+ * Document-method: Thread::SizedQueue#pop
  * call-seq:
  *   pop(non_block=false)
  *   deq(non_block=false)
@@ -1314,7 +1303,7 @@ rb_szqueue_pop(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- * Document-method: SizedQueue#clear
+ * Document-method: Thread::SizedQueue#clear
  *
  * Removes all objects from the queue.
  */
@@ -1330,7 +1319,7 @@ rb_szqueue_clear(VALUE self)
 }
 
 /*
- * Document-method: SizedQueue#length
+ * Document-method: Thread::SizedQueue#length
  * call-seq:
  *   length
  *   size
@@ -1347,7 +1336,7 @@ rb_szqueue_length(VALUE self)
 }
 
 /*
- * Document-method: SizedQueue#num_waiting
+ * Document-method: Thread::SizedQueue#num_waiting
  *
  * Returns the number of threads waiting on the queue.
  */
@@ -1361,7 +1350,7 @@ rb_szqueue_num_waiting(VALUE self)
 }
 
 /*
- * Document-method: SizedQueue#empty?
+ * Document-method: Thread::SizedQueue#empty?
  * call-seq: empty?
  *
  * Returns +true+ if the queue is empty.
@@ -1372,7 +1361,7 @@ rb_szqueue_empty_p(VALUE self)
 {
     struct rb_szqueue *sq = szqueue_ptr(self);
 
-    return queue_length(self, &sq->q) == 0 ? Qtrue : Qfalse;
+    return RBOOL(queue_length(self, &sq->q) == 0);
 }
 
 
@@ -1383,7 +1372,7 @@ struct rb_condvar {
 };
 
 /*
- *  Document-class: ConditionVariable
+ *  Document-class: Thread::ConditionVariable
  *
  *  ConditionVariable objects augment class Mutex. Using condition variables,
  *  it is possible to suspend while in the middle of a critical section until a
@@ -1391,8 +1380,8 @@ struct rb_condvar {
  *
  *  Example:
  *
- *    mutex = Mutex.new
- *    resource = ConditionVariable.new
+ *    mutex = Thread::Mutex.new
+ *    resource = Thread::ConditionVariable.new
  *
  *    a = Thread.new {
  *	 mutex.synchronize {
@@ -1480,13 +1469,15 @@ do_sleep(VALUE args)
 }
 
 /*
- * Document-method: ConditionVariable#wait
+ * Document-method: Thread::ConditionVariable#wait
  * call-seq: wait(mutex, timeout=nil)
  *
  * Releases the lock held in +mutex+ and waits; reacquires the lock on wakeup.
  *
  * If +timeout+ is given, this method returns after +timeout+ seconds passed,
  * even if no other thread doesn't signal.
+ *
+ * Returns the slept result on +mutex+.
  */
 
 static VALUE
@@ -1499,19 +1490,18 @@ rb_condvar_wait(int argc, VALUE *argv, VALUE self)
 
     rb_scan_args(argc, argv, "11", &args.mutex, &args.timeout);
 
-    COROUTINE_STACK_LOCAL(struct sync_waiter, w);
-    w->self = args.mutex;
-    w->th = ec->thread_ptr;
-    w->fiber = ec->fiber_ptr;
+    struct sync_waiter sync_waiter = {
+        .self = args.mutex,
+        .th = ec->thread_ptr,
+        .fiber = ec->fiber_ptr
+    };
 
-    list_add_tail(&cv->waitq, &w->node);
-    rb_ensure(do_sleep, (VALUE)&args, delete_from_waitq, (VALUE)w);
-
-    return self;
+    list_add_tail(&cv->waitq, &sync_waiter.node);
+    return rb_ensure(do_sleep, (VALUE)&args, delete_from_waitq, (VALUE)&sync_waiter);
 }
 
 /*
- * Document-method: ConditionVariable#signal
+ * Document-method: Thread::ConditionVariable#signal
  *
  * Wakes up the first thread in line waiting for this lock.
  */
@@ -1525,7 +1515,7 @@ rb_condvar_signal(VALUE self)
 }
 
 /*
- * Document-method: ConditionVariable#broadcast
+ * Document-method: Thread::ConditionVariable#broadcast
  *
  * Wakes up all threads waiting for this lock.
  */
@@ -1548,10 +1538,10 @@ undumpable(VALUE obj)
 }
 
 static VALUE
-define_thread_class(VALUE outer, const char *name, VALUE super)
+define_thread_class(VALUE outer, const ID name, VALUE super)
 {
-    VALUE klass = rb_define_class_under(outer, name, super);
-    rb_define_const(rb_cObject, name, klass);
+    VALUE klass = rb_define_class_id_under(outer, name, super);
+    rb_const_set(rb_cObject, name, klass);
     return klass;
 }
 
@@ -1559,15 +1549,15 @@ static void
 Init_thread_sync(void)
 {
 #undef rb_intern
-#if 0
-    rb_cMutex = rb_define_class("Mutex", rb_cObject); /* teach rdoc Mutex */
-    rb_cConditionVariable = rb_define_class("ConditionVariable", rb_cObject); /* teach rdoc ConditionVariable */
-    rb_cQueue = rb_define_class("Queue", rb_cObject); /* teach rdoc Queue */
-    rb_cSizedQueue = rb_define_class("SizedQueue", rb_cObject); /* teach rdoc SizedQueue */
+#if defined(TEACH_RDOC) && TEACH_RDOC == 42
+    rb_cMutex = rb_define_class_under(rb_cThread, "Mutex", rb_cObject);
+    rb_cConditionVariable = rb_define_class_under(rb_cThread, "ConditionVariable", rb_cObject);
+    rb_cQueue = rb_define_class_under(rb_cThread, "Queue", rb_cObject);
+    rb_cSizedQueue = rb_define_class_under(rb_cThread, "SizedQueue", rb_cObject);
 #endif
 
 #define DEFINE_CLASS(name, super) \
-    rb_c##name = define_thread_class(rb_cThread, #name, rb_c##super)
+    rb_c##name = define_thread_class(rb_cThread, rb_intern(#name), rb_c##super)
 
     /* Mutex */
     DEFINE_CLASS(Mutex, Object);

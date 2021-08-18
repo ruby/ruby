@@ -33,31 +33,32 @@ describe "Kernel.at_exit" do
       end
     EOC
 
-    result = ruby_exe(code, args: "2>&1")
+    result = ruby_exe(code, args: "2>&1", exit_status: 1)
     result.lines.should.include?("The exception matches: true (message=foo)\n")
   end
 
   it "both exceptions in at_exit and in the main script are printed" do
-    result = ruby_exe('at_exit { raise "at_exit_error" }; raise "main_script_error"', args: "2>&1")
+    code = 'at_exit { raise "at_exit_error" }; raise "main_script_error"'
+    result = ruby_exe(code, args: "2>&1", exit_status: 1)
     result.should.include?('at_exit_error (RuntimeError)')
     result.should.include?('main_script_error (RuntimeError)')
   end
 
   it "decides the exit status if both at_exit and the main script raise SystemExit" do
-    ruby_exe('at_exit { exit 43 }; exit 42', args: "2>&1")
+    ruby_exe('at_exit { exit 43 }; exit 42', args: "2>&1", exit_status: 43)
     $?.exitstatus.should == 43
   end
 
   it "runs all at_exit even if some raise exceptions" do
     code = 'at_exit { STDERR.puts "last" }; at_exit { exit 43 }; at_exit { STDERR.puts "first" }; exit 42'
-    result = ruby_exe(code, args: "2>&1")
+    result = ruby_exe(code, args: "2>&1", exit_status: 43)
     result.should == "first\nlast\n"
     $?.exitstatus.should == 43
   end
 
   it "runs at_exit handlers even if the main script fails to parse" do
     script = fixture(__FILE__, "at_exit.rb")
-    result = ruby_exe('{', options: "-r#{script}", args: "2>&1")
+    result = ruby_exe('{', options: "-r#{script}", args: "2>&1", exit_status: 1)
     $?.should_not.success?
     result.should.include?("at_exit ran\n")
     result.should.include?("syntax error")

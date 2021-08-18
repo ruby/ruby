@@ -37,7 +37,7 @@ module Bundler
   environment_preserver = EnvironmentPreserver.from_env
   ORIGINAL_ENV = environment_preserver.restore
   environment_preserver.replace_with_backup
-  SUDO_MUTEX = Mutex.new
+  SUDO_MUTEX = Thread::Mutex.new
 
   autoload :Definition,             File.expand_path("bundler/definition", __dir__)
   autoload :Dependency,             File.expand_path("bundler/dependency", __dir__)
@@ -69,6 +69,7 @@ module Bundler
   autoload :SharedHelpers,          File.expand_path("bundler/shared_helpers", __dir__)
   autoload :Source,                 File.expand_path("bundler/source", __dir__)
   autoload :SourceList,             File.expand_path("bundler/source_list", __dir__)
+  autoload :SourceMap,              File.expand_path("bundler/source_map", __dir__)
   autoload :SpecSet,                File.expand_path("bundler/spec_set", __dir__)
   autoload :StubSpecification,      File.expand_path("bundler/stub_specification", __dir__)
   autoload :UI,                     File.expand_path("bundler/ui", __dir__)
@@ -235,8 +236,9 @@ module Bundler
         end
 
         if warning
-          user_home = tmp_home_path(warning)
-          Bundler.ui.warn "#{warning}\nBundler will use `#{user_home}' as your home directory temporarily.\n"
+          Bundler.ui.warn "#{warning}\n"
+          user_home = tmp_home_path
+          Bundler.ui.warn "Bundler will use `#{user_home}' as your home directory temporarily.\n"
           user_home
         else
           Pathname.new(home)
@@ -651,10 +653,6 @@ EOF
     rescue ScriptError, StandardError => e
       msg = "There was an error while loading `#{path.basename}`: #{e.message}"
 
-      if e.is_a?(LoadError)
-        msg += "\nDoes it try to require a relative path? That's been removed in Ruby 1.9"
-      end
-
       raise GemspecError, Dsl::DSLError.new(msg, path, e.backtrace, contents)
     end
 
@@ -683,15 +681,13 @@ EOF
       Bundler.rubygems.clear_paths
     end
 
-    def tmp_home_path(warning)
+    def tmp_home_path
       Kernel.send(:require, "tmpdir")
       SharedHelpers.filesystem_access(Dir.tmpdir) do
         path = Bundler.tmp
         at_exit { Bundler.rm_rf(path) }
         path
       end
-    rescue RuntimeError => e
-      raise e.exception("#{warning}\nBundler also failed to create a temporary home directory':\n#{e}")
     end
 
     # @param env [Hash]

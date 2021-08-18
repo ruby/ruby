@@ -40,7 +40,6 @@ static VALUE r_cover_p(VALUE, VALUE, VALUE, VALUE);
 #define RANGE_SET_BEG(r, v) (RSTRUCT_SET(r, 0, v))
 #define RANGE_SET_END(r, v) (RSTRUCT_SET(r, 1, v))
 #define RANGE_SET_EXCL(r, v) (RSTRUCT_SET(r, 2, v))
-#define RBOOL(v) ((v) ? Qtrue : Qfalse)
 
 #define EXCL(r) RTEST(RANGE_EXCL(r))
 
@@ -125,7 +124,7 @@ range_initialize_copy(VALUE range, VALUE orig)
 static VALUE
 range_exclude_end_p(VALUE range)
 {
-    return EXCL(range) ? Qtrue : Qfalse;
+    return RBOOL(EXCL(range));
 }
 
 static VALUE
@@ -137,9 +136,7 @@ recursive_equal(VALUE range, VALUE obj, int recur)
     if (!rb_equal(RANGE_END(range), RANGE_END(obj)))
 	return Qfalse;
 
-    if (EXCL(range) != EXCL(obj))
-	return Qfalse;
-    return Qtrue;
+    return RBOOL(EXCL(range) == EXCL(obj));
 }
 
 
@@ -192,9 +189,7 @@ recursive_eql(VALUE range, VALUE obj, int recur)
     if (!rb_eql(RANGE_END(range), RANGE_END(obj)))
 	return Qfalse;
 
-    if (EXCL(range) != EXCL(obj))
-	return Qfalse;
-    return Qtrue;
+    return RBOOL(EXCL(range) == EXCL(obj));
 }
 
 /*
@@ -781,8 +776,7 @@ each_i(VALUE v, VALUE arg)
 static int
 sym_each_i(VALUE v, VALUE arg)
 {
-    rb_yield(rb_str_intern(v));
-    return 0;
+    return each_i(rb_str_intern(v), arg);
 }
 
 /*

@@ -34,12 +34,16 @@ module Psych
     def assert_reference_trip obj
       yml = Psych.dump([obj, obj])
       assert_match(/\*-?\d+/, yml)
-      data = Psych.load yml
+      begin
+        data = Psych.load yml
+      rescue Psych::DisallowedClass
+        data = Psych.unsafe_load yml
+      end
       assert_equal data.first.object_id, data.last.object_id
     end
 
     def test_float_references
-      data = Psych.load <<-eoyml
+      data = Psych.unsafe_load <<-eoyml
 ---\s
 - &name 1.2
 - *name
@@ -49,7 +53,7 @@ module Psych
     end
 
     def test_binary_references
-      data = Psych.load <<-eoyml
+      data = Psych.unsafe_load <<-eoyml
 ---
 - &name !binary |-
   aGVsbG8gd29ybGQh
@@ -60,7 +64,7 @@ module Psych
     end
 
     def test_regexp_references
-      data = Psych.load <<-eoyml
+      data = Psych.unsafe_load <<-eoyml
 ---\s
 - &name !ruby/regexp /pattern/i
 - *name

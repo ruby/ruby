@@ -199,7 +199,7 @@ RSpec.describe "bundle clean" do
     revision = revision_for(git_path)
 
     gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
 
       gem "rack", "1.0.0"
       git "#{git_path}", :ref => "#{revision}" do
@@ -261,6 +261,7 @@ RSpec.describe "bundle clean" do
     revision = revision_for(lib_path("rails"))
 
     gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "activesupport", :git => "#{lib_path("rails")}", :ref => '#{revision}'
     G
 
@@ -869,6 +870,7 @@ RSpec.describe "bundle clean" do
     expect(very_simple_binary_extensions_dir).to exist
 
     gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "very_simple_git_binary", :git => "#{lib_path("very_simple_git_binary-1.0")}", :ref => "#{revision}"
     G
 
@@ -878,6 +880,7 @@ RSpec.describe "bundle clean" do
     expect(very_simple_binary_extensions_dir).to exist
 
     gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
     G
 
     bundle "install"

@@ -135,7 +135,7 @@ module Bundler
           next
         end
 
-        mode = Bundler::WINDOWS ? "wb:UTF-8" : "w"
+        mode = Gem.win_platform? ? "wb:UTF-8" : "w"
         require "erb"
         content = if RUBY_VERSION >= "2.6"
           ERB.new(template, :trim_mode => "-").result(binding)
@@ -144,7 +144,7 @@ module Bundler
         end
 
         File.write(binstub_path, content, :mode => mode, :perm => 0o777 & ~File.umask)
-        if Bundler::WINDOWS || options[:all_platforms]
+        if Gem.win_platform? || options[:all_platforms]
           prefix = "@ruby -x \"%~f0\" %*\n@exit /b %ERRORLEVEL%\n\n"
           File.write("#{binstub_path}.cmd", prefix + content, :mode => mode)
         end
@@ -182,7 +182,7 @@ module Bundler
         executable_path = Pathname(spec.full_gem_path).join(spec.bindir, executable).relative_path_from(bin_path)
         executable_path = executable_path
 
-        mode = Bundler::WINDOWS ? "wb:UTF-8" : "w"
+        mode = Gem.win_platform? ? "wb:UTF-8" : "w"
         require "erb"
         content = if RUBY_VERSION >= "2.6"
           ERB.new(template, :trim_mode => "-").result(binding)
@@ -191,7 +191,7 @@ module Bundler
         end
 
         File.write("#{bin_path}/#{executable}", content, :mode => mode, :perm => 0o755)
-        if Bundler::WINDOWS || options[:all_platforms]
+        if Gem.win_platform? || options[:all_platforms]
           prefix = "@ruby -x \"%~f0\" %*\n@exit /b %ERRORLEVEL%\n\n"
           File.write("#{bin_path}/#{executable}.cmd", prefix + content, :mode => mode)
         end
@@ -222,14 +222,7 @@ module Bundler
       # Parallelization has some issues on Windows, so it's not yet the default
       return 1 if Gem.win_platform?
 
-      processor_count
-    end
-
-    def processor_count
-      require "etc"
-      Etc.nprocessors
-    rescue StandardError
-      1
+      Bundler.settings.processor_count
     end
 
     def load_plugins

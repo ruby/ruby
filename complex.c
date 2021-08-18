@@ -54,8 +54,6 @@ static ID id_abs, id_arg,
 #define id_quo idQuo
 #define id_fdiv idFdiv
 
-#define f_boolcast(x) ((x) ? Qtrue : Qfalse)
-
 #define fun1(n) \
 inline static VALUE \
 f_##n(VALUE x)\
@@ -1092,15 +1090,15 @@ nucomp_eqeq_p(VALUE self, VALUE other)
     if (RB_TYPE_P(other, T_COMPLEX)) {
 	get_dat2(self, other);
 
-	return f_boolcast(f_eqeq_p(adat->real, bdat->real) &&
+	return RBOOL(f_eqeq_p(adat->real, bdat->real) &&
 			  f_eqeq_p(adat->imag, bdat->imag));
     }
     if (k_numeric_p(other) && f_real_p(other)) {
 	get_dat1(self);
 
-	return f_boolcast(f_eqeq_p(dat->real, other) && f_zero_p(dat->imag));
+	return RBOOL(f_eqeq_p(dat->real, other) && f_zero_p(dat->imag));
     }
-    return f_boolcast(f_eqeq_p(other, self));
+    return RBOOL(f_eqeq_p(other, self));
 }
 
 static bool
@@ -1272,7 +1270,7 @@ rb_complex_conjugate(VALUE self)
  * Returns false, even if the complex number has no imaginary part.
  */
 static VALUE
-nucomp_false(VALUE self)
+nucomp_real_p_m(VALUE self)
 {
     return Qfalse;
 }
@@ -1326,8 +1324,8 @@ nucomp_numerator(VALUE self)
 }
 
 /* :nodoc: */
-static VALUE
-nucomp_hash(VALUE self)
+st_index_t
+rb_complex_hash(VALUE self)
 {
     st_index_t v, h[2];
     VALUE n;
@@ -1338,7 +1336,13 @@ nucomp_hash(VALUE self)
     n = rb_hash(dat->imag);
     h[1] = NUM2LONG(n);
     v = rb_memhash(h, sizeof(h));
-    return ST2FIX(v);
+    return v;
+}
+
+static VALUE
+nucomp_hash(VALUE self)
+{
+    return ST2FIX(rb_complex_hash(self));
 }
 
 /* :nodoc: */
@@ -1348,7 +1352,7 @@ nucomp_eql_p(VALUE self, VALUE other)
     if (RB_TYPE_P(other, T_COMPLEX)) {
 	get_dat2(self, other);
 
-	return f_boolcast((CLASS_OF(adat->real) == CLASS_OF(bdat->real)) &&
+	return RBOOL((CLASS_OF(adat->real) == CLASS_OF(bdat->real)) &&
 			  (CLASS_OF(adat->imag) == CLASS_OF(bdat->imag)) &&
 			  f_eqeq_p(self, other));
 
@@ -2379,7 +2383,7 @@ Init_Complex(void)
     rb_define_method(rb_cComplex, "conjugate", rb_complex_conjugate, 0);
     rb_define_method(rb_cComplex, "conj", rb_complex_conjugate, 0);
 
-    rb_define_method(rb_cComplex, "real?", nucomp_false, 0);
+    rb_define_method(rb_cComplex, "real?", nucomp_real_p_m, 0);
 
     rb_define_method(rb_cComplex, "numerator", nucomp_numerator, 0);
     rb_define_method(rb_cComplex, "denominator", nucomp_denominator, 0);

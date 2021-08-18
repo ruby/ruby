@@ -18,6 +18,7 @@ gc.rb
 io.rb
 kernel.rb
 numeric.rb
+nilclass.rb
 pack.rb
 ractor.rb
 timev.rb

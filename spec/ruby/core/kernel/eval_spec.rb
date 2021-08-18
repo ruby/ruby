@@ -228,6 +228,17 @@ describe "Kernel#eval" do
     ruby_exe(code).chomp.should == "a,b,c,e,LocalJumpError,f"
   end
 
+  it "can be called with Method#call" do
+    method(:eval).call("2 * 3").should == 6
+  end
+
+  it "has the correct default definee when called through Method#call" do
+    class EvalSpecs
+      method(:eval).call("def eval_spec_method_call; end")
+      EvalSpecs.should have_instance_method(:eval_spec_method_call)
+    end
+  end
+
   # See language/magic_comment_spec.rb for more magic comments specs
   describe "with a magic encoding comment" do
     it "uses the magic comment encoding for the encoding of literal strings" do
@@ -374,43 +385,45 @@ CODE
     end
   end
 
-  it "activates refinements from the eval scope" do
-    refinery = Module.new do
-      refine EvalSpecs::A do
-        def foo
-          "bar"
+  describe 'with refinements' do
+    it "activates refinements from the eval scope" do
+      refinery = Module.new do
+        refine EvalSpecs::A do
+          def foo
+            "bar"
+          end
         end
       end
+
+      result = nil
+
+      Module.new do
+        using refinery
+
+        result = eval "EvalSpecs::A.new.foo"
+      end
+
+      result.should == "bar"
     end
 
-    result = nil
-
-    Module.new do
-      using refinery
-
-      result = eval "EvalSpecs::A.new.foo"
-    end
-
-    result.should == "bar"
-  end
-
-  it "activates refinements from the binding" do
-    refinery = Module.new do
-      refine EvalSpecs::A do
-        def foo
-          "bar"
+    it "activates refinements from the binding" do
+      refinery = Module.new do
+        refine EvalSpecs::A do
+          def foo
+            "bar"
+          end
         end
       end
+
+      b = nil
+      m = Module.new do
+        using refinery
+        b = binding
+      end
+
+      result = eval "EvalSpecs::A.new.foo", b
+
+      result.should == "bar"
     end
-
-    b = nil
-    m = Module.new do
-      using refinery
-      b = binding
-    end
-
-    result = eval "EvalSpecs::A.new.foo", b
-
-    result.should == "bar"
   end
 end

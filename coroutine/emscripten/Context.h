@@ -26,6 +26,7 @@ struct coroutine_context
     emscripten_fiber_t state;
     coroutine_start entry_func;
     struct coroutine_context * from;
+    void *argument;
 };
 
 COROUTINE coroutine_trampoline(void * _context);

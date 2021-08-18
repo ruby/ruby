@@ -1663,6 +1663,37 @@ class TestArray < Test::Unit::TestCase
     assert_equal([1, 2, 3, 4], a)
   end
 
+  def test_freeze_inside_sort!
+    array = [1, 2, 3, 4, 5]
+    frozen_array = nil
+    assert_raise(FrozenError) do
+      count = 0
+      array.sort! do |a, b|
+        array.freeze if (count += 1) == 6
+        frozen_array ||= array.map.to_a if array.frozen?
+        b <=> a
+      end
+    end
+    assert_equal(frozen_array, array)
+
+    object = Object.new
+    array = [1, 2, 3, 4, 5]
+    object.define_singleton_method(:>){|_| array.freeze; true}
+    assert_raise(FrozenError) do
+      array.sort! do |a, b|
+        object
+      end
+    end
+
+    object = Object.new
+    array = [object, object]
+    object.define_singleton_method(:>){|_| array.freeze; true}
+    object.define_singleton_method(:<=>){|o| object}
+    assert_raise(FrozenError) do
+      array.sort!
+    end
+  end
+
   def test_sort_with_callcc
     need_continuation
     n = 1000

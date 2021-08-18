@@ -68,7 +68,7 @@ class Gem::Installer
 
   @path_warning = false
 
-  @install_lock = Mutex.new
+  @install_lock = Thread::Mutex.new
 
   class << self
     ##
@@ -726,6 +726,10 @@ class Gem::Installer
 
     if spec.extensions.any?{|ext| ext =~ /\R/ }
       raise Gem::InstallError, "#{spec} has an invalid extensions"
+    end
+
+    if spec.platform.to_s =~ /\R/
+      raise Gem::InstallError, "#{spec.platform} is an invalid platform"
     end
 
     unless spec.specification_version.to_s =~ /\A\d+\z/

@@ -105,7 +105,7 @@ module Gem
   end
 
   class Dependency
-    attr_accessor :source, :groups, :all_sources
+    attr_accessor :source, :groups
 
     alias_method :eql?, :==
 
@@ -116,7 +116,7 @@ module Gem
     end
 
     def to_yaml_properties
-      instance_variables.reject {|p| ["@source", "@groups", "@all_sources"].include?(p.to_s) }
+      instance_variables.reject {|p| ["@source", "@groups"].include?(p.to_s) }
     end
 
     def to_lock
@@ -134,6 +134,8 @@ module Gem
     class Requirement
       module OrderIndependentComparison
         def ==(other)
+          return unless Gem::Requirement === other
+
           if _requirements_sorted? && other._requirements_sorted?
             super
           else
@@ -174,20 +176,36 @@ module Gem
     end
   end
 
+  require "rubygems/platform"
+
   class Platform
     JAVA  = Gem::Platform.new("java") unless defined?(JAVA)
     MSWIN = Gem::Platform.new("mswin32") unless defined?(MSWIN)
     MSWIN64 = Gem::Platform.new("mswin64") unless defined?(MSWIN64)
     MINGW = Gem::Platform.new("x86-mingw32") unless defined?(MINGW)
     X64_MINGW = Gem::Platform.new("x64-mingw32") unless defined?(X64_MINGW)
+  end
 
-    undef_method :hash if method_defined? :hash
-    def hash
-      @cpu.hash ^ @os.hash ^ @version.hash
+  Platform.singleton_class.module_eval do
+    unless Platform.singleton_methods.include?(:match_spec?)
+      def match_spec?(spec)
+        match_gem?(spec.platform, spec.name)
+      end
+
+      def match_gem?(platform, gem_name)
+        match_platforms?(platform, Gem.platforms)
+      end
+
+      private
+
+      def match_platforms?(platform, platforms)
+        platforms.any? do |local_platform|
+          platform.nil? ||
+            local_platform == platform ||
+            (local_platform != Gem::Platform::RUBY && local_platform =~ platform)
+        end
+      end
     end
-
-    undef_method :eql? if method_defined? :eql?
-    alias_method :eql?, :==
   end
 
   require "rubygems/util"

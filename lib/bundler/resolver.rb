@@ -21,23 +21,19 @@ module Bundler
       base = SpecSet.new(base) unless base.is_a?(SpecSet)
       resolver = new(source_requirements, base, gem_version_promoter, additional_base_requirements, platforms)
       result = resolver.start(requirements)
-      SpecSet.new(result)
+      SpecSet.new(SpecSet.new(result).for(requirements.reject{|dep| dep.name.end_with?("\0") }))
     end
 
     def initialize(source_requirements, base, gem_version_promoter, additional_base_requirements, platforms)
       @source_requirements = source_requirements
-
-      @index_requirements = source_requirements.each_with_object({}) do |source_requirement, index_requirements|
-        name, source = source_requirement
-        index_requirements[name] = name == :global ? source : source.specs
-      end
-
       @base = base
       @resolver = Molinillo::Resolver.new(self, self)
       @search_for = {}
       @base_dg = Molinillo::DependencyGraph.new
+      aggregate_global_source = @source_requirements[:default].is_a?(Source::RubygemsAggregate)
       @base.each do |ls|
         dep = Dependency.new(ls.name, ls.version)
+        ls.source = source_for(ls.name) unless aggregate_global_source
         @base_dg.add_vertex(ls.name, DepProxy.get_proxy(dep, ls.platform), true)
       end
       additional_base_requirements.each {|d| @base_dg.add_vertex(d.name, d) }
@@ -45,10 +41,6 @@ module Bundler
       @resolving_only_for_ruby = platforms == [Gem::Platform::RUBY]
       @gem_version_promoter = gem_version_promoter
       @use_gvp = Bundler.feature_flag.use_gem_version_promoter_for_major_updates? || !@gem_version_promoter.major?
-      @no_aggregate_global_source = @source_requirements[:global].nil?
-
-      @variant_specific_names = []
-      @generic_names = ["Ruby\0", "RubyGems\0"]
     end
 
     def start(requirements)
@@ -58,7 +50,6 @@ module Bundler
       verify_gemfile_dependencies_are_found!(requirements)
       dg = @resolver.resolve(requirements, @base_dg)
       dg.
-        tap {|resolved| validate_resolved_specs!(resolved) }.
         map(&:payload).
         reject {|sg| sg.name.end_with?("\0") }.
         map(&:to_specs).
@@ -112,24 +103,14 @@ module Bundler
     include Molinillo::SpecificationProvider
 
     def dependencies_for(specification)
-      all_dependencies = specification.dependencies_for_activated_platforms
-
-      if @variant_specific_names.include?(specification.name)
-        @variant_specific_names |= all_dependencies.map(&:name) - @generic_names
-      else
-        generic_names, variant_specific_names = specification.partitioned_dependency_names_for_activated_platforms
-        @variant_specific_names |= variant_specific_names - @generic_names
-        @generic_names |= generic_names
-      end
-
-      all_dependencies
+      specification.dependencies_for_activated_platforms
     end
 
     def search_for(dependency_proxy)
       platform = dependency_proxy.__platform
       dependency = dependency_proxy.dep
       name = dependency.name
-      search_result = @search_for[dependency_proxy] ||= begin
+      @search_for[dependency_proxy] ||= begin
         results = results_for(dependency, @base[name])
 
         if vertex = @base_dg.vertex_named(name)
@@ -181,35 +162,14 @@ module Bundler
           @gem_version_promoter.sort_versions(dependency, spec_groups)
         end
       end
-
-      unless search_result.empty?
-        specific_dependency = @variant_specific_names.include?(name)
-        return search_result unless specific_dependency
-
-        search_result.each do |sg|
-          if @generic_names.include?(name)
-            @variant_specific_names -= [name]
-            sg.activate_all_platforms!
-          else
-            sg.activate_platform!(platform)
-          end
-        end
-      end
-
-      search_result
     end
 
     def index_for(dependency)
-      source = @index_requirements[dependency.name]
-      if source
-        source
-      elsif @no_aggregate_global_source
-        Index.build do |idx|
-          dependency.all_sources.each {|s| idx.add_source(s.specs) }
-        end
-      else
-        @index_requirements[:global]
-      end
+      source_for(dependency.name).specs
+    end
+
+    def source_for(name)
+      @source_requirements[name] || @source_requirements[:default]
     end
 
     def results_for(dependency, base)
@@ -240,23 +200,10 @@ module Bundler
       dependencies.map(&:dep) == other_dependencies.map(&:dep)
     end
 
-    def relevant_sources_for_vertex(vertex)
-      if vertex.root?
-        [@source_requirements[vertex.name]]
-      elsif @no_aggregate_global_source
-        vertex.recursive_predecessors.map do |v|
-          @source_requirements[v.name]
-        end.compact << @source_requirements[:default]
-      else
-        []
-      end
-    end
-
     def sort_dependencies(dependencies, activated, conflicts)
       dependencies.sort_by do |dependency|
         name = name_for(dependency)
         vertex = activated.vertex_named(name)
-        dependency.all_sources = relevant_sources_for_vertex(vertex)
         [
           @base_dg.vertex_named(name) ? 0 : 1,
           vertex.payload ? 0 : 1,
@@ -398,7 +345,7 @@ module Bundler
             if other_bundler_required
               o << "\n\n"
 
-              candidate_specs = @index_requirements[:default_bundler].search(conflict_dependency)
+              candidate_specs = source_for(:default_bundler).specs.search(conflict_dependency)
               if candidate_specs.any?
                 target_version = candidate_specs.last.version
                 new_command = [File.basename($PROGRAM_NAME), "_#{target_version}_", *ARGV].join(" ")
@@ -415,11 +362,7 @@ module Bundler
           elsif !conflict.existing
             o << "\n"
 
-            relevant_sources = if conflict.requirement.source
-              [conflict.requirement.source]
-            else
-              conflict.requirement.all_sources
-            end.compact.map(&:to_s).uniq.sort
+            relevant_source = conflict.requirement.source || source_for(name)
 
             metadata_requirement = name.end_with?("\0")
 
@@ -432,12 +375,10 @@ module Bundler
             end
             o << " "
 
-            o << if relevant_sources.empty?
-              "in any of the sources.\n"
-            elsif metadata_requirement
-              "is not available in #{relevant_sources.join(" or ")}"
+            o << if metadata_requirement
+              "is not available in #{relevant_source}"
             else
-              "in any of the relevant sources:\n  #{relevant_sources * "\n  "}\n"
+              "in #{relevant_source}.\n"
             end
           end
         end,
@@ -450,28 +391,6 @@ module Bundler
           end
         end
       )
-    end
-
-    def validate_resolved_specs!(resolved_specs)
-      resolved_specs.each do |v|
-        name = v.name
-        sources = relevant_sources_for_vertex(v)
-        next unless sources.any?
-        if default_index = sources.index(@source_requirements[:default])
-          sources.delete_at(default_index)
-        end
-        sources.reject! {|s| s.specs.search(name).empty? }
-        sources.uniq!
-        next if sources.size <= 1
-
-        msg = ["The gem '#{name}' was found in multiple relevant sources."]
-        msg.concat sources.map {|s| "  * #{s}" }.sort
-        msg << "You #{@no_aggregate_global_source ? :must : :should} add this gem to the source block for the source you wish it to be installed from."
-        msg = msg.join("\n")
-
-        raise SecurityError, msg if @no_aggregate_global_source
-        Bundler.ui.warn "Warning: #{msg}"
-      end
     end
   end
 end

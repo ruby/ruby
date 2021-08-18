@@ -499,20 +499,43 @@ describe "CApiObject" do
       @o.rb_is_type_array([]).should == true
       @o.rb_is_type_array(DescArray.new).should == true
       @o.rb_is_type_module(ObjectTest).should == false
+      @o.rb_is_type_module(Module.new).should == true
       @o.rb_is_type_class(ObjectTest).should == true
       @o.rb_is_type_data(Time.now).should == true
     end
   end
 
+  describe "rb_check_type" do
+    it "checks if the object is of the given type" do
+      @o.rb_check_type(nil, nil).should == true
+      @o.rb_check_type(ObjectTest.new, Object.new).should == true
+      @o.rb_check_type([], []).should == true
+      @o.rb_check_type(Class.new(Array).new, []).should == true
+      @o.rb_check_type(ObjectTest, Object).should == true
+    end
+
+    it "raises an exception if the object is not of the expected type" do
+      -> {
+        @o.rb_check_type([], Object.new)
+      }.should raise_error(TypeError, 'wrong argument type Array (expected Object)')
+
+      -> {
+        @o.rb_check_type(ObjectTest, Module.new)
+      }.should raise_error(TypeError, 'wrong argument type Class (expected Module)')
+
+      -> {
+        @o.rb_check_type(nil, "string")
+      }.should raise_error(TypeError, 'wrong argument type nil (expected String)')
+    end
+  end
+
   describe "rb_type_p" do
     it "returns whether object is of the given type" do
-      class DescArray < Array
-      end
       @o.rb_is_rb_type_p_nil(nil).should == true
       @o.rb_is_rb_type_p_object([]).should == false
       @o.rb_is_rb_type_p_object(ObjectTest.new).should == true
       @o.rb_is_rb_type_p_array([]).should == true
-      @o.rb_is_rb_type_p_array(DescArray.new).should == true
+      @o.rb_is_rb_type_p_array(Class.new(Array).new).should == true
       @o.rb_is_rb_type_p_module(ObjectTest).should == false
       @o.rb_is_rb_type_p_class(ObjectTest).should == true
       @o.rb_is_rb_type_p_data(Time.now).should == true
@@ -521,12 +544,10 @@ describe "CApiObject" do
 
   describe "BUILTIN_TYPE" do
     it "returns the type constant for the object" do
-      class DescArray < Array
-      end
       @o.rb_is_builtin_type_object([]).should == false
       @o.rb_is_builtin_type_object(ObjectTest.new).should == true
       @o.rb_is_builtin_type_array([]).should == true
-      @o.rb_is_builtin_type_array(DescArray.new).should == true
+      @o.rb_is_builtin_type_array(Class.new(Array).new).should == true
       @o.rb_is_builtin_type_module(ObjectTest).should == false
       @o.rb_is_builtin_type_class(ObjectTest).should == true
       @o.rb_is_builtin_type_data(Time.now).should == true

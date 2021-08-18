@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/ext'
 
 class TestGemExtRakeBuilder < Gem::TestCase
@@ -48,6 +48,8 @@ class TestGemExtRakeBuilder < Gem::TestCase
   end
 
   def test_class_no_openssl_override
+    pend 'openssl is missing' unless Gem::HAVE_OPENSSL
+
     create_temp_mkrf_file('task :default')
 
     rake = util_spec 'rake' do |s|
@@ -90,7 +92,7 @@ class TestGemExtRakeBuilder < Gem::TestCase
     output = []
 
     build_rake_in(false) do |rake|
-      error = assert_raises Gem::InstallError do
+      error = assert_raise Gem::InstallError do
         Gem::Ext::RakeBuilder.build "mkrf_conf.rb", @dest_path, output, [], nil, @ext
       end
 

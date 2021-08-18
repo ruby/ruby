@@ -70,53 +70,51 @@ describe "Module#private_method_defined?" do
     ModuleSpecs::CountsMixin.private_method_defined?(str).should == true
   end
 
-  ruby_version_is "2.6" do
-    describe "when passed true as a second optional argument" do
-      it "performs a lookup in ancestors" do
-        ModuleSpecs::Child.private_method_defined?(:public_child, true).should == false
-        ModuleSpecs::Child.private_method_defined?(:protected_child, true).should == false
-        ModuleSpecs::Child.private_method_defined?(:accessor_method, true).should == false
-        ModuleSpecs::Child.private_method_defined?(:private_child, true).should == true
+  describe "when passed true as a second optional argument" do
+    it "performs a lookup in ancestors" do
+      ModuleSpecs::Child.private_method_defined?(:public_child, true).should == false
+      ModuleSpecs::Child.private_method_defined?(:protected_child, true).should == false
+      ModuleSpecs::Child.private_method_defined?(:accessor_method, true).should == false
+      ModuleSpecs::Child.private_method_defined?(:private_child, true).should == true
 
-        # Defined in Parent
-        ModuleSpecs::Child.private_method_defined?(:public_parent, true).should == false
-        ModuleSpecs::Child.private_method_defined?(:protected_parent, true).should == false
-        ModuleSpecs::Child.private_method_defined?(:private_parent, true).should == true
+      # Defined in Parent
+      ModuleSpecs::Child.private_method_defined?(:public_parent, true).should == false
+      ModuleSpecs::Child.private_method_defined?(:protected_parent, true).should == false
+      ModuleSpecs::Child.private_method_defined?(:private_parent, true).should == true
 
-        # Defined in Module
-        ModuleSpecs::Child.private_method_defined?(:public_module, true).should == false
-        ModuleSpecs::Child.private_method_defined?(:protected_module, true).should == false
-        ModuleSpecs::Child.private_method_defined?(:private_module, true).should == true
+      # Defined in Module
+      ModuleSpecs::Child.private_method_defined?(:public_module, true).should == false
+      ModuleSpecs::Child.private_method_defined?(:protected_module, true).should == false
+      ModuleSpecs::Child.private_method_defined?(:private_module, true).should == true
 
-        # Defined in SuperModule
-        ModuleSpecs::Child.private_method_defined?(:public_super_module, true).should == false
-        ModuleSpecs::Child.private_method_defined?(:protected_super_module, true).should == false
-        ModuleSpecs::Child.private_method_defined?(:private_super_module, true).should == true
-      end
+      # Defined in SuperModule
+      ModuleSpecs::Child.private_method_defined?(:public_super_module, true).should == false
+      ModuleSpecs::Child.private_method_defined?(:protected_super_module, true).should == false
+      ModuleSpecs::Child.private_method_defined?(:private_super_module, true).should == true
     end
+  end
 
-    describe "when passed false as a second optional argument" do
-      it "checks only the class itself" do
-        ModuleSpecs::Child.private_method_defined?(:public_child, false).should == false
-        ModuleSpecs::Child.private_method_defined?(:protected_child, false).should == false
-        ModuleSpecs::Child.private_method_defined?(:accessor_method, false).should == false
-        ModuleSpecs::Child.private_method_defined?(:private_child, false).should == true
+  describe "when passed false as a second optional argument" do
+    it "checks only the class itself" do
+      ModuleSpecs::Child.private_method_defined?(:public_child, false).should == false
+      ModuleSpecs::Child.private_method_defined?(:protected_child, false).should == false
+      ModuleSpecs::Child.private_method_defined?(:accessor_method, false).should == false
+      ModuleSpecs::Child.private_method_defined?(:private_child, false).should == true
 
-        # Defined in Parent
-        ModuleSpecs::Child.private_method_defined?(:public_parent, false).should == false
-        ModuleSpecs::Child.private_method_defined?(:protected_parent, false).should == false
-        ModuleSpecs::Child.private_method_defined?(:private_parent, false).should == false
+      # Defined in Parent
+      ModuleSpecs::Child.private_method_defined?(:public_parent, false).should == false
+      ModuleSpecs::Child.private_method_defined?(:protected_parent, false).should == false
+      ModuleSpecs::Child.private_method_defined?(:private_parent, false).should == false
 
-        # Defined in Module
-        ModuleSpecs::Child.private_method_defined?(:public_module, false).should == false
-        ModuleSpecs::Child.private_method_defined?(:protected_module, false).should == false
-        ModuleSpecs::Child.private_method_defined?(:private_module, false).should == false
+      # Defined in Module
+      ModuleSpecs::Child.private_method_defined?(:public_module, false).should == false
+      ModuleSpecs::Child.private_method_defined?(:protected_module, false).should == false
+      ModuleSpecs::Child.private_method_defined?(:private_module, false).should == false
 
-        # Defined in SuperModule
-        ModuleSpecs::Child.private_method_defined?(:public_super_module, false).should == false
-        ModuleSpecs::Child.private_method_defined?(:protected_super_module, false).should == false
-        ModuleSpecs::Child.private_method_defined?(:private_super_module, false).should == false
-      end
+      # Defined in SuperModule
+      ModuleSpecs::Child.private_method_defined?(:public_super_module, false).should == false
+      ModuleSpecs::Child.private_method_defined?(:protected_super_module, false).should == false
+      ModuleSpecs::Child.private_method_defined?(:private_super_module, false).should == false
     end
   end
 end
