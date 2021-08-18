@@ -287,8 +287,6 @@ RSpec.describe "bundle binstubs <gem>" do
     end
 
     it "sets correct permissions for binstubs" do
-      skip "https://github.com/rubygems/rubygems/issues/3352" if Gem.win_platform?
-
       with_umask(0o002) do
         install_gemfile <<-G
           source "#{file_uri_for(gem_repo1)}"
@@ -297,7 +295,7 @@ RSpec.describe "bundle binstubs <gem>" do
 
         bundle "binstubs rack"
         binary = bundled_app("bin/rackup")
-        expect(File.stat(binary).mode.to_s(8)).to eq("100775")
+        expect(File.stat(binary).mode.to_s(8)).to eq(Gem.win_platform? ? "100644" : "100775")
       end
     end
 

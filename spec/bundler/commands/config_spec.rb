@@ -88,6 +88,16 @@ RSpec.describe ".bundle/config" do
       bundle "config get path", :env => { "BUNDLE_USER_CONFIG" => bundle_user_config }
       expect(out).to include("Set for the current user (#{bundle_user_config}): \"vendor\"")
     end
+
+    context "when not explicitly configured, but BUNDLE_USER_HOME set" do
+      let(:bundle_user_home) { bundled_app(".bundle").to_s }
+
+      it "uses the right location" do
+        bundle "config set path vendor", :env => { "BUNDLE_USER_HOME" => bundle_user_home }
+        bundle "config get path", :env => { "BUNDLE_USER_HOME" => bundle_user_home }
+        expect(out).to include("Set for the current user (#{bundle_user_home}/config): \"vendor\"")
+      end
+    end
   end
 
   describe "global" do

@@ -36,8 +36,6 @@ module Bundler
 
     def local!; end
 
-    def local_only!; end
-
     def cached!; end
 
     def remote!; end
@@ -65,6 +63,10 @@ module Bundler
 
     def inspect
       "#<#{self.class}:0x#{object_id} #{self}>"
+    end
+
+    def to_err
+      to_s
     end
 
     def path?

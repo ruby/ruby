@@ -161,12 +161,6 @@ module Bundler
       @multisource_allowed
     end
 
-    def resolve_only_locally!
-      @remote = false
-      sources.local_only!
-      resolve
-    end
-
     def resolve_with_cache!
       sources.cached!
       resolve
@@ -505,7 +499,7 @@ module Bundler
     end
 
     def precompute_source_requirements_for_indirect_dependencies?
-      sources.non_global_rubygems_sources.all?(&:dependency_api_available?) && !sources.aggregate_global_source?
+      @remote && sources.non_global_rubygems_sources.all?(&:dependency_api_available?) && !sources.aggregate_global_source?
     end
 
     def current_ruby_platform_locked?
