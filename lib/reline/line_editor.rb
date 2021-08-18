@@ -605,7 +605,7 @@ class Reline::LineEditor
     visual_start = nil
     @dialog_lines_backup[:lines].each_with_index { |l, i|
       pr = prompt_list ? prompt_list[i] : prompt
-      vl, height = split_by_width(pr + l, @screen_size.last)
+      vl, _ = split_by_width(pr + l, @screen_size.last)
       if i == @dialog_lines_backup[:line_index]
         visual_start = visual_lines.size + @dialog_lines_backup[:started_from]
       end
@@ -680,7 +680,7 @@ class Reline::LineEditor
     visual_start = nil
     @dialog_lines_backup[:lines].each_with_index { |l, i|
       pr = prompt_list ? prompt_list[i] : prompt
-      vl, height = split_by_width(pr + l, @screen_size.last)
+      vl, _ = split_by_width(pr + l, @screen_size.last)
       if i == @dialog_lines_backup[:line_index]
         visual_start = visual_lines.size + @dialog_lines_backup[:started_from] + @dialog_vertical_offset
       end
