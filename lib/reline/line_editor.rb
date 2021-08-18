@@ -249,7 +249,6 @@ class Reline::LineEditor
     @drop_terminate_spaces = false
     @in_pasting = false
     @auto_indent_proc = nil
-    @with_dialog = nil
     @dialog_column = nil
     @dialog_vertical_offset = nil
     @dialog_contents = nil
