@@ -603,6 +603,7 @@ class Reline::LineEditor
       visual_lines.concat(vl)
     }
     if old_dialog_vertical_offset < @dialog_vertical_offset
+      # rerender top
       move_cursor_down(old_dialog_vertical_offset)
       start = visual_start + old_dialog_vertical_offset
       line_num = @dialog_vertical_offset - old_dialog_vertical_offset
@@ -615,6 +616,7 @@ class Reline::LineEditor
       move_cursor_up(old_dialog_vertical_offset + line_num - 1)
     end
     if (old_dialog_vertical_offset + old_dialog_contents.size) > (@dialog_vertical_offset + @dialog_contents.size)
+      # rerender bottom
       move_cursor_down(@dialog_vertical_offset + @dialog_contents.size)
       start = visual_start + @dialog_vertical_offset + @dialog_contents.size
       line_num = (old_dialog_vertical_offset + old_dialog_contents.size) - (@dialog_vertical_offset + @dialog_contents.size)
@@ -627,6 +629,7 @@ class Reline::LineEditor
       move_cursor_up(@dialog_vertical_offset + @dialog_contents.size + line_num - 1)
     end
     if old_dialog_column < @dialog_column
+      # rerender left
       move_cursor_down(old_dialog_vertical_offset)
       width = @dialog_column - old_dialog_column
       start = visual_start + old_dialog_vertical_offset
@@ -644,6 +647,7 @@ class Reline::LineEditor
       move_cursor_up(old_dialog_vertical_offset + line_num - 1)
     end
     if (old_dialog_column + DIALOG_WIDTH) > (@dialog_column + DIALOG_WIDTH)
+      # rerender right
       move_cursor_down(old_dialog_vertical_offset)
       width = (old_dialog_column + DIALOG_WIDTH) - (@dialog_column + DIALOG_WIDTH)
       start = visual_start + old_dialog_vertical_offset
