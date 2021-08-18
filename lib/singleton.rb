@@ -196,43 +196,45 @@ module Singleton
   #  Returns the singleton instance.
 end
 
-module RactorLocalSingleton
-  include Singleton::SingletonInstanceMethods
+if defined?(Ractor)
+  module RactorLocalSingleton
+    include Singleton::SingletonInstanceMethods
 
-  module RactorLocalSingletonClassMethods
-    include Singleton::SingletonClassMethods
-    def instance
-      set_mutex(Thread::Mutex.new) if Ractor.current[mutex_key].nil?
-      return Ractor.current[instance_key] if Ractor.current[instance_key]
-      Ractor.current[mutex_key].synchronize {
+    module RactorLocalSingletonClassMethods
+      include Singleton::SingletonClassMethods
+      def instance
+        set_mutex(Thread::Mutex.new) if Ractor.current[mutex_key].nil?
         return Ractor.current[instance_key] if Ractor.current[instance_key]
-        set_instance(new())
-      }
-      Ractor.current[instance_key]
+        Ractor.current[mutex_key].synchronize {
+          return Ractor.current[instance_key] if Ractor.current[instance_key]
+          set_instance(new())
+        }
+        Ractor.current[instance_key]
+      end
+
+      private
+
+      def instance_key
+        :"__RactorLocalSingleton_instance_with_class_id_#{object_id}__"
+      end
+
+      def mutex_key
+        :"__RactorLocalSingleton_mutex_with_class_id_#{object_id}__"
+      end
+
+      def set_instance(val)
+        Ractor.current[instance_key] = val
+      end
+
+      def set_mutex(val)
+        Ractor.current[mutex_key] = val
+      end
     end
 
-    private
-
-    def instance_key
-      :"__RactorLocalSingleton_instance_with_class_id_#{object_id}__"
+    def self.module_with_class_methods
+      RactorLocalSingletonClassMethods
     end
 
-    def mutex_key
-      :"__RactorLocalSingleton_mutex_with_class_id_#{object_id}__"
-    end
-
-    def set_instance(val)
-      Ractor.current[instance_key] = val
-    end
-
-    def set_mutex(val)
-      Ractor.current[mutex_key] = val
-    end
+    extend Singleton::SingletonClassProperties
   end
-
-  def self.module_with_class_methods
-    RactorLocalSingletonClassMethods
-  end
-
-  extend Singleton::SingletonClassProperties
 end
