@@ -166,6 +166,12 @@ module Bundler
       @multisource_allowed
     end
 
+    def resolve_only_locally!
+      @remote = false
+      sources.local_only!
+      resolve
+    end
+
     def resolve_with_cache!
       sources.cached!
       resolve

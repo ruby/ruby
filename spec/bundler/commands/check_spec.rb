@@ -137,6 +137,22 @@ RSpec.describe "bundle check" do
     expect(exitstatus).to eq(1)
   end
 
+  it "ensures that gems are actually installed and not just cached in applications' cache" do
+    gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
+      gem "rack"
+    G
+
+    bundle "config set --local path vendor/bundle"
+    bundle :cache
+
+    gem_command "uninstall rack", :env => { "GEM_HOME" => vendored_gems.to_s }
+
+    bundle "check", :raise_on_error => false
+    expect(err).to include("* rack (1.0.0)")
+    expect(exitstatus).to eq(1)
+  end
+
   it "ignores missing gems restricted to other platforms" do
     gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"

@@ -15,7 +15,7 @@ module Bundler
       definition.validate_runtime!
 
       begin
-        definition.resolve_with_cache!
+        definition.resolve_only_locally!
         not_installed = definition.missing_specs
       rescue GemNotFound, VersionConflict
         Bundler.ui.error "Bundler can't satisfy your Gemfile's dependencies."
