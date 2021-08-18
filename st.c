@@ -651,17 +651,7 @@ st_memsize(const st_table *tab)
 }
 
 static st_index_t
-find_table_entry_ind(st_table *tab, st_hash_t hash_value, st_data_t key);
-
-static st_index_t
-find_table_bin_ind(st_table *tab, st_hash_t hash_value, st_data_t key);
-
-static st_index_t
 find_table_bin_ind_direct(st_table *table, st_hash_t hash_value, st_data_t key);
-
-static st_index_t
-find_table_bin_ptr_and_reserve(st_table *tab, st_hash_t *hash_value,
-			       st_data_t key, st_index_t *bin_ind);
 
 #ifdef HASH_LOG
 static void
