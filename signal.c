@@ -971,7 +971,7 @@ static void
 sigill(int sig SIGINFO_ARG)
 {
     check_reserved_signal("ILL");
-#if defined __APPLE__
+#if defined __APPLE__ || defined __linux__
     CHECK_STACK_OVERFLOW();
 #endif
     rb_bug_for_fatal_signal(default_sigill_handler, sig, SIGINFO_CTX, "Illegal instruction" MESSAGE_FAULT_ADDRESS);
