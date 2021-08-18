@@ -878,12 +878,13 @@ check_stack_overflow(int sig, const uintptr_t addr, const ucontext_t *ctx)
         (sp_page <= fault_page && fault_page <= bp_page)) {
 	rb_execution_context_t *ec = GET_EC();
 	int crit = FALSE;
-	if ((uintptr_t)ec->tag->buf / pagesize <= fault_page + 1) {
+	int uplevel = roomof(pagesize, sizeof(*ec->tag)) / 2; /* XXX: heuristic */
+	while ((uintptr_t)ec->tag->buf / pagesize <= fault_page + 1) {
 	    /* drop the last tag if it is close to the fault,
 	     * otherwise it can cause stack overflow again at the same
 	     * place. */
+	    if ((crit = (!ec->tag->prev || !--uplevel)) != FALSE) break;
 	    ec->tag = ec->tag->prev;
-	    crit = TRUE;
 	}
 	reset_sigmask(sig);
 	rb_ec_stack_overflow(ec, crit);
