@@ -336,7 +336,7 @@ RSpec.describe "bundle install with gem sources" do
 
       expect(err).to include("This Gemfile does not include an explicit global source. " \
         "Not using an explicit global source may result in a different lockfile being generated depending on " \
-        "the gems you have installed locally before bundler is run." \
+        "the gems you have installed locally before bundler is run. " \
         "Instead, define a global source in your Gemfile like this: source \"https://rubygems.org\".")
     end
 
@@ -757,6 +757,24 @@ RSpec.describe "bundle install with gem sources" do
         "Your bundle only supports platforms [\"x86_64-darwin-19\"] but your local platform is x86_64-linux. " \
         "Add the current platform to the lockfile with `bundle lock --add-platform x86_64-linux` and try again."
       )
+    end
+  end
+
+  context "with --local flag" do
+    before do
+      system_gems "rack-1.0.0", :path => default_bundle_path
+    end
+
+    it "respects installed gems without fetching any remote sources" do
+      install_gemfile <<-G, :local => true
+        source "#{file_uri_for(gem_repo1)}"
+
+        source "https://not-existing-source" do
+          gem "rack"
+        end
+      G
+
+      expect(last_command).to be_success
     end
   end
 end

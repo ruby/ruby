@@ -26,12 +26,6 @@ module Bundler
         Array(options["remotes"]).reverse_each {|r| add_remote(r) }
       end
 
-      def local_only!
-        @specs = nil
-        @allow_local = true
-        @allow_remote = false
-      end
-
       def local!
         return if @allow_local
 
@@ -50,6 +44,7 @@ module Bundler
         return if @allow_cached
 
         @specs = nil
+        @allow_local = true
         @allow_cached = true
       end
 
@@ -96,11 +91,22 @@ module Bundler
         out << "  specs:\n"
       end
 
+      def to_err
+        if remotes.empty?
+          "locally installed gems"
+        elsif @allow_remote
+          "rubygems repository #{remote_names} or installed locally"
+        elsif @allow_cached
+          "cached gems from rubygems repository #{remote_names} or installed locally"
+        else
+          "locally installed gems"
+        end
+      end
+
       def to_s
         if remotes.empty?
           "locally installed gems"
         else
-          remote_names = remotes.map(&:to_s).join(", ")
           "rubygems repository #{remote_names} or installed locally"
         end
       end
@@ -318,6 +324,10 @@ module Bundler
       end
 
       protected
+
+      def remote_names
+        remotes.map(&:to_s).join(", ")
+      end
 
       def credless_remotes
         remotes.map(&method(:suppress_configured_credentials))

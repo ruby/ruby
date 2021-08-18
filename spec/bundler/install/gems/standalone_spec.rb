@@ -147,6 +147,36 @@ RSpec.shared_examples "bundle install --standalone" do
     end
   end
 
+  describe "with Gemfiles using path sources and resulting bundle moved to a folder hierarchy with different nesting" do
+    before do
+      build_lib "minitest", "1.0.0", :path => lib_path("minitest")
+
+      Dir.mkdir bundled_app("app")
+
+      gemfile bundled_app("app/Gemfile"), <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem "minitest", :path => "#{lib_path("minitest")}"
+      G
+
+      bundle "install", :standalone => true, :dir => bundled_app("app")
+
+      Dir.mkdir tmp("one_more_level")
+      FileUtils.mv bundled_app, tmp("one_more_level")
+    end
+
+    it "also works" do
+      ruby <<-RUBY, :dir => tmp("one_more_level/bundled_app/app")
+        require "./bundle/bundler/setup"
+
+        require "minitest"
+        puts MINITEST
+      RUBY
+
+      expect(out).to eq("1.0.0")
+      expect(err).to be_empty
+    end
+  end
+
   describe "with gems with native extension", :ruby_repo do
     before do
       bundle "config set --local path #{bundled_app("bundle")}"
@@ -159,7 +189,7 @@ RSpec.shared_examples "bundle install --standalone" do
     it "generates a bundle/bundler/setup.rb with the proper paths" do
       expected_path = bundled_app("bundle/bundler/setup.rb")
       extension_line = File.read(expected_path).each_line.find {|line| line.include? "/extensions/" }.strip
-      expect(extension_line).to start_with '$:.unshift File.expand_path("#{path}/../#{ruby_engine}/#{ruby_version}/extensions/'
+      expect(extension_line).to start_with '$:.unshift File.expand_path("#{__dir__}/../#{RUBY_ENGINE}/#{RbConfig::CONFIG["ruby_version"]}/extensions/'
       expect(extension_line).to end_with '/very_simple_binary-1.0")'
     end
   end

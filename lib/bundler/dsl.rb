@@ -457,7 +457,7 @@ repo_name ||= user_name
     def implicit_global_source_warning
       Bundler::SharedHelpers.major_deprecation 2, "This Gemfile does not include an explicit global source. " \
         "Not using an explicit global source may result in a different lockfile being generated depending on " \
-        "the gems you have installed locally before bundler is run." \
+        "the gems you have installed locally before bundler is run. " \
         "Instead, define a global source in your Gemfile like this: source \"https://rubygems.org\"."
     end
 
