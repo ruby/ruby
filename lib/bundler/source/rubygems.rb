@@ -29,6 +29,7 @@ module Bundler
       def local_only!
         @specs = nil
         @allow_local = true
+        @allow_cached = false
         @allow_remote = false
       end
 
