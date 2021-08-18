@@ -632,6 +632,21 @@ rdoc_include:
     $LOAD_PATH.replace orig_LOAD_PATH
   end
 
+  def test_parse_template_stylesheets
+    css = nil
+    Dir.mktmpdir do |dir|
+      css = File.join(dir, "hoge.css")
+      File.write(css, "")
+      out, err = capture_output do
+        @options.parse %W[--template-stylesheets #{css}]
+      end
+
+      assert_empty out
+      assert_empty err
+    end
+    assert_include @options.template_stylesheets, css
+  end
+
   def test_parse_visibility
     @options.parse %w[--visibility=public]
     assert_equal :public, @options.visibility

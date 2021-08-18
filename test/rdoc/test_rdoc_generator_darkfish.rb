@@ -220,6 +220,20 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
     assert_includes method_name, '{ |%&lt;&lt;script&gt;alert(&quot;atui&quot;)&lt;/script&gt;&gt;, yield_arg| ... }'
   end
 
+  def test_template_stylesheets
+    css = Tempfile.create(%W'hoge .css', Dir.mktmpdir('tmp', '.'))
+    File.write(css, '')
+    base = File.basename(css)
+    refute_file(base)
+
+    @options.template_stylesheets << css
+
+    @g.generate
+
+    assert_file base
+    assert_include File.read('index.html'), %Q[href="./#{base}"]
+  end
+
   ##
   # Asserts that +filename+ has a link count greater than 1 if hard links to
   # @tmpdir are supported.

@@ -971,7 +971,7 @@ Usage: #{opt.program_name} [options] [names...]
       opt.on("--template-stylesheets=FILES", PathArray,
              "Set (or add to) the list of files to",
              "include with the html template.") do |value|
-        @template_stylesheets << value
+        @template_stylesheets.concat value
       end
 
       opt.separator nil
