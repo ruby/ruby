@@ -1410,10 +1410,10 @@ static uint64_t
 read_dw_form_addr(DebugInfoReader *reader, const char **ptr)
 {
     const char *p = *ptr;
-    *ptr = p + reader->format;
-    if (reader->format == 4) {
+    *ptr = p + reader->address_size;
+    if (reader->address_size == 4) {
         return read_uint32(&p);
-    } else if (reader->format == 8) {
+    } else if (reader->address_size == 8) {
         return read_uint64(&p);
     } else {
         fprintf(stderr,"unknown address_size:%d", reader->address_size);
