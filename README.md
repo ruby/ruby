@@ -24,7 +24,7 @@ To cite this repository in your publications, please use this bibtex snippet:
   year = {2021},
   publisher = {GitHub},
   journal = {GitHub repository},
-  howpublished = {\url{https://github.com/Shopify/ruby/tree/yjit}},
+  howpublished = {\url{https://github.com/Shopify/yjit}},
 }
 ```
 
@@ -39,10 +39,10 @@ Because there is no GC for generated code yet, your software could run out of ex
 
 ## Installation
 
-Start by cloning the `yjit` branch of the `Shopify/ruby` repository:
+Start by cloning the `Shopify/yjit` repository:
 
 ```
-git clone https://github.com/Shopify/ruby.git yjit
+git clone https://github.com/Shopify/yjit
 cd yjit
 ```
 
