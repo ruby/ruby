@@ -405,9 +405,8 @@ toregexp
 // attr bool leaf = false;
 // attr rb_snum_t sp_inc = 1 - (rb_snum_t)cnt;
 {
-    const VALUE ary = rb_ary_tmp_new_from_values(0, cnt, STACK_ADDR_FROM_TOP(cnt));
+    VALUE ary = rb_ary_tmp_new_from_values(0, cnt, STACK_ADDR_FROM_TOP(cnt));
     val = rb_reg_new_ary(ary, (int)opt);
-    rb_ary_clear(ary);
 }
 
 /* intern str to Symbol and push it. */
