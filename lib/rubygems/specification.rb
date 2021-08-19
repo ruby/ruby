@@ -855,7 +855,7 @@ class Gem::Specification < Gem::BasicSpecification
       next names if names.nonzero?
       versions = b.version <=> a.version
       next versions if versions.nonzero?
-      b.platform == Gem::Platform::RUBY ? -1 : 1
+      Gem::Platform.sort_priority(b.platform)
     end
   end
 
@@ -2333,7 +2333,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Returns an object you can use to sort specifications in #sort_by.
 
   def sort_obj
-    [@name, @version, @new_platform == Gem::Platform::RUBY ? -1 : 1]
+    [@name, @version, Gem::Platform.sort_priority(@new_platform)]
   end
 
   ##
