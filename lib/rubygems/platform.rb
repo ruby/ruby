@@ -40,6 +40,10 @@ class Gem::Platform
     match_platforms?(platform, Gem.platforms)
   end
 
+  def self.sort_priority(platform)
+    platform == Gem::Platform::RUBY ? -1 : 1
+  end
+
   def self.installable?(spec)
     if spec.respond_to? :installable_platform?
       spec.installable_platform?

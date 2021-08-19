@@ -71,7 +71,7 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
     end
 
     found = found.sort_by do |s|
-      [s.version, s.platform == Gem::Platform::RUBY ? -1 : 1]
+      [s.version, Gem::Platform.sort_priority(s.platform)]
     end
 
     newest = found.last
