@@ -807,6 +807,8 @@ typedef struct rb_objspace {
 	size_t total_freed_objects;
 	size_t total_allocated_pages;
 	size_t total_freed_pages;
+        size_t total_time_ns;
+        struct timespec start_time;
     } profile;
     struct gc_list *global_list;
 
@@ -9163,10 +9165,55 @@ gc_enter_count(enum gc_enter_event event)
     }
 }
 
+#define MEASURE_GC 1
+
+static bool
+gc_enter_event_measure_p(enum gc_enter_event event)
+{
+    if (!MEASURE_GC) return false;
+
+    switch (event) {
+      case gc_enter_event_start:
+      case gc_enter_event_mark_continue:
+      case gc_enter_event_sweep_continue:
+      case gc_enter_event_rest:
+        return true;
+      case gc_enter_event_finalizer:
+      case gc_enter_event_rb_memerror:
+        return false;
+    }
+}
+
+static void
+gc_enter_clock(rb_objspace_t *objspace, enum gc_enter_event event)
+{
+    if (gc_enter_event_measure_p(event)) {
+        clock_gettime(CLOCK_MONOTONIC, &objspace->profile.start_time);
+    }
+}
+
+static void
+gc_exit_clock(rb_objspace_t *objspace, enum gc_enter_event event)
+{
+    if (gc_enter_event_measure_p(event)) {
+        struct timespec end_time;
+
+        clock_gettime(CLOCK_MONOTONIC, &end_time);
+        if (end_time.tv_sec < objspace->profile.start_time.tv_sec) {
+            return; // ignore
+        }
+        size_t ns = (end_time.tv_sec - objspace->profile.start_time.tv_sec) * 1000 * 1000 * 1000 + end_time.tv_nsec - objspace->profile.start_time.tv_nsec;
+
+        objspace->profile.total_time_ns += ns;
+    }
+}
+
 static inline void
 gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_lev)
 {
     RB_VM_LOCK_ENTER_LEV(lock_lev);
+
+    gc_enter_clock(objspace, event);
 
     switch (event) {
       case gc_enter_event_rest:
@@ -9206,6 +9253,7 @@ gc_exit(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_l
     during_gc = FALSE;
 
     mjit_gc_exit_hook();
+    gc_exit_clock(objspace, event);
     RB_VM_LOCK_LEAVE_LEV(lock_lev);
 }
 
@@ -10444,6 +10492,7 @@ gc_latest_gc_info(rb_execution_context_t *ec, VALUE self, VALUE arg)
 
 enum gc_stat_sym {
     gc_stat_sym_count,
+    gc_stat_sym_time,
     gc_stat_sym_heap_allocated_pages,
     gc_stat_sym_heap_sorted_length,
     gc_stat_sym_heap_allocatable_pages,
@@ -10492,6 +10541,7 @@ setup_gc_stat_symbols(void)
     if (gc_stat_symbols[0] == 0) {
 #define S(s) gc_stat_symbols[gc_stat_sym_##s] = ID2SYM(rb_intern_const(#s))
 	S(count);
+        S(time);
 	S(heap_allocated_pages);
 	S(heap_sorted_length);
 	S(heap_allocatable_pages);
@@ -10558,6 +10608,7 @@ gc_stat_internal(VALUE hash_or_sym)
 	rb_hash_aset(hash, gc_stat_symbols[gc_stat_sym_##name], SIZET2NUM(attr));
 
     SET(count, objspace->profile.count);
+    SET(time, objspace->profile.total_time_ns / (1000 * 1000) /* ns -> ms */);
 
     /* implementation dependent counters */
     SET(heap_allocated_pages, heap_allocated_pages);
