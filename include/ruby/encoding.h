@@ -946,7 +946,6 @@ int rb_enc_precise_mbclen(const char *p, const char *e, rb_encoding *enc);
  * @retval     otherwise  A code point of the character at `p`.
  * @post       `len` (if set) is the number of bytes of `p`.
  */
-/* -> 0x00..0x7f, -1 */
 int rb_enc_ascget(const char *p, const char *e, int *len, rb_encoding *enc);
 
 /**
