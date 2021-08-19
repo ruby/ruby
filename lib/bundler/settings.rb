@@ -419,7 +419,15 @@ module Bundler
       elsif is_credential(key)
         "[REDACTED]"
       elsif is_userinfo(converted)
-        converted.gsub(/:.*$/, ":[REDACTED]")
+        username, pass = converted.split(":")
+
+        if pass == "x-oauth-basic"
+          username = "[REDACTED]"
+        else
+          pass = "[REDACTED]"
+        end
+
+        [username, pass].join(":")
       else
         converted
       end
