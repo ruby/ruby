@@ -65,6 +65,8 @@ RSpec.describe Bundler::Plugin do
     end
 
     it "passes the name and options to installer" do
+      allow(index).to receive(:installed?).
+        with("new-plugin")
       allow(installer).to receive(:install).with(["new-plugin"], opts) do
         { "new-plugin" => spec }
       end.once
@@ -73,6 +75,8 @@ RSpec.describe Bundler::Plugin do
     end
 
     it "validates the installed plugin" do
+      allow(index).to receive(:installed?).
+        with("new-plugin")
       allow(subject).
         to receive(:validate_plugin!).with(lib_path("new-plugin")).once
 
@@ -80,6 +84,8 @@ RSpec.describe Bundler::Plugin do
     end
 
     it "registers the plugin with index" do
+      allow(index).to receive(:installed?).
+        with("new-plugin")
       allow(index).to receive(:register_plugin).
         with("new-plugin", lib_path("new-plugin").to_s, [lib_path("new-plugin").join("lib").to_s], []).once
       subject.install ["new-plugin"], opts
@@ -96,6 +102,7 @@ RSpec.describe Bundler::Plugin do
         end.once
 
         allow(subject).to receive(:validate_plugin!).twice
+        allow(index).to receive(:installed?).twice
         allow(index).to receive(:register_plugin).twice
         subject.install ["new-plugin", "another-plugin"], opts
       end

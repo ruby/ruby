@@ -109,9 +109,9 @@ RSpec.describe "bundler plugin install" do
         build_gem "charlie"
       end
 
-      bundle "plugin install charlie --source #{file_uri_for(gem_repo2)}"
+      bundle "plugin install charlie --source #{file_uri_for(gem_repo2)}", :raise_on_error => false
 
-      expect(err).to include("Failed to install the following plugins: `charlie`. The underlying error was: plugins.rb was not found")
+      expect(err).to include("Failed to install plugin `charlie`, due to Bundler::Plugin::MalformattedPlugin (plugins.rb was not found in the plugin.)")
 
       expect(global_plugin_gem("charlie-1.0")).not_to be_directory
 
@@ -128,7 +128,7 @@ RSpec.describe "bundler plugin install" do
         end
       end
 
-      bundle "plugin install chaplin --source #{file_uri_for(gem_repo2)}"
+      bundle "plugin install chaplin --source #{file_uri_for(gem_repo2)}", :raise_on_error => false
 
       expect(global_plugin_gem("chaplin-1.0")).not_to be_directory
 
