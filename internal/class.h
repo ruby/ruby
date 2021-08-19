@@ -127,7 +127,6 @@ VALUE rb_obj_public_methods(int argc, const VALUE *argv, VALUE obj);
 VALUE rb_special_singleton_class(VALUE);
 VALUE rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach);
 VALUE rb_singleton_class_get(VALUE obj);
-int rb_class_has_methods(VALUE c);
 void rb_undef_methods_from(VALUE klass, VALUE super);
 
 static inline void RCLASS_SET_ORIGIN(VALUE klass, VALUE origin);

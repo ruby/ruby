@@ -2048,20 +2048,11 @@ class TestHash < Test::Unit::TestCase
 
   class TestSubHash < TestHash
     class SubHash < Hash
-      def reject(*)
-        super
-      end
     end
 
     def setup
       @cls = SubHash
       super
-    end
-
-    def test_reject
-      assert_warning(/extra states are no longer copied/) do
-        super
-      end
     end
   end
 

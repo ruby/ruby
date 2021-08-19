@@ -2363,12 +2363,6 @@ rb_scan_args_kw(int kw_flag, int argc, const VALUE *argv, const char *fmt, ...)
     return rb_scan_args_result(&arg, argc);
 }
 
-int
-rb_class_has_methods(VALUE c)
-{
-    return rb_id_table_size(RCLASS_M_TBL(c)) == 0 ? FALSE : TRUE;
-}
-
 /*!
  * \}
  */

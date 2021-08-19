@@ -52,11 +52,6 @@
 #include "gc.h"
 #endif
 
-#define HAS_EXTRA_STATES(hash, klass) ( \
-    ((klass = has_extra_methods(rb_obj_class(hash))) != 0) || \
-    FL_TEST((hash), FL_EXIVAR|RHASH_PROC_DEFAULT) || \
-    !NIL_P(RHASH_IFNONE(hash)))
-
 #define SET_DEFAULT(hash, ifnone) ( \
     FL_UNSET_RAW(hash, RHASH_PROC_DEFAULT), \
     RHASH_SET_IFNONE(hash, ifnone))
@@ -71,18 +66,6 @@ copy_default(struct RHash *hash, const struct RHash *hash2)
     hash->basic.flags &= ~RHASH_PROC_DEFAULT;
     hash->basic.flags |= hash2->basic.flags & RHASH_PROC_DEFAULT;
     RHASH_SET_IFNONE(hash, RHASH_IFNONE((VALUE)hash2));
-}
-
-static VALUE
-has_extra_methods(VALUE klass)
-{
-    const VALUE base = rb_cHash;
-    VALUE c = klass;
-    while (c != base) {
-	if (rb_class_has_methods(c)) return klass;
-	c = RCLASS_SUPER(c);
-    }
-    return 0;
 }
 
 static VALUE rb_hash_s_try_convert(VALUE, VALUE);
@@ -2608,12 +2591,6 @@ rb_hash_reject(VALUE hash)
     VALUE result;
 
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
-    if (RTEST(ruby_verbose)) {
-	VALUE klass;
-	if (HAS_EXTRA_STATES(hash, klass)) {
-	    rb_warn("extra states are no longer copied: %+"PRIsVALUE, hash);
-	}
-    }
     result = hash_dup_with_compare_by_id(hash);
     if (!RHASH_EMPTY_P(hash)) {
 	rb_hash_foreach(result, delete_if_i, result);
