@@ -64,6 +64,24 @@ class TestGemResolverInstallerSet < Gem::TestCase
     assert_equal %w[a-1], set.always_install.map {|s| s.full_name }
   end
 
+  def test_add_always_install_prerelease_github_problem
+    spec_fetcher do |fetcher|
+      fetcher.gem 'a', 1
+    end
+
+    # Github has an issue in which it will generate a misleading prerelease output in its RubyGems server API and
+    # returns a 0 version for the gem while it doesn't exist.
+    @fetcher.data["#{@gem_repo}prerelease_specs.#{Gem.marshal_version}.gz"] = util_gzip(Marshal.dump([
+      Gem::NameTuple.new('a', Gem::Version.new(0), 'ruby'),
+    ]))
+
+    set = Gem::Resolver::InstallerSet.new :both
+
+    set.add_always_install dep('a')
+
+    assert_equal %w[a-1], set.always_install.map {|s| s.full_name }
+  end
+
   def test_add_always_install_prerelease_only
     spec_fetcher do |fetcher|
       fetcher.gem 'a', '3.a'
