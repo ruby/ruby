@@ -1135,5 +1135,16 @@ ruby_version_is "2.7" do
         result.should == true
       end
     end
+
+    ruby_version_is "3.1" do
+      it "can omit parentheses in one line pattern matching" do
+        [1, 2] => a, b
+        a.should == 1
+        b.should == 2
+
+        {a: 1} => a:
+        a.should == 1
+      end
+    end
   end
 end

@@ -1519,13 +1519,13 @@ END
     assert_raise(NoMatchingPatternError) do
       {a: 1} => {a: 0}
     end
-    assert_syntax_error("if {} => {a:}; end", /void value expression/)
-    assert_syntax_error(%q{
-      1 => a, b
-    }, /unexpected/, '[ruby-core:95098]')
-    assert_syntax_error(%q{
-      1 => a:
-    }, /unexpected/, '[ruby-core:95098]')
+
+    [1, 2] => a, b
+    assert_equal 1, a
+    assert_equal 2, b
+
+    {a: 1} => a:
+    assert_equal 1, a
 
     assert_equal true, (1 in 1)
     assert_equal false, (1 in 2)

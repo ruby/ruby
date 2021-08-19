@@ -1732,7 +1732,7 @@ expr		: command_call
 			p->ctxt.in_kwarg = 1;
 		    }
 		    {$<tbl>$ = push_pvtbl(p);}
-		  p_expr
+		  p_top_expr_body
 		    {pop_pvtbl(p, $<tbl>4);}
 		    {
 			p->ctxt.in_kwarg = $<ctxt>3.in_kwarg;
@@ -1750,7 +1750,7 @@ expr		: command_call
 			p->ctxt.in_kwarg = 1;
 		    }
 		    {$<tbl>$ = push_pvtbl(p);}
-		  p_expr
+		  p_top_expr_body
 		    {pop_pvtbl(p, $<tbl>4);}
 		    {
 			p->ctxt.in_kwarg = $<ctxt>3.in_kwarg;
