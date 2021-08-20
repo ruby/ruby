@@ -50,8 +50,17 @@ const char *rb_builtin_type_name(int t);
 const char *rb_builtin_class_name(VALUE x);
 PRINTF_ARGS(void rb_warn_deprecated(const char *fmt, const char *suggest, ...), 1, 3);
 PRINTF_ARGS(void rb_warn_deprecated_to_remove(const char *removal, const char *fmt, const char *suggest, ...), 2, 4);
-#if RUBY_DEBUG && (RBIMPL_HAS_ATTRIBUTE(diagnose_if) || defined(__OPTIMIZE__))
+#if RUBY_DEBUG
 # include "ruby/version.h"
+# define RUBY_VERSION_SINCE(major, minor) (RUBY_API_VERSION_CODE >= (major * 10000) + (minor) * 100)
+# define RUBY_VERSION_BEFORE(major, minor) (RUBY_API_VERSION_CODE < (major * 10000) + (minor) * 100)
+# if defined(RBIMPL_WARNING_PRAGMA0)
+#   define RBIMPL_TODO0(x) RBIMPL_WARNING_PRAGMA0(message(x))
+# elif RBIMPL_COMPILER_SINCE(MSVC, 12, 0, 0)
+#   define RBIMPL_TODO0(x) __pragma(message(x))
+# endif
+
+# if RBIMPL_HAS_ATTRIBUTE(diagnose_if) || defined(__OPTIMIZE__)
 
 #define RUBY_VERSION_isdigit(c) ('0'<=(c)&&(c)<='9')
 // upto 99
@@ -68,32 +77,44 @@ PRINTF_ARGS(void rb_warn_deprecated_to_remove(const char *removal, const char *f
     (RUBY_VERSION__to_number(v, 0) * 10000 + \
      ((v)[RUBY_VERSION__number_len(v, 0)] == '.' ? \
       RUBY_VERSION__to_number(v, RUBY_VERSION__number_len(v, 0)+1) * 100 : 0))
-#define RUBY_VERSION_SINCE(v) (RUBY_API_VERSION_CODE >= RUBY_VERSION_CODE_FROM_MAJOR_MINOR_STRING(v))
-#define RUBY_VERSION_BEFORE(v) (RUBY_API_VERSION_CODE < RUBY_VERSION_CODE_FROM_MAJOR_MINOR_STRING(v))
+#define RUBY_VERSION_STRING_SINCE(v) (RUBY_API_VERSION_CODE >= RUBY_VERSION_CODE_FROM_MAJOR_MINOR_STRING(v))
+#define RUBY_VERSION_STRING_BEFORE(v) (RUBY_API_VERSION_CODE < RUBY_VERSION_CODE_FROM_MAJOR_MINOR_STRING(v))
 
 # if RBIMPL_HAS_ATTRIBUTE(diagnose_if)
 RBIMPL_ATTR_FORCEINLINE()
 static void
 rb_deprecated_method_to_be_removed(const char *removal)
     RBIMPL_ATTR_DIAGNOSE_IF(!RUBY_VERSION_isdigit(removal[0]), "malformed version number", "error")
-    RBIMPL_ATTR_DIAGNOSE_IF(RUBY_VERSION_SINCE(removal), "deprecated method to be removed", "error")
+    RBIMPL_ATTR_DIAGNOSE_IF(RUBY_VERSION_STRING_SINCE(removal), "deprecated method to be removed", "error")
 {
 }
 # else
 RBIMPL_ATTR_ERROR(("deprecated"))
 void rb_deprecated_method_to_be_removed(const char *);
 #   define rb_deprecated_method_to_be_removed(removal) \
-    (sizeof(char[1-2*(!RUBY_VERSION_isdigit(removal[0]) || RUBY_VERSION_SINCE(removal))])!=1 ? \
+    (sizeof(char[1-2*(!RUBY_VERSION_isdigit(removal[0]) || RUBY_VERSION_STRING_SINCE(removal))])!=1 ? \
      rb_deprecated_method_to_be_removed(removal) : \
      RBIMPL_ASSERT_NOTHING)
 # endif
 # define rb_warn_deprecated_to_remove_at(removal, ...) \
     (rb_deprecated_method_to_be_removed(#removal), \
      rb_warn_deprecated_to_remove(#removal, __VA_ARGS__))
-#else
+# endif
+#endif
+#ifndef rb_warn_deprecated_to_remove_at
 # define rb_warn_deprecated_to_remove_at(removal, ...) \
         rb_warn_deprecated_to_remove(#removal, __VA_ARGS__)
 #endif
+#ifndef RUBY_VERSION_SINCE
+# define RUBY_VERSION_SINCE(major, minor) 0
+#endif
+#ifndef RUBY_VERSION_BEFORE
+# define RUBY_VERSION_BEFORE(major, minor) 0
+#endif
+#ifndef RBIMPL_TODO0
+# define RBIMPL_TODO0(x)
+#endif
+#define RBIMPL_TODO(message) RBIMPL_TODO0("TODO: " message)
 VALUE rb_syntax_error_append(VALUE, VALUE, int, int, rb_encoding*, const char*, va_list);
 PRINTF_ARGS(void rb_enc_warn(rb_encoding *enc, const char *fmt, ...), 2, 3);
 PRINTF_ARGS(void rb_sys_enc_warning(rb_encoding *enc, const char *fmt, ...), 2, 3);
