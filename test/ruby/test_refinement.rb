@@ -2559,6 +2559,18 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal(:refined, Bug17822::Client.call_foo)
   end
 
+  def test_ancestors
+    refinement = nil
+    as = nil
+    Module.new do
+      refine Array do
+        refinement = self
+        as = ancestors
+      end
+    end
+    assert_equal([refinement], as, "[ruby-core:86949] [Bug #14744]")
+  end
+
   private
 
   def eval_using(mod, s)
