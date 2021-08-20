@@ -218,6 +218,7 @@ class Reline::Windows
   def self.check_input_event
     num_of_events = 0.chr * 8
     while @@output_buf.empty? #or true
+      sleep 0.01
       next if @@GetNumberOfConsoleInputEvents.(@@hConsoleInputHandle, num_of_events) == 0 or num_of_events.unpack('L').first == 0
       input_record = 0.chr * 18
       read_event = 0.chr * 4
