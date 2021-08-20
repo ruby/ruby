@@ -89,14 +89,14 @@ rb_module_add_to_subclasses_list(VALUE module, VALUE iclass)
 void
 rb_class_remove_from_super_subclasses(VALUE klass)
 {
-    rb_subclass_entry_t *entry;
+    rb_subclass_entry_t **prev = RCLASS_PARENT_SUBCLASSES(klass);
 
-    if (RCLASS_PARENT_SUBCLASSES(klass)) {
-	entry = *RCLASS_PARENT_SUBCLASSES(klass);
+    if (prev) {
+	rb_subclass_entry_t *entry = *prev, *next = entry->next;
 
-	*RCLASS_PARENT_SUBCLASSES(klass) = entry->next;
-	if (entry->next) {
-	    RCLASS_PARENT_SUBCLASSES(entry->next->klass) = RCLASS_PARENT_SUBCLASSES(klass);
+	*prev = next;
+	if (next) {
+	    RCLASS_PARENT_SUBCLASSES(next->klass) = prev;
 	}
 	xfree(entry);
     }
@@ -107,14 +107,14 @@ rb_class_remove_from_super_subclasses(VALUE klass)
 void
 rb_class_remove_from_module_subclasses(VALUE klass)
 {
-    rb_subclass_entry_t *entry;
+    rb_subclass_entry_t **prev = RCLASS_MODULE_SUBCLASSES(klass);
 
-    if (RCLASS_MODULE_SUBCLASSES(klass)) {
-	entry = *RCLASS_MODULE_SUBCLASSES(klass);
-	*RCLASS_MODULE_SUBCLASSES(klass) = entry->next;
+    if (prev) {
+        rb_subclass_entry_t *entry = *prev, *next = entry->next;
 
-	if (entry->next) {
-	    RCLASS_MODULE_SUBCLASSES(entry->next->klass) = RCLASS_MODULE_SUBCLASSES(klass);
+	*prev = next;
+	if (next) {
+	    RCLASS_MODULE_SUBCLASSES(next->klass) = prev;
 	}
 
 	xfree(entry);
@@ -1124,10 +1124,10 @@ do_include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super
             add_subclass = FALSE;
         }
 
-	{
+	if (add_subclass) {
 	    VALUE m = module;
             if (BUILTIN_TYPE(m) == T_ICLASS) m = RBASIC(m)->klass;
-            if (add_subclass) rb_module_add_to_subclasses_list(m, iclass);
+            rb_module_add_to_subclasses_list(m, iclass);
 	}
 
 	if (FL_TEST(klass, RMODULE_IS_REFINEMENT)) {
