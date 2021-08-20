@@ -246,9 +246,8 @@ module Bundler
     def save_plugins(plugins, specs, optional_plugins = [])
       plugins.each do |name|
         spec = specs[name]
-        validate_plugin! Pathname.new(spec.full_gem_path)
-        installed = register_plugin(name, spec, optional_plugins.include?(name))
-        Bundler.ui.info "Installed plugin #{name}" if installed
+
+        save_plugin(name, spec, optional_plugins.include?(name))
       end
     end
 
@@ -261,6 +260,20 @@ module Bundler
     def validate_plugin!(plugin_path)
       plugin_file = plugin_path.join(PLUGIN_FILE_NAME)
       raise MalformattedPlugin, "#{PLUGIN_FILE_NAME} was not found in the plugin." unless plugin_file.file?
+    end
+
+    # Validates and registers a plugin.
+    #
+    # @param [String] name the name of the plugin
+    # @param [Specification] spec of installed plugin
+    # @param [Boolean] optional_plugin, removed if there is conflict with any
+    #                     other plugin (used for default source plugins)
+    #
+    # @raise [MalformattedPlugin] if validation or registration raises any error
+    def save_plugin(name, spec, optional_plugin = false)
+      validate_plugin! Pathname.new(spec.full_gem_path)
+      installed = register_plugin(name, spec, optional_plugin)
+      Bundler.ui.info "Installed plugin #{name}" if installed
     end
 
     # Runs the plugins.rb file in an isolated namespace, records the plugin
