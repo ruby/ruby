@@ -13,7 +13,7 @@ class ErrorHighlightTest < Test::Unit::TestCase
   def setup
     if defined?(DidYouMean)
       @did_you_mean_old_formatter = DidYouMean.formatter
-      DidYouMean.formatter = DummyFormatter
+      DidYouMean.formatter = DummyFormatter.new
     end
   end
 
