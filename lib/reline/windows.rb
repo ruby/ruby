@@ -136,6 +136,7 @@ class Reline::Windows
 
   @@GetConsoleMode = Win32API.new('kernel32', 'GetConsoleMode', ['L', 'P'], 'L')
   @@SetConsoleMode = Win32API.new('kernel32', 'SetConsoleMode', ['L', 'L'], 'L')
+  @@WaitForSingleObject = Win32API.new('kernel32', 'WaitForSingleObject', ['L', 'L'], 'L')
   ENABLE_VIRTUAL_TERMINAL_PROCESSING = 4
 
   private_class_method def self.getconsolemode
@@ -218,7 +219,7 @@ class Reline::Windows
   def self.check_input_event
     num_of_events = 0.chr * 8
     while @@output_buf.empty? #or true
-      sleep 0.01
+      next if @@WaitForSingleObject.(@@hConsoleInputHandle, 100) != 0 # max 0.1 sec
       next if @@GetNumberOfConsoleInputEvents.(@@hConsoleInputHandle, num_of_events) == 0 or num_of_events.unpack('L').first == 0
       input_record = 0.chr * 18
       read_event = 0.chr * 4
