@@ -659,6 +659,7 @@ class Reline::LineEditor
         else
           s = Reline::Unicode.take_range(visual_lines[start + i], old_dialog_column + DIALOG_WIDTH, width)
         end
+        Reline::IOGate.move_cursor_column(@dialog_column + DIALOG_WIDTH)
         @output.write "\e[39m\e[49m%-#{width}s\e[39m\e[49m" % s
         move_cursor_down(1) if i < (line_num - 1)
       end
