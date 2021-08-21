@@ -562,6 +562,7 @@ class Reline::LineEditor
       @dialog_updown = :down
       @dialog_vertical_offset = 1
     end
+    Reline::IOGate.hide_cursor
     reset_dialog(old_dialog_contents, old_dialog_contents_width, old_dialog_column, old_dialog_vertical_offset, old_dialog_updown)
     case @dialog_updown
     when :down
@@ -581,6 +582,7 @@ class Reline::LineEditor
       move_cursor_up(@dialog_contents.size)
     when :up
     end
+    Reline::IOGate.show_cursor
     @dialog_lines_backup = {
       lines: modify_lines(whole_lines),
       line_index: @line_index,
@@ -683,6 +685,7 @@ class Reline::LineEditor
       visual_lines.concat(vl)
     }
     visual_lines_under_dialog = visual_lines[visual_start, @dialog_contents.size]
+    Reline::IOGate.hide_cursor
     move_cursor_down(@dialog_vertical_offset)
     dialog_vertical_size = @dialog_contents.size
     dialog_vertical_size.times do |i|
@@ -698,6 +701,7 @@ class Reline::LineEditor
     end
     move_cursor_up(dialog_vertical_size - 1 + @dialog_vertical_offset)
     Reline::IOGate.move_cursor_column(prompt_width + @cursor)
+    Reline::IOGate.show_cursor
   end
 
   private def calculate_scroll_partial_screen(highest_in_all, cursor_y)

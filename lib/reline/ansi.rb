@@ -274,6 +274,22 @@ class Reline::ANSI
     end
   end
 
+  def self.hide_cursor
+    if Reline::Terminfo.enabled?
+      @@output.write Reline::Terminfo.tigetstr('civis')
+    else
+      # ignored
+    end
+  end
+
+  def self.show_cursor
+    if Reline::Terminfo.enabled?
+      @@output.write Reline::Terminfo.tigetstr('cnorm')
+    else
+      # ignored
+    end
+  end
+
   def self.erase_after_cursor
     @@output.write "\e[K"
   end

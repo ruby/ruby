@@ -343,6 +343,14 @@ class Reline::Windows
     raise NotImplementedError
   end
 
+  def self.hide_cursor
+    # ignored
+  end
+
+  def self.show_cursor
+    # ignored
+  end
+
   def self.set_winch_handler(&handler)
     @@winch_handler = handler
   end
