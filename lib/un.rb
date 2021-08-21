@@ -349,7 +349,7 @@ def httpd
     s = nil
     options[:StartCallback] = proc {
       logger = s.logger
-      logger.info("To access this server, open this file in a browser:")
+      logger.info("To access this server, open this URL in a browser:")
       s.listeners.each do |listener|
         if options[:SSLEnable]
           addr = listener.addr
