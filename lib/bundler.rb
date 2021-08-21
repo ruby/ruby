@@ -636,6 +636,12 @@ EOF
       @rubygems = nil
     end
 
+    def configure_gem_home_and_path(path = bundle_path)
+      configure_gem_path
+      configure_gem_home(path)
+      Bundler.rubygems.clear_paths
+    end
+
     private
 
     def eval_yaml_gemspec(path, contents)
@@ -656,12 +662,6 @@ EOF
       raise GemspecError, Dsl::DSLError.new(msg, path, e.backtrace, contents)
     end
 
-    def configure_gem_home_and_path
-      configure_gem_path
-      configure_gem_home
-      Bundler.rubygems.clear_paths
-    end
-
     def configure_gem_path
       unless use_system_gems?
         # this needs to be empty string to cause
@@ -671,8 +671,8 @@ EOF
       end
     end
 
-    def configure_gem_home
-      Bundler::SharedHelpers.set_env "GEM_HOME", bundle_path.to_s
+    def configure_gem_home(path)
+      Bundler::SharedHelpers.set_env "GEM_HOME", path.to_s
     end
 
     def tmp_home_path

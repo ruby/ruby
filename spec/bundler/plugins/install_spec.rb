@@ -69,6 +69,21 @@ RSpec.describe "bundler plugin install" do
     plugin_should_be_installed("foo", "kung-foo")
   end
 
+  it "installs the latest version if not installed" do
+    update_repo2 do
+      build_plugin "foo", "1.1"
+    end
+
+    bundle "plugin install foo --version 1.0 --source #{file_uri_for(gem_repo2)} --verbose"
+    expect(out).to include("Installing foo 1.0")
+
+    bundle "plugin install foo --source #{file_uri_for(gem_repo2)} --verbose"
+    expect(out).to include("Installing foo 1.1")
+
+    bundle "plugin install foo --source #{file_uri_for(gem_repo2)} --verbose"
+    expect(out).to include("Using foo 1.1")
+  end
+
   it "works with different load paths" do
     build_repo2 do
       build_plugin "testing" do |s|

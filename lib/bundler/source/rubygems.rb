@@ -144,7 +144,7 @@ module Bundler
           end
         end
 
-        if (installed?(spec) || Plugin.installed?(spec.name)) && !force
+        if installed?(spec) && !force
           print_using_message "Using #{version_message(spec)}"
           return nil # no post-install message
         end
