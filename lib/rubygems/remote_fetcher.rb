@@ -5,6 +5,7 @@ require_relative 'request/connection_pools'
 require_relative 's3_uri_signer'
 require_relative 'uri_formatter'
 require_relative 'uri_parser'
+require_relative 'printable_uri'
 require_relative 'user_interaction'
 
 ##
@@ -21,19 +22,24 @@ class Gem::RemoteFetcher
   class FetchError < Gem::Exception
     ##
     # The URI which was being accessed when the exception happened.
+    def self.build(message, uri)
+      original_uri = uri.dup
+      uri = Gem::PrintableUri.parse_uri(uri)
+
+      if uri.respond_to?(:original_password) && uri.original_password
+        message = message.sub(uri.original_password, 'REDACTED')
+      end
+
+      new(message, uri.to_s, original_uri)
+    end
 
     attr_accessor :uri, :original_uri
 
-    def initialize(message, uri)
+    def initialize(message, uri, original_uri = nil)
       super message
 
-      uri = Gem::UriParser.parse_uri(uri)
-
-      @original_uri = uri.dup
-
-      uri.password = 'REDACTED' if uri.respond_to?(:password) && uri.password
-
-      @uri = uri.to_s
+      @uri = uri
+      @original_uri = original_uri ? original_uri : uri
     end
 
     def to_s # :nodoc:
@@ -219,20 +225,20 @@ class Gem::RemoteFetcher
       head ? response : response.body
     when Net::HTTPMovedPermanently, Net::HTTPFound, Net::HTTPSeeOther,
          Net::HTTPTemporaryRedirect then
-      raise FetchError.new('too many redirects', uri) if depth > 10
+      raise FetchError.build('too many redirects', uri) if depth > 10
 
       unless location = response['Location']
-        raise FetchError.new("redirecting but no redirect location was given", uri)
+        raise FetchError.build("redirecting but no redirect location was given", uri)
       end
       location = Gem::UriParser.parse_uri location
 
       if https?(uri) && !https?(location)
-        raise FetchError.new("redirecting to non-https resource: #{location}", uri)
+        raise FetchError.build("redirecting to non-https resource: #{location}", uri)
       end
 
       fetch_http(location, last_modified, head, depth + 1)
     else
-      raise FetchError.new("bad response #{response.message} #{response.code}", uri)
+      raise FetchError.build("bad response #{response.message} #{response.code}", uri)
     end
   end
 
@@ -254,21 +260,21 @@ class Gem::RemoteFetcher
       begin
         data = Gem::Util.gunzip data
       rescue Zlib::GzipFile::Error
-        raise FetchError.new("server did not return a valid file", uri)
+        raise FetchError.build("server did not return a valid file", uri)
       end
     end
 
     data
   rescue Timeout::Error, IOError, SocketError, SystemCallError,
          *(OpenSSL::SSL::SSLError if Gem::HAVE_OPENSSL) => e
-    raise FetchError.new("#{e.class}: #{e}", uri)
+    raise FetchError.build("#{e.class}: #{e}", uri)
   end
 
   def fetch_s3(uri, mtime = nil, head = false)
     begin
       public_uri = s3_uri_signer(uri).sign
     rescue Gem::S3URISigner::ConfigurationError, Gem::S3URISigner::InstanceProfileError => e
-      raise FetchError.new(e.message, "s3://#{uri.host}")
+      raise FetchError.build(e.message, "s3://#{uri.host}")
     end
     fetch_https public_uri, mtime, head
   end
