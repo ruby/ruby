@@ -671,7 +671,7 @@ EOF
     end
 
     def configure_gem_home
-      Bundler::SharedHelpers.set_env "GEM_HOME", File.expand_path(bundle_path, root)
+      Bundler::SharedHelpers.set_env "GEM_HOME", bundle_path.to_s
       Bundler.rubygems.clear_paths
     end
 
