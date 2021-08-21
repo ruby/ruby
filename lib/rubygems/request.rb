@@ -184,6 +184,7 @@ class Gem::Request
 
   def perform_request(request) # :nodoc:
     connection = connection_for @uri
+    uri = Gem::PrintableUri.parse_uri(@uri)
 
     retried = false
     bad_response = false
@@ -191,7 +192,7 @@ class Gem::Request
     begin
       @requests[connection.object_id] += 1
 
-      verbose "#{request.method} #{@uri}"
+      verbose "#{request.method} #{uri}"
 
       file_name = File.basename(@uri.path)
       # perform download progress reporter only for gems
