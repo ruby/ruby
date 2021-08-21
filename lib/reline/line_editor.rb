@@ -697,8 +697,6 @@ class Reline::LineEditor
       move_cursor_down(1) if i < (dialog_vertical_size - 1)
     end
     move_cursor_up(dialog_vertical_size - 1 + @dialog_vertical_offset)
-    #Reline::IOGate.move_cursor_column(0)
-    #    @output.write "\e[39m#{visual_lines[@first_line_started_from + @started_from]}\e[39m"
     Reline::IOGate.move_cursor_column(prompt_width + @cursor)
   end
 
