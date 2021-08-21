@@ -693,7 +693,7 @@ class Reline::LineEditor
         Reline::IOGate.move_cursor_column(@dialog_column)
         @output.write "\e[39m\e[49m#{' ' * DIALOG_WIDTH}\e[39m\e[49m"
       end
-      #Reline::IOGate.erase_after_cursor
+      Reline::IOGate.erase_after_cursor
       move_cursor_down(1) if i < (dialog_vertical_size - 1)
     end
     move_cursor_up(dialog_vertical_size - 1 + @dialog_vertical_offset)
