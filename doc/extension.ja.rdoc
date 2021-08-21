@@ -698,7 +698,8 @@ Cの世界で定義されたデータ(構造体)をRubyのオブジェクトと�
 このマクロの戻り値は生成されたオブジェクトを表すVALUE値です．
 
 klassはこのオブジェクトのクラスです．klassは, Objectクラスか
-ら派生し, 必ずrb_undef_alloc_func(klass)を呼び出してください．
+ら派生し, 必ずrb_define_alloc_funcかrb_undef_alloc_funcを呼
+び出してallocatorを設定してください．
 
 data_typeはこの構造体をRubyが管理するための情報を記述した
 const rb_data_type_t型へのポインタです．
@@ -708,16 +709,16 @@ rb_data_type_tは次のように定義されています．
   typedef struct rb_data_type_struct rb_data_type_t;
 
   struct rb_data_type_struct {
-          const char *wrap_struct_name;
-          struct {
-                  void (*dmark)(void*);
-                  void (*dfree)(void*);
-                  size_t (*dsize)(const void *);
-                  void *reserved[2];
-          } function;
-          const rb_data_type_t *parent;
-          void *data;
-          VALUE flags;
+      const char *wrap_struct_name;
+      struct {
+          void (*dmark)(void*);
+          void (*dfree)(void*);
+          size_t (*dsize)(const void *);
+          void *reserved[2];
+      } function;
+      const rb_data_type_t *parent;
+      void *data;
+      VALUE flags;
   };
 
 wrap_struct_nameはこの構造体を識別する名前です．主に統計情報
