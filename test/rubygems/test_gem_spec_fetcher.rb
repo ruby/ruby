@@ -144,7 +144,7 @@ class TestGemSpecFetcher < Gem::TestCase
   def test_spec_for_dependency_bad_fetch_spec
     src = Gem::Source.new(@gem_repo)
     def src.fetch_spec(name)
-      raise Gem::RemoteFetcher::FetchError.new("bad news from the internet", @uri)
+      raise Gem::RemoteFetcher::FetchError.build("bad news from the internet", @uri)
     end
 
     Gem.sources.replace [src]

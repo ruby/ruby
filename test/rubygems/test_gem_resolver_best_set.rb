@@ -106,7 +106,7 @@ class TestGemResolverBestSet < Gem::TestCase
 
     error_uri = api_uri + 'a'
 
-    error = Gem::RemoteFetcher::FetchError.new 'bogus', error_uri
+    error = Gem::RemoteFetcher::FetchError.build 'bogus', error_uri
 
     set.replace_failed_api_set error
 
@@ -124,7 +124,7 @@ class TestGemResolverBestSet < Gem::TestCase
 
     set.sets << index_set
 
-    error = Gem::RemoteFetcher::FetchError.new 'bogus', @gem_repo
+    error = Gem::RemoteFetcher::FetchError.build 'bogus', @gem_repo
 
     e = assert_raise Gem::RemoteFetcher::FetchError do
       set.replace_failed_api_set error
@@ -145,7 +145,7 @@ class TestGemResolverBestSet < Gem::TestCase
 
     error_uri = api_uri + 'a'
 
-    error = Gem::RemoteFetcher::FetchError.new 'bogus', error_uri
+    error = Gem::RemoteFetcher::FetchError.build 'bogus', error_uri
 
     set.replace_failed_api_set error
 

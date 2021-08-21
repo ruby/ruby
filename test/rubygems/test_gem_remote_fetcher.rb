@@ -204,7 +204,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
           @test_data
         end
 
-        raise Gem::RemoteFetcher::FetchError.new("haha!", '')
+        raise Gem::RemoteFetcher::FetchError.build("haha!", '')
       end
     end
 
@@ -237,6 +237,36 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     a1_cache_gem = @a1.cache_file
     assert_equal a1_cache_gem, fetcher.download(@a1, 'http://user:password@gems.example.com')
     assert_equal("http://user:password@gems.example.com/gems/a-1.gem",
+                 fetcher.instance_variable_get(:@test_arg).to_s)
+    assert File.exist?(a1_cache_gem)
+  end
+
+  def test_download_with_token
+    a1_data = nil
+    File.open @a1_gem, 'rb' do |fp|
+      a1_data = fp.read
+    end
+
+    fetcher = util_fuck_with_fetcher a1_data
+
+    a1_cache_gem = @a1.cache_file
+    assert_equal a1_cache_gem, fetcher.download(@a1, 'http://token@gems.example.com')
+    assert_equal("http://token@gems.example.com/gems/a-1.gem",
+                 fetcher.instance_variable_get(:@test_arg).to_s)
+    assert File.exist?(a1_cache_gem)
+  end
+
+  def test_download_with_x_oauth_basic
+    a1_data = nil
+    File.open @a1_gem, 'rb' do |fp|
+      a1_data = fp.read
+    end
+
+    fetcher = util_fuck_with_fetcher a1_data
+
+    a1_cache_gem = @a1.cache_file
+    assert_equal a1_cache_gem, fetcher.download(@a1, 'http://token:x-oauth-basic@gems.example.com')
+    assert_equal("http://token:x-oauth-basic@gems.example.com/gems/a-1.gem",
                  fetcher.instance_variable_get(:@test_arg).to_s)
     assert File.exist?(a1_cache_gem)
   end
