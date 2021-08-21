@@ -659,6 +659,7 @@ EOF
     def configure_gem_home_and_path
       configure_gem_path
       configure_gem_home
+      Bundler.rubygems.clear_paths
     end
 
     def configure_gem_path
@@ -672,7 +673,6 @@ EOF
 
     def configure_gem_home
       Bundler::SharedHelpers.set_env "GEM_HOME", bundle_path.to_s
-      Bundler.rubygems.clear_paths
     end
 
     def tmp_home_path
