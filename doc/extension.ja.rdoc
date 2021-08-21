@@ -697,14 +697,11 @@ Cの世界で定義されたデータ(構造体)をRubyのオブジェクトと�
 
 このマクロの戻り値は生成されたオブジェクトを表すVALUE値です．
 
-klassはこのオブジェクトのクラスです．data_typeはこの構造体を
-Rubyが管理するための情報を記述したconst rb_data_type_t型への
-ポインタです．
+klassはこのオブジェクトのクラスです．klassは, Objectクラスか
+ら派生し, 必ずrb_undef_alloc_func(klass)を呼び出してください．
 
-なお, klassは, Objectや他のクラスではなくData (rb_cData)とい
-う特別なクラスから派生することが推奨されます．
-Dataから派生しない場合には, 必ずrb_undef_alloc_func(klass)
-を呼び出してください．
+data_typeはこの構造体をRubyが管理するための情報を記述した
+const rb_data_type_t型へのポインタです．
 
 rb_data_type_tは次のように定義されています．
 
