@@ -701,7 +701,7 @@ Note that it is recommended to avoid such a reference.
 ++
 
 dfree is a function to free the pointer allocation.
-If this is -1, the pointer will be just freed.
+If this is RUBY_DEFAULT_FREE, the pointer will be just freed.
 
 dsize calculates memory consumption in bytes by the struct.
 Its parameter is a pointer to your struct.
