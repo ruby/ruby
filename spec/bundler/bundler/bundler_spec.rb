@@ -176,11 +176,9 @@ RSpec.describe Bundler do
   describe "configuration" do
     context "disable_shared_gems" do
       it "should unset GEM_PATH with empty string" do
-        env = {}
         expect(Bundler).to receive(:use_system_gems?).and_return(false)
-        Bundler.send(:configure_gem_path, env)
-        expect(env.keys).to include("GEM_PATH")
-        expect(env["GEM_PATH"]).to eq ""
+        Bundler.send(:configure_gem_path)
+        expect(ENV["GEM_PATH"]).to eq ""
       end
     end
   end

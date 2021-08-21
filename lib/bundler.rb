@@ -661,12 +661,12 @@ EOF
       configure_gem_home
     end
 
-    def configure_gem_path(env = ENV)
+    def configure_gem_path
       unless use_system_gems?
         # this needs to be empty string to cause
         # PathSupport.split_gem_path to only load up the
         # Bundler --path setting as the GEM_PATH.
-        env["GEM_PATH"] = ""
+        Bundler::SharedHelpers.set_env "GEM_PATH", ""
       end
     end
 
