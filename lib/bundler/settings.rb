@@ -419,7 +419,7 @@ module Bundler
       elsif is_credential(key)
         "[REDACTED]"
       elsif is_userinfo(converted)
-        username, pass = converted.split(":")
+        username, pass = converted.split(":", 2)
 
         if pass == "x-oauth-basic"
           username = "[REDACTED]"
