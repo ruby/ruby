@@ -63,20 +63,12 @@ class TestPrintableUri < Gem::TestCase
     assert_equal nil, Gem::PrintableUri.parse_uri("https://www.example.com").original_password
   end
 
-  def test_original_password_with_invalid_uri
-    assert_equal nil, Gem::PrintableUri.parse_uri("https://www.example.com:80index").original_password
-  end
-
   def test_original_password_with_empty_uri_object
     assert_equal nil, Gem::PrintableUri.parse_uri(URI("")).original_password
   end
 
   def test_original_password_with_valid_uri_object
     assert_equal "pass", Gem::PrintableUri.parse_uri(URI("https://user:pass@example.com")).original_password
-  end
-
-  def test_original_password_with_other_objects
-    assert_equal nil, Gem::PrintableUri.parse_uri(Object.new).original_password
   end
 
   def test_to_s_with_user_pass
