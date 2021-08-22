@@ -115,7 +115,9 @@ describe "IO#internal_encoding" do
 
   ruby_version_is '3.1' do
     it "can be retrieved from a closed stream" do
-      IOSpecs.closed_io.internal_encoding.should equal(Encoding.default_internal)
+      io = IOSpecs.io_fixture("lines.txt", "r")
+      io.close
+      io.internal_encoding.should equal(Encoding.default_internal)
     end
   end
 

@@ -96,7 +96,9 @@ describe "IO#external_encoding" do
 
   ruby_version_is '3.1' do
     it "can be retrieved from a closed stream" do
-      IOSpecs.closed_io.external_encoding.should equal(Encoding.default_external)
+      io = IOSpecs.io_fixture("lines.txt", "r")
+      io.close
+      io.external_encoding.should equal(Encoding.default_external)
     end
   end
 
