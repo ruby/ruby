@@ -204,7 +204,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
           @test_data
         end
 
-        raise Gem::RemoteFetcher::FetchError.build("haha!", '')
+        raise Gem::RemoteFetcher::FetchError.new("haha!", '')
       end
     end
 
