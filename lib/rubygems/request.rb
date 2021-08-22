@@ -127,7 +127,7 @@ class Gem::Request
     @connection_pool.checkout
   rescue Gem::HAVE_OPENSSL ? OpenSSL::SSL::SSLError : Errno::EHOSTDOWN,
          Errno::EHOSTDOWN => e
-    raise Gem::RemoteFetcher::FetchError.build(e.message, uri)
+    raise Gem::RemoteFetcher::FetchError.new(e.message, uri)
   end
 
   def fetch
@@ -228,14 +228,14 @@ class Gem::Request
 
       reset connection
 
-      raise Gem::RemoteFetcher::FetchError.build('too many bad responses', @uri) if bad_response
+      raise Gem::RemoteFetcher::FetchError.new('too many bad responses', @uri) if bad_response
 
       bad_response = true
       retry
     rescue Net::HTTPFatalError
       verbose "fatal error"
 
-      raise Gem::RemoteFetcher::FetchError.build('fatal error', @uri)
+      raise Gem::RemoteFetcher::FetchError.new('fatal error', @uri)
     # HACK work around EOFError bug in Net::HTTP
     # NOTE Errno::ECONNABORTED raised a lot on Windows, and make impossible
     # to install gems.
@@ -245,7 +245,7 @@ class Gem::Request
       requests = @requests[connection.object_id]
       verbose "connection reset after #{requests} requests, retrying"
 
-      raise Gem::RemoteFetcher::FetchError.build('too many connection resets', @uri) if retried
+      raise Gem::RemoteFetcher::FetchError.new('too many connection resets', @uri) if retried
 
       reset connection
 

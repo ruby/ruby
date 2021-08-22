@@ -182,7 +182,7 @@ class TestGemCommandsSourcesCommand < Gem::TestCase
 
     uri = "http://beta-gems.example.com/specs.#{@marshal_version}.gz"
     @fetcher.data[uri] = proc do
-      raise Gem::RemoteFetcher::FetchError.build('it died', uri)
+      raise Gem::RemoteFetcher::FetchError.new('it died', uri)
     end
 
     @cmd.handle_options %w[--add http://beta-gems.example.com]
