@@ -4,23 +4,23 @@ require 'rubygems/printable_uri'
 
 class TestPrintableUri < Gem::TestCase
   def test_parsed_uri
-    assert_equal true, Gem::PrintableUri.parse_uri("https://www.example.com").parsed_uri?
+    assert_equal true, Gem::PrintableUri.parse_uri("https://www.example.com").valid_uri?
   end
 
-  def test_parsed_uri_with_empty_uri_object
-    assert_equal true, Gem::PrintableUri.parse_uri(URI("")).parsed_uri?
+  def test_valid_uri_with_empty_uri_object
+    assert_equal true, Gem::PrintableUri.parse_uri(URI("")).valid_uri?
   end
 
-  def test_parsed_uri_with_valid_uri_object
-    assert_equal true, Gem::PrintableUri.parse_uri(URI("https://www.example.com")).parsed_uri?
+  def test_valid_uri_with_valid_uri_object
+    assert_equal true, Gem::PrintableUri.parse_uri(URI("https://www.example.com")).valid_uri?
   end
 
-  def test_parsed_uri_with_other_objects
-    assert_equal false, Gem::PrintableUri.parse_uri(Object.new).parsed_uri?
+  def test_valid_uri_with_other_objects
+    assert_equal false, Gem::PrintableUri.parse_uri(Object.new).valid_uri?
   end
 
-  def test_parsed_uri_with_invalid_uri
-    assert_equal false, Gem::PrintableUri.parse_uri("https://www.example.com:80index").parsed_uri?
+  def test_valid_uri_with_invalid_uri
+    assert_equal false, Gem::PrintableUri.parse_uri("https://www.example.com:80index").valid_uri?
   end
 
   def test_credential_redacted_with_user_pass

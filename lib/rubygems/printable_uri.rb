@@ -21,7 +21,7 @@ class Gem::PrintableUri
     self
   end
 
-  def parsed_uri?
+  def valid_uri?
     @uri.is_a? URI::Generic
   end
 
@@ -30,7 +30,7 @@ class Gem::PrintableUri
   end
 
   def original_password
-    return unless parsed_uri?
+    return unless valid_uri?
 
     @original_uri.password
   end
@@ -56,25 +56,25 @@ class Gem::PrintableUri
   end
 
   def redactable_credential?
-    return false unless parsed_uri?
+    return false unless valid_uri?
 
     password? || oauth_basic? || token?
   end
 
   def password?
-    return false unless parsed_uri?
+    return false unless valid_uri?
 
     !!@uri.password
   end
 
   def oauth_basic?
-    return false unless parsed_uri?
+    return false unless valid_uri?
 
     @uri.password == 'x-oauth-basic'
   end
 
   def token?
-    return false unless parsed_uri?
+    return false unless valid_uri?
 
     !@uri.user.nil? && @uri.password.nil?
   end
