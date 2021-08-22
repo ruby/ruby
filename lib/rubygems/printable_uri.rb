@@ -49,7 +49,7 @@ class Gem::PrintableUri
     elsif oauth_basic?
       @uri.user = 'REDACTED'
     elsif password?
-      @uri.password = 'REDACTED' if password?
+      @uri.password = 'REDACTED'
     end
 
     @credential_redacted = true
