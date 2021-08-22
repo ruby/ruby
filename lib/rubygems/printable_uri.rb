@@ -16,7 +16,7 @@ class Gem::PrintableUri
   def parse_uri
     @original_uri = Gem::UriParser.parse_uri(@original_uri)
     @uri = @original_uri.clone
-    redact_credential
+    redact_credential if valid_uri?
 
     self
   end
@@ -30,8 +30,6 @@ class Gem::PrintableUri
   end
 
   def original_password
-    return unless valid_uri?
-
     @original_uri.password
   end
 
@@ -42,40 +40,31 @@ class Gem::PrintableUri
   private
 
   def redact_credential
-    return unless redactable_credential?
-
     if token?
       @uri.user = 'REDACTED'
+      @credential_redacted = true
     elsif oauth_basic?
       @uri.user = 'REDACTED'
+      @credential_redacted = true
     elsif password?
       @uri.password = 'REDACTED'
+      @credential_redacted = true
     end
-
-    @credential_redacted = true
   end
 
   def redactable_credential?
-    return false unless valid_uri?
-
     password? || oauth_basic? || token?
   end
 
   def password?
-    return false unless valid_uri?
-
     !!@uri.password
   end
 
   def oauth_basic?
-    return false unless valid_uri?
-
     @uri.password == 'x-oauth-basic'
   end
 
   def token?
-    return false unless valid_uri?
-
     !@uri.user.nil? && @uri.password.nil?
   end
 end
