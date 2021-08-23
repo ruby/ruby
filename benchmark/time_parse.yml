@@ -1,0 +1,6 @@
+prelude: |
+  require 'time'
+  s = Time.now.iso8601
+benchmark:
+  - Time.iso8601(s)
+  - Time.parse(s)
