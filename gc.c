@@ -4919,7 +4919,7 @@ unlock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
 }
 
 static inline bool
-try_move_in_plane(rb_objspace_t *objspace, rb_heap_t *heap, intptr_t p, bits_t bits, VALUE dest)
+try_move_in_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bits, VALUE dest)
 {
     if (bits) {
         do {
@@ -4987,7 +4987,7 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
         bits_t bits = mark_bits[index] & ~pin_bits[index];
 
         bits >>= NUM_IN_PAGE(p);
-        if (try_move_in_plane(objspace, heap, (intptr_t)p, bits, dest)) return 1;
+        if (try_move_in_plane(objspace, heap, (uintptr_t)p, bits, dest)) return 1;
 
         if (index == 0) {
             p = cursor->start + (BITS_BITLENGTH - NUM_IN_PAGE(cursor->start));
@@ -5000,7 +5000,7 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page,
          * marked, so we iterate using the marking bitmap */
         for (size_t i = index + 1; i < HEAP_PAGE_BITMAP_LIMIT; i++) {
             bits_t bits = mark_bits[i] & ~pin_bits[i];
-            if (try_move_in_plane(objspace, heap, (intptr_t)p, bits, dest)) return 1;
+            if (try_move_in_plane(objspace, heap, (uintptr_t)p, bits, dest)) return 1;
             p += BITS_BITLENGTH;
         }
 
@@ -5045,7 +5045,7 @@ static void gc_update_references(rb_objspace_t * objspace, rb_heap_t *heap);
 static void invalidate_moved_page(rb_objspace_t *objspace, struct heap_page *page);
 
 static void
-read_barrier_handler(intptr_t address)
+read_barrier_handler(uintptr_t address)
 {
     VALUE obj;
     rb_objspace_t * objspace = &rb_objspace;
@@ -5079,7 +5079,7 @@ read_barrier_signal(EXCEPTION_POINTERS * info)
          * https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-exception_record
          *
          * Use this address to invalidate the page */
-        read_barrier_handler((intptr_t)info->ExceptionRecord->ExceptionInformation[1]);
+        read_barrier_handler((uintptr_t)info->ExceptionRecord->ExceptionInformation[1]);
         return EXCEPTION_CONTINUE_EXECUTION;
     }
     else {
@@ -5123,7 +5123,7 @@ read_barrier_signal(int sig, siginfo_t * info, void * data)
     sigprocmask(SIG_UNBLOCK, &set, &prev_set);
 
     // run handler
-    read_barrier_handler((intptr_t)info->si_addr);
+    read_barrier_handler((uintptr_t)info->si_addr);
 
     // reset SEGV/BUS handlers
     sigaction(SIGBUS, &prev_sigbus, NULL);
@@ -5224,7 +5224,7 @@ struct gc_sweep_context {
 };
 
 static inline void
-gc_fill_swept_page_plane(rb_objspace_t *objspace, rb_heap_t *heap, intptr_t p, bits_t bitset, bool * finished_compacting, struct gc_sweep_context *ctx)
+gc_fill_swept_page_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bitset, bool *finished_compacting, struct gc_sweep_context *ctx)
 {
     struct heap_page * sweep_page = ctx->page;
 
@@ -5298,13 +5298,13 @@ gc_fill_swept_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *s
     /* *Want to move* objects are pinned but not marked. */
     bitset = pin_bits[0] & ~mark_bits[0];
     bitset >>= NUM_IN_PAGE(p); // Skip header / dead space bits
-    gc_fill_swept_page_plane(objspace ,heap, (intptr_t)p, bitset, &finished_compacting, ctx);
+    gc_fill_swept_page_plane(objspace, heap, (uintptr_t)p, bitset, &finished_compacting, ctx);
     p += (BITS_BITLENGTH - NUM_IN_PAGE(p));
 
     for (int i = 1; i < HEAP_PAGE_BITMAP_LIMIT; i++) {
         /* *Want to move* objects are pinned but not marked. */
         bitset = pin_bits[i] & ~mark_bits[i];
-        gc_fill_swept_page_plane(objspace ,heap, (intptr_t)p, bitset, &finished_compacting, ctx);
+        gc_fill_swept_page_plane(objspace, heap, (uintptr_t)p, bitset, &finished_compacting, ctx);
         p += BITS_BITLENGTH;
     }
 
@@ -5314,7 +5314,7 @@ gc_fill_swept_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *s
 }
 
 static inline void
-gc_plane_sweep(rb_objspace_t *objspace, rb_heap_t *heap, intptr_t p, bits_t bitset, struct gc_sweep_context *ctx)
+gc_plane_sweep(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bitset, struct gc_sweep_context *ctx)
 {
     struct heap_page * sweep_page = ctx->page;
 
@@ -5466,14 +5466,14 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
     bitset = ~bits[0];
     bitset >>= NUM_IN_PAGE(p);
     if (bitset) {
-        gc_plane_sweep(objspace, heap, (intptr_t)p, bitset, &ctx);
+        gc_plane_sweep(objspace, heap, (uintptr_t)p, bitset, &ctx);
     }
     p += (BITS_BITLENGTH - NUM_IN_PAGE(p));
 
     for (i=1; i < HEAP_PAGE_BITMAP_LIMIT; i++) {
         bitset = ~bits[i];
         if (bitset) {
-            gc_plane_sweep(objspace, heap, (intptr_t)p, bitset, &ctx);
+            gc_plane_sweep(objspace, heap, (uintptr_t)p, bitset, &ctx);
         }
         p += BITS_BITLENGTH;
     }
@@ -5710,7 +5710,7 @@ gc_sweep_continue(rb_objspace_t *objspace, rb_heap_t *heap)
 }
 
 static void
-invalidate_moved_plane(rb_objspace_t *objspace, intptr_t p, bits_t bitset, struct gc_sweep_context *ctx)
+invalidate_moved_plane(rb_objspace_t *objspace, uintptr_t p, bits_t bitset, struct gc_sweep_context *ctx)
 {
     if (bitset) {
         do {
@@ -5771,7 +5771,7 @@ invalidate_moved_page(rb_objspace_t *objspace, struct heap_page *page)
     // Skip out of range slots at the head of the page
     bitset = pin_bits[0] & ~mark_bits[0];
     bitset >>= NUM_IN_PAGE(p);
-    invalidate_moved_plane(objspace, (intptr_t)p, bitset, &ctx);
+    invalidate_moved_plane(objspace, (uintptr_t)p, bitset, &ctx);
     p += (BITS_BITLENGTH - NUM_IN_PAGE(p));
 
     for (i=1; i < HEAP_PAGE_BITMAP_LIMIT; i++) {
@@ -5779,7 +5779,7 @@ invalidate_moved_page(rb_objspace_t *objspace, struct heap_page *page)
          * to indicate there is a moved object in this slot. */
         bitset = pin_bits[i] & ~mark_bits[i];
 
-        invalidate_moved_plane(objspace, (intptr_t)p, bitset, &ctx);
+        invalidate_moved_plane(objspace, (uintptr_t)p, bitset, &ctx);
         p += BITS_BITLENGTH;
     }
 
@@ -7873,7 +7873,7 @@ gc_marks_start(rb_objspace_t *objspace, int full_mark)
 
 #if GC_ENABLE_INCREMENTAL_MARK
 static inline void
-gc_marks_wb_unprotected_objects_in_plane(rb_objspace_t *objspace, intptr_t p, bits_t bits)
+gc_marks_wb_unprotected_objects_in_plane(rb_objspace_t *objspace, uintptr_t p, bits_t bits)
 {
     if (bits) {
         do {
@@ -7902,13 +7902,13 @@ gc_marks_wb_unprotected_objects(rb_objspace_t *objspace, rb_heap_t *heap)
 
         bits_t bits = mark_bits[0] & wbun_bits[0];
         bits >>= NUM_IN_PAGE(p);
-        gc_marks_wb_unprotected_objects_in_plane(objspace, (intptr_t)p, bits);
+        gc_marks_wb_unprotected_objects_in_plane(objspace, (uintptr_t)p, bits);
         p += (BITS_BITLENGTH - NUM_IN_PAGE(p));
 
 	for (j=1; j<HEAP_PAGE_BITMAP_LIMIT; j++) {
 	    bits_t bits = mark_bits[j] & wbun_bits[j];
 
-            gc_marks_wb_unprotected_objects_in_plane(objspace, (intptr_t)p, bits);
+            gc_marks_wb_unprotected_objects_in_plane(objspace, (uintptr_t)p, bits);
             p += BITS_BITLENGTH;
 	}
     }
@@ -8272,7 +8272,7 @@ rgengc_remembered(rb_objspace_t *objspace, VALUE obj)
 #endif
 
 static inline void
-rgengc_rememberset_mark_in_plane(rb_objspace_t *objspace, intptr_t p, bits_t bitset)
+rgengc_rememberset_mark_in_plane(rb_objspace_t *objspace, uintptr_t p, bits_t bitset)
 {
     if (bitset) {
         do {
@@ -8320,12 +8320,12 @@ rgengc_rememberset_mark(rb_objspace_t *objspace, rb_heap_t *heap)
 
             bitset = bits[0];
             bitset >>= NUM_IN_PAGE(p);
-            rgengc_rememberset_mark_in_plane(objspace, (intptr_t)p, bitset);
+            rgengc_rememberset_mark_in_plane(objspace, (uintptr_t)p, bitset);
             p += (BITS_BITLENGTH - NUM_IN_PAGE(p));
 
 	    for (j=1; j < HEAP_PAGE_BITMAP_LIMIT; j++) {
 		bitset = bits[j];
-                rgengc_rememberset_mark_in_plane(objspace, (intptr_t)p, bitset);
+                rgengc_rememberset_mark_in_plane(objspace, (uintptr_t)p, bitset);
                 p += BITS_BITLENGTH;
 	    }
 	}
