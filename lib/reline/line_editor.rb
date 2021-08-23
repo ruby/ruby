@@ -559,9 +559,8 @@ class Reline::LineEditor
       @dialog_vertical_offset = -(DIALOG_HEIGHT + 1)
     else
       if (lower_space + @rest_height) < DIALOG_HEIGHT
-        down = DIALOG_HEIGHT - (lower_space + @rest_height)
-        scroll_down(down)
-        move_cursor_up(DIALOG_HEIGHT - 1)
+        scroll_down(DIALOG_HEIGHT)
+        move_cursor_up(DIALOG_HEIGHT)
       end
       @dialog_updown = :down
       @dialog_vertical_offset = 1
