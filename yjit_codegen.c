@@ -1453,10 +1453,9 @@ gen_get_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
             mov(cb, REG1, ivar_opnd);
 
             // Guard that the variable is not Qundef
-            // TODO: use cmov to push Qnil in this case
-            ADD_COMMENT(cb, "guard value not Qundef");
             cmp(cb, REG1, imm_opnd(Qundef));
-            je_ptr(cb, COUNTED_EXIT(side_exit, getivar_undef));
+            mov(cb, REG0, imm_opnd(Qnil));
+            cmove(cb, REG1, REG0);
 
             // Push the ivar on the stack
             x86opnd_t out_opnd = ctx_stack_push(ctx, TYPE_UNKNOWN);
@@ -1490,7 +1489,8 @@ gen_get_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
 
             // Check that the ivar is not Qundef
             cmp(cb, REG0, imm_opnd(Qundef));
-            je_ptr(cb, COUNTED_EXIT(side_exit, getivar_undef));
+            mov(cb, REG1, imm_opnd(Qnil));
+            cmove(cb, REG0, REG1);
 
             // Push the ivar on the stack
             x86opnd_t out_opnd = ctx_stack_push(ctx, TYPE_UNKNOWN);

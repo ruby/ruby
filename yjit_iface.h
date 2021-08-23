@@ -52,7 +52,6 @@ YJIT_DECLARE_COUNTERS(
 
     getivar_se_self_not_heap,
     getivar_idx_out_of_range,
-    getivar_undef,
     getivar_name_not_mapped,
 
     setivar_se_self_not_heap,
