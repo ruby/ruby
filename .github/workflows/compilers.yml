@@ -168,8 +168,12 @@ jobs:
 
     name: ${{ matrix.entry.name }}
     runs-on: ubuntu-latest
-    container: ghcr.io/ruby/ruby-ci-image:${{ matrix.entry.container || 'clang-14' }}
+    container:
+      image: ghcr.io/ruby/ruby-ci-image:${{ matrix.entry.container || 'clang-14' }}
+      options: --user root
     steps:
+      - run: id
+        working-directory:
       - run: mkdir build
         working-directory:
       - name: setenv
