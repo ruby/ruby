@@ -44,7 +44,7 @@
 # include <wincrypt.h>
 #endif
 
-#if defined(__OpenBSD__) || defined(__FreeBSD__)
+#if defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__NetBSD__)
 /* to define OpenBSD and FreeBSD for version check */
 # include <sys/param.h>
 #endif

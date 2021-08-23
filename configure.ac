@@ -2545,6 +2545,15 @@ AS_CASE([$coroutine_type], [yes|''], [
         [aarch64-freebsd*], [
             coroutine_type=arm64
         ],
+        [x86_64-netbsd*], [
+            coroutine_type=amd64
+        ],
+        [i386-netbsd*], [
+            coroutine_type=x86
+        ],
+        [aarch64-netbsd*], [
+            coroutine_type=arm64
+        ],
         [x86_64-openbsd*], [
             coroutine_type=amd64
         ],
