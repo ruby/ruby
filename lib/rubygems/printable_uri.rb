@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require 'uri'
 require_relative 'uri_parser'
 
 class Gem::PrintableUri
@@ -22,7 +21,10 @@ class Gem::PrintableUri
   end
 
   def valid_uri?
-    @uri.is_a? URI::Generic
+    @uri.respond_to?(:user) &&
+      @uri.respond_to?(:user=) &&
+      @uri.respond_to?(:password) &&
+      @uri.respond_to?(:password=)
   end
 
   def credential_redacted?
