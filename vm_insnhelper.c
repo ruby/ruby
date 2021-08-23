@@ -3029,6 +3029,12 @@ vm_call_attrset(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_c
     return vm_setivar(calling->recv, vm_cc_cme(cc)->def->body.attr.id, val, NULL, NULL, cc, 1);
 }
 
+bool
+rb_vm_call_ivar_attrset_p(const vm_call_handler ch)
+{
+    return (ch == vm_call_ivar || ch == vm_call_attrset);
+}
+
 static inline VALUE
 vm_call_bmethod_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const VALUE *argv)
 {
@@ -3484,16 +3490,40 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
 
 	rb_check_arity(calling->argc, 1, 1);
 	vm_cc_attr_index_set(cc, 0);
-        CC_SET_FASTPATH(cc, vm_call_attrset, !(vm_ci_flag(ci) & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_KWARG)));
-        return vm_call_attrset(ec, cfp, calling);
+        if (UNLIKELY(ruby_vm_event_flags & (RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN))) {
+            const struct rb_callinfo *ci = calling->ci;
+            VALUE v;
+            EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_CALL, calling->recv, vm_cc_cme(cc)->def->original_id,
+                vm_ci_mid(ci), vm_cc_cme(cc)->owner, Qundef);
+            v = vm_call_attrset(ec, cfp, calling);
+            EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_RETURN, calling->recv, vm_cc_cme(cc)->def->original_id,
+                vm_ci_mid(ci), vm_cc_cme(cc)->owner, v);
+            return v;
+        }
+        else {
+            CC_SET_FASTPATH(cc, vm_call_attrset, !(vm_ci_flag(ci) & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_KWARG)));
+            return vm_call_attrset(ec, cfp, calling);
+        }
 
       case VM_METHOD_TYPE_IVAR:
         CALLER_SETUP_ARG(cfp, calling, ci);
         CALLER_REMOVE_EMPTY_KW_SPLAT(cfp, calling, ci);
 	rb_check_arity(calling->argc, 0, 0);
 	vm_cc_attr_index_set(cc, 0);
-        CC_SET_FASTPATH(cc, vm_call_ivar, !(vm_ci_flag(ci) & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT)));
-        return vm_call_ivar(ec, cfp, calling);
+        if (UNLIKELY(ruby_vm_event_flags & (RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN))) {
+            const struct rb_callinfo *ci = calling->ci;
+            VALUE v;
+            EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_CALL, calling->recv, vm_cc_cme(cc)->def->original_id,
+                vm_ci_mid(ci), vm_cc_cme(cc)->owner, Qundef);
+            v = vm_call_ivar(ec, cfp, calling);
+            EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_RETURN, calling->recv, vm_cc_cme(cc)->def->original_id,
+                vm_ci_mid(ci), vm_cc_cme(cc)->owner, v);
+            return v;
+        }
+        else {
+            CC_SET_FASTPATH(cc, vm_call_ivar, !(vm_ci_flag(ci) & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT)));
+            return vm_call_ivar(ec, cfp, calling);
+        }
 
       case VM_METHOD_TYPE_MISSING:
         vm_cc_method_missing_reason_set(cc, 0);
@@ -3613,6 +3643,15 @@ vm_call_general(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct 
 {
     RB_DEBUG_COUNTER_INC(ccf_general);
     return vm_call_method(ec, reg_cfp, calling);
+}
+
+void
+rb_vm_cc_general(const struct rb_callcache *cc)
+{
+    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
+    VM_ASSERT(cc != vm_cc_empty());
+
+    *(vm_call_handler *)&cc->call_ = vm_call_general;
 }
 
 static VALUE
