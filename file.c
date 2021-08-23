@@ -886,10 +886,15 @@ stat_atimespec(const struct stat *st)
 }
 
 static VALUE
+stat_time(const struct timespec ts)
+{
+    return rb_time_nano_new(ts.tv_sec, ts.tv_nsec);
+}
+
+static VALUE
 stat_atime(const struct stat *st)
 {
-    struct timespec ts = stat_atimespec(st);
-    return rb_time_nano_new(ts.tv_sec, ts.tv_nsec);
+    return stat_time(stat_atimespec(st));
 }
 
 static struct timespec
@@ -912,8 +917,7 @@ stat_mtimespec(const struct stat *st)
 static VALUE
 stat_mtime(const struct stat *st)
 {
-    struct timespec ts = stat_mtimespec(st);
-    return rb_time_nano_new(ts.tv_sec, ts.tv_nsec);
+    return stat_time(stat_mtimespec(st));
 }
 
 static struct timespec
@@ -936,8 +940,7 @@ stat_ctimespec(const struct stat *st)
 static VALUE
 stat_ctime(const struct stat *st)
 {
-    struct timespec ts = stat_ctimespec(st);
-    return rb_time_nano_new(ts.tv_sec, ts.tv_nsec);
+    return stat_time(stat_ctimespec(st));
 }
 
 #define HAVE_STAT_BIRTHTIME
