@@ -16,7 +16,7 @@
 
 #define RUBY_RELEASE_YEAR 2021
 #define RUBY_RELEASE_MONTH 8
-#define RUBY_RELEASE_DAY 23
+#define RUBY_RELEASE_DAY 24
 
 #include "ruby/version.h"
 
