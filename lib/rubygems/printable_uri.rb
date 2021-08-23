@@ -4,7 +4,10 @@ require_relative 'uri_parser'
 
 class Gem::PrintableUri
   def self.parse_uri(uri)
-    new(uri).parse_uri
+    printable_uri = new(uri)
+    printable_uri.parse_uri
+
+    printable_uri
   end
 
   def initialize(original_uri)
@@ -15,8 +18,6 @@ class Gem::PrintableUri
     @original_uri = Gem::UriParser.parse_uri(@original_uri)
     @uri = @original_uri.clone
     redact_credential if valid_uri?
-
-    self
   end
 
   def valid_uri?
