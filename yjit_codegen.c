@@ -1454,6 +1454,7 @@ gen_get_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
 
             // Guard that the variable is not Qundef
             // TODO: use cmov to push Qnil in this case
+            ADD_COMMENT(cb, "guard value not Qundef");
             cmp(cb, REG1, imm_opnd(Qundef));
             je_ptr(cb, COUNTED_EXIT(side_exit, getivar_undef));
 
