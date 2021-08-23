@@ -16,7 +16,7 @@ class Gem::PrintableUri
 
   def parse_uri
     @original_uri = Gem::UriParser.parse_uri(@original_uri)
-    @uri = @original_uri.clone
+    @uri = @original_uri.dup
     redact_credential if valid_uri?
   end
 
