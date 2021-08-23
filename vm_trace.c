@@ -74,6 +74,8 @@ rb_hook_list_free(rb_hook_list_t *hooks)
 
 /* ruby_vm_event_flags management */
 
+void rb_clear_attr_ccs(void);
+
 static void
 update_global_event_hook(rb_event_flag_t vm_events)
 {
@@ -90,6 +92,9 @@ update_global_event_hook(rb_event_flag_t vm_events)
 
 	/* write all ISeqs if and only if new events are added */
 	rb_iseq_trace_set_all(new_iseq_events | enabled_iseq_events);
+    }
+    else {
+        rb_clear_attr_ccs();
     }
 
     ruby_vm_event_flags = vm_events;
