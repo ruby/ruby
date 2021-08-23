@@ -54,10 +54,6 @@ class Gem::PrintableUri
     end
   end
 
-  def redactable_credential?
-    password? || oauth_basic? || token?
-  end
-
   def password?
     !!@uri.password
   end
