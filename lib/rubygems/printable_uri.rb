@@ -8,7 +8,6 @@ class Gem::PrintableUri
   end
 
   def initialize(original_uri)
-    @credential_redacted = false
     @original_uri = original_uri
   end
 
@@ -27,10 +26,6 @@ class Gem::PrintableUri
       @uri.respond_to?(:password=)
   end
 
-  def credential_redacted?
-    @credential_redacted
-  end
-
   def original_password
     @original_uri.password
   end
@@ -44,13 +39,10 @@ class Gem::PrintableUri
   def redact_credential
     if token?
       @uri.user = 'REDACTED'
-      @credential_redacted = true
     elsif oauth_basic?
       @uri.user = 'REDACTED'
-      @credential_redacted = true
     elsif password?
       @uri.password = 'REDACTED'
-      @credential_redacted = true
     end
   end
 

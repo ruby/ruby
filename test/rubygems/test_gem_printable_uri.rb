@@ -23,34 +23,6 @@ class TestPrintableUri < Gem::TestCase
     assert_equal false, Gem::PrintableUri.parse_uri("https://www.example.com:80index").valid_uri?
   end
 
-  def test_credential_redacted_with_user_pass
-    assert_equal true, Gem::PrintableUri.parse_uri("https://user:pass@example.com").credential_redacted?
-  end
-
-  def test_credential_redacted_with_token
-    assert_equal true, Gem::PrintableUri.parse_uri("https://token@example.com").credential_redacted?
-  end
-
-  def test_credential_redacted_with_user_x_oauth_basic
-    assert_equal true, Gem::PrintableUri.parse_uri("https://token:x-oauth-basic@example.com").credential_redacted?
-  end
-
-  def test_credential_redacted_without_credential
-    assert_equal false, Gem::PrintableUri.parse_uri("https://www.example.com").credential_redacted?
-  end
-
-  def test_credential_redacted_with_empty_uri_object
-    assert_equal false, Gem::PrintableUri.parse_uri(URI("")).credential_redacted?
-  end
-
-  def test_credential_redacted_with_valid_uri_object
-    assert_equal true, Gem::PrintableUri.parse_uri(URI("https://user:pass@example.com")).credential_redacted?
-  end
-
-  def test_credential_redacted_with_other_objects
-    assert_equal false, Gem::PrintableUri.parse_uri(Object.new).credential_redacted?
-  end
-
   def test_original_password_user_pass
     assert_equal "pass", Gem::PrintableUri.parse_uri("https://user:pass@example.com").original_password
   end
