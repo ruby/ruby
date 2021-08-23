@@ -547,6 +547,10 @@ class Reline::LineEditor
     lower_space = @highest_in_all - @first_line_started_from - @started_from - 1
     @dialog_updown = nil
     @dialog_column = pos.x
+    diff = (@dialog_column + DIALOG_WIDTH) - (@screen_size.last - 1)
+    if diff > 0
+      @dialog_column -= diff
+    end
     if (lower_space + @rest_height) >= DIALOG_HEIGHT
       @dialog_updown = :down
       @dialog_vertical_offset = 1
