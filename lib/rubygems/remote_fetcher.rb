@@ -22,6 +22,7 @@ class Gem::RemoteFetcher
   class FetchError < Gem::Exception
     ##
     # The URI which was being accessed when the exception happened.
+
     attr_accessor :uri, :original_uri
 
     def initialize(message, uri)
