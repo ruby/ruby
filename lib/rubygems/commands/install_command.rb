@@ -5,7 +5,6 @@ require_relative '../dependency_installer'
 require_relative '../local_remote_options'
 require_relative '../validator'
 require_relative '../version_option'
-require_relative '../printable_uri'
 
 ##
 # Gem installer command line tool
@@ -261,8 +260,8 @@ You can use `i` command instead of `install`.
     errors.each do |x|
       return unless Gem::SourceFetchProblem === x
 
-      printable_uri = Gem::PrintableUri.parse_uri(x.source.uri.clone)
-      msg = "Unable to pull data from '#{printable_uri}': #{x.error.message}"
+      require_relative "../uri"
+      msg = "Unable to pull data from '#{Gem::Uri.new(x.source.uri).redacted}': #{x.error.message}"
 
       alert_warning msg
     end
