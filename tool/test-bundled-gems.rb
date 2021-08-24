@@ -20,6 +20,11 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   test_command = "#{ruby} -C #{gem_dir}/src/#{gem} -Ilib #{rake} test"
   first_timeout = 600 # 10min
 
+  if gem == "typeprof"
+    raise "need to run rbs test suite before typeprof" unless File.readable?("#{gem_dir}/src/rbs/lib/rbs/parser.rb")
+    ENV["RUBYLIB"] = ["#{gem_dir}/src/rbs/lib", ENV.fetch("RUBYLIB", nil)].compact.join(":")
+  end
+
   if gem == "rbs"
     racc = File.realpath("../../libexec/racc", __FILE__)
     pid = Process.spawn("#{ruby} -C #{gem_dir}/src/#{gem} -Ilib #{racc} -v -o lib/rbs/parser.rb lib/rbs/parser.y")
