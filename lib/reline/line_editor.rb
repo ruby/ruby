@@ -572,11 +572,7 @@ class Reline::LineEditor
     end
     Reline::IOGate.hide_cursor
     reset_dialog(old_dialog_contents, old_dialog_contents_width, old_dialog_column, old_dialog_vertical_offset, old_dialog_updown)
-    case @dialog_updown
-    when :down
-      move_cursor_down(1)
-    when :up
-    end
+    move_cursor_down(@dialog_vertical_offset)
     Reline::IOGate.move_cursor_column(@dialog_column)
     @dialog_contents.each_with_index do |item, i|
       @output.write "\e[46m%-#{DIALOG_WIDTH}s\e[49m" % item.slice(0, DIALOG_WIDTH)
@@ -584,11 +580,7 @@ class Reline::LineEditor
       move_cursor_down(1) if i < (@dialog_contents.size - 1)
     end
     Reline::IOGate.move_cursor_column(cursor_column)
-    case @dialog_updown
-    when :down
-      move_cursor_up(@dialog_contents.size)
-    when :up
-    end
+    move_cursor_up(@dialog_vertical_offset + @dialog_contents.size - 1)
     Reline::IOGate.show_cursor
     @dialog_lines_backup = {
       lines: modify_lines(whole_lines),
