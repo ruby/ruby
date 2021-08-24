@@ -330,9 +330,6 @@ def lldb_inspect(debugger, target, result, val):
         elif flType == RUBY_T_HASH:
             result.write("T_HASH: %s" % flaginfo)
             append_command_output(debugger, "p *(struct RHash *) %0#x" % val.GetValueAsUnsigned(), result)
-        elif flType == RUBY_T_PAYLOAD:
-            result.write("T_PAYLOAD: %s" % flaginfo)
-            append_command_output(debugger, "p *(struct RPayload *) %0#x" % val.GetValueAsUnsigned(), result)
         elif flType == RUBY_T_BIGNUM:
             tRBignum = target.FindFirstType("struct RBignum").GetPointerType()
             val = val.Cast(tRBignum)
