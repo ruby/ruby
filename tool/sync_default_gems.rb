@@ -72,6 +72,7 @@ REPOSITORIES = {
   pathname: "ruby/pathname",
   digest: "ruby/digest",
   error_highlight: "ruby/error_highlight",
+  un: "ruby/un",
 }
 
 def sync_default_gems(gem)
