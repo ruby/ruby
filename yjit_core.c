@@ -522,7 +522,7 @@ add_block_version(blockid_t blockid, block_t* block)
             rb_bug("allocation failed");
         }
 
-#if RUBY_DEBUG
+#if YJIT_STATS
         // First block compiled for this iseq
         yjit_runtime_counters.compiled_iseq_count++;
 #endif

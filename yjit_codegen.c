@@ -159,30 +159,7 @@ jit_save_sp(jitstate_t* jit, ctx_t* ctx)
 static bool jit_guard_known_klass(jitstate_t *jit, ctx_t* ctx, VALUE known_klass, insn_opnd_t insn_opnd, VALUE sample_instance, const int max_chain_depth, uint8_t *side_exit);
 
 #if RUBY_DEBUG
-
-// Increment a profiling counter with counter_name
-#define GEN_COUNTER_INC(cb, counter_name) _gen_counter_inc(cb, &(yjit_runtime_counters . counter_name))
-static void
-_gen_counter_inc(codeblock_t *cb, int64_t *counter)
-{
-    if (!rb_yjit_opts.gen_stats) return;
-     mov(cb, REG0, const_ptr_opnd(counter));
-     cb_write_lock_prefix(cb); // for ractors.
-     add(cb, mem_opnd(64, REG0, 0), imm_opnd(1));
-}
-
-// Increment a counter then take an existing side exit.
-#define COUNTED_EXIT(side_exit, counter_name) _counted_side_exit(side_exit, &(yjit_runtime_counters . counter_name))
-static uint8_t *
-_counted_side_exit(uint8_t *existing_side_exit, int64_t *counter)
-{
-    if (!rb_yjit_opts.gen_stats) return existing_side_exit;
-
-    uint8_t *start = cb_get_ptr(ocb, ocb->write_pos);
-    _gen_counter_inc(ocb, counter);
-    jmp_ptr(ocb, existing_side_exit);
-    return start;
-}
+# define YJIT_STATS 1
 
 // Add a comment at the current position in the code block
 static void
@@ -268,13 +245,49 @@ verify_ctx(jitstate_t *jit, ctx_t *ctx)
 }
 
 #else
+#ifndef YJIT_STATS
+#define YJIT_STATS 0
+#endif // ifndef YJIT_STATS
 
-#define GEN_COUNTER_INC(cb, counter_name) ((void)0)
-#define COUNTED_EXIT(side_exit, counter_name) side_exit
 #define ADD_COMMENT(cb, comment) ((void)0)
 #define verify_ctx(jit, ctx) ((void)0)
 
 #endif // if RUBY_DEBUG
+
+#if YJIT_STATS
+
+// Increment a profiling counter with counter_name
+#define GEN_COUNTER_INC(cb, counter_name) _gen_counter_inc(cb, &(yjit_runtime_counters . counter_name))
+static void
+_gen_counter_inc(codeblock_t *cb, int64_t *counter)
+{
+    if (!rb_yjit_opts.gen_stats) return;
+     mov(cb, REG0, const_ptr_opnd(counter));
+     cb_write_lock_prefix(cb); // for ractors.
+     add(cb, mem_opnd(64, REG0, 0), imm_opnd(1));
+}
+
+// Increment a counter then take an existing side exit.
+#define COUNTED_EXIT(side_exit, counter_name) _counted_side_exit(side_exit, &(yjit_runtime_counters . counter_name))
+static uint8_t *
+_counted_side_exit(uint8_t *existing_side_exit, int64_t *counter)
+{
+    if (!rb_yjit_opts.gen_stats) return existing_side_exit;
+
+    uint8_t *start = cb_get_ptr(ocb, ocb->write_pos);
+    _gen_counter_inc(ocb, counter);
+    jmp_ptr(ocb, existing_side_exit);
+    return start;
+}
+
+
+#else
+
+#define GEN_COUNTER_INC(cb, counter_name) ((void)0)
+#define COUNTED_EXIT(side_exit, counter_name) side_exit
+
+#endif // if YJIT_STATS
+
 
 // Generate an exit to return to the interpreter
 static uint8_t *
@@ -302,7 +315,7 @@ yjit_gen_exit(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     mov(cb, member_opnd(REG_CFP, rb_control_frame_t, pc), RAX);
 
     // Accumulate stats about interpreter exits
-#if RUBY_DEBUG
+#if YJIT_STATS
     if (rb_yjit_opts.gen_stats) {
         mov(cb, RDI, const_ptr_opnd(exit_pc));
         call_ptr(cb, RSI, (void *)&rb_yjit_count_side_exit_op);

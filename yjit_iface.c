@@ -25,11 +25,18 @@ static VALUE mYjit;
 static VALUE cYjitBlock;
 
 #if RUBY_DEBUG
+# define YJIT_STATS 1
+static VALUE cYjitCodeComment;
+#else
+# ifndef YJIT_STATS
+#  define YJIT_STATS 0
+# endif
+#endif
+
+#if YJIT_STATS
+extern const int rb_vm_max_insn_name_size;
 static int64_t exit_op_count[VM_INSTRUCTION_SIZE] = { 0 };
 struct rb_yjit_runtime_counters yjit_runtime_counters = { 0 };
-static VALUE cYjitCodeComment;
-
-extern const int rb_vm_max_insn_name_size;
 #endif
 
 // Machine code blocks (executable memory)
@@ -721,7 +728,7 @@ get_yjit_stats(rb_execution_context_t *ec, VALUE self)
         rb_hash_aset(hash, key, value);
     }
 
-#if RUBY_DEBUG
+#if YJIT_STATS
     if (rb_yjit_opts.gen_stats) {
         // Indicate that the complete set of stats is available
         rb_hash_aset(hash, ID2SYM(rb_intern("all_stats")), Qtrue);
@@ -783,16 +790,16 @@ get_yjit_stats(rb_execution_context_t *ec, VALUE self)
 static VALUE
 reset_stats_bang(rb_execution_context_t *ec, VALUE self)
 {
-#if RUBY_DEBUG
+#if YJIT_STATS
     memset(&exit_op_count, 0, sizeof(exit_op_count));
     memset(&yjit_runtime_counters, 0, sizeof(yjit_runtime_counters));
-#endif // if RUBY_DEBUG
+#endif // if YJIT_STATS
     return Qnil;
 }
 
 #include "yjit.rbinc"
 
-#if RUBY_DEBUG
+#if YJIT_STATS
 void
 rb_yjit_collect_vm_usage_insn(int insn)
 {
@@ -1022,9 +1029,9 @@ rb_yjit_init(struct rb_yjit_options *options)
 
     rb_yjit_opts.gen_stats |= !!getenv("YJIT_STATS");
 
-#if !RUBY_DEBUG
+#if !YJIT_STATS
     if(rb_yjit_opts.gen_stats) {
-        rb_warning("--yjit-stats requires that Ruby is compiled with CPPFLAGS='-DRUBY_DEBUG=1'");
+        rb_warning("--yjit-stats requires that Ruby is compiled with CPPFLAGS='-DYJIT_STATS=1' or CPPFLAGS='-DRUBY_DEBUG=1'");
     }
 #endif
 
@@ -1070,7 +1077,7 @@ rb_yjit_init(struct rb_yjit_options *options)
 #endif
 #endif
 
-    if (RUBY_DEBUG && rb_yjit_opts.gen_stats) {
+    if (YJIT_STATS && rb_yjit_opts.gen_stats) {
         // Setup at_exit callback for printing out counters
         rb_block_call(rb_mKernel, rb_intern("at_exit"), 0, NULL, at_exit_print_stats, Qfalse);
     }
