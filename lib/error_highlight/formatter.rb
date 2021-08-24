@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module ErrorHighlight
   class DefaultFormatter
     def message_for(spot)
@@ -13,13 +15,18 @@ module ErrorHighlight
     end
   end
 
+  DEFAULT_FORMATTER = DefaultFormatter.new
+  Ractor.make_shareable(DEFAULT_FORMATTER) if defined?(Ractor)
+
   def self.formatter
-    @@formatter
+    DEFAULT_FORMATTER
   end
 
   def self.formatter=(formatter)
-    @@formatter = formatter
+    provider = proc {
+      formatter
+    }
+    Ractor.make_shareable(provider) if defined?(Ractor)
+    define_singleton_method(:formatter, &provider)
   end
-
-  self.formatter = DefaultFormatter.new
 end
