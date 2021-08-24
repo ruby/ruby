@@ -151,6 +151,9 @@ module Random::Formatter
       s.scan(/\w+/) do |c|
         assert_operator(c.size, :<=, formatter::CHUNK_SIZE)
       end
+
+      s = @it.phrase(10, separators: nil)
+      assert_match(/\A\w{10}\z/, s)
     end
 
     def assert_in_range(range, result, mesg = nil)

@@ -406,6 +406,13 @@ module Random::Formatter
   #
   #   prng.phrase     #=> "kDc9y^Xyii4.rm3WB~MAgl0^pSOBn^jsQKc^WakTU!OjfSs"
   #   prng.phrase(20) #=> "rKz4p-QihCf.zHff4^ukRGn"
+  #
+  # If _separators_ is +nil+ or empty, the result will consist of only
+  # one chunk without separators.
+  #
+  #   require 'random/formatter'
+  #
+  #   prng.phrase(10, separators: nil) #=> "YAzMKLQT8G"
   def phrase(n = 40, chunk: CHUNK_SIZE, separators: PUNCT, exclude: EXCLUDE)
     raise ArgumentError, "invalid chunk size" unless chunk > 0
     case n
@@ -420,15 +427,22 @@ module Random::Formatter
     when String
       separators = separators.chars
     end
-    if separators.size > 1
-      sep = proc {choose(separators, 1)}
-    else
-      sep = proc {separators[0]}
+    if separators
+      case
+      when separators.size > 1
+        sep = proc {choose(separators, 1)}
+      when separators.size > 0
+        sep = proc {separators[0]}
+      end
     end
-    w, d = n.divmod(chunk + 1)
-    if d.zero? and w > 1
-      w -= 1
-      d = chunk + 1
+    if sep
+      w, d = n.divmod(chunk + 1)
+      if d.zero? and w > 1
+        w -= 1
+        d = chunk + 1
+      end
+    else
+      w, d = 0, n
     end
     source = ALPHANUMERIC
     source -= exclude if exclude
