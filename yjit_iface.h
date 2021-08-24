@@ -16,6 +16,23 @@
 #endif
 
 #if RUBY_DEBUG
+# define YJIT_STATS 1
+struct yjit_comment {
+    uint32_t offset;
+    const char *comment;
+};
+
+typedef rb_darray(struct yjit_comment) yjit_comment_array_t;
+
+extern yjit_comment_array_t yjit_code_comments;
+#else
+# ifndef YJIT_STATS
+#  define YJIT_STATS 0
+# endif // ifndef YJIT_STATS
+#endif // if RUBY_DEBUG
+
+
+#if YJIT_STATS
 
 #define YJIT_DECLARE_COUNTERS(...) struct rb_yjit_runtime_counters { \
     int64_t __VA_ARGS__; \
@@ -81,16 +98,7 @@ YJIT_DECLARE_COUNTERS(
 
 #undef YJIT_DECLARE_COUNTERS
 
-struct yjit_comment {
-    uint32_t offset;
-    const char *comment;
-};
-
-typedef rb_darray(struct yjit_comment) yjit_comment_array_t;
-
-extern yjit_comment_array_t yjit_code_comments;
-
-#endif // if RUBY_DEBUG
+#endif // YJIT_STATS
 
 RUBY_EXTERN struct rb_yjit_options rb_yjit_opts;
 RUBY_EXTERN struct rb_yjit_runtime_counters yjit_runtime_counters;
