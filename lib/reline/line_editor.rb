@@ -541,6 +541,7 @@ class Reline::LineEditor
     old_dialog_updown = @dialog_updown
     if result and not result.empty?
       @dialog_contents = result
+      @dialog_contents = @dialog_contents[0...DIALOG_HEIGHT] if @dialog_contents.size > DIALOG_HEIGHT
       @dialog_contents_width = @dialog_contents.map{ |c| calculate_width(c) }
     else
       clear_dialog
@@ -577,7 +578,6 @@ class Reline::LineEditor
     when :up
     end
     Reline::IOGate.move_cursor_column(@dialog_column)
-    @dialog_contents = @dialog_contents[0...DIALOG_HEIGHT] if @dialog_contents.size > DIALOG_HEIGHT
     @dialog_contents.each_with_index do |item, i|
       @output.write "\e[46m%-#{DIALOG_WIDTH}s\e[49m" % item.slice(0, DIALOG_WIDTH)
       Reline::IOGate.move_cursor_column(@dialog_column)
