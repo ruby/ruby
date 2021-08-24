@@ -56,6 +56,8 @@ when /mingw/, /mswin/
   libc_so = libm_so = "#{crtname}.dll"
 when /darwin/
   libc_so = libm_so = "/usr/lib/libSystem.B.dylib"
+  # macOS 11.0+ removed libSystem.B.dylib from /usr/lib. But It works with dlopen.
+  rigid_path = true
 when /kfreebsd/
   libc_so = "/lib/libc.so.0.1"
   libm_so = "/lib/libm.so.1"
@@ -131,12 +133,9 @@ else
   end
 end
 
-libc_so = nil if !libc_so || (libc_so[0] == ?/ && !File.file?(libc_so))
-libm_so = nil if !libm_so || (libm_so[0] == ?/ && !File.file?(libm_so))
-
-# macOS 11.0+ removed libSystem.B.dylib from /usr/lib. But It works with dlopen.
-if RUBY_PLATFORM =~ /darwin/
-  libc_so = libm_so = "/usr/lib/libSystem.B.dylib"
+unless rigid_path
+  libc_so = nil if libc_so && libc_so[0] == ?/ && !File.file?(libc_so)
+  libm_so = nil if libm_so && libm_so[0] == ?/ && !File.file?(libm_so)
 end
 
 if !libc_so || !libm_so
