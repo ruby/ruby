@@ -158,7 +158,7 @@ class TestRubyOptimization < Test::Unit::TestCase
       methods = []
       tp = TracePoint.new(type) { |tp| methods << tp.method_id }
       tp.enable do
-        x = "a"; -x
+        x = "a"; x = -x
         [1].max
         [1].min
         x = 42 + 2
@@ -166,11 +166,11 @@ class TestRubyOptimization < Test::Unit::TestCase
         x = 42 * 2
         x = 42 / 2
         x = 42 % 2
-        x == 42
-        x < 42
-        x <= 42
-        x > 42
-        x >= 42
+        y = x == 42
+        y = x < 42
+        y = x <= 42
+        y = x > 42
+        y = x >= 42
         x = x << 1
         x = x & 1
         x = x | 1
@@ -182,6 +182,7 @@ class TestRubyOptimization < Test::Unit::TestCase
         x = 1; x.succ
         !x
         x = 'a'; x =~ /a/
+        x = y
       end
       assert_equal(expected, methods, bug14870)
     end
