@@ -510,6 +510,10 @@ class Reline::LineEditor
       @line_editor.instance_variable_get(:@just_cursor_moving)
     end
 
+    def screen_width
+      @line_editor.instance_variable_get(:@screen_size).last
+    end
+
     def call
       instance_exec(&@proc_to_exec)
     end
