@@ -1161,6 +1161,34 @@ undefined method `time' for 1:Integer
     ErrorHighlight.formatter = original_formatter
   end
 
+  def test_custom_formatter_with_ractor
+    skip unless defined?(Ractor)
+
+    custom_formatter = Object.new
+    def custom_formatter.message_for(spot)
+      "\n\n" + spot.inspect
+    end
+
+    original_formatter, ErrorHighlight.formatter = ErrorHighlight.formatter, custom_formatter
+
+    assert_error_message(NoMethodError, <<~END) do
+undefined method `time' for 1:Integer
+
+{:first_lineno=>#{ __LINE__ + 4 }, :first_column=>22, :last_lineno=>#{ __LINE__ + 4 }, :last_column=>27, :snippet=>"        Ractor.new { 1.time {} }.take\\n"}
+    END
+
+      begin
+        Ractor.new { 1.time {} }.take
+      rescue Ractor::RemoteError => e
+        STDERR.puts "#{e}, cause:#{e.cause}"
+        raise e.cause
+      end
+    end
+
+  ensure
+    ErrorHighlight.formatter = original_formatter
+  end
+
   def test_hard_tabs
     Tempfile.create(["error_highlight_test", ".rb"], binmode: true) do |tmp|
       tmp << "\t \t1.time {}\n"
