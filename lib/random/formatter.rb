@@ -42,6 +42,12 @@
 #   prng.alphanumeric(10) #=> "aOxAg8BAJe"
 #   Random.alphanumeric #=> "TmP9OsJHJLtaZYhP"
 #
+# Generate random phrase strings:
+#
+#   prng.phrase(10) #=> "XaNgz+qGgG"
+#   prng.phrase(10) #=> "tKn0l^hBxf"
+#   prng.phrase(20) #=> "p1TSO+eBCmD.5XVRP+hT"
+#
 # Generate UUIDs:
 #
 #   prng.uuid #=> "2d931510-d99f-494a-8c67-87feb05e1594"
@@ -368,5 +374,67 @@ module Random::Formatter
   def alphanumeric(n = nil, chars: ALPHANUMERIC)
     n = 16 if n.nil?
     choose(chars, n)
+  end
+
+  # Default chunk size for #phrase
+  CHUNK_SIZE = 5
+
+  # Default punctuation joining chunks for #phrase
+  PUNCT = %w[! - + / . ^ ~].freeze
+
+  # Default excluded characters for #phrase
+  EXCLUDE = %w"0 O o 1 l".freeze
+
+  # Random::Formatter#phrase generates a random phrase string.
+  #
+  # The argument _n_ specifies the length, in characters, of the
+  # random phrase string to be generated.
+  #
+  # If _n_ is not specified or is nil, 40 is assumed.  If _n_ is a
+  # Range, the length will be chosen in that range randomly.  The
+  # default length may be larger in the future.
+  #
+  # The result will consist of chunks upto _chunk_ bytes separated by
+  # the elements of _separators_.  The chunks consist of alpha-numeric
+  # characters, except for the elements of _exclude_ unless it is
+  # falsy.  The last chunk may be longer than _chunk_.  _separators_
+  # should be an Array of one-byte Strings, or a String.  The defaults
+  # of _chunk_, _separators_ and _exclude_ are CHUNK_SIZE, PUNCT and
+  # EXCLUDE respectively.
+  #
+  #   require 'random/formatter'
+  #
+  #   prng.phrase     #=> "kDc9y^Xyii4.rm3WB~MAgl0^pSOBn^jsQKc^WakTU!OjfSs"
+  #   prng.phrase(20) #=> "rKz4p-QihCf.zHff4^ukRGn"
+  def phrase(n = 40, chunk: CHUNK_SIZE, separators: PUNCT, exclude: EXCLUDE)
+    raise ArgumentError, "invalid chunk size" unless chunk > 0
+    case n
+    when Range
+      unless n = random_number(Range.new([n.begin || 1, 1].max, n.end, n.exclude_end?))
+        raise ArgumentError, "invalid phrase length range"
+      end
+    else
+      raise ArgumentError, "empty phrase length" unless n > 0
+    end
+    case separators
+    when String
+      separators = separators.chars
+    end
+    if separators.size > 1
+      sep = proc {choose(separators, 1)}
+    else
+      sep = proc {separators[0]}
+    end
+    w, d = n.divmod(chunk + 1)
+    if d.zero? and w > 1
+      w -= 1
+      d = chunk + 1
+    end
+    source = ALPHANUMERIC
+    source -= exclude if exclude
+    ph = ''.dup
+    w.times {ph << choose(source, chunk) << sep[]}
+    ph << choose(source, d) unless d.zero?
+    ph
   end
 end

@@ -138,6 +138,21 @@ module Random::Formatter
       end
     end
 
+    def test_phrase
+      formatter = Random::Formatter
+      s = @it.phrase
+      assert_equal(40, s.size)
+      formatter::EXCLUDE.each do |c|
+        assert_not_include(s, c)
+      end
+      s.scan(/\W/) do |c|
+        assert_include(formatter::PUNCT, c)
+      end
+      s.scan(/\w+/) do |c|
+        assert_operator(c.size, :<=, formatter::CHUNK_SIZE)
+      end
+    end
+
     def assert_in_range(range, result, mesg = nil)
       assert(range.cover?(result), build_message(mesg, "Expected #{result} to be in #{range}"))
     end
