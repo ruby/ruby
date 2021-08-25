@@ -8,7 +8,7 @@ ARGF.each(nil) do |source|
   grammar = source[sbeg, send-sbeg]
   grammar.sub!(/.*\n/, "")
   grammar.gsub!(/'\{'/, "'\001'")
-  grammar.gsub!(/'\}'/, "'\002'")
+  grammar.gsub!(/["']\}["']/, "'\002'")
   grammar.gsub!(%r{\*/}, "\003\003")
   grammar.gsub!(%r{/\*[^\003]*\003\003}, '')
   while grammar.gsub!(/\{[^{}]*\}/, ''); end
