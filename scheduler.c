@@ -25,6 +25,9 @@ static ID id_io_read;
 static ID id_io_write;
 static ID id_io_wait;
 
+static ID id_blocking_region_begin;
+static ID id_blocking_region_end;
+
 static ID id_address_resolve;
 
 void
@@ -42,6 +45,9 @@ Init_Fiber_Scheduler(void)
     id_io_read = rb_intern_const("io_read");
     id_io_write = rb_intern_const("io_write");
     id_io_wait = rb_intern_const("io_wait");
+
+    id_blocking_region_begin = rb_intern_const("blocking_region_begin");
+    id_blocking_region_end = rb_intern_const("blocking_region_end");
 
     id_address_resolve = rb_intern_const("address_resolve");
 }
@@ -95,7 +101,7 @@ rb_fiber_scheduler_set(VALUE scheduler)
     return thread->scheduler;
 }
 
-static VALUE
+VALUE
 rb_fiber_scheduler_current_for_threadptr(rb_thread_t *thread)
 {
     VM_ASSERT(thread);
@@ -168,6 +174,16 @@ rb_fiber_scheduler_timeout_afterv(VALUE scheduler, int argc, VALUE * argv)
     return rb_check_funcall(scheduler, id_timeout_after, argc, argv);
 }
 #endif
+
+VALUE rb_fiber_scheduler_blocking_region_begin(VALUE scheduler)
+{
+    return rb_check_funcall(scheduler, id_blocking_region_begin, 0, NULL);
+}
+
+VALUE rb_fiber_scheduler_blocking_region_end(VALUE scheduler)
+{
+    return rb_check_funcall(scheduler, id_blocking_region_end, 0, NULL);
+}
 
 VALUE
 rb_fiber_scheduler_process_wait(VALUE scheduler, rb_pid_t pid, int flags)

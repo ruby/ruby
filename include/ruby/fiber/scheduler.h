@@ -32,6 +32,9 @@ VALUE rb_fiber_scheduler_timeout_after(VALUE scheduler, VALUE timeout, VALUE exc
 VALUE rb_fiber_scheduler_timeout_afterv(VALUE scheduler, int argc, VALUE * argv);
 #endif
 
+VALUE rb_fiber_scheduler_blocking_region_begin(VALUE scheduler);
+VALUE rb_fiber_scheduler_blocking_region_end(VALUE scheduler);
+
 int rb_fiber_scheduler_supports_process_wait(VALUE scheduler);
 VALUE rb_fiber_scheduler_process_wait(VALUE scheduler, rb_pid_t pid, int flags);
 
