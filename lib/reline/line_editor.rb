@@ -544,6 +544,13 @@ class Reline::LineEditor
       @dialog_contents = @dialog_contents[0...DIALOG_HEIGHT] if @dialog_contents.size > DIALOG_HEIGHT
       @dialog_contents_width = @dialog_contents.map{ |c| calculate_width(c) }
     else
+      @dialog_lines_backup = {
+        lines: modify_lines(whole_lines),
+        line_index: @line_index,
+        first_line_started_from: @first_line_started_from,
+        started_from: @started_from,
+        byte_pointer: @byte_pointer
+      }
       clear_dialog
       @dialog_contents = nil
       return
