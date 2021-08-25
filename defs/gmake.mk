@@ -362,7 +362,7 @@ spec/bundler: test-bundler-parallel
 
 # workaround to avoid matching non ruby files with "spec/%/" under GNU make 3.81
 spec/%_spec.c spec/%_spec.bundle:
-	$(NOOP)
+	$(empty)
 
 spec/%/ spec/%_spec.rb: programs exts PHONY
 	+$(RUNRUBY) -r./$(arch)-fake $(srcdir)/spec/mspec/bin/mspec-run -B $(srcdir)/spec/default.mspec $(SPECOPTS) $(patsubst %,$(srcdir)/%,$@)
