@@ -7,6 +7,7 @@
 // Code blocks we generate code into
 extern codeblock_t *cb;
 extern codeblock_t *ocb;
+extern uint32_t yjit_codepage_frozen_bytes;
 
 // Code generation state
 typedef struct JITState
@@ -29,6 +30,10 @@ typedef struct JITState
     // Execution context when compilation started
     // This allows us to peek at run-time values
     rb_execution_context_t* ec;
+
+    // Whether we need to record the code address at
+    // the end of this bytecode instruction for tracing suppoert
+    bool record_boundary_patch_point;
 
 } jitstate_t;
 

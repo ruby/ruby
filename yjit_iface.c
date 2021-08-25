@@ -81,6 +81,17 @@ map_addr2insn(void *code_ptr, int insn)
     }
 }
 
+// For debugging. Print the disassembly of an iseq.
+void
+yjit_print_iseq(const rb_iseq_t *iseq)
+{
+    char *ptr;
+    long len;
+    VALUE disassembly = rb_iseq_disasm(iseq);
+    RSTRING_GETMEM(disassembly, ptr, len);
+    fprintf(stderr, "%.*s\n", (int)len, ptr);
+}
+
 int
 yjit_opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc)
 {

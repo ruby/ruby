@@ -1,17 +1,20 @@
-#include <assert.h>
-#include "insns.inc"
 #include "internal.h"
+#include "insns.inc"
 #include "vm_core.h"
 #include "vm_sync.h"
 #include "vm_callinfo.h"
 #include "builtin.h"
+#include "gc.h"
 #include "internal/compile.h"
 #include "internal/class.h"
 #include "internal/object.h"
+#include "internal/sanitizers.h"
 #include "internal/string.h"
 #include "internal/variable.h"
 #include "internal/re.h"
 #include "insns_info.inc"
+#include "probes.h"
+#include "probes_helper.h"
 #include "yjit.h"
 #include "yjit_iface.h"
 #include "yjit_core.h"
@@ -35,6 +38,25 @@ codeblock_t* ocb = NULL;
 
 // Code for exiting back to the interpreter from the leave insn
 static void *leave_exit_code;
+
+// Code for full logic of returning from C method and exiting to the interpreter
+static uint32_t outline_full_cfunc_return_pos;
+
+// For implementing global code invalidation
+struct codepage_patch {
+    uint32_t mainline_patch_pos;
+    uint32_t outline_target_pos;
+};
+
+typedef rb_darray(struct codepage_patch) patch_array_t;
+
+static patch_array_t global_inval_patches = NULL;
+
+// This number keeps track of the number of bytes counting from the beginning
+// of the page that should not be changed. After patching for global
+// invalidation, no one should make changes to the invalidated code region
+// anymore.
+uint32_t yjit_codepage_frozen_bytes = 0;
 
 // Print the current source location for debugging purposes
 RBIMPL_ATTR_MAYBE_UNUSED()
@@ -154,6 +176,28 @@ jit_save_sp(jitstate_t* jit, ctx_t* ctx)
         mov(cb, member_opnd(REG_CFP, rb_control_frame_t, sp), REG_SP);
         ctx->sp_offset = 0;
     }
+}
+
+// jit_save_pc() + jit_save_sp(). Should be used before calling a routine that
+// could:
+//  - Perform GC allocation
+//  - Take the VM loock through RB_VM_LOCK_ENTER()
+//  - Perform Ruby method call
+static void
+jit_prepare_routine_call(jitstate_t *jit, ctx_t *ctx, x86opnd_t scratch_reg)
+{
+    jit->record_boundary_patch_point = true;
+    jit_save_pc(jit, scratch_reg);
+    jit_save_sp(jit, ctx);
+}
+
+// Record the current codeblock write position for rewriting into a jump into
+// the outline block later. Used to implement global code invalidation.
+static void
+record_global_inval_patch(const codeblock_t *cb, uint32_t outline_block_target_pos)
+{
+    struct codepage_patch patch_point = { cb->write_pos, outline_block_target_pos };
+    if (!rb_darray_append(&global_inval_patches, patch_point)) rb_bug("allocation failed");
 }
 
 static bool jit_guard_known_klass(jitstate_t *jit, ctx_t* ctx, VALUE known_klass, insn_opnd_t insn_opnd, VALUE sample_instance, const int max_chain_depth, uint8_t *side_exit);
@@ -290,14 +334,12 @@ _counted_side_exit(uint8_t *existing_side_exit, int64_t *counter)
 
 
 // Generate an exit to return to the interpreter
-static uint8_t *
-yjit_gen_exit(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
+static uint32_t
+yjit_gen_exit(VALUE *exit_pc, ctx_t *ctx, codeblock_t *cb)
 {
-    uint8_t *code_ptr = cb_get_ptr(cb, cb->write_pos);
+    const uint32_t code_pos = cb->write_pos;
 
     ADD_COMMENT(cb, "exit to interpreter");
-
-    VALUE *exit_pc = jit->pc;
 
     // Generate the code to exit to the interpreters
     // Write the adjusted SP back into the CFP
@@ -329,7 +371,7 @@ yjit_gen_exit(jitstate_t *jit, ctx_t *ctx, codeblock_t *cb)
     mov(cb, RAX, imm_opnd(Qundef));
     ret(cb);
 
-    return code_ptr;
+    return code_pos;
 }
 
 // Generate a continuation for gen_leave() that exits to the interpreter at REG_CFP->pc.
@@ -363,7 +405,8 @@ yjit_gen_leave_exit(codeblock_t *cb)
 static uint8_t *
 yjit_side_exit(jitstate_t *jit, ctx_t *ctx)
 {
-    return yjit_gen_exit(jit, ctx, ocb);
+    uint32_t pos = yjit_gen_exit(jit->pc, ctx, ocb);
+    return cb_get_ptr(ocb, pos);
 }
 
 // Generate a runtime guard that ensures the PC is at the start of the iseq,
@@ -397,6 +440,64 @@ yjit_pc_guard(const rb_iseq_t *iseq)
     // PC should be at the beginning
     cb_write_label(cb, pc_is_zero);
     cb_link_labels(cb);
+}
+
+// The code we generate in gen_send_cfunc() doesn't fire the c_return TracePoint event
+// like the interpreter. When tracing for c_return is enabled, we patch the code after
+// the C method return to call into this to fire the event.
+static void
+full_cfunc_return(rb_execution_context_t *ec, VALUE return_value)
+{
+    rb_control_frame_t *cfp = ec->cfp;
+    RUBY_ASSERT_ALWAYS(cfp == GET_EC()->cfp);
+    const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
+
+    RUBY_ASSERT_ALWAYS(RUBYVM_CFUNC_FRAME_P(cfp));
+    RUBY_ASSERT_ALWAYS(me->def->type == VM_METHOD_TYPE_CFUNC);
+
+    // CHECK_CFP_CONSISTENCY("full_cfunc_return"); TODO revive this
+
+
+    // Pop the C func's frame and fire the c_return TracePoint event
+    // Note that this is the same order as vm_call_cfunc_with_frame().
+    rb_vm_pop_frame(ec);
+    EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_RETURN, cfp->self, me->def->original_id, me->called_id, me->owner, return_value);
+    // Note, this deviates from the interpreter in that users need to enable
+    // a c_return TracePoint for this DTrace hook to work. A reasonable change
+    // since the Ruby return event works this way as well.
+    RUBY_DTRACE_CMETHOD_RETURN_HOOK(ec, me->owner, me->def->original_id);
+
+    // Push return value into the caller's stack. We know that it's a frame that
+    // uses cfp->sp because we are patching a call done with gen_send_cfunc().
+    ec->cfp->sp[0] = return_value;
+    ec->cfp->sp++;
+}
+
+// Landing code for when c_return tracing is enabled. See full_cfunc_return().
+static void
+gen_full_cfunc_return(void)
+{
+    codeblock_t *cb = ocb;
+    outline_full_cfunc_return_pos = ocb->write_pos;
+
+    // This chunk of code expect REG_EC to be filled properly and
+    // RAX to contain the return value of the C method.
+
+    // Call full_cfunc_return()
+    mov(cb, C_ARG_REGS[0], REG_EC);
+    mov(cb, C_ARG_REGS[1], RAX);
+    call_ptr(cb, REG0, (void *)full_cfunc_return);
+
+    // Count the exit
+    GEN_COUNTER_INC(cb, traced_cfunc_return);
+
+    // Return to the interpreter
+    pop(cb, REG_SP);
+    pop(cb, REG_EC);
+    pop(cb, REG_CFP);
+
+    mov(cb, RAX, imm_opnd(Qundef));
+    ret(cb);
 }
 
 /*
@@ -473,6 +574,13 @@ jit_jump_to_next_insn(jitstate_t *jit, const ctx_t *current_context)
 
     blockid_t jump_block = { jit->iseq, jit_next_insn_idx(jit) };
 
+    // We are at the end of the current instruction. Record the boundary.
+    if (jit->record_boundary_patch_point) {
+        uint32_t exit_pos = yjit_gen_exit(jit->pc + insn_len(jit->opcode), &reset_depth, ocb);
+        record_global_inval_patch(cb, exit_pos);
+        jit->record_boundary_patch_point = false;
+    }
+
     // Generate the jump instruction
     gen_direct_jump(
         jit->block,
@@ -536,6 +644,14 @@ yjit_gen_block(block_t *block, rb_execution_context_t *ec)
         jit.pc = pc;
         jit.opcode = opcode;
 
+        // If previous instruction requested to record the boundary
+        if (jit.record_boundary_patch_point) {
+            // Generate an exit to this instruction and record it
+            uint32_t exit_pos = yjit_gen_exit(jit.pc, ctx, ocb);
+            record_global_inval_patch(cb, exit_pos);
+            jit.record_boundary_patch_point = false;
+        }
+
         // Verify our existing assumption (DEBUG)
         if (jit_at_current_insn(&jit)) {
             verify_ctx(&jit, ctx);
@@ -546,7 +662,7 @@ yjit_gen_block(block_t *block, rb_execution_context_t *ec)
         if (!gen_fn) {
             // If we reach an unknown instruction,
             // exit to the interpreter and stop compiling
-            yjit_gen_exit(&jit, ctx, cb);
+            yjit_gen_exit(jit.pc, ctx, cb);
             break;
         }
 
@@ -576,7 +692,7 @@ yjit_gen_block(block_t *block, rb_execution_context_t *ec)
             // TODO: if the codegen funcion makes changes to ctx and then return YJIT_CANT_COMPILE,
             // the exit this generates would be wrong. We could save a copy of the entry context
             // and assert that ctx is the same here.
-            yjit_gen_exit(&jit, ctx, cb);
+            yjit_gen_exit(jit.pc, ctx, cb);
             break;
         }
 
@@ -595,6 +711,10 @@ yjit_gen_block(block_t *block, rb_execution_context_t *ec)
 
     // Store the index of the last instruction in the block
     block->end_idx = insn_idx;
+
+    // We currently can't handle cases where the request is for a block that
+    // doesn't go to the next instruction.
+    RUBY_ASSERT(!jit.record_boundary_patch_point);
 
     if (YJIT_DUMP_MODE >= 2) {
         // Dump list of compiled instrutions
@@ -735,8 +855,7 @@ gen_newarray(jitstate_t* jit, ctx_t* ctx)
     rb_num_t n = (rb_num_t)jit_get_arg(jit, 0);
 
     // Save the PC and SP because we are allocating
-    jit_save_pc(jit, REG0);
-    jit_save_sp(jit, ctx);
+    jit_prepare_routine_call(jit, ctx, REG0);
 
     x86opnd_t values_ptr = ctx_sp_opnd(ctx, -(sizeof(VALUE) * (uint32_t)n));
 
@@ -760,8 +879,7 @@ gen_duparray(jitstate_t* jit, ctx_t* ctx)
     VALUE ary = jit_get_arg(jit, 0);
 
     // Save the PC and SP because we are allocating
-    jit_save_pc(jit, REG0);
-    jit_save_sp(jit, ctx);
+    jit_prepare_routine_call(jit, ctx, REG0);
 
     // call rb_ary_resurrect(VALUE ary);
     jit_mov_gc_ptr(jit, cb, C_ARG_REGS[0], ary);
@@ -783,8 +901,7 @@ gen_splatarray(jitstate_t* jit, ctx_t* ctx)
 
     // Save the PC and SP because the callee may allocate
     // Note that this modifies REG_SP, which is why we do it first
-    jit_save_pc(jit, REG0);
-    jit_save_sp(jit, ctx);
+    jit_prepare_routine_call(jit, ctx, REG0);
 
     // Get the operands from the stack
     x86opnd_t ary_opnd = ctx_stack_pop(ctx, 1);
@@ -908,8 +1025,7 @@ gen_newhash(jitstate_t* jit, ctx_t* ctx)
 
     if (n == 0) {
         // Save the PC and SP because we are allocating
-        jit_save_pc(jit, REG0);
-        jit_save_sp(jit, ctx);
+        jit_prepare_routine_call(jit, ctx, REG0);
 
         // val = rb_hash_new();
         call_ptr(cb, REG0, (void *)rb_hash_new);
@@ -1559,8 +1675,7 @@ gen_setinstancevariable(jitstate_t* jit, ctx_t* ctx)
 
     // Save the PC and SP because the callee may allocate
     // Note that this modifies REG_SP, which is why we do it first
-    jit_save_pc(jit, REG0);
-    jit_save_sp(jit, ctx);
+    jit_prepare_routine_call(jit, ctx, REG0);
 
     // Get the operands from the stack
     x86opnd_t val_opnd = ctx_stack_pop(ctx, 1);
@@ -1611,8 +1726,7 @@ gen_defined(jitstate_t* jit, ctx_t* ctx)
 
     // Save the PC and SP because the callee may allocate
     // Note that this modifies REG_SP, which is why we do it first
-    jit_save_pc(jit, REG0);
-    jit_save_sp(jit, ctx);
+    jit_prepare_routine_call(jit, ctx, REG0);
 
     // Get the operands from the stack
     x86opnd_t v_opnd = ctx_stack_pop(ctx, 1);
@@ -1706,8 +1820,7 @@ gen_concatstrings(jitstate_t* jit, ctx_t* ctx)
     rb_num_t n = (rb_num_t)jit_get_arg(jit, 0);
 
     // Save the PC and SP because we are allocating
-    jit_save_pc(jit, REG0);
-    jit_save_sp(jit, ctx);
+    jit_prepare_routine_call(jit, ctx, REG0);
 
     x86opnd_t values_ptr = ctx_sp_opnd(ctx, -(sizeof(VALUE) * (uint32_t)n));
 
@@ -1975,15 +2088,13 @@ gen_opt_aref(jitstate_t *jit, ctx_t *ctx)
 
         // Call VALUE rb_hash_aref(VALUE hash, VALUE key).
         {
-            // Write incremented pc to cfp->pc as the routine can raise and allocate
-            jit_save_pc(jit, REG0);
-
             // About to change REG_SP which these operands depend on. Yikes.
             mov(cb, C_ARG_REGS[0], recv_opnd);
             mov(cb, C_ARG_REGS[1], idx_opnd);
 
+            // Write incremented pc to cfp->pc as the routine can raise and allocate
             // Write sp to cfp->sp since rb_hash_aref might need to call #hash on the key
-            jit_save_sp(jit, ctx);
+            jit_prepare_routine_call(jit, ctx, REG0);
 
             call_ptr(cb, REG0, (void *)rb_hash_aref);
 
@@ -2009,8 +2120,7 @@ gen_opt_aset(jitstate_t *jit, ctx_t *ctx)
 {
     // Save the PC and SP because the callee may allocate
     // Note that this modifies REG_SP, which is why we do it first
-    jit_save_pc(jit, REG0);
-    jit_save_sp(jit, ctx);
+    jit_prepare_routine_call(jit, ctx, REG0);
 
     uint8_t* side_exit = yjit_side_exit(jit, ctx);
 
@@ -2177,8 +2287,7 @@ gen_opt_mod(jitstate_t* jit, ctx_t* ctx)
 {
     // Save the PC and SP because the callee may allocate bignums
     // Note that this modifies REG_SP, which is why we do it first
-    jit_save_pc(jit, REG0);
-    jit_save_sp(jit, ctx);
+    jit_prepare_routine_call(jit, ctx, REG0);
 
     uint8_t* side_exit = yjit_side_exit(jit, ctx);
 
@@ -2691,6 +2800,25 @@ gen_send_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const 
         return YJIT_CANT_COMPILE;
     }
 
+    // Don't JIT if tracing c_call or c_return
+    {
+        rb_event_flag_t tracing_events;
+        if (rb_multi_ractor_p()) {
+            tracing_events = ruby_vm_event_enabled_global_flags;
+        }
+        else {
+            // We could always use ruby_vm_event_enabled_global_flags,
+            // but since events are never removed from it, doing so would mean
+            // we don't compile even after tracing is disabled.
+            tracing_events = rb_ec_ractor_hooks(jit->ec)->events;
+        }
+
+        if (tracing_events & (RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN)) {
+            GEN_COUNTER_INC(cb, send_cfunc_tracing);
+            return YJIT_CANT_COMPILE;
+        }
+    }
+
     // Delegate to codegen for C methods if we have it.
     {
         method_codegen_t known_cfunc_codegen;
@@ -2842,6 +2970,9 @@ gen_send_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const 
     // Invalidation logic is in rb_yjit_method_lookup_change()
     call_ptr(cb, REG0, (void*)cfunc->func);
 
+    // Record code position for TracePoint patching. See full_cfunc_return().
+    record_global_inval_patch(cb, outline_full_cfunc_return_pos);
+
     // Push the return value on the Ruby stack
     x86opnd_t stack_ret = ctx_stack_push(ctx, TYPE_UNKNOWN);
     mov(cb, stack_ret, RAX);
@@ -2856,7 +2987,7 @@ gen_send_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const 
     // cfunc calls may corrupt types
     ctx_clear_local_types(ctx);
 
-    // Note: gen_oswb_iseq() jumps to the next instruction with ctx->sp_offset == 0
+    // Note: gen_send_iseq() jumps to the next instruction with ctx->sp_offset == 0
     // after the call, while this does not. This difference prevents
     // the two call types from sharing the same successor.
 
@@ -3480,8 +3611,7 @@ gen_getglobal(jitstate_t* jit, ctx_t* ctx)
     ID gid = jit_get_arg(jit, 0);
 
     // Save the PC and SP because we might make a Ruby call for warning
-    jit_save_pc(jit, REG0);
-    jit_save_sp(jit, ctx);
+    jit_prepare_routine_call(jit, ctx, REG0);
 
     mov(cb, C_ARG_REGS[0], imm_opnd(gid));
 
@@ -3500,8 +3630,7 @@ gen_setglobal(jitstate_t* jit, ctx_t* ctx)
 
     // Save the PC and SP because we might make a Ruby call for
     // Kernel#set_trace_var
-    jit_save_pc(jit, REG0);
-    jit_save_sp(jit, ctx);
+    jit_prepare_routine_call(jit, ctx, REG0);
 
     mov(cb, C_ARG_REGS[0], imm_opnd(gid));
 
@@ -3519,8 +3648,7 @@ gen_tostring(jitstate_t* jit, ctx_t* ctx)
 {
     // Save the PC and SP because we might make a Ruby call for
     // Kernel#set_trace_var
-    jit_save_pc(jit, REG0);
-    jit_save_sp(jit, ctx);
+    jit_prepare_routine_call(jit, ctx, REG0);
 
     x86opnd_t str = ctx_stack_pop(ctx, 1);
     x86opnd_t val = ctx_stack_pop(ctx, 1);
@@ -3545,8 +3673,7 @@ gen_toregexp(jitstate_t* jit, ctx_t* ctx)
 
     // Save the PC and SP because this allocates an object and could
     // raise an exception.
-    jit_save_pc(jit, REG0);
-    jit_save_sp(jit, ctx);
+    jit_prepare_routine_call(jit, ctx, REG0);
 
     x86opnd_t values_ptr = ctx_sp_opnd(ctx, -(sizeof(VALUE) * (uint32_t)cnt));
     ctx_stack_pop(ctx, cnt);
@@ -3678,8 +3805,7 @@ gen_opt_invokebuiltin_delegate(jitstate_t *jit, ctx_t *ctx)
     }
 
     // If the calls don't allocate, do they need up to date PC, SP?
-    jit_save_pc(jit, REG0);
-    jit_save_sp(jit, ctx);
+    jit_prepare_routine_call(jit, ctx, REG0);
 
     if (bf->argc > 0) {
         // Load environment pointer EP from CFP
@@ -3704,6 +3830,107 @@ gen_opt_invokebuiltin_delegate(jitstate_t *jit, ctx_t *ctx)
     mov(cb, stack_ret, RAX);
 
     return YJIT_KEEP_COMPILING;
+}
+
+static int tracing_invalidate_all_i(void *vstart, void *vend, size_t stride, void *data);
+static void invalidate_all_blocks_for_tracing(const rb_iseq_t *iseq);
+
+// Invalidate all generated code and patch C method return code to contain
+// logic for firing the c_return TracePoint event. Once rb_vm_barrier()
+// returns, all other ractors are pausing inside RB_VM_LOCK_ENTER(), which
+// means they are inside a C routine. If there are any generated code on-stack,
+// they are waiting for a return from a C routine. For every routine call, we
+// patch in an exit after the body of the containing VM instruction. This makes
+// it so all the invalidated code exit as soon as execution logically reaches
+// the next VM instruction.
+// The c_return event needs special handling as our codegen never outputs code
+// that contains tracing logic. If we let the normal output code run until the
+// start of the next VM instruction by relying on the patching scheme above, we
+// would fail to fire the c_return event. To handle it, we patch in the full
+// logic at the return address. See full_cfunc_return().
+// In addition to patching, we prevent future entries into invalidated code by
+// removing all live blocks from their iseq.
+void
+yjit_tracing_invalidate_all(void)
+{
+    if (!rb_yjit_enabled_p()) return;
+
+    // Stop other ractors since we are going to patch machine code.
+    RB_VM_LOCK_ENTER();
+    rb_vm_barrier();
+
+    // Make it so all live block versions are no longer valid branch targets
+    rb_objspace_each_objects(tracing_invalidate_all_i, NULL);
+
+    // Apply patches
+    const uint32_t old_pos = cb->write_pos;
+    rb_darray_for(global_inval_patches, patch_idx) {
+        struct codepage_patch patch = rb_darray_get(global_inval_patches, patch_idx);
+        cb_set_pos(cb, patch.mainline_patch_pos);
+        uint8_t *jump_target = cb_get_ptr(ocb, patch.outline_target_pos);
+        jmp_ptr(cb, jump_target);
+    }
+    cb_set_pos(cb, old_pos);
+
+    // Freeze invalidated part of the codepage. We only want to wait for
+    // running instances of the code to exit from now on, so we shouldn't
+    // change the code. There could be other ractors sleeping in
+    // branch_stub_hit(), for example. We could harden this by changing memory
+    // protection on the frozen range.
+    RUBY_ASSERT_ALWAYS(yjit_codepage_frozen_bytes <= old_pos && "frozen bytes should increase monotonically");
+    yjit_codepage_frozen_bytes = old_pos;
+
+    RB_VM_LOCK_LEAVE();
+}
+
+static int
+tracing_invalidate_all_i(void *vstart, void *vend, size_t stride, void *data)
+{
+    VALUE v = (VALUE)vstart;
+    for (; v != (VALUE)vend; v += stride) {
+        void *ptr = asan_poisoned_object_p(v);
+        asan_unpoison_object(v, false);
+
+	if (rb_obj_is_iseq(v)) {
+            rb_iseq_t *iseq = (rb_iseq_t *)v;
+            invalidate_all_blocks_for_tracing(iseq);
+	}
+
+        asan_poison_object_if(ptr, v);
+    }
+    return 0;
+}
+
+static void
+invalidate_all_blocks_for_tracing(const rb_iseq_t *iseq)
+{
+    struct rb_iseq_constant_body *body = iseq->body;
+    if (!body) return; // iseq yet to be initialized
+
+    ASSERT_vm_locking();
+
+    // Empty all blocks on the iseq so we don't compile new blocks that jump to the
+    // invalidted region.
+    // TODO Leaking the blocks for now since we might have situations where
+    // a different ractor is waiting in branch_stub_hit(). If we free the block
+    // that ractor can wake up with a dangling block.
+    rb_darray_for(body->yjit_blocks, version_array_idx) {
+        rb_yjit_block_array_t version_array = rb_darray_get(body->yjit_blocks, version_array_idx);
+        rb_darray_for(version_array, version_idx) {
+            // Stop listening for invalidation events like basic operation redefinition.
+            block_t *block = rb_darray_get(version_array, version_idx);
+            yjit_unlink_method_lookup_dependency(block);
+            yjit_block_assumptions_free(block);
+        }
+        rb_darray_free(version_array);
+    }
+    rb_darray_free(body->yjit_blocks);
+    body->yjit_blocks = NULL;
+
+#if USE_MJIT
+    // Reset output code entry point
+    body->jit_func = NULL;
+#endif
 }
 
 static void
@@ -3748,6 +3975,9 @@ yjit_init_codegen(void)
 
     // Generate the interpreter exit code for leave
     leave_exit_code = yjit_gen_leave_exit(cb);
+
+    // Generate full exit code for C func
+    gen_full_cfunc_return();
 
     // Map YARV opcodes to the corresponding codegen functions
     yjit_reg_op(BIN(nop), gen_nop);

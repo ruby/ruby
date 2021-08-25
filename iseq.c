@@ -3181,14 +3181,6 @@ typedef struct insn_data_struct {
 } insn_data_t;
 static insn_data_t insn_data[VM_INSTRUCTION_SIZE/2];
 
-
-
-
-#include "yjit_asm.h"
-
-
-
-
 void
 rb_vm_encoded_insn_data_table_init(void)
 {
@@ -3305,10 +3297,6 @@ iseq_add_local_tracepoint(const rb_iseq_t *iseq, rb_event_flag_t turnon_events, 
 
     VM_ASSERT(ISEQ_EXECUTABLE_P(iseq));
 
-#if USE_MJIT
-    // Force write the jit function to NULL
-    *((jit_func_t *)(&body->jit_func)) = 0;
-#endif
 
     for (pc=0; pc<body->iseq_size;) {
         const struct iseq_insn_info_entry *entry = get_insn_info(iseq, pc);
@@ -3445,10 +3433,6 @@ rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events)
             rb_event_flag_t pc_events = rb_iseq_event_flags(iseq, pc);
             pc += encoded_iseq_trace_instrument(&iseq_encoded[pc], pc_events & enabled_events, true);
 	}
-#if USE_MJIT
-        // Force write the jit function to NULL
-        *((jit_func_t *)(&body->jit_func)) = 0;
-#endif
     }
 }
 

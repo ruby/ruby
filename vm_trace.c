@@ -30,6 +30,7 @@
 #include "ruby/debug.h"
 #include "vm_core.h"
 #include "ruby/ractor.h"
+#include "yjit.h"
 
 #include "builtin.h"
 
@@ -96,6 +97,8 @@ update_global_event_hook(rb_event_flag_t vm_events)
     else {
         rb_clear_attr_ccs();
     }
+
+    yjit_tracing_invalidate_all();
 
     ruby_vm_event_flags = vm_events;
     ruby_vm_event_enabled_global_flags |= vm_events;
@@ -1211,6 +1214,8 @@ rb_tracepoint_enable_for_target(VALUE tpval, VALUE target, VALUE target_line)
     if (n == 0) {
         rb_raise(rb_eArgError, "can not enable any hooks");
     }
+
+    yjit_tracing_invalidate_all();
 
     ruby_vm_event_local_num++;
 

@@ -54,6 +54,7 @@ YJIT_DECLARE_COUNTERS(
     send_cfunc_ruby_array_varg,
     send_cfunc_argc_mismatch,
     send_cfunc_toomany_args,
+    send_cfunc_tracing,
     send_iseq_tailcall,
     send_iseq_arity_error,
     send_iseq_only_keywords,
@@ -62,6 +63,8 @@ YJIT_DECLARE_COUNTERS(
     send_getter_arity,
     send_se_cf_overflow,
     send_se_protected_check_failed,
+
+    traced_cfunc_return,
 
     leave_se_interrupt,
     leave_interp_return,
@@ -105,6 +108,7 @@ RUBY_EXTERN struct rb_yjit_runtime_counters yjit_runtime_counters;
 void yjit_map_addr2insn(void *code_ptr, int insn);
 VALUE *yjit_iseq_pc_at_idx(const rb_iseq_t *iseq, uint32_t insn_idx);
 int yjit_opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc);
+void yjit_print_iseq(const rb_iseq_t *iseq);
 
 void check_cfunc_dispatch(VALUE receiver, struct rb_callinfo *ci, void *callee, rb_callable_method_entry_t *compile_time_cme);
 
