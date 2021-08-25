@@ -98,10 +98,7 @@ module Bundler
       built_gem_path ||= build_gem
       cmd = [*gem_command, "install", built_gem_path.to_s]
       cmd << "--local" if local
-      out, status = sh_with_status(cmd)
-      unless status.success?
-        raise("Running `#{cmd}` failed with the following output:\n\n#{out}\n")
-      end
+      sh(cmd)
       Bundler.ui.confirm "#{name} (#{version}) installed."
     end
 
