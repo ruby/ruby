@@ -118,6 +118,7 @@ def sync_default_gems(gem)
       'lib/rdoc/rd/inline_parser.ry' => 'lib/rdoc/rd/inline_parser.rb'
     }
     Dir.chdir(upstream) do
+      `bundle install`
       parser_files.each_value do |dst|
         `bundle exec rake #{dst}`
       end
