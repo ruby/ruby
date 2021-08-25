@@ -130,8 +130,12 @@ class Reline::Config
     return home_rc_path
   end
 
+  private def default_inputrc_path
+    @default_inputrc_path ||= inputrc_path
+  end
+
   def read(file = nil)
-    file ||= inputrc_path
+    file ||= default_inputrc_path
     begin
       if file.respond_to?(:readlines)
         lines = file.readlines
