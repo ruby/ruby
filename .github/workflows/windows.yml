@@ -5,8 +5,13 @@ jobs:
     strategy:
       matrix:
         test_task: [check] # to make job names consistent
-        os: [windows-2019]
-        vs: [2019]
+        os: [windows-2019, windows-2022]
+        vs: [2019, 2022]
+        exclude:
+          - os: windows-2019
+            vs: 2022
+          - os: windows-2022
+            vs: 2019
       fail-fast: false
     runs-on: ${{ matrix.os }}
     env:
