@@ -196,11 +196,15 @@ module Reline
             result = nil
           end
         end
-        x = cursor_pos.x - Reline::Unicode.calculate_width(target)
+        target_width = Reline::Unicode.calculate_width(target)
+        x = cursor_pos.x - target_width
         if x < 0
           x = screen_width + x
+          y = -1
+        else
+          y = 0
         end
-        [Reline::CursorPos.new(x, nil), result]
+        [Reline::CursorPos.new(x, y), result]
       }
       inner_readline(prompt, add_hist, true, &confirm_multiline_termination)
 

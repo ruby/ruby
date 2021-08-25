@@ -558,17 +558,17 @@ class Reline::LineEditor
     end
     if (lower_space + @rest_height) >= DIALOG_HEIGHT
       @dialog_updown = :down
-      @dialog_vertical_offset = 1
+      @dialog_vertical_offset = pos.y + 1
     elsif upper_space >= DIALOG_HEIGHT
       @dialog_updown = :up
-      @dialog_vertical_offset = -(DIALOG_HEIGHT + 1)
+      @dialog_vertical_offset = pos.y + -(DIALOG_HEIGHT + 1)
     else
       if (lower_space + @rest_height) < DIALOG_HEIGHT
         scroll_down(DIALOG_HEIGHT)
         move_cursor_up(DIALOG_HEIGHT)
       end
       @dialog_updown = :down
-      @dialog_vertical_offset = 1
+      @dialog_vertical_offset = pos.y + 1
     end
     Reline::IOGate.hide_cursor
     reset_dialog(old_dialog_contents, old_dialog_contents_width, old_dialog_column, old_dialog_vertical_offset, old_dialog_updown)
@@ -585,6 +585,7 @@ class Reline::LineEditor
     @dialog_lines_backup = {
       lines: modify_lines(whole_lines),
       line_index: @line_index,
+      first_line_started_from: @first_line_started_from,
       started_from: @started_from,
       byte_pointer: @byte_pointer
     }
@@ -604,9 +605,12 @@ class Reline::LineEditor
       end
       visual_lines.concat(vl)
     }
-    if old_dialog_vertical_offset < @dialog_vertical_offset
+    old_y = @dialog_lines_backup[:first_line_started_from] + @dialog_lines_backup[:started_from]
+    y = @first_line_started_from + @started_from
+    y_diff = y - old_y
+    if (old_y + old_dialog_vertical_offset) < (y + @dialog_vertical_offset)
       # rerender top
-      move_cursor_down(old_dialog_vertical_offset)
+      move_cursor_down(old_dialog_vertical_offset - y_diff)
       start = visual_start + old_dialog_vertical_offset
       line_num = @dialog_vertical_offset - old_dialog_vertical_offset
       line_num.times do |i|
@@ -615,11 +619,11 @@ class Reline::LineEditor
         Reline::IOGate.erase_after_cursor
         move_cursor_down(1) if i < (line_num - 1)
       end
-      move_cursor_up(old_dialog_vertical_offset + line_num - 1)
+      move_cursor_up(old_dialog_vertical_offset + line_num - 1 - y_diff)
     end
-    if (old_dialog_vertical_offset + old_dialog_contents.size) > (@dialog_vertical_offset + @dialog_contents.size)
+    if (old_y + old_dialog_vertical_offset + old_dialog_contents.size) > (y + @dialog_vertical_offset + @dialog_contents.size)
       # rerender bottom
-      move_cursor_down(@dialog_vertical_offset + @dialog_contents.size)
+      move_cursor_down(@dialog_vertical_offset + @dialog_contents.size - y_diff)
       start = visual_start + @dialog_vertical_offset + @dialog_contents.size
       line_num = (old_dialog_vertical_offset + old_dialog_contents.size) - (@dialog_vertical_offset + @dialog_contents.size)
       line_num.times do |i|
@@ -628,11 +632,11 @@ class Reline::LineEditor
         Reline::IOGate.erase_after_cursor
         move_cursor_down(1) if i < (line_num - 1)
       end
-      move_cursor_up(@dialog_vertical_offset + @dialog_contents.size + line_num - 1)
+      move_cursor_up(@dialog_vertical_offset + @dialog_contents.size + line_num - 1 - y_diff)
     end
     if old_dialog_column < @dialog_column
       # rerender left
-      move_cursor_down(old_dialog_vertical_offset)
+      move_cursor_down(old_dialog_vertical_offset - y_diff)
       width = @dialog_column - old_dialog_column
       start = visual_start + old_dialog_vertical_offset
       line_num = old_dialog_contents.size
@@ -646,11 +650,11 @@ class Reline::LineEditor
         @output.write "\e[39m\e[49m%-#{width}s\e[39m\e[49m" % s
         move_cursor_down(1) if i < (line_num - 1)
       end
-      move_cursor_up(old_dialog_vertical_offset + line_num - 1)
+      move_cursor_up(old_dialog_vertical_offset + line_num - 1 - y_diff)
     end
     if (old_dialog_column + DIALOG_WIDTH) > (@dialog_column + DIALOG_WIDTH)
       # rerender right
-      move_cursor_down(old_dialog_vertical_offset)
+      move_cursor_down(old_dialog_vertical_offset + y_diff)
       width = (old_dialog_column + DIALOG_WIDTH) - (@dialog_column + DIALOG_WIDTH)
       start = visual_start + old_dialog_vertical_offset
       line_num = old_dialog_contents.size
@@ -665,7 +669,7 @@ class Reline::LineEditor
         @output.write "\e[39m\e[49m%-#{width}s\e[39m\e[49m" % s
         move_cursor_down(1) if i < (line_num - 1)
       end
-      move_cursor_up(old_dialog_vertical_offset + line_num - 1)
+      move_cursor_up(old_dialog_vertical_offset + line_num - 1 + y_diff)
     end
     Reline::IOGate.move_cursor_column(prompt_width + @cursor)
   end
