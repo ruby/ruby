@@ -506,10 +506,11 @@ static size_t get_num_versions(blockid_t blockid)
 static void
 add_block_version(blockid_t blockid, block_t* block)
 {
-    // Function entry blocks must have stack size 0
-    RUBY_ASSERT(!(block->blockid.idx == 0 && block->ctx.stack_size > 0));
     const rb_iseq_t *iseq = block->blockid.iseq;
     struct rb_iseq_constant_body *body = iseq->body;
+
+    // Function entry blocks must have stack size 0
+    RUBY_ASSERT(!(block->blockid.idx == 0 && block->ctx.stack_size > 0));
 
     // Ensure yjit_blocks is initialized for this iseq
     if (rb_darray_size(body->yjit_blocks) == 0) {
@@ -772,7 +773,7 @@ branch_stub_hit(branch_t* branch, const uint32_t target_idx, rb_execution_contex
         // If this block hasn't yet been compiled
         if (!p_block) {
             // If the new block can be generated right after the branch (at cb->write_pos)
-            if (cb->write_pos == branch->end_pos) {
+            if (cb->write_pos == branch->end_pos && branch->start_pos >= yjit_codepage_frozen_bytes) {
                 // This branch should be terminating its block
                 RUBY_ASSERT(branch->end_pos == branch->block->end_pos);
 
@@ -801,12 +802,14 @@ branch_stub_hit(branch_t* branch, const uint32_t target_idx, rb_execution_contex
         branch->dst_addrs[target_idx] = dst_addr;
 
         // Rewrite the branch with the new jump target address
-        RUBY_ASSERT(branch->dst_addrs[0] != NULL);
-        uint32_t cur_pos = cb->write_pos;
-        cb_set_pos(cb, branch->start_pos);
-        branch->gen_fn(cb, branch->dst_addrs[0], branch->dst_addrs[1], branch->shape);
-        RUBY_ASSERT(cb->write_pos == branch->end_pos && "branch can't change size");
-        cb_set_pos(cb, cur_pos);
+        if (branch->start_pos >= yjit_codepage_frozen_bytes) {
+            RUBY_ASSERT(branch->dst_addrs[0] != NULL);
+            uint32_t cur_pos = cb->write_pos;
+            cb_set_pos(cb, branch->start_pos);
+            branch->gen_fn(cb, branch->dst_addrs[0], branch->dst_addrs[1], branch->shape);
+            RUBY_ASSERT(cb->write_pos == branch->end_pos && "branch can't change size");
+            cb_set_pos(cb, cur_pos);
+        }
 
         // Mark this branch target as patched (no longer a stub)
         branch->blocks[target_idx] = p_block;
@@ -921,8 +924,7 @@ void gen_direct_jump(
     block_t* p_block = find_block_version(target0, ctx);
 
     // If the version already exists
-    if (p_block)
-    {
+    if (p_block) {
         rb_darray_append(&p_block->incoming, branch);
 
         branch->dst_addrs[0] = cb_get_ptr(cb, p_block->start_pos);
@@ -934,10 +936,9 @@ void gen_direct_jump(
         gen_jump_branch(cb, branch->dst_addrs[0], NULL, SHAPE_DEFAULT);
         branch->end_pos = cb->write_pos;
     }
-    else
-    {
-        // The target block will be compiled right after this one (fallthrough)
-        // See the loop in gen_block_version()
+    else {
+        // This NULL target address signals gen_block_version() to compile the
+        // target block right after this one (fallthrough).
         branch->dst_addrs[0] = NULL;
         branch->shape = SHAPE_NEXT0;
         branch->start_pos = cb->write_pos;
@@ -1048,7 +1049,7 @@ block_array_remove(rb_yjit_block_array_t block_array, block_t *block)
 
 // Invalidate one specific block version
 void
-invalidate_block_version(block_t* block)
+invalidate_block_version(block_t *block)
 {
     ASSERT_vm_locking();
     // TODO: want to assert that all other ractors are stopped here. Can't patch
@@ -1067,8 +1068,7 @@ invalidate_block_version(block_t* block)
     uint8_t* code_ptr = cb_get_ptr(cb, block->start_pos);
 
     // For each incoming branch
-    rb_darray_for(block->incoming, incoming_idx)
-    {
+    rb_darray_for(block->incoming, incoming_idx) {
         branch_t* branch = rb_darray_get(block->incoming, incoming_idx);
         uint32_t target_idx = (branch->dst_addrs[0] == code_ptr)? 0:1;
         RUBY_ASSERT(branch->dst_addrs[target_idx] == code_ptr);
@@ -1076,6 +1076,11 @@ invalidate_block_version(block_t* block)
 
         // Mark this target as being a stub
         branch->blocks[target_idx] = NULL;
+
+        // Don't patch frozen code region
+        if (branch->start_pos < yjit_codepage_frozen_bytes) {
+            continue;
+        }
 
         // Create a stub for this branch target
         branch->dst_addrs[target_idx] = get_branch_target(
@@ -1088,8 +1093,7 @@ invalidate_block_version(block_t* block)
         // Check if the invalidated block immediately follows
         bool target_next = block->start_pos == branch->end_pos;
 
-        if (target_next)
-        {
+        if (target_next) {
             // The new block will no longer be adjacent
             branch->shape = SHAPE_DEFAULT;
         }
@@ -1103,8 +1107,13 @@ invalidate_block_version(block_t* block)
         branch->block->end_pos = cb->write_pos;
         cb_set_pos(cb, cur_pos);
 
-        if (target_next && branch->end_pos > block->end_pos)
-        {
+        if (target_next && branch->end_pos > block->end_pos) {
+            fprintf(stderr, "branch_block_idx=%u block_idx=%u over=%d block_size=%d\n",
+                branch->block->blockid.idx,
+                block->blockid.idx,
+                branch->end_pos - block->end_pos,
+                block->end_pos - block->start_pos);
+            yjit_print_iseq(branch->block->blockid.iseq);
             rb_bug("yjit invalidate rewrote branch past end of invalidated block");
         }
     }

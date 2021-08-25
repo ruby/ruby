@@ -1612,3 +1612,217 @@ end
 bar(123, 1.1)
 bar(123, 1.1)
 }
+
+# test enabling a line TracePoint in a C method call
+assert_equal '[[:line, true]]', %q{
+  events = []
+  events.instance_variable_set(
+    :@tp,
+    TracePoint.new(:line) { |tp| events << [tp.event, tp.lineno] if tp.path == __FILE__ }
+  )
+  def events.to_str
+    @tp.enable; ''
+  end
+
+  # Stay in generated code while enabling tracing
+  def events.compiled(obj)
+    String(obj)
+    @tp.disable; __LINE__
+  end
+
+  line = events.compiled(events)
+  events[0][-1] = (events[0][-1] == line)
+
+  events
+}
+
+# test enabling a c_return TracePoint in a C method call
+assert_equal '[[:c_return, :String, :string_alias, "events_to_str"]]', %q{
+  events = []
+  events.instance_variable_set(:@tp, TracePoint.new(:c_return) { |tp| events << [tp.event, tp.method_id, tp.callee_id, tp.return_value] })
+  def events.to_str
+    @tp.enable; 'events_to_str'
+  end
+
+  # Stay in generated code while enabling tracing
+  alias string_alias String
+  def events.compiled(obj)
+    string_alias(obj)
+    @tp.disable
+  end
+
+  events.compiled(events)
+
+  events
+}
+
+# test enabling a TracePoint that targets a particular line in a C method call
+assert_equal '[true]', %q{
+  events = []
+  events.instance_variable_set(:@tp, TracePoint.new(:line) { |tp| events << tp.lineno })
+  def events.to_str
+    @tp.enable(target: method(:compiled))
+    ''
+  end
+
+  # Stay in generated code while enabling tracing
+  def events.compiled(obj)
+    String(obj)
+    __LINE__
+  end
+
+  line = events.compiled(events)
+  events[0] = (events[0] == line)
+
+  events
+}
+
+# test enabling tracing in the middle of splatarray
+assert_equal '[true]', %q{
+  events = []
+  obj = Object.new
+  obj.instance_variable_set(:@tp, TracePoint.new(:line) { |tp| events << tp.lineno })
+  def obj.to_a
+    @tp.enable(target: method(:compiled))
+    []
+  end
+
+  # Enable tracing in the middle of the splatarray instruction
+  def obj.compiled(obj)
+    * = *obj
+    __LINE__
+  end
+
+  obj.compiled([])
+  line = obj.compiled(obj)
+  events[0] = (events[0] == line)
+
+  events
+}
+
+# test enabling tracing in the middle of opt_aref. Different since the codegen
+# for it ends in a jump.
+assert_equal '[true]', %q{
+  def lookup(hash, tp)
+    hash[42]
+    tp.disable; __LINE__
+  end
+
+  lines = []
+  tp = TracePoint.new(:line) { lines << _1.lineno if _1.path == __FILE__ }
+
+  lookup(:foo, tp)
+  lookup({}, tp)
+
+  enable_tracing_on_missing = Hash.new { tp.enable }
+
+  expected_line = lookup(enable_tracing_on_missing, tp)
+
+  lines[0] = true if lines[0] == expected_line
+
+  lines
+}
+
+# test enabling c_call tracing before compiling
+assert_equal '[[:c_call, :itself]]', %q{
+  def shouldnt_compile
+    itself
+  end
+
+  events = []
+  tp = TracePoint.new(:c_call) { |tp| events << [tp.event, tp.method_id] }
+
+  # assume first call compiles
+  tp.enable { shouldnt_compile }
+
+  events
+}
+
+# test enabling c_return tracing before compiling
+assert_equal '[[:c_return, :itself, main]]', %q{
+  def shouldnt_compile
+    itself
+  end
+
+  events = []
+  tp = TracePoint.new(:c_return) { |tp| events << [tp.event, tp.method_id, tp.return_value] }
+
+  # assume first call compiles
+  tp.enable { shouldnt_compile }
+
+  events
+}
+
+# test enabling tracing for a suspended fiber
+assert_equal '[[:return, 42]]', %q{
+  def traced_method
+    Fiber.yield
+    42
+  end
+
+  events = []
+  tp = TracePoint.new(:return) { events << [_1.event, _1.return_value] }
+  # assume first call compiles
+  fiber = Fiber.new { traced_method }
+  fiber.resume
+  tp.enable(target: method(:traced_method))
+  fiber.resume
+
+  events
+}
+
+# test compiling on non-tracing ractor then running on a tracing one
+assert_equal '[:itself]', %q{
+  def traced_method
+    itself
+  end
+
+
+  tracing_ractor = Ractor.new do
+    # 1: start tracing
+    events = []
+    tp = TracePoint.new(:c_call) { events << _1.method_id }
+    tp.enable
+    Ractor.yield(nil)
+
+    # 3: run comipled method on tracing ractor
+    Ractor.yield(nil)
+    traced_method
+
+    events
+  ensure
+    tp&.disable
+  end
+
+  tracing_ractor.take
+
+  # 2: compile on non tracing ractor
+  traced_method
+
+  tracing_ractor.take
+  tracing_ractor.take
+}
+
+# Try to hit a lazy branch stub while another ractor enables tracing
+assert_equal '42', %q{
+  def compiled(arg)
+    if arg
+      arg + 1
+    else
+      itself
+      itself
+    end
+  end
+
+  ractor = Ractor.new do
+    compiled(false)
+    Ractor.yield(nil)
+    compiled(41)
+  end
+
+  tp = TracePoint.new(:line) { itself }
+  ractor.take
+  tp.enable
+
+  ractor.take
+}
