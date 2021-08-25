@@ -6,17 +6,10 @@ jobs:
       matrix:
         test_task: [check] # to make job names consistent
         os: [windows-2019, windows-2022]
-        vs: [2019, 2022]
-        exclude:
-          - os: windows-2019
-            vs: 2022
-          - os: windows-2022
-            vs: 2019
       fail-fast: false
     runs-on: ${{ matrix.os }}
     env:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
-      VCVARS: C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat
       PATCH: C:\msys64\usr\bin\patch.exe
     steps:
       - run: md build
@@ -28,6 +21,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-vcpkg-download-${{ matrix.os }}-
             ${{ runner.os }}-vcpkg-download-
+      - name: Set VCVARS
+        run: |
+          IF ${{ matrix.os }}==windows-2022 (
+            echo VCVARS="C:\Program Files\Microsoft Visual Studio\2022\Preview\VC\Auxiliary\Build\vcvars64.bat" >> %GITHUB_ENV%
+          ) ELSE IF ${{ matrix.os }}==windows-2019 (
+            echo VCVARS="C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat" >> %GITHUB_ENV%
+          )
       - name: Install libraries with vcpkg
         run: |
           vcpkg --triplet x64-windows install readline zlib
@@ -56,11 +56,11 @@ jobs:
           path: src
       - name: Configure
         run: |
-          call "%VCVARS%"
+          call %VCVARS%
           ../src/win32/configure.bat --disable-install-doc --enable-bundled-libffi --with-opt-dir=C:/vcpkg/installed/x64-windows --with-openssl-dir="C:/Program Files/OpenSSL-Win64"
       - name: nmake
         run: |
-          call "%VCVARS%"
+          call %VCVARS%
           set YACC=win_bison
           echo on
           nmake incs
@@ -69,12 +69,12 @@ jobs:
       - name: nmake test
         timeout-minutes: 5
         run: |
-          call "%VCVARS%"
+          call %VCVARS%
           nmake test
       - name: nmake test-all
         timeout-minutes: 60
         run: |
-          call "%VCVARS%"
+          call %VCVARS%
           ::- %TEMP% is inconsistent with %TMP% and test-all expects they are consistent.
           ::- https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
           set TMP=%USERPROFILE%\AppData\Local\Temp
@@ -83,7 +83,7 @@ jobs:
       - name: nmake test-spec
         timeout-minutes: 10
         run: |
-          call "%VCVARS%"
+          call %VCVARS%
           nmake test-spec
       - uses: k0kubun/action-slack@v2.0.0
         with:
