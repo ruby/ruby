@@ -1785,7 +1785,7 @@ assert_equal '[:itself]', %q{
     tp.enable
     Ractor.yield(nil)
 
-    # 3: run comipled method on tracing ractor
+    # 3: run compiled method on tracing ractor
     Ractor.yield(nil)
     traced_method
 
