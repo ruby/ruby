@@ -60,6 +60,7 @@ class Scheduler
 
       readable&.each do |io|
         if fiber = @readable.delete(io)
+          @writable.delete(io) if @writable[io] == fiber
           selected[fiber] = IO::READABLE
         elsif io == @urgent.first
           @urgent.first.read_nonblock(1024)
@@ -68,7 +69,8 @@ class Scheduler
 
       writable&.each do |io|
         if fiber = @writable.delete(io)
-          selected[fiber] |= IO::WRITABLE
+          @readable.delete(io) if @readable[io] == fiber
+          selected[fiber] = selected.fetch(fiber, 0) | IO::WRITABLE
         end
       end
 

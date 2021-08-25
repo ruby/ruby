@@ -97,4 +97,47 @@ class TestFiberIO < Test::Unit::TestCase
 
     assert_kind_of Errno::EPIPE, error
   end
+
+  def test_tcp_accept
+    server = TCPServer.new('localhost', 0)
+
+    th = Thread.new do
+      Fiber.set_scheduler(Scheduler.new)
+
+      Fiber.schedule do
+        sender = server.accept
+        sender.wait_writable
+        sender.write "hello"
+        sender.close
+      end
+    end
+
+    recver = TCPSocket.new('localhost', server.local_address.ip_port)
+    assert "hello", recver.read
+
+    recver.close
+    server.close
+    th.join
+  end
+
+  def test_tcp_connect
+    server = TCPServer.new('localhost', 0)
+
+    th = Thread.new do
+      Fiber.set_scheduler(Scheduler.new)
+
+      Fiber.schedule do
+        sender = TCPSocket.new('localhost', server.local_address.ip_port)
+        sender.write "hello"
+        sender.close
+      end
+    end
+
+    recver = server.accept
+    assert "hello", recver.read
+
+    recver.close
+    server.close
+    th.join
+  end
 end
