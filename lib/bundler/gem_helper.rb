@@ -98,9 +98,9 @@ module Bundler
       built_gem_path ||= build_gem
       cmd = [*gem_command, "install", built_gem_path.to_s]
       cmd << "--local" if local
-      _, status = sh_with_status(cmd)
+      out, status = sh_with_status(cmd)
       unless status.success?
-        raise "Couldn't install gem, run `gem install #{built_gem_path}' for more detailed output"
+        raise("Running `#{cmd}` failed with the following output:\n\n#{out}\n")
       end
       Bundler.ui.confirm "#{name} (#{version}) installed."
     end
@@ -219,7 +219,7 @@ module Bundler
       out, status = sh_with_status(cmd, &block)
       unless status.success?
         cmd = cmd.shelljoin if cmd.respond_to?(:shelljoin)
-        raise(out.empty? ? "Running `#{cmd}` failed. Run this command directly for more detailed output." : out)
+        raise("Running `#{cmd}` failed with the following output:\n\n#{out}\n")
       end
       out
     end

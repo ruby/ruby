@@ -219,7 +219,7 @@ RSpec.describe Bundler::GemHelper do
             FileUtils.touch app_gem_path
             app_gem_path
           end
-          expect { subject.install_gem }.to raise_error(/Couldn't install gem/)
+          expect { subject.install_gem }.to raise_error(/Running `#{gem_bin} install #{app_gem_path}` failed/)
         end
       end
     end
