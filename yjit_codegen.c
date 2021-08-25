@@ -1446,7 +1446,9 @@ gen_get_ivar(jitstate_t *jit, ctx_t *ctx, const int max_chain_depth, VALUE compt
     if (!iv_index_tbl || !rb_iv_index_tbl_lookup(iv_index_tbl, id, &ent)) {
         rb_ivar_set(comptime_receiver, id, Qundef);
         iv_index_tbl = ROBJECT_IV_INDEX_TBL(comptime_receiver);
-        RUBY_ASSERT(iv_index_tbl && rb_iv_index_tbl_lookup(iv_index_tbl, id, &ent));
+        RUBY_ASSERT(iv_index_tbl);
+        // Redo the lookup
+        RUBY_ASSERT_ALWAYS(rb_iv_index_tbl_lookup(iv_index_tbl, id, &ent));
     }
 
     uint32_t ivar_index = ent->index;
