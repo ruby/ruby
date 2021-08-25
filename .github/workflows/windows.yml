@@ -18,15 +18,21 @@ jobs:
     env:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
       VCVARS: ${{ matrix.vcvars }}
-      PATCH: D:\a\_temp\msys\msys64\usr\bin\patch.exe
+      PATCH: C:\msys64\usr\bin\patch.exe
     steps:
       - run: md build
         working-directory:
       - uses: msys2/setup-msys2@v2
+        id: setup-msys2
         with:
           update: true
           install: >-
             patch
+        if: ${{ matrix.os != 'windows-2019' }}
+      - name: patch path
+        shell: msys2 {0}
+        run: echo PATCH=$(cygpath -wa $(command -v patch)) >> $GITHUB_ENV
+        if: ${{ steps.setup-msys2.outcome == 'success' }}
       - uses: actions/cache@v2
         with:
           path: C:\vcpkg\downloads
