@@ -678,7 +678,7 @@ class Reline::LineEditor
       end
       move_cursor_up(old_dialog_vertical_offset + line_num - 1 + y_diff)
     end
-    Reline::IOGate.move_cursor_column(prompt_width + @cursor)
+    Reline::IOGate.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
   end
 
   private def clear_dialog
@@ -712,7 +712,7 @@ class Reline::LineEditor
       move_cursor_down(1) if i < (dialog_vertical_size - 1)
     end
     move_cursor_up(dialog_vertical_size - 1 + @dialog_vertical_offset)
-    Reline::IOGate.move_cursor_column(prompt_width + @cursor)
+    Reline::IOGate.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
     Reline::IOGate.show_cursor
   end
 
