@@ -215,8 +215,7 @@ module Bundler
     def sh(cmd, &block)
       out, status = sh_with_status(cmd, &block)
       unless status.success?
-        cmd = cmd.shelljoin if cmd.respond_to?(:shelljoin)
-        raise("Running `#{cmd}` failed with the following output:\n\n#{out}\n")
+        raise("Running `#{cmd.shelljoin}` failed with the following output:\n\n#{out}\n")
       end
       out
     end
