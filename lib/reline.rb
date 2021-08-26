@@ -184,7 +184,7 @@ module Reline
       @dialog_proc = ->() {
         # autocomplete
         if just_cursor_moving
-          # Auto complete starts only when endited
+          # Auto complete starts only when edited
           return nil
         end
         pre, target, post= retrieve_completion_block(true)
