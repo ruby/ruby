@@ -189,12 +189,11 @@ module Reline
         end
         pre, target, post= retrieve_completion_block(true)
         if target.nil? or target.empty?
+          return nil
+        end
+        result = call_completion_proc_with_checking_args(pre, target, post)
+        if result and result.size == 1 and result[0] == target
           result = nil
-        else
-          result = call_completion_proc_with_checking_args(pre, target, post)
-          if result and result.size == 1 and result[0] == target
-            result = nil
-          end
         end
         target_width = Reline::Unicode.calculate_width(target)
         x = cursor_pos.x - target_width
