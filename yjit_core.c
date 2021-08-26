@@ -1122,7 +1122,14 @@ invalidate_block_version(block_t *block)
     // interpreter will run the iseq
 
 #if JIT_ENABLED
-    iseq->body->jit_func = 0;
+    // Only clear the jit_func when we're invalidating the JIT entry block.
+    // We only support compiling iseqs from index 0 right now.  So entry
+    // points will always have an instruction index of 0.  We'll need to
+    // change this in the future when we support optional parameters because
+    // they enter the function with a non-zero PC
+    if (block->blockid.idx == 0) {
+        iseq->body->jit_func = 0;
+    }
 #endif
 
     // TODO:
