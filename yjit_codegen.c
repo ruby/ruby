@@ -3842,12 +3842,17 @@ static void invalidate_all_blocks_for_tracing(const rb_iseq_t *iseq);
 // they are waiting for a return from a C routine. For every routine call, we
 // patch in an exit after the body of the containing VM instruction. This makes
 // it so all the invalidated code exit as soon as execution logically reaches
-// the next VM instruction.
+// the next VM instruction. The interpreter takes care of firing the tracing
+// event if it so happens that the next VM instruction has one attached.
+//
 // The c_return event needs special handling as our codegen never outputs code
 // that contains tracing logic. If we let the normal output code run until the
 // start of the next VM instruction by relying on the patching scheme above, we
-// would fail to fire the c_return event. To handle it, we patch in the full
-// logic at the return address. See full_cfunc_return().
+// would fail to fire the c_return event. The interpreter doesn't fire the
+// event at an instruction boundary, so simply exiting to the interpreter isn't
+// enough. To handle it, we patch in the full logic at the return address. See
+// full_cfunc_return().
+//
 // In addition to patching, we prevent future entries into invalidated code by
 // removing all live blocks from their iseq.
 void
