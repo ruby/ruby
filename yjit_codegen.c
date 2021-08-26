@@ -44,18 +44,18 @@ static uint32_t outline_full_cfunc_return_pos;
 
 // For implementing global code invalidation
 struct codepage_patch {
-    uint32_t mainline_patch_pos;
-    uint32_t outline_target_pos;
+    uint32_t inline_patch_pos;
+    uint32_t outlined_target_pos;
 };
 
 typedef rb_darray(struct codepage_patch) patch_array_t;
 
 static patch_array_t global_inval_patches = NULL;
 
-// This number keeps track of the number of bytes counting from the beginning
-// of the page that should not be changed. After patching for global
-// invalidation, no one should make changes to the invalidated code region
-// anymore.
+// The number of bytes counting from the beginning of the inline code block
+// that should not be changed. After patching for global invalidation, no one
+// should make changes to the invalidated code region anymore. This is used to
+// break out of invalidation race when there are multiple ractors.
 uint32_t yjit_codepage_frozen_bytes = 0;
 
 // Print the current source location for debugging purposes
@@ -3871,8 +3871,8 @@ yjit_tracing_invalidate_all(void)
     const uint32_t old_pos = cb->write_pos;
     rb_darray_for(global_inval_patches, patch_idx) {
         struct codepage_patch patch = rb_darray_get(global_inval_patches, patch_idx);
-        cb_set_pos(cb, patch.mainline_patch_pos);
-        uint8_t *jump_target = cb_get_ptr(ocb, patch.outline_target_pos);
+        cb_set_pos(cb, patch.inline_patch_pos);
+        uint8_t *jump_target = cb_get_ptr(ocb, patch.outlined_target_pos);
         jmp_ptr(cb, jump_target);
     }
     cb_set_pos(cb, old_pos);
