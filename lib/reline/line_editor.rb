@@ -514,6 +514,10 @@ class Reline::LineEditor
       @line_editor.instance_variable_get(:@screen_size).last
     end
 
+    def completion_journey_data
+      @line_editor.instance_variable_get(:@completion_journey_data)
+    end
+
     def call
       instance_exec(&@proc_to_exec)
     end
@@ -533,7 +537,7 @@ class Reline::LineEditor
       return
     end
     @dialog_proc_scope.set_cursor_pos(cursor_column, @first_line_started_from + @started_from)
-    pos, result = @dialog_proc_scope.call
+    pos, result, pointer = @dialog_proc_scope.call
     old_dialog_contents = @dialog_contents
     old_dialog_contents_width = @dialog_contents_width
     old_dialog_column = @dialog_column
@@ -582,7 +586,12 @@ class Reline::LineEditor
     move_cursor_down(@dialog_vertical_offset)
     Reline::IOGate.move_cursor_column(@dialog_column)
     @dialog_contents.each_with_index do |item, i|
-      @output.write "\e[46m%-#{DIALOG_WIDTH}s\e[49m" % item.slice(0, DIALOG_WIDTH)
+      if i == pointer
+        bg_color = '45'
+      else
+        bg_color = '46'
+      end
+      @output.write "\e[#{bg_color}m%-#{DIALOG_WIDTH}s\e[49m" % item.slice(0, DIALOG_WIDTH)
       Reline::IOGate.move_cursor_column(@dialog_column)
       move_cursor_down(1) if i < (@dialog_contents.size - 1)
     end

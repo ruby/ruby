@@ -183,7 +183,7 @@ module Reline
       end
       @dialog_proc = ->() {
         # autocomplete
-        if just_cursor_moving
+        if just_cursor_moving and completion_journey_data.nil?
           # Auto complete starts only when edited
           return nil
         end
@@ -191,7 +191,14 @@ module Reline
         if target.nil? or target.empty?
           return nil
         end
-        result = call_completion_proc_with_checking_args(pre, target, post)
+        if completion_journey_data and completion_journey_data.list
+          result = completion_journey_data.list.dup
+          result.shift
+          pointer = completion_journey_data.pointer - 1
+        else
+          result = call_completion_proc_with_checking_args(pre, target, post)
+          pointer = nil
+        end
         if result and result.size == 1 and result[0] == target
           result = nil
         end
@@ -203,7 +210,7 @@ module Reline
         else
           y = 0
         end
-        [Reline::CursorPos.new(x, y), result]
+        [Reline::CursorPos.new(x, y), result, pointer]
       }
       inner_readline(prompt, add_hist, true, &confirm_multiline_termination)
 
