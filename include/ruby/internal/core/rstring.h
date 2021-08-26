@@ -42,9 +42,11 @@
 
 /** @cond INTERNAL_MACRO */
 #define RSTRING_NOEMBED         RSTRING_NOEMBED
+#if !USE_RVARGC
 #define RSTRING_EMBED_LEN_MASK  RSTRING_EMBED_LEN_MASK
 #define RSTRING_EMBED_LEN_SHIFT RSTRING_EMBED_LEN_SHIFT
 #define RSTRING_EMBED_LEN_MAX   RSTRING_EMBED_LEN_MAX
+#endif
 #define RSTRING_FSTR            RSTRING_FSTR
 #define RSTRING_EMBED_LEN RSTRING_EMBED_LEN
 #define RSTRING_LEN       RSTRING_LEN
@@ -160,6 +162,7 @@ enum ruby_rstring_flags {
      */
     RSTRING_NOEMBED         = RUBY_FL_USER1,
 
+#if !USE_RVARGC
     /**
      * When a  string employs embedded strategy  (see ::RSTRING_NOEMBED), these
      * bits  are  used to  store  the  number  of  bytes actually  filled  into
@@ -172,6 +175,7 @@ enum ruby_rstring_flags {
      */
     RSTRING_EMBED_LEN_MASK  = RUBY_FL_USER2 | RUBY_FL_USER3 | RUBY_FL_USER4 |
                               RUBY_FL_USER5 | RUBY_FL_USER6,
+#endif
 
     /* Actually,  string  encodings are  also  encoded  into the  flags,  using
      * remaining bits.*/
@@ -198,6 +202,7 @@ enum ruby_rstring_flags {
     RSTRING_FSTR            = RUBY_FL_USER17
 };
 
+#if !USE_RVARGC
 /**
  * This is an enum because GDB wants it (rather than a macro).  People need not
  * bother.
@@ -209,6 +214,7 @@ enum ruby_rstring_consts {
     /** Max possible number of characters that can be embedded. */
     RSTRING_EMBED_LEN_MAX   = RBIMPL_EMBED_LEN_MAX_OF(char) - 1
 };
+#endif
 
 /**
  * Ruby's String.  A string in ruby conceptually has these information:
@@ -278,7 +284,17 @@ struct RString {
             * here.   Could be  sufficiently large.   In this  case the  length is
             * encoded into the flags.
             */
+#if USE_RVARGC
+            short len;
+            /* This is a length 1 array because:
+             *   1. GCC has a bug that does not optimize C flexible array members
+             *      (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=102452)
+             *   2. Zero length arrays are not supported by all compilers
+             */
+            char ary[1];
+#else
             char ary[RSTRING_EMBED_LEN_MAX + 1];
+#endif
         } embed;
     } as;
 };
@@ -407,9 +423,13 @@ RSTRING_EMBED_LEN(VALUE str)
     RBIMPL_ASSERT_TYPE(str, RUBY_T_STRING);
     RBIMPL_ASSERT_OR_ASSUME(! RB_FL_ANY_RAW(str, RSTRING_NOEMBED));
 
+#if USE_RVARGC
+    short f = RSTRING(str)->as.embed.len;
+#else
     VALUE f = RBASIC(str)->flags;
     f &= RSTRING_EMBED_LEN_MASK;
     f >>= RSTRING_EMBED_LEN_SHIFT;
+#endif
     return RBIMPL_CAST((long)f);
 }
 

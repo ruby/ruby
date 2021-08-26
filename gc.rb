@@ -256,6 +256,16 @@ module GC
   def self.verify_compaction_references(toward: nil, double_heap: false)
     Primitive.gc_verify_compaction_references(double_heap, toward == :empty)
   end
+
+  # :nodoc:
+  # call-seq:
+  #     GC.using_rvargc? -> true or false
+  #
+  # Returns true if using experimental feature Variable Width Allocation, false
+  # otherwise.
+  def self.using_rvargc?
+    GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] > 1
+  end
 end
 
 module ObjectSpace

@@ -108,7 +108,7 @@ describe "C-API String function" do
 
     it "returns a string with the given capacity" do
       buf = @s.rb_str_buf_new(256, nil)
-      @s.rb_str_capacity(buf).should == 256
+      @s.rb_str_capacity(buf).should >= 256
     end
 
     it "returns a string that can be appended to" do
@@ -682,27 +682,27 @@ describe "C-API String function" do
   describe "rb_str_modify_expand" do
     it "grows the capacity to bytesize + expand, not changing the bytesize" do
       str = @s.rb_str_buf_new(256, "abcd")
-      @s.rb_str_capacity(str).should == 256
+      @s.rb_str_capacity(str).should >= 256
 
       @s.rb_str_set_len(str, 3)
       str.bytesize.should == 3
       @s.RSTRING_LEN(str).should == 3
-      @s.rb_str_capacity(str).should == 256
+      @s.rb_str_capacity(str).should >= 256
 
       @s.rb_str_modify_expand(str, 4)
       str.bytesize.should == 3
       @s.RSTRING_LEN(str).should == 3
-      @s.rb_str_capacity(str).should == 7
+      @s.rb_str_capacity(str).should >= 7
 
       @s.rb_str_modify_expand(str, 1024)
       str.bytesize.should == 3
       @s.RSTRING_LEN(str).should == 3
-      @s.rb_str_capacity(str).should == 1027
+      @s.rb_str_capacity(str).should >= 1027
 
       @s.rb_str_modify_expand(str, 1)
       str.bytesize.should == 3
       @s.RSTRING_LEN(str).should == 3
-      @s.rb_str_capacity(str).should == 4
+      @s.rb_str_capacity(str).should >= 4
     end
 
     it "raises an error if the string is frozen" do
