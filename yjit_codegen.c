@@ -1758,9 +1758,6 @@ gen_defined(jitstate_t* jit, ctx_t* ctx)
 static codegen_status_t
 gen_checktype(jitstate_t* jit, ctx_t* ctx)
 {
-    // TODO: could we specialize on the type we detect
-    uint8_t* side_exit = yjit_side_exit(jit, ctx);
-
     enum ruby_value_type type_val = (enum ruby_value_type)jit_get_arg(jit, 0);
     // Only three types are emitted by compile.c
     if (type_val == T_STRING || type_val == T_ARRAY || type_val == T_HASH) {
@@ -1785,16 +1782,17 @@ gen_checktype(jitstate_t* jit, ctx_t* ctx)
         }
 
         mov(cb, REG0, val);
+        mov(cb, REG1, imm_opnd(Qfalse));
+
+        uint32_t ret = cb_new_label(cb, "ret");
 
         if (!val_type.is_heap) {
             // if (SPECIAL_CONST_P(val)) {
-            // Bail if receiver is not a heap object
+            // Return Qfalse via REG1 if not on heap
             test(cb, REG0, imm_opnd(RUBY_IMMEDIATE_MASK));
-            jnz_ptr(cb, side_exit);
-            cmp(cb, REG0, imm_opnd(Qfalse));
-            je_ptr(cb, side_exit);
+            jnz_label(cb, ret);
             cmp(cb, REG0, imm_opnd(Qnil));
-            je_ptr(cb, side_exit);
+            jbe_label(cb, ret);
         }
 
         // Check type on object
@@ -1802,11 +1800,13 @@ gen_checktype(jitstate_t* jit, ctx_t* ctx)
         and(cb, REG0, imm_opnd(RUBY_T_MASK));
         cmp(cb, REG0, imm_opnd(type_val));
         mov(cb, REG0, imm_opnd(Qtrue));
-        mov(cb, REG1, imm_opnd(Qfalse));
-        cmovne(cb, REG0, REG1);
+        // REG1 contains Qfalse from above
+        cmove(cb, REG1, REG0);
 
+        cb_write_label(cb, ret);
         stack_ret = ctx_stack_push(ctx, TYPE_IMM);
-        mov(cb, stack_ret, REG0);
+        mov(cb, stack_ret, REG1);
+        cb_link_labels(cb);
 
         return YJIT_KEEP_COMPILING;
     } else {

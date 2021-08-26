@@ -152,6 +152,16 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_string_interpolation_cast
+    assert_compiles(<<~'RUBY', insns: %i[checktype concatstrings tostring], result: "123")
+      def make_str(foo, bar)
+        "#{foo}#{bar}"
+      end
+
+      make_str(1, 23)
+    RUBY
+  end
+
   def test_fib_recursion
     assert_compiles(<<~'RUBY', insns: %i[opt_le opt_minus opt_plus opt_send_without_block], result: 34)
       def fib(n)
