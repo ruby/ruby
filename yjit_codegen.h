@@ -32,7 +32,7 @@ typedef struct JITState
     rb_execution_context_t* ec;
 
     // Whether we need to record the code address at
-    // the end of this bytecode instruction for tracing suppoert
+    // the end of this bytecode instruction for global invalidation
     bool record_boundary_patch_point;
 
 } jitstate_t;
