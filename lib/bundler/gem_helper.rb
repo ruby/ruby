@@ -129,8 +129,8 @@ module Bundler
 
     def git_push(remote = nil)
       remote ||= default_remote
-      perform_git_push "#{remote} refs/heads/#{current_branch}"
-      perform_git_push "#{remote} refs/tags/#{version_tag}"
+      sh(%W[git push #{remote} refs/heads/#{current_branch}])
+      sh(%W[git push #{remote} refs/tags/#{version_tag}])
       Bundler.ui.confirm "Pushed git commits and release tag."
     end
 
@@ -156,11 +156,6 @@ module Bundler
         env_rubygems_host && env_rubygems_host.empty?
 
       allowed_push_host || env_rubygems_host || "rubygems.org"
-    end
-
-    def perform_git_push(options = "")
-      cmd = "git push #{options}"
-      sh(cmd.shellsplit)
     end
 
     def already_tagged?
