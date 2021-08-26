@@ -56,7 +56,9 @@ const union {
     enum ruby_robject_consts    robject_consts;
     enum ruby_rmodule_flags     rmodule_flags;
     enum ruby_rstring_flags     rstring_flags;
+#if !USE_RVARGC
     enum ruby_rstring_consts    rstring_consts;
+#endif
     enum ruby_rarray_flags      rarray_flags;
     enum ruby_rarray_consts     rarray_consts;
     enum {

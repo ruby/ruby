@@ -18,10 +18,6 @@
 struct rb_execution_context_struct; /* in vm_core.h */
 struct rb_objspace; /* in vm_core.h */
 
-#ifndef USE_RVARGC
-#define USE_RVARGC 0
-#endif
-
 #ifdef NEWOBJ_OF
 # undef NEWOBJ_OF
 # undef RB_NEWOBJ_OF
@@ -30,21 +26,20 @@ struct rb_objspace; /* in vm_core.h */
 
 #define RVALUE_SIZE (sizeof(struct RBasic) + sizeof(VALUE[RBIMPL_RVALUE_EMBED_LEN_MAX]))
 
-/* optimized version of NEWOBJ() */
-#define RB_NEWOBJ_OF(var, T, c, f) \
-  T *(var) = (T *)(((f) & FL_WB_PROTECTED) ? \
-                   rb_wb_protected_newobj_of((c), (f) & ~FL_WB_PROTECTED, RVALUE_SIZE) : \
-                   rb_wb_unprotected_newobj_of((c), (f), RVALUE_SIZE))
-
-#define RB_EC_NEWOBJ_OF(ec, var, T, c, f) \
-  T *(var) = (T *)(((f) & FL_WB_PROTECTED) ? \
-                   rb_ec_wb_protected_newobj_of((ec), (c), (f) & ~FL_WB_PROTECTED, RVALUE_SIZE) : \
-                   rb_wb_unprotected_newobj_of((c), (f), RVALUE_SIZE))
-
 #define RB_RVARGC_NEWOBJ_OF(var, T, c, f, s) \
   T *(var) = (T *)(((f) & FL_WB_PROTECTED) ? \
                    rb_wb_protected_newobj_of((c), (f) & ~FL_WB_PROTECTED, s) : \
                    rb_wb_unprotected_newobj_of((c), (f), s))
+
+#define RB_RVARGC_EC_NEWOBJ_OF(ec, var, T, c, f, s) \
+  T *(var) = (T *)(((f) & FL_WB_PROTECTED) ? \
+                   rb_ec_wb_protected_newobj_of((ec), (c), (f) & ~FL_WB_PROTECTED, s) : \
+                   rb_wb_unprotected_newobj_of((c), (f), s))
+
+/* optimized version of NEWOBJ() */
+#define RB_NEWOBJ_OF(var, T, c, f) RB_RVARGC_NEWOBJ_OF(var, T, c, f, RVALUE_SIZE)
+
+#define RB_EC_NEWOBJ_OF(ec, var, T, c, f) RB_RVARGC_EC_NEWOBJ_OF(ec, var, T, c, f, RVALUE_SIZE)
 
 #define NEWOBJ_OF(var, T, c, f) RB_NEWOBJ_OF((var), T, (c), (f))
 #define RVARGC_NEWOBJ_OF(var, T, c, f, s) RB_RVARGC_NEWOBJ_OF((var), T, (c), (f), (s))
@@ -102,6 +97,8 @@ static inline void *ruby_sized_xrealloc2_inlined(void *ptr, size_t new_count, si
 static inline void ruby_sized_xfree_inlined(void *ptr, size_t size);
 VALUE rb_class_allocate_instance(VALUE klass);
 void rb_gc_ractor_newobj_cache_clear(rb_ractor_newobj_cache_t *newobj_cache);
+size_t rb_gc_obj_slot_size(VALUE obj);
+bool rb_gc_size_allocatable_p(size_t size);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* gc.c (export) */
