@@ -35,11 +35,7 @@ jobs:
           )
       - name: Install libraries with vcpkg
         run: |
-          IF ${{ matrix.os }}==windows-2019 (
-            vcpkg --triplet x64-windows install readline zlib
-          ) ELSE (
-            vcpkg --triplet x64-windows install readline zlib libffi
-          )
+          vcpkg --triplet x64-windows install readline zlib
       - uses: actions/cache@v2
         with:
           path: C:\Users\runneradmin\AppData\Local\Temp\chocolatey
@@ -66,11 +62,7 @@ jobs:
       - name: Configure
         run: |
           call %VCVARS%
-          IF ${{ matrix.os }}==windows-2019 (
-            ..\src\win32\configure.bat --disable-install-doc --enable-bundled-libffi --with-opt-dir=C:/vcpkg/installed/x64-windows --with-openssl-dir="C:/Program Files/OpenSSL-Win64"
-          ) ELSE (
-            ..\src\win32\configure.bat --disable-install-doc --with-opt-dir=C:/vcpkg/installed/x64-windows --with-openssl-dir="C:/Program Files/OpenSSL-Win64"
-          )
+          ..\src\win32\configure.bat --disable-install-doc --enable-bundled-libffi --with-opt-dir=C:/vcpkg/installed/x64-windows --with-openssl-dir="C:/Program Files/OpenSSL-Win64"
       - name: nmake
         run: |
           call %VCVARS%
