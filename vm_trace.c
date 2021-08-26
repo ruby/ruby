@@ -98,11 +98,16 @@ update_global_event_hook(rb_event_flag_t vm_events)
         rb_clear_attr_ccs();
     }
 
-    yjit_tracing_invalidate_all();
-
     ruby_vm_event_flags = vm_events;
     ruby_vm_event_enabled_global_flags |= vm_events;
     rb_objspace_set_event_hook(vm_events);
+
+    if (vm_events & RUBY_EVENT_TRACEPOINT_ALL) {
+        // Invalidate all code if listening for any TracePoint event.
+        // Internal events fire inside C routines so don't need special handling.
+        // Do this last so other ractors see updated vm events when they wake up.
+        yjit_tracing_invalidate_all();
+    }
 }
 
 /* add/remove hooks */
