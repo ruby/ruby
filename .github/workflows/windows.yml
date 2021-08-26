@@ -10,7 +10,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
-      PATCH: C:\msys64\usr\bin\patch.exe
+      PATCH: D:\a\_temp\msys\msys64\usr\bin\patch.exe
     steps:
       - run: md build
         working-directory:
