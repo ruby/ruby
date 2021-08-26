@@ -177,41 +177,43 @@ module Reline
       Reline::IOGate.get_screen_size
     end
 
+    DEFAULT_DIALOG_PROC_AUTOCOMPLETE = ->() {
+      # autocomplete
+      if just_cursor_moving and completion_journey_data.nil?
+        # Auto complete starts only when edited
+        return nil
+      end
+      pre, target, post= retrieve_completion_block(true)
+      if target.nil? or target.empty?# or target.size <= 3
+        return nil
+      end
+      if completion_journey_data and completion_journey_data.list
+        result = completion_journey_data.list.dup
+        result.shift
+        pointer = completion_journey_data.pointer - 1
+      else
+        result = call_completion_proc_with_checking_args(pre, target, post)
+        pointer = nil
+      end
+      if result and result.size == 1 and result[0] == target
+        result = nil
+      end
+      target_width = Reline::Unicode.calculate_width(target)
+      x = cursor_pos.x - target_width
+      if x < 0
+        x = screen_width + x
+        y = -1
+      else
+        y = 0
+      end
+      [Reline::CursorPos.new(x, y), result, pointer]
+    }
+
     def readmultiline(prompt = '', add_hist = false, &confirm_multiline_termination)
       unless confirm_multiline_termination
         raise ArgumentError.new('#readmultiline needs block to confirm multiline termination')
       end
-      @dialog_proc = ->() {
-        # autocomplete
-        if just_cursor_moving and completion_journey_data.nil?
-          # Auto complete starts only when edited
-          return nil
-        end
-        pre, target, post= retrieve_completion_block(true)
-        if target.nil? or target.empty?
-          return nil
-        end
-        if completion_journey_data and completion_journey_data.list
-          result = completion_journey_data.list.dup
-          result.shift
-          pointer = completion_journey_data.pointer - 1
-        else
-          result = call_completion_proc_with_checking_args(pre, target, post)
-          pointer = nil
-        end
-        if result and result.size == 1 and result[0] == target
-          result = nil
-        end
-        target_width = Reline::Unicode.calculate_width(target)
-        x = cursor_pos.x - target_width
-        if x < 0
-          x = screen_width + x
-          y = -1
-        else
-          y = 0
-        end
-        [Reline::CursorPos.new(x, y), result, pointer]
-      }
+      @dialog_proc = DEFAULT_DIALOG_PROC_AUTOCOMPLETE
       inner_readline(prompt, add_hist, true, &confirm_multiline_termination)
 
       whole_buffer = line_editor.whole_buffer.dup
