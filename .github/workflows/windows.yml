@@ -89,7 +89,7 @@ jobs:
           ::- https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
           set TMP=%USERPROFILE%\AppData\Local\Temp
           set TEMP=%USERPROFILE%\AppData\Local\Temp
-          nmake test-all
+          nmake test-all TESTOPTS="-j%NUMBER_OF_PROCESSORS% --job-status=normal"
         continue-on-error: ${{ matrix.continue-on-error }}
       - name: nmake test-spec
         timeout-minutes: 10
