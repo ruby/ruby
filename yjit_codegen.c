@@ -181,7 +181,7 @@ jit_save_sp(jitstate_t* jit, ctx_t* ctx)
 // jit_save_pc() + jit_save_sp(). Should be used before calling a routine that
 // could:
 //  - Perform GC allocation
-//  - Take the VM loock through RB_VM_LOCK_ENTER()
+//  - Take the VM lock through RB_VM_LOCK_ENTER()
 //  - Perform Ruby method call
 static void
 jit_prepare_routine_call(jitstate_t *jit, ctx_t *ctx, x86opnd_t scratch_reg)
