@@ -40,6 +40,11 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
     test_command << " 'TESTOPTS=-e /test_stub_value_block_args_5__break_if_not_passed|test_no_method_error_on_unexpected_methods/'"
   end
 
+  if gem == "debug"
+    pid = Process.spawn("#{ruby} -C #{gem_dir}/src/#{gem} -Ilib #{rake} compile")
+    Process.waitpid(pid)
+  end
+
   print "[command]" if github_actions
   puts test_command
   pid = Process.spawn(test_command, "#{/mingw|mswin/ =~ RUBY_PLATFORM ? 'new_' : ''}pgroup": true)
