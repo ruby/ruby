@@ -252,8 +252,6 @@ class Reline::LineEditor
     @dialog_column = nil
     @dialog_vertical_offset = nil
     @dialog_contents = nil
-    @dialog_contents_width = nil
-    @dialog_updown = nil
     @dialog_lines_backup = nil
     reset_line
   end
@@ -539,14 +537,11 @@ class Reline::LineEditor
     @dialog_proc_scope.set_cursor_pos(cursor_column, @first_line_started_from + @started_from)
     pos, result, pointer = @dialog_proc_scope.call
     old_dialog_contents = @dialog_contents
-    old_dialog_contents_width = @dialog_contents_width
     old_dialog_column = @dialog_column
     old_dialog_vertical_offset = @dialog_vertical_offset
-    old_dialog_updown = @dialog_updown
     if result and not result.empty?
       @dialog_contents = result
       @dialog_contents = @dialog_contents[0...DIALOG_HEIGHT] if @dialog_contents.size > DIALOG_HEIGHT
-      @dialog_contents_width = @dialog_contents.map{ |c| calculate_width(c) }
     else
       @dialog_lines_backup = {
         lines: modify_lines(whole_lines),
@@ -561,28 +556,24 @@ class Reline::LineEditor
     end
     upper_space = @first_line_started_from - @started_from
     lower_space = @highest_in_all - @first_line_started_from - @started_from - 1
-    @dialog_updown = nil
     @dialog_column = pos.x
     diff = (@dialog_column + DIALOG_WIDTH) - (@screen_size.last - 1)
     if diff > 0
       @dialog_column -= diff
     end
     if (lower_space + @rest_height) >= DIALOG_HEIGHT
-      @dialog_updown = :down
       @dialog_vertical_offset = pos.y + 1
     elsif upper_space >= DIALOG_HEIGHT
-      @dialog_updown = :up
       @dialog_vertical_offset = pos.y + -(DIALOG_HEIGHT + 1)
     else
       if (lower_space + @rest_height) < DIALOG_HEIGHT
         scroll_down(DIALOG_HEIGHT)
         move_cursor_up(DIALOG_HEIGHT)
       end
-      @dialog_updown = :down
       @dialog_vertical_offset = pos.y + 1
     end
     Reline::IOGate.hide_cursor
-    reset_dialog(old_dialog_contents, old_dialog_contents_width, old_dialog_column, old_dialog_vertical_offset, old_dialog_updown)
+    reset_dialog(old_dialog_contents, old_dialog_column, old_dialog_vertical_offset)
     move_cursor_down(@dialog_vertical_offset)
     Reline::IOGate.move_cursor_column(@dialog_column)
     @dialog_contents.each_with_index do |item, i|
@@ -607,7 +598,7 @@ class Reline::LineEditor
     }
   end
 
-  private def reset_dialog(old_dialog_contents, old_dialog_contents_width, old_dialog_column, old_dialog_vertical_offset, old_dialog_updown)
+  private def reset_dialog(old_dialog_contents, old_dialog_column, old_dialog_vertical_offset)
     return if @dialog_lines_backup.nil? or old_dialog_contents.nil?
     prompt, prompt_width, prompt_list = check_multiline_prompt(@dialog_lines_backup[:lines], prompt)
     visual_lines = []
