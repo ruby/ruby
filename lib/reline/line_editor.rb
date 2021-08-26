@@ -1176,6 +1176,16 @@ class Reline::LineEditor
       @completion_journey_data = CompletionJourneyData.new(
         preposing, postposing,
         [target] + list.select{ |item| item.start_with?(target) }, 0)
+      if @completion_journey_data.list.size == 1
+        @completion_journey_data.pointer = 0
+      else
+        case direction
+        when :up
+          @completion_journey_data.pointer = @completion_journey_data.list.size - 1
+        when :down
+          @completion_journey_data.pointer = 1
+        end
+      end
       @completion_state = CompletionState::JOURNEY
     else
       case direction
@@ -1190,13 +1200,13 @@ class Reline::LineEditor
           @completion_journey_data.pointer = 0
         end
       end
-      completed = @completion_journey_data.list[@completion_journey_data.pointer]
-      @line = @completion_journey_data.preposing + completed + @completion_journey_data.postposing
-      line_to_pointer = @completion_journey_data.preposing + completed
-      @cursor_max = calculate_width(@line)
-      @cursor = calculate_width(line_to_pointer)
-      @byte_pointer = line_to_pointer.bytesize
     end
+    completed = @completion_journey_data.list[@completion_journey_data.pointer]
+    @line = @completion_journey_data.preposing + completed + @completion_journey_data.postposing
+    line_to_pointer = @completion_journey_data.preposing + completed
+    @cursor_max = calculate_width(@line)
+    @cursor = calculate_width(line_to_pointer)
+    @byte_pointer = line_to_pointer.bytesize
   end
 
   private def run_for_operators(key, method_symbol, &block)
