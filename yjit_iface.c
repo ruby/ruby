@@ -808,6 +808,13 @@ reset_stats_bang(rb_execution_context_t *ec, VALUE self)
     return Qnil;
 }
 
+static VALUE
+set_stats_enabled(rb_execution_context_t *ec, VALUE self, VALUE enabled)
+{
+    rb_yjit_opts.gen_stats = RB_TEST(enabled);
+    return enabled;
+}
+
 #include "yjit.rbinc"
 
 #if YJIT_STATS

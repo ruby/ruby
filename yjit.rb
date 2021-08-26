@@ -134,6 +134,14 @@ module YJIT
     Primitive.reset_stats_bang
   end
 
+  def self.stats_enabled?
+    Primitive.cexpr! 'rb_yjit_opts.gen_stats ? Qtrue : Qfalse'
+  end
+
+  def self.stats_enabled=(enabled)
+    Primitive.set_stats_enabled(enabled)
+  end
+
   def self.enabled?
     Primitive.cexpr! 'rb_yjit_enabled_p() ? Qtrue : Qfalse'
   end
