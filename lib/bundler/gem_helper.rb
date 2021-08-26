@@ -160,9 +160,7 @@ module Bundler
 
     def perform_git_push(options = "")
       cmd = "git push #{options}"
-      out, status = sh_with_status(cmd.shellsplit)
-      return if status.success?
-      raise "Couldn't git push. `#{cmd}' failed with the following output:\n\n#{out}\n"
+      sh(cmd.shellsplit)
     end
 
     def already_tagged?
