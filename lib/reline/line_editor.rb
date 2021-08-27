@@ -740,6 +740,7 @@ class Reline::LineEditor
       visual_lines.concat(vl)
     }
     visual_lines_under_dialog = visual_lines[visual_start, dialog.contents.size]
+    visual_lines_under_dialog = [] if visual_lines_under_dialog.nil?
     Reline::IOGate.hide_cursor
     move_cursor_down(dialog.vertical_offset)
     dialog_vertical_size = dialog.contents.size
