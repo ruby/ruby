@@ -560,7 +560,7 @@ class Reline::LineEditor
       return
     end
     dialog.set_cursor_pos(cursor_column, @first_line_started_from + @started_from)
-    pos, result, pointer = dialog.call
+    pos, result, pointer, bg = dialog.call
     old_dialog_contents = dialog.contents
     old_dialog_column = dialog.column
     old_dialog_vertical_offset = dialog.vertical_offset
@@ -605,7 +605,11 @@ class Reline::LineEditor
       if i == pointer
         bg_color = '45'
       else
-        bg_color = '46'
+        if bg
+          bg_color = bg
+        else
+          bg_color = '46'
+        end
       end
       @output.write "\e[#{bg_color}m%-#{DIALOG_WIDTH}s\e[49m" % item.slice(0, DIALOG_WIDTH)
       Reline::IOGate.move_cursor_column(dialog.column)

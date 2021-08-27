@@ -211,7 +211,7 @@ module Reline
       cursor_pos_to_render = Reline::CursorPos.new(x, y)
       context.clear
       context.push(cursor_pos_to_render, result, pointer)
-      [cursor_pos_to_render, result, pointer]
+      [cursor_pos_to_render, result, pointer, nil]
     }
 
     require 'rdoc'
@@ -247,7 +247,7 @@ module Reline
       formatter.width = 40
       str = doc.accept(formatter)
 
-      [Reline::CursorPos.new(cursor_pos_to_render.x + 40, cursor_pos_to_render.y + pointer), str.split("\n"), nil]
+      [Reline::CursorPos.new(cursor_pos_to_render.x + 40, cursor_pos_to_render.y + pointer), str.split("\n"), nil, '40']
     }
 
     def readmultiline(prompt = '', add_hist = false, &confirm_multiline_termination)
