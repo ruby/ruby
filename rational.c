@@ -2096,7 +2096,7 @@ rb_float_numerator(VALUE self)
 {
     double d = RFLOAT_VALUE(self);
     VALUE r;
-    if (isinf(d) || isnan(d))
+    if (!isfinite(d))
 	return self;
     r = float_to_r(self);
     return nurat_numerator(r);
@@ -2116,7 +2116,7 @@ rb_float_denominator(VALUE self)
 {
     double d = RFLOAT_VALUE(self);
     VALUE r;
-    if (isinf(d) || isnan(d))
+    if (!isfinite(d))
 	return INT2FIX(1);
     r = float_to_r(self);
     return nurat_denominator(r);

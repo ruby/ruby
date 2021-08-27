@@ -1348,7 +1348,7 @@ static inline double
 float_value(VALUE v)
 {
     double x = RFLOAT_VALUE(v);
-    if (isinf(x) || isnan(x)) {
+    if (!isfinite(x)) {
 	domain_error();
     }
     return x;

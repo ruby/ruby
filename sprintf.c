@@ -875,7 +875,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		double fval;
 
 		fval = RFLOAT_VALUE(rb_Float(val));
-		if (isnan(fval) || isinf(fval)) {
+		if (!isfinite(fval)) {
 		    const char *expr;
 		    int need;
 		    int elen;

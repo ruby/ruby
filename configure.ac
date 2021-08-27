@@ -799,7 +799,7 @@ AS_IF([test "$GCC" = yes], [
       ])
     ],
     [cygwin*|msys*|darwin*|netbsd*], [
-      # need lgamma_r(), finite()
+      # need lgamma_r()
     ])
 
     # ANSI (no XCFLAGS because this is C only)
@@ -1906,9 +1906,7 @@ AC_REPLACE_FUNCS(strlcpy)
 AC_REPLACE_FUNCS(strstr)
 AC_REPLACE_FUNCS(tgamma)
 
-RUBY_REPLACE_FUNC([finite], [@%:@include <math.h>])
-RUBY_REPLACE_FUNC([isinf], [@%:@include <math.h>])
-RUBY_REPLACE_FUNC([isnan], [@%:@include <math.h>])
+AC_DEFINE(HAVE_ISFINITE)        # C99; backward compatibility
 
 # for missing/setproctitle.c
 AS_CASE(["$target_os"],

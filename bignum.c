@@ -5382,7 +5382,7 @@ rb_integer_float_eq(VALUE x, VALUE y)
     double yd = RFLOAT_VALUE(y);
     double yi, yf;
 
-    if (isnan(yd) || isinf(yd))
+    if (!isfinite(yd))
         return Qfalse;
     yf = modf(yd, &yi);
     if (yf != 0)

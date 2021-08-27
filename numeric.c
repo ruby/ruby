@@ -1699,15 +1699,7 @@ rb_flo_is_finite_p(VALUE num)
 {
     double value = RFLOAT_VALUE(num);
 
-#ifdef HAVE_ISFINITE
-    if (!isfinite(value))
-	return Qfalse;
-#else
-    if (isinf(value) || isnan(value))
-	return Qfalse;
-#endif
-
-    return Qtrue;
+    return RBOOL(isfinite(value));
 }
 
 static VALUE
