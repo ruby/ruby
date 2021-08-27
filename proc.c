@@ -293,6 +293,23 @@ rb_proc_lambda_p(VALUE procval)
     return RBOOL(proc->is_lambda);
 }
 
+/*
+ * call-seq:
+ *   prc.isolated? -> true or false
+ *
+ * Returns +true+ if a Proc object is isolated (shareable).
+ * +false+ if not-isolated.
+ */
+
+VALUE
+rb_proc_isolated_p(VALUE procval)
+{
+    rb_proc_t *proc;
+    GetProcPtr(procval, proc);
+
+    return RBOOL(proc->is_isolated);
+}
+
 /* Binding */
 
 static void
@@ -4120,6 +4137,7 @@ Init_Proc(void)
     rb_define_method(rb_cProc, "parameters", rb_proc_parameters, 0);
     rb_define_method(rb_cProc, "ruby2_keywords", proc_ruby2_keywords, 0);
     // rb_define_method(rb_cProc, "isolate", rb_proc_isolate, 0); is not accepted.
+    rb_define_method(rb_cProc, "isolated?", rb_proc_isolated_p, 0);
 
     /* Exceptions */
     rb_eLocalJumpError = rb_define_class("LocalJumpError", rb_eStandardError);
