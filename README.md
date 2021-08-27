@@ -1,3 +1,10 @@
+<p align="center">
+  <a href="https://yjit.org/" target="_blank" rel="noopener noreferrer">
+    <img src="https://user-images.githubusercontent.com/224488/131155756-aa8fb528-a813-4dfd-99ac-8785c3d5eed7.png" width="400">
+  </a>
+</p>
+
+
 YJIT - Yet Another Ruby JIT
 ===========================
 
