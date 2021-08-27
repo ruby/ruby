@@ -1444,6 +1444,7 @@ class Reline::LineEditor
     end
     unless completion_occurs
       @completion_state = CompletionState::NORMAL
+      @completion_journey_data = nil
     end
     if not @in_pasting and @just_cursor_moving.nil?
       if @previous_line_index and @buffer_of_lines[@previous_line_index] == @line
