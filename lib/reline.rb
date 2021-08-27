@@ -209,14 +209,39 @@ module Reline
         y = 0
       end
       cursor_pos_to_render = Reline::CursorPos.new(x, y)
+      context.clear
+      context.push(cursor_pos_to_render, result, pointer)
       [cursor_pos_to_render, result, pointer]
+    }
+
+    require 'rdoc'
+    SHOW_DOC_DIALOG = ->() {
+      if just_cursor_moving and completion_journey_data.nil?
+        return nil
+      end
+      cursor_pos_to_render, result, pointer = context.pop(3)
+      return nil if result.nil? or pointer.nil?
+      name = result[pointer]
+      driver = RDoc::RI::Driver.new
+      doc = RDoc::Markup::Document.new
+      begin
+        driver.add_method(doc, name)
+      rescue RDoc::RI::Driver::NotFoundError => e
+        return nil
+      end
+      formatter = RDoc::Markup::ToBs.new
+      formatter.width = 40
+      str = doc.accept(formatter)
+      [Reline::CursorPos.new(cursor_pos_to_render.x + 40, cursor_pos_to_render.y + pointer), str.split("\n"), nil]
     }
 
     def readmultiline(prompt = '', add_hist = false, &confirm_multiline_termination)
       unless confirm_multiline_termination
         raise ArgumentError.new('#readmultiline needs block to confirm multiline termination')
       end
-      add_dialog_proc(:autocomplete, DEFAULT_DIALOG_PROC_AUTOCOMPLETE)
+      context = []
+      add_dialog_proc(:autocomplete, DEFAULT_DIALOG_PROC_AUTOCOMPLETE, context)
+      add_dialog_proc(:show_doc, SHOW_DOC_DIALOG, context)
       inner_readline(prompt, add_hist, true, &confirm_multiline_termination)
 
       whole_buffer = line_editor.whole_buffer.dup
