@@ -306,9 +306,11 @@ static void
 _gen_counter_inc(codeblock_t *cb, int64_t *counter)
 {
     if (!rb_yjit_opts.gen_stats) return;
-     mov(cb, REG0, const_ptr_opnd(counter));
-     cb_write_lock_prefix(cb); // for ractors.
-     add(cb, mem_opnd(64, REG0, 0), imm_opnd(1));
+
+    // Use REG1 because there might be return value in REG0
+    mov(cb, REG1, const_ptr_opnd(counter));
+    cb_write_lock_prefix(cb); // for ractors.
+    add(cb, mem_opnd(64, REG1, 0), imm_opnd(1));
 }
 
 // Increment a counter then take an existing side exit.
