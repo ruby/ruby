@@ -222,16 +222,31 @@ module Reline
       cursor_pos_to_render, result, pointer = context.pop(3)
       return nil if result.nil? or pointer.nil?
       name = result[pointer]
+
       driver = RDoc::RI::Driver.new
-      doc = RDoc::Markup::Document.new
-      begin
-        driver.add_method(doc, name)
-      rescue RDoc::RI::Driver::NotFoundError => e
-        return nil
+      name = driver.expand_name name
+      doc = nil
+      used_for_class = false
+      if not name =~ /#|\./
+        found, klasses, includes, extends = driver.classes_and_includes_and_extends_for(name)
+        if not found.empty?
+          doc = driver.class_document name, found, klasses, includes, extends
+          used_for_class = true
+        end
       end
+      unless used_for_class
+        doc = RDoc::Markup::Document.new
+        begin
+          driver.add_method(doc, name)
+        rescue RDoc::RI::Driver::NotFoundError
+          doc = nil
+        end
+      end
+      return nil if doc.nil?
       formatter = RDoc::Markup::ToBs.new
       formatter.width = 40
       str = doc.accept(formatter)
+
       [Reline::CursorPos.new(cursor_pos_to_render.x + 40, cursor_pos_to_render.y + pointer), str.split("\n"), nil]
     }
 
