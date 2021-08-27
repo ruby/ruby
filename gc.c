@@ -5535,6 +5535,30 @@ gc_mode_transition(rb_objspace_t *objspace, enum gc_mode mode)
 }
 
 static void
+heap_page_freelist_append(struct heap_page *page, RVALUE *freelist)
+{
+    if (freelist) {
+        asan_unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
+        if (page->freelist) {
+            RVALUE *p = page->freelist;
+            asan_unpoison_object((VALUE)p, false);
+            while (p->as.free.next) {
+                RVALUE *prev = p;
+                p = p->as.free.next;
+                asan_poison_object((VALUE)prev);
+                asan_unpoison_object((VALUE)p, false);
+            }
+            p->as.free.next = freelist;
+            asan_poison_object((VALUE)p);
+        }
+        else {
+            page->freelist = freelist;
+        }
+        asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
+    }
+}
+
+static void
 gc_sweep_start_heap(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     heap->sweeping_page = list_top(&heap->pages, struct heap_page, page_node);
@@ -5560,12 +5584,10 @@ gc_sweep_start(rb_objspace_t *objspace)
         rb_size_pool_t *size_pool = &size_pools[i];
 
 #if USE_RVARGC
-        if (size_pool->freelist) {
-            size_pool->using_page->freelist = (RVALUE *)size_pool->freelist;
-            size_pool->freelist = 0;
-        }
+        heap_page_freelist_append(size_pool->using_page, size_pool->freelist);
 
         size_pool->using_page = NULL;
+        size_pool->freelist = NULL;
 #endif
 
         gc_sweep_start_heap(objspace, SIZE_POOL_EDEN_HEAP(size_pool));
@@ -8713,25 +8735,7 @@ rb_gc_ractor_newobj_cache_clear(rb_ractor_newobj_cache_t *newobj_cache)
     RVALUE *freelist = newobj_cache->freelist;
     RUBY_DEBUG_LOG("ractor using_page:%p freelist:%p", page, freelist);
 
-    if (page && freelist) {
-        asan_unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
-        if (page->freelist) {
-            RVALUE *p = page->freelist;
-            asan_unpoison_object((VALUE)p, false);
-            while (p->as.free.next) {
-                RVALUE *prev = p;
-                p = p->as.free.next;
-                asan_poison_object((VALUE)prev);
-                asan_unpoison_object((VALUE)p, false);
-            }
-            p->as.free.next = freelist;
-            asan_poison_object((VALUE)p);
-        }
-        else {
-            page->freelist = freelist;
-        }
-        asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
-    }
+    heap_page_freelist_append(page, freelist);
 
     newobj_cache->using_page = NULL;
     newobj_cache->freelist = NULL;
