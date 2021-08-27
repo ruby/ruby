@@ -1098,8 +1098,7 @@ gen_putstring(jitstate_t* jit, ctx_t* ctx)
     VALUE put_val = jit_get_arg(jit, 0);
 
     // Save the PC and SP because the callee will allocate
-    jit_save_pc(jit, REG0);
-    jit_save_sp(jit, ctx);
+    jit_prepare_routine_call(jit, ctx, REG0);
 
     mov(cb, C_ARG_REGS[0], REG_EC);
     jit_mov_gc_ptr(jit, cb, C_ARG_REGS[1], put_val);
