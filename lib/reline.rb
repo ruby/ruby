@@ -243,11 +243,11 @@ module Reline
         end
       end
       return nil if doc.nil?
-      formatter = RDoc::Markup::ToBs.new
+      formatter = RDoc::Markup::ToAnsi.new
       formatter.width = 40
       str = doc.accept(formatter)
 
-      [Reline::CursorPos.new(cursor_pos_to_render.x + 40, cursor_pos_to_render.y + pointer), str.split("\n"), nil, '40']
+      [Reline::CursorPos.new(cursor_pos_to_render.x + 40, cursor_pos_to_render.y + pointer), str.split("\n"), nil, '49']
     }
 
     def readmultiline(prompt = '', add_hist = false, &confirm_multiline_termination)
