@@ -132,10 +132,10 @@ module Reline
       @dig_perfect_match_proc = p
     end
 
-    def add_dialog_proc(name_sym, p)
+    def add_dialog_proc(name_sym, p, context = nil)
       raise ArgumentError unless p.respond_to?(:call) or p.nil?
       raise ArgumentError unless name_sym.instance_of?(Symbol)
-      @dialog_proc_list << [name_sym, p]
+      @dialog_proc_list << [name_sym, p, context]
     end
 
     def input=(val)
@@ -273,8 +273,8 @@ module Reline
       line_editor.dig_perfect_match_proc = dig_perfect_match_proc
       line_editor.pre_input_hook = pre_input_hook
       @dialog_proc_list.each do |d|
-        name_sym, dialog_proc = d
-        line_editor.add_dialog_proc(name_sym, dialog_proc)
+        name_sym, dialog_proc, context = d
+        line_editor.add_dialog_proc(name_sym, dialog_proc, context)
       end
 
       unless config.test_mode

@@ -478,10 +478,15 @@ class Reline::LineEditor
   end
 
   class DialogProcScope
-    def initialize(line_editor, proc_to_exec)
+    def initialize(line_editor, proc_to_exec, context)
       @line_editor = line_editor
       @proc_to_exec = proc_to_exec
+      @context = context
       @cursor_pos = Reline::CursorPos.new
+    end
+
+    def context
+      @context
     end
 
     def retrieve_completion_block(set_completion_quote_character = false)
@@ -536,9 +541,9 @@ class Reline::LineEditor
     end
   end
 
-  def add_dialog_proc(name, p)
+  def add_dialog_proc(name, p, context = nil)
     return if @dialogs.any? { |d| d.name == name }
-    @dialogs << Dialog.new(name, DialogProcScope.new(self, p))
+    @dialogs << Dialog.new(name, DialogProcScope.new(self, p, context))
   end
 
   DIALOG_HEIGHT = 20
