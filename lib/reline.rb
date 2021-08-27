@@ -34,7 +34,7 @@ module Reline
       auto_indent_proc
       pre_input_hook
       dig_perfect_match_proc
-      dialog_proc
+      dialog_proc_list
     ).each(&method(:attr_reader))
 
     attr_accessor :config
@@ -48,6 +48,7 @@ module Reline
       yield self
       @completion_quote_character = nil
       @bracketed_paste_finished = false
+      @dialog_proc_list = []
     end
 
     def encoding
@@ -131,9 +132,10 @@ module Reline
       @dig_perfect_match_proc = p
     end
 
-    def dialog_proc=(p)
+    def add_dialog_proc(name_sym, p)
       raise ArgumentError unless p.respond_to?(:call) or p.nil?
-      @dialog_proc = p
+      raise ArgumentError unless name_sym.instance_of?(Symbol)
+      @dialog_proc_list << [name_sym, p]
     end
 
     def input=(val)
@@ -206,14 +208,15 @@ module Reline
       else
         y = 0
       end
-      [Reline::CursorPos.new(x, y), result, pointer]
+      cursor_pos_to_render = Reline::CursorPos.new(x, y)
+      [cursor_pos_to_render, result, pointer]
     }
 
     def readmultiline(prompt = '', add_hist = false, &confirm_multiline_termination)
       unless confirm_multiline_termination
         raise ArgumentError.new('#readmultiline needs block to confirm multiline termination')
       end
-      @dialog_proc = DEFAULT_DIALOG_PROC_AUTOCOMPLETE
+      add_dialog_proc(:autocomplete, DEFAULT_DIALOG_PROC_AUTOCOMPLETE)
       inner_readline(prompt, add_hist, true, &confirm_multiline_termination)
 
       whole_buffer = line_editor.whole_buffer.dup
@@ -269,7 +272,10 @@ module Reline
       line_editor.auto_indent_proc = auto_indent_proc
       line_editor.dig_perfect_match_proc = dig_perfect_match_proc
       line_editor.pre_input_hook = pre_input_hook
-      line_editor.dialog_proc = dialog_proc
+      @dialog_proc_list.each do |d|
+        name_sym, dialog_proc = d
+        line_editor.add_dialog_proc(name_sym, dialog_proc)
+      end
 
       unless config.test_mode
         config.read
