@@ -1916,17 +1916,7 @@ AS_CASE(["$target_os"],
 AC_CHECK_HEADERS(sys/pstat.h)
 
 
-AC_CACHE_CHECK(for signbit, rb_cv_have_signbit,
-  [AC_LINK_IFELSE([AC_LANG_PROGRAM([[
-#include <math.h>
-]], [[int v = signbit(-0.0);]])],
-	rb_cv_have_signbit=yes,
-	rb_cv_have_signbit=no)])
-AS_IF([test "$rb_cv_have_signbit" = yes], [
-  AC_DEFINE(HAVE_SIGNBIT)
-], [
-  AC_LIBOBJ([signbit])
-])
+AC_DEFINE(HAVE_SIGNBIT)         # C99; backward compatibility
 
 AC_FUNC_FORK
 

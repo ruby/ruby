@@ -26,11 +26,6 @@
 #include "internal/object.h"
 #include "internal/vm.h"
 
-#if defined(HAVE_SIGNBIT) && defined(__GNUC__) && defined(__sun) && \
-    !defined(signbit)
-    extern int signbit(double);
-#endif
-
 #define RB_BIGNUM_TYPE_P(x) RB_TYPE_P((x), T_BIGNUM)
 
 VALUE rb_mMath;

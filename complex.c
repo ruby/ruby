@@ -34,10 +34,6 @@
 #else
 static VALUE RFLOAT_0;
 #endif
-#if defined(HAVE_SIGNBIT) && defined(__GNUC__) && defined(__sun) && \
-    !defined(signbit)
-extern int signbit(double);
-#endif
 
 VALUE rb_cComplex;
 
