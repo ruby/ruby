@@ -240,7 +240,7 @@ module RDoc::Text
       when s.scan(/''/) then # tick double quote
         html << encoded[:close_dquote]
         after_word = nil
-      when s.scan(/'/) then # single quote
+      when s.scan(/&#39;|'/) then # single quote
         if insquotes
           html << encoded[:close_squote]
           insquotes = false

@@ -485,6 +485,13 @@ The comments associated with
     assert_equal '‘a’ ‘', to_html("'a' '")
   end
 
+  def test_to_html_apostrophe_entity
+    assert_equal '‘a', to_html("&#39;a")
+    assert_equal 'a’', to_html("a&#39;")
+
+    assert_equal '‘a’ ‘', to_html("&#39;a&#39; &#39;")
+  end
+
   def test_to_html_backslash
     assert_equal 'S', to_html('\\S')
   end
