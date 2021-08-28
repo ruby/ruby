@@ -2124,14 +2124,100 @@ gen_opt_gt(jitstate_t* jit, ctx_t* ctx)
     return gen_fixnum_cmp(jit, ctx, cmovg);
 }
 
-VALUE rb_opt_equality_specialized(VALUE recv, VALUE obj);
+// Implements specialized equality for either two fixnum or two strings
+// Returns true if code was generated, otherwise false
+bool
+gen_equality_specialized(jitstate_t* jit, ctx_t* ctx, uint8_t *side_exit)
+{
+    VALUE comptime_a = jit_peek_at_stack(jit, ctx, 1);
+    VALUE comptime_b = jit_peek_at_stack(jit, ctx, 0);
+
+    x86opnd_t a_opnd = ctx_stack_opnd(ctx, 1);
+    x86opnd_t b_opnd = ctx_stack_opnd(ctx, 0);
+
+    if (FIXNUM_P(comptime_a) && FIXNUM_P(comptime_b)) {
+        if (!assume_bop_not_redefined(jit->block, INTEGER_REDEFINED_OP_FLAG, BOP_EQ)) {
+            return YJIT_CANT_COMPILE;
+        }
+
+        guard_two_fixnums(ctx, side_exit);
+
+        mov(cb, REG0, a_opnd);
+        cmp(cb, REG0, b_opnd);
+
+        mov(cb, REG0, imm_opnd(Qfalse));
+        mov(cb, REG1, imm_opnd(Qtrue));
+        cmove(cb, REG0, REG1);
+
+        // Push the output on the stack
+        ctx_stack_pop(ctx, 2);
+        x86opnd_t dst = ctx_stack_push(ctx, TYPE_IMM);
+        mov(cb, dst, REG0);
+
+        return true;
+    } else if (CLASS_OF(comptime_a) == rb_cString &&
+		    CLASS_OF(comptime_b) == rb_cString) {
+        if (!assume_bop_not_redefined(jit->block, STRING_REDEFINED_OP_FLAG, BOP_EQ)) {
+            return YJIT_CANT_COMPILE;
+        }
+
+        // Guard that a is a String
+        mov(cb, REG0, a_opnd);
+        jit_guard_known_klass(jit, ctx, rb_cString, OPND_STACK(1), comptime_a, SEND_MAX_DEPTH, side_exit);
+
+        uint32_t ret = cb_new_label(cb, "ret");
+
+        // If they are equal by identity, return true
+        mov(cb, REG0, b_opnd);
+        cmp(cb, REG0, a_opnd);
+        mov(cb, REG0, imm_opnd(Qtrue));
+        je_label(cb, ret);
+
+        // Otherwise guard that b is a T_STRING (from type info) or String (from runtime guard)
+        if (ctx_get_opnd_type(ctx, OPND_STACK(0)).type != ETYPE_STRING) {
+            mov(cb, REG0, b_opnd);
+            // Note: any T_STRING is valid here, but we check for a ::String for simplicity
+            jit_guard_known_klass(jit, ctx, rb_cString, OPND_STACK(0), comptime_b, SEND_MAX_DEPTH, side_exit);
+        }
+
+        // Call rb_str_eql_internal(a, b)
+        mov(cb, C_ARG_REGS[0], a_opnd);
+        mov(cb, C_ARG_REGS[1], b_opnd);
+        call_ptr(cb, REG0, (void *)rb_str_eql_internal);
+
+        // Push the output on the stack
+        cb_write_label(cb, ret);
+        ctx_stack_pop(ctx, 2);
+        x86opnd_t dst = ctx_stack_push(ctx, TYPE_IMM);
+        mov(cb, dst, RAX);
+        cb_link_labels(cb);
+
+        return true;
+    } else {
+        return false;
+    }
+}
 
 static codegen_status_t gen_opt_send_without_block(jitstate_t *jit, ctx_t *ctx);
 
 static codegen_status_t
 gen_opt_eq(jitstate_t* jit, ctx_t* ctx)
 {
-	return gen_opt_send_without_block(jit, ctx);
+    // Defer compilation so we can specialize base on a runtime receiver
+    if (!jit_at_current_insn(jit)) {
+        defer_compilation(jit->block, jit->insn_idx, ctx);
+        return YJIT_END_BLOCK;
+    }
+
+    // Create a size-exit to fall back to the interpreter
+    uint8_t *side_exit = yjit_side_exit(jit, ctx);
+
+    if (gen_equality_specialized(jit, ctx, side_exit)) {
+        jit_jump_to_next_insn(jit, ctx);
+        return YJIT_END_BLOCK;
+    } else {
+        return gen_opt_send_without_block(jit, ctx);
+    }
 }
 
 static codegen_status_t gen_send_general(jitstate_t *jit, ctx_t *ctx, struct rb_call_data *cd, rb_iseq_t *block);
