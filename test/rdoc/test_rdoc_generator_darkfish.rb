@@ -233,6 +233,20 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
     assert_includes method_name, '{ |%&lt;&lt;script&gt;alert(&quot;atui&quot;)&lt;/script&gt;&gt;, yield_arg| ... }'
   end
 
+  def test_generated_filename_with_html_tag
+    @store.add_file '"><em>should be escaped'
+    doc = @store.all_files.last
+    doc.parser = RDoc::Parser::Simple
+
+    @g.generate
+
+    Dir.glob("*.html", base: @tmpdir) do |html|
+      File.read(File.join(@tmpdir, html)).scan(/.*should be escaped.*/) do |line|
+        assert_not_include line, "<em>", html
+      end
+    end
+  end
+
   def test_template_stylesheets
     css = Tempfile.create(%W'hoge .css', Dir.mktmpdir('tmp', '.'))
     File.write(css, '')
