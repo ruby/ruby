@@ -1950,3 +1950,29 @@ assert_equal '42', %q{
 
   ractor.take
 }
+
+# Test equality with changing types
+assert_equal '[true, false, false, false]', %q{
+  def eq(a, b)
+    a == b
+  end
+
+  [
+    eq("foo", "foo"),
+    eq("foo", "bar"),
+    eq(:foo, "bar"),
+    eq("foo", :bar)
+  ]
+}
+
+# Redefined eq
+assert_equal 'true', %q{
+  class String
+    def ==(other)
+      true
+    end
+  end
+
+  "foo" == "bar"
+  "foo" == "bar"
+}
