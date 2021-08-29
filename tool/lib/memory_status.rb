@@ -95,6 +95,7 @@ if defined?(Memory::Status)
       Memory.read_status do |key, val|
         self[key] = val
       end
+      self
     end unless method_defined?(:_update)
 
     Header = members.map {|k| k.to_s.upcase.rjust(6)}.join('')
