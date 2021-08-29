@@ -256,7 +256,6 @@ module Reline
       unless confirm_multiline_termination
         raise ArgumentError.new('#readmultiline needs block to confirm multiline termination')
       end
-      context = []
       add_dialog_proc(:autocomplete, Reline::DEFAULT_DIALOG_PROC_AUTOCOMPLETE, Reline::DEFAULT_DIALOG_CONTEXT)
       add_dialog_proc(:show_doc, Reline::SHOW_DOC_DIALOG, Reline::DEFAULT_DIALOG_CONTEXT)
       inner_readline(prompt, add_hist, true, &confirm_multiline_termination)
