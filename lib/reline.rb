@@ -34,7 +34,6 @@ module Reline
       auto_indent_proc
       pre_input_hook
       dig_perfect_match_proc
-      dialog_proc_list
     ).each(&method(:attr_reader))
 
     attr_accessor :config
