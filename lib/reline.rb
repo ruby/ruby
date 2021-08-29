@@ -107,6 +107,14 @@ module Reline
       @completion_proc = p
     end
 
+    def autocompletion
+      @config.autocompletion
+    end
+
+    def autocompletion=(val)
+      @config.autocompletion = val
+    end
+
     def output_modifier_proc=(p)
       raise ArgumentError unless p.respond_to?(:call) or p.nil?
       @output_modifier_proc = p
