@@ -1426,7 +1426,11 @@ class Reline::LineEditor
         if result.is_a?(Array)
           completion_occurs = true
           process_insert
-          complete(result)
+          if @config.autocompletion
+            move_completed_list(result, :down)
+          else
+            complete(result)
+          end
         end
       end
     elsif not @config.disable_completion and @config.editing_mode_is?(:vi_insert) and ["\C-p".ord, "\C-n".ord].include?(key.char)

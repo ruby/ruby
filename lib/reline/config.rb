@@ -65,6 +65,7 @@ class Reline::Config
     @history_size = -1 # unlimited
     @keyseq_timeout = 500
     @test_mode = false
+    @autocompletion = true
   end
 
   def reset
@@ -87,6 +88,14 @@ class Reline::Config
 
   def editing_mode_is?(*val)
     (val.respond_to?(:any?) ? val : [val]).any?(@editing_mode_label)
+  end
+
+  def autocompletion=(val)
+    @autocompletion = val
+  end
+
+  def autocompletion
+    @autocompletion
   end
 
   def keymap
