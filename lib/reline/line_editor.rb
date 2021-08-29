@@ -479,8 +479,9 @@ class Reline::LineEditor
   end
 
   class DialogProcScope
-    def initialize(line_editor, proc_to_exec, context)
+    def initialize(line_editor, config, proc_to_exec, context)
       @line_editor = line_editor
+      @config = config
       @proc_to_exec = proc_to_exec
       @context = context
       @cursor_pos = Reline::CursorPos.new
@@ -519,6 +520,10 @@ class Reline::LineEditor
       @line_editor.instance_variable_get(:@completion_journey_data)
     end
 
+    def config
+      @config
+    end
+
     def call
       instance_exec(&@proc_to_exec)
     end
@@ -544,7 +549,7 @@ class Reline::LineEditor
 
   def add_dialog_proc(name, p, context = nil)
     return if @dialogs.any? { |d| d.name == name }
-    @dialogs << Dialog.new(name, DialogProcScope.new(self, p, context))
+    @dialogs << Dialog.new(name, DialogProcScope.new(self, @config, p, context))
   end
 
   DIALOG_HEIGHT = 20
@@ -1431,6 +1436,15 @@ class Reline::LineEditor
           else
             complete(result)
           end
+        end
+      end
+    elsif @config.editing_mode_is?(:emacs, :vi_insert) and key.char == :completion_journey_up
+      if not @config.disable_completion and @config.autocompletion
+        result = call_completion_proc
+        if result.is_a?(Array)
+          completion_occurs = true
+          process_insert
+          move_completed_list(result, :up)
         end
       end
     elsif not @config.disable_completion and @config.editing_mode_is?(:vi_insert) and ["\C-p".ord, "\C-n".ord].include?(key.char)

@@ -42,6 +42,14 @@ class Reline::Windows
     }.each_pair do |key, func|
       config.add_default_key_binding_by_keymap(:emacs, key, func)
     end
+
+    # Emulate ANSI key sequence.
+    {
+      [27, 91, 90] => :completion_journey_up, # S-Tab
+    }.each_pair do |key, func|
+      config.add_default_key_binding_by_keymap(:emacs, key, func)
+      config.add_default_key_binding_by_keymap(:vi_insert, key, func)
+    end
   end
 
   if defined? JRUBY_VERSION
@@ -106,6 +114,7 @@ class Reline::Windows
   SCROLLLOCK_ON = 0x0040
   SHIFT_PRESSED = 0x0010
 
+  VK_TAB = 0x09
   VK_END = 0x23
   VK_HOME = 0x24
   VK_LEFT = 0x25
@@ -199,6 +208,9 @@ class Reline::Windows
     [ { control_keys: [], virtual_key_code: VK_DELETE }, [0, 83] ],
     [ { control_keys: [], virtual_key_code: VK_HOME },   [0, 71] ],
     [ { control_keys: [], virtual_key_code: VK_END },    [0, 79] ],
+
+    # Emulate ANSI key sequence.
+    [ { control_keys: :SHIFT, virtual_key_code: VK_TAB }, [27, 91, 90] ],
   ]
 
   def self.process_key_event(repeat_count, virtual_key_code, virtual_scan_code, char_code, control_key_state)

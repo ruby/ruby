@@ -180,6 +180,7 @@ module Reline
 
     Reline::DEFAULT_DIALOG_PROC_AUTOCOMPLETE = ->() {
       # autocomplete
+      return nil unless config.autocompletion
       if just_cursor_moving and completion_journey_data.nil?
         # Auto complete starts only when edited
         return nil
