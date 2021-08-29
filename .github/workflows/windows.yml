@@ -98,12 +98,12 @@ jobs:
         timeout-minutes: 60
         run: |
           nmake test-all TESTOPTS="-j%NUMBER_OF_PROCESSORS% --job-status=normal"
-        continue-on-error: ${{ matrix.continue-on-error }}
+        continue-on-error: ${{ matrix.continue-on-error || false }}
       - name: nmake test-spec
         timeout-minutes: 10
         run: |
           nmake test-spec
-        continue-on-error: ${{ matrix.continue-on-error }}
+        continue-on-error: ${{ matrix.continue-on-error || false }}
       - uses: k0kubun/action-slack@v2.0.0
         with:
           payload: |
