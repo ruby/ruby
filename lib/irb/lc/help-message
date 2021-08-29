@@ -30,6 +30,8 @@ Usage:  irb.rb [options] [programfile] [arguments]
   --nosingleline    Don't use singleline editor module
   --colorize        Use colorization
   --nocolorize      Don't use colorization
+  --autocomplete    Use autocompletion
+  --noautocomplete  Don't use autocompletion
   --prompt prompt-mode/--prompt-mode prompt-mode
                     Switch prompt mode. Pre-defined prompt modes are
                     `default', `simple', `xmp' and `inf-ruby'

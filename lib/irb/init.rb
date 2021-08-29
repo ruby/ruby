@@ -45,6 +45,7 @@ module IRB # :nodoc:
 
     @CONF[:USE_SINGLELINE] = false unless defined?(ReadlineInputMethod)
     @CONF[:USE_COLORIZE] = !ENV['NO_COLOR']
+    @CONF[:USE_AUTOCOMPLETE] = true
     @CONF[:INSPECT_MODE] = true
     @CONF[:USE_TRACER] = false
     @CONF[:USE_LOADER] = false
@@ -274,6 +275,10 @@ module IRB # :nodoc:
         @CONF[:USE_COLORIZE] = true
       when "--nocolorize"
         @CONF[:USE_COLORIZE] = false
+      when "--autocomplete"
+        @CONF[:USE_AUTOCOMPLETE] = true
+      when "--noautocomplete"
+        @CONF[:USE_AUTOCOMPLETE] = false
       when /^--prompt-mode(?:=(.+))?/, /^--prompt(?:=(.+))?/
         opt = $1 || argv.shift
         prompt_mode = opt.upcase.tr("-", "_").intern

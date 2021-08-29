@@ -295,6 +295,10 @@ module IRB
           end
         end
       Reline.dig_perfect_match_proc = IRB::InputCompletor::PerfectMatchedProc
+      Reline.autocompletion = IRB.conf[:USE_AUTOCOMPLETE]
+      if IRB.conf[:USE_AUTOCOMPLETE]
+        Reline.add_dialog_proc(:show_doc, SHOW_DOC_DIALOG, Reline::DEFAULT_DIALOG_CONTEXT)
+      end
     end
 
     def check_termination(&block)
@@ -361,7 +365,6 @@ module IRB
       Reline.output = @stdout
       Reline.prompt_proc = @prompt_proc
       Reline.auto_indent_proc = @auto_indent_proc if @auto_indent_proc
-      Reline.add_dialog_proc(:show_doc, SHOW_DOC_DIALOG, Reline::DEFAULT_DIALOG_CONTEXT)
       if l = readmultiline(@prompt, false, &@check_termination_proc)
         HISTORY.push(l) if !l.empty?
         @line[@line_no += 1] = l + "\n"

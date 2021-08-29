@@ -54,6 +54,7 @@ module IRB
         @use_multiline = nil
       end
       @use_colorize = IRB.conf[:USE_COLORIZE]
+      @use_autocomplete = IRB.conf[:USE_AUTOCOMPLETE]
       @verbose = IRB.conf[:VERBOSE]
       @io = nil
 
@@ -185,6 +186,8 @@ module IRB
     #
     # A copy of the default <code>IRB.conf[:USE_COLORIZE]</code>
     attr_reader :use_colorize
+    # A copy of the default <code>IRB.conf[:USE_AUTOCOMPLETE]</code>
+    attr_reader :use_autocomplete
     # A copy of the default <code>IRB.conf[:INSPECT_MODE]</code>
     attr_reader :inspect_mode
 
@@ -311,6 +314,8 @@ module IRB
     alias use_readline? use_singleline
     # Alias for #use_colorize
     alias use_colorize? use_colorize
+    # Alias for #use_autocomplete
+    alias use_autocomplete? use_autocomplete
     # Alias for #rc
     alias rc? rc
     alias ignore_sigint? ignore_sigint

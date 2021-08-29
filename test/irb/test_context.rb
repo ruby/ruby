@@ -159,6 +159,7 @@ module TestIRB
 
     def test_default_config
       assert_equal(true, @context.use_colorize?)
+      assert_equal(true, @context.use_autocomplete?)
     end
 
     def test_assignment_expression
