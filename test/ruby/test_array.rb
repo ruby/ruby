@@ -1624,6 +1624,19 @@ class TestArray < Test::Unit::TestCase
     assert_raise(ArgumentError) { @cls[1].slice!(0, 0, 0) }
   end
 
+  def test_slice_out_of_range!
+    a = @cls[*(1..100).to_a]
+
+    assert_nil(a.clone.slice!(-101..-1))
+    assert_nil(a.clone.slice!(-101..))
+
+    # assert_raise_with_message(RangeError, "((-101..-1).%(2)) out of range") { a.clone.slice!((-101..-1)%2) }
+    # assert_raise_with_message(RangeError, "((-101..).%(2)) out of range") { a.clone.slice!((-101..)%2) }
+
+    assert_nil(a.clone.slice!(10, -3))
+    assert_equal @cls[], a.clone.slice!(10..7)
+  end
+
   def test_sort
     a = @cls[ 4, 1, 2, 3 ]
     assert_equal(@cls[1, 2, 3, 4], a.sort)
