@@ -133,6 +133,13 @@ def sync_default_gems(gem)
     cp_r(Dir.glob("#{upstream}/lib/reline*"), "lib")
     cp_r("#{upstream}/test/reline", "test")
     cp_r("#{upstream}/reline.gemspec", "lib/reline")
+  when "irb"
+    rm_rf(%w[lib/irb lib/irb.rb test/irb])
+    cp_r(Dir.glob("#{upstream}/lib/irb*"), "lib")
+    cp_r("#{upstream}/test/irb", "test")
+    cp_r("#{upstream}/irb.gemspec", "lib/irb")
+    cp_r("#{upstream}/man/irb.1", "man/irb.1")
+    cp_r("#{upstream}/doc/irb", "doc")
   when "json"
     rm_rf(%w[ext/json test/json])
     cp_r("#{upstream}/ext/json/ext", "ext/json")
