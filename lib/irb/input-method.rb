@@ -323,7 +323,11 @@ module IRB
       name = result[pointer]
 
       driver = RDoc::RI::Driver.new
-      name = driver.expand_name(name)
+      begin
+        name = driver.expand_name(name)
+      rescue RDoc::RI::Driver::NotFoundError
+        return nil
+      end
       doc = nil
       used_for_class = false
       if not name =~ /#|\./
