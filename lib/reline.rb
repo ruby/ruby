@@ -44,10 +44,10 @@ module Reline
 
     def initialize
       self.output = STDOUT
+      @dialog_proc_list = []
       yield self
       @completion_quote_character = nil
       @bracketed_paste_finished = false
-      @dialog_proc_list = []
     end
 
     def encoding
@@ -220,7 +220,6 @@ module Reline
       unless confirm_multiline_termination
         raise ArgumentError.new('#readmultiline needs block to confirm multiline termination')
       end
-      add_dialog_proc(:autocomplete, Reline::DEFAULT_DIALOG_PROC_AUTOCOMPLETE, Reline::DEFAULT_DIALOG_CONTEXT)
       inner_readline(prompt, add_hist, true, &confirm_multiline_termination)
 
       whole_buffer = line_editor.whole_buffer.dup
@@ -474,6 +473,7 @@ module Reline
   def_single_delegators :core, :ambiguous_width
   def_single_delegators :core, :last_incremental_search
   def_single_delegators :core, :last_incremental_search=
+  def_single_delegators :core, :add_dialog_proc
 
   def_single_delegators :core, :readmultiline
   def_instance_delegators self, :readmultiline
@@ -495,6 +495,7 @@ module Reline
       core.completer_quote_characters = '"\''
       core.filename_quote_characters = ""
       core.special_prefixes = ""
+      core.add_dialog_proc(:autocomplete, Reline::DEFAULT_DIALOG_PROC_AUTOCOMPLETE, Reline::DEFAULT_DIALOG_CONTEXT)
     }
   end
 
