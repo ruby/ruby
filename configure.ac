@@ -3751,7 +3751,7 @@ AS_CASE(["$target_os"],
 		LIBRUBY_DLDFLAGS="${LIBRUBY_DLDFLAGS}"' $(RUBYDEF)'
 	    ])
 	    EXPORT_PREFIX=' '
-	    DLDFLAGS="${DLDFLAGS}"' $(DEFFILE)'
+	    EXTDLDFLAGS='$(DEFFILE)'
 	    AC_LIBOBJ([win32/win32])
 	    AC_LIBOBJ([win32/file])
 	    COMMON_LIBS=m
