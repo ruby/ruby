@@ -1278,6 +1278,15 @@ class TestHash < Test::Unit::TestCase
     assert_raise(FrozenError) { h2.replace(42) }
   end
 
+  def test_replace_memory_leak
+    assert_no_memory_leak([], "#{<<-"begin;"}", "#{<<-'end;'}")
+    h = ("aa".."zz").each_with_index.to_h
+    10_000.times {h.dup}
+    begin;
+      500_000.times {h.dup.replace(h)}
+    end;
+  end
+
   def test_size2
     assert_equal(0, @cls[].size)
   end
