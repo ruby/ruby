@@ -315,10 +315,18 @@ $(LIBRUBY_SO):
 LIBRUBY_WITH_EXT = @LIBRUBY_WITH_EXT@
 $(LIBRUBY_$(LIBRUBY_WITH_EXT)): $(LIBRUBY_SO_UPDATE)
 
+PKG_CONFIG = @PKG_CONFIG@
 ruby_pc = @ruby_pc@
 ruby.pc: $(ruby_pc)
-$(ruby_pc): config.status
-		@./config.status --file=$@:$(srcdir)/template/ruby.pc.in
+$(ruby_pc): config.status Makefile
+	$(Q)./config.status --file=-:$(srcdir)/template/ruby.pc.in | \
+	sed -e 's/\$$(\([A-Za-z_][A-Za-z0-9_]*\))/$${\1}/g' \
+	    -e 's|^prefix=.*|prefix=$(prefix)|' \
+	    > ruby.tmp.pc
+	$(Q)pkg_config=${PKG_CONFIG} && PKG_CONFIG_PATH=. $${pkg_config:-:} --print-errors ruby.tmp
+	$(Q)$(MV) -f ruby.tmp.pc $(ruby_pc)
+
+pre-install-local:: pkgconfig-data
 
 ruby-runner.h: template/ruby-runner.h.in config.status
 		@./config.status --file=$@:$(srcdir)/template/$(@F).in
@@ -328,7 +336,7 @@ $(RBCONFIG): $(PREP)
 rbconfig.rb: $(RBCONFIG)
 
 install-cross: $(arch)-fake.rb $(RBCONFIG) rbconfig.rb $(arch_hdrdir)/ruby/config.h \
-	$(LIBRUBY_A) $(LIBRUBY_SO) $(ARCHFILE)
+	$(LIBRUBY_A) $(LIBRUBY_SO) $(ARCHFILE) pkgconfig-data
 	$(ECHO) installing cross-compiling stuff
 	$(Q) $(MAKEDIRS) $(XRUBY_RUBYLIBDIR)/$(arch) $(XRUBY_RUBYHDRDIR)/$(arch)/ruby
 	$(Q) sed '/^\$$:\.unshift/q' $(arch)-fake.rb > fake.rb

@@ -4272,21 +4272,6 @@ AC_ARG_WITH(destdir,
 	    [DESTDIR="$withval"])
 AC_SUBST(DESTDIR)
 
-AC_CONFIG_FILES($ruby_pc:template/ruby.pc.in,
-    [
-    AS_IF([sed ['s/\$(\([A-Za-z_][A-Za-z0-9_]*\))/${\1}/g;s/@[A-Za-z_][A-Za-z0-9_]*@//'] $ruby_pc > ruby.tmp.pc &&
-	{
-	    test -z "$PKG_CONFIG" ||
-	    PKG_CONFIG_PATH=. $PKG_CONFIG --print-errors ruby.tmp
-	}],
-    [
-	mv -f ruby.tmp.pc $ruby_pc
-    ], [
-	exit 1
-    ])
-    ],
-    [ruby_pc='$ruby_pc' PKG_CONFIG='$PKG_CONFIG'])
-
 AC_OUTPUT
 }
 }
