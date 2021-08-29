@@ -65,7 +65,7 @@ class Reline::Config
     @history_size = -1 # unlimited
     @keyseq_timeout = 500
     @test_mode = false
-    @autocompletion = true
+    @autocompletion = false
   end
 
   def reset
