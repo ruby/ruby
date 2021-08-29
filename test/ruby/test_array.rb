@@ -1576,6 +1576,8 @@ class TestArray < Test::Unit::TestCase
 
     assert_nil(a.slice(10, -3))
     assert_equal @cls[], a.slice(10..7)
+
+    assert_equal([100], a.slice(-1, 1_000_000_000))
   end
 
   def test_slice!
@@ -1635,6 +1637,8 @@ class TestArray < Test::Unit::TestCase
 
     assert_nil(a.clone.slice!(10, -3))
     assert_equal @cls[], a.clone.slice!(10..7)
+
+    assert_equal([100], a.clone.slice!(-1, 1_000_000_000))
   end
 
   def test_sort
