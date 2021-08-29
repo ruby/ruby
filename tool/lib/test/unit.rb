@@ -889,7 +889,7 @@ module Test
             runner.add_status(" = #$1")
           when /\A\.+\z/
             runner.succeed
-          when /\A[EFS]\z/
+          when /\A\.*[EFS][EFS.]*\z/
             runner.failed(s)
           else
             $stdout.print(s)
