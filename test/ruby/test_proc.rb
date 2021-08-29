@@ -301,15 +301,15 @@ class TestProc < Test::Unit::TestCase
 
   def test_isolated?
     b = lambda {}
-    assert_equal(false, b.isolated?)
+    assert_not_predicate(b, :isolated?)
     b = proc {}
-    assert_equal(false, b.isolated?)
+    assert_not_predicate(b, :isolated?)
     b = lambda {}
     Ractor.make_shareable(b)
-    assert_equal(true, b.isolated?)
+    assert_predicate(b, :isolated?)
     b = proc {}
     Ractor.make_shareable(b)
-    assert_equal(true, b.isolated?)
+    assert_predicate(b, :isolated?)
   end
 
   def self.helper_test_warn_lamda_with_passed_block &b
