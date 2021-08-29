@@ -29,7 +29,7 @@ begin
       write_irbrc <<~'LINES'
         puts 'start IRB'
       LINES
-      start_terminal(25, 80, %W{ruby -I#{@pwd}/lib -I#{@pwd}/../reline/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
+      start_terminal(25, 80, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
       write(<<~EOC)
         'Hello, World!'
       EOC
@@ -46,7 +46,7 @@ begin
       write_irbrc <<~'LINES'
         puts 'start IRB'
       LINES
-      start_terminal(25, 80, %W{ruby -I#{@pwd}/lib -I#{@pwd}/../reline/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
+      start_terminal(25, 80, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
       write(<<~EOC)
         class A
           def inspect; '#<A>'; end
@@ -85,7 +85,7 @@ begin
       write_irbrc <<~'LINES'
         puts 'start IRB'
       LINES
-      start_terminal(40, 80, %W{ruby -I#{@pwd}/lib -I#{@pwd}/../reline/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
+      start_terminal(40, 80, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
       write(<<~EOC)
         class A
           def inspect; '#<A>'; end
