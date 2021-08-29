@@ -209,10 +209,13 @@ module Reline
         y = 0
       end
       cursor_pos_to_render = Reline::CursorPos.new(x, y)
-      context.clear
-      context.push(cursor_pos_to_render, result, pointer)
+      if context and context.is_a?(Array)
+        context.clear
+        context.push(cursor_pos_to_render, result, pointer)
+      end
       [cursor_pos_to_render, result, pointer, nil]
     }
+    DEFAULT_DIALOG_CONTEXT = Array.new
 
     require 'rdoc'
     SHOW_DOC_DIALOG = ->() {
@@ -255,8 +258,8 @@ module Reline
         raise ArgumentError.new('#readmultiline needs block to confirm multiline termination')
       end
       context = []
-      add_dialog_proc(:autocomplete, DEFAULT_DIALOG_PROC_AUTOCOMPLETE, context)
-      add_dialog_proc(:show_doc, SHOW_DOC_DIALOG, context)
+      add_dialog_proc(:autocomplete, DEFAULT_DIALOG_PROC_AUTOCOMPLETE, DEFAULT_DIALOG_CONTEXT)
+      add_dialog_proc(:show_doc, SHOW_DOC_DIALOG, DEFAULT_DIALOG_CONTEXT)
       inner_readline(prompt, add_hist, true, &confirm_multiline_termination)
 
       whole_buffer = line_editor.whole_buffer.dup
