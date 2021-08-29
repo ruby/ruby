@@ -179,7 +179,7 @@ module Reline
       Reline::IOGate.get_screen_size
     end
 
-    DEFAULT_DIALOG_PROC_AUTOCOMPLETE = ->() {
+    Reline::DEFAULT_DIALOG_PROC_AUTOCOMPLETE = ->() {
       # autocomplete
       if just_cursor_moving and completion_journey_data.nil?
         # Auto complete starts only when edited
@@ -215,10 +215,10 @@ module Reline
       end
       [cursor_pos_to_render, result, pointer, nil]
     }
-    DEFAULT_DIALOG_CONTEXT = Array.new
+    Reline::DEFAULT_DIALOG_CONTEXT = Array.new
 
     require 'rdoc'
-    SHOW_DOC_DIALOG = ->() {
+    Reline::SHOW_DOC_DIALOG = ->() {
       if just_cursor_moving and completion_journey_data.nil?
         return nil
       end
@@ -258,8 +258,8 @@ module Reline
         raise ArgumentError.new('#readmultiline needs block to confirm multiline termination')
       end
       context = []
-      add_dialog_proc(:autocomplete, DEFAULT_DIALOG_PROC_AUTOCOMPLETE, DEFAULT_DIALOG_CONTEXT)
-      add_dialog_proc(:show_doc, SHOW_DOC_DIALOG, DEFAULT_DIALOG_CONTEXT)
+      add_dialog_proc(:autocomplete, Reline::DEFAULT_DIALOG_PROC_AUTOCOMPLETE, Reline::DEFAULT_DIALOG_CONTEXT)
+      add_dialog_proc(:show_doc, Reline::SHOW_DOC_DIALOG, Reline::DEFAULT_DIALOG_CONTEXT)
       inner_readline(prompt, add_hist, true, &confirm_multiline_termination)
 
       whole_buffer = line_editor.whole_buffer.dup
