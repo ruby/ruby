@@ -361,7 +361,7 @@ spec/bundler: test-bundler-parallel
 	$(Q)$(NULLCMD)
 
 # workaround to avoid matching non ruby files with "spec/%/" under GNU make 3.81
-spec/%_spec.c spec/%_spec.bundle:
+spec/%_spec.c spec/%_spec.$(DLEXT):
 	$(empty)
 
 spec/%/ spec/%_spec.rb: programs exts PHONY
