@@ -322,7 +322,7 @@ module IRB
       if just_cursor_moving and completion_journey_data.nil?
         return nil
       end
-      cursor_pos_to_render, result, pointer, dialog = context.pop(4)
+      cursor_pos_to_render, result, pointer, autocomplete_dialog = context.pop(4)
       return nil if result.nil? or pointer.nil? or pointer < 0
       name = result[pointer]
       name = IRB::InputCompletor.retrieve_completion_data(name, doc_namespace: true)
@@ -360,7 +360,7 @@ module IRB
       str = doc.accept(formatter)
 
       x = cursor_pos_to_render.x + 40
-      y = cursor_pos_to_render.y + pointer - dialog.scroll_top
+      y = cursor_pos_to_render.y + pointer - autocomplete_dialog.scroll_top
       DialogRenderInfo.new(pos: Reline::CursorPos.new(x, y), contents: str.split("\n"), bg_color: '49')
     }
 
