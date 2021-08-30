@@ -8145,7 +8145,7 @@ static int
 iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popped)
 {
     const int line = (int)nd_line(node);
-    const NODE *line_node = node;
+    const NODE *const line_node = node;
     const enum node_type type = nd_type(node);
     struct rb_iseq_constant_body *const body = iseq->body;
 
