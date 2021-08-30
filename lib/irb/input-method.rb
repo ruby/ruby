@@ -331,6 +331,8 @@ module IRB
         name = driver.expand_name(name)
       rescue RDoc::RI::Driver::NotFoundError
         return nil
+      rescue
+        return nil # unknown error
       end
       doc = nil
       used_for_class = false
@@ -347,6 +349,8 @@ module IRB
           driver.add_method(doc, name)
         rescue RDoc::RI::Driver::NotFoundError
           doc = nil
+        rescue
+          return nil # unknown error
         end
       end
       return nil if doc.nil?
