@@ -566,12 +566,12 @@ class Reline::LineEditor
       return
     end
     dialog.set_cursor_pos(cursor_column, @first_line_started_from + @started_from)
-    pos, result, pointer, bg = dialog.call
+    dialog_render_info = dialog.call
     old_dialog_contents = dialog.contents
     old_dialog_column = dialog.column
     old_dialog_vertical_offset = dialog.vertical_offset
-    if result and not result.empty?
-      dialog.contents = result
+    if dialog_render_info and dialog_render_info.contents and not dialog_render_info.contents.empty?
+      dialog.contents = dialog_render_info.contents
       dialog.contents = dialog.contents[0...DIALOG_HEIGHT] if dialog.contents.size > DIALOG_HEIGHT
     else
       dialog.lines_backup = {
@@ -587,32 +587,32 @@ class Reline::LineEditor
     end
     upper_space = @first_line_started_from - @started_from
     lower_space = @highest_in_all - @first_line_started_from - @started_from - 1
-    dialog.column = pos.x
+    dialog.column = dialog_render_info.pos.x
     diff = (dialog.column + DIALOG_WIDTH) - (@screen_size.last - 1)
     if diff > 0
       dialog.column -= diff
     end
-    if (lower_space + @rest_height - pos.y) >= DIALOG_HEIGHT
-      dialog.vertical_offset = pos.y + 1
+    if (lower_space + @rest_height - dialog_render_info.pos.y) >= DIALOG_HEIGHT
+      dialog.vertical_offset = dialog_render_info.pos.y + 1
     elsif upper_space >= DIALOG_HEIGHT
-      dialog.vertical_offset = pos.y + -(DIALOG_HEIGHT + 1)
+      dialog.vertical_offset = dialog_render_info.pos.y + -(DIALOG_HEIGHT + 1)
     else
-      if (lower_space + @rest_height - pos.y) < DIALOG_HEIGHT
-        scroll_down(DIALOG_HEIGHT + pos.y)
-        move_cursor_up(DIALOG_HEIGHT + pos.y)
+      if (lower_space + @rest_height - dialog_render_info.pos.y) < DIALOG_HEIGHT
+        scroll_down(DIALOG_HEIGHT + dialog_render_info.pos.y)
+        move_cursor_up(DIALOG_HEIGHT + dialog_render_info.pos.y)
       end
-      dialog.vertical_offset = pos.y + 1
+      dialog.vertical_offset = dialog_render_info.pos.y + 1
     end
     Reline::IOGate.hide_cursor
     reset_dialog(dialog, old_dialog_contents, old_dialog_column, old_dialog_vertical_offset)
     move_cursor_down(dialog.vertical_offset)
     Reline::IOGate.move_cursor_column(dialog.column)
     dialog.contents.each_with_index do |item, i|
-      if i == pointer
+      if i == dialog_render_info.pointer
         bg_color = '45'
       else
-        if bg
-          bg_color = bg
+        if dialog_render_info.bg_color
+          bg_color = dialog_render_info.bg_color
         else
           bg_color = '46'
         end
