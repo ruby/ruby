@@ -18,7 +18,7 @@ module Reline
 
   Key = Struct.new('Key', :char, :combined_char, :with_meta)
   CursorPos = Struct.new(:x, :y)
-  DialogRenderInfo = Struct.new(:pos, :contents, :pointer, :bg_color, keyword_init: true)
+  DialogRenderInfo = Struct.new(:pos, :contents, :pointer, :bg_color, :height, keyword_init: true)
 
   class Core
     ATTR_READER_NAMES = %i(

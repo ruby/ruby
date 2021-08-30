@@ -531,11 +531,12 @@ class Reline::LineEditor
 
   class Dialog
     attr_reader :name
-    attr_accessor :column, :vertical_offset, :contents, :lines_backup
+    attr_accessor :scroll_top, :column, :vertical_offset, :contents, :lines_backup
 
     def initialize(name, proc_scope)
       @name = name
       @proc_scope = proc_scope
+      @scroll_top = 0
     end
 
     def set_cursor_pos(col, row)
@@ -570,9 +571,24 @@ class Reline::LineEditor
     old_dialog_contents = dialog.contents
     old_dialog_column = dialog.column
     old_dialog_vertical_offset = dialog.vertical_offset
+    start = 0
     if dialog_render_info and dialog_render_info.contents and not dialog_render_info.contents.empty?
+      height = dialog_render_info.height || DIALOG_HEIGHT
+      pointer = dialog_render_info.pointer
       dialog.contents = dialog_render_info.contents
-      dialog.contents = dialog.contents[0...DIALOG_HEIGHT] if dialog.contents.size > DIALOG_HEIGHT
+      if dialog.contents.size > height
+        if dialog_render_info.pointer
+          if dialog_render_info.pointer < 0
+            dialog.scroll_top = 0
+          elsif (dialog_render_info.pointer - dialog.scroll_top) >= (height - 1)
+            dialog.scroll_top = dialog_render_info.pointer - (height - 1)
+          elsif (dialog_render_info.pointer - dialog.scroll_top) < 0
+            dialog.scroll_top = dialog_render_info.pointer
+          end
+          pointer = dialog_render_info.pointer - dialog.scroll_top
+        end
+        dialog.contents = dialog.contents[dialog.scroll_top, height]
+      end
     else
       dialog.lines_backup = {
         lines: modify_lines(whole_lines),
@@ -592,14 +608,14 @@ class Reline::LineEditor
     if diff > 0
       dialog.column -= diff
     end
-    if (lower_space + @rest_height - dialog_render_info.pos.y) >= DIALOG_HEIGHT
+    if (lower_space + @rest_height - dialog_render_info.pos.y) >= height
       dialog.vertical_offset = dialog_render_info.pos.y + 1
-    elsif upper_space >= DIALOG_HEIGHT
-      dialog.vertical_offset = dialog_render_info.pos.y + -(DIALOG_HEIGHT + 1)
+    elsif upper_space >= height
+      dialog.vertical_offset = dialog_render_info.pos.y + -(height + 1)
     else
-      if (lower_space + @rest_height - dialog_render_info.pos.y) < DIALOG_HEIGHT
-        scroll_down(DIALOG_HEIGHT + dialog_render_info.pos.y)
-        move_cursor_up(DIALOG_HEIGHT + dialog_render_info.pos.y)
+      if (lower_space + @rest_height - dialog_render_info.pos.y) < height
+        scroll_down(height + dialog_render_info.pos.y)
+        move_cursor_up(height + dialog_render_info.pos.y)
       end
       dialog.vertical_offset = dialog_render_info.pos.y + 1
     end
@@ -608,7 +624,7 @@ class Reline::LineEditor
     move_cursor_down(dialog.vertical_offset)
     Reline::IOGate.move_cursor_column(dialog.column)
     dialog.contents.each_with_index do |item, i|
-      if i == dialog_render_info.pointer
+      if i == pointer
         bg_color = '45'
       else
         if dialog_render_info.bg_color
