@@ -186,11 +186,9 @@ jobs:
       - run: ./autogen.sh
         working-directory: src
       - name: Run configure
-        run: ../src/configure -C ${default_configure} ${append_configure} --with-gcc="${default_cc} ${append_cc}"
-        if: ${{ matrix.entry.key != 'crosshost' }}
-      - name: Run cross configure
-        run: ../src/configure -C ${default_configure} ${append_configure} --host="${crosshost}"
-        if: ${{ matrix.entry.key == 'crosshost' }}
+        run: >
+          ../src/configure -C ${default_configure} ${append_configure}
+          ${{ matrix.entry.key == 'crosshost' && '--host="${crosshost}"' || '--with-gcc="${default_cc} ${append_cc}"' }}
       - run: $make extract-extlibs
       - run: $make incs
       - run: $make
