@@ -325,6 +325,7 @@ module IRB
       cursor_pos_to_render, result, pointer = context.pop(3)
       return nil if result.nil? or pointer.nil?
       name = result[pointer]
+      name = IRB::InputCompletor.retrieve_completion_data(name, doc_namespace: true)
 
       driver = RDoc::RI::Driver.new
       begin
