@@ -222,7 +222,7 @@ module Reline
         context.clear
         context.push(cursor_pos_to_render, result, pointer)
       end
-      DialogRenderInfo.new(pos: cursor_pos_to_render, contents: result, pointer: pointer)
+      DialogRenderInfo.new(pos: cursor_pos_to_render, contents: result, pointer: pointer, height: 15)
     }
     Reline::DEFAULT_DIALOG_CONTEXT = Array.new
 
