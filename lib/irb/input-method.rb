@@ -322,7 +322,7 @@ module IRB
       if just_cursor_moving and completion_journey_data.nil?
         return nil
       end
-      cursor_pos_to_render, result, pointer = context.pop(3)
+      cursor_pos_to_render, result, pointer, dialog = context.pop(4)
       return nil if result.nil? or pointer.nil? or pointer < 0
       name = result[pointer]
       name = IRB::InputCompletor.retrieve_completion_data(name, doc_namespace: true)
