@@ -323,7 +323,7 @@ module IRB
         return nil
       end
       cursor_pos_to_render, result, pointer = context.pop(3)
-      return nil if result.nil? or pointer.nil?
+      return nil if result.nil? or pointer.nil? or pointer < 0
       name = result[pointer]
       name = IRB::InputCompletor.retrieve_completion_data(name, doc_namespace: true)
 
