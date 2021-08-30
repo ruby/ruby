@@ -1806,26 +1806,36 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
     io = rb_attr_get(self, id_i_io);
     GetOpenFile(io, fptr);
     if (ssl_started(ssl)) {
-	for (;;){
+        rb_str_locktmp(str);
+        for (;;) {
 	    nread = SSL_read(ssl, RSTRING_PTR(str), ilen);
 	    switch(ssl_get_error(ssl, nread)){
 	    case SSL_ERROR_NONE:
+                rb_str_unlocktmp(str);
 		goto end;
 	    case SSL_ERROR_ZERO_RETURN:
+                rb_str_unlocktmp(str);
 		if (no_exception_p(opts)) { return Qnil; }
 		rb_eof_error();
 	    case SSL_ERROR_WANT_WRITE:
-		if (no_exception_p(opts)) { return sym_wait_writable; }
-                write_would_block(nonblock);
+                if (nonblock) {
+                    rb_str_unlocktmp(str);
+                    if (no_exception_p(opts)) { return sym_wait_writable; }
+                    write_would_block(nonblock);
+                }
                 io_wait_writable(fptr);
                 continue;
 	    case SSL_ERROR_WANT_READ:
-		if (no_exception_p(opts)) { return sym_wait_readable; }
-                read_would_block(nonblock);
+                if (nonblock) {
+                    rb_str_unlocktmp(str);
+                    if (no_exception_p(opts)) { return sym_wait_readable; }
+                    read_would_block(nonblock);
+                }
                 io_wait_readable(fptr);
 		continue;
 	    case SSL_ERROR_SYSCALL:
 		if (!ERR_peek_error()) {
+                    rb_str_unlocktmp(str);
 		    if (errno)
 			rb_sys_fail(0);
 		    else {
@@ -1842,6 +1852,7 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
 		}
                 /* fall through */
 	    default:
+                rb_str_unlocktmp(str);
 		ossl_raise(eSSLError, "SSL_read");
 	    }
         }
