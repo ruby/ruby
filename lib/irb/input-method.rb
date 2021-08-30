@@ -359,7 +359,9 @@ module IRB
       formatter.width = 40
       str = doc.accept(formatter)
 
-      [Reline::CursorPos.new(cursor_pos_to_render.x + 40, cursor_pos_to_render.y + pointer), str.split("\n"), nil, '49']
+      x = cursor_pos_to_render.x + 40
+      y = cursor_pos_to_render.y + pointer - dialog.scroll_top
+      DialogRenderInfo.new(pos: Reline::CursorPos.new(x, y), contents: str.split("\n"), bg_color: '49')
     }
 
     # Reads the next line from this input method.
