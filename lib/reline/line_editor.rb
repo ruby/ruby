@@ -499,6 +499,14 @@ class Reline::LineEditor
       @line_editor.call_completion_proc_with_checking_args(pre, target, post)
     end
 
+    def set_dialog(dialog)
+      @dialog = dialog
+    end
+
+    def dialog
+      @dialog
+    end
+
     def set_cursor_pos(col, row)
       @cursor_pos.x = col
       @cursor_pos.y = row
@@ -544,6 +552,7 @@ class Reline::LineEditor
     end
 
     def call
+      @proc_scope.set_dialog(self)
       @proc_scope.call
     end
   end

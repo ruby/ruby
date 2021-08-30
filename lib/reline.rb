@@ -220,7 +220,7 @@ module Reline
       cursor_pos_to_render = Reline::CursorPos.new(x, y)
       if context and context.is_a?(Array)
         context.clear
-        context.push(cursor_pos_to_render, result, pointer)
+        context.push(cursor_pos_to_render, result, pointer, dialog)
       end
       DialogRenderInfo.new(pos: cursor_pos_to_render, contents: result, pointer: pointer, height: 15)
     }
