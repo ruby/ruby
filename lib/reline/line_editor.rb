@@ -580,7 +580,6 @@ class Reline::LineEditor
     old_dialog_contents = dialog.contents
     old_dialog_column = dialog.column
     old_dialog_vertical_offset = dialog.vertical_offset
-    start = 0
     if dialog_render_info and dialog_render_info.contents and not dialog_render_info.contents.empty?
       height = dialog_render_info.height || DIALOG_HEIGHT
       pointer = dialog_render_info.pointer
