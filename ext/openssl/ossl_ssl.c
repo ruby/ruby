@@ -1912,21 +1912,21 @@ ossl_ssl_write_internal(VALUE self, VALUE str, VALUE opts)
     int nwrite = 0;
     rb_io_t *fptr;
     int nonblock = opts != Qfalse;
-    VALUE io;
+    VALUE tmp, io;
 
-    StringValue(str);
+    tmp = rb_str_new_frozen(StringValue(str));
     GetSSL(self, ssl);
     io = rb_attr_get(self, id_i_io);
     GetOpenFile(io, fptr);
     if (ssl_started(ssl)) {
-	for (;;){
-	    int num = RSTRING_LENINT(str);
+	for (;;) {
+	    int num = RSTRING_LENINT(tmp);
 
 	    /* SSL_write(3ssl) manpage states num == 0 is undefined */
 	    if (num == 0)
 		goto end;
 
-	    nwrite = SSL_write(ssl, RSTRING_PTR(str), num);
+	    nwrite = SSL_write(ssl, RSTRING_PTR(tmp), num);
 	    switch(ssl_get_error(ssl, nwrite)){
 	    case SSL_ERROR_NONE:
 		goto end;
