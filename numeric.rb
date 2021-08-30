@@ -70,6 +70,17 @@ class Integer
     Primitive.cexpr! 'rb_int_comp(self)'
   end
 
+  # call-seq:
+  #    int.abs        ->  integer
+  #    int.magnitude  ->  integer
+  #
+  # Returns the absolute value of +int+.
+  #
+  #    (-12345).abs   #=> 12345
+  #    -12345.abs     #=> 12345
+  #    12345.abs      #=> 12345
+  #
+  # Integer#magnitude is an alias for Integer#abs.
   def abs
     Primitive.attr! 'inline'
     Primitive.cexpr! 'rb_int_abs(self)'
@@ -138,10 +149,13 @@ class Integer
     return true
   end
 
+  alias magnitude abs
+=begin
   def magnitude
     Primitive.attr! 'inline'
     Primitive.cexpr! 'rb_int_abs(self)'
   end
+=end
 
   #  call-seq:
   #     int.odd?  ->  true or false

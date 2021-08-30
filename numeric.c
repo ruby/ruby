@@ -4670,22 +4670,6 @@ int_to_f(VALUE num)
     return DBL2NUM(val);
 }
 
-/*
- *  Document-method: Integer#abs
- *  Document-method: Integer#magnitude
- *  call-seq:
- *     int.abs        ->  integer
- *     int.magnitude  ->  integer
- *
- *  Returns the absolute value of +int+.
- *
- *     (-12345).abs   #=> 12345
- *     -12345.abs     #=> 12345
- *     12345.abs      #=> 12345
- *
- *  Integer#magnitude is an alias for Integer#abs.
- */
-
 static VALUE
 fix_abs(VALUE fix)
 {
