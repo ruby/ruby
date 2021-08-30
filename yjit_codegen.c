@@ -382,17 +382,11 @@ yjit_gen_leave_exit(codeblock_t *cb)
 {
     uint8_t *code_ptr = cb_get_ptr(cb, cb->write_pos);
 
-    // Note, gen_leave() fully reconstructs interpreter state before
-    // coming here.
+    // Note, gen_leave() fully reconstructs interpreter state and leaves the
+    // return value in RAX before coming here.
 
     // Every exit to the interpreter should be counted
     GEN_COUNTER_INC(cb, leave_interp_return);
-
-    // GEN_COUNTER_INC clobbers RAX, so put the top of the stack
-    // in to RAX and return.
-    mov(cb, RAX, mem_opnd(64, REG_SP, -SIZEOF_VALUE));
-    sub(cb, member_opnd(REG_CFP, rb_control_frame_t, sp), imm_opnd(SIZEOF_VALUE));
-    mov(cb, REG_SP, member_opnd(REG_CFP, rb_control_frame_t, sp));
 
     pop(cb, REG_SP);
     pop(cb, REG_EC);
@@ -3029,9 +3023,8 @@ gen_send_cfunc(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const 
     // cfunc calls may corrupt types
     ctx_clear_local_types(ctx);
 
-    // Note: gen_send_iseq() jumps to the next instruction with ctx->sp_offset == 0
-    // after the call, while this does not. This difference prevents
-    // the two call types from sharing the same successor.
+    // Note: the return block of gen_send_iseq() has ctx->sp_offset == 1
+    // which allows for sharing the same successor.
 
     // Jump (fall through) to the call continuation block
     // We do this to end the current block after the call
@@ -3292,11 +3285,12 @@ gen_send_iseq(jitstate_t *jit, ctx_t *ctx, const struct rb_callinfo *ci, const r
     ctx_clear_local_types(ctx);
 
     // Pop arguments and receiver in return context, push the return value
-    // After the return, the JIT and interpreter SP will match up
+    // After the return, sp_offset will be 1. The codegen for leave writes
+    // the return value in case of JIT-to-JIT return.
     ctx_t return_ctx = *ctx;
     ctx_stack_pop(&return_ctx, argc + 1);
     ctx_stack_push(&return_ctx, TYPE_UNKNOWN);
-    return_ctx.sp_offset = 0;
+    return_ctx.sp_offset = 1;
     return_ctx.chain_depth = 0;
 
     // Write the JIT return address on the callee frame
@@ -3630,11 +3624,10 @@ gen_leave(jitstate_t* jit, ctx_t* ctx)
     add(cb, REG_CFP, imm_opnd(sizeof(rb_control_frame_t)));
     mov(cb, member_opnd(REG_EC, rb_execution_context_t, cfp), REG_CFP);
 
-    // Push the return value on the caller frame
-    // The SP points one above the topmost value
-    add(cb, member_opnd(REG_CFP, rb_control_frame_t, sp), imm_opnd(SIZEOF_VALUE));
+    // Reload REG_SP for the caller and write the return value.
+    // Top of the stack is REG_SP[0] since the caller has sp_offset=1.
     mov(cb, REG_SP, member_opnd(REG_CFP, rb_control_frame_t, sp));
-    mov(cb, mem_opnd(64, REG_SP, -SIZEOF_VALUE), REG0);
+    mov(cb, mem_opnd(64, REG_SP, 0), REG0);
 
     // Jump to the JIT return address on the frame that was just popped
     const int32_t offset_to_jit_return = -((int32_t)sizeof(rb_control_frame_t)) + (int32_t)offsetof(rb_control_frame_t, jit_return);
