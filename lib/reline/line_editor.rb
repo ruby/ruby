@@ -589,7 +589,7 @@ class Reline::LineEditor
     end
     dialog.set_cursor_pos(cursor_column, @first_line_started_from + @started_from)
     dialog_render_info = dialog.call
-    dialog.width = dialog_render_info.width if dialog_render_info.width
+    dialog.width = dialog_render_info.width if dialog_render_info and dialog_render_info.width
     old_dialog = dialog.clone
     if dialog_render_info and dialog_render_info.contents and not dialog_render_info.contents.empty?
       height = dialog_render_info.height || DIALOG_HEIGHT
