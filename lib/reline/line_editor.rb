@@ -589,26 +589,7 @@ class Reline::LineEditor
     end
     dialog.set_cursor_pos(cursor_column, @first_line_started_from + @started_from)
     dialog_render_info = dialog.call
-    old_dialog = dialog.clone
-    if dialog_render_info and dialog_render_info.contents and not dialog_render_info.contents.empty?
-      dialog.width = dialog_render_info.width if dialog_render_info.width
-      height = dialog_render_info.height || DIALOG_HEIGHT
-      pointer = dialog_render_info.pointer
-      dialog.contents = dialog_render_info.contents
-      if dialog.contents.size > height
-        if dialog_render_info.pointer
-          if dialog_render_info.pointer < 0
-            dialog.scroll_top = 0
-          elsif (dialog_render_info.pointer - dialog.scroll_top) >= (height - 1)
-            dialog.scroll_top = dialog_render_info.pointer - (height - 1)
-          elsif (dialog_render_info.pointer - dialog.scroll_top) < 0
-            dialog.scroll_top = dialog_render_info.pointer
-          end
-          pointer = dialog_render_info.pointer - dialog.scroll_top
-        end
-        dialog.contents = dialog.contents[dialog.scroll_top, height]
-      end
-    else
+    if dialog_render_info.nil? or dialog_render_info.contents.nil? or dialog_render_info.contents.empty?
       dialog.lines_backup = {
         lines: modify_lines(whole_lines),
         line_index: @line_index,
@@ -619,6 +600,24 @@ class Reline::LineEditor
       clear_each_dialog(dialog)
       dialog.contents = nil
       return
+    end
+    old_dialog = dialog.clone
+    dialog.width = dialog_render_info.width if dialog_render_info.width
+    height = dialog_render_info.height || DIALOG_HEIGHT
+    pointer = dialog_render_info.pointer
+    dialog.contents = dialog_render_info.contents
+    if dialog.contents.size > height
+      if dialog_render_info.pointer
+        if dialog_render_info.pointer < 0
+          dialog.scroll_top = 0
+        elsif (dialog_render_info.pointer - dialog.scroll_top) >= (height - 1)
+          dialog.scroll_top = dialog_render_info.pointer - (height - 1)
+        elsif (dialog_render_info.pointer - dialog.scroll_top) < 0
+          dialog.scroll_top = dialog_render_info.pointer
+        end
+        pointer = dialog_render_info.pointer - dialog.scroll_top
+      end
+      dialog.contents = dialog.contents[dialog.scroll_top, height]
     end
     upper_space = @first_line_started_from - @started_from
     lower_space = @highest_in_all - @first_line_started_from - @started_from - 1
