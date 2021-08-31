@@ -1444,6 +1444,85 @@ assert_equal '[:B, [:B, :m]]', %q{
   ins.bar
 }
 
+# invokesuper changed ancestor
+assert_equal '[:A, [:M, :B]]', %q{
+  class B
+    def foo
+      :B
+    end
+  end
+
+  class A < B
+    def foo
+      [:A, super]
+    end
+  end
+
+  module M
+    def foo
+      [:M, super]
+    end
+  end
+
+  ins = A.new
+  ins.foo
+  ins.foo
+  A.include(M)
+  ins.foo
+}
+
+# invokesuper changed ancestor via prepend
+assert_equal '[:A, [:M, :B]]', %q{
+  class B
+    def foo
+      :B
+    end
+  end
+
+  class A < B
+    def foo
+      [:A, super]
+    end
+  end
+
+  module M
+    def foo
+      [:M, super]
+    end
+  end
+
+  ins = A.new
+  ins.foo
+  ins.foo
+  B.prepend(M)
+  ins.foo
+}
+
+# invokesuper replaced method
+assert_equal '[:A, :Btwo]', %q{
+  class B
+    def foo
+      :B
+    end
+  end
+
+  class A < B
+    def foo
+      [:A, super]
+    end
+  end
+
+  ins = A.new
+  ins.foo
+  ins.foo
+  class B
+    def foo
+      :Btwo
+    end
+  end
+  ins.foo
+}
+
 # Call to fixnum
 assert_equal '[true, false]', %q{
   def is_odd(obj)
