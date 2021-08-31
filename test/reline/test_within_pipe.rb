@@ -28,20 +28,17 @@ class Reline::WithinPipeTest < Reline::TestCase
   end
 
   def test_simple_input
-    omit
     @writer.write("abc\n")
     assert_equal 'abc', Reline.readmultiline(&proc{ true })
   end
 
   def test_unknown_macro
-    omit
     @config.add_default_key_binding('abc'.bytes, :unknown_macro)
     @writer.write("abcd\n")
     assert_equal 'd', Reline.readmultiline(&proc{ true })
   end
 
   def test_macro_commands_for_moving
-    omit
     @config.add_default_key_binding("\C-x\C-a".bytes, :beginning_of_line)
     @config.add_default_key_binding("\C-x\C-e".bytes, :end_of_line)
     @config.add_default_key_binding("\C-x\C-f".bytes, :forward_char)
@@ -53,7 +50,6 @@ class Reline::WithinPipeTest < Reline::TestCase
   end
 
   def test_macro_commands_for_editing
-    omit
     @config.add_default_key_binding("\C-x\C-d".bytes, :delete_char)
     @config.add_default_key_binding("\C-x\C-h".bytes, :backward_delete_char)
     @config.add_default_key_binding("\C-x\C-v".bytes, :quoted_insert)
@@ -68,7 +64,6 @@ class Reline::WithinPipeTest < Reline::TestCase
   end
 
   def test_delete_text_in_multiline
-    omit
     @writer.write("abc\ndef\nxyz\n")
     result = Reline.readmultiline(&proc{ |str|
       if str.include?('xyz')
