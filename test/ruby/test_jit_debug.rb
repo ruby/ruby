@@ -7,6 +7,8 @@ return if ENV['RUBY_DEBUG']&.include?('ci') # ci.rvm.jp
 return if /mswin/ =~ RUBY_PLATFORM
 
 class TestJITDebug < TestJIT
+  @@test_suites.delete TestJIT if self.respond_to? :on_parallel_worker?
+
   def setup
     super
     # let `#eval_with_jit` use --jit-debug

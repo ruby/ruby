@@ -611,6 +611,14 @@ class TestRDocStore < XrefTestCase
     assert_equal page, @store.page('PAGE')
   end
 
+  def test_page_with_extension
+    page = @store.add_file 'PAGE.txt', parser: RDoc::Parser::Simple
+
+    assert_nil @store.page 'no such page'
+
+    assert_equal page, @store.page('PAGE.txt')
+  end
+
   def test_save
     FileUtils.mkdir_p @tmpdir
 

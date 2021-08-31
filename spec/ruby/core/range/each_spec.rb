@@ -32,25 +32,35 @@ describe "Range#each" do
     a.should == [x, y]
   end
 
-  ruby_version_is "2.6" do
-    it "works with endless ranges" do
-      a = []
-      eval("(-2..)").each { |x| break if x > 2; a << x }
-      a.should == [-2, -1, 0, 1, 2]
+  it "works for non-ASCII ranges" do
+    a = []
+    ('Σ'..'Ω').each { |i| a << i }
+    a.should == ["Σ", "Τ", "Υ", "Φ", "Χ", "Ψ", "Ω"]
+  end
 
-      a = []
-      eval("(-2...)").each { |x| break if x > 2; a << x }
-      a.should == [-2, -1, 0, 1, 2]
-    end
+  it "works with endless ranges" do
+    a = []
+    eval("(-2..)").each { |x| break if x > 2; a << x }
+    a.should == [-2, -1, 0, 1, 2]
 
-    it "works with String endless ranges" do
-      a = []
-      eval("('A'..)").each { |x| break if x > "D"; a << x }
-      a.should == ["A", "B", "C", "D"]
+    a = []
+    eval("(-2...)").each { |x| break if x > 2; a << x }
+    a.should == [-2, -1, 0, 1, 2]
+  end
 
-      a = []
-      eval("('A'...)").each { |x| break if x > "D"; a << x }
-      a.should == ["A", "B", "C", "D"]
+  it "works with String endless ranges" do
+    a = []
+    eval("('A'..)").each { |x| break if x > "D"; a << x }
+    a.should == ["A", "B", "C", "D"]
+
+    a = []
+    eval("('A'...)").each { |x| break if x > "D"; a << x }
+    a.should == ["A", "B", "C", "D"]
+  end
+
+  ruby_version_is "2.7" do
+    it "raises a TypeError beginless ranges" do
+      -> { eval("(..2)").each { |x| x } }.should raise_error(TypeError)
     end
   end
 

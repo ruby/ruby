@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Bundler::Molinillo
-  # Provides information about specifcations and dependencies to the resolver,
+  # Provides information about specifications and dependencies to the resolver,
   # allowing the {Resolver} class to remain generic while still providing power
   # and flexibility.
   #
@@ -43,6 +43,17 @@ module Bundler::Molinillo
     #   context of the current `activated` dependency graph.
     def requirement_satisfied_by?(requirement, activated, spec)
       true
+    end
+
+    # Determines whether two arrays of dependencies are equal, and thus can be
+    # grouped.
+    #
+    # @param [Array<Object>] dependencies
+    # @param [Array<Object>] other_dependencies
+    # @return [Boolean] whether `dependencies` and `other_dependencies` should
+    #   be considered equal.
+    def dependencies_equal?(dependencies, other_dependencies)
+      dependencies == other_dependencies
     end
 
     # Returns the name for the given `dependency`.

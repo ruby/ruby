@@ -4,7 +4,7 @@
 require 'erb'
 require 'fileutils'
 require 'pathname'
-require 'rdoc/generator/markup'
+require_relative 'markup'
 
 ##
 # Darkfish RDoc HTML Generator

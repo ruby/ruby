@@ -126,6 +126,7 @@ module IRB
             print "\e[H" + buff
             sleep 0.05
           end
+        rescue Interrupt
         ensure
           print "\e[0m\e[?1049l"
         end
@@ -134,4 +135,4 @@ module IRB
   end
 end
 
-IRB.send(:easter_egg, ARGV[0]&.to_sym) if $0 == __FILE__
+IRB.__send__(:easter_egg, ARGV[0]&.to_sym) if $0 == __FILE__

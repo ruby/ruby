@@ -57,15 +57,6 @@ module Gem::QueryUtils
     "--local --name-matches // --no-details --versions --no-installed"
   end
 
-  def description # :nodoc:
-    <<-EOF
-The query command is the basis for the list and search commands.
-
-You should really use the list and search commands instead.  This command
-is too hard to use.
-    EOF
-  end
-
   def execute
     gem_names = Array(options[:name])
 

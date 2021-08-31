@@ -5,11 +5,18 @@
 #
 
 class Gem::UriParser
+  def self.parse_uri(source_uri)
+    return source_uri unless source_uri.is_a?(String)
+
+    new.parse(source_uri)
+  end
 
   ##
   # Parses the #uri, raising if it's invalid
 
   def parse!(uri)
+    require "uri"
+
     raise URI::InvalidURIError unless uri
 
     # Always escape URI's to deal with potential spaces and such
@@ -32,5 +39,4 @@ class Gem::UriParser
   rescue URI::InvalidURIError
     uri
   end
-
 end

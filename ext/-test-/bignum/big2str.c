@@ -12,7 +12,7 @@ big(VALUE x)
 }
 
 static VALUE
-big2str_generic(VALUE x, VALUE vbase)
+big2str_generic(VALUE klass, VALUE x, VALUE vbase)
 {
     int base = NUM2INT(vbase);
     if (base < 2 || 36 < base)
@@ -23,7 +23,7 @@ big2str_generic(VALUE x, VALUE vbase)
 #define POW2_P(x) (((x)&((x)-1))==0)
 
 static VALUE
-big2str_poweroftwo(VALUE x, VALUE vbase)
+big2str_poweroftwo(VALUE klass, VALUE x, VALUE vbase)
 {
     int base = NUM2INT(vbase);
     if (base < 2 || 36 < base || !POW2_P(base))
@@ -33,7 +33,7 @@ big2str_poweroftwo(VALUE x, VALUE vbase)
 
 #if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)
 static VALUE
-big2str_gmp(VALUE x, VALUE vbase)
+big2str_gmp(VALUE klass, VALUE x, VALUE vbase)
 {
     int base = NUM2INT(vbase);
     if (base < 2 || 36 < base)
@@ -47,7 +47,7 @@ big2str_gmp(VALUE x, VALUE vbase)
 void
 Init_big2str(VALUE klass)
 {
-    rb_define_method(rb_cInteger, "big2str_generic", big2str_generic, 1);
-    rb_define_method(rb_cInteger, "big2str_poweroftwo", big2str_poweroftwo, 1);
-    rb_define_method(rb_cInteger, "big2str_gmp", big2str_gmp, 1);
+    rb_define_singleton_method(klass, "big2str_generic", big2str_generic, 2);
+    rb_define_singleton_method(klass, "big2str_poweroftwo", big2str_poweroftwo, 2);
+    rb_define_singleton_method(klass, "big2str_gmp", big2str_gmp, 2);
 }

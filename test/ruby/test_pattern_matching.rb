@@ -272,7 +272,7 @@ class TestPatternMatching < Test::Unit::TestCase
     end
 
     assert_syntax_error(%q{
-      0 in [a, a]
+      0 => [a, a]
     }, /duplicated variable name/)
   end
 
@@ -398,6 +398,53 @@ END
       case [0, 0]
       in a, ^a
         a == 0
+      end
+    end
+
+    assert_block do
+      @a = /a/
+      case 'abc'
+      in ^@a
+        true
+      end
+    end
+
+    assert_block do
+      @@TestPatternMatching = /a/
+      case 'abc'
+      in ^@@TestPatternMatching
+        true
+      end
+    end
+
+    assert_block do
+      $TestPatternMatching = /a/
+      case 'abc'
+      in ^$TestPatternMatching
+        true
+      end
+    end
+  end
+
+  def test_pin_operator_expr_pattern
+    assert_block do
+      case 'abc'
+        in ^(/a/)
+        true
+      end
+    end
+
+    assert_block do
+      case {name: '2.6', released_at: Time.new(2018, 12, 25)}
+        in {released_at: ^(Time.new(2010)..Time.new(2020))}
+        true
+      end
+    end
+
+    assert_block do
+      case 0
+      in ^(0+0)
+        true
       end
     end
   end
@@ -737,10 +784,10 @@ END
   end
 
   def test_find_pattern
-    [0, 1, 2] in [*, 1 => a, *]
+    [0, 1, 2] => [*, 1 => a, *]
     assert_equal(1, a)
 
-    [0, 1, 2] in [*a, 1 => b, *c]
+    [0, 1, 2] => [*a, 1 => b, *c]
     assert_equal([0], a)
     assert_equal(1, b)
     assert_equal([2], c)
@@ -763,7 +810,7 @@ END
       end
     end
 
-    [0, 1, 2] in [*a, 1 => b, 2 => c, *d]
+    [0, 1, 2] => [*a, 1 => b, 2 => c, *d]
     assert_equal([0], a)
     assert_equal(1, b)
     assert_equal(2, c)
@@ -789,6 +836,17 @@ END
         false
       in Array[*, 1, *]
         true
+      end
+    end
+
+    # https://bugs.ruby-lang.org/issues/17534
+    assert_block do
+      case [0, 1, 2]
+      in x
+        x = x # avoid a warning "assigned but unused variable - x"
+        true
+      in [*, 2, *]
+        false
       end
     end
   end
@@ -1162,6 +1220,10 @@ END
     end
   end
 
+  def test_nomatchingpatternerror
+    assert_equal(StandardError, NoMatchingPatternError.superclass)
+  end
+
   def test_invalid_syntax
     assert_syntax_error(%q{
       case 0
@@ -1259,6 +1321,94 @@ END
       in {**r}
         assert_equal({a: 0, b: 0, c: 0}, r)
         C.keys == nil
+      end
+    end
+  end
+
+  ################################################################
+
+  class CDeconstructCache
+    def initialize(v)
+      @v = v
+    end
+
+    def deconstruct
+      @v.shift
+    end
+  end
+
+  def test_deconstruct_cache
+    assert_block do
+      case CDeconstructCache.new([[0]])
+      in [1]
+      in [0]
+        true
+      end
+    end
+
+    assert_block do
+      case CDeconstructCache.new([[0, 1]])
+      in [1,]
+      in [0,]
+        true
+      end
+    end
+
+    assert_block do
+      case CDeconstructCache.new([[[0]]])
+      in [[1]]
+      in [[*a]]
+        a == [0]
+      end
+    end
+
+    assert_block do
+      case CDeconstructCache.new([[0]])
+      in [x] if x > 0
+      in [0]
+        true
+      end
+    end
+
+    assert_block do
+      case CDeconstructCache.new([[0]])
+      in []
+      in [1] | [0]
+        true
+      end
+    end
+
+    assert_block do
+      case CDeconstructCache.new([[0]])
+      in [1] => _
+      in [0] => _
+        true
+      end
+    end
+
+    assert_block do
+      case CDeconstructCache.new([[0]])
+      in C[0]
+      in CDeconstructCache[0]
+        true
+      end
+    end
+
+    assert_block do
+      case [CDeconstructCache.new([[0], [1]])]
+      in [[1]]
+        false
+      in [[1]]
+        true
+      end
+    end
+
+    assert_block do
+      case CDeconstructCache.new([[0, :a, 1]])
+      in [*, String => x, *]
+        false
+      in [*, Symbol => x, *]
+        x == :a
       end
     end
   end
@@ -1363,19 +1513,22 @@ END
 
   ################################################################
 
-  def test_modifier_in
-    1 in a
+  def test_one_line
+    1 => a
     assert_equal 1, a
     assert_raise(NoMatchingPatternError) do
-      {a: 1} in {a: 0}
+      {a: 1} => {a: 0}
     end
-    assert_syntax_error("if {} in {a:}; end", /void value expression/)
-    assert_syntax_error(%q{
-      1 in a, b
-    }, /unexpected/, '[ruby-core:95098]')
-    assert_syntax_error(%q{
-      1 in a:
-    }, /unexpected/, '[ruby-core:95098]')
+
+    [1, 2] => a, b
+    assert_equal 1, a
+    assert_equal 2, b
+
+    {a: 1} => a:
+    assert_equal 1, a
+
+    assert_equal true, (1 in 1)
+    assert_equal false, (1 in 2)
   end
 
   def assert_experimental_warning(code)
@@ -1385,14 +1538,140 @@ END
     assert_warn('') {eval(code)}
 
     Warning[:experimental] = true
-    assert_warn(/Pattern matching is experimental/) {eval(code)}
+    assert_warn(/is experimental/) {eval(code)}
   ensure
     Warning[:experimental] = w
   end
 
   def test_experimental_warning
-    assert_experimental_warning("case 0; in 0; end")
-    assert_experimental_warning("0 in 0")
+    assert_experimental_warning("case [0]; in [*, 0, *]; end")
+  end
+
+  ################################################################
+
+  def test_single_pattern_error_value_pattern
+    assert_raise_with_message(NoMatchingPatternError, "0: 1 === 0 does not return true") do
+      0 => 1
+    end
+  end
+
+  def test_single_pattern_error_array_pattern
+    assert_raise_with_message(NoMatchingPatternError, "[]: Hash === [] does not return true") do
+      [] => Hash[]
+    end
+
+    assert_raise_with_message(NoMatchingPatternError, "0: 0 does not respond to #deconstruct") do
+      0 => []
+    end
+
+    assert_raise_with_message(NoMatchingPatternError, "[0]: [0] length mismatch (given 1, expected 0)") do
+      [0] => []
+    end
+
+    assert_raise_with_message(NoMatchingPatternError, "[]: [] length mismatch (given 0, expected 1+)") do
+      [] => [_, *]
+    end
+
+    assert_raise_with_message(NoMatchingPatternError, "[0, 0]: 1 === 0 does not return true") do
+      [0, 0] => [0, 1]
+    end
+
+    assert_raise_with_message(NoMatchingPatternError, "[0, 0]: 1 === 0 does not return true") do
+      [0, 0] => [*, 0, 1]
+    end
+  end
+
+  def test_single_pattern_error_find_pattern
+    assert_raise_with_message(NoMatchingPatternError, "[]: Hash === [] does not return true") do
+      [] => Hash[*, _, *]
+    end
+
+    assert_raise_with_message(NoMatchingPatternError, "0: 0 does not respond to #deconstruct") do
+      0 => [*, _, *]
+    end
+
+    assert_raise_with_message(NoMatchingPatternError, "[]: [] length mismatch (given 0, expected 1+)") do
+      [] => [*, _, *]
+    end
+
+    assert_raise_with_message(NoMatchingPatternError, "[0]: [0] does not match to find pattern") do
+      [0] => [*, 1, *]
+    end
+
+    assert_raise_with_message(NoMatchingPatternError, "[0]: [0] does not match to find pattern") do
+      [0] => [*, {a:}, *]
+      raise a # suppress "unused variable: a" warning
+    end
+  end
+
+  def test_single_pattern_error_hash_pattern
+    assert_raise_with_message(NoMatchingPatternError, "{}: Array === {} does not return true") do
+      {} => Array[a:]
+      raise a # suppress "unused variable: a" warning
+    end
+
+    assert_raise_with_message(NoMatchingPatternError, "0: 0 does not respond to #deconstruct_keys") do
+      0 => {a:}
+      raise a # suppress "unused variable: a" warning
+    end
+
+    assert_raise_with_message(NoMatchingPatternKeyError, "{:a=>0}: key not found: :aa") do
+      {a: 0} => {aa:}
+      raise aa # suppress "unused variable: aa" warning
+    rescue NoMatchingPatternKeyError => e
+      assert_equal({a: 0}, e.matchee)
+      assert_equal(:aa, e.key)
+      raise e
+    end
+
+    assert_raise_with_message(NoMatchingPatternKeyError, "{:a=>{:b=>0}}: key not found: :bb") do
+      {a: {b: 0}} => {a: {bb:}}
+      raise bb # suppress "unused variable: bb" warning
+    rescue NoMatchingPatternKeyError => e
+      assert_equal({b: 0}, e.matchee)
+      assert_equal(:bb, e.key)
+      raise e
+    end
+
+    assert_raise_with_message(NoMatchingPatternError, "{:a=>0}: 1 === 0 does not return true") do
+      {a: 0} => {a: 1}
+    end
+
+    assert_raise_with_message(NoMatchingPatternError, "{:a=>0}: {:a=>0} is not empty") do
+      {a: 0} => {}
+    end
+
+    assert_raise_with_message(NoMatchingPatternError, "[{:a=>0}]: rest of {:a=>0} is not empty") do
+      [{a: 0}] => [{**nil}]
+    end
+  end
+
+  def test_single_pattern_error_as_pattern
+    assert_raise_with_message(NoMatchingPatternError, "[0]: 1 === 0 does not return true") do
+      case [0]
+      in [1] => _
+      end
+    end
+  end
+
+  def test_single_pattern_error_alternative_pattern
+    assert_raise_with_message(NoMatchingPatternError, "0: 2 === 0 does not return true") do
+      0 => 1 | 2
+    end
+  end
+
+  def test_single_pattern_error_guard_clause
+    assert_raise_with_message(NoMatchingPatternError, "0: guard clause does not return true") do
+      case 0
+      in _ if false
+      end
+    end
+
+    assert_raise_with_message(NoMatchingPatternError, "0: guard clause does not return true") do
+      case 0
+      in _ unless true
+      end
+    end
   end
 end
 END_of_GUARD

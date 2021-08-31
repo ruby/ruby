@@ -130,9 +130,6 @@ error !
 
 #define NEXT_INSN() TC_DISPATCH(__NEXT_INSN__)
 
-#define START_OF_ORIGINAL_INSN(x) start_of_##x:
-#define DISPATCH_ORIGINAL_INSN(x) goto  start_of_##x;
-
 /************************************************/
 #else /* no threaded code */
 /* most common method */
@@ -157,9 +154,11 @@ default:                        \
 
 #define NEXT_INSN() goto first
 
-#define START_OF_ORIGINAL_INSN(x) start_of_##x:
-#define DISPATCH_ORIGINAL_INSN(x) goto  start_of_##x;
+#endif
 
+#ifndef START_OF_ORIGINAL_INSN
+#define START_OF_ORIGINAL_INSN(x) if (0) goto start_of_##x; start_of_##x:
+#define DISPATCH_ORIGINAL_INSN(x) goto  start_of_##x;
 #endif
 
 #define VM_SP_CNT(ec, sp) ((sp) - (ec)->vm_stack)
@@ -185,8 +184,7 @@ default:                        \
 #define VM_DEBUG_STACKOVERFLOW 0
 
 #if VM_DEBUG_STACKOVERFLOW
-#define CHECK_VM_STACK_OVERFLOW_FOR_INSN(cfp, margin) \
-    WHEN_VM_STACK_OVERFLOWED(cfp, (cfp)->sp, margin) vm_stack_overflow_for_insn()
+#define CHECK_VM_STACK_OVERFLOW_FOR_INSN CHECK_VM_STACK_OVERFLOW
 #else
 #define CHECK_VM_STACK_OVERFLOW_FOR_INSN(cfp, margin)
 #endif

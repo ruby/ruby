@@ -31,4 +31,8 @@
 # define NUM2PIDT RB_NUM2LONG
 #endif
 
+#ifndef PRI_PIDT_PREFIX
+# define PRI_PIDT_PREFIX PRI_LONG_PREFIX
+#endif
+
 #endif /* RBIMPL_ARITHMETIC_PID_T_H */

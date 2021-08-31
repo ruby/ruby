@@ -12,38 +12,38 @@ big(VALUE x)
 }
 
 static VALUE
-mul_normal(VALUE x, VALUE y)
+mul_normal(VALUE klass, VALUE x, VALUE y)
 {
     return rb_big_norm(rb_big_mul_normal(big(x), big(y)));
 }
 
 static VALUE
-sq_fast(VALUE x)
+sq_fast(VALUE klass, VALUE x)
 {
     return rb_big_norm(rb_big_sq_fast(big(x)));
 }
 
 static VALUE
-mul_balance(VALUE x, VALUE y)
+mul_balance(VALUE klass, VALUE x, VALUE y)
 {
     return rb_big_norm(rb_big_mul_balance(big(x), big(y)));
 }
 
 static VALUE
-mul_karatsuba(VALUE x, VALUE y)
+mul_karatsuba(VALUE klass, VALUE x, VALUE y)
 {
     return rb_big_norm(rb_big_mul_karatsuba(big(x), big(y)));
 }
 
 static VALUE
-mul_toom3(VALUE x, VALUE y)
+mul_toom3(VALUE klass, VALUE x, VALUE y)
 {
     return rb_big_norm(rb_big_mul_toom3(big(x), big(y)));
 }
 
 #if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)
 static VALUE
-mul_gmp(VALUE x, VALUE y)
+mul_gmp(VALUE klass, VALUE x, VALUE y)
 {
     return rb_big_norm(rb_big_mul_gmp(big(x), big(y)));
 }
@@ -54,12 +54,12 @@ mul_gmp(VALUE x, VALUE y)
 void
 Init_mul(VALUE klass)
 {
-    rb_define_const(rb_cInteger, "SIZEOF_BDIGIT", INT2NUM(SIZEOF_BDIGIT));
-    rb_define_const(rb_cInteger, "BITSPERDIG", INT2NUM(SIZEOF_BDIGIT * CHAR_BIT));
-    rb_define_method(rb_cInteger, "big_mul_normal", mul_normal, 1);
-    rb_define_method(rb_cInteger, "big_sq_fast", sq_fast, 0);
-    rb_define_method(rb_cInteger, "big_mul_balance", mul_balance, 1);
-    rb_define_method(rb_cInteger, "big_mul_karatsuba", mul_karatsuba, 1);
-    rb_define_method(rb_cInteger, "big_mul_toom3", mul_toom3, 1);
-    rb_define_method(rb_cInteger, "big_mul_gmp", mul_gmp, 1);
+    rb_define_const(klass, "SIZEOF_BDIGIT", INT2NUM(SIZEOF_BDIGIT));
+    rb_define_const(klass, "BITSPERDIG", INT2NUM(SIZEOF_BDIGIT * CHAR_BIT));
+    rb_define_singleton_method(klass, "big_mul_normal", mul_normal, 2);
+    rb_define_singleton_method(klass, "big_sq_fast", sq_fast, 1);
+    rb_define_singleton_method(klass, "big_mul_balance", mul_balance, 2);
+    rb_define_singleton_method(klass, "big_mul_karatsuba", mul_karatsuba, 2);
+    rb_define_singleton_method(klass, "big_mul_toom3", mul_toom3, 2);
+    rb_define_singleton_method(klass, "big_mul_gmp", mul_gmp, 2);
 }

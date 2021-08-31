@@ -47,8 +47,6 @@ RUBY_EXTERN VALUE rb_cObject;
 RUBY_EXTERN VALUE rb_cArray;
 RUBY_EXTERN VALUE rb_cBinding;
 RUBY_EXTERN VALUE rb_cClass;
-RUBY_EXTERN VALUE rb_cCont;
-RUBY_EXTERN VALUE rb_cData;
 RUBY_EXTERN VALUE rb_cDir;
 RUBY_EXTERN VALUE rb_cEncoding;
 RUBY_EXTERN VALUE rb_cEnumerator;
@@ -109,6 +107,7 @@ RUBY_EXTERN VALUE rb_eRegexpError;
 RUBY_EXTERN VALUE rb_eEncodingError;
 RUBY_EXTERN VALUE rb_eEncCompatError;
 RUBY_EXTERN VALUE rb_eNoMatchingPatternError;
+RUBY_EXTERN VALUE rb_eNoMatchingPatternKeyError;
 
 RUBY_EXTERN VALUE rb_eScriptError;
 RUBY_EXTERN VALUE rb_eNameError;

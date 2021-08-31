@@ -271,7 +271,7 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
 	int flags = O_RDWR|O_NOCTTY;
 # if defined(O_CLOEXEC)
 	/* glibc posix_openpt() in GNU/Linux calls open("/dev/ptmx", flags) internally.
-	 * So version dependency on GNU/Linux is same as O_CLOEXEC with open().
+	 * So version dependency on GNU/Linux is the same as O_CLOEXEC with open().
 	 * O_CLOEXEC is available since Linux 2.6.23.  Linux 2.6.18 silently ignore it. */
 	flags |= O_CLOEXEC;
 # endif
@@ -464,11 +464,11 @@ pty_close_pty(VALUE assoc)
 /*
  * call-seq:
  *   PTY.open => [master_io, slave_file]
- *   PTY.open {|master_io, slave_file| ... } => block value
+ *   PTY.open {|(master_io, slave_file)| ... } => block value
  *
  * Allocates a pty (pseudo-terminal).
  *
- * In the block form, yields two arguments <tt>master_io, slave_file</tt>
+ * In the block form, yields an array of two elements (<tt>master_io, slave_file</tt>)
  * and the value of the block is returned from +open+.
  *
  * The IO and File are both closed after the block completes if they haven't
@@ -497,7 +497,7 @@ pty_close_pty(VALUE assoc)
  *   require 'io/console'
  *   PTY.open {|m, s|
  *     s.raw!
- *     ...
+ *     # ...
  *   }
  *
  */
@@ -694,7 +694,7 @@ static VALUE cPTY;
  * Document-class: PTY
  *
  * Creates and manages pseudo terminals (PTYs).  See also
- * http://en.wikipedia.org/wiki/Pseudo_terminal
+ * https://en.wikipedia.org/wiki/Pseudo_terminal
  *
  * PTY allows you to allocate new terminals using ::open or ::spawn a new
  * terminal with a specific command.
@@ -737,16 +737,16 @@ static VALUE cPTY;
  *
  * == License
  *
- *  C) Copyright 1998 by Akinori Ito.
+ * (c) Copyright 1998 by Akinori Ito.
  *
- *  This software may be redistributed freely for this purpose, in full
- *  or in part, provided that this entire copyright notice is included
- *  on any copies of this software and applications and derivations thereof.
+ * This software may be redistributed freely for this purpose, in full
+ * or in part, provided that this entire copyright notice is included
+ * on any copies of this software and applications and derivations thereof.
  *
- *  This software is provided on an "as is" basis, without warranty of any
- *  kind, either expressed or implied, as to any matter including, but not
- *  limited to warranty of fitness of purpose, or merchantability, or
- *  results obtained from use of this software.
+ * This software is provided on an "as is" basis, without warranty of any
+ * kind, either expressed or implied, as to any matter including, but not
+ * limited to warranty of fitness of purpose, or merchantability, or
+ * results obtained from use of this software.
  */
 
 void

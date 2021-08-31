@@ -104,7 +104,7 @@ ossl_cipher_alloc(VALUE klass)
  *  call-seq:
  *     Cipher.new(string) -> cipher
  *
- *  The string must contain a valid cipher name like "AES-256-CBC".
+ *  The string must contain a valid cipher name like "aes-256-cbc".
  *
  *  A list of cipher names is available by calling OpenSSL::Cipher.ciphers.
  */
@@ -814,6 +814,31 @@ ossl_cipher_block_size(VALUE self)
 }
 
 /*
+ *  call-seq:
+ *     cipher.ccm_data_len = integer -> integer
+ *
+ *  Sets the length of the plaintext / ciphertext message that will be
+ *  processed in CCM mode. Make sure to call this method after #key= and
+ *  #iv= have been set, and before #auth_data=.
+ *
+ *  Only call this method after calling Cipher#encrypt or Cipher#decrypt.
+ */
+static VALUE
+ossl_cipher_set_ccm_data_len(VALUE self, VALUE data_len)
+{
+    int in_len, out_len;
+    EVP_CIPHER_CTX *ctx;
+
+    in_len = NUM2INT(data_len);
+
+    GetCipher(self, ctx);
+    if (EVP_CipherUpdate(ctx, NULL, &out_len, NULL, in_len) != 1)
+        ossl_raise(eCipherError, NULL);
+
+    return data_len;
+}
+
+/*
  * INIT
  */
 void
@@ -849,7 +874,7 @@ Init_ossl_cipher(void)
      * individual components name, key length and mode. Either all uppercase
      * or all lowercase strings may be used, for example:
      *
-     *  cipher = OpenSSL::Cipher.new('AES-128-CBC')
+     *  cipher = OpenSSL::Cipher.new('aes-128-cbc')
      *
      * === Choosing either encryption or decryption mode
      *
@@ -879,7 +904,7 @@ Init_ossl_cipher(void)
      * without processing the password further. A simple and secure way to
      * create a key for a particular Cipher is
      *
-     *  cipher = OpenSSL::Cipher.new('AES-256-CFB')
+     *  cipher = OpenSSL::Cipher.new('aes-256-cfb')
      *  cipher.encrypt
      *  key = cipher.random_key # also sets the generated key on the Cipher
      *
@@ -947,14 +972,14 @@ Init_ossl_cipher(void)
      *
      *   data = "Very, very confidential data"
      *
-     *   cipher = OpenSSL::Cipher.new('AES-128-CBC')
+     *   cipher = OpenSSL::Cipher.new('aes-128-cbc')
      *   cipher.encrypt
      *   key = cipher.random_key
      *   iv = cipher.random_iv
      *
      *   encrypted = cipher.update(data) + cipher.final
      *   ...
-     *   decipher = OpenSSL::Cipher.new('AES-128-CBC')
+     *   decipher = OpenSSL::Cipher.new('aes-128-cbc')
      *   decipher.decrypt
      *   decipher.key = key
      *   decipher.iv = iv
@@ -990,7 +1015,7 @@ Init_ossl_cipher(void)
      * not to reuse the _key_ and _nonce_ pair. Reusing an nonce ruins the
      * security guarantees of GCM mode.
      *
-     *   cipher = OpenSSL::Cipher.new('AES-128-GCM').encrypt
+     *   cipher = OpenSSL::Cipher.new('aes-128-gcm').encrypt
      *   cipher.key = key
      *   cipher.iv = nonce
      *   cipher.auth_data = auth_data
@@ -1006,7 +1031,7 @@ Init_ossl_cipher(void)
      * ciphertext with a probability of 1/256.
      *
      *   raise "tag is truncated!" unless tag.bytesize == 16
-     *   decipher = OpenSSL::Cipher.new('AES-128-GCM').decrypt
+     *   decipher = OpenSSL::Cipher.new('aes-128-gcm').decrypt
      *   decipher.key = key
      *   decipher.iv = nonce
      *   decipher.auth_tag = tag
@@ -1043,6 +1068,7 @@ Init_ossl_cipher(void)
     rb_define_method(cCipher, "iv_len", ossl_cipher_iv_length, 0);
     rb_define_method(cCipher, "block_size", ossl_cipher_block_size, 0);
     rb_define_method(cCipher, "padding=", ossl_cipher_set_padding, 1);
+    rb_define_method(cCipher, "ccm_data_len=", ossl_cipher_set_ccm_data_len, 1);
 
     id_auth_tag_len = rb_intern_const("auth_tag_len");
     id_key_set = rb_intern_const("key_set");

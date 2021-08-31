@@ -91,7 +91,7 @@ module Bundler
       " #{source.revision[0..6]}"
     end
 
-  private
+    private
 
     def to_ary
       nil

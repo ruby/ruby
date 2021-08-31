@@ -31,4 +31,8 @@
 # define NUM2GIDT RB_NUM2LONG
 #endif
 
+#ifndef PRI_GIDT_PREFIX
+# define PRI_GIDT_PREFIX PRI_LONG_PREFIX
+#endif
+
 #endif /* RBIMPL_ARITHMETIC_GID_T_H */

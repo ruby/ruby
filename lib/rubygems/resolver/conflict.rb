@@ -4,7 +4,6 @@
 # with a spec that would be activated.
 
 class Gem::Resolver::Conflict
-
   ##
   # The specification that was activated prior to the conflict
 
@@ -86,7 +85,7 @@ class Gem::Resolver::Conflict
       activated, requirement,
       request_path(@activated).reverse.join(", depends on\n    "),
       request_path(@failed_dep).reverse.join(", depends on\n    "),
-      matching,
+      matching
     ]
   end
 
@@ -151,5 +150,4 @@ class Gem::Resolver::Conflict
   def requester
     @failed_dep.requester
   end
-
 end

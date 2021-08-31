@@ -38,13 +38,13 @@ module Gem
              [
                File.dirname(RbConfig::CONFIG['sitedir']),
                'Gems',
-               RbConfig::CONFIG['ruby_version']
+               RbConfig::CONFIG['ruby_version'],
              ]
            else
              [
                RbConfig::CONFIG['rubylibprefix'],
                'gems',
-               RbConfig::CONFIG['ruby_version']
+               RbConfig::CONFIG['ruby_version'],
              ]
            end
 
@@ -198,7 +198,7 @@ module Gem
 
   def self.default_bindir
     if defined? RUBY_FRAMEWORK_VERSION # mac framework support
-      '/usr/bin'
+      '/usr/local/bin'
     else # generic install
       RbConfig::CONFIG['bindir']
     end

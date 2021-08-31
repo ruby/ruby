@@ -1,9 +1,8 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/source'
 
 class TestGemSourceVendor < Gem::TestCase
-
   def test_initialize
     source = Gem::Source::Vendor.new 'vendor/foo'
 
@@ -27,5 +26,4 @@ class TestGemSourceVendor < Gem::TestCase
     assert_equal(1, vendor.<=>(installed), 'vendor <=> installed')
     assert_equal(-1, installed.<=>(vendor), 'installed <=> vendor')
   end
-
 end

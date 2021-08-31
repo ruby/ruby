@@ -27,8 +27,10 @@ describe "Kernel.lambda" do
   end
 
   it "creates a lambda-style Proc if given a literal block via Kernel.public_send" do
-    l = Kernel.public_send(:lambda) { 42 }
-    l.lambda?.should be_true
+    suppress_warning do
+      l = Kernel.public_send(:lambda) { 42 }
+      l.lambda?.should be_true
+    end
   end
 
   it "returns the passed Proc if given an existing Proc" do
@@ -39,11 +41,13 @@ describe "Kernel.lambda" do
   end
 
   it "creates a lambda-style Proc when called with zsuper" do
-    l = KernelSpecs::LambdaSpecs::ForwardBlockWithZSuper.new.lambda { 42 }
-    l.lambda?.should be_true
-    l.call.should == 42
+    suppress_warning do
+      l = KernelSpecs::LambdaSpecs::ForwardBlockWithZSuper.new.lambda { 42 }
+      l.lambda?.should be_true
+      l.call.should == 42
 
-    lambda { l.call(:extra) }.should raise_error(ArgumentError)
+      lambda { l.call(:extra) }.should raise_error(ArgumentError)
+    end
   end
 
   it "returns the passed Proc if given an existing Proc through super" do
@@ -118,5 +122,17 @@ describe "Kernel.lambda" do
 
   it "allows long returns to flow through it" do
     KernelSpecs::Lambda.new.outer.should == :good
+  end
+
+  it "treats the block as a Proc when lambda is re-defined" do
+    klass = Class.new do
+      def lambda (&block); block; end
+      def ret
+        lambda { return 1 }.call
+        2
+      end
+    end
+    klass.new.lambda { 42 }.should be_an_instance_of Proc
+    klass.new.ret.should == 1
   end
 end

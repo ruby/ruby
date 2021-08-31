@@ -76,7 +76,6 @@ class TestExtLibs < Test::Unit::TestCase
   check_existence "strscan"
   check_existence "syslog"
   check_existence "thread"
-  check_existence "Win32API"
   check_existence "win32ole"
   check_existence "zlib", "this may be false positive, but should assert because rubygems requires this"
 end

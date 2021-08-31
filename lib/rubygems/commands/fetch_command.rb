@@ -4,7 +4,6 @@ require 'rubygems/local_remote_options'
 require 'rubygems/version_option'
 
 class Gem::Commands::FetchCommand < Gem::Command
-
   include Gem::LocalRemoteOptions
   include Gem::VersionOption
 
@@ -73,5 +72,4 @@ then repackaging it.
       say "Downloaded #{spec.full_name}"
     end
   end
-
 end

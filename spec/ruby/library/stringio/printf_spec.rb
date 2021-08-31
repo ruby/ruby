@@ -32,7 +32,7 @@ describe "StringIO#printf" do
 
   describe "formatting" do
     it_behaves_like :kernel_sprintf, -> format, *args {
-      io = StringIO.new
+      io = StringIO.new(+"")
       io.printf(format, *args)
       io.string
     }

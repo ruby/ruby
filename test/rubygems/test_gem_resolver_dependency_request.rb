@@ -1,8 +1,7 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 
 class TestGemResolverDependencyRequest < Gem::TestCase
-
   def setup
     super
 
@@ -80,5 +79,4 @@ class TestGemResolverDependencyRequest < Gem::TestCase
 
     assert_equal dependency, dr.dependency
   end
-
 end

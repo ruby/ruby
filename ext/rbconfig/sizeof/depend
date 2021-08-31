@@ -150,7 +150,6 @@ limits.o: $(hdrdir)/ruby/internal/static_assert.h
 limits.o: $(hdrdir)/ruby/internal/stdalign.h
 limits.o: $(hdrdir)/ruby/internal/stdbool.h
 limits.o: $(hdrdir)/ruby/internal/symbol.h
-limits.o: $(hdrdir)/ruby/internal/token_paste.h
 limits.o: $(hdrdir)/ruby/internal/value.h
 limits.o: $(hdrdir)/ruby/internal/value_type.h
 limits.o: $(hdrdir)/ruby/internal/variable.h
@@ -161,13 +160,10 @@ limits.o: $(hdrdir)/ruby/backward.h
 limits.o: $(hdrdir)/ruby/backward/2/assume.h
 limits.o: $(hdrdir)/ruby/backward/2/attributes.h
 limits.o: $(hdrdir)/ruby/backward/2/bool.h
-limits.o: $(hdrdir)/ruby/backward/2/extern.h
 limits.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 limits.o: $(hdrdir)/ruby/backward/2/inttypes.h
 limits.o: $(hdrdir)/ruby/backward/2/limits.h
 limits.o: $(hdrdir)/ruby/backward/2/long_long.h
-limits.o: $(hdrdir)/ruby/backward/2/r_cast.h
-limits.o: $(hdrdir)/ruby/backward/2/rmodule.h
 limits.o: $(hdrdir)/ruby/backward/2/stdalign.h
 limits.o: $(hdrdir)/ruby/backward/2/stdarg.h
 limits.o: $(hdrdir)/ruby/defines.h
@@ -313,7 +309,6 @@ sizes.o: $(hdrdir)/ruby/internal/static_assert.h
 sizes.o: $(hdrdir)/ruby/internal/stdalign.h
 sizes.o: $(hdrdir)/ruby/internal/stdbool.h
 sizes.o: $(hdrdir)/ruby/internal/symbol.h
-sizes.o: $(hdrdir)/ruby/internal/token_paste.h
 sizes.o: $(hdrdir)/ruby/internal/value.h
 sizes.o: $(hdrdir)/ruby/internal/value_type.h
 sizes.o: $(hdrdir)/ruby/internal/variable.h
@@ -324,13 +319,10 @@ sizes.o: $(hdrdir)/ruby/backward.h
 sizes.o: $(hdrdir)/ruby/backward/2/assume.h
 sizes.o: $(hdrdir)/ruby/backward/2/attributes.h
 sizes.o: $(hdrdir)/ruby/backward/2/bool.h
-sizes.o: $(hdrdir)/ruby/backward/2/extern.h
 sizes.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 sizes.o: $(hdrdir)/ruby/backward/2/inttypes.h
 sizes.o: $(hdrdir)/ruby/backward/2/limits.h
 sizes.o: $(hdrdir)/ruby/backward/2/long_long.h
-sizes.o: $(hdrdir)/ruby/backward/2/r_cast.h
-sizes.o: $(hdrdir)/ruby/backward/2/rmodule.h
 sizes.o: $(hdrdir)/ruby/backward/2/stdalign.h
 sizes.o: $(hdrdir)/ruby/backward/2/stdarg.h
 sizes.o: $(hdrdir)/ruby/defines.h

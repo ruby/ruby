@@ -65,6 +65,8 @@ class Reline::Test < Reline::TestCase
     Reline.completer_word_break_characters = "[".encode(Encoding::ASCII)
     assert_equal("[", Reline.completer_word_break_characters)
     assert_equal(get_reline_encoding, Reline.completer_word_break_characters.encoding)
+
+    assert_nothing_raised { Reline.completer_word_break_characters = '' }
   ensure
     Reline.completer_word_break_characters = completer_word_break_characters
   end
@@ -89,6 +91,8 @@ class Reline::Test < Reline::TestCase
     Reline.completer_quote_characters = "`".encode(Encoding::ASCII)
     assert_equal("`", Reline.completer_quote_characters)
     assert_equal(get_reline_encoding, Reline.completer_quote_characters.encoding)
+
+    assert_nothing_raised { Reline.completer_quote_characters = '' }
   ensure
     Reline.completer_quote_characters = completer_quote_characters
   end
@@ -310,6 +314,12 @@ class Reline::Test < Reline::TestCase
   end
 
   def get_reline_encoding
-    RUBY_PLATFORM =~ /mswin|mingw/ ? Encoding::UTF_8 : Encoding::default_external
+    if encoding = Reline::IOGate.encoding
+      encoding
+    elsif RUBY_PLATFORM =~ /mswin|mingw/
+      Encoding::UTF_8
+    else
+      Encoding::default_external
+    end
   end
 end

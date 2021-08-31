@@ -85,7 +85,3 @@ def new_io(name, mode = "w:utf-8")
     File.new(name, mode)
   end
 end
-
-def find_unused_fd
-  Dir.entries("/dev/fd").map(&:to_i).max + 1
-end

@@ -105,6 +105,12 @@ VALUE hash_spec_rb_hash_new(VALUE self) {
   return rb_hash_new();
 }
 
+VALUE rb_ident_hash_new(void); /* internal.h, used in ripper */
+
+VALUE hash_spec_rb_ident_hash_new(VALUE self) {
+  return rb_ident_hash_new();
+}
+
 VALUE hash_spec_rb_hash_size(VALUE self, VALUE hash) {
   return rb_hash_size(hash);
 }
@@ -143,6 +149,7 @@ void Init_hash_spec(void) {
   rb_define_method(cls, "rb_hash_lookup2", hash_spec_rb_hash_lookup2, 3);
   rb_define_method(cls, "rb_hash_lookup2_default_undef", hash_spec_rb_hash_lookup2_default_undef, 2);
   rb_define_method(cls, "rb_hash_new", hash_spec_rb_hash_new, 0);
+  rb_define_method(cls, "rb_ident_hash_new", hash_spec_rb_ident_hash_new, 0);
   rb_define_method(cls, "rb_hash_size", hash_spec_rb_hash_size, 1);
   rb_define_method(cls, "rb_hash_set_ifnone", hash_spec_rb_hash_set_ifnone, 2);
   rb_define_method(cls, "compute_a_hash_code", hash_spec_compute_a_hash_code, 1);

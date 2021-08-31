@@ -25,10 +25,32 @@
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
-void rb_global_variable(VALUE*);
-void rb_gc_register_mark_object(VALUE);
-void rb_gc_register_address(VALUE*);
-void rb_gc_unregister_address(VALUE*);
+/**
+ * Inform the garbage collector that `valptr` points to a live Ruby object that
+ * should not be moved. Note that extensions should use this API on global
+ * constants instead of assuming constants defined in Ruby are always alive.
+ * Ruby code can remove global constants.
+ */
+void rb_gc_register_address(VALUE *valptr);
+
+/**
+ * An alias for `rb_gc_register_address()`.
+ */
+void rb_global_variable(VALUE *);
+
+/**
+ * Inform the garbage collector that a pointer previously passed to
+ * `rb_gc_register_address()` no longer points to a live Ruby object.
+ */
+void rb_gc_unregister_address(VALUE *valptr);
+
+/**
+ * Inform the garbage collector that `object` is a live Ruby object that should
+ * not be moved.
+ *
+ * See also: rb_gc_register_address()
+ */
+void rb_gc_register_mark_object(VALUE object);
 
 RBIMPL_SYMBOL_EXPORT_END()
 

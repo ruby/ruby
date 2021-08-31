@@ -316,14 +316,15 @@ opt_struct_aset(rb_execution_context_t *ec, VALUE self, VALUE val, VALUE idx)
 }
 
 static const struct rb_builtin_function struct_aref_builtin =
-    RB_BUILTIN_FUNCTION(0, struct_aref, opt_struct_aref, 1);
+    RB_BUILTIN_FUNCTION(0, struct_aref, opt_struct_aref, 1, 0);
 static const struct rb_builtin_function struct_aset_builtin =
-    RB_BUILTIN_FUNCTION(1, struct_aref, opt_struct_aset, 2);
+    RB_BUILTIN_FUNCTION(1, struct_aref, opt_struct_aset, 2, 0);
 
 static void
 define_aref_method(VALUE nstr, VALUE name, VALUE off)
 {
     const rb_iseq_t *iseq = rb_method_for_self_aref(name, off, &struct_aref_builtin);
+    iseq->body->builtin_inline_p = true;
 
     rb_add_method_iseq(nstr, SYM2ID(name), iseq, NULL, METHOD_VISI_PUBLIC);
 }
@@ -346,6 +347,24 @@ rb_struct_s_inspect(VALUE klass)
     return inspect;
 }
 
+/*
+ * call-seq:
+ *   StructClass.keyword_init? -> true or false
+ *
+ * Returns true if the class was initialized with +keyword_init: true+.
+ * Otherwise returns false.
+ *
+ * Examples:
+ *   Foo = Struct.new(:a)
+ *   Foo.keyword_init? # => nil
+ *   Bar = Struct.new(:a, keyword_init: true)
+ *   Bar.keyword_init? # => true
+ *   Baz = Struct.new(:a, keyword_init: false)
+ *   Baz.keyword_init? # => false
+ */
+
+#define rb_struct_s_keyword_init_p rb_struct_s_keyword_init
+
 static VALUE
 setup_struct(VALUE nstr, VALUE members)
 {
@@ -358,6 +377,8 @@ setup_struct(VALUE nstr, VALUE members)
     rb_define_singleton_method(nstr, "[]", rb_class_new_instance_pass_kw, -1);
     rb_define_singleton_method(nstr, "members", rb_struct_s_members_m, 0);
     rb_define_singleton_method(nstr, "inspect", rb_struct_s_inspect, 0);
+    rb_define_singleton_method(nstr, "keyword_init?", rb_struct_s_keyword_init_p, 0);
+
     len = RARRAY_LEN(members);
     for (i=0; i< len; i++) {
         VALUE sym = RARRAY_AREF(members, i);
@@ -387,9 +408,10 @@ struct_make_members_list(va_list ar)
 {
     char *mem;
     VALUE ary, list = rb_ident_hash_new();
-    st_table *tbl = RHASH_TBL(list);
+    st_table *tbl = RHASH_TBL_RAW(list);
 
     RBASIC_CLEAR_CLASS(list);
+    OBJ_WB_UNPROTECT(list);
     while ((mem = va_arg(ar, char*)) != 0) {
 	VALUE sym = rb_sym_intern_ascii_cstr(mem);
 	if (st_insert(tbl, sym, Qtrue)) {
@@ -552,7 +574,7 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
 static VALUE
 rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE name, rest, keyword_init = Qfalse;
+    VALUE name, rest, keyword_init = Qnil;
     long i;
     VALUE st;
     st_table *tbl;
@@ -575,14 +597,18 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
 	}
         rb_get_kwargs(argv[argc-1], keyword_ids, 0, 1, &keyword_init);
         if (keyword_init == Qundef) {
-            keyword_init = Qfalse;
+            keyword_init = Qnil;
+        }
+        else if (RTEST(keyword_init)) {
+            keyword_init = Qtrue;
         }
 	--argc;
     }
 
     rest = rb_ident_hash_new();
     RBASIC_CLEAR_CLASS(rest);
-    tbl = RHASH_TBL(rest);
+    OBJ_WB_UNPROTECT(rest);
+    tbl = RHASH_TBL_RAW(rest);
     for (i=0; i<argc; i++) {
 	VALUE mem = rb_to_symbol(argv[i]);
         if (rb_is_attrset_sym(mem)) {
@@ -654,11 +680,15 @@ static VALUE
 rb_struct_initialize_m(int argc, const VALUE *argv, VALUE self)
 {
     VALUE klass = rb_obj_class(self);
-    long i, n;
-
     rb_struct_modify(self);
-    n = num_members(klass);
-    if (argc > 0 && RTEST(rb_struct_s_keyword_init(klass))) {
+    long n = num_members(klass);
+    if (argc == 0) {
+        rb_mem_clear((VALUE *)RSTRUCT_CONST_PTR(self), n);
+        return Qnil;
+    }
+
+    VALUE keyword_init = rb_struct_s_keyword_init(klass);
+    if (RTEST(keyword_init)) {
 	struct struct_hash_set_arg arg;
 	if (argc > 1 || !RB_TYPE_P(argv[0], T_HASH)) {
 	    rb_raise(rb_eArgError, "wrong number of arguments (given %d, expected 0)", argc);
@@ -676,7 +706,11 @@ rb_struct_initialize_m(int argc, const VALUE *argv, VALUE self)
 	if (n < argc) {
 	    rb_raise(rb_eArgError, "struct size differs");
 	}
-	for (i=0; i<argc; i++) {
+        if (keyword_init == Qnil && argc == 1 && RB_TYPE_P(argv[0], T_HASH) && rb_keyword_given_p()) {
+            rb_warn("Passing only keyword arguments to Struct#initialize will behave differently from Ruby 3.2. "\
+                    "Please use a Hash literal like .new({k: v}) instead of .new(k: v).");
+        }
+        for (long i=0; i<argc; i++) {
 	    RSTRUCT_SET(self, i, argv[i]);
 	}
 	if (n > argc) {
@@ -1327,18 +1361,21 @@ rb_struct_size(VALUE s)
 
 /*
  * call-seq:
- *   struct.dig(key, ...)              -> object
+ *   struct.dig(key, *identifiers) -> object
  *
- * Extracts the nested value specified by the sequence of +key+
- * objects by calling +dig+ at each step, returning +nil+ if any
- * intermediate step is +nil+.
+ * Finds and returns the object in nested objects
+ * that is specified by +key+ and +identifiers+.
+ * The nested objects may be instances of various classes.
+ * See {Dig Methods}[rdoc-ref:doc/dig_methods.rdoc].
  *
+ * Examples:
  *   Foo = Struct.new(:a)
  *   f = Foo.new(Foo.new({b: [1, 2, 3]}))
- *
- *   f.dig(:a, :a, :b, 0)    # => 1
- *   f.dig(:b, 0)            # => nil
- *   f.dig(:a, :a, :b, :c)   # TypeError: no implicit conversion of Symbol into Integer
+ *   f.dig(:a) # => #<struct Foo a={:b=>[1, 2, 3]}>
+ *   f.dig(:a, :a) # => {:b=>[1, 2, 3]}
+ *   f.dig(:a, :a, :b) # => [1, 2, 3]
+ *   f.dig(:a, :a, :b, 0) # => 1
+ *   f.dig(:b, 0) # => nil
  */
 
 static VALUE

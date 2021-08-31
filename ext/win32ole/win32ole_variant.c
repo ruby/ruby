@@ -94,7 +94,7 @@ ole_val2olevariantdata(VALUE val, VARTYPE vt, struct olevariantdata *pvar)
                 }
             }
         }
-#if (_MSC_VER >= 1300) || defined(__CYGWIN__) || defined(__MINGW32__)
+#if (defined(_MSC_VER) && (_MSC_VER >= 1300)) || defined(__CYGWIN__) || defined(__MINGW32__)
     } else if ( (vt & ~VT_BYREF) == VT_I8 || (vt & ~VT_BYREF) == VT_UI8) {
         ole_val2variant_ex(val, &(pvar->realvar), (vt & ~VT_BYREF));
         ole_val2variant_ex(val, &(pvar->var), (vt & ~VT_BYREF));
@@ -202,7 +202,7 @@ ole_set_byref(VARIANT *realvar, VARIANT *var,  VARTYPE vt)
             V_R8REF(var) = &V_R8(realvar);
             break;
 
-#if (_MSC_VER >= 1300) || defined(__CYGWIN__) || defined(__MINGW32__)
+#if (defined(_MSC_VER) && (_MSC_VER >= 1300)) || defined(__CYGWIN__) || defined(__MINGW32__)
 #ifdef V_I8REF
         case VT_I8:
             V_I8REF(var) = &V_I8(realvar);
@@ -371,7 +371,7 @@ check_type_val2variant(VALUE val)
  *   Win32OLE converts Ruby object into OLE variant automatically when
  *   invoking OLE methods. If OLE method requires the argument which is
  *   different from the variant by automatic conversion of Win32OLE, you
- *   can convert the specfied variant type by using WIN32OLE_VARIANT class.
+ *   can convert the specified variant type by using WIN32OLE_VARIANT class.
  *
  *     param = WIN32OLE_VARIANT.new(10, WIN32OLE::VARIANT::VT_R4)
  *     oleobj.method(param)

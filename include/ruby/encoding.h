@@ -127,6 +127,8 @@ void rb_enc_copy(VALUE dst, VALUE src);
 VALUE rb_enc_str_new(const char*, long, rb_encoding*);
 VALUE rb_enc_str_new_cstr(const char*, rb_encoding*);
 VALUE rb_enc_str_new_static(const char*, long, rb_encoding*);
+VALUE rb_enc_interned_str(const char *, long, rb_encoding *);
+VALUE rb_enc_interned_str_cstr(const char *, rb_encoding *);
 VALUE rb_enc_reg_new(const char*, long, rb_encoding*, int);
 PRINTF_ARGS(VALUE rb_enc_sprintf(rb_encoding *, const char*, ...), 2, 3);
 VALUE rb_enc_vsprintf(rb_encoding *, const char*, va_list);
@@ -233,11 +235,9 @@ rb_enc_asciicompat_inline(rb_encoding *enc)
 }
 #define rb_enc_asciicompat(enc) rb_enc_asciicompat_inline(enc)
 
-int rb_enc_casefold(char *to, const char *p, const char *e, rb_encoding *enc);
 CONSTFUNC(int rb_enc_toupper(int c, rb_encoding *enc));
 CONSTFUNC(int rb_enc_tolower(int c, rb_encoding *enc));
 ID rb_intern3(const char*, long, rb_encoding*);
-ID rb_interned_id_p(const char *, long, rb_encoding *);
 int rb_enc_symname_p(const char*, rb_encoding*);
 int rb_enc_symname2_p(const char*, long, rb_encoding*);
 int rb_enc_str_coderange(VALUE);

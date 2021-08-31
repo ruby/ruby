@@ -6,14 +6,13 @@
 # use it.
 
 class Gem::Request::HTTPPool # :nodoc:
-
   attr_reader :cert_files, :proxy_uri
 
   def initialize(http_args, cert_files, proxy_uri)
     @http_args  = http_args
     @cert_files = cert_files
     @proxy_uri  = proxy_uri
-    @queue      = SizedQueue.new 1
+    @queue      = Thread::SizedQueue.new 1
     @queue << nil
   end
 
@@ -44,5 +43,4 @@ class Gem::Request::HTTPPool # :nodoc:
     connection.start
     connection
   end
-
 end

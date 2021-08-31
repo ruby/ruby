@@ -170,7 +170,7 @@ G
 
       bundle "platform", :raise_on_error => false
 
-      expect(exitstatus).not_to eq(0) if exitstatus
+      expect(exitstatus).not_to eq(0)
     end
 
     it "raises an error if engine_version is used but engine is not" do
@@ -183,7 +183,7 @@ G
 
       bundle "platform", :raise_on_error => false
 
-      expect(exitstatus).not_to eq(0) if exitstatus
+      expect(exitstatus).not_to eq(0)
     end
 
     it "raises an error if engine version doesn't match ruby version for MRI" do
@@ -196,7 +196,7 @@ G
 
       bundle "platform", :raise_on_error => false
 
-      expect(exitstatus).not_to eq(0) if exitstatus
+      expect(exitstatus).not_to eq(0)
     end
 
     it "should print if no ruby version is specified" do
@@ -213,11 +213,13 @@ G
 
     it "handles when there is a locked requirement" do
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         ruby "< 1.8.7"
       G
 
       lockfile <<-L
         GEM
+          remote: #{file_uri_for(gem_repo1)}/
           specs:
 
         PLATFORMS
@@ -238,6 +240,7 @@ G
 
     it "handles when there is a requirement in the gemfile" do
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         ruby ">= 1.8.7"
       G
 
@@ -247,6 +250,7 @@ G
 
     it "handles when there are multiple requirements in the gemfile" do
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         ruby ">= 1.8.7", "< 2.0.0"
       G
 
@@ -265,27 +269,27 @@ G
   let(:patchlevel_fixnum) { "#{ruby_version_correct}, :patchlevel => #{RUBY_PATCHLEVEL}1" }
 
   def should_be_ruby_version_incorrect
-    expect(exitstatus).to eq(18) if exitstatus
+    expect(exitstatus).to eq(18)
     expect(err).to be_include("Your Ruby version is #{RUBY_VERSION}, but your Gemfile specified #{not_local_ruby_version}")
   end
 
   def should_be_engine_incorrect
-    expect(exitstatus).to eq(18) if exitstatus
+    expect(exitstatus).to eq(18)
     expect(err).to be_include("Your Ruby engine is #{local_ruby_engine}, but your Gemfile specified #{not_local_tag}")
   end
 
   def should_be_engine_version_incorrect
-    expect(exitstatus).to eq(18) if exitstatus
+    expect(exitstatus).to eq(18)
     expect(err).to be_include("Your #{local_ruby_engine} version is #{local_engine_version}, but your Gemfile specified #{local_ruby_engine} #{not_local_engine_version}")
   end
 
   def should_be_patchlevel_incorrect
-    expect(exitstatus).to eq(18) if exitstatus
+    expect(exitstatus).to eq(18)
     expect(err).to be_include("Your Ruby patchlevel is #{RUBY_PATCHLEVEL}, but your Gemfile specified #{not_local_patchlevel}")
   end
 
   def should_be_patchlevel_fixnum
-    expect(exitstatus).to eq(18) if exitstatus
+    expect(exitstatus).to eq(18)
     expect(err).to be_include("The Ruby patchlevel in your Gemfile must be a string")
   end
 
@@ -387,7 +391,6 @@ G
       G
 
       bundle :check
-      expect(exitstatus).to eq(0) if exitstatus
       expect(out).to match(/\AResolving dependencies\.\.\.\.*\nThe Gemfile's dependencies are satisfied\z/)
     end
 
@@ -405,7 +408,6 @@ G
       G
 
       bundle :check
-      expect(exitstatus).to eq(0) if exitstatus
       expect(out).to match(/\AResolving dependencies\.\.\.\.*\nThe Gemfile's dependencies are satisfied\z/)
     end
 
@@ -498,6 +500,10 @@ G
         #{ruby_version_correct}
       G
       update_repo2 do
+        build_gem "rack", "1.2" do |s|
+          s.executables = "rackup"
+        end
+
         build_gem "activesupport", "3.0"
       end
 
@@ -514,6 +520,10 @@ G
         #{ruby_version_correct_engineless}
       G
       update_repo2 do
+        build_gem "rack", "1.2" do |s|
+          s.executables = "rackup"
+        end
+
         build_gem "activesupport", "3.0"
       end
 
@@ -679,6 +689,7 @@ G
 
     it "copies the .gem file to vendor/cache when ruby version matches" do
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem 'rack'
 
         #{ruby_version_correct}
@@ -702,6 +713,7 @@ G
 
     it "fails if the ruby version doesn't match" do
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem 'rack'
 
         #{ruby_version_incorrect}
@@ -713,6 +725,7 @@ G
 
     it "fails if the engine doesn't match" do
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem 'rack'
 
         #{engine_incorrect}
@@ -724,6 +737,7 @@ G
 
     it "fails if the engine version doesn't match", :jruby do
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem 'rack'
 
         #{engine_version_incorrect}
@@ -756,6 +770,7 @@ G
 
     it "copies the .gem file to vendor/cache when ruby version matches" do
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem 'rack'
 
         #{ruby_version_correct}
@@ -779,6 +794,7 @@ G
 
     it "fails if the ruby version doesn't match" do
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem 'rack'
 
         #{ruby_version_incorrect}
@@ -790,6 +806,7 @@ G
 
     it "fails if the engine doesn't match" do
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem 'rack'
 
         #{engine_incorrect}
@@ -801,6 +818,7 @@ G
 
     it "fails if the engine version doesn't match", :jruby do
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem 'rack'
 
         #{engine_version_incorrect}
@@ -831,6 +849,7 @@ G
 
     it "activates the correct gem when ruby version matches" do
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", "0.9.1"
 
         #{ruby_version_correct}
@@ -843,6 +862,7 @@ G
     it "activates the correct gem when ruby version matches any engine", :jruby do
       system_gems "rack-1.0.0", "rack-0.9.1", :path => default_bundle_path
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", "0.9.1"
 
         #{ruby_version_correct_engineless}
@@ -854,6 +874,7 @@ G
 
     it "fails when the ruby version doesn't match" do
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", "0.9.1"
 
         #{ruby_version_incorrect}
@@ -865,6 +886,7 @@ G
 
     it "fails when the engine doesn't match" do
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", "0.9.1"
 
         #{engine_incorrect}

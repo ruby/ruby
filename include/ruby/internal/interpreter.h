@@ -64,14 +64,13 @@ void ruby_show_copyright(void);
 void ruby_init_stack(volatile VALUE*);
 
 int ruby_setup(void);
-int ruby_cleanup(volatile int);
+int ruby_cleanup(int);
 
 void ruby_finalize(void);
 
 RBIMPL_ATTR_NORETURN()
 void ruby_stop(int);
 
-void ruby_set_stack_size(size_t);
 int ruby_stack_check(void);
 size_t ruby_stack_length(VALUE**);
 

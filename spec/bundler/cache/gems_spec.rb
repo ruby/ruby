@@ -4,6 +4,7 @@ RSpec.describe "bundle cache" do
   shared_examples_for "when there are only gemsources" do
     before :each do
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem 'rack'
       G
 
@@ -39,6 +40,7 @@ RSpec.describe "bundle cache" do
       end
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
 
@@ -49,6 +51,7 @@ RSpec.describe "bundle cache" do
       system_gems "rack-1.0.0", :path => default_bundle_path
 
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
 
@@ -64,6 +67,7 @@ RSpec.describe "bundle cache" do
       cache_gems "rack-1.0.0"
 
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
 
@@ -100,7 +104,7 @@ RSpec.describe "bundle cache" do
 
     it "uses builtin gems when installing to system gems" do
       bundle "config set path.system true"
-      install_gemfile %(gem 'builtin_gem', '1.0.2')
+      install_gemfile %(source "#{file_uri_for(gem_repo1)}"; gem 'builtin_gem', '1.0.2')
       expect(the_bundle).to include_gems("builtin_gem 1.0.2")
     end
 
@@ -134,11 +138,12 @@ RSpec.describe "bundle cache" do
       bundle "config set path.system true"
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem 'builtin_gem', '1.0.2'
       G
 
       bundle :cache, :raise_on_error => false
-      expect(exitstatus).to_not eq(0) if exitstatus
+      expect(exitstatus).to_not eq(0)
       expect(err).to include("builtin_gem-1.0.2 is built in to Ruby, and can't be cached")
     end
   end
@@ -197,7 +202,12 @@ RSpec.describe "bundle cache" do
     end
 
     it "adds and removes when gems are updated" do
-      update_repo2
+      update_repo2 do
+        build_gem "rack", "1.2" do |s|
+          s.executables = "rackup"
+        end
+      end
+
       bundle "update", :all => true
       expect(cached_gem("rack-1.2")).to exist
       expect(cached_gem("rack-1.0.0")).not_to exist
@@ -297,6 +307,7 @@ RSpec.describe "bundle cache" do
         :path => bundled_app("vendor/cache")
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo-bundler"
       G
 

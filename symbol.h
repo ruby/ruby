@@ -30,7 +30,7 @@ struct RSymbol {
     ID id;
 };
 
-#define RSYMBOL(obj) (R_CAST(RSymbol)(obj))
+#define RSYMBOL(obj) ((struct RSymbol *)(obj))
 
 #define is_notop_id(id) ((id)>tLAST_OP_ID)
 #define is_local_id(id) (id_type(id)==ID_LOCAL)

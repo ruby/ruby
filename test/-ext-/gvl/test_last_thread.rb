@@ -11,7 +11,7 @@ class TestLastThread < Test::Unit::TestCase
       }
 
       t0 = Time.now
-      Thread.current.__runnable_sleep__ 1
+      Bug::Thread.runnable_sleep 1
       t1 = Time.now
       t = t1 - t0
 

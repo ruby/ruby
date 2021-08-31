@@ -43,18 +43,14 @@
 
 require "rubygems"
 require 'rubygems/security'
-require 'rubygems/specification'
 require 'rubygems/user_interaction'
-require 'zlib'
 
 class Gem::Package
-
   include Gem::UserInteraction
 
   class Error < Gem::Exception; end
 
   class FormatError < Error
-
     attr_reader :path
 
     def initialize(message, source = nil)
@@ -66,16 +62,13 @@ class Gem::Package
 
       super message
     end
-
   end
 
   class PathError < Error
-
     def initialize(destination, destination_dir)
       super "installing into parent path %s of %s is not allowed" %
               [destination, destination_dir]
     end
-
   end
 
   class NonSeekableIO < Error; end
@@ -192,6 +185,8 @@ class Gem::Package
   # Creates a new package that will read or write to the file +gem+.
 
   def initialize(gem, security_policy) # :notnew:
+    require 'zlib'
+
     @gem = gem
 
     @build_time      = Gem.source_date_epoch
@@ -257,14 +252,7 @@ class Gem::Package
       stat = File.lstat file
 
       if stat.symlink?
-        target_path = File.readlink(file)
-
-        unless target_path.start_with? '.'
-          relative_dir = File.dirname(file).sub("#{Dir.pwd}/", '')
-          target_path = File.join(relative_dir, target_path)
-        end
-
-        tar.add_symlink file, target_path, stat.mode
+        tar.add_symlink file, File.readlink(file), stat.mode
       end
 
       next unless stat.file?
@@ -303,7 +291,7 @@ class Gem::Package
 
     setup_signer(
       signer_options: {
-        expiration_length_days: Gem.configuration.cert_expiration_length_days
+        expiration_length_days: Gem.configuration.cert_expiration_length_days,
       }
     )
 
@@ -364,12 +352,7 @@ EOM
                  end
 
     algorithms.each do |algorithm|
-      digester =
-        if defined?(OpenSSL::Digest)
-          OpenSSL::Digest.new algorithm
-        else
-          Digest.const_get(algorithm).new
-        end
+      digester = Gem::Security.create_digest(algorithm)
 
       digester << entry.read(16384) until entry.eof?
 
@@ -680,10 +663,9 @@ EOM
     when 'data.tar.gz' then
       verify_gz entry
     end
-  rescue => e
-    message = "package is corrupt, exception while verifying: " +
-              "#{e.message} (#{e.class})"
-    raise Gem::Package::FormatError.new message, @gem
+  rescue
+    warn "Exception while verifying #{@gem.path}"
+    raise
   end
 
   ##
@@ -718,7 +700,6 @@ EOM
   rescue Zlib::GzipFile::Error => e
     raise Gem::Package::FormatError.new(e.message, entry.full_name)
   end
-
 end
 
 require 'rubygems/package/digest_io'

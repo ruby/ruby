@@ -1,0 +1,13 @@
+prelude: |
+  require 'objspace'
+  require 'tempfile'
+  $objs = 1_000.times.map { Object.new }
+  $strings = 1_000.times.map { |i| "string #{i}" }
+  $file = Tempfile.new('heap')
+  $dev_null = File.open(File::NULL, 'w+')
+
+benchmark:
+  dump_all_string: "ObjectSpace.dump_all(output: :string)"
+  dump_all_file: "ObjectSpace.dump_all(output: $file)"
+  dump_all_dev_null: "ObjectSpace.dump_all(output: $dev_null)"
+loop_count: 1

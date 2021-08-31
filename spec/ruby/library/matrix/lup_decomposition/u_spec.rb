@@ -1,18 +1,21 @@
 require_relative '../../../spec_helper'
-require 'matrix'
 
-describe "Matrix::LUPDecomposition#u" do
-  before :each do
-    @a = Matrix[[7, 8, 9], [14, 46, 51], [28, 82, 163]]
-    @lu = Matrix::LUPDecomposition.new(@a)
-    @u = @lu.u
-  end
+ruby_version_is ""..."3.1" do
+  require 'matrix'
 
-  it "returns the second element of to_a" do
-    @u.should == @lu.to_a[1]
-  end
+  describe "Matrix::LUPDecomposition#u" do
+    before :each do
+      @a = Matrix[[7, 8, 9], [14, 46, 51], [28, 82, 163]]
+      @lu = Matrix::LUPDecomposition.new(@a)
+      @u = @lu.u
+    end
 
-  it "returns an upper triangular matrix" do
-    @u.upper_triangular?.should be_true
+    it "returns the second element of to_a" do
+      @u.should == @lu.to_a[1]
+    end
+
+    it "returns an upper triangular matrix" do
+      @u.upper_triangular?.should be_true
+    end
   end
 end

@@ -164,7 +164,6 @@ typedef struct RNode {
 	struct RNode *node;
 	ID id;
 	long state;
-	struct rb_global_entry *entry;
 	struct rb_args_info *args;
 	struct rb_ary_pattern_info *apinfo;
 	struct rb_fnd_pattern_info *fpinfo;
@@ -174,7 +173,7 @@ typedef struct RNode {
     int node_id;
 } NODE;
 
-#define RNODE(obj)  (R_CAST(RNode)(obj))
+#define RNODE(obj)  ((struct RNode *)(obj))
 
 /* FL     : 0..4: T_TYPES, 5: KEEP_WB, 6: PROMOTED, 7: FINALIZE, 8: UNUSED, 9: UNUSED, 10: EXIVAR, 11: FREEZE */
 /* NODE_FL: 0..4: T_TYPES, 5: KEEP_WB, 6: PROMOTED, 7: NODE_FL_NEWLINE,
@@ -188,6 +187,8 @@ typedef struct RNode {
 
 #define nd_type(n) ((int) (((n)->flags & NODE_TYPEMASK)>>NODE_TYPESHIFT))
 #define nd_set_type(n,t) \
+    rb_node_set_type(n, t)
+#define nd_init_type(n,t) \
     (n)->flags=(((n)->flags&~NODE_TYPEMASK)|((((unsigned long)(t))<<NODE_TYPESHIFT)&NODE_TYPEMASK))
 
 #define NODE_LSHIFT (NODE_TYPESHIFT+7)
@@ -228,7 +229,7 @@ typedef struct RNode {
 
 #define nd_stts  u1.node
 
-#define nd_entry u3.entry
+#define nd_entry u3.id
 #define nd_vid   u1.id
 #define nd_cflag u2.id
 #define nd_cval  u3.value
@@ -316,7 +317,7 @@ typedef struct RNode {
 #define NEW_ZLIST(loc) NEW_NODE(NODE_ZLIST,0,0,0,loc)
 #define NEW_HASH(a,loc)  NEW_NODE(NODE_HASH,a,0,0,loc)
 #define NEW_MASGN(l,r,loc)   NEW_NODE(NODE_MASGN,l,0,r,loc)
-#define NEW_GASGN(v,val,loc) NEW_NODE(NODE_GASGN,v,val,rb_global_entry(v),loc)
+#define NEW_GASGN(v,val,loc) NEW_NODE(NODE_GASGN,v,val,v,loc)
 #define NEW_LASGN(v,val,loc) NEW_NODE(NODE_LASGN,v,val,0,loc)
 #define NEW_DASGN(v,val,loc) NEW_NODE(NODE_DASGN,v,val,0,loc)
 #define NEW_DASGN_CURR(v,val,loc) NEW_NODE(NODE_DASGN_CURR,v,val,0,loc)
@@ -329,7 +330,7 @@ typedef struct RNode {
 #define NEW_OP_ASGN_OR(i,val,loc) NEW_NODE(NODE_OP_ASGN_OR,i,val,0,loc)
 #define NEW_OP_ASGN_AND(i,val,loc) NEW_NODE(NODE_OP_ASGN_AND,i,val,0,loc)
 #define NEW_OP_CDECL(v,op,val,loc) NEW_NODE(NODE_OP_CDECL,v,val,op,loc)
-#define NEW_GVAR(v,loc) NEW_NODE(NODE_GVAR,v,0,rb_global_entry(v),loc)
+#define NEW_GVAR(v,loc) NEW_NODE(NODE_GVAR,v,0,v,loc)
 #define NEW_LVAR(v,loc) NEW_NODE(NODE_LVAR,v,0,0,loc)
 #define NEW_DVAR(v,loc) NEW_NODE(NODE_DVAR,v,0,0,loc)
 #define NEW_IVAR(v,loc) NEW_NODE(NODE_IVAR,v,0,0,loc)
@@ -397,7 +398,10 @@ typedef struct node_buffer_struct node_buffer_t;
 typedef struct rb_ast_body_struct {
     const NODE *root;
     VALUE compile_option;
-    int line_count;
+    VALUE script_lines;
+    // script_lines is either:
+    // - a Fixnum that represents the line count of the original source, or
+    // - an Array that contains the lines of the original source
 } rb_ast_body_t;
 typedef struct rb_ast_struct {
     VALUE flags;
@@ -407,6 +411,7 @@ typedef struct rb_ast_struct {
 rb_ast_t *rb_ast_new(void);
 void rb_ast_mark(rb_ast_t*);
 void rb_ast_update_references(rb_ast_t*);
+void rb_ast_add_local_table(rb_ast_t*, ID *buf);
 void rb_ast_dispose(rb_ast_t*);
 void rb_ast_free(rb_ast_t*);
 size_t rb_ast_memsize(const rb_ast_t*);
@@ -457,14 +462,12 @@ struct rb_ary_pattern_info {
     NODE *pre_args;
     NODE *rest_arg;
     NODE *post_args;
-    VALUE imemo;
 };
 
 struct rb_fnd_pattern_info {
     NODE *pre_rest_arg;
     NODE *args;
     NODE *post_rest_arg;
-    VALUE imemo;
 };
 
 struct parser_params;
@@ -473,8 +476,18 @@ void *rb_parser_realloc(struct parser_params *, void *, size_t);
 void *rb_parser_calloc(struct parser_params *, size_t, size_t);
 void rb_parser_free(struct parser_params *, void *);
 PRINTF_ARGS(void rb_parser_printf(struct parser_params *parser, const char *fmt, ...), 2, 3);
+void rb_ast_node_type_change(NODE *n, enum node_type type);
 
 RUBY_SYMBOL_EXPORT_END
+
+static inline VALUE
+rb_node_set_type(NODE *n, enum node_type t)
+{
+#if RUBY_DEBUG
+    rb_ast_node_type_change(n, t);
+#endif
+    return nd_init_type(n, t);
+}
 
 #if defined(__cplusplus)
 #if 0

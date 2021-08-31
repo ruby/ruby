@@ -86,10 +86,10 @@ module Racc
     end
 
     def assert_output_unchanged(asset)
-      # racc generates the difference results in GitHub Actions
-      omit unless RUBY_PLATFORM =~ /darwin/
-
       file = File.basename(asset, '.y')
+
+      # Code to re-generate the expectation files
+      # File.write("#{REGRESS_DIR}/#{file}", File.read("#{@TAB_DIR}/#{file}"))
 
       expected = File.read("#{REGRESS_DIR}/#{file}")
       actual   = File.read("#{@TAB_DIR}/#{file}")

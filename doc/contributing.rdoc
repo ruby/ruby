@@ -195,25 +195,6 @@ A good template for a feature proposal should look something like this:
 [See also]
   Links to the other related resources
 
-=== Slideshow
-
-At the Ruby Developer Meeting in Japan, committers discuss Feature Proposals together in Tokyo. We will judge proposals and then accept, reject, or give feedback for them.
-If you have a stalled proposal, making a slide to submit is good way to get feedback.
-
-Slides should be:
-
-* One-page slide
-* Include a corresponding ticket number
-* MUST include a figure and/or short example code
-* SHOULD have less sentence in natural language (try to write less than 140 characters)
-* It is RECOMMENDED to itemize: motivation/use case, proposal, pros/cons, corner case
-* PDF or Image (Web browsers can show it)
-
-Please note:
-
-* Even if the proposal is generally acceptable, it won't be accepted without writing corner cases in the ticket
-* Slide's example: DevelopersMeeting20130727Japan
-
 == Backport Requests
 
 When a new version of Ruby is released, it starts at patch level 0 (p0), and

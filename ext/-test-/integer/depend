@@ -136,7 +136,6 @@ core_ext.o: $(hdrdir)/ruby/internal/static_assert.h
 core_ext.o: $(hdrdir)/ruby/internal/stdalign.h
 core_ext.o: $(hdrdir)/ruby/internal/stdbool.h
 core_ext.o: $(hdrdir)/ruby/internal/symbol.h
-core_ext.o: $(hdrdir)/ruby/internal/token_paste.h
 core_ext.o: $(hdrdir)/ruby/internal/value.h
 core_ext.o: $(hdrdir)/ruby/internal/value_type.h
 core_ext.o: $(hdrdir)/ruby/internal/variable.h
@@ -147,13 +146,10 @@ core_ext.o: $(hdrdir)/ruby/backward.h
 core_ext.o: $(hdrdir)/ruby/backward/2/assume.h
 core_ext.o: $(hdrdir)/ruby/backward/2/attributes.h
 core_ext.o: $(hdrdir)/ruby/backward/2/bool.h
-core_ext.o: $(hdrdir)/ruby/backward/2/extern.h
 core_ext.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 core_ext.o: $(hdrdir)/ruby/backward/2/inttypes.h
 core_ext.o: $(hdrdir)/ruby/backward/2/limits.h
 core_ext.o: $(hdrdir)/ruby/backward/2/long_long.h
-core_ext.o: $(hdrdir)/ruby/backward/2/r_cast.h
-core_ext.o: $(hdrdir)/ruby/backward/2/rmodule.h
 core_ext.o: $(hdrdir)/ruby/backward/2/stdalign.h
 core_ext.o: $(hdrdir)/ruby/backward/2/stdarg.h
 core_ext.o: $(hdrdir)/ruby/defines.h
@@ -309,7 +305,6 @@ init.o: $(hdrdir)/ruby/internal/static_assert.h
 init.o: $(hdrdir)/ruby/internal/stdalign.h
 init.o: $(hdrdir)/ruby/internal/stdbool.h
 init.o: $(hdrdir)/ruby/internal/symbol.h
-init.o: $(hdrdir)/ruby/internal/token_paste.h
 init.o: $(hdrdir)/ruby/internal/value.h
 init.o: $(hdrdir)/ruby/internal/value_type.h
 init.o: $(hdrdir)/ruby/internal/variable.h
@@ -320,13 +315,10 @@ init.o: $(hdrdir)/ruby/backward.h
 init.o: $(hdrdir)/ruby/backward/2/assume.h
 init.o: $(hdrdir)/ruby/backward/2/attributes.h
 init.o: $(hdrdir)/ruby/backward/2/bool.h
-init.o: $(hdrdir)/ruby/backward/2/extern.h
 init.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 init.o: $(hdrdir)/ruby/backward/2/inttypes.h
 init.o: $(hdrdir)/ruby/backward/2/limits.h
 init.o: $(hdrdir)/ruby/backward/2/long_long.h
-init.o: $(hdrdir)/ruby/backward/2/r_cast.h
-init.o: $(hdrdir)/ruby/backward/2/rmodule.h
 init.o: $(hdrdir)/ruby/backward/2/stdalign.h
 init.o: $(hdrdir)/ruby/backward/2/stdarg.h
 init.o: $(hdrdir)/ruby/defines.h
@@ -473,7 +465,6 @@ my_integer.o: $(hdrdir)/ruby/internal/static_assert.h
 my_integer.o: $(hdrdir)/ruby/internal/stdalign.h
 my_integer.o: $(hdrdir)/ruby/internal/stdbool.h
 my_integer.o: $(hdrdir)/ruby/internal/symbol.h
-my_integer.o: $(hdrdir)/ruby/internal/token_paste.h
 my_integer.o: $(hdrdir)/ruby/internal/value.h
 my_integer.o: $(hdrdir)/ruby/internal/value_type.h
 my_integer.o: $(hdrdir)/ruby/internal/variable.h
@@ -484,13 +475,10 @@ my_integer.o: $(hdrdir)/ruby/backward.h
 my_integer.o: $(hdrdir)/ruby/backward/2/assume.h
 my_integer.o: $(hdrdir)/ruby/backward/2/attributes.h
 my_integer.o: $(hdrdir)/ruby/backward/2/bool.h
-my_integer.o: $(hdrdir)/ruby/backward/2/extern.h
 my_integer.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 my_integer.o: $(hdrdir)/ruby/backward/2/inttypes.h
 my_integer.o: $(hdrdir)/ruby/backward/2/limits.h
 my_integer.o: $(hdrdir)/ruby/backward/2/long_long.h
-my_integer.o: $(hdrdir)/ruby/backward/2/r_cast.h
-my_integer.o: $(hdrdir)/ruby/backward/2/rmodule.h
 my_integer.o: $(hdrdir)/ruby/backward/2/stdalign.h
 my_integer.o: $(hdrdir)/ruby/backward/2/stdarg.h
 my_integer.o: $(hdrdir)/ruby/defines.h

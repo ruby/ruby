@@ -360,10 +360,10 @@ path_each_line(int argc, VALUE *argv, VALUE self)
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
     if (rb_block_given_p()) {
-        return rb_block_call(rb_cFile, id_foreach, 1+n, args, 0, 0);
+        return rb_block_call_kw(rb_cFile, id_foreach, 1+n, args, 0, 0, RB_PASS_CALLED_KEYWORDS);
     }
     else {
-        return rb_funcallv(rb_cFile, id_foreach, 1+n, args);
+        return rb_funcallv_kw(rb_cFile, id_foreach, 1+n, args, RB_PASS_CALLED_KEYWORDS);
     }
 }
 
@@ -834,7 +834,7 @@ path_split(VALUE self)
     VALUE str = get_strpath(self);
     VALUE ary, dirname, basename;
     ary = rb_funcall(rb_cFile, id_split, 1, str);
-    ary = rb_check_array_type(ary);
+    Check_Type(ary, T_ARRAY);
     dirname = rb_ary_entry(ary, 0);
     basename = rb_ary_entry(ary, 1);
     dirname = rb_class_new_instance(1, &dirname, rb_obj_class(self));
@@ -1512,6 +1512,10 @@ path_f_pathname(VALUE self, VALUE str)
 void
 Init_pathname(void)
 {
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    rb_ext_ractor_safe(true);
+#endif
+
     InitVM(pathname);
 
     rb_cPathname = rb_define_class("Pathname", rb_cObject);

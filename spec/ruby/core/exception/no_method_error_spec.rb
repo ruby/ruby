@@ -10,15 +10,13 @@ describe "NoMethodError.new" do
     NoMethodError.new("msg").message.should == "msg"
   end
 
-  ruby_version_is "2.6" do
-    it "accepts a :receiver keyword argument" do
-      receiver = mock("receiver")
+  it "accepts a :receiver keyword argument" do
+    receiver = mock("receiver")
 
-      error = NoMethodError.new("msg", :name, receiver: receiver)
+    error = NoMethodError.new("msg", :name, receiver: receiver)
 
-      error.receiver.should == receiver
-      error.name.should == :name
-    end
+    error.receiver.should == receiver
+    error.name.should == :name
   end
 end
 
@@ -104,20 +102,20 @@ describe "NoMethodError#message" do
     end
   end
 
-  ruby_version_is "2.8" do
+  ruby_version_is "3.0" do
     it "uses #name to display the receiver if it is a class or a module" do
       klass = Class.new { def self.name; "MyClass"; end }
       begin
         klass.foo
       rescue NoMethodError => error
-        error.message.lines.first.should == "undefined method `foo' for MyClass:Class"
+        error.message.lines.first.chomp.should == "undefined method `foo' for MyClass:Class"
       end
 
       mod = Module.new { def self.name; "MyModule"; end }
       begin
         mod.foo
       rescue NoMethodError => error
-        error.message.lines.first.should == "undefined method `foo' for MyModule:Module"
+        error.message.lines.first.chomp.should == "undefined method `foo' for MyModule:Module"
       end
     end
   end

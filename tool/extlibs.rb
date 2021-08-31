@@ -90,7 +90,7 @@ class ExtLibs
       $stdout.puts "applying #{patch} under #{dest}"
       $stdout.flush
     end
-    Process.wait(Process.spawn("patch", "-d", dest, "-i", patch, *args))
+    Process.wait(Process.spawn(ENV.fetch("PATCH", "patch"), "-d", dest, "-i", patch, *args))
     $?.success? or raise "failed to patch #{patch}"
   end
 
@@ -243,7 +243,7 @@ class ExtLibs
           begin
             extracted = do_command(mode, dest, url, cache_dir, chksums)
           rescue => e
-            warn e.inspect
+            warn e.full_message
             success = false
           end
           url = chksums = nil

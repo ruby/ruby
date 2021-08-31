@@ -136,7 +136,6 @@ zlib.o: $(hdrdir)/ruby/internal/static_assert.h
 zlib.o: $(hdrdir)/ruby/internal/stdalign.h
 zlib.o: $(hdrdir)/ruby/internal/stdbool.h
 zlib.o: $(hdrdir)/ruby/internal/symbol.h
-zlib.o: $(hdrdir)/ruby/internal/token_paste.h
 zlib.o: $(hdrdir)/ruby/internal/value.h
 zlib.o: $(hdrdir)/ruby/internal/value_type.h
 zlib.o: $(hdrdir)/ruby/internal/variable.h
@@ -147,13 +146,10 @@ zlib.o: $(hdrdir)/ruby/backward.h
 zlib.o: $(hdrdir)/ruby/backward/2/assume.h
 zlib.o: $(hdrdir)/ruby/backward/2/attributes.h
 zlib.o: $(hdrdir)/ruby/backward/2/bool.h
-zlib.o: $(hdrdir)/ruby/backward/2/extern.h
 zlib.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 zlib.o: $(hdrdir)/ruby/backward/2/inttypes.h
 zlib.o: $(hdrdir)/ruby/backward/2/limits.h
 zlib.o: $(hdrdir)/ruby/backward/2/long_long.h
-zlib.o: $(hdrdir)/ruby/backward/2/r_cast.h
-zlib.o: $(hdrdir)/ruby/backward/2/rmodule.h
 zlib.o: $(hdrdir)/ruby/backward/2/stdalign.h
 zlib.o: $(hdrdir)/ruby/backward/2/stdarg.h
 zlib.o: $(hdrdir)/ruby/defines.h

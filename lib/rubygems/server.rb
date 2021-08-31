@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require 'webrick'
 require 'zlib'
 require 'erb'
 require 'uri'
@@ -29,7 +28,6 @@ require 'rubygems/rdoc'
 # TODO Refactor into a real WEBrick servlet to remove code duplication.
 
 class Gem::Server
-
   attr_reader :spec_dirs
 
   include ERB::Util
@@ -430,6 +428,12 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
   end
 
   def initialize(gem_dirs, port, daemon, launch = nil, addresses = nil)
+    begin
+      require 'webrick'
+    rescue LoadError
+      abort "webrick is not found. You may need to `gem install webrick` to install webrick."
+    end
+
     Gem::RDoc.load_rdoc
     Socket.do_not_reverse_lookup = true
 
@@ -772,7 +776,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
         doc_items << {
           :name    => base_name,
           :url     => doc_root(new_path),
-          :summary => ''
+          :summary => '',
         }
       end
 
@@ -875,5 +879,4 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
 
     system("#{@launch} http://#{host}:#{@port}")
   end
-
 end

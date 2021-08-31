@@ -10,6 +10,7 @@ class TestJIT < Test::Unit::TestCase
   IGNORABLE_PATTERNS = [
     /\AJIT recompile: .+\n\z/,
     /\AJIT inline: .+\n\z/,
+    /\AJIT cancel: .+\n\z/,
     /\ASuccessful MJIT finish\n\z/,
   ]
   MAX_CACHE_PATTERNS = [
@@ -45,10 +46,8 @@ class TestJIT < Test::Unit::TestCase
     # ci.rvm.jp caches its build environment. Clean up temporary files left by SEGV.
     if ENV['RUBY_DEBUG']&.include?('ci')
       Dir.glob("#{ENV.fetch('TMPDIR', '/tmp')}/_ruby_mjit_p*u*.*").each do |file|
-        if File.mtime(file) < Time.now - 60 * 60 * 24
-          puts "test/ruby/test_jit.rb: removing #{file}"
-          File.unlink(file)
-        end
+        puts "test/ruby/test_jit.rb: removing #{file}"
+        File.unlink(file)
       end
     end
 
@@ -247,14 +246,6 @@ class TestJIT < Test::Unit::TestCase
     assert_compile_once('"a#{}b" + "c"', result_inspect: '"abc"', insns: %i[putstring concatstrings tostring])
   end
 
-  def test_compile_insn_freezestring
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~'end;'}", stdout: 'true', success_count: 1, insns: %i[freezestring])
-    begin;
-      # frozen_string_literal: true
-      print proc { "#{true}".frozen? }.call
-    end;
-  end
-
   def test_compile_insn_toregexp
     assert_compile_once('/#{true}/ =~ "true"', result_inspect: '0', insns: %i[toregexp])
   end
@@ -328,10 +319,6 @@ class TestJIT < Test::Unit::TestCase
     assert_compile_once('{}["true"] = true', result_inspect: 'true', insns: %i[swap topn])
   end
 
-  def test_compile_insn_reverse
-    assert_compile_once('q, (w, e), r = 1, [2, 3], 4; [q, w, e, r]', result_inspect: '[1, 2, 3, 4]', insns: %i[reverse])
-  end
-
   def test_compile_insn_reput
     skip "write test"
   end
@@ -372,7 +359,7 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_send
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '1', success_count: 2, insns: %i[send])
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '1', success_count: 3, insns: %i[send])
     begin;
       print proc { yield_self { 1 } }.call
     end;
@@ -511,7 +498,7 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_checkmatch_opt_case_dispatch
-    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '"world"', insns: %i[checkmatch opt_case_dispatch])
+    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '"world"', insns: %i[opt_case_dispatch])
     begin;
       case 'hello'
       when 'hello'
@@ -613,7 +600,10 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_opt_invokebuiltin_delegate_leave
-    insns = collect_insns(RubyVM::InstructionSequence.of("\x00".method(:unpack)).to_a)
+    iseq = eval(EnvUtil.invoke_ruby(['-e', <<~'EOS'], '', true).first)
+      p RubyVM::InstructionSequence.of("\x00".method(:unpack)).to_a
+    EOS
+    insns = collect_insns(iseq)
     mark_tested_insn(:opt_invokebuiltin_delegate_leave, used_insns: insns)
     assert_eval_with_jit('print "\x00".unpack("c")', stdout: '[0]', success_count: 1)
   end
@@ -697,17 +687,12 @@ class TestJIT < Test::Unit::TestCase
         assert_match(/\A#{JIT_SUCCESS_PREFIX}: mjit#{i}@\(eval\):/, errs[i], debug_info)
       end
 
+      assert_equal("No units can be unloaded -- incremented max-cache-size to 11 for --jit-wait\n", errs[10], debug_info)
+      assert_match(/\A#{JIT_SUCCESS_PREFIX}: mjit10@\(eval\):/, errs[11], debug_info)
       # On --jit-wait, when the number of JIT-ed code reaches --jit-max-cache,
       # it should trigger compaction.
-      if RUBY_PLATFORM.match?(/mswin|mingw/) # compaction is not supported on Windows yet
-        assert_equal("Too many JIT code -- 1 units unloaded\n", errs[10], debug_info)
-        assert_match(/\A#{JIT_SUCCESS_PREFIX}: mjit10@\(eval\):/, errs[11], debug_info)
-      else
-        assert_equal("Too many JIT code, but skipped unloading units for JIT compaction\n", errs[10], debug_info)
-        assert_equal("No units can be unloaded -- incremented max-cache-size to 11 for --jit-wait\n", errs[11], debug_info)
-        assert_match(/\A#{JIT_SUCCESS_PREFIX}: mjit10@\(eval\):/, errs[12], debug_info)
-
-        assert_equal(3, compactions.size, debug_info)
+      unless RUBY_PLATFORM.match?(/mswin|mingw/) # compaction is not supported on Windows yet
+        assert_equal(1, compactions.size, debug_info)
       end
 
       if RUBY_PLATFORM.match?(/mswin/)
@@ -789,6 +774,38 @@ class TestJIT < Test::Unit::TestCase
     end;
   end
 
+  def test_inlined_builtin_methods
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '', success_count: 1, min_calls: 2)
+    begin;
+      def test
+        float = 0.0
+        float.abs
+        float.-@
+        float.zero?
+      end
+      test
+      test
+    end;
+  end
+
+  def test_inlined_c_method
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "aaa", success_count: 2, recompile_count: 1, min_calls: 2)
+    begin;
+      def test(obj, recursive: nil)
+        if recursive
+          test(recursive)
+        end
+        obj.to_s
+      end
+
+      print(test('a')) # set #to_s cc to String#to_s (expecting C method)
+      print(test('a')) # JIT with #to_s cc: String#to_s
+      # update #to_s cd->cc to Symbol#to_s, then go through the Symbol#to_s cd->cc
+      # after checking receiver class using inlined #to_s cc with String#to_s.
+      print(test('a', recursive: :foo))
+    end;
+  end
+
   def test_inlined_exivar
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "aaa", success_count: 3, recompile_count: 1, min_calls: 2)
     begin;
@@ -823,11 +840,9 @@ class TestJIT < Test::Unit::TestCase
         end
       end
 
-      verbose, $VERBOSE = $VERBOSE, false # suppress "instance variable @b not initialized"
       print(Foo.new.bar)
       print(Foo.new.bar)
       print(Foo.new.bar)
-      $VERBOSE = verbose
     end;
   end
 
@@ -850,6 +865,18 @@ class TestJIT < Test::Unit::TestCase
       rescue FrozenError => e
         p e.class
       end
+    end;
+  end
+
+  def test_inlined_getconstant
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '11', success_count: 1, min_calls: 2)
+    begin;
+      FOO = 1
+      def const
+        FOO
+      end
+      print const
+      print const
     end;
   end
 
@@ -914,6 +941,34 @@ class TestJIT < Test::Unit::TestCase
       test(hoge) # JIT: compile with index=1
       test(fuga) # JIT -> VM: cc set index=2
       print test(hoge) # JIT: should use index=1, not index=2 in cc
+    end;
+  end
+
+  def test_heap_promotion_of_ivar_in_the_middle_of_jit
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "true\ntrue\n", success_count: 2, min_calls: 2)
+    begin;
+      class A
+        def initialize
+          @iv0 = nil
+          @iv1 = []
+          @iv2 = nil
+        end
+
+        def test(add)
+          @iv0.nil?
+          @iv2.nil?
+          add_ivar if add
+          @iv1.empty?
+        end
+
+        def add_ivar
+          @iv3 = nil
+        end
+      end
+
+      a = A.new
+      p a.test(false)
+      p a.test(true)
     end;
   end
 
@@ -1006,6 +1061,10 @@ class TestJIT < Test::Unit::TestCase
     end;
   end
 
+  def test_builtin_frame_omitted_inlining
+    assert_eval_with_jit('0.zero?; 0.zero?; 3.times { p 0.zero? }', stdout: "true\ntrue\ntrue\n", success_count: 1, min_calls: 2)
+  end
+
   def test_program_counter_with_regexpmatch
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "aa", success_count: 1)
     begin;
@@ -1031,6 +1090,30 @@ class TestJIT < Test::Unit::TestCase
       2.times do
         p(Thread.current["a"])
       end
+    end;
+  end
+
+  def test_mjit_pause_wait
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '', success_count: 0, min_calls: 1)
+    begin;
+      RubyVM::JIT.pause
+      proc {}.call
+    end;
+  end
+
+  def test_not_cancel_by_tracepoint_class
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", success_count: 1, min_calls: 2)
+    begin;
+      TracePoint.new(:class) {}.enable
+      2.times {}
+    end;
+  end
+
+  def test_cancel_by_tracepoint
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", success_count: 0, min_calls: 2)
+    begin;
+      TracePoint.new(:line) {}.enable
+      2.times {}
     end;
   end
 

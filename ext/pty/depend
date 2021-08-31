@@ -136,7 +136,6 @@ pty.o: $(hdrdir)/ruby/internal/static_assert.h
 pty.o: $(hdrdir)/ruby/internal/stdalign.h
 pty.o: $(hdrdir)/ruby/internal/stdbool.h
 pty.o: $(hdrdir)/ruby/internal/symbol.h
-pty.o: $(hdrdir)/ruby/internal/token_paste.h
 pty.o: $(hdrdir)/ruby/internal/value.h
 pty.o: $(hdrdir)/ruby/internal/value_type.h
 pty.o: $(hdrdir)/ruby/internal/variable.h
@@ -147,13 +146,10 @@ pty.o: $(hdrdir)/ruby/backward.h
 pty.o: $(hdrdir)/ruby/backward/2/assume.h
 pty.o: $(hdrdir)/ruby/backward/2/attributes.h
 pty.o: $(hdrdir)/ruby/backward/2/bool.h
-pty.o: $(hdrdir)/ruby/backward/2/extern.h
 pty.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 pty.o: $(hdrdir)/ruby/backward/2/inttypes.h
 pty.o: $(hdrdir)/ruby/backward/2/limits.h
 pty.o: $(hdrdir)/ruby/backward/2/long_long.h
-pty.o: $(hdrdir)/ruby/backward/2/r_cast.h
-pty.o: $(hdrdir)/ruby/backward/2/rmodule.h
 pty.o: $(hdrdir)/ruby/backward/2/stdalign.h
 pty.o: $(hdrdir)/ruby/backward/2/stdarg.h
 pty.o: $(hdrdir)/ruby/defines.h

@@ -1,0 +1,29 @@
+prelude: |
+  a = [nil] * 3
+  b = Class.new{attr_writer :a, :b, :c}.new
+  c, d, e, f = nil, nil, nil, nil
+benchmark:
+  array2_2: "c = (a[0], a[1] = 1, 2)"
+  array2_3: "c = (a[0], a[1] = 1, 2, 3)"
+  array3_2: "c = (a[0], a[1], a[2] = 1, 2)"
+  array3_3: "c = (a[0], a[1], a[2] = 1, 2, 3)"
+  attr2_2: "c = (b.a, b.b = 1, 2)"
+  attr2_3: "c = (b.a, b.b = 1, 2, 3)"
+  attr3_2: "c = (b.a, b.b, b.c = 1, 2)"
+  attr3_3: "c = (b.a, b.b, b.c = 1, 2, 3)"
+  lvar2_2: "c = (d, e = 1, 2)"
+  lvar2_3: "c = (d, e = 1, 2, 3)"
+  lvar3_2: "c = (d, e, f = 1, 2)"
+  lvar3_3: "c = (d, e, f = 1, 2, 3)"
+  array2_2p: "(a[0], a[1] = 1, 2; nil)"
+  array2_3p: "(a[0], a[1] = 1, 2, 3; nil)"
+  array3_2p: "(a[0], a[1], a[2] = 1, 2; nil)"
+  array3_3p: "(a[0], a[1], a[2] = 1, 2, 3; nil)"
+  attr2_2p: "(b.a, b.b = 1, 2; nil)"
+  attr2_3p: "(b.a, b.b = 1, 2, 3; nil)"
+  attr3_2p: "(b.a, b.b, b.c = 1, 2; nil)"
+  attr3_3p: "(b.a, b.b, b.c = 1, 2, 3; nil)"
+  lvar2_2p: "(d, e = 1, 2; nil)"
+  lvar2_3p: "(d, e = 1, 2, 3; nil)"
+  lvar3_2p: "(d, e, f = 1, 2; nil)"
+  lvar3_3p: "(d, e, f = 1, 2, 3; nil)"

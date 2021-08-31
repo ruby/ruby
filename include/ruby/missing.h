@@ -84,20 +84,12 @@ RUBY_EXTERN double atanh(double);
 RUBY_EXTERN char *crypt(const char *, const char *);
 #endif
 
-#ifndef HAVE_DUP2
-RUBY_EXTERN int dup2(int, int);
-#endif
-
 #ifndef HAVE_EACCESS
 RUBY_EXTERN int eaccess(const char*, int);
 #endif
 
 #ifndef HAVE_ROUND
 RUBY_EXTERN double round(double);	/* numeric.c */
-#endif
-
-#ifndef HAVE_FINITE
-RUBY_EXTERN int finite(double);
 #endif
 
 #ifndef HAVE_FLOCK
@@ -156,35 +148,9 @@ RUBY_EXTERN const union bytesequence4_or_float rb_nan;
 # define HUGE_VAL ((double)INFINITY)
 #endif
 
-#if defined(isinf)
-# /* Take that. */
-#elif defined(HAVE_ISINF)
-# /* Take that. */
-#elif defined(HAVE_FINITE) && defined(HAVE_ISNAN)
-# define isinf(x) (!finite(x) && !isnan(x))
-#elif defined(__cplusplus) && __cplusplus >= 201103L
-# // <cmath> must include constexpr bool isinf(double);
-#else
-RUBY_EXTERN int isinf(double);
-#endif
-
-#if defined(isnan)
-# /* Take that. */
-#elif defined(HAVE_ISNAN)
-# /* Take that. */
-#elif defined(__cplusplus) && __cplusplus >= 201103L
-# // <cmath> must include constexpr bool isnan(double);
-#else
-RUBY_EXTERN int isnan(double);
-#endif
-
-#if defined(isfinite)
-# /* Take that. */
-#elif defined(HAVE_ISFINITE)
-# /* Take that. */
-#else
-# define HAVE_ISFINITE 1
-# define isfinite(x) finite(x)
+#ifndef HAVE_FINITE
+# define HAVE_FINITE 1
+# define finite(x) isfinite(x)
 #endif
 
 #ifndef HAVE_NAN
@@ -230,10 +196,6 @@ RUBY_EXTERN size_t strlcpy(char *, const char*, size_t);
 
 #ifndef HAVE_STRLCAT
 RUBY_EXTERN size_t strlcat(char *, const char*, size_t);
-#endif
-
-#ifndef HAVE_SIGNBIT
-RUBY_EXTERN int signbit(double x);
 #endif
 
 #ifndef HAVE_FFS

@@ -105,6 +105,7 @@ RSpec.describe "bundle open" do
       skip "No default gems available on this test run" if default_gems.empty?
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "json"
       G
     end

@@ -3,27 +3,6 @@ require 'uri'
 require 'stringio'
 require 'time'
 
-module Kernel
-  private
-  alias open_uri_original_open open # :nodoc:
-  class << self
-    alias open_uri_original_open open # :nodoc:
-  end
-
-  def open(name, *rest, **kw, &block) # :nodoc:
-    if (name.respond_to?(:open) && !name.respond_to?(:to_path)) ||
-       (name.respond_to?(:to_str) &&
-        %r{\A[A-Za-z][A-Za-z0-9+\-\.]*://} =~ name &&
-        (uri = URI.parse(name)).respond_to?(:open))
-      warn('calling URI.open via Kernel#open is deprecated, call URI.open directly or use URI#open', uplevel: 1)
-      URI.open(name, *rest, **kw, &block)
-    else
-      open_uri_original_open(name, *rest, **kw, &block)
-    end
-  end
-  module_function :open
-end
-
 module URI
   # Allows the opening of various resources including URIs.
   #
@@ -49,9 +28,7 @@ module URI
           (uri = URI.parse(name)).respond_to?(:open)
       uri.open(*rest, &block)
     else
-      open_uri_original_open(name, *rest, &block)
-      # After Kernel#open override is removed:
-      #super
+      super
     end
   end
 end
@@ -773,7 +750,12 @@ module URI
         OpenURI.open_http(buf, self, proxy, options)
         return
       end
-      require 'net/ftp'
+
+      begin
+        require 'net/ftp'
+      rescue LoadError
+        abort "net/ftp is not found. You may need to `gem install net-ftp` to install net/ftp."
+      end
 
       path = self.path
       path = path.sub(%r{\A/}, '%2F') # re-encode the beginning slash because uri library decodes it.

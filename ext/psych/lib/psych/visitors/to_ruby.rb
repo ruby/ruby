@@ -24,6 +24,7 @@ module Psych
         super()
         @st = {}
         @ss = ss
+        @load_tags = Psych.load_tags
         @domain_types = Psych.domain_types
         @class_loader = class_loader
         @symbolize_names = symbolize_names
@@ -48,7 +49,7 @@ module Psych
       end
 
       def deserialize o
-        if klass = resolve_class(Psych.load_tags[o.tag])
+        if klass = resolve_class(@load_tags[o.tag])
           instance = klass.allocate
 
           if instance.respond_to?(:init_with)
@@ -128,7 +129,7 @@ module Psych
       end
 
       def visit_Psych_Nodes_Sequence o
-        if klass = resolve_class(Psych.load_tags[o.tag])
+        if klass = resolve_class(@load_tags[o.tag])
           instance = klass.allocate
 
           if instance.respond_to?(:init_with)
@@ -160,8 +161,8 @@ module Psych
       end
 
       def visit_Psych_Nodes_Mapping o
-        if Psych.load_tags[o.tag]
-          return revive(resolve_class(Psych.load_tags[o.tag]), o)
+        if @load_tags[o.tag]
+          return revive(resolve_class(@load_tags[o.tag]), o)
         end
         return revive_hash(register(o, {}), o) unless o.tag
 
@@ -326,6 +327,7 @@ module Psych
       end
 
       private
+
       def register node, object
         @st[node.anchor] = object if node.anchor
         object
@@ -337,18 +339,12 @@ module Psych
         list
       end
 
-      SHOVEL = '<<'
-      def revive_hash hash, o
+      def revive_hash hash, o, tagged= false
         o.children.each_slice(2) { |k,v|
           key = accept(k)
-          if @symbolize_names
-            key = key.to_sym
-          elsif !@freeze
-            key = deduplicate(key)
-          end
           val = accept(v)
 
-          if key == SHOVEL && k.tag != "tag:yaml.org,2002:str"
+          if key == '<<' && k.tag != "tag:yaml.org,2002:str"
             case v
             when Nodes::Alias, Nodes::Mapping
               begin
@@ -370,6 +366,12 @@ module Psych
               hash[key] = val
             end
           else
+            if !tagged && @symbolize_names && key.is_a?(String)
+              key = key.to_sym
+            elsif !@freeze
+              key = deduplicate(key)
+            end
+
             hash[key] = val
           end
 
@@ -402,7 +404,7 @@ module Psych
 
       def revive klass, node
         s = register(node, klass.allocate)
-        init_with(s, revive_hash({}, node), node)
+        init_with(s, revive_hash({}, node, true), node)
       end
 
       def init_with o, h, node

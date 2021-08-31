@@ -6,7 +6,7 @@ require "profile_test_all" if ENV.key?('RUBY_TEST_ALL_PROFILE')
 require "tracepointchecker"
 require "zombie_hunter"
 require "iseq_loader_checker"
-require "gc_compact_checker"
+require "gc_checker"
 
 module Test
   module Unit
@@ -196,6 +196,9 @@ if $0 == __FILE__
       class TestCase < MiniTest::Unit::TestCase # :nodoc: all
         undef on_parallel_worker?
         def on_parallel_worker?
+          true
+        end
+        def self.on_parallel_worker?
           true
         end
       end

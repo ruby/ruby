@@ -146,14 +146,6 @@ describe "Enumerable#any?" do
     end
 
     # may raise an exception in future versions
-    ruby_version_is ""..."2.6" do
-      it "ignores block" do
-        @enum2.any?(NilClass) { raise }.should == true
-        [1, 2, nil].any?(NilClass) { raise }.should == true
-        {a: 1}.any?(Array) { raise }.should == true
-      end
-    end
-
     it "always returns false on empty enumeration" do
       @empty.any?(Integer).should == false
       [].any?(Integer).should == false

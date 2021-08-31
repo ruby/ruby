@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @brief      Internal header to suppres / mandate warnings.
+ * @brief      Internal header to suppress / mandate warnings.
  */
 #include "ruby/internal/warning_push.h"
 #define COMPILER_WARNING_PUSH          RBIMPL_WARNING_PUSH()

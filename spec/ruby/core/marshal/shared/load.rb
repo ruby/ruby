@@ -309,7 +309,8 @@ describe :marshal_load, shared: true do
 
     it "loads an extended Array object containing a user-marshaled object" do
       obj = [UserMarshal.new, UserMarshal.new].extend(Meths)
-      new_obj = Marshal.send(@method, "\x04\be:\nMeths[\ao:\x10UserMarshal\x06:\n@dataI\"\nstuff\x06:\x06ETo;\x06\x06;\aI\"\nstuff\x06;\bT")
+      dump = "\x04\be:\nMeths[\ao:\x10UserMarshal\x06:\n@dataI\"\nstuff\x06:\x06ETo;\x06\x06;\aI\"\nstuff\x06;\bT"
+      new_obj = Marshal.send(@method, dump)
 
       new_obj.should == obj
       obj_ancestors = class << obj; ancestors[1..-1]; end
@@ -399,6 +400,24 @@ describe :marshal_load, shared: true do
       sym.should == s
       sym.encoding.should == Encoding::BINARY
     end
+
+    it "loads multiple Symbols sharing the same encoding" do
+      # Note that the encoding is a link for the second Symbol
+      symbol1 = "I:\t\xE2\x82\xACa\x06:\x06ET"
+      symbol2 = "I:\t\xE2\x82\xACb\x06;\x06T"
+      dump = "\x04\b[\a#{symbol1}#{symbol2}"
+      value = Marshal.send(@method, dump)
+      value.map(&:encoding).should == [Encoding::UTF_8, Encoding::UTF_8]
+      expected = [
+        "€a".force_encoding(Encoding::UTF_8).to_sym,
+        "€b".force_encoding(Encoding::UTF_8).to_sym
+      ]
+      value.should == expected
+
+      value = Marshal.send(@method, "\x04\b[\b#{symbol1}#{symbol2};\x00")
+      value.map(&:encoding).should == [Encoding::UTF_8, Encoding::UTF_8, Encoding::UTF_8]
+      value.should == [*expected, expected[0]]
+    end
   end
 
   describe "for a String" do
@@ -460,20 +479,23 @@ describe :marshal_load, shared: true do
   describe "for a Struct" do
     it "loads a extended_struct having fields with same objects" do
       s = 'hi'
-      obj = Struct.new("Ure2", :a, :b).new.extend(Meths)
+      obj = Struct.new("Extended", :a, :b).new.extend(Meths)
+      dump = "\004\be:\nMethsS:\025Struct::Extended\a:\006a0:\006b0"
+      Marshal.send(@method, dump).should == obj
+
       obj.a = [:a, s]
       obj.b = [:Meths, s]
-
-      Marshal.send(@method,
-        "\004\be:\nMethsS:\021Struct::Ure2\a:\006a[\a;\a\"\ahi:\006b[\a;\000@\a"
-        ).should == obj
-      Struct.send(:remove_const, :Ure2)
+      dump = "\004\be:\nMethsS:\025Struct::Extended\a:\006a[\a;\a\"\ahi:\006b[\a;\000@\a"
+      Marshal.send(@method, dump).should == obj
+      Struct.send(:remove_const, :Extended)
     end
 
     it "loads a struct having ivar" do
       obj = Struct.new("Thick").new
       obj.instance_variable_set(:@foo, 5)
-      Marshal.send(@method, "\004\bIS:\022Struct::Thick\000\006:\t@fooi\n").should == obj
+      reloaded = Marshal.send(@method, "\004\bIS:\022Struct::Thick\000\006:\t@fooi\n")
+      reloaded.should == obj
+      reloaded.instance_variable_get(:@foo).should == 5
       Struct.send(:remove_const, :Thick)
     end
 
@@ -588,6 +610,18 @@ describe :marshal_load, shared: true do
     end
   end
 
+  describe "for an object responding to #marshal_dump and #marshal_load" do
+    it "loads a user-marshaled object" do
+      obj = UserMarshal.new
+      obj.data = :data
+      value = [obj, :data]
+      dump = Marshal.dump(value)
+      dump.should == "\x04\b[\aU:\x10UserMarshal:\tdata;\x06"
+      reloaded = Marshal.load(dump)
+      reloaded.should == value
+    end
+  end
+
   describe "for a user object" do
     it "loads a user-marshaled extended object" do
       obj = UserMarshal.new.extend(Meths)
@@ -667,7 +701,7 @@ describe :marshal_load, shared: true do
     end
   end
 
-  describe "for a Integer" do
+  describe "for an Integer" do
     it "loads 0" do
       Marshal.send(@method, "\004\bi\000").should == 0
       Marshal.send(@method, "\004\bi\005").should == 0
@@ -746,13 +780,13 @@ describe :marshal_load, shared: true do
         it "dumps a Fixnum" do
           val = Marshal.send(@method, "\004\bl+\ab:wU")
           val.should == 1433877090
-          val.class.should == Fixnum
+          val.class.should == Integer
         end
 
         it "dumps an array containing multiple references to the Bignum as an array of Fixnum" do
           arr = Marshal.send(@method, "\004\b[\al+\a\223BwU@\006")
           arr.should == [1433879187, 1433879187]
-          arr.each { |v| v.class.should == Fixnum }
+          arr.each { |v| v.class.should == Integer }
         end
       end
     end

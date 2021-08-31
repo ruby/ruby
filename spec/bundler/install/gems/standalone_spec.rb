@@ -7,6 +7,12 @@ RSpec.shared_examples "bundle install --standalone" do
       expect(the_bundle).to include_gems(*args)
     end
 
+    it "still makes system gems unavailable to normal bundler" do
+      system_gems "rack-1.0.0"
+
+      expect(the_bundle).to_not include_gems("rack")
+    end
+
     it "generates a bundle/bundler/setup.rb" do
       expect(bundled_app("bundle/bundler/setup.rb")).to exist
     end
@@ -24,6 +30,39 @@ RSpec.shared_examples "bundle install --standalone" do
       ruby testrb
 
       expect(out).to eq(expected_gems.values.join("\n"))
+    end
+
+    it "makes the gems available without bundler via Kernel.require" do
+      testrb = String.new <<-RUBY
+        $:.unshift File.expand_path("bundle")
+        require "bundler/setup"
+
+      RUBY
+      expected_gems.each do |k, _|
+        testrb << "\nKernel.require \"#{k}\""
+        testrb << "\nputs #{k.upcase}"
+      end
+      ruby testrb
+
+      expect(out).to eq(expected_gems.values.join("\n"))
+    end
+
+    it "makes system gems unavailable without bundler" do
+      system_gems "rack-1.0.0"
+
+      testrb = String.new <<-RUBY
+        $:.unshift File.expand_path("bundle")
+        require "bundler/setup"
+
+        begin
+          require "rack"
+        rescue LoadError
+          puts "LoadError"
+        end
+      RUBY
+      ruby testrb
+
+      expect(out).to eq("LoadError")
     end
 
     it "works on a different system" do
@@ -55,7 +94,7 @@ RSpec.shared_examples "bundle install --standalone" do
         source "#{file_uri_for(gem_repo1)}"
         gem "rails"
       G
-      bundle "config --local path #{bundled_app("bundle")}"
+      bundle "config set --local path #{bundled_app("bundle")}"
       bundle :install, :standalone => true, :dir => cwd
     end
 
@@ -71,7 +110,7 @@ RSpec.shared_examples "bundle install --standalone" do
 
   describe "with gems with native extension", :ruby_repo do
     before do
-      bundle "config --local path #{bundled_app("bundle")}"
+      bundle "config set --local path #{bundled_app("bundle")}"
       install_gemfile <<-G, :standalone => true, :dir => cwd
         source "#{file_uri_for(gem_repo1)}"
         gem "very_simple_binary"
@@ -81,8 +120,8 @@ RSpec.shared_examples "bundle install --standalone" do
     it "generates a bundle/bundler/setup.rb with the proper paths" do
       expected_path = bundled_app("bundle/bundler/setup.rb")
       extension_line = File.read(expected_path).each_line.find {|line| line.include? "/extensions/" }.strip
-      expect(extension_line).to start_with '$:.unshift "#{path}/../#{ruby_engine}/#{ruby_version}/extensions/'
-      expect(extension_line).to end_with '/very_simple_binary-1.0"'
+      expect(extension_line).to start_with '$:.unshift File.expand_path("#{path}/../#{ruby_engine}/#{ruby_version}/extensions/'
+      expect(extension_line).to end_with '/very_simple_binary-1.0")'
     end
   end
 
@@ -105,8 +144,9 @@ RSpec.shared_examples "bundle install --standalone" do
           end
         G
       end
-      bundle "config --local path #{bundled_app("bundle")}"
+      bundle "config set --local path #{bundled_app("bundle")}"
       install_gemfile <<-G, :standalone => true, :dir => cwd, :raise_on_error => false
+        source "#{file_uri_for(gem_repo1)}"
         gem "bar", :git => "#{lib_path("bar-1.0")}"
       G
     end
@@ -126,7 +166,7 @@ RSpec.shared_examples "bundle install --standalone" do
         gem "rails"
         gem "devise", :git => "#{lib_path("devise-1.0")}"
       G
-      bundle "config --local path #{bundled_app("bundle")}"
+      bundle "config set --local path #{bundled_app("bundle")}"
       bundle :install, :standalone => true, :dir => cwd
     end
 
@@ -154,7 +194,7 @@ RSpec.shared_examples "bundle install --standalone" do
           gem "rack-test"
         end
       G
-      bundle "config --local path #{bundled_app("bundle")}"
+      bundle "config set --local path #{bundled_app("bundle")}"
       bundle :install, :standalone => true, :dir => cwd
     end
 
@@ -168,7 +208,7 @@ RSpec.shared_examples "bundle install --standalone" do
     include_examples "common functionality"
 
     it "allows creating a standalone file with limited groups" do
-      bundle "config --local path #{bundled_app("bundle")}"
+      bundle "config set --local path #{bundled_app("bundle")}"
       bundle :install, :standalone => "default", :dir => cwd
 
       load_error_ruby <<-RUBY, "spec"
@@ -185,8 +225,8 @@ RSpec.shared_examples "bundle install --standalone" do
     end
 
     it "allows `without` configuration to limit the groups used in a standalone" do
-      bundle "config --local path #{bundled_app("bundle")}"
-      bundle "config --local without test"
+      bundle "config set --local path #{bundled_app("bundle")}"
+      bundle "config set --local without test"
       bundle :install, :standalone => true, :dir => cwd
 
       load_error_ruby <<-RUBY, "spec"
@@ -203,7 +243,7 @@ RSpec.shared_examples "bundle install --standalone" do
     end
 
     it "allows `path` configuration to change the location of the standalone bundle" do
-      bundle "config --local path path/to/bundle"
+      bundle "config set --local path path/to/bundle"
       bundle "install", :standalone => true, :dir => cwd
 
       ruby <<-RUBY
@@ -218,9 +258,9 @@ RSpec.shared_examples "bundle install --standalone" do
     end
 
     it "allows `without` to limit the groups used in a standalone" do
-      bundle "config --local without test"
+      bundle "config set --local without test"
       bundle :install, :dir => cwd
-      bundle "config --local path #{bundled_app("bundle")}"
+      bundle "config set --local path #{bundled_app("bundle")}"
       bundle :install, :standalone => true, :dir => cwd
 
       load_error_ruby <<-RUBY, "spec"
@@ -246,7 +286,7 @@ RSpec.shared_examples "bundle install --standalone" do
           source "#{source_uri}"
           gem "rails"
         G
-        bundle "config --local path #{bundled_app("bundle")}"
+        bundle "config set --local path #{bundled_app("bundle")}"
         bundle :install, :standalone => true, :artifice => "endpoint", :dir => cwd
       end
 
@@ -267,7 +307,7 @@ RSpec.shared_examples "bundle install --standalone" do
         source "#{file_uri_for(gem_repo1)}"
         gem "rails"
       G
-      bundle "config --local path #{bundled_app("bundle")}"
+      bundle "config set --local path #{bundled_app("bundle")}"
       bundle :install, :standalone => true, :binstubs => true, :dir => cwd
     end
 
@@ -281,14 +321,10 @@ RSpec.shared_examples "bundle install --standalone" do
     include_examples "common functionality"
 
     it "creates stubs that use the standalone load path" do
-      skip "exec format error" if Gem.win_platform?
-
       expect(sys_exec("bin/rails -v").chomp).to eql "2.3.2"
     end
 
     it "creates stubs that can be executed from anywhere" do
-      skip "exec format error" if Gem.win_platform?
-
       require "tmpdir"
       sys_exec(%(#{bundled_app("bin/rails")} -v), :dir => Dir.tmpdir)
       expect(out).to eq("2.3.2")

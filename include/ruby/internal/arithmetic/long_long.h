@@ -25,12 +25,12 @@
 #include "ruby/internal/special_consts.h"
 #include "ruby/backward/2/long_long.h"
 
-#define RB_LL2NUM  rb_ll2inum
-#define RB_ULL2NUM rb_ull2inum
+#define RB_LL2NUM  rb_ll2num_inline
+#define RB_ULL2NUM rb_ull2num_inline
 #define LL2NUM     RB_LL2NUM
 #define ULL2NUM    RB_ULL2NUM
 #define RB_NUM2LL  rb_num2ll_inline
-#define RB_NUM2ULL rb_num2ull
+#define RB_NUM2ULL rb_num2ull_inline
 #define NUM2LL     RB_NUM2LL
 #define NUM2ULL    RB_NUM2ULL
 
@@ -41,6 +41,20 @@ LONG_LONG rb_num2ll(VALUE);
 unsigned LONG_LONG rb_num2ull(VALUE);
 RBIMPL_SYMBOL_EXPORT_END()
 
+static inline VALUE
+rb_ll2num_inline(LONG_LONG n)
+{
+    if (FIXABLE(n)) return LONG2FIX((long)n);
+    return rb_ll2inum(n);
+}
+
+static inline VALUE
+rb_ull2num_inline(unsigned LONG_LONG n)
+{
+    if (POSFIXABLE(n)) return LONG2FIX((long)n);
+    return rb_ull2inum(n);
+}
+
 static inline LONG_LONG
 rb_num2ll_inline(VALUE x)
 {
@@ -48,6 +62,15 @@ rb_num2ll_inline(VALUE x)
         return RB_FIX2LONG(x);
     else
         return rb_num2ll(x);
+}
+
+static inline unsigned LONG_LONG
+rb_num2ull_inline(VALUE x)
+{
+    if (RB_FIXNUM_P(x))
+        return RB_FIX2LONG(x);
+    else
+        return rb_num2ull(x);
 }
 
 #endif /* RBIMPL_ARITHMETIC_LONG_LONG_H */

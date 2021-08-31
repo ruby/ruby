@@ -1,11 +1,12 @@
 require_relative '../../spec_helper'
 
-platform_is_not :windows do
-  describe "Signal.trap" do
+describe "Signal.trap" do
+  platform_is_not :windows do
     before :each do
       ScratchPad.clear
       @proc = -> {}
       @saved_trap = Signal.trap(:HUP, @proc)
+      @hup_number = Signal.list["HUP"]
     end
 
     after :each do
@@ -16,10 +17,11 @@ platform_is_not :windows do
       Signal.trap(:HUP, @saved_trap).should equal(@proc)
     end
 
-    it "accepts a block in place of a proc/command argument" do
+    it "accepts a block" do
       done = false
 
-      Signal.trap(:HUP) do
+      Signal.trap(:HUP) do |signo|
+        signo.should == @hup_number
         ScratchPad.record :block_trap
         done = true
       end
@@ -28,6 +30,94 @@ platform_is_not :windows do
       Thread.pass until done
 
       ScratchPad.recorded.should == :block_trap
+    end
+
+    it "accepts a proc" do
+      done = false
+
+      handler = -> signo {
+        signo.should == @hup_number
+        ScratchPad.record :proc_trap
+        done = true
+      }
+
+      Signal.trap(:HUP, handler)
+
+      Process.kill :HUP, Process.pid
+      Thread.pass until done
+
+      ScratchPad.recorded.should == :proc_trap
+    end
+
+    it "accepts a method" do
+      done = false
+
+      handler_class = Class.new
+      hup_number = @hup_number
+
+      handler_class.define_method :handler_method do |signo|
+        signo.should == hup_number
+        ScratchPad.record :method_trap
+        done = true
+      end
+
+      handler_method = handler_class.new.method(:handler_method)
+
+      Signal.trap(:HUP, handler_method)
+
+      Process.kill :HUP, Process.pid
+      Thread.pass until done
+
+      ScratchPad.recorded.should == :method_trap
+    end
+
+    it "accepts anything you can call" do
+      done = false
+
+      callable = Object.new
+      hup_number = @hup_number
+
+      callable.singleton_class.define_method :call do |signo|
+        signo.should == hup_number
+        ScratchPad.record :callable_trap
+        done = true
+      end
+
+      Signal.trap(:HUP, callable)
+
+      Process.kill :HUP, Process.pid
+      Thread.pass until done
+
+      ScratchPad.recorded.should == :callable_trap
+    end
+
+    it "raises an exception for a non-callable at the point of use" do
+      not_callable = Object.new
+      Signal.trap(:HUP, not_callable)
+      -> {
+        Process.kill :HUP, Process.pid
+        loop { Thread.pass }
+      }.should raise_error(NoMethodError)
+    end
+
+    it "accepts a non-callable that becomes callable when used" do
+      done = false
+
+      late_callable = Object.new
+      hup_number = @hup_number
+
+      Signal.trap(:HUP, late_callable)
+
+      late_callable.singleton_class.define_method :call do |signo|
+        signo.should == hup_number
+        ScratchPad.record :late_callable_trap
+        done = true
+      end
+
+      Process.kill :HUP, Process.pid
+      Thread.pass until done
+
+      ScratchPad.recorded.should == :late_callable_trap
     end
 
     it "is possible to create a new Thread when the handler runs" do
@@ -49,7 +139,21 @@ platform_is_not :windows do
 
     it "registers an handler doing nothing with :IGNORE" do
       Signal.trap :HUP, :IGNORE
+      Signal.trap(:HUP, @saved_trap).should == "IGNORE"
+    end
+
+    it "can register a new handler after :IGNORE" do
+      Signal.trap :HUP, :IGNORE
+
+      done = false
+      Signal.trap(:HUP) do
+        ScratchPad.record :block_trap
+        done = true
+      end
+
       Process.kill(:HUP, Process.pid).should == 1
+      Thread.pass until done
+      ScratchPad.recorded.should == :block_trap
     end
 
     it "ignores the signal when passed nil" do
@@ -116,14 +220,12 @@ platform_is_not :windows do
       Signal.trap :HUP, @proc
       Signal.trap(:HUP, @saved_trap).should equal(@proc)
     end
-  end
 
-  describe "Signal.trap" do
     # See man 2 signal
     %w[KILL STOP].each do |signal|
       it "raises ArgumentError or Errno::EINVAL for SIG#{signal}" do
         -> {
-          trap(signal, -> {})
+          Signal.trap(signal, -> {})
         }.should raise_error(StandardError) { |e|
           [ArgumentError, Errno::EINVAL].should include(e.class)
           e.message.should =~ /Invalid argument|Signal already used by VM or OS/
@@ -138,7 +240,7 @@ platform_is_not :windows do
     end
 
     it "returns 'DEFAULT' for the initial SIGINT handler" do
-      ruby_exe('print trap(:INT) { abort }').should == 'DEFAULT'
+      ruby_exe("print Signal.trap(:INT) { abort }").should == 'DEFAULT'
     end
 
     it "returns SYSTEM_DEFAULT if passed DEFAULT and no handler was ever set" do
@@ -152,7 +254,7 @@ platform_is_not :windows do
         r.close
         loop { w.write("a"*1024) }
       RUBY
-      out = ruby_exe(code)
+      out = ruby_exe(code, exit_status: nil)
       status = $?
       out.should == "nil\n"
       status.should.signaled?
@@ -160,23 +262,22 @@ platform_is_not :windows do
       Signal.signame(status.termsig).should == "PIPE"
     end
   end
-end
 
-describe "Signal.trap" do
   describe "the special EXIT signal code" do
     it "accepts the EXIT code" do
-      code = "trap(:EXIT, proc { print 1 })"
+      code = "Signal.trap(:EXIT, proc { print 1 })"
       ruby_exe(code).should == "1"
     end
 
     it "runs the proc before at_exit handlers" do
-      code = "at_exit {print 1}; trap(:EXIT, proc {print 2}); at_exit {print 3}"
+      code = "at_exit {print 1}; Signal.trap(:EXIT, proc {print 2}); at_exit {print 3}"
       ruby_exe(code).should == "231"
     end
 
     it "can unset the handler" do
-      code = "trap(:EXIT, proc { print 1 }); trap(:EXIT, 'DEFAULT')"
+      code = "Signal.trap(:EXIT, proc { print 1 }); Signal.trap(:EXIT, 'DEFAULT')"
       ruby_exe(code).should == ""
     end
   end
+
 end

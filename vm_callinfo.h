@@ -267,8 +267,7 @@ vm_ci_markable(const struct rb_callinfo *ci)
 typedef VALUE (*vm_call_handler)(
     struct rb_execution_context_struct *ec,
     struct rb_control_frame_struct *cfp,
-    struct rb_calling_info *calling,
-    struct rb_call_data *cd);
+    struct rb_calling_info *calling);
 
 // imemo_callcache
 
@@ -358,6 +357,17 @@ vm_cc_markable(const struct rb_callcache *cc)
     return FL_TEST_RAW((VALUE)cc, VM_CALLCACHE_UNMARKABLE) == 0;
 }
 
+static inline bool
+vm_cc_invalidated_p(const struct rb_callcache *cc)
+{
+    if (cc->klass && !METHOD_ENTRY_INVALIDATED(vm_cc_cme(cc))) {
+        return false;
+    }
+    else {
+        return true;
+    }
+}
+
 // For MJIT. cc_cme is supposed to have inlined `vm_cc_cme(cc)`.
 static inline bool
 vm_cc_valid_p(const struct rb_callcache *cc, const rb_callable_method_entry_t *cc_cme, VALUE klass)
@@ -374,19 +384,7 @@ vm_cc_valid_p(const struct rb_callcache *cc, const rb_callable_method_entry_t *c
 extern const struct rb_callcache *rb_vm_empty_cc(void);
 #define vm_cc_empty() rb_vm_empty_cc()
 
-/* callcache: mutete */
-
-static inline void
-vm_cc_cme_set(const struct rb_callcache *cc, const struct rb_callable_method_entry_struct *cme)
-{
-    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
-    VM_ASSERT(cc != vm_cc_empty());
-    VM_ASSERT(vm_cc_cme(cc) != NULL);
-    VM_ASSERT(vm_cc_cme(cc)->called_id == cme->called_id);
-    VM_ASSERT(!vm_cc_markable(cc)); // only used for vm_eval.c
-
-    *((const struct rb_callable_method_entry_struct **)&cc->cme_) = cme;
-}
+/* callcache: mutate */
 
 static inline void
 vm_cc_call_set(const struct rb_callcache *cc, vm_call_handler call)

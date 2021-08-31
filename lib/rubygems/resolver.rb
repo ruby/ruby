@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 require 'rubygems/dependency'
 require 'rubygems/exceptions'
-require 'rubygems/util'
 require 'rubygems/util/list'
 
 ##
@@ -11,7 +10,6 @@ require 'rubygems/util/list'
 # all the requirements.
 
 class Gem::Resolver
-
   require 'rubygems/resolver/molinillo'
 
   ##
@@ -263,7 +261,12 @@ class Gem::Resolver
   end
 
   def requirement_satisfied_by?(requirement, activated, spec)
-    requirement.matches_spec? spec
+    matches_spec = requirement.matches_spec? spec
+    return matches_spec if @soft_missing
+
+    matches_spec &&
+      spec.spec.required_ruby_version.satisfied_by?(Gem.ruby_version) &&
+      spec.spec.required_rubygems_version.satisfied_by?(Gem.rubygems_version)
   end
 
   def name_for(dependency)
@@ -283,7 +286,7 @@ class Gem::Resolver
         amount_constrained(dependency),
         conflicts[name] ? 0 : 1,
         activated.vertex_named(name).payload ? 0 : search_for(dependency).count,
-        i # for stable sort
+        i, # for stable sort
       ]
     end
   end
@@ -313,7 +316,6 @@ class Gem::Resolver
     end
   end
   private :amount_constrained
-
 end
 
 require 'rubygems/resolver/activation_request'

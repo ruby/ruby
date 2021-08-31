@@ -140,6 +140,13 @@ module Bundler
           end
         end
 
+        # Set internal representation to fetch the gems/specs locally.
+        #
+        # When this is called, the source should try to fetch the specs and
+        # install from the local system.
+        def local!
+        end
+
         # Set internal representation to fetch the gems/specs from remote.
         #
         # When this is called, the source should try to fetch the specs and
@@ -237,6 +244,20 @@ module Bundler
           specs.unmet_dependency_names
         end
 
+        # Used by definition.
+        #
+        # Note: Do not override if you don't know what you are doing.
+        def spec_names
+          specs.spec_names
+        end
+
+        # Used by definition.
+        #
+        # Note: Do not override if you don't know what you are doing.
+        def add_dependency_names(names)
+          @dependencies |= Array(names)
+        end
+
         # Note: Do not override if you don't know what you are doing.
         def can_lock?(spec)
           spec.source == self
@@ -260,7 +281,7 @@ module Bundler
         end
 
         def to_s
-          "plugin source for #{options[:type]} with uri #{uri}"
+          "plugin source for #{@type} with uri #{@uri}"
         end
 
         # Note: Do not override if you don't know what you are doing.

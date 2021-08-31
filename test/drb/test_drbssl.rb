@@ -34,7 +34,7 @@ class DRbSSLService < DRbService
         [ ["C","JP"], ["O","Foo.DRuby.Org"], ["CN", "Sample"] ]
     end
 
-    @server = DRb::DRbServer.new('drbssl://:0', manager, config)
+    @server = DRb::DRbServer.new('drbssl://localhost:0', manager, config)
   end
 end
 

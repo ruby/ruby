@@ -12,7 +12,6 @@ require 'rubygems/version_option'
 # See `gem help install`
 
 class Gem::Commands::InstallCommand < Gem::Command
-
   attr_reader :installed_specs # :nodoc:
 
   include Gem::VersionOption
@@ -27,6 +26,8 @@ class Gem::Commands::InstallCommand < Gem::Command
       :version           => Gem::Requirement.default,
       :without_groups    => [],
     })
+
+    defaults.merge!(install_update_options)
 
     super 'install', 'Install a gem into the local repository', defaults
 
@@ -44,8 +45,9 @@ class Gem::Commands::InstallCommand < Gem::Command
   end
 
   def defaults_str # :nodoc:
-    "--both --version '#{Gem::Requirement.default}' --document --no-force\n" +
-    "--install-dir #{Gem.dir} --lock"
+    "--both --version '#{Gem::Requirement.default}' --no-force\n" +
+    "--install-dir #{Gem.dir} --lock\n" +
+    install_update_defaults_str
   end
 
   def description # :nodoc:
@@ -128,7 +130,7 @@ You can use `i` command instead of `install`.
   end
 
   def usage # :nodoc:
-    "#{program_name} GEMNAME [GEMNAME ...] [options] -- --build-flags"
+    "#{program_name} [options] GEMNAME [GEMNAME ...] -- --build-flags"
   end
 
   def check_install_dir # :nodoc:
@@ -270,5 +272,4 @@ You can use `i` command instead of `install`.
     gems = @installed_specs.length == 1 ? 'gem' : 'gems'
     say "#{@installed_specs.length} #{gems} installed"
   end
-
 end

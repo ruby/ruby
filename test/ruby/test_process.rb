@@ -1425,6 +1425,8 @@ class TestProcess < Test::Unit::TestCase
       assert_equal(s.to_i >> 1, s >> 1)
       assert_equal(false, s.stopped?)
       assert_equal(nil, s.stopsig)
+
+      assert_equal(s, Marshal.load(Marshal.dump(s)))
     end
   end
 
@@ -1442,6 +1444,8 @@ class TestProcess < Test::Unit::TestCase
       assert_equal(expected,
                    [s.exited?, s.signaled?, s.stopped?, s.success?],
                    "[s.exited?, s.signaled?, s.stopped?, s.success?]")
+
+      assert_equal(s, Marshal.load(Marshal.dump(s)))
     end
   end
 
@@ -1456,6 +1460,27 @@ class TestProcess < Test::Unit::TestCase
                    "[s.exited?, s.signaled?, s.stopped?, s.success?]")
       assert_equal("#<Process::Status: pid #{ s.pid } SIGQUIT (signal #{ s.termsig })>",
                    s.inspect.sub(/ \(core dumped\)(?=>\z)/, ''))
+
+      assert_equal(s, Marshal.load(Marshal.dump(s)))
+    end
+  end
+
+  def test_status_fail
+    ret = Process::Status.wait($$)
+    assert_instance_of(Process::Status, ret)
+    assert_equal(-1, ret.pid)
+  end
+
+
+  def test_status_wait
+    IO.popen([RUBY, "-e", "gets"], "w") do |io|
+      pid = io.pid
+      assert_nil(Process::Status.wait(pid, Process::WNOHANG))
+      io.puts
+      ret = Process::Status.wait(pid)
+      assert_instance_of(Process::Status, ret)
+      assert_equal(pid, ret.pid)
+      assert_predicate(ret, :exited?)
     end
   end
 
@@ -1681,7 +1706,7 @@ class TestProcess < Test::Unit::TestCase
       Process.wait pid
       assert_send [sig_r, :wait_readable, 5], 'self-pipe not readable'
     end
-    if RubyVM::MJIT.enabled? # checking -DMJIT_FORCE_ENABLE. It may trigger extra SIGCHLD.
+    if defined?(RubyVM::JIT) && RubyVM::JIT.enabled? # checking -DMJIT_FORCE_ENABLE. It may trigger extra SIGCHLD.
       assert_equal [true], signal_received.uniq, "[ruby-core:19744]"
     else
       assert_equal [true], signal_received, "[ruby-core:19744]"
@@ -1746,6 +1771,7 @@ class TestProcess < Test::Unit::TestCase
     min = 1_000 / (cmd.size + sep.size)
     cmds = Array.new(min, cmd)
     exs = [Errno::ENOENT]
+    exs << Errno::EINVAL if windows?
     exs << Errno::E2BIG if defined?(Errno::E2BIG)
     opts = {[STDOUT, STDERR]=>File::NULL}
     opts[:rlimit_nproc] = 128 if defined?(Process::RLIMIT_NPROC)
@@ -2407,7 +2433,7 @@ EOS
         rescue SystemCallError
           w.syswrite("exec failed\n")
         end
-        q = Queue.new
+        q = Thread::Queue.new
         th1 = Thread.new { i = 0; i += 1 while q.empty?; i }
         th2 = Thread.new { j = 0; j += 1 while q.empty? && Thread.pass.nil?; j }
         sleep 0.5
@@ -2490,6 +2516,12 @@ EOS
   def test_last_status
     Process.wait spawn(RUBY, "-e", "exit 13")
     assert_same(Process.last_status, $?)
+  end
+
+  def test_last_status_failure
+    assert_nil system("sad")
+    assert_not_predicate $?, :success?
+    assert_equal $?.exitstatus, 127
   end
 
   def test_exec_failure_leaves_no_child

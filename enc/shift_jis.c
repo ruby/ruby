@@ -55,13 +55,13 @@ OnigEncodingDefine(shift_jis, Shift_JIS) = {
  * Name: Shift_JIS
  * MIBenum: 17
  * Link: http://www.iana.org/assignments/character-sets
- * Link: http://ja.wikipedia.org/wiki/Shift_JIS
+ * Link: https://ja.wikipedia.org/wiki/Shift_JIS
  */
 
 /*
  * Name: MacJapanese
  * Link: http://unicode.org/Public/MAPPINGS/VENDORS/APPLE/JAPANESE.TXT
- * Link: http://ja.wikipedia.org/wiki/MacJapanese
+ * Link: https://ja.wikipedia.org/wiki/MacJapanese
  */
 ENC_REPLICATE("MacJapanese", "Shift_JIS")
 ENC_ALIAS("MacJapan", "MacJapanese")

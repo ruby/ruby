@@ -21,13 +21,12 @@
  * @brief      Defines #RBIMPL_HAS_DECLSPEC_ATTRIBUTE.
  */
 #include "ruby/internal/compiler_since.h"
-#include "ruby/internal/token_paste.h"
 
 /** Wraps (or simulates) `__has_declspec_attribute`. */
 #if defined(__has_declspec_attribute)
 # define RBIMPL_HAS_DECLSPEC_ATTRIBUTE(_) __has_declspec_attribute(_)
 #else
-# define RBIMPL_HAS_DECLSPEC_ATTRIBUTE(_) RBIMPL_TOKEN_PASTE(RBIMPL_HAS_DECLSPEC_ATTRIBUTE_, _)
+# define RBIMPL_HAS_DECLSPEC_ATTRIBUTE(_) (RBIMPL_HAS_DECLSPEC_ATTRIBUTE_ ## _)
 # define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_align       RBIMPL_COMPILER_SINCE(MSVC, 8, 0, 0)
 # define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_deprecated  RBIMPL_COMPILER_SINCE(MSVC,13, 0, 0)
 # define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_dllexport   RBIMPL_COMPILER_SINCE(MSVC, 8, 0, 0)

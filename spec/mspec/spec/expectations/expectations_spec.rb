@@ -1,29 +1,29 @@
 require 'spec_helper'
 require 'mspec/expectations/expectations'
 
-describe SpecExpectationNotMetError do
+RSpec.describe SpecExpectationNotMetError do
   it "is a subclass of StandardError" do
-    SpecExpectationNotMetError.ancestors.should include(StandardError)
+    expect(SpecExpectationNotMetError.ancestors).to include(StandardError)
   end
 end
 
-describe SpecExpectationNotFoundError do
+RSpec.describe SpecExpectationNotFoundError do
   it "is a subclass of StandardError" do
-    SpecExpectationNotFoundError.ancestors.should include(StandardError)
+    expect(SpecExpectationNotFoundError.ancestors).to include(StandardError)
   end
 end
 
-describe SpecExpectationNotFoundError, "#message" do
+RSpec.describe SpecExpectationNotFoundError, "#message" do
   it "returns 'No behavior expectation was found in the example'" do
     m = SpecExpectationNotFoundError.new.message
-    m.should == "No behavior expectation was found in the example"
+    expect(m).to eq("No behavior expectation was found in the example")
   end
 end
 
-describe SpecExpectation, "#fail_with" do
+RSpec.describe SpecExpectation, "#fail_with" do
   it "raises an SpecExpectationNotMetError" do
-    lambda {
+    expect {
       SpecExpectation.fail_with "expected this", "to equal that"
-    }.should raise_error(SpecExpectationNotMetError, "expected this to equal that")
+    }.to raise_error(SpecExpectationNotMetError, "expected this to equal that")
   end
 end

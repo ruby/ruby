@@ -25,7 +25,7 @@
  *
  * Q: Why all the macros defined in this file are function-like macros?
  *
- * A: Sigh.   This  is  because of  Doxgen.   Its  `SKIP_FUNCTION_MACROS = YES`
+ * A: Sigh.   This  is  because of  Doxygen.  Its  `SKIP_FUNCTION_MACROS = YES`
  *    configuration setting  requests us  that if  we want  it to  ignore these
  *    macros,  then we  have to  do  two things:  (1)  let them  be defined  as
  *    function-like macros,  and (2) place  them separately in their  own line,

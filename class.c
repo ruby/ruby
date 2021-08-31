@@ -27,6 +27,7 @@
 #include <ctype.h>
 
 #include "constant.h"
+#include "debug_counter.h"
 #include "id_table.h"
 #include "internal.h"
 #include "internal/class.h"
@@ -40,6 +41,11 @@
 
 #define id_attached id__attached__
 
+#define METACLASS_OF(k) RBASIC(k)->klass
+#define SET_METACLASS_OF(k, cls) RBASIC_SET_CLASS(k, cls)
+
+RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
+
 void
 rb_class_subclass_add(VALUE super, VALUE klass)
 {
@@ -50,14 +56,14 @@ rb_class_subclass_add(VALUE super, VALUE klass)
 	entry->klass = klass;
 	entry->next = NULL;
 
-	head = RCLASS_EXT(super)->subclasses;
+	head = RCLASS_SUBCLASSES(super);
 	if (head) {
 	    entry->next = head;
-	    RCLASS_EXT(head->klass)->parent_subclasses = &entry->next;
+	    RCLASS_PARENT_SUBCLASSES(head->klass) = &entry->next;
 	}
 
-	RCLASS_EXT(super)->subclasses = entry;
-	RCLASS_EXT(klass)->parent_subclasses = &RCLASS_EXT(super)->subclasses;
+	RCLASS_SUBCLASSES(super) = entry;
+	RCLASS_PARENT_SUBCLASSES(klass) = &RCLASS_SUBCLASSES(super);
     }
 }
 
@@ -70,57 +76,57 @@ rb_module_add_to_subclasses_list(VALUE module, VALUE iclass)
     entry->klass = iclass;
     entry->next = NULL;
 
-    head = RCLASS_EXT(module)->subclasses;
+    head = RCLASS_SUBCLASSES(module);
     if (head) {
 	entry->next = head;
-	RCLASS_EXT(head->klass)->module_subclasses = &entry->next;
+	RCLASS_MODULE_SUBCLASSES(head->klass) = &entry->next;
     }
 
-    RCLASS_EXT(module)->subclasses = entry;
-    RCLASS_EXT(iclass)->module_subclasses = &RCLASS_EXT(module)->subclasses;
+    RCLASS_SUBCLASSES(module) = entry;
+    RCLASS_MODULE_SUBCLASSES(iclass) = &RCLASS_SUBCLASSES(module);
 }
 
 void
 rb_class_remove_from_super_subclasses(VALUE klass)
 {
-    rb_subclass_entry_t *entry;
+    rb_subclass_entry_t **prev = RCLASS_PARENT_SUBCLASSES(klass);
 
-    if (RCLASS_EXT(klass)->parent_subclasses) {
-	entry = *RCLASS_EXT(klass)->parent_subclasses;
+    if (prev) {
+	rb_subclass_entry_t *entry = *prev, *next = entry->next;
 
-	*RCLASS_EXT(klass)->parent_subclasses = entry->next;
-	if (entry->next) {
-	    RCLASS_EXT(entry->next->klass)->parent_subclasses = RCLASS_EXT(klass)->parent_subclasses;
+	*prev = next;
+	if (next) {
+	    RCLASS_PARENT_SUBCLASSES(next->klass) = prev;
 	}
 	xfree(entry);
     }
 
-    RCLASS_EXT(klass)->parent_subclasses = NULL;
+    RCLASS_PARENT_SUBCLASSES(klass) = NULL;
 }
 
 void
 rb_class_remove_from_module_subclasses(VALUE klass)
 {
-    rb_subclass_entry_t *entry;
+    rb_subclass_entry_t **prev = RCLASS_MODULE_SUBCLASSES(klass);
 
-    if (RCLASS_EXT(klass)->module_subclasses) {
-	entry = *RCLASS_EXT(klass)->module_subclasses;
-	*RCLASS_EXT(klass)->module_subclasses = entry->next;
+    if (prev) {
+        rb_subclass_entry_t *entry = *prev, *next = entry->next;
 
-	if (entry->next) {
-	    RCLASS_EXT(entry->next->klass)->module_subclasses = RCLASS_EXT(klass)->module_subclasses;
+	*prev = next;
+	if (next) {
+	    RCLASS_MODULE_SUBCLASSES(next->klass) = prev;
 	}
 
 	xfree(entry);
     }
 
-    RCLASS_EXT(klass)->module_subclasses = NULL;
+    RCLASS_MODULE_SUBCLASSES(klass) = NULL;
 }
 
 void
 rb_class_foreach_subclass(VALUE klass, void (*f)(VALUE, VALUE), VALUE arg)
 {
-    rb_subclass_entry_t *cur = RCLASS_EXT(klass)->subclasses;
+    rb_subclass_entry_t *cur = RCLASS_SUBCLASSES(klass);
 
     /* do not be tempted to simplify this loop into a for loop, the order of
        operations is important here if `f` modifies the linked list */
@@ -170,22 +176,34 @@ rb_class_detach_module_subclasses(VALUE klass)
 static VALUE
 class_alloc(VALUE flags, VALUE klass)
 {
-    NEWOBJ_OF(obj, struct RClass, klass, (flags & T_MASK) | FL_PROMOTED1 /* start from age == 2 */ | (RGENGC_WB_PROTECTED_CLASS ? FL_WB_PROTECTED : 0));
+    size_t payload_size = 0;
+
+#if USE_RVARGC
+    payload_size = sizeof(rb_classext_t);
+#endif
+
+    RVARGC_NEWOBJ_OF(obj, struct RClass, klass, (flags & T_MASK) | FL_PROMOTED1 /* start from age == 2 */ | (RGENGC_WB_PROTECTED_CLASS ? FL_WB_PROTECTED : 0), payload_size);
+
+#if USE_RVARGC
+    obj->ptr = (rb_classext_t *)rb_gc_rvargc_object_data((VALUE)obj);
+#else
     obj->ptr = ZALLOC(rb_classext_t);
+#endif
+
     /* ZALLOC
       RCLASS_IV_TBL(obj) = 0;
       RCLASS_CONST_TBL(obj) = 0;
       RCLASS_M_TBL(obj) = 0;
       RCLASS_IV_INDEX_TBL(obj) = 0;
       RCLASS_SET_SUPER((VALUE)obj, 0);
-      RCLASS_EXT(obj)->subclasses = NULL;
-      RCLASS_EXT(obj)->parent_subclasses = NULL;
-      RCLASS_EXT(obj)->module_subclasses = NULL;
+      RCLASS_SUBCLASSES(obj) = NULL;
+      RCLASS_PARENT_SUBCLASSES(obj) = NULL;
+      RCLASS_MODULE_SUBCLASSES(obj) = NULL;
      */
     RCLASS_SET_ORIGIN((VALUE)obj, (VALUE)obj);
     RCLASS_SERIAL(obj) = rb_next_class_serial();
     RB_OBJ_WRITE(obj, &RCLASS_REFINED_CLASS(obj), Qnil);
-    RCLASS_EXT(obj)->allocator = 0;
+    RCLASS_ALLOCATOR(obj) = 0;
 
     return (VALUE)obj;
 }
@@ -227,7 +245,7 @@ void
 rb_check_inheritable(VALUE super)
 {
     if (!RB_TYPE_P(super, T_CLASS)) {
-	rb_raise(rb_eTypeError, "superclass must be a Class (%"PRIsVALUE" given)",
+        rb_raise(rb_eTypeError, "superclass must be an instance of Class (given an instance of %"PRIsVALUE")",
 		 rb_obj_class(super));
     }
     if (RBASIC(super)->flags & FL_SINGLETON) {
@@ -348,25 +366,28 @@ copy_tables(VALUE clone, VALUE orig)
     }
 }
 
+static bool ensure_origin(VALUE klass);
+
 /* :nodoc: */
 VALUE
 rb_mod_init_copy(VALUE clone, VALUE orig)
 {
+    if (RB_TYPE_P(clone, T_CLASS)) {
+        class_init_copy_check(clone, orig);
+    }
+    if (!OBJ_INIT_COPY(clone, orig)) return clone;
+
     /* cloned flag is refer at constant inline cache
      * see vm_get_const_key_cref() in vm_insnhelper.c
      */
     FL_SET(clone, RCLASS_CLONED);
     FL_SET(orig , RCLASS_CLONED);
 
-    if (RB_TYPE_P(clone, T_CLASS)) {
-        class_init_copy_check(clone, orig);
-    }
-    if (!OBJ_INIT_COPY(clone, orig)) return clone;
     if (!FL_TEST(CLASS_OF(clone), FL_SINGLETON)) {
         RBASIC_SET_CLASS(clone, rb_singleton_class_clone(orig));
         rb_singleton_class_attached(RBASIC(clone)->klass, (VALUE)clone);
     }
-    RCLASS_EXT(clone)->allocator = RCLASS_EXT(orig)->allocator;
+    RCLASS_ALLOCATOR(clone) = RCLASS_ALLOCATOR(orig);
     copy_tables(clone, orig);
     if (RCLASS_M_TBL(orig)) {
 	struct clone_method_arg arg;
@@ -390,7 +411,7 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
         int add_subclass;
         VALUE clone_origin;
 
-        rb_ensure_origin(clone);
+        ensure_origin(clone);
         clone_origin = RCLASS_ORIGIN(clone);
 
         while (p && p != orig_origin) {
@@ -403,7 +424,7 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
             RCLASS_M_TBL(clone_p) = RCLASS_M_TBL(p);
             RCLASS_CONST_TBL(clone_p) = RCLASS_CONST_TBL(p);
             RCLASS_IV_TBL(clone_p) = RCLASS_IV_TBL(p);
-            RCLASS_EXT(clone_p)->allocator = RCLASS_EXT(p)->allocator;
+            RCLASS_ALLOCATOR(clone_p) = RCLASS_ALLOCATOR(p);
             if (RB_TYPE_P(clone, T_CLASS)) {
                 RCLASS_SET_INCLUDER(clone_p, clone);
             }
@@ -454,26 +475,39 @@ rb_singleton_class_clone(VALUE obj)
     return rb_singleton_class_clone_and_attach(obj, Qundef);
 }
 
+// Clone and return the singleton class of `obj` if it has been created and is attached to `obj`.
 VALUE
 rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
 {
     const VALUE klass = RBASIC(obj)->klass;
 
-    if (!FL_TEST(klass, FL_SINGLETON))
-	return klass;
+    // Note that `rb_singleton_class()` can create situations where `klass` is
+    // attached to an object other than `obj`. In which case `obj` does not have
+    // a material singleton class attached yet and there is no singleton class
+    // to clone.
+    if (!(FL_TEST(klass, FL_SINGLETON) && rb_attr_get(klass, id_attached) == obj)) {
+        // nothing to clone
+        return klass;
+    }
     else {
 	/* copy singleton(unnamed) class */
+        bool klass_of_clone_is_new;
 	VALUE clone = class_alloc(RBASIC(klass)->flags, 0);
 
 	if (BUILTIN_TYPE(obj) == T_CLASS) {
+            klass_of_clone_is_new = true;
 	    RBASIC_SET_CLASS(clone, clone);
 	}
 	else {
-	    RBASIC_SET_CLASS(clone, rb_singleton_class_clone(klass));
+            VALUE klass_metaclass_clone = rb_singleton_class_clone(klass);
+            // When `METACLASS_OF(klass) == klass_metaclass_clone`, it means the
+            // recursive call did not clone `METACLASS_OF(klass)`.
+            klass_of_clone_is_new = (METACLASS_OF(klass) != klass_metaclass_clone);
+            RBASIC_SET_CLASS(clone, klass_metaclass_clone);
 	}
 
 	RCLASS_SET_SUPER(clone, RCLASS_SUPER(klass));
-	RCLASS_EXT(clone)->allocator = RCLASS_EXT(klass)->allocator;
+	RCLASS_ALLOCATOR(clone) = RCLASS_ALLOCATOR(klass);
 	if (RCLASS_IV_TBL(klass)) {
 	    rb_iv_tbl_copy(clone, klass);
 	}
@@ -493,7 +527,9 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
 	    arg.new_klass = clone;
 	    rb_id_table_foreach(RCLASS_M_TBL(klass), clone_method_i, &arg);
 	}
-	rb_singleton_class_attached(RBASIC(clone)->klass, clone);
+        if (klass_of_clone_is_new) {
+            rb_singleton_class_attached(RBASIC(clone)->klass, clone);
+        }
 	FL_SET(clone, FL_SINGLETON);
 
 	return clone;
@@ -508,17 +544,9 @@ void
 rb_singleton_class_attached(VALUE klass, VALUE obj)
 {
     if (FL_TEST(klass, FL_SINGLETON)) {
-	if (!RCLASS_IV_TBL(klass)) {
-	    RCLASS_IV_TBL(klass) = st_init_numtable();
-	}
 	rb_class_ivar_set(klass, id_attached, obj);
     }
 }
-
-
-
-#define METACLASS_OF(k) RBASIC(k)->klass
-#define SET_METACLASS_OF(k, cls) RBASIC_SET_CLASS(k, cls)
 
 /*!
  * whether k is a meta^(n)-class of Class class
@@ -623,7 +651,7 @@ boot_defclass(const char *name, VALUE super)
     ID id = rb_intern(name);
 
     rb_const_set((rb_cObject ? rb_cObject : obj), id, obj);
-    rb_vm_add_root_module(id, obj);
+    rb_vm_add_root_module(obj);
     return obj;
 }
 
@@ -745,14 +773,14 @@ rb_define_class(const char *name, VALUE super)
 	}
 
         /* Class may have been defined in Ruby and not pin-rooted */
-        rb_vm_add_root_module(id, klass);
+        rb_vm_add_root_module(klass);
 	return klass;
     }
     if (!super) {
 	rb_raise(rb_eArgError, "no super class for `%s'", name);
     }
     klass = rb_define_class_id(id, super);
-    rb_vm_add_root_module(id, klass);
+    rb_vm_add_root_module(klass);
     rb_const_set(rb_cObject, id, klass);
     rb_class_inherited(super, klass);
 
@@ -775,6 +803,7 @@ rb_define_class(const char *name, VALUE super)
  *
  * \note if a class named \a name is already defined and its superclass is
  *       \a super, the function just returns the defined class.
+ * \note the compaction GC does not move classes returned by this function.
  */
 VALUE
 rb_define_class_under(VALUE outer, const char *name, VALUE super)
@@ -798,6 +827,7 @@ rb_define_class_under(VALUE outer, const char *name, VALUE super)
  *
  * \note if a class named \a name is already defined and its superclass is
  *       \a super, the function just returns the defined class.
+ * \note the compaction GC does not move classes returned by this function.
  */
 VALUE
 rb_define_class_id_under(VALUE outer, ID id, VALUE super)
@@ -818,7 +848,7 @@ rb_define_class_id_under(VALUE outer, ID id, VALUE super)
 		     outer, rb_id2str(id), RCLASS_SUPER(klass), super);
 	}
         /* Class may have been defined in Ruby and not pin-rooted */
-        rb_vm_add_root_module(id, klass);
+        rb_vm_add_root_module(klass);
 
 	return klass;
     }
@@ -830,8 +860,7 @@ rb_define_class_id_under(VALUE outer, ID id, VALUE super)
     rb_set_class_path_string(klass, outer, rb_id2str(id));
     rb_const_set(outer, id, klass);
     rb_class_inherited(super, klass);
-    rb_vm_add_root_module(id, klass);
-    rb_gc_register_mark_object(klass);
+    rb_vm_add_root_module(klass);
 
     return klass;
 }
@@ -844,12 +873,16 @@ rb_module_new(void)
     return (VALUE)mdl;
 }
 
+// Kept for compatibility. Use rb_module_new() instead.
 VALUE
 rb_define_module_id(ID id)
 {
     return rb_module_new();
 }
 
+/*!
+ * \note the compaction GC does not move modules returned by this function.
+ */
 VALUE
 rb_define_module(const char *name)
 {
@@ -864,17 +897,19 @@ rb_define_module(const char *name)
 		     name, rb_obj_class(module));
 	}
         /* Module may have been defined in Ruby and not pin-rooted */
-        rb_vm_add_root_module(id, module);
+        rb_vm_add_root_module(module);
 	return module;
     }
-    module = rb_define_module_id(id);
-    rb_vm_add_root_module(id, module);
-    rb_gc_register_mark_object(module);
+    module = rb_module_new();
+    rb_vm_add_root_module(module);
     rb_const_set(rb_cObject, id, module);
 
     return module;
 }
 
+/*!
+ * \note the compaction GC does not move modules returned by this function.
+ */
 VALUE
 rb_define_module_under(VALUE outer, const char *name)
 {
@@ -893,9 +928,11 @@ rb_define_module_id_under(VALUE outer, ID id)
 		     " (%"PRIsVALUE")",
 		     outer, rb_id2str(id), rb_obj_class(module));
 	}
+        /* Module may have been defined in Ruby and not pin-rooted */
+        rb_gc_register_mark_object(module);
 	return module;
     }
-    module = rb_define_module_id(id);
+    module = rb_module_new();
     rb_const_set(outer, id, module);
     rb_set_class_path_string(module, outer, rb_id2str(id));
     rb_gc_register_mark_object(module);
@@ -908,8 +945,7 @@ rb_include_class_new(VALUE module, VALUE super)
 {
     VALUE klass = class_alloc(T_ICLASS, rb_cClass);
 
-    RCLASS_M_TBL(OBJ_WB_UNPROTECT(klass)) =
-      RCLASS_M_TBL(OBJ_WB_UNPROTECT(module)); /* TODO: unprotected? */
+    RCLASS_M_TBL(klass) = RCLASS_M_TBL(module);
 
     RCLASS_SET_ORIGIN(klass, klass);
     if (BUILTIN_TYPE(module) == T_ICLASS) {
@@ -923,6 +959,7 @@ rb_include_class_new(VALUE module, VALUE super)
 	RCLASS_CONST_TBL(module) = rb_id_table_create(0);
     }
     RCLASS_IV_TBL(klass) = RCLASS_IV_TBL(module);
+    RCLASS_CVC_TBL(klass) = RCLASS_CVC_TBL(module);
     RCLASS_CONST_TBL(klass) = RCLASS_CONST_TBL(module);
 
     RCLASS_SET_SUPER(klass, super);
@@ -955,7 +992,7 @@ rb_include_module(VALUE klass, VALUE module)
 	rb_raise(rb_eArgError, "cyclic include detected");
 
     if (RB_TYPE_P(klass, T_MODULE)) {
-        rb_subclass_entry_t *iclass = RCLASS_EXT(klass)->subclasses;
+        rb_subclass_entry_t *iclass = RCLASS_SUBCLASSES(klass);
         int do_include = 1;
         while (iclass) {
             VALUE check_class = iclass->klass;
@@ -990,44 +1027,70 @@ clear_module_cache_i(ID id, VALUE val, void *data)
     return ID_TABLE_CONTINUE;
 }
 
+static bool
+module_in_super_chain(const VALUE klass, VALUE module)
+{
+    struct rb_id_table *const klass_m_tbl = RCLASS_M_TBL(RCLASS_ORIGIN(klass));
+    if (klass_m_tbl) {
+        while (module) {
+            if (klass_m_tbl == RCLASS_M_TBL(module))
+                return true;
+            module = RCLASS_SUPER(module);
+        }
+    }
+    return false;
+}
+
 static int
-include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
+do_include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super, bool check_cyclic)
 {
     VALUE p, iclass, origin_stack = 0;
     int method_changed = 0, constant_changed = 0, add_subclass;
     long origin_len;
-    struct rb_id_table *const klass_m_tbl = RCLASS_M_TBL(RCLASS_ORIGIN(klass));
+    VALUE klass_origin = RCLASS_ORIGIN(klass);
     VALUE original_klass = klass;
 
-    rb_ensure_origin(module);
+    if (check_cyclic && module_in_super_chain(klass, module))
+        return -1;
 
     while (module) {
+        int c_seen = FALSE;
 	int superclass_seen = FALSE;
 	struct rb_id_table *tbl;
 
-	if (klass_m_tbl && klass_m_tbl == RCLASS_M_TBL(module))
-	    return -1;
-	/* ignore if the module included already in superclasses */
-        for (p = RCLASS_SUPER(klass); p; p = RCLASS_SUPER(p)) {
-	    int type = BUILTIN_TYPE(p);
-	    if (type == T_ICLASS) {
-		if (RCLASS_M_TBL(p) == RCLASS_M_TBL(module)) {
-		    if (!superclass_seen) {
-			c = p;  /* move insertion point */
-		    }
-		    goto skip;
-		}
-	    }
-	    else if (type == T_CLASS) {
-		if (!search_super) break;
-                superclass_seen = TRUE;
-	    }
-	}
+        if (klass == c) {
+            c_seen = TRUE;
+        }
+        if (klass_origin != c || search_super) {
+            /* ignore if the module included already in superclasses for include,
+             * ignore if the module included before origin class for prepend
+             */
+            for (p = RCLASS_SUPER(klass); p; p = RCLASS_SUPER(p)) {
+                int type = BUILTIN_TYPE(p);
+                if (klass_origin == p && !search_super)
+                    break;
+                if (c == p)
+                    c_seen = TRUE;
+                if (type == T_ICLASS) {
+                    if (RCLASS_M_TBL(p) == RCLASS_M_TBL(module)) {
+                        if (!superclass_seen && c_seen) {
+                            c = p;  /* move insertion point */
+                        }
+                        goto skip;
+                    }
+                }
+                else if (type == T_CLASS) {
+                    superclass_seen = TRUE;
+                }
+            }
+        }
 
         VALUE super_class = RCLASS_SUPER(c);
 
         // invalidate inline method cache
-        tbl = RMODULE_M_TBL(module);
+        RB_DEBUG_COUNTER_INC(cvar_include_invalidate);
+        ruby_vm_global_cvar_state++;
+        tbl = RCLASS_M_TBL(module);
         if (tbl && rb_id_table_size(tbl)) {
             if (search_super) { // include
                 if (super_class && !RB_TYPE_P(super_class, T_MODULE)) {
@@ -1060,21 +1123,21 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
             add_subclass = FALSE;
         }
 
-	{
+	if (add_subclass) {
 	    VALUE m = module;
             if (BUILTIN_TYPE(m) == T_ICLASS) m = RBASIC(m)->klass;
-            if (add_subclass) rb_module_add_to_subclasses_list(m, iclass);
+            rb_module_add_to_subclasses_list(m, iclass);
 	}
 
 	if (FL_TEST(klass, RMODULE_IS_REFINEMENT)) {
 	    VALUE refined_class =
 		rb_refinement_module_get_refined_class(klass);
 
-            rb_id_table_foreach(RMODULE_M_TBL(module), add_refined_method_entry_i, (void *)refined_class);
+            rb_id_table_foreach(RCLASS_M_TBL(module), add_refined_method_entry_i, (void *)refined_class);
 	    FL_SET(c, RMODULE_INCLUDED_INTO_REFINEMENT);
 	}
 
-	tbl = RMODULE_CONST_TBL(module);
+        tbl = RCLASS_CONST_TBL(module);
 	if (tbl && rb_id_table_size(tbl)) constant_changed = 1;
       skip:
 	module = RCLASS_SUPER(module);
@@ -1085,25 +1148,31 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
     return method_changed;
 }
 
+static int
+include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
+{
+    return do_include_modules_at(klass, c, module, search_super, true);
+}
+
 static enum rb_id_table_iterator_result
 move_refined_method(ID key, VALUE value, void *data)
 {
-    rb_method_entry_t *me = (rb_method_entry_t *) value;
-    VALUE klass = (VALUE)data;
-    struct rb_id_table *tbl = RCLASS_M_TBL(klass);
+    rb_method_entry_t *me = (rb_method_entry_t *)value;
 
     if (me->def->type == VM_METHOD_TYPE_REFINED) {
-	if (me->def->body.refined.orig_me) {
+        VALUE klass = (VALUE)data;
+        struct rb_id_table *tbl = RCLASS_M_TBL(klass);
+
+        if (me->def->body.refined.orig_me) {
 	    const rb_method_entry_t *orig_me = me->def->body.refined.orig_me, *new_me;
 	    RB_OBJ_WRITE(me, &me->def->body.refined.orig_me, NULL);
 	    new_me = rb_method_entry_clone(me);
-	    rb_id_table_insert(tbl, key, (VALUE)new_me);
-	    RB_OBJ_WRITTEN(klass, Qundef, new_me);
+            rb_method_table_insert(klass, tbl, key, new_me);
 	    rb_method_entry_copy(me, orig_me);
 	    return ID_TABLE_CONTINUE;
 	}
 	else {
-	    rb_id_table_insert(tbl, key, (VALUE)me);
+            rb_method_table_insert(klass, tbl, key, me);
 	    return ID_TABLE_DELETE;
 	}
     }
@@ -1112,38 +1181,71 @@ move_refined_method(ID key, VALUE value, void *data)
     }
 }
 
-void
-rb_ensure_origin(VALUE klass)
+static enum rb_id_table_iterator_result
+cache_clear_refined_method(ID key, VALUE value, void *data)
+{
+    rb_method_entry_t *me = (rb_method_entry_t *) value;
+
+    if (me->def->type == VM_METHOD_TYPE_REFINED && me->def->body.refined.orig_me) {
+        VALUE klass = (VALUE)data;
+        rb_clear_method_cache(klass, me->called_id);
+    }
+    // Refined method entries without an orig_me is going to stay in the method
+    // table of klass, like before the move, so no need to clear the cache.
+
+    return ID_TABLE_CONTINUE;
+}
+
+static bool
+ensure_origin(VALUE klass)
 {
     VALUE origin = RCLASS_ORIGIN(klass);
     if (origin == klass) {
 	origin = class_alloc(T_ICLASS, klass);
-	OBJ_WB_UNPROTECT(origin); /* TODO: conservative shading. Need more survey. */
 	RCLASS_SET_SUPER(origin, RCLASS_SUPER(klass));
 	RCLASS_SET_SUPER(klass, origin);
 	RCLASS_SET_ORIGIN(klass, origin);
 	RCLASS_M_TBL(origin) = RCLASS_M_TBL(klass);
 	RCLASS_M_TBL_INIT(klass);
+        rb_id_table_foreach(RCLASS_M_TBL(origin), cache_clear_refined_method, (void *)klass);
 	rb_id_table_foreach(RCLASS_M_TBL(origin), move_refined_method, (void *)klass);
+        return true;
     }
+    return false;
 }
 
 void
 rb_prepend_module(VALUE klass, VALUE module)
 {
-    int changed = 0;
+    int changed;
+    bool klass_had_no_origin;
 
     ensure_includable(klass, module);
-    rb_ensure_origin(klass);
-    changed = include_modules_at(klass, klass, module, FALSE);
-    if (changed < 0)
-	rb_raise(rb_eArgError, "cyclic prepend detected");
+    if (module_in_super_chain(klass, module))
+        rb_raise(rb_eArgError, "cyclic prepend detected");
+
+    klass_had_no_origin = ensure_origin(klass);
+    changed = do_include_modules_at(klass, klass, module, FALSE, false);
+    RUBY_ASSERT(changed >= 0); // already checked for cyclic prepend above
     if (changed) {
 	rb_vm_check_redefinition_by_prepend(klass);
     }
     if (RB_TYPE_P(klass, T_MODULE)) {
-        rb_subclass_entry_t *iclass = RCLASS_EXT(klass)->subclasses;
+        rb_subclass_entry_t *iclass = RCLASS_SUBCLASSES(klass);
+        VALUE klass_origin = RCLASS_ORIGIN(klass);
+        struct rb_id_table *klass_m_tbl = RCLASS_M_TBL(klass);
+        struct rb_id_table *klass_origin_m_tbl = RCLASS_M_TBL(klass_origin);
         while (iclass) {
+            if (klass_had_no_origin && klass_origin_m_tbl == RCLASS_M_TBL(iclass->klass)) {
+                // backfill an origin iclass to handle refinements and future prepends
+                rb_id_table_foreach(RCLASS_M_TBL(iclass->klass), clear_module_cache_i, (void *)iclass->klass);
+                RCLASS_M_TBL(iclass->klass) = klass_m_tbl;
+                VALUE origin = rb_include_class_new(klass_origin, RCLASS_SUPER(iclass->klass));
+                RCLASS_SET_SUPER(iclass->klass, origin);
+                RCLASS_SET_INCLUDER(origin, RCLASS_INCLUDER(iclass->klass));
+                RCLASS_SET_ORIGIN(iclass->klass, origin);
+                RICLASS_SET_ORIGIN_SHARED_MTBL(origin);
+            }
             include_modules_at(iclass->klass, iclass->klass, module, FALSE);
             iclass = iclass->next;
         }
@@ -1244,8 +1346,13 @@ VALUE
 rb_mod_ancestors(VALUE mod)
 {
     VALUE p, ary = rb_ary_new();
+    VALUE refined_class = Qnil;
+    if (FL_TEST(mod, RMODULE_IS_REFINEMENT)) {
+        refined_class = rb_refinement_module_get_refined_class(mod);
+    }
 
     for (p = mod; p; p = RCLASS_SUPER(p)) {
+        if (p == refined_class) break;
         if (p != RCLASS_ORIGIN(p)) continue;
 	if (BUILTIN_TYPE(p) == T_ICLASS) {
 	    rb_ary_push(ary, RBASIC(p)->klass);
@@ -1278,30 +1385,30 @@ ins_methods_i(st_data_t name, st_data_t type, st_data_t ary)
 }
 
 static int
-ins_methods_prot_i(st_data_t name, st_data_t type, st_data_t ary)
+ins_methods_type_i(st_data_t name, st_data_t type, st_data_t ary, rb_method_visibility_t visi)
 {
-    if ((rb_method_visibility_t)type == METHOD_VISI_PROTECTED) {
+    if ((rb_method_visibility_t)type == visi) {
 	ins_methods_push(name, ary);
     }
     return ST_CONTINUE;
+}
+
+static int
+ins_methods_prot_i(st_data_t name, st_data_t type, st_data_t ary)
+{
+    return ins_methods_type_i(name, type, ary, METHOD_VISI_PROTECTED);
 }
 
 static int
 ins_methods_priv_i(st_data_t name, st_data_t type, st_data_t ary)
 {
-    if ((rb_method_visibility_t)type == METHOD_VISI_PRIVATE) {
-	ins_methods_push(name, ary);
-    }
-    return ST_CONTINUE;
+    return ins_methods_type_i(name, type, ary, METHOD_VISI_PRIVATE);
 }
 
 static int
 ins_methods_pub_i(st_data_t name, st_data_t type, st_data_t ary)
 {
-    if ((rb_method_visibility_t)type == METHOD_VISI_PUBLIC) {
-	ins_methods_push(name, ary);
-    }
-    return ST_CONTINUE;
+    return ins_methods_type_i(name, type, ary, METHOD_VISI_PUBLIC);
 }
 
 struct method_entry_arg {
@@ -1747,19 +1854,15 @@ rb_undef_methods_from(VALUE klass, VALUE super)
  * \{
  */
 
-#define SPECIAL_SINGLETON(x,c) do {\
-    if (obj == (x)) {\
-	return (c);\
-    }\
-} while (0)
-
 static inline VALUE
 special_singleton_class_of(VALUE obj)
 {
-    SPECIAL_SINGLETON(Qnil, rb_cNilClass);
-    SPECIAL_SINGLETON(Qfalse, rb_cFalseClass);
-    SPECIAL_SINGLETON(Qtrue, rb_cTrueClass);
-    return Qnil;
+    switch (obj) {
+      case Qnil:   return rb_cNilClass;
+      case Qfalse: return rb_cFalseClass;
+      case Qtrue:  return rb_cTrueClass;
+      default:     return Qnil;
+    }
 }
 
 VALUE
@@ -1782,31 +1885,30 @@ singleton_class_of(VALUE obj)
 {
     VALUE klass;
 
-    if (FIXNUM_P(obj) || FLONUM_P(obj) || STATIC_SYM_P(obj)) {
-      no_singleton:
+    switch (TYPE(obj)) {
+      case T_FIXNUM:
+      case T_BIGNUM:
+      case T_FLOAT:
+      case T_SYMBOL:
 	rb_raise(rb_eTypeError, "can't define singleton");
-    }
-    if (SPECIAL_CONST_P(obj)) {
+
+      case T_FALSE:
+      case T_TRUE:
+      case T_NIL:
 	klass = special_singleton_class_of(obj);
 	if (NIL_P(klass))
 	    rb_bug("unknown immediate %p", (void *)obj);
 	return klass;
-    }
-    else {
-	switch (BUILTIN_TYPE(obj)) {
-	  case T_FLOAT: case T_BIGNUM: case T_SYMBOL:
-	    goto no_singleton;
-	  case T_STRING:
-	    if (FL_TEST_RAW(obj, RSTRING_FSTR)) goto no_singleton;
-	    break;
-          default:
-            break;
-	}
+
+      case T_STRING:
+        if (FL_TEST_RAW(obj, RSTRING_FSTR)) {
+            rb_raise(rb_eTypeError, "can't define singleton");
+        }
     }
 
     klass = RBASIC(obj)->klass;
     if (!(FL_TEST(klass, FL_SINGLETON) &&
-	  rb_ivar_get(klass, id_attached) == obj)) {
+          rb_attr_get(klass, id_attached) == obj)) {
 	rb_serial_t serial = RCLASS_SERIAL(klass);
 	klass = rb_make_metaclass(obj, klass);
 	RCLASS_SERIAL(klass) = serial;
@@ -1847,7 +1949,7 @@ rb_singleton_class_get(VALUE obj)
     }
     klass = RBASIC(obj)->klass;
     if (!FL_TEST(klass, FL_SINGLETON)) return Qnil;
-    if (rb_ivar_get(klass, id_attached) != obj) return Qnil;
+    if (rb_attr_get(klass, id_attached) != obj) return Qnil;
     return klass;
 }
 
@@ -1855,7 +1957,7 @@ rb_singleton_class_get(VALUE obj)
  * Returns the singleton class of \a obj. Creates it if necessary.
  *
  * \param obj an arbitrary object.
- * \throw TypeError if \a obj is a Integer or a Symbol.
+ * \throw TypeError if \a obj is an Integer or a Symbol.
  * \return the singleton class.
  *
  * \post \a obj has its own singleton class.
@@ -2263,12 +2365,6 @@ rb_scan_args_kw(int kw_flag, int argc, const VALUE *argv, const char *fmt, ...)
     argc = rb_scan_args_assign(&arg, argc, argv, vargs);
     va_end(vargs);
     return rb_scan_args_result(&arg, argc);
-}
-
-int
-rb_class_has_methods(VALUE c)
-{
-    return rb_id_table_size(RCLASS_M_TBL(c)) == 0 ? FALSE : TRUE;
 }
 
 /*!

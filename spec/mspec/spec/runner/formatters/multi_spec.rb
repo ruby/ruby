@@ -4,20 +4,20 @@ require 'mspec/runner/formatters/multi'
 require 'mspec/runner/example'
 require 'yaml'
 
-describe MultiFormatter, "#aggregate_results" do
+RSpec.describe MultiFormatter, "#aggregate_results" do
   before :each do
     @stdout, $stdout = $stdout, IOStub.new
 
     @file = double("file").as_null_object
 
-    File.stub(:delete)
-    File.stub(:read)
+    allow(File).to receive(:delete)
+    allow(File).to receive(:read)
 
     @hash = { "files"=>1, "examples"=>1, "expectations"=>2, "failures"=>0, "errors"=>0 }
-    YAML.stub(:load).and_return(@hash)
+    allow(YAML).to receive(:load).and_return(@hash)
 
     @formatter = DottedFormatter.new.extend(MultiFormatter)
-    @formatter.timer.stub(:format).and_return("Finished in 42 seconds")
+    allow(@formatter.timer).to receive(:format).and_return("Finished in 42 seconds")
   end
 
   after :each do
@@ -27,13 +27,12 @@ describe MultiFormatter, "#aggregate_results" do
   it "outputs a summary without errors" do
     @formatter.aggregate_results(["a", "b"])
     @formatter.finish
-    $stdout.should ==
-%[
+    expect($stdout).to eq(%[
 
 Finished in 42 seconds
 
 2 files, 2 examples, 4 expectations, 0 failures, 0 errors, 0 tagged
-]
+])
   end
 
   it "outputs a summary with errors" do
@@ -43,8 +42,7 @@ Finished in 42 seconds
     ]
     @formatter.aggregate_results(["a"])
     @formatter.finish
-    $stdout.should ==
-%[
+    expect($stdout).to eq(%[
 
 1)
 Some#method works real good FAILED
@@ -65,6 +63,6 @@ foo.rb:2
 Finished in 42 seconds
 
 1 file, 1 example, 2 expectations, 0 failures, 0 errors, 0 tagged
-]
+])
   end
 end

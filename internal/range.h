@@ -34,4 +34,8 @@ RANGE_EXCL(VALUE r)
     return RSTRUCT(r)->as.ary[2];
 }
 
+VALUE
+rb_range_component_beg_len(VALUE b, VALUE e, int excl,
+                           long *begp, long *lenp, long len, int err);
+
 #endif /* INTERNAL_RANGE_H */

@@ -63,7 +63,7 @@ module Psych
 
         parser = Psych::Parser.new klass.new
         2.times {
-          assert_raises(RuntimeError, method.to_s) do
+          assert_raise(RuntimeError, method.to_s) do
             parser.parse yaml
           end
         }
@@ -77,7 +77,7 @@ module Psych
     end
 
     def test_filename
-      ex = assert_raises(Psych::SyntaxError) do
+      ex = assert_raise(Psych::SyntaxError) do
         @parser.parse '--- `', 'omg!'
       end
       assert_match 'omg!', ex.message
@@ -180,7 +180,7 @@ module Psych
       def o.external_encoding; nil end
       def o.read len; self end
 
-      assert_raises(TypeError) do
+      assert_raise(TypeError) do
         @parser.parse o
       end
     end
@@ -193,23 +193,23 @@ module Psych
     end
 
     def test_syntax_error
-      assert_raises(Psych::SyntaxError) do
+      assert_raise(Psych::SyntaxError) do
         @parser.parse("---\n\"foo\"\n\"bar\"\n")
       end
     end
 
     def test_syntax_error_twice
-      assert_raises(Psych::SyntaxError) do
+      assert_raise(Psych::SyntaxError) do
         @parser.parse("---\n\"foo\"\n\"bar\"\n")
       end
 
-      assert_raises(Psych::SyntaxError) do
+      assert_raise(Psych::SyntaxError) do
         @parser.parse("---\n\"foo\"\n\"bar\"\n")
       end
     end
 
     def test_syntax_error_has_path_for_string
-      e = assert_raises(Psych::SyntaxError) do
+      e = assert_raise(Psych::SyntaxError) do
         @parser.parse("---\n\"foo\"\n\"bar\"\n")
       end
       assert_match '(<unknown>):', e.message
@@ -219,7 +219,7 @@ module Psych
       io = StringIO.new "---\n\"foo\"\n\"bar\"\n"
       def io.path; "hello!"; end
 
-      e = assert_raises(Psych::SyntaxError) do
+      e = assert_raise(Psych::SyntaxError) do
         @parser.parse(io)
       end
       assert_match "(#{io.path}):", e.message

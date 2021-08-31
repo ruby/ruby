@@ -73,4 +73,10 @@ module Gem::VersionOption
     end
   end
 
+  ##
+  # Extract platform given on the command line
+
+  def get_platform_from_requirements(requirements)
+    Gem.platforms[1].to_s if requirements.key? :added_platform
+  end
 end

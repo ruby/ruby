@@ -80,4 +80,12 @@ describe "Kernel#freeze" do
     o.freeze
     -> {o.instance_variable_set(:@foo, 1)}.should raise_error(RuntimeError)
   end
+
+  it "freezes an object's singleton class" do
+    o = Object.new
+    c = o.singleton_class
+    c.frozen?.should == false
+    o.freeze
+    c.frozen?.should == true
+  end
 end

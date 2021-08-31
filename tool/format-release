@@ -173,10 +173,18 @@ eom
 - version: #{ver}
   date: #{date.strftime("%Y-%m-%d")}
   post: /en/news/#{date.strftime("%Y/%m/%d")}/ruby-#{ver.tr('.', '-')}-released/
+eom
+
+    if ver.end_with?(".0")
+      entry <<= <<eom
   stats:
     files_changed: #{files_changed}
     insertions: #{insertions}
     deletions: #{deletions}
+eom
+    end
+
+    entry <<= <<eom
   url:
     gz:  https://cache.ruby-lang.org/pub/ruby/#{xy}/ruby-#{ver}.tar.gz
     zip: https://cache.ruby-lang.org/pub/ruby/#{xy}/ruby-#{ver}.zip
@@ -185,24 +193,28 @@ eom
   size:
     gz:  #{ary.find{|x|x.gz? }.size}
     zip: #{ary.find{|x|x.zip?}.size}
-    bz2: #{ary.find{|x|x.bz2?}.size}
+    bz2: #{ary.find{|x|x.bz2?}&.size}
     xz:  #{ary.find{|x|x.xz? }.size}
   sha1:
     gz:  #{ary.find{|x|x.gz? }.sha1}
     zip: #{ary.find{|x|x.zip?}.sha1}
-    bz2: #{ary.find{|x|x.bz2?}.sha1}
+    bz2: #{ary.find{|x|x.bz2?}&.sha1}
     xz:  #{ary.find{|x|x.xz? }.sha1}
   sha256:
     gz:  #{ary.find{|x|x.gz? }.sha256}
     zip: #{ary.find{|x|x.zip?}.sha256}
-    bz2: #{ary.find{|x|x.bz2?}.sha256}
+    bz2: #{ary.find{|x|x.bz2?}&.sha256}
     xz:  #{ary.find{|x|x.xz? }.sha256}
   sha512:
     gz:  #{ary.find{|x|x.gz? }.sha512}
     zip: #{ary.find{|x|x.zip?}.sha512}
-    bz2: #{ary.find{|x|x.bz2?}.sha512}
+    bz2: #{ary.find{|x|x.bz2?}&.sha512}
     xz:  #{ary.find{|x|x.xz? }.sha512}
 eom
+
+    if ver.start_with?("3.")
+      entry = entry.gsub(/    bz2: .*\n/, "")
+    end
 
     if data.include?("\n- version: #{ver}\n")
     elsif data.sub!(/\n# #{Regexp.escape(xy)} series\n/, "\\&\n#{entry}")

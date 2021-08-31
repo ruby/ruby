@@ -1,0 +1,8 @@
+- +month+: a month value, which may be:
+  - An integer month in the range <tt>1..12</tt>.
+  - A 3-character string that matches regular expression
+    <tt>/jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec/i</tt>.
+- +day+: an integer day in the range <tt>1..31</tt>
+  (less than 31 for some months).
+- +hour+: an integer hour in the range <tt>0..23</tt>.
+- +min+: an integer minute in the range <tt>0..59</tt>.

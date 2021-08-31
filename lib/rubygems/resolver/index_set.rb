@@ -4,7 +4,6 @@
 # source index.
 
 class Gem::Resolver::IndexSet < Gem::Resolver::Set
-
   def initialize(source = nil) # :nodoc:
     super()
 
@@ -76,5 +75,4 @@ class Gem::Resolver::IndexSet < Gem::Resolver::Set
       end
     end
   end
-
 end

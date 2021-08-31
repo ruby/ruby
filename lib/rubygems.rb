@@ -8,7 +8,7 @@
 require 'rbconfig'
 
 module Gem
-  VERSION = "3.2.0.pre1".freeze
+  VERSION = "3.3.0.dev".freeze
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -119,6 +119,10 @@ module Gem
   # to avoid deprecation warnings in Ruby 2.7.
   UNTAINT = RUBY_VERSION < '2.7' ? :untaint.to_sym : proc{}
 
+  # When https://bugs.ruby-lang.org/issues/17259 is available, there is no need to override Kernel#warn
+  KERNEL_WARN_IGNORES_INTERNAL_ENTRIES = RUBY_ENGINE == "truffleruby" ||
+      (RUBY_ENGINE == "ruby" && RUBY_VERSION >= '3.0')
+
   ##
   # An Array of Regexps that match windows Ruby platforms.
 
@@ -174,7 +178,7 @@ module Gem
   @configuration = nil
   @gemdeps = nil
   @loaded_specs = {}
-  LOADED_SPECS_MUTEX = Mutex.new
+  LOADED_SPECS_MUTEX = Thread::Mutex.new
   @path_to_default_spec_map = {}
   @platforms = []
   @ruby = nil
@@ -271,7 +275,7 @@ module Gem
 
     unless spec = specs.first
       msg = "can't find gem #{dep} with executable #{exec_name}"
-      if name == "bundler" && bundler_message = Gem::BundlerVersionFinder.missing_version_message
+      if dep.filters_bundler? && bundler_message = Gem::BundlerVersionFinder.missing_version_message
         msg = bundler_message
       end
       raise Gem::GemNotFoundException, msg
@@ -465,7 +469,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
       next if File.exist? subdir
       begin
         FileUtils.mkdir_p subdir, **options
-      rescue Errno::EACCES
+      rescue SystemCallError
       end
     end
   ensure
@@ -617,30 +621,19 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
   def self.load_yaml
     return if @yaml_loaded
-    return unless defined?(gem)
 
     begin
       # Try requiring the gem version *or* stdlib version of psych.
       require 'psych'
     rescue ::LoadError
-      # If we can't load psych, thats fine, go on.
+      # If we can't load psych, that's fine, go on.
     else
-      # If 'yaml' has already been required, then we have to
-      # be sure to switch it over to the newly loaded psych.
-      if defined?(YAML::ENGINE) && YAML::ENGINE.yamler != "psych"
-        YAML::ENGINE.yamler = "psych"
-      end
-
       require 'rubygems/psych_additions'
       require 'rubygems/psych_tree'
     end
 
     require 'yaml'
     require 'rubygems/safe_yaml'
-
-    # Now that we're sure some kind of yaml library is loaded, pull
-    # in our hack to deal with Syck's DefaultKey ugliness.
-    require 'rubygems/syck_hack'
 
     @yaml_loaded = true
   end
@@ -810,7 +803,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   ##
   # Safely write a file in binary mode on all platforms.
   def self.write_binary(path, data)
-    open(path, 'wb') do |io|
+    File.open(path, 'wb') do |io|
       begin
         io.flock(File::LOCK_EX)
       rescue *WRITE_BINARY_ERRORS
@@ -821,7 +814,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     if Thread.main != Thread.current
       raise
     else
-      open(path, 'wb') do |io|
+      File.open(path, 'wb') do |io|
         io.write data
       end
     end
@@ -976,7 +969,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
                      val = RbConfig::CONFIG[key]
                      next unless val and not val.empty?
                      ".#{val}"
-                   end
+                   end,
                   ].compact.uniq
   end
 
@@ -1186,7 +1179,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # methods, and then we switch over to `class << self` here. Pick one or the
   # other.
   class << self
-
     ##
     # RubyGems distributors (like operating system package managers) can
     # disable RubyGems update by setting this to error message printed to
@@ -1301,15 +1293,14 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     private
 
     def already_loaded?(file)
-      default_gem_load_paths.find do |load_path_entry|
-        $LOADED_FEATURES.include?("#{load_path_entry}/#{file}")
+      $LOADED_FEATURES.any? do |feature_path|
+        feature_path.end_with?(file) && default_gem_load_paths.any? {|load_path_entry| feature_path == "#{load_path_entry}/#{file}" }
       end
     end
 
     def default_gem_load_paths
       @default_gem_load_paths ||= $LOAD_PATH[load_path_insert_index..-1]
     end
-
   end
 
   ##
@@ -1335,8 +1326,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   autoload :Specification,      File.expand_path('rubygems/specification', __dir__)
   autoload :Util,               File.expand_path('rubygems/util', __dir__)
   autoload :Version,            File.expand_path('rubygems/version', __dir__)
-
-  require "rubygems/specification"
 end
 
 require 'rubygems/exceptions'

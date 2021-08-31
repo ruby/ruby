@@ -45,7 +45,6 @@ struct timeval rb_time_timeval(VALUE time);
 struct timespec rb_time_timespec(VALUE time);
 struct timespec rb_time_timespec_interval(VALUE num);
 VALUE rb_time_utc_offset(VALUE time);
-VALUE rb_time_succ(VALUE);
 
 RBIMPL_SYMBOL_EXPORT_END()
 

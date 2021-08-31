@@ -38,9 +38,7 @@ class MSpecScript
   end
 
   def initialize
-    ruby_version_is ""..."2.5" do
-      abort "MSpec needs Ruby 2.5 or more recent"
-    end
+    check_version!
 
     config[:formatter] = nil
     config[:includes]  = []
@@ -279,5 +277,11 @@ class MSpecScript
     script.setup_env
     require 'mspec'
     script.run
+  end
+
+  private def check_version!
+    ruby_version_is ""..."2.6" do
+      warn "MSpec is supported for Ruby 2.6 and above only"
+    end
   end
 end

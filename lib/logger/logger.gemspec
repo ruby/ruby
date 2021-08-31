@@ -13,7 +13,7 @@ Gem::Specification.new do |spec|
   spec.summary       = %q{Provides a simple logging utility for outputting messages.}
   spec.description   = %q{Provides a simple logging utility for outputting messages.}
   spec.homepage      = "https://github.com/ruby/logger"
-  spec.license       = "BSD-2-Clause"
+  spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   spec.files         = Dir.glob("lib/**/*.rb") + ["logger.gemspec"]
   spec.bindir        = "exe"

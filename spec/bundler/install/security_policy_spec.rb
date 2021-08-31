@@ -18,7 +18,6 @@ RSpec.describe "policies with unsigned gems" do
   it "will work after you try to deploy without a lock" do
     bundle "install --deployment", :raise_on_error => false
     bundle :install
-    expect(exitstatus).to eq(0) if exitstatus
     expect(the_bundle).to include_gems "rack 1.0", "signed_gem 1.0"
   end
 
@@ -39,7 +38,6 @@ RSpec.describe "policies with unsigned gems" do
 
   it "will succeed with no policy" do
     bundle "install"
-    expect(exitstatus).to eq(0) if exitstatus
   end
 end
 
@@ -64,13 +62,11 @@ RSpec.describe "policies with signed gems and no CA" do
 
   it "will succeed with Low Security setting, low security accepts self signed gem" do
     bundle "install --trust-policy=LowSecurity"
-    expect(exitstatus).to eq(0) if exitstatus
     expect(the_bundle).to include_gems "signed_gem 1.0"
   end
 
   it "will succeed with no policy" do
     bundle "install"
-    expect(exitstatus).to eq(0) if exitstatus
     expect(the_bundle).to include_gems "signed_gem 1.0"
   end
 end

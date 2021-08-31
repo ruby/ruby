@@ -399,7 +399,7 @@ class MSpecOptions
       end
       def obj.load
         file = MSpec.file
-        STDERR.print "\n#{file.ljust(@width)}"
+        STDERR.print "\n#{file.ljust(@width)}\n"
       end
       MSpec.register :start, obj
       MSpec.register :load, obj

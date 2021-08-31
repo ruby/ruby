@@ -24,4 +24,10 @@
  */
 #define R_CAST(st)   (struct st*)
 #define RMOVED(obj)  (R_CAST(RMoved)(obj))
+
+#if defined(__GNUC__)
+# warning R_CAST and RMOVED are deprecated
+#elif defined(_MSC_VER)
+# pragma message("warning: R_CAST and RMOVED are deprecated")
+#endif
 #endif /* RUBY_BACKWARD2_R_CAST_H */

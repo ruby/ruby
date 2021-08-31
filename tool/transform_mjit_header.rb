@@ -212,6 +212,10 @@ if ARGV.size != 3
   abort "Usage: #{$0} <c-compiler> <header file> <out>"
 end
 
+if STDOUT.tty?
+  require_relative 'lib/colorize'
+  color = Colorize.new
+end
 cc      = ARGV[0]
 code    = File.binread(ARGV[1]) # Current version of the header file.
 outfile = ARGV[2]
@@ -317,5 +321,6 @@ messages = {
   skipped: 'SKIPPED to transform',
 }
 transform_logs.each do |key, decl_names|
-  puts("#{PROGRAM}: #{messages.fetch(key)}: #{decl_names.map { |s| "\e[1m#{s}\e[0m" }.join(', ')}")
+  decl_names = decl_names.map { |s| color.bold(s) } if color
+  puts("#{PROGRAM}: #{messages.fetch(key)}: #{decl_names.join(', ')}")
 end

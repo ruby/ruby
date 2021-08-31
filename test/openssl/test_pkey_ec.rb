@@ -93,13 +93,46 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     assert_equal false, p256.verify("SHA256", signature1, data)
   end
 
-  def test_dsa_sign_verify
+  def test_derive_key
+    # NIST CAVP, KAS_ECC_CDH_PrimitiveTest.txt, P-256 COUNT = 0
+    qCAVSx = "700c48f77f56584c5cc632ca65640db91b6bacce3a4df6b42ce7cc838833d287"
+    qCAVSy = "db71e509e3fd9b060ddb20ba5c51dcc5948d46fbf640dfe0441782cab85fa4ac"
+    dIUT = "7d7dc5f71eb29ddaf80d6214632eeae03d9058af1fb6d22ed80badb62bc1a534"
+    zIUT = "46fc62106420ff012e54a434fbdd2d25ccc5852060561e68040dd7778997bd7b"
+    a = OpenSSL::PKey::EC.new("prime256v1")
+    a.private_key = OpenSSL::BN.new(dIUT, 16)
+    b = OpenSSL::PKey::EC.new("prime256v1")
+    uncompressed = OpenSSL::BN.new("04" + qCAVSx + qCAVSy, 16)
+    b.public_key = OpenSSL::PKey::EC::Point.new(b.group, uncompressed)
+    assert_equal [zIUT].pack("H*"), a.derive(b)
+
+    assert_equal a.derive(b), a.dh_compute_key(b.public_key)
+  end
+
+  def test_sign_verify_raw
+    key = Fixtures.pkey("p256")
     data1 = "foo"
     data2 = "bar"
-    key = OpenSSL::PKey::EC.new("prime256v1").generate_key!
+
+    malformed_sig = "*" * 30
+
+    # Sign by #dsa_sign_asn1
     sig = key.dsa_sign_asn1(data1)
     assert_equal true, key.dsa_verify_asn1(data1, sig)
     assert_equal false, key.dsa_verify_asn1(data2, sig)
+    assert_raise(OpenSSL::PKey::ECError) { key.dsa_verify_asn1(data1, malformed_sig) }
+    assert_equal true, key.verify_raw(nil, sig, data1)
+    assert_equal false, key.verify_raw(nil, sig, data2)
+    assert_raise(OpenSSL::PKey::PKeyError) { key.verify_raw(nil, malformed_sig, data1) }
+
+    # Sign by #sign_raw
+    sig = key.sign_raw(nil, data1)
+    assert_equal true, key.dsa_verify_asn1(data1, sig)
+    assert_equal false, key.dsa_verify_asn1(data2, sig)
+    assert_raise(OpenSSL::PKey::ECError) { key.dsa_verify_asn1(data1, malformed_sig) }
+    assert_equal true, key.verify_raw(nil, sig, data1)
+    assert_equal false, key.verify_raw(nil, sig, data2)
+    assert_raise(OpenSSL::PKey::PKeyError) { key.verify_raw(nil, malformed_sig, data1) }
   end
 
   def test_dsa_sign_asn1_FIPS186_3
@@ -333,21 +366,28 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
       # 3 * (6, 3) + 3 * (5, 1) = (7, 6)
       result_a2 = point_a.mul(3, 3)
       assert_equal B(%w{ 04 07 06 }), result_a2.to_octet_string(:uncompressed)
-      # 3 * point_a = 3 * (6, 3) = (16, 13)
-      result_b1 = point_a.mul([3], [])
-      assert_equal B(%w{ 04 10 0D }), result_b1.to_octet_string(:uncompressed)
-      # 3 * point_a + 2 * point_a = 3 * (6, 3) + 2 * (6, 3) = (7, 11)
-      begin
+      EnvUtil.suppress_warning do # Point#mul(ary, ary [, bn]) is deprecated
+        begin
+          result_b1 = point_a.mul([3], [])
+        rescue NotImplementedError
+          # LibreSSL and OpenSSL 3.0 do no longer support this form of calling
+          next
+        end
+
+        # 3 * point_a = 3 * (6, 3) = (16, 13)
+        result_b1 = point_a.mul([3], [])
+        assert_equal B(%w{ 04 10 0D }), result_b1.to_octet_string(:uncompressed)
+        # 3 * point_a + 2 * point_a = 3 * (6, 3) + 2 * (6, 3) = (7, 11)
         result_b1 = point_a.mul([3, 2], [point_a])
-      rescue OpenSSL::PKey::EC::Point::Error
-        # LibreSSL doesn't support multiple entries in first argument
-        raise if $!.message !~ /called a function you should not call/
-      else
         assert_equal B(%w{ 04 07 0B }), result_b1.to_octet_string(:uncompressed)
+        # 3 * point_a + 5 * point_a.group.generator = 3 * (6, 3) + 5 * (5, 1) = (13, 10)
+        result_b1 = point_a.mul([3], [], 5)
+        assert_equal B(%w{ 04 0D 0A }), result_b1.to_octet_string(:uncompressed)
+
+        assert_raise(ArgumentError) { point_a.mul([1], [point_a]) }
+        assert_raise(TypeError) { point_a.mul([1], nil) }
+        assert_raise(TypeError) { point_a.mul([nil], []) }
       end
-      # 3 * point_a + 5 * point_a.group.generator = 3 * (6, 3) + 5 * (5, 1) = (13, 10)
-      result_b1 = point_a.mul([3], [], 5)
-      assert_equal B(%w{ 04 0D 0A }), result_b1.to_octet_string(:uncompressed)
     rescue OpenSSL::PKey::EC::Group::Error
       # CentOS patches OpenSSL to reject curves defined over Fp where p < 256 bits
       raise if $!.message !~ /unsupported field/
@@ -360,9 +400,6 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     # invalid argument
     point = p256_key.public_key
     assert_raise(TypeError) { point.mul(nil) }
-    assert_raise(ArgumentError) { point.mul([1], [point]) }
-    assert_raise(TypeError) { point.mul([1], nil) }
-    assert_raise(TypeError) { point.mul([nil], []) }
   end
 
 # test Group: asn1_flag, point_conversion

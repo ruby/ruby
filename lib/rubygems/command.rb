@@ -17,7 +17,6 @@ require_relative 'user_interaction'
 # A very good example to look at is Gem::Commands::ContentsCommand
 
 class Gem::Command
-
   include Gem::UserInteraction
 
   OptionParser.accept Symbol do |value|
@@ -356,6 +355,8 @@ class Gem::Command
   def add_option(*opts, &handler) # :yields: value, options
     group_name = Symbol === opts.first ? opts.shift : :options
 
+    raise "Do not pass an empty string in opts" if opts.include?("")
+
     @option_groups[group_name] << [opts, handler]
   end
 
@@ -635,6 +636,7 @@ RubyGems is a package manager for Ruby.
     gem install rake
     gem list --local
     gem build package.gemspec
+    gem push package-0.0.1.gem
     gem help install
 
   Further help:
@@ -652,7 +654,6 @@ RubyGems is a package manager for Ruby.
   HELP
 
   # :startdoc:
-
 end
 
 ##

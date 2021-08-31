@@ -42,14 +42,12 @@ set_gc_hook(VALUE module, VALUE proc, rb_event_flag_t event, const char *tp_str,
 {
     VALUE tpval;
     ID tp_key = rb_intern(tp_str);
-    ID proc_key = rb_intern(proc_str);
 
     /* disable previous keys */
     if (rb_ivar_defined(module, tp_key) != 0 &&
 	RTEST(tpval = rb_ivar_get(module, tp_key))) {
 	rb_tracepoint_disable(tpval);
 	rb_ivar_set(module, tp_key, Qnil);
-	rb_ivar_set(module, proc_key, Qnil);
     }
 
     if (RTEST(proc)) {
@@ -59,7 +57,6 @@ set_gc_hook(VALUE module, VALUE proc, rb_event_flag_t event, const char *tp_str,
 
 	tpval = rb_tracepoint_new(0, event, gc_start_end_i, (void *)proc);
 	rb_ivar_set(module, tp_key, tpval);
-	rb_ivar_set(module, proc_key, proc); /* GC guard */
 	rb_tracepoint_enable(tpval);
     }
 

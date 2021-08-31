@@ -1,6 +1,6 @@
 /**********************************************************************
 
-  vm.c -
+  Vm.c -
 
   $Author$
 
@@ -18,13 +18,14 @@
 #include "internal/error.h"
 #include "internal/eval.h"
 #include "internal/inits.h"
-#include "internal/mjit.h"
 #include "internal/object.h"
 #include "internal/parse.h"
 #include "internal/proc.h"
 #include "internal/re.h"
 #include "internal/symbol.h"
+#include "internal/thread.h"
 #include "internal/vm.h"
+#include "internal/sanitizers.h"
 #include "iseq.h"
 #include "mjit.h"
 #include "ruby/st.h"
@@ -34,6 +35,8 @@
 #include "vm_debug.h"
 #include "vm_exec.h"
 #include "vm_insnhelper.h"
+#include "ractor_core.h"
+#include "vm_sync.h"
 
 #include "builtin.h"
 
@@ -55,7 +58,7 @@ RUBY_FUNC_EXPORTED
 #else
 MJIT_FUNC_EXPORTED
 #endif
-VALUE vm_exec(rb_execution_context_t *, int);
+VALUE vm_exec(rb_execution_context_t *, bool);
 
 PUREFUNC(static inline const VALUE *VM_EP_LEP(const VALUE *));
 static inline const VALUE *
@@ -364,7 +367,6 @@ rb_serial_t
 rb_next_class_serial(void)
 {
     rb_serial_t class_serial = NEXT_CLASS_SERIAL();
-    mjit_add_class_serial(class_serial);
     return class_serial;
 }
 
@@ -376,15 +378,35 @@ VALUE rb_block_param_proxy;
 #define ruby_vm_redefined_flag GET_VM()->redefined_flag
 VALUE ruby_vm_const_missing_count = 0;
 rb_vm_t *ruby_current_vm_ptr = NULL;
-rb_execution_context_t *ruby_current_execution_context_ptr = NULL;
+rb_ractor_t *ruby_single_main_ractor;
+
+#ifdef RB_THREAD_LOCAL_SPECIFIER
+RB_THREAD_LOCAL_SPECIFIER rb_execution_context_t *ruby_current_ec;
+
+#ifdef __APPLE__
+  rb_execution_context_t *
+  rb_current_ec(void)
+  {
+      return ruby_current_ec;
+  }
+  void
+  rb_current_ec_set(rb_execution_context_t *ec)
+  {
+      ruby_current_ec = ec;
+  }
+#endif
+
+#else
+native_tls_key_t ruby_current_ec_key;
+#endif
 
 rb_event_flag_t ruby_vm_event_flags;
 rb_event_flag_t ruby_vm_event_enabled_global_flags;
 unsigned int    ruby_vm_event_local_num;
 
-rb_serial_t ruby_vm_global_method_state = 1;
 rb_serial_t ruby_vm_global_constant_state = 1;
 rb_serial_t ruby_vm_class_serial = 1;
+rb_serial_t ruby_vm_global_cvar_state = 1;
 
 static const struct rb_callcache vm_empty_cc = {
     .flags = T_IMEMO | (imemo_callcache << FL_USHIFT) | VM_CALLCACHE_UNMARKABLE,
@@ -451,7 +473,6 @@ rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
  *  This hash includes information about method/constant cache serials:
  *
  *    {
- *      :global_method_state=>251,
  *      :global_constant_state=>481,
  *      :class_serial=>9029
  *    }
@@ -465,7 +486,7 @@ rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
 static VALUE
 vm_stat(int argc, VALUE *argv, VALUE self)
 {
-    static VALUE sym_global_method_state, sym_global_constant_state, sym_class_serial;
+    static VALUE sym_global_constant_state, sym_class_serial, sym_global_cvar_state;
     VALUE arg = Qnil;
     VALUE hash = Qnil, key = Qnil;
 
@@ -482,11 +503,11 @@ vm_stat(int argc, VALUE *argv, VALUE self)
 	hash = rb_hash_new();
     }
 
-    if (sym_global_method_state == 0) {
+    if (sym_global_constant_state == 0) {
 #define S(s) sym_##s = ID2SYM(rb_intern_const(#s))
-	S(global_method_state);
 	S(global_constant_state);
 	S(class_serial);
+	S(global_cvar_state);
 #undef S
     }
 
@@ -496,9 +517,9 @@ vm_stat(int argc, VALUE *argv, VALUE self)
     else if (hash != Qnil) \
 	rb_hash_aset(hash, sym_##name, SERIALT2NUM(attr));
 
-    SET(global_method_state, ruby_vm_global_method_state);
     SET(global_constant_state, ruby_vm_global_constant_state);
     SET(class_serial, ruby_vm_class_serial);
+    SET(global_cvar_state, ruby_vm_global_cvar_state);
 #undef SET
 
     if (!NIL_P(key)) { /* matched key should return above */
@@ -568,7 +589,6 @@ rb_vm_get_binding_creatable_next_cfp(const rb_execution_context_t *ec, const rb_
 MJIT_FUNC_EXPORTED rb_control_frame_t *
 rb_vm_get_ruby_level_next_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
 {
-    if (RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(ec, cfp)) bp();
     while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(ec, cfp)) {
 	if (VM_FRAME_RUBYFRAME_P(cfp)) {
 	    return (rb_control_frame_t *)cfp;
@@ -720,18 +740,17 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
 
     if (!VM_ENV_LOCAL_P(ep)) {
 	const VALUE *prev_ep = VM_ENV_PREV_EP(ep);
+        if (!VM_ENV_ESCAPED_P(prev_ep)) {
+            rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 
-	if (!VM_ENV_ESCAPED_P(prev_ep)) {
-	    rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+            while (prev_cfp->ep != prev_ep) {
+                prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(prev_cfp);
+                VM_ASSERT(prev_cfp->ep != NULL);
+            }
 
-	    while (prev_cfp->ep != prev_ep) {
-		prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(prev_cfp);
-		VM_ASSERT(prev_cfp->ep != NULL);
-	    }
-
-	    vm_make_env_each(ec, prev_cfp);
-	    VM_FORCE_WRITE_SPECIAL_CONST(&ep[VM_ENV_DATA_INDEX_SPECVAL], VM_GUARDED_PREV_EP(prev_cfp->ep));
-	}
+            vm_make_env_each(ec, prev_cfp);
+            VM_FORCE_WRITE_SPECIAL_CONST(&ep[VM_ENV_DATA_INDEX_SPECVAL], VM_GUARDED_PREV_EP(prev_cfp->ep));
+        }
     }
     else {
 	VALUE block_handler = VM_ENV_BLOCK_HANDLER(ep);
@@ -817,7 +836,8 @@ rb_vm_env_prev_env(const rb_env_t *env)
 	return NULL;
     }
     else {
-	return VM_ENV_ENVVAL_PTR(VM_ENV_PREV_EP(ep));
+        const VALUE *prev_ep = VM_ENV_PREV_EP(ep);
+        return VM_ENV_ENVVAL_PTR(prev_ep);
     }
 }
 
@@ -836,6 +856,7 @@ static void
 collect_local_variables_in_env(const rb_env_t *env, const struct local_var_list *vars)
 {
     do {
+        if (VM_ENV_FLAGS(env->ep, VM_ENV_FLAG_ISOLATED)) break;
 	collect_local_variables_in_iseq(env->iseq, vars);
     } while ((env = rb_vm_env_prev_env(env)) != NULL);
 }
@@ -886,8 +907,8 @@ vm_proc_create_from_captured(VALUE klass,
     VM_ASSERT(VM_EP_IN_HEAP_P(GET_EC(), captured->ep));
 
     /* copy block */
-    RB_OBJ_WRITE(procval, &proc->block.as.captured.self, captured->self);
     RB_OBJ_WRITE(procval, &proc->block.as.captured.code.val, captured->code.val);
+    RB_OBJ_WRITE(procval, &proc->block.as.captured.self, captured->self);
     rb_vm_block_ep_update(procval, &proc->block, captured->ep);
 
     vm_block_type_set(&proc->block, block_type);
@@ -940,10 +961,193 @@ rb_proc_dup(VALUE self)
 
     GetProcPtr(self, src);
     procval = proc_create(rb_cProc, &src->block, src->is_from_method, src->is_lambda);
+    if (RB_OBJ_SHAREABLE_P(self)) FL_SET_RAW(procval, RUBY_FL_SHAREABLE);
     RB_GC_GUARD(self); /* for: body = rb_proc_dup(body) */
     return procval;
 }
 
+struct collect_outer_variable_name_data {
+    VALUE ary;
+    VALUE read_only;
+    bool yield;
+    bool isolate;
+};
+
+static enum rb_id_table_iterator_result
+collect_outer_variable_names(ID id, VALUE val, void *ptr)
+{
+    struct collect_outer_variable_name_data *data = (struct collect_outer_variable_name_data *)ptr;
+
+    if (id == rb_intern("yield")) {
+        data->yield = true;
+    }
+    else {
+        if (data->isolate ||
+            val == Qtrue /* write */) {
+            if (data->ary == Qfalse) data->ary = rb_ary_new();
+            rb_ary_push(data->ary, rb_id2str(id));
+        }
+        else {
+            if (data->read_only == Qfalse) data->read_only = rb_ary_new();
+            rb_ary_push(data->read_only, rb_id2str(id));
+        }
+    }
+    return ID_TABLE_CONTINUE;
+}
+
+static const rb_env_t *
+env_copy(const VALUE *src_ep, VALUE read_only_variables)
+{
+    const rb_env_t *src_env = (rb_env_t *)VM_ENV_ENVVAL(src_ep);
+    VM_ASSERT(src_env->ep == src_ep);
+
+    VALUE *env_body = ZALLOC_N(VALUE, src_env->env_size); // fill with Qfalse
+    VALUE *ep = &env_body[src_env->env_size - 2];
+    volatile VALUE prev_env = Qnil;
+
+    if (read_only_variables) {
+        for (int i=0; i<RARRAY_LENINT(read_only_variables); i++) {
+            ID id = SYM2ID(rb_str_intern(RARRAY_AREF(read_only_variables, i)));
+
+            for (unsigned int j=0; j<src_env->iseq->body->local_table_size; j++) {
+                if (id ==  src_env->iseq->body->local_table[j]) {
+                    VALUE v = src_env->env[j];
+                    if (!rb_ractor_shareable_p(v)) {
+                        rb_raise(rb_eRactorIsolationError,
+                                 "can not make shareable Proc because it can refer unshareable object %"
+                                 PRIsVALUE" from variable `%s'", rb_inspect(v), rb_id2name(id));
+                    }
+                    env_body[j] = v;
+                    rb_ary_delete_at(read_only_variables, i);
+                    break;
+                }
+            }
+        }
+    }
+
+    ep[VM_ENV_DATA_INDEX_ME_CREF] = src_ep[VM_ENV_DATA_INDEX_ME_CREF];
+    ep[VM_ENV_DATA_INDEX_FLAGS]   = src_ep[VM_ENV_DATA_INDEX_FLAGS] | VM_ENV_FLAG_ISOLATED;
+
+    if (!VM_ENV_LOCAL_P(src_ep)) {
+        const VALUE *prev_ep = VM_ENV_PREV_EP(src_env->ep);
+        const rb_env_t *new_prev_env = env_copy(prev_ep, read_only_variables);
+        prev_env = (VALUE)new_prev_env;
+        ep[VM_ENV_DATA_INDEX_SPECVAL] = VM_GUARDED_PREV_EP(new_prev_env->ep);
+    }
+    else {
+        ep[VM_ENV_DATA_INDEX_SPECVAL] = VM_BLOCK_HANDLER_NONE;
+    }
+
+    const rb_env_t *copied_env = vm_env_new(ep, env_body, src_env->env_size, src_env->iseq);
+    RB_GC_GUARD(prev_env);
+    return copied_env;
+}
+
+static void
+proc_isolate_env(VALUE self, rb_proc_t *proc, VALUE read_only_variables)
+{
+    const struct rb_captured_block *captured = &proc->block.as.captured;
+    const rb_env_t *env = env_copy(captured->ep, read_only_variables);
+    *((const VALUE **)&proc->block.as.captured.ep) = env->ep;
+    RB_OBJ_WRITTEN(self, Qundef, env);
+}
+
+VALUE
+rb_proc_isolate_bang(VALUE self)
+{
+    const rb_iseq_t *iseq = vm_proc_iseq(self);
+
+    if (iseq) {
+        rb_proc_t *proc = (rb_proc_t *)RTYPEDDATA_DATA(self);
+        if (proc->block.type != block_type_iseq) rb_raise(rb_eRuntimeError, "not supported yet");
+
+        if (iseq->body->outer_variables) {
+            struct collect_outer_variable_name_data data = {
+                .isolate = true,
+                .ary = Qfalse,
+                .yield = false,
+            };
+            rb_id_table_foreach(iseq->body->outer_variables, collect_outer_variable_names, (void *)&data);
+
+            if (data.ary != Qfalse) {
+                VALUE str = rb_ary_join(data.ary, rb_str_new2(", "));
+                if (data.yield) {
+                    rb_raise(rb_eArgError, "can not isolate a Proc because it accesses outer variables (%s) and uses `yield'.",
+                             StringValueCStr(str));
+                }
+                else {
+                    rb_raise(rb_eArgError, "can not isolate a Proc because it accesses outer variables (%s).",
+                             StringValueCStr(str));
+                }
+            }
+            else {
+                VM_ASSERT(data.yield);
+                rb_raise(rb_eArgError, "can not isolate a Proc because it uses `yield'.");
+            }
+        }
+
+        proc_isolate_env(self, proc, Qfalse);
+        proc->is_isolated = TRUE;
+    }
+
+    FL_SET_RAW(self, RUBY_FL_SHAREABLE);
+    return self;
+}
+
+VALUE
+rb_proc_isolate(VALUE self)
+{
+    VALUE dst = rb_proc_dup(self);
+    rb_proc_isolate_bang(dst);
+    return dst;
+}
+
+VALUE
+rb_proc_ractor_make_shareable(VALUE self)
+{
+    const rb_iseq_t *iseq = vm_proc_iseq(self);
+
+    if (iseq) {
+        rb_proc_t *proc = (rb_proc_t *)RTYPEDDATA_DATA(self);
+        if (proc->block.type != block_type_iseq) rb_raise(rb_eRuntimeError, "not supported yet");
+
+        VALUE read_only_variables = Qfalse;
+
+        if (iseq->body->outer_variables) {
+            struct collect_outer_variable_name_data data = {
+                .isolate = false,
+                .ary = Qfalse,
+                .read_only = Qfalse,
+                .yield = false,
+            };
+
+            rb_id_table_foreach(iseq->body->outer_variables, collect_outer_variable_names, (void *)&data);
+
+            if (data.ary != Qfalse) {
+                VALUE str = rb_ary_join(data.ary, rb_str_new2(", "));
+                if (data.yield) {
+                    rb_raise(rb_eArgError, "can not make a Proc shareable because it accesses outer variables (%s) and uses `yield'.",
+                             StringValueCStr(str));
+                }
+                else {
+                    rb_raise(rb_eArgError, "can not make a Proc shareable because it accesses outer variables (%s).",
+                             StringValueCStr(str));
+                }
+            }
+            else if (data.yield) {
+                rb_raise(rb_eArgError, "can not make a Proc shareable because it uses `yield'.");
+            }
+
+            read_only_variables = data.read_only;
+        }
+
+        proc_isolate_env(self, proc, read_only_variables);
+        proc->is_isolated = TRUE;
+    }
+
+    FL_SET_RAW(self, RUBY_FL_SHAREABLE);
+    return self;
+}
 
 MJIT_FUNC_EXPORTED VALUE
 rb_vm_make_proc_lambda(const rb_execution_context_t *ec, const struct rb_captured_block *captured, VALUE klass, int8_t is_lambda)
@@ -1023,7 +1227,7 @@ rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const I
     rb_node_init(&tmp_node, NODE_SCOPE, (VALUE)dyns, 0, 0);
     ast.root = &tmp_node;
     ast.compile_option = 0;
-    ast.line_count = -1;
+    ast.script_lines = INT2FIX(-1);
 
     if (base_iseq) {
 	iseq = rb_iseq_new(&ast, base_iseq->body->location.label, path, realpath, base_iseq, ISEQ_TYPE_EVAL);
@@ -1057,7 +1261,7 @@ invoke_block(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE self, cons
 		  ec->cfp->sp + arg_size,
 		  iseq->body->local_table_size - arg_size,
 		  iseq->body->stack_max);
-    return vm_exec(ec, TRUE);
+    return vm_exec(ec, true);
 }
 
 static VALUE
@@ -1087,7 +1291,7 @@ invoke_bmethod(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE self, co
                                 me->def->original_id, me->called_id, me->owner, Qnil, FALSE);
     }
     VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);
-    ret = vm_exec(ec, TRUE);
+    ret = vm_exec(ec, true);
 
     EXEC_EVENT_HOOK(ec, RUBY_EVENT_RETURN, self, me->def->original_id, me->called_id, me->owner, ret);
     if ((hooks = me->def->body.bmethod.hooks) != NULL &&
@@ -1238,7 +1442,8 @@ invoke_block_from_c_proc(rb_execution_context_t *ec, const rb_proc_t *proc,
             }
             if (RHASH_EMPTY_P(keyword_hash)) {
                 argc--;
-            } else {
+            }
+            else {
                 ((VALUE *)argv)[argc-1] = rb_hash_dup(keyword_hash);
             }
         }
@@ -1273,6 +1478,20 @@ rb_vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc,
 		  int argc, const VALUE *argv, int kw_splat, VALUE passed_block_handler)
 {
     VALUE self = vm_block_self(&proc->block);
+    vm_block_handler_verify(passed_block_handler);
+
+    if (proc->is_from_method) {
+        return rb_vm_invoke_bmethod(ec, proc, self, argc, argv, kw_splat, passed_block_handler, NULL);
+    }
+    else {
+	return vm_invoke_proc(ec, proc, self, argc, argv, kw_splat, passed_block_handler);
+    }
+}
+
+VALUE
+rb_vm_invoke_proc_with_self(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self,
+                            int argc, const VALUE *argv, int kw_splat, VALUE passed_block_handler)
+{
     vm_block_handler_verify(passed_block_handler);
 
     if (proc->is_from_method) {
@@ -1579,7 +1798,7 @@ rb_iter_break_value(VALUE val)
 
 /* optimization: redefine management */
 
-static st_table *vm_opt_method_table = 0;
+static st_table *vm_opt_method_def_table = 0;
 static st_table *vm_opt_mid_table = 0;
 
 static int
@@ -1591,7 +1810,9 @@ vm_redefinition_check_flag(VALUE klass)
     if (klass == rb_cArray)  return ARRAY_REDEFINED_OP_FLAG;
     if (klass == rb_cHash)   return HASH_REDEFINED_OP_FLAG;
     if (klass == rb_cSymbol) return SYMBOL_REDEFINED_OP_FLAG;
+#if 0
     if (klass == rb_cTime)   return TIME_REDEFINED_OP_FLAG;
+#endif
     if (klass == rb_cRegexp) return REGEXP_REDEFINED_OP_FLAG;
     if (klass == rb_cNilClass) return NIL_REDEFINED_OP_FLAG;
     if (klass == rb_cTrueClass) return TRUE_REDEFINED_OP_FLAG;
@@ -1631,9 +1852,8 @@ rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass)
        klass = RBASIC_CLASS(klass);
     }
     if (vm_redefinition_check_method_type(me->def)) {
-	if (st_lookup(vm_opt_method_table, (st_data_t)me, &bop)) {
-	    int flag = vm_redefinition_check_flag(klass);
-
+        if (st_lookup(vm_opt_method_def_table, (st_data_t)me->def, &bop)) {
+            int flag = vm_redefinition_check_flag(klass);
 	    ruby_vm_redefined_flag[bop] |= flag;
 	}
     }
@@ -1664,7 +1884,7 @@ add_opt_method(VALUE klass, ID mid, VALUE bop)
     const rb_method_entry_t *me = rb_method_entry_at(klass, mid);
 
     if (me && vm_redefinition_check_method_type(me->def)) {
-	st_insert(vm_opt_method_table, (st_data_t)me, (st_data_t)bop);
+	st_insert(vm_opt_method_def_table, (st_data_t)me->def, (st_data_t)bop);
 	st_insert(vm_opt_mid_table, (st_data_t)mid, (st_data_t)Qtrue);
     }
     else {
@@ -1678,7 +1898,7 @@ vm_init_redefined_flag(void)
     ID mid;
     VALUE bop;
 
-    vm_opt_method_table = st_init_numtable();
+    vm_opt_method_def_table = st_init_numtable();
     vm_opt_mid_table = st_init_numtable();
 
 #define OP(mid_, bop_) (mid = id##mid_, bop = BOP_##bop_, ruby_vm_redefined_flag[bop] = 0)
@@ -1701,7 +1921,7 @@ vm_init_redefined_flag(void)
     OP(Length, LENGTH), (C(Array), C(String), C(Hash));
     OP(Size, SIZE), (C(Array), C(String), C(Hash));
     OP(EmptyP, EMPTY_P), (C(Array), C(String), C(Hash));
-    OP(Succ, SUCC), (C(Integer), C(String), C(Time));
+    OP(Succ, SUCC), (C(Integer), C(String));
     OP(EqTilde, MATCH), (C(Regexp), C(String));
     OP(Freeze, FREEZE), (C(String));
     OP(UMinus, UMINUS), (C(String));
@@ -1930,7 +2150,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
                          VALUE errinfo, VALUE *initial);
 
 VALUE
-vm_exec(rb_execution_context_t *ec, int mjit_enable_p)
+vm_exec(rb_execution_context_t *ec, bool mjit_enable_p)
 {
     enum ruby_tag_type state;
     VALUE result = Qundef;
@@ -1947,7 +2167,7 @@ vm_exec(rb_execution_context_t *ec, int mjit_enable_p)
     }
     else {
 	result = ec->errinfo;
-        rb_ec_raised_reset(ec, RAISED_STACKOVERFLOW);
+        rb_ec_raised_reset(ec, RAISED_STACKOVERFLOW | RAISED_NOMEMORY);
         while ((result = vm_exec_handle_exception(ec, state, result, &initial)) == Qundef) {
             /* caught a jump, exec the handler */
             result = vm_exec_core(ec, initial);
@@ -2083,10 +2303,16 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
 		}
 	    }
 	}
-	else if (state == TAG_BREAK && !escape_cfp) {
-	    type = CATCH_TYPE_BREAK;
+        else if ((state == TAG_BREAK && !escape_cfp) ||
+                 (state == TAG_REDO) ||
+                 (state == TAG_NEXT)) {
+            type = (const enum catch_type[TAG_MASK]) {
+                [TAG_BREAK]  = CATCH_TYPE_BREAK,
+                [TAG_NEXT]   = CATCH_TYPE_NEXT,
+                [TAG_REDO]   = CATCH_TYPE_REDO,
+                /* otherwise = dontcare */
+            }[state];
 
-	  search_restart_point:
 	    ct = cfp->iseq->body->catch_table;
 	    if (ct) for (i = 0; i < ct->size; i++) {
 		entry = UNALIGNED_MEMBER_PTR(ct, entries[i]);
@@ -2115,14 +2341,6 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
 		    }
 		}
 	    }
-	}
-	else if (state == TAG_REDO) {
-	    type = CATCH_TYPE_REDO;
-	    goto search_restart_point;
-	}
-	else if (state == TAG_NEXT) {
-	    type = CATCH_TYPE_NEXT;
-	    goto search_restart_point;
 	}
 	else {
 	    ct = cfp->iseq->body->catch_table;
@@ -2189,7 +2407,7 @@ rb_iseq_eval(const rb_iseq_t *iseq)
     rb_execution_context_t *ec = GET_EC();
     VALUE val;
     vm_set_top_stack(ec, iseq);
-    val = vm_exec(ec, TRUE);
+    val = vm_exec(ec, true);
     return val;
 }
 
@@ -2200,7 +2418,7 @@ rb_iseq_eval_main(const rb_iseq_t *iseq)
     VALUE val;
 
     vm_set_main_stack(ec, iseq);
-    val = vm_exec(ec, TRUE);
+    val = vm_exec(ec, true);
     return val;
 }
 
@@ -2259,17 +2477,9 @@ rb_vm_update_references(void *ptr)
 {
     if (ptr) {
         rb_vm_t *vm = ptr;
-        rb_thread_t *th = 0;
 
         rb_gc_update_tbl_refs(vm->frozen_strings);
-
-        list_for_each(&vm->living_threads, th, vmlt_node) {
-            th->self = rb_gc_location(th->self);
-        }
-
-        vm->thgroup_default = rb_gc_location(vm->thgroup_default);
         vm->mark_object_ary = rb_gc_location(vm->mark_object_ary);
-
         vm->load_path = rb_gc_location(vm->load_path);
         vm->load_path_snapshot = rb_gc_location(vm->load_path_snapshot);
 
@@ -2290,20 +2500,60 @@ rb_vm_update_references(void *ptr)
 }
 
 void
+rb_vm_each_stack_value(void *ptr, void (*cb)(VALUE, void*), void *ctx)
+{
+    if (ptr) {
+        rb_vm_t *vm = ptr;
+        rb_ractor_t *r = 0;
+        list_for_each(&vm->ractor.set, r, vmlr_node) {
+            VM_ASSERT(rb_ractor_status_p(r, ractor_blocking) ||
+                      rb_ractor_status_p(r, ractor_running));
+            if (r->threads.cnt > 0) {
+                rb_thread_t *th = 0;
+                list_for_each(&r->threads.set, th, lt_node) {
+                    VM_ASSERT(th != NULL);
+                    rb_execution_context_t * ec = th->ec;
+                    if (ec->vm_stack) {
+                        VALUE *p = ec->vm_stack;
+                        VALUE *sp = ec->cfp->sp;
+                        while (p <= sp) {
+                            if (!rb_special_const_p(*p)) {
+                                cb(*p, ctx);
+                            }
+                            p++;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+static enum rb_id_table_iterator_result
+vm_mark_negative_cme(VALUE val, void *dmy)
+{
+    rb_gc_mark(val);
+    return ID_TABLE_CONTINUE;
+}
+
+void
 rb_vm_mark(void *ptr)
 {
     RUBY_MARK_ENTER("vm");
     RUBY_GC_INFO("-------------------------------------------------\n");
     if (ptr) {
 	rb_vm_t *vm = ptr;
-	rb_thread_t *th = 0;
+        rb_ractor_t *r = 0;
         long i, len;
         const VALUE *obj_ary;
 
-        list_for_each(&vm->living_threads, th, vmlt_node) {
-            rb_gc_mark_movable(th->self);
-        }
-        rb_gc_mark_movable(vm->thgroup_default);
+	list_for_each(&vm->ractor.set, r, vmlr_node) {
+            // ractor.set only contains blocking or running ractors
+            VM_ASSERT(rb_ractor_status_p(r, ractor_blocking) ||
+                      rb_ractor_status_p(r, ractor_running));
+            rb_gc_mark(rb_ractor_self(r));
+	}
+
         rb_gc_mark_movable(vm->mark_object_ary);
 
         len = RARRAY_LEN(vm->mark_object_ary);
@@ -2337,9 +2587,21 @@ rb_vm_mark(void *ptr)
 	    rb_mark_tbl(vm->loading_table);
 	}
 
-	rb_hook_list_mark(&vm->global_hooks);
-
 	rb_gc_mark_values(RUBY_NSIG, vm->trap_list.cmd);
+
+        rb_id_table_foreach_values(vm->negative_cme_table, vm_mark_negative_cme, NULL);
+        for (i=0; i<VM_GLOBAL_CC_CACHE_TABLE_SIZE; i++) {
+            const struct rb_callcache *cc = vm->global_cc_cache_table[i];
+
+            if (cc != NULL) {
+                if (!vm_cc_invalidated_p(cc)) {
+                    rb_gc_mark((VALUE)cc);
+                }
+                else {
+                    vm->global_cc_cache_table[i] = NULL;
+                }
+            }
+        }
 
         mjit_mark();
     }
@@ -2359,7 +2621,7 @@ rb_vm_register_special_exception_str(enum ruby_special_exceptions sp, VALUE cls,
 }
 
 int
-rb_vm_add_root_module(ID id, VALUE module)
+rb_vm_add_root_module(VALUE module)
 {
     rb_vm_t *vm = GET_VM();
 
@@ -2381,10 +2643,11 @@ ruby_vm_destruct(rb_vm_t *vm)
     RUBY_FREE_ENTER("vm");
 
     if (vm) {
-	rb_thread_t *th = vm->main_thread;
+	rb_thread_t *th = vm->ractor.main_thread;
 	struct rb_objspace *objspace = vm->objspace;
-	vm->main_thread = 0;
-	if (th) {
+        vm->ractor.main_thread = NULL;
+
+        if (th) {
             rb_fiber_reset_root_local_storage(th);
 	    thread_free(th);
 	}
@@ -2399,11 +2662,12 @@ ruby_vm_destruct(rb_vm_t *vm)
 	    st_free_table(vm->frozen_strings);
 	    vm->frozen_strings = 0;
 	}
-	rb_vm_gvl_destroy(vm);
 	RB_ALTSTACK_FREE(vm->main_altstack);
 	if (objspace) {
 	    rb_objspace_free(objspace);
 	}
+        rb_native_mutex_destroy(&vm->waitpid_lock);
+        rb_native_mutex_destroy(&vm->workqueue_lock);
 	/* after freeing objspace, you *can't* use ruby_xfree() */
 	ruby_mimfree(vm);
 	ruby_current_vm_ptr = NULL;
@@ -2415,14 +2679,11 @@ ruby_vm_destruct(rb_vm_t *vm)
 static size_t
 vm_memsize(const void *ptr)
 {
-    const rb_vm_t *vmobj = ptr;
     size_t size = sizeof(rb_vm_t);
 
-    size += vmobj->living_thread_num * sizeof(rb_thread_t);
+    // TODO
+    // size += vmobj->ractor_num * sizeof(rb_ractor_t);
 
-    if (vmobj->defined_strings) {
-	size += DEFINED_EXPR * sizeof(VALUE);
-    }
     return size;
 }
 
@@ -2544,12 +2805,16 @@ rb_execution_context_update(const rb_execution_context_t *ec)
             cfp->iseq = (rb_iseq_t *)rb_gc_location((VALUE)cfp->iseq);
             cfp->block_code = (void *)rb_gc_location((VALUE)cfp->block_code);
 
-            while (!VM_ENV_LOCAL_P(ep)) {
+            if (!VM_ENV_LOCAL_P(ep)) {
+                const VALUE *prev_ep = VM_ENV_PREV_EP(ep);
+                if (VM_ENV_FLAGS(prev_ep, VM_ENV_FLAG_ESCAPED)) {
+                    VM_FORCE_WRITE(&prev_ep[VM_ENV_DATA_INDEX_ENV], rb_gc_location(prev_ep[VM_ENV_DATA_INDEX_ENV]));
+                }
+
                 if (VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED)) {
                     VM_FORCE_WRITE(&ep[VM_ENV_DATA_INDEX_ENV], rb_gc_location(ep[VM_ENV_DATA_INDEX_ENV]));
                     VM_FORCE_WRITE(&ep[VM_ENV_DATA_INDEX_ME_CREF], rb_gc_location(ep[VM_ENV_DATA_INDEX_ME_CREF]));
                 }
-                ep = VM_ENV_PREV_EP(ep);
             }
 
             cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
@@ -2575,6 +2840,7 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
 	rb_control_frame_t *cfp = ec->cfp;
 	rb_control_frame_t *limit_cfp = (void *)(ec->vm_stack + ec->vm_stack_size);
 
+        VM_ASSERT(sp == ec->cfp->sp);
         rb_gc_mark_vm_stack_values((long)(sp - p), p);
 
 	while (cfp != limit_cfp) {
@@ -2584,12 +2850,16 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
             rb_gc_mark_movable((VALUE)cfp->iseq);
             rb_gc_mark_movable((VALUE)cfp->block_code);
 
-            while (!VM_ENV_LOCAL_P(ep)) {
+            if (!VM_ENV_LOCAL_P(ep)) {
+                const VALUE *prev_ep = VM_ENV_PREV_EP(ep);
+                if (VM_ENV_FLAGS(prev_ep, VM_ENV_FLAG_ESCAPED)) {
+                    rb_gc_mark_movable(prev_ep[VM_ENV_DATA_INDEX_ENV]);
+                }
+
 		if (VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED)) {
                     rb_gc_mark_movable(ep[VM_ENV_DATA_INDEX_ENV]);
                     rb_gc_mark(ep[VM_ENV_DATA_INDEX_ME_CREF]);
 		}
-                ep = VM_ENV_PREV_EP(ep);
             }
 
 	    cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
@@ -2625,11 +2895,12 @@ static void
 thread_compact(void *ptr)
 {
     rb_thread_t *th = ptr;
-    rb_fiber_update_self(th->ec->fiber_ptr);
 
-    if (th->root_fiber) rb_fiber_update_self(th->root_fiber);
+    th->self = rb_gc_location(th->self);
 
-    rb_execution_context_update(th->ec);
+    if (!th->root_fiber) {
+        rb_execution_context_update(th->ec);
+    }
 }
 
 static void
@@ -2642,6 +2913,7 @@ thread_mark(void *ptr)
     /* mark ruby objects */
     switch (th->invoke_type) {
       case thread_invoke_type_proc:
+      case thread_invoke_type_ractor_proc:
         RUBY_MARK_UNLESS_NULL(th->invoke_arg.proc.proc);
         RUBY_MARK_UNLESS_NULL(th->invoke_arg.proc.args);
         break;
@@ -2652,6 +2924,7 @@ thread_mark(void *ptr)
         break;
     }
 
+    rb_gc_mark(rb_ractor_self(th->ractor));
     RUBY_MARK_UNLESS_NULL(th->thgroup);
     RUBY_MARK_UNLESS_NULL(th->value);
     RUBY_MARK_UNLESS_NULL(th->pending_interrupt_queue);
@@ -2687,8 +2960,8 @@ thread_free(void *ptr)
 
     rb_threadptr_root_fiber_release(th);
 
-    if (th->vm && th->vm->main_thread == th) {
-	RUBY_GC_INFO("main thread\n");
+    if (th->vm && th->vm->ractor.main_thread == th) {
+	RUBY_GC_INFO("MRI main thread\n");
     }
     else {
 	ruby_xfree(ptr);
@@ -2727,12 +3000,7 @@ const rb_data_type_t ruby_threadptr_data_type = {
 VALUE
 rb_obj_is_thread(VALUE obj)
 {
-    if (rb_typeddata_is_kind_of(obj, &thread_data_type)) {
-	return Qtrue;
-    }
-    else {
-	return Qfalse;
-    }
+    return RBOOL(rb_typeddata_is_kind_of(obj, &thread_data_type));
 }
 
 static VALUE
@@ -2807,25 +3075,31 @@ th_init(rb_thread_t *th, VALUE self)
     th->thread_id_string[0] = '\0';
 #endif
 
+    th->value = Qundef;
+
 #if OPT_CALL_THREADED_CODE
     th->retval = Qundef;
 #endif
     th->name = Qnil;
     th->report_on_exception = th->vm->thread_report_on_exception;
+    th->ext_config.ractor_safe = true;
 }
 
 static VALUE
 ruby_thread_init(VALUE self)
 {
-    rb_thread_t *th = rb_thread_ptr(self);
-    rb_vm_t *vm = GET_THREAD()->vm;
+    rb_thread_t *th = GET_THREAD();
+    rb_thread_t *target_th = rb_thread_ptr(self);
+    rb_vm_t *vm = th->vm;
 
-    th->vm = vm;
-    th_init(th, self);
+    target_th->vm = vm;
+    th_init(target_th, self);
 
-    th->top_wrapper = 0;
-    th->top_self = rb_vm_top_self();
-    th->ec->root_svar = Qfalse;
+    target_th->top_wrapper = 0;
+    target_th->top_self = rb_vm_top_self();
+    target_th->ec->root_svar = Qfalse;
+    target_th->ractor = th->ractor;
+
     return self;
 }
 
@@ -2918,6 +3192,24 @@ m_core_hash_merge_kwd(VALUE recv, VALUE hash, VALUE kw)
 }
 
 static VALUE
+m_core_make_shareable(VALUE recv, VALUE obj)
+{
+    return rb_ractor_make_shareable(obj);
+}
+
+static VALUE
+m_core_make_shareable_copy(VALUE recv, VALUE obj)
+{
+    return rb_ractor_make_shareable_copy(obj);
+}
+
+static VALUE
+m_core_ensure_shareable(VALUE recv, VALUE obj, VALUE name)
+{
+    return rb_ractor_ensure_shareable(obj, name);
+}
+
+static VALUE
 core_hash_merge_kwd(VALUE hash, VALUE kw)
 {
     rb_hash_foreach(rb_to_hash_type(kw), kwmerge_i, hash);
@@ -2926,13 +3218,13 @@ core_hash_merge_kwd(VALUE hash, VALUE kw)
 
 /* Returns true if JIT is enabled */
 static VALUE
-mjit_enabled_p(VALUE _)
+jit_enabled_p(VALUE _)
 {
-    return mjit_enabled ? Qtrue : Qfalse;
+    return RBOOL(mjit_enabled);
 }
 
 static VALUE
-mjit_pause_m(int argc, VALUE *argv, RB_UNUSED_VAR(VALUE self))
+jit_pause_m(int argc, VALUE *argv, RB_UNUSED_VAR(VALUE self))
 {
     VALUE options = Qnil;
     VALUE wait = Qtrue;
@@ -2949,7 +3241,7 @@ mjit_pause_m(int argc, VALUE *argv, RB_UNUSED_VAR(VALUE self))
 }
 
 static VALUE
-mjit_resume_m(VALUE _)
+jit_resume_m(VALUE _)
 {
     return mjit_resume();
 }
@@ -2972,7 +3264,7 @@ static VALUE
 nsdr(VALUE self)
 {
     VALUE ary = rb_ary_new();
-#if HAVE_BACKTRACE
+#ifdef HAVE_BACKTRACE
 #include <execinfo.h>
 #define MAX_NATIVE_TRACE 1024
     static void *trace[MAX_NATIVE_TRACE];
@@ -3026,6 +3318,12 @@ f_lambda(VALUE _)
 }
 
 static VALUE
+f_sprintf(int c, const VALUE *v, VALUE _)
+{
+    return rb_f_sprintf(c, v);
+}
+
+static VALUE
 vm_mtbl(VALUE self, VALUE obj, VALUE sym)
 {
     vm_mtbl_dump(CLASS_OF(obj), RTEST(sym) ? SYM2ID(sym) : 0);
@@ -3045,7 +3343,7 @@ Init_VM(void)
     VALUE opts;
     VALUE klass;
     VALUE fcore;
-    VALUE mjit;
+    VALUE jit;
 
     /*
      * Document-class: RubyVM
@@ -3069,6 +3367,7 @@ Init_VM(void)
 
     /* FrozenCore (hidden) */
     fcore = rb_class_new(rb_cBasicObject);
+    rb_set_class_path(fcore, rb_cRubyVM, "FrozenCore");
     RBASIC(fcore)->flags = T_ICLASS;
     klass = rb_singleton_class(fcore);
     rb_define_method_id(klass, id_core_set_method_alias, m_core_set_method_alias, 3);
@@ -3078,22 +3377,29 @@ Init_VM(void)
     rb_define_method_id(klass, id_core_hash_merge_ptr, m_core_hash_merge_ptr, -1);
     rb_define_method_id(klass, id_core_hash_merge_kwd, m_core_hash_merge_kwd, 2);
     rb_define_method_id(klass, id_core_raise, f_raise, -1);
+    rb_define_method_id(klass, id_core_sprintf, f_sprintf, -1);
     rb_define_method_id(klass, idProc, f_proc, 0);
     rb_define_method_id(klass, idLambda, f_lambda, 0);
+    rb_define_method(klass, "make_shareable", m_core_make_shareable, 1);
+    rb_define_method(klass, "make_shareable_copy", m_core_make_shareable_copy, 1);
+    rb_define_method(klass, "ensure_shareable", m_core_ensure_shareable, 2);
     rb_obj_freeze(fcore);
     RBASIC_CLEAR_CLASS(klass);
     rb_obj_freeze(klass);
     rb_gc_register_mark_object(fcore);
     rb_mRubyVMFrozenCore = fcore;
 
-    /* ::RubyVM::MJIT
+    /* ::RubyVM::JIT
      * Provides access to the Method JIT compiler of MRI.
      * Of course, this module is MRI specific.
      */
-    mjit = rb_define_module_under(rb_cRubyVM, "MJIT");
-    rb_define_singleton_method(mjit, "enabled?", mjit_enabled_p, 0);
-    rb_define_singleton_method(mjit, "pause", mjit_pause_m, -1);
-    rb_define_singleton_method(mjit, "resume", mjit_resume_m, 0);
+    jit = rb_define_module_under(rb_cRubyVM, "JIT");
+    rb_define_singleton_method(jit, "enabled?", jit_enabled_p, 0);
+    rb_define_singleton_method(jit, "pause", jit_pause_m, -1);
+    rb_define_singleton_method(jit, "resume", jit_resume_m, 0);
+    /* RubyVM::MJIT for short-term backward compatibility */
+    rb_const_set(rb_cRubyVM, rb_intern("MJIT"), jit);
+    rb_deprecate_constant(rb_cRubyVM, "MJIT");
 
     /*
      * Document-class: Thread
@@ -3327,7 +3633,6 @@ Init_VM(void)
     rb_define_singleton_method(rb_cRubyVM, "SDR", sdr, 0);
     rb_define_singleton_method(rb_cRubyVM, "NSDR", nsdr, 0);
     rb_define_singleton_method(rb_cRubyVM, "mtbl", vm_mtbl, 2);
-    rb_define_singleton_method(rb_cRubyVM, "mtbl", vm_mtbl, 2);
     rb_define_singleton_method(rb_cRubyVM, "mtbl2", vm_mtbl2, 2);
 #else
     (void)sdr;
@@ -3343,23 +3648,21 @@ Init_VM(void)
 	VALUE filename = rb_fstring_lit("<main>");
 	const rb_iseq_t *iseq = rb_iseq_new(0, filename, filename, Qnil, 0, ISEQ_TYPE_TOP);
 
+        // Ractor setup
+        rb_ractor_main_setup(vm, th->ractor, th);
+
 	/* create vm object */
 	vm->self = TypedData_Wrap_Struct(rb_cRubyVM, &vm_data_type, vm);
 
 	/* create main thread */
-	th->self = TypedData_Wrap_Struct(rb_cThread, &thread_data_type, th);
-
-	vm->main_thread = th;
-	vm->running_thread = th;
+        th->self = TypedData_Wrap_Struct(rb_cThread, &thread_data_type, th);
+	vm->ractor.main_thread = th;
+        vm->ractor.main_ractor = th->ractor;
 	th->vm = vm;
 	th->top_wrapper = 0;
 	th->top_self = rb_vm_top_self();
 
-	rb_thread_set_current(th);
-
-	rb_vm_living_threads_insert(vm, th);
-
-	rb_gc_register_mark_object((VALUE)iseq);
+        rb_gc_register_mark_object((VALUE)iseq);
 	th->ec->cfp->iseq = iseq;
 	th->ec->cfp->pc = iseq->body->iseq_encoded;
 	th->ec->cfp->self = th->top_self;
@@ -3371,6 +3674,8 @@ Init_VM(void)
 	 * The Binding of the top level scope
 	 */
 	rb_define_global_const("TOPLEVEL_BINDING", rb_binding_new());
+
+        rb_objspace_gc_enable(vm->objspace);
     }
     vm_init_redefined_flag();
 
@@ -3387,7 +3692,7 @@ Init_VM(void)
 void
 rb_vm_set_progname(VALUE filename)
 {
-    rb_thread_t *th = GET_VM()->main_thread;
+    rb_thread_t *th = GET_VM()->ractor.main_thread;
     rb_control_frame_t *cfp = (void *)(th->ec->vm_stack + th->ec->vm_stack_size);
     --cfp;
 
@@ -3411,12 +3716,18 @@ Init_BareVM(void)
 
     vm->objspace = rb_objspace_alloc();
     ruby_current_vm_ptr = vm;
+    vm->negative_cme_table = rb_id_table_create(16);
 
     Init_native_thread(th);
     th->vm = vm;
     th_init(th, 0);
-    rb_thread_set_current_raw(th);
+    vm->ractor.main_ractor = th->ractor = rb_ractor_main_alloc();
+    rb_ractor_set_current_ec(th->ractor, th->ec);
     ruby_thread_init_stack(th);
+
+    rb_native_mutex_initialize(&vm->ractor.sync.lock);
+    rb_native_cond_initialize(&vm->ractor.sync.barrier_cond);
+    rb_native_cond_initialize(&vm->ractor.sync.terminate_cond);
 }
 
 void
@@ -3430,8 +3741,6 @@ Init_vm_objects(void)
     vm->mark_object_ary = rb_ary_tmp_new(128);
     vm->loading_table = st_init_strtable();
     vm->frozen_strings = st_init_table_with_size(&rb_fstring_hash_type, 10000);
-
-    rb_objspace_gc_enable(vm->objspace);
 }
 
 /* top self */
@@ -3458,28 +3767,18 @@ Init_top_self(void)
     rb_define_alias(rb_singleton_class(rb_vm_top_self()), "inspect", "to_s");
 }
 
-static VALUE *
-ruby_vm_verbose_ptr(rb_vm_t *vm)
-{
-    return &vm->verbose;
-}
-
-static VALUE *
-ruby_vm_debug_ptr(rb_vm_t *vm)
-{
-    return &vm->debug;
-}
-
 VALUE *
 rb_ruby_verbose_ptr(void)
 {
-    return ruby_vm_verbose_ptr(GET_VM());
+    rb_ractor_t *cr = GET_RACTOR();
+    return &cr->verbose;
 }
 
 VALUE *
 rb_ruby_debug_ptr(void)
 {
-    return ruby_vm_debug_ptr(GET_VM());
+    rb_ractor_t *cr = GET_RACTOR();
+    return &cr->debug;
 }
 
 /* iseq.c */
@@ -3684,24 +3983,21 @@ usage_analysis_register_stop(VALUE self)
 static VALUE
 usage_analysis_insn_running(VALUE self)
 {
-  if (ruby_vm_collect_usage_func_insn == 0) return Qfalse;
-  return Qtrue;
+  return RBOOL(ruby_vm_collect_usage_func_insn != 0);
 }
 
 /* :nodoc: */
 static VALUE
 usage_analysis_operand_running(VALUE self)
 {
-  if (ruby_vm_collect_usage_func_operand == 0) return Qfalse;
-  return Qtrue;
+  return RBOOL(ruby_vm_collect_usage_func_operand != 0);
 }
 
 /* :nodoc: */
 static VALUE
 usage_analysis_register_running(VALUE self)
 {
-  if (ruby_vm_collect_usage_func_register == 0) return Qfalse;
-  return Qtrue;
+  return RBOOL(ruby_vm_collect_usage_func_register != 0);
 }
 
 /* :nodoc: */

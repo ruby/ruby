@@ -30,7 +30,7 @@
  * @param   y      Minor version.
  * @param   z      Patchlevel.
  * @retval  true   cc >= x.y.z.
- * @retval  false  oherwise.
+ * @retval  false  otherwise.
  */
 #define RBIMPL_COMPILER_SINCE(cc, x, y, z)     \
      (RBIMPL_COMPILER_IS(cc)                && \
@@ -48,7 +48,7 @@
  * @param   y      Minor version.
  * @param   z      Patchlevel.
  * @retval  true   cc < x.y.z.
- * @retval  false  oherwise.
+ * @retval  false  otherwise.
  */
 #define RBIMPL_COMPILER_BEFORE(cc, x, y, z)    \
      (RBIMPL_COMPILER_IS(cc)                && \

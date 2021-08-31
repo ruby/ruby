@@ -1,10 +1,6 @@
 # frozen_string_literal: true
 
 RSpec.describe "bundle binstubs <gem>" do
-  before do
-    skip "https://github.com/rubygems/bundler/issues/6894" if Gem.win_platform?
-  end
-
   context "when the gem exists in the lockfile" do
     it "sets up the binstub" do
       install_gemfile <<-G
@@ -55,6 +51,18 @@ RSpec.describe "bundle binstubs <gem>" do
       expect(bundled_app("bin/rake")).to exist
     end
 
+    it "allows installing binstubs for all platforms" do
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack"
+      G
+
+      bundle "binstubs rack --all-platforms"
+
+      expect(bundled_app("bin/rackup")).to exist
+      expect(bundled_app("bin/rackup.cmd")).to exist
+    end
+
     it "displays an error when used without any gem" do
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
@@ -62,7 +70,7 @@ RSpec.describe "bundle binstubs <gem>" do
       G
 
       bundle "binstubs", :raise_on_error => false
-      expect(exitstatus).to eq(1) if exitstatus
+      expect(exitstatus).to eq(1)
       expect(err).to include("`bundle binstubs` needs at least one gem to run.")
     end
 
@@ -100,6 +108,10 @@ RSpec.describe "bundle binstubs <gem>" do
       before do
         pristine_system_gems "bundler-#{system_bundler_version}"
         build_repo2 do
+          build_gem "rack", "1.2" do |s|
+            s.executables = "rackup"
+          end
+
           build_gem "prints_loaded_gems", "1.0" do |s|
             s.executables = "print_loaded_gems"
             s.bindir = "exe"
@@ -127,9 +139,16 @@ RSpec.describe "bundle binstubs <gem>" do
       context "when BUNDLER_VERSION is set" do
         it "runs the correct version of bundler" do
           sys_exec "bin/bundle install", :env => { "BUNDLER_VERSION" => "999.999.999" }, :raise_on_error => false
-          expect(exitstatus).to eq(42) if exitstatus
-          expect(err).to include("Activating bundler (~> 999.999) failed:").
-            and include("To install the version of bundler this project requires, run `gem install bundler -v '~> 999.999'`")
+          expect(exitstatus).to eq(42)
+          expect(err).to include("Activating bundler (999.999.999) failed:").
+            and include("To install the version of bundler this project requires, run `gem install bundler -v '999.999.999'`")
+        end
+
+        it "runs the correct version of bundler even if a higher version is installed" do
+          system_gems "bundler-999.999.998", "bundler-999.999.999"
+
+          sys_exec "bin/bundle install", :env => { "BUNDLER_VERSION" => "999.999.998", "DEBUG" => "1" }, :raise_on_error => false
+          expect(out).to include %(Using bundler 999.999.998\n)
         end
       end
 
@@ -141,7 +160,7 @@ RSpec.describe "bundle binstubs <gem>" do
 
           it "runs the correct version of bundler" do
             sys_exec "bin/bundle install", :raise_on_error => false
-            expect(exitstatus).to eq(42) if exitstatus
+            expect(exitstatus).to eq(42)
             expect(err).to include("Activating bundler (~> 999.999) failed:").
               and include("To install the version of bundler this project requires, run `gem install bundler -v '~> 999.999'`")
           end
@@ -156,7 +175,7 @@ RSpec.describe "bundle binstubs <gem>" do
 
           it "runs the correct version of bundler" do
             sys_exec "bin/bundle install", :raise_on_error => false
-            expect(exitstatus).to eq(42) if exitstatus
+            expect(exitstatus).to eq(42)
             expect(err).to include("Activating bundler (~> 44.0) failed:").
               and include("To install the version of bundler this project requires, run `gem install bundler -v '~> 44.0'`")
           end
@@ -171,7 +190,7 @@ RSpec.describe "bundle binstubs <gem>" do
 
           it "runs the available version of bundler when the version is older and the same major" do
             sys_exec "bin/bundle install"
-            expect(exitstatus).not_to eq(42) if exitstatus
+            expect(exitstatus).not_to eq(42)
             expect(err).not_to include("Activating bundler (~> 55.0) failed:")
           end
         end
@@ -185,7 +204,7 @@ RSpec.describe "bundle binstubs <gem>" do
 
           it "runs the correct version of bundler when the version is a pre-release" do
             sys_exec "bin/bundle install", :raise_on_error => false
-            expect(exitstatus).to eq(42) if exitstatus
+            expect(exitstatus).to eq(42)
             expect(err).to include("Activating bundler (~> 2.12.a) failed:").
               and include("To install the version of bundler this project requires, run `gem install bundler -v '~> 2.12.a'`")
           end
@@ -202,9 +221,9 @@ RSpec.describe "bundle binstubs <gem>" do
 
         it "calls through to the explicit bundler version" do
           sys_exec "bin/bundle update --bundler=999.999.999", :raise_on_error => false
-          expect(exitstatus).to eq(42) if exitstatus
-          expect(err).to include("Activating bundler (~> 999.999) failed:").
-            and include("To install the version of bundler this project requires, run `gem install bundler -v '~> 999.999'`")
+          expect(exitstatus).to eq(42)
+          expect(err).to include("Activating bundler (999.999.999) failed:").
+            and include("To install the version of bundler this project requires, run `gem install bundler -v '999.999.999'`")
         end
       end
 
@@ -227,7 +246,7 @@ RSpec.describe "bundle binstubs <gem>" do
 
           it "attempts to load that version" do
             sys_exec bundled_app("bin/rackup").to_s, :raise_on_error => false
-            expect(exitstatus).to eq(42) if exitstatus
+            expect(exitstatus).to eq(42)
             expect(err).to include("Activating bundler (~> 999.999) failed:").
               and include("To install the version of bundler this project requires, run `gem install bundler -v '~> 999.999'`")
           end
@@ -242,6 +261,7 @@ RSpec.describe "bundle binstubs <gem>" do
         s.executables = %w[foo]
       end
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :git => "#{lib_path("foo")}"
       G
 
@@ -257,6 +277,7 @@ RSpec.describe "bundle binstubs <gem>" do
         s.executables = %w[foo]
       end
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :path => "#{lib_path("foo")}"
       G
 
@@ -266,7 +287,7 @@ RSpec.describe "bundle binstubs <gem>" do
     end
 
     it "sets correct permissions for binstubs" do
-      skip "https://github.com/rubygems/bundler/issues/6895" if Gem.win_platform?
+      skip "https://github.com/rubygems/rubygems/issues/3352" if Gem.win_platform?
 
       with_umask(0o002) do
         install_gemfile <<-G
@@ -288,8 +309,7 @@ RSpec.describe "bundle binstubs <gem>" do
         G
 
         bundle "binstubs rack --shebang jruby"
-
-        expect(File.open(bundled_app("bin/rackup")).gets).to eq("#!/usr/bin/env jruby\n")
+        expect(File.readlines(bundled_app("bin/rackup")).first).to eq("#!/usr/bin/env jruby\n")
       end
     end
   end
@@ -302,7 +322,7 @@ RSpec.describe "bundle binstubs <gem>" do
 
       bundle "binstubs doesnt_exist", :raise_on_error => false
 
-      expect(exitstatus).to eq(7) if exitstatus
+      expect(exitstatus).to eq(7)
       expect(err).to include("Could not find gem 'doesnt_exist'.")
     end
   end
@@ -355,6 +375,14 @@ RSpec.describe "bundle binstubs <gem>" do
       it "generates a standalone binstub at the given path" do
         bundle "binstubs rack --standalone --path foo"
         expect(bundled_app("foo/rackup")).to exist
+      end
+    end
+
+    context "when specified --all-platforms option" do
+      it "generates standalone binstubs for all platforms" do
+        bundle "binstubs rack --standalone --all-platforms"
+        expect(bundled_app("bin/rackup")).to exist
+        expect(bundled_app("bin/rackup.cmd")).to exist
       end
     end
   end
@@ -422,8 +450,14 @@ RSpec.describe "bundle binstubs <gem>" do
     end
 
     it "works if the gem has development dependencies" do
+      build_repo2 do
+        build_gem "with_development_dependency" do |s|
+          s.add_development_dependency "activesupport", "= 2.3.5"
+        end
+      end
+
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "with_development_dependency"
       G
 

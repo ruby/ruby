@@ -101,31 +101,6 @@ describe "IO#readlines" do
       @io.readlines(obj).should == IOSpecs.lines_r_separator
     end
   end
-
-  describe "when passed a string that starts with a |" do
-    it "gets data from the standard out of the subprocess" do
-      cmd = "|sh -c 'echo hello;echo line2'"
-      platform_is :windows do
-        cmd = "|cmd.exe /C echo hello&echo line2"
-      end
-      lines = IO.readlines(cmd)
-      lines.should == ["hello\n", "line2\n"]
-    end
-
-    platform_is_not :windows do
-      it "gets data from a fork when passed -" do
-        lines = IO.readlines("|-")
-
-        if lines # parent
-          lines.should == ["hello\n", "from a fork\n"]
-        else
-          puts "hello"
-          puts "from a fork"
-          exit!
-        end
-      end
-    end
-  end
 end
 
 describe "IO#readlines" do
@@ -167,6 +142,31 @@ describe "IO.readlines" do
     $_ = "test"
     IO.readlines(@name)
     $_.should == "test"
+  end
+
+  describe "when passed a string that starts with a |" do
+    it "gets data from the standard out of the subprocess" do
+      cmd = "|sh -c 'echo hello;echo line2'"
+      platform_is :windows do
+        cmd = "|cmd.exe /C echo hello&echo line2"
+      end
+      lines = IO.readlines(cmd)
+      lines.should == ["hello\n", "line2\n"]
+    end
+
+    platform_is_not :windows do
+      it "gets data from a fork when passed -" do
+        lines = IO.readlines("|-")
+
+        if lines # parent
+          lines.should == ["hello\n", "from a fork\n"]
+        else
+          puts "hello"
+          puts "from a fork"
+          exit!
+        end
+      end
+    end
   end
 
   it_behaves_like :io_readlines, :readlines

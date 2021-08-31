@@ -17,11 +17,12 @@
 #include <sys/types.h>
 
 #include "internal.h"
+#include "internal/array.h"
 #include "internal/bits.h"
 #include "internal/string.h"
 #include "internal/symbol.h"
-#include "internal/util.h"
 #include "internal/variable.h"
+#include "ruby/util.h"
 
 #include "builtin.h"
 
@@ -140,7 +141,6 @@ str_associated(VALUE str)
 static void
 unknown_directive(const char *mode, char type, VALUE fmt)
 {
-    VALUE f;
     char unknown[5];
 
     if (ISPRINT(type)) {
@@ -150,10 +150,7 @@ unknown_directive(const char *mode, char type, VALUE fmt)
     else {
         snprintf(unknown, sizeof(unknown), "\\x%.2x", type & 0xff);
     }
-    f = rb_str_quote_unprintable(fmt);
-    if (f != fmt) {
-        fmt = rb_str_subseq(f, 1, RSTRING_LEN(f) - 2);
-    }
+    fmt = rb_str_quote_unprintable(fmt);
     rb_warning("unknown %s directive '%s' in '%"PRIsVALUE"'",
                mode, unknown, fmt);
 }

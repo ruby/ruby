@@ -136,7 +136,6 @@ init.o: $(hdrdir)/ruby/internal/static_assert.h
 init.o: $(hdrdir)/ruby/internal/stdalign.h
 init.o: $(hdrdir)/ruby/internal/stdbool.h
 init.o: $(hdrdir)/ruby/internal/symbol.h
-init.o: $(hdrdir)/ruby/internal/token_paste.h
 init.o: $(hdrdir)/ruby/internal/value.h
 init.o: $(hdrdir)/ruby/internal/value_type.h
 init.o: $(hdrdir)/ruby/internal/variable.h
@@ -147,13 +146,10 @@ init.o: $(hdrdir)/ruby/backward.h
 init.o: $(hdrdir)/ruby/backward/2/assume.h
 init.o: $(hdrdir)/ruby/backward/2/attributes.h
 init.o: $(hdrdir)/ruby/backward/2/bool.h
-init.o: $(hdrdir)/ruby/backward/2/extern.h
 init.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 init.o: $(hdrdir)/ruby/backward/2/inttypes.h
 init.o: $(hdrdir)/ruby/backward/2/limits.h
 init.o: $(hdrdir)/ruby/backward/2/long_long.h
-init.o: $(hdrdir)/ruby/backward/2/r_cast.h
-init.o: $(hdrdir)/ruby/backward/2/rmodule.h
 init.o: $(hdrdir)/ruby/backward/2/stdalign.h
 init.o: $(hdrdir)/ruby/backward/2/stdarg.h
 init.o: $(hdrdir)/ruby/defines.h
@@ -300,7 +296,6 @@ leap_second.o: $(hdrdir)/ruby/internal/static_assert.h
 leap_second.o: $(hdrdir)/ruby/internal/stdalign.h
 leap_second.o: $(hdrdir)/ruby/internal/stdbool.h
 leap_second.o: $(hdrdir)/ruby/internal/symbol.h
-leap_second.o: $(hdrdir)/ruby/internal/token_paste.h
 leap_second.o: $(hdrdir)/ruby/internal/value.h
 leap_second.o: $(hdrdir)/ruby/internal/value_type.h
 leap_second.o: $(hdrdir)/ruby/internal/variable.h
@@ -311,13 +306,10 @@ leap_second.o: $(hdrdir)/ruby/backward.h
 leap_second.o: $(hdrdir)/ruby/backward/2/assume.h
 leap_second.o: $(hdrdir)/ruby/backward/2/attributes.h
 leap_second.o: $(hdrdir)/ruby/backward/2/bool.h
-leap_second.o: $(hdrdir)/ruby/backward/2/extern.h
 leap_second.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 leap_second.o: $(hdrdir)/ruby/backward/2/inttypes.h
 leap_second.o: $(hdrdir)/ruby/backward/2/limits.h
 leap_second.o: $(hdrdir)/ruby/backward/2/long_long.h
-leap_second.o: $(hdrdir)/ruby/backward/2/r_cast.h
-leap_second.o: $(hdrdir)/ruby/backward/2/rmodule.h
 leap_second.o: $(hdrdir)/ruby/backward/2/stdalign.h
 leap_second.o: $(hdrdir)/ruby/backward/2/stdarg.h
 leap_second.o: $(hdrdir)/ruby/defines.h
@@ -468,7 +460,6 @@ new.o: $(hdrdir)/ruby/internal/static_assert.h
 new.o: $(hdrdir)/ruby/internal/stdalign.h
 new.o: $(hdrdir)/ruby/internal/stdbool.h
 new.o: $(hdrdir)/ruby/internal/symbol.h
-new.o: $(hdrdir)/ruby/internal/token_paste.h
 new.o: $(hdrdir)/ruby/internal/value.h
 new.o: $(hdrdir)/ruby/internal/value_type.h
 new.o: $(hdrdir)/ruby/internal/variable.h
@@ -479,13 +470,10 @@ new.o: $(hdrdir)/ruby/backward.h
 new.o: $(hdrdir)/ruby/backward/2/assume.h
 new.o: $(hdrdir)/ruby/backward/2/attributes.h
 new.o: $(hdrdir)/ruby/backward/2/bool.h
-new.o: $(hdrdir)/ruby/backward/2/extern.h
 new.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 new.o: $(hdrdir)/ruby/backward/2/inttypes.h
 new.o: $(hdrdir)/ruby/backward/2/limits.h
 new.o: $(hdrdir)/ruby/backward/2/long_long.h
-new.o: $(hdrdir)/ruby/backward/2/r_cast.h
-new.o: $(hdrdir)/ruby/backward/2/rmodule.h
 new.o: $(hdrdir)/ruby/backward/2/stdalign.h
 new.o: $(hdrdir)/ruby/backward/2/stdarg.h
 new.o: $(hdrdir)/ruby/defines.h

@@ -765,6 +765,10 @@ InitVM_digest(void)
      */
     rb_mDigest = rb_define_module("Digest");
 
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    rb_ext_ractor_safe(true);
+#endif
+
     /* module functions */
     rb_define_module_function(rb_mDigest, "hexencode", rb_digest_s_hexencode, 1);
 

@@ -31,4 +31,8 @@
 # define NUM2UIDT RB_NUM2LONG
 #endif
 
+#ifndef PRI_UIDT_PREFIX
+# define PRI_UIDT_PREFIX PRI_LONG_PREFIX
+#endif
+
 #endif /* RBIMPL_ARITHMETIC_UID_T_H */

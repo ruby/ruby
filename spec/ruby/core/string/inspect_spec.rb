@@ -502,5 +502,11 @@ describe "String#inspect" do
         "\u{3042}".encode("EUC-JP").inspect.should == '"\\x{A4A2}"'
       end
     end
+
+    describe "and the string has both ASCII-compatible and ASCII-incompatible chars" do
+      it "returns a string with the non-ASCII characters replaced by \\u notation" do
+        "hello привет".encode("utf-16le").inspect.should == '"hello \\u043F\\u0440\\u0438\\u0432\\u0435\\u0442"'
+      end
+    end
   end
 end

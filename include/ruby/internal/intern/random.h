@@ -34,7 +34,6 @@ unsigned int rb_genrand_int32(void);
 double rb_genrand_real(void);
 void rb_reset_random_seed(void);
 VALUE rb_random_bytes(VALUE rnd, long n);
-VALUE rb_random_int(VALUE rnd, VALUE max);
 unsigned int rb_random_int32(VALUE rnd);
 double rb_random_real(VALUE rnd);
 unsigned long rb_random_ulong_limited(VALUE rnd, unsigned long limit);

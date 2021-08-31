@@ -112,7 +112,7 @@ class LeakChecker
       }
       unless fd_leaked.empty?
         unless @@try_lsof == false
-          @@try_lsof |= system("lsof -p #$$", out: MiniTest::Unit.output)
+          @@try_lsof |= system(*%W[lsof -a -d #{fd_leaked.minmax.uniq.join("-")} -p #$$], out: MiniTest::Unit.output)
         end
       end
       h.each {|fd, list|
@@ -265,7 +265,7 @@ class LeakChecker
     leaked
   end
 
-  WARNING_CATEGORIES = %i[deprecated experimental].freeze
+  WARNING_CATEGORIES = (Warning.respond_to?(:[]) ? %i[deprecated experimental] : []).freeze
 
   def find_warning_flags
     WARNING_CATEGORIES.to_h do |category|

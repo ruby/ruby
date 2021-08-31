@@ -13,7 +13,7 @@ describe "IO.sysopen" do
 
   it "returns the file descriptor for a given path" do
     @fd = IO.sysopen(@filename, "w")
-    @fd.should be_kind_of(Fixnum)
+    @fd.should be_kind_of(Integer)
     @fd.should_not equal(0)
   end
 
@@ -21,7 +21,7 @@ describe "IO.sysopen" do
   platform_is_not :windows do
     it "works on directories" do
       @fd = IO.sysopen(tmp(""))    # /tmp
-      @fd.should be_kind_of(Fixnum)
+      @fd.should be_kind_of(Integer)
       @fd.should_not equal(0)
     end
   end

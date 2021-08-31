@@ -30,7 +30,7 @@
 #     class RSYNC < Generic
 #       DEFAULT_PORT = 873
 #     end
-#     @@schemes['RSYNC'] = RSYNC
+#     register_scheme 'RSYNC', RSYNC
 #   end
 #   #=> URI::RSYNC
 #
@@ -70,7 +70,6 @@
 # - URI::REGEXP - (in uri/common.rb)
 #   - URI::REGEXP::PATTERN - (in uri/common.rb)
 # - URI::Util - (in uri/common.rb)
-# - URI::Escape - (in uri/common.rb)
 # - URI::Error - (in uri/common.rb)
 #   - URI::InvalidURIError - (in uri/common.rb)
 #   - URI::InvalidComponentError - (in uri/common.rb)
@@ -101,3 +100,4 @@ require_relative 'uri/https'
 require_relative 'uri/ldap'
 require_relative 'uri/ldaps'
 require_relative 'uri/mailto'
+require_relative 'uri/ws'

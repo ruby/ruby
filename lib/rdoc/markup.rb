@@ -843,6 +843,7 @@ https://github.com/ruby/rdoc/issues
   autoload :List,                  'rdoc/markup/list'
   autoload :ListItem,              'rdoc/markup/list_item'
   autoload :Paragraph,             'rdoc/markup/paragraph'
+  autoload :Table,                 'rdoc/markup/table'
   autoload :Raw,                   'rdoc/markup/raw'
   autoload :Rule,                  'rdoc/markup/rule'
   autoload :Verbatim,              'rdoc/markup/verbatim'

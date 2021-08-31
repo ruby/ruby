@@ -1,4 +1,4 @@
-# -*- Autoconf -*-
+dnl -*- Autoconf -*-
 AC_DEFUN([RUBY_SETJMP_TYPE], [
 RUBY_CHECK_BUILTIN_SETJMP
 RUBY_CHECK_SETJMP(_setjmpex, [], [@%:@include <setjmpex.h>])

@@ -135,7 +135,6 @@ bug-14384.o: $(hdrdir)/ruby/internal/static_assert.h
 bug-14384.o: $(hdrdir)/ruby/internal/stdalign.h
 bug-14384.o: $(hdrdir)/ruby/internal/stdbool.h
 bug-14384.o: $(hdrdir)/ruby/internal/symbol.h
-bug-14384.o: $(hdrdir)/ruby/internal/token_paste.h
 bug-14384.o: $(hdrdir)/ruby/internal/value.h
 bug-14384.o: $(hdrdir)/ruby/internal/value_type.h
 bug-14384.o: $(hdrdir)/ruby/internal/variable.h
@@ -146,13 +145,10 @@ bug-14384.o: $(hdrdir)/ruby/backward.h
 bug-14384.o: $(hdrdir)/ruby/backward/2/assume.h
 bug-14384.o: $(hdrdir)/ruby/backward/2/attributes.h
 bug-14384.o: $(hdrdir)/ruby/backward/2/bool.h
-bug-14384.o: $(hdrdir)/ruby/backward/2/extern.h
 bug-14384.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 bug-14384.o: $(hdrdir)/ruby/backward/2/inttypes.h
 bug-14384.o: $(hdrdir)/ruby/backward/2/limits.h
 bug-14384.o: $(hdrdir)/ruby/backward/2/long_long.h
-bug-14384.o: $(hdrdir)/ruby/backward/2/r_cast.h
-bug-14384.o: $(hdrdir)/ruby/backward/2/rmodule.h
 bug-14384.o: $(hdrdir)/ruby/backward/2/stdalign.h
 bug-14384.o: $(hdrdir)/ruby/backward/2/stdarg.h
 bug-14384.o: $(hdrdir)/ruby/debug.h

@@ -31,7 +31,7 @@ struct RStruct {
     } as;
 };
 
-#define RSTRUCT(obj) (R_CAST(RStruct)(obj))
+#define RSTRUCT(obj) ((struct RStruct *)(obj))
 
 #ifdef RSTRUCT_LEN
 # undef RSTRUCT_LEN

@@ -90,6 +90,12 @@ describe "IO.write" do
     IO.write(@filename, 'hi', mode: "w", encoding: Encoding::UTF_32LE).should == 8
   end
 
+  it "writes the file with the permissions in the :perm parameter" do
+    rm_r @filename
+    IO.write(@filename, 'write :perm spec', mode: "w", perm: 0o755).should == 16
+    (File.stat(@filename).mode & 0o777) == 0o755
+  end
+
   it "writes binary data if no encoding is given" do
     IO.write(@filename, 'Hëllö'.encode('ISO-8859-1'))
     xEB = [235].pack('C*')

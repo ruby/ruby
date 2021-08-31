@@ -95,12 +95,13 @@ describe "Class.new" do
   end
 
   it "raises a TypeError when given a non-Class" do
-    error_msg = /superclass must be a Class/
-    -> { Class.new("")         }.should raise_error(TypeError, error_msg)
-    -> { Class.new(1)          }.should raise_error(TypeError, error_msg)
-    -> { Class.new(:symbol)    }.should raise_error(TypeError, error_msg)
-    -> { Class.new(mock('o'))  }.should raise_error(TypeError, error_msg)
-    -> { Class.new(Module.new) }.should raise_error(TypeError, error_msg)
+    error_msg = /superclass must be a.*Class/
+    -> { Class.new("")              }.should raise_error(TypeError, error_msg)
+    -> { Class.new(1)               }.should raise_error(TypeError, error_msg)
+    -> { Class.new(:symbol)         }.should raise_error(TypeError, error_msg)
+    -> { Class.new(mock('o'))       }.should raise_error(TypeError, error_msg)
+    -> { Class.new(Module.new)      }.should raise_error(TypeError, error_msg)
+    -> { Class.new(BasicObject.new) }.should raise_error(TypeError, error_msg)
   end
 end
 

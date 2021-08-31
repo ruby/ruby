@@ -1,10 +1,9 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems'
 require 'fileutils'
 
 class TestGemPathSupport < Gem::TestCase
-
   def setup
     super
 
@@ -131,7 +130,7 @@ class TestGemPathSupport < Gem::TestCase
     begin
       File.symlink(dir, symlink)
     rescue NotImplementedError, SystemCallError
-      skip 'symlinks not supported'
+      pend 'symlinks not supported'
     end
     not_existing = "#{@tempdir}/does_not_exist"
     path = "#{symlink}#{File::PATH_SEPARATOR}#{not_existing}"
@@ -140,5 +139,4 @@ class TestGemPathSupport < Gem::TestCase
     assert_equal dir, ps.home
     assert_equal [dir, not_existing], ps.path
   end
-
 end

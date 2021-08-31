@@ -9,7 +9,6 @@ require 'rubygems/name_tuple'
 # SpecFetcher handles metadata updates from remote gem repositories.
 
 class Gem::SpecFetcher
-
   include Gem::UserInteraction
   include Gem::Text
 
@@ -99,7 +98,7 @@ class Gem::SpecFetcher
 
       found[source] = specs.select do |tup|
         if dependency.match?(tup)
-          if matching_platform and !Gem::Platform.match(tup.platform)
+          if matching_platform and !Gem::Platform.match_gem?(tup.platform, tup.name)
             pm = (
               rejected_specs[dependency] ||= \
                 Gem::PlatformMismatch.new(tup.name, tup.version))
@@ -259,5 +258,4 @@ class Gem::SpecFetcher
     raise unless gracefully_ignore
     []
   end
-
 end

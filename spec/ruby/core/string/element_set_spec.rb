@@ -5,7 +5,7 @@ require_relative 'fixtures/classes'
 # TODO: Add missing String#[]= specs:
 #   String#[re, idx] = obj
 
-describe "String#[]= with Fixnum index" do
+describe "String#[]= with Integer index" do
   it "replaces the char at idx with other_str" do
     a = "hello"
     a[0] = "bam"
@@ -85,7 +85,7 @@ describe "String#[]= with Fixnum index" do
     -> { "test"[1] = nil       }.should raise_error(TypeError)
   end
 
-  it "raises a TypeError if passed a Fixnum replacement" do
+  it "raises a TypeError if passed an Integer replacement" do
     -> { "abc"[1] = 65 }.should raise_error(TypeError)
   end
 
@@ -102,7 +102,7 @@ describe "String#[]= with Fixnum index" do
     str.should == "あa"
   end
 
-  it "raises a TypeError if #to_int does not return an Fixnum" do
+  it "raises a TypeError if #to_int does not return an Integer" do
     index = mock("string element set")
     index.should_receive(:to_int).and_return('1')
 
@@ -243,7 +243,7 @@ describe "String#[]= with a Regexp index" do
       str.should == "axc"
     end
 
-    it "raises a TypeError if #to_int does not return a Fixnum" do
+    it "raises a TypeError if #to_int does not return an Integer" do
       ref = mock("string element set regexp ref")
       ref.should_receive(:to_int).and_return(nil)
 
@@ -438,7 +438,7 @@ describe "String#[]= with a Range index" do
   end
 end
 
-describe "String#[]= with Fixnum index, count" do
+describe "String#[]= with Integer index, count" do
   it "starts at idx and overwrites count characters before inserting the rest of other_str" do
     a = "hello"
     a[0, 2] = "xx"

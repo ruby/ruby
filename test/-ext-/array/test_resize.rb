@@ -3,6 +3,12 @@ require 'test/unit'
 require '-test-/array/resize'
 
 class Test_Array < Test::Unit::TestCase
+  using Module.new {
+    refine(Array) {
+      def __resize__(len) ::Bug::Array.__resize__(self, len); end
+    }
+  }
+
   class TestResize < Test::Unit::TestCase
     def test_expand
       feature = '[ruby-dev:42912]'

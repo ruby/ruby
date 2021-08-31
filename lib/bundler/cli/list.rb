@@ -31,7 +31,7 @@ module Bundler
       Bundler.ui.info "Use `bundle info` to print more detailed information about a gem"
     end
 
-  private
+    private
 
     def verify_group_exists(groups)
       (@without_group + @only_group).each do |group|

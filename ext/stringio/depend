@@ -136,7 +136,6 @@ stringio.o: $(hdrdir)/ruby/internal/static_assert.h
 stringio.o: $(hdrdir)/ruby/internal/stdalign.h
 stringio.o: $(hdrdir)/ruby/internal/stdbool.h
 stringio.o: $(hdrdir)/ruby/internal/symbol.h
-stringio.o: $(hdrdir)/ruby/internal/token_paste.h
 stringio.o: $(hdrdir)/ruby/internal/value.h
 stringio.o: $(hdrdir)/ruby/internal/value_type.h
 stringio.o: $(hdrdir)/ruby/internal/variable.h
@@ -147,13 +146,10 @@ stringio.o: $(hdrdir)/ruby/backward.h
 stringio.o: $(hdrdir)/ruby/backward/2/assume.h
 stringio.o: $(hdrdir)/ruby/backward/2/attributes.h
 stringio.o: $(hdrdir)/ruby/backward/2/bool.h
-stringio.o: $(hdrdir)/ruby/backward/2/extern.h
 stringio.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 stringio.o: $(hdrdir)/ruby/backward/2/inttypes.h
 stringio.o: $(hdrdir)/ruby/backward/2/limits.h
 stringio.o: $(hdrdir)/ruby/backward/2/long_long.h
-stringio.o: $(hdrdir)/ruby/backward/2/r_cast.h
-stringio.o: $(hdrdir)/ruby/backward/2/rmodule.h
 stringio.o: $(hdrdir)/ruby/backward/2/stdalign.h
 stringio.o: $(hdrdir)/ruby/backward/2/stdarg.h
 stringio.o: $(hdrdir)/ruby/defines.h

@@ -1,8 +1,11 @@
 # frozen_string_literal: true
 require 'rubygems/command'
 require 'rubygems/server'
+require 'rubygems/deprecate'
 
 class Gem::Commands::ServerCommand < Gem::Command
+  extend Gem::Deprecate
+  rubygems_deprecate_command
 
   def initialize
     super 'server', 'Documentation and gem repository HTTP server',
@@ -82,5 +85,4 @@ You can set up a shortcut to gem server documentation using the URL:
     options[:gemdir] = Gem.path if options[:gemdir].empty?
     Gem::Server.run options
   end
-
 end

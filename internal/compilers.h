@@ -7,7 +7,7 @@
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @brief      Internal header absorbing C compipler differences.
+ * @brief      Internal header absorbing C compiler differences.
  */
 #include "ruby/internal/compiler_since.h"
 #include "ruby/internal/has/attribute.h"

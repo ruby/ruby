@@ -14,20 +14,29 @@ describe "Method#unbind" do
     @normal_um.should be_kind_of(UnboundMethod)
   end
 
-  it "returns a String containing 'UnboundMethod'" do
-    @string.should =~ /\bUnboundMethod\b/
+  describe "#inspect" do
+    it "returns a String containing 'UnboundMethod'" do
+      @string.should =~ /\bUnboundMethod\b/
+    end
+
+    it "returns a String containing the method name" do
+      @string.should =~ /\#bar/
+    end
+
+    it "returns a String containing the Module the method is defined in" do
+      @string.should =~ /MethodSpecs::MyMod/
+    end
+
+    it "returns a String containing the Module the method is referenced from" do
+      @string.should =~ /MethodSpecs::MySub/
+    end
   end
 
-  it "returns a String containing the method name" do
-    @string.should =~ /\#bar/
-  end
-
-  it "returns a String containing the Module the method is defined in" do
-    @string.should =~ /MethodSpecs::MyMod/
-  end
-
-  it "returns a String containing the Module the method is referenced from" do
-    @string.should =~ /MethodSpecs::MySub/
+  it "keeps the origin singleton class if there is one" do
+    obj = Object.new
+    def obj.foo
+    end
+    obj.method(:foo).unbind.inspect.should.start_with?("#<UnboundMethod: #{obj.singleton_class}#foo")
   end
 
   specify "rebinding UnboundMethod to Method's obj produces exactly equivalent Methods" do

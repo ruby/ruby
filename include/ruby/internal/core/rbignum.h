@@ -37,13 +37,15 @@ int rb_big_sign(VALUE num);
 RBIMPL_SYMBOL_EXPORT_END()
 
 static inline bool
-RBIGNUM_POSITIVE_P(VALUE b) {
+RBIGNUM_POSITIVE_P(VALUE b)
+{
     RBIMPL_ASSERT_TYPE(b, RUBY_T_BIGNUM);
     return RBIGNUM_SIGN(b);
 }
 
 static inline bool
-RBIGNUM_NEGATIVE_P(VALUE b) {
+RBIGNUM_NEGATIVE_P(VALUE b)
+{
     RBIMPL_ASSERT_TYPE(b, RUBY_T_BIGNUM);
     return ! RBIGNUM_POSITIVE_P(b);
 }

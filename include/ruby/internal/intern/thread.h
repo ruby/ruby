@@ -31,7 +31,7 @@ struct timeval;
 
 /* thread.c */
 void rb_thread_schedule(void);
-void rb_thread_wait_fd(int);
+int rb_thread_wait_fd(int);
 int rb_thread_fd_writable(int);
 void rb_thread_fd_close(int);
 int rb_thread_alone(void);
@@ -70,10 +70,6 @@ VALUE rb_mutex_lock(VALUE mutex);
 VALUE rb_mutex_unlock(VALUE mutex);
 VALUE rb_mutex_sleep(VALUE self, VALUE timeout);
 VALUE rb_mutex_synchronize(VALUE mutex, VALUE (*func)(VALUE arg), VALUE arg);
-
-VALUE rb_thread_scheduler_get(VALUE);
-VALUE rb_thread_scheduler_set(VALUE, VALUE);
-VALUE rb_current_thread_scheduler(void);
 
 RBIMPL_SYMBOL_EXPORT_END()
 

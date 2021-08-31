@@ -2,23 +2,23 @@ require 'spec_helper'
 require 'mspec/guards'
 require 'mspec/helpers'
 
-describe ScratchPad do
+RSpec.describe ScratchPad do
   it "records an object and returns a previously recorded object" do
     ScratchPad.record :this
-    ScratchPad.recorded.should == :this
+    expect(ScratchPad.recorded).to eq(:this)
   end
 
   it "clears the recorded object" do
     ScratchPad.record :that
-    ScratchPad.recorded.should == :that
+    expect(ScratchPad.recorded).to eq(:that)
     ScratchPad.clear
-    ScratchPad.recorded.should == nil
+    expect(ScratchPad.recorded).to eq(nil)
   end
 
   it "provides a convenience shortcut to append to a previously recorded object" do
     ScratchPad.record []
     ScratchPad << :new
     ScratchPad << :another
-    ScratchPad.recorded.should == [:new, :another]
+    expect(ScratchPad.recorded).to eq([:new, :another])
   end
 end

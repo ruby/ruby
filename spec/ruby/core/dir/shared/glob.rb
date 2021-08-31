@@ -23,14 +23,7 @@ describe :dir_glob, shared: true do
     Dir.send(@method, obj).should == %w[file_one.ext]
   end
 
-  ruby_version_is ""..."2.6" do
-    it "splits the string on \\0 if there is only one string given" do
-      Dir.send(@method, "file_o*\0file_t*").should ==
-        %w!file_one.ext file_two.ext!
-    end
-  end
-
-  ruby_version_is "2.6"..."2.7" do
+  ruby_version_is ""..."2.7" do
     it "splits the string on \\0 if there is only one string given and warns" do
       -> {
         Dir.send(@method, "file_o*\0file_t*").should ==
@@ -53,6 +46,7 @@ describe :dir_glob, shared: true do
       dir_filename_ordering
       file_one.ext
       file_two.ext
+      nested
       nondotfile
       special
       subdir_one
@@ -120,8 +114,16 @@ describe :dir_glob, shared: true do
     Dir.send(@method, 'special/test\{1\}/*').should == ['special/test{1}/file[1]']
   end
 
-  it "matches dotfiles with '.*'" do
-    Dir.send(@method, '.*').sort.should == %w|. .. .dotfile .dotsubdir|.sort
+  ruby_version_is ''...'3.1' do
+    it "matches dotfiles with '.*'" do
+      Dir.send(@method, '.*').sort.should == %w|. .. .dotfile .dotsubdir|.sort
+    end
+  end
+
+  ruby_version_is '3.1' do
+    it "matches dotfiles except .. with '.*'" do
+      Dir.send(@method, '.*').sort.should == %w|. .dotfile .dotsubdir|.sort
+    end
   end
 
   it "matches non-dotfiles with '*<non-special characters>'" do
@@ -156,6 +158,7 @@ describe :dir_glob, shared: true do
       dir_filename_ordering
       file_one.ext
       file_two.ext
+      nested
       nondotfile
       special
       subdir_one
@@ -165,8 +168,16 @@ describe :dir_glob, shared: true do
     Dir.send(@method, '**').sort.should == expected
   end
 
-  it "matches dotfiles in the current directory with '.**'" do
-    Dir.send(@method, '.**').sort.should == %w|. .. .dotsubdir .dotfile|.sort
+  ruby_version_is ''...'3.1' do
+    it "matches dotfiles in the current directory with '.**'" do
+      Dir.send(@method, '.**').sort.should == %w|. .. .dotsubdir .dotfile|.sort
+    end
+  end
+
+  ruby_version_is '3.1' do
+    it "matches dotfiles in the current directory except .. with '.**'" do
+      Dir.send(@method, '.**').sort.should == %w|. .dotsubdir .dotfile|.sort
+    end
   end
 
   it "recursively matches any nondot subdirectories with '**/'" do
@@ -177,6 +188,7 @@ describe :dir_glob, shared: true do
       deeply/nested/directory/
       deeply/nested/directory/structure/
       dir/
+      nested/
       special/
       special/test{1}/
       subdir_one/
@@ -186,9 +198,27 @@ describe :dir_glob, shared: true do
     Dir.send(@method, '**/').sort.should == expected
   end
 
-  it "recursively matches any subdirectories including ./ and ../ with '.**/'" do
-    Dir.chdir("#{DirSpecs.mock_dir}/subdir_one") do
-      Dir.send(@method, '.**/').sort.should == %w|./ ../|.sort
+  it "recursively matches any subdirectories except './' or '../' with '**/' from the base directory if that is specified" do
+    expected = %w[
+      nested/directory
+    ]
+
+    Dir.send(@method, '**/*ory', base: 'deeply').sort.should == expected
+  end
+
+  ruby_version_is ''...'3.1' do
+    it "recursively matches any subdirectories including ./ and ../ with '.**/'" do
+      Dir.chdir("#{DirSpecs.mock_dir}/subdir_one") do
+        Dir.send(@method, '.**/').sort.should == %w|./ ../|.sort
+      end
+    end
+  end
+
+  ruby_version_is '3.1' do
+    it "recursively matches any subdirectories including ./ with '.**/'" do
+      Dir.chdir("#{DirSpecs.mock_dir}/subdir_one") do
+        Dir.send(@method, '.**/').should == ['./']
+      end
     end
   end
 
@@ -231,7 +261,7 @@ describe :dir_glob, shared: true do
   end
 
   it "matches dot or non-dotfiles with '{,.}*'" do
-    Dir.send(@method, '{,.}*').sort.should == DirSpecs.expected_paths
+    Dir.send(@method, '{,.}*').sort.should == DirSpecs.expected_glob_paths
   end
 
   it "respects the order of {} expressions, expanding left most first" do

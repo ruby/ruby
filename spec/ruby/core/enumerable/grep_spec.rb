@@ -40,15 +40,25 @@ describe "Enumerable#grep" do
     $~.should == nil
   end
 
-  it "sets $~ to the last match when given no block" do
-    "z" =~ /z/ # Reset $~
-    ["abc", "def"].grep(/b/).should == ["abc"]
+  ruby_version_is ""..."3.0.0" do
+    it "sets $~ to the last match when given no block" do
+      "z" =~ /z/ # Reset $~
+      ["abc", "def"].grep(/b/).should == ["abc"]
 
-    # Set by the failed match of "def"
-    $~.should == nil
+      # Set by the failed match of "def"
+      $~.should == nil
 
-    ["abc", "def"].grep(/e/)
-    $&.should == "e"
+      ["abc", "def"].grep(/e/)
+      $&.should == "e"
+    end
+  end
+
+  ruby_version_is "3.0.0" do
+    it "does not set $~ when given no block" do
+      "z" =~ /z/ # Reset $~
+      ["abc", "def"].grep(/b/).should == ["abc"]
+      $&.should == "z"
+    end
   end
 
   describe "with a block" do

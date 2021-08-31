@@ -16,25 +16,29 @@
 #include "ruby/intern.h"        /* for rb_alloc_func_t */
 #include "ruby/ruby.h"          /* for struct RBasic */
 
-#ifdef RClass
-# undef RClass /* See also include/ruby/backward.h */
-#endif
-
 #ifdef RCLASS_SUPER
 # undef RCLASS_SUPER
 #endif
-
-struct rb_deprecated_classext_struct {
-    char conflict[sizeof(VALUE) * 3];
-};
 
 struct rb_subclass_entry {
     VALUE klass;
     struct rb_subclass_entry *next;
 };
 
+struct rb_iv_index_tbl_entry {
+    uint32_t index;
+    rb_serial_t class_serial;
+    VALUE class_value;
+};
+
+struct rb_cvar_class_tbl_entry {
+    uint32_t index;
+    rb_serial_t global_cvar_state;
+    VALUE class_value;
+};
+
 struct rb_classext_struct {
-    struct st_table *iv_index_tbl;
+    struct st_table *iv_index_tbl; // ID -> struct rb_iv_index_tbl_entry
     struct st_table *iv_tbl;
 #if SIZEOF_SERIAL_T == SIZEOF_VALUE /* otherwise m_tbl is in struct RClass */
     struct rb_id_table *m_tbl;
@@ -42,6 +46,7 @@ struct rb_classext_struct {
     struct rb_id_table *const_tbl;
     struct rb_id_table *callable_m_tbl;
     struct rb_id_table *cc_tbl; /* ID -> [[ci, cc1], cc2, ...] */
+    struct rb_id_table *cvc_tbl;
     struct rb_subclass_entry *subclasses;
     struct rb_subclass_entry **parent_subclasses;
     /**
@@ -85,6 +90,7 @@ typedef struct rb_classext_struct rb_classext_t;
 #endif
 #define RCLASS_CALLABLE_M_TBL(c) (RCLASS_EXT(c)->callable_m_tbl)
 #define RCLASS_CC_TBL(c) (RCLASS_EXT(c)->cc_tbl)
+#define RCLASS_CVC_TBL(c) (RCLASS_EXT(c)->cvc_tbl)
 #define RCLASS_IV_INDEX_TBL(c) (RCLASS_EXT(c)->iv_index_tbl)
 #define RCLASS_ORIGIN(c) (RCLASS_EXT(c)->origin_)
 #define RCLASS_REFINED_CLASS(c) (RCLASS_EXT(c)->refined_class)
@@ -94,6 +100,10 @@ typedef struct rb_classext_struct rb_classext_t;
 # define RCLASS_SERIAL(c) (RCLASS_EXT(c)->class_serial)
 #endif
 #define RCLASS_INCLUDER(c) (RCLASS_EXT(c)->includer)
+#define RCLASS_PARENT_SUBCLASSES(c) (RCLASS_EXT(c)->parent_subclasses)
+#define RCLASS_MODULE_SUBCLASSES(c) (RCLASS_EXT(c)->module_subclasses)
+#define RCLASS_ALLOCATOR(c) (RCLASS_EXT(c)->allocator)
+#define RCLASS_SUBCLASSES(c) (RCLASS_EXT(c)->subclasses)
 
 #define RICLASS_IS_ORIGIN FL_USER5
 #define RCLASS_CLONED     FL_USER6
@@ -117,9 +127,7 @@ VALUE rb_obj_public_methods(int argc, const VALUE *argv, VALUE obj);
 VALUE rb_special_singleton_class(VALUE);
 VALUE rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach);
 VALUE rb_singleton_class_get(VALUE obj);
-int rb_class_has_methods(VALUE c);
 void rb_undef_methods_from(VALUE klass, VALUE super);
-void rb_ensure_origin(VALUE klass);
 
 static inline void RCLASS_SET_ORIGIN(VALUE klass, VALUE origin);
 static inline void RICLASS_SET_ORIGIN_SHARED_MTBL(VALUE iclass);
@@ -143,6 +151,12 @@ static inline void
 RICLASS_SET_ORIGIN_SHARED_MTBL(VALUE iclass)
 {
     FL_SET(iclass, RICLASS_ORIGIN_SHARED_MTBL);
+}
+
+static inline bool
+RICLASS_OWNS_M_TBL_P(VALUE iclass)
+{
+    return FL_TEST_RAW(iclass, RICLASS_IS_ORIGIN | RICLASS_ORIGIN_SHARED_MTBL) == RICLASS_IS_ORIGIN;
 }
 
 static inline void

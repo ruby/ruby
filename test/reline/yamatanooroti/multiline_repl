@@ -1,0 +1,74 @@
+#!/usr/bin/env ruby
+
+require 'reline'
+require 'optparse'
+require_relative 'termination_checker'
+
+opt = OptionParser.new
+opt.on('--prompt-list-cache-timeout VAL') { |v|
+  Reline::LineEditor.__send__(:remove_const, :PROMPT_LIST_CACHE_TIMEOUT)
+  Reline::LineEditor::PROMPT_LIST_CACHE_TIMEOUT = v.to_f
+}
+opt.on('--dynamic-prompt') {
+  Reline.prompt_proc = proc { |lines|
+    lines.each_with_index.map { |l, i|
+      '[%04d]> ' % i
+    }
+  }
+}
+opt.on('--broken-dynamic-prompt') {
+  Reline.prompt_proc = proc { |lines|
+    range = lines.size > 1 ? (0..(lines.size - 2)) : (0..0)
+    lines[range].each_with_index.map { |l, i|
+      '[%04d]> ' % i
+    }
+  }
+}
+opt.on('--dynamic-prompt-returns-empty') {
+  Reline.prompt_proc = proc { |l| [] }
+}
+opt.on('--auto-indent') {
+  AutoIndent.new
+}
+opt.parse!(ARGV)
+
+begin
+  stty_save = `stty -g`.chomp
+rescue
+end
+
+begin
+  prompt = ENV['RELINE_TEST_PROMPT'] || 'prompt> '
+  puts 'Multiline REPL.'
+  checker = TerminationChecker.new
+  while code = Reline.readmultiline(prompt, true) { |code| checker.terminated?(code) }
+    case code.chomp
+    when 'exit', 'quit', 'q'
+      exit 0
+    when ''
+      # NOOP
+    else
+      begin
+        result = eval(code)
+        puts "=> #{result.inspect}"
+      rescue ScriptError, StandardError => e
+        puts "Traceback (most recent call last):"
+        e.backtrace.reverse_each do |f|
+          puts "        #{f}"
+        end
+        puts e.message
+      end
+    end
+  end
+rescue Interrupt
+  puts '^C'
+  `stty #{stty_save}` if stty_save
+  exit 0
+ensure
+  `stty #{stty_save}` if stty_save
+end
+begin
+  puts
+rescue Errno::EIO
+  # Maybe the I/O has been closed.
+end

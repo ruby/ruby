@@ -5,7 +5,6 @@ require 'rubygems/installer'
 require 'rubygems/version_option'
 
 class Gem::Commands::PristineCommand < Gem::Command
-
   include Gem::VersionOption
 
   def initialize
@@ -171,7 +170,7 @@ extensions will be restored.
         :install_dir => spec.base_dir,
         :env_shebang => env_shebang,
         :build_args => spec.build_args,
-        :bin_dir => bin_dir
+        :bin_dir => bin_dir,
       }
 
       if options[:only_executables]
@@ -188,5 +187,4 @@ extensions will be restored.
       say "Restored #{spec.full_name}"
     end
   end
-
 end

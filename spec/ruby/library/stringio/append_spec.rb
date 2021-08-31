@@ -36,7 +36,7 @@ describe "StringIO#<< when passed [Object]" do
     end
   end
 
-  ruby_version_is ""..."2.8" do
+  ruby_version_is ""..."3.0" do
     it "does not taint self when the passed argument is tainted" do
       (@io << "test".taint)
       @io.tainted?.should be_false

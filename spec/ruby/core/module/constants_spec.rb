@@ -13,9 +13,9 @@ describe "Module.constants" do
 
   it "returns an array of Symbol names" do
     # This in NOT an exhaustive list
-    Module.constants.should include(:Array, :Bignum, :Class, :Comparable, :Dir,
+    Module.constants.should include(:Array, :Class, :Comparable, :Dir,
                                     :Enumerable, :ENV, :Exception, :FalseClass,
-                                    :File, :Fixnum, :Float, :Hash, :Integer, :IO,
+                                    :File, :Float, :Hash, :Integer, :IO,
                                     :Kernel, :Math, :Method, :Module, :NilClass,
                                     :Numeric, :Object, :Range, :Regexp, :String,
                                     :Symbol, :Thread, :Time, :TrueClass)
@@ -43,31 +43,31 @@ end
 describe "Module#constants" do
   it "returns an array of Symbol names of all constants defined in the module and all included modules" do
     ConstantSpecs::ContainerA.constants.sort.should == [
-      :CS_CONST10, :CS_CONST23, :CS_CONST24, :CS_CONST5, :ChildA
+      :CS_CONST10, :CS_CONST10_LINE, :CS_CONST23, :CS_CONST24, :CS_CONST5, :ChildA
     ]
   end
 
   it "returns all constants including inherited when passed true" do
     ConstantSpecs::ContainerA.constants(true).sort.should == [
-      :CS_CONST10, :CS_CONST23, :CS_CONST24, :CS_CONST5, :ChildA
+      :CS_CONST10, :CS_CONST10_LINE, :CS_CONST23, :CS_CONST24, :CS_CONST5, :ChildA
     ]
   end
 
   it "returns all constants including inherited when passed some object" do
     ConstantSpecs::ContainerA.constants(Object.new).sort.should == [
-      :CS_CONST10, :CS_CONST23, :CS_CONST24, :CS_CONST5, :ChildA
+      :CS_CONST10, :CS_CONST10_LINE, :CS_CONST23, :CS_CONST24, :CS_CONST5, :ChildA
     ]
   end
 
   it "doesn't returns inherited constants when passed false" do
     ConstantSpecs::ContainerA.constants(false).sort.should == [
-      :CS_CONST10, :CS_CONST23, :CS_CONST5, :ChildA
+      :CS_CONST10, :CS_CONST10_LINE, :CS_CONST23, :CS_CONST5, :ChildA
     ]
   end
 
   it "doesn't returns inherited constants when passed nil" do
     ConstantSpecs::ContainerA.constants(nil).sort.should == [
-      :CS_CONST10, :CS_CONST23, :CS_CONST5, :ChildA
+      :CS_CONST10, :CS_CONST10_LINE, :CS_CONST23, :CS_CONST5, :ChildA
     ]
   end
 

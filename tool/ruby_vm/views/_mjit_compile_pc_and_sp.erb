@@ -5,9 +5,10 @@
 % # conditions mentioned  in the  file COPYING  are met.   Consult the  file for
 % # details.
 %
-% # JIT: Move pc for catch table on catch_except_p, and for #caller_locations and rb_profile_frames on !insn.always_leaf?
+% # JIT: When an insn is leaf, we don't need to Move pc for a catch table on catch_except_p, #caller_locations,
+% #      and rb_profile_frames. For check_ints, we lazily move PC when we have interruptions.
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || <%= insn.always_leaf? ? 'FALSE' : 'TRUE' %>) {
+        if (<%= !(insn.always_leaf? || insn.leaf_without_check_ints?) %>) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }

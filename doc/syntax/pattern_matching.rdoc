@@ -1,12 +1,8 @@
 = Pattern matching
 
-Pattern matching is an experimental feature allowing deep matching of structured values: checking the structure and binding the matched parts to local variables.
+Pattern matching is a feature allowing deep matching of structured values: checking the structure and binding the matched parts to local variables.
 
-Pattern matching in Ruby is implemented with the +in+ operator, which can be used in a standalone expression:
-
-    <expression> in <pattern>
-
-or within the +case+ statement:
+Pattern matching in Ruby is implemented with the +case+/+in+ expression:
 
     case <expression>
     in <pattern1>
@@ -19,11 +15,17 @@ or within the +case+ statement:
       ...
     end
 
-(Note that +in+ and +when+ branches can *not* be mixed in one +case+ statement.)
+(Note that +in+ and +when+ branches can NOT be mixed in one +case+ expression.)
 
-Pattern matching is _exhaustive_: if variable doesn't match pattern (in a separate +in+ statement), or doesn't matches any branch of +case+ statement (and +else+ branch is absent), +NoMatchingPatternError+ is raised.
+Or with the <code>=></code> operator and the +in+ operator, which can be used in a standalone expression:
 
-Therefore, +case+ statement might be used for conditional matching and unpacking:
+    <expression> => <pattern>
+
+    <expression> in <pattern>
+
+The +case+/+in+ expression is _exhaustive_: if the value of the expression does not match any branch of the +case+ expression (and the +else+ branch is absent), +NoMatchingPatternError+ is raised.
+
+Therefore, the +case+ expression might be used for conditional matching and unpacking:
 
   config = {db: {user: 'admin', password: 'abc123'}}
 
@@ -37,14 +39,20 @@ Therefore, +case+ statement might be used for conditional matching and unpacking
   end
   # Prints: "Connect with user 'admin'"
 
-whilst standalone +in+ statement is most useful when expected data structure is known beforehand, to just unpack parts of it:
+whilst the <code>=></code> operator is most useful when the expected data structure is known beforehand, to just unpack parts of it:
 
   config = {db: {user: 'admin', password: 'abc123'}}
 
-  config in {db: {user:}} # will raise if the config's structure is unexpected
+  config => {db: {user:}} # will raise if the config's structure is unexpected
 
   puts "Connect with user '#{user}'"
   # Prints: "Connect with user 'admin'"
+
+<code><expression> in <pattern></code> is the same as <code>case <expression>; in <pattern>; true; else false; end</code>.
+You can use it when you only want to know if a pattern has been matched or not:
+
+  users = [{name: "Alice", age: 12}, {name: "Bob", age: 23}]
+  users.any? {|user| user in {name: /B/, age: 20..} } #=> true
 
 See below for more examples and explanations of the syntax.
 
@@ -52,18 +60,19 @@ See below for more examples and explanations of the syntax.
 
 Patterns can be:
 
-* any Ruby object (matched by <code>===</code> operator, like in +when+);
-* array pattern: <code>[<subpattern>, <subpattern>, <subpattern>, ...]</code>;
-* hash pattern: <code>{key: <subpattern>, key: <subpattern>, ...}</code>;
-* special match-anything pattern: <code>_</code>;
-* combination of patterns with <code>|</code>.
+* any Ruby object (matched by the <code>===</code> operator, like in +when+); (<em>Value pattern</em>)
+* array pattern: <code>[<subpattern>, <subpattern>, <subpattern>, ...]</code>; (<em>Array pattern</em>)
+* find pattern: <code>[*variable, <subpattern>, <subpattern>, <subpattern>, ..., *variable]</code>; (<em>Find pattern</em>)
+* hash pattern: <code>{key: <subpattern>, key: <subpattern>, ...}</code>; (<em>Hash pattern</em>)
+* combination of patterns with <code>|</code>; (<em>Alternative pattern</em>)
+* variable capture: <code><pattern> => variable</code> or <code>variable</code>; (<em>As pattern</em>, <em>Variable pattern</em>)
 
-Any pattern can be nested inside array/hash patterns where <code><subpattern></code> is specified.
+Any pattern can be nested inside array/find/hash patterns where <code><subpattern></code> is specified.
 
-Array patterns match arrays, or objects that respond to +deconstruct+ (see below about the latter).
-Hash patterns match hashes, or objects that respond to +deconstruct_keys+ (see below about the latter). Note that only symbol keys are supported for hash patterns, at least for now.
+Array patterns and find patterns match arrays, or objects that respond to +deconstruct+ (see below about the latter).
+Hash patterns match hashes, or objects that respond to +deconstruct_keys+ (see below about the latter). Note that only symbol keys are supported for hash patterns.
 
-An important difference between array and hash patterns behavior is arrays match only a _whole_ array
+An important difference between array and hash pattern behavior is that arrays match only a _whole_ array:
 
   case [1, 2, 3]
   in [Integer, Integer]
@@ -73,7 +82,7 @@ An important difference between array and hash patterns behavior is arrays match
   end
   #=> "not matched"
 
-while the hash matches even if there are other keys besides specified part:
+while the hash matches even if there are other keys besides the specified part:
 
   case {a: 1, b: 2, c: 3}
   in {a: Integer}
@@ -83,7 +92,25 @@ while the hash matches even if there are other keys besides specified part:
   end
   #=> "matched"
 
-There is also a way to specify there should be no other keys in the matched hash except those explicitly specified by pattern, with <code>**nil</code>:
+<code>{}</code> is the only exclusion from this rule. It matches only if an empty hash is given:
+
+  case {a: 1, b: 2, c: 3}
+  in {}
+    "matched"
+  else
+    "not matched"
+  end
+  #=> "not matched"
+
+  case {}
+  in {}
+    "matched"
+  else
+    "not matched"
+  end
+  #=> "matched"
+
+There is also a way to specify there should be no other keys in the matched hash except those explicitly specified by the pattern, with <code>**nil</code>:
 
   case {a: 1, b: 2}
   in {a: Integer, **nil} # this will not match the pattern having keys other than a:
@@ -113,7 +140,7 @@ Both array and hash patterns support "rest" specification:
   end
   #=> "matched"
 
-In +case+ (but not in standalone +in+) statement, parentheses around both kinds of patterns could be omitted
+Parentheses around both kinds of patterns could be omitted:
 
   case [1, 2]
   in Integer, Integer
@@ -131,9 +158,24 @@ In +case+ (but not in standalone +in+) statement, parentheses around both kinds 
   end
   #=> "matched"
 
+ [1, 2] => a, b
+ [1, 2] in a, b
+
+ {a: 1, b: 2, c: 3} => a:
+ {a: 1, b: 2, c: 3} in a:
+
+Find pattern is similar to array pattern but it can be used to check if the given object has any elements that match the pattern:
+
+  case ["a", 1, "b", "c", 2]
+  in [*, String, String, *]
+    "matched"
+  else
+    "not matched"
+  end
+
 == Variable binding
 
-Besides deep structural checks, one of the very important features of the pattern matching is the binding of the matched parts to local variables. The basic form of binding is just specifying <code>=> variable_name</code> after the matched (sub)pattern (one might find this similar to storing exceptions in local variables in <code>rescue ExceptionClass => var</code> clause):
+Besides deep structural checks, one of the very important features of the pattern matching is the binding of the matched parts to local variables. The basic form of binding is just specifying <code>=> variable_name</code> after the matched (sub)pattern (one might find this similar to storing exceptions in local variables in a <code>rescue ExceptionClass => var</code> clause):
 
   case [1, 2]
   in Integer => a, Integer
@@ -151,7 +193,7 @@ Besides deep structural checks, one of the very important features of the patter
   end
   #=> "matched: 1"
 
-If no additional check is required, only binding some part of the data to a variable, a simpler form could be used:
+If no additional check is required, for only binding some part of the data to a variable, a simpler form could be used:
 
   case [1, 2]
   in a, Integer
@@ -169,7 +211,7 @@ If no additional check is required, only binding some part of the data to a vari
   end
   #=> "matched: 1"
 
-For hash patterns, even a simpler form exists: key-only specification (without any value) binds the local variable with the key's name, too:
+For hash patterns, even a simpler form exists: key-only specification (without any sub-pattern) binds the local variable with the key's name, too:
 
   case {a: 1, b: 2, c: 3}
   in a:
@@ -217,21 +259,21 @@ Binding to variables currently does NOT work for alternative patterns joined wit
   end
   # SyntaxError (illegal variable in alternative pattern (a))
 
-The match-anything pattern <code>_</code> is the only exclusion from this rule: it still binds the first match to local variable <code>_</code>, but allowed to be used in alternative patterns:
+Variables that start with <code>_</code> are the only exclusions from this rule:
 
   case {a: 1, b: 2}
-  in {a: _} | Array
-    "matched: #{_}"
+  in {a: _, b: _foo} | Array
+    "matched: #{_}, #{_foo}"
   else
     "not matched"
   end
-  # => "matched: 1"
+  # => "matched: 1, 2"
 
-It is, though, not advised to reuse bound value, as <code>_</code> pattern's goal is to signify discarded value.
+It is, though, not advised to reuse the bound value, as this pattern's goal is to signify a discarded value.
 
 == Variable pinning
 
-Due to variable binding feature, existing local variable can't be straightforwardly used as a sub-pattern:
+Due to the variable binding feature, existing local variable can not be straightforwardly used as a sub-pattern:
 
   expectation = 18
 
@@ -244,7 +286,7 @@ Due to variable binding feature, existing local variable can't be straightforwar
   # expected: "not matched. expectation was: 18"
   # real: "matched. expectation was: 1" -- local variable just rewritten
 
-For this case, "variable pinning" operator <code>^</code> can be used, to tell Ruby "just use this value as a part of pattern"
+For this case, the pin operator <code>^</code> can be used, to tell Ruby "just use this value as part of the pattern":
 
   expectation = 18
   case [1, 2]
@@ -255,7 +297,7 @@ For this case, "variable pinning" operator <code>^</code> can be used, to tell R
   end
   #=> "not matched. expectation was: 18"
 
-One important usage of variable pinning is specifying the same value should happen in the pattern several times:
+One important usage of variable pinning is specifying that the same value should occur in the pattern several times:
 
   jane = {school: 'high', schools: [{id: 1, level: 'middle'}, {id: 2, level: 'high'}]}
   john = {school: 'high', schools: [{id: 1, level: 'middle'}]}
@@ -276,9 +318,36 @@ One important usage of variable pinning is specifying the same value should happ
   end
   #=> "not matched"
 
-== Matching non-primitive objects: +deconstruct_keys+ and +deconstruct+
+In addition to pinning local variables, you can also pin instance, global, and class variables:
 
-As already mentioned above, hash and array patterns besides literal arrays and hashes will try to match any object implementing +deconstruct+ (for array patterns) or +deconstruct_keys+ (for hash patterns).
+  $gvar = 1
+  class A
+    @ivar = 2
+    @@cvar = 3
+    case [1, 2, 3]
+    in ^$gvar, ^@ivar, ^@@cvar
+      "matched"
+    else
+      "not matched"
+    end
+    #=> "matched"
+  end
+
+You can also pin the result of arbitrary expressions using parentheses:
+
+  a = 1
+  b = 2
+  case 3
+  in ^(a + b)
+    "matched"
+  else
+    "not matched"
+  end
+  #=> "matched"
+
+== Matching non-primitive objects: +deconstruct+ and +deconstruct_keys+
+
+As already mentioned above, array, find, and hash patterns besides literal arrays and hashes will try to match any object implementing +deconstruct+ (for array/find patterns) or +deconstruct_keys+ (for hash patterns).
 
   class Point
     def initialize(x, y)
@@ -297,7 +366,7 @@ As already mentioned above, hash and array patterns besides literal arrays and h
   end
 
   case Point.new(1, -2)
-  in px, Integer  # subpatterns and variable binding works
+  in px, Integer  # sub-patterns and variable binding works
     "matched: #{px}"
   else
     "not matched"
@@ -325,7 +394,7 @@ As already mentioned above, hash and array patterns besides literal arrays and h
   # prints: deconstruct_keys called with nil
   #=> "matched: 1"
 
-Additionally, when matching custom classes, expected class could be specified as a part of the pattern and is checked with <code>===</code>
+Additionally, when matching custom classes, the expected class can be specified as part of the pattern and is checked with <code>===</code>
 
   class SuperPoint < Point
   end
@@ -378,53 +447,94 @@ Additionally, when matching custom classes, expected class could be specified as
 
 == Current feature status
 
-As of Ruby 2.7, feature is considered _experimental_: its syntax can change in the future, and the performance is not optimized yet. Every time you use pattern matching in code, the warning will be printed:
+As of Ruby 3.1, find patterns are considered _experimental_: its syntax can change in the future. Every time you use these features in code, a warning will be printed:
 
-  {a: 1, b: 2} in {a:}
-  # warning: Pattern matching is experimental, and the behavior may change in future versions of Ruby!
+  [0] => [*, 0, *]
+  # warning: Find pattern is experimental, and the behavior may change in future versions of Ruby!
+  # warning: One-line pattern matching is experimental, and the behavior may change in future versions of Ruby!
 
-To suppress this warning, one may use newly introduced Warning::[]= method:
+To suppress this warning, one may use the Warning::[]= method:
 
   Warning[:experimental] = false
-  eval('{a: 1, b: 2} in {a:}')
+  eval('[0] => [*, 0, *]')
   # ...no warning printed...
 
-Note that pattern-matching warning is raised at a compile time, so this will not suppress warning:
+Note that pattern-matching warnings are raised at compile time, so this will not suppress the warning:
 
   Warning[:experimental] = false # At the time this line is evaluated, the parsing happened and warning emitted
-  {a: 1, b: 2} in {a:}
+  [0] => [*, 0, *]
 
 So, only subsequently loaded files or `eval`-ed code is affected by switching the flag.
 
-Alternatively, command-line key <code>-W:no-experimental</code> can be used to turn off "experimental" feature warnings.
+Alternatively, the command line option <code>-W:no-experimental</code> can be used to turn off "experimental" feature warnings.
 
-One of the things developer should be aware of, which probably to be fixed in the upcoming versions, is that pattern matching statement rewrites mentioned local variables on partial match, <i>even if the whole pattern is not matched</i>.
+== Appendix A. Pattern syntax
 
-  a = 5
-  case [1, 2]
-  in String => a, String
+Approximate syntax is:
+
+  pattern: value_pattern
+         | variable_pattern
+         | alternative_pattern
+         | as_pattern
+         | array_pattern
+         | find_pattern
+         | hash_pattern
+
+  value_pattern: literal
+               | Constant
+               | ^local_variable
+               | ^instance_variable
+               | ^class_variable
+               | ^global_variable
+               | ^(expression)
+
+  variable_pattern: variable
+
+  alternative_pattern: pattern | pattern | ...
+
+  as_pattern: pattern => variable
+
+  array_pattern: [pattern, ..., *variable]
+               | Constant(pattern, ..., *variable)
+               | Constant[pattern, ..., *variable]
+
+  find_pattern: [*variable, pattern, ..., *variable]
+              | Constant(*variable, pattern, ..., *variable)
+              | Constant[*variable, pattern, ..., *variable]
+
+  hash_pattern: {key: pattern, key:, ..., **variable}
+              | Constant(key: pattern, key:, ..., **variable)
+              | Constant[key: pattern, key:, ..., **variable]
+
+== Appendix B. Some undefined behavior examples
+
+To leave room for optimization in the future, the specification contains some undefined behavior.
+
+Use of a variable in an unmatched pattern:
+
+  case [0, 1]
+  in [a, 2]
+    "not matched"
+  in b
     "matched"
-  else
+  in c
     "not matched"
   end
-  #=> "not matched"
-  a
-  #=> 5  -- even partial match not happened, a is not rewritten
+  a #=> undefined
+  c #=> undefined
 
-  case [1, 2]
-  in a, String
-    "matched"
-  else
-    "not matched"
+Number of +deconstruct+, +deconstruct_keys+ method calls:
+
+  $i = 0
+  ary = [0]
+  def ary.deconstruct
+    $i += 1
+    self
   end
-  #=> "not matched"
-  a
-  #=> 1  -- the whole pattern not matched, but partial match happened, a is rewritten
-
-Currently, the only core class implementing +deconstruct+ and +deconstruct_keys+ is Struct.
-
-   Point = Struct.new(:x, :y)
-   Point[1, 2] in [a, b]
-   # successful match
-   Point[1, 2] in {x:, y:}
-   # successful match
+  case ary
+  in [0, 1]
+    "not matched"
+  in [0]
+    "matched"
+  end
+  $i #=> undefined

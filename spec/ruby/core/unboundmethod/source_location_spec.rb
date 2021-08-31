@@ -12,9 +12,9 @@ describe "UnboundMethod#source_location" do
     file.should == File.realpath('../fixtures/classes.rb', __FILE__)
   end
 
-  it "sets the last value to a Fixnum representing the line on which the method was defined" do
+  it "sets the last value to an Integer representing the line on which the method was defined" do
     line = @method.source_location.last
-    line.should be_an_instance_of(Fixnum)
+    line.should be_an_instance_of(Integer)
     line.should == 5
   end
 

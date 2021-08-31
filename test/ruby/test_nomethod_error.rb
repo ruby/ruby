@@ -86,8 +86,24 @@ class TestNoMethodError < Test::Unit::TestCase
     str = "\u2600"
     id = :"\u2604"
     msg = "undefined method `#{id}' for \"#{str}\":String"
-    assert_raise_with_message(NoMethodError, msg, bug3237) do
+    assert_raise_with_message(NoMethodError, Regexp.compile(Regexp.quote(msg)), bug3237) do
       str.__send__(id)
     end
+  end
+
+  def test_to_s
+    pre = Module.new do
+      def name
+        BasicObject.new
+      end
+    end
+    mod = Module.new
+    mod.singleton_class.prepend(pre)
+
+    err = assert_raise(NoMethodError) do
+      mod.this_method_does_not_exist
+    end
+
+    assert_match(/undefined method.+this_method_does_not_exist.+for.+Module/, err.to_s)
   end
 end

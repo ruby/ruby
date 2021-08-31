@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
 
 describe "Time#subsec" do
-  it "returns 0 as a Fixnum for a Time with a whole number of seconds" do
+  it "returns 0 as an Integer for a Time with a whole number of seconds" do
     Time.at(100).subsec.should eql(0)
   end
 

@@ -1,4 +1,5 @@
 require_relative '../../spec_helper'
+require_relative '../../fixtures/code_loading'
 require_relative 'fixtures/classes'
 require 'thread'
 
@@ -33,14 +34,7 @@ end
 describe "Module#autoload" do
   before :all do
     @non_existent = fixture __FILE__, "no_autoload.rb"
-
-    # Require RubyGems eagerly, to ensure #require is already the RubyGems
-    # version, before starting #autoload specs which snapshot #require, and
-    # could end up redefining #require as the original core Kernel#require.
-    begin
-      require "rubygems"
-    rescue LoadError
-    end
+    CodeLoadingSpecs.preload_rubygems
   end
 
   before :each do
@@ -208,6 +202,13 @@ describe "Module#autoload" do
     filename = fixture(__FILE__, "autoload_ex1.rb")
     ModuleSpecs::Autoload.autoload :EX1, filename
     ModuleSpecs::Autoload.use_ex1.should == :good
+  end
+
+  it "considers an autoload constant as loaded when autoload is called for/from the current file" do
+    filename = fixture(__FILE__, "autoload_during_require_current_file.rb")
+    require filename
+
+    ScratchPad.recorded.should be_nil
   end
 
   describe "interacting with defined?" do

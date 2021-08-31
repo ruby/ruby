@@ -41,7 +41,6 @@ RSpec.describe "require 'bundler/gem_tasks'" do
     ]
     tasks = out.lines.to_a.map {|s| s.split("#").first.strip }
     expect(tasks & expected_tasks).to eq(expected_tasks)
-    expect(exitstatus).to eq(0) if exitstatus
   end
 
   it "defines a working `rake install` task", :ruby_repo do
@@ -61,6 +60,18 @@ RSpec.describe "require 'bundler/gem_tasks'" do
       spaced_bundled_app = tmp.join("bundled app")
       FileUtils.cp_r bundled_app, spaced_bundled_app
       bundle "exec rake build", :dir => spaced_bundled_app
+    end
+
+    it "still runs successfully" do
+      expect(err).to be_empty
+    end
+  end
+
+  context "rake build when path has brackets", :ruby_repo do
+    before do
+      bracketed_bundled_app = tmp.join("bundled[app")
+      FileUtils.cp_r bundled_app, bracketed_bundled_app
+      bundle "exec rake build", :dir => bracketed_bundled_app
     end
 
     it "still runs successfully" do

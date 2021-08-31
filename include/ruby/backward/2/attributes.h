@@ -60,7 +60,20 @@
 #define DEPRECATED_BY(n,x) RBIMPL_ATTR_DEPRECATED(("by: " # n)) x
 
 #undef DEPRECATED_TYPE
-#define DEPRECATED_TYPE(mseg, decl) decl RBIMPL_ATTR_DEPRECATED(mseg)
+#if defined(__GNUC__)
+# define DEPRECATED_TYPE(mesg, decl)                      \
+    _Pragma("message \"DEPRECATED_TYPE is deprecated\""); \
+    decl RBIMPL_ATTR_DEPRECATED(mseg)
+#elif defined(_MSC_VER)
+# pragma deprecated(DEPRECATED_TYPE)
+# define DEPRECATED_TYPE(mesg, decl)                              \
+    __pragma(message(__FILE__"("STRINGIZE(__LINE__)"): warning: " \
+                     "DEPRECATED_TYPE is deprecated"))            \
+    decl RBIMPL_ATTR_DEPRECATED(mseg)
+#else
+# define DEPRECATED_TYPE(mesg, decl)                    \
+    <-<-"DEPRECATED_TYPE is deprecated"->->
+#endif
 
 #undef RUBY_CXX_DEPRECATED
 #define RUBY_CXX_DEPRECATED(mseg) RBIMPL_ATTR_DEPRECATED((mseg))
@@ -77,16 +90,12 @@
 #define ERRORFUNC(mesg, x) RBIMPL_ATTR_ERROR(mesg) x
 #if RBIMPL_HAS_ATTRIBUTE(error)
 # define HAVE_ATTRIBUTE_ERRORFUNC 1
-#else
-# define HAVE_ATTRIBUTE_ERRORFUNC 0
 #endif
 
 #undef WARNINGFUNC
 #define WARNINGFUNC(mesg, x) RBIMPL_ATTR_WARNING(mesg) x
 #if RBIMPL_HAS_ATTRIBUTE(warning)
 # define HAVE_ATTRIBUTE_WARNINGFUNC 1
-#else
-# define HAVE_ATTRIBUTE_WARNINGFUNC 0
 #endif
 
 /*

@@ -73,7 +73,7 @@ The first byte has the following special values:
   a positive little-endian integer.
 
 "\xfd"::
-  The total size of the integer is two bytes.  The following three bytes are a
+  The total size of the integer is four bytes.  The following three bytes are a
   negative little-endian integer.
 
 "\x04"::

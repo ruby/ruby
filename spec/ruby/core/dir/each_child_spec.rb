@@ -10,6 +10,18 @@ describe "Dir.each_child" do
     DirSpecs.delete_mock_dirs
   end
 
+  it "accepts an encoding keyword for the encoding of the entries" do
+    dirs = Dir.each_child("#{DirSpecs.mock_dir}/deeply/nested", encoding: "utf-8").to_a.sort
+    dirs.each {|dir| dir.encoding.should == Encoding::UTF_8}
+  end
+
+  ruby_version_is ""..."2.7" do
+    it "accepts nil options" do
+      dirs = Dir.each_child("#{DirSpecs.mock_dir}/deeply/nested", nil).to_a.sort
+      dirs.each {|dir| dir.encoding.should == Encoding.find("filesystem")}
+    end
+  end
+
   it "yields all names in an existing directory to the provided block" do
     a, b = [], []
 
@@ -50,52 +62,50 @@ describe "Dir.each_child" do
   end
 end
 
-ruby_version_is "2.6" do
-  describe "Dir#each_child" do
-    before :all do
-      DirSpecs.create_mock_dirs
-    end
+describe "Dir#each_child" do
+  before :all do
+    DirSpecs.create_mock_dirs
+  end
 
-    after :all do
-      DirSpecs.delete_mock_dirs
-    end
+  after :all do
+    DirSpecs.delete_mock_dirs
+  end
 
-    after :each do
-      @dir.close if @dir
-    end
+  after :each do
+    @dir.close if @dir
+  end
 
-    it "yields all names in an existing directory to the provided block" do
-      a, b = [], []
+  it "yields all names in an existing directory to the provided block" do
+    a, b = [], []
+    @dir = Dir.new(DirSpecs.mock_dir)
+    @dir2 = Dir.new("#{DirSpecs.mock_dir}/deeply/nested")
+
+    @dir.each_child { |f| a << f }
+    @dir2.each_child { |f| b << f }
+    @dir2.close
+
+    a.sort.should == DirSpecs.expected_paths - %w|. ..|
+    b.sort.should == %w|.dotfile.ext directory|
+  end
+
+  it "returns self when successful" do
+    @dir = Dir.new(DirSpecs.mock_dir)
+    @dir.each_child { |f| f }.should == @dir
+  end
+
+  describe "when no block is given" do
+    it "returns an Enumerator" do
       @dir = Dir.new(DirSpecs.mock_dir)
-      @dir2 = Dir.new("#{DirSpecs.mock_dir}/deeply/nested")
 
-      @dir.each_child { |f| a << f }
-      @dir2.each_child { |f| b << f }
-      @dir2.close
-
-      a.sort.should == DirSpecs.expected_paths - %w|. ..|
-      b.sort.should == %w|.dotfile.ext directory|
+      @dir.each_child.should be_an_instance_of(Enumerator)
+      @dir.each_child.to_a.sort.should == DirSpecs.expected_paths - %w|. ..|
     end
 
-    it "returns self when successful" do
-      @dir = Dir.new(DirSpecs.mock_dir)
-      @dir.each_child { |f| f }.should == @dir
-    end
-
-    describe "when no block is given" do
-      it "returns an Enumerator" do
-        @dir = Dir.new(DirSpecs.mock_dir)
-
-        @dir.each_child.should be_an_instance_of(Enumerator)
-        @dir.each_child.to_a.sort.should == DirSpecs.expected_paths - %w|. ..|
-      end
-
-      describe "returned Enumerator" do
-        describe "size" do
-          it "should return nil" do
-            @dir = Dir.new(DirSpecs.mock_dir)
-            @dir.each_child.size.should == nil
-          end
+    describe "returned Enumerator" do
+      describe "size" do
+        it "should return nil" do
+          @dir = Dir.new(DirSpecs.mock_dir)
+          @dir.each_child.size.should == nil
         end
       end
     end

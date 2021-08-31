@@ -2187,7 +2187,6 @@ enum ReduceType {
   RQ_AQ,       /* to '*?'   */
   RQ_QQ,       /* to '??'   */
   RQ_P_QQ,     /* to '+)??' */
-  RQ_PQ_Q      /* to '+?)?' */
 };
 
 static enum ReduceType const ReduceTypeTable[6][6] = {
@@ -2197,7 +2196,7 @@ static enum ReduceType const ReduceTypeTable[6][6] = {
   {RQ_A,    RQ_A,    RQ_DEL, RQ_ASIS, RQ_P_QQ, RQ_DEL},  /* '+'  */
   {RQ_DEL,  RQ_AQ,   RQ_AQ,  RQ_DEL,  RQ_AQ,   RQ_AQ},   /* '??' */
   {RQ_DEL,  RQ_DEL,  RQ_DEL, RQ_DEL,  RQ_DEL,  RQ_DEL},  /* '*?' */
-  {RQ_ASIS, RQ_PQ_Q, RQ_DEL, RQ_AQ,   RQ_AQ,   RQ_DEL}   /* '+?' */
+  {RQ_ASIS, RQ_ASIS, RQ_ASIS, RQ_AQ,  RQ_AQ,   RQ_DEL}   /* '+?' */
 };
 
 extern void
@@ -2232,12 +2231,6 @@ onig_reduce_nested_quantifier(Node* pnode, Node* cnode)
     p->target = cnode;
     p->lower  = 0;  p->upper = 1;  p->greedy = 0;
     c->lower  = 1;  c->upper = REPEAT_INFINITE;  c->greedy = 1;
-    return ;
-    break;
-  case RQ_PQ_Q:
-    p->target = cnode;
-    p->lower  = 0;  p->upper = 1;  p->greedy = 1;
-    c->lower  = 1;  c->upper = REPEAT_INFINITE;  c->greedy = 0;
     return ;
     break;
   case RQ_ASIS:
@@ -4348,7 +4341,7 @@ fetch_char_property_to_ctype(UChar** src, UChar* end, ScanEnv* env)
   OnigEncoding enc = env->enc;
   UChar *prev, *start, *p = *src;
 
-  r = 0;
+  r = ONIGERR_INVALID_CHAR_PROPERTY_NAME;
   start = prev = p;
 
   while (!PEND) {
@@ -4362,7 +4355,6 @@ fetch_char_property_to_ctype(UChar** src, UChar* end, ScanEnv* env)
       return r;
     }
     else if (c == '(' || c == ')' || c == '{' || c == '|') {
-      r = ONIGERR_INVALID_CHAR_PROPERTY_NAME;
       break;
     }
   }

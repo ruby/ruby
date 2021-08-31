@@ -307,7 +307,7 @@ class Reline::KeyActor::Emacs < Reline::KeyActor::Base
     # 152 M-^X
     :ed_unassigned,
     # 153 M-^Y
-    :ed_unassigned,
+    :em_yank_pop,
     # 154 M-^Z
     :ed_unassigned,
     # 155 M-^[

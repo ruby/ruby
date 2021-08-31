@@ -43,7 +43,7 @@ module Bundler
         config.update_mirror(mirror)
       end
 
-    private
+      private
 
       def fetch_valid_mirror_for(uri)
         downcased = uri.to_s.downcase
@@ -158,7 +158,7 @@ module Bundler
         end
       end
 
-    private
+      private
 
       def wait_for_writtable_socket(socket, address, timeout)
         if IO.select(nil, [socket], nil, timeout)

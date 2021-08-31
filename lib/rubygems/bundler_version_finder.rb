@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "rubygems/util"
-
 module Gem::BundlerVersionFinder
   def self.bundler_version
     version, _ = bundler_version_with_reason

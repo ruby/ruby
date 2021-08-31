@@ -4,7 +4,6 @@ require 'rubygems/local_remote_options'
 require 'rubygems/version_option'
 
 class Gem::Commands::DependencyCommand < Gem::Command
-
   include Gem::LocalRemoteOptions
   include Gem::VersionOption
 
@@ -215,5 +214,4 @@ use with other commands.
       /\A#{Regexp.union(*args)}/
     end
   end
-
 end

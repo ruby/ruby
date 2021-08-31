@@ -136,7 +136,6 @@ postponed_job.o: $(hdrdir)/ruby/internal/static_assert.h
 postponed_job.o: $(hdrdir)/ruby/internal/stdalign.h
 postponed_job.o: $(hdrdir)/ruby/internal/stdbool.h
 postponed_job.o: $(hdrdir)/ruby/internal/symbol.h
-postponed_job.o: $(hdrdir)/ruby/internal/token_paste.h
 postponed_job.o: $(hdrdir)/ruby/internal/value.h
 postponed_job.o: $(hdrdir)/ruby/internal/value_type.h
 postponed_job.o: $(hdrdir)/ruby/internal/variable.h
@@ -147,13 +146,10 @@ postponed_job.o: $(hdrdir)/ruby/backward.h
 postponed_job.o: $(hdrdir)/ruby/backward/2/assume.h
 postponed_job.o: $(hdrdir)/ruby/backward/2/attributes.h
 postponed_job.o: $(hdrdir)/ruby/backward/2/bool.h
-postponed_job.o: $(hdrdir)/ruby/backward/2/extern.h
 postponed_job.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 postponed_job.o: $(hdrdir)/ruby/backward/2/inttypes.h
 postponed_job.o: $(hdrdir)/ruby/backward/2/limits.h
 postponed_job.o: $(hdrdir)/ruby/backward/2/long_long.h
-postponed_job.o: $(hdrdir)/ruby/backward/2/r_cast.h
-postponed_job.o: $(hdrdir)/ruby/backward/2/rmodule.h
 postponed_job.o: $(hdrdir)/ruby/backward/2/stdalign.h
 postponed_job.o: $(hdrdir)/ruby/backward/2/stdarg.h
 postponed_job.o: $(hdrdir)/ruby/debug.h
