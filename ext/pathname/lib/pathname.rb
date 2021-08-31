@@ -583,7 +583,7 @@ class Pathname    # * FileUtils *
   # See FileUtils.mkpath and FileUtils.mkdir_p
   def mkpath
     FileUtils.mkpath(@path)
-    nil
+    self
   end
 
   # Recursively deletes a directory, including all directories beneath it.
@@ -593,7 +593,7 @@ class Pathname    # * FileUtils *
     # The name "rmtree" is borrowed from File::Path of Perl.
     # File::Path provides "mkpath" and "rmtree".
     FileUtils.rm_r(@path)
-    nil
+    self
   end
 end
 
