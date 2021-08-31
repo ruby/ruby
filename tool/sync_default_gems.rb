@@ -468,7 +468,9 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
   unless failed_commits.empty?
     puts "---- failed commits ----"
     puts failed_commits
+    return false
   end
+  return true
 end
 
 def sync_lib(repo, upstream = nil)
@@ -577,9 +579,9 @@ else
   end
   gem = ARGV.shift
   if ARGV[0]
-    sync_default_gems_with_commits(gem, ARGV, edit: edit)
+    exit sync_default_gems_with_commits(gem, ARGV, edit: edit)
   elsif auto
-    sync_default_gems_with_commits(gem, true, edit: edit)
+    exit sync_default_gems_with_commits(gem, true, edit: edit)
   else
     sync_default_gems(gem)
   end
