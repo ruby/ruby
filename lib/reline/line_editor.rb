@@ -652,7 +652,7 @@ class Reline::LineEditor
           bg_color = '46'
         end
       end
-      @output.write "\e[#{bg_color}m%-#{dialog.width}s\e[49m" % item.slice(0, dialog.width)
+      @output.write "\e[#{bg_color}m%-#{dialog.width}s\e[49m" % Reline::Unicode.take_range(item, 0, dialog.width)
       Reline::IOGate.move_cursor_column(dialog.column)
       move_cursor_down(1) if i < (dialog.contents.size - 1)
     end
