@@ -43,7 +43,7 @@ VALUE io_spec_rb_io_addstr(VALUE self, VALUE io, VALUE str) {
 
 VALUE io_spec_rb_io_printf(VALUE self, VALUE io, VALUE ary) {
   long argc = RARRAY_LEN(ary);
-  VALUE *argv = alloca(sizeof(VALUE) * argc);
+  VALUE *argv = (VALUE*) alloca(sizeof(VALUE) * argc);
   int i;
 
   for (i = 0; i < argc; i++) {
@@ -55,7 +55,7 @@ VALUE io_spec_rb_io_printf(VALUE self, VALUE io, VALUE ary) {
 
 VALUE io_spec_rb_io_print(VALUE self, VALUE io, VALUE ary) {
   long argc = RARRAY_LEN(ary);
-  VALUE *argv = alloca(sizeof(VALUE) * argc);
+  VALUE *argv = (VALUE*) alloca(sizeof(VALUE) * argc);
   int i;
 
   for (i = 0; i < argc; i++) {
@@ -67,7 +67,7 @@ VALUE io_spec_rb_io_print(VALUE self, VALUE io, VALUE ary) {
 
 VALUE io_spec_rb_io_puts(VALUE self, VALUE io, VALUE ary) {
   long argc = RARRAY_LEN(ary);
-  VALUE *argv = alloca(sizeof(VALUE) * argc);
+  VALUE *argv = (VALUE*) alloca(sizeof(VALUE) * argc);
   int i;
 
   for (i = 0; i < argc; i++) {
@@ -201,6 +201,21 @@ VALUE io_spec_rb_io_close(VALUE self, VALUE io) {
   return rb_io_close(io);
 }
 
+VALUE io_spec_rb_io_set_nonblock(VALUE self, VALUE io) {
+  rb_io_t* fp;
+#ifdef F_GETFL
+  int flags;
+#endif
+  GetOpenFile(io, fp);
+  rb_io_set_nonblock(fp);
+#ifdef F_GETFL
+  flags = fcntl(fp->fd, F_GETFL, 0);
+  return flags & O_NONBLOCK ? Qtrue : Qfalse;
+#else
+  return Qfalse;
+#endif
+}
+
 /*
  * this is needed to ensure rb_io_wait_*able functions behave
  * predictably because errno may be set to unexpected values
@@ -210,6 +225,16 @@ static VALUE io_spec_errno_set(VALUE self, VALUE val) {
   int e = NUM2INT(val);
   errno = e;
   return val;
+}
+
+VALUE io_spec_mode_sync_flag(VALUE self, VALUE io) {
+  rb_io_t *fp;
+  GetOpenFile(io, fp);
+  if (fp->mode & FMODE_SYNC) {
+    return Qtrue;
+  } else {
+    return Qfalse;
+  }
 }
 
 void Init_io_spec(void) {
@@ -225,6 +250,7 @@ void Init_io_spec(void) {
   rb_define_method(cls, "rb_io_check_readable", io_spec_rb_io_check_readable, 1);
   rb_define_method(cls, "rb_io_check_writable", io_spec_rb_io_check_writable, 1);
   rb_define_method(cls, "rb_io_check_closed", io_spec_rb_io_check_closed, 1);
+  rb_define_method(cls, "rb_io_set_nonblock", io_spec_rb_io_set_nonblock, 1);
   rb_define_method(cls, "rb_io_taint_check", io_spec_rb_io_taint_check, 1);
   rb_define_method(cls, "rb_io_wait_readable", io_spec_rb_io_wait_readable, 2);
   rb_define_method(cls, "rb_io_wait_writable", io_spec_rb_io_wait_writable, 1);
@@ -235,6 +261,7 @@ void Init_io_spec(void) {
   rb_define_method(cls, "rb_fd_fix_cloexec", io_spec_rb_fd_fix_cloexec, 1);
   rb_define_method(cls, "rb_cloexec_open", io_spec_rb_cloexec_open, 3);
   rb_define_method(cls, "errno=", io_spec_errno_set, 1);
+  rb_define_method(cls, "rb_io_mode_sync_flag", io_spec_mode_sync_flag, 1);
 }
 
 #ifdef __cplusplus

@@ -1,0 +1,4 @@
+# For available configuration options, see:
+#   https://github.com/testdouble/standard
+
+default_ignores: false

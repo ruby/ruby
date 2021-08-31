@@ -1,13 +1,3 @@
-require 'thread'
-require 'timeout'
-require_relative 'monotonic_time'
-
-##
-# Raised when you attempt to retrieve a connection from a pool that has been
-# shut down.
-
-class Bundler::ConnectionPool::PoolShuttingDownError < RuntimeError; end
-
 ##
 # The TimedStack manages a pool of homogeneous connections (or any resource
 # you wish to manage).  Connections are created lazily up to a given maximum
@@ -25,7 +15,7 @@ class Bundler::ConnectionPool::PoolShuttingDownError < RuntimeError; end
 #
 #    conn = ts.pop
 #    ts.pop timeout: 5
-#    #=> raises Timeout::Error after 5 seconds
+#    #=> raises Bundler::ConnectionPool::TimeoutError after 5 seconds
 
 class Bundler::ConnectionPool::TimedStack
   attr_reader :max
@@ -39,8 +29,8 @@ class Bundler::ConnectionPool::TimedStack
     @created = 0
     @que = []
     @max = size
-    @mutex = Mutex.new
-    @resource = ConditionVariable.new
+    @mutex = Thread::Mutex.new
+    @resource = Thread::ConditionVariable.new
     @shutdown_block = nil
   end
 
@@ -59,12 +49,12 @@ class Bundler::ConnectionPool::TimedStack
       @resource.broadcast
     end
   end
-  alias_method :<<, :push
+  alias << push
 
   ##
   # Retrieves a connection from the stack.  If a connection is available it is
   # immediately returned.  If no connection is available within the given
-  # timeout a Timeout::Error is raised.
+  # timeout a Bundler::ConnectionPool::TimeoutError is raised.
   #
   # +:timeout+ is the only checked entry in +options+ and is preferred over
   # the +timeout+ argument (which will be removed in a future release).  Other
@@ -74,7 +64,7 @@ class Bundler::ConnectionPool::TimedStack
     options, timeout = timeout, 0.5 if Hash === timeout
     timeout = options.fetch :timeout, timeout
 
-    deadline = Bundler::ConnectionPool.monotonic_time + timeout
+    deadline = current_time + timeout
     @mutex.synchronize do
       loop do
         raise Bundler::ConnectionPool::PoolShuttingDownError if @shutdown_block
@@ -83,18 +73,20 @@ class Bundler::ConnectionPool::TimedStack
         connection = try_create(options)
         return connection if connection
 
-        to_wait = deadline - Bundler::ConnectionPool.monotonic_time
-        raise Timeout::Error, "Waited #{timeout} sec" if to_wait <= 0
+        to_wait = deadline - current_time
+        raise Bundler::ConnectionPool::TimeoutError, "Waited #{timeout} sec" if to_wait <= 0
         @resource.wait(@mutex, to_wait)
       end
     end
   end
 
   ##
-  # Shuts down the TimedStack which prevents connections from being checked
-  # out.  The +block+ is called once for each connection on the stack.
+  # Shuts down the TimedStack by passing each connection to +block+ and then
+  # removing it from the pool. Attempting to checkout a connection after
+  # shutdown will raise +Bundler::ConnectionPool::PoolShuttingDownError+ unless
+  # +:reload+ is +true+.
 
-  def shutdown(&block)
+  def shutdown(reload: false, &block)
     raise ArgumentError, "shutdown must receive a block" unless block_given?
 
     @mutex.synchronize do
@@ -102,6 +94,7 @@ class Bundler::ConnectionPool::TimedStack
       @resource.broadcast
 
       shutdown_connections
+      @shutdown_block = nil if reload
     end
   end
 
@@ -120,6 +113,10 @@ class Bundler::ConnectionPool::TimedStack
   end
 
   private
+
+  def current_time
+    Process.clock_gettime(Process::CLOCK_MONOTONIC)
+  end
 
   ##
   # This is an extension point for TimedStack and is called with a mutex.
@@ -149,6 +146,7 @@ class Bundler::ConnectionPool::TimedStack
       conn = fetch_connection(options)
       @shutdown_block.call(conn)
     end
+    @created = 0
   end
 
   ##

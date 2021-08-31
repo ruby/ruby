@@ -1,0 +1,23 @@
+# frozen_string_literal: true
+require "test/unit"
+require "fiber"
+
+class TestFiberCurrentRactor < Test::Unit::TestCase
+  def setup
+    skip unless defined? Ractor
+  end
+
+  def test_ractor_shareable
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      $VERBOSE = nil
+      require "fiber"
+      r = Ractor.new do
+        Fiber.new do
+          Fiber.current.class
+        end.resume
+      end
+      assert_equal(Fiber, r.take)
+    end;
+  end
+end

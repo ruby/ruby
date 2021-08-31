@@ -43,8 +43,10 @@ class CSV
 
       row = @fields_converter.convert(row, nil, lineno) if @fields_converter
 
+      i = -1
       converted_row = row.collect do |field|
-        quote(field)
+        i += 1
+        quote(field, i)
       end
       line = converted_row.join(@column_separator) + @row_separator
       if @output_encoding
@@ -100,6 +102,33 @@ class CSV
       end
     end
 
+    def prepare_force_quotes_fields(force_quotes)
+      @force_quotes_fields = {}
+      force_quotes.each do |name_or_index|
+        case name_or_index
+        when Integer
+          index = name_or_index
+          @force_quotes_fields[index] = true
+        when String, Symbol
+          name = name_or_index.to_s
+          if @headers.nil?
+            message = ":headers is required when you use field name " +
+                      "in :force_quotes: " +
+                      "#{name_or_index.inspect}: #{force_quotes.inspect}"
+            raise ArgumentError, message
+          end
+          index = @headers.index(name)
+          next if index.nil?
+          @force_quotes_fields[index] = true
+        else
+          message = ":force_quotes element must be " +
+                    "field index or field name: " +
+                    "#{name_or_index.inspect}: #{force_quotes.inspect}"
+          raise ArgumentError, message
+        end
+      end
+    end
+
     def prepare_format
       @column_separator = @options[:column_separator].to_s.encode(@encoding)
       row_separator = @options[:row_separator]
@@ -109,7 +138,17 @@ class CSV
         @row_separator = row_separator.to_s.encode(@encoding)
       end
       @quote_character = @options[:quote_character]
-      @force_quotes = @options[:force_quotes]
+      force_quotes = @options[:force_quotes]
+      if force_quotes.is_a?(Array)
+        prepare_force_quotes_fields(force_quotes)
+        @force_quotes = false
+      elsif force_quotes
+        @force_quotes_fields = nil
+        @force_quotes = true
+      else
+        @force_quotes_fields = nil
+        @force_quotes = false
+      end
       unless @force_quotes
         @quotable_pattern =
           Regexp.new("[\r\n".encode(@encoding) +
@@ -147,8 +186,10 @@ class CSV
         encoded_quote_character
     end
 
-    def quote(field)
+    def quote(field, i)
       if @force_quotes
+        quote_field(field)
+      elsif @force_quotes_fields and @force_quotes_fields[i]
         quote_field(field)
       else
         if field.nil?  # represent +nil+ fields as empty unquoted fields
@@ -156,7 +197,7 @@ class CSV
         else
           field = String(field)  # Stringify fields
           # represent empty fields as empty quoted fields
-          if (@quote_empty and field.empty?) or @quotable_pattern.match?(field)
+          if (@quote_empty and field.empty?) or (field.valid_encoding? and @quotable_pattern.match?(field))
             quote_field(field)
           else
             field  # unquoted field

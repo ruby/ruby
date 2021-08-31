@@ -15,11 +15,13 @@
 extern "C" {
 #endif
 
-static VALUE thread_spec_rb_thread_alone() {
+static VALUE thread_spec_rb_thread_alone(VALUE self) {
   return rb_thread_alone() ? Qtrue : Qfalse;
 }
 
+#if defined(__GNUC__)
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
 
 /* This is unblocked by unblock_func(). */
 static void* blocking_gvl_func(void* data) {
@@ -89,7 +91,7 @@ static VALUE thread_spec_rb_thread_call_without_gvl_with_ubf_io(VALUE self) {
   return (VALUE)ret;
 }
 
-static VALUE thread_spec_rb_thread_current() {
+static VALUE thread_spec_rb_thread_current(VALUE self) {
   return rb_thread_current();
 }
 

@@ -423,30 +423,50 @@ module Net::HTTPHeader
   alias form_data= set_form_data
 
   # Set an HTML form data set.
-  # +params+ is the form data set; it is an Array of Arrays or a Hash
-  # +enctype is the type to encode the form data set.
-  # It is application/x-www-form-urlencoded or multipart/form-data.
-  # +formopt+ is an optional hash to specify the detail.
+  # +params+ :: The form data to set, which should be an enumerable.
+  #             See below for more details.
+  # +enctype+ :: The content type to use to encode the form submission,
+  #              which should be application/x-www-form-urlencoded or
+  #              multipart/form-data.
+  # +formopt+ :: An options hash, supporting the following options:
+  #              :boundary :: The boundary of the multipart message. If
+  #                           not given, a random boundary will be used.
+  #              :charset :: The charset of the form submission. All
+  #                          field names and values of non-file fields
+  #                          should be encoded with this charset.
   #
-  # boundary:: the boundary of the multipart message
-  # charset::  the charset of the message. All names and the values of
-  #            non-file fields are encoded as the charset.
-  #
-  # Each item of params is an array and contains following items:
-  # +name+::  the name of the field
-  # +value+:: the value of the field, it should be a String or a File
-  # +opt+::   an optional hash to specify additional information
+  # Each item of params should respond to +each+ and yield 2-3 arguments,
+  # or an array of 2-3 elements. The arguments yielded should be:
+  #  * The name of the field.
+  #  * The value of the field, it should be a String or a File or IO-like.
+  #  * An options hash, supporting the following options, only
+  #    used for file uploads:
+  #    :filename :: The name of the file to use.
+  #    :content_type :: The content type of the uploaded file.
   #
   # Each item is a file field or a normal field.
-  # If +value+ is a File object or the +opt+ have a filename key,
+  # If +value+ is a File object or the +opt+ hash has a :filename key,
   # the item is treated as a file field.
   #
-  # If Transfer-Encoding is set as chunked, this send the request in
+  # If Transfer-Encoding is set as chunked, this sends the request using
   # chunked encoding. Because chunked encoding is HTTP/1.1 feature,
-  # you must confirm the server to support HTTP/1.1 before sending it.
+  # you should confirm that the server supports HTTP/1.1 before using
+  # chunked encoding.
   #
   # Example:
-  #    http.set_form([["q", "ruby"], ["lang", "en"]])
+  #    req.set_form([["q", "ruby"], ["lang", "en"]])
+  #
+  #    req.set_form({"f"=>File.open('/path/to/filename')},
+  #                 "multipart/form-data",
+  #                 charset: "UTF-8",
+  #    )
+  #
+  #    req.set_form([["f",
+  #                   File.open('/path/to/filename.bar'),
+  #                   {filename: "other-filename.foo"}
+  #                 ]],
+  #                 "multipart/form-data",
+  #    )
   #
   # See also RFC 2388, RFC 2616, HTML 4.01, and HTML5
   #

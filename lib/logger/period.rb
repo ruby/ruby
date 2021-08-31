@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class Logger
   module Period
     module_function
@@ -13,8 +15,10 @@ class Logger
       when 'monthly'
         t = Time.mktime(now.year, now.month, 1) + SiD * 32
         return Time.mktime(t.year, t.month, 1)
-      else
+      when 'now', 'everytime'
         return now
+      else
+        raise ArgumentError, "invalid :shift_age #{shift_age.inspect}, should be daily, weekly, monthly, or everytime"
       end
       if t.hour.nonzero? or t.min.nonzero? or t.sec.nonzero?
         hour = t.hour
@@ -32,8 +36,10 @@ class Logger
         t = Time.mktime(now.year, now.month, now.mday) - (SiD * now.wday + SiD / 2)
       when 'monthly'
         t = Time.mktime(now.year, now.month, 1) - SiD / 2
-      else
+      when 'now', 'everytime'
         return now
+      else
+        raise ArgumentError, "invalid :shift_age #{shift_age.inspect}, should be daily, weekly, monthly, or everytime"
       end
       Time.mktime(t.year, t.month, t.mday, 23, 59, 59)
     end

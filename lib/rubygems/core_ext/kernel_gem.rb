@@ -61,9 +61,13 @@ module Kernel
 
     spec = dep.to_spec
 
-    Gem::LOADED_SPECS_MUTEX.synchronize do
-      spec.activate
-    end if spec
+    if spec
+      if Gem::LOADED_SPECS_MUTEX.owned?
+        spec.activate
+      else
+        Gem::LOADED_SPECS_MUTEX.synchronize { spec.activate }
+      end
+    end
   end
 
   private :gem

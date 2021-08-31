@@ -6,8 +6,8 @@ ruby_version_is ''...'2.7' do
 
   describe "IO#scanf" do
     before :each do
-      @hw = File.open(fixture(__FILE__, 'helloworld.txt'), 'r')
-      @data = File.open(fixture(__FILE__, 'date.txt'), 'r')
+      @hw = File.open(fixture(__FILE__, 'helloworld.txt'), 'rb')
+      @data = File.open(fixture(__FILE__, 'date.txt'), 'rb')
     end
 
     after :each do

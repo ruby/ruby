@@ -21,8 +21,10 @@ module IRB # :nodoc:
     LOCALE_DIR = "/lc/"
 
     @@legacy_encoding_alias_map = {}.freeze
+    @@loaded = []
 
     def initialize(locale = nil)
+      @override_encoding = nil
       @lang = @territory = @encoding_name = @modifier = nil
       @locale = locale || ENV["IRB_LANG"] || ENV["LC_MESSAGES"] || ENV["LC_ALL"] || ENV["LANG"] || "C"
       if m = LOCALE_NAME_RE.match(@locale)
@@ -39,12 +41,16 @@ module IRB # :nodoc:
       @encoding ||= (Encoding.find('locale') rescue Encoding::ASCII_8BIT)
     end
 
-    attr_reader :lang, :territory, :encoding, :modifier
+    attr_reader :lang, :territory, :modifier
+
+    def encoding
+      @override_encoding || @encoding
+    end
 
     def String(mes)
       mes = super(mes)
-      if @encoding
-        mes.encode(@encoding, undef: :replace)
+      if encoding
+        mes.encode(encoding, undef: :replace)
       else
         mes
       end
@@ -107,7 +113,10 @@ module IRB # :nodoc:
     def load(file, priv=nil)
       found = find(file)
       if found
-        return real_load(found, priv)
+        unless @@loaded.include?(found)
+          @@loaded << found # cache
+          return real_load(found, priv)
+        end
       else
         raise LoadError, "No such file to load -- #{file}"
       end

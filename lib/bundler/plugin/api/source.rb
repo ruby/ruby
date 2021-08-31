@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "uri"
-
 module Bundler
   module Plugin
     class API
@@ -108,7 +106,7 @@ module Bundler
         def install_path
           @install_path ||=
             begin
-              base_name = File.basename(URI.parse(uri).normalize.path)
+              base_name = File.basename(Bundler::URI.parse(uri).normalize.path)
 
               gem_install_dir.join("#{base_name}-#{uri_hash[0..11]}")
             end
@@ -142,6 +140,13 @@ module Bundler
           end
         end
 
+        # Set internal representation to fetch the gems/specs locally.
+        #
+        # When this is called, the source should try to fetch the specs and
+        # install from the local system.
+        def local!
+        end
+
         # Set internal representation to fetch the gems/specs from remote.
         #
         # When this is called, the source should try to fetch the specs and
@@ -170,7 +175,7 @@ module Bundler
         #
         # This is used by `app_cache_path`
         def app_cache_dirname
-          base_name = File.basename(URI.parse(uri).normalize.path)
+          base_name = File.basename(Bundler::URI.parse(uri).normalize.path)
           "#{base_name}-#{uri_hash}"
         end
 
@@ -239,6 +244,20 @@ module Bundler
           specs.unmet_dependency_names
         end
 
+        # Used by definition.
+        #
+        # Note: Do not override if you don't know what you are doing.
+        def spec_names
+          specs.spec_names
+        end
+
+        # Used by definition.
+        #
+        # Note: Do not override if you don't know what you are doing.
+        def add_dependency_names(names)
+          @dependencies |= Array(names)
+        end
+
         # Note: Do not override if you don't know what you are doing.
         def can_lock?(spec)
           spec.source == self
@@ -262,7 +281,7 @@ module Bundler
         end
 
         def to_s
-          "plugin source for #{options[:type]} with uri #{uri}"
+          "plugin source for #{@type} with uri #{@uri}"
         end
 
         # Note: Do not override if you don't know what you are doing.

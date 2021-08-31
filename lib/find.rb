@@ -46,24 +46,24 @@ module Find
       ps = [path]
       while file = ps.shift
         catch(:prune) do
-          yield file.dup.taint
+          yield file.dup
           begin
             s = File.lstat(file)
-          rescue Errno::ENOENT, Errno::EACCES, Errno::ENOTDIR, Errno::ELOOP, Errno::ENAMETOOLONG
+          rescue Errno::ENOENT, Errno::EACCES, Errno::ENOTDIR, Errno::ELOOP, Errno::ENAMETOOLONG, Errno::EINVAL
             raise unless ignore_error
             next
           end
           if s.directory? then
             begin
               fs = Dir.children(file, encoding: enc)
-            rescue Errno::ENOENT, Errno::EACCES, Errno::ENOTDIR, Errno::ELOOP, Errno::ENAMETOOLONG
+            rescue Errno::ENOENT, Errno::EACCES, Errno::ENOTDIR, Errno::ELOOP, Errno::ENAMETOOLONG, Errno::EINVAL
               raise unless ignore_error
               next
             end
             fs.sort!
             fs.reverse_each {|f|
               f = File.join(file, f)
-              ps.unshift f.untaint
+              ps.unshift f
             }
           end
         end

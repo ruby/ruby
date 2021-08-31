@@ -51,11 +51,13 @@ EOF
           end
           @binding = BINDING_QUEUE.pop
 
-        when 3	# binding in function on TOPLEVEL_BINDING(default)
-          @binding = eval("self.class.send(:remove_method, :irb_binding) if defined?(irb_binding); private; def irb_binding; binding; end; irb_binding",
+        when 3	# binding in function on TOPLEVEL_BINDING
+          @binding = eval("self.class.remove_method(:irb_binding) if defined?(irb_binding); private; def irb_binding; binding; end; irb_binding",
                           TOPLEVEL_BINDING,
                           __FILE__,
                           __LINE__ - 3)
+        when 4  # binding is a copy of TOPLEVEL_BINDING (default)
+          @binding = TOPLEVEL_BINDING.dup
         end
       end
 
@@ -74,7 +76,7 @@ EOF
           begin
             @binding = eval("IRB.conf[:__MAIN__].instance_eval('binding', __FILE__, __LINE__)", @binding, __FILE__, __LINE__)
           rescue TypeError
-            IRB.fail CantChangeBinding, @main.inspect
+            fail CantChangeBinding, @main.inspect
           end
         end
       end
@@ -124,21 +126,13 @@ EOF
 
     # error message manipulator
     def filter_backtrace(bt)
+      return nil if bt =~ /\/irb\/.*\.rb/
+      return nil if bt =~ /\/irb\.rb/
+      return nil if bt =~ /tool\/lib\/.*\.rb|runner\.rb/ # for tests in Ruby repository
       case IRB.conf[:CONTEXT_MODE]
-      when 0
-        return nil if bt =~ /\(irb_local_binding\)/
       when 1
-        if(bt =~ %r!/tmp/irb-binding! or
-            bt =~ %r!irb/.*\.rb! or
-            bt =~ /irb\.rb/)
-          return nil
-        end
-      when 2
-        return nil if bt =~ /irb\/.*\.rb/
-        return nil if bt =~ /irb\.rb/
+        return nil if bt =~ %r!/tmp/irb-binding!
       when 3
-        return nil if bt =~ /irb\/.*\.rb/
-        return nil if bt =~ /irb\.rb/
         bt = bt.sub(/:\s*in `irb_binding'/, '')
       end
       bt
@@ -181,7 +175,7 @@ EOF
       body = (start_pos..end_pos).map do |current_pos|
         sprintf(fmt, pos == current_pos ? '=>' : '', current_pos + 1, lines[current_pos])
       end.join("")
-      "\nFrom: #{file} @ line #{pos + 1} :\n\n#{body}#{Color.clear}\n"
+      "\nFrom: #{file} @ line #{pos + 1} :\n\n#{body}#{Color.clear if use_colorize}\n"
     end
 
     def IRB.delete_caller

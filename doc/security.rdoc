@@ -15,19 +15,6 @@ mailto:security@ruby-lang.org ({the PGP public
 key}[https://www.ruby-lang.org/security.asc]), which is a private mailing list.
 Reported problems will be published after fixes.
 
-== <code>$SAFE</code>
-
-Ruby provides a mechanism to restrict what operations can be performed by Ruby
-code in the form of the <code>$SAFE</code> variable.
-
-However, <code>$SAFE</code> does not provide a secure environment for executing
-untrusted code.
-
-If you need to execute untrusted code, you should use an operating system level
-sandboxing mechanism. On Linux, ptrace or LXC can be used to sandbox
-potentially malicious code. Other similar mechanisms exist on every major
-operating system.
-
 == +Marshal.load+
 
 Ruby's +Marshal+ module provides methods for serializing and deserializing Ruby

@@ -233,11 +233,9 @@ class TestFile < Test::Unit::TestCase
   end
 
   def test_chown
-    assert_nothing_raised {
-      File.open(__FILE__) {|f| f.chown(-1, -1) }
-    }
-    assert_nothing_raised("[ruby-dev:27140]") {
-      File.open(__FILE__) {|f| f.chown nil, nil }
+    Tempfile.create("test-chown") {|f|
+      assert_nothing_raised {f.chown(-1, -1)}
+      assert_nothing_raised("[ruby-dev:27140]") {f.chown(nil, nil)}
     }
   end
 
@@ -252,6 +250,10 @@ class TestFile < Test::Unit::TestCase
       tst = realdir + (File::SEPARATOR*3 + ".")
       assert_equal(realdir, File.realpath(tst))
       assert_equal(realdir, File.realpath(".", tst))
+      assert_equal(realdir, Dir.chdir(realdir) {File.realpath(".")})
+      realpath = File.join(realdir, "test")
+      File.write(realpath, "")
+      assert_equal(realpath, Dir.chdir(realdir) {File.realpath("test")})
       if File::ALT_SEPARATOR
         bug2961 = '[ruby-core:28653]'
         assert_equal(realdir, File.realpath(realdir.tr(File::SEPARATOR, File::ALT_SEPARATOR)), bug2961)
@@ -283,26 +285,6 @@ class TestFile < Test::Unit::TestCase
     }
   end
 
-  def test_realpath_taintedness
-    Dir.mktmpdir('rubytest-realpath') {|tmpdir|
-      dir = File.realpath(tmpdir).untaint
-      File.write(File.join(dir, base = "test.file"), '')
-      base.taint
-      dir.taint
-      assert_predicate(File.realpath(base, dir), :tainted?)
-      base.untaint
-      dir.taint
-      assert_predicate(File.realpath(base, dir), :tainted?)
-      base.taint
-      dir.untaint
-      assert_predicate(File.realpath(base, dir), :tainted?)
-      base.untaint
-      dir.untaint
-      assert_predicate(File.realpath(base, dir), :tainted?)
-      assert_predicate(Dir.chdir(dir) {File.realpath(base)}, :tainted?)
-    }
-  end
-
   def test_realpath_special_symlink
     IO.pipe do |r, w|
       if File.pipe?(path = "/dev/fd/#{r.fileno}")
@@ -318,6 +300,8 @@ class TestFile < Test::Unit::TestCase
       assert_equal(realdir, File.realdirpath(tst))
       assert_equal(realdir, File.realdirpath(".", tst))
       assert_equal(File.join(realdir, "foo"), File.realdirpath("foo", tst))
+      assert_equal(realdir, Dir.chdir(realdir) {File.realdirpath(".")})
+      assert_equal(File.join(realdir, "foo"), Dir.chdir(realdir) {File.realdirpath("foo")})
     }
     begin
       result = File.realdirpath("bar", "//:/foo")
@@ -465,19 +449,7 @@ class TestFile < Test::Unit::TestCase
     end
   end
 
-  def test_untainted_path
-    bug5374 = '[ruby-core:39745]'
-    cwd = ("./"*40+".".taint).dup.untaint
-    in_safe = proc {|safe| $SAFE = safe; File.stat(cwd)}
-    assert_not_send([cwd, :tainted?])
-    (0..1).each do |level|
-      assert_nothing_raised(SecurityError, bug5374) {in_safe[level]}
-    end
-  ensure
-    $SAFE = 0
-  end
-
-  if /(bcc|ms|cyg)win|mingw|emx/ =~ RUBY_PLATFORM
+  if /mswin|mingw/ =~ RUBY_PLATFORM
     def test_long_unc
       feature3399 = '[ruby-core:30623]'
       path = File.expand_path(__FILE__)
@@ -527,13 +499,16 @@ class TestFile < Test::Unit::TestCase
     assert_file.not_absolute_path?("~")
     assert_file.not_absolute_path?("~user")
 
-    if /mswin|mingw/ =~ RUBY_PLATFORM
+    if /cygwin|mswin|mingw/ =~ RUBY_PLATFORM
       assert_file.absolute_path?("C:\\foo\\bar")
       assert_file.absolute_path?("C:/foo/bar")
-      assert_file.not_absolute_path?("/foo/bar\\baz")
     else
       assert_file.not_absolute_path?("C:\\foo\\bar")
       assert_file.not_absolute_path?("C:/foo/bar")
+    end
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      assert_file.not_absolute_path?("/foo/bar\\baz")
+    else
       assert_file.absolute_path?("/foo/bar\\baz")
     end
   end

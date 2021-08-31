@@ -14,9 +14,11 @@
 .Op Fl E Ar external Ns Op : Ns Ar internal
 .Op Fl W Ns Op Ar level
 .Op Fl - Ns Oo no Oc Ns inspect
-.Op Fl - Ns Oo no Oc Ns readline
+.Op Fl - Ns Oo no Oc Ns multiline
+.Op Fl - Ns Oo no Oc Ns singleline
 .Op Fl - Ns Oo no Oc Ns echo
 .Op Fl - Ns Oo no Oc Ns colorize
+.Op Fl - Ns Oo no Oc Ns autocomplete
 .Op Fl - Ns Oo no Oc Ns verbose
 .Op Fl -prompt Ar mode
 .Op Fl -prompt-mode Ar mode
@@ -90,11 +92,17 @@ Uses `inspect' for output (default except for bc mode)
 .It Fl -noinspect
 Doesn't use inspect for output
 .Pp
-.It Fl -readline
-Uses Readline extension module.
+.It Fl -multiline
+Uses multiline editor module.
 .Pp
-.It Fl -noreadline
-Doesn't use Readline extension module.
+.It Fl -nomultiline
+Doesn't use multiline editor module.
+.Pp
+.It Fl -singleline
+Uses singleline editor module.
+.Pp
+.It Fl -nosingleline
+Doesn't use singleline editor module.
 .Pp
 .Pp
 .It Fl -echo
@@ -111,6 +119,13 @@ Use colorization.
 Don't use colorization.
 .Pp
 .Pp
+.It Fl -autocomplete
+Use autocompletion.
+.Pp
+.It Fl -noautocomplete
+Don't use autocompletion.
+.Pp
+.Pp
 .It Fl -verbose
 Show details.
 .Pp
@@ -124,7 +139,7 @@ Switch prompt mode. Pre-defined prompt modes are
 .Pp
 .It Fl -inf-ruby-mode
 Uses prompt appropriate for inf-ruby-mode on emacs.
-Suppresses --readline.
+Suppresses --multiline and --singleline.
 .Pp
 .It Fl -simple-prompt
 Makes prompts simple.

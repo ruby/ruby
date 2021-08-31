@@ -5,7 +5,7 @@ describe "Kernel#class" do
   it "returns the class of the object" do
     Object.new.class.should equal(Object)
 
-    1.class.should equal(Fixnum)
+    1.class.should equal(Integer)
     3.14.class.should equal(Float)
     :hello.class.should equal(Symbol)
     "hello".class.should equal(String)

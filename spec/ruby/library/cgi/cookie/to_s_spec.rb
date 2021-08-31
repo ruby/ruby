@@ -27,16 +27,7 @@ describe "CGI::Cookie#to_s" do
     cookie.to_s.should == "test-cookie=+%21%22%23%24%25%26%27%28%29%2A%2B%2C-.%2F0123456789%3A%3B%3C%3D%3E%3F%40ABCDEFGHIJKLMNOPQRSTUVWXYZ%5B%5C%5D%5E_%60abcdefghijklmnopqrstuvwxyz%7B%7C%7D; path="
   end
 
-  ruby_version_is ""..."2.5" do
-    it "escapes tilde" do
-      cookie = CGI::Cookie.new("test-cookie", "~").to_s.should == "test-cookie=%7E; path="
-    end
+  it "does not escape tilde" do
+    cookie = CGI::Cookie.new("test-cookie", "~").to_s.should == "test-cookie=~; path="
   end
-
-  ruby_version_is "2.5" do
-    it "does not escape tilde" do
-      cookie = CGI::Cookie.new("test-cookie", "~").to_s.should == "test-cookie=~; path="
-    end
-  end
-
 end

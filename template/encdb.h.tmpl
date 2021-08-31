@@ -1,4 +1,4 @@
-<%
+<% #-*- mode: ruby -*-
 #
 # OnigEncodingDefine(foo, Foo) = {
 #   ..
@@ -58,7 +58,7 @@ encdirs.each do |encdir|
           else
             name = $1
           end
-          check_duplication(defs, $1, fn, $.)
+          check_duplication(defs, $1, fn, f.lineno)
           next if BUILTIN_ENCODINGS[name]
           encodings << $1
           count += 1
@@ -70,31 +70,32 @@ encdirs.each do |encdir|
             encodings << $1
           when /^ENC_REPLICATE\(\s*"([^"]+)"\s*,\s*"([^"]+)"/
             raise ArgumentError,
-            '%s:%d: ENC_REPLICATE: %s is not defined yet. (replica %s)' %
-              [fn, $., $2, $1] unless defs[$2.upcase]
+                  '%s:%d: ENC_REPLICATE: %s is not defined yet. (replica %s)' %
+                  [fn, f.lineno, $2, $1] unless defs[$2.upcase]
             count += 1
           when /^ENC_ALIAS\(\s*"([^"]+)"\s*,\s*"([^"]+)"/
             raise ArgumentError,
-            '%s:%d: ENC_ALIAS: %s is not defined yet. (alias %s)' %
-              [fn, $., $2, $1] unless defs[$2.upcase]
+                  '%s:%d: ENC_ALIAS: %s is not defined yet. (alias %s)' %
+                  [fn, f.lineno, $2, $1] unless defs[$2.upcase]
           when /^ENC_DUMMY\w*\(\s*"([^"]+)"/
             count += 1
           else
             next
           end
-          check_duplication(defs, $1, fn, $.)
+          check_duplication(defs, $1, fn, f.lineno)
           lines << line.sub(/;.*/m, "").chomp + ";" if line
         end
       end
     end
   end
 end
-encodings.each_with_index do |e, i|
-%>ENC_DEFINE("<%=e%>");
+-%>
+% encodings.each_with_index do |e, i|
+ENC_DEFINE("<%=e%>");
 % end
 % encidx = encodings.size - 1
 % lines.each do |line|
-<%=line%>
+<%=line%><%#=%% %>
 % end
 
 #define ENCODING_COUNT <%=count%>

@@ -151,6 +151,16 @@ describe "C-API IO function" do
     end
   end
 
+  describe "rb_io_set_nonblock" do
+    platform_is_not :windows do
+      it "returns true when nonblock flag is set" do
+        require 'io/nonblock'
+        @o.rb_io_set_nonblock(@io)
+        @io.nonblock?.should be_true
+      end
+    end
+  end
+
   # NOTE: unlike the name might suggest in MRI this function checks if an
   # object is frozen, *not* if it's tainted.
   describe "rb_io_taint_check" do
@@ -220,7 +230,7 @@ describe "C-API IO function" do
   end
 
   describe "rb_io_check_writable" do
-    it "does not raise an exeption if the IO is opened for writing" do
+    it "does not raise an exception if the IO is opened for writing" do
       # The MRI function is void, so we use should_not raise_error
       -> { @o.rb_io_check_writable(@w_io) }.should_not raise_error
     end
@@ -363,5 +373,31 @@ describe "rb_cloexec_open" do
   it "sets close_on_exec on the newly-opened IO" do
     @io = @o.rb_cloexec_open(@name, 0, 0)
     @io.close_on_exec?.should be_true
+  end
+end
+
+describe "rb_io_t modes flags" do
+  before :each do
+    @o = CApiIOSpecs.new
+    @name = tmp("c_api_rb_io_specs")
+    touch @name
+  end
+
+  after :each do
+    rm_r @name
+  end
+
+  it "has the sync flag set if the IO object is synced in Ruby" do
+    File.open(@name) { |io|
+      io.sync = true
+      @o.rb_io_mode_sync_flag(io).should == true
+    }
+  end
+
+  it "has the sync flag unset if the IO object is not synced in Ruby" do
+    File.open(@name) { |io|
+      io.sync = false
+      @o.rb_io_mode_sync_flag(io).should == false
+    }
   end
 end

@@ -4,11 +4,32 @@ require_relative 'fixtures/classes'
 describe "main#public" do
   after :each do
     Object.send(:private, :main_private_method)
+    Object.send(:private, :main_private_method2)
   end
 
-  it "sets the visibility of the given method to public" do
-    eval "public :main_private_method", TOPLEVEL_BINDING
-    Object.should_not have_private_method(:main_private_method)
+  context "when single argument is passed and it is not an array" do
+    it "sets the visibility of the given methods to public" do
+      eval "public :main_private_method", TOPLEVEL_BINDING
+      Object.should_not have_private_method(:main_private_method)
+    end
+  end
+
+  context "when multiple arguments are passed" do
+    it "sets the visibility of the given methods to public" do
+      eval "public :main_private_method, :main_private_method2", TOPLEVEL_BINDING
+      Object.should_not have_private_method(:main_private_method)
+      Object.should_not have_private_method(:main_private_method2)
+    end
+  end
+
+  ruby_version_is "3.0" do
+    context "when single argument is passed and is an array" do
+      it "sets the visibility of the given methods to public" do
+        eval "public [:main_private_method, :main_private_method2]", TOPLEVEL_BINDING
+        Object.should_not have_private_method(:main_private_method)
+        Object.should_not have_private_method(:main_private_method2)
+      end
+    end
   end
 
   it "returns Object" do

@@ -1,23 +1,26 @@
 require_relative '../../../spec_helper'
-require 'rexml/document'
 
-describe "REXML::Attribute#write" do
-  before :each do
-    @attr = REXML::Attribute.new("name", "Charlotte")
-    @s = ""
-  end
+ruby_version_is ''...'3.0' do
+  require 'rexml/document'
 
-  it "writes the name and value to output" do
-    @attr.write(@s)
-    @s.should == "name='Charlotte'"
-  end
+  describe "REXML::Attribute#write" do
+    before :each do
+      @attr = REXML::Attribute.new("name", "Charlotte")
+      @s = ""
+    end
 
-  it "currently ignores the second argument" do
-    @attr.write(@s, 3)
-    @s.should == "name='Charlotte'"
+    it "writes the name and value to output" do
+      @attr.write(@s)
+      @s.should == "name='Charlotte'"
+    end
 
-    @s = ""
-    @attr.write(@s, "foo")
-    @s.should == "name='Charlotte'"
+    it "currently ignores the second argument" do
+      @attr.write(@s, 3)
+      @s.should == "name='Charlotte'"
+
+      @s = ""
+      @attr.write(@s, "foo")
+      @s.should == "name='Charlotte'"
+    end
   end
 end

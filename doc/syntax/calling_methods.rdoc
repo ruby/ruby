@@ -30,7 +30,41 @@ NoMethodError.
 You may also use <code>::</code> to designate a receiver, but this is rarely
 used due to the potential for confusion with <code>::</code> for namespaces.
 
-=== Safe navigation operator
+=== Chaining \Method Calls
+
+You can "chain" method calls by immediately following one method call with another.
+
+This example chains methods Array#append and Array#compact:
+
+  a = [:foo, 'bar', 2]
+  a1 = [:baz, nil, :bam, nil]
+  a2 = a.append(*a1).compact
+  a2 # => [:foo, "bar", 2, :baz, :bam]
+
+Details:
+
+- First method <tt>merge</tt> creates a copy of <tt>a</tt>,
+  appends (separately) each element of <tt>a1</tt> to the copy, and returns
+    [:foo, "bar", 2, :baz, nil, :bam, nil]
+- Chained method <tt>compact</tt> creates a copy of that return value,
+  removes its <tt>nil</tt>-valued entries, and returns
+     [:foo, "bar", 2, :baz, :bam]
+
+You can chain methods that are in different classes.
+This example chains methods Hash#to_a and Array#reverse:
+
+  h = {foo: 0, bar: 1, baz: 2}
+  h.to_a.reverse # => [[:baz, 2], [:bar, 1], [:foo, 0]]
+
+Details:
+
+- First method Hash#to_a converts <tt>a</tt> to an \Array, and returns
+    [[:foo, 0], [:bar, 1], [:baz, 2]]
+- Chained method Array#reverse creates copy of that return value,
+  reverses it, and  returns
+    [[:baz, 2], [:bar, 1], [:foo, 0]]
+
+=== Safe Navigation Operator
 
 <code>&.</code>, called "safe navigation operator", allows to skip method call
 when receiver is +nil+. It returns +nil+ and doesn't evaluate method's arguments

@@ -31,17 +31,6 @@ class TestTempfile < Test::Unit::TestCase
     assert_equal "hello world", File.read(path)
   end
 
-  def test_saves_in_dir_tmpdir_by_default
-    t = tempfile("foo")
-    assert_equal Dir.tmpdir, File.dirname(t.path)
-    bug3733 = '[ruby-dev:42089]'
-    assert_nothing_raised(SecurityError, bug3733) {
-      proc {$SAFE = 1; File.expand_path(Dir.tmpdir)}.call
-    }
-  ensure
-    $SAFE = 0
-  end
-
   def test_saves_in_given_directory
     subdir = File.join(Dir.tmpdir, "tempfile-test-#{rand}")
     Dir.mkdir(subdir)

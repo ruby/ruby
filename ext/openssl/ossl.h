@@ -24,9 +24,11 @@
 #include <openssl/ssl.h>
 #include <openssl/pkcs12.h>
 #include <openssl/pkcs7.h>
-#include <openssl/hmac.h>
 #include <openssl/rand.h>
 #include <openssl/conf.h>
+#ifndef OPENSSL_NO_TS
+  #include <openssl/ts.h>
+#endif
 #include <openssl/crypto.h>
 #if !defined(OPENSSL_NO_ENGINE)
 #  include <openssl/engine.h>
@@ -85,9 +87,8 @@ VALUE ossl_buf2str(char *buf, int len);
 VALUE ossl_str_new(const char *, long, int *);
 #define ossl_str_adjust(str, p) \
 do{\
-    long len = RSTRING_LEN(str);\
     long newlen = (long)((p) - (unsigned char*)RSTRING_PTR(str));\
-    assert(newlen <= len);\
+    assert(newlen <= RSTRING_LEN(str));\
     rb_str_set_len((str), newlen);\
 }while(0)
 /*
@@ -167,7 +168,9 @@ void ossl_debug(const char *, ...);
 #include "ossl_pkey.h"
 #include "ossl_rand.h"
 #include "ossl_ssl.h"
-#include "ossl_version.h"
+#ifndef OPENSSL_NO_TS
+  #include "ossl_ts.h"
+#endif
 #include "ossl_x509.h"
 #include "ossl_engine.h"
 #include "ossl_kdf.h"

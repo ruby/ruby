@@ -5,9 +5,9 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems/command'
-require 'rubygems/user_interaction'
-require 'rubygems/text'
+require_relative 'command'
+require_relative 'user_interaction'
+require_relative 'text'
 
 ##
 # The command manager registers and installs all the individual sub-commands
@@ -32,7 +32,6 @@ require 'rubygems/text'
 # See Gem::Command for instructions on writing gem commands.
 
 class Gem::CommandManager
-
   include Gem::Text
   include Gem::UserInteraction
 
@@ -74,7 +73,7 @@ class Gem::CommandManager
   ].freeze
 
   ALIAS_COMMANDS = {
-    'i' => 'install'
+    'i' => 'install',
   }.freeze
 
   ##
@@ -138,7 +137,7 @@ class Gem::CommandManager
   # Return a sorted list of all command names as strings.
 
   def command_names
-    @commands.keys.collect {|key| key.to_s}.sort
+    @commands.keys.collect {|key| key.to_s }.sort
   end
 
   ##
@@ -175,6 +174,7 @@ class Gem::CommandManager
     else
       cmd_name = args.shift.downcase
       cmd = find_command cmd_name
+      cmd.deprecation_warning if cmd.deprecated?
       cmd.invoke_with_build_args args, build_args
     end
   end
@@ -188,7 +188,7 @@ class Gem::CommandManager
       raise Gem::CommandLineError,
             "Ambiguous command #{cmd_name} matches [#{possibilities.join(', ')}]"
     elsif possibilities.empty?
-      raise Gem::CommandLineError, "Unknown command #{cmd_name}"
+      raise Gem::UnknownCommandError.new(cmd_name)
     end
 
     self[possibilities.first]
@@ -202,9 +202,9 @@ class Gem::CommandManager
   def find_command_possibilities(cmd_name)
     len = cmd_name.length
 
-    found = command_names.select { |name| cmd_name == name[0, len] }
+    found = command_names.select {|name| cmd_name == name[0, len] }
 
-    exact = found.find { |name| name == cmd_name }
+    exact = found.find {|name| name == cmd_name }
 
     exact ? [exact] : found
   end
@@ -230,5 +230,4 @@ class Gem::CommandManager
       ui.backtrace e
     end
   end
-
 end

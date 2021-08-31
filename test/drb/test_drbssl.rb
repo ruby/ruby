@@ -34,7 +34,7 @@ class DRbSSLService < DRbService
         [ ["C","JP"], ["O","Foo.DRuby.Org"], ["CN", "Sample"] ]
     end
 
-    @server = DRb::DRbServer.new('drbssl://:0', manager, config)
+    @server = DRb::DRbServer.new('drbssl://localhost:0', manager, config)
   end
 end
 
@@ -59,6 +59,7 @@ end
 class TestDRbSSLAry < Test::Unit::TestCase
   include DRbAry
   def setup
+    LeakChecker.skip if defined?(LeakChecker)
     @drb_service = DRbSSLService.new
     super
     setup_service 'ut_array_drbssl.rb'

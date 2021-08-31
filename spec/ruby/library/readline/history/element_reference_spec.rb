@@ -12,9 +12,11 @@ with_feature :readline do
       Readline::HISTORY.pop
     end
 
-    it "returns tainted objects" do
-      Readline::HISTORY[0].tainted?.should be_true
-      Readline::HISTORY[1].tainted?.should be_true
+    ruby_version_is ''...'2.7' do
+      it "returns tainted objects" do
+        Readline::HISTORY[0].tainted?.should be_true
+        Readline::HISTORY[1].tainted?.should be_true
+      end
     end
 
     it "returns the history item at the passed index" do

@@ -9,7 +9,7 @@
 #
 #
 #
-IRB.fail CantShiftToMultiIrbMode unless defined?(Thread)
+fail CantShiftToMultiIrbMode unless defined?(Thread)
 
 module IRB
   class JobManager
@@ -67,8 +67,8 @@ module IRB
     # exception is raised.
     def switch(key)
       th, irb = search(key)
-      IRB.fail IrbAlreadyDead unless th.alive?
-      IRB.fail IrbSwitchedToCurrentThread if th == Thread.current
+      fail IrbAlreadyDead unless th.alive?
+      fail IrbSwitchedToCurrentThread if th == Thread.current
       @current_job = irb
       th.run
       Thread.stop
@@ -84,7 +84,7 @@ module IRB
     def kill(*keys)
       for key in keys
         th, _ = search(key)
-        IRB.fail IrbAlreadyDead unless th.alive?
+        fail IrbAlreadyDead unless th.alive?
         th.exit
       end
     end
@@ -114,7 +114,7 @@ module IRB
             else
               @jobs.find{|k, v| v.context.main.equal?(key)}
             end
-      IRB.fail NoSuchJob, key if job.nil?
+      fail NoSuchJob, key if job.nil?
       job
     end
 
@@ -122,7 +122,7 @@ module IRB
     def delete(key)
       case key
       when Integer
-        IRB.fail NoSuchJob, key unless @jobs[key]
+        fail NoSuchJob, key unless @jobs[key]
         @jobs[key] = nil
       else
         catch(:EXISTS) do
@@ -135,7 +135,7 @@ module IRB
               throw :EXISTS
             end
           end
-          IRB.fail NoSuchJob, key
+          fail NoSuchJob, key
         end
       end
       until assoc = @jobs.pop; end unless @jobs.empty?

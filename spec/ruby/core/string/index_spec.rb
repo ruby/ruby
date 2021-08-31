@@ -27,7 +27,7 @@ describe "String#index" do
     "abc".index("c", offset).should == 2
   end
 
-  it "raises a TypeError if passed a Fixnum" do
+  it "raises a TypeError if passed an Integer" do
     -> { "abc".index 97 }.should raise_error(TypeError)
   end
 end
@@ -146,6 +146,7 @@ describe "String#index with String" do
 
   it "returns the character index after offset" do
     "われわれ".index("わ", 1).should == 2
+    "ありがとうありがとう".index("が", 3).should == 7
   end
 
   it "returns the character index after a partial first match" do

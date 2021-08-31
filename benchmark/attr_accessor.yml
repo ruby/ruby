@@ -1,0 +1,29 @@
+prelude: |
+  class C
+    attr_accessor :x
+    def initialize
+      @x = nil
+    end
+    class_eval <<-END
+      def ar
+        #{'x;'*256}
+      end
+      def aw
+        #{'self.x = nil;'*256}
+      end
+      def arm
+        m = method(:x)
+        #{'m.call;'*256}
+      end
+      def awm
+        m = method(:x=)
+        #{'m.call(nil);'*256}
+      end
+    END
+  end
+  obj = C.new
+benchmark:
+  attr_reader: "obj.ar"
+  attr_writer: "obj.aw"
+  attr_reader_method: "obj.arm"
+  attr_writer_method: "obj.awm"

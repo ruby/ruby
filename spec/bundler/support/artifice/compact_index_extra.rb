@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require File.expand_path("../compact_index", __FILE__)
+require_relative "compact_index"
 
 Artifice.deactivate
 
@@ -14,11 +14,11 @@ class CompactIndexExtra < CompactIndexAPI
   end
 
   get "/extra/specs.4.8.gz" do
-    File.read("#{gem_repo2}/specs.4.8.gz")
+    File.binread("#{gem_repo2}/specs.4.8.gz")
   end
 
   get "/extra/prerelease_specs.4.8.gz" do
-    File.read("#{gem_repo2}/prerelease_specs.4.8.gz")
+    File.binread("#{gem_repo2}/prerelease_specs.4.8.gz")
   end
 
   get "/extra/quick/Marshal.4.8/:id" do
@@ -26,11 +26,11 @@ class CompactIndexExtra < CompactIndexAPI
   end
 
   get "/extra/fetch/actual/gem/:id" do
-    File.read("#{gem_repo2}/quick/Marshal.4.8/#{params[:id]}")
+    File.binread("#{gem_repo2}/quick/Marshal.4.8/#{params[:id]}")
   end
 
   get "/extra/gems/:id" do
-    File.read("#{gem_repo2}/gems/#{params[:id]}")
+    File.binread("#{gem_repo2}/gems/#{params[:id]}")
   end
 end
 

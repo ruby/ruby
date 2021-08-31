@@ -226,11 +226,10 @@ ossl_x509extfactory_create_ext(int argc, VALUE *argv, VALUE self)
     GetX509ExtFactory(self, ctx);
     obj = NewX509Ext(cX509Ext);
     rconf = rb_iv_get(self, "@config");
-    conf = NIL_P(rconf) ? NULL : DupConfigPtr(rconf);
+    conf = NIL_P(rconf) ? NULL : GetConfig(rconf);
     X509V3_set_nconf(ctx, conf);
     ext = X509V3_EXT_nconf_nid(conf, ctx, nid, RSTRING_PTR(valstr));
     X509V3_set_ctx_nodb(ctx);
-    NCONF_free(conf);
     if (!ext){
 	ossl_raise(eX509ExtError, "%"PRIsVALUE" = %"PRIsVALUE, oid, valstr);
     }
@@ -403,6 +402,19 @@ ossl_x509ext_get_value(VALUE obj)
 }
 
 static VALUE
+ossl_x509ext_get_value_der(VALUE obj)
+{
+    X509_EXTENSION *ext;
+    ASN1_OCTET_STRING *value;
+
+    GetX509Ext(obj, ext);
+    if ((value = X509_EXTENSION_get_data(ext)) == NULL)
+	ossl_raise(eX509ExtError, NULL);
+
+    return rb_str_new((const char *)value->data, value->length);
+}
+
+static VALUE
 ossl_x509ext_get_critical(VALUE obj)
 {
     X509_EXTENSION *ext;
@@ -472,6 +484,7 @@ Init_ossl_x509ext(void)
     rb_define_method(cX509Ext, "critical=", ossl_x509ext_set_critical, 1);
     rb_define_method(cX509Ext, "oid", ossl_x509ext_get_oid, 0);
     rb_define_method(cX509Ext, "value", ossl_x509ext_get_value, 0);
+    rb_define_method(cX509Ext, "value_der", ossl_x509ext_get_value_der, 0);
     rb_define_method(cX509Ext, "critical?", ossl_x509ext_get_critical, 0);
     rb_define_method(cX509Ext, "to_der", ossl_x509ext_to_der, 0);
 }

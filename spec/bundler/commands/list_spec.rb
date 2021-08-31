@@ -3,7 +3,7 @@
 RSpec.describe "bundle list" do
   context "with name-only and paths option" do
     it "raises an error" do
-      bundle "list --name-only --paths"
+      bundle "list --name-only --paths", :raise_on_error => false
 
       expect(err).to eq "The `--name-only` and `--paths` options cannot be used together"
     end
@@ -11,7 +11,7 @@ RSpec.describe "bundle list" do
 
   context "with without-group and only-group option" do
     it "raises an error" do
-      bundle "list --without-group dev --only-group test"
+      bundle "list --without-group dev --only-group test", :raise_on_error => false
 
       expect(err).to eq "The `--only-group` and `--without-group` options cannot be used together"
     end
@@ -24,23 +24,35 @@ RSpec.describe "bundle list" do
 
         gem "rack"
         gem "rspec", :group => [:test]
+        gem "rails", :group => [:production]
       G
     end
 
     context "when group is present" do
       it "prints the gems not in the specified group" do
-        bundle! "list --without-group test"
+        bundle "list --without-group test"
 
         expect(out).to include("  * rack (1.0.0)")
+        expect(out).to include("  * rails (2.3.2)")
         expect(out).not_to include("  * rspec (1.2.7)")
       end
     end
 
     context "when group is not found" do
       it "raises an error" do
-        bundle "list --without-group random"
+        bundle "list --without-group random", :raise_on_error => false
 
         expect(err).to eq "`random` group could not be found."
+      end
+    end
+
+    context "when multiple groups" do
+      it "prints the gems not in the specified groups" do
+        bundle "list --without-group test production"
+
+        expect(out).to include("  * rack (1.0.0)")
+        expect(out).not_to include("  * rails (2.3.2)")
+        expect(out).not_to include("  * rspec (1.2.7)")
       end
     end
   end
@@ -52,12 +64,13 @@ RSpec.describe "bundle list" do
 
         gem "rack"
         gem "rspec", :group => [:test]
+        gem "rails", :group => [:production]
       G
     end
 
     context "when group is present" do
       it "prints the gems in the specified group" do
-        bundle! "list --only-group default"
+        bundle "list --only-group default"
 
         expect(out).to include("  * rack (1.0.0)")
         expect(out).not_to include("  * rspec (1.2.7)")
@@ -66,9 +79,19 @@ RSpec.describe "bundle list" do
 
     context "when group is not found" do
       it "raises an error" do
-        bundle "list --only-group random"
+        bundle "list --only-group random", :raise_on_error => false
 
         expect(err).to eq "`random` group could not be found."
+      end
+    end
+
+    context "when multiple groups" do
+      it "prints the gems in the specified groups" do
+        bundle "list --only-group default production"
+
+        expect(out).to include("  * rack (1.0.0)")
+        expect(out).to include("  * rails (2.3.2)")
+        expect(out).not_to include("  * rspec (1.2.7)")
       end
     end
   end
@@ -94,6 +117,10 @@ RSpec.describe "bundle list" do
   context "with paths option" do
     before do
       build_repo2 do
+        build_gem "rack", "1.2" do |s|
+          s.executables = "rackup"
+        end
+
         build_gem "bar"
       end
 

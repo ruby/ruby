@@ -218,5 +218,5 @@ OnigEncodingDefine(cp949, CP949) = {
 /*
  * Name: CP949
  * Link: http://www.microsoft.com/globaldev/reference/dbcs/949.mspx
- * Link: http://en.wikipedia.org/wiki/EUC-KR#EUC-KR
+ * Link: https://en.wikipedia.org/wiki/EUC-KR#EUC-KR
  */

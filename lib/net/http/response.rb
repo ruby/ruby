@@ -11,7 +11,7 @@
 # HTTPResponse subclass. All classes are defined under the Net module.
 # Indentation indicates inheritance.  For a list of the classes see Net::HTTP.
 #
-# Correspondense <code>HTTP code => class</code> is stored in CODE_TO_OBJ
+# Correspondence <code>HTTP code => class</code> is stored in CODE_TO_OBJ
 # constant:
 #
 #    Net::HTTPResponse::CODE_TO_OBJ['404'] #=> Net::HTTPNotFound
@@ -268,12 +268,13 @@ class Net::HTTPResponse
 
       begin
         yield inflate_body_io
+        success = true
       ensure
-        orig_err = $!
         begin
           inflate_body_io.finish
         rescue => err
-          raise orig_err || err
+          # Ignore #finish's error if there is an exception from yield
+          raise err if success
         end
       end
     when 'none', 'identity' then

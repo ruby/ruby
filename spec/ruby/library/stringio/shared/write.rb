@@ -52,9 +52,11 @@ describe :stringio_write_string, shared: true do
     end
   end
 
-  it "does not taint self when the passed argument is tainted" do
-    @io.send(@method, "test".taint)
-    @io.tainted?.should be_false
+  ruby_version_is ""..."3.0" do
+    it "does not taint self when the passed argument is tainted" do
+      @io.send(@method, "test".taint)
+      @io.tainted?.should be_false
+    end
   end
 end
 

@@ -170,4 +170,18 @@ describe "String#unpack with format 'm'" do
     "".unpack("m").first.encoding.should == Encoding::BINARY
     "Ojs8PT4/QA==\n".unpack("m").first.encoding.should == Encoding::BINARY
   end
+
+  it "does not raise an error for an invalid base64 character" do
+    "dGV%zdA==".unpack("m").should == ["test"]
+  end
+
+  describe "when given count 0" do
+    it "decodes base64" do
+      "dGVzdA==".unpack("m0").should == ["test"]
+    end
+
+    it "raises an ArgumentError for an invalid base64 character" do
+      -> { "dGV%zdA==".unpack("m0") }.should raise_error(ArgumentError)
+    end
+  end
 end

@@ -27,12 +27,12 @@ If you cannot reproduce the example with the master branch, but can reproduce
 the issue on the latest version for the branch, then it is likely the bug has
 already been fixed, but it has not been backported yet.  Try to determine
 which commit fixed it, and update the issue noting that the issue has been
-fixed but not yet backported.  If the ruby version is in the security
+fixed but not yet backported.  If the Ruby version is in the security
 maintenance phase or no longer supported, change the status to Closed. This
-change be made without adding a note to avoid spamming the mailing list.
+change can be made without adding a note to avoid spamming the mailing list.
 
 For issues that may require backwards incompatible changes or may benefit from
-general committer attention or discussion, considering adding them as agenda
+general committer attention or discussion, consider adding them as agenda
 items for the next committer meeting (https://bugs.ruby-lang.org/issues/14770).
 
 == Crash Bugs Without Reproducers
@@ -41,27 +41,26 @@ Many bugs reported have little more than a crash report, often with no way to
 reproduce the issue.  These bugs are difficult to triage as they often do not
 contain enough information.
 
-
-For these bugs, if the ruby version is the master branch or is the latest
+For these bugs, if the Ruby version is the master branch or is the latest
 release for the branch and the branch is in normal maintenance phase, look at
 the backtrace and see if you can determine what could be causing the issue.
-If you can guess would could be causing the issue, see if you can put together
+If you can guess what could be causing the issue, see if you can put together
 a reproducible example (this is in general quite difficult).  If you cannot
 guess what could be causing the issue, or cannot put together a reproducible
 example yourself, please ask the reporter to provide a reproducible example,
 and change the status to Feedback.
 
-if the ruby version is no longer current (e.g. 2.5.0 when the latest version
-on the ruby 2.5 branch is 2.5.5), add a note to the issue asking the reporter
-to try the latest ruby version for the branch and report back, and change the
-status to Feedback.  If the ruby version is in the security maintenance phase
+If the Ruby version is no longer current (e.g. 2.5.0 when the latest version
+on the Ruby 2.5 branch is 2.5.5), add a note to the issue asking the reporter
+to try the latest Ruby version for the branch and report back, and change the
+status to Feedback.  If the Ruby version is in the security maintenance phase
 or no longer supported, change the status to Closed. This change can be made
 without adding a note.
 
 == Crash Bugs With 3rd Party C Extensions
 
-If the crash happens inside a 3rd party C extension, try to figure out which
-C extension it happens inside, and add a note to the issue to report the
+If the crash happens inside a 3rd party C extension, try to figure out inside
+which C extension it happens, and add a note to the issue to report the
 issue to that C extension, and set the status to Third Party's Issue.
 
 == Non-Bug reports
@@ -75,6 +74,6 @@ improvements) or Misc. This change can be made without adding a note.
 There are many issues that are stale, with no updates in months or even years.
 For stale issues in Feedback state, where the feedback has not been received,
 you can change the status to Closed without adding a note.  For stale issues
-in Assigned state, you can reach out the assignee and see if they can update
+in Assigned state, you can reach out to the assignee and see if they can update
 the issue.  If the assignee is no longer an active committer, remove them
 as the assignee and change the status to Open.

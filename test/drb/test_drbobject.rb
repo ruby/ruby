@@ -12,6 +12,7 @@ module DRbObjectTest
 
   def teardown
     DRb.stop_service
+    DRb::DRbConn.stop_pool
   end
 
   def drb_eq(obj)
@@ -43,7 +44,19 @@ class TestDRbObjectTimerIdConv < Test::Unit::TestCase
   include DRbObjectTest
 
   def setup
-    DRb.start_service(nil, nil, {:idconv => DRb::TimerIdConv.new})
+    @idconv = DRb::TimerIdConv.new
+    DRb.start_service(nil, nil, {:idconv => @idconv})
+  end
+
+  def teardown
+    super
+    # stop DRb::TimerIdConv::TimerHolder2#on_gc
+    @idconv.instance_eval do
+      @holder.instance_eval do
+        @expires = nil
+      end
+    end
+    GC.start
   end
 end
 

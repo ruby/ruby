@@ -76,12 +76,13 @@ describe "StringIO#gets when passed no argument" do
     @io.gets.should == "this is\n"
 
     begin
-      old_sep, $/ = $/, " "
+      old_sep = $/
+      suppress_warning {$/ = " "}
       @io.gets.should == "an "
       @io.gets.should == "example\nfor "
       @io.gets.should == "StringIO#gets"
     ensure
-      $/ = old_sep
+      suppress_warning {$/ = old_sep}
     end
   end
 

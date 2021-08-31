@@ -1,3 +1,5 @@
+#ifndef RUBY_SYMBOL_H
+#define RUBY_SYMBOL_H 1
 /**********************************************************************
 
   symbol.h -
@@ -9,10 +11,8 @@
 
 **********************************************************************/
 
-#ifndef RUBY_SYMBOL_H
-#define RUBY_SYMBOL_H 1
-
 #include "id.h"
+#include "ruby/encoding.h"
 
 #define DYNAMIC_ID_P(id) (!(id&ID_STATIC_SYM)&&id>tLAST_OP_ID)
 #define STATIC_ID2SYM(id)  (((VALUE)(id)<<RUBY_SPECIAL_SHIFT)|SYMBOL_FLAG)
@@ -30,7 +30,7 @@ struct RSymbol {
     ID id;
 };
 
-#define RSYMBOL(obj) (R_CAST(RSymbol)(obj))
+#define RSYMBOL(obj) ((struct RSymbol *)(obj))
 
 #define is_notop_id(id) ((id)>tLAST_OP_ID)
 #define is_local_id(id) (id_type(id)==ID_LOCAL)

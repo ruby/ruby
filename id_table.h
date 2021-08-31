@@ -1,5 +1,7 @@
 #ifndef RUBY_ID_TABLE_H
 #define RUBY_ID_TABLE_H 1
+#include "ruby/internal/config.h"
+#include <stddef.h>
 #include "ruby/ruby.h"
 
 struct rb_id_table;

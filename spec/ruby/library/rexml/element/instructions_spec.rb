@@ -1,21 +1,24 @@
-require 'rexml/document'
 require_relative '../../../spec_helper'
 
-describe "REXML::Element#instructions" do
-  before :each do
-    @elem = REXML::Element.new("root")
-  end
-  it "returns the Instruction children nodes" do
-    inst = REXML::Instruction.new("xml-stylesheet", "href='headlines.css'")
-    @elem << inst
-    @elem.instructions.first.should == inst
-  end
+ruby_version_is ''...'3.0' do
+  require 'rexml/document'
 
-  it "returns an empty array if it has no Instruction children" do
-    @elem.instructions.should be_empty
-  end
+  describe "REXML::Element#instructions" do
+    before :each do
+      @elem = REXML::Element.new("root")
+    end
+    it "returns the Instruction children nodes" do
+      inst = REXML::Instruction.new("xml-stylesheet", "href='headlines.css'")
+      @elem << inst
+      @elem.instructions.first.should == inst
+    end
 
-  it "freezes the returned array" do
-    @elem.instructions.frozen?.should be_true
+    it "returns an empty array if it has no Instruction children" do
+      @elem.instructions.should be_empty
+    end
+
+    it "freezes the returned array" do
+      @elem.instructions.frozen?.should be_true
+    end
   end
 end

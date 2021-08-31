@@ -3,8 +3,16 @@ prelude: |
   str10 = str1 * 10
   str100 = str10 * 10
   str1000 = str100 * 10
+  nonascii1 = [*"\u{e0}".."\u{ff}"].join("")
+  nonascii10 = nonascii1 * 10
+  nonascii100 = nonascii10 * 10
+  nonascii1000 = nonascii100 * 10
 benchmark:
   upcase-1: str1.upcase
   upcase-10: str10.upcase
   upcase-100: str100.upcase
   upcase-1000: str1000.upcase
+  upcase-nonascii1: nonascii1.upcase
+  upcase-nonascii10: nonascii10.upcase
+  upcase-nonascii100: nonascii100.upcase
+  upcase-nonascii1000: nonascii1000.upcase

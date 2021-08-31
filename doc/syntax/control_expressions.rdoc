@@ -232,7 +232,7 @@ You may use +then+ after the +when+ condition.  This is most frequently used
 to place the body of the +when+ on a single line.
 
   case a
-  when 1, 2 then puts "a is one or two
+  when 1, 2 then puts "a is one or two"
   when 3    then puts "a is three"
   else           puts "I don't know what a is"
   end
@@ -254,6 +254,20 @@ Again, the +then+ and +else+ are optional.
 
 The result value of a +case+ expression is the last value executed in the
 expression.
+
+Since Ruby 2.7, +case+ expressions also provide a more powerful experimental
+pattern matching feature via the +in+ keyword:
+
+  case {a: 1, b: 2, c: 3}
+  in a: Integer => m
+    "matched: #{m}"
+  else
+    "not matched"
+  end
+  # => "matched: 1"
+
+The pattern matching syntax is described on
+{its own page}[rdoc-ref:syntax/pattern_matching.rdoc].
 
 == +while+ Loop
 

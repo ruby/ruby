@@ -57,18 +57,28 @@ describe "String#tr" do
     "bla".tr(from_str, to_str).should == "BlA"
   end
 
-  it "returns subclass instances when called on a subclass" do
-    StringSpecs::MyString.new("hello").tr("e", "a").should be_an_instance_of(StringSpecs::MyString)
+  ruby_version_is ''...'3.0' do
+    it "returns subclass instances when called on a subclass" do
+      StringSpecs::MyString.new("hello").tr("e", "a").should be_an_instance_of(StringSpecs::MyString)
+    end
   end
 
-  it "taints the result when self is tainted" do
-    ["h", "hello"].each do |str|
-      tainted_str = str.dup.taint
+  ruby_version_is '3.0' do
+    it "returns Stringinstances when called on a subclass" do
+      StringSpecs::MyString.new("hello").tr("e", "a").should be_an_instance_of(String)
+    end
+  end
 
-      tainted_str.tr("e", "a").tainted?.should == true
+  ruby_version_is ''...'2.7' do
+    it "taints the result when self is tainted" do
+      ["h", "hello"].each do |str|
+        tainted_str = str.dup.taint
 
-      str.tr("e".taint, "a").tainted?.should == false
-      str.tr("e", "a".taint).tainted?.should == false
+        tainted_str.tr("e", "a").should.tainted?
+
+        str.tr("e".taint, "a").should_not.tainted?
+        str.tr("e", "a".taint).should_not.tainted?
+      end
     end
   end
 
@@ -120,10 +130,10 @@ describe "String#tr!" do
     s.should == "hello"
   end
 
-  it "raises a #{frozen_error_class} if self is frozen" do
+  it "raises a FrozenError if self is frozen" do
     s = "abcdefghijklmnopqR".freeze
-    -> { s.tr!("cdefg", "12") }.should raise_error(frozen_error_class)
-    -> { s.tr!("R", "S")      }.should raise_error(frozen_error_class)
-    -> { s.tr!("", "")        }.should raise_error(frozen_error_class)
+    -> { s.tr!("cdefg", "12") }.should raise_error(FrozenError)
+    -> { s.tr!("R", "S")      }.should raise_error(FrozenError)
+    -> { s.tr!("", "")        }.should raise_error(FrozenError)
   end
 end

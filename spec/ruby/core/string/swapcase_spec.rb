@@ -9,9 +9,11 @@ describe "String#swapcase" do
    "+++---111222???".swapcase.should == "+++---111222???"
   end
 
-  it "taints resulting string when self is tainted" do
-    "".taint.swapcase.tainted?.should == true
-    "hello".taint.swapcase.tainted?.should == true
+  ruby_version_is ''...'2.7' do
+    it "taints resulting string when self is tainted" do
+      "".taint.swapcase.should.tainted?
+      "hello".taint.swapcase.should.tainted?
+    end
   end
 
   describe "full Unicode case mapping" do
@@ -71,9 +73,18 @@ describe "String#swapcase" do
     -> { "abc".swapcase(:invalid_option) }.should raise_error(ArgumentError)
   end
 
-  it "returns subclass instances when called on a subclass" do
-    StringSpecs::MyString.new("").swapcase.should be_an_instance_of(StringSpecs::MyString)
-    StringSpecs::MyString.new("hello").swapcase.should be_an_instance_of(StringSpecs::MyString)
+  ruby_version_is ''...'3.0' do
+    it "returns subclass instances when called on a subclass" do
+      StringSpecs::MyString.new("").swapcase.should be_an_instance_of(StringSpecs::MyString)
+      StringSpecs::MyString.new("hello").swapcase.should be_an_instance_of(StringSpecs::MyString)
+    end
+  end
+
+  ruby_version_is '3.0' do
+    it "returns String instances when called on a subclass" do
+      StringSpecs::MyString.new("").swapcase.should be_an_instance_of(String)
+      StringSpecs::MyString.new("hello").swapcase.should be_an_instance_of(String)
+    end
   end
 end
 
@@ -84,11 +95,23 @@ describe "String#swapcase!" do
     a.should == "CyBeR_pUnK11"
   end
 
+  it "modifies self in place for non-ascii-compatible encodings" do
+    a = "cYbEr_PuNk11".encode("utf-16le")
+    a.swapcase!
+    a.should == "CyBeR_pUnK11".encode("utf-16le")
+  end
+
   describe "full Unicode case mapping" do
     it "modifies self in place for all of Unicode with no option" do
       a = "äÖü"
       a.swapcase!
       a.should == "ÄöÜ"
+    end
+
+    it "works for non-ascii-compatible encodings" do
+      a = "äÖü".encode("utf-16le")
+      a.swapcase!
+      a.should == "ÄöÜ".encode("utf-16le")
     end
 
     it "updates string metadata" do
@@ -107,6 +130,12 @@ describe "String#swapcase!" do
       a = "aßet"
       a.swapcase!(:ascii)
       a.should == "AßET"
+    end
+
+    it "works for non-ascii-compatible encodings" do
+      a = "aBc".encode("utf-16le")
+      a.swapcase!(:ascii)
+      a.should == "AbC".encode("utf-16le")
     end
   end
 
@@ -162,10 +191,10 @@ describe "String#swapcase!" do
     "".swapcase!.should == nil
   end
 
-  it "raises a #{frozen_error_class} when self is frozen" do
+  it "raises a FrozenError when self is frozen" do
     ["", "hello"].each do |a|
       a.freeze
-      -> { a.swapcase! }.should raise_error(frozen_error_class)
+      -> { a.swapcase! }.should raise_error(FrozenError)
     end
   end
 end

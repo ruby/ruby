@@ -41,8 +41,8 @@ describe :keep_if, shared: true do
         @frozen.should == @origin
       end
 
-      it "raises a #{frozen_error_class}" do
-        -> { @frozen.send(@method) { true } }.should raise_error(frozen_error_class)
+      it "raises a FrozenError" do
+        -> { @frozen.send(@method) { true } }.should raise_error(FrozenError)
       end
     end
 
@@ -52,8 +52,8 @@ describe :keep_if, shared: true do
         @frozen.should == @origin
       end
 
-      it "raises a #{frozen_error_class}" do
-        -> { @frozen.send(@method) { false } }.should raise_error(frozen_error_class)
+      it "raises a FrozenError" do
+        -> { @frozen.send(@method) { false } }.should raise_error(FrozenError)
       end
     end
   end

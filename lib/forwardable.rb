@@ -76,7 +76,7 @@
 #     def_delegators :@q, :clear, :first, :push, :shift, :size
 #   end
 #
-#   q = Queue.new
+#   q = Thread::Queue.new
 #   q.enq 1, 2, 3, 4, 5
 #   q.push 6
 #
@@ -110,7 +110,10 @@
 #
 module Forwardable
   require 'forwardable/impl'
-  require "forwardable/version"
+
+  # Version of +forwardable.rb+
+  VERSION = "1.3.2"
+  FORWARDABLE_VERSION = VERSION
 
   @debug = nil
   class << self
@@ -160,6 +163,7 @@ module Forwardable
   # +accessor.method+.  +accessor+ should be a method name, instance
   # variable name, or constant name.  Use the full path to the
   # constant if providing the constant name.
+  # Returns the name of the method defined.
   #
   #   class MyQueue
   #     CONST = 1
@@ -183,7 +187,10 @@ module Forwardable
     gen = Forwardable._delegator_method(self, accessor, method, ali)
 
     # If it's not a class or module, it's an instance
-    (Module === self ? self : singleton_class).module_eval(&gen)
+    mod = Module === self ? self : singleton_class
+    ret = mod.module_eval(&gen)
+    mod.__send__(:ruby2_keywords, ali) if RUBY_VERSION >= '2.7'
+    ret
   end
 
   alias delegate instance_delegate
@@ -297,10 +304,13 @@ module SingleForwardable
   # Defines a method _method_ which delegates to _accessor_ (i.e. it calls
   # the method of the same name in _accessor_).  If _new_name_ is
   # provided, it is used as the name for the delegate method.
+  # Returns the name of the method defined.
   def def_single_delegator(accessor, method, ali = method)
     gen = Forwardable._delegator_method(self, accessor, method, ali)
 
-    instance_eval(&gen)
+    ret = instance_eval(&gen)
+    singleton_class.__send__(:ruby2_keywords, ali) if RUBY_VERSION >= '2.7'
+    ret
   end
 
   alias delegate single_delegate

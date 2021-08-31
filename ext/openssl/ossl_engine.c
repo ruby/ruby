@@ -93,9 +93,6 @@ static const rb_data_type_t ossl_engine_type = {
 static VALUE
 ossl_engine_s_load(int argc, VALUE *argv, VALUE klass)
 {
-#if !defined(HAVE_ENGINE_LOAD_BUILTIN_ENGINES)
-    return Qnil;
-#else
     VALUE name;
 
     rb_scan_args(argc, argv, "01", &name);
@@ -104,60 +101,53 @@ ossl_engine_s_load(int argc, VALUE *argv, VALUE klass)
         return Qtrue;
     }
     StringValueCStr(name);
-#ifndef OPENSSL_NO_STATIC_ENGINE
-#if HAVE_ENGINE_LOAD_DYNAMIC
+#ifdef HAVE_ENGINE_LOAD_DYNAMIC
     OSSL_ENGINE_LOAD_IF_MATCH(dynamic, DYNAMIC);
 #endif
-#if HAVE_ENGINE_LOAD_4758CCA
+#ifndef OPENSSL_NO_STATIC_ENGINE
+#ifdef HAVE_ENGINE_LOAD_4758CCA
     OSSL_ENGINE_LOAD_IF_MATCH(4758cca, 4758CCA);
 #endif
-#if HAVE_ENGINE_LOAD_AEP
+#ifdef HAVE_ENGINE_LOAD_AEP
     OSSL_ENGINE_LOAD_IF_MATCH(aep, AEP);
 #endif
-#if HAVE_ENGINE_LOAD_ATALLA
+#ifdef HAVE_ENGINE_LOAD_ATALLA
     OSSL_ENGINE_LOAD_IF_MATCH(atalla, ATALLA);
 #endif
-#if HAVE_ENGINE_LOAD_CHIL
+#ifdef HAVE_ENGINE_LOAD_CHIL
     OSSL_ENGINE_LOAD_IF_MATCH(chil, CHIL);
 #endif
-#if HAVE_ENGINE_LOAD_CSWIFT
+#ifdef HAVE_ENGINE_LOAD_CSWIFT
     OSSL_ENGINE_LOAD_IF_MATCH(cswift, CSWIFT);
 #endif
-#if HAVE_ENGINE_LOAD_NURON
+#ifdef HAVE_ENGINE_LOAD_NURON
     OSSL_ENGINE_LOAD_IF_MATCH(nuron, NURON);
 #endif
-#if HAVE_ENGINE_LOAD_SUREWARE
+#ifdef HAVE_ENGINE_LOAD_SUREWARE
     OSSL_ENGINE_LOAD_IF_MATCH(sureware, SUREWARE);
 #endif
-#if HAVE_ENGINE_LOAD_UBSEC
+#ifdef HAVE_ENGINE_LOAD_UBSEC
     OSSL_ENGINE_LOAD_IF_MATCH(ubsec, UBSEC);
 #endif
-#if HAVE_ENGINE_LOAD_PADLOCK
+#ifdef HAVE_ENGINE_LOAD_PADLOCK
     OSSL_ENGINE_LOAD_IF_MATCH(padlock, PADLOCK);
 #endif
-#if HAVE_ENGINE_LOAD_CAPI
+#ifdef HAVE_ENGINE_LOAD_CAPI
     OSSL_ENGINE_LOAD_IF_MATCH(capi, CAPI);
 #endif
-#if HAVE_ENGINE_LOAD_GMP
+#ifdef HAVE_ENGINE_LOAD_GMP
     OSSL_ENGINE_LOAD_IF_MATCH(gmp, GMP);
 #endif
-#if HAVE_ENGINE_LOAD_GOST
+#ifdef HAVE_ENGINE_LOAD_GOST
     OSSL_ENGINE_LOAD_IF_MATCH(gost, GOST);
 #endif
-#if HAVE_ENGINE_LOAD_CRYPTODEV
+#endif
+#ifdef HAVE_ENGINE_LOAD_CRYPTODEV
     OSSL_ENGINE_LOAD_IF_MATCH(cryptodev, CRYPTODEV);
-#endif
-#if HAVE_ENGINE_LOAD_AESNI
-    OSSL_ENGINE_LOAD_IF_MATCH(aesni, AESNI);
-#endif
-#endif
-#ifdef HAVE_ENGINE_LOAD_OPENBSD_DEV_CRYPTO
-    OSSL_ENGINE_LOAD_IF_MATCH(openbsd_dev_crypto, OPENBSD_DEV_CRYPTO);
 #endif
     OSSL_ENGINE_LOAD_IF_MATCH(openssl, OPENSSL);
     rb_warning("no such builtin loader for `%"PRIsVALUE"'", name);
     return Qnil;
-#endif /* HAVE_ENGINE_LOAD_BUILTIN_ENGINES */
 }
 
 /*

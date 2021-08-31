@@ -13,7 +13,7 @@
 #
 # This ensures that only one instance of Klass can be created.
 #
-#      a,b  = Klass.instance, Klass.instance
+#      a,b = Klass.instance, Klass.instance
 #
 #      a == b
 #      # => true
@@ -58,10 +58,9 @@
 # == Singleton and Marshal
 #
 # By default Singleton's #_dump(depth) returns the empty string. Marshalling by
-# default will strip state information, e.g. instance variables and taint
-# state, from the instance. Classes using Singleton can provide custom
-# _load(str) and _dump(depth) methods to retain some of the previous state of
-# the instance.
+# default will strip state information, e.g. instance variables from the instance.
+# Classes using Singleton can provide custom _load(str) and _dump(depth) methods
+# to retain some of the previous state of the instance.
 #
 #    require 'singleton'
 #
@@ -82,7 +81,6 @@
 #    a = Example.instance
 #    a.keep = "keep this"
 #    a.strip = "get rid of this"
-#    a.taint
 #
 #    stored_state = Marshal.dump(a)
 #
@@ -94,6 +92,8 @@
 #    p a.strip #  => nil
 #
 module Singleton
+  VERSION = "0.1.1"
+
   # Raises a TypeError to prevent cloning.
   def clone
     raise TypeError, "can't clone instance of singleton #{self.class}"

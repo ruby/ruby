@@ -2,18 +2,18 @@ require 'spec_helper'
 require 'mspec/expectations/expectations'
 require 'mspec/matchers'
 
-describe BeTrueOrFalseMatcher do
+RSpec.describe BeTrueOrFalseMatcher do
   it "matches when actual is true" do
-    BeTrueOrFalseMatcher.new.matches?(true).should == true
+    expect(BeTrueOrFalseMatcher.new.matches?(true)).to eq(true)
   end
 
   it "matches when actual is false" do
-    BeTrueOrFalseMatcher.new.matches?(false).should == true
+    expect(BeTrueOrFalseMatcher.new.matches?(false)).to eq(true)
   end
 
   it "provides a useful failure message" do
     matcher = BeTrueOrFalseMatcher.new
     matcher.matches?("some string")
-    matcher.failure_message.should == ["Expected \"some string\"", "to be true or false"]
+    expect(matcher.failure_message).to eq(["Expected \"some string\"", "to be true or false"])
   end
 end

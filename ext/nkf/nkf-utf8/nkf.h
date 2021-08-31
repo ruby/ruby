@@ -16,8 +16,8 @@
 #define X0201_DEFAULT TRUE
 #endif
 
-#if DEFAULT_NEWLINE == 0x0D0A
-#elif DEFAULT_NEWLINE == 0x0D
+#if defined(DEFAULT_NEWLINE) && DEFAULT_NEWLINE == 0x0D0A
+#elif defined(DEFAULT_NEWLINE) && DEFAULT_NEWLINE == 0x0D
 #else
 #define DEFAULT_NEWLINE 0x0A
 #endif

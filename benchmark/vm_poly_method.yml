@@ -1,0 +1,24 @@
+# loop_count is not utilized since `i` is involved in the script
+benchmark:
+  vm_poly_method: |
+    class C1
+      def m
+        1
+      end
+    end
+    class C2
+      def m
+        2
+      end
+    end
+
+    o1 = C1.new
+    o2 = C2.new
+
+    i = 0
+    while i<6_000_000
+      o = (i % 2 == 0) ? o1 : o2
+      o.m; o.m; o.m; o.m; o.m; o.m; o.m; o.m
+      i += 1
+    end
+loop_count: 1

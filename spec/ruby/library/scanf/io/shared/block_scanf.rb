@@ -2,7 +2,7 @@ require 'scanf'
 
 describe :scanf_io_block_scanf, shared: true do
   before :each do
-    @data = File.open(fixture(__FILE__, 'date.txt'), 'r')
+    @data = File.open(fixture(__FILE__, 'date.txt'), 'rb')
   end
 
   after :each do

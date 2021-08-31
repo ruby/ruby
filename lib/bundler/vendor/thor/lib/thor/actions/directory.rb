@@ -56,7 +56,7 @@ class Bundler::Thor
       attr_reader :source
 
       def initialize(base, source, destination = nil, config = {}, &block)
-        @source = File.expand_path(base.find_in_source_paths(source.to_s))
+        @source = File.expand_path(Dir[Util.escape_globs(base.find_in_source_paths(source.to_s))].first)
         @block  = block
         super(base, destination, {:recursive => true}.merge(config))
       end
@@ -96,22 +96,12 @@ class Bundler::Thor
         end
       end
 
-      if RUBY_VERSION < "2.0"
-        def file_level_lookup(previous_lookup)
-          File.join(previous_lookup, "{*,.[a-z]*}")
-        end
+      def file_level_lookup(previous_lookup)
+        File.join(previous_lookup, "*")
+      end
 
-        def files(lookup)
-          Dir[lookup]
-        end
-      else
-        def file_level_lookup(previous_lookup)
-          File.join(previous_lookup, "*")
-        end
-
-        def files(lookup)
-          Dir.glob(lookup, File::FNM_DOTMATCH)
-        end
+      def files(lookup)
+        Dir.glob(lookup, File::FNM_DOTMATCH)
       end
     end
   end

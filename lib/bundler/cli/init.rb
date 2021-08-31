@@ -38,10 +38,10 @@ module Bundler
       puts "Writing new #{gemfile} to #{SharedHelpers.pwd}/#{gemfile}"
     end
 
-  private
+    private
 
     def gemfile
-      @gemfile ||= Bundler.settings[:init_gems_rb] ? "gems.rb" : "Gemfile"
+      @gemfile ||= Bundler.preferred_gemfile_name
     end
   end
 end

@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
+require 'envutil'
 require 'drb/drb'
 require 'drb/extservm'
 require 'timeout'
@@ -11,9 +12,6 @@ class DRbService
   @@ruby << "-d" if $DEBUG
   def self.add_service_command(nm)
     dir = File.dirname(File.expand_path(__FILE__))
-    if /ssl/ =~ nm && RUBY_PLATFORM =~ /solaris/i
-      @@ruby[1..-1] = "-dv"
-    end
     DRb::ExtServManager.command[nm] = @@ruby + ["#{dir}/#{nm}"]
   end
 
@@ -45,6 +43,7 @@ class DRbService
     server.stop_service
     manager.instance_variable_get(:@queue)&.push(nil)
     manager.instance_variable_get(:@thread)&.join
+    DRb::DRbConn.stop_pool
   end
 end
 
@@ -116,6 +115,7 @@ module DRbBase
       }
     end
     @drb_service.finish
+    DRb::DRbConn.stop_pool
   end
 end
 
@@ -216,6 +216,7 @@ module DRbCore
   def test_06_timeout
     skip if RUBY_PLATFORM.include?("armv7l-linux")
     skip if RUBY_PLATFORM.include?("sparc-solaris2.10")
+    skip if defined?(RubyVM::JIT) && RubyVM::JIT.enabled? # expecting a certain delay is difficult for --jit-wait CI
     Timeout.timeout(60) do
       ten = Onecky.new(10)
       assert_raise(Timeout::Error) do

@@ -51,6 +51,13 @@ describe 'UDPSocket#recvfrom_nonblock' do
             @server.recvfrom_nonblock(1).should be_an_instance_of(Array)
           end
 
+          it 'writes the data to the buffer when one is present' do
+            buffer = "".b
+            IO.select([@server])
+            @server.recvfrom_nonblock(1, 0, buffer)
+            buffer.should == 'h'
+          end
+
           describe 'the returned Array' do
             before do
               IO.select([@server])

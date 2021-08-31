@@ -3,9 +3,6 @@ require 'crlstore'
 
 
 class CertStore
-  include OpenSSL
-  include X509
-
   attr_reader :self_signed_ca
   attr_reader :other_ca
   attr_reader :ee
@@ -17,11 +14,11 @@ class CertStore
     @c_store = CHashDir.new(@certs_dir)
     @c_store.hash_dir(true)
     @crl_store = CrlStore.new(@c_store)
-    @x509store = Store.new
+    @x509store = OpenSSL::X509::Store.new
     @self_signed_ca = @other_ca = @ee = @crl = nil
 
     # Uncomment this line to let OpenSSL to check CRL for each certs.
-    # @x509store.flags = V_FLAG_CRL_CHECK | V_FLAG_CRL_CHECK_ALL
+    # @x509store.flags = OpenSSL::X509::V_FLAG_CRL_CHECK | OpenSSL::X509::V_FLAG_CRL_CHECK_ALL
 
     add_path
     scan_certs

@@ -15,7 +15,7 @@ class Object
   end
 end
 
-def mock(name, options={})
+def mock(name, options = {})
   MockObject.new name, options
 end
 
@@ -23,6 +23,6 @@ def mock_int(val)
   MockIntObject.new(val)
 end
 
-def mock_numeric(name, options={})
+def mock_numeric(name, options = {})
   NumericMockObject.new name, options
 end

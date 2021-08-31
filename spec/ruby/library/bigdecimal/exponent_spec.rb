@@ -22,7 +22,7 @@ describe "BigDecimal#exponent" do
 =begin
   platform_is wordsize: 32 do
     # TODO: write specs for both 32 and 64 bit
-    it "returns 0 if exponent can't be represented as Fixnum" do
+    it "returns 0 if exponent can't be represented as Integer" do
       BigDecimal("2E1000000000000000").exponent.should == 0
       BigDecimal("-5E-999999999999999").exponent.should == 0
     end

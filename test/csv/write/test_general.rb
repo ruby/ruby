@@ -4,6 +4,8 @@
 require_relative "../helper"
 
 module TestCSVWriteGeneral
+  include Helper
+
   def test_tab
     assert_equal("\t#{$INPUT_RECORD_SEPARATOR}",
                  generate_line(["\t"]))
@@ -219,20 +221,6 @@ module TestCSVWriteGeneral
       row = ["あ", "い", "う"].collect {|field| field.encode("EUC-JP")}
       assert_equal(%Q[あ,い,う#{$INPUT_RECORD_SEPARATOR}].encode("EUC-JP"),
                    generate_line(row))
-    end
-  end
-
-  def with_default_internal(encoding)
-    original = Encoding.default_internal
-    begin
-      $VERBOSE, verbose_bak = nil, $VERBOSE
-      Encoding.default_internal = encoding
-      $VERBOSE = verbose_bak
-      yield
-    ensure
-      $VERBOSE, verbose_bak = nil, $VERBOSE
-      Encoding.default_internal = original
-      $VERBOSE = verbose_bak
     end
   end
 end

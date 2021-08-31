@@ -157,7 +157,7 @@ ossl_ocspcertid_new(OCSP_CERTID *cid)
 }
 
 /*
- * OCSP::Resquest
+ * OCSP::Request
  */
 static VALUE
 ossl_ocspreq_alloc(VALUE klass)
@@ -1069,55 +1069,7 @@ ossl_ocspbres_verify(int argc, VALUE *argv, VALUE self)
     x509st = GetX509StorePtr(store);
     flg = NIL_P(flags) ? 0 : NUM2INT(flags);
     x509s = ossl_x509_ary2sk(certs);
-#if (OPENSSL_VERSION_NUMBER < 0x1000202fL) || defined(LIBRESSL_VERSION_NUMBER)
-    /*
-     * OpenSSL had a bug that it doesn't use the certificates in x509s for
-     * verifying the chain. This can be a problem when the response is signed by
-     * a certificate issued by an intermediate CA.
-     *
-     *       root_ca
-     *         |
-     *   intermediate_ca
-     *         |-------------|
-     *     end_entity    ocsp_signer
-     *
-     * When the certificate hierarchy is like this, and the response contains
-     * only ocsp_signer certificate, the following code wrongly fails.
-     *
-     *   store = OpenSSL::X509::Store.new; store.add_cert(root_ca)
-     *   basic_response.verify([intermediate_ca], store)
-     *
-     * So add the certificates in x509s to the embedded certificates list first.
-     *
-     * This is fixed in OpenSSL 0.9.8zg, 1.0.0s, 1.0.1n, 1.0.2b. But it still
-     * exists in LibreSSL 2.1.10, 2.2.9, 2.3.6, 2.4.1.
-     */
-    if (!(flg & (OCSP_NOCHAIN | OCSP_NOVERIFY)) &&
-	sk_X509_num(x509s) && sk_X509_num(bs->certs)) {
-	int i;
-
-	bs = ASN1_item_dup(ASN1_ITEM_rptr(OCSP_BASICRESP), bs);
-	if (!bs) {
-	    sk_X509_pop_free(x509s, X509_free);
-	    ossl_raise(eOCSPError, "ASN1_item_dup");
-	}
-
-	for (i = 0; i < sk_X509_num(x509s); i++) {
-	    if (!OCSP_basic_add1_cert(bs, sk_X509_value(x509s, i))) {
-		sk_X509_pop_free(x509s, X509_free);
-		OCSP_BASICRESP_free(bs);
-		ossl_raise(eOCSPError, "OCSP_basic_add1_cert");
-	    }
-	}
-	result = OCSP_basic_verify(bs, x509s, x509st, flg);
-	OCSP_BASICRESP_free(bs);
-    }
-    else {
-	result = OCSP_basic_verify(bs, x509s, x509st, flg);
-    }
-#else
     result = OCSP_basic_verify(bs, x509s, x509st, flg);
-#endif
     sk_X509_pop_free(x509s, X509_free);
     if (result <= 0)
 	ossl_clear_error();
@@ -1489,13 +1441,15 @@ ossl_ocspcid_initialize_copy(VALUE self, VALUE other)
  * call-seq:
  *   OpenSSL::OCSP::CertificateId.new(subject, issuer, digest = nil) -> certificate_id
  *   OpenSSL::OCSP::CertificateId.new(der_string)                    -> certificate_id
+ *   OpenSSL::OCSP::CertificateId.new(obj)                           -> certificate_id
  *
  * Creates a new OpenSSL::OCSP::CertificateId for the given _subject_ and
  * _issuer_ X509 certificates.  The _digest_ is a digest algorithm that is used
  * to compute the hash values. This defaults to SHA-1.
  *
  * If only one argument is given, decodes it as DER representation of a
- * certificate ID.
+ * certificate ID or generates certificate ID from the object that responds to
+ * the to_der method.
  */
 static VALUE
 ossl_ocspcid_initialize(int argc, VALUE *argv, VALUE self)
@@ -1717,7 +1671,7 @@ Init_ossl_ocsp(void)
      * subject certificate so the CA knows which certificate we are asking
      * about:
      *
-     *   digest = OpenSSL::Digest::SHA1.new
+     *   digest = OpenSSL::Digest.new('SHA1')
      *   certificate_id =
      *     OpenSSL::OCSP::CertificateId.new subject, issuer, digest
      *
@@ -1734,18 +1688,11 @@ Init_ossl_ocsp(void)
      * To submit the request to the CA for verification we need to extract the
      * OCSP URI from the subject certificate:
      *
-     *   authority_info_access = subject.extensions.find do |extension|
-     *     extension.oid == 'authorityInfoAccess'
-     *   end
-     *
-     *   descriptions = authority_info_access.value.split "\n"
-     *   ocsp = descriptions.find do |description|
-     *     description.start_with? 'OCSP'
-     *   end
+     *   ocsp_uris = subject.ocsp_uris
      *
      *   require 'uri'
      *
-     *   ocsp_uri = URI ocsp[/URI:(.*)/, 1]
+     *   ocsp_uri = URI ocsp_uris[0]
      *
      * To submit the request we'll POST the request to the OCSP URI (per RFC
      * 2560).  Note that we only handle HTTP requests and don't handle any
@@ -1792,7 +1739,7 @@ Init_ossl_ocsp(void)
      *   single_response = basic_response.find_response(certificate_id)
      *
      *   unless single_response
-     *     raise 'basic_response does not have the status for the certificiate'
+     *     raise 'basic_response does not have the status for the certificate'
      *   end
      *
      * Then check the validity. A status issued in the future must be rejected.

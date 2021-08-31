@@ -15,8 +15,14 @@ describe :kernel_method, shared: true do
     m.call.should == 'class done'
   end
 
-  it "returns a method object if we repond_to_missing? method" do
+  it "returns a method object if respond_to_missing?(method) is true" do
     m = KernelSpecs::RespondViaMissing.new.send(@method, :handled_publicly)
+    m.should be_an_instance_of Method
+    m.call(42).should == "Done handled_publicly([42])"
+  end
+
+  it "the returned method object if respond_to_missing?(method) calls #method_missing with a Symbol name" do
+    m = KernelSpecs::RespondViaMissing.new.send(@method, "handled_publicly")
     m.should be_an_instance_of Method
     m.call(42).should == "Done handled_publicly([42])"
   end

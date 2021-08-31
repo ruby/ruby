@@ -601,7 +601,7 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
   (((s) - str) * num_comb_exp_check + ((snum) - 1))
 # define STATE_CHECK_VAL(v,snum) do {\
   if (state_check_buff != NULL) {\
-    int x = STATE_CHECK_POS(s,snum);\
+    ptrdiff_t x = STATE_CHECK_POS(s,snum);\
     (v) = state_check_buff[x/8] & (1<<(x%8));\
   }\
   else (v) = 0;\
@@ -610,7 +610,7 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
 
 # define ELSE_IF_STATE_CHECK_MARK(stk) \
   else if ((stk)->type == STK_STATE_CHECK_MARK) { \
-    int x = STATE_CHECK_POS(stk->u.state.pstr, stk->u.state.state_check);\
+    ptrdiff_t x = STATE_CHECK_POS(stk->u.state.pstr, stk->u.state.state_check);\
     state_check_buff[x/8] |= (1<<(x%8));				\
   }
 
@@ -3873,7 +3873,7 @@ onig_match(regex_t* reg, const UChar* str, const UChar* end, const UChar* at, On
   MATCH_ARG_INIT(msa, option, region, at, at);
 #ifdef USE_COMBINATION_EXPLOSION_CHECK
   {
-    int offset = at - str;
+    ptrdiff_t offset = at - str;
     STATE_CHECK_BUFF_INIT(msa, end - str, offset, reg->num_comb_exp_check);
   }
 #endif
@@ -4352,7 +4352,7 @@ onig_search_gpos(regex_t* reg, const UChar* str, const UChar* end,
   MATCH_ARG_INIT(msa, option, region, start, global_pos);
 #ifdef USE_COMBINATION_EXPLOSION_CHECK
   {
-    int offset = (MIN(start, range) - str);
+    ptrdiff_t offset = (MIN(start, range) - str);
     STATE_CHECK_BUFF_INIT(msa, end - str, offset, reg->num_comb_exp_check);
   }
 #endif

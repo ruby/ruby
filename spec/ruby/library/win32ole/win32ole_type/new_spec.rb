@@ -12,15 +12,18 @@ platform_is :windows do
 
     it "raises TypeError if second argument is not a String" do
       -> { WIN32OLE_TYPE.new(1,2) }.should raise_error TypeError
-      -> { WIN32OLE_TYPE.new('Microsoft Shell Controls And Automation',2) }.
-      should raise_error TypeError
+      -> {
+        WIN32OLE_TYPE.new('Microsoft Shell Controls And Automation',2)
+      }.should raise_error TypeError
     end
 
     it "raise WIN32OLERuntimeError if OLE object specified is not found" do
-      -> { WIN32OLE_TYPE.new('Microsoft Shell Controls And Automation','foo') }.
-      should raise_error WIN32OLERuntimeError
-      -> { WIN32OLE_TYPE.new('Microsoft Shell Controls And Automation','Application') }.
-      should raise_error WIN32OLERuntimeError
+      -> {
+        WIN32OLE_TYPE.new('Microsoft Shell Controls And Automation','foo')
+      }.should raise_error WIN32OLERuntimeError
+      -> {
+        WIN32OLE_TYPE.new('Microsoft Shell Controls And Automation','Application')
+      }.should raise_error WIN32OLERuntimeError
     end
 
     it "creates WIN32OLE_TYPE object from name and valid type" do

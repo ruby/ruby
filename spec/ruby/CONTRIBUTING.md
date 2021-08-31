@@ -8,7 +8,7 @@ Spec are grouped in 5 separate top-level groups:
 
 * `command_line`: for the ruby executable command-line flags (`-v`, `-e`, etc)
 * `language`: for the language keywords and syntax constructs (`if`, `def`, `A::B`, etc)
-* `core`: for the core methods (`Fixnum#+`, `String#upcase`, no need to require anything)
+* `core`: for the core methods (`Integer#+`, `String#upcase`, no need to require anything)
 * `library`: for the standard libraries methods (`CSV.new`, `YAML.parse`, need to require the stdlib)
 * `optional/capi`: for functions available to the Ruby C-extension API
 
@@ -53,12 +53,14 @@ which indicates the file was generated but the method unspecified.
 Here is a list of frequently-used matchers, which should be enough for most specs.
 There are a few extra specific matchers used in the couple specs that need it.
 
+#### Comparison matchers
+
 ```ruby
 (1 + 2).should == 3 # Calls #==
 (1 + 2).should_not == 5
 
-File.should equal(File) # Calls #equal? (tests identity)
-(1 + 2).should eql(3) # Calls #eql? (Hash equality)
+File.should.equal?(File) # Calls #equal? (tests identity)
+(1 + 2).should.eql?(3) # Calls #eql? (Hash equality)
 
 1.should < 2
 2.should <= 2
@@ -66,12 +68,19 @@ File.should equal(File) # Calls #equal? (tests identity)
 4.should > 3
 
 "Hello".should =~ /l{2}/ # Calls #=~ (Regexp match)
+```
 
-[].should be_empty # Calls #empty?
-[1,2,3].should include(2) # Calls #include?
+#### Predicate matchers
+
+```ruby
+[].should.empty?
+[1,2,3].should.include?(2)
+
+"hello".should.start_with?("h")
+"hello".should.end_with?("o")
 
 (0.1 + 0.2).should be_close(0.3, TOLERANCE) # (0.2-0.1).abs < TOLERANCE
-(0.0/0.0).should be_nan # Calls Float#nan?
+(0.0/0.0).should.nan?
 (1.0/0.0).should be_positive_infinity
 (-1.0/0.0).should be_negative_infinity
 
@@ -79,19 +88,41 @@ File.should equal(File) # Calls #equal? (tests identity)
 3.14.should be_kind_of(Numeric) # Calls #is_a?
 Numeric.should be_ancestor_of(Float) # Float.ancestors.include?(Numeric)
 
-3.14.should respond_to(:to_i) # Calls #respond_to?
-Fixnum.should have_instance_method(:+)
+3.14.should.respond_to?(:to_i)
+Integer.should have_instance_method(:+)
 Array.should have_method(:new)
-# Also have_constant, have_private_instance_method, have_singleton_method, etc
+```
 
+Also `have_constant`, `have_private_instance_method`, `have_singleton_method`, etc.
+
+#### Exception matchers
+
+```ruby
 -> {
   raise "oops"
 }.should raise_error(RuntimeError, /oops/)
 
-# To avoid! Instead, use an expectation testing what the code in the lambda does.
-# If an exception is raised, it will fail the example anyway.
--> { ... }.should_not raise_error
+-> {
+  raise "oops"
+}.should raise_error(RuntimeError) { |e|
+  # Custom checks on the Exception object
+  e.message.should.include?("oops")
+  e.cause.should == nil
+}
+```
 
+##### should_not raise_error
+
+**To avoid!** Instead, use an expectation testing what the code in the lambda does.
+If an exception is raised, it will fail the example anyway.
+
+```ruby
+-> { ... }.should_not raise_error
+```
+
+#### Warning matcher
+
+```ruby
 -> {
   Fixnum
 }.should complain(/constant ::Fixnum is deprecated/) # Expect a warning
@@ -102,15 +133,21 @@ Array.should have_method(:new)
 Different guards are available as defined by mspec.
 Here is a list of the most commonly-used guards:
 
+#### Version guards
+
 ```ruby
-ruby_version_is ""..."2.4" do
-  # Specs for RUBY_VERSION < 2.4
+ruby_version_is ""..."2.6" do
+  # Specs for RUBY_VERSION < 2.6
 end
 
-ruby_version_is "2.4" do
-  # Specs for RUBY_VERSION >= 2.4
+ruby_version_is "2.6" do
+  # Specs for RUBY_VERSION >= 2.6
 end
+```
 
+#### Platform guards
+
+```ruby
 platform_is :windows do
   # Specs only valid on Windows
 end
@@ -132,33 +169,45 @@ end
 big_endian do
   # Big-endian platform
 end
+```
 
-# In case there is a bug in MRI but the expected behavior is obvious
-# First file a bug at https://bugs.ruby-lang.org/
-# It is better to use a ruby_version_is guard if there was a release with the fix
-ruby_bug '#13669', ''...'2.5' do
+#### Guard for bug
+
+In case there is a bug in MRI but the expected behavior is obvious.
+First, file a bug at https://bugs.ruby-lang.org/.
+It is better to use a `ruby_version_is` guard if there was a release with the fix.
+
+```ruby
+ruby_bug '#13669', ''...'2.7' do
   it "works like this" do
     # Specify the expected behavior here, not the bug
   end
 end
+```
 
+#### Combining guards
 
-# Combining guards
-guard -> { platform_is :windows and ruby_version_is ""..."2.5" } do
-  # Windows and RUBY_VERSION < 2.5
+```ruby
+guard -> { platform_is :windows and ruby_version_is ""..."2.6" } do
+  # Windows and RUBY_VERSION < 2.6
 end
 
-guard_not -> { platform_is :windows and ruby_version_is ""..."2.5" } do
+guard_not -> { platform_is :windows and ruby_version_is ""..."2.6" } do
   # The opposite
 end
+```
 
-# Custom guard
+#### Custom guard
+
+```ruby
 max_uint = (1 << 32) - 1
 guard -> { max_uint <= fixnum_max } do
 end
 ```
 
 Custom guards are better than a simple `if` as they allow [mspec commands](https://github.com/ruby/mspec/issues/30#issuecomment-312487779) to work properly.
+
+#### Implementation-specific behaviors
 
 In general, the usage of guards should be minimized as possible.
 

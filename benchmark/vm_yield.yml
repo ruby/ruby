@@ -1,0 +1,13 @@
+# while loop cost is not removed due to benchmark_driver.gem's limitation
+benchmark:
+  vm_yield: |
+    def m
+      i = 0
+      while i<30_000_000
+        i += 1
+        yield
+      end
+    end
+
+    m{}
+loop_count: 1

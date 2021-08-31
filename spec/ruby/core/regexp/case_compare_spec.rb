@@ -22,4 +22,14 @@ describe "Regexp#===" do
     (/abc/ === nil).should be_false
     (/abc/ === /abc/).should be_false
   end
+
+  it "uses #to_str on string-like objects" do
+    stringlike = Class.new do
+      def to_str
+        "abc"
+      end
+    end.new
+
+    (/abc/ === stringlike).should be_true
+  end
 end

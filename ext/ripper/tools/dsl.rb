@@ -7,6 +7,9 @@
 #   v2 = dispatch0(void_stmt);
 #   $$ = dispatch2(stmts_add, v1, v2);
 
+$dollar = "$$"
+alias $$ $dollar
+
 class DSL
   def initialize(code, options)
     @events = {}
@@ -15,17 +18,14 @@ class DSL
     if options.include?("final")
       @final = "p->result"
     else
-      @final = (options.grep(/\A\$[$\d]\z/)[0] || "$$")
+      @final = (options.grep(/\A\$(?:\$|\d+)\z/)[0] || "$$")
     end
     @vars = 0
 
     # create $1 == "$1", $2 == "$2", ...
-    re, s = "", ""
-    1.upto(9) do |n|
-      re << "(..)"
-      s << "$#{ n }"
-    end
-    /#{ re }/ =~ s
+    s = (1..20).map {|n| "$#{n}"}
+    re = Array.new(s.size, "([^\0]+)")
+    /#{re.join("\0")}/ =~ s.join("\0")
 
     # struct parser_params *p
     p = p = "p"

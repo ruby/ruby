@@ -3,10 +3,10 @@ require_relative 'fixtures/classes'
 
 describe "String#empty?" do
   it "returns true if the string has a length of zero" do
-    "hello".empty?.should == false
-    " ".empty?.should == false
-    "\x00".empty?.should == false
-    "".empty?.should == true
-    StringSpecs::MyString.new("").empty?.should == true
+    "hello".should_not.empty?
+    " ".should_not.empty?
+    "\x00".should_not.empty?
+    "".should.empty?
+    StringSpecs::MyString.new("").should.empty?
   end
 end

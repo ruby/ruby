@@ -116,8 +116,7 @@ with all sufficient information, see the ChangeLog file.
       corresponding method in the prepending module.
     * added Module.prepended and Module.prepend_features, similar
       to included and append_features.
-    * added Module#refine, which extends a class or module locally.
-      [experimental]
+    * added Module#refine, which extends a class or module locally. [experimental]
   * extended method:
     * Module#define_method accepts a UnboundMethod from a Module.
     * Module#const_get accepts a qualified constant string, e.g.

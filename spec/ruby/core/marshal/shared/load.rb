@@ -1,6 +1,5 @@
 # -*- encoding: binary -*-
 require_relative '../fixtures/marshal_data'
-require 'stringio'
 
 describe :marshal_load, shared: true do
   before :all do
@@ -182,85 +181,87 @@ describe :marshal_load, shared: true do
     end
   end
 
-  it "returns an untainted object if source is untainted" do
-    x = Object.new
-    y = Marshal.send(@method, Marshal.dump(x))
-    y.tainted?.should be_false
-  end
-
-  describe "when source is tainted" do
-    it "returns a tainted object" do
+  ruby_version_is ''...'2.7' do
+    it "returns an untainted object if source is untainted" do
       x = Object.new
-      x.taint
-      s = Marshal.dump(x)
-      y = Marshal.send(@method, s)
-      y.tainted?.should be_true
+      y = Marshal.send(@method, Marshal.dump(x))
+      y.tainted?.should be_false
+    end
 
-      # note that round-trip via Marshal does not preserve
-      # the taintedness at each level of the nested structure
-      y = Marshal.send(@method, Marshal.dump([[x]]))
+    describe "when source is tainted" do
+      it "returns a tainted object" do
+        x = Object.new
+        x.taint
+        s = Marshal.dump(x)
+        y = Marshal.send(@method, s)
+        y.tainted?.should be_true
+
+        # note that round-trip via Marshal does not preserve
+        # the taintedness at each level of the nested structure
+        y = Marshal.send(@method, Marshal.dump([[x]]))
+        y.tainted?.should be_true
+        y.first.tainted?.should be_true
+        y.first.first.tainted?.should be_true
+      end
+
+      it "does not taint Symbols" do
+        x = [:x]
+        y = Marshal.send(@method, Marshal.dump(x).taint)
+        y.tainted?.should be_true
+        y.first.tainted?.should be_false
+      end
+
+      it "does not taint Fixnums" do
+        x = [1]
+        y = Marshal.send(@method, Marshal.dump(x).taint)
+        y.tainted?.should be_true
+        y.first.tainted?.should be_false
+      end
+
+      it "does not taint Bignums" do
+        x = [bignum_value]
+        y = Marshal.send(@method, Marshal.dump(x).taint)
+        y.tainted?.should be_true
+        y.first.tainted?.should be_false
+      end
+
+      it "does not taint Floats" do
+        x = [1.2]
+        y = Marshal.send(@method, Marshal.dump(x).taint)
+        y.tainted?.should be_true
+        y.first.tainted?.should be_false
+      end
+    end
+
+    it "preserves taintedness of nested structure" do
+      x = Object.new
+      a = [[x]]
+      x.taint
+      y = Marshal.send(@method, Marshal.dump(a))
       y.tainted?.should be_true
       y.first.tainted?.should be_true
       y.first.first.tainted?.should be_true
     end
 
-    it "does not taint Symbols" do
-      x = [:x]
-      y = Marshal.send(@method, Marshal.dump(x).taint)
-      y.tainted?.should be_true
-      y.first.tainted?.should be_false
+    it "returns a trusted object if source is trusted" do
+      x = Object.new
+      y = Marshal.send(@method, Marshal.dump(x))
+      y.untrusted?.should be_false
     end
 
-    it "does not taint Fixnums" do
-      x = [1]
-      y = Marshal.send(@method, Marshal.dump(x).taint)
-      y.tainted?.should be_true
-      y.first.tainted?.should be_false
+    it "returns an untrusted object if source is untrusted" do
+      x = Object.new
+      x.untrust
+      y = Marshal.send(@method, Marshal.dump(x))
+      y.untrusted?.should be_true
+
+      # note that round-trip via Marshal does not preserve
+      # the untrustedness at each level of the nested structure
+      y = Marshal.send(@method, Marshal.dump([[x]]))
+      y.untrusted?.should be_true
+      y.first.untrusted?.should be_true
+      y.first.first.untrusted?.should be_true
     end
-
-    it "does not taint Bignums" do
-      x = [bignum_value]
-      y = Marshal.send(@method, Marshal.dump(x).taint)
-      y.tainted?.should be_true
-      y.first.tainted?.should be_false
-    end
-
-    it "does not taint Floats" do
-      x = [1.2]
-      y = Marshal.send(@method, Marshal.dump(x).taint)
-      y.tainted?.should be_true
-      y.first.tainted?.should be_false
-    end
-  end
-
-  it "preserves taintedness of nested structure" do
-    x = Object.new
-    a = [[x]]
-    x.taint
-    y = Marshal.send(@method, Marshal.dump(a))
-    y.tainted?.should be_true
-    y.first.tainted?.should be_true
-    y.first.first.tainted?.should be_true
-  end
-
-  it "returns a trusted object if source is trusted" do
-    x = Object.new
-    y = Marshal.send(@method, Marshal.dump(x))
-    y.untrusted?.should be_false
-  end
-
-  it "returns an untrusted object if source is untrusted" do
-    x = Object.new
-    x.untrust
-    y = Marshal.send(@method, Marshal.dump(x))
-    y.untrusted?.should be_true
-
-    # note that round-trip via Marshal does not preserve
-    # the untrustedness at each level of the nested structure
-    y = Marshal.send(@method, Marshal.dump([[x]]))
-    y.untrusted?.should be_true
-    y.first.untrusted?.should be_true
-    y.first.first.untrusted?.should be_true
   end
 
   # Note: Ruby 1.9 should be compatible with older marshal format
@@ -308,7 +309,8 @@ describe :marshal_load, shared: true do
 
     it "loads an extended Array object containing a user-marshaled object" do
       obj = [UserMarshal.new, UserMarshal.new].extend(Meths)
-      new_obj = Marshal.send(@method, "\x04\be:\nMeths[\ao:\x10UserMarshal\x06:\n@dataI\"\nstuff\x06:\x06ETo;\x06\x06;\aI\"\nstuff\x06;\bT")
+      dump = "\x04\be:\nMeths[\ao:\x10UserMarshal\x06:\n@dataI\"\nstuff\x06:\x06ETo;\x06\x06;\aI\"\nstuff\x06;\bT"
+      new_obj = Marshal.send(@method, dump)
 
       new_obj.should == obj
       obj_ancestors = class << obj; ancestors[1..-1]; end
@@ -398,6 +400,24 @@ describe :marshal_load, shared: true do
       sym.should == s
       sym.encoding.should == Encoding::BINARY
     end
+
+    it "loads multiple Symbols sharing the same encoding" do
+      # Note that the encoding is a link for the second Symbol
+      symbol1 = "I:\t\xE2\x82\xACa\x06:\x06ET"
+      symbol2 = "I:\t\xE2\x82\xACb\x06;\x06T"
+      dump = "\x04\b[\a#{symbol1}#{symbol2}"
+      value = Marshal.send(@method, dump)
+      value.map(&:encoding).should == [Encoding::UTF_8, Encoding::UTF_8]
+      expected = [
+        "€a".force_encoding(Encoding::UTF_8).to_sym,
+        "€b".force_encoding(Encoding::UTF_8).to_sym
+      ]
+      value.should == expected
+
+      value = Marshal.send(@method, "\x04\b[\b#{symbol1}#{symbol2};\x00")
+      value.map(&:encoding).should == [Encoding::UTF_8, Encoding::UTF_8, Encoding::UTF_8]
+      value.should == [*expected, expected[0]]
+    end
   end
 
   describe "for a String" do
@@ -408,8 +428,9 @@ describe :marshal_load, shared: true do
     end
 
     it "loads a string through StringIO stream" do
-        obj = "This is a string which should be unmarshalled through StringIO stream!"
-        Marshal.send(@method, StringIO.new(Marshal.dump(obj))).should == obj
+      require 'stringio'
+      obj = "This is a string which should be unmarshalled through StringIO stream!"
+      Marshal.send(@method, StringIO.new(Marshal.dump(obj))).should == obj
     end
 
     it "loads a string with an ivar" do
@@ -458,20 +479,23 @@ describe :marshal_load, shared: true do
   describe "for a Struct" do
     it "loads a extended_struct having fields with same objects" do
       s = 'hi'
-      obj = Struct.new("Ure2", :a, :b).new.extend(Meths)
+      obj = Struct.new("Extended", :a, :b).new.extend(Meths)
+      dump = "\004\be:\nMethsS:\025Struct::Extended\a:\006a0:\006b0"
+      Marshal.send(@method, dump).should == obj
+
       obj.a = [:a, s]
       obj.b = [:Meths, s]
-
-      Marshal.send(@method,
-        "\004\be:\nMethsS:\021Struct::Ure2\a:\006a[\a;\a\"\ahi:\006b[\a;\000@\a"
-        ).should == obj
-      Struct.send(:remove_const, :Ure2)
+      dump = "\004\be:\nMethsS:\025Struct::Extended\a:\006a[\a;\a\"\ahi:\006b[\a;\000@\a"
+      Marshal.send(@method, dump).should == obj
+      Struct.send(:remove_const, :Extended)
     end
 
     it "loads a struct having ivar" do
       obj = Struct.new("Thick").new
       obj.instance_variable_set(:@foo, 5)
-      Marshal.send(@method, "\004\bIS:\022Struct::Thick\000\006:\t@fooi\n").should == obj
+      reloaded = Marshal.send(@method, "\004\bIS:\022Struct::Thick\000\006:\t@fooi\n")
+      reloaded.should == obj
+      reloaded.instance_variable_get(:@foo).should == 5
       Struct.send(:remove_const, :Thick)
     end
 
@@ -529,6 +553,19 @@ describe :marshal_load, shared: true do
       loaded.message.should == obj.message
       loaded.backtrace.should == obj.backtrace
     end
+
+    it "loads an marshalled exception with ivars" do
+      s = 'hi'
+      arr = [:so, :so, s, s]
+      obj = Exception.new("foo")
+      obj.instance_variable_set :@arr, arr
+
+      loaded = Marshal.send(@method, "\x04\bo:\x0EException\b:\tmesg\"\bfoo:\abt0:\t@arr[\t:\aso;\t\"\ahi@\b")
+      new_arr = loaded.instance_variable_get :@arr
+
+      loaded.message.should == obj.message
+      new_arr.should == arr
+    end
   end
 
   describe "for an Object" do
@@ -573,6 +610,18 @@ describe :marshal_load, shared: true do
     end
   end
 
+  describe "for an object responding to #marshal_dump and #marshal_load" do
+    it "loads a user-marshaled object" do
+      obj = UserMarshal.new
+      obj.data = :data
+      value = [obj, :data]
+      dump = Marshal.dump(value)
+      dump.should == "\x04\b[\aU:\x10UserMarshal:\tdata;\x06"
+      reloaded = Marshal.load(dump)
+      reloaded.should == value
+    end
+  end
+
   describe "for a user object" do
     it "loads a user-marshaled extended object" do
       obj = UserMarshal.new.extend(Meths)
@@ -608,7 +657,7 @@ describe :marshal_load, shared: true do
 
   describe "for a Regexp" do
     it "loads an extended Regexp" do
-      obj = /[a-z]/.extend(Meths, MethsMore)
+      obj = /[a-z]/.dup.extend(Meths, MethsMore)
       new_obj = Marshal.send(@method, "\004\be:\nMethse:\016MethsMore/\n[a-z]\000")
 
       new_obj.should == obj
@@ -652,7 +701,7 @@ describe :marshal_load, shared: true do
     end
   end
 
-  describe "for a Integer" do
+  describe "for an Integer" do
     it "loads 0" do
       Marshal.send(@method, "\004\bi\000").should == 0
       Marshal.send(@method, "\004\bi\005").should == 0
@@ -731,13 +780,13 @@ describe :marshal_load, shared: true do
         it "dumps a Fixnum" do
           val = Marshal.send(@method, "\004\bl+\ab:wU")
           val.should == 1433877090
-          val.class.should == Fixnum
+          val.class.should == Integer
         end
 
         it "dumps an array containing multiple references to the Bignum as an array of Fixnum" do
           arr = Marshal.send(@method, "\004\b[\al+\a\223BwU@\006")
           arr.should == [1433879187, 1433879187]
-          arr.each { |v| v.class.should == Fixnum }
+          arr.each { |v| v.class.should == Integer }
         end
       end
     end

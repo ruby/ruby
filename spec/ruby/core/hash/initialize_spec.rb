@@ -45,17 +45,17 @@ describe "Hash#initialize" do
     h.send(:initialize).should equal(h)
   end
 
-  it "raises a #{frozen_error_class} if called on a frozen instance" do
+  it "raises a FrozenError if called on a frozen instance" do
     block = -> { HashSpecs.frozen_hash.instance_eval { initialize() }}
-    block.should raise_error(frozen_error_class)
+    block.should raise_error(FrozenError)
 
     block = -> { HashSpecs.frozen_hash.instance_eval { initialize(nil) }  }
-    block.should raise_error(frozen_error_class)
+    block.should raise_error(FrozenError)
 
     block = -> { HashSpecs.frozen_hash.instance_eval { initialize(5) }    }
-    block.should raise_error(frozen_error_class)
+    block.should raise_error(FrozenError)
 
     block = -> { HashSpecs.frozen_hash.instance_eval { initialize { 5 } } }
-    block.should raise_error(frozen_error_class)
+    block.should raise_error(FrozenError)
   end
 end

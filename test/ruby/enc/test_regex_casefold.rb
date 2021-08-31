@@ -11,7 +11,7 @@ class TestCaseFold < Test::Unit::TestCase
 
   def check_downcase_properties(expected, start, *flags)
     assert_equal expected, start.downcase(*flags)
-    temp = start
+    temp = start.dup
     assert_equal expected, temp.downcase!(*flags)
     assert_equal expected, expected.downcase(*flags)
     temp = expected

@@ -1,0 +1,8 @@
+prelude: |
+  th = Thread.current
+  th[:key] = :val
+benchmark:
+  key?: th.key?(:key)
+  []: th[:key]
+  keys: th.keys
+loop_count: 1_000_000

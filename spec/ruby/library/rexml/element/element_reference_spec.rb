@@ -1,20 +1,23 @@
-require 'rexml/document'
 require_relative '../../../spec_helper'
 
-describe "REXML::Element#[]" do
+ruby_version_is ''...'3.0' do
+  require 'rexml/document'
 
-  before :each do
-    @doc = REXML::Document.new("<root foo='bar'></root>")
-    @child = REXML::Element.new("child")
-    @doc.root.add_element @child
-  end
+  describe "REXML::Element#[]" do
 
-  it "return attribute value if argument is string or symbol" do
-    @doc.root[:foo].should == 'bar'
-    @doc.root['foo'].should == 'bar'
-  end
+    before :each do
+      @doc = REXML::Document.new("<root foo='bar'></root>")
+      @child = REXML::Element.new("child")
+      @doc.root.add_element @child
+    end
 
-  it "return nth element if argument is int" do
-    @doc.root[0].should == @child
+    it "return attribute value if argument is string or symbol" do
+      @doc.root[:foo].should == 'bar'
+      @doc.root['foo'].should == 'bar'
+    end
+
+    it "return nth element if argument is int" do
+      @doc.root[0].should == @child
+    end
   end
 end

@@ -1,0 +1,2 @@
+- +sec+ is the number of seconds (Integer, Float, or Rational)
+  in the range <tt>0..60</tt>.

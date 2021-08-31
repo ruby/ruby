@@ -1,6 +1,10 @@
 # frozen_string_literal: false
 require_relative 'test_optparse'
-require "did_you_mean" rescue return
+begin
+  require "did_you_mean"
+rescue LoadError
+  return
+end
 
 class TestOptionParser::DidYouMean < TestOptionParser
   def setup

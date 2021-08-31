@@ -245,7 +245,8 @@ When +super+ is invoked method lookup checks:
 
 Note that +super+ in a method of a refinement invokes the method in the
 refined class even if there is another refinement which has been activated in
-the same context.
+the same context. This is only true for +super+ in a method of a refinement, it
+does not apply to +super+ in a method in a module that is included in a refinement.
 
 == Methods Introspection
 
@@ -278,6 +279,6 @@ Refinements in descendants have higher precedence than those of ancestors.
 
 == Further Reading
 
-See https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/RefinementsSpec for the
+See https://bugs.ruby-lang.org/projects/ruby-master/wiki/RefinementsSpec for the
 current specification for implementing refinements.  The specification also
 contains more details.

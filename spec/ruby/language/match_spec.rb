@@ -48,6 +48,13 @@ describe "The =~ operator with named captures" do
     end
   end
 
+  describe "on syntax of 'string_literal' =~ /regexp/" do
+    it "does not set local variables" do
+      'string literal' =~ /(?<matched>str)(?<unmatched>lit)?/
+      local_variables.should == []
+    end
+  end
+
   describe "on syntax of string_variable =~ /regexp/" do
     it "does not set local variables" do
       @string =~ /(?<matched>foo)(?<unmatched>bar)?/

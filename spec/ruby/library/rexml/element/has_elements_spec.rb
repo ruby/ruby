@@ -1,18 +1,21 @@
-require 'rexml/document'
 require_relative '../../../spec_helper'
 
-describe "REXML::Element#has_elements?" do
-  before :each do
-    @e = REXML::Element.new("root")
-  end
+ruby_version_is ''...'3.0' do
+  require 'rexml/document'
 
-  it "returns true if element has child elements" do
-    child = REXML::Element.new("child")
-    @e << child
-    @e.has_elements?.should be_true
-  end
+  describe "REXML::Element#has_elements?" do
+    before :each do
+      @e = REXML::Element.new("root")
+    end
 
-  it "returns false if element doesn't have child elements" do
-    @e.has_elements?.should be_false
+    it "returns true if element has child elements" do
+      child = REXML::Element.new("child")
+      @e << child
+      @e.has_elements?.should be_true
+    end
+
+    it "returns false if element doesn't have child elements" do
+      @e.has_elements?.should be_false
+    end
   end
 end

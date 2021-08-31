@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require File.expand_path("../compact_index_extra_api", __FILE__)
+require_relative "compact_index_extra_api"
 
 Artifice.deactivate
 
@@ -9,7 +9,7 @@ class CompactIndexExtraAPIMissing < CompactIndexExtraApi
     if params[:id] == "missing-1.0.gemspec.rz"
       halt 404
     else
-      File.read("#{gem_repo2}/quick/Marshal.4.8/#{params[:id]}")
+      File.binread("#{gem_repo2}/quick/Marshal.4.8/#{params[:id]}")
     end
   end
 end

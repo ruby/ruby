@@ -5,6 +5,6 @@
 module RDoc::I18n
 
   autoload :Locale, 'rdoc/i18n/locale'
-  require 'rdoc/i18n/text'
+  require_relative 'i18n/text'
 
 end

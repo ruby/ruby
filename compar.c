@@ -9,9 +9,12 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
 #include "id.h"
 #include "internal.h"
+#include "internal/compar.h"
+#include "internal/error.h"
+#include "internal/vm.h"
+#include "ruby/ruby.h"
 
 VALUE rb_mComparable;
 
@@ -102,8 +105,7 @@ cmpint(VALUE x, VALUE y)
 static VALUE
 cmp_gt(VALUE x, VALUE y)
 {
-    if (cmpint(x, y) > 0) return Qtrue;
-    return Qfalse;
+    return RBOOL(cmpint(x, y) > 0);
 }
 
 /*
@@ -117,8 +119,7 @@ cmp_gt(VALUE x, VALUE y)
 static VALUE
 cmp_ge(VALUE x, VALUE y)
 {
-    if (cmpint(x, y) >= 0) return Qtrue;
-    return Qfalse;
+    return RBOOL(cmpint(x, y) >= 0);
 }
 
 /*
@@ -132,8 +133,7 @@ cmp_ge(VALUE x, VALUE y)
 static VALUE
 cmp_lt(VALUE x, VALUE y)
 {
-    if (cmpint(x, y) < 0) return Qtrue;
-    return Qfalse;
+    return RBOOL(cmpint(x, y) < 0);
 }
 
 /*
@@ -147,8 +147,7 @@ cmp_lt(VALUE x, VALUE y)
 static VALUE
 cmp_le(VALUE x, VALUE y)
 {
-    if (cmpint(x, y) <= 0) return Qtrue;
-    return Qfalse;
+    return RBOOL(cmpint(x, y) <= 0);
 }
 
 /*
@@ -230,11 +229,9 @@ cmp_clamp(int argc, VALUE *argv, VALUE x)
         }
         if (!NIL_P(max)) {
             if (excl) rb_raise(rb_eArgError, "cannot clamp with an exclusive range");
-            if (!NIL_P(min) && cmpint(min, max) > 0) goto arg_error;
         }
     }
-    else if (cmpint(min, max) > 0) {
-      arg_error:
+    if (!NIL_P(min) && !NIL_P(max) && cmpint(min, max) > 0) {
 	rb_raise(rb_eArgError, "min argument must be smaller than max argument");
     }
 
@@ -253,9 +250,9 @@ cmp_clamp(int argc, VALUE *argv, VALUE x)
 /*
  *  The Comparable mixin is used by classes whose objects may be
  *  ordered. The class must define the <code><=></code> operator,
- *  which compares the receiver against another object, returning
- *  a value less than 0, 0, or a value greater than 0, depending on
- *  whether the receiver is less than, equal to,
+ *  which compares the receiver against another object, returning a
+ *  value less than 0, returning 0, or returning a value greater than 0,
+ *  depending on whether the receiver is less than, equal to,
  *  or greater than the other object. If the other object is not
  *  comparable then the <code><=></code> operator should return +nil+.
  *  Comparable uses <code><=></code> to implement the conventional
@@ -288,14 +285,27 @@ cmp_clamp(int argc, VALUE *argv, VALUE x)
  *     s4.between?(s3, s5)           #=> true
  *     [ s3, s2, s5, s4, s1 ].sort   #=> [Z, YY, XXX, WWWW, VVVVV]
  *
+ *  == What's Here
+ *
+ *  \Module \Comparable provides these methods, all of which use method <tt><=></tt>:
+ *
+ *  - {<}[#method-i-3C]:: Returns whether +self+ is less than the given object.
+ *  - {<=}[#method-i-3C-3D]:: Returns whether +self+ is less than or equal to
+ *                            the given object.
+ *  - {==}[#method-i-3D-3D]:: Returns whether +self+ is equal to the given object.
+ *  - {>}[#method-i-3E]:: Returns whether +self+ is greater than or equal to
+ *                        the given object.
+ *  - {>=}[#method-i-3E-3D]:: Returns whether +self+ is greater than the given object.
+ *  - #between? Returns +true+ if +self+ is between two given objects.
+ *  - #clamp:: For given objects +min+ and +max+, or range <tt>(min..max)</tt>, returns:
+ *    - +min+ if <tt>(self <=> min) < 0</tt>.
+ *    - +max+ if <tt>(self <=> max) > 0</tt>.
+ *    - +self+ otherwise.
  */
 
 void
 Init_Comparable(void)
 {
-#undef rb_intern
-#define rb_intern(str) rb_intern_const(str)
-
     rb_mComparable = rb_define_module("Comparable");
     rb_define_method(rb_mComparable, "==", cmp_equal, 1);
     rb_define_method(rb_mComparable, ">", cmp_gt, 1);

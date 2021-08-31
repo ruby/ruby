@@ -199,6 +199,6 @@ succeed to return 0.  The meaning of ``\1nn`` in regular expression
 seems to depend on the existence of capturing expressions.
 
 In spite of these Ruby's behaviors, we have a good news!  The present
-SAT sover does not suffer from the issues because the program cannot
+SAT solver does not suffer from the issues because the program cannot
 return solutions in practical time for inputs with variables more than
 40.

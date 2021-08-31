@@ -1,17 +1,20 @@
-require 'rexml/document'
 require_relative '../../../spec_helper'
 
-describe "REXML::Element#attribute" do
-  it "returns an attribute by name" do
-    person = REXML::Element.new "Person"
-    attribute = REXML::Attribute.new("drink", "coffee")
-    person.add_attribute(attribute)
-    person.attribute("drink").should == attribute
-  end
+ruby_version_is ''...'3.0' do
+  require 'rexml/document'
 
-  it "supports attributes inside namespaces" do
-    e = REXML::Element.new("element")
-    e.add_attributes({"xmlns:ns" => "http://some_uri"})
-    e.attribute("ns", "ns").to_s.should == "http://some_uri"
+  describe "REXML::Element#attribute" do
+    it "returns an attribute by name" do
+      person = REXML::Element.new "Person"
+      attribute = REXML::Attribute.new("drink", "coffee")
+      person.add_attribute(attribute)
+      person.attribute("drink").should == attribute
+    end
+
+    it "supports attributes inside namespaces" do
+      e = REXML::Element.new("element")
+      e.add_attributes({"xmlns:ns" => "http://some_uri"})
+      e.attribute("ns", "ns").to_s.should == "http://some_uri"
+    end
   end
 end

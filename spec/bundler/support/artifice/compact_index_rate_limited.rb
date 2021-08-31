@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
-require File.expand_path("../compact_index", __FILE__)
+require_relative "compact_index"
 
 Artifice.deactivate
 
 class CompactIndexRateLimited < CompactIndexAPI
   class RequestCounter
     def self.queue
-      @queue ||= Queue.new
+      @queue ||= Thread::Queue.new
     end
 
     def self.size

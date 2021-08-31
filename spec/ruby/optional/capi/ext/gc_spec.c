@@ -16,19 +16,32 @@ static VALUE registered_reference_address(VALUE self) {
   return registered_reference_value;
 }
 
-static VALUE gc_spec_rb_gc_enable() {
+static VALUE gc_spec_rb_gc_enable(VALUE self) {
   return rb_gc_enable();
 }
 
-static VALUE gc_spec_rb_gc_disable() {
+static VALUE gc_spec_rb_gc_disable(VALUE self) {
   return rb_gc_disable();
 }
 
-static VALUE gc_spec_rb_gc() {
+static VALUE gc_spec_rb_gc(VALUE self) {
   rb_gc();
   return Qnil;
 }
 
+static VALUE gc_spec_rb_gc_latest_gc_info(VALUE self, VALUE hash_or_key){
+  return rb_gc_latest_gc_info(hash_or_key);
+}
+
+static VALUE gc_spec_rb_gc_adjust_memory_usage(VALUE self, VALUE diff) {
+  rb_gc_adjust_memory_usage(NUM2SSIZET(diff));
+  return Qnil;
+}
+
+static VALUE gc_spec_rb_gc_register_mark_object(VALUE self, VALUE obj) {
+  rb_gc_register_mark_object(obj);
+  return Qnil;
+}
 
 void Init_gc_spec(void) {
   VALUE cls = rb_define_class("CApiGCSpecs", rb_cObject);
@@ -43,6 +56,9 @@ void Init_gc_spec(void) {
   rb_define_method(cls, "rb_gc_enable", gc_spec_rb_gc_enable, 0);
   rb_define_method(cls, "rb_gc_disable", gc_spec_rb_gc_disable, 0);
   rb_define_method(cls, "rb_gc", gc_spec_rb_gc, 0);
+  rb_define_method(cls, "rb_gc_adjust_memory_usage", gc_spec_rb_gc_adjust_memory_usage, 1);
+  rb_define_method(cls, "rb_gc_register_mark_object", gc_spec_rb_gc_register_mark_object, 1);
+  rb_define_method(cls, "rb_gc_latest_gc_info", gc_spec_rb_gc_latest_gc_info, 1);
 }
 
 #ifdef __cplusplus

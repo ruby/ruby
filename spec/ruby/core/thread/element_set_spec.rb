@@ -6,13 +6,13 @@ describe "Thread#[]=" do
     Thread.current[:value] = nil
   end
 
-  it "raises a #{frozen_error_class} if the thread is frozen" do
+  it "raises a FrozenError if the thread is frozen" do
     Thread.new do
       th = Thread.current
       th.freeze
       -> {
         th[:foo] = "bar"
-      }.should raise_error(frozen_error_class, /frozen/)
+      }.should raise_error(FrozenError, /frozen/)
     end.join
   end
 

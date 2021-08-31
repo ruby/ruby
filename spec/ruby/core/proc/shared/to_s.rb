@@ -33,8 +33,13 @@ describe :proc_to_s, shared: true do
 
   describe "for a proc created with UnboundMethod#to_proc" do
     it "returns a description including '(lambda)' and optionally including file and line number" do
-      def hello; end
-      method("hello").to_proc.send(@method).should =~ /^#<Proc:([^ ]*?)(#{sep}#{Regexp.escape __FILE__}:#{__LINE__ })? \(lambda\)>$/
+        def hello; end
+        s = method("hello").to_proc.send(@method)
+        if s.include? __FILE__
+          s.should =~ /^#<Proc:([^ ]*?)#{sep}#{Regexp.escape __FILE__}:#{__LINE__ - 3} \(lambda\)>$/
+        else
+          s.should =~ /^#<Proc:([^ ]*?) \(lambda\)>$/
+        end
     end
 
     it "has a binary encoding" do
@@ -46,7 +51,7 @@ describe :proc_to_s, shared: true do
   describe "for a proc created with Symbol#to_proc" do
     it "returns a description including '(&:symbol)'" do
       proc = :foobar.to_proc
-      proc.send(@method).should =~ /^#<Proc:0x\h+\(&:foobar\)>$/
+      proc.send(@method).should.include?('(&:foobar)')
     end
 
     it "has a binary encoding" do

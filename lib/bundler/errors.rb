@@ -56,6 +56,7 @@ module Bundler
   class SudoNotPermittedError < BundlerError; status_code(30); end
   class ThreadCreationError < BundlerError; status_code(33); end
   class APIResponseMismatchError < BundlerError; status_code(34); end
+  class APIResponseInvalidDependenciesError < BundlerError; status_code(35); end
   class GemfileEvalError < GemfileError; end
   class MarshalError < StandardError; end
 
@@ -121,7 +122,7 @@ module Bundler
 
   class VirtualProtocolError < BundlerError
     def message
-      "There was an error relating to virtualization and file access." \
+      "There was an error relating to virtualization and file access. " \
       "It is likely that you need to grant access to or mount some file system correctly."
     end
 

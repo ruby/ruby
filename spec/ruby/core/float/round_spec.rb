@@ -114,4 +114,17 @@ describe "Float#round" do
   it "raise for a non-existent round mode" do
     -> { 14.2.round(half: :nonsense) }.should raise_error(ArgumentError, "invalid rounding mode: nonsense")
   end
+
+  describe "when 0.0 is given" do
+    it "returns self for positive ndigits" do
+      (0.0).round(5).inspect.should == "0.0"
+      (-0.0).round(1).inspect.should == "-0.0"
+    end
+
+    it "returns 0 for 0 or undefined ndigits" do
+      (0.0).round.should == 0
+      (-0.0).round(0).should == 0
+      (0.0).round(half: :up) == 0
+    end
+  end
 end

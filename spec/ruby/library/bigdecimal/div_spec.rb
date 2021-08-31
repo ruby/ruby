@@ -80,13 +80,13 @@ describe "BigDecimal#div" do
   end
 
   it "returns NaN if zero is divided by zero" do
-    @zero.div(@zero, 0).nan?.should == true
-    @zero_minus.div(@zero_plus, 0).nan?.should == true
-    @zero_plus.div(@zero_minus, 0).nan?.should == true
+    @zero.div(@zero, 0).should.nan?
+    @zero_minus.div(@zero_plus, 0).should.nan?
+    @zero_plus.div(@zero_minus, 0).should.nan?
 
-    @zero.div(@zero, 10).nan?.should == true
-    @zero_minus.div(@zero_plus, 10).nan?.should == true
-    @zero_plus.div(@zero_minus, 10).nan?.should == true
+    @zero.div(@zero, 10).should.nan?
+    @zero_minus.div(@zero_plus, 10).should.nan?
+    @zero_plus.div(@zero_minus, 10).should.nan?
   end
 
   it "raises FloatDomainError if (+|-) Infinity divided by 1 and no precision given" do
@@ -102,8 +102,8 @@ describe "BigDecimal#div" do
   end
 
   it "returns NaN if Infinity / ((+|-) Infinity)" do
-    @infinity.div(@infinity_minus, 100000).nan?.should == true
-    @infinity_minus.div(@infinity, 1).nan?.should == true
+    @infinity.div(@infinity_minus, 100000).should.nan?
+    @infinity_minus.div(@infinity, 1).should.nan?
   end
 
 

@@ -190,9 +190,41 @@ Here is an example:
   b.n b #=> 1 -- m called on defining class
   a.n b # raises NoMethodError A is not a subclass of B
 
-The third visibility is +private+.  A private method may not be called with a
-receiver, not even if it equals +self+.  If a private method is called with a
-receiver other than a literal +self+ a NoMethodError will be raised.
+The third visibility is +private+.  A private method may only be called from
+inside the owner class without a receiver, or with a literal +self+
+as a receiver.  If a private method is called with a
+receiver other than a literal +self+, a NoMethodError will be raised.
+
+  class A
+    def without
+      m
+    end
+
+    def with_self
+      self.m
+    end
+
+    def with_other
+      A.new.m
+    end
+
+    def with_renamed
+      copy = self
+      copy.m
+    end
+
+    def m
+      1
+    end
+
+    private :m
+  end
+
+  a = A.new
+  a.without      #=> 1
+  a.with_self    #=> 1
+  a.with_other   # NoMethodError (private method `m' called for #<A:0x0000559c287f27d0>)
+  a.with_renamed # NoMethodError (private method `m' called for #<A:0x0000559c285f8330>)
 
 === +alias+ and +undef+
 

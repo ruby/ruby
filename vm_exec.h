@@ -1,3 +1,5 @@
+#ifndef RUBY_VM_EXEC_H
+#define RUBY_VM_EXEC_H
 /**********************************************************************
 
   vm.h -
@@ -8,9 +10,6 @@
   Copyright (C) 2004-2007 Koichi Sasada
 
 **********************************************************************/
-
-#ifndef RUBY_VM_EXEC_H
-#define RUBY_VM_EXEC_H
 
 typedef long OFFSET;
 typedef unsigned long lindex_t;
@@ -40,6 +39,10 @@ typedef rb_iseq_t *ISEQ;
 
 #define throwdebug if(0)printf
 /* #define throwdebug printf */
+
+#ifndef USE_INSNS_COUNTER
+#define USE_INSNS_COUNTER 0
+#endif
 
 /************************************************/
 #if defined(DISPATCH_XXX)
@@ -75,7 +78,8 @@ error !
                  (reg_pc - reg_cfp->iseq->body->iseq_encoded), \
                  (reg_cfp->pc - reg_cfp->iseq->body->iseq_encoded), \
                  RSTRING_PTR(rb_iseq_path(reg_cfp->iseq)), \
-                 rb_iseq_line_no(reg_cfp->iseq, reg_pc - reg_cfp->iseq->body->iseq_encoded));
+                 rb_iseq_line_no(reg_cfp->iseq, reg_pc - reg_cfp->iseq->body->iseq_encoded)); \
+  if (USE_INSNS_COUNTER) vm_insns_counter_count_insn(BIN(insn));
 
 #define INSN_DISPATCH_SIG(insn)
 
@@ -126,9 +130,6 @@ error !
 
 #define NEXT_INSN() TC_DISPATCH(__NEXT_INSN__)
 
-#define START_OF_ORIGINAL_INSN(x) start_of_##x:
-#define DISPATCH_ORIGINAL_INSN(x) goto  start_of_##x;
-
 /************************************************/
 #else /* no threaded code */
 /* most common method */
@@ -153,9 +154,11 @@ default:                        \
 
 #define NEXT_INSN() goto first
 
-#define START_OF_ORIGINAL_INSN(x) start_of_##x:
-#define DISPATCH_ORIGINAL_INSN(x) goto  start_of_##x;
+#endif
 
+#ifndef START_OF_ORIGINAL_INSN
+#define START_OF_ORIGINAL_INSN(x) if (0) goto start_of_##x; start_of_##x:
+#define DISPATCH_ORIGINAL_INSN(x) goto  start_of_##x;
 #endif
 
 #define VM_SP_CNT(ec, sp) ((sp) - (ec)->vm_stack)
@@ -181,8 +184,7 @@ default:                        \
 #define VM_DEBUG_STACKOVERFLOW 0
 
 #if VM_DEBUG_STACKOVERFLOW
-#define CHECK_VM_STACK_OVERFLOW_FOR_INSN(cfp, margin) \
-    WHEN_VM_STACK_OVERFLOWED(cfp, (cfp)->sp, margin) vm_stack_overflow_for_insn()
+#define CHECK_VM_STACK_OVERFLOW_FOR_INSN CHECK_VM_STACK_OVERFLOW
 #else
 #define CHECK_VM_STACK_OVERFLOW_FOR_INSN(cfp, margin)
 #endif

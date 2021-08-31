@@ -4,6 +4,10 @@ describe "Process.groups" do
   platform_is_not :windows do
     it "gets an Array of the gids of groups in the supplemental group access list" do
       groups = `id -G`.scan(/\d+/).map { |i| i.to_i }
+      # Include the standard `id` command output.  On macOS, GNU
+      # coreutils `id` is limited to NGROUPS_MAX groups, because of
+      # the backward compatibility of getgroups(2).
+      (groups |= `/usr/bin/id -G`.scan(/\d+/).map { |i| i.to_i }) rescue nil
       gid = Process.gid
 
       expected = (groups.sort - [gid]).uniq.sort

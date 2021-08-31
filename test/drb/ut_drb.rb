@@ -69,7 +69,7 @@ class DRbEx
     private def priv; 3; end
   end
   def basic_object
-    BO.new
+    @basic_object = BO.new
   end
 
   def unknown_class
@@ -146,6 +146,18 @@ class DRbEx
     else
       super(msg, *a, &b)
     end
+  end
+
+  def keyword_test1(a:)
+    a
+  end
+
+  def keyword_test2(b: "default")
+    b
+  end
+
+  def keyword_test3(**opt)
+    opt
   end
 
   private

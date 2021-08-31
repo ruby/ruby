@@ -3,7 +3,6 @@ require 'stringio'
 require 'zlib'
 
 describe :gzipreader_each, shared: true do
-
   before :each do
     @data = "firstline\nsecondline\n\nforthline"
     @zip = [31, 139, 8, 0, 244, 125, 128, 88, 2, 255, 75, 203, 44, 42, 46, 201,
@@ -47,5 +46,4 @@ describe :gzipreader_each, shared: true do
       @gzreader.pos.should == i
     end
   end
-
 end

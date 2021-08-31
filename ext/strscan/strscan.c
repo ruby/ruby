@@ -4,8 +4,8 @@
     Copyright (c) 1999-2006 Minero Aoki
 
     This program is free software.
-    You can distribute/modify this program under the terms of
-    the Ruby License. For details, see the file COPYING.
+    You can redistribute this program under the terms of the Ruby's or 2-clause
+    BSD License.  For details, see the COPYING and LICENSE.txt files.
 */
 
 #include "ruby/ruby.h"
@@ -22,7 +22,7 @@ extern size_t onig_region_memsize(const struct re_registers *regs);
 
 #include <stdbool.h>
 
-#define STRSCAN_VERSION "1.0.3"
+#define STRSCAN_VERSION "3.0.0"
 
 /* =======================================================================
                          Data Type Definitions
@@ -77,7 +77,6 @@ struct strscanner
    ======================================================================= */
 
 static inline long minl _((const long n, const long x));
-static VALUE infect _((VALUE str, struct strscanner *p));
 static VALUE extract_range _((struct strscanner *p, long beg_i, long end_i));
 static VALUE extract_beg_len _((struct strscanner *p, long beg_i, long len));
 
@@ -139,13 +138,6 @@ static VALUE inspect2 _((struct strscanner *p));
    ======================================================================= */
 
 static VALUE
-infect(VALUE str, struct strscanner *p)
-{
-    OBJ_INFECT(str, p->str);
-    return str;
-}
-
-static VALUE
 str_new(struct strscanner *p, const char *ptr, long len)
 {
     VALUE str = rb_str_new(ptr, len);
@@ -164,7 +156,7 @@ extract_range(struct strscanner *p, long beg_i, long end_i)
 {
     if (beg_i > S_LEN(p)) return Qnil;
     end_i = minl(end_i, S_LEN(p));
-    return infect(str_new(p, S_PBEG(p) + beg_i, end_i - beg_i), p);
+    return str_new(p, S_PBEG(p) + beg_i, end_i - beg_i);
 }
 
 static VALUE
@@ -172,7 +164,7 @@ extract_beg_len(struct strscanner *p, long beg_i, long len)
 {
     if (beg_i > S_LEN(p)) return Qnil;
     len = minl(len, S_LEN(p) - beg_i);
-    return infect(str_new(p, S_PBEG(p) + beg_i, len), p);
+    return str_new(p, S_PBEG(p) + beg_i, len);
 }
 
 /* =======================================================================
@@ -184,6 +176,7 @@ strscan_mark(void *ptr)
 {
     struct strscanner *p = ptr;
     rb_gc_mark(p->str);
+    rb_gc_mark(p->regex);
 }
 
 static void
@@ -220,6 +213,7 @@ strscan_s_allocate(VALUE klass)
     CLEAR_MATCH_STATUS(p);
     onig_region_init(&(p->regs));
     p->str = Qnil;
+    p->regex = Qnil;
     return obj;
 }
 
@@ -451,13 +445,10 @@ static VALUE
 strscan_get_charpos(VALUE self)
 {
     struct strscanner *p;
-    VALUE substr;
 
     GET_SCANNER(self, p);
 
-    substr = rb_funcall(p->str, id_byteslice, 2, INT2FIX(0), INT2NUM(p->curr));
-
-    return rb_str_length(substr);
+    return LONG2NUM(rb_enc_strlen(S_PBEG(p), CURPTR(p), rb_enc_get(p->str)));
 }
 
 /*
@@ -481,7 +472,7 @@ strscan_set_pos(VALUE self, VALUE v)
     if (i < 0) rb_raise(rb_eRangeError, "index out of range");
     if (i > S_LEN(p)) rb_raise(rb_eRangeError, "index out of range");
     p->curr = i;
-    return INT2NUM(i);
+    return LONG2NUM(i);
 }
 
 static inline UChar *
@@ -856,9 +847,8 @@ adjust_registers_to_matched(struct strscanner *p)
  *   s.getch           # => "b"
  *   s.getch           # => nil
  *
- *   $KCODE = 'EUC'
- *   s = StringScanner.new("\244\242")
- *   s.getch           # => "\244\242"   # Japanese hira-kana "A" in EUC-JP
+ *   s = StringScanner.new("\244\242".force_encoding("euc-jp"))
+ *   s.getch           # => "\x{A4A2}"   # Japanese hira-kana "A" in EUC-JP
  *   s.getch           # => nil
  */
 static VALUE
@@ -893,10 +883,9 @@ strscan_getch(VALUE self)
  *   s.get_byte         # => "b"
  *   s.get_byte         # => nil
  *
- *   $KCODE = 'EUC'
- *   s = StringScanner.new("\244\242")
- *   s.get_byte         # => "\244"
- *   s.get_byte         # => "\242"
+ *   s = StringScanner.new("\244\242".force_encoding("euc-jp"))
+ *   s.get_byte         # => "\xA4"
+ *   s.get_byte         # => "\xA2"
  *   s.get_byte         # => nil
  */
 static VALUE
@@ -950,7 +939,7 @@ strscan_peek(VALUE self, VALUE vlen)
 
     len = NUM2LONG(vlen);
     if (EOS_P(p))
-        return infect(str_new(p, "", 0), p);
+        return str_new(p, "", 0);
 
     len = minl(len, S_RESTLEN(p));
     return extract_beg_len(p, p->curr, len);
@@ -992,7 +981,7 @@ strscan_unscan(VALUE self)
 }
 
 /*
- * Returns +true+ iff the scan pointer is at the beginning of the line.
+ * Returns +true+ if and only if the scan pointer is at the beginning of the line.
  *
  *   s = StringScanner.new("test\ntest\n")
  *   s.bol?           # => true
@@ -1045,7 +1034,7 @@ strscan_empty_p(VALUE self)
 }
 
 /*
- * Returns true iff there is more data in the string.  See #eos?.
+ * Returns true if and only if there is more data in the string.  See #eos?.
  * This method is obsolete; use #eos? instead.
  *
  *   s = StringScanner.new('test string')
@@ -1062,7 +1051,7 @@ strscan_rest_p(VALUE self)
 }
 
 /*
- * Returns +true+ iff the last match was successful.
+ * Returns +true+ if and only if the last match was successful.
  *
  *   s = StringScanner.new('test string')
  *   s.match?(/\w+/)     # => 4
@@ -1099,8 +1088,9 @@ strscan_matched(VALUE self)
 }
 
 /*
- * Returns the size of the most recent match (see #matched), or +nil+ if there
- * was no recent match.
+ * Returns the size of the most recent match in bytes, or +nil+ if there
+ * was no recent match.  This is different than <tt>matched.size</tt>,
+ * which will return the size in characters.
  *
  *   s = StringScanner.new('test string')
  *   s.check /\w+/           # -> "test"
@@ -1115,7 +1105,7 @@ strscan_matched_size(VALUE self)
 
     GET_SCANNER(self, p);
     if (! MATCHED_P(p)) return Qnil;
-    return INT2NUM(p->regs.end[0] - p->regs.beg[0]);
+    return LONG2NUM(p->regs.end[0] - p->regs.beg[0]);
 }
 
 static int
@@ -1177,7 +1167,7 @@ strscan_aref(VALUE self, VALUE idx)
             idx = rb_sym2str(idx);
             /* fall through */
         case T_STRING:
-            if (!p->regex) return Qnil;
+            if (!RTEST(p->regex)) return Qnil;
             RSTRING_GETMEM(idx, name, i);
             i = name_to_backref_number(&(p->regs), p->regex, name, name + i, rb_enc_get(idx));
             break;
@@ -1336,7 +1326,7 @@ strscan_rest(VALUE self)
 
     GET_SCANNER(self, p);
     if (EOS_P(p)) {
-        return infect(str_new(p, "", 0), p);
+        return str_new(p, "", 0);
     }
     return extract_range(p, p->curr, S_LEN(p));
 }
@@ -1391,11 +1381,11 @@ strscan_inspect(VALUE self)
     p = check_strscan(self);
     if (NIL_P(p->str)) {
 	a = rb_sprintf("#<%"PRIsVALUE" (uninitialized)>", rb_obj_class(self));
-	return infect(a, p);
+	return a;
     }
     if (EOS_P(p)) {
 	a = rb_sprintf("#<%"PRIsVALUE" fin>", rb_obj_class(self));
-	return infect(a, p);
+	return a;
     }
     if (p->curr == 0) {
 	b = inspect2(p);
@@ -1403,7 +1393,7 @@ strscan_inspect(VALUE self)
 		       rb_obj_class(self),
 		       p->curr, S_LEN(p),
 		       b);
-	return infect(a, p);
+	return a;
     }
     a = inspect1(p);
     b = inspect2(p);
@@ -1411,7 +1401,7 @@ strscan_inspect(VALUE self)
 		   rb_obj_class(self),
 		   p->curr, S_LEN(p),
 		   a, b);
-    return infect(a, p);
+    return a;
 }
 
 static VALUE
@@ -1544,7 +1534,7 @@ strscan_fixed_anchor_p(VALUE self)
  *
  * === Finding Where we Are
  *
- * - #beginning_of_line? (#bol?)
+ * - #beginning_of_line? (<tt>#bol?</tt>)
  * - #eos?
  * - #rest?
  * - #rest_size
@@ -1561,13 +1551,13 @@ strscan_fixed_anchor_p(VALUE self)
  * - #matched
  * - #matched?
  * - #matched_size
- * - []
+ * - <tt>#[]</tt>
  * - #pre_match
  * - #post_match
  *
  * === Miscellaneous
  *
- * - <<
+ * - <tt><<</tt>
  * - #concat
  * - #string
  * - #string=
@@ -1578,6 +1568,10 @@ strscan_fixed_anchor_p(VALUE self)
 void
 Init_strscan(void)
 {
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    rb_ext_ractor_safe(true);
+#endif
+
 #undef rb_intern
     ID id_scanerr = rb_intern("ScanError");
     VALUE tmp;

@@ -97,7 +97,7 @@ class String
 end
 
 class StringScanner
-  # lx: limit of x (colmns of screen)
+  # lx: limit of x (columns of screen)
   # ly: limit of y (rows of screen)
   def getrows(lx, ly)
     cp1 = charpos
@@ -241,7 +241,12 @@ def find_svn_log(pattern)
 end
 
 def find_git_log(pattern)
-  `git #{RUBY_REPO_PATH ? "-C #{RUBY_REPO_PATH.shellecape}" : ""} log --grep="#{pattern}"`
+  `git #{RUBY_REPO_PATH ? "-C #{RUBY_REPO_PATH.shellescape}" : ""} log --grep="#{pattern}"`
+end
+
+def has_commit(commit, branch)
+  base = RUBY_REPO_PATH ? ["-C", RUBY_REPO_PATH.shellescape] : nil
+  system("git", *base, "merge-base", "--is-ancestor", commit, branch)
 end
 
 def show_last_journal(http, uri)
@@ -269,14 +274,8 @@ def backport_command_string
     @changesets = @changesets.select do |c|
       next false if c.match(/\A\d{1,6}\z/) # skip SVN revision
 
-      # check if the Git revision is included in trunk
-      begin
-        uri = URI("#{REDMINE_BASE}/projects/ruby-trunk/repository/git/revisions/#{c}")
-        uri.read($openuri_options)
-        true
-      rescue
-        false
-      end
+      # check if the Git revision is included in master
+      has_commit(c, "master")
     end
     @changesets.define_singleton_method(:validated){true}
   end
@@ -301,7 +300,7 @@ class CommandSyntaxError < RuntimeError; end
 commands = {
   "ls" => proc{|args|
     raise CommandSyntaxError unless /\A(\d+)?\z/ =~ args
-    uri = URI(REDMINE_BASE+'/projects/ruby-trunk/issues.json?'+URI.encode_www_form(@query.dup.merge('page' => ($1 ? $1.to_i : 1))))
+    uri = URI(REDMINE_BASE+'/projects/ruby-master/issues.json?'+URI.encode_www_form(@query.dup.merge('page' => ($1 ? $1.to_i : 1))))
     # puts uri
     res = JSON(uri.read($openuri_options))
     @issues = issues = res["issues"]
@@ -349,7 +348,7 @@ eom
     i["custom_fields"].each do |x|
       sio.puts "%-10s: %s" % [x["name"], x["value"]]
     end
-    #res["attachements"].each do |x|
+    #res["attachments"].each do |x|
     #end
     sio.puts i["description"]
     sio.puts
@@ -379,10 +378,10 @@ eom
     case args
     when /\Ar?(\d+)\z/ # SVN
       rev = $1
-      uri = URI("#{REDMINE_BASE}/projects/ruby-trunk/repository/trunk/revisions/#{rev}/issues.json")
+      uri = URI("#{REDMINE_BASE}/projects/ruby-master/repository/trunk/revisions/#{rev}/issues.json")
     when /\A\h{7,40}\z/ # Git
       rev = args
-      uri = URI("#{REDMINE_BASE}/projects/ruby-trunk/repository/git/revisions/#{rev}/issues.json")
+      uri = URI("#{REDMINE_BASE}/projects/ruby-master/repository/git/revisions/#{rev}/issues.json")
     else
       raise CommandSyntaxError
     end
@@ -423,9 +422,10 @@ eom
   },
 
   "done" => proc{|args|
-    raise CommandSyntaxError unless /\A(\d+)?(?:\s*-- +(.*))?\z/ =~ args
-    notes = $2
+    raise CommandSyntaxError unless /\A(\d+)?(?: by (\h+))?(?:\s*-- +(.*))?\z/ =~ args
+    notes = $3
     notes.strip! if notes
+    rev = $2
     if $1
       i = $1.to_i
       i = @issues[i]["id"] if @issues && i < @issues.size
@@ -436,7 +436,8 @@ eom
       next
     end
 
-    if system("svn info #{RUBY_REPO_PATH&.shellescape}", %i(out err) => IO::NULL) # SVN
+    if rev
+    elsif system("svn info #{RUBY_REPO_PATH&.shellescape}", %i(out err) => IO::NULL) # SVN
       if (log = find_svn_log("##@issue]")) && (/revision="(?<rev>\d+)/ =~ log)
         rev = "r#{rev}"
       end
@@ -447,13 +448,21 @@ eom
     end
     if log && rev
       str = log[/merge revision\(s\) ([^:]+)(?=:)/]
-      str.insert(5, "d")
-      str = "ruby_#{TARGET_VERSION.tr('.','_')} #{rev} #{str}."
+      if str
+        str.insert(5, "d")
+        str = "ruby_#{TARGET_VERSION.tr('.','_')} #{rev} #{str}."
+      else
+        str = "ruby_#{TARGET_VERSION.tr('.','_')} #{rev}."
+      end
       if notes
         str << "\n"
         str << notes
       end
       notes = str
+    elsif rev && has_commit(rev, "ruby_#{TARGET_VERSION.tr('.','_')}")
+      # Backport commit's log doesn't have the issue number.
+      # Instead of that manually it's provided.
+      notes = "ruby_#{TARGET_VERSION.tr('.','_')} commit:#{rev}."
     else
       puts "no commit is found whose log include ##@issue"
       next

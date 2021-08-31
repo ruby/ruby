@@ -1,7 +1,7 @@
 /* This is a public domain general purpose hash table package
    originally written by Peter Moore @ UCB.
 
-   The hash table data strutures were redesigned and the package was
+   The hash table data structures were redesigned and the package was
    rewritten by Vladimir Makarov <vmakarov@redhat.com>.  */
 
 #ifndef RUBY_ST_H

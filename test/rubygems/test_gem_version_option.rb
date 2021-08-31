@@ -1,10 +1,9 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/command'
 require 'rubygems/version_option'
 
 class TestGemVersionOption < Gem::TestCase
-
   def setup
     super
 
@@ -57,7 +56,7 @@ class TestGemVersionOption < Gem::TestCase
     @cmd.handle_options %w[--platform ruby]
 
     expected = [
-      Gem::Platform::RUBY
+      Gem::Platform::RUBY,
     ]
 
     assert_equal expected, Gem.platforms
@@ -162,5 +161,4 @@ class TestGemVersionOption < Gem::TestCase
 
     assert_equal expected, @cmd.options
   end
-
 end

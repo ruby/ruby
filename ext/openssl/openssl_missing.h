@@ -12,40 +12,7 @@
 
 #include "ruby/config.h"
 
-/* added in 1.0.2 */
-#if !defined(OPENSSL_NO_EC)
-#if !defined(HAVE_EC_CURVE_NIST2NID)
-int ossl_EC_curve_nist2nid(const char *);
-#  define EC_curve_nist2nid ossl_EC_curve_nist2nid
-#endif
-#endif
-
-#if !defined(HAVE_X509_REVOKED_DUP)
-# define X509_REVOKED_dup(rev) (X509_REVOKED *)ASN1_dup((i2d_of_void *)i2d_X509_REVOKED, \
-	(d2i_of_void *)d2i_X509_REVOKED, (char *)(rev))
-#endif
-
-#if !defined(HAVE_X509_STORE_CTX_GET0_STORE)
-#  define X509_STORE_CTX_get0_store(x) ((x)->ctx)
-#endif
-
-#if !defined(HAVE_SSL_IS_SERVER)
-#  define SSL_is_server(s) ((s)->server)
-#endif
-
 /* added in 1.1.0 */
-#if !defined(HAVE_BN_GENCB_NEW)
-#  define BN_GENCB_new() ((BN_GENCB *)OPENSSL_malloc(sizeof(BN_GENCB)))
-#endif
-
-#if !defined(HAVE_BN_GENCB_FREE)
-#  define BN_GENCB_free(cb) OPENSSL_free(cb)
-#endif
-
-#if !defined(HAVE_BN_GENCB_GET_ARG)
-#  define BN_GENCB_get_arg(cb) (cb)->arg
-#endif
-
 #if !defined(HAVE_EVP_MD_CTX_NEW)
 #  define EVP_MD_CTX_new EVP_MD_CTX_create
 #endif
@@ -54,14 +21,8 @@ int ossl_EC_curve_nist2nid(const char *);
 #  define EVP_MD_CTX_free EVP_MD_CTX_destroy
 #endif
 
-#if !defined(HAVE_HMAC_CTX_NEW)
-HMAC_CTX *ossl_HMAC_CTX_new(void);
-#  define HMAC_CTX_new ossl_HMAC_CTX_new
-#endif
-
-#if !defined(HAVE_HMAC_CTX_FREE)
-void ossl_HMAC_CTX_free(HMAC_CTX *);
-#  define HMAC_CTX_free ossl_HMAC_CTX_free
+#if !defined(HAVE_EVP_MD_CTX_PKEY_CTX)
+#  define EVP_MD_CTX_pkey_ctx(x) (x)->pctx
 #endif
 
 #if !defined(HAVE_X509_STORE_GET_EX_DATA)
@@ -72,6 +33,9 @@ void ossl_HMAC_CTX_free(HMAC_CTX *);
 #if !defined(HAVE_X509_STORE_SET_EX_DATA)
 #  define X509_STORE_set_ex_data(x, idx, data) \
 	CRYPTO_set_ex_data(&(x)->ex_data, (idx), (data))
+#endif
+
+#if !defined(HAVE_X509_STORE_GET_EX_NEW_INDEX) && !defined(X509_STORE_get_ex_new_index)
 #  define X509_STORE_get_ex_new_index(l, p, newf, dupf, freef) \
 	CRYPTO_get_ex_new_index(CRYPTO_EX_INDEX_X509_STORE, (l), (p), \
 				(newf), (dupf), (freef))
@@ -217,6 +181,37 @@ IMPL_PKEY_GETTER(EC_KEY, ec)
 
 #if !defined(HAVE_SSL_SESSION_GET_PROTOCOL_VERSION)
 #  define SSL_SESSION_get_protocol_version(s) ((s)->ssl_version)
+#endif
+
+#if !defined(HAVE_TS_STATUS_INFO_GET0_STATUS)
+#  define TS_STATUS_INFO_get0_status(a) ((a)->status)
+#endif
+
+#if !defined(HAVE_TS_STATUS_INFO_GET0_TEXT)
+#  define TS_STATUS_INFO_get0_text(a) ((a)->text)
+#endif
+
+#if !defined(HAVE_TS_STATUS_INFO_GET0_FAILURE_INFO)
+#  define TS_STATUS_INFO_get0_failure_info(a) ((a)->failure_info)
+#endif
+
+#if !defined(HAVE_TS_VERIFY_CTS_SET_CERTS)
+#  define TS_VERIFY_CTS_set_certs(ctx, crts) ((ctx)->certs=(crts))
+#endif
+
+#if !defined(HAVE_TS_VERIFY_CTX_SET_STORE)
+#  define TS_VERIFY_CTX_set_store(ctx, str) ((ctx)->store=(str))
+#endif
+
+#if !defined(HAVE_TS_VERIFY_CTX_ADD_FLAGS)
+#  define TS_VERIFY_CTX_add_flags(ctx, f) ((ctx)->flags |= (f))
+#endif
+
+#if !defined(HAVE_TS_RESP_CTX_SET_TIME_CB)
+#   define TS_RESP_CTX_set_time_cb(ctx, callback, dta) do { \
+        (ctx)->time_cb = (callback); \
+        (ctx)->time_cb_data = (dta); \
+    } while (0)
 #endif
 
 #endif /* _OSSL_OPENSSL_MISSING_H_ */

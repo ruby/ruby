@@ -42,7 +42,7 @@ describe "BigDecimal#frac" do
   it "correctly handles special values" do
     @infinity.frac.should == @infinity
     @infinity_neg.frac.should == @infinity_neg
-    @nan.frac.nan?.should == true
+    @nan.frac.should.nan?
   end
 
 end

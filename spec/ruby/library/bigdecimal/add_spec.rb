@@ -136,8 +136,8 @@ describe "BigDecimal#add" do
   end
 
   it "returns NaN if NaN is involved" do
-    @one.add(@nan, 10000).nan?.should == true
-    @nan.add(@one, 1).nan?.should == true
+    @one.add(@nan, 10000).should.nan?
+    @nan.add(@one, 1).should.nan?
   end
 
   it "returns Infinity or -Infinity if these are involved" do
@@ -166,8 +166,8 @@ describe "BigDecimal#add" do
   end
 
   it "returns NaN if Infinity + (- Infinity)" do
-    @infinity.add(@infinity_minus, 10000).nan?.should == true
-    @infinity_minus.add(@infinity, 10000).nan?.should == true
+    @infinity.add(@infinity_minus, 10000).should.nan?
+    @infinity_minus.add(@infinity, 10000).should.nan?
   end
 
   it "raises TypeError when adds nil" do

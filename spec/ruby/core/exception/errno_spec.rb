@@ -1,10 +1,6 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/common'
 
-describe "SystemCallError#errno" do
-  it "needs to be reviewed for spec completeness"
-end
-
 describe "Errno::EINVAL.new" do
   it "can be called with no arguments" do
     exc = Errno::EINVAL.new
@@ -43,6 +39,20 @@ describe "Errno::EAGAIN" do
       Errno::EAGAIN.should == Errno::EWOULDBLOCK
     else
       Errno::EAGAIN.should_not == Errno::EWOULDBLOCK
+    end
+  end
+end
+
+describe "Errno::ENOTSUP" do
+  it "is defined" do
+    Errno.should have_constant(:ENOTSUP)
+  end
+
+  it "is the same class as Errno::EOPNOTSUPP if they represent the same errno value" do
+    if Errno::ENOTSUP::Errno == Errno::EOPNOTSUPP::Errno
+      Errno::ENOTSUP.should == Errno::EOPNOTSUPP
+    else
+      Errno::ENOTSUP.should_not == Errno::EOPNOTSUPP
     end
   end
 end

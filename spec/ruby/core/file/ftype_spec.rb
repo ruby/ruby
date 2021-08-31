@@ -12,8 +12,9 @@ describe "File.ftype" do
   end
 
   it "raises Errno::ENOENT if the file is not valid" do
-    l = -> { File.ftype("/#{$$}#{Time.now.to_f}") }
-    l.should raise_error(Errno::ENOENT)
+    -> {
+      File.ftype("/#{$$}#{Time.now.to_f}")
+    }.should raise_error(Errno::ENOENT)
   end
 
   it "returns a String" do
@@ -31,6 +32,14 @@ describe "File.ftype" do
   it "returns 'directory' when the file is a dir" do
     FileSpecs.directory do |dir|
       File.ftype(dir).should == 'directory'
+    end
+  end
+
+  it "uses to_path to convert arguments" do
+    FileSpecs.normal_file do |file|
+      obj = mock('path')
+      obj.should_receive(:to_path).and_return(file)
+      File.ftype(obj).should == 'file'
     end
   end
 

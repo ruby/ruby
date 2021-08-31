@@ -9758,7 +9758,7 @@ Thu Aug 23 16:20:04 2012  Koichi Sasada  <ko1@atdot.net>
 	  are b10.
 	  If flonum is activated, then USE_FLONUM macro is 1.
 	  I'll write detailed in this technique on
-	  https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/Flonum_tech
+	  https://bugs.ruby-lang.org/projects/ruby-master/wiki/Flonum_tech
 
 	* benchmark/bmx_temp.rb: add an benchmark for simple
 	  Float calculation.
@@ -13008,7 +13008,7 @@ Thu Jun  7 15:53:03 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* .gdbinit: add function `trace_machine_instructions' to trace
 	  in native machine assemble.
-	  See https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/MachineInstructionsTraceWithGDB
+	  See https://bugs.ruby-lang.org/projects/ruby-master/wiki/MachineInstructionsTraceWithGDB
 	  for more details.
 
 Wed Jun  6 21:31:21 2012  Tanaka Akira  <akr@fsij.org>
@@ -14711,7 +14711,7 @@ Fri Apr 27 01:45:05 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 	  (22) main thread waits at gvl_yield:112 (native_cond_wait)
 	  As described above, the main thread can't escape from
 	  rb_threadptr_execute_interrupts_common.
-	  See extended memo: http://bugs.ruby-lang.org/projects/ruby-trunk/wiki/R35480_ExtendedMemo
+	  See extended memo: http://bugs.ruby-lang.org/projects/ruby-master/wiki/R35480_ExtendedMemo
 
 Fri Apr 27 07:15:07 2012  Tanaka Akira  <akr@fsij.org>
 

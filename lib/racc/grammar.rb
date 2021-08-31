@@ -1,11 +1,14 @@
+#--
 #
-# $Id: 3fcabd58bef02540bf78e8142469681cb9f975c2 $
+#
 #
 # Copyright (c) 1999-2006 Minero Aoki
 #
 # This program is free software.
 # You can distribute/modify this program under the same terms of ruby.
 # see the file "COPYING".
+#
+#++
 
 require 'racc/compat'
 require 'racc/iset'
@@ -83,14 +86,15 @@ module Racc
     end
 
     def n_useless_nonterminals
-      @n_useless_nonterminals ||=
-          begin
-            n = 0
-            @symboltable.each_nonterminal do |sym|
-              n += 1 if sym.useless?
-            end
-            n
-          end
+      @n_useless_nonterminals ||= each_useless_nonterminal.count
+    end
+
+    def each_useless_nonterminal
+      return to_enum __method__ unless block_given?
+
+      @symboltable.each_nonterminal do |sym|
+        yield sym if sym.useless?
+      end
     end
 
     def useless_rule_exist?
@@ -98,14 +102,15 @@ module Racc
     end
 
     def n_useless_rules
-      @n_useless_rules ||=
-          begin
-            n = 0
-            each do |r|
-              n += 1 if r.useless?
-            end
-            n
-          end
+      @n_useless_rules ||= each_useless_rule.count
+    end
+
+    def each_useless_rule
+      return to_enum __method__ unless block_given?
+
+      each do |r|
+        yield r if r.useless?
+      end
     end
 
     def nfa

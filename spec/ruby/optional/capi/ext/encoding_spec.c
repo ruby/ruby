@@ -7,6 +7,10 @@
 extern "C" {
 #endif
 
+static VALUE encoding_spec_MBCLEN_CHARFOUND_P(VALUE self, VALUE obj) {
+  return INT2FIX(MBCLEN_CHARFOUND_P(FIX2INT(obj)));
+}
+
 static VALUE encoding_spec_ENC_CODERANGE_ASCIIONLY(VALUE self, VALUE obj) {
   if(ENC_CODERANGE_ASCIIONLY(obj)) {
     return Qtrue;
@@ -102,8 +106,37 @@ static VALUE encoding_spec_rb_enc_find_index(VALUE self, VALUE name) {
   return INT2NUM(rb_enc_find_index(RSTRING_PTR(name)));
 }
 
+static VALUE encoding_spec_rb_enc_isalnum(VALUE self, VALUE chr, VALUE encoding) {
+  rb_encoding *e = rb_to_encoding(encoding);
+  return rb_enc_isalnum(FIX2INT(chr), e) ? Qtrue : Qfalse;
+}
+
+static VALUE encoding_spec_rb_enc_isspace(VALUE self, VALUE chr, VALUE encoding) {
+  rb_encoding *e = rb_to_encoding(encoding);
+  return rb_enc_isspace(FIX2INT(chr), e) ? Qtrue : Qfalse;
+}
+
 static VALUE encoding_spec_rb_enc_from_index(VALUE self, VALUE index) {
   return rb_str_new2(rb_enc_from_index(NUM2INT(index))->name);
+}
+
+static VALUE encoding_spec_rb_enc_mbc_to_codepoint(VALUE self, VALUE str, VALUE offset) {
+  int o = FIX2INT(offset);
+  char *p = RSTRING_PTR(str);
+  char *e = p + o;
+  return INT2FIX(rb_enc_mbc_to_codepoint(p, e, rb_enc_get(str)));
+}
+
+static VALUE encoding_spec_rb_enc_mbcput(VALUE self, VALUE code, VALUE encoding) {
+  unsigned int c = FIX2UINT(code);
+  rb_encoding *enc = rb_to_encoding(encoding);
+  char buf[ONIGENC_CODE_TO_MBC_MAXLEN];
+  memset(buf, '\1', sizeof(buf));
+  int len = rb_enc_mbcput(c, buf, enc);
+  if (buf[len] != '\1') {
+    rb_raise(rb_eRuntimeError, "should not change bytes after len");
+  }
+  return rb_enc_str_new(buf, len, enc);
 }
 
 static VALUE encoding_spec_rb_enc_from_encoding(VALUE self, VALUE name) {
@@ -112,6 +145,13 @@ static VALUE encoding_spec_rb_enc_from_encoding(VALUE self, VALUE name) {
 
 static VALUE encoding_spec_rb_enc_get(VALUE self, VALUE obj) {
   return rb_str_new2(rb_enc_get(obj)->name);
+}
+
+static VALUE encoding_spec_rb_enc_precise_mbclen(VALUE self, VALUE str, VALUE offset) {
+  int o = FIX2INT(offset);
+  char *p = RSTRING_PTR(str);
+  char *e = p + o;
+  return INT2FIX(rb_enc_precise_mbclen(p, e, rb_enc_get(str)));
 }
 
 static VALUE encoding_spec_rb_obj_encoding(VALUE self, VALUE obj) {
@@ -149,6 +189,21 @@ static VALUE encoding_spec_rb_enc_str_coderange(VALUE self, VALUE str) {
   }
 }
 
+static VALUE encoding_spec_rb_enc_str_new_cstr(VALUE self, VALUE str, VALUE enc) {
+  rb_encoding *e = rb_to_encoding(enc);
+  return rb_enc_str_new_cstr(StringValueCStr(str), e);
+}
+
+static VALUE encoding_spec_rb_enc_str_new_cstr_constant(VALUE self, VALUE enc) {
+  if (NIL_P(enc)) {
+    rb_encoding *e = NULL;
+    return rb_enc_str_new_static("test string literal", strlen("test string literal"), e);
+  } else {
+    rb_encoding *e = rb_to_encoding(enc);
+    return rb_enc_str_new_cstr("test string literal", e);
+  }
+}
+
 static VALUE encoding_spec_rb_enc_str_new(VALUE self, VALUE str, VALUE len, VALUE enc) {
   return rb_enc_str_new(RSTRING_PTR(str), FIX2INT(len), rb_to_encoding(enc));
 }
@@ -175,6 +230,21 @@ static VALUE encoding_spec_rb_to_encoding(VALUE self, VALUE obj) {
   return rb_str_new2(rb_to_encoding(obj)->name);
 }
 
+static rb_encoding** native_rb_encoding_pointer;
+
+static VALUE encoding_spec_rb_to_encoding_native_store(VALUE self, VALUE obj) {
+  rb_encoding* enc = rb_to_encoding(obj);
+  VALUE address = SIZET2NUM((size_t) native_rb_encoding_pointer);
+  *native_rb_encoding_pointer = enc;
+  return address;
+}
+
+static VALUE encoding_spec_rb_to_encoding_native_name(VALUE self, VALUE address) {
+  rb_encoding** ptr = (rb_encoding**) NUM2SIZET(address);
+  rb_encoding* enc = *ptr;
+  return rb_str_new2(enc->name);
+}
+
 static VALUE encoding_spec_rb_to_encoding_index(VALUE self, VALUE obj) {
   return INT2NUM(rb_to_encoding_index(obj));
 }
@@ -196,8 +266,45 @@ static VALUE encoding_spec_rb_enc_codepoint_len(VALUE self, VALUE str) {
   return rb_ary_new3(2, LONG2NUM(codepoint), LONG2NUM(len));
 }
 
+static VALUE encoding_spec_rb_enc_str_asciionly_p(VALUE self, VALUE str) {
+  if (rb_enc_str_asciionly_p(str)) {
+    return Qtrue;
+  } else {
+    return Qfalse;
+  }
+}
+
+static VALUE encoding_spec_rb_uv_to_utf8(VALUE self, VALUE buf, VALUE num) {
+  return INT2NUM(rb_uv_to_utf8(RSTRING_PTR(buf), NUM2INT(num)));
+}
+
+static VALUE encoding_spec_ONIGENC_MBC_CASE_FOLD(VALUE self, VALUE str) {
+  char *beg = RSTRING_PTR(str);
+  char *beg_initial = beg;
+  char *end = beg + 2;
+  OnigUChar fold[ONIGENC_GET_CASE_FOLD_CODES_MAX_NUM];
+  memset(fold, '\1', sizeof(fold));
+  rb_encoding *enc = rb_enc_get(str);
+  int r = ONIGENC_MBC_CASE_FOLD(enc, ONIGENC_CASE_FOLD, &beg, (const OnigUChar *)end, fold);
+  if (r > 0 && fold[r] != '\1') {
+    rb_raise(rb_eRuntimeError, "should not change bytes after len");
+  }
+  VALUE str_result = r <= 0 ? Qnil : rb_enc_str_new((char *)fold, r, enc);
+  long bytes_used = beg - beg_initial;
+  return rb_ary_new3(2, str_result, INT2FIX(bytes_used));
+}
+
+static VALUE encoding_spec_rb_enc_codelen(VALUE self, VALUE code, VALUE encoding) {
+  unsigned int c = FIX2UINT(code);
+  rb_encoding *enc = rb_to_encoding(encoding);
+  return INT2FIX(rb_enc_codelen(c, enc));
+}
+
 void Init_encoding_spec(void) {
-  VALUE cls = rb_define_class("CApiEncodingSpecs", rb_cObject);
+  VALUE cls;
+  native_rb_encoding_pointer = (rb_encoding**) malloc(sizeof(rb_encoding*));
+
+  cls = rb_define_class("CApiEncodingSpecs", rb_cObject);
   rb_define_method(cls, "ENC_CODERANGE_ASCIIONLY",
                    encoding_spec_ENC_CODERANGE_ASCIIONLY, 1);
 
@@ -221,27 +328,41 @@ void Init_encoding_spec(void) {
   rb_define_method(cls, "rb_enc_alias", encoding_spec_rb_enc_alias, 2);
 #endif
 
+  rb_define_method(cls, "MBCLEN_CHARFOUND_P", encoding_spec_MBCLEN_CHARFOUND_P, 1);
   rb_define_method(cls, "rb_enc_associate", encoding_spec_rb_enc_associate, 2);
   rb_define_method(cls, "rb_enc_associate_index", encoding_spec_rb_enc_associate_index, 2);
   rb_define_method(cls, "rb_enc_compatible", encoding_spec_rb_enc_compatible, 2);
   rb_define_method(cls, "rb_enc_copy", encoding_spec_rb_enc_copy, 2);
+  rb_define_method(cls, "rb_enc_codelen", encoding_spec_rb_enc_codelen, 2);
   rb_define_method(cls, "rb_enc_find", encoding_spec_rb_enc_find, 1);
   rb_define_method(cls, "rb_enc_find_index", encoding_spec_rb_enc_find_index, 1);
+  rb_define_method(cls, "rb_enc_isalnum", encoding_spec_rb_enc_isalnum, 2);
+  rb_define_method(cls, "rb_enc_isspace", encoding_spec_rb_enc_isspace, 2);
   rb_define_method(cls, "rb_enc_from_index", encoding_spec_rb_enc_from_index, 1);
+  rb_define_method(cls, "rb_enc_mbc_to_codepoint", encoding_spec_rb_enc_mbc_to_codepoint, 2);
+  rb_define_method(cls, "rb_enc_mbcput", encoding_spec_rb_enc_mbcput, 2);
   rb_define_method(cls, "rb_enc_from_encoding", encoding_spec_rb_enc_from_encoding, 1);
   rb_define_method(cls, "rb_enc_get", encoding_spec_rb_enc_get, 1);
+  rb_define_method(cls, "rb_enc_precise_mbclen", encoding_spec_rb_enc_precise_mbclen, 2);
   rb_define_method(cls, "rb_obj_encoding", encoding_spec_rb_obj_encoding, 1);
   rb_define_method(cls, "rb_enc_get_index", encoding_spec_rb_enc_get_index, 1);
   rb_define_method(cls, "rb_enc_set_index", encoding_spec_rb_enc_set_index, 2);
   rb_define_method(cls, "rb_enc_str_coderange", encoding_spec_rb_enc_str_coderange, 1);
+  rb_define_method(cls, "rb_enc_str_new_cstr", encoding_spec_rb_enc_str_new_cstr, 2);
+  rb_define_method(cls, "rb_enc_str_new_cstr_constant", encoding_spec_rb_enc_str_new_cstr_constant, 1);
   rb_define_method(cls, "rb_enc_str_new", encoding_spec_rb_enc_str_new, 3);
   rb_define_method(cls, "ENCODING_GET", encoding_spec_ENCODING_GET, 1);
   rb_define_method(cls, "ENCODING_SET", encoding_spec_ENCODING_SET, 2);
   rb_define_method(cls, "rb_enc_to_index", encoding_spec_rb_enc_to_index, 1);
   rb_define_method(cls, "rb_to_encoding", encoding_spec_rb_to_encoding, 1);
+  rb_define_method(cls, "rb_to_encoding_native_store", encoding_spec_rb_to_encoding_native_store, 1);
+  rb_define_method(cls, "rb_to_encoding_native_name", encoding_spec_rb_to_encoding_native_name, 1);
   rb_define_method(cls, "rb_to_encoding_index", encoding_spec_rb_to_encoding_index, 1);
   rb_define_method(cls, "rb_enc_nth", encoding_spec_rb_enc_nth, 2);
   rb_define_method(cls, "rb_enc_codepoint_len", encoding_spec_rb_enc_codepoint_len, 1);
+  rb_define_method(cls, "rb_enc_str_asciionly_p", encoding_spec_rb_enc_str_asciionly_p, 1);
+  rb_define_method(cls, "rb_uv_to_utf8", encoding_spec_rb_uv_to_utf8, 2);
+  rb_define_method(cls, "ONIGENC_MBC_CASE_FOLD", encoding_spec_ONIGENC_MBC_CASE_FOLD, 1);
 }
 
 #ifdef __cplusplus

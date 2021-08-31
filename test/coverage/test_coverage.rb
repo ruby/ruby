@@ -728,4 +728,50 @@ class TestCoverage < Test::Unit::TestCase
       }
     }
   end
+
+  def test_stop_wrong_peephole_optimization
+    result = {
+      :lines => [1, 1, 1, nil]
+    }
+    assert_coverage(<<~"end;", { lines: true }, result)
+      raise if 1 == 2
+      while true
+        break
+      end
+    end;
+  end
+
+  def test_branch_coverage_in_ensure_clause
+    result = {
+      :branches => {
+        [:if, 0, 4, 2, 4, 11] => {
+          [:then, 1, 4, 2, 4, 5] => 1,
+          [:else, 2, 4, 2, 4, 11] => 1,
+        }
+      }
+    }
+    assert_coverage(<<~"end;", { branches: true }, result) # Bug #16967
+      def foo
+        yield
+      ensure
+        :ok if $!
+      end
+      foo {}
+      foo { raise } rescue nil
+    end;
+  end
+
+  def test_coverage_with_asan
+    result = { :lines => [1, 1, 0, 0, nil, nil, nil] }
+
+    assert_coverage(<<~"end;", { lines: true }, result) # Bug #18001
+      class Foo
+        def bar
+          baz do |x|
+            next unless Integer == x
+          end
+        end
+      end
+    end;
+  end
 end

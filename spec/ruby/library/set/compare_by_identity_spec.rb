@@ -42,7 +42,7 @@ describe "Set#compare_by_identity" do
     set = Set.new.compare_by_identity
     set << :foo
     set.compare_by_identity.should equal(set)
-    set.compare_by_identity?.should == true
+    set.should.compare_by_identity?
     set.to_a.should == [:foo]
   end
 
@@ -91,11 +91,11 @@ describe "Set#compare_by_identity" do
     set.to_a.sort.should == [a1, a2].sort
   end
 
-  it "raises a #{frozen_error_class} on frozen sets" do
+  it "raises a FrozenError on frozen sets" do
     set = Set.new.freeze
     -> {
       set.compare_by_identity
-    }.should raise_error(frozen_error_class, /frozen Hash/)
+    }.should raise_error(FrozenError, /frozen Hash/)
   end
 
   it "persists over #dups" do
@@ -124,20 +124,20 @@ end
 
 describe "Set#compare_by_identity?" do
   it "returns false by default" do
-    Set.new.compare_by_identity?.should == false
+    Set.new.should_not.compare_by_identity?
   end
 
   it "returns true once #compare_by_identity has been invoked on self" do
     set = Set.new
     set.compare_by_identity
-    set.compare_by_identity?.should == true
+    set.should.compare_by_identity?
   end
 
   it "returns true when called multiple times on the same set" do
     set = Set.new
     set.compare_by_identity
-    set.compare_by_identity?.should == true
-    set.compare_by_identity?.should == true
-    set.compare_by_identity?.should == true
+    set.should.compare_by_identity?
+    set.should.compare_by_identity?
+    set.should.compare_by_identity?
   end
 end

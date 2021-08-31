@@ -214,12 +214,51 @@ PERLMOD_MAKEVAR_PREFIX =
 # Configuration options related to the preprocessor
 #---------------------------------------------------------------------------
 ENABLE_PREPROCESSING   = YES
-MACRO_EXPANSION        = NO
-EXPAND_ONLY_PREDEF     = NO
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = YES
 SEARCH_INCLUDES        = YES
 INCLUDE_PATH           = <%=srcdir%> <%=srcdir%>/include
 INCLUDE_FILE_PATTERNS  =
-PREDEFINED             =
+PREDEFINED             = \
+    ALWAYS_INLINE(_)=_ \
+    COLDFUNC= \
+    CONSTFUNC(_)=_ \
+    DEPRECATED(_)=_ \
+    DEPRECATED_BY(__,_)=_ \
+    ERRORFUNC(__,_)=_ \
+    MJIT_FUNC_EXPORTED= \
+    MJIT_STATIC=extern \
+    MJIT_SYMBOL_EXPORT_BEGIN= \
+    MJIT_SYMBOL_EXPORT_END= \
+    NOINLINE(_)=_ \
+    NORETURN(_)=_ \
+    PRINTF_ARGS(_,__,___)=_ \
+    PUREFUNC(_)=_ \
+    RUBY_EXTERN=extern \
+    RUBY_FUNC_EXPORTED= \
+    RUBY_FUNC_NONNULL(__,_)=_ \
+    RUBY_SYMBOL_EXPORT_BEGIN= \
+    RUBY_SYMBOL_EXPORT_END= \
+    WARNINGFUNC(__,_)=_ \
+    _MSC_VER=1924 \
+    __DOXYGEN__ \
+    __GNUC_MINOR__=0 \
+    __GNUC_PATCHLEVEL__=0 \
+    __GNUC__=10 \
+    __STDC_VERSION__=201710L \
+    __clang__=10 \
+    __clang_major__=10 \
+    __clang_minor__=0 \
+    __clang_patchlevel__=0 \
+    __cplusplus=201704L \
+    __has_attribute(_)=1 \
+    __has_builtin(_)=1 \
+    __has_c_attribute(_)=1 \
+    __has_cpp_attribute(_)=1 \
+    __has_declspec_attribute(_)=1 \
+    __has_extension(_)=1 \
+    __has_feature(_)=1 \
+    __has_warning(_)=1
 EXPAND_AS_DEFINED      =
 SKIP_FUNCTION_MACROS   = YES
 #---------------------------------------------------------------------------

@@ -136,4 +136,13 @@ describe "File.join" do
     File.join(bin).should == "bin"
     File.join("usr", bin).should == "usr/bin"
   end
+
+  it "raises errors for null bytes" do
+    -> { File.join("\x00x", "metadata.gz") }.should raise_error(ArgumentError) { |e|
+      e.message.should == 'string contains null byte'
+    }
+    -> { File.join("metadata.gz", "\x00x") }.should raise_error(ArgumentError) { |e|
+      e.message.should == 'string contains null byte'
+    }
+  end
 end

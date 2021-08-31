@@ -11,7 +11,7 @@ describe "ConditionVariable#wait" do
     cv.wait(o, 1234)
   end
 
-  it "returns self" do
+  it "can be woken up by ConditionVariable#signal" do
     m = Mutex.new
     cv = ConditionVariable.new
     in_synchronize = false
@@ -19,17 +19,62 @@ describe "ConditionVariable#wait" do
     th = Thread.new do
       m.synchronize do
         in_synchronize = true
-        cv.wait(m).should == cv
+        cv.wait(m)
       end
+      :success
     end
 
     # wait for m to acquire the mutex
     Thread.pass until in_synchronize
     # wait until th is sleeping (ie waiting)
-    Thread.pass while th.status and th.status != "sleep"
+    Thread.pass until th.stop?
 
     m.synchronize { cv.signal }
-    th.join
+    th.value.should == :success
+  end
+
+  it "can be interrupted by Thread#run" do
+    m = Mutex.new
+    cv = ConditionVariable.new
+    in_synchronize = false
+
+    th = Thread.new do
+      m.synchronize do
+        in_synchronize = true
+        cv.wait(m)
+      end
+      :success
+    end
+
+    # wait for m to acquire the mutex
+    Thread.pass until in_synchronize
+    # wait until th is sleeping (ie waiting)
+    Thread.pass until th.stop?
+
+    th.run
+    th.value.should == :success
+  end
+
+  it "can be interrupted by Thread#wakeup" do
+    m = Mutex.new
+    cv = ConditionVariable.new
+    in_synchronize = false
+
+    th = Thread.new do
+      m.synchronize do
+        in_synchronize = true
+        cv.wait(m)
+      end
+      :success
+    end
+
+    # wait for m to acquire the mutex
+    Thread.pass until in_synchronize
+    # wait until th is sleeping (ie waiting)
+    Thread.pass until th.stop?
+
+    th.wakeup
+    th.value.should == :success
   end
 
   it "reacquires the lock even if the thread is killed" do
@@ -53,7 +98,7 @@ describe "ConditionVariable#wait" do
     # wait for m to acquire the mutex
     Thread.pass until in_synchronize
     # wait until th is sleeping (ie waiting)
-    Thread.pass while th.status and th.status != "sleep"
+    Thread.pass until th.stop?
 
     th.kill
     th.join
@@ -61,41 +106,39 @@ describe "ConditionVariable#wait" do
     owned.should == true
   end
 
-  ruby_bug '#14999', ''...'2.5' do
-    it "reacquires the lock even if the thread is killed after being signaled" do
-      m = Mutex.new
-      cv = ConditionVariable.new
-      in_synchronize = false
-      owned = nil
+  it "reacquires the lock even if the thread is killed after being signaled" do
+    m = Mutex.new
+    cv = ConditionVariable.new
+    in_synchronize = false
+    owned = nil
 
-      th = Thread.new do
-        m.synchronize do
-          in_synchronize = true
-          begin
-            cv.wait(m)
-          ensure
-            owned = m.owned?
-            $stderr.puts "\nThe Thread doesn't own the Mutex!" unless owned
-          end
+    th = Thread.new do
+      m.synchronize do
+        in_synchronize = true
+        begin
+          cv.wait(m)
+        ensure
+          owned = m.owned?
+          $stderr.puts "\nThe Thread doesn't own the Mutex!" unless owned
         end
       end
-
-      # wait for m to acquire the mutex
-      Thread.pass until in_synchronize
-      # wait until th is sleeping (ie waiting)
-      Thread.pass while th.status and th.status != "sleep"
-
-      m.synchronize {
-        cv.signal
-        # Wait that the thread is blocked on acquiring the Mutex
-        sleep 0.001
-        # Kill the thread, yet the thread should first acquire the Mutex before going on
-        th.kill
-      }
-
-      th.join
-      owned.should == true
     end
+
+    # wait for m to acquire the mutex
+    Thread.pass until in_synchronize
+    # wait until th is sleeping (ie waiting)
+    Thread.pass until th.stop?
+
+    m.synchronize {
+      cv.signal
+      # Wait that the thread is blocked on acquiring the Mutex
+      sleep 0.001
+      # Kill the thread, yet the thread should first acquire the Mutex before going on
+      th.kill
+    }
+
+    th.join
+    owned.should == true
   end
 
   it "supports multiple Threads waiting on the same ConditionVariable and Mutex" do
@@ -114,7 +157,7 @@ describe "ConditionVariable#wait" do
     }
 
     Thread.pass until m.synchronize { events.size } == n_threads
-    Thread.pass while threads.any? { |th| th.status and th.status != "sleep" }
+    Thread.pass until threads.any?(&:stop?)
     m.synchronize do
       threads.each { |t|
         # Cause interactions with the waiting threads.

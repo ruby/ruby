@@ -94,6 +94,8 @@ class Bundler::Thor
       # say("I know you knew that.")
       #
       def say(message = "", color = nil, force_new_line = (message.to_s !~ /( |\t)\Z/))
+        return if quiet?
+
         buffer = prepare_message(message, *color)
         buffer << "\n" if force_new_line && !message.to_s.end_with?("\n")
 
@@ -230,8 +232,9 @@ class Bundler::Thor
         paras = message.split("\n\n")
 
         paras.map! do |unwrapped|
-          counter = 0
-          unwrapped.split(" ").inject do |memo, word|
+          words = unwrapped.split(" ")
+          counter = words.first.length
+          words.inject do |memo, word|
             word = word.gsub(/\n\005/, "\n").gsub(/\005/, "\n")
             counter = 0 if word.include? "\n"
             if (counter + word.length + 1) < width
@@ -451,14 +454,23 @@ class Bundler::Thor
 
       def ask_filtered(statement, color, options)
         answer_set = options[:limited_to]
+        case_insensitive = options.fetch(:case_insensitive, false)
         correct_answer = nil
         until correct_answer
           answers = answer_set.join(", ")
           answer = ask_simply("#{statement} [#{answers}]", color, options)
-          correct_answer = answer_set.include?(answer) ? answer : nil
+          correct_answer = answer_match(answer_set, answer, case_insensitive)
           say("Your response must be one of: [#{answers}]. Please try again.") unless correct_answer
         end
         correct_answer
+      end
+
+      def answer_match(possibilities, answer, case_insensitive)
+        if case_insensitive
+          possibilities.detect{ |possibility| possibility.downcase == answer.downcase }
+        else
+          possibilities.detect{ |possibility| possibility == answer }
+        end
       end
 
       def merge(destination, content) #:nodoc:

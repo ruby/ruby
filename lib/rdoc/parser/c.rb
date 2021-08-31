@@ -210,48 +210,6 @@ class RDoc::Parser::C < RDoc::Parser
   end
 
   ##
-  # Removes duplicate call-seq entries for methods using the same
-  # implementation.
-
-  def deduplicate_call_seq
-    @methods.each do |var_name, functions|
-      class_name = @known_classes[var_name]
-      next unless class_name
-      class_obj  = find_class var_name, class_name
-
-      functions.each_value do |method_names|
-        next if method_names.length == 1
-
-        method_names.each do |method_name|
-          deduplicate_method_name class_obj, method_name
-        end
-      end
-    end
-  end
-
-  ##
-  # If two ruby methods share a C implementation (and comment) this
-  # deduplicates the examples in the call_seq for the method to reduce
-  # confusion in the output.
-
-  def deduplicate_method_name class_obj, method_name # :nodoc:
-    return unless
-      method = class_obj.method_list.find { |m| m.name == method_name }
-    return unless call_seq = method.call_seq
-
-    method_name = method_name[0, 1] if method_name =~ /\A\[/
-
-    entries = call_seq.split "\n"
-
-    matching = entries.select do |entry|
-      entry =~ /^\w*\.?#{Regexp.escape method_name}/ or
-        entry =~ /\s#{Regexp.escape method_name}\s/
-    end
-
-    method.call_seq = matching.join "\n"
-  end
-
-  ##
   # Scans #content for rb_define_alias
 
   def do_aliases
@@ -269,21 +227,27 @@ class RDoc::Parser::C < RDoc::Parser
       end
 
       class_obj = find_class var_name, class_name
-
-      al = RDoc::Alias.new '', old_name, new_name, ''
-      al.singleton = @singleton_classes.key? var_name
-
       comment = find_alias_comment var_name, new_name, old_name
-
       comment.normalize
-
-      al.comment = comment
-
-      al.record_location @top_level
-
-      class_obj.add_alias al
-      @stats.add_alias al
+      if comment.to_s.empty? and existing_method = class_obj.method_list.find { |m| m.name == old_name}
+        comment = existing_method.comment
+      end
+      add_alias(var_name, class_obj, old_name, new_name, comment)
     end
+  end
+
+  ##
+  # Add alias, either from a direct alias definition, or from two
+  # method that reference the same function.
+
+  def add_alias(var_name, class_obj, old_name, new_name, comment)
+    al = RDoc::Alias.new '', old_name, new_name, ''
+    al.singleton = @singleton_classes.key? var_name
+    al.comment = comment
+    al.record_location @top_level
+    class_obj.add_alias al
+    @stats.add_alias al
+    al
   end
 
   ##
@@ -354,7 +318,7 @@ class RDoc::Parser::C < RDoc::Parser
                 \s*"(?<module_name_1>\w+)"\s*
               \)
             |
-              _under\s*\( # rb_define_module_under(module_under, module_name_1)
+              _under\s*\( # rb_define_module_under(module_under, module_name_2)
                 \s*(?<module_under>\w+),
                 \s*"(?<module_name_2>\w+)"
               \s*\)
@@ -608,7 +572,7 @@ class RDoc::Parser::C < RDoc::Parser
       ((?>/\*.*?\*/\s*)?)
       ((?:(?:\w+)\s+)?
         (?:intern\s+)?VALUE\s+(\w+)
-        \s*(?:\([^)]*\))(?:[^;]|$))
+        \s*(?:\([^)]*\))(?:[^\);]|$))
     | ((?>/\*.*?\*/\s*))^\s*(\#\s*define\s+(\w+)\s+(\w+))
     | ^\s*\#\s*define\s+(\w+)\s+(\w+)
     }xm) do
@@ -1021,6 +985,10 @@ class RDoc::Parser::C < RDoc::Parser
 
     class_obj = find_class var_name, class_name
 
+    if existing_method = class_obj.method_list.find { |m| m.c_function == function }
+      add_alias(var_name, class_obj, existing_method.name, meth_name, existing_method.comment)
+    end
+
     if class_obj then
       if meth_name == 'initialize' then
         meth_name = 'new'
@@ -1248,8 +1216,6 @@ class RDoc::Parser::C < RDoc::Parser
     do_includes
     do_aliases
     do_attrs
-
-    deduplicate_call_seq
 
     @store.add_c_variables self
 

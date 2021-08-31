@@ -1,13 +1,18 @@
+#ifndef COROUTINE_X86_CONTEXT_H
+#define COROUTINE_X86_CONTEXT_H 1
+
 /*
  *  This file is part of the "Coroutine" project and released under the MIT License.
  *
  *  Created by Samuel Williams on 3/11/2018.
- *  Copyright, 2018, by Samuel Williams. All rights reserved.
+ *  Copyright, 2018, by Samuel Williams.
 */
 
 #pragma once
 
 #include <assert.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <string.h>
 
 #define COROUTINE __attribute__((noreturn, fastcall)) void
@@ -18,6 +23,7 @@ enum {COROUTINE_REGISTERS = 4};
 struct coroutine_context
 {
     void **stack_pointer;
+    void *argument;
 };
 
 typedef COROUTINE(* coroutine_start)(struct coroutine_context *from, struct coroutine_context *self) __attribute__((fastcall));
@@ -51,3 +57,5 @@ static inline void coroutine_destroy(struct coroutine_context * context)
 {
     context->stack_pointer = NULL;
 }
+
+#endif /* COROUTINE_X86_CONTEXT_H */

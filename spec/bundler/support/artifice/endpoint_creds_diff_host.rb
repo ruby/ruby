@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require File.expand_path("../endpoint", __FILE__)
+require_relative "endpoint"
 
 Artifice.deactivate
 
@@ -31,7 +31,7 @@ class EndpointCredsDiffHost < Endpoint
 
   get "/no/creds/:id" do
     if request.host.include?("diffhost") && !auth.provided?
-      File.read("#{gem_repo1}/gems/#{params[:id]}")
+      File.binread("#{gem_repo1}/gems/#{params[:id]}")
     end
   end
 end

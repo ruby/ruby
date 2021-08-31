@@ -12,6 +12,8 @@ require 'uri'
 require 'shellwords'
 
 ENV['LC_ALL'] = 'C'
+ORIGIN = 'git@git.ruby-lang.org:ruby.git'
+GITHUB = 'git@github.com:ruby/ruby.git'
 
 module Merger
   REPOS = 'svn+ssh://svn@ci.ruby-lang.org/ruby/'
@@ -114,7 +116,7 @@ class << Merger
     v, pl = version
     if relname
       abort "patchlevel is not -1 but '#{pl}' for preview or rc" if pl != '-1' && /-(?:preview|rc)/ =~ relname
-      abort "patchlevel is not 0 but '#{pl}' for the first release" if pl != '0' && /-(?:preview|rc)/ !~ relname
+      abort "patchlevel is not 0 but '#{pl}' for the first release" if pl != '0' && relname.end_with?(".0")
       pl = relname[/-(.*)\z/, 1]
       curver = "#{v.join('.')}#{("-#{pl}" if pl)}"
       if relname != curver
@@ -150,7 +152,7 @@ class << Merger
       unless execute('git', 'tag', tagname)
         abort 'specfied tag already exists. check tag name and remove it if you want to force re-tagging'
       end
-      execute('git', 'push', 'origin', tagname, interactive: true)
+      execute('git', 'push', ORIGIN, tagname, interactive: true)
     end
   end
 
@@ -176,7 +178,8 @@ class << Merger
       execute('svn', 'rm', '-m', "remove tag #{tagname}", tag_url, interactive: true)
     else
       execute('git', 'tag', '-d', tagname)
-      execute('git', 'push', 'origin', ":#{tagname}", interactive: true)
+      execute('git', 'push', ORIGIN, ":#{tagname}", interactive: true)
+      execute('git', 'push', GITHUB, ":#{tagname}", interactive: true)
     end
   end
 
@@ -217,8 +220,7 @@ class << Merger
     else
       current_branch = IO.popen(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], &:read).strip
       execute('git', 'add', '.') &&
-        execute('git', 'commit', '-F', file) &&
-        execute('git', 'push', 'origin', current_branch)
+        execute('git', 'commit', '-F', file)
     end
   end
 

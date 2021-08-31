@@ -103,15 +103,6 @@ module DRbYield
     @there.xarray_each {|x| assert_kind_of(XArray, x)}
     @there.xarray_each {|*x| assert_kind_of(XArray, x[0])}
   end
-
-  def test_06_taint
-    x = proc {}
-    assert_not_predicate(x, :tainted?)
-    @there.echo_yield(x) {|o|
-      assert_equal(x, o)
-      assert_not_predicate(x, :tainted?)
-    }
-  end
 end
 
 class TestDRbYield < Test::Unit::TestCase
@@ -332,27 +323,47 @@ class TestDRbAnyToS < Test::Unit::TestCase
   end
 
   def test_any_to_s
-    server = DRb::DRbServer.new('druby://:0')
+    server = DRb::DRbServer.new('druby://localhost:0')
     server.singleton_class.send(:public, :any_to_s)
     assert_equal("foo:String", server.any_to_s("foo"))
     assert_match(/\A#<DRbTests::TestDRbAnyToS::BO:0x[0-9a-f]+>\z/, server.any_to_s(BO.new))
     server.stop_service
     server.thread.join
+    DRb::DRbConn.stop_pool
   end
 end
 
 class TestDRbTCP < Test::Unit::TestCase
   def test_immediate_close
-    server = DRb::DRbServer.new('druby://:0')
+    server = DRb::DRbServer.new('druby://localhost:0')
     host, port, = DRb::DRbTCPSocket.send(:parse_uri, server.uri)
     socket = TCPSocket.open host, port
     socket.shutdown
     socket.close
     client = DRb::DRbTCPSocket.new(server.uri, socket)
     assert client
-    client.close
+  ensure
+    client&.close
+    socket&.close
     server.stop_service
     server.thread.join
+    DRb::DRbConn.stop_pool
+  end
+end
+
+class TestBug16634 < Test::Unit::TestCase
+  include DRbBase
+
+  def setup
+    super
+    setup_service 'ut_drb.rb'
+  end
+
+  def test_bug16634
+    assert_equal(42, @there.keyword_test1(a: 42))
+    assert_equal("default", @there.keyword_test2)
+    assert_equal(42, @there.keyword_test2(b: 42))
+    assert_equal({:a=>42, :b=>42}, @there.keyword_test3(a: 42, b: 42))
   end
 end
 

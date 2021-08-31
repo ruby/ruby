@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
 require "net/http"
+require_relative "../path"
 
-CASSETTE_PATH = File.expand_path("../vcr_cassettes", __FILE__)
+CASSETTE_PATH = "#{Spec::Path.spec_dir}/support/artifice/vcr_cassettes"
 CASSETTE_NAME = ENV.fetch("BUNDLER_SPEC_VCR_CASSETTE_NAME") { "realworld" }
 
 class BundlerVCRHTTP < Net::HTTP
@@ -30,7 +31,6 @@ class BundlerVCRHTTP < Net::HTTP
 
     def recorded_response?
       return true if ENV["BUNDLER_SPEC_PRE_RECORDED"]
-      return false if ENV["BUNDLER_SPEC_FORCE_RECORD"]
       request_pair_paths.all? {|f| File.exist?(f) }
     end
 
@@ -39,7 +39,7 @@ class BundlerVCRHTTP < Net::HTTP
         response_io = ::Net::BufferedIO.new(response_file)
         ::Net::HTTPResponse.read_new(response_io).tap do |response|
           response.decode_content = request.decode_content if request.respond_to?(:decode_content)
-          response.uri = request.uri if request.respond_to?(:uri)
+          response.uri = request.uri
 
           response.reading_body(response_io, request.response_body_permitted?) do
             response_block.call(response) if response_block
@@ -56,6 +56,7 @@ class BundlerVCRHTTP < Net::HTTP
       response = http.request_without_vcr(request, body, &response_block)
       @recording = false
       unless @recording
+        require "fileutils"
         FileUtils.mkdir_p(File.dirname(request_path))
         binwrite(request_path, request_to_string(request))
         binwrite(response_path, response_to_string(response))
@@ -78,7 +79,7 @@ class BundlerVCRHTTP < Net::HTTP
     end
 
     def read_stored_request(path)
-      contents = File.read(path)
+      contents = File.binread(path)
       headers = {}
       method = nil
       path = nil
@@ -131,6 +132,19 @@ class BundlerVCRHTTP < Net::HTTP
       File.open(path, "wb:ASCII-8BIT") {|f| f.write(contents) }
     end
   end
+
+  def start_with_vcr
+    if ENV["BUNDLER_SPEC_PRE_RECORDED"]
+      raise IOError, "HTTP session already opened" if @started
+      @socket = nil
+      @started = true
+    else
+      start_without_vcr
+    end
+  end
+
+  alias_method :start_without_vcr, :start
+  alias_method :start, :start_with_vcr
 
   def request_with_vcr(request, *args, &block)
     handler = request.instance_eval do

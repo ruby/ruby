@@ -160,8 +160,6 @@ require_relative 'eq'
 #   # The object that handles requests on the server
 #   FRONT_OBJECT=TimeServer.new
 #
-#   $SAFE = 1   # disable eval() and friends
-#
 #   DRb.start_service(URI, FRONT_OBJECT)
 #   # Wait for the drb server thread to finish before exiting.
 #   DRb.thread.join
@@ -235,7 +233,7 @@ require_relative 'eq'
 #       def get_logger(name)
 #           if !@loggers.has_key? name
 #               # make the filename safe, then declare it to be so
-#               fname = name.gsub(/[.\/\\\:]/, "_").untaint
+#               fname = name.gsub(/[.\/\\\:]/, "_")
 #               @loggers[name] = Logger.new(name, @basedir + "/" + fname)
 #           end
 #           return @loggers[name]
@@ -244,8 +242,6 @@ require_relative 'eq'
 #   end
 #
 #   FRONT_OBJECT=LoggerFactory.new("/tmp/dlog")
-#
-#   $SAFE = 1   # disable eval() and friends
 #
 #   DRb.start_service(URI, FRONT_OBJECT)
 #   DRb.thread.join
@@ -286,10 +282,7 @@ require_relative 'eq'
 #    ro.instance_eval("`rm -rf *`")
 #
 # The dangers posed by instance_eval and friends are such that a
-# DRbServer should generally be run with $SAFE set to at least
-# level 1.  This will disable eval() and related calls on strings
-# passed across the wire.  The sample usage code given above follows
-# this practice.
+# DRbServer should only be used when clients are trusted.
 #
 # A DRbServer can be configured with an access control list to
 # selectively allow or deny access from specified IP addresses.  The
@@ -601,16 +594,9 @@ module DRb
       raise(DRbConnError, 'premature marshal format(can\'t read)') if str.size < sz
       DRb.mutex.synchronize do
         begin
-          save = Thread.current[:drb_untaint]
-          Thread.current[:drb_untaint] = []
           Marshal::load(str)
         rescue NameError, ArgumentError
           DRbUnknown.new($!, str)
-        ensure
-          Thread.current[:drb_untaint].each do |x|
-            x.untaint
-          end
-          Thread.current[:drb_untaint] = save
         end
       end
     end
@@ -850,8 +836,6 @@ module DRb
     # URI protocols.
     def self.open(uri, config)
       host, port, = parse_uri(uri)
-      host.untaint
-      port.untaint
       soc = TCPSocket.open(host, port)
       self.new(uri, soc, config)
     end
@@ -1068,9 +1052,6 @@ module DRb
 
       if DRb.here?(uri)
         obj = DRb.to_obj(ref)
-        if ((! obj.tainted?) && Thread.current[:drb_untaint])
-          Thread.current[:drb_untaint].push(obj)
-        end
         return obj
       end
 
@@ -1150,7 +1131,7 @@ module DRb
     end
 
     # Routes method calls to the referenced remote object.
-    def method_missing(msg_id, *a, &b)
+    ruby2_keywords def method_missing(msg_id, *a, &b)
       if DRb.here?(@uri)
         obj = DRb.to_obj(@ref)
         DRb.current_server.check_insecure_method(obj, msg_id)
@@ -1232,6 +1213,11 @@ module DRb
       @thread.alive?
     end
 
+    def kill
+      @thread.kill
+      @thread.join
+    end
+
     def method_missing(msg, *arg, &blk)
       synchronize do
         @wait_ev.wait_until { @status == :wait }
@@ -1300,11 +1286,16 @@ module DRb
         end
       end
     end
-    @pool_proxy = make_pool
+    @pool_proxy = nil
+
+    def self.stop_pool
+      @pool_proxy&.kill
+      @pool_proxy = nil
+    end
 
     def self.open(remote_uri)  # :nodoc:
       begin
-        @pool_proxy = make_pool unless @pool_proxy.alive?
+        @pool_proxy = make_pool unless @pool_proxy&.alive?
 
         conn = @pool_proxy.take(remote_uri)
         conn = self.new(remote_uri) unless conn
@@ -1362,7 +1353,6 @@ module DRb
     @@argc_limit = 256
     @@load_limit = 0xffffffff
     @@verbose = false
-    @@safe_level = 0
 
     # Set the default value for the :argc_limit option.
     #
@@ -1392,13 +1382,6 @@ module DRb
       @@idconv = idconv
     end
 
-    # Set the default safe level to +level+.  The default safe level is 0
-    #
-    # See #new for more information.
-    def self.default_safe_level(level)
-      @@safe_level = level
-    end
-
     # Set the default value of the :verbose option.
     #
     # See #new().  The initial default value is false.
@@ -1418,7 +1401,6 @@ module DRb
         :tcp_acl => @@acl,
         :load_limit => @@load_limit,
         :argc_limit => @@argc_limit,
-        :safe_level => @@safe_level
       }
       default_config.update(hash)
     end
@@ -1452,10 +1434,6 @@ module DRb
     # :argc_limit :: the maximum number of arguments to a remote
     #                method accepted by the server.  Defaults to
     #                256.
-    # :safe_level :: The safe level of the DRbServer.  The attribute
-    #                sets $SAFE for methods performed in the main_loop.
-    #                Defaults to 0.
-    #
     # The default values of these options can be modified on
     # a class-wide basis by the class methods #default_argc_limit,
     # #default_load_limit, #default_acl, #default_id_conv,
@@ -1487,7 +1465,6 @@ module DRb
 
       @front = front
       @idconv = @config[:idconv]
-      @safe_level = @config[:safe_level]
 
       @grp = ThreadGroup.new
       @thread = run
@@ -1513,12 +1490,6 @@ module DRb
 
     # The configuration of this DRbServer
     attr_reader :config
-
-    # The safe level for this server.  This is a number corresponding to
-    # $SAFE.
-    #
-    # The default safe_level is 0
-    attr_reader :safe_level
 
     # Set whether to operate in verbose mode.
     #
@@ -1652,7 +1623,6 @@ module DRb
     class InvokeMethod  # :nodoc:
       def initialize(drb_server, client)
         @drb_server = drb_server
-        @safe_level = drb_server.safe_level
         @client = client
       end
 
@@ -1661,33 +1631,10 @@ module DRb
         @succ = false
         setup_message
 
-        if $SAFE < @safe_level
-          info = Thread.current['DRb']
-          if @block
-            @result = Thread.new do
-              Thread.current['DRb'] = info
-              prev_safe_level = $SAFE
-              $SAFE = @safe_level
-              perform_with_block
-            ensure
-              $SAFE = prev_safe_level
-            end.value
-          else
-            @result = Thread.new do
-              Thread.current['DRb'] = info
-              prev_safe_level = $SAFE
-              $SAFE = @safe_level
-              perform_without_block
-            ensure
-              $SAFE = prev_safe_level
-            end.value
-          end
+        if @block
+          @result = perform_with_block
         else
-          if @block
-            @result = perform_with_block
-          else
-            @result = perform_without_block
-          end
+          @result = perform_without_block
         end
         @succ = true
         case @result

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # frozen_string_literal: true
 #--
 # Copyright (C) 2004 Mauricio Julio Fernández Pradier
@@ -9,7 +8,6 @@
 # TarReader reads tar files and allows iteration over their items
 
 class Gem::Package::TarReader
-
   include Enumerable
 
   ##
@@ -121,7 +119,6 @@ class Gem::Package::TarReader
   ensure
     rewind
   end
-
 end
 
-require 'rubygems/package/tar_reader/entry'
+require_relative 'tar_reader/entry'

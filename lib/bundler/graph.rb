@@ -27,7 +27,7 @@ module Bundler
       GraphVizClient.new(self).run
     end
 
-  private
+    private
 
     def _populate_relations
       parent_dependencies = _groups.values.to_set.flatten

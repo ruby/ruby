@@ -62,12 +62,6 @@ class TestRequire < Test::Unit::TestCase
     assert_require_nonascii_path(encoding, bug8165)
   end
 
-  def test_require_insecure_path
-    assert_require_insecure_path("foo")
-    encoding = 'filesystem'
-    assert_require_insecure_path(nil, encoding)
-  end
-
   def test_require_nonascii_path_utf8
     bug8676 = '[ruby-core:56136] [Bug #8676]'
     encoding = Encoding::UTF_8
@@ -75,23 +69,11 @@ class TestRequire < Test::Unit::TestCase
     assert_require_nonascii_path(encoding, bug8676)
   end
 
-  def test_require_insecure_path_utf8
-    encoding = Encoding::UTF_8
-    return if Encoding.find('filesystem') == encoding
-    assert_require_insecure_path(nil, encoding)
-  end
-
   def test_require_nonascii_path_shift_jis
     bug8676 = '[ruby-core:56136] [Bug #8676]'
     encoding = Encoding::Shift_JIS
     return if Encoding.find('filesystem') == encoding
     assert_require_nonascii_path(encoding, bug8676)
-  end
-
-  def test_require_insecure_path_shift_jis
-    encoding = Encoding::Shift_JIS
-    return if Encoding.find('filesystem') == encoding
-    assert_require_insecure_path(nil, encoding)
   end
 
   case RUBY_PLATFORM
@@ -105,19 +87,8 @@ class TestRequire < Test::Unit::TestCase
     end
   end
 
-  SECURITY_WARNING =
-    if /mswin|mingw/ =~ RUBY_PLATFORM
-      nil
-    else
-      proc do |require_path|
-        $SAFE = 1
-        require(require_path)
-      ensure
-        $SAFE = 0
-      end
-    end
-
   def prepare_require_path(dir, encoding)
+    require 'enc/trans/single_byte'
     Dir.mktmpdir {|tmp|
       begin
         require_path = File.join(tmp, dir, 'foo.rb').encode(encoding)
@@ -150,31 +121,6 @@ class TestRequire < Test::Unit::TestCase
           assert(!require(require_path), bug)
         }
       end
-    }
-  end
-
-  def assert_require_insecure_path(dirname, encoding = nil)
-    return unless SECURITY_WARNING
-    dirname ||= "\u3042" * 5
-    encoding ||= dirname.encoding
-    prepare_require_path(dirname, encoding) {|require_path|
-      require_path.untaint
-      require(require_path)
-      $".pop
-      File.chmod(0777, File.dirname(require_path))
-      require_path.encode('filesystem') rescue
-        require_path.encode(self.class.ospath_encoding(require_path))
-      e = nil
-      stderr = EnvUtil.verbose_warning do
-        e = assert_raise(SecurityError) do
-          SECURITY_WARNING.call(require_path)
-        end
-      end
-      assert_include(e.message, "loading from unsafe path")
-      assert_include(stderr, "Insecure world writable dir")
-      require_path = require_path.encode(self.class.ospath_encoding(require_path))
-      assert_include(e.message, require_path)
-      assert_include(stderr, File.dirname(require_path))
     }
   end
 
@@ -254,6 +200,7 @@ class TestRequire < Test::Unit::TestCase
   end
 
   def assert_syntax_error_backtrace
+    loaded_features = $LOADED_FEATURES.dup
     Dir.mktmpdir do |tmp|
       req = File.join(tmp, "test.rb")
       File.write(req, ",\n")
@@ -263,10 +210,18 @@ class TestRequire < Test::Unit::TestCase
       assert_not_nil(bt = e.backtrace, "no backtrace")
       assert_not_empty(bt.find_all {|b| b.start_with? __FILE__}, proc {bt.inspect})
     end
+    $LOADED_FEATURES.replace loaded_features
   end
 
   def test_require_syntax_error
     assert_syntax_error_backtrace {|req| require req}
+  end
+
+  def test_require_syntax_error_rescued
+    assert_syntax_error_backtrace do |req|
+      assert_raise_with_message(SyntaxError, /unexpected/) {require req}
+      require req
+    end
   end
 
   def test_load_syntax_error
@@ -416,15 +371,15 @@ class TestRequire < Test::Unit::TestCase
     bug = '[ruby-list:49994] path in ospath'
     base = "test_load\u{3042 3044 3046 3048 304a}".encode(Encoding::Windows_31J)
     path = nil
-    Tempfile.create([base, ".rb"]) do |t|
-      path = t.path
-
+    Dir.mktmpdir do |dir|
+      path = File.join(dir, base+".rb")
       assert_raise_with_message(LoadError, /#{base}/) {
-        load(File.join(File.dirname(path), base))
+        load(File.join(dir, base))
       }
 
-      t.puts "warn 'ok'"
-      t.close
+      File.open(path, "w+b") do |t|
+        t.puts "warn 'ok'"
+      end
       assert_include(path, base)
       assert_warn("ok\n", bug) {
         assert_nothing_raised(LoadError, bug) {
@@ -434,40 +389,10 @@ class TestRequire < Test::Unit::TestCase
     end
   end
 
-  def test_tainted_loadpath
-    Tempfile.create(["test_ruby_test_require", ".rb"]) {|t|
-      abs_dir, file = File.split(t.path)
-      abs_dir = File.expand_path(abs_dir).untaint
-
-      assert_separately([], <<-INPUT)
-        abs_dir = "#{ abs_dir }"
-        $: << abs_dir
-        assert_nothing_raised {require "#{ file }"}
-      INPUT
-
-      assert_separately([], <<-INPUT)
-        abs_dir = "#{ abs_dir }"
-        $: << abs_dir.taint
-        assert_nothing_raised {require "#{ file }"}
-      INPUT
-
-      assert_separately([], <<-INPUT)
-        abs_dir = "#{ abs_dir }"
-        $: << abs_dir.taint
-        $SAFE = 1
-        assert_raise(SecurityError) {require "#{ file }"}
-      INPUT
-
-      assert_separately([], <<-INPUT)
-        abs_dir = "#{ abs_dir }"
-        $: << abs_dir << 'elsewhere'.taint
-        assert_nothing_raised {require "#{ file }"}
-      INPUT
-    }
-  end
-
   def test_relative
     load_path = $:.dup
+    loaded_featrures = $LOADED_FEATURES.dup
+
     $:.delete(".")
     Dir.mktmpdir do |tmp|
       Dir.chdir(tmp) do
@@ -487,6 +412,7 @@ class TestRequire < Test::Unit::TestCase
     end
   ensure
     $:.replace(load_path) if load_path
+    $LOADED_FEATURES.replace loaded_featrures
   end
 
   def test_relative_symlink
@@ -844,6 +770,8 @@ class TestRequire < Test::Unit::TestCase
   end if File.respond_to?(:mkfifo)
 
   def test_loading_fifo_fd_leak
+    skip if RUBY_PLATFORM =~ /android/ # https://rubyci.org/logs/rubyci.s3.amazonaws.com/android29-x86_64/ruby-master/log/20200419T124100Z.fail.html.gz
+
     Tempfile.create(%w'fifo .rb') {|f|
       f.close
       File.unlink(f.path)
@@ -905,9 +833,9 @@ class TestRequire < Test::Unit::TestCase
       rescue NotImplementedError, Errno::EACCES
         skip "File.symlink is not implemented"
       end
-      File.write(File.join(tmp, "real/a.rb"), "print __FILE__")
-      result = IO.popen([EnvUtil.rubybin, "-I#{tmp}/symlink", "-e", "require 'a.rb'"], &:read)
-      assert_operator(result, :end_with?, "/real/a.rb")
+      File.write(File.join(tmp, "real/test_symlink_load_path.rb"), "print __FILE__")
+      result = IO.popen([EnvUtil.rubybin, "-I#{tmp}/symlink", "-e", "require 'test_symlink_load_path.rb'"], &:read)
+      assert_operator(result, :end_with?, "/real/test_symlink_load_path.rb")
     }
   end
 
@@ -928,6 +856,10 @@ class TestRequire < Test::Unit::TestCase
     ensure
       $:.replace(paths)
       $".replace(loaded)
+    end
+
+    def test_resolve_feature_path_with_missing_feature
+      assert_nil($LOAD_PATH.resolve_feature_path("superkalifragilisticoespialidoso"))
     end
   end
 end

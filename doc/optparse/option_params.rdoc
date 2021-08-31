@@ -1,0 +1,509 @@
+== Parameters for New Options
+
+Option-creating methods in \OptionParser
+accept arguments that determine the behavior of a new option:
+
+- OptionParser#on
+- OptionParser#on_head
+- OptionParser#on_tail
+- OptionParser#define
+- OptionParser#define_head
+- OptionParser#define_tail
+- OptionParser#make_switch
+
+The code examples on this page use:
+
+- OptionParser#on, to define options.
+- OptionParser#parse!, to parse the command line.
+- Built-in option <tt>--help</tt>, to display defined options.
+
+Contents:
+
+- {Option Names}[#label-Option+Names]
+  - {Short Names}[#label-Short+Names]
+    - {Simple Short Names}[#label-Simple+Short+Names]
+    - {Short Names with Required Arguments}[#label-Short+Names+with+Required+Arguments]
+    - {Short Names with Optional Arguments}[#label-Short+Names+with+Optional+Arguments]
+    - {Short Names from Range}[#label-Short+Names+from+Range]
+  - {Long Names}[#label-Long+Names]
+    - {Simple Long Names}[#label-Simple+Long+Names]
+    - {Long Names with Required Arguments}[#label-Long+Names+with+Required+Arguments]
+    - {Long Names with Optional Arguments}[#label-Long+Names+with+Optional+Arguments]
+    - {Long Names with Negation}[#label-Long+Names+with+Negation]
+  - {Mixed Names}[#label-Mixed+Names]
+- {Argument Styles}[#label-Argument+Styles]
+- {Argument Values}[#label-Argument+Values]
+  - {Explicit Argument Values}[#label-Explicit+Argument+Values]
+    - {Explicit Values in Array}[#label-Explicit+Values+in+Array]
+    - {Explicit Values in Hash}[#label-Explicit+Values+in+Hash]
+  - {Argument Value Patterns}[#label-Argument+Value+Patterns]
+- {Argument Converters}[#label-Argument+Converters]
+- {Descriptions}[#label-Descriptions]
+- {Option Handlers}[#label-Option+Handlers]
+  - {Handler Blocks}[#label-Handler+Blocks]
+  - {Handler Procs}[#label-Handler+Procs]
+  - {Handler Methods}[#label-Handler+Methods]
+
+=== Option Names
+
+There are two kinds of option names:
+
+- Short option name, consisting of a single hyphen and a single character.
+- Long option name, consisting of two hyphens and one or more characters.
+
+==== Short Names
+
+===== Simple Short Names
+
+File +short_simple.rb+ defines two options:
+
+- One with short name <tt>-x</tt>.
+- The other with two short names, in effect, aliases, <tt>-1</tt> and <tt>-%</tt>.
+
+ :include: ruby/short_simple.rb
+
+Executions:
+
+  $ ruby short_simple.rb --help
+  Usage: short_simple [options]
+      -x                               One short name
+      -1, -%                           Two short names (aliases)
+  $ ruby short_simple.rb -x
+  ["-x", true]
+  $ ruby short_simple.rb -1 -x -%
+  ["-1 or -%", true]
+  ["-x", true]
+  ["-1 or -%", true]
+
+===== Short Names with Required Arguments
+
+A short name followed (no whitespace) by a dummy word
+defines an option that requires an argument.
+
+File +short_required.rb+ defines an option <tt>-x</tt>
+that requires an argument.
+
+  :include: ruby/short_required.rb
+
+Executions:
+
+  $ ruby short_required.rb --help
+  Usage: short_required [options]
+      -xXXX                            Short name with required argument
+  $ ruby short_required.rb -x
+  short_required.rb:6:in `<main>': missing argument: -x (OptionParser::MissingArgument)
+  $ ruby short_required.rb -x FOO
+  ["-x", "FOO"]
+
+===== Short Names with Optional Arguments
+
+A short name followed (with whitespace) by a dummy word in square brackets
+defines an option that allows an optional argument.
+
+File +short_optional.rb+ defines an option <tt>-x</tt>
+that allows an optional argument.
+
+  :include: ruby/short_optional.rb
+
+Executions:
+
+  $ ruby short_optional.rb --help
+  Usage: short_optional [options]
+      -x [XXX]                         Short name with optional argument
+  $ ruby short_optional.rb -x
+  ["-x", nil]
+  $ ruby short_optional.rb -x FOO
+  ["-x", "FOO"]
+
+===== Short Names from Range
+
+You can define an option with multiple short names
+taken from a range of characters.
+The parser yields both the actual character cited and the value.
+
+File +short_range.rb+ defines an option with short names
+for all printable characters from <tt>!</tt> to <tt>~</tt>:
+
+  :include: ruby/short_range.rb
+
+Executions:
+
+  $ ruby short_range.rb --help
+  Usage: short_range [options]
+      -[!-~]                           Short names in (very large) range
+  $ ruby short_range.rb -!
+  ["!-~", "!", nil]
+  $ ruby short_range.rb -!
+  ["!-~", "!", nil]
+  $ ruby short_range.rb -A
+  ["!-~", "A", nil]
+  $ ruby short_range.rb -z
+  ["!-~", "z", nil]
+
+==== Long Names
+
+===== Simple Long Names
+
+File +long_simple.rb+ defines two options:
+
+- One with long name <tt>-xxx</tt>.
+- The other with two long names, in effect, aliases,
+  <tt>--y1%</tt> and <tt>--z2#</tt>.
+
+  :include: ruby/long_simple.rb
+
+Executions:
+
+  $ ruby long_simple.rb --help
+  Usage: long_simple [options]
+          --xxx                        One long name
+          --y1%, --z2#                 Two long names (aliases)
+  $ ruby long_simple.rb --xxx
+  ["--xxx", true]
+  $ ruby long_simple.rb --y1% --xxx --z2#
+  ["--y1% or --z2#", true]
+  ["--xxx", true]
+  ["--y1% or --z2#", true]
+
+===== Long Names with Required Arguments
+
+A long name followed (with whitespace) by a dummy word
+defines an option that requires an argument.
+
+File +long_required.rb+ defines an option <tt>--xxx</tt>
+that requires an argument.
+
+  :include: ruby/long_required.rb
+
+Executions:
+
+  $ ruby long_required.rb --help
+  Usage: long_required [options]
+          --xxx XXX                    Long name with required argument
+  $ ruby long_required.rb --xxx
+  long_required.rb:6:in `<main>': missing argument: --xxx (OptionParser::MissingArgument)
+  $ ruby long_required.rb --xxx FOO
+  ["--xxx", "FOO"]
+
+===== Long Names with Optional Arguments
+
+A long name followed (with whitespace) by a dummy word in square brackets
+defines an option that allows an optional argument.
+
+File +long_optional.rb+ defines an option <tt>--xxx</tt>
+that allows an optional argument.
+
+  :include: ruby/long_optional.rb
+
+Executions:
+
+  $ ruby long_optional.rb --help
+  Usage: long_optional [options]
+          --xxx [XXX]                  Long name with optional argument
+  $ ruby long_optional.rb --xxx
+  ["--xxx", nil]
+  $ ruby long_optional.rb --xxx FOO
+  ["--xxx", "FOO"]
+
+===== Long Names with Negation
+
+A long name may be defined with both positive and negative senses.
+
+File +long_with_negation.rb+ defines an option that has both senses.
+
+  :include: ruby/long_with_negation.rb
+
+Executions:
+
+  $ ruby long_with_negation.rb --help
+  Usage: long_with_negation [options]
+          --[no-]binary                Long name with negation
+  $ ruby long_with_negation.rb --binary
+  [true, TrueClass]
+  $ ruby long_with_negation.rb --no-binary
+  [false, FalseClass]
+
+==== Mixed Names
+
+An option may have both short and long names.
+
+File +mixed_names.rb+ defines a mixture of short and long names.
+
+  :include: ruby/mixed_names.rb
+
+Executions:
+
+  $ ruby mixed_names.rb --help
+Usage: mixed_names [options]
+    -x, --xxx                        Short and long, no argument
+    -y, --yyyYYY                     Short and long, required argument
+    -z, --zzz [ZZZ]                  Short and long, optional argument
+  $ ruby mixed_names.rb -x
+  ["--xxx", true]
+  $ ruby mixed_names.rb --xxx
+  ["--xxx", true]
+  $ ruby mixed_names.rb -y
+  mixed_names.rb:12:in `<main>': missing argument: -y (OptionParser::MissingArgument)
+  $ ruby mixed_names.rb -y FOO
+  ["--yyy", "FOO"]
+  $ ruby mixed_names.rb --yyy
+  mixed_names.rb:12:in `<main>': missing argument: --yyy (OptionParser::MissingArgument)
+  $ ruby mixed_names.rb --yyy BAR
+  ["--yyy", "BAR"]
+  $ ruby mixed_names.rb -z
+  ["--zzz", nil]
+  $ ruby mixed_names.rb -z BAZ
+  ["--zzz", "BAZ"]
+  $ ruby mixed_names.rb --zzz
+  ["--zzz", nil]
+  $ ruby mixed_names.rb --zzz BAT
+  ["--zzz", "BAT"]
+
+=== Argument Keywords
+
+As seen above, a given option name string may itself
+indicate whether the option has no argument, a required argument,
+or an optional argument.
+
+An alternative is to use a separate symbol keyword,
+which is one of <tt>:NONE</tt> (the default),
+<tt>:REQUIRED</tt>, <tt>:OPTIONAL</tt>.
+
+File +argument_keywords.rb+ defines an option with a required argument.
+
+  :include: ruby/argument_keywords.rb
+
+Executions:
+
+  $ ruby argument_keywords.rb --help
+  Usage: argument_keywords [options]
+      -x, --xxx                        Required argument
+  $ ruby argument_styles.rb --xxx
+  argument_styles.rb:6:in `<main>': missing argument: --xxx (OptionParser::MissingArgument)
+  $ ruby argument_styles.rb --xxx FOO
+  ["--xxx", "FOO"]
+
+=== Argument Strings
+
+Still another way to specify a required argument
+is to define it in a string separate from the name string.
+
+File +argument_strings.rb+ defines an option with a required argument.
+
+  :include: ruby/argument_strings.rb
+
+Executions:
+
+  $ ruby argument_strings.rb --help
+  Usage: argument_strings [options]
+      -x, --xxx=XXX                    Required argument
+  $ ruby argument_strings.rb --xxx
+  argument_strings.rb:9:in `<main>': missing argument: --xxx (OptionParser::MissingArgument)
+  $ ruby argument_strings.rb --xxx FOO
+  ["--xxx", "FOO"]
+
+=== Argument Values
+
+Permissible argument values may be restricted
+either by specifying explicit values
+or by providing a pattern that the given value must match.
+
+==== Explicit Argument Values
+
+You can specify argument values in either of two ways:
+
+- Specify values an array of strings.
+- Specify values a hash.
+
+===== Explicit Values in Array
+
+You can specify explicit argument values in an array of strings.
+The argument value must be one of those strings, or an unambiguous abbreviation.
+
+File +explicit_array_values.rb+ defines options with explicit argument values.
+
+  :include: ruby/explicit_array_values.rb
+
+Executions:
+
+  $ ruby explicit_array_values.rb --help
+  Usage: explicit_array_values [options]
+      -xXXX                            Values for required argument
+      -y [YYY]                         Values for optional argument
+  $ ruby explicit_array_values.rb -x
+  explicit_array_values.rb:9:in `<main>': missing argument: -x (OptionParser::MissingArgument)
+  $ ruby explicit_array_values.rb -x foo
+  ["-x", "foo"]
+  $ ruby explicit_array_values.rb -x f
+  ["-x", "foo"]
+  $ ruby explicit_array_values.rb -x bar
+  ["-x", "bar"]
+  $ ruby explicit_array_values.rb -y ba
+  explicit_array_values.rb:9:in `<main>': ambiguous argument: -y ba (OptionParser::AmbiguousArgument)
+  $ ruby explicit_array_values.rb -x baz
+  explicit_array_values.rb:9:in `<main>': invalid argument: -x baz (OptionParser::InvalidArgument)
+
+
+===== Explicit Values in Hash
+
+You can specify explicit argument values in a hash with string keys.
+The value passed must be one of those keys, or an unambiguous abbreviation;
+the value yielded will be the value for that key.
+
+File +explicit_hash_values.rb+ defines options with explicit argument values.
+
+  :include: ruby/explicit_hash_values.rb
+
+Executions:
+
+  $ ruby explicit_hash_values.rb --help
+  Usage: explicit_hash_values [options]
+      -xXXX                            Values for required argument
+      -y [YYY]                         Values for optional argument
+  $ ruby explicit_hash_values.rb -x
+  explicit_hash_values.rb:9:in `<main>': missing argument: -x (OptionParser::MissingArgument)
+  $ ruby explicit_hash_values.rb -x foo
+  ["-x", 0]
+  $ ruby explicit_hash_values.rb -x f
+  ["-x", 0]
+  $ ruby explicit_hash_values.rb -x bar
+  ["-x", 1]
+  $ ruby explicit_hash_values.rb -x baz
+  explicit_hash_values.rb:9:in `<main>': invalid argument: -x baz (OptionParser::InvalidArgument)
+  $ ruby explicit_hash_values.rb -y
+  ["-y", nil]
+  $ ruby explicit_hash_values.rb -y baz
+  ["-y", 2]
+  $ ruby explicit_hash_values.rb -y bat
+  ["-y", 3]
+  $ ruby explicit_hash_values.rb -y ba
+  explicit_hash_values.rb:9:in `<main>': ambiguous argument: -y ba (OptionParser::AmbiguousArgument)
+  $ ruby explicit_hash_values.rb -y bam
+  ["-y", nil]
+
+==== Argument Value Patterns
+
+You can restrict permissible argument values
+by specifying a Regexp that the given argument must match.
+
+File +matched_values.rb+ defines options with matched argument values.
+
+  :include: ruby/matched_values.rb
+
+Executions:
+
+  $ ruby matched_values.rb --help
+  Usage: matched_values [options]
+          --xxx XXX                    Matched values
+  $ ruby matched_values.rb --xxx foo
+  ["--xxx", "foo"]
+  $ ruby matched_values.rb --xxx FOO
+  ["--xxx", "FOO"]
+  $ ruby matched_values.rb --xxx bar
+  matched_values.rb:6:in `<main>': invalid argument: --xxx bar (OptionParser::InvalidArgument)
+
+=== Argument Converters
+
+An option can specify that its argument is to be converted
+from the default \String to an instance of another class.
+
+There are a number of built-in converters.
+You can also define custom converters.
+
+See {Argument Converters}[./argument_converters_rdoc.html].
+
+=== Descriptions
+
+A description parameter is any string parameter
+that is not recognized as an
+{option name}[#label-Option+Names] or a
+{terminator}[#label-Terminators];
+in other words, it does not begin with a hypnen.
+
+You may give any number of description parameters;
+each becomes a line in the text generated by option <tt>--help</tt>.
+
+File +descriptions.rb+ has six strings in its array +descriptions+.
+These are all passed as parameters to OptionParser#on, so that they
+all, line for line, become the option's description.
+
+  :include: ruby/descriptions.rb
+
+Executions:
+
+  $ ruby descriptions.rb --help
+  Usage: descriptions [options]
+          --xxx                        Lorem ipsum dolor sit amet, consectetuer
+                                       adipiscing elit. Aenean commodo ligula eget.
+                                       Aenean massa. Cum sociis natoque penatibus
+                                       et magnis dis parturient montes, nascetur
+                                       ridiculus mus. Donec quam felis, ultricies
+                                       nec, pellentesque eu, pretium quis, sem.
+  $ ruby descriptions.rb --xxx
+  ["--xxx", true]
+
+=== Option Handlers
+
+The handler for an option is an executable that will be called
+when the option is encountered.  The handler may be:
+
+- A block (this is most often seen).
+- A proc.
+- A method.
+
+==== Handler Blocks
+
+An option hadler may be a block.
+
+File +block.rb+ defines an option that has a handler block.
+
+  :include: ruby/block.rb
+
+Executions:
+
+  $ ruby block.rb --help
+  Usage: block [options]
+          --xxx                        Option with no argument
+          --yyy YYY                    Option with required argument
+  $ ruby block.rb --xxx
+  ["Handler block for -xxx called with value:", true]
+  $ ruby block.rb --yyy FOO
+  ["Handler block for -yyy called with value:", "FOO"]
+
+==== Handler Procs
+
+An option handler may be a Proc.
+
+File +proc.rb+ defines an option that has a handler proc.
+
+  :include: ruby/proc.rb
+
+Executions:
+
+  $ ruby proc.rb --help
+  Usage: proc [options]
+          --xxx                        Option with no argument
+          --yyy YYY                    Option with required argument
+  $ ruby proc.rb --xxx
+  ["Handler proc for -xxx called with value:", true]
+  $ ruby proc.rb --yyy FOO
+  ["Handler proc for -yyy called with value:", "FOO"]
+
+==== Handler Methods
+
+An option handler may be a Method.
+
+File +proc.rb+ defines an option that has a handler method.
+
+  :include: ruby/method.rb
+
+Executions:
+
+  $ ruby method.rb --help
+  Usage: method [options]
+          --xxx                        Option with no argument
+          --yyy YYY                    Option with required argument
+  $ ruby method.rb --xxx
+  ["Handler method for -xxx called with value:", true]
+  $ ruby method.rb --yyy FOO
+  ["Handler method for -yyy called with value:", "FOO"]

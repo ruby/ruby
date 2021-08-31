@@ -17,10 +17,11 @@ module Bundler
       perform_bundle_install unless options["skip-install"]
     end
 
-  private
+    private
 
     def perform_bundle_install
       Installer.install(Bundler.root, Bundler.definition)
+      Bundler.load.cache if Bundler.app_cache.exist?
     end
 
     def inject_dependencies

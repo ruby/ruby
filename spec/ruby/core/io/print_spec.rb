@@ -1,15 +1,15 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
-describe IO, "#print" do
+describe "IO#print" do
   before :each do
     @old_separator = $\
-    $\ = '->'
+    suppress_warning {$\ = '->'}
     @name = tmp("io_print")
   end
 
   after :each do
-    $\ = @old_separator
+    suppress_warning {$\ = @old_separator}
     rm_r @name
   end
 

@@ -41,6 +41,7 @@ ComparisonTest
 ConstantSpecsIncludedModule
 ConstantVisibility
 Coverage
+CoverageSpecs
 CustomArgumentError
 DRb
 DRbIdConv
@@ -55,6 +56,7 @@ DefSpecsLambdaVisibility
 DefineMethodByProcClass
 DefineMethodSpecClass
 DefineSingletonMethodSpecClass
+Delegator
 DescArray
 DescObjectTest
 Digest
@@ -148,8 +150,10 @@ Readline
 ReceiverClass
 RegexpSpecsSubclass
 RegexpSpecsSubclassTwo
+Reline
 RescueInClassExample
 Resolv
+Ripper
 SHA1Constants
 SHA256Constants
 SHA384Constants
@@ -161,6 +165,7 @@ SecondClass
 SecureRandom
 Set
 Shellwords
+SimpleDelegator
 SingleForwardable
 Singleton
 Socket
@@ -188,6 +193,7 @@ TimeoutError
 UDPSocket
 UNIXServer
 UNIXSocket
+URI
 UnaryMinusTest
 UnicodeNormalize
 UnloadableDumpableDir

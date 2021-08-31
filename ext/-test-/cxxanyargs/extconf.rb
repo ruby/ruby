@@ -2,12 +2,23 @@
 
 cxx = MakeMakefile["C++"]
 
-ok = cxx.try_compile(<<~'begin', "") do |x|
+# #### have_devel hack ####
+# cxx.try_compile tries to detect compilers, but the try_compile below is
+# trying to detect a compiler in a different way.  We need to prevent the
+# default detection routine.
+
+cxx.instance_variable_set(:'@have_devel', true)
+
+ok = cxx.try_link(<<~'begin', "") do |x|
   #include "ruby/config.h"
 
+  #ifdef RUBY_ALTERNATIVE_MALLOC_HEADER
+  # include RUBY_ALTERNATIVE_MALLOC_HEADER
+  #endif
+
   namespace {
-      typedef int conftest[SIZEOF_LONG == sizeof(long) ? 1 : -1];
-      typedef int conftest[SIZEOF_VOIDP == sizeof(void*) ? 1 : -1];
+      typedef int conftest1[SIZEOF_LONG == sizeof(long) ? 1 : -1];
+      typedef int conftest2[SIZEOF_VOIDP == sizeof(void*) ? 1 : -1];
   }
 
   int
@@ -21,8 +32,15 @@ begin
   x.sub! %<#include "ruby.h">, ''
 end
 
+cxx.instance_variable_set(:'@have_devel', ok)
+
 if ok
   $srcs = %w[cxxanyargs.cpp]
-  $cleanfiles << "failure.failed"
-  create_makefile("-test-/cxxanyargs")
+  failures = Dir.glob($srcdir + "/failure*.cpp").map {|n| File.basename(n)}
+  $cleanfiles << "$(FAILURES:.cpp=.failed)"
+  create_makefile("-test-/cxxanyargs") do |mk|
+    mk << "FAILURES #{['=', failures].join(' ')}\n"
+    mk << ".IGNORE: $(FAILURES:.cpp=.o)\n" unless $mswin
+    mk
+  end
 end

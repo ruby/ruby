@@ -1,0 +1,6 @@
+prelude: "object = Object.new"
+benchmark:
+  clone: "object.clone"
+  clone_true: "object.clone(freeze: true)"
+  clone_false: "object.clone(freeze: false)"
+loop_count: 10000

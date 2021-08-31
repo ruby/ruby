@@ -2,7 +2,7 @@ require 'spec_helper'
 require 'mspec/guards'
 require 'mspec/helpers'
 
-describe Object, "#cp" do
+RSpec.describe Object, "#cp" do
   before :each do
     @source = tmp("source.txt")
     @copy = tmp("copied.txt")
@@ -19,12 +19,12 @@ describe Object, "#cp" do
   it "copies a file" do
     cp @source, @copy
     data = IO.read(@copy)
-    data.should == @contents
-    data.should == IO.read(@source)
+    expect(data).to eq(@contents)
+    expect(data).to eq(IO.read(@source))
   end
 end
 
-describe Object, "#touch" do
+RSpec.describe Object, "#touch" do
   before :all do
     @name = tmp("touched.txt")
   end
@@ -35,29 +35,29 @@ describe Object, "#touch" do
 
   it "creates a file" do
     touch @name
-    File.exist?(@name).should be_true
+    expect(File.exist?(@name)).to be_truthy
   end
 
   it "accepts an optional mode argument" do
     touch @name, "wb"
-    File.exist?(@name).should be_true
+    expect(File.exist?(@name)).to be_truthy
   end
 
   it "overwrites an existing file" do
     File.open(@name, "w") { |f| f.puts "used" }
-    File.size(@name).should > 0
+    expect(File.size(@name)).to be > 0
 
     touch @name
-    File.size(@name).should == 0
+    expect(File.size(@name)).to eq(0)
   end
 
   it "yields the open file if passed a block" do
     touch(@name) { |f| f.write "touching" }
-    IO.read(@name).should == "touching"
+    expect(IO.read(@name)).to eq("touching")
   end
 end
 
-describe Object, "#touch" do
+RSpec.describe Object, "#touch" do
   before :all do
     @name = tmp("subdir/touched.txt")
   end
@@ -68,11 +68,11 @@ describe Object, "#touch" do
 
   it "creates all the directories in the path to the file" do
     touch @name
-    File.exist?(@name).should be_true
+    expect(File.exist?(@name)).to be_truthy
   end
 end
 
-describe Object, "#mkdir_p" do
+RSpec.describe Object, "#mkdir_p" do
   before :all do
     @dir1 = tmp("/nested")
     @dir2 = @dir1 + "/directory"
@@ -86,17 +86,17 @@ describe Object, "#mkdir_p" do
 
   it "creates all the directories in a path" do
     mkdir_p @dir2
-    File.directory?(@dir2).should be_true
+    expect(File.directory?(@dir2)).to be_truthy
   end
 
   it "raises an ArgumentError if a path component is a file" do
     File.open(@dir1, "w") { |f| }
-    lambda { mkdir_p @dir2 }.should raise_error(ArgumentError)
+    expect { mkdir_p @dir2 }.to raise_error(ArgumentError)
   end
 
   it "works if multiple processes try to create the same directory concurrently" do
     original = File.method(:directory?)
-    File.should_receive(:directory?).at_least(:once) { |dir|
+    expect(File).to receive(:directory?).at_least(:once) { |dir|
       ret = original.call(dir)
       if !ret and dir == @dir1
         Dir.mkdir(dir) # Simulate race
@@ -104,11 +104,11 @@ describe Object, "#mkdir_p" do
       ret
     }
     mkdir_p @dir1
-    original.call(@dir1).should be_true
+    expect(original.call(@dir1)).to be_truthy
   end
 end
 
-describe Object, "#rm_r" do
+RSpec.describe Object, "#rm_r" do
   before :all do
     @topdir  = tmp("rm_r_tree")
     @topfile = @topdir + "/file.txt"
@@ -137,59 +137,59 @@ describe Object, "#rm_r" do
   end
 
   it "raises an ArgumentError if the path is not prefixed by MSPEC_RM_PREFIX" do
-    lambda { rm_r "some_file.txt" }.should raise_error(ArgumentError)
+    expect { rm_r "some_file.txt" }.to raise_error(ArgumentError)
   end
 
   it "removes a single file" do
     rm_r @subfile
-    File.exist?(@subfile).should be_false
+    expect(File.exist?(@subfile)).to be_falsey
   end
 
   it "removes multiple files" do
     rm_r @topfile, @subfile
-    File.exist?(@topfile).should be_false
-    File.exist?(@subfile).should be_false
+    expect(File.exist?(@topfile)).to be_falsey
+    expect(File.exist?(@subfile)).to be_falsey
   end
 
   platform_is_not :windows do
     it "removes a symlink to a file" do
       File.symlink @topfile, @link
       rm_r @link
-      File.exist?(@link).should be_false
+      expect(File.exist?(@link)).to be_falsey
     end
 
     it "removes a symlink to a directory" do
       File.symlink @subdir1, @link
       rm_r @link
-      lambda do
+      expect do
         File.lstat(@link)
-      end.should raise_error(Errno::ENOENT)
-      File.exist?(@subdir1).should be_true
+      end.to raise_error(Errno::ENOENT)
+      expect(File.exist?(@subdir1)).to be_truthy
     end
 
     it "removes a dangling symlink" do
       File.symlink "non_existent_file", @link
       rm_r @link
-      lambda do
+      expect do
         File.lstat(@link)
-      end.should raise_error(Errno::ENOENT)
+      end.to raise_error(Errno::ENOENT)
     end
 
     it "removes a socket" do
       require 'socket'
       UNIXServer.new(@socket).close
       rm_r @socket
-      File.exist?(@socket).should be_false
+      expect(File.exist?(@socket)).to be_falsey
     end
   end
 
   it "removes a single directory" do
     rm_r @subdir2
-    File.directory?(@subdir2).should be_false
+    expect(File.directory?(@subdir2)).to be_falsey
   end
 
   it "recursively removes a directory tree" do
     rm_r @topdir
-    File.directory?(@topdir).should be_false
+    expect(File.directory?(@topdir)).to be_falsey
   end
 end

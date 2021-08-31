@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require_relative "utils"
 
 if defined?(OpenSSL)
@@ -122,6 +122,7 @@ __EOS__
       ctx.options &= ~OpenSSL::SSL::OP_NO_TICKET
       # Disable server-side session cache which is enabled by default
       ctx.session_cache_mode = OpenSSL::SSL::SSLContext::SESSION_CACHE_OFF
+      ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION if libressl?(3, 2, 0)
     }
     start_server(ctx_proc: ctx_proc) do |port|
       sess1 = server_connect_with_session(port, nil, nil) { |ssl|

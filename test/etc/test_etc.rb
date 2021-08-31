@@ -44,7 +44,7 @@ class TestEtc < Test::Unit::TestCase
     unless s.empty?
       assert_include(s, Etc.getpwuid)
     end
-  end
+  end unless RUBY_PLATFORM.include?("android")
 
   def test_getpwnam
     passwd = {}
@@ -54,7 +54,7 @@ class TestEtc < Test::Unit::TestCase
     passwd.each_value do |s|
       assert_equal(s, Etc.getpwnam(s.name))
     end
-  end
+  end unless RUBY_PLATFORM.include?("android")
 
   def test_passwd_with_low_level_api
     a = []
@@ -169,4 +169,28 @@ class TestEtc < Test::Unit::TestCase
     assert_operator(1, :<=, n)
   end
 
+  def test_ractor
+    return unless Etc.passwd # => skip test if no platform support
+    Etc.endpwent
+
+    assert_ractor(<<~RUBY, require: 'etc')
+      ractor = Ractor.new do
+        Etc.passwd do |s|
+          Ractor.yield :sync
+          Ractor.yield s.name
+          break :done
+        end
+      end
+      ractor.take # => :sync
+      assert_raise RuntimeError, /parallel/ do
+        Etc.passwd {}
+      end
+      name = ractor.take # => first name
+      ractor.take # => :done
+      name2 = Etc.passwd do |s|
+        break s.name
+      end
+      assert_equal(name2, name)
+    RUBY
+  end
 end

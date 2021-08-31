@@ -1,10 +1,10 @@
 # frozen_string_literal: true
-require 'rubygems/command'
-require 'rubygems/install_update_options'
-require 'rubygems/dependency_installer'
-require 'rubygems/local_remote_options'
-require 'rubygems/validator'
-require 'rubygems/version_option'
+require_relative '../command'
+require_relative '../install_update_options'
+require_relative '../dependency_installer'
+require_relative '../local_remote_options'
+require_relative '../validator'
+require_relative '../version_option'
 
 ##
 # Gem installer command line tool
@@ -12,7 +12,6 @@ require 'rubygems/version_option'
 # See `gem help install`
 
 class Gem::Commands::InstallCommand < Gem::Command
-
   attr_reader :installed_specs # :nodoc:
 
   include Gem::VersionOption
@@ -27,6 +26,8 @@ class Gem::Commands::InstallCommand < Gem::Command
       :version           => Gem::Requirement.default,
       :without_groups    => [],
     })
+
+    defaults.merge!(install_update_options)
 
     super 'install', 'Install a gem into the local repository', defaults
 
@@ -44,8 +45,9 @@ class Gem::Commands::InstallCommand < Gem::Command
   end
 
   def defaults_str # :nodoc:
-    "--both --version '#{Gem::Requirement.default}' --document --no-force\n" +
-    "--install-dir #{Gem.dir} --lock"
+    "--both --version '#{Gem::Requirement.default}' --no-force\n" +
+    "--install-dir #{Gem.dir} --lock\n" +
+    install_update_defaults_str
   end
 
   def description # :nodoc:
@@ -128,7 +130,7 @@ You can use `i` command instead of `install`.
   end
 
   def usage # :nodoc:
-    "#{program_name} GEMNAME [GEMNAME ...] [options] -- --build-flags"
+    "#{program_name} [options] GEMNAME [GEMNAME ...] -- --build-flags"
   end
 
   def check_install_dir # :nodoc:
@@ -170,7 +172,7 @@ You can use `i` command instead of `install`.
   end
 
   def install_from_gemdeps # :nodoc:
-    require 'rubygems/request_set'
+    require_relative '../request_set'
     rs = Gem::RequestSet.new
 
     specs = rs.install_from_gemdeps options do |req, inst|
@@ -218,7 +220,7 @@ You can use `i` command instead of `install`.
       gem_version ||= options[:version]
       domain = options[:domain]
       domain = :local unless options[:suggest_alternate]
-      supress_suggestions = (domain == :local)
+      suppress_suggestions = (domain == :local)
 
       begin
         install_gem gem_name, gem_version
@@ -226,11 +228,11 @@ You can use `i` command instead of `install`.
         alert_error "Error installing #{gem_name}:\n\t#{e.message}"
         exit_code |= 1
       rescue Gem::GemNotFoundException => e
-        show_lookup_failure e.name, e.version, e.errors, supress_suggestions
+        show_lookup_failure e.name, e.version, e.errors, suppress_suggestions
 
         exit_code |= 2
       rescue Gem::UnsatisfiableDependencyError => e
-        show_lookup_failure e.name, e.version, e.errors, supress_suggestions,
+        show_lookup_failure e.name, e.version, e.errors, suppress_suggestions,
                             "'#{gem_name}' (#{gem_version})"
 
         exit_code |= 2
@@ -245,11 +247,11 @@ You can use `i` command instead of `install`.
 
   def load_hooks # :nodoc:
     if options[:install_as_default]
-      require 'rubygems/install_default_message'
+      require_relative '../install_default_message'
     else
-      require 'rubygems/install_message'
+      require_relative '../install_message'
     end
-    require 'rubygems/rdoc'
+    require_relative '../rdoc'
   end
 
   def show_install_errors(errors) # :nodoc:
@@ -258,7 +260,8 @@ You can use `i` command instead of `install`.
     errors.each do |x|
       return unless Gem::SourceFetchProblem === x
 
-      msg = "Unable to pull data from '#{x.source.uri}': #{x.error.message}"
+      require_relative "../uri"
+      msg = "Unable to pull data from '#{Gem::Uri.new(x.source.uri).redacted}': #{x.error.message}"
 
       alert_warning msg
     end
@@ -270,5 +273,4 @@ You can use `i` command instead of `install`.
     gems = @installed_specs.length == 1 ? 'gem' : 'gems'
     say "#{@installed_specs.length} #{gems} installed"
   end
-
 end

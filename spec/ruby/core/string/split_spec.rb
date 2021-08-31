@@ -84,6 +84,24 @@ describe "String#split with String" do
         $; = old_fs
       end
     end
+
+    ruby_version_is "2.7" do
+      context "when $; is not nil" do
+        before do
+          suppress_warning do
+            @old_value, $; = $;, 'foobar'
+          end
+        end
+
+        after do
+          $; = @old_value
+        end
+
+        it "warns" do
+          -> { "".split }.should complain(/warning: \$; is set to non-nil value/)
+        end
+      end
+    end
   end
 
   it "ignores leading and continuous whitespace when string is a single space" do
@@ -141,40 +159,62 @@ describe "String#split with String" do
     "foo".split("bar", 3).should == ["foo"]
   end
 
-  it "returns subclass instances based on self" do
-    ["", "x.y.z.", "  x  y  "].each do |str|
-      ["", ".", " "].each do |pat|
-        [-1, 0, 1, 2].each do |limit|
-          StringSpecs::MyString.new(str).split(pat, limit).each do |x|
-            x.should be_an_instance_of(StringSpecs::MyString)
-          end
+  ruby_version_is ''...'3.0' do
+    it "returns subclass instances based on self" do
+      ["", "x.y.z.", "  x  y  "].each do |str|
+        ["", ".", " "].each do |pat|
+          [-1, 0, 1, 2].each do |limit|
+            StringSpecs::MyString.new(str).split(pat, limit).each do |x|
+              x.should be_an_instance_of(StringSpecs::MyString)
+            end
 
-          str.split(StringSpecs::MyString.new(pat), limit).each do |x|
-            x.should be_an_instance_of(String)
+            str.split(StringSpecs::MyString.new(pat), limit).each do |x|
+              x.should be_an_instance_of(String)
+            end
+          end
+        end
+      end
+    end
+
+    it "does not call constructor on created subclass instances" do
+      # can't call should_not_receive on an object that doesn't yet exist
+      # so failure here is signalled by exception, not expectation failure
+
+      s = StringSpecs::StringWithRaisingConstructor.new('silly:string')
+      s.split(':').first.should == 'silly'
+    end
+  end
+
+  ruby_version_is '3.0' do
+    it "returns String instances based on self" do
+      ["", "x.y.z.", "  x  y  "].each do |str|
+        ["", ".", " "].each do |pat|
+          [-1, 0, 1, 2].each do |limit|
+            StringSpecs::MyString.new(str).split(pat, limit).each do |x|
+              x.should be_an_instance_of(String)
+            end
+
+            str.split(StringSpecs::MyString.new(pat), limit).each do |x|
+              x.should be_an_instance_of(String)
+            end
           end
         end
       end
     end
   end
 
-  it "does not call constructor on created subclass instances" do
-    # can't call should_not_receive on an object that doesn't yet exist
-    # so failure here is signalled by exception, not expectation failure
+  ruby_version_is ''...'2.7' do
+    it "taints the resulting strings if self is tainted" do
+      ["", "x.y.z.", "  x  y  "].each do |str|
+        ["", ".", " "].each do |pat|
+          [-1, 0, 1, 2].each do |limit|
+            str.dup.taint.split(pat).each do |x|
+              x.should.tainted?
+            end
 
-    s = StringSpecs::StringWithRaisingConstructor.new('silly:string')
-    s.split(':').first.should == 'silly'
-  end
-
-  it "taints the resulting strings if self is tainted" do
-    ["", "x.y.z.", "  x  y  "].each do |str|
-      ["", ".", " "].each do |pat|
-        [-1, 0, 1, 2].each do |limit|
-          str.dup.taint.split(pat).each do |x|
-            x.tainted?.should == true
-          end
-
-          str.split(pat.dup.taint).each do |x|
-            x.tainted?.should == false
+            str.split(pat.dup.taint).each do |x|
+              x.should_not.tainted?
+            end
           end
         end
       end
@@ -335,49 +375,67 @@ describe "String#split with Regexp" do
     "foo".split(/bar/, 3).should == ["foo"]
   end
 
-  it "returns subclass instances based on self" do
-    ["", "x:y:z:", "  x  y  "].each do |str|
-      [//, /:/, /\s+/].each do |pat|
-        [-1, 0, 1, 2].each do |limit|
-          StringSpecs::MyString.new(str).split(pat, limit).each do |x|
-            x.should be_an_instance_of(StringSpecs::MyString)
+  ruby_version_is ''...'3.0' do
+    it "returns subclass instances based on self" do
+      ["", "x:y:z:", "  x  y  "].each do |str|
+        [//, /:/, /\s+/].each do |pat|
+          [-1, 0, 1, 2].each do |limit|
+            StringSpecs::MyString.new(str).split(pat, limit).each do |x|
+              x.should be_an_instance_of(StringSpecs::MyString)
+            end
+          end
+        end
+      end
+    end
+
+    it "does not call constructor on created subclass instances" do
+      # can't call should_not_receive on an object that doesn't yet exist
+      # so failure here is signalled by exception, not expectation failure
+
+      s = StringSpecs::StringWithRaisingConstructor.new('silly:string')
+      s.split(/:/).first.should == 'silly'
+    end
+  end
+
+  ruby_version_is '3.0' do
+    it "returns String instances based on self" do
+      ["", "x:y:z:", "  x  y  "].each do |str|
+        [//, /:/, /\s+/].each do |pat|
+          [-1, 0, 1, 2].each do |limit|
+            StringSpecs::MyString.new(str).split(pat, limit).each do |x|
+              x.should be_an_instance_of(String)
+            end
           end
         end
       end
     end
   end
 
-  it "does not call constructor on created subclass instances" do
-    # can't call should_not_receive on an object that doesn't yet exist
-    # so failure here is signalled by exception, not expectation failure
-
-    s = StringSpecs::StringWithRaisingConstructor.new('silly:string')
-    s.split(/:/).first.should == 'silly'
-  end
-
-  it "taints the resulting strings if self is tainted" do
-    ["", "x:y:z:", "  x  y  "].each do |str|
-      [//, /:/, /\s+/].each do |pat|
-        [-1, 0, 1, 2].each do |limit|
-          str.dup.taint.split(pat, limit).each do |x|
-            # See the spec below for why the conditional is here
-            x.tainted?.should be_true unless x.empty?
+  ruby_version_is ''...'2.7' do
+    it "taints the resulting strings if self is tainted" do
+      ["", "x:y:z:", "  x  y  "].each do |str|
+        [//, /:/, /\s+/].each do |pat|
+          [-1, 0, 1, 2].each do |limit|
+            str.dup.taint.split(pat, limit).each do |x|
+              # See the spec below for why the conditional is here
+              x.tainted?.should be_true unless x.empty?
+            end
           end
         end
       end
     end
-  end
 
-  it "taints an empty string if self is tainted" do
-    ":".taint.split(//, -1).last.tainted?.should be_true
-  end
+    it "taints an empty string if self is tainted" do
+      ":".taint.split(//, -1).last.tainted?.should be_true
+    end
 
-  it "doesn't taints the resulting strings if the Regexp is tainted" do
-    ["", "x:y:z:", "  x  y  "].each do |str|
-      [//, /:/, /\s+/].each do |pat|
-        [-1, 0, 1, 2].each do |limit|
-          str.split(pat.dup.taint, limit).each do |x|
-            x.tainted?.should be_false
+    it "doesn't taints the resulting strings if the Regexp is tainted" do
+      ["", "x:y:z:", "  x  y  "].each do |str|
+        [//, /:/, /\s+/].each do |pat|
+          [-1, 0, 1, 2].each do |limit|
+            str.split(pat.dup.taint, limit).each do |x|
+              x.tainted?.should be_false
+            end
           end
         end
       end
@@ -403,16 +461,92 @@ describe "String#split with Regexp" do
     ->{ broken_str.split(/\r\n|\r|\n/) }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is "2.6" do
-    it "yields each split substrings if a block is given" do
+  # See https://bugs.ruby-lang.org/issues/12689 and https://github.com/jruby/jruby/issues/4868
+  it "allows concurrent Regexp calls in a shared context" do
+    str = 'a,b,c,d,e'
+
+    p = proc { str.split(/,/) }
+    results = 10.times.map { Thread.new { x = nil; 100.times { x = p.call }; x } }.map(&:value)
+
+    results.should == [%w[a b c d e]] * 10
+  end
+
+  context "when a block is given" do
+    it "yields each split substring with default pattern" do
       a = []
-      returned_object = "chunky bacon".split(" ") { |str| a << str.capitalize }
+      returned_object = "chunky bacon".split { |str| a << str.capitalize }
 
       returned_object.should == "chunky bacon"
       a.should == ["Chunky", "Bacon"]
     end
 
-    describe "for a String subclass" do
+    it "yields each split substring with default pattern for a non-ASCII string" do
+      a = []
+      returned_object = "l'été arrive bientôt".split { |str| a << str }
+
+      returned_object.should == "l'été arrive bientôt"
+      a.should == ["l'été", "arrive", "bientôt"]
+    end
+
+    it "yields the string when limit is 1" do
+      a = []
+      returned_object = "chunky bacon".split("", 1) { |str| a << str.capitalize }
+
+      returned_object.should == "chunky bacon"
+      a.should == ["Chunky bacon"]
+    end
+
+    it "yields each split letter" do
+      a = []
+      returned_object = "chunky".split("", 0) { |str| a << str.capitalize }
+
+      returned_object.should == "chunky"
+      a.should == %w(C H U N K Y)
+    end
+
+    it "yields each split substring with a pattern" do
+      a = []
+      returned_object = "chunky-bacon".split("-", 0) { |str| a << str.capitalize }
+
+      returned_object.should == "chunky-bacon"
+      a.should == ["Chunky", "Bacon"]
+    end
+
+    it "yields each split substring with empty regexp pattern" do
+      a = []
+      returned_object = "chunky".split(//) { |str| a << str.capitalize }
+
+      returned_object.should == "chunky"
+      a.should == %w(C H U N K Y)
+    end
+
+    it "yields each split substring with empty regexp pattern and limit" do
+      a = []
+      returned_object = "chunky".split(//, 3) { |str| a << str.capitalize }
+
+      returned_object.should == "chunky"
+      a.should == %w(C H Unky)
+    end
+
+    it "yields each split substring with a regexp pattern" do
+      a = []
+      returned_object = "chunky:bacon".split(/:/) { |str| a << str.capitalize }
+
+      returned_object.should == "chunky:bacon"
+      a.should == ["Chunky", "Bacon"]
+    end
+
+    it "returns a string as is (and doesn't call block) if it is empty" do
+      a = []
+      returned_object = "".split { |str| a << str.capitalize }
+
+      returned_object.should == ""
+      a.should == []
+    end
+  end
+
+  describe "for a String subclass" do
+    ruby_version_is ''...'3.0' do
       it "yields instances of the same subclass" do
         a = []
         StringSpecs::MyString.new("a|b").split("|") { |str| a << str }
@@ -422,6 +556,20 @@ describe "String#split with Regexp" do
         first.should == "a"
 
         last.should be_an_instance_of(StringSpecs::MyString)
+        last.should == "b"
+      end
+    end
+
+    ruby_version_is '3.0' do
+      it "yields instances of String" do
+        a = []
+        StringSpecs::MyString.new("a|b").split("|") { |str| a << str }
+        first, last = a
+
+        first.should be_an_instance_of(String)
+        first.should == "a"
+
+        last.should be_an_instance_of(String)
         last.should == "b"
       end
     end
